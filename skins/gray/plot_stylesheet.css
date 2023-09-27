@@ -1,0 +1,19 @@
+VipAbstractPlotArea 
+{ 
+	colorpalette: "random"; 
+}
+
+VipPlotCurve 
+{
+	border-width: 1.5; 
+}
+
+VipAbstractScale:title 
+{
+	margin: 5;
+}
+
+VipLegend
+{ 
+	minimum-width: 20;
+}

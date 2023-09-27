@@ -1,0 +1,746 @@
+Thermavip v3.10.0 - 31/01/2023
+
+(Core) Added support for Excel CSV files (';' separator without header)
+
+(GUI) Corrected wrong behavior of movies time lines
+(GUI) Optimized the directory browser panel, especially in unconnected mode
+(GUI) Added web browser on Windows only and if Qt version is >= 5.15 (and webkip module is available)
+(GUI) When right clicking on a workspace tab, added options "Close all" and "Close all BUT this"
+(GUI) For players and workspaces, added option to copy its content into the clipboard as an image
+(GUI) For video players, added key shortcuts for shape drawing: 'R' for rectangles, 'P' for polygons, 'L' for polylines, 'F' for free regions, ';' for points
+(GUI) For plot players, using SHIFT+click inside the plotting area will set the workspace time to the clicked position
+(GUI) Correct multiple display bugs for both offline display and streaming
+(GUI) Optimized video and curve streaming
+(GUI) Added option to copy workspace session file to clipboard (for pasting in PowerPoint)
+(GUI) Curves can now be selected, dragged and dropped through their legends
+(GUI) Operations between curves now work as expected
+(GUI) Corrected crash due to drag'n drop of processings in the Processing List editor
+
+(WEST) Corrected ROI editor: subtracting a ROI to another does no longer change the ROI ordering
+(WEST) Using SHIFT+click in an image of the Shot Summary will set the workspace time to the clicked pixel time
+(WEST) Removed Security ROI and times of interest in the Shot Summary
+(WEST) Added option to display the shot summary of a single view (right click on the view and select "Video summary")
+(WEST) Multiple minor updates to support unconnected mode
+(WEST) Corrected and simplified "SurvIR over pulses"
+(WEST) Added option to display chrono codes for current pulse number
+(WEST) Added option to display DWMS feedback rules and thresholds for current pulse
+
+(WEST_DB) Added option to change the analysis status for selected events
+
+(librir) Added support for unconnected mode
+(librir) Multithreaded IR video decompression
+(librir) Changed the way ARCADE signals are timestamped. Now, 32s is directly removed from the signal times instead of the ignitron time.
+This results in a better video/signals synchronization.
+(librir) Corrected translation computation for C4 IR videos
+
+(NVF) Added IR camera streaming and control
+
+Thermavip v3.9.0 - 16/12/2022
+
+(Core) Added Running Average and Running Median processing that work on videos and curves
+(GUI) Corrected problems with timelines when trying to synchronize movies manually
+
+(NVF) Added possibility to use an emissivity map for a movie instead of a global emissivity value
+(NVF) Added possibility (through tool bar button) to display a movie without combining IT frames
+
+(librir) Correction in IR video calibration
+
+(WEST) Modified alioth/evenio dashboard address
+(WEST) Added new way to handled thermavip addresses (on the form thermavip://) given by evenio dashboard
+(WEST) Corrected crash in ROI Editor when clicking on "Add new ROI" and then clicking outside the movie
+(WEST) Removed to need to set Physical ROI temperature threshold to 4000°C
+(WEST) Added support to registration files generated (and saved in ARCADE) by the acquisition units
+
+(WEST_DB) Multiple minor corrections
+(WEST_DB) Switched to the new event database format
+(WEST_DB) Switched to the new JSON format for thermal event description
+
+
+Thermavip v3.8.0 - 26/10/2022
+
+(Core) Corrected potential crash when opening thermal events from evenio dashboard
+
+(GUI) Added CEA logo
+(GUI) Properly save in session files the time unit for temporal curves
+(GUI) Properly save in session files color scale parameters for videos
+(GUI) Added possibility to display and adjust a vertical window on plot players. 
+It is used for information extraction, display of min/max on curves, and curve fitting.
+
+(Plotting) Color map slider can now be selected even if a ROI is under it
+
+(WEST_DB) Added full support to evenio dashboard located on alioth server
+(WEST) Added full support to unconnected mode (open saved signals/videos without access to internal network)
+(NVF) Avoid freeze when the video folder is not mounted at Thermavip startup
+(Python) Curve fitting processing now uses the vertical window of plot player to adjust the fit parameters
+
+(librir) Corrected bug in group of signals caching
+(librir) Added pulse date caching mechanism
+
+
+Thermavip v3.7.0 - 10/08/2022
+
+(GUI) Corrected crash when formatting log output in multi-threaded context (std::cout based)
+(GUI) Corrected wrong log output color for some formatting scheme (std::cout based)
+(GUI) Corrected issue with non closable workspace
+
+(WEST_DB) Several corrections in the annotation tool
+(WEST_DB) Added support for COCO json files
+(WEST) Minor correction in ROIEditor tool
+
+
+Thermavip v3.6.0 - 02/05/2021
+
+(DataType) Optimized array based algorithms
+
+(Plotting) Optimized curve drawing with pen width > 1
+
+(GUI) Added fullscreen support (F11 short key)
+(GUI) More efficient "Maximize workspace" mode
+(GUI) Added possibility to save shape attributes as a H5 scene model file
+(GUI) Openning a file by command line now raises Thermavip
+
+(Global) Switched to qt5.15.2
+(Global) Reduced session file size
+
+(Python) Added possibility to save curves/images as NPZ or MAT files
+
+(WEST,WEST_DB) switched to new librir version
+(WEST) Add features to save a registration file from a WEST IR Video, and load/apply a registration file to a video
+
+(WEST_DB) Moved location of thermavip_interface.py to Python/ folder
+(WEST_DB) Added possibility to open JSON file by command line or using "Open files" from top tool bar
+(WEST_DB) Corrected displayed events flickering when multiple videos are open
+(WEST_DB) Added support for parameter 'AnalysisStatus'
+
+(Tokida) Optimize vtk file reading
+(Tokida) Added support for new VTK file format (5.1)
+(Tokida) Multiple minor bug corrections in Python interface (Tokida.py and related cpp files)
+(Tokida) Multiple bug corrections for scene model display and saving in H5 format
+
+(NVF) Corrected wrong displayed IT for videos with only one IT
+
+(librir) Corrected bug in signals caching
+
+
+Thermavip v3.5.0 - 22/10/2021
+
+(DataType) Faster histogram extraction, use ska_sort when possible
+
+(Plotting) Added more rendering strategies: opengl, offscreen opengl and direct rendering.
+Added multi-threaded rendering support for high display usages.
+(Plotting) Faster histogram flattening option for video color scale
+(Plotting) Added option to optimize curve drawing for large pen width
+
+(GUI) Added fullscreen support of the main interface
+(GUI) Added better maximize workspace feature
+(GUI) Added new "Rendering settings" option page
+
+(ImageProcessing) Fasten image rotation/mirroring processings
+
+(WEST) Optimize online IR camera streaming
+(WEST) Optimize usage on unconnected mode
+
+(WEST_DB) Added dataset related features
+(WEST_DB) Added possibility to extract events on a H5 video
+(WEST_DB) Added field 'dataset' in generated JSON files
+
+
+Thermavip v3.4.6 - 20/04/2021
+
+(Tokida) Minor bug corrections
+
+(librir) Modified ts_pulse_infos function to provide more information
+(librir) Correction in polygon_interpolate (now handle polygons wiath a unique point duplicated)
+(librir) Added function set_west_data_dir (in Python set_temp_directory) to change the data folder
+(librir) Added function get_default_temp_directory which returns the default data folder (before calls to set_temp_directory) 
+(librir) On Linux, removed the custom behavior that used /Home/thermavip/west_data as the default data folder
+
+(WEST_DB)
+- Manual annotation panel: letters 'u' and 'k' can be used in comments and surname
+- Annotation edition panel: moving a polygon with arrows is properly taken into account
+- Maximum values for signals SMAG_IP, SHYBPTOT and SICHPTOT are no longer computed and uploaded to the DB
+- Added maximum confidence in the query DB panel
+- Added new visual warnings when trying to upload an invalid manual annotation (like no key frames or no class)
+- To validate a comment or surname in manual annotation panel, the user has to press ENTER inside the editors.
+- Annotation edition panel: selected events time lines are now displayed in semi-transparent white on top of the class time line
+- Annotation edition panel: better management of selected events, especially when moving along the movie
+- Corrected crash that happened sometimes when moving the time slider or playing with manual annotations defined
+- Annotation edition panel: polygon interpolation now create missing frames inside selected time range, and can also extend an event
+- Removed from DB the WEST signals values on events, removed the pulse date
+- Added helper tool for event manual annotation
+
+(WEST) Added possibility to change the data folder from the option page. This is saved in the session file.
+
+(NVF)
+- Added minimum DL for each TI in calibration file
+- Added new compressed format HNVF using the h264 video codec
+- Added compression function from the NVF option page
+- Added display of the pixel calibration in us in the video tool tip
+- Added NVF video file browser
+- Added additional digit precision for emissivity value
+
+
+Thermavip v3.4.5 - 14/04/2021
+
+(Core) Several minro bug corrections and optimizations
+
+(Plotting) Correct bug where moving the time slider while playing can provoke a crash if the tool tip is displayed
+
+(GUI) Added possibility to select a time range from the time slider (use SHIFT key)
+(GUI) Correct bug on extract time trace where the ROIs have an additional transform (mainly for events time trace from WEST_DB on the WA view)
+
+(Python) Added python function set_time_markers, remove_time_markers and set_row_ratio to Thermavip module
+
+(librir) Added python function find_median_pixel
+(librir) Minor bug corrections
+(librir) Updated ffmpeg libraries. Now using libx265.
+(librir) Added full offline mode to read back videos, signals and ROI infos while not connected
+to IRFM network. The videos/signals must have been read at least once while connected.
+
+(Tokida) Corrected the Tokida Python module in order to work with both list and numpy arrays
+
+(NVF) Added the NVF plugin and associated calibration files to read back NVF infrared movies (HADES facility)
+
+(WEST_DB) Added more possibilities to modify events from the DB:
+ - User can now change the events method name and automatic flag
+ - User can change the polygon at each frame
+ - User can split an event into 2 events
+ - User can remove frames from one or more events
+ - User can merge events.
+ - Several events can be modified at once.
+ - User can recompute the events polygons on a time range
+
+
+Thermavip v3.4.4 - 17/03/2021
+
+(Python) Simplified Python options
+(Python) Internal console: added support for the %pip magic command to install/uninstall packages
+(Python) Thermavip module: updated the user_input() function to support files/folder
+(Python) Thermavip module: added functions:
+- current_player() -> returns the current player id
+- reorganize() -> reorganize the current player's layout based on the workspace maximum columns
+- set_workspace_max_columns() -> set the workspace maximum number of columns
+- workspace_max_columns() -> get the workspace maximum number of columns
+
+(WEST) Added support for the visible HD camera
+(WEST) Better synchronization between IR and visible cameras
+(WEST) Removed display CSV file attributes as curves
+
+
+Thermavip v3.4.3 - 05/03/2021
+
+(Core) Minor bug correction that prevented some session files to be reloaded properly
+(GUI) Added a undo/redo feature for ROI definition
+
+(Python) Switch to miniconda Python installation
+(Python) Added functions in Thermavip module: get_roi_bounding_rect, add_circle, user_input. Corrected
+functions setWorkspaceTitle and workspaceTitle.
+
+(librir) added Python interface to manage file attributes (see FileAttributes submodule)
+
+(WEST_DB) Added new polygon interpolation method for manual annotations
+(WEST_DB) Added new keyboard shortcuts for manual annotations:
+		- K: add a new time marker for selected ROIs
+		- Z: increase video contour level by one (if present)
+		- S: decrease video contour level by one (if present)
+		- N: select the next ROI
+		- U: update/create ROI from iso line
+(WEST_DB) Added a undo/redo feature for manual annotations
+
+
+Thermavip v3.4.2 - 25/02/2021
+
+(GUI) Removed for now the Directory Browser tool widget which might cause freezes when using VPN connection
+(GUI) Added key shortcuts to navigate through a movie:
+            - SPACE to start/stop playing
+            - arrows to got to next/previous image
+            - arrows + CTRL to advance forward/backward by 10% of the movie duration
+            - Page UP/DOWN to go to last/first image
+(GUI) Corrected time range issue when extracting a ROI time trace while annotations are visible
+(GUI) Added function to extract image statistics over time (min,max,mean and std)
+(GUI) Corrected wrong behavior for functions moveSelectionToForeground and moveSelectionToBackground
+(GUI) Added possibility to rotate ROIs
+
+(Python) Switched to a miniconda Python installation
+(Python) Update of the Thermavip Python module
+
+(WEST) ROI editor: added save ROI to dcamir HISTORY folder
+(WEST) SurvIR over pulses: added possibility to extract manually defined ROI time trace pulse to pulse
+(WEST) Updated the manual annotation tool. Corrected wrong ROI interpolation when at least 3 time markers are present.
+    Corrected wrong ROI time trace when SQL annotations are present on the video player. The time marker are now drawn on
+    the global time line instead of a dedicated widget.
+
+(librir) Better management of IR calibration based on STEFI temperature
+(librir/WEST) Added major optimizations/corrections for easier usage through VPN connection:
+	- All unnecessary calls to the tslib has been removed
+	- Signals are now correctly read through VPN connection
+	- All signals/groups/camera lists are now buffered in a dedicated folder in dcamir (WEST/SIGNALS).
+	This reduces the time lags when changing the pulse number by a factor 2 to 10.
+
+
+Thermavip v3.4.1 - 18/02/2021
+
+(DataType, Plotting) Corected several wrong behaviors, especially when dealing with multi-component images
+(Plotting) Added fixed ratio resize of ROI (using SHIFT key) and centered resize (using CTRL key) close to PowerPoint behavior
+(GUI) Corrected wrong behavior when moving items to the background/foreground
+
+(WEST) Corrected wrong behavior of maximum west_data folder size
+(WEST) Added ROI Editor tool for PPO members only
+
+
+Thermavip v3.4.0 - 10/02/2021
+
+(Plotting) Modified opengl rendering strategy. By default, only items (curves, histograms) objects are now rendered with opengl 
+(if faster than standard raster engine), while scales are still rendered with raster engine
+(Plotting) Reduced the memory impact of opengl rendering (which caused crashs when too many signals were opened)
+(Plotting) Optimized the opengl rendering speed by reducing the multi-sampling
+(Plotting) Disable opengl rendering for old versions of opengl (usually < 2.0.0)
+
+(GUI) Updated dark skin, slightly gray skin, and updated a few icons
+(GUI) Changed Thermavip main title to reflect the name of its global shared memory (for Python inter-process communcation)
+(GUI) Modified global option dialog look & feel, updated Python options
+(GUI) Updated video player look & feel
+
+(Python) Added IPython shells support. This only works if the user has a python installation containing PyQt5 (or PySide2) and
+ipython. The shell process communicates with Thermavip using a shared memory defined in Thermavip module. Thermavip module can now be
+called from external Python processes.
+(Python) Updated Thermavip Python module
+(Python) Updated Python code editor. Now a python code can be launched either in the standard shell or in
+an IPython shell. The code editor dedicated shell is removed.
+(Python) Better code editor style management (no more light style in dark skin)
+
+(Tokida) Corrected issue with direct rendering image saving
+(Tokida) Optimized ImageOpticalDistortion processing (to add or remove optical distortions to/from images)
+(Tokida) Added Tokida.py Python module to interact with a 3D scene: open 3D files/folders, get/set fields of view,
+get the direct rendering image, add lights...
+
+(WEST) Added a maximum size for the west_data folder (default to 70GB). Whenever its total size is above limit*0.8,
+older files are removed until reaching limit*0.5. The limit can be modified in the WEST options page.
+(WEST) Corrected bug where small signals always had a size of 10000 with padded zeros
+(WEST) On linux, if the files are stored in /Home/thermavip/west_data/, the downloaded video file rights are set to 777
+to be removed by anybody
+
+
+Thermavip v3.3.5 - 25/01/2021
+
+(GUI) Players can now be dragged and dropped between workspaces
+(GUI) Corrected wrong widget focus handling when closing a player (focus not always passed to the next valid player)
+(GUI) Changed the default plot player settings: curve width set to 1.5 and grid hidden
+(GUI) Plot players now use opengl offscreen rendering if it is faster than the standard raster strategy
+(GUI) Corrected drag&drop issues with players
+
+(Plotting) Changed default color palette
+
+(Python) Added 'add_ellipse' Python function
+
+(WEST) Added Mask_R-CNN detection pipeline for some users only
+(WEST_DB) Removed "Detect thermal events" option (based on old Sauvola thresholding)
+(WEST_DB) Added filter IR video events based on detection method name
+
+(librir) Added attributes to IR cameras from the last image lines (like sensor temperature)
+(librir) Corrected bug in multithreaded/multiprocesses environments when trying to open a video failed due to tmp file collisions
+(librir) Corrected python function get_roi_infos, get_roi_mask and get_roi_result
+
+
+Thermavip v3.3.4 - 06/01/2021
+
+(GUI) Added BuRd and Sunset color maps
+(GUI) Updated dark skin
+
+(Python) Added add_ellipse python function in Thermavip module
+
+
+Thermavip v3.3.3 - 05/01/2021
+
+(Core) Switched to version 3.3.3
+
+(GUI) Better histogram flattening for color scale
+(GUI) Possibility to modify the strength of the histogram flattening function
+(GUI) Updated JET colormap
+(GUI) Updated plot legend positioning
+(GUI) Several minor GUI enhancements
+
+(WEST) Shot summary: added dialog option to select which view to display in the summary
+(WEST) Shot Summary: increased curves width
+
+(WEST_DB) EventDB.ini file to customize event DB access
+
+(librir) Added functions for polygon drawing and polygon extraction
+(librir) Corrected issue with IR video optical and STEFI temperature that created a temperature artifact on TI change
+(librir) Reduced ARCADE queries when possible (optimization for poor network bandwidth, especially from VPN)
+
+
+Thermavip v3.3.2 - 16/12/2020
+
+(WEST) Added possibility to modify the STEFI temperature for temperature calibration
+(WEST) Added possibility to save one or more IR videos with a right click on selected videos (from WEST panel). The video is (if necessary) encoded to h264 and will contain all its calibration files.
+(WEST) Added possibility to save calibration files for a IR video with a right click on the video from the WEST panel.
+(WEST) SurvIR now uses (if available) the RROI files from dcamir. This way, the shot summary and SurvIR features will be available as soon as possible, sometimes before the shot is closed.
+(WEST) Corrected RT viewer
+(WEST) Added function SurvIR over several pulses
+(librir) Minor correction
+(librir) Added possibility to change the STEFI temperature. Works also with lossy compressed videos.
+(librir) Updated Python and Matlab wrappers
+(librir) Optimized IR video read back with multi-threading
+(librir) Corrected wrong video timestamping for some C3 movies
+(librir) Added Python functions extract_times, resample_time_serie and draw_polygon
+(librir) Added Python modules rdp, sql_query and maskrcnn_pipeline
+(librir) Added Python member ir_camera.toH264 to record a sub part of a video
+
+
+Thermavip v3.3.1 - 10/11/2020
+
+(WEST) Support new Top configuration for IR parameters used during C5
+(WEST) Support new compressed (H264) video format used for C5
+(WEST) Display additional information for each pulse (disruption, maximum injected power...)
+(WEST) Added the shot summary tool
+(WEST) Gathered IR advanced tools (Shot Summary, SurvIR) into the same advanced menu
+(WEST) Updated online display
+
+(librir) Updated Python interface, added support for old Python (starting 2.6)
+(librir) Added support for the new lossy compression algorithm (both reading and writing)
+
+(NVF) Created the NVF plugin to read back HADES IR videos
+
+(Tokida) Several bug corrections and minor updates
+
+
+Thermavip v3.3.0 - 22/11/2020
+
+(DataType) HUGE refactoring of the library to provide a cleaner API and new features
+
+(GUI) Added better support for Thermavip window moving and resizing
+(GUI) Added better support for multi-screens
+(GUI) Optimization of signal display with VipDisplayObject, better management of the event loop to avoid freeze
+with a lot of streaming videos/curves.
+(GUI) Moved all session parameters within VipGuiDisplayParameters, and save them in a different file than the session one.
+(GUI) The skin can now modifiy the color of the Debug text in log console.
+(GUI) Reduction of the XML session file size (array Thumbnails stored insteed of full array)
+(GUI) Support for scaled display with the --scale argument (mainly for 4k screens)
+(GUI) Support player minimization with AdvancedDisplay plugin
+(GUI) Support for minimal display option with AdvancedDisplay plugin
+
+(Plotting) Huge refactorization to optimize the signal display, support multithreading and opengl rendering.
+(Plotting) Added support for Qt > 5.13
+(Plotting) Reduction of the number of repainting triggers
+(Plotting) Optimize all drawing functions, especially curve, histogram, spectrogram and scales.
+
+
+Thermavip v3.0.2 - 04/02/2020
+
+- Corrected malfunctioning boolean image display
+- Corrected drag&drop wrong behavior when dropping on video player
+- Corrected potential infinit loop when reloading session file
+- Added automatic workspace naming based on pulse number
+- Added visualization of Min/Max values for curves
+
+- (Librir) Minor corrections
+- (Librir) Added functions to get ROI masks and results
+
+- (WEST) Added pulse informations (max IP, HYB,...) in the WEST signals panel
+- (WEST) Simplified editable session saving
+
+- (WEST_DB) Added support for non rectangular events (polygon based)
+- (WEST_DB) Added event constraints based on camera view
+
+Thermavip v3.0.1 - 15/01/2020
+
+- Increased video playing performances by removing unnecessary threads
+- Corrected plugin loading behaviour on Linux
+- Added export images to PDF/EPS/PS
+- Display video frame rate when playing
+- Added Python functions and support for PyQt5
+- Added scale exponent in plots
+- Added quick save/load sessions
+- Many minor corrections
+
+- (WEST_DB) Change default thermal event name in WEST_DB (2)
+- (WEST_DB) corrected wrong tracking with WA camera
+- (WEST_DB) Minor corrections and additional features
+
+- (librir) refactor python wrapper and several new functions added
+- (librir) added unit tests
+- (librir) Added support for h264 video file (compression and decompression) in librir and Python wrapper (ir_saver.py). 
+- (librir) Added registration.py in Python wrapper for motion correction. 
+- (librir) Many minor changes/corrections.
+
+
+Thermavip v3.0.0 - 28/10/2019
+
+- Added new AdvancedDisplay plugin to remove old video and plot players
+- Changed curve color palette
+- Changed JET color scale
+- Corrected grid visibility problem with stacked panel
+
+- WEST: add online display of any IR view
+- WEST: add new features for event detection
+- WEST: add scene model support for cameras
+
+- UDA: corrected streaming behavior
+
+
+Thermavip v2.2.18 - 25/09/2019
+
+- ROI names are used for the name of time traces and profiles
+- Added Python functions in Thermavip module to manipulate ROIs and workspace titles
+- Modified tool tip for curves and videos
+- Correction on Operation Between Players processing
+- Correction on stacked plots
+- Possibility to rename workspaces
+- Changed color palette for curves
+
+- WEST: Modified librir to take into account acquisition code updates
+- WEST: Modified survIR to take into account acquisition code updates
+- WEST: Added bad pixel detection algorithm
+- WEST: Modified video attributes
+
+
+Thermavip v2.2.17 - 21/08/2019
+ 
+- Added video/plot annotation feature with graphical interface and Python functions
+- Files can now be opened with Thermavip by double clicking on them
+- Plot player scale state is now saved within a session
+- Updated dark skin, better skin management system
+- Add possibility to save a unique player's state within a session file
+- Player property tool widget: the ROIs border length and barycentre are displayed
+- Added Python interpreter history file
+- Corrected Python interpreter behavior, new functionalities (copy/paste behavior, history, possibility to restart interpreter,...)
+- Corrected bug in session saving/loading
+- Python fusion processing is now droppable
+- Added several Python functions (annotation, remove_annotation, clear_annotations, set_title, imshow)
+- Possibility to rename players titles
+- Better multi-screen management
+- Better font management
+- "Player properties" panel is automatically closed when the last player of a workspace is closed
+- Updated HTML help
+- Created the 'SSF' (Simplified Session File) file format to define simple sessions
+- Changed stylesheet syntax
+
+- UDA: add log error message
+- UDA: add a way to manage disconnection issues
+- UDA: automatic management of Ffmpeg paths
+
+- WEST: Added survIR mode with progress bar
+- WEST: Corrected a memory leak in librir
+- WEST: Linux version of librir now uses a common temp directory (/Home/thermavip/west_data)
+- WEST: Auto detect ARCADE listening port
+
+
+Thermavip v2.2.16 - 15/05/2019
+
+- On minimal display mode, tool bars and main tab bar are shown when hovering with the mouse
+- Added menu in the minimal display button to hide/show all players tool bars, all legends, video player axes,...
+- Added the possibility to display an inner legend in plot players instead of the bottom one.
+- Added a Python file editor and file running
+- Added the Python Thermavip module to interact with the main interface
+- Added shortcuts for Python files saved in the Scripts folder
+- Added compute distance between 2 points
+
+- UDA: added plot player button "apply to all"
+- UDA: corrected wrong decimation type when reloading session
+
+
+Thermavip v2.2.15 - 25/04/2019
+
+- Save plot player time marker in session file
+- Save legend and grid visible or not in session file
+- Heavily modified dark skin
+- Corrected bug when reloading session with registered PyProcessing
+- Added style sheet mechanism for VipPlotItem
+- Added tool to compute the distance between 2 points
+- Gather plot player advanced tools in a submenu
+- WEST Faster IR video loading + offline mode (no access to Top)
+- WEST Librir: PCR and BIN files can now be calibrated using calibration files (vip_lut, viptrhub,...) in the same directory
+- UDA: several minor corrections
+
+
+Thermavip v2.2.14 - 10/04/2019
+
+- WEST: Display WEST ROI covered pixels instead of polygons
+- WEST: add button to go to last pulse
+- WEST: add button to reload pulse based signals/videos
+- WEST: add search field
+- WEST: add shortcut button in video player to subtract background
+- WEST: add option panel to keep the west_data directory between sessions
+- WEST: add MATLAB and Python wrapper of librir
+- WEST: add support for old TS videos
+- WEST: add linux support for INTRA area
+- WEST: add support for custom emissivity in IR videos
+
+- Add automatic update management for Windows computers
+
+- Several minor corrections
+- Add better session saving/loading support
+- Add option to Python signal fusion processing: expand python variables in title and unit
+- Change in Python signal fusion: y values are computed before x values
+- Corrected CSV support on linux
+- Corrected freeze video player behavior
+- Corrected seek behavior for some MPEG video formats
+- Updated ROI editor
+- Correct bug where video time ranges are in the wrong unit when opening the first movie of a workspace
+- Plot player: add auto scale only on X or Y
+
+
+Thermavip v2.2.13 - 10/03/2019
+
+- Densified plot player toolbar, and add several items in the contextual menu
+- Added zoom area button in plot player tool bar
+- Added apply y scale to all
+- Modified Python editor and highlighter
+- Added PySignalFusionProcessing to create data fusion processings with Python scripts
+- Added a way to record a Python processing in order to use it on different signals and through sessions
+- Modified PyProcessing to record the processing through sessions
+- Added new widget to manage/modify recorded Python processings
+- Modified resample algorithm to handle enveloppe inputs
+- Minor corrections and updates in the Tool Widgets management
+- Minor corrections and updates in the Processing Editor tool editor
+
+
+Thermavip v2.2.12 - 25/02/2019
+
+- Add possibility to create data fusion processing
+- Add datafusion processing for numeric operation, signal convolution and correlation
+- Add new periodogram Python algorithm using Welch algorithm
+- Upgrade the resampling algorithm for data fusion algorithms
+- Add CSV writer dialog
+- Correct ROI editor strange behavior with multiple scene models
+- Correcte log scale engine with negative values
+- The scale engine is now serialized
+- UDA: add UTC to time unit
+- UDA: Drastically reduce RAM and CPU usage (caused by resampling algorithm and several timers)
+- UDA: Pulse list is updated properly
+- UDA: add possibility to plot several signals in different players
+
+
+Thermavip v2.2.11 - 29/01/2019
+
+- UDA: add "home" button (go back to initial time interval)
+- UDA: add button to update pulse based signal with the new pulse number
+- UDA: add button to update pulse based signal with the last pulse number
+- UDA: bug fix in multi-threaded context
+- UDA: correct management of automatic reconnection with --noconnect when reloading previous session
+- UDA: restore support of videos
+- UDA: add player button to apply time scale to all other pplayers within the workspace
+
+- Add support/corrections for nanosecond precision timestamps
+- Minor corrections for the session saving/loading
+
+
+Thermavip v2.2.10 - 02/12/2018
+
+- Correct the session saving/loading for stacked plots
+- UDA: several bug fixes
+
+
+Thermavip v2.2.9 - 05/11/2018
+
+- Add "Time Difference" signal algorithm to compute the evolution of the sampling time.
+- Add "Signal Derivative" signal algorithm to compute the derivative of a signal.
+- Correct result image when saving a plot player in BMP or JPG format (24 bits per pixel formats)
+- Add the possibility to display a horizontal tool tip displaying the Y axis value.
+- Add the possibility to stack plots vertically in order to share the same X axis (usually time).
+- Add the possibility to record a unique player actions into a MPG video.
+
+- UDA: add loading relative time range into a pulse.
+- UDA: Signals from different pulses can be synchronized.
+- UDA: 2 signals can be plotted as a function of each other: signal_1 = f(signal_2).
+- UDA: remove most dependencies to additinal libraries.
+
+
+Thermavip v2.2.8 - 02/10/2018
+
+- The curve properties (in "Player properties" panel) are now based on the player time scale
+- Plot player: add the possibility to undo/redo a scale change (when zooming, mouse panning,...)
+- Plot player: simplify a little the tool bar (merge buttons show/hide legend and grid)
+- It is now possible to define custom sessions
+- "Player properties" panel: properties are not necessarily sorted by alphabetical order
+
+- FFmpeg: add the possibility to record in a video the Thermavip interface.
+
+- UDA: when connecting to a different UDA server, previous servers are displayed in a list
+to avoid typing them
+- UDA: default decimation value is 1000 (instead of 5000 previously)
+
+
+Thermavip v2.2.7 - 22/09/2018
+
+- Updated skins and icons
+- Histogram extraction speedup.
+- Extracting a histogram or values along polyline now ask for
+the way to extract image components if needed: ARGB, complex real/imag,...
+- Moved ROI related information (size, area, min, max,...) to the
+"Player properties" tool widget.
+- Added new information in the "Player properties" tool widget (curve's min,
+max..., histogram min, max..., image statistics...).
+- Removed ROI statistics from the ROI editor (moved to "Player properties")
+- Added a tool bar button for video players to disable image updates (freeze image)
+- Added a tool bar button for video players to use an adjusted color map based 
+on the image histogram.
+- Processing list: processing can now be copied/cutted/pasted.
+- Plot player: it is now possible to zoom with the wheel only vertically or
+horizontally.
+- Corrected linux bug where tool widgets were not properly raised on top
+of the main GUI.
+- Plot player: added a new time scale mode where the scale displays 
+the elapsed time since the left date of the scale.
+- Plot player: enable mouse zooming from outside the scale area.
+- Plot player: optimized symbol drawing for curves.
+- Plot player: fixed wrong automatic scale for histograms.
+
+- UDA: Added millisecond precision for the time interval selection, possibility to copy/paste time in ns
+
+- UDA: display information signal (max, min, number of points,..) and display them in the "Player properties" panel
+
+- UDA: added spin box to modify the decimation factor per player
+
+
+
+Thermavip v2.2.6 - 01/09/2018
+
+- Updated skins, modified icons
+- Optimized archive file writer to avoid too much memory usage
+- Corrected the playing speed behavior for wrokspaces
+- Corrected the file search when mapping filesystem
+- Now apply the image transformations (cropping, rotation,...) to the drawn ROIs
+- Added possibility to apply a y offset to all curves in order to have the minimum y value at 0
+- Optimized curve drawing (once again)
+- Corrected tool tip behavior when the mouse hover the tool tip
+- Added CHANGELOG.txt in about dialog box
+- Enhanced the drag & drop of plot items
+- Added the possibility to copy/paste signals/images/ROIs
+- Optimized the curve/signal/image display, mainly for streaming
+- ROI display: by default the ROI text color depends on the background color
+- Changed the behavior of the time scale in plot player. Now, the
+start date always corresponds to the minimum y value of all curves.
+- Lot of minor corrections/enhancement in players
+- Added the possibility to extract time trace on multiple ROIs using:
+the union shape, the intersection shape or extract all shapes independently.
+- Added possibility to display date time on plot player time scale
+
+- Python: Enhanced curve fitting
+
+- UDA: Now zooming on a curve or changing the time scale will reload the signal for given time range
+- UDA: The user can change the decimation strategy for each plot player
+- UDA: Added a UDA settings page to change the server address, the decimation value and decimation strategy
+
+
+Thermavip v2.2.5 - 17/08/2018
+
+-Modified the dark skin and added several icons.
+-Corrected the image cropping method for RGB images with transparancy
+-Optimize VipBinaryArchive to avoid too much memory allocation
+-Avoid Qt warnings on signal disconnection.
+-processing list: the processing's error is now set the its inner processing error.
+-Several corrections/optimizations
+-Reshaping of the "Directory browser" tool widget
+-Reshaping of the "Player properties" tool widget
+-Reshaping of the "Player list" tool widget
+-Moved the streaming button in the workspace tab bar
+-Corrected the session loading bug on linux
+-Changed axes titles and curves titles are now kept as expected
+-Add options to change the default curve look & feel
+-Add a new tool tip mode for plot players. A time marker can be visible on all other
+players to ease the multi player analysis.
+-Several small GUI enhancement
+-Relocating the UDA data base is now saved in the session file. 
+-Simplification of the interface.

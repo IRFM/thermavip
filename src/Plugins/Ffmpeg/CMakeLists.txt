@@ -1,0 +1,108 @@
+cmake_minimum_required(VERSION 3.16)
+project(Ffmpeg VERSION 1.0 LANGUAGES C CXX)
+
+set(CMAKE_INCLUDE_CURRENT_DIR ON)
+
+# Set up AUTOMOC and some sensible defaults for runtime execution
+# When using Qt 6.3, you can replace the code block below with
+# qt_standard_project_setup()
+set(CMAKE_AUTOMOC ON)
+include(GNUInstallDirs)
+
+find_package(QT NAMES Qt5 Qt6 REQUIRED COMPONENTS Core)
+find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Gui Network Xml Widgets OpenGL PrintSupport)
+
+FILE(GLOB Sources *.cpp)
+FILE(GLOB Headers *.h)
+add_library(Ffmpeg SHARED
+    ${Sources} ${Headers}
+)
+
+target_include_directories(Ffmpeg PRIVATE
+    ${PROJECT_SOURCE_DIR}/../../Logging 
+	${PROJECT_SOURCE_DIR}/../../DataType 
+	${PROJECT_SOURCE_DIR}/../../Core 
+	${PROJECT_SOURCE_DIR}/../../Plotting 
+	${PROJECT_SOURCE_DIR}/../../GUI
+)
+
+target_link_libraries(Ffmpeg PRIVATE
+    Qt::Core
+    Qt::Gui
+    Qt::Network
+	Qt::Widgets
+	Qt::OpenGL
+	Qt::PrintSupport
+    Qt::Xml
+)
+
+target_link_libraries(Ffmpeg PRIVATE
+	VipDataType
+	VipLogging
+	VipCore
+	VipPlotting
+	VipGui
+)
+
+set(TARGET_PROJECT Ffmpeg)
+include(${PROJECT_SOURCE_DIR}/../../compiler_flags.cmake)
+
+target_compile_definitions(Ffmpeg PRIVATE ENABLE_H264 BUILD_FFMPEG_LIB)
+
+IF (MSVC)
+
+
+	SET(FFMPEG_LIB_DIR ${CMAKE_SOURCE_DIR}/3rd_64/ffmpeg-4.3-msvc/lib)
+	SET(FFMPEG_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/3rd_64/ffmpeg-4.3-msvc)
+	SET(FFMPEG_LIBS avdevice avformat avcodec swscale avutil swresample avfilter )
+	SET(ADDITIONAL_FFMPEG_LIBS libx264 libx265 kvazaar postproc vcruntime140_1 Vfw32 shlwapi strmbase)
+	SET(FFMPEG_PREFIX )
+	SET(FFMPEG_SUFFIX .dll)
+
+	
+ELSE()
+
+	IF (WIN32)
+		# mingw
+		SET(FFMPEG_LIB_DIR ${CMAKE_SOURCE_DIR}/3rd_64/ffmpeg/install/lib)
+		SET(FFMPEG_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/3rd_64/ffmpeg/install/include)
+		SET(FFMPEG_LIBS avdevice avformat avcodec swscale avutil swresample avfilter)
+		SET(ADDITIONAL_FFMPEG_LIBS postproc)
+		SET(FFMPEG_PREFIX )
+		SET(FFMPEG_SUFFIX .dll)
+	ELSE()
+		SET(FFMPEG_LIB_DIR ${CMAKE_SOURCE_DIR}/3rd_64/ffmpeg/install/lib)
+		SET(FFMPEG_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/3rd_64/ffmpeg/install/include)
+		SET(FFMPEG_LIBS avdevice avformat avcodec swscale avutil swresample avfilter)
+		SET(ADDITIONAL_FFMPEG_LIBS postproc)
+		SET(FFMPEG_PREFIX lib)
+		SET(FFMPEG_SUFFIX .so)
+	ENDIF()
+ENDIF()
+
+target_link_directories(Ffmpeg PRIVATE ${FFMPEG_LIB_DIR})
+MESSAGE(STATUS "Using ${FFMPEG_LIB_DIR} for ffmpeg library files")
+
+
+target_include_directories(Ffmpeg PRIVATE 	${FFMPEG_INCLUDE_DIR})
+target_link_libraries(Ffmpeg PRIVATE ${FFMPEG_LIBS})
+SET(COMPLETE_FFMPEG_LIBS ${FFMPEG_LIBS} ${ADDITIONAL_FFMPEG_LIBS})
+
+
+# Add any variables you need during post install.
+install(CODE "set(FFMPEG_LIB_DIR \"${FFMPEG_LIB_DIR}\")")
+install(CODE "set(FFMPEG_INCLUDE_DIR \"${FFMPEG_INCLUDE_DIR}\")")
+install(CODE "set(FFMPEG_LIBS \"${FFMPEG_LIBS}\")")
+install(CODE "set(ADDITIONAL_FFMPEG_LIBS \"${ADDITIONAL_FFMPEG_LIBS}\")")
+install(CODE "set(FFMPEG_PREFIX \"${FFMPEG_PREFIX}\")")
+install(CODE "set(FFMPEG_SUFFIX \"${FFMPEG_SUFFIX}\")")
+install(CODE "set(COMPLETE_FFMPEG_LIBS \"${COMPLETE_FFMPEG_LIBS}\")")
+install(CODE "set(CMAKE_INSTALL_BINDIR \"${CMAKE_INSTALL_BINDIR}\")")
+install(CODE "set(CMAKE_SOURCE_DIR \"${CMAKE_SOURCE_DIR}\")")
+install(SCRIPT InstallFfmpeg.cmake)
+
+install(TARGETS Ffmpeg
+	LIBRARY DESTINATION "${CMAKE_INSTALL_PREFIX}/thermavip/VipPlugins"
+    FRAMEWORK DESTINATION "${CMAKE_INSTALL_PREFIX}/thermavip/VipPlugins"
+    RUNTIME DESTINATION "${CMAKE_INSTALL_PREFIX}/thermavip/VipPlugins"
+)

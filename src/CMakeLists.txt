@@ -1,0 +1,11 @@
+
+add_subdirectory(Logging)
+add_subdirectory(DataType)
+add_subdirectory(Plotting)
+add_subdirectory(Core)
+add_subdirectory(Gui)
+add_subdirectory(Annotation)
+add_subdirectory(Thermavip)
+add_subdirectory(Plugins)
+add_subdirectory(Tests)
+add_subdirectory(External)

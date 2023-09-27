@@ -1,0 +1,34 @@
+VipAbstractPlotArea 
+{ 
+	title-color: white; 
+	colorpalette: "random:120"; 
+}
+
+VipPlotItem 
+{ 
+	title-color: white; 
+	color: white;
+}
+
+VipPlotCurve 
+{
+	border-width: 1.5; 
+}
+
+VipAbstractScale 
+{
+	title-color: white; 
+	label-color: white; 
+	pen: white;
+}
+
+VipAbstractScale:title 
+{
+	margin: 5;
+}
+
+VipLegend
+{ 
+	minimum-width: 20;
+	color: white;
+}

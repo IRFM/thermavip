@@ -1,0 +1,23 @@
+#!/bin/bash
+
+# Source global definitions
+if [ -f /etc/bashrc ]; then
+	. /etc/bashrc
+fi
+
+
+
+export OPENSSL_LIBS="-L /usr/lib64 -llibeay32 -lssleay32 -llibcrypto -luser32 -lgdi32 -lwsock32 -lws2_32"
+CURRENT=`pwd`
+export CURRENT
+export FFMPEG_FOLDER="3rd_64"
+
+SCRIPT=$(realpath -s "$0")
+SCRIPTPATH=$(dirname "$SCRIPT")
+cd $SCRIPTPATH
+echo $(pwd)
+cd $FFMPEG_FOLDER || exit
+echo "entering $FFMPEG_FOLDER"
+chmod u+x build-gcc.sh
+. ./build-gcc.sh
+cd $CURRENT || exit

@@ -1,0 +1,44 @@
+Building ffmpeg is a quite painfull task (especially on Windows) as it depends on many other libraries (depending on its configuration).
+For msvc builds, a prebuilt version is provided in ffmpeg-4.3-msvc folder (built with Visual Studio 2019). This version is built using x264 (H264 codec) and kvazaar (H265 codec) libraries. It is therefore under the GPL license.
+
+A.	Ffmpeg build instruction for Windows with msvc/msys2
+
+If you wish to build your own version of ffmpeg with msvc, here are some general considerations
+
+1. Build Kvazaar
+Download the latest version: git clone https://github.com/ultravideo/kvazaar.git
+Open the sln file in the build folder. For the kvazaar_lib project, change its target to dll (as well as extension), switch code generation to DLL multithread (/MD), select the right toolset and SDK version. In preprocessor definition, add the PIC define to enable symbol exports.
+Build, output is in build\x64-Release-libs.
+Since you are going to build ffmpeg with msys2, you will need to create a “fake” package targeting your msvc build. Create the kvazaar.pc file in mingw64\lib\pkgconfig of your msys2 installation with the following content (replace paths with your owns):
+
+prefix=/mingw64
+exec_prefix=${prefix}
+libdir=/c/src/kvazaar-master/build/x64-Release-libs
+includedir=/c/src/kvazaar-master/src
+Name: kvazaar
+Description: H.265/HEVC video encoder
+Version: 2.0.0
+Libs: C:/src/kvazaar-master/build/x64-Release-libs/kvazaar_lib.lib
+Cflags: -I${includedir} /LIBPATH:C:/src/kvazaar-master/build/x64-Release-libs
+
+2. Build x264
+
+Follow exactly this tutorial: https://www.roxlu.com/2019/062/compiling-ffmpeg-with-x264-on-windows-10-using-msvc
+Make sure to build the shared version, as ffmpeg will not compile with the static one.
+
+3. build Ffmpeg
+
+Follow this tutorial: https://www.roxlu.com/2019/062/compiling-ffmpeg-with-x264-on-windows-10-using-msvc
+Possible configure command:
+ ./configure --target-os=win64 --arch=x86_64 --toolchain=msvc --enable-asm --disable-static --enable-shared --enable-libx264 --enable-libkvazaar --extra-ldflags='/LIBPATH:C:/src/kvazaar-master/build/x64-Release-libs C:/src/kvazaar-master/build/x64-Release-libs/kvazaar_lib.lib C:/src/x264/x264/64/lib/libx264.lib -libpath:C:/src/x264/x264/64/lib' --prefix=/c/src/ffmpeg_git2_test/ffmpeg/64 --enable-gpl --extra-cflags='-IC:/src/x264/x264/64/include -IC:/src/kvazaar-master/src' --disable-debug
+Replace the paths with your owns.
+
+
+B.	Ffmpeg build with gcc
+
+Just launch the script build-gcc.sh with the argument “gpl” or “lgpl”. 
+The LGPL final build won’t contain the x264 library. 
+The script will download and compile x264, kvazaar and ffmpeg libraries, all binaries will be located into ffmpeg/install/lib.
+The following packages are mandatory in order to work properly: pkg-config, autotools, autoconf, binutils, nasm, yasm. 
+Note that nasm will be automatically downloaded/compiled/installed (locally) if note present. 
+This script does not require sudo rights.
