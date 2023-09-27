@@ -1,4 +1,5 @@
 
+
 # Thermavip
 
 [CEA-IRFM](http://irfm.cea.fr/en/index.php) has gained in-depth expertise at using imaging diagnostics to understand quick-ageing and damaging of materials under high thermal stresses. This knowledge has been used to developp the ThermaVIP (*Viewing Imaging Platform*) software platform, initially designed for the exploitation of infrared thermography diagnostics in fusion tokamaks. This software platform, which required 8 years of development, is made up of a set of modules allowing the exploitation of imaging diagnoses in a complex measuring environments.
@@ -29,9 +30,12 @@ The SDK itself is based on [Qt](https://www.qt.io) only, a powerfull and open so
 
 -	[Logging](docs/logging.md): logging to file/console/GUI tools
 -	[DataType](docs/datatypes.md): base data types manipulated by Thermavip (N-D arrays, vector of points, scene models...)
--	[Plotting](docs/plotting.md): high performance plotting library for offline/real-time display of multi-sensor data
--	[Core](docs/core.md): base library to define and manipulate processing pipelines
+-	[Plotting](docs/plotting.md): high performance plotting library for offline/firm real-time display of multi-sensor data
+-	[Core](docs/core.md): asynchronous agents library based on dataflow and archiving tools
 -	[Gui](docs/gui.md): base graphical components (main window, players...)
+
+## Usage
+
 
 
 ## Getting Started
@@ -78,9 +82,7 @@ If the compilation went fine, all required files/binaries are moved to the subfo
 ## Authors
 
 * [Victor MONCADA](mailto:victor.moncada@cea.fr) (victor.moncada@cea.fr)
-* **Vincent Martin**
 * **Gwenael Dunand**
-* **Tran Thanh Ngo**
 * **Chakib Belafdil**
 
 The software has been built with the collaboration and intensive testing of:

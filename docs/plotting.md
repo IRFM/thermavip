@@ -3,7 +3,7 @@
 
 # Plotting library
 
-The *Plotting* library defines items and widgets to create several types of 2D plots (see the [galery](galery.md)):
+The *Plotting* library defines items and widgets to create several types of 2D plots (see the [gallery](gallery.md)):
 
 -	Curves,
 -	Histograms,
@@ -50,7 +50,7 @@ All plot items are `QGraphicsItem` that must inherit `VipPlotItem` base class. C
 -	`VipPlotShape`: displays any kind of 2D shape
 -	`VipPlotSceneModel`: displays a `VipSceneModel` (collection of shapes)
 
-See the [galery](galery.md) and related examples for more details on the library capabilities.
+See the [gallery](gallery.md) and related examples for more details on the library capabilities.
 
 ## Firm real-time display
 The Plotting library was developped for firm real-time applications. It provides a handfull of tricks/features to achieve high display frame rates even on heavy loads (see StreamingMandelbrot example for instance). Its first goal is to develop online control panels displaying data from dozens of sensors: cameras (visible/infrared), thermocouples, voltage measurements...
