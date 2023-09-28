@@ -22,7 +22,7 @@ set_property(GLOBAL PROPERTY AUTOMOC_MOC_OPTIONS "-nw")
 
 
 find_package(QT NAMES Qt5 Qt6 REQUIRED COMPONENTS Core)
-find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets OpenGl Gui Xml Network)
+find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets OpenGL Gui Xml Network)
 MESSAGE(STATUS "Qt5 found!")
 
 include(GNUInstallDirs) 
