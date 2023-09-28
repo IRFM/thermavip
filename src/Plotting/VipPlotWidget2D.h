@@ -1279,8 +1279,10 @@ public:
 /// Usage:
 /// \code{cpp}
 ///
-/// #include "VipMultiGraphicsView.h"
 /// #include "VipPlotWidget2D.h"
+///
+/// #include <qapplication.h>
+/// #include <qgraphicslinearlayout.h>
 ///
 /// int main(int argc, char** argv)
 /// {
