@@ -197,7 +197,9 @@ class VIP_CORE_EXPORT VipXIStringArchive : public VipXIArchive
 	QDomDocument doc;
 
 public:
-	VipXIStringArchive(const QString& buffer);
+	VipXIStringArchive(const QString& buffer = QString());
+	bool open(const QString& buffer);
+
 	virtual bool open(QDomNode n);
 };
 

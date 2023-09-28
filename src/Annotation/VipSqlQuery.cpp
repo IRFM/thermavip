@@ -503,9 +503,9 @@ QList<qint64> vipSendToDB(const QString & userName, const QString & camera, cons
 
 		//find min and max timestamps, and max temperature
 		qint64 min = std::numeric_limits<qint64>::max();
-		qint64 max = -std::numeric_limits<qint64>::max();
-		double max_t = -std::numeric_limits<double>::max();
-		qint64 max_T_timestamp_ns = -std::numeric_limits<double>::max();
+		qint64 max = std::numeric_limits<qint64>::min();
+		double max_t = -100000;
+		qint64 max_T_timestamp_ns = std::numeric_limits<double>::min();
 		const QList<VipShape> & sh = it.value();
 		for (int i = 0; i < sh.size(); ++i) {
 			qint64 t = sh[i].attribute("timestamp_ns").toLongLong();
@@ -2052,8 +2052,8 @@ const VipBaseDeviceParameters* vipFindDeviceParameters(const QString& name)
 {
 	auto it = _devices_parameters.find(name);
 	if (it == _devices_parameters.end())
-		return _devices_parameters[QString()].get();
-	return it.value().get();
+		return _devices_parameters[QString()].data();
+	return it.value().data();
 }
 
 

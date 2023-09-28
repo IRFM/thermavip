@@ -1,6 +1,7 @@
 #pragma once
 
 #include "VipFunctional.h"
+#include "VipArchive.h"
 
 /// @brief Base class with an integer attribute
 class BaseClass : public QObject
@@ -10,7 +11,7 @@ class BaseClass : public QObject
 public:
 	int ivalue;
 
-	BaseClass(int v)
+	BaseClass(int v = 0)
 	  : ivalue(v)
 	{
 	}
@@ -27,7 +28,7 @@ class DerivedClass : public BaseClass
 public:
 	double dvalue;
 
-	DerivedClass(int iv, double dv)
+	DerivedClass(int iv = 0, double dv = 0.)
 	  : BaseClass(iv)
 	  , dvalue(dv)
 	{
@@ -41,28 +42,21 @@ VIP_REGISTER_QOBJECT_METATYPE(DerivedClass*)
 // define serialization function for both classes
 
 
-VipArchive& operator<<(VipArchive& arch, const BaseClass* o)
+inline VipArchive& operator<<(VipArchive& arch, const BaseClass* o)
 {
 	return arch.content("ivalue", o->ivalue);
 }
-VipArchive& operator>>(VipArchive& arch, BaseClass* o)
+inline VipArchive& operator>>(VipArchive& arch, BaseClass* o)
 {
 	return arch.content("ivalue", o->ivalue);
 }
 
-VipArchive& operator<<(VipArchive& arch, const DerivedClass* o)
+inline VipArchive& operator<<(VipArchive& arch, const DerivedClass* o)
 {
 	return arch.content("dvalue", o->dvalue);
 }
-VipArchive& operator>>(VipArchive& arch, DerivedClass* o)
+inline VipArchive& operator>>(VipArchive& arch, DerivedClass* o)
 {
 	return arch.content("dvalue", o->dvalue);
 }
 
-
-
-
-QObject* getDerivedObject(int iv, double dv)
-{
-	return new DerivedClass(iv, dv);
-}

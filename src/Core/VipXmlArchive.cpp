@@ -828,13 +828,23 @@ VipXIStringArchive::VipXIStringArchive(const QString& buffer)
   : VipXIArchive()
   , doc("")
 {
+	if (!buffer.isEmpty()) {
+		open(buffer);
+	}
+	
+}
+
+bool VipXIStringArchive::open(const QString& buffer)
+{
 	setCurrentNode(doc);
 	if (!doc.setContent(buffer)) {
 		setCurrentNode(QDomNode());
 		setMode(NotOpen);
+		return false;
 	}
 	else {
 		setMode(Read);
+		return true;
 	}
 }
 
