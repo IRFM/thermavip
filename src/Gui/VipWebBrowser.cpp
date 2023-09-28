@@ -1,12 +1,14 @@
 #include <qboxlayout.h>
-#include <qwebenginesettings.h>
-#include <qwebenginecertificateerror.h>
+
 
 #include "VipWebBrowser.h"
 #include "VipDisplayArea.h"
 #include "VipProgress.h"
 
 #ifdef __VIP_USE_WEB_ENGINE
+
+#include <qwebenginesettings.h>
+#include <qwebenginecertificateerror.h>
 
 bool VipHTTPFileHandler::open(const QString& path, QString* error)
 {

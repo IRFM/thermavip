@@ -1,27 +1,68 @@
-#include "VipProcessingObject.h"
+#pragma once
 
+#include "VipFunctional.h"
 
-class MultiplyNumericalValue : public VipProcessingObject
+/// @brief Base class with an integer attribute
+class BaseClass : public QObject
 {
 	Q_OBJECT
-	VIP_IO(VipInput input)
-	VIP_IO(VipProperty factor)
 
 public:
-	double sum;
+	int ivalue;
 
-	MultiplyNumericalValue(QObject* parent = nullptr)
-	  : VipProcessingObject(parent)
+	BaseClass(int v)
+	  : ivalue(v)
 	{
-		sum = 0;
-	}
-
-protected:
-
-	virtual void apply() 
-	{
-		double input = inputAt(0)->data().value<double>();
-		input *= propertyAt(0)->value<double>();
-		sum += input;
 	}
 };
+// Register BaseClass to the Qt metatype system as well as the thermavip layer
+VIP_REGISTER_QOBJECT_METATYPE(BaseClass*)
+
+
+/// @brief Derived class with a double attribute
+class DerivedClass : public BaseClass
+{
+	Q_OBJECT
+
+public:
+	double dvalue;
+
+	DerivedClass(int iv, double dv)
+	  : BaseClass(iv)
+	  , dvalue(dv)
+	{
+	}
+};
+// Register DerivedClass to the Qt metatype system as well as the thermavip layer
+VIP_REGISTER_QOBJECT_METATYPE(DerivedClass*)
+
+
+
+// define serialization function for both classes
+
+
+VipArchive& operator<<(VipArchive& arch, const BaseClass* o)
+{
+	return arch.content("ivalue", o->ivalue);
+}
+VipArchive& operator>>(VipArchive& arch, BaseClass* o)
+{
+	return arch.content("ivalue", o->ivalue);
+}
+
+VipArchive& operator<<(VipArchive& arch, const DerivedClass* o)
+{
+	return arch.content("dvalue", o->dvalue);
+}
+VipArchive& operator>>(VipArchive& arch, DerivedClass* o)
+{
+	return arch.content("dvalue", o->dvalue);
+}
+
+
+
+
+QObject* getDerivedObject(int iv, double dv)
+{
+	return new DerivedClass(iv, dv);
+}

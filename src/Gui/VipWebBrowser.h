@@ -1,4 +1,5 @@
-#pragma once
+#ifndef VIP_WEB_BROWSER_H
+#define VIP_WEB_BROWSER_H
 
 #ifdef __VIP_USE_WEB_ENGINE
 
@@ -82,3 +83,5 @@ private:
 VIP_REGISTER_QOBJECT_METATYPE(VipWebBrowser*)
 
 #endif //__VIP_USE_WEB_ENGINE
+
+#endif // VIP_WEB_BROWSER_H
