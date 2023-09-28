@@ -843,7 +843,7 @@ template<size_t Size>
 struct SizedSubKey
 {
     template<typename T>
-    static auto sub_key(T && value, void *)
+	static auto sub_key(T&& value, void*) -> decltype(to_unsigned_or_bool(value))
     {
         return to_unsigned_or_bool(value);
     }
