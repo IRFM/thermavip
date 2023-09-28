@@ -21,7 +21,7 @@ target_include_directories(Axes PRIVATE
 	${PROJECT_SOURCE_DIR}/../../../DataType 
 	${PROJECT_SOURCE_DIR}/../../../Core 
 	${PROJECT_SOURCE_DIR}/../../../Plotting 
-	${PROJECT_SOURCE_DIR}/../../../GUI
+	${PROJECT_SOURCE_DIR}/../../../Gui
 )
 
 target_link_libraries(Axes PRIVATE
