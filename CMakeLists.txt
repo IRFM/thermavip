@@ -17,16 +17,9 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
-set_property(GLOBAL PROPERTY AUTOMOC_MOC_OPTIONS "-nw")
-
-
 
 find_package(QT NAMES Qt5 Qt6 REQUIRED )
-if(${QT_VERSION_MAJOR} LESS 6)
-find_package(Qt5 REQUIRED COMPONENTS Qt5Widgets Qt5OpenGL Qt5Core Qt5Gui Qt5Xml Qt5Network Qt5Sql Qt5PrintSupport Qt5Svg)
-else()
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets OpenGL Core Gui Xml Network Sql PrintSupport Svg)
-endif()
 
 MESSAGE(STATUS "Qt5 found!")
 
