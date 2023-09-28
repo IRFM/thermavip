@@ -9,6 +9,7 @@
 #include <QTimer>
 
 #include <cmath>
+#include <unordered_set>
 
 #include "VipCore.h"
 #include "VipDataType.h"
@@ -726,6 +727,34 @@ bool VipIODevice::isStreamingEnabled() const
 	return m_data->parameters.streamingEnabled;
 }
 
+
+
+static std::unordered_set<int> _unregistered_ids;
+static VipSpinlock _unregistered_lock;
+static bool isUnregistered(int id) 
+{
+	VipUniqueLock<VipSpinlock> lock(_unregistered_lock);
+	return _unregistered_ids.find(id) != _unregistered_ids.end();
+}
+
+void VipIODevice::unregisterDeviceForPossibleReadWrite(int id)
+{
+	if (id <= 0)
+		return;
+
+	QObject * obj = vipCreateVariant(id).value<QObject*>();
+	if (obj) {
+		if (!qobject_cast<VipIODevice*>(obj)) {
+			delete obj;
+			return;
+		}
+		delete obj;
+
+		VipUniqueLock<VipSpinlock> lock(_unregistered_lock);
+		_unregistered_ids.insert(id);
+	}
+}
+
 QList<VipProcessingObject::Info> VipIODevice::possibleReadDevices(const VipPath& path, const QByteArray& first_bytes, const QVariant& out_value)
 {
 	QMultiMap<QString, VipProcessingObject::Info> tmp = VipProcessingObject::validProcessingObjects<VipIODevice*>(QVariantList(), -1);
@@ -743,8 +772,10 @@ QList<VipProcessingObject::Info> VipIODevice::possibleReadDevices(const VipPath&
 			prefix = path.canonicalPath().mid(0, index);
 	}
 
-	for (QMultiMap<QString, VipProcessingObject::Info>::const_iterator it = tmp.begin(); it != tmp.end(); ++it) {
-		// VipIODevice  * device = vipCreateVariant(devices[i]).value<VipIODevice*>();
+	for (QMultiMap<QString, VipProcessingObject::Info>::const_iterator it = tmp.begin(); it != tmp.end(); ++it) 
+	{
+		if (isUnregistered(it.value().metatype))
+			continue;
 		VipIODevice* device = qobject_cast<VipIODevice*>(it.value().create());
 		if (device) {
 			if ((device->supportedModes() & VipIODevice::ReadOnly)) {
@@ -790,7 +821,11 @@ QList<VipProcessingObject::Info> VipIODevice::possibleWriteDevices(const VipPath
 	if (index >= 0)
 		prefix = path.canonicalPath().mid(0, index);
 
-	for (QMultiMap<QString, VipProcessingObject::Info>::const_iterator it = tmp.begin(); it != tmp.end(); ++it) {
+	for (QMultiMap<QString, VipProcessingObject::Info>::const_iterator it = tmp.begin(); it != tmp.end(); ++it) 
+	{
+		if (isUnregistered(it.value().metatype))
+			continue;
+
 		VipIODevice* device = qobject_cast<VipIODevice*>(it.value().create());
 		if (device) {
 			device->setMapFileSystem(path.mapFileSystem());

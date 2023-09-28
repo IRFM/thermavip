@@ -234,14 +234,16 @@ public:
 		return QFileInfo(removePrefix(path())).size();
 	}
 
-	///Returns all read devices that can handle given path and/or first bytes
+	/// @brief Returns all read devices that can handle given path and/or first bytes
 	static QList<VipProcessingObject::Info> possibleReadDevices(const VipPath & path, const QByteArray& first_bytes, const QVariant & out_value = QVariant());
-	///Returns all read devices that can handle given path and input data
+	/// @brief Returns all read devices that can handle given path and input data
 	static QList<VipProcessingObject::Info> possibleWriteDevices(const VipPath & path, const QVariantList & input_data);
-	///Returns the file filters (as returned by #VipIODevice::fileFilters)  for the read devices that can handle given path and/or first bytes
+	/// @brief Returns the file filters (as returned by #VipIODevice::fileFilters)  for the read devices that can handle given path and/or first bytes
 	static QStringList possibleReadFilters(const VipPath & path, const QByteArray& first_bytes, const QVariant & out_value = QVariant());
-	///Returns the file filters (as returned by #VipIODevice::fileFilters)  for the write devices that can handle given path and input data
+	/// @brief Returns the file filters (as returned by #VipIODevice::fileFilters)  for the write devices that can handle given path and input data
 	static QStringList possibleWriteFilters(const VipPath & path, const QVariantList & input_data);
+	/// @brief Unregister a VipIODevice type in order to NOT be visible by calls to possibleReadDevices() and possibleWriteDevices()
+	static void unregisterDeviceForPossibleReadWrite(int id);
 
 public Q_SLOTS:
 
