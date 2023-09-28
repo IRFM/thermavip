@@ -406,7 +406,7 @@ namespace detail
 template<class Functor>
 VipProcessingObject* vipProcessingFunction(const Functor & fun, QObject * parent = nullptr)
 {
-	using signature = detail::Signature<Functor>::type;
+	using signature = typename detail::Signature<Functor>::type;
 	return new detail::VipProcessingFunction<signature>(fun, parent);
 }
 

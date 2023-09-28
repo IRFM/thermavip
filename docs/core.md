@@ -31,6 +31,9 @@ Within Thermavip, the serialization mechanism is mainly used to save/restore ses
 Why another serialization framework? There are already very good existing libraries like for instance boost.serialization. 
 The first basic reason is to avoid introducing another (potentially huge) dependancy to Thermavip.
 The second reason is to have a serialization framework that works nicely with Qt metatype system.
+Let's consider this example:
+
+
 
 The library defines several graphics items for plotting purposes which  all inherit `VipAbstractPlotArea` base class (which itself is a `QGraphicsWidget`):
 
