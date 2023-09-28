@@ -94,5 +94,6 @@ The software has been built with the collaboration and intensive testing of:
 
 Thermavip SDK and plugins are shipped with raw/modified versions of a few libraries:
 
+TODO: ska_sort
 * The *Plotting* module of Thermavip SDK is a heavily modified version of [qwt](https://qwt.sourceforge.io/) library.
 * The *ImageWarping* plugin uses a modified version of this [Delaunay](https://github.com/paulzfm/MSTSolver/tree/master/delaunay) library written by Ken Clarkson.

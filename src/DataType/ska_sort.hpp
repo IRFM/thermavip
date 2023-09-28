@@ -135,7 +135,8 @@ struct SizedRadixSorter<1>
     template<typename It, typename OutIt, typename ExtractKey>
     static bool sort(It begin, It end, OutIt buffer_begin, ExtractKey && extract_key)
     {
-        counting_sort_impl(begin, end, buffer_begin, [&](auto && o)
+        using type = typename std::iterator_traits<It>::value_type;
+	    counting_sort_impl(begin, end, buffer_begin, [&](const type& o)
         {
             return to_unsigned_or_bool(extract_key(o));
         });
@@ -483,11 +484,12 @@ struct RadixSorter<std::pair<K, V>>
     template<typename It, typename OutIt, typename ExtractKey>
     static bool sort(It begin, It end, OutIt buffer_begin, ExtractKey && extract_key)
     {
-        bool first_result = RadixSorter<V>::sort(begin, end, buffer_begin, [&](auto && o)
+        using type = typename std::iterator_traits<It>::value_type;
+        bool first_result = RadixSorter<V>::sort(begin, end, buffer_begin, [&](const type & o)
         {
             return extract_key(o).second;
         });
-        auto extract_first = [&](auto && o)
+        auto extract_first = [&](const type & o)
         {
             return extract_key(o).first;
         };
@@ -510,11 +512,12 @@ struct RadixSorter<const std::pair<K, V> &>
     template<typename It, typename OutIt, typename ExtractKey>
     static bool sort(It begin, It end, OutIt buffer_begin, ExtractKey && extract_key)
     {
-        bool first_result = RadixSorter<V>::sort(begin, end, buffer_begin, [&](auto && o) -> const V &
+        using type = typename std::iterator_traits<It>::value_type;
+        bool first_result = RadixSorter<V>::sort(begin, end, buffer_begin, [&](const type & o) -> const V &
         {
             return extract_key(o).second;
         });
-        auto extract_first = [&](auto && o) -> const K &
+        auto extract_first = [&](const type & o) -> const K &
         {
             return extract_key(o).first;
         };
@@ -540,8 +543,9 @@ struct TupleRadixSorter
     template<typename It, typename OutIt, typename ExtractKey>
     static bool sort(It begin, It end, OutIt out_begin, OutIt out_end, ExtractKey && extract_key)
     {
+        using type = typename std::iterator_traits<It>::value_type;
         bool which = NextSorter::sort(begin, end, out_begin, out_end, extract_key);
-        auto extract_i = [&](auto && o)
+        auto extract_i = [&](const type & o)
         {
             return std::get<I>(extract_key(o));
         };
@@ -562,8 +566,9 @@ struct TupleRadixSorter<I, S, const Tuple &>
     template<typename It, typename OutIt, typename ExtractKey>
     static bool sort(It begin, It end, OutIt out_begin, OutIt out_end, ExtractKey && extract_key)
     {
+        using type = typename std::iterator_traits<It>::value_type;
         bool which = NextSorter::sort(begin, end, out_begin, out_end, extract_key);
-        auto extract_i = [&](auto && o) -> decltype(auto)
+	    auto extract_i = [&](const type& o) -> decltype(std::get<I>(extract_key(o)))
         {
             return std::get<I>(extract_key(o));
         };
@@ -632,11 +637,12 @@ struct RadixSorter<std::array<T, S>>
     template<typename It, typename OutIt, typename ExtractKey>
     static bool sort(It begin, It end, OutIt buffer_begin, ExtractKey && extract_key)
     {
+        using type = typename std::iterator_traits<It>::value_type;
         auto buffer_end = buffer_begin + (end - begin);
         bool which = false;
         for (size_t i = S; i > 0; --i)
         {
-            auto extract_i = [&, i = i - 1](auto && o)
+            auto extract_i = [&, i = i - 1](const type & o)
             {
                 return extract_key(o)[i];
             };
@@ -689,7 +695,8 @@ struct FallbackRadixSorter : RadixSorter<decltype(to_radix_sort_key(std::declval
     template<typename It, typename OutIt, typename ExtractKey>
     static bool sort(It begin, It end, OutIt buffer_begin, ExtractKey && extract_key)
     {
-        return base::sort(begin, end, buffer_begin, [&](auto && a) -> decltype(auto)
+        using type = typename std::iterator_traits<It>::value_type;
+        return base::sort(begin, end, buffer_begin, [&](const type & a) //-> decltype(auto)
         {
             return to_radix_sort_key(extract_key(a));
         });
@@ -872,7 +879,7 @@ struct FallbackSubKey
     using base = SubKey<decltype(to_radix_sort_key(std::declval<T>()))>;
 
     template<typename U>
-    static decltype(auto) sub_key(U && value, void * data)
+    static auto sub_key(U&& value, void* data) -> decltype(base::sub_key(to_radix_sort_key(value), data))
     {
         return base::sub_key(to_radix_sort_key(value), data);
     }
@@ -928,7 +935,7 @@ struct SubKey<T *> : SizedSubKey<sizeof(T *)>
 template<typename F, typename S, typename Current>
 struct PairSecondSubKey : Current
 {
-    static decltype(auto) sub_key(const std::pair<F, S> & value, void * sort_data)
+	static auto sub_key(const std::pair<F, S>& value, void* sort_data) -> decltype(Current::sub_key(value.second, sort_data))
     {
         return Current::sub_key(value.second, sort_data);
     }
@@ -938,7 +945,7 @@ struct PairSecondSubKey : Current
 template<typename F, typename S, typename Current>
 struct PairFirstSubKey : Current
 {
-    static decltype(auto) sub_key(const std::pair<F, S> & value, void * sort_data)
+	static auto sub_key(const std::pair<F, S>& value, void* sort_data) -> decltype(Current::sub_key(value.first, sort_data))
     {
         return Current::sub_key(value.first, sort_data);
     }
@@ -982,7 +989,7 @@ template<size_t Index, typename Current, typename First, typename... More>
 struct TupleSubKey : Current
 {
     template<typename Tuple>
-    static decltype(auto) sub_key(const Tuple & value, void * sort_data)
+	static auto sub_key(const Tuple& value, void* sort_data) -> decltype(Current::sub_key(std::get<Index>(value), sort_data))
     {
         return Current::sub_key(std::get<Index>(value), sort_data);
     }
@@ -993,7 +1000,7 @@ template<size_t Index, typename Current, typename First>
 struct TupleSubKey<Index, Current, First> : Current
 {
     template<typename Tuple>
-    static decltype(auto) sub_key(const Tuple & value, void * sort_data)
+	static auto sub_key(const Tuple& value, void* sort_data) -> decltype(Current::sub_key(std::get<Index>(value), sort_data))
     {
         return Current::sub_key(std::get<Index>(value), sort_data);
     }
@@ -1025,7 +1032,7 @@ struct ListElementSubKey : SubKey<typename std::decay<decltype(std::declval<T>()
     using next = ListElementSubKey;
 
     template<typename U>
-    static decltype(auto) sub_key(U && value, void * sort_data)
+    static auto sub_key(U&& value, void* sort_data) -> decltype(base::sub_key(std::declval<U>(),sort_data))
     {
         BaseListSortData * list_sort_data = static_cast<BaseListSortData *>(sort_data);
         const T & list = CurrentSubKey::sub_key(value, list_sort_data->next_sort_data);
@@ -1054,7 +1061,8 @@ struct FallbackSubKey<T, typename std::enable_if<has_subscript_operator<T>::valu
 template<typename It, typename ExtractKey>
 inline void StdSortFallback(It begin, It end, ExtractKey & extract_key)
 {
-    std::sort(begin, end, [&](auto && l, auto && r){ return extract_key(l) < extract_key(r); });
+    using type = typename std::iterator_traits<It>::value_type;
+	std::sort(begin, end, [&](const type& l, const type& r) { return extract_key(l) < extract_key(r); });
 }
 
 template<std::ptrdiff_t StdSortThreshold, typename It, typename ExtractKey>
@@ -1280,16 +1288,18 @@ struct ListInplaceSorter
     {
         size_t current_index = sort_data->current_index;
         void * next_sort_data = sort_data->next_sort_data;
-        auto current_key = [&](auto && elem) -> decltype(auto)
+
+        using type = typename std::iterator_traits<It>::value_type;
+	    auto current_key = [&](const type& elem)
         {
             return CurrentSubKey::sub_key(extract_key(elem), next_sort_data);
         };
-        auto element_key = [&](auto && elem) -> decltype(auto)
+	    auto element_key = [&](const type& elem)
         {
             return ElementSubKey::base::sub_key(elem, sort_data);
         };
         sort_data->current_index = current_index = CommonPrefix(begin, end, current_index, current_key, element_key);
-        It end_of_shorter_ones = std::partition(begin, end, [&](auto && elem)
+	    It end_of_shorter_ones = std::partition(begin, end, [&](const type& elem)
         {
             return current_key(elem).size() <= current_index;
         });
@@ -1341,7 +1351,8 @@ struct InplaceSorter<StdSortThreshold, AmericanFlagSortThreshold, CurrentSubKey,
     template<typename It, typename ExtractKey>
     static void sort(It begin, It end, std::ptrdiff_t, ExtractKey & extract_key, void (*next_sort)(It, It, std::ptrdiff_t, ExtractKey &, void *), void * sort_data)
     {
-        It middle = std::partition(begin, end, [&](auto && a){ return !CurrentSubKey::sub_key(extract_key(a), sort_data); });
+        using type = typename std::iterator_traits<It>::value_type;
+	    It middle = std::partition(begin, end, [&](const type& a) { return !CurrentSubKey::sub_key(extract_key(a), sort_data); });
         if (next_sort)
         {
             next_sort(begin, middle, middle - begin, extract_key, sort_data);
@@ -1417,7 +1428,7 @@ void inplace_radix_sort(It begin, It end, ExtractKey & extract_key)
 struct IdentityFunctor
 {
     template<typename T>
-    decltype(auto) operator()(T && i) const
+    T&& operator()(T && i) const
     {
         return std::forward<T>(i);
     }
