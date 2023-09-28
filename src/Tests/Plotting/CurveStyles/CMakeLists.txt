@@ -9,9 +9,6 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(CMAKE_AUTOMOC ON)
 include(GNUInstallDirs)
 
-find_package(QT NAMES Qt5 Qt6 REQUIRED COMPONENTS Core)
-find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Gui Network Xml Widgets OpenGL PrintSupport)
-
 add_executable(CurveStyles 
     main.cpp 
 )
@@ -23,18 +20,6 @@ target_include_directories(CurveStyles PRIVATE
 	${PROJECT_SOURCE_DIR}/../../../Plotting 
 	${PROJECT_SOURCE_DIR}/../../../Gui
 )
-
-target_link_libraries(CurveStyles PRIVATE
-    Qt::Core
-    Qt::Gui
-    Qt::Network
-	Qt::Widgets
-	Qt::OpenGL
-	Qt::PrintSupport
-    Qt::Xml
-)
-
-
 
 target_link_libraries(CurveStyles PRIVATE
 	VipDataType

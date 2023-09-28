@@ -9,9 +9,6 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(CMAKE_AUTOMOC ON)
 include(GNUInstallDirs)
 
-find_package(QT NAMES Qt5 Qt6 REQUIRED COMPONENTS Core)
-find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets OpenGL Core Gui Xml Network Sql PrintSupport)
-
 FILE(GLOB Sources *.cpp)
 FILE(GLOB Headers *.h)
 add_library(VipDataType SHARED
@@ -23,11 +20,6 @@ target_include_directories(VipDataType PRIVATE
 
 target_compile_definitions(VipDataType PRIVATE
     VIP_BUILD_DATA_TYPE_LIB
-)
-
-target_link_libraries(VipDataType PRIVATE
-    Qt::Core
-    Qt::Gui
 )
 
 set(TARGET_PROJECT VipDataType)

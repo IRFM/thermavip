@@ -9,9 +9,6 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(CMAKE_AUTOMOC ON)
 include(GNUInstallDirs)
 
-find_package(QT NAMES Qt5 Qt6 REQUIRED COMPONENTS Core)
-find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets OpenGL Core Gui Xml Network Sql PrintSupport)
-
 FILE(GLOB Sources *.cpp)
 FILE(GLOB Headers *.h)
 add_library(VipGui SHARED
@@ -26,16 +23,6 @@ target_compile_definitions(VipGui PRIVATE
     VIP_BUILD_GUI_LIB
 )
 
-target_link_libraries(VipGui PRIVATE
-    Qt::Core
-    Qt::Gui
-    Qt::Network
-	Qt::Widgets
-	Qt::OpenGL
-	Qt::PrintSupport
-    Qt::Xml
-)
-
 # Add WebEnging if possible
 find_package(Qt${QT_VERSION_MAJOR}WebEngine REQUIRED)
 find_package(Qt${QT_VERSION_MAJOR}WebEngineWidgets REQUIRED)
@@ -45,10 +32,17 @@ if (Qt${QT_VERSION_MAJOR}WebEngine_FOUND)
 	else()
 		message(STATUS "Using web engine")
 		find_package(Qt${QT_VERSION_MAJOR}WebEngineWidgets REQUIRED)
+		if(${QT_VERSION_MAJOR} LESS 6)
+		target_link_libraries(VipGui PRIVATE
+		Qt5::WebEngine
+		Qt5::WebEngineWidgets
+		)
+		else()
 		target_link_libraries(VipGui PRIVATE
 		Qt::WebEngine
 		Qt::WebEngineWidgets
 		)
+		endif()
 		target_compile_definitions(VipGui PRIVATE __VIP_USE_WEB_ENGINE)
 	endif()
 endif()

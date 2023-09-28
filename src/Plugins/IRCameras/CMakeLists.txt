@@ -9,9 +9,6 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(CMAKE_AUTOMOC ON)
 include(GNUInstallDirs)
 
-find_package(QT NAMES Qt5 Qt6 REQUIRED COMPONENTS Core)
-find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets OpenGL Core Gui Xml Network Sql PrintSupport)
-
 FILE(GLOB Sources *.cpp)
 FILE(GLOB Headers *.h)
 add_library(IRCameras SHARED
@@ -24,16 +21,6 @@ target_include_directories(IRCameras PRIVATE
 	${PROJECT_SOURCE_DIR}/../../Core 
 	${PROJECT_SOURCE_DIR}/../../Plotting 
 	${PROJECT_SOURCE_DIR}/../../Gui
-)
-
-target_link_libraries(IRCameras PRIVATE
-    Qt::Core
-    Qt::Gui
-    Qt::Network
-	Qt::Widgets
-	Qt::OpenGL
-	Qt::PrintSupport
-    Qt::Xml
 )
 
 target_link_libraries(IRCameras PRIVATE

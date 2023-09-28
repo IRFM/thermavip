@@ -9,9 +9,6 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(CMAKE_AUTOMOC ON)
 include(GNUInstallDirs)
 
-find_package(QT NAMES Qt5 Qt6 REQUIRED COMPONENTS Core)
-find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets OpenGL Core Gui Xml Network Sql PrintSupport)
-
 FILE(GLOB Sources *.cpp)
 FILE(GLOB Headers *.h)
 add_library(VipPlotting SHARED
@@ -24,17 +21,6 @@ target_include_directories(VipPlotting PRIVATE
 
 target_compile_definitions(VipPlotting PRIVATE
     VIP_BUILD_PLOTTING_LIB
-)
-
-target_link_libraries(VipPlotting PRIVATE
-    Qt::Core
-    Qt::Gui
-    Qt::Network
-	Qt::Widgets
-	Qt::OpenGL
-    Qt::Xml
-	Qt::PrintSupport
-	Qt::Svg
 )
 
 target_link_libraries(VipPlotting PRIVATE

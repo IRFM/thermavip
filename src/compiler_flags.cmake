@@ -1,5 +1,36 @@
 
 
+find_package(QT NAMES Qt5 Qt6 REQUIRED COMPONENTS Core)
+find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets OpenGL Core Gui Xml Network Sql Svg PrintSupport)
+
+set(QT_PREFIX Qt${QT_VERSION_MAJOR})
+set(CMAKE_AUTOMOC ON)
+
+if(${QT_VERSION_MAJOR} LESS 6)
+set(QT_LIBS Qt::Core
+    Qt5::Gui
+    Qt5::Network
+	Qt5::Widgets
+	Qt5::OpenGL
+	Qt5::PrintSupport
+    Qt5::Xml
+	Qt5::Sql
+	Qt5::Svg
+	)
+else()
+set(QT_LIBS Qt::Core
+    Qt::Gui
+    Qt::Network
+	Qt::Widgets
+	Qt::OpenGL
+	Qt::PrintSupport
+    Qt::Xml
+	Qt::Sql
+	Qt::Svg
+	)
+endif()
+target_link_libraries(${TARGET_PROJECT} PRIVATE ${QT_LIBS})
+
 #external code added if exists
 if(EXISTS my_compiler_flags.cmake ) 
       include(my_compiler_flags.cmake)

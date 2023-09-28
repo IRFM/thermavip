@@ -9,19 +9,11 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(CMAKE_AUTOMOC ON)
 include(GNUInstallDirs)
 
-find_package(QT NAMES Qt5 Qt6 REQUIRED COMPONENTS Core)
-find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets OpenGL Core Gui Xml Network Sql PrintSupport)
-
 add_library(VipLogging SHARED
     VipLogging.cpp VipLogging.h
 )
 target_compile_definitions(VipLogging PRIVATE
     VIP_BUILD_LOGGING_LIB
-)
-
-target_link_libraries(VipLogging PRIVATE
-    Qt5::Core
-    Qt5::Gui
 )
 
 
