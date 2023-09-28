@@ -543,7 +543,7 @@ namespace detail
 		template<class Dst, class Src, class OverRoi>
 		static bool apply(Dst& , const Src& , const OverRoi& )
 		{
-			return false
+			return false;
 		}
 	};
 
