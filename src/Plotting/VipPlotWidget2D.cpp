@@ -1,4 +1,6 @@
 #include <float.h>
+#include <condition_variable>
+#include <chrono>
 
 //Qt includes
 #include <QGraphicsSceneMouseEvent>

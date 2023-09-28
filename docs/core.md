@@ -8,12 +8,29 @@ The *Core* library defines the central concepts used within Thermavip applicatio
 -	XML/Binary archiving,
 -	Plugin mechanism,
 -	Access to configuration files/directories,
--	Most importantly, an **Asynchronous Agents Library based on dataflow**
+-	Most importantly, an **Asynchronous Agents Library based on dataflow** used to define complex processing pipelines
 
 The *Core* library can be used outside of Thermavip application, like any other library. It depends on VipLogging, VipDataType, QtCore, QtGui, QtXml and QtNetwork.
 
 
-## Widgets and plotting areas
+## Archiving
+
+The library defines the interface VipArchive to serialize/deserialize any type of objects, including QObject pointers. Currently, only XML and binary serialization are provided 
+through th classes:
+
+-	VipBinaryArchive: binary serialization/deserialization using an internal format,
+-	VipXOStringArchive: XML serialization to buffer,
+-	VipXOfArchive: XML serialization to file,
+-	VipXIStringArchive: XML deserialization from buffer,
+-	VipXIfArchive: XML deserialization from file.
+
+Within Thermavip, the serialization mechanism is mainly used to save/restore sessions, and to copy processing pipelines.
+
+### Why?
+
+Why another serialization framework? There are already very good existing libraries like for instance boost.serialization. 
+The first basic reason is to avoid introducing another (potentially huge) dependancy to Thermavip.
+The second reason is to have a serialization framework that works nicely with Qt metatype system.
 
 The library defines several graphics items for plotting purposes which  all inherit `VipAbstractPlotArea` base class (which itself is a `QGraphicsWidget`):
 
