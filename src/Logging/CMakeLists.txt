@@ -20,8 +20,8 @@ target_compile_definitions(VipLogging PRIVATE
 )
 
 target_link_libraries(VipLogging PRIVATE
-    Qt::Core
-    Qt::Gui
+    Qt5::Core
+    Qt5::Gui
 )
 
 
