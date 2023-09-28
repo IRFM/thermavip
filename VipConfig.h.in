@@ -165,6 +165,30 @@ Disable printf calls if required
 #endif
 
 
+// Check for C++14-17-20
+#if defined(_MSC_VER) && !defined(__clang__)
+#if _MSVC_LANG >= 201300L
+#define VIP_HAS_CPP_14
+#endif
+#if _MSVC_LANG >= 201703L
+#define VIP_HAS_CPP_17
+#endif
+#if _MSVC_LANG >= 202002L
+#define VIP_HAS_CPP_20
+#endif
+#else
+#if __cplusplus >= 201300L
+#define VIP_HAS_CPP_14
+#endif
+#if __cplusplus >= 201703L
+#define VIP_HAS_CPP_17
+#endif
+#if __cplusplus >= 202002L
+#define VIP_HAS_CPP_20
+#endif
+#endif
+
+
 
 
 //define this macro to disable multithreading

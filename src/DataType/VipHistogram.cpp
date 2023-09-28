@@ -325,27 +325,75 @@ VipIntervalSampleVector extractHistogram(T * begin, T * end, int bins, Vip::Bins
 // }
 // }
 
+
+
+
+#ifdef VIP_HAS_CPP_14
+
 #include "ska_sort.hpp"
 
 template<class T>
 struct ExtractKey
 {
-	T operator()(const std::pair<T, int>& v) const { return v.first; }
+	typename std::make_unsigned<T>::type operator()(const std::pair<T, int>& v) const { 
+		// integral types
+		using integral_type = std::make_unsigned<T>::type;
+		integral_type val = static_cast<integral_type>(v.first);
+		if (std::is_signed<T>::value)
+			// wrap around to keep an unsigned value in the same order as the signed one
+			val += (static_cast<integral_type>(1) << (static_cast<integral_type>(sizeof(T) * 8 - 1)));
+		return (val);
+	}
 };
+
+template<>
+struct ExtractKey<bool>
+{
+	std::uint8_t operator()(const std::pair<bool, int>& v) const { return v.first; }
+};
+
 template<>
 struct ExtractKey<float>
 {
-	std::uint32_t operator()(const std::pair<float, int>& v) const { std::uint32_t r; memcpy(&r, &(v.first), sizeof(v.first)); return r; }
+	std::uint32_t operator()(const std::pair<float, int>& v) const 
+	{ 
+		union U
+		{
+			float d;
+			std::uint32_t u;
+		};
+		U u = { v.first };
+		// Interpret float as 32-bit unsigned.
+		// Flip all except top if top bit is set.
+		u.u ^= ((static_cast<unsigned>((static_cast<int>(u.u)) >> 31)) >> 1);
+		// Flip top bit.
+		u.u ^= (1u << 31u);
+		return (u.u);
+	}
 };
 template<>
 struct ExtractKey<double>
 {
-	std::uint64_t operator()(const std::pair<double, int>& v) const { std::uint64_t r; memcpy(&r, &(v.first), sizeof(v.first)); return r; }
+	std::uint64_t operator()(const std::pair<double, int>& v) const
+	{
+		union U
+		{
+			double d;
+			std::uint64_t u;
+		};
+		U u = { v.first };
+		// Interpret double as 64-bit unsigned.
+		// Flip all except top if top bit is set.
+		u.u ^= ((static_cast<std::uint64_t>((static_cast<std::int64_t>(u.u)) >> 63ll)) >> 1ll);
+		// Flip top bit.
+		u.u ^= (1ull << 63ull);
+		return (u.u);
+	}
 };
 template<>
 struct ExtractKey<long double>
 {
-	std::uint64_t operator()(const std::pair<long double, int>& v) const { double tmp = v.first;  std::uint64_t r; memcpy(&r, &tmp, sizeof(tmp)); return r; }
+	std::uint64_t operator()(const std::pair<long double, int>& v) const { return ExtractKey<double>{}(std::pair<double, int>{v.first,0}); }
 };
 
 template<class T, bool Numeric = std::is_arithmetic<T>::value>
@@ -364,6 +412,16 @@ struct SortVector<T,true>
 		ska_sort(values.begin(), values.end(), ExtractKey<T>());
 	}
 };
+
+#else
+
+template<class T, bool Numeric = std::is_arithmetic<T>::value>
+struct SortVector
+{
+	static void apply(std::vector<std::pair<T, int>>& values) { std::sort(values.begin(), values.end(), sort_pair<T>()); }
+};
+
+#endif
 
 template < class T>
 VipIntervalSampleVector extractHistogram(T * begin, T * end, int bins, Vip::BinsStrategy strategy,  VipInterval  inter, int * indexes, int index_offset = 0, int replace_inf = -1, int replace_sup = -1, int replace_nan = -1, int slop_factor = 0)
