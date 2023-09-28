@@ -8,13 +8,10 @@ The *Core* library defines the central concepts used within Thermavip applicatio
 -	XML/Binary archiving,
 -	Plugin mechanism,
 -	Access to configuration files/directories,
--	Pie charts,
--	Bar charts,
--	Polar gauges,
--	Shapes and scene models,
--	Text, arrows,... 
+-	Most importantly, an **Asynchronous Agents Library based on dataflow**
 
-Its goal is to provide fast, dynamic and interactive plots meant for firm real-time display of 2D data. The library is highly customizable in order to define custom plotting items. *Plotting* library relies on the Qt **Graphics View Framework**, and is based on a heavily modified version of [Qwt](https://qwt.sourceforge.io/). The *Plotting* library depends on the *Logging* and *DataType* libraries.
+The *Core* library can be used outside of Thermavip application, like any other library. It depends on VipLogging, VipDataType, QtCore, QtGui, QtXml and QtNetwork.
+
 
 ## Widgets and plotting areas
 

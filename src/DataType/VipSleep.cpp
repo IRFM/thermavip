@@ -61,7 +61,7 @@ static std::uint64_t NowInUs()
 #endif // __APPLE__
 
 
-void vipSleep(double milliseconds) 
+void vipSleep(double milliseconds)
 {
 	if (milliseconds > 20) {
 		SleepInMs(static_cast<std::uint32_t>(milliseconds));
@@ -69,6 +69,7 @@ void vipSleep(double milliseconds)
 	else {
 		SleepInUs(static_cast<std::uint32_t>(milliseconds * 1000));
 	}
+}
 
 #endif // _WIN32
 /************************************ unix <=**********************************/
