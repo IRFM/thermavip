@@ -1,1 +1,2 @@
 add_subdirectory(Pipeline)
+add_subdirectory(SimpleSerialize)
