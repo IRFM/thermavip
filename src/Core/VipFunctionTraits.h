@@ -82,9 +82,9 @@ namespace detail
 	{
 		template<typename F, typename Getter, typename... A>
 		static inline auto apply(F&& f, Getter&& t, A&&... a)
-		  -> decltype(ApplyFunctor<N - 1>::apply(std::forward<F>(f), std::forward<Getter>(t), std::forward<Getter>(t).get<N - 1>(), std::forward<A>(a)...))
+		  -> decltype(ApplyFunctor<N - 1>::apply(std::forward<F>(f), std::forward<Getter>(t), std::forward<Getter>(t).template get<N - 1>(), std::forward<A>(a)...))
 		{
-			return ApplyFunctor<N - 1>::apply(std::forward<F>(f), std::forward<Getter>(t), std::forward<Getter>(t).get<N - 1>(), std::forward<A>(a)...);
+			return ApplyFunctor<N - 1>::apply(std::forward<F>(f), std::forward<Getter>(t), std::forward<Getter>(t).template get<N - 1>(), std::forward<A>(a)...);
 		}
 	};
 
