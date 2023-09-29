@@ -1101,7 +1101,7 @@ void VipPlayer2D::itemsDropped(VipPlotItem* target, QMimeData* mimeData)
 	if(!managed){
 		//Manage unhandled drop
 
-		QList<VipFunction> lst = VipFDDropOnPlotItem().match(this, target,mimeData );
+		const auto lst = VipFDDropOnPlotItem().match(this, target,mimeData );
 		for (int i = 0; i < lst.size(); ++i) {
 			bool ret = lst[i](this, target, mimeData);
 			if (ret)
@@ -2209,7 +2209,7 @@ static void __create_video_processing_menu(VipProcessingObjectMenu * menu, VipVi
 	QList<QAction*> acts = menu->processingActions();
 	for (int i = 0; i < acts.size(); ++i)
 	{
-		QList<VipFunction> lst = VipFDAddProcessingAction().match(acts[i], pl);
+		const auto lst = VipFDAddProcessingAction().match(acts[i], pl);
 		bool applied = false;
 		for (int j = 0; j < lst.size(); ++j) applied = applied || lst[j](acts[i], pl).value<bool>();
 		if (!applied) {
@@ -7683,7 +7683,7 @@ static void __create_processing_menu(VipProcessingObjectMenu * menu, VipPlayer2D
 	QList<QAction*> acts = menu->processingActions();
 	for (int i = 0; i < acts.size(); ++i)
 	{
-		QList<VipFunction> lst = VipFDAddProcessingAction().match(acts[i], pl);
+		const auto lst = VipFDAddProcessingAction().match(acts[i], pl);
 		bool applied = false;
 		for (int j = 0; j < lst.size(); ++j) applied = applied || lst[j](acts[i], pl).value<bool>();
 		if (!applied) {
@@ -7718,7 +7718,7 @@ static void __create_fusion_processing_menu(VipProcessingObjectMenu * menu, VipP
 	QList<QAction*> acts = menu->processingActions();
 	for (int i = 0; i < acts.size(); ++i)
 	{
-		QList<VipFunction> lst = VipFDAddProcessingAction().match(acts[i], pl);
+		const auto lst = VipFDAddProcessingAction().match(acts[i], pl);
 		bool applied = false;
 		for (int j = 0; j < lst.size(); ++j) applied = applied || lst[j](acts[i], pl).value<bool>();
 		if (!applied) {

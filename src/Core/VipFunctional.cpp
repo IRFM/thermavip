@@ -103,6 +103,7 @@ VipFunctionDispatcher::FunctionList VipFunctionDispatcher::match(const VipTypeLi
 VipFunctionDispatcher::FunctionList VipFunctionDispatcher::match(const VipAny & v1, const VipAny & v2, const VipAny & v3, const VipAny & v4, const VipAny & v5) const
 {
 	VipTypeList lst;
+	lst.reserve(5);
 	lst << v1.type()<< v2.type() << v3.type() << v4.type() << v5.type();
 	return match(lst);
 }
@@ -123,17 +124,6 @@ VipFunctionDispatcher::FunctionList VipFunctionDispatcher::exactMatch(const VipA
 {
 	VipTypeList lst;
 	lst << v1.type()<< v2.type() << v3.type() << v4.type() << v5.type();
-
-	//for (int i = 0; i < m_argCount; ++i)
-	// printf("%s, ", lst[i].name);
-	// printf("\n");
-	// for (int i = 0; i < m_functions.size(); ++i) {
-	// VipTypeList tmp = m_functions[i].typeList();
-	// for (int j = 0; j < m_argCount; ++j)
-	// printf("%s, ", tmp[j].name);
-	// printf("\n");
-	// }
-	// printf("\n");
 
 	return exactMatch(lst);
 }
@@ -160,10 +150,11 @@ VipAny VipFunctionDispatcher::callOneExactMatch(const VipAny & v1 , const VipAny
 	return VipAny();
 }
 
-QList<VipAny> VipFunctionDispatcher::callAllMatch(const VipAny & v1 , const VipAny & v2 , const VipAny & v3 , const VipAny & v4 , const VipAny & v5 ) const
+QVector<VipAny> VipFunctionDispatcher::callAllMatch(const VipAny& v1, const VipAny& v2, const VipAny& v3, const VipAny& v4, const VipAny& v5) const
 {
 	FunctionList lst = match(v1,v2,v3,v4,v5);
-	QList<VipAny> res;
+	QVector<VipAny> res;
+	res.reserve(lst.size());
 	for(int i=0; i < lst.size(); ++i)
 	{
 		res << lst[i](v1,v2,v3,v4,v5);
@@ -172,10 +163,11 @@ QList<VipAny> VipFunctionDispatcher::callAllMatch(const VipAny & v1 , const VipA
 	return res;
 }
 
-QList<VipAny> VipFunctionDispatcher::callAllExactMatch(const VipAny & v1 , const VipAny & v2 , const VipAny & v3 , const VipAny & v4 , const VipAny & v5 ) const
+QVector<VipAny> VipFunctionDispatcher::callAllExactMatch(const VipAny& v1, const VipAny& v2, const VipAny& v3, const VipAny& v4, const VipAny& v5) const
 {
 	FunctionList lst = exactMatch(v1,v2,v3,v4,v5);
-	QList<VipAny> res;
+	QVector<VipAny> res;
+	res.reserve(lst.size());
 	for(int i=0; i < lst.size(); ++i)
 	{
 		res << lst[i](v1,v2,v3,v4,v5);

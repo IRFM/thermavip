@@ -735,9 +735,12 @@ void VipXIArchive::doComment(QString& data)
 	}
 }
 
+
+
+
 VipXOStringArchive::VipXOStringArchive()
   : VipXOArchive()
-  , doc("")
+  , doc(QString())
 {
 	setCurrentNode(doc);
 	setMode(Write);
@@ -748,9 +751,16 @@ QString VipXOStringArchive::toString()
 	return doc.toString();
 }
 
+void VipXOStringArchive::reset()
+{
+	resetError();
+	setCurrentNode(doc = QDomDocument(QString()));
+	setLastNode(QDomNode());
+}
+
 bool VipXOStringArchive::open(QDomNode n)
 {
-	doc = QDomDocument("");
+	doc = QDomDocument();
 	setCurrentNode(n);
 	setLastNode(n);
 	if (n.isDocument())
@@ -759,18 +769,15 @@ bool VipXOStringArchive::open(QDomNode n)
 		return !doc.appendChild(n).isNull();
 }
 
+
+
 VipXOfArchive::VipXOfArchive(const QString& filename)
   : VipXOArchive()
-  , doc("")
 {
-	open(filename);
+	if (!filename.isEmpty())
+		open(filename);
 }
 
-VipXOfArchive::VipXOfArchive()
-  : VipXOArchive()
-  , doc("")
-{
-}
 
 VipXOfArchive::~VipXOfArchive()
 {
@@ -779,8 +786,8 @@ VipXOfArchive::~VipXOfArchive()
 
 bool VipXOfArchive::open(const QString& filename)
 {
-	setMode(NotOpen);
-	resetError();
+	close();
+
 	QFile fout(filename);
 	if (!fout.open(QIODevice::WriteOnly | QIODevice::Text)) {
 		setError("Unable to open file: " + filename);
@@ -788,7 +795,7 @@ bool VipXOfArchive::open(const QString& filename)
 	}
 
 	setMode(Write);
-	setCurrentNode(doc);
+	setCurrentNode(doc = QDomDocument(QString()));
 	file = filename;
 	return true;
 }
@@ -797,10 +804,12 @@ void VipXOfArchive::close()
 {
 	resetError();
 	setMode(NotOpen);
+	file.clear();
 	if (!currentNode().isNull()) {
 		QFile fout(file);
 		if (!fout.open(QIODevice::WriteOnly | QIODevice::Text)) {
 			setMode(NotOpen);
+			setCurrentNode(QDomNode());
 			setError("Unable to open file: " + file);
 			return;
 		}
@@ -808,14 +817,12 @@ void VipXOfArchive::close()
 		fout.write(temp.toLatin1().data(), temp.length());
 		fout.close();
 	}
-
-	// doc = QDomDocument("");
-	// setCurrentNode( doc;
+	setCurrentNode(doc = QDomDocument());
 }
 
 bool VipXOfArchive::open(QDomNode n)
 {
-	doc = QDomDocument("");
+	doc = QDomDocument(QString());
 	setCurrentNode(n);
 	setLastNode(n);
 	if (n.isDocument())
@@ -824,33 +831,31 @@ bool VipXOfArchive::open(QDomNode n)
 		return !doc.appendChild(n).isNull();
 }
 
+
+
 VipXIStringArchive::VipXIStringArchive(const QString& buffer)
   : VipXIArchive()
-  , doc("")
 {
 	if (!buffer.isEmpty()) {
 		open(buffer);
 	}
-	
 }
 
 bool VipXIStringArchive::open(const QString& buffer)
 {
-	setCurrentNode(doc);
-	if (!doc.setContent(buffer)) {
-		setCurrentNode(QDomNode());
-		setMode(NotOpen);
+	setMode(NotOpen);
+	if (!doc.setContent(buffer))
 		return false;
-	}
-	else {
+	if (open(doc)) {
 		setMode(Read);
 		return true;
 	}
+	return false;
 }
 
 bool VipXIStringArchive::open(QDomNode n)
 {
-	doc = QDomDocument("");
+	//doc = QDomDocument("");
 	setCurrentNode(n);
 	setLastNode(n);
 	if (n.isDocument())
@@ -861,33 +866,28 @@ bool VipXIStringArchive::open(QDomNode n)
 
 VipXIfArchive::VipXIfArchive(const QString& filename)
   : VipXIArchive()
-  , doc("")
 {
-	open(filename);
+	if (!filename.isEmpty())
+		open(filename);
 }
 
-VipXIfArchive::VipXIfArchive()
-  : VipXIArchive()
-  , doc("")
-{
-}
 
 bool VipXIfArchive::open(const QString& filename)
 {
 	resetError();
 	setMode(NotOpen);
+	setCurrentNode(QDomNode());
+
 	QFile file(filename);
 	if (!file.open(QIODevice::ReadOnly)) {
 		setError("Unable to open file: " + filename);
-		setCurrentNode(QDomNode());
 		return false;
 	}
 	QString error;
 	int errorLine, errorCol;
 	if (!doc.setContent(&file, &error, &errorLine, &errorCol)) {
 		setError(QString::asprintf("error at line %d, col %d:\n%s\n", errorLine, errorCol, error.toLatin1().data()));
-		printf("error at line %d, col %d:\n%s\n", errorLine, errorCol, error.toLatin1().data());
-		setCurrentNode(QDomNode());
+		vip_debug("error at line %d, col %d:\n%s\n", errorLine, errorCol, error.toLatin1().data());
 		file.close();
 		return false;
 	}

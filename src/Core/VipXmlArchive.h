@@ -171,8 +171,11 @@ class VIP_CORE_EXPORT VipXOStringArchive : public VipXOArchive
 
 public:
 	VipXOStringArchive();
-	virtual bool open(QDomNode n);
 	QString toString();
+	void reset();
+
+protected:
+	virtual bool open(QDomNode n);
 };
 
 /// XML output archive providing an easy way to write into a file
@@ -182,13 +185,14 @@ class VIP_CORE_EXPORT VipXOfArchive : public VipXOArchive
 	QDomDocument doc;
 
 public:
-	VipXOfArchive(const QString& filename);
-	VipXOfArchive();
+	VipXOfArchive(const QString& filename = QString());
 	~VipXOfArchive();
 
-	virtual bool open(QDomNode n);
 	bool open(const QString& filename);
 	void close();
+
+protected:
+	virtual bool open(QDomNode n);
 };
 
 /// XML input archive providing an easy way to read data from a buffer
@@ -200,6 +204,7 @@ public:
 	VipXIStringArchive(const QString& buffer = QString());
 	bool open(const QString& buffer);
 
+protected:
 	virtual bool open(QDomNode n);
 };
 
@@ -209,11 +214,11 @@ class VIP_CORE_EXPORT VipXIfArchive : public VipXIArchive
 	QDomDocument doc;
 
 public:
-	VipXIfArchive(const QString& filename);
-	VipXIfArchive();
-
-	virtual bool open(QDomNode n);
+	VipXIfArchive(const QString& filename = QString());
 	bool open(const QString& filename);
+
+protected:
+	virtual bool open(QDomNode n);
 };
 
 /// @}

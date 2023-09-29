@@ -784,10 +784,10 @@ public:
 
 	/// @brief Comparison operator.
 	/// Two VipFunction objects are considered equals if they have the same argument and return types.
-	bool operator==(const VipFunction& other) { return m_typeList == other.m_typeList && m_returnType == other.m_returnType; }
+	bool operator==(const VipFunction& other) const { return m_typeList == other.m_typeList && m_returnType == other.m_returnType; }
 	/// Comparison operator.
 	/// Two VipFunction objects are considered equals if they have the same argument and return types.
-	bool operator!=(const VipFunction& other) { return !((*this) == other); }
+	bool operator!=(const VipFunction& other) const { return !((*this) == other); }
 
 	/// @brief Create a \a VipFunction object from any callable object (in the sense of std::function)
 	template<class Signature, class Callable>
@@ -857,14 +857,14 @@ public:
 class VIP_CORE_EXPORT VipFunctionDispatcher
 {
 	int m_argCount;
-	QList<VipFunction> m_functions;
+	QVector<VipFunction> m_functions;
 
 	// return false if equal, true otherwise
 	bool nonConvertible(const VipTypeList& t1, const VipTypeList& t2) const;
 	bool exactEqual(const VipTypeList& t1, const VipTypeList& t2) const;
 
 public:
-	using FunctionList = QList<VipFunction>;
+	using FunctionList = QVector<VipFunction>;
 	using result_type = VipAny;
 
 	/// @brief Construct a VipFunctionDispatcher with given arity
@@ -906,9 +906,9 @@ public:
 	VipAny callOneExactMatch(const VipAny& v1 = VipAny(), const VipAny& v2 = VipAny(), const VipAny& v3 = VipAny(), const VipAny& v4 = VipAny(), const VipAny& v5 = VipAny()) const;
 
 	/// @brief Call all the functions that match given arguments, and return the results
-	QList<VipAny> callAllMatch(const VipAny& v1 = VipAny(), const VipAny& v2 = VipAny(), const VipAny& v3 = VipAny(), const VipAny& v4 = VipAny(), const VipAny& v5 = VipAny()) const;
+	QVector<VipAny> callAllMatch(const VipAny& v1 = VipAny(), const VipAny& v2 = VipAny(), const VipAny& v3 = VipAny(), const VipAny& v4 = VipAny(), const VipAny& v5 = VipAny()) const;
 	/// @brief Call all the functions that match exactly given arguments, and return the results
-	QList<VipAny> callAllExactMatch(const VipAny& v1 = VipAny(), const VipAny& v2 = VipAny(), const VipAny& v3 = VipAny(), const VipAny& v4 = VipAny(), const VipAny& v5 = VipAny()) const;
+	QVector<VipAny> callAllExactMatch(const VipAny& v1 = VipAny(), const VipAny& v2 = VipAny(), const VipAny& v3 = VipAny(), const VipAny& v4 = VipAny(), const VipAny& v5 = VipAny()) const;
 
 	/// @brief Equivalent to callOneExactMatch()
 	VipAny operator()(const VipAny& v1 = VipAny(), const VipAny& v2 = VipAny(), const VipAny& v3 = VipAny(), const VipAny& v4 = VipAny(), const VipAny& v5 = VipAny()) const;

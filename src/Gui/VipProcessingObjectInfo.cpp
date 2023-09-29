@@ -963,7 +963,7 @@ void VipProcessingObjectInfo::setProcessingObject(VipProcessingObject * obj, Vip
 			if(m_data->infos[i])
 				delete m_data->infos[i].data();
 		m_data->infos.clear();
-		QList<VipFunction> funs = VipFDProcessingOutputInfo().match(m_data->player.data(),output, output->data().data());
+		const auto funs = VipFDProcessingOutputInfo().match(m_data->player.data(),output, output->data().data());
 		for (int i = 0; i < funs.size(); ++i)
 			if (VipAdditionalInfo * info = funs[i](m_data->player.data(),output, output->data().data()).value<VipAdditionalInfo*>())
 			{

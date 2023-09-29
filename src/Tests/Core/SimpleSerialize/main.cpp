@@ -4,8 +4,33 @@
 
 #include <iostream>
 
+
+#include <VipFunctionTraits.h>
+
+template<class C>
+void print_info(C&& c)
+{
+	using traits = VipFunctionTraits<C>;
+	std::cout << "Return: " << typeid(typename traits::return_type).name() << std::endl;
+	std::cout << "Signature: " << typeid(typename traits::signature_type).name() << std::endl;
+	std::cout << "Arity: " <<traits::nargs << std::endl;
+	std::cout << "Type (0): " << typeid(typename traits::element<0>::type).name() << std::endl;
+	std::cout << "Type (1): " << typeid(typename traits::element<1>::type).name() << std::endl;
+}
+
+
+struct test_fun
+{
+	double operator()(int a, double b) { return a + b; }
+};
+
 int main(int argc, char** argv)
 {
+	const std::tuple<int, double> t(1, 2.2);
+	auto ret = vipApply(test_fun{}, t);
+
+	print_info(test_fun{});
+
 	// register serialization functions
 	vipRegisterArchiveStreamOperators<BaseClass*>();
 	vipRegisterArchiveStreamOperators<DerivedClass*>();

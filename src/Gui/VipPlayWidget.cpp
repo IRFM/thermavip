@@ -595,7 +595,7 @@ void VipTimeRangeListItem::setDevice(VipIODevice* device)
 
 		connect(device, SIGNAL(timestampingChanged()), this, SLOT(deviceTimestampingChanged()));
 
-		QList<VipFunction> lst = vipCreateTimeRangeItemsDispatcher().match(device, this);
+		const auto lst = vipCreateTimeRangeItemsDispatcher().match(device, this);
 		if (lst.size())
 			lst.last()(device, this);
 		else {

@@ -38,6 +38,10 @@ target_link_libraries(Thermavip PRIVATE
 	VipAnnotation
 )
 
+if(NOT WIN32)
+target_link_libraries(Thermavip PRIVATE z)
+endif()
+
 set(TARGET_PROJECT Thermavip)
 include(${PROJECT_SOURCE_DIR}/../compiler_flags.cmake)
 

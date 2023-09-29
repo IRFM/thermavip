@@ -338,7 +338,7 @@ namespace detail
 	{
 		(*arch) >> const_cast<T&>(value);
 		return QVariant::fromValue(value);
-	}
+	} 
 }
 
 template<class T>

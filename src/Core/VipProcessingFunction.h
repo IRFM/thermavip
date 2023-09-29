@@ -2,10 +2,7 @@
 #define VIP_PROCESSING_FUNCTION_H
 
 #include "VipProcessingObject.h"
-
-#include <type_traits>
-#include <functional>
-#include <tuple>
+#include "VipFunctionTraits.h"
 
 namespace detail
 {
@@ -57,70 +54,6 @@ namespace detail
 	};
 
 
-	template<class Signature>
-	class Callable;
-
-	template<class R, class... Args>
-	class Callable<R(Args...)>
-	{
-	public:
-		using return_type = R;
-		using signature = R(Args...);
-		using return_info = TupleInfo<R>;
-		static constexpr size_t count = return_info::count;
-		static constexpr size_t arity = sizeof...(Args);
-		static constexpr bool has_return = !std::is_same<void, R>::value;
-	};
-
-
-	template<typename T>
-	struct Identity
-	{
-		typedef T type;
-	};
-
-	// ----------
-	// Function signature metafunction implementation
-	// Also handler for function object case
-	// ----------
-
-	template<class T>
-	struct Signature : Signature<decltype(&T::operator())>
-	{
-	};
-
-	// ----------
-	// Function signature specializations
-	// ----------
-
-	template<class R, class... Args>
-	struct Signature<R(Args...)> : Identity<R(Args...)>
-	{
-	};
-
-	// ----------
-	// Function pointer specializations
-	// ----------
-
-	template<typename R, class... Args>
-	struct Signature<R (*)(Args...)> : Signature<R(Args...)>
-	{
-	};
-
-	// ----------
-	// Member function pointer specializations
-	// ----------
-
-	template<typename C, typename R, class... Args>
-	struct Signature<R (C::*)(Args...)> : Signature<R(Args...)>
-	{
-	};
-
-	template<typename C, typename R, class... Args>
-	struct Signature<R (C::*)(Args...) const> : Signature<R(Args...)>
-	{
-	};
-
 
 	
 	/// Forward return type to processing output
@@ -133,43 +66,38 @@ namespace detail
 	inline VipAnyData buildAnyData(QVariant&& t) { return VipAnyData(std::move(t)); }
 	inline VipAnyData buildAnyData(VipAnyData&& t) { return VipAnyData(std::move(t)); }
 
-	template<class CallableType, size_t N = CallableType::count - 1>
+	template<size_t N >
 	struct ForwardRet
 	{
-		using return_info = typename CallableType::return_info;
-
 		template<class Tuple>
 		static void apply(Tuple& t, VipProcessingObject* o, qint64 time)
 		{
-			VipAnyData any = buildAnyData(return_info::get<N>(t));
+			using info = TupleInfo<Tuple>;
+			VipAnyData any = buildAnyData(std::move(info::get<N>(t)));
 			any.setTime(time);
 			any.setSource((qint64)o);
 			any.setAttributes(o->attributes());
 			o->outputAt(N)->setData(any);
-			ForwardRet<ForwardRet, N - 1>::apply(t, o, time);
+			ForwardRet< N - 1>::apply(t, o, time);
 		}
 	};
-	template<class CallableType>
-	struct ForwardRet<CallableType, 0>
+	template<>
+	struct ForwardRet<0>
 	{
-		using return_info = typename CallableType::return_info;
-
 		template<class Tuple>
 		static void apply(Tuple& t, VipProcessingObject* o, qint64 time)
 		{
-			VipAnyData any = buildAnyData(std::move(return_info::get<0>(t)));
+			using info = TupleInfo<Tuple>;
+			VipAnyData any = buildAnyData(std::move(info::get<0>(t)));
 			any.setTime(time);
 			any.setSource((qint64)o);
 			any.setAttributes(o->attributes());
 			o->outputAt(0)->setData(any);
 		}
 	};
-
-	template<class CallableType>
-	struct ForwardRet<CallableType, (size_t)-1>
+	template<>
+	struct ForwardRet<(size_t)-1>
 	{
-		using return_info = typename CallableType::return_info;
-
 		template<class Tuple>
 		static void apply(Tuple& , VipProcessingObject* , qint64 )
 		{
@@ -196,146 +124,42 @@ namespace detail
 		return AnyData{o->inputAt(I)->data()};
 	}
 
-	template<class Callable, class Ret, size_t Arity = 0>
-	struct CallFunctor
+	struct ProcessingGetter
 	{
+		VipProcessingObject* o;
+		template<size_t I>
+		AnyData get()
+		{
+			return AnyData{ o->inputAt(static_cast<int>(I))->data() };
+		}
+	};
+
+	template<class Signature, class Ret = typename VipFunctionTraits<Signature>::return_type>
+	struct CallFunctorForward
+	{
+		using return_type = typename VipFunctionTraits<Signature>::return_type;
+
 		template<class Functor>
 		static void call(const Functor& fun, VipProcessingObject* o, qint64 time)
 		{
-			Ret res = fun();
-			ForwardRet<Callable>::apply(res, o, time);
+			auto ret = vipApply(fun, ProcessingGetter{ o });
+			ForwardRet<VipFunctionTraits<Signature>::nargs-1>::apply(ret, o, time);
 		}
 	};
-	template<class Callable>
-	struct CallFunctor<Callable,void,0>
+	template<class Signature>
+	struct CallFunctorForward<Signature,void>
 	{
+		using return_type = typename VipFunctionTraits<Signature>::return_type;
+
 		template<class Functor>
-		static void call(const Functor& fun, VipProcessingObject* o, qint64 )
+		static void call(const Functor& fun, VipProcessingObject* o, qint64 time)
 		{
-			fun();
+			vipApply(fun, ProcessingGetter{ o });
 		}
 	};
 
 
-	template<class Callable, class Ret>
-	struct CallFunctor<Callable, Ret, 1>
-	{
-		template<class Functor>
-		static void call(const Functor& fun, VipProcessingObject* o, qint64 time)
-		{
-			Ret res = fun(get<0>(o));
-			ForwardRet<Callable>::apply(res, o, time);
-		}
-	};
-	template<class Callable>
-	struct CallFunctor<Callable, void, 1>
-	{
-		template<class Functor>
-		static void call(const Functor& fun, VipProcessingObject* o, qint64 )
-		{
-			fun(get<0>(o));
-		}
-	};
 
-	template<class Callable, class Ret>
-	struct CallFunctor<Callable, Ret, 2>
-	{
-		template<class Functor>
-		static void call(const Functor& fun, VipProcessingObject* o, qint64 time)
-		{
-			Ret res = fun(get<0>(o), get<1>(o));
-			ForwardRet<Callable>::apply(res, o, time);
-		}
-	};
-	template<class Callable>
-	struct CallFunctor<Callable, void, 2>
-	{
-		template<class Functor>
-		static void call(const Functor& fun, VipProcessingObject* o, qint64 time)
-		{
-			fun(get<0>(o), get<1>(o));
-		}
-	};
-
-	template<class Callable, class Ret>
-	struct CallFunctor<Callable, Ret, 3>
-	{
-		template<class Functor>
-		static void call(const Functor& fun, VipProcessingObject* o, qint64 time)
-		{
-			Ret res = fun(get<0>(o), get<1>(o), get<2>(o));
-			ForwardRet<Callable>::apply(res, o, time);
-		}
-	};
-	template<class Callable>
-	struct CallFunctor<Callable, void, 3>
-	{
-		template<class Functor>
-		static void call(const Functor& fun, VipProcessingObject* o, qint64 )
-		{
-			fun(get<0>(o), get<1>(o), get<2>(o));
-		}
-	};
-
-	template<class Callable, class Ret>
-	struct CallFunctor<Callable, Ret, 4>
-	{
-		template<class Functor>
-		static void call(const Functor& fun, VipProcessingObject* o, qint64 time)
-		{
-			Ret res = fun(get<0>(o), get<1>(o), get<2>(o), get<3>(o));
-			ForwardRet<Callable>::apply(res, o, time);
-		}
-	};
-	template<class Callable>
-	struct CallFunctor<Callable, void, 4>
-	{
-		template<class Functor>
-		static void call(const Functor& fun, VipProcessingObject* o, qint64 )
-		{
-			fun(get<0>(o), get<1>(o), get<2>(o), get<3>(o));
-		}
-	};
-
-	template<class Callable, class Ret>
-	struct CallFunctor<Callable, Ret, 5>
-	{
-		template<class Functor>
-		static void call(const Functor& fun, VipProcessingObject* o, qint64 time)
-		{
-			Ret res = fun(get<0>(o), get<1>(o), get<2>(o), get<3>(o), get<4>(o));
-			ForwardRet<Callable>::apply(res, o, time);
-		}
-	};
-	template<class Callable>
-	struct CallFunctor<Callable, void, 5>
-	{
-		template<class Functor>
-		static void call(const Functor& fun, VipProcessingObject* o, qint64 )
-		{
-			fun(get<0>(o), get<1>(o), get<2>(o), get<3>(o), get<4>(o));
-		}
-	};
-
-	template<class Callable, class Ret>
-	struct CallFunctor<Callable, Ret, 6>
-	{
-		template<class Functor>
-		static void call(const Functor& fun, VipProcessingObject* o, qint64 time)
-		{
-			Ret res = fun(get<0>(o), get<1>(o), get<2>(o), get<3>(o), get<4>(o), get<5>(o));
-			ForwardRet<Callable>::apply(res, o, time);
-		}
-	};
-	template<class Callable>
-	struct CallFunctor<Callable, void, 6>
-	{
-		template<class Functor>
-		static void call(const Functor& fun, VipProcessingObject* o, qint64 )
-		{
-			fun(get<0>(o), get<1>(o), get<2>(o), get<3>(o), get<4>(o), get<5>(o));
-		}
-	};
 
 
 	
@@ -352,10 +176,7 @@ namespace detail
 	template<class Sig>
 	class VipProcessingFunction : public VipBaseProcessingFunction
 	{
-		using signature_type = Sig;
-		using callable_type = Callable<Sig>;
-
-		static_assert(callable_type::arity > 0, "VipProcessingFunction must have at least one input");
+		static_assert(VipFunctionTraits<Sig>::nargs > 0, "VipProcessingFunction must have at least one input");
 
 		std::function<Sig> m_fun;
 	public:
@@ -364,20 +185,20 @@ namespace detail
 		  : VipBaseProcessingFunction(parent)
 		  , m_fun(fun)
 		{
-			topLevelInputAt(0)->toMultiInput()->resize(callable_type::arity);
-			topLevelOutputAt(0)->toMultiOutput()->resize(callable_type::count);
+			topLevelInputAt(0)->toMultiInput()->resize(VipFunctionTraits<Sig>::nargs);
+			topLevelOutputAt(0)->toMultiOutput()->resize(VipFunctionTraits<Sig>::nargs);
 		}
 
 	protected:
 		virtual void apply() { 
 			
 			// Get input time
-			qint64 this_time = callable_type::arity == 0 ? this->time() : inputAt(0)->time();
-			if (this_time == VipInvalidTime && callable_type::arity != 0)
+			qint64 this_time = VipFunctionTraits<Sig>::nargs == 0 ? this->time() : inputAt(0)->time();
+			if (this_time == VipInvalidTime && VipFunctionTraits<Sig>::nargs != 0)
 				this_time = this->time();
 
 			// Call function
-			CallFunctor<callable_type, typename callable_type::return_type, callable_type::arity>::call(m_fun, this, this_time);
+			CallFunctorForward<Sig>::call(m_fun, this, this_time);
 
 		}
 	};
@@ -406,7 +227,7 @@ namespace detail
 template<class Functor>
 VipProcessingObject* vipProcessingFunction(const Functor & fun, QObject * parent = nullptr)
 {
-	using signature = typename detail::Signature<Functor>::type;
+	using signature = typename VipFunctionTraits<Functor>::signature_type;
 	return new detail::VipProcessingFunction<signature>(fun, parent);
 }
 
