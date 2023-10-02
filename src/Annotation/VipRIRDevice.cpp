@@ -4,6 +4,8 @@
 
 VipRIRDevice::VipRIRDevice(QObject * parent)
   : VipTimeRangeBasedGenerator(parent)
+  , m_file(0)
+  , m_count(0)
 {
 	this->outputAt(0)->setData(VipNDArray());
 	this->propertyAt(0)->setData(-1);
