@@ -31,6 +31,9 @@ Within Thermavip, the serialization mechanism is mainly used to save/restore ses
 Why another serialization framework? There are already very good existing libraries like for instance boost.serialization. 
 The first basic reason is to avoid introducing another (potentially huge) dependancy to Thermavip.
 The second reason is to have a serialization framework that works nicely with Qt metatype system.
+
+### Archiving QObject inheriting types
+
 Let's consider this example:
 
 ```cpp
@@ -174,6 +177,21 @@ Each class defines its own serialization/deserialization functions registered wi
 
 First thing to notice is that the `DerivedClass` serialization/deserialization functions do not need to call the base class functions, as they will automatically be called by the serialization library.
 When serializing a QObject pointer, all registered serialization functions that support the object metaclass are called, in this case the functions for `BaseClass` (first) and `DerivedClass`.
+Basically, the serialization library scan the object inheritance tree and call all registered functins that belong to this tree.
+
+When deserializing an object, 2 options are possible:
+
+-	The archive can be deserialized into an existing object,
+-	The archive can read the next object and returns the result as a `QVariant` object.
+
+In the second situation, the archive uses an internal factory to create the right object on the heap and call all related deserialize functions.
+
+### Supported types
+
+The serialization mechanism supports all types that can be stored in a `QVariant` object: all types declared with the Q_DECLARE_METATYPE() macro and all QObject inheriting types registered with VIP_REGISTER_QOBJECT_METATYPE() macro.
+By default, objects are serialized/deserialized using the provided functions registered with `vipRegisterArchiveStreamOperators()`. If no functions are provided, the library will try to use the stream operators from/to `QDataStream`.
+
+
 
 The library defines several graphics items for plotting purposes which  all inherit `VipAbstractPlotArea` base class (which itself is a `QGraphicsWidget`):
 
