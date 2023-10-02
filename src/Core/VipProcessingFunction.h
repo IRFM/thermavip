@@ -73,7 +73,7 @@ namespace detail
 		static void apply(Tuple& t, VipProcessingObject* o, qint64 time)
 		{
 			using info = TupleInfo<Tuple>;
-			VipAnyData any = buildAnyData(std::move(info::get<N>(t)));
+			VipAnyData any = buildAnyData(std::move(info::template get<N>(t)));
 			any.setTime(time);
 			any.setSource((qint64)o);
 			any.setAttributes(o->attributes());
@@ -88,7 +88,7 @@ namespace detail
 		static void apply(Tuple& t, VipProcessingObject* o, qint64 time)
 		{
 			using info = TupleInfo<Tuple>;
-			VipAnyData any = buildAnyData(std::move(info::get<0>(t)));
+			VipAnyData any = buildAnyData(std::move(info::template get<0>(t)));
 			any.setTime(time);
 			any.setSource((qint64)o);
 			any.setAttributes(o->attributes());
