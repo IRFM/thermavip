@@ -55,6 +55,10 @@ else()
 	# Use find_package to get the Python paths
 	find_package (Python COMPONENTS Interpreter Development NumPy )
 	
+	message(STATUS "Use Python include dirs: ${Python_INCLUDE_DIRS} ${Python_NumPy_INCLUDE_DIRS}" )
+	message(STATUS "Use Python lib dirs: ${Python_LIBRARY_DIRS}" )
+	message(STATUS "Use Python libraries: ${Python_LIBRARIES}" )
+	
 	target_include_directories(Python PRIVATE ${Python_INCLUDE_DIRS} ${Python_NumPy_INCLUDE_DIRS})
 	target_link_directories(Python PRIVATE ${Python_LIBRARY_DIRS})
 	target_link_libraries(Python PRIVATE ${Python_LIBRARIES})

@@ -29,7 +29,7 @@ option(LOCAL_INSTALL "Install locally" ON)
 option(WITH_FFMEG "Build ffmpeg plugin" ON)
 option(WITH_HDF5 "Build HDF5 plugin" OFF)
 option(WITH_PYTHON "Build Python plugin" ON)
-
+option(WITH_LIBRIR "Build and install librir" ON)
 
 
 IF(LOCAL_INSTALL)
