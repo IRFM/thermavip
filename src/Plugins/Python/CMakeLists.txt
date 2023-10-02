@@ -63,7 +63,7 @@ else()
 	target_link_directories(Python PRIVATE ${Python_LIBRARY_DIRS})
 	target_link_libraries(Python PRIVATE ${Python_LIBRARIES})
 	
-	target_compile_definitions(Python PRIVATE "VIP_PYTHON_SHARED_LIB=${Python_LIBRARIES}")
+	target_compile_definitions(Python PRIVATE "VIP_PYTHON_SHARED_LIB=\"${Python_LIBRARIES}\"")
 	
 	#target_compile_definitions(Python PRIVATE "VIP_PYTHONHOME=$ENV{VIP_PYTHON_HOME}")
 	
