@@ -43,26 +43,8 @@ class Mandelbrot
 		}
 		return MAX;
 	}
-	void updateImageSlice(double zoom, double offsetX, double offsetY, VipNDArrayTypeView<int> image, int minY, int maxY) const
-	{
-		const int height = image.shape(0);
-		const int width = image.shape(1);
-		double real = 0 * zoom - width / 2.0 * zoom + offsetX;
-		const double imagstart = minY * zoom - height / 2.0 * zoom + offsetY;
-		
-		double iv = imagstart;
-		for (int y = minY; y < maxY; y++, iv+= zoom) 
-		{
-			int* img = image.ptr(vip_vector(y));
-			double rv = real;
-			for (int x = 0; x < width; x++, rv += zoom)
-			{
-				img[x] = mandelbrot(rv, iv);
-			}
-		}
-		
-	}
-	void updateImageSlice2(double zoom, double offsetX, double offsetY, VipNDArrayTypeView<int> image) const
+	
+	void updateImageSlice(double zoom, double offsetX, double offsetY, VipNDArrayTypeView<int> image) const
 	{
 		const int height = image.shape(0);
 		const int width = image.shape(1);
@@ -90,10 +72,7 @@ public:
 	}
 	void updateImage(double zoom, double offsetX, double offsetY, VipNDArrayTypeView<int> image) 
 	{
-		qint64 st = QDateTime::currentMSecsSinceEpoch();
-		updateImageSlice2(zoom, offsetX, offsetY, (image));
-		qint64 el = QDateTime::currentMSecsSinceEpoch() - st;
-		printf("el: %i ms\n", (int)el);
+		updateImageSlice(zoom, offsetX, offsetY, (image));
 	}
 };
 

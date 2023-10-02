@@ -20,8 +20,6 @@
 /// @brief Multithreaded Mandelbrot set image generator
 class Mandelbrot
 {
-	QThreadPool pool;
-	std::vector<int> colors;
 	int MAX;
 
 	VIP_ALWAYS_INLINE int mandelbrot(double startReal, double startImag) const
@@ -39,17 +37,22 @@ class Mandelbrot
 		}
 		return MAX;
 	}
-	void updateImageSlice(double zoom, double offsetX, double offsetY, VipNDArrayTypeView<int> image, int minY, int maxY) const
+
+	void updateImageSlice(double zoom, double offsetX, double offsetY, VipNDArrayTypeView<int> image) const
 	{
 		const int height = image.shape(0);
 		const int width = image.shape(1);
 		double real = 0 * zoom - width / 2.0 * zoom + offsetX;
-		const double imagstart = minY * zoom - height / 2.0 * zoom + offsetY;
-		for (int x = 0; x < width; x++, real += zoom) {
-			double imag = imagstart;
-			for (int y = minY; y < maxY; y++, imag += zoom) {
-				int value = mandelbrot(real, imag);
-				image(y, x) = colors[value];
+		const double imagstart = -height / 2.0 * zoom + offsetY;
+		int* img = image.ptr();
+
+#pragma omp parallel for
+		for (int y = 0; y < height; y++) {
+			double iv = imagstart + y * zoom;
+			int* p = img + y * width;
+			double rv = real;
+			for (int x = 0; x < width; x++, rv += zoom) {
+				p[x] = mandelbrot(rv, iv);
 			}
 		}
 	}
@@ -60,20 +63,8 @@ public:
 	{
 		if (max == 0)
 			MAX = std::thread::hardware_concurrency() * 32 - 1;
-		//std::cout << MAX << std::endl;
-		colors.resize(MAX + 1);
-		for (int i = 0; i <= MAX; ++i) 
-			colors[i] = i; 
 	}
-	void updateImage(double zoom, double offsetX, double offsetY, VipNDArrayTypeView<int> image) 
-	{
-		const int height = image.shape(0);
-		const int STEP = height / std::thread::hardware_concurrency();
-		for (int i = 0; i < height; i += STEP) 
-			pool.start(std::bind(&Mandelbrot::updateImageSlice, this, zoom, offsetX, offsetY, (image), i, std::min(i + STEP, height)));
-		pool.waitForDone();
-	}
-	
+	void updateImage(double zoom, double offsetX, double offsetY, VipNDArrayTypeView<int> image) { updateImageSlice(zoom, offsetX, offsetY, (image)); }
 };
 
 struct Histogram
