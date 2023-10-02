@@ -241,18 +241,17 @@ VIP_CORE_EXPORT bool vipSafeVariantSave(QDataStream& s, const QVariant& v);
 /// The QVariantMap can be read back with the standard version of QDataStream & operator>>(QDataStream &, QVariantMap&);
 VIP_CORE_EXPORT int vipSafeVariantMapSave(QDataStream& s, const QVariantMap& c);
 
-class VipFunction;
 /// \internal add a function that will be called at Thermavip initialization. Only used by the Core and Gui libraries.
-VIP_CORE_EXPORT bool vipAddInitializationFunction(const VipFunction& fun);
+VIP_CORE_EXPORT bool vipAddInitializationFunction(const VipFunction<0>& fun);
 VIP_CORE_EXPORT bool vipAddInitializationFunction(void (*fun)());
 VIP_CORE_EXPORT bool vipAddInitializationFunction(int (*fun)());
 
-VIP_CORE_EXPORT bool vipPrependInitializationFunction(const VipFunction& fun);
+VIP_CORE_EXPORT bool vipPrependInitializationFunction(const VipFunction<0>& fun);
 VIP_CORE_EXPORT bool vipPrependInitializationFunction(void (*fun)());
 VIP_CORE_EXPORT bool vipPrependInitializationFunction(int (*fun)());
 
 /// \internal add a function that will be called at Thermavip uninitialization. Only used by the Core and Gui libraries.
-VIP_CORE_EXPORT bool vipAddUninitializationFunction(const VipFunction& fun);
+VIP_CORE_EXPORT bool vipAddUninitializationFunction(const VipFunction<0>& fun);
 VIP_CORE_EXPORT bool vipAddUninitializationFunction(void (*fun)());
 VIP_CORE_EXPORT bool vipAddUninitializationFunction(int (*fun)());
 /// \internal call all initialization function
@@ -263,7 +262,7 @@ VIP_CORE_EXPORT void vipExecUnitializationFunction();
 /// Register a function called at Thermavip closing.
 /// This function will be called after all widgets/processings/objects has been closed, when the Core shared library is unloaded.
 /// This could be usefull for plugins that needs to perform tasks at the very end (like the Python plugin that uninitializes Python).
-VIP_CORE_EXPORT bool vipAddTerminationFunction(const VipFunction& fun);
+VIP_CORE_EXPORT bool vipAddTerminationFunction(const VipFunction<0>& fun);
 VIP_CORE_EXPORT bool vipAddTerminationFunction(void (*fun)());
 
 /// An error data, represented by an error code (<0) and an error string

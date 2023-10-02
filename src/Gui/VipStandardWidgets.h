@@ -1135,7 +1135,7 @@ VIP_REGISTER_QOBJECT_METATYPE(VipFileName*)
 // It can be used to display an editor for any king of object, including VipProcessingObject instances and VipPlotItem instances, but
 // also standard types like QPen and QBrush.
 // The editor widget must have a property 'value' used to set and retrieve the edited object.
-VIP_GUI_EXPORT VipFunctionDispatcher & vipFDObjectEditor();
+VIP_GUI_EXPORT VipFunctionDispatcher<1> & vipFDObjectEditor();
 VIP_GUI_EXPORT QWidget * vipObjectEditor(const QVariant & obj);
 VIP_GUI_EXPORT bool vipHasObjectEditor(const QVariant & obj);
 

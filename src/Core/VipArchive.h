@@ -273,13 +273,13 @@ protected:
 	/// Create a comment section with the given text
 	virtual void doComment(QString& text) { Q_UNUSED(text); }
 
-	VipFunctionDispatcher::FunctionList serializeFunctions(const QVariant& value);
-	VipFunctionDispatcher::FunctionList deserializeFunctions(const QVariant& value);
+	VipFunctionDispatcher<2>::function_list_type serializeFunctions(const QVariant& value);
+	VipFunctionDispatcher<2>::function_list_type deserializeFunctions(const QVariant& value);
 	void copyFastTypes(VipArchive& other);
 
 private:
-	static VipFunctionDispatcher& serializeDispatcher();
-	static VipFunctionDispatcher& deserializeDispatcher();
+	static VipFunctionDispatcher<2>& serializeDispatcher();
+	static VipFunctionDispatcher<2>& deserializeDispatcher();
 
 	class PrivateData;
 	PrivateData* m_data;
@@ -346,7 +346,7 @@ int vipRegisterArchiveStreamOperators()
 {
 	if (VipArchive::serializeDispatcher().exactMatch(VipTypeList() << VipType(qMetaTypeId<T>())).size() == 0) {
 		VipArchive::serializeDispatcher().append<void(const T&, VipArchive*)>(detail::serializeAdapter<T>);
-		VipArchive::deserializeDispatcher().append<void(const T&, VipArchive*)>(detail::deserializeAdapter<T>);
+		VipArchive::deserializeDispatcher().append<QVariant(const T&, VipArchive*)>(detail::deserializeAdapter<T>);
 		return qMetaTypeId<T>();
 	}
 	return 0;

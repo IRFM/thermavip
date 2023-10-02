@@ -1518,8 +1518,7 @@ void VipPlayer2D::mouseButtonRelease(VipPlotItem* item, VipPlotItem::MouseButton
 					item = shape;
 		}
 		//create the contextual menu from the dispatcher
-		const VipFunctionDispatcher & disp = VipFDItemRightClick();
-		VipFunctionDispatcher::FunctionList funs = disp.match(item, this);
+		const auto funs = VipFDItemRightClick().match(item, this);
 		QList<QAction*> actions;
 
 		for (int i = 0; i < funs.size(); ++i)
@@ -7920,52 +7919,52 @@ void VipPlotPlayer::histBinsChanged(int value)
 
 
 
-VipFunctionDispatcher & vipFDPlayerCreated()
+VipFunctionDispatcher<1>& vipFDPlayerCreated()
 {
-	static VipFunctionDispatcher disp(1);
+	static VipFunctionDispatcher<1> disp;
 	return disp;
 }
 
-VipFunctionDispatcher & VipFDItemAddedOnPlayer()
+VipFunctionDispatcher<2>& VipFDItemAddedOnPlayer()
 {
-	static VipFunctionDispatcher disp(2);
+	static VipFunctionDispatcher<2> disp;
 	return disp;
 }
 
-VipFunctionDispatcher & VipFDItemRemovedFromPlayer()
+VipFunctionDispatcher<2>& VipFDItemRemovedFromPlayer()
 {
-	static VipFunctionDispatcher disp(2);
+	static VipFunctionDispatcher<2> disp;
 	return disp;
 }
 
-VipFunctionDispatcher & VipFDItemAxisUnitChanged()
+VipFunctionDispatcher<2>& VipFDItemAxisUnitChanged()
 {
-	static VipFunctionDispatcher disp(2);
+	static VipFunctionDispatcher<2> disp;
 	return disp;
 }
 
-VipFunctionDispatcher & VipFDItemSelected()
+VipFunctionDispatcher<2>& VipFDItemSelected()
 {
-	static VipFunctionDispatcher disp(2);
+	static VipFunctionDispatcher<2> disp;
 	return disp;
 }
 
-VipFunctionDispatcher & VipFDItemRightClick()
+VipFunctionDispatcher<2>& VipFDItemRightClick()
 {
-	static VipFunctionDispatcher disp(2);
+	static VipFunctionDispatcher<2> disp;
 	return disp;
 }
 
 
-VipFunctionDispatcher & VipFDAddProcessingAction()
+VipFunctionDispatcher<2> & VipFDAddProcessingAction()
 {
-	static VipFunctionDispatcher disp(2);
+	static VipFunctionDispatcher<2> disp;
 	return disp;
 }
 
-VipFunctionDispatcher& VipFDDropOnPlotItem()
+VipFunctionDispatcher<3>& VipFDDropOnPlotItem()
 {
-	static VipFunctionDispatcher disp(3);
+	static VipFunctionDispatcher<3> disp;
 	return disp;
 }
 

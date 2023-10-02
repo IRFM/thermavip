@@ -6,7 +6,7 @@
 #include <tuple>
 
 
-namespace detail
+namespace details
 {
 
 	template<typename T>
@@ -110,11 +110,18 @@ namespace detail
 	};
 }
 
-
+/// @brief Function traits
+/// 
+/// VipFunctionTraits provides information on any callable type:
+/// return_type: function return type,
+/// signature_type: full function signature
+/// nargs: function arity
+/// element: template class giving argument type at a position. Example: element<0>::type
+/// 
 template<class C>
-class VipFunctionTraits : detail::CallableInfos<typename detail::Signature<typename std::decay<C>::type>::type>
+class VipFunctionTraits : details::CallableInfos<typename details::Signature<typename std::decay<C>::type>::type>
 {
-	using base = detail::CallableInfos<typename detail::Signature<typename std::decay<C>::type>::type>;
+	using base = details::CallableInfos<typename details::Signature<typename std::decay<C>::type>::type>;
 
 public:
 	using return_type = typename base::return_type;
@@ -126,32 +133,46 @@ public:
 
 
 
-
+/// @brief C++11 equivalent to std::apply()
+/// @tparam F Function object
+/// @tparam Getter Structure giving access to arguments. Must provide the member template get<size_t>().
+/// @param f F Function object
+/// @param t Getter Structure giving access to arguments. Must provide the member template get<size_t>().
+/// @return Function object return value
 template<typename F, typename Getter>
 inline typename VipFunctionTraits<F>::return_type vipApply(F&& f, Getter&& t)
 {
-	return detail::ApplyFunctor<VipFunctionTraits<typename std::decay<F>::type>::nargs>::apply(std::forward<F>(f), std::forward<Getter>(t));
+	return details::ApplyFunctor<VipFunctionTraits<typename std::decay<F>::type>::nargs>::apply(std::forward<F>(f), std::forward<Getter>(t));
 }
 
+/// @brief C++11 equivalent to std::apply()
+///
+/// This overload forward tuple arguments to the functor object.
+/// 
 template<typename F, typename... Args>
 inline typename VipFunctionTraits<F>::return_type vipApply(F&& f, std::tuple<Args...> && t)
 {
 	using tuple_type = std::tuple<Args...>;
 	using ref_type = typename std::conditional<std::is_const<decltype(t)>::value,const tuple_type&, tuple_type&>::type;
-	using getter = detail::TupleGetter<ref_type>;
+	using getter = details::TupleGetter<ref_type>;
 	
-	return detail::ApplyFunctor<VipFunctionTraits<typename std::decay<F>::type>::nargs>::apply(std::forward<F>(f), getter{ t });
+	return details::ApplyFunctor<VipFunctionTraits<typename std::decay<F>::type>::nargs>::apply(std::forward<F>(f), getter{ t });
 }
 
+/// @brief C++11 equivalent to std::apply()
+///
+/// This overload forward tuple arguments to the functor object.
+///
 template<typename F, typename... Args>
 inline typename VipFunctionTraits<F>::return_type vipApply(F&& f, const std::tuple<Args...>& t)
 {
 	using tuple_type = std::tuple<Args...>;
 	using ref_type = const tuple_type&;
-	using getter = detail::TupleGetter<ref_type>;
+	using getter = details::TupleGetter<ref_type>;
 
-	return detail::ApplyFunctor<VipFunctionTraits<typename std::decay<F>::type>::nargs>::apply(std::forward<F>(f), getter{ t });
+	return details::ApplyFunctor<VipFunctionTraits<typename std::decay<F>::type>::nargs>::apply(std::forward<F>(f), getter{ t });
 }
+
 
 
 #endif

@@ -90,7 +90,7 @@ public:
 	template<class T>
 	void setSource(const T* source)
 	{
-		m_source = static_cast<std::uintptr_t>(source);
+		m_source = reinterpret_cast<std::uintptr_t>(source);
 	}
 	qint64 source() const { return m_source; }
 

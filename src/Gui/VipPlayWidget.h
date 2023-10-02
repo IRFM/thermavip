@@ -84,7 +84,7 @@ Q_DECLARE_METATYPE(VipTimeRangeItemList)
 /// Dispatcher used to create a list of VipTimeRangeItem based on a VipIODevice and a parent VipTimeRangeListItem.
 /// Signature:
 /// VipTimeRangeItemList (VipIODevice*, VipTimeRangeListItem*);
-VIP_GUI_EXPORT VipFunctionDispatcher & vipCreateTimeRangeItemsDispatcher();
+VIP_GUI_EXPORT VipFunctionDispatcher<2> & vipCreateTimeRangeItemsDispatcher();
 
 class VipPlayerArea;
 class VIP_GUI_EXPORT VipTimeRangeListItem : public VipPlotItem

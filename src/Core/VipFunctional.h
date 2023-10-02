@@ -10,6 +10,7 @@
 #include <qvector.h>
 
 #include "VipConfig.h"
+#include "VipFunctionTraits.h"
 
 /// \addtogroup Core
 /// @{
@@ -43,8 +44,8 @@ struct VipType
 	VipType(const VipType&) = default;
 	VipType& operator=(const VipType&) = default;
 
-	bool operator==(const VipType& other) const { return id == other.id || (metaObject == other.metaObject && metaObject); }
-	bool operator!=(const VipType& other) const { return !((*this) == other); }
+	bool operator==(const VipType& other) const noexcept { return id == other.id || (metaObject == other.metaObject && metaObject); }
+	bool operator!=(const VipType& other) const noexcept { return !((*this) == other); }
 };
 
 /// The \a VipAny class is a kind of variant type used to store any kind of object type declared to the Qt meta type system.
@@ -163,36 +164,6 @@ namespace details
 		};
 	}
 
-	template<typename T>
-	struct base_function_traits;
-
-#define FUNCTION_TRAITS(arity, ...)                                                                                                                                                                    \
-	struct base_function_traits<std::function<R(__VA_ARGS__)>>                                                                                                                                     \
-	{                                                                                                                                                                                              \
-		static const size_t nargs = arity;                                                                                                                                                     \
-		typedef R result_type;                                                                                                                                                                 \
-		template<size_t i>                                                                                                                                                                     \
-		struct arg                                                                                                                                                                             \
-		{                                                                                                                                                                                      \
-			typedef typename std::tuple_element<i, std::tuple<__VA_ARGS__>>::type type;                                                                                                    \
-		};                                                                                                                                                                                     \
-	};
-
-	template<typename R>
-	FUNCTION_TRAITS(0)
-	template<typename R, typename A0>
-	FUNCTION_TRAITS(1, A0)
-	template<typename R, typename A0, typename A1>
-	FUNCTION_TRAITS(2, A0, A1)
-	template<typename R, typename A0, typename A1, typename A2>
-	FUNCTION_TRAITS(3, A0, A1, A2)
-	template<typename R, typename A0, typename A1, typename A2, typename A3>
-	FUNCTION_TRAITS(4, A0, A1, A2, A3)
-	template<typename R, typename A0, typename A1, typename A2, typename A3, typename A4>
-	FUNCTION_TRAITS(5, A0, A1, A2, A3, A4)
-	template<typename R, typename A0, typename A1, typename A2, typename A3, typename A4, typename A5>
-	FUNCTION_TRAITS(5, A0, A1, A2, A3, A4, A5)
-
 	////////////////////////////////////////////////////////////////////////////////
 	// Few helper type traits
 	////////////////////////////////////////////////////////////////////////////////
@@ -242,10 +213,6 @@ namespace details
 		};
 	};
 
-	template<class T>
-	struct function_traits : details::base_function_traits<std::function<T>>
-	{
-	};
 
 	// handle object create, taking care of abstract classes
 
@@ -590,110 +557,138 @@ QList<int> vipUserTypes()
 	return vipUserTypes(qMetaTypeId<T>());
 }
 
+
+
+
 namespace details
 {
 
-	// build a VipTypeList from a function signature
-	template<class Signature, int Arity>
-	struct BuildTypeList
+	/// @brief Build std::function type by repeating N times VipAny
+	/// @tparam ...Args
+	template<size_t N, class... Args>
+	struct FType
 	{
+		using type = typename FType<N - 1, VipAny, Args...>::type;
+	};
+	template<class... Args>
+	struct FType<0, Args...>
+	{
+		using type = std::function<VipAny(Args...)>;
+	};
+
+	// build a VipTypeList from a function signature
+	template<class Signature, size_t NArgs = VipFunctionTraits<Signature>::nargs>
+	struct BuildTypeListFromSignature
+	{
+		using traits = VipFunctionTraits<Signature>;
+		using arg_type = typename traits::template element<NArgs>::type;
+		using valid_arg_type = typename remove_const_reference<arg_type>::type;//typename std::remove_reference<typename std::remove_const<arg_type>::type>::type;
+
 		static void update(VipTypeList& lst)
 		{
-			typedef typename function_traits<Signature>::template arg<Arity>::type type;
-			typedef typename remove_const_reference<type>::type new_type;
-			int id = (qMetaTypeId<new_type>());
-			if (std::is_same<new_type, QVariant>::value)
-				lst[Arity] = VipType(0, nullptr, nullptr); // QVariant case
+			const int id = (qMetaTypeId<valid_arg_type>());
+			if (std::is_same<valid_arg_type, QVariant>::value || std::is_same<valid_arg_type, VipAny>::value)
+				lst[NArgs] = VipType(0, nullptr, nullptr); // QVariant case
 			else
-				lst[Arity] = VipType(id, QMetaType::typeName(id), QMetaType(id).metaObject());
-			BuildTypeList<Signature, Arity - 1>::update(lst);
+				lst[NArgs] = VipType(id, QMetaType::typeName(id), QMetaType(id).metaObject());
+			BuildTypeListFromSignature<Signature, NArgs - 1>::update(lst);
 		}
 	};
 
 	template<class Signature>
-	struct BuildTypeList<Signature, -1>
+	struct BuildTypeListFromSignature<Signature, (size_t)-1>
 	{
 		static void update(VipTypeList&) {}
 	};
 
 	template<class Signature>
-	VipTypeList buildTypeList()
+	VipTypeList buildTypeListFromSignature()
 	{
-		VipTypeList lst(function_traits<Signature>::nargs);
-		BuildTypeList<Signature, (int)function_traits<Signature>::nargs - 1>::update(lst);
+		VipTypeList lst(VipFunctionTraits<Signature>::nargs);
+		BuildTypeListFromSignature<Signature, VipFunctionTraits<Signature>::nargs - 1>::update(lst);
 		return lst;
 	}
 
-	template<class Signature>
-	VipType buildReturnType()
+	// build a VipTypeList from a function signature
+	struct BuildTypeListFromObjects
 	{
-		int id = qMetaTypeId<typename function_traits<Signature>::result_type>();
-		return VipType(id, QMetaType::typeName(id), QMetaType(id).metaObject());
-	}
-
-	// build a FunctionType from any callable object and its signature
-
-	template<class Callable, class Ret>
-	struct Wrap
-	{
-		Callable callable;
-		Wrap(const Callable& c)
-		  : callable(c)
+		template<class A, class... Args>
+		static void update(VipTypeList& lst, int index, const A& a, Args&&... args)
 		{
+			lst[index] = VipAny(a).type();
+			update(lst, index + 1, std::forward<Args>(args)...);
 		}
-		VipAny operator()(const VipAny& v1, const VipAny& v2, const VipAny& v3, const VipAny& v4, const VipAny& v5) { return callable(v1, v2, v3, v4, v5); }
+		static void update(VipTypeList&, int) {}
 	};
 
-	template<class Callable>
-	struct Wrap<Callable, void>
+	template<class... Args>
+	VipTypeList buildTypeListFromObjects(Args&&... args)
 	{
-		Callable callable;
-		Wrap(const Callable& c)
-		  : callable(c)
+		VipTypeList lst(sizeof...(Args));
+		BuildTypeListFromObjects::update(lst, 0, std::forward<Args>(args)...);
+		return lst;
+	}
+
+	/// @brief Callable wrapper that returns a VipAny
+	template<class Callable, class Signature = Callable, class Ret = typename VipFunctionTraits<Signature>::return_type>
+	struct CallableWrapper
+	{
+		using call_type = typename std::decay<Callable>::type;
+		call_type c;
+
+		static VipType returnType() { return VipType(qMetaTypeId<Ret>()); }
+
+		template<class... Args>
+		VipAny operator()(Args&&... args) const
 		{
+			return const_cast<call_type&>(c)(std::forward<Args>(args)...);
 		}
-		VipAny operator()(const VipAny& v1, const VipAny& v2, const VipAny& v3, const VipAny& v4, const VipAny& v5)
+	};
+	template<class Callable, class Signature>
+	struct CallableWrapper<Callable, Signature, void>
+	{
+		using call_type = typename std::decay<Callable>::type;
+		call_type c;
+
+		static VipType returnType() { return VipType(qMetaTypeId<void>()); }
+
+		template<class... Args>
+		VipAny operator()(Args&&... args) const
 		{
-			callable(v1, v2, v3, v4, v5);
+			const_cast<call_type&>(c)(std::forward<Args>(args)...);
 			return VipAny();
 		}
 	};
 
-	template<class BindCallable>
-	FunctionType createFunction(BindCallable c)
+	inline bool nonConvertible(const VipTypeList& t1, const VipTypeList& t2)
 	{
-		typedef typename BindCallable::result_type result_type;
-		return Wrap<BindCallable, result_type>(c);
+		int count = std::min(t1.size(), t2.size());
+		for (int i = 0; i < count; ++i) {
+			if (!vipIsConvertible(t1[i], t2[i]))
+				return true;
+		}
+		return false;
 	}
 
-	template<class Callable, int Arity>
-	struct BuildBind
+	inline bool exactEqual(const VipTypeList& t1, const VipTypeList& t2)
 	{
-		static FunctionType create(Callable c) { return createFunction(std::bind(c)); }
-	};
-
-	using namespace std::placeholders;
-#define BUILD_BIND(arity, ...)                                                                                                                                                                         \
-                                                                                                                                                                                                       \
-	template<class Callable>                                                                                                                                                                       \
-	struct BuildBind<Callable, arity>                                                                                                                                                              \
-	{                                                                                                                                                                                              \
-		static FunctionType create(Callable c) { return createFunction(std::bind(c, __VA_ARGS__)); }                                                                                           \
-	};
-
-	BUILD_BIND(1, _1)
-	BUILD_BIND(2, _1, _2)
-	BUILD_BIND(3, _1, _2, _3)
-	BUILD_BIND(4, _1, _2, _3, _4)
-	BUILD_BIND(5, _1, _2, _3, _4, _5)
-
-	template<class Signature, class Callable>
-	FunctionType create(Callable c)
-	{
-		return BuildBind<Callable, function_traits<Signature>::nargs>::create(c);
+		int count = std::min(t1.size(), t2.size());
+		for (int i = 0; i < count; ++i) {
+			const VipType& _t1 = t1[i];
+			const VipType& _t2 = t2[i];
+			if (_t1.metaObject || _t2.metaObject) {
+				// compare meta objects instead of ids
+				if (_t1.metaObject == _t2.metaObject)
+					continue;
+				else
+					return false;
+			}
+			else if (_t1.id != _t2.id)
+				return false;
+		}
+		return true;
 	}
-
-} // end details
+}
 
 /// @brief VipFunction class is very similar to std::function, except it is limited to up to 5 arguments and is not a template class.
 /// Instead, the argument are passed as VipAny objects, making possible runtime checking of the arguments.
@@ -702,57 +697,34 @@ namespace details
 /// Usually, std::function SHOULD be preffered to VipFunction, except if you need runtime query of argument/result types.
 /// VipFunction is mainly meant to be used with VipFunctionDispatcher.
 ///
+template<size_t NArgs>
 class VipFunction
 {
-	FunctionType m_fun;
+	typename details::FType<NArgs>::type m_function;
 	VipTypeList m_typeList;
 	VipType m_returnType;
 
 public:
-	using result_type = VipAny;
+	using function_type = typename details::FType<NArgs>::type;
 
-	/// @brief Construct from a FunctionType, a VipTypeList and result type
-	VipFunction(const FunctionType& fun = FunctionType(), const VipTypeList& typelist = VipTypeList(), const VipType& ret = VipType())
-	  : m_fun(fun)
-	  , m_typeList(typelist)
-	  , m_returnType(ret)
+	VipFunction(){};
+
+	template<class Callable>
+	VipFunction(Callable&& c, typename std::enable_if<!std::is_same<typename std::decay<Callable>::type, VipFunction>::value, void>::type* = 0)
+	  : m_function(details::CallableWrapper<Callable>{ c })
+	  , m_typeList(details::buildTypeListFromSignature<Callable>())
+	  , m_returnType(details::CallableWrapper<Callable>::returnType())
 	{
+		static_assert(VipFunctionTraits<Callable>::nargs == NArgs, "invalid number of arguments!");
 	}
-	/// @brief Construct from function pointer
-	template<class Ret>
-	VipFunction(Ret (*fun)())
+
+	template<class Callable, class Signature>
+	VipFunction(Callable&& c, Signature* s)
+	  : m_function(details::CallableWrapper<Callable, Signature>{ c })
+	  , m_typeList(details::buildTypeListFromSignature<Signature>())
+	  , m_returnType(details::CallableWrapper<Signature>::returnType())
 	{
-		*this = VipFunction::create<Ret()>(fun);
-	}
-	/// @brief Construct from function pointer
-	template<class Ret, class A1>
-	VipFunction(Ret (*fun)(A1))
-	{
-		*this = VipFunction::create<Ret(A1)>(fun);
-	}
-	/// @brief Construct from function pointer
-	template<class Ret, class A1, class A2>
-	VipFunction(Ret (*fun)(A1, A2))
-	{
-		*this = VipFunction::create<Ret(A1, A2)>(fun);
-	}
-	/// @brief Construct from function pointer
-	template<class Ret, class A1, class A2, class A3>
-	VipFunction(Ret (*fun)(A1, A2, A3))
-	{
-		*this = VipFunction::create<Ret(A1, A2, A3)>(fun);
-	}
-	/// @brief Construct from function pointer
-	template<class Ret, class A1, class A2, class A3, class A4>
-	VipFunction(Ret (*fun)(A1, A2, A3, A4))
-	{
-		*this = VipFunction::create<Ret(A1, A2, A3, A4)>(fun);
-	}
-	/// @brief Construct from function pointer
-	template<class Ret, class A1, class A2, class A3, class A4, class A5>
-	VipFunction(Ret (*fun)(A1, A2, A3, A4, A5))
-	{
-		*this = VipFunction::create<Ret(A1, A2, A3, A4, A5)>(fun);
+		static_assert(VipFunctionTraits<Signature>::nargs == NArgs, "invalid number of arguments!");
 	}
 
 	VipFunction(const VipFunction&) = default;
@@ -760,47 +732,36 @@ public:
 	VipFunction& operator=(const VipFunction&) = default;
 	VipFunction& operator=(VipFunction&&) = default;
 
-	/// @brief Returns true if the VipFunction is valid (contains a valid FunctionType)
-	bool isValid() const
+	template<class... Args>
+	VipAny operator()(Args&&... args) const
 	{
-		if (m_fun)
-			return true;
-		return false;
+		static_assert((sizeof...(Args)) == NArgs, "invalid number of arguments!");
+		return m_function(std::forward<Args>(args)...);
 	}
-	bool isNull() const { return !isValid(); }
+
+	/// @brief Returns true if the VipFunction is valid (contains a valid FunctionType)
+	bool isValid() const noexcept { return m_function; }
+	bool isNull() const noexcept { return !isValid(); }
 
 	/// @brief Returns the underlying std::function object
-	const FunctionType& function() const { return m_fun; }
+	const function_type& function() const noexcept { return m_function; }
 	/// @brief Returns the arguments types as a \a VipTypeList
-	const VipTypeList& typeList() const { return m_typeList; }
+	const VipTypeList& typeList() const noexcept { return m_typeList; }
 	/// @brief Returns the return type
-	const VipType& returnType() const { return m_returnType; }
-
-	/// @brief Call the function object with given arguments
-	VipAny operator()(const VipAny& v1 = VipAny(), const VipAny& v2 = VipAny(), const VipAny& v3 = VipAny(), const VipAny& v4 = VipAny(), const VipAny& v5 = VipAny()) const
-	{
-		return m_fun(v1, v2, v3, v4, v5);
-	}
+	const VipType& returnType() const noexcept { return m_returnType; }
 
 	/// @brief Comparison operator.
 	/// Two VipFunction objects are considered equals if they have the same argument and return types.
-	bool operator==(const VipFunction& other) const { return m_typeList == other.m_typeList && m_returnType == other.m_returnType; }
+	bool operator==(const VipFunction& other) const noexcept { return m_typeList == other.m_typeList && m_returnType == other.m_returnType; }
 	/// Comparison operator.
 	/// Two VipFunction objects are considered equals if they have the same argument and return types.
-	bool operator!=(const VipFunction& other) const { return !((*this) == other); }
-
-	/// @brief Create a \a VipFunction object from any callable object (in the sense of std::function)
-	template<class Signature, class Callable>
-	static VipFunction create(const Callable& c)
-	{
-		return VipFunction(details::create<Signature>(c), details::buildTypeList<Signature>(), details::buildReturnType<Signature>());
-	}
+	bool operator!=(const VipFunction& other) const noexcept { return !((*this) == other); }
 };
 
 /// @brief VipFunctionDispatcher is a list of VipFunction.
 ///
 /// Its purpose is to pick the right function according to the argument types. Thus, it provides
-/// a different and expendable approach for polymorphism based on Qt metatype system.
+/// a different and extendable approach for polymorphism based on Qt metatype system.
 ///
 /// Usage:
 ///
@@ -808,12 +769,13 @@ public:
 /// inline void print_int(int value) { std::cout<<"this is an integer: "<<value<<std::endl;}
 /// inline void print_double(double value) { std::cout<<"this is a double: "<<value<<std::endl;}
 ///
-/// VipFunctionDispatcher disp(1);
+/// VipFunctionDispatcher<1> disp;
 /// disp.append<void(int)>(print_int);
 /// disp.append<void(double)>(print_double);
 ///
 /// disp.callAllExactMatch(2); //call print_int(2)
 /// disp.callAllExactMatch(2.3); //call print_double(2.3)
+/// disp.callAllMatch(2.3); //call both print_int(2) and print_double(2.3)
 /// \end_code
 ///
 /// When dealing with object pointers, VipFunctionDispatcher will only work on QObject inheriting classes.
@@ -823,14 +785,14 @@ public:
 /// {
 ///	Q_OBJECT
 ///
-///	virtual QString identifier() {"I am a Base";}
+///	virtual const char* identifier() {return "I am a Base";}
 /// };
 ///
 /// struct Child : Base
 /// {
 ///	Q_OBJECT
 ///
-///	virtual QString identifier() {return "I am a Child";}
+///	virtual const char* identifier() {return "I am a Child";}
 /// };
 ///
 /// //I want to extend the functionalities of Base and Child because know I need a sub identifier
@@ -838,7 +800,7 @@ public:
 /// static QString Base_identifier(Base *) {return "And also a QObject";}
 /// static QString Child_identifier(Child *) {return "And also a Base and a QObject";}
 ///
-/// VipFunctionDispatcher sub_identifier(1);
+/// VipFunctionDispatcher<1> sub_identifier;
 /// sub_identifier.append<QString(Base*)>(Base_identifier);
 /// sub_identifier.append<QString(Child*)>(Child_identifier);
 ///
@@ -847,90 +809,157 @@ public:
 /// Base * b1 = new Base();
 /// Base * b2 = new Child();
 ///
-/// std::cout<< sub_identifier(b1).value<QByteArray>().data() <<std::endl; // "And also a QObject"
-/// std::cout<< sub_identifier(b2).value<QByteArray>().data() <<std::endl; // "And also a Base and a QObject"
+/// std::cout<<b1->identifier() <<" "<< sub_identifier(b1).value<QByteArray>().data() <<std::endl; // "I am a Base And also a QObject"
+/// std::cout<<b2->identifier() <<" "<<  sub_identifier(b2).value<QByteArray>().data() <<std::endl; // "I am a Child And also a Base and a QObject"
 ///
 /// \endcode
 ///
 /// VipFunctionDispatcher provides ways to retrieve the functions that match exactly given arguments, but also the ones that can accept these arguments through implicit conversion.
 ///
-class VIP_CORE_EXPORT VipFunctionDispatcher
+template<size_t NArgs>
+class VipFunctionDispatcher
 {
-	int m_argCount;
-	QVector<VipFunction> m_functions;
-
-	// return false if equal, true otherwise
-	bool nonConvertible(const VipTypeList& t1, const VipTypeList& t2) const;
-	bool exactEqual(const VipTypeList& t1, const VipTypeList& t2) const;
+	QVector<VipFunction<NArgs>> m_functions;
 
 public:
-	using FunctionList = QVector<VipFunction>;
+	using function_type = VipFunction<NArgs>;
+	using function_list_type = QVector<function_type>;
 	using result_type = VipAny;
 
 	/// @brief Construct a VipFunctionDispatcher with given arity
-	VipFunctionDispatcher(int arity = 0)
-	  : m_argCount(arity)
-	{
-	}
-
+	VipFunctionDispatcher() {}
 	VipFunctionDispatcher(const VipFunctionDispatcher&) = default;
 	VipFunctionDispatcher(VipFunctionDispatcher&&) = default;
 	VipFunctionDispatcher& operator=(const VipFunctionDispatcher&) = default;
 	VipFunctionDispatcher& operator=(VipFunctionDispatcher&&) = default;
 
 	/// @brief Returns true if the dispatcher is valid (non 0 arity)
-	bool isValid() const { return m_argCount != 0; }
+	constexpr bool isValid() const noexcept { return NArgs != 0; }
 
 	/// @brief Returns all the functions stored in this VipFunctionDispatcher
-	const FunctionList& functions() const;
+	const function_list_type& functions() const noexcept { return m_functions; }
 	/// @brief Returns the function dispatcher arity
-	int arity() const;
+	constexpr int nargs() const noexcept { return NArgs; }
 	/// @brief Returns the number of functions stored in this VipFunctionDispatcher
-	int count() const { return m_functions.size(); }
+	int count() const noexcept { return m_functions.size(); }
 
 	/// @brief Returns all functions that match given argument types.
 	/// This includes the functions that match exactly given argument types, but also the ones that can accept these arguments through implicit conversion.
-	FunctionList match(const VipTypeList& lst) const;
+	function_list_type match(const VipTypeList& lst) const
+	{
+		if (lst.size() > NArgs)
+			return function_list_type();
+		function_list_type res;
+		for (const function_type& f : m_functions) {
+			if (!details::nonConvertible(lst, f.typeList()))
+				res.push_back(f);
+		}
+		return res;
+	}
+	function_list_type match(VipTypeList& lst) const { return match(static_cast<const VipTypeList&>(lst)); }
 	/// @brief Returns all functions that match given argument types.
 	/// This includes the functions that match exactly given argument types, but also the ones that can accept these arguments through implicit conversion.
-	FunctionList match(const VipAny& v1 = VipAny(), const VipAny& v2 = VipAny(), const VipAny& v3 = VipAny(), const VipAny& v4 = VipAny(), const VipAny& v5 = VipAny()) const;
+	template<class... Args>
+	function_list_type match(Args&&... args) const
+	{
+		static_assert((sizeof...(Args)) <= NArgs, "invalid number of arguments!");
+		return match(static_cast<const VipTypeList&>(details::buildTypeListFromObjects(std::forward<Args>(args)...)));
+	}
 
 	/// @brief Returns all functions that match exactly given argument types.
-	FunctionList exactMatch(const VipTypeList& lst) const;
+	function_list_type exactMatch(const VipTypeList& lst) const
+	{
+		if (lst.size() > NArgs)
+			return function_list_type();
+		function_list_type res;
+		for (const function_type& f : m_functions) {
+			if (details::exactEqual(lst, f.typeList()))
+				res.push_back(f);
+		}
+		return res;
+	}
+	function_list_type exactMatch(VipTypeList& lst) const { return exactMatch(static_cast<const VipTypeList&>(lst)); }
 	/// @brief Returns all functions that match exactly given argument types.
-	FunctionList exactMatch(const VipAny& v1 = VipAny(), const VipAny& v2 = VipAny(), const VipAny& v3 = VipAny(), const VipAny& v4 = VipAny(), const VipAny& v5 = VipAny()) const;
+	template<class... Args>
+	function_list_type exactMatch(Args&&... args) const
+	{
+		static_assert((sizeof...(Args)) <= NArgs, "invalid number of arguments!");
+		return exactMatch(static_cast<const VipTypeList&>(details::buildTypeListFromObjects(std::forward<Args>(args)...)));
+	}
 
 	/// @brief Call the first found function that match given arguments, and return the result
-	VipAny callOneMatch(const VipAny& v1 = VipAny(), const VipAny& v2 = VipAny(), const VipAny& v3 = VipAny(), const VipAny& v4 = VipAny(), const VipAny& v5 = VipAny()) const;
+	template<class... Args>
+	VipAny callOneMatch(Args&&... args) const
+	{
+		function_list_type lst = match(std::forward<Args>(args)...);
+		if (lst.size())
+			return lst.back()(std::forward<Args>(args)...);
+		return VipAny();
+	}
 	/// @brief Call the first found function that match exactly given arguments, and return the result
-	VipAny callOneExactMatch(const VipAny& v1 = VipAny(), const VipAny& v2 = VipAny(), const VipAny& v3 = VipAny(), const VipAny& v4 = VipAny(), const VipAny& v5 = VipAny()) const;
+	template<class... Args>
+	VipAny callOneExactMatch(Args&&... args) const
+	{
+		function_list_type lst = exactMatch(std::forward<Args>(args)...);
+		if (lst.size())
+			return lst.back()(std::forward<Args>(args)...);
+		return VipAny();
+	}
 
 	/// @brief Call all the functions that match given arguments, and return the results
-	QVector<VipAny> callAllMatch(const VipAny& v1 = VipAny(), const VipAny& v2 = VipAny(), const VipAny& v3 = VipAny(), const VipAny& v4 = VipAny(), const VipAny& v5 = VipAny()) const;
+	template<class... Args>
+	QVector<VipAny> callAllMatch(Args&&... args) const
+	{
+		const function_list_type lst = match(std::forward<Args>(args)...);
+		QVector<VipAny> res;
+		res.reserve(lst.size());
+		for (int i = 0; i < lst.size(); ++i)
+			res.push_back(lst[i](std::forward<Args>(args)...));
+		return res;
+	}
 	/// @brief Call all the functions that match exactly given arguments, and return the results
-	QVector<VipAny> callAllExactMatch(const VipAny& v1 = VipAny(), const VipAny& v2 = VipAny(), const VipAny& v3 = VipAny(), const VipAny& v4 = VipAny(), const VipAny& v5 = VipAny()) const;
+	template<class... Args>
+	QVector<VipAny> callAllExactMatch(Args&&... args) const
+	{
+		const function_list_type lst = exactMatch(std::forward<Args>(args)...);
+		QVector<VipAny> res;
+		res.reserve(lst.size());
+		for (int i = 0; i < lst.size(); ++i)
+			res.push_back(lst[i](std::forward<Args>(args)...));
+		return res;
+	}
 
 	/// @brief Equivalent to callOneExactMatch()
-	VipAny operator()(const VipAny& v1 = VipAny(), const VipAny& v2 = VipAny(), const VipAny& v3 = VipAny(), const VipAny& v4 = VipAny(), const VipAny& v5 = VipAny()) const;
+	template<class... Args>
+	VipAny operator()(Args&&... args) const
+	{
+		return callOneExactMatch(std::forward<Args>(args)...);
+	}
 
 	/// @brief Add a new function
-	void append(const VipFunction& fun);
+	void append(const function_type& fun) { m_functions.append(fun); }
 	/// @brief Add new functions
-	void append(const FunctionList& funs);
+	void append(const function_list_type& funs) { m_functions.append(funs); }
 	/// Add a callable object
 	template<class Signature, class Callable>
 	void append(const Callable& c)
 	{
-		append(VipFunction::create<Signature>(c));
+		append(function_type(c, (Signature*)nullptr));
 	}
 
 	/// @brief Remove all functions having the same signature as \a fun
-	void remove(const VipFunction& fun);
+	void remove(const function_type& fun) { m_functions.removeAll(fun); }
 	/// @brief Remove all functions having the same signature as \a lst
-	void remove(const FunctionList& lst);
+	void remove(const function_list_type& lst)
+	{
+		for (int i = 0; i < lst.size(); ++i)
+			remove(lst[i]);
+	}
 	/// @brief Remove all functions
-	void clear();
+	void clear() { m_functions.clear(); }
 };
+
+
 
 /// @}
 // end Core

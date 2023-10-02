@@ -4987,15 +4987,15 @@ VipMainWindow * vipGetMainWindow()
 
 
 
-VipFunctionDispatcher & vipFDCreateWidgetFromIODevice()
+VipFunctionDispatcher<1> & vipFDCreateWidgetFromIODevice()
 {
-	static VipFunctionDispatcher disp(1);
+	static VipFunctionDispatcher<1> disp;
 	return disp;
 }
 
-VipFunctionDispatcher & vipFDSwitchToMinimalDisplay()
+VipFunctionDispatcher<2> & vipFDSwitchToMinimalDisplay()
 {
-	static VipFunctionDispatcher disp(2);
+	static VipFunctionDispatcher<2> disp;
 	return disp;
 }
 
@@ -5004,7 +5004,7 @@ VipBaseDragWidget * vipCreateWidgetFromProcessingObject(VipProcessingObject* obj
 	if (qobject_cast<VipIODevice*>(object))
 	{
 		VipIODevice * device = static_cast<VipIODevice*>(object);
-		VipFunctionDispatcher::FunctionList lst = vipFDCreateWidgetFromIODevice().exactMatch(device);
+		VipFunctionDispatcher<1>::function_list_type lst = vipFDCreateWidgetFromIODevice().exactMatch(device);
 		if (lst.size())
 			return lst.back()(device);
 	}
@@ -5637,9 +5637,9 @@ bool vipPrint(VipBaseDragWidget *w)
 
 
 
-VipFunctionDispatcher& vipFDAboutToRender()
+VipFunctionDispatcher<1>& vipFDAboutToRender()
 {
-	static VipFunctionDispatcher inst(1);
+	static VipFunctionDispatcher<1> inst;
 	return inst;
 }
 

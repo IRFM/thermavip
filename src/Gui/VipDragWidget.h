@@ -797,7 +797,7 @@ Q_SIGNALS:
 /// \code
 /// bool(QMimeData*, QWidget * drop_target);
 /// \endcode
-VIP_GUI_EXPORT VipFunctionDispatcher & vipAcceptDragMimeData();
+VIP_GUI_EXPORT VipFunctionDispatcher<2> & vipAcceptDragMimeData();
 
 /// Function dispatcher which drops a QMimeData on a VipBaseDragWidget or inside a VipDragWidgetArea.
 /// By using this dispatcher and the vipAcceptDragMimeData one, you can support other dropping behavior within VipBaseDragWidget.
@@ -805,14 +805,14 @@ VIP_GUI_EXPORT VipFunctionDispatcher & vipAcceptDragMimeData();
 /// \code
 /// VipBaseDragWidget *(QMimeData*, QWidget * drop_target);
 /// \endcode
-VIP_GUI_EXPORT VipFunctionDispatcher & vipDropMimeData();
+VIP_GUI_EXPORT VipFunctionDispatcher<2>& vipDropMimeData();
 
 /// Function dispatcher which provides a custom behavior when setting the inner widget of a VipDragWidget.
 /// Its signature is:
 /// \code
 /// void (VipDragWidget*, QWidget*);
 /// \endcode
-VIP_GUI_EXPORT VipFunctionDispatcher & vipSetDragWidget();
+VIP_GUI_EXPORT VipFunctionDispatcher<2>& vipSetDragWidget();
 
 
 /// @}

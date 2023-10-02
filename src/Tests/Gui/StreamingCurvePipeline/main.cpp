@@ -10,8 +10,9 @@
 #include "VipPlotCurve.h"
 #include "VipProcessingFunction.h"
 
-QVariant generate_cos(const QVariant& , qint64 prev_ns) {
-	return std::cos(QDateTime::currentMSecsSinceEpoch() * 0.001);
+VipAnyData generate_cos(const VipAnyData&)
+{
+	return VipAnyData(QVariant::fromValue(std::cos(QDateTime::currentMSecsSinceEpoch() * 0.001)));
 }
 
 double generate_fast_cos(double v)

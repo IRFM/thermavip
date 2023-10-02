@@ -558,9 +558,9 @@ qobject_cast<VipPlotPlayer*>(player()))
 
 
 
-VipFunctionDispatcher & VipFDProcessingOutputInfo()
+VipFunctionDispatcher<3> & VipFDProcessingOutputInfo()
 {
-	static VipFunctionDispatcher disp(3);
+	static VipFunctionDispatcher<3> disp;
 	return disp;
 }
 

@@ -184,7 +184,7 @@ protected:
 /// This function dispatcher is called by the VipProcessingObjectInfo to display additional informations on a processing output.
 /// Its signature is VipAdditionalInfo* (VipAbstractPlayer* player, VipOutput * src, const QVariant & data);
 /// The last argument is the output data type.
-VIP_GUI_EXPORT VipFunctionDispatcher & VipFDProcessingOutputInfo();
+VIP_GUI_EXPORT VipFunctionDispatcher<3> & VipFDProcessingOutputInfo();
 
 
 /// A tool widget that displays the attributes of a VipAnyData.

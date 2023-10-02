@@ -496,19 +496,19 @@ int vipProcessEvents(bool * keep_going, int milli)
 }
 
 
-static QList<VipFunction> & init_functions()
+static QList<VipFunction<0>>& init_functions()
 {
-	static QList<VipFunction> instance;
+	static QList<VipFunction<0>> instance;
 	return instance;
 }
 
-static QList<VipFunction> & uninit_functions()
+static QList<VipFunction<0>>& uninit_functions()
 {
-	static QList<VipFunction> instance;
+	static QList<VipFunction<0>> instance;
 	return instance;
 }
 
-bool vipAddInitializationFunction(const VipFunction & fun)
+bool vipAddInitializationFunction(const VipFunction<0>& fun)
 {
 	init_functions().append(fun);
 	return true;
@@ -516,21 +516,21 @@ bool vipAddInitializationFunction(const VipFunction & fun)
 
 bool vipAddInitializationFunction(void(*fun)())
 {
-	VipFunction f(fun);
+	VipFunction<0> f(fun);
 	init_functions().append(f);
 	return true;
 }
 
 bool vipAddInitializationFunction(int(*fun)())
 {
-	VipFunction f(fun);
+	VipFunction<0> f(fun);
 	init_functions().append(f);
 	return true;
 }
 
 
 
-bool vipPrependInitializationFunction(const VipFunction& fun)
+bool vipPrependInitializationFunction(const VipFunction<0>& fun)
 {
 	init_functions().insert(0,fun);
 	return true;
@@ -538,20 +538,20 @@ bool vipPrependInitializationFunction(const VipFunction& fun)
 
 bool vipPrependInitializationFunction(void (*fun)())
 {
-	VipFunction f(fun);
+	VipFunction<0> f(fun);
 	init_functions().insert(0, f);
 	return true;
 }
 
 bool vipPrependInitializationFunction(int (*fun)())
 {
-	VipFunction f(fun);
+	VipFunction<0> f(fun);
 	init_functions().insert(0, f);
 	return true;
 }
 
 
-bool vipAddUninitializationFunction(const VipFunction & fun)
+bool vipAddUninitializationFunction(const VipFunction<0>& fun)
 {
 	uninit_functions().append(fun);
 	return true;
@@ -559,14 +559,14 @@ bool vipAddUninitializationFunction(const VipFunction & fun)
 
 bool vipAddUninitializationFunction(void(*fun)())
 {
-	VipFunction f(fun);
+	VipFunction<0> f(fun);
 	uninit_functions().append(f);
 	return true;
 }
 
 bool vipAddUninitializationFunction(int(*fun)())
 {
-	VipFunction f(fun);
+	VipFunction<0> f(fun);
 	uninit_functions().append(f);
 	return true;
 }
@@ -590,7 +590,7 @@ void vipExecUnitializationFunction()
 
 struct TerminationFunction
 {
-	QList<VipFunction> functions;
+	QList<VipFunction<0>> functions;
 	TerminationFunction() {}
 	~TerminationFunction() {
 		for (int i = 0; i < functions.size(); ++i)
@@ -599,15 +599,15 @@ struct TerminationFunction
 };
 static TerminationFunction _termination;
 
-bool vipAddTerminationFunction(const VipFunction & fun)
+bool vipAddTerminationFunction(const VipFunction<0>& fun)
 {
-	VipFunction f(fun);
+	VipFunction<0> f(fun);
 	_termination.functions.append(f);
 	return true;
 }
 bool vipAddTerminationFunction(void(*fun)())
 {
-	VipFunction f(fun);
+	VipFunction<0> f(fun);
 	_termination.functions.append(f);
 	return true;
 }

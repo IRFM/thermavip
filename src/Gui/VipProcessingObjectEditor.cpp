@@ -4284,9 +4284,9 @@ bool VipUniqueProcessingObjectEditor::setProcessingObject(VipProcessingObject* o
 
 	QVector<QWidget*> editors(metas.size(), NULL);
 
-	VipFunctionDispatcher::FunctionList lst = vipFDObjectEditor().match(obj);
+	const auto lst = vipFDObjectEditor().match(obj);
 	for (int i = 0; i < lst.size(); ++i) {
-		VipFunction fun = lst[i];
+		auto fun = lst[i];
 		const QMetaObject* meta = fun.typeList()[0].metaObject;
 		QWidget* editor = fun(obj).value<QWidget*>();
 		if (editor) {
@@ -5442,7 +5442,7 @@ VipIODevice* VipCreateDevice::create(const QList<VipProcessingObject::Info>& dev
 	// display device option widget
 	if (show_device_options) {
 
-		VipFunctionDispatcher::FunctionList lst = vipFDObjectEditor().exactMatch(result);
+		const auto lst = vipFDObjectEditor().exactMatch(result);
 		if (lst.size()) {
 
 			QWidget* editor = lst.first()(result).value<QWidget*>();

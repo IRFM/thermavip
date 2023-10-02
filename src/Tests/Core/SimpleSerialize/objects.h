@@ -33,6 +33,9 @@ public:
 	  , dvalue(dv)
 	{
 	}
+	~DerivedClass() { 
+		bool stop = true;
+	}
 };
 // Register DerivedClass to the Qt metatype system as well as the thermavip layer
 VIP_REGISTER_QOBJECT_METATYPE(DerivedClass*)
@@ -60,3 +63,21 @@ inline VipArchive& operator>>(VipArchive& arch, DerivedClass* o)
 	return arch.content("dvalue", o->dvalue);
 }
 
+
+
+
+
+
+struct Base :  QObject
+{
+	Q_OBJECT
+public:
+	virtual QString identifier() {return "I am a Base";}
+};
+
+struct Child : Base
+{
+	Q_OBJECT
+public:
+	virtual QString identifier() {return "I am a Child";}
+};

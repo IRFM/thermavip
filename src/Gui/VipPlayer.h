@@ -931,42 +931,42 @@ VIP_REGISTER_QOBJECT_METATYPE(VipPlotPlayer*)
 
 /// This function dispatcher is called every time an \a VipAbstractPlayer instance is created.
 /// Its signature is: void(VipAbstractPlayer*);
-VIP_GUI_EXPORT VipFunctionDispatcher & vipFDPlayerCreated();
+VIP_GUI_EXPORT VipFunctionDispatcher<1> & vipFDPlayerCreated();
 
 /// This function dispatcher is called every time a #VipPlotItem is added to an #VipAbstractPlayer.
 /// Its signature is void(VipPlotItem*, VipAbstractPlayer*);
-VIP_GUI_EXPORT VipFunctionDispatcher & VipFDItemAddedOnPlayer();
+VIP_GUI_EXPORT VipFunctionDispatcher<2> & VipFDItemAddedOnPlayer();
 
 /// This function dispatcher is called every time a #VipPlotItem is removed from an #VipAbstractPlayer.
 /// Its signature is void(VipPlotItem*, VipAbstractPlayer*);
 /// Do not use the VipPlotItem since it might already destroyed.
-VIP_GUI_EXPORT VipFunctionDispatcher & VipFDItemRemovedFromPlayer();
+VIP_GUI_EXPORT VipFunctionDispatcher<2> & VipFDItemRemovedFromPlayer();
 
 /// This function dispatcher is called every time a #VipPlotItem's axis unit changes.
 /// Its signature is void(VipPlotItem*, VipAbstractPlayer*);
-VIP_GUI_EXPORT VipFunctionDispatcher & VipFDItemAxisUnitChanged();
+VIP_GUI_EXPORT VipFunctionDispatcher<2> & VipFDItemAxisUnitChanged();
 
 /// This function dispatcher is called every time a #VipPlotItem's selection changes.
 /// Its signature is void(VipPlotItem*, VipAbstractPlayer*);
-VIP_GUI_EXPORT VipFunctionDispatcher & VipFDItemSelected();
+VIP_GUI_EXPORT VipFunctionDispatcher<2> & VipFDItemSelected();
 
 /// This function dispatcher is called every time the user right click on a #VipPlotItem.
 /// It is used to generate the entries of a contextual menu.
 /// Its signature is QList<QAction*>(VipPlotItem*, VipAbstractPlayer*);
-VIP_GUI_EXPORT VipFunctionDispatcher & VipFDItemRightClick();
+VIP_GUI_EXPORT VipFunctionDispatcher<2>& VipFDItemRightClick();
 
 /// This function dispatcher is called every time the user open the processing menu or the data fusion processing menu.
 /// The dispatcher is called for every action in the menu. If a function is found (and called), the action won't
 /// be triggered if clicked and won't be draggable. This a useful way to override the processing menu behavior.
 /// Its signature is bool(QAction*, VipAbstractPlayer*);
-VIP_GUI_EXPORT VipFunctionDispatcher & VipFDAddProcessingAction();
+VIP_GUI_EXPORT VipFunctionDispatcher<2>& VipFDAddProcessingAction();
 
 
 
 /// This function dispatcher is called whenever the user drop a QMimeData on a VipPlayer2D which cannot be handled by the standard drag & drop mechanism.
 /// If a valid action is performed, the function must return true.
 /// Its signature is bool(VipPlayer2D*, VipPlotItem*,QMimeData*);
-VIP_GUI_EXPORT VipFunctionDispatcher& VipFDDropOnPlotItem();
+VIP_GUI_EXPORT VipFunctionDispatcher<3>& VipFDDropOnPlotItem();
 
 
 typedef QList<QAction*> ActionList;

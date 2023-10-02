@@ -319,7 +319,7 @@ qint64 VipGenericRecorder::estimateFileSize() const
  {
 	 if (m_data->recorder && !isOpen() )
 	 {
-		 VipFunctionDispatcher::FunctionList lst = vipFDObjectEditor().exactMatch(m_data->recorder);
+		 VipFunctionDispatcher<1>::function_list_type lst = vipFDObjectEditor().exactMatch(m_data->recorder);
 		 if (lst.size())
 		 {
 			 QWidget * editor = lst.first()(m_data->recorder).value<QWidget*>();
@@ -663,7 +663,7 @@ bool VipRecordWidget::canDisplayRecorderParametersEditor() const
 	{
 		if (!m_data->recorder->isOpen())
 		{
-			VipFunctionDispatcher::FunctionList lst = vipFDObjectEditor().exactMatch(m_data->recorder->recorder());
+			VipFunctionDispatcher<1>::function_list_type lst = vipFDObjectEditor().exactMatch(m_data->recorder->recorder());
 			return lst.size() > 0;
 		}
 	}

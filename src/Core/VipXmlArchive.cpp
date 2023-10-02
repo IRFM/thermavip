@@ -487,7 +487,7 @@ void VipXOArchive::doContent(QString& name, QVariant& value, QVariantMap& metada
 	bool serialized = false;
 	if (value.userType() >= QMetaType::User) {
 		// use the serialize dispatcher
-		VipFunctionDispatcher::FunctionList lst = serializeFunctions(value);
+		VipFunctionDispatcher<2>::function_list_type lst = serializeFunctions(value);
 		if (lst.size()) {
 			// call all serialize functions in a new node
 			if (name.isEmpty())
@@ -632,7 +632,7 @@ void VipXIArchive::doContent(QString& name, QVariant& value, QVariantMap& metada
 
 	bool serialized = false;
 	if (value.userType() >= QMetaType::User) {
-		VipFunctionDispatcher::FunctionList lst = deserializeFunctions(value);
+		VipFunctionDispatcher<2>::function_list_type lst = deserializeFunctions(value);
 		if (lst.size()) {
 			for (int i = 0; i < lst.size(); ++i) {
 				value = lst[i](value, this);
@@ -804,13 +804,14 @@ void VipXOfArchive::close()
 {
 	resetError();
 	setMode(NotOpen);
+	QString filename = file;
 	file.clear();
 	if (!currentNode().isNull()) {
-		QFile fout(file);
+		QFile fout(filename);
 		if (!fout.open(QIODevice::WriteOnly | QIODevice::Text)) {
 			setMode(NotOpen);
 			setCurrentNode(QDomNode());
-			setError("Unable to open file: " + file);
+			setError("Unable to open file: " + filename);
 			return;
 		}
 		QString temp(doc.toString());

@@ -2817,7 +2817,7 @@ VipBaseDragWidget * VipMultiDragWidget::createFromMimeData(const QMimeData * dat
 	else
 	{
 		QMimeData * mime = const_cast<QMimeData*>(data);
-		VipFunctionDispatcher::FunctionList lst = vipDropMimeData().match(mime,this);
+		const auto lst = vipDropMimeData().match(mime,this);
 		if(lst.size())
 			return lst.back()(mime,this).value<VipBaseDragWidget*>();
 	}
@@ -2834,7 +2834,7 @@ bool VipMultiDragWidget::supportDrop(const QMimeData * data)
 	else
 	{
 		QMimeData * mime = const_cast<QMimeData*>(data);
-		VipFunctionDispatcher::FunctionList lst = vipAcceptDragMimeData().match(mime,this);
+		const auto lst = vipAcceptDragMimeData().match(mime,this);
 		if(lst.size())
 			return lst.back()(mime,this).value<bool>();
 	}
@@ -2877,7 +2877,7 @@ void VipViewportArea::dragEnterEvent(QDragEnterEvent * evt){
 	else
 	{
 		QMimeData * mime = const_cast<QMimeData*>(evt->mimeData());
-		VipFunctionDispatcher::FunctionList lst = vipAcceptDragMimeData().match(mime,this);
+		const auto lst = vipAcceptDragMimeData().match(mime,this);
 		if(lst.size() && lst.back()(mime,this).value<bool>())
 			evt->acceptProposedAction();
 		else if(evt->mimeData()->hasUrls())
@@ -2892,7 +2892,7 @@ void VipViewportArea::dragMoveEvent(QDragMoveEvent * evt){
 	else
 	{
 		QMimeData * mime = const_cast<QMimeData*>(evt->mimeData());
-		VipFunctionDispatcher::FunctionList lst = vipAcceptDragMimeData().match(mime,this);
+		const auto lst = vipAcceptDragMimeData().match(mime,this);
 		if (lst.size() && lst.back()(mime,this).value<bool>())
 			evt->acceptProposedAction();
 		else if (mime->hasUrls())
@@ -2905,7 +2905,7 @@ void VipViewportArea::dropMimeData(const QMimeData * mimeData, const QPoint & po
 {
 	//check that we drop something else than the usual VipBaseDragWidget, and handle it
 	QMimeData * mime = const_cast<QMimeData*>(mimeData);
-	VipFunctionDispatcher::FunctionList lst = vipDropMimeData().match(mime, this);
+	const auto lst = vipDropMimeData().match(mime, this);
 	if (lst.size())
 	{
 		if (VipBaseDragWidget * widget = lst.back()(mime, this).value<VipBaseDragWidget*>())
@@ -3132,21 +3132,21 @@ void VipDragWidgetArea::moving(VipMultiDragWidget * widget)
 
 
 
-VipFunctionDispatcher & vipAcceptDragMimeData()
+VipFunctionDispatcher<2> & vipAcceptDragMimeData()
 {
-	static VipFunctionDispatcher disp(2);
+	static VipFunctionDispatcher<2> disp;
 	return disp;
 }
 
-VipFunctionDispatcher & vipDropMimeData()
+VipFunctionDispatcher<2>& vipDropMimeData()
 {
-	static VipFunctionDispatcher disp(2);
+	static VipFunctionDispatcher<2> disp;
 	return disp;
 }
 
-VipFunctionDispatcher & vipSetDragWidget()
+VipFunctionDispatcher<2>& vipSetDragWidget()
 {
-	static VipFunctionDispatcher disp(2);
+	static VipFunctionDispatcher<2> disp;
 	return disp;
 }
 

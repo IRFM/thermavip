@@ -161,7 +161,7 @@ protected:
 /// Signature: QString (VipPlayer2D * , const VipShapeList&)
 /// It can be used to display, for instance, the minimum/maximum/mean pixel values inside Regions Of Intersets in an image.
 /// The text result can have a HTML formatting.
-VIP_GUI_EXPORT VipFunctionDispatcher & vipFDShapeStatistics();
+VIP_GUI_EXPORT VipFunctionDispatcher<2> & vipFDShapeStatistics();
 
 
 

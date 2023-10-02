@@ -3140,15 +3140,15 @@ bool VipShowWidgetOnHover::eventFilter(QObject * //watched
 
 
 
-VipFunctionDispatcher & vipFDObjectEditor()
+VipFunctionDispatcher<1> & vipFDObjectEditor()
 {
-	static VipFunctionDispatcher disp(1);
+	static VipFunctionDispatcher<1> disp;
 	return disp;
 }
 
 QWidget * vipObjectEditor(const QVariant & obj)
 {
-	VipFunctionDispatcher::FunctionList lst = vipFDObjectEditor().match(obj);
+	VipFunctionDispatcher<1>::function_list_type lst = vipFDObjectEditor().match(obj);
 	if (lst.size())
 		return lst.back()(obj).value<QWidget*>();
 	return NULL;

@@ -8,8 +8,8 @@ public:
 	SupportedOperations operations;
 	OpenMode 	io_mode;
 	QString version;
-	VipFunctionDispatcher fastTypesS;
-	VipFunctionDispatcher fastTypesD;
+	VipFunctionDispatcher<2> fastTypesS;
+	VipFunctionDispatcher<2> fastTypesD;
 
 	struct Parameters
 	{
@@ -25,7 +25,7 @@ public:
 	Parameters parameters;
 	QList<Parameters> saved;
 
-	PrivateData(): flag(Text), io_mode(NotOpen), fastTypesS(1), fastTypesD(1) {}
+	PrivateData(): flag(Text), io_mode(NotOpen) {}
 };
 
 
@@ -245,21 +245,21 @@ QVariant VipArchive::read()
 	return QVariant();
 }
 
-VipFunctionDispatcher & VipArchive::serializeDispatcher()
+VipFunctionDispatcher<2>& VipArchive::serializeDispatcher()
 {
-	static VipFunctionDispatcher s_dispatcher(1);
+	static VipFunctionDispatcher<2> s_dispatcher;
 	return s_dispatcher;
 }
 
-VipFunctionDispatcher & VipArchive::deserializeDispatcher()
+VipFunctionDispatcher<2>& VipArchive::deserializeDispatcher()
 {
-	static VipFunctionDispatcher s_dispatcher(1);
+	static VipFunctionDispatcher<2> s_dispatcher;
 	return s_dispatcher;
 }
 
-VipFunctionDispatcher::FunctionList VipArchive::serializeFunctions(const QVariant & value)
+VipFunctionDispatcher<2>::function_list_type VipArchive::serializeFunctions(const QVariant& value)
 {
-	VipFunctionDispatcher::FunctionList lst;
+	VipFunctionDispatcher<2>::function_list_type lst;
 	if(m_data->fastTypesS.count())
 		lst = m_data->fastTypesS.match(value);
 	if(!lst.size())
@@ -267,9 +267,9 @@ VipFunctionDispatcher::FunctionList VipArchive::serializeFunctions(const QVarian
 	return lst;
 }
 
-VipFunctionDispatcher::FunctionList VipArchive::deserializeFunctions(const QVariant & value)
+VipFunctionDispatcher<2>::function_list_type VipArchive::deserializeFunctions(const QVariant& value)
 {
-	VipFunctionDispatcher::FunctionList lst;
+	VipFunctionDispatcher<2>::function_list_type lst;
 	if (m_data->fastTypesD.count())
 		lst = m_data->fastTypesD.match(value);
 	if(!lst.size())
@@ -282,8 +282,8 @@ void VipArchive::registerFastType(int type)
 	VipTypeList lst;
 	lst.append(VipType(type));
 	lst.append(VipType(qMetaTypeId<VipBinaryArchive*>()));
-	VipFunctionDispatcher::FunctionList serialize_lst = serializeDispatcher().match(lst);
-	VipFunctionDispatcher::FunctionList deserialize_lst = deserializeDispatcher().match(lst);
+	VipFunctionDispatcher<2>::function_list_type serialize_lst = serializeDispatcher().match(lst);
+	VipFunctionDispatcher<2>::function_list_type deserialize_lst = deserializeDispatcher().match(lst);
 
 	m_data->fastTypesS.append(serialize_lst);
 	m_data->fastTypesD.append(deserialize_lst);
@@ -692,7 +692,7 @@ QVariant VipBinaryArchive::deserialize(const QByteArray & ar)
 	if (value.userType() >= QMetaType::User || value.userType() == QMetaType::QVariantMap)
 	{
 		//use the dispatcher approach
-		VipFunctionDispatcher::FunctionList lst = deserializeFunctions(value);
+		VipFunctionDispatcher<2>::function_list_type lst = deserializeFunctions(value);
 		if (lst.size())
 		{
 			for (int i = 0; i < lst.size(); ++i)
@@ -760,7 +760,7 @@ void VipBinaryArchive::doContent(QString & name, QVariant & value, QVariantMap &
 		{
 			//use the serialize dispatcher, but not in the QIODevice case
 
-			VipFunctionDispatcher::FunctionList lst = serializeFunctions(value);
+			VipFunctionDispatcher<2>::function_list_type lst = serializeFunctions(value);
 			if (lst.size())
 			{
 				//call all serialize functions in a new archive
@@ -933,7 +933,7 @@ void VipBinaryArchive::doContent(QString & name, QVariant & value, QVariantMap &
 		if (value.userType() >= QMetaType::User || value.userType() == QMetaType::QVariantMap)
 		{
 			//use the dispatcher approach
-			VipFunctionDispatcher::FunctionList lst = deserializeFunctions(value);
+			VipFunctionDispatcher<2>::function_list_type lst = deserializeFunctions(value);
 			if (lst.size())
 			{
 				//before calling the deserialize functions, save the read mode and reset it after

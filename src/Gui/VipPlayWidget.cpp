@@ -422,9 +422,9 @@ QVariant VipTimeRangeItem::itemChange ( GraphicsItemChange change, const QVarian
 }
 
 
-VipFunctionDispatcher & vipCreateTimeRangeItemsDispatcher()
+VipFunctionDispatcher<2> & vipCreateTimeRangeItemsDispatcher()
 {
-	static VipFunctionDispatcher inst(2);
+	static VipFunctionDispatcher<2> inst;
 	return inst;
 }
 

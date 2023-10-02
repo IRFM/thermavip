@@ -291,7 +291,7 @@ Q_DECLARE_METATYPE(QList<VipDisplayObject*> )
 /// \code
 /// VipDisplayObject*(const QVariant &, VipAbstractPlayer *, const VipAnyData & any)
 /// \endcode
-VIP_GUI_EXPORT VipFunctionDispatcher & vipFDCreateDisplayFromData();
+VIP_GUI_EXPORT VipFunctionDispatcher<3> & vipFDCreateDisplayFromData();
 
 /// Creates a VipDisplayObject able to display the data from \a any into \a player. The player might be NULL.
 VIP_GUI_EXPORT VipDisplayObject * vipCreateDisplayFromData(const VipAnyData & any, VipAbstractPlayer *);
@@ -307,7 +307,7 @@ VIP_GUI_EXPORT VipDisplayObject * vipCreateDisplayFromData(const VipAnyData & an
 /// \code
 /// QList<VipAbstractPlayer *> (const QVariant &, VipAbstractPlayer *, const VipAnyData & any, QObject * target)
 /// \endcode
-VIP_GUI_EXPORT VipFunctionDispatcher & vipFDCreatePlayersFromData();
+VIP_GUI_EXPORT VipFunctionDispatcher<4>& vipFDCreatePlayersFromData();
 /// Creates a list of VipAbstractPlayer instances that will display the given data.
 /// If a non null player is given, this function will try to display the data into the player, and a list containing only the player is returned on success. An empty list will be returned in case of failure.
 ///
@@ -324,7 +324,7 @@ VIP_GUI_EXPORT QList<VipAbstractPlayer*> vipCreatePlayersFromData(const VipAnyDa
 /// \code
 /// QList<VipAbstractPlayer *> (VipProcessingObject *, VipAbstractPlayer*,VipOutput*, QObject * target );
 /// \endcode
-VIP_GUI_EXPORT VipFunctionDispatcher & vipFDCreatePlayersFromProcessing();
+VIP_GUI_EXPORT VipFunctionDispatcher<4> & vipFDCreatePlayersFromProcessing();
 
 
 

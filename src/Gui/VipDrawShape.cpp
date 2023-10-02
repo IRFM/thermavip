@@ -800,9 +800,9 @@ public:
 
 
 
-VipFunctionDispatcher & vipFDShapeStatistics()
+VipFunctionDispatcher<2> & vipFDShapeStatistics()
 {
-	static VipFunctionDispatcher disp(1);
+	static VipFunctionDispatcher<2> disp;
 	return disp;
 }
 

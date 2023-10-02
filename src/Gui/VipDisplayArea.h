@@ -664,7 +664,7 @@ VIP_GUI_EXPORT VipMainWindow * vipGetMainWindow();
 /// \code
 /// VipBaseDragWidget*(VipIODevice*);
 /// \endcode
-VIP_GUI_EXPORT VipFunctionDispatcher & vipFDCreateWidgetFromIODevice();
+VIP_GUI_EXPORT VipFunctionDispatcher<1> & vipFDCreateWidgetFromIODevice();
 
 /// Function dispatcher which turns on/off the minimal display for a widget
 /// The minimal display is used to only display the visualized data without all the fanzy stuff/controls.
@@ -672,7 +672,7 @@ VIP_GUI_EXPORT VipFunctionDispatcher & vipFDCreateWidgetFromIODevice();
 /// \code
 /// void (QWidget*, bool);
 /// \endcode
-VIP_GUI_EXPORT VipFunctionDispatcher & vipFDSwitchToMinimalDisplay();
+VIP_GUI_EXPORT VipFunctionDispatcher<2> & vipFDSwitchToMinimalDisplay();
 
 
 /// Create a VipBaseDragWidget from a VipProcessingObject.
@@ -699,7 +699,7 @@ VIP_GUI_EXPORT bool vipPrint(VipBaseDragWidget* w);
 /// It take one argument which is the VipDragWidget internal widget (usually a player).
 /// Signature:
 /// void (QWidget *);
-VIP_GUI_EXPORT VipFunctionDispatcher& vipFDAboutToRender();
+VIP_GUI_EXPORT VipFunctionDispatcher<1>& vipFDAboutToRender();
 
 
 

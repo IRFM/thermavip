@@ -22,17 +22,21 @@ class VIP_CORE_EXPORT VipSequentialGenerator : public VipIODevice
 
 public:
 	/// @brief Generator function type, takes the previous data and previous time (ns) as parameters
-	using generator_function = std::function<QVariant(const QVariant&, qint64)>;
+	using generator_function = std::function<VipAnyData(const VipAnyData&)>;
 
 	VipSequentialGenerator(QObject* parent = nullptr);
+	VipSequentialGenerator(const generator_function& fun, double sampling, QObject* parent = nullptr);
 	~VipSequentialGenerator();
+
+	
+	void setGeneratorFunction(const generator_function& fun);
+	generator_function generatorFunction() const;
 
 	virtual VipIODevice::OpenModes supportedModes() const { return ReadOnly; }
 	virtual VipIODevice::DeviceType deviceType() const {return Sequential;}
 	virtual bool open(VipIODevice::OpenModes);
 
-	void setGeneratorFunction(const generator_function&);
-	generator_function generatorFunction() const;
+	
 
 protected:
 	virtual bool enableStreaming(bool);

@@ -994,16 +994,16 @@ void VipDisplayImage::displayData(const VipAnyDataList & lst)
 
 
 
-VipFunctionDispatcher & vipFDCreateDisplayFromData()
+VipFunctionDispatcher<3> & vipFDCreateDisplayFromData()
 {
-	static VipFunctionDispatcher disp(2);
+	static VipFunctionDispatcher<3> disp;
 	return disp;
 }
 
 VipDisplayObject * vipCreateDisplayFromData(const VipAnyData & any, VipAbstractPlayer * pl )
 {
 	VipDisplayObject * res = NULL;
-	VipFunctionDispatcher::FunctionList lst = vipFDCreateDisplayFromData().exactMatch(any.data(),pl,any);
+	const auto lst = vipFDCreateDisplayFromData().exactMatch(any.data(),pl);
 	if(lst.size())
 		res= lst.back()(any.data(),pl,any).value<VipDisplayObject*>();
 	else
@@ -1081,9 +1081,9 @@ VipDisplayObject * vipCreateDisplayFromData(const VipAnyData & any, VipAbstractP
 
 
 
-VipFunctionDispatcher & vipFDCreatePlayersFromData()
+VipFunctionDispatcher<4> & vipFDCreatePlayersFromData()
 {
-	static VipFunctionDispatcher disp(2);
+	static VipFunctionDispatcher<4> disp;
 	return disp;
 }
 
@@ -1102,7 +1102,7 @@ static void setProcessingPool(VipProcessingObject * obj, VipProcessingPool * poo
 
 QList<VipAbstractPlayer*> vipCreatePlayersFromData(const VipAnyData & any, VipAbstractPlayer * pl, VipOutput * src, QObject * target, QList<VipDisplayObject*> * doutputs)
 {
-	VipFunctionDispatcher::FunctionList lst = vipFDCreatePlayersFromData().exactMatch(any.data(), pl, any,target);
+	const auto lst = vipFDCreatePlayersFromData().exactMatch(any.data(), pl);
 	if (lst.size()) {
 		QList<VipDisplayObject*> existing;
 		if (pl)
@@ -1205,9 +1205,9 @@ QList<VipAbstractPlayer*> vipCreatePlayersFromData(const VipAnyData & any, VipAb
 
 
 
-VipFunctionDispatcher & vipFDCreatePlayersFromProcessing()
+VipFunctionDispatcher<4> & vipFDCreatePlayersFromProcessing()
 {
-	static VipFunctionDispatcher disp(2);
+	static VipFunctionDispatcher<4> disp;
 	return disp;
 }
 
@@ -1220,7 +1220,7 @@ QList<VipAbstractPlayer*> vipCreatePlayersFromProcessing(VipProcessingObject * d
 	if (!disp)
 		return QList<VipAbstractPlayer*>();
 
-	VipFunctionDispatcher::FunctionList lst = vipFDCreatePlayersFromProcessing().match(disp,pl,output, target);
+	const auto lst = vipFDCreatePlayersFromProcessing().match(disp,pl);
 	if (lst.size()) {
 		QList<VipAbstractPlayer*> res = lst.back()(disp, pl, output, target);
 		QList<VipDisplayObject*> existing;

@@ -1,1 +1,2 @@
 add_subdirectory(StreamingCurvePipeline)
+add_subdirectory(StreamingMandelbrotPipeline)
