@@ -94,9 +94,10 @@ QStringList VideoDecoder::list_devices()
 	av_dict_set(&options, "list_devices", "true", 0);
 	AVInputFormat *iformat = av_find_input_format("dshow");
 	int ret = avformat_open_input(&formatC, "video=dummy", iformat, &options);
+	av_log_set_callback(av_log_default_callback);
 	if (ret < 0)
 		return QStringList();
-	av_log_set_callback(av_log_default_callback);
+	
 	//freopen("CON", "w", stderr);
 
 	//QFile file("tmp.txt");
