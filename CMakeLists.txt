@@ -28,7 +28,7 @@ include(GNUInstallDirs)
 option(LOCAL_INSTALL "Install locally" ON)
 option(WITH_FFMEG "Build ffmpeg plugin" ON)
 option(WITH_HDF5 "Build HDF5 plugin" OFF)
-option(WIDTH_PYTHON "Build Python plugin" ON)
+option(WITH_PYTHON "Build Python plugin" ON)
 
 
 
