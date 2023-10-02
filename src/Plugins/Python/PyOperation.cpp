@@ -1058,7 +1058,11 @@ public:
 				//get the version and load the library
 				if (path.size() > 3)
 				{
-					found_version = path.mid(path.size() - 3);
+					#ifdef VIP_PYTHON_SAHRED_LIB
+					printf("Load library %s...", VIP_PYTHON_SHARED_LIB);
+					void* tmp = dlopen(VIP_PYTHON_SHARED_LIB, RTLD_GLOBAL | RTLD_NOW);
+					#endif
+					/* found_version = path.mid(path.size() - 3);
 					if (found_version == py_version)
 					{
 						QString libPython = "/usr/local/lib/libpython" + found_version + "m.so.1.0";
@@ -1088,7 +1092,7 @@ public:
 						if (tmp == NULL) {
 							printf("Cannot find python shared library'\n");
 						}
-					}
+					}*/
 
 				}
 			}

@@ -48,7 +48,7 @@ if(DEFINED ENV{VIP_PYTHON_HOME} AND DEFINED ENV{VIP_PYTHON_VERSION})
 	target_include_directories(Python PRIVATE "$ENV{VIP_PYTHON_HOME}/include" "$ENV{VIP_PYTHON_HOME}/Lib/site-packages/numpy/core/include" )
 	target_link_directories(Python PRIVATE "$ENV{VIP_PYTHON_HOME}/libs")
 	target_link_libraries(Python PRIVATE python$ENV{VIP_PYTHON_VERSION})
-	
+		
 	SET(PYTHON_RUNTIME $ENV{VIP_PYTHON_HOME})
 	
 else()
@@ -62,6 +62,8 @@ else()
 	target_include_directories(Python PRIVATE ${Python_INCLUDE_DIRS} ${Python_NumPy_INCLUDE_DIRS})
 	target_link_directories(Python PRIVATE ${Python_LIBRARY_DIRS})
 	target_link_libraries(Python PRIVATE ${Python_LIBRARIES})
+	
+	target_compile_definitions(Python PRIVATE "VIP_PYTHON_SHARED_LIB=${Python_LIBRARIES}")
 	
 	#target_compile_definitions(Python PRIVATE "VIP_PYTHONHOME=$ENV{VIP_PYTHON_HOME}")
 	
