@@ -36,6 +36,22 @@ target_link_libraries(VipAnnotation PRIVATE
 set(TARGET_PROJECT VipAnnotation)
 include(${PROJECT_SOURCE_DIR}/../compiler_flags.cmake)
 
+
+
+# Configure Librir
+IF(WITH_LIBRIR)
+	include(ExternalProject)
+	ExternalProject_Add(librir
+	  GIT_REPOSITORY https://github.com/IRFM/librir.git
+	  GIT_TAG main
+	)
+	add_dependencies(VipAnnotation librir)
+	install(DIRECTORY ${CMAKE_BINARY_DIR}/src/Annotation/librir-prefix/src/librir-build/install/librir DESTINATION "${CMAKE_INSTALL_PREFIX}/thermavip")
+	
+endif()
+
+
+
 install(TARGETS VipAnnotation
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR} 
 	ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}

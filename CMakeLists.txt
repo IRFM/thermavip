@@ -49,18 +49,6 @@ IF(LOCAL_INSTALL)
 ENDIF()
 
 
-IF(WITH_LIBRIR)
-	include(ExternalProject)
-	ExternalProject_Add(librir
-	  GIT_REPOSITORY https://github.com/IRFM/librir.git
-	  GIT_TAG main
-	)
-	add_custom_target(librir_build)
-	add_dependencies(librir_build librir)
-	install(DIRECTORY ${CMAKE_BINARY_DIR}/librir-prefix/src/librir-build/install/librir DESTINATION "${CMAKE_INSTALL_PREFIX}/thermavip")
-	
-endif()
-
 
 # Make configure_ffmpeg executable
 IF (UNIX)
