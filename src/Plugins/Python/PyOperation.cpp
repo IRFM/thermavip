@@ -1058,10 +1058,15 @@ public:
 				//get the version and load the library
 				if (path.size() > 3)
 				{
-					#ifdef VIP_PYTHON_SAHRED_LIB
+#ifdef VIP_PYTHON_SHARED_LIB
 					printf("Load library %s...", VIP_PYTHON_SHARED_LIB);
 					void* tmp = dlopen(VIP_PYTHON_SHARED_LIB, RTLD_GLOBAL | RTLD_NOW);
-					#endif
+#endif
+					found_version = path;
+					int start = found_version.lastIndexOf("/");
+					if (start >= 0)
+						found_version = found_version.mid(start);
+					found_version.replace("python", "");
 					/* found_version = path.mid(path.size() - 3);
 					if (found_version == py_version)
 					{
