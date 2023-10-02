@@ -1,6 +1,5 @@
 #pragma once
 
-#include "VipFunctional.h"
 #include "VipArchive.h"
 
 /// @brief Base class with an integer attribute
@@ -63,21 +62,3 @@ inline VipArchive& operator>>(VipArchive& arch, DerivedClass* o)
 	return arch.content("dvalue", o->dvalue);
 }
 
-
-
-
-
-
-struct Base :  QObject
-{
-	Q_OBJECT
-public:
-	virtual QString identifier() {return "I am a Base";}
-};
-
-struct Child : Base
-{
-	Q_OBJECT
-public:
-	virtual QString identifier() {return "I am a Child";}
-};

@@ -33,7 +33,147 @@ The first basic reason is to avoid introducing another (potentially huge) depend
 The second reason is to have a serialization framework that works nicely with Qt metatype system.
 Let's consider this example:
 
+```cpp
+// File objects.h
 
+#pragma once
+
+#include "VipArchive.h"
+
+/// @brief Base class with an integer attribute
+class BaseClass : public QObject
+{
+	Q_OBJECT
+
+public:
+	int ivalue;
+
+	BaseClass(int v = 0)
+	  : ivalue(v)
+	{
+	}
+};
+// Register BaseClass to the Qt metatype system as well as the thermavip layer
+VIP_REGISTER_QOBJECT_METATYPE(BaseClass*)
+
+
+/// @brief Derived class with a double attribute
+class DerivedClass : public BaseClass
+{
+	Q_OBJECT
+
+public:
+	double dvalue;
+
+	DerivedClass(int iv = 0, double dv = 0.)
+	  : BaseClass(iv)
+	  , dvalue(dv)
+	{
+	}
+	~DerivedClass() { 
+		bool stop = true;
+	}
+};
+// Register DerivedClass to the Qt metatype system as well as the thermavip layer
+VIP_REGISTER_QOBJECT_METATYPE(DerivedClass*)
+
+
+// define serialization function for both classes
+
+inline VipArchive& operator<<(VipArchive& arch, const BaseClass* o)
+{
+	return arch.content("ivalue", o->ivalue);
+}
+inline VipArchive& operator>>(VipArchive& arch, BaseClass* o)
+{
+	return arch.content("ivalue", o->ivalue);
+}
+
+inline VipArchive& operator<<(VipArchive& arch, const DerivedClass* o)
+{
+	return arch.content("dvalue", o->dvalue);
+}
+inline VipArchive& operator>>(VipArchive& arch, DerivedClass* o)
+{
+	return arch.content("dvalue", o->dvalue);
+}
+
+```
+
+```cpp
+// File main.cpp
+
+#include "objects.h"
+
+#include "VipXmlArchive.h"
+
+#include <iostream>
+
+ 
+int main(int argc, char** argv)
+{
+	// register serialization functions
+	vipRegisterArchiveStreamOperators<BaseClass*>();
+	vipRegisterArchiveStreamOperators<DerivedClass*>();
+
+	// Create a DerivedClass object, but manipulate it through a QObject
+	DerivedClass* derived = new DerivedClass(4, 5.6);
+	QObject* object = derived;
+
+	// Create archive to serialize object to XML buffer
+	VipXOStringArchive arch;
+
+	// Serialize a DerivedClass object through a QObject pointer
+	if (!arch.content("Object", object)) {
+		std::cerr << "An error occured while writing to archive!" << std::endl;
+		return -1;
+	}
+	
+	
+	// output the resulting xml content
+	std::cout << arch.toString().toLatin1().data() << std::endl;
+
+
+	// modify object's value to be sure of the result
+	derived->ivalue = 23;
+	derived->dvalue = 45.6;
+
+	// Now read back the XML content
+	VipXIStringArchive iarch(arch.toString());
+	if (!iarch.content("Object", object)) {
+		std::cerr << "An error occured while reading archive!" << std::endl;
+		return -1;
+	}
+
+	// check the result
+	if (derived->ivalue == 4 && derived->dvalue == 5.6) {
+		std::cout << "Read archive success!" << std::endl;
+	}
+
+
+	// now another option: use the builtin factory to read the archive and create a new DerivedClass
+	iarch.open(arch.toString());
+	QVariant var = iarch.read("Object");
+	DerivedClass * derived2 = var.value<DerivedClass*>();
+
+	//check again the result
+	if (derived2->ivalue == 4 && derived2->dvalue == 5.6) {
+		std::cout << "Read archive success (again)!" << std::endl;
+	}
+
+	// we just created a new object, destroy it
+	delete derived2;
+	delete derived;
+
+	return 0;
+}
+```
+
+We create 2 classes, `BaseClass` that inherits `QObject` and `DerivedClass` that inherits `BaseClass`. Both classes are visible to Qt metaobject system (Q_OBJECT macro) and thermavip metaobject system (VIP_REGISTER_QOBJECT_METATYPE macro).
+Each class defines its own serialization/deserialization functions registered with `vipRegisterArchiveStreamOperators()` function.
+
+First thing to notice is that the `DerivedClass` serialization/deserialization functions do not need to call the base class functions, as they will automatically be called by the serialization library.
+When serializing a QObject pointer, all registered serialization functions that support the object metaclass are called, in this case the functions for `BaseClass` (first) and `DerivedClass`.
 
 The library defines several graphics items for plotting purposes which  all inherit `VipAbstractPlotArea` base class (which itself is a `QGraphicsWidget`):
 
