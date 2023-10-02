@@ -30,6 +30,7 @@ option(WITH_FFMEG "Build ffmpeg plugin" ON)
 option(WITH_HDF5 "Build HDF5 plugin" OFF)
 option(WITH_PYTHON "Build Python plugin" ON)
 option(WITH_LIBRIR "Build and install librir" ON)
+option(WITH_WEST "Build and install WEST related features" OFF)
 
 
 IF(LOCAL_INSTALL)
@@ -48,6 +49,16 @@ IF(LOCAL_INSTALL)
 	ENDIF()
 ENDIF()
 
+
+IF(WITH_WEST)
+	IF(EXISTS ${PROJECT_SOURCE_DIR}/src/External/thermavip_WEST_plugins)
+		message(STATUS "Pulling WEST repository...")
+		execute_process(COMMAND git pull WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/src/External/thermavip_WEST_plugins)
+	ELSE()
+		message(STATUS "Cloning WEST repository...")
+		execute_process(COMMAND git clone https://github.com/IRFM/thermavip_WEST_plugins.git ${PROJECT_SOURCE_DIR}/src/External/thermavip_WEST_plugins)
+	ENDIF()
+endif()
 
 
 # Make configure_ffmpeg executable

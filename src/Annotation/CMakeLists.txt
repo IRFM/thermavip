@@ -41,10 +41,19 @@ include(${PROJECT_SOURCE_DIR}/../compiler_flags.cmake)
 # Configure Librir
 IF(WITH_LIBRIR)
 	include(ExternalProject)
-	ExternalProject_Add(librir
-	  GIT_REPOSITORY https://github.com/IRFM/librir.git
-	  GIT_TAG main
-	)
+	# pass the WITH_WEST option to librir configuration
+	if(WITH_WEST)
+		ExternalProject_Add(librir
+		  GIT_REPOSITORY https://github.com/IRFM/librir.git
+		  GIT_TAG main
+		  CMAKE_ARGS -DWITH_WEST=ON
+		)
+	else()
+		ExternalProject_Add(librir
+		  GIT_REPOSITORY https://github.com/IRFM/librir.git
+		  GIT_TAG main
+		)
+	endif()
 	add_dependencies(VipAnnotation librir)
 	install(DIRECTORY ${CMAKE_BINARY_DIR}/src/Annotation/librir-prefix/src/librir-build/install/librir DESTINATION "${CMAKE_INSTALL_PREFIX}/thermavip")
 	

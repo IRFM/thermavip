@@ -366,7 +366,7 @@ static QVariant stdToVariant(void * pyobject)
 	{
 		long long value = PyLong_AsLongLong(res_object);
 		res = QVariant(value);
-	}
+	} 
 	else if (PyArray_IsAnyScalar(res_object))//strcmp(res_object->ob_type->tp_name,"numpy.int64")==0)
 	{
 		vip_double value = PyFloat_AsDouble(res_object);

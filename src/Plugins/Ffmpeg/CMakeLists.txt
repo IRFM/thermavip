@@ -36,11 +36,22 @@ include(${PROJECT_SOURCE_DIR}/../../compiler_flags.cmake)
 
 target_compile_definitions(Ffmpeg PRIVATE ENABLE_H264 BUILD_FFMPEG_LIB)
 
+
+
+# Configure ffmpeg path, use librir ffmpeg install if possible
+IF(WITH_LIBRIR)
+	set(FFMPEG_PATH ${CMAKE_BINARY_DIR}/src/Annotation/librir-prefix/src/librir/3rd_64)
+else()
+	set(FFMPEG_PATH ${CMAKE_SOURCE_DIR}/3rd_64)
+endif()
+
+
+
 IF (MSVC)
 
 
-	SET(FFMPEG_LIB_DIR ${CMAKE_SOURCE_DIR}/3rd_64/ffmpeg-4.3-msvc/lib)
-	SET(FFMPEG_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/3rd_64/ffmpeg-4.3-msvc)
+	SET(FFMPEG_LIB_DIR ${FFMPEG_PATH}/ffmpeg-4.3-msvc/lib)
+	SET(FFMPEG_INCLUDE_DIR ${FFMPEG_PATH}/ffmpeg-4.3-msvc)
 	SET(FFMPEG_LIBS avdevice avformat avcodec swscale avutil swresample avfilter )
 	SET(ADDITIONAL_FFMPEG_LIBS libx264 libx265 kvazaar postproc vcruntime140_1 Vfw32 shlwapi strmbase)
 	SET(FFMPEG_PREFIX )
@@ -51,15 +62,15 @@ ELSE()
 
 	IF (WIN32)
 		# mingw
-		SET(FFMPEG_LIB_DIR ${CMAKE_SOURCE_DIR}/3rd_64/ffmpeg/install/lib)
-		SET(FFMPEG_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/3rd_64/ffmpeg/install/include)
+		SET(FFMPEG_LIB_DIR ${FFMPEG_PATH}/ffmpeg/install/lib)
+		SET(FFMPEG_INCLUDE_DIR ${FFMPEG_PATH}/ffmpeg/install/include)
 		SET(FFMPEG_LIBS avdevice avformat avcodec swscale avutil swresample avfilter)
 		SET(ADDITIONAL_FFMPEG_LIBS postproc)
 		SET(FFMPEG_PREFIX )
 		SET(FFMPEG_SUFFIX .dll)
 	ELSE()
-		SET(FFMPEG_LIB_DIR ${CMAKE_SOURCE_DIR}/3rd_64/ffmpeg/install/lib)
-		SET(FFMPEG_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/3rd_64/ffmpeg/install/include)
+		SET(FFMPEG_LIB_DIR ${FFMPEG_PATH}/ffmpeg/install/lib)
+		SET(FFMPEG_INCLUDE_DIR ${FFMPEG_PATH}/ffmpeg/install/include)
 		SET(FFMPEG_LIBS avdevice avformat avcodec swscale avutil swresample avfilter)
 		SET(ADDITIONAL_FFMPEG_LIBS postproc)
 		SET(FFMPEG_PREFIX lib)
