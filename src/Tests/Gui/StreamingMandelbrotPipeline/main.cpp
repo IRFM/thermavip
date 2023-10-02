@@ -1,5 +1,6 @@
 #include <cmath>
 #include <iostream>
+#include <thread>
 
 #include <qapplication.h>
 #include <QGraphicsGridLayout>
