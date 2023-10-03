@@ -182,10 +182,10 @@ FfmpegInterface::LoadResult FfmpegInterface::load()
 		record.setOutputSize(rect.size());
 		record.setTimeout(timeout);
 
-		EventLoop loop;
+		QEventLoop loop;
 
 		connect(&record, SIGNAL(stopped()), &record, SLOT(stop()));
-		connect(&record, SIGNAL(stopped()), &loop, SLOT(quitEventLoop()));
+		connect(&record, SIGNAL(stopped()), &loop, SLOT(quit()));
 
 		QMetaObject::invokeMethod(&record, "start", Qt::QueuedConnection);
 		

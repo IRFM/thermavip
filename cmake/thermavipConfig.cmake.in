@@ -2,23 +2,23 @@
 @PACKAGE_INIT@
 
 set(THERMAVIP_FOUND true)
-set_and_check(THERMAVIP_INCLUDE_DIRS "${PACKAGE_PREFIX_DIR}/include" "${PACKAGE_PREFIX_DIR}/include/VipLogging" "${PACKAGE_PREFIX_DIR}/include/VipDataType" "${PACKAGE_PREFIX_DIR}/include/VipCore" "${PACKAGE_PREFIX_DIR}/include/VipGui" "${PACKAGE_PREFIX_DIR}/include/VipAnnotation")
+set(THERMAVIP_INCLUDE_DIRS ${PACKAGE_PREFIX_DIR}/include ${PACKAGE_PREFIX_DIR}/include/VipLogging ${PACKAGE_PREFIX_DIR}/include/VipDataType ${PACKAGE_PREFIX_DIR}/include/VipCore ${PACKAGE_PREFIX_DIR}/include/VipGui ${PACKAGE_PREFIX_DIR}/include/VipAnnotation)
 
 math(EXPR BITS "8*${CMAKE_SIZEOF_VOID_P}")
 IF(${BITS} MATCHES "64" AND UNIX)
-	set_and_check(THERMAVIP_LIB_DIR "${PACKAGE_PREFIX_DIR}/lib64")
+	set_and_check(THERMAVIP_LIB_DIR ${PACKAGE_PREFIX_DIR}/lib64)
 ELSE()
-	set_and_check(THERMAVIP_LIB_DIR "${PACKAGE_PREFIX_DIR}/lib")
+	set_and_check(THERMAVIP_LIB_DIR ${PACKAGE_PREFIX_DIR}/lib)
 ENDIF()
 
 IF(${BITS} MATCHES "64" AND UNIX)
-	set_and_check(THERMAVIP_BIN_DIR "${PACKAGE_PREFIX_DIR}/bin64")
+	set_and_check(THERMAVIP_BIN_DIR ${PACKAGE_PREFIX_DIR}/bin64)
 ELSE()
-	set_and_check(THERMAVIP_BIN_DIR "${PACKAGE_PREFIX_DIR}/bin")
+	set_and_check(THERMAVIP_BIN_DIR ${PACKAGE_PREFIX_DIR}/bin)
 ENDIF()
 
-set_and_check(THERMAVIP_APPLICATION_DIR "${PACKAGE_PREFIX_DIR}/thermavip")
-set_and_check(THERMAVIP_PLUGIN_DIR "${PACKAGE_PREFIX_DIR}/thermavip/VipPlugins")
+set_and_check(THERMAVIP_APPLICATION_DIR ${PACKAGE_PREFIX_DIR}/thermavip)
+set_and_check(THERMAVIP_PLUGIN_DIR ${PACKAGE_PREFIX_DIR}/thermavip/VipPlugins)
 
 set(THERMAVIP_LIBRARIES VipLogging VipDataType VipPlotting VipCore VipGui VipAnnotation @PLUGINS_LIBS@)
 
