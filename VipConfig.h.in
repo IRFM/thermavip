@@ -47,29 +47,18 @@
 #endif
 
 
-/* Version parsed out into numeric values 
-
-The version number follow these rules:
-<ul>
-<li> A micro version change means that only the function/member implementations changed. 
-A plugin compiled with a different micro version can still be loaded.</li>
-<li> A minor version change implies a modification of function/member definition.
-A plugin compiled with a different minro version can not be loaded.</li>
-<li> A major version change implies a hude modification of Thermavip architecture.</li>
-</ul>
-*/
-
-
+/// @ Project name
 #define VIP_PROJECT_NAME "@PROJECT_NAME@"
+/// @ Version parsed out into numeric values 
 #define VIP_VERSION  "@PROJECT_VERSION@"
 #define VIP_MAJOR_VERSION "@PROJECT_VERSION_MAJOR@"
 #define VIP_MINOR_VERSION "@PROJECT_VERSION_MINOR@"
 #define VIP_MICRO_VERSION "@PROJECT_VERSION_PATCH@"
 
+/// @brief Use long double for VipPoint
+#define VIP_USE_LONG_DOUBLE @LONG_DOUBLE_VALUE@
 
-/**
-Enable/disable printf function in debug/release
-*/
+/// @Enable/disable printf function in debug/release
 #define VIP_ENABLE_PRINTF_DEBUG 1
 #define VIP_ENABLE_PRINTF_RELEASE 0
 
@@ -95,7 +84,7 @@ Disable printf calls if required
 #endif
 
 
-//#define VIP_USE_LONG_DOUBLE
+
 
 
 
@@ -145,6 +134,38 @@ Disable printf calls if required
 #endif
 
 
+
+// no inline
+#if defined( _MSC_VER) && !defined(__clang__)
+#define VIP_NOINLINE(...) __declspec(noinline) __VA_ARGS__
+#else
+#define VIP_NOINLINE(...) __VA_ARGS__ __attribute__((noinline))
+#endif
+
+// fallthrough
+#ifndef __has_cpp_attribute 
+#    define __has_cpp_attribute(x) 0
+#endif
+#if __has_cpp_attribute(clang::fallthrough)
+#    define VIP_FALLTHROUGH() [[clang::fallthrough]]
+#elif __has_cpp_attribute(gnu::fallthrough)
+#    define VIP_FALLTHROUGH() [[gnu::fallthrough]]
+#else
+#    define VIP_FALLTHROUGH()
+#endif
+
+// likely/unlikely definition
+#if !defined( _MSC_VER) || defined(__clang__)
+#define VIP_LIKELY(x)    __builtin_expect (!!(x), 1)
+#define VIP_UNLIKELY(x)  __builtin_expect (!!(x), 0)
+#define VIP_HAS_EXPECT
+#else
+#define VIP_LIKELY(x) x
+#define VIP_UNLIKELY(x) x
+#endif
+
+
+
 // assume data are aligned
 #if defined(__GNUC__) && (__GNUC__>=4 && __GNUC_MINOR__>=7)
 #define VIP_RESTRICT __restrict
@@ -188,6 +209,38 @@ Disable printf calls if required
 #endif
 #endif
 
+
+// If constexpr
+#ifdef VIP_HAS_CPP_17
+	#define VIP_CONSTEXPR constexpr
+#else
+	#define VIP_CONSTEXPR
+#endif
+
+
+#ifndef VIP_DEBUG
+#ifndef NDEBUG
+#define VIP_DEBUG
+#endif
+#endif
+
+// Debug assertion
+#ifndef VIP_DEBUG
+#define VIP_ASSERT_DEBUG(condition, msg) 
+#else
+#define VIP_ASSERT_DEBUG(condition, ... )  assert((condition) && (__VA_ARGS__))
+#endif
+
+
+// Support for __has_builtin
+#ifndef __has_builtin
+#define __has_builtin(x) 0
+#endif
+
+// Support for __has_attribute
+#ifndef __has_attribute
+#define __has_attribute(x) 0
+#endif
 
 
 

@@ -11,17 +11,7 @@
 struct RecordThread;
 class VideoEncoder;
 
-class EventLoop : public QEventLoop
-{
-	Q_OBJECT
-
-public Q_SLOTS:
-	void quitEventLoop() {
-		exit();
-	}
-
-};
-
+/// @brief Select a player within current workspace
 class PlayerSelection : public VipComboBox
 {
 	Q_OBJECT
@@ -39,6 +29,8 @@ private:
 	QPointer<VipBaseDragWidget> m_widget;
 };
 
+
+/// @brief Settings for thermavip window recording
 class RecordWindow : public QWidget
 {
 	Q_OBJECT
@@ -152,6 +144,5 @@ private:
 };
 
 
-QImage grabScreenRect(const QRect & r);
 
-bool IsCloseEventReceived();
+

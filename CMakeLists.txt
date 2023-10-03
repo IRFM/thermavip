@@ -26,10 +26,11 @@ MESSAGE(STATUS "Qt5 found!")
 include(GNUInstallDirs) 
 
 option(LOCAL_INSTALL "Install locally" ON)
-option(WITH_FFMEG "Build ffmpeg plugin" ON)
+option(WITH_LONG_DOUBLE "Use long double as the default type for 2D point representation" OFF)
+option(WITH_FFMEG "Build ffmpeg plugin" OFF)
 option(WITH_HDF5 "Build HDF5 plugin" OFF)
-option(WITH_PYTHON "Build Python plugin" ON)
-option(WITH_LIBRIR "Build and install librir" ON)
+option(WITH_PYTHON "Build Python plugin" OFF)
+option(WITH_LIBRIR "Build and install librir" OFF)
 option(WITH_WEST "Build and install WEST related features" OFF)
 
 
@@ -76,6 +77,12 @@ add_custom_target(ffmpeg ALL COMMAND ${PROJECT_SOURCE_DIR}/configure_ffmpeg)
 ENDIF()
 
 
+
+if(WITH_LONG_DOUBLE)
+	set(LONG_DOUBLE_VALUE 1)
+else()
+	set(LONG_DOUBLE_VALUE 0)
+endif()
 
 configure_file(VipConfig.h.in VipConfig.h)
 install(FILES ${CMAKE_BINARY_DIR}/VipConfig.h DESTINATION include)

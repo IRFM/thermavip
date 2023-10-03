@@ -109,7 +109,7 @@ QDataStream &operator>>(QDataStream & i, VipLongPoint & pt) {
 	return i;
 }
 
-#ifndef VIP_USE_LONG_DOUBLE
+#if VIP_USE_LONG_DOUBLE == 0
 QDataStream &operator<<(QDataStream & s, const VipPoint & c)
 {
 	return s << c.x() << c.y();
@@ -271,7 +271,7 @@ QTextStream & operator>>(QTextStream & s, VipLongPoint & c)
 	return s;
 }
 
-#ifndef VIP_USE_LONG_DOUBLE
+#if VIP_USE_LONG_DOUBLE==0
 QTextStream &operator<<(QTextStream & s, const VipPoint & c)
 {
 	return s << "[" << c.x() << " , " << c.y() << "] ";
@@ -922,7 +922,7 @@ vip_long_double toLongDouble(T v) { return (vip_long_double)v; }
 template< class T>
 T fromLongDouble(vip_long_double v) { return (T)v; }
 
-#ifndef VIP_USE_LONG_DOUBLE
+#if VIP_USE_LONG_DOUBLE==0
 static VipPoint to_point(const VipLongPoint & pt) {
 	return VipPoint(pt);
 }
@@ -950,7 +950,7 @@ static int registerConversionFunctions()
 	qRegisterMetaType<complex_f>();
 	qRegisterMetaType<complex_d>();
 	qRegisterMetaType<VipPoint>();
-#ifndef VIP_USE_LONG_DOUBLE
+#if VIP_USE_LONG_DOUBLE==0
 	//VipLongPoint is different than VipPoint, we need to register it
 	qRegisterMetaType<VipLongPoint>();
 	qRegisterMetaTypeStreamOperators<VipLongPoint>("VipLongPoint");
@@ -996,7 +996,7 @@ static int registerConversionFunctions()
 	QMetaType::registerConverter<VipLongPoint, QByteArray>(detail::typeToByteArray<VipLongPoint>);
 	QMetaType::registerConverter<QByteArray, VipLongPoint>(detail::byteArrayToType<VipLongPoint>);
 
-#ifndef VIP_USE_LONG_DOUBLE
+#if VIP_USE_LONG_DOUBLE==0
 	//VipPoint is different than VipLongPoint, we need to register its conversion operators
 	QMetaType::registerConverter<VipPoint, QPoint >(&VipPoint::toPoint);
 	QMetaType::registerConverter<VipPoint, QPointF >(&VipPoint::toPointF);

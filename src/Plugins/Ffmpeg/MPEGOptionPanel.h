@@ -10,10 +10,8 @@
 
 class MPEGSaver;
 
-/**
-* \class MPEGOptionPanel
-* \brief MpegOptionPanel is used to define video
-*/
+/// @brief Editor for MPEGSaver device.
+/// Allows to modify the recording rate, frequency, codec.
 class MPEGOptionPanel : public QGroupBox
 {
 	Q_OBJECT

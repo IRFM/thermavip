@@ -220,7 +220,7 @@ static vip_long_double LongDoubleFromByteArray(const QByteArray & str)
 static int registerLongDouble()
 {
 	qRegisterMetaType<VipPoint>();
-#ifndef VIP_USE_LONG_DOUBLE
+#if VIP_USE_LONG_DOUBLE == 0
 	qRegisterMetaType<VipLongPoint>();
 #endif
 	qRegisterMetaType<vip_long_double>();

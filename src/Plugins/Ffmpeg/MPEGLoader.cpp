@@ -111,6 +111,7 @@ bool MPEGLoader::open(VipIODevice::OpenModes mode)
 
 	if (file.contains("|"))
 	{
+		// Try to open the path as a sequential device
 		QStringList lst = file.split("|");
 		if (lst.size() >= 2)
 		{
@@ -829,102 +830,3 @@ long int VideoGrabber::GetCurrentFramePos()const { return m_frame_pos; }
 double VideoGrabber::GetFps()const { return m_fps; }
 
 
-
-
-
-
-class IR_H264_Loader::PrivateData
-{
-public:
-	VideoGrabber grabber;
-	qint64 count;
-	double sampling_time;
-	PrivateData() : count(0), sampling_time(0) {}
-};
-
-IR_H264_Loader::IR_H264_Loader(QObject * parent)
-	:VipTimeRangeBasedGenerator(parent)
-{
-	m_data = new PrivateData();
-	this->outputAt(0)->setData(QVariant::fromValue(VipNDArray(QMetaType::UShort,vipVector(10, 10))));
-}
-
-IR_H264_Loader::~IR_H264_Loader()
-{
-	close();
-	delete m_data;
-}
-
-bool IR_H264_Loader::open(VipIODevice::OpenModes mode)
-{
-	if (mode != VipIODevice::ReadOnly)
-		return false;
-
-	if (this->isOpen())
-	{
-		m_data->grabber.Close();
-		setOpenMode(NotOpen);
-		m_data->count = 0;
-	}
-
-	QString file = this->removePrefix(path());
-
-	try {
-		m_data->grabber.Close();
-		m_data->grabber.Open(file.toLatin1().data());
-		qint64 size = m_data->grabber.GetFrameCount();
-		this->setTimeWindows(0, size, 0.02 * 1000000000);//qint64(m_data->sampling_time * qint64(1000000000)));
-
-		QFileInfo info(file);
-
-		this->setAttribute("Date", info.lastModified().toString());
-		this->setOpenMode(mode);
-
-		m_data->grabber.MoveNextFrame();
-		VipAnyData out = create(QVariant::fromValue(m_data->grabber.GetCurrentFrame()));
-		if (deviceType() == Sequential)
-		{
-			out.setTime(vipGetNanoSecondsSinceEpoch());
-			out.setAttribute("Number", 0);
-		}
-		outputAt(0)->setData(out);
-		m_data->grabber.SeekFrame(0);
-		setOpenMode(ReadOnly);
-
-		return true;
-
-	}
-	catch (const std::exception & e)
-	{
-		setError(e.what());
-		return false;
-	}
-
-	return false;
-
-}
-
-void IR_H264_Loader::close()
-{
-	this->stopStreaming();
-	m_data->grabber.Close();
-	setOpenMode(NotOpen);
-	m_data->count = 0;
-}
-
-bool IR_H264_Loader::readData(qint64 time)
-{
-	try {
-		//temporal device (mpeg file)
-		qint64 pos = computeTimeToPos(time);
-		const VipNDArray ar = m_data->grabber.GetFrameByNumber(pos);//Time(time*0.000000001);
-		VipAnyData out = create(QVariant::fromValue(ar));
-		outputAt(0)->setData(out);
-		return true;
-	}
-	catch (const std::exception & e)
-	{
-		setError(e.what());
-		return false;
-	}
-}

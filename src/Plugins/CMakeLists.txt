@@ -1,4 +1,4 @@
-if(WITH_FFMEG)
+if(WITH_FFMPEG)
 add_subdirectory(Ffmpeg)
 else()
 message(STATUS "FFmpeg plugin not built")

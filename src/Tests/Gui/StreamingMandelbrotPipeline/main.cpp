@@ -254,6 +254,10 @@ int main(int argc, char** argv)
 	// Setup pipeline
 
 
+	// Note that, in this case (no serialization, no multiple VipIODevice), using a processing pool
+	// is not mandatory. We use it to allocate processings on the heap and assign them a parent
+	// in order to be properly destroyed at exit.
+
 	VipProcessingPool pool;
 
 	// Create mandelbrot generator

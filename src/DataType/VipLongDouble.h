@@ -376,7 +376,7 @@ Q_DECL_CONSTEXPR inline QPointF VipFloatPoint<T>::toPointF() const
 
 
 
-#ifdef VIP_USE_LONG_DOUBLE
+#if VIP_USE_LONG_DOUBLE == 1
 
 typedef vip_long_double vip_double;
 typedef VipFloatPoint<vip_long_double> VipLongPoint;
@@ -413,7 +413,7 @@ inline vip_double vipReadLEDouble(unsigned LD_support , QDataStream & stream)
 
 	if (has_LD) { //was saved as long double
 		unsigned LD_size = LD_support & ~(1U << 31U);
-#ifdef VIP_USE_LONG_DOUBLE
+#if VIP_USE_LONG_DOUBLE == 1
 		if (LD_size == sizeof(long double)) {
 			//read raw long double
 			vipReadLELongDouble(stream, v);

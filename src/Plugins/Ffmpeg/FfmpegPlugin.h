@@ -36,7 +36,6 @@ class FfmpegInterface : public QObject, public VipPluginInterface
 {
 	Q_OBJECT
 		Q_PLUGIN_METADATA(IID "thermadiag.thermavip.VipPluginInterface")
-		//Q_PLUGIN_METADATA(IID "InfraTechPluginh")
 		Q_INTERFACES(VipPluginInterface)
 public:
 

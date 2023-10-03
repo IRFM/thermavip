@@ -31,6 +31,9 @@ set(QT_LIBS Qt::Core
 endif()
 target_link_libraries(${TARGET_PROJECT} PRIVATE ${QT_LIBS})
 
+
+
+
 #external code added if exists
 if(EXISTS my_compiler_flags.cmake ) 
       include(my_compiler_flags.cmake)

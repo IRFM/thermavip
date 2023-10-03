@@ -26,6 +26,30 @@ if (last_time == 0 || (current - last_time) >= sampling_ms)
 static QMutex __mutex;
 static bool __should_quit = false;
 
+static bool IsCloseEventReceived()
+{
+	return false;
+	struct Thread : QThread
+	{
+		std::string str;
+		virtual void run()
+		{
+			while (!__should_quit) {
+				std::cin >> str;
+
+				QMutexLocker lock(&__mutex);
+				__should_quit = true;
+			}
+		}
+	};
+
+	static Thread th;
+	if (!th.isRunning())
+		th.start();
+
+	return __should_quit;
+}
+
 
 #ifdef _MSC_VER
 #include "Windows.h"
@@ -845,34 +869,6 @@ void RecordWindow::setState(bool start)
 
 
 
-
-
-bool IsCloseEventReceived()
-{
-	return false;
-	struct Thread : QThread
-	{
-		std::string str;
-		virtual void run()
-		{
-			while (!__should_quit)
-			{
-				std::cin >> str;
-				
-					QMutexLocker lock(&__mutex);
-					__should_quit = true;
-				
-			}
-		}
-	};
-
-	static Thread th;
-	if (!th.isRunning())
-		th.start();
-
-	
-	return __should_quit;
-}
 
 
 /*

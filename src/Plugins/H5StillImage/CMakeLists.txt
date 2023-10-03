@@ -41,6 +41,8 @@ target_compile_definitions(H5StillImage PRIVATE H5_BUILT_AS_DYNAMIC_LIB BUILD_H5
 # Use find_package to get the H5StillImage paths
 find_package (HDF5 COMPONENTS C )
 
+message(STATUS "Found HDF5 in ${HDF5_INCLUDE_DIRS}")
+
 target_include_directories(H5StillImage PRIVATE ${HDF5_INCLUDE_DIRS} )
 target_link_libraries(H5StillImage PRIVATE ${HDF5_LIBRARIES})
 

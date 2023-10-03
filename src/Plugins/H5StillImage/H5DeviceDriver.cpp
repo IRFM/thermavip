@@ -1,8 +1,8 @@
 
-
-#include <hdf5.h>
+extern "C" {
 #include <H5Ipublic.h>
-
+#include <hdf5.h>
+}
 #include <qiodevice.h>
 
 #include "H5DeviceDriver.h"

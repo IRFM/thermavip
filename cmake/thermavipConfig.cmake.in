@@ -20,6 +20,6 @@ ENDIF()
 set_and_check(THERMAVIP_APPLICATION_DIR "${PACKAGE_PREFIX_DIR}/thermavip")
 set_and_check(THERMAVIP_PLUGIN_DIR "${PACKAGE_PREFIX_DIR}/thermavip/VipPlugins")
 
-set(THERMAVIP_LIBRARIES Logging DataType Plotting Core Gui Annotation @PLUGINS_LIBS@)
+set(THERMAVIP_LIBRARIES VipLogging VipDataType VipPlotting VipCore VipGui VipAnnotation @PLUGINS_LIBS@)
 
 check_required_components(thermavip)

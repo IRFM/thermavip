@@ -74,7 +74,7 @@ VIP_DATA_TYPE_EXPORT QDataStream &operator>>(QDataStream & s, VipRGB & c);
 VIP_DATA_TYPE_EXPORT QDataStream &operator<<(QDataStream & s, const VipLongPoint & c);
 VIP_DATA_TYPE_EXPORT QDataStream &operator>>(QDataStream & s, VipLongPoint & c);
 
-#ifndef VIP_USE_LONG_DOUBLE
+#if VIP_USE_LONG_DOUBLE==0
 VIP_DATA_TYPE_EXPORT QDataStream &operator<<(QDataStream & s, const VipPoint & c);
 VIP_DATA_TYPE_EXPORT QDataStream &operator>>(QDataStream & s, VipPoint & c);
 #endif
@@ -110,7 +110,7 @@ VIP_DATA_TYPE_EXPORT QTextStream & operator>>(QTextStream & s, QPointF & c);
 VIP_DATA_TYPE_EXPORT QTextStream & operator<<(QTextStream & s, const VipLongPoint & c);
 VIP_DATA_TYPE_EXPORT QTextStream & operator>>(QTextStream & s, VipLongPoint & c);
 
-#ifndef VIP_USE_LONG_DOUBLE
+#if VIP_USE_LONG_DOUBLE==0
 VIP_DATA_TYPE_EXPORT QTextStream &operator<<(QTextStream & s, const VipPoint & c);
 VIP_DATA_TYPE_EXPORT QTextStream &operator>>(QTextStream & s, VipPoint & c);
 #endif

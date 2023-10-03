@@ -6,8 +6,8 @@
 The *Core* library defines the central concepts used within Thermavip application:
 
 -	XML/Binary archiving,
--	Plugin mechanism,
 -	Access to configuration files/directories,
+-	Plugin mechanism,
 -	Most importantly, an **Asynchronous Agents Library based on dataflow** used to define complex processing pipelines
 
 The *Core* library can be used outside of Thermavip application, like any other library. It depends on VipLogging, VipDataType, QtCore, QtGui, QtXml and QtNetwork.
@@ -190,6 +190,40 @@ In the second situation, the archive uses an internal factory to create the righ
 
 The serialization mechanism supports all types that can be stored in a `QVariant` object: all types declared with the Q_DECLARE_METATYPE() macro and all QObject inheriting types registered with VIP_REGISTER_QOBJECT_METATYPE() macro.
 By default, objects are serialized/deserialized using the provided functions registered with `vipRegisterArchiveStreamOperators()`. If no functions are provided, the library will try to use the stream operators from/to `QDataStream`.
+
+
+## Access to configuration files/directories
+
+*Core* library gives access to thermavip configuration files and directories through the following functions:
+
+-	`vipGetDataDirectory()`: Returns the data directory path, used to store persistent informations per user
+-	`vipGetTempDirectory()`: Returns the temporary directory path, used to store data that should not remains when exiting from the executable
+-	`vipGetLogDirectory()`: Returns the log directory. It is located inside the data directory and stores all log files for the SDK and the plugins.
+-	`vipGetPerspectiveDirectory()`: Returns the global perspective directory. It is located next to the executable and stores all global perspectives.
+-	`vipGetPluginsDirectory()`: Returns the plugins directory. It is located next to the executable and stores the plugins (dynamic libraries and possible configuration files).
+
+If you intend to use the *Core* library without thermavip executable, these functions should not be used.
+
+## Plugins
+
+The *Core* library provides the base class `VipPluginInterface` used to create custom plugins for the thermavip application.
+This interface has no use if the Core library is used as a 3rd party library in another application.
+
+Usually, thermavip plugins are located in the folder *VipPlugins* located next to the thermavip executable. Use `vipGetPluginsDirectory()` get the full plugins directory path.
+Plugins are loaded at runtime from the thermavip main() function. By default, all shared libraries located inside the plugins directory are loaded.
+You can specify which plugins are loaded and the load order using a `Plugins.ini` file in the plugins directory. Example of `Plugins.ini`:
+
+```ini
+[Default]
+
+plugin/1/name = Ffmpeg
+plugin/2/name = WEST
+plugin/3/name = Generators
+plugin/4/name = NVF
+plugin/5/name = WEST_DB
+plugin/6/name = ImageProcessing
+```
+
 
 
 

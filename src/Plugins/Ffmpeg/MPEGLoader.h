@@ -2,10 +2,18 @@
 #define MPEG_LOADER_H
 
 #include "VipIODevice.h"
+#include "VipSleep.h"
+
 #include "FfmpegConfig.h"
  
 class VideoDecoder;
 
+/// @brief VipIODevice class able to read most MPEG video formats using ffmpeg library
+///
+/// MPEGLoader is either a Temporal or Sequential VipIODevice based on provided path.
+/// If the path refers to a local file, MPEGLoader will be Temporal.
+/// If the path refers to a network stream, MPEGLoader will be Sequential.
+/// 
 class FFMPEG_EXPORT MPEGLoader : public VipTimeRangeBasedGenerator
 {
 	Q_OBJECT
@@ -30,7 +38,8 @@ public:
 
 	virtual DeviceType deviceType() const;
 
-	//helper function
+	/// @brief Helper function, open path with optional format and options.
+	/// This can be used (for instance) to open the webcam (on Windows): open("video=" + action->text(), "dshow");
 	bool open(const QString & name, const QString & format, const QMap<QString, QString> & options = QMap<QString, QString>());
 
 	virtual QString fileFilters() const { return "Video file (*.mpg *.mpeg *.avi *.mp4 *.wmv *.gif *.mov *.mkv *.IR *.sdp)"; }
@@ -53,7 +62,7 @@ protected:
 			while (!stop)
 			{
 				loader->readCurrentData();
-				QThread::msleep(10);
+				vipSleep(10);
 			}
 		}
 	};
@@ -70,45 +79,6 @@ protected:
 };
 
 VIP_REGISTER_QOBJECT_METATYPE(MPEGLoader*)
-
-
-
-#include "MPEGSaver.h"
-
-class FFMPEG_EXPORT IR_H264_Loader : public VipTimeRangeBasedGenerator
-{
-	Q_OBJECT
-	VIP_IO(VipOutput image)
-
-		Q_CLASSINFO("image", "Output image read from the IR video file")
-		Q_CLASSINFO("description", "Read a sequence of image from a IR video file. Internally uses ffmpeg.")
-public:
-
-
-	IR_H264_Loader(QObject * parent = NULL);
-	virtual ~IR_H264_Loader();
-
-	virtual bool probe(const QString &filename, const QByteArray &) const {
-		return supportFilename(filename) || VipIODevice::probe(filename);
-	}
-	virtual bool open(VipIODevice::OpenModes mode);
-	virtual void close();
-
-	virtual DeviceType deviceType() const {
-		return Temporal;
-	}
-
-	virtual QString fileFilters() const { return "Video file (*." CODEC_FORMAT ")"; }
-
-protected:
-	virtual bool readData(qint64 time);
-
-private:
-	
-	class PrivateData;
-	PrivateData * m_data;
-};
-//VIP_REGISTER_QOBJECT_METATYPE(IR_H264_Loader*)
 
 
 #endif
