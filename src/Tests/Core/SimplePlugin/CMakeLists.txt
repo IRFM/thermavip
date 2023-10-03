@@ -32,7 +32,6 @@ set(QT_LIBS Qt::Core
 # Link Qt libraries
 target_link_libraries(SimplePlugin PRIVATE ${QT_LIBS})
 
-
 # Find thermavip
 find_package(thermavip REQUIRED )
 
