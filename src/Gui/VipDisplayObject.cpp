@@ -117,7 +117,6 @@ public:
 		first(true),
 		previousDisplayTime(0),
 		lastTitleUpdate(0),
-		missCount(0),
 		lastVisibleUpdate(0){}
 
 	std::atomic<bool> displayInProgress;
@@ -129,7 +128,9 @@ public:
 	qint64 previousDisplayTime;
 	qint64 lastTitleUpdate;
 	qint64 lastVisibleUpdate;
-	int missCount;
+
+	//VipSpinlock lock;
+	//std::condition_variable_any cond;
 };
 
 VipDisplayObject::VipDisplayObject(QObject * parent )
@@ -201,31 +202,23 @@ void VipDisplayObject::apply()
 			// display in the GUI thread or not
 			if ((QCoreApplication::instance() && QThread::currentThread() == QCoreApplication::instance()->thread()))
 				this->display(buffer);
-			else
+			else {
 				QMetaObject::invokeMethod(this, "display", Qt::QueuedConnection, Q_ARG(VipAnyDataList, buffer));
+			}
 		}
 	}
 
 	//wait for the display to end
-	//
-	// For super fast offline display, uncomment the if(stream) line
-	/* if (stream) {
-		while (m_data->displayInProgress && !m_data->isDestruct) {
-			vipSleep(3);
-			// timeout of 1s, to avoid potential deadlock in streaming mode
-			 qint64 current = QDateTime::currentMSecsSinceEpoch();
-			 if ((current - time) > 50) {
-				vipProcessEvents(NULL, 100);
-			}
-			if ((current - time) > 1000)
-				break;
-		}
-	}
-	else*/
+	
 	{
-		//TEST
-		 while (m_data->displayInProgress && !m_data->isDestruct) {
+		// The condition based approach is is in thoery better.
+		// But tests show that pooling approach increase the global GUI responsiveness
+		//VipUniqueLock<VipSpinlock> ll(m_data->lock);
+		 while (m_data->displayInProgress.load(std::memory_order_relaxed) && !m_data->isDestruct) {
 			vipSleep(3);
+			// m_data->cond.wait_for(m_data->lock, std::chrono::milliseconds(1));
+			//if (!m_data->displayInProgress.load(std::memory_order_relaxed) || m_data->isDestruct)
+			//	break;
 			qint64 current = QDateTime::currentMSecsSinceEpoch();
 			if ((current - time) > 50) {
 				vipProcessEvents(NULL, 100);
@@ -271,6 +264,7 @@ void VipDisplayObject::display( const VipAnyDataList & dat)
 	Q_EMIT displayed(dat);
 
 	m_data->displayInProgress = false;
+	//m_data->cond.notify_one();
 }
 
 bool VipDisplayObject::displayInProgress() const

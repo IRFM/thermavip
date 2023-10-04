@@ -1,5 +1,4 @@
 #define VIP_ENABLE_LOG_DEBUG
-//#define VIP_EVAL_THREAD_COUNT 1
 
 #include <fstream>
 
@@ -18,6 +17,8 @@
 #include <QDesktopWidget>
 #include <QOpenGLWidget>
 #include <QTemporaryDir>
+#include <QOpenGLWidget>
+#include <qopenglfunctions.h>
 
 #include "VipCore.h"
 #include "VipGui.h"  
@@ -39,20 +40,13 @@
 #endif
 
 
-
 #ifdef _MSC_VER
 #define VIP_ALLOW_AUTO_UPDATE
 #endif
 
-#include <time.h>
-#include <QRegion>
-
-
 void myMessageOutput(QtMsgType type, const QMessageLogContext &context, const QString &msg)
 {
-	//if (msg.contains("setMouseGrabEnabled"))
-	//	bool stop = true;
-
+	
 	(void)context;
 	switch (type) {
 	case QtDebugMsg:
@@ -70,11 +64,7 @@ void myMessageOutput(QtMsgType type, const QMessageLogContext &context, const QS
 	}
 	return;
 } 
- 
-#include <QOpenGLWidget>
-#include <qopenglfunctions.h>
-#include "VipPolygon.h"
-#include <array>
+
 
 
 int main(int argc, char** argv)
@@ -166,7 +156,7 @@ int main(int argc, char** argv)
 #else
 
 	QString app_path = QFileInfo(argv[0]).canonicalFilePath();
-	printf("App: %s\n", app_path.toLatin1().data());
+	vip_debug("App: %s\n", app_path.toLatin1().data());
 	if (app_path.isEmpty())
 		app_path = QApplication::applicationDirPath() + "/Thermavip.exe";
 	vipSetAppCanonicalPath(app_path);
@@ -192,18 +182,18 @@ int main(int argc, char** argv)
 	QDir::setCurrent(QFileInfo(vipAppCanonicalPath()).canonicalPath());
 #endif
 
-	printf("%s\n", app.font().toString().toLatin1().data());
+	vip_debug("%s\n", app.font().toString().toLatin1().data());
 
 	//load fonts embedded within Thermavip
 	QFontDatabase base;
 	QStringList families = base.families(QFontDatabase::Any);
 	/*for (int i = 0; i < families.size(); ++i)
-	printf("familiy: %s\n", families[i].toLatin1().data());*/
+	vip_debug("familiy: %s\n", families[i].toLatin1().data());*/
 	if (QFileInfo("fonts").exists() && QFileInfo("fonts").isDir()) {
 		QFileInfoList files = QDir("fonts").entryInfoList(QStringList() << "*.ttf", QDir::Files);
 		for (int i = 0; i < files.size(); ++i)
 			if (QFontDatabase::addApplicationFont("fonts/" + files[i].fileName()) != -1) {
-				printf("Added font %s\n", files[i].fileName().toLatin1().data());
+				vip_debug("Added font %s\n", files[i].fileName().toLatin1().data());
 			}
 
 		if (families.size() < 10 || force_font) {
@@ -212,7 +202,7 @@ int main(int argc, char** argv)
 			QFont font("Calibri Light");
 			font.setPointSize(12);
 			QApplication::setFont(font);
-			printf("Set font to %s\n", font.family().toLatin1().data());
+			vip_debug("Set font to %s\n", font.family().toLatin1().data());
 		}
 	}
 
@@ -376,8 +366,8 @@ int main(int argc, char** argv)
 	QString thermavip = vipAppCanonicalPath();
 	thermavip.replace("\\", "/");
 	thermavip.replace("/", "\\\\");
-	printf("%s\n", p.toLatin1().data());
-	printf("%s\n", thermavip.toLatin1().data());
+	vip_debug("%s\n", p.toLatin1().data());
+	vip_debug("%s\n", thermavip.toLatin1().data());
 
 	std::ofstream out(p.toLatin1().data());
 	if (out) {
@@ -448,7 +438,7 @@ int main(int argc, char** argv)
 	{
 
 		QString fileName = QFileInfo(plugins[i]).fileName();
-		printf("Start loading %s\n", fileName.toLatin1().data());
+		vip_debug("Start loading %s\n", fileName.toLatin1().data());
 		QString error;
 		VipPluginInterface::LoadResult ret = VipLoadPlugins::instance().loadPlugin(plugins[i], &error);
 		if (ret == VipPluginInterface::ExitProcess)

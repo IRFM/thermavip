@@ -47,3 +47,5 @@ install(TARGETS Thermavip
     FRAMEWORK DESTINATION "${CMAKE_INSTALL_PREFIX}/thermavip"
     RUNTIME DESTINATION "${CMAKE_INSTALL_PREFIX}/thermavip"
 )
+install(FILES ${PROJECT_SOURCE_DIR}/base_session.session
+        DESTINATION ${CMAKE_INSTALL_PREFIX}/thermavip )
