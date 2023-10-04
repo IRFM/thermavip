@@ -92,4 +92,6 @@ A. Puig Sitjes et Al., *«Wendelstein 7-X Near Real-Time Image Diagnostic System
 
 M. Jakubowski et Al., *«Infrared imaging systems for wall protection in the W7-X stellarator (invited),»* Review of Scientific Instruments, vol. 89, n° %110E116, 2018.
 
+
+
 Thermavip framework and this page Copyright (c) 2023, CEA/IRFM
