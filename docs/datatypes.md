@@ -13,7 +13,7 @@ The *DataType* library defines the data structures that are commonly manipulated
 -	`VipIntervalSampleVector`: a typedef of`QVector<VipIntervalSample>` used to represent histograms within Thermavip.
 -	`VipNDArray` and its derived classes (`VipNDArrayView`, `VipNDArrayType` and `VipNDArrayTypeView`) representing a dynamic N-dimension array of any type. Images within Thermavip are manipulated using `VipNDArray`.
 -	`VipHybridVector` 1D vector class using either static or dynamic storage and used to represent coordinates, shapes and strides for `VipNDArray` objects.
--	`VipShape` and `VipSceneModel` representing arbitray 2D shapes mainly used to extract statistical data inside sub-part of images.
+-	`VipShape` and `VipSceneModel` representing arbitray 2D shapes mainly used to extract statistical data inside sub-part of images, or to represent video annotations.
 
 The classes `VipPointVector`, `VipIntervalSampleVector` and `VipNDArray` internally use **Copy On Write** (COW) to avoid unnecessary allocations and copies. The classes `VipShape` and `VipSceneModel` use **explicit sharing**. This means that modifying one object will change all copies.
 
@@ -156,7 +156,7 @@ res[i] = (2 * vipCos(a[i])) > 0 ? b : c;
 ```
 Using expression template in video acquisition tools produces a smaller and more comprehensive code, as well as a usually more optimize binary.
 
-Currently, Thermavip provdes the following functions working on arrays and/or values:
+Currently, Thermavip provides the following functions working on arrays and/or values:
 
 -	`vipCast`: cast array type to another one
 -	`vipMin`: minimum between 2 arrays/values
@@ -337,4 +337,4 @@ Within Thermavip, a scene model is collection of 2D shapes groupped by labels. A
 -	Draw Regions Of Intereset (ROI) over images/videos
 -	Extract temporal statistics over ROI on videos
 -	Extract dynamic histograms
--	Display 2D shapes over videos as the result of pattern recognition tools 
+-	Display 2D shapes over videos as the result of pattern recognition tools or video annotations

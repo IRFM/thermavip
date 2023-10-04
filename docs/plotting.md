@@ -53,7 +53,7 @@ All plot items are `QGraphicsItem` that must inherit `VipPlotItem` base class. C
 See the [gallery](gallery.md) and related examples for more details on the library capabilities.
 
 ## Firm real-time display
-The Plotting library was developped for firm real-time applications. It provides a handfull of tricks/features to achieve high display frame rates even on heavy loads (see StreamingMandelbrot example for instance). Its first goal is to develop online control panels displaying data from dozens of sensors: cameras (visible/infrared), thermocouples, voltage measurements...
+The Plotting library was developped for firm real-time applications. It provides a handfull of tricks/features to achieve high display frame rates even on heavy loads (see [StreamingMandelbrot](../src/Tests/Plotting/StreamingMandelbrot/main.cpp) example for instance). Its first goal is to develop online control panels displaying data from dozens of sensors: cameras (visible/infrared), thermocouples, voltage measurements...
 
 ### Data streaming
 All plotting classes (inheriting `VipPlotItem`) have been optimized to render static as well as dynamic contents for streaming purposes.
@@ -71,7 +71,7 @@ Most plotting classes support setting their data in another thread than the GUI 
 - Some computing tasks can be performed in the calling thread instead of the GUI one to increase global GUI responsiveness
 - The streaming thread (which generates the input data) does not need to go through the main event loop to set the data.
 
-All streaming examples use this feature: [StreamingMandelbrot](../src/Tests/Plotting/StreamingMandelbrot/main.cpp), [CurveStreaming](../src/tests/Plotting/CurveStreaming/main.cpp), [CurveStreaming2](../src/tests/Plotting/CurveStreaming2/main.cpp), [HeavyCurveStreaming](../src/tests/Plotting/HeavyCurveStreaming/main.cpp), [SceneModel](../src/tests/Plotting/SceneModel/main.cpp), [Quivers](../src/tests/Plotting/Quivers/main.cpp).
+All streaming examples use this feature: [StreamingMandelbrot](../src/Tests/Plotting/StreamingMandelbrot/main.cpp), [CurveStreaming](../src/Tests/Plotting/CurveStreaming/main.cpp), [CurveStreaming2](../src/Tests/Plotting/CurveStreaming2/main.cpp), [HeavyCurveStreaming](../src/Tests/Plotting/HeavyCurveStreaming/main.cpp), [SceneModel](../src/Tests/Plotting/SceneModel/main.cpp), [Quivers](../src/Tests/Plotting/Quivers/main.cpp).
 
 ### Rendering modes
 
@@ -126,5 +126,5 @@ Currently, style sheets do NOT support several Qt features:
 - Descendant Selector
 - Sub-Controls (like `QComboBox::drop-down`)
 
-See [StyleSheet](../src/tests/Plotting/StyleSheet/main.cpp) for another example of complete style sheet.
+See [StyleSheet](../src/Tests/Plotting/StyleSheet/main.cpp) for another example of complete style sheet.
 

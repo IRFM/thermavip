@@ -6,7 +6,7 @@ This page presents examples of plots made with the *Plotting* library and link t
 
 ## Axes
 
-This example shows how to organize several axes around the same plotting are and what type of axis optinos are available. [Source code](../src/Tests/Plotting/Axes/main.cpp).
+This example shows how to organize several axes around the same plotting area and what type of axis options are available. [Source code](../src/Tests/Plotting/Axes/main.cpp).
 ![Axes](images/multiple_axes.png)
 
 ## BarChart
@@ -55,7 +55,7 @@ VipPolarValueGauge uses several VipPieItem to build a customized polar gauge. [S
 
 ## Quiver
 
-This example shows how to setup a live quiver plot which uses a colormap. [Source code](../src/Tests/Plotting/Quiver/main.cpp).
+This example shows how to setup a live quiver plot which uses a colormap. [Source code](../src/Tests/Plotting/Quivers/main.cpp).
 ![Quiver](images/quivers.png)
 
 ## Scatter
@@ -83,7 +83,7 @@ This example demonstrates how to perform heavy streaming of several signals:
 -	1 curve displaying the pixel values along a polyline drawn inside the top left image. Like the histogram, the polyline is dynamic.
 -	1 curve displaying the time trace of the maximum pixel value inside the ROI.
 
-[Source code](../src/Tests/Plotting/StreamingMandelbrot/main.cpp).
+There are 2 versions of this example: on relying only on the *Plotting* library ([Source code](../src/Tests/Plotting/StreamingMandelbrot/main.cpp)), and one using the **Agent** system from the [Core](core.md) library ([Source code](../src/Tests/Gui/StreamingMandelbrotPipeline/main.cpp)).
 ![StreamingMandelbrot](images/mandelbrot.png)
 
 ## StyleSheet
@@ -99,4 +99,5 @@ This example shows how to vertically stack plotting areas with a shared horizont
 ## MultiPlot
 
 This (simple) example shows how to use a QGraphicsLayout to layout plotting areas inside a VipMultiGraphicsView, and how to align axes of several plotting areas. [Source code](../src/Tests/Plotting/MultiPlot/main.cpp).
+
 ![MultiPlot](images/multi_graphics_view.png)

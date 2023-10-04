@@ -40,11 +40,7 @@ The SDK itself is based on [Qt](https://www.qt.io) only, a powerfull and open so
 Currently, Thermavip libraries are restricted to C++11 as older gcc version must be supported.
 
 
-## Getting Started
-
-These instructions will get you a copy of the project up and running on your local machine for development and testing purposes.
-
-### Prerequisites
+## Prerequisites
 
 To compile and run Thermavip, you need a valid Qt installation (starting version 5.9).
 Qt needs to be compiled with the desktop opengl option, and with mysql support if you wish to use the [Annotation](docs/annotation.md) library with a MySQL database.
@@ -55,7 +51,7 @@ Note that Thermavip will compile and run on almost any platform supporting Qt, i
 
 Default plugins shipped within the git reprository rely on the [HDF5](https://www.hdfgroup.org/solutions/hdf5/), [CPython](https://github.com/python/cpython) and [Ffmpeg](https://ffmpeg.org/) libraries, and are NOT compiled by default.
 
-### Compilation
+## Compilation
 
 Thermavip compilation relies on cmake. See this [page](docs/compilation.md) for more details.
 

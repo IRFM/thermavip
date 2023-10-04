@@ -4,7 +4,7 @@ The Logging library provides a few helper functions/macros to log information to
 
 Its main components are the ```VipLogging``` singleton class and the ```VIP_LOG_INFO```, ```VIP_LOG_WARNING```, ```VIP_LOG_ERROR``` and ```VIP_LOG_DEBUG``` macros. Usually the ```VipLogging``` class should not be used directly as it is configured by the Thermavip process.
 Logging information is not a (too) heavy process as it is equivalent to holding a mutex and pushing a string object to a QList. The actual writting part (to file, console or GUI) is performed by a dedicated thread. Therefore, logging is a thread safe operation that should be used extensively.
-Usage example:
+Usage:
 
 ```cpp
 #include <VipLogging.h>

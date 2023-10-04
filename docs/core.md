@@ -13,7 +13,7 @@ The *Core* library can be used outside of Thermavip application, like any other 
 
 ## Archiving
 
-The library defines the interface VipArchive to serialize/deserialize any type of objects, including QObject pointers. Currently, only XML and binary serialization are provided 
+The library defines the interface `VipArchive` to serialize/deserialize any type of objects, including QObject pointers. Currently, only XML and binary serialization are provided 
 through the classes:
 
 -	`VipBinaryArchive`: binary serialization/deserialization using an internal format,
@@ -327,7 +327,7 @@ And then for the plugin code itself:
 
 #include "VipPlugin.h"
 
- @brief Minimal plugin interface
+/// @brief Minimal plugin interface
 class SimpleInterface : public QObject, public VipPluginInterface
 {
 	Q_OBJECT
@@ -550,12 +550,12 @@ A VipIODevice can be of 3 types:
 - `VipIODevice::Sequential`: input data are generated sequentially. It does not have a notion of time window or position. Sequential devices only support input operations. They are usually suited for streaming operations.
 - `VipIODevice::Resource`: the device holds one unique data. It does not have a notion of time and position at all. Resource devices are suited for non temporal data, like for instance an image file on the drive.
 
-A read-only VipIODevice should defines one or more outputs. A write-only VipIODevice should defines one or more inputs.
+A read-only VipIODevice should define one or more outputs. A write-only VipIODevice should define one or more inputs.
 
 To open a VipIODevice, you should usually follow these steps:
 - Set all necessary parameters
-- Set the path using VipIODevice::setPath() (for instance for file based devices) or set the QIODevice (`VipIODevice::setDevice()`)
-- Call VipIODevice::open() with the right open mode (usually `VipIODevice::ReadOnly` or `VipIODevice::WriteOnly`).
+- Set the path using `VipIODevice::setPath()` (for instance for file based devices) or set the QIODevice (`VipIODevice::setDevice()`)
+- Call `VipIODevice::open()` with the right open mode (usually `VipIODevice::ReadOnly` or `VipIODevice::WriteOnly`).
 
 If the VipIODevice is intended to work on files, you should call `VipIODevice::setPath()` or `VipIODevice::setDevice()` prior to open the VipIODevice.
 If using `VipIODevice::setPath()`, the `VipIODevice::open()` override should call `VipIODevice::createDevice()` to build a suitable QIODevice based on
@@ -564,13 +564,13 @@ the set `VipMapFileSystemPtr` object (if any).
 WriteOnly devices behave like VipProcessingObject: you should reimplement the `VipProcessingObject::apply()` function and call `VipProcessingObject::update()` to write the data (for non Asynchronous processing, otherwise the update() function is called automatically).
 
 ReadOnly, Temporal or Resource devices don't care about the apply() function (that's why an empty implementation of apply() is provided) and must reimplement VipIODevice::readData() instead.
-Sequential devices do not need to reimplement any of these functions. Instead, they must reimplement VipIODevice::enableStreaming() to start/stop sending output data.
+Sequential devices do not need to reimplement any of these functions. Instead, they must reimplement `VipIODevice::enableStreaming()` to start/stop sending output data.
 
 
 ### Processing pool
 
 
-A processing pool (class `VipProcessingPool`) is VipIODevice without any inputs nor outputs, and is used to control the simultaneous playing of several VipIODevice objects.
+A processing pool (class `VipProcessingPool`) is a VipIODevice without any inputs nor outputs, and is used to control the simultaneous playing of several VipIODevice objects.
 
 VipProcessingPool should be the parent object of read only VipIODevice objects. VipProcessingPool itself is a VipIODevice which type (Temporal, Sequential or Resource) depends
 on its children VipIODevice. The time window of a VipProcessingPool is the union of its children time windows.
