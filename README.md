@@ -21,7 +21,7 @@ For real-time exploitation of sensor data, Thermavip provide tools for:
 * Recording any kind of sensor data within a single or multiple archives,
 * Online/multiscreen displaying of several videos and temporal signals,
 
-Below screenshot shows an example of software built based on Thermavip SDK for the post analysis of WEST sensor data:
+Below screenshot shows an example of software built based on Thermavip SDK for the post analysis of [WEST](https://irfm.cea.fr/en/west/) sensor data:
 
 ![Thermavip](docs/images/thermavip.png)
 
@@ -37,7 +37,8 @@ The SDK itself is based on [Qt](https://www.qt.io) only, a powerfull and open so
 
 **These libraries can also be used outside of Thermavip application, like any third party library.**
 
-Currently, Thermavip libraries are restricted to C++11 as older gcc version must be supported.
+The basic Thermavip application, without plugins, provides at least the necessary features dedicated to video annotation.
+Note that this requires to build Thermavip with the [librir](https://github.com/IRFM/librir) library (see [build](compilation.md) notes).
 
 
 ## Prerequisites
@@ -58,8 +59,8 @@ Thermavip compilation relies on cmake. See this [page](docs/compilation.md) for 
 ## Authors
 
 * [Victor MONCADA](mailto:victor.moncada@cea.fr) (victor.moncada@cea.fr)
-* **Gwenael Dunand**
-* **Chakib Belafdil**
+* [Léo DUBUS](mailto:leo.dubus@cea.fr) (victor.moncada@cea.fr)
+* [Erwan GRELIER](mailto:erwan.grelier@cea.fr) (victor.moncada@cea.fr)
 
 The software has been built with the collaboration and intensive testing of:
 
