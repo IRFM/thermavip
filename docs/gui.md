@@ -11,7 +11,7 @@ The *Gui* library could be used within external applications, but mostly for the
 
 ## Extending the Agent library
 
-*Gui* extends the **Agent** system defined in the *Core* library by providing the following processing classes (inheriting VipProcessingObject):
+*Gui* extends the **Agent** system defined in the *Core* library by providing the following processing classes (inheriting `VipProcessingObject`):
 
 -	`VipDisplayObject`: base class for all processing objects used to display... well, anything
 -	`VipDisplayPlotItem`: base class for processing objects displaying an input data using a `VipPlotItem` instance from the *Plotting* library
@@ -20,7 +20,7 @@ The *Gui* library could be used within external applications, but mostly for the
 -	`VipDisplayImage`: a `VipDisplayPlotItem` that displays an input image using `VipPlotSpectrogram` class
 -	`VipDisplaySceneModel`: a `VipDisplayPlotItem` that displays an input scene model (`VipSceneModel`) using `VipPlotSceneModel` class
 
-[StreamingMandelbrotPipeline](../src/Tests/Gui/StreamingMandelbrotPipeline/main.cpp) example for a use case.
+See [StreamingMandelbrotPipeline](../src/Tests/Gui/StreamingMandelbrotPipeline/main.cpp) example for a use case.
 
 
 ## Thermavip main interface
