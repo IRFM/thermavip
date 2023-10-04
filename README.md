@@ -38,7 +38,7 @@ The SDK itself is based on [Qt](https://www.qt.io) only, a powerfull and open so
 **These libraries can also be used outside of Thermavip application, like any third party library.**
 
 The basic Thermavip application, without plugins, provides at least the necessary features dedicated to video annotation.
-Note that this requires to build Thermavip with the [librir](https://github.com/IRFM/librir) library (see [build](compilation.md) notes).
+Note that this requires to build Thermavip with the [librir](https://github.com/IRFM/librir) library (see [build](docs/compilation.md) notes).
 
 
 ## Prerequisites
@@ -76,5 +76,20 @@ Thermavip SDK and plugins are shipped with raw/modified versions of a few librar
 * The *Plotting* library of Thermavip SDK is a heavily modified version of [qwt](https://qwt.sourceforge.io/) library.
 * The *Image Warping* processing uses a modified version of this [Delaunay](https://github.com/paulzfm/MSTSolver/tree/master/delaunay) library written by Ken Clarkson.
 
+## Publications
+
+V. Moncada et Al., *«Software platform for imaging diagnostic exploitation applied to edge plasma physics and real-time PFC monitoring»*, Fusion Engineering and Design, Volume 190, 113528, ISSN 0920-3796, 2023
+
+E. Grelier et Al., *«Deep Learning-Based Process for the Automatic Detection, Tracking, and Classification of Thermal Events on the In-Vessel Components of Fusion Reactors,»* Proceedings of the 32nd Symposium on Fusion Technology, 2022.
+
+E. Grelier et Al., *«Deep Learning and Image Processing for the Automated Analysis of Thermal Events on the First Wall and Divertor of Fusion Reactors,»* Plasma Physics and Controlled Fusion (2022). 
+
+H. Roche et Al., *«Commissioning of the HADES - High heAt loaD tESting - facility at CEA-IRFM,»* Proceedings of the 32nd Symposium on Fusion Technology, 2022.
+
+Y. Corre et Al., *«Thermographic reconstruction of heat load on the first wall of Wendelstein 7-X due to ECRH shine-through power,»* Nuclear Fusion, vol. 61, n° %1066002, 2021. 
+
+A. Puig Sitjes et Al., *«Wendelstein 7-X Near Real-Time Image Diagnostic System for Plasma-Facing Components Protection,»* Fusion Science and Technology, vol. 74(10), pp. 1-9, 2017. 
+
+M. Jakubowski et Al., *«Infrared imaging systems for wall protection in the W7-X stellarator (invited),»* Review of Scientific Instruments, vol. 89, n° %110E116, 2018.
 
 Thermavip framework and this page Copyright (c) 2023, CEA/IRFM
