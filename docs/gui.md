@@ -33,6 +33,7 @@ Main types of widget are displayed in red or green (for readability).
 
 1.	Main Thermavip widget (class `VipMainWindow`). The main window is accessible using function `vipGetMainWindow()`.
 	Note that the *Gui* library will NOT instanciate this window by default, only the first call to `vipGetMainWindow()` will.
+	The main window is instanciated through Thermavip application.
 	`VipMainWindow` inherits [QMainWindow](https://doc.qt.io/qt-6/qmainwindow.html).
 2.	A [QToolBar](https://doc.qt.io/qt-6/qtoolbar.html) displaying the application icon and title, and update progress (if available). Class `VipIconBar`, accessible using `vipGetMainWindow()->iconBar()`.
 3.	A QToolBar used to open files, folders, or generate sequential devices. Accessible using `vipGetMainWindow()->fileToolBar()`.
@@ -56,3 +57,16 @@ Main types of widget are displayed in red or green (for readability).
 11.	Players displaying videos (class `VipVideoPlayer`) and signals (class `VipPlotPlayer`). 
 	A player class always inherits `VipAbstractPlayer`. `VipVideoPlayer` displays an image (or spectrogram) using the *Plotting* library. `VipPlotPlayer` displays signals and histograms using the *Plotting* library.
 
+
+## Extend Thermavip interface
+
+The *Gui* library is mostly used to extend Thermavip interface using plugins.
+Check the [SimpleGuiPlugin](../src/Tests/Gui/SimpleGuiPlugin) example for more details on how to write a Thermavip plugin.
+The SimpleGuiPlugin does the following:
+
+-	Add the command line argument '--say-hi'. If detected, print 'Hi!' and exit.
+-	Register a function that customize all VipPlotPlayer instances by adding a button that displays a message box saying 'Hi!'
+-	Add a new tool widget that print 'Hi!' and a few information on the selected player.
+-	Register a new write device (RAWSignalWriter) that can save VipPointVector into a .rawsig file.
+-	Register a new read device (RAWSignalReader) that can read .rawsig files.
+-	At startup, create a new workspace containing 6 plot players displaying the same curves.

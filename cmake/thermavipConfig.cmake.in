@@ -2,7 +2,7 @@
 @PACKAGE_INIT@
 
 set(THERMAVIP_FOUND true)
-set(THERMAVIP_INCLUDE_DIRS ${PACKAGE_PREFIX_DIR}/include ${PACKAGE_PREFIX_DIR}/include/VipLogging ${PACKAGE_PREFIX_DIR}/include/VipDataType ${PACKAGE_PREFIX_DIR}/include/VipCore ${PACKAGE_PREFIX_DIR}/include/VipGui ${PACKAGE_PREFIX_DIR}/include/VipAnnotation)
+set(THERMAVIP_INCLUDE_DIRS ${PACKAGE_PREFIX_DIR}/include ${PACKAGE_PREFIX_DIR}/include/VipLogging ${PACKAGE_PREFIX_DIR}/include/VipDataType ${PACKAGE_PREFIX_DIR}/include/VipPlotting ${PACKAGE_PREFIX_DIR}/include/VipCore ${PACKAGE_PREFIX_DIR}/include/VipGui ${PACKAGE_PREFIX_DIR}/include/VipAnnotation)
 
 math(EXPR BITS "8*${CMAKE_SIZEOF_VOID_P}")
 IF(${BITS} MATCHES "64" AND UNIX)

@@ -11,6 +11,6 @@ Name: @PROJECT_NAME@
 Description: @CMAKE_PROJECT_DESCRIPTION@
 URL: @CMAKE_PROJECT_HOMEPAGE_URL@
 Version: @PROJECT_VERSION@
-Cflags: -I"${includedir}" -I"${includedir}/VipLogging" -I"${includedir}/VipDataType" -I"${includedir}/VipCore" -I"${includedir}/VipGui" -I"${includedir}/VipAnnotation"
+Cflags: -I"${includedir}" -I"${includedir}/VipLogging" -I"${includedir}/VipDataType" -I"${includedir}/VipPlotting" -I"${includedir}/VipCore" -I"${includedir}/VipGui" -I"${includedir}/VipAnnotation"
 Libs: -L"${libdir}" -lVipLogging -lVipDataType -lVipPlotting -lVipCore -lVipGui -lVipAnnotation
 Libs.private: -L"${libdir}" -lVipLogging -lVipDataType -lVipPlotting -lVipCore -lVipGui -lVipAnnotation

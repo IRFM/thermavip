@@ -1959,7 +1959,11 @@ bool VipPlayer2D::saveItemContent(VipPlotItemData * item, const QString & path)
 				if (VipMultiInput * in = device->topLevelInputAt(0)->toMultiInput())
 					in->resize(data.size());
 				device->setPath(filename);
-				device->open(VipIODevice::WriteOnly);
+				if (!device->open(VipIODevice::WriteOnly)) {
+					VIP_LOG_ERROR("Failed to open output file ", filename);
+					delete device;
+					return false;
+				}
 				for (int i = 0; i < data.size(); ++i)
 					device->inputAt(i)->setData(any_data[i]);
 				device->update();
@@ -2025,7 +2029,11 @@ bool VipPlayer2D::saveItemContent(VipPlotItemData * item, const QString & path)
 			if (VipMultiInput * in = device->topLevelInputAt(0)->toMultiInput())
 				in->add();
 			device->setPath(filename);
-			device->open(VipIODevice::WriteOnly);
+			if (!device->open(VipIODevice::WriteOnly)) {
+				VIP_LOG_ERROR("Failed to open output file ",filename);
+				delete device;
+				return false;
+			}
 			device->inputAt(0)->setData(any);
 			device->update();
 			bool res = !device->hasError();

@@ -1133,8 +1133,8 @@ QList<VipAbstractPlayer*> vipCreatePlayersFromData(const VipAnyData & any, VipAb
 		VipProcessingObject * source = NULL;
 		if (src)
 			source = src->parentProcessing();
-
-		display->setParent(source->parent());
+		if (source)
+			display->setParent(source->parent());
 		VipIODevice * device = qobject_cast<VipIODevice*>(source);
 
 		if (device)
