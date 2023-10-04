@@ -226,7 +226,7 @@ The signal `rangeUpdated()` is emitted when opening the archive, and `valueUpdat
 These signals provide a simple way to follow the deserialization process for huge archives in order, for instance, to display a progress bar.
 Within Thermavip, the progress bar will be automatically displayed if connecting these signals to the corresponding slots of a `VipProgress` object.
 
-This is automatically done when loading a session file (or the previous session) from Thermavip.
+This is automatically done when loading a session file (or the previous session) from Thermavip application.
 
 ## Access to configuration files/directories
 
@@ -245,7 +245,7 @@ If you intend to use the *Core* library without thermavip executable, these func
 The *Core* library provides the base class `VipPluginInterface` used to create custom plugins for the thermavip application.
 This interface has no use if the Core library is used as a 3rd party library in another application.
 
-Thermavip plugins are standard shared libraires extending the behavior of the program based on Thermavip SDK.
+Thermavip plugins are standard shared libraires extending the behavior of the program based on Thermavip SDK, and are based on Qt [plugin mechanism](https://doc.qt.io/qt-6/plugins-howto.html).
 Usually, thermavip plugins are located in the folder *VipPlugins* next to the thermavip executable. Use `vipGetPluginsDirectory()` get the full plugins directory path.
 Plugins are loaded at runtime from the thermavip main() function. By default, all shared libraries located inside the plugins directory are loaded.
 You can specify which plugins are loaded and the load order using a `Plugins.ini` file in the plugins directory. Example of `Plugins.ini`:
@@ -533,6 +533,64 @@ Only a few members are thread safe (mandatory for asynchronous strategy):
 -	Adding/retrieving data from VipInput/VipOutput/VipProperty objects, like `inputAt(0)->setData(my_data)`, `clearInputBuffers()`...
 -	Calls to `setEnabled()`, `isEnabled()`, `setVisible()`, `isVisible()`
 -	Calls to `update()` and `reset()`
+
+
+### IO devices
+
+
+Source processings (defining only outputs) and leaf ones (defining only inputs) are called IO devices, and should (most of the time) inherit `VipIODevice`.
+
+`VipIODevice` is a special kind of `VipProcessingObject` providing additional functionalities to handle the generation of data (for instance from a video file).
+
+VipIODevice provides both a common implementation and an abstract interface for devices that support reading and writing of VipAnyData.
+VipIODevice is abstract and can not be instantiated, but it is common to use the interface it defines to provide device-independent I/O features.
+
+A VipIODevice can be of 3 types:
+- `VipIODevice::Temporal`: it defines a start and end time, a time window and might have a notion of position. A Temporal devices support both input and output operations.
+- `VipIODevice::Sequential`: input data are generated sequentially. It does not have a notion of time window or position. Sequential devices only support input operations. They are usually suited for streaming operations.
+- `VipIODevice::Resource`: the device holds one unique data. It does not have a notion of time and position at all. Resource devices are suited for non temporal data, like for instance an image file on the drive.
+
+A read-only VipIODevice should defines one or more outputs. A write-only VipIODevice should defines one or more inputs.
+
+To open a VipIODevice, you should usually follow these steps:
+- Set all necessary parameters
+- Set the path using VipIODevice::setPath() (for instance for file based devices) or set the QIODevice (`VipIODevice::setDevice()`)
+- Call VipIODevice::open() with the right open mode (usually `VipIODevice::ReadOnly` or `VipIODevice::WriteOnly`).
+
+If the VipIODevice is intended to work on files, you should call `VipIODevice::setPath()` or `VipIODevice::setDevice()` prior to open the VipIODevice.
+If using `VipIODevice::setPath()`, the `VipIODevice::open()` override should call `VipIODevice::createDevice()` to build a suitable QIODevice based on
+the set `VipMapFileSystemPtr` object (if any).
+
+WriteOnly devices behave like VipProcessingObject: you should reimplement the `VipProcessingObject::apply()` function and call `VipProcessingObject::update()` to write the data (for non Asynchronous processing, otherwise the update() function is called automatically).
+
+ReadOnly, Temporal or Resource devices don't care about the apply() function (that's why an empty implementation of apply() is provided) and must reimplement VipIODevice::readData() instead.
+Sequential devices do not need to reimplement any of these functions. Instead, they must reimplement VipIODevice::enableStreaming() to start/stop sending output data.
+
+
+### Processing pool
+
+
+A processing pool (class `VipProcessingPool`) is VipIODevice without any inputs nor outputs, and is used to control the simultaneous playing of several VipIODevice objects.
+
+VipProcessingPool should be the parent object of read only VipIODevice objects. VipProcessingPool itself is a VipIODevice which type (Temporal, Sequential or Resource) depends
+on its children VipIODevice. The time window of a VipProcessingPool is the union of its children time windows.
+
+Calling `VipProcessingPool::nextTime()`, `VipProcessingPool::previousTime()` or `VipProcessingPool::closestTime()` will return the required time taking into account
+all read-only opened child devices.
+
+Calling `VipProcessingPool::read()` will read the data at given time for all read-only opened child devices.
+
+Disabled children VipIODevice objects are excluded from the time related functions of VipProcessingPool.
+
+
+#### Archiving
+
+If you wish to save/restore the state of a full processing pipeline, you should store it inside a VipProcessingPool object by setting all VipProcessingObject's parents to the pool.
+
+When archiving the VipProcessingPool, all its children will be archived as well, including their connection status and all their properties.
+
+VipProcessingPool ensures that all children VipProcessingObject have a unique name, which is mandatory for archiving. That's why in Thermavip all processing pipelines are manipulated through a VipProcessingPool object.
+
 
 
 ### Examples
