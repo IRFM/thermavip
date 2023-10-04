@@ -83,7 +83,7 @@ This example demonstrates how to perform heavy streaming of several signals:
 -	1 curve displaying the pixel values along a polyline drawn inside the top left image. Like the histogram, the polyline is dynamic.
 -	1 curve displaying the time trace of the maximum pixel value inside the ROI.
 
-There are 2 versions of this example: on relying only on the *Plotting* library ([Source code](../src/Tests/Plotting/StreamingMandelbrot/main.cpp)), and one using the **Agent** system from the [Core](core.md) library ([Source code](../src/Tests/Gui/StreamingMandelbrotPipeline/main.cpp)).
+There are 2 versions of this example: one relying only on the *Plotting* library ([Source code](../src/Tests/Plotting/StreamingMandelbrot/main.cpp)), and one using the **Agent** system from the [Core](core.md) library ([Source code](../src/Tests/Gui/StreamingMandelbrotPipeline/main.cpp)).
 ![StreamingMandelbrot](images/mandelbrot.png)
 
 ## StyleSheet

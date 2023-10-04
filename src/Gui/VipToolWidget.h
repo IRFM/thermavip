@@ -217,7 +217,10 @@ protected:
 
 
 
-
+/// @brief A VipToolWidget which is linked to a VipDisplayPlayerArea or to a VipAbstractPlayer
+///
+/// Subclasses must reimplement setPlayer() member to update the widget's content based on provided player.
+/// 
 class VIP_GUI_EXPORT VipToolWidgetPlayer : public VipToolWidget
 {
 	Q_OBJECT

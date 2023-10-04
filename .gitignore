@@ -2,3 +2,4 @@ _*
 /doc/html/
 build
 CMakeFiles
+*.pptx
