@@ -147,6 +147,7 @@ Vip_event_list ManualAnnotationHelper::createFromUserProposal(const QList<QPolyg
 	p.setModal(true);
 
 	while (true) {
+		
 		if (m_process.state() != QProcess::Running) {
 			m_process.waitForReadyRead(500);
 			QByteArray ar = m_process.readAllStandardOutput();
@@ -167,7 +168,6 @@ Vip_event_list ManualAnnotationHelper::createFromUserProposal(const QList<QPolyg
 		
 		if (err.size()) {
 			VIP_LOG_INFO(err);
-			//printf("err %s\n", err.data());
 			int index = err.indexOf("|");
 			if (index > 0) {
 				err = err.mid(0, index);
@@ -182,9 +182,14 @@ Vip_event_list ManualAnnotationHelper::createFromUserProposal(const QList<QPolyg
 				p.setText(text);
 				p.setValue(value);
 			}
+			else if (err.contains("Traceback")) {
+				m_process.kill();
+				return Vip_event_list();
+			}
 		}
-		if(ar.size())
+		if (ar.size()) {
 			VIP_LOG_INFO(ar);
+		}
 		if (ar.contains("finished"))
 			break;
 	}
