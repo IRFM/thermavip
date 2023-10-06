@@ -9,6 +9,7 @@
 #include "VipPlotWidget2D.h"
 #include "VipPainter.h"
 #include "VipBorderItem.h"
+#include "VipSet.h"
 
 #include <QApplication>
 #include <QGraphicsView>
@@ -1127,7 +1128,7 @@ QList<VipPlotItem*> VipAbstractScale::synchronizedPlotItems() const
 	for(int i=0; i < d_data->synchronizedWith.size(); ++i)
 		items.append(d_data->synchronizedWith[i]->plotItems());
 
-	return items.toSet().toList();
+	return vipToSet( items).values();
 }
 
 QGraphicsView * VipAbstractScale::view() const
@@ -1425,9 +1426,9 @@ void VipAbstractScale::updateItems()
 	if (d_data->plotItems.isEmpty())
 		return;
 	//update items for this axis and synchronized axes
-	QSet<VipPlotItem*> items = d_data->plotItems.toSet();
+	QSet<VipPlotItem*> items = vipToSet(d_data->plotItems);
 	for (int s = 0; s < d_data->synchronizedWith.size(); ++s)
-		items.unite( d_data->synchronizedWith[s]->d_data->plotItems.toSet());
+		items.unite(vipToSet(d_data->synchronizedWith[s]->d_data->plotItems));
 
 	for (QSet<VipPlotItem*>::iterator it = items.begin(); it != items.end(); ++it)
 		(*it)->markCoordinateSystemDirty();

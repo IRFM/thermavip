@@ -564,8 +564,8 @@ void VipVMultiPlotArea2D::resetInnerLegendsPosition()
 			double top_margin = 0;
 			double bottom_margin = 0;
 			QList< VipAbstractScale*> scales = this->scales();
-			for (int i = 0; i < scales.size(); ++i) {
-				if (VipBorderItem* it = qobject_cast<VipBorderItem*>(scales[i])) {
+			for (int j = 0; j < scales.size(); ++j) {
+				if (VipBorderItem* it = qobject_cast<VipBorderItem*>(scales[j])) {
 					if (it->alignment() == VipBorderItem::Right && it->scaleDraw()->ticksPosition() == VipScaleDraw::TicksOutside && it->scaleDraw()->hasComponent(VipScaleDraw::Ticks)) {
 						right_margin = std::max(right_margin, it->scaleDraw()->tickLength(VipScaleDiv::MajorTick));
 						right_margin = std::max(right_margin, it->scaleDraw()->tickLength(VipScaleDiv::MediumTick));

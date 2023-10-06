@@ -543,7 +543,7 @@ public Q_SLOTS:
 	void setCurrentText(const QString & text);
 	void setChoices(const QString & choices){
 		clear();
-		addItems(choices.split(",",QString::SkipEmptyParts));
+		addItems(choices.split(",",VIP_SKIP_BEHAVIOR::SkipEmptyParts));
 	}
 
 private Q_SLOTS:

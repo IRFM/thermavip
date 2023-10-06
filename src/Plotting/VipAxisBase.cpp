@@ -45,7 +45,7 @@ VipAxisBase::VipAxisBase(Alignment pos, QGraphicsItem* parent)
 	d_data = new PrivateData();
 	// this->setLength(0);
 
-	d_data->layoutFlags = 0;
+	d_data->layoutFlags = LayoutFlags();
 	if (pos == Right)
 		d_data->layoutFlags |= TitleInverted;
 
@@ -769,7 +769,7 @@ VipMultiAxisBase::VipMultiAxisBase(Alignment pos, QGraphicsItem* parent)
 {
 	d_data = new PrivateData();
 	d_data->scaleSpacing = 0;
-	d_data->layoutFlags = 0;
+	d_data->layoutFlags = LayoutFlags();
 	if (pos == Right)
 		d_data->layoutFlags |= TitleInverted;
 

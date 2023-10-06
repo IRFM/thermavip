@@ -32,7 +32,6 @@ ManualAnnotationHelper::ManualAnnotationHelper()
 
 		QString cmd = "cmd /c \"cd " + cd_path + " && " + activate + " && " + python_path + " " + thermavip_interface + "\"";
 		printf("cmd: '%s'\n", cmd.toLatin1().data());
-		// m_process.start(cmd);
 		m_process.start("cmd");
 		if (!m_process.waitForStarted(5000)) {
 			printf("error: %s\n", m_process.errorString().toLatin1().data());

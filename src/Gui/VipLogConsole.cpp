@@ -459,7 +459,7 @@ void VipConsoleWidget::disable(bool dis)
 void VipConsoleWidget::setVisibleLogLevel()
 {
 	QList<QAction*> actions = m_data->levelVisibility->menu()->actions();
-	VipLogging::Levels levels = 0;
+	VipLogging::Levels levels ;
 	QStringList consoles;
 
 

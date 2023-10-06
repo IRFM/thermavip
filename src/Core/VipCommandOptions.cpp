@@ -336,7 +336,7 @@ QMultiHash<QString, QVariant> VipCommandOptions::parameters() const
         }
         else
         {
-            foreach(const QVariant& value, option.values)
+            for(const QVariant& value: option.values)
                 params.insert(option.canonicalName, value);
         }
     }
@@ -366,7 +366,7 @@ void CommandOptionsPrivate::setOption(CommandOption* option, const QString& valu
     {
         // Clear mutually-exclusive options
         QList<CommandOption*>& others = groups[option->group];
-        foreach(CommandOption* other, others)
+        for(CommandOption* other: others)
         {
             if (other != option) other->values.clear();
         }
@@ -565,10 +565,10 @@ bool VipCommandOptions::showUnrecognizedWarning(QTextStream& stream) const
         name = "VipCommandOptions";
 
     if (qxt_d().unrecognized.count())
-        stream << name << ": " << tr("unrecognized parameters: ") << qxt_d().unrecognized.join(" ") << endl;
+        stream << name << ": " << tr("unrecognized parameters: ") << qxt_d().unrecognized.join(" ") << Qt::endl;
 
-    foreach(const QString& param, qxt_d().missingParams)
-        stream << name << ": " << tr("%1 requires a parameter").arg(param) << endl;
+    for(const QString& param: qxt_d().missingParams)
+	    stream << name << ": " << tr("%1 requires a parameter").arg(param) << Qt::endl;
 
     return true;
 }
@@ -605,12 +605,12 @@ void VipCommandOptions::showUsage(bool showQtOptions, QTextStream& stream) const
     int maxNameLength = 0;
     QString name;
 
-    foreach(const CommandOption& option, qxt_d().options)
+    for(const CommandOption& option: qxt_d().options)
     {
         // Don't generate usage for undocumented parameters
         if (option.paramType & Undocumented) continue;
 
-        foreach(const QString& n, option.names)
+        for(const QString& n: option.names)
         {
             if (name.length()) name += ", ";
             if (qxt_d().flagStyle == Slash)
@@ -690,19 +690,20 @@ void VipCommandOptions::showUsage(bool showQtOptions, QTextStream& stream) const
         if (names[i].isEmpty())
         {
             // Section headers have no name entry
-            stream << endl << descs[i] << ":" << endl;
+		    stream << Qt::endl << descs[i] << ":" << Qt::endl;
             continue;
         }
         line = ' ' + names[i] + QString(maxNameLength - names[i].length() + 2, ' ');
-        foreach(const QString& word, descs[i].split(' ', QString::SkipEmptyParts))
+
+        for (const QString& word : descs[i].split(' ', VIP_SKIP_BEHAVIOR::SkipEmptyParts))
         {
             if (qxt_d().screenWidth > 0 && line.length() + word.length() >= qxt_d().screenWidth)
             {
-                stream << line << endl;
+			    stream << line << Qt::endl;
                 line = wrap;
             }
             line += word + ' ';
         }
-        stream << line << endl;
+	    stream << line << Qt::endl;
     }
 }

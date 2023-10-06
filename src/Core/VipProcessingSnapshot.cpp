@@ -179,12 +179,12 @@ bool vipLoadProcessingPoolSnapshot(VipProcessingPool * pool, VipArchive & arch)
 			p->topLevelInputAt(0)->toMultiInput()->resize(count);
 		for (int j = 0; j < count; ++j)
 		{
-			QString name = arch.read("name").toString();
+			QString _name = arch.read("name").toString();
 			QString connection = arch.read("connection").toString();
 			QString descr = arch.read("descr").toString();
 			VipInput * input = p->inputAt(j);
-			input->setName(name);
-			p->m_inputDescriptions[name] = descr;
+			input->setName(_name);
+			p->m_inputDescriptions[_name] = descr;
 			if (input->connection()->address() != connection)
 			{
 				has_new_connections = true;
@@ -201,12 +201,12 @@ bool vipLoadProcessingPoolSnapshot(VipProcessingPool * pool, VipArchive & arch)
 			p->topLevelPropertyAt(0)->toMultiProperty()->resize(count);
 		for (int j = 0; j < count; ++j)
 		{
-			QString name = arch.read("name").toString();
+			QString _name = arch.read("name").toString();
 			QString connection = arch.read("connection").toString();
 			QString descr = arch.read("descr").toString();
 			VipProperty * prop = p->propertyAt(j);
-			prop->setName(name);
-			p->m_propertyDescriptions[name] = descr;
+			prop->setName(_name);
+			p->m_propertyDescriptions[_name] = descr;
 			if (prop->connection()->address() != connection)
 			{
 				has_new_connections = true;
@@ -223,12 +223,12 @@ bool vipLoadProcessingPoolSnapshot(VipProcessingPool * pool, VipArchive & arch)
 			p->topLevelOutputAt(0)->toMultiOutput()->resize(count);
 		for (int j = 0; j < count; ++j)
 		{
-			QString name = arch.read("name").toString();
+			QString _name = arch.read("name").toString();
 			QString connection = arch.read("connection").toString();
 			QString descr = arch.read("descr").toString();
 			VipOutput * out = p->outputAt(j);
-			out->setName(name);
-			p->m_outputDescriptions[name] = descr;
+			out->setName(_name);
+			p->m_outputDescriptions[_name] = descr;
 			if (out->connection()->address() != connection)
 			{
 				has_new_connections = true;

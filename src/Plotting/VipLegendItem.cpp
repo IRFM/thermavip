@@ -16,7 +16,6 @@ public:
 	  maximumSymbolSize(20, 20),
 	  spacing(5),
 	  left(5),
-	  renderHints(0),
 	  displayMode(DisplayAllItems),
 		drawCheckbox(true),
 	  box(NULL),
@@ -426,7 +425,6 @@ public:
 	PrivateData()
 	:legendItemSpacing(5),
 	 legendItemLeft(5),
-	 legendItemRenderHints(0),
 	 displayMode(VipLegendItem::DisplayNamedItems),
 	checkState(ItemBased),
 	drawCheckbox(true)
@@ -1134,13 +1132,13 @@ void VipLegend::itemChanged(VipPlotItem * item)
 
 	if (d_data->checkState == CheckableVisibility)
 	{
-		QList<VipLegendItem*> legends = legendItems(item);
+		legends = legendItems(item);
 		for (int i = 0; i < legends.size(); ++i)
 			legends[i]->setChecked(item->isVisible());
 	}
 	else if (d_data->checkState == CheckableSelection)
 	{
-		QList<VipLegendItem*> legends = legendItems(item);
+		legends = legendItems(item);
 		for (int i = 0; i < legends.size(); ++i)
 			legends[i]->setChecked(item->isSelected());
 	}

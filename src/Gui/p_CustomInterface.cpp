@@ -35,21 +35,21 @@ static void anchorToArea(const Anchor& a, VipDragRubberBand& area, QWidget* widg
 
 	if (!a.canvas) {
 	
-		if (VipDisplayPlayerArea* area = vipGetMainWindow()->displayArea()->currentDisplayPlayerArea()) {
-			VipMultiDragWidget* main = area->mainDragWidget(QWidgetList());
+		if (VipDisplayPlayerArea* workspace = vipGetMainWindow()->displayArea()->currentDisplayPlayerArea()) {
+			VipMultiDragWidget* main = workspace->mainDragWidget(QWidgetList());
 			if (main->orientation() == Qt::Vertical) {
 				if (a.side == Vip::Top || a.side == Vip::Bottom) {
 
-					QPoint left = area->mapToGlobal(QPoint(0, 0));
-					QPoint right = area->mapToGlobal(QPoint(area->width(), 0));
+					QPoint left = workspace->mapToGlobal(QPoint(0, 0));
+					QPoint right = workspace->mapToGlobal(QPoint(workspace->width(), 0));
 					geom.setLeft(left.x());
 					geom.setRight(right.x());
 				}
 			}
 			else {
 				if (a.side == Vip::Left || a.side == Vip::Right) {
-					QPoint top = area->mapToGlobal(QPoint(0, 0));
-					QPoint bottom = area->mapToGlobal(QPoint(0, area->height()));
+					QPoint top = workspace->mapToGlobal(QPoint(0, 0));
+					QPoint bottom = workspace->mapToGlobal(QPoint(0, workspace->height()));
 					geom.setTop(top.y());
 					geom.setBottom(bottom.y());
 				}
@@ -1455,10 +1455,10 @@ bool CustomizePlotPlayer::eventFilter(QObject * w, QEvent * evt)
 			//drag
 			if (event->buttons() & Qt::LeftButton) {
 				if ((event->pos() - m_data->mousePress).manhattanLength() > 10) {
-					VipBaseDragWidget* w = VipDragWidget::fromChild(m_data->player);
+					VipBaseDragWidget* _w = VipDragWidget::fromChild(m_data->player);
 					QPoint pt = m_data->mousePress;
 					m_data->mousePress = QPoint(-1, -1);
-					return w->dragThisWidget(m_data->player->plotWidget2D()->viewport(), pt);
+					return _w->dragThisWidget(m_data->player->plotWidget2D()->viewport(), pt);
 				}
 			}
 
@@ -1896,12 +1896,12 @@ struct CustomizePlayer : public QObject
 		}
 
 		//make sure to create the tool bars before
-		if (VipVideoPlayer * p = qobject_cast<VipVideoPlayer*>(w->widget()))
-			updateVideoPlayer(p);
-		else if (VipPlotPlayer * p = qobject_cast<VipPlotPlayer*>(w->widget()))
-			updatePlotPlayer(p);
-		else if (VipWidgetPlayer* p = qobject_cast<VipWidgetPlayer*>(w->widget()))
-			updateWidgetPlayer(p);
+		if (VipVideoPlayer * video = qobject_cast<VipVideoPlayer*>(w->widget()))
+			updateVideoPlayer(video);
+		else if (VipPlotPlayer * plot = qobject_cast<VipPlotPlayer*>(w->widget()))
+			updatePlotPlayer(plot);
+		else if (VipWidgetPlayer* widget = qobject_cast<VipWidgetPlayer*>(w->widget()))
+			updateWidgetPlayer(widget);
 
 		//hide all tool bars
 		QWidget * top = vipGetMainWindow()->displayArea()->currentDisplayPlayerArea()->topWidget();

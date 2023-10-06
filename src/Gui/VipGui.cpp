@@ -734,8 +734,6 @@ static int _registerStreamOperators = vipPrependInitializationFunction(registerS
 //make the the types declared with Q_DECLARE_METATYPE are registered
 static int reg1 = qMetaTypeId<VipPlotShape*>();
 static int reg2 = qMetaTypeId<VipPlotShape*>();
-static QVariant v = vipCreateVariant("VipLinearColorMap*");
-static VipLinearColorMap * pl = v.value<VipLinearColorMap*>();
 static int reg3 = qMetaTypeId<VipPlotShape*>();
 
 
@@ -822,18 +820,18 @@ bool vipLoadSkin(const QString & skin_name)
 			
 			{
 				// Now, read the plot_stylesheet.css file
-				QFile file(skin + "/plot_stylesheet.css");
-				if (file.open(QFile::ReadOnly)) {
-					vip_debug("plot skin file: '%s'\n", QFileInfo(skin + "/plot_stylesheet.css").canonicalFilePath().toLatin1().data());
+				QFile fin(skin + "/plot_stylesheet.css");
+				if (fin.open(QFile::ReadOnly)) {
+					vip_debug("plot skin fin: '%s'\n", QFileInfo(skin + "/plot_stylesheet.css").canonicalFilePath().toLatin1().data());
 
 					// read skin
-					QString sk = file.readAll();
-					VipGlobalStyleSheet::setStyleSheet(sk);
+					QString _sk = fin.readAll();
+					VipGlobalStyleSheet::setStyleSheet(_sk);
 
 					return true;
 				}
 				else
-					vip_debug("cannot open skin file '%s'\n", (skin + "/plot_stylesheet.css").toLatin1().data());
+					vip_debug("cannot open skin fin '%s'\n", (skin + "/plot_stylesheet.css").toLatin1().data());
 			}
 		}
 		else
@@ -1898,7 +1896,7 @@ static void serialize_VipGuiDisplayParamaters(VipGuiDisplayParamaters * inst, Vi
 				arch.restore();
 
 			//check version
-			QStringList vers = version.split(".", QString::SkipEmptyParts);
+			QStringList vers = version.split(".", VIP_SKIP_BEHAVIOR::SkipEmptyParts);
 			QList<int> ivers;
 			for (int i = 0; i < vers.size(); ++i) ivers.append(vers[i].toInt());
 

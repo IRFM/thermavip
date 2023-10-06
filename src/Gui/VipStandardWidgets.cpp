@@ -304,9 +304,11 @@ void VipPrefixSuffixLineEdit::resetMargins()
 	else if (_suffix->isVisible())
 		_suffix->hide();
 
-	int t, b, l, r;
-	this->getTextMargins(&l, &t, &r, &b);
-	this->setTextMargins(left, t, right, b);
+	//int t, b, l, r;
+	
+	QMargins m = this->textMargins();
+	//this->getTextMargins(&l, &t, &r, &b);
+	this->setTextMargins(left, m.top(), right, m.bottom());
 }
 
 void VipPrefixSuffixLineEdit::resizeEvent(QResizeEvent *)
@@ -398,10 +400,10 @@ void VipDoubleEdit::setValue(double value)
 	if (f.isEmpty())
 		f = "%g";
 
-	char data[50];
-	memset(data, 0, sizeof(data));
-	snprintf(data, 50, f.toLatin1().data(), value);
-	setText(QString(data));
+	char val[50];
+	memset(val, 0, sizeof(val));
+	snprintf(val, 50, f.toLatin1().data(), value);
+	setText(QString(val));
 	setStyleSheet(m_rightStyle);
 
 	this->blockSignals(blocked);
@@ -475,10 +477,10 @@ void VipDoubleEdit::enterPressed()
 			if (f.isEmpty())
 				f = "%g";
 
-			char data[50];
-			memset(data, 0, sizeof(data));
-			snprintf(data, 50, f.toLatin1().data(), m_value);
-			setText(QString(data));
+			char val[50];
+			memset(val, 0, sizeof(val));
+			snprintf(val, 50, f.toLatin1().data(), m_value);
+			setText(QString(val));
 			setStyleSheet(m_rightStyle);
 		}
 		this->blockSignals(blocked);
@@ -624,7 +626,7 @@ VipNDDoubleCoordinate VipMultiComponentDoubleEdit::readValue(bool * ok) const
 	str.replace(separator(), " ");
 
 	VipNDDoubleCoordinate value;
-	QStringList lst = str.split(" ", QString::SkipEmptyParts);
+	QStringList lst = str.split(" ", VIP_SKIP_BEHAVIOR::SkipEmptyParts);
 	for (int i = 0; i < lst.size(); ++i)
 	{
 		bool is_ok = false;
@@ -676,10 +678,10 @@ void VipMultiComponentDoubleEdit::applyFormat()
 			if (f.isEmpty())
 				f = "%g";
 
-			char data[50];
-			memset(data, 0, sizeof(data));
-			snprintf(data, 50, f.toLatin1().data(), value[i]);
-			res += (QString(data));
+			char val[50];
+			memset(val, 0, sizeof(val));
+			snprintf(val, 50, f.toLatin1().data(), value[i]);
+			res += (QString(val));
 			if (i < value.size() - 1)
 				res += " " + separator() + " ";
 		}
@@ -1693,7 +1695,7 @@ void VipBoxStyleWidget::emitBoxStyleChanged()
 	if (m_radius.value())
 		m_style.setRoundedCorners(Vip::AllCorners);
 	else
-		m_style.setRoundedCorners(0);
+		m_style.setRoundedCorners(Vip::Corners());
 
 	Q_EMIT boxStyleChanged(m_style);
 }
@@ -1796,10 +1798,10 @@ QString VipFileDialog::getSaveFileName(QWidget * parent, const QString & caption
 		int index2 = last_filter.indexOf(")", index1);
 		if (index1 > 0 && index2 > 0)
 		{
-			QString suffix = last_filter.mid(index1 + 2, index2 - index1 - 2);
-			suffix.remove(" ");
-			if (suffix.size())
-				res += "." + suffix;
+			QString s = last_filter.mid(index1 + 2, index2 - index1 - 2);
+			s.remove(" ");
+			if (s.size())
+				res += "." + s;
 		}
 	}
 
@@ -1844,10 +1846,10 @@ QString VipFileDialog::getSaveFileName2(QWidget * parent, const QString &filenam
 		int index2 = last_filter.indexOf(")", index1);
 		if (index1 > 0 && index2 > 0)
 		{
-			QString suffix = last_filter.mid(index1 + 2, index2 - index1 - 2);
-			suffix.remove(" ");
-			if (suffix.size())
-				res += "." + suffix;
+			QString s = last_filter.mid(index1 + 2, index2 - index1 - 2);
+			s.remove(" ");
+			if (s.size())
+				res += "." + s;
 		}
 	}
 

@@ -13,6 +13,7 @@
 #include <qapplication.h>
 #include <qstyle.h>
 #include <qdesktopwidget.h>
+#include <qscreen.h>
 
 
 
@@ -564,9 +565,9 @@ void VipToolTip::setPlotAreaPos(const QPointF & pos)
 		}
 
 		tool_tip = ("<div style = \"white-space:nowrap;\"><p align='left' style = \"white-space:nowrap; width: 1200px;\">" + tool_tip + "</p></div>");
-		VipText text = tool_tip;
-		QPoint this_pos = toolTipPosition(text, pos, d_data->position, d_data->alignment);
-		VipCorrectedTip::showText(this_pos, text.text(), parent, QRect(), d_data->delayTime);
+		VipText tip_text = tool_tip;
+		QPoint this_pos = toolTipPosition(tip_text, pos, d_data->position, d_data->alignment);
+		VipCorrectedTip::showText(this_pos, tip_text.text(), parent, QRect(), d_data->delayTime);
 		d_data->pos = pos;
 	}
 	else {
@@ -625,11 +626,19 @@ static QPoint findPosition(Vip::RegionPositions position, Qt::Alignment alignmen
 
 QPoint VipToolTip::toolTipPosition(VipText & text, const QPointF & pos, Vip::RegionPositions position, Qt::Alignment alignment)
 {
-	QDesktopWidget *w = qApp->desktop();
+	/* QDesktopWidget* w = qApp->desktop();
 	int screen_number = -1;
 	if (this->plotArea() && this->plotArea()->view())
 		screen_number = w->screenNumber(this->plotArea()->view());
-	QRect screen = w->screenGeometry(screen_number);
+	QRect screen = w->screenGeometry(screen_number);*/
+	QScreen* sc = nullptr;
+	if (this->plotArea())
+		if (QGraphicsView* view = this->plotArea()->view())
+			sc = view->screen();
+	if (!sc)
+		sc = QGuiApplication::primaryScreen();
+	QRect screen = sc->geometry();
+
 	QRect tip_rect = VipCorrectedTip::textGeometry(QPoint(0, 0), text.text(), plotArea()->view(), QRect());
 	QSize tip_size = tip_rect.size();
 	QPoint tip_offset = tip_rect.topLeft();
@@ -697,7 +706,7 @@ QPoint VipToolTip::toolTipPosition(VipText & text, const QPointF & pos, Vip::Reg
 		QPoint mouse_pos = QCursor::pos();//sceneToScreenCoordinates(plotArea()->scene(), plotArea()->mapToScene(pos));
 		if (this_rect.contains(mouse_pos) && position != Vip::Automatic)
 		{
-			Qt::Alignment align = 0;;
+			Qt::Alignment align ;
 			if (alignment & Qt::AlignRight)
 				align |= Qt::AlignLeft;
 			else if (alignment & Qt::AlignLeft)

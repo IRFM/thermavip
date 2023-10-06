@@ -48,7 +48,7 @@ QPair<VipPlotScatter*, VipPlotScatter*> generateScatterAndArea(const QString& ti
 	area->rightAxis()->setVisible(false);
 	area->topAxis()->setVisible(false);
 	VipText t = title;
-	t.setRenderHints(QPainter::HighQualityAntialiasing|QPainter::TextAntialiasing);
+	t.setRenderHints(QPainter::Antialiasing|QPainter::TextAntialiasing);
 	area->setTitle(t);
 	area->setPlotToolTip(new VipToolTip());
 	area->plotToolTip()->setDisplayFlags(VipToolTip::ItemsToolTips);
@@ -164,9 +164,9 @@ int main(int argc, char** argv)
 
 		VipScatterPointVector vec(10000);
 		for (int i = 0; i < 10000; ++i) {
-			int h = i / 100;
-			int w = i % 100;
-			vec[i].position = VipPoint(w + 0.5, h + 0.5);
+			int he = i / 100;
+			int wi = i % 100;
+			vec[i].position = VipPoint(wi + 0.5, he + 0.5);
 			vec[i].value = i;
 		}
 

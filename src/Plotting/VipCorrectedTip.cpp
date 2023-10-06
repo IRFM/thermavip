@@ -15,6 +15,7 @@
 #include <qtimer.h>
 #include <qtextdocument.h>
 #include <qtooltip.h>
+#include <qscreen.h>
 #include "qapplication.h"
 #include "qdesktopwidget.h"
 #include "qevent.h"
@@ -31,10 +32,29 @@
 
 static QAlphaWidget* q_blend = 0;
 
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
+static QWidget* effectParent(const QWidget* w)
+{
+	const int screenNumber = w ? QGuiApplication::screens().indexOf(w->screen()) : 0;
+	QT_WARNING_PUSH // ### Qt 6: Find a replacement for QDesktopWidget::screen()
+	  QT_WARNING_DISABLE_DEPRECATED return QApplication::desktop()
+	    ->screen(screenNumber);
+	QT_WARNING_POP
+}
+#endif
+
 // Constructs a QAlphaWidget.
 QAlphaWidget::QAlphaWidget(QWidget* w, Qt::WindowFlags f)
-	: QWidget(QApplication::desktop()->screen(QApplication::desktop()->screenNumber(w)), f)
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
+  : QWidget(effectParent(w), f)
+#else
+  : QWidget(nullptr,f)
+#endif
 {
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+	if (w)
+		this->setScreen(w->screen());
+#endif
 #ifndef Q_OS_WIN
 	setEnabled(false);
 #endif
@@ -785,10 +805,16 @@ bool VipTipContainer::eventFilter(QObject *o, QEvent *e)
 
 int VipTipContainer::getTipScreen(const QPoint &pos, QWidget *w)
 {
-    if (QApplication::desktop()->isVirtualDesktop())
+	/* if (QApplication::desktop()->isVirtualDesktop())
         return QApplication::desktop()->screenNumber(pos);
     else
-        return QApplication::desktop()->screenNumber(w);
+        return QApplication::desktop()->screenNumber(w);*/
+	QScreen* screen = w ? w->screen() : nullptr;
+	if (!screen)
+		screen = QGuiApplication::screenAt(pos);
+	if (screen)
+		return qApp->screens().indexOf(screen);
+	return 0;
 }
 
 QRect VipTipContainer::mapToScreen() const
@@ -798,7 +824,8 @@ QRect VipTipContainer::mapToScreen() const
 
 void VipTipContainer::placeTip(const QPoint &pos, QWidget *w)
 {
-    QRect screen = QApplication::desktop()->screenGeometry(getTipScreen(pos, w));
+    //QRect screen = QApplication::desktop()->screenGeometry(getTipScreen(pos, w));
+	QRect screen = qApp->screens()[getTipScreen(pos, w)]->geometry();
     QPoint p = pos;
     p += QPoint(2,
 #ifdef Q_DEAD_CODE_FROM_QT4_WIN

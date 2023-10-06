@@ -719,7 +719,7 @@ public:
 	}
 
 	template<class Callable, class Signature>
-	VipFunction(Callable&& c, Signature* s)
+	VipFunction(Callable&& c, Signature* )
 	  : m_function(details::CallableWrapper<Callable, Signature>{ c })
 	  , m_typeList(details::buildTypeListFromSignature<Signature>())
 	  , m_returnType(details::CallableWrapper<Signature>::returnType())

@@ -112,10 +112,10 @@ QList<VipInterval> VipPlotQuiver::dataBoundingIntervals(const VipQuiverPointVect
 
 	for (int i = 1; i < vec.size(); ++i) {
 		const VipQuiverPoint& pt = vec[i];
-		double min_x = std::min(pt.position.x(), pt.destination.x());
-		double max_x = std::max(pt.position.x(), pt.destination.x());
-		double min_y = std::min(pt.position.y(), pt.destination.y());
-		double max_y = std::max(pt.position.y(), pt.destination.y());
+		min_x = std::min(pt.position.x(), pt.destination.x());
+		max_x = std::max(pt.position.x(), pt.destination.x());
+		min_y = std::min(pt.position.y(), pt.destination.y());
+		max_y = std::max(pt.position.y(), pt.destination.y());
 		x = x.extend(min_x);
 		x = x.extend(max_x);
 		y = y.extend(min_y);
@@ -340,8 +340,8 @@ void VipPlotQuiver::draw(QPainter * painter, const VipCoordinateSystemPtr & m) c
 			quiver.setColor(color(tmp.value,p.color().rgba()));
 		}
 
-		VipQuiver q((QPointF)m->transform(tmp.position), (QPointF)m->transform(tmp.destination));
-		QLineF line = q.line();
+		VipQuiver _q((QPointF)m->transform(tmp.position), (QPointF)m->transform(tmp.destination));
+		QLineF line = _q.line();
 		quiver.draw(painter, line);
 
 		if (!d_data->text.isEmpty()) {

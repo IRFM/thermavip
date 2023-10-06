@@ -422,9 +422,9 @@ void VipDisplayPlotItem::formatItem(VipPlotItem * item, const VipAnyData & data,
 	//apply style sheet
 	QVariantMap::const_iterator  st = attrs.find(stylesheet);
 	if (st != attrs.end() ) {
-		QString stylesheet = st.value().toString();
-		if(!stylesheet.isEmpty())
-			item->setStyleSheet(stylesheet);
+		QString _stylesheet = st.value().toString();
+		if(!_stylesheet.isEmpty())
+			item->setStyleSheet(_stylesheet);
 	}
 
 
@@ -1146,12 +1146,12 @@ QList<VipAbstractPlayer*> vipCreatePlayersFromData(const VipAnyData & any, VipAb
 			}
 
 			//insert a VipProcessingList in between the device output and the VipDisplayObject
-			VipProcessingList * lst = new VipProcessingList();
-			lst->setParent(device->parent());
-			lst->setScheduleStrategies(VipProcessingObject::Asynchronous);
+			VipProcessingList * _lst = new VipProcessingList();
+			_lst->setParent(device->parent());
+			_lst->setScheduleStrategies(VipProcessingObject::Asynchronous);
 
-			src->setConnection(lst->inputAt(0));
-			lst->outputAt(0)->setConnection(display->inputAt(0));
+			src->setConnection(_lst->inputAt(0));
+			_lst->outputAt(0)->setConnection(display->inputAt(0));
 
 			//add an VipExtractComponent in the list for VipNDArray only
 			if (any.data().userType() == qMetaTypeId<VipNDArray>())
@@ -1159,15 +1159,15 @@ QList<VipAbstractPlayer*> vipCreatePlayersFromData(const VipAnyData & any, VipAb
 				VipExtractComponent * extract = new VipExtractComponent();
 				//extract->setProperty("_vip_hidden",true)
 				extract->setVisible(false);
-				lst->append(extract);
+				_lst->append(extract);
 				//vipGetProcessingEditorToolWidget()->setProcessingObject(display);
-				//if (VipProcessingListEditor * editor = vipGetProcessingEditorToolWidget()->editor()->processingEditor<VipProcessingListEditor*>(lst))
-				//	editor->setProcessingVisible(lst->at(lst->size() - 1), false);
+				//if (VipProcessingListEditor * editor = vipGetProcessingEditorToolWidget()->editor()->processingEditor<VipProcessingListEditor*>(_lst))
+				//	editor->setProcessingVisible(_lst->at(_lst->size() - 1), false);
 			}
 
 
 			//if the device is destroyed, destroy everything
-			lst->setDeleteOnOutputConnectionsClosed(true);
+			_lst->setDeleteOnOutputConnectionsClosed(true);
 			device->setDeleteOnOutputConnectionsClosed(true);
 		}
 		else if(src)
@@ -1249,79 +1249,79 @@ QList<VipAbstractPlayer*> vipCreatePlayersFromProcessing(VipProcessingObject * d
 		}
 		else if(!pl)
 		{
-			VipPlotPlayer * player = new VipPlotPlayer();
-			player->setWindowTitle(curve->item()->title().text());
-			curve->item()->setAxes(player->defaultXAxis(), player->defaultYAxis(), player->defaultCoordinateSystem());
+			VipPlotPlayer * plot_player = new VipPlotPlayer();
+			plot_player->setWindowTitle(curve->item()->title().text());
+			curve->item()->setAxes(plot_player->defaultXAxis(), plot_player->defaultYAxis(), plot_player->defaultCoordinateSystem());
 			if (doutputs) *doutputs << curve;
-			return QList<VipAbstractPlayer*>()<< player;
+			return QList<VipAbstractPlayer*>()<< plot_player;
 		}
 		else
 			return QList<VipAbstractPlayer*>();
 	}
-	else if(VipDisplayHistogram * curve = qobject_cast<VipDisplayHistogram*>(disp))
+	else if(VipDisplayHistogram * hist = qobject_cast<VipDisplayHistogram*>(disp))
 	{
 		if(VipPlotPlayer * player = qobject_cast<VipPlotPlayer*>(pl) )
 		{
-			setProcessingPool(curve, player->processingPool());
+			setProcessingPool(hist, player->processingPool());
 			if (VipPlotItem * item = qobject_cast<VipPlotItem*>(target))
-				curve->item()->setAxes(item->axes(), VipCoordinateSystem::Cartesian);
+				hist->item()->setAxes(item->axes(), VipCoordinateSystem::Cartesian);
 			else
-				curve->item()->setAxes(player->defaultXAxis(), player->defaultYAxis(), player->defaultCoordinateSystem());
-			if (doutputs) *doutputs << curve;
+				hist->item()->setAxes(player->defaultXAxis(), player->defaultYAxis(), player->defaultCoordinateSystem());
+			if (doutputs) *doutputs << hist;
 			return QList<VipAbstractPlayer*>()<< pl;
 		}
 		else if(!pl)
 		{
-			VipPlotPlayer * player = new VipPlotPlayer();
-			player->setWindowTitle(curve->item()->title().text());
-			curve->item()->setAxes(player->defaultXAxis(), player->defaultYAxis(), player->defaultCoordinateSystem());
-			if (doutputs) *doutputs << curve;
-			return QList<VipAbstractPlayer*>()<< player;
+			VipPlotPlayer * plot_player = new VipPlotPlayer();
+			plot_player->setWindowTitle(hist->item()->title().text());
+			hist->item()->setAxes(plot_player->defaultXAxis(), plot_player->defaultYAxis(), plot_player->defaultCoordinateSystem());
+			if (doutputs) *doutputs << hist;
+			return QList<VipAbstractPlayer*>()<< plot_player;
 		}
 		else
 			return QList<VipAbstractPlayer*>();
 	}
-	else if(VipDisplayImage * curve = qobject_cast<VipDisplayImage*>(disp))
+	else if(VipDisplayImage * img = qobject_cast<VipDisplayImage*>(disp))
 	{
 		// if(VipVideoPlayer * player = qobject_cast<VipVideoPlayer*>(pl))
 		// {
-		// player->setSpectrogram(curve->item());
+		// player->setSpectrogram(img->item());
 		// return QList<VipAbstractPlayer*>()<< player;
 		// }
 		// else 
-if(pl) //we cannot add a VipDisplayImage in an existing player which is not a VipVideoPlayer
+		if(pl) //we cannot add a VipDisplayImage in an existing player which is not a VipVideoPlayer
 				return QList<VipAbstractPlayer*>();
 		else
 		{
 			VipVideoPlayer * player = new VipVideoPlayer();
-			player->setSpectrogram(curve->item());
-			player->setWindowTitle(curve->item()->title().text());
-			if (doutputs) *doutputs << curve;
+			player->setSpectrogram(img->item());
+			player->setWindowTitle(img->item()->title().text());
+			if (doutputs) *doutputs << img;
 			return QList<VipAbstractPlayer*>()<< player;
 		}
 	}
-	else if(VipDisplaySceneModel * curve = qobject_cast<VipDisplaySceneModel*>(disp))
+	else if(VipDisplaySceneModel * scene_model = qobject_cast<VipDisplaySceneModel*>(disp))
 	{
 		//a VipDisplaySceneModel can be displays in both VipVideoPlayer and VipPlotPlayer. Default player type is VipVideoPlayer
 		if(VipPlayer2D * player = qobject_cast<VipPlayer2D*>(pl))
 		{
 			if (VipVideoPlayer * video = qobject_cast<VipVideoPlayer*>(pl))
 			{
-				setProcessingPool(curve, player->processingPool());
-				curve->item()->setMode(VipPlotSceneModel::Fixed);
-				curve->item()->setAxes(video->viewer()->area()->bottomAxis(), video->viewer()->area()->leftAxis(), VipCoordinateSystem::Cartesian);
-				if (doutputs) *doutputs << curve;
+				setProcessingPool(scene_model, player->processingPool());
+				scene_model->item()->setMode(VipPlotSceneModel::Fixed);
+				scene_model->item()->setAxes(video->viewer()->area()->bottomAxis(), video->viewer()->area()->leftAxis(), VipCoordinateSystem::Cartesian);
+				if (doutputs) *doutputs << scene_model;
 				return QList<VipAbstractPlayer*>() << player;
 			}
 			else if (VipPlotPlayer * plot = qobject_cast<VipPlotPlayer*>(pl))
 			{
-				setProcessingPool(curve, player->processingPool());
-				curve->item()->setMode(VipPlotSceneModel::Fixed);
+				setProcessingPool(scene_model, player->processingPool());
+				scene_model->item()->setMode(VipPlotSceneModel::Fixed);
 				if (VipPlotItem * item = qobject_cast<VipPlotItem*>(target))
-					curve->item()->setAxes(item->axes(), VipCoordinateSystem::Cartesian);
+					scene_model->item()->setAxes(item->axes(), VipCoordinateSystem::Cartesian);
 				else
-					curve->item()->setAxes(plot->defaultXAxis(), plot->defaultYAxis(), plot->defaultCoordinateSystem());
-				if (doutputs) *doutputs << curve;
+					scene_model->item()->setAxes(plot->defaultXAxis(), plot->defaultYAxis(), plot->defaultCoordinateSystem());
+				if (doutputs) *doutputs << scene_model;
 				return QList<VipAbstractPlayer*>() << player;
 			}
 			else
@@ -1330,38 +1330,38 @@ if(pl) //we cannot add a VipDisplayImage in an existing player which is not a Vi
 		else
 		{
 			VipVideoPlayer * res = new VipVideoPlayer();
-			res->setWindowTitle(curve->item()->title().text());
-			curve->item()->setAxes(res->viewer()->area()->bottomAxis(), res->viewer()->area()->leftAxis(),VipCoordinateSystem::Cartesian);
-			if (doutputs) *doutputs << curve;
+			res->setWindowTitle(scene_model->item()->title().text());
+			scene_model->item()->setAxes(res->viewer()->area()->bottomAxis(), res->viewer()->area()->leftAxis(),VipCoordinateSystem::Cartesian);
+			if (doutputs) *doutputs << scene_model;
 			return QList<VipAbstractPlayer*>()<< res;
 		}
 	}
-	else if(VipDisplayPlotItem * curve = qobject_cast<VipDisplayPlotItem*>(disp))
+	else if(VipDisplayPlotItem * plot_item = qobject_cast<VipDisplayPlotItem*>(disp))
 	{
 		//any other VipDisplayPlotItem
 		if(VipPlotPlayer * player = qobject_cast<VipPlotPlayer*>(pl) )
 		{
-			setProcessingPool(curve, player->processingPool());
+			setProcessingPool(plot_item, player->processingPool());
 			if (VipPlotItem * item = qobject_cast<VipPlotItem*>(target))
-				curve->item()->setAxes(item->axes(), VipCoordinateSystem::Cartesian);
+				plot_item->item()->setAxes(item->axes(), VipCoordinateSystem::Cartesian);
 			else
-				curve->item()->setAxes(player->defaultXAxis(), player->defaultYAxis(),player->defaultCoordinateSystem());
-			if (doutputs) *doutputs << curve;
+				plot_item->item()->setAxes(player->defaultXAxis(), player->defaultYAxis(),player->defaultCoordinateSystem());
+			if (doutputs) *doutputs << plot_item;
 			return QList<VipAbstractPlayer*>()<< pl;
 		}
-		else if(VipVideoPlayer * player = qobject_cast<VipVideoPlayer*>(pl))
+		else if(VipVideoPlayer * video = qobject_cast<VipVideoPlayer*>(pl))
 		{
-			setProcessingPool(curve, player->processingPool());
-			curve->item()->setAxes(player->viewer()->area()->bottomAxis(), player->viewer()->area()->leftAxis(),VipCoordinateSystem::Cartesian);
-			if (doutputs) *doutputs << curve;
+			setProcessingPool(plot_item, video->processingPool());
+			plot_item->item()->setAxes(video->viewer()->area()->bottomAxis(), video->viewer()->area()->leftAxis(), VipCoordinateSystem::Cartesian);
+			if (doutputs) *doutputs << plot_item;
 			return QList<VipAbstractPlayer*>()<< pl;
 		}
 		else
 		{
 			VipPlotPlayer * res = new VipPlotPlayer();
-			res->setWindowTitle(curve->item()->title().text());
-			curve->item()->setAxes(res->defaultXAxis(), res->defaultYAxis(),res->defaultCoordinateSystem());
-			if (doutputs) *doutputs << curve;
+			res->setWindowTitle(plot_item->item()->title().text());
+			plot_item->item()->setAxes(res->defaultXAxis(), res->defaultYAxis(),res->defaultCoordinateSystem());
+			if (doutputs) *doutputs << plot_item;
 			return QList<VipAbstractPlayer*>()<< res;
 		}
 	}
@@ -1732,13 +1732,13 @@ VipProcessingObject * vipCreateDataFusionProcessing(const QList<VipPlotItem*> & 
 
 
 
-VipArchive & operator<<(VipArchive & stream, const VipDisplayObject * r)
+VipArchive & operator<<(VipArchive & stream, const VipDisplayObject * )
 {
 	//return stream.content("displayInGuiThread",r->displayInGuiThread());
 	return stream;
 }
 
-VipArchive & operator>>(VipArchive & stream, VipDisplayObject * r)
+VipArchive & operator>>(VipArchive & stream, VipDisplayObject * )
 {
 	//r->setDisplayInGuiThread(stream.read("displayInGuiThread").value<bool>());
 	return stream;

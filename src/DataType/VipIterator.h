@@ -2573,16 +2573,16 @@ namespace iter_detail
 	/*Create the iteration shape (end bounds) */\
 	if(VipHybridVector<int,__NDIM(shape) > sh = shape) \
 		/* Get the full iteration count */\
-		if(int size = vipCumMultiply(sh))\
+		if(int _size = vipCumMultiply(sh))\
 			/* Get the number of thread, or 1 if the iteration count < thread_count*/\
-			if(int thread_count = size >= (int)vipOmpThreadCount() ? (int)vipOmpThreadCount() : size) \
+			if(int thread_count = _size >= (int)vipOmpThreadCount() ? (int)vipOmpThreadCount() : _size) \
 				/* Get number of chunk per thread*/\
-				if(int chunk_size = size/ thread_count) \
+				if(int chunk_size = _size/ thread_count) \
 					/* Parallel directive */\
 					VIP_PRAGMA(omp parallel for)\
 					for(int i = 0; i < thread_count; ++i) \
 						/* End iteration for this thread, and take care of the remaining values*/\
-						if(int end_iter = (i == thread_count-1 ? (chunk_size + size -chunk_size*thread_count) : chunk_size ))\
+						if(int end_iter = (i == thread_count-1 ? (chunk_size + _size -chunk_size*thread_count) : chunk_size ))\
 							/* Create the coord vector used in the iteration process */\
 							if (VipHybridVector<int,__NDIM(shape) > coord = iter_detail::initStart<__NDIM(shape)>(sh)) \
 								/* Advance coord */\

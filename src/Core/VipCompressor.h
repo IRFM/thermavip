@@ -8,10 +8,10 @@
 ///
 /// To use this function on a QByteArray that has been compressed with qCompress, you need to remove the first 4 bytes since
 /// Qt add the uncompressed size at the beginning.
-VIP_CORE_EXPORT bool vipIsUncompressed(const uchar* data, int len);
+//VIP_CORE_EXPORT bool vipIsUncompressed(const uchar* data, int len);
 
 /// Same as vipIsUncompressed, but works on a QByteArray compressed with qCompress function.
-VIP_CORE_EXPORT bool vipIsQtUncompressed(const QByteArray& ar);
+//VIP_CORE_EXPORT bool vipIsQtUncompressed(const QByteArray& ar);
 
 /// VipCompressor is the base class for all processing implementing a compression algorithm.
 ///

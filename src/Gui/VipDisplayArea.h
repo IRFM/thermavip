@@ -410,7 +410,7 @@ public:
 	void updateTitle();
 
 	void setTitleIcon(const QPixmap& pix);
-	const QPixmap& titleIcon() const;
+	QPixmap titleIcon() const;
 
 	/// Set the main Thermavip title
 	void setMainTitle(const QString& title);

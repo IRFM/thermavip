@@ -89,8 +89,8 @@ bool MPEGLoader::open(const QString & name, const QString & format, const QMap<Q
 		setError(e.what());
 		return false;
 	}
-
-	return false;
+	VIP_UNREACHABLE();
+	//return false;
 
 }
 
@@ -387,11 +387,7 @@ static int __ReadFunc(void* ptr, uint8_t* buf, int buf_size)
 // whence: SEEK_SET, SEEK_CUR, SEEK_END (like fseek) and AVSEEK_SIZE
 int64_t __SeekFunc(void* ptr, int64_t pos, int whence)
 {
-	int ss = SEEK_SET;
-	int sc = SEEK_CUR;
-	int SE = SEEK_END;
-
-
+	
 	QIODevice* pStream = reinterpret_cast<QIODevice*>(ptr);
 
 	long long res;
@@ -701,7 +697,7 @@ VipNDArray VideoGrabber::toArray(AVFrame * frame)
 
 size_t VideoGrabber::MoveNextFrame(size_t target_dts )
 {
-	size_t res = -1;
+	size_t res = static_cast<size_t>(-1);
 
 	if (!m_is_packet)
 	{
@@ -709,7 +705,7 @@ size_t VideoGrabber::MoveNextFrame(size_t target_dts )
 			av_free_packet(&packet);
 		//pFormatCtx->cur_pkt.destruct=NULL;
 		if (av_read_frame(pFormatCtx, &packet) < 0)
-			return -1;
+			return static_cast<size_t>(-1);
 		res = packet.dts;
 	}
 
@@ -720,7 +716,7 @@ size_t VideoGrabber::MoveNextFrame(size_t target_dts )
 		av_free_packet(&packet);
 		//pFormatCtx->cur_pkt.destruct=NULL;
 		if (av_read_frame(pFormatCtx, &packet) < 0)
-			return -1;
+			return static_cast<size_t>(-1);
 		res = packet.dts;
 	}
 
@@ -737,7 +733,7 @@ size_t VideoGrabber::MoveNextFrame(size_t target_dts )
 	{
 
 #if LIBAVFORMAT_VERSION_MAJOR > 52
-		int ret = avcodec_decode_video2(pCodecCtx,
+		/* int ret =*/ avcodec_decode_video2(pCodecCtx,
 			pFrame,
 			&ffinish,
 			&packet);
@@ -768,7 +764,7 @@ size_t VideoGrabber::MoveNextFrame(size_t target_dts )
 				av_free_packet(&packet);
 				//pFormatCtx->cur_pkt.destruct=NULL;
 				if (av_read_frame(pFormatCtx, &packet) < 0)
-					return -1;
+					return static_cast<size_t>(-1);
 				res = packet.dts;
 
 				if (target_dts != -1) {

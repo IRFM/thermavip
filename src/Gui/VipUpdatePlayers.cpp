@@ -669,7 +669,7 @@ static QList<QAction*> videoPlayerActions(VipPlotItem* item, VipVideoPlayer* pla
 	{
 		if ((shape->rawData().type() == VipShape::Path || shape->rawData().type() == VipShape::Polygon) && !vipIsImageArray(player->viewer()->area()->array()))
 		{
-			QAction * crop = new QAction("VipImageCrop image on shape bounding rect", NULL);
+			QAction * crop = new QAction("Crop image on shape bounding rect", NULL);
 			QObject::connect(crop, &QAction::triggered, std::bind(cropOnShape, shape, player));
 			actions << crop;
 		}
@@ -1163,17 +1163,17 @@ void VipUpdatePlotPlayer::updateMarkers()
 					int max = -1;
 					int min = -1;
 					bool inside = false;
-					for (int p = 0; p < vec.size(); ++p) {
-						if (bounds.contains(vec[p].x())) {
+					for (int index = 0; index < vec.size(); ++index) {
+						if (bounds.contains(vec[index].x())) {
 							inside = true;
 							if (max == -1) {
-								max = min = p;
+								max = min = index;
 							}
 							else {
-								if (vec[p].y() > vec[max].y())
-									max = p;
-								if (vec[p].y() < vec[min].y())
-									min = p;
+								if (vec[index].y() > vec[max].y())
+									max = index;
+								if (vec[index].y() < vec[min].y())
+									min = index;
 							}
 						}
 						else if (inside)

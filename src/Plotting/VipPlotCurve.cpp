@@ -335,7 +335,6 @@ public:
 		sub_continuous(false),
         symbol( new VipSymbol(VipSymbol::Ellipse, QBrush(Qt::lightGray),QPen(Qt::darkGray), QSizeF(9,9)) ),
 		symbolVisible(false),
-        attributes( 0 ),
         legendAttributes( LegendShowBrush|LegendShowSymbol|LegendShowLine ),
 		hasSymbol(0),
 		optimizeLargePenDrawing(true)
@@ -567,7 +566,7 @@ int VipPlotCurve::findClosestPos(const VipPointVector & data, const VipPoint & p
 	//if the plot is continuous, the scale engine linear and we don't request the area for y scale, we can search only
 	//for a sub part of the curve
 	bool can_query_sub_part = axis == 0 && axes().size() && axes()[0]->scaleEngine()->isLinear() && continuous;
-	double min_x, max_x;
+	double min_x = 0, max_x = 0;
 	if (can_query_sub_part) {
 		VipPoint pos_min = VipPoint(pos.x() - maxDistance, pos.y());
 		VipPoint pos_max = VipPoint(pos.x() + maxDistance, pos.y());
@@ -800,45 +799,45 @@ static void insideRect(const QRectF & r, const QPolygonF & pts, QVector<QLineF> 
 		}
 		else if (c1)
 		{
-			if (l.intersect(left, &inter) == QLineF::BoundedIntersection)
+			if (l.intersects(left, &inter) == QLineF::BoundedIntersection)
 				out.append(QLineF(l.p1(), inter));
-			else if (l.intersect(top, &inter) == QLineF::BoundedIntersection)
+			else if (l.intersects(top, &inter) == QLineF::BoundedIntersection)
 				out.append(QLineF(l.p1(), inter));
-			else if (l.intersect(right, &inter) == QLineF::BoundedIntersection)
+			else if (l.intersects(right, &inter) == QLineF::BoundedIntersection)
 				out.append(QLineF(l.p1(), inter));
-			else if (l.intersect(bottom, &inter) == QLineF::BoundedIntersection)
+			else if (l.intersects(bottom, &inter) == QLineF::BoundedIntersection)
 				out.append(QLineF(l.p1(), inter));
 		}
 		else if (c2)
 		{
-			if (l.intersect(left, &inter) == QLineF::BoundedIntersection)
+			if (l.intersects(left, &inter) == QLineF::BoundedIntersection)
 				out.append(QLineF(inter,l.p2()));
-			else if (l.intersect(top, &inter) == QLineF::BoundedIntersection)
+			else if (l.intersects(top, &inter) == QLineF::BoundedIntersection)
 				out.append(QLineF(inter, l.p2()));
-			else if (l.intersect(right, &inter) == QLineF::BoundedIntersection)
+			else if (l.intersects(right, &inter) == QLineF::BoundedIntersection)
 				out.append(QLineF(inter, l.p2()));
-			else if (l.intersect(bottom, &inter) == QLineF::BoundedIntersection)
+			else if (l.intersects(bottom, &inter) == QLineF::BoundedIntersection)
 				out.append(QLineF(inter, l.p2()));
 		}
 		else
 		{
 			QPointF p1, p2;
-			if (l.intersect(left, &inter) == QLineF::BoundedIntersection)
+			if (l.intersects(left, &inter) == QLineF::BoundedIntersection)
 			{
 				if (p1 == QPointF()) p1 = inter;
 				else p2 = inter;
 			}
-			if (l.intersect(top, &inter) == QLineF::BoundedIntersection)
+			if (l.intersects(top, &inter) == QLineF::BoundedIntersection)
 			{
 				if (p1 == QPointF()) p1 = inter;
 				else p2 = inter;
 			}
-			if (l.intersect(right, &inter) == QLineF::BoundedIntersection)
+			if (l.intersects(right, &inter) == QLineF::BoundedIntersection)
 			{
 				if (p1 == QPointF()) p1 = inter;
 				else p2 = inter;
 			}
-			if (l.intersect(bottom, &inter) == QLineF::BoundedIntersection)
+			if (l.intersects(bottom, &inter) == QLineF::BoundedIntersection)
 			{
 				if (p1 == QPointF()) p1 = inter;
 				else p2 = inter;
@@ -864,7 +863,7 @@ static void insideRect(const QRectF & r, const QPolygonF & pts, QVector<QLineF> 
 
 void VipPlotCurve::draw(QPainter * painter, const VipCoordinateSystemPtr & m) const
 {
-	qint64 st = QDateTime::currentMSecsSinceEpoch();
+	//qint64 st = QDateTime::currentMSecsSinceEpoch();
 	QList<QPolygonF> drawn_polygons;
 
 	if (d_data->function) 
@@ -997,8 +996,8 @@ void VipPlotCurve::draw(QPainter * painter, const VipCoordinateSystemPtr & m) co
 					}
 					else {
 						lines.resize(enveloppe.size() - 1);
-						for (int i = 1; i < enveloppe.size(); ++i)
-							lines[i - 1] = (QLineF(enveloppe[i - 1], enveloppe[i]));
+						for (int j = 1; j < enveloppe.size(); ++j)
+							lines[j - 1] = (QLineF(enveloppe[j - 1], enveloppe[j]));
 					}
 
 					painter->setPen(p);
@@ -2205,7 +2204,7 @@ bool VipPlotCurve::setItemProperty(const char* name, const QVariant& value, cons
 		return true;
 	}
 	else if (strcmp(name, "symbol-background") == 0) {
-		QBrush b = value.value<QBrush>();
+		//QBrush b = value.value<QBrush>();
 		VipSymbol sym = this->symbol() ? *this->symbol() : VipSymbol();
 		if (value.userType() == qMetaTypeId<QBrush>())
 			sym.setBrush(value.value<QBrush>());

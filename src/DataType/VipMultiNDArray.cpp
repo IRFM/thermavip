@@ -83,13 +83,13 @@ namespace detail
 	}
 
 
-	QDataStream & MultiNDArrayHandle::ostream(const VipNDArrayShape & start, const VipNDArrayShape & shape, QDataStream & o) const
+	QDataStream & MultiNDArrayHandle::ostream(const VipNDArrayShape & _start, const VipNDArrayShape & _shape, QDataStream & o) const
 	{
 		o << current;
 		o << arrays.size();
 		for (QMap<QString, VipNDArray>::const_iterator it = arrays.begin(); it != arrays.end(); ++it)
 		{
-			o << it.key() << it.value().mid(start, shape);
+			o << it.key() << it.value().mid(_start, _shape);
 		}
 		return o << arrays;
 	}
@@ -98,9 +98,9 @@ namespace detail
 	{
 		QString c;
 		arrays.clear();
-		int size = 0;
-		i >> c >> size;
-		for (int s = 0; s < size; ++s)
+		int _size = 0;
+		i >> c >> _size;
+		for (int s = 0; s < _size; ++s)
 		{
 			QString name;
 			VipNDArray ar;

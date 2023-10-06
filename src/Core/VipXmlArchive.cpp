@@ -129,14 +129,14 @@ QString VipEditableArchiveSymbol::nodeToLocation(QDomNode n)
 
 QDomNode VipEditableArchiveSymbol::locationToNode(const QString& loc, QDomNode top_node)
 {
-	QStringList lst = loc.split("/", QString::SkipEmptyParts);
+	QStringList lst = loc.split("/", VIP_SKIP_BEHAVIOR::SkipEmptyParts);
 	if (lst.size() < 1)
 		return QDomNode();
 
 	QDomNode node = top_node;
 
 	for (int i = 1; i < lst.size(); ++i) {
-		QStringList temp = lst[i].split("#", QString::SkipEmptyParts);
+		QStringList temp = lst[i].split("#", VIP_SKIP_BEHAVIOR::SkipEmptyParts);
 		if (temp.size() != 2)
 			return QDomNode();
 

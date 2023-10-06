@@ -104,7 +104,7 @@ void VipProcessingObjectTree::setProcessingInfos(const QList<VipProcessingObject
 
 		for (QMap<QString, VipProcessingObject::Info>::iterator it = sorted.begin(); it != sorted.end(); ++it)
 		{
-			QStringList lst = it.key().split("/", QString::SkipEmptyParts);
+			QStringList lst = it.key().split("/", VIP_SKIP_BEHAVIOR::SkipEmptyParts);
 
 			QTreeWidgetItem * item = top_level;
 			for (int i = 0; i < lst.size() - 1; ++i)
@@ -262,10 +262,10 @@ void  VipProcessingObjectMenu::setProcessingInfos(const QList<VipProcessingObjec
 	QMap<QString, VipProcessingObject::Info> sorted;
 
 	//find a common prefix (if any)
-	QStringList common_prefix = infos[0].category.split("/",QString::SkipEmptyParts);
+	QStringList common_prefix = infos[0].category.split("/",VIP_SKIP_BEHAVIOR::SkipEmptyParts);
 	for (int i = 0; i < infos.size(); ++i)
 	{
-		QStringList lst = infos[i].category.split("/",QString::SkipEmptyParts);
+		QStringList lst = infos[i].category.split("/", VIP_SKIP_BEHAVIOR::SkipEmptyParts);
 		int j=0;
 		int s = qMin(lst.size(),common_prefix.size());
 		for(; j < s; ++j) {

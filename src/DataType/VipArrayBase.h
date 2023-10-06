@@ -510,12 +510,12 @@ namespace detail
 
 		}
 
-		virtual bool fill(const VipNDArrayShape & start, const VipNDArrayShape & shape, const QVariant & value)
+		virtual bool fill(const VipNDArrayShape & _start, const VipNDArrayShape & _shape, const QVariant & value)
 		{
 			if (!value.canConvert<T>())
 				return false;
 
-			vipInplaceArrayTransform(static_cast<T*>(opaque) + vipFlatOffset<false>(strides, start), shape, strides, VipFillTransform<T>(value.value<T>()));
+			vipInplaceArrayTransform(static_cast<T*>(opaque) + vipFlatOffset<false>(strides, _start), _shape, strides, VipFillTransform<T>(value.value<T>()));
 			return true;
 		}
 
@@ -533,20 +533,20 @@ namespace detail
 			this->ptr(sh)[0] = val.value<T>();
 		}
 
-		virtual QDataStream & ostream(const VipNDArrayShape & start, const VipNDArrayShape & shape, QDataStream & o) const
+		virtual QDataStream & ostream(const VipNDArrayShape & _start, const VipNDArrayShape & _shape, QDataStream & o) const
 		{
 			Ostream<T> out;
 			out.stream = &o;
 			//be carefull of the storage of float/double data type
-			if (std::is_same<double, T>::value || std::is_same<complex_d, T>::value)
+			if VIP_CONSTEXPR (std::is_same<double, T>::value || std::is_same<complex_d, T>::value)
 				o.setFloatingPointPrecision(QDataStream::DoublePrecision);
 			else
 				o.setFloatingPointPrecision(QDataStream::SinglePrecision);
-			vipInplaceArrayTransform(static_cast<T*>(opaque) + vipFlatOffset<false>(strides, start), shape, strides, out);
+			vipInplaceArrayTransform(static_cast<T*>(opaque) + vipFlatOffset<false>(strides, _start), _shape, strides, out);
 			return o;
 		}
 
-		virtual QDataStream & istream(const VipNDArrayShape & start, const VipNDArrayShape & shape, QDataStream & i)
+		virtual QDataStream & istream(const VipNDArrayShape & _start, const VipNDArrayShape & _shape, QDataStream & i)
 		{
 			if (std::is_same<long double, T>::value)
 			{
@@ -555,23 +555,23 @@ namespace detail
 				in.stream = &i;
 				in.LD_support = i.device()->property("_vip_LD").toUInt();
 				i.setFloatingPointPrecision(QDataStream::DoublePrecision);
-				vipInplaceArrayTransform(static_cast<long double*>(opaque) + vipFlatOffset<false>(strides, start), shape, strides, in);
+				vipInplaceArrayTransform(static_cast<long double*>(opaque) + vipFlatOffset<false>(strides, _start), _shape, strides, in);
 			}
 			else
 			{
 				Istream<T> in;
 				in.stream = &i;
 				//be carefull of the storage of float/double data type
-				if (std::is_same<double, T>::value || std::is_same<complex_d, T>::value)
+				if VIP_CONSTEXPR (std::is_same<double, T>::value || std::is_same<complex_d, T>::value)
 					i.setFloatingPointPrecision(QDataStream::DoublePrecision);
 				else
 					i.setFloatingPointPrecision(QDataStream::SinglePrecision);
-				vipInplaceArrayTransform(static_cast<T*>(opaque) + vipFlatOffset<false>(strides, start), shape, strides, in);
+				vipInplaceArrayTransform(static_cast<T*>(opaque) + vipFlatOffset<false>(strides, _start), _shape, strides, in);
 			}
 			return i;
 		}
 
-		virtual QTextStream & oTextStream(const VipNDArrayShape & start, const VipNDArrayShape & shape, QTextStream & stream, const QString & separator) const
+		virtual QTextStream & oTextStream(const VipNDArrayShape & _start, const VipNDArrayShape & _shape, QTextStream & stream, const QString & separator) const
 		{
 			struct Otextstream {
 				QTextStream * stream;
@@ -584,7 +584,7 @@ namespace detail
 			Otextstream ou;
 			ou.stream = &stream;
 			ou.sep = separator;
-			vipInplaceArrayTransform(static_cast<T*>(opaque) + vipFlatOffset<false>(strides, start), shape, strides, ou);
+			vipInplaceArrayTransform(static_cast<T*>(opaque) + vipFlatOffset<false>(strides, _start), _shape, strides, ou);
 
 			//VipNDSubArrayIterator<T> begin(shape, strides, static_cast<T*>(opaque) + vipFlatOffset<false>(strides, start));
 			// VipNDSubArrayIterator<T> end(shape, strides, static_cast<T*>(opaque) + vipFlatOffset<false>(strides, start), false);
@@ -720,8 +720,8 @@ namespace detail
 			return
 				handle->opaqueForPos(op, pos);
 		}
-		virtual bool resize(const VipNDArrayShape & start, const VipNDArrayShape & shape, VipNDArrayHandle * dst, Vip::InterpolationType type, const VipNDArrayShape & out_start, const VipNDArrayShape & out_shape) const {
-			return handle->resize(start + this->start, shape, dst, type, out_start, out_shape);
+		virtual bool resize(const VipNDArrayShape & _start, const VipNDArrayShape & _shape, VipNDArrayHandle * dst, Vip::InterpolationType type, const VipNDArrayShape & out_start, const VipNDArrayShape & out_shape) const {
+			return handle->resize(_start + this->start, _shape, dst, type, out_start, out_shape);
 		}
 		virtual const char* dataName() const { return handle->dataName(); }
 		virtual int dataSize() const { return handle->dataSize(); }
@@ -735,17 +735,17 @@ namespace detail
 			return const_cast<VipNDArrayHandle*>(handle.data())->importData(this_start + start, this_shape, src, src_start, src_shape);
 		}
 
-		virtual bool fill(const VipNDArrayShape & start, const VipNDArrayShape & shape, const QVariant & value) {
-			return const_cast<VipNDArrayHandle*>(handle.data())->fill(start + this->start, shape, value);
+		virtual bool fill(const VipNDArrayShape & _start, const VipNDArrayShape & _shape, const QVariant & value) {
+			return const_cast<VipNDArrayHandle*>(handle.data())->fill(_start + this->start, _shape, value);
 		}
 		virtual QVariant toVariant(const VipNDArrayShape & pos) const { return handle->toVariant(pos + start); }
 		virtual void fromVariant(const VipNDArrayShape &pos, const QVariant & v) { return const_cast<VipNDArrayHandle*>(handle.data())->fromVariant(pos + start, v); }
-		virtual QDataStream & ostream(const VipNDArrayShape & start, const VipNDArrayShape & shape, QDataStream & o) const { return handle->ostream(this->start + start, shape, o); }
-		virtual QDataStream & istream(const VipNDArrayShape & start, const VipNDArrayShape & shape, QDataStream & i) {
-			return const_cast<VipNDArrayHandle*>(handle.data())->istream(start + this->start, shape, i);
+		virtual QDataStream & ostream(const VipNDArrayShape & _start, const VipNDArrayShape & _shape, QDataStream & o) const { return handle->ostream(this->start + _start, _shape, o); }
+		virtual QDataStream & istream(const VipNDArrayShape & _start, const VipNDArrayShape & _shape, QDataStream & i) {
+			return const_cast<VipNDArrayHandle*>(handle.data())->istream(_start + this->start, _shape, i);
 		}
-		virtual QTextStream & oTextStream(const VipNDArrayShape & start, const VipNDArrayShape & shape, QTextStream & stream, const QString & sep) const {
-			return handle->oTextStream(this->start + start, shape, stream, sep);
+		virtual QTextStream & oTextStream(const VipNDArrayShape & _start, const VipNDArrayShape & _shape, QTextStream & stream, const QString & sep) const {
+			return handle->oTextStream(this->start + _start, _shape, stream, sep);
 		}
 	};
 
@@ -764,7 +764,7 @@ namespace detail
 namespace detail
 {
 	template< class T>
-	bool StdHandle<T>::resize(const VipNDArrayShape & start, const VipNDArrayShape & shape, VipNDArrayHandle * dst, Vip::InterpolationType type, const VipNDArrayShape & out_start, const VipNDArrayShape & out_shape) const
+	bool StdHandle<T>::resize(const VipNDArrayShape & _start, const VipNDArrayShape & _shape, VipNDArrayHandle * dst, Vip::InterpolationType type, const VipNDArrayShape & out_start, const VipNDArrayShape & out_shape) const
 	{
 		if (!opaque || !dst->opaque)
 			return false;
@@ -774,10 +774,10 @@ namespace detail
 #endif
 
 		StdHandle<T> handle_src;
-		handle_src.opaque = (T*)((void*)opaque) + vipFlatOffset<false>(strides, start);
-		handle_src.shape = shape;
+		handle_src.opaque = (T*)((void*)opaque) + vipFlatOffset<false>(strides, _start);
+		handle_src.shape = _shape;
 		handle_src.strides = strides;
-		handle_src.size = vipShapeToSize(shape);
+		handle_src.size = vipShapeToSize(_shape);
 
 		void * saveOpaque = dst->opaque;
 		VipNDArrayShape saveShape = dst->shape;

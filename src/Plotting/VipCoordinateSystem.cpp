@@ -71,7 +71,7 @@ QTransform VipCoordinateSystem::changeCoordinateSystem(const QPointF & origin_x,
 	lx.translate(origin_y);
 	ly.translate(origin_x);
 	QPointF new_origin;
-	lx.intersect(ly,&new_origin);
+	lx.intersects(ly,&new_origin);
 
 	return changeCoordinateSystem(new_origin,x,y);
 }

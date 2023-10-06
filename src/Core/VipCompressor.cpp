@@ -7,13 +7,13 @@
 #include <qdatastream.h>
 
 
-#if defined(__GNUC__)
+/* #if defined (__GNUC__)
 #include "zlib.h"
 #define z_uLongf unsigned long
 #else
 #include "QtZlib/zlib.h"
 #endif
-
+*/
 #define UNCOMPRESS_ASSERT(classname, value, error ) \
 if(!(value)) { \
 	setError((QString(classname) + ":" + QString(error))); \
@@ -23,7 +23,7 @@ if(!(value)) { \
 
 
 
-bool vipIsUncompressed(const uchar * data, int size)
+/* bool vipIsUncompressed(const uchar* data, int size)
 {
 	char tmp[40];
 	z_uLongf len = 40;
@@ -39,7 +39,7 @@ bool vipIsQtUncompressed(const QByteArray & ar)
 		return true;
 
 	return vipIsUncompressed((uchar*)(ar.data() + 4), ar.size() - 4);
-}
+}*/
 
 
 

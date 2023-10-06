@@ -392,9 +392,9 @@ VipAbstractScale::independentScales(const QList<T*> scales)
 	// do the others
 	for (int i = 1; i < scales.size(); ++i) {
 		if (synchro.find(scales[i]) == synchro.end()) {
-			VipAbstractScale* scale = valid_titles[scales[i]];
-			if (scales.indexOf(qobject_cast<T*>(scale)) >= 0)
-				res << scale;
+			VipAbstractScale* _scale = valid_titles[scales[i]];
+			if (scales.indexOf(qobject_cast<T*>(_scale)) >= 0)
+				res << _scale;
 			else
 				res << scales[i];
 			synchro += synchronized_list[i];

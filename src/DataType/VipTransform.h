@@ -130,9 +130,9 @@ namespace detail
 				x = tr.m11()*fx + tr.m21()*fy + tr.dx();
 				y = tr.m12()*fx + tr.m22()*fy + tr.dy();
 				if (type == QTransform::TxProject) {
-					qreal w = 1. / (tr.m13() * fx + tr.m23() * fy + tr.m33());
-					x *= w;
-					y *= w;
+					qreal _w = 1. / (tr.m13() * fx + tr.m23() * fy + tr.m33());
+					x *= _w;
+					y *= _w;
 				}
 			}
 			x += translate.x();

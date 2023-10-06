@@ -24,8 +24,8 @@ namespace detail
 		virtual int handleType() const { return MultiArray; }
 		virtual bool realloc(const VipNDArrayShape & sh) { return currentHandle->realloc(sh); }
 		virtual bool reshape(const VipNDArrayShape & sh) { return currentHandle->reshape(sh); }
-		virtual bool resize(const VipNDArrayShape & start, const VipNDArrayShape & shape, VipNDArrayHandle * h, Vip::InterpolationType type, const VipNDArrayShape & out_start, const VipNDArrayShape & out_shape) const {
-			return currentHandle->resize(start, shape, h, type, out_start, out_shape);
+		virtual bool resize(const VipNDArrayShape & _start, const VipNDArrayShape & _shape, VipNDArrayHandle * h, Vip::InterpolationType type, const VipNDArrayShape & out_start, const VipNDArrayShape & out_shape) const {
+			return currentHandle->resize(_start, _shape, h, type, out_start, out_shape);
 		}
 		virtual void * opaqueForPos(void * op, const VipNDArrayShape & pos) const { return currentHandle->opaqueForPos(op, pos); }
 		virtual const char* dataName() const { return currentHandle ? currentHandle->dataName() : NULL; }
@@ -39,12 +39,12 @@ namespace detail
 		virtual bool importData(const VipNDArrayShape & this_shape, const VipNDArrayShape & this_start, const VipNDArrayHandle * src, const VipNDArrayShape & src_shape, const VipNDArrayShape & src_start) {
 			return currentHandle->importData(this_shape, this_start, src, src_shape, src_start);
 		}
-		virtual bool fill(const VipNDArrayShape & start, const VipNDArrayShape & shape, const QVariant & v) { return currentHandle->fill(start, shape, v); }
+		virtual bool fill(const VipNDArrayShape & _start, const VipNDArrayShape & _shape, const QVariant & v) { return currentHandle->fill(_start, _shape, v); }
 		virtual QVariant toVariant(const VipNDArrayShape & sh) const { return currentHandle->toVariant(sh); }
 		virtual void fromVariant(const VipNDArrayShape & sh, const QVariant & v) { return currentHandle->fromVariant(sh, v); }
 		virtual QDataStream & ostream(const VipNDArrayShape & start, const VipNDArrayShape & shape, QDataStream & o) const;
 		virtual QDataStream & istream(const VipNDArrayShape & start, const VipNDArrayShape & shape, QDataStream & i);
-		virtual QTextStream & oTextStream(const VipNDArrayShape & start, const VipNDArrayShape & shape, QTextStream & stream, const QString & separator) const { return currentHandle->oTextStream(start, shape, stream, separator); }
+		virtual QTextStream & oTextStream(const VipNDArrayShape & _start, const VipNDArrayShape & _shape, QTextStream & stream, const QString & separator) const { return currentHandle->oTextStream(_start, _shape, stream, separator); }
 	};
 }
 

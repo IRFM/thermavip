@@ -1,6 +1,7 @@
 #ifndef VIDEO_VideoEncoder_H
 #define VIDEO_VideoEncoder_H
 
+#pragma warning(disable : 4996)
 
 #ifndef INT64_C
 #define INT64_C(c) (c ## LL)

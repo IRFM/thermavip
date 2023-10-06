@@ -253,7 +253,7 @@ bool VipSimpleAnnotation::load(QDataStream & stream)
 
 void VipSimpleAnnotation::draw(const VipShape & sh, QPainter * painter, const VipCoordinateSystemPtr & m) const
 {
-	painter->setRenderHints(QPainter::HighQualityAntialiasing | QPainter::TextAntialiasing);
+	painter->setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing);
 
 	if (sh.type() == VipShape::Point)
 		drawPoint(sh, painter, m);

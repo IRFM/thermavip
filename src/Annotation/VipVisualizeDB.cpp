@@ -1,10 +1,10 @@
 #include "VipVisualizeDB.h"
 #include "VipProcessMovie.h"
-
 #include "VipPlotShape.h"
 #include "VipDisplayArea.h"
 #include "VipDragWidget.h"
 #include "VipLogging.h"
+#include "VipSet.h"
 
 #include <qmessagebox.h>
 #include <qboxlayout.h>
@@ -717,7 +717,7 @@ void VisualizeDB::displaySelectedEvents(QAction* a)
 	QList<qint64> ids;
 	for (int i = 0; i < items.size(); ++i) 
 		ids.append(static_cast<DBItem*>(items[i])->eventId);
-	ids = ids.toSet().toList();
+	ids = vipToSet(ids).values();
 
 	//query events in db
 	VipEventQuery q;

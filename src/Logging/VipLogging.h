@@ -132,10 +132,10 @@ public:
 	/// \param levels the levels of this entry (a combination of \ref VipLogging::Level).
 	/// \param outputs the outputs where this entry is redirected (a combination of \ref VipLogging::VipOutput). A value of -1 means that the current output
 	/// will be used to determine the outputs.
-	void log(const QString& text, Level level, Outputs outputs = 0, qint64 time = -1);
+	void log(const QString& text, Level level, Outputs outputs = Outputs(), qint64 time = -1);
 
 	///Directly write a log frame without using the writing thread.
-	void directLog(const QString& text, Level level = Info, Outputs outputs = 0, qint64 time = -1);
+	void directLog(const QString& text, Level level = Info, Outputs outputs = Outputs(), qint64 time = -1);
 
 	static QByteArray formatLogEntry(const QString& text, VipLogging::Level level, const QDateTime& date);
 	static bool splitLogEntry(const QString& entry, QString& type, QString& date, QString& text);

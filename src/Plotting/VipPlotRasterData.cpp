@@ -895,11 +895,11 @@ void VipPlotRasterData::draw(QPainter *painter, const VipCoordinateSystemPtr & m
 	if (d_data->borderPen.color() != Qt::transparent && d_data->borderPen.style() != Qt::NoPen)
 	{
 		rect = rect.adjusted(0.1, 0.1, -0.1, -0.1);
-		QPolygonF dst = m->transform(rect);
+		QPolygonF poly = m->transform(rect);
 		painter->setBrush(QBrush());
 		d_data->borderPen.setWidth(2);
 		painter->setPen(d_data->borderPen);
-		painter->drawPolygon(dst);
+		painter->drawPolygon(poly);
 	}
 
 	//painter->restore();

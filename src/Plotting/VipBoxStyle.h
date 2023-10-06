@@ -140,7 +140,7 @@ private:
 	struct PrivateData: QSharedData
 	{
 		PrivateData()
-		:pen(Qt::NoPen), radius(0), drawLines(Vip::AllSides), roundedCorners(0)
+		:pen(Qt::NoPen), radius(0), drawLines(Vip::AllSides)
 		{}
 
 		QPen pen;

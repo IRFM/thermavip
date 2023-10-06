@@ -1559,20 +1559,20 @@ QVector<QPoint> VipShape::clip(const QVector<QPoint> & points, const QRect & rec
 
 			if (bounding)
 			{
-				const QPoint pt = points[i];
+				const QPoint p = points[i];
 
 				if (bounding->isEmpty())
-					*bounding = QRect(pt, QSize(0, 0));
+					*bounding = QRect(p, QSize(0, 0));
 
-				if (bounding->left() > pt.x())
-					bounding->setLeft(pt.x());
-				else if (bounding->right() < pt.x())
-					bounding->setRight(pt.x());
+				if (bounding->left() > p.x())
+					bounding->setLeft(p.x());
+				else if (bounding->right() < p.x())
+					bounding->setRight(p.x());
 
-				if (bounding->top() > pt.y())
-					bounding->setTop(pt.y());
-				else if (bounding->bottom() < pt.y())
-					bounding->setBottom(pt.y());
+				if (bounding->top() > p.y())
+					bounding->setTop(p.y());
+				else if (bounding->bottom() < p.y())
+					bounding->setBottom(p.y());
 			}
 		}
 	}

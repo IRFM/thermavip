@@ -337,7 +337,6 @@ void VipAxisColorMap::draw ( QPainter * painter, QWidget * widget  )
 			QPainter::RenderHints hint = painter->renderHints();
 			if (!painter->transform().isRotating()) {
 				painter->setRenderHints(QPainter::Antialiasing,false);
-				painter->setRenderHints(QPainter::HighQualityAntialiasing, false);
 			}
 			painter->drawRect(rect.toAlignedRect());
 			if (!painter->transform().isRotating())

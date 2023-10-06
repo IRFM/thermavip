@@ -10,6 +10,7 @@
 #include "VipProcessingObjectEditor.h"
 #include "VipDisplayArea.h"
 #include "VipLogging.h"
+#include "VipSet.h"
 
 #include <QPainter>
 #include <QGraphicsSceneMouseEvent>
@@ -248,7 +249,7 @@ void VipDrawShapeEllipse::paint(QPainter * painter, const QStyleOptionGraphicsIt
 
 	if(!shape.isNull() )
 	{
-		painter->setRenderHints(QPainter::HighQualityAntialiasing);
+		painter->setRenderHints(QPainter::Antialiasing);
 		painter->setPen(QPen(Qt::white, 0));
 		painter->setBrush(QColor(255, 0, 0, 50));
 		painter->drawEllipse(shape);
@@ -340,7 +341,7 @@ void VipDrawShapePolygon::paint(QPainter * painter, const QStyleOptionGraphicsIt
 {
 	painter->setPen(QPen(QColor(255, 0, 0, 100), 0));
 	painter->setBrush(QColor(255, 0, 0, 50));
-	painter->setRenderHints(QPainter::HighQualityAntialiasing|QPainter::Antialiasing);
+	painter->setRenderHints(QPainter::Antialiasing);
 
 	QPolygonF poly(m_polygon);
 	poly.append(m_pos);
@@ -468,7 +469,7 @@ void VipDrawShapePolyline::paint(QPainter * painter, const QStyleOptionGraphicsI
 {
 	painter->setPen(QPen(QColor(255, 0, 0, 50), 0));
 	painter->setBrush(Qt::NoBrush);
-	painter->setRenderHints(QPainter::HighQualityAntialiasing | QPainter::Antialiasing);
+	painter->setRenderHints( QPainter::Antialiasing);
 
 	QPolygonF poly(m_polygon);
 	poly.append(m_pos);
@@ -580,7 +581,7 @@ void VipDrawShapeMask::paint(QPainter * painter, const QStyleOptionGraphicsItem 
 {
 	painter->setPen(QPen(Qt::white, 0));
 	painter->setBrush(QColor(255, 0, 0, 50));
-	painter->setRenderHints(QPainter::HighQualityAntialiasing);
+	painter->setRenderHints(QPainter::Antialiasing);
 
 	QPolygonF poly = area()->scaleToPosition(m_polygon,sceneModelScales());
 	//TEST: remove Qt::WindingFill
@@ -980,11 +981,11 @@ public:
 		for (int i = 0; i < sh.size(); ++i) {
 			const QVariantMap attrs = sh[i].attributes();
 			if (common.isEmpty()) {
-				common = attrs.keys().toSet();
+				common = vipToSet(attrs.keys());
 				attributes = attrs;
 			}
 			else {
-				common = common.intersect(attrs.keys().toSet());
+				common = common.intersect(vipToSet(attrs.keys()));
 				for (QSet<QString>::iterator it = common.begin(); it != common.end(); ++it) {
 					QVariant v = attrs[*it];
 					if (v.toString() != attributes[*it].toString())
@@ -1010,7 +1011,6 @@ public:
 	void textEdited()
 	{
 		//save current state
-		QList<VipPlotSceneModel*> models;
 		if (editor && editor->scene()) {
 			//push current state for undo
 			QList<VipPlotSceneModel*> models = vipCastItemList<VipPlotSceneModel*>(editor->scene()->items());
@@ -1663,7 +1663,7 @@ void VipSceneModelEditor::removeProperty()
 	{
 		QSet<QString> properties;
 		for(int i=0; i < shapes.size(); ++i)
-			properties |= (shapes[i]->rawData().attributes().keys().toSet());
+			properties |= vipToSet(shapes[i]->rawData().attributes().keys());
 
 		if(properties.size())
 		{
@@ -1746,8 +1746,8 @@ VipMultiNDArray VipSceneModelEditor::createH5ShapeAttributes(const QVariant & ba
 	VipVideoPlayer* pl = static_cast<VipVideoPlayer*>(m_data->player2D.data());
 
 	//get the current image
-	VipRasterData data = pl->spectrogram()->rawData();
-	VipNDArray image = data.extract(data.boundingRect());
+	VipRasterData rdata = pl->spectrogram()->rawData();
+	VipNDArray image = rdata.extract(rdata.boundingRect());
 	if (image.isEmpty())
 		return VipMultiNDArray();
 
@@ -1763,7 +1763,7 @@ VipMultiNDArray VipSceneModelEditor::createH5ShapeAttributes(const QVariant & ba
 	// Compute properties
 	QMap<QString, QVariant> properties;
 	for (int i = 0; i < shapes.size(); ++i)
-		properties.unite(shapes[i]->rawData().attributes());
+		properties.insert(shapes[i]->rawData().attributes());
 	QStringList keys = properties.keys();
 	for (int i = 0; i < keys.size(); ++i) {
 		if (keys[i].startsWith("_vip_")) {
@@ -1781,7 +1781,7 @@ VipMultiNDArray VipSceneModelEditor::createH5ShapeAttributes(const QVariant & ba
 				if (ok)
 					data_type = QMetaType::Double;
 			}
-			printf("name: %s, dt: %i\n", name.toLatin1().data(), data_type);
+			vip_debug("name: %s, dt: %i\n", name.toLatin1().data(), data_type);
 			if (name.isEmpty() || data_type != QMetaType::Double  )
 			{
 				keys.removeAt(i);
@@ -1789,7 +1789,7 @@ VipMultiNDArray VipSceneModelEditor::createH5ShapeAttributes(const QVariant & ba
 			}
 		}
 	}
-	keys = keys.toSet().toList();
+	keys = vipToSet(keys).values();
 	keys.sort();
 
 	if (!properties.size())
@@ -1807,8 +1807,8 @@ VipMultiNDArray VipSceneModelEditor::createH5ShapeAttributes(const QVariant & ba
 		VipNDArray output(data_type, image.shape());
 		output.fill(background);
 
-		for (int i = 0; i < shapes.size(); ++i)
-			shapes[i]->rawData().writeAttribute(name, output, data.boundingRect().topLeft().toPoint());
+		for (int j = 0; j < shapes.size(); ++j)
+			shapes[j]->rawData().writeAttribute(name, output, rdata.boundingRect().topLeft().toPoint());
 
 		ars[name] = output;
 	}
@@ -1867,8 +1867,8 @@ void VipSceneModelEditor::saveShapesAttribute()
 	VipVideoPlayer * pl = static_cast<VipVideoPlayer*>(m_data->player2D.data());
 
 	//get the current image
-	VipRasterData data = pl->spectrogram()->rawData();
-	VipNDArray image = data.extract(data.boundingRect());
+	VipRasterData rdata = pl->spectrogram()->rawData();
+	VipNDArray image = rdata.extract(rdata.boundingRect());
 	if(image.isEmpty())
 		return;
 
@@ -1877,7 +1877,7 @@ void VipSceneModelEditor::saveShapesAttribute()
 	{
 		QMap<QString,QVariant> properties;
 		for(int i=0; i < shapes.size(); ++i)
-			properties.unite(shapes[i]->rawData().attributes());
+			properties.insert(shapes[i]->rawData().attributes());
 		QStringList keys = properties.keys();
 		for(int i=0; i < keys.size(); ++i) {
 			if (keys[i].startsWith("_vip_") ){
@@ -1906,7 +1906,7 @@ void VipSceneModelEditor::saveShapesAttribute()
 					output.fill(value);
 
 					for(int i=0; i < shapes.size(); ++i)
-						shapes[i]->rawData().writeAttribute(name,output,data.boundingRect().topLeft().toPoint());
+						shapes[i]->rawData().writeAttribute(name,output,rdata.boundingRect().topLeft().toPoint());
 
 					//save the image
 					QFile fout(filename);
@@ -1929,7 +1929,7 @@ void VipSceneModelEditor::saveShapesImage()
 		return;
 
 	VipVideoPlayer * pl = static_cast<VipVideoPlayer*>(m_data->player2D.data());
-	VipRasterData data = pl->spectrogram()->rawData();
+	VipRasterData rdata = pl->spectrogram()->rawData();
 
 	QList<VipPlotShape*> shapes = m_data->player2D->plotWidget2D()->area()->findItems<VipPlotShape*>(QString(), 1, 1);
 	if(shapes.size())
@@ -1944,7 +1944,7 @@ void VipSceneModelEditor::saveShapesImage()
 					bounding |= shapes[i]->rawData().boundingRect();
 
 				//extract image and save it
-				VipNDArray output = data.extract(bounding);
+				VipNDArray output = rdata.extract(bounding);
 
 				QFile fout(filename);
 				fout.open(QFile::WriteOnly|QFile::Text);

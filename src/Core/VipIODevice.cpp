@@ -18,6 +18,7 @@
 #include "VipProgress.h"
 #include "VipTextOutput.h"
 #include "VipSleep.h"
+#include "VipSet.h"
 
 
 
@@ -658,8 +659,8 @@ bool VipIODevice::read(qint64 time, bool force)
 	qint64 closest = computeClosestTime(time);
 
 	if (!exact_time || !inside) {
-		bool inside;
-		qint64 real_time = m_data->parameters.filter.invTransform(time_transform, &inside);
+		bool _inside;
+		qint64 real_time = m_data->parameters.filter.invTransform(time_transform, &_inside);
 		if (readInvalidTime(real_time))
 			return true;
 	}
@@ -765,9 +766,9 @@ QList<VipProcessingObject::Info> VipIODevice::possibleReadDevices(const VipPath&
 
 	// try to find the device name in the path, taking care of possible namespaces in the name
 	{
-		QString tmp = path.canonicalPath();
-		tmp.replace("::", "--");
-		int index = tmp.indexOf(":");
+		QString _tmp = path.canonicalPath();
+		_tmp.replace("::", "--");
+		int index = _tmp.indexOf(":");
 		if (index >= 0)
 			prefix = path.canonicalPath().mid(0, index);
 	}
@@ -875,7 +876,7 @@ QStringList VipIODevice::possibleReadFilters(const VipPath& path, const QByteArr
 		}
 	}
 
-	QStringList res = filters.toList();
+	QStringList res = filters.values();
 	res.sort();
 	return res;
 }
@@ -896,7 +897,7 @@ QStringList VipIODevice::possibleWriteFilters(const VipPath& path, const QVarian
 		}
 	}
 
-	QStringList res = filters.toList();
+	QStringList res = filters.values();
 	res.sort();
 	return res;
 }
@@ -981,7 +982,7 @@ public:
 		QSharedPointer<ErrorCodes> logErrors;
 
 		Parameters(double speed = 1,
-			   RunMode mode = 0,
+			   RunMode mode = RunMode(),
 			   qint64 begin_time = VipInvalidTime,
 			   qint64 end_time = VipInvalidTime,
 			   qint64 time = VipInvalidTime,
@@ -1555,7 +1556,7 @@ QList<VipProcessingObject*> VipProcessingPool::leafs(bool children_only) const
 {
 	QMutexLocker lock(&m_data->device_mutex);
 
-	QSet<VipProcessingObject*> layer = vipListCast<VipProcessingObject*>(m_data->read_devices).toSet();
+	QSet<VipProcessingObject*> layer = vipToSet(vipListCast<VipProcessingObject*>(m_data->read_devices));
 	QSet<VipProcessingObject*> all;
 	QList<VipProcessingObject*> res;
 
@@ -1571,7 +1572,7 @@ QList<VipProcessingObject*> VipProcessingPool::leafs(bool children_only) const
 					if (!outs.size())
 						res << (*it);
 					else {
-						layer.unite(outs.toSet());
+						layer.unite(vipToSet(outs));
 					}
 				}
 			}
@@ -1580,21 +1581,6 @@ QList<VipProcessingObject*> VipProcessingPool::leafs(bool children_only) const
 
 	return res;
 }
-
-struct RunRead : QRunnable
-{
-	VipIODevice* device;
-	qint64 time;
-	bool res;
-	RunRead(VipIODevice* dev = NULL, qint64 t = 0)
-	  : device(dev)
-	  , time(t)
-	  , res(false)
-	{
-		setAutoDelete(false);
-	}
-	virtual void run() { res = device->read(time, true); }
-};
 
 bool VipProcessingPool::readData(qint64 time)
 {
@@ -3422,7 +3408,7 @@ bool VipCSVReader::open(VipIODevice::OpenModes mode)
 					float_sep = ",";
 			}
 
-			QLocale locale;
+			//QLocale locale;
 			if (float_sep == ".")
 				locale = QLocale(QLocale::French);
 			else
@@ -3505,12 +3491,12 @@ bool VipCSVReader::open(VipIODevice::OpenModes mode)
 			// }
 			// else
 			// any.setName(yunit);
-			QStringList tmp = extractTitleAndUnit(lst[i + 1]);
-			if (tmp.isEmpty())
+			QStringList _tmp = extractTitleAndUnit(lst[i + 1]);
+			if (_tmp.isEmpty())
 				any.setName(lst[i + 1]);
 			else {
-				any.setName(tmp[0]);
-				any.setYUnit(tmp[1]);
+				any.setName(_tmp[0]);
+				any.setYUnit(_tmp[1]);
 			}
 
 			m_signals.append(any);
@@ -3709,7 +3695,7 @@ void VipDirectoryReader::setSupportedSuffixes(const QString& suffixes)
 {
 	QString tmp = suffixes;
 	tmp.replace(" ", "");
-	m_data->supported_suffixes = tmp.split(",", QString::SkipEmptyParts);
+	m_data->supported_suffixes = tmp.split(",", VIP_SKIP_BEHAVIOR::SkipEmptyParts);
 	m_data->dirtyFiles = true;
 }
 
@@ -3864,7 +3850,7 @@ void VipDirectoryReader::computeFiles()
 	if (!m_data->alphabetical_order) {
 		// reverse the list
 		for (int k = 0; k < (files.size() / 2); k++)
-			files.swap(k, files.size() - (1 + k));
+			files.swapItemsAt(k, files.size() - (1 + k));
 	}
 
 	// crop
@@ -4273,16 +4259,16 @@ qint64 VipDirectoryReader::computePreviousTime(qint64 intime) const
 	}
 }
 
-qint64 VipDirectoryReader::computeClosestTime(qint64 time) const
+qint64 VipDirectoryReader::computeClosestTime(qint64 _time) const
 {
-	if (time <= firstTime())
+	if (_time <= firstTime())
 		return firstTime();
-	else if (time >= lastTime())
+	else if (_time >= lastTime())
 		return lastTime();
 
 	if (m_data->type == IndependentData) {
 
-		qint64 from_time = (time);
+		qint64 from_time = (_time);
 		qint64 time = VipInvalidTime;
 
 		for (int i = 0; i < m_data->devices.size(); ++i) {
@@ -4301,7 +4287,7 @@ qint64 VipDirectoryReader::computeClosestTime(qint64 time) const
 			return (time);
 	}
 	else {
-		int index = closestDeviceIndex(time);
+		int index = closestDeviceIndex(_time);
 		if (index < 0)
 			return VipInvalidTime;
 
@@ -4311,7 +4297,7 @@ qint64 VipDirectoryReader::computeClosestTime(qint64 time) const
 		if (index > 0 && use_sampling)
 			time_offset_before = m_data->timestamps[index - 1].second + m_data->sampling;
 
-		return (m_data->devices[index]->closestTime(time - time_offset_before) + time_offset_before);
+		return (m_data->devices[index]->closestTime(_time - time_offset_before) + time_offset_before);
 	}
 }
 
@@ -4351,7 +4337,8 @@ bool VipDirectoryReader::reload()
 			outputAt(i)->setData(outputAt(i)->data());
 		return true;
 	}
-	return false;
+	VIP_UNREACHABLE();
+	//return false;
 }
 
 bool VipDirectoryReader::readData(qint64 time)
@@ -4918,10 +4905,10 @@ bool VipArchiveReader::open(VipIODevice::OpenModes mode)
 				m_data->ranges.clear();
 
 				// find smallest sampling time
-				int i = 0;
+				//int i = 0;
 				qint64 prev = 0;
 				qint64 sampling = 0;
-				for (QMultiMap<qint64, ArchFrame>::iterator it = m_data->frames.begin(); it != m_data->frames.end(); ++it, ++i) {
+				for (QMultiMap<qint64, ArchFrame>::iterator it = m_data->frames.begin(); it != m_data->frames.end(); ++it /*, ++i*/) {
 					if (i > 0) {
 						qint64 samp = it.key() - prev;
 						if (samp > 0) {
@@ -5119,8 +5106,8 @@ bool VipArchiveReader::readData(qint64 time)
 			int output_index = m_data->indexes[it.value().stream];
 
 			// for streams having just one data or (Resource stream), just reset the output
-			VipTimeRange range = m_data->trailer.sourceLimits[it.value().stream];
-			if (range.second - range.first == 0) {
+			VipTimeRange _range = m_data->trailer.sourceLimits[it.value().stream];
+			if (_range.second - _range.first == 0) {
 				outputAt(output_index)->setData(outputAt(output_index)->data());
 				continue;
 			}

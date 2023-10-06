@@ -440,10 +440,10 @@ void VipPlotItemWidget::updatePlotItem(VipPlotItem* item)
 		//try to set the title to the source processing object
 		if (VipDisplayObject * obj = item->property("VipDisplayObject").value<VipDisplayObject*>()) {
 			if (VipOutput * out = obj->inputAt(0)->connection()->source())
-				if (VipProcessingObject * obj = out->parentProcessing())
-					if (obj->attribute("Name").toString() != m_title.text()) {
-						obj->setAttribute("Name", m_title.text());
-						to_reload = obj;
+				if (VipProcessingObject * p = out->parentProcessing())
+					if (p->attribute("Name").toString() != m_title.text()) {
+						p->setAttribute("Name", m_title.text());
+						to_reload = p;
 					}
 		}
 	}
@@ -453,7 +453,7 @@ void VipPlotItemWidget::updatePlotItem(VipPlotItem* item)
 		item->setRenderHints(item->renderHints() | QPainter::Antialiasing | QPainter::SmoothPixmapTransform | QPainter::TextAntialiasing);
 	}
 	else
-		item->setRenderHints(0);
+		item->setRenderHints(QPainter::RenderHints());
 
 	QList<VipAbstractScale*> item_scales = item->axes();
 	if(item_scales.size() == 2)
@@ -778,7 +778,7 @@ void VipPlotCurveWidget::setCurve(VipPlotCurve * curve)
 
 	m_line = curve->pen().color();
 	m_back = curve->brush().color();
-	m_symbolPen = curve->symbol() ? curve->symbol()->pen().color() : m_line.dark(110);
+	m_symbolPen = curve->symbol() ? curve->symbol()->pen().color() : m_line.darker(110);
 	m_symbolBack = curve->symbol() ? curve->symbol()->brush().color() : m_line;
 
 	m_draw_line.blockSignals(true);
@@ -2219,7 +2219,7 @@ void VipDefaultPlotAreaSettings::applyToCurve(VipPlotCurve* c)
 	if (m_data->m_drawAntialize.isChecked())
 		c->setRenderHints(QPainter::Antialiasing | QPainter::SmoothPixmapTransform | QPainter::TextAntialiasing);
 	else
-		c->setRenderHints(0);
+		c->setRenderHints(QPainter::RenderHints());
 }
 void VipDefaultPlotAreaSettings::applyToArea(VipPlotArea2D* area)
 {

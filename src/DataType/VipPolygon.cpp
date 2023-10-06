@@ -15,7 +15,7 @@ QPolygon vipSimplifyPolygon(const QPolygon& polygon)
 		if (polygon[i] == polygon[i - 1])
 			continue;
 		angle = QLineF(polygon[i - 1], polygon[i]).angle();
-		double new_angle;
+		double new_angle = 0;
 		//QPoint pt1 = polygon[i];
 		//QPoint pt2 = polygon[i + 1];
 		while (i < polygon.size() - 1 && qFuzzyCompare(new_angle = QLineF(polygon[i], polygon[i + 1]).angle(), angle))
@@ -52,7 +52,7 @@ QPolygonF vipSimplifyPolygon(const QPolygonF& polygon)
 		if (polygon[i] == polygon[i - 1])
 			continue;
 		angle = QLineF(polygon[i - 1], polygon[i]).angle();
-		double new_angle;
+		double new_angle=0;
 		//QPointF pt1 = polygon[i];
 		//QPointF pt2 = polygon[i + 1];
 		while (i < polygon.size()-1 && qFuzzyCompare(new_angle = QLineF(polygon[i], polygon[i + 1]).angle(), angle))
@@ -508,8 +508,8 @@ static void startPoint(QPoint pt, QPolygonF& out, const VipNDArrayType<T>& ar, T
 		QPolygonF res;
 		res.push_back(out.front());
 		for (int i = 1; i < out.size() - 1; ++i) {
-			QPointF pt = out[i];
-			if ((pt.x() == out[i - 1].x() && pt.x() == out[i + 1].x()) || (pt.y() == out[i - 1].y() && pt.y() == out[i + 1].y()))
+			QPointF p = out[i];
+			if ((p.x() == out[i - 1].x() && p.x() == out[i + 1].x()) || (p.y() == out[i - 1].y() && p.y() == out[i + 1].y()))
 				;//skip point
 			else
 				res.push_back(out[i]);

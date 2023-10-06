@@ -348,7 +348,7 @@ VipPlotSpectrogram::VipPlotSpectrogram(const VipText & title)
 :VipPlotRasterData(title), d_data(new PrivateData())
 {
 	//disable antialiazing by default
-	setRenderHints(0);
+	setRenderHints(QPainter::RenderHints());
 }
 
 VipPlotSpectrogram::~VipPlotSpectrogram()
@@ -472,7 +472,7 @@ ContourLines VipPlotSpectrogram::contourLines() const
 				return d_data->lines = ContourLines();
 
 			QList<vip_double> levels = d_data->contourLevels;
-			qSort(levels);
+			std::sort(levels.begin(),levels.end());
 
 			ContourLines lines = contourLines(ar, QRectF(0, 0, ar.shape(1), ar.shape(0)), levels, d_data->ignoreAllVerticesOnLevel);
 

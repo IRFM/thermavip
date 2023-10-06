@@ -125,7 +125,7 @@ bool VipOptions::addPage(const QString & category, VipPageOption * page, const Q
 	if (hasPage(page))
 		return false;
 
-	QStringList path = category.split("/", QString::SkipEmptyParts);
+	QStringList path = category.split("/", VIP_SKIP_BEHAVIOR::SkipEmptyParts);
 	if (path.size() == 0)
 		return false;
 
@@ -755,9 +755,9 @@ void ProcessingSettings::applyPage()
 		VipProcessingManager::setLogErrorEnabled(VipProcessingObject::InputBufferFull, printDebug);
 	}
 	if (priority >= 0)
-		VipProcessingManager::setDefaultPriority(priority, &VipProcessingObject::staticMetaObject);
+		VipProcessingManager::setDefaultPriority((QThread::Priority)priority, &VipProcessingObject::staticMetaObject);
 	if (displayPriority >= 0)
-		VipProcessingManager::setDefaultPriority(displayPriority, &VipDisplayObject::staticMetaObject);
+		VipProcessingManager::setDefaultPriority((QThread::Priority)displayPriority, &VipDisplayObject::staticMetaObject);
 
 
 	connect(&VipProcessingManager::instance(), SIGNAL(changed()), this, SLOT(updatePage()), Qt::QueuedConnection);

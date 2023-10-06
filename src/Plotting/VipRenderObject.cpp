@@ -12,6 +12,7 @@
 #include <qdesktopwidget.h>
 #include <qsvggenerator.h>
 #include <QPrinter>
+#include <qpagesize.h>
 
 #include "VipRenderObject.h"
 #include "VipShapeDevice.h"
@@ -190,7 +191,7 @@ static bool hasPdfTops()
 	else {
 		checked = true;
 		QProcess p;
-		p.start(QString("pdftops"));
+		p.start(QString("pdftops"),QStringList());
 		if (p.waitForStarted()) {
 			if (p.waitForFinished())
 				ok = (p.readAllStandardOutput() + p.readAllStandardError()).size() > 0;
@@ -218,13 +219,18 @@ bool VipRenderObject::saveAsPs(VipRenderObject* render, const QString& filename)
 		return false;
 
 	QProcess p;
-	QString option;
+	/* QString option;
 	if (QFileInfo(filename).suffix().compare("eps", Qt::CaseInsensitive) == 0)
 		option = " -eps ";
 	option += "-paperw " + QString::number(std::ceil(point_size.width())) + " -paperh " + QString::number(std::ceil(point_size.height())) + " ";
 	QString command = "pdftops " + option + filename + ".pdf " + filename;
-	// printf("command: '%s'\n", command.toLatin1().data());
-	p.start(command);
+	p.start(command);*/
+	QStringList option;
+	if (QFileInfo(filename).suffix().compare("eps", Qt::CaseInsensitive) == 0)
+		option<< "-eps";
+	option << "-paperw" << QString::number(std::ceil(point_size.width())) << "-paperh" << QString::number(std::ceil(point_size.height())) << (filename + ".pdf") << filename;
+	p.start("pdftops",option);
+
 	bool res = false;
 	if (p.waitForStarted())
 		if (p.waitForFinished())
@@ -317,9 +323,11 @@ bool VipRenderObject::saveAsPdf(VipRenderObject* render, const QString& filename
 		*point_size = QSizeF(paper_size.width() * 2.834645669291, paper_size.height() * 2.834645669291);
 
 	// printer.setFullPage(true);
-	printer.setPageSize(QPrinter::Custom);
-	printer.setPaperSize(paper_size, QPrinter::Millimeter);
-	printer.setPageMargins(0, 0, 0, 0, QPrinter::Millimeter);
+	QPageSize page(paper_size, QPageSize::Millimeter);
+	printer.setPageSize(page);
+	//printer.setPageSize(QPrinter::Custom);
+	//printer.setPaperSize(paper_size, QPrinter::Millimeter);
+	//printer.setPageMargins(0, 0, 0, 0, QPageSize::Millimeter);
 	printer.setResolution(600);
 
 	if (!painter.begin(&printer)) { // failed to open file

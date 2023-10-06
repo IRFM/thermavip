@@ -146,7 +146,6 @@ void VipPlotGrid::drawCartesian( QPainter *p, const VipCoordinateSystem & m) con
 	if (remove_antialiazing)
 	{
 		p->setRenderHint(QPainter::Antialiasing, false);
-		p->setRenderHint(QPainter::HighQualityAntialiasing, false);
 	}
 
 

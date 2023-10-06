@@ -400,7 +400,7 @@ Vip::Corners VipBoxStyle::roundedCorners() const
 	if(d_data)
 		return d_data->roundedCorners;
 	else
-		return 0;
+		return Vip::Corners();
 }
 
 bool VipBoxStyle::isTransparentBrush() const
@@ -958,11 +958,11 @@ void VipBoxStyle::computePie(const QPointF & c, const VipPie & pie, double spaci
 		QPainterPathStroker stroker;
 		stroker.setWidth(spacing*2);
 
-		QPainterPath p;
-		p.addPolygon(QPolygonF() << line_start.p1() << line_start.p2());
-		p.addPolygon(QPolygonF() << line_end.p1() << line_end.p2());
+		QPainterPath _p;
+		_p.addPolygon(QPolygonF() << line_start.p1() << line_start.p2());
+		_p.addPolygon(QPolygonF() << line_end.p1() << line_end.p2());
 
-		QPainterPath str = stroker.createStroke(p);
+		QPainterPath str = stroker.createStroke(_p);
 		background = background.subtracted(str);
 		border = border.subtracted(str);
 	}

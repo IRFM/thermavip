@@ -137,13 +137,13 @@ VipPolarValueGauge::VipPolarValueGauge(QWidget* parent)
 	// p->setTextDirection(VipText::AutoDirection);
 	d_data->polarGradiant->setAxes(scales, VipCoordinateSystem::Polar);
 	d_data->polarGradiant->setItemAttribute(VipPlotItem::ClipToScaleRect, false);
-	d_data->polarGradiant->setRenderHints(QPainter::Antialiasing | QPainter::HighQualityAntialiasing);
+	d_data->polarGradiant->setRenderHints(QPainter::Antialiasing );
 
 	d_data->clipValue = new VipPieItem();
 	d_data->clipValue->setRawData(VipPie(0, 100, 60, 100, 0));
 	d_data->clipValue->setAxes(scales, VipCoordinateSystem::Polar);
 	d_data->clipValue->setItemAttribute(VipPlotItem::ClipToScaleRect, false);
-	d_data->clipValue->setRenderHints(QPainter::Antialiasing | QPainter::HighQualityAntialiasing);
+	d_data->clipValue->setRenderHints(QPainter::Antialiasing );
 	d_data->clipValue->boxStyle().setBorderPen(QPen(Qt::white));
 	d_data->polarGradiant->setClipTo(d_data->clipValue);
 
@@ -151,7 +151,7 @@ VipPolarValueGauge::VipPolarValueGauge(QWidget* parent)
 	d_data->background->setRawData(VipPie(0, 100, 60, 100, 0));
 	d_data->background->setAxes(scales, VipCoordinateSystem::Polar);
 	d_data->background->setItemAttribute(VipPlotItem::ClipToScaleRect, false);
-	d_data->background->setRenderHints(QPainter::Antialiasing | QPainter::HighQualityAntialiasing);
+	d_data->background->setRenderHints(QPainter::Antialiasing);
 	d_data->background->boxStyle().setBorderPen(QPen(Qt::white));
 
 	this->area()->grid()->setClipTo(d_data->polarGradiant);

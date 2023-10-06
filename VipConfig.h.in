@@ -85,7 +85,18 @@ Disable printf calls if required
 
 
 
+#ifdef _MSC_VER
+#pragma warning ( disable : 4127 ) //suppress useless "conditional expression is constant" warning
+#pragma warning ( disable : 4505 ) // suppress "unreferenced function with internal linkage has been removed"
+#endif
 
+
+// Suppress deprecated warning with QString::SkipEmptyParts
+#if QT_VERSION < QT_VERSION_CHECK(5, 14, 0)
+#define VIP_SKIP_BEHAVIOR QString
+#else
+#define VIP_SKIP_BEHAVIOR Qt
+#endif
 
 
 // __MINGW32__ doesn't seem to be properly defined, so define it.
@@ -93,6 +104,13 @@ Disable printf calls if required
 #if	(defined(_WIN32) || defined(__WIN32__) || defined(WIN32)) && defined(__GNUC__) && !defined(__CYGWIN__)
 #define __MINGW32__
 #endif
+#endif
+
+// Unreachable code
+#ifdef _MSC_VER
+#define VIP_UNREACHABLE() __assume(0)
+#else
+#define VIP_UNREACHABLE() __builtin_unreachable()
 #endif
 
 //pragma directive might be different between compilers, so define a generic VIP_PRAGMA macro.

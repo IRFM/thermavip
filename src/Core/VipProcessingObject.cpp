@@ -1049,14 +1049,24 @@ VipProperty::VipProperty(const VipProperty& other)
 {
 }
 
+VipProperty& VipProperty::operator=(const VipProperty& other) 
+{
+	static_cast<UniqueProcessingIO&>(*this) = static_cast<const UniqueProcessingIO&>(other);
+	m_data = other.m_data;
+	return *this;
+}
 VipAnyData VipProperty::data() const
 {
+	VipUniqueLock<VipSpinlock> lock(const_cast<VipSpinlock&>(m_lock));
 	return *m_data;
 }
 
 void VipProperty::setData(const VipAnyData& d)
 {
-	*m_data = d;
+	{
+		VipUniqueLock<VipSpinlock> lock(m_lock);
+		*m_data = d;
+	}
 	// only emit signal if parent processing is enabled
 	if (parentProcessing() && parentProcessing()->isEnabled() && isEnabled()) {
 		parentProcessing()->emitProcessingChanged();
@@ -1074,8 +1084,8 @@ VipMultiProperty::VipMultiProperty(const VipMultiProperty& other)
 {
 }
 
-#define LOCK(mutex) QMutexLocker lock(const_cast<QMutex*>(&mutex));
-#define SPIN_LOCK(mutex) VipUniqueLock<VipSpinlock> lock(const_cast<VipSpinlock&>(mutex));
+#define LOCK(mutex) QMutexLocker lock_m(const_cast<QMutex*>(&mutex));
+#define SPIN_LOCK(mutex) VipUniqueLock<VipSpinlock> lock_p(const_cast<VipSpinlock&>(mutex));
 
 // We gather all static variables related to VipProcessingObject inside VipProcessingManager
 class VipProcessingManager::PrivateData
@@ -1129,7 +1139,7 @@ VipProcessingManager::~VipProcessingManager()
 	delete m_data;
 }
 
-void VipProcessingManager::setDefaultPriority(int priority, const QMetaObject* meta)
+void VipProcessingManager::setDefaultPriority(QThread::Priority priority, const QMetaObject* meta)
 {
 	instance().m_data->priorities[meta->className()] = priority;
 	applyAll();
@@ -1803,467 +1813,6 @@ void VipLastAvailableList::clear()
 
 
 
-/// @brief VipTaskPool is a thread that asynchronously executes objects of type QRunnable.
-///
-/// When a VipProcessingObject is Asynchronous, it uses internally a VipTaskPool to schedule its processing.
-/// QThreadPool is not used due to observed dead locks in certain situations.
-///
-class  VipTaskPool : public QThread
-{
-	QMutex m_mutex;
-	QWaitCondition m_cond;
-	QList<QRunnable*> m_run;
-	QRunnable* m_next;
-	bool m_stop;
-	bool m_running;
-	bool m_runMainEventLoop;
-	int m_counter;
-	void atomWait(int milli);
-
-protected:
-	virtual void run();
-
-public:
-	/// @brief Construct from a parent object and a thread priority
-	VipTaskPool(QObject* parent = nullptr, QThread::Priority p = QThread::InheritPriority);
-	~VipTaskPool();
-
-	/// @brief Enable/disable running the main event loop
-	///
-	/// When the waitForDone() or waitForCurrentPendingTasks() is called from the main thread,
-	/// tells the VipTaskPool to process pending events while waiting.
-	/// This allows to execute GUI operations in the task pool and avoid a deadlock while waiting.
-	/// Default is false.
-	void setRunMainEventLoop(bool enable);
-	bool runMainEventLoop() const;
-
-	/// @brief Schedule a QRunnable object to be processed
-	///
-	/// The VipTaskPool will delete the QRunnable object after
-	/// execution if r->autoDelete() is true.
-	void push(QRunnable* r);
-
-	/// @brief Wait until the task list is empty or until timeout
-	bool waitForDone(int milli = -1);
-
-	/// @brief Wait for currently remaining tasks to be processed or until timeout
-	bool waitForCurrentPendingTasks(int milli = -1);
-
-	/// @brief Returns the number of remaining scheduled QRunnable, include the one being currently executed (if any)
-	int remaining() const;
-
-	/// @brief Returns the number of remaining scheduled QRunnable equal to runnable, include the one being currently executed (if any)
-	int remaining(QRunnable* runnable) const;
-
-	/// @brief remove all pending tasks
-	void clear();
-
-	/// @brief remove all pending tasks equal to runnable
-	void clear(QRunnable* runnable);
-
-	/// @brief Reset the internal counter
-	///
-	/// VipTaskPool stores a counter which is incremented each time a QRunnable object is executed.
-	/// This function reset this counter to 0, and set 'remaining' variable to the number of pending tasks
-	/// (VipTaskPool::remaining()) if not null.
-	///
-	/// Note that, by default, VipTaskPool does not increment the counter unless this function is called.
-	///
-	void startCounter(int* remaining = nullptr);
-
-	/// @brief Stop incrementing the internal counter.
-	void stopCounter();
-
-	/// @brief Returns the current counter value
-	int counterValue() const;
-};
-
-
-void VipTaskPool::run()
-{
-	// notify that the thread started
-	size_t mutex_lock;
-	size_t process_time = 0;
-	{
-		size_t st = std::clock();
-		LOCK(m_mutex);
-		mutex_lock = std::clock() - st;
-		m_cond.wakeAll();
-	}
-
-	LOCK(m_mutex);
-	while (!m_stop) {
-
-		// wait for incoming runnable objects.
-		// takes at most 10 ms to stop if required.
-		while (!m_run.size() && !m_stop) {
-			m_cond.wait(&m_mutex, 10);
-			m_cond.wakeAll();
-		}
-
-		while (m_run.size()) {
-			m_next = NULL;
-			m_running = true;
-			m_next = m_run.front();
-			m_run.pop_front();
-
-			if (m_next) {
-				// Now it would be great to unlock the mutex during the runnable execution
-				// in order to schedule additional tasks in the meatime.
-				// However it comes with a huge cost for very fast tasks that constantly
-				// unlock/relock the mutex while parent processing does the same on new input.
-				// Therefore, we avoid doing that for very fast processing
-
-				const bool lock = (process_time > mutex_lock);
-
-				if (lock)
-					m_mutex.unlock();
-				try {
-					// Avoid exiting task pool thread on unhandled exception
-					size_t st = std::clock();
-					m_next->run();
-					process_time = std::clock() - st;
-				}
-				catch (const std::exception& e) {
-					if (VipProcessingObject* o = qobject_cast<VipProcessingObject*>(parent()))
-						o->setError("Unhandled exception: " + QString(e.what()));
-					else
-						qWarning() << "Unhandled exception: " << e.what() << "\n";
-				}
-				catch (...) {
-					if (VipProcessingObject* o = qobject_cast<VipProcessingObject*>(parent()))
-						o->setError("Unhandled unknown exception");
-					else
-						qWarning() << "Unhandled unknown exception\n";
-				}
-				if (m_next->autoDelete())
-					delete m_next;
-				if (lock)
-					m_mutex.lock();
-				if (m_counter >= 0)
-					++m_counter;
-			}
-			m_running = false;
-			m_next = NULL;
-		}
-
-		m_cond.wakeAll();
-	}
-
-	m_cond.wakeAll();
-}
-
-/* void VipTaskPool::run()
-{
-	//notify that the thread started
-	{
-		LOCK(m_mutex);
-		m_cond.wakeAll();
-	}
-
-
-	while(!m_stop)
-	{
-
-		{
-			//wait for incoming runnable objects.
-			//takes at most 10ms to stop if required.
-			LOCK(m_mutex);
-			while(!m_run.size() && !m_stop)
-			{
-				m_cond.wait(&m_mutex,10);
-				m_cond.wakeAll();
-			}
-		}
-
-		while(m_run.size())
-		{
-			m_next = NULL;
-			m_mutex.lock();
-			if (m_run.size())
-			{
-				m_running = true;
-				m_next = m_run.front();
-				m_run.pop_front();
-			}
-			m_mutex.unlock();
-
-			if (m_next)
-			{
-				m_next->run();
-				if (m_counter >= 0)
-				{
-					m_mutex.lock();
-					++m_counter;
-					m_mutex.unlock();
-				}
-			}
-			m_running = false;
-			m_next = NULL;
-		}
-
-		m_cond.wakeAll();
-	}
-
-	m_cond.wakeAll();
-
-}*/
-
-VipTaskPool::VipTaskPool(QObject* parent, QThread::Priority p)
-  : QThread(parent)
-  , m_next(NULL)
-  , m_stop(false)
-  , m_running(false)
-  , m_runMainEventLoop(false)
-  , m_counter(-1)
-{
-	LOCK(m_mutex);
-	this->start(p);
-	m_cond.wait(&m_mutex);
-}
-
-VipTaskPool::~VipTaskPool()
-{
-	m_stop = true;
-	m_cond.wakeAll();
-	wait();
-}
-
-void VipTaskPool::setRunMainEventLoop(bool enable)
-{
-	LOCK(m_mutex);
-	m_runMainEventLoop = enable;
-}
-bool VipTaskPool::runMainEventLoop() const
-{
-	return m_runMainEventLoop;
-}
-
-void VipTaskPool::push(QRunnable* r)
-{
-	{
-		LOCK(m_mutex);
-		m_run.append(r);
-	}
-	m_cond.wakeAll();
-}
-
-void VipTaskPool::atomWait(int milli)
-{
-	// Wait one time at most milli ms.
-	// If m_runMainEventLoop is true and we are in the main thread, process pending events.
-
-	if (m_runMainEventLoop && QCoreApplication::instance() && QCoreApplication::instance()->thread() == this) {
-		m_mutex.unlock();
-		// process event loop
-		vipProcessEvents(NULL, milli);
-		m_mutex.lock();
-	}
-	else {
-		m_cond.wait(&m_mutex, milli);
-	}
-}
-
-bool VipTaskPool::waitForDone(int milli_time)
-{
-	if (milli_time < 0) {
-		// wait until finished
-		while (this->remaining()) {
-			LOCK(m_mutex);
-			m_cond.wakeAll();
-			atomWait(10);
-		}
-		return true;
-	}
-	else {
-		// wait for at most milli_time milliseconds
-		qint64 current = vipGetMilliSecondsSinceEpoch();
-		while (this->remaining()) {
-			LOCK(m_mutex);
-			m_cond.wakeAll();
-			atomWait(10);
-			if (vipGetMilliSecondsSinceEpoch() - current > milli_time)
-				return this->remaining() == 0;
-		}
-		return true;
-	}
-}
-
-bool VipTaskPool::waitForCurrentPendingTasks(int milli_time)
-{
-	m_mutex.lock();
-	int pending = remaining();
-	m_counter = 0;
-	m_mutex.unlock();
-
-	if (milli_time < 0) {
-		// wait until finished
-		while (m_counter < pending) {
-			LOCK(m_mutex);
-			m_cond.wakeAll();
-			atomWait(10);
-		}
-	}
-	else {
-		// wait for milli_time milliseconds
-		qint64 current = vipGetMilliSecondsSinceEpoch();
-		while (m_counter < pending) {
-			LOCK(m_mutex);
-			m_cond.wakeAll();
-			atomWait(10);
-			qint64 elapsed = vipGetMilliSecondsSinceEpoch() - current;
-			qint64 remaining = milli_time - elapsed;
-			if (remaining <= 0) {
-				bool res = (m_counter == pending);
-				m_counter = -1;
-				return res;
-			}
-		}
-	}
-
-	m_mutex.lock();
-	m_counter = -1;
-	m_mutex.unlock();
-	return true;
-}
-
-// bool VipTaskPool::waitForDone(int milli_time )
-// {
-// if (milli_time < 0)
-// {
-// //wait until finished
-// while (this->remaining())
-// {
-//	LOCK(m_mutex);
-//	m_cond.wakeAll();
-//	m_cond.wait(&m_mutex,1);
-// }
-// return true;
-// }
-// else
-// {
-// //wait for milli_time milliseconds
-// qint64 current = vipGetMilliSecondsSinceEpoch();
-// qint64 remaining = milli_time;
-//
-// while (this->remaining())
-// {
-//	LOCK(m_mutex);
-//	m_cond.wakeAll();
-//	m_cond.wait(&m_mutex, remaining);
-//	qint64 elapsed = vipGetMilliSecondsSinceEpoch() - current;
-//	remaining = milli_time - elapsed;
-//	if (remaining <= 0)
-//		return this->remaining() == 0;
-// }
-//
-// return true;
-// }
-// }
-//
-// bool VipTaskPool::waitForCurrentPendingTasks(int milli_time)
-// {
-// m_mutex.lock();
-// int pending = remaining();
-// m_counter = 0;
-// m_mutex.unlock();
-//
-// if (milli_time < 0)
-// {
-// //wait until finished
-// while (m_counter < pending)
-// {
-//	LOCK(m_mutex);
-//	m_cond.wakeAll();
-//	m_cond.wait(&m_mutex, 1);
-// }
-// }
-// else
-// {
-// //wait for milli_time milliseconds
-// qint64 current = vipGetMilliSecondsSinceEpoch();
-// qint64 remaining = milli_time;
-//
-// while (m_counter < pending)
-// {
-//	LOCK(m_mutex);
-//	m_cond.wakeAll();
-//	m_cond.wait(&m_mutex, remaining);
-//	qint64 elapsed = vipGetMilliSecondsSinceEpoch() - current;
-//	remaining = milli_time - elapsed;
-//	if (remaining <= 0)
-//	{
-//		bool res = ( m_counter == pending );
-//		m_counter = -1;
-//		return res;
-//	}
-// }
-//
-// }
-//
-// m_mutex.lock();
-// m_counter = -1;
-// m_mutex.unlock();
-// return true;
-// }
-
-int VipTaskPool::remaining() const
-{
-	return m_run.size() + m_running;
-}
-
-int VipTaskPool::remaining(QRunnable* runnable) const
-{
-	LOCK(m_mutex);
-	int count = 0;
-	for (int i = 0; i < m_run.size(); ++i)
-		if (m_run[i] == runnable)
-			++count;
-	return count + (m_running ? m_next == runnable : 0);
-}
-
-void VipTaskPool::clear()
-{
-	LOCK(m_mutex);
-	m_run.clear();
-}
-
-void VipTaskPool::clear(QRunnable* runnable)
-{
-	LOCK(m_mutex);
-	for (int i = 0; i < m_run.size(); ++i) {
-		if (m_run[i] == runnable) {
-			m_run.removeAt(i);
-			--i;
-		}
-	}
-}
-
-void VipTaskPool::startCounter(int* _remaining)
-{
-	LOCK(m_mutex);
-	m_counter = 0;
-	if (_remaining)
-		*_remaining = remaining();
-}
-
-void VipTaskPool::stopCounter()
-{
-	LOCK(m_mutex);
-	m_counter = -1;
-}
-
-int VipTaskPool::counterValue() const
-{
-	return m_counter;
-}
-
-
-
-
-
-
-
 
 
 
@@ -2658,7 +2207,7 @@ void VipProcessingObject::restore()
 
 		// reset the schedule strategies to create the task pool if necessary
 		ScheduleStrategies st = m_data->parameters.schedule_strategies;
-		m_data->parameters.schedule_strategies = 0;
+		m_data->parameters.schedule_strategies = ScheduleStrategies();
 		blockSignals(true);
 		setScheduleStrategies(st);
 		blockSignals(false);
@@ -3874,7 +3423,7 @@ void VipProcessingObject::run()
 		else {
 			if (time - m_data->lastTime > 500) {
 
-				m_data->processingRate = 1000.0 * double(m_data->processingCount + 1) / (time - m_data->lastTime);
+				m_data->processingRate = 1000.0 * static_cast<double>(m_data->processingCount + 1) / (time - m_data->lastTime);
 				m_data->processingCount = 0;
 				m_data->lastTime = time;
 			}
@@ -3919,8 +3468,8 @@ void VipProcessingObject::receiveConnectionClosed(VipProcessingIO* io)
 				}
 				else if (VipMultiOutput* mout = m_data->outputs[o]->toMultiOutput()) {
 					for (int m = 0; m < mout->count(); ++m) {
-						VipOutput* out = mout->at(m);
-						if (out->connection()->openMode() != VipConnection::UnknownConnection) {
+						VipOutput* ot = mout->at(m);
+						if (ot->connection()->openMode() != VipConnection::UnknownConnection) {
 							all_closed = false;
 							break;
 						}
@@ -4353,8 +3902,8 @@ VipProcessingObject* VipProcessingList::take(int i)
 
 	// remove the source properties from the VipProcessingObject
 	QList<QByteArray> names = sourceProperties();
-	for (int i = 0; i < names.size(); ++i)
-		obj->setSourceProperty(names[i].data(), QVariant());
+	for (const QByteArray & name : names)
+		obj->setSourceProperty(name.data(), QVariant());
 
 	disconnect(obj, SIGNAL(processingDone(VipProcessingObject*, qint64)), this, SLOT(receivedProcessingDone(VipProcessingObject*, qint64)));
 
@@ -4603,8 +4152,8 @@ public:
 
 	QReadWriteLock shapeLock;
 	VipShape dirtyShape;
-	bool reloadOnSceneChanges;
-	MergeStrategy mergeStrategy;
+	bool reloadOnSceneChanges{ false };
+	MergeStrategy mergeStrategy{ NoMerge };
 	QTransform shapeTransform;
 };
 
@@ -4612,9 +4161,6 @@ VipSceneModelBasedProcessing::VipSceneModelBasedProcessing(QObject* parent)
   : VipProcessingObject(parent)
 {
 	m_data = new PrivateData();
-	m_data->reloadOnSceneChanges = true;
-	m_data->mergeStrategy = NoMerge;
-
 	this->topLevelPropertyAt(1)->toMultiProperty()->resize(1);
 }
 

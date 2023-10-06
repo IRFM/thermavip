@@ -124,8 +124,8 @@ static IRB_BLOCK_INFO read_blocks(QIODevice * device, qint32 reord, qint32 /*nex
 		{
 			us[0] = qFromBigEndian(us[0]);
 			us[1] = qFromBigEndian(us[1]);
-			for (int i = 0; i< 7; ++i)
-				in[i] = qFromBigEndian(in[i]);
+			for (int j = 0; j< 7; ++j)
+				in[j] = qFromBigEndian(in[j]);
 		}
 
 		type_of_block[i] = us[0];

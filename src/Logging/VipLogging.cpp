@@ -19,7 +19,7 @@ class VipLogging::PrivateData
 {
 public:
 	PrivateData()
-		: semaphore("Log", 1), outputs(0), stop(true), enable_saving(false), enabled(true)
+		: semaphore("Log", 1), stop(true), enable_saving(false), enabled(true)
 	{}
 	QList<LogFrame>					logs;
 	QSystemSemaphore				semaphore;
@@ -41,7 +41,7 @@ struct VipLogging::LogFrame
 	Level level;
 	QDateTime date;
 
-	LogFrame(const QString & text = QString(), Level level = Info, Outputs outputs = 0, const QDateTime & date = QDateTime::currentDateTime())
+	LogFrame(const QString& text = QString(), Level level = Info, Outputs outputs = Outputs(), const QDateTime& date = QDateTime::currentDateTime())
 		:text(text),outputs(outputs),level(level), date(date) {}
 };
 
@@ -249,7 +249,7 @@ void VipLogging::close()
 
 	d_data->logs.clear();
 	d_data->file.reset();
-	d_data->outputs = 0;
+	d_data->outputs = Outputs();
 }
 
 bool VipLogging::waitForWritten(int msecs )
@@ -359,7 +359,11 @@ QStringList VipLogging::lastLogEntries()
 		}
 
 		QString str(QByteArray(static_cast<char*>(d_data->memory.data()) + sizeof(qint32), size));
-		lst = str.split("\n",QString::SkipEmptyParts);
+#if QT_VERSION < QT_VERSION_CHECK(5, 14, 0)
+		lst = str.split("\n",VIP_SKIP_BEHAVIOR::SkipEmptyParts);
+#else
+		lst = str.split("\n", Qt::SkipEmptyParts);
+#endif
 
 		memset(d_data->memory.data(),0,d_data->memory.size());
 

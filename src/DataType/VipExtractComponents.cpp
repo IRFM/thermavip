@@ -127,8 +127,8 @@ bool VipExtractComponents::SetComponent(const QString & component, const VipNDAr
 
 		return true;
 	}
-
-	return false;
+	VIP_UNREACHABLE();
+	//return false;
 }
 void VipExtractComponents::SetClampMin(double min, int component)
 {

@@ -2,6 +2,7 @@
 #include "VipProcessingObjectEditor.h"
 #include "VipStandardWidgets.h"
 #include "VipDisplayArea.h"
+#include "VipSet.h"
 
 #include <QDateTime>
 #include <QFileInfo>
@@ -220,7 +221,7 @@ qint64 VipGenericRecorder::estimateFileSize() const
  	}
 
  	//make unique, sort and return
- 	res = res.toSet().toList();
+ 	res = vipToSet(res).values();
  	return res.join(";;");
  }
 
@@ -628,14 +629,14 @@ QString VipRecordWidget::updateFileFilters(const QVariantList & data, VipFileNam
 		for (int i = 0; i < devices.size(); ++i)
 		{
 			VipIODevice * dev = qobject_cast<VipIODevice*>(devices[i].create());//vipCreateVariant(devices[i]).value<VipIODevice*>();
-			QString filters = dev->fileFilters();
-			if (!filters.isEmpty())
-				res.append(filters);
+			QString _filters = dev->fileFilters();
+			if (!_filters.isEmpty())
+				res.append(_filters);
 			delete dev;
 		}
 
 		//make unique, sort and return
-		res = res.toSet().toList();
+		res = vipToSet(res).values();
 		filters = res.join(";;");
 	}
 
@@ -644,10 +645,10 @@ QString VipRecordWidget::updateFileFilters(const QVariantList & data, VipFileNam
 	return filters;
 }
 
-QString VipRecordWidget::updateFileFilters(const QVariantList & data)
+QString VipRecordWidget::updateFileFilters(const QVariantList & lst)
 {
-	if(data.size())
-		return updateFileFilters(data,&m_data->filename);
+	if (lst.size())
+		return updateFileFilters(lst, &m_data->filename);
 	else if (m_data->recorder)
 	{
 		QString filters = m_data->recorder->fileFilters();

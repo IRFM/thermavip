@@ -6,6 +6,7 @@
 #include "VipStandardEditors.h"
 #include "VipGui.h"
 #include "VipEnvironment.h"
+#include "VipSet.h"
 
 #include <qfileinfo.h>
 #include <qfile.h>
@@ -212,7 +213,8 @@ static int register_psftp()
 	// Check for psftp process
 	{
 		QProcess pr;
-		pr.start("psftp -h");
+		//pr.start("psftp -h");
+		pr.start("psftp", QStringList() << "-h");
 		bool ok = pr.waitForStarted();
 		pr.waitForFinished();
 		if (!ok)
@@ -396,7 +398,7 @@ VipPathList VipMapFileSystemTreeItem::childrenPaths() const
 	return res;
 }
 
-bool VipMapFileSystemTreeItem::setChildren(const VipPathList & children)
+bool VipMapFileSystemTreeItem::setChildren(const VipPathList & _children)
 {
 	if (isCustom())
 		return false;
@@ -405,23 +407,23 @@ bool VipMapFileSystemTreeItem::setChildren(const VipPathList & children)
 	m_need_full_update = false;
 	m_need_attribute_update = false;
 
-	if (m_children.toSet() != children.toSet())
+	if (vipToSet(m_children) != vipToSet(_children))
 	{
 		m_need_full_update = true;
 	}
 	else
 	{
 		//compare attributes
-		for (int i = 0; i < children.size(); ++i)
+		for (int i = 0; i < _children.size(); ++i)
 		{
-			if (children[i] != m_children[i])
+			if (_children[i] != m_children[i])
 			{
 				m_need_attribute_update = true;
 				break;
 			}
 		}
 	}
-	m_children = children;
+	m_children = _children;
 
 	return m_need_full_update || m_need_attribute_update;
 }
@@ -670,7 +672,7 @@ VipMapFileSystemTree::VipMapFileSystemTree(QWidget * parent)
 	m_data->update = new VipMapFileSystemTreeUpdate(this);
 
 	this->setSortingEnabled(true);
-	this->sortByColumn(0);
+	this->sortByColumn(0,Qt::AscendingOrder);
 	this->setSelectionMode(QTreeWidget::ExtendedSelection);
 	this->setDragEnabled(true);
 	this->setDragEnabled(true);
@@ -708,7 +710,7 @@ void VipMapFileSystemTree::setMapFileSystem(VipMapFileSystemPtr map)
 			// setSupportedOperations(m_data->operations & map->supportedOperations());
 			if (!(map->supportedOperations() & VipMapFileSystem::OpenWrite) || !(map->supportedOperations() & VipMapFileSystem::Rename) ||
 			    !(map->supportedOperations() & VipMapFileSystem::CopyFile))
-				setSupportedOperations(0);
+				setSupportedOperations(Operations());
 		}
 	}
 }
@@ -894,7 +896,7 @@ QList<QTreeWidgetItem *> VipMapFileSystemTree::itemsForPath(const VipPath & path
 							res += child;
 						else {
 							if (QTreeWidgetItem * it =
-								internalItemForPath(child, path.canonicalPath().mid(child->path().canonicalPath().size()).split("/", QString::SkipEmptyParts), child->path().canonicalPath()))
+								internalItemForPath(child, path.canonicalPath().mid(child->path().canonicalPath().size()).split("/", VIP_SKIP_BEHAVIOR::SkipEmptyParts), child->path().canonicalPath()))
 								res += it;
 						}
 					}
@@ -1410,29 +1412,29 @@ void VipMapFileSystemTree::dropEvent(QDropEvent * evt)
 			// add paths to shortcuts
 			VipPathList already_there = static_cast<VipMapFileSystemTreeItem*>(top)->childrenPaths();
 			QList<QUrl> urls = evt->mimeData()->urls();
-			VipPathList lst;
+			VipPathList _lst;
 			for (int i = 0; i < urls.size(); ++i) {
 				QString path = urls[i].toString();
 				path.replace("\\", "/");
 				path.remove("file:///");
 				path = QFileInfo(path).canonicalFilePath();
-				lst.append(VipPath(path, QFileInfo(path).isDir()));
+				_lst.append(VipPath(path, QFileInfo(path).isDir()));
 			}
 
-			for (int i = 0; i < lst.size(); ++i)
+			for (int i = 0; i < _lst.size(); ++i)
 			{
-				printf("lst: '%s'\n", lst[i].canonicalPath().toLatin1().data());
+				printf("_lst: '%s'\n", _lst[i].canonicalPath().toLatin1().data());
 
-				if (already_there.indexOf(lst[i]) >= 0)
+				if (already_there.indexOf(_lst[i]) >= 0)
 					continue;
 
-				VipMapFileSystemTreeItem* child = lst[i].isDir() ?
-					new VipMapFileSystemTreeDirItem(lst[i], this) :
-					new VipMapFileSystemTreeItem(lst[i], this);
+				VipMapFileSystemTreeItem* child = _lst[i].isDir() ?
+					new VipMapFileSystemTreeDirItem(_lst[i], this) :
+					new VipMapFileSystemTreeItem(_lst[i], this);
 				child->setFlags(child->flags() & (~Qt::ItemIsDragEnabled));
 				top->addChild(child);
 
-				if (!lst[i].isDir()) child->setAttributes(lst[i].attributes());
+				if (!_lst[i].isDir()) child->setAttributes(_lst[i].attributes());
 				else child->updateContent();
 			}
 			return;
@@ -1683,8 +1685,8 @@ void VipMapFileSystemTree::setPathExpanded(const VipPath& path, bool expanded, I
 			{
 				if (item->path().isDir())
 					item->setExpanded(false);
-				else if (QTreeWidgetItem *it = item->parent())
-					it->setExpanded(false);
+				else if (QTreeWidgetItem *p = item->parent())
+					p->setExpanded(false);
 			}
 			else
 			{
@@ -1701,16 +1703,9 @@ void VipMapFileSystemTree::setPathExpanded(const VipPath& path, bool expanded, I
 				//expand from root to item
 				for (int i = items.size() - 1; i >= 0; --i)
 				{
-					QList<QTreeWidgetItem*> found = itemsForPath(items[i], type);
-					//for (int j = 0; j < found.size(); ++j) {
-					// if (!found[j]) {
-					// printf("path : '%s'\n", items[i].canonicalPath().toLatin1().data());
-					// found = itemsForPath(items[i], type);
-					// break;
-					// }
-					// }
-					for (int j = 0; j < found.size(); ++j)
-						found[j]->setExpanded(true);
+					QList<QTreeWidgetItem*> found_items = itemsForPath(items[i], type);
+					for (int j = 0; j < found_items.size(); ++j)
+						found_items[j]->setExpanded(true);
 				}
 			}
 		}
@@ -1793,7 +1788,7 @@ void VipMapFileSystemTree::removeDirItem(QTreeWidgetItem* item)
 void VipMapFileSystemTree::addItem(QTreeWidgetItem* item)
 {
 	VipMapFileSystemTreeDirItem * it = static_cast<VipMapFileSystemTreeDirItem*>(item);
-	m_data->items.insertMulti(it->path().canonicalPath(), it);
+	m_data->items.insert(it->path().canonicalPath(), it);
 }
 
 void VipMapFileSystemTree::removeItem(QTreeWidgetItem* item)
@@ -1924,7 +1919,7 @@ QStringList suffixesFromFilter(const QString & filter)
 		QString str = filter.mid(index_start + 1, end_index - index_start - 1);
 		str.replace(" ", "");
 		str.replace(".", "");
-		return (str.split("*", QString::SkipEmptyParts));
+		return (str.split("*", VIP_SKIP_BEHAVIOR::SkipEmptyParts));
 	}
 	return QStringList();
 }
@@ -1952,7 +1947,7 @@ static void applyPendingFileSystemSession(VipFileSystemWidget* w, const PendingF
 	w->splitter()->restoreState(session.splitterState);
 
 	// make unique
-	VipPathList shortcuts = QSet<VipPath>::fromList(session.shortcuts).toList();
+	VipPathList shortcuts = vipToSet(session.shortcuts).values();
 
 	// clear previous shorcuts
 	QTreeWidgetItem* top = w->tree()->property("_vip_shortcuts").value<VipMapFileSystemTreeDirItem*>();
@@ -2294,11 +2289,11 @@ void VipFileSystemWidget::startSearch()
 
 			QString search = m_data->searchPattern->text();
 			search.replace("\t", " ");
-			QStringList lst = search.split(" ", QString::SkipEmptyParts);
+			QStringList _lst = search.split(" ", VIP_SKIP_BEHAVIOR::SkipEmptyParts);
 			QList<QRegExp> exps;
-			for (int i = 0; i < lst.size(); ++i)
+			for (int i = 0; i < _lst.size(); ++i)
 			{
-				exps.append(QRegExp(lst[i]));
+				exps.append(QRegExp(_lst[i]));
 				exps.last().setPatternSyntax(QRegExp::Wildcard);
 				exps.last().setCaseSensitivity(Qt::CaseInsensitive);
 			}

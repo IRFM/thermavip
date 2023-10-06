@@ -8,6 +8,7 @@
 #include "VipTimer.h"
 #include "VipTextOutput.h"
 #include "VipStandardProcessing.h"
+#include "VipSet.h"
 
 #include <qboxlayout.h>
 #include <qtreewidget.h>
@@ -232,10 +233,10 @@ void VipExtractShapesInfos::apply()
 		return;
 	}
 
-	if (VipVideoPlayer * pl = qobject_cast<VipVideoPlayer*>(player()))
+	if (VipVideoPlayer * video = qobject_cast<VipVideoPlayer*>(player()))
 	{
-		//const VipSceneModel sm = pl->plotSceneModel()->sceneModel();
-		//QList<VipPlotShape*> shapes = pl->plotSceneModel()->shapes();
+		//const VipSceneModel sm = video->plotSceneModel()->sceneModel();
+		//QList<VipPlotShape*> shapes = video->plotSceneModel()->shapes();
 		for (int i = 0; i < shapes.size(); ++i)
 		{
 			//extract shape stats
@@ -283,9 +284,9 @@ void VipExtractShapesInfos::apply()
 
 		}
 	}
-	else if (VipPlotPlayer * pl = qobject_cast<VipPlotPlayer*>(player()))
+	else if (VipPlotPlayer * plot = qobject_cast<VipPlotPlayer*>(player()))
 	{
-		if(VipPlotArea2D * area = qobject_cast<VipPlotArea2D *>(pl->plotWidget2D()->area()))
+		if(VipPlotArea2D * area = qobject_cast<VipPlotArea2D *>(plot->plotWidget2D()->area()))
 		{
 			QString xunit = area->bottomAxis()->title().text();
 			QString yunit = area->leftAxis()->title().text();
@@ -305,17 +306,17 @@ void VipExtractShapesInfos::apply()
 				//special case: points
 				if (sh.type() == VipShape::Point) {
 					QPoint pt = sh.point().toPoint();
-					map.append(name + "/Position X", pl->formatXValue(pt.x()) + " " + pl->timeUnit()) ;
+					map.append(name + "/Position X", plot->formatXValue(pt.x()) + " " + plot->timeUnit()) ;
 					map.append(name + "/Position Y", QString::number(pt.y()) + " " + yunit );
 				}
 				else
 				{
 					QRectF r = sh.boundingRect().normalized();
-					map.append(name + "/Bounding rect left", pl->formatXValue(r.left()) + " " + pl->timeUnit()) ;
+					map.append(name + "/Bounding rect left", plot->formatXValue(r.left()) + " " + plot->timeUnit()) ;
 					map.append(name + "/Bounding rect top", QString::number(r.bottom()) + " " + yunit );
-					map.append(name + "/Bounding rect right", pl->formatXValue(r.right()) + " " + pl->timeUnit()) ;
+					map.append(name + "/Bounding rect right", plot->formatXValue(r.right()) + " " + plot->timeUnit()) ;
 					map.append(name + "/Bounding rect bottom", QString::number(r.top()) + " " + yunit );
-					map.append(name + "/Bounding rect width", QString::number(r.width() / (double)pl->timeFactor()) + " " + pl->timeUnit() );
+					map.append(name + "/Bounding rect width", QString::number(r.width() / (double)plot->timeFactor()) + " " + plot->timeUnit() );
 					map.append(name + "/Bounding rect height", QString::number(r.height()) + " " + yunit);
 				}
 
@@ -328,9 +329,9 @@ void VipExtractShapesInfos::apply()
 	//polyline and polygon: compute the length
 	QString tunit;
 	double time_factor = 1.;
-	if (VipPlotPlayer * pl = qobject_cast<VipPlotPlayer*>(player())) {
-		time_factor = (double)pl->timeFactor();
-		tunit = pl->timeUnit();
+	if (VipPlotPlayer * plot = qobject_cast<VipPlotPlayer*>(player())) {
+		time_factor = (double)plot->timeFactor();
+		tunit = plot->timeUnit();
 	}
 	for (int i = 0; i < shapes.size(); ++i) {
 		const VipShape sh = shapes[i];
@@ -341,8 +342,8 @@ void VipExtractShapesInfos::apply()
 		if (sh.type() == VipShape::Polyline || sh.type() == VipShape::Polygon) {
 			const QPolygonF p = sh.type() == VipShape::Polyline ? sh.polyline() : sh.polygon();
 			double len = 0;
-			for (int i = 1; i < p.size(); ++i) {
-				len += QLineF(QPointF(p[i - 1].x() /time_factor, p[i-1].y()), QPointF(p[i].x()/time_factor,p[i].y())).length();
+			for (int j = 1; j < p.size(); ++j) {
+				len += QLineF(QPointF(p[j - 1].x() /time_factor, p[j-1].y()), QPointF(p[j].x()/time_factor,p[j].y())).length();
 			}
 			map.append(name + "/Border length", QString::number(len) + (tunit.size() ? (" (time: " +tunit +")") : ""));
 		}
@@ -685,7 +686,7 @@ public:
 				h += m_row_height;
 				if (top->isExpanded())
 				{
-					for (int i = 0; i < top->childCount(); ++i)
+					for (int j = 0; j < top->childCount(); ++j)
 						h += m_row_height;
 				}
 			}
@@ -694,7 +695,8 @@ public:
 		else
 			return QTreeWidget::sizeHint();
 
-		return QTreeWidget::sizeHint();
+		VIP_UNREACHABLE();
+		//return QTreeWidget::sizeHint();
 	}
 
 	QSize itemSizeHint(QTreeWidgetItem * item,int ) const
@@ -1519,8 +1521,8 @@ QList<VipProcessingObject*> VipProcessingObjectInfo::plotAttributes( QList<VipOu
 		}
 	}
 	//make unqiue
-	sources = sources.toSet().toList();
-	leafs = leafs.toSet().toList();
+	sources = vipToSet(sources).values();
+	leafs = vipToSet(leafs).values();
 
 	//create one VipExtractAttribute for each output
 	QVector<VipProcessingObject *> extract(outputs.size());

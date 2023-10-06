@@ -6,7 +6,7 @@
 #include "VipPlayWidget.h"
 #include "VipDrawShape.h"
 #include "VipPolygon.h"
-
+#include "VipSet.h"
 #include "VipSqlQuery.h"
 
 #include <qboxlayout.h>
@@ -317,7 +317,8 @@ public:
 			//take the first rect
 			return (markers.first());
 		}
-		return QPolygonF();
+		VIP_UNREACHABLE();
+		//return QPolygonF();
 	}
 
 	void setTime(qint64 time, bool update_processing_pool) {
@@ -1154,11 +1155,7 @@ void VipManualAnnotation::keyPressEvent(QKeyEvent* evt)
 
 static QByteArray rectToByteArray(const QRect& r)
 {
-	char text[21];
-	memset(text, 0, sizeof(text));
-	sprintf(text, "%i %i %i %i", r.left(), r.top(), r.width(), r.height());
-	QByteArray ar(text, 20);
-	return ar;
+	return QString::asprintf("%i %i %i %i", r.left(), r.top(), r.width(), r.height()).toLatin1();
 }
 
 Vip_event_list VipManualAnnotation::generateShapes(VipProgress * p , QString * error)
@@ -1205,7 +1202,7 @@ Vip_event_list VipManualAnnotation::generateShapes(VipProgress * p , QString * e
 		sources += displays[i]->allSources();
 	}
 	//make sure sources are unique
-	sources = sources.toSet().toList();
+	sources = vipToSet(sources).values();
 
 	//for Temporal device only:
 	pool->stop(); //stop playing

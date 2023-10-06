@@ -673,7 +673,6 @@ public:
 	  , size(sz)
 	  , brush(br)
 	  , pen(pn)
-	  , hints(0)
 	  , isPinPointEnabled(false)
 	{
 		cache.policy = VipSymbol::AutoCache;
@@ -717,7 +716,6 @@ public:
 		QPainter::RenderHints hints;
 		PaintCache()
 		  : policy(AutoCache)
-		  , hints(0)
 		{
 		}
 

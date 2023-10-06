@@ -491,8 +491,8 @@ int vipProcessEvents(bool * keep_going, int milli)
 			res = -1;
 		return res;
 	}
-
-	return -3;
+	VIP_UNREACHABLE();
+	//return -3;
 }
 
 
@@ -1007,7 +1007,7 @@ qint64 vipBuildTime()
 	{
 		QString date = (__DATE__ + QString(" ") + QString(__TIME__));
 		date.replace(":", " ");
-		QStringList lst = date.split(" ", QString::SkipEmptyParts);
+		QStringList lst = date.split(" ", VIP_SKIP_BEHAVIOR::SkipEmptyParts);
 		date = lst.join(" ");
 		if (lst.size() == 6)
 		{

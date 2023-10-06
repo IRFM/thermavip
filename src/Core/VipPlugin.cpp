@@ -3,7 +3,7 @@
 #include "VipLogging.h"
 #include "VipCore.h"
 #include "VipCommandOptions.h"
-
+#include "VipSet.h"
 
 #include <qsettings.h>
 #include <QMap>
@@ -89,7 +89,7 @@ QStringList VipLoadPlugins::pluginsInDir(const QString directory)
 		//res << QDir::cleanPath(QDir(directory).absoluteFilePath(fileName));
 	}
 
-	res = res.toSet().toList();
+	res = vipToSet(res).values();
 	std::sort(res.begin(),res.end());
 	return res;
 }

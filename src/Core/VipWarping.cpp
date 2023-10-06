@@ -1,6 +1,7 @@
 #include <QVector>
 #include <QPoint>
 #include <QColor>
+#include <qmutex.h>
 #include <cmath>
 
 
@@ -9,13 +10,18 @@
 
 QVector<int> getDelaunayTriangles(const QVector<QPoint>& pts, int clockwise)
 {
+	static QMutex mutex;
+
+	// Protect BuildTriangleIndexList which is NOT thread safe
+	QMutexLocker lock(&mutex);
+
 	int numTriangleVertices = 0;
 	int* triangles = BuildTriangleIndexList(const_cast<QPoint*>(pts.data()), 0, pts.size(), 2, clockwise, &numTriangleVertices);
 	if (!triangles)
 		return QVector<int>();
 
 	QVector<int> res(numTriangleVertices);
-	qCopy(triangles, triangles + numTriangleVertices, res.data());
+	std::copy(triangles, triangles + numTriangleVertices, res.data());
 	free(triangles);
 	return res;
 }

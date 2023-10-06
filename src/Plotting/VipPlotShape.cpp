@@ -4,6 +4,7 @@
 #include "VipShapeDevice.h"
 #include "VipSimpleAnnotation.h"
 #include "VipLock.h"
+#include "VipSet.h"
 
 #include <QCursor>
 #include <QGraphicsSceneHoverEvent>
@@ -453,10 +454,10 @@ VipAnnotation* VipPlotShape::annotation() const
 				delete _this->d_data->annotation;
 				_this->d_data->annotation = NULL;
 			}
-			if (VipAnnotation* an = vipLoadAnnotation(ar)) {
-				_this->d_data->annotation = an;
+			if (VipAnnotation* annot = vipLoadAnnotation(ar)) {
+				_this->d_data->annotation = annot;
 				_this->d_data->annotationData = ar;
-				an->setParentShape(_this);
+				annot->setParentShape(_this);
 			}
 		}
 	}
@@ -685,8 +686,8 @@ QPainterPath VipPlotShape::shape() const
 
 		return path | additional;
 	}
-
-	return QPainterPath();
+	VIP_UNREACHABLE();
+	//return QPainterPath();
 }
 
 void VipPlotShape::setPolygonEditable(bool editable)
@@ -856,10 +857,10 @@ void VipPlotShape::draw(QPainter* painter, const VipCoordinateSystemPtr& m) cons
 		if (testDrawComponent(Attributes)) {
 			// add attributes
 			QString t = text.text();
-			static const QString name = "Name";
+			static const QString name_key = "Name";
 			const QVariantMap attrs = rawData().attributes();
 			for (QVariantMap::const_iterator it = attrs.begin(); it != attrs.end(); ++it) {
-				if (it.key() != name && !it.key().startsWith("_vip_"))
+				if (it.key() != name_key && !it.key().startsWith("_vip_"))
 					t += "\n" + it.key() + ": " + it.value().toString();
 			}
 			text.setText(t);
@@ -921,7 +922,7 @@ void VipPlotShape::drawPath(QPainter* painter, const VipCoordinateSystemPtr& m, 
 		QPainterPath path = sh.shape();
 		// TEST: remove Qt::WindingFill
 		// path.setFillRule(Qt::WindingFill);
-		painter->setRenderHint(QPainter::HighQualityAntialiasing);
+		painter->setRenderHint(QPainter::Antialiasing);
 		VipPainter::drawPath(painter, m->transform(path));
 	}
 }
@@ -955,11 +956,11 @@ void VipPlotShape::drawPolyline(QPainter* painter, const VipCoordinateSystemPtr&
 			painter->setBrush(brush());
 			painter->setPen(Qt::NoPen);
 
-			QPolygonF polygon;
+			QPolygonF poly;
 			for (int i = 0; i < points.size(); ++i) {
 				QRectF pixel(points[i].x(), points[i].y(), 1, 1);
-				polygon = m->transform(pixel);
-				VipPainter::drawPolygon(painter, polygon);
+				poly = m->transform(pixel);
+				VipPainter::drawPolygon(painter, poly);
 			}
 		}
 		else {
@@ -1731,12 +1732,12 @@ void VipPlotSceneModel::setSceneModelInternal()
 	connect(scene.shapeSignals(), SIGNAL(groupAdded(const QString&)), this, SLOT(emitGroupsChanged()), Qt::DirectConnection);
 	connect(scene.shapeSignals(), SIGNAL(groupRemoved(const QString&)), this, SLOT(emitGroupsChanged()), Qt::DirectConnection);
 
-	QSet<QString> prev_groups = d_data->sceneModel.groups().toSet();
+	QSet<QString> prev_groups = vipToSet(d_data->sceneModel.groups());
 
 	d_data->sceneModel = scene;
 	resetSceneModel();
 
-	QSet<QString> new_groups = d_data->sceneModel.groups().toSet();
+	QSet<QString> new_groups = vipToSet(d_data->sceneModel.groups());
 	if (new_groups != prev_groups)
 		Q_EMIT groupsChanged();
 	Q_EMIT sceneModelChanged(scene);

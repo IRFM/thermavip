@@ -347,8 +347,8 @@ static bool toByteArray(const QVariant & v, QDataStream & stream)
 	else if (v.userType() == qMetaTypeId<QVariantMap>())
 	{
 		QByteArray res;
-		QDataStream stream(&res, QIODevice::WriteOnly);
-		vipSafeVariantMapSave(stream, v.value<QVariantMap>());
+		QDataStream str(&res, QIODevice::WriteOnly);
+		vipSafeVariantMapSave(str, v.value<QVariantMap>());
 		return true;
 	}
 	else
@@ -387,8 +387,9 @@ static bool fromByteArray(QDataStream & stream, QVariant & v, int max_size)
 	{ this->setError("Cannot write data to the device"); return ;}
 
 #define WRITE_DEVICE_INTEGER(value) \
-		{int tmp = qToLittleEndian(value);\
-		if(m_device->write(reinterpret_cast<char*>(&tmp),sizeof(tmp)) != sizeof(tmp)) \
+		{                                                                                                                                                                                              \
+		qint32 unused_tmp = qToLittleEndian(value);\
+		if (m_device->write(reinterpret_cast<char*>(&unused_tmp), sizeof(unused_tmp)) != sizeof(unused_tmp)) \
 		{ this->setError("Cannot write data to the device"); return ;}}
 
 #define READ_DEVICE(data,size, m_device,return_value) \
@@ -396,17 +397,21 @@ static bool fromByteArray(QDataStream & stream, QVariant & v, int max_size)
 		{this->setError("Cannot read data from the device"); return return_value;}
 
 #define READ_DEVICE_INTEGER(value,m_device,return_value) \
-		{ int tmp = 0;\
-		if(m_device->read(reinterpret_cast<char*>(&tmp),(sizeof(tmp))) != sizeof(tmp)) \
+		{                                                                                                                                                                                           \
+		qint32 unused_tmp = 0;\
+		if (m_device->read(reinterpret_cast<char*>(&unused_tmp), (sizeof(unused_tmp))) != sizeof(unused_tmp)) \
 		{this->setError("Cannot read data from the device"); return return_value;} \
-		value = qFromLittleEndian(tmp);}
+		value = qFromLittleEndian(unused_tmp);          \
+		}
 
 #define READ_DEVICE_INTEGER_BACKWARD(value,m_device,return_value) \
-		{ int tmp = 0;\
+		{                                                                                                                                                                                              \
+		qint32 unused_tmp = 0;\
 		if(!m_device->seek(m_device->pos() - 4)) {this->setError("Cannot read data from the device"); return return_value;}  \
-		if(m_device->read(reinterpret_cast<char*>(&tmp),(sizeof(tmp))) != sizeof(tmp)) \
+		if (m_device->read(reinterpret_cast<char*>(&unused_tmp), (sizeof(unused_tmp))) != sizeof(unused_tmp)) \
 		{this->setError("Cannot read data from the device"); return return_value;} \
-		value = qFromLittleEndian(tmp);}
+		value = qFromLittleEndian(unused_tmp);                                                                                                                                                 \
+	}
 
 
 VipBinaryArchive::VipBinaryArchive()
@@ -783,8 +788,8 @@ void VipBinaryArchive::doContent(QString & name, QVariant & value, QVariantMap &
 			{
 				//write the input device content
 
-				quint32 size = device->size() + to_write.size();
-				WRITE_DEVICE_INTEGER(size);
+				quint32 _size = device->size() + to_write.size();
+				WRITE_DEVICE_INTEGER(_size);
 				WRITE_DEVICE(to_write.data(), to_write.size());
 
 				//write the device content by chunks of 10k
@@ -798,7 +803,7 @@ void VipBinaryArchive::doContent(QString & name, QVariant & value, QVariantMap &
 						break;
 				}
 
-				WRITE_DEVICE_INTEGER(size);
+				WRITE_DEVICE_INTEGER(_size);
 			}
 			else
 			{
@@ -945,7 +950,7 @@ void VipBinaryArchive::doContent(QString & name, QVariant & value, QVariantMap &
 					value = lst[i](value, this);
 					if (hasError())
 					{
-						break;
+						//break;
 						//skip the whole value
 						if (readMode() == Forward) m_device->seek(current_pos + 8 + full_size);
 						else  m_device->seek(current_pos - 8 - full_size);

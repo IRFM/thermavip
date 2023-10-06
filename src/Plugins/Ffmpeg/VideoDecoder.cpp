@@ -1,13 +1,11 @@
 #include <stdexcept>
 #include <fstream>
-#include "VideoDecoder.h"
 #include <qfile.h>
 
-static int ReadFunc(void* ptr, uint8_t* buf, int buf_size)
-{
-	QIODevice* pStream = reinterpret_cast<QIODevice*>(ptr);
-	return pStream->read((char*)buf, buf_size);
-}
+#include "VipConfig.h"
+#include "VideoDecoder.h"
+
+
 
 // whence: SEEK_SET, SEEK_CUR, SEEK_END (like fseek) and AVSEEK_SIZE
 int64_t SeekFunc(void* ptr, int64_t pos, int whence)
@@ -52,13 +50,6 @@ int init_libavcodec()
 }
 static int init = init_libavcodec();
 
-//static AVPacket flush_pkt = {0,0,(uint8_t*)"FLUSH",0};
-
-static void destruct( AVPacket * pkt)
-{
-	pkt->data=NULL;
-	pkt->size=0;
-}
 
 static void init_packet( AVPacket * pkt)
 {
@@ -105,7 +96,7 @@ QStringList VideoDecoder::list_devices()
 	QString ar = _stderr;// file.readAll();
 
 	QStringList res;
-	QStringList lines = ar.split("\n", QString::SkipEmptyParts);
+	QStringList lines = ar.split("\n", VIP_SKIP_BEHAVIOR::SkipEmptyParts);
 
 	for (int i = 1; i < lines.size(); ++i)
 	{
@@ -493,7 +484,7 @@ bool VideoDecoder::MoveNextFrame()
 		{
 
 #if LIBAVFORMAT_VERSION_MAJOR > 52
-			int ret = avcodec_decode_video2(	pCodecCtx,
+			/* int ret =*/ avcodec_decode_video2(pCodecCtx,
 												pFrame,
 												&ffinish,
 												&packet );
@@ -601,7 +592,7 @@ void VideoDecoder::SeekTime(double time)
 
 		if (time == 0)
 		{
-			int ret = av_seek_frame(pFormatCtx, videoStream, seek_target, AVSEEK_FLAG_BACKWARD);
+			av_seek_frame(pFormatCtx, videoStream, seek_target, AVSEEK_FLAG_BACKWARD);
 			avcodec_flush_buffers(pFormatCtx->streams[videoStream]->codec);
 			return;
 		}
@@ -612,7 +603,7 @@ void VideoDecoder::SeekTime(double time)
 		seek_target = av_rescale_q(seek_target, r, pFormatCtx->streams[videoStream]->time_base);
 
 		//pFormatCtx->cur_pkt.destruct=NULL;
-		int ret = av_seek_frame(pFormatCtx, videoStream, seek_target, AVSEEK_FLAG_BACKWARD);
+		av_seek_frame(pFormatCtx, videoStream, seek_target, AVSEEK_FLAG_BACKWARD);
 		avcodec_flush_buffers(pFormatCtx->streams[videoStream]->codec);
 	}
 	double TARGET_PTS = (time) * AV_TIME_BASE -m_tech;
@@ -634,7 +625,7 @@ void VideoDecoder::SeekTime(double time)
 	{
 
 #if LIBAVFORMAT_VERSION_MAJOR > 52
-			int ret = avcodec_decode_video2(	pCodecCtx,
+			avcodec_decode_video2(	pCodecCtx,
 												pFrame,
 												&frameFinished,
 												&packet );

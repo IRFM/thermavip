@@ -179,12 +179,12 @@ VipOtherPlayerData VipOtherPlayerDataEditor::value() const
 	return m_data->data;
 }
 
-void VipOtherPlayerDataEditor::setValue(const VipOtherPlayerData& data)
+void VipOtherPlayerDataEditor::setValue(const VipOtherPlayerData& _data)
 {
-	m_data->data = data;
+	m_data->data = _data;
 
 	m_data->dynamic.blockSignals(true);
-	m_data->dynamic.setChecked(data.isDynamic());
+	m_data->dynamic.setChecked(_data.isDynamic());
 	m_data->dynamic.blockSignals(false);
 	showPlayers();
 	showDisplays();
@@ -973,9 +973,8 @@ void VipProcessingListEditor::updateProcessingTree()
 {
 	if (m_data->processingList) {
 		// create a list of all VipProcessingObject that can be inserted into a VipProcessingList
-		VipAnyData data = m_data->processingList->inputAt(0)->probe();
 		QVariantList lst;
-		lst.append(data.data());
+		lst.append(m_data->processingList->inputAt(0)->probe().data());
 
 		QList<int> current_types = vipUserTypes();
 		if (m_data->infos.isEmpty() || current_types != m_data->user_types) {
@@ -1095,7 +1094,8 @@ void VipProcessingListEditor::selectObject(VipProcessingObject* obj)
 	for (int i = 0; i < m_data->list->count(); ++i) {
 		ProcessingListWidgetItem* item = static_cast<ProcessingListWidgetItem*>(m_data->list->item(i));
 		if (item->processing == obj) {
-			m_data->list->setItemSelected(item, true);
+			//m_data->list->setItemSelected(item, true);
+			item->setSelected(true);
 			break;
 		}
 	}
@@ -1407,8 +1407,8 @@ void VipSplitAndMergeEditor::receiveSelectionChanged(VipUniqueProcessingObjectEd
 		for (int i = 0; i < m_data->editors.size(); ++i) {
 			if (m_data->editors[i] != editor) {
 				QListWidget* list = m_data->editors[i]->list();
-				for (int i = 0; i < list->count(); ++i)
-					list->item(i)->setSelected(false);
+				for (int j = 0; j < list->count(); ++j)
+					list->item(j)->setSelected(false);
 			}
 		}
 	}
@@ -3957,7 +3957,7 @@ public:
 		if (category.isEmpty())
 			return root;
 
-		QStringList lst = category.split("/", QString::SkipEmptyParts);
+		QStringList lst = category.split("/", VIP_SKIP_BEHAVIOR::SkipEmptyParts);
 		if (lst.size() == 0)
 			lst << category;
 
@@ -4287,11 +4287,11 @@ bool VipUniqueProcessingObjectEditor::setProcessingObject(VipProcessingObject* o
 	const auto lst = vipFDObjectEditor().match(obj);
 	for (int i = 0; i < lst.size(); ++i) {
 		auto fun = lst[i];
-		const QMetaObject* meta = fun.typeList()[0].metaObject;
+		const QMetaObject* _meta = fun.typeList()[0].metaObject;
 		QWidget* editor = fun(obj).value<QWidget*>();
 		if (editor) {
 			// insert the editor while taking care of the inheritance order
-			int index = metas.indexOf(meta);
+			int index = metas.indexOf(_meta);
 			if (index >= 0)
 				editors[index] = editor;
 			else
@@ -4647,15 +4647,15 @@ void VipProcessingTooButton::updateText()
 		if (errors.size() && errors.last().msecsSinceEpoch() > m_data->lastErrorDate) {
 			m_data->lastErrorDate = errors.last().msecsSinceEpoch();
 			m_data->errors.clear();
-			QString text;
+			QString error_text;
 			for (int i = 0; i < errors.size(); ++i) {
 				VipErrorData err = errors[i];
 				QString date = QDateTime::fromMSecsSinceEpoch(err.msecsSinceEpoch()).toString("yy:MM:dd-hh:mm:ss.zzz    ");
 				QString err_str = err.errorString();
 				QString code = QString::number(err.errorCode());
-				text += date + err_str + " (" + code + ")\n";
+				error_text += date + err_str + " (" + code + ")\n";
 			}
-			m_data->errors.setPlainText(text);
+			m_data->errors.setPlainText(error_text);
 		}
 	}
 

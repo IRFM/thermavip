@@ -1596,7 +1596,7 @@ _QRegionPrivate* qt_imageToRegion(const QImage& image)
 							}
 							else {
 								prev1 = x;
-								all = ~zero;
+								all = static_cast<uchar>(~zero);
 							}
 						}
 						byte >>= 1;
@@ -1615,7 +1615,7 @@ _QRegionPrivate* qt_imageToRegion(const QImage& image)
 							}
 							else {
 								prev1 = x;
-								all = ~zero;
+								all =static_cast<uchar>( ~zero);
 							}
 						}
 						byte <<= 1;

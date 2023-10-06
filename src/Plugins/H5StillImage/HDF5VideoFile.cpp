@@ -97,7 +97,7 @@ protected:
 public:
 	hid_t id;
 	bool own;
-	hdf5id(hid_t id = -1) :id(id), own(true) {}
+	hdf5id(hid_t _id = -1) :id(_id), own(true) {}
 	operator hid_t() const { return id; }
 	virtual void clear() {}
 	virtual ~hdf5id() { clear(); }
@@ -106,7 +106,7 @@ public:
 struct hfile : hdf5id
 {
 	hfile(hid_t id = -1) :hdf5id(id) {}
-	hfile & operator=(hid_t id) { clear(); this->id = id; return *this; }
+	hfile & operator=(hid_t _id) { clear(); this->id = _id; return *this; }
 	virtual void clear() { if (id > 0 && own) H5Fclose(id); id = -1; }
 	virtual ~hfile() { clear(); }
 };
@@ -114,7 +114,7 @@ struct hfile : hdf5id
 struct hset : hdf5id
 {
 	hset(hid_t id = -1) :hdf5id(id) {}
-	hset & operator=(hid_t id) { clear(); this->id = id; return *this; }
+	hset & operator=(hid_t _id) { clear(); this->id = _id; return *this; }
 	virtual void clear() { if (id > 0 && own) H5Dclose(id); id = -1; }
 	virtual ~hset() { clear(); }
 };
@@ -122,7 +122,7 @@ struct hset : hdf5id
 struct hspace : hdf5id
 {
 	hspace(hid_t id = -1) :hdf5id(id) {}
-	hspace & operator=(hid_t id) { clear(); this->id = id; return *this; }
+	hspace & operator=(hid_t _id) { clear(); this->id = _id; return *this; }
 	virtual void clear() { if (id > 0 && own) H5Sclose(id); id = -1; }
 	virtual ~hspace() { clear(); }
 };
@@ -130,7 +130,7 @@ struct hspace : hdf5id
 struct hprop : hdf5id
 {
 	hprop(hid_t id = -1) :hdf5id(id) {}
-	hprop & operator=(hid_t id) { clear(); this->id = id; return *this; }
+	hprop & operator=(hid_t _id) { clear(); this->id = _id; return *this; }
 	virtual void clear() { if (id > 0 && own) H5Pclose(id); id = -1; }
 	virtual ~hprop() { clear(); }
 };
@@ -138,7 +138,7 @@ struct hprop : hdf5id
 struct hattr : hdf5id
 {
 	hattr(hid_t id = -1) :hdf5id(id) {}
-	hattr & operator=(hid_t id) { clear(); this->id = id; return *this; }
+	hattr & operator=(hid_t _id) { clear(); this->id = _id; return *this; }
 	virtual void clear() { if (id > 0 && own) H5Aclose(id); id = -1; }
 	virtual ~hattr() { clear(); }
 };
@@ -146,7 +146,7 @@ struct hattr : hdf5id
 struct htype : hdf5id
 {
 	htype(hid_t id = -1) :hdf5id(id) {}
-	htype & operator=(hid_t id) { clear(); this->id = id; return *this; }
+	htype & operator=(hid_t _id) { clear(); this->id = _id; return *this; }
 	virtual void clear() { if (id > 0 && own) H5Tclose(id); id = -1; }
 	virtual ~htype() { clear(); }
 };
@@ -154,7 +154,7 @@ struct htype : hdf5id
 struct hgroup : hdf5id
 {
 	hgroup(hid_t id = -1) :hdf5id(id) {}
-	hgroup & operator=(hid_t id) { clear(); this->id = id; return *this; }
+	hgroup & operator=(hid_t _id) { clear(); this->id = _id; return *this; }
 	virtual void clear() { if (id > 0 && own) H5Gclose(id); id = -1; }
 	virtual ~hgroup() { clear(); }
 };
@@ -610,10 +610,10 @@ QVariantMap HDF5VideoReader::ReadAttributes(const QString & dataset_name) const
 		if (type_class == H5T_STRING)
 		{
 			htype   atype_mem = H5Tget_native_type(atype, H5T_DIR_ASCEND);
-			int size = (int)H5Tget_size(atype_mem);
-			QByteArray data(size, 0);
-			herr_t ret = H5Aread(attr, atype_mem, data.data());
-			if (ret == 0)
+			int _size = (int)H5Tget_size(atype_mem);
+			QByteArray data(_size, 0);
+			herr_t _ret = H5Aread(attr, atype_mem, data.data());
+			if (_ret == 0)
 			{
 				attribute_value = QVariant(QString(data));
 			}
@@ -621,8 +621,8 @@ QVariantMap HDF5VideoReader::ReadAttributes(const QString & dataset_name) const
 		else if (type_class == H5T_INTEGER)
 		{
 			qint64 value;
-			herr_t ret = H5Aread(attr, H5T_NATIVE_INT64, &value);
-			if (ret == 0)
+			herr_t _ret = H5Aread(attr, H5T_NATIVE_INT64, &value);
+			if (_ret == 0)
 			{
 				attribute_value = QVariant(value);
 			}
@@ -630,8 +630,8 @@ QVariantMap HDF5VideoReader::ReadAttributes(const QString & dataset_name) const
 		else if (type_class == H5T_FLOAT)
 		{
 			double value;
-			herr_t ret = H5Aread(attr, H5T_NATIVE_DOUBLE, &value);
-			if (ret == 0)
+			herr_t _ret = H5Aread(attr, H5T_NATIVE_DOUBLE, &value);
+			if (_ret == 0)
 			{
 				attribute_value = QVariant(value);
 			}
@@ -831,20 +831,20 @@ bool HDF5_ECRHVideoReader::open(VipIODevice::OpenModes mode)
 	m_data->set = H5Dopen(m_data->file, images_dataset.toLatin1().data(), H5P_DEFAULT);
 	m_data->space = H5Dget_space(m_data->set);
 
-	int rank;
-	hsize_t dims[32];
+	int full_rank;
+	hsize_t full_dims[32];
 
-	rank = H5Sget_simple_extent_ndims(m_data->space);
-	H5Sget_simple_extent_dims(m_data->space, dims, NULL);
+	full_rank = H5Sget_simple_extent_ndims(m_data->space);
+	H5Sget_simple_extent_dims(m_data->space, full_dims, NULL);
 
-	if (rank != 3)
+	if (full_rank != 3)
 	{
 		close();
 		return false;
 	}
 
-	m_data->count = dims[2];
-	m_data->imageSize = QSize(dims[1], dims[0]);
+	m_data->count = full_dims[2];
+	m_data->imageSize = QSize(full_dims[1], full_dims[0]);
 	if (m_data->imageSize.width() == 0 || m_data->imageSize.height() == 0)
 	{
 		close();
@@ -854,9 +854,9 @@ bool HDF5_ECRHVideoReader::open(VipIODevice::OpenModes mode)
 	//open timestamps
 	hset t_set = H5Dopen(m_data->file, timestamps_dataset.toLatin1().data(), H5P_DEFAULT);
 	hspace t_space = H5Dget_space(t_set);
-	rank = H5Sget_simple_extent_ndims(t_space);
-	H5Sget_simple_extent_dims(t_space, dims, NULL);
-	if (rank != 1 || dims[0] != (unsigned)m_data->count)
+	full_rank = H5Sget_simple_extent_ndims(t_space);
+	H5Sget_simple_extent_dims(t_space, full_dims, NULL);
+	if (full_rank != 1 || full_dims[0] != (unsigned)m_data->count)
 	{
 		close();
 		return false;
@@ -865,11 +865,11 @@ bool HDF5_ECRHVideoReader::open(VipIODevice::OpenModes mode)
 	{
 		//read the whole timestamp vector
 		hsize_t t_dim[1] = { (hsize_t)m_data->count }, t_offset[1] = { (hsize_t)0 };
-		hspace t_space = H5Dget_space(t_set);
-		H5Sselect_hyperslab(t_space, H5S_SELECT_SET, t_offset, NULL, t_dim, NULL);
+		hspace _t_space = H5Dget_space(t_set);
+		H5Sselect_hyperslab(_t_space, H5S_SELECT_SET, t_offset, NULL, t_dim, NULL);
 		hspace t_mem = H5Screate_simple(1, t_dim, NULL);
 		QVector<qint64> timestamps(m_data->count);
-		H5Dread(t_set, H5T_NATIVE_INT64, t_mem, t_space, H5P_DEFAULT, timestamps.data());
+		H5Dread(t_set, H5T_NATIVE_INT64, t_mem, _t_space, H5P_DEFAULT, timestamps.data());
 		this->setTimestamps(timestamps);
 
 		if (timestamps.size() && timestamps.first() != 0)
@@ -891,9 +891,9 @@ bool HDF5_ECRHVideoReader::open(VipIODevice::OpenModes mode)
 	if (params.id >= 0)
 	{
 		QVariantMap attributes;
-		herr_t ret = H5Gget_info(params, &oinfo);
+		herr_t _ret = H5Gget_info(params, &oinfo);
 
-		if (ret == 0)
+		if (_ret == 0)
 		{
 			for (int i = 0; i < (int)oinfo.nlinks; ++i)
 			{

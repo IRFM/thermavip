@@ -5,6 +5,7 @@
 #include "VipPlotWidget2D.h"
 #include "VipShapeDevice.h"
 #include "VipStyleSheet.h"
+#include "VipSet.h"
 
 #include <QAtomicInt>
 #include <QCoreApplication>
@@ -443,13 +444,13 @@ bool VipPaintItem::setItemProperty(const char* name, const QVariant& value, cons
 		int v = value.toInt();
 		switch (v) {
 			case 0:
-				setRenderHints((QPainter::RenderHints)0);
+				setRenderHints(QPainter::RenderHints());
 				return true;
 			case 1:
 				setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing);
 				return true;
 			case 2:
-				setRenderHints(QPainter::HighQualityAntialiasing | QPainter::SmoothPixmapTransform | QPainter::TextAntialiasing);
+				setRenderHints(QPainter::Antialiasing | QPainter::SmoothPixmapTransform | QPainter::TextAntialiasing);
 				return true;
 			default:
 				return false;
@@ -964,7 +965,6 @@ bool VipPlotItem::setItemProperty(const char* name, const QVariant& value, const
 		else
 			return false;
 		
-		return true;
 	}
 	else if (strcmp(name, "border") == 0) {
 		if (value.userType() == qMetaTypeId<QPen>()) {
@@ -980,7 +980,6 @@ bool VipPlotItem::setItemProperty(const char* name, const QVariant& value, const
 		}
 		else
 			return false;
-		return true;
 	}
 	else if (strcmp(name, "border-width") == 0) {
 		bool ok = false;
@@ -1006,7 +1005,6 @@ bool VipPlotItem::setItemProperty(const char* name, const QVariant& value, const
 		}
 		else
 			return false;
-		return true;
 	}
 	else if (strcmp(name, "major-color") == 0) {
 		if (value.canConvert<QColor>()) {
@@ -1016,7 +1014,6 @@ bool VipPlotItem::setItemProperty(const char* name, const QVariant& value, const
 		else
 			return false;
 		
-		return true;
 	}
 	else if (strcmp(name, "colormap") == 0) {
 		if (value.userType() == QMetaType::QByteArray) {
@@ -1394,16 +1391,10 @@ static QOpenGLFramebufferObject* buffer(const QSize& size)
 }
 static QImage createImageWithFBO(VipPlotItem* item)
 {
-	qint64 st = QDateTime::currentMSecsSinceEpoch();
+	//qint64 st = QDateTime::currentMSecsSinceEpoch();
 
-	qint64 st2 = QDateTime::currentMSecsSinceEpoch();
+	//qint64 st2 = QDateTime::currentMSecsSinceEpoch();
 
-	// QOpenGLContext context;
-	// context.setFormat(format);
-	// if (!context.create())
-	// qFatal("Cannot create the requested OpenGL context!");
-	// bool r1 = context.makeCurrent(&window);
-	// bool r1 =
 	context()->makeCurrent(window());
 
 	QRectF brect = item->sceneMap()->clipPath(item).boundingRect();
@@ -1453,7 +1444,7 @@ static QImage createImageWithFBO(VipPlotItem* item)
 
 	painter.end();
 
-	qint64 el2 = QDateTime::currentMSecsSinceEpoch() - st2;
+	//qint64 el2 = QDateTime::currentMSecsSinceEpoch() - st2;
 
 	fbo->release();
 	QImage img = fbo->toImage();
@@ -1467,7 +1458,7 @@ static QImage createImageWithFBO(VipPlotItem* item)
 	//
 	// fbo->release();
 
-	qint64 el = QDateTime::currentMSecsSinceEpoch() - st;
+	//qint64 el = QDateTime::currentMSecsSinceEpoch() - st;
 	//printf("opengl: %i , %i ms\n", (int)el, (int)el2);
 	return img;
 }
@@ -1650,7 +1641,7 @@ QList<VipPlotItem*> VipPlotItem::linkedItems() const
 	for (int i = 0; i < d_data->axes.size(); ++i) {
 		if (VipAbstractScale* axis = d_data->axes[i]) {
 			valid_axes = true;
-			res += axis->plotItems().toSet();
+			res += vipToSet(axis->plotItems());
 		}
 	}
 
@@ -1685,7 +1676,7 @@ QList<VipPlotItem*> VipPlotItem::linkedItems() const
 	// }
 	// }
 
-	return res.toList();
+	return res.values();
 }
 
 QPainterPath VipPlotItem::shape() const
@@ -1844,17 +1835,17 @@ QString VipPlotItem::formatText(const QString& str, const QPointF& pos) const
 	text.repeatBlock();
 
 	if (has_legend) {
-		QList<VipText> legends = legendNames();
+		QList<VipText> ls = legendNames();
 		QPixmap legend0;
-		for (int i = 0; i < legends.size(); ++i) {
+		for (int i = 0; i < ls.size(); ++i) {
 			QPixmap legend = this->legendPixmap(QSize(20, 16), i);
 			if (!legend.isNull() && testItemAttribute(HasLegendIcon) && testItemAttribute(VisibleLegend))
 				text.replace("#licon" + QString::number(i), QString(vipToHtml(legend, "align ='middle'")));
-			text.replace("#lname" + QString::number(i), legends[i].text());
+			text.replace("#lname" + QString::number(i), ls[i].text());
 			if (i == 0)
 				legend0 = legend;
 		}
-		if (legends.size())
+		if (ls.size())
 			text.replace("#licon", QString(vipToHtml(legend0, "align ='middle'")));
 	}
 

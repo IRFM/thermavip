@@ -514,10 +514,8 @@ void	VipSliderGrip::mouseMoveEvent ( QGraphicsSceneMouseEvent * event )
 {
 	if(d_data->selection !=QPointF())
 	{
-		QPointF p = d_data->axis->mapFromScene(event->scenePos()); //d_data->axis->globalSceneTransform().inverted().map(event->scenePos());
 		double value = d_data->value;
-
-		d_data->value = d_data->axis->constScaleDraw()->value(p);
+		d_data->value = d_data->axis->constScaleDraw()->value(d_data->axis->mapFromScene(event->scenePos()));
 
 		//vipBounds value
 		if(d_data->gripAlwaysInsideScale)

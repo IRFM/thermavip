@@ -585,16 +585,16 @@ void VipBaseDragWidget::closeEvent(QCloseEvent* evt)
 		}
 		else {
 			this->deleteLater();
-			if (VipMultiDragWidget* w = qobject_cast<VipMultiDragWidget*>(this))
-				if (w->isTopLevel())
-					Q_EMIT VipDragWidgetHandler::find(parentWidget())->closed(w);
+			if (VipMultiDragWidget* _w = qobject_cast<VipMultiDragWidget*>(this))
+				if (_w->isTopLevel())
+					Q_EMIT VipDragWidgetHandler::find(parentWidget())->closed(_w);
 		}
 	}
 	else {
 		this->deleteLater();
-		if (VipMultiDragWidget* w = qobject_cast<VipMultiDragWidget*>(this))
-			if (w->isTopLevel())
-				Q_EMIT VipDragWidgetHandler::find(parentWidget())->closed(w);
+		if (VipMultiDragWidget* _w = qobject_cast<VipMultiDragWidget*>(this))
+			if (_w->isTopLevel())
+				Q_EMIT VipDragWidgetHandler::find(parentWidget())->closed(_w);
 	}
 }
 
@@ -1401,7 +1401,7 @@ void VipMinimizeWidget::paintEvent(QPaintEvent* evt)
 	p.drawRect(QRect(0, 0, width() - 1, height() - 1));*/
 }
 
-bool VipMinimizeWidget::eventFilter(QObject* w, QEvent* evt)
+bool VipMinimizeWidget::eventFilter(QObject* , QEvent* evt)
 {
 	if (evt->type() == QEvent::Resize) {
 		reorganize();
@@ -1492,7 +1492,7 @@ Qt::Alignment VipDragWidgetHandle::HandleAlignment()
 	else if(splitter()->orientation() == Qt::Horizontal && splitter()->indexOf(this) == splitter()->count()-1)
 		return Qt::AlignRight;
 	else
-		return 0;
+		return Qt::Alignment();
 }
 
 void VipDragWidgetHandle::setMaximumHandleWidth(int w)
@@ -1710,23 +1710,23 @@ void VipDragRubberBand::paintEvent(QPaintEvent*)
 	QRect r(0, 0, width(), height());
 	p.drawRoundedRect(r.adjusted(3, 3, -3, -3), 2, 2);
 
-	VipText text = this->text;
-	text.setTextPen(QPen(VipGuiDisplayParamaters::instance()->defaultPlayerTextColor()));
-	if (!text.isEmpty()) {
-		QSize s = text.textSize().toSize();
+	VipText t = this->text;
+	t.setTextPen(QPen(VipGuiDisplayParamaters::instance()->defaultPlayerTextColor()));
+	if (!t.isEmpty()) {
+		QSize s = t.textSize().toSize();
 		if (s.width() < r.width()) {
-			text.setAlignment(Qt::AlignCenter);
-			text.draw(&p, r);
+			t.setAlignment(Qt::AlignCenter);
+			t.draw(&p, r);
 		}
 		else if (s.width() < r.height()) {
 			QTransform tr;
 			tr.translate(r.center().x(), r.center().y());
 			tr.rotate(-90);
 			p.setTransform(tr);
-			text.setAlignment(Qt::AlignCenter);
+			t.setAlignment(Qt::AlignCenter);
 			r = QRect(0, 0, r.height(), r.width());
 			r.moveCenter(QPoint(0, 0));
-			text.draw(&p, r);
+			t.draw(&p, r);
 		}
 	}
 }
@@ -2803,12 +2803,12 @@ bool VipMultiDragWidget::supportReparent(QWidget* new_parent)
 	return true;
 }
 
-VipBaseDragWidget * VipMultiDragWidget::createFromMimeData(const QMimeData * data)
+VipBaseDragWidget * VipMultiDragWidget::createFromMimeData(const QMimeData * mime_data)
 {
-	if(data->hasFormat("application/dragwidget"))
+	if(mime_data->hasFormat("application/dragwidget"))
 	{
 		//check that the widget supports Drop operation
-		const VipBaseDragWidgetMimeData * mime = static_cast<const VipBaseDragWidgetMimeData*>(data);
+		const VipBaseDragWidgetMimeData * mime = static_cast<const VipBaseDragWidgetMimeData*>(mime_data);
 		if(!mime->dragWidget->isDropable())
 			return NULL;
 		else
@@ -2816,7 +2816,7 @@ VipBaseDragWidget * VipMultiDragWidget::createFromMimeData(const QMimeData * dat
 	}
 	else
 	{
-		QMimeData * mime = const_cast<QMimeData*>(data);
+		QMimeData * mime = const_cast<QMimeData*>(mime_data);
 		const auto lst = vipDropMimeData().match(mime,this);
 		if(lst.size())
 			return lst.back()(mime,this).value<VipBaseDragWidget*>();
@@ -2824,16 +2824,16 @@ VipBaseDragWidget * VipMultiDragWidget::createFromMimeData(const QMimeData * dat
 	return NULL;
 }
 
-bool VipMultiDragWidget::supportDrop(const QMimeData * data)
+bool VipMultiDragWidget::supportDrop(const QMimeData * mime_data)
 {
-	if(data->hasFormat("application/dragwidget"))
+	if(mime_data->hasFormat("application/dragwidget"))
 	{
-		const VipBaseDragWidgetMimeData * mime = static_cast<const VipBaseDragWidgetMimeData*>(data);
+		const VipBaseDragWidgetMimeData * mime = static_cast<const VipBaseDragWidgetMimeData*>(mime_data);
 		return mime->dragWidget->isDropable();
 	}
 	else
 	{
-		QMimeData * mime = const_cast<QMimeData*>(data);
+		QMimeData * mime = const_cast<QMimeData*>(mime_data);
 		const auto lst = vipAcceptDragMimeData().match(mime,this);
 		if(lst.size())
 			return lst.back()(mime,this).value<bool>();

@@ -10,7 +10,7 @@ class VipDynGridLayout::PrivateData
 {
 public:
     PrivateData():
-        spacing(0),alignment(0),expanding(Qt::Horizontal),isDirty( true )
+        spacing(0),expanding(Qt::Horizontal),isDirty( true )
     {
     }
 
@@ -398,12 +398,12 @@ QSizeF	VipDynGridLayout::sizeHint ( Qt::SizeHint which, const QSizeF & constrain
 QRectF VipDynGridLayout::alignmentRect(const QRectF &r) const
 {
 	return r;
-    QSizeF s = sizeHint(Qt::PreferredSize);
+	/* QSizeF s = sizeHint(Qt::PreferredSize);
     Qt::Alignment a = alignment();
 
     // This is a hack to obtain the real maximum size.
     VipDynGridLayout *that = const_cast<VipDynGridLayout *>(this);
-    that->setAlignment(0);
+    that->setAlignment(Qt::Alignment());
     QSizeF ms = that->maximumSize();
     that->setAlignment(a);
 
@@ -435,7 +435,7 @@ QRectF VipDynGridLayout::alignmentRect(const QRectF &r) const
     else if (!(a & Qt::AlignLeft))
         x += (r.width() - s.width()) / 2;
 
-    return QRect(x, y, s.width(), s.height());
+    return QRect(x, y, s.width(), s.height());*/
 }
 
 
@@ -477,12 +477,13 @@ QList<QRectF> VipDynGridLayout::layoutItems( const QRectF &rect,
     QVector<double> rowY( numRows );
 
     const double xySpace = spacing();
-    double l=0,r=0,t=0,b=0;
+    double t = 0, l = 0;
+    //double l=0,r=0,t=0,b=0;
     //this->getContentsMargins(&l,&t,&r,&b);
 
     rowY[0] = yOffset + t;
-    for ( uint r = 1; r < numRows; r++ )
-        rowY[r] = rowY[r-1] + rowHeight[r-1] + xySpace;
+    for (uint ro = 1; ro < numRows; ro++)
+	    rowY[ro] = rowY[ro - 1] + rowHeight[ro - 1] + xySpace;
 
     colX[0] = xOffset + l;
     for ( uint c = 1; c < numColumns; c++ )

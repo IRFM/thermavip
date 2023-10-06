@@ -14,6 +14,7 @@
 #include <QScrollArea>
 #include <qapplication.h>
 #include <qlabel.h>
+#include <qscreen.h>
 
 #include "VipDragWidget.h"
 #include "VipWidgetResizer.h"
@@ -213,7 +214,8 @@ void VipToolWidgetTitleBar::setPatternColor(const QColor & c)
 void VipToolWidgetTitleBar::setDisplayWindowIcon(bool enable)
 {
 	m_data->displayWindowIcon = enable;
-	m_data->icon->setVisible(enable && m_data->icon->pixmap() && !m_data->icon->pixmap()->isNull());
+	const QPixmap pix = m_data->icon->pixmap(Qt::ReturnByValue);
+	m_data->icon->setVisible(enable && !pix.isNull());
 }
 
 void VipToolWidgetTitleBar::VipToolWidgetTitleBar::setCloseButton(const QIcon & icon)
@@ -659,12 +661,14 @@ void VipToolWidget::showEvent(QShowEvent *)
 
 	//change screen if necessary
 	if (m_data->firstShow && isFloating()) {
-		int screen = qApp->desktop()->screenNumber(this);
-		int main_screen = qApp->desktop()->screenNumber(parentWidget());
-		if (screen != main_screen) {
+		//int screen = qApp->desktop()->screenNumber(this);
+		//int main_screen = qApp->desktop()->screenNumber(parentWidget());
+		int screen = qApp->screens().indexOf(this->screen());
+		int main_screen = qApp->screens().indexOf(parentWidget()->screen());
+		if (screen != main_screen && screen >= 0 && main_screen >= 0) {
 			//compute offset
-			QPoint offset = this->pos() - qApp->desktop()->screenGeometry(screen).topLeft();
-			offset += qApp->desktop()->screenGeometry(main_screen).topLeft();
+			QPoint offset = this->pos() - qApp->screens()[screen]->availableGeometry().topLeft();
+			offset += qApp->screens()[main_screen]->availableGeometry().topLeft(); // qApp->desktop()->screenGeometry(main_screen).topLeft();
 			this->move(offset);
 		}
 	}
@@ -723,9 +727,14 @@ void VipToolWidget::internalResetSize()
 	if (QWidget * w = widget())
 	{
 		//now resize the VipToolWidget, but make sure we stay in the desktop boundaries
-		QDesktopWidget * desktop = qApp->desktop();
+		/* QDesktopWidget* desktop = qApp->desktop();
 		int screen = desktop->screenNumber(this);
 		QRect d_rect = desktop->availableGeometry(screen);
+		QRect this_rect(this->mapToGlobal(QPoint(0, 0)), w->sizeHint() + QSize(25, 25));
+		this_rect = this_rect & d_rect;*/
+
+		// Qt6 way
+		QRect d_rect = this->screen() ? this->screen()->availableGeometry() : QGuiApplication::primaryScreen()->availableGeometry();
 		QRect this_rect(this->mapToGlobal(QPoint(0, 0)), w->sizeHint() + QSize(25, 25));
 		this_rect = this_rect & d_rect;
 
@@ -733,8 +742,7 @@ void VipToolWidget::internalResetSize()
 		{
 			if (!keepFloatingUserSize())
 			{
-				w->resize//setMinimumSize
-(w->sizeHint());
+				w->resize(w->sizeHint());
 				QSize s = this_rect.size();
 				resize(s + QSize(0, titleBarWidget()->sizeHint().height()));
 				m_data->size = s;
@@ -1221,7 +1229,8 @@ VipMultiProgressWidget::VipMultiProgressWidget(VipMainWindow * window)
 	VipProgress::setProgressManager(this);
 
 	//center the widget on the main screen
-	QRect rect = QApplication::desktop()->screenGeometry();
+	//QRect rect = QApplication::desktop()->screenGeometry();
+	QRect rect = (window && window->screen()) ? window->screen()->availableGeometry() : QGuiApplication::primaryScreen()->availableGeometry();
 	this->move(rect.x() + rect.width() / 2 - this->width() / 2, rect.y() + rect.height() / 2 - this->height() / 2);
 
 }
@@ -1261,7 +1270,8 @@ void VipMultiProgressWidget::showEvent(QShowEvent * evt)
 {
 	if (isFloating()) {
 		//center the widget on the main screen
-		QRect rect = QApplication::desktop()->screenGeometry();
+		//QRect rect = QApplication::desktop()->screenGeometry();
+		QRect rect = this->screen() ? this->screen()->availableGeometry() : QGuiApplication::primaryScreen()->availableGeometry();
 		this->move(rect.x() + rect.width() / 2 - this->width() / 2, rect.y() + rect.height() / 2 - this->height() / 2);
 	}
 
@@ -1465,17 +1475,33 @@ void VipMultiProgressWidget::setModal(QObjectPointer ptr, bool modal)
 
 				//center the widget inside its parent (if any)
 				if (parentWidget() && parentWidget()->isVisible()) {
-					QRect rect;
+					/* QRect rect;
 					int screen = qApp->desktop()->screenNumber(this->parentWidget());
 					if (this->parentWidget())
 						rect = this->parentWidget()->geometry();
 					else
-						rect = QApplication::desktop()->screenGeometry(screen);
+						rect = QApplication::desktop()->screenGeometry(screen);*/
+
+					//Qt6 way
+					QRect rect;
+					if (this->parentWidget())
+						rect = this->parentWidget()->geometry();
+					else {
+						if (this->screen())
+							rect = this->screen()->availableGeometry();
+						else
+							rect = QGuiApplication::primaryScreen()->availableGeometry();
+					}
+
 					this->move(rect.x() + rect.width() / 2 - this->width() / 2, rect.y() + rect.height() / 2 - this->height() / 2);
 				}
 				else {
 					//center the widget on the main screen
-					QRect rect = QApplication::desktop()->screenGeometry();
+					QRect rect;
+					if (this->screen())
+						rect = this->screen()->availableGeometry();
+					else
+						rect = QGuiApplication::primaryScreen()->availableGeometry();
 					this->move(rect.x() + rect.width() / 2 - this->width() / 2, rect.y() + rect.height() / 2 - this->height() / 2);
 				}
 

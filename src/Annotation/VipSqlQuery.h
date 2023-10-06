@@ -287,6 +287,7 @@ VIP_ANNOTATION_EXPORT Vip_event_list vipEventsFromJson(const QByteArray& content
 /// @brief Base virtual class defining how to handle movies for a device
 struct VipBaseDeviceParameters
 {
+	virtual ~VipBaseDeviceParameters() {}
 	/// @brief Returns a path based on experiment id and camera name.
 	/// This path must be suitable to be opened inside Thermavip.
 	virtual QString createDevicePath(Vip_experiment_id experiment_id, const QString& camera) const = 0;

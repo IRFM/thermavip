@@ -233,7 +233,7 @@ void	PathEngine::drawPolygon ( const QPointF * points, int pointCount, PolygonDr
 		QPolygonF p(pointCount + (mode != PolylineMode ? 1 : 0));
 		if (m_tr.type() != QTransform::TxNone)
 		{
-			qCopy(points, points + pointCount, p.data());
+			std::copy(points, points + pointCount, p.data());
 		}
 		else
 		{
@@ -273,7 +273,7 @@ void	PathEngine::drawPolygon ( const QPoint * points, int pointCount, PolygonDra
 		QPolygonF p(pointCount + (mode != PolylineMode ? 1 : 0));
 		if (m_tr.type() != QTransform::TxNone)
 		{
-			qCopy(points, points + pointCount, p.data());
+			std::copy(points, points + pointCount, p.data());
 		}
 		else
 		{
@@ -333,12 +333,12 @@ QPaintEngine::Type	PathEngine::type () const
 	return QPaintEngine::User;
 }
 
-void	PathEngine::updateState ( const QPaintEngineState & state )
+void	PathEngine::updateState ( const QPaintEngineState & _state )
 {
-	if(state.state() & QPaintEngine::DirtyTransform)
+	if(_state.state() & QPaintEngine::DirtyTransform)
 	{
-		m_penW2 = state.pen().widthF()/2;
-		m_tr = state.transform();
+		m_penW2 = _state.pen().widthF()/2;
+		m_tr = _state.transform();
 	}
 }
 

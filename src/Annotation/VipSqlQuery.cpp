@@ -82,10 +82,9 @@ QString vipFormatRequestCondition(const VipRequestCondition & c)
 #include <qregion.h>
 static int regionArea(const QRegion & reg)
 {
-	const QVector<QRect> rects = reg.rects();
 	int pixel_area = 0;
-	for (int i = 0; i < rects.size(); ++i)
-		pixel_area += rects[i].width() * rects[i].height();
+	for (const QRect & r : reg)
+		pixel_area += r.width() * r.height();
 	return pixel_area;
 }
 
@@ -585,21 +584,21 @@ QList<qint64> vipSendToDB(const QString & userName, const QString & camera, cons
 
 			//fill spatial attributes
 			
-			QPolygon p;// = floorPolygonF(sh[i].polygon());
-			QRect r;// = p.boundingRect();
-			convertShape(sh[i], p, r);
+			QPolygon poly;// = floorPolygonF(sh[i].polygon());
+			QRect r;// = poly.boundingRect();
+			convertShape(sh[i], poly, r);
 			QPointF centroid(0, 0);
-			QString polygon;
+			QString poly_string;
 			int pixel_area = r.width() * r.height();
 			//recompute centroid
-			for (int i = 0; i < p.size(); ++i){
-				centroid.rx() += p[i].x();
-				centroid.ry() += p[i].y();
+			for (const QPoint & pt : poly){
+				centroid.rx() += pt.x();
+				centroid.ry() += pt.y();
 			}
-			centroid.rx() /= p.size();
-			centroid.ry() /= p.size();
-			if (!vipIsRect(p)) {
-				polygon = polygonToString(p);				
+			centroid.rx() /= poly.size();
+			centroid.ry() /= poly.size();
+			if (!vipIsRect(poly)) {
+				poly_string = polygonToString(poly);				
 				//recompute pixel_area
 				pixel_area = sh[i].fillPixels().size();
 			}
@@ -623,7 +622,7 @@ QList<qint64> vipSendToDB(const QString & userName, const QString & camera, cons
 					  .arg(pixel_area)
 					  .arg(centroid.x())
 					  .arg(centroid.y())
-					  .arg(polygon)
+					  .arg(poly_string)
 					  .arg(a["pfc_id"].toLongLong())
 					  .arg(a["overheating_factor"].toDouble())
 					  .arg(a["max_T_world_position_x_m"].toDouble())
@@ -1073,8 +1072,7 @@ VipFullQueryResult vipFullQueryDB(const VipEventQueryResults & evtres, VipProgre
 			VipCameraResult& cam = experiment_id.cameras[evt.camera];
 			cam.cameraName = evt.camera;
 			cam.device = evt.device;
-			VipEventQueryResults & evtres = cam.events;
-			VipEventQueryResult & event = evtres.events[evt.eventId];
+			VipEventQueryResult& event = cam.events.events[evt.eventId];
 			if (event.shapes.isEmpty()) {
 				//copy struct
 				event = evt;
@@ -1238,9 +1236,9 @@ QMap<QString, QMap<Vip_experiment_id, QMap<QString, QMap<QString, VipPointVector
 		available_pulses.insert(p.experiment_id);
 		for (QMap<QString, VipCameraResult>::const_iterator itc = p.cameras.begin(); itc != p.cameras.end(); ++itc)
 		{
-			const VipEventQueryResults & events = itc.value().events;
+			const VipEventQueryResults & r_events = itc.value().events;
 			available_cameras.insert(itc.value().cameraName);
-			for (QMap<qint64, VipEventQueryResult>::const_iterator ite = events.events.begin(); ite != events.events.end(); ++ite)
+			for (QMap<qint64, VipEventQueryResult>::const_iterator ite = r_events.events.begin(); ite != r_events.events.end(); ++ite)
 			{
 				const VipEventQueryResult & evt = ite.value();
 				const VipShapeList & lst = evt.shapes;
@@ -1342,13 +1340,13 @@ QMap<QString, QMap<Vip_experiment_id, QMap<QString, QMap<QString, VipPointVector
 				QMap<QString, VipPointVector>& res = result[camera][experiment_id][roi];
 
 				//keep track of pulses for mergePulses only
-				QSet<Vip_experiment_id> pulses;
+				QSet<Vip_experiment_id> ids;
 				
 				//extract parameters
 				for (QMap<qint64, VipShapeList>::const_iterator it = shapes.begin(); it != shapes.end(); ++it) {
 					const VipShapeList & lst = it.value();
-					double max, min, mean;
-					int pixel_area, maxX, maxY, minX, minY;
+					double max, min, mean = 0;
+					int pixel_area = 0, maxX = 0, maxY = 0, minX = 0, minY = 0;
 					max = lst.first().attribute("max_temperature_C").toDouble();
 					min = lst.first().attribute("min_temperature_C").toDouble(); 
 					if(opts.mean) mean = lst.first().attribute("average_temperature_C").toDouble();
@@ -1361,10 +1359,10 @@ QMap<QString, QMap<Vip_experiment_id, QMap<QString, QMap<QString, VipPointVector
 
 					bool new_pulse = false;
 					if (opts.mergePulses) {
-						Vip_experiment_id p = (lst.first().attribute("experiment_id").value<Vip_experiment_id>());
-						if (pulses.find(p) == pulses.end()) {
+						Vip_experiment_id p_number = (lst.first().attribute("experiment_id").value<Vip_experiment_id>());
+						if (ids.find(p_number) == ids.end()) {
 							new_pulse = true;
-							pulses.insert(p);
+							ids.insert(p_number);
 						}
 					}
 
@@ -1582,20 +1580,18 @@ QByteArray vipEventsToJson(const Vip_event_list& all_shapes, VipProgress* p)
 			const QVariantMap a = sh[i].attributes();
 
 			// fill spatial attributes
-			QPolygon p = sh[i].polygon().toPolygon();
+			QPolygon poly = sh[i].polygon().toPolygon();
 			QPointF centroid(0, 0);
-			QRect r = p.boundingRect();
-			QString polygon;
+			QRect r = poly.boundingRect();
 			int pixel_area = r.width() * r.height();
 			// recompute centroid
-			for (int i = 0; i < p.size(); ++i) {
-				centroid.rx() += p[i].x();
-				centroid.ry() += p[i].y();
+			for (const QPoint & pt : poly) {
+				centroid.rx() += pt.x();
+				centroid.ry() += pt.y();
 			}
-			centroid.rx() /= p.size();
-			centroid.ry() /= p.size();
-			if (!vipIsRect(p)) {
-				polygon = polygonToString(p);
+			centroid.rx() /= poly.size();
+			centroid.ry() /= poly.size();
+			if (!vipIsRect(poly)) {
 				// recompute pixel_area
 				pixel_area = sh[i].fillPixels().size();
 			}
@@ -1664,12 +1660,12 @@ QByteArray vipEventsToJson(const Vip_event_list& all_shapes, VipProgress* p)
 		for (int j = 0; j < shs.size(); ++j) {
 			str << "\t\t{\n";
 
-			QPolygon p;
+			QPolygon poly;
 			QRect r;
-			convertShape(shs[j], p, r);
+			convertShape(shs[j], poly, r);
 
 			
-			str << "\t\t\t" << "\"polygon\": " << polygonToJSON(p) << ",\n";
+			str << "\t\t\t" << "\"polygon\": " << polygonToJSON(poly) << ",\n";
 			str << "\t\t\t" << "\"timestamp_ns\": " << addDoubleQuotes(shs[j].attribute("timestamp_ns").toString()) << ",\n";
 			str << "\t\t\t" << "\"bbox_x\": " << (r.left()) << ",\n";
 			str << "\t\t\t" << "\"bbox_y\": " << (r.top()) << ",\n";
@@ -1793,9 +1789,9 @@ Vip_event_list vipEventsFromJson(const QByteArray& content)
 
 			}
 			else {
-				QString p = obj.value("polygon").toString();
-				if (!p.isEmpty()) {
-					QTextStream str(&p);
+				QString p_string = obj.value("polygon").toString();
+				if (!p_string.isEmpty()) {
+					QTextStream str(&p_string);
 					QPolygon poly;
 					while (true) {
 						double x, y;
@@ -1887,9 +1883,9 @@ Vip_event_list vipEventsFromJson(const QByteArray& content)
 				shapes.first().setAttribute("polygon", polygonToString(poly));
 			}
 			else {
-				QString p = event.value("polygon").toString();
-				if (!p.isEmpty()) {
-					QTextStream str(&p);
+				QString p_string = event.value("polygon").toString();
+				if (!p_string.isEmpty()) {
+					QTextStream str(&p_string);
 					QPolygon poly;
 					while (true) {
 						double x, y;

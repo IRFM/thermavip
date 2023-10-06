@@ -855,8 +855,9 @@ struct Legend
 static void updateCacheMode(VipAbstractPlotArea * w, bool useCache)
 {
 #ifndef VIP_CUSTOM_ITEM_CACHING
-	return;
-#endif // VIP_CUSTOM_ITEM_CACHING
+	(void)w;
+	(void)useCache;
+#else // VIP_CUSTOM_ITEM_CACHING
 	if (useCache) {
 		if (QPixmapCache::cacheLimit() < 100000)
 			QPixmapCache::setCacheLimit(120000);
@@ -871,6 +872,7 @@ static void updateCacheMode(VipAbstractPlotArea * w, bool useCache)
 		else if (!useCache && mode != QGraphicsItem::NoCache)
 			scales[i]->setCacheMode(QGraphicsItem::NoCache);
 	}
+#endif
 }
 
 
@@ -1872,7 +1874,7 @@ void	VipAbstractPlotArea::doUpdateScaleLogic()
 
 		{
 			//compute scale div first, that might trigger a geometry update
-			QList<VipAbstractScale*> scales = VipAbstractScale::independentScales(d_data->dirtyScaleDiv.toList());
+			QList<VipAbstractScale*> scales = VipAbstractScale::independentScales(d_data->dirtyScaleDiv.values());
 
 			for (int i = 0; i < scales.size(); ++i) {
 				scales[i]->computeScaleDiv();
@@ -1900,8 +1902,8 @@ void	VipAbstractPlotArea::doUpdateScaleLogic()
 	}
 
 	// refresh tool tip
-	if (VipToolTip* tip = plotToolTip())
-		tip->refresh();
+	//if (VipToolTip* tip = plotToolTip())
+	//	tip->refresh();
 
 	d_data->insideUpdate = false;
 	d_data->dirty = false;
@@ -1969,7 +1971,7 @@ bool VipAbstractPlotArea::paintOpenGLInternal(QPainter* painter, const QStyleOpt
 		painter->save();
 		QRect r = boundingRect().toRect();
 		if (r.size() == img_opengl.size()) {
-			painter->setRenderHints(0);
+			painter->setRenderHints(QPainter::RenderHints());
 			img_opengl.draw(painter, r);
 		}
 		else {
@@ -3452,7 +3454,7 @@ void VipAbstractPlotArea::setAlignedWith(VipAbstractPlotArea* other, Qt::Orienta
 	
 QList<VipAbstractPlotArea*> VipAbstractPlotArea::alignedWith(Qt::Orientation align_orientation) const
 {
-	return sharedAlignedAreas(this, align_orientation).toList();
+	return sharedAlignedAreas(this, align_orientation).values();
 }
 void VipAbstractPlotArea::removeAlignment(Qt::Orientation align_orientation)
 {
@@ -4459,22 +4461,22 @@ public:
 		//compute the union rect of all axes and items
 		QSet<VipPlotItem*> items;
 		QRectF union_rect;
-		for (int i = 0; i < linkedPolarAxis.size(); ++i)
+		for (VipPolarAxis * axis: linkedPolarAxis)
 		{
-			if (linkedPolarAxis[i]->isVisible())
-				union_rect |= linkedPolarAxis[i]->axisRect();
-			items += visible(linkedPolarAxis[i]->plotItems());
+			if (axis->isVisible())
+				union_rect |= axis->axisRect();
+			items += visible(axis->plotItems());
 		}
-		for (int i = 0; i < linkedRadialAxis.size(); ++i)
+		for (VipRadialAxis * axis: linkedRadialAxis)
 		{
-			if (linkedRadialAxis[i]->isVisible())
-				union_rect |= linkedRadialAxis[i]->axisRect();
-			items += visible(linkedRadialAxis[i]->plotItems());
+			if (axis->isVisible())
+				union_rect |= axis->axisRect();
+			items += visible(axis->plotItems());
 		}
-		for (QSet<VipPlotItem*>::iterator it = items.begin(); it != items.end(); ++it)
+		for (VipPlotItem * item : items)
 		{
-			(*it)->markCoordinateSystemDirty();
-			union_rect |= (*it)->shape().boundingRect().translated((*it)->pos());
+			item->markCoordinateSystemDirty();
+			union_rect |= item->shape().boundingRect().translated(item->pos());
 		}
 
 
@@ -4570,8 +4572,8 @@ public:
 		}
 
 		//enable back geometry update
-		for (QSet<VipAbstractPlotArea*>::iterator it = areas.begin(); it != areas.end(); ++it)
-			(*it)->setGeometryUpdateEnabled(true);
+		for (VipAbstractPlotArea * a : areas)
+			a->setGeometryUpdateEnabled(true);
 
 	}
 
@@ -5358,9 +5360,9 @@ bool VipBaseGraphicsView::renderObject(QPainter * p, const QPointF & pos, bool d
 					QPixmap pix1(target.size().toSize()), pix2(target.size().toSize());
 					{
 						//fill with this technique to set the transparent background
-						QPainter p(&pix1);
-						p.setCompositionMode(QPainter::CompositionMode_Clear);
-						p.fillRect(0, 0, pix1.width(), pix1.height(), QColor(230, 230, 230, 0));
+						QPainter painter(&pix1);
+						painter.setCompositionMode(QPainter::CompositionMode_Clear);
+						painter.fillRect(0, 0, pix1.width(), pix1.height(), QColor(230, 230, 230, 0));
 					}
 
 					pix2.fill(Qt::transparent);
@@ -6193,10 +6195,9 @@ void	VipImageWidget2D::mouseReleaseEvent(QMouseEvent * event)
 
 void VipImageWidget2D::mouseTimer()
 {
-	//disable for now
-	return;
+	//disable for now as it does not work well with other functionalities
 
-	if (!(QApplication::mouseButtons() & Qt::LeftButton))
+	/* if (!(QApplication::mouseButtons() & Qt::LeftButton))
 		return;
 	if (!d_mouseInsideCanvas)
 		return;
@@ -6250,7 +6251,7 @@ void VipImageWidget2D::mouseTimer()
 			this->verticalScrollBar()->setValue(this->verticalScrollBar()->value() + 10);
 			vScrollBarsMoved();
 		}
-	}
+	}*/
 }
 
 

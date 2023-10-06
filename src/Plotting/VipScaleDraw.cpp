@@ -1643,9 +1643,9 @@ VipScaleText VipAbstractScaleDraw::tickLabel(vip_double value, VipScaleDiv::Tick
 		}
 		// use custom label
 		else {
-			QMap<vip_double, VipScaleText>::const_iterator it = d_data->customLabels.find(value);
-			if (it != d_data->customLabels.end() && it->tick == tick) {
-				lbl = it.value();
+			QMap<vip_double, VipScaleText>::const_iterator found = d_data->customLabels.find(value);
+			if (found != d_data->customLabels.end() && found->tick == tick) {
+				lbl = found.value();
 				if (customTextStyle() != UseCustomTextStyle)
 					lbl.text.setTextStyle(textStyle(tick));
 			}
@@ -2271,7 +2271,6 @@ void VipScaleDraw::drawTicks(QPainter* painter) const
 	QPainter::RenderHints saved = painter->renderHints();
 	if (remove_antialiazing) {
 		painter->setRenderHint(QPainter::Antialiasing, false);
-		painter->setRenderHint(QPainter::HighQualityAntialiasing, false);
 	}
 
 	VipAbstractScaleDraw::drawTicks(painter);
@@ -2387,7 +2386,6 @@ void VipScaleDraw::drawBackbone(QPainter* painter) const
 	QPainter::RenderHints saved = painter->renderHints();
 	if (remove_antialiazing) {
 		painter->setRenderHint(QPainter::Antialiasing, false);
-		painter->setRenderHint(QPainter::HighQualityAntialiasing, false);
 	}
 
 	switch (alignment()) {
@@ -2532,9 +2530,9 @@ void VipScaleDraw::drawLabel(QPainter* painter, vip_double value, const VipText&
 	painter->setWorldTransform(transform, true);
 
 	if (d_data->ignoreTextTransform) {
-		QTransform tr = painter->worldTransform();
+		QTransform _tr = painter->worldTransform();
 		painter->resetTransform();
-		text_rect = tr.mapRect(text_rect);
+		text_rect = _tr.mapRect(text_rect);
 	}
 
 	lbl.draw(painter, text_rect);
@@ -2590,7 +2588,7 @@ QTransform VipScaleDraw::labelTransformation(vip_double value, const QPointF& po
 
 	int flags = text_alignment;
 
-	double x, y;
+	double x = 0, y = 0;
 	double rotate = 0;
 	switch (alignment()) {
 		case RightScale: {
@@ -3519,7 +3517,7 @@ static double vipDistance(const QLineF& l, const QPointF& p)
 	l2.translate(p - l2.p1());
 	QLineF normal = l2.normalVector();
 	QPointF intersect;
-	normal.intersect(l, &intersect);
+	normal.intersects(l, &intersect);
 	return QLineF(intersect, p).length();
 }
 

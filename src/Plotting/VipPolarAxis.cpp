@@ -8,6 +8,7 @@
 #include "VipScaleMap.h"
 #include "VipPolarAxis.h"
 #include "VipScaleDraw.h"
+#include "VipSet.h"
 
 
 
@@ -130,18 +131,18 @@ public:
 		{
 			if(linkedPolarAxis[i]->isVisible())
 				union_rect |= linkedPolarAxis[i]->axisRect();
-			items += QSet<VipPlotItem*>::fromList(linkedPolarAxis[i]->plotItems());
+			items += vipToSet(linkedPolarAxis[i]->plotItems());
 		}
 		for(int i=0; i < linkedRadialAxis.size(); ++i)
 		{
 			if(linkedRadialAxis[i]->isVisible())
 				union_rect |= linkedRadialAxis[i]->axisRect();
-			items += QSet<VipPlotItem*>::fromList(linkedRadialAxis[i]->plotItems());
+			items += vipToSet(linkedRadialAxis[i]->plotItems());
 		}
-		for(QSet<VipPlotItem*>::iterator it = items.begin(); it != items.end(); ++it)
+		for (VipPlotItem * item : items)
 		{
-			(*it)->markCoordinateSystemDirty();
-			union_rect |= (*it)->shape().boundingRect().translated((*it)->pos());
+			item->markCoordinateSystemDirty();
+			union_rect |= item->shape().boundingRect().translated(item->pos());
 		}
 
 
@@ -298,7 +299,7 @@ class VipPolarAxis::PrivateData
 public:
 
 	PrivateData()
-	: centerProximity(0), titleAlignment(0), startAngle(0), endAngle(0), minRadius(0), maxRadius(0), additionalRadius(0),radius(1)
+	: centerProximity(0), startAngle(0), endAngle(0), minRadius(0), maxRadius(0), additionalRadius(0),radius(1)
 	{}
 
 	int centerProximity;
@@ -624,7 +625,7 @@ class VipRadialAxis::PrivateData
 public:
 
 	PrivateData()
-	: startDist(0), endDist(0), startRadius(0), endRadius(1), angle(0), titleAlignment(0),
+	: startDist(0), endDist(0), startRadius(0), endRadius(1), angle(0),
 	  startRadiusAxis(NULL), endRadiusAxis(NULL), angleAxis(NULL), angleType(Vip::Relative)
 	{}
 

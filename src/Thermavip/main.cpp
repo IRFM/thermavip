@@ -19,6 +19,7 @@
 #include <QTemporaryDir>
 #include <QOpenGLWidget>
 #include <qopenglfunctions.h>
+#include <qscreen.h>
 
 #include "VipCore.h"
 #include "VipGui.h"  
@@ -65,6 +66,27 @@ void myMessageOutput(QtMsgType type, const QMessageLogContext &context, const QS
 	return;
 } 
 
+struct Thread : QThread
+{
+	VipProperty* prop{ nullptr };
+	int counter{ 0 };
+	bool read{ true };
+
+	virtual void run()
+	{
+		while (true) {
+			if (read) {
+				int val = prop->value<int>();
+				counter += val;
+			}
+			else {
+				++counter;
+				prop->setData(counter);
+			}
+		}
+	}
+};
+#include <iostream>
 
 
 int main(int argc, char** argv)
@@ -314,8 +336,7 @@ int main(int argc, char** argv)
 	//COMMENT CHB QDir(vipGetTempDirectory()).removeRecursively();
 
 	//Set the default directory to open/save files
-	VipFileDialog::setDefaultDirectory(getenv("HOME"));
-
+	VipFileDialog::setDefaultDirectory(qgetenv("HOME"));
 
 	//auto update only works for Windows OS
 #if defined(VIP_ALLOW_AUTO_UPDATE) && defined(_MSC_VER)
@@ -342,7 +363,11 @@ int main(int argc, char** argv)
 					if (button == QMessageBox::Yes)
 					{
 						QString procname = QFileInfo(app.arguments()[0]).fileName();
-						QProcess::startDetached(VipUpdate::getUpdateProgram() + " -u --command " + procname + " -o ./");
+						//QProcess::startDetached(VipUpdate::getUpdateProgram() + " -u --command " + procname + " -o ./");
+						QProcess::startDetached(VipUpdate::getUpdateProgram(),
+									QStringList() << "-u"
+										      << "--command" << procname << "-o"
+										      << "./");
 						return 0;
 					}
 				}
@@ -396,8 +421,9 @@ int main(int argc, char** argv)
 		out.close();
 
 		QProcess process;
-		QString cmd = "regedit /s " + p;
-		process.start(cmd);
+		//QString cmd = "regedit /s " + p;
+		//process.start(cmd);
+		process.start("regedit", QStringList() << "/s" << p);
 		process.waitForStarted();
 		process.waitForFinished();
 
@@ -421,7 +447,7 @@ int main(int argc, char** argv)
 	QString p_section = "Default";
 	if (VipCommandOptions::instance().count("plugins"))
 	{
-		plugins = VipCommandOptions::instance().value("plugins").toString().split(",", QString::SkipEmptyParts);
+		plugins = VipCommandOptions::instance().value("plugins").toString().split(",", VIP_SKIP_BEHAVIOR::SkipEmptyParts);
 	}
 	else
 	{
@@ -463,9 +489,9 @@ int main(int argc, char** argv)
 
 			//add the style sheet
 			if (VipPluginInterface* inter = VipLoadPlugins::instance().find(plugins[i])) {
-				QString st = inter->additionalStyleSheet();
-				if (!st.isEmpty())
-					qApp->setStyleSheet(qApp->styleSheet() + "\n" + st);
+				QString sheet = inter->additionalStyleSheet();
+				if (!sheet.isEmpty())
+					qApp->setStyleSheet(qApp->styleSheet() + "\n" + sheet);
 			}
 		}
 	}
@@ -527,8 +553,13 @@ int main(int argc, char** argv)
 				if (!last_session) {
 					QMessageBox box(QMessageBox::Question, "Load previous session", "Do you want to load the last session?", QMessageBox::Yes | QMessageBox::No);
 					//center on same screen as vipGetMainWindow()
-					int thisScreen = QApplication::desktop()->screenNumber(vipGetMainWindow());
-					QRect r = QApplication::desktop()->screenGeometry(thisScreen);
+					//int thisScreen = QApplication::desktop()->screenNumber(vipGetMainWindow());
+					//QRect r = QApplication::desktop()->screenGeometry(thisScreen);
+					QRect r;
+					if (vipGetMainWindow()->screen())
+						r = vipGetMainWindow()->screen()->geometry();
+					else
+						r = QGuiApplication::primaryScreen()->geometry();
 					box.move(r.x() + r.width() / 2 - box.width() / 2, r.y() + r.height() / 2 - box.height() / 2);
 					if (box.exec() == QMessageBox::Yes)
 						last_session = true;
@@ -576,7 +607,12 @@ int main(int argc, char** argv)
 	VipLogging::instance().close(); 
 	if (vipIsRestartEnabled()) 
 	{
-		QProcess::startDetached(VipUpdate::getUpdateProgram() + " --hide --command Thermavip -l " + QString::number(vipRestartMSecs()));
+		//QProcess::startDetached(VipUpdate::getUpdateProgram() + " --hide --command Thermavip -l " + QString::number(vipRestartMSecs()));
+		QProcess::startDetached(VipUpdate::getUpdateProgram(),
+					QStringList() << "--hide"
+						      << "--command"
+						      << "Thermavip"
+						      << "-l" << QString::number(vipRestartMSecs()));
 	}
 	return ret;
 }

@@ -163,8 +163,8 @@ VipIntervalSampleVector extractHistogram(T * begin, T * end, int bins, Vip::Bins
 		double width = (_max - _min) / (double)bins;
 		double start = _min;
 		VipIntervalSampleVector res(bins);
-		for (int i = 0; i < res.size(); ++i, start += width)
-			res[i] = VipIntervalSample(0, VipInterval(start, start + width, VipInterval::ExcludeMaximum));
+		for (int j = 0; j < res.size(); ++j, start += width)
+			res[j] = VipIntervalSample(0, VipInterval(start, start + width, VipInterval::ExcludeMaximum));
 
 
 		for (VipIntervalSampleVector::const_iterator it = hist.cbegin(); it != hist.cend(); ++it)
@@ -187,8 +187,8 @@ VipIntervalSampleVector extractHistogram(T * begin, T * end, int bins, Vip::Bins
 		VipIntervalSampleVector res;
 		VipIntervalSampleVector::const_iterator it = hist.cbegin();
 		++it;
-		int i = 1;
-		for (; it != hist.cend(); ++it, ++i)
+		int j = 1;
+		for (; it != hist.cend(); ++it, ++j)
 		{
 			if (tot_values >= next_step)
 			{

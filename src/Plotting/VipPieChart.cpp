@@ -223,7 +223,7 @@ VipPieItem::VipPieItem(const VipText & title)
 {
 	d_data = new PrivateData;
 	d_data->quiverPath.setColor(Qt::black);
-	d_data->quiverPath.setStyle(0);
+	d_data->quiverPath.setStyle(VipQuiverPath::QuiverStyles());
 	//d_data->quiverPath.setExtremityBrush(VipQuiverPath::End,QBrush(Qt::red));
 	// d_data->quiverPath.setLength(VipQuiverPath::End,5);
 	//d_data->quiverPath.setVisible(false);
@@ -838,7 +838,7 @@ QRectF VipPieItem::drawLegend(QPainter * painter, const QRectF & r, int ) const
 
 		// if painter does not define a rotation, remove antialiazing
 		if (w && !painter->transform().isRotating())
-			painter->setRenderHints(0);
+			painter->setRenderHints(QPainter::RenderHints());
 	}
 
 	if (colorMap() && vipIsValid(value())) {

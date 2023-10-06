@@ -22,7 +22,8 @@ static std::locale toStdLocale(const QLocale & l)
 			return std::locale();
 		}
 	}
-	return std::locale();
+	VIP_UNREACHABLE();
+	//return std::locale();
 }
 
 

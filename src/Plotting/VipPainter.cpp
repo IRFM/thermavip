@@ -1282,7 +1282,7 @@ void VipPainter::drawRoundedFrame( QPainter *painter,
 
         for ( int i = 0; i < 4; i++ )
         {
-            QRectF r = pathList[2 * i].controlPointRect();
+            QRectF _r = pathList[2 * i].controlPointRect();
 
             QPen arcPen;
             arcPen.setCapStyle( Qt::FlatCap );
@@ -1303,8 +1303,8 @@ void VipPainter::drawRoundedFrame( QPainter *painter,
                 case 1:
                 {
                     QLinearGradient gradient;
-                    gradient.setStart( r.topLeft() );
-                    gradient.setFinalStop( r.bottomRight() );
+                    gradient.setStart( _r.topLeft() );
+                    gradient.setFinalStop( _r.bottomRight() );
                     gradient.setColorAt( 0.0, c1 );
                     gradient.setColorAt( 1.0, c2 );
 
@@ -1322,8 +1322,8 @@ void VipPainter::drawRoundedFrame( QPainter *painter,
                 {
                     QLinearGradient gradient;
 
-                    gradient.setStart( r.bottomRight() );
-                    gradient.setFinalStop( r.topLeft() );
+                    gradient.setStart( _r.bottomRight() );
+                    gradient.setFinalStop( _r.topLeft() );
                     gradient.setColorAt( 0.0, c2 );
                     gradient.setColorAt( 1.0, c1 );
 

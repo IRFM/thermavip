@@ -28,6 +28,7 @@
 #include "VipAbout.h"
 #include "VipWidgetResizer.h"
 #include "VipCommandOptions.h"
+#include "VipSet.h"
 
 #include <qclipboard.h>
 #include <QApplication>
@@ -1293,10 +1294,10 @@ void VipDisplayPlayerArea::print()
 	qreal mm_per_pixel_y = screen_psize.height() / screen_size.height();
 	QSizeF paper_size(bounding.width() * mm_per_pixel_x, bounding.height() * mm_per_pixel_y);
 
-	// printer.setFullPage(true);
-	printer.setPageSize(QPrinter::Custom);
-	printer.setPaperSize(paper_size, QPrinter::Millimeter);
-	printer.setPageMargins(0, 0, 0, 0, QPrinter::Millimeter);
+	//printer.setPageSize(QPrinter::Custom);
+	//printer.setPaperSize(paper_size, QPrinter::Millimeter);
+	//printer.setPageMargins(0, 0, 0, 0, QPrinter::Millimeter);
+	printer.setPageSize(QPageSize(paper_size, QPageSize::Millimeter));
 	printer.setResolution(600);
 
 	QPrintDialog printDialog(&printer, NULL);
@@ -1458,7 +1459,7 @@ void VipDisplayPlayerArea::layoutColorMap(const QList<VipVideoPlayer*> & pls)
 		QStringList lst;
 		for (int i = 0; i < players.size(); ++i)
 			lst.append(players[i]->viewer()->area()->colorMapAxis()->title().text());
-		lst = lst.toSet().toList();
+		lst = vipToSet(lst).values();
 		QString title = lst.size() == 1 ? lst.first() : QString();
 		if (title != m_data->colorMapTitle) {
 			colorMapAxis()->setTitle(title);
@@ -2156,7 +2157,7 @@ void VipDisplayPlayerArea::setPoolToPlayers()
 			// and the play widget itself might display update glitches.
 			if (displays[j]->parent() != this->processingPool())
 				displays[j]->setParent(this->processingPool());
-			devices.unite(vipListCast<VipIODevice*>(displays[j]->allSources()).toSet());
+			devices.unite(vipToSet(vipListCast<VipIODevice*>(displays[j]->allSources())));
 		}
 	}
 
@@ -2686,7 +2687,7 @@ static bool customSupportReparent(VipMultiDragWidget* drag, QWidget* new_parent)
 		//
 		// displays_in_players += ( displays.toSet() );
 		for (int j = 0; j < displays.size(); ++j) {
-			QSet<VipProcessingObject*> tmp_sources = displays[j]->allSources().toSet();
+			QSet<VipProcessingObject*> tmp_sources = vipToSet(displays[j]->allSources());
 			if (tmp_sources.size())
 				displays_in_players.insert(displays[j]);
 			sources += tmp_sources;
@@ -2700,7 +2701,7 @@ static bool customSupportReparent(VipMultiDragWidget* drag, QWidget* new_parent)
 
 	// then, compute all sink VipDisplayObject
 	for (QSet<VipIODevice*>::iterator it = source_devices.begin(); it != source_devices.end(); ++it) {
-		displays_sinks += vipListCast<VipDisplayObject*>((*it)->allSinks()).toSet();
+		displays_sinks += vipToSet(vipListCast<VipDisplayObject*>((*it)->allSinks()));
 	}
 
 	bool res = (displays_in_players == displays_sinks);
@@ -2788,10 +2789,9 @@ void VipIconBar::setTitleIcon(const QPixmap& pix)
 	labelIcon->setPixmap(pix);
 }
 
-const QPixmap& VipIconBar::titleIcon() const
+QPixmap VipIconBar::titleIcon() const
 {
-	static QPixmap null;
-	return labelIcon->pixmap() ? *labelIcon->pixmap() : null;
+	return labelIcon->pixmap(Qt::ReturnByValue);
 }
 
 void VipIconBar::updateTitle()
@@ -2808,9 +2808,9 @@ void VipIconBar::updateTitle()
 	}
 }
 
-void VipIconBar::setMainTitle(const QString& title)
+void VipIconBar::setMainTitle(const QString& _title)
 {
-	customTitle = title;
+	customTitle = _title;
 	updateTitle();
 }
 QString VipIconBar::mainTitle() const
@@ -2825,8 +2825,14 @@ static void showNormalOrMaximize(VipMainWindow * win)
 	if (!win)
 		return;
 
-	int screen = qApp->desktop()->screenNumber(win);
-	QRect screen_rect = qApp->desktop()->screenGeometry(screen);
+	QRect screen_rect; 
+	if (QScreen* screen = win->screen())
+		screen_rect = screen->availableGeometry();
+	else
+		screen_rect = QGuiApplication::primaryScreen()->availableGeometry();
+	int screen = qApp->screens().indexOf(win->screen());
+	//int screen = qApp->desktop()->screenNumber(win);
+	//QRect screen_rect = qApp->desktop()->screenGeometry(screen);
 
 	if (win->isMaximized()) {
 		//if maximized but not centered, re-maximize again
@@ -2977,8 +2983,8 @@ void VipCloseBar::computeHelpMenu()
 	QMenu * menu = helpButton->menu();
 	menu->clear();
 
-	QAction * help = menu->addAction(vipIcon("help.png"), "Thermavip help...");
-	connect(help, SIGNAL(triggered(bool)), mainWindow, SLOT(showHelp()));
+	QAction * _help = menu->addAction(vipIcon("help.png"), "Thermavip help...");
+	connect(_help, SIGNAL(triggered(bool)), mainWindow, SLOT(showHelp()));
 
 	//find all folders in the help directory
 	QStringList help_dirs = QDir("help").entryList(QDir::Dirs | QDir::NoDotAndDotDot);
@@ -3112,7 +3118,7 @@ void VipCloseBar::computeToolsMenu()
 	QAction* hist_strength = menu->addAction(pix, "Videos: flat histogram strength");
 	hist_strength->setMenu(new QMenu());
 	for (int i = 1; i < 6; ++i) {
-		QAction* a;
+		QAction* a = nullptr;
 		if (i == 1)
 			a = hist_strength->menu()->addAction("very light");
 		if (i == 2)
@@ -3123,10 +3129,12 @@ void VipCloseBar::computeToolsMenu()
 			a = hist_strength->menu()->addAction("strong");
 		if (i == 5)
 			a = hist_strength->menu()->addAction("very strong");
-		a->setProperty("strength", i);
-		a->setCheckable(true);
-		a->setChecked(i == VipGuiDisplayParamaters::instance()->flatHistogramStrength());
-		QObject::connect(a, SIGNAL(triggered(bool)), mainWindow, SLOT(setFlatHistogramStrength()));
+		if (a) {
+			a->setProperty("strength", i);
+			a->setCheckable(true);
+			a->setChecked(i == VipGuiDisplayParamaters::instance()->flatHistogramStrength());
+			QObject::connect(a, SIGNAL(triggered(bool)), mainWindow, SLOT(setFlatHistogramStrength()));
+		}
 	}
 
 	menu->addSeparator();
@@ -3239,8 +3247,7 @@ void VipCloseBar::computeWindowState()
 			mainWindow->show();
 		}
 	}
-	return;
-#endif
+#else
 
 
 	int st = mainWindow->windowState();
@@ -3278,6 +3285,7 @@ void VipCloseBar::computeWindowState()
 		if (state != -1)
 			mainWindow->show();
 	}
+#endif
 }
 
 void VipCloseBar::maximizeOrShowNormal()
@@ -3538,7 +3546,7 @@ void VipMainWindow::openSharedMemoryFiles()
 	iconBar()->updateTitle();
 
 	//multi-screen only
-	if (qApp->desktop()->screenCount() > 1) {
+	if (qApp->screens().size() > 1) {
 		//raise modal widget when the application is active to display it on top of dock widgets
 		if (QGuiApplication::applicationState() == Qt::ApplicationActive) {
 
@@ -4065,9 +4073,9 @@ bool VipMainWindow::loadSessionShowProgress(const QString & filename, VipProgres
 
 	arch.end();
 
-	if (screen >= 0 && screen < qApp->desktop()->screenCount()) {
-		QRect s_geom = qApp->desktop()->screenGeometry(screen);
-		int current_screen = qApp->desktop()->screenNumber(this);
+	if (screen >= 0 && screen < qApp->screens().size()) {
+		QRect s_geom = qApp->screens()[screen]->availableGeometry();
+		int current_screen = this->screen() ? qApp->screens().indexOf(this->screen()) : -1; // qApp->desktop()->screenNumber(this);
 		if (maximized && current_screen != screen)
 			this->setGeometry(s_geom);
 		else
@@ -4130,7 +4138,7 @@ void VipMainWindow::applicationStateChanged(Qt::ApplicationState state)
 {
 
 	//multi-screen only
-	if (qApp->desktop()->screenCount() > 1) {
+	if (qApp->screens().size() > 1) {
 		QList<QDockWidget*> ws = this->findChildren<QDockWidget*>();
 
 		for (int i = 0; i < ws.size(); ++i) {
@@ -5254,11 +5262,11 @@ static VipBaseDragWidget * dropMimeData(QMimeData * mime, QWidget * drop_widget)
 							QList<VipDisplayObject*> all_disps;
 							for (int i = 0; i < srcs.size(); ++i)
 								all_disps += vipListCast< VipDisplayObject*>(srcs[i]->allSinks());
-							if (objs.toSet() == all_disps.toSet()) {
+							if (vipToSet(objs) == vipToSet(all_disps)) {
 								//drop is allowed
 							}
 							else
-								return NULL;
+								return nullptr;
 						}
 						if (d->isMaximized()) {
 							d->showNormal();
@@ -5267,7 +5275,7 @@ static VipBaseDragWidget * dropMimeData(QMimeData * mime, QWidget * drop_widget)
 					}
 				}
 		}
-		return NULL;
+		return nullptr;
 	}
 	else {
 		QList<QUrl> urls = mime->urls();
@@ -5402,7 +5410,7 @@ VipArchive & vipSaveBaseDragWidget(VipArchive & arch, VipBaseDragWidget * w)
 			objects += displays[j]->allSources();
 	}
 	//make unique
-	objects = objects.toSet().toList();
+	objects = vipToSet(objects).values();
 
 	QVariantMap metadata;
 	metadata["session_type"] = VipMainWindow::DragWidget;
@@ -5610,10 +5618,10 @@ bool vipPrint(VipBaseDragWidget *w)
 	qreal mm_per_pixel_y = screen_psize.height() / screen_size.height();
 	QSizeF paper_size(bounding.width() * mm_per_pixel_x, bounding.height() * mm_per_pixel_y);
 
-	// printer.setFullPage(true);
-	printer.setPageSize(QPrinter::Custom);
-	printer.setPaperSize(paper_size, QPrinter::Millimeter);
-	printer.setPageMargins(0, 0, 0, 0, QPrinter::Millimeter);
+	//printer.setPageSize(QPrinter::Custom);
+	//printer.setPaperSize(paper_size, QPrinter::Millimeter);
+	//printer.setPageMargins(0, 0, 0, 0, QPrinter::Millimeter);
+	printer.setPageSize(QPageSize(paper_size, QPageSize::Millimeter));
 	printer.setResolution(600);
 
 	QPrintDialog printDialog(&printer, NULL);

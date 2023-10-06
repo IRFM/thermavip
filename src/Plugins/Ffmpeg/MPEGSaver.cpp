@@ -37,8 +37,8 @@ bool MPEGSaver::open(VipIODevice::OpenModes mode)
 		setError(e.what());
 		return false;
 	}
-
-	return false;
+	VIP_UNREACHABLE();
+	//return false;
 }
 
 void MPEGSaver::close()

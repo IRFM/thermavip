@@ -81,7 +81,8 @@ qint64 vipDistance(const VipTimeRange &pair, qint64 val, qint64 * closest)
 			return 0;
 		}
 	}
-	return 0;
+	VIP_UNREACHABLE();
+//	return 0;
 }
 
 qint64 vipDistance(const VipTimeRangeList &ranges, qint64 value, qint64 * closest, int * index)
@@ -384,7 +385,7 @@ VipTimeRangeList vipToTimeRangeList(const QString & str, bool * ok )
 	VipTimeRangeList res;
 
 	//first split according to ',' then to '-'
-	QStringList list = str.split(",",QString::SkipEmptyParts);
+	QStringList list = str.split(",",VIP_SKIP_BEHAVIOR::SkipEmptyParts);
 
 	for(int i=0; i< list.size(); ++i)
 	{

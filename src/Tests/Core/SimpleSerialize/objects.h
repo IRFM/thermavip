@@ -33,7 +33,6 @@ public:
 	{
 	}
 	~DerivedClass() { 
-		bool stop = true;
 	}
 };
 // Register DerivedClass to the Qt metatype system as well as the thermavip layer

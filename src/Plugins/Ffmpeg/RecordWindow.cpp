@@ -29,7 +29,7 @@ static bool __should_quit = false;
 static bool IsCloseEventReceived()
 {
 	return false;
-	struct Thread : QThread
+	/* struct Thread : QThread
 	{
 		std::string str;
 		virtual void run()
@@ -47,7 +47,7 @@ static bool IsCloseEventReceived()
 	if (!th.isRunning())
 		th.start();
 
-	return __should_quit;
+	return __should_quit;*/
 }
 
 
@@ -463,7 +463,7 @@ RecordWindow::RecordWindow(QWidget * parent)
 
 	m_first_show = false;
 	m_press_date = 0;
-	m_buttons = 0;
+	m_buttons = Qt::MouseButtons();
 	m_cursor = vipPixmap("std_cursor.png");
 	m_timeout = -1;
 	m_handler = NULL;
@@ -679,7 +679,7 @@ QImage RecordWindow::grabCurrentImage()
 			else
 			{
 				if (m_buttons) {
-					m_buttons = 0;
+					m_buttons = Qt::MouseButtons();
 					m_press_date = QDateTime::currentMSecsSinceEpoch();
 				}
 

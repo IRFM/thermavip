@@ -199,12 +199,20 @@ Q_DECL_CONSTEXPR static inline typename std::enable_if<std::is_integral<T1>::val
 {
 	return v1 == v2;
 }
+
+
+#ifdef _MSC_VER
+#pragma warning(push)
+#pragma warning(disable : 4127)
+// suppress "conditional expression is constant" warning
+#endif
+
 template<class T1, class T2>
 static inline typename std::enable_if<detail::NumericMixFloating<T1, T2>::value, bool>::type vipFuzzyCompare(T1 v1, T2 v2)
 {
-	if (std::is_same<T1, long double>::value || std::is_same<T2, long double>::value)
+	if VIP_CONSTEXPR (std::is_same<T1, long double>::value || std::is_same<T2, long double>::value)
 		return (qAbs((long double)v1 - (long double)v2) * 100000000000000. <= qMin(qAbs((long double)v1), qAbs((long double)v2)));
-	else if (std::is_same<T1, double>::value || std::is_same<T2, double>::value)
+	else if VIP_CONSTEXPR (std::is_same<T1, double>::value || std::is_same<T2, double>::value)
 		return (qAbs((double)v1 - (double)v2) * 1000000000000. <= qMin(qAbs((double)v1), qAbs((double)v2)));
 	else
 		return (qAbs((float)v1 - (float)v2) * 100000.f <= qMin(qAbs((float)v1), qAbs((float)v2)));
@@ -226,13 +234,18 @@ Q_DECL_CONSTEXPR static inline typename std::enable_if<std::is_integral<T>::valu
 template<class T>
 static inline typename std::enable_if<std::is_floating_point<T>::value, bool>::type vipFuzzyIsNull(T d)
 {
-	if (std::is_same<T, float>::value)
+	if VIP_CONSTEXPR (std::is_same<T, float>::value)
 		return qAbs(d) <= 0.00001f;
-	else if (std::is_same<T, double>::value)
+	else if VIP_CONSTEXPR (std::is_same<T, double>::value)
 		return qAbs(d) <= 0.000000000001;
 	else
 		return qAbs(d) <= 0.00000000000001L;
 }
+
+#ifdef _MSC_VER
+#pragma warning(pop)
+#endif
+
 template<class T>
 Q_DECL_CONSTEXPR static inline bool vipFuzzyIsNull(const std::complex<T>& v)
 {

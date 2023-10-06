@@ -132,7 +132,6 @@ public:
 			pix = QPixmap(s);
 			pix.fill(Qt::transparent);
 			QPainter p(&pix);
-			p.setRenderHint(QPainter::HighQualityAntialiasing);
 			p.setRenderHint(QPainter::Antialiasing);
 			QPainterPath path;
 			QRectF arc(3, 1, s.width() - 4, s.height() - 4);
@@ -261,13 +260,13 @@ public:
 			if (item->isSelected() && item != _this && item != top && children.indexOf(item) < 0 && !hasSelectedResizeItem(item))
 			{
 				//compute new transform
-				QRectF bounding = shapes[i]->sceneMap()->invTransform(shapes[i]->boundingRect()).boundingRect();
-				QPointF center = bounding.center();
-				QTransform tr;
-				tr.translate(center.x(), center.y());
-				tr.rotate(angle);
-				tr.translate(-center.x(), -center.y());
-				applyTr(shapes[i],tr);
+				QRectF b = shapes[i]->sceneMap()->invTransform(shapes[i]->boundingRect()).boundingRect();
+				QPointF c = b.center();
+				QTransform t;
+				t.translate(c.x(), c.y());
+				t.rotate(angle);
+				t.translate(-c.x(), -c.y());
+				applyTr(shapes[i],t);
 			}
 		}
 
@@ -354,7 +353,7 @@ public:
 VipResizeItem::VipResizeItem(const VipText & title)
 :VipPlotItem(title), d_data(new PrivateData())
 {
-	this->setRenderHints(0);
+	this->setRenderHints(QPainter::RenderHints());
 	this->setAcceptHoverEvents(true);
 	this->setFlag(QGraphicsItem::ItemIsFocusable,true);
 	this->setFlag(QGraphicsItem::ItemIsSelectable,true);
@@ -926,29 +925,29 @@ void 	VipResizeItem::computeResizers()
 	d_data->resizers[BottomLeft]->setPath(d_data->resizerPath.translated(bounding.bottomLeft() + QPointF(0,-resizer.height())));
 
 	if (!d_data->customResizer[Top - Top].isEmpty()) {
-		QRectF resizer = d_data->customResizer[Top - Top].boundingRect();
-		d_data->resizers[Top]->setPath(d_data->customResizer[Top - Top].translated(bounding.topLeft() + QPointF(w / 2 - resizer.width() / 2, 0)));
+		QRectF r = d_data->customResizer[Top - Top].boundingRect();
+		d_data->resizers[Top]->setPath(d_data->customResizer[Top - Top].translated(bounding.topLeft() + QPointF(w / 2 - r.width() / 2, 0)));
 	}
 	else
 		d_data->resizers[Top]->setPath(d_data->resizerPath.translated(bounding.topLeft() + QPointF(w/2 - resizer.width()/2, 0 )));
 
 	if (!d_data->customResizer[Bottom - Top].isEmpty()) {
-		QRectF resizer = d_data->customResizer[Bottom - Top].boundingRect();
-		d_data->resizers[Bottom]->setPath(d_data->customResizer[Bottom - Top].translated(bounding.topLeft() + QPointF(w / 2 - resizer.width() / 2, h - resizer.height())));
+		QRectF r = d_data->customResizer[Bottom - Top].boundingRect();
+		d_data->resizers[Bottom]->setPath(d_data->customResizer[Bottom - Top].translated(bounding.topLeft() + QPointF(w / 2 - r.width() / 2, h - r.height())));
 	}
 	else
 		d_data->resizers[Bottom]->setPath(d_data->resizerPath.translated(bounding.topLeft() + QPointF(w/2 - resizer.width()/2, h - resizer.height() )));
 
 	if (!d_data->customResizer[Left - Top].isEmpty()) {
-		QRectF resizer = d_data->customResizer[Left - Top].boundingRect();
-		d_data->resizers[Left]->setPath(d_data->customResizer[Left - Top].translated(bounding.topLeft() + QPointF(0, h / 2 - resizer.height() / 2)));
+		QRectF r = d_data->customResizer[Left - Top].boundingRect();
+		d_data->resizers[Left]->setPath(d_data->customResizer[Left - Top].translated(bounding.topLeft() + QPointF(0, h / 2 - r.height() / 2)));
 	}
 	else
 		d_data->resizers[Left]->setPath(d_data->resizerPath.translated(bounding.topLeft() + QPointF(0,h/2 - resizer.height()/2)));
 
 	if (!d_data->customResizer[Right - Top].isEmpty()) {
-		QRectF resizer = d_data->customResizer[Right - Top].boundingRect();
-		d_data->resizers[Right]->setPath(d_data->customResizer[Right - Top].translated(bounding.topLeft() + QPointF(w - resizer.width(), h / 2 - resizer.height() / 2)));
+		QRectF r = d_data->customResizer[Right - Top].boundingRect();
+		d_data->resizers[Right]->setPath(d_data->customResizer[Right - Top].translated(bounding.topLeft() + QPointF(w - r.width(), h / 2 - r.height() / 2)));
 	}
 	else
 		d_data->resizers[Right]->setPath(d_data->resizerPath.translated(bounding.topLeft() + QPointF(w-resizer.width(),h/2 - resizer.height()/2 )));

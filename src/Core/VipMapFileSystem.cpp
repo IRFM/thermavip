@@ -84,7 +84,7 @@ QString VipPath::filePath() const
 
 VipPath VipPath::parent() const
 {
-	QStringList lst = m_canonical_path.split("/", QString::KeepEmptyParts);
+	QStringList lst = m_canonical_path.split("/", VIP_SKIP_BEHAVIOR::KeepEmptyParts);
 	if (lst.size() > 1)
 	{
 		lst.removeAt(lst.size() - 1);
@@ -214,27 +214,27 @@ public:
 
 	bool match(const VipPath & p)
 	{
-		QString path = p.canonicalPath();
-		if (path.isEmpty())
+		QString _path = p.canonicalPath();
+		if (_path.isEmpty())
 			return false;
 
 		//find the last part of the pasth, after the last '/'
-		int index = path.lastIndexOf("/");
-		if(index == path.size()-1)
-			index = path.lastIndexOf("/", path.size() - 2);
+		int index = _path.lastIndexOf("/");
+		if(index == _path.size()-1)
+			index = _path.lastIndexOf("/", _path.size() - 2);
 		if (index >= 0)
-			path = path.mid(index+1);
+			_path = _path.mid(index+1);
 
 		for (int i = 0; i < exps.size(); ++i)
 		{
 			if (exact)
 			{
-				if (exps[i].exactMatch(path))
+				if (exps[i].exactMatch(_path))
 					return true;
 			}
 			else
 			{
-				int id = exps[i].indexIn(path);
+				int id = exps[i].indexIn(_path);
 				if (id == 0)
 					return true;
 
@@ -384,7 +384,7 @@ bool VipMapFileSystem::create(const VipPath & path)
 	}
 	resetError();
 
-	QStringList paths = path.canonicalPath().split("/",QString::KeepEmptyParts);
+	QStringList paths = path.canonicalPath().split("/", VIP_SKIP_BEHAVIOR::KeepEmptyParts);
 	QString subpath;
 	for (int i = 0; i < paths.size() - 1; ++i)
 	{
@@ -645,8 +645,8 @@ bool VipMapFileSystem::copy(const VipPath & src, const VipPath & dst, bool overw
 
 		return copyDirContentHelper(src, dst, overwrite, progress);
 	}
-
-	return false;
+	VIP_UNREACHABLE();
+	//return false;
 }
 
 void VipMapFileSystem::listPathHelper(VipPathList & out, const VipPath & path)
@@ -966,7 +966,9 @@ VipPathList VipPhysicalFileSystem::listPathContent(const VipPath & path)
 			p.setAttribute("Type", "DIR");
 			p.setAttribute("Writable", info.isWritable());
 			p.setAttribute("Readable", info.isReadable());
-			p.setAttribute("Created", info.created());
+#if QT_VERSION >= QT_VERSION_CHECK(5, 10, 0)
+			p.setAttribute("Created", info.birthTime());
+#endif
 			p.setAttribute("Last modified", info.lastModified());
 			p.setAttribute("Last read", info.lastRead());
 		}
@@ -1104,8 +1106,8 @@ public:
 
 		proc.setProcessChannelMode(QProcess::MergedChannels);
 
-		QByteArray cmd = "psftp -pw " + password + " " + address;
-		proc.start(cmd);
+		QString cmd = "psftp";//-pw " + password + "" + address;
+		proc.start(cmd, QStringList() << "-pw" << password<< address);
 		if (!proc.waitForStarted(2000))
 			_OPEN_ERROR("Unable to connect to " + address + ", please check address and password");
 
@@ -1178,13 +1180,13 @@ public:
 					}
 
 					QString tmp = readOutput(proc);
-					QStringList lst = tmp.split("\n");
+					QStringList _lst = tmp.split("\n");
 
 					QString start = listPath.canonicalPath();
 					if (!start.endsWith("/"))
 						start += "/";
 
-					for (const QString& str : lst) {
+					for (const QString& str : _lst) {
 
 						QStringList l = str.split(" ", Qt::SkipEmptyParts);
 						if (l.size() < 5)

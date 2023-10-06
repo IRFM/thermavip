@@ -14,7 +14,7 @@
 class PTWDevice : public VipTimeRangeBasedGenerator
 {
 	Q_OBJECT
-	Q_PROPERTY(VipOutput image)
+	VIP_IO(VipOutput image)
 
 public:
 

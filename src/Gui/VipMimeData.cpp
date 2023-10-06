@@ -77,11 +77,11 @@ static VipOutput * findOutput_copy(VipDisplayObject * obj, VipProcessingPool * t
 					QList<VipProcessingObject*> new_pipeline = VipProcessingObjectList(pipeline).copy(target_pool);
 					if (new_pipeline.size())
 					{
-						VipProcessingObject * obj = new_pipeline.first();
-						if (obj->outputCount() > o_index) {
+						VipProcessingObject * o = new_pipeline.first();
+						if (o->outputCount() > o_index) {
 							//pipeline copied successfully, return the last processing output
-							obj->outputAt(o_index)->setData(any);
-							return obj->outputAt(o_index);
+							o->outputAt(o_index)->setData(any);
+							return o->outputAt(o_index);
 						}
 					}
 

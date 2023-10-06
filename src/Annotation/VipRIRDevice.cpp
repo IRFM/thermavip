@@ -48,8 +48,8 @@ bool VipRIRDevice::open(VipIODevice::OpenModes mode)
 
 	this->setAttributes(VipLibRIR::instance()->getGlobalAttributesAsString(m_file));
 	if (attribute("Name").toString().isEmpty()) {
-		QString p = removePrefix(path());
-		setAttribute("Name", QFileInfo(p).fileName());
+		QString pa = removePrefix(path());
+		setAttribute("Name", QFileInfo(pa).fileName());
 	}
 	
 	// set transform for WA camera
@@ -261,8 +261,6 @@ VipRIRDeviceEditor::~VipRIRDeviceEditor()
 void VipRIRDeviceEditor::setDevice(VipRIRDevice* dev)
 {
 	m_data->device = NULL;
-	bool enable_emi = false;
-	bool use_map = false;
 	if (dev) {
 		QStringList calibs = dev->calibrations();
 		bool has_calibrations = calibs.size() > 1;

@@ -13,7 +13,7 @@
 #include <QSet>
 #include <QSharedPointer>
 #include <QStringList>
-#include <QThreadPool>
+#include <QThread>
 #include <QVariant>
 #include <QWaitCondition>
 
@@ -165,7 +165,7 @@ private:
 class VipDataList;
 class VipProcessingObject;
 
-typedef QMap<QString, int> PriorityMap;
+typedef QMap<QString, QThread::Priority> PriorityMap;
 Q_DECLARE_METATYPE(PriorityMap)
 
 /// VipProcessingManager manages the default configuration of all new VipDataList instances and VipProcessingObject instances.
@@ -187,7 +187,7 @@ public:
 
 	static VipProcessingManager& instance();
 
-	static void setDefaultPriority(int priority, const QMetaObject* meta);
+	static void setDefaultPriority(QThread::Priority priority, const QMetaObject* meta);
 	static int defaultPriority(const QMetaObject* meta);
 	static void setDefaultPriorities(const PriorityMap&);
 	static PriorityMap defaultPriorities();
@@ -1093,10 +1093,12 @@ public:
 class VIP_CORE_EXPORT VipProperty : public UniqueProcessingIO
 {
 	QSharedPointer<VipAnyData> m_data;
+	VipSpinlock m_lock;
 
 public:
 	VipProperty(const QString& name = QString(), VipProcessingObject* parent = nullptr);
 	VipProperty(const VipProperty& other);
+	VipProperty& operator=(const VipProperty&);
 	/// Reimplemented from #VipProcessingIO::data. Returns the property data.
 	virtual VipAnyData data() const;
 	/// Reimplemented from #VipProcessingIO::setData. Set the property data.

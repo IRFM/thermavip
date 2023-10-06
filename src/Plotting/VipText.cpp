@@ -168,7 +168,7 @@ private:
 		static const QColor white(Qt::white);
 
 		const QFontMetrics fm(font);
-		QPixmap pm(fm.width(dummy), fm.height());
+		QPixmap pm(fm.horizontalAdvance(dummy), fm.height());
 		pm.fill(white);
 
 		QPainter p(&pm);
@@ -675,7 +675,6 @@ bool VipTextStyle::operator!=(const VipTextStyle& other) const
 
 VipText::PrivateData::PrivateData()
   : QSharedData()
-  , layoutAttributes(0)
   , textEngine(NULL)
 {
 }
@@ -1339,8 +1338,8 @@ static QList<QList<TextChar>> getCharactersPerLines(const VipText& t)
 		doc.adjustSize();
 	}
 
-	QTextBlock block = doc.begin();
-	double start_line_y = block.layout()->position().y();
+	//QTextBlock block = doc.begin();
+	double start_line_y = doc.begin().layout()->position().y();
 	double line_y = -std::numeric_limits<double>::max();
 	;
 
@@ -1394,13 +1393,13 @@ static QList<QList<TextChar>> getCharactersPerLines(const VipText& t)
 
 				QTextFragment currentFragment = it.fragment();
 				QTextCharFormat format = currentFragment.charFormat();
-				QList<QGlyphRun> glyphes = currentFragment.glyphRuns();
+				const QList<QGlyphRun> glp = currentFragment.glyphRuns();
 
-				for (int i = 0; i < glyphes.size(); ++i) {
+				for (int i = 0; i < glp.size(); ++i) {
 					TextChar tc;
-					tc.indexes = glyphes[i].glyphIndexes();
-					tc.positions = glyphes[i].positions();
-					tc.raw_font = glyphes[i].rawFont();
+					tc.indexes = glp[i].glyphIndexes();
+					tc.positions = glp[i].positions();
+					tc.raw_font = glp[i].rawFont();
 					tc.format = format;
 					tc.line_y = line_y;
 					textChar.back() << tc;
@@ -1512,20 +1511,18 @@ void VipText::draw(QPainter* painter, const QPointF& c, const VipPie& pie, TextD
 
 		const QList<TextChar>& tchar = textChar[line];
 
-		for (int c = 0; c < tchar.size(); ++c) {
-			const TextChar& tc = tchar[c];
-
+		for (const TextChar& tc: tchar) {
 			if (dir == TowardInside) {
 				for (int i = 0; i < tc.indexes.size(); ++i) {
 					double y = tc.positions[i].y();
-					radiuses.back() << (base_radius + height - y - tchar[c].line_y);
+					radiuses.back() << (base_radius + height - y - tc.line_y);
 					angle_positions.back() << 2 * qAsin((tc.positions[i].x() / 2.0) / radiuses.back().back()) * Vip::ToDegree;
 				}
 			}
 			else if (dir == TowardOutside) {
 				for (int i = 0; i < tc.indexes.size(); ++i) {
 					double y = tc.positions[i].y();
-					radiuses.back() << (base_radius - height + y + tchar[c].line_y);
+					radiuses.back() << (base_radius - height + y + tc.line_y);
 					double angle = 2 * qAsin((tc.positions[i].x() / 2.0) / (radiuses.back().back() - y / 2.0)) * Vip::ToDegree;
 					angle_positions.back() << (angle_mean - (angle - angle_mean));
 				}
@@ -1580,11 +1577,11 @@ void VipText::draw(QPainter* painter, const QPointF& c, const VipPie& pie, TextD
 	}
 
 	// draw each character
-	painter->setRenderHints(QPainter::HighQualityAntialiasing | QPainter::Antialiasing);
+	painter->setRenderHints( QPainter::Antialiasing);
 
-	QTransform tr;
-	tr.translate(center.x(), center.y());
-	tr.rotate(360 - pie.endAngle());
+	//QTransform tr;
+	//tr.translate(center.x(), center.y());
+	//tr.rotate(360 - pie.endAngle());
 
 	VipBoxStyle textBStyle;
 	if (hasTextBoxStyle())
@@ -1597,8 +1594,7 @@ void VipText::draw(QPainter* painter, const QPointF& c, const VipPie& pie, TextD
 		QTransform tr;
 		tr.translate(center.x(), center.y());
 
-		for (int c = 0; c < tchar.size(); ++c) {
-			const TextChar& tc = tchar[c];
+		for (const TextChar& tc: tchar) {
 
 			if (!hasTextBoxStyle()) {
 				if (tc.format.foreground() == QBrush())

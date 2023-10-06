@@ -10,6 +10,7 @@
 #include "VipPlotItem.h"
 #include "VipLogging.h"
 #include "VipTextOutput.h"
+#include "VipSet.h"
 
 #include <QCoreApplication>
 #include <QRadioButton>
@@ -1022,13 +1023,13 @@ void VipRecordToolWidget::setDisplayPlayerArea(VipDisplayPlayerArea * area)
 
 VipRecordToolBar * VipRecordToolWidget::toolBar()
 {
-	//TEST
-	return NULL;
-	if (!m_data->toolBar)
+	//Disable for now
+	return nullptr;
+	/* if (!m_data->toolBar)
 	{
 		m_data->toolBar = new VipRecordToolBar(this);
 	}
-	return m_data->toolBar;
+	return m_data->toolBar;*/
 }
 
 VipDisplayPlayerArea * VipRecordToolWidget::area() const
@@ -1376,9 +1377,9 @@ void VipRecordToolWidget::launchRecord(bool launch)
 			{
 				m_data->recorder->recorder()->setProperty("player", QVariant::fromValue(player));
 			}
-			else if (VipAbstractPlayer * player = VipAbstractPlayer::findAbstractPlayer(item->item))
+			else if (VipAbstractPlayer * player2 = VipAbstractPlayer::findAbstractPlayer(item->item))
 			{
-				m_data->recorder->recorder()->setProperty("player", QVariant::fromValue(player));
+				m_data->recorder->recorder()->setProperty("player", QVariant::fromValue(player2));
 			}
 		}
 	}
@@ -1471,7 +1472,7 @@ void VipRecordToolWidget::launchRecord(bool launch)
 		}
 
 		QPen pen;
-		bool show_axes;
+		bool show_axes = true;
 		if (recordSceneOnly() && selectedVideoPlayer())
 		{
 			pen = selectedVideoPlayer()->spectrogram()->borderPen();
@@ -1662,22 +1663,23 @@ VipRecordWidgetButton::VipRecordWidgetButton(VipBaseDragWidget * widget, QWidget
 	this->setIcon(vipIcon("record_icon.png"));
 
 	m_data->filename.setMode(VipFileName::Save);
-	QVariantList data; data.append(QVariant::fromValue(vipToArray(QImage(10, 10, QImage::Format_ARGB32))));
+	QVariantList data_list; 
+	data_list.append(QVariant::fromValue(vipToArray(QImage(10, 10, QImage::Format_ARGB32))));
 	QString filters;
 	// find the devices that can save these data
-	QList<VipIODevice::Info> devices = VipIODevice::possibleWriteDevices(QString(), data);
+	QList<VipIODevice::Info> devices = VipIODevice::possibleWriteDevices(QString(), data_list);
 	QStringList res;
 	for (int i = 0; i < devices.size(); ++i)
 	{
 		VipIODevice * dev = qobject_cast<VipIODevice*>(devices[i].create());//vipCreateVariant(devices[i]).value<VipIODevice*>();
-		QString filters = dev->fileFilters();
-		if (!filters.isEmpty())
-			res.append(filters);
+		QString fs = dev->fileFilters();
+		if (!fs.isEmpty())
+			res.append(fs);
 		delete dev;
 	}
 
 	//make unique, sort and return
-	res = res.toSet().toList();
+	res = vipToSet(res).values();
 	filters = res.join(";;");
 	m_data->filename.setFilters(filters);
 

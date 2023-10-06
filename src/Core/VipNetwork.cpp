@@ -44,10 +44,10 @@ namespace detail
 	{
 	}
 
-	bool VipNetworkConnectionPrivate::bind(const QHostAddress& address, quint16 port, QAbstractSocket::BindMode mode)
+	bool VipNetworkConnectionPrivate::bind(const QHostAddress& address, quint16 _port, QAbstractSocket::BindMode mode)
 	{
 		QMutexLocker lock(&mutex);
-		return socket->bind(address, port, mode);
+		return socket->bind(address, _port, mode);
 	}
 
 	bool VipNetworkConnectionPrivate::waitForConnected(int msecs)
@@ -130,20 +130,20 @@ namespace detail
 		socket->abort();
 	}
 
-	void VipNetworkConnectionPrivate::setSocketDescriptor(qintptr socketDescriptor, QAbstractSocket::SocketState socketState, QAbstractSocket::OpenMode openMode)
+	void VipNetworkConnectionPrivate::setSocketDescriptor(qintptr socketDescriptor, QAbstractSocket::SocketState socketState, QAbstractSocket::OpenMode _openMode)
 	{
 		QMutexLocker lock(&mutex);
-		socket->setSocketDescriptor(socketDescriptor, socketState, openMode);
+		socket->setSocketDescriptor(socketDescriptor, socketState, _openMode);
 	}
 
-	void VipNetworkConnectionPrivate::connectToHost(const QString& hostName, quint16 port, QAbstractSocket::OpenMode openMode, QAbstractSocket::NetworkLayerProtocol protocol)
+	void VipNetworkConnectionPrivate::connectToHost(const QString& hostName, quint16 _port, QAbstractSocket::OpenMode _openMode, QAbstractSocket::NetworkLayerProtocol _protocol)
 	{
 		QMutexLocker lock(&mutex);
 		this->host = hostName;
-		this->port = port;
-		this->openMode = openMode;
-		this->protocol = protocol;
-		socket->connectToHost(hostName, port, openMode, protocol);
+		this->port = _port;
+		this->openMode = _openMode;
+		this->protocol = _protocol;
+		socket->connectToHost(hostName, _port, _openMode, _protocol);
 	}
 
 	void VipNetworkConnectionPrivate::disconnectFromHost()

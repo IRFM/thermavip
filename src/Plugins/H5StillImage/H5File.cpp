@@ -140,6 +140,150 @@ bool H5File::readFile(const QString& in_file, QStringList& names, QList<VipNDArr
 	return readFile(file, names, arrays);
 }
 
+
+bool readDataSet(hid_t file, const QByteArray & name,  QStringList& names, QList<VipNDArray>& arrays) 
+{
+	// we found a dataset, open it and retrieve its dimensions
+	hid_t set = H5Dopen(file, name.data(), H5P_DEFAULT);
+	hid_t space = H5Dget_space(set);
+	bool res = false;
+
+	// int qt_type = 0;
+	if (hid_t type = H5Dget_type(set)) {
+		// if (int t = HDF5ToQt(type))
+		//	qt_type = t;
+		H5Tclose(type);
+	}
+	// TODO: use qt_type
+
+	hsize_t dims[32];
+	int rank = H5Sget_simple_extent_ndims(space);
+	H5Sget_simple_extent_dims(space, dims, NULL);
+	if (rank == 2) {
+		// 3 dimensions, might be an image dataset
+		if (dims[0] > 0 && dims[1] > 0) {
+			// store the data in a double image
+			VipNDArray array = VipNDArray(QMetaType::Double, vipVector(dims[0], dims[1]));
+			void* ptr = array.data();
+			hid_t data_type = H5T_NATIVE_DOUBLE;
+
+			hsize_t offset[2] = { 0, 0 };
+			H5Sselect_hyperslab(space, H5S_SELECT_SET, offset, NULL, dims, NULL);
+
+			// define memory space
+			hid_t mem = H5Screate_simple(2, dims, NULL);
+
+			// read data
+			herr_t status = H5Dread(set, data_type, mem, space, H5P_DEFAULT, ptr);
+
+			H5Sclose(mem);
+
+			if (status != 0) {
+				VIP_LOG_WARNING("Cannot read data set '" + name + "'");
+			}
+			else {
+				names.append(QString(name.data()));
+				arrays.append(array);
+				res = true;
+			}
+		}
+	}
+	else if (rank == 3) {
+		if (dims[2] == 2) {
+			// complex image
+			VipNDArray array = VipNDArray(qMetaTypeId<complex_d>(), vipVector(dims[0], dims[1]));
+			void* ptr = array.data();
+			hid_t data_type = H5T_NATIVE_DOUBLE;
+
+			hsize_t offset[3] = { 0, 0, 0 };
+			H5Sselect_hyperslab(space, H5S_SELECT_SET, offset, NULL, dims, NULL);
+
+			// define memory space
+			hid_t mem = H5Screate_simple(3, dims, NULL);
+
+			// read data
+			herr_t status = H5Dread(set, data_type, mem, space, H5P_DEFAULT, ptr);
+
+			H5Sclose(mem);
+
+			if (status != 0) {
+				VIP_LOG_WARNING("Cannot read data set '" + name + "'");
+			}
+			else {
+				names.append(QString(name.data()));
+				arrays.append(array);
+				res = true;
+			}
+		}
+		else if (dims[2] == 4) {
+			// ARGB image
+			QImage img(dims[1], dims[0], QImage::Format_ARGB32);
+			hid_t data_type = H5T_NATIVE_UINT8;
+
+			hsize_t offset[3] = { 0, 0, 0 };
+			H5Sselect_hyperslab(space, H5S_SELECT_SET, offset, NULL, dims, NULL);
+
+			// define memory space
+			hid_t mem = H5Screate_simple(3, dims, NULL);
+
+			// read data
+			herr_t status = H5Dread(set, data_type, mem, space, H5P_DEFAULT, img.bits());
+
+			H5Sclose(mem);
+
+			if (status != 0) {
+				VIP_LOG_WARNING("Cannot read data set '" + name + "'");
+			}
+			else {
+				names.append(QString(name.data()));
+				arrays.append(vipToArray(img));
+				res = true;
+			}
+		}
+	}
+
+	H5Sclose(space);
+	H5Dclose(set);
+	return res;
+}
+
+
+bool readGroup(hid_t file, const QByteArray& name, QStringList& names, QList<VipNDArray>& arrays)
+{
+	hid_t group = H5Gopen(file, name.data(), 0);
+	if (group <= 0)
+		return false;
+
+	H5G_info_t oinfo;
+	herr_t ret = H5Gget_info(group, &oinfo);
+	if (ret != 0) {
+		H5Gclose(group);
+		return false;
+	}
+
+	for (int i = 0; i < (int)oinfo.nlinks; ++i) {
+		QByteArray name(50, 0);
+		int size = H5Gget_objname_by_idx(group, i, name.data(), name.size());
+		if (size > name.size()) {
+			name = QByteArray(size, 0);
+			H5Gget_objname_by_idx(group, i, name.data(), name.size());
+		}
+		H5G_obj_t type = H5Gget_objtype_by_idx(group, i);
+
+		if (type == H5G_GROUP) {
+			readGroup(group, name, names, arrays);
+		}
+		else if (type == H5G_DATASET) {
+			readDataSet(group, name, names, arrays);
+		}
+		else
+			bool stop = true;
+	}
+
+	H5Gclose(group);
+	return true;
+}
+
 bool H5File::readFile(qint64 f_handle, QStringList& names, QList<VipNDArray>& arrays)
 {
 	// find all the image dataset names
@@ -157,105 +301,15 @@ bool H5File::readFile(qint64 f_handle, QStringList& names, QList<VipNDArray>& ar
 			}
 			H5G_obj_t type = H5Gget_objtype_by_idx(file, i);
 
-			if (type == H5G_DATASET) {
-				// we found a dataset, open it and retrieve its dimensions
-				hid_t set = H5Dopen(file, name.data(), H5P_DEFAULT);
-				hid_t space = H5Dget_space(set);
-
-				// int qt_type = 0;
-				if (hid_t type = H5Dget_type(set)) {
-					// if (int t = HDF5ToQt(type))
-					//	qt_type = t;
-					H5Tclose(type);
-				}
-				// TODO: use qt_type
-
-				hsize_t dims[32];
-				int rank = H5Sget_simple_extent_ndims(space);
-				H5Sget_simple_extent_dims(space, dims, NULL);
-				if (rank == 2) {
-					// 3 dimensions, might be an image dataset
-					if (dims[0] > 0 && dims[1] > 0) {
-						// store the data in a double image
-						VipNDArray array = VipNDArray(QMetaType::Double, vipVector(dims[0], dims[1]));
-						void* ptr = array.data();
-						hid_t data_type = H5T_NATIVE_DOUBLE;
-
-						hsize_t offset[2] = { 0, 0 };
-						H5Sselect_hyperslab(space, H5S_SELECT_SET, offset, NULL, dims, NULL);
-
-						// define memory space
-						hid_t mem = H5Screate_simple(2, dims, NULL);
-
-						// read data
-						herr_t status = H5Dread(set, data_type, mem, space, H5P_DEFAULT, ptr);
-
-						H5Sclose(mem);
-
-						if (status != 0) {
-							VIP_LOG_WARNING("Cannot read data set '" + name + "'");
-						}
-						else {
-							names.append(QString(name.data()));
-							arrays.append(array);
-						}
-					}
-				}
-				else if (rank == 3) {
-					if (dims[2] == 2) {
-						// complex image
-						VipNDArray array = VipNDArray(qMetaTypeId<complex_d>(), vipVector(dims[0], dims[1]));
-						void* ptr = array.data();
-						hid_t data_type = H5T_NATIVE_DOUBLE;
-
-						hsize_t offset[3] = { 0, 0, 0 };
-						H5Sselect_hyperslab(space, H5S_SELECT_SET, offset, NULL, dims, NULL);
-
-						// define memory space
-						hid_t mem = H5Screate_simple(3, dims, NULL);
-
-						// read data
-						herr_t status = H5Dread(set, data_type, mem, space, H5P_DEFAULT, ptr);
-
-						H5Sclose(mem);
-
-						if (status != 0) {
-							VIP_LOG_WARNING("Cannot read data set '" + name + "'");
-						}
-						else {
-							names.append(QString(name.data()));
-							arrays.append(array);
-						}
-					}
-					else if (dims[2] == 4) {
-						// ARGB image
-						QImage img(dims[1], dims[0], QImage::Format_ARGB32);
-						hid_t data_type = H5T_NATIVE_UINT8;
-
-						hsize_t offset[3] = { 0, 0, 0 };
-						H5Sselect_hyperslab(space, H5S_SELECT_SET, offset, NULL, dims, NULL);
-
-						// define memory space
-						hid_t mem = H5Screate_simple(3, dims, NULL);
-
-						// read data
-						herr_t status = H5Dread(set, data_type, mem, space, H5P_DEFAULT, img.bits());
-
-						H5Sclose(mem);
-
-						if (status != 0) {
-							VIP_LOG_WARNING("Cannot read data set '" + name + "'");
-						}
-						else {
-							names.append(QString(name.data()));
-							arrays.append(vipToArray(img));
-						}
-					}
-				}
-
-				H5Sclose(space);
-				H5Dclose(set);
+			if (type == H5G_GROUP) {
+				readGroup(file, name, names, arrays);
 			}
+			else if (type == H5G_DATASET) {
+
+				readDataSet(file, name, names, arrays);
+			}
+			else
+				bool stop = true;
 		}
 	}
 

@@ -5,6 +5,7 @@
 #include "VipAxisColorMap.h"
 #include "VipText.h"
 #include "VipLogging.h"
+#include "VipSet.h"
 
 #include <qbytearray.h>
 #include <qmap.h>
@@ -212,8 +213,8 @@ static QColor parseColor(const QByteArray & ar, int & parse_end, bool *ok = NULL
 		parse_end = start + color_name.size();
 		return it.value();
 	}
-
-	ERROR(QColor());
+	VIP_UNREACHABLE();
+	//	ERROR(QColor());
 }
 
 static QPen parsePen(const QByteArray & ar, bool *ok = NULL)
@@ -790,9 +791,9 @@ VipKeyWords vipKeyWordsForClass(const char * classname, bool *ok)
 	}
 
 	for (auto& name : classnames) {
-		auto it = _keyWordsForClass().find(name);
-		if (it != _keyWordsForClass().end())
-			res = addKeyWords(res, it.value().keywords);
+		auto found = _keyWordsForClass().find(name);
+		if (found != _keyWordsForClass().end())
+			res = addKeyWords(res, found.value().keywords);
 	}
 	return res;
 }
@@ -853,7 +854,7 @@ static VipKeyWords keywordsForItem(VipPaintItem * item)
 
 QVariant VipStyleSheet::findProperty(const QByteArray& classname, const QByteArray& property_name, const QByteArray& index, const QByteArray& selectors) const
 { 
-	QSet<QByteArray> sels = selectors.split(':').toSet();
+	QSet<QByteArray> sels = vipToSet(selectors.split(':'));
 	// remove empty
 	for (auto it = sels.begin(); it != sels.end();) {
 		if (it->isEmpty())
@@ -893,7 +894,7 @@ bool VipStyleSheet::setProperty(const QByteArray& classname, const QByteArray& p
 
 	VipParserPtr parser = it_key.value();
 
-	QSet<QByteArray> sels = selectors.split(':').toSet();
+	QSet<QByteArray> sels = vipToSet(selectors.split(':'));
 	// remove empty
 	for (auto it = sels.begin(); it != sels.end();) {
 		if (it->isEmpty())
@@ -1081,10 +1082,10 @@ VipStyleSheet vipParseStyleSheet(const QByteArray & ar, VipPaintItem * item, QSt
 		split = name.split(':');
 		name = split[0];
 		for (int i = 1; i < split.size(); ++i) {
-			QByteArray ar = split[i];
-			if (!ar.isEmpty()) {
+			QByteArray _ar = split[i];
+			if (!_ar.isEmpty()) {
 				
-				selectors << ar;
+				selectors << _ar;
 			}
 		}
 
@@ -1152,14 +1153,15 @@ VipStyleSheet vipParseStyleSheet(const QByteArray & ar, VipPaintItem * item, QSt
 			else {
 
 				//find the parser
-				VipKeyWords::const_iterator it = keywords.find(value_name);
-				if (it == keywords.end()) ERROR("Unknown key name: " + value_name);
+				VipKeyWords::const_iterator found = keywords.find(value_name);
+				if (found == keywords.end())
+					ERROR("Unknown key name: " + value_name);
 				//parse
-				QVariant value = it.value()->parse(pair[1]);
+				QVariant value = found.value()->parse(pair[1]);
 				if (value.userType() == 0) {
 					ERROR("Unable to parse value of " + value_name);
 				}
-				p = ParseValue(value_name, value, num, it.value());				
+				p = ParseValue(value_name, value, num, found.value());				
 			}
 
 			// add to result
@@ -1228,17 +1230,17 @@ QByteArray vipStyleSheetToString(const VipStyleSheet & st)
 			// build class name + selectors
 			QByteArray full_class_name = classname;
 			if (!state.selectors.isEmpty())
-				full_class_name += ":" + state.selectors.toList().join(":");
+				full_class_name += ":" + state.selectors.values().join(":");
 
 			//write it
 			str << full_class_name << "\n{\n";
 
 			// write properties
-			for (auto it = state.parseResults.begin(); it != state.parseResults.end(); ++it) {
+			for (auto parse = state.parseResults.begin(); parse != state.parseResults.end(); ++parse) {
 				
-				QByteArray property = it.key();
-				VipParserPtr parser = it.value().parser();
-				const QMap<QByteArray, QVariant> values = it.value().values();
+				QByteArray property = parse.key();
+				VipParserPtr parser = parse.value().parser();
+				const QMap<QByteArray, QVariant> values = parse.value().values();
 				for (auto index = values.begin(); index != values.end(); ++index) {
 
 					if (index.key().isEmpty())
@@ -1294,8 +1296,8 @@ bool vipApplyStyleSheet(const VipStyleSheet & p, VipPaintItem * item, QString * 
 	//apply from the lower class to the higher one
 	for (int i = 0; i < to_use.size(); ++i) {
 		//get the VipParseResult
-		const VipParseResult p = to_use[i];
-		for (VipParseResult::const_iterator it = p.begin(); it != p.end(); ++it) {
+		const VipParseResult parse = to_use[i];
+		for (VipParseResult::const_iterator it = parse.begin(); it != parse.end(); ++it) {
 			//get all values (usually just one) for given property name
 			const QMap<QByteArray, QVariant> & values = it.value().values();
 			for(auto itv = values.begin(); itv != values.end(); ++itv)

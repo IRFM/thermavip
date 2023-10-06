@@ -1024,7 +1024,8 @@ namespace detail
 			if (Offset + 1 != NumBytes || next_sort) {
 				size_t start_offset = 0;
 				It partition_begin = begin;
-				for (uint8_t *it = remaining_partitions, *end = remaining_partitions + num_partitions; it != end; ++it) {
+				uint8_t* _end = remaining_partitions + num_partitions;
+				for (uint8_t *it = remaining_partitions; it != _end; ++it) {
 					size_t end_offset = partitions[*it].next_offset;
 					It partition_end = begin + end_offset;
 					std::ptrdiff_t num_elements = end_offset - start_offset;

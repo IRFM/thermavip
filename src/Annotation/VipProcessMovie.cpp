@@ -9,6 +9,7 @@
 #include "VipDisplayArea.h"
 #include "VipPlayWidget.h"
 #include "VipPolygon.h"
+#include "VipSet.h"
 
 
 #include <qmessagebox.h>
@@ -54,7 +55,7 @@ static void drawEventTimeLine(const Vip_event_list & evts, const QList<QPointer<
 
 		painter->setPen(Qt::white);
 		painter->setBrush(Qt::white);
-		painter->setRenderHints(0);
+		painter->setRenderHints(QPainter::RenderHints());
 		painter->setOpacity(0.5);
 		double bottom = item->heights().first;
 		double top = item->heights().second;
@@ -129,7 +130,7 @@ void VipEventDevice::setEvents(const Vip_event_list & events, const QString & gr
 	if (m_scenes.size()) {
 		QList<qint64> times = m_scenes.keys();
 		QVector<qint64> timestamps(times.size());
-		qCopy(times.begin(), times.end(), timestamps.begin());
+		std::copy(times.begin(), times.end(), timestamps.begin());
 		setTimestamps(timestamps);
 
 		setProperty("_vip_showTimeLine", 1);
@@ -527,7 +528,7 @@ QList<qint64> EventInfo::mergeIds() const
 	ids.replace(",", " ");
 	ids.replace(":", " ");
 	ids.replace(";", " ");
-	QStringList lst = ids.split(" ", QString::SkipEmptyParts);
+	QStringList lst = ids.split(" ", VIP_SKIP_BEHAVIOR::SkipEmptyParts);
 	QList<qint64> res;
 	for (int i = 0; i < lst.size(); ++i) {
 		qint64 id;
@@ -1399,11 +1400,7 @@ void VipPlayerDBAccess::saveToJson()
 
 static QByteArray rectToByteArray(const QRect& r)
 {
-	char text[21];
-	memset(text, 0, sizeof(text));
-	sprintf(text, "%i %i %i %i", r.left(), r.top(), r.width(), r.height());
-	QByteArray ar(text, 20);
-	return ar;
+	return QString::asprintf("%i %i %i %i", r.left(), r.top(), r.width(), r.height()).toLatin1();
 }
 
 void VipPlayerDBAccess::saveToJsonInternal(bool show_messages)
@@ -1419,7 +1416,7 @@ void VipPlayerDBAccess::saveToJsonInternal(bool show_messages)
 		QString PPO = m_events.first().first().attribute("user").toString();
 		QString camera = m_events.first().first().attribute("line_of_sight").toString();
 		QString device = m_events.first().first().attribute("device").toString();
-		Vip_experiment_id pulse = m_events.first().first().attribute("experiment_id").value< Vip_experiment_id>();
+		//Vip_experiment_id pulse = m_events.first().first().attribute("experiment_id").value< Vip_experiment_id>();
 
 		if (PPO.isEmpty()) {
 			if (show_messages)
@@ -1447,7 +1444,7 @@ void VipPlayerDBAccess::saveToJsonInternal(bool show_messages)
 		QSet<qint64> ids;
 		for (int i = 0; i < m_actions.size(); ++i) {
 			if (m_actions[i].type == Action::ChangePolygon || m_actions[i].type == Action::InterpolateFrames) {
-				ids.unite(m_actions[i].ids.toSet());
+				ids.unite(vipToSet(m_actions[i].ids));
 			}
 		}
 		QList<QPair<VipDisplaySceneModel*, QString> > to_recompute;
@@ -1512,15 +1509,15 @@ void VipPlayerDBAccess::saveToJsonInternal(bool show_messages)
 					max_vals.size() == mean_vals.size() && max_vals.size() == shs.size() ) {
 					
 
-					for (int i = 0; i < max_vals.size(); ++i) {
-						VipShape& sh = shs[i];
-						sh.setAttribute("max_temperature_C", max_vals[i].y()); //TODO
-						sh.setAttribute("max_T_image_position_x", qRound(max_vals_pos[i].x()));
-						sh.setAttribute("max_T_image_position_y", qRound(max_vals_pos[i].y()));
-						sh.setAttribute("min_temperature_C", min_vals[i].y());
-						sh.setAttribute("min_T_image_position_x", qRound(min_vals_pos[i].x()));
-						sh.setAttribute("min_T_image_position_y", qRound(min_vals_pos[i].y()));
-						sh.setAttribute("average_temperature_C", mean_vals[i].y());
+					for (int j = 0; j < max_vals.size(); ++j) {
+						VipShape& sh = shs[j];
+						sh.setAttribute("max_temperature_C", max_vals[j].y()); //TODO
+						sh.setAttribute("max_T_image_position_x", qRound(max_vals_pos[j].x()));
+						sh.setAttribute("max_T_image_position_y", qRound(max_vals_pos[j].y()));
+						sh.setAttribute("min_temperature_C", min_vals[j].y());
+						sh.setAttribute("min_T_image_position_x", qRound(min_vals_pos[j].x()));
+						sh.setAttribute("min_T_image_position_y", qRound(min_vals_pos[j].y()));
+						sh.setAttribute("average_temperature_C", mean_vals[j].y());
 
 					}
 				}
@@ -1635,7 +1632,7 @@ void VipPlayerDBAccess::uploadInternal(bool show_messages)
 			QSet<qint64> ids;
 			for (int i = 0; i < m_actions.size(); ++i) {
 				if (m_actions[i].type == Action::ChangePolygon || m_actions[i].type == Action::InterpolateFrames) {
-					ids.unite(m_actions[i].ids.toSet());
+					ids.unite(vipToSet(m_actions[i].ids));
 				}
 			}
 			QList<QPair<VipDisplaySceneModel*, QString> > to_recompute;
@@ -1675,11 +1672,11 @@ void VipPlayerDBAccess::uploadInternal(bool show_messages)
 				int c = 0;
 				for (int i = 0; i < to_recomputeIds.size(); ++i) {
 					VipAnyResource* max = static_cast<VipAnyResource*>(stats[c++]);
-					printf("%s\n", max->path().toLatin1().data());
+					vip_debug("%s\n", max->path().toLatin1().data());
 					VipAnyResource* min = static_cast<VipAnyResource*>(stats[c++]);
-					printf("%s\n", min->path().toLatin1().data());
+					vip_debug("%s\n", min->path().toLatin1().data());
 					VipAnyResource* mean = static_cast<VipAnyResource*>(stats[c++]);
-					printf("%s\n", mean->path().toLatin1().data());
+					vip_debug("%s\n", mean->path().toLatin1().data());
 					
 					VipPointVector max_vals = max->outputAt(0)->value<VipPointVector>();
 					VipPointVector max_vals_pos = max->outputAt(0)->data().attribute("_vip_Pos").value<VipPointVector>();
@@ -1701,15 +1698,15 @@ void VipPlayerDBAccess::uploadInternal(bool show_messages)
 						max_vals.size() == mean_vals.size() && max_vals.size() == shs.size()) {
 
 
-						for (int i = 0; i < max_vals.size(); ++i) {
-							VipShape& sh = shs[i];
-							sh.setAttribute("max_temperature_C", max_vals[i].y()); //TODO
-							sh.setAttribute("max_T_image_position_x", qRound(max_vals_pos[i].x()));
-							sh.setAttribute("max_T_image_position_y", qRound(max_vals_pos[i].y()));
-							sh.setAttribute("min_temperature_C", min_vals[i].y());
-							sh.setAttribute("min_T_image_position_x", qRound(min_vals_pos[i].x()));
-							sh.setAttribute("min_T_image_position_y", qRound(min_vals_pos[i].y()));
-							sh.setAttribute("average_temperature_C", mean_vals[i].y());
+						for (int j = 0; j < max_vals.size(); ++j) {
+							VipShape& sh = shs[j];
+							sh.setAttribute("max_temperature_C", max_vals[j].y()); //TODO
+							sh.setAttribute("max_T_image_position_x", qRound(max_vals_pos[j].x()));
+							sh.setAttribute("max_T_image_position_y", qRound(max_vals_pos[j].y()));
+							sh.setAttribute("min_temperature_C", min_vals[j].y());
+							sh.setAttribute("min_T_image_position_x", qRound(min_vals_pos[j].x()));
+							sh.setAttribute("min_T_image_position_y", qRound(min_vals_pos[j].y()));
+							sh.setAttribute("average_temperature_C", mean_vals[j].y());
 
 						}
 					}

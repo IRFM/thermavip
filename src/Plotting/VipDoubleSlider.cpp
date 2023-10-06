@@ -70,7 +70,7 @@ VipDoubleSlider::VipDoubleSlider(Alignment pos, QGraphicsItem * parent )
 	d_data->grip->setValue(interval.minValue());
 
 	this->scaleDraw()->setTicksPosition(VipScaleDraw::TicksInside);
-	this->setRenderHints(QPainter::TextAntialiasing | QPainter::HighQualityAntialiasing);
+	this->setRenderHints(QPainter::TextAntialiasing | QPainter::Antialiasing);
 	this->setBorderDist(5,5);
 	this->setUseBorderDistHintForLayout(true);
 

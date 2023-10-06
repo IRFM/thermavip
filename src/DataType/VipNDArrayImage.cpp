@@ -131,14 +131,14 @@ namespace detail
 			return true;
 		}
 
-		virtual bool resize(const VipNDArrayShape & start, const VipNDArrayShape & shape, VipNDArrayHandle * dst, Vip::InterpolationType type, const VipNDArrayShape & out_start, const VipNDArrayShape & out_shape ) const
+		virtual bool resize(const VipNDArrayShape & _start, const VipNDArrayShape & _shape, VipNDArrayHandle * dst, Vip::InterpolationType type, const VipNDArrayShape & out_start, const VipNDArrayShape & out_shape ) const
 		{
 			if(!image())
 				return false;
 
 			if(dst->dataType() == qMetaTypeId<QImage>())
 			{
-				QRect source = QRect(start[1], start[0], shape[1], shape[0]);
+				QRect source = QRect(_start[1], _start[0], _shape[1], _shape[0]);
 				QRect dest = QRect(out_start[1], out_start[0], out_shape[1], out_shape[0]);
 				QPainter painter(static_cast<ImageHandle*>(dst)->painteDevice());
 				painter.setRenderHint(QPainter::SmoothPixmapTransform,type != Vip::NoInterpolation);
@@ -148,7 +148,7 @@ namespace detail
 			else if(dst->dataType() == qMetaTypeId<VipRGB>())
 			{
 				QImage temp;
-				QImage src = image()->copy(start[1], start[0], shape[1], shape[0]);
+				QImage src = image()->copy(_start[1], _start[0], _shape[1], _shape[0]);
 				QRect out = QRect(out_start[1], out_start[0], out_shape[1], out_shape[0]);
 				if(type == Vip::NoInterpolation)
 					temp = src.scaled(out.width(), out.height(),Qt::IgnoreAspectRatio,Qt::FastTransformation).convertToFormat(QImage::Format_ARGB32);
@@ -157,7 +157,7 @@ namespace detail
 
 				VipRGB* ptr = static_cast<VipRGB*>(dst->opaque) + vipFlatOffset<false>(dst->strides, out_start);
 
-				return vipArrayTransform(reinterpret_cast<const QRgb*>(temp.bits()),shape, strides,
+				return vipArrayTransform(reinterpret_cast<const QRgb*>(temp.bits()),_shape, strides,
 					(QRgb*)ptr,out_shape,dst->strides,VipNullTransform());
 			}
 
@@ -214,7 +214,7 @@ namespace detail
 				reinterpret_cast<QRgb*>(image()->bits()) + vipFlatOffset<false>(strides, this_start), this_shape, strides, VipNullTransform());
 		}
 
-		virtual bool fill(const VipNDArrayShape & start, const VipNDArrayShape & shape, const QVariant & value)
+		virtual bool fill(const VipNDArrayShape & _start, const VipNDArrayShape & _shape, const QVariant & value)
 		{
 			if(!value.canConvert<QColor>())
 				return false;
@@ -223,7 +223,7 @@ namespace detail
 			p.setPen(Qt::NoPen);
 			p.setBrush(value.value<QColor>());
 			p.setCompositionMode(QPainter::CompositionMode_Source);
-			p.drawRect(QRect(start[1], start[0], shape[1], shape[0]));
+			p.drawRect(QRect(_start[1], _start[0], _shape[1], _shape[0]));
 			return true;
 		}
 		virtual QVariant toVariant(const VipNDArrayShape & sh) const
@@ -243,28 +243,28 @@ namespace detail
 			((QRgb*)image()->bits())[pos] = val.value<VipRGB>();
 		}
 
-		virtual QDataStream & ostream(const VipNDArrayShape & start, const VipNDArrayShape & shape, QDataStream & o) const
+		virtual QDataStream & ostream(const VipNDArrayShape & _start, const VipNDArrayShape & _shape, QDataStream & o) const
 		{
-			o << image()->copy(start[1],start[0],shape[1],shape[0]);
+			o << image()->copy(_start[1],_start[0],_shape[1],_shape[0]);
 			return o;
 		}
 
-		virtual QDataStream & istream(const VipNDArrayShape & start, const VipNDArrayShape & shape, QDataStream & i)
+		virtual QDataStream & istream(const VipNDArrayShape & _start, const VipNDArrayShape & _shape, QDataStream & i)
 		{
 			QImage tmp;
 			i >> tmp;
 
 			QPainter p(image());
-			p.drawImage(QPoint(start[1], start[0]), tmp.scaled(shape[1],shape[0]));
+			p.drawImage(QPoint(_start[1], _start[0]), tmp.scaled(_shape[1],_shape[0]));
 
 			return i;
 		}
 
-		virtual QTextStream & oTextStream(const VipNDArrayShape & start, const VipNDArrayShape & shape, QTextStream & stream, const QString & separator) const
+		virtual QTextStream & oTextStream(const VipNDArrayShape & _start, const VipNDArrayShape & _shape, QTextStream & stream, const QString & separator) const
 		{
 			const VipRGB* rgb = reinterpret_cast<const VipRGB*>(image()->bits());// +shape[1] + shape[0] * image()->width();
-			for(int y=start[0]; y < start[0]+shape[0]; ++y)
-				for (int x = start[1]; x < start[1]+shape[1]; ++x)
+			for(int y=_start[0]; y < _start[0]+_shape[0]; ++y)
+				for (int x = _start[1]; x < _start[1]+_shape[1]; ++x)
 				{
 					const VipRGB value = rgb[x + y*image()->width()];
 					stream << value << separator;

@@ -618,41 +618,6 @@ double VideoEncoder::GetFps() const {return m_fps;}
 
 
 
-static int send_video_frame(AVFormatContext * o, AVCodecContext * ctx, AVStream * stream, AVFrame * frame)
-{
-	/* encode the image */
-	int got_packet = 0;
-	AVPacket pkt;
-	av_init_packet(&pkt);
-	pkt.data = NULL;    // packet data will be allocated by the encoder
-	pkt.size = 0;
-	int ret = avcodec_encode_video2(ctx, &pkt, frame, &got_packet);
-	/* if zero size, it means the image was buffered */
-	if (ret == 0) {
-
-		pkt.pts = av_rescale_q(ctx->coded_frame->pts, ctx->time_base, stream->time_base);
-		if (ctx->coded_frame->key_frame)
-#if LIBAVFORMAT_VERSION_MAJOR > 52
-			pkt.flags |= AV_PKT_FLAG_KEY;
-#else
-			pkt.flags |= PKT_FLAG_KEY;
-#endif
-		pkt.stream_index = stream->index;
-		/* write the compressed frame in the media file */
-		ret = av_write_frame(o, &pkt);
-		av_free_packet(&pkt);
-		return 0;
-	}
-	return ret;
-}
-
-
-
-
-
-
-
-
 #if defined( ENABLE_H264) && LIBAVCODEC_VERSION_MICRO >= 100 //Ffmpeg micro version starts at 100, while libav is < 100
 
 

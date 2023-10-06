@@ -204,7 +204,6 @@ void VipTimeRangeItem::draw(QPainter * p, const VipCoordinateSystemPtr & m) cons
 	p->setBrush(brush);
 
 	p->setRenderHint(QPainter::Antialiasing,false);
-	p->setRenderHint(QPainter::HighQualityAntialiasing, false);
 	p->drawRect(r);//drawRoundedRect(r,3,3);
 	}
 
@@ -623,12 +622,12 @@ void VipTimeRangeListItem::setDevice(VipIODevice* device)
 			else
 			{
 				//use the original time window in case of no filtering
-				VipTimeRangeList lst = m_data->device->timeWindow();
-				for (int i = 0; i < lst.size(); ++i)
+				VipTimeRangeList _lst = m_data->device->timeWindow();
+				for (int i = 0; i < _lst.size(); ++i)
 				{
 					VipTimeRangeItem * item = new VipTimeRangeItem(this);
 					item->blockSignals(true);
-					item->setInitialTimeRange(lst[i]);
+					item->setInitialTimeRange(_lst[i]);
 					item->setRenderHints(QPainter::Antialiasing);
 					item->setColor(m_data->color);
 					item->blockSignals(false);
@@ -884,7 +883,6 @@ void VipTimeRangeListItem::drawSelected( QPainter  *p, const VipCoordinateSystem
 	if ((m_data->drawComponents & MovingArea) && m_data->items.size() > 1)
 	{
 		p->setRenderHint(QPainter::Antialiasing, false);
-		p->setRenderHint(QPainter::HighQualityAntialiasing, false);
 
 		//draw moving area
 		p->setPen(QColor(0x4D91AE));
@@ -894,7 +892,6 @@ void VipTimeRangeListItem::drawSelected( QPainter  *p, const VipCoordinateSystem
 	if ((m_data->drawComponents & ResizeArea) && m_data->items.size() > 1)
 	{
 		p->setRenderHint(QPainter::Antialiasing, true);
-		p->setRenderHint(QPainter::HighQualityAntialiasing, true);
 
 		//draw arrows
 		//p->setPen(QColor(0xEEE058).darker(180));
@@ -1397,7 +1394,7 @@ VipPlayerArea::VipPlayerArea( )
 	m_data->timeMarker->setZValue(1000);
 	m_data->timeMarker->setFlag(VipPlotItem::ItemIsSelectable,false);
 	m_data->timeMarker->setItemAttribute(VipPlotItem::AutoScale, false);
-	m_data->timeMarker->setRenderHints(0);
+	m_data->timeMarker->setRenderHints(QPainter::RenderHints());
 	m_data->timeMarker->setIgnoreStyleSheet(true);
 
 	m_data->limit1Grip = new TimeSliderGripNoLimits(NULL,m_data->timeScale);
@@ -2131,8 +2128,8 @@ void VipPlayerArea::alignToZero(bool enable)
 				//create the timestamping filter
 				VipTimeRangeTransforms trs;
 				VipTimeRangeList window = device->timeWindow();
-				for(int i=0; i < window.size(); ++i)
-					trs[window[i]] = VipTimeRange(window[i].first - first_time, window[i].second - first_time);
+				for(const VipTimeRange & win : window)
+					trs[win] = VipTimeRange(win.first - first_time, win.second - first_time);
 				VipTimestampingFilter filter;
 				filter.setTransforms(trs);
 				device->setTimestampingFilter(filter);
@@ -2226,9 +2223,9 @@ void VipPlayerArea::mouseReleased(VipPlotItem* item, VipPlotItem::MouseButton bu
 			tr.translate(double(m_data->highlightedTime - m_data->boundTime),0);
 
 			//apply the transform to all VipTimeRangeItem
-			if( VipTimeRangeListItem * t_item = qobject_cast<VipTimeRangeListItem*>(m_data->highlightedItem))
+			if( VipTimeRangeListItem * t_litem = qobject_cast<VipTimeRangeListItem*>(m_data->highlightedItem))
 			{
-				QList<VipTimeRangeItem *> items = t_item->items();
+				QList<VipTimeRangeItem *> items = t_litem->items();
 				for(int i=0; i < items.size(); ++i)
 					items[i]->applyTransform(tr);
 			}
@@ -2271,12 +2268,12 @@ void VipPlayerArea::mouseMoved(VipPlotItem* item, VipPlotItem::MouseButton )
 	m_data->highlightedTime = VipInvalidTime;
 
 	//if the whole VipTimeRangeListItem is moved
-	if( VipTimeRangeListItem * t_item = qobject_cast<VipTimeRangeListItem*>(item))
+	if( VipTimeRangeListItem * t_litem = qobject_cast<VipTimeRangeListItem*>(item))
 	{
-		all_stops = stops(t_item->items());
-		item_stops = t_item->stops();
+		all_stops = stops(t_litem->items());
+		item_stops = t_litem->stops();
 
-		m_data->highlightedItem = t_item;
+		m_data->highlightedItem = t_litem;
 	}
 	//if only a VipTimeRangeItem is moved
 	else if( VipTimeRangeItem * t_item = qobject_cast<VipTimeRangeItem*>(item))
@@ -2360,7 +2357,7 @@ static qint64 year2000 = QDateTime::fromString("2000", "yyyy").toMSecsSinceEpoch
 static VipValueToTime::TimeType findBestTimeUnit(VipPlayWidget * w)
 {
 	VipTimeRange r = w->processingPool() ? w->processingPool()->timeLimits() : VipTimeRange(0,0);
-	VipValueToTime::TimeType current = w->timeType();
+	//VipValueToTime::TimeType current = w->timeType();
 
 	if (r.first > year2000)
 	{
@@ -2401,8 +2398,8 @@ static VipValueToTime::TimeType findBestTimeUnit(VipPlayWidget * w)
 			return time;
 		}
 	}
-
-	return current;
+	VIP_UNREACHABLE();
+	//return current;
 }
 
 

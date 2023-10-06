@@ -1301,7 +1301,8 @@ void VipBaseDataFusion::apply()
 					//convert to complex
 					VipPointVector vector = v.value<VipPointVector>();
 					VipComplexPointVector cvector(vector.size());
-					for (int i = 0; i < vector.size(); ++i) cvector[i] = VipComplexPoint(vector[i].x(), vector[i].y());
+					for (const VipPoint & p: vector)
+						cvector[i] = VipComplexPoint(p.x(), p.y());
 					inputs[i].setData(QVariant::fromValue(cvector));
 				}
 				else {
@@ -1321,12 +1322,12 @@ void VipBaseDataFusion::apply()
 				else inputs[i].setData(QVariant::fromValue(complex_d(v.toDouble())));
 			}
 			else {
-				QVariant tmp = v;
-				if (!tmp.convert(dtype)) {
+				QVariant _tmp = v;
+				if (!_tmp.convert(dtype)) {
 					setError("cannot convert from type " + QString(v.typeName()) + " to type " + QString(QMetaType::typeName(dtype)));
 					return;
 				}
-				inputs[i].setData(tmp);
+				inputs[i].setData(_tmp);
 			}
 		}
 

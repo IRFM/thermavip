@@ -389,7 +389,7 @@ void histogram(const VipNDArrayTypeView<T>& img, VipNDArrayType<float>& tmp, int
 }
 
 template< class T>
-static void applyColorMapLinear(const VipLinearColorMap * map, const VipInterval &interval, const T * values, QRgb * out, const int w, const int h, const int num_threads )
+void applyColorMapLinear(const VipLinearColorMap * map, const VipInterval &interval, const T * values, QRgb * out, const int w, const int h, const int num_threads )
 {
 	const_cast<VipLinearColorMap*>(map)->computeRenderColors();
 
@@ -450,13 +450,13 @@ static void applyColorMapLinear(const VipLinearColorMap * map, const VipInterval
 		else if (map->d_data->histogram.size() < num_colors)
 		{
 			//small histogram, expand to num_colors
-			double factor = num_colors / (double)(map->d_data->histogram.size());
+			double f = num_colors / (double)(map->d_data->histogram.size());
 
 #pragma omp parallel for num_threads(num_threads)
 			for (int i = 0; i < size; ++i){
 				int index = map->d_data->indexes[i];
 				if(index < max_index && index > 1)
-					index = (int)(((index - 2) * factor) + 2.5);
+					index = (int)(((index - 2) * f) + 2.5);
 				out[i] = palette[index];
 			}
 		}
