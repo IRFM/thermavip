@@ -626,11 +626,13 @@ static QPoint findPosition(Vip::RegionPositions position, Qt::Alignment alignmen
 
 QPoint VipToolTip::toolTipPosition(VipText & text, const QPointF & pos, Vip::RegionPositions position, Qt::Alignment alignment)
 {
-	/* QDesktopWidget* w = qApp->desktop();
+#if QT_VERSION < QT_VERSION_CHECK(5, 15, 0)
+	QDesktopWidget* w = qApp->desktop();
 	int screen_number = -1;
 	if (this->plotArea() && this->plotArea()->view())
 		screen_number = w->screenNumber(this->plotArea()->view());
-	QRect screen = w->screenGeometry(screen_number);*/
+	QRect screen = w->screenGeometry(screen_number);
+#else
 	QScreen* sc = nullptr;
 	if (this->plotArea())
 		if (QGraphicsView* view = this->plotArea()->view())
@@ -638,6 +640,7 @@ QPoint VipToolTip::toolTipPosition(VipText & text, const QPointF & pos, Vip::Reg
 	if (!sc)
 		sc = QGuiApplication::primaryScreen();
 	QRect screen = sc->geometry();
+#endif
 
 	QRect tip_rect = VipCorrectedTip::textGeometry(QPoint(0, 0), text.text(), plotArea()->view(), QRect());
 	QSize tip_size = tip_rect.size();
