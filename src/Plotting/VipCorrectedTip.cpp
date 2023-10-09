@@ -28,7 +28,9 @@
 #include "qelapsedtimer.h"
 #include "qdebug.h"
 
-
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
+#include "qdesktopwidget.h"
+#endif
 
 static QAlphaWidget* q_blend = 0;
 
@@ -805,16 +807,19 @@ bool VipTipContainer::eventFilter(QObject *o, QEvent *e)
 
 int VipTipContainer::getTipScreen(const QPoint &pos, QWidget *w)
 {
-	/* if (QApplication::desktop()->isVirtualDesktop())
+#if QT_VERSION < QT_VERSION_CHECK(5, 15, 0)
+	 if (QApplication::desktop()->isVirtualDesktop())
         return QApplication::desktop()->screenNumber(pos);
     else
-        return QApplication::desktop()->screenNumber(w);*/
+        return QApplication::desktop()->screenNumber(w);
+#else
 	QScreen* screen = w ? w->screen() : nullptr;
 	if (!screen)
 		screen = QGuiApplication::screenAt(pos);
 	if (screen)
 		return qApp->screens().indexOf(screen);
 	return 0;
+#endif
 }
 
 QRect VipTipContainer::mapToScreen() const
@@ -824,8 +829,11 @@ QRect VipTipContainer::mapToScreen() const
 
 void VipTipContainer::placeTip(const QPoint &pos, QWidget *w)
 {
-    //QRect screen = QApplication::desktop()->screenGeometry(getTipScreen(pos, w));
+#if QT_VERSION < QT_VERSION_CHECK(5, 15, 0)
+    QRect screen = QApplication::desktop()->screenGeometry(getTipScreen(pos, w));
+#else
 	QRect screen = qApp->screens()[getTipScreen(pos, w)]->geometry();
+#endif
     QPoint p = pos;
     p += QPoint(2,
 #ifdef Q_DEAD_CODE_FROM_QT4_WIN

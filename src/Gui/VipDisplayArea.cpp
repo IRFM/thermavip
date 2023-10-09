@@ -44,7 +44,6 @@
 #include <QBoxLayout>
 #include <QPrintDialog>
 #include <QPrinter>
-#include <QDesktopWidget>
 #include <QProgressBar>
 #include <QProcess>
 #include <QDesktopServices>
@@ -53,6 +52,9 @@
 #include <QScreen>
 #include <qprintdialog.h>
 #include <qprinter.h>
+#if QT_VERSION < QT_VERSION_CHECK(5, 15, 0)
+#include <QDesktopWidget>
+#endif
 
 class VipDisplayTabBar::PrivateData
 {
@@ -1284,7 +1286,13 @@ void VipDisplayPlayerArea::print()
 	QRect bounding(QPoint(0, 0), mdrag->size());
 	// get bounding rect in millimeters
 	QScreen* screen = qApp->primaryScreen();
+#if QT_VERSION < QT_VERSION_CHECK(5, 15, 0)
 	int thisScreen = QApplication::desktop()->screenNumber(mdrag);
+#else
+	int thisScreen = qApp->screens().indexOf(mdrag->screen());
+	if (thisScreen < 0)
+		thisScreen = 0;
+#endif
 	if (thisScreen >= 0)
 		screen = qApp->screens()[thisScreen];
 
@@ -2825,14 +2833,17 @@ static void showNormalOrMaximize(VipMainWindow * win)
 	if (!win)
 		return;
 
+#if QT_VERSION < QT_VERSION_CHECK(5, 15, 0)
+	int screen = qApp->desktop()->screenNumber(win);
+	QRect screen_rect = qApp->desktop()->screenGeometry(screen);
+#else
 	QRect screen_rect; 
 	if (QScreen* screen = win->screen())
 		screen_rect = screen->availableGeometry();
 	else
 		screen_rect = QGuiApplication::primaryScreen()->availableGeometry();
 	int screen = qApp->screens().indexOf(win->screen());
-	//int screen = qApp->desktop()->screenNumber(win);
-	//QRect screen_rect = qApp->desktop()->screenGeometry(screen);
+#endif
 
 	if (win->isMaximized()) {
 		//if maximized but not centered, re-maximize again
@@ -3546,7 +3557,13 @@ void VipMainWindow::openSharedMemoryFiles()
 	iconBar()->updateTitle();
 
 	//multi-screen only
-	if (qApp->screens().size() > 1) {
+#if QT_VERSION < QT_VERSION_CHECK(5, 15, 0)
+	if (qApp->desktop()->screenCount() > 1)
+#else
+	
+	if (qApp->screens().size() > 1) 
+#endif
+	{
 		//raise modal widget when the application is active to display it on top of dock widgets
 		if (QGuiApplication::applicationState() == Qt::ApplicationActive) {
 
@@ -3784,7 +3801,14 @@ bool VipMainWindow::saveSession(VipXOArchive & arch, int session_type, int sessi
 		arch.content("size", this->size());
 		arch.content("state", tools_state);
 		//new in 2.2.17
-		arch.content("screen", qApp->desktop()->screenNumber(this));
+#if QT_VERSION < QT_VERSION_CHECK(5, 15, 0)
+		int screen = qApp->desktop()->screenNumber(this);
+#else
+		int screen = qApp->screens().indexOf(this->screen());
+		if (screen < 0)
+			screen = 0;
+#endif
+		arch.content("screen", screen);
 		arch.content("DirectoryBrowser", vipGetDirectoryBrowser());
 		arch.content("LogConsole", vipGetConsoleWidget());
 	}
@@ -4073,6 +4097,17 @@ bool VipMainWindow::loadSessionShowProgress(const QString & filename, VipProgres
 
 	arch.end();
 
+#if QT_VERSION < QT_VERSION_CHECK(5, 15, 0)
+	if (screen >= 0 && screen < qApp->desktop()->screenCount()) {
+		QRect s_geom = qApp->desktop()->screenGeometry(screen);
+		int current_screen = qApp->desktop()->screenNumber(this);
+		if (maximized && current_screen != screen)
+			this->setGeometry(s_geom);
+		else
+			this->move(s_geom.topLeft());
+	}
+#else
+
 	if (screen >= 0 && screen < qApp->screens().size()) {
 		QRect s_geom = qApp->screens()[screen]->availableGeometry();
 		int current_screen = this->screen() ? qApp->screens().indexOf(this->screen()) : -1; // qApp->desktop()->screenNumber(this);
@@ -4081,6 +4116,7 @@ bool VipMainWindow::loadSessionShowProgress(const QString & filename, VipProgres
 		else
 			this->move(s_geom.topLeft());
 	}
+#endif
 
 	if (state.userType() != 0) {
 		//restore the size only if available
@@ -4138,7 +4174,11 @@ void VipMainWindow::applicationStateChanged(Qt::ApplicationState state)
 {
 
 	//multi-screen only
+#if QT_VERSION < QT_VERSION_CHECK(5, 15, 0)
+	if (qApp->desktop()->screenCount() > 1) {
+#else
 	if (qApp->screens().size() > 1) {
+#endif
 		QList<QDockWidget*> ws = this->findChildren<QDockWidget*>();
 
 		for (int i = 0; i < ws.size(); ++i) {
@@ -5608,12 +5648,24 @@ bool vipPrint(VipBaseDragWidget *w)
 	QRect bounding(QPoint(0, 0), w->size());
 	// get bounding rect in millimeters
 	QScreen* screen = qApp->primaryScreen();
+#if QT_VERSION < QT_VERSION_CHECK(5, 15, 0)
 	int thisScreen = QApplication::desktop()->screenNumber(w);
+#else
+	int thisScreen = qApp->screens().indexOf(w->screen());
+	if (thisScreen < 0)
+		thisScreen = 0;
+#endif
+
+#if QT_VERSION >= QT_VERSION_CHECK(5, 15, 0)
 	if (thisScreen >= 0)
 		screen = qApp->screens()[thisScreen];
-
+	
+#else
+	screen = qApp->desktop()->screen(thisScreen);
+#endif
 	QSizeF screen_psize = screen->physicalSize();
 	QSize screen_size = screen->size();
+	
 	qreal mm_per_pixel_x = screen_psize.width() / screen_size.width();
 	qreal mm_per_pixel_y = screen_psize.height() / screen_size.height();
 	QSizeF paper_size(bounding.width() * mm_per_pixel_x, bounding.height() * mm_per_pixel_y);

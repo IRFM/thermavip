@@ -34,6 +34,13 @@
 #define VIP_PLOTTING_STICK_DISTANCE 10
 #endif
 
+#if QT_VERSION >= QT_VERSION_CHECK(5, 14, 0)
+#define QLINE_INTERSECTS intersects
+#else
+#define QLINE_INTERSECTS intersect
+#endif
+
+
 namespace Vip
 {
 	/// @brief Constant representing an invalid value
@@ -190,7 +197,7 @@ inline QPair<QPointF, QPointF> vipIntersect(const QLineF& line, const QRectF& re
 #if QT_VERSION < QT_VERSION_CHECK(5, 14, 0)
 	if (line.intersect(QLineF(rect.topLeft(), rect.topRight()), &inter) == QLineF::BoundedIntersection)
 #else
-	if (line.intersects(QLineF(rect.topLeft(), rect.topRight()), &inter) == QLineF::BoundedIntersection)
+	if (line.QLINE_INTERSECTS(QLineF(rect.topLeft(), rect.topRight()), &inter) == QLineF::BoundedIntersection)
 #endif
 	{
 		if (!vipIsValid(res.first))
@@ -203,7 +210,7 @@ inline QPair<QPointF, QPointF> vipIntersect(const QLineF& line, const QRectF& re
 #if QT_VERSION < QT_VERSION_CHECK(5, 14, 0)
 	if (line.intersect(QLineF(rect.topRight(), rect.bottomRight()), &inter) == QLineF::BoundedIntersection)
 #else
-	if (line.intersects(QLineF(rect.topRight(), rect.bottomRight()), &inter) == QLineF::BoundedIntersection)
+	if (line.QLINE_INTERSECTS(QLineF(rect.topRight(), rect.bottomRight()), &inter) == QLineF::BoundedIntersection)
 #endif
 	{
 		if (!vipIsValid(res.first))
@@ -216,7 +223,7 @@ inline QPair<QPointF, QPointF> vipIntersect(const QLineF& line, const QRectF& re
 #if QT_VERSION < QT_VERSION_CHECK(5, 14, 0)
 	if (line.intersect(QLineF(rect.bottomRight(), rect.bottomLeft()), &inter) == QLineF::BoundedIntersection)
 #else
-	if (line.intersects(QLineF(rect.bottomRight(), rect.bottomLeft()), &inter) == QLineF::BoundedIntersection)
+	if (line.QLINE_INTERSECTS(QLineF(rect.bottomRight(), rect.bottomLeft()), &inter) == QLineF::BoundedIntersection)
 #endif
 	{
 		if (!vipIsValid(res.first))
@@ -229,7 +236,7 @@ inline QPair<QPointF, QPointF> vipIntersect(const QLineF& line, const QRectF& re
 #if QT_VERSION < QT_VERSION_CHECK(5, 14, 0)
 	if (line.intersect(QLineF(rect.bottomLeft(), rect.topLeft()), &inter) == QLineF::BoundedIntersection)
 #else
-	if (line.intersects(QLineF(rect.bottomLeft(), rect.topLeft()), &inter) == QLineF::BoundedIntersection)
+	if (line.QLINE_INTERSECTS(QLineF(rect.bottomLeft(), rect.topLeft()), &inter) == QLineF::BoundedIntersection)
 #endif
 	{
 		if (!vipIsValid(res.first))

@@ -64,6 +64,8 @@ QTransform VipCoordinateSystem::changeCoordinateSystem(const QPointF & origin, c
 	return tr;
 }
 
+
+
 QTransform VipCoordinateSystem::changeCoordinateSystem(const QPointF & origin_x, const QVector2D & x, const QPointF & origin_y, const QVector2D & y)
 {
 	QLineF lx(QPointF(0,0),x.toPointF());
@@ -71,7 +73,7 @@ QTransform VipCoordinateSystem::changeCoordinateSystem(const QPointF & origin_x,
 	lx.translate(origin_y);
 	ly.translate(origin_x);
 	QPointF new_origin;
-	lx.intersects(ly,&new_origin);
+	lx.QLINE_INTERSECTS(ly, &new_origin);
 
 	return changeCoordinateSystem(new_origin,x,y);
 }

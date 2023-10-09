@@ -778,6 +778,7 @@ bool VipPlotCurve::areaOfInterest(const QPointF & pos, int axis, double maxDista
 
 
 
+
 static void insideRect(const QRectF & r, const QPolygonF & pts, QVector<QLineF> & out)
 {
 	QLineF left(r.topLeft(), r.bottomLeft());
@@ -799,45 +800,45 @@ static void insideRect(const QRectF & r, const QPolygonF & pts, QVector<QLineF> 
 		}
 		else if (c1)
 		{
-			if (l.intersects(left, &inter) == QLineF::BoundedIntersection)
+			if (l.QLINE_INTERSECTS(left, &inter) == QLineF::BoundedIntersection)
 				out.append(QLineF(l.p1(), inter));
-			else if (l.intersects(top, &inter) == QLineF::BoundedIntersection)
+			else if (l.QLINE_INTERSECTS(top, &inter) == QLineF::BoundedIntersection)
 				out.append(QLineF(l.p1(), inter));
-			else if (l.intersects(right, &inter) == QLineF::BoundedIntersection)
+			else if (l.QLINE_INTERSECTS(right, &inter) == QLineF::BoundedIntersection)
 				out.append(QLineF(l.p1(), inter));
-			else if (l.intersects(bottom, &inter) == QLineF::BoundedIntersection)
+			else if (l.QLINE_INTERSECTS(bottom, &inter) == QLineF::BoundedIntersection)
 				out.append(QLineF(l.p1(), inter));
 		}
 		else if (c2)
 		{
-			if (l.intersects(left, &inter) == QLineF::BoundedIntersection)
+			if (l.QLINE_INTERSECTS(left, &inter) == QLineF::BoundedIntersection)
 				out.append(QLineF(inter,l.p2()));
-			else if (l.intersects(top, &inter) == QLineF::BoundedIntersection)
+			else if (l.QLINE_INTERSECTS(top, &inter) == QLineF::BoundedIntersection)
 				out.append(QLineF(inter, l.p2()));
-			else if (l.intersects(right, &inter) == QLineF::BoundedIntersection)
+			else if (l.QLINE_INTERSECTS(right, &inter) == QLineF::BoundedIntersection)
 				out.append(QLineF(inter, l.p2()));
-			else if (l.intersects(bottom, &inter) == QLineF::BoundedIntersection)
+			else if (l.QLINE_INTERSECTS(bottom, &inter) == QLineF::BoundedIntersection)
 				out.append(QLineF(inter, l.p2()));
 		}
 		else
 		{
 			QPointF p1, p2;
-			if (l.intersects(left, &inter) == QLineF::BoundedIntersection)
+			if (l.QLINE_INTERSECTS(left, &inter) == QLineF::BoundedIntersection)
 			{
 				if (p1 == QPointF()) p1 = inter;
 				else p2 = inter;
 			}
-			if (l.intersects(top, &inter) == QLineF::BoundedIntersection)
+			if (l.QLINE_INTERSECTS(top, &inter) == QLineF::BoundedIntersection)
 			{
 				if (p1 == QPointF()) p1 = inter;
 				else p2 = inter;
 			}
-			if (l.intersects(right, &inter) == QLineF::BoundedIntersection)
+			if (l.QLINE_INTERSECTS(right, &inter) == QLineF::BoundedIntersection)
 			{
 				if (p1 == QPointF()) p1 = inter;
 				else p2 = inter;
 			}
-			if (l.intersects(bottom, &inter) == QLineF::BoundedIntersection)
+			if (l.QLINE_INTERSECTS(bottom, &inter) == QLineF::BoundedIntersection)
 			{
 				if (p1 == QPointF()) p1 = inter;
 				else p2 = inter;

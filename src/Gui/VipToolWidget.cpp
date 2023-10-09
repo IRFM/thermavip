@@ -10,14 +10,17 @@
 #include <QBoxLayout>
 #include <QPointer>
 #include <QApplication>
-#include <QDesktopWidget>
 #include <QScrollArea>
 #include <qapplication.h>
 #include <qlabel.h>
 #include <qscreen.h>
+#if QT_VERSION < QT_VERSION_CHECK(5, 15, 0)
+#include <QDesktopWidget>
+#endif
 
 #include "VipDragWidget.h"
 #include "VipWidgetResizer.h"
+
 
 
 class VipToolWidgetResizer : public VipWidgetResizer
@@ -661,14 +664,22 @@ void VipToolWidget::showEvent(QShowEvent *)
 
 	//change screen if necessary
 	if (m_data->firstShow && isFloating()) {
-		//int screen = qApp->desktop()->screenNumber(this);
-		//int main_screen = qApp->desktop()->screenNumber(parentWidget());
+#if QT_VERSION < QT_VERSION_CHECK(5, 15, 0)
+		int screen = qApp->desktop()->screenNumber(this);
+		int main_screen = qApp->desktop()->screenNumber(parentWidget());
+#else
 		int screen = qApp->screens().indexOf(this->screen());
 		int main_screen = qApp->screens().indexOf(parentWidget()->screen());
+#endif
 		if (screen != main_screen && screen >= 0 && main_screen >= 0) {
 			//compute offset
-			QPoint offset = this->pos() - qApp->screens()[screen]->availableGeometry().topLeft();
+#if QT_VERSION < QT_VERSION_CHECK(5, 15, 0)
+			QPoint offset = this->pos() - qApp->desktop()->screenGeometry(screen).topLeft();
+			offset += qApp->desktop()->screenGeometry(main_screen).topLeft();
+#else
+			QPoint offset = this->pos() - qApp->screens()[screen]->availableGeometry().topLeft();// qApp->desktop()->screenGeometry(screen).topLeft();
 			offset += qApp->screens()[main_screen]->availableGeometry().topLeft(); // qApp->desktop()->screenGeometry(main_screen).topLeft();
+#endif
 			this->move(offset);
 		}
 	}

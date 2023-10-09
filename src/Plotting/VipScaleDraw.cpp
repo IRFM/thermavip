@@ -13,6 +13,8 @@
 #include "VipShapeDevice.h"
 #include "VipValueTransform.h"
 
+
+
 // static QDateTime addDays(const QDateTime time, double days)
 // {
 // return time.addMSecs(86400000*days);
@@ -3517,7 +3519,7 @@ static double vipDistance(const QLineF& l, const QPointF& p)
 	l2.translate(p - l2.p1());
 	QLineF normal = l2.normalVector();
 	QPointF intersect;
-	normal.intersects(l, &intersect);
+	normal.QLINE_INTERSECTS(l, &intersect);
 	return QLineF(intersect, p).length();
 }
 
