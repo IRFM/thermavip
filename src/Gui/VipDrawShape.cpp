@@ -1762,8 +1762,12 @@ VipMultiNDArray VipSceneModelEditor::createH5ShapeAttributes(const QVariant & ba
 
 	// Compute properties
 	QMap<QString, QVariant> properties;
+#if QT_VERSION < QT_VERSION_CHECK(5, 15, 0)
+	properties.unite(shapes[i]->rawData().attributes());
+#else
 	for (int i = 0; i < shapes.size(); ++i)
 		properties.insert(shapes[i]->rawData().attributes());
+#endif
 	QStringList keys = properties.keys();
 	for (int i = 0; i < keys.size(); ++i) {
 		if (keys[i].startsWith("_vip_")) {
@@ -1876,8 +1880,12 @@ void VipSceneModelEditor::saveShapesAttribute()
 	if(shapes.size())
 	{
 		QMap<QString,QVariant> properties;
+#if QT_VERSION < QT_VERSION_CHECK(5, 15, 0)
+		properties.unite(shapes[i]->rawData().attributes());
+#else
 		for(int i=0; i < shapes.size(); ++i)
 			properties.insert(shapes[i]->rawData().attributes());
+#endif
 		QStringList keys = properties.keys();
 		for(int i=0; i < keys.size(); ++i) {
 			if (keys[i].startsWith("_vip_") ){
