@@ -2799,7 +2799,11 @@ void VipIconBar::setTitleIcon(const QPixmap& pix)
 
 QPixmap VipIconBar::titleIcon() const
 {
+#if QT_VERSION < QT_VERSION_CHECK(5, 15, 0)
+	return labelIcon->pixmap() ? *return labelIcon->pixmap() : QPixmap();
+#else
 	return labelIcon->pixmap(Qt::ReturnByValue);
+#endif
 }
 
 void VipIconBar::updateTitle()

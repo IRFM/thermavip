@@ -35,7 +35,11 @@ VipAboutDialog::VipAboutDialog()
 	m_data->thermadiag->setStyleSheet("QLabel {background: #2D2D30; }");
 	m_data->thermadiag->setPixmap(vipPixmap("Thermavip_banner.png"));
 	m_data->thermadiag->setAlignment(Qt::AlignCenter);
+#if QT_VERSION < QT_VERSION_CHECK(5, 15, 0)
+	const QPixmap pix = m_data->thermadiag->pixmap() ? *m_data->thermadiag->pixmap() : QPixmap();
+#else
 	const QPixmap pix = m_data->thermadiag->pixmap(Qt::ReturnByValue);
+#endif
 	m_data->thermadiag->setMinimumWidth(pix.width());			      // +20);
 	m_data->thermadiag->setMinimumHeight(pix.height()); // +20);
 	m_data->thermadiag->setCursor(QCursor(Qt::PointingHandCursor));

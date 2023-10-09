@@ -217,7 +217,11 @@ void VipToolWidgetTitleBar::setPatternColor(const QColor & c)
 void VipToolWidgetTitleBar::setDisplayWindowIcon(bool enable)
 {
 	m_data->displayWindowIcon = enable;
+#if QT_VERSION < QT_VERSION_CHECK(5, 15, 0)
+	const QPixmap pix = m_data->icon->pixmap() ? *m_data->icon->pixmap() : QPïxmap();
+#else
 	const QPixmap pix = m_data->icon->pixmap(Qt::ReturnByValue);
+#endif
 	m_data->icon->setVisible(enable && !pix.isNull());
 }
 
