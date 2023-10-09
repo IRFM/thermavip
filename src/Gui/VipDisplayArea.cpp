@@ -5649,24 +5649,24 @@ bool vipPrint(VipBaseDragWidget *w)
 {
 	QPrinter printer(QPrinter::HighResolution);
 
+#if QT_VERSION < QT_VERSION_CHECK(5, 15, 0)
 	QRect bounding(QPoint(0, 0), w->size());
 	// get bounding rect in millimeters
 	QScreen* screen = qApp->primaryScreen();
-#if QT_VERSION < QT_VERSION_CHECK(5, 15, 0)
 	int thisScreen = QApplication::desktop()->screenNumber(w);
+	if (thisScreen >= 0)
+		screen = qApp->screens()[thisScreen];
 #else
+	QRect bounding(QPoint(0, 0), w->size());
+	// get bounding rect in millimeters
+	QScreen* screen = qApp->primaryScreen();
 	int thisScreen = qApp->screens().indexOf(w->screen());
 	if (thisScreen < 0)
 		thisScreen = 0;
-#endif
-
-#if QT_VERSION >= QT_VERSION_CHECK(5, 15, 0)
 	if (thisScreen >= 0)
 		screen = qApp->screens()[thisScreen];
-	
-#else
-	screen = qApp->desktop()->screen(thisScreen);
 #endif
+
 	QSizeF screen_psize = screen->physicalSize();
 	QSize screen_size = screen->size();
 	
