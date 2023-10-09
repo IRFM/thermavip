@@ -168,7 +168,11 @@ private:
 		static const QColor white(Qt::white);
 
 		const QFontMetrics fm(font);
+#if QT_VERSION < QT_VERSION_CHECK(5, 15, 0)
+		QPixmap pm(fm.width(dummy), fm.height());
+#else
 		QPixmap pm(fm.horizontalAdvance(dummy), fm.height());
+#endif
 		pm.fill(white);
 
 		QPainter p(&pm);
