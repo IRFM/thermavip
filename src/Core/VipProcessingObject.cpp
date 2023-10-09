@@ -18,6 +18,20 @@
 #include "VipUniqueId.h"
 #include "VipXmlArchive.h"
 
+
+inline QDataStream& operator<<(QDataStream& str, const PriorityMap & map) 
+{
+	const QMap<QString, int>& m = reinterpret_cast<const QMap<QString, int>&>(map);
+	return str << m;
+}
+inline QDataStream& operator>>(QDataStream& str, PriorityMap& map)
+{
+	return str >> reinterpret_cast< QMap<QString, int>&>(map);
+}
+
+
+
+
 VipAnyData::VipAnyData()
   : m_source(0)
   , m_time(VipInvalidTime)
