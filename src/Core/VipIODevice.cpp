@@ -3850,7 +3850,11 @@ void VipDirectoryReader::computeFiles()
 	if (!m_data->alphabetical_order) {
 		// reverse the list
 		for (int k = 0; k < (files.size() / 2); k++)
+#if QT_VERSION < QT_VERSION_CHECK(5, 15, 0)
+			files.swap(k, files.size() - (1 + k));
+#else
 			files.swapItemsAt(k, files.size() - (1 + k));
+#endif
 	}
 
 	// crop
