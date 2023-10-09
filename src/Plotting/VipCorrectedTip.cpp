@@ -38,7 +38,7 @@ static QAlphaWidget* q_blend = 0;
 static QWidget* effectParent(const QWidget* w)
 {
 #if QT_VERSION < QT_VERSION_CHECK(5, 15, 0)
-	const int screenNumber = w ? QApplication::desktop()->screenNumber(w); : 0;
+	const int screenNumber = w ? QApplication::desktop()->screenNumber(w) : 0;
 #else
 	const int screenNumber = w ? QGuiApplication::screens().indexOf(w->screen()) : 0;
 #endif
