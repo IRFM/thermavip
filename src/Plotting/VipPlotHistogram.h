@@ -111,7 +111,7 @@
 /// 
 /// \endcode
 /// 
-	class VIP_PLOTTING_EXPORT VipPlotHistogram: public VipPlotItemDataType< VipIntervalSampleVector>
+class VIP_PLOTTING_EXPORT VipPlotHistogram : public VipPlotItemDataType<VipIntervalSampleVector, VipIntervalSample>
 {
 	Q_OBJECT
 

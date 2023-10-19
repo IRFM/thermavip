@@ -470,13 +470,15 @@ const VipTextEngine* TextEngineDict::textEngine(VipText::TextFormat format) cons
 	return e;
 }
 
+static QPainter::RenderHints default_text_hints = QPainter::Antialiasing | QPainter::TextAntialiasing;
+
 VipTextStyle::PrivateData::PrivateData()
   : cached(false)
   , margin(0)
   , boxStyle(Qt::NoPen)
   , textBoxStyle(NULL)
   , alignment(Qt::AlignCenter)
-  , renderHints(QPainter::Antialiasing | QPainter::TextAntialiasing)
+  , renderHints(default_text_hints)
 {
 }
 
@@ -1168,6 +1170,8 @@ static QRectF computeRect(const QRectF& outer, const QRectF& inner, int flags)
 	return res & outer;
 }
 
+#include "VipPicture.h"
+
 /// Draw a text into a rectangle
 ///
 /// \param painter VipPainter
@@ -1177,9 +1181,8 @@ void VipText::draw(QPainter* painter, const QRectF& rect) const
 	if (!painter->paintEngine())
 		return;
 
-	// painter->save();
-
-	painter->setRenderHints(renderHints());
+	if (renderHints() != painter->renderHints())
+		painter->setRenderHints(renderHints());
 	if (!this->textStyle().boxStyle().isTransparent()) {
 		VipBoxStyle bstyle = this->textStyle().boxStyle();
 		double m = this->textStyle().margin();
@@ -1204,7 +1207,6 @@ void VipText::draw(QPainter* painter, const QRectF& rect) const
 	// QT 5.6 crashes when drawing text on a GL paint engine, so cash the text first in a QPixmap
 	// also, we still need to cach the text if the painter transformation has a rotation, otherwise the rendering is ugly
 	const bool is_opengl = VipPainter::isOpenGL(painter);
-
 	const bool should_cache = VipText::cacheTextWhenPossible() ? (is_opengl && !hasTextBoxStyle()) || painter->worldTransform().isRotating() : false;
 	const bool is_vectoriel = VipPainter::isVectoriel(painter);
 	bool is_cached = ((cached() || should_cache) && !is_vectoriel);
@@ -1220,7 +1222,6 @@ void VipText::draw(QPainter* painter, const QRectF& rect) const
 		expandedRect.adjust(0, 0, 2, 2);
 		QSize s = (expandedRect.size().toSize() + QSize(2, 2)) * ratio;
 
-		// QPixmap& pixmap = VipPixmapCache<QPixmap>::instance().pixmap(s);
 		static thread_local QPixmap pixmap;
 		QSize pixsize(pixmap.width(), pixmap.height());
 		if (pixmap.isNull() || pixsize.width() < s.width() || pixsize.width() > 2 * s.width() || pixsize.height() < s.height() || pixsize.height() > 2 * s.height())
@@ -1231,8 +1232,7 @@ void VipText::draw(QPainter* painter, const QRectF& rect) const
 		QPainter p(&pixmap);
 		p.setFont(font());
 		p.setPen(textPen());
-		p.setRenderHints(renderHints()); //
-		// QPainter::Antialiasing |QPainter::SmoothPixmapTransform|QPainter::HighQualityAntialiasing | QPainter::TextAntialiasing); //remove TextAntialiasing for QPixmap
+		p.setRenderHints(renderHints()); 
 
 		if (!hasTextBoxStyle()) {
 			d_data->textEngine->draw(&p, expandedRect.translated(-expandedRect.topLeft()), alignment(), d_data->text);
@@ -1249,17 +1249,34 @@ void VipText::draw(QPainter* painter, const QRectF& rect) const
 		}
 
 		// Disable SmoothPixmapTransform when possible as it produces ugly output
-		const QTransform tr = painter->transform();
-		if (tr.isRotating() || tr.isScaling())
-			painter->setRenderHint(QPainter::SmoothPixmapTransform);
+		 const QTransform& tr = painter->transform();
+		if (tr.isRotating() || tr.isScaling()) {
+			if (!painter->testRenderHint(QPainter::SmoothPixmapTransform))
+				painter->setRenderHint(QPainter::SmoothPixmapTransform);
+		}
+		else if (painter->testRenderHint(QPainter::SmoothPixmapTransform))
+			painter->setRenderHint(QPainter::SmoothPixmapTransform,false);
 		// Using a different composition mode produces a strange behavior with opengl rendering
-		if (is_opengl)
-			painter->setCompositionMode(QPainter::CompositionMode_SourceOver);
+		if (is_opengl) {
+			if (painter->compositionMode() != QPainter::CompositionMode_SourceOver)
+				painter->setCompositionMode(QPainter::CompositionMode_SourceOver);
+
+			// For default QOpenglWidget, this draws a black pixmap if SmoothPixmapTransform is not set (?)
+			if (!VipOpenGLWidget::isInPainting()) {
+
+				if (!painter->testRenderHint(QPainter::SmoothPixmapTransform))
+					painter->setRenderHint(QPainter::SmoothPixmapTransform);
+			}
+		}
+		
 		VipPainter::drawPixmap(painter, QRectF(expandedRect.topLeft() - QPointF(1, 1), QSizeF(pixmap.size())), pixmap);
 	}
 	else {
-		painter->setFont(font());
-		painter->setPen(textPen());
+		if (font() != painter->font())
+			painter->setFont(font());
+		if (textPen() != painter->pen())
+			painter->setPen(textPen());
+
 		// with a ratio != 1, the top left corner is slightly shifted
 		if (ratio != 1) {
 			qreal factor = (ratio - 1) * 5;
@@ -1282,8 +1299,6 @@ void VipText::draw(QPainter* painter, const QRectF& rect) const
 			st.draw(painter);
 		}
 	}
-
-	// painter->restore();
 }
 
 QString VipText::replace(const QString& input, const QString& str, const QString& value, bool possible_numeric)

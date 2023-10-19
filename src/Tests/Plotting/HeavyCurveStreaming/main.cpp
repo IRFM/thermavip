@@ -141,11 +141,11 @@ int main(int argc, char** argv)
 	
 
 	VipPlotWidget2D w; 
-	VipPlotArea2D* area = w.area();
+	w.setRenderingMode(VipPlotWidget2D::OpenGL);
+	VipText::setCacheTextWhenPossible(true);
+	
 
-	// area->setMaximumFrameRate(2);
-	// area->setRenderStrategy(VipPlotArea2D::OpenGLOffscreen);
-	// area->setRenderingThreads(6);
+	VipPlotArea2D* area = w.area();
 	setup_plot_area(area);
 
 	QList<VipPlotCurve*> curves;

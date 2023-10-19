@@ -163,18 +163,23 @@ bool VipPainter::isX11GraphicsSystem()
 
 bool VipPainter::isAligning( QPainter *painter )
 {
-    if ( painter && painter->isActive() )
-    {
+	if (painter && painter->isActive()) {
 		if (isVectoriel(painter))
 			return false;
 
-        const QTransform tr = painter->transform();
-        if ( tr.isRotating() || tr.isScaling() )
-        {
-            // we might have to check translations too
-            return false;
-        }
-    }
+		const QTransform& tr = painter->transform();
+		if (tr.isRotating() || tr.isScaling()) {
+			// we might have to check translations too
+			return false;
+		}
+
+		// for opengl, avoid emitting another state change
+		if (QPaintEngine* en = painter->paintEngine()) {
+			auto type = en->type();
+			if (type == QPaintEngine::OpenGL || type == QPaintEngine::OpenGL2)
+				return false;
+		}
+	}
 
     return true;
 }
@@ -1362,13 +1367,11 @@ void VipPainter::drawRoundedFrame( QPainter *painter,
 void VipPainter::drawColorBar( QPainter *painter,
          VipColorMap &colorMap, const VipInterval &interval,
         const VipScaleMap &scaleMap, Qt::Orientation orientation,
-        const QRectF &rect , QPixmap * pixmap)
+        const QRectF &rect , QImage * pixmap)
 {
 	colorMap.startDraw();
 
-    QVector<QRgb> colorTable;
-    if ( colorMap.format() == VipColorMap::Indexed )
-        colorTable = colorMap.colorTable( interval );
+    const QVector<QRgb> colorTable = (colorMap.format() == VipColorMap::Indexed) ? colorMap.colorTable(interval) : QVector<QRgb>();
 
     QColor c;
 
@@ -1376,18 +1379,19 @@ void VipPainter::drawColorBar( QPainter *painter,
 
     // We paint to a pixmap first to have something scalable for printing
     // ( f.e. in a Pdf document )
-	QPixmap pix;
+    static thread_local QImage pix;
 	if(!pixmap) {
 		pixmap = &pix;
 	}
 	if (pixmap->size() != devRect.size())
-		*pixmap = QPixmap(devRect.size());
+		*pixmap = QImage(devRect.width(), devRect.height(), QImage::Format_ARGB32); // QPixmap(devRect.size());
     pixmap->fill(Qt::transparent);
-    QPainter pmPainter( pixmap );
-    pmPainter.translate( -devRect.x(), -devRect.y() );
-
+    
     if ( orientation == Qt::Horizontal )
     {
+	    QPainter pmPainter(pixmap);
+	    pmPainter.translate(-devRect.x(), -devRect.y());
+
         VipScaleMap sMap = scaleMap;
         sMap.setPaintInterval( rect.left(), rect.right() );
 
@@ -1403,36 +1407,39 @@ void VipPainter::drawColorBar( QPainter *painter,
             pmPainter.setPen( c );
             pmPainter.drawLine( x, devRect.top(), x, devRect.bottom() );
         }
+
+        pmPainter.end();
     }
     else // Vertical
     {
         VipScaleMap sMap = scaleMap;
         sMap.setPaintInterval( rect.bottom(), rect.top() );
 
+        uint* pix = (uint*)pixmap->bits();
+	    int width = pixmap->width();
         for ( int y = devRect.top(); y <= devRect.bottom(); y++ )
         {
             const double value = sMap.invTransform( y );
 
-            if ( colorMap.format() == VipColorMap::RGB )
+            QRgb color = colorMap.format() == VipColorMap::RGB ? colorMap.rgb(interval, value) : colorTable[colorMap.colorIndex(interval, value)];
+	        int yp = y - devRect.top();
+	        std::fill_n(pix + yp * width, width, color);
+            /* if (colorMap.format() == VipColorMap::RGB)
                 c.setRgba( colorMap.rgb( interval, value ) );
             else
                 c = colorTable[colorMap.colorIndex( interval, value )];
 
             pmPainter.setPen( c );
-            pmPainter.drawLine( devRect.left(), y, devRect.right(), y );
+            pmPainter.drawLine( devRect.left(), y, devRect.right(), y );*/
         }
     }
-    pmPainter.end();
+    
 
 	QRectF tmp = rect;
-	//bool is_opengl = isOpenGL(painter);
-	//bool is_vectoriel = isVectoriel(painter);
-	//if (!is_opengl && !is_vectoriel)// !painter->paintEngine() || !(painter->paintEngine()->type() == QPaintEngine::OpenGL || painter->paintEngine()->type() == QPaintEngine::OpenGL2))
-	//	tmp = rect.adjusted(0, 0, 1,1); //non opengl device
-
-    drawPixmap( painter, tmp, *pixmap );
+    drawImage( painter, tmp, *pixmap );
 
 	colorMap.endDraw();
+
 }
 
 static inline void vipFillRect( const QWidget *widget, QPainter *painter,

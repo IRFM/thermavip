@@ -74,13 +74,6 @@ VipPlotScatter::VipPlotScatter(const VipText& title )
 	this->setData(QVariant::fromValue(VipScatterPointVector()));
 	this->setMajorColor(QColor(Qt::blue));
 
-	// regiter types
-	static bool reg = false;
-	if (!reg) {
-		reg = true;
-		qRegisterMetaType<VipScatterPoint>();
-		qRegisterMetaType<VipScatterPointVector>();
-	}
 }
 
 VipPlotScatter::~VipPlotScatter() 
@@ -461,3 +454,23 @@ int VipPlotScatter::findClosestPos(const VipScatterPointVector &vec, const QPoin
 	}
 	return -1;
 }
+
+
+VIP_PLOTTING_EXPORT QDataStream& operator<<(QDataStream& str, const VipScatterPoint& p)
+{
+	return str << p.position << p.value;
+}
+VIP_PLOTTING_EXPORT QDataStream& operator>>(QDataStream& str, VipScatterPoint& p)
+{
+	return str >> p.position >> p.value;
+}
+
+	// regiter types
+static bool register_types()
+{
+	qRegisterMetaType<VipScatterPoint>();
+	qRegisterMetaType<VipScatterPointVector>();
+	qRegisterMetaTypeStreamOperators<VipScatterPoint>();
+	return true;
+}
+static bool _register_types = register_types();

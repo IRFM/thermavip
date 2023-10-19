@@ -15,7 +15,7 @@
 #include "VipColorMap.h"
 #include "VipSliderGrip.h"
 #include "VipAxisColorMap.h"
-
+#include "VipPicture.h"
 
 /// @brief Generate a cosinus curve of at most 500 points with X values being in seconds
 class CurveStreaming : public QThread
@@ -47,13 +47,20 @@ public:
 		
 			double x = (QDateTime::currentMSecsSinceEpoch() - start) * 1e-3; 
 			double y = std::cos(x*2);
-			vec.push_back(VipPoint(x, y));
-			if (vec.size() > 500)
-				vec.erase(vec.begin());
 
 			for (int i = 0; i < curves.size(); ++i)
-				curves[i]->setRawData(vec);
+				curves[i]->updateSamples([x, y](VipPointVector& vec) {
+					vec.push_back(VipPoint(x, y));
+					if (vec.size() > 500)
+						vec.erase(vec.begin());
+					});
 
+			/* vec.push_back(VipPoint(x, y));
+			if (vec.size() > 500)
+				vec.erase(vec.begin());
+			for (int i = 0; i < curves.size(); ++i)
+				curves[i]->setRawData(vec);
+			*/
 			qint64 current = QDateTime::currentMSecsSinceEpoch(); 
 			if (current - start_print > 1000) {
 				printf("Rate: %i\n", curves.first()->fps());
@@ -189,7 +196,9 @@ int main(int argc, char** argv)
 	
 
 	VipMultiGraphicsView w; 
-	//w.setOpenGLRendering(true);
+	//w.setViewport(new VipOpenGLWidget());
+	w.setRenderingMode(VipMultiGraphicsView::OpenGLThread);
+	VipText::setCacheTextWhenPossible(false);
 
 	QGraphicsGridLayout* grid = new QGraphicsGridLayout();
 	

@@ -21,6 +21,9 @@ using VipQuiverPointVector = QVector<VipQuiverPoint>;
 Q_DECLARE_METATYPE(VipQuiverPoint);
 Q_DECLARE_METATYPE(VipQuiverPointVector);
 
+VIP_PLOTTING_EXPORT QDataStream& operator<<(QDataStream&, const VipQuiverPoint&);
+VIP_PLOTTING_EXPORT QDataStream& operator>>(QDataStream&,  VipQuiverPoint&);
+
 
 /// @brief VipPlotItem that draws a field of quivers
 ///
@@ -40,7 +43,7 @@ Q_DECLARE_METATYPE(VipQuiverPointVector);
 /// -	'arrow-size': floating point value defining the arrow size in item's coordinates
 /// -	'arrow-style': style of the arrow (sse VipQuiverPath), combination of 'line|startArrow|startSquare|startCircle|endArrow|endSquare|endCircle'
 /// 
-class VIP_PLOTTING_EXPORT VipPlotQuiver : public VipPlotItemDataType<VipQuiverPointVector>
+class VIP_PLOTTING_EXPORT VipPlotQuiver : public VipPlotItemDataType<VipQuiverPointVector, VipQuiverPoint>
 {
 	Q_OBJECT
 

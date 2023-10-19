@@ -8,6 +8,8 @@
 #include "VipColorMap.h"
 #include "VipPlotQuiver.h"
 #include "VipToolTip.h"
+#include "VipSleep.h"
+#include "VipPicture.h"
 
 
 /// @brief Generate 400 rotating arrows with an x/y step of 2 units
@@ -37,6 +39,7 @@ VipQuiverPointVector generateQuivers()
 			res.push_back(p);
 		}
 
+	
 	return res;
 }
 
@@ -65,7 +68,7 @@ protected:
 		while (!stop) {
 			VipQuiverPointVector vec = generateQuivers();
 			quiver->setRawData(vec);
-			QThread::msleep(5);
+			vipSleep(10);
 
 			qint64 current = QDateTime::currentMSecsSinceEpoch();
 			if (current - st > 1000) {
@@ -76,8 +79,9 @@ protected:
 	}
 };
 
-#include <qsurface.h>
 
+
+#include <qsurface.h>
 
 int main(int argc, char** argv)
 {
@@ -91,15 +95,10 @@ int main(int argc, char** argv)
 
 	QApplication app(argc, argv);
 
-	// Create the VipVMultiPlotArea2D, and set it to a VipPlotWidget2D
-	
 	VipPlotWidget2D w;
-
-	//w.area()->setRenderStrategy(VipAbstractPlotArea::OpenGLOffscreen);
-	//w.area()->setRenderingThreads(6);
-	//w.setOpenGLRendering(true);
-	//w.area()->setMaximumFrameRate(2);
-	//VipText::setCacheTextWhenPossible(true);
+	w.setRenderingMode(VipPlotWidget2D::OpenGLThread);
+	
+	VipText::setCacheTextWhenPossible(true);
 	
 
 	// Enable zooming/panning
@@ -119,6 +118,7 @@ int main(int argc, char** argv)
 
 	auto* map = w.area()->createColorMap(VipAxisBase::Right, VipInterval(), VipLinearColorMap::createColorMap(VipLinearColorMap::Sunset));
 	
+	//TEST
 	VipPlotQuiver* p = new VipPlotQuiver("Quivers");
 	p->setPen(QPen(Qt::blue));
 	p->quiverPath().setStyle(VipQuiverPath::EndArrow);
@@ -128,11 +128,12 @@ int main(int argc, char** argv)
 	p->setAxes(w.area()->bottomAxis(), w.area()->leftAxis(),VipCoordinateSystem::Cartesian);
 	p->setToolTipText("#value");
 	p->setRawData(generateQuivers());
-	//p->setText("#value");
-
+	// p->setText("#value");
+	
 	QuiverGenerator gen(p);
 	gen.start();
-
+	
+	
 	// update tool tip
 	QObject::connect(p, SIGNAL(dataChanged()), w.area()->plotToolTip(), SLOT(refresh()));
 	

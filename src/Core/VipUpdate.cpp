@@ -102,8 +102,8 @@ int VipUpdate::hasUpdate(const QString & out_dir, bool * already_downloaded, voi
 		return -1;
 
 	//printf("start '%s'\n", (getUpdateProgram() + " -c --hide -o " + out_dir).toLatin1().data());
-	m_data->process.start(getUpdateProgram(), QStringList()<<"-c"<<"--hide"<<"-o"<<out_dir);
-	//m_data->process.start(getUpdateProgram() + " -c --hide -o " + out_dir);
+	//m_data->process.start(getUpdateProgram(), QStringList()<<"-c"<<"--hide"<<"-o"<<out_dir);
+	m_data->process.start(getUpdateProgram() + " -c --hide -o " + out_dir);
 	m_data->process.waitForStarted(3000);
 
 	if (!_stop)
@@ -151,8 +151,8 @@ bool VipUpdate::isDownloadFinished()
 	if(!stop())
 		return false;
 
-	m_data->process.start(getUpdateProgram(), QStringList()<< "-w"<< "--hide");
-	//m_data->process.start(getUpdateProgram() + " -w --hide");
+	//m_data->process.start(getUpdateProgram(), QStringList()<< "-w"<< "--hide");
+	m_data->process.start(getUpdateProgram() + " -w --hide");
 	if(!m_data->process.waitForFinished(30000))
 		return false;
 
@@ -176,8 +176,8 @@ bool VipUpdate::startDownload(const QString & out_dir)
 	connect(&m_data->process,SIGNAL(readyReadStandardOutput()),this,SLOT(newOutput()),Qt::DirectConnection);
 	connect(&m_data->process,SIGNAL(finished(int, QProcess::ExitStatus)),this,SLOT(emitFinished()),Qt::DirectConnection);
 	
-	m_data->process.start(getUpdateProgram() ,QStringList()<< "-u"<< "-d" << "--hide" << "-o" << out_dir);
-	//m_data->process.start(getUpdateProgram() + " -u -d --hide -o " + out_dir);
+	//m_data->process.start(getUpdateProgram() ,QStringList()<< "-u"<< "-d" << "--hide" << "-o" << out_dir);
+	m_data->process.start(getUpdateProgram() + " -u -d --hide -o " + out_dir);
 	return m_data->process.waitForStarted(10000);
 }
 
@@ -190,8 +190,8 @@ bool VipUpdate::startUpdate(const QString & out_dir)
 	connect(&m_data->process,SIGNAL(readyReadStandardOutput()),this,SLOT(newOutput()),Qt::DirectConnection);
 	connect(&m_data->process,SIGNAL(finished(int, QProcess::ExitStatus)),this,SLOT(emitFinished()),Qt::DirectConnection);
 	
-	m_data->process.start(getUpdateProgram() ,QStringList()<< "-u" <<"--hide"<< "-o" << out_dir);
-	//m_data->process.start(getUpdateProgram() + " -u --hide -o " + out_dir);
+	//m_data->process.start(getUpdateProgram() ,QStringList()<< "-u" <<"--hide"<< "-o" << out_dir);
+	m_data->process.start(getUpdateProgram() + " -u --hide -o " + out_dir);
 	return m_data->process.waitForStarted(30000);
 }
 

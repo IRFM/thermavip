@@ -134,7 +134,8 @@ static QWidget * create_player_top_toolbar(VipAbstractPlayer * player, QObject *
 	QObject::connect(w, SIGNAL(windowTitleChanged(const QString &)), titleWidget, SLOT(setText(const QString&)));
 	title->addWidget(new QLabel("<b>&nbsp;&nbsp;Title</b>: "));
 	title->addWidget(titleWidget);
-	title->addWidget(pl2D->afterTitleToolBar());
+	if (pl2D)
+		title->addWidget(pl2D->afterTitleToolBar());
 	
 	QWidget * res = new QWidget();
 	QVBoxLayout * lay = new QVBoxLayout();
@@ -398,6 +399,10 @@ VipDragWidget * CustomizeVideoPlayer::dragWidget() const
 	return m_data->dragWidget;
 }
 
+void CustomizeVideoPlayer::updateViewport(QWidget* viewport)
+{
+	viewport->installEventFilter(this);
+}
 
 QToolButton * CustomizeVideoPlayer::maximizeButton() const
 {
@@ -1244,6 +1249,11 @@ CustomizePlotPlayer::~CustomizePlotPlayer()
 VipDragWidget * CustomizePlotPlayer::dragWidget() const
 {
 	return m_data->dragWidget;
+}
+
+void CustomizePlotPlayer::updateViewport(QWidget* viewport)
+{
+	viewport->installEventFilter(this);
 }
 
 Anchor CustomizePlotPlayer::anchor(const QPoint & viewport_pos, const QMimeData * mime)
@@ -2117,4 +2127,4 @@ static int registerCustomPlotPlayer()
 	return 0;
 }
 
-static int register_functions = vipAddInitializationFunction(registerCustomPlotPlayer);
+static int register_functions = vipAddGuiInitializationFunction(registerCustomPlotPlayer);

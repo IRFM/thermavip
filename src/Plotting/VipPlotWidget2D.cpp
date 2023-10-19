@@ -48,7 +48,7 @@
 #include "VipPlotCurve.h"
 #include "VipLock.h"
 #include "VipSleep.h"
-
+#include "VipPicture.h"
 
 /// @internal List of vertically/horizontally aligned areas
 /// This structred is shared by all aligned areas.
@@ -306,8 +306,8 @@ void VipRubberBand::setAdditionalPaintCommands(const QPicture & pic)
 		return;
 	
 	d_data->additionalPaintCommands = pic;
-	if (area() && VipAbstractPlotArea::renderingThreads() > 1 )
-		area()->markNeedUpdate();
+	//if (area() && VipAbstractPlotArea::renderingThreads() > 1 )
+	//	area()->markNeedUpdate();
 	
 	QGraphicsWidget::update();
 }
@@ -971,7 +971,7 @@ static QOpenGLFramebufferObject* globalBuffer(const QSize& size)
 {
 	static QOpenGLFramebufferObject* buf = NULL;
 	//Create/reset a QOpenGLFramebufferObject with given size
-	if (!buf || buf->size().width() < size.width() || buf->size().height() < size.height()) { // buf->size() != size
+	if (!buf || buf->size().width() < size.width() || buf->size().height() < size.height()) { // 
 		if (buf) {
 			delete buf;
 		}
@@ -1091,11 +1091,6 @@ public:
 		updateTimer.setSingleShot(true);
 		dcount = 0;
 
-		renderStrategy = Default; 
-		dirtyComputeStrategy = 1;
-		testOpenGL = true;
-		drawCPUTime = drawGPUTime = 0;
-
 		maximumScalesStates = 50;
 	}
 
@@ -1157,339 +1152,15 @@ public:
 	qint64 lastUpdate;
 	QTimer updateTimer;
 
-	// Offscreen opengl rendering
-	RenderStrategy renderStrategy;
-	int dirtyComputeStrategy;
-	bool testOpenGL;
 
 	VipColorPalette colorPalette;
 	QString colorPaletteName;
 	QString colorMapName;
 
-	// for multithreaded rendering
-	qint64 drawCPUTime;
-	qint64 drawGPUTime;
 };
 
 
 
-
-
-
-class RenderThread : public QThread
-{
-public:
-	QPointer<VipAbstractPlotArea> area;
-	QOpenGLFramebufferObject* buffer;
-	QOffscreenSurface* window;
-	QOpenGLContext* context;
-	ImageOrPixmap img;
-	std::atomic<bool> trigger;
-	bool stop;
-
-	/* QMutex mutex;
-	QWaitCondition cond;
-	using UniqueLock = QMutexLocker;
-	QMutex* get_mutex() { return &mutex; }*/
-
-	VipSpinlock mutex;
-	std::condition_variable_any cond;
-	using UniqueLock = VipUniqueLock<VipSpinlock>;
-	VipSpinlock& get_mutex() { return mutex; }
-
-
-	RenderThread(VipAbstractPlotArea* area)
-		:area(area), buffer(NULL), trigger(false), stop(false)
-	{
-		this->window = new QOffscreenSurface();
-		this->window->setFormat(QSurfaceFormat::defaultFormat());
-		this->window->create();
-		this->window->moveToThread(this);
-		
-		this->context = ::context();
-		if(this->context)
-			this->context->moveToThread(this);
-		start();
-	}
-	~RenderThread()
-	{
-		stop = true;
-		cond.notify_all();
-		wait();
-		if (window) {
-			//delete window;
-			window->deleteLater();
-		}
-		if (context) {
-			//delete context;
-			context->deleteLater();
-		}
-		if (buffer)
-			delete buffer;
-	}
-	bool isValidForOpenGL() const {
-		return this->window != NULL && this->context != NULL;
-	}
-	void setAreaAndTrigger(VipAbstractPlotArea* a) { 
-		area = a;
-		trigger = true;
-		cond.notify_one();
-	}
-	void waitForDone() 
-	{
-		while (trigger.load(std::memory_order_relaxed)) {
-			//UniqueLock lock(get_mutex());
-			//cond.notify_one();
-			std::this_thread::yield();
-		}
-	}
-
-	virtual void run()
-	{
-		static const int max_width = 4000;
-		bool first = true;
-
-		while (!stop) {
-
-			//QMutexLocker lock(&mutex);
-			//cond.wait(&mutex, -1);
-			UniqueLock lock(get_mutex());
-			cond.wait_for(get_mutex(),std::chrono::milliseconds(1));
-			if (!trigger.load(std::memory_order_relaxed))
-				continue;
-
-			if (VipAbstractPlotArea * a = this->area)
-			{
-
-				bool auto_select = a->renderStrategy() == VipAbstractPlotArea::AutoStrategy;
-				bool use_opengl = isValidForOpenGL() && (a->renderStrategy() == VipAbstractPlotArea::OpenGLOffscreen);
-
-				qint64 draw_CPU_time = 0;
-				qint64 draw_GPU_time = 0;
-				if (auto_select) {
-					// Select between CPU and GPU drawing
-					draw_CPU_time = a->d_data->drawCPUTime;
-					draw_GPU_time = a->d_data->drawGPUTime;
-					
-					if (draw_CPU_time == 0 || draw_CPU_time * 1.5 < draw_GPU_time ) // favor GPU if possible
-						use_opengl = false;
-					else
-						use_opengl = true;
-
-				}
-
-				//compute the list of children VipPaintItem
-				QList<VipPaintItem*> items = a->paintItemChildren();
-				for (VipPaintItem* it : items) {
-					
-					it->setPaintingEnabled(true);
-				}
-				
-				//render
-				QTransform tr;
-				QRectF bounding = a->boundingRect();
-				QPointF topLeft = a->boundingRect().topLeft();
-				tr.translate(-topLeft.x(), -topLeft.y());
-				//limit image size to max_width*max_width
-				QSize s = bounding.size().toSize();
-				double max = qMax(bounding.width(), bounding.height());
-				if (max > max_width) {
-					if (max == bounding.width()) {
-						double factor = max_width / bounding.width();
-						tr.scale(factor, factor);
-						s.setWidth(max_width);
-						s.setHeight(bounding.height() * factor);
-					}
-					else {
-						double factor = max_width / bounding.height();
-						tr.scale(factor, factor);
-						s.setHeight(max_width);
-						s.setWidth(bounding.width() * factor);
-					}
-				}
-
-				QPainter* painter = NULL;
-				QOpenGLPaintDevice *device = NULL;
-
-				qint64 start = QDateTime::currentMSecsSinceEpoch();
-
-				if(use_opengl) {
-					context->makeCurrent(window);
-					this->buffer = createBuffer(this->buffer, s);
-					if (!(context->functions()->openGLFeatures() & QOpenGLFunctions::Shaders)) {
-						img = QPixmap();
-						trigger = false;
-						context->doneCurrent();
-						continue;
-					}
-					(buffer)->bind();
-
-					device = new QOpenGLPaintDevice(s);
-					painter = new QPainter();
-					painter->begin(device);
-					painter->beginNativePainting();
-					glClearColor(0.0, 0.0, 0.0, 0.0);
-					glClear(GL_COLOR_BUFFER_BIT);
-					painter->endNativePainting();
-				}
-				else {
-					if (img.pixmap.size() != s)
-						img.pixmap = QPixmap(s);//QImage(s.width(), s.height(), QImage::Format_ARGB32);
-					img.pixmap.fill(Qt::transparent);
-					img.image = QImage();
-					painter = new QPainter(&img.pixmap);
-				}
-				painter->setTransform(tr);
-
-
-				for (int i = 0; i < items.size(); ++i) {
-					
-					if (QGraphicsItem* item = items[i]->graphicsObject()) {
-						if (!item->isVisible())
-							continue;
-						
-						painter->save();
-						QPointF p = item->pos();
-						QTransform t;
-						t.translate(p.x(), p.y());
-						t *= item->transform();
-						painter->setTransform(t, true);
-						item->paint(painter, NULL, NULL);
-						painter->restore();
-					}
-				}
-				painter->end();
-
-
-				if (use_opengl) {
-					
-					const QImage tmp = (buffer)->toImage();
-					context->doneCurrent();
-					(buffer)->release();
-					img.image = tmp.copy(QRect(QPoint(0, tmp.height()-s.height()), s));
-					img.pixmap = QPixmap();
-				}
-
-				for(VipPaintItem * it : items) {
-					it->setPaintingEnabled(false);
-				}
-
-				qint64 el = QDateTime::currentMSecsSinceEpoch() - start;
-
-				if (!first) {
-					if (use_opengl)
-						a->d_data->drawGPUTime = el;
-					else
-						a->d_data->drawCPUTime = el;
-				}
-				first = false;
-
-				delete painter;
-				if (device)
-					delete device;
-				trigger=false;
-			}
-		}
-		
-	}
-};
-
-static QList< VipAbstractPlotArea*> allAreas;
-
-struct RenderThreadPool : public QObject
-{
-	int thread_count;
-	QList< RenderThread*> threads;
-	QMap< VipAbstractPlotArea*, ImageOrPixmap> images;
-
-	RenderThreadPool(int threads = 0)
-		:QObject(qApp),thread_count(threads){
-		setNumberOfThreads(threads);
-	}
-	~RenderThreadPool()
-	{
-		for (int i = 0; i < threads.size(); ++i)
-			delete threads[i];
-	}
-
-	void setNumberOfThreads(int num)
-	{
-		if (num < 0) 
-			num = 0;
-
-		thread_count = num;
-		int size = threads.size();
-		for (int i = size; i < num; ++i) {
-			threads.push_back(new RenderThread(NULL));
-		}
-		for (int i = num; i < size; ++i) {
-			RenderThread* th = threads.back();
-			delete th;
-			threads.pop_back();
-		}
-
-		if (num < 2) {
-			// we switched from multithreaded to monothreaded:
-			// make sure to enable back painting on items and scales
-			
-			for (int i = 0; i < allAreas.size(); ++i) {
-				VipAbstractPlotArea* area = allAreas[i];
-				QList<VipPaintItem*> items = area->paintItemChildren();
-				for (VipPaintItem* it : items) {
-					it->setPaintingEnabled(true);
-				}
-			}
-		}
-	}
-
-	int numberOfThreads() const {
-		return thread_count;
-	}
-
-	void push(const QList<VipAbstractPlotArea*>& areas) {
-		if (thread_count == 0)
-			return;
-
-		//distribute
-		int th_index = 0;
-		for (int i = 0; i < areas.size(); ++i, ++th_index) {
-
-			threads[th_index]->setAreaAndTrigger( areas[i]);
-			
-			if (th_index == threads.size()-1) {
-				//wait for finished
-
-				for (int j = 0; j < threads.size(); ++j) {
-					RenderThread* th = threads[j];
-					th->waitForDone();
-					if (!th->img.isNull())
-						images[th->area] = th->img;
-				}
-				th_index = -1;
-			}
-			if (i == areas.size() - 1) {
-				//finish
-				for (int j = 0; j <= th_index; ++j) {
-					RenderThread* th = threads[j];
-					th->waitForDone();
-					if (!th->img.isNull())
-						images[th->area] = th->img;
-				}
-			}
-		}
-
-	}
-	
-	ImageOrPixmap retrieve(VipAbstractPlotArea* area) { 
-		return images[area];
-	}
-};
-
-static RenderThreadPool& renderPool()
-{
-	static RenderThreadPool* inst = new RenderThreadPool();
-	return *inst;
-}
 
 
 
@@ -1509,15 +1180,10 @@ static int registerAbstractAreaKeyWords()
 	static VipKeyWords keywords;
 	if (keywords.isEmpty()) {
 		QMap<QByteArray, int> mousebutton;
-		QMap<QByteArray, int> render;
 
 		mousebutton["leftButton"] = Qt::LeftButton;
 		mousebutton["rightButton"] = Qt::RightButton;
 		mousebutton["middleButton"] = Qt::MiddleButton;
-
-		render["default"] = VipAbstractPlotArea::Default;
-		render["openGLOffscreen"] = VipAbstractPlotArea::OpenGLOffscreen;
-		render["automatic"] = VipAbstractPlotArea::AutoStrategy;
 
 		QMap<QByteArray, int> position;
 		position["none"] = Vip::detail::LegendNone;
@@ -1540,7 +1206,6 @@ static int registerAbstractAreaKeyWords()
 		keywords["mouse-item-selection"] = VipParserPtr(new EnumParser(mousebutton));
 		keywords["mouse-wheel-zoom"] = VipParserPtr(new BoolParser());
 		keywords["zoom-multiplier"] = VipParserPtr(new DoubleParser());
-		keywords["render-strategy"] = VipParserPtr(new EnumParser(render));
 		keywords["maximum-frame-rate"] = VipParserPtr(new DoubleParser());
 		keywords["draw-selection-order"] = VipParserPtr(new BoolParser());
 		//keywords["colormap"] = VipParserPtr(new EnumParser(colorMap));
@@ -1620,14 +1285,11 @@ VipAbstractPlotArea::VipAbstractPlotArea(QGraphicsItem * parent)
 	//for now comment this as it triggers too many recomputeGeometry
 	//connect(this, SIGNAL(childItemChanged(VipPlotItem*)), this, SLOT(recomputeGeometry()), Qt::QueuedConnection);
 
-	allAreas.push_back(this);
 }
 
 VipAbstractPlotArea::~VipAbstractPlotArea()
 {
 	removeSharedAlignedArea(this);
-	allAreas.removeOne(this);
-
 	delete d_data;
 }
 
@@ -1796,6 +1458,7 @@ static QImage createImageWithFBO(int mode, //QOpenGLFramebufferObject ** buffer,
 		//qint64 st = QDateTime::currentMSecsSinceEpoch();
 		const QImage tmp = (buffer)->toImage();
 		//qint64 el = QDateTime::currentMSecsSinceEpoch() - st;
+		//printf("toImage: %i ms %i\n", (int)el, (int)buffer->hasOpenGLFramebufferBlit());
 
 		res = tmp.copy(QRect(QPoint(0, tmp.height() - s.height()), s));
 		//qint64 el2 = QDateTime::currentMSecsSinceEpoch() - st;
@@ -1914,7 +1577,7 @@ void	VipAbstractPlotArea::doUpdateScaleLogic()
 
 }
 
-
+/*
 static int __renderThreads = 1;
 
 void VipAbstractPlotArea::setRenderingThreads(int count)
@@ -1982,26 +1645,25 @@ bool VipAbstractPlotArea::paintOpenGLInternal(QPainter* painter, const QStyleOpt
 	}
 
 	return true;
-}
+}*/
 
 void	VipAbstractPlotArea::paint(QPainter * painter, const QStyleOptionGraphicsItem * option, QWidget * widget)
 {
-	
-
-	bool opengl = VipPainter::isOpenGL(painter);
+	/* bool opengl = VipPainter::isOpenGL(painter);
 	if (widget && !opengl && __renderThreads > 1 && paintOpenGLInternal(painter, option, widget))
 		return;
 
 	if (renderPool().numberOfThreads() != __renderThreads)
-		renderPool().setNumberOfThreads(__renderThreads);
+		renderPool().setNumberOfThreads(__renderThreads);*/
 
 	doUpdateScaleLogic() ;
 
 	//draw itself
 	VipBoxGraphicsWidget::paint(painter, option, widget);
 
+
 	//draw children with opengl only when drawing on a non opengl widget
-	if (widget && !VipPainter::isOpenGL(painter) && ((d_data->renderStrategy == AutoStrategy) || (d_data->renderStrategy == OpenGLOffscreen))) {
+	/* if (widget && !VipPainter::isOpenGL(painter) && ((d_data->renderStrategy == AutoStrategy) || (d_data->renderStrategy == OpenGLOffscreen))) {
 		QImage img_raster;
 		QImage img_opengl;
 		//compute the list of children VipPaintItem
@@ -2069,7 +1731,7 @@ void	VipAbstractPlotArea::paint(QPainter * painter, const QStyleOptionGraphicsIt
 		QList<VipPaintItem*> items = paintItemChildren();
 		for (VipPaintItem* it : items)
 			it->setPaintingEnabled(true);
-	}
+	}*/
 
 	//qint64 el = QDateTime::currentMSecsSinceEpoch()-st;
 	//printf("%i ms, %s\n",(int)el, this->metaObject()->className());
@@ -2230,24 +1892,6 @@ bool VipAbstractPlotArea::zoomEnabled(VipAbstractScale * sc)
 	return p.toBool();
 }
 
-void VipAbstractPlotArea::setRenderStrategy(RenderStrategy st)
-{
-	if (d_data->renderStrategy != st)
-	{
-		d_data->renderStrategy = st;
-		d_data->testOpenGL = true;
-		if (st == Default) {
-			//enable back drawing
-			QList<VipPaintItem*> items = paintItemChildren();
-			for (VipPaintItem * it : items)
-				it->setPaintingEnabled(true);
-		}
-	}
-}
-VipAbstractPlotArea::RenderStrategy VipAbstractPlotArea::renderStrategy() const
-{
-	return d_data->renderStrategy;
-}
 
 void VipAbstractPlotArea::setMaximumFrameRate(int fps)
 {
@@ -2634,9 +2278,6 @@ void VipAbstractPlotArea::addScale(VipAbstractScale * scale, bool isSpatialCoord
 		if (!internalAddScale(scale, isSpatialCoordinate))
 			return;
 
-		//add a scale might change the best rendering strategy
-		d_data->dirtyComputeStrategy = 1;
-
 		scale->scaleDraw()->enableLabelOverlapping(defaultLabelOverlapping());
 //		scale->setUpdater(this->updater());
 
@@ -2681,9 +2322,6 @@ void VipAbstractPlotArea::removeScale(VipAbstractScale * scale)
 
 	if (!internalRemoveScale(scale))
 		return;
-
-	//removing a scale might change the best rendering strategy
-	d_data->dirtyComputeStrategy = 1;
 
 	disconnect(scale, SIGNAL(itemAdded(VipPlotItem*)), this, SLOT(addItem(VipPlotItem*)));
 	disconnect(scale, SIGNAL(itemRemoved(VipPlotItem*)), this, SLOT(removeItem(VipPlotItem*)));
@@ -2892,10 +2530,6 @@ bool VipAbstractPlotArea::setItemProperty(const char* name, const QVariant& valu
 		setZoomMultiplier(value.toDouble());
 		return true;
 	}
-	if (strcmp(name, "render-strategy") == 0) {
-		setRenderStrategy((RenderStrategy)value.toInt());
-		return true;
-	}
 	if (strcmp(name, "maximum-frame-rate") == 0) {
 		setMaximumFrameRate(value.toInt());
 		return true;
@@ -3042,9 +2676,6 @@ void VipAbstractPlotArea::addItem(VipPlotItem* item)
 		//save the current scales state, before auto scaling apply
 		bufferScalesState();
 
-	//adding an item might change the best rendering strategy
-	d_data->dirtyComputeStrategy = 1;
-
 	if (item  && d_data->items.indexOf(item)  < 0)
 	{
 		d_data->items.append(item);
@@ -3094,9 +2725,7 @@ void VipAbstractPlotArea::removeItem(VipPlotItem* item)
 
 	if (item)
 	{
-		//removing an item might change the best rendering strategy
-		d_data->dirtyComputeStrategy = 1;
-
+		
 		d_data->items.removeOne(item);
 //		if(d_data->items.removeOne(item))
 //			item->setUpdater(NULL);
@@ -5191,6 +4820,7 @@ int vipMaxDisplayRate(QGraphicsView * view)
 
 
 
+
 class VipBaseGraphicsView::PrivateData
 {
 public:
@@ -5198,9 +4828,6 @@ public:
 	QSharedPointer<QColor> backgroundColor;
 	bool useInternalViewport;
 };
-
-
-
 
 
 VipBaseGraphicsView::VipBaseGraphicsView(QGraphicsScene * sc, QWidget* parent)
@@ -5213,21 +4840,21 @@ VipBaseGraphicsView::VipBaseGraphicsView(QGraphicsScene * sc, QWidget* parent)
 #if !defined(_WIN32) && (defined(__unix__) || defined(__unix) || (defined(__APPLE__) && defined(__MACH__)))
 
 #else
+	//TEST
+	this->setViewportUpdateMode(QGraphicsView::FullViewportUpdate);
 	
-		this->setAttribute(Qt::WA_PaintUnclipped);
-		this->viewport()->setAttribute(Qt::WA_PaintUnclipped);
+	this->setAttribute(Qt::WA_PaintUnclipped);
+	this->viewport()->setAttribute(Qt::WA_PaintUnclipped);
 
-		this->setAttribute(Qt::WA_NoSystemBackground);
-		this->setAttribute(Qt::WA_OpaquePaintEvent);
-		this->viewport()->setAttribute(Qt::WA_NoSystemBackground);
-		this->viewport()->setAttribute(Qt::WA_OpaquePaintEvent);
+	this->setAttribute(Qt::WA_NoSystemBackground);
+	this->setAttribute(Qt::WA_OpaquePaintEvent);
+	this->viewport()->setAttribute(Qt::WA_NoSystemBackground);
+	this->viewport()->setAttribute(Qt::WA_OpaquePaintEvent);
 	
 
 #endif
 
-	//this->setViewportUpdateMode(QGraphicsView::FullViewportUpdate);
 	this->setFrameShape(QFrame::NoFrame);
-	//this->scene();
 
 	if (sc)
 		this->setScene(sc);
@@ -5277,47 +4904,81 @@ void VipBaseGraphicsView::keyPressEvent(QKeyEvent* event)
 	QApplication::sendEvent(scene(), event);
 }
 
-
-
-void VipBaseGraphicsView::setOpenGLRendering(bool enable)
+void VipBaseGraphicsView::setupViewport(QWidget* viewport)
 {
-	if (m_data->useInternalViewport) return;
-
-	if (enable != openGLRendering()) {
-
-		//if (viewport())
-		//	viewport()->deleteLater();
-
-		if (enable) {
-			this->setViewport(new QOpenGLWidget());
-			this->setAttribute(Qt::WA_PaintUnclipped, false);
-			this->setAttribute(Qt::WA_NoSystemBackground, false);
-			this->setAttribute(Qt::WA_OpaquePaintEvent, false);
-			this->viewport()->setStyleSheet("QOpenGLWidget{background: transparent;}");
-
-			//enable back item's painting
-			QList<QGraphicsItem*> items = scene()->items();
-			for (int i = 0; i < items.size(); ++i) {
-				if (QGraphicsObject* o = items[i]->toGraphicsObject())
-					if (VipPaintItem* it = o->property("VipPaintItem").value < VipPaintItem*>())
-						it->setPaintingEnabled(true);
-			}
-		}
-		else {
-			this->setViewport(new QWidget());
-			this->setAttribute(Qt::WA_PaintUnclipped, true);
-			this->setAttribute(Qt::WA_NoSystemBackground, true);
-			this->setAttribute(Qt::WA_OpaquePaintEvent, true);
-
-		}
-	}
-	updateCacheMode(enable);
+	QGraphicsView::setupViewport(viewport);
+	Q_EMIT viewportChanged(viewport);
 }
 
-
-bool VipBaseGraphicsView::openGLRendering() const
+void VipBaseGraphicsView::setRenderingMode(RenderingMode mode)
 {
-	return qobject_cast<QOpenGLWidget*>(viewport()) != NULL;
+	if (m_data->useInternalViewport)
+		return;
+
+	if (mode == OpenGL) {
+		if (renderingMode() == OpenGL)
+			return;
+		this->setViewport(new QOpenGLWidget());
+		this->setAttribute(Qt::WA_PaintUnclipped, false);
+		this->setAttribute(Qt::WA_NoSystemBackground, false);
+		this->setAttribute(Qt::WA_OpaquePaintEvent, false);
+		this->viewport()->setStyleSheet("QOpenGLWidget{background: transparent;}");
+
+		// enable back item's painting
+		QList<QGraphicsItem*> items = scene()->items();
+		for (int i = 0; i < items.size(); ++i) {
+			if (QGraphicsObject* o = items[i]->toGraphicsObject())
+				if (VipPaintItem* it = o->property("VipPaintItem").value<VipPaintItem*>())
+					it->setPaintingEnabled(true);
+		}
+		updateCacheMode(true);
+		update();
+		return;
+	}
+
+	// restore attributes
+	this->setAttribute(Qt::WA_PaintUnclipped, true);
+	this->setAttribute(Qt::WA_NoSystemBackground, true);
+	this->setAttribute(Qt::WA_OpaquePaintEvent, true);
+
+	if (mode == OpenGLThread) {
+		if (renderingMode() == OpenGLThread)
+			return;
+		setViewport(new VipOpenGLWidget());
+
+		// enable back item's painting
+		QList<QGraphicsItem*> items = scene()->items();
+		for (int i = 0; i < items.size(); ++i) {
+			if (QGraphicsObject* o = items[i]->toGraphicsObject())
+				if (VipPaintItem* it = o->property("VipPaintItem").value<VipPaintItem*>())
+					it->setPaintingEnabled(true);
+		}
+		updateCacheMode(true);
+		update();
+		return;
+	}
+
+	if (mode == Raster) {
+		if (renderingMode() == Raster)
+			return;
+		setViewport(new QWidget());
+		updateCacheMode(false);
+		update();
+		return;
+	}
+}
+
+VipBaseGraphicsView::RenderingMode VipBaseGraphicsView::renderingMode() const
+{
+	if (qobject_cast<QOpenGLWidget*>(viewport()))
+		return OpenGL;
+	if (qobject_cast<VipOpenGLWidget*>(viewport()))
+		return OpenGLThread;
+	return Raster;
+}
+bool VipBaseGraphicsView::isOpenGLBasedRendering() const
+{
+	return qobject_cast<QOpenGLWidget*>(viewport()) != nullptr || qobject_cast<VipOpenGLWidget*>(viewport()) != nullptr;
 }
 
 void VipBaseGraphicsView::setUseInternalViewport(bool enable)
@@ -5335,7 +4996,7 @@ void VipBaseGraphicsView::startRender(VipRenderState &)
 
 void VipBaseGraphicsView::endRender(VipRenderState &)
 {
-	updateCacheMode(openGLRendering());
+	updateCacheMode(isOpenGLBasedRendering());
 }
 
 bool VipBaseGraphicsView::renderObject(QPainter * p, const QPointF & pos, bool draw_background)
@@ -5416,11 +5077,20 @@ void VipBaseGraphicsView::paintEvent(QPaintEvent * evt)
 		c = backgroundColor();
 	else
 		c = qApp->palette(this).color(QPalette::Window);
-	QPainter p(viewport());
-	p.fillRect(QRect(0, 0, width(), height()), c);
 
+	VipOpenGLWidget* w = qobject_cast<VipOpenGLWidget*>(viewport());
+	if(w)
+		w->startRendering();
+	//qint64 st = QDateTime::currentMSecsSinceEpoch();
+	{
+		QPainter p(viewport());
+		p.fillRect(QRect(0, 0, width(), height()), c);
+	}
 	QGraphicsView::paintEvent(evt);
-
+	if(w)
+		w->stopRendering();
+	//qint64 el = QDateTime::currentMSecsSinceEpoch() - st;
+	//printf("el : %i ms\n", (int)el);
 }
 
 
@@ -5470,7 +5140,7 @@ void VipAbstractPlotWidget2D::setArea(VipAbstractPlotArea* area)
 	if (area && !scene()->focusItem())
 		area->setFocus();
 
-	this->updateCacheMode(openGLRendering());
+	this->updateCacheMode(isOpenGLBasedRendering());
 }
 
 VipAbstractPlotArea* VipAbstractPlotWidget2D::area() const

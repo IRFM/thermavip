@@ -1175,6 +1175,7 @@ QDataStream & operator>>(QDataStream & stream, VipBoxStyle & style)
 
 static int registerStreamOperators()
 {
+	qRegisterMetaType<VipBoxStyle>();
 	qRegisterMetaTypeStreamOperators<VipBoxStyle>("VipBoxStyle");
 	return 0;
 }

@@ -661,7 +661,7 @@ QList<VipAbstractPlayer *> VipAbstractPlayer::findOutputPlayers(VipProcessingObj
 	QList<VipDisplayObject*> displays = vipListCast<VipDisplayObject*>(proc->allSinks());
 	QList<VipAbstractPlayer*> res;
 	for (int i = 0; i < displays.size(); ++i) {
-		if (VipAbstractPlayer * pl = displays[i]->widget())
+		if (VipAbstractPlayer* pl = vipFindParent<VipAbstractPlayer>(displays[i]->widget()))
 			if (res.indexOf(pl) < 0)
 				res.append(pl);
 	}
@@ -5707,10 +5707,7 @@ VipPlotPlayer::VipPlotPlayer(VipAbstractPlotWidget2D * viewer, QWidget * parent)
 	m_data->curveEditorAction->setVisible(false);
 
 	this->setPlotWidget2D(m_data->viewer);
-	//Test: set the rendering strategy
-	//plotWidget2D()->setOpenGLRendering(true);
-	plotWidget2D()->area()->setRenderStrategy(VipPlotArea2D::AutoStrategy );
-
+	
 	m_data->viewer->area()->legend()->setCheckState(VipLegend::CheckableSelection);
 
 	//add inner legend

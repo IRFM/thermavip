@@ -1506,6 +1506,7 @@ VipScaleWidget::VipScaleWidget(VipAbstractScale * scale , QWidget * parent )
 	this->setVerticalScrollBarPolicy( Qt::ScrollBarAlwaysOff );
 	this->setFrameShape(QFrame::NoFrame);
 
+	this->setBackgroundBrush(QBrush());
 	setScale(scale);
 }
 

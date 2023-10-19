@@ -267,25 +267,6 @@ namespace Vip
 /// By default, all items of a VipAbstractPlotArea are rendered independently using QGraphicsView rendering method, which could use opengl is the viewport is a QOpenGLWidget.
 /// 
 /// 
-/// Rendering modes
-/// ---------------
-/// 
-/// VipAbstractPlotArea supports offscreen opengl rendering using VipAbstractPlotArea::setRenderStrategy(VipAbstractPlotArea::OpenGLOffscreen).
-/// In this case, all items/scales of a VipAbstractPlotArea will be rendered offscreen using a global QOpenGLContext and QOpenGLFrameBufferObject.
-/// The content of the QOpenGLFrameBufferObject is then converted to QImage which is drawn. Note that OpenGL rendering won't be used when drawing
-/// in a vectorial paint device, like when saving the QGraphicsView content to a PDF file.
-/// 
-/// VipAbstractPlotArea supports multithreaded rendering using VipAbstractPlotArea::setRenderingThreads() with a value greater than 1.
-/// If OpenGLOffscreen is used, the VipAbstractPlotArea will use multithreaded OpenGL rendering, otherwise multithreaded raster rendering
-/// will be used.
-/// 
-/// Multithreaded rendering only works at VipAbstractPlotArea level: each VipAbstractPlotArea can be rendered in separate threads, but a unique
-/// VipAbstractPlotArea will always be rendered in one thread. Therefore, multithreaded rendering is only usefull when displaying multiple VipAbstractPlotArea.
-/// 
-/// Multithreading and/or OpenGL rendering is not always the best solution as the Qt Graphics View Framework is optimized to provide very fast
-/// CPU based rendering. Different configurations should be tested for each use case. 
-/// 
-/// 
 /// Stylesheets
 /// -----------
 /// 
@@ -296,7 +277,6 @@ namespace Vip
 /// -	'mouse-item-selection': equivalent to VipAbstractPlotArea::setMouseItemSelection(), possible values are 'leftButton', 'rightButton' and 'middleButton'
 /// -	'mouse-wheel-zoom': boolean value equivalent to VipAbstractPlotArea::setMouseWheelZoom()
 /// -	'zoom-multiplier': floating point value equivalent to VipAbstractPlotArea::setZoomMultiplier()
-/// -	'render-strategy': equivalent to VipAbstractPlotArea::setRenderStrategy(), possible values are 'default', 'openGLOffscreen', 'automatic'
 /// -	'maximum-frame-rate': equivalent to VipAbstractPlotArea::setMaximumFrameRate()
 /// -	'draw-selection-order': boolean value that enable/disable drawing item's selection order
 /// -	'colorpalette' set the default color palette for item's color: 'random', 'pastel', 'set1'
@@ -322,15 +302,7 @@ class VIP_PLOTTING_EXPORT VipAbstractPlotArea : public VipBoxGraphicsWidget
 	friend class ComputeBorderGeometry;
 
 public:
-	/// Define the rendering strategy for this VipAbstractPlotArea.
-	/// \sa setRenderStrategy(), renderStrategy()
-	enum RenderStrategy
-	{
-		Default = 0,			//! Use default engine based on the underlying device
-		OpenGLOffscreen , //! Render the VipAbstractPlotArea in a QImage using opengl first, and draw this image
-		AutoStrategy ,	//! Use the fastest drawing strategy between Default and OpenGLOffscreen
-	};
-
+	
 	typedef QMap<const VipAbstractScale*, VipInterval> scales_state;
 
 	VipAbstractPlotArea(QGraphicsItem* parent = NULL);
@@ -384,15 +356,7 @@ public:
 	virtual void setZoomEnabled(VipAbstractScale* sc, bool enable);
 	bool zoomEnabled(VipAbstractScale* sc);
 
-	/// @brief Set the rendering strategy
-	///
-	/// Defines how this VipAbstractPlotArea should render its items:
-	/// -	Default: directly paint items in the provided paint device 
-	/// -	OpenGLOffscreen: render all items in an offscreen opengl context and draw the resulting image
-	/// -	AutoStrategy: try to find the fastest strategy between Default and OpenGLOffscreen
-	void setRenderStrategy(RenderStrategy);
-	RenderStrategy renderStrategy() const;
-
+	
 	/// @brief Set the maximum refresh rate of this VipAbstractPlotArea
 	/// 
 	/// Default value is 60. 
@@ -656,11 +620,6 @@ public:
 	/// @brief Returns the last VipPlotItem which triggered a mouseButtonPressed() signal
 	VipPlotItem* lastPressed() const;
 
-	/// @brief Set the total number of threads used for VipAbstractPlotArea rendering for the whole application.
-	/// Default is one. Note that opengl rendering also works with multithreading is OpenGLOffscreen is set. 
-	static void setRenderingThreads(int count);
-	static int renderingThreads();
-
 public Q_SLOTS:
 
 	/// @brief Enable/disable automatic scaling for spatial scales
@@ -853,7 +812,6 @@ private:
 	void markScaleDivDirty(VipAbstractScale*);
 	bool markGeometryDirty();
 	void applyLabelOverlapping();
-	bool paintOpenGLInternal(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget);
 	class PrivateData;
 	PrivateData* d_data;
 };
@@ -1071,7 +1029,7 @@ private:
 /// several areas when using a QGraphicsLayout (see VipMultiGraphicsView class).
 /// 
 /// VipBaseGraphicsView mainly provides 2 featrues:
-/// -	Easy use of opengl rendering with VipBaseGraphicsView::setOpenGLRendering()
+/// -	Easy use of opengl rendering with VipBaseGraphicsView::setRenderingMode()
 /// -	Definition of a background color with the property 'backgroundColor'
 /// 
 /// VipBaseGraphicsView is a VipRenderObject and its content can be saved as an image or pdf/ps/svg file
@@ -1085,6 +1043,13 @@ class VIP_PLOTTING_EXPORT VipBaseGraphicsView
 	Q_PROPERTY(QColor backgroundColor READ backgroundColor WRITE setBackgroundColor)
 
 public:
+	/// @brief Rendering mode, modify the viewport widget
+	enum RenderingMode
+	{
+		Raster, // Use a QWidget viewport
+		OpenGL, // Use a QOpenGLWidget viewport
+		OpenGLThread // Use a VipOpenGLWidget
+	};
 	VipBaseGraphicsView(QWidget* parent = NULL);
 	VipBaseGraphicsView(QGraphicsScene* scene, QWidget* parent = NULL);
 	virtual ~VipBaseGraphicsView();
@@ -1092,18 +1057,23 @@ public:
 	/// @brief Returns the part of the scene that is currently visualized by this QGraphicsView
 	QRectF visualizedSceneRect() const;
 
-	/// @brief Set the QGraphicsView viewport as a QOpenGLWidget to use opengl rendering.
+	/// @brief Set the rendering mode
+	/// 
+	/// The mode could be one of:
+	/// -	Raster: use a QWidget viewport,
+	/// -	OpenGL: use a QOpenGLWidget viewport,
+	/// -	OpenGLThread: use a VipOpenGLWidget viewport (fastest rendering)
 	/// 
 	/// Note that for opengl rendering, the scales cache mode is set to QGraphicsItem::DeviceCoordinateCache,
 	/// if VIP_CUSTOM_ITEM_CACHING is defined. Otherwise (default), the user is responsible of the items caching strategy.
 	///
-	/// When enabled, the redering strategy of its VipAbstractPlotArea is ignored.
-	void setOpenGLRendering(bool enable);
-	bool openGLRendering() const;
+	void setRenderingMode(RenderingMode mode);
+	RenderingMode renderingMode() const;
+	bool isOpenGLBasedRendering() const;
 
 
 	/// @brief Enable/disable usage of custom viewport.
-	/// If true, setOpenGLRendering() has no effect.
+	/// If true, setRenderingMode() has no effect.
 	void setUseInternalViewport(bool);
 	bool useInternalViewport() const;
 	
@@ -1117,6 +1087,9 @@ public Q_SLOTS:
 	void removeBackgroundColor();
 	void setBackgroundColor(const QColor& color);
 
+Q_SIGNALS:
+	void viewportChanged(QWidget* w);
+
 protected:
 	/// Any sub class reimplementing this function should call this function ensure the built-in compatibility.
 	virtual void startRender(VipRenderState&);
@@ -1124,6 +1097,7 @@ protected:
 	virtual bool renderObject(QPainter* p, const QPointF& pos, bool draw_background);
 	virtual void paintEvent(QPaintEvent* evt);
 	virtual void keyPressEvent(QKeyEvent* event);
+	virtual void setupViewport(QWidget* viewport);
 	void updateCacheMode(bool enable_cache);
 
 private:

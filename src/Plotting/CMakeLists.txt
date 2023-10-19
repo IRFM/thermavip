@@ -16,7 +16,7 @@ add_library(VipPlotting SHARED
 )
 
 target_include_directories(VipPlotting PRIVATE
-    ${PROJECT_SOURCE_DIR}/../Logging ${PROJECT_SOURCE_DIR}/../DataType
+    ${PROJECT_SOURCE_DIR}/../Logging ${PROJECT_SOURCE_DIR}/../DataType ${PROJECT_SOURCE_DIR}/../Core
 )
 
 target_compile_definitions(VipPlotting PRIVATE
@@ -26,6 +26,7 @@ target_compile_definitions(VipPlotting PRIVATE
 target_link_libraries(VipPlotting PRIVATE
 	VipDataType
 	VipLogging
+	VipCore
 )
 
 set(TARGET_PROJECT VipPlotting)

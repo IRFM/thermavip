@@ -89,6 +89,8 @@ int main(int argc, char** argv)
 {
 	QApplication app(argc, argv);
 	VipPlotWidget2D w;
+	//w.setRenderingMode(VipPlotWidget2D::OpenGLThread);
+
 	w.setMouseTracking(true);
 	setup_plot_area(w.area());
 

@@ -421,3 +421,46 @@ QPair<double,double> VipQuiverPath::draw(QPainter * painter, const QPolygonF & p
 {
 	return draw(painter,polyline.data(),polyline.size());
 }
+
+
+
+QDataStream& operator<<(QDataStream& str, const VipQuiverPath& path)
+{
+	return str << path.pen() << path.extremetyPen(VipQuiverPath::Start) << path.extremetyPen(VipQuiverPath::End) << path.extremetyBrush(VipQuiverPath::Start) << path.extremetyBrush(VipQuiverPath::End)
+	    << (int)path.style() << path.angle(VipQuiverPath::Start) << path.angle(VipQuiverPath::End) << path.length(VipQuiverPath::Start) << path.length(VipQuiverPath::End) << path.isVisible();
+} 
+
+QDataStream& operator>>(QDataStream& str, VipQuiverPath& path)
+{
+	QPen pen, startp, endp;
+	QBrush startb, endb;
+	int style = 0;
+	double starta = 0, enda = 0;
+	double startl = 0, endl = 0;
+	bool vis = true;
+
+	str >> pen >> startp >> endp >> startb >> endb >> style >> starta >> enda >> startl >> endl >> vis;
+	if (str.status() != QDataStream::Ok)
+		return str;
+
+	path.setPen(pen);
+	path.setExtremityPen(VipQuiverPath::Start, startp);
+	path.setExtremityPen(VipQuiverPath::End, endp);
+	path.setExtremityBrush(VipQuiverPath::Start, startb);
+	path.setExtremityBrush(VipQuiverPath::End, endb);
+	path.setStyle((VipQuiverPath::QuiverStyles)style);
+	path.setAngle(VipQuiverPath::Start, starta);
+	path.setAngle(VipQuiverPath::End, enda);
+	path.setLength(VipQuiverPath::Start, startl);
+	path.setLength(VipQuiverPath::End, endl);
+	path.setVisible(vis);
+	return str;
+
+}
+
+static bool register_types()
+{
+	qRegisterMetaType<VipQuiver>();
+	qRegisterMetaType<VipQuiverPath>();
+	qRegisterMetaTypeStreamOperators<VipQuiverPath>();
+}

@@ -168,6 +168,7 @@ public:
 	{
 		propertyName("bins")->setData(1000);
 		propertyName("output_name")->setData(QString());
+		setReloadOnSceneChanges(true);
 	}
 	~VipExtractHistogram();
 
@@ -199,6 +200,7 @@ public:
 	  , m_extract(NULL)
 	{
 		propertyName("output_name")->setData(QString());
+		setReloadOnSceneChanges(true);
 	}
 	~VipExtractPolyline()
 	{

@@ -82,7 +82,7 @@ namespace details
 	{
 		template<typename F, typename Getter, typename... A>
 		static inline auto apply(F&& f, Getter&& t, A&&... a)
-		  -> decltype(ApplyFunctor<N - 1>::apply(std::forward<F>(f), std::forward<Getter>(t), std::forward<Getter>(t).template get<N - 1>(), std::forward<A>(a)...))
+		  //-> decltype(ApplyFunctor<N - 1>::apply(std::forward<F>(f), std::forward<Getter>(t), std::forward<Getter>(t).template get<N - 1>(), std::forward<A>(a)...))
 		{
 			return ApplyFunctor<N - 1>::apply(std::forward<F>(f), std::forward<Getter>(t), std::forward<Getter>(t).template get<N - 1>(), std::forward<A>(a)...);
 		}
@@ -92,7 +92,7 @@ namespace details
 	struct ApplyFunctor<0>
 	{
 		template<typename F, typename Getter, typename... A>
-		static inline auto apply(F&& f, Getter&&, A&&... a) -> decltype(std::forward<F>(f)(std::forward<A>(a)...))
+		static inline auto apply(F&& f, Getter&&, A&&... a) //-> decltype(std::forward<F>(f)(std::forward<A>(a)...))
 		{
 			return std::forward<F>(f)(std::forward<A>(a)...);
 		}
@@ -103,7 +103,7 @@ namespace details
 	{
 		TupleRef t;
 		template<size_t I>
-		auto get() -> decltype(std::get<I>(t))
+		auto get() //-> decltype(std::get<I>(t))
 		{
 			return std::get<I>(t);
 		}

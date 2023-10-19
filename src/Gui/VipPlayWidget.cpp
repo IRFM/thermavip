@@ -2587,7 +2587,6 @@ VipPlayWidget::VipPlayWidget(QWidget * parent)
 	//timestamping area
 	m_data->playerArea = new VipPlayerArea();
 	m_data->playerWidget = new VipPlotWidget2D();
-	m_data->playerWidget->setOpenGLRendering(false);
 	m_data->playerWidget->setArea(m_data->playerArea);
 	m_data->playerArea->setMargins(VipMargins(10, 0, 10, 0));
 	m_data->playerArea->timeMarker()->installSceneEventFilter(m_data->playerArea->timeSliderGrip());

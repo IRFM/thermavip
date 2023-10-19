@@ -275,12 +275,20 @@ static QString parseText(const QByteArray & ar, bool *ok = NULL)
 {
 	//format: 'text'
 	int start, end;
-	if (!cleanLine(ar, start, end))
+	if (!cleanLine(ar, start, end)) {
+		if (ok)
+			*ok = false;
 		ERROR(QString());
+	}
 
 	QByteArray tmp = ar.mid(start, end - start);
-	if(!removeQuote(tmp))
+	if (!removeQuote(tmp)) {
+		if (ok)
+			*ok = false;
 		ERROR(QString());
+	}
+	if (ok)
+		*ok = true;
 	return tmp;
 
 }
@@ -1147,7 +1155,8 @@ VipStyleSheet vipParseStyleSheet(const QByteArray & ar, VipPaintItem * item, QSt
 				//this a qt property, use AnyParser
 				AnyParser parser;
 				QVariant value = parser.parse(pair[1]);
-				if (value.userType() == 0) ERROR("Unable to parse value of " + value_name);
+				if (value.userType() == 0)
+					ERROR("Unable to parse value of " + value_name + ", content is '" + pair[1] + "'");
 				p = ParseValue(value_name, value, num, new AnyParser());
 			}
 			else {
@@ -1159,7 +1168,7 @@ VipStyleSheet vipParseStyleSheet(const QByteArray & ar, VipPaintItem * item, QSt
 				//parse
 				QVariant value = found.value()->parse(pair[1]);
 				if (value.userType() == 0) {
-					ERROR("Unable to parse value of " + value_name);
+					ERROR("Unable to parse value of " + value_name + ", content is '" + pair[1] + "', parser is " + QByteArray(typeid(*found.value().get()).name()));
 				}
 				p = ParseValue(value_name, value, num, found.value());				
 			}

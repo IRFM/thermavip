@@ -9,13 +9,17 @@
 struct VipScatterPoint
 {
 	VipPoint position;
-	double value;
+	double value{ 0 };
 };
 
 using VipScatterPointVector = QVector<VipScatterPoint>;
 
 Q_DECLARE_METATYPE(VipScatterPoint)
 Q_DECLARE_METATYPE(VipScatterPointVector)
+
+VIP_PLOTTING_EXPORT QDataStream& operator<<(QDataStream&, const VipScatterPoint&);
+VIP_PLOTTING_EXPORT QDataStream& operator>>(QDataStream&, VipScatterPoint&);
+
 
 /// @brief Plot item used to create scatter plots based on VipScatterPointVector
 ///
@@ -53,7 +57,7 @@ Q_DECLARE_METATYPE(VipScatterPointVector)
 /// 
 /// In addition, VipPlotScatter defines the following selector: 'itemUnit' and 'axisUnit'.
 /// 
-class VIP_PLOTTING_EXPORT VipPlotScatter : public VipPlotItemDataType< VipScatterPointVector>
+class VIP_PLOTTING_EXPORT VipPlotScatter : public VipPlotItemDataType< VipScatterPointVector, VipScatterPoint>
 {
 	Q_OBJECT
 

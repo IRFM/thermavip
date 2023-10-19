@@ -1154,7 +1154,11 @@ void VipAbstractScaleDraw::draw(QPainter* painter) const
 {
 	painter->save();
 
+	QPainter::RenderHints hints = painter->renderHints();
+
 	drawLabels(painter);
+
+	painter->setRenderHints(hints);
 	drawTicks(painter);
 
 	if (hasComponent(VipAbstractScaleDraw::Backbone)) {
@@ -2299,6 +2303,8 @@ void VipScaleDraw::drawTick(QPainter* painter, vip_double value, double len, Vip
 	double tval = scaleMap().transform(value);
 	const double pw = componentPen(Backbone).widthF() / 2;
 
+	
+
 	switch (alignment()) {
 		case LeftScale: {
 			double x1, x2;
@@ -2384,12 +2390,12 @@ void VipScaleDraw::drawBackbone(QPainter* painter) const
 
 	painter->setPen(componentPen(Backbone));
 
-	bool remove_antialiazing = !painter->transform().isRotating();
+	bool remove_antialiazing = !painter->transform().isRotating() && painter->testRenderHint(QPainter::Antialiasing);
 	QPainter::RenderHints saved = painter->renderHints();
 	if (remove_antialiazing) {
-		painter->setRenderHint(QPainter::Antialiasing, false);
+		painter->setRenderHint(QPainter::Antialiasing,false);
 	}
-
+	
 	switch (alignment()) {
 		case LeftScale: {
 			double x = pos.x() - off + 0.5;

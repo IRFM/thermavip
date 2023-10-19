@@ -1,5 +1,6 @@
 
 
+
 # Compilation
 
 Thermavip is fully developed in C++ with a few parts in Python. Python is not mandatory to compile or to launch Thermavip, but a valid Python installation 
@@ -32,7 +33,7 @@ cmake .. -G "Visual Studio 16 2019" -DCMAKE_BUILD_TYPE=Release  -DWITH_PYTHON=ON
 
 Once installed, the installation folder will  contain the following directories:
 
--	*bin*: contains SDK shared libraries binaries (VipLogging, VipDataType, VipCore, VipGui, VipAnnotation)
+-	*bin*: contains SDK shared libraries binaries (VipLogging, VipDataType, VipCore, VipPlotting, VipGui, VipAnnotation)
 -	*fonts*: contains the additional fonts that Thermavip application uses
 -	*help*: Thermavip application html help
 -	*icons*: Thermavip application icons

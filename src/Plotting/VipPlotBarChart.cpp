@@ -175,14 +175,14 @@ void VipPlotBarChart::setData(const QVariant& v)
 {
 	d_data->plotInterval = VipInterval();
 
-	d_data->plotRect = computePlotBoundingRect(v.value<BarVector>(), sceneMap());
+	d_data->plotRect = computePlotBoundingRect(v.value<VipBarVector>(), sceneMap());
 	d_data->barRects.clear();
 	VipPlotItemDataType::setData(v);
 }
 
 VipInterval VipPlotBarChart::plotInterval(const VipInterval& interval ) const 
 {
-	const BarVector vec = rawData();
+	const VipBarVector vec = rawData();
 	VipInterval inter = VipInterval();
 	
 	for (const VipBar& b : vec) {
@@ -459,7 +459,7 @@ VipBoxStyle& VipPlotBarChart::boxStyle(const QString& name)
 
 void VipPlotBarChart::draw(QPainter* painter, const VipCoordinateSystemPtr& m) const
 {
-	const BarVector values = this->rawData();
+	const VipBarVector values = this->rawData();
 
 	d_data->barRects.resize(values.size());
 
@@ -494,7 +494,7 @@ QString VipPlotBarChart::formatToolTip(const QPointF& pos) const
 		const QVector<QPolygonF>& vec = d_data->barRects[i];
 		for (int j = 0; j < vec.size(); ++j) {
 			if (vec[j].boundingRect().contains(pos)) {
-				const BarVector v = rawData();
+				const VipBarVector v = rawData();
 
 				double value = v[i].value(j);
 				const QString title = j < d_data->names.size() ? d_data->names[j].text() : QString();
@@ -723,7 +723,7 @@ QList<QPolygonF> VipPlotBarChart::barValuesRects(const VipBar& bv, const VipCoor
 	}
 }
 
-QRectF VipPlotBarChart::computePlotBoundingRect(const BarVector& values, const VipCoordinateSystemPtr& m) const
+QRectF VipPlotBarChart::computePlotBoundingRect(const VipBarVector& values, const VipCoordinateSystemPtr& m) const
 {
 	QRectF result;
 
@@ -803,3 +803,27 @@ bool VipPlotBarChart::setItemProperty(const char* name, const QVariant& value, c
 
 	return VipPlotItem::setItemProperty(name, value, index);
 }
+
+
+
+
+QDataStream& operator<<(QDataStream& str, const VipBar& b) {
+	return str << b.position() << b.values();
+}
+QDataStream& operator>>(QDataStream& str, VipBar& b) {
+	QVector<double> values;
+	double position;
+	str >> position, values;
+	b.setValues(values);
+	b.setPosition(position);
+	return str;
+}
+
+static bool register_types()
+{
+	qRegisterMetaType<VipBar>();
+	qRegisterMetaType<VipBarVector>();
+	qRegisterMetaTypeStreamOperators<VipBar>();
+	return true;
+}
+static bool _register_types = register_types();

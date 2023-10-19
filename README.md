@@ -1,4 +1,5 @@
 
+![Logo](docs/images/logo.png)
 
 # Thermavip
 
@@ -25,36 +26,37 @@ Below screenshot shows an example of software built based on Thermavip SDK for t
 
 ![Thermavip](docs/images/thermavip.png)
 
-Thermavip is based on a [versatile software architecture](docs/architecture.md) composed of a C++  **S**oftware **D**evelopment  **K**it (SDK) and a plugin mechanism.
-The SDK itself is based on [Qt](https://www.qt.io) only, a powerfull and open source library for generic programming and Graphical User Interface. Currently, the SDK is composed of 6 libraries:
+Thermavip is based on a [versatile software architecture](docs/architecture.md) composed of a C++  **S**oftware **D**evelopment  **K**it (SDK) and a plugin mechanism based on [Qt](https://www.qt.io/) only. Currently, the SDK is composed of 6 libraries:
 
--	[Logging](docs/logging.md): logging to file/console/GUI tools
--	[DataType](docs/datatypes.md): base data types manipulated by Thermavip (N-D arrays, vector of points, scene models...)
--	[Plotting](docs/plotting.md): high performance plotting library for offline/firm real-time display of multi-sensor data
--	[Core](docs/core.md): asynchronous agents library based on dataflow, archiving, plugin mechanism
--	[Gui](docs/gui.md): base graphical components (main window, players...)
--	[Annotation](docs/annotation.md): graphical components used to annotate IR videos, upload annotations to JSON files or to a MySQL/SQLite DB, query and display annotations from a DB.
+-	Generic libraries that can be used outside *Thermavip* application, like any third party library:
 
-**These libraries can also be used outside of Thermavip application, like any third party library.**
+	-	[Logging](docs/logging.md): logging to file/console/GUI tools
+	-	[DataType](docs/datatype.md): base data types manipulated by Thermavip (N-D arrays, vector of points, scene models...)
+	-	[Core](docs/core.md): asynchronous agents library based on dataflow, archiving, plugin mechanism
+	-	[Plotting](docs/plotting.md): high performance plotting library for offline/firm real-time display of multi-sensor data
+-	Libraries strongly connected to *Thermavip* application:
+	-	[Gui](docs/gui.md): base graphical components (main window, players...)
+	-	[Annotation](docs/annotation.md): graphical components used to annotate IR videos, upload annotations to JSON files or to a MySQL/SQLite DB, query and display annotations from a DB.
 
-The basic Thermavip application, without plugins, provides at least the necessary features dedicated to video annotation.
-Note that this requires to build Thermavip with the [librir](https://github.com/IRFM/librir) library (see [build](docs/compilation.md) notes).
+
+The basic *Thermavip* application, without plugins, provides at least the necessary features dedicated to video annotation.
+Note that this requires to build *Thermavip* with the [librir](https://github.com/IRFM/librir) library (see [build](docs/compilation.md) notes).
 
 
 ## Prerequisites
 
-To compile and run Thermavip, you need a valid Qt installation (starting version 5.9).
+To compile and run *Thermavip*, you need a valid Qt installation (starting version 5.9).
 Qt needs to be compiled with the desktop opengl option, and with mysql support if you wish to use the [Annotation](docs/annotation.md) library with a MySQL database.
 
 You can download Qt source code from this [website](https://download.qt.io/archive/qt/).
 
-Note that Thermavip will compile and run on almost any platform supporting Qt, including Windows and all Linux distributions.
+Note that *Thermavip* will compile and run on almost any platform supporting Qt, including Windows and all Linux distributions.
 
 Default plugins shipped within the git reprository rely on the [HDF5](https://www.hdfgroup.org/solutions/hdf5/), [CPython](https://github.com/python/cpython) and [Ffmpeg](https://ffmpeg.org/) libraries, and are NOT compiled by default.
 
 ## Compilation
 
-Thermavip compilation relies on cmake. See this [page](docs/compilation.md) for more details.
+*Thermavip* compilation relies on cmake. See this [page](docs/compilation.md) for more details.
 
 ## Authors
 
@@ -68,7 +70,7 @@ The software has been built with the collaboration and intensive testing of:
 * The Greifswald branch of [IPP](https://www.ipp.mpg.de/w7x) for the Wendelstein 7-X Stellarator,
 * The [ITER-CODAC](https://www.iter.org/mach/Codac) team.
 
-## Publications
+## Related publications
 
 -	V. Moncada et Al., *«Software platform for imaging diagnostic exploitation applied to edge plasma physics and real-time PFC monitoring»*, Fusion Engineering and Design, Volume 190, 113528, ISSN 0920-3796, 2023
 -	E. Grelier et Al., *«Deep Learning-Based Process for the Automatic Detection, Tracking, and Classification of Thermal Events on the In-Vessel Components of Fusion Reactors,»* Proceedings of the 32nd Symposium on Fusion Technology, 2022.

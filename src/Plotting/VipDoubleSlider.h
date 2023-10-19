@@ -12,7 +12,12 @@ class VipSliderGrip;
 class VIP_PLOTTING_EXPORT VipDoubleSlider : public VipAxisBase
 {
 	Q_OBJECT
-
+	Q_PROPERTY(bool singleStepEnabled READ singleStepEnabled WRITE setSingleStepEnabled)
+	Q_PROPERTY(bool scaleVisible READ scaleVisible WRITE setScaleVisible)
+	Q_PROPERTY(bool sliderEnabled READ isSliderEnabled WRITE setSliderEnabled)
+	Q_PROPERTY(bool mouseClickEnabled READ isMouseClickEnabled WRITE setMouseClickEnabled)
+	Q_PROPERTY(double value READ value WRITE setValue)
+	Q_PROPERTY(double lineWidth READ lineWidth WRITE setLineWidth)
 public:
 	VipDoubleSlider(Alignment pos, QGraphicsItem* parent = 0);
 	virtual ~VipDoubleSlider();
@@ -42,7 +47,6 @@ public:
 	double singleStep() const;
 
 	/// @brief Enable/disable slider bar drawing
-	void setSliderEnabled(bool on);
 	bool isSliderEnabled() const;
 
 	/// @brief Set the bow style to draw the slider bar
@@ -50,12 +54,12 @@ public:
 	const VipBoxStyle& lineBoxStyle() const;
 	VipBoxStyle& lineBoxStyle();
 
-	/// @brief Set the slider bar width (area drawn close to the axis backbone on which the grip is positioned)
-	void setLineWidth(double);
+	/// @brief Get/Set the slider bar width (area drawn close to the axis backbone on which the grip is positioned)
 	double lineWidth() const;
 
-	void setScaleVisible(bool);
 	bool scaleVisible() const;
+
+	bool isMouseClickEnabled() const;
 
 	void divideAxisScale(vip_double min, vip_double max, vip_double stepSize = 0.);
 
@@ -64,6 +68,10 @@ public:
 
 public Q_SLOTS:
 
+	void setSliderEnabled(bool on);
+	void setLineWidth(double);
+	void setScaleVisible(bool);
+	void setMouseClickEnabled(bool);
 	/// @brief Set the grip value
 	void setValue(double);
 
@@ -73,10 +81,9 @@ Q_SIGNALS:
 
 protected:
 	void drawSlider(QPainter* painter, const QRectF& rect) const;
-
 	virtual void itemGeometryChanged(const QRectF&);
-
 	virtual double additionalSpace() const;
+	virtual void mousePressEvent(QGraphicsSceneMouseEvent* event);
 
 private Q_SLOTS:
 
@@ -96,7 +103,8 @@ private:
 class VIP_PLOTTING_EXPORT VipDoubleSliderWidget : public VipScaleWidget
 {
 	Q_OBJECT
-
+	Q_PROPERTY(bool singleStepEnabled READ singleStepEnabled WRITE setSingleStepEnabled)
+	Q_PROPERTY(double value READ value WRITE setValue)
 public:
 	VipDoubleSliderWidget(VipBorderItem::Alignment align, QWidget* parent = NULL);
 
@@ -109,6 +117,7 @@ public:
 
 	double minValue() const;
 	double maxValue() const;
+	double value() const;
 
 	void setSingleStepEnabled(bool);
 	bool singleStepEnabled() const;

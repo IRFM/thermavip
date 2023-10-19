@@ -584,33 +584,85 @@ void vipExecUnitializationFunction()
 }
 
 
+#include "VipSleep.h"
 
-
-
-
-struct TerminationFunction
+struct GuiFunctions : public QObject
 {
+	QMutex mutex;
+	std::thread thread;
 	QList<VipFunction<0>> functions;
-	TerminationFunction() {}
-	~TerminationFunction() {
-		for (int i = 0; i < functions.size(); ++i)
-			functions[i]();
+	std::atomic<bool> stop{false};
+
+	
+	static GuiFunctions & instance()
+	{
+		static GuiFunctions inst;
+		return inst;
+	}
+
+	GuiFunctions::GuiFunctions()
+	{
+		thread = std::thread(std::bind(&GuiFunctions::run,this));
+	}
+	~GuiFunctions() {
+		stop = true;
+		thread.join();
+	}
+
+	void run()
+	{
+		while (!QCoreApplication::instance() && !stop)
+			vipSleep(1);
+		if(stop)
+			return;
+		QCoreApplication::instance()->postEvent(&instance(),new QEvent(QEvent::Create));
+	}
+
+	void addFunction(const VipFunction<0>& fun)
+	{
+		QMutexLocker lock(&mutex);
+		functions.push_back(fun);
+	}
+
+	virtual bool event(QEvent* evt)
+	{
+		if(evt->type() != QEvent::Create)
+			return false;
+		QMutexLocker lock(&mutex);
+		for(const VipFunction<0> & fun : functions)
+			fun();
+		return true;
 	}
 };
-static TerminationFunction _termination;
 
-bool vipAddTerminationFunction(const VipFunction<0>& fun)
+
+
+
+bool vipAddGuiInitializationFunction(int (*fun)())
 {
-	VipFunction<0> f(fun);
-	_termination.functions.append(f);
+	GuiFunctions::instance().addFunction(fun);
 	return true;
 }
-bool vipAddTerminationFunction(void(*fun)())
+bool vipAddGuiInitializationFunction(void (*fun)())
 {
-	VipFunction<0> f(fun);
-	_termination.functions.append(f);
+	GuiFunctions::instance().addFunction(fun);
 	return true;
 }
+
+
+
+
+
+Q_COREAPP_STARTUP_FUNCTION(vipExecInitializationFunction);
+
+static int add_post_routine() {
+	qAddPostRoutine(vipExecUnitializationFunction);
+	return 0;
+}
+static int _add_post_routine = add_post_routine();
+
+
+
 
 
 

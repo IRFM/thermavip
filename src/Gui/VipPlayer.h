@@ -89,6 +89,8 @@ private:
 };
 
 
+class VipAbstractPlayer;
+
 /// Singleton class used to monitore the lifetime of VipAbstractPlayer objects.
 class VIP_GUI_EXPORT VipPlayerLifeTime : public QObject
 {
@@ -147,6 +149,7 @@ public:
 class VIP_GUI_EXPORT VipAbstractPlayer : public VipPlotWidget
 {
 	Q_OBJECT
+	Q_PROPERTY(bool automaticWindowTitle READ automaticWindowTitle WRITE setAutomaticWindowTitle)
 		
 public:
 	VipAbstractPlayer(QWidget * parent = NULL);

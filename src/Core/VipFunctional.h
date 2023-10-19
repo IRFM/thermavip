@@ -44,8 +44,8 @@ struct VipType
 	VipType(const VipType&) = default;
 	VipType& operator=(const VipType&) = default;
 
-	bool operator==(const VipType& other) const noexcept { return id == other.id || (metaObject == other.metaObject && metaObject); }
-	bool operator!=(const VipType& other) const noexcept { return !((*this) == other); }
+	inline bool operator==(const VipType& other) const noexcept { return id == other.id || (metaObject == other.metaObject && metaObject); }
+	inline bool operator!=(const VipType& other) const noexcept { return !((*this) == other); }
 };
 
 /// The \a VipAny class is a kind of variant type used to store any kind of object type declared to the Qt meta type system.
@@ -129,9 +129,8 @@ public:
 };
 
 Q_DECLARE_METATYPE(VipAny)
-
 typedef QVector<VipType> VipTypeList;
-typedef std::function<VipAny(const VipAny&, const VipAny&, const VipAny&, const VipAny&, const VipAny&)> FunctionType;
+
 
 namespace details
 {
@@ -399,7 +398,7 @@ VIP_CORE_EXPORT void vipReleaseVariant(const QVariant& v);
 /// Check if type \a type_from is convertible to type \a type_to.
 /// This is done by checking if the types are convertible with QVariant::canConvert() function,
 /// but also by using (in case of QObject inheriting classes) an equivalent of \a qobject_cast function.
-inline bool vipIsConvertible(const VipType& type_from, const VipType& type_to)
+VIP_ALWAYS_INLINE bool vipIsConvertible(const VipType& type_from, const VipType& type_to)
 {
 	if (type_from == type_to || type_to.id == 0)
 		return true;
@@ -437,7 +436,7 @@ VIP_CORE_EXPORT QVariant vipCreateVariant(int id);
 /// @brief Returns the type id for given QObject pointer.
 /// Note that this function returns the highest possible type id based on object's QMetaObject.
 template<class T>
-inline int vipMetaTypeFromQObject(const T* obj)
+VIP_ALWAYS_INLINE int vipMetaTypeFromQObject(const T* obj)
 {
 	int id = 0;
 	if (obj)
@@ -450,7 +449,7 @@ inline int vipMetaTypeFromQObject(const T* obj)
 /// @brief Converts a pointer to QObject to QVariant.
 /// Note that this function returns the highest possible type id based on object's QMetaObject.
 template<class T>
-inline QVariant vipVariantFromQObject(const T* obj)
+VIP_ALWAYS_INLINE QVariant vipVariantFromQObject(const T* obj)
 {
 	int id = vipMetaTypeFromQObject(obj);
 	return QVariant(id, &obj);
@@ -461,12 +460,12 @@ namespace details
 	template<class T, bool IsQObject = inherit_qobject<T>::value>
 	struct ToVariant
 	{
-		static QVariant apply(const T& value) { return QVariant::fromValue(value); }
+		static VIP_ALWAYS_INLINE QVariant apply(const T& value) { return QVariant::fromValue(value); }
 	};
 	template<class T>
 	struct ToVariant<T, true>
 	{
-		static QVariant apply(const T& value) { return ::vipVariantFromQObject(value); }
+		static VIP_ALWAYS_INLINE QVariant apply(const T& value) { return ::vipVariantFromQObject(value); }
 	};
 }
 
@@ -479,20 +478,20 @@ QVariant vipToVariant(const T& value)
 	return details::ToVariant<T>::apply(value);
 }
 template<>
-inline QVariant QVariant::fromValue<QObject*>(QObject* const& value)
+VIP_ALWAYS_INLINE QVariant QVariant::fromValue<QObject*>(QObject* const& value)
 {
 	return vipToVariant(value);
 }
 class QWidget;
 template<>
-inline QVariant QVariant::fromValue<QWidget*>(QWidget* const& value)
+VIP_ALWAYS_INLINE QVariant QVariant::fromValue<QWidget*>(QWidget* const& value)
 {
 	return vipToVariant(value);
 }
 
 /// @brief Returns a QVariant constructed with given type name.
 /// \sa vipCreateVariant(int id)
-inline QVariant vipCreateVariant(const char* name)
+VIP_ALWAYS_INLINE QVariant vipCreateVariant(const char* name)
 {
 	return vipCreateVariant(QMetaType::type(name));
 }
@@ -500,7 +499,7 @@ inline QVariant vipCreateVariant(const char* name)
 /// @brief Returns a QVariant constructed with given \a id.
 /// If \a id represents a type declared with #VIP_REGISTER_QOBJECT_METATYPE_NO_DECLARE or #VIP_REGISTER_QOBJECT_METATYPE,
 /// the returned QVariant will still hold a NULL pointer to QObject.
-inline QVariant vipCreateNullVariant(int id)
+VIP_ALWAYS_INLINE QVariant vipCreateNullVariant(int id)
 {
 	if (QMetaType(id).flags() & QMetaType::PointerToQObject) {
 		QObject* ptr1 = nullptr;
@@ -514,13 +513,13 @@ inline QVariant vipCreateNullVariant(int id)
 /// @brief Returns a QVariant constructed with given type name.
 /// If the type name represents a type declared with #VIP_REGISTER_QOBJECT_METATYPE_NO_DECLARE or #VIP_REGISTER_QOBJECT_METATYPE,
 /// the returned QVariant will still hold a NULL pointer to QObject.
-inline QVariant vipCreateNullVariant(const char* name)
+VIP_ALWAYS_INLINE QVariant vipCreateNullVariant(const char* name)
 {
 	return vipCreateNullVariant(QMetaType::type(name));
 }
 
 /// @brief Returns the QMetaObject associated to given class name (must end with '*')
-inline const QMetaObject* vipMetaObjectFromName(const char* name)
+VIP_ALWAYS_INLINE const QMetaObject* vipMetaObjectFromName(const char* name)
 {
 	int id = QMetaType::type(name);
 	if (id)
@@ -552,7 +551,7 @@ VIP_CORE_EXPORT QList<int> vipUserTypes(int type);
 
 /// @brief Returns all user types (id >= QMetaType::User) that are convertible to given template type.
 template<class T>
-QList<int> vipUserTypes()
+VIP_ALWAYS_INLINE QList<int> vipUserTypes()
 {
 	return vipUserTypes(qMetaTypeId<T>());
 }
@@ -636,10 +635,10 @@ namespace details
 		using call_type = typename std::decay<Callable>::type;
 		call_type c;
 
-		static VipType returnType() { return VipType(qMetaTypeId<Ret>()); }
+		static VIP_ALWAYS_INLINE VipType returnType() { return VipType(qMetaTypeId<Ret>()); }
 
 		template<class... Args>
-		VipAny operator()(Args&&... args) const
+		VIP_ALWAYS_INLINE VipAny operator()(Args&&... args) const
 		{
 			return const_cast<call_type&>(c)(std::forward<Args>(args)...);
 		}
@@ -650,17 +649,17 @@ namespace details
 		using call_type = typename std::decay<Callable>::type;
 		call_type c;
 
-		static VipType returnType() { return VipType(qMetaTypeId<void>()); }
+		static VIP_ALWAYS_INLINE VipType returnType() { return VipType(qMetaTypeId<void>()); }
 
 		template<class... Args>
-		VipAny operator()(Args&&... args) const
+		VIP_ALWAYS_INLINE VipAny operator()(Args&&... args) const
 		{
 			const_cast<call_type&>(c)(std::forward<Args>(args)...);
 			return VipAny();
 		}
 	};
 
-	inline bool nonConvertible(const VipTypeList& t1, const VipTypeList& t2)
+	VIP_ALWAYS_INLINE bool nonConvertible(const VipTypeList& t1, const VipTypeList& t2)
 	{
 		int count = std::min(t1.size(), t2.size());
 		for (int i = 0; i < count; ++i) {
@@ -670,7 +669,7 @@ namespace details
 		return false;
 	}
 
-	inline bool exactEqual(const VipTypeList& t1, const VipTypeList& t2)
+	VIP_ALWAYS_INLINE bool exactEqual(const VipTypeList& t1, const VipTypeList& t2)
 	{
 		int count = std::min(t1.size(), t2.size());
 		for (int i = 0; i < count; ++i) {

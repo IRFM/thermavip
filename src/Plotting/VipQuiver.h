@@ -126,6 +126,9 @@ Q_DECLARE_OPERATORS_FOR_FLAGS(VipQuiverPath::QuiverStyles);
 Q_DECLARE_METATYPE(VipQuiver);
 Q_DECLARE_METATYPE(VipQuiverPath);
 
+VIP_PLOTTING_EXPORT QDataStream& operator<<(QDataStream& str, const VipQuiverPath& path);
+VIP_PLOTTING_EXPORT QDataStream& operator>>(QDataStream& str, VipQuiverPath& path);
+
 /// @}
 //end Plotting
 

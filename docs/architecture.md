@@ -1,5 +1,6 @@
 
 
+
 # Global architecture
 
 
@@ -10,8 +11,8 @@ Thermavip is a C++ framework based on 4 layers (see image below):
 
 	1.	[Logging](logging.md): logging to file/console/GUI tools
 	2.	[DataType](datatypes.md): base data types manipulated by Thermavip (N-D arrays, vector of points, scene models...)
-	3.	[Plotting](plotting.md): high performance plotting library for offline/firm real-time display of multi-sensor data
-	4.	[Core](core.md): asynchronous agents library based on dataflow, archiving, plugin mechanism
+	3.	[Core](core.md): asynchronous agents library based on dataflow, archiving, plugin mechanism
+	4.	[Plotting](plotting.md): high performance plotting library for offline/firm real-time display of multi-sensor data
 	5.	[Gui](gui.md): base graphical components (main window, players...)
 	6.	[Annotation](annotation.md): graphical components used to annotate IR videos, upload annotations to JSON files or to a MySQL/SQLite DB, query and display annotations from a DB.
 			
@@ -24,13 +25,13 @@ Thermavip is a C++ framework based on 4 layers (see image below):
 A lot of Thermavip SDK functionalitites rely on Qt mechanisms : meta-object system and the property system.
 It is fundamental to understand these systems if you wish to use Thermavip SDK.
 
-Currently, Thermavip libraries are restricted to C++11 as older gcc versions must be supported.
+Currently, Thermavip libraries are restricted to C++14 as older gcc versions must be supported.
 
 
 # Naming convention
 
 
-Thermavip source code is not very strict with its naming convention. In hidden codes (at least hidden for people manipulating the API, not the sources) might coexist different conventions. The API itself (almost) always follows the same naming convention. It is very close to the Qt library one. The naming convention is the following:
+Thermavip API always follows the same naming convention which is very close to the Qt library one. The naming convention is the following:
 
 - Classes start with the ```Vip``` prefix and each sub-part of the full name starts with an upper case letter. For instance, a class which goal is to sort a numerical sequence is called **VipSortNumericalSequence**.
 - Free functions start with the ```vip``` prefix and each sub-part of the full name starts with an upper case letter. For instance, a function which goal is to sort a numerical sequence is called **vipSortNumericalSequence**.

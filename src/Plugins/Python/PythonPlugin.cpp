@@ -707,7 +707,7 @@ PythonInterface::LoadResult PythonInterface::load()
 	vipFDPlayerCreated().append<void(VipPlotPlayer*)>(updatePlotPlayer);
 	vipFDPlayerCreated().append<void(VipAbstractPlayer*)>(customizePlayer);
 
-	vipAddTerminationFunction(uninitPython);
+	vipAddUninitializationFunction(uninitPython);
 
 
 	BaseHighlighter * h = CodeEditor::stdColorSchemeForType("Python");

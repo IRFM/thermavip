@@ -1574,6 +1574,7 @@ QDataStream& operator>>(QDataStream& stream, VipSymbol& s)
 
 static int registerStreamOperators()
 {
+	qRegisterMetaType<VipSymbol>();
 	qRegisterMetaTypeStreamOperators<VipSymbol>("VipSymbol");
 	return 0;
 }

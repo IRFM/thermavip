@@ -886,15 +886,16 @@ void VipPlotShape::draw(QPainter* painter, const VipCoordinateSystemPtr& m) cons
 		}
 
 		VipText t = text;
-		if (d_data->adjustTextColor) {
-			t.setTextPen(QPen(Qt::white));
+		const bool is_opengl = VipPainter::isOpenGL(painter);
+		if (d_data->adjustTextColor && !is_opengl) {
 			painter->save();
+			t.setTextPen(QPen(Qt::white));
 			painter->setCompositionMode(QPainter::CompositionMode_Difference);
 		}
 
 		VipPainter::drawText(painter, t, textTransform(), textTransformReference(), textDistance(), textPosition(), textAlignment(), shape_rect);
 
-		if (d_data->adjustTextColor)
+		if (d_data->adjustTextColor && !is_opengl)
 			painter->restore();
 	}
 }

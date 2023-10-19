@@ -1,26 +1,8 @@
 
+
 # Gui library
 
-The *Gui* library has 2 purposes:
-
-1.	Makes the bridge between the [Core](core.md) library and the [Plotting](plotting.md) one by defining processing objects (Agent based mechanism, see [Core](core.md) library) suitable to display
-any kind of data using the [Plotting](plotting.md) library. See the [StreamingMandelbrotPipeline](../src/Tests/Gui/StreamingMandelbrotPipeline/main.cpp) example for a use case.
-2.	Defines most Thermavip application widgets (including the main one) and GUI abstractions.
-
-The *Gui* library could be used within external applications, but mostly for the first usage.
-
-## Extending the Agent library
-
-*Gui* extends the **Agent** system defined in the *Core* library by providing the following processing classes (inheriting `VipProcessingObject`):
-
--	`VipDisplayObject`: base class for all processing objects used to display... well, anything
--	`VipDisplayPlotItem`: base class for processing objects displaying an input data using a `VipPlotItem` instance from the *Plotting* library
--	`VipDisplayCurve`: a `VipDisplayPlotItem` that displays an input curve using `VipPlotCurve` class
--	`VipDisplayHistogram`: a `VipDisplayPlotItem` that displays an input histogram using `VipPlotHistogram` class
--	`VipDisplayImage`: a `VipDisplayPlotItem` that displays an input image using `VipPlotSpectrogram` class
--	`VipDisplaySceneModel`: a `VipDisplayPlotItem` that displays an input scene model (`VipSceneModel`) using `VipPlotSceneModel` class
-
-See [StreamingMandelbrotPipeline](../src/Tests/Gui/StreamingMandelbrotPipeline/main.cpp) example for a use case.
+The *Gui* library defines most *Thermavip* application widgets (including the main one) and GUI abstractions. It is strongly linked to Thermavip application itself unlike the [Logging](logging.md), [DataType](datatype.md), [Core](core.md) and *[Plotting](plotting.md) libraries.
 
 
 ## Thermavip main interface

@@ -1,6 +1,7 @@
 
 
 
+
 # Plotting library
 
 The *Plotting* library defines items and widgets to create several types of 2D plots (see the [gallery](gallery.md)):
@@ -14,7 +15,7 @@ The *Plotting* library defines items and widgets to create several types of 2D p
 -	Shapes and scene models,
 -	Text, arrows,... 
 
-Its goal is to provide fast, dynamic and interactive plots meant for firm real-time display of 2D data. The library is highly customizable in order to define custom plotting items. *Plotting* library relies on the Qt **Graphics View Framework**, and is based on a heavily modified version of [Qwt](https://qwt.sourceforge.io/). The *Plotting* library depends on the *Logging* and *DataType* libraries.
+Its goal is to provide fast, dynamic and interactive plots meant for firm real-time display of 2D data. The library is highly customizable in order to define custom plotting items. *Plotting* library relies on the Qt **Graphics View Framework**, and is based on a heavily modified version of [Qwt](https://qwt.sourceforge.io/). The *Plotting* library depends on the *Logging*, *DataType* and *Core* libraries.
 
 ## Widgets and plotting areas
 
@@ -75,15 +76,44 @@ All streaming examples use this feature: [StreamingMandelbrot](../src/Tests/Plot
 
 ### Rendering modes
 
-The Plotting library supports OpenGL rendering based on [Qt OpenGL library]( https://doc.qt.io/qt-6/qtopengl-index.html). The simpliest way to enable OpenGL rendering is to call `setOpenGLRendering(true)` on a`VipPlotWidget2D`, `VipPlotPolarWidget2D`, `VipImageWidget2D` or`VipMultiGraphicsView`. This will reset the internal viewport with a `QOpenGLWidget` which automatically render items using Qt OpenGL engine.
+The Plotting library supports OpenGL rendering based on [Qt OpenGL library]( https://doc.qt.io/qt-6/qtopengl-index.html). All classes inheriting `VipBaseGraphicsView` (like `VipPlotWidget2D`, `VipPlotPolarWidget2D`, `VipImageWidget2D` or`VipMultiGraphicsView`) provide the member `setRenderingMode()` supporting the following values:
 
-While convenient, this method is not always possible especially when inserting plotting areas in a QGraphicsView that we do not control. That is why all `VipAbstractPlotArea` inheriting classes support offscreen OpenGL rendering. The rendering mode of a `VipAbstractPlotArea` can be toggled using `VipAbstractPlotArea::setRenderStrategy()` with one of the following values:
+-	`VipBaseGraphicsView::Raster`: set the viewport to a standard QWidget. The `QGraphicsView` will draw its items using the default raster engine.
+-	`VipBaseGraphicsView::OpenGL`: set the viewport to a `QOpenGLWidget`. The `QGraphicsView` will draw its items using Qt OpenGL engine.
+-	`VipBaseGraphicsView::OpenGLThread`: set the viewport to a `VipOpenGLWidget`. The `QGraphicsView` will draw its items using Qt OpenGL engine in a dedicated thread.
 
-- `Default`: directly paint items in the provided paint device (raster engine on standard widgets, opengl engine on QOpenGLWidget)
-- `OpenGLOffscreen`: render all items in an offscreen opengl context and draw the resulting image
-- `AutoStrategy`: try to find the fastest strategy between `Default` and `OpenGLOffscreen`
+Note that using `QOpenGLWidget` is usually not the best way to leverage opengl rendering as it does not decerase the application CPU load or the paint duration (except for some situations like thick line drawing), and the raster engine provides almost always better performances.
 
-In addition, the rendering can be multithreaded using the static method  `VipAbstractPlotArea::setRenderingThreads()`. Multithreaded rendering is only usefull when displaying several `VipAbstractPlotArea` in the same application, as rendering a unique `VipAbstractPlotArea` cannot be dispatched on multiple threads. Multithreading works with all rendering strategies.
+However , the `VipOpenGLWidget` class uses a thread dedicated to rendering tasks, and is almost always faster than the raster engine. See the class documentation for more details on its internals.
+
+Using opengl rendering requires some setup at runtime before the main `QApplication` is created, like this:
+
+```cpp
+// Setup default surface format
+QCoreApplication::setAttribute(Qt::AA_UseDesktopOpenGL);
+QSurfaceFormat format;
+format.setSamples(4);
+format.setSwapInterval(0);
+QSurfaceFormat::setDefaultFormat(format);
+
+// Optionally, disable text caching (which is always done by default on opengl engine)
+VipText::setCacheTextWhenPossible(false);
+```
+
+### Using the Agent Library
+
+It is possible to use the *Plotting* library with the Asynchronous Agent mechanism defined in the [Core](core.md) library. The following asynchronous processing objects are provided (they all define one unique input):
+
+- `VipDisplayCurve`: display a curve based on `VipPlotCurve`
+- `VipDisplayImage`: display an image based on `VipPlotSpectrogram`
+- `VipDisplaySceneModel`: display a scene model based on `VipPlotSceneModel`
+- `VipDisplayHistogram`: display a histogram based on `VipPlotHistogram`
+- `VipDisplayScatterPoints`: display scatter points based on `VipPlotScatter`
+- `VipDisplayQuiver`: display arrows based on `VipPlotQuiver`
+- `VipDisplayBars`: display bars based on `VipPlotBarChart`
+- `VipDisplayMarker`: display a marker based on `VipPlotMarker`
+
+See for instance the [StreamingCurvePipeline](../src/Tests/Gui/StreamingCurvePipeline/main.cpp), [StreamingMandelbrotPipeline](../src/Tests/Gui/StreamingMandelbrotPipeline/main.cpp) and [TemporalMandelbrotPipeline](../src/Tests/Gui/TemporalMandelbrotPipeline/main.cpp) examples.
 
 ## Style sheets
 

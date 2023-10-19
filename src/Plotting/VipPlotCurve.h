@@ -156,7 +156,7 @@ class VipSymbol;
 /// }
 /// 
 /// \endcode
-class VIP_PLOTTING_EXPORT VipPlotCurve: public VipPlotItemDataType< VipPointVector>
+class VIP_PLOTTING_EXPORT VipPlotCurve: public VipPlotItemDataType< VipPointVector, VipPoint>
 {
 	Q_OBJECT
 
@@ -253,6 +253,15 @@ public:
     /// @brief Reimplemented from VipPlotItemSampleDataType, set the VipPointVector data as a QVariant.
     /// Use VipPlotCurve::setRawData() to directly set a VipPointVector object.
     virtual void setData( const QVariant & );
+
+    void addSample(const VipPoint& pt) { addSamples(&pt, 1); }
+    void addSamples(const VipPointVector& pts) { addSamples(pts.data(), pts.size()); }
+    void addSamples(const VipPoint* pts, int numPoints);
+
+    template<class F>
+    void updateSamples(F&& fun);
+    
+   
 
 	/// @brief Returns the list of sub vectors (input VipPointVector splitted by NaN X value)
 	const QList<VipPointVector> & vectors() const;
@@ -419,6 +428,40 @@ private:
     class PrivateData;
     PrivateData *d_data;
 };
+
+
+
+template<class F>
+void VipPlotCurve::updateSamples(F&& fun)
+{
+    // First, lock data
+	this->dataLock()->lock();
+	
+	const QList<VipPointVector>& vecs = this->vectors();
+	if (vecs.size() == 1) {
+        // We only have one vector (most situations):
+        // take the internal data to remove a ref count
+		takeData();
+        // Call the functor on unref vector
+		try {
+			std::forward<F>(fun)(const_cast<VipPointVector&>(vecs.first()));
+		}
+		catch (...) {
+			VipPointVector tmp(vecs.first());
+			this->dataLock()->unlock();
+			setRawData(tmp);
+			throw;
+		}
+        // Unlock and set data
+		VipPointVector tmp(vecs.first());
+		this->dataLock()->unlock();
+		setRawData(tmp);
+		return;
+    }
+	this->dataLock()->unlock();
+	// Use standard updateData()
+    this->updateData(std::forward<F>(fun));
+}
 
 
 Q_DECLARE_OPERATORS_FOR_FLAGS( VipPlotCurve::LegendAttributes )

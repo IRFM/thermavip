@@ -888,15 +888,11 @@ class RenderingSettings::PrivateData
 public:
 	QRadioButton* vdirect;
 	QRadioButton* vpureGPU;
-	QRadioButton* voffscreenGPU;
-	QRadioButton* vautomatic;
+	QRadioButton* vGPUThreaded;
 
 	QRadioButton* pdirect;
 	QRadioButton* ppureGPU;
-	QRadioButton* poffscreenGPU;
-	QRadioButton* pautomatic;
-
-	QSpinBox* threads;
+	QRadioButton* pGPUThreaded;
 };
 
 RenderingSettings::RenderingSettings(QWidget* parent)
@@ -910,11 +906,8 @@ RenderingSettings::RenderingSettings(QWidget* parent)
 	m_data->vpureGPU = new QRadioButton("Opengl rendering");
 	m_data->vpureGPU->setToolTip("Direct opengl based rendering.\nDoes not work with multiple threads.");
 
-	m_data->voffscreenGPU = new QRadioButton("Offscreen opengl rendering");
-	m_data->voffscreenGPU->setToolTip("Offscreen opengl based rendering");
-
-	m_data->vautomatic = new QRadioButton("Automatic rendering");
-	m_data->vautomatic->setToolTip("Try to find the best performances between opengl offscreen and direct rendering");
+	m_data->vGPUThreaded = new QRadioButton("Threaded opengl rendering");
+	m_data->vGPUThreaded->setToolTip("Threaded opengl based rendering");
 
 	m_data->pdirect = new QRadioButton("Direct rendering");
 	m_data->pdirect->setToolTip("Direct CPU based rendering (default), usually the fastest");
@@ -922,41 +915,26 @@ RenderingSettings::RenderingSettings(QWidget* parent)
 	m_data->ppureGPU = new QRadioButton("Opengl rendering");
 	m_data->ppureGPU->setToolTip("Direct opengl based rendering.\nDoes not work with multiple threads.");
 
-	m_data->poffscreenGPU = new QRadioButton("Offscreen opengl rendering");
-	m_data->poffscreenGPU->setToolTip("Offscreen opengl based rendering");
-
-	m_data->pautomatic = new QRadioButton("Automatic rendering");
-	m_data->pautomatic->setToolTip("Try to find the best performances between opengl offscreen and direct rendering");
+	m_data->pGPUThreaded = new QRadioButton("Threaded opengl rendering");
+	m_data->pGPUThreaded->setToolTip("Threaded opengl based rendering");
 
 	QGroupBox* video = createGroup("Video rendering mode");
 	QVBoxLayout* vlay = new QVBoxLayout();
 	vlay->addWidget(m_data->vdirect);
 	vlay->addWidget(m_data->vpureGPU);
-	vlay->addWidget(m_data->voffscreenGPU);
-	vlay->addWidget(m_data->vautomatic);
+	vlay->addWidget(m_data->vGPUThreaded);
 	video->setLayout(vlay);
 
 	QGroupBox* plot = createGroup("Plot rendering mode");
 	QVBoxLayout* play = new QVBoxLayout();
 	play->addWidget(m_data->pdirect);
 	play->addWidget(m_data->ppureGPU);
-	play->addWidget(m_data->poffscreenGPU);
-	play->addWidget(m_data->pautomatic);
+	play->addWidget(m_data->pGPUThreaded);
 	plot->setLayout(play);
-
-	m_data->threads = new QSpinBox();
-	m_data->threads->setRange(1, 16);
-	m_data->threads->setValue(1);
-	m_data->threads->setToolTip("Rendering threads (default to 1).\nDoes not work with direct opengl rendering.");
-	QLabel* l = new QLabel("Rendering threads: ");
-	QHBoxLayout* hlay = new QHBoxLayout();
-	hlay->addWidget(l);
-	hlay->addWidget(m_data->threads);
 
 	QVBoxLayout* lay = new QVBoxLayout();
 	lay->addWidget(video);
 	lay->addWidget(plot);
-	lay->addLayout(hlay);
 	lay->addStretch(1);
 	setLayout(lay);
 }
@@ -968,46 +946,36 @@ RenderingSettings::~RenderingSettings()
 void RenderingSettings::applyPage()
 {
 	if (m_data->vdirect->isChecked())
-		VipGuiDisplayParamaters::instance()->setVideoRenderingStrategy(VipGuiDisplayParamaters::DirectRendering);
-	else if(m_data->voffscreenGPU->isChecked())
-		VipGuiDisplayParamaters::instance()->setVideoRenderingStrategy(VipGuiDisplayParamaters::OffscreenOpenGL);
+		VipGuiDisplayParamaters::instance()->setVideoRenderingStrategy(VipBaseGraphicsView::Raster);
+	else if(m_data->vGPUThreaded->isChecked())
+		VipGuiDisplayParamaters::instance()->setVideoRenderingStrategy(VipBaseGraphicsView::OpenGLThread);
 	else if (m_data->vpureGPU->isChecked())
-		VipGuiDisplayParamaters::instance()->setVideoRenderingStrategy(VipGuiDisplayParamaters::PureOpenGL);
-	else if (m_data->vautomatic->isChecked())
-		VipGuiDisplayParamaters::instance()->setVideoRenderingStrategy(VipGuiDisplayParamaters::AutoRendering);
-
+		VipGuiDisplayParamaters::instance()->setVideoRenderingStrategy(VipBaseGraphicsView::OpenGL);
+	
 	if (m_data->pdirect->isChecked())
-		VipGuiDisplayParamaters::instance()->setPlotRenderingStrategy(VipGuiDisplayParamaters::DirectRendering);
-	else if (m_data->poffscreenGPU->isChecked())
-		VipGuiDisplayParamaters::instance()->setPlotRenderingStrategy(VipGuiDisplayParamaters::OffscreenOpenGL);
+		VipGuiDisplayParamaters::instance()->setPlotRenderingStrategy(VipBaseGraphicsView::Raster);
+	else if (m_data->pGPUThreaded->isChecked())
+		VipGuiDisplayParamaters::instance()->setPlotRenderingStrategy(VipBaseGraphicsView::OpenGLThread);
 	else if (m_data->ppureGPU->isChecked())
-		VipGuiDisplayParamaters::instance()->setPlotRenderingStrategy(VipGuiDisplayParamaters::PureOpenGL);
-	else if (m_data->pautomatic->isChecked())
-		VipGuiDisplayParamaters::instance()->setPlotRenderingStrategy(VipGuiDisplayParamaters::AutoRendering);
-
-	VipGuiDisplayParamaters::instance()->setRenderingThreads(m_data->threads->value());
+		VipGuiDisplayParamaters::instance()->setPlotRenderingStrategy(VipBaseGraphicsView::OpenGL);
 }
 void RenderingSettings::updatePage()
 {
 	int st = VipGuiDisplayParamaters::instance()->videoRenderingStrategy();
-	if (st == VipGuiDisplayParamaters::DirectRendering)
+	if (st == VipBaseGraphicsView::Raster)
 		m_data->vdirect->setChecked(true);
-	else if (st == VipGuiDisplayParamaters::OffscreenOpenGL)
-		m_data->voffscreenGPU->setChecked(true);
-	else if (st == VipGuiDisplayParamaters::PureOpenGL)
+	else if (st == VipBaseGraphicsView::OpenGLThread)
+		m_data->vGPUThreaded->setChecked(true);
+	else if (st == VipBaseGraphicsView::OpenGL)
 		m_data->vpureGPU->setChecked(true);
-	else if (st == VipGuiDisplayParamaters::AutoRendering)
-		m_data->vautomatic->setChecked(true);
+	
 
 	st = VipGuiDisplayParamaters::instance()->plotRenderingStrategy();
-	if (st == VipGuiDisplayParamaters::DirectRendering)
+	if (st == VipBaseGraphicsView::Raster)
 		m_data->pdirect->setChecked(true);
-	else if (st == VipGuiDisplayParamaters::OffscreenOpenGL)
-		m_data->poffscreenGPU->setChecked(true);
-	else if (st == VipGuiDisplayParamaters::PureOpenGL)
+	else if (st == VipBaseGraphicsView::OpenGLThread)
+		m_data->pGPUThreaded->setChecked(true);
+	else if (st == VipBaseGraphicsView::OpenGL)
 		m_data->ppureGPU->setChecked(true);
-	else if (st == VipGuiDisplayParamaters::AutoRendering)
-		m_data->pautomatic->setChecked(true);
-
-	m_data->threads->setValue(VipGuiDisplayParamaters::instance()->renderingThreads());
+	
 }

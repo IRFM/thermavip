@@ -1,6 +1,7 @@
 #define VIP_ENABLE_LOG_DEBUG
 
 #include <fstream>
+#include <iostream>
 
 #include <QApplication>
 #include <QSplashScreen>
@@ -45,7 +46,7 @@
 #define VIP_ALLOW_AUTO_UPDATE
 #endif
 
-void myMessageOutput(QtMsgType type, const QMessageLogContext &context, const QString &msg)
+static void myMessageOutput(QtMsgType type, const QMessageLogContext &context, const QString &msg)
 {
 	
 	(void)context;
@@ -66,27 +67,6 @@ void myMessageOutput(QtMsgType type, const QMessageLogContext &context, const QS
 	return;
 } 
 
-struct Thread : QThread
-{
-	VipProperty* prop{ nullptr };
-	int counter{ 0 };
-	bool read{ true };
-
-	virtual void run()
-	{
-		while (true) {
-			if (read) {
-				int val = prop->value<int>();
-				counter += val;
-			}
-			else {
-				++counter;
-				prop->setData(counter);
-			}
-		}
-	}
-};
-#include <iostream>
 
 
 int main(int argc, char** argv)
@@ -128,6 +108,7 @@ int main(int argc, char** argv)
 	format.setSamples(4);
 	format.setSwapInterval(0); 
 	QSurfaceFormat::setDefaultFormat(format);
+	VipText::setCacheTextWhenPossible(false);
 
 	/*QSurfaceFormat fmt;
 	fmt.setSamples(4);
@@ -217,15 +198,15 @@ int main(int argc, char** argv)
 			if (QFontDatabase::addApplicationFont("fonts/" + files[i].fileName()) != -1) {
 				vip_debug("Added font %s\n", files[i].fileName().toLatin1().data());
 			}
-
 		if (families.size() < 10 || force_font) {
 			//If the system provides few fonts (like some Linux distributions),
 			//there are chances that they look hugly. In which case, use embedded one.
-			QFont font("Calibri Light");
-			font.setPointSize(12);
+			QFont font("Roboto");
+			font.setPointSizeF(9.5);
 			QApplication::setFont(font);
 			vip_debug("Set font to %s\n", font.family().toLatin1().data());
 		}
+		
 	}
 
 
@@ -294,9 +275,26 @@ int main(int argc, char** argv)
 	if (VipCommandOptions::instance().count("session"))
 		session_file = VipCommandOptions::instance().value("session").toString();
 
+	
+	
+	// load the skin
+	if (VipCommandOptions::instance().count("skin")) {
+		QString skin = VipCommandOptions::instance().value("skin").toString();
+		vipLoadSkin(skin);
+	}
+	else {
+		// load the standard skin if it exists
+		QString skin = "skins/" + VipCoreSettings::instance()->skin();
+		if (QDir(skin).exists() && !VipCoreSettings::instance()->skin().isEmpty())
+			vipLoadSkin(VipCoreSettings::instance()->skin());
+		else if (QDir("skins/dark").exists())
+			vipLoadSkin("dark");
+	}
+
 	bool no_splashscreen = VipCommandOptions::instance().count("no_splashscreen") > 0;
 	if (show_help)
 		no_splashscreen = true;
+
 
 	QSplashScreen* splash = NULL;
 	if (!no_splashscreen)
@@ -310,14 +308,17 @@ int main(int argc, char** argv)
 		splash->raise();
 	}
 
+#ifndef _WIN32
 	//for Linux, we need this for the splashscreen to show itself (?)
 	qint64 st = QDateTime::currentMSecsSinceEpoch();
 	do {
 		QCoreApplication::processEvents(QEventLoop::AllEvents);
 	} while ((QDateTime::currentMSecsSinceEpoch() - st < 1000));
+#endif
 
 	//initialize
-	vipExecInitializationFunction();
+	//vipExecInitializationFunction();
+
 
 
 	//splash->finish(vipGetMainWindow());
@@ -603,16 +604,15 @@ int main(int argc, char** argv)
 	int ret = app.exec();
 
 	VipLoadPlugins::instance().unloadPlugins();
-	vipExecUnitializationFunction();
 	VipLogging::instance().close(); 
 	if (vipIsRestartEnabled()) 
 	{
-		//QProcess::startDetached(VipUpdate::getUpdateProgram() + " --hide --command Thermavip -l " + QString::number(vipRestartMSecs()));
-		QProcess::startDetached(VipUpdate::getUpdateProgram(),
+		QProcess::startDetached(VipUpdate::getUpdateProgram() + " --hide --command Thermavip -l " + QString::number(vipRestartMSecs()));
+		/* QProcess::startDetached(VipUpdate::getUpdateProgram(),
 					QStringList() << "--hide"
 						      << "--command"
 						      << "Thermavip"
-						      << "-l" << QString::number(vipRestartMSecs()));
+						      << "-l" << QString::number(vipRestartMSecs()));*/
 	}
 	return ret;
 }

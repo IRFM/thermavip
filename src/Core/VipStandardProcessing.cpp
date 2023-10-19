@@ -936,7 +936,7 @@ VipNumericValueToPointVector::VipNumericValueToPointVector(QObject * parent)
 
 bool VipNumericValueToPointVector::acceptInput(int , const QVariant & v) const
 {
-	return v.canConvert(QMetaType::Double);
+	return v.canConvert(QMetaType::Double) || v.userType() == qMetaTypeId<VipPoint>();
 }
 
 void VipNumericValueToPointVector::resetProcessing()
@@ -951,17 +951,20 @@ void VipNumericValueToPointVector::apply()
 	while (inputAt(0)->hasNewData())
 	{
 		any = inputAt(0)->data();
-		bool ok = false;
-		double value = any.data().toDouble(&ok);
+		
 
-		if (!ok)
-		{
-			setError("input type is not convertible to a numerical value", VipProcessingObject::WrongInput);
-			return;
+		if (any.data().userType() == qMetaTypeId<VipPoint>())
+			m_vector.append(any.value<VipPoint>());
+		else if (any.time() != VipInvalidTime) {
+			bool ok = false;
+			double value = any.data().toDouble(&ok);
+
+			if (!ok) {
+				setError("input type is not convertible to a numerical value", VipProcessingObject::WrongInput);
+				return;
+			}
+			m_vector.append(VipPoint(any.time(), value));
 		}
-
-		if(any.time() != VipInvalidTime)
-			m_vector.append(QPointF(any.time(), value));
 	}
 
 	double window = propertyAt(0)->value<double>();
@@ -976,7 +979,8 @@ void VipNumericValueToPointVector::apply()
 			if (range < window)
 			{
 				if (i != 0)
-					m_vector = m_vector.mid(i);
+					m_vector.erase(m_vector.begin(), m_vector.begin() + i);
+					//m_vector = m_vector.mid(i);
 				break;
 			}
 		}

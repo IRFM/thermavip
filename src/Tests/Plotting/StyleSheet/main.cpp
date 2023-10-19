@@ -13,6 +13,7 @@
 #include "VipPolarAxis.h"
 #include "VipPlotHistogram.h"
 #include "VipPlotSpectrogram.h"
+#include "VipPicture.h"
 
 
 /// @brief Generate a gray theme stylesheet
@@ -60,6 +61,7 @@ VipMultiGraphicsView* createPlotWidget(const QString& title)
 	// create a VipMultiGraphicsView and add 5 different plotting areas
 	VipMultiGraphicsView* w = new VipMultiGraphicsView();
 	
+
 	QGraphicsLinearLayout* lay = new QGraphicsLinearLayout(Qt::Horizontal);
 	w->widget()->setLayout(lay);
 

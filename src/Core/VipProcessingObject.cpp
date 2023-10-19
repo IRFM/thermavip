@@ -17,6 +17,7 @@
 #include "VipTextOutput.h"
 #include "VipUniqueId.h"
 #include "VipXmlArchive.h"
+#include "VipSleep.h"
 
 
 inline QDataStream& operator<<(QDataStream& str, const PriorityMap & map) 
@@ -3329,7 +3330,7 @@ bool VipProcessingObject::wait(bool wait_for_sources, int max_milli_time)
 				if (remaining < 0)
 					return false;
 			}
-			QThread::msleep(1);
+			vipSleep(1);
 		}
 	}
 

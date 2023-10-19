@@ -3,6 +3,7 @@
 
 #include "VipPlotMimeData.h"
 #include "VipPlayer.h"
+#include "VipMapFileSystem.h"
 
 /// \addtogroup Gui
 /// @{

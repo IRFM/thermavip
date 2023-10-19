@@ -116,7 +116,7 @@ public:
 	  : graphicsObject(nullptr)
 	  , paintEnabled(true)
 	  , globalStyleSheetId(0)
-	  , renderHints(QPainter::Antialiasing | QPainter::TextAntialiasing)
+	  , renderHints(QPainter::Antialiasing | QPainter::TextAntialiasing) //TEST
 	  , compositionMode(QPainter::CompositionMode_SourceOver)
 	  , dirtyStyleSheet(true)
 	  , insideApply(false)
@@ -213,9 +213,10 @@ QList<VipPaintItem*> VipPaintItem::paintItemChildren() const
 	QList<QGraphicsItem*> items = graphicsObject()->childItems();
 	QList<VipPaintItem*> pitems;
 	for (QGraphicsItem* it : items) {
-		if (QGraphicsObject* obj = it->toGraphicsObject())
+		if (QGraphicsObject* obj = it->toGraphicsObject()) {
 			if (VipPaintItem* pitem = obj->property("VipPaintItem").value<VipPaintItem*>())
 				pitems.push_back(pitem);
+		}
 	}
 	return pitems;
 }
@@ -2731,20 +2732,6 @@ void VipPlotItemData::setInternalData(const QVariant& value)
 	Q_EMIT dataChanged();
 }
 
-void VipPlotItemData::setInternalData2(const QVariant& value, bool lock, bool emit_dataChanged)
-{
-	if (d_data->inDestroy)
-		return;
-	if (lock)
-		d_data->dataLock.lock();
-	d_data->data = value;
-	d_data->lastDataTime = QDateTime::currentMSecsSinceEpoch();
-	if (lock)
-		d_data->dataLock.unlock();
-	if (emit_dataChanged)
-		Q_EMIT dataChanged();
-}
-
 void VipPlotItemData::setData(const QVariant& d)
 {
 	if (d_data->inDestroy)
@@ -2758,6 +2745,16 @@ void VipPlotItemData::setData(const QVariant& d)
 			QMetaObject::invokeMethod(this, "markDirty", Qt::QueuedConnection);
 	}
 }
+
+QVariant VipPlotItemData::takeData() 
+{
+	if (d_data->inDestroy)
+		return QVariant();
+	QVariant ret = d_data->data ;
+	d_data->data = QVariant();
+	return ret;
+}
+
 
 VipPlotItemData::Mutex* VipPlotItemData::dataLock() const
 {

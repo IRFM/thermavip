@@ -17,7 +17,7 @@ QMainWindow::separator {
 	height: 8px;
 }
 QMainWindow::separator:hover {
-    background: #565656; 
+    background: #3D3D3D; 
 	  
 }   
 
@@ -85,6 +85,7 @@ QDockWidget {
 VipToolWidgetTitleBar > QLabel{
 	background: transparent;
 	color: white;
+	font: bold;
 }
 VipToolWidgetTitleBar > QToolButton{
 	background: transparent;
@@ -93,20 +94,21 @@ VipToolWidgetTitleBar > QToolButton{
 
 
 VipViewport {
-	background-color: #424242;
+	background-color: #3D3D3D;
 }
 VipViewport > QWidget {
-	background-color: #424242;
+	background-color: #3D3D3D;
 }
 VipToolWidgetScrollArea {
-	background-color: #424242;
+	background-color: #3D3D3D;
 }
 VipToolWidgetTitleBar {
-	background-color: #424242;
+	background-color: #3D3D3D;
 }
 VipToolWidgetTitleBar {
 	border-top-left-radius: 5px;
 	border-top-right-radius: 5px;
+	font: bold;
 }
 VipToolWidgetScrollArea {
 	border-bottom-left-radius: 5px;
@@ -114,9 +116,9 @@ VipToolWidgetScrollArea {
 	padding: 3px;
 }
 VipToolWidgetTitleBar[isFloating="false"] {
-	border-top: 1px solid #474747;
-	border-left: 1px solid #474747;
-	border-right: 1px solid #474747;
+	border-top: 1px solid #3D3D3D;
+	border-left: 1px solid #3D3D3D;
+	border-right: 1px solid #3D3D3D;
 	qproperty-closeButton: url(skins/dark/icons/close.png);
 	qproperty-floatButton: url(skins/dark/icons/pin.png);
 	qproperty-maximizeButton: url(skins/dark/icons/maximize.png);
@@ -124,15 +126,15 @@ VipToolWidgetTitleBar[isFloating="false"] {
 	qproperty-textColor: black;
 }
 VipToolWidgetScrollArea[isFloating="false"] {
-    border-bottom: 3px solid #474747;
-	border-left: 3px solid #474747;
-	border-right: 3px solid #474747;
+    border-bottom: 3px solid #3D3D3D;
+	border-left: 3px solid #3D3D3D;
+	border-right: 3px solid #3D3D3D;
 	
 }
 VipToolWidgetTitleBar[isFloating="true"] {
-	border-top: 1px solid #474747;
-	border-left: 1px solid #474747;
-	border-right: 1px solid #474747;
+	border-top: 1px solid #3D3D3D;
+	border-left: 1px solid #3D3D3D;
+	border-right: 1px solid #3D3D3D;
 	qproperty-closeButton: url(skins/dark/icons/close.png);
 	qproperty-floatButton: url(skins/dark/icons/pin.png);
 	qproperty-maximizeButton: url(skins/dark/icons/maximize.png);
@@ -140,9 +142,9 @@ VipToolWidgetTitleBar[isFloating="true"] {
 	qproperty-textColor: black;
 }
 VipToolWidgetScrollArea[isFloating="true"] {
-    border-bottom: 1px solid #474747;
-	border-left: 1px solid #474747;
-	border-right: 1px solid #474747;
+    border-bottom: 1px solid #3D3D3D;
+	border-left: 1px solid #3D3D3D;
+	border-right: 1px solid #3D3D3D;
 }
 VipToolWidgetTitleBar[hasHover="true"] {
 	border-top: 1px solid #008BE8;
@@ -178,8 +180,9 @@ VipToolWidgetScrollArea[hasFocus="true"] {
 QTabBar {
 	qproperty-drawBase:false;
 	border: none;
-	background: #424242;
+	background: #3D3D3D;
 	color: white;
+	font: bold;
 }
 QTabBar > QAbstractButton {
 	background : transparent;
@@ -195,13 +198,14 @@ QTabBar::tab {
 	height:25px;
 	padding-left:10px;
 	padding-right:10px;
-    background: #424242;
+    background: #3D3D3D;
     border: none;
 	color: white;
+	font: bold;
 }
 QTabBar::tab:selected {
     background: #56A0EA;
-    border: 1px solid #35342D;
+    border: 1px solid #2D2C27;
 	color: white;
 }
 QTabBar::tab:hover {
@@ -213,7 +217,7 @@ QTabBar::tab:hover {
 
 QTabWidget::pane {
 	border-top: 3px solid #008BE8;
-	background: #424242;
+	background: #3D3D3D;
 }
 QTabWidget::tab-bar {
 	left: 5px;
@@ -255,7 +259,7 @@ QLineEdit, QComboBox, QAbstractSpinBox {
     border: 1px solid gray;
 	border-color: #333031;
     padding: 0 8px;
-    background: #35342D;
+    background: #2D2C27;
     selection-background-color: #56A0EA;
 }
 QLineEdit:hover, QComboBox:hover, QDateTimeEdit:hover QAbstractSpinBox:hover, QDoubleSpinBox:hover  {
@@ -312,29 +316,26 @@ QStatusBar::item {
  
 
 QSplitter::handle:hover {
-    background-color: #565656;
+    background-color: #3D3D3D;
 }
 
 QTextEdit{
-	background-color: #353535;
+	background-color: #303030;
 	color: white;
 	/*font: 9.5pt "Consolas";*/
 	selection-background-color: #56A0EA;
 }
 QPlainTextEdit{
-	background-color: #353535;
+	background-color: #303030;
 	color: white;
 	/*font: 9.5pt "Consolas";*/
 	selection-background-color: #56A0EA;
 }
-/*CodeEditor {
-	qproperty-lineAreaBackground: white;
-	qproperty-lineAreaBorder: gray;
-}*/
+
 
 
 QListWidget, QTreeView{
-background-color: #353535;
+background-color: #303030;
 }
 
 QTreeView::item:selected{
@@ -348,7 +349,7 @@ QTreeView::branch:closed:has-children {
 }
 
 QPushButton {
-   border: 1px solid #424242;
+   border: 1px solid #3D3D3D;
    border-radius: 3px;
    padding-left: 10px ;
    padding-right: 10px ;
@@ -396,8 +397,9 @@ QToolButton::menu-button {
 
 
 QHeaderView::section {
-    background-color: #424242;/*#272822;*/
+    background-color: #3D3D3D;/*#272822;*/
 	border: 1px solid grey;
+	font: bold;
 }
 QHeaderView::section:hover
 {
@@ -508,7 +510,7 @@ VipDisplayTabBar{
 	margin-bottom: -2px;
 	padding-left:10px;
 	padding-right:10px;
-    background: #424242;
+    background: #3D3D3D;
 	color: white;
 	qproperty-closeIcon: url(skins/dark/icons/close.png);
 	qproperty-floatIcon: url(skins/dark/icons/pin.png);
@@ -531,7 +533,7 @@ VipDisplayTabBar::tab {
 	margin-bottom: -2px;
 	padding-left:10px;
 	padding-right:10px;
-    background: #424242;
+    background: #3D3D3D;
 	color: white;
 }
 VipDisplayTabBar::tab:selected {
@@ -548,7 +550,7 @@ VipDisplayTabBar::tab:hover {
 
 VipDisplayTabWidget::pane {
 	border-top: 3px solid #008BE8;
-	background: #424242;
+	background: #3D3D3D;
 }
 VipDisplayTabWidget::tab-bar {
 	left: 5px;
@@ -557,11 +559,11 @@ VipDisplayTabWidget::tab-bar {
 
 
 VipDragWidgetArea {
-	background: #565656;
+	background: #3D3D3D;
 	border: none;
 }
 VipViewportArea {
-	background: #565656;
+	background: #3D3D3D;
 	border: none;
 }
 
@@ -570,7 +572,7 @@ VipViewportArea {
 
 
 VipDragWidgetSplitter {
-	/*background : #424242;*/
+	/*background : #3D3D3D;*/
 	border-radius: 5px;
 }
 VipDragWidgetHandle {
@@ -579,17 +581,17 @@ VipDragWidgetHandle {
 }
 
 VipDragWidgetHandle:hover {
-	background : #565656;
+	background : #3D3D3D;
 }
 
 
 VipMultiDragWidget {
 	border: 1px solid #272822;
 	border-radius: 5px;
-	background : #474747;
+	background : #3D3D3D;
 }
 VipDragWidget {
-	background : #474747;
+	background : #3D3D3D;
 }
 
 VipLogConsole {
@@ -602,24 +604,24 @@ VipLogConsole {
 
 VipAbstractPlotWidget2D
 {
-	background : #474747;
-	qproperty-backgroundColor: #474747;
+	background : #3D3D3D;
+	qproperty-backgroundColor: #3D3D3D;
 }
 
 /*VipAbstractPlotWidget2D  {
-	background : #474747;
+	background : #3D3D3D;
 	qproperty-selectionColor: rgba(0,0,0,40);
 	
 	qproperty-titleColor: white;
 	qproperty-axisColor: white;
 	qproperty-axisTitleColor: white;
 	qproperty-axisTextColor: white;
-	qproperty-backgroundColor: #474747;
+	qproperty-backgroundColor: #3D3D3D;
 	qproperty-legendColor: white;
 }
 
 VipScaleWidget {
-	background : #474747;	
+	background : #3D3D3D;	
 	qproperty-axisTitleColor: white;
 	qproperty-axisColor: white;
 	qproperty-axisTextColor: white;
@@ -683,7 +685,7 @@ IPythonTabBar{
 	margin-bottom: -2px;
 	padding-left:10px;
 	padding-right:10px;
-    background: #424242;
+    background: #3D3D3D;
 	color: white;
 	qproperty-closeIcon: url(skins/dark/icons/close.png);
 	qproperty-hoverCloseIcon: url(skins/dark/icons/close_white.png);
@@ -704,7 +706,7 @@ IPythonTabBar::tab {
 	margin-bottom: -2px;
 	padding-left:10px;
 	padding-right:10px;
-    background: #424242;
+    background: #3D3D3D;
 	color: white;
 }
 IPythonTabBar::tab:selected {
@@ -720,7 +722,7 @@ IPythonTabBar::tab:hover {
 
 IPythonTabWidget::pane {
 	border-top: 3px solid #008BE8;
-	background: #424242;
+	background: #3D3D3D;
 }
 IPythonTabWidget::tab-bar {
 	left: 5px;

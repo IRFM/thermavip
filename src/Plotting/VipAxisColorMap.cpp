@@ -44,7 +44,7 @@ public:
 	VipInterval computedInterval;
 
 	QList<VipColorMapGrip*> grips;
-	QPixmap pixmap;
+	QImage pixmap;
 
 	vip_double autoScaleMin, autoScaleMax;
 	bool hasAutoScaleMin, hasAutoScaleMax;

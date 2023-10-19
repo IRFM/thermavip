@@ -69,13 +69,6 @@ VipPlotQuiver::VipPlotQuiver(const VipText & title )
 {
 	d_data = new PrivateData();
 
-	static bool once = false;
-	if (!once) {
-		once = true;
-		qRegisterMetaType<VipQuiverPoint>();
-		qRegisterMetaType<VipQuiverPointVector>();
-	}
-
 	setMajorColor(Qt::blue);
 	QPen p(Qt::blue);
 	p.setJoinStyle(Qt::MiterJoin);
@@ -383,3 +376,22 @@ VipQuiverPath & VipPlotQuiver::quiverPath()
 {
 	return d_data->quiver;
 }
+
+
+QDataStream& operator<<(QDataStream& str, const VipQuiverPoint& p)
+{
+	return str << p.destination << p.position << p.value;
+}
+QDataStream& operator>>(QDataStream& str, VipQuiverPoint& p)
+{
+	return str >> p.destination >> p.position >> p.value;
+}
+
+static bool register_types()
+{
+	qRegisterMetaType<VipQuiverPoint>();
+	qRegisterMetaType<VipQuiverPointVector>();
+	qRegisterMetaTypeStreamOperators<VipQuiverPoint>();
+	return true;
+}
+static bool _register_types = register_types();

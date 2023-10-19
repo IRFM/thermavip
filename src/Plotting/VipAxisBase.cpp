@@ -664,8 +664,9 @@ double VipAxisBase::dimForLength(double length, const QFont& // scaleFont
 void VipAxisBase::draw(QPainter* painter, QWidget* widget)
 {
 	painter->save();
-	painter->setRenderHints(this->renderHints());
+	
 	VipBorderItem::draw(painter, widget);
+	painter->setRenderHints(this->renderHints());
 
 	// if (this->alignment() == Left) {
 	// const QTransform &tr = painter->transform();

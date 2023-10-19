@@ -2049,6 +2049,7 @@ void VipPlotCurve::setData( const QVariant &v )
 	VipPlotItemDataType::setData( v );
 }
 
+
 const QList<VipPointVector> & VipPlotCurve::vectors() const
 {
 	return d_data->vectors;
@@ -2331,9 +2332,10 @@ QList<VipInterval> VipPlotCurve::dataBoundingRect(
 	if (sub_continuous)
 	{
 		full_continuous = true;
-		for (int i = 1; i < vectors.size(); ++i)
+		const QList<VipPointVector>& vecs = vectors;
+		for (int i = 1; i < vecs.size(); ++i)
 		{
-			if (vectors[i].first().x() < vectors[i - 1].last().x()) {
+			if (vecs[i].first().x() < vecs[i - 1].last().x()) {
 				full_continuous = false;
 				break;
 			}
@@ -2345,6 +2347,14 @@ QList<VipInterval> VipPlotCurve::dataBoundingRect(
 	out_vectors = vectors;
 
 	return QList<VipInterval>() << VipInterval(topleft.x(), bottomright.x()) << VipInterval(topleft.y(), bottomright.y());
+}
+
+void VipPlotCurve::addSamples(const VipPoint* pts, int numPoints)
+{
+	updateSamples([&](VipPointVector& v) {
+		for (int i = 0; i < numPoints; ++i)
+			v.push_back(pts[i]);
+	});
 }
 
 void VipPlotCurve::dataBoundingRect(const VipPointVector & samples)

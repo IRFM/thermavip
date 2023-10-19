@@ -33,9 +33,13 @@ private:
 };
 
 
-typedef QVector<VipBar> BarVector;
+typedef QVector<VipBar> VipBarVector;
 Q_DECLARE_METATYPE(VipBar);
-Q_DECLARE_METATYPE(BarVector);
+Q_DECLARE_METATYPE(VipBarVector);
+
+VIP_PLOTTING_EXPORT QDataStream& operator<<(QDataStream&, const VipBar&);
+VIP_PLOTTING_EXPORT QDataStream& operator>>(QDataStream&, VipBar&);
+
 
 
 /// @brief Class used to draw bar charts represented a vector of VipBar.
@@ -136,7 +140,7 @@ Q_DECLARE_METATYPE(BarVector);
 /// return app.exec();
 /// }
 /// 
-class VIP_PLOTTING_EXPORT VipPlotBarChart: public VipPlotItemDataType<QVector<VipBar > >
+class VIP_PLOTTING_EXPORT VipPlotBarChart: public VipPlotItemDataType<VipBarVector, VipBar >
 {
 	Q_OBJECT
 
@@ -180,7 +184,7 @@ public:
     explicit VipPlotBarChart( const VipText &title = VipText() );
     virtual ~VipPlotBarChart();
 
-    /// @brief Set data, must be a BarVector
+    /// @brief Set data, must be a VipBarVector
     virtual void setData( const QVariant & );
 
     virtual VipInterval plotInterval(const VipInterval& interval = Vip::InfinitInterval) const;
@@ -298,7 +302,7 @@ protected:
     void drawBarValues( QPainter *, const VipCoordinateSystemPtr &, const VipBar &, int) const;
 
     QList<QPolygonF> barValuesRects(const VipBar&, const VipCoordinateSystemPtr&) const;
-    QRectF computePlotBoundingRect(const BarVector&, const VipCoordinateSystemPtr&) const;
+    QRectF computePlotBoundingRect(const VipBarVector&, const VipCoordinateSystemPtr&) const;
 	double value(double v) const;
 
     virtual bool setItemProperty(const char* name, const QVariant& value, const QByteArray& index = QByteArray());

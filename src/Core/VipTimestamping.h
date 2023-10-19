@@ -50,7 +50,7 @@ namespace Vip
 }
 
 ///Comparison operator for VipTimeRange
-inline bool operator < (const VipTimeRange & t1, const VipTimeRange & t2)
+VIP_ALWAYS_INLINE bool operator<(const VipTimeRange& t1, const VipTimeRange& t2)
 {
 	if( t1.first < t2.first)
 		return true;
@@ -61,7 +61,7 @@ inline bool operator < (const VipTimeRange & t1, const VipTimeRange & t2)
 }
 
 ///Retruns true if a value is inside given time range
-inline bool vipIsInside(const VipTimeRange &pair, qint64 val)
+VIP_ALWAYS_INLINE bool vipIsInside(const VipTimeRange& pair, qint64 val)
 {
 	if( pair.first < pair.second)
 		return val >= pair.first && val <= pair.second;
@@ -83,7 +83,7 @@ VIP_CORE_EXPORT VipTimeRange vipIntersectRange(const VipTimeRange & r1, const Vi
 VIP_CORE_EXPORT VipTimeRange vipUnionRange(const VipTimeRange& r1, const VipTimeRange& r2);
 
 /// Returns range.second - range.first ***
-inline qint64 vipRangeWidth(const VipTimeRange& range)
+VIP_ALWAYS_INLINE qint64 vipRangeWidth(const VipTimeRange& range)
 {
 	return range.second - range.first;
 }

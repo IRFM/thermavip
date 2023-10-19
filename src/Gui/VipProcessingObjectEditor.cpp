@@ -4476,7 +4476,7 @@ QString VipProcessingLeafSelector::title(VipProcessingObject* obj, QString& tool
 	QString res;
 
 	if (VipDisplayObject* disp = qobject_cast<VipDisplayObject*>(obj)) {
-		if (VipAbstractPlayer* pl = disp->widget()) {
+		if (VipAbstractPlayer* pl = vipFindParent<VipAbstractPlayer>( disp->widget())) {
 			tip_lst << "<b>Player</b>: " + QString::number(pl->parentId()) + " " + pl->QWidget::windowTitle();
 		}
 		res = disp->title();
@@ -5140,7 +5140,7 @@ void VipProcessingEditorToolWidget::setProcessingObject(VipProcessingObject* obj
 		title = object->inputAt(0)->probe().name();
 	if (title.isEmpty()) {
 		if (VipDisplayObject* disp = qobject_cast<VipDisplayObject*>(object))
-			if (VipAbstractPlayer* pl = disp->widget())
+			if (VipAbstractPlayer* pl =  vipFindParent<VipAbstractPlayer>(disp->widget()))
 				title = QString::number(pl->parentId()) + " " + pl->QWidget::windowTitle();
 	}
 	if (title.isEmpty())

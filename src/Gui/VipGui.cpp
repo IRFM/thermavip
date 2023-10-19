@@ -6,737 +6,13 @@
 #include "VipLegendItem.h"
 #include "VipEnvironment.h"
 #include "VipPlotWidget2D.h"
+#include "VipLogging.h"
+#include "VipIODevice.h"
+#include "VipPlayer.h"
+#include "VipProgress.h"
+#include "VipStandardProcessing.h"
 
-VipPlotItem * vipCopyPlotItem(const VipPlotItem* item)
-{
-	VipXOStringArchive arch;
-	arch.content("item", QVariant::fromValue(const_cast<VipPlotItem*>(item)));
-
-	VipXIStringArchive iarch(arch.toString());
-	iarch.setProperty("_vip_no_id_or_scale", true);
-	return iarch.read("item").value<VipPlotItem*>();
-}
-
-QByteArray vipSavePlotItemState(const VipPlotItem* item)
-{
-	VipXOStringArchive arch; 
-	arch.content("item", QVariant::fromValue(const_cast<VipPlotItem*>(item)));
-	return arch.toString().toLatin1();
-}
-
-bool vipRestorePlotItemState(VipPlotItem* item, const QByteArray & state)
-{
-	VipXIStringArchive iarch(state);
-	iarch.setProperty("_vip_no_id_or_scale", true);
-	return iarch.content("item", item);
-}
-
-VipArchive & operator<<(VipArchive & arch, const VipPlotItem * value)
-{
-	arch.content("id", VipUniqueId::id(value))
-		.content("title", value->title())
-		.content("attributes", (int)value->itemAttributes())
-		.content("renderHints", (int)value->renderHints())
-		.content("compositionMode", (int)value->compositionMode())
-		.content("selectedPen", value->selectedPen())
-		.content("axisUnits", value->axisUnits())
-		.content("visible", value->isVisible());
-
-	//save the color map
-	if (value->colorMap())
-		//new in 2.2.17: save id as a VipAbstractScale instead of VipAxisColorMap
-		arch.content("colorMap", VipUniqueId::id<VipAbstractScale>(value->colorMap()));
-	else
-		arch.content("colorMap", 0);
-
-	//save the axes
-	arch.content("coordinateSystem", (int)value->coordinateSystemType());
-	QList<VipAbstractScale*> scales = value->axes();
-	arch.content("axisCount", scales.size());
-	for (int i = 0; i < scales.size(); ++i)
-		arch.content("axisId", VipUniqueId::id(scales[i]));
-
-	//save the properties
-	QList<QByteArray> names = value->dynamicPropertyNames();
-	QVariantMap properties;
-	for (int i = 0; i < names.size(); ++i)
-		if (!names[i].startsWith("_q_"))
-		{
-			QVariant v = value->property(names[i]);
-			if (v.userType() > 0 && v.userType() < QMetaType::User)
-			{
-				properties[names[i]] = v;
-			}
-		}
-
-	arch.content("properties", properties);
-
-	//save the additional texts
-	const QMap<int, VipPlotItem::ItemText> texts = value->texts();
-
-	arch.content("textCount", texts.size());
-	arch.start("texts");
-	for (QMap<int, VipPlotItem::ItemText>::const_iterator it = texts.begin(); it != texts.end(); ++it)
-	{
-		arch.content("text", it.value().text);
-		arch.content("position", (int)it.value().position);
-		arch.content("alignment", (int)it.value().alignment);
-	}
-	arch.end();
-
-	
-	arch.content("styleSheet", value->styleSheetString());
-	return arch;
-}
-
-VipArchive & operator>>(VipArchive & arch, VipPlotItem * value)
-{
-	int id = arch.read("id").value<int>();
-	if (!arch.property("_vip_no_id_or_scale").toBool())
-		VipUniqueId::setId(value, id);
-	value->setTitle(arch.read("title").value<VipText>());
-	value->setItemAttributes(VipPlotItem::ItemAttributes(arch.read("attributes").value<int>()));
-	value->setRenderHints(QPainter::RenderHints(arch.read("renderHints").value<int>()));
-	value->setCompositionMode(QPainter::CompositionMode(arch.read("compositionMode").value<int>()));
-	value->setSelectedPen(arch.read("selectedPen").value<QPen>());
-	QList<VipText> units = arch.read("axisUnits").value<QList<VipText> >();
-	for (int i = 0; i < units.size(); ++i)
-		value->setAxisUnit(i, units[i]);
-	value->setVisible(arch.read("visible").toBool());
-
-	//load the color map
-	id = arch.read("colorMap").toInt();
-	if (id && !arch.property("_vip_no_id_or_scale").toBool())
-	{
-		//new in 2.2.17: interpret id as a VipAbstractScale instead of VipAxisColorMap
-		VipAxisColorMap * axis = qobject_cast<VipAxisColorMap*>(VipUniqueId::find<VipAbstractScale>(id));
-		if (!axis)
-			axis = VipUniqueId::find<VipAxisColorMap>(id);
-		if (axis)
-			value->setColorMap(axis);
-	}
-
-	//try to set the axes
-	int coordinateSystem = arch.read("coordinateSystem").toInt();
-	int count = arch.read("axisCount").toInt();
-	if (count)
-	{
-		QList<VipAbstractScale*> scales;
-		for (int i = 0; i < count; ++i)
-		{
-			VipAbstractScale * scale = VipUniqueId::find<VipAbstractScale>(arch.read("axisId").toInt());
-			scales.append(scale);
-		}
-		if (!arch.property("_vip_no_id_or_scale").toBool())
-			value->setAxes(scales, (VipCoordinateSystem::Type)coordinateSystem);
-	}
-
-	arch.save();
-	QVariantMap properties;
-	if (arch.content("properties", properties))
-	{
-		for (QVariantMap::const_iterator it = properties.begin(); it != properties.end(); ++it)
-			value->setProperty(it.key().toLatin1().data(), it.value());
-	}
-	else
-		arch.restore();
-
-	//read additional texts
-	count = arch.read("textCount").toInt();
-	if (count && (bool)arch.start("texts"))
-	{
-		while (arch) {
-			VipText text = arch.read("text").value<VipText>();
-			Vip::RegionPositions position = (Vip::RegionPositions)arch.read("position").toInt();
-			Qt::Alignment alignment = (Qt::Alignment)arch.read("alignment").toInt();
-
-			if (arch) {
-				value->addText(text, position, alignment);
-			}
-		}
-		arch.end();
-	}
-	arch.resetError();
-
-	
-
-	arch.save();
-	QString st;
-	if (arch.content("styleSheet", st))
-		value->setStyleSheet(st);
-	else
-		arch.restore();
-
-	return arch;
-}
-
-VipArchive & operator<<(VipArchive & arch, const VipPlotItemData * value)
-{
-	//arch.content("maxSampleCount", value->maxSampleCount());
-	QVariant v = value->data();
-	if (v.userType() == qMetaTypeId<VipPointVector>()) {
-		//for VipPointVector only, downsample to 100 points to avoid having too big session files
-		const VipPointVector pts = v.value<VipPointVector>();
-		if (pts.size() > 100) {
-			double step = pts.size() / 100.0;
-			VipPointVector tmp;
-			for (double s = 0; s < pts.size(); s += step) {
-				int index = (int)s;
-				tmp.push_back(pts[index]);
-			}
-			v = vipToVariant(tmp);
-		}
-	}
-	arch.content("data", v);
-	return arch;
-}
-
-VipArchive & operator>>(VipArchive & arch, VipPlotItemData * value)
-{
-	//value->setMaxSampleCount(arch.read("maxSampleCount").toInt());
-	value->setData(arch.read("data"));
-	return arch;
-}
-
-VipArchive & operator<<(VipArchive & arch, const VipPlotCurve * value)
-{
-	arch.content("legendAttributes", (int)value->legendAttributes());
-	arch.content("curveAttributes", (int)value->curveAttributes());
-	arch.content("boxStyle", value->boxStyle());
-	arch.content("baseline", value->baseline());
-	arch.content("curveStyle", (int)value->style());
-	if (value->symbol())
-		arch.content("symbol", *value->symbol());
-	else
-		arch.content("symbol", VipSymbol());
-	arch.content("symbolVisible", value->symbolVisible());
-	return arch;
-}
-
-VipArchive & operator>>(VipArchive & arch, VipPlotCurve * value)
-{
-	value->setLegendAttributes(VipPlotCurve::LegendAttributes(arch.read("legendAttributes").value<int>()));
-	value->setCurveAttributes(VipPlotCurve::CurveAttributes(arch.read("curveAttributes").value<int>()));
-	value->setBoxStyle(arch.read("boxStyle").value<VipBoxStyle>());
-	value->setBaseline(arch.read("baseline").value<double>());
-	value->setStyle(VipPlotCurve::CurveStyle(arch.read("curveStyle").value<int>()));
-	value->setSymbol(new VipSymbol(arch.read("symbol").value<VipSymbol>()));
-	value->setSymbolVisible(arch.read("symbolVisible").toBool());
-	return arch;
-}
-
-VipArchive & operator<<(VipArchive & arch, const VipPlotHistogram * value)
-{
-	return arch.content("boxStyle", value->boxStyle())
-		.content("textPosition", (int)value->textPosition())
-		//.content("textRotation", value->textRotation())
-		.content("textDistance", value->textDistance())
-		.content("text", value->text())
-		.content("baseline", value->baseline())
-		.content("style", (int)value->style());
-}
-
-VipArchive & operator>>(VipArchive & arch, VipPlotHistogram * value)
-{
-	value->setBoxStyle(arch.read("boxStyle").value<VipBoxStyle>());
-	value->setTextPosition((Vip::RegionPositions)arch.read("textPosition").value<int>());
-	//value->setTextRotation(arch.read("textRotation").value<double>());
-	value->setTextDistance(arch.read("textDistance").value<double>());
-	value->setText(arch.read("text").value<VipText>());
-	value->setBaseline(arch.read("baseline").value<double>());
-	value->setStyle((VipPlotHistogram::HistogramStyle)arch.read("style").value<int>());
-	return arch;
-}
-
-VipArchive & operator<<(VipArchive & arch, const VipPlotGrid * value)
-{
-	arch.content("minorPen", value->minorPen());
-	arch.content("majorPen", value->majorPen());
-	arch.content("_vip_customDisplay", value->property("_vip_customDisplay").toInt());
-	return arch;
-}
-
-VipArchive & operator>>(VipArchive & arch, VipPlotGrid * value)
-{
-	value->setMinorPen(arch.read("minorPen").value<QPen>());
-	value->setMajorPen(arch.read("majorPen").value<QPen>());
-	//new in 2.2.18
-	int _vip_customDisplay;
-	if (arch.content("_vip_customDisplay", _vip_customDisplay))
-		value->setProperty("_vip_customDisplay", _vip_customDisplay);
-	else
-		arch.restore();
-	return arch;
-}
-
-VipArchive & operator<<(VipArchive & arch, const VipPlotCanvas * value)
-{
-	arch.content("boxStyle", value->boxStyle());
-	//new in 2.2.18
-	arch.content("_vip_customDisplay", value->property("_vip_customDisplay").toInt());
-	return arch;
-}
-
-VipArchive & operator>>(VipArchive & arch, VipPlotCanvas * value)
-{
-	value->setBoxStyle(arch.read("boxStyle").value<VipBoxStyle>());
-	//new in 2.2.18
-	int _vip_customDisplay;
-	if (arch.content("_vip_customDisplay", _vip_customDisplay))
-		value->setProperty("_vip_customDisplay", _vip_customDisplay);
-	else
-		arch.restore();
-	return arch;
-}
-
-VipArchive & operator<<(VipArchive & arch, const VipPlotMarker * value)
-{
-	arch.content("lineStyle", (int)value->lineStyle())
-		.content("linePen", value->linePen())
-		.content("label", value->label())
-		.content("labelAlignment", (int)value->labelAlignment())
-		.content("labelOrientation", (int)value->labelOrientation())
-		.content("spacing", value->spacing());
-	if (value->symbol())
-		return arch.content("symbol", *value->symbol());
-	else
-		return arch.content("symbol", VipSymbol());
-}
-
-VipArchive & operator>>(VipArchive & arch, VipPlotMarker * value)
-{
-	value->setLineStyle((VipPlotMarker::LineStyle)arch.read("lineStyle").value<int>());
-	value->setLinePen(arch.read("linePen").value<QPen>());
-	value->setLabel(arch.read("label").value<VipText>());
-	value->setLabelAlignment((Qt::AlignmentFlag)arch.read("labelAlignment").value<int>());
-	value->setLabelOrientation((Qt::Orientation)arch.read("labelOrientation").value<int>());
-	value->setSpacing(arch.read("spacing").value<double>());
-	value->setSymbol(new VipSymbol(arch.read("symbol").value<VipSymbol>()));
-	return arch;
-}
-
-VipArchive & operator<<(VipArchive & arch, const VipPlotRasterData *)
-{
-	return arch;
-}
-
-VipArchive & operator>>(VipArchive & arch, VipPlotRasterData *)
-{
-	return arch;
-}
-
-VipArchive & operator<<(VipArchive & arch, const VipPlotSpectrogram * value)
-{
-	arch.content("defaultContourPen", value->defaultContourPen());
-	arch.content("ignoreAllVerticesOnLevel", value->ignoreAllVerticesOnLevel());
-	QList< vip_double > levels = value->contourLevels();
-	for (int i = 0; i < levels.size(); ++i)
-		arch.content("level", levels[i]);
-	return arch;
-}
-
-VipArchive & operator>>(VipArchive & arch, VipPlotSpectrogram * value)
-{
-	value->setDefaultContourPen(arch.read("defaultContourPen").value<QPen>());
-	value->setIgnoreAllVerticesOnLevel(arch.read("ignoreAllVerticesOnLevel").value<bool>());
-	QList< vip_double > levels;
-	while (true)
-	{
-		QVariant tmp = arch.read();
-		if (tmp.userType() == 0)
-			break;
-		levels.append(tmp.toDouble());
-	}
-	value->setContourLevels(levels);
-	arch.resetError();
-	return arch;
-}
-
-VipArchive & operator<<(VipArchive & arch, const VipPlotShape * value)
-{
-	arch.content("dawComponents", (int)value->dawComponents());
-	arch.content("textStyle", value->textStyle());
-	arch.content("textPosition", (int)value->textPosition());
-	arch.content("textAlignment", (int)value->textAlignment());
-	arch.content("adjustTextColor", (int)value->adjustTextColor());
-	return arch;
-}
-
-VipArchive & operator>>(VipArchive & arch, VipPlotShape * value)
-{
-	value->setDrawComponents((VipPlotShape::DrawComponents)arch.read("dawComponents").value<int>());
-	value->setTextStyle(arch.read("textStyle").value<VipTextStyle>());
-	value->setTextPosition((Vip::RegionPositions)arch.read("textPosition").value<int>());
-	value->setTextAlignment((Qt::AlignmentFlag)arch.read("textAlignment").value<int>());
-	arch.save();
-	value->setAdjustTextColor(arch.read("adjustTextColor").value<bool>());
-	if (!arch)
-		arch.restore();
-	arch.resetError();
-	return arch;
-}
-
-VipArchive & operator<<(VipArchive & arch, const VipPlotSceneModel * value)
-{
-	//mark internal shapes as non serializable, they will recreated when reloading the VipPlotSceneModel
-	for (int i = 0; i < value->count(); ++i) {
-		if (VipPlotShape * sh = qobject_cast<VipPlotShape*>(value->at(i))) {
-			sh->setProperty("_vip_no_serialize", true);
-			if (VipResizeItem * re = (sh->property("VipResizeItem").value<VipResizeItemPtr>()))
-				re->setProperty("_vip_no_serialize", true);
-		}
-	}
-
-	return arch.content("mode", (int)value->mode()).content("sceneModel", value->sceneModel());
-}
-
-VipArchive & operator>>(VipArchive & arch, VipPlotSceneModel * value)
-{
-	value->setMode((VipPlotSceneModel::Mode)arch.read("mode").toInt());
-	value->setSceneModel(arch.read("sceneModel").value<VipSceneModel>());
-	return arch;
-}
-
-static DoubleVector toDoubleVector(const DoubleList & lst)
-{
-	DoubleVector res;
-	res.resize(lst.size());
-	for (int i = 0; i < lst.size(); ++i)
-		res[i] = lst[i];
-	return res;
-}
-
-static int registerDoubleList = qRegisterMetaType<DoubleList>("DoubleList");
-static int registerDoubleListStream = qRegisterMetaTypeStreamOperators<DoubleList>();
-static int registerDoubleVector = qRegisterMetaType<DoubleVector>("DoubleVector");
-static int registerDoubleVectorStream = qRegisterMetaTypeStreamOperators<DoubleVector>();
-static bool convert = QMetaType::registerConverter<DoubleList, DoubleVector>(toDoubleVector);
-
-VipArchive & operator<<(VipArchive & arch, const VipScaleDiv & value)
-{
-	arch.content("MinorTicks", value.ticks(VipScaleDiv::MinorTick));
-	arch.content("MediumTick", value.ticks(VipScaleDiv::MediumTick));
-	arch.content("MajorTick", value.ticks(VipScaleDiv::MajorTick));
-	arch.content("lowerBound", value.lowerBound());
-	arch.content("upperBound", value.upperBound());
-	return arch;
-}
-
-VipArchive & operator >> (VipArchive & arch, VipScaleDiv & value)
-{
-	value.setTicks(VipScaleDiv::MinorTick, arch.read("MinorTicks").value<DoubleVector>());
-	value.setTicks(VipScaleDiv::MediumTick, arch.read("MediumTick").value<DoubleVector>());
-	value.setTicks(VipScaleDiv::MajorTick, arch.read("MajorTick").value<DoubleVector>());
-	value.setLowerBound(arch.read("lowerBound").toDouble());
-	value.setUpperBound(arch.read("upperBound").toDouble());
-	return arch;
-}
-
-VipArchive & operator<<(VipArchive & arch, const VipAbstractScale * value)
-{
-	arch.content("id", VipUniqueId::id(value));
-	arch.content("boxStyle", value->boxStyle());
-	arch.content("isAutoScale", value->isAutoScale());
-	arch.content("title", value->title());
-	arch.content("majorTextStyle", value->textStyle(VipScaleDiv::MajorTick));
-	arch.content("mediumTextStyle", value->textStyle(VipScaleDiv::MediumTick));
-	arch.content("minorTextStyle", value->textStyle(VipScaleDiv::MinorTick));
-	arch.content("majorTransform", value->labelTransform(VipScaleDiv::MajorTick));
-	arch.content("mediumTransform", value->labelTransform(VipScaleDiv::MediumTick));
-	arch.content("minorTransform", value->labelTransform(VipScaleDiv::MinorTick));
-	arch.content("isDrawTitleEnabled", value->isDrawTitleEnabled());
-	arch.content("startBorderDist", value->startBorderDist());
-	arch.content("endBorderDist", value->endBorderDist());
-	arch.content("startMinBorderDist", value->startMinBorderDist());
-	arch.content("endMinBorderDist", value->endMinBorderDist());
-	arch.content("startMaxBorderDist", value->startMaxBorderDist());
-	arch.content("endMaxBorderDist", value->endMaxBorderDist());
-	arch.content("margin", value->margin());
-	arch.content("spacing", value->spacing());
-	arch.content("isScaleInverted", value->isScaleInverted());
-	arch.content("maxMajor", value->maxMajor());
-	arch.content("maxMinor", value->maxMinor());
-	//new in 3.0.1
-	arch.content("autoExponent", value->constScaleDraw()->valueToText()->automaticExponent());
-	arch.content("minLabelSize", value->constScaleDraw()->valueToText()->maxLabelSize());
-	arch.content("exponent", value->constScaleDraw()->valueToText()->exponent());
-
-	arch.content("scaleDiv", value->scaleDiv());
-	arch.content("renderHints", (int)value->renderHints());
-	arch.content("visible", (int)value->isVisible());
-	//save the y scale engine type
-	arch.content("yScaleEngine", value->scaleEngine() ? (int)value->scaleEngine()->scaleType() : 0);
-
-	arch.content("styleSheet", value->styleSheetString());
-
-	return arch;
-}
-
-VipArchive & operator>>(VipArchive & arch, VipAbstractScale * value)
-{
-	VipUniqueId::setId(value, arch.read("id").toInt());
-	value->setBoxStyle(arch.read("boxStyle").value<VipBoxStyle>());
-	value->setAutoScale(arch.read("isAutoScale").value<bool>());
-	value->setTitle(arch.read("title").value<VipText>());
-	value->setTextStyle(arch.read("majorTextStyle").value<VipTextStyle>(), VipScaleDiv::MajorTick);
-	value->setTextStyle(arch.read("mediumTextStyle").value<VipTextStyle>(), VipScaleDiv::MediumTick);
-	value->setTextStyle(arch.read("minorTextStyle").value<VipTextStyle>(), VipScaleDiv::MinorTick);
-	value->setLabelTransform(arch.read("majorTransform").value<QTransform>(), VipScaleDiv::MajorTick);
-	value->setLabelTransform(arch.read("mediumTransform").value<QTransform>(), VipScaleDiv::MediumTick);
-	value->setLabelTransform(arch.read("minorTransform").value<QTransform>(), VipScaleDiv::MinorTick);
-	value->enableDrawTitle(arch.read("isDrawTitleEnabled").value<bool>());
-	double startBorderDist = arch.read("startBorderDist").value<double>();
-	double endBorderDist = arch.read("endBorderDist").value<double>();
-	value->setBorderDist(startBorderDist, endBorderDist);
-	double startMinBorderDist = arch.read("startMinBorderDist").value<double>();
-	double endMinBorderDist = arch.read("endMinBorderDist").value<double>();
-	value->setMinBorderDist(startMinBorderDist, endMinBorderDist);
-	double startMaxBorderDist = arch.read("startMaxBorderDist").value<double>();
-	double endMaxBorderDist = arch.read("endMaxBorderDist").value<double>();
-	value->setMaxBorderDist(startMaxBorderDist, endMaxBorderDist);
-	value->setMargin(arch.read("margin").value<double>());
-	value->setSpacing(arch.read("spacing").value<double>());
-	value->setScaleInverted(arch.read("isScaleInverted").value<bool>());
-	value->setMaxMajor(arch.read("maxMajor").value<int>());
-	value->setMaxMinor(arch.read("maxMinor").value<int>());
-
-	//new in 3.0.1
-	arch.save();
-	bool autoExponent = false;
-	int minLabelSize = 0, exponent=0;
-	if (arch.content("autoExponent", autoExponent)) {
-		arch.content("minLabelSize", minLabelSize);
-		arch.content("exponent", exponent);
-		value->scaleDraw()->valueToText()->setAutomaticExponent(autoExponent);
-		value->scaleDraw()->valueToText()->setMaxLabelSize(minLabelSize);
-		value->scaleDraw()->valueToText()->setExponent(exponent);
-	}
-	else
-		arch.restore();
-
-	value->setScaleDiv(arch.read("scaleDiv").value<VipScaleDiv>());
-	value->setRenderHints((QPainter::RenderHints)arch.read("renderHints").value<int>());
-	value->setVisible(arch.read("visible").toBool());
-	int engine = arch.read("yScaleEngine").toInt();
-	if (!value->scaleEngine() || engine != value->scaleEngine()->scaleType()) {
-		if (engine == VipScaleEngine::Linear) value->setScaleEngine(new VipLinearScaleEngine());
-		else if (engine == VipScaleEngine::Log10) value->setScaleEngine(new VipLog10ScaleEngine());
-	}
-	
-	arch.resetError();
-
-	
-	arch.save();
-	QString st;
-	if (arch.content("styleSheet", st)) {
-		if (!st.isEmpty())
-			value->setStyleSheet(st);
-	}
-	else
-		arch.restore();
-
-	return arch;
-}
-
-VipArchive & operator<<(VipArchive & arch, const VipAxisBase * value)
-{
-	arch.content("isMapScaleToScene", value->isMapScaleToScene());
-	arch.content("isTitleInverted", value->isTitleInverted());
-	arch.content("titleInside", value->titleInside());
-	return arch;
-}
-
-VipArchive & operator>>(VipArchive & arch, VipAxisBase * value)
-{
-	value->setMapScaleToScene(arch.read("isMapScaleToScene").value<bool>());
-	value->setTitleInverted(arch.read("isTitleInverted").value<bool>());
-	arch.save();
-	//since 2.2.18
-	bool titleInside;
-	if (arch.content("titleInside", titleInside))
-		value->setTitleInside(titleInside);
-	else
-		arch.restore();
-	return arch;
-}
-
-VipArchive & operator<<(VipArchive & arch, const VipColorMap * value)
-{
-	arch.content("format", (int)value->format());
-	arch.content("externalValue", (int)value->externalValue());
-	arch.content("externalColor", value->externalColor());
-	return arch;
-}
-
-VipArchive & operator>>(VipArchive & arch, VipColorMap * value)
-{
-	value->setFormat((VipColorMap::Format)arch.read("format").value<int>());
-	VipColorMap::ExternalValue ext_value = (VipColorMap::ExternalValue)arch.read("externalValue").value<int>();
-	QRgb ext_color = arch.read("externalColor").value<int>();
-	value->setExternalValue(ext_value, ext_color);
-	return arch;
-}
-
-VipArchive & operator<<(VipArchive & arch, const VipLinearColorMap * value)
-{
-	arch.content("type", (int)value->type());
-	return arch.content("gradientStops", value->gradientStops());
-}
-
-VipArchive & operator>>(VipArchive & arch, VipLinearColorMap * value)
-{
-	value->setType((VipLinearColorMap::StandardColorMap)arch.read("type").value<int>());
-	value->setGradientStops(arch.read("gradientStops").value<QGradientStops>());
-	return arch;
-}
-
-VipArchive & operator<<(VipArchive & arch, const VipAlphaColorMap * value)
-{
-	return arch.content("color", value->color());
-}
-
-VipArchive & operator>>(VipArchive & arch, VipAlphaColorMap * value)
-{
-	value->setColor(arch.read("color").value<QColor>());
-	return arch;
-}
-
-VipArchive & operator<<(VipArchive & arch, const VipAxisColorMap * value)
-{
-	arch.content("gripInterval", value->gripInterval());
-	arch.content("colorMap", value->colorMap());
-	arch.content("isColorBarEnabled", value->isColorBarEnabled());
-	arch.content("colorBarWidth", value->colorBarWidth());
-	arch.content("colorMapInterval", value->colorMapInterval());
-
-	//since 2.2.18
-	arch.content("hasAutoScaleMax", value->hasAutoScaleMax());
-	arch.content("autoScaleMax", value->autoScaleMax());
-	arch.content("hasAutoScaleMin", value->hasAutoScaleMin());
-	arch.content("autoScaleMin", value->autoScaleMin());
-	return arch;
-}
-
-VipArchive & operator>>(VipArchive & arch, VipAxisColorMap * value)
-{
-	VipInterval inter = arch.read("gripInterval").value<VipInterval>();
-	value->setColorMap(inter, arch.read("colorMap").value<VipColorMap*>());
-	value->setGripInterval(inter);
-	value->setColorBarEnabled(arch.read("isColorBarEnabled").value<bool>());
-	value->setColorBarWidth(arch.read("colorBarWidth").value<double>());
-	value->setColorMapInterval(arch.read("colorMapInterval").value<VipInterval>());
-
-	//since 2.2.18
-	bool hasAutoScaleMax, hasAutoScaleMin;
-	vip_double autoScaleMax, autoScaleMin;
-	arch.save();
-	if (arch.content("hasAutoScaleMax", hasAutoScaleMax)) {
-		arch.content("autoScaleMax", autoScaleMax);
-		arch.content("hasAutoScaleMin", hasAutoScaleMin);
-		arch.content("autoScaleMin", autoScaleMin);
-		value->setHasAutoScaleMax(hasAutoScaleMax);
-		value->setHasAutoScaleMin(hasAutoScaleMin);
-		value->setAutoScaleMax(autoScaleMax);
-		value->setAutoScaleMin(autoScaleMin);
-	}
-	else
-		arch.restore();
-
-	return arch;
-}
-
-
-
-VipArchive & operator<<(VipArchive & arch, const VipPlotArea2D * value)
-{
-	arch.content("leftAxis", value->leftAxis());
-	arch.content("rightAxis", value->rightAxis());
-	arch.content("topAxis", value->topAxis());
-	arch.content("bottomAxis", value->bottomAxis());
-	arch.content("leftAxisVisible", value->leftAxis()->isVisible());
-	arch.content("rightAxisVisible", value->rightAxis()->isVisible());
-	arch.content("topAxisVisible", value->topAxis()->isVisible());
-	arch.content("bottomAxisVisible", value->bottomAxis()->isVisible());
-	arch.content("grid", value->grid());
-	arch.content("canvas", value->canvas());
-	//since 2.2.18
-	arch.content("title", value->titleAxis());
-	return arch;
-}
-VipArchive & operator>>(VipArchive & arch, VipPlotArea2D * value)
-{
-	arch.content("leftAxis", value->leftAxis());
-	arch.content("rightAxis", value->rightAxis());
-	arch.content("topAxis", value->topAxis());
-	arch.content("bottomAxis", value->bottomAxis());
-	value->leftAxis()->setVisible(arch.read("leftAxisVisible").toBool());
-	value->rightAxis()->setVisible(arch.read("rightAxisVisible").toBool());
-	value->topAxis()->setVisible(arch.read("topAxisVisible").toBool());
-	value->bottomAxis()->setVisible(arch.read("bottomAxisVisible").toBool());
-	arch.content("grid", value->grid());
-	arch.content("canvas", value->canvas());
-	//since 2.2.18
-	arch.save();
-	if (!arch.content("title", value->titleAxis()))
-		arch.restore();
-
-	return arch;
-}
-
-
-#include "VipCommandOptions.h"
 #include <qapplication.h>
-#include <qdir.h>
-
-static int registerStreamOperators()
-{
-	vipRegisterArchiveStreamOperators<VipScaleDiv>();
-	vipRegisterArchiveStreamOperators<VipPlotItem*>();
-	vipRegisterArchiveStreamOperators<VipPlotItemData*>();
-	vipRegisterArchiveStreamOperators<VipPlotCurve*>();
-	vipRegisterArchiveStreamOperators<VipPlotHistogram*>();
-	vipRegisterArchiveStreamOperators<VipPlotGrid*>();
-	vipRegisterArchiveStreamOperators<VipPlotCanvas*>();
-	vipRegisterArchiveStreamOperators<VipPlotMarker*>();
-	vipRegisterArchiveStreamOperators<VipPlotRasterData*>();
-	vipRegisterArchiveStreamOperators<VipPlotSpectrogram*>();
-	vipRegisterArchiveStreamOperators<VipPlotShape*>();
-	vipRegisterArchiveStreamOperators<VipPlotSceneModel*>();
-	vipRegisterArchiveStreamOperators<VipAbstractScale*>();
-	vipRegisterArchiveStreamOperators<VipAxisBase*>();
-	vipRegisterArchiveStreamOperators<VipColorMap*>();
-	vipRegisterArchiveStreamOperators<VipLinearColorMap*>();
-	vipRegisterArchiveStreamOperators<VipAlphaColorMap*>();
-	vipRegisterArchiveStreamOperators<VipAxisColorMap*>();
-	vipRegisterArchiveStreamOperators<VipPlotArea2D*>();
-
-	//load the skin
-	if (VipCommandOptions::instance().count("skin"))
-	{
-		QString skin = VipCommandOptions::instance().value("skin").toString();
-		vipLoadSkin(skin);
-	}
-	else
-	{
-		//load the standard skin if it exists
-		QString skin = "skins/" + VipCoreSettings::instance()->skin();
-		if (QDir(skin).exists() && !VipCoreSettings::instance()->skin().isEmpty())
-			vipLoadSkin(VipCoreSettings::instance()->skin());
-		else if (QDir("skins/dark").exists())
-			vipLoadSkin("dark");
-	}
-
-	return 0;
-}
-
-static int _registerStreamOperators = vipPrependInitializationFunction(registerStreamOperators);
-
-//make the the types declared with Q_DECLARE_METATYPE are registered
-static int reg1 = qMetaTypeId<VipPlotShape*>();
-static int reg2 = qMetaTypeId<VipPlotShape*>();
-static int reg3 = qMetaTypeId<VipPlotShape*>();
-
-
 
 
 
@@ -1127,9 +403,9 @@ VipGuiDisplayParamaters::VipGuiDisplayParamaters(VipMainWindow * win)
 	m_data->dirty = false;
 	m_data->displayType = VipValueToTime::Double;
 
-	m_data->videoRenderingStrategy = DirectRendering;
-	m_data->plotRenderingStrategy = DirectRendering;
-	m_data->renderingThreads = 1;
+	m_data->videoRenderingStrategy = VipBaseGraphicsView::Raster;
+	m_data->plotRenderingStrategy = VipBaseGraphicsView::Raster;
+	
 	m_data->displayExactPixels = false;
 
 	m_data->defaultPlotWidget = new VipPlotWidget2D(win);
@@ -1696,10 +972,6 @@ int VipGuiDisplayParamaters::plotRenderingStrategy() const
 {
 	return m_data->plotRenderingStrategy;
 }
-int VipGuiDisplayParamaters::renderingThreads() const
-{
-	return m_data->renderingThreads;
-}
 
 void VipGuiDisplayParamaters::setVideoRenderingStrategy(int st)
 {
@@ -1709,13 +981,8 @@ void VipGuiDisplayParamaters::setVideoRenderingStrategy(int st)
 		if (m_data->setAndApply) {
 			QList<VipVideoPlayer*> pls = vipListCast<VipVideoPlayer*>(VipPlayerLifeTime::instance()->players());
 			for (int i = 0; i < pls.size(); ++i) {
-				pls[i]->plotWidget2D()->setOpenGLRendering(st == PureOpenGL);
-				if (st == DirectRendering || st == PureOpenGL)
-					pls[i]->plotWidget2D()->area()->setRenderStrategy(VipAbstractPlotArea::Default);
-				else if (st == OffscreenOpenGL)
-					pls[i]->plotWidget2D()->area()->setRenderStrategy(VipAbstractPlotArea::OpenGLOffscreen);
-				else
-					pls[i]->plotWidget2D()->area()->setRenderStrategy(VipAbstractPlotArea::AutoStrategy);
+				if (st >= 0 && st <= VipBaseGraphicsView::OpenGLThread)
+					pls[i]->plotWidget2D()->setRenderingMode((VipBaseGraphicsView::RenderingMode)st);
 			}
 		}
 		emitChanged();
@@ -1729,27 +996,14 @@ void VipGuiDisplayParamaters::setPlotRenderingStrategy(int st)
 		if (m_data->setAndApply) {
 			QList<VipPlotPlayer*> pls = vipListCast<VipPlotPlayer*>(VipPlayerLifeTime::instance()->players());
 			for (int i = 0; i < pls.size(); ++i) {
-				pls[i]->plotWidget2D()->setOpenGLRendering(st == PureOpenGL);
-				if (st == DirectRendering || st == PureOpenGL)
-					pls[i]->plotWidget2D()->area()->setRenderStrategy(VipAbstractPlotArea::Default);
-				else if (st == OffscreenOpenGL)
-					pls[i]->plotWidget2D()->area()->setRenderStrategy(VipAbstractPlotArea::OpenGLOffscreen);
-				else
-					pls[i]->plotWidget2D()->area()->setRenderStrategy(VipAbstractPlotArea::AutoStrategy);
+				if (st >= 0 && st <= VipBaseGraphicsView::OpenGLThread)
+					pls[i]->plotWidget2D()->setRenderingMode((VipBaseGraphicsView::RenderingMode)st);
 			}
 		}
 		emitChanged();
 	}
 }
-void VipGuiDisplayParamaters::setRenderingThreads(int threads)
-{
-	if (threads != m_data->renderingThreads)
-	{
-		m_data->renderingThreads = threads;
-		VipAbstractPlotArea::setRenderingThreads(threads);
-		emitChanged();
-	}
-}
+
 
 void VipGuiDisplayParamaters::setDisplayExactPixels(bool enable)
 {
@@ -1781,26 +1035,16 @@ void VipGuiDisplayParamaters::apply(QWidget * w)
 			v->plotWidget2D()->area()->titleAxis()->setVisible(defaultPlotArea()->titleAxis()->isVisible());
 			v->setFlatHistogramStrength(flatHistogramStrength());
 
-			v->plotWidget2D()->setOpenGLRendering(m_data->videoRenderingStrategy == PureOpenGL);
-			if (m_data->videoRenderingStrategy == DirectRendering || m_data->videoRenderingStrategy == PureOpenGL)
-				v->plotWidget2D()->area()->setRenderStrategy(VipAbstractPlotArea::Default);
-			else if (m_data->videoRenderingStrategy == OffscreenOpenGL)
-				v->plotWidget2D()->area()->setRenderStrategy(VipAbstractPlotArea::OpenGLOffscreen);
-			else
-				v->plotWidget2D()->area()->setRenderStrategy(VipAbstractPlotArea::AutoStrategy);
+			if (m_data->videoRenderingStrategy >= 0 && m_data->videoRenderingStrategy <= VipBaseGraphicsView::OpenGLThread)
+				v->plotWidget2D()->setRenderingMode((VipBaseGraphicsView::RenderingMode)m_data->videoRenderingStrategy);
 		}
 
 		if (VipPlotPlayer * p = qobject_cast<VipPlotPlayer*>(pl)) {
 			p->setLegendPosition(this->legendPosition());
 			//p->valueToTimeButton()->setDisplayTimeOffset(m_data->displayTimeOffset);
 			p->setTimeMarkerAlwaysVisible(alwaysShowTimeMarker());
-			p->plotWidget2D()->setOpenGLRendering(m_data->plotRenderingStrategy == PureOpenGL);
-			if (m_data->plotRenderingStrategy == DirectRendering || m_data->plotRenderingStrategy == PureOpenGL)
-				p->plotWidget2D()->area()->setRenderStrategy(VipAbstractPlotArea::Default);
-			else if (m_data->plotRenderingStrategy == OffscreenOpenGL)
-				p->plotWidget2D()->area()->setRenderStrategy(VipAbstractPlotArea::OpenGLOffscreen);
-			else
-				p->plotWidget2D()->area()->setRenderStrategy(VipAbstractPlotArea::AutoStrategy);
+			if (m_data->plotRenderingStrategy >= 0 && m_data->plotRenderingStrategy <= VipBaseGraphicsView::OpenGLThread)
+				p->plotWidget2D()->setRenderingMode((VipBaseGraphicsView::RenderingMode)m_data->plotRenderingStrategy);
 			applyDefaultPlotArea(qobject_cast<VipPlotArea2D*>(p->plotWidget2D()->area()));
 		}
 	}
@@ -1821,9 +1065,8 @@ void VipGuiDisplayParamaters::reset()
 	setPlotGridVisible(true);
 	setPlotTitleInside(false);
 	setFlatHistogramStrength(1);
-	setVideoRenderingStrategy(DirectRendering);
-	setPlotRenderingStrategy(DirectRendering);
-	setRenderingThreads(1);
+	setVideoRenderingStrategy(VipBaseGraphicsView::Raster);
+	setPlotRenderingStrategy(VipBaseGraphicsView::Raster);
 	//setTitleTextStyle(VipTextStyle());
 	//setDefaultTextStyle(VipTextStyle());
 	m_data->titleTextStyle.reset();
@@ -1983,20 +1226,17 @@ static void serialize_VipGuiDisplayParamaters(VipGuiDisplayParamaters * inst, Vi
 
 			//new in 3.4.7
 			arch.save();
-			int videoRenderingStrategy,plotRenderingStrategy,renderingThreads;
-			arch.content("videoRenderingStrategy", videoRenderingStrategy);
-			arch.content("plotRenderingStrategy", plotRenderingStrategy);
-			arch.content("renderingThreads", renderingThreads);
+			int videoRenderingMode,plotRenderingMode;
+			arch.content("videoRenderingMode", videoRenderingMode);
+			arch.content("plotRenderingMode", plotRenderingMode);
 			if (arch) {
-				inst->setVideoRenderingStrategy(videoRenderingStrategy);
-				inst->setPlotRenderingStrategy(plotRenderingStrategy);
-				inst->setRenderingThreads(renderingThreads);
+				inst->setVideoRenderingStrategy(videoRenderingMode);
+				inst->setPlotRenderingStrategy(plotRenderingMode);
 			}
 			else {
 				arch.restore();
-				inst->setVideoRenderingStrategy(VipGuiDisplayParamaters::DirectRendering);
-				inst->setPlotRenderingStrategy(VipGuiDisplayParamaters::DirectRendering);
-				inst->setRenderingThreads(1);
+				inst->setVideoRenderingStrategy(VipBaseGraphicsView::Raster);
+				inst->setPlotRenderingStrategy(VipBaseGraphicsView::Raster);
 			}
 
 			arch.save();
@@ -2092,9 +1332,8 @@ static void serialize_VipGuiDisplayParamaters(VipGuiDisplayParamaters * inst, Vi
 			arch.content("flatHistogramStrength", inst->flatHistogramStrength());
 
 			//new in 3.4.7
-			arch.content("videoRenderingStrategy", inst->videoRenderingStrategy());
-			arch.content("plotRenderingStrategy", inst->plotRenderingStrategy());
-			arch.content("renderingThreads", inst->renderingThreads());
+			arch.content("videoRenderingMode", inst->videoRenderingStrategy());
+			arch.content("plotRenderingMode", inst->plotRenderingStrategy());
 
 			//printf("write showTimeMarkerAlways: %i\n", (int)inst->alwaysShowTimeMarker());
 			//printf("write globalColorScale: %i\n", (int)inst->globalColorScale());
@@ -2134,3 +1373,697 @@ static int registerVipGuiDisplayParamaters()
 	return 0;
 }
 static int _registerVipGuiDisplayParamaters = registerVipGuiDisplayParamaters();
+
+
+
+
+
+
+
+
+
+
+
+
+VipFunctionDispatcher<3>& vipFDCreateDisplayFromData()
+{
+	static VipFunctionDispatcher<3> disp;
+	return disp;
+}
+
+VipDisplayObject* vipCreateDisplayFromData(const VipAnyData& any, VipAbstractPlayer* pl)
+{
+	VipDisplayObject* res = NULL;
+	const auto lst = vipFDCreateDisplayFromData().exactMatch(any.data(), pl);
+	if (lst.size())
+		res = lst.back()(any.data(), pl, any).value<VipDisplayObject*>();
+	else {
+		// default behavior: handle VipPointVector, VipIntervalSampleVector and VipNDArray
+		if (any.data().userType() == qMetaTypeId<VipPointVector>()) {
+			VipDisplayCurve* curve = new VipDisplayCurve();
+			curve->inputAt(0)->setData(any);
+			curve->item()->setData(any.data());
+			curve->setItemSuppressable(true);
+			curve->formatItem(curve->item(), any, true);
+			res = curve;
+		}
+		else if (any.data().canConvert<double>()) {
+			VipDisplayCurve* curve = new VipDisplayCurve();
+			curve->inputAt(0)->setData(any);
+			curve->item()->setData(QVariant::fromValue(VipPointVector()));
+			curve->setItemSuppressable(true);
+			curve->formatItem(curve->item(), any, true);
+			res = curve;
+		}
+		else if (any.data().canConvert<VipPoint>()) {
+			VipDisplayCurve* curve = new VipDisplayCurve();
+			curve->inputAt(0)->setData(any);
+			curve->item()->setData(QVariant::fromValue(VipPointVector() << any.value<VipPoint>()));
+			curve->setItemSuppressable(true);
+			curve->formatItem(curve->item(), any, true);
+			res = curve;
+		}
+		else if (any.data().userType() == qMetaTypeId<VipIntervalSampleVector>()) {
+			VipDisplayHistogram* curve = new VipDisplayHistogram();
+			curve->inputAt(0)->setData(any);
+			curve->item()->setData(any.data());
+			curve->setItemSuppressable(true);
+			curve->formatItem(curve->item(), any, true);
+			res = curve;
+		}
+		else if (any.data().canConvert<VipIntervalSample>()) {
+			VipDisplayHistogram* curve = new VipDisplayHistogram();
+			curve->inputAt(0)->setData(any);
+			curve->item()->setData(QVariant::fromValue(VipIntervalSampleVector() << any.data().value<VipIntervalSample>()));
+			curve->setItemSuppressable(true);
+			curve->formatItem(curve->item(), any, true);
+			res = curve;
+		}
+		else if (any.data().userType() == qMetaTypeId<VipNDArray>()) {
+			VipDisplayImage* curve = new VipDisplayImage();
+			curve->inputAt(0)->setData(any);
+			curve->item()->setRawData(VipRasterData(any.data().value<VipNDArray>(), QPointF(0, 0)));
+			curve->formatItem(curve->item(), any, true);
+			res = curve;
+		}
+		else if (any.data().userType() == qMetaTypeId<VipSceneModel>()) {
+			VipDisplaySceneModel* curve = new VipDisplaySceneModel();
+			curve->inputAt(0)->setData(any);
+			curve->item()->setSceneModel(any.data().value<VipSceneModel>());
+			res = curve;
+		}
+		else if (any.data().userType() == qMetaTypeId<VipShape>()) {
+			VipDisplaySceneModel* curve = new VipDisplaySceneModel();
+			curve->inputAt(0)->setData(any);
+			curve->item()->sceneModel().add("All", any.data().value<VipShape>());
+			res = curve;
+		}
+	}
+	if (VipDisplayPlotItem* it = qobject_cast<VipDisplayPlotItem*>(res)) {
+		// set the _vip_created property to tell that the item can trigger an axis creation
+		it->item()->setProperty("_vip_created", true);
+	}
+	return res;
+}
+
+VipFunctionDispatcher<4>& vipFDCreatePlayersFromData()
+{
+	static VipFunctionDispatcher<4> disp;
+	return disp;
+}
+
+static void setProcessingPool(VipProcessingObject* obj, VipProcessingPool* pool)
+{
+	if (!pool || !obj)
+		return;
+	obj->setParent(pool);
+	QList<VipProcessingObject*> sources = obj->allSources();
+	for (int i = 0; i < sources.size(); ++i)
+		// TOCHECK: check processing pool before
+		if (!sources[i]->parentObjectPool())
+			sources[i]->setParent(pool);
+}
+
+QList<VipAbstractPlayer*> vipCreatePlayersFromData(const VipAnyData& any, VipAbstractPlayer* pl, VipOutput* src, QObject* target, QList<VipDisplayObject*>* doutputs)
+{
+	const auto lst = vipFDCreatePlayersFromData().exactMatch(any.data(), pl);
+	if (lst.size()) {
+		QList<VipDisplayObject*> existing;
+		if (pl)
+			existing = pl->displayObjects();
+		QList<VipAbstractPlayer*> res = lst.back()(any.data(), pl, any, target);
+		if (doutputs) {
+			for (int i = 0; i < res.size(); ++i) {
+				// build the list of created display objects
+				QList<VipDisplayObject*> disps = res[i]->displayObjects();
+				for (int j = 0; j < disps.size(); ++j)
+					if (existing.indexOf(disps[j]) < 0)
+						*doutputs << disps[j];
+			}
+		}
+		return res;
+	}
+
+	if (any.isEmpty())
+		return QList<VipAbstractPlayer*>();
+
+	VipDisplayObject* display = vipCreateDisplayFromData(any, pl);
+	if (pl)
+		setProcessingPool(display, pl->processingPool());
+
+	if (display) {
+
+		VipProcessingObject* source = NULL;
+		if (src)
+			source = src->parentProcessing();
+		if (source)
+			display->setParent(source->parent());
+		VipIODevice* device = qobject_cast<VipIODevice*>(source);
+
+		if (device) {
+			// for numerical values, insert a VipNumericValueToPointVector before the processing list
+			bool is_numeric = false;
+			src->data().data().toDouble(&is_numeric);
+			if (is_numeric) {
+				VipNumericValueToPointVector* ConvertToPointVector = new VipNumericValueToPointVector(device->parent());
+				ConvertToPointVector->setScheduleStrategies(VipProcessingObject::Asynchronous);
+				ConvertToPointVector->setDeleteOnOutputConnectionsClosed(true);
+				ConvertToPointVector->inputAt(0)->setConnection(src);
+				src = ConvertToPointVector->outputAt(0);
+			}
+
+			// insert a VipProcessingList in between the device output and the VipDisplayObject
+			VipProcessingList* _lst = new VipProcessingList();
+			_lst->setParent(device->parent());
+			_lst->setScheduleStrategies(VipProcessingObject::Asynchronous);
+
+			src->setConnection(_lst->inputAt(0));
+			_lst->outputAt(0)->setConnection(display->inputAt(0));
+
+			// add an VipExtractComponent in the list for VipNDArray only
+			if (any.data().userType() == qMetaTypeId<VipNDArray>()) {
+				VipExtractComponent* extract = new VipExtractComponent();
+				// extract->setProperty("_vip_hidden",true)
+				extract->setVisible(false);
+				_lst->append(extract);
+				// vipGetProcessingEditorToolWidget()->setProcessingObject(display);
+				// if (VipProcessingListEditor * editor = vipGetProcessingEditorToolWidget()->editor()->processingEditor<VipProcessingListEditor*>(_lst))
+				//	editor->setProcessingVisible(_lst->at(_lst->size() - 1), false);
+			}
+
+			// if the device is destroyed, destroy everything
+			_lst->setDeleteOnOutputConnectionsClosed(true);
+			device->setDeleteOnOutputConnectionsClosed(true);
+		}
+		else if (src) {
+			src->setConnection(display->inputAt(0));
+		}
+
+		QList<VipAbstractPlayer*> res = vipCreatePlayersFromProcessing(display, pl, NULL, target);
+		if (!res.size()) {
+			// we cannot insert the VipDisplayObject in an existing player: delete it
+			if (device)
+				device->setDeleteOnOutputConnectionsClosed(false);
+			display->deleteLater();
+		}
+		if (doutputs)
+			*doutputs << display;
+		return res;
+	}
+
+	return QList<VipAbstractPlayer*>();
+}
+
+VipFunctionDispatcher<4>& vipFDCreatePlayersFromProcessing()
+{
+	static VipFunctionDispatcher<4> disp;
+	return disp;
+}
+
+QList<VipAbstractPlayer*> vipCreatePlayersFromProcessing(VipProcessingObject* disp, VipAbstractPlayer* pl, VipOutput* output, QObject* target, QList<VipDisplayObject*>* doutputs)
+{
+	if (!disp)
+		return QList<VipAbstractPlayer*>();
+
+	const auto lst = vipFDCreatePlayersFromProcessing().match(disp, pl);
+	if (lst.size()) {
+		QList<VipAbstractPlayer*> res = lst.back()(disp, pl, output, target);
+		QList<VipDisplayObject*> existing;
+		if (pl && doutputs)
+			existing = pl->displayObjects();
+		if (doutputs) {
+			for (int i = 0; i < res.size(); ++i) {
+				// build the list of created display objects
+				QList<VipDisplayObject*> disps = res[i]->displayObjects();
+				for (int j = 0; j < disps.size(); ++j)
+					if (existing.indexOf(disps[j]) < 0)
+						*doutputs << disps[j];
+			}
+		}
+		return res;
+	}
+
+	// default behavior
+
+	// default behavior: handle VipDisplayCurve, VipDisplayImage, VipDisplayHistogram, VipVideoPlayer and VipPlotPlayer
+	if (VipDisplayCurve* curve = qobject_cast<VipDisplayCurve*>(disp)) {
+		if (VipPlotPlayer* player = qobject_cast<VipPlotPlayer*>(pl)) {
+			setProcessingPool(curve, player->processingPool());
+			if (VipPlotItem* item = qobject_cast<VipPlotItem*>(target))
+				curve->item()->setAxes(item->axes(), VipCoordinateSystem::Cartesian);
+			else
+				curve->item()->setAxes(player->defaultXAxis(), player->defaultYAxis(), player->defaultCoordinateSystem());
+			if (doutputs)
+				*doutputs << curve;
+			return QList<VipAbstractPlayer*>() << pl;
+		}
+		else if (!pl) {
+			VipPlotPlayer* plot_player = new VipPlotPlayer();
+			plot_player->setWindowTitle(curve->item()->title().text());
+			curve->item()->setAxes(plot_player->defaultXAxis(), plot_player->defaultYAxis(), plot_player->defaultCoordinateSystem());
+			if (doutputs)
+				*doutputs << curve;
+			return QList<VipAbstractPlayer*>() << plot_player;
+		}
+		else
+			return QList<VipAbstractPlayer*>();
+	}
+	else if (VipDisplayHistogram* hist = qobject_cast<VipDisplayHistogram*>(disp)) {
+		if (VipPlotPlayer* player = qobject_cast<VipPlotPlayer*>(pl)) {
+			setProcessingPool(hist, player->processingPool());
+			if (VipPlotItem* item = qobject_cast<VipPlotItem*>(target))
+				hist->item()->setAxes(item->axes(), VipCoordinateSystem::Cartesian);
+			else
+				hist->item()->setAxes(player->defaultXAxis(), player->defaultYAxis(), player->defaultCoordinateSystem());
+			if (doutputs)
+				*doutputs << hist;
+			return QList<VipAbstractPlayer*>() << pl;
+		}
+		else if (!pl) {
+			VipPlotPlayer* plot_player = new VipPlotPlayer();
+			plot_player->setWindowTitle(hist->item()->title().text());
+			hist->item()->setAxes(plot_player->defaultXAxis(), plot_player->defaultYAxis(), plot_player->defaultCoordinateSystem());
+			if (doutputs)
+				*doutputs << hist;
+			return QList<VipAbstractPlayer*>() << plot_player;
+		}
+		else
+			return QList<VipAbstractPlayer*>();
+	}
+	else if (VipDisplayImage* img = qobject_cast<VipDisplayImage*>(disp)) {
+		// if(VipVideoPlayer * player = qobject_cast<VipVideoPlayer*>(pl))
+		// {
+		// player->setSpectrogram(img->item());
+		// return QList<VipAbstractPlayer*>()<< player;
+		// }
+		// else
+		if (pl) // we cannot add a VipDisplayImage in an existing player which is not a VipVideoPlayer
+			return QList<VipAbstractPlayer*>();
+		else {
+			VipVideoPlayer* player = new VipVideoPlayer();
+			player->setSpectrogram(img->item());
+			player->setWindowTitle(img->item()->title().text());
+			if (doutputs)
+				*doutputs << img;
+			return QList<VipAbstractPlayer*>() << player;
+		}
+	}
+	else if (VipDisplaySceneModel* scene_model = qobject_cast<VipDisplaySceneModel*>(disp)) {
+		// a VipDisplaySceneModel can be displays in both VipVideoPlayer and VipPlotPlayer. Default player type is VipVideoPlayer
+		if (VipPlayer2D* player = qobject_cast<VipPlayer2D*>(pl)) {
+			if (VipVideoPlayer* video = qobject_cast<VipVideoPlayer*>(pl)) {
+				setProcessingPool(scene_model, player->processingPool());
+				scene_model->item()->setMode(VipPlotSceneModel::Fixed);
+				scene_model->item()->setAxes(video->viewer()->area()->bottomAxis(), video->viewer()->area()->leftAxis(), VipCoordinateSystem::Cartesian);
+				if (doutputs)
+					*doutputs << scene_model;
+				return QList<VipAbstractPlayer*>() << player;
+			}
+			else if (VipPlotPlayer* plot = qobject_cast<VipPlotPlayer*>(pl)) {
+				setProcessingPool(scene_model, player->processingPool());
+				scene_model->item()->setMode(VipPlotSceneModel::Fixed);
+				if (VipPlotItem* item = qobject_cast<VipPlotItem*>(target))
+					scene_model->item()->setAxes(item->axes(), VipCoordinateSystem::Cartesian);
+				else
+					scene_model->item()->setAxes(plot->defaultXAxis(), plot->defaultYAxis(), plot->defaultCoordinateSystem());
+				if (doutputs)
+					*doutputs << scene_model;
+				return QList<VipAbstractPlayer*>() << player;
+			}
+			else
+				return QList<VipAbstractPlayer*>();
+		}
+		else {
+			VipVideoPlayer* res = new VipVideoPlayer();
+			res->setWindowTitle(scene_model->item()->title().text());
+			scene_model->item()->setAxes(res->viewer()->area()->bottomAxis(), res->viewer()->area()->leftAxis(), VipCoordinateSystem::Cartesian);
+			if (doutputs)
+				*doutputs << scene_model;
+			return QList<VipAbstractPlayer*>() << res;
+		}
+	}
+	else if (VipDisplayPlotItem* plot_item = qobject_cast<VipDisplayPlotItem*>(disp)) {
+		// any other VipDisplayPlotItem
+		if (VipPlotPlayer* player = qobject_cast<VipPlotPlayer*>(pl)) {
+			setProcessingPool(plot_item, player->processingPool());
+			if (VipPlotItem* item = qobject_cast<VipPlotItem*>(target))
+				plot_item->item()->setAxes(item->axes(), VipCoordinateSystem::Cartesian);
+			else
+				plot_item->item()->setAxes(player->defaultXAxis(), player->defaultYAxis(), player->defaultCoordinateSystem());
+			if (doutputs)
+				*doutputs << plot_item;
+			return QList<VipAbstractPlayer*>() << pl;
+		}
+		else if (VipVideoPlayer* video = qobject_cast<VipVideoPlayer*>(pl)) {
+			setProcessingPool(plot_item, video->processingPool());
+			plot_item->item()->setAxes(video->viewer()->area()->bottomAxis(), video->viewer()->area()->leftAxis(), VipCoordinateSystem::Cartesian);
+			if (doutputs)
+				*doutputs << plot_item;
+			return QList<VipAbstractPlayer*>() << pl;
+		}
+		else {
+			VipPlotPlayer* res = new VipPlotPlayer();
+			res->setWindowTitle(plot_item->item()->title().text());
+			plot_item->item()->setAxes(res->defaultXAxis(), res->defaultYAxis(), res->defaultCoordinateSystem());
+			if (doutputs)
+				*doutputs << plot_item;
+			return QList<VipAbstractPlayer*>() << res;
+		}
+	}
+
+	// special case: device having no output
+	if (disp->topLevelOutputCount() == 0)
+		return QList<VipAbstractPlayer*>();
+
+	// compute all VipOutput object to use
+	QVector<VipOutput*> proc_outputs;
+	if (!output) {
+		for (int i = 0; i < disp->outputCount(); ++i) {
+			if (disp->outputAt(i)->isEnabled())
+				proc_outputs.append(disp->outputAt(i));
+		}
+	}
+	else
+		proc_outputs.append(output);
+
+	// the VipDisplayObject we are going to create
+	QList<VipDisplayObject*> displayObjects;
+	// all the inputs from the device
+	QVector<VipAnyData> outputs(proc_outputs.size());
+
+	// try to read the device until we've got all outputs
+	VipIODevice* device = qobject_cast<VipIODevice*>(disp);
+	if (!device)
+		device = disp->parentObjectPool();
+
+	// directly read the processing outputs
+	bool all_outputs = true;
+	for (int i = 0; i < proc_outputs.size(); ++i) {
+		outputs[i] = proc_outputs[i]->data();
+		if (outputs[i].isEmpty())
+			all_outputs = false;
+	}
+
+	// if some outputs are still empty, read the VipProcessingPool until we have valid outputs
+	if (device && !all_outputs) {
+		qint64 time = device->firstTime();
+		while (true) {
+			device->read(time);
+
+			bool has_all_output = true;
+			for (int i = 0; i < proc_outputs.size(); ++i) {
+				proc_outputs[i]->parentProcessing()->wait();
+				outputs[i] = proc_outputs[i]->data();
+				if (outputs[i].isEmpty())
+					has_all_output = false;
+			}
+
+			if (has_all_output)
+				break;
+
+			qint64 next = device->nextTime(time);
+			if (time == next || next == VipInvalidTime)
+				break;
+			time = next;
+		}
+	}
+
+	QList<VipAbstractPlayer*> players;
+
+	// we've got all possible outputs, create the corresponding players
+	for (int i = 0; i < outputs.size(); ++i) {
+		if (outputs[i].isEmpty())
+			continue;
+
+		QList<VipAbstractPlayer*> tmp;
+
+		if (pl) // if a player is given, try to insert the data inside it
+			tmp = vipCreatePlayersFromData(outputs[i], pl, proc_outputs[i], target, doutputs);
+		else if (!players.size()) // no created players: create a new one
+			tmp = vipCreatePlayersFromData(outputs[i], NULL, proc_outputs[i], target, doutputs);
+		else // otherwise, try to insert it into an existing one
+		{
+			for (int p = 0; p < players.size(); ++p) {
+				tmp = vipCreatePlayersFromData(outputs[i], players[p], proc_outputs[i], target, doutputs);
+				if (tmp.size())
+					break;
+			}
+
+			if (!tmp.size()) // we cannot insert it: try to create a new player
+				tmp = vipCreatePlayersFromData(outputs[i], NULL, proc_outputs[i], target, doutputs);
+		}
+
+		players += tmp;
+
+		// remove duplicates
+		players = vipListUnique(players);
+	}
+
+	if (device)		  // VipProcessingPool * pool = disp->parentObjectPool())
+		device->reload(); // read(pool->time());
+
+	return players;
+}
+
+QList<VipAbstractPlayer*> vipCreatePlayersFromProcessings(const QList<VipProcessingObject*>& procs, VipAbstractPlayer* pl, QObject* target, QList<VipDisplayObject*>* doutputs)
+{
+	if (!procs.size())
+		return QList<VipAbstractPlayer*>();
+
+	if (pl) {
+		for (int i = 0; i < procs.size(); ++i) {
+			QList<VipAbstractPlayer*> players = vipCreatePlayersFromProcessing(procs[i], pl, NULL, target, doutputs);
+			if (!players.size())
+				return QList<VipAbstractPlayer*>();
+		}
+		return QList<VipAbstractPlayer*>() << pl;
+	}
+	else {
+		// create the new players
+		QList<VipAbstractPlayer*> players = vipCreatePlayersFromProcessing(procs.first(), NULL, NULL, target, doutputs);
+
+		for (int i = 1; i < procs.size(); ++i) {
+			// try to insert the VipDisplayObject into an existing player
+			bool inserted = false;
+			for (int p = 0; p < players.size(); ++p) {
+				QList<VipAbstractPlayer*> tmp = vipCreatePlayersFromProcessing(procs[i], players[p], NULL, target, doutputs);
+				if (tmp.size()) {
+					inserted = true;
+					break;
+				}
+			}
+
+			// if not inserted, create a new player (if possible)
+			if (!inserted) {
+				QList<VipAbstractPlayer*> tmp = vipCreatePlayersFromProcessing(procs[i], NULL, NULL, target, doutputs);
+				if (tmp.size()) {
+					players.append(tmp);
+				}
+			}
+		}
+
+		// make unique while keeping the order
+		return vipListUnique(players);
+	}
+}
+
+#include "VipProcessingObjectEditor.h"
+
+QList<VipAbstractPlayer*> vipCreatePlayersFromStringList(const QStringList& lst, VipAbstractPlayer* player, QObject* target, QList<VipDisplayObject*>* doutputs)
+{
+	QList<VipProcessingObject*> devices;
+
+	VipProgress p;
+	p.setModal(true);
+	p.setCancelable(true);
+	if (lst.size() > 1)
+		p.setRange(0, lst.size());
+
+	for (int i = 0; i < lst.size(); ++i) {
+		VipIODevice* device = VipCreateDevice::create(lst[i]);
+		if (device) {
+			device->setPath(lst[i]);
+
+			QString name = device->removePrefix(device->name());
+			p.setText("<b>Open</b> " + QFileInfo(name).fileName());
+			if (lst.size() > 1)
+				p.setValue(i);
+
+			// allow VipIODevice to display a progress bar
+			device->setProperty("_vip_enableProgress", true);
+
+			if (device->open(VipIODevice::ReadOnly)) {
+				devices << device;
+				VIP_LOG_INFO("Open " + lst[i]);
+			}
+			else
+				delete device;
+		}
+
+		if (p.canceled())
+			break;
+	}
+
+	QList<VipAbstractPlayer*> res = vipCreatePlayersFromProcessings(devices, player, target, doutputs);
+	if (res.isEmpty()) {
+		// delete devices
+		for (int i = 0; i < devices.size(); ++i)
+			delete devices[i];
+	}
+	return res;
+}
+
+QList<VipAbstractPlayer*> vipCreatePlayersFromPaths(const VipPathList& paths, VipAbstractPlayer* player, QObject* target, QList<VipDisplayObject*>* doutputs)
+{
+	QList<VipProcessingObject*> devices;
+
+	VipProgress p;
+	p.setModal(true);
+	p.setCancelable(true);
+	p.setRange(0, paths.size());
+
+	for (int i = 0; i < paths.size(); ++i) {
+		p.setText("Open <b>" + paths[i].canonicalPath() + "</b>");
+		VipIODevice* device = VipCreateDevice::create(paths[i]);
+		if (device) {
+			device->setPath(paths[i].canonicalPath());
+			device->setMapFileSystem(paths[i].mapFileSystem());
+
+			if (device->open(VipIODevice::ReadOnly)) {
+				devices << device;
+				VIP_LOG_INFO("Open " + paths[i].canonicalPath());
+			}
+			else {
+				delete device;
+			}
+		}
+
+		if (p.canceled())
+			break;
+	}
+
+	QList<VipAbstractPlayer*> res = vipCreatePlayersFromProcessings(devices, player, target, doutputs);
+	if (res.isEmpty()) {
+		// delete devices
+		for (int i = 0; i < devices.size(); ++i)
+			delete devices[i];
+	}
+	return res;
+}
+
+VipProcessingObject* vipCreateProcessing(VipOutput* output, const VipProcessingObject::Info& info)
+{
+	VipProcessingPool* pool = NULL;
+	VipProcessingList* lst = NULL;
+	VipProcessingObject* res = info.create();
+	if (!res)
+		return NULL;
+	// check output/input
+	if (res->outputCount() == 0)
+		goto error;
+	if (res->inputCount() != 1) {
+		if (VipMultiInput* multi = res->topLevelInputAt(0)->toMultiInput()) {
+			if (!multi->resize(1))
+				goto error;
+		}
+		else
+			goto error;
+	}
+	// connect inputs
+	if (!pool)
+		pool = output->parentProcessing()->parentObjectPool();
+	output->setConnection(res->inputAt(0));
+	res->inputAt(0)->setData(output->data());
+
+	res->setDeleteOnOutputConnectionsClosed(true);
+	res->setParent(pool);
+	lst = new VipProcessingList();
+	lst->setDeleteOnOutputConnectionsClosed(true);
+	lst->setParent(pool);
+	lst->inputAt(0)->setConnection(res->outputAt(0));
+
+	// run the processing at least once to have a valid output
+	lst->update();
+	if (res->hasError())
+		goto error;
+
+	res->setScheduleStrategy(VipProcessingObject::Asynchronous);
+	lst->setScheduleStrategy(VipProcessingObject::Asynchronous);
+	return lst;
+
+error:
+	if (res)
+		delete res;
+	if (lst)
+		delete lst;
+	return NULL;
+}
+
+VipProcessingObject* vipCreateDataFusionProcessing(const QList<VipOutput*>& outputs, const VipProcessingObject::Info& info)
+{
+	VipProcessingPool* pool = NULL;
+	VipProcessingList* lst = NULL;
+	VipProcessingObject* res = info.create();
+	if (!res)
+		return NULL;
+
+	// check input count
+	if (res->inputCount() != outputs.size()) {
+		if (VipMultiInput* multi = res->topLevelInputAt(0)->toMultiInput()) {
+			if (!multi->resize(outputs.size()))
+				goto error;
+		}
+		else
+			goto error;
+	}
+	// check output
+	if (res->outputCount() == 0)
+		goto error;
+
+	// connect inputs
+	for (int i = 0; i < outputs.size(); ++i) {
+		if (!pool)
+			pool = outputs[i]->parentProcessing()->parentObjectPool();
+		outputs[i]->setConnection(res->inputAt(i));
+		res->inputAt(i)->setData(outputs[i]->data());
+	}
+
+	res->setDeleteOnOutputConnectionsClosed(true);
+	res->setParent(pool);
+	lst = new VipProcessingList();
+	lst->setDeleteOnOutputConnectionsClosed(true);
+	lst->setParent(pool);
+	lst->inputAt(0)->setConnection(res->outputAt(0));
+
+	// run the processing at least once to have a valid output
+	lst->update();
+	if (res->hasError())
+		goto error;
+
+	res->setScheduleStrategy(VipProcessingObject::Asynchronous);
+	lst->setScheduleStrategy(VipProcessingObject::Asynchronous);
+	return lst;
+
+error:
+	if (res)
+		delete res;
+	if (lst)
+		delete lst;
+	return NULL;
+}
+
+VipProcessingObject* vipCreateDataFusionProcessing(const QList<VipPlotItem*>& items, const VipProcessingObject::Info& info)
+{
+	QList<VipOutput*> procs;
+	for (int i = 0; i < items.size(); ++i) {
+		if (VipDisplayObject* disp = items[i]->property("VipDisplayObject").value<VipDisplayObject*>()) {
+			if (VipOutput* out = disp->inputAt(0)->connection()->source())
+				procs.append(out);
+		}
+		else
+			return NULL;
+	}
+	if (procs.size() != items.size())
+		return NULL;
+	return vipCreateDataFusionProcessing(procs, info);
+}

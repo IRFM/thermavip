@@ -598,10 +598,10 @@ public:
 
 	void swapWidgets(VipDragWidget * from, VipDragWidget * to);
 	/// Insert orizontally a VipBaseDragWidget before given position.
-	void insertSub(int y, int x,  VipBaseDragWidget * widget);
+	bool insertSub(int y, int x,  VipBaseDragWidget * widget);
 
 	/// Insert vertically a VipBaseDragWidget before given position.
-	void insertMain(int y,  VipBaseDragWidget * widget);
+	bool insertMain(int y, VipBaseDragWidget* widget);
 
 	/// Hide all QTabWidget except the one containing given VipBaseDragWidget.
 	void hideAllExcept(VipBaseDragWidget * widget);

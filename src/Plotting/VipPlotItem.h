@@ -134,6 +134,15 @@ private:
 /// -	'render-hint': one of 'antialiasing', 'highQualityAntialiasing' or 'noAntialiasing'
 /// -	'composition-mode': one of 'compositionMode_SourceOver', 'compositionMode_DestinationOver', ... (see QPainter documentation)
 /// -	'title': text value
+/// -	'title-font': title font
+/// -	'title-font-size': title font size
+/// -	'title-font-style': title font style
+/// -	'title-font-weight': title font weight
+/// -	'title-font-family': title font familly
+/// -	'title-text-border': title text box border pen
+/// -	'title-text-border-radius': title text box border radius
+/// -	'title-text-background': title text box background
+/// -	'title-text-border-margin': title text box border margin
 /// -	'selected': boolean value
 /// -	'visible': boolean value
 ///
@@ -1020,7 +1029,11 @@ private Q_SLOTS:
 protected:
 	virtual void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget = 0);
 	void setInternalData(const QVariant& value);
-	void setInternalData2(const QVariant& value, bool lock, bool emit_dataChanged);
+
+	/// Return current data and reset internal one.
+	/// Does NOT call setData(), which must be called later.
+	/// The lock must be held before calling this function.
+	QVariant takeData();
 
 private:
 	class PrivateData;
@@ -1028,19 +1041,38 @@ private:
 };
 
 /// @brief Typied version of VipPlotItemData
-template<class DATA_TYPE>
+template<class Data, class Sample = Data>
 class VipPlotItemDataType : public VipPlotItemData
 {
 public:
-	typedef DATA_TYPE data_type;
+	using data_type = Data;
+	using sample_type = Sample;
 
 	VipPlotItemDataType(const VipText& title = VipText())
 	  : VipPlotItemData(title)
 	{
 	}
 
-	void setRawData(const DATA_TYPE& raw_data) { this->setData(QVariant::fromValue(raw_data)); }
-	DATA_TYPE rawData() const { return this->data().template value<DATA_TYPE>(); }
+	void setRawData(const Data& raw_data) { this->setData(QVariant::fromValue(raw_data)); }
+	Data rawData() const { return this->data().template value<Data>(); }
+
+	template<class F>
+	void updateData(F&& fun)
+	{
+		
+		this->dataLock()->lock();
+		Data vec = takeData().value<Data>();
+		try {
+			std::forward<F>(fun)(vec);
+		}
+		catch (...) {
+			this->dataLock()->unlock();
+			setRawData(vec);
+			throw;
+		}
+		this->dataLock()->unlock();
+		setRawData(vec);
+	}
 };
 
 /// @}

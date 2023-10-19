@@ -2393,7 +2393,8 @@ public:
 	void setSceneModel(const VipSceneModel& scene, const QStringList& identifiers);
 	/// Set the shape by setting the 'scene_model' property and the 'shape_ids' property
 	void setShape(const VipShape& shape);
-	/// Set the shape directly
+	/// Set the shape directly. Note that when calling this function, the shape is 'fixed',
+	/// and reload() will never be called when moving the shape manually or programmatically.
 	void setFixedShape(const VipShape& shape);
 
 	/// Returns the scene model object
@@ -2425,6 +2426,12 @@ private:
 	class PrivateData;
 	PrivateData* m_data;
 };
+
+
+
+
+
+
 
 /// @brief Processing taking any kind and number of inputs, and send them one by one to the unique output.
 /// Since a processing input can be connected to only one output, this is a convenient way to overcome this limitation.

@@ -25,6 +25,7 @@ VipAbstractScale
 VipAbstractScale:title 
 {
 	margin: 5;
+	title-font-weight: bold;
 }
 
 VipLegend

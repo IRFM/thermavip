@@ -102,4 +102,4 @@ int registerGenerate()
 	return 0;
 }
 
-static bool _registerGenerate = vipAddInitializationFunction(registerGenerate);
+static bool _registerGenerate = vipAddGuiInitializationFunction(registerGenerate);

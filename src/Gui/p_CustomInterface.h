@@ -22,13 +22,17 @@ class BaseCustomPlayer : public QObject
 public:
 	BaseCustomPlayer(VipAbstractPlayer* pl)
 		:QObject(pl)
-	{}
+	{
+		if (pl->plotWidget2D())
+			connect(pl->plotWidget2D(), SIGNAL(viewportChanged(QWidget*)), this, SLOT(updateViewport(QWidget*)));
+	}
 	virtual VipDragWidget* dragWidget() const = 0;
 
 public Q_SLOTS:
 	virtual void closePlayer();
 	virtual void maximizePlayer();
 	virtual void minimizePlayer();
+	virtual void updateViewport(QWidget* viewport) {}
 };
 
 class CustomWidgetPlayer : public BaseCustomPlayer
@@ -77,6 +81,7 @@ public:
 	~CustomizeVideoPlayer();
 	virtual bool eventFilter(QObject * w, QEvent * evt);
 	virtual VipDragWidget * dragWidget() const;
+	virtual void updateViewport(QWidget* viewport);
 
 public:
 	QToolButton * maximizeButton() const;
@@ -102,6 +107,7 @@ public:
 
 	virtual bool eventFilter(QObject * w, QEvent * evt);
 	virtual VipDragWidget * dragWidget() const;
+	virtual void updateViewport(QWidget* viewport);
 private Q_SLOTS:
 	void titleChanged();
 	void finishEditingTitle();

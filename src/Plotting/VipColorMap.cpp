@@ -324,7 +324,6 @@ template<class T>
 void histogram(const VipNDArrayTypeView<T>& img, VipNDArrayType<float>& tmp, int strength, const VipInterval& interval, VipIntervalSampleVector& out, int* indexes, int max_index, int num_threads)
 {
 	(void)num_threads;
-	//qint64 st = QDateTime::currentMSecsSinceEpoch();
 	const T* _src = img.ptr();
 	float* _out = tmp.ptr();
 	int w = img.shape(1);
@@ -381,11 +380,12 @@ void histogram(const VipNDArrayTypeView<T>& img, VipNDArrayType<float>& tmp, int
 			_out[y * w + w - 1] = _src[y * w + w - 1];
 		}
 	}
+
+	
 	
 	int numcolors = 1024;
 	vipExtractHistogram(tmp, out, numcolors,
 		Vip::SameBinHeight, interval,indexes, 2, 1, max_index, 0,-(4-(strength-1)));
-	
 }
 
 template< class T>
@@ -1116,8 +1116,8 @@ QGradientStops VipLinearColorMap::createGradientStops(StandardColorMap color_map
 		break;
 
 	case VipLinearColorMap::Viridis:
-		colorStops_ << QGradientStop(0, QColor(0xFDE725)) << QGradientStop(0.25, QColor(0x5EC962)) << QGradientStop(0.5, QColor(0x21918C)) << QGradientStop(0.75, QColor(0x3B528B))
-			    << QGradientStop(1, QColor(0x440154));
+		colorStops_ << QGradientStop(0, QColor(0x440154)) << QGradientStop(0.25, QColor(0x3B528B)) << QGradientStop(0.5, QColor(0x21918C)) << QGradientStop(0.75, QColor(0x5EC962))
+			    << QGradientStop(1, QColor(0xFDE725));
 		break;
 
 	case VipLinearColorMap::White:
@@ -1533,6 +1533,7 @@ QDataStream & operator>>(QDataStream & stream, VipColorPalette & p)
 
 static int registerStreamOperators()
 {
+	qRegisterMetaType<VipColorPalette>();
 	qRegisterMetaTypeStreamOperators<VipColorPalette>("VipColorPalette");
 	return 0;
 }

@@ -173,6 +173,7 @@ void setup_plot_area(VipPlotArea2D* area)
 
 
 #include <qsurfaceformat.h>
+#include "VipPicture.h"
 
 int main(int argc, char** argv)
 {
@@ -188,7 +189,8 @@ int main(int argc, char** argv)
 	
 	// Optional, use opengl rendering
 	//w.setOpenGLRendering(true);
-
+	w.setRenderingMode(VipMultiGraphicsView::OpenGLThread);
+	VipText::setCacheTextWhenPossible(false);
 	// Create all widgets/plotting areas
 
 	QGraphicsGridLayout* grid = new QGraphicsGridLayout();

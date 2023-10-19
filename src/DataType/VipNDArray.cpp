@@ -56,31 +56,15 @@ bool vipIsNullArray(const VipNDArrayHandle * h)
 }
 
 
-//#define VIP_DEBUG
-
-#ifdef VIP_DEBUG
-#include <atomic>
-static std::atomic<int> _VipNDArrayHandle_count = 0;
-static std::atomic<qint64> _VipNDArrayHandle_print = 0;
-#endif
-
 
 VipNDArrayHandle::VipNDArrayHandle() : size(0), opaque(NULL){
 	//add_handle(this);
-#ifdef VIP_DEBUG
-	++_VipNDArrayHandle_count;
-#endif
+
 }
 
 	//should destroy the underlying data only if own = true
 VipNDArrayHandle::~VipNDArrayHandle() {
-#ifdef VIP_DEBUG
-	--_VipNDArrayHandle_count;
-	if (QDateTime::currentMSecsSinceEpoch() - (qint64)_VipNDArrayHandle_print > 1000) {
-		_VipNDArrayHandle_print = QDateTime::currentMSecsSinceEpoch();
-		printf("VipNDArrayHandle: %d\n", (int)_VipNDArrayHandle_count);
-	}
-#endif
+
 }
 
 VipNDArrayBase::VipNDArrayBase()

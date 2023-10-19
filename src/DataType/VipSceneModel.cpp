@@ -664,32 +664,15 @@ static int findId(const QList<VipShape> & shapes, int id, int & insert_index)
 
 #include <qreadwritelock.h>
 
-
-//#define VIP_DEBUG
-
-#ifdef VIP_DEBUG
-#include <atomic>
-static std::atomic<int> _VipShape_count = 0;
-static std::atomic<qint64> _VipShape_print = 0;
-#endif
-
 class VipShape::PrivateData
 {
 public:
 	PrivateData() : type(Unknown), polygonBased(false), id(0), mutex(QReadWriteLock::Recursive) {
-#ifdef VIP_DEBUG
-		++_VipShape_count;
-#endif
+
 	}
 	~PrivateData()
 	{
-#ifdef VIP_DEBUG
-		--_VipShape_count;
-		if (QDateTime::currentMSecsSinceEpoch() - (qint64)_VipShape_print > 1000) {
-			_VipShape_print = QDateTime::currentMSecsSinceEpoch();
-			printf("VipShape: %d\n", (int)_VipShape_count);
-		}
-#endif
+
 	}
 
 	QVariantMap attributes;
@@ -1604,13 +1587,6 @@ QVector<QRect> VipShape::clip(const QVector<QRect> & rects, const QRect & rect, 
 }
 
 
-//#define VIP_DEBUG
-
-#ifdef VIP_DEBUG
-#include <atomic>
-static std::atomic<int> _VipSceneModel_count = 0;
-static std::atomic<qint64> _VipSceneModel_print = 0;
-#endif
 
 class VipSceneModel::PrivateData
 {
@@ -1623,9 +1599,7 @@ public:
 	PrivateData() : sceneModel(NULL), shapeSignals(NULL)
 	{
 		shapeSignals = new VipShapeSignals();
-#ifdef VIP_DEBUG
-		++_VipSceneModel_count;
-#endif
+
 	}
 
 	~PrivateData()
@@ -1637,17 +1611,11 @@ public:
 				in[i].d_data->parent = QWeakPointer<PrivateData>();
 		}
 		shapeSignals->d_data = QSharedPointer<VipSceneModel::PrivateData>();
-		//shapeSignals->deleteLater();
-		shapeSignals->moveToThread(QThread::currentThread());
-		delete shapeSignals;
 
-#ifdef VIP_DEBUG
-		--_VipSceneModel_count;
-		if (QDateTime::currentMSecsSinceEpoch() - (qint64)_VipSceneModel_print > 1000) {
-			_VipSceneModel_print = QDateTime::currentMSecsSinceEpoch();
-			printf("VipSceneModel: %d\n", (int)_VipSceneModel_count);
-		}
-#endif
+		// Do NOT use deleteLater() as the object will never be deleted if it belongs to a thread without event loop!!!
+		//shapeSignals->deleteLater();
+		//shapeSignals->moveToThread(QThread::currentThread());
+		delete shapeSignals;
 	}
 };
 
@@ -2157,30 +2125,14 @@ VipSceneModel VipShape::parent() const
 	return VipSceneModel(QSharedPointer<VipSceneModel::PrivateData>());
 }
 
-//#define VIP_DEBUG
-
-#ifdef VIP_DEBUG
-#include <atomic>
-static std::atomic<int> _VipShapeSignals_count = 0;
-static std::atomic<qint64> _VipShapeSignals_print = 0;
-#endif
-
 
 VipShapeSignals::VipShapeSignals()
 {
-#ifdef VIP_DEBUG
-	++_VipShapeSignals_count;
-#endif
+
 }
 VipShapeSignals::~VipShapeSignals()
 {
-#ifdef VIP_DEBUG
-	--_VipShapeSignals_count;
-	if (QDateTime::currentMSecsSinceEpoch() - (qint64)_VipShapeSignals_print > 1000) {
-		_VipShapeSignals_print = QDateTime::currentMSecsSinceEpoch();
-		printf("VipShapeSignals: %d\n", (int)_VipShapeSignals_count);
-	}
-#endif
+
 }
 
 VipSceneModel VipShapeSignals::sceneModel() const

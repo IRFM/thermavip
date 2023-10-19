@@ -5,32 +5,40 @@
 template<class T>
 struct sort_by_arg
 {
-	bool operator()(const T & a, const T & b) const{return std::arg(a) < std::arg(b);}
+	VIP_ALWAYS_INLINE bool operator()(const T& a, const T& b) const { return std::arg(a) < std::arg(b); }
 };
 template<class T>
 struct sort_by_amplitude
 {
-	bool operator()(const T & a, const T & b) const { return std::norm(a) < std::norm(b); }
+	VIP_ALWAYS_INLINE bool operator()(const T& a, const T& b) const { return std::norm(a) < std::norm(b); }
 };
 template<class T>
 struct sort_by_real
 {
-	bool operator()(const T & a, const T & b) const { return std::real(a) < std::real(b); }
+	VIP_ALWAYS_INLINE bool operator()(const T& a, const T& b) const { return std::real(a) < std::real(b); }
 };
 template<class T>
 struct sort_by_imag
 {
-	bool operator()(const T & a, const T & b) const { return std::imag(a) < std::imag(b); }
+	VIP_ALWAYS_INLINE bool operator()(const T& a, const T& b) const { return std::imag(a) < std::imag(b); }
 };
 
 template<class T> bool isNan(T) { return false; }
-template<> bool isNan(float value) { return std::isnan(value); }
-template<> bool isNan(double value) { return std::isnan(value);}
+template<> 
+VIP_ALWAYS_INLINE bool isNan(float value)
+{
+	return value != value;
+}
+template<>
+VIP_ALWAYS_INLINE bool isNan(double value)
+{
+	return value != value;
+}
 
 template< class T>
 struct sort_pair
 {
-	bool operator()(const std::pair<T,int> & a, const std::pair<T, int> & b) const
+	VIP_ALWAYS_INLINE bool operator()(const std::pair<T, int>& a, const std::pair<T, int>& b) const
 	{
 		return a.first < b.first;
 	}
@@ -38,20 +46,23 @@ struct sort_pair
 template<>
 struct sort_pair<float>
 {
-	bool operator()(const std::pair<float, int> & a, const std::pair<float, int> & b) const
+	VIP_ALWAYS_INLINE bool operator()(const std::pair<float, int>& a, const std::pair<float, int>& b) const
 	{
-		if (std::isnan(a.first)) return true;
-		else if (std::isnan(b.first)) return false;
+		if (isNan(a.first)) return true;
+		else if (isNan(b.first))
+			return false;
 		else return a.first < b.first;
 	}
 };
 template<>
 struct sort_pair<double>
 {
-	bool operator()(const std::pair<double, int> & a, const std::pair<double, int> & b) const
+	VIP_ALWAYS_INLINE bool operator()(const std::pair<double, int>& a, const std::pair<double, int>& b) const
 	{
-		if (std::isnan(a.first)) return true;
-		else if (std::isnan(b.first)) return false;
+		if (isNan(a.first))
+			return true;
+		else if (isNan(b.first))
+			return false;
 		else return a.first < b.first;
 	}
 };
@@ -60,25 +71,28 @@ struct sort_pair<double>
 template< class T>
 struct sort_std
 {
-	bool operator()(const T & a, const T & b) const{return a < b;}
+	VIP_ALWAYS_INLINE bool operator()(const T & a, const T & b) const{return a < b;}
 };
 template<>
 struct sort_std<float>
 {
-	bool operator()(const float a, const float b) const
+	VIP_ALWAYS_INLINE bool operator()(const float a, const float b) const
 	{
-		if (std::isnan(a)) return true;
-		else if (std::isnan(b)) return false;
+		if (isNan(a)) return true;
+		else if (isNan(b))
+			return false;
 		else return a < b;
 	}
 };
 template<>
 struct sort_std<double>
 {
-	bool operator()(const double a, const double b) const
+	VIP_ALWAYS_INLINE bool operator()(const double a, const double b) const
 	{
-		if (std::isnan(a)) return true;
-		else if (std::isnan(b)) return false;
+		if (isNan(a))
+			return true;
+		else if (isNan(b))
+			return false;
 		else return a < b;
 	}
 };
@@ -115,7 +129,7 @@ static void expandSampleWidth(VipIntervalSampleVector & out, double max_width)
 
 #include <unordered_map>
 template < class T>
-VipIntervalSampleVector extractHistogram(T * begin, T * end, int bins, Vip::BinsStrategy strategy, const VipInterval & inter)
+VipIntervalSampleVector extractHistogram(const T * begin, const T * end, int bins, Vip::BinsStrategy strategy, const VipInterval & inter)
 {
 	//sort
 	//sorting with unordered_map and map is faster than std::sort
@@ -124,7 +138,7 @@ VipIntervalSampleVector extractHistogram(T * begin, T * end, int bins, Vip::Bins
 	int tot_count = 0;
 	while(begin < end) {
 		if (!isNan(*begin) && (!inter.isValid() || inter.contains(*begin))) {
-			typename std::unordered_map<T, int>::iterator it = unordered.find(*begin);
+			auto it = unordered.find(*begin);
 			if (it != unordered.end())
 				it->second++;
 			else
@@ -211,120 +225,6 @@ VipIntervalSampleVector extractHistogram(T * begin, T * end, int bins, Vip::Bins
 }
 
 
-// template < class T>
-// VipIntervalSampleVector extractHistogram( T * begin,  T * end, int bins , Vip::BinsStrategy strategy, const VipInterval & inter)
-// {
-// int size = end - begin;
-//
-// //sort
-// std::sort(begin, end, sort_std<T>());
-//
-// //ignore nan values
-// while (begin < end && isNan(*begin))
-// ++begin;
-// if (begin == end)
-// return VipIntervalSampleVector();
-//
-// if (inter.isValid())
-// {
-// //ignore values outside given interval and nan values
-// while (begin < end && !inter.contains(*begin))
-//	++begin;
-// if (begin != end) {
-//	while (end > begin && !inter.contains(*(end - 1)))
-//		--end;
-// }
-// }
-// if (begin == end)
-// return VipIntervalSampleVector();
-//
-// //build first histogram
-// VipIntervalSampleVector hist;
-//
-// VipIntervalSample first;
-// first.value = 1;
-// first.interval.setMinValue(*begin);
-// first.interval.setMaxValue(*begin);
-// hist.append(first);
-//
-// ++begin;
-//
-// VipIntervalSample * current = &hist.last();
-//
-// //compute histogram
-// for (;;)
-// {
-// while (begin < end && *begin == current->interval.minValue())
-// {
-//
-//	++current->value;
-//	++begin;
-// }
-// if (begin >= end)
-//	break;
-//
-// hist.append(VipIntervalSample());
-// current = &hist.last();
-// current->value = 1;
-// current->interval.setMinValue(*begin);
-// current->interval.setMaxValue(*begin++);
-// }
-//
-//
-// //compute bins
-// if(bins <= 0 || hist.size() <= bins)
-// return hist;
-//
-// if (strategy == SameBinWidth)
-// {
-// T _min = hist.first().interval.minValue();
-// T _max = hist.last().interval.minValue();
-//
-// //initialize histogram
-// double width = (_max - _min) / (double)bins;
-// double start = _min;
-// VipIntervalSampleVector res(bins);
-// for (int i = 0; i < res.size(); ++i, start += width)
-//	res[i] = VipIntervalSample(0, VipInterval(start, start + width, VipInterval::ExcludeMaximum));
-//
-//
-// for (VipIntervalSampleVector::const_iterator it = hist.cbegin(); it != hist.cend(); ++it)
-// {
-//	int index = std::floor((it->interval.minValue() - _min) / width);
-//	if (index == res.size())
-//		--index;
-//	res[index].value++;
-// }
-//
-// return res;
-// }
-// else
-// {
-// double bin_height = size / (double)bins;
-// VipIntervalSample start = hist.first();
-// VipIntervalSampleVector res;
-//
-// VipIntervalSampleVector::const_iterator it = hist.cbegin();
-// ++it;
-// for (; it != hist.cend(); ++it)
-// {
-//	if (start.value >= bin_height)
-//	{
-//		res.append(start);
-//		start = *it;
-//	}
-//	else
-//	{
-//		start.interval.setMaxValue(it->interval.maxValue());
-//		start.value += it->value;
-//	}
-// }
-// res.append(start);
-//
-// return res;
-// }
-// }
-
 
 
 
@@ -335,7 +235,8 @@ VipIntervalSampleVector extractHistogram(T * begin, T * end, int bins, Vip::Bins
 template<class T>
 struct ExtractKey
 {
-	typename std::make_unsigned<T>::type operator()(const std::pair<T, int>& v) const { 
+	VIP_ALWAYS_INLINE typename std::make_unsigned<T>::type operator()(const std::pair<T, int>& v) const
+	{ 
 		// integral types
 		using integral_type = std::make_unsigned<T>::type;
 		integral_type val = static_cast<integral_type>(v.first);
@@ -349,13 +250,13 @@ struct ExtractKey
 template<>
 struct ExtractKey<bool>
 {
-	std::uint8_t operator()(const std::pair<bool, int>& v) const { return v.first; }
+	VIP_ALWAYS_INLINE std::uint8_t operator()(const std::pair<bool, int>& v) const { return v.first; }
 };
 
 template<>
 struct ExtractKey<float>
 {
-	std::uint32_t operator()(const std::pair<float, int>& v) const 
+	VIP_ALWAYS_INLINE std::uint32_t operator()(const std::pair<float, int>& v) const 
 	{ 
 		union U
 		{
@@ -374,7 +275,7 @@ struct ExtractKey<float>
 template<>
 struct ExtractKey<double>
 {
-	std::uint64_t operator()(const std::pair<double, int>& v) const
+	VIP_ALWAYS_INLINE std::uint64_t operator()(const std::pair<double, int>& v) const
 	{
 		union U
 		{
@@ -393,7 +294,7 @@ struct ExtractKey<double>
 template<>
 struct ExtractKey<long double>
 {
-	std::uint64_t operator()(const std::pair<long double, int>& v) const { return ExtractKey<double>{}(std::pair<double, int>{v.first,0}); }
+	VIP_ALWAYS_INLINE std::uint64_t operator()(const std::pair<long double, int>& v) const { return ExtractKey<double>{}(std::pair<double, int>{ v.first, 0 }); }
 };
 
 template<class T, bool Numeric = std::is_arithmetic<T>::value>
@@ -424,35 +325,34 @@ struct SortVector
 #endif
 
 template < class T>
-VipIntervalSampleVector extractHistogram(T * begin, T * end, int bins, Vip::BinsStrategy strategy,  VipInterval  inter, int * indexes, int index_offset = 0, int replace_inf = -1, int replace_sup = -1, int replace_nan = -1, int slop_factor = 0)
+VipIntervalSampleVector extractHistogram(const T * begin, const T * end, int bins, Vip::BinsStrategy strategy,  VipInterval  inter, int * indexes, int index_offset = 0, int replace_inf = -1, int replace_sup = -1, int replace_nan = -1, int slop_factor = 0)
 {
 	int size = end - begin;
-	std::vector<std::pair<T, int> > values(size);
+
+	static thread_local std::vector<std::pair<T, int>> values;
+	if (values.size() != size)
+		values.resize(size);
 
 	//extract index: we must sort a pair of value -> index
 	bool has_nan = false;
-	bool has_negative = false;
-	for (int i = 0; i < size; ++i)
-	{
+	
+	for (int i = 0; i < size; ++i) {
 		if (!isNan(begin[i])) {
 			values[i].first = (begin[i]);
 			values[i].second = i;
-			if (!has_negative)
-				has_negative = begin[i] < T(0);
 		}
 		else {
 			has_nan = true;
-			//ignore nan values
+			// ignore nan values
 		}
 	}
+	
 
 	int tot_count = 0;
 	VipIntervalSampleVector hist;
 
 	//sort
- 	//std::sort(values.begin(), values.end(), sort_pair<T>());
-	//ska_sort(values.begin(), values.end(), ExtractKey<T>());
-	if(!has_negative && !has_nan)
+	if(!has_nan)
 		SortVector<T>::apply(values);
 	else
 		std::sort(values.begin(), values.end(), sort_pair<T>());
@@ -657,7 +557,7 @@ VipIntervalSampleVector extractHistogram(T * begin, T * end, int bins, Vip::Bins
 
 
 template < class T>
-VipIntervalSampleVector genericExtractHistogram(T * begin, T * end, int bins, Vip::BinsStrategy strategy, const VipInterval & inter, int * indexes,
+VipIntervalSampleVector genericExtractHistogram(const T * begin, const T * end, int bins, Vip::BinsStrategy strategy, const VipInterval & inter, int * indexes,
 	int index_offset = 0,
 	int replace_inf = -1,
 	int replace_sup = -1,

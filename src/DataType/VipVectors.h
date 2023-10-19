@@ -13,16 +13,39 @@ Q_DECLARE_METATYPE(VipIntervalSampleVector)
 class VIP_DATA_TYPE_EXPORT VipPointVector : public QVector<VipPoint>
 {
 public:
-	VipPointVector();
-	VipPointVector(int size);
-	VipPointVector(const QVector<VipPoint>& other);
-	VipPointVector(const QVector<QPointF>& other);
-	VipPointVector(const VipPointVector& other);
-	~VipPointVector();
+	VipPointVector() 
+		:QVector<VipPoint>() 
+	{}
+	VipPointVector(int size)
+	  : QVector<VipPoint>(size)
+	{
+	}
+	VipPointVector(const QVector<VipPoint>& other)
+	  : QVector<VipPoint>(other)
+	{
+	}
+	VipPointVector(const QVector<QPointF>& other) 
+		: QVector<VipPoint>(other.size())
+	{ 
+		std::copy(other.begin(), other.end(), begin()); 
+	}
+	VipPointVector(const VipPointVector& other)
+	  : QVector<VipPoint>(other)
+	{
+	}
+	VipPointVector( VipPointVector&& other) noexcept
+	  : QVector<VipPoint>(std::move(other))
+	{
+	}
 
 	VipPointVector& operator=(const VipPointVector& other)
 	{
 		static_cast<QVector<VipPoint>&>(*this) = static_cast<const QVector<VipPoint>&>(other);
+		return *this;
+	}
+	VipPointVector& operator=(VipPointVector&& other) noexcept
+	{
+		static_cast<QVector<VipPoint>&>(*this) = std::move(static_cast<const QVector<VipPoint>&>(other));
 		return *this;
 	}
 	VipPointVector& operator=(const QVector<VipPoint>& other)

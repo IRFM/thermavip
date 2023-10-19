@@ -1,23 +1,35 @@
 
 #include <qapplication.h>
-#include <cmath>
+#include <qsurface.h>
+
 #include "VipMultiPlotWidget2D.h"
 #include "VipColorMap.h"
 #include "VipPlotCurve.h"
 #include "VipPolarAxis.h"
 #include "VipSliderGrip.h"
-
+#include "VipPicture.h"
 #include "VipStyleSheet.h"
+
 #include <iostream>
+#include <cmath>
 
 int main(int argc, char** argv)
 {
-	QApplication app(argc, argv);
+	
+	QCoreApplication::setAttribute(Qt::AA_UseDesktopOpenGL);
+	QSurfaceFormat format;
+	format.setSamples(4);
+	format.setSwapInterval(0);
+	QSurfaceFormat::setDefaultFormat(format);
 
 	// Rotated texts are ugly with raster engine... let's cache it through QPixmap
 	VipText::setCacheTextWhenPossible(true);
 
+	QApplication app(argc, argv);
+
 	VipPlotPolarWidget2D w;
+	//w.setViewport(new VipOpenGLWidget());
+
 	VipPlotPolarArea2D* area = w.area();
 	area->setInnerMargin(20);
 	area->setMargins(10);

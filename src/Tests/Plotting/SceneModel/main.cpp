@@ -9,6 +9,7 @@
 #include "VipSymbol.h"
 #include "VipShapeDevice.h"
 #include "VipToolTip.h"
+#include "VipPicture.h"
 
 /// @brief Create a star polygon
 QPolygonF createStar(const QPointF & center, double width)
@@ -175,12 +176,12 @@ QString darkPlotStyleSheet()
 
 int main(int argc, char** argv)
 {
-
-
 	QApplication app(argc, argv);
 
 	// grid of 2 horizontal plot areas
 	VipMultiGraphicsView w;
+	//w.setViewport(new VipOpenGLWidget());
+
 	w.setStyleSheet(darkStyleSheet());
 	w.widget()->setStyleSheet(darkPlotStyleSheet());
 

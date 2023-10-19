@@ -3,6 +3,8 @@
 #include "VipPainter.h"
 #include "VipPlotItem.h"
 
+#include <qgraphicssceneevent.h>
+
 
 
 class DoubleSliderGrip : public VipSliderGrip
@@ -47,10 +49,18 @@ public:
 	bool singleStepEnabled;
 	double singleStep;
 	double value;
+	bool isMouseClickEnabled;
 	VipSliderGrip * grip;
 
 	PrivateData()
-	:isEnabled(true),width(15),lineWidth(10),singleStepEnabled(false),singleStep(1),grip(NULL)
+	  : isEnabled(true)
+	  , width(15)
+	  , lineWidth(10)
+	  , singleStepEnabled(false)
+	  , singleStep(1)
+	  , value(0)
+	  , isMouseClickEnabled(false)
+	  , grip(NULL)
 	{
 		VipAdaptativeGradient grad(QGradientStops()<<QGradientStop(0,QColor(0xBDBDBD))<<QGradientStop(1,QColor(0xDBDBDB)),Qt::Vertical);
 		lineBoxStyle.setBorderRadius(2);
@@ -114,6 +124,15 @@ double VipDoubleSlider::additionalSpace() const
 		return 0.;
 }
 
+void VipDoubleSlider::mousePressEvent(QGraphicsSceneMouseEvent* event)
+{
+	if (isMouseClickEnabled()) {
+
+		double val = VipAxisBase::value(event->pos());
+		setValue(val);
+	}
+}
+
 void VipDoubleSlider::setSingleStepEnabled(bool enable)
 {
 	d_data->grip->setSingleStepEnabled(enable);
@@ -169,6 +188,15 @@ void VipDoubleSlider::setScaleVisible(bool visible)
 bool VipDoubleSlider::scaleVisible() const
 {
 	return constScaleDraw()->components() == VipScaleDraw::AllComponents;
+}
+
+void VipDoubleSlider::setMouseClickEnabled(bool enable) 
+{
+	d_data->isMouseClickEnabled = enable;
+}
+bool VipDoubleSlider::isMouseClickEnabled() const
+{
+	return d_data->isMouseClickEnabled ;
 }
 
 void VipDoubleSlider::divideAxisScale(vip_double min, vip_double max, vip_double stepSize)
@@ -389,6 +417,11 @@ double VipDoubleSliderWidget::minValue() const
 double VipDoubleSliderWidget::maxValue() const
 {
 	return slider()->scaleDiv().bounds().minValue();
+}
+
+double VipDoubleSliderWidget::value() const 
+{
+	return slider()->value();
 }
 
 void VipDoubleSliderWidget::setSingleStepEnabled(bool enable)

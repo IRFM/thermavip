@@ -142,6 +142,7 @@ void setup_plot_area(VipPlotArea2D* area)
 
 
 #include <qsurfaceformat.h>
+#include "VipPicture.h"
 
 VipAnyData test(const VipAnyData& v)
 {
@@ -156,6 +157,7 @@ int main(int argc, char** argv)
 	format.setSamples(4);
 	format.setSwapInterval(0);
 	QSurfaceFormat::setDefaultFormat(format);
+	VipText::setCacheTextWhenPossible(true);
 
 	VipGlobalStyleSheet::setStyleSheet(
 
@@ -176,6 +178,8 @@ int main(int argc, char** argv)
 
 
 	VipPlotWidget2D w; 
+	w.setViewport(new VipOpenGLWidget());
+
 	VipPlotArea2D* area = w.area();
 	
 	setup_plot_area(area);

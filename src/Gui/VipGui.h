@@ -1,111 +1,25 @@
 #ifndef VIS_GUI_H
 #define VIS_GUI_H
 
-#include "VipArchive.h"
-#include "VipFunctional.h"
-#include "VipPlotItem.h"
-#include "VipPlotCurve.h"
-#include "VipSymbol.h"
-#include "VipPlotHistogram.h"
-#include "VipPlotGrid.h"
-#include "VipPlotMarker.h"
-#include "VipPlotRasterData.h"
-#include "VipPlotSpectrogram.h"
-#include "VipPlotShape.h"
-#include "VipAxisBase.h"
-#include "VipAxisColorMap.h"
-#include "VipColorMap.h"
-#include "VipPlotWidget2D.h"
-///\defgroup Gui Gui
-///
-///
-///
+#include <functional>
 
-/// \addtogroup Gui
-/// @{
+#include "VipDisplayObject.h"
+#include "VipMapFileSystem.h"
 
-VIP_REGISTER_QOBJECT_METATYPE_NO_DECLARE(VipPlotItem*);
-VIP_REGISTER_QOBJECT_METATYPE(VipPlotItemData*);
-VIP_REGISTER_QOBJECT_METATYPE(VipPlotCurve*);
-VIP_REGISTER_QOBJECT_METATYPE(VipPlotHistogram*);
-VIP_REGISTER_QOBJECT_METATYPE(VipPlotGrid*);
-VIP_REGISTER_QOBJECT_METATYPE(VipPlotCanvas*);
-VIP_REGISTER_QOBJECT_METATYPE(VipPlotMarker*);
-VIP_REGISTER_QOBJECT_METATYPE(VipPlotRasterData*);
-VIP_REGISTER_QOBJECT_METATYPE(VipPlotSpectrogram*);
-VIP_REGISTER_QOBJECT_METATYPE(VipPlotShape*);
-VIP_REGISTER_QOBJECT_METATYPE(VipPlotSceneModel*);
-VIP_REGISTER_QOBJECT_METATYPE(VipAbstractScale*);
-VIP_REGISTER_QOBJECT_METATYPE(VipAxisBase*);
-VIP_REGISTER_QOBJECT_METATYPE(VipAxisColorMap*);
-VIP_REGISTER_QOBJECT_METATYPE(VipColorMap*);
-VIP_REGISTER_QOBJECT_METATYPE(VipLinearColorMap*);
-VIP_REGISTER_QOBJECT_METATYPE(VipAlphaColorMap*);
+class VipAbstractPlayer;
 
-VIP_GUI_EXPORT VipArchive & operator<<(VipArchive & arch, const VipPlotItem * value);
-VIP_GUI_EXPORT VipArchive & operator>>(VipArchive & arch, VipPlotItem * value);
 
-VIP_GUI_EXPORT VipArchive & operator<<(VipArchive & arch, const VipPlotItemData * value);
-VIP_GUI_EXPORT VipArchive & operator>>(VipArchive & arch, VipPlotItemData * value);
-
-VIP_GUI_EXPORT VipArchive & operator<<(VipArchive & arch, const VipPlotCurve * value);
-VIP_GUI_EXPORT VipArchive & operator>>(VipArchive & arch, VipPlotCurve * value);
-
-VIP_GUI_EXPORT VipArchive & operator<<(VipArchive & arch, const VipPlotHistogram * value);
-VIP_GUI_EXPORT VipArchive & operator>>(VipArchive & arch, VipPlotHistogram * value);
-
-VIP_GUI_EXPORT VipArchive & operator<<(VipArchive & arch, const VipPlotGrid * value);
-VIP_GUI_EXPORT VipArchive & operator>>(VipArchive & arch, VipPlotGrid * value);
-
-VIP_GUI_EXPORT VipArchive & operator<<(VipArchive & arch, const VipPlotCanvas * value);
-VIP_GUI_EXPORT VipArchive & operator>>(VipArchive & arch, VipPlotCanvas * value);
-
-VIP_GUI_EXPORT VipArchive & operator<<(VipArchive & arch, const VipPlotMarker * value);
-VIP_GUI_EXPORT VipArchive & operator>>(VipArchive & arch, VipPlotMarker * value);
-
-VIP_GUI_EXPORT VipArchive & operator<<(VipArchive & arch, const VipPlotRasterData * value);
-VIP_GUI_EXPORT VipArchive & operator>>(VipArchive & arch, VipPlotRasterData * value);
-
-VIP_GUI_EXPORT VipArchive & operator<<(VipArchive & arch, const VipPlotSpectrogram * value);
-VIP_GUI_EXPORT VipArchive & operator>>(VipArchive & arch, VipPlotSpectrogram * value);
-
-VIP_GUI_EXPORT VipArchive & operator<<(VipArchive & arch, const VipPlotShape * value);
-VIP_GUI_EXPORT VipArchive & operator>>(VipArchive & arch, VipPlotShape * value);
-
-VIP_GUI_EXPORT VipArchive & operator<<(VipArchive & arch, const VipPlotSceneModel * value);
-VIP_GUI_EXPORT VipArchive & operator>>(VipArchive & arch, VipPlotSceneModel * value);
-
-VIP_GUI_EXPORT VipArchive & operator<<(VipArchive & arch, const VipAbstractScale * value);
-VIP_GUI_EXPORT VipArchive & operator>>(VipArchive & arch, VipAbstractScale * value);
-
-VIP_GUI_EXPORT VipArchive & operator<<(VipArchive & arch, const VipAxisBase * value);
-VIP_GUI_EXPORT VipArchive & operator>>(VipArchive & arch, VipAxisBase * value);
-
-VIP_GUI_EXPORT VipArchive & operator<<(VipArchive & arch, const VipColorMap * value);
-VIP_GUI_EXPORT VipArchive & operator>>(VipArchive & arch, VipColorMap * value);
-
-VIP_GUI_EXPORT VipArchive & operator<<(VipArchive & arch, const VipLinearColorMap * value);
-VIP_GUI_EXPORT VipArchive & operator>>(VipArchive & arch, VipLinearColorMap * value);
-
-VIP_GUI_EXPORT VipArchive & operator<<(VipArchive & arch, const VipAlphaColorMap * value);
-VIP_GUI_EXPORT VipArchive & operator>>(VipArchive & arch, VipAlphaColorMap * value);
-
-VIP_GUI_EXPORT VipArchive & operator<<(VipArchive & arch, const VipAxisColorMap * value);
-VIP_GUI_EXPORT VipArchive & operator>>(VipArchive & arch, VipAxisColorMap * value);
-
-VIP_GUI_EXPORT VipArchive & operator<<(VipArchive & arch, const VipPlotArea2D * value);
-VIP_GUI_EXPORT VipArchive & operator>>(VipArchive & arch, VipPlotArea2D * value);
-
-/// Returns a copy of given item.
-/// This function uses the serialize/deserialize mechanism to produce a copy of input VipPlotItem.
-/// You should always use this function to copy an item, as it will take care of internal IDs used to identify each item.
-/// Note that the output item will NOT share the input item axes and will have a different ID (as in #VipUniqueId::id()).
-VIP_GUI_EXPORT VipPlotItem * vipCopyPlotItem(const VipPlotItem* item);
-
-/// Save the current item state, except its ID (as in #VipUniqueId::id()) and its axises.
-VIP_GUI_EXPORT QByteArray vipSavePlotItemState(const VipPlotItem* item);
-/// Restore an item state previously saved with #vipSavePlotItemState.
-VIP_GUI_EXPORT bool vipRestorePlotItemState(VipPlotItem* item, const QByteArray & state);
+/// @brief Returns the first parent widget that can be casted to T
+template<class T>
+T* vipFindParent(QWidget * w)
+{
+	while (w) {
+		if (T* p = qobject_cast<T*>(w))
+			return p;
+		w = w->parentWidget();
+	}
+	return nullptr;
+}
 
 /// Returns the standard foreground text brush for given widget.
 /// The text color for all widgets is usually black. However, this might be changed by manually setting the palette or
@@ -210,15 +124,6 @@ class VIP_GUI_EXPORT VipGuiDisplayParamaters : public QObject
 
 public:
 
-	/// Rendering strategy for videos and plots
-	enum RenderStrategy
-	{
-		PureOpenGL,			//! use QOpenGLWidget inside a QGraphicsView
-		OffscreenOpenGL,	//! use offscreen opengl rendering with standard QWidget
-		AutoRendering,		//! try to select the fastest between offscreen opengl and direct rendering
-		DirectRendering		//! CPU based rendering (default, usually the fastest)
-	};
-
 	static VipGuiDisplayParamaters * instance(VipMainWindow * win = NULL);
 
 	~VipGuiDisplayParamaters();
@@ -245,7 +150,6 @@ public:
 	int flatHistogramStrength() const;
 	int videoRenderingStrategy() const;
 	int plotRenderingStrategy() const;
-	int renderingThreads() const;
 	bool displayExactPixels() const;
 	
 	///Returns the ROI border pen
@@ -279,7 +183,6 @@ public Q_SLOTS:
 	void setDefaultTextStyle2(const VipText &);
 	void setVideoRenderingStrategy(int);
 	void setPlotRenderingStrategy(int);
-	void setRenderingThreads(int);
 	void autoScaleAll();
 	void setDisplayExactPixels(bool);
 
@@ -312,10 +215,94 @@ private:
 };
 
 
-typedef QList<vip_double> DoubleList;
-Q_DECLARE_METATYPE(DoubleList)
-typedef QVector<vip_double> DoubleVector;
-Q_DECLARE_METATYPE(DoubleVector)
+
+
+class VipAbstractPlayer;
+
+/// Function dispatcher which create a VipDisplayObject object from a QVariant and a VipAbstractPlayer.
+/// This dispatcher is called within vipCreateDisplayFromData to provide a custom behavior. Its goal is to create a new instance of VipDisplayObject
+/// able to display given data into a specific player.
+/// Its signature is:
+/// \code
+/// VipDisplayObject*(const QVariant &, VipAbstractPlayer *, const VipAnyData & any)
+/// \endcode
+VIP_GUI_EXPORT VipFunctionDispatcher<3>& vipFDCreateDisplayFromData();
+
+/// Creates a VipDisplayObject able to display the data from \a any into \a player. The player might be NULL.
+VIP_GUI_EXPORT VipDisplayObject* vipCreateDisplayFromData(const VipAnyData& any, VipAbstractPlayer*);
+
+/// Function dispatcher which create a list of VipAbstractPlayer instances that will display the given data.
+/// This dispatcher is called within vipCreatePlayersFromData and vipCreatePlayersFromProcessing to provide a custom behavior.
+/// If a non null player is given, this function will try to display the processing outputs into the player, and a list containing only the player is returned on success. An empty list will be
+/// returned in case of failure.
+///
+///
+/// Its signature is:
+/// \code
+/// QList<VipAbstractPlayer *> (const QVariant &, VipAbstractPlayer *, const VipAnyData & any, QObject * target)
+/// \endcode
+VIP_GUI_EXPORT VipFunctionDispatcher<4>& vipFDCreatePlayersFromData();
+/// Creates a list of VipAbstractPlayer instances that will display the given data.
+/// If a non null player is given, this function will try to display the data into the player, and a list containing only the player is returned on success. An empty list will be returned in case of
+/// failure.
+///
+/// \a target is a QObject used to define the target in drop situations (in case of dropping, it is usually a #VipPlotItem).
+VIP_GUI_EXPORT QList<VipAbstractPlayer*> vipCreatePlayersFromData(const VipAnyData& any,
+								  VipAbstractPlayer* pl,
+								  VipOutput* src = NULL,
+								  QObject* target = NULL,
+								  QList<VipDisplayObject*>* outputs = NULL);
+
+/// Function dispatcher which create a list of VipAbstractPlayer instances that will display the output(s) of a VipProcessingObject.
+/// This dispatcher is called within vipCreatePlayersFromProcessing to provide a custom behavior.
+/// If a non null player is given, this function will try to display the processing outputs into the player, and a list containing only the player is returned on success. An empty list will be
+/// returned in case of failure. Its signature is: \code QList<VipAbstractPlayer *> (VipProcessingObject *, VipAbstractPlayer*,VipOutput*, QObject * target ); \endcode
+VIP_GUI_EXPORT VipFunctionDispatcher<4>& vipFDCreatePlayersFromProcessing();
+
+/// Creates a list of VipAbstractPlayer instances that will display the output(s) of a VipProcessingObject.
+/// If a non null player is given, this function will try to display the processing outputs into the player, and a list containing only the player is returned on success. An empty list will be
+/// returned in case of failure. If a non null VipOutput is given, only the data of this output will be displayed in the player.
+///
+/// This function try to minimize the number of returned players. Therefore, if the processing has multiple outputs that can be displayed into the same player
+/// (like for instance multiple floating point values), only one player is created for all of them (displaying for instance multiple curves).
+///
+/// \a target is a QObject used to define the target in drop situations (in case of dropping, it is usually a #VipPlotItem).
+VIP_GUI_EXPORT QList<VipAbstractPlayer*> vipCreatePlayersFromProcessing(VipProcessingObject* proc,
+									VipAbstractPlayer* player,
+									VipOutput* src = NULL,
+									QObject* target = NULL,
+									QList<VipDisplayObject*>* outputs = NULL);
+
+/// Creates a list of VipAbstractPlayer instances that will display the output(s) of a several VipProcessingObject instances.
+/// This function try to minimize the number of returned players by inserting several display objects into the same player.
+VIP_GUI_EXPORT QList<VipAbstractPlayer*> vipCreatePlayersFromProcessings(const QList<VipProcessingObject*>&, VipAbstractPlayer*, QObject* target = NULL, QList<VipDisplayObject*>* outputs = NULL);
+
+/// Creates a list of VipAbstractPlayer instances that will display the output(s) of a several VipProcessingObject instances.
+/// This function try to minimize the number of returned players by inserting several display objects into the same player.
+template<class T>
+QList<VipAbstractPlayer*> vipCreatePlayersFromProcessings(const QList<T*>& lst, VipAbstractPlayer* player, QObject* target = NULL, QList<VipDisplayObject*>* outputs = NULL)
+{
+	return vipCreatePlayersFromProcessings(vipListCast<VipProcessingObject*>(lst), player, target, outputs);
+}
+
+/// Creates a list of VipAbstractPlayer instances that will display the output(s) of the VipIODevice objects created from all the given strings.
+/// This function try to minimize the number of returned players by inserting several display objects into the same player.
+VIP_GUI_EXPORT QList<VipAbstractPlayer*> vipCreatePlayersFromStringList(const QStringList& lst, VipAbstractPlayer* player, QObject* target = NULL, QList<VipDisplayObject*>* outputs = NULL);
+
+/// Creates a list of VipAbstractPlayer instances that will display the output(s) of the VipIODevice objects created from all the given paths and QIODevice objetcs.
+/// This function try to minimize the number of returned players by inserting several display objects into the same player.
+VIP_GUI_EXPORT QList<VipAbstractPlayer*> vipCreatePlayersFromPaths(const VipPathList& paths, VipAbstractPlayer* player, QObject* target = NULL, QList<VipDisplayObject*>* outputs = NULL);
+
+/// Helper function.
+/// Create a new processing object (\a info) based on given VipOutput.
+/// A VipProcessingList is added just after the processing.
+VIP_GUI_EXPORT VipProcessingObject* vipCreateProcessing(VipOutput* output, const VipProcessingObject::Info& info);
+
+/// Helper function.
+/// Create a new data fusion processing (\a info) based on given VipOutput.
+/// A VipProcessingList is added just after the data fusion processing.
+VIP_GUI_EXPORT VipProcessingObject* vipCreateDataFusionProcessing(const QList<VipOutput*>& outputs, const VipProcessingObject::Info& info);
+VIP_GUI_EXPORT VipProcessingObject* vipCreateDataFusionProcessing(const QList<VipPlotItem*>& items, const VipProcessingObject::Info& info);
 
 
 /// @}

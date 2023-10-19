@@ -1585,23 +1585,27 @@ bool VipDragWidgetHandle::dropMimeData(const QMimeData * mime)
 
 		if (splitter()->orientation() == Qt::Vertical) {
 			int index = splitter()->indexOf(this);
-			multiDragWidget->insertMain(index, widget);
+			if (!multiDragWidget->insertMain(index, widget))
+				return false;
 		}
 		else {
 			int h_index = splitter()->indexOf(this);
 			int v_index = multiDragWidget->mainSplitter()->indexOf(splitter());
-			multiDragWidget->insertSub(v_index, h_index, widget);
+			if (!multiDragWidget->insertSub(v_index, h_index, widget))
+				return false;
 		}
 	}
 	else {
 		if (splitter()->orientation() == Qt::Horizontal) {
 			int index = splitter()->indexOf(this);
-			multiDragWidget->insertMain(index, widget);
+			if (!multiDragWidget->insertMain(index, widget))
+				return false;
 		}
 		else {
 			int h_index = splitter()->indexOf(this);
 			int v_index = multiDragWidget->mainSplitter()->indexOf(splitter());
-			multiDragWidget->insertSub(v_index, h_index, widget);
+			if (!multiDragWidget->insertSub(v_index, h_index, widget))
+				return false;
 		}
 	}
 
@@ -2557,21 +2561,38 @@ void VipMultiDragWidget::updateSizes(bool enable_resize)
 	//vipProcessEvents(NULL, 500);
 }
 
-void VipMultiDragWidget::insertSub(int y, int x,  VipBaseDragWidget * widget)
+bool VipMultiDragWidget::insertSub(int y, int x,  VipBaseDragWidget * widget)
 {
-
 	QSplitter * h_splitter = subSplitter(y);
+	// check
+	if (x < h_splitter->count()) {
+		if(QTabWidget* tab = qobject_cast<QTabWidget*>(h_splitter->widget(x)))
+			if (tab->indexOf(widget) >= 0)
+				return false;
+	}
+	
 	QTabWidget * tab = createTabWidget();
 	h_splitter->insertWidget(x,tab);
 	setWidget(y,x,widget);
+	return true;
 }
 
-void VipMultiDragWidget::insertMain(int y,  VipBaseDragWidget * widget)
+bool VipMultiDragWidget::insertMain(int y,  VipBaseDragWidget * widget)
 {
+	if (y < d_data->v_splitter->count()) {
+		// check if widget is already at the right location
+		if (QSplitter* splitter = qobject_cast<QSplitter*>(d_data->v_splitter->widget(y))) {
+			for (int i=0; i < splitter->count(); ++i)
+				if (QTabWidget* tab = qobject_cast<QTabWidget*>(splitter->widget(i)))
+					if (tab->indexOf(widget) >= 0)
+						return false;
+		}
+			
+	}
 	QSplitter * h_splitter = createHSplitter();
 	d_data->v_splitter->insertWidget(y,h_splitter);
 	setWidget(y,0,widget);
-
+	return true;
 }
 
 void VipMultiDragWidget::hideAllExcept(VipBaseDragWidget * widget)
