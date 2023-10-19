@@ -1,5 +1,5 @@
 
-![Logo](docs/images/logo.png)
+<img src="docs/images/logo.png" width="615">
 
 # Thermavip
 
