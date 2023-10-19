@@ -2,7 +2,7 @@
 
 # Gui library
 
-The *Gui* library defines most *Thermavip* application widgets (including the main one) and GUI abstractions. It is strongly linked to Thermavip application itself unlike the [Logging](logging.md), [DataType](datatype.md), [Core](core.md) and *[Plotting](plotting.md) libraries.
+The *Gui* library defines most *Thermavip* application widgets (including the main one) and GUI abstractions. It is strongly linked to Thermavip application itself unlike the [Logging](logging.md), [DataType](datatype.md), [Core](core.md) and [Plotting](plotting.md) libraries.
 
 
 ## Thermavip main interface

@@ -599,4 +599,5 @@ Thermavip provides several example of processing pipelines:
 
 -	[StreamingCurvePipeline](../src/Tests/Gui/StreamingCurvePipeline/main.cpp): streaming and display of 1d + time signals.
 -	[StreamingMandelbrotPipeline](../src/Tests/Gui/StreamingMandelbrotPipeline/main.cpp): streaming, processing and display of 1d + time signals, histogram, images.
+-	[TemporalMandelbrotPipeline](../src/Tests/Gui/TemporalMandelbrotPipeline/main.cpp): video player, processing and display of 1d + time signals, histogram, images.
 

@@ -10,7 +10,7 @@ Thermavip is a C++ framework based on 4 layers (see image below):
 - a Software Development Kit (SDK) composed of 6 shared libraries: 
 
 	1.	[Logging](logging.md): logging to file/console/GUI tools
-	2.	[DataType](datatypes.md): base data types manipulated by Thermavip (N-D arrays, vector of points, scene models...)
+	2.	[DataType](datatype.md): base data types manipulated by Thermavip (N-D arrays, vector of points, scene models...)
 	3.	[Core](core.md): asynchronous agents library based on dataflow, archiving, plugin mechanism
 	4.	[Plotting](plotting.md): high performance plotting library for offline/firm real-time display of multi-sensor data
 	5.	[Gui](gui.md): base graphical components (main window, players...)
