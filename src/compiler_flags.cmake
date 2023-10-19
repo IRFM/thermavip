@@ -57,7 +57,7 @@ else()
 		
 		if (CMAKE_BUILD_TYPE STREQUAL "Release" )
 			# gcc release
-			target_compile_options(${TARGET_PROJECT} PRIVATE -O3 -ftree-vectorize )
+			target_compile_options(${TARGET_PROJECT} PRIVATE -O3 -ftree-vectorize -march=native -fopenmp -fPIC -mno-bmi2 -mno-fma -mno-avx -std=gnu++14 -Wno-maybe-uninitialized)
 		endif()
 	endif()
 	

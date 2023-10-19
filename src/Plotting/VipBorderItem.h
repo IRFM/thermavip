@@ -1,5 +1,5 @@
-#ifndef VIS_BORDER_ITEM_H
-#define VIS_BORDER_ITEM_H
+#ifndef VIP_BORDER_ITEM_H
+#define VIP_BORDER_ITEM_H
 
 #include "VipAbstractScale.h"
 
