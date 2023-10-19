@@ -125,7 +125,7 @@ Each class inheriting `VipPaintItem` (all plot items and areas, axes...) provide
 
 The style sheets syntax supports a subset of Qt style sheets syntax, and can modify any kind of property like a color, pen, brush, font, width, string, qt property, etc.
 
-The style sheet system is extendible, which means that any plot item can define new properties. Below is the global style sheet used in the [StreamingCurvePipeline](../src/tests/Gui/StreamingCurvePipeline/main.cpp) example:
+The style sheet system is extendible, which means that any plot item can define new properties. Below is the global style sheet used in the [StreamingCurvePipeline](../src/Tests/Gui/StreamingCurvePipeline/main.cpp) example:
 
 ```cpp
 VipGlobalStyleSheet::setStyleSheet(
