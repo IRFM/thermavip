@@ -9,6 +9,8 @@
 #include <QSet>
 #include <QStandardPaths>
 
+#include <thread>
+
 
 bool vipSafeVariantSave(QDataStream &s, const QVariant & v)
 {
@@ -600,7 +602,7 @@ struct GuiFunctions : public QObject
 		return inst;
 	}
 
-	GuiFunctions::GuiFunctions()
+	GuiFunctions()
 	{
 		thread = std::thread(std::bind(&GuiFunctions::run,this));
 	}
