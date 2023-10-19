@@ -320,7 +320,7 @@ namespace detail
 	protected:
 		virtual bool prepareForDisplay(const VipAnyDataList& lst)
 		{
-			if (PlotItemType* curve = item()) {
+			if (PlotItemType* curve = this->item()) {
 
 				Data data;
 				bool full_data = false;
@@ -357,7 +357,7 @@ namespace detail
 		virtual bool prepareForDisplay(const VipAnyDataList& lst)
 		{
 			if (lst.size()) {
-				if (PlotItemType* curve = item()) {
+				if (PlotItemType* curve = this->item()) {
 					curve->setRawData(lst.back().value<Data>());
 				}
 			}

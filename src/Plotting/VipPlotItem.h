@@ -1061,7 +1061,7 @@ public:
 	{
 		
 		this->dataLock()->lock();
-		Data vec = takeData().value<Data>();
+		Data vec = takeData().template value<Data>();
 		try {
 			std::forward<F>(fun)(vec);
 		}
