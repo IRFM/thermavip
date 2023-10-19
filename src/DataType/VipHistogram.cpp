@@ -238,7 +238,7 @@ struct ExtractKey
 	VIP_ALWAYS_INLINE typename std::make_unsigned<T>::type operator()(const std::pair<T, int>& v) const
 	{ 
 		// integral types
-		using integral_type = std::make_unsigned<T>::type;
+		using integral_type = typename std::make_unsigned<T>::type;
 		integral_type val = static_cast<integral_type>(v.first);
 		if (std::is_signed<T>::value)
 			// wrap around to keep an unsigned value in the same order as the signed one
