@@ -1,13 +1,42 @@
+/**
+ * BSD 3-Clause License
+ *
+ * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice, this
+ *    list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of the copyright holder nor the names of its
+ *    contributors may be used to endorse or promote products derived from
+ *    this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
 #include "VipPlotBarChart.h"
 #include "VipAbstractScale.h"
+#include "VipAxisColorMap.h"
+#include "VipBorderItem.h"
 #include "VipColorMap.h"
 #include "VipPainter.h"
-#include "VipBorderItem.h"
-#include "VipAxisColorMap.h"
 
 #include <QMultiMap>
-
-
 
 static int registerBarChartKeyWords()
 {
@@ -31,7 +60,6 @@ static int registerBarChartKeyWords()
 		textValue["maxValue"] = VipPlotBarChart::MaxValue;
 		textValue["sumValue"] = VipPlotBarChart::SumValue;
 
-
 		keywords["style"] = VipParserPtr(new EnumOrParser(style));
 		keywords["width-unit"] = VipParserPtr(new EnumOrParser(widthUnit));
 		keywords["value-type"] = VipParserPtr(new EnumOrParser(valueType));
@@ -50,11 +78,6 @@ static int registerBarChartKeyWords()
 }
 
 static int _registerBarChartKeyWords = registerBarChartKeyWords();
-
-
-
-
-
 
 VipBar::VipBar(double pos, const QVector<double>& values)
   : d_pos(pos)
@@ -180,11 +203,11 @@ void VipPlotBarChart::setData(const QVariant& v)
 	VipPlotItemDataType::setData(v);
 }
 
-VipInterval VipPlotBarChart::plotInterval(const VipInterval& interval ) const 
+VipInterval VipPlotBarChart::plotInterval(const VipInterval& interval) const
 {
 	const VipBarVector vec = rawData();
 	VipInterval inter = VipInterval();
-	
+
 	for (const VipBar& b : vec) {
 		for (int i = 0; i < b.valueCount(); ++i) {
 			double val = b.value(i);
@@ -206,7 +229,7 @@ void VipPlotBarChart::setValueType(ValueType type)
 {
 	if (d_data->valueType != type) {
 		d_data->valueType = type;
-		d_data->plotRect = computePlotBoundingRect(rawData(),sceneMap());
+		d_data->plotRect = computePlotBoundingRect(rawData(), sceneMap());
 		emitItemChanged();
 	}
 }
@@ -219,7 +242,7 @@ VipPlotBarChart::ValueType VipPlotBarChart::valueType() const
 void VipPlotBarChart::setBaseline(double reference)
 {
 	d_data->baseline = reference;
-	d_data->plotRect = computePlotBoundingRect(rawData(),sceneMap());
+	d_data->plotRect = computePlotBoundingRect(rawData(), sceneMap());
 	emitItemChanged();
 }
 
@@ -247,7 +270,7 @@ VipPlotBarChart::WidthUnit VipPlotBarChart::spacingUnit() const
 void VipPlotBarChart::setStyle(Style style)
 {
 	d_data->style = style;
-	d_data->plotRect = computePlotBoundingRect(rawData(),sceneMap());
+	d_data->plotRect = computePlotBoundingRect(rawData(), sceneMap());
 	emitItemChanged();
 }
 
@@ -255,7 +278,7 @@ void VipPlotBarChart::setBarWidth(double width, WidthUnit unit)
 {
 	d_data->width = width;
 	d_data->widthUnit = unit;
-	d_data->plotRect = computePlotBoundingRect(rawData(),sceneMap());
+	d_data->plotRect = computePlotBoundingRect(rawData(), sceneMap());
 	emitItemChanged();
 }
 
@@ -306,16 +329,18 @@ Vip::RegionPositions VipPlotBarChart::textPosition() const
 	return d_data->textPosition;
 }
 
-void VipPlotBarChart::setTextTransform(const QTransform& tr, const QPointF& ref) 
+void VipPlotBarChart::setTextTransform(const QTransform& tr, const QPointF& ref)
 {
 	d_data->textTransform = tr;
 	d_data->textTransformReference = ref;
 	emitItemChanged();
 }
-const QTransform& VipPlotBarChart::textTransform() const {
+const QTransform& VipPlotBarChart::textTransform() const
+{
 	return d_data->textTransform;
 }
-const QPointF& VipPlotBarChart::textTransformReference() const {
+const QPointF& VipPlotBarChart::textTransformReference() const
+{
 	return d_data->textTransformReference;
 }
 
@@ -355,7 +380,6 @@ const QList<VipText>& VipPlotBarChart::barNames() const
 	return d_data->names;
 }
 
-
 /// @brief Set the color palette used to fill each bar.
 void VipPlotBarChart::setColorPalette(const VipColorPalette& p)
 {
@@ -364,7 +388,7 @@ void VipPlotBarChart::setColorPalette(const VipColorPalette& p)
 		d_data->boxStyles[i].setBackgroundBrush(QBrush(p.color(i)));
 	emitItemChanged();
 }
-VipColorPalette VipPlotBarChart::colorPalette() const 
+VipColorPalette VipPlotBarChart::colorPalette() const
 {
 	return d_data->palette;
 }
@@ -376,21 +400,19 @@ void VipPlotBarChart::setTextStyle(const VipTextStyle& st)
 	d_data->text.setTextStyle(st);
 	emitItemChanged();
 }
-VipTextStyle VipPlotBarChart::textStyle() const 
+VipTextStyle VipPlotBarChart::textStyle() const
 {
 	return d_data->textStyle ? *d_data->textStyle : VipTextStyle();
 }
-
-
 
 void VipPlotBarChart::setBoxStyle(const VipBoxStyle& st)
 {
 	d_data->boxStyle = st;
 }
-const VipBoxStyle& VipPlotBarChart::boxStyle() const {
+const VipBoxStyle& VipPlotBarChart::boxStyle() const
+{
 	return d_data->boxStyle;
 }
-
 
 void VipPlotBarChart::setBoxStyle(const VipBoxStyle& bstyle, int index)
 {
@@ -401,7 +423,6 @@ void VipPlotBarChart::setBoxStyle(const VipBoxStyle& bstyle, int index)
 			d_data->boxStyles[i] = boxStyle();
 			d_data->boxStyles[i].setBackgroundBrush(QBrush(d_data->palette.color(i)));
 		}
-			
 	}
 
 	d_data->boxStyles[index] = bstyle;
@@ -464,7 +485,7 @@ void VipPlotBarChart::draw(QPainter* painter, const VipCoordinateSystemPtr& m) c
 	d_data->barRects.resize(values.size());
 
 	for (int i = 0; i < values.size(); ++i) {
-		drawBarValues(painter, m, values.value(i),i);
+		drawBarValues(painter, m, values.value(i), i);
 	}
 }
 
@@ -488,7 +509,7 @@ QList<VipInterval> VipPlotBarChart::plotBoundingIntervals() const
 	return QList<VipInterval>() << VipInterval(d_data->plotRect.left(), d_data->plotRect.right()).normalized() << VipInterval(d_data->plotRect.top(), d_data->plotRect.bottom()).normalized();
 }
 
-QString VipPlotBarChart::formatToolTip(const QPointF& pos) const 
+QString VipPlotBarChart::formatToolTip(const QPointF& pos) const
 {
 	for (int i = 0; i < d_data->barRects.size(); ++i) {
 		const QVector<QPolygonF>& vec = d_data->barRects[i];
@@ -499,12 +520,12 @@ QString VipPlotBarChart::formatToolTip(const QPointF& pos) const
 				double value = v[i].value(j);
 				const QString title = j < d_data->names.size() ? d_data->names[j].text() : QString();
 
-				QString res =this->toolTipText();
+				QString res = this->toolTipText();
 				res = VipText::replace(res, "#value", value);
 				res = VipText::replace(res, "#title", title);
 				if (res.indexOf("#licon") >= 0)
 					res = VipText::replace(res, "#licon", QString(vipToHtml(this->legendPixmap(QSize(20, 16), j))));
-				res = VipPlotItem::formatText(res,pos);
+				res = VipPlotItem::formatText(res, pos);
 				return res;
 			}
 		}
@@ -512,7 +533,7 @@ QString VipPlotBarChart::formatToolTip(const QPointF& pos) const
 	return QString();
 }
 
-bool VipPlotBarChart::areaOfInterest(const QPointF& pos, int , double maxDistance, VipPointVector& out_pos, VipBoxStyle& style, int& legend) const
+bool VipPlotBarChart::areaOfInterest(const QPointF& pos, int, double maxDistance, VipPointVector& out_pos, VipBoxStyle& style, int& legend) const
 {
 	for (int i = 0; i < d_data->barRects.size(); ++i) {
 		const QVector<QPolygonF>& vec = d_data->barRects[i];
@@ -535,7 +556,6 @@ bool VipPlotBarChart::areaOfInterest(const QPointF& pos, int , double maxDistanc
 	}
 	return false;
 }
-
 
 void VipPlotBarChart::drawBarValues(QPainter* painter, const VipCoordinateSystemPtr& m, const VipBar& values, int index) const
 {
@@ -562,7 +582,6 @@ void VipPlotBarChart::drawBarValues(QPainter* painter, const VipCoordinateSystem
 
 	if (textValue() == EachValue) {
 		for (int i = 0; i < rects.size(); ++i) {
-			
 
 			VipText t = d_data->text;
 			QString res = VipPlotItem::formatText(t.text(), QPointF());
@@ -570,7 +589,7 @@ void VipPlotBarChart::drawBarValues(QPainter* painter, const VipCoordinateSystem
 				res = VipText::replace(res, "#title", d_data->names[index].text());
 			res = VipText::replace(res, "#value", values.value(i));
 			t.setText(res);
-			
+
 			VipPainter::drawText(painter, t, textTransform(), textTransformReference(), textDistance(), textPosition(), textAlignment(), rects[i].boundingRect());
 		}
 	}
@@ -584,7 +603,7 @@ void VipPlotBarChart::drawBarValues(QPainter* painter, const VipCoordinateSystem
 		for (int i = 0; i < rects.size(); ++i) {
 			if (i > 0)
 				union_rect = union_rect | rects[i].boundingRect();
-			
+
 			sumValue += values.value(i);
 			if (values.value(i) > maxValue) {
 				maxValue = values.value(i);
@@ -595,7 +614,7 @@ void VipPlotBarChart::drawBarValues(QPainter* painter, const VipCoordinateSystem
 		VipText t = d_data->text;
 
 		if (textValue() == MaxValue) {
-			t.setText(VipText::replace(t.text(),"#value",maxValue));
+			t.setText(VipText::replace(t.text(), "#value", maxValue));
 			if (style() == SideBySide) {
 				union_rect = rects[maxIndex].boundingRect();
 			}
@@ -606,7 +625,6 @@ void VipPlotBarChart::drawBarValues(QPainter* painter, const VipCoordinateSystem
 
 		// draw text
 		VipPainter::drawText(painter, t, textTransform(), textTransformReference(), textDistance(), textPosition(), textAlignment(), union_rect);
-
 	}
 }
 
@@ -620,7 +638,7 @@ double VipPlotBarChart::value(double v) const
 
 QList<QPolygonF> VipPlotBarChart::barValuesRects(const VipBar& bv, const VipCoordinateSystemPtr& m) const
 {
-	
+
 	double bspacing = spacing();
 	double bwidth = barWidth();
 	if (m && m->axes().size() == 2) {
@@ -641,7 +659,6 @@ QList<QPolygonF> VipPlotBarChart::barValuesRects(const VipBar& bv, const VipCoor
 		bspacing = 0;
 		bwidth = 0.1;
 	}
-	
 
 	if (style() == SideBySide) {
 		double total_width = bv.valueCount() * bwidth + (bv.valueCount() - 1) * bspacing;
@@ -728,7 +745,7 @@ QRectF VipPlotBarChart::computePlotBoundingRect(const VipBarVector& values, cons
 	QRectF result;
 
 	for (int i = 0; i < values.size(); ++i) {
-		QList<QPolygonF> rects = barValuesRects(values[i],m);
+		QList<QPolygonF> rects = barValuesRects(values[i], m);
 		for (int j = 0; j < rects.size(); ++j) {
 			if (result.isEmpty())
 				result = rects[j].boundingRect();
@@ -739,9 +756,6 @@ QRectF VipPlotBarChart::computePlotBoundingRect(const VipBarVector& values, cons
 
 	return result;
 }
-
-
-
 
 bool VipPlotBarChart::setItemProperty(const char* name, const QVariant& value, const QByteArray& index)
 {
@@ -756,7 +770,7 @@ bool VipPlotBarChart::setItemProperty(const char* name, const QVariant& value, c
 	/// -   'value-type': see VipPlotBarChart::setValueType(), one of 'scaleValue', 'barLength'
 	/// -   'width-unit': see VipPlotBarChart::setBarWidth(), one of 'itemUnit', 'axisUnit'
 	/// -   'bar-width': width of each bar, see VipPlotBarChart::setBarWidth()
-	/// 
+	///
 	if (strcmp(name, "text-alignment") == 0) {
 		setTextAlignment((Qt::Alignment)value.toInt());
 		return true;
@@ -793,24 +807,23 @@ bool VipPlotBarChart::setItemProperty(const char* name, const QVariant& value, c
 		return true;
 	}
 	if (strcmp(name, "width-unit") == 0) {
-		setBarWidth(barWidth(),(WidthUnit)value.toInt());
+		setBarWidth(barWidth(), (WidthUnit)value.toInt());
 		return true;
 	}
 	if (strcmp(name, "bar-width") == 0) {
-		setBarWidth(value.toDouble(),barWidthUnit());
+		setBarWidth(value.toDouble(), barWidthUnit());
 		return true;
 	}
 
 	return VipPlotItem::setItemProperty(name, value, index);
 }
 
-
-
-
-QDataStream& operator<<(QDataStream& str, const VipBar& b) {
+QDataStream& operator<<(QDataStream& str, const VipBar& b)
+{
 	return str << b.position() << b.values();
 }
-QDataStream& operator>>(QDataStream& str, VipBar& b) {
+QDataStream& operator>>(QDataStream& str, VipBar& b)
+{
 	QVector<double> values;
 	double position;
 	str >> position, values;
@@ -818,7 +831,6 @@ QDataStream& operator>>(QDataStream& str, VipBar& b) {
 	b.setPosition(position);
 	return str;
 }
-
 
 VipArchive& operator<<(VipArchive& arch, const VipPlotBarChart* value)
 {
@@ -864,7 +876,6 @@ VipArchive& operator>>(VipArchive& arch, VipPlotBarChart* value)
 
 	return arch;
 }
-
 
 static bool register_types()
 {

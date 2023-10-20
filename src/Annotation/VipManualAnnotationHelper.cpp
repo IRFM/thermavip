@@ -1,16 +1,47 @@
+/**
+ * BSD 3-Clause License
+ *
+ * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice, this
+ *    list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of the copyright holder nor the names of its
+ *    contributors may be used to endorse or promote products derived from
+ *    this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
 #include "VipManualAnnotationHelper.h"
 #include "VipCore.h"
 #include "VipLogging.h"
-#include <qprocess.h>
-#include <qfileinfo.h>
 #include <qdir.h>
+#include <qfileinfo.h>
+#include <qprocess.h>
 
 ManualAnnotationHelper::ManualAnnotationHelper()
 {
 
 	QString path = vipAppCanonicalPath();
 	path = QFileInfo(path).canonicalPath();
-	//vip_debug("%s\n", path.toLatin1().data());
+	// vip_debug("%s\n", path.toLatin1().data());
 	QString thermavip_interface = path + "/Python/thermavip_interface.py";
 	QString activate = path + "/miniconda/condabin/activate.bat";
 
@@ -28,11 +59,9 @@ ManualAnnotationHelper::ManualAnnotationHelper()
 		QString python_path = QFileInfo(vipAppCanonicalPath()).canonicalPath() + "/miniconda/python";
 		// vip_debug("%s\n", path.toLatin1().data());
 
-		
-
 		QString cmd = "cmd /c \"cd " + cd_path + " && " + activate + " && " + python_path + " " + thermavip_interface + "\"";
 		vip_debug("cmd: '%s'\n", cmd.toLatin1().data());
-		m_process.start("cmd");
+		m_process.start("cmd",QStringList());
 		if (!m_process.waitForStarted(5000)) {
 			vip_debug("error: %s\n", m_process.errorString().toLatin1().data());
 			return;
@@ -48,21 +77,19 @@ ManualAnnotationHelper::ManualAnnotationHelper()
 		m_process.write((python_path + " " + thermavip_interface + "\n").toLatin1());
 		m_process.waitForBytesWritten();
 	}
-	else
-	{
-		m_process.start(( "python " + thermavip_interface ).toLatin1());
+	else {
+		m_process.start("python " ,QStringList()<< thermavip_interface);
 		m_process.waitForStarted();
 	}
 
 	QByteArray out;
-	while(m_process.waitForReadyRead(3000))
+	while (m_process.waitForReadyRead(3000))
 		out += m_process.readAllStandardOutput();
-	//m_process.waitForReadyRead(3000);
-	//out = m_process.readAllStandardError() + m_process.readAllStandardOutput();
-	//vip_debug("out: %s\n", out.data());
+	// m_process.waitForReadyRead(3000);
+	// out = m_process.readAllStandardError() + m_process.readAllStandardOutput();
+	// vip_debug("out: %s\n", out.data());
 
-	
-	//QByteArray out = m_process.readAllStandardOutput();
+	// QByteArray out = m_process.readAllStandardOutput();
 	if (!out.contains("ready")) {
 		vip_debug("out: %s\n", out.data());
 		QByteArray err = m_process.readAllStandardError();
@@ -84,20 +111,19 @@ ManualAnnotationHelper::~ManualAnnotationHelper()
 }
 
 Vip_event_list ManualAnnotationHelper::createFromUserProposal(const QList<QPolygonF>& polygons,
-							  Vip_experiment_id pulse,
-							  const QString& camera,
-							  const QString& device,
-								const QString& userName,
-							  qint64 time,
-							  const QString& type,
-							  const QString& filename)
+							      Vip_experiment_id pulse,
+							      const QString& camera,
+							      const QString& device,
+							      const QString& userName,
+							      qint64 time,
+							      const QString& type,
+							      const QString& filename)
 {
 	if (m_process.state() != QProcess::Running)
 		return Vip_event_list();
 
 	Vip_event_list lst;
-	for (int i = 0; i < polygons.size(); ++i)
-	{
+	for (int i = 0; i < polygons.size(); ++i) {
 		VipShape sh;
 		sh.setPolygon(polygons[i]);
 		QRect r = polygons[i].boundingRect().toRect();
@@ -119,11 +145,10 @@ Vip_event_list ManualAnnotationHelper::createFromUserProposal(const QList<QPolyg
 		sh.setAttribute("confidence", 1);
 		sh.setAttribute("user", userName);
 
-
 		lst[i].push_back(sh);
 	}
 
-	//create JSON file
+	// create JSON file
 	QString file = QDir::tempPath();
 	file.replace("\\", "/");
 	if (!file.endsWith("/"))
@@ -131,12 +156,12 @@ Vip_event_list ManualAnnotationHelper::createFromUserProposal(const QList<QPolyg
 	file += QString::number(QDateTime::currentMSecsSinceEpoch()) + ".json";
 	QString json = file;
 	vip_debug("json file: %s\n", json.toLatin1().data());
-	//sendToJSON(file, userName, camera, device, pulse, lst);
-	vipEventsToJsonFile(file,lst);
+	// sendToJSON(file, userName, camera, device, pulse, lst);
+	vipEventsToJsonFile(file, lst);
 
-	//TEST
-	//sendToJSON("C:/Users/VM213788/Desktop/tmp_json.json", userName, camera, pulse, lst);
-	//vip_debug("filename: '%s'\n'", filename.toLatin1().data());
+	// TEST
+	// sendToJSON("C:/Users/VM213788/Desktop/tmp_json.json", userName, camera, pulse, lst);
+	// vip_debug("filename: '%s'\n'", filename.toLatin1().data());
 	QString cmd = (type + " " + json + (filename.isEmpty() ? QString() : (" " + filename)) + "\n");
 	vip_debug("cmd: %s\n", cmd.toLatin1().data());
 	m_process.write((type + " " + json + (filename.isEmpty() ? QString() : (" " + filename)) + "\n").toLatin1()); // use 'segm' for segmentation
@@ -147,7 +172,7 @@ Vip_event_list ManualAnnotationHelper::createFromUserProposal(const QList<QPolyg
 	p.setModal(true);
 
 	while (true) {
-		
+
 		if (m_process.state() != QProcess::Running) {
 			m_process.waitForReadyRead(500);
 			QByteArray ar = m_process.readAllStandardOutput();
@@ -155,7 +180,7 @@ Vip_event_list ManualAnnotationHelper::createFromUserProposal(const QList<QPolyg
 			QString error = m_process.errorString();
 			if (error.size())
 				VIP_LOG_INFO(error);
-			if(ar.size())
+			if (ar.size())
 				VIP_LOG_INFO(ar);
 			if (err.size())
 				VIP_LOG_INFO(err);
@@ -165,7 +190,7 @@ Vip_event_list ManualAnnotationHelper::createFromUserProposal(const QList<QPolyg
 		m_process.waitForReadyRead(500);
 		QByteArray ar = m_process.readAllStandardOutput();
 		QByteArray err = m_process.readAllStandardError();
-		
+
 		if (err.size()) {
 			VIP_LOG_INFO(err);
 			int index = err.indexOf("|");
@@ -176,8 +201,8 @@ Vip_event_list ManualAnnotationHelper::createFromUserProposal(const QList<QPolyg
 				QString percent = err.mid(index + 1);
 				percent.replace("%", "");
 				percent.replace(" ", "");
-				//vip_debug("txt: '%s'\n", text.toLatin1().data());
-				//vip_debug("value: '%s'\n", percent.toLatin1().data());
+				// vip_debug("txt: '%s'\n", text.toLatin1().data());
+				// vip_debug("value: '%s'\n", percent.toLatin1().data());
 				double value = percent.toDouble();
 				p.setText(text);
 				p.setValue(value);
@@ -193,7 +218,7 @@ Vip_event_list ManualAnnotationHelper::createFromUserProposal(const QList<QPolyg
 		if (ar.contains("finished"))
 			break;
 	}
-	//read the 'ready' flag if not done
+	// read the 'ready' flag if not done
 	m_process.waitForReadyRead(1000);
 	QByteArray ar = m_process.readAllStandardOutput();
 
@@ -208,28 +233,28 @@ Vip_event_list ManualAnnotationHelper::createFromUserProposal(const QList<QPolyg
 	}
 	fin.close();
 
-	//QFile::remove(json);
+	// QFile::remove(json);
 
 	return res;
 }
 
 Vip_event_list ManualAnnotationHelper::createBBoxesFromUserProposal(const QList<QPolygonF>& polygons,
-								Vip_experiment_id pulse,
-								const QString& camera,
-								const QString& device,
-								const QString& userName,
-								qint64 time,
-								const QString& filename )
+								    Vip_experiment_id pulse,
+								    const QString& camera,
+								    const QString& device,
+								    const QString& userName,
+								    qint64 time,
+								    const QString& filename)
 {
 	return createFromUserProposal(polygons, pulse, camera, device, userName, time, "bbox", filename);
 }
 Vip_event_list ManualAnnotationHelper::createSegmentationFromUserProposal(const QList<QPolygonF>& polygons,
-								      Vip_experiment_id pulse,
-								      const QString& camera,
-								      const QString& device,
-								      const QString& userName,
-								      qint64 time,
-								      const QString& filename)
+									  Vip_experiment_id pulse,
+									  const QString& camera,
+									  const QString& device,
+									  const QString& userName,
+									  qint64 time,
+									  const QString& filename)
 {
 	return createFromUserProposal(polygons, pulse, camera, device, userName, time, "segm", filename);
 }
@@ -277,16 +302,14 @@ bool ManualAnnotationHelper::supportBBox()
 	QString path = vipAppCanonicalPath();
 	path = QFileInfo(path).canonicalPath();
 	QString thermavip_interface = path + "/Python/thermavip_interface.py";
-	
+
 	if (!QFileInfo(thermavip_interface).exists())
 		return false;
 	return true;
 }
 
-
-
-#include "VipPlayer.h"
 #include "VipIODevice.h"
+#include "VipPlayer.h"
 #include "VipProcessMovie.h"
 
 static void extractAnnotationFromPlayer(VipVideoPlayer* pl, const QList<VipShape>& shs, const QString& method = "bbox")
@@ -414,7 +437,6 @@ static QList<QAction*> manualAnnotationHelperMenu(VipPlotShape* shape, VipVideoP
 	}
 	return actions;
 }
-
 
 static int registerManualAnnotationHelperMenu()
 {

@@ -1,3 +1,34 @@
+/**
+ * BSD 3-Clause License
+ *
+ * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice, this
+ *    list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of the copyright holder nor the names of its
+ *    contributors may be used to endorse or promote products derived from
+ *    this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
 #ifndef VIP_PIE_CHART_H
 #define VIP_PIE_CHART_H
 
@@ -10,7 +41,6 @@
 
 /// \addtogroup Plotting
 /// @{
-
 
 /// @brief Base class for all pie based VipPlotItem
 ///
@@ -33,11 +63,10 @@ private:
 	VipBoxStyle d_style;
 };
 
-
 /// @brief Plot item representing a pie within a polar coordinate system.
-/// 
+///
 /// VipPieItem can be used as an individual plotting item, or indirectly through a VipPieChart item.
-/// 
+///
 /// VipPieItem supports stylesheets and define the following attributes:
 /// -	'legend-style': see VipPieItem::setLegendStyle(), one of 'backgroundAndBorder', 'backgroundOnly', 'backgroundAndDefaultPen'
 /// -	'clip-to-pie': boolean value, see VipPieItem::setClipToPie()
@@ -51,7 +80,7 @@ private:
 /// -	'text-angle-position': see VipPieItem::setTextAnglePosition()
 /// -	'spacing': see VipPieItem::setSpacing()
 /// -	'to-text-border': pen used to draw the path from the pie to outer text
-/// 
+///
 class VIP_PLOTTING_EXPORT VipPieItem : public VipAbstractPieItem
 {
 	Q_OBJECT
@@ -67,7 +96,6 @@ public:
 		/// @brief Draw using the pie item background brush and a cosmetic pen with the color of the parent QWidget text color (usually black)
 		BackgroundAndDefaultPen
 	};
-
 
 	VipPieItem(const VipText& title = VipText());
 	virtual ~VipPieItem();
@@ -97,13 +125,15 @@ public:
 	/// @brief Reimplemented from VipPlotItem, return the background color
 	virtual QColor majorColor() const { return boxStyle().backgroundBrush().color(); }
 	/// @brief Reimplemented from VipPlotItem, set the color of all pens and brushes
-	virtual void setMajorColor(const QColor& c) { 
-		boxStyle().setColor(c); 
+	virtual void setMajorColor(const QColor& c)
+	{
+		boxStyle().setColor(c);
 		quiverPath().setColor(c);
 	}
 	/// @brief Reimplemented from VipPlotItem, set all pens
-	virtual void setPen(const QPen& p) { 
-		boxStyle().setBorderPen(p); 
+	virtual void setPen(const QPen& p)
+	{
+		boxStyle().setBorderPen(p);
 		quiverPath().setPen(p);
 		quiverPath().setExtremityPen(VipQuiverPath::Start, p);
 		quiverPath().setExtremityPen(VipQuiverPath::End, p);
@@ -120,8 +150,7 @@ public:
 	void setLegendStyle(LegendStyle);
 	LegendStyle legendStyle() const;
 
-
-	/// @brief Set the parameters used to draw the line between the pie item and its text. 
+	/// @brief Set the parameters used to draw the line between the pie item and its text.
 	/// Note that this line is only drawn when the text is outside the pie.
 	void setQuiverPath(const VipQuiverPath&);
 	const VipQuiverPath& quiverPath() const;
@@ -148,7 +177,7 @@ public:
 	/// By default, the transform is applied from the top left corner of the text rectangle.
 	/// You can specify a different origin using the ref parameter, which is a relative x and y distance from the rectangle dimensions.
 	/// For Instance, to apply a rotation around the text center, use QPointF(0.5,0.5).
-	void setTextAdditionalTransform(const QTransform& tr, const QPointF & ref = QPointF(0,0));
+	void setTextAdditionalTransform(const QTransform& tr, const QPointF& ref = QPointF(0, 0));
 	QTransform textAdditionalTransform() const;
 	QPointF textAdditionalTransformReference() const;
 
@@ -194,7 +223,7 @@ protected:
 	virtual bool setItemProperty(const char* name, const QVariant& value, const QByteArray& index = QByteArray());
 
 private:
-	void recomputeItem(const VipCoordinateSystemPtr &, VipAbstractScaleDraw::TextPosition);
+	void recomputeItem(const VipCoordinateSystemPtr&, VipAbstractScaleDraw::TextPosition);
 	void recomputeItem(const VipCoordinateSystemPtr&);
 
 	class PrivateData;
@@ -208,14 +237,14 @@ class VipColorPalette;
 /// VipPieChart is used to plot a pie chart, where each pie of the chart is internally represented as a VipPieItem.
 /// VipPieChart is a VipPlotItemComposite using by default the VipPlotItemComposite::UniqueItem mode. VipPlotItemComposite::Aggregate is also
 /// supported if you wish to manipulate (select, hide,...) individual VipPieItem items.
-/// 
+///
 /// A VipPieChart organizes its pies within its bounding pie set with VipPieChart::setPie().
-/// Individual pies are created using the function VipPieChart::setValues(). Within the Individual bounding pie, 
+/// Individual pies are created using the function VipPieChart::setValues(). Within the Individual bounding pie,
 /// each item takes as much angular space as its ratio to the sum value of all items.
-/// 
+///
 /// VipPieChart provides the same functions as VipPieItem to control the drawing style of its pies.
 /// Note that each individual pie item can be directly manipulated using VipPieItem::pieItemAt().
-/// 
+///
 /// VipPieChart supports stylesheets and adds the following attributes:
 /// -	'legend-style': see VipPieChart::setLegendStyle(), one of 'backgroundAndBorder', 'backgroundOnly', 'backgroundAndDefaultPen'
 /// -	'clip-to-pie': boolean value, see VipPieChart::setClipToPie()
@@ -230,23 +259,23 @@ class VipColorPalette;
 /// -	'spacing': see VipPieChart::setSpacing()
 /// -	'to-text-border': pen used to draw the path from the pie to outer text
 ///
-/// 
+///
 /// Code example:
-/// 
+///
 /// \code{.cpp}
-/// 
+///
 /// #include "VipPolarAxis.h"
 /// #include "VipPieChart.h"
 /// #include "VipPlotGrid.h"
 /// #include "VipPlotWidget2D.h"
 /// #include <qapplication.h>
-/// 
+///
 /// int main(int argc, char** argv)
 /// {
 /// QApplication app(argc, argv);
 ///
 /// VipPlotPolarWidget2D w;
-/// 
+///
 /// // set title and show title axis
 /// w.area()->setTitle("<b>Countries by Proportion of World Population</b>");
 /// w.area()->titleAxis()->setVisible(true);
@@ -313,7 +342,7 @@ class VipColorPalette;
 /// w.show();
 /// return app.exec();
 /// }
-/// 
+///
 /// \endcode
 ///
 class VIP_PLOTTING_EXPORT VipPieChart : public VipPlotItemComposite
@@ -321,7 +350,6 @@ class VIP_PLOTTING_EXPORT VipPieChart : public VipPlotItemComposite
 	Q_OBJECT
 
 public:
-	
 	VipPieChart(const VipText& title = VipText());
 	virtual ~VipPieChart();
 
@@ -333,13 +361,15 @@ public:
 	VipPieItem::LegendStyle legendStyle() const;
 
 	/// @brief Reimplemented from VipPlotItem, return the background color
-	virtual QColor majorColor() const {
-		//return boxStyle().backgroundBrush().color(); 
+	virtual QColor majorColor() const
+	{
+		// return boxStyle().backgroundBrush().color();
 		return QColor();
 	}
 	/// @brief Reimplemented from VipPlotItem, set the color of all pens and brushes
-	virtual void setMajorColor(const QColor& ){
-		//boxStyle().setColor(c);
+	virtual void setMajorColor(const QColor&)
+	{
+		// boxStyle().setColor(c);
 	}
 	/// @brief Reimplemented from VipPlotItem, set all pens
 	virtual void setPen(const QPen& p)
@@ -358,7 +388,6 @@ public:
 	}
 	virtual QBrush brush() const { return itemsBoxStyle().backgroundBrush(); }
 
-
 	virtual QRectF boundingRect() const;
 	virtual QPainterPath shape() const;
 	virtual VipInterval plotInterval(const VipInterval& interval = Vip::InfinitInterval) const;
@@ -369,7 +398,7 @@ public:
 	void setTitles(const QVector<VipText>& titles);
 	const QVector<double>& values() const;
 	const QVector<VipText>& titles() const;
-	
+
 	/// @brief Set the VipQuiverPath used to draw the line between outside text and the pie external boundary.
 	/// By default, VipPieChart will try to use the pen color used to draw axes backbones, unless VIP_CUSTOM_BACKBONE_TICKS_COLOR property is set.
 	void setQuiverPath(const VipQuiverPath&);
@@ -440,21 +469,18 @@ public:
 	double textOuterDistanceToBorder() const;
 	Vip::ValueType outerDistanceToBorder() const;
 
-	void setItemsBoxStyle(const VipBoxStyle& );
+	void setItemsBoxStyle(const VipBoxStyle&);
 	const VipBoxStyle& itemsBoxStyle() const;
 
 	VipPieItem* pieItemAt(int index) { return static_cast<VipPieItem*>(this->at(index)); }
 	const VipPieItem* pieItemAt(int index) const { return static_cast<const VipPieItem*>(this->at(index)); }
 	using VipPlotItemComposite::count;
 
-	
 protected:
 	virtual bool setItemProperty(const char* name, const QVariant& value, const QByteArray& index = QByteArray());
 
-	
 private:
-	VipPieItem* createItem(int index) ;
-
+	VipPieItem* createItem(int index);
 
 	class PrivateData;
 	PrivateData* d_data;

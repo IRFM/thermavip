@@ -1,27 +1,57 @@
-#include "VipStyleSheet.h"
-#include "VipText.h"
-#include "VipColorMap.h"
-#include "VipPlotItem.h"
-#include "VipAxisColorMap.h"
-#include "VipText.h"
-#include "VipLogging.h"
-#include "VipSet.h"
+/**
+ * BSD 3-Clause License
+ *
+ * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice, this
+ *    list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of the copyright holder nor the names of its
+ *    contributors may be used to endorse or promote products derived from
+ *    this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
 
+#include "VipStyleSheet.h"
+#include "VipAxisColorMap.h"
+#include "VipColorMap.h"
+#include "VipLogging.h"
+#include "VipPlotItem.h"
+#include "VipSet.h"
+#include "VipText.h"
+
+#include <qapplication.h>
 #include <qbytearray.h>
 #include <qmap.h>
 #include <qsharedpointer.h>
 #include <qvariant.h>
-#include <qapplication.h>
 
-#include <vector>
 #include <deque>
+#include <vector>
 
 /// Parse a comment block.
 /// start_comment is the start index of the comment ("/*").
 /// Returns the index of the first character after the end of comment, or -1 if none.
-static int parseComment(const QByteArray & ar, int start_comment)
+static int parseComment(const QByteArray& ar, int start_comment)
 {
-	for (int i = start_comment +2; i < ar.size(); ++i) {
+	for (int i = start_comment + 2; i < ar.size(); ++i) {
 		if (ar[i] == '*' && i < (ar.size() - 1) && ar[i + 1] == '/')
 			return i + 2;
 	}
@@ -31,33 +61,35 @@ static int parseComment(const QByteArray & ar, int start_comment)
 /// Parse a string.
 /// start_string is the position of the ' or " character.
 /// Returns the position of the corresponding ' or ", or -1 if none.
-static int parseString(const QByteArray & ar, int start_string)
+static int parseString(const QByteArray& ar, int start_string)
 {
 	char token = ar[start_string];
-	for (int i = start_string + 1; i < ar.size(); ++i)
-	{
+	for (int i = start_string + 1; i < ar.size(); ++i) {
 		if (ar[i] == token)
 			return i;
 	}
 	return -1;
 }
 
-static bool cleanLine(const QByteArray & ar, int & start, int & end)
+static bool cleanLine(const QByteArray& ar, int& start, int& end)
 {
-	if (ar.isEmpty()) return false;
+	if (ar.isEmpty())
+		return false;
 	start = 0;
 	while (start < ar.size() && (ar[start] == ' ' || ar[start] == '\t' || ar[start] == '\r' || ar[start] == '\n'))
 		++start;
-	if (start == ar.size()) return false;
+	if (start == ar.size())
+		return false;
 	end = ar.size() - 1;
 	while (end >= start && (ar[end] == ' ' || ar[end] == '\t' || ar[end] == '\r' || ar[end] == '\n'))
 		--end;
-	if (end < 0) return false;
+	if (end < 0)
+		return false;
 	++end;
 	return true;
 }
 
-static bool removeQuote(QByteArray & ar) 
+static bool removeQuote(QByteArray& ar)
 {
 	// Remove '' or "" from string if it exists
 	int ids = ar.indexOf("'");
@@ -96,14 +128,15 @@ static bool removeQuote(QByteArray & ar)
 	return true;
 }
 
-static QByteArray cleanLine(const QByteArray & ar)
+static QByteArray cleanLine(const QByteArray& ar)
 {
 	int s, e;
-	if (!cleanLine(ar, s, e))return QByteArray();
+	if (!cleanLine(ar, s, e))
+		return QByteArray();
 	return ar.mid(s, e - s);
 }
 
-static QByteArray cleanKey(const QByteArray & ar)
+static QByteArray cleanKey(const QByteArray& ar)
 {
 	QByteArray res;
 	res.reserve(ar.size());
@@ -116,24 +149,19 @@ static QByteArray cleanKey(const QByteArray & ar)
 static int numDigits(int x)
 {
 	x = abs(x);
-	return (x < 10 ? 1 :
-		(x < 100 ? 2 :
-		(x < 1000 ? 3 :
-			(x < 10000 ? 4 :
-			(x < 100000 ? 5 :
-				(x < 1000000 ? 6 :
-				(x < 10000000 ? 7 :
-					(x < 100000000 ? 8 :
-					(x < 1000000000 ? 9 :
-						10)))))))));
+	return (x < 10 ? 1 : (x < 100 ? 2 : (x < 1000 ? 3 : (x < 10000 ? 4 : (x < 100000 ? 5 : (x < 1000000 ? 6 : (x < 10000000 ? 7 : (x < 100000000 ? 8 : (x < 1000000000 ? 9 : 10)))))))));
 }
 
-#define ERROR(ret) \
-{ if(ok) *ok = false; return ret;}
+#define ERROR(ret)                                                                                                                                                                                     \
+	{                                                                                                                                                                                              \
+		if (ok)                                                                                                                                                                                \
+			*ok = false;                                                                                                                                                                   \
+		return ret;                                                                                                                                                                            \
+	}
 
-static QColor parseColor(const QByteArray & ar, int & parse_end, bool *ok = nullptr)
+static QColor parseColor(const QByteArray& ar, int& parse_end, bool* ok = nullptr)
 {
-	//build "default" colors
+	// build "default" colors
 	static QMap<QByteArray, QColor> default_colors;
 	if (default_colors.isEmpty()) {
 		default_colors["black"] = Qt::black;
@@ -155,61 +183,85 @@ static QColor parseColor(const QByteArray & ar, int & parse_end, bool *ok = null
 		default_colors["lightGray"] = Qt::lightGray;
 		default_colors["transparent"] = Qt::transparent;
 	}
-	//cleaning
+	// cleaning
 	int start, end;
 	if (!cleanLine(ar, start, end)) {
 		ERROR(QColor())
 	}
 
-	//find format
+	// find format
 	if (ar[start] == '#') {
-		//read color in hexadecimal
+		// read color in hexadecimal
 		bool _ok;
-		int val = ar.mid(start + 1).toInt(&_ok,16);
-		if (!_ok) ERROR(QColor());
-		if (ok) *ok = true;
+		int val = ar.mid(start + 1).toInt(&_ok, 16);
+		if (!_ok)
+			ERROR(QColor());
+		if (ok)
+			*ok = true;
 		parse_end = start + 1 + numDigits(val);
 		return QColor(val);
 	}
 	else if (ar.mid(start, 4) == "rgb(") {
 		int index = ar.indexOf(")", start + 4);
-		if (index < 0) ERROR(QColor());
+		if (index < 0)
+			ERROR(QColor());
 		QList<QByteArray> components = ar.mid(start + 4, index - (start + 4)).split(',');
-		if(components.size() != 3) ERROR(QColor());
+		if (components.size() != 3)
+			ERROR(QColor());
 		QColor res;
 		bool _ok;
-		res.setRed(components[0].toInt(&_ok)); if(!_ok) ERROR(QColor());
-		res.setGreen(components[1].toInt(&_ok)); if (!_ok) ERROR(QColor());
-		res.setBlue(components[2].toInt(&_ok)); if (!_ok) ERROR(QColor());
-		if (ok) *ok = true;
+		res.setRed(components[0].toInt(&_ok));
+		if (!_ok)
+			ERROR(QColor());
+		res.setGreen(components[1].toInt(&_ok));
+		if (!_ok)
+			ERROR(QColor());
+		res.setBlue(components[2].toInt(&_ok));
+		if (!_ok)
+			ERROR(QColor());
+		if (ok)
+			*ok = true;
 		parse_end = index + 1;
 		return res;
 	}
 	else if (ar.mid(start, 5) == "rgba(") {
 		int index = ar.indexOf(")", start + 5);
-		if (index < 0) ERROR(QColor());
+		if (index < 0)
+			ERROR(QColor());
 		QList<QByteArray> components = ar.mid(start + 5, index - (start + 5)).split(',');
-		if (components.size() != 4) ERROR(QColor());
+		if (components.size() != 4)
+			ERROR(QColor());
 		QColor res;
 		bool _ok;
-		res.setRed(components[0].toInt(&_ok)); if (!_ok) ERROR(QColor());
-		res.setGreen(components[1].toInt(&_ok)); if (!_ok) ERROR(QColor());
-		res.setBlue(components[2].toInt(&_ok)); if (!_ok) ERROR(QColor());
-		res.setAlpha(components[3].toInt(&_ok)); if (!_ok) ERROR(QColor());
-		if (ok) *ok = true;
+		res.setRed(components[0].toInt(&_ok));
+		if (!_ok)
+			ERROR(QColor());
+		res.setGreen(components[1].toInt(&_ok));
+		if (!_ok)
+			ERROR(QColor());
+		res.setBlue(components[2].toInt(&_ok));
+		if (!_ok)
+			ERROR(QColor());
+		res.setAlpha(components[3].toInt(&_ok));
+		if (!_ok)
+			ERROR(QColor());
+		if (ok)
+			*ok = true;
 		parse_end = index + 1;
 		return res;
 	}
 	else {
-		
-		//default colors
+
+		// default colors
 		QTextStream str(ar);
 		QString color;
 		str >> color;
 		const QByteArray color_name = color.toLatin1();
 		QMap<QByteArray, QColor>::const_iterator it = default_colors.find(color_name);
-		if (it == default_colors.cend()) ERROR(QColor());
-		if (ok) *ok = true;
+		if (it == default_colors.cend())
+			ERROR(QColor());
+		if (ok)
+			*ok = true;
 		parse_end = start + color_name.size();
 		return it.value();
 	}
@@ -217,7 +269,7 @@ static QColor parseColor(const QByteArray & ar, int & parse_end, bool *ok = null
 	//	ERROR(QColor());
 }
 
-static QPen parsePen(const QByteArray & ar, bool *ok = nullptr)
+static QPen parsePen(const QByteArray& ar, bool* ok = nullptr)
 {
 	static QMap<QByteArray, int> styles;
 	if (styles.isEmpty()) {
@@ -230,50 +282,55 @@ static QPen parsePen(const QByteArray & ar, bool *ok = nullptr)
 	}
 
 	int start, end;
-	if (!cleanLine(ar, start, end)) ERROR(QPen());
+	if (!cleanLine(ar, start, end))
+		ERROR(QPen());
 
 	QByteArray tmp = ar.mid(start, end - start);
 	QPen res;
 
-	//check if starts with line width
+	// check if starts with line width
 	int index = tmp.indexOf("px");
 	if (index >= 0) {
 		bool _ok;
-		double width = tmp.mid(0, index ).toDouble(&_ok);
-		if (!_ok) ERROR(QPen());
+		double width = tmp.mid(0, index).toDouble(&_ok);
+		if (!_ok)
+			ERROR(QPen());
 		res.setWidthF(width);
-		//remove the line width  and clean
+		// remove the line width  and clean
 		tmp = tmp.mid(index + 2);
-		if (!cleanLine(tmp, start, end)) ERROR(QPen());
+		if (!cleanLine(tmp, start, end))
+			ERROR(QPen());
 		tmp = tmp.mid(start, end - start);
 	}
 
-	//check for style
+	// check for style
 	if (tmp[0] == 's' || tmp[0] == 'd' || tmp[0] == 'n') {
 		QTextStream str(tmp);
 		QString style;
 		str >> style;
 		QMap<QByteArray, int>::const_iterator it = styles.find(style.toLatin1());
-		if (it == styles.cend()) ERROR(QPen());
+		if (it == styles.cend())
+			ERROR(QPen());
 		res.setStyle((Qt::PenStyle)it.value());
 		tmp = str.readAll().toLatin1();
 	}
 
-	//read color
+	// read color
 	bool _ok;
 	int parse_end;
 	QColor c = parseColor(tmp, parse_end, &_ok);
-	if(!_ok && res.style() != Qt::NoPen) 
+	if (!_ok && res.style() != Qt::NoPen)
 		ERROR(QPen());
 	res.setColor(c);
 
-	if (ok) *ok = true;
+	if (ok)
+		*ok = true;
 	return res;
 }
 
-static QString parseText(const QByteArray & ar, bool *ok = nullptr)
+static QString parseText(const QByteArray& ar, bool* ok = nullptr)
 {
-	//format: 'text'
+	// format: 'text'
 	int start, end;
 	if (!cleanLine(ar, start, end)) {
 		if (ok)
@@ -290,53 +347,57 @@ static QString parseText(const QByteArray & ar, bool *ok = nullptr)
 	if (ok)
 		*ok = true;
 	return tmp;
-
 }
 
-static int parseEnum(const QByteArray & ar, const QMap<QByteArray, int> & enums, bool *ok = nullptr)
+static int parseEnum(const QByteArray& ar, const QMap<QByteArray, int>& enums, bool* ok = nullptr)
 {
 	int start, end;
-	if (!cleanLine(ar, start, end)) ERROR(0);
+	if (!cleanLine(ar, start, end))
+		ERROR(0);
 	QMap<QByteArray, int>::const_iterator it = enums.find(ar.mid(start, end - start));
-	if (it == enums.cend()) ERROR(0);
-	if (ok) *ok = true;
+	if (it == enums.cend())
+		ERROR(0);
+	if (ok)
+		*ok = true;
 	return it.value();
 }
 
-static int parseOrEnum(const QByteArray & ar, const QMap<QByteArray, int> & enums, bool *ok = nullptr)
+static int parseOrEnum(const QByteArray& ar, const QMap<QByteArray, int>& enums, bool* ok = nullptr)
 {
 	int start, end;
-	if (!cleanLine(ar, start, end)) ERROR(0);
+	if (!cleanLine(ar, start, end))
+		ERROR(0);
 	QByteArray tmp = ar.mid(start, end - start);
 	QList<QByteArray> lst = tmp.split('|');
 	int res = 0;
 	for (int i = 0; i < lst.size(); ++i) {
 		int s, e;
-		if(!cleanLine(lst[i],s,e))ERROR(0);
+		if (!cleanLine(lst[i], s, e))
+			ERROR(0);
 		QByteArray val = lst[i].mid(s, e - s);
 		QMap<QByteArray, int>::const_iterator it = enums.find(val);
-		if (it == enums.cend()) ERROR(0);
+		if (it == enums.cend())
+			ERROR(0);
 		res |= it.value();
 	}
 
-	if (ok) *ok = true;
+	if (ok)
+		*ok = true;
 	return res;
 }
 
-
-static QByteArray colorToString(const QColor & c) 
+static QByteArray colorToString(const QColor& c)
 {
 	return "rgba(" + QByteArray::number(c.red()) + ", " + QByteArray::number(c.green()) + ", " + QByteArray::number(c.blue()) + ", " + QByteArray::number(c.alpha()) + ")";
 }
 
-
-QVariant PenParser::parse(const QByteArray & ar)
+QVariant PenParser::parse(const QByteArray& ar)
 {
 	bool ok;
 	QPen p = parsePen(ar, &ok);
 	return ok ? QVariant::fromValue(p) : QVariant();
 }
-QByteArray PenParser::toString(const QVariant& v) 
+QByteArray PenParser::toString(const QVariant& v)
 {
 	const QPen p = v.value<QPen>();
 	QByteArray style;
@@ -353,16 +414,16 @@ QByteArray PenParser::toString(const QVariant& v)
 		style = "dashdot";
 	else if (p.style() == Qt::DashDotDotLine)
 		style = "dashdotdot";
-	
+
 	return QByteArray::number(p.widthF()) + "px " + style + " " + colorToString(p.color());
 }
 
-QVariant BrushParser::parse(const QByteArray& )
+QVariant BrushParser::parse(const QByteArray&)
 {
-	//QPen p = parsePen(ar, &ok);
+	// QPen p = parsePen(ar, &ok);
 	return QVariant(); // ok ? QVariant::fromValue(p) : QVariant();
 }
-QByteArray BrushParser::toString(const QVariant& ) 
+QByteArray BrushParser::toString(const QVariant&)
 {
 	return QByteArray();
 }
@@ -392,7 +453,7 @@ QVariant FontParser::parse(const QByteArray& ar)
 	line.replace('\t', ' ');
 	QList<QByteArray> lst = line.split(' ');
 
-	//remove empty elements
+	// remove empty elements
 	for (int i = 0; i < lst.size(); ++i) {
 		if (lst[i].isEmpty()) {
 			lst.removeAt(i);
@@ -405,7 +466,7 @@ QVariant FontParser::parse(const QByteArray& ar)
 	bool has_style = false;
 	double size = 0;
 	QByteArray type = "pt";
-	for ( QByteArray& b : lst) {
+	for (QByteArray& b : lst) {
 		if (b == "normal") {
 			if (!has_style) {
 				res.setStyle(QFont::StyleNormal);
@@ -470,7 +531,6 @@ QVariant FontParser::parse(const QByteArray& ar)
 				size = b.toDouble();
 				if (size == 0)
 					return QVariant();
-				
 			}
 		}
 	}
@@ -501,7 +561,7 @@ QByteArray FontParser::toString(const QVariant& v)
 		res = "normal";
 	else if (f.style() == QFont::StyleItalic)
 		res = "italic";
-	else 
+	else
 		res = "oblique";
 
 	res += " ";
@@ -553,7 +613,7 @@ QByteArray FontParser::toString(const QVariant& v)
 	return res;
 }
 
-QVariant ColorParser::parse(const QByteArray & ar)
+QVariant ColorParser::parse(const QByteArray& ar)
 {
 	bool ok;
 	int parse_end;
@@ -566,7 +626,7 @@ QByteArray ColorParser::toString(const QVariant& v)
 	return colorToString(c);
 }
 
-QVariant EnumParser::parse(const QByteArray & ar)
+QVariant EnumParser::parse(const QByteArray& ar)
 {
 	bool ok;
 	int val = parseEnum(ar, enums, &ok);
@@ -582,8 +642,7 @@ QByteArray EnumParser::toString(const QVariant& v)
 	return QByteArray();
 }
 
-
-QVariant EnumOrStringParser::parse(const QByteArray& ar) 
+QVariant EnumOrStringParser::parse(const QByteArray& ar)
 {
 	bool ok;
 	int val = parseEnum(ar, enums, &ok);
@@ -610,8 +669,7 @@ QByteArray EnumOrStringParser::toString(const QVariant& v)
 	return QByteArray();
 }
 
-
-QVariant EnumOrParser::parse(const QByteArray & ar)
+QVariant EnumOrParser::parse(const QByteArray& ar)
 {
 	bool ok;
 	int val = parseOrEnum(ar, enums, &ok);
@@ -628,8 +686,7 @@ QByteArray EnumOrParser::toString(const QVariant& v)
 	return lst.join("|").toLatin1();
 }
 
-
-QVariant DoubleParser::parse(const QByteArray & ar)
+QVariant DoubleParser::parse(const QByteArray& ar)
 {
 	double res;
 	QTextStream stream(ar);
@@ -637,18 +694,21 @@ QVariant DoubleParser::parse(const QByteArray & ar)
 		return QVariant::fromValue(res);
 	return QVariant();
 }
-QByteArray DoubleParser::toString(const QVariant& v) 
+QByteArray DoubleParser::toString(const QVariant& v)
 {
 	return v.toByteArray();
 }
 
-QVariant BoolParser::parse(const QByteArray & ar)
+QVariant BoolParser::parse(const QByteArray& ar)
 {
 	int s, e;
-	if (!cleanLine(ar, s, e)) return QVariant();
+	if (!cleanLine(ar, s, e))
+		return QVariant();
 	QByteArray tmp = ar.mid(s, s - e);
-	if (tmp == "true") return QVariant::fromValue(true);
-	else if (tmp == "false") return QVariant::fromValue(false);
+	if (tmp == "true")
+		return QVariant::fromValue(true);
+	else if (tmp == "false")
+		return QVariant::fromValue(false);
 	else {
 		int res;
 		QTextStream stream(ar);
@@ -662,7 +722,7 @@ QByteArray BoolParser::toString(const QVariant& v)
 	return v.toBool() ? "true" : "false";
 }
 
-QVariant TextParser::parse(const QByteArray & ar)
+QVariant TextParser::parse(const QByteArray& ar)
 {
 	bool ok;
 	QString res = parseText(ar, &ok);
@@ -679,11 +739,9 @@ QByteArray TextParser::toString(const QVariant& v)
 	return res;
 }
 
-
-
-
-QVector<VipParserPtr> AnyParser::parsers() {
-	static  QVector<VipParserPtr> p;
+QVector<VipParserPtr> AnyParser::parsers()
+{
+	static QVector<VipParserPtr> p;
 	if (p.isEmpty()) {
 		p.push_back(VipParserPtr(new PenParser()));
 		p.push_back(VipParserPtr(new ColorParser()));
@@ -693,7 +751,7 @@ QVector<VipParserPtr> AnyParser::parsers() {
 	}
 	return p;
 }
-QVariant AnyParser::parse(const QByteArray & ar)
+QVariant AnyParser::parse(const QByteArray& ar)
 {
 	const QVector<VipParserPtr> par = parsers();
 	for (int i = 0; i < par.size(); ++i) {
@@ -703,12 +761,10 @@ QVariant AnyParser::parse(const QByteArray & ar)
 	}
 	return QVariant();
 }
-QByteArray AnyParser::toString(const QVariant& ) 
+QByteArray AnyParser::toString(const QVariant&)
 {
 	return QByteArray();
 }
-
-
 
 struct ClassKeyWords
 {
@@ -716,20 +772,19 @@ struct ClassKeyWords
 	const QMetaObject* meta;
 };
 
-
 static QMap<QByteArray, ClassKeyWords>& _keyWordsForClass()
 {
 	static QMap<QByteArray, ClassKeyWords> instance;
 	return instance;
 }
 
-static QMap<const QMetaObject*, ClassKeyWords>& _delayedRegistered() 
+static QMap<const QMetaObject*, ClassKeyWords>& _delayedRegistered()
 {
 	static QMap<const QMetaObject*, ClassKeyWords> inst;
 	return inst;
 }
 
-static void registerDelayed() 
+static void registerDelayed()
 {
 	auto it = _delayedRegistered().begin();
 	for (; it != _delayedRegistered().end();) {
@@ -740,12 +795,9 @@ static void registerDelayed()
 		else
 			++it;
 	}
-	
 }
 
-
-
-void vipRegisterMetaObject(const QMetaObject* metaclass) 
+void vipRegisterMetaObject(const QMetaObject* metaclass)
 {
 	// Register metaclass
 	// To be sure that a style sheet of type "MyClass{}" will work even if MyClass does not define specific keywords
@@ -763,9 +815,6 @@ void vipRegisterMetaObject(const QMetaObject* metaclass)
 	}
 }
 
-
-
-
 static VipKeyWords addKeyWords(const VipKeyWords& current, const VipKeyWords& new_keys)
 {
 	VipKeyWords res = current;
@@ -774,7 +823,7 @@ static VipKeyWords addKeyWords(const VipKeyWords& current, const VipKeyWords& ne
 	return res;
 }
 
-VipKeyWords vipKeyWordsForClass(const char * classname, bool *ok)
+VipKeyWords vipKeyWordsForClass(const char* classname, bool* ok)
 {
 	registerDelayed();
 
@@ -808,17 +857,19 @@ VipKeyWords vipKeyWordsForClass(const char * classname, bool *ok)
 
 bool vipSetKeyWordsForClass(const QMetaObject* metaclass, const VipKeyWords& keywords)
 {
-	_delayedRegistered()[metaclass] = ClassKeyWords{ keywords, metaclass }; 
+	_delayedRegistered()[metaclass] = ClassKeyWords{ keywords, metaclass };
 	return true;
 }
 
-
-
 #undef ERROR
-#define ERROR(str) {if(error) *error = (str); return VipStyleSheet();}
+#define ERROR(str)                                                                                                                                                                                     \
+	{                                                                                                                                                                                              \
+		if (error)                                                                                                                                                                             \
+			*error = (str);                                                                                                                                                                \
+		return VipStyleSheet();                                                                                                                                                                \
+	}
 
-
-static void addParseValue(VipParseResult & res, ParseValue p)
+static void addParseValue(VipParseResult& res, ParseValue p)
 {
 	VipParseResult::iterator it = res.find(p.name());
 	if (it != res.end()) {
@@ -829,39 +880,32 @@ static void addParseValue(VipParseResult & res, ParseValue p)
 	}
 }
 
-static void addParseValue(VipParseResult& res, const VipParseResult& src) 
+static void addParseValue(VipParseResult& res, const VipParseResult& src)
 {
 	for (auto it = src.begin(); it != src.end(); ++it)
 		addParseValue(res, it.value());
 }
 
-
-
-
-static VipKeyWords keywordsForItem(VipPaintItem * item)
+static VipKeyWords keywordsForItem(VipPaintItem* item)
 {
 	registerDelayed();
 
 	if (!item)
 		return VipKeyWords();
 
-	const QMetaObject * meta = item->graphicsObject()->metaObject();
+	const QMetaObject* meta = item->graphicsObject()->metaObject();
 
 	while (meta) {
 		if (_keyWordsForClass().find(meta->className()) != _keyWordsForClass().end())
 			return vipKeyWordsForClass(meta->className());
-		
+
 		meta = meta->superClass();
 	}
 	return VipKeyWords();
 }
 
-
-
-
-
 QVariant VipStyleSheet::findProperty(const QByteArray& classname, const QByteArray& property_name, const QByteArray& index, const QByteArray& selectors) const
-{ 
+{
 	QSet<QByteArray> sels = vipToSet(selectors.split(':'));
 	// remove empty
 	for (auto it = sels.begin(); it != sels.end();) {
@@ -877,8 +921,8 @@ QVariant VipStyleSheet::findProperty(const QByteArray& classname, const QByteArr
 
 	const VipClassStates& states = it.value();
 	for (const VipClassState& state : states) {
-		if (state.selectors==sels) {
-		
+		if (state.selectors == sels) {
+
 			auto found = state.parseResults.find(property_name);
 			if (found == state.parseResults.end())
 				return QVariant();
@@ -887,11 +931,10 @@ QVariant VipStyleSheet::findProperty(const QByteArray& classname, const QByteArr
 			if (found_index == values.end())
 				return QVariant();
 			return found_index.value();
-		}	
+		}
 	}
 	return QVariant();
 }
-
 
 bool VipStyleSheet::setProperty(const QByteArray& classname, const QByteArray& property_name, const QVariant& value, const QByteArray& index, const QByteArray& selectors, bool all)
 {
@@ -925,20 +968,20 @@ bool VipStyleSheet::setProperty(const QByteArray& classname, const QByteArray& p
 
 	// find state
 	VipClassStates& states = it_class.value();
-	QVector<VipClassState*> state ;
+	QVector<VipClassState*> state;
 	if (!all) {
 
 		for (VipClassState& st : states) {
 			if (st.selectors == sels) {
 				// found selector
-				state.push_back( &st);
+				state.push_back(&st);
 				break;
 			}
 		}
 		// create state if necessary
 		if (state.isEmpty()) {
 			states.push_back(VipClassState{ sels, VipParseResult{} });
-			state.push_back( &states.back());
+			state.push_back(&states.back());
 		}
 	}
 	else {
@@ -959,14 +1002,11 @@ bool VipStyleSheet::setProperty(const QByteArray& classname, const QByteArray& p
 	return true;
 }
 
-
-
-
-static int indexOfChar(const QByteArray & ar, char c, int start) 
+static int indexOfChar(const QByteArray& ar, char c, int start)
 {
 	// Find next index of c while skipping strings
 	for (int i = start; i < ar.size(); ++i) {
-	
+
 		if (ar[i] == '"' || ar[i] == '\'') {
 
 			int end = parseString(ar, i);
@@ -980,13 +1020,13 @@ static int indexOfChar(const QByteArray & ar, char c, int start)
 	return -1;
 }
 
-static QList<QByteArray> splitOverString(const QByteArray& ar, char sep) 
+static QList<QByteArray> splitOverString(const QByteArray& ar, char sep)
 {
 	// split based on sep  while skipping strings
 	QList<QByteArray> res;
 
 	int last_start = 0;
-	for (int i=0; i < ar.size(); ++i) {
+	for (int i = 0; i < ar.size(); ++i) {
 		if (ar[i] == '"' || ar[i] == '\'') {
 
 			int end = parseString(ar, i);
@@ -1003,26 +1043,28 @@ static QList<QByteArray> splitOverString(const QByteArray& ar, char sep)
 	return res;
 }
 
-
-VipStyleSheet vipParseStyleSheet(const QByteArray & ar, VipPaintItem * item, QString * error)
+VipStyleSheet vipParseStyleSheet(const QByteArray& ar, VipPaintItem* item, QString* error)
 {
-	QByteArray style_sheet = ar; //replace comments by spaces
-	QByteArray reformated = ar; //replace comments by spaces, replace {} inside strings by spaces
+	QByteArray style_sheet = ar; // replace comments by spaces
+	QByteArray reformated = ar;  // replace comments by spaces, replace {} inside strings by spaces
 
 	for (int i = 0; i < ar.size(); ++i) {
 		if (ar[i] == '"' || ar[i] == (char)39) {
-			//find full comment
+			// find full comment
 			int end = parseString(ar, i);
-			if (end < 0) ERROR("Unbalanced string starting at pos " + QString::number(i));
-			//replace string content by spaces
-			for (int j = i + 1; j < end; ++j) reformated[j] = ' ';
+			if (end < 0)
+				ERROR("Unbalanced string starting at pos " + QString::number(i));
+			// replace string content by spaces
+			for (int j = i + 1; j < end; ++j)
+				reformated[j] = ' ';
 			i = end;
 		}
 		else if (ar[i] == '/' && i < ar.size() - 1 && ar[i + 1] == '*') {
-			//find full comment
+			// find full comment
 			int end = parseComment(ar, i);
-			if(end < 0) ERROR("Unbalanced comment block starting at pos " + QString::number(i));
-			//replace string content by spaces
+			if (end < 0)
+				ERROR("Unbalanced comment block starting at pos " + QString::number(i));
+			// replace string content by spaces
 			for (int j = i; j < end; ++j) {
 				reformated[j] = ' ';
 				style_sheet[j] = ' ';
@@ -1031,50 +1073,47 @@ VipStyleSheet vipParseStyleSheet(const QByteArray & ar, VipPaintItem * item, QSt
 		}
 	}
 
-
-	//find blocks (start with '{', ends with '}') and block names
-	QMultiMap<QByteArray,QByteArray> blocks;
+	// find blocks (start with '{', ends with '}') and block names
+	QMultiMap<QByteArray, QByteArray> blocks;
 
 	int index = 0;
 	while (true) {
-		int start = indexOfChar(reformated,'{', index);
+		int start = indexOfChar(reformated, '{', index);
 		if (start < 0)
 			break;
 
-		//we found a starting block, find the name before
+		// we found a starting block, find the name before
 		QByteArray name = style_sheet.mid(index, start - index);
 		int s, e;
-		if (!cleanLine(name, s, e)) ERROR("A block start ('{') should preceded by a class name at pos " + QString::number(start));
+		if (!cleanLine(name, s, e))
+			ERROR("A block start ('{') should preceded by a class name at pos " + QString::number(start));
 		name = name.mid(s, e - s);
 
-		//find end of block
-		int end = indexOfChar(reformated,'}', start + 1);
-		if (end < 0) ERROR("Unbalanced block (missing '}') starting at pos " + QString::number(start));
+		// find end of block
+		int end = indexOfChar(reformated, '}', start + 1);
+		if (end < 0)
+			ERROR("Unbalanced block (missing '}') starting at pos " + QString::number(start));
 
-		blocks.insert(name, style_sheet.mid(start + 1, end - start -1));
+		blocks.insert(name, style_sheet.mid(start + 1, end - start - 1));
 		index = end + 1;
 	}
 
-	
-	//if no block, create a VipPlotItem (default) one
+	// if no block, create a VipPlotItem (default) one
 	if (blocks.isEmpty()) {
 		blocks.insert("QObject", style_sheet);
 	}
-	
 
 	VipStyleSheet res;
 
 	VipKeyWords item_keywords = keywordsForItem(item);
 
-	//decode each block
-	for (QMultiMap<QByteArray, QByteArray>::const_iterator it = blocks.begin(); it != blocks.end(); ++it)
-	{
+	// decode each block
+	for (QMultiMap<QByteArray, QByteArray>::const_iterator it = blocks.begin(); it != blocks.end(); ++it) {
 		// selectors like 'hover', '!hover', 'selected'...
 		QSet<QByteArray> selectors;
 
 		QByteArray name = it.key();
 
-		
 		// handle inheritance selector (using '>')
 		QList<QByteArray> split = name.split('>');
 		if (split.size() > 2) {
@@ -1092,12 +1131,12 @@ VipStyleSheet vipParseStyleSheet(const QByteArray & ar, VipPaintItem * item, QSt
 		for (int i = 1; i < split.size(); ++i) {
 			QByteArray _ar = split[i];
 			if (!_ar.isEmpty()) {
-				
+
 				selectors << _ar;
 			}
 		}
 
-		//handle name selectors (using '#')
+		// handle name selectors (using '#')
 		split = name.split('#');
 		if (split.size() > 2) {
 			ERROR("Invalid selector #: " + cleanLine(name));
@@ -1111,48 +1150,50 @@ VipStyleSheet vipParseStyleSheet(const QByteArray & ar, VipPaintItem * item, QSt
 		VipClassState state;
 		state.selectors = selectors;
 
-
 		const QByteArray block = it.value();
 
 		bool class_found;
 		VipKeyWords keywords = addKeyWords(item_keywords, vipKeyWordsForClass(name.data(), &class_found));
-		if (keywords.isEmpty() || !class_found) 
+		if (keywords.isEmpty() || !class_found)
 			ERROR("Unknown block name: " + cleanLine(name));
 
-		//split the block using semicolon
+		// split the block using semicolon
 		QList<QByteArray> directives = splitOverString(block, ';');
-		//parse each directive
+		// parse each directive
 		for (int i = 0; i < directives.size(); ++i) {
 
-			//handle empty directive (possible and valid)
+			// handle empty directive (possible and valid)
 			if (cleanLine(directives[i]).isEmpty())
 				continue;
 
-			//split name/value using ':'
-			QList<QByteArray> pair = splitOverString(directives[i],':');
-			if (pair.size() != 2) ERROR("Syntax error: unbalanced ':'");
+			// split name/value using ':'
+			QList<QByteArray> pair = splitOverString(directives[i], ':');
+			if (pair.size() != 2)
+				ERROR("Syntax error: unbalanced ':'");
 
-			//clean name
+			// clean name
 			int s, e;
-			if(!cleanLine(pair[0],s,e)) ERROR("Syntax error: unbalanced ':'");
+			if (!cleanLine(pair[0], s, e))
+				ERROR("Syntax error: unbalanced ':'");
 			QByteArray value_name = pair[0].mid(s, e - s);
 			QByteArray clean = cleanKey(value_name);
 
-			//check if name is an array ( 'name[0]' or 'name[1]' ... )
+			// check if name is an array ( 'name[0]' or 'name[1]' ... )
 			int start = value_name.indexOf('[');
 			QByteArray num = 0;
 			if (start >= 0) {
 				int end = value_name.indexOf(']', start + 1);
-				if (end < start + 1) ERROR("unbalanced '[' in block name " + clean);
+				if (end < start + 1)
+					ERROR("unbalanced '[' in block name " + clean);
 				num = value_name.mid(start + 1, end - start - 1);
-				if(!removeQuote(num))
+				if (!removeQuote(num))
 					ERROR("Wrong value format inside '[]'");
 				value_name = value_name.mid(0, start);
 			}
 
 			ParseValue p;
 			if (value_name.startsWith("qproperty-")) {
-				//this a qt property, use AnyParser
+				// this a qt property, use AnyParser
 				AnyParser parser;
 				QVariant value = parser.parse(pair[1]);
 				if (value.userType() == 0)
@@ -1161,25 +1202,24 @@ VipStyleSheet vipParseStyleSheet(const QByteArray & ar, VipPaintItem * item, QSt
 			}
 			else {
 
-				//find the parser
+				// find the parser
 				VipKeyWords::const_iterator found = keywords.find(value_name);
 				if (found == keywords.end())
 					ERROR("Unknown key name: " + value_name);
-				//parse
+				// parse
 				QVariant value = found.value()->parse(pair[1]);
 				if (value.userType() == 0) {
 					ERROR("Unable to parse value of " + value_name + ", content is '" + pair[1] + "', parser is " + QByteArray(typeid(*found.value()).name()));
 				}
-				p = ParseValue(value_name, value, num, found.value());				
+				p = ParseValue(value_name, value, num, found.value());
 			}
 
 			// add to result
 			addParseValue(state.parseResults, p);
 
-			
-			//VipStyleSheet::iterator itr = res.find(name);
-			//if (itr == res.end()) itr = res.insert(name, VipParseResult());
-			//addParseValue(itr.value(), p);
+			// VipStyleSheet::iterator itr = res.find(name);
+			// if (itr == res.end()) itr = res.insert(name, VipParseResult());
+			// addParseValue(itr.value(), p);
 		}
 
 		// add to style sheet
@@ -1190,16 +1230,14 @@ VipStyleSheet vipParseStyleSheet(const QByteArray & ar, VipPaintItem * item, QSt
 		else {
 			res.insert(name, VipClassStates() << state);
 		}
-			
 	}
 
-	if (error) error->clear();
+	if (error)
+		error->clear();
 	return res;
 }
 
-
-
-QByteArray vipStyleSheetToString(const VipStyleSheet & st) 
+QByteArray vipStyleSheetToString(const VipStyleSheet& st)
 {
 	QByteArray res;
 	QTextStream str(&res, QIODevice::WriteOnly);
@@ -1217,13 +1255,12 @@ QByteArray vipStyleSheetToString(const VipStyleSheet & st)
 			VipParserPtr parser = it.value().parser();
 			const QMap<QByteArray, QVariant> values = it.value().values();
 			for (auto index = values.begin(); index != values.end(); ++index) {
-				
+
 				if (index.key().isEmpty())
-					str << property <<  ": " << parser->toString(index.value()) << "; ";
+					str << property << ": " << parser->toString(index.value()) << "; ";
 				else
-					str << property << "[" << index.key()<<"]: " << parser->toString(index.value()) << "; ";
+					str << property << "[" << index.key() << "]: " << parser->toString(index.value()) << "; ";
 			}
-			
 		}
 		str.flush();
 		str.reset();
@@ -1235,25 +1272,25 @@ QByteArray vipStyleSheetToString(const VipStyleSheet & st)
 		const VipClassStates states = it.value();
 
 		for (const VipClassState& state : states) {
-			
+
 			// build class name + selectors
 			QByteArray full_class_name = classname;
 			if (!state.selectors.isEmpty())
 				full_class_name += ":" + state.selectors.values().join(":");
 
-			//write it
+			// write it
 			str << full_class_name << "\n{\n";
 
 			// write properties
 			for (auto parse = state.parseResults.begin(); parse != state.parseResults.end(); ++parse) {
-				
+
 				QByteArray property = parse.key();
 				VipParserPtr parser = parse.value().parser();
 				const QMap<QByteArray, QVariant> values = parse.value().values();
 				for (auto index = values.begin(); index != values.end(); ++index) {
 
 					if (index.key().isEmpty())
-						str << "\t"<< property << ": " << parser->toString(index.value()) << ";\n";
+						str << "\t" << property << ": " << parser->toString(index.value()) << ";\n";
 					else
 						str << "\t" << property << "[" << index.key() << "]: " << parser->toString(index.value()) << ";\n";
 				}
@@ -1268,22 +1305,25 @@ QByteArray vipStyleSheetToString(const VipStyleSheet & st)
 	return res;
 }
 
-
-
 #undef ERROR
-#define ERROR(str) {if(error) *error = (str); return false;}
+#define ERROR(str)                                                                                                                                                                                     \
+	{                                                                                                                                                                                              \
+		if (error)                                                                                                                                                                             \
+			*error = (str);                                                                                                                                                                \
+		return false;                                                                                                                                                                          \
+	}
 
-bool vipApplyStyleSheet(const VipStyleSheet & p, VipPaintItem * item, QString * error)
+bool vipApplyStyleSheet(const VipStyleSheet& p, VipPaintItem* item, QString* error)
 {
 	if (p.isEmpty())
 		return true;
 	if (!item)
 		ERROR("Null item");
 
-	//grab the ParseResult that must be used
+	// grab the ParseResult that must be used
 	std::deque<VipParseResult> to_use;
 
-	const QMetaObject * meta = item->graphicsObject()->metaObject();
+	const QMetaObject* meta = item->graphicsObject()->metaObject();
 	while (meta) {
 		VipStyleSheet::const_iterator it = p.find(meta->className());
 		if (it != p.cend()) {
@@ -1296,32 +1336,32 @@ bool vipApplyStyleSheet(const VipStyleSheet & p, VipPaintItem * item, QString * 
 			to_use.insert(to_use.begin(), class_results.begin(), class_results.end());
 		}
 		//	to_use << it.value();
-		//if (strcmp(meta->className(), "VipPlotItem") == 0)
+		// if (strcmp(meta->className(), "VipPlotItem") == 0)
 		//	break; //VipPlotItem is the bottom most class
 
 		meta = meta->superClass();
 	}
 
-	//apply from the lower class to the higher one
+	// apply from the lower class to the higher one
 	for (int i = 0; i < to_use.size(); ++i) {
-		//get the VipParseResult
+		// get the VipParseResult
 		const VipParseResult parse = to_use[i];
 		for (VipParseResult::const_iterator it = parse.begin(); it != parse.end(); ++it) {
-			//get all values (usually just one) for given property name
-			const QMap<QByteArray, QVariant> & values = it.value().values();
-			for(auto itv = values.begin(); itv != values.end(); ++itv)
+			// get all values (usually just one) for given property name
+			const QMap<QByteArray, QVariant>& values = it.value().values();
+			for (auto itv = values.begin(); itv != values.end(); ++itv)
 				if (!item->setItemProperty(it.value().name().data(), itv.value(), itv.key())) {
 					ERROR("Unable to set property " + it.value().name())
 				}
 		}
 	}
 
-	if (error) error->clear();
+	if (error)
+		error->clear();
 	return true;
 }
 
-
-VipStyleSheet vipExtractRelevantStyleSheetFor(const VipStyleSheet& p, VipPaintItem* item) 
+VipStyleSheet vipExtractRelevantStyleSheetFor(const VipStyleSheet& p, VipPaintItem* item)
 {
 	VipStyleSheet res;
 	for (auto it = p.begin(); it != p.end(); ++it) {
@@ -1341,12 +1381,11 @@ VipStyleSheet vipExtractRelevantStyleSheetFor(const VipStyleSheet& p, VipPaintIt
 	return res;
 }
 
-
-VipStyleSheet vipMergeStyleSheet(const VipStyleSheet& src, const VipStyleSheet& additional) 
+VipStyleSheet vipMergeStyleSheet(const VipStyleSheet& src, const VipStyleSheet& additional)
 {
 	VipStyleSheet res = src;
 	for (auto it = additional.begin(); it != additional.end(); ++it) {
-	
+
 		const QByteArray classname = it.key();
 
 		// ignore global style sheet without class name
@@ -1358,13 +1397,13 @@ VipStyleSheet vipMergeStyleSheet(const VipStyleSheet& src, const VipStyleSheet& 
 			res[classname] = it.value();
 		else {
 			VipClassStates& dst_states = found.value();
-			const VipClassStates &src_states = it.value();
+			const VipClassStates& src_states = it.value();
 			for (const VipClassState& state : src_states) {
 				// find a similar state in dst
 				bool added = false;
 				for (int i = 0; i < dst_states.size(); ++i) {
 					if (dst_states[i].selectors == state.selectors) {
-						addParseValue( dst_states[i].parseResults, state.parseResults);
+						addParseValue(dst_states[i].parseResults, state.parseResults);
 						added = true;
 						break;
 					}
@@ -1372,12 +1411,10 @@ VipStyleSheet vipMergeStyleSheet(const VipStyleSheet& src, const VipStyleSheet& 
 				if (!added)
 					dst_states.push_back(state);
 			}
-
 		}
 	}
 	return res;
 }
-
 
 QList<QByteArray> vipClassNames(const QObject* object)
 {
@@ -1390,7 +1427,7 @@ QList<QByteArray> vipClassNames(const QObject* object)
 	return res;
 }
 
-bool vipIsA(const QObject* object, const char* classname) 
+bool vipIsA(const QObject* object, const char* classname)
 {
 	const QMetaObject* meta = object->metaObject();
 	while (meta) {
@@ -1401,14 +1438,7 @@ bool vipIsA(const QObject* object, const char* classname)
 	return false;
 }
 
-
-
-
-
-
-
 static int registerVipStyleSheet = qRegisterMetaType<VipStyleSheet>();
-
 
 static quint64& _globalStyleSheetId()
 {
@@ -1417,7 +1447,7 @@ static quint64& _globalStyleSheetId()
 }
 static VipStyleSheet& _globalStyleSheet()
 {
-	static VipStyleSheet inst ;
+	static VipStyleSheet inst;
 	return inst;
 }
 static QString& _globalStyleSheetString()
@@ -1426,12 +1456,12 @@ static QString& _globalStyleSheetString()
 	return inst;
 }
 
-quint64 VipGlobalStyleSheet::styleSheetId() 
+quint64 VipGlobalStyleSheet::styleSheetId()
 {
 	return _globalStyleSheetId();
 }
 
-bool VipGlobalStyleSheet::setStyleSheet(const QString& str) 
+bool VipGlobalStyleSheet::setStyleSheet(const QString& str)
 {
 	QString error;
 	VipStyleSheet st = vipParseStyleSheet(str.toLatin1(), nullptr, &error);
@@ -1452,35 +1482,28 @@ void VipGlobalStyleSheet::setStyleSheet(const VipStyleSheet& st)
 	_globalStyleSheetId()++;
 }
 
-VipStyleSheet& VipGlobalStyleSheet::styleSheet() 
+VipStyleSheet& VipGlobalStyleSheet::styleSheet()
 {
 	_globalStyleSheetId()++;
 	return _globalStyleSheet();
 }
-const VipStyleSheet& VipGlobalStyleSheet::cstyleSheet() 
+const VipStyleSheet& VipGlobalStyleSheet::cstyleSheet()
 {
 	return _globalStyleSheet();
 }
-QString VipGlobalStyleSheet::styleSheetString() 
+QString VipGlobalStyleSheet::styleSheetString()
 {
 	return _globalStyleSheetString();
 }
-void VipGlobalStyleSheet::updateStyleSheetString() 
+void VipGlobalStyleSheet::updateStyleSheetString()
 {
 	_globalStyleSheetString() = vipStyleSheetToString(cstyleSheet());
 }
 
-
-
-
-
-
 #include "VipColorMap.h"
 #include "VipSymbol.h"
 
-
-
-void VipStandardStyleSheet::addTextStyleKeyWords(VipKeyWords& keywords, const QByteArray& prefix) 
+void VipStandardStyleSheet::addTextStyleKeyWords(VipKeyWords& keywords, const QByteArray& prefix)
 {
 	keywords[prefix + "font"] = VipParserPtr(new FontParser());
 	keywords[prefix + "font-size"] = VipParserPtr(new DoubleParser());
@@ -1541,7 +1564,6 @@ bool VipStandardStyleSheet::handleTextStyleKeyWord(const char* name, const QVari
 	return true;
 }
 
-
 QMap<QByteArray, int> VipStandardStyleSheet::fontStyleEnum()
 {
 	static QMap<QByteArray, int> style;
@@ -1586,7 +1608,6 @@ QMap<QByteArray, int> VipStandardStyleSheet::alignmentEnum()
 	return alignment;
 }
 
-
 QMap<QByteArray, int> VipStandardStyleSheet::orientationEnum()
 {
 	QMap<QByteArray, int> orientation;
@@ -1618,7 +1639,6 @@ QMap<QByteArray, int> VipStandardStyleSheet::colormapEnum()
 	QMap<QByteArray, int> colorMap;
 	if (colorMap.isEmpty()) {
 
-		
 		colorMap["autumn"] = VipLinearColorMap::Autumn;
 		colorMap["bone"] = VipLinearColorMap::Bone;
 		colorMap["burd"] = VipLinearColorMap::BuRd;
@@ -1662,14 +1682,11 @@ QMap<QByteArray, int> VipStandardStyleSheet::colorPaletteEnum()
 	return colorMap;
 }
 
-
-
 QMap<QByteArray, int> VipStandardStyleSheet::symbolEnum()
 {
 	QMap<QByteArray, int> symbol;
 	if (symbol.isEmpty()) {
 
-		
 		symbol["none"] = VipSymbol::None;
 		symbol["ellipse"] = VipSymbol::Ellipse;
 		symbol["rect"] = VipSymbol::Rect;

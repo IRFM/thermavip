@@ -1,29 +1,57 @@
+/**
+ * BSD 3-Clause License
+ *
+ * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice, this
+ *    list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of the copyright holder nor the names of its
+ *    contributors may be used to endorse or promote products derived from
+ *    this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
 #include <limits>
 
 #include <QApplication>
-#include <QPixmap>
-#include <QPainter>
-#include <QStyleOption>
-#include <QDoubleSpinBox>
-#include <QColorDialog>
 #include <QBoxLayout>
-#include <QGridLayout>
-#include <QWidgetAction>
 #include <QButtonGroup>
-#include <QFontDialog>
-#include <QPalette>
+#include <QColorDialog>
+#include <QDoubleSpinBox>
 #include <QFileInfo>
+#include <QFontDialog>
+#include <QGridLayout>
+#include <QPainter>
+#include <QPalette>
+#include <QPixmap>
+#include <QStyleOption>
+#include <QWidgetAction>
 #include <qpointer.h>
 
-
-#include "VipStandardWidgets.h"
-#include "VipDisplayArea.h"
 #include "VipCore.h"
+#include "VipDisplayArea.h"
 #include "VipGui.h"
+#include "VipStandardWidgets.h"
 
-
-
-QList<QObject*> VipFindChidren::children(const QString & name)
+QList<QObject*> VipFindChidren::children(const QString& name)
 {
 	QList<QWidget*> widgets = QApplication::topLevelWidgets();
 	QList<QObject*> res;
@@ -33,9 +61,8 @@ QList<QObject*> VipFindChidren::children(const QString & name)
 	return res;
 }
 
-
-VipDetectLooseFocus::VipDetectLooseFocus(QWidget * widget)
-	:QObject(widget)
+VipDetectLooseFocus::VipDetectLooseFocus(QWidget* widget)
+  : QObject(widget)
 {
 	qApp->installEventFilter(this);
 }
@@ -45,18 +72,17 @@ VipDetectLooseFocus::~VipDetectLooseFocus()
 	qApp->removeEventFilter(this);
 }
 
-bool	VipDetectLooseFocus::eventFilter(QObject * //watched
-, QEvent *event)
+bool VipDetectLooseFocus::eventFilter(QObject* // watched
+				      ,
+				      QEvent* event)
 {
 	if (!parent())
 		return false;
 
-	if (event->type() == QEvent::MouseButtonPress)
-	{
-		const QWidget *area = static_cast<QWidget*>(parent());
+	if (event->type() == QEvent::MouseButtonPress) {
+		const QWidget* area = static_cast<QWidget*>(parent());
 		const QPoint pt = area->mapFromGlobal(QCursor::pos());
-		if (!QRect(0, 0, area->width(), area->height()).contains(pt))
-		{
+		if (!QRect(0, 0, area->width(), area->height()).contains(pt)) {
 			Q_EMIT focusLost();
 			this->deleteLater();
 		}
@@ -65,91 +91,84 @@ bool	VipDetectLooseFocus::eventFilter(QObject * //watched
 	return false;
 }
 
-
-
-VipVerticalLine::VipVerticalLine(QWidget * parent)
-	:QFrame(parent)
+VipVerticalLine::VipVerticalLine(QWidget* parent)
+  : QFrame(parent)
 {
 	setFrameShape(QFrame::VLine);
 }
 
-VipHorizontalLine::VipHorizontalLine(QWidget * parent)
-	: QFrame(parent)
+VipHorizontalLine::VipHorizontalLine(QWidget* parent)
+  : QFrame(parent)
 {
 	setFrameShape(QFrame::HLine);
 }
 
-
-QFrame *VipLineWidget::createHLine(QWidget * parent)
+QFrame* VipLineWidget::createHLine(QWidget* parent)
 {
-	QFrame *fr = new VipHorizontalLine(parent);
+	QFrame* fr = new VipHorizontalLine(parent);
 	fr->setObjectName("hline");
 	return fr;
 }
 
-QFrame *VipLineWidget::createVLine(QWidget * parent)
+QFrame* VipLineWidget::createVLine(QWidget* parent)
 {
-	QFrame *fr = new VipVerticalLine(parent);
+	QFrame* fr = new VipVerticalLine(parent);
 	fr->setObjectName("vline");
 	return fr;
 }
 
-QFrame *VipLineWidget::createSunkenHLine(QWidget * parent)
+QFrame* VipLineWidget::createSunkenHLine(QWidget* parent)
 {
-	QFrame * fr = new QFrame(parent);
+	QFrame* fr = new QFrame(parent);
 	fr->setObjectName("hline");
 	fr->setFrameShape(QFrame::HLine);
 	fr->setFrameShadow(QFrame::Sunken);
 	return fr;
 }
 
-QFrame *VipLineWidget::createSunkenVLine(QWidget * parent)
+QFrame* VipLineWidget::createSunkenVLine(QWidget* parent)
 {
-	QFrame * fr = new QFrame(parent);
+	QFrame* fr = new QFrame(parent);
 	fr->setObjectName("vline");
 	fr->setFrameShape(QFrame::VLine);
 	fr->setFrameShadow(QFrame::Sunken);
 	return fr;
 }
 
-
-
-QString VipStandardWidgets::format(const QString & str)
+QString VipStandardWidgets::format(const QString& str)
 {
 	static QChar c = QString("'")[0];
 	if (!str.contains(c))
 		return c + str + c;
 	return str;
 }
-QWidget * VipStandardWidgets::fromName(const QString & name)
+QWidget* VipStandardWidgets::fromName(const QString& name)
 {
 	return vipCreateVariant(name.toLatin1().data()).value<QWidget*>();
 }
 
-QWidget * VipStandardWidgets::fromStyleSheet(const QString & style_sheet)
+QWidget* VipStandardWidgets::fromStyleSheet(const QString& style_sheet)
 {
-	//find widget's name
+	// find widget's name
 	QStringList lst = style_sheet.split("{");
 	if (lst.size() == 0)
 		return nullptr;
 
 	QString class_name = lst[0].split("#")[0].remove(" ") + "*";
-	//take care of '--' for widget inside namespace
+	// take care of '--' for widget inside namespace
 	class_name.replace("--", "::");
-	QWidget * widget = vipCreateVariant(class_name.toLatin1().data()).value<QWidget*>();
-	if (widget)
-	{
-		//apply the style sheet and make sur it is applied to the widget
+	QWidget* widget = vipCreateVariant(class_name.toLatin1().data()).value<QWidget*>();
+	if (widget) {
+		// apply the style sheet and make sur it is applied to the widget
 		widget->setStyleSheet(style_sheet);
 		widget->style()->unpolish(widget);
 		widget->style()->polish(widget);
 
-		//now, remove all the qproperty stuff from the style sheet to avoid them being reset each time the widget is polished,
-		//which might trigger a VipProcessingObject
+		// now, remove all the qproperty stuff from the style sheet to avoid them being reset each time the widget is polished,
+		// which might trigger a VipProcessingObject
 
 		QString st = style_sheet;
-		while (true)
-		{
+		while (true) {
 			int index = st.indexOf("qproperty-");
 			if (index < 0)
 				break;
@@ -160,25 +179,20 @@ QWidget * VipStandardWidgets::fromStyleSheet(const QString & style_sheet)
 			st.remove(index, end - index);
 		}
 		widget->setStyleSheet(st);
-
 	}
 
 	return widget;
 }
 
-
-
-
-VipSpinBox::VipSpinBox(QWidget * parent)
-	:QSpinBox(parent)
+VipSpinBox::VipSpinBox(QWidget* parent)
+  : QSpinBox(parent)
 {
 	setRange(-std::numeric_limits<int>::max(), std::numeric_limits<int>::max());
 	connect(this, SIGNAL(valueChanged(int)), this, SLOT(valueHasChanged()));
 }
 
-
-VipBoolEdit::VipBoolEdit(QWidget * parent)
-	:QCheckBox(parent)
+VipBoolEdit::VipBoolEdit(QWidget* parent)
+  : QCheckBox(parent)
 {
 	connect(this, SIGNAL(stateChanged(int)), this, SLOT(changed()));
 }
@@ -199,10 +213,8 @@ void VipBoolEdit::changed()
 	Q_EMIT genericValueChanged(isChecked());
 }
 
-
-
-VipDoubleSpinBox::VipDoubleSpinBox(QWidget * parent)
-	:QDoubleSpinBox(parent)
+VipDoubleSpinBox::VipDoubleSpinBox(QWidget* parent)
+  : QDoubleSpinBox(parent)
 {
 	setRange(-std::numeric_limits<double>::max(), std::numeric_limits<double>::max());
 	connect(this, SIGNAL(valueChanged(double)), this, SLOT(valueHasChanged()));
@@ -211,8 +223,8 @@ VipDoubleSpinBox::VipDoubleSpinBox(QWidget * parent)
 QString VipDoubleSpinBox::textFromValue(double value) const
 {
 	return QDoubleSpinBox::textFromValue(value);
-	//QString text = QDoubleSpinBox::textFromValue(value);
-	// return text.replace(QLocale().decimalPoint(), QLatin1Char('.'));
+	// QString text = QDoubleSpinBox::textFromValue(value);
+	//  return text.replace(QLocale().decimalPoint(), QLatin1Char('.'));
 }
 
 double VipDoubleSpinBox::valueFromText(const QString& text) const
@@ -228,16 +240,15 @@ double VipDoubleSpinBox::valueFromText(const QString& text) const
 	// return QDoubleSpinBox::valueFromText(text);
 }
 
-QValidator::State	VipDoubleSpinBox::validate(QString &text, int &pos) const
+QValidator::State VipDoubleSpinBox::validate(QString& text, int& pos) const
 {
-	//if (text[pos] == '.')
-	// text[pos] = ',';
+	// if (text[pos] == '.')
+	//  text[pos] = ',';
 	return QDoubleSpinBox::validate(text, pos);
 }
 
-
-VipPrefixSuffixLineEdit::VipPrefixSuffixLineEdit(const QString& prefix, const QString& suffix, QWidget *parent)
-	:QLineEdit(parent)
+VipPrefixSuffixLineEdit::VipPrefixSuffixLineEdit(const QString& prefix, const QString& suffix, QWidget* parent)
+  : QLineEdit(parent)
 {
 	_prefix = new QLabel(this);
 	_prefix->setStyleSheet("background: transparent;");
@@ -250,16 +261,20 @@ VipPrefixSuffixLineEdit::VipPrefixSuffixLineEdit(const QString& prefix, const QS
 	setSuffix(suffix);
 }
 
-QString VipPrefixSuffixLineEdit::prefix() const {
+QString VipPrefixSuffixLineEdit::prefix() const
+{
 	return _prefix->text();
 }
-QString VipPrefixSuffixLineEdit::suffix() const {
+QString VipPrefixSuffixLineEdit::suffix() const
+{
 	return _suffix->text();
 }
-QLabel * VipPrefixSuffixLineEdit::prefixLabel() const {
+QLabel* VipPrefixSuffixLineEdit::prefixLabel() const
+{
 	return _prefix;
 }
-QLabel * VipPrefixSuffixLineEdit::suffixLabel() const {
+QLabel* VipPrefixSuffixLineEdit::suffixLabel() const
+{
 	return _suffix;
 }
 
@@ -267,7 +282,6 @@ void VipPrefixSuffixLineEdit::setPrefix(const QString& prefix)
 {
 	_prefix->setText(prefix);
 	resetMargins();
-
 }
 
 void VipPrefixSuffixLineEdit::setSuffix(const QString& suffix)
@@ -280,8 +294,7 @@ void VipPrefixSuffixLineEdit::resetMargins()
 {
 	int left = 0;
 	int right = 0;
-	if (!prefix().isEmpty())
-	{
+	if (!prefix().isEmpty()) {
 		left = _prefix->sizeHint().width();
 		if (!_prefix->isVisible())
 			_prefix->show();
@@ -292,8 +305,7 @@ void VipPrefixSuffixLineEdit::resetMargins()
 	else if (_prefix->isVisible())
 		_prefix->hide();
 
-	if (!suffix().isEmpty())
-	{
+	if (!suffix().isEmpty()) {
 		right = _suffix->sizeHint().width();
 		if (!_suffix->isVisible())
 			_suffix->show();
@@ -304,48 +316,46 @@ void VipPrefixSuffixLineEdit::resetMargins()
 	else if (_suffix->isVisible())
 		_suffix->hide();
 
-	//int t, b, l, r;
-	
+	// int t, b, l, r;
+
 	QMargins m = this->textMargins();
-	//this->getTextMargins(&l, &t, &r, &b);
+	// this->getTextMargins(&l, &t, &r, &b);
 	this->setTextMargins(left, m.top(), right, m.bottom());
 }
 
-void VipPrefixSuffixLineEdit::resizeEvent(QResizeEvent *)
+void VipPrefixSuffixLineEdit::resizeEvent(QResizeEvent*)
 {
 	resetMargins();
 }
 
-
-
-#include <QTextStream>
 #include <QLocale>
+#include <QTextStream>
 
-VipDoubleEdit::VipDoubleEdit(QWidget * parent)
-	:VipPrefixSuffixLineEdit(QString(), QString(), parent), m_integer(false), m_value(0)
+VipDoubleEdit::VipDoubleEdit(QWidget* parent)
+  : VipPrefixSuffixLineEdit(QString(), QString(), parent)
+  , m_integer(false)
+  , m_value(0)
 {
-	m_rightStyle = "";// "QLineEdit { border: 1px solid lightGray; }";
+	m_rightStyle = ""; // "QLineEdit { border: 1px solid lightGray; }";
 	m_wrongStyle = "QLineEdit { border: 1px solid red; }";
 	setValue(0);
 
 	connect(this, SIGNAL(returnPressed()), this, SLOT(enterPressed()));
-	connect(this, SIGNAL(textEdited(const QString &)), this, SLOT(edited()));
+	connect(this, SIGNAL(textEdited(const QString&)), this, SLOT(edited()));
 }
 
-double VipDoubleEdit::readValue(const QString & text, bool integer, bool * ok)
+double VipDoubleEdit::readValue(const QString& text, bool integer, bool* ok)
 {
 	QString str = text;
 
-	//check for hexadecimal first
-	if (str.startsWith("0x"))
-	{
+	// check for hexadecimal first
+	if (str.startsWith("0x")) {
 		str.remove("0x");
 		uint v = str.toUInt(ok, 16);
 		return v;
 	}
 
-	if (!integer)
-	{
+	if (!integer) {
 		QTextStream stream(&str);
 		double v;
 		stream >> v;
@@ -353,8 +363,7 @@ double VipDoubleEdit::readValue(const QString & text, bool integer, bool * ok)
 			*ok = stream.status() == QTextStream::Ok && stream.pos() == str.size();
 		return v;
 	}
-	else
-	{
+	else {
 		QTextStream stream(&str);
 		int v;
 		stream >> v;
@@ -376,17 +385,17 @@ double VipDoubleEdit::value() const
 	return m_value;
 }
 
-const QString & VipDoubleEdit::rightStyle() const
+const QString& VipDoubleEdit::rightStyle() const
 {
 	return m_rightStyle;
 }
 
-const QString & VipDoubleEdit::wrongStyle() const
+const QString& VipDoubleEdit::wrongStyle() const
 {
 	return m_wrongStyle;
 }
 
-const QString & VipDoubleEdit::format() const
+const QString& VipDoubleEdit::format() const
 {
 	return m_format;
 }
@@ -408,29 +417,28 @@ void VipDoubleEdit::setValue(double value)
 
 	this->blockSignals(blocked);
 
-	if (value != m_value)
-	{
+	if (value != m_value) {
 		m_value = value;
 		Q_EMIT valueChanged(value);
 		Q_EMIT genericValueChanged(value);
 	}
 }
 
-void VipDoubleEdit::setRightStyle(const QString & style)
+void VipDoubleEdit::setRightStyle(const QString& style)
 {
 	m_rightStyle = style;
 	if (isValid())
 		setStyleSheet(style);
 }
 
-void VipDoubleEdit::setWrongStyle(const QString & style)
+void VipDoubleEdit::setWrongStyle(const QString& style)
 {
 	m_wrongStyle = style;
 	if (!isValid())
 		setStyleSheet(style);
 }
 
-void VipDoubleEdit::setFormat(const QString & format)
+void VipDoubleEdit::setFormat(const QString& format)
 {
 	m_format = format;
 	if (isValid())
@@ -451,28 +459,24 @@ void VipDoubleEdit::setIntegerFormat(bool integer)
 
 void VipDoubleEdit::edited()
 {
-	if (isValid())
-	{
+	if (isValid()) {
 		setStyleSheet(m_rightStyle);
 		QString str = text();
 
 		m_value = readValue(text(), m_integer);
 	}
-	else
-	{
+	else {
 		setStyleSheet(m_wrongStyle);
 	}
 }
 
 void VipDoubleEdit::enterPressed()
 {
-	if (isValid())
-	{
+	if (isValid()) {
 		bool blocked = this->signalsBlocked();
 		this->blockSignals(true);
 
-		if (!text().startsWith("0x") && !m_integer)
-		{
+		if (!text().startsWith("0x") && !m_integer) {
 			QString f = m_format;
 			if (f.isEmpty())
 				f = "%g";
@@ -485,18 +489,21 @@ void VipDoubleEdit::enterPressed()
 		}
 		this->blockSignals(blocked);
 
-
 		Q_EMIT valueChanged(value());
 		Q_EMIT genericValueChanged(value());
 	}
 }
 
-
-
 class VipMultiComponentDoubleEdit::PrivateData
 {
 public:
-	PrivateData() :separator(","), fixedNumberOfComponents(1), maxNumberOfComponents(-1), integer(false) {}
+	PrivateData()
+	  : separator(",")
+	  , fixedNumberOfComponents(1)
+	  , maxNumberOfComponents(-1)
+	  , integer(false)
+	{
+	}
 	QString format;
 	QString rightStyle;
 	QString wrongStyle;
@@ -510,20 +517,20 @@ public:
 	VipNDDoubleCoordinate value;
 };
 
-VipMultiComponentDoubleEdit::VipMultiComponentDoubleEdit(QWidget * parent)
-	:QWidget(parent)
+VipMultiComponentDoubleEdit::VipMultiComponentDoubleEdit(QWidget* parent)
+  : QWidget(parent)
 {
 	m_data = new PrivateData();
 	m_data->rightStyle = "QLineEdit { border: 1px solid lightGray; }";
 	m_data->wrongStyle = "QLineEdit { border: 1px solid red; }";
 
-	QHBoxLayout * lay = new QHBoxLayout();
+	QHBoxLayout* lay = new QHBoxLayout();
 	lay->setContentsMargins(0, 0, 0, 0);
 	lay->addWidget(&m_data->edit);
 	setLayout(lay);
 
 	m_data->edit.setStyleSheet(m_data->rightStyle);
-	connect(&m_data->edit, SIGNAL(textEdited(const QString &)), this, SLOT(edited()));
+	connect(&m_data->edit, SIGNAL(textEdited(const QString&)), this, SLOT(edited()));
 	connect(&m_data->edit, SIGNAL(returnPressed()), this, SLOT(enterPressed()));
 }
 
@@ -543,15 +550,15 @@ QString VipMultiComponentDoubleEdit::separator() const
 {
 	return m_data->separator;
 }
-const QString & VipMultiComponentDoubleEdit::rightStyle() const
+const QString& VipMultiComponentDoubleEdit::rightStyle() const
 {
 	return m_data->rightStyle;
 }
-const QString & VipMultiComponentDoubleEdit::wrongStyle() const
+const QString& VipMultiComponentDoubleEdit::wrongStyle() const
 {
 	return m_data->wrongStyle;
 }
-const QString & VipMultiComponentDoubleEdit::format() const
+const QString& VipMultiComponentDoubleEdit::format() const
 {
 	return m_data->format;
 }
@@ -569,12 +576,12 @@ VipNDDoubleCoordinate VipMultiComponentDoubleEdit::value() const
 {
 	return m_data->value;
 }
-void VipMultiComponentDoubleEdit::setRightStyle(const QString & st)
+void VipMultiComponentDoubleEdit::setRightStyle(const QString& st)
 {
 	m_data->rightStyle = st;
 	this->applyStyle();
 }
-void VipMultiComponentDoubleEdit::setWrongStyle(const QString & st)
+void VipMultiComponentDoubleEdit::setWrongStyle(const QString& st)
 {
 	m_data->wrongStyle = st;
 	this->applyStyle();
@@ -597,21 +604,20 @@ void VipMultiComponentDoubleEdit::setMaxNumberOfComponents(int comp)
 	m_data->fixedNumberOfComponents = -1;
 	this->applyStyle();
 }
-void VipMultiComponentDoubleEdit::setSeparator(const QString & sep)
+void VipMultiComponentDoubleEdit::setSeparator(const QString& sep)
 {
 	m_data->separator = sep;
 	this->applyFormat();
 	this->applyStyle();
 }
-void VipMultiComponentDoubleEdit::setFormat(const QString & format)
+void VipMultiComponentDoubleEdit::setFormat(const QString& format)
 {
 	m_data->format = format;
 	this->applyFormat();
 }
-void VipMultiComponentDoubleEdit::setValue(const VipNDDoubleCoordinate & value)
+void VipMultiComponentDoubleEdit::setValue(const VipNDDoubleCoordinate& value)
 {
-	if (value != m_data->value)
-	{
+	if (value != m_data->value) {
 		m_data->value = value;
 		Q_EMIT valueChanged(value);
 		Q_EMIT genericValueChanged(QVariant::fromValue(value));
@@ -620,32 +626,32 @@ void VipMultiComponentDoubleEdit::setValue(const VipNDDoubleCoordinate & value)
 	this->applyStyle();
 }
 
-VipNDDoubleCoordinate VipMultiComponentDoubleEdit::readValue(bool * ok) const
+VipNDDoubleCoordinate VipMultiComponentDoubleEdit::readValue(bool* ok) const
 {
 	QString str = m_data->edit.text();
 	str.replace(separator(), " ");
 
 	VipNDDoubleCoordinate value;
 	QStringList lst = str.split(" ", VIP_SKIP_BEHAVIOR::SkipEmptyParts);
-	for (int i = 0; i < lst.size(); ++i)
-	{
+	for (int i = 0; i < lst.size(); ++i) {
 		bool is_ok = false;
 		VipDoubleEdit::readValue(lst[i], m_data->integer, &is_ok);
-		if (!is_ok)
-		{
-			if (ok) *ok = false;
+		if (!is_ok) {
+			if (ok)
+				*ok = false;
 			return value;
 		}
 	}
 
-	if (ok) *ok = true;
-	if (m_data->fixedNumberOfComponents >= 0 && value.size() != m_data->fixedNumberOfComponents)
-	{
-		if (ok) *ok = false;
+	if (ok)
+		*ok = true;
+	if (m_data->fixedNumberOfComponents >= 0 && value.size() != m_data->fixedNumberOfComponents) {
+		if (ok)
+			*ok = false;
 	}
-	if (m_data->maxNumberOfComponents >= 0 && value.size() > m_data->maxNumberOfComponents)
-	{
-		if (ok) *ok = false;
+	if (m_data->maxNumberOfComponents >= 0 && value.size() > m_data->maxNumberOfComponents) {
+		if (ok)
+			*ok = false;
 	}
 	return value;
 }
@@ -654,13 +660,11 @@ void VipMultiComponentDoubleEdit::applyStyle()
 {
 	bool ok = false;
 	VipNDDoubleCoordinate value = readValue(&ok);
-	if (ok)
-	{
+	if (ok) {
 		m_data->edit.setStyleSheet(m_data->rightStyle);
 		m_data->value = value;
 	}
-	else
-	{
+	else {
 		m_data->edit.setStyleSheet(m_data->wrongStyle);
 	}
 }
@@ -669,11 +673,9 @@ void VipMultiComponentDoubleEdit::applyFormat()
 {
 	bool ok = false;
 	VipNDDoubleCoordinate value = readValue(&ok);
-	if (ok && !m_data->integer)
-	{
+	if (ok && !m_data->integer) {
 		QString res;
-		for (int i = 0; i < value.size(); ++i)
-		{
+		for (int i = 0; i < value.size(); ++i) {
 			QString f = m_data->format;
 			if (f.isEmpty())
 				f = "%g";
@@ -704,16 +706,12 @@ void VipMultiComponentDoubleEdit::enterPressed()
 	Q_EMIT genericValueChanged(QVariant::fromValue(value));
 }
 
-
-
-
-
-VipDoubleSliderEdit::VipDoubleSliderEdit(QWidget * parent)
-	:QWidget(parent)
+VipDoubleSliderEdit::VipDoubleSliderEdit(QWidget* parent)
+  : QWidget(parent)
 {
 	m_slider = new QSlider(Qt::Horizontal);
 	m_spin = new VipDoubleSpinBox();
-	QHBoxLayout * lay = new QHBoxLayout();
+	QHBoxLayout* lay = new QHBoxLayout();
 	lay->setSpacing(2);
 	lay->setContentsMargins(0, 0, 0, 0);
 	lay->addWidget(m_slider, 1);
@@ -801,12 +799,10 @@ void VipDoubleSliderEdit::valueHasChanged()
 	m_spin->blockSignals(true);
 	m_slider->blockSignals(true);
 
-	if (sender() == m_slider)
-	{
+	if (sender() == m_slider) {
 		m_spin->setValue(m_slider->value() * m_spin->singleStep() + m_spin->minimum());
 	}
-	else
-	{
+	else {
 		m_slider->setValue((m_spin->value() - m_spin->minimum()) / m_spin->singleStep());
 	}
 
@@ -817,18 +813,14 @@ void VipDoubleSliderEdit::valueHasChanged()
 	Q_EMIT genericValueChanged(value());
 }
 
-
-
 VipLineEditIcon::VipLineEditIcon(QWidget* parent)
-	: VipLineEdit(parent)
+  : VipLineEdit(parent)
 {
 }
 
-VipLineEditIcon::~VipLineEditIcon()
-{
-}
+VipLineEditIcon::~VipLineEditIcon() {}
 
-void VipLineEditIcon::setIcon(const QIcon & icon)
+void VipLineEditIcon::setIcon(const QIcon& icon)
 {
 	m_icon = icon;
 	if (m_icon.isNull())
@@ -844,27 +836,26 @@ void VipLineEditIcon::paintEvent(QPaintEvent* event)
 		QPainter painter(this);
 		QPixmap pxm = m_icon.pixmap(height() - 2, height() - 2);
 
-		int x = 1;// , cx = pxm.width();
+		int x = 1; // , cx = pxm.width();
 		painter.drawPixmap(x, 1, pxm);
-		//painter.setPen(QColor("lightgrey"));
-		// painter.drawLine(cx + 2, 3, cx + 2, height() - 4);
+		// painter.setPen(QColor("lightgrey"));
+		//  painter.drawLine(cx + 2, 3, cx + 2, height() - 4);
 	}
 }
-
-
 
 #include <QAbstractItemView>
 #include <QDropEvent>
 #include <QMimeData>
 #include <iostream>
-VipComboBox::VipComboBox(QWidget * parent)
-	: QComboBox(parent), m_innerDragDropEnabled(false)
+VipComboBox::VipComboBox(QWidget* parent)
+  : QComboBox(parent)
+  , m_innerDragDropEnabled(false)
 {
-	//view()->installEventFilter(this);
+	// view()->installEventFilter(this);
 	connect(this, SIGNAL(currentIndexChanged(int)), this, SLOT(valueHasChanged()));
 }
 
-void VipComboBox::setCurrentText(const QString & text)
+void VipComboBox::setCurrentText(const QString& text)
 {
 	int index = this->findText(text);
 	if (index >= 0)
@@ -891,25 +882,21 @@ bool VipComboBox::innerDragDropEnabled() const
 	return m_innerDragDropEnabled;
 }
 
-bool VipComboBox::eventFilter(QObject *, QEvent * evt)
+bool VipComboBox::eventFilter(QObject*, QEvent* evt)
 {
-	if (evt->type() == QEvent::Drop)
-	{
-		if (m_innerDragDropEnabled)
-		{
-			const QMimeData * mime = static_cast<QDropEvent*>(evt)->mimeData();
+	if (evt->type() == QEvent::Drop) {
+		if (m_innerDragDropEnabled) {
+			const QMimeData* mime = static_cast<QDropEvent*>(evt)->mimeData();
 			view()->setDragDropMode(QAbstractItemView::InternalMove);
 			Q_EMIT innerItemDropped(mime->text());
-			//std::cout<<mime->text().toLatin1().data()<<" "<<mime->formats().join(";").toLatin1().data()<<std::endl;
+			// std::cout<<mime->text().toLatin1().data()<<" "<<mime->formats().join(";").toLatin1().data()<<std::endl;
 		}
 	}
 	return false;
 }
 
-
-
-VipEnumEdit::VipEnumEdit(QWidget * parent)
-	:QComboBox(parent)
+VipEnumEdit::VipEnumEdit(QWidget* parent)
+  : QComboBox(parent)
 {
 	connect(this, SIGNAL(currentIndexChanged(int)), this, SLOT(valueHasChanged()));
 }
@@ -936,7 +923,7 @@ QString VipEnumEdit::value() const
 	return itemData(index).toString();
 }
 
-void VipEnumEdit::setEnumNames(const QString & choices)
+void VipEnumEdit::setEnumNames(const QString& choices)
 {
 	QStringList lst = choices.split(",");
 	this->clear();
@@ -946,7 +933,7 @@ void VipEnumEdit::setEnumNames(const QString & choices)
 	setCurrentIndex(0);
 }
 
-void VipEnumEdit::setEnumValues(const QString & choices)
+void VipEnumEdit::setEnumValues(const QString& choices)
 {
 	QString v = value();
 
@@ -956,18 +943,16 @@ void VipEnumEdit::setEnumValues(const QString & choices)
 		setItemData(i, lst[i]);
 
 	QString v2 = value();
-	if (v != v2)
-	{
+	if (v != v2) {
 		Q_EMIT valueChanged(v2);
 		Q_EMIT genericValueChanged(v2);
 	}
 }
 
-void VipEnumEdit::setValue(const QString & value)
+void VipEnumEdit::setValue(const QString& value)
 {
 	for (int i = 0; i < count(); ++i)
-		if (itemData(i).toString() == value)
-		{
+		if (itemData(i).toString() == value) {
 			this->setCurrentIndex(i);
 			break;
 		}
@@ -979,10 +964,8 @@ void VipEnumEdit::valueHasChanged()
 	Q_EMIT genericValueChanged(value());
 }
 
-
-
-VipColorWidget::VipColorWidget(QWidget * parent)
-	:QToolButton(parent)
+VipColorWidget::VipColorWidget(QWidget* parent)
+  : QToolButton(parent)
 {
 	setAutoRaise(true);
 	setColor(QColor(Qt::white));
@@ -990,10 +973,9 @@ VipColorWidget::VipColorWidget(QWidget * parent)
 	connect(this, SIGNAL(clicked(bool)), this, SLOT(triggered()));
 }
 
-void VipColorWidget::setColor(const QColor & c)
+void VipColorWidget::setColor(const QColor& c)
 {
-	if (c != m_color)
-	{
+	if (c != m_color) {
 		m_color = c;
 		QPixmap pix(width() - 4, height() - 4);
 		pix.fill(QColor(Qt::transparent));
@@ -1011,22 +993,19 @@ void VipColorWidget::triggered()
 {
 	QColorDialog dial(color(), nullptr);
 	dial.setOption(QColorDialog::ShowAlphaChannel);
-	if (dial.exec() == QDialog::Accepted)
-	{
+	if (dial.exec() == QDialog::Accepted) {
 		setColor(dial.currentColor());
 	}
 }
 
-
-
-VipBrushWidget::VipBrushWidget(const QBrush & brush, QWidget * parent)
-	:QWidget(parent)
+VipBrushWidget::VipBrushWidget(const QBrush& brush, QWidget* parent)
+  : QWidget(parent)
 {
-	QVBoxLayout * lay = new QVBoxLayout();
+	QVBoxLayout* lay = new QVBoxLayout();
 	lay->addWidget(&m_color);
 	lay->addWidget(&m_pattern);
 
-	QHBoxLayout * hlay = new QHBoxLayout();
+	QHBoxLayout* hlay = new QHBoxLayout();
 	hlay->addLayout(lay);
 	hlay->addWidget(&m_image, 1);
 	hlay->setContentsMargins(0, 0, 0, 0);
@@ -1037,11 +1016,25 @@ VipBrushWidget::VipBrushWidget(const QBrush & brush, QWidget * parent)
 	m_color.setToolTip("Change the brush color");
 	m_color.setAutoRaise(true);
 
-	m_pattern.addItems(QStringList() << "No pattern" << "Uniform color" << "Extremely dense pattern" << "Very dense pattern" <<
-		"Somewhat dense pattern" << "Half dense pattern" << "Somewhat sparse pattern" << "Very sparse pattern" <<
-		"Extremely sparse pattern" << "Horizontal lines" << "Vertical lines" << "Horizontal and V. lines" <<
-		"Backward diagonal lines" << "Forward diagonal lines" << "Crossing diagonal lines" << "Linear gradient" << "Radial gradient" <<
-		"Conical gradient" << "Texture pattern");
+	m_pattern.addItems(QStringList() << "No pattern"
+					 << "Uniform color"
+					 << "Extremely dense pattern"
+					 << "Very dense pattern"
+					 << "Somewhat dense pattern"
+					 << "Half dense pattern"
+					 << "Somewhat sparse pattern"
+					 << "Very sparse pattern"
+					 << "Extremely sparse pattern"
+					 << "Horizontal lines"
+					 << "Vertical lines"
+					 << "Horizontal and V. lines"
+					 << "Backward diagonal lines"
+					 << "Forward diagonal lines"
+					 << "Crossing diagonal lines"
+					 << "Linear gradient"
+					 << "Radial gradient"
+					 << "Conical gradient"
+					 << "Texture pattern");
 
 	m_pattern.setFrame(false);
 	m_pattern.setToolTip("Select the brush pattern");
@@ -1061,14 +1054,12 @@ VipBrushWidget::VipBrushWidget(const QBrush & brush, QWidget * parent)
 void VipBrushWidget::setColorOptionVisible(bool vis)
 {
 	m_color.setVisible(vis);
-	if (vis)
-	{
+	if (vis) {
 		m_image.setMinimumHeight(80);
 		this->setMinimumHeight(80);
 		this->setMaximumHeight(80);
 	}
-	else
-	{
+	else {
 		m_image.setMinimumHeight(30);
 		this->setMinimumHeight(30);
 		this->setMaximumHeight(30);
@@ -1079,11 +1070,11 @@ bool VipBrushWidget::colorOptionVisible() const
 	return !m_color.isHidden();
 }
 
-void VipBrushWidget::setBrush(const QBrush & brush)
+void VipBrushWidget::setBrush(const QBrush& brush)
 {
 	m_brush = brush;
 
-	//set the color button
+	// set the color button
 	int size = 20;
 	QColor c = m_brush.color();
 	QPixmap pix(size, size);
@@ -1094,15 +1085,14 @@ void VipBrushWidget::setBrush(const QBrush & brush)
 	p.drawRoundedRect(QRect(0, 0, pix.width(), pix.height()), 3, 3);
 	m_color.setIcon(QIcon(pix));
 
-	//set the pattern
+	// set the pattern
 	Qt::BrushStyle style = brush.style();
 	if (style != Qt::TexturePattern)
 		m_pattern.setCurrentIndex(int(style));
 	else
 		m_pattern.setCurrentIndex(18);
 
-
-	//fill image
+	// fill image
 	redraw();
 
 	Q_EMIT brushChanged(m_brush);
@@ -1110,7 +1100,7 @@ void VipBrushWidget::setBrush(const QBrush & brush)
 
 void VipBrushWidget::redraw()
 {
-	//fill image
+	// fill image
 	QPixmap pix(m_image.width() - m_image.margin() * 2, m_image.height() - m_image.margin() * 2);
 	pix.fill(QColor(Qt::transparent));
 	QPainter p(&pix);
@@ -1129,11 +1119,9 @@ void VipBrushWidget::setPattern(int index)
 {
 	if (index != 18)
 		m_brush.setStyle(Qt::BrushStyle(index));
-	else
-	{
+	else {
 		QString fileName = VipFileDialog::getOpenFileName(this, ("Open image pattern"), ("Image file (*.png *.jpg *.jpeg *.bmp *.pgm *.ppm *.tiff *.xbm *.xpm *.ps *.eps)"));
-		if (fileName.length() > 0)
-		{
+		if (fileName.length() > 0) {
 			m_brush.setTextureImage(QImage(fileName));
 		}
 	}
@@ -1145,21 +1133,16 @@ void VipBrushWidget::setColor()
 {
 	QColorDialog dial(m_brush.color(), nullptr);
 	dial.setOption(QColorDialog::ShowAlphaChannel);
-	if (dial.exec() == QDialog::Accepted)
-	{
+	if (dial.exec() == QDialog::Accepted) {
 		m_brush.setColor(dial.currentColor());
 		setBrush(m_brush);
 	}
 }
 
-
-
-
-
-VipPenWidget::VipPenWidget(const QPen & pen, QWidget * parent)
-	:QWidget(parent)
+VipPenWidget::VipPenWidget(const QPen& pen, QWidget* parent)
+  : QWidget(parent)
 {
-	QGridLayout * glay = new QGridLayout();
+	QGridLayout* glay = new QGridLayout();
 	int row = -1;
 	glay->addWidget(new QLabel("Fill rules:"), ++row, 0);
 	glay->addWidget(&m_brush, row, 1);
@@ -1186,29 +1169,32 @@ VipPenWidget::VipPenWidget(const QPen & pen, QWidget * parent)
 	m_join.setFrame(false);
 	m_join.setToolTip("Select the join between two connected lines");
 
-
-	m_join.addItems(QStringList() << "Miter Join" << "Bevel Join" << "Round Join" << "Svg Miter Join");
-	m_cap.addItems(QStringList() << "Square Cap" << "Flat Cap" << "Round Cap");
+	m_join.addItems(QStringList() << "Miter Join"
+				      << "Bevel Join"
+				      << "Round Join"
+				      << "Svg Miter Join");
+	m_cap.addItems(QStringList() << "Square Cap"
+				     << "Flat Cap"
+				     << "Round Cap");
 	m_style.setIconSize(QSize(150, 20));
 
-	//m_image.setMargin(5);
+	// m_image.setMargin(5);
 	m_image.setMinimumHeight(50);
 	m_image.setMinimumWidth(170);
 	m_image.setToolTip("Preview of the pen's type");
-
 
 	QObject::connect(&m_style, SIGNAL(activated(int)), this, SLOT(setStyle(int)));
 	QObject::connect(&m_cap, SIGNAL(activated(int)), this, SLOT(setCap(int)));
 	QObject::connect(&m_join, SIGNAL(activated(int)), this, SLOT(setJoin(int)));
 	QObject::connect(&m_width, SIGNAL(valueChanged(double)), this, SLOT(setWidth(double)));
-	QObject::connect(&m_brush, SIGNAL(brushChanged(const QBrush	 &)), this, SLOT(setBrush(const QBrush &)));
+	QObject::connect(&m_brush, SIGNAL(brushChanged(const QBrush&)), this, SLOT(setBrush(const QBrush&)));
 
 	this->setMaximumSize(QSize(300, 300));
 
 	setPen(pen);
 }
 
-void VipPenWidget::setPen(const QPen & pen)
+void VipPenWidget::setPen(const QPen& pen)
 {
 	m_pen = pen;
 
@@ -1288,7 +1274,7 @@ void VipPenWidget::setJoin(int st)
 	setPen(m_pen);
 }
 
-void VipPenWidget::setBrush(const QBrush & brush)
+void VipPenWidget::setBrush(const QBrush& brush)
 {
 	m_pen.setBrush(brush);
 	m_brush.blockSignals(true);
@@ -1298,10 +1284,9 @@ void VipPenWidget::setBrush(const QBrush & brush)
 
 void VipPenWidget::showFullOptions(bool sh)
 {
-	QGridLayout * glay = static_cast<QGridLayout*>(layout());
+	QGridLayout* glay = static_cast<QGridLayout*>(layout());
 
-	for (int row = 1; row < glay->rowCount(); ++row)
-	{
+	for (int row = 1; row < glay->rowCount(); ++row) {
 		glay->itemAtPosition(row, 0)->widget()->setVisible(sh);
 		glay->itemAtPosition(row, 1)->widget()->setVisible(sh);
 	}
@@ -1310,16 +1295,14 @@ void VipPenWidget::showFullOptions(bool sh)
 		this->setMaximumSize(QSize(300, 300));
 	else
 		this->setMaximumSize(QSize(300, 100));
-
 }
 
 void VipPenWidget::redraw()
 {
-	//redraw the pen styles
+	// redraw the pen styles
 	int index = m_style.currentIndex();
 	m_style.clear();
-	for (int i = 0; i <= Qt::CustomDashLine; ++i)
-	{
+	for (int i = 0; i <= Qt::CustomDashLine; ++i) {
 		QPixmap im(150, 20);
 		im.fill(QColor(230, 230, 230, 0));
 		QPainter p(&im);
@@ -1333,7 +1316,7 @@ void VipPenWidget::redraw()
 	if (index >= 0)
 		m_style.setCurrentIndex(index);
 
-	//redraw the label
+	// redraw the label
 	QPixmap pix(170, 50);
 	pix.fill(QColor(255, 255, 255, 0));
 	QPainter p(&pix);
@@ -1341,41 +1324,34 @@ void VipPenWidget::redraw()
 	p.setPen(m_pen);
 	p.drawPolyline((QPolygon() << QPoint(10, 35) << QPoint(80, 15) << QPoint(70, 35) << QPoint(160, 15)));
 	m_image.setPixmap(pix);
-	//m_image.setMask(pix.Mask());
-
+	// m_image.setMask(pix.Mask());
 }
 
-
-
-
-
-
-
-
-VipPenButton::VipPenButton(const QPen & pen, QWidget * parent)
-	:QToolButton(parent), m_mode(Pen)
+VipPenButton::VipPenButton(const QPen& pen, QWidget* parent)
+  : QToolButton(parent)
+  , m_mode(Pen)
 {
 	m_pen = new VipPenWidget(pen);
 
-	//this->setToolButtonStyle (Qt::ToolButtonTextBesideIcon);
+	// this->setToolButtonStyle (Qt::ToolButtonTextBesideIcon);
 	this->setPopupMode(QToolButton::MenuButtonPopup);
 	this->setAutoRaise(true);
 	this->setPen(pen);
 	this->setMaximumHeight(22);
 
-	QWidgetAction * action = new QWidgetAction(&m_menu);
+	QWidgetAction* action = new QWidgetAction(&m_menu);
 	action->setDefaultWidget(m_pen);
 	m_menu.addAction(action);
 	this->setMenu(&m_menu);
 
-	connect(m_pen, SIGNAL(penChanged(const QPen &)), this, SLOT(setPen(const QPen&)));
+	connect(m_pen, SIGNAL(penChanged(const QPen&)), this, SLOT(setPen(const QPen&)));
 	connect(this, SIGNAL(clicked(bool)), this, SLOT(triggered()));
 }
 
 VipPenButton::~VipPenButton()
 {
 	QList<QAction*> act = m_menu.actions();
-	for (int i = 0; i< act.size(); ++i)
+	for (int i = 0; i < act.size(); ++i)
 		delete act[i];
 }
 
@@ -1383,20 +1359,17 @@ void VipPenButton::setMode(VipPenButton::Mode mode)
 {
 	m_mode = mode;
 
-	if (mode == Color)
-	{
+	if (mode == Color) {
 		m_pen->showFullOptions(false);
 		this->setPopupMode(QToolButton::DelayedPopup);
 		this->setMenu(nullptr);
 	}
-	else if (mode == Brush)
-	{
+	else if (mode == Brush) {
 		m_pen->showFullOptions(false);
 		this->setPopupMode(QToolButton::MenuButtonPopup);
 		this->setMenu(&m_menu);
 	}
-	else
-	{
+	else {
 		m_pen->showFullOptions(true);
 		this->setPopupMode(QToolButton::MenuButtonPopup);
 		this->setMenu(&m_menu);
@@ -1420,13 +1393,14 @@ VipPenButton::Mode VipPenButton::mode() const
 
 void VipPenButton::setColorOptionVisible(bool vis)
 {
-	if (vis != colorOptionVisible())
-	{
+	if (vis != colorOptionVisible()) {
 		m_pen->setColorOptionVisible(vis);
 
 		if (vis) {
-			if (m_mode == Color) this->setPopupMode(QToolButton::DelayedPopup);
-			else  this->setPopupMode(QToolButton::MenuButtonPopup);
+			if (m_mode == Color)
+				this->setPopupMode(QToolButton::DelayedPopup);
+			else
+				this->setPopupMode(QToolButton::MenuButtonPopup);
 			connect(this, SIGNAL(clicked(bool)), this, SLOT(triggered()));
 		}
 		else {
@@ -1440,7 +1414,7 @@ bool VipPenButton::colorOptionVisible() const
 	return m_pen->colorOptionVisible();
 }
 
-void VipPenButton::setPen(const QPen & pen)
+void VipPenButton::setPen(const QPen& pen)
 {
 	m_pen->blockSignals(true);
 	m_pen->setPen(pen);
@@ -1449,7 +1423,7 @@ void VipPenButton::setPen(const QPen & pen)
 	Q_EMIT penChanged(pen);
 }
 
-void VipPenButton::setBrush(const QBrush & brush)
+void VipPenButton::setBrush(const QBrush& brush)
 {
 	m_pen->blockSignals(true);
 	m_pen->setBrush(brush);
@@ -1462,8 +1436,7 @@ void VipPenButton::triggered()
 {
 	QColorDialog dial(pen().brush().color(), nullptr);
 	dial.setOption(QColorDialog::ShowAlphaChannel);
-	if (dial.exec() == QDialog::Accepted)
-	{
+	if (dial.exec() == QDialog::Accepted) {
 		QPen pen(this->pen());
 		pen.setColor(dial.currentColor());
 		setPen(pen);
@@ -1472,10 +1445,9 @@ void VipPenButton::triggered()
 
 void VipPenButton::redraw()
 {
-	//set the color button
+	// set the color button
 	int w, h;
-	if (text().isEmpty())
-	{
+	if (text().isEmpty()) {
 		w = width() - 3;
 		if (popupMode() == QToolButton::MenuButtonPopup)
 			w -= 17;
@@ -1483,8 +1455,7 @@ void VipPenButton::redraw()
 			w -= 10;
 		h = height() - 3;
 	}
-	else
-	{
+	else {
 		w = qMax(height() - 4, 3);
 		h = w;
 	}
@@ -1493,28 +1464,28 @@ void VipPenButton::redraw()
 	QPixmap pix(w, h);
 	pix.fill(QColor(Qt::transparent));
 	QPainter p(&pix);
-	//if(m_mode == Color)
+	// if(m_mode == Color)
 	{
 		p.setPen(c);
 		p.setBrush(c);
 		p.setRenderHints(QPainter::Antialiasing);
 		p.drawRoundedRect(QRect(0, 0, pix.width(), pix.height()), 3, 3);
 	}
-	//else if(m_mode == Brush)
-	// {
-	// p.setPen(pen().brush().color());
-	// p.setBrush(pen().brush());
-	// p.setRenderHints(QPainter::Antialiasing);
-	// p.drawRoundedRect(QRect(0,0,pix.width(),pix.height()),3,3);
-	// }
-	// else if(m_mode == Pen)
-	// {
-	// double width = pen().widthF()/2;
-	// p.setPen(pen());
-	// p.setBrush(QBrush());
-	// p.setRenderHints(QPainter::Antialiasing);
-	// p.drawRoundedRect(QRect(width,width,pix.width()-width,pix.height()-width),3,3);
-	// }
+	// else if(m_mode == Brush)
+	//  {
+	//  p.setPen(pen().brush().color());
+	//  p.setBrush(pen().brush());
+	//  p.setRenderHints(QPainter::Antialiasing);
+	//  p.drawRoundedRect(QRect(0,0,pix.width(),pix.height()),3,3);
+	//  }
+	//  else if(m_mode == Pen)
+	//  {
+	//  double width = pen().widthF()/2;
+	//  p.setPen(pen());
+	//  p.setBrush(QBrush());
+	//  p.setRenderHints(QPainter::Antialiasing);
+	//  p.drawRoundedRect(QRect(width,width,pix.width()-width,pix.height()-width),3,3);
+	//  }
 	setIcon(QIcon(pix));
 }
 
@@ -1524,27 +1495,23 @@ void VipPenButton::resizeEvent(QResizeEvent* evt)
 	redraw();
 }
 
-
-
-
-
-VipTextWidget::VipTextWidget(QWidget * parent)
-	:QWidget(parent)
+VipTextWidget::VipTextWidget(QWidget* parent)
+  : QWidget(parent)
 {
-	//QGridLayout * grid = new QGridLayout();
-//
+	// QGridLayout * grid = new QGridLayout();
+	//
 	// grid->addWidget(&textChoice, 0, 0);
 	// grid->addWidget(&textColor, 1, 0);
 	// textColor.setMaximumHeight(10);
 	// textChoice.setMaximumHeight(20);
-//
+	//
 	// grid->addWidget(&backgroundPen, 0, 1, 2, 1);
 	// backgroundPen.setMaximumWidth(30);
 	// grid->addWidget(&backgroundBrush, 0, 2, 2, 1);
 	// backgroundBrush.setMaximumWidth(30);
 	// grid->setContentsMargins(0, 0, 0, 0);
 	// grid->setSpacing(0);
-	QHBoxLayout * tlay = new QHBoxLayout();
+	QHBoxLayout* tlay = new QHBoxLayout();
 	tlay->setContentsMargins(0, 0, 0, 0);
 	tlay->setSpacing(0);
 	tlay->addWidget(&textChoice);
@@ -1552,9 +1519,9 @@ VipTextWidget::VipTextWidget(QWidget * parent)
 	textColor.setMaximumWidth(15);
 	textChoice.setMaximumHeight(20);
 
-	//backgroundPen.setText("Border");
+	// backgroundPen.setText("Border");
 	backgroundPen.setToolTip("Text's border pen");
-	//backgroundBrush.setText("Background");
+	// backgroundBrush.setText("Background");
 	backgroundBrush.setToolTip("Text's background brush");
 	textColor.setToolTip("Text color");
 	textColor.setMode(VipPenButton::Color);
@@ -1568,7 +1535,7 @@ VipTextWidget::VipTextWidget(QWidget * parent)
 	m_options->setLayout(tlay);
 	m_options->setMaximumWidth(80);
 
-	QHBoxLayout * hlay = new QHBoxLayout();
+	QHBoxLayout* hlay = new QHBoxLayout();
 	hlay->setContentsMargins(0, 0, 0, 0);
 	hlay->addWidget(&text, 2);
 	hlay->addWidget(m_options);
@@ -1589,12 +1556,12 @@ void VipTextWidget::textEdited()
 	Q_EMIT changed(getText());
 }
 
-QLineEdit * VipTextWidget::edit() const
+QLineEdit* VipTextWidget::edit() const
 {
 	return const_cast<QLineEdit*>(&text);
 }
 
-void VipTextWidget::setText(const VipText & t)
+void VipTextWidget::setText(const VipText& t)
 {
 	text.setText(t.text());
 	text.setFont(t.font());
@@ -1623,22 +1590,17 @@ VipText VipTextWidget::getText() const
 void VipTextWidget::fontChoice()
 {
 	QFontDialog dial(text.font());
-	if (dial.exec() == QDialog::Accepted)
-	{
+	if (dial.exec() == QDialog::Accepted) {
 		QFont textfont = dial.currentFont();
 		text.setFont(textfont);
 		textEdited();
 	}
 }
 
-
-
-
-
-VipBoxStyleWidget::VipBoxStyleWidget(QWidget * parent)
-	:QWidget(parent)
+VipBoxStyleWidget::VipBoxStyleWidget(QWidget* parent)
+  : QWidget(parent)
 {
-	QGridLayout * glay = new QGridLayout();
+	QGridLayout* glay = new QGridLayout();
 
 	int row = -1;
 
@@ -1663,7 +1625,7 @@ VipBoxStyleWidget::VipBoxStyleWidget(QWidget * parent)
 	connect(&m_radius, SIGNAL(valueChanged(int)), this, SLOT(emitBoxStyleChanged()));
 }
 
-void VipBoxStyleWidget::setBoxStyle(const VipBoxStyle & box)
+void VipBoxStyleWidget::setBoxStyle(const VipBoxStyle& box)
 {
 	m_style = box;
 
@@ -1700,39 +1662,30 @@ void VipBoxStyleWidget::emitBoxStyleChanged()
 	Q_EMIT boxStyleChanged(m_style);
 }
 
-
-
-
-
-
-
-
-
-static QMap<QString, QString>  m_last_dirs;//= vipGetDataDirectory();
+static QMap<QString, QString> m_last_dirs; //= vipGetDataDirectory();
 static QMap<QString, QString> m_last_filters;
 static QString m_default_dir;
 
-void VipFileDialog::setDefaultDirectory(const QString & dirname)
+void VipFileDialog::setDefaultDirectory(const QString& dirname)
 {
 	m_default_dir = dirname;
 }
 
-QString VipFileDialog::getExistingDirectory(QWidget * parent, const QString & caption, QFileDialog::Options options)
+QString VipFileDialog::getExistingDirectory(QWidget* parent, const QString& caption, QFileDialog::Options options)
 {
 	QString dir = m_default_dir.isEmpty() ? m_last_dirs[caption] : m_default_dir;
 	QString res = QFileDialog::getExistingDirectory(parent, caption, dir, options);
 	m_default_dir = QString();
-	if (!res.isEmpty())
-	{
+	if (!res.isEmpty()) {
 		QFileInfo info(res);
 		m_last_dirs[caption] = info.absolutePath();
 	}
 	return res;
 }
 
-QString VipFileDialog::getOpenFileName(QWidget * parent, const QString & caption, const QString & filter, QString * selectedFilter, QFileDialog::Options options)
+QString VipFileDialog::getOpenFileName(QWidget* parent, const QString& caption, const QString& filter, QString* selectedFilter, QFileDialog::Options options)
 {
-	QString & last_filter = m_last_filters[caption];
+	QString& last_filter = m_last_filters[caption];
 	QString filters = filter;
 	if (!last_filter.isEmpty() && last_filter != filters)
 		filters = last_filter + ";;" + filters;
@@ -1740,8 +1693,7 @@ QString VipFileDialog::getOpenFileName(QWidget * parent, const QString & caption
 	QString dir = m_default_dir.isEmpty() ? m_last_dirs[caption] : m_default_dir;
 	QString res = QFileDialog::getOpenFileName(parent, caption, dir, filter, &last_filter, options);
 	m_default_dir = QString();
-	if (!res.isEmpty())
-	{
+	if (!res.isEmpty()) {
 		QFileInfo info(res);
 		m_last_dirs[caption] = info.absolutePath();
 		if (selectedFilter)
@@ -1750,10 +1702,9 @@ QString VipFileDialog::getOpenFileName(QWidget * parent, const QString & caption
 	return res;
 }
 
-
-QStringList VipFileDialog::getOpenFileNames(QWidget * parent, const QString & caption, const QString & filter, QString * selectedFilter, QFileDialog::Options options)
+QStringList VipFileDialog::getOpenFileNames(QWidget* parent, const QString& caption, const QString& filter, QString* selectedFilter, QFileDialog::Options options)
 {
-	QString & last_filter = m_last_filters[caption];
+	QString& last_filter = m_last_filters[caption];
 	QString filters = filter;
 	if (!last_filter.isEmpty() && last_filter != filters)
 		filters = last_filter + ";;" + filters;
@@ -1761,8 +1712,7 @@ QStringList VipFileDialog::getOpenFileNames(QWidget * parent, const QString & ca
 	QString dir = m_default_dir.isEmpty() ? m_last_dirs[caption] : m_default_dir;
 	QStringList res = QFileDialog::getOpenFileNames(parent, caption, dir, filter, &last_filter, options);
 	m_default_dir = QString();
-	if (res.size() != 0)
-	{
+	if (res.size() != 0) {
 		QFileInfo info(res[0]);
 		m_last_dirs[caption] = info.absolutePath();
 		if (selectedFilter)
@@ -1772,9 +1722,9 @@ QStringList VipFileDialog::getOpenFileNames(QWidget * parent, const QString & ca
 }
 
 #include <iostream>
-QString VipFileDialog::getSaveFileName(QWidget * parent, const QString & caption, const QString & filter, QString * selectedFilter, QFileDialog::Options options)
+QString VipFileDialog::getSaveFileName(QWidget* parent, const QString& caption, const QString& filter, QString* selectedFilter, QFileDialog::Options options)
 {
-	QString & last_filter = m_last_filters[caption];
+	QString& last_filter = m_last_filters[caption];
 	QString filters = filter;
 	if (!last_filter.isEmpty() && last_filter != filters)
 		filters = last_filter + ";;" + filters;
@@ -1782,22 +1732,19 @@ QString VipFileDialog::getSaveFileName(QWidget * parent, const QString & caption
 	QString dir = m_default_dir.isEmpty() ? m_last_dirs[caption] : m_default_dir;
 	QString res = QFileDialog::getSaveFileName(parent, caption, dir, filter, &last_filter, options);
 	m_default_dir = QString();
-	if (!res.isEmpty())
-	{
+	if (!res.isEmpty()) {
 		QFileInfo info(res);
 		m_last_dirs[caption] = info.absolutePath();
 		if (selectedFilter)
 			*selectedFilter = last_filter;
 	}
 
-	//make sure the result has a valid suffix
+	// make sure the result has a valid suffix
 	QString suffix = QFileInfo(res).suffix();
-	if (suffix.isEmpty() && !last_filter.isEmpty())
-	{
+	if (suffix.isEmpty() && !last_filter.isEmpty()) {
 		int index1 = last_filter.indexOf("*.");
 		int index2 = last_filter.indexOf(")", index1);
-		if (index1 > 0 && index2 > 0)
-		{
+		if (index1 > 0 && index2 > 0) {
 			QString s = last_filter.mid(index1 + 2, index2 - index1 - 2);
 			s.remove(" ");
 			if (s.size())
@@ -1807,9 +1754,9 @@ QString VipFileDialog::getSaveFileName(QWidget * parent, const QString & caption
 
 	return res;
 }
-QString VipFileDialog::getSaveFileName2(QWidget * parent, const QString &filename, const QString & caption, const QString & filter, QString * selectedFilter, QFileDialog::Options options)
+QString VipFileDialog::getSaveFileName2(QWidget* parent, const QString& filename, const QString& caption, const QString& filter, QString* selectedFilter, QFileDialog::Options options)
 {
-	QString & last_filter = m_last_filters[caption];
+	QString& last_filter = m_last_filters[caption];
 	QString filters = filter;
 	if (!last_filter.isEmpty() && last_filter != filters)
 		filters = last_filter + ";;" + filters;
@@ -1827,25 +1774,22 @@ QString VipFileDialog::getSaveFileName2(QWidget * parent, const QString &filenam
 	fname.replace("|", "_");
 	if (!fname.isEmpty())
 		dir += "/" + fname;
-	//vip_debug("fname: %s\n",fname.toLatin1().data());
+	// vip_debug("fname: %s\n",fname.toLatin1().data());
 	QString res = QFileDialog::getSaveFileName(parent, caption, dir, filter, &last_filter, options);
 	m_default_dir = QString();
-	if (!res.isEmpty())
-	{
+	if (!res.isEmpty()) {
 		QFileInfo info(res);
 		m_last_dirs[caption] = info.absolutePath();
 		if (selectedFilter)
 			*selectedFilter = last_filter;
 	}
 
-	//make sure the result has a valid suffix
+	// make sure the result has a valid suffix
 	QString suffix = QFileInfo(res).suffix();
-	if (suffix.isEmpty() && !last_filter.isEmpty())
-	{
+	if (suffix.isEmpty() && !last_filter.isEmpty()) {
 		int index1 = last_filter.indexOf("*.");
 		int index2 = last_filter.indexOf(")", index1);
-		if (index1 > 0 && index2 > 0)
-		{
+		if (index1 > 0 && index2 > 0) {
 			QString s = last_filter.mid(index1 + 2, index2 - index1 - 2);
 			s.remove(" ");
 			if (s.size())
@@ -1856,10 +1800,9 @@ QString VipFileDialog::getSaveFileName2(QWidget * parent, const QString &filenam
 	return res;
 }
 
-
-
-VipFileName::VipFileName(QWidget * parent)
-	:QWidget(parent), m_mode(Open)
+VipFileName::VipFileName(QWidget* parent)
+  : QWidget(parent)
+  , m_mode(Open)
 {
 	m_layout = new QGridLayout();
 	m_layout->setContentsMargins(0, 0, 0, 0);
@@ -1875,8 +1818,9 @@ VipFileName::VipFileName(QWidget * parent)
 	connect(&m_button, SIGNAL(clicked(bool)), this, SLOT(buttonTriggered()));
 }
 
-VipFileName::VipFileName(const QString & filename, QWidget * parent)
-	:QWidget(parent), m_mode(Open)
+VipFileName::VipFileName(const QString& filename, QWidget* parent)
+  : QWidget(parent)
+  , m_mode(Open)
 {
 	m_layout = new QGridLayout();
 	m_layout->setContentsMargins(0, 0, 0, 0);
@@ -1924,41 +1868,40 @@ QString VipFileName::defaultPath() const
 	return m_default_path;
 }
 
-QGridLayout * VipFileName::gridLayout()
+QGridLayout* VipFileName::gridLayout()
 {
 	return m_layout;
 }
 
-void VipFileName::setFilename(const QString & filename)
+void VipFileName::setFilename(const QString& filename)
 {
-	if (filename != m_edit.text())
-	{
+	if (filename != m_edit.text()) {
 		m_edit.setText(filename);
 		emit changed(filename);
 	}
 }
 
-void VipFileName::setFilters(const QString & filters)
+void VipFileName::setFilters(const QString& filters)
 {
 	m_filters = filters;
 }
 
-void VipFileName::setPrefix(const QString & prefix)
+void VipFileName::setPrefix(const QString& prefix)
 {
 	m_prefix = prefix;
 }
 
-void VipFileName::setTitle(const QString & title)
+void VipFileName::setTitle(const QString& title)
 {
 	m_title = title;
 }
 
-void VipFileName::setDefaultPath(const QString & path)
+void VipFileName::setDefaultPath(const QString& path)
 {
 	m_default_path = path;
 }
 
-void VipFileName::setDefaultOpenDir(const QString & dir)
+void VipFileName::setDefaultOpenDir(const QString& dir)
 {
 	m_default_open_dir = dir;
 }
@@ -1977,8 +1920,10 @@ void VipFileName::buttonTriggered()
 {
 	QString fileName;
 	QString filters;
-	if (m_filters.isEmpty()) filters = "All files (*)";
-	else filters = m_filters;
+	if (m_filters.isEmpty())
+		filters = "All files (*)";
+	else
+		filters = m_filters;
 
 	VipFileDialog::setDefaultDirectory(m_default_open_dir);
 	if (m_mode == Save)
@@ -1989,47 +1934,41 @@ void VipFileName::buttonTriggered()
 		fileName = VipFileDialog::getExistingDirectory(this, m_title);
 	VipFileDialog::setDefaultDirectory(QString());
 
-	if (!fileName.isEmpty())
-	{
+	if (!fileName.isEmpty()) {
 		setFilename(fileName);
 	}
 }
 
-
-
-
-
-
-
-
-
-
-
 #include <qwidgetaction.h>
 
-struct Action {
-	QAction * action;
-	QWidget * widget;
-	QWidget * parent;
-	Action(QAction * act = nullptr, QWidget * w = nullptr, QWidget *p = nullptr)
-		:action(act), widget(w), parent(p) {}
+struct Action
+{
+	QAction* action;
+	QWidget* widget;
+	QWidget* parent;
+	Action(QAction* act = nullptr, QWidget* w = nullptr, QWidget* p = nullptr)
+	  : action(act)
+	  , widget(w)
+	  , parent(p)
+	{
+	}
 };
 
-static QList<Action> findActions(QWidget * bar, QAction * exclude = nullptr) {
+static QList<Action> findActions(QWidget* bar, QAction* exclude = nullptr)
+{
 	QList<QAction*> acts = bar->actions();
 	QList<Action> res;
 	for (int i = 0; i < acts.size(); ++i) {
 		if (acts[i] == exclude)
 			continue;
-		if (QWidgetAction * a = qobject_cast<QWidgetAction*>(acts[i])) {
-			if (QWidget * w = a->defaultWidget()) {
-				//special case: tool bar
-				//if (QToolBar* b = qobject_cast<QToolBar*>(w))
-				// res += findActions(b);
-				// else
+		if (QWidgetAction* a = qobject_cast<QWidgetAction*>(acts[i])) {
+			if (QWidget* w = a->defaultWidget()) {
+				// special case: tool bar
+				// if (QToolBar* b = qobject_cast<QToolBar*>(w))
+				//  res += findActions(b);
+				//  else
 				res.append(Action(a, w, a->associatedWidgets()[0]));
 			}
-
 		}
 		else {
 			QList<QWidget*> ws = acts[i]->associatedWidgets();
@@ -2042,27 +1981,26 @@ static QList<Action> findActions(QWidget * bar, QAction * exclude = nullptr) {
 	return res;
 }
 
-static QList<Action> hiddenActions(QWidget * parent, const QList<Action> & acts, int * visible_actions_width = nullptr)
+static QList<Action> hiddenActions(QWidget* parent, const QList<Action>& acts, int* visible_actions_width = nullptr)
 {
 	int width = 0;
 	QList<Action> res;
 	int i = 0;
-	for (; i < acts.size(); ++i)
-	{
-		//Action act = acts[i];
+	for (; i < acts.size(); ++i) {
+		// Action act = acts[i];
 		if (acts[i].action->isVisible()) {
-			//set action size as long as it is inside the tool bar (and we can compute it)
+			// set action size as long as it is inside the tool bar (and we can compute it)
 			if (acts[i].widget) {
 				if (acts[i].widget->isVisible()) {
 					width = acts[i].widget->mapTo(parent, QPoint(acts[i].widget->width(), 0)).x();
 				}
 				else {
-					//stop at first hidden widget
+					// stop at first hidden widget
 					break;
 				}
 			}
 			else
-				width += 20; //probably a separator
+				width += 20; // probably a separator
 		}
 	}
 
@@ -2072,68 +2010,65 @@ static QList<Action> hiddenActions(QWidget * parent, const QList<Action> & acts,
 	return acts.mid(i);
 }
 
-static void transferActions(QWidget * from, QWidget * to, const QList<Action> & acts)
+static void transferActions(QWidget* from, QWidget* to, const QList<Action>& acts)
 {
-	for (int i = 0; i < acts.size(); ++i)
-	{
+	for (int i = 0; i < acts.size(); ++i) {
 		Action a = acts[i];
 		from->removeAction(a.action);
-		//acts[i].parent->
-to->addAction(a.action);
+		// acts[i].parent->
+		to->addAction(a.action);
 	}
 }
 
-
-
-VipAdditionalToolBar::VipAdditionalToolBar(VipToolBar * parent)
-	:QToolBar(parent), parent(parent)
-{}
-
-bool VipAdditionalToolBar::eventFilter(QObject * watched, QEvent *event)
+VipAdditionalToolBar::VipAdditionalToolBar(VipToolBar* parent)
+  : QToolBar(parent)
+  , parent(parent)
 {
-	//filter all app events, and make sure to hide on first click or other event outside the tool bar
-	if (event->type() == QEvent::MouseButtonPress)
-	{
-		if (QWidget * w = qobject_cast<QWidget*>(watched)) {
+}
+
+bool VipAdditionalToolBar::eventFilter(QObject* watched, QEvent* event)
+{
+	// filter all app events, and make sure to hide on first click or other event outside the tool bar
+	if (event->type() == QEvent::MouseButtonPress) {
+		if (QWidget* w = qobject_cast<QWidget*>(watched)) {
 			if (w != this) {
-				//check that the widget belongs to the tool bar
+				// check that the widget belongs to the tool bar
 				while (w) {
-					if (w == this) return false;
+					if (w == this)
+						return false;
 					w = w->parentWidget();
 				}
 			}
 			else {
-				//when clicking outside, the event is still sent to the tool bar.
-				//Therefore, check that the cursor is still inside the tool bar.
+				// when clicking outside, the event is still sent to the tool bar.
+				// Therefore, check that the cursor is still inside the tool bar.
 				QRect r(this->mapToGlobal(QPoint(0, 0)), this->mapToGlobal(QPoint(width(), height())));
 				if (!r.contains(QCursor::pos()))
 					hide();
 			}
-			//the event was on a widget outisde: hide the tool bar
+			// the event was on a widget outisde: hide the tool bar
 			hide();
 		}
 	}
 	return false;
 }
 
-void VipAdditionalToolBar::showEvent(QShowEvent *)
+void VipAdditionalToolBar::showEvent(QShowEvent*)
 {
-	//filter all app events
+	// filter all app events
 	qApp->installEventFilter(this);
 }
-void VipAdditionalToolBar::hideEvent(QHideEvent *)
+void VipAdditionalToolBar::hideEvent(QHideEvent*)
 {
 	qApp->removeEventFilter(this);
 	parent->aboutToHide();
 }
 
-
-
 class VipToolBar::PrivateData
 {
 public:
-	QMenu *additional;
-	VipAdditionalToolBar * additionalToolBar;
+	QMenu* additional;
+	VipAdditionalToolBar* additionalToolBar;
 	QToolButton showAdditional;
 	QAction* showAdditionalAction;
 
@@ -2148,12 +2083,17 @@ public:
 	QTimer timer;
 
 	PrivateData()
-		: showAdditionalAction(nullptr), _ShowAdditionals(ShowInMenu), aboutToShow(false), dirtyCompute(true), customBehaviorEnabled(true)
-	{}
+	  : showAdditionalAction(nullptr)
+	  , _ShowAdditionals(ShowInMenu)
+	  , aboutToShow(false)
+	  , dirtyCompute(true)
+	  , customBehaviorEnabled(true)
+	{
+	}
 };
 
-VipToolBar::VipToolBar(QWidget * parent)
-	:QToolBar(parent)
+VipToolBar::VipToolBar(QWidget* parent)
+  : QToolBar(parent)
 {
 	m_data = new PrivateData();
 	m_data->additionalToolBar = new VipAdditionalToolBar(this);
@@ -2173,8 +2113,8 @@ VipToolBar::VipToolBar(QWidget * parent)
 	m_data->showAdditional.setAutoFillBackground(true);
 	m_data->showAdditional.setPalette(palette());
 	m_data->showAdditional.setToolTip("Show additional actions");
-	//to hide the tool button menu indicator:
-	//QToolButton::menu-indicator{ image: none; }
+	// to hide the tool button menu indicator:
+	// QToolButton::menu-indicator{ image: none; }
 
 	m_data->timer.setSingleShot(true);
 	m_data->timer.setInterval(200);
@@ -2194,52 +2134,50 @@ VipToolBar::~VipToolBar()
 QSize VipToolBar::sizeHint() const
 {
 	QSize s = QToolBar::sizeHint();
-	s.rwidth() += m_data->additional->sizeHint().width() + 13; //add 13 for the showAdditional button
+	s.rwidth() += m_data->additional->sizeHint().width() + 13; // add 13 for the showAdditional button
 	s.rwidth() += m_data->additionalToolBar->sizeHint().width();
 	return s;
 }
 
 void VipToolBar::aboutToShow()
 {
-	//body.remove( QRegExp( "<(?:div|span|tr|td|br|body|html|tt|a|strong|p)[^>]*>", Qt::CaseInsensitive ) );
+	// body.remove( QRegExp( "<(?:div|span|tr|td|br|body|html|tt|a|strong|p)[^>]*>", Qt::CaseInsensitive ) );
 
 	m_data->aboutToShow = true;
 
 	if (m_data->_ShowAdditionals == ShowInMenu) {
-		//add hidden actions in menu
-		for (int i = 0; i < m_data->hidden.size(); ++i)
-		{
-			//m_data->hidden[i].parent
-this->removeAction(m_data->hidden[i].action);
+		// add hidden actions in menu
+		for (int i = 0; i < m_data->hidden.size(); ++i) {
+			// m_data->hidden[i].parent
+			this->removeAction(m_data->hidden[i].action);
 			m_data->additional->addAction(m_data->hidden[i].action);
 		}
 	}
 	else {
-		//copy parameters
+		// copy parameters
 		m_data->additionalToolBar->setIconSize(iconSize());
 		m_data->additionalToolBar->setToolButtonStyle(toolButtonStyle());
 
-		//add hidden actions in tool bar
-		for (int i = 0; i < m_data->hidden.size(); ++i)
-		{
-			//m_data->hidden[i].parent
-this->removeAction(m_data->hidden[i].action);
+		// add hidden actions in tool bar
+		for (int i = 0; i < m_data->hidden.size(); ++i) {
+			// m_data->hidden[i].parent
+			this->removeAction(m_data->hidden[i].action);
 			m_data->additionalToolBar->addAction(m_data->hidden[i].action);
 		}
 
-		//resize to avoid showing the bottom-arrow span button
-		//m_data->additionalToolBar->resize(m_data->additionalToolBar->size() + QSize(10, 0));
+		// resize to avoid showing the bottom-arrow span button
+		// m_data->additionalToolBar->resize(m_data->additionalToolBar->size() + QSize(10, 0));
 
 		int w = m_data->additionalToolBar->sizeHint().width();
 		if (w > this->width()) {
-			//align to the left
+			// align to the left
 			m_data->additionalToolBar->move(this->mapToGlobal(QPoint(0, height())));
 		}
 		else {
-			//align to the right
+			// align to the right
 			m_data->additionalToolBar->move(this->mapToGlobal(QPoint(width() - w, height())));
 		}
-		//show in event loop
+		// show in event loop
 		QMetaObject::invokeMethod(m_data->additionalToolBar, "show", Qt::QueuedConnection);
 	}
 
@@ -2250,25 +2188,25 @@ void VipToolBar::aboutToHide()
 {
 
 	if (m_data->_ShowAdditionals == ShowInMenu) {
-		//transfer back
+		// transfer back
 		transferActions(m_data->additional, this, m_data->hidden);
 	}
 	else if (sender() != m_data->additional) {
-		//transfer back
+		// transfer back
 		transferActions(m_data->additionalToolBar, this, m_data->hidden);
 	}
 }
 
-QToolButton *VipToolBar::showButton() const
+QToolButton* VipToolBar::showButton() const
 {
 	return &m_data->showAdditional;
 }
 
-QMenu * VipToolBar::showAdditionalMenu() const
+QMenu* VipToolBar::showAdditionalMenu() const
 {
 	return m_data->additional;
 }
-QToolBar * VipToolBar::showAdditionalToolBar() const
+QToolBar* VipToolBar::showAdditionalToolBar() const
 {
 	return m_data->additionalToolBar;
 }
@@ -2287,7 +2225,7 @@ void VipToolBar::setShowAdditionals(ShowAdditionals sh)
 			m_data->additional->setStyleSheet("");
 		}
 		else {
-			//transferActions(m_data->additional, m_data->additionalToolBar);
+			// transferActions(m_data->additional, m_data->additionalToolBar);
 			m_data->additional->setStyleSheet("background: transparent; border: 0px;");
 		}
 	}
@@ -2297,8 +2235,7 @@ void VipToolBar::delayCompute()
 {
 	if (!m_data->customBehaviorEnabled)
 		return;
-	if (m_data->dirtyCompute)
-	{
+	if (m_data->dirtyCompute) {
 		m_data->dirtyCompute = false;
 		QMetaObject::invokeMethod(this, "compute", Qt::QueuedConnection);
 	}
@@ -2306,8 +2243,7 @@ void VipToolBar::delayCompute()
 
 void VipToolBar::setCustomBehaviorEnabled(bool enable)
 {
-	if (enable != m_data->customBehaviorEnabled)
-	{
+	if (enable != m_data->customBehaviorEnabled) {
 		m_data->customBehaviorEnabled = enable;
 		if (enable) {
 			compute();
@@ -2334,7 +2270,7 @@ void VipToolBar::compute()
 		m_data->showAdditional.show();
 		m_data->showAdditional.move(this->width() - m_data->showAdditional.width(), 0);
 		m_data->showAdditional.resize(m_data->showAdditional.width(), this->height());
-		//m_data->showAdditional.raise();
+		// m_data->showAdditional.raise();
 	}
 	else
 		m_data->showAdditional.hide();
@@ -2342,84 +2278,76 @@ void VipToolBar::compute()
 	m_data->dirtyCompute = true;
 }
 
-void VipToolBar::showEvent(QShowEvent * evt)
+void VipToolBar::showEvent(QShowEvent* evt)
 {
 	QToolBar::showEvent(evt);
 	compute();
 }
 
-void VipToolBar::resizeEvent(QResizeEvent * evt)
+void VipToolBar::resizeEvent(QResizeEvent* evt)
 {
 	QToolBar::resizeEvent(evt);
 	compute();
 }
 
-void VipToolBar::actionEvent(QActionEvent *evt)
+void VipToolBar::actionEvent(QActionEvent* evt)
 {
 	QToolBar::actionEvent(evt);
-	//We need to trigger a compute() each time the user add/remove an action to/from the toolbar.
-	//However we DON'T want to trigger while it is creating the additional menu/toolbar in aboutToShow().
+	// We need to trigger a compute() each time the user add/remove an action to/from the toolbar.
+	// However we DON'T want to trigger while it is creating the additional menu/toolbar in aboutToShow().
 
 	if (!m_data->aboutToShow) {
 		delayCompute();
 	}
 }
 
-
-
-
-
-
-
-
-
-
-VipValueToTimeButton::VipValueToTimeButton(QWidget * parent)
-	:QToolButton(parent), m_auto_unit(true)
+VipValueToTimeButton::VipValueToTimeButton(QWidget* parent)
+  : QToolButton(parent)
+  , m_auto_unit(true)
 {
-	QMenu * menu = new QMenu();
-	QAction * ns = menu->addAction("Nanoseconds");
+	QMenu* menu = new QMenu();
+	QAction* ns = menu->addAction("Nanoseconds");
 	ns->setProperty("unit", QString("ns"));
 	ns->setCheckable(true);
-	QAction * nsse = menu->addAction("Nanoseconds since Epoch");
+	QAction* nsse = menu->addAction("Nanoseconds since Epoch");
 	nsse->setProperty("unit", QString("ns"));
 	nsse->setCheckable(true);
-	QAction * micro = menu->addAction("Microseconds");
+	QAction* micro = menu->addAction("Microseconds");
 	micro->setProperty("unit", QString("us"));
 	micro->setCheckable(true);
-	QAction * microse = menu->addAction("Microseconds since Epoch");
+	QAction* microse = menu->addAction("Microseconds since Epoch");
 	microse->setProperty("unit", QString("us"));
 	microse->setCheckable(true);
-	QAction * milli = menu->addAction("Milliseconds");
+	QAction* milli = menu->addAction("Milliseconds");
 	milli->setProperty("unit", QString("ms"));
 	milli->setCheckable(true);
-	QAction * millise = menu->addAction("Milliseconds since Epoch");
+	QAction* millise = menu->addAction("Milliseconds since Epoch");
 	millise->setProperty("unit", QString("ms"));
 	millise->setCheckable(true);
-	QAction * se = menu->addAction("Seconds");
+	QAction* se = menu->addAction("Seconds");
 	se->setProperty("unit", QString("s"));
 	se->setCheckable(true);
-	QAction * sese = menu->addAction("Seconds since Epoch");
+	QAction* sese = menu->addAction("Seconds since Epoch");
 	sese->setProperty("unit", QString("s"));
 	sese->setCheckable(true);
 	menu->addSeparator();
-	QAction * auto_unit = menu->addAction("Automatic unit");
+	QAction* auto_unit = menu->addAction("Automatic unit");
 	auto_unit->setProperty("unit", QString("auto"));
 
 	menu->addSeparator();
-	QAction * integer = menu->addAction("Display time as integer");
+	QAction* integer = menu->addAction("Display time as integer");
 	integer->setProperty("unit", QString("integer"));
 	integer->setCheckable(true);
-	QAction * datatime = menu->addAction("Display absolute date time");
+	QAction* datatime = menu->addAction("Display absolute date time");
 	datatime->setProperty("unit", QString("datetime"));
 	datatime->setCheckable(true);
 
 	menu->addSeparator();
-	QAction * offset = menu->addAction("Display time offset from left date");
+	QAction* offset = menu->addAction("Display time offset from left date");
 	offset->setProperty("unit", QString("offset"));
 	offset->setCheckable(true);
 	offset->setChecked(VipGuiDisplayParamaters::instance()->displayTimeOffset());
-	//this option has no effect for now, hide it
+	// this option has no effect for now, hide it
 	offset->setVisible(false);
 
 	m_time.fixedStartValue = !VipGuiDisplayParamaters::instance()->displayTimeOffset();
@@ -2432,7 +2360,7 @@ VipValueToTimeButton::VipValueToTimeButton(QWidget * parent)
 	connect(this, SIGNAL(triggered(QAction*)), this, SLOT(timeUnitTriggered(QAction*)));
 }
 
-QAction * VipValueToTimeButton::findAction(const QString & unit_name) const
+QAction* VipValueToTimeButton::findAction(const QString& unit_name) const
 {
 	QList<QAction*> acts = menu()->actions();
 	for (int i = 0; i < acts.size(); ++i)
@@ -2441,22 +2369,22 @@ QAction * VipValueToTimeButton::findAction(const QString & unit_name) const
 	return nullptr;
 }
 
-const VipValueToTime & VipValueToTimeButton::currentValueToTime() const
+const VipValueToTime& VipValueToTimeButton::currentValueToTime() const
 {
 	return m_time;
 }
 
 void VipValueToTimeButton::setValueToTime(VipValueToTime::TimeType type)
 {
-	QAction * action = this->menu()->actions()[type];
+	QAction* action = this->menu()->actions()[type];
 	action->setChecked(true);
 	timeUnitTriggered(action);
 }
 
 void VipValueToTimeButton::setDisplayType(VipValueToTime::DisplayType type)
 {
-	QAction * integer = findAction("integer");
-	QAction * datetime = findAction("datetime");
+	QAction* integer = findAction("integer");
+	QAction* datetime = findAction("datetime");
 	if (type == VipValueToTime::Double) {
 		integer->setChecked(false);
 		datetime->setChecked(false);
@@ -2481,7 +2409,7 @@ VipValueToTime::DisplayType VipValueToTimeButton::displayType() const
 
 void VipValueToTimeButton::setDisplayTimeOffset(bool enable)
 {
-	QAction * offset = findAction("offset");
+	QAction* offset = findAction("offset");
 	offset->setChecked(enable);
 	timeUnitTriggered(offset);
 }
@@ -2502,26 +2430,25 @@ void VipValueToTimeButton::setAutomaticUnit(bool auto_unit)
 
 void VipValueToTimeButton::timeUnitTriggered(QAction* action)
 {
-	if (!action || action->property("unit").toString() == "integer" || action->property("unit").toString() == "datetime")
-	{
-		//trigger display integer or date time
-		QAction * integer = findAction("integer");
-		QAction * datetime = findAction("datetime");
+	if (!action || action->property("unit").toString() == "integer" || action->property("unit").toString() == "datetime") {
+		// trigger display integer or date time
+		QAction* integer = findAction("integer");
+		QAction* datetime = findAction("datetime");
 
 		if (action && action == datetime && datetime->isChecked()) {
-			//uncheck integer
+			// uncheck integer
 			integer->blockSignals(true);
 			integer->setChecked(false);
 			integer->blockSignals(false);
 		}
 		else if (action && action == integer && integer->isChecked()) {
-			//uncheck datetime
+			// uncheck datetime
 			datetime->blockSignals(true);
 			datetime->setChecked(false);
 			datetime->blockSignals(false);
 		}
 		else if (!action) {
-			//uncheck all
+			// uncheck all
 			datetime->blockSignals(true);
 			datetime->setChecked(false);
 			datetime->blockSignals(false);
@@ -2537,32 +2464,26 @@ void VipValueToTimeButton::timeUnitTriggered(QAction* action)
 		else
 			m_time.displayType = VipValueToTime::AbsoluteDateTime;
 	}
-	else if (action && action->property("unit").toString() == "offset")
-	{
+	else if (action && action->property("unit").toString() == "offset") {
 		m_time.fixedStartValue = !action->isChecked();
 	}
-	else
-	{
-		//trigger a time unit or automatic unit
+	else {
+		// trigger a time unit or automatic unit
 		QString action_text = action->property("unit").toString();
-		if (action_text != "auto")
-		{
+		if (action_text != "auto") {
 			m_auto_unit = false;
 			QList<QAction*> acts = this->menu()->actions();
 			m_time.type = (VipValueToTime::TimeType)acts.indexOf(action);
 			this->setText(action_text + " ");
 
-			//uncheck the time actions
-			for (int i = 0; i < 8; ++i)
-			{
-				if (acts[i] != action)
-				{
+			// uncheck the time actions
+			for (int i = 0; i < 8; ++i) {
+				if (acts[i] != action) {
 					acts[i]->blockSignals(true);
 					acts[i]->setChecked(false);
 					acts[i]->blockSignals(false);
 				}
 			}
-
 		}
 		else
 			m_auto_unit = true;
@@ -2571,22 +2492,19 @@ void VipValueToTimeButton::timeUnitTriggered(QAction* action)
 	Q_EMIT timeUnitChanged();
 }
 
-
-
-
 class VipCloseToolBar::PrivateData
 {
 public:
 	QPointer<QWidget> widget;
-	QAction * minimize;
-	QAction * maximize;
-	QAction * close;
+	QAction* minimize;
+	QAction* maximize;
+	QAction* close;
 	QPoint pt;
 	QPoint previous_pos;
 };
 
-VipCloseToolBar::VipCloseToolBar(QWidget  * widget, QWidget * parent)
-	:QToolBar(parent)
+VipCloseToolBar::VipCloseToolBar(QWidget* widget, QWidget* parent)
+  : QToolBar(parent)
 {
 	m_data = new PrivateData();
 
@@ -2610,23 +2528,21 @@ VipCloseToolBar::~VipCloseToolBar()
 
 void VipCloseToolBar::setWidget(QWidget* widget)
 {
-	if (QWidget * w = m_data->widget)
-	{
+	if (QWidget* w = m_data->widget) {
 		w->removeEventFilter(this);
 		disconnect(m_data->minimize, SIGNAL(triggered(bool)), w, SLOT(showMinimized()));
 		disconnect(m_data->close, SIGNAL(triggered(bool)), w, SLOT(close()));
 	}
 
 	m_data->widget = widget;
-	if (widget)
-	{
+	if (widget) {
 		widget->installEventFilter(this);
 		connect(m_data->minimize, SIGNAL(triggered(bool)), widget, SLOT(showMinimized()));
 		connect(m_data->close, SIGNAL(triggered(bool)), widget, SLOT(close()));
 	}
 }
 
-QWidget * VipCloseToolBar::widget() const
+QWidget* VipCloseToolBar::widget() const
 {
 	return m_data->widget;
 }
@@ -2644,18 +2560,15 @@ void VipCloseToolBar::maximizeOrShowNormal()
 
 bool VipCloseToolBar::eventFilter(QObject*, QEvent* evt)
 {
-	if (evt->type() == QEvent::WindowStateChange)
-	{
+	if (evt->type() == QEvent::WindowStateChange) {
 		if (!widget())
 			return false;
 
-		if (widget()->isMaximized())
-		{
+		if (widget()->isMaximized()) {
 			m_data->maximize->setText("Restore");
 			m_data->maximize->setIcon(vipIcon("restore.png"));
 		}
-		else
-		{
+		else {
 			m_data->maximize->setText("Maximize");
 			m_data->maximize->setIcon(vipIcon("maximize.png"));
 		}
@@ -2665,12 +2578,12 @@ bool VipCloseToolBar::eventFilter(QObject*, QEvent* evt)
 
 #include <QMouseEvent>
 
-void VipCloseToolBar::mouseDoubleClickEvent(QMouseEvent *)
+void VipCloseToolBar::mouseDoubleClickEvent(QMouseEvent*)
 {
 	VipCloseToolBar::maximizeOrShowNormal();
 }
 
-void VipCloseToolBar::mousePressEvent(QMouseEvent * evt)
+void VipCloseToolBar::mousePressEvent(QMouseEvent* evt)
 {
 	if (!widget())
 		return;
@@ -2679,47 +2592,50 @@ void VipCloseToolBar::mousePressEvent(QMouseEvent * evt)
 	m_data->previous_pos = widget()->pos();
 }
 
-void VipCloseToolBar::mouseReleaseEvent(QMouseEvent *)
+void VipCloseToolBar::mouseReleaseEvent(QMouseEvent*)
 {
 	m_data->pt = QPoint();
 }
 
-void VipCloseToolBar::mouseMoveEvent(QMouseEvent * evt)
+void VipCloseToolBar::mouseMoveEvent(QMouseEvent* evt)
 {
 	if (!widget())
 		return;
 
-	if (m_data->pt != QPoint())
-	{
+	if (m_data->pt != QPoint()) {
 		QPoint diff = widget()->mapToParent(evt->pos()) - m_data->pt;
 		widget()->move(m_data->previous_pos + diff);
 	}
 }
 
-
 class VipGenericDialog::PrivateData
 {
 public:
-	PrivateData() :ok("Ok"), cancel("Cancel"), apply("Apply") {}
+	PrivateData()
+	  : ok("Ok")
+	  , cancel("Cancel")
+	  , apply("Apply")
+	{
+	}
 	QPushButton ok;
 	QPushButton cancel;
 	QPushButton apply;
 };
 
-VipGenericDialog::VipGenericDialog(QWidget * panel, const QString & title, QWidget * parent)
-	:QDialog(//parent ? parent : vipGetMainWindow()
-parent)
+VipGenericDialog::VipGenericDialog(QWidget* panel, const QString& title, QWidget* parent)
+  : QDialog( // parent ? parent : vipGetMainWindow()
+      parent)
 {
 	m_data = new PrivateData();
 	hide();
-	//centerWidget(this);
+	// centerWidget(this);
 	setWindowTitle(title);
 
 	m_data->apply.hide();
 	connect(&m_data->ok, SIGNAL(clicked(bool)), this, SLOT(accept()));
 	connect(&m_data->cancel, SIGNAL(clicked(bool)), this, SLOT(reject()));
 
-	QHBoxLayout * buttonLayout = new QHBoxLayout();
+	QHBoxLayout* buttonLayout = new QHBoxLayout();
 	buttonLayout->setSpacing(0);
 	buttonLayout->addStretch(1);
 	buttonLayout->addWidget(&m_data->ok);
@@ -2728,13 +2644,13 @@ parent)
 	buttonLayout->addWidget(&m_data->cancel);
 	buttonLayout->addStretch(1);
 
-	QVBoxLayout * globalLayout = new QVBoxLayout();
+	QVBoxLayout* globalLayout = new QVBoxLayout();
 	globalLayout->setSpacing(0);
 	globalLayout->addWidget(panel);
 	globalLayout->addLayout(buttonLayout);
 	setLayout(globalLayout);
 
-	//this->setWindowFlags(Qt::Tool|Qt::WindowStaysOnTopHint|Qt::CustomizeWindowHint|Qt::WindowCloseButtonHint);
+	// this->setWindowFlags(Qt::Tool|Qt::WindowStaysOnTopHint|Qt::CustomizeWindowHint|Qt::WindowCloseButtonHint);
 };
 
 VipGenericDialog::~VipGenericDialog()
@@ -2742,61 +2658,61 @@ VipGenericDialog::~VipGenericDialog()
 	delete m_data;
 }
 
-QPushButton * VipGenericDialog::applyButton()
+QPushButton* VipGenericDialog::applyButton()
 {
 	return &m_data->apply;
 }
 
-
-
-
-
-#include <QMouseEvent>
 #include <QDrag>
+#include <QMouseEvent>
 #include <QSizeGrip>
 #include <QWidgetAction>
 
 class VipDragMenu::PrivateData
 {
 public:
-	PrivateData() :widget(nullptr) {}
+	PrivateData()
+	  : widget(nullptr)
+	{
+	}
 	QPoint pos;
 	QPointer<QWidget> widget;
-	QSizeGrip *grip;
-	QMap<QMimeData*, QPointer<QDrag> > drag;
+	QSizeGrip* grip;
+	QMap<QMimeData*, QPointer<QDrag>> drag;
 };
 
-VipDragMenu::VipDragMenu(QWidget * parent)
-	:QMenu(parent) {
+VipDragMenu::VipDragMenu(QWidget* parent)
+  : QMenu(parent)
+{
 	m_data = new PrivateData();
 	m_data->grip = new QSizeGrip(this);
 	m_data->grip->setVisible(false);
 }
 
-VipDragMenu::VipDragMenu(const QString & title, QWidget * parent)
-	:QMenu(title, parent) {
+VipDragMenu::VipDragMenu(const QString& title, QWidget* parent)
+  : QMenu(title, parent)
+{
 	m_data = new PrivateData();
 	m_data->grip = new QSizeGrip(this);
 }
 
 VipDragMenu::~VipDragMenu()
 {
-	for (QMap<QMimeData*, QPointer<QDrag > >::iterator it = m_data->drag.begin(); it != m_data->drag.end(); ++it)
+	for (QMap<QMimeData*, QPointer<QDrag>>::iterator it = m_data->drag.begin(); it != m_data->drag.end(); ++it)
 		if (it.value())
 			delete it.value();
 
 	delete m_data;
 }
 
-void VipDragMenu::setWidget(QWidget * w)
+void VipDragMenu::setWidget(QWidget* w)
 {
 	if (m_data->widget)
 		m_data->widget->removeEventFilter(this);
 
 	clear();
-	if (w)
-	{
-		QWidgetAction * action = new QWidgetAction(this);
+	if (w) {
+		QWidgetAction* action = new QWidgetAction(this);
 		action->setDefaultWidget(w);
 		addAction(action);
 
@@ -2808,7 +2724,7 @@ void VipDragMenu::setWidget(QWidget * w)
 	resize(w->size() + QSize(6, 6));
 }
 
-QWidget * VipDragMenu::widget() const
+QWidget* VipDragMenu::widget() const
 {
 	return m_data->widget;
 }
@@ -2823,44 +2739,41 @@ bool VipDragMenu::isResizable() const
 	return m_data->grip->isVisible();
 }
 
-void VipDragMenu::mousePressEvent(QMouseEvent * evt)
+void VipDragMenu::mousePressEvent(QMouseEvent* evt)
 {
 	m_data->pos = evt->pos();
 	QMenu::mousePressEvent(evt);
 }
 
-void VipDragMenu::mouseReleaseEvent(QMouseEvent * evt)
+void VipDragMenu::mouseReleaseEvent(QMouseEvent* evt)
 {
 	m_data->pos = QPoint(0, 0);
 	QMenu::mouseReleaseEvent(evt);
 }
 
-static void execDrag(QMimeData * m)
+static void execDrag(QMimeData* m)
 {
 	QDrag d(vipGetMainWindow());
 	d.setMimeData(m);
-	//Qt::DropAction drop =
- d.exec();
-	//QObject* w = d.target();
+	// Qt::DropAction drop =
+	d.exec();
+	// QObject* w = d.target();
 	QCoreApplication::removePostedEvents(&d, QEvent::DeferredDelete);
 }
 
-void VipDragMenu::mouseMoveEvent(QMouseEvent * evt)
+void VipDragMenu::mouseMoveEvent(QMouseEvent* evt)
 {
 	QPoint pt = evt->pos();
-	if ((pt - m_data->pos).manhattanLength() > 5 && m_data->pos != QPoint(0, 0))
-	{
-		//start dragging
-		QAction * action = this->actionAt(pt);
-		if (!action)
-		{
+	if ((pt - m_data->pos).manhattanLength() > 5 && m_data->pos != QPoint(0, 0)) {
+		// start dragging
+		QAction* action = this->actionAt(pt);
+		if (!action) {
 			m_data->pos = QPoint(0, 0);
 			return;
 		}
 
-		QMimeData * mime = action->property("QMimeData").value<QMimeData*>();
-		if (!mime )
-		{
+		QMimeData* mime = action->property("QMimeData").value<QMimeData*>();
+		if (!mime) {
 			m_data->pos = QPoint(0, 0);
 			return;
 		}
@@ -2868,26 +2781,23 @@ void VipDragMenu::mouseMoveEvent(QMouseEvent * evt)
 		if (m_data->drag.find(mime) == m_data->drag.end())
 			m_data->drag[mime] = new QDrag(this);
 
-		//this->close();
-		QDrag * drag = m_data->drag[mime];
+		// this->close();
+		QDrag* drag = m_data->drag[mime];
 		drag->setMimeData(mime);
 		drag->exec();
 		QCoreApplication::removePostedEvents(drag, QEvent::DeferredDelete);
-		//QCoreApplication::processEvents();
-		//QMetaObject::invokeMethod(QCoreApplication::instance(), std::bind(execDrag, mime), Qt::QueuedConnection);
+		// QCoreApplication::processEvents();
+		// QMetaObject::invokeMethod(QCoreApplication::instance(), std::bind(execDrag, mime), Qt::QueuedConnection);
 		m_data->pos = QPoint(0, 0);
-
 	}
-	else
-	{
+	else {
 		QMenu::mouseMoveEvent(evt);
 	}
 }
 
-void VipDragMenu::resizeEvent(QResizeEvent *)
+void VipDragMenu::resizeEvent(QResizeEvent*)
 {
-	if (m_data->widget)
-	{
+	if (m_data->widget) {
 		m_data->widget->removeEventFilter(this);
 		m_data->widget->resize(this->size() - QSize(6, 6));
 		m_data->widget->installEventFilter(this);
@@ -2898,28 +2808,20 @@ void VipDragMenu::resizeEvent(QResizeEvent *)
 	m_data->grip->raise();
 }
 
-bool VipDragMenu::eventFilter(QObject *, QEvent * evt)
+bool VipDragMenu::eventFilter(QObject*, QEvent* evt)
 {
-	if (evt->type() == QEvent::Resize)
-	{
+	if (evt->type() == QEvent::Resize) {
 		if (m_data->widget)
 			this->resize(m_data->widget->size() + QSize(6, 6));
 	}
 	return false;
 }
 
-
-
-
-
-
-
-
 class VipShowWidgetOnHover::PrivateData
 {
 public:
 	QPointer<QWidget> hover;
-	QList<QPointer<QWidget> > hovers;
+	QList<QPointer<QWidget>> hovers;
 	QPointer<QWidget> show;
 	int showDelay;
 	int hideDelay;
@@ -2930,8 +2832,8 @@ public:
 	QTimer timer;
 };
 
-VipShowWidgetOnHover::VipShowWidgetOnHover(QObject * parent)
-	:QObject(parent)
+VipShowWidgetOnHover::VipShowWidgetOnHover(QObject* parent)
+  : QObject(parent)
 {
 	m_data = new PrivateData();
 	m_data->timer.setSingleShot(true);
@@ -2953,7 +2855,7 @@ VipShowWidgetOnHover::~VipShowWidgetOnHover()
 	delete m_data;
 }
 
-void VipShowWidgetOnHover::setHoverWidget(QWidget * hover)
+void VipShowWidgetOnHover::setHoverWidget(QWidget* hover)
 {
 	if (m_data->hover)
 		m_data->hover->removeEventFilter(this);
@@ -2967,12 +2869,12 @@ void VipShowWidgetOnHover::setHoverWidget(QWidget * hover)
 	if (m_data->hover)
 		m_data->hover->installEventFilter(this);
 }
-QWidget * VipShowWidgetOnHover::hoverWidget() const
+QWidget* VipShowWidgetOnHover::hoverWidget() const
 {
 	return m_data->hover;
 }
 
-void VipShowWidgetOnHover::setHoverWidgets(const QList<QWidget*> & hovers)
+void VipShowWidgetOnHover::setHoverWidgets(const QList<QWidget*>& hovers)
 {
 	if (m_data->hover)
 		m_data->hover->removeEventFilter(this);
@@ -2998,7 +2900,7 @@ QList<QWidget*> VipShowWidgetOnHover::hoverWidgets() const
 	return res;
 }
 
-void VipShowWidgetOnHover::setShowWidget(QWidget * show)
+void VipShowWidgetOnHover::setShowWidget(QWidget* show)
 {
 	if (m_data->show)
 		m_data->show->removeEventFilter(this);
@@ -3006,7 +2908,7 @@ void VipShowWidgetOnHover::setShowWidget(QWidget * show)
 	if (m_data->show)
 		m_data->show->installEventFilter(this);
 }
-QWidget * VipShowWidgetOnHover::showWidget() const
+QWidget* VipShowWidgetOnHover::showWidget() const
 {
 	return m_data->show;
 }
@@ -3054,8 +2956,8 @@ void VipShowWidgetOnHover::startShow()
 	if (!m_data->enable)
 		return;
 	QSize hint = m_data->show->sizeHint();
-	//QSize cur = m_data->show->size();
-	//disconnect any possible startHide()
+	// QSize cur = m_data->show->size();
+	// disconnect any possible startHide()
 	m_data->timer.stop();
 	m_data->timer.disconnect();
 	m_data->timer.setInterval(10);
@@ -3078,14 +2980,15 @@ void VipShowWidgetOnHover::startHide()
 	if (!m_data->enable)
 		return;
 	QSize hint = m_data->show->sizeHint();
-	//QSize cur = m_data->show->size();
-	//disconnect any possible startShow()
+	// QSize cur = m_data->show->size();
+	// disconnect any possible startShow()
 	m_data->timer.stop();
 	m_data->timer.disconnect();
 	m_data->timer.setInterval(10);
 	double speed = hint.height() / (double)m_data->showDelay;
 	m_data->currentSize -= (QDateTime::currentMSecsSinceEpoch() - m_data->start) * speed;
-	if (m_data->currentSize < 0) m_data->currentSize = 0;
+	if (m_data->currentSize < 0)
+		m_data->currentSize = 0;
 	int h = m_data->currentSize;
 	m_data->show->setMaximumHeight(h);
 	if (m_data->show->height() > 0) {
@@ -3105,25 +3008,24 @@ void VipShowWidgetOnHover::resetStart()
 	m_data->start = QDateTime::currentMSecsSinceEpoch();
 }
 
-bool VipShowWidgetOnHover::eventFilter(QObject * //watched
-, QEvent * evt)
+bool VipShowWidgetOnHover::eventFilter(QObject* // watched
+				       ,
+				       QEvent* evt)
 {
 	if (!m_data->enable)
 		return false;
 	if ((!m_data->hover && m_data->hovers.isEmpty()) || !m_data->show)
 		return false;
-	if (evt->type() == QEvent::Enter)
-	{
+	if (evt->type() == QEvent::Enter) {
 		m_data->start = QDateTime::currentMSecsSinceEpoch();
 		m_data->currentSize = m_data->show->isVisible() ? m_data->show->height() : 0;
 		startShow();
 	}
-	else if (evt->type() == QEvent::Leave)
-	{
+	else if (evt->type() == QEvent::Leave) {
 		QSize hint = m_data->show->sizeHint();
 		QSize cur = m_data->show->size();
 		if (cur.height() < hint.height()) {
-			//if we leave before fully shown, hide completely
+			// if we leave before fully shown, hide completely
 			m_data->timer.stop();
 			m_data->timer.disconnect();
 			m_data->show->hide();
@@ -3139,16 +3041,13 @@ bool VipShowWidgetOnHover::eventFilter(QObject * //watched
 	return false;
 }
 
-
-
-
-VipFunctionDispatcher<1> & vipFDObjectEditor()
+VipFunctionDispatcher<1>& vipFDObjectEditor()
 {
 	static VipFunctionDispatcher<1> disp;
 	return disp;
 }
 
-QWidget * vipObjectEditor(const QVariant & obj)
+QWidget* vipObjectEditor(const QVariant& obj)
 {
 	VipFunctionDispatcher<1>::function_list_type lst = vipFDObjectEditor().match(obj);
 	if (lst.size())
@@ -3156,7 +3055,7 @@ QWidget * vipObjectEditor(const QVariant & obj)
 	return nullptr;
 }
 
-bool vipHasObjectEditor(const QVariant & obj)
+bool vipHasObjectEditor(const QVariant& obj)
 {
 	bool res = vipFDObjectEditor().match(obj).size() > 0;
 	return res;

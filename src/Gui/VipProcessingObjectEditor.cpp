@@ -1,3 +1,34 @@
+/**
+ * BSD 3-Clause License
+ *
+ * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice, this
+ *    list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of the copyright holder nor the names of its
+ *    contributors may be used to endorse or promote products derived from
+ *    this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
 #include "VipProcessingObjectEditor.h"
 #include "VipDataType.h"
 #include "VipDisplayArea.h"
@@ -9,15 +40,17 @@
 #include "VipPlotItem.h"
 #include "VipProcessingObjectTree.h"
 #include "VipProgress.h"
+#include "VipQuiver.h"
 #include "VipStandardProcessing.h"
 #include "VipStandardWidgets.h"
 #include "VipTextOutput.h"
 #include "VipTimer.h"
 #include "VipXmlArchive.h"
-#include "VipQuiver.h"
 
+#include <QApplication>
 #include <QBoxLayout>
 #include <QCheckBox>
+#include <QGraphicsSceneMouseEvent>
 #include <QGroupBox>
 #include <QKeyEvent>
 #include <QLabel>
@@ -25,8 +58,6 @@
 #include <QPointer>
 #include <QRadioButton>
 #include <QToolButton>
-#include <QGraphicsSceneMouseEvent>
-#include <QApplication>
 #include <qtimer.h>
 
 #define __VIP_MAX_DISPLAYED_EDITORS 5
@@ -1094,7 +1125,7 @@ void VipProcessingListEditor::selectObject(VipProcessingObject* obj)
 	for (int i = 0; i < m_data->list->count(); ++i) {
 		ProcessingListWidgetItem* item = static_cast<ProcessingListWidgetItem*>(m_data->list->item(i));
 		if (item->processing == obj) {
-			//m_data->list->setItemSelected(item, true);
+			// m_data->list->setItemSelected(item, true);
 			item->setSelected(true);
 			break;
 		}
@@ -3304,8 +3335,6 @@ VipSymbol& PlotWarpingPoints::symbol() const
 	return const_cast<VipSymbol&>(m_data->symbol);
 }
 
-
-
 class VipWarpingEditor::PrivateData
 {
 public:
@@ -4476,7 +4505,7 @@ QString VipProcessingLeafSelector::title(VipProcessingObject* obj, QString& tool
 	QString res;
 
 	if (VipDisplayObject* disp = qobject_cast<VipDisplayObject*>(obj)) {
-		if (VipAbstractPlayer* pl = vipFindParent<VipAbstractPlayer>( disp->widget())) {
+		if (VipAbstractPlayer* pl = vipFindParent<VipAbstractPlayer>(disp->widget())) {
 			tip_lst << "<b>Player</b>: " + QString::number(pl->parentId()) + " " + pl->QWidget::windowTitle();
 		}
 		res = disp->title();
@@ -5140,7 +5169,7 @@ void VipProcessingEditorToolWidget::setProcessingObject(VipProcessingObject* obj
 		title = object->inputAt(0)->probe().name();
 	if (title.isEmpty()) {
 		if (VipDisplayObject* disp = qobject_cast<VipDisplayObject*>(object))
-			if (VipAbstractPlayer* pl =  vipFindParent<VipAbstractPlayer>(disp->widget()))
+			if (VipAbstractPlayer* pl = vipFindParent<VipAbstractPlayer>(disp->widget()))
 				title = QString::number(pl->parentId()) + " " + pl->QWidget::windowTitle();
 	}
 	if (title.isEmpty())

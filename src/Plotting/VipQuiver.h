@@ -1,12 +1,43 @@
-#ifndef QUIVER_H
-#define QUIVER_H
+/**
+ * BSD 3-Clause License
+ *
+ * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice, this
+ *    list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of the copyright holder nor the names of its
+ *    contributors may be used to endorse or promote products derived from
+ *    this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
 
-#include <QVector2D>
-#include <QPolygonF>
+#ifndef VIP_QUIVER_H
+#define VIP_QUIVER_H
+
+#include <QBrush>
 #include <QLineF>
 #include <QMetaType>
 #include <QPen>
-#include <QBrush>
+#include <QPolygonF>
+#include <QVector2D>
 
 #include "VipGlobals.h"
 
@@ -21,14 +52,14 @@ class VIP_PLOTTING_EXPORT VipQuiver
 
 public:
 	/// @brief Construct from origin and vector
-	VipQuiver(const QPointF & origin = QPointF(), const QVector2D vector = QVector2D());
+	VipQuiver(const QPointF& origin = QPointF(), const QVector2D vector = QVector2D());
 	/// @brief Construct from origin and end points
-	VipQuiver(const QPointF & p1, const QPointF & p2);
+	VipQuiver(const QPointF& p1, const QPointF& p2);
 	/// @brief Construct from line
-	VipQuiver(const QLineF & line);
+	VipQuiver(const QLineF& line);
 
-	const QPointF & origin() const;
-	const QVector2D & vector() const;
+	const QPointF& origin() const;
+	const QVector2D& vector() const;
 	QLineF line() const;
 	QPointF p1() const;
 	QPointF p2() const;
@@ -46,14 +77,13 @@ public:
 	/// @param lengths array of 2 lengths for the origin and destination symbols (if any)
 	/// @param style combination of VipQuiverPath::QuiverStyle
 	/// @return Actual line size taking into account the drawn symbols
-	QLineF draw(QPainter* painter, const QPen * extremityPen, const QBrush * extremityBrush,  const double * angles, const double * lengths, int style = 0);
+	QLineF draw(QPainter* painter, const QPen* extremityPen, const QBrush* extremityBrush, const double* angles, const double* lengths, int style = 0);
 };
 
 /// @brief Class used to draw a polyline starting/ending with a symbol: square, circle or arrow
 class VIP_PLOTTING_EXPORT VipQuiverPath
 {
 public:
-
 	/// @brief Extremity (start/end)
 	enum Extremity
 	{
@@ -76,42 +106,41 @@ public:
 
 	VipQuiverPath();
 
-	void setPen(const QPen & );
-	const QPen & pen() const;
+	void setPen(const QPen&);
+	const QPen& pen() const;
 
-	void setExtremityPen(Extremity, const QPen & );
-	const QPen & extremetyPen(Extremity) const;
+	void setExtremityPen(Extremity, const QPen&);
+	const QPen& extremetyPen(Extremity) const;
 
-	void setExtremityBrush(Extremity, const QBrush & );
-	const QBrush & extremetyBrush(Extremity) const;
+	void setExtremityBrush(Extremity, const QBrush&);
+	const QBrush& extremetyBrush(Extremity) const;
 
 	/// @brief Set the color off all pen/brush used
-	void setColor(const QColor &);
+	void setColor(const QColor&);
 
-	void setStyle(const QuiverStyles & );
+	void setStyle(const QuiverStyles&);
 	QuiverStyles style() const;
 
 	void setAngle(Extremity, double);
 	double angle(Extremity) const;
 
-	void setLength(Extremity ,double);
-	double length(Extremity ) const;
+	void setLength(Extremity, double);
+	double length(Extremity) const;
 
 	void setVisible(bool);
 	bool isVisible() const;
 
 	/// @brief Draw a line using this VipQuiverPath parameters
 	/// @return additional start and end length due to drawn symbols
-	QPair<double,double> draw(QPainter * , const QLineF& ) const;
+	QPair<double, double> draw(QPainter*, const QLineF&) const;
 	/// @brief Draw a polyline using this VipQuiverPath parameters
 	/// @return additional start and end length due to drawn symbols
-	QPair<double,double> draw(QPainter * , const QPolygonF& ) const;
+	QPair<double, double> draw(QPainter*, const QPolygonF&) const;
 	/// @brief Draw a polyline using this VipQuiverPath parameters
 	/// @return additional start and end length due to drawn symbols
-	QPair<double,double> draw(QPainter * , const QPointF*, int ) const;
+	QPair<double, double> draw(QPainter*, const QPointF*, int) const;
 
 private:
-
 	QBrush d_extremityBrush[2];
 	QPen d_extremityPen[2];
 	QPen d_pathPen;
@@ -130,6 +159,6 @@ VIP_PLOTTING_EXPORT QDataStream& operator<<(QDataStream& str, const VipQuiverPat
 VIP_PLOTTING_EXPORT QDataStream& operator>>(QDataStream& str, VipQuiverPath& path);
 
 /// @}
-//end Plotting
+// end Plotting
 
 #endif

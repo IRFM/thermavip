@@ -1,54 +1,84 @@
-#include <float.h>
-#include <condition_variable>
-#include <chrono>
+/**
+ * BSD 3-Clause License
+ *
+ * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice, this
+ *    list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of the copyright holder nor the names of its
+ *    contributors may be used to endorse or promote products derived from
+ *    this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
 
-//Qt includes
+#include <chrono>
+#include <condition_variable>
+#include <float.h>
+
+// Qt includes
+#include <QApplication>
+#include <QCoreApplication>
+#include <QGraphicsScene>
 #include <QGraphicsSceneMouseEvent>
 #include <QGraphicsSceneWheelEvent>
-#include <QGraphicsScene>
+#include <QMimeData>
 #include <QMouseEvent>
-#include <QWheelEvent>
-#include <QCoreApplication>
-#include <QScrollBar>
+#include <QOpenGLFramebufferObjectFormat>
+#include <QOpenGLTexture>
 #include <QPicture>
 #include <QPointer>
-#include <QApplication>
+#include <QScrollBar>
 #include <QTimer>
-#include <QMimeData>
-#include <qopenglcontext.h>
-#include <qoffscreensurface.h>
-#include <QOpenGLFramebufferObjectFormat>
-#include <qopenglpaintdevice.h>
-#include <qwindow.h>
+#include <QWheelEvent>
 #include <qdatetime.h>
-#include <QOpenGLTexture>
-#include <qpixmapcache.h>
-#include <qpaintengine.h>
-#include <qopenglfunctions.h>
-#include <qopenglwidget.h>
-#include <qwaitcondition.h>
 #include <qoffscreensurface.h>
+#include <qopenglcontext.h>
+#include <qopenglfunctions.h>
+#include <qopenglpaintdevice.h>
+#include <qopenglwidget.h>
+#include <qpaintengine.h>
+#include <qpixmapcache.h>
+#include <qwaitcondition.h>
+#include <qwindow.h>
 
-//Our includes
+// Our includes
 #include "VipAxisColorMap.h"
-#include "VipPlotGrid.h"
-#include "VipPlotWidget2D.h"
-#include "VipPlotSpectrogram.h"
+#include "VipCorrectedTip.h"
+#include "VipDynGridLayout.h"
+#include "VipLegendItem.h"
+#include "VipLock.h"
+#include "VipLogging.h"
+#include "VipMultiPlotWidget2D.h"
 #include "VipNDArray.h"
 #include "VipNDArrayImage.h"
-#include "VipLegendItem.h"
-#include "VipDynGridLayout.h"
-#include "VipPolarAxis.h"
-#include "VipToolTip.h"
-#include "VipMultiPlotWidget2D.h"
-#include "VipPlotShape.h"
-#include "VipCorrectedTip.h"
 #include "VipPainter.h"
-#include "VipLogging.h"
-#include "VipPlotCurve.h"
-#include "VipLock.h"
-#include "VipSleep.h"
 #include "VipPicture.h"
+#include "VipPlotCurve.h"
+#include "VipPlotGrid.h"
+#include "VipPlotShape.h"
+#include "VipPlotSpectrogram.h"
+#include "VipPlotWidget2D.h"
+#include "VipPolarAxis.h"
+#include "VipSleep.h"
+#include "VipToolTip.h"
 
 /// @internal List of vertically/horizontally aligned areas
 /// This structred is shared by all aligned areas.
@@ -77,7 +107,7 @@ static SharedAlignedArea getSharedAlignedArea(const VipAbstractPlotArea* area, Q
 		return area->property("_vip_hAlignedArea").value<SharedAlignedArea>();
 }
 /// @brief Remove the SharedAlignedArea object from area for given orientation
-static void removeSharedAlignedArea(VipAbstractPlotArea* area, Qt::Orientation align) 
+static void removeSharedAlignedArea(VipAbstractPlotArea* area, Qt::Orientation align)
 {
 	SharedAlignedArea sh = getSharedAlignedArea(area, align);
 	if (sh) {
@@ -136,25 +166,25 @@ static QSet<VipAbstractPlotArea*> sharedAlignedAreas(const VipAbstractPlotArea* 
 	return res;
 }
 
-
-
-
-
-
 struct GraphicsSceneMouseEvent : public QGraphicsSceneMouseEvent
 {
-	QGraphicsItem * item;
+	QGraphicsItem* item;
 	bool enable;
 
-	GraphicsSceneMouseEvent(Type type, QGraphicsItem * item, bool enable)
-		:QGraphicsSceneMouseEvent(type), item(item), enable(enable) {}
+	GraphicsSceneMouseEvent(Type type, QGraphicsItem* item, bool enable)
+	  : QGraphicsSceneMouseEvent(type)
+	  , item(item)
+	  , enable(enable)
+	{
+	}
 
-	~GraphicsSceneMouseEvent() {
-		//if (item)
+	~GraphicsSceneMouseEvent()
+	{
+		// if (item)
 		//	item->setItemAttribute(VipPlotItem::IgnoreMouseEvents, enable);
 	}
 
-	void import(const QGraphicsSceneMouseEvent & src)
+	void import(const QGraphicsSceneMouseEvent& src)
 	{
 		this->setSource(src.source());
 		this->setWidget(src.widget());
@@ -186,26 +216,21 @@ struct GraphicsSceneMouseEvent : public QGraphicsSceneMouseEvent
 	}
 };
 
-
-
 VipPlotAreaFilter::VipPlotAreaFilter()
-	:QGraphicsObject(), d_area(nullptr)
+  : QGraphicsObject()
+  , d_area(nullptr)
 {
 }
 
-VipAbstractPlotArea * VipPlotAreaFilter::area() const
+VipAbstractPlotArea* VipPlotAreaFilter::area() const
 {
 	return d_area;
 }
-
 
 void VipPlotAreaFilter::emitFinished()
 {
 	Q_EMIT finished();
 }
-
-
-
 
 static int registerRubberBandKeyWords()
 {
@@ -219,15 +244,12 @@ static int registerRubberBandKeyWords()
 }
 static int _registerRubberBandKeyWords = registerRubberBandKeyWords();
 
-
-
 class VipRubberBand::PrivateData
 {
 public:
 	PrivateData()
-		:mousePressInside(false)
+	  : mousePressInside(false)
 	{
-		
 	}
 
 	bool mousePressInside;
@@ -243,8 +265,7 @@ public:
 	QPointer<VipPlotAreaFilter> filter;
 };
 
-
-VipRubberBand::VipRubberBand(VipAbstractPlotArea * parent)
+VipRubberBand::VipRubberBand(VipAbstractPlotArea* parent)
   : VipBoxGraphicsWidget(parent)
 {
 	d_data = new PrivateData();
@@ -264,72 +285,67 @@ VipRubberBand::~VipRubberBand()
 	delete d_data;
 }
 
-
-void VipRubberBand::setArea(VipAbstractPlotArea * a)
+void VipRubberBand::setArea(VipAbstractPlotArea* a)
 {
-	if (area())
-	{
+	if (area()) {
 		this->disconnect(area(), SIGNAL(childItemChanged(VipPlotItem*)), this, SLOT(updateGeometry()));
 	}
 
-	if (a)
-	{
+	if (a) {
 		this->setParentItem(a);
 		this->connect(a, SIGNAL(childItemChanged(VipPlotItem*)), this, SLOT(updateGeometry()), Qt::DirectConnection);
 		this->setZValue(a->zValue() + 10000);
 		this->updateGeometry();
 	}
-	else
-	{
+	else {
 		this->setParentItem(nullptr);
 	}
 }
 
-VipAbstractPlotArea * VipRubberBand::area() const
+VipAbstractPlotArea* VipRubberBand::area() const
 {
 	return static_cast<VipAbstractPlotArea*>(parentItem());
 }
 
-void VipRubberBand::setTextStyle(const VipTextStyle & style)
+void VipRubberBand::setTextStyle(const VipTextStyle& style)
 {
 	d_data->textStyle = style;
 }
 
-const VipTextStyle & VipRubberBand::textStyle() const
+const VipTextStyle& VipRubberBand::textStyle() const
 {
 	return d_data->textStyle;
 }
 
-void VipRubberBand::setAdditionalPaintCommands(const QPicture & pic)
+void VipRubberBand::setAdditionalPaintCommands(const QPicture& pic)
 {
 	if (pic.isNull() && d_data->additionalPaintCommands.isNull())
 		return;
-	
+
 	d_data->additionalPaintCommands = pic;
-	//if (area() && VipAbstractPlotArea::renderingThreads() > 1 )
+	// if (area() && VipAbstractPlotArea::renderingThreads() > 1 )
 	//	area()->markNeedUpdate();
-	
+
 	QGraphicsWidget::update();
 }
 
-const QPicture & VipRubberBand::additionalPaintCommands() const
+const QPicture& VipRubberBand::additionalPaintCommands() const
 {
 	return d_data->additionalPaintCommands;
 }
 
-void VipRubberBand::drawRubberBand(QPainter * painter) const
+void VipRubberBand::drawRubberBand(QPainter* painter) const
 {
 	painter->setPen(QPen());
 	if (d_data->start == d_data->end)
 		return;
 
-	//recompute the new start and end coordinates based on the scale coordinates
-	//this is necessary because during the selection, the scale might have changed due to scroll bars
-	//This might happen with VipImageArea2D when scroll bars are enabled and we select an area close to the border
+	// recompute the new start and end coordinates based on the scale coordinates
+	// this is necessary because during the selection, the scale might have changed due to scroll bars
+	// This might happen with VipImageArea2D when scroll bars are enabled and we select an area close to the border
 	QPointF d_start = d_data->start;
 	QPointF d_end = d_data->end;
-	if (d_data->scaleStart != d_data->scaleEnd)
-	{
+	if (d_data->scaleStart != d_data->scaleEnd) {
 		d_start = area()->scaleToPosition(d_data->scaleStart);
 		d_end = area()->scaleToPosition(d_data->scaleEnd);
 	}
@@ -337,22 +353,19 @@ void VipRubberBand::drawRubberBand(QPainter * painter) const
 	QString start_x, end_x, start_y, end_y;
 	QList<VipAbstractScale*> scales = static_cast<VipPlotArea2D*>(area())->scales();
 
-	for (int i = 0; i < scales.size(); ++i)
-	{
-		VipAbstractScale * axis = scales[i];
+	for (int i = 0; i < scales.size(); ++i) {
+		VipAbstractScale* axis = scales[i];
 		if (!axis->isVisible())
 			continue;
 
 		vip_double start = axis->scaleDraw()->value(axis->mapFromItem(area(), d_start));
 		vip_double end = axis->scaleDraw()->value(axis->mapFromItem(area(), d_end));
 
-		//is it a "x" axis?
-		bool is_x_scale = (qobject_cast<VipAxisBase*>(axis) && static_cast<VipAxisBase*>(axis)->orientation() == Qt::Horizontal) ||
-			qobject_cast<VipRadialAxis*>(axis);
+		// is it a "x" axis?
+		bool is_x_scale = (qobject_cast<VipAxisBase*>(axis) && static_cast<VipAxisBase*>(axis)->orientation() == Qt::Horizontal) || qobject_cast<VipRadialAxis*>(axis);
 
-		if (is_x_scale && !axis->title().isEmpty())
-		{
-			//if()
+		if (is_x_scale && !axis->title().isEmpty()) {
+			// if()
 			{
 				start_x += axis->title().text() + ": ";
 				end_x += axis->title().text() + ": ";
@@ -360,9 +373,8 @@ void VipRubberBand::drawRubberBand(QPainter * painter) const
 			start_x += axis->scaleDraw()->label(start, VipScaleDiv::MajorTick).text() + "\n";
 			end_x += axis->scaleDraw()->label(end, VipScaleDiv::MajorTick).text() + "\n";
 		}
-		else if (!is_x_scale && !axis->title().isEmpty())
-		{
-			//if(!axis->title().isEmpty())
+		else if (!is_x_scale && !axis->title().isEmpty()) {
+			// if(!axis->title().isEmpty())
 			{
 				start_y += axis->title().text() + ": ";
 				end_y += axis->title().text() + ": ";
@@ -372,20 +384,20 @@ void VipRubberBand::drawRubberBand(QPainter * painter) const
 		}
 	}
 
-	VipText start_text(start_x +//"\n" +
- start_y, textStyle());
-	VipText end_text(end_x +//"\n" +
- end_y, textStyle());
+	VipText start_text(start_x + //"\n" +
+			     start_y,
+			   textStyle());
+	VipText end_text(end_x + //"\n" +
+			   end_y,
+			 textStyle());
 
 	VipBoxStyle bs = boxStyle();
 
-	if (qobject_cast<VipPlotArea2D*>(area()))
-	{
+	if (qobject_cast<VipPlotArea2D*>(area())) {
 		bs.computeRect(QRectF(d_start, d_end));
 	}
-	else if (qobject_cast<VipPlotPolarArea2D*>(area()))
-	{
-		VipPlotPolarArea2D * parea = static_cast<VipPlotPolarArea2D*>(area());
+	else if (qobject_cast<VipPlotPolarArea2D*>(area())) {
+		VipPlotPolarArea2D* parea = static_cast<VipPlotPolarArea2D*>(area());
 		QPointF center = parea->radialAxis()->scaleDraw()->center();
 		QLineF l1(center, d_start);
 		QLineF l2(center, d_end);
@@ -399,53 +411,45 @@ void VipRubberBand::drawRubberBand(QPainter * painter) const
 	painter->setRenderHints(QPainter::Antialiasing);
 	bs.draw(painter);
 
-
-
 	QPointF start_pos;
 	QPointF end_pos;
 
-	if (d_start.x() < d_end.x())
-	{
+	if (d_start.x() < d_end.x()) {
 		start_pos.setX(d_start.x() - start_text.textSize().width());
 		end_pos.setX(d_end.x());
 	}
-	else
-	{
+	else {
 		start_pos.setX(d_start.x());
 		end_pos.setX(d_end.x() - end_text.textSize().width());
 	}
 
-	if (d_start.y() < d_end.y())
-	{
+	if (d_start.y() < d_end.y()) {
 		start_pos.setY(d_start.y() - start_text.textSize().height());
 		end_pos.setY(d_end.y());
 	}
-	else
-	{
+	else {
 		start_pos.setY(d_start.y());
 		end_pos.setY(d_end.y() - end_text.textSize().height());
 	}
 
 	start_text.draw(painter, start_text.textRect().translated(start_pos));
 	end_text.draw(painter, end_text.textRect().translated(end_pos));
-
 }
 
-void VipRubberBand::setRubberBandStart(const QPointF & start)
+void VipRubberBand::setRubberBandStart(const QPointF& start)
 {
 	d_data->start = d_data->end = start;
 	d_data->scaleStart = d_data->scaleEnd = this->area()->positionToScale(start);
 	update();
 }
 
-void VipRubberBand::setRubberBandEnd(const QPointF & end)
+void VipRubberBand::setRubberBandEnd(const QPointF& end)
 {
 	d_data->end = end;
-	
+
 	d_data->scaleEnd = this->area()->positionToScale(end);
 	update();
 }
-
 
 void VipRubberBand::resetRubberBand()
 {
@@ -454,12 +458,12 @@ void VipRubberBand::resetRubberBand()
 	update();
 }
 
-const QPointF & VipRubberBand::rubberBandStart() const
+const QPointF& VipRubberBand::rubberBandStart() const
 {
 	return d_data->start;
 }
 
-const QPointF & VipRubberBand::rubberBandEnd() const
+const QPointF& VipRubberBand::rubberBandEnd() const
 {
 	return d_data->end;
 }
@@ -479,12 +483,12 @@ QRectF VipRubberBand::rubberBandRect() const
 	return QRectF(d_data->start, d_data->end).normalized();
 }
 
-const VipPoint & VipRubberBand::rubberBandScaleStart() const
+const VipPoint& VipRubberBand::rubberBandScaleStart() const
 {
 	return d_data->scaleStart;
 }
 
-const VipPoint & VipRubberBand::rubberBandScaleEnd() const
+const VipPoint& VipRubberBand::rubberBandScaleEnd() const
 {
 	return d_data->scaleEnd;
 }
@@ -494,16 +498,14 @@ bool VipRubberBand::hasRubberBandArea() const
 	return d_data->start != d_data->end;
 }
 
-void VipRubberBand::installFilter(VipPlotAreaFilter * filter)
+void VipRubberBand::installFilter(VipPlotAreaFilter* filter)
 {
-	if (filter != d_data->filter)
-	{
-		if (VipPlotAreaFilter * f = d_data->filter)
+	if (filter != d_data->filter) {
+		if (VipPlotAreaFilter* f = d_data->filter)
 			f->deleteLater();
 
 		d_data->filter = filter;
-		if (filter)
-		{
+		if (filter) {
 			if (filter->d_area)
 				filter->d_area->removeFilter();
 
@@ -520,15 +522,14 @@ void VipRubberBand::installFilter(VipPlotAreaFilter * filter)
 
 void VipRubberBand::removeFilter()
 {
-	if (d_data->filter)
-	{
+	if (d_data->filter) {
 		d_data->filter->setParent(nullptr);
 		d_data->filter->d_area = nullptr;
 	}
 	d_data->filter = nullptr;
 }
 
-VipPlotAreaFilter * VipRubberBand::filter() const
+VipPlotAreaFilter* VipRubberBand::filter() const
 {
 	return d_data->filter;
 }
@@ -546,7 +547,7 @@ bool VipRubberBand::setItemProperty(const char* name, const QVariant& value, con
 	return VipBoxGraphicsWidget::setItemProperty(name, value, index);
 }
 
-void VipRubberBand::paint(QPainter * painter, const QStyleOptionGraphicsItem * option, QWidget * widget)
+void VipRubberBand::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget)
 {
 	if (!this->paintingEnabled())
 		return;
@@ -554,24 +555,21 @@ void VipRubberBand::paint(QPainter * painter, const QStyleOptionGraphicsItem * o
 
 	painter->save();
 
-	//Be carefull, there might be an offset between the rubber band top left position (0,0 in its own coordinate) and
-	//the VipAbstractPlotArea top left position (boundingRect().topLeft()).
+	// Be carefull, there might be an offset between the rubber band top left position (0,0 in its own coordinate) and
+	// the VipAbstractPlotArea top left position (boundingRect().topLeft()).
 	//
-	//Since the rubber band and the additional painter commands are in VipAbstractPlotArea coordinates, apply this offset to the painter
+	// Since the rubber band and the additional painter commands are in VipAbstractPlotArea coordinates, apply this offset to the painter
 	QTransform tr;
 	QPointF offset = -area()->boundingRect().topLeft();
 	tr.translate(offset.x(), offset.y());
 	painter->setWorldTransform(tr, true);
 
-	if (VipPlotAreaFilter * f = d_data->filter)
-	{
+	if (VipPlotAreaFilter* f = d_data->filter) {
 		f->paint(painter, option, widget);
 	}
-	else
-	{
+	else {
 		drawRubberBand(painter);
-		if (!d_data->additionalPaintCommands.isNull())
-		{
+		if (!d_data->additionalPaintCommands.isNull()) {
 			painter->setRenderHint(QPainter::Antialiasing);
 			painter->drawPicture(0, 0, d_data->additionalPaintCommands);
 		}
@@ -584,44 +582,40 @@ void VipRubberBand::updateGeometry()
 	this->setGeometry(parentItem()->boundingRect());
 }
 
-void	VipRubberBand::keyPressEvent(QKeyEvent * event)
+void VipRubberBand::keyPressEvent(QKeyEvent* event)
 {
-	if (VipPlotAreaFilter * f = d_data->filter)
-	{
+	if (VipPlotAreaFilter* f = d_data->filter) {
 		if (!f->sceneEvent(event))
 			area()->keyPressEvent(event);
 	}
 	else
 		area()->keyPressEvent(event);
 }
-void	VipRubberBand::keyReleaseEvent(QKeyEvent * event)
+void VipRubberBand::keyReleaseEvent(QKeyEvent* event)
 {
-	if (VipPlotAreaFilter * f = d_data->filter)
-	{
+	if (VipPlotAreaFilter* f = d_data->filter) {
 		if (!f->sceneEvent(event))
 			area()->keyReleaseEvent(event);
 	}
 	else
 		area()->keyReleaseEvent(event);
 }
-void	VipRubberBand::mouseDoubleClickEvent(QGraphicsSceneMouseEvent * event)
+void VipRubberBand::mouseDoubleClickEvent(QGraphicsSceneMouseEvent* event)
 {
 	QPointF offset = area()->boundingRect().topLeft();
 	event->setPos(event->pos() + offset);
-	if (VipPlotAreaFilter * f = d_data->filter)
-	{
+	if (VipPlotAreaFilter* f = d_data->filter) {
 		if (!f->sceneEvent(event))
 			area()->mouseDoubleClickEvent(event);
 	}
 	else
 		area()->mouseDoubleClickEvent(event);
 }
-void	VipRubberBand::mouseMoveEvent(QGraphicsSceneMouseEvent * event)
+void VipRubberBand::mouseMoveEvent(QGraphicsSceneMouseEvent* event)
 {
 	QPointF offset = area()->boundingRect().topLeft();
 	event->setPos(event->pos() + offset);
-	if (VipPlotAreaFilter * f = d_data->filter)
-	{
+	if (VipPlotAreaFilter* f = d_data->filter) {
 		if (!f->sceneEvent(event))
 			area()->mouseMoveEvent(event);
 	}
@@ -630,7 +624,7 @@ void	VipRubberBand::mouseMoveEvent(QGraphicsSceneMouseEvent * event)
 }
 
 static bool _inSimulate = false;
-void	VipRubberBand::mousePressEvent(QGraphicsSceneMouseEvent * event)
+void VipRubberBand::mousePressEvent(QGraphicsSceneMouseEvent* event)
 {
 	if (_inSimulate) {
 		_inSimulate = false;
@@ -640,61 +634,55 @@ void	VipRubberBand::mousePressEvent(QGraphicsSceneMouseEvent * event)
 	QPointF offset = area()->boundingRect().topLeft();
 	event->setPos(event->pos() + offset);
 	event->setButtonDownPos(event->button(), event->buttonDownPos(event->button()) + offset);
-	if (VipPlotAreaFilter * f = d_data->filter)
-	{
+	if (VipPlotAreaFilter* f = d_data->filter) {
 		if (!f->sceneEvent(event))
 			area()->mousePressEvent(event);
 	}
 	else
 		area()->mousePressEvent(event);
 }
-void	VipRubberBand::mouseReleaseEvent(QGraphicsSceneMouseEvent * event)
+void VipRubberBand::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
 {
 	QPointF offset = area()->boundingRect().topLeft();
 	event->setPos(event->pos() + offset);
-	if (VipPlotAreaFilter * f = d_data->filter)
-	{
+	if (VipPlotAreaFilter* f = d_data->filter) {
 		if (!f->sceneEvent(event))
 			area()->mouseReleaseEvent(event);
 	}
 	else
 		area()->mouseReleaseEvent((event));
 }
-void	VipRubberBand::hoverEnterEvent(QGraphicsSceneHoverEvent * event)
+void VipRubberBand::hoverEnterEvent(QGraphicsSceneHoverEvent* event)
 {
 	VipBoxGraphicsWidget::hoverEnterEvent(event);
 	QPointF offset = area()->boundingRect().topLeft();
 	event->setPos(event->pos() + offset);
-	if (VipPlotAreaFilter * f = d_data->filter)
-	{
+	if (VipPlotAreaFilter* f = d_data->filter) {
 		if (!f->sceneEvent(event))
 			area()->hoverEnterEvent(event);
 	}
 	else
 		area()->hoverEnterEvent(event);
 }
-void	VipRubberBand::hoverLeaveEvent(QGraphicsSceneHoverEvent * event)
+void VipRubberBand::hoverLeaveEvent(QGraphicsSceneHoverEvent* event)
 {
 	VipBoxGraphicsWidget::hoverLeaveEvent(event);
 	QPointF offset = area()->boundingRect().topLeft();
 	event->setPos(event->pos() + offset);
-	if (VipPlotAreaFilter * f = d_data->filter)
-	{
+	if (VipPlotAreaFilter* f = d_data->filter) {
 		if (!f->sceneEvent(event))
 			area()->hoverLeaveEvent(event);
 	}
 	else
 		area()->hoverLeaveEvent(event);
 }
-void	VipRubberBand::hoverMoveEvent(QGraphicsSceneHoverEvent * event)
+void VipRubberBand::hoverMoveEvent(QGraphicsSceneHoverEvent* event)
 {
-	if (event->pos() != d_data->lastHover)
-	{
+	if (event->pos() != d_data->lastHover) {
 		d_data->lastHover = event->pos();
 		QPointF offset = area()->boundingRect().topLeft();
 		event->setPos(event->pos() + offset);
-		if (VipPlotAreaFilter * f = d_data->filter)
-		{
+		if (VipPlotAreaFilter* f = d_data->filter) {
 			if (!f->sceneEvent(event))
 				area()->hoverMoveEvent(event);
 		}
@@ -703,12 +691,11 @@ void	VipRubberBand::hoverMoveEvent(QGraphicsSceneHoverEvent * event)
 	}
 }
 
-void	VipRubberBand::wheelEvent(QGraphicsSceneWheelEvent * event)
+void VipRubberBand::wheelEvent(QGraphicsSceneWheelEvent* event)
 {
 	QPointF offset = area()->boundingRect().topLeft();
 	event->setPos(event->pos() + offset);
-	if (VipPlotAreaFilter * f = d_data->filter)
-	{
+	if (VipPlotAreaFilter* f = d_data->filter) {
 		if (!f->sceneEvent(event))
 			area()->wheelEvent(event);
 	}
@@ -716,33 +703,29 @@ void	VipRubberBand::wheelEvent(QGraphicsSceneWheelEvent * event)
 		area()->wheelEvent(event);
 }
 
-
-
-
-VipDrawSelectionOrder::VipDrawSelectionOrder(VipAbstractPlotArea * parent)
-	:QGraphicsObject(parent), m_align(Qt::AlignLeft | Qt::AlignHCenter)
+VipDrawSelectionOrder::VipDrawSelectionOrder(VipAbstractPlotArea* parent)
+  : QGraphicsObject(parent)
+  , m_align(Qt::AlignLeft | Qt::AlignHCenter)
 {
 }
 
-void VipDrawSelectionOrder::setArea(VipAbstractPlotArea * a)
+void VipDrawSelectionOrder::setArea(VipAbstractPlotArea* a)
 {
-	if (a)
-	{
+	if (a) {
 		this->setParentItem(a);
 		this->setZValue(a->zValue() + 20000);
 	}
-	else
-	{
+	else {
 		this->setParentItem(nullptr);
 	}
 }
 
-VipAbstractPlotArea * VipDrawSelectionOrder::area() const
+VipAbstractPlotArea* VipDrawSelectionOrder::area() const
 {
 	return static_cast<VipAbstractPlotArea*>(parentItem());
 }
 
-void VipDrawSelectionOrder::setFont(const QFont & font)
+void VipDrawSelectionOrder::setFont(const QFont& font)
 {
 	m_font = font;
 	update();
@@ -772,26 +755,24 @@ QPainterPath VipDrawSelectionOrder::shape() const
 	return QPainterPath();
 }
 
-void VipDrawSelectionOrder::paint(QPainter * painter, const QStyleOptionGraphicsItem *, QWidget *)
+void VipDrawSelectionOrder::paint(QPainter* painter, const QStyleOptionGraphicsItem*, QWidget*)
 {
-	if (area())
-	{
+	if (area()) {
 		int order = 1;
 		QRectF bounding;
-		if (VipVMultiPlotArea2D * a = qobject_cast<VipVMultiPlotArea2D*>(area()))
+		if (VipVMultiPlotArea2D* a = qobject_cast<VipVMultiPlotArea2D*>(area()))
 			bounding = a->plotRect();
 		else
 			bounding = area()->canvas()->boundingRect();
-		//reduce area bounding rect to remove ticks
+		// reduce area bounding rect to remove ticks
 		bounding = bounding.adjusted(10, 10, -10, -10);
 
 		QList<VipPlotItem*> items = vipCastItemListOrdered<VipPlotItem*>(area()->plotItems(), QString(), 1, 1);
 		for (int i = 0; i < items.size(); ++i) {
-			//ignore VipPlotCanvas and VipPlotGrid
-			if (qobject_cast<VipPlotCanvas*>(items[i]) || qobject_cast<VipPlotGrid*>(items[i]) ||
-				qobject_cast<VipPlotShape*>(items[i]) || qobject_cast<VipResizeItem*>(items[i]))
+			// ignore VipPlotCanvas and VipPlotGrid
+			if (qobject_cast<VipPlotCanvas*>(items[i]) || qobject_cast<VipPlotGrid*>(items[i]) || qobject_cast<VipPlotShape*>(items[i]) || qobject_cast<VipResizeItem*>(items[i]))
 				continue;
-			//find the best background color
+			// find the best background color
 			QColor c = items[i]->majorColor();
 			if (c == Qt::transparent)
 				continue;
@@ -809,50 +790,36 @@ void VipDrawSelectionOrder::paint(QPainter * painter, const QStyleOptionGraphics
 	}
 }
 
-
-
-
-
 VipPlotAreaFilter::~VipPlotAreaFilter()
 {
-	if (VipAbstractPlotArea * area = qobject_cast<VipAbstractPlotArea*>(d_area))
+	if (VipAbstractPlotArea* area = qobject_cast<VipAbstractPlotArea*>(d_area))
 		area->rubberBand()->d_data->filter = nullptr;
 }
-
-
-
-
-
-
-
-
 
 /// Additional legend objects used in VipAbstractPlotArea
 struct Legend
 {
 	QPointer<VipLegend> legend;
-	QObject * olegend;
+	QObject* olegend;
 	Qt::Alignment alignment;
 	int border_margin;
 	bool moved;
-	Legend(VipLegend * l = nullptr, Qt::Alignment align = Qt::AlignTop | Qt::AlignHCenter, int border_margin = 10)
-		:legend(l), olegend(l), alignment(align), border_margin(border_margin), moved(false)
-	{}
+	Legend(VipLegend* l = nullptr, Qt::Alignment align = Qt::AlignTop | Qt::AlignHCenter, int border_margin = 10)
+	  : legend(l)
+	  , olegend(l)
+	  , alignment(align)
+	  , border_margin(border_margin)
+	  , moved(false)
+	{
+	}
 
-	bool operator==(const Legend & other) { return legend == other.legend; }
-	bool operator==(const VipLegend * other) { return legend == other; }
-	bool operator!=(const Legend & other) { return legend != other.legend; }
-	bool operator!=(const VipLegend * other) { return legend != other; }
+	bool operator==(const Legend& other) { return legend == other.legend; }
+	bool operator==(const VipLegend* other) { return legend == other; }
+	bool operator!=(const Legend& other) { return legend != other.legend; }
+	bool operator!=(const VipLegend* other) { return legend != other; }
 };
 
-
-
-
-
-
-
-
-static void updateCacheMode(VipAbstractPlotArea * w, bool useCache)
+static void updateCacheMode(VipAbstractPlotArea* w, bool useCache)
 {
 #ifndef VIP_CUSTOM_ITEM_CACHING
 	(void)w;
@@ -875,23 +842,9 @@ static void updateCacheMode(VipAbstractPlotArea * w, bool useCache)
 #endif
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 static QWindow* window()
 {
-	//Create a QWindow
+	// Create a QWindow
 	QWindow* win = nullptr;
 	if (!win) {
 		QSurfaceFormat format = QSurfaceFormat::defaultFormat();
@@ -904,7 +857,7 @@ static QWindow* window()
 }
 static QWindow* globalWindow()
 {
-	//Create a QWindow
+	// Create a QWindow
 	static QWindow* win = nullptr;
 	if (!win) {
 		QSurfaceFormat format = QSurfaceFormat::defaultFormat();
@@ -918,7 +871,7 @@ static QWindow* globalWindow()
 
 static QOpenGLContext* context()
 {
-	//Create a QOpenGLContext
+	// Create a QOpenGLContext
 	QOpenGLContext* ctx = nullptr;
 	if (!ctx) {
 		QSurfaceFormat format = QSurfaceFormat::defaultFormat();
@@ -934,7 +887,7 @@ static QOpenGLContext* context()
 }
 static QOpenGLContext* globalContext()
 {
-	//Create a QOpenGLContext
+	// Create a QOpenGLContext
 	static QOpenGLContext* ctx = nullptr;
 	static bool initialized = false;
 	if (!initialized) {
@@ -953,7 +906,7 @@ static QOpenGLContext* globalContext()
 
 static QOpenGLFramebufferObject* createBuffer(QOpenGLFramebufferObject* buf, const QSize& size)
 {
-	//Create/reset a QOpenGLFramebufferObject with given size
+	// Create/reset a QOpenGLFramebufferObject with given size
 	if (!buf || buf->size().width() < size.width() || buf->size().height() < size.height()) { // buf->size() != size
 		if (buf) {
 			delete buf;
@@ -970,8 +923,8 @@ static QOpenGLFramebufferObject* createBuffer(QOpenGLFramebufferObject* buf, con
 static QOpenGLFramebufferObject* globalBuffer(const QSize& size)
 {
 	static QOpenGLFramebufferObject* buf = nullptr;
-	//Create/reset a QOpenGLFramebufferObject with given size
-	if (!buf || buf->size().width() < size.width() || buf->size().height() < size.height()) { // 
+	// Create/reset a QOpenGLFramebufferObject with given size
+	if (!buf || buf->size().width() < size.width() || buf->size().height() < size.height()) { //
 		if (buf) {
 			delete buf;
 		}
@@ -984,41 +937,40 @@ static QOpenGLFramebufferObject* globalBuffer(const QSize& size)
 	return buf;
 }
 
-
-
 struct ImageOrPixmap
 {
 	QImage image;
 	QPixmap pixmap;
 	ImageOrPixmap() {}
 	ImageOrPixmap(const QImage& img)
-		:image(img) {}
+	  : image(img)
+	{
+	}
 	ImageOrPixmap(const QPixmap& pix)
-		:pixmap(pix) {}
-	QPaintDevice* device() {
+	  : pixmap(pix)
+	{
+	}
+	QPaintDevice* device()
+	{
 		if (!image.isNull())
 			return &image;
 		return &pixmap;
 	}
 	bool isNull() const { return image.isNull() && pixmap.isNull(); }
-	QSize size() const {
+	QSize size() const
+	{
 		if (!image.isNull())
 			return image.size();
 		return pixmap.size();
 	}
-	void draw(QPainter* p, const QRectF& dst) const {
+	void draw(QPainter* p, const QRectF& dst) const
+	{
 		if (!image.isNull())
 			p->drawImage(dst, image);
 		else
 			p->drawPixmap(dst.toRect(), pixmap);
 	}
 };
-
-
-
-
-
-
 
 class VipAbstractPlotArea::PrivateData
 {
@@ -1152,28 +1104,10 @@ public:
 	qint64 lastUpdate;
 	QTimer updateTimer;
 
-
 	VipColorPalette colorPalette;
 	QString colorPaletteName;
 	QString colorMapName;
-
 };
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 static int registerAbstractAreaKeyWords()
 {
@@ -1199,16 +1133,16 @@ static int registerAbstractAreaKeyWords()
 		position["innerTopLeft"] = Vip::detail::LegendInnerTopLeft;
 		position["innerBottomRight"] = Vip::detail::LegendInnerBottomRight;
 		position["innerBottomLeft"] = Vip::detail::LegendInnerBottomLeft;
-		
+
 		keywords["mouse-selection-and-zoom"] = VipParserPtr(new BoolParser());
 		keywords["mouse-panning"] = VipParserPtr(new EnumParser(mousebutton));
-		keywords["mouse-zoom-selection"]= VipParserPtr(new EnumParser(mousebutton));
+		keywords["mouse-zoom-selection"] = VipParserPtr(new EnumParser(mousebutton));
 		keywords["mouse-item-selection"] = VipParserPtr(new EnumParser(mousebutton));
 		keywords["mouse-wheel-zoom"] = VipParserPtr(new BoolParser());
 		keywords["zoom-multiplier"] = VipParserPtr(new DoubleParser());
 		keywords["maximum-frame-rate"] = VipParserPtr(new DoubleParser());
 		keywords["draw-selection-order"] = VipParserPtr(new BoolParser());
-		//keywords["colormap"] = VipParserPtr(new EnumParser(colorMap));
+		// keywords["colormap"] = VipParserPtr(new EnumParser(colorMap));
 		keywords["colorpalette"] = VipParserPtr(new EnumOrStringParser(VipStandardStyleSheet::colorPaletteEnum()));
 		keywords["colormap"] = VipParserPtr(new EnumOrStringParser(VipStandardStyleSheet::colormapEnum()));
 		keywords["margins"] = VipParserPtr(new DoubleParser());
@@ -1219,7 +1153,7 @@ static int registerAbstractAreaKeyWords()
 
 		keywords["legend-position"] = VipParserPtr(new EnumParser(position));
 		keywords["legend-border-distance"] = VipParserPtr(new DoubleParser());
-		
+
 		vipSetKeyWordsForClass(&VipAbstractPlotArea::staticMetaObject, keywords);
 	}
 	return 0;
@@ -1227,14 +1161,8 @@ static int registerAbstractAreaKeyWords()
 
 static int _registerAbstractAreaKeyWords = registerAbstractAreaKeyWords();
 
-
-
-
-
-
-
-VipAbstractPlotArea::VipAbstractPlotArea(QGraphicsItem * parent)
-	: VipBoxGraphicsWidget()
+VipAbstractPlotArea::VipAbstractPlotArea(QGraphicsItem* parent)
+  : VipBoxGraphicsWidget()
 {
 
 	d_data = new PrivateData();
@@ -1250,7 +1178,7 @@ VipAbstractPlotArea::VipAbstractPlotArea(QGraphicsItem * parent)
 	this->setAcceptHoverEvents(true);
 	this->setAcceptDrops(false);
 
-	//d_data->title->setVisible(false);
+	// d_data->title->setVisible(false);
 	d_data->title->setObjectName("title");
 	d_data->title->setProperty("_vip_title", true);
 	d_data->legend->setObjectName("legend");
@@ -1282,9 +1210,8 @@ VipAbstractPlotArea::VipAbstractPlotArea(QGraphicsItem * parent)
 	connect(d_data->canvas, SIGNAL(dropped(VipPlotItem*, QMimeData*)), this, SLOT(receiveDropped(VipPlotItem*, QMimeData*)), Qt::DirectConnection);
 
 	connect(&d_data->updateTimer, SIGNAL(timeout()), this, SLOT(updateInternal()));
-	//for now comment this as it triggers too many recomputeGeometry
-	//connect(this, SIGNAL(childItemChanged(VipPlotItem*)), this, SLOT(recomputeGeometry()), Qt::QueuedConnection);
-
+	// for now comment this as it triggers too many recomputeGeometry
+	// connect(this, SIGNAL(childItemChanged(VipPlotItem*)), this, SLOT(recomputeGeometry()), Qt::QueuedConnection);
 }
 
 VipAbstractPlotArea::~VipAbstractPlotArea()
@@ -1295,12 +1222,10 @@ VipAbstractPlotArea::~VipAbstractPlotArea()
 
 QRectF VipAbstractPlotArea::visualizedSceneRect() const
 {
-	QGraphicsScene * sc = scene();
-	if (sc)
-	{
+	QGraphicsScene* sc = scene();
+	if (sc) {
 		QList<QGraphicsView*> views = sc->views();
-		if (views.size())
-		{
+		if (views.size()) {
 			return VipBorderItem::visualizedSceneRect(views.front());
 		}
 	}
@@ -1332,7 +1257,7 @@ void VipAbstractPlotArea::updateInternal()
 	update();
 }
 
-void VipAbstractPlotArea::markScaleDivDirty(VipAbstractScale * sc)
+void VipAbstractPlotArea::markScaleDivDirty(VipAbstractScale* sc)
 {
 	if (d_data->insideUpdate)
 		return;
@@ -1350,7 +1275,7 @@ void VipAbstractPlotArea::markScaleDivDirty(VipAbstractScale * sc)
 	}
 }
 
-void VipAbstractPlotArea::setGeometryUpdateEnabled(bool enable) 
+void VipAbstractPlotArea::setGeometryUpdateEnabled(bool enable)
 {
 	d_data->isGeometryUpdateEnabled = enable;
 }
@@ -1379,14 +1304,12 @@ bool VipAbstractPlotArea::markGeometryDirty()
 	return true;
 }
 
-
-
-
 #define MODE_OPENGL 1
 #define MODE_RASTER 0
 
-static QImage createImageWithFBO(int mode, //QOpenGLFramebufferObject ** buffer, QOpenGLContext * context, QWindow * window,
- const QList<QGraphicsItem*> & items, const QGraphicsItem * parent)
+static QImage createImageWithFBO(int mode, // QOpenGLFramebufferObject ** buffer, QOpenGLContext * context, QWindow * window,
+				 const QList<QGraphicsItem*>& items,
+				 const QGraphicsItem* parent)
 {
 	static const int max_width = 4000;
 
@@ -1394,7 +1317,7 @@ static QImage createImageWithFBO(int mode, //QOpenGLFramebufferObject ** buffer,
 	QRectF bounding = parent->boundingRect();
 	QPointF topLeft = parent->boundingRect().topLeft();
 	tr.translate(-topLeft.x(), -topLeft.y());
-	//limit image size to max_width*max_width
+	// limit image size to max_width*max_width
 	QSize s = bounding.size().toSize();
 	double max = qMax(bounding.width(), bounding.height());
 	if (max > max_width) {
@@ -1412,17 +1335,16 @@ static QImage createImageWithFBO(int mode, //QOpenGLFramebufferObject ** buffer,
 		}
 	}
 
-	//qint64 st = QDateTime::currentMSecsSinceEpoch();
+	// qint64 st = QDateTime::currentMSecsSinceEpoch();
 
 	QImage res;
 	if (mode == MODE_OPENGL) {
 
-
 		if (!globalContext())
 			return res;
 		globalContext()->makeCurrent(globalWindow());
-		QOpenGLFramebufferObject * buffer = globalBuffer(s);
-		//vip_debug("opengl: %s\n", (const char*)globalContext()->functions()->glGetString(GL_VERSION));
+		QOpenGLFramebufferObject* buffer = globalBuffer(s);
+		// vip_debug("opengl: %s\n", (const char*)globalContext()->functions()->glGetString(GL_VERSION));
 		if (!(globalContext()->functions()->openGLFeatures() & QOpenGLFunctions::Shaders)) {
 			return QImage();
 		}
@@ -1437,15 +1359,15 @@ static QImage createImageWithFBO(int mode, //QOpenGLFramebufferObject ** buffer,
 		glClearColor(0.0, 0.0, 0.0, 0.0);
 		glClear(GL_COLOR_BUFFER_BIT);
 		painter.endNativePainting();
-		painter.setTransform(tr,false);
+		painter.setTransform(tr, false);
 
-		
 		for (int i = 0; i < items.size(); ++i) {
 			if (!items[i]->isVisible())
 				continue;
 			painter.save();
 			QPointF p = items[i]->pos();
-			QTransform t; t.translate(p.x(), p.y());
+			QTransform t;
+			t.translate(p.x(), p.y());
 			t *= items[i]->transform();
 			painter.setTransform(t, true);
 			QGraphicsItem* o = items[i];
@@ -1455,17 +1377,15 @@ static QImage createImageWithFBO(int mode, //QOpenGLFramebufferObject ** buffer,
 
 		painter.end();
 
-		//qint64 st = QDateTime::currentMSecsSinceEpoch();
+		// qint64 st = QDateTime::currentMSecsSinceEpoch();
 		const QImage tmp = (buffer)->toImage();
-		//qint64 el = QDateTime::currentMSecsSinceEpoch() - st;
-		//vip_debug("toImage: %i ms %i\n", (int)el, (int)buffer->hasOpenGLFramebufferBlit());
+		// qint64 el = QDateTime::currentMSecsSinceEpoch() - st;
+		// vip_debug("toImage: %i ms %i\n", (int)el, (int)buffer->hasOpenGLFramebufferBlit());
 
 		res = tmp.copy(QRect(QPoint(0, tmp.height() - s.height()), s));
-		//qint64 el2 = QDateTime::currentMSecsSinceEpoch() - st;
-		//vip_debug("to image: %i %i ms\n", (int)el,(int)el2);
+		// qint64 el2 = QDateTime::currentMSecsSinceEpoch() - st;
+		// vip_debug("to image: %i %i ms\n", (int)el,(int)el2);
 		(buffer)->release();
-
-
 	}
 	else {
 		QImage img(s.width(), s.height(), QImage::Format_ARGB32);
@@ -1477,7 +1397,8 @@ static QImage createImageWithFBO(int mode, //QOpenGLFramebufferObject ** buffer,
 					continue;
 				painter.save();
 				QPointF p = items[i]->pos();
-				QTransform t; t.translate(p.x(), p.y());
+				QTransform t;
+				t.translate(p.x(), p.y());
 				t *= items[i]->transform();
 				painter.setTransform(t, true);
 				items[i]->paint(&painter, nullptr, nullptr);
@@ -1487,17 +1408,14 @@ static QImage createImageWithFBO(int mode, //QOpenGLFramebufferObject ** buffer,
 		res = img;
 	}
 
-	//qint64 el2 = QDateTime::currentMSecsSinceEpoch() - st;
+	// qint64 el2 = QDateTime::currentMSecsSinceEpoch() - st;
 
-
-
-	//qint64 el = QDateTime::currentMSecsSinceEpoch() - st;
-	//vip_debug("opengl: %i , %i ms\n", (int)el, (int)el2);
+	// qint64 el = QDateTime::currentMSecsSinceEpoch() - st;
+	// vip_debug("opengl: %i , %i ms\n", (int)el, (int)el2);
 	return res;
 }
 
-
-QImage	VipAbstractPlotArea::renderOpengl(const QList<VipPaintItem*>& items) const
+QImage VipAbstractPlotArea::renderOpengl(const QList<VipPaintItem*>& items) const
 {
 	QList<QGraphicsItem*> objs;
 	for (VipPaintItem* it : items) {
@@ -1505,16 +1423,16 @@ QImage	VipAbstractPlotArea::renderOpengl(const QList<VipPaintItem*>& items) cons
 		if (QGraphicsObject* o = it->graphicsObject())
 			objs.push_back(o);
 	}
-	
-	//render
-	//qint64 st = QDateTime::currentMSecsSinceEpoch();
-	const QImage res =  createImageWithFBO(MODE_OPENGL, objs, this);
-	//qint64 el = QDateTime::currentMSecsSinceEpoch() - st;
-	//vip_debug("renderOpengl: %i\n", (int)el);
+
+	// render
+	// qint64 st = QDateTime::currentMSecsSinceEpoch();
+	const QImage res = createImageWithFBO(MODE_OPENGL, objs, this);
+	// qint64 el = QDateTime::currentMSecsSinceEpoch() - st;
+	// vip_debug("renderOpengl: %i\n", (int)el);
 	return res;
 }
 
-QImage	VipAbstractPlotArea::renderRaster(const QList<VipPaintItem*> &items) const
+QImage VipAbstractPlotArea::renderRaster(const QList<VipPaintItem*>& items) const
 {
 	QList<QGraphicsItem*> objs;
 	for (VipPaintItem* it : items) {
@@ -1522,12 +1440,11 @@ QImage	VipAbstractPlotArea::renderRaster(const QList<VipPaintItem*> &items) cons
 		if (QGraphicsObject* o = it->graphicsObject())
 			objs.push_back(o);
 	}
-	//render
+	// render
 	return createImageWithFBO(MODE_RASTER, objs, this);
 }
 
-
-void	VipAbstractPlotArea::doUpdateScaleLogic()
+void VipAbstractPlotArea::doUpdateScaleLogic()
 {
 	d_data->insideUpdate = true;
 	d_data->insideComputeScaleDiv = true;
@@ -1536,21 +1453,19 @@ void	VipAbstractPlotArea::doUpdateScaleLogic()
 	if (d_data->dirtyScaleDiv.size()) {
 
 		{
-			//compute scale div first, that might trigger a geometry update
+			// compute scale div first, that might trigger a geometry update
 			QList<VipAbstractScale*> scales = VipAbstractScale::independentScales(d_data->dirtyScaleDiv.values());
 
 			for (int i = 0; i < scales.size(); ++i) {
 				scales[i]->computeScaleDiv();
 			}
 
-			//for (QSet<VipAbstractScale*>::iterator it = d_data->dirtyScaleDiv.begin(); it != d_data->dirtyScaleDiv.end(); ++it) {
-			// (*it)->computeScaleDiv();
-			// }
+			// for (QSet<VipAbstractScale*>::iterator it = d_data->dirtyScaleDiv.begin(); it != d_data->dirtyScaleDiv.end(); ++it) {
+			//  (*it)->computeScaleDiv();
+			//  }
 			need_update = true;
 			d_data->dcount = 0;
 		}
-
-
 	}
 
 	d_data->insideComputeScaleDiv = false;
@@ -1565,7 +1480,7 @@ void	VipAbstractPlotArea::doUpdateScaleLogic()
 	}
 
 	// refresh tool tip
-	//if (VipToolTip* tip = plotToolTip())
+	// if (VipToolTip* tip = plotToolTip())
 	//	tip->refresh();
 
 	d_data->insideUpdate = false;
@@ -1574,7 +1489,6 @@ void	VipAbstractPlotArea::doUpdateScaleLogic()
 		d_data->markGeometryDirty = 0;
 	d_data->markNeedUpdate = false;
 	d_data->dirtyScaleDiv.clear();
-
 }
 
 /*
@@ -1600,8 +1514,8 @@ bool VipAbstractPlotArea::paintOpenGLInternal(QPainter* painter, const QStyleOpt
 	//for opengl widget, use paint()
 	if (VipPainter::isOpenGL(painter) || VipPainter::isVectoriel(painter) || __renderThreads < 2)
 		return false;
-	
-	if (renderPool().numberOfThreads() != __renderThreads) 
+
+	if (renderPool().numberOfThreads() != __renderThreads)
 		renderPool().setNumberOfThreads(__renderThreads);
 
 	if (d_data->markNeedUpdate) {
@@ -1622,14 +1536,14 @@ bool VipAbstractPlotArea::paintOpenGLInternal(QPainter* painter, const QStyleOpt
 		//qint64 el = QDateTime::currentMSecsSinceEpoch() - st;
 		//vip_debug("push: %i ms\n", (int)el);
 	}
-	
+
 
 
 	// draw itself
 	VipBoxGraphicsWidget::paint(painter, option, widget);
 
 	const ImageOrPixmap img_opengl = renderPool().retrieve(this);
-	
+
 	if (!img_opengl.isNull()) {
 		painter->save();
 		QRect r = boundingRect().toRect();
@@ -1647,7 +1561,7 @@ bool VipAbstractPlotArea::paintOpenGLInternal(QPainter* painter, const QStyleOpt
 	return true;
 }*/
 
-void	VipAbstractPlotArea::paint(QPainter * painter, const QStyleOptionGraphicsItem * option, QWidget * widget)
+void VipAbstractPlotArea::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget)
 {
 	/* bool opengl = VipPainter::isOpenGL(painter);
 	if (widget && !opengl && __renderThreads > 1 && paintOpenGLInternal(painter, option, widget))
@@ -1656,19 +1570,18 @@ void	VipAbstractPlotArea::paint(QPainter * painter, const QStyleOptionGraphicsIt
 	if (renderPool().numberOfThreads() != __renderThreads)
 		renderPool().setNumberOfThreads(__renderThreads);*/
 
-	doUpdateScaleLogic() ;
+	doUpdateScaleLogic();
 
-	//draw itself
+	// draw itself
 	VipBoxGraphicsWidget::paint(painter, option, widget);
 
-
-	//draw children with opengl only when drawing on a non opengl widget
+	// draw children with opengl only when drawing on a non opengl widget
 	/* if (widget && !VipPainter::isOpenGL(painter) && ((d_data->renderStrategy == AutoStrategy) || (d_data->renderStrategy == OpenGLOffscreen))) {
 		QImage img_raster;
 		QImage img_opengl;
 		//compute the list of children VipPaintItem
 		QList<VipPaintItem*> items = paintItemChildren();
-		
+
 
 		if ((d_data->renderStrategy == AutoStrategy) && d_data->dirtyComputeStrategy == 1) {
 			// Note that d_data->dirtyComputeStrategy is 1 when dirty, 2 when non dirty and Default strategy is best,
@@ -1717,7 +1630,7 @@ void	VipAbstractPlotArea::paint(QPainter * painter, const QStyleOptionGraphicsIt
 			//disable painting opengl items
 			for (int i = 0; i < items.size(); ++i) {
 				items[i]->setPaintingEnabled(false);
-				
+
 			}
 		}
 		else {
@@ -1733,19 +1646,18 @@ void	VipAbstractPlotArea::paint(QPainter * painter, const QStyleOptionGraphicsIt
 			it->setPaintingEnabled(true);
 	}*/
 
-	//qint64 el = QDateTime::currentMSecsSinceEpoch()-st;
-	//vip_debug("%i ms, %s\n",(int)el, this->metaObject()->className());
+	// qint64 el = QDateTime::currentMSecsSinceEpoch()-st;
+	// vip_debug("%i ms, %s\n",(int)el, this->metaObject()->className());
 }
-
 
 void VipAbstractPlotArea::applyLabelOverlapping()
 {
-	QVector< QSharedPointer<QPainterPath> > overlapps;
+	QVector<QSharedPointer<QPainterPath>> overlapps;
 	for (int i = 0; i < d_data->scales.size(); ++i)
 		overlapps << d_data->scales[i]->constScaleDraw()->thisLabelArea();
 	for (int i = 0; i < d_data->scales.size(); ++i) {
 		if (!d_data->scales[i]->scaleDraw()->labelOverlappingEnabled()) {
-			QVector< QSharedPointer<QPainterPath> > copy = overlapps;
+			QVector<QSharedPointer<QPainterPath>> copy = overlapps;
 			copy.removeAt(i);
 			d_data->scales[i]->scaleDraw()->clearAdditionalLabelOverlapp();
 			d_data->scales[i]->scaleDraw()->setAdditionalLabelOverlapp(copy);
@@ -1753,22 +1665,22 @@ void VipAbstractPlotArea::applyLabelOverlapping()
 	}
 }
 
-//void VipAbstractPlotArea::recomputeIfDirty()
-// {
-// if (d_data->dirtyGeometry)
-// {
-// d_data->dirtyGeometry = false;
-// recomputeGeometry();
-// }
-// }
+// void VipAbstractPlotArea::recomputeIfDirty()
+//  {
+//  if (d_data->dirtyGeometry)
+//  {
+//  d_data->dirtyGeometry = false;
+//  recomputeGeometry();
+//  }
+//  }
 //
-// void VipAbstractPlotArea::delayRecomputeGeometry()
-// {
-// d_data->dirtyGeometry = true;
-// QMetaObject::invokeMethod(this, "recomputeIfDirty", Qt::QueuedConnection);
-// }
+//  void VipAbstractPlotArea::delayRecomputeGeometry()
+//  {
+//  d_data->dirtyGeometry = true;
+//  QMetaObject::invokeMethod(this, "recomputeIfDirty", Qt::QueuedConnection);
+//  }
 
-void VipAbstractPlotArea::installFilter(VipPlotAreaFilter * filter)
+void VipAbstractPlotArea::installFilter(VipPlotAreaFilter* filter)
 {
 	rubberBand()->installFilter(filter);
 }
@@ -1778,24 +1690,19 @@ void VipAbstractPlotArea::removeFilter()
 	rubberBand()->removeFilter();
 }
 
-VipPlotAreaFilter * VipAbstractPlotArea::filter() const
+VipPlotAreaFilter* VipAbstractPlotArea::filter() const
 {
 	return rubberBand()->filter();
 }
 
-VipInterval VipAbstractPlotArea::areaBoundaries(const VipAbstractScale * scale) const
+VipInterval VipAbstractPlotArea::areaBoundaries(const VipAbstractScale* scale) const
 {
-	if (const VipBorderItem * item = qobject_cast<const VipBorderItem*>(scale))
-	{
+	if (const VipBorderItem* item = qobject_cast<const VipBorderItem*>(scale)) {
 		QRectF r = this->innerArea().boundingRect();
 		if (item->orientation() == Qt::Vertical)
-			return VipInterval(
-				scale->value(scale->mapFromItem(this, r.topLeft())),
-				scale->value(scale->mapFromItem(this, r.bottomLeft()))).normalized();
+			return VipInterval(scale->value(scale->mapFromItem(this, r.topLeft())), scale->value(scale->mapFromItem(this, r.bottomLeft()))).normalized();
 		else
-			return VipInterval(
-				scale->value(scale->mapFromItem(this, r.bottomLeft())),
-				scale->value(scale->mapFromItem(this, r.bottomRight()))).normalized();
+			return VipInterval(scale->value(scale->mapFromItem(this, r.bottomLeft())), scale->value(scale->mapFromItem(this, r.bottomRight()))).normalized();
 	}
 	return VipInterval();
 }
@@ -1804,15 +1711,15 @@ void VipAbstractPlotArea::setMouseSelectionAndZoom(bool enable)
 {
 	d_data->mouseSelectionAndZoom = enable;
 }
-bool  VipAbstractPlotArea::mouseSelectionAndZoom() const
+bool VipAbstractPlotArea::mouseSelectionAndZoom() const
 {
 	return d_data->mouseSelectionAndZoom;
 }
-void  VipAbstractPlotArea::setMouseSelectionAndZoomMinimumSize(const QSizeF & s)
+void VipAbstractPlotArea::setMouseSelectionAndZoomMinimumSize(const QSizeF& s)
 {
 	d_data->mouseSelectionAndZoomMinimumSize = s;
 }
-QSizeF  VipAbstractPlotArea::mouseSelectionAndZoomMinimumSize() const
+QSizeF VipAbstractPlotArea::mouseSelectionAndZoomMinimumSize() const
 {
 	return d_data->mouseSelectionAndZoomMinimumSize;
 }
@@ -1872,17 +1779,16 @@ double VipAbstractPlotArea::zoomMultiplier() const
 	return d_data->zoomMultiplier;
 }
 
-void VipAbstractPlotArea::setZoomEnabled(VipAbstractScale * sc, bool enable)
+void VipAbstractPlotArea::setZoomEnabled(VipAbstractScale* sc, bool enable)
 {
 	sc->setProperty("zoom_enabled", enable);
 	QSet<VipAbstractScale*> scales = sc->synchronizedWith();
-	for (QSet<VipAbstractScale*>::iterator it = scales.begin(); it != scales.end(); ++it)
-	{
+	for (QSet<VipAbstractScale*>::iterator it = scales.begin(); it != scales.end(); ++it) {
 		(*it)->setProperty("zoom_enabled", enable);
 	}
 }
 
-bool VipAbstractPlotArea::zoomEnabled(VipAbstractScale * sc)
+bool VipAbstractPlotArea::zoomEnabled(VipAbstractScale* sc)
 {
 	if (!sc)
 		return true;
@@ -1892,25 +1798,22 @@ bool VipAbstractPlotArea::zoomEnabled(VipAbstractScale * sc)
 	return p.toBool();
 }
 
-
 void VipAbstractPlotArea::setMaximumFrameRate(int fps)
 {
 	d_data->maxFPS = fps;
-	d_data->maxMS = static_cast<int>( (1. / fps) * 1000.);
+	d_data->maxMS = static_cast<int>((1. / fps) * 1000.);
 }
 int VipAbstractPlotArea::maximumFrameRate() const
 {
 	return d_data->maxFPS;
 }
 
-void VipAbstractPlotArea::setRubberBand(VipRubberBand * rubberBand)
+void VipAbstractPlotArea::setRubberBand(VipRubberBand* rubberBand)
 {
-	if (d_data->rubberBand != rubberBand)
-	{
+	if (d_data->rubberBand != rubberBand) {
 		if (d_data->rubberBand)
 			delete d_data->rubberBand;
-		if (rubberBand)
-		{
+		if (rubberBand) {
 			d_data->rubberBand = rubberBand;
 			rubberBand->setArea(this);
 		}
@@ -1919,32 +1822,29 @@ void VipAbstractPlotArea::setRubberBand(VipRubberBand * rubberBand)
 	}
 }
 
-VipRubberBand * VipAbstractPlotArea::rubberBand() const
+VipRubberBand* VipAbstractPlotArea::rubberBand() const
 {
 	return const_cast<VipRubberBand*>(d_data->rubberBand.data());
 }
 
-void VipAbstractPlotArea::setDrawSelectionOrder(VipDrawSelectionOrder * drawSelection)
+void VipAbstractPlotArea::setDrawSelectionOrder(VipDrawSelectionOrder* drawSelection)
 {
-	if (d_data->drawSelection != drawSelection)
-	{
+	if (d_data->drawSelection != drawSelection) {
 		if (d_data->drawSelection)
 			delete d_data->drawSelection;
-		
+
 		d_data->drawSelection = drawSelection;
 		if (drawSelection)
 			drawSelection->setArea(this);
-		
 	}
 }
 
-VipDrawSelectionOrder * VipAbstractPlotArea::drawSelectionOrder() const
+VipDrawSelectionOrder* VipAbstractPlotArea::drawSelectionOrder() const
 {
 	return const_cast<VipDrawSelectionOrder*>(d_data->drawSelection.data());
 }
 
-
-void VipAbstractPlotArea::setColorMap(const QString& name) 
+void VipAbstractPlotArea::setColorMap(const QString& name)
 {
 	d_data->colorMapName = name;
 	QGradientStops map = VipLinearColorMap::createGradientStops(name.toLatin1().data());
@@ -1952,7 +1852,7 @@ void VipAbstractPlotArea::setColorMap(const QString& name)
 	if (map.isEmpty())
 		return;
 
-	//apply to each color map
+	// apply to each color map
 	QList<VipAxisColorMap*> axes = this->findItems<VipAxisColorMap*>();
 	for (auto it = axes.begin(); it != axes.end(); ++it)
 		(*it)->setColorMap((*it)->colorMapInterval(), VipLinearColorMap::createColorMap(map));
@@ -1962,7 +1862,7 @@ QString VipAbstractPlotArea::colorMap() const
 	return d_data->colorMapName;
 }
 
-void VipAbstractPlotArea::setColorPalette(const QString& name) 
+void VipAbstractPlotArea::setColorPalette(const QString& name)
 {
 	QGradientStops map = VipLinearColorMap::createGradientStops(name.toLatin1().data());
 
@@ -1976,7 +1876,7 @@ void VipAbstractPlotArea::setColorPalette(const QString& name)
 	}
 }
 
-void VipAbstractPlotArea::setColorPalette(const VipColorPalette& palette) 
+void VipAbstractPlotArea::setColorPalette(const VipColorPalette& palette)
 {
 	d_data->colorPaletteName.clear();
 	d_data->colorPalette = palette;
@@ -1995,14 +1895,14 @@ VipColorPalette VipAbstractPlotArea::colorPalette() const
 	return d_data->colorPalette;
 }
 
-void VipAbstractPlotArea::applyColorPalette() 
+void VipAbstractPlotArea::applyColorPalette()
 {
 	if (d_data->colorPalette.count() == 0)
 		return;
 
 	QList<VipPlotItem*> items = this->findItems<VipPlotItem*>();
 	QMap<int, VipPlotItem*> sorted;
-	for (int i=0; i < items.size(); ++i) {
+	for (int i = 0; i < items.size(); ++i) {
 		VipPlotItem* it = items[i];
 
 		if (qobject_cast<VipPlotCanvas*>(it) || qobject_cast<VipPlotGrid*>(it) || it->ignoreStyleSheet()) {
@@ -2010,7 +1910,7 @@ void VipAbstractPlotArea::applyColorPalette()
 			--i;
 			continue;
 		}
-		
+
 		it->setColorPalette(d_data->colorPalette);
 		it->markStyleSheetDirty();
 
@@ -2038,7 +1938,7 @@ void VipAbstractPlotArea::applyColorPalette()
 				id = start;
 				break;
 			}
-		//insert
+		// insert
 		sorted.insert(id, items[i]);
 		items[i]->setMajorColor(d_data->colorPalette.color(id));
 		items[i]->markStyleSheetDirty();
@@ -2046,12 +1946,12 @@ void VipAbstractPlotArea::applyColorPalette()
 	}
 }
 
-void VipAbstractPlotArea::setMargins(const VipMargins & m)
+void VipAbstractPlotArea::setMargins(const VipMargins& m)
 {
 	this->setProperty("margins", QVariant::fromValue(m));
 }
 
-void VipAbstractPlotArea::setMargins(const QRectF & rect)
+void VipAbstractPlotArea::setMargins(const QRectF& rect)
 {
 	QRectF bounding = boundingRect();
 	QRectF r = rect & bounding;
@@ -2064,68 +1964,61 @@ VipMargins VipAbstractPlotArea::margins() const
 	return v.value<VipMargins>();
 }
 
-VipPlotGrid * VipAbstractPlotArea::grid() const
+VipPlotGrid* VipAbstractPlotArea::grid() const
 {
 	return const_cast<VipPlotGrid*>(d_data->grid);
 }
 
-VipPlotCanvas * VipAbstractPlotArea::canvas() const
+VipPlotCanvas* VipAbstractPlotArea::canvas() const
 {
 	return const_cast<VipPlotCanvas*>(d_data->canvas);
 }
 
-VipBorderLegend * VipAbstractPlotArea::borderLegend() const
+VipBorderLegend* VipAbstractPlotArea::borderLegend() const
 {
 	return const_cast<VipBorderLegend*>(d_data->blegend);
 }
 
-void VipAbstractPlotArea::setLegend(VipLegend * legend, bool own)
+void VipAbstractPlotArea::setLegend(VipLegend* legend, bool own)
 {
-	if (d_data->legend != legend)
-	{
+	if (d_data->legend != legend) {
 		QList<VipPlotItem*> items = plotItems();
 
-		if (d_data->legend)
-		{
+		if (d_data->legend) {
 			for (int i = 0; i < items.size(); ++i)
 				d_data->legend->removeItem(items[i]);
 		}
 
-		if (legend)
-		{
+		if (legend) {
 			for (int i = 0; i < items.size(); ++i)
 				d_data->legend->addItem(items[i]);
 		}
 
-		if (d_data->legend && d_data->legend->parentItem() == d_data->blegend)
-		{
+		if (d_data->legend && d_data->legend->parentItem() == d_data->blegend) {
 			delete d_data->legend;
 		}
 
 		d_data->legend = legend;
 
-		if (own)
-		{
+		if (own) {
 			d_data->blegend->setLegend(d_data->legend);
 		}
-		else
-		{
+		else {
 			d_data->blegend->setLegend(nullptr);
 		}
-
 	}
 }
 
-VipLegend * VipAbstractPlotArea::legend() const
+VipLegend* VipAbstractPlotArea::legend() const
 {
 	return const_cast<VipLegend*>(d_data->legend);
 }
 
-void VipAbstractPlotArea::addInnerLegend(VipLegend * legend,  Qt::Alignment alignment, int border_margin)
+void VipAbstractPlotArea::addInnerLegend(VipLegend* legend, Qt::Alignment alignment, int border_margin)
 {
 	addInnerLegend(legend, nullptr, alignment, border_margin);
 }
-VipAbstractScale * VipAbstractPlotArea::scaleForlegend(VipLegend * l) const
+VipAbstractScale* VipAbstractPlotArea::scaleForlegend(VipLegend* l) const
 {
 	return l->property("_vip_scale").value<VipAbstractScale*>();
 }
@@ -2140,11 +2033,11 @@ void VipAbstractPlotArea::legendDestroyed(QObject* l)
 			removed = true;
 		}
 	}
-	if(removed)
+	if (removed)
 		resetInnerLegendsPosition();
 }
 
-void VipAbstractPlotArea::addInnerLegend(VipLegend * legend, VipAbstractScale * scale, Qt::Alignment alignment, int border_margin)
+void VipAbstractPlotArea::addInnerLegend(VipLegend* legend, VipAbstractScale* scale, Qt::Alignment alignment, int border_margin)
 {
 	if (d_data->legends.indexOf(legend) < 0) {
 		legend->setCheckState(d_data->legend->checkState());
@@ -2154,19 +2047,19 @@ void VipAbstractPlotArea::addInnerLegend(VipLegend * legend, VipAbstractScale * 
 		legend->setLegendItemRenderHints(d_data->legend->legendItemRenderHints());
 		legend->setLegendItemBoxStyle(d_data->legend->legendItemBoxStyle());
 		legend->setLegendItemTextStyle(d_data->legend->legendItemTextStyle());
-		//if (d_data->legend->hasLegendTextColor())
+		// if (d_data->legend->hasLegendTextColor())
 		//	legend->setLegendTextColor(d_data->legend->legendTextColor());
-		//if (d_data->legend->hasLegendTextFont())
+		// if (d_data->legend->hasLegendTextFont())
 		//	legend->setLegendTextFont(d_data->legend->legendTextFont());
 		legend->setFlag(QGraphicsItem::ItemIsMovable, true);
-		//the legend should be always on top
+		// the legend should be always on top
 		legend->setZValue(std::numeric_limits<double>::max());
 		legend->setProperty("_vip_scale", QVariant::fromValue(scale));
 		legend->setProperty("_vip_inner", true);
 		d_data->legends.append(Legend(legend, alignment, border_margin));
-		legend->setParentItem(scale ? (QGraphicsObject*)scale : (QGraphicsObject*)this);		
+		legend->setParentItem(scale ? (QGraphicsObject*)scale : (QGraphicsObject*)this);
 
-		//add existing items
+		// add existing items
 		QList<VipPlotItem*> items;
 		if (scale)
 			items = scale->plotItems();
@@ -2184,11 +2077,11 @@ void VipAbstractPlotArea::addInnerLegend(VipLegend * legend, VipAbstractScale * 
 	}
 }
 
-VipLegend* VipAbstractPlotArea::takeInnerLegend(VipLegend * legend)
+VipLegend* VipAbstractPlotArea::takeInnerLegend(VipLegend* legend)
 {
 	int i = d_data->legends.indexOf(legend);
 	if (i >= 0) {
-		VipLegend * l = d_data->legends[i].legend;
+		VipLegend* l = d_data->legends[i].legend;
 		d_data->legends.removeAt(i);
 		l->setProperty("_vip_inner", QVariant());
 		resetInnerLegendsPosition();
@@ -2196,9 +2089,9 @@ VipLegend* VipAbstractPlotArea::takeInnerLegend(VipLegend * legend)
 	}
 	return nullptr;
 }
-void VipAbstractPlotArea::removeInnerLegend(VipLegend * legend)
+void VipAbstractPlotArea::removeInnerLegend(VipLegend* legend)
 {
-	VipLegend * l = takeInnerLegend(legend);
+	VipLegend* l = takeInnerLegend(legend);
 	if (l)
 		l->deleteLater();
 }
@@ -2225,7 +2118,7 @@ int VipAbstractPlotArea::innerLegendCount() const
 {
 	return d_data->legends.size();
 }
-VipLegend * VipAbstractPlotArea::innerLegend(int index) const
+VipLegend* VipAbstractPlotArea::innerLegend(int index) const
 {
 	return d_data->legends[index].legend;
 }
@@ -2239,19 +2132,19 @@ int VipAbstractPlotArea::innerLegendMargin(int index) const
 	return d_data->legends[index].border_margin;
 }
 
-void VipAbstractPlotArea::setTitle(const VipText & t)
+void VipAbstractPlotArea::setTitle(const VipText& t)
 {
 	d_data->title->setTitle(t);
 	VipBoxGraphicsWidget::setTitle(t);
 }
 
-VipAxisBase * VipAbstractPlotArea::titleAxis() const
+VipAxisBase* VipAbstractPlotArea::titleAxis() const
 {
 	return const_cast<VipAxisBase*>(d_data->title);
 }
 
 void VipAbstractPlotArea::setDefaultLabelOverlapping(bool enable)
-{ 
+{
 	d_data->defaultLabelOverlapping = enable;
 }
 bool VipAbstractPlotArea::defaultLabelOverlapping() const
@@ -2259,9 +2152,7 @@ bool VipAbstractPlotArea::defaultLabelOverlapping() const
 	return d_data->defaultLabelOverlapping;
 }
 
-
-
-bool VipAbstractPlotArea::internalAddScale(VipAbstractScale * scale, bool //isSpatialCoordinate
+bool VipAbstractPlotArea::internalAddScale(VipAbstractScale* scale, bool // isSpatialCoordinate
 )
 {
 	scale->setParentItem(this);
@@ -2269,33 +2160,30 @@ bool VipAbstractPlotArea::internalAddScale(VipAbstractScale * scale, bool //isSp
 	return true;
 }
 
-void VipAbstractPlotArea::addScale(VipAbstractScale * scale, bool isSpatialCoordinate)
+void VipAbstractPlotArea::addScale(VipAbstractScale* scale, bool isSpatialCoordinate)
 {
 
-	if (scale->parentItem() != this)
-	{
+	if (scale->parentItem() != this) {
 
 		if (!internalAddScale(scale, isSpatialCoordinate))
 			return;
 
 		scale->scaleDraw()->enableLabelOverlapping(defaultLabelOverlapping());
-//		scale->setUpdater(this->updater());
+		//		scale->setUpdater(this->updater());
 
-		//connect(scale, SIGNAL(geometryNeedUpdate()), this, SLOT(delayRecomputeGeometry()), Qt::DirectConnection);
-
+		// connect(scale, SIGNAL(geometryNeedUpdate()), this, SLOT(delayRecomputeGeometry()), Qt::DirectConnection);
 
 		connect(scale, SIGNAL(itemAdded(VipPlotItem*)), this, SLOT(addItem(VipPlotItem*)), Qt::DirectConnection);
 		connect(scale, SIGNAL(itemRemoved(VipPlotItem*)), this, SLOT(removeItem(VipPlotItem*)), Qt::DirectConnection);
 		connect(scale, SIGNAL(titleChanged(const VipText&)), this, SLOT(receiveTitleChanged(const VipText&)), Qt::DirectConnection);
-		if (isSpatialCoordinate)
-		{
+		if (isSpatialCoordinate) {
 			d_data->scales << scale;
-			//add the items related to this scale
+			// add the items related to this scale
 			PlotItemList items = scale->plotItems();
 			for (int i = 0; i < items.size(); ++i)
 				if (items[i] && d_data->items.indexOf(items[i]) < 0) {
 					d_data->items.append(items[i]);
-//					d_data->items[i]->setUpdater(this->updater());
+					//					d_data->items[i]->setUpdater(this->updater());
 				}
 		}
 
@@ -2308,16 +2196,15 @@ void VipAbstractPlotArea::addScale(VipAbstractScale * scale, bool isSpatialCoord
 	markGeometryDirty();
 }
 
-bool VipAbstractPlotArea::internalRemoveScale(VipAbstractScale * scale)
+bool VipAbstractPlotArea::internalRemoveScale(VipAbstractScale* scale)
 {
-	if (scale->parentItem() == this)
-	{
+	if (scale->parentItem() == this) {
 		scale->setParentItem(nullptr);
 	}
 	return true;
 }
 
-void VipAbstractPlotArea::removeScale(VipAbstractScale * scale)
+void VipAbstractPlotArea::removeScale(VipAbstractScale* scale)
 {
 
 	if (!internalRemoveScale(scale))
@@ -2326,11 +2213,10 @@ void VipAbstractPlotArea::removeScale(VipAbstractScale * scale)
 	disconnect(scale, SIGNAL(itemAdded(VipPlotItem*)), this, SLOT(addItem(VipPlotItem*)));
 	disconnect(scale, SIGNAL(itemRemoved(VipPlotItem*)), this, SLOT(removeItem(VipPlotItem*)));
 	disconnect(scale, SIGNAL(titleChanged(const VipText&)), this, SLOT(receiveTitleChanged(const VipText&)));
-	//disconnect(scale, SIGNAL(geometryNeedUpdate()), this, SLOT(delayRecomputeGeometry()));
+	// disconnect(scale, SIGNAL(geometryNeedUpdate()), this, SLOT(delayRecomputeGeometry()));
 
-	if (d_data->scales.removeOne(scale))
-	{
-		//remove the items related to this scale
+	if (d_data->scales.removeOne(scale)) {
+		// remove the items related to this scale
 		QList<VipPlotItem*> items = scale->plotItems();
 		for (int i = 0; i < items.size(); ++i) {
 			d_data->items.removeOne(items[i]);
@@ -2348,7 +2234,6 @@ QList<VipAbstractScale*> VipAbstractPlotArea::scales() const
 	return d_data->scales;
 }
 
-
 QList<VipAbstractScale*> VipAbstractPlotArea::allScales() const
 {
 	const QList<QGraphicsItem*> items = this->childItems();
@@ -2364,12 +2249,11 @@ VipAbstractPlotArea::scales_state VipAbstractPlotArea::scalesState() const
 	return state;
 }
 
-void VipAbstractPlotArea::setScalesState(const scales_state & state)
+void VipAbstractPlotArea::setScalesState(const scales_state& state)
 {
 	QList<VipAbstractScale*> scales = VipAbstractScale::independentScales(this->scales());
-	for (int i = 0; i < scales.size(); ++i)
-	{
-		VipAbstractScale * sc = scales[i];
+	for (int i = 0; i < scales.size(); ++i) {
+		VipAbstractScale* sc = scales[i];
 		scales_state::const_iterator it = state.find(sc);
 		if (it != state.end())
 			sc->setScale(it->minValue(), it->maxValue());
@@ -2392,7 +2276,7 @@ int VipAbstractPlotArea::maximumScalesStates() const
 	return d_data->maximumScalesStates;
 }
 
-void VipAbstractPlotArea::setMaximumScalesStates(int max) 
+void VipAbstractPlotArea::setMaximumScalesStates(int max)
 {
 	if (max < 1)
 		max = 1;
@@ -2406,11 +2290,9 @@ void VipAbstractPlotArea::setMaximumScalesStates(int max)
 
 void VipAbstractPlotArea::bufferScalesState()
 {
-	if (d_data->trackScalesStateEnabled)
-	{
+	if (d_data->trackScalesStateEnabled) {
 		scales_state st = scalesState();
-		if (d_data->scalesStates.isEmpty() || d_data->scalesStates.last() != st)
-		{
+		if (d_data->scalesStates.isEmpty() || d_data->scalesStates.last() != st) {
 			d_data->scalesStates.append(st);
 			if (d_data->scalesStates.size() > d_data->maximumScalesStates)
 				d_data->scalesStates.pop_front();
@@ -2420,8 +2302,7 @@ void VipAbstractPlotArea::bufferScalesState()
 
 void VipAbstractPlotArea::undoScalesState()
 {
-	if (d_data->scalesStates.size())
-	{
+	if (d_data->scalesStates.size()) {
 		d_data->redoScalesStates.append(scalesState());
 		if (d_data->redoScalesStates.size() > d_data->maximumScalesStates)
 			d_data->redoScalesStates.pop_front();
@@ -2433,8 +2314,7 @@ void VipAbstractPlotArea::undoScalesState()
 
 void VipAbstractPlotArea::redoScalesState()
 {
-	if (d_data->redoScalesStates.size())
-	{
+	if (d_data->redoScalesStates.size()) {
 		bufferScalesState();
 
 		scales_state st = d_data->redoScalesStates.last();
@@ -2443,15 +2323,14 @@ void VipAbstractPlotArea::redoScalesState()
 	}
 }
 
-const QList<VipAbstractPlotArea::scales_state>  & VipAbstractPlotArea::undoStates() const
+const QList<VipAbstractPlotArea::scales_state>& VipAbstractPlotArea::undoStates() const
 {
 	return d_data->scalesStates;
 }
-const QList<VipAbstractPlotArea::scales_state>  & VipAbstractPlotArea::redoStates() const
+const QList<VipAbstractPlotArea::scales_state>& VipAbstractPlotArea::redoStates() const
 {
 	return d_data->redoScalesStates;
 }
-
 
 QByteArray VipAbstractPlotArea::saveSpatialScaleState() const
 {
@@ -2460,11 +2339,11 @@ QByteArray VipAbstractPlotArea::saveSpatialScaleState() const
 		QDataStream str(&ar, QIODevice::WriteOnly);
 		str.setByteOrder(QDataStream::LittleEndian);
 
-		//save the number of scales
+		// save the number of scales
 		str << d_data->scales.size();
 
-		//for each scale, save its title and bounds
-		//we also save the fact that vip_double is bigger than double
+		// for each scale, save its title and bounds
+		// we also save the fact that vip_double is bigger than double
 		for (int i = 0; i < d_data->scales.size(); ++i)
 			str << d_data->scales[i]->title().text() << d_data->scales[i]->scaleDiv().bounds();
 	}
@@ -2481,7 +2360,7 @@ void VipAbstractPlotArea::restoreSpatialScaleState(const QByteArray& state)
 	str >> count;
 
 	if (count < 1000) {
-		//count > 1000 make no sense
+		// count > 1000 make no sense
 
 		count = qMin(count, d_data->scales.size());
 		for (int i = 0; i < count; ++i) {
@@ -2490,18 +2369,14 @@ void VipAbstractPlotArea::restoreSpatialScaleState(const QByteArray& state)
 			str >> title >> inter;
 			inter = inter.normalized();
 			if (title == d_data->scales[i]->title().text()) {
-				//set interval only if same title
+				// set interval only if same title
 				d_data->scales[i]->setScale(inter.minValue(), inter.maxValue());
 			}
 		}
 	}
 }
 
-
-
-
-
-bool VipAbstractPlotArea::setItemProperty(const char* name, const QVariant& value, const QByteArray& index) 
+bool VipAbstractPlotArea::setItemProperty(const char* name, const QVariant& value, const QByteArray& index)
 {
 	if (value.userType() == 0)
 		return false;
@@ -2549,7 +2424,7 @@ bool VipAbstractPlotArea::setItemProperty(const char* name, const QVariant& valu
 		if (value.userType() == QMetaType::QByteArray)
 			setColorPalette(value.toByteArray());
 		else
-			setColorPalette(VipColorPalette((VipLinearColorMap::StandardColorMap) value.toInt()));
+			setColorPalette(VipColorPalette((VipLinearColorMap::StandardColorMap)value.toInt()));
 		return true;
 	}
 	if (strcmp(name, "colormap") == 0) {
@@ -2582,7 +2457,7 @@ bool VipAbstractPlotArea::setItemProperty(const char* name, const QVariant& valu
 			plotToolTip()->setOverlayBrush(value.value<QBrush>());
 		return true;
 	}
-	
+
 	if (strcmp(name, "legend-position") == 0) {
 		setProperty("_vip_legend-position", QVariant::fromValue(value.toInt()));
 		resetInnerLegendsStyleSheet();
@@ -2593,11 +2468,11 @@ bool VipAbstractPlotArea::setItemProperty(const char* name, const QVariant& valu
 		resetInnerLegendsStyleSheet();
 		return true;
 	}
-	return VipBoxGraphicsWidget::setItemProperty(name,value,index);
+	return VipBoxGraphicsWidget::setItemProperty(name, value, index);
 }
 
-void VipAbstractPlotArea::resetInnerLegendsStyleSheet() 
-{ 
+void VipAbstractPlotArea::resetInnerLegendsStyleSheet()
+{
 	QVariant vpos = property("_vip_legend-position");
 	if (vpos.isNull())
 		return;
@@ -2605,7 +2480,7 @@ void VipAbstractPlotArea::resetInnerLegendsStyleSheet()
 	int legend_pos = vpos.toInt();
 	if (legend_pos == Vip::detail::LegendNone || legend_pos <= Vip::detail::LegendRight) {
 		// remove all inner legends
-		for (int i = 0; i <  innerLegendCount(); ++i)
+		for (int i = 0; i < innerLegendCount(); ++i)
 			removeInnerLegend(innerLegend(i));
 	}
 
@@ -2634,27 +2509,25 @@ void VipAbstractPlotArea::resetInnerLegendsStyleSheet()
 		else if (legend_pos == Vip::detail::LegendInnerBottomRight)
 			align = Qt::AlignBottom | Qt::AlignRight;
 
-		//make sure there is at least one inner legend
+		// make sure there is at least one inner legend
 		if (innerLegendCount() == 0) {
 			addInnerLegend(new VipLegend(), align, qMax(borderLegend()->margin(), 5.));
 		}
 
 		// set ALL parameters to ALL inner legends
 		for (int i = 0; i < innerLegendCount(); ++i) {
-			setInnerLegendAlignment(i,align);
+			setInnerLegendAlignment(i, align);
 			setInnerLegendMargin(i, qMax(borderLegend()->margin(), 5.));
 		}
 	}
 }
 
-
-
-VipAxisColorMap* VipAbstractPlotArea::createColorMap(VipAxisBase::Alignment alignment, const VipInterval & interval, VipColorMap * map)
+VipAxisColorMap* VipAbstractPlotArea::createColorMap(VipAxisBase::Alignment alignment, const VipInterval& interval, VipColorMap* map)
 {
 	VipAxisColorMap* axis = new VipAxisColorMap(alignment);
 	axis->setCanvasProximity(2);
 	axis->scaleDraw()->setTicksPosition(VipScaleDraw::TicksInside);
-	//axis->boxStyle().setBackgroundBrush(QBrush(Qt::lightGray));
+	// axis->boxStyle().setBackgroundBrush(QBrush(Qt::lightGray));
 	axis->setRenderHints(QPainter::TextAntialiasing);
 	axis->setColorBarEnabled(true);
 	axis->setBorderDist(5, 5);
@@ -2668,30 +2541,28 @@ VipAxisColorMap* VipAbstractPlotArea::createColorMap(VipAxisBase::Alignment alig
 
 void VipAbstractPlotArea::addItem(VipPlotItem* item)
 {
-	//this->blockSignals(true);
-	// removeItem(item);
-	// this->blockSignals(false);
+	// this->blockSignals(true);
+	//  removeItem(item);
+	//  this->blockSignals(false);
 
 	if (this->isAutoScale())
-		//save the current scales state, before auto scaling apply
+		// save the current scales state, before auto scaling apply
 		bufferScalesState();
 
-	if (item  && d_data->items.indexOf(item)  < 0)
-	{
+	if (item && d_data->items.indexOf(item) < 0) {
 		d_data->items.append(item);
 
-//		item->setUpdater(this->updater());
+		//		item->setUpdater(this->updater());
 
-		//update main legend
-		if (d_data->legend && item->testItemAttribute(VipPlotItem::HasLegendIcon) && item->testItemAttribute(VipPlotItem::VisibleLegend))
-		{
+		// update main legend
+		if (d_data->legend && item->testItemAttribute(VipPlotItem::HasLegendIcon) && item->testItemAttribute(VipPlotItem::VisibleLegend)) {
 			d_data->legend->addItem(item);
 		}
-		//update additional legends
+		// update additional legends
 		for (int i = 0; i < d_data->legends.size(); ++i) {
 			if (d_data->legends[i].legend && item->testItemAttribute(VipPlotItem::HasLegendIcon) && item->testItemAttribute(VipPlotItem::VisibleLegend)) {
-				VipAbstractScale * sc = scaleForlegend(d_data->legends[i].legend);
-				if(!sc || item->axes().indexOf(sc) >= 0)
+				VipAbstractScale* sc = scaleForlegend(d_data->legends[i].legend);
+				if (!sc || item->axes().indexOf(sc) >= 0)
 					d_data->legends[i].legend->addItem(item);
 			}
 		}
@@ -2706,10 +2577,9 @@ void VipAbstractPlotArea::addItem(VipPlotItem* item)
 		connect(item, SIGNAL(itemChanged(VipPlotItem*)), this, SLOT(receiveChildChanged(VipPlotItem*)), Qt::DirectConnection);
 		connect(item, SIGNAL(selectionChanged(VipPlotItem*)), this, SLOT(receiveChildSelectionChanged(VipPlotItem*)), Qt::DirectConnection);
 		connect(item, SIGNAL(axisUnitChanged(VipPlotItem*)), this, SLOT(receiveChildAxisUnitChanged(VipPlotItem*)), Qt::DirectConnection);
-		connect(item, SIGNAL(dropped(VipPlotItem*, QMimeData *)), this, SLOT(receiveDropped(VipPlotItem*, QMimeData*)), Qt::DirectConnection);
+		connect(item, SIGNAL(dropped(VipPlotItem*, QMimeData*)), this, SLOT(receiveDropped(VipPlotItem*, QMimeData*)), Qt::DirectConnection);
 
-		if (qobject_cast<VipPlotItemData*>(item))
-		{
+		if (qobject_cast<VipPlotItemData*>(item)) {
 			connect(item, SIGNAL(dataChanged()), this, SLOT(receivedDataChanged()), Qt::AutoConnection);
 		}
 
@@ -2720,20 +2590,19 @@ void VipAbstractPlotArea::addItem(VipPlotItem* item)
 void VipAbstractPlotArea::removeItem(VipPlotItem* item)
 {
 	if (this->isAutoScale())
-		//save the current scales state, before auto scaling apply
+		// save the current scales state, before auto scaling apply
 		bufferScalesState();
 
-	if (item)
-	{
-		
-		d_data->items.removeOne(item);
-//		if(d_data->items.removeOne(item))
-//			item->setUpdater(nullptr);
+	if (item) {
 
-		//update main legend
+		d_data->items.removeOne(item);
+		//		if(d_data->items.removeOne(item))
+		//			item->setUpdater(nullptr);
+
+		// update main legend
 		if (d_data->legend)
 			d_data->legend->removeItem(item);
-		//update additional legends
+		// update additional legends
 		for (int i = 0; i < d_data->legends.size(); ++i) {
 			if (d_data->legends[i].legend) {
 				d_data->legends[i].legend->removeItem(item);
@@ -2750,10 +2619,9 @@ void VipAbstractPlotArea::removeItem(VipPlotItem* item)
 		disconnect(item, SIGNAL(itemChanged(VipPlotItem*)), this, SLOT(receiveChildChanged(VipPlotItem*)));
 		disconnect(item, SIGNAL(selectionChanged(VipPlotItem*)), this, SLOT(receiveChildSelectionChanged(VipPlotItem*)));
 		disconnect(item, SIGNAL(axisUnitChanged(VipPlotItem*)), this, SLOT(receiveChildAxisUnitChanged(VipPlotItem*)));
-		disconnect(item, SIGNAL(dropped(VipPlotItem*, QMimeData *)), this, SLOT(receiveDropped(VipPlotItem*, QMimeData*)));
+		disconnect(item, SIGNAL(dropped(VipPlotItem*, QMimeData*)), this, SLOT(receiveDropped(VipPlotItem*, QMimeData*)));
 
-		if (qobject_cast<VipPlotItemData*>(item))
-		{
+		if (qobject_cast<VipPlotItemData*>(item)) {
 			disconnect(item, SIGNAL(dataChanged()), this, SLOT(receivedDataChanged()));
 		}
 
@@ -2763,7 +2631,7 @@ void VipAbstractPlotArea::removeItem(VipPlotItem* item)
 
 void VipAbstractPlotArea::receivedDataChanged()
 {
-	if (VipPlotItem * item = qobject_cast<VipPlotItem*>(sender()))
+	if (VipPlotItem* item = qobject_cast<VipPlotItem*>(sender()))
 		Q_EMIT itemDataChanged(item);
 }
 
@@ -2777,16 +2645,14 @@ void VipAbstractPlotArea::resetInnerLegendsPosition()
 
 	double top_space = titleOffset();
 
-	for (int i = 0; i < d_data->legends.size(); ++i)
-	{
-		if (d_data->legends[i].legend && !d_data->legends[i].moved)
-		{
-			//compute margin
+	for (int i = 0; i < d_data->legends.size(); ++i) {
+		if (d_data->legends[i].legend && !d_data->legends[i].moved) {
+			// compute margin
 			double x_margin = 0;
 			double y_margin = 0;
 			if (d_data->legends[i].border_margin) {
 				QPointF p1(0, 0), p2(d_data->legends[i].border_margin, d_data->legends[i].border_margin);
-				if (QGraphicsView * v = this->view()) {
+				if (QGraphicsView* v = this->view()) {
 					p1 = v->mapToScene(p1.toPoint());
 					p2 = v->mapToScene(p2.toPoint());
 					p1 = this->mapFromScene(p1);
@@ -2816,7 +2682,7 @@ void VipAbstractPlotArea::resetInnerLegendsPosition()
 
 			QRectF geom(pos, size);
 			d_data->legends[i].legend->setGeometry(geom);
-			//d_data->legends[i].legend->setPos(pos);
+			// d_data->legends[i].legend->setPos(pos);
 		}
 	}
 }
@@ -2837,17 +2703,17 @@ void VipAbstractPlotArea::mouseButtonReleased(VipPlotItem* item, VipPlotItem::Mo
 	Q_EMIT mouseButtonRelease(item, button);
 }
 
-void VipAbstractPlotArea::mouseButtonDoubleClicked(VipPlotItem*item, VipPlotItem::MouseButton button)
+void VipAbstractPlotArea::mouseButtonDoubleClicked(VipPlotItem* item, VipPlotItem::MouseButton button)
 {
 	Q_EMIT mouseButtonDoubleClick(item, button);
 }
 
-void VipAbstractPlotArea::keyPressed(VipPlotItem * item, qint64 id, int key, int modifiers)
+void VipAbstractPlotArea::keyPressed(VipPlotItem* item, qint64 id, int key, int modifiers)
 {
 	Q_EMIT keyPress(item, id, key, modifiers);
 }
 
-void VipAbstractPlotArea::keyReleased(VipPlotItem * item, qint64 id, int key, int modifiers)
+void VipAbstractPlotArea::keyReleased(VipPlotItem* item, qint64 id, int key, int modifiers)
 {
 	Q_EMIT keyRelease(item, id, key, modifiers);
 }
@@ -2867,7 +2733,7 @@ void VipAbstractPlotArea::receiveChildAxisUnitChanged(VipPlotItem* item)
 	Q_EMIT childAxisUnitChanged(item);
 }
 
-void VipAbstractPlotArea::receiveTitleChanged(const VipText & title)
+void VipAbstractPlotArea::receiveTitleChanged(const VipText& title)
 {
 	Q_EMIT titleChanged(title);
 }
@@ -2879,13 +2745,11 @@ void VipAbstractPlotArea::receiveDropped(VipPlotItem* item, QMimeData* data)
 
 void VipAbstractPlotArea::setPlotToolTip(VipToolTip* tooltip)
 {
-	if (tooltip != d_data->plotToolTip)
-	{
+	if (tooltip != d_data->plotToolTip) {
 		if (d_data->plotToolTip)
 			delete d_data->plotToolTip;
 		d_data->plotToolTip = tooltip;
-		if (d_data->plotToolTip)
-		{
+		if (d_data->plotToolTip) {
 			d_data->plotToolTip->setPlotArea(this);
 		}
 	}
@@ -2902,11 +2766,11 @@ void VipAbstractPlotArea::refreshToolTip()
 		d_data->plotToolTip->refresh();
 }
 
-void	VipAbstractPlotArea::simulateMouseClick(const QGraphicsSceneMouseEvent * event)
+void VipAbstractPlotArea::simulateMouseClick(const QGraphicsSceneMouseEvent* event)
 {
-	//send mouse press and release event
-	GraphicsSceneMouseEvent *pressed = new GraphicsSceneMouseEvent(QEvent::GraphicsSceneMousePress, nullptr, false);
-	GraphicsSceneMouseEvent *released = new GraphicsSceneMouseEvent(QEvent::GraphicsSceneMouseRelease, this, false);
+	// send mouse press and release event
+	GraphicsSceneMouseEvent* pressed = new GraphicsSceneMouseEvent(QEvent::GraphicsSceneMousePress, nullptr, false);
+	GraphicsSceneMouseEvent* released = new GraphicsSceneMouseEvent(QEvent::GraphicsSceneMouseRelease, this, false);
 	pressed->import(*event);
 	released->import(*event);
 	_inSimulate = true;
@@ -2914,16 +2778,16 @@ void	VipAbstractPlotArea::simulateMouseClick(const QGraphicsSceneMouseEvent * ev
 	QApplication::postEvent(scene(), released);
 }
 
-void	VipAbstractPlotArea::hoverEnterEvent(QGraphicsSceneHoverEvent * event)
+void VipAbstractPlotArea::hoverEnterEvent(QGraphicsSceneHoverEvent* event)
 {
 	QPointF pos = event->pos();
-	if (canvas()->shape().contains(pos)) //inside canvas
+	if (canvas()->shape().contains(pos)) // inside canvas
 		Q_EMIT toolTipStarted((pos));
 
 	event->ignore();
 }
 
-void	VipAbstractPlotArea::hoverLeaveEvent(QGraphicsSceneHoverEvent * event)
+void VipAbstractPlotArea::hoverLeaveEvent(QGraphicsSceneHoverEvent* event)
 {
 	if (d_data->rubberBand)
 		d_data->rubberBand->setAdditionalPaintCommands(QPicture());
@@ -2931,18 +2795,16 @@ void	VipAbstractPlotArea::hoverLeaveEvent(QGraphicsSceneHoverEvent * event)
 	event->ignore();
 }
 
-void VipAbstractPlotArea::mouseMoveEvent(QGraphicsSceneMouseEvent * event)
+void VipAbstractPlotArea::mouseMoveEvent(QGraphicsSceneMouseEvent* event)
 {
 
 	if (d_data->rubberBand)
 		d_data->rubberBand->setAdditionalPaintCommands(QPicture());
 	Q_EMIT toolTipEnded((event->pos()));
 
-	if ((event->buttons() & d_data->mousePanning) && d_data->mousePos != Vip::InvalidPoint)
-	{
-		if (d_data->firstMousePanning)
-		{
-			Q_EMIT  mouseScaleAboutToChange();
+	if ((event->buttons() & d_data->mousePanning) && d_data->mousePos != Vip::InvalidPoint) {
+		if (d_data->firstMousePanning) {
+			Q_EMIT mouseScaleAboutToChange();
 			bufferScalesState();
 			d_data->firstMousePanning = false;
 		}
@@ -2951,27 +2813,23 @@ void VipAbstractPlotArea::mouseMoveEvent(QGraphicsSceneMouseEvent * event)
 		d_data->mousePos = event->pos();
 		this->translate(event->pos(), event->pos() - pos);
 		recomputeGeometry();
-
 	}
-	else if ((event->buttons() & d_data->mouseZoomSelection) && d_data->mousePos != Vip::InvalidPoint)
-	{
+	else if ((event->buttons() & d_data->mouseZoomSelection) && d_data->mousePos != Vip::InvalidPoint) {
 		d_data->mouseEndPos = event->pos();
 		d_data->rubberBand->setRubberBandEnd(event->pos());
 		d_data->rubberBand->setCursor(QCursor(Qt::CrossCursor));
 		this->update();
 	}
-	else if ((event->buttons() & d_data->mouseItemSelection) && d_data->mousePos != Vip::InvalidPoint)
-	{
+	else if ((event->buttons() & d_data->mouseItemSelection) && d_data->mousePos != Vip::InvalidPoint) {
 		d_data->mouseEndPos = event->pos();
 		d_data->rubberBand->setRubberBandEnd(event->pos());
 		this->update();
 	}
 	else
 		event->ignore();
-
 }
 
-QList<VipAbstractScale*> VipAbstractPlotArea::scalesForPos(const QPointF & pos) const
+QList<VipAbstractScale*> VipAbstractPlotArea::scalesForPos(const QPointF& pos) const
 {
 	QRectF r = canvas()->shape().boundingRect();
 	if (canvas()->shape().contains(pos))
@@ -2979,21 +2837,19 @@ QList<VipAbstractScale*> VipAbstractPlotArea::scalesForPos(const QPointF & pos) 
 	return QList<VipAbstractScale*>();
 }
 
-void	VipAbstractPlotArea::hoverMoveEvent(QGraphicsSceneHoverEvent * event)
+void VipAbstractPlotArea::hoverMoveEvent(QGraphicsSceneHoverEvent* event)
 {
 
 	QPointF pos = event->pos();
-	//bool inside_canvas = canvas()->shape().contains(pos);
+	// bool inside_canvas = canvas()->shape().contains(pos);
 	QList<VipAbstractScale*> tool_tip_scales = scalesForPos(pos);
 
-	if (tool_tip_scales.size())
-	{
+	if (tool_tip_scales.size()) {
 
 		Qt::MouseButtons buttons = QApplication::mouseButtons();
 
-		//display tool tip
-		if (d_data->plotToolTip && buttons == 0)
-		{
+		// display tool tip
+		if (d_data->plotToolTip && buttons == 0) {
 			if (d_data->plotToolTip->plotArea() != this)
 				d_data->plotToolTip->setPlotArea(this);
 			d_data->plotToolTip->setScales(tool_tip_scales);
@@ -3001,24 +2857,21 @@ void	VipAbstractPlotArea::hoverMoveEvent(QGraphicsSceneHoverEvent * event)
 			Q_EMIT toolTipMoved(event->pos());
 		}
 
-		//Since the rubber band accept hover events, they won't be propagated to underlying items.
-		//So we manually handle hover move, enter and leave events to simulate the standard behavior.
+		// Since the rubber band accept hover events, they won't be propagated to underlying items.
+		// So we manually handle hover move, enter and leave events to simulate the standard behavior.
 
-		//first, find the top most VipPlotItem under the mouse (if any)
-		VipPlotItem * pitem = nullptr;
-		QList<QGraphicsItem *> items = scene()->items(event->scenePos());
-		for (int i = 0; i < items.size(); ++i)
-		{
+		// first, find the top most VipPlotItem under the mouse (if any)
+		VipPlotItem* pitem = nullptr;
+		QList<QGraphicsItem*> items = scene()->items(event->scenePos());
+		for (int i = 0; i < items.size(); ++i) {
 			pitem = qobject_cast<VipPlotItem*>(items[i]->toGraphicsObject());
 			if (pitem)
 				break;
 		}
 
-		if (pitem)
-		{
-			//handle hover events
-			if (pitem != d_data->hoverItem)
-			{
+		if (pitem) {
+			// handle hover events
+			if (pitem != d_data->hoverItem) {
 				if (d_data->hoverItem)
 					d_data->hoverItem->hoverLeaveEvent(event);
 				pitem->hoverEnterEvent(event);
@@ -3028,9 +2881,8 @@ void	VipAbstractPlotArea::hoverMoveEvent(QGraphicsSceneHoverEvent * event)
 
 			d_data->hoverItem = pitem;
 		}
-		else
-		{
-			//no VipPlotItem under the mouse, send a hover leave event to the last VipPlotItem under the mouse (if any)
+		else {
+			// no VipPlotItem under the mouse, send a hover leave event to the last VipPlotItem under the mouse (if any)
 			if (d_data->hoverItem)
 				d_data->hoverItem->hoverLeaveEvent(event);
 			d_data->hoverItem = nullptr;
@@ -3038,13 +2890,12 @@ void	VipAbstractPlotArea::hoverMoveEvent(QGraphicsSceneHoverEvent * event)
 
 		Q_EMIT mouseHoverMove(d_data->hoverItem);
 	}
-	else
-	{
-		//mouse outside the canvas: send a hover leave event to the last VipPlotItem under the mouse (if any)
+	else {
+		// mouse outside the canvas: send a hover leave event to the last VipPlotItem under the mouse (if any)
 		if (d_data->hoverItem)
 			d_data->hoverItem->hoverLeaveEvent(event);
 
-		//reset additional drawing
+		// reset additional drawing
 		if (d_data->rubberBand)
 			d_data->rubberBand->setAdditionalPaintCommands(QPicture());
 		Q_EMIT toolTipEnded((event->pos()));
@@ -3056,10 +2907,10 @@ QPointF VipAbstractPlotArea::lastMousePressPos() const
 	return d_data->mousePress;
 }
 
-QGraphicsView * VipAbstractPlotArea::view() const
+QGraphicsView* VipAbstractPlotArea::view() const
 {
 	if (scene()) {
-		QList<QGraphicsView *> views = scene()->views();
+		QList<QGraphicsView*> views = scene()->views();
 		if (views.size())
 			return views.first();
 	}
@@ -3073,14 +2924,14 @@ VipPlotItem* VipAbstractPlotArea::lastPressed() const
 
 bool VipAbstractPlotArea::mouseInUse() const
 {
-	return vipIsValid( d_data->mousePos);
+	return vipIsValid(d_data->mousePos);
 }
 
 void VipAbstractPlotArea::setAlignedWith(VipAbstractPlotArea* other, Qt::Orientation align_orientation)
 {
 	addSharedAlignedArea(this, other, align_orientation);
 }
-	
+
 QList<VipAbstractPlotArea*> VipAbstractPlotArea::alignedWith(Qt::Orientation align_orientation) const
 {
 	return sharedAlignedAreas(this, align_orientation).values();
@@ -3090,357 +2941,329 @@ void VipAbstractPlotArea::removeAlignment(Qt::Orientation align_orientation)
 	removeSharedAlignedArea(this, align_orientation);
 }
 
-void VipAbstractPlotArea::mousePressEvent(QGraphicsSceneMouseEvent * event)
+void VipAbstractPlotArea::mousePressEvent(QGraphicsSceneMouseEvent* event)
 {
 	d_data->firstMousePanning = true;
 	d_data->mousePress = event->pos();
 
-	//bool inside_canvas = canvas()->shape().contains(event->pos());
+	// bool inside_canvas = canvas()->shape().contains(event->pos());
 	QList<VipAbstractScale*> scales = scalesForPos(event->pos());
 
-	if ((event->button() & d_data->mousePanning) && scales.size() //inside_canvas
-)
-	{
+	if ((event->button() & d_data->mousePanning) && scales.size() // inside_canvas
+	) {
 		d_data->mousePos = event->pos();
 		if (d_data->rubberBand)
 			d_data->rubberBand->setCursor(QCursor(Qt::ClosedHandCursor));
 		d_data->isMousePanning = true;
-
 	}
 	else if ((event->button() & d_data->mouseZoomSelection) //&& inside_canvas
-)
-	{
+	) {
 		d_data->mousePos = event->pos();
-		if (d_data->rubberBand)
-		{
+		if (d_data->rubberBand) {
 			d_data->rubberBand->setRubberBandStart(event->pos());
-			//d_data->rubberBand->setCursor(QCursor(Qt::CrossCursor));
+			// d_data->rubberBand->setCursor(QCursor(Qt::CrossCursor));
 		}
 	}
 	else if ((event->button() & d_data->mouseItemSelection) //&& inside_canvas
-)
-	{
+	) {
 		d_data->mousePos = event->pos();
-		if (d_data->rubberBand)
-		{
+		if (d_data->rubberBand) {
 			d_data->rubberBand->setRubberBandStart(event->pos());
 			d_data->rubberBand->setCursor(QCursor(Qt::CrossCursor));
 		}
 	}
-	else
-	{
-		
+	else {
+
 		event->ignore();
 	}
 }
 
-void VipAbstractPlotArea::mouseReleaseEvent(QGraphicsSceneMouseEvent * event)
+void VipAbstractPlotArea::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
 {
 	if (d_data->isMousePanning)
 		Q_EMIT endMousePanning();
 	d_data->isMousePanning = false;
 	d_data->firstMousePanning = true;
 
-	//if (testItemAttribute(IgnoreMouseEvents))
-	// {
-	// event->ignore();
-	// return;
-	// }
+	// if (testItemAttribute(IgnoreMouseEvents))
+	//  {
+	//  event->ignore();
+	//  return;
+	//  }
 
 	d_data->mousePos = Vip::InvalidPoint;
 
-	if (event->button() & d_data->mouseZoomSelection)
-	{
-		if ((d_data->rubberBand && d_data->rubberBand->hasRubberBandArea()) || mouseSelectionAndZoom())
-		{
-			if (mouseSelectionAndZoom() &&
-				d_data->rubberBand->rubberBandWidth() < d_data->mouseSelectionAndZoomMinimumSize.width() &&
-				d_data->rubberBand->rubberBandHeight() < d_data->mouseSelectionAndZoomMinimumSize.height()) {
-				//apply selection
+	if (event->button() & d_data->mouseZoomSelection) {
+		if ((d_data->rubberBand && d_data->rubberBand->hasRubberBandArea()) || mouseSelectionAndZoom()) {
+			if (mouseSelectionAndZoom() && d_data->rubberBand->rubberBandWidth() < d_data->mouseSelectionAndZoomMinimumSize.width() &&
+			    d_data->rubberBand->rubberBandHeight() < d_data->mouseSelectionAndZoomMinimumSize.height()) {
+				// apply selection
 				simulateMouseClick(event);
 			}
 			else if (d_data->rubberBand->hasRubberBandArea()) {
-				//apply zooming
-				Q_EMIT  mouseScaleAboutToChange();
+				// apply zooming
+				Q_EMIT mouseScaleAboutToChange();
 				bufferScalesState();
 				this->zoomOnSelection(d_data->rubberBand->rubberBandStart(), d_data->rubberBand->rubberBandEnd());
 				recomputeGeometry();
 			}
 			Q_EMIT endMouseZooming();
-
 		}
-		//else  if(event->pos() == event->buttonDownPos(event->button() ))//TEST
+		// else  if(event->pos() == event->buttonDownPos(event->button() ))//TEST
 		//	event->ignore();
-		if (d_data->rubberBand)
-		{
+		if (d_data->rubberBand) {
 			d_data->rubberBand->setCursor(QCursor(Qt::ArrowCursor));
 			d_data->rubberBand->resetRubberBand();
 		}
 	}
-	else if (event->button() & d_data->mouseItemSelection)
-	{
-		//find items inside selection
-		if (d_data->rubberBand && d_data->rubberBand->hasRubberBandArea())
-		{
-			//select or unselect items under mouse
+	else if (event->button() & d_data->mouseItemSelection) {
+		// find items inside selection
+		if (d_data->rubberBand && d_data->rubberBand->hasRubberBandArea()) {
+			// select or unselect items under mouse
 			bool ctrl_down = (event->modifiers() & Qt::ControlModifier);
 			QRectF selection = QRectF(d_data->rubberBand->rubberBandStart(), d_data->rubberBand->rubberBandEnd()).normalized();
 			PlotItemList lst = this->plotItems();
 
-			for (int i = 0; i < lst.size(); ++i)
-			{
+			for (int i = 0; i < lst.size(); ++i) {
 				VipPlotItem* item = lst[i];
-				//items under selection area
-				if (selection.intersects(item->shape().boundingRect()))
-				{
+				// items under selection area
+				if (selection.intersects(item->shape().boundingRect())) {
 					bool was_selected = item->isSelected();
 					bool selected = true;
 					if (was_selected && ctrl_down)
 						selected = false;
-					//if (ctrl_down) selected = !selected;
+					// if (ctrl_down) selected = !selected;
 					item->setSelected(selected);
 				}
-				else if (!ctrl_down)
-				{
-					//if item is not under selection area, unselect it unless CTRL is down
+				else if (!ctrl_down) {
+					// if item is not under selection area, unselect it unless CTRL is down
 					item->setSelected(false);
 				}
 			}
 		}
-		else
-		{
-			//if no selection, simulate mouse click for standard selection behavior
+		else {
+			// if no selection, simulate mouse click for standard selection behavior
 			simulateMouseClick(event);
 		}
-		if (d_data->rubberBand)
-		{
+		if (d_data->rubberBand) {
 			d_data->rubberBand->setCursor(QCursor(Qt::ArrowCursor));
 			d_data->rubberBand->resetRubberBand();
 		}
 	}
-	else if (event->button() & d_data->mousePanning)
-	{
+	else if (event->button() & d_data->mousePanning) {
 		if (d_data->rubberBand)
 			d_data->rubberBand->setCursor(QCursor(Qt::ArrowCursor));
 		double len = (event->pos() - d_data->mousePress).manhattanLength();
-		if (len < 7)//event->buttonDownPos(event->button() ))
+		if (len < 7) // event->buttonDownPos(event->button() ))
 		{
 			simulateMouseClick(event);
-			//event->ignore();
+			// event->ignore();
 		}
 		else
 			event->ignore();
 	}
-	else
-	{
+	else {
 		event->ignore();
 	}
 
 	d_data->mousePress = Vip::InvalidPoint;
 }
-void 	VipAbstractPlotArea::wheelEvent(QGraphicsSceneWheelEvent * event)
+void VipAbstractPlotArea::wheelEvent(QGraphicsSceneWheelEvent* event)
 {
-	if (!mouseWheelZoom())
-	{
+	if (!mouseWheelZoom()) {
 		event->ignore();
 		return;
 	}
 
-	Q_EMIT  mouseScaleAboutToChange();
+	Q_EMIT mouseScaleAboutToChange();
 	bufferScalesState();
 
 	if (d_data->rubberBand)
 		d_data->rubberBand->setAdditionalPaintCommands(QPicture());
 
 	if (event->delta() > 0) {
-		//zoom in
+		// zoom in
 		zoomOnPosition(event->pos(), zoomMultiplier());
 	}
 	else {
-		//zoom out
+		// zoom out
 		zoomOnPosition(event->pos(), 1 / zoomMultiplier());
-
 	}
 
 	Q_EMIT endMouseWheel();
 
-	//TODO: remove call twice (now only works properly with 2 calls)
+	// TODO: remove call twice (now only works properly with 2 calls)
 	recomputeGeometry();
 	recomputeGeometry();
-
 }
 
-QVariant VipAbstractPlotArea::itemChange(QGraphicsItem::GraphicsItemChange change, const QVariant& value) 
+QVariant VipAbstractPlotArea::itemChange(QGraphicsItem::GraphicsItemChange change, const QVariant& value)
 {
 	if (change == QGraphicsItem::ItemChildAddedChange)
 		applyColorPalette();
 	return VipBoxGraphicsWidget::itemChange(change, value);
 }
 
-VipPoint VipAbstractPlotArea::positionToScale(const QPointF & pos, bool *ok) const
+VipPoint VipAbstractPlotArea::positionToScale(const QPointF& pos, bool* ok) const
 {
 	QList<VipAbstractScale*> scales;
 	standardScales(scales);
-	if (scales.size() == 2)
-	{
+	if (scales.size() == 2) {
 		vip_double x = scales.first()->scaleDraw()->value(scales.first()->mapFromItem(this, pos));
 		vip_double y = scales.last()->scaleDraw()->value(scales.last()->mapFromItem(this, pos));
 		VipPoint res(x, y);
-		if (ok) *ok = true;
+		if (ok)
+			*ok = true;
 		return res;
 	}
-	else
-	{
-		if (ok) *ok = false;
+	else {
+		if (ok)
+			*ok = false;
 		return VipPoint();
 	}
 }
 
-VipPoint VipAbstractPlotArea::positionToScale(const QPointF & pos, const QList<VipAbstractScale*> & scales, bool *ok) const
+VipPoint VipAbstractPlotArea::positionToScale(const QPointF& pos, const QList<VipAbstractScale*>& scales, bool* ok) const
 {
-	if (scales.size() == 2)
-	{
+	if (scales.size() == 2) {
 		vip_double x = scales.first()->scaleDraw()->value(scales.first()->mapFromItem(this, pos));
 		vip_double y = scales.last()->scaleDraw()->value(scales.last()->mapFromItem(this, pos));
 		VipPoint res(x, y);
-		if (ok) *ok = true;
+		if (ok)
+			*ok = true;
 		return res;
 	}
-	else
-	{
-		if (ok) *ok = false;
+	else {
+		if (ok)
+			*ok = false;
 		return VipPoint();
 	}
 }
 
-QPointF VipAbstractPlotArea::scaleToPosition(const VipPoint & scale_value, bool *ok) const
+QPointF VipAbstractPlotArea::scaleToPosition(const VipPoint& scale_value, bool* ok) const
 {
 	QList<VipAbstractScale*> scales;
 	standardScales(scales);
-	if (scales.size() == 2)
-	{
+	if (scales.size() == 2) {
 		double x = this->mapFromItem(scales.first(), scales.first()->scaleDraw()->position(scale_value.x())).x();
 		double y = this->mapFromItem(scales.last(), scales.last()->scaleDraw()->position(scale_value.y())).y();
 		QPointF res(x, y);
-		if (ok) *ok = true;
+		if (ok)
+			*ok = true;
 		return res;
 	}
-	else
-	{
-		if (ok) *ok = false;
+	else {
+		if (ok)
+			*ok = false;
 		return QPointF();
 	}
 }
 
-QPointF VipAbstractPlotArea::scaleToPosition(const VipPoint & scale_value, const QList<VipAbstractScale*> & scales, bool *ok) const
+QPointF VipAbstractPlotArea::scaleToPosition(const VipPoint& scale_value, const QList<VipAbstractScale*>& scales, bool* ok) const
 {
-	if (scales.size() == 2)
-	{
+	if (scales.size() == 2) {
 		double x = this->mapFromItem(scales.first(), scales.first()->scaleDraw()->position(scale_value.x())).x();
 		double y = this->mapFromItem(scales.last(), scales.last()->scaleDraw()->position(scale_value.y())).y();
 		QPointF res(x, y);
-		if (ok) *ok = true;
+		if (ok)
+			*ok = true;
 		return res;
 	}
-	else
-	{
-		if (ok) *ok = false;
+	else {
+		if (ok)
+			*ok = false;
 		return QPointF();
 	}
 }
 
-VipPointVector VipAbstractPlotArea::positionToScale(const QVector<QPointF> & positions, bool *ok) const
+VipPointVector VipAbstractPlotArea::positionToScale(const QVector<QPointF>& positions, bool* ok) const
 {
 	QList<VipAbstractScale*> scales;
 	standardScales(scales);
-	if (scales.size() == 2)
-	{
-		if (ok) *ok = true;
+	if (scales.size() == 2) {
+		if (ok)
+			*ok = true;
 		VipPointVector res(positions.size());
-		VipAbstractScale * scale_x = scales.first();
-		VipAbstractScale * scale_y = scales.last();
-		for (int i = 0; i < positions.size(); ++i)
-		{
+		VipAbstractScale* scale_x = scales.first();
+		VipAbstractScale* scale_y = scales.last();
+		for (int i = 0; i < positions.size(); ++i) {
 			const vip_double x = scale_x->scaleDraw()->value(scale_x->mapFromItem(this, positions[i]));
 			const vip_double y = scale_y->scaleDraw()->value(scale_y->mapFromItem(this, positions[i]));
 			res[i] = VipPoint(x, y);
 		}
 		return res;
 	}
-	else
-	{
-		if (ok) *ok = false;
+	else {
+		if (ok)
+			*ok = false;
 		return VipPointVector();
 	}
 }
 
-VipPointVector VipAbstractPlotArea::positionToScale(const QVector<QPointF> & positions, const QList<VipAbstractScale*> & scales, bool *ok) const
+VipPointVector VipAbstractPlotArea::positionToScale(const QVector<QPointF>& positions, const QList<VipAbstractScale*>& scales, bool* ok) const
 {
-	if (scales.size() == 2)
-	{
-		if (ok) *ok = true;
+	if (scales.size() == 2) {
+		if (ok)
+			*ok = true;
 		VipPointVector res(positions.size());
-		VipAbstractScale * scale_x = scales.first();
-		VipAbstractScale * scale_y = scales.last();
-		for (int i = 0; i < positions.size(); ++i)
-		{
+		VipAbstractScale* scale_x = scales.first();
+		VipAbstractScale* scale_y = scales.last();
+		for (int i = 0; i < positions.size(); ++i) {
 			const vip_double x = scale_x->scaleDraw()->value(scale_x->mapFromItem(this, positions[i]));
 			const vip_double y = scale_y->scaleDraw()->value(scale_y->mapFromItem(this, positions[i]));
 			res[i] = VipPoint(x, y);
 		}
 		return res;
 	}
-	else
-	{
-		if (ok) *ok = false;
+	else {
+		if (ok)
+			*ok = false;
 		return VipPointVector();
 	}
 }
 
-QVector<QPointF> VipAbstractPlotArea::scaleToPosition(const VipPointVector & scale_values, bool *ok) const
+QVector<QPointF> VipAbstractPlotArea::scaleToPosition(const VipPointVector& scale_values, bool* ok) const
 {
 	QList<VipAbstractScale*> scales;
 	standardScales(scales);
-	if (scales.size() == 2)
-	{
-		if (ok) *ok = true;
+	if (scales.size() == 2) {
+		if (ok)
+			*ok = true;
 		QVector<QPointF> res(scale_values.size());
-		VipAbstractScale * scale_x = scales.first();
-		VipAbstractScale * scale_y = scales.last();
-		for (int i = 0; i < scale_values.size(); ++i)
-		{
+		VipAbstractScale* scale_x = scales.first();
+		VipAbstractScale* scale_y = scales.last();
+		for (int i = 0; i < scale_values.size(); ++i) {
 			const double x = this->mapFromItem(scale_x, scale_x->scaleDraw()->position(scale_values[i].x())).x();
 			const double y = this->mapFromItem(scale_y, scale_y->scaleDraw()->position(scale_values[i].y())).y();
 			res[i] = QPointF(x, y);
 		}
 		return res;
 	}
-	else
-	{
-		if (ok) *ok = false;
+	else {
+		if (ok)
+			*ok = false;
 		return QVector<QPointF>();
 	}
 }
 
-QVector<QPointF> VipAbstractPlotArea::scaleToPosition(const VipPointVector & scale_values, const QList<VipAbstractScale*> & scales, bool *ok) const
+QVector<QPointF> VipAbstractPlotArea::scaleToPosition(const VipPointVector& scale_values, const QList<VipAbstractScale*>& scales, bool* ok) const
 {
-	if (scales.size() == 2)
-	{
-		if (ok) *ok = true;
+	if (scales.size() == 2) {
+		if (ok)
+			*ok = true;
 		QVector<QPointF> res(scale_values.size());
-		VipAbstractScale * scale_x = scales.first();
-		VipAbstractScale * scale_y = scales.last();
-		for (int i = 0; i < scale_values.size(); ++i)
-		{
+		VipAbstractScale* scale_x = scales.first();
+		VipAbstractScale* scale_y = scales.last();
+		for (int i = 0; i < scale_values.size(); ++i) {
 			const double x = this->mapFromItem(scale_x, scale_x->scaleDraw()->position(scale_values[i].x())).x();
 			const double y = this->mapFromItem(scale_y, scale_y->scaleDraw()->position(scale_values[i].y())).y();
 			res[i] = QPointF(x, y);
 		}
 		return res;
 	}
-	else
-	{
-		if (ok) *ok = false;
+	else {
+		if (ok)
+			*ok = false;
 		return QVector<QPointF>();
 	}
 }
@@ -3451,8 +3274,7 @@ void VipAbstractPlotArea::setAutoScale(bool auto_scale)
 		bufferScalesState();
 
 	QList<VipAbstractScale*> sc = scales();
-	for (int i = 0; i < sc.size(); ++i)
-	{
+	for (int i = 0; i < sc.size(); ++i) {
 		sc[i]->setAutoScale(auto_scale);
 	}
 	Q_EMIT autoScaleChanged(auto_scale);
@@ -3461,8 +3283,7 @@ void VipAbstractPlotArea::setAutoScale(bool auto_scale)
 bool VipAbstractPlotArea::isAutoScale() const
 {
 	QList<VipAbstractScale*> sc = scales();
-	for (int i = 0; i < sc.size(); ++i)
-	{
+	for (int i = 0; i < sc.size(); ++i) {
 		if (!sc[i]->isAutoScale())
 			return false;
 	}
@@ -3479,15 +3300,15 @@ void VipAbstractPlotArea::disableAutoScale()
 	setAutoScale(false);
 }
 
-QList<VipPlotItem*> VipAbstractPlotArea::plotItems(const QPointF & pos) const
+QList<VipPlotItem*> VipAbstractPlotArea::plotItems(const QPointF& pos) const
 {
 	QList<VipPlotItem*> res;
 
 	const bool valid_pos = vipIsValid(pos);
 
-	for (QList<VipPlotItem*>::iterator it = d_data->items.begin(); it != d_data->items.end(); ++it)//QSet<VipPlotItem*>::iterator it = set.begin(); it != set.end(); ++it)
+	for (QList<VipPlotItem*>::iterator it = d_data->items.begin(); it != d_data->items.end(); ++it) // QSet<VipPlotItem*>::iterator it = set.begin(); it != set.end(); ++it)
 	{
-		VipPlotItem * item = *it;
+		VipPlotItem* item = *it;
 		if (valid_pos && item->shape().contains(pos))
 			res << item;
 		else if (!valid_pos)
@@ -3497,24 +3318,19 @@ QList<VipPlotItem*> VipAbstractPlotArea::plotItems(const QPointF & pos) const
 	return res;
 }
 
-
-
-PlotItemList VipAbstractPlotArea::plotItems(const QPointF & pos, int axis, double maxDistance, QList<VipPointVector> & out_points, VipBoxStyleList & out_styles, QList<int> & out_legends) const
+PlotItemList VipAbstractPlotArea::plotItems(const QPointF& pos, int axis, double maxDistance, QList<VipPointVector>& out_points, VipBoxStyleList& out_styles, QList<int>& out_legends) const
 {
 	PlotItemList res;
 
-	for (int i = 0; i < d_data->items.size(); ++i)
-	{
-		if (VipPlotItem * item = d_data->items[i])
-		{
+	for (int i = 0; i < d_data->items.size(); ++i) {
+		if (VipPlotItem* item = d_data->items[i]) {
 			VipPointVector out;
 			VipBoxStyle st;
 			int legend_index = -1;
 			QPointF item_pos = mapToItem(item, pos);
 			bool r = item->areaOfInterest(item_pos, axis, maxDistance, out, st, legend_index);
 
-			if (r || item->shape().contains(item_pos))
-			{
+			if (r || item->shape().contains(item_pos)) {
 				res << item;
 				out_points << out;
 				out_styles << st;
@@ -3526,23 +3342,13 @@ PlotItemList VipAbstractPlotArea::plotItems(const QPointF & pos, int axis, doubl
 	return res;
 }
 
-
-
-
-
-
-
-
-
-
-
 /// \internal
 /// Compute the geometry for VipBorderItem
 class ComputeBorderGeometry
 {
 
 	/// Returns the inner and outer plotting area (if any).
-	void computeRects(const VipMargins & margins)
+	void computeRects(const VipMargins& margins)
 	{
 		outerRect = parent->boundingRect();
 		innerRect = outerRect;
@@ -3555,10 +3361,9 @@ class ComputeBorderGeometry
 	}
 
 public:
-
-	QGraphicsWidget * parent;
+	QGraphicsWidget* parent;
 	QList<VipBorderItem*> linkedBorders;
-	QMap<VipBorderItem*, QPair<double, double> > offsets;
+	QMap<VipBorderItem*, QPair<double, double>> offsets;
 	QMap<VipBorderItem*, double> extents;
 	QMap<VipBorderItem*, double> parentExtents;
 	double left;
@@ -3569,39 +3374,40 @@ public:
 	QRectF outerRect;
 
 	ComputeBorderGeometry()
-		: parent(nullptr), left(0), right(0), top(0), bottom(0) {}
-
-
-	void computeItemsGeometry(const VipMargins & margins)
+	  : parent(nullptr)
+	  , left(0)
+	  , right(0)
+	  , top(0)
+	  , bottom(0)
 	{
-		//const VipBorderItem* item = static_cast<const VipBorderItem*>(b_item);
+	}
+
+	void computeItemsGeometry(const VipMargins& margins)
+	{
+		// const VipBorderItem* item = static_cast<const VipBorderItem*>(b_item);
 
 		VipMargins marg = margins;
 
-		//compute linkedBorders items
-		//linkedBorders = linkedItems<VipBorderItem>();
+		// compute linkedBorders items
+		// linkedBorders = linkedItems<VipBorderItem>();
 
-		//compute borders length and offsets
-
+		// compute borders length and offsets
 
 		left = right = top = bottom = 0;
 
-		//first, compute the inner rect without border items
+		// first, compute the inner rect without border items
 		computeRects(marg);
 
-		VipMargins m; //potential margins due to border dist hint
+		VipMargins m; // potential margins due to border dist hint
 
-		for (int i = 0; i < 2; ++i)
-		{
+		for (int i = 0; i < 2; ++i) {
 			left = right = top = bottom = 0;
 
-			//compute the different extents in 2 passes
-			for (QList<VipBorderItem*>::const_iterator it = linkedBorders.begin(); it != linkedBorders.end(); ++it)
-			{
-				VipBorderItem * item = *it;
+			// compute the different extents in 2 passes
+			for (QList<VipBorderItem*>::const_iterator it = linkedBorders.begin(); it != linkedBorders.end(); ++it) {
+				VipBorderItem* item = *it;
 				if (!(*it)->isVisible() || (*it)->axisIntersectionEnabled() || item->property("_vip_ignore_geometry").toBool())
 					continue;
-
 
 				QRectF r;
 				if ((*it)->expandToCorners())
@@ -3615,50 +3421,44 @@ public:
 				else
 					length = r.width();
 
-				//if ((*it)->ignoreTransformations())
+				// if ((*it)->ignoreTransformations())
 				//	length = (*it)->view()->mapFromScene(QPoint(length, 0.)).x() - (*it)->view()->mapFromScene(QPoint(0, 0.)).x();
-
 
 				double extent = (*it)->extentForLength(length);
 				extents[(*it)] = extent;
 
-
 				double parentExtent = extent;
-				//if ((*it)->ignoreTransformations())
+				// if ((*it)->ignoreTransformations())
 				//	parentExtent = (*it)->view()->mapToScene(QPoint(parentExtent, 0.)).x() - (*it)->view()->mapToScene(QPoint(0, 0.)).x();
 
 				parentExtents[(*it)] = parentExtent;
 
-				//ignore scales inside a VipMultiAxisBase when computing the inner rect
+				// ignore scales inside a VipMultiAxisBase when computing the inner rect
 				if (VipMultiAxisBase::fromScale(item))
 					parentExtent = 0;
 
 				double start_dist = 0, end_dist = 0;
-				//compute total length for each sides
-				if ((*it)->alignment() == VipBorderItem::Left)
-				{
-					//TODO: we replaced (*it)->scaleDraw()->getBorderDistHint with (*it)->getBorderDistHint. Is is ok?
+				// compute total length for each sides
+				if ((*it)->alignment() == VipBorderItem::Left) {
+					// TODO: we replaced (*it)->scaleDraw()->getBorderDistHint with (*it)->getBorderDistHint. Is is ok?
 					left += parentExtent;
 					(*it)->getBorderDistHint(start_dist, end_dist);
 					m.bottom = qMax(m.bottom, start_dist);
 					m.top = qMax(m.top, end_dist);
 				}
-				else if ((*it)->alignment() == VipBorderItem::Right)
-				{
+				else if ((*it)->alignment() == VipBorderItem::Right) {
 					right += parentExtent;
 					(*it)->getBorderDistHint(start_dist, end_dist);
 					m.bottom = qMax(m.bottom, start_dist);
 					m.top = qMax(m.top, end_dist);
 				}
-				else if ((*it)->alignment() == VipBorderItem::Top)
-				{
+				else if ((*it)->alignment() == VipBorderItem::Top) {
 					top += parentExtent;
 					(*it)->getBorderDistHint(start_dist, end_dist);
 					m.left = qMax(m.left, start_dist);
 					m.right = qMax(m.right, end_dist);
 				}
-				else if ((*it)->alignment() == VipBorderItem::Bottom)
-				{
+				else if ((*it)->alignment() == VipBorderItem::Bottom) {
 					bottom += parentExtent;
 					(*it)->getBorderDistHint(start_dist, end_dist);
 					m.left = qMax(m.left, start_dist);
@@ -3669,39 +3469,40 @@ public:
 			computeRects(marg);
 		}
 
-		//left = qMax(left,m.left);
-		// right = qMax(right,m.right);
-		// top = qMax(top,m.top);
-		// bottom = qMax(bottom,m.bottom);
-		if (m.left > left) marg.left += m.left - left;
-		if (m.right > right) marg.right += m.right - right;
-		if (m.top > top) marg.top += m.top - top;
-		if (m.bottom > bottom) marg.bottom += m.bottom - bottom;
+		// left = qMax(left,m.left);
+		//  right = qMax(right,m.right);
+		//  top = qMax(top,m.top);
+		//  bottom = qMax(bottom,m.bottom);
+		if (m.left > left)
+			marg.left += m.left - left;
+		if (m.right > right)
+			marg.right += m.right - right;
+		if (m.top > top)
+			marg.top += m.top - top;
+		if (m.bottom > bottom)
+			marg.bottom += m.bottom - bottom;
 		computeRects(marg);
 
-		//compute the different offsets
+		// compute the different offsets
 
-		for (QList<VipBorderItem*>::const_iterator it = linkedBorders.begin(); it != linkedBorders.end(); ++it)
-		{
-			VipBorderItem * item = *it;
+		for (QList<VipBorderItem*>::const_iterator it = linkedBorders.begin(); it != linkedBorders.end(); ++it) {
+			VipBorderItem* item = *it;
 			if (!item->isVisible() || item->axisIntersectionEnabled() || item->property("_vip_ignore_geometry").toBool())
 				continue;
 
-			//compute offsets for each items
+			// compute offsets for each items
 			int index = linkedBorders.indexOf(item);
 			QPair<double, double> off(0., 0.);
 
-			for (int i = 0; i < linkedBorders.size(); ++i)
-			{
-				VipBorderItem * ax = linkedBorders[i];
+			for (int i = 0; i < linkedBorders.size(); ++i) {
+				VipBorderItem* ax = linkedBorders[i];
 
 				if (!ax->isVisible() || ax == *it || ax->alignment() != (*it)->alignment())
 					continue;
 
 				double extent = parentExtents[ax];
 
-				if (!ax->axisIntersectionEnabled())
-				{
+				if (!ax->axisIntersectionEnabled()) {
 					if (ax->canvasProximity() < (*it)->canvasProximity())
 						off.first += extent;
 					else if (ax->canvasProximity() == (*it)->canvasProximity() && i < index)
@@ -3711,32 +3512,29 @@ public:
 				}
 			}
 
-
 			offsets[*it] = off;
-
 		}
-
 	}
 
-	void computeItemGeometry(VipBorderItem * item, bool compute_intersection_geometry)
+	void computeItemGeometry(VipBorderItem* item, bool compute_intersection_geometry)
 	{
 		if (item->property("_vip_ignore_geometry").toBool())
 			return;
 
-		//do no modify position or size if the computed inner and outer rects are invalid
+		// do no modify position or size if the computed inner and outer rects are invalid
 		if (!outerRect.isValid())
 			return;
 
-		//first, compute the geometry of intersected axis and avoid
-		//infinite recursion in case of cross intersection
+		// first, compute the geometry of intersected axis and avoid
+		// infinite recursion in case of cross intersection
 		if (item->axisIntersectionEnabled() && compute_intersection_geometry && item->axisIntersection()->parentItem() == parent)
-			computeItemGeometry(item->axisIntersection(),false);
+			computeItemGeometry(item->axisIntersection(), false);
 
-		//the new item geometry
+		// the new item geometry
 		QPointF new_pos;
 		QRectF new_rect;
 
-		//compute the geometry
+		// compute the geometry
 		{
 			QRectF surrounded_rect = innerRect;
 			QPair<double, double> off = offsets[item];
@@ -3758,8 +3556,8 @@ public:
 			else if (item->alignment() == VipBorderItem::Bottom)
 				new_pos = QPointF(surrounded_rect.left(), surrounded_rect.bottom() + off.first);
 
-			if (VipBorderItem * inter = item->axisIntersection()){
-				if (inter->parentItem() == item->parentItem()){
+			if (VipBorderItem* inter = item->axisIntersection()) {
+				if (inter->parentItem() == item->parentItem()) {
 					if (item->orientation() == Qt::Vertical)
 						new_pos.setX(inter->position(item->axisIntersectionValue(), 0, item->axisIntersectionType()).x() + inter->pos().x());
 					else
@@ -3788,22 +3586,20 @@ public:
 					}
 					else if (item->alignment() == VipBorderItem::Right)
 						new_rect.setRight(new_rect.right() + fullExtent);
-					
 				}
 			}
 		}
 
-
-		//take into account corners
-		if (item->expandToCorners()){
+		// take into account corners
+		if (item->expandToCorners()) {
 			QRectF rect = (new_rect);
 
-			if (item->orientation() == Qt::Horizontal){
+			if (item->orientation() == Qt::Horizontal) {
 				new_pos.setX(new_pos.x() - this->left);
 				new_rect.setRight(new_rect.right() + this->left + this->right);
 				rect.moveLeft(rect.left() + this->left);
 			}
-			else{
+			else {
 
 				new_pos.setY(new_pos.y() - this->top);
 				new_rect.setBottom(new_rect.bottom() + this->top + this->bottom);
@@ -3812,29 +3608,25 @@ public:
 			item->setBoundingRectNoCorners(rect);
 		}
 
-
-		//update geometry only if needed
-		if (new_pos != item->pos() || new_rect != item->boundingRect())
-		{
-			//item->setPos(new_pos);
+		// update geometry only if needed
+		if (new_pos != item->pos() || new_rect != item->boundingRect()) {
+			// item->setPos(new_pos);
 			if (!item->expandToCorners())
 				item->setBoundingRectNoCorners(new_rect);
 
 			item->itemGeometryChanged(new_rect);
 			item->setGeometry(new_rect.translated(new_pos));
-			
-			//fully update items
+
+			// fully update items
 			item->updateItems();
 		}
-		else
-		{
+		else {
 			item->itemGeometryChanged(new_rect);
 		}
 		item->update();
 	}
 
-
-	static void recomputeGeometry(VipAbstractPlotArea * area, QRectF & innerRect, QRectF & outerRect, bool compute_aligned = false)
+	static void recomputeGeometry(VipAbstractPlotArea* area, QRectF& innerRect, QRectF& outerRect, bool compute_aligned = false)
 	{
 		if (compute_aligned)
 			area->d_data->aligned_margins = VipMargins();
@@ -3843,11 +3635,11 @@ public:
 		c.parent = area;
 		QList<QGraphicsItem*> items = area->childItems();
 		for (QList<QGraphicsItem*>::const_iterator it = items.cbegin(); it != items.cend(); ++it) {
-			if (VipBorderItem * item = qobject_cast<VipBorderItem*>((*it)->toGraphicsObject())) {
+			if (VipBorderItem* item = qobject_cast<VipBorderItem*>((*it)->toGraphicsObject())) {
 				c.linkedBorders.append(item);
 				item->prepareGeometryChange();
-				item->QGraphicsObject::update(); //force an update in case of item caching (see QGraphicsItem::setCacheMode).
-				//indeed, the item is not properly updated with caching except with an explicit call to update()
+				item->QGraphicsObject::update(); // force an update in case of item caching (see QGraphicsItem::setCacheMode).
+				// indeed, the item is not properly updated with caching except with an explicit call to update()
 			}
 		}
 		c.computeItemsGeometry(area->margins() + area->d_data->aligned_margins);
@@ -3888,20 +3680,20 @@ public:
 					for (auto it = areaInnerRects.begin(); it != areaInnerRects.end(); ++it) {
 						VipAbstractPlotArea* a = it.key();
 						QRectF inner = it.value();
-						//VipMargins margins = a->margins();
+						// VipMargins margins = a->margins();
 						bool need_update = false;
 						if (!vipFuzzyCompare(inner.top(), top)) {
 							need_update = true;
-							//margins.top += top - inner.top();
+							// margins.top += top - inner.top();
 							a->d_data->aligned_margins.top = top - inner.top();
 						}
 						if (!vipFuzzyCompare(inner.bottom(), bottom)) {
 							need_update = true;
 							a->d_data->aligned_margins.bottom = inner.bottom() - bottom;
-							//margins.bottom += inner.bottom() - bottom;
+							// margins.bottom += inner.bottom() - bottom;
 						}
-						//if (need_update)
-							//a->setMargins(margins);
+						// if (need_update)
+						// a->setMargins(margins);
 					}
 				}
 			}
@@ -3933,47 +3725,38 @@ public:
 					for (auto it = areaInnerRects.begin(); it != areaInnerRects.end(); ++it) {
 						VipAbstractPlotArea* a = it.key();
 						QRectF inner = it.value();
-						//VipMargins margins = a->margins();
+						// VipMargins margins = a->margins();
 						bool need_update = false;
 						if (!vipFuzzyCompare(inner.left(), left)) {
 							need_update = true;
 							a->d_data->aligned_margins.left = left - inner.left();
-							//margins.left += left - inner.left();
+							// margins.left += left - inner.left();
 						}
 						if (!vipFuzzyCompare(inner.right(), right)) {
 							need_update = true;
 							a->d_data->aligned_margins.right = inner.right() - right;
-							//margins.right += inner.right() - right;
+							// margins.right += inner.right() - right;
 						}
 						if (need_update)
 							a->recomputeGeometry(false);
-							//a->setMargins(a->margins());
+						// a->setMargins(a->margins());
 					}
 				}
 			}
 		}
 	}
-
 };
-
-
-
-
-
-
 
 /// \internal
 /// Compute the geometry for VipBorderItem
 class ComputePolarGeometry
 {
 public:
-
 	QList<VipPolarAxis*> linkedPolarAxis;
 	QList<VipRadialAxis*> linkedRadialAxis;
 	QPointF shared_center;
 
-	ComputePolarGeometry()
-	{}
+	ComputePolarGeometry() {}
 
 	QSet<VipPlotItem*> visible(const PlotItemList& lst)
 	{
@@ -3987,89 +3770,82 @@ public:
 		return res;
 	}
 
-	void computeGeometry(const QList< VipAbstractPolarScale*> & scales, const QRectF & outer_rect)
+	void computeGeometry(const QList<VipAbstractPolarScale*>& scales, const QRectF& outer_rect)
 	{
 		linkedPolarAxis.clear();
 		linkedRadialAxis.clear();
 
-		for (int i = 0; i < scales.size(); ++i)
-		{
+		for (int i = 0; i < scales.size(); ++i) {
 			if (qobject_cast<VipPolarAxis*>(scales[i]))
 				linkedPolarAxis << static_cast<VipPolarAxis*>(scales[i]);
 			else if (qobject_cast<VipRadialAxis*>(scales[i]))
 				linkedRadialAxis << static_cast<VipRadialAxis*>(scales[i]);
 		}
 
-		//get parent VipAbstractPlotArea if any and disable geometry update (which might leed to infinit recursion)
+		// get parent VipAbstractPlotArea if any and disable geometry update (which might leed to infinit recursion)
 		QSet<VipAbstractPlotArea*> areas;
 		for (int i = 0; i < scales.size(); ++i)
 			if (scales[i]->area()) {
 				areas.insert(scales[i]->area());
-				//disable geometry update
+				// disable geometry update
 				scales[i]->area()->setGeometryUpdateEnabled(false);
 			}
 
-
-
-		//VipPolarAxis sorted by center proximity
-		QMap<int, QList<VipPolarAxis*> > axes;
-		//radius extent each layer
-		QMap<int, double > radiusExtents;
-		//free axes (centerProximity() < 0)
+		// VipPolarAxis sorted by center proximity
+		QMap<int, QList<VipPolarAxis*>> axes;
+		// radius extent each layer
+		QMap<int, double> radiusExtents;
+		// free axes (centerProximity() < 0)
 		QList<VipPolarAxis*> free;
-		//maximum radius
+		// maximum radius
 		double max_radius = 0;
 
-		//axes center
+		// axes center
 		shared_center = Vip::InvalidPoint;
 
-		//extract VipPolarAxis sorted by layers, free VipPolarAxis, and radius extents sorted by layers
-		for (int i = 0; i < linkedPolarAxis.size(); ++i)
-		{
+		// extract VipPolarAxis sorted by layers, free VipPolarAxis, and radius extents sorted by layers
+		for (int i = 0; i < linkedPolarAxis.size(); ++i) {
 			VipPolarAxis* axis = linkedPolarAxis[i];
 
-			//update shared_center for the first iteration
-			if (!vipIsValid(shared_center ))
+			// update shared_center for the first iteration
+			if (!vipIsValid(shared_center))
 				shared_center = axis->center();
 
-			//Temporally block axes signals
+			// Temporally block axes signals
 			axis->blockSignals(true);
 
-			//update center and layout scale if necessary (just to get min and max radius)
+			// update center and layout scale if necessary (just to get min and max radius)
 			axis->setCenter(shared_center);
-			//if(axis->axisRect().isEmpty())
+			// if(axis->axisRect().isEmpty())
 			axis->layoutScale();
 
 			max_radius = qMax(max_radius, axis->maxRadius());
 
-			//sort axes by center proximity
+			// sort axes by center proximity
 			if (axis->centerProximity() < 0)
 				free << axis;
-			else
-			{
+			else {
 				axes[axis->centerProximity()] << axis;
 
-				//compute layers extent
-				QMap<int, double >::iterator it = radiusExtents.find(axis->centerProximity());
+				// compute layers extent
+				QMap<int, double>::iterator it = radiusExtents.find(axis->centerProximity());
 				if (it == radiusExtents.end())
 					radiusExtents[axis->centerProximity()] = axis->radiusExtent();
-				else
-				{
+				else {
 					radiusExtents[axis->centerProximity()] = qMax(axis->radiusExtent(), it.value());
 				}
 			}
 		}
 
-		//update radius according to center proximity a first time
-		QMapIterator<int, QList<VipPolarAxis*> > it(axes);
-		it.toBack(); it.previous();
+		// update radius according to center proximity a first time
+		QMapIterator<int, QList<VipPolarAxis*>> it(axes);
+		it.toBack();
+		it.previous();
 		QList<double> extents = radiusExtents.values();
 		double radius = max_radius;
-		for (int i = extents.size() - 1; i >= 0; --i)
-		{
+		for (int i = extents.size() - 1; i >= 0; --i) {
 			QList<VipPolarAxis*> layer = it.value();
-			for (int j = 0; j < layer.size(); ++j)
-			{
+			for (int j = 0; j < layer.size(); ++j) {
 				layer[j]->setMinRadius(radius - extents[i]);
 				layer[j]->layoutScale();
 			}
@@ -4078,104 +3854,87 @@ public:
 			it.previous();
 		}
 
-		//update VipRadialAxis layout
-		for (int i = 0; i < linkedRadialAxis.size(); ++i)
-		{
+		// update VipRadialAxis layout
+		for (int i = 0; i < linkedRadialAxis.size(); ++i) {
 			VipRadialAxis* axis = static_cast<VipRadialAxis*>(linkedRadialAxis[i]);
 			axis->blockSignals(true);
 			axis->setCenter(shared_center);
 			axis->layoutScale();
 		}
 
-		//compute the union rect of all axes and items
+		// compute the union rect of all axes and items
 		QSet<VipPlotItem*> items;
 		QRectF union_rect;
-		for (VipPolarAxis * axis: linkedPolarAxis)
-		{
+		for (VipPolarAxis* axis : linkedPolarAxis) {
 			if (axis->isVisible())
 				union_rect |= axis->axisRect();
 			items += visible(axis->plotItems());
 		}
-		for (VipRadialAxis * axis: linkedRadialAxis)
-		{
+		for (VipRadialAxis* axis : linkedRadialAxis) {
 			if (axis->isVisible())
 				union_rect |= axis->axisRect();
 			items += visible(axis->plotItems());
 		}
-		for (VipPlotItem * item : items)
-		{
+		for (VipPlotItem* item : items) {
 			item->markCoordinateSystemDirty();
 			union_rect |= item->shape().boundingRect().translated(item->pos());
 		}
 
-
-
-
-
-		//scale the bounding rect but keep proportions
+		// scale the bounding rect but keep proportions
 		double factor = 1;
 		double width_on_height = outer_rect.width() / outer_rect.height();
 		double axes_width_on_height = union_rect.width() / union_rect.height();
 
-		//compute the transformation to change axes radius and center
-		if (axes_width_on_height > width_on_height)
-		{
+		// compute the transformation to change axes radius and center
+		if (axes_width_on_height > width_on_height) {
 			factor = outer_rect.width() / union_rect.width();
 
-			//QPointF proportions = (shared_center - union_rect.topLeft()) / QPointF(union_rect.width(),union_rect.height()) * factor;
+			// QPointF proportions = (shared_center - union_rect.topLeft()) / QPointF(union_rect.width(),union_rect.height()) * factor;
 
-			QPointF translate = QPointF(outer_rect.left() - union_rect.left(),
-				outer_rect.top() + (outer_rect.height() - factor * union_rect.height()) / 2.0 - union_rect.top());
+			QPointF translate = QPointF(outer_rect.left() - union_rect.left(), outer_rect.top() + (outer_rect.height() - factor * union_rect.height()) / 2.0 - union_rect.top());
 
 			QPointF topLeft = union_rect.topLeft() + translate;
 			shared_center = (shared_center - union_rect.topLeft()) * factor + topLeft;
 		}
-		else
-		{
+		else {
 			factor = outer_rect.height() / union_rect.height();
-			QPointF translate = QPointF(outer_rect.left() + (outer_rect.width() - factor * union_rect.width()) / 2.0 - union_rect.left(),
-				outer_rect.top() - union_rect.top());
+			QPointF translate = QPointF(outer_rect.left() + (outer_rect.width() - factor * union_rect.width()) / 2.0 - union_rect.left(), outer_rect.top() - union_rect.top());
 			QPointF topLeft = union_rect.topLeft() + translate;
 			shared_center = (shared_center - union_rect.topLeft()) * factor + topLeft;
 		}
 
-
-
-		//change the center for all axes
+		// change the center for all axes
 		for (int i = 0; i < linkedPolarAxis.size(); ++i)
 			linkedPolarAxis[i]->setCenter(shared_center);
 
-		//change the center for all axes
+		// change the center for all axes
 		for (int i = 0; i < linkedRadialAxis.size(); ++i)
 			linkedRadialAxis[i]->setCenter(shared_center);
 
-
-		//change axes radius the outer layer and free axes
+		// change axes radius the outer layer and free axes
 		QList<VipPolarAxis*> outers = (--axes.end()).value();
-		for (int i = 0; i < outers.size(); ++i)
-		{
+		for (int i = 0; i < outers.size(); ++i) {
 			double min_radius = qMax(0.1, outers[i]->minRadius() * factor);
 			outers[i]->setMinRadius(min_radius);
 			outers[i]->layoutScale();
 		}
 
-		for (int i = 0; i < free.size(); ++i)
-		{
+		for (int i = 0; i < free.size(); ++i) {
 			double min_radius = qMax(0.1, free[i]->minRadius() * factor);
 			free[i]->setMinRadius(min_radius);
 			free[i]->layoutScale();
 		}
 
-		//update radius according to center proximity one last time, excluding outer layer
-		it = QMapIterator<int, QList<VipPolarAxis*> >(axes);
-		it.toBack(); it.previous();  it.previous();
+		// update radius according to center proximity one last time, excluding outer layer
+		it = QMapIterator<int, QList<VipPolarAxis*>>(axes);
+		it.toBack();
+		it.previous();
+		it.previous();
 		max_radius *= factor;
 		radius = max_radius - extents.last();
-		for (int i = extents.size() - 2; i >= 0; --i)
-		{
+		for (int i = extents.size() - 2; i >= 0; --i) {
 			QList<VipPolarAxis*> layer = it.value();
-			for (int j = 0; j < layer.size(); ++j)
-			{
+			for (int j = 0; j < layer.size(); ++j) {
 				layer[j]->setMinRadius(radius - extents[i]);
 				layer[j]->layoutScale();
 			}
@@ -4184,43 +3943,25 @@ public:
 			it.previous();
 		}
 
-		//enable signals, compute the minimum size, set the geometry
+		// enable signals, compute the minimum size, set the geometry
 		QRectF geom = QRectF(QPointF(0, 0), outer_rect.bottomRight() + outer_rect.topLeft() * 2);
 
-		for (int i = 0; i < linkedPolarAxis.size(); ++i)
-		{
+		for (int i = 0; i < linkedPolarAxis.size(); ++i) {
 			linkedPolarAxis[i]->setGeometry(geom);
 			linkedPolarAxis[i]->blockSignals(false);
 		}
 
-		for (int i = 0; i < linkedRadialAxis.size(); ++i)
-		{
+		for (int i = 0; i < linkedRadialAxis.size(); ++i) {
 			linkedRadialAxis[i]->layoutScale();
 			linkedRadialAxis[i]->setGeometry(geom);
 			linkedRadialAxis[i]->blockSignals(false);
 		}
 
-		//enable back geometry update
-		for (VipAbstractPlotArea * a : areas)
+		// enable back geometry update
+		for (VipAbstractPlotArea* a : areas)
 			a->setGeometryUpdateEnabled(true);
-
 	}
-
-
 };
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 class VipPlotArea2D::PrivateData
 {
@@ -4233,20 +3974,20 @@ public:
 		xBottom = new VipAxisBase(VipAxisBase::Bottom);
 
 		yLeft->setMargin(0);
-		//yLeft->setMaxBorderDist(0, 0);
+		// yLeft->setMaxBorderDist(0, 0);
 		yLeft->setZValue(20);
 
 		yRight->setMargin(0);
-		//yRight->setMaxBorderDist(0, 0);
+		// yRight->setMaxBorderDist(0, 0);
 		yRight->setZValue(20);
 
 		xTop->setMargin(0);
-		//xTop->setMaxBorderDist(0, 0);
+		// xTop->setMaxBorderDist(0, 0);
 		xTop->setZValue(10);
 		xTop->setExpandToCorners(true);
 
 		xBottom->setMargin(0);
-		//xBottom->setMaxBorderDist(0, 0);
+		// xBottom->setMaxBorderDist(0, 0);
 		xBottom->setZValue(10);
 		xBottom->setExpandToCorners(true);
 
@@ -4254,19 +3995,18 @@ public:
 		xTop->synchronizeWith(xBottom);
 	}
 
-	VipAxisBase * yLeft;
-	VipAxisBase * yRight;
-	VipAxisBase * xTop;
-	VipAxisBase * xBottom;
+	VipAxisBase* yLeft;
+	VipAxisBase* yRight;
+	VipAxisBase* xTop;
+	VipAxisBase* xBottom;
 	QRectF innerRect, outerRect;
 	QList<VipAxisBase*> axes;
 };
 
 static bool registerVipPlotArea2D = vipSetKeyWordsForClass(&VipPlotArea2D::staticMetaObject);
 
-
-VipPlotArea2D::VipPlotArea2D(QGraphicsItem * parent)
-	: VipAbstractPlotArea(parent)
+VipPlotArea2D::VipPlotArea2D(QGraphicsItem* parent)
+  : VipAbstractPlotArea(parent)
 {
 
 	d_data = new PrivateData();
@@ -4282,7 +4022,6 @@ VipPlotArea2D::VipPlotArea2D(QGraphicsItem * parent)
 	d_data->xBottom->setObjectName("Bottom axis");
 	d_data->yLeft->setObjectName("Left axis");
 	d_data->yRight->setObjectName("Right axis");
-
 }
 
 VipPlotArea2D::~VipPlotArea2D()
@@ -4290,34 +4029,32 @@ VipPlotArea2D::~VipPlotArea2D()
 	delete d_data;
 }
 
-VipAxisBase * VipPlotArea2D::leftAxis() const
+VipAxisBase* VipPlotArea2D::leftAxis() const
 {
 	return const_cast<VipAxisBase*>(d_data->yLeft);
 }
 
-VipAxisBase * VipPlotArea2D::rightAxis() const
+VipAxisBase* VipPlotArea2D::rightAxis() const
 {
 	return const_cast<VipAxisBase*>(d_data->yRight);
 }
 
-VipAxisBase * VipPlotArea2D::topAxis() const
+VipAxisBase* VipPlotArea2D::topAxis() const
 {
 	return const_cast<VipAxisBase*>(d_data->xTop);
 }
 
-VipAxisBase * VipPlotArea2D::bottomAxis() const
+VipAxisBase* VipPlotArea2D::bottomAxis() const
 {
 	return const_cast<VipAxisBase*>(d_data->xBottom);
 }
-
 
 QList<VipAxisBase*> VipPlotArea2D::axes() const
 {
 	QList<VipAxisBase*> res;
 	QList<VipAbstractScale*> _scales = this->scales();
 
-	for (int i = 0; i < _scales.size(); ++i)
-	{
+	for (int i = 0; i < _scales.size(); ++i) {
 		if (qobject_cast<VipAxisBase*>(_scales[i]))
 			res << static_cast<VipAxisBase*>(_scales[i]);
 	}
@@ -4325,16 +4062,16 @@ QList<VipAxisBase*> VipPlotArea2D::axes() const
 	return res;
 }
 
-VipCoordinateSystem::Type VipPlotArea2D::standardScales(QList<VipAbstractScale*> & axes) const
+VipCoordinateSystem::Type VipPlotArea2D::standardScales(QList<VipAbstractScale*>& axes) const
 {
 	axes << bottomAxis() << leftAxis();
 	return VipCoordinateSystem::Cartesian;
 }
 
-bool VipPlotArea2D::internalRemoveScale(VipAbstractScale * scale)
+bool VipPlotArea2D::internalRemoveScale(VipAbstractScale* scale)
 {
-	//we cannot remove on of the predifined scale
-	//if (scale == d_data->xBottom || scale == d_data->xTop || scale == d_data->yLeft || scale == d_data->yRight)
+	// we cannot remove on of the predifined scale
+	// if (scale == d_data->xBottom || scale == d_data->xTop || scale == d_data->yLeft || scale == d_data->yRight)
 	//	return false;
 
 	return VipAbstractPlotArea::internalRemoveScale(scale);
@@ -4363,7 +4100,7 @@ QRectF VipPlotArea2D::innerRect() const
 	return d_data->innerRect;
 }
 
-void VipPlotArea2D::recomputeGeometry(bool recompute_aligned_areas )
+void VipPlotArea2D::recomputeGeometry(bool recompute_aligned_areas)
 {
 	if (titleAxis()->titleInside()) {
 		double spacing = topAxis()->isVisible() ? topAxis()->boundingRect().height() : 0;
@@ -4378,22 +4115,18 @@ void VipPlotArea2D::recomputeGeometry(bool recompute_aligned_areas )
 
 	ComputeBorderGeometry::recomputeGeometry(this, d_data->innerRect, d_data->outerRect, recompute_aligned_areas);
 
-
 	this->resetInnerLegendsPosition();
 
 	this->update();
 }
 
-
-void VipPlotArea2D::zoomOnSelection(const QPointF & start, const QPointF & end)
+void VipPlotArea2D::zoomOnSelection(const QPointF& start, const QPointF& end)
 {
 	QList<VipAbstractScale*> items = VipAbstractScale::independentScales(axes());
 
-	for (int i = 0; i < items.size(); ++i)
-	{
-		VipAbstractScale * axis = items[i];
-		if (zoomEnabled(axis))
-		{
+	for (int i = 0; i < items.size(); ++i) {
+		VipAbstractScale* axis = items[i];
+		if (zoomEnabled(axis)) {
 			QPointF axis_start = axis->mapFromItem(this, start);
 			QPointF axis_end = axis->mapFromItem(this, end);
 
@@ -4401,33 +4134,26 @@ void VipPlotArea2D::zoomOnSelection(const QPointF & start, const QPointF & end)
 			interval = interval.normalized();
 			axis->setScale(interval.minValue(), interval.maxValue());
 		}
-
 	}
-
 }
 
-void VipPlotArea2D::zoomOnPosition(const QPointF & item_pos, double sc)
+void VipPlotArea2D::zoomOnPosition(const QPointF& item_pos, double sc)
 {
 	vip_double zoomValue = (sc - 1);
 	QList<VipAbstractScale*> items = VipAbstractScale::independentScales(axes());
 
-	for (int i = 0; i < items.size(); ++i)
-	{
-		VipAxisBase * axis = static_cast<VipAxisBase*>(items[i]);
-		if (zoomEnabled(axis))
-		{
-			//mapFromItem(this,scenePos) to mapFromScene(scenePos)
+	for (int i = 0; i < items.size(); ++i) {
+		VipAxisBase* axis = static_cast<VipAxisBase*>(items[i]);
+		if (zoomEnabled(axis)) {
+			// mapFromItem(this,scenePos) to mapFromScene(scenePos)
 			vip_double pos = axis->scaleDraw()->value(axis->mapFromItem(this, item_pos));
 
 			VipInterval interval = axis->scaleDiv().bounds();
-			VipInterval new_interval(interval.minValue() + (pos - interval.minValue())*zoomValue,
-				interval.maxValue() - (interval.maxValue() - pos)*zoomValue);
-
+			VipInterval new_interval(interval.minValue() + (pos - interval.minValue()) * zoomValue, interval.maxValue() - (interval.maxValue() - pos) * zoomValue);
 
 			axis->setScale(new_interval.minValue(), new_interval.maxValue());
 		}
 	}
-
 }
 
 QPainterPath VipPlotArea2D::innerArea() const
@@ -4437,20 +4163,18 @@ QPainterPath VipPlotArea2D::innerArea() const
 	return p;
 }
 
-void VipPlotArea2D::translate(const QPointF &, const QPointF & dp)
+void VipPlotArea2D::translate(const QPointF&, const QPointF& dp)
 {
 	QList<VipAbstractScale*> items = VipAbstractScale::independentScales(axes());
 
-	for (int i = 0; i < items.size(); ++i)
-	{
-		VipAxisBase * axis = static_cast<VipAxisBase*>(items[i]);
-		if (zoomEnabled(axis))
-		{
+	for (int i = 0; i < items.size(); ++i) {
+		VipAxisBase* axis = static_cast<VipAxisBase*>(items[i]);
+		if (zoomEnabled(axis)) {
 			vip_double start = axis->scaleDraw()->value(axis->scaleDraw()->pos() - dp);
 			vip_double end = axis->scaleDraw()->value(axis->scaleDraw()->end() - dp);
 
-			//for images only, clamp to image bounding rect
-			if (VipImageArea2D * area = qobject_cast<VipImageArea2D*>(this)) {
+			// for images only, clamp to image bounding rect
+			if (VipImageArea2D* area = qobject_cast<VipImageArea2D*>(this)) {
 				QRectF imrect = area->spectrogram()->imageBoundingRect();
 				vip_double w = end - start;
 				if (axis->orientation() == Qt::Vertical) {
@@ -4462,8 +4186,10 @@ void VipPlotArea2D::translate(const QPointF &, const QPointF & dp)
 						end = imrect.bottom();
 						start = end - w;
 					}
-					if (start < imrect.top()) continue;
-					if (end > imrect.bottom()) continue;
+					if (start < imrect.top())
+						continue;
+					if (end > imrect.bottom())
+						continue;
 				}
 				else {
 					if (start < imrect.left()) {
@@ -4474,13 +4200,15 @@ void VipPlotArea2D::translate(const QPointF &, const QPointF & dp)
 						end = imrect.right();
 						start = end - w;
 					}
-					if (start < imrect.left()) continue;
-					if (end > imrect.right()) continue;
+					if (start < imrect.left())
+						continue;
+					if (end > imrect.right())
+						continue;
 				}
 			}
 
 			VipInterval interval(start, end);
-			//keep the initial axis scale orientation
+			// keep the initial axis scale orientation
 			if (axis->orientation() == Qt::Vertical)
 				interval = interval.inverted();
 
@@ -4488,10 +4216,6 @@ void VipPlotArea2D::translate(const QPointF &, const QPointF & dp)
 		}
 	}
 }
-
-
-
-
 
 static int registerPlotPolarKeywords()
 {
@@ -4503,12 +4227,11 @@ static int registerPlotPolarKeywords()
 }
 static int _registerPlotPolarKeywords = registerPlotPolarKeywords();
 
-
 class VipPlotPolarArea2D::PrivateData
 {
 public:
 	PrivateData()
-		:margin(5)
+	  : margin(5)
 	{
 		paxis = new VipPolarAxis();
 		raxis = new VipRadialAxis();
@@ -4521,21 +4244,20 @@ public:
 	}
 
 	double margin;
-	VipPolarAxis *paxis;
-	VipRadialAxis * raxis;
+	VipPolarAxis* paxis;
+	VipRadialAxis* raxis;
 	QRectF innerRect;
 	QRectF outerRect;
 	QList<VipAbstractPolarScale*> axes;
 };
 
-VipPlotPolarArea2D::VipPlotPolarArea2D(QGraphicsItem * parent)
-	:VipAbstractPlotArea(parent)
+VipPlotPolarArea2D::VipPlotPolarArea2D(QGraphicsItem* parent)
+  : VipAbstractPlotArea(parent)
 {
 	d_data = new PrivateData();
 
 	addScale(d_data->raxis);
 	addScale(d_data->paxis);
-
 
 	canvas()->setAxes(d_data->raxis, d_data->paxis, VipCoordinateSystem::Polar);
 	grid()->setAxes(d_data->raxis, d_data->paxis, VipCoordinateSystem::Polar);
@@ -4568,7 +4290,7 @@ bool VipPlotPolarArea2D::setItemProperty(const char* name, const QVariant& value
 	return VipAbstractPlotArea::setItemProperty(name, value, index);
 }
 
-VipCoordinateSystem::Type VipPlotPolarArea2D::standardScales(QList<VipAbstractScale*> & axes) const
+VipCoordinateSystem::Type VipPlotPolarArea2D::standardScales(QList<VipAbstractScale*>& axes) const
 {
 	axes << d_data->raxis << d_data->paxis;
 	return VipCoordinateSystem::Polar;
@@ -4576,11 +4298,10 @@ VipCoordinateSystem::Type VipPlotPolarArea2D::standardScales(QList<VipAbstractSc
 
 void VipPlotPolarArea2D::setInnerMargin(double margin)
 {
-	if (margin != d_data->margin)
-	{
+	if (margin != d_data->margin) {
 		d_data->margin = margin;
-		//emitItemChanged();
-		//recomputeGeometry();
+		// emitItemChanged();
+		// recomputeGeometry();
 	}
 }
 
@@ -4589,12 +4310,12 @@ double VipPlotPolarArea2D::innerMargin() const
 	return d_data->margin;
 }
 
-VipPolarAxis * VipPlotPolarArea2D::polarAxis() const
+VipPolarAxis* VipPlotPolarArea2D::polarAxis() const
 {
 	return const_cast<VipPolarAxis*>(d_data->paxis);
 }
 
-VipRadialAxis * VipPlotPolarArea2D::radialAxis() const
+VipRadialAxis* VipPlotPolarArea2D::radialAxis() const
 {
 	return const_cast<VipRadialAxis*>(d_data->raxis);
 }
@@ -4604,8 +4325,7 @@ QList<VipAbstractPolarScale*> VipPlotPolarArea2D::axes() const
 	QList<VipAbstractPolarScale*> res;
 	QList<VipAbstractScale*> _scales = this->scales();
 
-	for (int i = 0; i < _scales.size(); ++i)
-	{
+	for (int i = 0; i < _scales.size(); ++i) {
 		if (qobject_cast<VipAbstractPolarScale*>(_scales[i]))
 			res << static_cast<VipAbstractPolarScale*>(_scales[i]);
 	}
@@ -4613,16 +4333,13 @@ QList<VipAbstractPolarScale*> VipPlotPolarArea2D::axes() const
 	return res;
 }
 
-
-void VipPlotPolarArea2D::zoomOnSelection(const QPointF & start, const QPointF & end)
+void VipPlotPolarArea2D::zoomOnSelection(const QPointF& start, const QPointF& end)
 {
 	QList<VipAbstractScale*> items = VipAbstractScale::independentScales(axes());
 
-	for (int i = 0; i < items.size(); ++i)
-	{
-		VipAbstractScale * axis = items[i];
-		if (zoomEnabled(axis))
-		{
+	for (int i = 0; i < items.size(); ++i) {
+		VipAbstractScale* axis = items[i];
+		if (zoomEnabled(axis)) {
 			QPointF axis_start = axis->mapFromItem(this, start);
 			QPointF axis_end = axis->mapFromItem(this, end);
 
@@ -4631,29 +4348,23 @@ void VipPlotPolarArea2D::zoomOnSelection(const QPointF & start, const QPointF & 
 			axis->setScale(interval.minValue(), interval.maxValue());
 		}
 	}
-
-
 }
 
-void VipPlotPolarArea2D::zoomOnPosition(const QPointF & item_pos, double sc)
+void VipPlotPolarArea2D::zoomOnPosition(const QPointF& item_pos, double sc)
 {
 	vip_double zoomValue = (sc - 1);
 	QList<VipAbstractScale*> items = VipAbstractScale::independentScales(axes());
 
-	for (int i = 0; i < items.size(); ++i)
-	{
-		VipAbstractScale * axis = items[i];
-		if (zoomEnabled(axis))
-		{
+	for (int i = 0; i < items.size(); ++i) {
+		VipAbstractScale* axis = items[i];
+		if (zoomEnabled(axis)) {
 			vip_double pos = axis->scaleDraw()->value(item_pos);
 
 			VipInterval interval = axis->scaleDiv().bounds();
-			VipInterval new_interval(interval.minValue() + (pos - interval.minValue())*zoomValue,
-				interval.maxValue() - (interval.maxValue() - pos)*zoomValue);
+			VipInterval new_interval(interval.minValue() + (pos - interval.minValue()) * zoomValue, interval.maxValue() - (interval.maxValue() - pos) * zoomValue);
 			axis->setScale(new_interval.minValue(), new_interval.maxValue());
 		}
 	}
-
 }
 
 QPainterPath VipPlotPolarArea2D::innerArea() const
@@ -4661,26 +4372,22 @@ QPainterPath VipPlotPolarArea2D::innerArea() const
 	return canvas()->shape();
 }
 
-void VipPlotPolarArea2D::translate(const QPointF & fromPt, const QPointF & dp)
+void VipPlotPolarArea2D::translate(const QPointF& fromPt, const QPointF& dp)
 {
 	QList<VipAbstractScale*> items = VipAbstractScale::independentScales(axes());
 
-	for (int i = 0; i < items.size(); ++i)
-	{
+	for (int i = 0; i < items.size(); ++i) {
 		if (!qobject_cast<VipAbstractPolarScale*>(items[i]))
 			continue;
 
-		VipAbstractPolarScale * axis = static_cast<VipAbstractPolarScale*>(items[i]);
-		if (zoomEnabled(axis))
-		{
+		VipAbstractPolarScale* axis = static_cast<VipAbstractPolarScale*>(items[i]);
+		if (zoomEnabled(axis)) {
 			vip_double start = 0;
 			vip_double end = 0;
 
-			if (qobject_cast<VipPolarAxis*>(axis))
-			{
-				VipPolarAxis * paxis = static_cast<VipPolarAxis*>(axis);
-				vip_double dangle = QLineF(paxis->scaleDraw()->center(), fromPt).
-					angleTo(QLineF(paxis->scaleDraw()->center(), fromPt + dp));
+			if (qobject_cast<VipPolarAxis*>(axis)) {
+				VipPolarAxis* paxis = static_cast<VipPolarAxis*>(axis);
+				vip_double dangle = QLineF(paxis->scaleDraw()->center(), fromPt).angleTo(QLineF(paxis->scaleDraw()->center(), fromPt + dp));
 
 				QLineF l1(paxis->scaleDraw()->center(), paxis->scaleDraw()->center() - QPointF(0, paxis->scaleDraw()->radius()));
 				l1.setAngle(paxis->scaleDraw()->startAngle() - dangle);
@@ -4698,13 +4405,11 @@ void VipPlotPolarArea2D::translate(const QPointF & fromPt, const QPointF & dp)
 					vip_double diff = end - paxis->scaleDiv().bounds().maxValue();
 					start = paxis->scaleDiv().bounds().minValue() + diff;
 				}
-				//start = axis->scaleDraw()->scaleMap().invTransform( paxis->scaleDraw()->startAngle()+dangle );
-				//end = axis->scaleDraw()->scaleMap().invTransform( paxis->scaleDraw()->endAngle()+dangle );
-
+				// start = axis->scaleDraw()->scaleMap().invTransform( paxis->scaleDraw()->startAngle()+dangle );
+				// end = axis->scaleDraw()->scaleMap().invTransform( paxis->scaleDraw()->endAngle()+dangle );
 			}
-			else
-			{
-				VipRadialAxis * raxis = static_cast<VipRadialAxis*>(axis);
+			else {
+				VipRadialAxis* raxis = static_cast<VipRadialAxis*>(axis);
 
 				QLineF l1(raxis->scaleDraw()->center(), raxis->scaleDraw()->center() - QPointF(0, raxis->scaleDraw()->endRadius()));
 				l1.setAngle(raxis->scaleDraw()->angle());
@@ -4737,9 +4442,6 @@ void VipPlotPolarArea2D::recomputeGeometry(bool recompute_aligned_areas)
 
 	this->update();
 }
-
-
-
 
 /* struct DisplayRateFilter : QObject
 {
@@ -4817,32 +4519,26 @@ int vipMaxDisplayRate(QGraphicsView * view)
 
 */
 
-
-
-
-
 class VipBaseGraphicsView::PrivateData
 {
 public:
-	
 	QSharedPointer<QColor> backgroundColor;
 	bool useInternalViewport;
 };
 
-
-VipBaseGraphicsView::VipBaseGraphicsView(QGraphicsScene * sc, QWidget* parent)
-	:QGraphicsView(parent), VipRenderObject(this)
+VipBaseGraphicsView::VipBaseGraphicsView(QGraphicsScene* sc, QWidget* parent)
+  : QGraphicsView(parent)
+  , VipRenderObject(this)
 {
 	m_data = new PrivateData();
 	m_data->useInternalViewport = false;
 
-
 #if !defined(_WIN32) && (defined(__unix__) || defined(__unix) || (defined(__APPLE__) && defined(__MACH__)))
 
 #else
-	//TEST
+	// TEST
 	this->setViewportUpdateMode(QGraphicsView::FullViewportUpdate);
-	
+
 	this->setAttribute(Qt::WA_PaintUnclipped);
 	this->viewport()->setAttribute(Qt::WA_PaintUnclipped);
 
@@ -4850,7 +4546,6 @@ VipBaseGraphicsView::VipBaseGraphicsView(QGraphicsScene * sc, QWidget* parent)
 	this->setAttribute(Qt::WA_OpaquePaintEvent);
 	this->viewport()->setAttribute(Qt::WA_NoSystemBackground);
 	this->viewport()->setAttribute(Qt::WA_OpaquePaintEvent);
-	
 
 #endif
 
@@ -4863,7 +4558,7 @@ VipBaseGraphicsView::VipBaseGraphicsView(QGraphicsScene * sc, QWidget* parent)
 	this->scene()->setParent(this);
 
 	this->scene()->setItemIndexMethod(QGraphicsScene::NoIndex);
-	//if (qobject_cast<)
+	// if (qobject_cast<)
 	updateCacheMode(false);
 
 	setMouseTracking(true);
@@ -4876,16 +4571,14 @@ VipBaseGraphicsView::VipBaseGraphicsView(QWidget* parent)
 
 VipBaseGraphicsView::~VipBaseGraphicsView()
 {
-	if (QGraphicsScene * sc = scene())
-	{
+	if (QGraphicsScene* sc = scene()) {
 		setScene(nullptr);
 		delete sc;
 	}
 	delete m_data;
 }
 
-
-void VipBaseGraphicsView::updateCacheMode(bool enable_cache) 
+void VipBaseGraphicsView::updateCacheMode(bool enable_cache)
 {
 	if (!this->scene())
 		return;
@@ -4985,33 +4678,31 @@ void VipBaseGraphicsView::setUseInternalViewport(bool enable)
 {
 	m_data->useInternalViewport = enable;
 }
-bool VipBaseGraphicsView::useInternalViewport() const {
+bool VipBaseGraphicsView::useInternalViewport() const
+{
 	return m_data->useInternalViewport;
 }
 
-void VipBaseGraphicsView::startRender(VipRenderState &)
+void VipBaseGraphicsView::startRender(VipRenderState&)
 {
-	updateCacheMode( false);
+	updateCacheMode(false);
 }
 
-void VipBaseGraphicsView::endRender(VipRenderState &)
+void VipBaseGraphicsView::endRender(VipRenderState&)
 {
 	updateCacheMode(isOpenGLBasedRendering());
 }
 
-bool VipBaseGraphicsView::renderObject(QPainter * p, const QPointF & pos, bool draw_background)
+bool VipBaseGraphicsView::renderObject(QPainter* p, const QPointF& pos, bool draw_background)
 {
-	//default behavior for QWidget: use QWidget::render
-	if (isVisible())
-	{
-		if (!draw_background)
-		{
-			//TODO: test with tokida
-			if (false)//QOpenGLWidget * gl = qobject_cast<QOpenGLWidget*>(viewport()))
+	// default behavior for QWidget: use QWidget::render
+	if (isVisible()) {
+		if (!draw_background) {
+			// TODO: test with tokida
+			if (false) // QOpenGLWidget * gl = qobject_cast<QOpenGLWidget*>(viewport()))
 			{
 				//(void)gl;
-				if (scene())
-				{
+				if (scene()) {
 
 					p->setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing | QPainter::SmoothPixmapTransform);
 					QRectF visible = mapToScene(viewport()->geometry()).boundingRect();
@@ -5020,7 +4711,7 @@ bool VipBaseGraphicsView::renderObject(QPainter * p, const QPointF & pos, bool d
 
 					QPixmap pix1(target.size().toSize()), pix2(target.size().toSize());
 					{
-						//fill with this technique to set the transparent background
+						// fill with this technique to set the transparent background
 						QPainter painter(&pix1);
 						painter.setCompositionMode(QPainter::CompositionMode_Clear);
 						painter.fillRect(0, 0, pix1.width(), pix1.height(), QColor(230, 230, 230, 0));
@@ -5033,7 +4724,6 @@ bool VipBaseGraphicsView::renderObject(QPainter * p, const QPointF & pos, bool d
 					pa1.setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing | QPainter::SmoothPixmapTransform);
 					this->QWidget::render(&pa1, QPoint(0, 0), QRegion(), QWidget::DrawChildren);
 
-
 					pa2.setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing | QPainter::SmoothPixmapTransform);
 					scene()->render(&pa2, target, visible);
 
@@ -5044,18 +4734,16 @@ bool VipBaseGraphicsView::renderObject(QPainter * p, const QPointF & pos, bool d
 					p->drawPixmap(QRectF(pos, this->size()), pix2, target);
 				}
 			}
-			else
-			{
+			else {
 
 				QRectF target = geometry();
 				target.moveTopLeft(pos);
 				this->render(p, target);
-
 			}
 			return false;
 		}
 		else {
-			//QOpenGLWidget* w = qobject_cast<QOpenGLWidget*>(this->viewport());
+			// QOpenGLWidget* w = qobject_cast<QOpenGLWidget*>(this->viewport());
 			QWidget::render(p, pos.toPoint(), QRegion(), QWidget::DrawWindowBackground | QWidget::DrawChildren);
 			/*if (w) {
 				QBrush b = this->palette().background();
@@ -5065,12 +4753,11 @@ bool VipBaseGraphicsView::renderObject(QPainter * p, const QPointF & pos, bool d
 			}*/
 			return true;
 		}
-
 	}
 	return false;
 }
 
-void VipBaseGraphicsView::paintEvent(QPaintEvent * evt)
+void VipBaseGraphicsView::paintEvent(QPaintEvent* evt)
 {
 	QColor c;
 	if (hasBackgroundColor())
@@ -5079,20 +4766,19 @@ void VipBaseGraphicsView::paintEvent(QPaintEvent * evt)
 		c = qApp->palette(this).color(QPalette::Window);
 
 	VipOpenGLWidget* w = qobject_cast<VipOpenGLWidget*>(viewport());
-	if(w)
+	if (w)
 		w->startRendering();
-	//qint64 st = QDateTime::currentMSecsSinceEpoch();
+	// qint64 st = QDateTime::currentMSecsSinceEpoch();
 	{
 		QPainter p(viewport());
 		p.fillRect(QRect(0, 0, width(), height()), c);
 	}
 	QGraphicsView::paintEvent(evt);
-	if(w)
+	if (w)
 		w->stopRendering();
-	//qint64 el = QDateTime::currentMSecsSinceEpoch() - st;
-	//printf("el : %i ms\n", (int)el);
+	// qint64 el = QDateTime::currentMSecsSinceEpoch() - st;
+	// printf("el : %i ms\n", (int)el);
 }
-
 
 QRectF VipBaseGraphicsView::visualizedSceneRect() const
 {
@@ -5111,15 +4797,11 @@ void VipBaseGraphicsView::removeBackgroundColor()
 {
 	m_data->backgroundColor.reset();
 }
-void VipBaseGraphicsView::setBackgroundColor(const QColor & color)
+void VipBaseGraphicsView::setBackgroundColor(const QColor& color)
 {
 	m_data->backgroundColor.reset(new QColor(color));
 	update();
 }
-
-
-
-
 
 VipAbstractPlotWidget2D::VipAbstractPlotWidget2D(QWidget* parent)
   : VipBaseGraphicsView(parent)
@@ -5127,16 +4809,15 @@ VipAbstractPlotWidget2D::VipAbstractPlotWidget2D(QWidget* parent)
 }
 
 VipAbstractPlotWidget2D::VipAbstractPlotWidget2D(QGraphicsScene* scene, QWidget* parent)
-  : VipBaseGraphicsView(scene,parent)
+  : VipBaseGraphicsView(scene, parent)
 {
 }
-	
 
 void VipAbstractPlotWidget2D::setArea(VipAbstractPlotArea* area)
 {
-	
+
 	d_area = area;
-	
+
 	if (area && !scene()->focusItem())
 		area->setFocus();
 
@@ -5159,23 +4840,19 @@ void VipAbstractPlotWidget2D::resizeEvent(QResizeEvent* event)
 	this->recomputeGeometry();
 }
 
-
-
-
 #include "VipMultiPlotWidget2D.h"
 
-
-VipPlotWidget2D::VipPlotWidget2D(QWidget* parent, QGraphicsScene * sc, AreaType type)
-	: VipAbstractPlotWidget2D(sc,parent)
+VipPlotWidget2D::VipPlotWidget2D(QWidget* parent, QGraphicsScene* sc, AreaType type)
+  : VipAbstractPlotWidget2D(sc, parent)
 {
 	if (type == Simple)
 		d_area = new VipPlotArea2D();
 	else
 		d_area = new VipVMultiPlotArea2D();
 
-	//Set-up the scene
-	//QGraphicsScene * sc = new QGraphicsScene(this);
-	//setScene(sc);
+	// Set-up the scene
+	// QGraphicsScene * sc = new QGraphicsScene(this);
+	// setScene(sc);
 	viewport()->setMouseTracking(true);
 
 	scene()->addItem(d_area);
@@ -5183,25 +4860,23 @@ VipPlotWidget2D::VipPlotWidget2D(QWidget* parent, QGraphicsScene * sc, AreaType 
 
 	setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
 	setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-	//setViewportUpdateMode(QGraphicsView::FullViewportUpdate);
+	// setViewportUpdateMode(QGraphicsView::FullViewportUpdate);
 
 	area()->setGeometry(visualizedSceneRect());
 
 	VipAbstractPlotWidget2D::setArea(d_area);
 }
 
-VipPlotWidget2D:: ~VipPlotWidget2D()
-{}
+VipPlotWidget2D::~VipPlotWidget2D() {}
 
-VipPlotArea2D * VipPlotWidget2D::area() const
+VipPlotArea2D* VipPlotWidget2D::area() const
 {
 	return const_cast<VipPlotArea2D*>(d_area);
 }
 
-void VipPlotWidget2D::setArea(VipPlotArea2D * area)
+void VipPlotWidget2D::setArea(VipPlotArea2D* area)
 {
-	if (area != d_area && area)
-	{
+	if (area != d_area && area) {
 		if (d_area)
 			delete d_area;
 
@@ -5219,43 +4894,32 @@ void VipPlotWidget2D::recomputeGeometry()
 	d_area->recomputeGeometry();
 };
 
-
-
-
-
-
-VipPlotPolarWidget2D::VipPlotPolarWidget2D(QWidget* parent, QGraphicsScene * sc)
-	:VipAbstractPlotWidget2D(sc, parent)
+VipPlotPolarWidget2D::VipPlotPolarWidget2D(QWidget* parent, QGraphicsScene* sc)
+  : VipAbstractPlotWidget2D(sc, parent)
 {
 	d_area = new VipPlotPolarArea2D();
 
-	//Set-up the scene
-	//QGraphicsScene * sc = new QGraphicsScene(this);
-	//setScene(sc);
+	// Set-up the scene
+	// QGraphicsScene * sc = new QGraphicsScene(this);
+	// setScene(sc);
 	viewport()->setMouseTracking(true);
 
 	scene()->addItem(d_area);
 	scene()->setSceneRect(QRectF(0, 0, 1000, 1000));
 
-
-	//setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-	//setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-	//setViewportUpdateMode(QGraphicsView::FullViewportUpdate);
+	// setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+	// setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+	// setViewportUpdateMode(QGraphicsView::FullViewportUpdate);
 
 	area()->setGeometry(sceneRect());
 	VipAbstractPlotWidget2D::setArea(d_area);
 }
 
-VipPlotPolarWidget2D::~VipPlotPolarWidget2D()
-{
-
-}
-
+VipPlotPolarWidget2D::~VipPlotPolarWidget2D() {}
 
 void VipPlotPolarWidget2D::setArea(VipPlotPolarArea2D* area)
 {
-	if (area != d_area && area)
-	{
+	if (area != d_area && area) {
 		if (d_area)
 			delete d_area;
 
@@ -5266,26 +4930,20 @@ void VipPlotPolarWidget2D::setArea(VipPlotPolarArea2D* area)
 	}
 }
 
-VipPlotPolarArea2D * VipPlotPolarWidget2D::area() const
+VipPlotPolarArea2D* VipPlotPolarWidget2D::area() const
 {
 	return d_area;
 }
 
-
 void VipPlotPolarWidget2D::recomputeGeometry()
 {
-	//this->setSceneRect(QRectF(0, 0, width(), height()));
-	// d_area->setGeometry(QRectF(0, 0, width(), height()));
-	QRectF scene_rect = QRectF(0, 0, width(), height()); //sceneRect();
+	// this->setSceneRect(QRectF(0, 0, width(), height()));
+	//  d_area->setGeometry(QRectF(0, 0, width(), height()));
+	QRectF scene_rect = QRectF(0, 0, width(), height()); // sceneRect();
 	setSceneRect(scene_rect);
 	d_area->setGeometry(scene_rect);
 	d_area->recomputeGeometry();
 }
-
-
-
-
-
 
 static int registerImageAreaKeywords()
 {
@@ -5300,17 +4958,20 @@ static int _registerImageAreaKeywords = registerImageAreaKeywords();
 class VipImageArea2D::PrivateData
 {
 public:
-	PrivateData() : spectrogram(nullptr), colorMap(nullptr), keepAspectRatio(true){}
+	PrivateData()
+	  : spectrogram(nullptr)
+	  , colorMap(nullptr)
+	  , keepAspectRatio(true)
+	{
+	}
 	QPointer<VipPlotSpectrogram> spectrogram;
-	VipAxisColorMap * colorMap;
+	VipAxisColorMap* colorMap;
 	QRectF imageRect;
 	bool keepAspectRatio;
 };
 
-
-
-VipImageArea2D::VipImageArea2D(QGraphicsItem * parent)
-	:VipPlotArea2D(parent)
+VipImageArea2D::VipImageArea2D(QGraphicsItem* parent)
+  : VipPlotArea2D(parent)
 {
 	d_data = new PrivateData;
 	d_data->colorMap = this->createColorMap(VipAxisBase::Right, VipInterval(0, 100), VipLinearColorMap::createColorMap(VipLinearColorMap::Jet));
@@ -5328,12 +4989,11 @@ VipImageArea2D::VipImageArea2D(QGraphicsItem * parent)
 
 VipImageArea2D::~VipImageArea2D()
 {
-	//if(d_data->spectrogram)
-	// delete d_data->spectrogram.data();
+	// if(d_data->spectrogram)
+	//  delete d_data->spectrogram.data();
 
 	delete d_data;
 }
-
 
 bool VipImageArea2D::setItemProperty(const char* name, const QVariant& value, const QByteArray& index)
 {
@@ -5345,7 +5005,6 @@ bool VipImageArea2D::setItemProperty(const char* name, const QVariant& value, co
 	}
 	return VipPlotArea2D::setItemProperty(name, value, index);
 }
-
 
 void VipImageArea2D::setKeepAspectRatio(bool enable)
 {
@@ -5359,7 +5018,7 @@ bool VipImageArea2D::keepAspectRatio() const
 	return d_data->keepAspectRatio;
 }
 
-void VipImageArea2D::setSpectrogram(VipPlotSpectrogram * spectrogram)
+void VipImageArea2D::setSpectrogram(VipPlotSpectrogram* spectrogram)
 {
 	if (d_data->spectrogram == spectrogram)
 		return;
@@ -5369,18 +5028,17 @@ void VipImageArea2D::setSpectrogram(VipPlotSpectrogram * spectrogram)
 
 	d_data->spectrogram = spectrogram;
 
-	if (spectrogram)
-	{
+	if (spectrogram) {
 		d_data->spectrogram->setAxes(QList<VipAbstractScale*>() << this->bottomAxis() << this->leftAxis(), VipCoordinateSystem::Cartesian);
 		d_data->spectrogram->setItemAttribute(VipPlotItem::ClipToScaleRect);
-		d_data->spectrogram->setHoverEffect();;
+		d_data->spectrogram->setHoverEffect();
+		;
 		d_data->spectrogram->setSelectedEffect();
 
-		if (d_data->colorMap)
-		{
+		if (d_data->colorMap) {
 			d_data->spectrogram->setColorMap(d_data->colorMap);
 
-			//hide or show the color map
+			// hide or show the color map
 			const VipRasterData data = d_data->spectrogram->rawData();
 			int data_type = data.dataType();
 			if (data_type == qMetaTypeId<QImage>() || data_type == 0)
@@ -5390,11 +5048,11 @@ void VipImageArea2D::setSpectrogram(VipPlotSpectrogram * spectrogram)
 		}
 
 		grid()->setZValue(d_data->spectrogram->zValue() + 1);
-		connect(d_data->spectrogram, SIGNAL(imageRectChanged(const QRectF &)), this, SLOT(receiveNewRect(const QRectF &)), Qt::AutoConnection);
+		connect(d_data->spectrogram, SIGNAL(imageRectChanged(const QRectF&)), this, SLOT(receiveNewRect(const QRectF&)), Qt::AutoConnection);
 	}
 }
 
-void VipImageArea2D::setAxisColorMap(VipAxisColorMap * map)
+void VipImageArea2D::setAxisColorMap(VipAxisColorMap* map)
 {
 	if (d_data->colorMap == map)
 		return;
@@ -5433,11 +5091,9 @@ QRectF VipImageArea2D::visualizedImageRect() const
 	return QRectF(top_left, bottom_right).normalized();
 }
 
-
-void VipImageArea2D::receiveNewRect(const QRectF & rect)
+void VipImageArea2D::receiveNewRect(const QRectF& rect)
 {
-	if (d_data->imageRect != rect)
-	{
+	if (d_data->imageRect != rect) {
 		d_data->imageRect = rect;
 		bottomAxis()->setScale(0, rect.right());
 		leftAxis()->setScale(rect.bottom(), 0);
@@ -5445,18 +5101,18 @@ void VipImageArea2D::receiveNewRect(const QRectF & rect)
 	}
 }
 
-void VipImageArea2D::setArray(const VipNDArray & ar, const QPointF & image_offset)
+void VipImageArea2D::setArray(const VipNDArray& ar, const QPointF& image_offset)
 {
 	VipRasterData data(ar, image_offset);
 	d_data->spectrogram->setRawData(data);
 }
 
-void VipImageArea2D::setImage(const QImage & image, const QPointF & image_offset)
+void VipImageArea2D::setImage(const QImage& image, const QPointF& image_offset)
 {
 	this->setArray(vipToArray(image), image_offset);
 }
 
-void VipImageArea2D::setPixmap(const QPixmap & image, const QPointF & image_offset)
+void VipImageArea2D::setPixmap(const QPixmap& image, const QPointF& image_offset)
 {
 	this->setArray(vipToArray(image.toImage()), image_offset);
 }
@@ -5466,7 +5122,7 @@ VipNDArray VipImageArea2D::array() const
 	return d_data->spectrogram->rawData().extract(d_data->spectrogram->imageBoundingRect());
 }
 
-VipPlotSpectrogram * VipImageArea2D::spectrogram() const
+VipPlotSpectrogram* VipImageArea2D::spectrogram() const
 {
 	return const_cast<VipPlotSpectrogram*>(d_data->spectrogram.data());
 }
@@ -5483,8 +5139,7 @@ void VipImageArea2D::emitVisualizedAreaChanged()
 
 void VipImageArea2D::recomputeGeometry(const QRectF& visualized_image_rect, bool recompute_aligned_areas)
 {
-	if (d_data->spectrogram->imageBoundingRect().isValid())
-	{
+	if (d_data->spectrogram->imageBoundingRect().isValid()) {
 		QRectF inner_rect = innerRect();
 		QRectF outer_rect = outerRect();
 
@@ -5493,7 +5148,7 @@ void VipImageArea2D::recomputeGeometry(const QRectF& visualized_image_rect, bool
 		double right_axis = (outer_rect.right() - inner_rect.right());
 		double bottom_axis = (outer_rect.bottom() - inner_rect.bottom());
 
-		QRectF scene_rect = boundingRect();//visualizedSceneRect();
+		QRectF scene_rect = boundingRect(); // visualizedSceneRect();
 		QRectF usable_scene_rect = scene_rect;
 		usable_scene_rect.setLeft(usable_scene_rect.left() + left_axis);
 		usable_scene_rect.setTop(usable_scene_rect.top() + top_axis);
@@ -5513,27 +5168,27 @@ void VipImageArea2D::recomputeGeometry(const QRectF& visualized_image_rect, bool
 			requested_rect.setBottom(im_bounding_rect.bottom());
 
 		//
-		//adjust the requested rect to the real image rect without changing the visualized width/height ratio
+		// adjust the requested rect to the real image rect without changing the visualized width/height ratio
 		//
 
-		//change the left and right position if necessary
-		//EDIT: commented and replaced by above if conditions
-		//if (requested_rect.width() > im_bounding_rect.width())
-		// {
-		// //center horizontally
-		// requested_rect.moveLeft(im_bounding_rect.left() - (requested_rect.width() - im_bounding_rect.width()) / 2);
-		// }
-		// else if (requested_rect.left() < im_bounding_rect.left())
-		// {
-		// //move to the right
-		// requested_rect.moveLeft(im_bounding_rect.left());
-		// }
-		// else if (requested_rect.right() > im_bounding_rect.right())
-		// {
-		// //move to the left
-		// requested_rect.moveRight(im_bounding_rect.right());
-		// }
-//
+		// change the left and right position if necessary
+		// EDIT: commented and replaced by above if conditions
+		// if (requested_rect.width() > im_bounding_rect.width())
+		//  {
+		//  //center horizontally
+		//  requested_rect.moveLeft(im_bounding_rect.left() - (requested_rect.width() - im_bounding_rect.width()) / 2);
+		//  }
+		//  else if (requested_rect.left() < im_bounding_rect.left())
+		//  {
+		//  //move to the right
+		//  requested_rect.moveLeft(im_bounding_rect.left());
+		//  }
+		//  else if (requested_rect.right() > im_bounding_rect.right())
+		//  {
+		//  //move to the left
+		//  requested_rect.moveRight(im_bounding_rect.right());
+		//  }
+		//
 		// //change the top and bottom position if necessary
 		// if (requested_rect.height() > im_bounding_rect.height())
 		// {
@@ -5551,26 +5206,22 @@ void VipImageArea2D::recomputeGeometry(const QRectF& visualized_image_rect, bool
 		// requested_rect.moveBottom(im_bounding_rect.bottom());
 		// }
 
-
-
 		double scene_w_on_h = usable_scene_rect.width() / usable_scene_rect.height();
 		double image_w_on_h = requested_rect.width() / requested_rect.height();
 
 		//
 		// if necessary, expand the requested rect width or height to show more pixels
 		//
-		if (scene_w_on_h > image_w_on_h)
-		{
+		if (scene_w_on_h > image_w_on_h) {
 			double missing_pixels = im_bounding_rect.width() - requested_rect.width();
-			if (missing_pixels > 0)
-			{
-				//we can enlarge the width to show more pixels
+			if (missing_pixels > 0) {
+				// we can enlarge the width to show more pixels
 
-				//the height dictate the image pixel size
+				// the height dictate the image pixel size
 				double im_pixel_size = usable_scene_rect.height() / requested_rect.height();
 				double requested_width = requested_rect.width() * im_pixel_size;
 				double additional_pixels = qMin(missing_pixels, (usable_scene_rect.width() - requested_width) / im_pixel_size);
-				//adjust requested rect width
+				// adjust requested rect width
 				requested_rect.setLeft(requested_rect.left() - additional_pixels / 2);
 				requested_rect.setRight(requested_rect.right() + additional_pixels / 2);
 				if (requested_rect.left() < im_bounding_rect.left())
@@ -5579,18 +5230,16 @@ void VipImageArea2D::recomputeGeometry(const QRectF& visualized_image_rect, bool
 					requested_rect.moveRight(im_bounding_rect.right());
 			}
 		}
-		else
-		{
+		else {
 			double missing_pixels = im_bounding_rect.height() - requested_rect.height();
-			if (missing_pixels > 0)
-			{
-				//we can enlarge the height to show more pixels
+			if (missing_pixels > 0) {
+				// we can enlarge the height to show more pixels
 
-				//the width dictate the image pixel size
+				// the width dictate the image pixel size
 				double im_pixel_size = usable_scene_rect.width() / requested_rect.width();
 				double requested_height = requested_rect.height() * im_pixel_size;
 				double additional_pixels = qMin(missing_pixels, (usable_scene_rect.height() - requested_height) / im_pixel_size);
-				//adjust requested rect height
+				// adjust requested rect height
 				requested_rect.setTop(requested_rect.top() - additional_pixels / 2);
 				requested_rect.setBottom(requested_rect.bottom() + additional_pixels / 2);
 				if (requested_rect.top() < im_bounding_rect.top())
@@ -5600,22 +5249,19 @@ void VipImageArea2D::recomputeGeometry(const QRectF& visualized_image_rect, bool
 			}
 		}
 
-		//if requested rect englobes image rect, try to reduce its size by fitting to the imag rect width/height
-		if (requested_rect.width() > im_bounding_rect.width() && requested_rect.height() > im_bounding_rect.height())
-		{
+		// if requested rect englobes image rect, try to reduce its size by fitting to the imag rect width/height
+		if (requested_rect.width() > im_bounding_rect.width() && requested_rect.height() > im_bounding_rect.height()) {
 			double request_w_on_h = requested_rect.width() / requested_rect.height();
 			double im_w_on_h = im_bounding_rect.width() / im_bounding_rect.height();
-			if (request_w_on_h > im_w_on_h)
-			{
-				//reduce width
+			if (request_w_on_h > im_w_on_h) {
+				// reduce width
 				double new_width = requested_rect.height() * im_w_on_h;
 				new_width = qMax(new_width, im_bounding_rect.width());
 				requested_rect.setLeft(im_bounding_rect.center().x() - new_width / 2);
 				requested_rect.setRight(im_bounding_rect.center().x() + new_width / 2);
 			}
-			else
-			{
-				//reduce height
+			else {
+				// reduce height
 				double new_height = requested_rect.width() / im_w_on_h;
 				new_height = qMax(new_height, im_bounding_rect.height());
 				requested_rect.setTop(im_bounding_rect.center().y() - new_height / 2);
@@ -5628,13 +5274,11 @@ void VipImageArea2D::recomputeGeometry(const QRectF& visualized_image_rect, bool
 		//
 
 		image_w_on_h = requested_rect.width() / requested_rect.height();
-		if (scene_w_on_h > image_w_on_h)
-		{
+		if (scene_w_on_h > image_w_on_h) {
 			usable_scene_rect.setLeft(usable_scene_rect.left() + (usable_scene_rect.width() - usable_scene_rect.height() * image_w_on_h) / 2);
 			usable_scene_rect.setWidth(usable_scene_rect.height() * image_w_on_h);
 		}
-		else
-		{
+		else {
 			usable_scene_rect.setTop(usable_scene_rect.top() + (usable_scene_rect.height() - usable_scene_rect.width() / image_w_on_h) / 2);
 			usable_scene_rect.setHeight(usable_scene_rect.width() / image_w_on_h);
 		}
@@ -5644,16 +5288,15 @@ void VipImageArea2D::recomputeGeometry(const QRectF& visualized_image_rect, bool
 		usable_scene_rect.setBottom(usable_scene_rect.bottom() + bottom_axis);
 		scene_rect = scene_rect & usable_scene_rect;
 
-		//update area scales
+		// update area scales
 		this->bottomAxis()->setScale(requested_rect.left(), requested_rect.right());
 		this->leftAxis()->setScale(requested_rect.bottom(), requested_rect.top());
 
-		//update area geometry
-		if (scene_rect.isValid() && keepAspectRatio())
-		{
-			//this->blockSignals(true);
+		// update area geometry
+		if (scene_rect.isValid() && keepAspectRatio()) {
+			// this->blockSignals(true);
 			this->setMargins(scene_rect);
-			//this->blockSignals(false);
+			// this->blockSignals(false);
 			this->update();
 		}
 	}
@@ -5663,32 +5306,32 @@ void VipImageArea2D::recomputeGeometry(const QRectF& visualized_image_rect, bool
 
 void VipImageArea2D::recomputeGeometry(bool recompute_aligned_areas)
 {
-	//VipPlotArea2D::recomputeGeometry();
+	// VipPlotArea2D::recomputeGeometry();
 	recomputeGeometry(visualizedImageRect(), recompute_aligned_areas);
 }
 
-void VipImageArea2D::setVisualizedImageRect(const QRectF& rect) 
+void VipImageArea2D::setVisualizedImageRect(const QRectF& rect)
 {
 	recomputeGeometry(rect);
 }
 
-
-
-VipImageWidget2D::VipImageWidget2D(QWidget* parent, QGraphicsScene * sc)
-	: VipAbstractPlotWidget2D(sc, parent), d_mouseInsideCanvas(false), d_scrollBarEnabled(true)
+VipImageWidget2D::VipImageWidget2D(QWidget* parent, QGraphicsScene* sc)
+  : VipAbstractPlotWidget2D(sc, parent)
+  , d_mouseInsideCanvas(false)
+  , d_scrollBarEnabled(true)
 {
 	d_area = new VipImageArea2D();
 
-	//Set-up the scene
-	//QGraphicsScene * sc = new QGraphicsScene(this);
-	//setScene(sc);
+	// Set-up the scene
+	// QGraphicsScene * sc = new QGraphicsScene(this);
+	// setScene(sc);
 	viewport()->setMouseTracking(true);
 
 	scene()->addItem(d_area);
 	scene()->setSceneRect(QRectF(0, 0, 1000, 1000));
 	area()->setGeometry(visualizedSceneRect());
 
-	//setViewportUpdateMode(QGraphicsView::FullViewportUpdate);
+	// setViewportUpdateMode(QGraphicsView::FullViewportUpdate);
 	horizontalScrollBar()->disconnect();
 	verticalScrollBar()->disconnect();
 	horizontalScrollBar()->setSingleStep(1);
@@ -5707,7 +5350,6 @@ VipImageWidget2D::VipImageWidget2D(QWidget* parent, QGraphicsScene * sc)
 	d_timer->setInterval(300);
 
 	connect(d_timer, SIGNAL(timeout()), this, SLOT(mouseTimer()));
-
 }
 
 VipImageWidget2D::~VipImageWidget2D()
@@ -5717,7 +5359,7 @@ VipImageWidget2D::~VipImageWidget2D()
 	delete d_timer;
 }
 
-VipImageArea2D * VipImageWidget2D::area() const
+VipImageArea2D* VipImageWidget2D::area() const
 {
 	return const_cast<VipImageArea2D*>(d_area);
 }
@@ -5733,14 +5375,12 @@ void VipImageWidget2D::recomputeGeometry()
 void VipImageWidget2D::setScrollBarEnabled(bool enable)
 {
 	d_scrollBarEnabled = enable;
-	if (!enable)
-	{
+	if (!enable) {
 		setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
 		setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
 		area()->recomputeGeometry();
 	}
-	else
-	{
+	else {
 		computeScrollBars();
 	}
 }
@@ -5758,57 +5398,46 @@ void VipImageWidget2D::computeScrollBars()
 	horizontalScrollBar()->disconnect();
 	verticalScrollBar()->disconnect();
 
-
 	QRectF visualized_image_rect = area()->visualizedImageRect();
 	QRectF image_rect = area()->imageRect();
 	bool state_changed = false;
 
-	if (visualized_image_rect.width() < image_rect.width())
-	{
-		if (horizontalScrollBarPolicy() != Qt::ScrollBarAlwaysOn)
-		{
+	if (visualized_image_rect.width() < image_rect.width()) {
+		if (horizontalScrollBarPolicy() != Qt::ScrollBarAlwaysOn) {
 			setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
 			state_changed = true;
 		}
 		horizontalScrollBar()->setRange(0, std::ceil(image_rect.width() - visualized_image_rect.width()));
 		horizontalScrollBar()->setValue(visualized_image_rect.left());
 	}
-	else
-	{
-		if (horizontalScrollBarPolicy() != Qt::ScrollBarAlwaysOff)
-		{
+	else {
+		if (horizontalScrollBarPolicy() != Qt::ScrollBarAlwaysOff) {
 			setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
 			state_changed = true;
 		}
 	}
 
-	if (visualized_image_rect.height() < image_rect.height())
-	{
-		if (verticalScrollBarPolicy() != Qt::ScrollBarAlwaysOn)
-		{
+	if (visualized_image_rect.height() < image_rect.height()) {
+		if (verticalScrollBarPolicy() != Qt::ScrollBarAlwaysOn) {
 			setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
 			state_changed = true;
 		}
 		verticalScrollBar()->setRange(0, std::ceil(image_rect.height() - visualized_image_rect.height()));
 		verticalScrollBar()->setValue(visualized_image_rect.top());
 	}
-	else
-	{
-		if (verticalScrollBarPolicy() != Qt::ScrollBarAlwaysOff)
-		{
+	else {
+		if (verticalScrollBarPolicy() != Qt::ScrollBarAlwaysOff) {
 			setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
 			state_changed = true;
 		}
 	}
 
-	if (state_changed)
-	{
+	if (state_changed) {
 		area()->recomputeGeometry();
 	}
 
 	connect(horizontalScrollBar(), SIGNAL(actionTriggered(int)), this, SLOT(hScrollBarsMoved()), Qt::QueuedConnection);
 	connect(verticalScrollBar(), SIGNAL(actionTriggered(int)), this, SLOT(vScrollBarsMoved()), Qt::QueuedConnection);
-
 }
 
 void VipImageWidget2D::vScrollBarsMoved()
@@ -5833,16 +5462,14 @@ void VipImageWidget2D::hScrollBarsMoved()
 	connect(area(), SIGNAL(visualizedAreaChanged()), this, SLOT(computeScrollBars()), Qt::QueuedConnection);
 }
 
-
-void	VipImageWidget2D::mouseMoveEvent(QMouseEvent * event)
+void VipImageWidget2D::mouseMoveEvent(QMouseEvent* event)
 {
 	VipAbstractPlotWidget2D::mouseMoveEvent(event);
 }
 
-void	VipImageWidget2D::mousePressEvent(QMouseEvent * event)
+void VipImageWidget2D::mousePressEvent(QMouseEvent* event)
 {
-	if (event->button() == Qt::LeftButton)
-	{
+	if (event->button() == Qt::LeftButton) {
 		QPointF pos = this->mapToScene(event->pos());
 		if (this->area() && this->area()->spectrogram()) {
 			pos = this->area()->spectrogram()->mapFromScene(pos);
@@ -5851,12 +5478,11 @@ void	VipImageWidget2D::mousePressEvent(QMouseEvent * event)
 		}
 		else
 			d_mouseInsideCanvas = false;
-
 	}
 	VipAbstractPlotWidget2D::mousePressEvent(event);
 }
 
-void	VipImageWidget2D::mouseReleaseEvent(QMouseEvent * event)
+void VipImageWidget2D::mouseReleaseEvent(QMouseEvent* event)
 {
 	d_timer->stop();
 	d_mouseInsideCanvas = false;
@@ -5865,7 +5491,7 @@ void	VipImageWidget2D::mouseReleaseEvent(QMouseEvent * event)
 
 void VipImageWidget2D::mouseTimer()
 {
-	//disable for now as it does not work well with other functionalities
+	// disable for now as it does not work well with other functionalities
 
 	/* if (!(QApplication::mouseButtons() & Qt::LeftButton))
 		return;
@@ -5924,20 +5550,12 @@ void VipImageWidget2D::mouseTimer()
 	}*/
 }
 
-
-
-
-
-
 static bool registerVipMultiGraphicsWidget = vipSetKeyWordsForClass(&VipMultiGraphicsWidget::staticMetaObject);
 
-
-VipMultiGraphicsWidget::VipMultiGraphicsWidget(QGraphicsItem * parent)
+VipMultiGraphicsWidget::VipMultiGraphicsWidget(QGraphicsItem* parent)
   : VipBoxGraphicsWidget(parent)
-{ 
+{
 }
-
-
 
 VipMultiGraphicsView::VipMultiGraphicsView(QGraphicsScene* scene, QWidget* parent)
   : VipBaseGraphicsView(scene, parent)
@@ -5965,12 +5583,6 @@ void VipMultiGraphicsView::resizeEvent(QResizeEvent* event)
 	QRectF scene_rect = visualizedSceneRect();
 	d_widget->setGeometry(scene_rect);
 }
-
-
-
-
-
-
 
 VipArchive& operator<<(VipArchive& arch, const VipPlotArea2D* value)
 {
@@ -6007,7 +5619,6 @@ VipArchive& operator>>(VipArchive& arch, VipPlotArea2D* value)
 
 	return arch;
 }
-
 
 static int registerStreamOperators()
 {

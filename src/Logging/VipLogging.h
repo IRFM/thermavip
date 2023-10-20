@@ -1,3 +1,34 @@
+/**
+ * BSD 3-Clause License
+ *
+ * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice, this
+ *    list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of the copyright holder nor the names of its
+ *    contributors may be used to endorse or promote products derived from
+ *    this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
 #ifndef VIP_LOGGING_H
 #define VIP_LOGGING_H
 
@@ -97,11 +128,11 @@ public:
 
 	/// Return the current VipFileLogger instance
 	const VipFileLogger* logger() const;
-	///Returns the logging identifier (used for the file semaphore and the shared memory keys).
+	/// Returns the logging identifier (used for the file semaphore and the shared memory keys).
 	QString identifier() const;
-	///Returns the current output filename.
+	/// Returns the current output filename.
 	QString filename() const;
-	///Returns the current output.
+	/// Returns the current output.
 	Outputs outputs() const;
 
 	/// Enable log saving.
@@ -134,7 +165,7 @@ public:
 	/// will be used to determine the outputs.
 	void log(const QString& text, Level level, Outputs outputs = Outputs(), qint64 time = -1);
 
-	///Directly write a log frame without using the writing thread.
+	/// Directly write a log frame without using the writing thread.
 	void directLog(const QString& text, Level level = Info, Outputs outputs = Outputs(), qint64 time = -1);
 
 	static QByteArray formatLogEntry(const QString& text, VipLogging::Level level, const QDateTime& date);
@@ -237,109 +268,111 @@ inline QString vipLoggingCurrentLibrary()
 /// Always use this macro instead of the \ref VipLogging::Log() function.
 /// Expands to nothing if \ref VIP_ENABLE_LOG_DEBUG is undefined or \ref VIP_DISABLE_LOG is defined.
 
-namespace details {
-template<int N>
-static inline const char* __build_str(const char str[N])
+namespace details
 {
-	return str;
-}
-static inline const char* __build_str(const char* str)
-{
-	return str;
-}
-static inline const char* __build_str(const std::string& str)
-{
-	return str.c_str();
-}
-static inline const char* __build_str(const QByteArray& str)
-{
-	return str.data();
-}
-static inline const char* __build_str(const QString& str)
-{
-	return str.toLatin1().data();
-}
-
-template<int N>
-static inline QString __build_qstr(const char str[N])
-{
-	return QString(str);
-}
-static inline QString __build_qstr(const char* str)
-{
-	return QString(str);
-}
-static inline QString __build_qstr(const std::string& str)
-{
-	return QString(str.c_str());
-}
-static inline QString __build_qstr(const QByteArray& str)
-{
-	return QString(str);
-}
-static inline QString __build_qstr(const QString& str)
-{
-	return str;
-}
-
-template<class T1>
-static inline QString _format(const T1& str)
-{
-	return __build_qstr(str);
-}
-//template< class T1, class ...Args>
-// static inline QString _format(const T1 & str, Args... args) { return QString::asprintf(details::__build_str(str), args...); }
-template<class T1, class T2>
-static inline QString _format(const T1& str, const T2& a2)
-{
-	return QString::asprintf(details::__build_str(str), a2);
-}
-template<class T1, class T2, class T3>
-static inline QString _format(const T1& str, const T2& a2, const T3& a3)
-{
-	return QString::asprintf(details::__build_str(str), a2, a3);
-}
-template<class T1, class T2, class T3, class T4>
-static inline QString _format(const T1& str, const T2& a2, const T3& a3, const T4& a4)
-{
-	return QString::asprintf(details::__build_str(str), a2, a3, a4);
-}
-template<class T1, class T2, class T3, class T4, class T5>
-static inline QString _format(const T1& str, const T2& a2, const T3& a3, const T4& a4, const T5& a5)
-{
-	return QString::asprintf(details::__build_str(str), a2, a3, a4, a5);
-}
-template<class T1, class T2, class T3, class T4, class T5, class T6>
-static inline QString _format(const T1& str, const T2& a2, const T3& a3, const T4& a4, const T5& a5, const T6& a6)
-{
-	return QString::asprintf(details::__build_str(str), a2, a3, a4, a5, a6);
-}
-template<class T1, class T2, class T3, class T4, class T5, class T6, class T7>
-static inline QString _format(const T1& str, const T2& a2, const T3& a3, const T4& a4, const T5& a5, const T6& a6, const T7& a7)
-{
-	return QString::asprintf(details::__build_str(str), a2, a3, a4, a5, a6, a7);
-}
-
-template<class... Args>
-static inline void concat_internal(QTextStream*)
-{}
-template<class T, class... Args>
-static inline void concat_internal(QTextStream* str, const T& val, Args... args)
-{
-	(*str) << val;
-	concat_internal<Args...>(str, std::forward<Args>(args)...);
-}
-template<class... Args>
-static inline QString concatenate(const QString& current_lib, Args... args)
-{
-	QString res;
+	template<int N>
+	static inline const char* __build_str(const char str[N])
 	{
-		QTextStream str(&res, QIODevice::WriteOnly);
-		str << current_lib;
-		concat_internal(&str, std::forward<Args>(args)...);
+		return str;
 	}
-	return res;
-}
+	static inline const char* __build_str(const char* str)
+	{
+		return str;
+	}
+	static inline const char* __build_str(const std::string& str)
+	{
+		return str.c_str();
+	}
+	static inline const char* __build_str(const QByteArray& str)
+	{
+		return str.data();
+	}
+	static inline const char* __build_str(const QString& str)
+	{
+		return str.toLatin1().data();
+	}
+
+	template<int N>
+	static inline QString __build_qstr(const char str[N])
+	{
+		return QString(str);
+	}
+	static inline QString __build_qstr(const char* str)
+	{
+		return QString(str);
+	}
+	static inline QString __build_qstr(const std::string& str)
+	{
+		return QString(str.c_str());
+	}
+	static inline QString __build_qstr(const QByteArray& str)
+	{
+		return QString(str);
+	}
+	static inline QString __build_qstr(const QString& str)
+	{
+		return str;
+	}
+
+	template<class T1>
+	static inline QString _format(const T1& str)
+	{
+		return __build_qstr(str);
+	}
+	// template< class T1, class ...Args>
+	//  static inline QString _format(const T1 & str, Args... args) { return QString::asprintf(details::__build_str(str), args...); }
+	template<class T1, class T2>
+	static inline QString _format(const T1& str, const T2& a2)
+	{
+		return QString::asprintf(details::__build_str(str), a2);
+	}
+	template<class T1, class T2, class T3>
+	static inline QString _format(const T1& str, const T2& a2, const T3& a3)
+	{
+		return QString::asprintf(details::__build_str(str), a2, a3);
+	}
+	template<class T1, class T2, class T3, class T4>
+	static inline QString _format(const T1& str, const T2& a2, const T3& a3, const T4& a4)
+	{
+		return QString::asprintf(details::__build_str(str), a2, a3, a4);
+	}
+	template<class T1, class T2, class T3, class T4, class T5>
+	static inline QString _format(const T1& str, const T2& a2, const T3& a3, const T4& a4, const T5& a5)
+	{
+		return QString::asprintf(details::__build_str(str), a2, a3, a4, a5);
+	}
+	template<class T1, class T2, class T3, class T4, class T5, class T6>
+	static inline QString _format(const T1& str, const T2& a2, const T3& a3, const T4& a4, const T5& a5, const T6& a6)
+	{
+		return QString::asprintf(details::__build_str(str), a2, a3, a4, a5, a6);
+	}
+	template<class T1, class T2, class T3, class T4, class T5, class T6, class T7>
+	static inline QString _format(const T1& str, const T2& a2, const T3& a3, const T4& a4, const T5& a5, const T6& a6, const T7& a7)
+	{
+		return QString::asprintf(details::__build_str(str), a2, a3, a4, a5, a6, a7);
+	}
+
+	template<class... Args>
+	static inline void concat_internal(QTextStream*)
+	{
+	}
+	template<class T, class... Args>
+	static inline void concat_internal(QTextStream* str, const T& val, Args... args)
+	{
+		(*str) << val;
+		concat_internal<Args...>(str, std::forward<Args>(args)...);
+	}
+	template<class... Args>
+	static inline QString concatenate(const QString& current_lib, Args... args)
+	{
+		QString res;
+		{
+			QTextStream str(&res, QIODevice::WriteOnly);
+			str << current_lib;
+			concat_internal(&str, std::forward<Args>(args)...);
+		}
+		return res;
+	}
 }
 
 #ifdef VIP_DISABLE_LOG

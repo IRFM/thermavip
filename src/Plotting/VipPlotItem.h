@@ -1,3 +1,34 @@
+/**
+ * BSD 3-Clause License
+ *
+ * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice, this
+ *    list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of the copyright holder nor the names of its
+ *    contributors may be used to endorse or promote products derived from
+ *    this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
 #ifndef VIP_PLOT_ITEM_H
 #define VIP_PLOT_ITEM_H
 
@@ -8,6 +39,7 @@
 #include <QVector>
 #include <qset.h>
 
+#include "VipArchive.h"
 #include "VipCoordinateSystem.h"
 #include "VipDataType.h"
 #include "VipGlobals.h"
@@ -15,7 +47,6 @@
 #include "VipRenderObject.h"
 #include "VipStyleSheet.h"
 #include "VipText.h"
-#include "VipArchive.h"
 
 /// \addtogroup Plotting
 /// @{
@@ -129,7 +160,7 @@ private:
 /// VipPaintItem is the base class for most drawing items within Thermavip.
 /// Its main goal is to provide a style sheet mechanism to all drawing items
 /// like VipPlotItem, VipAbstractScale, VipAbstractPlotArea...
-/// 
+///
 /// By default, VipPaintItem supports the following properties:
 /// -	'qproperty-name': set the QObject property 'name'
 /// -	'render-hint': one of 'antialiasing', 'highQualityAntialiasing' or 'noAntialiasing'
@@ -209,7 +240,7 @@ public:
 protected:
 	/// @brief Set a property based on its name and an optional index value.
 	/// @return true on success, false otherwise.
-	/// 
+	///
 	/// In order to define custom properties for style sheets, you must reimplement this function
 	/// and call the base version.
 	///
@@ -220,7 +251,7 @@ protected:
 	/// -	'title': text value
 	/// -	'selected': boolean value
 	/// -	'visible': boolean value
-	/// 
+	///
 	virtual bool setItemProperty(const char* name, const QVariant& value, const QByteArray& index = QByteArray());
 	/// @brief Update the VipPaintItem when its stylesheet is updated
 	virtual void updateOnStyleSheet();
@@ -877,8 +908,6 @@ typedef QList<VipPlotItem*> PlotItemList;
 VIP_PLOTTING_EXPORT VipArchive& operator<<(VipArchive& arch, const VipPlotItem* value);
 VIP_PLOTTING_EXPORT VipArchive& operator>>(VipArchive& arch, VipPlotItem* value);
 
-
-
 /// Returns a copy of given item.
 /// This function uses the serialize/deserialize mechanism to produce a copy of input VipPlotItem.
 /// You should always use this function to copy an item, as it will take care of internal IDs used to identify each item.
@@ -889,7 +918,6 @@ VIP_PLOTTING_EXPORT VipPlotItem* vipCopyPlotItem(const VipPlotItem* item);
 VIP_PLOTTING_EXPORT QByteArray vipSavePlotItemState(const VipPlotItem* item);
 /// Restore an item state previously saved with #vipSavePlotItemState.
 VIP_PLOTTING_EXPORT bool vipRestorePlotItemState(VipPlotItem* item, const QByteArray& state);
-
 
 /// @brief Singleton class used to notify whever a VipPlotItem visibility or selection changed,
 /// or when an items is clicked over.
@@ -1065,7 +1093,6 @@ VIP_REGISTER_QOBJECT_METATYPE(VipPlotItemData*)
 VIP_PLOTTING_EXPORT VipArchive& operator<<(VipArchive& arch, const VipPlotItemData* value);
 VIP_PLOTTING_EXPORT VipArchive& operator>>(VipArchive& arch, VipPlotItemData* value);
 
-
 /// @brief Typied version of VipPlotItemData
 template<class Data, class Sample = Data>
 class VipPlotItemDataType : public VipPlotItemData
@@ -1085,7 +1112,7 @@ public:
 	template<class F>
 	void updateData(F&& fun)
 	{
-		
+
 		this->dataLock()->lock();
 		Data vec = takeData().template value<Data>();
 		try {

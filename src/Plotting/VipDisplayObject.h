@@ -1,77 +1,98 @@
+/**
+ * BSD 3-Clause License
+ *
+ * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice, this
+ *    list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of the copyright holder nor the names of its
+ *    contributors may be used to endorse or promote products derived from
+ *    this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
 #ifndef VIP_DISPLAY_OBJECT_H
 #define VIP_DISPLAY_OBJECT_H
 
 #include <QPointer>
 #include <QWidget>
 
-#include "VipProcessingObject.h"
-#include "VipPlotCurve.h"
-#include "VipPlotSpectrogram.h"
-#include "VipPlotHistogram.h"
-#include "VipPlotShape.h"
-#include "VipPlotBarChart.h"
-#include "VipExtractStatistics.h"
 #include "VipArchive.h"
-#include "VipFunctional.h"
-#include "VipSymbol.h"
-#include "VipPlotGrid.h"
-#include "VipPlotMarker.h"
-#include "VipPlotScatter.h"
-#include "VipPlotQuiver.h"
 #include "VipAxisBase.h"
 #include "VipAxisColorMap.h"
 #include "VipColorMap.h"
+#include "VipExtractStatistics.h"
+#include "VipFunctional.h"
+#include "VipPlotBarChart.h"
+#include "VipPlotCurve.h"
+#include "VipPlotGrid.h"
+#include "VipPlotHistogram.h"
+#include "VipPlotMarker.h"
+#include "VipPlotQuiver.h"
+#include "VipPlotScatter.h"
+#include "VipPlotShape.h"
+#include "VipPlotSpectrogram.h"
 #include "VipPlotWidget2D.h"
+#include "VipProcessingObject.h"
+#include "VipSymbol.h"
 
 /// \addtogroup Plotting
 /// @{
 
-
-/// VipDisplayObject is the base class for VipProcessingObject designed to display data. 
-/// 
+/// VipDisplayObject is the base class for VipProcessingObject designed to display data.
+///
 /// One instance of VipDisplayObject should display only one input data.
 /// The display operation must be performed in the reimplementation of VipDisplayObject::displayData() and/or prepareForDisplay().
-/// 
+///
 /// Since drawing operations are usually only allowed within the main thread, VipDisplayObject let you dispatch the display
 /// operation between the internal task pool thread and the main GUI thread.
-/// 
-/// VipDisplayObject::prepareForDisplay() is always called from the task pool thread first, 
+///
+/// VipDisplayObject::prepareForDisplay() is always called from the task pool thread first,
 /// and VipDisplayObject::displayData() is always be called from the main thread afterward if
 /// VipDisplayObject::prepareForDisplay() returns false.
-/// 
+///
 /// By default, VipDisplayObject is asynchronous.
-/// 
+///
 class VIP_PLOTTING_EXPORT VipDisplayObject : public VipProcessingObject
 {
 	Q_OBJECT
 	VIP_IO(VipInput data)
 	VIP_IO(VipProperty numThreads)
 public:
-
-	VipDisplayObject(QObject * parent = nullptr);
+	VipDisplayObject(QObject* parent = nullptr);
 	~VipDisplayObject();
 
 	/// @brief Returns the VipAbstractPlayer displaying the data of this VipDisplayObject.
-	virtual QWidget* widget() const {
-		return nullptr;
-	}
+	virtual QWidget* widget() const { return nullptr; }
 	/// @brief Returns true if the displayed data is currently visible.
-	virtual bool isVisible() const {
-		return false;
-	}
+	virtual bool isVisible() const { return false; }
 	/// @brief Returns true if the display operation is currently in progress.
 	virtual bool displayInProgress() const;
 
 	/// @brief Returned the preferred size for the display object.
-	virtual QSize sizeHint() const {
-		return QSize();
-	}
+	virtual QSize sizeHint() const { return QSize(); }
 
 	/// @brief Return the display object title.
 	/// This could be any string that contains a human readable text describing this display object.
-	virtual QString title() const {
-		return QString();
-	}
+	virtual QString title() const { return QString(); }
 
 	/// @brief Select whever the displayed object uses input data attributes for its formatting.
 	///
@@ -85,67 +106,67 @@ public:
 	virtual bool useEventLoop() const { return true; }
 
 protected:
-	///Reimplement this function to perform the drawing based on \a data.
-	virtual void displayData(const VipAnyDataList & ) { }
+	/// Reimplement this function to perform the drawing based on \a data.
+	virtual void displayData(const VipAnyDataList&) {}
 	/// This function is called in the processing thread just before launching the display.
 	/// It can be used to performs some time consuming operations in the processing thread insteed of the GUI one (like
 	/// converting a numeric image into a RGB one).
 	/// Returns false to tell that displayData() should be called afterward, true otherwise (display finished)
 	virtual bool prepareForDisplay(const VipAnyDataList&) { return false; }
 
-	///Tis function is called whenever a new input data is available (see VipProcessingObject for more details).
-	virtual void apply() ;
+	/// Tis function is called whenever a new input data is available (see VipProcessingObject for more details).
+	virtual void apply();
 
 Q_SIGNALS:
-	///Emitted by the display(VipAnyDataList&) function
-	void displayed(const VipAnyDataList &);
+	/// Emitted by the display(VipAnyDataList&) function
+	void displayed(const VipAnyDataList&);
 
 private Q_SLOTS:
-	void display( const VipAnyDataList &);
+	void display(const VipAnyDataList&);
 	void checkVisibility();
+
 private:
 	class PrivateData;
-	PrivateData * m_data;
+	PrivateData* m_data;
 };
 
 VIP_REGISTER_QOBJECT_METATYPE(VipDisplayObject*)
-VIP_PLOTTING_EXPORT VipArchive & operator<<(VipArchive & stream, const VipDisplayObject * r);
-VIP_PLOTTING_EXPORT VipArchive & operator>>(VipArchive & stream, VipDisplayObject * r);
-
+VIP_PLOTTING_EXPORT VipArchive& operator<<(VipArchive& stream, const VipDisplayObject* r);
+VIP_PLOTTING_EXPORT VipArchive& operator>>(VipArchive& stream, VipDisplayObject* r);
 
 /// VipDisplayPlotItem is a VipDisplayObject that displays its data through a VipPlotItem object.
 /// If the VipDisplayPlotItem is destroyed, the VipPlotItem itself won't be destroyed.
 /// However, destroying the VipPlotItem will destroy the VipDisplayPlotItem.
-/// 
+///
 class VIP_PLOTTING_EXPORT VipDisplayPlotItem : public VipDisplayObject
 {
 	Q_OBJECT
-	friend VIP_PLOTTING_EXPORT VipArchive & operator<<(VipArchive & stream, const VipDisplayPlotItem * r);
-	friend VIP_PLOTTING_EXPORT VipArchive & operator>>(VipArchive & stream, VipDisplayPlotItem * r);
+	friend VIP_PLOTTING_EXPORT VipArchive& operator<<(VipArchive& stream, const VipDisplayPlotItem* r);
+	friend VIP_PLOTTING_EXPORT VipArchive& operator>>(VipArchive& stream, VipDisplayPlotItem* r);
 
 public:
-	VipDisplayPlotItem(QObject * parent = nullptr);
+	VipDisplayPlotItem(QObject* parent = nullptr);
 	~VipDisplayPlotItem();
 
-	virtual QWidget* widget() const ;
-	virtual bool isVisible() const ;
+	virtual QWidget* widget() const;
+	virtual bool isVisible() const;
 	virtual bool displayInProgress() const;
 
 	virtual QString title() const;
 
-	///Returns the internal VipPlotItem.
+	/// Returns the internal VipPlotItem.
 	virtual VipPlotItem* item() const;
-	///Set the internal VipPlotItem. This will destroy the previous one, if any.
-	/// This will also setting the property "VipDisplayObject" to the plot item containing a pointer to this VipDisplayPlotItem.
-	virtual void setItem(VipPlotItem * item);
+	/// Set the internal VipPlotItem. This will destroy the previous one, if any.
+	///  This will also setting the property "VipDisplayObject" to the plot item containing a pointer to this VipDisplayPlotItem.
+	virtual void setItem(VipPlotItem* item);
 
 	/// @brief Remove and returns the internal item
 	VipPlotItem* takeItem();
 
-	///Equivalent to:
-	/// \code
-	/// item()->setItemAttribute(VipPlotItem::IsSuppressable,enable);
-	/// \endcode
+	/// Equivalent to:
+	///  \code
+	///  item()->setItemAttribute(VipPlotItem::IsSuppressable,enable);
+	///  \endcode
 	void setItemSuppressable(bool enable);
 	/// Equivalent to:
 	/// \code
@@ -155,20 +176,21 @@ public:
 
 	/// Format the item based on given data.
 	/// The standard implementation set the item's title to the data property "Name", and set the item's axis unit based on the data properties "XUnit and "YUnit".
-	virtual void formatItem(VipPlotItem * item, const VipAnyData & any, bool force = false);
-	void formatItemIfNecessary(VipPlotItem * item, const VipAnyData & any);
+	virtual void formatItem(VipPlotItem* item, const VipAnyData& any, bool force = false);
+	void formatItemIfNecessary(VipPlotItem* item, const VipAnyData& any);
 
 private Q_SLOTS:
 	void setItemProperty();
 	void internalFormatItem();
+
 private:
 	class PrivateData;
-	PrivateData * m_data;
+	PrivateData* m_data;
 };
 
 VIP_REGISTER_QOBJECT_METATYPE(VipDisplayPlotItem*)
-VIP_PLOTTING_EXPORT VipArchive & operator<<(VipArchive & stream, const VipDisplayPlotItem * r);
-VIP_PLOTTING_EXPORT VipArchive & operator>>(VipArchive & stream, VipDisplayPlotItem * r);
+VIP_PLOTTING_EXPORT VipArchive& operator<<(VipArchive& stream, const VipDisplayPlotItem* r);
+VIP_PLOTTING_EXPORT VipArchive& operator>>(VipArchive& stream, VipDisplayPlotItem* r);
 
 /// A VipDisplayPlotItem that displays a curve based on VipPlotCurve.
 /// It accepts as input data either a VipPointVector, VipComplexPointVector, VipPoint
@@ -177,16 +199,15 @@ class VIP_PLOTTING_EXPORT VipDisplayCurve : public VipDisplayPlotItem
 {
 	Q_OBJECT
 	VIP_IO(VipProperty Sliding_time_window)
-	VIP_IO_DESCRIPTION(Sliding_time_window,"Temporal window of the curve (seconds).\nThis is only used when plotting a continuous curve (streaming)")
+	VIP_IO_DESCRIPTION(Sliding_time_window, "Temporal window of the curve (seconds).\nThis is only used when plotting a continuous curve (streaming)")
 
 public:
-
-	VipDisplayCurve(QObject * parent = nullptr);
+	VipDisplayCurve(QObject* parent = nullptr);
 	~VipDisplayCurve();
 
-	VipExtractComponent * extractComponent() const;
+	VipExtractComponent* extractComponent() const;
 
-	virtual bool acceptInput(int top_level_index, const QVariant & v) const;
+	virtual bool acceptInput(int top_level_index, const QVariant& v) const;
 	virtual VipPlotCurve* item() const { return static_cast<VipPlotCurve*>(VipDisplayPlotItem::item()); }
 	virtual void setItem(VipPlotCurve* item);
 
@@ -196,11 +217,10 @@ protected:
 
 private:
 	class PrivateData;
-	PrivateData *m_data;
+	PrivateData* m_data;
 };
 
 VIP_REGISTER_QOBJECT_METATYPE(VipDisplayCurve*)
-
 
 /// A VipDisplayPlotItem that displays a spectrogram based on VipPlotSpectrogram.
 /// It accepts as input data either a VipNDArray or a VipRasterData.
@@ -209,35 +229,30 @@ class VIP_PLOTTING_EXPORT VipDisplayImage : public VipDisplayPlotItem
 {
 	Q_OBJECT
 public:
-
-	VipDisplayImage(QObject * parent = nullptr);
+	VipDisplayImage(QObject* parent = nullptr);
 	~VipDisplayImage();
 
-	virtual bool acceptInput(int top_level_index, const QVariant & v) const;
+	virtual bool acceptInput(int top_level_index, const QVariant& v) const;
 	virtual VipPlotSpectrogram* item() const { return static_cast<VipPlotSpectrogram*>(VipDisplayPlotItem::item()); }
 
-	virtual QSize sizeHint() const ;
+	virtual QSize sizeHint() const;
 
-	VipExtractComponent * extractComponent() const;
+	VipExtractComponent* extractComponent() const;
 
 	/// Returns true if the VipDisplayImage can display \a ar as is, without extracting a component.
 	/// Currently, this returns true for all images except complex ones.
-	static bool canDisplayImageAsIs(const VipNDArray & ar);
+	static bool canDisplayImageAsIs(const VipNDArray& ar);
 
 protected:
 	virtual void displayData(const VipAnyDataList& data);
 	virtual bool prepareForDisplay(const VipAnyDataList& data);
 
-
 private:
 	class PrivateData;
-	PrivateData * m_data;
-
+	PrivateData* m_data;
 };
 
 VIP_REGISTER_QOBJECT_METATYPE(VipDisplayImage*)
-
-
 
 /// A VipDisplayPlotItem that displays a scene model based on VipPlotSceneModel.
 /// It accepts as input a VipSceneModel or a VipShape.
@@ -245,13 +260,12 @@ class VIP_PLOTTING_EXPORT VipDisplaySceneModel : public VipDisplayPlotItem
 {
 	Q_OBJECT
 public:
+	VipDisplaySceneModel(QObject* parent = nullptr);
 
-	VipDisplaySceneModel(QObject * parent = nullptr);
+	virtual bool acceptInput(int top_level_index, const QVariant& v) const;
+	VipPlotSceneModel* item() const { return static_cast<VipPlotSceneModel*>(VipDisplayPlotItem::item()); }
 
-	virtual bool acceptInput(int top_level_index, const QVariant & v) const;
-	VipPlotSceneModel* item() const {return static_cast<VipPlotSceneModel*>(VipDisplayPlotItem::item());}
-
-	void setTransform(const QTransform & tr);
+	void setTransform(const QTransform& tr);
 	QTransform transform() const;
 
 protected:
@@ -264,15 +278,13 @@ private:
 
 VIP_REGISTER_QOBJECT_METATYPE(VipDisplaySceneModel*)
 
-
-
 namespace detail
 {
 	/// @brief Base class for display objects using a VipPlotItemDataType
 	/// @tparam PlotItemType VipPlotItemDataType type
 	/// @tparam Data data type
 	/// @tparam Sample sample type
-	template<class PlotItemType, class Data , class Sample >
+	template<class PlotItemType, class Data, class Sample>
 	class VipBaseDisplayPlotItemData : public VipDisplayPlotItem
 	{
 	public:
@@ -283,13 +295,10 @@ namespace detail
 			item()->setAutoMarkDirty(false);
 		}
 
-		virtual bool acceptInput(int top_level_index, const QVariant& v) const { 
-			return v.canConvert<Data>() || (!std::is_same<Data,Sample>::value && v.canConvert<Sample>());
-		}
-		virtual PlotItemType* item() const { 
-			return static_cast<PlotItemType*>(VipDisplayPlotItem::item()); 
-		}
-		virtual void setItem(PlotItemType* it) {
+		virtual bool acceptInput(int top_level_index, const QVariant& v) const { return v.canConvert<Data>() || (!std::is_same<Data, Sample>::value && v.canConvert<Sample>()); }
+		virtual PlotItemType* item() const { return static_cast<PlotItemType*>(VipDisplayPlotItem::item()); }
+		virtual void setItem(PlotItemType* it)
+		{
 			if (it && it != item()) {
 				it->setAutoMarkDirty(false);
 				VipDisplayPlotItem::setItem(it);
@@ -297,7 +306,8 @@ namespace detail
 		}
 
 	protected:
-		virtual void displayData(const VipAnyDataList& lst) {
+		virtual void displayData(const VipAnyDataList& lst)
+		{
 			if (PlotItemType* it = item()) {
 				it->markDirty();
 				// format the item
@@ -308,12 +318,13 @@ namespace detail
 	};
 
 	template<class PlotItemType, class Data = typename PlotItemType::data_type, class Sample = typename PlotItemType::sample_type>
-	class VipDisplayPlotItemData : public VipBaseDisplayPlotItemData<PlotItemType,Data,Sample>
+	class VipDisplayPlotItemData : public VipBaseDisplayPlotItemData<PlotItemType, Data, Sample>
 	{
 	public:
 		VipDisplayPlotItemData(QObject* parent = nullptr)
 		  : VipBaseDisplayPlotItemData<PlotItemType, Data, Sample>(parent)
-		{}
+		{
+		}
 
 	protected:
 		virtual bool prepareForDisplay(const VipAnyDataList& lst)
@@ -323,7 +334,7 @@ namespace detail
 				Data data;
 				bool full_data = false;
 				for (int i = 0; i < lst.size(); ++i) {
-					const VipAnyData & any = lst[i];
+					const VipAnyData& any = lst[i];
 					QVariant v = any.data();
 
 					if (v.userType() == qMetaTypeId<Data>()) {
@@ -343,7 +354,7 @@ namespace detail
 	};
 
 	template<class PlotItemType, class Data>
-	class VipDisplayPlotItemData<PlotItemType,Data,Data> : public VipBaseDisplayPlotItemData<PlotItemType, Data, Data>
+	class VipDisplayPlotItemData<PlotItemType, Data, Data> : public VipBaseDisplayPlotItemData<PlotItemType, Data, Data>
 	{
 	public:
 		VipDisplayPlotItemData(QObject* parent = nullptr)
@@ -364,8 +375,6 @@ namespace detail
 	};
 }
 
-
-
 /// A VipDisplayPlotItem that displays a histogram based on VipPlotHistogram.
 /// It accepts as input data either a VipIntervalSampleVector or a VipIntervalSample.
 class VIP_PLOTTING_EXPORT VipDisplayHistogram : public detail::VipDisplayPlotItemData<VipPlotHistogram>
@@ -379,7 +388,6 @@ public:
 };
 
 VIP_REGISTER_QOBJECT_METATYPE(VipDisplayHistogram*)
-
 
 /// A VipDisplayPlotItem that displays a scatter plot based on VipPlotScatter.
 /// It accepts as input data of type VipScatterPointVector or VipScatterPoint.
@@ -395,8 +403,6 @@ public:
 
 VIP_REGISTER_QOBJECT_METATYPE(VipDisplayScatterPoints*)
 
-
-
 /// A VipDisplayPlotItem that displays arrows based on VipPlotQuiver.
 /// It accepts as input data of type VipQuiverPointVector or VipQuiverPoint.
 class VIP_PLOTTING_EXPORT VipDisplayQuiver : public detail::VipDisplayPlotItemData<VipPlotQuiver>
@@ -410,7 +416,6 @@ public:
 };
 
 VIP_REGISTER_QOBJECT_METATYPE(VipDisplayQuiver*)
-
 
 /// A VipDisplayPlotItem that displays bars based on VipPlotBarChart.
 /// It accepts as input data of type VipBar or VipBarVector.
@@ -426,8 +431,6 @@ public:
 
 VIP_REGISTER_QOBJECT_METATYPE(VipDisplayBars*)
 
-
-
 /// A VipDisplayPlotItem that displays a marker based on VipPlotMarker.
 /// It accepts as input data of type VipPoint.
 class VIP_PLOTTING_EXPORT VipDisplayMarker : public detail::VipDisplayPlotItemData<VipPlotMarker>
@@ -442,11 +445,9 @@ public:
 
 VIP_REGISTER_QOBJECT_METATYPE(VipDisplayMarker*)
 
-Q_DECLARE_METATYPE(QList<VipDisplayObject*> )
-
-
+Q_DECLARE_METATYPE(QList<VipDisplayObject*>)
 
 /// @}
-//end Plotting
+// end Plotting
 
 #endif

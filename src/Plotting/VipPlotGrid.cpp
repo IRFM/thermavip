@@ -1,12 +1,41 @@
-#include <QPainterPathStroker>
+/**
+ * BSD 3-Clause License
+ *
+ * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice, this
+ *    list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of the copyright holder nor the names of its
+ *    contributors may be used to endorse or promote products derived from
+ *    this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
 #include <QGraphicsScene>
 #include <QMap>
+#include <QPainterPathStroker>
 
-#include "VipPlotGrid.h"
 #include "VipAxisBase.h"
 #include "VipPainter.h"
-
-
+#include "VipPlotGrid.h"
 
 static int registerGridKeyWords()
 {
@@ -25,27 +54,25 @@ static int registerGridKeyWords()
 }
 static int _registerGridKeyWords = registerGridKeyWords();
 
-
 class VipPlotGrid::PrivateData
 {
 public:
-    QMap<int,bool> axisEnabled;
-    QMap<int,bool> axisMinEnabled;
-    QPen minorPen;
-    QPen majorPen;
+	QMap<int, bool> axisEnabled;
+	QMap<int, bool> axisMinEnabled;
+	QPen minorPen;
+	QPen majorPen;
 };
 
-
 VipPlotGrid::VipPlotGrid()
-:VipPlotItem()
+  : VipPlotItem()
 {
 	d_data = new PrivateData();
 	this->setZValue(10);
-	this->setItemAttribute(VisibleLegend,false);
-	this->setItemAttribute(HasLegendIcon,false);
-	this->setItemAttribute(AutoScale,false);
-	this->setItemAttribute(ClipToScaleRect,false);
-	this->setItemAttribute(Droppable,false);
+	this->setItemAttribute(VisibleLegend, false);
+	this->setItemAttribute(HasLegendIcon, false);
+	this->setItemAttribute(AutoScale, false);
+	this->setItemAttribute(ClipToScaleRect, false);
+	this->setItemAttribute(Droppable, false);
 }
 
 VipPlotGrid::~VipPlotGrid()
@@ -53,7 +80,7 @@ VipPlotGrid::~VipPlotGrid()
 	delete d_data;
 }
 
-void VipPlotGrid::enableAxis(int axis ,bool enable )
+void VipPlotGrid::enableAxis(int axis, bool enable)
 {
 	d_data->axisEnabled[axis] = enable;
 	emitItemChanged();
@@ -61,13 +88,13 @@ void VipPlotGrid::enableAxis(int axis ,bool enable )
 
 bool VipPlotGrid::axisEnabled(int axis) const
 {
-	QMap<int,bool>::iterator it= d_data->axisEnabled.find(axis);
-	if(it !=  d_data->axisEnabled.end())
+	QMap<int, bool>::iterator it = d_data->axisEnabled.find(axis);
+	if (it != d_data->axisEnabled.end())
 		return it.value();
 	return true;
 }
 
-void VipPlotGrid::enableAxisMin(int axis ,bool enable)
+void VipPlotGrid::enableAxisMin(int axis, bool enable)
 {
 	d_data->axisMinEnabled[axis] = enable;
 	emitItemChanged();
@@ -75,20 +102,20 @@ void VipPlotGrid::enableAxisMin(int axis ,bool enable)
 
 bool VipPlotGrid::axisMinEnabled(int axis) const
 {
-	QMap<int,bool>::iterator it= d_data->axisMinEnabled.find(axis);
-	if(it !=  d_data->axisMinEnabled.end())
+	QMap<int, bool>::iterator it = d_data->axisMinEnabled.find(axis);
+	if (it != d_data->axisMinEnabled.end())
 		return it.value();
 	return true;
 }
 
-void VipPlotGrid::setPen( const QPen & p)
+void VipPlotGrid::setPen(const QPen& p)
 {
 	d_data->minorPen = p;
 	d_data->majorPen = p;
 	emitItemChanged();
 }
 
-void VipPlotGrid::setMajorPen( const QPen & p)
+void VipPlotGrid::setMajorPen(const QPen& p)
 {
 	d_data->majorPen = p;
 	emitItemChanged();
@@ -103,7 +130,7 @@ QPen& VipPlotGrid::majorPen()
 	return d_data->majorPen;
 }
 
-void VipPlotGrid::setMinorPen( const QPen & p )
+void VipPlotGrid::setMinorPen(const QPen& p)
 {
 	d_data->minorPen = p;
 	emitItemChanged();
@@ -118,99 +145,84 @@ QPen& VipPlotGrid::minorPen()
 	return d_data->minorPen;
 }
 
-void VipPlotGrid::draw( QPainter *p, const VipCoordinateSystemPtr & m) const
+void VipPlotGrid::draw(QPainter* p, const VipCoordinateSystemPtr& m) const
 {
 	VipCoordinateSystemPtr map = m;
 
-	if(map->axes().size() != 2 || !map->axes().constFirst() || !map->axes().constLast())
+	if (map->axes().size() != 2 || !map->axes().constFirst() || !map->axes().constLast())
 		return;
 
-	if(coordinateSystemType() == VipCoordinateSystem::Cartesian ||
-			coordinateSystemType() == VipCoordinateSystem::Null)
-	{
-		drawCartesian(p,*map);
+	if (coordinateSystemType() == VipCoordinateSystem::Cartesian || coordinateSystemType() == VipCoordinateSystem::Null) {
+		drawCartesian(p, *map);
 	}
-	else if(coordinateSystemType() == VipCoordinateSystem::Polar)
-	{
+	else if (coordinateSystemType() == VipCoordinateSystem::Polar) {
 		drawPolar(p, *static_cast<const VipPolarSystem*>(map.get()));
 	}
 }
 
-void VipPlotGrid::drawCartesian( QPainter *p, const VipCoordinateSystem & m) const
+void VipPlotGrid::drawCartesian(QPainter* p, const VipCoordinateSystem& m) const
 {
-	//check for vertical or horizontal line, and remove antialiazing
-	QPointF diff_x =( m.transform(VipPoint(0, 0)) - m.transform(VipPoint(1, 0)));
+	// check for vertical or horizontal line, and remove antialiazing
+	QPointF diff_x = (m.transform(VipPoint(0, 0)) - m.transform(VipPoint(1, 0)));
 	QPointF diff_y = (m.transform(VipPoint(0, 0)) - m.transform(VipPoint(0, 1)));
 	bool remove_antialiazing = (vipFuzzyCompare(diff_x.y(), 0) && vipFuzzyCompare(diff_y.x(), 0) && !p->transform().isRotating());
 	QPainter::RenderHints saved = p->renderHints();
-	if (remove_antialiazing)
-	{
+	if (remove_antialiazing) {
 		p->setRenderHint(QPainter::Antialiasing, false);
 	}
 
+	const QList<VipInterval> intervals = VipAbstractScale::scaleIntervals(axes());
 
-	const QList<VipInterval> intervals= VipAbstractScale::scaleIntervals(axes());
-
-	if(axisEnabled(0) && intervals[1].isValid())
-	{
+	if (axisEnabled(0) && intervals[1].isValid()) {
 		const VipScaleDiv::TickList major = axes()[0]->scaleDiv().ticks(VipScaleDiv::MajorTick);
 		p->setPen((majorPen()));
 		VipInterval inter = intervals[0];
-		for(int i=0; i < major.size(); ++i)
-		{
+		for (int i = 0; i < major.size(); ++i) {
 			vip_double value = major[i];
-			if(value != inter.minValue() && value != inter.maxValue())
-				VipPainter::drawLine(p, m.transform(VipPoint(value,intervals[1].minValue())) , m.transform(VipPoint(value,intervals[1].maxValue())));
+			if (value != inter.minValue() && value != inter.maxValue())
+				VipPainter::drawLine(p, m.transform(VipPoint(value, intervals[1].minValue())), m.transform(VipPoint(value, intervals[1].maxValue())));
 		}
 
-		if(axisMinEnabled(0))
-		{
+		if (axisMinEnabled(0)) {
 			const VipScaleDiv::TickList minor = axes()[0]->scaleDiv().ticks(VipScaleDiv::MinorTick) + axes()[0]->scaleDiv().ticks(VipScaleDiv::MinorTick);
 			p->setPen((minorPen()));
 
-			for(int i=0; i < minor.size(); ++i)
-			{
+			for (int i = 0; i < minor.size(); ++i) {
 				vip_double value = minor[i];
 				if (value != inter.minValue() && value != inter.maxValue())
-					VipPainter::drawLine(p, m.transform(VipPoint(value,intervals[1].minValue())) , m.transform(VipPoint(value,intervals[1].maxValue())));
+					VipPainter::drawLine(p, m.transform(VipPoint(value, intervals[1].minValue())), m.transform(VipPoint(value, intervals[1].maxValue())));
 			}
 		}
 	}
 
-	if(axisEnabled(1) && intervals[0].isValid())
-	{
+	if (axisEnabled(1) && intervals[0].isValid()) {
 		const VipScaleDiv::TickList major = axes()[1]->scaleDiv().ticks(VipScaleDiv::MajorTick);
 		p->setPen((majorPen()));
 		VipInterval inter = intervals[1];
-		for(int i=0; i < major.size(); ++i)
-		{
+		for (int i = 0; i < major.size(); ++i) {
 			vip_double value = major[i];
 			if (value != inter.minValue() && value != inter.maxValue())
-				VipPainter::drawLine(p, m.transform(VipPoint(intervals[0].minValue(),value)) , m.transform(VipPoint(intervals[0].maxValue(),value)));
+				VipPainter::drawLine(p, m.transform(VipPoint(intervals[0].minValue(), value)), m.transform(VipPoint(intervals[0].maxValue(), value)));
 		}
 
-		if(axisMinEnabled(1))
-		{
+		if (axisMinEnabled(1)) {
 			const VipScaleDiv::TickList minor = axes()[1]->scaleDiv().ticks(VipScaleDiv::MinorTick) + axes()[1]->scaleDiv().ticks(VipScaleDiv::MinorTick);
 			p->setPen((minorPen()));
 
-			for(int i=0; i < minor.size(); ++i)
-			{
+			for (int i = 0; i < minor.size(); ++i) {
 				vip_double value = minor[i];
 				if (value != inter.minValue() && value != inter.maxValue())
-					VipPainter::drawLine(p, m.transform(VipPoint(intervals[0].minValue(),value)), m.transform(VipPoint(intervals[0].maxValue(),value)));
+					VipPainter::drawLine(p, m.transform(VipPoint(intervals[0].minValue(), value)), m.transform(VipPoint(intervals[0].maxValue(), value)));
 			}
 		}
 	}
 
-
-	if (remove_antialiazing)
-	{
+	if (remove_antialiazing) {
 		p->setRenderHints(saved);
 	}
 }
 
-bool VipPlotGrid::setItemProperty(const char* name, const QVariant& value, const QByteArray& index ) 
+bool VipPlotGrid::setItemProperty(const char* name, const QVariant& value, const QByteArray& index)
 {
 	if (value.userType() == 0)
 		return false;
@@ -250,7 +262,7 @@ bool VipPlotGrid::setItemProperty(const char* name, const QVariant& value, const
 	return VipPlotItem::setItemProperty(name, value, index);
 }
 
-bool VipPlotGrid::hasState(const QByteArray& state, bool enable) const 
+bool VipPlotGrid::hasState(const QByteArray& state, bool enable) const
 {
 	if (state == "cartesian") {
 		return (coordinateSystemType() == VipCoordinateSystem::Cartesian) == enable;
@@ -261,11 +273,7 @@ bool VipPlotGrid::hasState(const QByteArray& state, bool enable) const
 	return VipPlotItem::hasState(state, enable);
 }
 
-
-
-
-
-static QPainterPath strokePath(const QPainterPath& p, double width) 
+static QPainterPath strokePath(const QPainterPath& p, double width)
 {
 	QPainterPathStroker stroke;
 	stroke.setWidth(width);
@@ -298,12 +306,12 @@ static QPainterPath pathArc(const VipScaleDiv::TickList& radiuses, const VipPola
 		QPainterPath p;
 		p.arcMoveTo(rect, m.startAngle());
 		p.arcTo(rect, m.startAngle(), m.sweepLength());
-		res.addPath(strokePath(p,7));
+		res.addPath(strokePath(p, 7));
 	}
 	return res;
 }
 
-QPainterPath VipPlotGrid::shape() const 
+QPainterPath VipPlotGrid::shape() const
 {
 	const VipPolarSystem* m = static_cast<const VipPolarSystem*>(sceneMap().get());
 	if (m->axes().size() != 2 || !m->axes().constFirst() || !m->axes().constLast())
@@ -350,119 +358,101 @@ QPainterPath VipPlotGrid::shape() const
 	QPainterPath res;
 	res.addPath(pathRadius(anglesMajor, *m));
 	res.addPath(pathRadius(anglesMinor, *m));
-	res.addPath(pathArc(radiusMajor,*m));
+	res.addPath(pathArc(radiusMajor, *m));
 	res.addPath(pathArc(radiusMinor, *m));
 	return res;
 }
-	
 
-
-
-void VipPlotGrid::drawRadius( QPainter *painter,  const VipScaleDiv::TickList & angles, const QPen & pen, const VipPolarSystem & m) const
+void VipPlotGrid::drawRadius(QPainter* painter, const VipScaleDiv::TickList& angles, const QPen& pen, const VipPolarSystem& m) const
 {
 	painter->setPen(pen);
-	for(int i=0; i < angles.size(); ++i)
-	{
+	for (int i = 0; i < angles.size(); ++i) {
 		vip_double angle = angles[i];
-		angle = m.polarTransform(VipPolarCoordinate(m.startRadius(),angle)).angle();
-		QLineF line(m.center(), QPointF(m.center().x(),m.center().y() - m.endRadius()));
+		angle = m.polarTransform(VipPolarCoordinate(m.startRadius(), angle)).angle();
+		QLineF line(m.center(), QPointF(m.center().x(), m.center().y() - m.endRadius()));
 		line.setAngle(angle);
-		line.setP1(line.pointAt(m.startRadius()/m.endRadius()));
-		VipPainter::drawLine(painter,line);
+		line.setP1(line.pointAt(m.startRadius() / m.endRadius()));
+		VipPainter::drawLine(painter, line);
 	}
-
 }
 
-void VipPlotGrid::drawArc( QPainter *painter,  const VipScaleDiv::TickList & radiuses, const QPen & pen, const VipPolarSystem & m) const
+void VipPlotGrid::drawArc(QPainter* painter, const VipScaleDiv::TickList& radiuses, const QPen& pen, const VipPolarSystem& m) const
 {
 	painter->setPen(pen);
-	for(int i=0; i < radiuses.size(); ++i)
-	{
+	for (int i = 0; i < radiuses.size(); ++i) {
 		vip_double radius = radiuses[i];
-		radius = m.polarTransform(VipPolarCoordinate(radius,m.startAngle())).radius();
-		QRectF rect((QPointF)m.center() - QPointF(radius,radius), QSizeF(radius*2,radius*2));
-		painter->drawArc(rect,m.startAngle()*16,m.sweepLength()*16);
+		radius = m.polarTransform(VipPolarCoordinate(radius, m.startAngle())).radius();
+		QRectF rect((QPointF)m.center() - QPointF(radius, radius), QSizeF(radius * 2, radius * 2));
+		painter->drawArc(rect, m.startAngle() * 16, m.sweepLength() * 16);
 	}
 }
 
-void VipPlotGrid::drawPolar( QPainter *p, const VipPolarSystem & m) const
+void VipPlotGrid::drawPolar(QPainter* p, const VipPolarSystem& m) const
 {
 	VipScaleDiv::TickList anglesMajor;
 	VipScaleDiv::TickList anglesMinor;
 	VipScaleDiv::TickList radiusMajor;
 	VipScaleDiv::TickList radiusMinor;
 
-	if(m.isRadialPolar())
-	{
+	if (m.isRadialPolar()) {
 
-		if(axes()[0])
-		{
-			if(axisEnabled(0))
+		if (axes()[0]) {
+			if (axisEnabled(0))
 				radiusMajor = axes()[0]->scaleDiv().ticks(VipScaleDiv::MajorTick);
-			if(axisMinEnabled(0))
-				radiusMinor = axes()[0]->scaleDiv().ticks(VipScaleDiv::MinorTick) +  axes()[0]->scaleDiv().ticks(VipScaleDiv::MediumTick);
+			if (axisMinEnabled(0))
+				radiusMinor = axes()[0]->scaleDiv().ticks(VipScaleDiv::MinorTick) + axes()[0]->scaleDiv().ticks(VipScaleDiv::MediumTick);
 		}
-		if(axes()[1])
-		{
-			if(axisEnabled(1))
+		if (axes()[1]) {
+			if (axisEnabled(1))
 				anglesMajor = axes()[1]->scaleDiv().ticks(VipScaleDiv::MajorTick);
-			if(axisMinEnabled(1))
-				anglesMinor = axes()[1]->scaleDiv().ticks(VipScaleDiv::MinorTick) +  axes()[1]->scaleDiv().ticks(VipScaleDiv::MediumTick);
+			if (axisMinEnabled(1))
+				anglesMinor = axes()[1]->scaleDiv().ticks(VipScaleDiv::MinorTick) + axes()[1]->scaleDiv().ticks(VipScaleDiv::MediumTick);
 		}
 	}
-	else
-	{
-		if(axes()[0])
-		{
-			if(axisEnabled(0))
+	else {
+		if (axes()[0]) {
+			if (axisEnabled(0))
 				anglesMajor = axes()[0]->scaleDiv().ticks(VipScaleDiv::MajorTick);
-			if(axisMinEnabled(0))
-				anglesMinor = axes()[0]->scaleDiv().ticks(VipScaleDiv::MinorTick) +  axes()[0]->scaleDiv().ticks(VipScaleDiv::MediumTick);
+			if (axisMinEnabled(0))
+				anglesMinor = axes()[0]->scaleDiv().ticks(VipScaleDiv::MinorTick) + axes()[0]->scaleDiv().ticks(VipScaleDiv::MediumTick);
 		}
-		if(axes()[1])
-		{
-			if(axisEnabled(1))
+		if (axes()[1]) {
+			if (axisEnabled(1))
 				radiusMajor = axes()[1]->scaleDiv().ticks(VipScaleDiv::MajorTick);
-			if(axisMinEnabled(1))
-				radiusMinor = axes()[1]->scaleDiv().ticks(VipScaleDiv::MinorTick) +  axes()[1]->scaleDiv().ticks(VipScaleDiv::MediumTick);
+			if (axisMinEnabled(1))
+				radiusMinor = axes()[1]->scaleDiv().ticks(VipScaleDiv::MinorTick) + axes()[1]->scaleDiv().ticks(VipScaleDiv::MediumTick);
 		}
 	}
 
-	this->drawRadius(p,anglesMajor,majorPen(),m);
-	this->drawRadius(p,anglesMinor,minorPen(),m);
-	this->drawArc(p,radiusMajor,majorPen(),m);
-	this->drawArc(p,radiusMinor,minorPen(),m);
+	this->drawRadius(p, anglesMajor, majorPen(), m);
+	this->drawRadius(p, anglesMinor, minorPen(), m);
+	this->drawArc(p, radiusMajor, majorPen(), m);
+	this->drawArc(p, radiusMinor, minorPen(), m);
 }
-
-
-
 
 class VipPlotCanvas::PrivateData
 {
 public:
-
 	VipBoxStyle boxStyle;
 	QPolygonF polygon;
 };
 
 static bool registerVipPlotCanvas = vipSetKeyWordsForClass(&VipPlotCanvas::staticMetaObject);
 
-
 VipPlotCanvas::VipPlotCanvas()
-:VipPlotItem()
+  : VipPlotItem()
 {
 	d_data = new PrivateData;
 
-	this->setFlag(ItemIsSelectable,false);
-	this->setItemAttribute(VisibleLegend,false);
-	//this->setItemAttribute(IgnoreMouseEvents,true);
-	this->setItemAttribute(HasLegendIcon,false);
-	this->setItemAttribute(AutoScale,false);
-	this->setItemAttribute(ClipToScaleRect,false);
-	this->setItemAttribute(Droppable,false);
-	//this->setRenderHints(QPainter::Antialiasing);
+	this->setFlag(ItemIsSelectable, false);
+	this->setItemAttribute(VisibleLegend, false);
+	// this->setItemAttribute(IgnoreMouseEvents,true);
+	this->setItemAttribute(HasLegendIcon, false);
+	this->setItemAttribute(AutoScale, false);
+	this->setItemAttribute(ClipToScaleRect, false);
+	this->setItemAttribute(Droppable, false);
+	// this->setRenderHints(QPainter::Antialiasing);
 	this->setAcceptHoverEvents(false);
-
 }
 
 VipPlotCanvas::~VipPlotCanvas()
@@ -472,37 +462,34 @@ VipPlotCanvas::~VipPlotCanvas()
 
 QPainterPath VipPlotCanvas::shape() const
 {
-	if(isDirtyShape())
-	{
-		VipPlotCanvas * _this = const_cast<VipPlotCanvas*>(this);
+	if (isDirtyShape()) {
+		VipPlotCanvas* _this = const_cast<VipPlotCanvas*>(this);
 		_this->markDirtyShape(false);
 
-		if(sceneMap()->type() == VipCoordinateSystem::Polar)
-		{
-			const VipPolarSystem & map = static_cast<const VipPolarSystem&>(*sceneMap());
-			_this->d_data->boxStyle.computePie((QPointF)map.center(),VipPie(map.startAngle(),map.endAngle(),qMax((vip_double)0.0,map.startRadius()),map.endRadius()));
+		if (sceneMap()->type() == VipCoordinateSystem::Polar) {
+			const VipPolarSystem& map = static_cast<const VipPolarSystem&>(*sceneMap());
+			_this->d_data->boxStyle.computePie((QPointF)map.center(), VipPie(map.startAngle(), map.endAngle(), qMax((vip_double)0.0, map.startRadius()), map.endRadius()));
 		}
-		else if(sceneMap()->type() == VipCoordinateSystem::Cartesian)
-		{
+		else if (sceneMap()->type() == VipCoordinateSystem::Cartesian) {
 			QRectF bounding;
-			if(this->parentItem())
+			if (this->parentItem())
 				bounding = this->parentItem()->boundingRect();
-			else if(this->scene())
+			else if (this->scene())
 				bounding = this->scene()->sceneRect();
 
-			VipInterval x,y;
+			VipInterval x, y;
 
-			if(this->axes()[0])
+			if (this->axes()[0])
 				x = this->axes()[0]->scaleDiv().bounds();
 			else
-				x = VipInterval(bounding.left(),bounding.right());
+				x = VipInterval(bounding.left(), bounding.right());
 
-			if(this->axes()[1])
+			if (this->axes()[1])
 				y = this->axes()[1]->scaleDiv().bounds();
 			else
-				y = VipInterval(bounding.top(),bounding.bottom());
+				y = VipInterval(bounding.top(), bounding.bottom());
 
-			if(d_data->polygon.size() != 4)
+			if (d_data->polygon.size() != 4)
 				d_data->polygon.resize(4);
 			d_data->polygon[0] = this->sceneMap()->transform(x.minValue(), y.minValue());
 			d_data->polygon[1] = this->sceneMap()->transform(x.minValue(), y.maxValue());
@@ -516,7 +503,7 @@ QPainterPath VipPlotCanvas::shape() const
 	return d_data->boxStyle.background();
 }
 
-void VipPlotCanvas::draw( QPainter *p, const VipCoordinateSystemPtr & m) const
+void VipPlotCanvas::draw(QPainter* p, const VipCoordinateSystemPtr& m) const
 {
 	Q_UNUSED(m)
 
@@ -525,35 +512,33 @@ void VipPlotCanvas::draw( QPainter *p, const VipCoordinateSystemPtr & m) const
 	d_data->boxStyle.draw(p);
 }
 
-void VipPlotCanvas::setBoxStyle(const VipBoxStyle & bs)
+void VipPlotCanvas::setBoxStyle(const VipBoxStyle& bs)
 {
 	d_data->boxStyle = bs;
 	emitItemChanged();
 }
 
-const VipBoxStyle & VipPlotCanvas::boxStyle() const
+const VipBoxStyle& VipPlotCanvas::boxStyle() const
 {
 	return d_data->boxStyle;
 }
 
-VipBoxStyle & VipPlotCanvas::boxStyle()
+VipBoxStyle& VipPlotCanvas::boxStyle()
 {
 	return d_data->boxStyle;
 }
 
-bool VipPlotCanvas::setItemProperty(const char* name, const QVariant& value, const QByteArray& index) 
+bool VipPlotCanvas::setItemProperty(const char* name, const QVariant& value, const QByteArray& index)
 {
 	if (value.userType() == 0)
 		return false;
 	if (strcmp(name, "background") == 0) {
-	
+
 		setBrush(QBrush(value.value<QColor>()));
 		return true;
 	}
 	return VipPlotItem::setItemProperty(name, value, index);
 }
-
-
 
 VipArchive& operator<<(VipArchive& arch, const VipPlotGrid* value)
 {

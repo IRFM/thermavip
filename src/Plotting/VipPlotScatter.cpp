@@ -1,10 +1,38 @@
+/**
+ * BSD 3-Clause License
+ *
+ * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice, this
+ *    list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of the copyright holder nor the names of its
+ *    contributors may be used to endorse or promote products derived from
+ *    this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
 #include "VipPlotScatter.h"
 #include "VipBorderItem.h"
-#include "VipShapeDevice.h"
 #include "VipPainter.h"
-
-
-
+#include "VipShapeDevice.h"
 
 static int registerScatterKeyWords()
 {
@@ -14,7 +42,6 @@ static int registerScatterKeyWords()
 		QMap<QByteArray, int> unit;
 		unit["itemUnit"] = VipPlotScatter::ItemUnit;
 		unit["axisUnit"] = VipPlotScatter::AxisUnit;
-		
 
 		keywords["size-unit"] = VipParserPtr(new EnumParser(unit));
 		keywords["use-value-as-size"] = VipParserPtr(new BoolParser());
@@ -31,8 +58,6 @@ static int registerScatterKeyWords()
 
 static int _registerScatterKeyWords = registerScatterKeyWords();
 
-
-
 class VipPlotScatter::PrivateData
 {
 public:
@@ -42,7 +67,7 @@ public:
 	  , textAlignment(Qt::AlignTop | Qt::AlignHCenter)
 	  , textPosition(Vip::XInside)
 	  , textDistance(5)
-	{ 
+	{
 		symbol.setStyle(VipSymbol::Rect);
 		symbol.setSize(QSizeF(10, 10));
 		symbol.setCachePolicy(VipSymbol::NoCache);
@@ -67,21 +92,20 @@ public:
 	QSharedPointer<VipTextStyle> textStyle;
 };
 
-VipPlotScatter::VipPlotScatter(const VipText& title )
+VipPlotScatter::VipPlotScatter(const VipText& title)
   : VipPlotItemDataType(title)
 {
 	d_data = new PrivateData();
 	this->setData(QVariant::fromValue(VipScatterPointVector()));
 	this->setMajorColor(QColor(Qt::blue));
-
 }
 
-VipPlotScatter::~VipPlotScatter() 
+VipPlotScatter::~VipPlotScatter()
 {
 	delete d_data;
 }
 
-void VipPlotScatter::setSizeUnit(SizeUnit unit) 
+void VipPlotScatter::setSizeUnit(SizeUnit unit)
 {
 	if (d_data->unit != unit) {
 
@@ -89,7 +113,8 @@ void VipPlotScatter::setSizeUnit(SizeUnit unit)
 		emitItemChanged();
 	}
 }
-VipPlotScatter::SizeUnit VipPlotScatter::sizeUnit() const {
+VipPlotScatter::SizeUnit VipPlotScatter::sizeUnit() const
+{
 	return d_data->unit;
 }
 
@@ -101,14 +126,17 @@ void VipPlotScatter::setUseValueAsSize(bool enable)
 		emitItemChanged();
 	}
 }
-bool VipPlotScatter::useValueAsSize() const {
+bool VipPlotScatter::useValueAsSize() const
+{
 	return d_data->useValueAsSize;
 }
 
-VipSymbol& VipPlotScatter::symbol() {
+VipSymbol& VipPlotScatter::symbol()
+{
 	return d_data->symbol;
 }
-const VipSymbol& VipPlotScatter::symbol() const {
+const VipSymbol& VipPlotScatter::symbol() const
+{
 	return d_data->symbol;
 }
 void VipPlotScatter::setSymbol(const VipSymbol& s)
@@ -191,7 +219,7 @@ VipText& VipPlotScatter::text()
 	return d_data->text;
 }
 
-VipInterval VipPlotScatter::computeInterval(const VipScatterPointVector& vec, const VipInterval& interval) const 
+VipInterval VipPlotScatter::computeInterval(const VipScatterPointVector& vec, const VipInterval& interval) const
 {
 	VipInterval res;
 	for (const VipScatterPoint& p : vec) {
@@ -207,7 +235,6 @@ VipInterval VipPlotScatter::computeInterval(const VipScatterPointVector& vec, co
 	return res;
 }
 
-
 QList<VipInterval> VipPlotScatter::dataBoundingIntervals(const VipScatterPointVector& data) const
 {
 	if (!data.size())
@@ -218,12 +245,12 @@ QList<VipInterval> VipPlotScatter::dataBoundingIntervals(const VipScatterPointVe
 	vip_double x_max = first.position.x();
 	vip_double y_min = first.position.y();
 	vip_double y_max = first.position.y();
-	
+
 	for (int i = 1; i < data.size(); ++i) {
 		const VipScatterPoint p = data[i];
 		x_min = std::min(p.position.x(), x_min);
 		x_max = std::max(p.position.x(), x_max);
-		
+
 		y_max = std::max(y_max, p.position.y());
 		y_min = std::min(y_min, p.position.y());
 	}
@@ -240,7 +267,7 @@ void VipPlotScatter::setData(const QVariant& data)
 	d_data->dataInterval = computeInterval(vec, Vip::InfinitInterval);
 }
 
-VipInterval VipPlotScatter::plotInterval(const VipInterval& interval ) const 
+VipInterval VipPlotScatter::plotInterval(const VipInterval& interval) const
 {
 	if (d_data->dataInterval.isValid() && d_data->dataValidInterval == interval)
 		return d_data->dataInterval;
@@ -248,7 +275,6 @@ VipInterval VipPlotScatter::plotInterval(const VipInterval& interval ) const
 	const_cast<VipPlotScatter*>(this)->d_data->dataValidInterval = interval;
 	return const_cast<VipPlotScatter*>(this)->d_data->dataInterval = computeInterval(rawData(), interval);
 }
-
 
 QList<VipInterval> VipPlotScatter::plotBoundingIntervals() const
 {
@@ -261,8 +287,7 @@ QList<VipInterval> VipPlotScatter::plotBoundingIntervals() const
 	return res;
 }
 
-
-QString VipPlotScatter::formatText(const QString& text, const QPointF& pos) const 
+QString VipPlotScatter::formatText(const QString& text, const QPointF& pos) const
 {
 	const VipScatterPointVector vec = rawData();
 	int index = findClosestPos(vec, pos, 0, nullptr);
@@ -272,7 +297,7 @@ QString VipPlotScatter::formatText(const QString& text, const QPointF& pos) cons
 	return VipText::replace(text, "#value", vec[index].value);
 }
 
-bool VipPlotScatter::areaOfInterest(const QPointF& pos, int , double maxDistance, VipPointVector& out_pos, VipBoxStyle& style, int& legend) const 
+bool VipPlotScatter::areaOfInterest(const QPointF& pos, int, double maxDistance, VipPointVector& out_pos, VipBoxStyle& style, int& legend) const
 {
 	const VipScatterPointVector vec = rawData();
 	QRectF rect;
@@ -297,7 +322,7 @@ bool VipPlotScatter::areaOfInterest(const QPointF& pos, int , double maxDistance
 	return true;
 }
 
-void VipPlotScatter::draw(QPainter* painter, const VipCoordinateSystemPtr& m) const 
+void VipPlotScatter::draw(QPainter* painter, const VipCoordinateSystemPtr& m) const
 {
 	if (m->axes().size() != 2)
 		return;
@@ -321,11 +346,10 @@ void VipPlotScatter::draw(QPainter* painter, const VipCoordinateSystemPtr& m) co
 	VipSymbol sym = symbol();
 	QColor default_color = symbol().brush().color();
 
-
 	for (int i = 0; i < vec.size(); ++i) {
 		VipPoint p = m->transform(vec[i].position);
 		QSizeF size = s;
-		if (useValueAsSize() ) {
+		if (useValueAsSize()) {
 			if (sizeUnit() == AxisUnit && x && y) {
 				size.setWidth(x->axisRangeToItemUnit(vec[i].value));
 				size.setHeight(y->axisRangeToItemUnit(vec[i].value));
@@ -347,10 +371,8 @@ void VipPlotScatter::draw(QPainter* painter, const VipCoordinateSystemPtr& m) co
 			VipPainter::drawText(painter, t, textTransform(), textTransformReference(), textDistance(), textPosition(), textAlignment(), rect);
 		}
 	}
-	
-	
 }
-QRectF VipPlotScatter::drawLegend(QPainter* p, const QRectF& r, int ) const 
+QRectF VipPlotScatter::drawLegend(QPainter* p, const QRectF& r, int) const
 {
 	QRectF rect = vipInnerSquare(r);
 	VipSymbol s = symbol();
@@ -364,7 +386,7 @@ QRectF VipPlotScatter::drawLegend(QPainter* p, const QRectF& r, int ) const
 	return rect;
 }
 
-bool VipPlotScatter::hasState(const QByteArray& state, bool enable) const 
+bool VipPlotScatter::hasState(const QByteArray& state, bool enable) const
 {
 	if (state == "itemUnit")
 		return (sizeUnit() == ItemUnit) == enable;
@@ -377,7 +399,7 @@ bool VipPlotScatter::setItemProperty(const char* name, const QVariant& value, co
 {
 	if (value.userType() == 0)
 		return false;
-	
+
 	if (strcmp(name, "text-alignment") == 0) {
 		setTextAlignment((Qt::Alignment)value.toInt());
 		return true;
@@ -410,7 +432,7 @@ bool VipPlotScatter::setItemProperty(const char* name, const QVariant& value, co
 	return VipPlotItem::setItemProperty(name, value, index);
 }
 
-int VipPlotScatter::findClosestPos(const VipScatterPointVector &vec, const QPointF& pos, double maxDistance, QRectF * out) const
+int VipPlotScatter::findClosestPos(const VipScatterPointVector& vec, const QPointF& pos, double maxDistance, QRectF* out) const
 {
 	VipCoordinateSystemPtr m = sceneMap();
 	if (m->axes().size() != 2)
@@ -429,12 +451,11 @@ int VipPlotScatter::findClosestPos(const VipScatterPointVector &vec, const QPoin
 			}
 		}
 	}
-	
 
 	for (int i = 0; i < vec.size(); ++i) {
 		VipPoint p = m->transform(vec[i].position);
 		QSizeF size = s;
-		if (useValueAsSize() ) {
+		if (useValueAsSize()) {
 			if (sizeUnit() == AxisUnit && x && y) {
 
 				size.setWidth(x->axisRangeToItemUnit(vec[i].value));
@@ -455,7 +476,6 @@ int VipPlotScatter::findClosestPos(const VipScatterPointVector &vec, const QPoin
 	return -1;
 }
 
-
 QDataStream& operator<<(QDataStream& str, const VipScatterPoint& p)
 {
 	return str << p.position << p.value;
@@ -464,7 +484,6 @@ QDataStream& operator>>(QDataStream& str, VipScatterPoint& p)
 {
 	return str >> p.position >> p.value;
 }
-
 
 VipArchive& operator<<(VipArchive& arch, const VipPlotScatter* value)
 {
@@ -498,10 +517,7 @@ VipArchive& operator>>(VipArchive& arch, VipPlotScatter* value)
 	return arch;
 }
 
-
-
-
-	// regiter types
+// regiter types
 static bool register_types()
 {
 	qRegisterMetaType<VipScatterPoint>();

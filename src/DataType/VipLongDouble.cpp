@@ -1,8 +1,38 @@
+/**
+ * BSD 3-Clause License
+ *
+ * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice, this
+ *    list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of the copyright holder nor the names of its
+ *    contributors may be used to endorse or promote products derived from
+ *    this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
 #include "VipLongDouble.h"
 #include <complex>
 
-
-static std::locale toStdLocale(const QLocale & l)
+static std::locale toStdLocale(const QLocale& l)
 {
 	QByteArray name = l.name().toLatin1();
 	try {
@@ -11,7 +41,7 @@ static std::locale toStdLocale(const QLocale & l)
 	}
 	catch (...) {
 		try {
-			//get first '_', replace by '-'
+			// get first '_', replace by '-'
 			int index = name.indexOf('_');
 			if (index >= 0)
 				name[index] = '-';
@@ -23,11 +53,10 @@ static std::locale toStdLocale(const QLocale & l)
 		}
 	}
 	VIP_UNREACHABLE();
-	//return std::locale();
+	// return std::locale();
 }
 
-
-QString vipLongDoubleToString(const vip_long_double v )
+QString vipLongDoubleToString(const vip_long_double v)
 {
 	std::ostringstream ss;
 	ss << std::setprecision(std::numeric_limits<vip_long_double>::digits10 + 1) << v;
@@ -39,7 +68,7 @@ QByteArray vipLongDoubleToByteArray(const vip_long_double v)
 	ss << std::setprecision(std::numeric_limits<vip_long_double>::digits10 + 1) << v;
 	return QByteArray(ss.str().c_str());
 }
-vip_long_double vipLongDoubleFromString(const QString & str , bool *ok)
+vip_long_double vipLongDoubleFromString(const QString& str, bool* ok)
 {
 	std::istringstream ss(str.toLatin1().data());
 	vip_long_double res;
@@ -48,7 +77,7 @@ vip_long_double vipLongDoubleFromString(const QString & str , bool *ok)
 		*ok = !ss.fail();
 	return res;
 }
-vip_long_double vipLongDoubleFromByteArray(const QByteArray & str,  bool * ok)
+vip_long_double vipLongDoubleFromByteArray(const QByteArray& str, bool* ok)
 {
 	std::istringstream ss(str.data());
 	vip_long_double res;
@@ -60,26 +89,24 @@ vip_long_double vipLongDoubleFromByteArray(const QByteArray & str,  bool * ok)
 
 static QLocale _locale = QLocale::system();
 
-QString vipLongDoubleToStringLocale(const vip_long_double v, const QLocale & l)
+QString vipLongDoubleToStringLocale(const vip_long_double v, const QLocale& l)
 {
 	std::ostringstream ss;
-	if(l.language() != //_locale.language()
- QLocale::C)
+	if (l.language() != //_locale.language()
+	    QLocale::C)
 		ss.imbue(toStdLocale(l.name()));
 	ss << std::setprecision(std::numeric_limits<vip_long_double>::digits10 + 1) << v;
 	return QString(ss.str().c_str());
 }
-QByteArray vipLongDoubleToByteArrayLocale(const vip_long_double v, const QLocale &l)
+QByteArray vipLongDoubleToByteArrayLocale(const vip_long_double v, const QLocale& l)
 {
 	std::ostringstream ss;
-	if(l.language() != //_locale.language()
- QLocale::C)
+	if (l.language() != //_locale.language()
+	    QLocale::C)
 		ss.imbue(toStdLocale(l.name()));
 	ss << std::setprecision(std::numeric_limits<vip_long_double>::digits10 + 1) << v;
 	return QByteArray(ss.str().c_str());
 }
-
-
 
 // #include <Windows.h>
 //
@@ -112,24 +139,24 @@ QByteArray vipLongDoubleToByteArrayLocale(const vip_long_double v, const QLocale
 // return 0;
 // }
 
-vip_long_double vipLongDoubleFromStringLocale(const QString & str ,const QLocale &l, bool * ok)
+vip_long_double vipLongDoubleFromStringLocale(const QString& str, const QLocale& l, bool* ok)
 {
-	//printlocales();
-	//vip_debug("locale '%s'\n", l.name().toLatin1().data());
+	// printlocales();
+	// vip_debug("locale '%s'\n", l.name().toLatin1().data());
 	std::istringstream ss(str.toLatin1().data());
 	if (l.language() != //_locale.language()
- QLocale::C)
-		ss.imbue(toStdLocale(l));//std::locale(l.name().toLatin1().data()));
+	    QLocale::C)
+		ss.imbue(toStdLocale(l)); // std::locale(l.name().toLatin1().data()));
 	vip_long_double res;
 	ss >> res;
 	if (ok)
 		*ok = !ss.fail();
 	return res;
 }
-vip_long_double vipLongDoubleFromByteArrayLocale(const QByteArray & str, const QLocale &l, bool * ok)
+vip_long_double vipLongDoubleFromByteArrayLocale(const QByteArray& str, const QLocale& l, bool* ok)
 {
 	std::istringstream ss(str.data());
-	if(l.language() != QLocale::C)//_locale.language())
+	if (l.language() != QLocale::C) //_locale.language())
 		ss.imbue(toStdLocale(l));
 	vip_long_double res;
 	ss >> res;
@@ -137,24 +164,23 @@ vip_long_double vipLongDoubleFromByteArrayLocale(const QByteArray & str, const Q
 		*ok = !ss.fail();
 	return res;
 }
-QTextStream & operator<<(QTextStream & s, vip_long_double v)
+QTextStream& operator<<(QTextStream& s, vip_long_double v)
 {
 	std::ostringstream ss;
-	if(s.locale().language() != QLocale::C)
+	if (s.locale().language() != QLocale::C)
 		ss.imbue(toStdLocale(s.locale()));
 	ss << std::setprecision(std::numeric_limits<vip_long_double>::digits10 + 1) << v;
 	return s << ss.str().c_str();
 }
-QTextStream & operator>>(QTextStream & s, vip_long_double & v)
+QTextStream& operator>>(QTextStream& s, vip_long_double& v)
 {
 	QString word;
 	s >> word;
-	v = vipLongDoubleFromStringLocale(word,s.locale());
+	v = vipLongDoubleFromStringLocale(word, s.locale());
 	return s;
 }
 
-
-void vipWriteNLongDouble(QTextStream & s, const vip_long_double * values, int count, int step, const char* sep)
+void vipWriteNLongDouble(QTextStream& s, const vip_long_double* values, int count, int step, const char* sep)
 {
 	std::ostringstream ss;
 	if (s.locale().language() != QLocale::C)
@@ -165,13 +191,13 @@ void vipWriteNLongDouble(QTextStream & s, const vip_long_double * values, int co
 	}
 	s << ss.str().c_str();
 }
-int vipReadNLongDouble(QTextStream & s, vip_long_double * values, int max_count)
+int vipReadNLongDouble(QTextStream& s, vip_long_double* values, int max_count)
 {
-	//qint64 pos = s.pos();
+	// qint64 pos = s.pos();
 	std::string str = s.readAll().toLatin1().data();
 	std::istringstream ss(str);
 	if (s.locale().language() != //_locale.language()
- QLocale::C)
+	    QLocale::C)
 		ss.imbue(toStdLocale(s.locale()));
 	int i = 0;
 	for (; i < max_count; ++i)
@@ -181,13 +207,13 @@ int vipReadNLongDouble(QTextStream & s, vip_long_double * values, int max_count)
 	s.seek(ss.tellg());
 	return i;
 }
-int vipReadNLongDouble(QTextStream & s, QVector<vip_long_double> & values, int max_count)
+int vipReadNLongDouble(QTextStream& s, QVector<vip_long_double>& values, int max_count)
 {
-	//qint64 pos = s.pos();
+	// qint64 pos = s.pos();
 	std::string str = s.readAll().toLatin1().data();
 	std::istringstream ss(str);
 	if (s.locale().language() != //_locale.language()
- QLocale::C)
+	    QLocale::C)
 		ss.imbue(toStdLocale(s.locale()));
 	int i = 0;
 	for (; i < max_count; ++i) {
@@ -201,19 +227,22 @@ int vipReadNLongDouble(QTextStream & s, QVector<vip_long_double> & values, int m
 	return i;
 }
 
+template<class T>
+static vip_long_double toLongDouble(T v)
+{
+	return (vip_long_double)v;
+}
+template<class T>
+static T fromLongDouble(vip_long_double v)
+{
+	return (T)v;
+}
 
-
-template< class T>
-static vip_long_double toLongDouble(T v) { return (vip_long_double)v; }
-template< class T>
-static T fromLongDouble(vip_long_double v) { return (T)v; }
-
-
-static vip_long_double LongDoubleFromString(const QString & str)
+static vip_long_double LongDoubleFromString(const QString& str)
 {
 	return vipLongDoubleFromString(str, nullptr);
 }
-static vip_long_double LongDoubleFromByteArray(const QByteArray & str)
+static vip_long_double LongDoubleFromByteArray(const QByteArray& str)
 {
 	return vipLongDoubleFromByteArray(str, nullptr);
 }

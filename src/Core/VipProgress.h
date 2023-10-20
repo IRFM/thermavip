@@ -1,9 +1,40 @@
+/**
+ * BSD 3-Clause License
+ *
+ * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice, this
+ *    list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of the copyright holder nor the names of its
+ *    contributors may be used to endorse or promote products derived from
+ *    this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
 #ifndef VIP_PROGRESS_H
 #define VIP_PROGRESS_H
 
-#include <QObject>
 #include "VipConfig.h"
 #include "VipCore.h"
+#include <QObject>
 
 /// \addtogroup Core
 /// @{
@@ -17,18 +48,19 @@ class VIP_CORE_EXPORT DefaultProgressManager : public QObject
 {
 	Q_OBJECT
 public:
-	DefaultProgressManager(QObject * parent = nullptr)
-		:QObject(parent) {}
+	DefaultProgressManager(QObject* parent = nullptr)
+	  : QObject(parent)
+	{
+	}
 
 public Q_SLOTS:
 	void addProgress(QObjectPointer) {}
 	void removeProgress(QObjectPointer) {}
-	void setText(QObjectPointer , const QString & text) {Q_UNUSED(text)}
+	void setText(QObjectPointer, const QString& text) { Q_UNUSED(text) }
 	void setValue(QObjectPointer, int value) { Q_UNUSED(value) }
 	void setCancelable(QObjectPointer, bool cancelable) { Q_UNUSED(cancelable) }
 	void setModal(QObjectPointer, bool modal) { Q_UNUSED(modal) }
 };
-
 
 /// VipProgress is used to display an operation progress.
 /// Each you define a time consuming operation (for instance extracting the maximum pixel value in ROI inside a whole movie), you should use
@@ -52,52 +84,50 @@ class VIP_CORE_EXPORT VipProgress : public QObject
 	Q_OBJECT
 
 public:
-	VipProgress(double min = 0, double max = 100, const QString & text = QString());
+	VipProgress(double min = 0, double max = 100, const QString& text = QString());
 	~VipProgress();
 
-	///Returns the progress minimum range value
+	/// Returns the progress minimum range value
 	double min() const;
-	///Returns the progress maximum range value
+	/// Returns the progress maximum range value
 	double max() const;
-	///Returns the current progress text
+	/// Returns the current progress text
 	QString text() const;
-	///Returns the progress value
+	/// Returns the progress value
 	double value() const;
-	///Returns true if the current operation is cancelable
+	/// Returns true if the current operation is cancelable
 	bool isCancelable() const;
-	///Returns true if the current operation is modal
+	/// Returns true if the current operation is modal
 	bool isModal() const;
-	///Returns true if the current operation has been canceled by the user
+	/// Returns true if the current operation has been canceled by the user
 	bool canceled() const;
 
-	///Set the progress manager. It must follow the same class pattern as DefaultProgressManager.
-	static void setProgressManager(QObject * manager);
+	/// Set the progress manager. It must follow the same class pattern as DefaultProgressManager.
+	static void setProgressManager(QObject* manager);
 	static void resetProgressManager();
-	///Returns the progress manager
-	static QObject * progressManager();
+	/// Returns the progress manager
+	static QObject* progressManager();
 
 public Q_SLOTS:
-	///Set the current operation progress range
+	/// Set the current operation progress range
 	void setRange(double min, double max);
-	///Set the operation status text
-	void setText(const QString & text);
-	///Set the current progress value
+	/// Set the operation status text
+	void setText(const QString& text);
+	/// Set the current progress value
 	void setValue(double value);
-	///Set the current operation cancelable or not
+	/// Set the current operation cancelable or not
 	void setCancelable(bool cancelable);
-	///Set the current operation modal or not
+	/// Set the current operation modal or not
 	void setModal(bool modal);
 
 	void cancelRequested();
 
 private:
 	class PrivateData;
-	PrivateData * m_data;
+	PrivateData* m_data;
 };
 
-
 /// @}
-//end Core
-
+// end Core
 
 #endif

@@ -1,42 +1,80 @@
+/**
+ * BSD 3-Clause License
+ *
+ * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice, this
+ *    list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of the copyright holder nor the names of its
+ *    contributors may be used to endorse or promote products derived from
+ *    this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
 #include "VipMapFileSystem.h"
-#include "VipProgress.h"
 #include "VipArchive.h"
-#include "VipLogging.h"
-#include "VipSleep.h"
 #include "VipEnvironment.h"
+#include "VipLogging.h"
+#include "VipProgress.h"
+#include "VipSleep.h"
 
 #include <QMutex>
 #include <QRegExp>
 
 VipPath::VipPath()
-	:m_dir(false)
-{}
-VipPath::VipPath(const VipPath & other)
-	: m_map(other.m_map),m_attributes(other.attributes()), m_canonical_path(other.canonicalPath()), m_dir(other.isDir())
-{}
-
-
-VipPath::VipPath(const QString & full_path, bool is_dir)
-	: m_canonical_path(full_path), m_dir(is_dir)
+  : m_dir(false)
 {
-	//replace backslash by slash
+}
+VipPath::VipPath(const VipPath& other)
+  : m_map(other.m_map)
+  , m_attributes(other.attributes())
+  , m_canonical_path(other.canonicalPath())
+  , m_dir(other.isDir())
+{
+}
+
+VipPath::VipPath(const QString& full_path, bool is_dir)
+  : m_canonical_path(full_path)
+  , m_dir(is_dir)
+{
+	// replace backslash by slash
 	m_canonical_path.replace("\\", "/");
-	//remove starting and trailing slash
+	// remove starting and trailing slash
 	if (m_canonical_path.endsWith("/") && m_canonical_path.size() != 1)
 		m_canonical_path = m_canonical_path.mid(0, m_canonical_path.size() - 1);
 }
 
-VipPath::VipPath(const QString & full_path, const QVariantMap & attributes, bool is_dir)
-	: m_attributes(attributes),m_canonical_path(full_path),  m_dir(is_dir)
+VipPath::VipPath(const QString& full_path, const QVariantMap& attributes, bool is_dir)
+  : m_attributes(attributes)
+  , m_canonical_path(full_path)
+  , m_dir(is_dir)
 {
-	//replace backslash by slash
+	// replace backslash by slash
 	m_canonical_path.replace("\\", "/");
-	//remove starting and trailing slash
+	// remove starting and trailing slash
 	if (m_canonical_path.endsWith("/") && m_canonical_path.size() != 1)
 		m_canonical_path = m_canonical_path.mid(0, m_canonical_path.size() - 1);
 }
 
-VipPath & VipPath::operator=(const VipPath & other)
+VipPath& VipPath::operator=(const VipPath& other)
 {
 	m_canonical_path = other.canonicalPath();
 	m_attributes = other.attributes();
@@ -71,29 +109,26 @@ QString VipPath::filePath() const
 {
 	if (m_dir)
 		return m_canonical_path;
-	else
-	{
+	else {
 		int index = m_canonical_path.lastIndexOf("/");
 		if (index >= 0)
-			return m_canonical_path.mid(0,index);
+			return m_canonical_path.mid(0, index);
 		else
 			return QString();
 	}
-
 }
 
 VipPath VipPath::parent() const
 {
 	QStringList lst = m_canonical_path.split("/", VIP_SKIP_BEHAVIOR::KeepEmptyParts);
-	if (lst.size() > 1)
-	{
+	if (lst.size() > 1) {
 		lst.removeAt(lst.size() - 1);
 		return VipPath(lst.join("/"), true);
 	}
 	return VipPath();
 }
 
-void VipPath::setMapFileSystem(const VipMapFileSystemPtr & map)
+void VipPath::setMapFileSystem(const VipMapFileSystemPtr& map)
 {
 	m_map = map;
 }
@@ -103,14 +138,12 @@ VipMapFileSystemPtr VipPath::mapFileSystem() const
 	return m_map;
 }
 
-QStringList VipPath::mergeAttributes(const QVariantMap & attrs)
+QStringList VipPath::mergeAttributes(const QVariantMap& attrs)
 {
 	QStringList res;
-	for (QVariantMap::const_iterator it = attrs.begin(); it != attrs.end(); ++it)
-	{
+	for (QVariantMap::const_iterator it = attrs.begin(); it != attrs.end(); ++it) {
 		QVariantMap::const_iterator found = m_attributes.find(it.key());
-		if (found == m_attributes.end() || it.value() != found.value())
-		{
+		if (found == m_attributes.end() || it.value() != found.value()) {
 			m_attributes[it.key()] = it.value();
 			res << it.key();
 		}
@@ -118,27 +151,24 @@ QStringList VipPath::mergeAttributes(const QVariantMap & attrs)
 	return res;
 }
 
-
-bool operator==(const VipPath & p1, const VipPath & p2)
+bool operator==(const VipPath& p1, const VipPath& p2)
 {
 	return p1.canonicalPath() == p2.canonicalPath();
 }
 
-bool operator!=(const VipPath & p1, const VipPath & p2)
+bool operator!=(const VipPath& p1, const VipPath& p2)
 {
 	return p1.canonicalPath() != p2.canonicalPath();
 }
 
-
-
-static VipArchive & operator<<(VipArchive & arch, const VipPath & p)
+static VipArchive& operator<<(VipArchive& arch, const VipPath& p)
 {
 	arch.content("path", p.canonicalPath());
 	arch.content("is_dir", p.isDir());
 	return arch;
 }
 
-static VipArchive & operator >> (VipArchive & arch, VipPath & p)
+static VipArchive& operator>>(VipArchive& arch, VipPath& p)
 {
 	QString path = arch.read("path").toString();
 	bool is_dir = arch.read("is_dir").toBool();
@@ -146,8 +176,7 @@ static VipArchive & operator >> (VipArchive & arch, VipPath & p)
 	return arch;
 }
 
-
-static VipArchive & operator<<(VipArchive & arch, const VipPathList & p)
+static VipArchive& operator<<(VipArchive& arch, const VipPathList& p)
 {
 	arch.content("count", p.count());
 	arch.start("paths");
@@ -159,13 +188,12 @@ static VipArchive & operator<<(VipArchive & arch, const VipPathList & p)
 	return arch;
 }
 
-static VipArchive & operator >> (VipArchive & arch, VipPathList & p)
+static VipArchive& operator>>(VipArchive& arch, VipPathList& p)
 {
 	int count = arch.read("count").toInt();
 	arch.start("paths");
 	p.clear();
-	for (int i = 0; i < count; ++i)
-	{
+	for (int i = 0; i < count; ++i) {
 		p.append(arch.read().value<VipPath>());
 	}
 	arch.end();
@@ -183,16 +211,12 @@ static int registerPath()
 }
 static int _registerPath = vipAddInitializationFunction(registerPath);
 
-
-
-
-
 #include <qthread.h>
 
 class SearchThread : public QThread
 {
 public:
-	VipMapFileSystem * map;
+	VipMapFileSystem* map;
 	VipPath path;
 	QList<QRegExp> exps;
 	QDir::Filters filters;
@@ -200,55 +224,55 @@ public:
 	bool stop = false;
 	int count_found;
 
-	SearchThread(VipMapFileSystem * map, const VipPath & path, const QList<QRegExp> & exps, QDir::Filters filters, bool exact)
-		:map(map), path(path), exps(exps), filters(filters), exact(exact), count_found(0)
+	SearchThread(VipMapFileSystem* map, const VipPath& path, const QList<QRegExp>& exps, QDir::Filters filters, bool exact)
+	  : map(map)
+	  , path(path)
+	  , exps(exps)
+	  , filters(filters)
+	  , exact(exact)
+	  , count_found(0)
 	{
 		start();
 	}
 
-	~SearchThread() {
+	~SearchThread()
+	{
 		if (isRunning())
 			stop = true;
 		wait();
 	}
 
-	bool match(const VipPath & p)
+	bool match(const VipPath& p)
 	{
 		QString _path = p.canonicalPath();
 		if (_path.isEmpty())
 			return false;
 
-		//find the last part of the pasth, after the last '/'
+		// find the last part of the pasth, after the last '/'
 		int index = _path.lastIndexOf("/");
-		if(index == _path.size()-1)
+		if (index == _path.size() - 1)
 			index = _path.lastIndexOf("/", _path.size() - 2);
 		if (index >= 0)
-			_path = _path.mid(index+1);
+			_path = _path.mid(index + 1);
 
-		for (int i = 0; i < exps.size(); ++i)
-		{
-			if (exact)
-			{
+		for (int i = 0; i < exps.size(); ++i) {
+			if (exact) {
 				if (exps[i].exactMatch(_path))
 					return true;
 			}
-			else
-			{
+			else {
 				int id = exps[i].indexIn(_path);
 				if (id == 0)
 					return true;
-
 			}
 		}
 		return false;
 	}
 
-	void searchHelper(const VipPath & p)
+	void searchHelper(const VipPath& p)
 	{
-		if (!stop)
-		{
-			if (match(p))
-			{
+		if (!stop) {
+			if (match(p)) {
 				Q_EMIT map->found(p);
 				map->m_found.append(p);
 
@@ -257,8 +281,7 @@ public:
 					vipProcessEvents(nullptr, 10);
 			}
 
-			if (p.isDir())
-			{
+			if (p.isDir()) {
 				VipPathList lst = map->list(p);
 				if (map->hasError())
 					return;
@@ -273,36 +296,31 @@ public:
 	virtual void run()
 	{
 		Q_EMIT map->searchStarted();
-		//searchHelper(path);
+		// searchHelper(path);
 
 		VipPathList lst;
 		lst.append(path);
 
-		while (lst.size() && !stop && exps.size())
-		{
-			//organize the search by layers
+		while (lst.size() && !stop && exps.size()) {
+			// organize the search by layers
 			VipPathList next_layer;
 
-			for (int i = 0; i < lst.size(); ++i)
-			{
-				if(stop)
+			for (int i = 0; i < lst.size(); ++i) {
+				if (stop)
 					break;
 
 				Q_EMIT map->searchEnterPath(lst[i]);
 
-				//for all path of the current layer, list
+				// for all path of the current layer, list
 				VipPathList tmp = map->list(lst[i]);
-				if (map->hasError())
-				{
+				if (map->hasError()) {
 					stop = true;
 					break;
 				}
 
-				//inspect all found elements
-				for (int j = 0; j < tmp.size(); ++j)
-				{
-					if (match(tmp[j]))
-					{
+				// inspect all found elements
+				for (int j = 0; j < tmp.size(); ++j) {
+					if (match(tmp[j])) {
 						Q_EMIT map->found(tmp[j]);
 						map->m_found.append(tmp[j]);
 
@@ -323,20 +341,17 @@ public:
 	}
 };
 
-
-
-
-
 VipMapFileSystem::VipMapFileSystem(SupportedOperations operations)
-	:m_error_code(0), m_operations(operations), m_search(nullptr)
+  : m_error_code(0)
+  , m_operations(operations)
+  , m_search(nullptr)
 {
 	VipUniqueId::id(this);
 }
 
 VipMapFileSystem::~VipMapFileSystem()
 {
-	if (m_search)
-	{
+	if (m_search) {
 		delete m_search;
 	}
 }
@@ -369,29 +384,28 @@ QStringList VipMapFileSystem::standardAttributes()
 	return standardFileSystemAttributes();
 }
 
-bool VipMapFileSystem::exists(const VipPath & path)
+bool VipMapFileSystem::exists(const VipPath& path)
 {
 	resetError();
 	return pathExists(path);
 }
 
-bool VipMapFileSystem::create(const VipPath & path)
+bool VipMapFileSystem::create(const VipPath& path)
 {
-	if (!(m_operations & Create))
-	{
-		setError("Cannot create path: unsupported operation" ,- 1);
+	if (!(m_operations & Create)) {
+		setError("Cannot create path: unsupported operation", -1);
 		return false;
 	}
 	resetError();
 
 	QStringList paths = path.canonicalPath().split("/", VIP_SKIP_BEHAVIOR::KeepEmptyParts);
 	QString subpath;
-	for (int i = 0; i < paths.size() - 1; ++i)
-	{
-		if (i == 0)
-		{
-			if (paths[i].isEmpty()) subpath = "/";
-			else subpath = paths[0];
+	for (int i = 0; i < paths.size() - 1; ++i) {
+		if (i == 0) {
+			if (paths[i].isEmpty())
+				subpath = "/";
+			else
+				subpath = paths[0];
 		}
 		else
 			subpath += "/" + paths[i];
@@ -405,11 +419,10 @@ bool VipMapFileSystem::create(const VipPath & path)
 	return createPath(path);
 }
 
-bool VipMapFileSystem::remove(const VipPath & path)
+bool VipMapFileSystem::remove(const VipPath& path)
 {
-	if (!(m_operations & Remove))
-	{
-		setError("Cannot remove path: unsupported operation" ,- 1);
+	if (!(m_operations & Remove)) {
+		setError("Cannot remove path: unsupported operation", -1);
 		return false;
 	}
 	resetError();
@@ -417,15 +430,13 @@ bool VipMapFileSystem::remove(const VipPath & path)
 	return removePath(path);
 }
 
-bool VipMapFileSystem::move(const VipPath & src, const VipPath & dst, bool merge, VipProgress * progress)
+bool VipMapFileSystem::move(const VipPath& src, const VipPath& dst, bool merge, VipProgress* progress)
 {
-	if (!(m_operations & Rename))
-	{
-		setError("Cannot move path: unsupported operation" ,- 1);
+	if (!(m_operations & Rename)) {
+		setError("Cannot move path: unsupported operation", -1);
 		return false;
 	}
-	if (dst.isDir() != src.isDir())
-	{
+	if (dst.isDir() != src.isDir()) {
 		setError("Move: unauthorized operation");
 		return false;
 	}
@@ -435,33 +446,27 @@ bool VipMapFileSystem::move(const VipPath & src, const VipPath & dst, bool merge
 	if (progress)
 		progress->setText("Move to <b>" + dst.canonicalPath() + "</b>");
 
-	if (!src.isDir())
-	{
-		//if src is a file, just rename it
+	if (!src.isDir()) {
+		// if src is a file, just rename it
 		return rename(src, dst, merge);
 	}
-	else
-	{
+	else {
 		bool has_dst_dir = exists(dst);
 		if (hasError())
 			return false;
 
-		if (!has_dst_dir)
-		{
-			//no dst folder with this name: just rename it
+		if (!has_dst_dir) {
+			// no dst folder with this name: just rename it
 			return rename(src, dst, false);
 		}
-		else
-		{
-			if (!merge)
-			{
+		else {
+			if (!merge) {
 				setError("Move: destination folder already exists");
 				return false;
 			}
 
-			//merge src and dst folder
-			if (copy(src, dst, true, progress))
-			{
+			// merge src and dst folder
+			if (copy(src, dst, true, progress)) {
 				if (progress)
 					progress->setText("Remove <b>" + src.canonicalPath() + "</b>");
 
@@ -471,47 +476,38 @@ bool VipMapFileSystem::move(const VipPath & src, const VipPath & dst, bool merge
 				return false;
 		}
 	}
-
 }
 
-bool VipMapFileSystem::rename(const VipPath & src, const VipPath & dst, bool overwrite )
+bool VipMapFileSystem::rename(const VipPath& src, const VipPath& dst, bool overwrite)
 {
-	if (!(m_operations & Rename))
-	{
-		setError("Cannot rename path: unsupported operation" ,- 1);
+	if (!(m_operations & Rename)) {
+		setError("Cannot rename path: unsupported operation", -1);
 		return false;
 	}
 	resetError();
 
-	if (src.isDir() != dst.isDir())
-	{
+	if (src.isDir() != dst.isDir()) {
 		setError("Rename: unauthorized operation");
 		return false;
 	}
 
-	if (src.mapFileSystem() && src.mapFileSystem().data() != this)
-	{
-		//we try to rename a source file/folder from a different VipMapFileSystem: use copy instead
+	if (src.mapFileSystem() && src.mapFileSystem().data() != this) {
+		// we try to rename a source file/folder from a different VipMapFileSystem: use copy instead
 		return copy(src, dst, overwrite);
 	}
 
-	//if the path exists and overwrite is true, remove the destination path first
-	if (pathExists(dst))
-	{
-		if (overwrite)
-		{
-			if (removePath(dst))
-			{
+	// if the path exists and overwrite is true, remove the destination path first
+	if (pathExists(dst)) {
+		if (overwrite) {
+			if (removePath(dst)) {
 				return renamePath(src, dst);
 			}
-			else
-			{
+			else {
 				setError("Rename: cannot overwrite destination");
 				return false;
 			}
 		}
-		else
-		{
+		else {
 			setError("Cannot rename file or directory: destination file or directpory already exists");
 			return false;
 		}
@@ -520,57 +516,49 @@ bool VipMapFileSystem::rename(const VipPath & src, const VipPath & dst, bool ove
 		return renamePath(src, dst);
 }
 
-
-bool VipMapFileSystem::copy(const VipPath & src, const VipPath & dst, bool overwrite, VipProgress * progress)
+bool VipMapFileSystem::copy(const VipPath& src, const VipPath& dst, bool overwrite, VipProgress* progress)
 {
-	if (dst.isDir() != src.isDir())
-	{
+	if (dst.isDir() != src.isDir()) {
 		setError("Copy: unauthorized operation");
 		return false;
 	}
-	if ( !(m_operations & CopyFile))
-	{
-		setError("Copy: unsupported operation" ,- 1);
+	if (!(m_operations & CopyFile)) {
+		setError("Copy: unsupported operation", -1);
 		return false;
 	}
 
 	resetError();
 
-	if (src.mapFileSystem() && src.mapFileSystem().data() != this)
-	{
-		//we try to copy a source file/folder from a different VipMapFileSystem:
-		//copy the src in a temporay directory, and then copy the tmp file to the destination
+	if (src.mapFileSystem() && src.mapFileSystem().data() != this) {
+		// we try to copy a source file/folder from a different VipMapFileSystem:
+		// copy the src in a temporay directory, and then copy the tmp file to the destination
 
-		//copy a file
-		if (!src.isDir())
-		{
+		// copy a file
+		if (!src.isDir()) {
 			bool dst_exists = exists(dst);
 			if (hasError())
 				return false;
 
-			if (dst_exists && !overwrite)
-			{
+			if (dst_exists && !overwrite) {
 				setError("Copy: destination file already exists");
 				return false;
 			}
-			else if (dst_exists && overwrite)
-			{
+			else if (dst_exists && overwrite) {
 				if (progress)
 					progress->setText("Remove <b>" + dst.canonicalPath() + "</b>");
 				if (!remove(dst) || hasError())
 					return false;
 			}
 
-			QIODevice * src_device = src.mapFileSystem()->open(src, QIODevice::ReadOnly);
-			QIODevice * dst_device = open(dst, QIODevice::WriteOnly);
-			if(progress)
+			QIODevice* src_device = src.mapFileSystem()->open(src, QIODevice::ReadOnly);
+			QIODevice* dst_device = open(dst, QIODevice::WriteOnly);
+			if (progress)
 				progress->setText("Copy <b>" + dst.canonicalPath() + "</b>");
 
-			//copy device to device by chunks of 100KB
+			// copy device to device by chunks of 100KB
 			qint64 full_size = 0;
-			while (true)
-			{
-				QByteArray ar(100000,0);
+			while (true) {
+				QByteArray ar(100000, 0);
 				qint64 size = src_device->read(ar.data(), ar.size());
 				dst_device->write(ar.data(), size);
 				full_size += size;
@@ -579,9 +567,8 @@ bool VipMapFileSystem::copy(const VipPath & src, const VipPath & dst, bool overw
 			}
 			return full_size == src_device->size();
 		}
-		else
-		{
-			//copy directory
+		else {
+			// copy directory
 			bool dst_exists = exists(dst);
 			if (hasError())
 				return false;
@@ -592,23 +579,17 @@ bool VipMapFileSystem::copy(const VipPath & src, const VipPath & dst, bool overw
 
 			return copyDirContentHelper(src, dst, overwrite, progress);
 		}
-
 	}
 
-
-
-	if (!src.isDir())
-	{
-		//copy a file
+	if (!src.isDir()) {
+		// copy a file
 
 		bool dst_exists = exists(dst);
 		if (hasError())
 			return false;
 
-		if (dst_exists)
-		{
-			if (!overwrite)
-			{
+		if (dst_exists) {
+			if (!overwrite) {
 				setError("Copy: destination file already exists");
 				return false;
 			}
@@ -616,7 +597,7 @@ bool VipMapFileSystem::copy(const VipPath & src, const VipPath & dst, bool overw
 			if (progress)
 				progress->setText("Remove <b>" + dst.canonicalPath() + "</b>");
 
-			if(!remove(dst) || hasError())
+			if (!remove(dst) || hasError())
 				return false;
 
 			if (progress)
@@ -624,17 +605,15 @@ bool VipMapFileSystem::copy(const VipPath & src, const VipPath & dst, bool overw
 
 			return copyPath(src, dst);
 		}
-		else
-		{
+		else {
 			if (progress)
 				progress->setText("Copy <b>" + dst.canonicalPath() + "</b>");
 
 			return copyPath(src, dst);
 		}
 	}
-	else
-	{
-		//copy directory
+	else {
+		// copy directory
 		bool dst_exists = exists(dst);
 		if (hasError())
 			return false;
@@ -646,10 +625,10 @@ bool VipMapFileSystem::copy(const VipPath & src, const VipPath & dst, bool overw
 		return copyDirContentHelper(src, dst, overwrite, progress);
 	}
 	VIP_UNREACHABLE();
-	//return false;
+	// return false;
 }
 
-void VipMapFileSystem::listPathHelper(VipPathList & out, const VipPath & path)
+void VipMapFileSystem::listPathHelper(VipPathList& out, const VipPath& path)
 {
 	VipPathList tmp = listPathContent(path);
 	if (hasError())
@@ -657,10 +636,8 @@ void VipMapFileSystem::listPathHelper(VipPathList & out, const VipPath & path)
 
 	out += tmp;
 
-	for (int i = 0; i < tmp.size(); ++i)
-	{
-		if (tmp[i].isDir())
-		{
+	for (int i = 0; i < tmp.size(); ++i) {
+		if (tmp[i].isDir()) {
 			listPathHelper(out, tmp[i]);
 			if (hasError())
 				break;
@@ -668,28 +645,26 @@ void VipMapFileSystem::listPathHelper(VipPathList & out, const VipPath & path)
 	}
 }
 
-VipPathList VipMapFileSystem::list(const VipPath & path, bool recursive)
+VipPathList VipMapFileSystem::list(const VipPath& path, bool recursive)
 {
 	resetError();
-	if (!path.isDir())
-	{
+	if (!path.isDir()) {
 		setError("Cannot list content on a file");
 		return VipPathList();
 	}
 
-	if(!recursive)
+	if (!recursive)
 		return listPathContent(path);
-	else
-	{
+	else {
 		VipPathList out;
 		listPathHelper(out, path);
 		return out;
 	}
 }
 
-bool VipMapFileSystem::copyDirContentHelper(const VipPath & src_dir, const VipPath & dst_dir, bool overwrite, VipProgress * progress )
+bool VipMapFileSystem::copyDirContentHelper(const VipPath& src_dir, const VipPath& dst_dir, bool overwrite, VipProgress* progress)
 {
-	VipPathList content_src = list(src_dir,true);
+	VipPathList content_src = list(src_dir, true);
 	VipPathList src_files;
 	for (int i = 0; i < content_src.size(); ++i)
 		if (!content_src[i].isDir())
@@ -698,10 +673,8 @@ bool VipMapFileSystem::copyDirContentHelper(const VipPath & src_dir, const VipPa
 	if (progress)
 		progress->setRange(0, src_files.size());
 
-	for (int i = 0; i < src_files.size(); ++i)
-	{
-		if (progress)
-		{
+	for (int i = 0; i < src_files.size(); ++i) {
+		if (progress) {
 			if (progress->canceled())
 				break;
 			progress->setValue(i);
@@ -723,26 +696,24 @@ bool VipMapFileSystem::copyDirContentHelper(const VipPath & src_dir, const VipPa
 
 		if (!copy(src_files[i], dst_file, overwrite))
 			return false;
-
 	}
 	return true;
 }
 
-
-QIODevice * VipMapFileSystem::open(const VipPath & path, QIODevice::OpenMode mode)
+QIODevice* VipMapFileSystem::open(const VipPath& path, QIODevice::OpenMode mode)
 {
-	//setError("Cannot list path content: unsupported operation" - 1);
-	if ( (mode & QIODevice::ReadOnly) && !(m_operations & OpenRead))
+	// setError("Cannot list path content: unsupported operation" - 1);
+	if ((mode & QIODevice::ReadOnly) && !(m_operations & OpenRead))
 		return nullptr;
 	if ((mode & QIODevice::WriteOnly) && !(m_operations & OpenWrite))
 		return nullptr;
 	if ((mode & QIODevice::Text) && !(m_operations & OpenText))
 		return nullptr;
 	resetError();
-	return openPath(path,mode);
+	return openPath(path, mode);
 }
 
-void VipMapFileSystem::search(const VipPath & in_path, const QList<QRegExp> & exps, bool exact_match, QDir::Filters filters)
+void VipMapFileSystem::search(const VipPath& in_path, const QList<QRegExp>& exps, bool exact_match, QDir::Filters filters)
 {
 	stopSearch();
 	m_search = new SearchThread(this, in_path, exps, filters, exact_match);
@@ -750,8 +721,7 @@ void VipMapFileSystem::search(const VipPath & in_path, const QList<QRegExp> & ex
 
 void VipMapFileSystem::stopSearch()
 {
-	if (m_search)
-	{
+	if (m_search) {
 		delete m_search;
 		m_search = nullptr;
 	}
@@ -782,7 +752,7 @@ int VipMapFileSystem::errorCode() const
 	return m_error_code;
 }
 
-void VipMapFileSystem::setError(const QString & error_str, int error_code)
+void VipMapFileSystem::setError(const QString& error_str, int error_code)
 {
 	m_error_string = error_str;
 	m_error_code = error_code;
@@ -795,56 +765,57 @@ void VipMapFileSystem::resetError()
 	openIfNecessary();
 }
 
-bool VipMapFileSystem::createPath(const VipPath & )
+bool VipMapFileSystem::createPath(const VipPath&)
 {
 	return false;
 }
 
-bool VipMapFileSystem::removePath(const VipPath & )
+bool VipMapFileSystem::removePath(const VipPath&)
 {
 	return false;
 }
 
-bool VipMapFileSystem::renamePath(const VipPath & , const VipPath & )
+bool VipMapFileSystem::renamePath(const VipPath&, const VipPath&)
 {
 	return false;
 }
 
-bool VipMapFileSystem::copyPath(const VipPath & , const VipPath & )
+bool VipMapFileSystem::copyPath(const VipPath&, const VipPath&)
 {
 	return false;
 }
 
-QIODevice * VipMapFileSystem::openPath(const VipPath & , QIODevice::OpenMode )
+QIODevice* VipMapFileSystem::openPath(const VipPath&, QIODevice::OpenMode)
 {
 	return nullptr;
 }
 
-
-
-
-
-#include <QStorageInfo>
 #include <QFile>
-#include <qdir.h>
+#include <QStorageInfo>
 #include <qdatetime.h>
-
+#include <qdir.h>
 
 // On Windows, having network mounted drive in unconnected state causes a LOT of problems.
 // It freezes calls to QFileInfo::exists and also cripple the icon provider.
 // We try to detect these cases to avoid using the QFileIconProvider that periodically freeze the application.
 static std::atomic<bool> _has_network_issue{ false };
 
-
 VipPhysicalFileSystem::VipPhysicalFileSystem()
-	:VipMapFileSystem(VipMapFileSystem::All)
+  : VipMapFileSystem(VipMapFileSystem::All)
 {
 	setObjectName("Local file system");
 }
 
 QStringList VipPhysicalFileSystem::standardFileSystemAttributes()
 {
-	static QStringList attrs = QStringList() << "Size" << "Type" <<  "Last modified" << "Created" << "Last read" << "Executable" << "Writable" << "Readable";
+	static QStringList attrs = QStringList() << "Size"
+						 << "Type"
+						 << "Last modified"
+						 << "Created"
+						 << "Last read"
+						 << "Executable"
+						 << "Writable"
+						 << "Readable";
 	return attrs;
 }
 
@@ -853,7 +824,7 @@ bool VipPhysicalFileSystem::has_network_issues()
 	return _has_network_issue;
 }
 
-bool VipPhysicalFileSystem::exists_timeout(const QString& path, int milli_timeout, bool * timed_out)
+bool VipPhysicalFileSystem::exists_timeout(const QString& path, int milli_timeout, bool* timed_out)
 {
 #ifdef WIN32
 	if (milli_timeout < 0) {
@@ -862,12 +833,11 @@ bool VipPhysicalFileSystem::exists_timeout(const QString& path, int milli_timeou
 
 	std::atomic<bool> finished = false;
 	std::atomic<bool> exists = false;
-	std::thread* th = new std::thread([&]()
-		{
-			QFileInfo info(path);
-			exists = info.exists();
-			finished = true;
-		});
+	std::thread* th = new std::thread([&]() {
+		QFileInfo info(path);
+		exists = info.exists();
+		finished = true;
+	});
 
 	qint64 st = QDateTime::currentMSecsSinceEpoch();
 	while (QDateTime::currentMSecsSinceEpoch() - st < milli_timeout && !finished)
@@ -896,7 +866,7 @@ VipPathList VipPhysicalFileSystem::rootPaths()
 	for (char c = 'A'; c <= 'Z'; ++c) {
 		QString path = QString(1, c) + ":";
 		bool time_out;
-		if (exists_timeout(path, 500,&time_out))
+		if (exists_timeout(path, 500, &time_out))
 			res.append(VipPath(path, QVariantMap(), true));
 	}
 	return res;
@@ -909,30 +879,26 @@ VipPathList VipPhysicalFileSystem::rootPaths()
 #endif
 }
 
-bool VipPhysicalFileSystem::pathExists(const VipPath & path)
+bool VipPhysicalFileSystem::pathExists(const VipPath& path)
 {
 	return QFileInfo(path.canonicalPath()).exists();
 }
 
-bool VipPhysicalFileSystem::createPath(const VipPath & path)
+bool VipPhysicalFileSystem::createPath(const VipPath& path)
 {
-	if (path.isDir())
-	{
+	if (path.isDir()) {
 		return QDir().mkpath(path.canonicalPath());
 	}
-	else if (!pathExists(path))
-	{
+	else if (!pathExists(path)) {
 		QFile file(path.canonicalPath());
 		return file.open(QFile::WriteOnly);
 	}
 	return false;
-
 }
 
-bool VipPhysicalFileSystem::removePath(const VipPath & path)
+bool VipPhysicalFileSystem::removePath(const VipPath& path)
 {
-	if (pathExists(path))
-	{
+	if (pathExists(path)) {
 		if (path.isDir())
 			return QDir(path.canonicalPath()).removeRecursively();
 		else
@@ -941,27 +907,25 @@ bool VipPhysicalFileSystem::removePath(const VipPath & path)
 	return false;
 }
 
-bool VipPhysicalFileSystem::renamePath(const VipPath & src, const VipPath & dst)
+bool VipPhysicalFileSystem::renamePath(const VipPath& src, const VipPath& dst)
 {
 	return QDir().rename(src.canonicalPath(), dst.canonicalPath());
 }
 
-bool VipPhysicalFileSystem::copyPath(const VipPath & src, const VipPath & dst)
+bool VipPhysicalFileSystem::copyPath(const VipPath& src, const VipPath& dst)
 {
 	return QFile::copy(src.canonicalPath(), dst.canonicalPath());
 }
 
-VipPathList VipPhysicalFileSystem::listPathContent(const VipPath & path)
+VipPathList VipPhysicalFileSystem::listPathContent(const VipPath& path)
 {
 	VipPathList res;
-	QFileInfoList lst = QDir(path.canonicalPath() + "/").entryInfoList(QDir::NoDotAndDotDot | QDir::AllEntries , QDir::Name);
-	for (int i = 0; i < lst.size(); ++i)
-	{
-		const QFileInfo & info = lst[i];
+	QFileInfoList lst = QDir(path.canonicalPath() + "/").entryInfoList(QDir::NoDotAndDotDot | QDir::AllEntries, QDir::Name);
+	for (int i = 0; i < lst.size(); ++i) {
+		const QFileInfo& info = lst[i];
 		VipPath p;
 
-		if (info.isDir())
-		{
+		if (info.isDir()) {
 			p = VipPath(info.canonicalFilePath(), QVariantMap(), true);
 			p.setAttribute("Type", "DIR");
 			p.setAttribute("Writable", info.isWritable());
@@ -974,15 +938,14 @@ VipPathList VipPhysicalFileSystem::listPathContent(const VipPath & path)
 			p.setAttribute("Last modified", info.lastModified());
 			p.setAttribute("Last read", info.lastRead());
 		}
-		else
-		{
+		else {
 			p = VipPath(info.canonicalFilePath(), QVariantMap(), false);
 			p.setAttribute("Size", info.size());
 			p.setAttribute("Type", info.suffix().toUpper());
 			p.setAttribute("Executable", info.isExecutable());
 			p.setAttribute("Writable", info.isWritable());
 			p.setAttribute("Readable", info.isReadable());
-#if QT_VERSION >= QT_VERSION_CHECK(5,10,0)
+#if QT_VERSION >= QT_VERSION_CHECK(5, 10, 0)
 			p.setAttribute("Created", info.birthTime());
 #else
 			p.setAttribute("Created", info.created());
@@ -997,9 +960,9 @@ VipPathList VipPhysicalFileSystem::listPathContent(const VipPath & path)
 	return res;
 }
 
-QIODevice * VipPhysicalFileSystem::openPath(const VipPath & path, QIODevice::OpenMode modes)
+QIODevice* VipPhysicalFileSystem::openPath(const VipPath& path, QIODevice::OpenMode modes)
 {
-	QFile * file = new QFile(path.canonicalPath());
+	QFile* file = new QFile(path.canonicalPath());
 	if (file->open(modes))
 		return file;
 	else
@@ -1007,28 +970,24 @@ QIODevice * VipPhysicalFileSystem::openPath(const VipPath & path, QIODevice::Ope
 	return nullptr;
 }
 
-
 #ifdef _WIN32
 
+#include <atomic>
 #include <qprocess.h>
 #include <qthread.h>
-#include <atomic>
-
 
 #define _OPEN_ERROR(...)                                                                                                                                                                               \
 	{                                                                                                                                                                                              \
-		VIP_LOG_ERROR(__VA_ARGS__);                                                                                                                                                                                            \
-		error = __VA_ARGS__; \
-		finished = true;\
-		proc.terminate();\
-		return;\
+		VIP_LOG_ERROR(__VA_ARGS__);                                                                                                                                                            \
+		error = __VA_ARGS__;                                                                                                                                                                   \
+		finished = true;                                                                                                                                                                       \
+		proc.terminate();                                                                                                                                                                      \
+		return;                                                                                                                                                                                \
 	}
-
 
 class VipSFTPFileSystem::PrivateData : public QThread
 {
 public:
-	
 	QString error;
 	VipPath listPath;
 	VipPath getPath;
@@ -1042,7 +1001,7 @@ public:
 	std::atomic<bool> finished;
 	std::atomic<bool> stop;
 
-	//list of path -> attributes
+	// list of path -> attributes
 	QMap<QString, QVariantMap> attributes;
 
 	PrivateData()
@@ -1057,7 +1016,7 @@ public:
 		wait();
 	}
 
-	QString readOutput(QProcess & proc)
+	QString readOutput(QProcess& proc)
 	{
 		QString res;
 		while (true) {
@@ -1100,7 +1059,7 @@ public:
 		}
 	}
 
-	virtual void run() 
+	virtual void run()
 	{
 		current.clear();
 		root.clear();
@@ -1110,8 +1069,8 @@ public:
 
 		proc.setProcessChannelMode(QProcess::MergedChannels);
 
-		QString cmd = "psftp";//-pw " + password + "" + address;
-		proc.start(cmd, QStringList() << "-pw" << password<< address);
+		QString cmd = "psftp"; //-pw " + password + "" + address;
+		proc.start(cmd, QStringList() << "-pw" << password << address);
 		if (!proc.waitForStarted(2000))
 			_OPEN_ERROR("Unable to connect to " + address + ", please check address and password");
 
@@ -1153,7 +1112,7 @@ public:
 
 				if (!getPath.isEmpty() && !outFile.isEmpty()) {
 					// download file
-					
+
 					proc.write(("get " + getPath.canonicalPath() + " " + outFile + "\n").toLatin1());
 					proc.waitForBytesWritten(2000);
 					QString res = readOutput(proc);
@@ -1163,9 +1122,8 @@ public:
 					res.replace("\n", "");
 					if (!res.contains("=>"))
 						error = "Unable get remote file " + getPath.canonicalPath() + ": " + res;
-					
-					finished = true;
 
+					finished = true;
 				}
 				if (!listPath.isEmpty()) {
 
@@ -1222,10 +1180,9 @@ public:
 					finished = true;
 				}
 			}
-				
+
 			if (proc.state() != QProcess::Running)
 				break;
-
 		}
 
 		if (proc.state() == QProcess::Running) {
@@ -1238,10 +1195,8 @@ public:
 	}
 };
 
-
-
-VipSFTPFileSystem::VipSFTPFileSystem() 
-: VipMapFileSystem(OpenRead|OpenText)
+VipSFTPFileSystem::VipSFTPFileSystem()
+  : VipMapFileSystem(OpenRead | OpenText)
 {
 	d_data = new PrivateData();
 }
@@ -1251,13 +1206,12 @@ VipSFTPFileSystem::~VipSFTPFileSystem()
 	delete d_data;
 }
 
-
-bool VipSFTPFileSystem::open(const QByteArray& addr) 
+bool VipSFTPFileSystem::open(const QByteArray& addr)
 {
 	QMutexLocker lock(&d_data->mutex);
 
 	if (d_data->isRunning()) {
-		d_data->stop=true;
+		d_data->stop = true;
 		d_data->wait();
 	}
 
@@ -1268,7 +1222,7 @@ bool VipSFTPFileSystem::open(const QByteArray& addr)
 	d_data->finished = false;
 	d_data->start();
 
-	//wait for connected
+	// wait for connected
 	while (!d_data->finished) {
 		vipSleep(5);
 	}
@@ -1277,9 +1231,9 @@ bool VipSFTPFileSystem::open(const QByteArray& addr)
 		return false;
 	}
 	return true;
-	
 }
-QByteArray VipSFTPFileSystem::address() const {
+QByteArray VipSFTPFileSystem::address() const
+{
 	return d_data->address;
 }
 bool VipSFTPFileSystem::isOpen() const
@@ -1287,43 +1241,49 @@ bool VipSFTPFileSystem::isOpen() const
 	return d_data->isRunning();
 }
 
-void VipSFTPFileSystem::setPassword(const QByteArray& pwd) {
+void VipSFTPFileSystem::setPassword(const QByteArray& pwd)
+{
 	d_data->password = pwd;
 }
 
-
-QStringList VipSFTPFileSystem::standardFileSystemAttributes() {
+QStringList VipSFTPFileSystem::standardFileSystemAttributes()
+{
 	static QStringList attrs = QStringList() << "Size"
 						 << "Executable"
 						 << "Writable"
 						 << "Readable";
 	return attrs;
 }
-VipPathList VipSFTPFileSystem::rootPaths() 
+VipPathList VipSFTPFileSystem::rootPaths()
 {
 	if (!d_data->root.isEmpty())
 		return VipPathList() << VipPath(QString(d_data->root), true);
 	return VipPathList();
 }
-bool VipSFTPFileSystem::pathExists(const VipPath& path) {
+bool VipSFTPFileSystem::pathExists(const VipPath& path)
+{
 	(void)path;
 	return true;
 }
-bool VipSFTPFileSystem::createPath(const VipPath&) {
+bool VipSFTPFileSystem::createPath(const VipPath&)
+{
 	return false;
 }
-bool VipSFTPFileSystem::removePath(const VipPath& ) {
+bool VipSFTPFileSystem::removePath(const VipPath&)
+{
 	return false;
 }
-bool VipSFTPFileSystem::renamePath(const VipPath&, const VipPath&) {
+bool VipSFTPFileSystem::renamePath(const VipPath&, const VipPath&)
+{
 	return false;
 }
-bool VipSFTPFileSystem::copyPath(const VipPath& src, const VipPath& dst) {
+bool VipSFTPFileSystem::copyPath(const VipPath& src, const VipPath& dst)
+{
 	(void)src;
 	(void)dst;
 	return false;
 }
-VipPathList VipSFTPFileSystem::listPathContent(const VipPath& path) 
+VipPathList VipSFTPFileSystem::listPathContent(const VipPath& path)
 {
 	QMutexLocker lock(&d_data->mutex);
 
@@ -1386,13 +1346,9 @@ QIODevice* VipSFTPFileSystem::openPath(const VipPath& path, QIODevice::OpenMode 
 
 #endif
 
-
-
-
-
 #include "VipArchive.h"
 
-static VipArchive & operator<<(VipArchive & arch, VipMapFileSystem * sys)
+static VipArchive& operator<<(VipArchive& arch, VipMapFileSystem* sys)
 {
 	arch.content("address", sys->address());
 	arch.content("alias", sys->objectName());
@@ -1401,7 +1357,7 @@ static VipArchive & operator<<(VipArchive & arch, VipMapFileSystem * sys)
 	return arch;
 }
 
-static VipArchive & operator>>(VipArchive & arch, VipMapFileSystem* sys)
+static VipArchive& operator>>(VipArchive& arch, VipMapFileSystem* sys)
 {
 	QByteArray address = arch.read("address").toByteArray();
 	QString alias = arch.read("alias").toString();

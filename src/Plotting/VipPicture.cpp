@@ -1,31 +1,59 @@
+/**
+ * BSD 3-Clause License
+ *
+ * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice, this
+ *    list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of the copyright holder nor the names of its
+ *    contributors may be used to endorse or promote products derived from
+ *    this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
 #include "VipPicture.h"
 #include "VipLock.h"
 #include "VipSleep.h"
 
-#include <vector>
 #include <condition_variable>
+#include <vector>
 
-
+#include <qapplication.h>
 #include <qboxlayout.h>
+#include <qcolor.h>
 #include <qdatetime.h>
 #include <qevent.h>
+#include <qgraphicsview.h>
+#include <qguiapplication.h>
 #include <qopenglcontext.h>
 #include <qopenglpaintdevice.h>
 #include <qopenglwidget.h>
 #include <qpaintengine.h>
-#include <qthread.h>
-#include <qwindow.h>
-#include <qguiapplication.h>
 #include <qpainter.h>
 #include <qpainterpath.h>
-#include <qscreen.h>
-#include <qcolor.h>
-#include <qwindow.h>
-#include <qscrollarea.h>
 #include <qpointer.h>
-#include <qapplication.h>
-#include <qgraphicsview.h>
-
+#include <qscreen.h>
+#include <qscrollarea.h>
+#include <qthread.h>
+#include <qwindow.h>
 
 namespace detail
 {
@@ -115,7 +143,10 @@ namespace detail
 		setAcceptDrops(true);
 		connect(QGuiApplication::instance(), SIGNAL(focusWindowChanged(QWindow*)), this, SLOT(focusWindowChanged(QWindow*)));
 	}
-	QWindow* VipWindowContainer::containedWindow() const { return d_data->window; }
+	QWindow* VipWindowContainer::containedWindow() const
+	{
+		return d_data->window;
+	}
 	/*!
 	    \internal
 	 */
@@ -214,12 +245,9 @@ namespace detail
 
 }
 
-
-
 #ifdef DrawText
 #undef DrawText
 #endif
-
 
 struct TiledPixmapItem
 {
@@ -327,7 +355,6 @@ public:
 	}
 };
 
-
 template<class T>
 QVector<T> toVector(const T* begin, const T* end)
 {
@@ -339,7 +366,6 @@ QVector<T> toVector(const T* begin, const T* end)
 	return QVector<T>(begin, end);
 #endif
 }
-
 
 struct BaseHolder
 {
@@ -354,7 +380,7 @@ struct Holder : BaseHolder
 	{
 	}
 	template<class U>
-	Holder( U&& val)
+	Holder(U&& val)
 	  : value(std::forward<U>(val))
 	{
 	}
@@ -362,18 +388,18 @@ struct Holder : BaseHolder
 
 class CommandHolder
 {
-	struct alignas(Holder<std::uintptr_t>) Storage{
+	struct alignas(Holder<std::uintptr_t>) Storage
+	{
 		char data[sizeof(Holder<std::uintptr_t>)];
 	};
 	Storage storage;
 	std::int16_t flag; // 1: inline, 0: heap, -1: nothing
-	std::int16_t type;	// command type
+	std::int16_t type; // command type
 	VIP_ALWAYS_INLINE void* as_storage() noexcept { return (void*)storage.data; }
 	VIP_ALWAYS_INLINE std::uintptr_t* as_address() noexcept { return reinterpret_cast<std::uintptr_t*>(storage.data); }
 	VIP_ALWAYS_INLINE const std::uintptr_t* as_address() const noexcept { return reinterpret_cast<const std::uintptr_t*>(storage.data); }
 
 public:
-
 	int count{ 0 };
 	CommandHolder* next{ nullptr };
 	CommandHolder* prev{ nullptr };
@@ -390,7 +416,7 @@ public:
 	{
 		if (sizeof(Holder<T>) <= sizeof(storage))
 			new (as_storage()) Holder<T>(value);
-		else 
+		else
 			as_address()[0] = reinterpret_cast<std::uintptr_t>(new Holder<T>(value));
 	}
 	VIP_ALWAYS_INLINE CommandHolder(int command_type, const QPaintEngineState& value)
@@ -410,20 +436,20 @@ public:
 		other.flag = -1;
 		other.type = 0;
 	}*/
-	VIP_ALWAYS_INLINE virtual ~CommandHolder() 
-	{ 
+	VIP_ALWAYS_INLINE virtual ~CommandHolder()
+	{
 		if (flag == 0) {
 			BaseHolder* h = reinterpret_cast<Holder<std::uintptr_t>*>(as_address()[0]);
 			delete h;
 		}
 		else if (flag == 1) {
-			BaseHolder * h = reinterpret_cast<Holder<std::uintptr_t>*>(storage.data);
+			BaseHolder* h = reinterpret_cast<Holder<std::uintptr_t>*>(storage.data);
 			h->~BaseHolder();
 		}
 	}
 
 	/* VIP_ALWAYS_INLINE CommandHolder& operator=(CommandHolder&& other) noexcept
-	{ 
+	{
 		memcpy(storage.data, other.storage.data, sizeof(storage));
 		flag = (other.flag);
 		type = (other.type);
@@ -436,7 +462,7 @@ public:
 	VIP_ALWAYS_INLINE const T* value() const noexcept
 	{
 		switch (flag) {
-			case 0: 
+			case 0:
 				return &(reinterpret_cast<const Holder<T>*>(as_address()[0])->value);
 			case 1:
 				return &(reinterpret_cast<const Holder<T>*>(storage.data)->value);
@@ -459,11 +485,8 @@ public:
 		VIP_UNREACHABLE();
 	}
 
-	VIP_ALWAYS_INLINE int commandType() const noexcept { 
-		return type;
-	}
+	VIP_ALWAYS_INLINE int commandType() const noexcept { return type; }
 };
-
 
 struct Command : CommandHolder
 {
@@ -505,14 +528,14 @@ struct Command : CommandHolder
 	{
 	}
 	VIP_ALWAYS_INLINE Command& operator=(Command&& other)
-	{ 
+	{
 		static_cast<CommandHolder&>(*this) = std::move(static_cast<CommandHolder&>(other));
 		return *this;
 	}*/
-	
+
 	template<class T>
 	VIP_ALWAYS_INLINE Command(Type _type, const T& value)
-	  : CommandHolder(_type,value)
+	  : CommandHolder(_type, value)
 	{
 	}
 
@@ -556,8 +579,8 @@ struct Command : CommandHolder
 			case DrawLinesF: {
 				const LineFVector& vec = *this->value<LineFVector>();
 				const QPainter::RenderHints hints = p->renderHints();
-				const bool no_antialiaze = !p->transform().isRotating() && (hints & QPainter::Antialiasing) && vec.size() == 1 && 
-					(vec.first().p1().x() == vec.first().p2().x() || vec.first().p1().y() == vec.first().p2().y());
+				const bool no_antialiaze = !p->transform().isRotating() && (hints & QPainter::Antialiasing) && vec.size() == 1 &&
+							   (vec.first().p1().x() == vec.first().p2().x() || vec.first().p1().y() == vec.first().p2().y());
 				if (no_antialiaze)
 					p->setRenderHint(QPainter::Antialiasing, false);
 				p->drawLines(vec.data(), vec.size());
@@ -576,7 +599,7 @@ struct Command : CommandHolder
 				const RectVector& vec = *this->value<RectVector>();
 				const QPainter::RenderHints hints = p->renderHints();
 				const bool no_antialiaze = !p->transform().isRotating() && (hints & QPainter::Antialiasing);
-				if (no_antialiaze )
+				if (no_antialiaze)
 					p->setRenderHint(QPainter::Antialiasing, false);
 				p->drawRects(vec.data(), vec.size());
 				if (no_antialiaze)
@@ -672,7 +695,6 @@ struct Command : CommandHolder
 	}
 };
 
-
 template<class T>
 static Command* push_back_cmd(Command*& cmd, Command::Type cmd_type, const T& value)
 {
@@ -713,27 +735,25 @@ static void clear_cmd(Command*& cmd)
 	Command* end = cmd;
 	Command* c = cmd;
 	do {
-		Command* next = static_cast < Command*>(c->next);
+		Command* next = static_cast<Command*>(c->next);
 		delete c;
 		c = next;
 	} while (c != end);
 	cmd = nullptr;
 }
 
-
 using CommandList = std::vector<Command>;
-
 
 template<class Device>
 struct PicturePaintEngine : public QPaintEngine
 {
-	//Device must provide emplace_back(), count(), back(), back_back(), pop_back() and send()
+	// Device must provide emplace_back(), count(), back(), back_back(), pop_back() and send()
 	QPaintEngine::Type d_type;
 	bool d_batch_rendering;
 	Device* device;
 
 public:
-	PicturePaintEngine(Device * dev, QPaintEngine::Type type = QPaintEngine::Windows, bool batch_rendering = true)
+	PicturePaintEngine(Device* dev, QPaintEngine::Type type = QPaintEngine::Windows, bool batch_rendering = true)
 	  : QPaintEngine(QPaintEngine::AllFeatures)
 	  , d_type(type)
 	  , d_batch_rendering(batch_rendering)
@@ -741,15 +761,14 @@ public:
 	{
 	}
 
-	virtual bool begin(QPaintDevice* pdev)
+	virtual bool begin(QPaintDevice* pdev) { return true; }
+	virtual void drawEllipse(const QRectF& rect)
 	{
-		return true;
-	}
-	virtual void drawEllipse(const QRectF& rect) { 
 		device->emplace_back(Command::DrawEllipseF, rect);
 		device->send();
 	}
-	virtual void drawEllipse(const QRect& rect) { 
+	virtual void drawEllipse(const QRect& rect)
+	{
 		device->emplace_back(Command::DrawEllipse, rect);
 		device->send();
 	}
@@ -785,10 +804,11 @@ public:
 
 		ImageVector tmp;
 		tmp.push_back(ImageItem{ rectangle, image, sr, flags, QTransform(), false });
-		device->emplace_back(Command::DrawImage, tmp); 
+		device->emplace_back(Command::DrawImage, tmp);
 	}
 
-	virtual void drawLines(const QLineF* lines, int lineCount) { 
+	virtual void drawLines(const QLineF* lines, int lineCount)
+	{
 		if (d_batch_rendering && device->count() > 0 && device->back().commandType() == Command::DrawLinesF) {
 			LineFVector& vec = *device->back().template value<LineFVector>();
 			if (lineCount == 1) {
@@ -796,7 +816,7 @@ public:
 				bool prev_no_alias = l.p1().x() == l.p2().x() || l.p1().y() == l.p2().y();
 				bool current_no_alias = lines[0].p1().x() == lines[0].p2().x() || lines[0].p1().y() == lines[0].p2().y();
 				if (current_no_alias == prev_no_alias) {
-					//Merge
+					// Merge
 					vec.push_back(lines[0]);
 					return;
 				}
@@ -806,7 +826,8 @@ public:
 		device->send();
 		device->emplace_back(Command::DrawLinesF, toVector(lines, lines + lineCount));
 	}
-	virtual void drawLines(const QLine* lines, int lineCount) { 
+	virtual void drawLines(const QLine* lines, int lineCount)
+	{
 		if (d_batch_rendering && device->count() > 0 && device->back().commandType() == Command::DrawLines) {
 			LineVector& vec = *device->back().template value<LineVector>();
 			if (lineCount == 1) {
@@ -824,11 +845,13 @@ public:
 		device->send();
 		device->emplace_back(Command::DrawLines, toVector(lines, lines + lineCount));
 	}
-	virtual void drawPath(const QPainterPath& path) {
-		device->emplace_back(Command::DrawPath, path); 
+	virtual void drawPath(const QPainterPath& path)
+	{
+		device->emplace_back(Command::DrawPath, path);
 		device->send();
 	}
-	virtual void drawPixmap(const QRectF& r, const QPixmap& pm, const QRectF& sr) { 
+	virtual void drawPixmap(const QRectF& r, const QPixmap& pm, const QRectF& sr)
+	{
 
 		if (d_batch_rendering && device->count() > 1) {
 			// previous command is also text: merge
@@ -859,9 +882,10 @@ public:
 
 		PixmapVector tmp;
 		tmp.push_back(PixmapItem{ r, pm, sr, QTransform(), false });
-		device->emplace_back(Command::DrawPixmap, tmp); 
+		device->emplace_back(Command::DrawPixmap, tmp);
 	}
-	virtual void drawPoints(const QPointF* points, int pointCount) { 
+	virtual void drawPoints(const QPointF* points, int pointCount)
+	{
 
 		if (d_batch_rendering && device->count() > 0 && device->back().commandType() == Command::DrawPointsF) {
 			PointFVector& vec = *device->back().template value<PointFVector>();
@@ -872,9 +896,10 @@ public:
 		// send previous
 		device->send();
 
-		device->emplace_back(Command::DrawPointsF, toVector(points, points + pointCount)); 
+		device->emplace_back(Command::DrawPointsF, toVector(points, points + pointCount));
 	}
-	virtual void drawPoints(const QPoint* points, int pointCount) { 
+	virtual void drawPoints(const QPoint* points, int pointCount)
+	{
 		if (d_batch_rendering && device->count() > 0 && device->back().commandType() == Command::DrawPoints) {
 			PointVector& vec = *device->back().template value<PointVector>();
 			for (int i = 0; i < pointCount; ++i)
@@ -883,7 +908,7 @@ public:
 		}
 		// send previous
 		device->send();
-		device->emplace_back(Command::DrawPoints, toVector(points, points + pointCount)); 
+		device->emplace_back(Command::DrawPoints, toVector(points, points + pointCount));
 	}
 	virtual void drawPolygon(const QPointF* points, int pointCount, QPaintEngine::PolygonDrawMode mode)
 	{
@@ -917,7 +942,8 @@ public:
 		}
 		device->send();
 	}
-	virtual void drawRects(const QRectF* rects, int rectCount) { 
+	virtual void drawRects(const QRectF* rects, int rectCount)
+	{
 		if (d_batch_rendering && device->count() > 0 && device->back().commandType() == Command::DrawRectsF) {
 			RectFVector& vec = *device->back().template value<RectFVector>();
 			for (int i = 0; i < rectCount; ++i)
@@ -928,7 +954,8 @@ public:
 		device->send();
 		device->emplace_back(Command::DrawRectsF, toVector(rects, rects + rectCount));
 	}
-	virtual void drawRects(const QRect* rects, int rectCount) { 
+	virtual void drawRects(const QRect* rects, int rectCount)
+	{
 		if (d_batch_rendering && device->count() > 0 && device->back().commandType() == Command::DrawRects) {
 			RectVector& vec = *device->back().template value<RectVector>();
 			for (int i = 0; i < rectCount; ++i)
@@ -939,7 +966,8 @@ public:
 		device->send();
 		device->emplace_back(Command::DrawRects, toVector(rects, rects + rectCount));
 	}
-	virtual void drawTextItem(const QPointF& p, const QTextItem& textItem) { 
+	virtual void drawTextItem(const QPointF& p, const QTextItem& textItem)
+	{
 		if (d_batch_rendering && device->count() > 1) {
 			// previous command is also text: merge
 			if (device->back().commandType() == Command::DrawText) {
@@ -956,7 +984,7 @@ public:
 					// the command in-between is a transform (ony) change: we can merge (and remove the intermediate state change)
 					QTransform tr = state->worldMatrix;
 
-					//remove state change
+					// remove state change
 					device->pop_back();
 					TextVector& vec = *device->back().template value<TextVector>();
 					vec.push_back(TextItem{ textItem.text(), p, textItem.font(), tr, true });
@@ -967,25 +995,26 @@ public:
 
 		// send previous
 		device->send();
-		
+
 		TextVector tmp;
 		tmp.push_back(TextItem{ textItem.text(), p, textItem.font(), QTransform(), false });
-		device->emplace_back(Command::DrawText, tmp); 
+		device->emplace_back(Command::DrawText, tmp);
 	}
-	virtual void drawTiledPixmap(const QRectF& rect, const QPixmap& pixmap, const QPointF& p) { 
-		device->emplace_back(Command::DrawTiledPixmap, TiledPixmapItem{ rect, pixmap, p }); 
+	virtual void drawTiledPixmap(const QRectF& rect, const QPixmap& pixmap, const QPointF& p)
+	{
+		device->emplace_back(Command::DrawTiledPixmap, TiledPixmapItem{ rect, pixmap, p });
 		device->send();
 	}
-	virtual void updateState(const QPaintEngineState& state) {
+	virtual void updateState(const QPaintEngineState& state)
+	{
 		QPaintEngine::DirtyFlags flags = state.state();
 		if (flags == 0)
 			return;
 
 		if (d_batch_rendering && device->count() > 0 && device->back().commandType() == Command::ChangeState) {
-			
+
 			PaintEngineState& last = *device->back().template value<PaintEngineState>();
-			if (!(state.state() && QPaintEngine::DirtyTransform)) 
-			{
+			if (!(state.state() && QPaintEngine::DirtyTransform)) {
 				// Merge
 				last.dirty |= flags;
 
@@ -1009,7 +1038,7 @@ public:
 					last.composition_mode = (state.compositionMode());
 				if (flags & QPaintEngine::DirtyFont)
 					last.font = (state.font());
-				//if (flags & QPaintEngine::DirtyTransform)
+				// if (flags & QPaintEngine::DirtyTransform)
 				//	last.worldMatrix = (state.transform());
 				if (flags & QPaintEngine::DirtyClipEnabled)
 					last.clipEnabled = (state.isClipEnabled());
@@ -1032,32 +1061,24 @@ public:
 class VipPicture::PrivateData
 {
 public:
-	PrivateData() 
-	: engine(this)
+	PrivateData()
+	  : engine(this)
 	{
 	}
-	~PrivateData() 
-	{ 
-		clear_cmd(commands);
-	}
+	~PrivateData() { clear_cmd(commands); }
 	Command* commands{ nullptr };
-	QPaintEngine::Type type{ QPaintEngine ::Windows};
+	QPaintEngine::Type type{ QPaintEngine ::Windows };
 	PicturePaintEngine<PrivateData> engine;
 	bool isBatchRenderingEnabled{ true };
 
-	int count() const noexcept { 
-		return commands ? commands->count : 0;
-	}
+	int count() const noexcept { return commands ? commands->count : 0; }
 	template<class T>
 	void emplace_back(Command::Type cmd_type, const T& value)
 	{
 		push_back_cmd(commands, cmd_type, value);
 	}
-	void pop_back() 
-	{ 
-		pop_back_cmd(commands);
-	}
-	Command& back() noexcept{ return *static_cast<Command*>(commands->prev);}
+	void pop_back() { pop_back_cmd(commands); }
+	Command& back() noexcept { return *static_cast<Command*>(commands->prev); }
 	const Command& back() const noexcept { return *static_cast<Command*>(commands->prev); }
 	Command& back_back() noexcept { return *static_cast<Command*>(commands->prev->prev); }
 	const Command& back_back() const noexcept { return *static_cast<Command*>(commands->prev->prev); }
@@ -1084,12 +1105,12 @@ VipPicture& VipPicture::operator=(const VipPicture& other)
 	return *this;
 }
 
-void VipPicture::setBatchRenderingEnabled(bool enable) 
+void VipPicture::setBatchRenderingEnabled(bool enable)
 {
 	d_ptr->isBatchRenderingEnabled = enable;
 	d_ptr->engine.d_batch_rendering = enable;
 }
-bool VipPicture::isBatchRenderingEnabled() const 
+bool VipPicture::isBatchRenderingEnabled() const
 {
 	return d_ptr->isBatchRenderingEnabled;
 }
@@ -1110,7 +1131,7 @@ bool VipPicture::play(QPainter* p) const
 		return true;
 
 	Command* c = d_ptr->commands;
-	Command * end = c;
+	Command* end = c;
 	do {
 
 		c->apply(p);
@@ -1193,52 +1214,42 @@ int VipPicture::metric(PaintDeviceMetric m) const
 	return val;
 }
 
-
-
 class DummyPaintEngine : public QPaintEngine
 {
-	
+
 public:
 	DummyPaintEngine()
 	  : QPaintEngine(QPaintEngine::AllFeatures)
 	{
 	}
-	virtual bool begin(QPaintDevice* pdev)
-	{
-		return true;
-	}
-	virtual void drawEllipse(const QRectF& rect) {  }
-	virtual void drawEllipse(const QRect& rect) { }
-	virtual void drawImage(const QRectF& rectangle, const QImage& image, const QRectF& sr, Qt::ImageConversionFlags flags = Qt::AutoColor) { }
+	virtual bool begin(QPaintDevice* pdev) { return true; }
+	virtual void drawEllipse(const QRectF& rect) {}
+	virtual void drawEllipse(const QRect& rect) {}
+	virtual void drawImage(const QRectF& rectangle, const QImage& image, const QRectF& sr, Qt::ImageConversionFlags flags = Qt::AutoColor) {}
 
-	virtual void drawLines(const QLineF* lines, int lineCount) { }
-	virtual void drawLines(const QLine* lines, int lineCount) { }
-	virtual void drawPath(const QPainterPath& path) {  }
-	virtual void drawPixmap(const QRectF& r, const QPixmap& pm, const QRectF& sr) {  }
-	virtual void drawPoints(const QPointF* points, int pointCount) {  }
-	virtual void drawPoints(const QPoint* points, int pointCount) {  }
-	virtual void drawPolygon(const QPointF* points, int pointCount, QPaintEngine::PolygonDrawMode mode) {  }
-	virtual void drawPolygon(const QPoint* points, int pointCount, QPaintEngine::PolygonDrawMode mode) {  }
-	virtual void drawRects(const QRectF* rects, int rectCount) {  }
-	virtual void drawRects(const QRect* rects, int rectCount) { }
-	virtual void drawTextItem(const QPointF& p, const QTextItem& textItem) { }
-	virtual void drawTiledPixmap(const QRectF& rect, const QPixmap& pixmap, const QPointF& p) {  }
-	virtual void updateState(const QPaintEngineState& state) { }
+	virtual void drawLines(const QLineF* lines, int lineCount) {}
+	virtual void drawLines(const QLine* lines, int lineCount) {}
+	virtual void drawPath(const QPainterPath& path) {}
+	virtual void drawPixmap(const QRectF& r, const QPixmap& pm, const QRectF& sr) {}
+	virtual void drawPoints(const QPointF* points, int pointCount) {}
+	virtual void drawPoints(const QPoint* points, int pointCount) {}
+	virtual void drawPolygon(const QPointF* points, int pointCount, QPaintEngine::PolygonDrawMode mode) {}
+	virtual void drawPolygon(const QPoint* points, int pointCount, QPaintEngine::PolygonDrawMode mode) {}
+	virtual void drawRects(const QRectF* rects, int rectCount) {}
+	virtual void drawRects(const QRect* rects, int rectCount) {}
+	virtual void drawTextItem(const QPointF& p, const QTextItem& textItem) {}
+	virtual void drawTiledPixmap(const QRectF& rect, const QPixmap& pixmap, const QPointF& p) {}
+	virtual void updateState(const QPaintEngineState& state) {}
 
 	virtual QPaintEngine::Type type() const { return QPaintEngine::Windows; }
-	virtual bool end()
-	{
-		return true;
-	}
+	virtual bool end() { return true; }
 };
 
-
-
-static bool& is_in_opengl_widget_paint() {
+static bool& is_in_opengl_widget_paint()
+{
 	static bool inst = false;
 	return inst;
 }
-
 
 struct OpenGLWindow : public QWindow
 {
@@ -1254,21 +1265,18 @@ struct OpenGLWindow : public QWindow
 		std::atomic<bool> finished{ false };
 		QColor back{ Qt::transparent };
 
-		void setBackground(const QColor& c){ 
-			back = c;
-		}
-		QColor background() const { 
-			return back;
-		}
+		void setBackground(const QColor& c) { back = c; }
+		QColor background() const { return back; }
 
-		void add(Command* cmd) { 
+		void add(Command* cmd)
+		{
 			VipUniqueLock<VipSpinlock> ll(lock);
 			if (!to_draw) {
-				//vip_debug("set %i \n", cmd->count);
+				// vip_debug("set %i \n", cmd->count);
 				to_draw = cmd;
 			}
 			else {
-				//merge commands
+				// merge commands
 				to_draw->prev->next = cmd;
 				to_draw->prev = cmd->prev;
 				cmd->prev->next = to_draw;
@@ -1280,16 +1288,15 @@ struct OpenGLWindow : public QWindow
 		}
 
 		void startRendering()
-		{ 
+		{
 			inRender = true;
 			finished = false;
-			
 		}
 		void stopRendering()
 		{
 			inRender = false;
-			//to_draw = p;
-			//cond.notify_one();
+			// to_draw = p;
+			// cond.notify_one();
 		}
 
 		virtual void run()
@@ -1306,7 +1313,7 @@ struct OpenGLWindow : public QWindow
 					vipSleep(5);
 					continue;
 				}
-				
+
 				// retrieve commands
 				Command* cmd = nullptr;
 				{
@@ -1330,7 +1337,7 @@ struct OpenGLWindow : public QWindow
 				QPainter p;
 				p.begin(&device);
 
-				do{
+				do {
 					if (!cmd) {
 						std::this_thread::yield();
 					}
@@ -1358,19 +1365,19 @@ struct OpenGLWindow : public QWindow
 					cmd = nullptr;
 					VipUniqueLock<VipSpinlock> ll(lock);
 					if (!to_draw)
-						cond.wait(lock, [&]() { return to_draw  != nullptr || inRender.load(std::memory_order_relaxed) == false; });
+						cond.wait(lock, [&]() { return to_draw != nullptr || inRender.load(std::memory_order_relaxed) == false; });
 					cmd = to_draw;
 					to_draw = nullptr;
 
 				} while (inRender.load() || cmd);
 
 				p.end();
-				
+
 				thread_context->swapBuffers(v);
 				thread_context->doneCurrent();
 
-				//qint64 el = QDateTime::currentMSecsSinceEpoch() -st;
-				//vip_debug("ogl: %i ms\n", (int)el);
+				// qint64 el = QDateTime::currentMSecsSinceEpoch() -st;
+				// vip_debug("ogl: %i ms\n", (int)el);
 				finished = true;
 				cond.notify_one();
 			}
@@ -1389,7 +1396,6 @@ struct OpenGLWindow : public QWindow
 	int sentCount{ 0 };
 
 public:
-
 	// members for PicturePaintEngine
 
 	int count() const noexcept { return commands ? commands->count : 0; }
@@ -1403,19 +1409,18 @@ public:
 	const Command& back() const noexcept { return *static_cast<Command*>(commands->prev); }
 	Command& back_back() noexcept { return *static_cast<Command*>(commands->prev->prev); }
 	const Command& back_back() const noexcept { return *static_cast<Command*>(commands->prev->prev); }
-	void send() { 
+	void send()
+	{
 		if (commands && commands->count > 20) {
-			sentCount += commands->count; 
+			sentCount += commands->count;
 			thread.add(commands);
 			commands = nullptr;
 		}
 	}
 
-
-
 	OpenGLWindow(QWidget* top)
 	  : QWindow()
-	  , trueEngine(this,QPaintEngine::OpenGL2)
+	  , trueEngine(this, QPaintEngine::OpenGL2)
 	  , top_level(top)
 	{
 		setSurfaceType(QSurface::OpenGLSurface);
@@ -1430,25 +1435,25 @@ public:
 		clear_cmd(commands);
 	}
 
-	
 	void startRendering()
-	{		
+	{
 		is_in_opengl_widget_paint() = true;
 		sentCount = 0;
 		inRender = true;
 		thread.startRendering();
 	}
-	void stopRendering() {
+	void stopRendering()
+	{
 
 		if (commands) {
-			sentCount += commands->count; 
+			sentCount += commands->count;
 			thread.add(commands);
 			commands = nullptr;
 		}
 
 		inRender = false;
-		thread.stopRendering(); 
-		
+		thread.stopRendering();
+
 		if (sentCount != 0) {
 			// Only wait if at least one paint command has been emitted
 			while (!thread.finished.load()) {
@@ -1457,37 +1462,20 @@ public:
 			}
 		}
 		is_in_opengl_widget_paint() = false;
-		//vip_debug("count: %i\n", sentCount);
+		// vip_debug("count: %i\n", sentCount);
 	}
 
-	virtual void keyPressEvent(QKeyEvent* ev) { 
-		qApp->sendEvent(top_level, ev);
-	}
-	virtual void keyReleaseEvent(QKeyEvent* ev) { 
-		qApp->sendEvent(top_level, ev); 
-	}
-	virtual void mouseDoubleClickEvent(QMouseEvent* ev) { 
-		qApp->sendEvent(top_level, ev); 
-	}
-	virtual void mouseMoveEvent(QMouseEvent* ev) { 
-		qApp->sendEvent(top_level, ev); 
-	}
-	virtual void mousePressEvent(QMouseEvent* ev) {
-		qApp->sendEvent(top_level, ev); 
-	}
-	virtual void mouseReleaseEvent(QMouseEvent* ev) { 
-		qApp->sendEvent(top_level, ev); 
-	}
-	virtual void tabletEvent(QTabletEvent* ev) { 
-		qApp->sendEvent(top_level, ev); 
-	}
-	virtual void touchEvent(QTouchEvent* ev) {
-		qApp->sendEvent(top_level, ev); 
-	}
-	virtual void wheelEvent(QWheelEvent* ev) { 
-		qApp->sendEvent(top_level, ev); 
-	}
-	virtual void focusInEvent(QFocusEvent* ev) { 
+	virtual void keyPressEvent(QKeyEvent* ev) { qApp->sendEvent(top_level, ev); }
+	virtual void keyReleaseEvent(QKeyEvent* ev) { qApp->sendEvent(top_level, ev); }
+	virtual void mouseDoubleClickEvent(QMouseEvent* ev) { qApp->sendEvent(top_level, ev); }
+	virtual void mouseMoveEvent(QMouseEvent* ev) { qApp->sendEvent(top_level, ev); }
+	virtual void mousePressEvent(QMouseEvent* ev) { qApp->sendEvent(top_level, ev); }
+	virtual void mouseReleaseEvent(QMouseEvent* ev) { qApp->sendEvent(top_level, ev); }
+	virtual void tabletEvent(QTabletEvent* ev) { qApp->sendEvent(top_level, ev); }
+	virtual void touchEvent(QTouchEvent* ev) { qApp->sendEvent(top_level, ev); }
+	virtual void wheelEvent(QWheelEvent* ev) { qApp->sendEvent(top_level, ev); }
+	virtual void focusInEvent(QFocusEvent* ev)
+	{
 		qint64 time = QDateTime::currentMSecsSinceEpoch();
 		if (time - lastRequestActive < 100)
 			return;
@@ -1496,10 +1484,8 @@ public:
 		this->requestActivate();
 		lastRequestActive = QDateTime::currentMSecsSinceEpoch();
 	}
-	virtual void focusOutEvent(QFocusEvent* ev) { 
-		qApp->sendEvent(top_level, ev); 
-	}
-	
+	virtual void focusOutEvent(QFocusEvent* ev) { qApp->sendEvent(top_level, ev); }
+
 	/* virtual bool event(QEvent* event)
 	{
 		switch (event->type()) {
@@ -1521,9 +1507,6 @@ public:
 	}
 };
 
-
-
-
 class VipOpenGLWidget::PrivateData
 {
 public:
@@ -1531,14 +1514,14 @@ public:
 };
 
 VipOpenGLWidget::VipOpenGLWidget(QWidget* parent)
- // : QWidget(parent)
-  : detail::VipWindowContainer(new OpenGLWindow(this),parent)
+  : detail::VipWindowContainer(new OpenGLWindow(this), parent)
 {
 	d_data = new PrivateData();
-	d_data->window = static_cast < OpenGLWindow*>(this->containedWindow());
+	d_data->window = static_cast<OpenGLWindow*>(this->containedWindow());
 	d_data->window->show();
 
 	this->setAttribute(Qt::WA_PaintOnScreen);
+	setAttribute(Qt::WA_OpaquePaintEvent);
 	this->setMouseTracking(true);
 }
 
@@ -1575,12 +1558,6 @@ bool VipOpenGLWidget::isInPainting()
 	return is_in_opengl_widget_paint();
 }
 
-void VipOpenGLWidget::paintEvent(QPaintEvent* evt) 
-{
-	if (QGraphicsView* view = qobject_cast<QGraphicsView*>(parentWidget()))
-		view->update();
-}
-
 void VipOpenGLWidget::setBackgroundColor(const QColor& c)
 {
 	d_data->window->thread.setBackground(c);
@@ -1589,41 +1566,3 @@ QColor VipOpenGLWidget::backgroundColor() const
 {
 	return d_data->window->thread.background();
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

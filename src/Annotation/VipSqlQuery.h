@@ -1,3 +1,34 @@
+/**
+ * BSD 3-Clause License
+ *
+ * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice, this
+ *    list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of the copyright holder nor the names of its
+ *    contributors may be used to endorse or promote products derived from
+ *    this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
 #ifndef VIP_SQL_QUERY_H
 #define VIP_SQL_QUERY_H
 
@@ -6,13 +37,11 @@
 #include "VipProgress.h"
 #include "VipSceneModel.h"
 
-
 /// @brief Maximum number of points to describe a polygon in the database
 #define VIP_DB_MAX_FRAME_POLYGON_POINTS 32
 
 /// @brief Experiment id type
 using Vip_experiment_id = qint64;
-
 
 //////////////////////////////////////////////
 // SQL database functions
@@ -131,19 +160,19 @@ struct VipEventQuery
 	Vip_experiment_id min_pulse; // minimum pulse (no minimum if -1)
 	Vip_experiment_id max_pulse; // maximum pulse (no maximum if -1)
 	// int id_thermaleventinfo;
-	QString in_comment;			// sub string to find in comment
-	QString in_name;			// sub string to find in name
-	QString method;				// method if not empty
-	QString dataset; // dataset name if not empty
-	QStringList users; // possible users (all if empty)
-	qint64 min_duration;	// minimum duration if not -1
-	qint64 max_duration;	// maximum duration if not -1
-	double min_temperature;	// min maximum temperature if not -1
-	double max_temperature; // max maximum temperature if not -1
-	int automatic;			// automatic or manual detection if not -1
-	double min_confidence;	// minimum confidence value if not -1
-	double max_confidence;	// maximum confidence value if not -1
-	QStringList event_types;	// possible event types (all if empty)
+	QString in_comment;	 // sub string to find in comment
+	QString in_name;	 // sub string to find in name
+	QString method;		 // method if not empty
+	QString dataset;	 // dataset name if not empty
+	QStringList users;	 // possible users (all if empty)
+	qint64 min_duration;	 // minimum duration if not -1
+	qint64 max_duration;	 // maximum duration if not -1
+	double min_temperature;	 // min maximum temperature if not -1
+	double max_temperature;	 // max maximum temperature if not -1
+	int automatic;		 // automatic or manual detection if not -1
+	double min_confidence;	 // minimum confidence value if not -1
+	double max_confidence;	 // maximum confidence value if not -1
+	QStringList event_types; // possible event types (all if empty)
 
 	VipEventQuery()
 	  : min_pulse(-1)
@@ -210,17 +239,14 @@ struct VipEventQueryResults
 };
 
 /// @brief Query the DB based on a VipEventQuery
-/// 
+///
 /// The query is performed only on the 'thermal_events' table.
 /// Therfore, the VipEventQueryResult::shapes field is not filled.
 /// Returns a VipEventQueryResults storing the map of event_id -> VipEventQueryResult.
-/// 
+///
 /// The VipEventQueryResults can be used in vipFullQueryDB() to read actual thermal event instances
 /// (which is a lot heavier)
 VIP_ANNOTATION_EXPORT VipEventQueryResults vipQueryDB(const VipEventQuery& query, VipProgress* p = nullptr);
-
-
-
 
 struct VipCameraResult
 {
@@ -248,19 +274,12 @@ struct VipFullQueryResult
 	bool isValid() const { return error.isEmpty(); }
 };
 
-
 /// @brief Performs a full event query on the DB based on a VipEventQueryResults
 VIP_ANNOTATION_EXPORT VipFullQueryResult vipFullQueryDB(const VipEventQueryResults& evtres, VipProgress* p = nullptr);
-
-
-
-
-
 
 //////////////////////////////////////////////
 // Helper functions
 //////////////////////////////////////////////
-
 
 /// @brief Extract all events from a VipFullQueryResult struct
 VIP_ANNOTATION_EXPORT Vip_event_list vipExtractEvents(const VipFullQueryResult& res);
@@ -269,7 +288,6 @@ VIP_ANNOTATION_EXPORT Vip_event_list vipExtractEvents(const VipFullQueryResult& 
 /// Internally uses vipRDPSimplifyPolygon().
 VIP_ANNOTATION_EXPORT QPolygonF vipSimplifyPolygonDB(const QPolygonF& poly, int max_points);
 
-
 /// @brief Convert input events to JSON format
 VIP_ANNOTATION_EXPORT QByteArray vipEventsToJson(const Vip_event_list& evts, VipProgress* progress = nullptr);
 /// @brief Convert input events to JSON format and write to file
@@ -277,12 +295,9 @@ VIP_ANNOTATION_EXPORT bool vipEventsToJsonFile(const QString& out_file, const Vi
 /// @brief Read thermal event from a JSON file
 VIP_ANNOTATION_EXPORT Vip_event_list vipEventsFromJson(const QByteArray& content);
 
-
-
 //////////////////////////////////////////////
 // Per device handling
 //////////////////////////////////////////////
-
 
 /// @brief Base virtual class defining how to handle movies for a device
 struct VipBaseDeviceParameters
@@ -307,23 +322,15 @@ VIP_ANNOTATION_EXPORT bool vipRegisterDeviceParameters(const QString& name, VipB
 /// Returns the default DeviceParameters if provided name was not found.
 VIP_ANNOTATION_EXPORT const VipBaseDeviceParameters* vipFindDeviceParameters(const QString& name);
 
-
-
-
-
-
 //////////////////////////////////////////////
 // Widgets
 //////////////////////////////////////////////
 
-
-
-
+#include <qlineedit.h>
 #include <qmenu.h>
+#include <qspinbox.h>
 #include <qtoolbutton.h>
 #include <qwidget.h>
-#include <qspinbox.h>
-#include <qlineedit.h>
 
 /// @brief Spinbox working with 64 bits integer
 class VIP_ANNOTATION_EXPORT VipLongLongSpinBox : public QAbstractSpinBox
@@ -426,7 +433,6 @@ Q_SIGNALS:
 	void valueChanged(qint64 v);
 };
 
-
 /// @brief Integer experiment id editor, used for WEST and W7-X
 class VIP_ANNOTATION_EXPORT VipPulseSpinBox : public VipLongLongSpinBox
 {
@@ -443,7 +449,6 @@ public:
 		setLocale(QLocale(QLocale::C));
 	}
 };
-
 
 /// @brief Tool button used to select a dataset
 class VIP_ANNOTATION_EXPORT VipDatasetButton : public QToolButton
@@ -555,7 +560,5 @@ public:
 	class PrivateData;
 	PrivateData* m_data;
 };
-
-
 
 #endif

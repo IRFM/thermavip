@@ -1,8 +1,39 @@
+/**
+ * BSD 3-Clause License
+ *
+ * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice, this
+ *    list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of the copyright holder nor the names of its
+ *    contributors may be used to endorse or promote products derived from
+ *    this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
 #ifndef VIP_LEGEND_ITEM_H
 #define VIP_LEGEND_ITEM_H
 
-#include "VipPlotItem.h"
 #include "VipBorderItem.h"
+#include "VipPlotItem.h"
 
 /// \addtogroup Plotting
 /// @{
@@ -25,11 +56,11 @@ public:
 	};
 
 	/// @brief Construct from a VipPlotItem and a legend index
-	VipLegendItem(VipPlotItem * item, int index, QGraphicsItem* parent = nullptr);
+	VipLegendItem(VipPlotItem* item, int index, QGraphicsItem* parent = nullptr);
 	~VipLegendItem();
 
 	/// @brief Returns the parent VipLegend (if any)
-	VipLegend * legend() const;
+	VipLegend* legend() const;
 
 	/// @brief Returns true if the legend text is empty
 	bool emptyLegendText() const;
@@ -48,7 +79,7 @@ public:
 
 	/// @brief Reset the VipPlotItem and its legend index
 	void setPlotItem(VipPlotItem* item, int legend_index = 0);
-	VipPlotItem * plotItem() const;
+	VipPlotItem* plotItem() const;
 	int legendIindex() const;
 
 	/// @brief Set the minimum size of the symbol part of the legeng in item's coordinates
@@ -75,27 +106,26 @@ public:
 	void setLeft(double);
 	double left();
 
-	void setRenderHints( QPainter::RenderHints );
+	void setRenderHints(QPainter::RenderHints);
 	QPainter::RenderHints renderHints() const;
 
-	void setTextStyle(const VipTextStyle &);
-	const VipTextStyle & textStyle() const;
-	VipTextStyle & textStyle();
+	void setTextStyle(const VipTextStyle&);
+	const VipTextStyle& textStyle() const;
+	VipTextStyle& textStyle();
 
-	virtual void	paint ( QPainter * painter, const QStyleOptionGraphicsItem * option, QWidget * widget = 0 );
+	virtual void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget = 0);
 
 protected:
-	virtual void	mousePressEvent(QGraphicsSceneMouseEvent * event);
-	virtual void	mouseMoveEvent(QGraphicsSceneMouseEvent* event);
-	virtual void	mouseReleaseEvent(QGraphicsSceneMouseEvent * event);
+	virtual void mousePressEvent(QGraphicsSceneMouseEvent* event);
+	virtual void mouseMoveEvent(QGraphicsSceneMouseEvent* event);
+	virtual void mouseReleaseEvent(QGraphicsSceneMouseEvent* event);
 
 Q_SIGNALS:
 	void clicked(bool);
 
 private:
-
 	class PrivateData;
-	PrivateData * d_data;
+	PrivateData* d_data;
 };
 
 class VipDynGridLayout;
@@ -108,7 +138,7 @@ class VipDynGridLayout;
 /// -	'display-mode': equivalent to VipLegend::setDisplayMode(), one of 'allItems' and 'namedItems'
 /// -	'margin': floating point value equivalent to VipLegend::setMargins()
 /// -	'alignment': equivalent to VipLegend::setAlignment(), combination of 'left|right|top|bottom|hcenter|vcenter'
-/// -	'expanding-directions': legend expanding direction, combination of 'vertical|horizontal' 
+/// -	'expanding-directions': legend expanding direction, combination of 'vertical|horizontal'
 /// -	'spacing': floating point value equivalent to VipLegend::setSpacing()
 /// -	'item-spacing': space between item image and item text
 /// -	'max-columns': equivalent to VipLegend::setMaxColumns()
@@ -118,17 +148,17 @@ class VipDynGridLayout;
 /// -	'minimum-height': minimum symbol height
 /// -	'maximum-width': maximum symbol width
 /// -	'maximum-height': maximum symbol height
-/// 
+///
 /// In addition, VipLegend is sensible to the selector 'inner' for VipLegend inside a VipAbstractPlotArea (added with VipAbstractPlotArea::addInnerLegend())
-/// 
+///
 class VIP_PLOTTING_EXPORT VipLegend : public VipBoxGraphicsWidget
 {
 	Q_OBJECT
 
 public:
-
 	/// @brief Check state of internal items
-	enum CheckState {
+	enum CheckState
+	{
 		/// @brief Let the VipLegendItem itself define if it is checkable or not
 		ItemBased,
 		/// @brief Items are checkable, and it's up to the user to handle checking
@@ -159,7 +189,7 @@ public:
 	/// @brief Set margins around the legend
 	void setContentsMargins(double left, double top, double right, double bottom);
 	void setMargins(double);
-	void getContentsMargins(double *left, double *top, double *right, double *bottom) const;
+	void getContentsMargins(double* left, double* top, double* right, double* bottom) const;
 
 	void setLegendAlignment(Qt::Alignment);
 	Qt::Alignment legendAlignment() const;
@@ -176,17 +206,17 @@ public:
 	void addItem(VipPlotItem*);
 	void addLegendItem(VipLegendItem*);
 	void insertItem(int, VipPlotItem*);
-	void insertLegendItem(int,VipLegendItem*);
+	void insertLegendItem(int, VipLegendItem*);
 
 	int removeItem(VipPlotItem*);
 	int removeLegendItem(VipLegendItem*);
 
-	void setItems(const QList<VipPlotItem*> & items);
-	const QList<VipPlotItem*> & items() const;
+	void setItems(const QList<VipPlotItem*>& items);
+	const QList<VipPlotItem*>& items() const;
 
-	void setLegendItems(const QList<VipLegendItem*> & items);
+	void setLegendItems(const QList<VipLegendItem*>& items);
 	QList<VipLegendItem*> legendItems() const;
-	QList<VipLegendItem*> legendItems(const VipPlotItem *) const;
+	QList<VipLegendItem*> legendItems(const VipPlotItem*) const;
 
 	void clear();
 
@@ -199,14 +229,14 @@ public:
 	void setLegendItemLeft(double left);
 	double legendItemLeft() const;
 
-	void setLegendItemRenderHints( QPainter::RenderHints );
+	void setLegendItemRenderHints(QPainter::RenderHints);
 	QPainter::RenderHints legendItemRenderHints() const;
 
-	void setLegendItemBoxStyle(const VipBoxStyle & style);
-	const VipBoxStyle & legendItemBoxStyle() const;
+	void setLegendItemBoxStyle(const VipBoxStyle& style);
+	const VipBoxStyle& legendItemBoxStyle() const;
 	VipBoxStyle& legendItemBoxStyle();
 
-	void setLegendItemTextStyle(const VipTextStyle & t_style);
+	void setLegendItemTextStyle(const VipTextStyle& t_style);
 	const VipTextStyle& legendItemTextStyle() const;
 
 	void setMinimumSymbolSize(const QSizeF&);
@@ -215,21 +245,20 @@ public:
 	void setMaximumSymbolSize(const QSizeF&);
 	QSizeF maximumSymbolSize() const;
 
+	QRectF preferredGeometry(const QRectF& bounding_rect, Qt::Alignment align);
 
-	QRectF preferredGeometry(const QRectF & bounding_rect, Qt::Alignment align);
-
-	VipDynGridLayout * layout() const;
-	virtual QSizeF sizeHint(Qt::SizeHint which, const QSizeF & constraint = QSizeF()) const;
+	VipDynGridLayout* layout() const;
+	virtual QSizeF sizeHint(Qt::SizeHint which, const QSizeF& constraint = QSizeF()) const;
 
 Q_SIGNALS:
-	void clicked(VipLegendItem *, bool);
+	void clicked(VipLegendItem*, bool);
 
 private Q_SLOTS:
-	void itemChanged(VipPlotItem *);
+	void itemChanged(VipPlotItem*);
 	void receiveClicked(bool);
 
 protected:
-	virtual QVariant	itemChange(GraphicsItemChange change, const QVariant & value);
+	virtual QVariant itemChange(GraphicsItemChange change, const QVariant& value);
 	/// @brief Set properties through style sheet
 	virtual bool setItemProperty(const char* name, const QVariant& value, const QByteArray& index = QByteArray());
 	/// @brief Make the legend style sheet aware of the selector 'inner'
@@ -238,39 +267,38 @@ protected:
 private:
 	void legendItemAdded(VipLegendItem*);
 	class PrivateData;
-	PrivateData * d_data;
+	PrivateData* d_data;
 };
-
 
 /// @brief Legend item within a vertical or horizontal scale
 class VIP_PLOTTING_EXPORT VipBorderLegend : public VipBorderItem
 {
 	Q_OBJECT
 public:
-
-	VipBorderLegend(Alignment pos, QGraphicsItem * parent = 0);
+	VipBorderLegend(Alignment pos, QGraphicsItem* parent = 0);
 	~VipBorderLegend();
 
-	void setLegend(VipLegend *);
+	void setLegend(VipLegend*);
 	VipLegend* legend();
-	const VipLegend *legend() const;
-	VipLegend * takeLegend();
+	const VipLegend* legend() const;
+	VipLegend* takeLegend();
 
-	void setMargin(double );
+	void setMargin(double);
 	double margin() const;
 
 protected:
-
-	virtual QPointF position(double value) const {Q_UNUSED(value)
-		return QPointF();}
+	virtual QPointF position(double value) const
+	{
+		Q_UNUSED(value)
+		return QPointF();
+	}
 	virtual void layoutScale() {}
 
 	double extentForLength(double length) const;
-	virtual void itemGeometryChanged(const QRectF &);
+	virtual void itemGeometryChanged(const QRectF&);
 
 private:
-
-	VipLegend * d_legend;
+	VipLegend* d_legend;
 	double d_margin;
 	double d_length;
 	QRectF d_max_rect;
@@ -278,6 +306,6 @@ private:
 };
 
 /// @}
-//end Plotting
+// end Plotting
 
 #endif

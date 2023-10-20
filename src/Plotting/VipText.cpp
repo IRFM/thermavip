@@ -1,3 +1,34 @@
+/**
+ * BSD 3-Clause License
+ *
+ * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice, this
+ *    list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of the copyright holder nor the names of its
+ *    contributors may be used to endorse or promote products derived from
+ *    this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
 #include "VipText.h"
 #include "VipPainter.h"
 #include "VipPie.h"
@@ -1232,7 +1263,7 @@ void VipText::draw(QPainter* painter, const QRectF& rect) const
 		QPainter p(&pixmap);
 		p.setFont(font());
 		p.setPen(textPen());
-		p.setRenderHints(renderHints()); 
+		p.setRenderHints(renderHints());
 
 		if (!hasTextBoxStyle()) {
 			d_data->textEngine->draw(&p, expandedRect.translated(-expandedRect.topLeft()), alignment(), d_data->text);
@@ -1249,13 +1280,13 @@ void VipText::draw(QPainter* painter, const QRectF& rect) const
 		}
 
 		// Disable SmoothPixmapTransform when possible as it produces ugly output
-		 const QTransform& tr = painter->transform();
+		const QTransform& tr = painter->transform();
 		if (tr.isRotating() || tr.isScaling()) {
 			if (!painter->testRenderHint(QPainter::SmoothPixmapTransform))
 				painter->setRenderHint(QPainter::SmoothPixmapTransform);
 		}
 		else if (painter->testRenderHint(QPainter::SmoothPixmapTransform))
-			painter->setRenderHint(QPainter::SmoothPixmapTransform,false);
+			painter->setRenderHint(QPainter::SmoothPixmapTransform, false);
 		// Using a different composition mode produces a strange behavior with opengl rendering
 		if (is_opengl) {
 			if (painter->compositionMode() != QPainter::CompositionMode_SourceOver)
@@ -1268,7 +1299,7 @@ void VipText::draw(QPainter* painter, const QRectF& rect) const
 					painter->setRenderHint(QPainter::SmoothPixmapTransform);
 			}
 		}
-		
+
 		VipPainter::drawPixmap(painter, QRectF(expandedRect.topLeft() - QPointF(1, 1), QSizeF(pixmap.size())), pixmap);
 	}
 	else {
@@ -1357,7 +1388,7 @@ static QList<QList<TextChar>> getCharactersPerLines(const VipText& t)
 		doc.adjustSize();
 	}
 
-	//QTextBlock block = doc.begin();
+	// QTextBlock block = doc.begin();
 	double start_line_y = doc.begin().layout()->position().y();
 	double line_y = -std::numeric_limits<double>::max();
 	;
@@ -1530,7 +1561,7 @@ void VipText::draw(QPainter* painter, const QPointF& c, const VipPie& pie, TextD
 
 		const QList<TextChar>& tchar = textChar[line];
 
-		for (const TextChar& tc: tchar) {
+		for (const TextChar& tc : tchar) {
 			if (dir == TowardInside) {
 				for (int i = 0; i < tc.indexes.size(); ++i) {
 					double y = tc.positions[i].y();
@@ -1596,11 +1627,11 @@ void VipText::draw(QPainter* painter, const QPointF& c, const VipPie& pie, TextD
 	}
 
 	// draw each character
-	painter->setRenderHints( QPainter::Antialiasing);
+	painter->setRenderHints(QPainter::Antialiasing);
 
-	//QTransform tr;
-	//tr.translate(center.x(), center.y());
-	//tr.rotate(360 - pie.endAngle());
+	// QTransform tr;
+	// tr.translate(center.x(), center.y());
+	// tr.rotate(360 - pie.endAngle());
 
 	VipBoxStyle textBStyle;
 	if (hasTextBoxStyle())
@@ -1613,7 +1644,7 @@ void VipText::draw(QPainter* painter, const QPointF& c, const VipPie& pie, TextD
 		QTransform tr;
 		tr.translate(center.x(), center.y());
 
-		for (const TextChar& tc: tchar) {
+		for (const TextChar& tc : tchar) {
 
 			if (!hasTextBoxStyle()) {
 				if (tc.format.foreground() == QBrush())

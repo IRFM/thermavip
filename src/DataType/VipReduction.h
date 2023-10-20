@@ -1,26 +1,60 @@
-#pragma once
+/**
+ * BSD 3-Clause License
+ *
+ * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice, this
+ *    list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of the copyright holder nor the names of its
+ *    contributors may be used to endorse or promote products derived from
+ *    this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
 
-#include "VipOverRoi.h"
+
+#ifndef VIP_REDUCTION_H
+#define VIP_REDUCTION_H
+
 #include "VipEval.h"
+#include "VipOverRoi.h"
 
 namespace detail
 {
 
 	template<bool SrcNullType, bool ValidCast, class OverRoi = VipInfinitRoi>
-	struct Reduce {
+	struct Reduce
+	{
 		template<class Reductor, class Src, class Offset>
-		static bool apply(Reductor & , const Src & , const OverRoi & , const Offset & )
+		static bool apply(Reductor&, const Src&, const OverRoi&, const Offset&)
 		{
 			return false;
 		}
 	};
 
 	template<class OverRoi>
-	struct Reduce<false,true, OverRoi >
+	struct Reduce<false, true, OverRoi>
 	{
 		/// Reduce src.
 		template<class Reductor, class Src, class Offset>
-		static bool apply(Reductor & red, const Src & src, const OverRoi & roi, const Offset & src_offset)
+		static bool apply(Reductor& red, const Src& src, const OverRoi& roi, const Offset& src_offset)
 		{
 			VipNDArrayShape offset;
 			offset.resize(src_offset.size());
@@ -30,11 +64,14 @@ namespace detail
 				offset.fill(0);
 
 			typedef typename Reductor::value_type type;
-			if (src_offset.size() == 0 && (Src::access_type & Vip::Flat) && (Reductor::access_type & Vip::Flat) && (OverRoi::access_type & Vip::Flat) && src.isUnstrided() && roi.isUnstrided()) {
+			if (src_offset.size() == 0 && (Src::access_type & Vip::Flat) && (Reductor::access_type & Vip::Flat) && (OverRoi::access_type & Vip::Flat) && src.isUnstrided() &&
+			    roi.isUnstrided()) {
 				int size = vipCumMultiply(src.shape());
-				for(int i=0; i < size; ++i){
-					if(std::is_same<VipInfinitRoi, OverRoi>::value) red.setAt(i, vipCast<type>(src[i]));
-					else if(roi[i]) red.setAt(i, vipCast<type>(src[i]));
+				for (int i = 0; i < size; ++i) {
+					if (std::is_same<VipInfinitRoi, OverRoi>::value)
+						red.setAt(i, vipCast<type>(src[i]));
+					else if (roi[i])
+						red.setAt(i, vipCast<type>(src[i]));
 				}
 			}
 			else if ((Src::access_type & Vip::Flat) && src.isUnstrided()) {
@@ -50,10 +87,10 @@ namespace detail
 				else if (src.shape().size() == 2) {
 					int h = src.shape()[0] + offset[0];
 					int w = src.shape()[1] + offset[1];
-					int i=0;
+					int i = 0;
 					VipHybridVector<int, 2> p;
 					for (p[0] = offset[0]; p[0] < h; ++p[0])
-						for (p[1] = offset[1]; p[1] < w; ++p[1],++i) {
+						for (p[1] = offset[1]; p[1] < w; ++p[1], ++i) {
 							if (roi(p)) {
 								red.setPos(p, vipCast<type>(src[i]));
 							}
@@ -67,7 +104,7 @@ namespace detail
 					VipHybridVector<int, 3> p;
 					for (p[0] = offset[0]; p[0] < z; ++p[0])
 						for (p[1] = offset[1]; p[1] < h; ++p[1])
-							for (p[2] = offset[2]; p[2] < w; ++p[2],++i) {
+							for (p[2] = offset[2]; p[2] < w; ++p[2], ++i) {
 								if (roi(p)) {
 									red.setPos(p, vipCast<type>(src[i]));
 								}
@@ -78,7 +115,7 @@ namespace detail
 					int size = vipCumMultiply(src.shape());
 					for (int i = 0; i < size; ++i) {
 						if (roi(iter.pos)) {
-						red.setPos(iter.pos, vipCast<type>(src[i]));
+							red.setPos(iter.pos, vipCast<type>(src[i]));
 						}
 						iter.increment();
 					}
@@ -101,7 +138,7 @@ namespace detail
 					int w = src.shape()[1] + offset[1];
 					VipHybridVector<int, 2> p;
 					VipHybridVector<int, 2> src_p;
-					for (p[0] = offset[0]; p[0]  < h; ++p[0])
+					for (p[0] = offset[0]; p[0] < h; ++p[0])
 						for (p[1] = offset[1]; p[1] < w; ++p[1]) {
 							if (roi(p)) {
 								src_p[0] = p[0] + offset[0];
@@ -134,7 +171,7 @@ namespace detail
 					pos.resize(offset.size());
 					for (int i = 0; i < size; ++i) {
 						if (roi(iter.pos)) {
-							if(src_offset.size() == 0)
+							if (src_offset.size() == 0)
 								red.setPos(iter.pos, vipCast<type>(src(iter.pos)));
 							else {
 								for (int j = 0; j < src_offset.size(); ++j)
@@ -150,13 +187,12 @@ namespace detail
 		}
 	};
 
-
 	template<int Dim>
-	struct Reduce<false, true,VipOverNDRects<Dim> >
+	struct Reduce<false, true, VipOverNDRects<Dim>>
 	{
 		/// Reduce src.
 		template<class Reductor, class Src, class Offset>
-		static bool apply(Reductor & red, const Src & src, const  VipOverNDRects<Dim> & roi, const Offset & src_offset)
+		static bool apply(Reductor& red, const Src& src, const VipOverNDRects<Dim>& roi, const Offset& src_offset)
 		{
 			typedef typename Reductor::value_type type;
 			if (roi.size() == 0)
@@ -173,7 +209,7 @@ namespace detail
 
 			if (roi.rects()[0].dimCount() == 1) {
 				for (int r = 0; r < roi.size(); ++r) {
-					const VipNDRect<Dim> & rect = roi.rects()[r];
+					const VipNDRect<Dim>& rect = roi.rects()[r];
 					VipHybridVector<int, 1> p;
 					VipHybridVector<int, 1> src_p;
 					const int start = std::max(offset[0], rect.start(0));
@@ -188,27 +224,26 @@ namespace detail
 			}
 			else if (roi.rects()[0].dimCount() == 2) {
 				for (int r = 0; r < roi.size(); ++r) {
-					const VipNDRect<Dim> & rect = roi.rects()[r];
+					const VipNDRect<Dim>& rect = roi.rects()[r];
 					VipHybridVector<int, 2> p;
 					VipHybridVector<int, 2> src_p;
 					const int start0 = std::max(offset[0], rect.start(0));
 					const int end0 = std::min(rect.end(0), src.shape()[0] + offset[0]);
 					const int start1 = std::max(offset[1], rect.start(1));
 					const int end1 = std::min(rect.end(1), src.shape()[1] + offset[1]);
-					for (p[0] = start0; p[0] <  end0; ++p[0])
+					for (p[0] = start0; p[0] < end0; ++p[0])
 						for (p[1] = start1; p[1] < end1; ++p[1]) {
 							if (roi(p)) {
 								src_p[0] = p[0] - offset[0];
 								src_p[1] = p[1] - offset[1];
 								red.setPos(p, vipCast<type>(src(src_p)));
 							}
-
 						}
 				}
 			}
 			else if (roi.rects()[0].dimCount() == 3) {
 				for (int r = 0; r < roi.size(); ++r) {
-					const VipNDRect<Dim> & rect = roi.rects()[r];
+					const VipNDRect<Dim>& rect = roi.rects()[r];
 					VipHybridVector<int, 3> p;
 					VipHybridVector<int, 3> src_p;
 					const int start0 = std::max(offset[0], rect.start(0));
@@ -218,7 +253,7 @@ namespace detail
 					const int start2 = std::max(offset[2], rect.start(2));
 					const int end2 = std::min(rect.end(2), src.shape()[2] + offset[2]);
 					for (p[0] = start0; p[0] < end0; ++p[0])
-						for (p[1] = start1; p[1]  < end1; ++p[1])
+						for (p[1] = start1; p[1] < end1; ++p[1])
 							for (p[2] = start2; p[2] < end2; ++p[2]) {
 								if (roi(p)) {
 									src_p[0] = p[0] - offset[0];
@@ -231,7 +266,7 @@ namespace detail
 			}
 			else {
 				for (int r = 0; r < roi.size(); ++r) {
-					const VipNDRect<Dim> & rect = roi.rects()[r];
+					const VipNDRect<Dim>& rect = roi.rects()[r];
 					CIteratorFMajorNoSkip<VipNDArrayShape> iter(rect.shape());
 					iter.pos = rect.start();
 					int size = rect.shapeSize();
@@ -239,7 +274,7 @@ namespace detail
 					pos.resize(offset.size());
 					for (int i = 0; i < size; ++i) {
 						if (roi(iter.pos)) {
-							if(src_offset.size() == 0)
+							if (src_offset.size() == 0)
 								red.setPos(iter.pos, vipCast<type>(src(iter.pos)));
 							else {
 								for (int j = 0; j < src_offset.size(); ++j)
@@ -255,18 +290,15 @@ namespace detail
 		}
 	};
 
-
-
-
 	template<class OverRoi>
-	struct Reduce<true, true,OverRoi>
+	struct Reduce<true, true, OverRoi>
 	{
 		template<class Reductor, class Src, class Offset = VipNDArrayShape>
-		static bool apply(Reductor & dst, const Src & src, const OverRoi & roi, const Offset & off = Offset())
+		static bool apply(Reductor& dst, const Src& src, const OverRoi& roi, const Offset& off = Offset())
 		{
 			typedef typename Reductor::value_type dtype;
 			static const bool valid = InternalCast<dtype, Src>::valid;
-			//src of unkown type
+			// src of unkown type
 			if (src.dataType() == QMetaType::Bool) {
 				return Reduce<false, valid, OverRoi>::apply(dst, InternalCast<bool, Src>::cast(src), roi, off);
 			}
@@ -326,11 +358,8 @@ namespace detail
 		}
 	};
 
-
-
-
-	///Base class for all reductors
-	template< class T>
+	/// Base class for all reductors
+	template<class T>
 	struct Reductor : BaseReductor
 	{
 		//! input value type
@@ -338,86 +367,91 @@ namespace detail
 		//! define the way input array is walked through. Depending on this value, setAt() or setPos() will be called.
 		static const int access_type = Vip::Flat | Vip::Position;
 		//! set a new value for given flat index
-		void setAt(int, const T &) {}
+		void setAt(int, const T&) {}
 		//! set a new value for given position
-		template<class ShapeType> void setPos(const ShapeType &, const T &) {}
+		template<class ShapeType>
+		void setPos(const ShapeType&, const T&)
+		{
+		}
 		//! finish the reduction algorithm, returns true on success, false otherwise.
 		bool finish() { return true; }
 	};
 
-	template< class T, class = void>
-	struct is_valid_reductor : std::false_type {};
+	template<class T, class = void>
+	struct is_valid_reductor : std::false_type
+	{
+	};
 
-	//template< class T>
-	//struct is_valid_reductor<T , std::void_t<decltype(T().setAt(0,typename T::value_type()))> > :std::true_type {};
+	// template< class T>
+	// struct is_valid_reductor<T , std::void_t<decltype(T().setAt(0,typename T::value_type()))> > :std::true_type {};
 
 }
 
-
-
 /// Apply given reduction algorithm (inheriting detail::BaseReductor) to \a src array or functor expression.
 /// Returns true on success, false otherwise.
-template< class Reductor, class Src, class OverRoi = VipInfinitRoi, class Offset = VipNDArrayShape>
-bool vipReduce(Reductor & red, const Src & src, const OverRoi & roi = OverRoi(), const Offset & off = VipNDArrayShape())
+template<class Reductor, class Src, class OverRoi = VipInfinitRoi, class Offset = VipNDArrayShape>
+bool vipReduce(Reductor& red, const Src& src, const OverRoi& roi = OverRoi(), const Offset& off = VipNDArrayShape())
 {
 	if (src.isEmpty())
 		return false;
-	bool res = detail::Reduce<
-		detail::HasNullType<Src>::value,
-		detail::InternalCast<typename Reductor::value_type,Src>::valid,
-		OverRoi >::apply(red,// detail::InternalCast<typename Reductor::value_type, Src>::cast(src)
-src, roi, off);
+	bool res = detail::Reduce<detail::HasNullType<Src>::value,
+				  detail::InternalCast<typename Reductor::value_type, Src>::valid,
+				  OverRoi>::apply(red, // detail::InternalCast<typename Reductor::value_type, Src>::cast(src)
+						  src,
+						  roi,
+						  off);
 	if (res)
 		return red.finish();
 	return res;
 }
 
-
-
-
-
 namespace Vip
 {
 	/// Array statistic values extracted with #VipArrayStats
-	enum ArrayStats {
-		Min = 0x001, //! minimum element
-		Max = 0x002, //! maximum element
-		MinPos = 0x004, //! minimum element position
-		MaxPos = 0x008, //! maximum element position
-		Mean = 0x01, //! aaverage value
-		Sum = 0x02, //! cumulative sum
+	enum ArrayStats
+	{
+		Min = 0x001,	 //! minimum element
+		Max = 0x002,	 //! maximum element
+		MinPos = 0x004,	 //! minimum element position
+		MaxPos = 0x008,	 //! maximum element position
+		Mean = 0x01,	 //! aaverage value
+		Sum = 0x02,	 //! cumulative sum
 		Multiply = 0x04, //! cumulative multiplication
-		Std = 0x08, //! standard deviation
+		Std = 0x08,	 //! standard deviation
 		AllStats = Min | Max | MinPos | MaxPos | Mean | Sum | Multiply | Std
 	};
 }
 
-
 namespace detail
 {
-	template< class T, class =void>
+	template<class T, class = void>
 	struct ComputeMinMaxStd
 	{
-		static bool min(T & , const T & ) { return false; }
-		static bool max(T & , const T & ) { return false; }
-		static void std(T & , T & , const T & , const T & , int ) {}
+		static bool min(T&, const T&) { return false; }
+		static bool max(T&, const T&) { return false; }
+		static void std(T&, T&, const T&, const T&, int) {}
 	};
-	template< class T>
-	struct ComputeMinMaxStd<T, typename std::enable_if<has_lesser_operator<T,T>::value ,void>::type >
+	template<class T>
+	struct ComputeMinMaxStd<T, typename std::enable_if<has_lesser_operator<T, T>::value, void>::type>
 	{
-		static bool min(T & min, const T & val) {
+		static bool min(T& min, const T& val)
+		{
 			if (val < min) {
-				min = val; return true;
+				min = val;
+				return true;
 			}
 			return false;
 		}
-		static bool max(T & max, const T & val) {
+		static bool max(T& max, const T& val)
+		{
 			if (val > max) {
-				max = val; return true;
+				max = val;
+				return true;
 			}
 			return false;
 		}
-		static void std(T & std, T & var, const T & sum2, const T & mean, int count) {
+		static void std(T& std, T& var, const T& sum2, const T& mean, int count)
+		{
 			if (count > 1) {
 				var = (sum2 - count * mean * mean) / (count - 1);
 				std = std::sqrt(var);
@@ -435,16 +469,30 @@ class VipArrayStats : public detail::Reductor<T>
 {
 	bool first;
 	T sum2;
+
 public:
-	typedef decltype(T()*T()) value_type;
+	typedef decltype(T() * T()) value_type;
 	int count;
 	T min, max, mean, sum, multiply, std, var;
 	VipNDArrayShape minPos, maxPos;
 
-	VipArrayStats() :first(true), sum2(0),count(0), min(0), max(0),mean(0), sum(0), multiply(0), std(0), var(0) {}
+	VipArrayStats()
+	  : first(true)
+	  , sum2(0)
+	  , count(0)
+	  , min(0)
+	  , max(0)
+	  , mean(0)
+	  , sum(0)
+	  , multiply(0)
+	  , std(0)
+	  , var(0)
+	{
+	}
 	static const int access_type = (Vip::Position | (((Stats & Vip::MinPos) | (Stats & Vip::MaxPos)) ? 0 : Vip::Flat));
 
-	void setAt(int , const T & value) {
+	void setAt(int, const T& value)
+	{
 		if (vipIsNan(value))
 			return;
 		++count;
@@ -454,11 +502,11 @@ public:
 			first = false;
 		}
 		if (Stats & Vip::Min) {
-			//if (value < min) min = value;
+			// if (value < min) min = value;
 			detail::ComputeMinMaxStd<T>::min(min, value);
 		}
 		if (Stats & Vip::Max) {
-			//if (value > max) max = value;
+			// if (value > max) max = value;
 			detail::ComputeMinMaxStd<T>::max(max, value);
 		}
 		if (Stats & Vip::Multiply) {
@@ -467,10 +515,12 @@ public:
 		if (Stats & Vip::Mean || Stats & Vip::Sum || Stats & Vip::Std) {
 			sum += value;
 			if (Stats & Vip::Std)
-				sum2 += value*value;
+				sum2 += value * value;
 		}
 	}
-	template<class ShapeType> void setPos(const ShapeType & pos, const T & value) {
+	template<class ShapeType>
+	void setPos(const ShapeType& pos, const T& value)
+	{
 		if (vipIsNan(value))
 			return;
 		++count;
@@ -481,12 +531,14 @@ public:
 			first = false;
 		}
 		if (Stats & Vip::Min) {
-			if(detail::ComputeMinMaxStd<T>::min(min, value))
-				if (Stats & Vip::MinPos) minPos = pos;
+			if (detail::ComputeMinMaxStd<T>::min(min, value))
+				if (Stats & Vip::MinPos)
+					minPos = pos;
 		}
 		if (Stats & Vip::Max) {
 			if (detail::ComputeMinMaxStd<T>::max(max, value))
-				if (Stats & Vip::MaxPos) maxPos = pos;
+				if (Stats & Vip::MaxPos)
+					maxPos = pos;
 		}
 		if (Stats & Vip::Multiply) {
 			multiply *= value;
@@ -494,12 +546,14 @@ public:
 		if (Stats & Vip::Mean || Stats & Vip::Sum || Stats & Vip::Std) {
 			sum += value;
 			if (Stats & Vip::Std)
-				sum2 += value*value;
+				sum2 += value * value;
 		}
 	}
-	bool finish() {
+	bool finish()
+	{
 		if ((Stats & Vip::Mean) || Stats & Vip::Std) {
-			if (!count) return false;
+			if (!count)
+				return false;
 			mean = sum / (double)count;
 			if (Stats & Vip::Std) {
 				detail::ComputeMinMaxStd<T>::std(std, var, sum2, mean, count);
@@ -513,25 +567,29 @@ public:
 #include <type_traits>
 #include <utility>
 
-
 namespace detail
 {
 	template<class T>
 	using try_assign = decltype(typename T::value_type());
 
 	template<class T, template<class> class Op, class = void>
-	struct is_valid : std::false_type { };
+	struct is_valid : std::false_type
+	{
+	};
 
 	template<class T, template<class> class Op>
-	struct is_valid<T, Op, std::void_t<Op<T> > > : std::true_type { };
+	struct is_valid<T, Op, std::void_t<Op<T>>> : std::true_type
+	{
+	};
 
 	template<class T>
 	using is_copy_assignable = is_valid<T, try_assign>;
 
 	template<class T, int Stats>
-	struct is_valid_reductor<VipArrayStats<T, Stats>, std::void_t<decltype(T()+T())> > :std::true_type {};
+	struct is_valid_reductor<VipArrayStats<T, Stats>, std::void_t<decltype(T() + T())>> : std::true_type
+	{
+	};
 }
-
 
 /// Extracts the array or functor expression statistics and returns them as a VipArrayStats object.
 ///
@@ -540,41 +598,49 @@ namespace detail
 /// to avoid overflow.
 ///
 /// It is also advised to use floating point type when computing the mean value or the standard deviation.
-template<class T , int Stats = Vip::AllStats, class Src, class OverRoi = VipInfinitRoi, class Offset = VipNDArrayShape>
-VipArrayStats<T, Stats> vipArrayStats(const Src & src, const OverRoi & roi= OverRoi(), const Offset & off = VipNDArrayShape())
+template<class T, int Stats = Vip::AllStats, class Src, class OverRoi = VipInfinitRoi, class Offset = VipNDArrayShape>
+VipArrayStats<T, Stats> vipArrayStats(const Src& src, const OverRoi& roi = OverRoi(), const Offset& off = VipNDArrayShape())
 {
 	VipArrayStats<T, Stats> stats;
-	if (!vipReduce(stats, src,roi, off))
+	if (!vipReduce(stats, src, roi, off))
 		stats = VipArrayStats<T, Stats>();
 	return stats;
 }
 /// Returns the minimum value of input array or functor expression
 template<class T, class Src, class OverRoi = VipInfinitRoi, class Offset = VipNDArrayShape>
-T vipArrayMin(const Src & src, const OverRoi & roi = OverRoi(), const Offset & off = VipNDArrayShape()) {
+T vipArrayMin(const Src& src, const OverRoi& roi = OverRoi(), const Offset& off = VipNDArrayShape())
+{
 	return vipArrayStats<T, Vip::Min>(src, roi, off).min;
 }
 /// Returns the maximum value of input array or functor expression
 template<class T, class Src, class OverRoi = VipInfinitRoi, class Offset = VipNDArrayShape>
-T vipArrayMax(const Src & src, const OverRoi & roi = OverRoi(), const Offset & off = VipNDArrayShape()) {
+T vipArrayMax(const Src& src, const OverRoi& roi = OverRoi(), const Offset& off = VipNDArrayShape())
+{
 	return vipArrayStats<T, Vip::Max>(src, roi, off).max;
 }
 /// Returns the cumulative sum of input array or functor expression
 template<class T, class Src, class OverRoi = VipInfinitRoi, class Offset = VipNDArrayShape>
-T vipArrayCumSum(const Src & src, const OverRoi & roi = OverRoi(), const Offset & off = VipNDArrayShape()) {
+T vipArrayCumSum(const Src& src, const OverRoi& roi = OverRoi(), const Offset& off = VipNDArrayShape())
+{
 	return vipArrayStats<T, Vip::Sum>(src, roi, off).sum;
 }
 /// Returns the cumulative multiplication of input array or functor expression
 template<class T, class Src, class OverRoi = VipInfinitRoi, class Offset = VipNDArrayShape>
-T vipArrayCumMultiply(const Src & src, const OverRoi & roi = OverRoi(), const Offset & off = VipNDArrayShape()) {
+T vipArrayCumMultiply(const Src& src, const OverRoi& roi = OverRoi(), const Offset& off = VipNDArrayShape())
+{
 	return vipArrayStats<T, Vip::Multiply>(src, roi, off).multiply;
 }
 /// Returns the mean value of input array or functor expression
 template<class T, class Src, class OverRoi = VipInfinitRoi, class Offset = VipNDArrayShape>
-T vipArrayMean(const Src & src, const OverRoi & roi = OverRoi(), const Offset & off = VipNDArrayShape()) {
+T vipArrayMean(const Src& src, const OverRoi& roi = OverRoi(), const Offset& off = VipNDArrayShape())
+{
 	return vipArrayStats<T, Vip::Mean>(src, roi, off).mean;
 }
 /// Returns the standard deviation of input array or functor expression
 template<class T, class Src, class OverRoi = VipInfinitRoi, class Offset = VipNDArrayShape>
-T vipArrayStd(const Src & src, const OverRoi & roi = OverRoi(), const Offset & off = VipNDArrayShape()) {
-	return vipArrayStats<T, Vip::Std>(src,roi,off).std;
+T vipArrayStd(const Src& src, const OverRoi& roi = OverRoi(), const Offset& off = VipNDArrayShape())
+{
+	return vipArrayStats<T, Vip::Std>(src, roi, off).std;
 }
+
+#endif

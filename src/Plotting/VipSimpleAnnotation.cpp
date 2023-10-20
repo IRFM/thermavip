@@ -1,27 +1,54 @@
+/**
+ * BSD 3-Clause License
+ *
+ * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice, this
+ *    list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of the copyright holder nor the names of its
+ *    contributors may be used to endorse or promote products derived from
+ *    this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
 #include "VipSimpleAnnotation.h"
 #include "VipAbstractScale.h"
-#include "VipQuiver.h"
-#include "VipSymbol.h"
 #include "VipPainter.h"
+#include "VipQuiver.h"
 #include "VipShapeDevice.h"
+#include "VipSymbol.h"
 
-
-
-void VipAnnotation::setParentShape(VipPlotShape * sh)
+void VipAnnotation::setParentShape(VipPlotShape* sh)
 {
 	m_shape = sh;
 }
-VipPlotShape * VipAnnotation::parentShape() const
+VipPlotShape* VipAnnotation::parentShape() const
 {
 	return m_shape;
 }
 
-
-
 namespace detail
 {
 	static QMap<QString, annot_func> _annotations;
-	void registerAnnotationFunction(const char * name, annot_func fun)
+	void registerAnnotationFunction(const char* name, annot_func fun)
 	{
 		if (_annotations.isEmpty())
 			_annotations["VipSimpleAnnotation"] = createAnnotation<VipSimpleAnnotation>;
@@ -29,7 +56,7 @@ namespace detail
 	}
 }
 
-VipAnnotation * vipCreateAnnotation(const char * name)
+VipAnnotation* vipCreateAnnotation(const char* name)
 {
 	if (detail::_annotations.isEmpty())
 		detail::_annotations["VipSimpleAnnotation"] = detail::createAnnotation<VipSimpleAnnotation>;
@@ -38,11 +65,12 @@ VipAnnotation * vipCreateAnnotation(const char * name)
 		return nullptr;
 	return it.value()();
 }
-QStringList vipAnnotations() {
+QStringList vipAnnotations()
+{
 	return detail::_annotations.keys();
 }
 
-QByteArray vipSaveAnnotation(const VipAnnotation * annot)
+QByteArray vipSaveAnnotation(const VipAnnotation* annot)
 {
 	QByteArray ar;
 	QDataStream str(&ar, QIODevice::WriteOnly);
@@ -54,7 +82,7 @@ QByteArray vipSaveAnnotation(const VipAnnotation * annot)
 	return ar;
 }
 
-VipAnnotation * vipLoadAnnotation(const QByteArray & ar)
+VipAnnotation* vipLoadAnnotation(const QByteArray& ar)
 {
 	QDataStream str(ar);
 	str.setByteOrder(QDataStream::LittleEndian);
@@ -65,7 +93,7 @@ VipAnnotation * vipLoadAnnotation(const QByteArray & ar)
 		return nullptr;
 	QByteArray name(len, 0);
 	str.readRawData(name.data(), len);
-	VipAnnotation * annot = vipCreateAnnotation(name.data());
+	VipAnnotation* annot = vipCreateAnnotation(name.data());
 	if (!annot)
 		return nullptr;
 
@@ -77,24 +105,24 @@ VipAnnotation * vipLoadAnnotation(const QByteArray & ar)
 	return annot;
 }
 
-
-
-
-
 class VipSimpleAnnotation::PrivateData
 {
 public:
-	VipQuiverPath quiver; //for arrow only
-	double text_distance; //for all, distance to the region
-	VipText text; //for all
-	Qt::Alignment text_alignment; //for all
-	VipSymbol symbol; //for arrow only, pen and brush for all
-	int end_style; //for arrow only
+	VipQuiverPath quiver;	      // for arrow only
+	double text_distance;	      // for all, distance to the region
+	VipText text;		      // for all
+	Qt::Alignment text_alignment; // for all
+	VipSymbol symbol;	      // for arrow only, pen and brush for all
+	int end_style;		      // for arrow only
 	double endSize;
-	Vip::RegionPositions text_position; //for rect and ellipse only
+	Vip::RegionPositions text_position; // for rect and ellipse only
 
 	PrivateData()
-		:text_distance(0), text_alignment(Qt::AlignTop | Qt::AlignCenter), end_style(-1), endSize(7), text_position(Vip::XInside | Vip::YInside)
+	  : text_distance(0)
+	  , text_alignment(Qt::AlignTop | Qt::AlignCenter)
+	  , end_style(-1)
+	  , endSize(7)
+	  , text_position(Vip::XInside | Vip::YInside)
 	{
 		symbol.setBrush(QBrush());
 		quiver.setExtremityBrush(VipQuiverPath::End, QBrush());
@@ -105,7 +133,6 @@ public:
 	}
 };
 
-
 VipSimpleAnnotation::VipSimpleAnnotation()
 {
 	m_data = new PrivateData();
@@ -115,23 +142,23 @@ VipSimpleAnnotation::~VipSimpleAnnotation()
 	delete m_data;
 }
 
-void VipSimpleAnnotation::setPen(const QPen & p)
+void VipSimpleAnnotation::setPen(const QPen& p)
 {
-	m_data->symbol.setPen( p);
+	m_data->symbol.setPen(p);
 	m_data->quiver.setPen(p);
 	m_data->quiver.setExtremityPen(VipQuiverPath::End, p);
 }
-const QPen & VipSimpleAnnotation::pen() const
+const QPen& VipSimpleAnnotation::pen() const
 {
 	return m_data->symbol.pen();
 }
 
 void VipSimpleAnnotation::setBrush(const QBrush& b)
 {
-	m_data->symbol.setBrush( b);
+	m_data->symbol.setBrush(b);
 	m_data->quiver.setExtremityBrush(VipQuiverPath::End, b);
 }
-const QBrush & VipSimpleAnnotation::brush() const
+const QBrush& VipSimpleAnnotation::brush() const
 {
 	return m_data->symbol.brush();
 }
@@ -145,26 +172,26 @@ int VipSimpleAnnotation::endStyle() const
 	return m_data->end_style;
 }
 
-void  VipSimpleAnnotation::setEndSize(double s)
+void VipSimpleAnnotation::setEndSize(double s)
 {
 	m_data->endSize = s;
 	m_data->symbol.setSize(QSizeF(s, s));
 	m_data->quiver.setLength(VipQuiverPath::End, s);
 }
-double  VipSimpleAnnotation::endSize() const
+double VipSimpleAnnotation::endSize() const
 {
 	return m_data->endSize;
 }
 
-void VipSimpleAnnotation::setText(const QString & t)
+void VipSimpleAnnotation::setText(const QString& t)
 {
 	m_data->text.setText(t);
 }
-const VipText & VipSimpleAnnotation::text() const
+const VipText& VipSimpleAnnotation::text() const
 {
 	return m_data->text;
 }
-VipText & VipSimpleAnnotation::text()
+VipText& VipSimpleAnnotation::text()
 {
 	return m_data->text;
 }
@@ -205,7 +232,7 @@ Vip::RegionPositions VipSimpleAnnotation::textPosition() const
 	return m_data->text_position;
 }
 
-QPainterPath VipSimpleAnnotation::shape(const VipShape & sh, const VipCoordinateSystemPtr & m) const
+QPainterPath VipSimpleAnnotation::shape(const VipShape& sh, const VipCoordinateSystemPtr& m) const
 {
 	VipShapeDevice dev;
 	QPainterPath res;
@@ -217,11 +244,11 @@ QPainterPath VipSimpleAnnotation::shape(const VipShape & sh, const VipCoordinate
 	return res;
 }
 
-void VipSimpleAnnotation::save(QDataStream & stream) const
+void VipSimpleAnnotation::save(QDataStream& stream) const
 {
-	stream << pen() << brush() << endStyle() << endSize()<< text() << textDistance() << arrowAngle() << (int)textAlignment() << (int)textPosition();
+	stream << pen() << brush() << endStyle() << endSize() << text() << textDistance() << arrowAngle() << (int)textAlignment() << (int)textPosition();
 }
-bool VipSimpleAnnotation::load(QDataStream & stream)
+bool VipSimpleAnnotation::load(QDataStream& stream)
 {
 	QPen p;
 	QBrush b;
@@ -232,7 +259,7 @@ bool VipSimpleAnnotation::load(QDataStream & stream)
 	double a;
 	int ta;
 	int tp;
-	stream >> p >> b >> es >>esi>> t >>td>> a >> ta >> tp;
+	stream >> p >> b >> es >> esi >> t >> td >> a >> ta >> tp;
 	if (stream.status() != QDataStream::Ok)
 		return false;
 	if (tp < 0 || tp > Vip::Automatic)
@@ -243,7 +270,7 @@ bool VipSimpleAnnotation::load(QDataStream & stream)
 	setBrush(b);
 	setEndStyle(es);
 	setEndSize(esi);
-	text() =(t);
+	text() = (t);
 	setTextDistance(td);
 	setArrowAngle(a);
 	setTextAlignment((Qt::Alignment)ta);
@@ -251,7 +278,7 @@ bool VipSimpleAnnotation::load(QDataStream & stream)
 	return true;
 }
 
-void VipSimpleAnnotation::draw(const VipShape & sh, QPainter * painter, const VipCoordinateSystemPtr & m) const
+void VipSimpleAnnotation::draw(const VipShape& sh, QPainter* painter, const VipCoordinateSystemPtr& m) const
 {
 	painter->setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing);
 
@@ -263,21 +290,20 @@ void VipSimpleAnnotation::draw(const VipShape & sh, QPainter * painter, const Vi
 		drawShape(sh, painter, m);
 }
 
-
-void VipSimpleAnnotation::drawShape(const VipShape & sh, QPainter * painter, const VipCoordinateSystemPtr & m) const
+void VipSimpleAnnotation::drawShape(const VipShape& sh, QPainter* painter, const VipCoordinateSystemPtr& m) const
 {
-	//draw the path
+	// draw the path
 	QPainterPath path = m->transform(sh.shape());
 	painter->setPen(pen());
 	painter->setBrush(brush());
 	VipPainter::drawPath(painter, path);
 
-	//draw the text
+	// draw the text
 	QRectF brect = path.boundingRect();
 	QRectF trect = text().textRect();
 	QPointF text_pos;
 
-	//set X position
+	// set X position
 	if (textPosition() & Vip::XInside) {
 		if (textAlignment() & Qt::AlignLeft)
 			text_pos.setX(textDistance() + brect.left());
@@ -293,7 +319,7 @@ void VipSimpleAnnotation::drawShape(const VipShape & sh, QPainter * painter, con
 			text_pos.setX(brect.right() + textDistance());
 	}
 
-	//set Y position
+	// set Y position
 	if (textPosition() & Vip::YInside) {
 		if (textAlignment() & Qt::AlignTop)
 			text_pos.setY(textDistance() + brect.top());
@@ -309,16 +335,15 @@ void VipSimpleAnnotation::drawShape(const VipShape & sh, QPainter * painter, con
 			text_pos.setY(brect.bottom() + textDistance());
 	}
 
-
 	text().draw(painter, text_pos);
 }
 
-void VipSimpleAnnotation::drawArrow(const VipShape & sh, QPainter * painter, const VipCoordinateSystemPtr & m) const
+void VipSimpleAnnotation::drawArrow(const VipShape& sh, QPainter* painter, const VipCoordinateSystemPtr& m) const
 {
 	QPolygonF polyline = m->transform(sh.polyline());
 
 	if (polyline.size()) {
-		//draw the polyline
+		// draw the polyline
 		if (m_data->end_style == Arrow) {
 			m_data->quiver.setStyle(VipQuiverPath::EndArrow);
 			m_data->quiver.draw(painter, polyline);
@@ -328,11 +353,11 @@ void VipSimpleAnnotation::drawArrow(const VipShape & sh, QPainter * painter, con
 
 			QPointF last = polyline.last();
 
-			//clip polyline to symbol shape
+			// clip polyline to symbol shape
 			if (endStyle() > 0 && endStyle() < Arrow) {
 				QPainterPath p;
 				const QPolygonF saved = polyline;
-				p.addPolygon(polyline << (polyline.first()+QPointF(1,1)));
+				p.addPolygon(polyline << (polyline.first() + QPointF(1, 1)));
 				m_data->symbol.setStyle(VipSymbol::Style(endStyle()));
 				QPainterPath s = m_data->symbol.shape(last);
 				p = p.subtracted(s);
@@ -345,14 +370,14 @@ void VipSimpleAnnotation::drawArrow(const VipShape & sh, QPainter * painter, con
 
 			VipPainter::drawPolyline(painter, polyline);
 
-			//draw the symbol
+			// draw the symbol
 			if (endStyle() >= 0 && endStyle() < Arrow) {
 				m_data->symbol.setStyle(VipSymbol::Style(endStyle()));
 				m_data->symbol.drawSymbol(painter, last);
 			}
 		}
 
-		//draw the text
+		// draw the text
 		QRectF trect = text().textRect();
 		QPointF center = polyline.first();
 		QPointF text_pos;
@@ -373,16 +398,16 @@ void VipSimpleAnnotation::drawArrow(const VipShape & sh, QPainter * painter, con
 	}
 }
 
-void VipSimpleAnnotation::drawPoint(const VipShape & sh, QPainter * painter, const VipCoordinateSystemPtr & m) const
+void VipSimpleAnnotation::drawPoint(const VipShape& sh, QPainter* painter, const VipCoordinateSystemPtr& m) const
 {
 
 	QPointF pos = m->transform(sh.point());
-	//draw the symbol
+	// draw the symbol
 	if (endStyle() >= 0 && endStyle() < Arrow) {
 		m_data->symbol.setStyle(VipSymbol::Style(endStyle()));
 		m_data->symbol.drawSymbol(painter, pos);
 	}
-	//draw the text
+	// draw the text
 	QRectF trect = text().textRect();
 	QPointF center = pos;
 	QPointF text_pos;
@@ -402,11 +427,10 @@ void VipSimpleAnnotation::drawPoint(const VipShape & sh, QPainter * painter, con
 	text().draw(painter, text_pos);
 }
 
-
-
 #include "VipStyleSheet.h"
 
-static EnumOrParser & parseAlignment() {
+static EnumOrParser& parseAlignment()
+{
 	static QMap<QByteArray, int> values;
 	static QSharedPointer<EnumOrParser> parser;
 	if (values.isEmpty()) {
@@ -421,7 +445,8 @@ static EnumOrParser & parseAlignment() {
 	}
 	return *parser;
 }
-static EnumOrParser & parsePosition() {
+static EnumOrParser& parsePosition()
+{
 	static QMap<QByteArray, int> values;
 	static QSharedPointer<EnumOrParser> parser;
 	if (values.isEmpty()) {
@@ -433,7 +458,8 @@ static EnumOrParser & parsePosition() {
 	}
 	return *parser;
 }
-static EnumParser & parseSymbol() {
+static EnumParser& parseSymbol()
+{
 	static QMap<QByteArray, int> values;
 	static QSharedPointer<EnumParser> parser;
 	if (values.isEmpty()) {
@@ -458,23 +484,22 @@ static EnumParser & parseSymbol() {
 	return *parser;
 }
 
-QPair<VipShape,VipSimpleAnnotation*> vipAnnotation(const QString & type, const QString & text,
-	const QPointF & start, const QPointF & end , const QVariantMap & attributes , QString * error )
+QPair<VipShape, VipSimpleAnnotation*> vipAnnotation(const QString& type, const QString& text, const QPointF& start, const QPointF& end, const QVariantMap& attributes, QString* error)
 {
-	VipSimpleAnnotation * a = new VipSimpleAnnotation();
+	VipSimpleAnnotation* a = new VipSimpleAnnotation();
 	VipShape shape;
 
-	//set the default parameters
+	// set the default parameters
 	a->setPen(QColor(Qt::red));
 	a->setBrush(QBrush());
 	a->setEndStyle(VipSimpleAnnotation::Ellipse);
 	a->setEndSize(9);
 	a->setText(text);
-	//a->text().setTextPen(vipWidgetTextBrush(pl).color());
+	// a->text().setTextPen(vipWidgetTextBrush(pl).color());
 	a->text().boxStyle().setDrawLines(Vip::NoSide);
 	a->setTextAlignment(Qt::AlignTop | Qt::AlignHCenter);
 
-	//parse annotation type
+	// parse annotation type
 	if (type == "line") {
 		if (end == QPointF()) {
 			shape.setPoint(start);
@@ -493,7 +518,7 @@ QPair<VipShape,VipSimpleAnnotation*> vipAnnotation(const QString & type, const Q
 		a->setTextAlignment(Qt::AlignTop | Qt::AlignHCenter);
 	}
 	else if (type == "rectangle" || type == "ellipse") {
-		if(type == "rectangle")
+		if (type == "rectangle")
 			shape.setRect(QRectF(start, end).normalized());
 		else {
 			QPainterPath p;
@@ -516,35 +541,39 @@ QPair<VipShape,VipSimpleAnnotation*> vipAnnotation(const QString & type, const Q
 		return QPair<VipShape, VipSimpleAnnotation*>(VipShape(), nullptr);
 	}
 
-	//parse attributes
-	// - "textcolor" : annotation text pen given as a QPen, QColor or a QString (uses #PenParser from stylesheet mechanism)
-	// - "textbackground" : annotation text background color given as a QColor or QString
-	// - "textborder" : annotation text outline (border box pen)
-	// - "textradius" : annotation text border radius of the border box
-	// - "textsize" : size in points of the text font
-	// - "bold" : use bold font for the text
-	// - "italic" : use italic font for the text
-	// - "fontfamilly": font familly for the text
-	// - "border" : shape pen
-	// - "background" : shape brush
-	// - "distance" : distance between the annotation text and the shape
-	// - "alignment" : annotation text alignment around the shape (combination of 'left', 'right', 'top', 'bottom', 'hcenter', vcenter', 'center')
-	// - "position" : text position around the shape (combination of 'xinside', 'yinside', 'inside', 'outside')
-	// - "symbol" : for 'line' only, symbol for the end point (one of 'none', 'ellipse', 'rect', 'diamond', 'triangle', 'dtriangle', 'utriangle', 'ltriangle', 'rtriangle', 'cross', 'xcross', 'hline', 'vline', 'star1', 'star2', 'hexagon')
-	// - "symbolsize" : for 'line' and 'arrow', symbol size for the end point
+	// parse attributes
+	//  - "textcolor" : annotation text pen given as a QPen, QColor or a QString (uses #PenParser from stylesheet mechanism)
+	//  - "textbackground" : annotation text background color given as a QColor or QString
+	//  - "textborder" : annotation text outline (border box pen)
+	//  - "textradius" : annotation text border radius of the border box
+	//  - "textsize" : size in points of the text font
+	//  - "bold" : use bold font for the text
+	//  - "italic" : use italic font for the text
+	//  - "fontfamilly": font familly for the text
+	//  - "border" : shape pen
+	//  - "background" : shape brush
+	//  - "distance" : distance between the annotation text and the shape
+	//  - "alignment" : annotation text alignment around the shape (combination of 'left', 'right', 'top', 'bottom', 'hcenter', vcenter', 'center')
+	//  - "position" : text position around the shape (combination of 'xinside', 'yinside', 'inside', 'outside')
+	//  - "symbol" : for 'line' only, symbol for the end point (one of 'none', 'ellipse', 'rect', 'diamond', 'triangle', 'dtriangle', 'utriangle', 'ltriangle', 'rtriangle', 'cross', 'xcross',
+	//  'hline', 'vline', 'star1', 'star2', 'hexagon')
+	//  - "symbolsize" : for 'line' and 'arrow', symbol size for the end point
 	{
 		QVariantMap::const_iterator it = attributes.find("textcolor");
 		if (it != attributes.end()) {
 			QVariant v = it.value();
-			if (v.userType() == qMetaTypeId<QPen>()) a->text().setTextPen(v.value<QPen>());
-			else if (v.userType() == qMetaTypeId<QColor>()) a->text().textPen().setColor(v.value<QColor>());
+			if (v.userType() == qMetaTypeId<QPen>())
+				a->text().setTextPen(v.value<QPen>());
+			else if (v.userType() == qMetaTypeId<QColor>())
+				a->text().textPen().setColor(v.value<QColor>());
 			else {
 				QByteArray val = v.toByteArray();
 				PenParser p;
 				v = p.parse(val);
 				if (v.userType() == 0) {
 					delete a;
-					if (error) *error = "wrong 'textcolor' attribute: " + val;
+					if (error)
+						*error = "wrong 'textcolor' attribute: " + val;
 					return QPair<VipShape, VipSimpleAnnotation*>(VipShape(), nullptr);
 				}
 				a->text().setTextPen(v.value<QPen>());
@@ -555,14 +584,16 @@ QPair<VipShape,VipSimpleAnnotation*> vipAnnotation(const QString & type, const Q
 		QVariantMap::const_iterator it = attributes.find("textbackground");
 		if (it != attributes.end()) {
 			QVariant v = it.value();
-			if (v.userType() == qMetaTypeId<QColor>()) a->text().setBackgroundBrush(QBrush(v.value<QColor>()));
+			if (v.userType() == qMetaTypeId<QColor>())
+				a->text().setBackgroundBrush(QBrush(v.value<QColor>()));
 			else {
 				QByteArray val = v.toByteArray();
 				ColorParser p;
 				v = p.parse(val);
 				if (v.userType() == 0) {
 					delete a;
-					if (error) *error = "wrong 'textbackground' attribute: " + val;
+					if (error)
+						*error = "wrong 'textbackground' attribute: " + val;
 					return QPair<VipShape, VipSimpleAnnotation*>(VipShape(), nullptr);
 				}
 				a->text().setBackgroundBrush(QBrush(v.value<QColor>()));
@@ -577,7 +608,8 @@ QPair<VipShape,VipSimpleAnnotation*> vipAnnotation(const QString & type, const Q
 			double size = v.toDouble(&ok);
 			if (!ok) {
 				delete a;
-				if (error) *error = "wrong 'textsize' attribute: " + v.toString();
+				if (error)
+					*error = "wrong 'textsize' attribute: " + v.toString();
 				return QPair<VipShape, VipSimpleAnnotation*>(VipShape(), nullptr);
 			}
 			QFont f = a->text().font();
@@ -618,15 +650,18 @@ QPair<VipShape,VipSimpleAnnotation*> vipAnnotation(const QString & type, const Q
 		QVariantMap::const_iterator it = attributes.find("textborder");
 		if (it != attributes.end()) {
 			QVariant v = it.value();
-			if (v.userType() == qMetaTypeId<QPen>()) a->text().setBorderPen(v.value<QPen>());
-			else if (v.userType() == qMetaTypeId<QColor>()) a->text().setBorderPen(v.value<QColor>());
+			if (v.userType() == qMetaTypeId<QPen>())
+				a->text().setBorderPen(v.value<QPen>());
+			else if (v.userType() == qMetaTypeId<QColor>())
+				a->text().setBorderPen(v.value<QColor>());
 			else {
 				QByteArray val = v.toByteArray();
 				PenParser p;
 				v = p.parse(val);
 				if (v.userType() == 0) {
 					delete a;
-					if (error) *error = "wrong 'textborder' attribute: " + val;
+					if (error)
+						*error = "wrong 'textborder' attribute: " + val;
 					return QPair<VipShape, VipSimpleAnnotation*>(VipShape(), nullptr);
 				}
 				a->text().setBorderPen(v.value<QPen>());
@@ -642,7 +677,8 @@ QPair<VipShape,VipSimpleAnnotation*> vipAnnotation(const QString & type, const Q
 			double dist = v.toDouble(&ok);
 			if (!ok) {
 				delete a;
-				if (error) *error = "wrong 'textradius' attribute: " + v.toString();
+				if (error)
+					*error = "wrong 'textradius' attribute: " + v.toString();
 				return QPair<VipShape, VipSimpleAnnotation*>(VipShape(), nullptr);
 			}
 			a->text().boxStyle().setBorderRadius(dist);
@@ -652,15 +688,18 @@ QPair<VipShape,VipSimpleAnnotation*> vipAnnotation(const QString & type, const Q
 		QVariantMap::const_iterator it = attributes.find("border");
 		if (it != attributes.end()) {
 			QVariant v = it.value();
-			if (v.userType() == qMetaTypeId<QPen>()) a->setPen(v.value<QPen>());
-			else if (v.userType() == qMetaTypeId<QColor>()) a->setPen(QPen(v.value<QColor>()));
+			if (v.userType() == qMetaTypeId<QPen>())
+				a->setPen(v.value<QPen>());
+			else if (v.userType() == qMetaTypeId<QColor>())
+				a->setPen(QPen(v.value<QColor>()));
 			else {
 				QByteArray val = v.toByteArray();
 				PenParser p;
 				v = p.parse(val);
 				if (v.userType() == 0) {
 					delete a;
-					if (error) *error = "wrong 'border' attribute: " + val;
+					if (error)
+						*error = "wrong 'border' attribute: " + val;
 					return QPair<VipShape, VipSimpleAnnotation*>(VipShape(), nullptr);
 				}
 				a->setPen(v.value<QPen>());
@@ -671,14 +710,16 @@ QPair<VipShape,VipSimpleAnnotation*> vipAnnotation(const QString & type, const Q
 		QVariantMap::const_iterator it = attributes.find("background");
 		if (it != attributes.end()) {
 			QVariant v = it.value();
-			if (v.userType() == qMetaTypeId<QColor>()) a->setBrush(QBrush(v.value<QColor>()));
+			if (v.userType() == qMetaTypeId<QColor>())
+				a->setBrush(QBrush(v.value<QColor>()));
 			else {
 				QByteArray val = v.toByteArray();
 				ColorParser p;
 				v = p.parse(val);
 				if (v.userType() == 0) {
 					delete a;
-					if (error) *error = "wrong 'background' attribute: " + val;
+					if (error)
+						*error = "wrong 'background' attribute: " + val;
 					return QPair<VipShape, VipSimpleAnnotation*>(VipShape(), nullptr);
 				}
 				a->setBrush(QBrush(v.value<QColor>()));
@@ -693,7 +734,8 @@ QPair<VipShape,VipSimpleAnnotation*> vipAnnotation(const QString & type, const Q
 			double dist = v.toDouble(&ok);
 			if (!ok) {
 				delete a;
-				if (error) *error = "wrong 'distance' attribute: " + v.toString();
+				if (error)
+					*error = "wrong 'distance' attribute: " + v.toString();
 				return QPair<VipShape, VipSimpleAnnotation*>(VipShape(), nullptr);
 			}
 			a->setTextDistance(dist);
@@ -707,9 +749,10 @@ QPair<VipShape,VipSimpleAnnotation*> vipAnnotation(const QString & type, const Q
 			int align = v.toInt(&ok);
 			if (!ok)
 				align = parseAlignment().parse(v.toByteArray()).toInt(&ok);
-			if(!ok) {
+			if (!ok) {
 				delete a;
-				if (error) *error = "wrong 'alignment' attribute: " + v.toString();
+				if (error)
+					*error = "wrong 'alignment' attribute: " + v.toString();
 				return QPair<VipShape, VipSimpleAnnotation*>(VipShape(), nullptr);
 			}
 			a->setTextAlignment((Qt::Alignment)align);
@@ -725,7 +768,8 @@ QPair<VipShape,VipSimpleAnnotation*> vipAnnotation(const QString & type, const Q
 				pos = parsePosition().parse(v.toByteArray()).toInt(&ok);
 			if (!ok) {
 				delete a;
-				if (error) *error = "wrong 'position' attribute: " + v.toString();
+				if (error)
+					*error = "wrong 'position' attribute: " + v.toString();
 				return QPair<VipShape, VipSimpleAnnotation*>(VipShape(), nullptr);
 			}
 			a->setTextPosition((Vip::RegionPositions)pos);
@@ -741,7 +785,8 @@ QPair<VipShape,VipSimpleAnnotation*> vipAnnotation(const QString & type, const Q
 				sym = parseSymbol().parse(v.toByteArray()).toInt(&ok);
 			if (!ok) {
 				delete a;
-				if (error) *error = "wrong 'symbol' attribute: " + v.toString();
+				if (error)
+					*error = "wrong 'symbol' attribute: " + v.toString();
 				return QPair<VipShape, VipSimpleAnnotation*>(VipShape(), nullptr);
 			}
 			a->setEndStyle((VipSimpleAnnotation::EndStyle)sym);
@@ -755,12 +800,13 @@ QPair<VipShape,VipSimpleAnnotation*> vipAnnotation(const QString & type, const Q
 			double size = v.toDouble(&ok);
 			if (!ok) {
 				delete a;
-				if (error) *error = "wrong 'symbolsize' attribute: " + v.toString();
+				if (error)
+					*error = "wrong 'symbolsize' attribute: " + v.toString();
 				return QPair<VipShape, VipSimpleAnnotation*>(VipShape(), nullptr);
 			}
 			a->setEndSize(size);
 		}
 	}
 
-	return QPair<VipShape, VipSimpleAnnotation*>(shape,a);
+	return QPair<VipShape, VipSimpleAnnotation*>(shape, a);
 }

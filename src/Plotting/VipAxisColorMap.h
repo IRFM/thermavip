@@ -1,3 +1,34 @@
+/**
+ * BSD 3-Clause License
+ *
+ * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice, this
+ *    list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of the copyright holder nor the names of its
+ *    contributors may be used to endorse or promote products derived from
+ *    this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
 #ifndef VIP_AXIS_COLOR_MAP_H
 #define VIP_AXIS_COLOR_MAP_H
 
@@ -11,13 +42,13 @@ class VipColorMapGrip;
 
 /// A vertical or horizontal axis displaying an additional color map and 2 slider grips (that can be hidden).
 /// It is mostly used to display a color map for spectrograms (see VipPlotSpectrogram)
-/// 
+///
 /// VipAxisColorMap supports stylesheets and adds the following attributes:
 /// -	'color-bar-enabled': boolean value equivalent to VipAxisColorMap::setColorBarEnabled()
 /// -	'color-bar-width': floating point value equivalent to VipAxisColorMap::setColorBarWidth()
 /// -	'use-flat-histogram':  boolean value equivalent to VipAxisColorMap::setUseFlatHistogram()
 /// -	'flat-histogram-strength': integer point value equivalent to VipAxisColorMap::setFlatHistogramStrength()
-/// 
+///
 class VIP_PLOTTING_EXPORT VipAxisColorMap : public VipAxisBase
 {
 	Q_OBJECT
@@ -25,24 +56,23 @@ class VIP_PLOTTING_EXPORT VipAxisColorMap : public VipAxisBase
 	friend class VipPlotItem;
 
 public:
-
 	/// @brief Construct from the axis alignment
-	VipAxisColorMap(Alignment pos = Right, QGraphicsItem * parent = 0);
+	VipAxisColorMap(Alignment pos = Right, QGraphicsItem* parent = 0);
 	virtual ~VipAxisColorMap();
 
 	/// @brief Reset alignment
-	virtual void reset( Alignment );
+	virtual void reset(Alignment);
 
 	/// @brief Show/hide the color bar
-	void setColorBarEnabled( bool on );
+	void setColorBarEnabled(bool on);
 	bool isColorBarEnabled() const;
 
 	/// @brief Set the color bar width
-	void setColorBarWidth( double width );
+	void setColorBarWidth(double width);
 	double colorBarWidth() const;
 
 	/// @brief Set the color map interval on which the color bar is drawn
-	void setColorMapInterval(const VipInterval & interval);
+	void setColorMapInterval(const VipInterval& interval);
 	VipInterval colorMapInterval() const;
 
 	/// @brief Enable/disable histogram flattening for the color map
@@ -53,29 +83,29 @@ public:
 	int flatHistogramStrength() const;
 
 	/// @brief Set the color map and value interval, that are used for displaying the color bar.
-	void setColorMap(const VipInterval &interval, VipColorMap *colorMap );
-	void setColorMap(const VipInterval &interval, VipLinearColorMap::StandardColorMap map);
+	void setColorMap(const VipInterval& interval, VipColorMap* colorMap);
+	void setColorMap(const VipInterval& interval, VipLinearColorMap::StandardColorMap map);
 	void setColorMap(VipLinearColorMap::StandardColorMap map);
 	void setColorMap(VipColorMap* map);
 	/// @brief Returns the underlying VipColorMap object used to draw the color bar
-	VipColorMap *colorMap() const;
+	VipColorMap* colorMap() const;
 	/// @brief Returns the color bar rectangle in item's coordinate
 	QRectF colorBarRect() const;
 
 	/// @brief Set the grip interval
-	void setGripInterval(const VipInterval & interval);
+	void setGripInterval(const VipInterval& interval);
 	VipInterval gripInterval() const;
 
 	/// @brief Returns the first slider grip
-	VipColorMapGrip * grip1();
-	const VipColorMapGrip * grip1() const;
+	VipColorMapGrip* grip1();
+	const VipColorMapGrip* grip1() const;
 	/// @brief Returns the second slider grip
-	VipColorMapGrip * grip2();
-	const VipColorMapGrip * grip2() const;
+	VipColorMapGrip* grip2();
+	const VipColorMapGrip* grip2() const;
 
 	/// @brief Add a new slider grip
-	VipColorMapGrip * addGrip(VipColorMapGrip *);
-	VipColorMapGrip * addGrip(const QImage & img = QImage());
+	VipColorMapGrip* addGrip(VipColorMapGrip*);
+	VipColorMapGrip* addGrip(const QImage& img = QImage());
 	/// @brief Remove grip but do NOT delete it
 	void removeGrip(VipColorMapGrip*);
 	QList<VipColorMapGrip*> grips() const;
@@ -99,10 +129,10 @@ public:
 
 	void divideAxisScale(vip_double min, vip_double max, vip_double stepSize = 0.);
 
-	virtual void draw ( QPainter * painter, QWidget * widget = 0 ) ;
+	virtual void draw(QPainter* painter, QWidget* widget = 0);
 
-	virtual void startRender(VipRenderState & state);
-	virtual void endRender(VipRenderState & state);
+	virtual void startRender(VipRenderState& state);
+	virtual void endRender(VipRenderState& state);
 
 	virtual void computeScaleDiv();
 
@@ -120,9 +150,9 @@ Q_SIGNALS:
 protected:
 	virtual bool setItemProperty(const char* name, const QVariant& value, const QByteArray& index);
 
-	void drawColorBar( QPainter *painter, const QRectF& rect ) const;
+	void drawColorBar(QPainter* painter, const QRectF& rect) const;
 
-	virtual void itemGeometryChanged(const QRectF &);
+	virtual void itemGeometryChanged(const QRectF&);
 	virtual double additionalSpace() const;
 
 private Q_SLOTS:
@@ -131,14 +161,13 @@ private Q_SLOTS:
 	void gripValueChanged(double);
 
 private:
+	QRectF colorBarRect(const QRectF& rect) const;
 
-	QRectF colorBarRect( const QRectF& rect ) const;
-
-	void addItem(VipPlotItem *);
-	void removeItem(VipPlotItem *);
+	void addItem(VipPlotItem*);
+	void removeItem(VipPlotItem*);
 
 	class PrivateData;
-	PrivateData * d_data;
+	PrivateData* d_data;
 };
 
 VIP_REGISTER_QOBJECT_METATYPE(VipAxisColorMap*)
@@ -147,6 +176,6 @@ VIP_PLOTTING_EXPORT VipArchive& operator<<(VipArchive& arch, const VipAxisColorM
 VIP_PLOTTING_EXPORT VipArchive& operator>>(VipArchive& arch, VipAxisColorMap* value);
 
 /// @}
-//end Plotting
+// end Plotting
 
 #endif

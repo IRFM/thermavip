@@ -1,10 +1,41 @@
+/**
+ * BSD 3-Clause License
+ *
+ * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice, this
+ *    list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of the copyright holder nor the names of its
+ *    contributors may be used to endorse or promote products derived from
+ *    this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
 #include "VipPlotShape.h"
+#include "VipLock.h"
 #include "VipPainter.h"
 #include "VipResizeItem.h"
+#include "VipSet.h"
 #include "VipShapeDevice.h"
 #include "VipSimpleAnnotation.h"
-#include "VipLock.h"
-#include "VipSet.h"
 
 #include <QCursor>
 #include <QGraphicsSceneHoverEvent>
@@ -16,9 +47,9 @@
 #include <qapplication.h>
 #include <qthread.h>
 
+#include <atomic>
 #include <cmath>
 #include <limits>
-#include <atomic>
 // static QList<QPolygonF> editablePolygon(const QPainterPath & path)
 // {
 // QPainterPath pa = path.simplified();
@@ -311,12 +342,8 @@ public:
 	}
 };
 
-
-
-
-
-
-static const QMap<QByteArray, int>& drawComponentValues() {
+static const QMap<QByteArray, int>& drawComponentValues()
+{
 	static QMap<QByteArray, int> component;
 	if (component.isEmpty()) {
 
@@ -336,7 +363,6 @@ static int registerShapeKeyWords()
 	static VipKeyWords keywords;
 	if (keywords.isEmpty()) {
 
-		
 		keywords["components"] = VipParserPtr(new EnumOrParser(drawComponentValues()));
 		keywords["component"] = VipParserPtr(new BoolParser());
 		keywords["text-alignment"] = VipParserPtr(new EnumOrParser(VipStandardStyleSheet::alignmentEnum()));
@@ -351,11 +377,6 @@ static int registerShapeKeyWords()
 }
 
 static int _registerShapeKeyWords = registerShapeKeyWords();
-
-
-
-
-
 
 class VipPlotShape::PrivateData
 {
@@ -506,7 +527,6 @@ bool VipPlotShape::adjustTextColor() const
 	return d_data->adjustTextColor;
 }
 
-
 void VipPlotShape::setText(const VipText& text)
 {
 	d_data->text = text;
@@ -573,10 +593,10 @@ QString VipPlotShape::formatText(const QString& text, const QPointF& pos) const
 	while (index >= 0) {
 		QString full = res.mid(index, _reg.matchedLength());
 
-		 if (full.startsWith("#p")) {
+		if (full.startsWith("#p")) {
 			full.remove("#p");
 			auto it = attrs.find(full);
-			
+
 			if (it != attrs.end()) {
 				const QVariant var = it.value();
 				bool ok = false;
@@ -598,12 +618,12 @@ QString VipPlotShape::formatText(const QString& text, const QPointF& pos) const
 	return VipPlotItem::formatText(res, pos);
 }
 
-QString VipPlotShape::formatToolTip(const QPointF& pos) const 
+QString VipPlotShape::formatToolTip(const QPointF& pos) const
 {
 	return formatText(toolTipText(), pos);
 }
 
-bool VipPlotShape::areaOfInterest(const QPointF& pos, int , double , VipPointVector& out_pos, VipBoxStyle& style, int& legend) const
+bool VipPlotShape::areaOfInterest(const QPointF& pos, int, double, VipPointVector& out_pos, VipBoxStyle& style, int& legend) const
 {
 	QPainterPath sh = shape();
 	if (sh.contains(pos)) {
@@ -687,7 +707,7 @@ QPainterPath VipPlotShape::shape() const
 		return path | additional;
 	}
 	VIP_UNREACHABLE();
-	//return QPainterPath();
+	// return QPainterPath();
 }
 
 void VipPlotShape::setPolygonEditable(bool editable)
@@ -867,7 +887,7 @@ void VipPlotShape::draw(QPainter* painter, const VipCoordinateSystemPtr& m) cons
 		}
 	}
 	else {
-	
+
 		text = d_data->text;
 		text.setText(this->formatText(text.text(), QPointF()));
 	}
@@ -1081,8 +1101,7 @@ QVariant VipPlotShape::itemChange(GraphicsItemChange change, const QVariant& val
 	return VipPlotItemDataType::itemChange(change, value);
 }
 
-
-bool VipPlotShape::setItemProperty(const char* name, const QVariant& value, const QByteArray& index )
+bool VipPlotShape::setItemProperty(const char* name, const QVariant& value, const QByteArray& index)
 {
 	if (value.userType() == 0)
 		return false;
@@ -1121,13 +1140,6 @@ bool VipPlotShape::setItemProperty(const char* name, const QVariant& value, cons
 	return VipPlotItem::setItemProperty(name, value, index);
 }
 
-
-
-
-
-
-
-
 static int _registerVipPlotSceneModel = vipSetKeyWordsForClass(&VipPlotSceneModel::staticMetaObject);
 
 class VipPlotSceneModel::PrivateData
@@ -1136,7 +1148,7 @@ public:
 	QMap<QString, VipPlotShape::DrawComponents> components;
 	QMap<QString, Vip::RegionPositions> textPosition;
 	QMap<QString, Qt::Alignment> textAlignment;
-	QMap<QString, QSharedPointer<VipTextStyle> > textStyle;
+	QMap<QString, QSharedPointer<VipTextStyle>> textStyle;
 	QMap<QString, VipText> text;
 	QMap<QString, QPainter::RenderHints> shapesRenderHints;
 	QMap<QString, bool> adjustTextColor;
@@ -1409,7 +1421,8 @@ double VipPlotSceneModel::textDistance(const QString& group) const
 	return getValue(d_data->textDistance, group);
 }
 
-void VipPlotSceneModel::setTextStyle(const VipTextStyle& style) {
+void VipPlotSceneModel::setTextStyle(const VipTextStyle& style)
+{
 	setTextStyle(QString(), style);
 }
 
@@ -1429,7 +1442,7 @@ void VipPlotSceneModel::setTextStyle(const QString& group, const VipTextStyle& s
 
 VipTextStyle VipPlotSceneModel::textStyle(const QString& group) const
 {
-	auto ts =  getValue(d_data->textStyle, group);
+	auto ts = getValue(d_data->textStyle, group);
 	if (ts)
 		return *ts;
 	return VipTextStyle();
@@ -1468,10 +1481,10 @@ void VipPlotSceneModel::setToolTipText(const QString& group, const QString& text
 	}
 	updateShapes();
 }
-QString VipPlotSceneModel::toolTipText(const QString& group) {
+QString VipPlotSceneModel::toolTipText(const QString& group)
+{
 	return getValue(d_data->toolTipText, group);
 }
-
 
 void VipPlotSceneModel::setResizerPen(const QString& group, const QPen& pen)
 {
@@ -1486,7 +1499,6 @@ QPen VipPlotSceneModel::resizerPen(const QString& group) const
 {
 	return getValue(d_data->resizerPen, group);
 }
-
 
 void VipPlotSceneModel::setResizerBrush(const QString& group, const QBrush& brush)
 {
@@ -1550,7 +1562,7 @@ QBrush VipPlotSceneModel::brush() const
 	return brush(QString());
 }
 
-void VipPlotSceneModel::setIgnoreStyleSheet(bool enable) 
+void VipPlotSceneModel::setIgnoreStyleSheet(bool enable)
 {
 	VipPlotItemComposite::setIgnoreStyleSheet(enable);
 	QList<VipPlotShape*> shapes = shapeItems();
@@ -1591,7 +1603,7 @@ QList<VipPlotShape*> VipPlotSceneModel::shapeItems() const
 
 QList<VipPlotShape*> VipPlotSceneModel::shapes(int selection) const
 {
-	QList<VipPlotShape*> items = shapeItems(); 
+	QList<VipPlotShape*> items = shapeItems();
 	if (selection < 0 || selection > 1) {
 		QList<VipPlotShape*> res;
 		for (int i = 0; i < items.size(); ++i)
@@ -1608,10 +1620,10 @@ QList<VipPlotShape*> VipPlotSceneModel::shapes(int selection) const
 	}
 }
 
-void VipPlotSceneModel::resetSceneModelInternal() 
+void VipPlotSceneModel::resetSceneModelInternal()
 {
 	bool expect = false;
-	if (d_data->dirtySM.compare_exchange_strong(expect,true)) {
+	if (d_data->dirtySM.compare_exchange_strong(expect, true)) {
 		if (QThread::currentThread() == qApp->thread())
 			resetSceneModel();
 		else
@@ -1619,7 +1631,7 @@ void VipPlotSceneModel::resetSceneModelInternal()
 	}
 }
 
-void VipPlotSceneModel::setSceneModel(const VipSceneModel& scene) 
+void VipPlotSceneModel::setSceneModel(const VipSceneModel& scene)
 {
 	if (QThread::currentThread() == qApp->thread()) {
 		d_data->newSceneModel = scene;
@@ -1633,7 +1645,6 @@ void VipPlotSceneModel::setSceneModel(const VipSceneModel& scene)
 			QMetaObject::invokeMethod(this, "setSceneModelInternal", Qt::QueuedConnection);
 	}
 }
-
 
 void VipPlotSceneModel::resetContentWith(const VipSceneModel& scene)
 {
@@ -1650,8 +1661,7 @@ void VipPlotSceneModel::resetContentWith(const VipSceneModel& scene)
 	}
 }
 
-
-void VipPlotSceneModel::resetSceneModelInternalWith() 
+void VipPlotSceneModel::resetSceneModelInternalWith()
 {
 	VipSceneModel scene = VipSceneModel::null();
 	{
@@ -1667,12 +1677,6 @@ void VipPlotSceneModel::resetSceneModelInternalWith()
 	d_data->sceneModel.reset(scene);
 	resetSceneModel();
 }
-
-
-
-
-
-
 
 void VipPlotSceneModel::mergeContentWith(const VipSceneModel& scene)
 {
@@ -1706,12 +1710,9 @@ void VipPlotSceneModel::mergeSceneModelInternalWith()
 	resetSceneModel();
 }
 
-
-
-
 void VipPlotSceneModel::setSceneModelInternal()
 {
-	
+
 	VipSceneModel scene = VipSceneModel::null();
 	{
 		VipUniqueLock<VipSpinlock> lock(d_data->mutex);
@@ -2022,7 +2023,7 @@ VipPlotShape* VipPlotSceneModel::createShape(const VipShape&) const
 	return shape;
 }
 
-bool VipPlotSceneModel::setItemProperty(const char* name, const QVariant& value, const QByteArray& index) 
+bool VipPlotSceneModel::setItemProperty(const char* name, const QVariant& value, const QByteArray& index)
 {
 	if (value.userType() == 0)
 		return false;
@@ -2077,8 +2078,6 @@ QList<VipPlotShape*> VipPlotSceneModel::shapes(const QString& group, int selecti
 	}
 	return res;
 }
-
-
 
 VipArchive& operator<<(VipArchive& arch, const VipPlotShape* value)
 {
@@ -2145,8 +2144,6 @@ VipArchive& operator>>(VipArchive& arch, VipPlotSceneModel* value)
 	value->setSceneModel(arch.read("sceneModel").value<VipSceneModel>());
 	return arch;
 }
-
-
 
 static bool register_types()
 {

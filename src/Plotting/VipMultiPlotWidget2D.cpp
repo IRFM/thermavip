@@ -1,6 +1,36 @@
+/**
+ * BSD 3-Clause License
+ *
+ * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice, this
+ *    list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of the copyright holder nor the names of its
+ *    contributors may be used to endorse or promote products derived from
+ *    this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
 #include "VipMultiPlotWidget2D.h"
 #include "VipPlotGrid.h"
-
 
 class VipVMultiPlotArea2D::PrivateData
 {
@@ -10,19 +40,18 @@ public:
 		yLeft = new VipMultiAxisBase(VipAxisBase::Left);
 		yRight = new VipMultiAxisBase(VipAxisBase::Right);
 
-		//add a VipAxisBase to the left and right scale
+		// add a VipAxisBase to the left and right scale
 		left = new VipAxisBase(VipAxisBase::Left);
 		left->setMargin(0);
-		//left->setMaxBorderDist(0, 0);
+		// left->setMaxBorderDist(0, 0);
 		left->setZValue(20);
 
-
 		yLeft->setMargin(0);
-		//yLeft->setMaxBorderDist(0, 0);
+		// yLeft->setMaxBorderDist(0, 0);
 		yLeft->setZValue(20);
 
 		yRight->setMargin(0);
-		//yRight->setMaxBorderDist(0, 0);
+		// yRight->setMaxBorderDist(0, 0);
 		yRight->setZValue(20);
 
 		to_remove = nullptr;
@@ -30,10 +59,10 @@ public:
 		insertionIndex = -1;
 	}
 
-	VipMultiAxisBase * yLeft;
-	VipMultiAxisBase * yRight;
-	VipAxisBase * left;
-	VipAbstractScale * to_remove;
+	VipMultiAxisBase* yLeft;
+	VipMultiAxisBase* yRight;
+	VipAxisBase* left;
+	VipAbstractScale* to_remove;
 	QList<VipPlotGrid*> grids;
 	QList<VipPlotCanvas*> canvas;
 	QList<VipAxisBase*> haxes;
@@ -46,14 +75,13 @@ public:
 	QPointer<VipPlotGrid> gmodel;
 };
 
-
-VipVMultiPlotArea2D::VipVMultiPlotArea2D(QGraphicsItem * parent)
-	: VipPlotArea2D(parent)
+VipVMultiPlotArea2D::VipVMultiPlotArea2D(QGraphicsItem* parent)
+  : VipPlotArea2D(parent)
 {
 
 	d_data = new PrivateData();
 
-	//remove the preivous left and right axes
+	// remove the preivous left and right axes
 	removeScale(VipPlotArea2D::leftAxis());
 	removeScale(VipPlotArea2D::rightAxis());
 	delete VipPlotArea2D::leftAxis();
@@ -68,8 +96,8 @@ VipVMultiPlotArea2D::VipVMultiPlotArea2D(QGraphicsItem * parent)
 	d_data->canvas << canvas();
 	d_data->haxes << bottomAxis();
 
-	grid()->setProperty("_vip_no_serialize",true);
-	canvas()->setProperty("_vip_no_serialize",true);
+	grid()->setProperty("_vip_no_serialize", true);
+	canvas()->setProperty("_vip_no_serialize", true);
 
 	d_data->lmodel = static_cast<VipAxisBase*>(d_data->left);
 	d_data->cmodel = d_data->canvas.first();
@@ -77,7 +105,7 @@ VipVMultiPlotArea2D::VipVMultiPlotArea2D(QGraphicsItem * parent)
 	d_data->inConstructor = false;
 	addScale(d_data->left);
 
-	//we can safely delete previous grid and canvas
+	// we can safely delete previous grid and canvas
 	delete d_data->grids.first();
 	delete d_data->canvas.first();
 	d_data->grids.removeFirst();
@@ -93,7 +121,7 @@ VipVMultiPlotArea2D::~VipVMultiPlotArea2D()
 	delete d_data;
 }
 
-VipAxisBase * VipVMultiPlotArea2D::leftAxis() const
+VipAxisBase* VipVMultiPlotArea2D::leftAxis() const
 {
 	for (int i = 0; i < d_data->yLeft->count(); ++i)
 		if (const VipAxisBase* ax = qobject_cast<const VipAxisBase*>(d_data->yLeft->at(i)))
@@ -101,7 +129,7 @@ VipAxisBase * VipVMultiPlotArea2D::leftAxis() const
 	return nullptr;
 }
 
-VipAxisBase * VipVMultiPlotArea2D::rightAxis() const
+VipAxisBase* VipVMultiPlotArea2D::rightAxis() const
 {
 	for (int i = 0; i < d_data->yRight->count(); ++i)
 		if (const VipAxisBase* ax = qobject_cast<const VipAxisBase*>(d_data->yRight->at(i)))
@@ -109,20 +137,20 @@ VipAxisBase * VipVMultiPlotArea2D::rightAxis() const
 	return nullptr;
 }
 
-VipPlotGrid * VipVMultiPlotArea2D::grid() const
+VipPlotGrid* VipVMultiPlotArea2D::grid() const
 {
 	return d_data->grids.size() ? d_data->grids.first() : VipPlotArea2D::grid();
 }
-VipPlotCanvas * VipVMultiPlotArea2D::canvas() const
+VipPlotCanvas* VipVMultiPlotArea2D::canvas() const
 {
 	return d_data->canvas.size() ? d_data->canvas.first() : VipPlotArea2D::canvas();
 }
 
-VipMultiAxisBase * VipVMultiPlotArea2D::leftMultiAxis() const
+VipMultiAxisBase* VipVMultiPlotArea2D::leftMultiAxis() const
 {
 	return const_cast<VipMultiAxisBase*>(d_data->yLeft);
 }
-VipMultiAxisBase * VipVMultiPlotArea2D::rightMultiAxis() const
+VipMultiAxisBase* VipVMultiPlotArea2D::rightMultiAxis() const
 {
 	return const_cast<VipMultiAxisBase*>(d_data->yRight);
 }
@@ -140,7 +168,7 @@ QList<VipAxisBase*> VipVMultiPlotArea2D::horizontalAxes() const
 	return d_data->haxes;
 }
 
-QPainterPath VipVMultiPlotArea2D::plotArea(const VipBorderItem * vertical_scale) const
+QPainterPath VipVMultiPlotArea2D::plotArea(const VipBorderItem* vertical_scale) const
 {
 	if (!vertical_scale)
 		return QPainterPath();
@@ -155,8 +183,7 @@ QPainterPath VipVMultiPlotArea2D::plotArea(const VipBorderItem * vertical_scale)
 		QPointF hend = bottomAxis()->mapToItem(this, bottomAxis()->end());
 
 		QPolygonF polygon;
-		polygon << QPointF(hstart.x(),vstart.y()) << QPointF(hstart.x(), vend.y())
-			<< QPointF(hend.x(), vend.y()) << QPointF(hend.x(), vstart.y());
+		polygon << QPointF(hstart.x(), vstart.y()) << QPointF(hstart.x(), vend.y()) << QPointF(hend.x(), vend.y()) << QPointF(hend.x(), vstart.y());
 
 		QPainterPath path;
 		path.addPolygon(polygon);
@@ -186,7 +213,7 @@ QRectF VipVMultiPlotArea2D::plotRect() const
 	double vend = d_data->yLeft->at(0)->mapToItem(this, d_data->yLeft->at(0)->end()).y();
 
 	for (int i = 0; i < d_data->yLeft->count(); ++i) {
-		VipBorderItem * vertical_scale = d_data->yLeft->at(i);
+		VipBorderItem* vertical_scale = d_data->yLeft->at(i);
 		double _vstart = vertical_scale->mapToItem(this, vertical_scale->start()).y();
 		double _vend = vertical_scale->mapToItem(this, vertical_scale->end()).y();
 		vstart = qMin(vstart, _vstart);
@@ -197,13 +224,13 @@ QRectF VipVMultiPlotArea2D::plotRect() const
 
 void VipVMultiPlotArea2D::applyLabelOverlapping()
 {
-	QVector< QSharedPointer<QPainterPath> > overlapps;
+	QVector<QSharedPointer<QPainterPath>> overlapps;
 	for (int i = 0; i < d_data->yLeft->count(); ++i)
 		overlapps << d_data->yLeft->at(i)->constScaleDraw()->thisLabelArea();
 
 	for (int i = 0; i < d_data->yLeft->count(); ++i) {
 		if (!d_data->yLeft->at(i)->scaleDraw()->labelOverlappingEnabled()) {
-			QVector< QSharedPointer<QPainterPath> > copy = overlapps;
+			QVector<QSharedPointer<QPainterPath>> copy = overlapps;
 			copy.removeAt(i);
 			d_data->yLeft->at(i)->scaleDraw()->enableLabelOverlapping(false);
 			d_data->yLeft->at(i)->scaleDraw()->clearAdditionalLabelOverlapp();
@@ -213,16 +240,16 @@ void VipVMultiPlotArea2D::applyLabelOverlapping()
 
 	overlapps.clear();
 	for (int i = 0; i < d_data->yRight->count(); ++i)
-		//if(d_data->yRight->at(i)->constScaleDraw()->hasComponent(VipScaleDraw::Labels))
-			overlapps << d_data->yRight->at(i)->constScaleDraw()->thisLabelArea();
+		// if(d_data->yRight->at(i)->constScaleDraw()->hasComponent(VipScaleDraw::Labels))
+		overlapps << d_data->yRight->at(i)->constScaleDraw()->thisLabelArea();
 
-	//int c = 0;
+	// int c = 0;
 	for (int i = 0; i < d_data->yRight->count(); ++i) {
-		//if (d_data->yRight->at(i)->constScaleDraw()->hasComponent(VipScaleDraw::Labels)) 
- {
+		// if (d_data->yRight->at(i)->constScaleDraw()->hasComponent(VipScaleDraw::Labels))
+		{
 			if (!d_data->yRight->at(i)->scaleDraw()->labelOverlappingEnabled()) {
-				QVector< QSharedPointer<QPainterPath> > copy = overlapps;
-				copy.removeAt(i);//c);
+				QVector<QSharedPointer<QPainterPath>> copy = overlapps;
+				copy.removeAt(i); // c);
 				d_data->yRight->at(i)->scaleDraw()->enableLabelOverlapping(false);
 				d_data->yRight->at(i)->scaleDraw()->clearAdditionalLabelOverlapp();
 				d_data->yRight->at(i)->scaleDraw()->setAdditionalLabelOverlapp(copy);
@@ -234,10 +261,10 @@ void VipVMultiPlotArea2D::applyLabelOverlapping()
 
 void VipVMultiPlotArea2D::applyDefaultParameters()
 {
-	//apply parameters to left scales
-	if (VipAxisBase * model = qobject_cast<VipAxisBase*>(d_data->lmodel)){
-		for (int i = 0; i < d_data->yLeft->count(); ++i){
-			VipBorderItem * it = d_data->yLeft->at(i);
+	// apply parameters to left scales
+	if (VipAxisBase* model = qobject_cast<VipAxisBase*>(d_data->lmodel)) {
+		for (int i = 0; i < d_data->yLeft->count(); ++i) {
+			VipBorderItem* it = d_data->yLeft->at(i);
 			it->setMargin(model->margin());
 			it->setSpacing(model->spacing());
 			double st, en;
@@ -248,16 +275,16 @@ void VipVMultiPlotArea2D::applyDefaultParameters()
 			it->setMaxMajor(model->maxMajor());
 			it->setMaxMinor(model->maxMinor());
 			it->scaleDraw()->setTextStyle(model->textStyle(VipScaleDiv::MajorTick), VipScaleDiv::MajorTick);
-			if (VipAxisBase * b = qobject_cast<VipAxisBase*>(it)) {
+			if (VipAxisBase* b = qobject_cast<VipAxisBase*>(it)) {
 				b->setTitleInverted(model->isTitleInverted());
 				b->scaleDraw()->setComponents(model->scaleDraw()->components());
 			}
 		}
 	}
-	//apply parameters to right scales
-	if (VipAxisBase * model = qobject_cast<VipAxisBase*>(d_data->rmodel)){
-		for (int i = 0; i < d_data->yRight->count(); ++i){
-			VipBorderItem * it = d_data->yRight->at(i);
+	// apply parameters to right scales
+	if (VipAxisBase* model = qobject_cast<VipAxisBase*>(d_data->rmodel)) {
+		for (int i = 0; i < d_data->yRight->count(); ++i) {
+			VipBorderItem* it = d_data->yRight->at(i);
 			it->setMargin(model->margin());
 			it->setSpacing(model->spacing());
 			double st, en;
@@ -268,53 +295,50 @@ void VipVMultiPlotArea2D::applyDefaultParameters()
 			it->setMaxMajor(model->maxMajor());
 			it->setMaxMinor(model->maxMinor());
 			it->scaleDraw()->setTextStyle(model->textStyle(VipScaleDiv::MajorTick), VipScaleDiv::MajorTick);
-			if (VipAxisBase * b = qobject_cast<VipAxisBase*>(it)) {
+			if (VipAxisBase* b = qobject_cast<VipAxisBase*>(it)) {
 				b->setTitleInverted(model->isTitleInverted());
 				b->scaleDraw()->setComponents(model->scaleDraw()->components());
 			}
 		}
 	}
-	//apply parameters to grid
-	if(d_data->gmodel)
-		for (int i = 0; i < d_data->grids.size(); ++i){
+	// apply parameters to grid
+	if (d_data->gmodel)
+		for (int i = 0; i < d_data->grids.size(); ++i) {
 			d_data->grids[i]->setMajorPen(d_data->gmodel->majorPen());
 			d_data->grids[i]->setMinorPen(d_data->gmodel->minorPen());
-			d_data->grids[i]->enableAxisMin(0,d_data->gmodel->axisMinEnabled(0));
+			d_data->grids[i]->enableAxisMin(0, d_data->gmodel->axisMinEnabled(0));
 			d_data->grids[i]->enableAxisMin(1, d_data->gmodel->axisMinEnabled(1));
 			d_data->grids[i]->enableAxis(0, d_data->gmodel->axisEnabled(0));
 			d_data->grids[i]->enableAxis(1, d_data->gmodel->axisEnabled(1));
-			//d_data->grids[i]->setDrawSelected(d_data->gmodel->drawSelected());
+			// d_data->grids[i]->setDrawSelected(d_data->gmodel->drawSelected());
 			d_data->grids[i]->setZValue(d_data->gmodel->zValue());
 			d_data->grids[i]->setVisible(d_data->gmodel->isVisible());
 		}
-	//apply canvas parameters
-	if(d_data->cmodel)
-		for (int i = 0; i < d_data->canvas.size(); ++i)
-		{
+	// apply canvas parameters
+	if (d_data->cmodel)
+		for (int i = 0; i < d_data->canvas.size(); ++i) {
 			d_data->canvas[i]->setBoxStyle(d_data->cmodel->boxStyle());
 			d_data->canvas[i]->setZValue(d_data->cmodel->zValue());
 		}
 }
 
-bool VipVMultiPlotArea2D::internalAddScale(VipAbstractScale * sc, bool spatial)
+bool VipVMultiPlotArea2D::internalAddScale(VipAbstractScale* sc, bool spatial)
 {
-	if(spatial && !d_data->inConstructor)
-		if (VipAxisBase * b = qobject_cast<VipAxisBase*>(sc))
-		{
+	if (spatial && !d_data->inConstructor)
+		if (VipAxisBase* b = qobject_cast<VipAxisBase*>(sc)) {
 			sc->scaleDraw()->enableLabelOverlapping(this->defaultLabelOverlapping());
-			if (b->alignment() == VipBorderItem::Left)
-			{
+			if (b->alignment() == VipBorderItem::Left) {
 
-				//do NOT recompute the geometry based on the internal scale geometry
-				//disconnect(sc, SIGNAL(geometryNeedUpdate()), this, SLOT(delayRecomputeGeometry()));
+				// do NOT recompute the geometry based on the internal scale geometry
+				// disconnect(sc, SIGNAL(geometryNeedUpdate()), this, SLOT(delayRecomputeGeometry()));
 
-				VipAxisBase * right = new VipAxisBase(VipAxisBase::Right);
+				VipAxisBase* right = new VipAxisBase(VipAxisBase::Right);
 				right->setScaleDiv(b->scaleDiv());
 				right->scaleDraw()->enableComponent(VipScaleDraw::Labels, false);
 				right->setMargin(0);
-				//right->setMaxBorderDist(0, 0);
+				// right->setMaxBorderDist(0, 0);
 				right->setZValue(101);
-				//right->setUpdater(updater());
+				// right->setUpdater(updater());
 				b->synchronizeWith(right);
 
 				int insert_index = this->insertionIndex();
@@ -323,36 +347,36 @@ bool VipVMultiPlotArea2D::internalAddScale(VipAbstractScale * sc, bool spatial)
 					d_data->yRight->addScale(right);
 				}
 				else {
-					d_data->yLeft->insertScale(insert_index,b);
-					d_data->yRight->insertScale(insert_index,right);
+					d_data->yLeft->insertScale(insert_index, b);
+					d_data->yRight->insertScale(insert_index, right);
 				}
 
-				//if (b != d_data->left)
+				// if (b != d_data->left)
 				{
-					//add a new grid and canvas
-					VipPlotGrid * grid = new VipPlotGrid();
+					// add a new grid and canvas
+					VipPlotGrid* grid = new VipPlotGrid();
 					grid->setTitle(QString("Axes grid"));
-					//grid->setDrawSelected(false);
+					// grid->setDrawSelected(false);
 					grid->setAxes(bottomAxis(), b, VipCoordinateSystem::Cartesian);
 					grid->setZValue(100);
-					//grid->setUpdater(updater());
-					VipPlotCanvas * canvas = new VipPlotCanvas();
+					// grid->setUpdater(updater());
+					VipPlotCanvas* canvas = new VipPlotCanvas();
 					canvas->setAxes(bottomAxis(), b, VipCoordinateSystem::Cartesian);
 					canvas->setZValue(-1);
-					//canvas->setUpdater(updater());
+					// canvas->setUpdater(updater());
 
-					grid->setProperty("_vip_no_serialize",true);
-					canvas->setProperty("_vip_no_serialize",true);
+					grid->setProperty("_vip_no_serialize", true);
+					canvas->setProperty("_vip_no_serialize", true);
 
-					//add a new horizontal axe if necessary
+					// add a new horizontal axe if necessary
 					if (d_data->yLeft->count() > 1) {
-						VipAxisBase * haxe = new VipAxisBase(VipAxisBase::Bottom);
+						VipAxisBase* haxe = new VipAxisBase(VipAxisBase::Bottom);
 						haxe->synchronizeWith(bottomAxis());
-						if(insert_index == 0)
+						if (insert_index == 0)
 							haxe->setAxisIntersection(d_data->yLeft->at(1), 1, Vip::Relative);
 						else
 							haxe->setAxisIntersection(b, 1, Vip::Relative);
-						//haxe->setUpdater(updater());
+						// haxe->setUpdater(updater());
 						haxe->setScaleDiv(bottomAxis()->scaleDiv());
 						haxe->scaleDraw()->enableComponent(VipScaleDraw::Labels, false);
 						haxe->setMargin(0);
@@ -361,7 +385,7 @@ bool VipVMultiPlotArea2D::internalAddScale(VipAbstractScale * sc, bool spatial)
 							d_data->haxes << haxe;
 						else {
 							if (insert_index == 0)
-								d_data->haxes.insert(1, haxe); //index 0 is always the bottom axis
+								d_data->haxes.insert(1, haxe); // index 0 is always the bottom axis
 							else
 								d_data->haxes.insert(insert_index, haxe);
 						}
@@ -389,14 +413,13 @@ bool VipVMultiPlotArea2D::internalAddScale(VipAbstractScale * sc, bool spatial)
 	return VipPlotArea2D::internalAddScale(sc, spatial);
 }
 
-bool VipVMultiPlotArea2D::internalRemoveScale(VipAbstractScale * sc)
+bool VipVMultiPlotArea2D::internalRemoveScale(VipAbstractScale* sc)
 {
 	if (sc == d_data->yLeft || sc == d_data->yRight || sc == bottomAxis() || sc == topAxis())
 		return false;
 
-	if(!d_data->inConstructor)
-		if (VipAxisBase * b = qobject_cast<VipAxisBase*>(sc))
-		{
+	if (!d_data->inConstructor)
+		if (VipAxisBase* b = qobject_cast<VipAxisBase*>(sc)) {
 			int l_index = d_data->yLeft->indexOf(b);
 			int r_index = d_data->yRight->indexOf(b);
 			if (l_index >= 0 || r_index >= 0) {
@@ -406,29 +429,29 @@ bool VipVMultiPlotArea2D::internalRemoveScale(VipAbstractScale * sc)
 				if (d_data->to_remove == sc)
 					return false;
 				d_data->to_remove = sc;
-				//avoid removing the last scale
-				//if (d_data->yLeft->count() == 1)
+				// avoid removing the last scale
+				// if (d_data->yLeft->count() == 1)
 				//	return false;
 
-				//remove the scale from the left AND right ones
-				VipAbstractScale *left = d_data->yLeft->takeItem(index);
+				// remove the scale from the left AND right ones
+				VipAbstractScale* left = d_data->yLeft->takeItem(index);
 				left->setParentItem(nullptr);
-				VipAbstractScale *right = d_data->yRight->takeItem(index);
+				VipAbstractScale* right = d_data->yRight->takeItem(index);
 				right->setParentItem(nullptr);
 
 				Q_EMIT canvasRemoved(d_data->canvas.at(index));
 
-				//remove grid and canvas
+				// remove grid and canvas
 				d_data->grids[index]->setAxes(QList<VipAbstractScale*>(), VipCoordinateSystem::Null);
 				d_data->canvas[index]->setAxes(QList<VipAbstractScale*>(), VipCoordinateSystem::Null);
 				delete d_data->grids.takeAt(index);
 				delete d_data->canvas.takeAt(index);
 
-				//internalRemoveScale should not remove the scale being removed, so do NOT delete the left one,
-				//only the right one
+				// internalRemoveScale should not remove the scale being removed, so do NOT delete the left one,
+				// only the right one
 				delete right;
 
-				//remove horizontal axe
+				// remove horizontal axe
 				if (d_data->haxes[index] != bottomAxis()) {
 					removeScale(d_data->haxes[index]);
 					delete d_data->haxes.takeAt(index);
@@ -438,13 +461,15 @@ bool VipVMultiPlotArea2D::internalRemoveScale(VipAbstractScale * sc)
 					delete d_data->haxes.takeAt(1);
 				}
 
-				//recompute default models
+				// recompute default models
 				if (!d_data->lmodel)
 					for (int i = 0; i < d_data->yLeft->count(); ++i)
-						if (!d_data->lmodel) d_data->lmodel = qobject_cast<VipAxisBase*>(d_data->yLeft->at(i));
+						if (!d_data->lmodel)
+							d_data->lmodel = qobject_cast<VipAxisBase*>(d_data->yLeft->at(i));
 				if (!d_data->rmodel)
 					for (int i = 0; i < d_data->yRight->count(); ++i)
-						if (!d_data->rmodel) d_data->rmodel = qobject_cast<VipAxisBase*>(d_data->yRight->at(i));
+						if (!d_data->rmodel)
+							d_data->rmodel = qobject_cast<VipAxisBase*>(d_data->yRight->at(i));
 				if (!d_data->cmodel)
 					d_data->cmodel = d_data->canvas.first();
 				if (!d_data->gmodel)
@@ -460,14 +485,13 @@ bool VipVMultiPlotArea2D::internalRemoveScale(VipAbstractScale * sc)
 	return VipPlotArea2D::internalRemoveScale(sc);
 }
 
-QList<VipAbstractScale*> VipVMultiPlotArea2D::scalesForPos(const QPointF & pos) const
+QList<VipAbstractScale*> VipVMultiPlotArea2D::scalesForPos(const QPointF& pos) const
 {
 	QList<VipAbstractScale*> res; //= VipAbstractScale::independentScales(scales());
 	// res.removeOne(d_data->yLeft);
 	// res.removeOne(d_data->yRight);
 
-	for (int i = 0; i < d_data->yLeft->count(); ++i)
-	{
+	for (int i = 0; i < d_data->yLeft->count(); ++i) {
 		QPainterPath p = plotArea(d_data->yLeft->at(i));
 		if (p.contains(pos)) {
 			res << bottomAxis() << d_data->yLeft->at(i);
@@ -477,29 +501,29 @@ QList<VipAbstractScale*> VipVMultiPlotArea2D::scalesForPos(const QPointF & pos) 
 	return res;
 }
 
-//VipInterval VipVMultiPlotArea2D::areaBoundaries(const VipAbstractScale * scale) const
-// {
-// if (const VipBorderItem * item = qobject_cast<const VipBorderItem*>(scale))
-// {
-// if (item->orientation() == Qt::Vertical)
-// {
+// VipInterval VipVMultiPlotArea2D::areaBoundaries(const VipAbstractScale * scale) const
+//  {
+//  if (const VipBorderItem * item = qobject_cast<const VipBorderItem*>(scale))
+//  {
+//  if (item->orientation() == Qt::Vertical)
+//  {
 //	QPointF topleft = d_data->yLeft->geometry().topLeft();
 //	QPointF bottomleft = d_data->yLeft->geometry().bottomLeft();
 //	return VipInterval(
 //		scale->value(scale->mapFromItem(this, topleft)),
 //		scale->value(scale->mapFromItem(this, bottomleft))).normalized();
-// }
-// else
-// {
+//  }
+//  else
+//  {
 //	QPointF bottomleft = bottomAxis()->geometry().bottomLeft();
 //	QPointF bottomright = bottomAxis()->geometry().bottomRight();
 //	return VipInterval(
 //		scale->value(scale->mapFromItem(this, bottomleft)),
 //		scale->value(scale->mapFromItem(this, bottomright))).normalized();
-// }
-// }
-// return VipInterval();
-// }
+//  }
+//  }
+//  return VipInterval();
+//  }
 
 #include "VipLegendItem.h"
 
@@ -514,9 +538,8 @@ void VipVMultiPlotArea2D::resetInnerLegendsPosition()
 
 	double top_space = titleOffset();
 
-	for (int i = 0; i < innerLegendCount(); ++i)
-	{
-		VipLegend * l = innerLegend(i);
+	for (int i = 0; i < innerLegendCount(); ++i) {
+		VipLegend* l = innerLegend(i);
 		if (l->items().size() == 0)
 			continue;
 
@@ -524,31 +547,30 @@ void VipVMultiPlotArea2D::resetInnerLegendsPosition()
 		int border_margin = innerLegendMargin(i);
 		Qt::Alignment align = innerLegendAlignment(i);
 
-		if (l)
-		{
-			//find parent rect
+		if (l) {
+			// find parent rect
 			QRectF parent = area;
-			if (VipAbstractScale * sc = scaleForlegend(l)) {
+			if (VipAbstractScale* sc = scaleForlegend(l)) {
 				int index = d_data->yLeft->indexOf(static_cast<VipBorderItem*>(sc));
-				if(index < 0)
+				if (index < 0)
 					index = d_data->yRight->indexOf(static_cast<VipBorderItem*>(sc));
 				if (index >= 0) {
-					//get the canvas rect
+					// get the canvas rect
 					parent = plotArea(d_data->yLeft->at(index)).boundingRect();
 					parent = sc->mapFromItem(this, parent).boundingRect();
-					if (index == d_data->yLeft->count()-1)
+					if (index == d_data->yLeft->count() - 1)
 						space = top_space;
-					//QPointF p = sc->pos();
-					//bool stop = true;
+					// QPointF p = sc->pos();
+					// bool stop = true;
 				}
 			}
 
-			//compute margin
+			// compute margin
 			double x_margin = 0;
 			double y_margin = 0;
 			if (border_margin) {
 				QPointF p1(0, 0), p2(border_margin, border_margin);
-				if (QGraphicsView * v = this->view()) {
+				if (QGraphicsView* v = this->view()) {
 					p1 = v->mapToScene(p1.toPoint());
 					p2 = v->mapToScene(p2.toPoint());
 					p1 = this->mapFromScene(p1);
@@ -558,30 +580,34 @@ void VipVMultiPlotArea2D::resetInnerLegendsPosition()
 				}
 			}
 
-			//Compute additional margins due to axis ticks
+			// Compute additional margins due to axis ticks
 			double right_margin = 0;
 			double left_margin = 0;
 			double top_margin = 0;
 			double bottom_margin = 0;
-			QList< VipAbstractScale*> scales = this->scales();
+			QList<VipAbstractScale*> scales = this->scales();
 			for (int j = 0; j < scales.size(); ++j) {
 				if (VipBorderItem* it = qobject_cast<VipBorderItem*>(scales[j])) {
-					if (it->alignment() == VipBorderItem::Right && it->scaleDraw()->ticksPosition() == VipScaleDraw::TicksOutside && it->scaleDraw()->hasComponent(VipScaleDraw::Ticks)) {
+					if (it->alignment() == VipBorderItem::Right && it->scaleDraw()->ticksPosition() == VipScaleDraw::TicksOutside &&
+					    it->scaleDraw()->hasComponent(VipScaleDraw::Ticks)) {
 						right_margin = std::max(right_margin, it->scaleDraw()->tickLength(VipScaleDiv::MajorTick));
 						right_margin = std::max(right_margin, it->scaleDraw()->tickLength(VipScaleDiv::MediumTick));
 						right_margin = std::max(right_margin, it->scaleDraw()->tickLength(VipScaleDiv::MinorTick));
 					}
-					else if (it->alignment() == VipBorderItem::Left && it->scaleDraw()->ticksPosition() == VipScaleDraw::TicksOutside && it->scaleDraw()->hasComponent(VipScaleDraw::Ticks)) {
+					else if (it->alignment() == VipBorderItem::Left && it->scaleDraw()->ticksPosition() == VipScaleDraw::TicksOutside &&
+						 it->scaleDraw()->hasComponent(VipScaleDraw::Ticks)) {
 						left_margin = std::max(left_margin, it->scaleDraw()->tickLength(VipScaleDiv::MajorTick));
 						left_margin = std::max(left_margin, it->scaleDraw()->tickLength(VipScaleDiv::MediumTick));
 						left_margin = std::max(left_margin, it->scaleDraw()->tickLength(VipScaleDiv::MinorTick));
 					}
-					else if (it->alignment() == VipBorderItem::Top && it->scaleDraw()->ticksPosition() == VipScaleDraw::TicksOutside && it->scaleDraw()->hasComponent(VipScaleDraw::Ticks)) {
+					else if (it->alignment() == VipBorderItem::Top && it->scaleDraw()->ticksPosition() == VipScaleDraw::TicksOutside &&
+						 it->scaleDraw()->hasComponent(VipScaleDraw::Ticks)) {
 						top_margin = std::max(top_margin, it->scaleDraw()->tickLength(VipScaleDiv::MajorTick));
 						top_margin = std::max(top_margin, it->scaleDraw()->tickLength(VipScaleDiv::MediumTick));
 						top_margin = std::max(top_margin, it->scaleDraw()->tickLength(VipScaleDiv::MinorTick));
 					}
-					else if (it->alignment() == VipBorderItem::Bottom && it->scaleDraw()->ticksPosition() == VipScaleDraw::TicksOutside && it->scaleDraw()->hasComponent(VipScaleDraw::Ticks)) {
+					else if (it->alignment() == VipBorderItem::Bottom && it->scaleDraw()->ticksPosition() == VipScaleDraw::TicksOutside &&
+						 it->scaleDraw()->hasComponent(VipScaleDraw::Ticks)) {
 						bottom_margin = std::max(bottom_margin, it->scaleDraw()->tickLength(VipScaleDiv::MajorTick));
 						bottom_margin = std::max(bottom_margin, it->scaleDraw()->tickLength(VipScaleDiv::MediumTick));
 						bottom_margin = std::max(bottom_margin, it->scaleDraw()->tickLength(VipScaleDiv::MinorTick));
@@ -589,13 +615,13 @@ void VipVMultiPlotArea2D::resetInnerLegendsPosition()
 				}
 			}
 
-			QSizeF size = l->sizeHint(Qt::PreferredSize);//l->effectiveSizeHint(Qt::PreferredSize);
+			QSizeF size = l->sizeHint(Qt::PreferredSize); // l->effectiveSizeHint(Qt::PreferredSize);
 
 			QPointF pos;
 			if (align & Qt::AlignLeft)
-				pos.setX(x_margin + left_margin +  parent.left());
+				pos.setX(x_margin + left_margin + parent.left());
 			else if (align & Qt::AlignRight)
-				pos.setX(parent.right() - size.width() - right_margin- x_margin);
+				pos.setX(parent.right() - size.width() - right_margin - x_margin);
 			else
 				pos.setX((parent.width() - size.width()) / 2);
 
@@ -608,30 +634,29 @@ void VipVMultiPlotArea2D::resetInnerLegendsPosition()
 
 			QRectF geom(pos, size);
 			l->setGeometry(geom);
-			//l->setPos(pos);
+			// l->setPos(pos);
 		}
 	}
 }
 
-
 void VipVMultiPlotArea2D::recomputeGeometry()
 {
-	//recompute axes geometry, but avoid the ones inside the left and right VipMultiAxisBase objects
-	//if (titleAxis()->titleInside()) {
-	// double spacing = topAxis()->isVisible() ? topAxis()->boundingRect().height() : 0;
-	// if (topAxis()->constScaleDraw()->hasComponent(VipScaleDraw::Backbone))
-	// spacing += topAxis()->constScaleDraw()->componentPen(VipScaleDraw::Backbone).widthF();
-	// if (topAxis()->constScaleDraw()->hasComponent(VipScaleDraw::Ticks))
-	// spacing += topAxis()->constScaleDraw()->tickLength(VipScaleDiv::MajorTick);
-	// titleAxis()->setSpacing(spacing);
-	// }
-	// else
-	// titleAxis()->setSpacing(0);
-//
+	// recompute axes geometry, but avoid the ones inside the left and right VipMultiAxisBase objects
+	// if (titleAxis()->titleInside()) {
+	//  double spacing = topAxis()->isVisible() ? topAxis()->boundingRect().height() : 0;
+	//  if (topAxis()->constScaleDraw()->hasComponent(VipScaleDraw::Backbone))
+	//  spacing += topAxis()->constScaleDraw()->componentPen(VipScaleDraw::Backbone).widthF();
+	//  if (topAxis()->constScaleDraw()->hasComponent(VipScaleDraw::Ticks))
+	//  spacing += topAxis()->constScaleDraw()->tickLength(VipScaleDiv::MajorTick);
+	//  titleAxis()->setSpacing(spacing);
+	//  }
+	//  else
+	//  titleAxis()->setSpacing(0);
+	//
 	// //starts by the left and right multi axes
 	// d_data->yLeft->recomputeGeometry();
 	// d_data->yRight->computeGeometry(true);
-//
+	//
 	// QList<VipBorderItem*> items = bottomAxis()->linkedBorderItems();
 	// for (int i = 0; i < items.size(); ++i)
 	// {
@@ -639,30 +664,30 @@ void VipVMultiPlotArea2D::recomputeGeometry()
 	// if (items[i]->innerOuterParent())
 	//	items[i]->computeGeometry(true);
 	// }
-//
+	//
 	// this->resetInnerLegendsPosition();
 	// this->update();
 
-	//TOCKECK
+	// TOCKECK
 	VipPlotArea2D::recomputeGeometry();
 }
 
-void VipVMultiPlotArea2D::zoomOnSelection(const QPointF & start, const QPointF & end)
+void VipVMultiPlotArea2D::zoomOnSelection(const QPointF& start, const QPointF& end)
 {
-	//we only zoom horizontally, except if we only have one left axis
+	// we only zoom horizontally, except if we only have one left axis
 
 	QList<VipAbstractScale*> items = VipAbstractScale::independentScales(axes());
 
 	QList<VipAbstractScale*> left_scales;
 	for (int i = 0; i < items.size(); ++i) {
-		if (VipBorderItem * it = qobject_cast<VipBorderItem*>(items[i]))
+		if (VipBorderItem* it = qobject_cast<VipBorderItem*>(items[i]))
 			if (zoomEnabled(it) && it->alignment() == VipBorderItem::Left)
 				left_scales << items[i];
 	}
 	bool enable_v_zomm = left_scales.size() == 1;
 	if (!enable_v_zomm) {
 		QList<VipAbstractScale*> inter;
-		//find the scale intersecting the area
+		// find the scale intersecting the area
 		for (int i = 0; i < left_scales.size(); ++i) {
 			QList<VipPlotCanvas*> c = vipCastItemList<VipPlotCanvas*>(left_scales[i]->plotItems());
 			if (c.size() == 1) {
@@ -677,10 +702,9 @@ void VipVMultiPlotArea2D::zoomOnSelection(const QPointF & start, const QPointF &
 		}
 	}
 
-	for (int i = 0; i < items.size(); ++i)
-	{
-		VipAbstractScale * axis = items[i];
-		if (VipBorderItem * it = qobject_cast<VipBorderItem*>(axis)) {
+	for (int i = 0; i < items.size(); ++i) {
+		VipAbstractScale* axis = items[i];
+		if (VipBorderItem* it = qobject_cast<VipBorderItem*>(axis)) {
 			if (zoomEnabled(axis) && it->alignment() == VipBorderItem::Bottom) {
 				QPointF axis_start = axis->mapFromItem(this, start);
 				QPointF axis_end = axis->mapFromItem(this, end);
@@ -697,18 +721,16 @@ void VipVMultiPlotArea2D::zoomOnSelection(const QPointF & start, const QPointF &
 			}
 		}
 	}
-
 }
 
-void VipVMultiPlotArea2D::zoomOnPosition(const QPointF & item_pos, double sc)
+void VipVMultiPlotArea2D::zoomOnPosition(const QPointF& item_pos, double sc)
 {
-	//only zoom on a couple of axis
+	// only zoom on a couple of axis
 
-	//find the bottom/left axes involved
-	QPointF mouse_pos = item_pos;// this->mapFromScene(scenePos);
+	// find the bottom/left axes involved
+	QPointF mouse_pos = item_pos; // this->mapFromScene(scenePos);
 	VipAxisBase *left = nullptr, *bottom = nullptr;
-	for (int i = 0; i < d_data->yLeft->count(); ++i)
-	{
+	for (int i = 0; i < d_data->yLeft->count(); ++i) {
 		QPainterPath p = plotArea(qobject_cast<VipAxisBase*>(d_data->yLeft->at(i)));
 		if (p.contains(mouse_pos)) {
 			left = qobject_cast<VipAxisBase*>(d_data->yLeft->at(i));
@@ -717,36 +739,31 @@ void VipVMultiPlotArea2D::zoomOnPosition(const QPointF & item_pos, double sc)
 		}
 	}
 
-
 	QList<VipAbstractScale*> items;
-	if (bottom) items << bottom << left;
+	if (bottom)
+		items << bottom << left;
 	vip_double zoomValue = (sc - 1);
 
-	for (int i = 0; i < items.size(); ++i)
-	{
-		VipAbstractScale * axis = items[i];
-		if (zoomEnabled(axis))
-		{
+	for (int i = 0; i < items.size(); ++i) {
+		VipAbstractScale* axis = items[i];
+		if (zoomEnabled(axis)) {
 			vip_double pos = axis->scaleDraw()->value(axis->mapFromItem(this, item_pos));
 
 			VipInterval interval = axis->scaleDiv().bounds();
-			VipInterval new_interval(interval.minValue() + (pos - interval.minValue())*zoomValue,
-				interval.maxValue() - (interval.maxValue() - pos)*zoomValue);
+			VipInterval new_interval(interval.minValue() + (pos - interval.minValue()) * zoomValue, interval.maxValue() - (interval.maxValue() - pos) * zoomValue);
 			axis->setScale(new_interval.minValue(), new_interval.maxValue());
 		}
 	}
-
 }
 
-void VipVMultiPlotArea2D::translate(const QPointF &, const QPointF & dp)
+void VipVMultiPlotArea2D::translate(const QPointF&, const QPointF& dp)
 {
-	//only zoom on a couple of axis
+	// only zoom on a couple of axis
 
-	//find the bottom/left axes involved
+	// find the bottom/left axes involved
 	QPointF mouse_pos = (this->lastMousePressPos());
 	VipAxisBase *left = nullptr, *bottom = nullptr;
-	for (int i = 0; i < d_data->yLeft->count(); ++i)
-	{
+	for (int i = 0; i < d_data->yLeft->count(); ++i) {
 		QPainterPath p = plotArea(qobject_cast<VipAxisBase*>(d_data->yLeft->at(i)));
 		if (p.contains(mouse_pos)) {
 			left = qobject_cast<VipAxisBase*>(d_data->yLeft->at(i));
@@ -756,19 +773,18 @@ void VipVMultiPlotArea2D::translate(const QPointF &, const QPointF & dp)
 	}
 
 	QList<VipAbstractScale*> items;
-	if (bottom) items << bottom << left;
+	if (bottom)
+		items << bottom << left;
 
-	for (int i = 0; i < items.size(); ++i)
-	{
-		VipAxisBase * axis = static_cast<VipAxisBase*>(items[i]);
-		if (zoomEnabled(axis))
-		{
+	for (int i = 0; i < items.size(); ++i) {
+		VipAxisBase* axis = static_cast<VipAxisBase*>(items[i]);
+		if (zoomEnabled(axis)) {
 
 			vip_double start = axis->scaleDraw()->value(axis->scaleDraw()->pos() - dp);
 			vip_double end = axis->scaleDraw()->value(axis->scaleDraw()->end() - dp);
 
 			VipInterval interval(start, end);
-			//keep the initial axis scale orientation
+			// keep the initial axis scale orientation
 			if (axis->orientation() == Qt::Vertical)
 				interval = interval.inverted();
 
@@ -776,5 +792,3 @@ void VipVMultiPlotArea2D::translate(const QPointF &, const QPointF & dp)
 		}
 	}
 }
-
-

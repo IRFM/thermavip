@@ -1,150 +1,166 @@
+/**
+ * BSD 3-Clause License
+ *
+ * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice, this
+ *    list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of the copyright holder nor the names of its
+ *    contributors may be used to endorse or promote products derived from
+ *    this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
+#include <QEventLoop>
 #include <QGraphicsItem>
 #include <QGraphicsScene>
-#include <QEventLoop>
 #include <QPainter>
-#include <qwidget.h>
-#include <qscreen.h>
 #include <QPdfWriter>
-#include <qprocess.h>
-#include <qfileinfo.h>
-#include <qapplication.h>
-#include <qpicture.h>
-#include <qdesktopwidget.h>
-#include <qsvggenerator.h>
 #include <QPrinter>
+#include <qapplication.h>
+#include <qdesktopwidget.h>
+#include <qfileinfo.h>
 #include <qpagesize.h>
+#include <qpicture.h>
+#include <qprocess.h>
+#include <qscreen.h>
+#include <qsvggenerator.h>
+#include <qwidget.h>
 
+#include "VipLogging.h"
 #include "VipRenderObject.h"
 #include "VipShapeDevice.h"
-#include "VipLogging.h"
 
-
-static VipRenderObject * getRenderObject(QObject * item)
+static VipRenderObject* getRenderObject(QObject* item)
 {
-	if(!item)
+	if (!item)
 		return nullptr;
 	QVariant data = item->property("VipRenderObject");
-	if(data.userType() == qMetaTypeId<VipRenderObject*>())
+	if (data.userType() == qMetaTypeId<VipRenderObject*>())
 		return data.value<VipRenderObject*>();
 	else
 		return nullptr;
 }
 
-
-VipRenderObject::VipRenderObject(QObject * this_object)
-:m_object(this_object)
+VipRenderObject::VipRenderObject(QObject* this_object)
+  : m_object(this_object)
 {
-	m_object->setProperty("VipRenderObject",QVariant::fromValue(this));
+	m_object->setProperty("VipRenderObject", QVariant::fromValue(this));
 }
 
 VipRenderObject::~VipRenderObject()
 {
-	if(m_object)
+	if (m_object)
 		m_object->setProperty("VipRenderObject", QVariant());
 }
 
-
-bool VipRenderObject::renderObject(QPainter * , const QPointF & , bool )
+bool VipRenderObject::renderObject(QPainter*, const QPointF&, bool)
 {
-	//default behavior for QWidget: use QWidget::render
-	if (QWidget * w = qobject_cast<QWidget*>(m_object) )
-		if (w->isVisible())
-		{
-			//TEST: uncomment this line
-			//w->render(p, pos.toPoint(), QRegion(), draw_background ? QWidget::DrawWindowBackground : QWidget::RenderFlags(0));
+	// default behavior for QWidget: use QWidget::render
+	if (QWidget* w = qobject_cast<QWidget*>(m_object))
+		if (w->isVisible()) {
+			// TEST: uncomment this line
+			// w->render(p, pos.toPoint(), QRegion(), draw_background ? QWidget::DrawWindowBackground : QWidget::RenderFlags(0));
 			return true;
 		}
 	return false;
 }
 
-
-
-void VipRenderObject::startRender(QGraphicsScene * scene, VipRenderState & state)
+void VipRenderObject::startRender(QGraphicsScene* scene, VipRenderState& state)
 {
-	if(VipRenderObject * render = getRenderObject(scene))
+	if (VipRenderObject* render = getRenderObject(scene))
 		render->startRender(state);
 
-	QList<QGraphicsItem *> items = scene->items();
-	for(QList<QGraphicsItem*>::iterator it = items.begin(); it != items.end(); ++it)
-	{
-		QGraphicsItem * item = *it;
-		if(VipRenderObject * obj = getRenderObject(item->toGraphicsObject()))
+	QList<QGraphicsItem*> items = scene->items();
+	for (QList<QGraphicsItem*>::iterator it = items.begin(); it != items.end(); ++it) {
+		QGraphicsItem* item = *it;
+		if (VipRenderObject* obj = getRenderObject(item->toGraphicsObject()))
 			obj->startRender(state);
 	}
 }
 
-void VipRenderObject::endRender(QGraphicsScene * scene, VipRenderState & state)
+void VipRenderObject::endRender(QGraphicsScene* scene, VipRenderState& state)
 {
-	if(VipRenderObject * render = getRenderObject(scene))
+	if (VipRenderObject* render = getRenderObject(scene))
 		render->endRender(state);
 
-	QList<QGraphicsItem *> items = scene->items();
-	for(QList<QGraphicsItem*>::iterator it = items.begin(); it != items.end(); ++it)
-	{
-		QGraphicsItem * item = *it;
-		if(VipRenderObject * obj = getRenderObject(item->toGraphicsObject()))
+	QList<QGraphicsItem*> items = scene->items();
+	for (QList<QGraphicsItem*>::iterator it = items.begin(); it != items.end(); ++it) {
+		QGraphicsItem* item = *it;
+		if (VipRenderObject* obj = getRenderObject(item->toGraphicsObject()))
 			obj->endRender(state);
 	}
 }
 
-void VipRenderObject::startRender(QObject * obj, VipRenderState & state)
+void VipRenderObject::startRender(QObject* obj, VipRenderState& state)
 {
-	if (VipRenderObject * render = getRenderObject(obj)) {
+	if (VipRenderObject* render = getRenderObject(obj)) {
 		render->startRender(state);
 	}
 
-	QList<QObject *> items = obj->findChildren<QObject*>();
-	for(QList<QObject*>::iterator it = items.begin(); it != items.end(); ++it)
-	{
-		if (VipRenderObject * render = getRenderObject(*it)) {
+	QList<QObject*> items = obj->findChildren<QObject*>();
+	for (QList<QObject*>::iterator it = items.begin(); it != items.end(); ++it) {
+		if (VipRenderObject* render = getRenderObject(*it)) {
 			render->startRender(state);
 		}
 	}
 }
 
-void VipRenderObject::endRender(QObject * obj , VipRenderState & state)
+void VipRenderObject::endRender(QObject* obj, VipRenderState& state)
 {
-	if (VipRenderObject * render = getRenderObject(obj)) {
+	if (VipRenderObject* render = getRenderObject(obj)) {
 		render->endRender(state);
 	}
 
-	QList<QObject *> items = obj->findChildren<QObject*>();
-	for(QList<QObject*>::iterator it = items.begin(); it != items.end(); ++it)
-	{
-		if (VipRenderObject * render = getRenderObject(*it)) {
+	QList<QObject*> items = obj->findChildren<QObject*>();
+	for (QList<QObject*>::iterator it = items.begin(); it != items.end(); ++it) {
+		if (VipRenderObject* render = getRenderObject(*it)) {
 			render->endRender(state);
 		}
 	}
 }
 
-
-void VipRenderObject::renderObject(VipRenderObject * obj, QPainter * p, const QPoint & pos, bool draw_children, bool draw_background)
+void VipRenderObject::renderObject(VipRenderObject* obj, QPainter* p, const QPoint& pos, bool draw_children, bool draw_background)
 {
-	QWidget * w = qobject_cast<QWidget*>(obj->m_object);
+	QWidget* w = qobject_cast<QWidget*>(obj->m_object);
 	if (w && w->isHidden())
 		return;
 
 	if (!obj->renderObject(p, pos, draw_background))
 		return;
 
-	if (draw_children)
-	{
-		if (w)
-		{
-			QList<QWidget *> children = w->findChildren<QWidget*>(QString(), Qt::FindDirectChildrenOnly);
-			for (int i = 0; i < children.size(); ++i)
-			{
-				QWidget * child = children[i];
+	if (draw_children) {
+		if (w) {
+			QList<QWidget*> children = w->findChildren<QWidget*>(QString(), Qt::FindDirectChildrenOnly);
+			for (int i = 0; i < children.size(); ++i) {
+				QWidget* child = children[i];
 
 				p->save();
 
 				QPoint offset = child->pos();
-				//p->setTransform(QTransform().translate(offset.x(), offset.y()), true);
+				// p->setTransform(QTransform().translate(offset.x(), offset.y()), true);
 
-				if (VipRenderObject * ren = getRenderObject(child))
-					renderObject(ren,p, pos + offset, draw_children, draw_background);
-				else
-				{
+				if (VipRenderObject* ren = getRenderObject(child))
+					renderObject(ren, p, pos + offset, draw_children, draw_background);
+				else {
 					VipRenderObject r(child);
 					renderObject(&r, p, pos + offset, draw_children, draw_background);
 				}
@@ -152,12 +168,10 @@ void VipRenderObject::renderObject(VipRenderObject * obj, QPainter * p, const QP
 				p->restore();
 			}
 		}
-		else
-		{
-			QList<QObject *> items = obj->m_object->findChildren<QObject*>();
-			for (QList<QObject*>::iterator it = items.begin(); it != items.end(); ++it)
-			{
-				if (VipRenderObject * ren = getRenderObject(*it))
+		else {
+			QList<QObject*> items = obj->m_object->findChildren<QObject*>();
+			for (QList<QObject*>::iterator it = items.begin(); it != items.end(); ++it) {
+				if (VipRenderObject* ren = getRenderObject(*it))
 					ren->renderObject(p, pos, draw_background);
 			}
 		}
@@ -178,10 +192,6 @@ QRectF VipRenderObject::renderRect(VipRenderObject* obj)
 	return dev.shape().boundingRect();
 }
 
-
-
-
-
 static bool hasPdfTops()
 {
 	static bool checked = false;
@@ -191,7 +201,7 @@ static bool hasPdfTops()
 	else {
 		checked = true;
 		QProcess p;
-		p.start(QString("pdftops"),QStringList());
+		p.start(QString("pdftops"), QStringList());
 		if (p.waitForStarted()) {
 			if (p.waitForFinished())
 				ok = (p.readAllStandardOutput() + p.readAllStandardError()).size() > 0;
@@ -227,9 +237,9 @@ bool VipRenderObject::saveAsPs(VipRenderObject* render, const QString& filename)
 	p.start(command);*/
 	QStringList option;
 	if (QFileInfo(filename).suffix().compare("eps", Qt::CaseInsensitive) == 0)
-		option<< "-eps";
+		option << "-eps";
 	option << "-paperw" << QString::number(std::ceil(point_size.width())) << "-paperh" << QString::number(std::ceil(point_size.height())) << (filename + ".pdf") << filename;
-	p.start("pdftops",option);
+	p.start("pdftops", option);
 
 	bool res = false;
 	if (p.waitForStarted())
@@ -239,7 +249,6 @@ bool VipRenderObject::saveAsPs(VipRenderObject* render, const QString& filename)
 	QFile::remove(filename + ".pdf");
 	return res;
 }
-
 
 bool VipRenderObject::saveAsSvg(VipRenderObject* render, const QString& filename, const QString& title, const QString& description)
 {
@@ -325,9 +334,9 @@ bool VipRenderObject::saveAsPdf(VipRenderObject* render, const QString& filename
 	// printer.setFullPage(true);
 	QPageSize page(paper_size, QPageSize::Millimeter);
 	printer.setPageSize(page);
-	//printer.setPageSize(QPrinter::Custom);
-	//printer.setPaperSize(paper_size, QPrinter::Millimeter);
-	//printer.setPageMargins(0, 0, 0, 0, QPageSize::Millimeter);
+	// printer.setPageSize(QPrinter::Custom);
+	// printer.setPaperSize(paper_size, QPrinter::Millimeter);
+	// printer.setPageMargins(0, 0, 0, 0, QPageSize::Millimeter);
 	printer.setResolution(600);
 
 	if (!painter.begin(&printer)) { // failed to open file
@@ -359,7 +368,6 @@ bool VipRenderObject::saveAsPdf(VipRenderObject* render, const QString& filename
 	VipRenderObject::endRender(render->thisObject(), state);
 	return true;
 }
-
 
 bool VipRenderObject::saveAsImage(VipRenderObject* render, const QString& filename, QColor* background)
 {

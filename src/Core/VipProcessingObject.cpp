@@ -1,6 +1,37 @@
-#include <vector>
-#include <condition_variable>
+/**
+ * BSD 3-Clause License
+ *
+ * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice, this
+ *    list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of the copyright holder nor the names of its
+ *    contributors may be used to endorse or promote products derived from
+ *    this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
 #include <chrono>
+#include <condition_variable>
+#include <vector>
 
 #include <QDateTime>
 #include <QDebug>
@@ -14,24 +45,20 @@
 #include "VipIODevice.h"
 #include "VipLogging.h"
 #include "VipProcessingObject.h"
+#include "VipSleep.h"
 #include "VipTextOutput.h"
 #include "VipUniqueId.h"
 #include "VipXmlArchive.h"
-#include "VipSleep.h"
 
-
-inline QDataStream& operator<<(QDataStream& str, const PriorityMap & map) 
+inline QDataStream& operator<<(QDataStream& str, const PriorityMap& map)
 {
 	const QMap<QString, int>& m = reinterpret_cast<const QMap<QString, int>&>(map);
 	return str << m;
 }
 inline QDataStream& operator>>(QDataStream& str, PriorityMap& map)
 {
-	return str >> reinterpret_cast< QMap<QString, int>&>(map);
+	return str >> reinterpret_cast<QMap<QString, int>&>(map);
 }
-
-
-
 
 VipAnyData::VipAnyData()
   : m_source(0)
@@ -46,7 +73,7 @@ VipAnyData::VipAnyData(const QVariant& data, qint64 time)
 {
 }
 
-VipAnyData::VipAnyData(QVariant&& data, qint64 time )
+VipAnyData::VipAnyData(QVariant&& data, qint64 time)
   : m_source(0)
   , m_time(time)
   , m_data(std::move(data))
@@ -127,11 +154,10 @@ static int registerStreamOperators()
 }
 static int _regiterStreamOperators = vipAddInitializationFunction(registerStreamOperators);
 
-
 static VipErrorData* _null_error()
 {
 	static VipErrorData inst;
-	return & inst;
+	return &inst;
 }
 
 VipErrorHandler::VipErrorHandler(QObject* parent)
@@ -140,7 +166,7 @@ VipErrorHandler::VipErrorHandler(QObject* parent)
 {
 }
 
-VipErrorHandler ::~VipErrorHandler() 
+VipErrorHandler ::~VipErrorHandler()
 {
 	VipErrorData* prev = d_data.exchange(_null_error());
 	if (prev != _null_error())
@@ -151,7 +177,7 @@ void VipErrorHandler::setError(const QString& err, int code)
 {
 	setError(VipErrorData(err, code));
 }
-void VipErrorHandler::setError( VipErrorData&& err) 
+void VipErrorHandler::setError(VipErrorData&& err)
 {
 	VipErrorData* error = new VipErrorData(std::move(err));
 	VipErrorData* prev = d_data.exchange(error);
@@ -901,9 +927,9 @@ void VipInput::setData(const VipAnyData& data)
 
 				// only update the parent processing if:
 				// - the input size has been increased
-				if ((previous_size != current_size ))
+				if ((previous_size != current_size))
 					proc->update();
-				
+
 				if ((previous_size >= current_size)) {
 					// the input data has been dropped, print debug info if required
 					if (proc->isLogErrorEnabled(VipProcessingObject::InputBufferFull)) {
@@ -983,8 +1009,7 @@ VipOutput::VipOutput(const VipOutput& other)
 {
 }
 
-
-VipOutput& VipOutput::operator = (const VipOutput& other) 
+VipOutput& VipOutput::operator=(const VipOutput& other)
 {
 	static_cast<UniqueProcessingIO&>(*this) = other;
 	m_bufferize_outputs = other.m_bufferize_outputs;
@@ -992,7 +1017,7 @@ VipOutput& VipOutput::operator = (const VipOutput& other)
 	return *this;
 }
 
-void VipOutput::setBufferDataEnabled(bool enable) 
+void VipOutput::setBufferDataEnabled(bool enable)
 {
 	if (m_bufferize_outputs != enable) {
 		m_bufferize_outputs = enable;
@@ -1006,7 +1031,7 @@ bool VipOutput::bufferDataEnabled() const
 {
 	return m_bufferize_outputs;
 }
-QList<VipAnyData> VipOutput::clearBufferedData()  
+QList<VipAnyData> VipOutput::clearBufferedData()
 {
 	QList<VipAnyData> res;
 	VipUniqueLock<VipSpinlock> lock(m_buffer_lock);
@@ -1015,7 +1040,7 @@ QList<VipAnyData> VipOutput::clearBufferedData()
 	return res;
 }
 
-int VipOutput::bufferDataSize() 
+int VipOutput::bufferDataSize()
 {
 	VipUniqueLock<VipSpinlock> lock(m_buffer_lock);
 	return m_buffer.size();
@@ -1064,7 +1089,7 @@ VipProperty::VipProperty(const VipProperty& other)
 {
 }
 
-VipProperty& VipProperty::operator=(const VipProperty& other) 
+VipProperty& VipProperty::operator=(const VipProperty& other)
 {
 	static_cast<UniqueProcessingIO&>(*this) = static_cast<const UniqueProcessingIO&>(other);
 	m_data = other.m_data;
@@ -1369,9 +1394,6 @@ VipDataList::~VipDataList()
 	VipProcessingManager::instance().remove(this);
 }
 
-
-
-
 #define _SPINLOCKER() VipUniqueLock<VipSpinlock> _lock(const_cast<VipSpinlock&>(m_mutex))
 #define _SHAREDSPINLOCKER() VipUniqueLock<VipSpinlock> _lock(const_cast<VipSpinlock&>(m_mutex))
 
@@ -1382,8 +1404,8 @@ VipFIFOList::VipFIFOList()
 
 int VipFIFOList::push(const VipAnyData& data, int* previous)
 {
-	_SPINLOCKER(); 
-	
+	_SPINLOCKER();
+
 	if (previous)
 		*previous = (int)m_list.size();
 	m_list.push_back(data);
@@ -1393,7 +1415,7 @@ int VipFIFOList::push(const VipAnyData& data, int* previous)
 			m_list.pop_front();
 	}
 	if (listLimitType() & MemorySize) {
-		
+
 		int i = 0;
 		int size = 0;
 		for (i = (int)m_list.size() - 1; i >= 0; --i) {
@@ -1403,14 +1425,13 @@ int VipFIFOList::push(const VipAnyData& data, int* previous)
 		}
 		if (i >= 0) {
 			m_list.erase(m_list.begin(), m_list.begin() + i);
-			//m_list = m_list.mid(i);
+			// m_list = m_list.mid(i);
 		}
-		
 	}
 	return (int)m_list.size();
 }
 
-int VipFIFOList::push( VipAnyData&& data, int* previous)
+int VipFIFOList::push(VipAnyData&& data, int* previous)
 {
 	_SPINLOCKER();
 
@@ -1450,7 +1471,7 @@ void VipFIFOList::reset(const VipAnyData& data)
 		m_list.push_back(data);
 	}
 }
-void VipFIFOList::reset( VipAnyData&& data)
+void VipFIFOList::reset(VipAnyData&& data)
 {
 	_SPINLOCKER();
 	if (m_list.size() == 1) {
@@ -1464,7 +1485,7 @@ void VipFIFOList::reset( VipAnyData&& data)
 
 VipAnyData VipFIFOList::next()
 {
-	_SPINLOCKER(); 
+	_SPINLOCKER();
 	if (m_list.size() > 0) {
 		m_last = m_list.front();
 		m_list.pop_front();
@@ -1474,17 +1495,17 @@ VipAnyData VipFIFOList::next()
 
 VipAnyDataList VipFIFOList::allNext()
 {
-	_SPINLOCKER(); 
+	_SPINLOCKER();
 	VipAnyDataList res;
 	if (m_list.size() > 0) {
-		
+
 		m_last = m_list.back();
 		for (auto it = m_list.begin(); it != m_list.end(); ++it)
 			res.push_back(std::move(*it));
 		m_list.clear();
 	}
 	else if (m_last.isValid()) {
-		res.push_back( m_last);
+		res.push_back(m_last);
 	}
 	return res;
 }
@@ -1515,7 +1536,7 @@ bool VipFIFOList::empty() const
 	return !m_list.size() && !m_last.isValid();
 }
 
-int VipFIFOList::remaining() const 
+int VipFIFOList::remaining() const
 {
 	_SHAREDSPINLOCKER();
 	return (int)m_list.size();
@@ -1526,7 +1547,6 @@ bool VipFIFOList::hasNewData() const
 	_SHAREDSPINLOCKER();
 	return m_list.size() > 0;
 }
-
 
 int VipFIFOList::status() const
 {
@@ -1545,13 +1565,9 @@ int VipFIFOList::memoryFootprint() const
 
 void VipFIFOList::clear()
 {
-	_SPINLOCKER(); 
+	_SPINLOCKER();
 	m_list.clear();
 }
-
-
-
-
 
 VipLIFOList::VipLIFOList()
   : VipDataList()
@@ -1563,7 +1579,7 @@ int VipLIFOList::push(const VipAnyData& data, int* previous)
 	_SPINLOCKER();
 
 	if (previous)
-		*previous = (int) m_list.size();
+		*previous = (int)m_list.size();
 
 	m_list.push_back(data);
 
@@ -1581,12 +1597,12 @@ int VipLIFOList::push(const VipAnyData& data, int* previous)
 		}
 		if (i < m_list.size())
 			m_list.erase(m_list.begin() + i + 1, m_list.end());
-			//m_list = m_list.mid(0, i + 1);
+		// m_list = m_list.mid(0, i + 1);
 	}
 	return (int)m_list.size();
 }
 
-int VipLIFOList::push( VipAnyData&& data, int* previous)
+int VipLIFOList::push(VipAnyData&& data, int* previous)
 {
 	_SPINLOCKER();
 
@@ -1625,7 +1641,7 @@ void VipLIFOList::reset(const VipAnyData& data)
 		m_list.push_back(data);
 	}
 }
-void VipLIFOList::reset( VipAnyData&& data)
+void VipLIFOList::reset(VipAnyData&& data)
 {
 	_SPINLOCKER();
 	if (m_list.size() == 1) {
@@ -1718,9 +1734,6 @@ void VipLIFOList::clear()
 	m_list.clear();
 }
 
-
-
-
 VipLastAvailableList::VipLastAvailableList()
   : VipDataList()
   , m_has_new_data(false)
@@ -1736,7 +1749,7 @@ int VipLastAvailableList::push(const VipAnyData& data, int* previous)
 	m_has_new_data = (true);
 	return 1;
 }
-int VipLastAvailableList::push( VipAnyData&& data, int* previous)
+int VipLastAvailableList::push(VipAnyData&& data, int* previous)
 {
 	_SPINLOCKER();
 	if (previous)
@@ -1752,7 +1765,7 @@ void VipLastAvailableList::reset(const VipAnyData& data)
 	m_data = data;
 	m_has_new_data = (true);
 }
-void VipLastAvailableList::reset( VipAnyData&& data)
+void VipLastAvailableList::reset(VipAnyData&& data)
 {
 	_SPINLOCKER();
 	m_data = std::move(data);
@@ -1771,7 +1784,7 @@ bool VipLastAvailableList::hasNewData() const
 	return m_has_new_data;
 }
 
-int VipLastAvailableList::status() const 
+int VipLastAvailableList::status() const
 {
 	_SHAREDSPINLOCKER();
 	return (!m_has_new_data && !m_data.isValid()) ? -1 : m_has_new_data;
@@ -1823,21 +1836,6 @@ void VipLastAvailableList::clear()
 	m_has_new_data = false;
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 /// @brief TaskPool is a thread that asynchronously executes VipProcessingObject::run().
 ///
 /// When a VipProcessingObject is Asynchronous, it uses internally a TaskPool to schedule its processing.
@@ -1845,8 +1843,8 @@ void VipLastAvailableList::clear()
 ///
 class TaskPool : public QThread
 {
-	//QMutex m_mutex;
-	//QWaitCondition m_cond;
+	// QMutex m_mutex;
+	// QWaitCondition m_cond;
 	std::atomic<int> m_run;
 	VipProcessingObject* m_parent;
 	bool m_stop;
@@ -1885,20 +1883,19 @@ public:
 
 	/// @brief remove all pending tasks
 	void clear();
-
 };
 
 void TaskPool::run()
 {
 	// notify that the thread started
 	{
-		//LOCK(m_mutex);
-		//m_cond.wakeAll();
+		// LOCK(m_mutex);
+		// m_cond.wakeAll();
 		std::unique_lock<VipSpinlock> ll(lock);
 		cond.notify_all();
 	}
 
-	//LOCK(m_mutex);
+	// LOCK(m_mutex);
 	std::unique_lock<VipSpinlock> ll(lock);
 
 	while (!m_stop) {
@@ -1906,11 +1903,11 @@ void TaskPool::run()
 		// wait for incoming runnable objects.
 		// takes at most 10 ms to stop if required.
 		while (m_run == 0 && !m_stop) {
-			//m_cond.wait(&m_mutex, 10);
-			//m_cond.wakeAll();
+			// m_cond.wait(&m_mutex, 10);
+			// m_cond.wakeAll();
 			cond.wait_for(lock, std::chrono::milliseconds(10));
 			cond.notify_all();
-		}		
+		}
 
 		int count = m_run;
 		int saved = count;
@@ -1934,20 +1931,18 @@ void TaskPool::run()
 				else
 					qWarning() << "Unhandled unknown exception\n";
 			}
-				
+
 			m_running = false;
 		}
 		m_run.fetch_sub(saved);
 
-
-		//m_cond.wakeAll();
+		// m_cond.wakeAll();
 		cond.notify_all();
 	}
 
-	//m_cond.wakeAll();
+	// m_cond.wakeAll();
 	cond.notify_all();
 }
-
 
 TaskPool::TaskPool(VipProcessingObject* parent, QThread::Priority p)
   : QThread(parent)
@@ -1957,24 +1952,24 @@ TaskPool::TaskPool(VipProcessingObject* parent, QThread::Priority p)
   , m_running(false)
   , m_runMainEventLoop(false)
 {
-	//LOCK(m_mutex);
+	// LOCK(m_mutex);
 	std::unique_lock<VipSpinlock> ll(lock);
 	this->start(p);
-	//m_cond.wait(&m_mutex);
+	// m_cond.wait(&m_mutex);
 	cond.wait(lock);
 }
 
 TaskPool::~TaskPool()
 {
 	m_stop = true;
-	//m_cond.wakeAll();
+	// m_cond.wakeAll();
 	cond.notify_all();
 	wait();
 }
 
 void TaskPool::setRunMainEventLoop(bool enable)
 {
-	//LOCK(m_mutex);
+	// LOCK(m_mutex);
 	std::unique_lock<VipSpinlock> ll(lock);
 	m_runMainEventLoop = enable;
 }
@@ -1986,7 +1981,7 @@ bool TaskPool::runMainEventLoop() const
 void TaskPool::push()
 {
 	++m_run;
-	//m_cond.wakeAll();
+	// m_cond.wakeAll();
 	cond.notify_all();
 }
 
@@ -2001,8 +1996,9 @@ void TaskPool::atomWait(int milli)
 		vipProcessEvents(nullptr, milli);
 		m_mutex.lock();
 	}
-	else*/ {
-		//m_cond.wait(&m_mutex, milli);
+	else*/
+	{
+		// m_cond.wait(&m_mutex, milli);
 		cond.wait_for(lock, std::chrono::milliseconds(milli));
 	}
 }
@@ -2012,8 +2008,8 @@ bool TaskPool::waitForDone(int milli_time)
 	if (milli_time < 0) {
 		// wait until finished
 		while (this->remaining() > 0) {
-			//LOCK(m_mutex);
-			//m_cond.wakeAll();
+			// LOCK(m_mutex);
+			// m_cond.wakeAll();
 			std::unique_lock<VipSpinlock> ll(lock);
 			cond.notify_all();
 			atomWait(10);
@@ -2024,8 +2020,8 @@ bool TaskPool::waitForDone(int milli_time)
 		// wait for at most milli_time milliseconds
 		qint64 current = vipGetMilliSecondsSinceEpoch();
 		while (this->remaining() > 0) {
-			//LOCK(m_mutex);
-			//m_cond.wakeAll();
+			// LOCK(m_mutex);
+			// m_cond.wakeAll();
 			std::unique_lock<VipSpinlock> ll(lock);
 			cond.notify_all();
 			atomWait(10);
@@ -2036,7 +2032,6 @@ bool TaskPool::waitForDone(int milli_time)
 	}
 }
 
-
 int TaskPool::remaining() const
 {
 	return m_run.load() + m_running;
@@ -2044,22 +2039,10 @@ int TaskPool::remaining() const
 
 void TaskPool::clear()
 {
-	//LOCK(m_mutex);
+	// LOCK(m_mutex);
 	std::unique_lock<VipSpinlock> ll(lock);
 	m_run = 0;
 }
-
-
-
-
-
-
-
-
-
-
-
-
 
 class VipProcessingObject::PrivateData
 {
@@ -2128,7 +2111,7 @@ public:
 
 	// inputs, outputs and properties
 	int initializeIO;
-	bool updateCalled; 
+	bool updateCalled;
 	QVector<VipProcessingIO*> inputs;
 	QVector<VipProcessingIO*> outputs;
 	QVector<VipProcessingIO*> properties;
@@ -2201,7 +2184,7 @@ VipProcessingObject::~VipProcessingObject()
 	// delete all inputs/outputs/properties
 	for (int i = 0; i < m_data->inputs.size(); ++i)
 		delete m_data->inputs[i];
-	for (int i = 0; i < m_data->outputs.size(); ++i) 
+	for (int i = 0; i < m_data->outputs.size(); ++i)
 		delete m_data->outputs[i];
 	for (int i = 0; i < m_data->properties.size(); ++i)
 		delete m_data->properties[i];
@@ -2270,9 +2253,6 @@ QList<QByteArray> VipProcessingObject::sourceProperties() const
 	return res;
 }
 
-
-
-
 template<class TYPE>
 static QStringList names(const std::vector<TYPE*>& io)
 {
@@ -2292,7 +2272,7 @@ static TYPE* name(const std::vector<TYPE*>& io, const QString& name)
 }
 
 template<class TYPE>
-static std::vector<TYPE*> flatten(const QVector<VipProcessingIO*>& io) 
+static std::vector<TYPE*> flatten(const QVector<VipProcessingIO*>& io)
 {
 	std::vector<TYPE*> flat;
 	for (int i = 0; i < io.size(); ++i) {
@@ -2305,8 +2285,6 @@ static std::vector<TYPE*> flatten(const QVector<VipProcessingIO*>& io)
 	}
 	return flat;
 }
-
-
 
 void VipProcessingObject::internalInitIO(bool force) const
 {
@@ -2338,13 +2316,13 @@ void VipProcessingObject::internalInitIO(bool force) const
 		_this->m_data->flatOutputs = flatten<VipOutput>(m_data->outputs);
 		_this->m_data->flatProperties = flatten<VipProperty>(m_data->properties);
 
-		for (size_t i = 0; i < m_data->flatInputs.size(); ++i) 
+		for (size_t i = 0; i < m_data->flatInputs.size(); ++i)
 			_this->m_data->flatInputs[i]->setParentProcessing(_this);
 
-		for (size_t i = 0; i < m_data->flatOutputs.size(); ++i) 
+		for (size_t i = 0; i < m_data->flatOutputs.size(); ++i)
 			_this->m_data->flatOutputs[i]->setParentProcessing(_this);
 
-		for (size_t i = 0; i < m_data->flatProperties.size(); ++i) 
+		for (size_t i = 0; i < m_data->flatProperties.size(); ++i)
 			_this->m_data->flatProperties[i]->setParentProcessing(_this);
 
 		_this->m_data->dirtyIO = false;
@@ -2354,7 +2332,7 @@ void VipProcessingObject::internalInitIO(bool force) const
 void VipProcessingObject::initialize(bool force) const
 {
 	if (!m_data->updateCalled) // Once update has been called, we must not change IO
-		if (force || !m_data->initializeIO || m_data->dirtyIO || m_data->initializeIO != metaObject()->propertyCount()) 
+		if (force || !m_data->initializeIO || m_data->dirtyIO || m_data->initializeIO != metaObject()->propertyCount())
 			internalInitIO(force);
 }
 
@@ -2453,7 +2431,7 @@ qint64 VipProcessingObject::time() const
 	return vipGetNanoSecondsSinceEpoch();
 }
 
-void VipProcessingObject::setComputeTimeStatistics(bool enable) 
+void VipProcessingObject::setComputeTimeStatistics(bool enable)
 {
 	if (m_data->computeTimeStatistics != enable) {
 		m_data->computeTimeStatistics = enable;
@@ -3132,8 +3110,8 @@ bool VipProcessingObject::deleteOnOutputConnectionsClosed() const
 	return m_data->parameters.deleteOnOutputConnectionsClosed;
 }
 
-
-static std::atomic<bool>& atomic_ref(bool& value) {
+static std::atomic<bool>& atomic_ref(bool& value)
+{
 	static_assert(sizeof(bool) == sizeof(std::atomic<bool>), "unsupported atomic ref on this platform");
 	return reinterpret_cast<std::atomic<bool>&>(value);
 }
@@ -3142,7 +3120,6 @@ static const std::atomic<bool>& atomic_ref(const bool& value)
 	static_assert(sizeof(bool) == sizeof(std::atomic<bool>), "unsupported atomic ref on this platform");
 	return reinterpret_cast<const std::atomic<bool>&>(value);
 }
-
 
 void VipProcessingObject::setEnabled(bool enable)
 {
@@ -3163,18 +3140,18 @@ void VipProcessingObject::setVisible(bool vis)
 bool VipProcessingObject::isVisible() const
 {
 	return atomic_ref(m_data->parameters.visible).load(std::memory_order_relaxed);
-	//return m_data->parameters.visible;
+	// return m_data->parameters.visible;
 }
 
 bool VipProcessingObject::isEnabled() const
 {
 	return atomic_ref(m_data->parameters.enable).load(std::memory_order_relaxed);
-	//return m_data->parameters.enable;
+	// return m_data->parameters.enable;
 }
 
 bool VipProcessingObject::update(bool force_run)
 {
-	
+
 	// Exit if disabled
 	if (!isEnabled())
 		return false;
@@ -3188,7 +3165,7 @@ bool VipProcessingObject::update(bool force_run)
 
 	// First step: if the schedule strategy is not Asynchronous, update first the source processings.
 	if (!(m_data->parameters.schedule_strategies & Asynchronous)) {
-		
+
 		for (const VipInput* in : m_data->flatInputs)
 			if (VipOutput* out = in->source())
 				if (VipProcessingObject* o = out->parentProcessing())
@@ -3204,21 +3181,21 @@ bool VipProcessingObject::update(bool force_run)
 		int new_count = 0;
 		for (const VipInput* in : m_data->flatInputs) {
 			int status = in->status();
-			if (status == -1 && no_empy_input) 
+			if (status == -1 && no_empy_input)
 				return false;
-			if (status <= 0 && all_new) 
+			if (status <= 0 && all_new)
 				return false;
 			if (status > 0)
 				new_count++;
 		}
-		if (new_count == 0) 
+		if (new_count == 0)
 			return false;
 	}
 
 	// If SkipIfBusy is set, returns if a processing is scheduled
-	if ((m_data->parameters.schedule_strategies & SkipIfBusy) && m_data->pool && m_data->pool->remaining() > 0) 
+	if ((m_data->parameters.schedule_strategies & SkipIfBusy) && m_data->pool && m_data->pool->remaining() > 0)
 		return false;
-	
+
 	if (!(m_data->parameters.schedule_strategies & Asynchronous)) {
 		// Synchronous processing
 		if (m_data->parameters.schedule_strategies & NoThread)
@@ -3411,7 +3388,7 @@ void VipProcessingObject::run()
 	if (testScheduleStrategy(SkipIfNoInput)) {
 		// if the processing has no new input, skip it
 		bool has_input = false;
-		for (const VipInput * in : m_data->flatInputs)
+		for (const VipInput* in : m_data->flatInputs)
 			if (in->hasNewData()) {
 				has_input = true;
 				break;
@@ -3423,10 +3400,9 @@ void VipProcessingObject::run()
 			return;
 		}
 	}
-	
 
 	resetError();
-	
+
 	qint64 time = 0;
 	if (computeTimeStatistics()) {
 
@@ -3464,7 +3440,7 @@ void VipProcessingObject::receiveConnectionClosed(VipProcessingIO* io)
 
 	if (m_data->parameters.deleteOnOutputConnectionsClosed && !m_data->destruct) {
 		// check all output connections. If they are all closed, close the VipProcessingIO
-		
+
 		bool found = false;
 		for (VipOutput* out : m_data->flatOutputs) {
 			if (out == io) {
@@ -3917,7 +3893,7 @@ VipProcessingObject* VipProcessingList::take(int i)
 
 	// remove the source properties from the VipProcessingObject
 	QList<QByteArray> names = sourceProperties();
-	for (const QByteArray & name : names)
+	for (const QByteArray& name : names)
 		obj->setSourceProperty(name.data(), QVariant());
 
 	disconnect(obj, SIGNAL(processingDone(VipProcessingObject*, qint64)), this, SLOT(receivedProcessingDone(VipProcessingObject*, qint64)));

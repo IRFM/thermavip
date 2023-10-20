@@ -1,17 +1,46 @@
+/**
+ * BSD 3-Clause License
+ *
+ * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice, this
+ *    list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of the copyright holder nor the names of its
+ *    contributors may be used to endorse or promote products derived from
+ *    this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
 #include <cmath>
 
-#include "VipPlotQuiver.h"
 #include "VipAxisColorMap.h"
 #include "VipPainter.h"
+#include "VipPlotQuiver.h"
 #include "VipShapeDevice.h"
-
-
 
 static int registerQuiverKeyWords()
 {
 	static VipKeyWords keywords;
 	if (keywords.isEmpty()) {
-		
+
 		QMap<QByteArray, int> style;
 		style["line"] = VipQuiverPath::Line;
 		style["startArrow"] = VipQuiverPath::StartArrow;
@@ -34,13 +63,9 @@ static int registerQuiverKeyWords()
 
 static int _registerQuiverKeyWords = registerQuiverKeyWords();
 
-
-
-
 class VipPlotQuiver::PrivateData
 {
 public:
-
 	PrivateData()
 	  : textAlignment(Qt::AlignTop | Qt::AlignHCenter)
 	  , textPosition(Vip::XInside)
@@ -64,8 +89,8 @@ public:
 	QSharedPointer<VipTextStyle> textStyle;
 };
 
-VipPlotQuiver::VipPlotQuiver(const VipText & title )
-:VipPlotItemDataType(title)
+VipPlotQuiver::VipPlotQuiver(const VipText& title)
+  : VipPlotItemDataType(title)
 {
 	d_data = new PrivateData();
 
@@ -80,7 +105,7 @@ VipPlotQuiver::~VipPlotQuiver()
 	delete d_data;
 }
 
-void VipPlotQuiver::setData(const QVariant& data) 
+void VipPlotQuiver::setData(const QVariant& data)
 {
 	VipPlotItemDataType::setData(data);
 
@@ -134,7 +159,7 @@ VipInterval VipPlotQuiver::computeInterval(const VipQuiverPointVector& vec, cons
 
 	return res;
 }
-	
+
 int VipPlotQuiver::findQuiverIndex(const VipQuiverPointVector& vec, const QPointF& pos, double max_dist) const
 {
 	const VipCoordinateSystemPtr m = this->sceneMap();
@@ -147,7 +172,7 @@ int VipPlotQuiver::findQuiverIndex(const VipQuiverPointVector& vec, const QPoint
 
 	for (int i = 0; i < vec.size(); ++i) {
 		QLineF line(m->transform(vec[i].position), m->transform(vec[i].destination));
-		
+
 		QPainterPath p;
 		p.moveTo(m->transform(vec[i].position));
 		p.lineTo(m->transform(vec[i].destination));
@@ -158,7 +183,7 @@ int VipPlotQuiver::findQuiverIndex(const VipQuiverPointVector& vec, const QPoint
 	return -1;
 }
 
-QString VipPlotQuiver::formatText(const QString& text, const QPointF& pos) const 
+QString VipPlotQuiver::formatText(const QString& text, const QPointF& pos) const
 {
 	QString res = VipPlotItem::formatText(text, pos);
 	const VipQuiverPointVector vec = rawData();
@@ -167,9 +192,8 @@ QString VipPlotQuiver::formatText(const QString& text, const QPointF& pos) const
 		return res;
 
 	return VipText::replace(res, "#value", vec[index].value);
-
 }
-bool VipPlotQuiver::areaOfInterest(const QPointF& pos, int , double maxDistance, VipPointVector& out_pos, VipBoxStyle& style, int& legend) const 
+bool VipPlotQuiver::areaOfInterest(const QPointF& pos, int, double maxDistance, VipPointVector& out_pos, VipBoxStyle& style, int& legend) const
 {
 	const VipQuiverPointVector vec = rawData();
 	int index = findQuiverIndex(vec, pos, maxDistance);
@@ -202,7 +226,7 @@ QList<VipInterval> VipPlotQuiver::plotBoundingIntervals() const
 	return res;
 }
 
-bool VipPlotQuiver::setItemProperty(const char* name, const QVariant& value, const QByteArray& index) 
+bool VipPlotQuiver::setItemProperty(const char* name, const QVariant& value, const QByteArray& index)
 {
 	if (value.userType() == 0)
 		return false;
@@ -258,14 +282,12 @@ Vip::RegionPositions VipPlotQuiver::textPosition() const
 	return d_data->textPosition;
 }
 
-
 void VipPlotQuiver::setTextStyle(const VipTextStyle& st)
 {
 	d_data->textStyle.reset(new VipTextStyle(st));
 	d_data->text.setTextStyle(st);
 	emitItemChanged();
 }
-
 
 void VipPlotQuiver::setTextTransform(const QTransform& tr, const QPointF& ref)
 {
@@ -312,8 +334,7 @@ VipText& VipPlotQuiver::text()
 	return d_data->text;
 }
 
-
-void VipPlotQuiver::draw(QPainter * painter, const VipCoordinateSystemPtr & m) const
+void VipPlotQuiver::draw(QPainter* painter, const VipCoordinateSystemPtr& m) const
 {
 	QPen p((d_data->quiver.pen()));
 	VipQuiverPath quiver = d_data->quiver;
@@ -324,13 +345,11 @@ void VipPlotQuiver::draw(QPainter * painter, const VipCoordinateSystemPtr & m) c
 
 	VipText t = d_data->text;
 
-	for(int i = 0; i < vector.size(); ++i )
-	{
+	for (int i = 0; i < vector.size(); ++i) {
 		const VipQuiverPoint& tmp = vector[i];
 
-		if (use_colormap)
-		{
-			quiver.setColor(color(tmp.value,p.color().rgba()));
+		if (use_colormap) {
+			quiver.setColor(color(tmp.value, p.color().rgba()));
 		}
 
 		VipQuiver _q((QPointF)m->transform(tmp.position), (QPointF)m->transform(tmp.destination));
@@ -344,13 +363,12 @@ void VipPlotQuiver::draw(QPainter * painter, const VipCoordinateSystemPtr & m) c
 	}
 }
 
-QRectF VipPlotQuiver::drawLegend(QPainter * painter, const QRectF & r, int index) const
+QRectF VipPlotQuiver::drawLegend(QPainter* painter, const QRectF& r, int index) const
 {
 	Q_UNUSED(index)
-	d_data->quiver.draw(painter,QLineF(QPointF(r.left(),r.center().y()),QPointF(r.right(),r.center().y())));
+	d_data->quiver.draw(painter, QLineF(QPointF(r.left(), r.center().y()), QPointF(r.right(), r.center().y())));
 	return r;
 }
-
 
 VipInterval VipPlotQuiver::plotInterval(const VipInterval& interval) const
 {
@@ -361,22 +379,21 @@ VipInterval VipPlotQuiver::plotInterval(const VipInterval& interval) const
 	return const_cast<VipPlotQuiver*>(this)->d_data->dataInterval = computeInterval(rawData(), interval);
 }
 
-void VipPlotQuiver::setQuiverPath(const VipQuiverPath & q)
+void VipPlotQuiver::setQuiverPath(const VipQuiverPath& q)
 {
 	d_data->quiver = q;
 	emitItemChanged();
 }
 
-const VipQuiverPath & VipPlotQuiver::quiverPath() const
+const VipQuiverPath& VipPlotQuiver::quiverPath() const
 {
 	return d_data->quiver;
 }
 
-VipQuiverPath & VipPlotQuiver::quiverPath()
+VipQuiverPath& VipPlotQuiver::quiverPath()
 {
 	return d_data->quiver;
 }
-
 
 QDataStream& operator<<(QDataStream& str, const VipQuiverPoint& p)
 {
@@ -386,7 +403,6 @@ QDataStream& operator>>(QDataStream& str, VipQuiverPoint& p)
 {
 	return str >> p.destination >> p.position >> p.value;
 }
-
 
 VipArchive& operator<<(VipArchive& arch, const VipPlotQuiver* value)
 {
@@ -413,9 +429,6 @@ VipArchive& operator>>(VipArchive& arch, VipPlotQuiver* value)
 	value->setText(arch.read("text").value<VipText>());
 	return arch;
 }
-
-
-
 
 static bool register_types()
 {

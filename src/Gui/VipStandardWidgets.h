@@ -1,52 +1,80 @@
+/**
+ * BSD 3-Clause License
+ *
+ * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice, this
+ *    list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of the copyright holder nor the names of its
+ *    contributors may be used to endorse or promote products derived from
+ *    this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
 #ifndef VIP_STANDARD_WIDGETS_H
 #define VIP_STANDARD_WIDGETS_H
 
 #include <QBrush>
-#include <QPen>
-#include <QDialog>
-#include <QMenu>
-#include <QLabel>
+#include <QCheckBox>
 #include <QComboBox>
-#include <QToolButton>
+#include <QDialog>
+#include <QDoubleSpinBox>
+#include <QFileDialog>
+#include <QLabel>
+#include <QLineEdit>
+#include <QMenu>
+#include <QMimeData>
+#include <QPen>
 #include <QPushButton>
 #include <QSpinBox>
-#include <QDoubleSpinBox>
-#include <QLineEdit>
-#include <QFileDialog>
-#include <QCheckBox>
-#include <QDialog>
-#include <QMimeData>
+#include <QToolButton>
 #include <qtoolbar.h>
 
-#include "VipText.h"
 #include "VipConfig.h"
 #include "VipDataType.h"
 #include "VipScaleDraw.h"
+#include "VipText.h"
 
 /// \addtogroup Gui
 /// @{
 
-
-//forward declaration
+// forward declaration
 class QGridLayout;
 
 class VIP_GUI_EXPORT VipFindChidren
 {
 public:
-	static QList<QObject*> children(const QString & name = QString());
+	static QList<QObject*> children(const QString& name = QString());
 
-	template< class T>
-	static QList<T> findChildren(const QString & name = QString())
+	template<class T>
+	static QList<T> findChildren(const QString& name = QString())
 	{
 		QList<T> res;
 		QList<QObject*> c = children(name);
-		for(int i=0; i < c.size(); ++i)
-			if(T tmp = qobject_cast<T>(c[i]))
+		for (int i = 0; i < c.size(); ++i)
+			if (T tmp = qobject_cast<T>(c[i]))
 				res << tmp;
 		return res;
 	}
 };
-
 
 /// Helper class to detect whenever a widget loose the focus because of a keyboard hit.
 class VIP_GUI_EXPORT VipDetectLooseFocus : public QObject
@@ -54,66 +82,87 @@ class VIP_GUI_EXPORT VipDetectLooseFocus : public QObject
 	Q_OBJECT
 
 public:
-	VipDetectLooseFocus(QWidget * parent );
+	VipDetectLooseFocus(QWidget* parent);
 	~VipDetectLooseFocus();
 
-	bool	eventFilter(QObject * watched, QEvent *event);
+	bool eventFilter(QObject* watched, QEvent* event);
 
 Q_SIGNALS:
 	void focusLost();
 };
 
-
 class VIP_GUI_EXPORT VipVerticalLine : public QFrame
 {
 	Q_OBJECT
 public:
-	VipVerticalLine(QWidget * parent = nullptr);
+	VipVerticalLine(QWidget* parent = nullptr);
 };
 
 class VIP_GUI_EXPORT VipHorizontalLine : public QFrame
 {
 	Q_OBJECT
 public:
-	VipHorizontalLine(QWidget * parent = nullptr);
+	VipHorizontalLine(QWidget* parent = nullptr);
 };
 
 class VIP_GUI_EXPORT VipLineWidget
 {
 public:
-	static QFrame *createHLine(QWidget * parent = nullptr);
-	static QFrame *createVLine(QWidget * parent = nullptr);
-	static QFrame *createSunkenHLine(QWidget * parent = nullptr);
-	static QFrame *createSunkenVLine(QWidget * parent = nullptr);
+	static QFrame* createHLine(QWidget* parent = nullptr);
+	static QFrame* createVLine(QWidget* parent = nullptr);
+	static QFrame* createSunkenHLine(QWidget* parent = nullptr);
+	static QFrame* createSunkenVLine(QWidget* parent = nullptr);
 };
 
 class VIP_GUI_EXPORT VipFileDialog
 {
 public:
 	/// Open a dialog box to open a directory.
-	/// The selected path will be kept in memory and used in the next call to #VipFileDialog::getExistingDirectory, #VipFileDialog::getOpenFileName, #VipFileDialog::getOpenFileNames or #VipFileDialog::getSaveFileName.
-	static QString getExistingDirectory  ( QWidget * parent , const QString & caption , QFileDialog::Options options = QFileDialog::Options() );
+	/// The selected path will be kept in memory and used in the next call to #VipFileDialog::getExistingDirectory, #VipFileDialog::getOpenFileName, #VipFileDialog::getOpenFileNames or
+	/// #VipFileDialog::getSaveFileName.
+	static QString getExistingDirectory(QWidget* parent, const QString& caption, QFileDialog::Options options = QFileDialog::Options());
 	/// Open a dialog box to select a file.
-	/// The selected path will be kept in memory and used in the next call to #VipFileDialog::getExistingDirectory, #VipFileDialog::getOpenFileName, #VipFileDialog::getOpenFileNames or #VipFileDialog::getSaveFileName.
-	static QString getOpenFileName ( QWidget * parent, const QString & caption , const QString & filter = QString(), QString * selectedFilter = nullptr, QFileDialog::Options options= QFileDialog::Options() );
+	/// The selected path will be kept in memory and used in the next call to #VipFileDialog::getExistingDirectory, #VipFileDialog::getOpenFileName, #VipFileDialog::getOpenFileNames or
+	/// #VipFileDialog::getSaveFileName.
+	static QString getOpenFileName(QWidget* parent,
+				       const QString& caption,
+				       const QString& filter = QString(),
+				       QString* selectedFilter = nullptr,
+				       QFileDialog::Options options = QFileDialog::Options());
 	/// Open a dialog box to select one or more files.
-	/// The selected path will be kept in memory and used in the next call to #VipFileDialog::getExistingDirectory, #VipFileDialog::getOpenFileName, #VipFileDialog::getOpenFileNames or #VipFileDialog::getSaveFileName.
-	static QStringList getOpenFileNames ( QWidget * parent , const QString & caption , const QString & filter = QString(), QString * selectedFilter = nullptr, QFileDialog::Options options= QFileDialog::Options() );
+	/// The selected path will be kept in memory and used in the next call to #VipFileDialog::getExistingDirectory, #VipFileDialog::getOpenFileName, #VipFileDialog::getOpenFileNames or
+	/// #VipFileDialog::getSaveFileName.
+	static QStringList getOpenFileNames(QWidget* parent,
+					    const QString& caption,
+					    const QString& filter = QString(),
+					    QString* selectedFilter = nullptr,
+					    QFileDialog::Options options = QFileDialog::Options());
 	/// Open a dialog box to select one file in saving mode.
-	/// The selected path will be kept in memory and used in the next call to #VipFileDialog::getExistingDirectory, #VipFileDialog::getOpenFileName, #VipFileDialog::getOpenFileNames or #VipFileDialog::getSaveFileName.
-	static QString getSaveFileName ( QWidget * parent, const QString & caption ,  const QString & filter = QString() , QString * selectedFilter = nullptr , QFileDialog::Options options= QFileDialog::Options() );
-	static QString getSaveFileName2( QWidget * parent,const QString & filename, const QString & caption ,  const QString & filter = QString() , QString * selectedFilter = nullptr , QFileDialog::Options options= QFileDialog::Options() );
+	/// The selected path will be kept in memory and used in the next call to #VipFileDialog::getExistingDirectory, #VipFileDialog::getOpenFileName, #VipFileDialog::getOpenFileNames or
+	/// #VipFileDialog::getSaveFileName.
+	static QString getSaveFileName(QWidget* parent,
+				       const QString& caption,
+				       const QString& filter = QString(),
+				       QString* selectedFilter = nullptr,
+				       QFileDialog::Options options = QFileDialog::Options());
+	static QString getSaveFileName2(QWidget* parent,
+					const QString& filename,
+					const QString& caption,
+					const QString& filter = QString(),
+					QString* selectedFilter = nullptr,
+					QFileDialog::Options options = QFileDialog::Options());
 
 	/// Set the default directory for the next call to one of the file dialog functions
-	static void setDefaultDirectory(const QString & dirname);
+	static void setDefaultDirectory(const QString& dirname);
 };
 
 class VIP_GUI_EXPORT VipStandardWidgets
 {
-	static QString format(const QString & str);
+	static QString format(const QString& str);
+
 public:
-	static QWidget * fromName(const QString & name);
-	static QWidget * fromStyleSheet(const QString & style_sheet);
+	static QWidget* fromName(const QString& name);
+	static QWidget* fromStyleSheet(const QString& style_sheet);
 
 	/// Create the style sheet for a VipSpinBox.
 	/// example:
@@ -121,9 +170,10 @@ public:
 	///		QWidget *w = fromStyleSheet(spinBox(0,10,1,2));
 	/// w2->show();
 	/// \endcode
-	static QString spinBox(int min,int max,int step, int value)
+	static QString spinBox(int min, int max, int step, int value)
 	{
-		return "VipSpinBox{ qproperty-minimum:" + QString::number(min) + "; qproperty-maximum:" + QString::number(max) + "; qproperty-singleStep:" + QString::number(step) + "; qproperty-value:" + QString::number(value) + "; }";
+		return "VipSpinBox{ qproperty-minimum:" + QString::number(min) + "; qproperty-maximum:" + QString::number(max) + "; qproperty-singleStep:" + QString::number(step) +
+		       "; qproperty-value:" + QString::number(value) + "; }";
 	}
 
 	/// Create the style sheet for a VipDoubleSpinBox.
@@ -134,7 +184,8 @@ public:
 	/// \endcode
 	static QString doubleSpinBox(double min, double max, double step, double value)
 	{
-		return "VipDoubleSpinBox{  qproperty-minimum:" + QString::number(min) + "; qproperty-maximum:" + QString::number(max) + "; qproperty-singleStep:" + QString::number(step) + "; qproperty-value:" + QString::number(value) + ";}";
+		return "VipDoubleSpinBox{  qproperty-minimum:" + QString::number(min) + "; qproperty-maximum:" + QString::number(max) + "; qproperty-singleStep:" + QString::number(step) +
+		       "; qproperty-value:" + QString::number(value) + ";}";
 	}
 
 	/// Create the style sheet for a VipDoubleSliderEdit.
@@ -145,9 +196,9 @@ public:
 	/// \endcode
 	static QString doubleSliderEdit(double min, double max, double step, double value, bool show_spin_box)
 	{
-		return "VipDoubleSliderEdit{ qproperty-minimum:" + QString::number(min) + "; qproperty-maximum:" + QString::number(max) + "; qproperty-singleStep:" + QString::number(step) + "; qproperty-value:" + QString::number(value) + "; qproperty-showSpinBox:" + QString::number(show_spin_box) + ";}";
+		return "VipDoubleSliderEdit{ qproperty-minimum:" + QString::number(min) + "; qproperty-maximum:" + QString::number(max) + "; qproperty-singleStep:" + QString::number(step) +
+		       "; qproperty-value:" + QString::number(value) + "; qproperty-showSpinBox:" + QString::number(show_spin_box) + ";}";
 	}
-
 
 	/// Create the style sheet for a VipDoubleEdit.
 	/// example:
@@ -155,9 +206,7 @@ public:
 	///		QWidget *w = fromStyleSheet(doubleEdit(2.5));
 	/// w2->show();
 	/// \endcode
-	static QString doubleEdit(double value, const QString & d_format = "%g")
-	{return "VipDoubleEdit{ qproperty-value:" +QString::number(value)+ "; qproperty-format:"+ format(d_format)+ ";}";}
-
+	static QString doubleEdit(double value, const QString& d_format = "%g") { return "VipDoubleEdit{ qproperty-value:" + QString::number(value) + "; qproperty-format:" + format(d_format) + ";}"; }
 
 	/// Create the style sheet for a VipComboBox.
 	/// example:
@@ -165,10 +214,7 @@ public:
 	///		QWidget *w = fromStyleSheet(comboBox("choice1,choice2,choice3","choice2"));
 	/// w2->show();
 	/// \endcode
-	static QString comboBox(const QString & choices, const QString & value)
-	{
-		return "VipComboBox{ qproperty-choices:" + format(choices) + "; qproperty-value:" + format(value) + " ;}";
-	}
+	static QString comboBox(const QString& choices, const QString& value) { return "VipComboBox{ qproperty-choices:" + format(choices) + "; qproperty-value:" + format(value) + " ;}"; }
 
 	/// Create the style sheet for a VipEnumEdit.
 	/// example:
@@ -176,7 +222,7 @@ public:
 	///	QWidget *w = fromStyleSheet(enumWidget("enum1,enum2,enum3","",1));
 	/// w2->show();
 	/// \endcode
-	static QString enumWidget(const QString & enums, const QString & values, int value)
+	static QString enumWidget(const QString& enums, const QString& values, int value)
 	{
 		return "VipEnumEdit{ qproperty-enumNames:" + format(enums) + "; qproperty-enumValues:" + format(values) + "; qproperty-value:" + QString::number(value) + " ;}";
 	}
@@ -187,10 +233,7 @@ public:
 	///		QWidget *w = fromStyleSheet(lineEdit("text"));
 	/// w2->show();
 	/// \endcode
-	static QString lineEdit(const QString & value)
-	{
-		return "VipLineEdit{ qproperty-value:" + format(value) + " ;}";
-	}
+	static QString lineEdit(const QString& value) { return "VipLineEdit{ qproperty-value:" + format(value) + " ;}"; }
 
 	/// Create the style sheet for a VipBrushWidget.
 	/// example:
@@ -198,10 +241,7 @@ public:
 	///		QWidget *w = fromStyleSheet(brushWidget("red"));
 	/// w2->show();
 	/// \endcode
-	static QString brushWidget(const QString & color)
-	{
-		return "VipBrushWidget{ qproperty-value:" + color + " ;}";
-	}
+	static QString brushWidget(const QString& color) { return "VipBrushWidget{ qproperty-value:" + color + " ;}"; }
 
 	/// Create the style sheet for a VipPenWidget.
 	/// example:
@@ -209,9 +249,10 @@ public:
 	///		QWidget *w = fromStyleSheet(penWidget("red",2.5,2,2,8));
 	/// w2->show();
 	/// \endcode
-	static QString penWidget(const QString & brush,double width,int style,int cap,int join)
+	static QString penWidget(const QString& brush, double width, int style, int cap, int join)
 	{
-		return "VipPenWidget{ qproperty-brush:" + brush + " ;qproperty-width:" + QString::number(width) + " ;qproperty-style:" + QString::number(style) + " ;qproperty-cap:" + QString::number(cap) + " ;qproperty-join:" + QString::number(join) + " ;}";
+		return "VipPenWidget{ qproperty-brush:" + brush + " ;qproperty-width:" + QString::number(width) + " ;qproperty-style:" + QString::number(style) +
+		       " ;qproperty-cap:" + QString::number(cap) + " ;qproperty-join:" + QString::number(join) + " ;}";
 	}
 
 	/// Create the style sheet for a VipPenWidget.
@@ -220,9 +261,10 @@ public:
 	///		QWidget *w = fromStyleSheet(penButton("Pen",red,2.5,2,2,8));
 	/// w2->show();
 	/// \endcode
-	static QString penButton(const QString & mode,const QString & brush,double width,int style,int cap,int join)
+	static QString penButton(const QString& mode, const QString& brush, double width, int style, int cap, int join)
 	{
-		return "VipPenButton{  qproperty-mode:" + format(mode) + "; qproperty-brush:" + brush + " ;qproperty-width:" + QString::number(width) + " ;qproperty-style:" + QString::number(style) + " ;qproperty-cap:" + QString::number(cap) + " ;qproperty-join:" + QString::number(join) + " ;}";
+		return "VipPenButton{  qproperty-mode:" + format(mode) + "; qproperty-brush:" + brush + " ;qproperty-width:" + QString::number(width) + " ;qproperty-style:" + QString::number(style) +
+		       " ;qproperty-cap:" + QString::number(cap) + " ;qproperty-join:" + QString::number(join) + " ;}";
 	}
 
 	/// Create the style sheet for a VipFileName.
@@ -231,13 +273,11 @@ public:
 	///		QWidget *w = fromStyleSheet(fileName("Open","","Open image","Image files (*.png *.bmp *.jpeg)"));
 	/// w2->show();
 	/// \endcode
-	static QString fileName(const QString &mode, const QString &filename,const QString &title, const QString &filters)
+	static QString fileName(const QString& mode, const QString& filename, const QString& title, const QString& filters)
 	{
-		return "VipFileName{  qproperty-mode:" + format(mode) + "; qproperty-value:" + format(filename) + " ;qproperty-title:" + format(title) + " ;qproperty-filters:" + format(filters) + " ;}";
+		return "VipFileName{  qproperty-mode:" + format(mode) + "; qproperty-value:" + format(filename) + " ;qproperty-title:" + format(title) + " ;qproperty-filters:" + format(filters) +
+		       " ;}";
 	}
-
-
-
 };
 
 /// Reimplements QSpinBox to solve a strange bug with stylesheet (setting min or max values does nothing).
@@ -245,16 +285,13 @@ class VIP_GUI_EXPORT VipSpinBox : public QSpinBox
 {
 	Q_OBJECT
 public:
-
-	VipSpinBox(QWidget * parent = nullptr);
+	VipSpinBox(QWidget* parent = nullptr);
 
 private Q_SLOTS:
-	void valueHasChanged() {
-		Q_EMIT genericValueChanged(value());
-	}
+	void valueHasChanged() { Q_EMIT genericValueChanged(value()); }
 
 Q_SIGNALS:
-	void genericValueChanged(const QVariant &);
+	void genericValueChanged(const QVariant&);
 };
 
 /// A QCheckBox that defines the value property
@@ -264,14 +301,14 @@ class VIP_GUI_EXPORT VipBoolEdit : public QCheckBox
 	Q_PROPERTY(bool value READ value WRITE setValue)
 
 public:
-	VipBoolEdit(QWidget * parent = nullptr);
+	VipBoolEdit(QWidget* parent = nullptr);
 
 	bool value() const;
 	void setValue(bool);
 
 Q_SIGNALS:
 	void valueChanged(bool);
-	void genericValueChanged(const QVariant &);
+	void genericValueChanged(const QVariant&);
 
 private Q_SLOTS:
 	void changed();
@@ -283,79 +320,74 @@ class VIP_GUI_EXPORT VipDoubleSpinBox : public QDoubleSpinBox
 {
 	Q_OBJECT
 public:
-
-	VipDoubleSpinBox(QWidget * parent = nullptr);
+	VipDoubleSpinBox(QWidget* parent = nullptr);
 
 	virtual QString textFromValue(double value) const;
 	virtual double valueFromText(const QString& text) const;
-	virtual QValidator::State	validate(QString &text, int &pos) const;
+	virtual QValidator::State validate(QString& text, int& pos) const;
 
 private Q_SLOTS:
-	void valueHasChanged() {
-		Q_EMIT genericValueChanged(value());
-	}
+	void valueHasChanged() { Q_EMIT genericValueChanged(value()); }
 
 Q_SIGNALS:
-	void genericValueChanged(const QVariant &);
+	void genericValueChanged(const QVariant&);
 };
 
-
-
-/// This class implements a standard QLineEdit that displays a fixed, non-editable prefix and/or suffix.  You can use it just like a QLineEdit, calling setText() and text() with the actual internal text value.  Use setPrefix() and setSuffix() to change what is displayed in front and after this text.  Use fullText() to retrieve the complete string, including the prefix and the suffix.
+/// This class implements a standard QLineEdit that displays a fixed, non-editable prefix and/or suffix.  You can use it just like a QLineEdit, calling setText() and text() with the actual internal
+/// text value.  Use setPrefix() and setSuffix() to change what is displayed in front and after this text.  Use fullText() to retrieve the complete string, including the prefix and the suffix.
 class VIP_GUI_EXPORT VipPrefixSuffixLineEdit : public QLineEdit
 {
 	Q_OBJECT
 
 public:
-	VipPrefixSuffixLineEdit(const QString& prefix = QString(), const QString& suffix = QString(), QWidget *parent = 0);
+	VipPrefixSuffixLineEdit(const QString& prefix = QString(), const QString& suffix = QString(), QWidget* parent = 0);
 
 	QString prefix() const;
 	QString suffix() const;
 
-	QLabel * prefixLabel() const;
-	QLabel * suffixLabel() const;
+	QLabel* prefixLabel() const;
+	QLabel* suffixLabel() const;
 
-public Q_SLOTS :
+public Q_SLOTS:
 	void setPrefix(const QString& prefix);
 	void setSuffix(const QString& suffix);
 
 protected:
 	void resetMargins();
-	virtual void resizeEvent(QResizeEvent * evt);
-	QLabel * _prefix;
-	QLabel * _suffix;
+	virtual void resizeEvent(QResizeEvent* evt);
+	QLabel* _prefix;
+	QLabel* _suffix;
 };
 
 class VIP_GUI_EXPORT VipDoubleEdit : public VipPrefixSuffixLineEdit
 {
 	Q_OBJECT
-	Q_PROPERTY(double value READ value WRITE setValue )
-	Q_PROPERTY(QString rightStyle READ rightStyle WRITE setRightStyle )
-	Q_PROPERTY(QString wrongStyle READ wrongStyle WRITE setWrongStyle )
-	Q_PROPERTY(QString format READ format WRITE setFormat )
+	Q_PROPERTY(double value READ value WRITE setValue)
+	Q_PROPERTY(QString rightStyle READ rightStyle WRITE setRightStyle)
+	Q_PROPERTY(QString wrongStyle READ wrongStyle WRITE setWrongStyle)
+	Q_PROPERTY(QString format READ format WRITE setFormat)
 
 public:
-	VipDoubleEdit(QWidget * parent = nullptr);
+	VipDoubleEdit(QWidget* parent = nullptr);
 	double value() const;
-	const QString & rightStyle() const;
-	const QString & wrongStyle() const;
-	const QString & format() const;
+	const QString& rightStyle() const;
+	const QString& wrongStyle() const;
+	const QString& format() const;
 	bool isValid() const;
 	bool integerFormat() const;
 
-	static double readValue(const QString & text, bool integer, bool * ok = nullptr) ;
+	static double readValue(const QString& text, bool integer, bool* ok = nullptr);
 
 public Q_SLOTS:
 	void setValue(double value);
-	void setRightStyle(const QString &);
-	void setWrongStyle(const QString &);
-	void setFormat(const QString &);
+	void setRightStyle(const QString&);
+	void setWrongStyle(const QString&);
+	void setFormat(const QString&);
 	void setIntegerFormat(bool integer);
-
 
 Q_SIGNALS:
 	void valueChanged(double);
-	void genericValueChanged(const QVariant &);
+	void genericValueChanged(const QVariant&);
 
 private Q_SLOTS:
 	void edited();
@@ -369,7 +401,6 @@ private:
 	double m_value;
 };
 
-
 class VIP_GUI_EXPORT VipMultiComponentDoubleEdit : public QWidget
 {
 	Q_OBJECT
@@ -382,49 +413,48 @@ class VIP_GUI_EXPORT VipMultiComponentDoubleEdit : public QWidget
 	Q_PROPERTY(int maxNumberOfComponents READ maxNumberOfComponents WRITE setMaxNumberOfComponents)
 	Q_PROPERTY(int integer READ integerFormat WRITE setIntegerFormat)
 public:
-	VipMultiComponentDoubleEdit(QWidget * parent = nullptr);
+	VipMultiComponentDoubleEdit(QWidget* parent = nullptr);
 	~VipMultiComponentDoubleEdit();
 
 	int fixedNumberOfComponents() const;
 	int maxNumberOfComponents() const;
 	QString separator() const;
 
-	const QString & rightStyle() const;
-	const QString & wrongStyle() const;
-	const QString & format() const;
+	const QString& rightStyle() const;
+	const QString& wrongStyle() const;
+	const QString& format() const;
 	bool isValid() const;
 	bool integerFormat() const;
 
 	VipNDDoubleCoordinate value() const;
 
 public Q_SLOTS:
-	void setRightStyle(const QString &);
-	void setWrongStyle(const QString &);
+	void setRightStyle(const QString&);
+	void setWrongStyle(const QString&);
 	void setIntegerFormat(bool integer);
 	void setFixedNumberOfComponents(int);
 	void setMaxNumberOfComponents(int);
 
-	void setSeparator(const QString & sep);
-	void setFormat(const QString & format);
+	void setSeparator(const QString& sep);
+	void setFormat(const QString& format);
 
-	void setValue(const VipNDDoubleCoordinate & value);
+	void setValue(const VipNDDoubleCoordinate& value);
 
 private Q_SLOTS:
 	void edited();
 	void enterPressed();
 
 Q_SIGNALS:
-	void valueChanged(const VipNDDoubleCoordinate &);
-	void genericValueChanged(const QVariant &);
+	void valueChanged(const VipNDDoubleCoordinate&);
+	void genericValueChanged(const QVariant&);
 
 private:
-	VipNDDoubleCoordinate readValue(bool * ok = nullptr) const;
+	VipNDDoubleCoordinate readValue(bool* ok = nullptr) const;
 	void applyStyle();
 	void applyFormat();
 	class PrivateData;
-	PrivateData * m_data;
+	PrivateData* m_data;
 };
-
 
 class QSlider;
 
@@ -440,7 +470,7 @@ class VIP_GUI_EXPORT VipDoubleSliderEdit : public QWidget
 	Q_PROPERTY(bool showSpinBox READ showSpinBox WRITE setShowSpinBox)
 
 public:
-	VipDoubleSliderEdit(QWidget * parent = nullptr);
+	VipDoubleSliderEdit(QWidget* parent = nullptr);
 
 	double value() const;
 	double minimum() const;
@@ -461,36 +491,37 @@ private Q_SLOTS:
 
 Q_SIGNALS:
 	void valueChanged(double);
-	void genericValueChanged(const QVariant &);
+	void genericValueChanged(const QVariant&);
 
 private:
-	QSlider *m_slider;
-	VipDoubleSpinBox *m_spin;
+	QSlider* m_slider;
+	VipDoubleSpinBox* m_spin;
 };
 
 /// Reimplements QLineEdit to provide a 'value' property for the perspective tool.
 class VIP_GUI_EXPORT VipLineEdit : public QLineEdit
 {
 	Q_OBJECT
-	Q_PROPERTY(QString value READ text WRITE setText )
+	Q_PROPERTY(QString value READ text WRITE setText)
 
 public:
-
-	VipLineEdit(QWidget * parent = nullptr) : QLineEdit(parent) {
+	VipLineEdit(QWidget* parent = nullptr)
+	  : QLineEdit(parent)
+	{
 		connect(this, SIGNAL(returnPressed()), this, SLOT(valueHasChanged()));
 	}
 
-private Q_SLOTS :
-	void valueHasChanged() {
-	Q_EMIT valueChanged(text());
-	Q_EMIT genericValueChanged(text());
+private Q_SLOTS:
+	void valueHasChanged()
+	{
+		Q_EMIT valueChanged(text());
+		Q_EMIT genericValueChanged(text());
 	}
 
 Q_SIGNALS:
-	void valueChanged(const QString & v);
-	void genericValueChanged(const QVariant &);
+	void valueChanged(const QString& v);
+	void genericValueChanged(const QVariant&);
 };
-
 
 class VipLineEditIcon : public VipLineEdit
 {
@@ -501,8 +532,10 @@ public:
 	~VipLineEditIcon();
 public Q_SLOTS:
 	void setIcon(const QIcon& icon);
+
 protected:
 	virtual void paintEvent(QPaintEvent* event);
+
 private:
 	QIcon m_icon;
 };
@@ -511,39 +544,41 @@ private:
 class VIP_GUI_EXPORT VipComboBox : public QComboBox
 {
 	Q_OBJECT
-	Q_PROPERTY(QString value READ currentText WRITE setCurrentText  )
-	Q_PROPERTY(QString choices READ choices WRITE setChoices  )
+	Q_PROPERTY(QString value READ currentText WRITE setCurrentText)
+	Q_PROPERTY(QString choices READ choices WRITE setChoices)
 
 public:
-	VipComboBox(QWidget * parent = nullptr);
+	VipComboBox(QWidget* parent = nullptr);
 
-	QStringList items() const {
+	QStringList items() const
+	{
 		QStringList res;
-		for(int i=0; i < count(); ++i) res << itemText(i);
+		for (int i = 0; i < count(); ++i)
+			res << itemText(i);
 		return res;
 	}
 
-	QString choices() const {
-		return items().join(",");
-	}
+	QString choices() const { return items().join(","); }
 
-	virtual void 	showPopup () {
-			emit openPopup();
-			QComboBox::showPopup();
-		}
+	virtual void showPopup()
+	{
+		emit openPopup();
+		QComboBox::showPopup();
+	}
 
 	void setInnerDragDropEnabled(bool enable);
 	bool innerDragDropEnabled() const;
 
 protected:
-	virtual bool eventFilter(QObject * obj , QEvent * evt);
+	virtual bool eventFilter(QObject* obj, QEvent* evt);
 
 public Q_SLOTS:
-	//add the function setCurrentText, not provided by QComboBox
-	void setCurrentText(const QString & text);
-	void setChoices(const QString & choices){
+	// add the function setCurrentText, not provided by QComboBox
+	void setCurrentText(const QString& text);
+	void setChoices(const QString& choices)
+	{
 		clear();
-		addItems(choices.split(",",VIP_SKIP_BEHAVIOR::SkipEmptyParts));
+		addItems(choices.split(",", VIP_SKIP_BEHAVIOR::SkipEmptyParts));
 	}
 
 private Q_SLOTS:
@@ -551,16 +586,14 @@ private Q_SLOTS:
 
 Q_SIGNALS:
 	void openPopup();
-	void innerItemDropped(const QString & item);
+	void innerItemDropped(const QString& item);
 
-	void valueChanged(const QString &);
-	void genericValueChanged(const QVariant &);
+	void valueChanged(const QString&);
+	void genericValueChanged(const QVariant&);
 
 private:
 	bool m_innerDragDropEnabled;
 };
-
-
 
 /// A QComboBox used to edit an enumeration value.
 /// Set the enumeration names with #setEnumNames.
@@ -574,46 +607,45 @@ class VIP_GUI_EXPORT VipEnumEdit : public QComboBox
 	Q_PROPERTY(QString enumValues READ enumNames WRITE setEnumValues)
 
 public:
-	VipEnumEdit(QWidget * parent = nullptr);
+	VipEnumEdit(QWidget* parent = nullptr);
 
 	QString enumNames() const;
 	QString enumValues() const;
 	QString value() const;
 
 public Q_SLOTS:
-	///Set the enum names as a string with comma separators
-	void setEnumNames(const QString & choices);
-	///Set the enum values as a string with comma separators
-	void setEnumValues(const QString & choices);
-	///Set the current enum value
-	void setValue(const QString & value);
+	/// Set the enum names as a string with comma separators
+	void setEnumNames(const QString& choices);
+	/// Set the enum values as a string with comma separators
+	void setEnumValues(const QString& choices);
+	/// Set the current enum value
+	void setValue(const QString& value);
 
 private Q_SLOTS:
 	void valueHasChanged();
 
 Q_SIGNALS:
-	void valueChanged(const QString &);
-	void genericValueChanged(const QVariant &);
+	void valueChanged(const QString&);
+	void genericValueChanged(const QVariant&);
 };
-
-
 
 class VIP_GUI_EXPORT VipColorWidget : public QToolButton
 {
 	Q_OBJECT
 
 public:
-	VipColorWidget(QWidget * parent = nullptr);
-	const QColor & color() const {return m_color;}
+	VipColorWidget(QWidget* parent = nullptr);
+	const QColor& color() const { return m_color; }
 
 public Q_SLOTS:
-	void setColor(const QColor & );
+	void setColor(const QColor&);
 
 Q_SIGNALS:
-	void colorChanged(const QColor &);
+	void colorChanged(const QColor&);
 
 private Q_SLOTS:
 	void triggered();
+
 private:
 	QColor m_color;
 };
@@ -623,7 +655,7 @@ private:
 class VIP_GUI_EXPORT VipBrushWidget : public QWidget
 {
 	Q_OBJECT
-	Q_PROPERTY(QBrush value READ brush WRITE setBrush  )
+	Q_PROPERTY(QBrush value READ brush WRITE setBrush)
 
 	QBrush m_brush;
 	QLabel m_image;
@@ -631,10 +663,9 @@ class VIP_GUI_EXPORT VipBrushWidget : public QWidget
 	QToolButton m_color;
 
 public:
+	VipBrushWidget(const QBrush& brush = QBrush(), QWidget* parent = nullptr);
 
-	VipBrushWidget(const QBrush & brush = QBrush(), QWidget * parent = nullptr);
-
-	void setBrush(const QBrush & brush);
+	void setBrush(const QBrush& brush);
 	QBrush brush() const;
 
 	void setColorOptionVisible(bool);
@@ -648,9 +679,8 @@ private Q_SLOTS:
 
 Q_SIGNALS:
 
-	void brushChanged(const QBrush	 &);
-	void genericValueChanged(const QVariant &);
-
+	void brushChanged(const QBrush&);
+	void genericValueChanged(const QVariant&);
 };
 
 /// Widget used to edit a QPen object.
@@ -658,7 +688,7 @@ Q_SIGNALS:
 class VIP_GUI_EXPORT VipPenWidget : public QWidget
 {
 	Q_OBJECT
-	Q_PROPERTY(QPen value READ pen WRITE setPen  )
+	Q_PROPERTY(QPen value READ pen WRITE setPen)
 
 	QPen m_pen;
 
@@ -670,8 +700,7 @@ class VIP_GUI_EXPORT VipPenWidget : public QWidget
 	QLabel m_image;
 
 public:
-
-	VipPenWidget(const QPen & pen = QPen(), QWidget * parent = nullptr);
+	VipPenWidget(const QPen& pen = QPen(), QWidget* parent = nullptr);
 
 	QPen pen() const;
 
@@ -680,8 +709,8 @@ public:
 
 public Q_SLOTS:
 
-	void setPen(const QPen & pen);
-	void setBrush(const QBrush &);
+	void setPen(const QPen& pen);
+	void setBrush(const QBrush&);
 	void showFullOptions(bool sh);
 
 private Q_SLOTS:
@@ -694,38 +723,34 @@ private Q_SLOTS:
 
 Q_SIGNALS:
 
-	void penChanged(const QPen &);
-	void genericValueChanged(const QVariant &);
+	void penChanged(const QPen&);
+	void genericValueChanged(const QVariant&);
 };
-
 
 /// Button used to edit a QPen object.
 /// Provide a 'value' property for the perspective tool.
 class VIP_GUI_EXPORT VipPenButton : public QToolButton
 {
 	Q_OBJECT
-	Q_PROPERTY(QPen value READ pen WRITE setPen  )
-	Q_PROPERTY(Mode mode READ mode WRITE setMode  )
+	Q_PROPERTY(QPen value READ pen WRITE setPen)
+	Q_PROPERTY(Mode mode READ mode WRITE setMode)
 	Q_ENUMS(Mode)
 
-
 public:
-
-	enum Mode{
+	enum Mode
+	{
 		Color,
 		Brush,
 		Pen
 	};
 
-	VipPenButton(const QPen & pen = QPen(), QWidget * parent = nullptr);
+	VipPenButton(const QPen& pen = QPen(), QWidget* parent = nullptr);
 	~VipPenButton();
 
 	QPen pen() const;
 	Mode mode() const;
 
-	VipPenWidget * penWidget() const {
-		return const_cast<VipPenWidget*>(m_pen);
-	}
+	VipPenWidget* penWidget() const { return const_cast<VipPenWidget*>(m_pen); }
 
 	void setColorOptionVisible(bool);
 	bool colorOptionVisible() const;
@@ -733,8 +758,8 @@ public:
 public Q_SLOTS:
 
 	void showFullPenOptions(bool sh);
-	void setPen(const QPen & pen);
-	void setBrush(const QBrush &);
+	void setPen(const QPen& pen);
+	void setBrush(const QBrush&);
 	void setMode(Mode mode);
 
 private Q_SLOTS:
@@ -744,17 +769,16 @@ private Q_SLOTS:
 
 Q_SIGNALS:
 
-	void penChanged(const QPen & );
-	void genericValueChanged(const QVariant &);
+	void penChanged(const QPen&);
+	void genericValueChanged(const QVariant&);
 
 protected:
 	void resizeEvent(QResizeEvent* evt);
 
 	Mode m_mode;
-	VipPenWidget *m_pen;
+	VipPenWidget* m_pen;
 	QMenu m_menu;
 };
-
 
 /// Widget used to edit a VipText object.
 class VIP_GUI_EXPORT VipTextWidget : public QWidget
@@ -762,16 +786,16 @@ class VIP_GUI_EXPORT VipTextWidget : public QWidget
 	Q_OBJECT
 	Q_PROPERTY(VipText value READ getText WRITE setText)
 public:
-	VipTextWidget(QWidget * parent = nullptr);
+	VipTextWidget(QWidget* parent = nullptr);
 
-	void setText(const VipText & t);
+	void setText(const VipText& t);
 	VipText getText() const;
 
-	QLineEdit * edit() const;
+	QLineEdit* edit() const;
 
 Q_SIGNALS:
-	void changed(const VipText &);
-	void genericValueChanged(const QVariant &);
+	void changed(const VipText&);
+	void genericValueChanged(const QVariant&);
 
 private Q_SLOTS:
 	void fontChoice();
@@ -783,29 +807,24 @@ private:
 	VipPenButton textColor;
 	QLineEdit text;
 	QToolButton textChoice;
-	QWidget * m_options;
+	QWidget* m_options;
 };
-
 
 class VIP_GUI_EXPORT VipBoxStyleWidget : public QWidget
 {
 	Q_OBJECT
 
 public:
-	VipBoxStyleWidget(QWidget * parent = nullptr);
+	VipBoxStyleWidget(QWidget* parent = nullptr);
 
-	void setBoxStyle(const VipBoxStyle & box);
+	void setBoxStyle(const VipBoxStyle& box);
 	VipBoxStyle getBoxStyle() const;
 
-	VipPenButton * backgroundEditor() const {
-		return const_cast<VipPenButton*>(&m_background);
-	}
-	VipPenButton * borderEditor() const {
-		return const_cast<VipPenButton*>(&m_border);
-	}
+	VipPenButton* backgroundEditor() const { return const_cast<VipPenButton*>(&m_background); }
+	VipPenButton* borderEditor() const { return const_cast<VipPenButton*>(&m_border); }
 
 Q_SIGNALS:
-	void boxStyleChanged(const VipBoxStyle &);
+	void boxStyleChanged(const VipBoxStyle&);
 
 private Q_SLOTS:
 	void emitBoxStyleChanged();
@@ -817,50 +836,49 @@ private:
 	QSpinBox m_radius;
 };
 
-
-
 /// Widget used to edit a filename (QString).
 class VIP_GUI_EXPORT VipFileName : public QWidget
 {
 	Q_OBJECT
-	Q_PROPERTY(QString value READ filename WRITE setFilename  )
-	Q_PROPERTY(QString filters READ filters WRITE setFilters  )
-	Q_PROPERTY(QString prefix READ prefix WRITE setPrefix  )
+	Q_PROPERTY(QString value READ filename WRITE setFilename)
+	Q_PROPERTY(QString filters READ filters WRITE setFilters)
+	Q_PROPERTY(QString prefix READ prefix WRITE setPrefix)
 	Q_PROPERTY(QString title READ title WRITE setTitle)
 	Q_PROPERTY(QString default_path READ defaultPath WRITE setDefaultPath)
-	Q_PROPERTY(Mode mode READ mode WRITE setMode )
+	Q_PROPERTY(Mode mode READ mode WRITE setMode)
 	Q_ENUMS(Mode)
 
 public:
-
-	enum Mode {
+	enum Mode
+	{
 		Open,
 		OpenDir,
 		Save
 	};
 
-	VipFileName(const QString & Filename , QWidget * parent = nullptr);
-	VipFileName(QWidget * parent = nullptr);
+	VipFileName(const QString& Filename, QWidget* parent = nullptr);
+	VipFileName(QWidget* parent = nullptr);
 
 	Mode mode() const;
-	QString filename() const;;
+	QString filename() const;
+	;
 	QString filters() const;
 	QString prefix() const;
 	QString title() const;
 	QString defaultPath() const;
 	QString defaultOpenDir() const;
-	QGridLayout * gridLayout();
-	QLineEdit * edit() {return &m_edit;}
+	QGridLayout* gridLayout();
+	QLineEdit* edit() { return &m_edit; }
 
 public Q_SLOTS:
 
-	void setFilename(const QString & filename);
-	void setFilters(const QString & filters);
-	void setPrefix(const QString & prefix);
-	void setTitle(const QString & title);
+	void setFilename(const QString& filename);
+	void setFilters(const QString& filters);
+	void setPrefix(const QString& prefix);
+	void setTitle(const QString& title);
 	void setMode(Mode mode);
-	void setDefaultPath(const QString & path);
-	void setDefaultOpenDir(const QString & dir);
+	void setDefaultPath(const QString& path);
+	void setDefaultOpenDir(const QString& dir);
 
 private Q_SLOTS:
 
@@ -868,35 +886,35 @@ private Q_SLOTS:
 
 Q_SIGNALS:
 
-	void changed(const QString &);
-	void genericValueChanged(const QVariant &);
+	void changed(const QString&);
+	void genericValueChanged(const QVariant&);
 
 protected:
-
-	QGridLayout * 	m_layout;
-	QLineEdit 		m_edit;
-	QToolButton 	m_button;
-	QString 		m_filters;
-	QString 		m_title;
-	QString			m_prefix;
-	QString			m_default_path;
-	QString			m_default_open_dir;
-	Mode 			m_mode;
+	QGridLayout* m_layout;
+	QLineEdit m_edit;
+	QToolButton m_button;
+	QString m_filters;
+	QString m_title;
+	QString m_prefix;
+	QString m_default_path;
+	QString m_default_open_dir;
+	Mode m_mode;
 };
-
 
 class VipToolBar;
 class VIP_GUI_EXPORT VipAdditionalToolBar : public QToolBar
 {
 	Q_OBJECT
 public:
-	VipAdditionalToolBar(VipToolBar * parent = nullptr);
-	virtual bool eventFilter(QObject * watched, QEvent *event);
+	VipAdditionalToolBar(VipToolBar* parent = nullptr);
+	virtual bool eventFilter(QObject* watched, QEvent* event);
+
 protected:
-	virtual void showEvent(QShowEvent *);
-	virtual void hideEvent(QHideEvent *);
+	virtual void showEvent(QShowEvent*);
+	virtual void hideEvent(QHideEvent*);
+
 private:
-	VipToolBar * parent;
+	VipToolBar* parent;
 };
 /// A QToolBar like class.
 ///
@@ -906,8 +924,9 @@ class VIP_GUI_EXPORT VipToolBar : public QToolBar
 	Q_OBJECT
 
 	friend class VipAdditionalToolBar;
+
 public:
-	//Q_OBJECT
+	// Q_OBJECT
 
 	enum ShowAdditionals
 	{
@@ -915,7 +934,7 @@ public:
 		ShowInToolBar
 	};
 
-	VipToolBar(QWidget * parent = nullptr);
+	VipToolBar(QWidget* parent = nullptr);
 	virtual ~VipToolBar();
 
 	virtual QSize sizeHint() const;
@@ -923,18 +942,17 @@ public:
 	void setShowAdditionals(ShowAdditionals sh);
 	ShowAdditionals showAdditionals() const;
 
-	QToolButton * showButton() const;
-	QMenu * showAdditionalMenu() const;
-	QToolBar * showAdditionalToolBar() const;
+	QToolButton* showButton() const;
+	QMenu* showAdditionalMenu() const;
+	QToolBar* showAdditionalToolBar() const;
 
 	void setCustomBehaviorEnabled(bool);
 	bool customBehaviorEnabled() const;
 
 protected:
-
-	virtual void showEvent(QShowEvent * evt);
-	virtual void resizeEvent(QResizeEvent * evt);
-	virtual void actionEvent(QActionEvent *evt);
+	virtual void showEvent(QShowEvent* evt);
+	virtual void resizeEvent(QResizeEvent* evt);
+	virtual void actionEvent(QActionEvent* evt);
 
 private Q_SLOTS:
 	void aboutToShow();
@@ -944,10 +962,8 @@ private Q_SLOTS:
 
 private:
 	class PrivateData;
-	PrivateData * m_data;
+	PrivateData* m_data;
 };
-
-
 
 /// A \a QToolButton used to modify a time scale unit, based on a \a VipValueToTime object.
 /// The \a VipValueToTime object returned by #currentValueToTime() should always be copied.
@@ -955,11 +971,10 @@ class VIP_GUI_EXPORT VipValueToTimeButton : public QToolButton
 {
 	Q_OBJECT
 public:
-
-	VipValueToTimeButton(QWidget * parent = nullptr);
+	VipValueToTimeButton(QWidget* parent = nullptr);
 	/// Returns the current \a VipValueToTime instance
-	const VipValueToTime & currentValueToTime() const;
-	///Set the current time unit
+	const VipValueToTime& currentValueToTime() const;
+	/// Set the current time unit
 	void setValueToTime(VipValueToTime::TimeType);
 	VipValueToTime::TimeType valueToTime() const { return m_time.type; }
 
@@ -975,17 +990,14 @@ public:
 Q_SIGNALS:
 	void timeUnitChanged();
 
-	private Q_SLOTS:
+private Q_SLOTS:
 	void timeUnitTriggered(QAction*);
 
 private:
-	QAction * findAction(const QString &) const;
+	QAction* findAction(const QString&) const;
 	VipValueToTime m_time;
 	bool m_auto_unit;
 };
-
-
-
 
 /// A tool bar that displays at its right extremity control buttons to close/minimize/maximize/restore a widget.
 class VipCloseToolBar : public QToolBar
@@ -993,27 +1005,26 @@ class VipCloseToolBar : public QToolBar
 	Q_OBJECT
 
 public:
-	VipCloseToolBar(QWidget  * widget = nullptr, QWidget * parent = nullptr);
+	VipCloseToolBar(QWidget* widget = nullptr, QWidget* parent = nullptr);
 	~VipCloseToolBar();
 
 	void setWidget(QWidget* w);
-	QWidget * widget() const;
+	QWidget* widget() const;
 
 private Q_SLOTS:
 	void maximizeOrShowNormal();
 
 protected:
 	virtual bool eventFilter(QObject*, QEvent*);
-	virtual void mouseDoubleClickEvent(QMouseEvent *event);
-	virtual void mousePressEvent(QMouseEvent * evt);
-	virtual void mouseReleaseEvent(QMouseEvent * evt);
-	virtual void mouseMoveEvent(QMouseEvent * evt);
+	virtual void mouseDoubleClickEvent(QMouseEvent* event);
+	virtual void mousePressEvent(QMouseEvent* evt);
+	virtual void mouseReleaseEvent(QMouseEvent* evt);
+	virtual void mouseMoveEvent(QMouseEvent* evt);
 
 private:
 	class PrivateData;
-	PrivateData * m_data;
+	PrivateData* m_data;
 };
-
 
 /// \class VipGenericDialog
 /// \brief VipGenericDialog is used to display a QWidget inside a QDialog containing an 'Ok' and 'Cancel' buttons (and optionally a Apply button)
@@ -1021,15 +1032,14 @@ class VIP_GUI_EXPORT VipGenericDialog : public QDialog
 {
 	Q_OBJECT
 public:
-
-	VipGenericDialog(QWidget * inner_panel, const QString & title = QString(), QWidget * parent = nullptr);
+	VipGenericDialog(QWidget* inner_panel, const QString& title = QString(), QWidget* parent = nullptr);
 	~VipGenericDialog();
 
-	QPushButton * applyButton();
+	QPushButton* applyButton();
 
 private:
 	class PrivateData;
-	PrivateData * m_data;
+	PrivateData* m_data;
 };
 
 /// A QMenu whose actions might be dragable.
@@ -1046,30 +1056,29 @@ class VIP_GUI_EXPORT VipDragMenu : public QMenu
 	Q_OBJECT
 
 public:
-	VipDragMenu(QWidget * parent = 0);
-	VipDragMenu(const QString & title, QWidget * parent = 0);
+	VipDragMenu(QWidget* parent = 0);
+	VipDragMenu(const QString& title, QWidget* parent = 0);
 	~VipDragMenu();
 
-	void setWidget(QWidget * w);
-	QWidget * widget() const;
+	void setWidget(QWidget* w);
+	QWidget* widget() const;
 
 	void setResizable(bool enable);
 	bool isResizable() const;
 
 protected:
-	virtual bool eventFilter(QObject * watched, QEvent * evt);
-	virtual void mousePressEvent(QMouseEvent * evt);
-	virtual void mouseReleaseEvent(QMouseEvent * evt);
-	virtual void mouseMoveEvent(QMouseEvent * evt);
-	virtual void resizeEvent(QResizeEvent * evt);
+	virtual bool eventFilter(QObject* watched, QEvent* evt);
+	virtual void mousePressEvent(QMouseEvent* evt);
+	virtual void mouseReleaseEvent(QMouseEvent* evt);
+	virtual void mouseMoveEvent(QMouseEvent* evt);
+	virtual void resizeEvent(QResizeEvent* evt);
 
 private:
 	class PrivateData;
-	PrivateData * m_data;
+	PrivateData* m_data;
 };
 
 Q_DECLARE_METATYPE(QMimeData*)
-
 
 /// Small class used to show a widget when another one is hovered, and hide it when the mouse leave
 /// either the hover widget or the shown one.
@@ -1078,16 +1087,16 @@ class VipShowWidgetOnHover : public QObject
 	Q_OBJECT
 
 public:
-	VipShowWidgetOnHover(QObject * parent = nullptr);
+	VipShowWidgetOnHover(QObject* parent = nullptr);
 	~VipShowWidgetOnHover();
 
-	void setHoverWidget(QWidget * hover);
-	void setHoverWidgets(const QList<QWidget*> & hovers);
-	QWidget * hoverWidget() const;
+	void setHoverWidget(QWidget* hover);
+	void setHoverWidgets(const QList<QWidget*>& hovers);
+	QWidget* hoverWidget() const;
 	QList<QWidget*> hoverWidgets() const;
 
-	void setShowWidget(QWidget * show);
-	QWidget * showWidget() const;
+	void setShowWidget(QWidget* show);
+	QWidget* showWidget() const;
 
 	void setShowDelay(int msecs);
 	int showDelay() const;
@@ -1101,19 +1110,17 @@ public:
 	void setEnabled(bool);
 	bool isEnabled() const;
 
-	virtual bool eventFilter(QObject *watched, QEvent * evt);
+	virtual bool eventFilter(QObject* watched, QEvent* evt);
 
 private Q_SLOTS:
 	void startShow();
 	void startHide();
 	void resetStart();
+
 private:
 	class PrivateData;
-	PrivateData * m_data;
-
+	PrivateData* m_data;
 };
-
-
 
 #include "VipFunctional.h"
 
@@ -1135,11 +1142,11 @@ VIP_REGISTER_QOBJECT_METATYPE(VipFileName*)
 // It can be used to display an editor for any king of object, including VipProcessingObject instances and VipPlotItem instances, but
 // also standard types like QPen and QBrush.
 // The editor widget must have a property 'value' used to set and retrieve the edited object.
-VIP_GUI_EXPORT VipFunctionDispatcher<1> & vipFDObjectEditor();
-VIP_GUI_EXPORT QWidget * vipObjectEditor(const QVariant & obj);
-VIP_GUI_EXPORT bool vipHasObjectEditor(const QVariant & obj);
+VIP_GUI_EXPORT VipFunctionDispatcher<1>& vipFDObjectEditor();
+VIP_GUI_EXPORT QWidget* vipObjectEditor(const QVariant& obj);
+VIP_GUI_EXPORT bool vipHasObjectEditor(const QVariant& obj);
 
 /// @}
-//end Gui
+// end Gui
 
 #endif

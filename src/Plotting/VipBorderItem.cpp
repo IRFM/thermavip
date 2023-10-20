@@ -1,74 +1,101 @@
-#include <QPainter>
-#include <QGraphicsView>
-#include <QGraphicsScene>
-#include <QScrollBar>
-#include <QPaintEvent>
-#include <QEvent>
-#include <QVector2D>
+/**
+ * BSD 3-Clause License
+ *
+ * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice, this
+ *    list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of the copyright holder nor the names of its
+ *    contributors may be used to endorse or promote products derived from
+ *    this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
 #include <QCoreApplication>
 #include <QEvent>
-#include <QSharedPointer>
+#include <QGraphicsScene>
+#include <QGraphicsView>
+#include <QPaintEvent>
+#include <QPainter>
 #include <QPointer>
+#include <QScrollBar>
+#include <QSharedPointer>
+#include <QVector2D>
 
 #include "VipBorderItem.h"
-#include "VipPainter.h"
 #include "VipBoxStyle.h"
+#include "VipPainter.h"
 #include "VipScaleDiv.h"
 #include "VipScaleDraw.h"
 
-QPoint sceneToScreenCoordinates(const QGraphicsScene * scene, const QPointF & pos)
+QPoint sceneToScreenCoordinates(const QGraphicsScene* scene, const QPointF& pos)
 {
-	if (scene == nullptr) return QPoint();
+	if (scene == nullptr)
+		return QPoint();
 	const QList<QGraphicsView*> views = scene->views();
-	if(!views.isEmpty() // that scene is displayed in a view...
-	    && views.first() != nullptr // ... which is not null...
+	if (!views.isEmpty()			    // that scene is displayed in a view...
+	    && views.first() != nullptr		    // ... which is not null...
 	    && views.first()->viewport() != nullptr // ... and has a viewport
-	    )
-	{
-	    const QGraphicsView *v = views.first();
-	    QPoint viewP = v->mapFromScene(pos);
-	    return v->viewport()->mapToGlobal(viewP);
+	) {
+		const QGraphicsView* v = views.first();
+		QPoint viewP = v->mapFromScene(pos);
+		return v->viewport()->mapToGlobal(viewP);
 	}
 
 	return QPoint();
 }
 
-QPointF screenToSceneCoordinates(const QGraphicsScene * scene, const QPoint & pos)
+QPointF screenToSceneCoordinates(const QGraphicsScene* scene, const QPoint& pos)
 {
-	if (scene == nullptr) return QPoint();
+	if (scene == nullptr)
+		return QPoint();
 	const QList<QGraphicsView*> views = scene->views();
-	if (!views.isEmpty() // that scene is displayed in a view...
-		&& views.first() != nullptr // ... which is not null...
-		&& views.first()->viewport() != nullptr // ... and has a viewport
-		)
-	{
-		const QGraphicsView *v = views.first();
-		QPoint viewP = v->mapFromGlobal(pos);//v->mapFromScene(pos);
+	if (!views.isEmpty()			    // that scene is displayed in a view...
+	    && views.first() != nullptr		    // ... which is not null...
+	    && views.first()->viewport() != nullptr // ... and has a viewport
+	) {
+		const QGraphicsView* v = views.first();
+		QPoint viewP = v->mapFromGlobal(pos); // v->mapFromScene(pos);
 		return v->mapToScene(viewP);
 	}
 
 	return QPointF();
 }
 
-
-
-
 class VipBorderItem::PrivateData
 {
 public:
-
 	PrivateData(VipBorderItem::Alignment pos)
-	:extent(0),
-	 intersectWith(),
-	 intersectValue(0),
-	 intersectValueType(Vip::Absolute),
-	 innerItem(nullptr),
-	 alignment(pos),
-	 expandToCorners(0),
-	 canvasProximity(0),
-	 dirtyGlobalSceneTransform(1),
-	 dirtyParentTransform(1)
-	{}
+	  : extent(0)
+	  , intersectWith()
+	  , intersectValue(0)
+	  , intersectValueType(Vip::Absolute)
+	  , innerItem(nullptr)
+	  , alignment(pos)
+	  , expandToCorners(0)
+	  , canvasProximity(0)
+	  , dirtyGlobalSceneTransform(1)
+	  , dirtyParentTransform(1)
+	{
+	}
 
 	double extent;
 
@@ -76,7 +103,7 @@ public:
 	double intersectValue;
 	Vip::ValueType intersectValueType;
 
-	QGraphicsItem * innerItem;
+	QGraphicsItem* innerItem;
 	Alignment alignment;
 	bool expandToCorners;
 	int canvasProximity;
@@ -89,20 +116,18 @@ public:
 	bool dirtyParentTransform;
 	QTransform parentTransform;
 
-	//geometry updates based on inner/outer item geometry changes
+	// geometry updates based on inner/outer item geometry changes
 	QPointF watchedPos;
 	QRectF watchedRect;
 };
 
-
-
 static bool registerVipBorderItem = vipSetKeyWordsForClass(&VipBorderItem::staticMetaObject);
 
-VipBorderItem::VipBorderItem(Alignment pos, QGraphicsItem * parent)
-:VipAbstractScale(parent)
+VipBorderItem::VipBorderItem(Alignment pos, QGraphicsItem* parent)
+  : VipAbstractScale(parent)
 {
 	d_data = new PrivateData(pos);
-	this->setFlag(QGraphicsItem::ItemSendsGeometryChanges,true);
+	this->setFlag(QGraphicsItem::ItemSendsGeometryChanges, true);
 	this->setAlignment(pos);
 }
 
@@ -122,7 +147,7 @@ bool VipBorderItem::expandToCorners() const
 	return d_data->expandToCorners;
 }
 
-void VipBorderItem::setAxisIntersection(VipBorderItem * other, double other_value, Vip::ValueType type)
+void VipBorderItem::setAxisIntersection(VipBorderItem* other, double other_value, Vip::ValueType type)
 {
 	d_data->intersectWith = other;
 	d_data->intersectValue = other_value;
@@ -130,7 +155,7 @@ void VipBorderItem::setAxisIntersection(VipBorderItem * other, double other_valu
 	emitGeometryNeedUpdate();
 }
 
-VipBorderItem * VipBorderItem::axisIntersection() const
+VipBorderItem* VipBorderItem::axisIntersection() const
 {
 	return d_data->intersectWith;
 }
@@ -160,7 +185,7 @@ bool VipBorderItem::axisIntersectionEnabled() const
 void VipBorderItem::emitScaleDivNeedUpdate()
 {
 	// Recompute geometry if axis intersection is wrong
-	if (VipBorderItem * inter = d_data->intersectWith) {
+	if (VipBorderItem* inter = d_data->intersectWith) {
 		if (inter->parentItem() == this->parentItem()) {
 			// grab the theoric 'good' position computed in VipPlotWidget2D.cpp when recomputing the area geometry
 			QPointF theoric_pos = this->property("_vip_Pos").value<QPointF>();
@@ -174,7 +199,7 @@ void VipBorderItem::emitScaleDivNeedUpdate()
 				double y = inter->position(this->axisIntersectionValue(), 0, this->axisIntersectionType()).y() + inter->pos().y();
 				if (y != theoric_pos.y())
 					this->emitGeometryNeedUpdate();
-			}			
+			}
 		}
 	}
 	VipAbstractScale::emitScaleDivNeedUpdate();
@@ -198,13 +223,12 @@ bool VipBorderItem::hasState(const QByteArray& state, bool enable) const
 		bool is_side = alignment() == Bottom;
 		return (is_side == enable);
 	}
-	return VipAbstractScale::hasState(state,enable);
+	return VipAbstractScale::hasState(state, enable);
 }
 
-void VipBorderItem::setAlignment( Alignment align)
+void VipBorderItem::setAlignment(Alignment align)
 {
-	if(d_data->alignment != align)
-	{
+	if (d_data->alignment != align) {
 		d_data->alignment = align;
 		this->markStyleSheetDirty();
 		this->emitGeometryNeedUpdate();
@@ -219,7 +243,7 @@ VipBorderItem::Alignment VipBorderItem::alignment() const
 Qt::Orientation VipBorderItem::orientation() const
 {
 	Alignment align = alignment();
-	if ( align == Top || align == Bottom )
+	if (align == Top || align == Bottom)
 		return Qt::Horizontal;
 	else
 		return Qt::Vertical;
@@ -227,8 +251,7 @@ Qt::Orientation VipBorderItem::orientation() const
 
 void VipBorderItem::setCanvasProximity(int proximity)
 {
-	if(d_data->canvasProximity != proximity)
-	{
+	if (d_data->canvasProximity != proximity) {
 		d_data->canvasProximity = proximity;
 		emitGeometryNeedUpdate();
 	}
@@ -241,47 +264,45 @@ int VipBorderItem::canvasProximity() const
 
 QRectF VipBorderItem::boundingRectNoCorners() const
 {
-	if(d_data->boundingRectNoCorners == QRectF())
-	{
-		if(isVisible() && area())
+	if (d_data->boundingRectNoCorners == QRectF()) {
+		if (isVisible() && area())
 			const_cast<VipBorderItem*>(this)->emitGeometryNeedUpdate();
 	}
 
 	return d_data->boundingRectNoCorners;
 }
 
-void VipBorderItem::setBoundingRectNoCorners(const QRectF & r)
+void VipBorderItem::setBoundingRectNoCorners(const QRectF& r)
 {
 	d_data->boundingRectNoCorners = r;
 }
 
-int VipBorderItem::hscrollBarHeight(const QGraphicsView * view)
+int VipBorderItem::hscrollBarHeight(const QGraphicsView* view)
 {
-	return  (view->horizontalScrollBar()->isVisible()) ? view->horizontalScrollBar()->frameGeometry().height() + 2 : 0;
+	return (view->horizontalScrollBar()->isVisible()) ? view->horizontalScrollBar()->frameGeometry().height() + 2 : 0;
 }
 
-int VipBorderItem::vscrollBarWidth(const QGraphicsView * view)
+int VipBorderItem::vscrollBarWidth(const QGraphicsView* view)
 {
-	return  (view->verticalScrollBar()->isVisible()) ? view->verticalScrollBar()->frameGeometry().width() + 2 : 0;
+	return (view->verticalScrollBar()->isVisible()) ? view->verticalScrollBar()->frameGeometry().width() + 2 : 0;
 }
 
-QRectF VipBorderItem::visualizedSceneRect(const QGraphicsView * view)
+QRectF VipBorderItem::visualizedSceneRect(const QGraphicsView* view)
 {
-	//to receive the currently visible area, map the widget bounds to the scene
+	// to receive the currently visible area, map the widget bounds to the scene
 	QPointF topLeft = view->mapToScene(0, 0);
 	int w = view->width();
 	int h = view->height();
-	QPointF bottomRight = view->mapToScene(w - vscrollBarWidth(view)//-3
-, h - hscrollBarHeight(view)//-3
-);
+	QPointF bottomRight = view->mapToScene(w - vscrollBarWidth(view) //-3
+					       ,
+					       h - hscrollBarHeight(view) //-3
+	);
 	return QRectF(topLeft, bottomRight);
 }
 
-
 QTransform VipBorderItem::globalSceneTransform() const
 {
-	if (d_data->dirtyGlobalSceneTransform)
-	{
+	if (d_data->dirtyGlobalSceneTransform) {
 		d_data->globalSceneTransform = VipAbstractScale::globalSceneTransform(this);
 		d_data->dirtyGlobalSceneTransform = 0;
 	}
@@ -291,8 +312,7 @@ QTransform VipBorderItem::globalSceneTransform() const
 
 QTransform VipBorderItem::parentTransform() const
 {
-	if (d_data->dirtyParentTransform)
-	{
+	if (d_data->dirtyParentTransform) {
 		d_data->parentTransform = VipAbstractScale::parentTransform(this);
 		d_data->dirtyParentTransform = 0;
 	}
@@ -320,29 +340,23 @@ vip_double VipBorderItem::itemRangeToAxisUnit(double dist) const
 	}
 }
 
-double VipBorderItem::mapFromView(QGraphicsView * view, int length)
+double VipBorderItem::mapFromView(QGraphicsView* view, int length)
 {
 	return view->mapToScene(QPoint(length, 0.)).x() - view->mapToScene(QPoint(0, 0.)).x();
 }
 
-int VipBorderItem::mapToView(QGraphicsView * view, double length)
+int VipBorderItem::mapToView(QGraphicsView* view, double length)
 {
 	return view->mapFromScene(QPointF(length, 0.)).x() - view->mapFromScene(QPointF(0., 0.)).x();
 }
 
-
-QVariant VipBorderItem::itemChange ( GraphicsItemChange change, const QVariant & value )
+QVariant VipBorderItem::itemChange(GraphicsItemChange change, const QVariant& value)
 {
-	if(change == QGraphicsItem::ItemTransformChange ||
-			change == QGraphicsItem::ItemRotationChange||
-			change == QGraphicsItem::ItemScaleChange||
-			change == QGraphicsItem::ItemPositionChange )
-	{
+	if (change == QGraphicsItem::ItemTransformChange || change == QGraphicsItem::ItemRotationChange || change == QGraphicsItem::ItemScaleChange || change == QGraphicsItem::ItemPositionChange) {
 		d_data->dirtyGlobalSceneTransform = 1;
 		d_data->dirtyParentTransform = 1;
 		this->emitGeometryNeedUpdate();
 	}
 
-	return VipAbstractScale::itemChange(change,value);
+	return VipAbstractScale::itemChange(change, value);
 }
-

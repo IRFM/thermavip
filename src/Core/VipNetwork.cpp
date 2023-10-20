@@ -1,11 +1,38 @@
+/**
+ * BSD 3-Clause License
+ *
+ * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice, this
+ *    list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of the copyright holder nor the names of its
+ *    contributors may be used to endorse or promote products derived from
+ *    this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
 #include "VipNetwork.h"
 
-#include <qdatetime.h>
 #include <QCoreApplication>
-
-
-
-
+#include <qdatetime.h>
 
 static void registerVipNetworkConnection()
 {
@@ -13,8 +40,7 @@ static void registerVipNetworkConnection()
 	QMutexLocker lock(&mutex);
 
 	static bool reg = 0;
-	if (!reg)
-	{
+	if (!reg) {
 		qRegisterMetaType<QAbstractSocket::PauseModes>("QAbstractSocket::PauseModes");
 		qRegisterMetaType<QNetworkProxy>("QNetworkProxy");
 		qRegisterMetaType<QAbstractSocket::SocketOption>("QAbstractSocket::SocketOption");
@@ -27,8 +53,6 @@ static void registerVipNetworkConnection()
 		reg = 1;
 	}
 }
-
-
 
 namespace detail
 {
@@ -166,21 +190,16 @@ namespace detail
 
 }
 
-
-
-
-
-VipNetworkConnection::VipNetworkConnection(QObject * parent)
+VipNetworkConnection::VipNetworkConnection(QObject* parent)
   : QThread(parent)
   , m_data(nullptr)
   , m_pending(0)
 {
 	registerVipNetworkConnection();
 
-
 	start();
 
-	//wait for socket to be created
+	// wait for socket to be created
 	while (!m_data || !m_data->socket)
 		QThread::msleep(1);
 }
@@ -207,7 +226,7 @@ VipNetworkConnection::~VipNetworkConnection()
 	wait();
 }
 
-QAbstractSocket * VipNetworkConnection::socket() const
+QAbstractSocket* VipNetworkConnection::socket() const
 {
 	return m_data->socket;
 }
@@ -221,56 +240,58 @@ void VipNetworkConnection::run()
 		m_data->socket->open(QIODevice::ReadWrite);
 		m_pending = 0;
 	}
-	
+
 	connect(m_data->socket, SIGNAL(readyRead()), m_data, SLOT(onReadyRead()), Qt::DirectConnection);
 	connect(m_data->socket, SIGNAL(readyRead()), this, SLOT(_emit_readyRead()), Qt::DirectConnection);
 	connect(m_data->socket, SIGNAL(connected()), this, SLOT(_emit_connected()), Qt::DirectConnection);
 	connect(m_data->socket, SIGNAL(disconnected()), this, SLOT(_emit_disconnected()), Qt::DirectConnection);
 	connect(m_data->socket, SIGNAL(error(QAbstractSocket::SocketError)), this, SLOT(_emit_error(QAbstractSocket::SocketError)), Qt::DirectConnection);
 	connect(m_data->socket, SIGNAL(hostFound()), this, SLOT(_emit_hostFound()), Qt::DirectConnection);
-	connect(m_data->socket, SIGNAL(proxyAuthenticationRequired(const QNetworkProxy &, QAuthenticator *)), this, SLOT(_emit_proxyAuthenticationRequired(const QNetworkProxy &, QAuthenticator *)), Qt::DirectConnection);
+	connect(m_data->socket,
+		SIGNAL(proxyAuthenticationRequired(const QNetworkProxy&, QAuthenticator*)),
+		this,
+		SLOT(_emit_proxyAuthenticationRequired(const QNetworkProxy&, QAuthenticator*)),
+		Qt::DirectConnection);
 	connect(m_data->socket, SIGNAL(stateChanged(QAbstractSocket::SocketState)), this, SLOT(_emit_stateChanged(QAbstractSocket::SocketState)), Qt::DirectConnection);
 
 	exec();
 
 	m_data->socket->disconnectFromHost();
-	if(m_data->socket->state() != QAbstractSocket::UnconnectedState)
+	if (m_data->socket->state() != QAbstractSocket::UnconnectedState)
 		m_data->socket->waitForDisconnected();
 	delete m_data->socket;
 	delete m_data;
 }
 
-
-
-void	VipNetworkConnection::resume()
+void VipNetworkConnection::resume()
 {
 	if (QThread::currentThread() != socket()->thread())
 		QMetaObject::invokeMethod(m_data, "resume", Qt::BlockingQueuedConnection);
 	else
 		m_data->resume();
 }
-void	VipNetworkConnection::setPauseMode(QAbstractSocket::PauseModes pauseMode)
+void VipNetworkConnection::setPauseMode(QAbstractSocket::PauseModes pauseMode)
 {
 	if (QThread::currentThread() != socket()->thread())
 		QMetaObject::invokeMethod(m_data, "setPauseMode", Qt::BlockingQueuedConnection, Q_ARG(QAbstractSocket::PauseModes, pauseMode));
 	else
 		m_data->setPauseMode(pauseMode);
 }
-void	VipNetworkConnection::setProxy(const QNetworkProxy &networkProxy)
+void VipNetworkConnection::setProxy(const QNetworkProxy& networkProxy)
 {
 	if (QThread::currentThread() != socket()->thread())
 		QMetaObject::invokeMethod(m_data, "setProxy", Qt::BlockingQueuedConnection, Q_ARG(QNetworkProxy, networkProxy));
 	else
 		m_data->setProxy(networkProxy);
 }
-void	VipNetworkConnection::setReadBufferSize(qint64 size)
+void VipNetworkConnection::setReadBufferSize(qint64 size)
 {
 	if (QThread::currentThread() != socket()->thread())
 		QMetaObject::invokeMethod(m_data, "setReadBufferSize", Qt::BlockingQueuedConnection, Q_ARG(qint64, size));
 	else
 		m_data->setReadBufferSize(size);
 }
-void	VipNetworkConnection::setSocketOption(QAbstractSocket::SocketOption option, const QVariant &value)
+void VipNetworkConnection::setSocketOption(QAbstractSocket::SocketOption option, const QVariant& value)
 {
 	if (QThread::currentThread() != socket()->thread())
 		QMetaObject::invokeMethod(m_data, "setSocketOption", Qt::BlockingQueuedConnection, Q_ARG(QAbstractSocket::SocketOption, option), Q_ARG(QVariant, value));
@@ -278,32 +299,42 @@ void	VipNetworkConnection::setSocketOption(QAbstractSocket::SocketOption option,
 		m_data->setSocketOption(option, value);
 }
 
-void	VipNetworkConnection::setSocketDescriptor(qintptr socketDescriptor, QAbstractSocket::SocketState socketState, QAbstractSocket::OpenMode openMode)
+void VipNetworkConnection::setSocketDescriptor(qintptr socketDescriptor, QAbstractSocket::SocketState socketState, QAbstractSocket::OpenMode openMode)
 {
 	if (QThread::currentThread() != socket()->thread())
-		QMetaObject::invokeMethod(m_data, "setSocketDescriptor", Qt::BlockingQueuedConnection, Q_ARG(qintptr, socketDescriptor), Q_ARG(QAbstractSocket::SocketState, socketState), Q_ARG(QAbstractSocket::OpenMode, openMode));
+		QMetaObject::invokeMethod(m_data,
+					  "setSocketDescriptor",
+					  Qt::BlockingQueuedConnection,
+					  Q_ARG(qintptr, socketDescriptor),
+					  Q_ARG(QAbstractSocket::SocketState, socketState),
+					  Q_ARG(QAbstractSocket::OpenMode, openMode));
 	else
 		m_data->setSocketDescriptor(socketDescriptor, socketState, openMode);
 }
 
-void	VipNetworkConnection::connectToHost(const QString &hostName, quint16 port, QAbstractSocket::OpenMode openMode, QAbstractSocket::NetworkLayerProtocol protocol)
+void VipNetworkConnection::connectToHost(const QString& hostName, quint16 port, QAbstractSocket::OpenMode openMode, QAbstractSocket::NetworkLayerProtocol protocol)
 {
 	if (QThread::currentThread() != socket()->thread())
-		QMetaObject::invokeMethod(m_data, "connectToHost", Qt::BlockingQueuedConnection, Q_ARG(QString, hostName), Q_ARG(quint16, port), Q_ARG(QAbstractSocket::OpenMode, openMode), Q_ARG(QAbstractSocket::NetworkLayerProtocol, protocol));
+		QMetaObject::invokeMethod(m_data,
+					  "connectToHost",
+					  Qt::BlockingQueuedConnection,
+					  Q_ARG(QString, hostName),
+					  Q_ARG(quint16, port),
+					  Q_ARG(QAbstractSocket::OpenMode, openMode),
+					  Q_ARG(QAbstractSocket::NetworkLayerProtocol, protocol));
 	else
 		m_data->connectToHost(hostName, port, openMode, protocol);
 }
 
-void	VipNetworkConnection::reconnect()
+void VipNetworkConnection::reconnect()
 {
-	if (state() != QAbstractSocket::ConnectedState && !m_data->host.isEmpty() && m_data->port > 0)
-	{
+	if (state() != QAbstractSocket::ConnectedState && !m_data->host.isEmpty() && m_data->port > 0) {
 		abort();
 		connectToHost(m_data->host, m_data->port, m_data->openMode, m_data->protocol);
 	}
 }
 
-void	VipNetworkConnection::disconnectFromHost()
+void VipNetworkConnection::disconnectFromHost()
 {
 	if (QThread::currentThread() != socket()->thread())
 		QMetaObject::invokeMethod(m_data, "disconnectFromHost", Qt::BlockingQueuedConnection);
@@ -311,7 +342,7 @@ void	VipNetworkConnection::disconnectFromHost()
 		m_data->disconnectFromHost();
 }
 
-void	VipNetworkConnection::abort()
+void VipNetworkConnection::abort()
 {
 	if (QThread::currentThread() != socket()->thread())
 		QMetaObject::invokeMethod(m_data, "abort", Qt::BlockingQueuedConnection);
@@ -319,7 +350,7 @@ void	VipNetworkConnection::abort()
 		m_data->abort();
 }
 
-void	VipNetworkConnection::close()
+void VipNetworkConnection::close()
 {
 	if (QThread::currentThread() != socket()->thread())
 		QMetaObject::invokeMethod(m_data, "close", Qt::BlockingQueuedConnection);
@@ -327,19 +358,19 @@ void	VipNetworkConnection::close()
 		m_data->close();
 }
 
-bool	VipNetworkConnection::bind(const QHostAddress &address, quint16 port, QAbstractSocket::BindMode mode)
+bool VipNetworkConnection::bind(const QHostAddress& address, quint16 port, QAbstractSocket::BindMode mode)
 {
 	bool res = false;
 
 	if (QThread::currentThread() != socket()->thread())
-		QMetaObject::invokeMethod(m_data, "bind", Qt::BlockingQueuedConnection, Q_RETURN_ARG(bool, res), Q_ARG(QHostAddress, address), Q_ARG(quint16, port), Q_ARG(QAbstractSocket::BindMode, mode));
+		QMetaObject::invokeMethod(
+		  m_data, "bind", Qt::BlockingQueuedConnection, Q_RETURN_ARG(bool, res), Q_ARG(QHostAddress, address), Q_ARG(quint16, port), Q_ARG(QAbstractSocket::BindMode, mode));
 	else
 		res = m_data->bind(address, port, mode);
 	return res;
 }
 
-
-qint64	VipNetworkConnection::write(const QByteArray & ar)
+qint64 VipNetworkConnection::write(const QByteArray& ar)
 {
 	qint64 res = 0;
 
@@ -350,7 +381,6 @@ qint64	VipNetworkConnection::write(const QByteArray & ar)
 
 	return res;
 }
-
 
 bool VipNetworkConnection::waitForConnected(int msecs)
 {
@@ -382,7 +412,7 @@ bool VipNetworkConnection::waitForDisconnected(int msecs)
 	return res;
 }
 
-bool VipNetworkConnection::waitForReadyRead(int msecs )
+bool VipNetworkConnection::waitForReadyRead(int msecs)
 {
 	bool res = false;
 
@@ -394,7 +424,7 @@ bool VipNetworkConnection::waitForReadyRead(int msecs )
 	return res;
 }
 
-bool VipNetworkConnection::waitForBytesWritten(int msecs )
+bool VipNetworkConnection::waitForBytesWritten(int msecs)
 {
 	bool res = false;
 
@@ -413,9 +443,8 @@ void VipNetworkConnection::setAutoReconnection(bool enable)
 
 	QObject::disconnect(this, SIGNAL(error(QAbstractSocket::SocketError)), this, SLOT(reconnect()));
 	QObject::disconnect(this, SIGNAL(disconnected()), this, SLOT(reconnect()));
-	if (enable)
-	{
-		QObject::connect(this, SIGNAL(error(QAbstractSocket::SocketError)), this, SLOT(reconnect()),Qt::QueuedConnection);
+	if (enable) {
+		QObject::connect(this, SIGNAL(error(QAbstractSocket::SocketError)), this, SLOT(reconnect()), Qt::QueuedConnection);
 		QObject::connect(this, SIGNAL(disconnected()), this, SLOT(reconnect()), Qt::QueuedConnection);
 	}
 }
@@ -449,20 +478,17 @@ QByteArray VipNetworkConnection::readAll()
 	return res;
 }
 
-qint64	VipNetworkConnection::bytesAvailable() const
+qint64 VipNetworkConnection::bytesAvailable() const
 {
 	QMutexLocker lock(&m_data->mutex);
 	return socket()->bytesAvailable();
 }
 
-qint64	VipNetworkConnection::bytesToWrite() const
+qint64 VipNetworkConnection::bytesToWrite() const
 {
 	QMutexLocker lock(&m_data->mutex);
 	return socket()->bytesToWrite();
 }
-
-
-
 
 class VipTcpServer::PrivateData
 {
@@ -476,8 +502,8 @@ VipTcpServer::VipTcpServer(QObject* parent)
 {
 	m_data = new PrivateData();
 }
-	
-VipTcpServer::~VipTcpServer() 
+
+VipTcpServer::~VipTcpServer()
 {
 	// Close all connections
 	for (qintptr con : m_data->connections) {
@@ -487,7 +513,7 @@ VipTcpServer::~VipTcpServer()
 	delete m_data;
 }
 
-qintptr VipTcpServer::nextPendingConnectionDescriptor() 
+qintptr VipTcpServer::nextPendingConnectionDescriptor()
 {
 	QMutexLocker lock(&m_data->mutex);
 	if (m_data->connections.isEmpty())
@@ -496,8 +522,7 @@ qintptr VipTcpServer::nextPendingConnectionDescriptor()
 	return m_data->connections.takeFirst();
 }
 
-
-void VipTcpServer::incomingConnection(qintptr socketDescriptor) 
+void VipTcpServer::incomingConnection(qintptr socketDescriptor)
 {
 	QMutexLocker lock(&m_data->mutex);
 	if (m_data->connections.size() >= this->maxPendingConnections()) {

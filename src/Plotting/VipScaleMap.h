@@ -1,3 +1,34 @@
+/**
+ * BSD 3-Clause License
+ *
+ * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice, this
+ *    list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of the copyright holder nor the names of its
+ *    contributors may be used to endorse or promote products derived from
+ *    this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
 
 #ifndef VIP_SCALE_MAP_H
 #define VIP_SCALE_MAP_H
@@ -10,110 +41,106 @@
 /// \addtogroup Plotting
 /// @{
 
-
-
 /// \brief A scale map
 ///
 /// VipScaleMap offers transformations from the coordinate system
 /// of a scale into the linear coordinate system of a paint device
 /// and vice versa.
-class  VIP_PLOTTING_EXPORT VipScaleMap
+class VIP_PLOTTING_EXPORT VipScaleMap
 {
 public:
-    VipScaleMap();
-    VipScaleMap( const VipScaleMap& );
+	VipScaleMap();
+	VipScaleMap(const VipScaleMap&);
 
-    ~VipScaleMap();
+	~VipScaleMap();
 
-    VipScaleMap &operator=( const VipScaleMap & );
+	VipScaleMap& operator=(const VipScaleMap&);
 
-    void setTransformation( VipValueTransform * );
-    const VipValueTransform *transformation() const;
+	void setTransformation(VipValueTransform*);
+	const VipValueTransform* transformation() const;
 
-    void setPaintInterval(vip_double p1, vip_double p2 );
-    void setScaleInterval(vip_double s1, vip_double s2 );
+	void setPaintInterval(vip_double p1, vip_double p2);
+	void setScaleInterval(vip_double s1, vip_double s2);
 
 	vip_double distanceToOrigin(vip_double s) const;
 	vip_double distanceToOriginInt64(qint64 s) const;
 
 	vip_double invDistanceToOrigin(vip_double p) const;
 
-	vip_double transform(vip_double s ) const;
-	vip_double invTransform(vip_double p ) const;
+	vip_double transform(vip_double s) const;
+	vip_double invTransform(vip_double p) const;
 	qint64 invTransformTime(vip_double p) const;
 
-    vip_double p1() const;
-    vip_double p2() const;
+	vip_double p1() const;
+	vip_double p2() const;
 
-    vip_double s1() const;
-    vip_double s2() const;
+	vip_double s1() const;
+	vip_double s2() const;
 
-    vip_double pDist() const;
-    vip_double sDist() const;
+	vip_double pDist() const;
+	vip_double sDist() const;
 
-    bool isInverting() const;
+	bool isInverting() const;
 
 private:
-    void updateFactor();
+	void updateFactor();
 
-    vip_double d_s1, d_s2;     // scale interval boundaries
-    vip_double d_p1, d_p2;     // paint device interval boundaries
+	vip_double d_s1, d_s2; // scale interval boundaries
+	vip_double d_p1, d_p2; // paint device interval boundaries
 
-    vip_double d_cnv;       // conversion factor
-    vip_double d_abs_cnv;
-    vip_double d_ts1;
+	vip_double d_cnv; // conversion factor
+	vip_double d_abs_cnv;
+	vip_double d_ts1;
 
-    VipValueTransform *d_transform;
+	VipValueTransform* d_transform;
 };
-
 
 /// \return First border of the scale interval
 inline vip_double VipScaleMap::s1() const
 {
-    return d_s1;
+	return d_s1;
 }
 
 /// \return Second border of the scale interval
 inline vip_double VipScaleMap::s2() const
 {
-    return d_s2;
+	return d_s2;
 }
 
 /// \return First border of the paint interval
 inline vip_double VipScaleMap::p1() const
 {
-    return d_p1;
+	return d_p1;
 }
 
 /// \return Second border of the paint interval
 inline vip_double VipScaleMap::p2() const
 {
-    return d_p2;
+	return d_p2;
 }
 
 /// \return qwtAbs(p2() - p1())
 inline vip_double VipScaleMap::pDist() const
 {
-    return qAbs( d_p2 - d_p1 );
+	return qAbs(d_p2 - d_p1);
 }
 
 /// \return qwtAbs(s2() - s1())
 inline vip_double VipScaleMap::sDist() const
 {
-    return qAbs( d_s2 - d_s1 );
+	return qAbs(d_s2 - d_s1);
 }
-
 
 inline vip_double VipScaleMap::distanceToOrigin(vip_double s) const
 {
-    if ( d_transform )
-        s = d_transform->transform( s );
+	if (d_transform)
+		s = d_transform->transform(s);
 
-    return ( s - d_ts1 ) * d_abs_cnv;
+	return (s - d_ts1) * d_abs_cnv;
 }
 inline vip_double VipScaleMap::distanceToOriginInt64(qint64 s) const
 {
-	if (d_transform )
+	if (d_transform)
 		return (d_transform->transform(s) - d_ts1) * d_abs_cnv;
 
 	return (s - (qint64)d_ts1) * d_abs_cnv;
@@ -121,11 +148,11 @@ inline vip_double VipScaleMap::distanceToOriginInt64(qint64 s) const
 
 inline vip_double VipScaleMap::invDistanceToOrigin(vip_double p) const
 {
-    vip_double s = d_ts1 + ( p ) / d_abs_cnv;
-    if ( d_transform )
-        s = d_transform->invTransform( s );
+	vip_double s = d_ts1 + (p) / d_abs_cnv;
+	if (d_transform)
+		s = d_transform->invTransform(s);
 
-    return s;
+	return s;
 }
 
 /// Transform a point related to the scale interval into an point
@@ -135,12 +162,12 @@ inline vip_double VipScaleMap::invDistanceToOrigin(vip_double p) const
 /// \return Transformed value
 ///
 /// \sa invTransform()
-inline vip_double VipScaleMap::transform( vip_double s ) const
+inline vip_double VipScaleMap::transform(vip_double s) const
 {
-    if ( d_transform )
-        s = d_transform->transform( s );
+	if (d_transform)
+		s = d_transform->transform(s);
 
-    return d_p1 + ( s - d_ts1 ) * d_cnv;
+	return d_p1 + (s - d_ts1) * d_cnv;
 }
 
 /// Transform an paint device value into a value in the
@@ -150,13 +177,13 @@ inline vip_double VipScaleMap::transform( vip_double s ) const
 /// \return Transformed value
 ///
 /// \sa transform()
-inline vip_double VipScaleMap::invTransform( vip_double p ) const
+inline vip_double VipScaleMap::invTransform(vip_double p) const
 {
-    vip_double s = d_ts1 + ( p - d_p1 ) / d_cnv;
-    if ( d_transform )
-        s = d_transform->invTransform( s );
+	vip_double s = d_ts1 + (p - d_p1) / d_cnv;
+	if (d_transform)
+		s = d_transform->invTransform(s);
 
-    return s;
+	return s;
 }
 
 inline qint64 VipScaleMap::invTransformTime(vip_double p) const
@@ -168,19 +195,16 @@ inline qint64 VipScaleMap::invTransformTime(vip_double p) const
 	return s;
 }
 
-
 //! \return True, when ( p1() < p2() ) != ( s1() < s2() )
 inline bool VipScaleMap::isInverting() const
 {
-    return ( ( d_p1 < d_p2 ) != ( d_s1 < d_s2 ) );
+	return ((d_p1 < d_p2) != (d_s1 < d_s2));
 }
 
-
 /// Initialize the map with a transformation
-inline void VipScaleMap::setTransformation(VipValueTransform *transform)
+inline void VipScaleMap::setTransformation(VipValueTransform* transform)
 {
-	if (transform != d_transform)
-	{
+	if (transform != d_transform) {
 		if (d_transform)
 			delete d_transform;
 		d_transform = transform;
@@ -190,7 +214,7 @@ inline void VipScaleMap::setTransformation(VipValueTransform *transform)
 }
 
 //! Get the transformation
-inline const VipValueTransform *VipScaleMap::transformation() const
+inline const VipValueTransform* VipScaleMap::transformation() const
 {
 	return d_transform;
 }
@@ -205,8 +229,7 @@ inline void VipScaleMap::setScaleInterval(vip_double s1, vip_double s2)
 	d_s1 = s1;
 	d_s2 = s2;
 
-	if (d_transform)
-	{
+	if (d_transform) {
 		d_s1 = d_transform->bounded(d_s1);
 		d_s2 = d_transform->bounded(d_s2);
 	}
@@ -230,8 +253,7 @@ inline void VipScaleMap::updateFactor()
 	d_ts1 = d_s1;
 	vip_double ts2 = d_s2;
 
-	if (d_transform)
-	{
+	if (d_transform) {
 		d_ts1 = d_transform->transform(d_ts1);
 		ts2 = d_transform->transform(ts2);
 	}
@@ -243,12 +265,7 @@ inline void VipScaleMap::updateFactor()
 	d_abs_cnv = qAbs(d_p2 - d_p1) / (ts2 - d_ts1);
 }
 
-
-
-
-
-
 /// @}
-//end Plotting
+// end Plotting
 
 #endif

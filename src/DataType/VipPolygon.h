@@ -1,17 +1,47 @@
-#pragma once
+/**
+ * BSD 3-Clause License
+ *
+ * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice, this
+ *    list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of the copyright holder nor the names of its
+ *    contributors may be used to endorse or promote products derived from
+ *    this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
+#ifndef VIP_POLYGON_H
+#define VIP_POLYGON_H
 
 #include <set>
 
 #include "VipNDArray.h"
 
-
 /// @brief Close Component Labelling algorithm
-template< class T, class U>
+template<class T, class U>
 int vipLabelImage(const VipNDArrayType<T>& input, VipNDArrayType<U>& output, T background, bool connectivity_8 = false, int* relabel = nullptr)
 {
 	QVector<int> buffer;
-	if (!relabel)
-	{
+	if (!relabel) {
 		buffer.resize(input.size());
 		relabel = buffer.data();
 	}
@@ -20,43 +50,35 @@ int vipLabelImage(const VipNDArrayType<T>& input, VipNDArrayType<U>& output, T b
 	for (int i = 0; i < size; ++i)
 		relabel[i] = i;
 
-
 	output.fill(0);
 	int h = input.shape(0);
 	int w = input.shape(1);
 	int next_label = 1;
 
-	for (int y = 0; y < h; ++y)
-	{
-		for (int x = 0; x < w; ++x)
-		{
+	for (int y = 0; y < h; ++y) {
+		for (int x = 0; x < w; ++x) {
 			const T value = input(vipVector(y, x));
 
-			//ignore background value
+			// ignore background value
 			if (value == background)
 				continue;
 
-			//check neighbors
+			// check neighbors
 
 			U label = 0;
 
-			//check left
-			if (x > 0 && input(vipVector(y, x - 1)) == value)
-			{
+			// check left
+			if (x > 0 && input(vipVector(y, x - 1)) == value) {
 				label = output(vipVector(y, x - 1));
 			}
 
-			//check top
-			if (y > 0 && input(vipVector(y - 1, x)) == value)
-			{
-				if (const U other_label = output(vipVector(y - 1, x)))
-				{
-					if (label != other_label && label)
-					{
-						//if we already found a left neighbor with a different label, tells to relabel
-						//always keep the smallest label
-						if (label > other_label)
-						{
+			// check top
+			if (y > 0 && input(vipVector(y - 1, x)) == value) {
+				if (const U other_label = output(vipVector(y - 1, x))) {
+					if (label != other_label && label) {
+						// if we already found a left neighbor with a different label, tells to relabel
+						// always keep the smallest label
+						if (label > other_label) {
 							relabel[label] = relabel[other_label];
 							label = other_label;
 						}
@@ -68,17 +90,12 @@ int vipLabelImage(const VipNDArrayType<T>& input, VipNDArrayType<U>& output, T b
 				}
 			}
 
-			if (connectivity_8)
-			{
-				//check top left
-				if (y > 0 && x > 0 && input(vipVector(y - 1, x - 1)) == value)
-				{
-					if (const U other_label = output(vipVector(y - 1, x - 1)))
-					{
-						if (label != other_label && label)
-						{
-							if (label > other_label)
-							{
+			if (connectivity_8) {
+				// check top left
+				if (y > 0 && x > 0 && input(vipVector(y - 1, x - 1)) == value) {
+					if (const U other_label = output(vipVector(y - 1, x - 1))) {
+						if (label != other_label && label) {
+							if (label > other_label) {
 								relabel[label] = relabel[other_label];
 								label = other_label;
 							}
@@ -90,15 +107,11 @@ int vipLabelImage(const VipNDArrayType<T>& input, VipNDArrayType<U>& output, T b
 					}
 				}
 
-				//check top right
-				if (y > 0 && x + 1 < w && input(vipVector(y - 1, x + 1)) == value)
-				{
-					if (const U other_label = output(vipVector(y - 1, x + 1)))
-					{
-						if (label != other_label && label)
-						{
-							if (label > other_label)
-							{
+				// check top right
+				if (y > 0 && x + 1 < w && input(vipVector(y - 1, x + 1)) == value) {
+					if (const U other_label = output(vipVector(y - 1, x + 1))) {
+						if (label != other_label && label) {
+							if (label > other_label) {
 								relabel[label] = relabel[other_label];
 								label = other_label;
 							}
@@ -115,42 +128,36 @@ int vipLabelImage(const VipNDArrayType<T>& input, VipNDArrayType<U>& output, T b
 				label = next_label++;
 
 			output(vipVector(y, x)) = label;
-
 		}
 	}
 
+	// at this point, we could relable and we would have isolated all components.
+	// however, their labels would not necessarly be consecutive.
+	// so we need to modify the relabel vector to have consecutive ids
 
-	//at this point, we could relable and we would have isolated all components.
-	//however, their labels would not necessarly be consecutive.
-	//so we need to modify the relabel vector to have consecutive ids
-
-	//just find the labels that don't move: they are the remaining ones
+	// just find the labels that don't move: they are the remaining ones
 	QVector<int> final_labels(next_label);
 	for (int i = 0; i < next_label; ++i)
 		final_labels[i] = i;
 
 	int label_count = 0;
-	for (int i = 0; i < next_label; ++i)
-	{
+	for (int i = 0; i < next_label; ++i) {
 		if (relabel[i] == i && i != 0)
 			final_labels[i] = ++label_count;
 	}
 
-
-	//second pass: relabel output
+	// second pass: relabel output
 	U* out = output.ptr();
 
 #pragma omp parallel for
-	for (int i = 0; i < size; ++i)
-	{
-		//follow all indirections
+	for (int i = 0; i < size; ++i) {
+		// follow all indirections
 		U value = out[i];
 		while (value != relabel[value])
 			value = relabel[value];
 
 		out[i] = final_labels[value];
 	}
-
 
 	return label_count;
 }
@@ -185,11 +192,9 @@ bool vipIsRect(const QVector<Point>& poly, QRectF* rect = nullptr)
 	return false;
 }
 
-
 /// Remove points from polygon that do not change the overall shape (basically points within a straigth line).
 VIP_DATA_TYPE_EXPORT QPolygonF vipSimplifyPolygon(const QPolygonF& polygon);
 VIP_DATA_TYPE_EXPORT QPolygon vipSimplifyPolygon(const QPolygon& polygon);
-
 
 /// Simplify given polygon using Ramer-Douglas-Peucker algorithm (see https://github.com/prakol16/rdp-expansion-only for more details).
 /// @param  epsilon: epsilon value used to simplify the polygon by the Ramer-Douglas-Peucker algorithm.
@@ -267,9 +272,9 @@ VIP_DATA_TYPE_EXPORT QPolygonF vipConvexHull(const QPolygonF& poly);
 //	one full turn (2 pi radians).
 VIP_DATA_TYPE_EXPORT bool vipIsNonConcave(const QPolygonF& poly);
 
-
 /// Oriented rect structure, as returned by vipMinimumAreaBBox
-struct VipOrientedRect {
+struct VipOrientedRect
+{
 	QPolygonF boundingPoints;
 	QPolygonF hullPoints;
 	QPointF center;
@@ -286,12 +291,17 @@ struct VipOrientedRect {
 	// negative value means opposite
 	double heightAngle;
 
-
-	VipOrientedRect(const QPolygonF& bp = QPolygonF(), const QPolygonF& hp = QPolygonF(), const QPointF& c = QPointF(),
-		double w = 0, double h = 0, double wa = 0, double ha = 0) :
-		boundingPoints(bp), hullPoints(hp), center(c), width(w), height(h), widthAngle(wa), heightAngle(ha) {}
+	VipOrientedRect(const QPolygonF& bp = QPolygonF(), const QPolygonF& hp = QPolygonF(), const QPointF& c = QPointF(), double w = 0, double h = 0, double wa = 0, double ha = 0)
+	  : boundingPoints(bp)
+	  , hullPoints(hp)
+	  , center(c)
+	  , width(w)
+	  , height(h)
+	  , widthAngle(wa)
+	  , heightAngle(ha)
+	{
+	}
 };
-
 
 /// Returns the minimum area oriented bounding box around a set of points.
 ///
@@ -299,4 +309,4 @@ struct VipOrientedRect {
 /// Set check_convex to false if input polygon is already a convex one.
 VIP_DATA_TYPE_EXPORT VipOrientedRect vipMinimumAreaBBox(const QPolygonF& poly, bool check_convex = true);
 
-
+#endif

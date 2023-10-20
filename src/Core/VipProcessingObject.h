@@ -1,3 +1,34 @@
+/**
+ * BSD 3-Clause License
+ *
+ * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice, this
+ *    list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of the copyright holder nor the names of its
+ *    contributors may be used to endorse or promote products derived from
+ *    this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
 #ifndef VIP_PROCESSING_OBJECT_H
 #define VIP_PROCESSING_OBJECT_H
 
@@ -22,8 +53,8 @@
 #include "VipDataType.h"
 #include "VipFunctional.h"
 #include "VipLock.h"
-#include "VipTimestamping.h"
 #include "VipProcessingHelper.h"
+#include "VipTimestamping.h"
 
 /// \addtogroup Core
 /// @{
@@ -1300,7 +1331,7 @@ Q_DECLARE_METATYPE(VipMultiOutput)
 /// are set, the input data are buffered in each VipInput buffer (VipDataList object) and processing executions are
 /// scheduled inside the internal task pool. By default, each input uses a VipFIFOList, but the buffer type can be set
 /// to VipLIFOList or VipLastAvailableList (no buffering, always use the last data).
-/// 
+///
 /// Each input buffer can have a maximum size based either on a number of inputs or on the size in Bytes of buffered
 /// inputs. Use VipDataList::setMaxListSize(), VipDataList::setMaxListMemory() and VipDataList::setListLimitType()
 /// to control this behavior. Use VipProcessingManager to change the behavior of ALL existing input buffers and to ALL future ones.
@@ -1328,13 +1359,13 @@ Q_DECLARE_METATYPE(VipMultiOutput)
 /// (see VipProcessingObject::setLogErrorEnabled()).
 ///
 /// The error code is reseted before each call to VipProcessingObject::apply().
-/// 
-/// 
+///
+///
 /// Thread safety
 /// -------------
-/// 
+///
 /// VipProcessingObject class is NOT thread safe, while all members are reentrant.
-/// 
+///
 /// Only a few members are thread safe (mandatory for asynchronous strategy):
 /// -	All error related functions: setError(), resetError()...
 /// -	All introspection functions: className(), description(), inputDescription(), inputNames()...
@@ -1344,8 +1375,7 @@ Q_DECLARE_METATYPE(VipMultiOutput)
 /// -	Calls to update() and reset()
 ///
 ///
-class VIP_CORE_EXPORT VipProcessingObject
-  : public VipErrorHandler
+class VIP_CORE_EXPORT VipProcessingObject : public VipErrorHandler
 {
 	Q_OBJECT
 
@@ -1361,7 +1391,6 @@ class VIP_CORE_EXPORT VipProcessingObject
 	friend VIP_CORE_EXPORT VipArchive& operator>>(VipArchive& arch, VipProcessingObject* proc);
 
 protected:
-	
 	// Dummy accessor used by the VIP_IO macro in order to remove moc warnings
 	VipAny io() const { return VipAny(); }
 
@@ -1370,15 +1399,16 @@ public:
 	enum ScheduleStrategy
 	{
 		/// Launch the processing if only one new input data is set (default behavior).
-		OneInput = 0x00,     
+		OneInput = 0x00,
 		/// Launch the processing if if all input data are new ones.
-		AllInputs = 0x01,    
+		AllInputs = 0x01,
 		/// The processing is automatically triggered depending on the schedule strategy (OneInput or AllInputs). Otherwise, you must call the update() function yourself.
 		Asynchronous = 0x02,
-		/// When the processing is triggered, skip the processing if it is currently being performed. Otherwise, it will be performed after the current one finish. Only works in asynchronous mode.
-		SkipIfBusy = 0x04,   
+		/// When the processing is triggered, skip the processing if it is currently being performed. Otherwise, it will be performed after the current one finish. Only works in asynchronous
+		/// mode.
+		SkipIfBusy = 0x04,
 		/// Update the processing even if one of the input data is empty
-		AcceptEmptyInput = 0x08, 
+		AcceptEmptyInput = 0x08,
 		/// Do not call the apply() function if no new input is available. Only works in synchronous mode. The update() function directly call apply() without going
 		/// through the thread pool. This is the default behavior. This flag is ignored if Asynchronous is set.
 		SkipIfNoInput = 0x10,
@@ -1393,21 +1423,21 @@ public:
 	enum ErrorCode
 	{
 		/// Default error code for an error occuring in the VipProcessingObject::apply member
-		RuntimeError = -1,    
+		RuntimeError = -1,
 		/// An input buffer is full
-		InputBufferFull = -2, 
+		InputBufferFull = -2,
 		/// An input has a wrong type or is empty
-		WrongInput = -3, 
+		WrongInput = -3,
 		/// Invalid number of inputs (mainly for VipMultiInput)
 		WrongInputNumber = -4,
 		/// A UniqueProcessingIO failed to establish a connection
-		ConnectionNotOpen = -5, 
+		ConnectionNotOpen = -5,
 		/// A VipIODevice is not open
-		DeviceNotOpen = -6,	
+		DeviceNotOpen = -6,
 		/// Error while reading/writing from/to a file or socket
-		IOError = -7,	
+		IOError = -7,
 		/// Start value for user defined errors
-		User = -1000		
+		User = -1000
 	};
 
 	/// Hint about how the output data (if any) should be displayed based on the input one(s).
@@ -1624,7 +1654,7 @@ public:
 
 	//
 	// Attributes management functions
-	// 
+	//
 	// VipProcessingObject supports setting any kind of attributes on the form key (QString) -> value (QVariant).
 	// The attributes are added to the processing output (VipAnyData) attributes.
 	//
@@ -1687,7 +1717,7 @@ public:
 	void removeProcessingPoolFromAddresses();
 
 	/// @brief Set the processing schedule strategy. The schedule strategy defines the behavior of the #VipProcessingObject::update function.
-	/// 
+	///
 	/// If #VipProcessingObject::Asynchronous is set, the processing is automatically triggered (i.e. update() is called). Otherwise, you muste calle update() yourself to apply the processing.
 	///
 	/// When #VipProcessingObject::update is called (either automatically or manually), the processing is actually performed (through #VipProcessingObject::apply)
@@ -1700,7 +1730,7 @@ public:
 	/// If Otherwise, #VipProcessingObject::update will update all source processing first, apply its processing (depending on \a AllInput or \a OneInput) and then return.
 	///
 	/// If #VipProcessingObject::SkipIfBusy is set, the processing won't be performed if at least one processing is scheduled or in progress.
-	/// 
+	///
 	void setScheduleStrategies(ScheduleStrategies);
 	void setScheduleStrategy(ScheduleStrategy, bool on = true);
 	bool testScheduleStrategy(ScheduleStrategy) const;
@@ -1832,8 +1862,8 @@ public Q_SLOTS:
 	/// This property is used for display only, when the processing is inside a VipProcessingList that is edited.
 	virtual void setVisible(bool);
 
-	/// @brief Update the processing object. 
-	/// 
+	/// @brief Update the processing object.
+	///
 	/// This will trigger the processing if required, based on the scheduleStrategies():
 	/// -	If OneInput is set, only launch the processing if at least one of its input is new (always launch if force_run is true)
 	/// -	If  AllInputs is set, only launch the processing if all inputs are new (always launch if force_run is true)
@@ -1850,7 +1880,6 @@ public Q_SLOTS:
 	virtual bool reload();
 	/// @brief Wait until there are no more scheduled tasks or until timeout (only meaningful with VipProcessingObject::Asynchronous)
 	bool wait(bool wait_for_sources = true, int max_milli_time = -1);
-	
 
 Q_SIGNALS:
 
@@ -1877,13 +1906,13 @@ Q_SIGNALS:
 protected:
 	/// @brief Apply the processing. Reimplement this function within your own processing.
 	/// Default implementation does nothing.
-	/// 
+	///
 	/// VipProcessingObject will make sure that apply() and resetProcessing() will be called synchronously.
 	virtual void apply();
 
 	/// @brief Reset the processing.
 	/// Default implementation does nothing.
-	/// 
+	///
 	/// VipProcessingObject will make sure that apply() and resetProcessing() will be called synchronously.
 	virtual void resetProcessing();
 
@@ -1954,7 +1983,6 @@ private:
 	class PrivateData;
 	PrivateData* m_data;
 };
-
 
 template<class ProcessingType>
 QMultiMap<QString, VipProcessingObject::Info> VipProcessingObject::validProcessingObjects(const QVariantList& lst, int output_count, DisplayHint maxDisplayHint)
@@ -2427,12 +2455,6 @@ private:
 	PrivateData* m_data;
 };
 
-
-
-
-
-
-
 /// @brief Processing taking any kind and number of inputs, and send them one by one to the unique output.
 /// Since a processing input can be connected to only one output, this is a convenient way to overcome this limitation.
 class VIP_CORE_EXPORT VipMultiInputToOne : public VipProcessingObject
@@ -2455,7 +2477,7 @@ public:
 protected:
 	virtual void apply();
 };
- 
+
 VIP_REGISTER_QOBJECT_METATYPE(VipMultiInputToOne*)
 
 /// @brief Processing taking any kind and number of inputs, and send only one of them to the unique output

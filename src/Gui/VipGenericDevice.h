@@ -1,3 +1,34 @@
+/**
+ * BSD 3-Clause License
+ *
+ * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice, this
+ *    list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of the copyright holder nor the names of its
+ *    contributors may be used to endorse or promote products derived from
+ *    this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
 #ifndef VIP_GENERIC_DEVICE_H
 #define VIP_GENERIC_DEVICE_H
 
@@ -6,7 +37,6 @@
 
 /// \addtogroup Gui
 /// @{
-
 
 /// VipGenericRecorder is a helper class that encapsulates any kind of writing VipIODevice classes registerd with VIP_REGISTER_QOBJECT_METATYPE.
 /// Use this class if you need a writing VipIODevice that supports several data types / file formats.
@@ -19,47 +49,47 @@ class VIP_GUI_EXPORT VipGenericRecorder : public VipIODevice
 {
 	Q_OBJECT
 	VIP_IO(VipMultiInput inputs)
-	Q_CLASSINFO("description","Record any type of input data into a single file of any supported format");
+	Q_CLASSINFO("description", "Record any type of input data into a single file of any supported format");
 
 public:
-	VipGenericRecorder(QObject * parent = nullptr);
+	VipGenericRecorder(QObject* parent = nullptr);
 	~VipGenericRecorder();
 
-	///Returns true if any already registered VipIODevice supports given filename or first_bytes.
-	virtual bool probe(const QString &filename, const QByteArray & first_bytes) const;
+	/// Returns true if any already registered VipIODevice supports given filename or first_bytes.
+	virtual bool probe(const QString& filename, const QByteArray& first_bytes) const;
 
-	///Open the device. You must have set the path first with VipGenericRecorder::setPath.
+	/// Open the device. You must have set the path first with VipGenericRecorder::setPath.
 	virtual bool open(VipIODevice::OpenModes mode);
-	virtual DeviceType deviceType() const {return Temporal;}
-	virtual VipIODevice::OpenModes supportedModes() const {return WriteOnly;}
-	///Returns all supported file filters for all writing VipIODevice classes registerd with VIP_REGISTER_QOBJECT_METATYPE
+	virtual DeviceType deviceType() const { return Temporal; }
+	virtual VipIODevice::OpenModes supportedModes() const { return WriteOnly; }
+	/// Returns all supported file filters for all writing VipIODevice classes registerd with VIP_REGISTER_QOBJECT_METATYPE
 	virtual QString fileFilters() const;
-	///Set the writing path. This will create the internal VipIODevice and setup the inputs.
-	virtual bool setPath(const QString & path);
-	///Close the internal VipIODevice
+	/// Set the writing path. This will create the internal VipIODevice and setup the inputs.
+	virtual bool setPath(const QString& path);
+	/// Close the internal VipIODevice
 	virtual void close();
 	virtual qint64 estimateFileSize() const;
 
-	///Directly set the internal recorder.
-	/// This will delete the preivous recorder, if any.
-	void setRecorder(VipIODevice * device);
-	VipIODevice * recorder() const;
+	/// Directly set the internal recorder.
+	///  This will delete the preivous recorder, if any.
+	void setRecorder(VipIODevice* device);
+	VipIODevice* recorder() const;
 
-	///Returns the date prefix format, which must be compatible with QDateTime::toString function
+	/// Returns the date prefix format, which must be compatible with QDateTime::toString function
 	QString datePrefix() const;
-	///Returns true adding a date prefix to the output file is requested
+	/// Returns true adding a date prefix to the output file is requested
 	bool hasDatePrefix() const;
 
-	///Generate the output filename from the current path and the date prefix (if any)
+	/// Generate the output filename from the current path and the date prefix (if any)
 	QString generateFilename() const;
 
-	void setProbeInputs(const QVariantList & lst);
+	void setProbeInputs(const QVariantList& lst);
 
 	qint64 recordedSize() const;
 
 public Q_SLOTS:
-	///Set the date prefix
-	void setDatePrefix(const QString & date_prefix);
+	/// Set the date prefix
+	void setDatePrefix(const QString& date_prefix);
 	void setHasDatePrefix(bool enable);
 	void setRecorderAvailableDataOnOpen(bool enable);
 
@@ -67,12 +97,8 @@ public Q_SLOTS:
 
 	void openDeviceIfNotOpened();
 
-	void openDevice() {
-		setOpened(true);
-	}
-	void closeDevice() {
-		setOpened(false);
-	}
+	void openDevice() { setOpened(true); }
+	void closeDevice() { setOpened(false); }
 	void setRecordedSize(qint64 bytes);
 
 	/// Display again the recorder parameters (if any).
@@ -84,9 +110,8 @@ protected:
 
 private:
 	class PrivateData;
-	PrivateData * m_data;
+	PrivateData* m_data;
 };
-
 
 class QToolButton;
 class VipFileName;
@@ -113,12 +138,12 @@ public:
 		Right
 	};
 
-	VipRecordWidget(InfosLocation loc = Bottom, QWidget * widget = nullptr);
+	VipRecordWidget(InfosLocation loc = Bottom, QWidget* widget = nullptr);
 	~VipRecordWidget();
 
-	///Set the VipGenericRecorder instance managed by this widget
-	void setGenericRecorder(VipGenericRecorder * recorder);
-	VipGenericRecorder * genericRecorder() const;
+	/// Set the VipGenericRecorder instance managed by this widget
+	void setGenericRecorder(VipGenericRecorder* recorder);
+	VipGenericRecorder* genericRecorder() const;
 
 	void setRecordInfos(RecordInfos infos);
 	RecordInfos recordInfos() const;
@@ -128,37 +153,37 @@ public:
 
 	void setDatePrefixEnabled(bool);
 	bool datePrefixEnabled() const;
-	void setDatePrefix(const QString &);
+	void setDatePrefix(const QString&);
 	QString datePrefix() const;
 
-	///Returns the record button
-	QToolButton * record() const;
-	QToolButton * suspend() const;
-	VipFileName * filenameWidget() const;
+	/// Returns the record button
+	QToolButton* record() const;
+	QToolButton* suspend() const;
+	VipFileName* filenameWidget() const;
 
 	QString path() const;
 	QString filename() const;
-	static QString updateFileFilters(const QVariantList & data, VipFileName * filename );
+	static QString updateFileFilters(const QVariantList& data, VipFileName* filename);
 
 public Q_SLOTS:
-	QString updateFileFilters(const QVariantList & data);
-	void updateFileFilters(const QString & filters);
+	QString updateFileFilters(const QVariantList& data);
+	void updateFileFilters(const QString& filters);
 	void updateFileFilters();
-	void setFilename(const QString & filename);
+	void setFilename(const QString& filename);
 	void enableRecording(bool record);
 	void suspend(bool enable);
 
 private Q_SLOTS:
-	///Start/stop recording
+	/// Start/stop recording
 	void setRecording(bool);
-	///Start recording
+	/// Start recording
 	void startRecording();
-	///Stop recording
+	/// Stop recording
 	void stopRecording();
 	void updateWidgetFromDevice();
 	void updateDeviceFromWidget();
-	///Update the record info. VipRecordWidget provides a QLabel displaying the number of frames currently save in the VipGenericRecorder.
-	/// This function update the QLabel's content.
+	/// Update the record info. VipRecordWidget provides a QLabel displaying the number of frames currently save in the VipGenericRecorder.
+	///  This function update the QLabel's content.
 	void updateRecordInfo();
 
 	void resetParameters();
@@ -170,10 +195,10 @@ private:
 	bool canDisplayRecorderParametersEditor() const;
 
 	class PrivateData;
-	PrivateData * m_data;
+	PrivateData* m_data;
 };
 
 /// @}
-//end Gui
+// end Gui
 
 #endif

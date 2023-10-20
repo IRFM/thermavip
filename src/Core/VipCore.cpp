@@ -1,18 +1,48 @@
+/**
+ * BSD 3-Clause License
+ *
+ * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice, this
+ *    list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of the copyright holder nor the names of its
+ *    contributors may be used to endorse or promote products derived from
+ *    this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
 #include "VipCore.h"
 #include "VipArchive.h"
-#include "VipUniqueId.h"
 #include "VipDataType.h"
 #include "VipSceneModel.h"
+#include "VipUniqueId.h"
 
-#include <QTextStream>
 #include <QMetaType>
 #include <QSet>
 #include <QStandardPaths>
+#include <QTextStream>
 
 #include <thread>
 
-
-bool vipSafeVariantSave(QDataStream &s, const QVariant & v)
+bool vipSafeVariantSave(QDataStream& s, const QVariant& v)
 {
 	qint64 pos = s.device()->pos();
 	quint32 typeId = v.type();
@@ -46,21 +76,20 @@ bool vipSafeVariantSave(QDataStream &s, const QVariant & v)
 		s << QMetaType::typeName(v.userType());
 	}
 
-	if (!v.userType() ) {
+	if (!v.userType()) {
 		if (s.version() < QDataStream::Qt_5_0)
 			s << QString();
 		return true;
 	}
 
-	if (!QMetaType::save(s,v.userType(), v.constData())) {
+	if (!QMetaType::save(s, v.userType(), v.constData())) {
 		s.device()->seek(pos);
 		return false;
 	}
 	return true;
 }
 
-
-int  vipSafeVariantMapSave(QDataStream &s, const QVariantMap & c)
+int vipSafeVariantMapSave(QDataStream& s, const QVariantMap& c)
 {
 	QByteArray ar;
 	QDataStream str(&ar, QIODevice::WriteOnly);
@@ -79,7 +108,7 @@ int  vipSafeVariantMapSave(QDataStream &s, const QVariantMap & c)
 			++count;
 		}
 		else {
-			//try to the save the value before
+			// try to the save the value before
 			QByteArray tmp;
 			QDataStream tmp_str(&tmp, QIODevice::WriteOnly);
 			tmp_str.setByteOrder(s.byteOrder());
@@ -97,25 +126,25 @@ int  vipSafeVariantMapSave(QDataStream &s, const QVariantMap & c)
 	return count;
 }
 
-VipArchive & operator<<(VipArchive & arch, const VipShape & value)
+VipArchive& operator<<(VipArchive& arch, const VipShape& value)
 {
-	arch.content("id",value.id());
-	arch.content("group",value.group());
-	arch.content("type",(int)value.type());
-	arch.content("attributes",value.attributes());
-	if(value.type() == VipShape::Path)
-		arch.content("path",value.shape());
-	else if(value.type() == VipShape::Polygon)
-		arch.content("polygon",VipPointVector(value.polygon()));
-	else if(value.type() == VipShape::Polyline)
-		arch.content("polyline",VipPointVector(value.polyline()));
-	else if(value.type() == VipShape::Point)
-		arch.content("point",VipPoint(value.point()));
+	arch.content("id", value.id());
+	arch.content("group", value.group());
+	arch.content("type", (int)value.type());
+	arch.content("attributes", value.attributes());
+	if (value.type() == VipShape::Path)
+		arch.content("path", value.shape());
+	else if (value.type() == VipShape::Polygon)
+		arch.content("polygon", VipPointVector(value.polygon()));
+	else if (value.type() == VipShape::Polyline)
+		arch.content("polyline", VipPointVector(value.polyline()));
+	else if (value.type() == VipShape::Point)
+		arch.content("point", VipPoint(value.point()));
 	arch.content("isPolygonBased", value.isPolygonBased());
 	return arch;
 }
 
-VipArchive & operator>>(VipArchive & arch, VipShape & value)
+VipArchive& operator>>(VipArchive& arch, VipShape& value)
 {
 	value.setId(arch.read("id").toInt());
 	value.setGroup(arch.read("group").toString());
@@ -126,41 +155,40 @@ VipArchive & operator>>(VipArchive & arch, VipShape & value)
 	arch.restore();
 
 	value.setAttributes(arch.read("attributes").value<QVariantMap>());
-	if(type == VipShape::Path)
+	if (type == VipShape::Path)
 		value.setShape(arch.read("path").value<QPainterPath>(), VipShape::Path, isPolygonBased);
-	else if(type == VipShape::Polygon)
+	else if (type == VipShape::Polygon)
 		value.setPolygon((arch.read("polygon").value<VipPointVector>().toPointF()));
-	else if(type == VipShape::Polyline)
+	else if (type == VipShape::Polyline)
 		value.setPolyline((arch.read("polyline").value<VipPointVector>().toPointF()));
-	else if(type == VipShape::Point)
+	else if (type == VipShape::Point)
 		value.setPoint(arch.read("point").value<VipPoint>());
 	return arch;
 }
 
-VipArchive & operator<<(VipArchive & arch, const VipSceneModel & value)
+VipArchive& operator<<(VipArchive& arch, const VipSceneModel& value)
 {
-	arch.content("scene_id",VipUniqueId::id(value.shapeSignals()));
-	//new in 2.2.17
+	arch.content("scene_id", VipUniqueId::id(value.shapeSignals()));
+	// new in 2.2.17
 	arch.content("attributes", value.attributes());
 	//
 	QStringList groups = value.groups();
-	for(int g=0; g < groups.size(); ++g)
-	{
+	for (int g = 0; g < groups.size(); ++g) {
 		QList<VipShape> shapes = value.shapes(groups[g]);
-		for(int i=0; i < shapes.size(); ++i)
+		for (int i = 0; i < shapes.size(); ++i)
 			arch.content(shapes[i]);
 	}
 	return arch;
 }
 
-VipArchive & operator>>(VipArchive & arch, VipSceneModel & value)
+VipArchive& operator>>(VipArchive& arch, VipSceneModel& value)
 {
 	int id = arch.read("scene_id").value<int>();
 	if (arch.hasError())
 		return arch;
-	VipUniqueId::setId(value.shapeSignals(),id);
+	VipUniqueId::setId(value.shapeSignals(), id);
 
-	//new in 2.2.17
+	// new in 2.2.17
 	arch.save();
 	QVariantMap attrs;
 	if (arch.content("attributes", attrs)) {
@@ -170,25 +198,23 @@ VipArchive & operator>>(VipArchive & arch, VipSceneModel & value)
 		arch.restore();
 	//
 
-	while(arch)
-	{
-		VipShape sh =arch.read().value<VipShape>();
-		if(arch)
-			value.add(sh.group(),sh);
+	while (arch) {
+		VipShape sh = arch.read().value<VipShape>();
+		if (arch)
+			value.add(sh.group(), sh);
 	}
 	arch.resetError();
 	return arch;
 }
 
-
-VipArchive & operator<<(VipArchive & arch, const VipSceneModelList & value)
+VipArchive& operator<<(VipArchive& arch, const VipSceneModelList& value)
 {
 	arch.content("count", value.size());
 	for (int i = 0; i < value.size(); ++i)
 		arch.content(value[i]);
 	return arch;
 }
-VipArchive & operator>>(VipArchive & arch, VipSceneModelList & value)
+VipArchive& operator>>(VipArchive& arch, VipSceneModelList& value)
 {
 	value.clear();
 	int count = arch.read("count").toInt();
@@ -203,37 +229,34 @@ VipArchive & operator>>(VipArchive & arch, VipSceneModelList & value)
 }
 
 #include "VipXmlArchive.h"
-#include <QGuiApplication>
 #include <QClipboard>
+#include <QGuiApplication>
 
-void vipCopyObjectsToClipboard(const QVariantList & lst)
+void vipCopyObjectsToClipboard(const QVariantList& lst)
 {
-	if (lst.size())
-	{
+	if (lst.size()) {
 		VipXOStringArchive arch;
 		arch.start("Clipboard");
 		for (int i = 0; i < lst.size(); ++i)
 			arch.content(lst[i]);
 		arch.end();
 
-		QClipboard *clipboard = QGuiApplication::clipboard();
+		QClipboard* clipboard = QGuiApplication::clipboard();
 		clipboard->setText(arch.toString());
 	}
 }
 
 QVariantList vipCreateFromClipboard()
 {
-	QClipboard *clipboard = QGuiApplication::clipboard();
+	QClipboard* clipboard = QGuiApplication::clipboard();
 	QString text = clipboard->text();
 
 	VipXIStringArchive arch(text);
-	if(arch.start("Clipboard"))
-	{
+	if (arch.start("Clipboard")) {
 		QVariantList res;
-		while(arch)
-		{
+		while (arch) {
 			QVariant tmp = arch.read();
-			if(arch)
+			if (arch)
 				res.append(tmp);
 			else
 				break;
@@ -241,10 +264,8 @@ QVariantList vipCreateFromClipboard()
 		return res;
 	}
 
-return QVariantList();
+	return QVariantList();
 }
-
-
 
 QDataStream& operator<<(QDataStream& stream, const VipErrorData& data)
 {
@@ -260,7 +281,7 @@ QDataStream& operator>>(QDataStream& stream, VipErrorData& data)
 	return stream;
 }
 
-//register functions
+// register functions
 
 static int registerConversionFunctions()
 {
@@ -268,9 +289,9 @@ static int registerConversionFunctions()
 	qRegisterMetaType<VipErrorData>("VipErrorData");
 	qRegisterMetaTypeStreamOperators<VipErrorData>("VipErrorData");
 
-	qRegisterMetaType <VipFunctionObject>("VipFunctionObject");
+	qRegisterMetaType<VipFunctionObject>("VipFunctionObject");
 
-	//register serialization functions for VipShape and VipSceneModel
+	// register serialization functions for VipShape and VipSceneModel
 	vipRegisterArchiveStreamOperators<VipShape>();
 	vipRegisterArchiveStreamOperators<VipSceneModel>();
 	vipRegisterArchiveStreamOperators<VipSceneModelList>();
@@ -279,17 +300,14 @@ static int registerConversionFunctions()
 
 static int _registerConversionFunctions = registerConversionFunctions();
 
-
-
+#include <QCoreApplication>
 #include <QMutex>
 #include <QThread>
-#include <QCoreApplication>
 
 static QObject* object()
 {
 	static QObject inst;
-	if(inst.thread() != QCoreApplication::instance()->thread())
-	{
+	if (inst.thread() != QCoreApplication::instance()->thread()) {
 		inst.moveToThread(QCoreApplication::instance()->thread());
 	}
 	return &inst;
@@ -374,32 +392,35 @@ static QObject* object()
 // return result;
 // }
 
-
-int vipProcessEvents(bool * keep_going, int milli)
+int vipProcessEvents(bool* keep_going, int milli)
 {
 	struct Event : QEvent
 	{
 		QSharedPointer<bool> alive;
-		Event(QSharedPointer<bool> v) :QEvent(QEvent::MaxUser), alive(v) { *alive = true; }
+		Event(QSharedPointer<bool> v)
+		  : QEvent(QEvent::MaxUser)
+		  , alive(v)
+		{
+			*alive = true;
+		}
 		~Event() { *alive = false; }
 	};
 
 	static QMutex mutex(QMutex::Recursive);
-	static QThread *thread_processing = nullptr;
+	static QThread* thread_processing = nullptr;
 	static bool processing_result = false;
 	static bool main_thread_processing = false;
 
-	QThread * current_thread = QThread::currentThread();
-	QCoreApplication * application = QCoreApplication::instance();
+	QThread* current_thread = QThread::currentThread();
+	QCoreApplication* application = QCoreApplication::instance();
 	if (!application)
 		return -1;
 
-	//we are in the main thread and this function is already applying from the main thread: recursive call, return
+	// we are in the main thread and this function is already applying from the main thread: recursive call, return
 	if (current_thread == application->thread() && main_thread_processing)
 		return -3;
 
-	if (current_thread == application->thread())
-	{
+	if (current_thread == application->thread()) {
 		{
 			QMutexLocker lock(&mutex);
 			thread_processing = current_thread;
@@ -413,16 +434,14 @@ int vipProcessEvents(bool * keep_going, int milli)
 		QCoreApplication::instance()->postEvent(object(), new Event(alive));
 
 		int res = 0;
-		while (*alive && (!keep_going || *keep_going == true))
-		{
-			//use QCoreApplication::processEvents when called from the main thread
+		while (*alive && (!keep_going || *keep_going == true)) {
+			// use QCoreApplication::processEvents when called from the main thread
 			QCoreApplication::processEvents(QEventLoop::AllEvents, sleep_time);
 
 			qint64 cur_time = QDateTime::currentMSecsSinceEpoch();
 			qint64 full_elapsed = cur_time - start;
-			if (milli > 0 && full_elapsed >= milli)
-			{
-				//timeout
+			if (milli > 0 && full_elapsed >= milli) {
+				// timeout
 				processing_result = false;
 				res = -2;
 				break;
@@ -437,15 +456,12 @@ int vipProcessEvents(bool * keep_going, int milli)
 			res = -1;
 		return res;
 	}
-	else
-	{
-		//if there is already a thread calling this function, wait for it to finish
-		if (thread_processing)
-		{
+	else {
+		// if there is already a thread calling this function, wait for it to finish
+		if (thread_processing) {
 			qint64 start = QDateTime::currentMSecsSinceEpoch();
-			while (!processing_result && thread_processing)
-			{
-				//check for maximum time
+			while (!processing_result && thread_processing) {
+				// check for maximum time
 				if (milli > 0)
 					if ((QDateTime::currentMSecsSinceEpoch() - start) >= milli)
 						return -2;
@@ -457,7 +473,7 @@ int vipProcessEvents(bool * keep_going, int milli)
 				return 0;
 		}
 
-		//now wait for the event loop to process a custom event
+		// now wait for the event loop to process a custom event
 		{
 			QMutexLocker lock(&mutex);
 			thread_processing = current_thread;
@@ -469,14 +485,11 @@ int vipProcessEvents(bool * keep_going, int milli)
 		qint64 start = QDateTime::currentMSecsSinceEpoch();
 		int res = 0;
 
-		while (*alive && (!keep_going || *keep_going == true))
-		{
-			if (milli > 0)
-			{
-				//check for maximum time
+		while (*alive && (!keep_going || *keep_going == true)) {
+			if (milli > 0) {
+				// check for maximum time
 				qint64 elapsed = QDateTime::currentMSecsSinceEpoch() - start;
-				if (elapsed >= milli)
-				{
+				if (elapsed >= milli) {
 					res = -2;
 					break;
 				}
@@ -494,9 +507,8 @@ int vipProcessEvents(bool * keep_going, int milli)
 		return res;
 	}
 	VIP_UNREACHABLE();
-	//return -3;
+	// return -3;
 }
-
 
 static QList<VipFunction<0>>& init_functions()
 {
@@ -516,25 +528,23 @@ bool vipAddInitializationFunction(const VipFunction<0>& fun)
 	return true;
 }
 
-bool vipAddInitializationFunction(void(*fun)())
+bool vipAddInitializationFunction(void (*fun)())
 {
 	VipFunction<0> f(fun);
 	init_functions().append(f);
 	return true;
 }
 
-bool vipAddInitializationFunction(int(*fun)())
+bool vipAddInitializationFunction(int (*fun)())
 {
 	VipFunction<0> f(fun);
 	init_functions().append(f);
 	return true;
 }
-
-
 
 bool vipPrependInitializationFunction(const VipFunction<0>& fun)
 {
-	init_functions().insert(0,fun);
+	init_functions().insert(0, fun);
 	return true;
 }
 
@@ -552,21 +562,20 @@ bool vipPrependInitializationFunction(int (*fun)())
 	return true;
 }
 
-
 bool vipAddUninitializationFunction(const VipFunction<0>& fun)
 {
 	uninit_functions().append(fun);
 	return true;
 }
 
-bool vipAddUninitializationFunction(void(*fun)())
+bool vipAddUninitializationFunction(void (*fun)())
 {
 	VipFunction<0> f(fun);
 	uninit_functions().append(f);
 	return true;
 }
 
-bool vipAddUninitializationFunction(int(*fun)())
+bool vipAddUninitializationFunction(int (*fun)())
 {
 	VipFunction<0> f(fun);
 	uninit_functions().append(f);
@@ -585,7 +594,6 @@ void vipExecUnitializationFunction()
 		uninit_functions()[i]();
 }
 
-
 #include "VipSleep.h"
 
 struct GuiFunctions : public QObject
@@ -593,20 +601,17 @@ struct GuiFunctions : public QObject
 	QMutex mutex;
 	std::thread thread;
 	QList<VipFunction<0>> functions;
-	std::atomic<bool> stop{false};
+	std::atomic<bool> stop{ false };
 
-	
-	static GuiFunctions & instance()
+	static GuiFunctions& instance()
 	{
 		static GuiFunctions inst;
 		return inst;
 	}
 
-	GuiFunctions()
+	GuiFunctions() { thread = std::thread(std::bind(&GuiFunctions::run, this)); }
+	~GuiFunctions()
 	{
-		thread = std::thread(std::bind(&GuiFunctions::run,this));
-	}
-	~GuiFunctions() {
 		stop = true;
 		thread.join();
 	}
@@ -615,9 +620,9 @@ struct GuiFunctions : public QObject
 	{
 		while (!QCoreApplication::instance() && !stop)
 			vipSleep(1);
-		if(stop)
+		if (stop)
 			return;
-		QCoreApplication::instance()->postEvent(&instance(),new QEvent(QEvent::Create));
+		QCoreApplication::instance()->postEvent(&instance(), new QEvent(QEvent::Create));
 	}
 
 	void addFunction(const VipFunction<0>& fun)
@@ -628,17 +633,14 @@ struct GuiFunctions : public QObject
 
 	virtual bool event(QEvent* evt)
 	{
-		if(evt->type() != QEvent::Create)
+		if (evt->type() != QEvent::Create)
 			return false;
 		QMutexLocker lock(&mutex);
-		for(const VipFunction<0> & fun : functions)
+		for (const VipFunction<0>& fun : functions)
 			fun();
 		return true;
 	}
 };
-
-
-
 
 bool vipAddGuiInitializationFunction(int (*fun)())
 {
@@ -651,23 +653,14 @@ bool vipAddGuiInitializationFunction(void (*fun)())
 	return true;
 }
 
-
-
-
-
 Q_COREAPP_STARTUP_FUNCTION(vipExecInitializationFunction);
 
-static int add_post_routine() {
+static int add_post_routine()
+{
 	qAddPostRoutine(vipExecUnitializationFunction);
 	return 0;
 }
 static int _add_post_routine = add_post_routine();
-
-
-
-
-
-
 
 static QMap<QString, VipFunctionObject> _functions;
 
@@ -676,7 +669,7 @@ bool VipFunctionObject::isValid() const
 	return (bool)function;
 }
 
-bool vipRegisterFunction(const VipFunctionObject &fun)
+bool vipRegisterFunction(const VipFunctionObject& fun)
 {
 	if (fun.isValid()) {
 		_functions[fun.name] = fun;
@@ -698,7 +691,7 @@ bool vipRegisterFunction(const VipFunctionObject::function_type& fun, const QStr
 	return false;
 }
 
-VipFunctionObject vipFindFunction(const QString & name)
+VipFunctionObject vipFindFunction(const QString& name)
 {
 	QMap<QString, VipFunctionObject>::const_iterator it = _functions.find(name);
 	if (it != _functions.end())
@@ -711,39 +704,32 @@ QList<VipFunctionObject> vipAllFunctions()
 	return _functions.values();
 }
 
-
-
-
-
-
-typedef void(*archive_fun)(VipArchive &);
-typedef QList<QPair<archive_fun, archive_fun> > archive_fun_list;
+typedef void (*archive_fun)(VipArchive&);
+typedef QList<QPair<archive_fun, archive_fun>> archive_fun_list;
 static archive_fun_list _archive_fun_list;
 
-void vipRegisterSettingsArchiveFunctions(void(*save)(VipArchive &), void(*restore)(VipArchive&))
+void vipRegisterSettingsArchiveFunctions(void (*save)(VipArchive&), void (*restore)(VipArchive&))
 {
 	_archive_fun_list.append(QPair<archive_fun, archive_fun>(save, restore));
 }
 
-void vipSaveSettings(VipArchive & arch)
+void vipSaveSettings(VipArchive& arch)
 {
-	for (int i = 0; i < _archive_fun_list.size(); ++i)
-	{
+	for (int i = 0; i < _archive_fun_list.size(); ++i) {
 		_archive_fun_list[i].first(arch);
 	}
 }
 
-void vipRestoreSettings(VipArchive & arch)
+void vipRestoreSettings(VipArchive& arch)
 {
-	for (int i = 0; i < _archive_fun_list.size(); ++i)
-	{
+	for (int i = 0; i < _archive_fun_list.size(); ++i) {
 		_archive_fun_list[i].second(arch);
 	}
 }
 
-void vipSaveCustomProperties(VipArchive & arch, const QObject * obj)
+void vipSaveCustomProperties(VipArchive& arch, const QObject* obj)
 {
-	//save all properties starting with "_vip_custom"
+	// save all properties starting with "_vip_custom"
 	arch.start("custom_properties");
 	QList<QByteArray> properties = obj->dynamicPropertyNames();
 	for (int i = 0; i < properties.size(); ++i) {
@@ -756,7 +742,7 @@ void vipSaveCustomProperties(VipArchive & arch, const QObject * obj)
 	arch.end();
 }
 
-QList<QByteArray> vipLoadCustomProperties(VipArchive & arch, QObject * obj)
+QList<QByteArray> vipLoadCustomProperties(VipArchive& arch, QObject* obj)
 {
 	QList<QByteArray> res;
 
@@ -780,13 +766,13 @@ QList<QByteArray> vipLoadCustomProperties(VipArchive & arch, QObject * obj)
 	return res;
 }
 
-
-
 VipCoreSettings::VipCoreSettings()
-	:m_log_overwrite(false), m_log_date(false)
-{}
+  : m_log_overwrite(false)
+  , m_log_date(false)
+{
+}
 
-VipCoreSettings * VipCoreSettings::instance()
+VipCoreSettings* VipCoreSettings::instance()
 {
 	static VipCoreSettings inst;
 	return &inst;
@@ -810,19 +796,18 @@ bool VipCoreSettings::logFileDate() const
 	return m_log_date;
 }
 
-void  VipCoreSettings::setSkin(const QString & skin)
+void VipCoreSettings::setSkin(const QString& skin)
 {
 	m_skin = skin;
 }
-QString  VipCoreSettings::skin() const
+QString VipCoreSettings::skin() const
 {
 	return m_skin;
 }
 
-bool  VipCoreSettings::save(VipArchive & ar)
+bool VipCoreSettings::save(VipArchive& ar)
 {
-	if (ar.start("VipCoreSettings"))
-	{
+	if (ar.start("VipCoreSettings")) {
 		ar.content("logFileOverwrite", VipCoreSettings::instance()->logFileOverwrite());
 		ar.content("logFileDate", VipCoreSettings::instance()->logFileDate());
 		ar.content("skin", VipCoreSettings::instance()->skin());
@@ -831,7 +816,7 @@ bool  VipCoreSettings::save(VipArchive & ar)
 	}
 	return false;
 }
-bool  VipCoreSettings::save(const QString & file)
+bool VipCoreSettings::save(const QString& file)
 {
 	VipXOfArchive ar;
 	if (!ar.open(file))
@@ -839,10 +824,9 @@ bool  VipCoreSettings::save(const QString & file)
 	return save(ar);
 }
 
-bool  VipCoreSettings::restore(VipArchive & ar)
+bool VipCoreSettings::restore(VipArchive& ar)
 {
-	if (ar.start("VipCoreSettings"))
-	{
+	if (ar.start("VipCoreSettings")) {
 		VipCoreSettings::instance()->setLogFileOverwrite(ar.read("logFileOverwrite").value<bool>());
 		VipCoreSettings::instance()->setLogFileDate(ar.read("logFileDate").value<bool>());
 		VipCoreSettings::instance()->setSkin(ar.read("skin").toString());
@@ -851,7 +835,7 @@ bool  VipCoreSettings::restore(VipArchive & ar)
 	}
 	return false;
 }
-bool  VipCoreSettings::restore(const QString & file)
+bool VipCoreSettings::restore(const QString& file)
 {
 	VipXIfArchive ar;
 	if (!ar.open(file))
@@ -859,85 +843,97 @@ bool  VipCoreSettings::restore(const QString & file)
 	return restore(ar);
 }
 
+static QMap<int, int (*)(int, const QVariant&)> _mem_functions;
 
-
-
-
-static QMap<int, int(*)(int, const QVariant &)> _mem_functions;
-
-int vipGetMemoryFootprint(const QVariant & v)
+int vipGetMemoryFootprint(const QVariant& v)
 {
 	int type = v.userType();
 
 	if (type == 0)
 		return 0;
 
-	//standard types
-	switch (type)
-	{
-	case QMetaType::Bool:
-	case QMetaType::UChar:
-	case QMetaType::Char:
-	case QMetaType::SChar: return 1;
-	case QMetaType::UShort:
-	case QMetaType::Short: return 2;
-	case QMetaType::UInt:
-	case QMetaType::Int:
-	case QMetaType::Float: return 4;
-	case QMetaType::ULongLong:
-	case QMetaType::LongLong:
-	case QMetaType::Double: return 8;
-	case QMetaType::QChar: return sizeof(QChar);
-	case QMetaType::QString: return sizeof(QChar)*v.toString().size();
-	case QMetaType::QByteArray: return v.toByteArray().size();
-	case QMetaType::Long: return sizeof(long);
-	case QMetaType::ULong: return sizeof(unsigned long);
-	case QMetaType::QDate: return sizeof(QDate);
-	case QMetaType::QSize: return sizeof(QSize);
-	case QMetaType::QSizeF: return sizeof(QSizeF);
-	case QMetaType::QTime: return sizeof(QTime);
-	case QMetaType::QPolygon: return v.value<QPolygon>().size()*sizeof(QPoint);
-	case QMetaType::QPolygonF: return v.value<QPolygonF>().size() * sizeof(QPointF);
-	case QMetaType::QPoint:	return sizeof(QPoint);
-	case QMetaType::QPointF:	return sizeof(QPointF);
-	case QMetaType::QRect:	return sizeof(QRect);
-	case QMetaType::QRectF:	return sizeof(QRectF);
-	case QMetaType::QColor:	return sizeof(QColor);
-	case QMetaType::QVariantMap:
-	{
-		int size = 0;
-		const QVariantMap map = v.value<QVariantMap>();
-		for (QVariantMap::const_iterator it = map.begin(); it != map.end(); ++it)
-			size += vipGetMemoryFootprint(it.value()) + it.key().size() * sizeof(QChar);
-		return size;
-	}
-	case QMetaType::QVariantList:
-	{
-		int size = 0;
-		const QVariantList map = v.value<QVariantList>();
-		for (QVariantList::const_iterator it = map.begin(); it != map.end(); ++it)
-			size += vipGetMemoryFootprint(*it);
-		return size;
-	}
-	default:
-		break;
+	// standard types
+	switch (type) {
+		case QMetaType::Bool:
+		case QMetaType::UChar:
+		case QMetaType::Char:
+		case QMetaType::SChar:
+			return 1;
+		case QMetaType::UShort:
+		case QMetaType::Short:
+			return 2;
+		case QMetaType::UInt:
+		case QMetaType::Int:
+		case QMetaType::Float:
+			return 4;
+		case QMetaType::ULongLong:
+		case QMetaType::LongLong:
+		case QMetaType::Double:
+			return 8;
+		case QMetaType::QChar:
+			return sizeof(QChar);
+		case QMetaType::QString:
+			return sizeof(QChar) * v.toString().size();
+		case QMetaType::QByteArray:
+			return v.toByteArray().size();
+		case QMetaType::Long:
+			return sizeof(long);
+		case QMetaType::ULong:
+			return sizeof(unsigned long);
+		case QMetaType::QDate:
+			return sizeof(QDate);
+		case QMetaType::QSize:
+			return sizeof(QSize);
+		case QMetaType::QSizeF:
+			return sizeof(QSizeF);
+		case QMetaType::QTime:
+			return sizeof(QTime);
+		case QMetaType::QPolygon:
+			return v.value<QPolygon>().size() * sizeof(QPoint);
+		case QMetaType::QPolygonF:
+			return v.value<QPolygonF>().size() * sizeof(QPointF);
+		case QMetaType::QPoint:
+			return sizeof(QPoint);
+		case QMetaType::QPointF:
+			return sizeof(QPointF);
+		case QMetaType::QRect:
+			return sizeof(QRect);
+		case QMetaType::QRectF:
+			return sizeof(QRectF);
+		case QMetaType::QColor:
+			return sizeof(QColor);
+		case QMetaType::QVariantMap: {
+			int size = 0;
+			const QVariantMap map = v.value<QVariantMap>();
+			for (QVariantMap::const_iterator it = map.begin(); it != map.end(); ++it)
+				size += vipGetMemoryFootprint(it.value()) + it.key().size() * sizeof(QChar);
+			return size;
+		}
+		case QMetaType::QVariantList: {
+			int size = 0;
+			const QVariantList map = v.value<QVariantList>();
+			for (QVariantList::const_iterator it = map.begin(); it != map.end(); ++it)
+				size += vipGetMemoryFootprint(*it);
+			return size;
+		}
+		default:
+			break;
 	}
 
-	//custom types defined by thermavip
-	if (type == qMetaTypeId<VipNDArray>())
-	{
+	// custom types defined by thermavip
+	if (type == qMetaTypeId<VipNDArray>()) {
 		const VipNDArray ar = v.value<VipNDArray>();
 		if (vipIsImageArray(ar))
 			return ar.size() * 4;
-		return ar.size()*ar.dataSize();
+		return ar.size() * ar.dataSize();
 	}
-	//else if (type == qMetaTypeId<VipRasterData>())
-	// {
-	// const VipNDArray ar = v.value<VipNDArray>();
-	// if (vipIsImageArray(ar))
-	// return ar.size() * 4;
-	// return ar.size()*ar.dataSize();
-	// }
+	// else if (type == qMetaTypeId<VipRasterData>())
+	//  {
+	//  const VipNDArray ar = v.value<VipNDArray>();
+	//  if (vipIsImageArray(ar))
+	//  return ar.size() * 4;
+	//  return ar.size()*ar.dataSize();
+	//  }
 	else if (type == qMetaTypeId<complex_f>())
 		return sizeof(complex_f);
 	else if (type == qMetaTypeId<complex_d>())
@@ -951,35 +947,33 @@ int vipGetMemoryFootprint(const QVariant & v)
 	else if (type == qMetaTypeId<VipIntervalSampleVector>())
 		return v.value<VipIntervalSampleVector>().size() * sizeof(VipIntervalSample);
 
-	QMap<int, int(*)(int, const QVariant &)>::iterator it = _mem_functions.find(type);
+	QMap<int, int (*)(int, const QVariant&)>::iterator it = _mem_functions.find(type);
 	if (it != _mem_functions.end())
 		return it.value()(type, v);
 
 	return 0;
 }
 
-int vipRegisterMemoryFootprintFunction(int metatype_id, int(*fun)(int, const QVariant &))
+int vipRegisterMemoryFootprintFunction(int metatype_id, int (*fun)(int, const QVariant&))
 {
 	_mem_functions[metatype_id] = fun;
 	return metatype_id;
 }
-
-
 
 static qint64 defaultNanoSecondsSinceEpoch()
 {
 	return QDateTime::currentMSecsSinceEpoch() * 1000000;
 }
 
-typedef qint64(*time_function)();
+typedef qint64 (*time_function)();
 static time_function _time_function = defaultNanoSecondsSinceEpoch;
 static time_function _ms_time_function = QDateTime::currentMSecsSinceEpoch;
 
-void vipSetTimeFunction(qint64(*fun)())
+void vipSetTimeFunction(qint64 (*fun)())
 {
 	_time_function = fun;
 }
-void vipSetMsTimeFunction(qint64(*fun)())
+void vipSetMsTimeFunction(qint64 (*fun)())
 {
 	_ms_time_function = fun;
 }
@@ -994,15 +988,11 @@ qint64 vipGetMilliSecondsSinceEpoch()
 	return _ms_time_function ? _ms_time_function() : _time_function() / 1000000;
 }
 
+static QStringList _icon_paths = QStringList() << "icons/";
 
-
-
-static QStringList _icon_paths = QStringList()<<"icons/";
-
-QPixmap vipPixmap(const QString & name)
+QPixmap vipPixmap(const QString& name)
 {
-	for (int i = 0; i < _icon_paths.size(); ++i)
-	{
+	for (int i = 0; i < _icon_paths.size(); ++i) {
 		QPixmap icon = QPixmap(_icon_paths[i] + name);
 		if (!icon.isNull())
 			return icon;
@@ -1011,7 +1001,7 @@ QPixmap vipPixmap(const QString & name)
 	return QPixmap();
 }
 
-QIcon vipIcon(const QString & name)
+QIcon vipIcon(const QString& name)
 {
 	QPixmap pix = vipPixmap(name);
 	if (pix.isNull())
@@ -1020,7 +1010,7 @@ QIcon vipIcon(const QString & name)
 		return QIcon(pix);
 }
 
-void vipAddIconPath(const QString & path)
+void vipAddIconPath(const QString& path)
 {
 	QString p = path;
 	p.replace("\\", "/");
@@ -1030,7 +1020,7 @@ void vipAddIconPath(const QString & path)
 	_icon_paths.append(p);
 }
 
-void vipAddFrontIconPath(const QString & path)
+void vipAddFrontIconPath(const QString& path)
 {
 	QString p = path;
 	p.replace("\\", "/");
@@ -1040,11 +1030,10 @@ void vipAddFrontIconPath(const QString & path)
 	_icon_paths.push_front(p);
 }
 
-void vipSetIconPaths(const QStringList & paths)
+void vipSetIconPaths(const QStringList& paths)
 {
 	_icon_paths = paths;
-	for (int i = 0; i < _icon_paths.size(); ++i)
-	{
+	for (int i = 0; i < _icon_paths.size(); ++i) {
 		QString p = _icon_paths[i];
 		p.replace("\\", "/");
 		if (!p.endsWith("/"))
@@ -1053,37 +1042,32 @@ void vipSetIconPaths(const QStringList & paths)
 	}
 }
 
-
 qint64 vipBuildTime()
 {
 	static qint64 time = 0;
-	if (time == 0)
-	{
+	if (time == 0) {
 		QString date = (__DATE__ + QString(" ") + QString(__TIME__));
 		date.replace(":", " ");
 		QStringList lst = date.split(" ", VIP_SKIP_BEHAVIOR::SkipEmptyParts);
 		date = lst.join(" ");
-		if (lst.size() == 6)
-		{
+		if (lst.size() == 6) {
 			QString pattern;
 			pattern += QString("M").repeated(lst[0].size()) + " ";
 			pattern += QString("d").repeated(lst[1].size()) + " ";
 			pattern += QString("y").repeated(lst[2].size()) + " ";
 			pattern += QString("h").repeated(lst[3].size()) + " ";
-			pattern += QString("m").repeated(lst[4].size()) +" ";
+			pattern += QString("m").repeated(lst[4].size()) + " ";
 			pattern += QString("s").repeated(lst[5].size());
 
 			QLocale locale(QLocale::English, QLocale::UnitedStates);
 			time = locale.toDateTime(date, pattern).toMSecsSinceEpoch();
 		}
-
 	}
 	return time;
 }
 
-
 static QString _editionVersion;
-void vipSetEditionVersion(const QString & ver)
+void vipSetEditionVersion(const QString& ver)
 {
 	_editionVersion = ver;
 }
@@ -1092,9 +1076,8 @@ QString vipEditionVersion()
 	return _editionVersion;
 }
 
-
 static QString _app_name;
-void vipSetAppCanonicalPath(const QString & name)
+void vipSetAppCanonicalPath(const QString& name)
 {
 	_app_name = name;
 }

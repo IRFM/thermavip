@@ -1,3 +1,34 @@
+/**
+ * BSD 3-Clause License
+ *
+ * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice, this
+ *    list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of the copyright holder nor the names of its
+ *    contributors may be used to endorse or promote products derived from
+ *    this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
 #ifndef VIP_CONVOLVE_H
 #define VIP_CONVOLVE_H
 
@@ -11,48 +42,48 @@ namespace Vip
 	/// Convolution border treatment
 	enum ConvolveBorderRule
 	{
-		Avoid, //! Directly returns the source value without convolution
+		Avoid,	 //! Directly returns the source value without convolution
 		Nearest, //! Uses the nearest valid value to perform the convolution
-		Wrap //! Wrap around coordinates
+		Wrap	 //! Wrap around coordinates
 	};
 }
 /// @}
-//end DataType
+// end DataType
 
 namespace detail
 {
 
-	template <Vip::ConvolveBorderRule Rule>
+	template<Vip::ConvolveBorderRule Rule>
 	struct ArrayConvolve
 	{
-		template< class Array, class Kernel, class Type, class Coord1, class Coord2, class Coord3, class Coord4>
-		static bool apply(int Dim, int NbDim,
-								const Array & array,
-								const Kernel & kernel,
-								const Coord1 & current,
-								const Coord2 & k_center,
-								const Coord3 & arshape,
-								const Coord3 & kshape,
-								Coord4 & c_k,
-								Coord4 & c_a,
-								Type & res
-								)
+		template<class Array, class Kernel, class Type, class Coord1, class Coord2, class Coord3, class Coord4>
+		static bool apply(int Dim,
+				  int NbDim,
+				  const Array& array,
+				  const Kernel& kernel,
+				  const Coord1& current,
+				  const Coord2& k_center,
+				  const Coord3& arshape,
+				  const Coord3& kshape,
+				  Coord4& c_k,
+				  Coord4& c_a,
+				  Type& res)
 		{
-			if(Dim == 0){
-				int last = NbDim-1;
-				for(int i = 0; i < kshape[last]; ++i){
-					//update coordinates
+			if (Dim == 0) {
+				int last = NbDim - 1;
+				for (int i = 0; i < kshape[last]; ++i) {
+					// update coordinates
 					c_a[last] = current[last] + (c_k[last] = i) - (int)k_center[last];
 					res += kernel(c_k) * array(c_a);
 				}
 				return true;
 			}
 
-			int last = NbDim-Dim-1;
-			//loop on kernel coordinates
-			for(int i = 0; i < kshape[last]; ++i) {
-				//update coordinates
-				c_a[last] = current[last] +  (c_k[last] = i) - (int)k_center[last];
+			int last = NbDim - Dim - 1;
+			// loop on kernel coordinates
+			for (int i = 0; i < kshape[last]; ++i) {
+				// update coordinates
+				c_a[last] = current[last] + (c_k[last] = i) - (int)k_center[last];
 				ArrayConvolve<Rule>::apply(Dim - 1, NbDim, array, kernel, current, k_center, arshape, kshape, c_k, c_a, res);
 			}
 
@@ -60,27 +91,26 @@ namespace detail
 		}
 	};
 
-
-	template <>
+	template<>
 	struct ArrayConvolve<Vip::Avoid>
 	{
-		template< class Array, class Kernel, class Type, class Coord1, class Coord2, class Coord3, class Coord4>
-		static bool apply(int Dim, int NbDim,
-			const Array & array,
-			const Kernel & kernel,
-			const Coord1 & current,
-			const Coord2 & k_center,
-			const Coord3 & arshape,
-			const Coord3 & kshape,
-			Coord4 & c_k,
-			Coord4 & c_a,
-			Type & res
-		)
+		template<class Array, class Kernel, class Type, class Coord1, class Coord2, class Coord3, class Coord4>
+		static bool apply(int Dim,
+				  int NbDim,
+				  const Array& array,
+				  const Kernel& kernel,
+				  const Coord1& current,
+				  const Coord2& k_center,
+				  const Coord3& arshape,
+				  const Coord3& kshape,
+				  Coord4& c_k,
+				  Coord4& c_a,
+				  Type& res)
 		{
-			if (Dim == 0){
+			if (Dim == 0) {
 				int last = NbDim - 1;
-				for (int i = 0; i < kshape[last]; ++i){
-					//update coordinates
+				for (int i = 0; i < kshape[last]; ++i) {
+					// update coordinates
 					c_a[last] = current[last] + (c_k[last] = i) - (int)k_center[last];
 					if (c_a[last] < 0 || c_a[last] >= (int)arshape[last])
 						return false;
@@ -91,43 +121,41 @@ namespace detail
 				return true;
 			}
 
-
 			int last = NbDim - Dim - 1;
-			//loop on kernel coordinates
+			// loop on kernel coordinates
 			for (int i = 0; i < kshape[last]; ++i) {
-				//update coordinates
+				// update coordinates
 				c_a[last] = current[last] + (c_k[last] = i) - (int)k_center[last];
 				if (c_a[last] < 0 || c_a[last] >= (int)arshape[last])
 					return false;
-				else
-					if (!ArrayConvolve<Vip::Avoid>::apply(Dim - 1, NbDim, array, kernel, current, k_center, arshape, kshape, c_k, c_a, res))
-						return false;
+				else if (!ArrayConvolve<Vip::Avoid>::apply(Dim - 1, NbDim, array, kernel, current, k_center, arshape, kshape, c_k, c_a, res))
+					return false;
 			}
 
 			return true;
 		}
 	};
 
-	template <>
+	template<>
 	struct ArrayConvolve<Vip::Nearest>
 	{
-		template< class Array, class Kernel, class Type, class Coord1, class Coord2, class Coord3, class Coord4>
-		static bool apply(int Dim, int NbDim,
-			const Array & array,
-			const Kernel & kernel,
-			const Coord1 & current,
-			const Coord2 & k_center,
-			const Coord3 & arshape,
-			const Coord3 & kshape,
-			Coord4 & c_k,
-			Coord4 & c_a,
-			Type & res
-		)
+		template<class Array, class Kernel, class Type, class Coord1, class Coord2, class Coord3, class Coord4>
+		static bool apply(int Dim,
+				  int NbDim,
+				  const Array& array,
+				  const Kernel& kernel,
+				  const Coord1& current,
+				  const Coord2& k_center,
+				  const Coord3& arshape,
+				  const Coord3& kshape,
+				  Coord4& c_k,
+				  Coord4& c_a,
+				  Type& res)
 		{
-			if (Dim == 0){
+			if (Dim == 0) {
 				int last = NbDim - 1;
-				for (int i = 0; i < kshape[last]; ++i){
-					//update coordinates
+				for (int i = 0; i < kshape[last]; ++i) {
+					// update coordinates
 					c_a[last] = current[last] + (c_k[last] = i) - (int)k_center[last];
 					if (c_a[last] < 0 || c_a[last] >= (int)arshape[last])
 						c_a[last] = (c_a[last] > 0) * ((int)arshape[last] - 1);
@@ -136,11 +164,10 @@ namespace detail
 				return true;
 			}
 
-
 			int last = NbDim - Dim - 1;
-			//loop on kernel coordinates
-			for (int i = 0; i < kshape[last]; ++i)	{
-				//update coordinates
+			// loop on kernel coordinates
+			for (int i = 0; i < kshape[last]; ++i) {
+				// update coordinates
 				c_a[last] = current[last] + (c_k[last] = i) - (int)k_center[last];
 				if (c_a[last] < 0 || c_a[last] >= (int)arshape[last])
 					c_a[last] = (c_a[last] > 0) * ((int)arshape[last] - 1);
@@ -150,24 +177,24 @@ namespace detail
 		}
 	};
 
-	//template <>
-	// struct ArrayConvolve<Vip::Clip>
-	// {
-	// template< class Array, class Kernel, class Type, class Coord1, class Coord2, class Coord3, class Coord4>
-	// static bool apply(int Dim, int NbDim,
-	// const Array & array,
-	// const Kernel & kernel,
-	// const Coord1 & current,
-	// const Coord2 & k_center,
-	// const Coord3 & arshape,
-	// const Coord3 & kshape,
-	// Coord4 & c_k,
-	// Coord4 & c_a,
-	// Type & res
-	// )
-	// {
-	// if (Dim == 0)
-	// {
+	// template <>
+	//  struct ArrayConvolve<Vip::Clip>
+	//  {
+	//  template< class Array, class Kernel, class Type, class Coord1, class Coord2, class Coord3, class Coord4>
+	//  static bool apply(int Dim, int NbDim,
+	//  const Array & array,
+	//  const Kernel & kernel,
+	//  const Coord1 & current,
+	//  const Coord2 & k_center,
+	//  const Coord3 & arshape,
+	//  const Coord3 & kshape,
+	//  Coord4 & c_k,
+	//  Coord4 & c_a,
+	//  Type & res
+	//  )
+	//  {
+	//  if (Dim == 0)
+	//  {
 	//	int last = NbDim - 1;
 	//	for (int i = 0; i < kshape[last]; ++i){
 	//		//update coordinates
@@ -178,9 +205,9 @@ namespace detail
 	//			res += kernel(c_k) * array(c_a);
 	//	}
 	//	return true;
-	// }
-//
-//
+	//  }
+	//
+	//
 	// int last = NbDim - Dim - 1;
 	// //loop on kernel coordinates
 	// for (int i = 0; i < kshape[last]; ++i){
@@ -193,55 +220,60 @@ namespace detail
 	// }
 	// };
 
-	template <>
+	template<>
 	struct ArrayConvolve<Vip::Wrap>
 	{
-		template< class Array, class Kernel, class Type, class Coord1, class Coord2, class Coord3, class Coord4>
-		static bool apply(int Dim, int NbDim,
-			const Array & array,
-			const Kernel & kernel,
-			const Coord1 & current,
-			const Coord2 & k_center,
-			const Coord3 & arshape,
-			const Coord3 & kshape,
-			Coord4 & c_k,
-			Coord4 & c_a,
-			Type & res
-		)
+		template<class Array, class Kernel, class Type, class Coord1, class Coord2, class Coord3, class Coord4>
+		static bool apply(int Dim,
+				  int NbDim,
+				  const Array& array,
+				  const Kernel& kernel,
+				  const Coord1& current,
+				  const Coord2& k_center,
+				  const Coord3& arshape,
+				  const Coord3& kshape,
+				  Coord4& c_k,
+				  Coord4& c_a,
+				  Type& res)
 		{
-			if (Dim == 0){
+			if (Dim == 0) {
 				int last = NbDim - 1;
-				for (int i = 0; i < kshape[last]; ++i){
-					//update coordinates
+				for (int i = 0; i < kshape[last]; ++i) {
+					// update coordinates
 					c_a[last] = current[last] + (c_k[last] = i) - (int)k_center[last];
 					if (c_a[last] < 0 || c_a[last] >= (int)arshape[last])
-						c_a[last] = (c_a[last] % (int)arshape[last]) + (c_a[last] < 0)*arshape[last];
+						c_a[last] = (c_a[last] % (int)arshape[last]) + (c_a[last] < 0) * arshape[last];
 					res += kernel(c_k) * array(c_a);
 				}
 				return true;
 			}
 
-
 			int last = NbDim - Dim - 1;
-			//loop on kernel coordinates
-			for (int i = 0; i < kshape[last]; ++i){
-				//update coordinates
+			// loop on kernel coordinates
+			for (int i = 0; i < kshape[last]; ++i) {
+				// update coordinates
 				c_a[last] = current[last] + (c_k[last] = i) - (int)k_center[last];
 				if (c_a[last] < 0 || c_a[last] >= (int)arshape[last])
-					c_a[last] = (c_a[last] % (int)arshape[last]) + (c_a[last] < 0)*arshape[last];
+					c_a[last] = (c_a[last] % (int)arshape[last]) + (c_a[last] < 0) * arshape[last];
 				ArrayConvolve<Vip::Wrap>::apply(Dim - 1, NbDim, array, kernel, current, k_center, arshape, kshape, c_k, c_a, res);
 			}
 			return true;
 		}
 	};
 
-
-	template<class T, Vip::ConvolveBorderRule Rule, int NDims >
+	template<class T, Vip::ConvolveBorderRule Rule, int NDims>
 	struct ApplyConvolve
 	{
 		template<class Rect, class Array, class Kernel, class Coord1>
-		static T apply(const Rect &, const Array & array, const VipNDArrayShape & ashape, const Kernel & kernel,
-			const Coord1 & pos, const VipNDArrayShape & k_center, const VipNDArrayShape & kshape, VipNDArrayShape & c_k, VipNDArrayShape & c_a)
+		static T apply(const Rect&,
+			       const Array& array,
+			       const VipNDArrayShape& ashape,
+			       const Kernel& kernel,
+			       const Coord1& pos,
+			       const VipNDArrayShape& k_center,
+			       const VipNDArrayShape& kshape,
+			       VipNDArrayShape& c_k,
+			       VipNDArrayShape& c_a)
 		{
 			c_k.resize(k_center.size());
 			c_a.resize(k_center.size());
@@ -259,8 +291,15 @@ namespace detail
 	struct ApplyConvolve<T, Rule, 1>
 	{
 		template<class Rect, class Array, class Kernel, class Coord1>
-		static VIP_ALWAYS_INLINE T apply(const Rect & valid, const Array & array, const VipNDArrayShape & ashape, const Kernel & kernel,
-			const Coord1 & pos, const VipNDArrayShape & k_center, const VipNDArrayShape & kshape, VipNDArrayShape&, VipNDArrayShape&)
+		static VIP_ALWAYS_INLINE T apply(const Rect& valid,
+						 const Array& array,
+						 const VipNDArrayShape& ashape,
+						 const Kernel& kernel,
+						 const Coord1& pos,
+						 const VipNDArrayShape& k_center,
+						 const VipNDArrayShape& kshape,
+						 VipNDArrayShape&,
+						 VipNDArrayShape&)
 		{
 			if (valid.contains(pos)) {
 				T res = 0;
@@ -288,8 +327,15 @@ namespace detail
 	struct ApplyConvolve<T, Rule, 2>
 	{
 		template<class Rect, class Array, class Kernel, class Coord1>
-		static VIP_ALWAYS_INLINE T apply(const Rect & valid, const Array & array, const VipNDArrayShape & ashape, const Kernel & kernel,
-			const Coord1 & pos, const VipNDArrayShape & k_center, const VipNDArrayShape & kshape, VipNDArrayShape&, VipNDArrayShape&)
+		static VIP_ALWAYS_INLINE T apply(const Rect& valid,
+						 const Array& array,
+						 const VipNDArrayShape& ashape,
+						 const Kernel& kernel,
+						 const Coord1& pos,
+						 const VipNDArrayShape& k_center,
+						 const VipNDArrayShape& kshape,
+						 VipNDArrayShape&,
+						 VipNDArrayShape&)
 		{
 
 			if (valid.contains(pos)) {
@@ -326,9 +372,16 @@ namespace detail
 	template<class T, Vip::ConvolveBorderRule Rule>
 	struct ApplyConvolve<T, Rule, 3>
 	{
-		template< class Rect, class Array, class Kernel, class Coord1>
-		static VIP_ALWAYS_INLINE T apply(const Rect & valid, const Array & array, const VipNDArrayShape & ashape, const Kernel & kernel,
-			const Coord1 & pos, const VipNDArrayShape & k_center, const VipNDArrayShape & kshape, VipNDArrayShape&, VipNDArrayShape&)
+		template<class Rect, class Array, class Kernel, class Coord1>
+		static VIP_ALWAYS_INLINE T apply(const Rect& valid,
+						 const Array& array,
+						 const VipNDArrayShape& ashape,
+						 const Kernel& kernel,
+						 const Coord1& pos,
+						 const VipNDArrayShape& k_center,
+						 const VipNDArrayShape& kshape,
+						 VipNDArrayShape&,
+						 VipNDArrayShape&)
 		{
 			if (valid.contains(pos)) {
 				T res = 0;
@@ -364,10 +417,10 @@ namespace detail
 	template<Vip::ConvolveBorderRule Rule, class A, class Kernel, bool hasNullType = HasNullType<A, Kernel>::value>
 	struct Convolve : BaseOperator2<typename DeduceArrayType<A>::value_type, A, Kernel>
 	{
-		_ENSURE_OPERATOR2_DEF( BaseOperator2<typename DeduceArrayType<A>::value_type, A, Kernel> )
+		_ENSURE_OPERATOR2_DEF(BaseOperator2<typename DeduceArrayType<A>::value_type, A, Kernel>)
 		static const int access_type = Vip::Position;
-		//typedef BaseOperator2<typename DeduceArrayType<A>::value_type, A, Kernel> base_type;
-		//typedef typename base_type::value_type value_type;
+		// typedef BaseOperator2<typename DeduceArrayType<A>::value_type, A, Kernel> base_type;
+		// typedef typename base_type::value_type value_type;
 		VipNDRect<Vip::None> valid_rect;
 		const VipNDArrayShape kshape;
 		const VipNDArrayShape sh;
@@ -375,8 +428,12 @@ namespace detail
 		VipNDArrayShape c_k, c_a;
 
 		Convolve() {}
-		Convolve(const A & op1, const Kernel & k, const VipNDArrayShape & kcenter)
-			: base(op1, k), kshape(k.shape()), sh(op1.shape()), kcenter(kcenter) {
+		Convolve(const A& op1, const Kernel& k, const VipNDArrayShape& kcenter)
+		  : base(op1, k)
+		  , kshape(k.shape())
+		  , sh(op1.shape())
+		  , kcenter(kcenter)
+		{
 			valid_rect.resize(k.shape().size());
 			for (int i = 0; i < sh.size(); ++i) {
 				valid_rect.setStart(i, kcenter[i]);
@@ -384,14 +441,15 @@ namespace detail
 			}
 		}
 
-		const VipNDArrayShape & shape() const { return  this->array1.shape(); }
-		int dataType() const { return  this->array1.dataType(); }
+		const VipNDArrayShape& shape() const { return this->array1.shape(); }
+		int dataType() const { return this->array1.dataType(); }
 
-		template< class Coord>
-		VIP_ALWAYS_INLINE value_type operator()(const Coord & pos) const {
+		template<class Coord>
+		VIP_ALWAYS_INLINE value_type operator()(const Coord& pos) const
+		{
 			typedef decltype(typename array_type1::value_type() * typename array_type2::value_type()) op_type;
-			return ApplyConvolve<op_type, Rule, Coord::static_size>::apply(valid_rect, this->array1, sh,  this->array2, pos, kcenter, kshape,
-				const_cast<VipNDArrayShape&>(c_k), const_cast<VipNDArrayShape&>(c_a));
+			return ApplyConvolve<op_type, Rule, Coord::static_size>::apply(
+			  valid_rect, this->array1, sh, this->array2, pos, kcenter, kshape, const_cast<VipNDArrayShape&>(c_k), const_cast<VipNDArrayShape&>(c_a));
 		}
 	};
 
@@ -400,26 +458,32 @@ namespace detail
 	{
 		const VipNDArrayShape kcenter;
 		Convolve() {}
-		Convolve(const A & op1, const Kernel & k, const VipNDArrayShape & kcenter) : BaseOperator2<NullType, A, Kernel>(op1, k), kcenter(kcenter) {}
-		const VipNDArrayShape & shape() const { return  this->array1.shape(); }
+		Convolve(const A& op1, const Kernel& k, const VipNDArrayShape& kcenter)
+		  : BaseOperator2<NullType, A, Kernel>(op1, k)
+		  , kcenter(kcenter)
+		{
+		}
+		const VipNDArrayShape& shape() const { return this->array1.shape(); }
 	};
 
 	template<class T, Vip::ConvolveBorderRule Rule, class A1, class A2, bool hasNullType>
-	struct rebind<T, Convolve<Rule, A1, A2, hasNullType>, false> {
+	struct rebind<T, Convolve<Rule, A1, A2, hasNullType>, false>
+	{
 
 		typedef Convolve<Rule, A1, A2, hasNullType> op;
 		typedef Convolve<Rule, typename rebind<T, typename op::array_type1>::type, typename rebind<T, typename op::array_type2>::type, false> type;
-		static type cast(const op & a) { return type(rebind<T, typename op::array_type1>::cast(a.array1), rebind<T, typename op::array_type2>::cast(a.array2), a.kcenter); }
+		static type cast(const op& a) { return type(rebind<T, typename op::array_type1>::cast(a.array1), rebind<T, typename op::array_type2>::cast(a.array2), a.kcenter); }
 	};
 
 	template<class T1, class T2>
-	using try_convolve = decltype(T1()*T2() + T1());
+	using try_convolve = decltype(T1() * T2() + T1());
 
 	template<Vip::ConvolveBorderRule Rule, class A, class Kernel>
-	struct is_valid_functor<Convolve<Rule, A, Kernel, false> > : is_valid_op2 < typename DeduceArrayType<A>::value_type, typename DeduceArrayType<Kernel>::value_type, try_convolve > {};
+	struct is_valid_functor<Convolve<Rule, A, Kernel, false>> : is_valid_op2<typename DeduceArrayType<A>::value_type, typename DeduceArrayType<Kernel>::value_type, try_convolve>
+	{
+	};
 
-}//end detail
-
+} // end detail
 
 /// \addtogroup DataType
 /// @{
@@ -429,17 +493,12 @@ namespace detail
 ///
 /// \sa vipEval
 template<Vip::ConvolveBorderRule Rule, class A, class Kernel, class Coord>
-detail::Convolve<Rule, A, Kernel> vipConvolve(const A & array, const Kernel & k, const Coord & kcenter)
+detail::Convolve<Rule, A, Kernel> vipConvolve(const A& array, const Kernel& k, const Coord& kcenter)
 {
 	return detail::Convolve<Rule, A, Kernel>(array, k, kcenter);
 }
 
 /// @}
-//end DataType
-
-
-
-
-
+// end DataType
 
 #endif

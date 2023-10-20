@@ -1,23 +1,53 @@
-#include <QBoxLayout>
-#include <QHeaderView>
-#include <QTreeWidget>
-#include <QSplitter>
-#include <QPushButton>
-#include <QLabel>
-#include <qgroupbox.h>
-#include <qscrollarea.h>
-#include <qicon.h>
-#include <QDesktopServices>
-#include <QRadioButton>
+/**
+ * BSD 3-Clause License
+ *
+ * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice, this
+ *    list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of the copyright holder nor the names of its
+ *    contributors may be used to endorse or promote products derived from
+ *    this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
 
+#include <QBoxLayout>
+#include <QDesktopServices>
+#include <QHeaderView>
+#include <QLabel>
+#include <QPushButton>
+#include <QRadioButton>
+#include <QSplitter>
+#include <QTreeWidget>
+#include <qgroupbox.h>
+#include <qicon.h>
+#include <qscrollarea.h>
+
+#include "VipCore.h"
 #include "VipDisplayArea.h"
-#include "VipStandardEditors.h"
-#include "VipStandardWidgets.h"
-#include "VipOptions.h"
 #include "VipEnvironment.h"
 #include "VipLogging.h"
-#include "VipCore.h"
-
+#include "VipOptions.h"
+#include "VipStandardEditors.h"
+#include "VipStandardWidgets.h"
 
 QGroupBox* VipPageOption::createOptionGroup(const QString& label)
 {
@@ -32,18 +62,21 @@ QGroupBox* VipPageOption::createOptionGroup(const QString& label)
 class VipOptions::PrivateData
 {
 public:
-	PrivateData() : current(nullptr) {}
-	QMap<QTreeWidgetItem*, QScrollArea *> pages;
-	VipPageOption *			current;
-	QTreeWidget*			page_browser;
-	QSplitter*				splitter;
-	QPushButton*			ok;
-	QPushButton*			cancel;
-	QVBoxLayout*			page_lay;
+	PrivateData()
+	  : current(nullptr)
+	{
+	}
+	QMap<QTreeWidgetItem*, QScrollArea*> pages;
+	VipPageOption* current;
+	QTreeWidget* page_browser;
+	QSplitter* splitter;
+	QPushButton* ok;
+	QPushButton* cancel;
+	QVBoxLayout* page_lay;
 };
 
-VipOptions::VipOptions(QWidget * parent)
-	:QDialog(parent)
+VipOptions::VipOptions(QWidget* parent)
+  : QDialog(parent)
 {
 	m_data = new PrivateData();
 
@@ -62,32 +95,31 @@ VipOptions::VipOptions(QWidget * parent)
 	m_data->page_browser->setIndentation(10);
 	m_data->page_browser->setMinimumWidth(200);
 
-	//create page widget
-	QWidget * page = new QWidget();
+	// create page widget
+	QWidget* page = new QWidget();
 	m_data->page_lay = new QVBoxLayout();
 	page->setLayout(m_data->page_lay);
 
-	//create splitter
+	// create splitter
 	m_data->splitter->addWidget(m_data->page_browser);
 	m_data->splitter->addWidget(page);
 	m_data->splitter->setStretchFactor(1, 1);
 
-	//create button layout
-	QHBoxLayout * button_lay = new QHBoxLayout();
+	// create button layout
+	QHBoxLayout* button_lay = new QHBoxLayout();
 	button_lay->addStretch(1);
 	button_lay->addWidget(m_data->ok);
 	button_lay->addWidget(m_data->cancel);
 	button_lay->setContentsMargins(0, 2, 2, 2);
 
-	//create final layout
-	QVBoxLayout * final_lay = new QVBoxLayout();
+	// create final layout
+	QVBoxLayout* final_lay = new QVBoxLayout();
 	final_lay->addWidget(m_data->splitter);
 	final_lay->addWidget(VipLineWidget::createSunkenHLine());
 	final_lay->addLayout(button_lay);
-	//final_lay->setContentsMargins(0, 0, 0, 0);
+	// final_lay->setContentsMargins(0, 0, 0, 0);
 
 	setLayout(final_lay);
-
 
 	m_data->ok->setText("Ok");
 	m_data->cancel->setText("Cancel");
@@ -95,7 +127,7 @@ VipOptions::VipOptions(QWidget * parent)
 	connect(m_data->ok, SIGNAL(clicked(bool)), this, SLOT(ok()));
 	connect(m_data->ok, SIGNAL(clicked(bool)), this, SLOT(accept()));
 	connect(m_data->cancel, SIGNAL(clicked(bool)), this, SLOT(reject()));
-	connect(m_data->page_browser, SIGNAL(itemClicked(QTreeWidgetItem *, int)), this, SLOT(itemClicked(QTreeWidgetItem *, int)));
+	connect(m_data->page_browser, SIGNAL(itemClicked(QTreeWidgetItem*, int)), this, SLOT(itemClicked(QTreeWidgetItem*, int)));
 }
 
 VipOptions::~VipOptions()
@@ -105,22 +137,21 @@ VipOptions::~VipOptions()
 
 void VipOptions::ok()
 {
-	for (QMap<QTreeWidgetItem*, QScrollArea *>::iterator it = m_data->pages.begin(); it != m_data->pages.end(); ++it)
-	{
-		VipPageOption * page = qobject_cast<VipPageOption*>(it.value()->widget());
+	for (QMap<QTreeWidgetItem*, QScrollArea*>::iterator it = m_data->pages.begin(); it != m_data->pages.end(); ++it) {
+		VipPageOption* page = qobject_cast<VipPageOption*>(it.value()->widget());
 		page->applyPage();
 	}
 }
 
-bool VipOptions::hasPage(VipPageOption * page) const
+bool VipOptions::hasPage(VipPageOption* page) const
 {
-	for (QMap<QTreeWidgetItem*, QScrollArea *>::const_iterator it = m_data->pages.begin(); it != m_data->pages.end(); ++it)
+	for (QMap<QTreeWidgetItem*, QScrollArea*>::const_iterator it = m_data->pages.begin(); it != m_data->pages.end(); ++it)
 		if (qobject_cast<VipPageOption*>(it.value()->widget()) == page)
 			return true;
 	return false;
 }
 
-bool VipOptions::addPage(const QString & category, VipPageOption * page, const QIcon & icon)
+bool VipOptions::addPage(const QString& category, VipPageOption* page, const QIcon& icon)
 {
 	if (hasPage(page))
 		return false;
@@ -129,32 +160,28 @@ bool VipOptions::addPage(const QString & category, VipPageOption * page, const Q
 	if (path.size() == 0)
 		return false;
 
-	//create the page leaf inside m_data->page_browser
-	QTreeWidgetItem * current = m_data->page_browser->invisibleRootItem();
+	// create the page leaf inside m_data->page_browser
+	QTreeWidgetItem* current = m_data->page_browser->invisibleRootItem();
 
-	for (int i = 0; i < path.size(); ++i)
-	{
-		QTreeWidgetItem * found = nullptr;
-		for (int child = 0; child < current->childCount(); ++child)
-		{
-			if (current->child(child)->text(0) == path[i])
-			{
+	for (int i = 0; i < path.size(); ++i) {
+		QTreeWidgetItem* found = nullptr;
+		for (int child = 0; child < current->childCount(); ++child) {
+			if (current->child(child)->text(0) == path[i]) {
 				found = current->child(child);
-				//if the last leaf already exists, return false
+				// if the last leaf already exists, return false
 				if (i == path.size() - 1)
 					return false;
 				break;
 			}
 		}
 
-		if (!found)
-		{
-			//item not found, add it
-			QTreeWidgetItem * item = new QTreeWidgetItem();
+		if (!found) {
+			// item not found, add it
+			QTreeWidgetItem* item = new QTreeWidgetItem();
 			item->setText(0, path[i]);
 			current->addChild(item);
 			current = item;
-			//set its icon
+			// set its icon
 			if (i == path.size() - 1 && !icon.isNull())
 				item->setIcon(0, icon);
 		}
@@ -162,16 +189,16 @@ bool VipOptions::addPage(const QString & category, VipPageOption * page, const Q
 			current = found;
 	}
 
-	QScrollArea * area = new QScrollArea();
+	QScrollArea* area = new QScrollArea();
 	area->setWidgetResizable(true);
 	area->setWidget(page);
 	m_data->pages[current] = area;
 	m_data->page_lay->addWidget(area);
 	area->hide();
 
-	//set the focus to the first page
+	// set the focus to the first page
 	if (m_data->pages.size() > 0 && !m_data->current)
-		setCurrentPage(qobject_cast<VipPageOption*>( m_data->pages.begin().value()->widget()));
+		setCurrentPage(qobject_cast<VipPageOption*>(m_data->pages.begin().value()->widget()));
 
 	return true;
 }
@@ -181,25 +208,23 @@ void VipOptions::setTreeWidth(int w)
 	m_data->splitter->setSizes(QList<int>() << w << (width() - w));
 }
 
-QScrollArea * VipOptions::areaForPage(VipPageOption * page) const
+QScrollArea* VipOptions::areaForPage(VipPageOption* page) const
 {
-	for (QMap<QTreeWidgetItem*, QScrollArea *>::const_iterator it = m_data->pages.begin(); it != m_data->pages.end(); ++it)
+	for (QMap<QTreeWidgetItem*, QScrollArea*>::const_iterator it = m_data->pages.begin(); it != m_data->pages.end(); ++it)
 		if (qobject_cast<VipPageOption*>(it.value()->widget()) == page)
 			return it.value();
 	return nullptr;
 }
 
-void VipOptions::setCurrentPage(VipPageOption * page)
+void VipOptions::setCurrentPage(VipPageOption* page)
 {
-	if (page && page != m_data->current)
-	{
+	if (page && page != m_data->current) {
 		if (!hasPage(page))
 			return;
 
-		QTreeWidgetItem * item = m_data->pages.key(areaForPage(page));
+		QTreeWidgetItem* item = m_data->pages.key(areaForPage(page));
 
-		for (QMap<QTreeWidgetItem*, QScrollArea *>::const_iterator it = m_data->pages.begin(); it != m_data->pages.end(); ++it)
-		{
+		for (QMap<QTreeWidgetItem*, QScrollArea*>::const_iterator it = m_data->pages.begin(); it != m_data->pages.end(); ++it) {
 			it.value()->setVisible(qobject_cast<VipPageOption*>(it.value()->widget()) == page);
 		}
 
@@ -210,16 +235,15 @@ void VipOptions::setCurrentPage(VipPageOption * page)
 	}
 }
 
-void VipOptions::itemClicked(QTreeWidgetItem * item, int )
+void VipOptions::itemClicked(QTreeWidgetItem* item, int)
 {
 	if (!item)
 		return;
 
-	//find item
-	QMap<QTreeWidgetItem*, QScrollArea *>::iterator it = m_data->pages.find(item);
-	if (it == m_data->pages.end())
-	{
-		//if item is not inside m_data->pages, try set the focus to its first child
+	// find item
+	QMap<QTreeWidgetItem*, QScrollArea*>::iterator it = m_data->pages.find(item);
+	if (it == m_data->pages.end()) {
+		// if item is not inside m_data->pages, try set the focus to its first child
 		if (item->childCount() > 0)
 			itemClicked(item->child(0), 0);
 		return;
@@ -228,13 +252,10 @@ void VipOptions::itemClicked(QTreeWidgetItem * item, int )
 	setCurrentPage(qobject_cast<VipPageOption*>(it.value()->widget()));
 }
 
-
-
-VipOptions * vipGetOptions()
+VipOptions* vipGetOptions()
 {
-	static VipOptions * dialog = nullptr;
-	if (!dialog)
-	{
+	static VipOptions* dialog = nullptr;
+	if (!dialog) {
 		dialog = new VipOptions();
 		dialog->addPage("General display", new AppearanceSettings());
 		dialog->addPage("Rendering modes", new RenderingSettings());
@@ -245,16 +266,13 @@ VipOptions * vipGetOptions()
 	return dialog;
 }
 
-
-
-
-#include "VipPlayer.h"
 #include "VipGui.h"
 #include "VipPainter.h"
+#include "VipPlayer.h"
 #include "VipStandardWidgets.h"
 #include <qcheckbox.h>
 
-static QGroupBox * createGroup(const QString& label)
+static QGroupBox* createGroup(const QString& label)
 {
 	QGroupBox* res = new QGroupBox(label);
 	res->setFlat(true);
@@ -267,24 +285,24 @@ static QGroupBox * createGroup(const QString& label)
 class AppearanceSettings::PrivateData
 {
 public:
-	QGroupBox *general;
-	QComboBox *skins;
-	QComboBox *colorPalette;
+	QGroupBox* general;
+	QComboBox* skins;
+	QComboBox* colorPalette;
 
-	QGroupBox * players;
-	QComboBox * colorMaps;
-	QToolButton * showScale;
+	QGroupBox* players;
+	QComboBox* colorMaps;
+	QToolButton* showScale;
 
-	QGroupBox *roi;
-	VipTextWidget *title;
-	VipPenButton *pen;
-	VipPenButton *brush;
-	QCheckBox *titleVisible;
-	QCheckBox *groupVisible;
-	QCheckBox *idVisible;
-	QCheckBox *innerPixels;
+	QGroupBox* roi;
+	VipTextWidget* title;
+	VipPenButton* pen;
+	VipPenButton* brush;
+	QCheckBox* titleVisible;
+	QCheckBox* groupVisible;
+	QCheckBox* idVisible;
+	QCheckBox* innerPixels;
 
-	QGroupBox *plots;
+	QGroupBox* plots;
 	QCheckBox displayTimeOffset;
 	QRadioButton displayTimeInteger;
 	QRadioButton displayAbsoluteDate;
@@ -292,8 +310,8 @@ public:
 
 	VipDefaultPlotAreaSettings settings;
 };
-AppearanceSettings::AppearanceSettings(QWidget * parent)
-	:VipPageOption(parent)
+AppearanceSettings::AppearanceSettings(QWidget* parent)
+  : VipPageOption(parent)
 {
 	this->setWindowTitle("General appearance");
 	m_data = new PrivateData();
@@ -302,34 +320,28 @@ AppearanceSettings::AppearanceSettings(QWidget * parent)
 	m_data->skins = new QComboBox();
 	m_data->skins->addItems((QStringList() << "Default") + vipAvailableSkins());
 
-
-
 	m_data->colorPalette = new QComboBox();
 	QImage palette = vipPixmap("palette.png").toImage().convertToFormat(QImage::Format_ARGB32);
-	if (!palette.isNull())
-	{
-		m_data->colorPalette->addItem("Default",0);
-		m_data->colorPalette->addItem(applyFactor(palette, 60), "Very dark",60);
-		m_data->colorPalette->addItem(applyFactor(palette, 80), "Dark",80);
-		m_data->colorPalette->addItem(QPixmap::fromImage(palette), "Standard",100);
-		m_data->colorPalette->addItem(applyFactor(palette, 120), "Light",120);
-		m_data->colorPalette->addItem(applyFactor(palette, 140), "Very light",140);
+	if (!palette.isNull()) {
+		m_data->colorPalette->addItem("Default", 0);
+		m_data->colorPalette->addItem(applyFactor(palette, 60), "Very dark", 60);
+		m_data->colorPalette->addItem(applyFactor(palette, 80), "Dark", 80);
+		m_data->colorPalette->addItem(QPixmap::fromImage(palette), "Standard", 100);
+		m_data->colorPalette->addItem(applyFactor(palette, 120), "Light", 120);
+		m_data->colorPalette->addItem(applyFactor(palette, 140), "Very light", 140);
 	}
 
 	m_data->skins->setToolTip("Global Thermavip color theme");
 	m_data->colorPalette->setToolTip("Color palette used for curves and histograms");
 
-	QGridLayout * glay = new QGridLayout();
-	glay->addWidget(new QLabel("Color theme"), 0, 0,Qt::AlignLeft);
+	QGridLayout* glay = new QGridLayout();
+	glay->addWidget(new QLabel("Color theme"), 0, 0, Qt::AlignLeft);
 	glay->addWidget(m_data->skins, 0, 1, Qt::AlignLeft);
-
 
 	glay->addWidget(new QLabel("Item color palette"), 1, 0, Qt::AlignLeft);
 	glay->addWidget(m_data->colorPalette, 1, 1, Qt::AlignLeft);
 
 	m_data->general->setLayout(glay);
-
-
 
 	m_data->players = createGroup("Video player display");
 	m_data->colorMaps = new QComboBox();
@@ -358,7 +370,7 @@ AppearanceSettings::AppearanceSettings(QWidget * parent)
 	m_data->showScale->setAutoRaise(true);
 	m_data->showScale->setCheckable(true);
 
-	QGridLayout * dlay = new QGridLayout();
+	QGridLayout* dlay = new QGridLayout();
 	dlay->addWidget(new QLabel());
 	dlay->addWidget(new QLabel("Video color scale"), 0, 0, Qt::AlignLeft);
 	dlay->addWidget(m_data->colorMaps, 0, 1, Qt::AlignLeft);
@@ -366,11 +378,8 @@ AppearanceSettings::AppearanceSettings(QWidget * parent)
 	dlay->addWidget(m_data->showScale, 1, 1, Qt::AlignLeft);
 	m_data->players->setLayout(dlay);
 
-
-
-
 	m_data->roi = createGroup("Regions Of Interest");
-	QGridLayout * lay = new QGridLayout();
+	QGridLayout* lay = new QGridLayout();
 	int row = -1;
 
 	m_data->title = new VipTextWidget();
@@ -410,8 +419,8 @@ AppearanceSettings::AppearanceSettings(QWidget * parent)
 
 	m_data->displayTimeOffset.setText("Display time offset from left date");
 	m_data->displayTimeOffset.setToolTip("<div>For plot players only, if the time scale displays a time since Epoch, select the behavior of the scale values."
-		"If checked, displayed labels represent the time offset since the scale start value."
-		"Otherwise, displayed labels represent the time offset since the start of the left most curve.</div>");
+					     "If checked, displayed labels represent the time offset since the scale start value."
+					     "Otherwise, displayed labels represent the time offset since the start of the left most curve.</div>");
 	m_data->displayTimeInteger.setText("Display time as integer");
 	m_data->displayTimeInteger.setToolTip("<div>If checked, time values in plot players will be displayed as integer, without precision loss</div>");
 	m_data->displayAbsoluteDate.setText("Display absolute date time");
@@ -419,7 +428,7 @@ AppearanceSettings::AppearanceSettings(QWidget * parent)
 	m_data->displayNormal.setText("Display standard time values");
 	m_data->displayNormal.setToolTip("<div>If checked, time labels in plot players will be displayed as floating point values</div>");
 
-	QVBoxLayout * tlay = new QVBoxLayout();
+	QVBoxLayout* tlay = new QVBoxLayout();
 	tlay->addWidget(&m_data->displayTimeOffset);
 	tlay->addWidget(&m_data->displayTimeInteger);
 	tlay->addWidget(&m_data->displayAbsoluteDate);
@@ -427,14 +436,13 @@ AppearanceSettings::AppearanceSettings(QWidget * parent)
 	tlay->setContentsMargins(5, 5, 5, 5);
 
 	m_data->plots = createGroup("Default plot settings");
-	QVBoxLayout * play = new QVBoxLayout();
+	QVBoxLayout* play = new QVBoxLayout();
 	play->setContentsMargins(0, 0, 0, 0);
 	play->addLayout(tlay);
 	play->addWidget(&m_data->settings);
 	m_data->plots->setLayout(play);
 
-
-	QVBoxLayout * vlay = new QVBoxLayout();
+	QVBoxLayout* vlay = new QVBoxLayout();
 	vlay->addWidget(m_data->general);
 	vlay->addWidget(m_data->players);
 	vlay->addWidget(m_data->plots);
@@ -443,9 +451,8 @@ AppearanceSettings::AppearanceSettings(QWidget * parent)
 	setLayout(vlay);
 
 	connect(m_data->skins, SIGNAL(currentIndexChanged(int)), this, SLOT(skinChanged()));
-//	connect(&VipDefaultSceneModelDisplayOptions::instance(), SIGNAL(changed()), this, SLOT(updatePage()), Qt::QueuedConnection);
+	//	connect(&VipDefaultSceneModelDisplayOptions::instance(), SIGNAL(changed()), this, SLOT(updatePage()), Qt::QueuedConnection);
 	updatePage();
-
 }
 
 AppearanceSettings::~AppearanceSettings()
@@ -465,13 +472,12 @@ void AppearanceSettings::skinChanged()
 
 void AppearanceSettings::updatePage()
 {
-	//General settings
+	// General settings
 	int index = m_data->skins->findText(VipCoreSettings::instance()->skin());
 	if (index >= 0)
 		m_data->skins->setCurrentIndex(index);
 	else
 		m_data->skins->setCurrentIndex(0);
-
 
 	int current = VipGuiDisplayParamaters::instance()->itemPaletteFactor();
 	if (current == 0)
@@ -487,16 +493,15 @@ void AppearanceSettings::updatePage()
 	else if (current == 140)
 		m_data->colorPalette->setCurrentIndex(5);
 
-	//Video player settings
+	// Video player settings
 	m_data->colorMaps->setCurrentIndex(VipGuiDisplayParamaters::instance()->playerColorScale());
 	m_data->showScale->setChecked(VipGuiDisplayParamaters::instance()->videoPlayerShowAxes());
 
-
-	//ROI settings
+	// ROI settings
 	m_data->brush->setBrush(VipGuiDisplayParamaters::instance()->shapeBackgroundBrush());
 	m_data->pen->setPen(VipGuiDisplayParamaters::instance()->shapeBorderPen());
 	m_data->title->hide();
-	//m_data->title->setText(VipText("", VipDefaultSceneModelDisplayOptions::instance().textStyle()));
+	// m_data->title->setText(VipText("", VipDefaultSceneModelDisplayOptions::instance().textStyle()));
 	m_data->groupVisible->setChecked(VipGuiDisplayParamaters::instance()->shapeDrawComponents() & VipPlotShape::Group);
 	m_data->idVisible->setChecked(VipGuiDisplayParamaters::instance()->shapeDrawComponents() & VipPlotShape::Id);
 	m_data->titleVisible->setChecked(VipGuiDisplayParamaters::instance()->shapeDrawComponents() & VipPlotShape::Title);
@@ -515,23 +520,21 @@ void AppearanceSettings::updatePage()
 	m_data->settings.setDefaultPlotArea(VipGuiDisplayParamaters::instance()->defaultPlotArea());
 }
 
-QPixmap AppearanceSettings::applyFactor(const QImage & img, int factor)
+QPixmap AppearanceSettings::applyFactor(const QImage& img, int factor)
 {
 	QImage res = img;
-	uint * bits = (uint *)res.bits();
-	int size = res.width()*res.height();
-	for (int i = 0; i < size; ++i)
-	{
+	uint* bits = (uint*)res.bits();
+	int size = res.width() * res.height();
+	for (int i = 0; i < size; ++i) {
 		bits[i] = QColor::fromRgba(bits[i]).lighter(factor).rgba();
 	}
-	return QPixmap::fromImage( res);
+	return QPixmap::fromImage(res);
 }
 
-QPixmap AppearanceSettings::colorMapPixmap(int color_map, const QSize & size)
+QPixmap AppearanceSettings::colorMapPixmap(int color_map, const QSize& size)
 {
-	VipLinearColorMap * map = VipLinearColorMap::createColorMap(VipLinearColorMap::StandardColorMap(color_map));
-	if (map)
-	{
+	VipLinearColorMap* map = VipLinearColorMap::createColorMap(VipLinearColorMap::StandardColorMap(color_map));
+	if (map) {
 		QPixmap pix(size);
 		QPainter p(&pix);
 		VipScaleMap sc;
@@ -545,7 +548,7 @@ QPixmap AppearanceSettings::colorMapPixmap(int color_map, const QSize & size)
 
 void AppearanceSettings::applyPage()
 {
-	//General settings
+	// General settings
 	if (m_data->skins->currentText() != "Default")
 		VipCoreSettings::instance()->setSkin(m_data->skins->currentText());
 	else
@@ -553,58 +556,55 @@ void AppearanceSettings::applyPage()
 
 	VipGuiDisplayParamaters::instance()->setItemPaletteFactor(m_data->colorPalette->currentData().toInt());
 
-	//Video player settings
+	// Video player settings
 	VipGuiDisplayParamaters::instance()->setPlayerColorScale(VipLinearColorMap::StandardColorMap(m_data->colorMaps->currentIndex()));
 	VipGuiDisplayParamaters::instance()->setVideoPlayerShowAxes(m_data->showScale->isChecked());
 
-
-	//ROI settings
-	//disconnect(&VipDefaultSceneModelDisplayOptions::instance(), SIGNAL(changed()), this, SLOT(updatePage()));
+	// ROI settings
+	// disconnect(&VipDefaultSceneModelDisplayOptions::instance(), SIGNAL(changed()), this, SLOT(updatePage()));
 
 	QBrush brush = m_data->brush->pen().brush();
 	QPen pen = m_data->pen->pen();
 	VipTextStyle style = m_data->title->getText().textStyle();
 	VipPlotShape::DrawComponents cmp = VipPlotShape::Background | VipPlotShape::Border;
-	if (m_data->groupVisible->isChecked()) cmp |= VipPlotShape::Group;
-	if (m_data->idVisible->isChecked()) cmp |= VipPlotShape::Id;
-	if (m_data->titleVisible->isChecked()) cmp |= VipPlotShape::Title;
-	if (m_data->innerPixels->isChecked()) cmp |= VipPlotShape::FillPixels;
+	if (m_data->groupVisible->isChecked())
+		cmp |= VipPlotShape::Group;
+	if (m_data->idVisible->isChecked())
+		cmp |= VipPlotShape::Id;
+	if (m_data->titleVisible->isChecked())
+		cmp |= VipPlotShape::Title;
+	if (m_data->innerPixels->isChecked())
+		cmp |= VipPlotShape::FillPixels;
 
-
-	if (cmp != VipGuiDisplayParamaters::instance()->shapeDrawComponents() ||
-		brush != VipGuiDisplayParamaters::instance()->shapeBackgroundBrush() ||
-		pen != VipGuiDisplayParamaters::instance()->shapeBorderPen() //||
-		// style != VipDefaultSceneModelDisplayOptions::instance().textStyle()
-)
-	{
+	if (cmp != VipGuiDisplayParamaters::instance()->shapeDrawComponents() || brush != VipGuiDisplayParamaters::instance()->shapeBackgroundBrush() ||
+	    pen != VipGuiDisplayParamaters::instance()->shapeBorderPen() //||
+									 // style != VipDefaultSceneModelDisplayOptions::instance().textStyle()
+	) {
 		VipGuiDisplayParamaters::instance()->setShapeBackgroundBrush(brush);
 		VipGuiDisplayParamaters::instance()->setShapeBorderPen(pen);
-		//VipDefaultSceneModelDisplayOptions::instance().setTextStyle(style);
+		// VipDefaultSceneModelDisplayOptions::instance().setTextStyle(style);
 		VipGuiDisplayParamaters::instance()->setShapeDrawComponents(cmp);
 	}
 
-	//connect(&VipDefaultSceneModelDisplayOptions::instance(), SIGNAL(changed()), this, SLOT(updatePage()), Qt::QueuedConnection);
+	// connect(&VipDefaultSceneModelDisplayOptions::instance(), SIGNAL(changed()), this, SLOT(updatePage()), Qt::QueuedConnection);
 
-	//Plot settings
+	// Plot settings
 
 	m_data->settings.applyToCurve(VipGuiDisplayParamaters::instance()->defaultCurve());
 	m_data->settings.applyToArea(VipGuiDisplayParamaters::instance()->defaultPlotArea());
 
-
-	if (m_data->settings.shouldApplyToAllPlayers())
-	{
+	if (m_data->settings.shouldApplyToAllPlayers()) {
 		QList<VipPlotPlayer*> pls = vipGetMainWindow()->displayArea()->findChildren<VipPlotPlayer*>();
-		for (int i = 0; i < pls.size(); ++i)
-		{
+		for (int i = 0; i < pls.size(); ++i) {
 			VipGuiDisplayParamaters::instance()->apply(pls[i]);
-			//m_data->settings.applyToArea(qobject_cast<VipPlotArea2D*>(pls[i]->plotWidget2D()->area()));
-//
+			// m_data->settings.applyToArea(qobject_cast<VipPlotArea2D*>(pls[i]->plotWidget2D()->area()));
+			//
 			// QList<VipPlotCurve*> curves = pls[i]->plotWidget2D()->area()->findItems<VipPlotCurve*>();
 			// for (int j = 0; j < curves.size(); ++j)
 			// m_data->settings.applyToCurve(curves[j]);
 
 			pls[i]->valueToTimeButton()->setDisplayTimeOffset(m_data->displayTimeOffset.isChecked());
-			if(m_data->displayTimeInteger.isChecked())
+			if (m_data->displayTimeInteger.isChecked())
 				pls[i]->valueToTimeButton()->setDisplayType(VipValueToTime::Integer);
 			else if (m_data->displayAbsoluteDate.isChecked())
 				pls[i]->valueToTimeButton()->setDisplayType(VipValueToTime::AbsoluteDateTime);
@@ -627,27 +627,23 @@ void AppearanceSettings::applyPage()
 	VipCoreSettings::instance()->save(vipGetDataDirectory() + "core_settings.xml");
 }
 
-
-
-
-
 class ProcessingSettings::PrivateData
 {
 public:
-	QGroupBox * general;
-	QComboBox * procPriority;
-	QComboBox * displayPriority;
-	QCheckBox *printDebug;
+	QGroupBox* general;
+	QComboBox* procPriority;
+	QComboBox* displayPriority;
+	QCheckBox* printDebug;
 
-	QGroupBox * inputs;
-	QCheckBox *maxSizeEnable;
-	QSpinBox *maxSize;
+	QGroupBox* inputs;
+	QCheckBox* maxSizeEnable;
+	QSpinBox* maxSize;
 	QCheckBox* maxMemoryEnable;
-	QSpinBox *maxMemory;
+	QSpinBox* maxMemory;
 };
 
-ProcessingSettings::ProcessingSettings(QWidget * parent)
-	:VipPageOption(parent)
+ProcessingSettings::ProcessingSettings(QWidget* parent)
+  : VipPageOption(parent)
 {
 	m_data = new PrivateData();
 
@@ -683,9 +679,8 @@ ProcessingSettings::ProcessingSettings(QWidget * parent)
 	glay->addWidget(m_data->procPriority, 0, 1);
 	glay->addWidget(new QLabel("Display processing thread priority"), 1, 0);
 	glay->addWidget(m_data->displayPriority, 1, 1);
-	glay->addWidget(m_data->printDebug, 2, 0,1,2);
+	glay->addWidget(m_data->printDebug, 2, 0, 1, 2);
 	m_data->general->setLayout(glay);
-
 
 	m_data->inputs = createGroup("Input buffer settings");
 	m_data->maxSizeEnable = new QCheckBox();
@@ -693,7 +688,7 @@ ProcessingSettings::ProcessingSettings(QWidget * parent)
 	m_data->maxMemoryEnable = new QCheckBox();
 	m_data->maxMemory = new QSpinBox();
 
-	QVBoxLayout * vlay = new QVBoxLayout();
+	QVBoxLayout* vlay = new QVBoxLayout();
 	vlay->addWidget(m_data->maxSizeEnable);
 	vlay->addWidget(m_data->maxSize);
 	vlay->addWidget(m_data->maxMemoryEnable);
@@ -735,20 +730,21 @@ void ProcessingSettings::applyPage()
 	disconnect(&VipProcessingManager::instance(), SIGNAL(changed()), this, SLOT(updatePage()));
 
 	int type = 0;
-	if (m_data->maxSizeEnable->isChecked()) type |= VipDataList::Number;
-	if (m_data->maxMemoryEnable->isChecked()) type |= VipDataList::MemorySize;
+	if (m_data->maxSizeEnable->isChecked())
+		type |= VipDataList::Number;
+	if (m_data->maxMemoryEnable->isChecked())
+		type |= VipDataList::MemorySize;
 	int maxSize = m_data->maxSize->value();
-	int maxMemory = m_data->maxMemory->value()*1000000;
+	int maxMemory = m_data->maxMemory->value() * 1000000;
 	bool printDebug = m_data->printDebug->isChecked();
 
 	int priority = m_data->procPriority->currentIndex();
 	int displayPriority = m_data->displayPriority->currentIndex();
 
-	//bool printDebugEnabled = VipProcessingManager::isLogErrorEnabled(VipProcessingObject::InputBufferFull);
+	// bool printDebugEnabled = VipProcessingManager::isLogErrorEnabled(VipProcessingObject::InputBufferFull);
 
-	if (type != VipProcessingManager::listLimitType() || maxSize != VipProcessingManager::maxListSize() ||
-		maxMemory != VipProcessingManager::maxListMemory() || printDebug != VipProcessingManager::isLogErrorEnabled(VipProcessingObject::InputBufferFull))
-	{
+	if (type != VipProcessingManager::listLimitType() || maxSize != VipProcessingManager::maxListSize() || maxMemory != VipProcessingManager::maxListMemory() ||
+	    printDebug != VipProcessingManager::isLogErrorEnabled(VipProcessingObject::InputBufferFull)) {
 		VipProcessingManager::setListLimitType(type);
 		VipProcessingManager::setMaxListSize(maxSize);
 		VipProcessingManager::setMaxListMemory(maxMemory);
@@ -758,7 +754,6 @@ void ProcessingSettings::applyPage()
 		VipProcessingManager::setDefaultPriority((QThread::Priority)priority, &VipProcessingObject::staticMetaObject);
 	if (displayPriority >= 0)
 		VipProcessingManager::setDefaultPriority((QThread::Priority)displayPriority, &VipDisplayObject::staticMetaObject);
-
 
 	connect(&VipProcessingManager::instance(), SIGNAL(changed()), this, SLOT(updatePage()), Qt::QueuedConnection);
 }
@@ -772,32 +767,29 @@ void ProcessingSettings::updatePage()
 	m_data->maxMemory->setEnabled(VipProcessingManager::listLimitType() & VipDataList::MemorySize);
 
 	m_data->maxSize->setValue(VipProcessingManager::maxListSize());
-	m_data->maxMemory->setValue(VipProcessingManager::maxListMemory()/1000000);
+	m_data->maxMemory->setValue(VipProcessingManager::maxListMemory() / 1000000);
 
 	m_data->procPriority->setCurrentIndex(VipProcessingManager::defaultPriority(&VipProcessingObject::staticMetaObject));
 	m_data->displayPriority->setCurrentIndex(VipProcessingManager::defaultPriority(&VipDisplayObject::staticMetaObject));
 }
 
-
-
-
 class EnvironmentSettings::PrivateData
 {
 public:
-	QGroupBox * data;
-	QLabel * dataDir;
-	QToolButton * openDataDir;
+	QGroupBox* data;
+	QLabel* dataDir;
+	QToolButton* openDataDir;
 
-	QGroupBox * log;
-	QLabel * logDir;
-	QToolButton * openLogDir;
-	QToolButton * openLogFile;
-	QCheckBox * overwrite;
-	QCheckBox * append_date;
+	QGroupBox* log;
+	QLabel* logDir;
+	QToolButton* openLogDir;
+	QToolButton* openLogFile;
+	QCheckBox* overwrite;
+	QCheckBox* append_date;
 };
 
-EnvironmentSettings::EnvironmentSettings(QWidget * parent)
-	:VipPageOption(parent)
+EnvironmentSettings::EnvironmentSettings(QWidget* parent)
+  : VipPageOption(parent)
 {
 	m_data = new PrivateData();
 
@@ -822,7 +814,7 @@ EnvironmentSettings::EnvironmentSettings(QWidget * parent)
 	m_data->overwrite = new QCheckBox("Overwrite log file at each startup");
 	m_data->append_date = new QCheckBox("Append startup date to log file name");
 
-	QHBoxLayout * hlay = new QHBoxLayout();
+	QHBoxLayout* hlay = new QHBoxLayout();
 	hlay->addWidget(m_data->dataDir);
 	hlay->addWidget(m_data->openDataDir);
 	hlay->addStretch(1);
@@ -833,7 +825,7 @@ EnvironmentSettings::EnvironmentSettings(QWidget * parent)
 	hlay->addWidget(m_data->openLogDir);
 	hlay->addWidget(m_data->openLogFile);
 	hlay->addStretch(1);
-	QVBoxLayout * vlay = new QVBoxLayout();
+	QVBoxLayout* vlay = new QVBoxLayout();
 	vlay->addLayout(hlay);
 	vlay->addWidget(m_data->overwrite);
 	vlay->addWidget(m_data->append_date);
@@ -881,8 +873,6 @@ void EnvironmentSettings::openLogFile()
 	QDesktopServices::openUrl(fname);
 }
 
-
-
 class RenderingSettings::PrivateData
 {
 public:
@@ -896,7 +886,7 @@ public:
 };
 
 RenderingSettings::RenderingSettings(QWidget* parent)
-	:VipPageOption(parent)
+  : VipPageOption(parent)
 {
 	m_data = new PrivateData();
 
@@ -947,11 +937,11 @@ void RenderingSettings::applyPage()
 {
 	if (m_data->vdirect->isChecked())
 		VipGuiDisplayParamaters::instance()->setVideoRenderingStrategy(VipBaseGraphicsView::Raster);
-	else if(m_data->vGPUThreaded->isChecked())
+	else if (m_data->vGPUThreaded->isChecked())
 		VipGuiDisplayParamaters::instance()->setVideoRenderingStrategy(VipBaseGraphicsView::OpenGLThread);
 	else if (m_data->vpureGPU->isChecked())
 		VipGuiDisplayParamaters::instance()->setVideoRenderingStrategy(VipBaseGraphicsView::OpenGL);
-	
+
 	if (m_data->pdirect->isChecked())
 		VipGuiDisplayParamaters::instance()->setPlotRenderingStrategy(VipBaseGraphicsView::Raster);
 	else if (m_data->pGPUThreaded->isChecked())
@@ -968,7 +958,6 @@ void RenderingSettings::updatePage()
 		m_data->vGPUThreaded->setChecked(true);
 	else if (st == VipBaseGraphicsView::OpenGL)
 		m_data->vpureGPU->setChecked(true);
-	
 
 	st = VipGuiDisplayParamaters::instance()->plotRenderingStrategy();
 	if (st == VipBaseGraphicsView::Raster)
@@ -977,5 +966,4 @@ void RenderingSettings::updatePage()
 		m_data->pGPUThreaded->setChecked(true);
 	else if (st == VipBaseGraphicsView::OpenGL)
 		m_data->ppureGPU->setChecked(true);
-	
 }

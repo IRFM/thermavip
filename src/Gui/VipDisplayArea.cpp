@@ -1,55 +1,84 @@
-#include "VipDisplayArea.h"
-#include "VipDragWidget.h"
-#include "VipPlayWidget.h"
-#include "VipDisplayObject.h"
-#include "VipPlayer.h"
-#include "VipToolWidget.h"
-#include "VipDrawShape.h"
-#include "VipIODevice.h"
-#include "VipPlugin.h"
-#include "VipXmlArchive.h"
-#include "VipAnnotationEditor.h"
-#include "VipEditXMLSymbols.h"
-#include "VipStandardEditors.h"
-#include "VipProgress.h"
-#include "VipStandardWidgets.h"
-#include "VipRecordToolWidget.h"
-#include "VipProcessingObjectInfo.h"
-#include "VipProcessingObjectEditor.h"
-#include "VipAxisColorMap.h"
-#include "VipLogConsole.h"
-#include "VipUniqueId.h"
-#include "VipEnvironment.h"
-#include "VipPlayer.h"
-#include "VipOptions.h"
-#include "VipFileSystem.h"
-#include "VipUpdate.h"
-#include "VipGui.h"
-#include "VipAbout.h"
-#include "VipWidgetResizer.h"
-#include "VipCommandOptions.h"
-#include "VipSet.h"
+/**
+ * BSD 3-Clause License
+ *
+ * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice, this
+ *    list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of the copyright holder nor the names of its
+ *    contributors may be used to endorse or promote products derived from
+ *    this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
 
-#include <qclipboard.h>
+#include "VipDisplayArea.h"
+#include "VipAbout.h"
+#include "VipAnnotationEditor.h"
+#include "VipAxisColorMap.h"
+#include "VipCommandOptions.h"
+#include "VipDisplayObject.h"
+#include "VipDragWidget.h"
+#include "VipDrawShape.h"
+#include "VipEditXMLSymbols.h"
+#include "VipEnvironment.h"
+#include "VipFileSystem.h"
+#include "VipGui.h"
+#include "VipIODevice.h"
+#include "VipLogConsole.h"
+#include "VipOptions.h"
+#include "VipPlayWidget.h"
+#include "VipPlayer.h"
+#include "VipPlugin.h"
+#include "VipProcessingObjectEditor.h"
+#include "VipProcessingObjectInfo.h"
+#include "VipProgress.h"
+#include "VipRecordToolWidget.h"
+#include "VipSet.h"
+#include "VipStandardEditors.h"
+#include "VipStandardWidgets.h"
+#include "VipToolWidget.h"
+#include "VipUniqueId.h"
+#include "VipUpdate.h"
+#include "VipWidgetResizer.h"
+#include "VipXmlArchive.h"
+
 #include <QApplication>
+#include <QBoxLayout>
 #include <QCloseEvent>
-#include <QMessageBox>
-#include <QMouseEvent>
-#include <QToolButton>
-#include <QMouseEvent>
+#include <QDesktopServices>
 #include <QDragEnterEvent>
 #include <QDragLeaveEvent>
-#include <QTimer>
-#include <QSplitter>
-#include <QBoxLayout>
+#include <QMenuBar>
+#include <QMessageBox>
+#include <QMouseEvent>
 #include <QPrintDialog>
 #include <QPrinter>
-#include <QProgressBar>
 #include <QProcess>
-#include <QDesktopServices>
-#include <QMenuBar>
-#include <qlabel.h>
+#include <QProgressBar>
 #include <QScreen>
+#include <QSplitter>
+#include <QTimer>
+#include <QToolButton>
+#include <qclipboard.h>
+#include <qlabel.h>
 #include <qprintdialog.h>
 #include <qprinter.h>
 #if QT_VERSION < QT_VERSION_CHECK(5, 15, 0)
@@ -59,15 +88,23 @@
 class VipDisplayTabBar::PrivateData
 {
 public:
-	PrivateData() : tabWidget(nullptr), timer(nullptr), dragIndex(-1),
-		closeIcon(vipIcon("close.png")), floatIcon(vipIcon("pin.png")),
-		hoverCloseIcon(vipIcon("close.png")), hoverFloatIcon(vipIcon("pin.png")),
-		selectedCloseIcon(vipIcon("close.png")), selectedFloatIcon(vipIcon("pin.png")),
-		hoverIndex(-1),
-		streamingButtonEnabled(true),
-		dirtyStreamingButton(false){}
-	VipDisplayTabWidget * tabWidget;
-	QTimer * timer;
+	PrivateData()
+	  : tabWidget(nullptr)
+	  , timer(nullptr)
+	  , dragIndex(-1)
+	  , closeIcon(vipIcon("close.png"))
+	  , floatIcon(vipIcon("pin.png"))
+	  , hoverCloseIcon(vipIcon("close.png"))
+	  , hoverFloatIcon(vipIcon("pin.png"))
+	  , selectedCloseIcon(vipIcon("close.png"))
+	  , selectedFloatIcon(vipIcon("pin.png"))
+	  , hoverIndex(-1)
+	  , streamingButtonEnabled(true)
+	  , dirtyStreamingButton(false)
+	{
+	}
+	VipDisplayTabWidget* tabWidget;
+	QTimer* timer;
 	int dragIndex;
 
 	QIcon closeIcon;
@@ -81,12 +118,12 @@ public:
 	bool dirtyStreamingButton;
 };
 
-VipDisplayTabBar::VipDisplayTabBar(VipDisplayTabWidget * parent)
-	:QTabBar(parent)
+VipDisplayTabBar::VipDisplayTabBar(VipDisplayTabWidget* parent)
+  : QTabBar(parent)
 {
-	//add the tab that allows to append new tabs
+	// add the tab that allows to append new tabs
 	setAcceptDrops(true);
-	//setMaximumHeight(30);
+	// setMaximumHeight(30);
 
 	setIconSize(QSize(18, 18));
 	setMouseTracking(true);
@@ -99,8 +136,8 @@ VipDisplayTabBar::VipDisplayTabBar(VipDisplayTabWidget * parent)
 	connect(m_data->timer, SIGNAL(timeout()), this, SLOT(dragLongEnough()));
 	connect(this, SIGNAL(currentChanged(int)), this, SLOT(updateIcons()));
 
-	//parent->addTab(new QWidget(), "+");
-	//addTab("+");//vipIcon("add_page.png"),QString());
+	// parent->addTab(new QWidget(), "+");
+	// addTab("+");//vipIcon("add_page.png"),QString());
 }
 
 VipDisplayTabBar::~VipDisplayTabBar()
@@ -113,7 +150,7 @@ QIcon VipDisplayTabBar::closeIcon() const
 {
 	return m_data->closeIcon;
 }
-void VipDisplayTabBar::setCloseIcon(const QIcon & i)
+void VipDisplayTabBar::setCloseIcon(const QIcon& i)
 {
 	m_data->closeIcon = i;
 	updateIcons();
@@ -123,7 +160,7 @@ QIcon VipDisplayTabBar::floatIcon() const
 {
 	return m_data->floatIcon;
 }
-void VipDisplayTabBar::setFloatIcon(const QIcon & i)
+void VipDisplayTabBar::setFloatIcon(const QIcon& i)
 {
 	m_data->floatIcon = i;
 	updateIcons();
@@ -133,7 +170,7 @@ QIcon VipDisplayTabBar::hoverCloseIcon() const
 {
 	return m_data->hoverCloseIcon;
 }
-void VipDisplayTabBar::setHoverCloseIcon(const QIcon & i)
+void VipDisplayTabBar::setHoverCloseIcon(const QIcon& i)
 {
 	m_data->hoverCloseIcon = i;
 	updateIcons();
@@ -143,7 +180,7 @@ QIcon VipDisplayTabBar::hoverFloatIcon() const
 {
 	return m_data->hoverFloatIcon;
 }
-void VipDisplayTabBar::setHoverFloatIcon(const QIcon & i)
+void VipDisplayTabBar::setHoverFloatIcon(const QIcon& i)
 {
 	m_data->hoverFloatIcon = i;
 	updateIcons();
@@ -153,7 +190,7 @@ QIcon VipDisplayTabBar::selectedCloseIcon() const
 {
 	return m_data->selectedCloseIcon;
 }
-void VipDisplayTabBar::setSelectedCloseIcon(const QIcon & i)
+void VipDisplayTabBar::setSelectedCloseIcon(const QIcon& i)
 {
 	m_data->selectedCloseIcon = i;
 	updateIcons();
@@ -163,63 +200,62 @@ QIcon VipDisplayTabBar::selectedFloatIcon() const
 {
 	return m_data->selectedFloatIcon;
 }
-void VipDisplayTabBar::setSelectedFloatIcon(const QIcon & i)
+void VipDisplayTabBar::setSelectedFloatIcon(const QIcon& i)
 {
 	m_data->selectedFloatIcon = i;
 	updateIcons();
 }
 
-VipDisplayTabWidget * VipDisplayTabBar::displayTabWidget() const
+VipDisplayTabWidget* VipDisplayTabBar::displayTabWidget() const
 {
 	return const_cast<VipDisplayTabWidget*>(m_data->tabWidget);
 }
 
-//QToolBar * VipDisplayTabBar::tabButtons(int index) const
-// {
-// if (index < 0)
-// index = this->currentIndex();
-// if (index < 0)
-// return nullptr;
-// return qobject_cast<QToolBar*>(tabButton(index, QTabBar::RightSide));
-// }
+// QToolBar * VipDisplayTabBar::tabButtons(int index) const
+//  {
+//  if (index < 0)
+//  index = this->currentIndex();
+//  if (index < 0)
+//  return nullptr;
+//  return qobject_cast<QToolBar*>(tabButton(index, QTabBar::RightSide));
+//  }
 //
-// QToolButton * VipDisplayTabBar::floatButton(int index) const
-// {
-// if (index < 0)
-// index = this->currentIndex();
-// if (index < 0)
-// return nullptr;
+//  QToolButton * VipDisplayTabBar::floatButton(int index) const
+//  {
+//  if (index < 0)
+//  index = this->currentIndex();
+//  if (index < 0)
+//  return nullptr;
 //
-// QWidget * w = tabButton(index, QTabBar::RightSide);
-// return w->findChild<QToolButton*>("float_workspace");
-// }
+//  QWidget * w = tabButton(index, QTabBar::RightSide);
+//  return w->findChild<QToolButton*>("float_workspace");
+//  }
 //
-// QToolButton * VipDisplayTabBar::closeButton(int index) const
-// {
-// if (index < 0)
-// index = this->currentIndex();
-// if (index < 0)
-// return nullptr;
+//  QToolButton * VipDisplayTabBar::closeButton(int index) const
+//  {
+//  if (index < 0)
+//  index = this->currentIndex();
+//  if (index < 0)
+//  return nullptr;
 //
-// QWidget * w = tabButton(index, QTabBar::RightSide);
-// return w->findChild<QToolButton*>("close_workspace");
-// }
+//  QWidget * w = tabButton(index, QTabBar::RightSide);
+//  return w->findChild<QToolButton*>("close_workspace");
+//  }
 //
-// QToolButton * VipDisplayTabBar::streamingButton(int index) const
-// {
-// if (index < 0)
-// index = this->currentIndex();
-// if (index < 0)
-// return nullptr;
+//  QToolButton * VipDisplayTabBar::streamingButton(int index) const
+//  {
+//  if (index < 0)
+//  index = this->currentIndex();
+//  if (index < 0)
+//  return nullptr;
 //
-// QWidget * w = tabButton(index, QTabBar::LeftSide);
-// return qobject_cast<QToolButton*>(w);
-// }
+//  QWidget * w = tabButton(index, QTabBar::LeftSide);
+//  return qobject_cast<QToolButton*>(w);
+//  }
 
 void VipDisplayTabBar::setStreamingEnabled(bool enable)
 {
-	if (m_data->streamingButtonEnabled != enable)
-	{
+	if (m_data->streamingButtonEnabled != enable) {
 		m_data->streamingButtonEnabled = enable;
 		updateStreamingButton();
 	}
@@ -232,27 +268,25 @@ bool VipDisplayTabBar::streamingButtonEnabled() const
 void VipDisplayTabBar::enableStreaming()
 {
 	//
-	//Enable/disable streaming for the player area
+	// Enable/disable streaming for the player area
 	//
 
-	if(sender())
-		if (VipDisplayPlayerArea * area = qobject_cast<VipDisplayPlayerArea*>(sender()->property("widget").value<QWidget*>()))
-		{
-			VipProcessingPool * pool = area->processingPool();
+	if (sender())
+		if (VipDisplayPlayerArea* area = qobject_cast<VipDisplayPlayerArea*>(sender()->property("widget").value<QWidget*>())) {
+			VipProcessingPool* pool = area->processingPool();
 			pool->setStreamingEnabled(!pool->isStreamingEnabled());
 			updateStreamingButton();
 		}
 }
 
-
-//static QToolButton * findButton(const QList<QWidget*> & ws, const QString & name)
-// {
-// for (int i = 0; i < ws.size(); ++i)
-// if (ws[i]->objectName() == name)
+// static QToolButton * findButton(const QList<QWidget*> & ws, const QString & name)
+//  {
+//  for (int i = 0; i < ws.size(); ++i)
+//  if (ws[i]->objectName() == name)
 //	if (QToolButton * b = qobject_cast<QToolButton*>(ws[i]))
 //		return b;
-// return nullptr;
-// }
+//  return nullptr;
+//  }
 
 void VipDisplayTabBar::updateStreamingButtonDelayed()
 {
@@ -265,37 +299,38 @@ void VipDisplayTabBar::updateStreamingButtonDelayed()
 void VipDisplayTabBar::updateStreamingButton()
 {
 	m_data->dirtyStreamingButton = false;
-	//update ALL streaming buttons
-	VipDisplayArea * area = nullptr;
-	QWidget * w = parentWidget();
+	// update ALL streaming buttons
+	VipDisplayArea* area = nullptr;
+	QWidget* w = parentWidget();
 	while (w) {
 		if (area = qobject_cast<VipDisplayArea*>(w))
 			break;
 		w = w->parentWidget();
 	}
-	if (!area) return;
+	if (!area)
+		return;
 
-	//reset last tab ('+' tab)
+	// reset last tab ('+' tab)
 	this->setTabButton(this->count() - 1, QTabBar::LeftSide, nullptr);
 	this->setTabButton(this->count() - 1, QTabBar::RightSide, nullptr);
 
-	for (int i = 0; i < area->count(); ++i)
-	{
-		VipDisplayPlayerArea * a = area->displayPlayerArea(i);
-		//Reset left and right tab widgets, as they might be strucked on the last tab (with the '+')
-		if (!a->leftTabWidget()) a->setLeftTabWidget(new QToolBar());
-		else a->setLeftTabWidget(a->leftTabWidget());
-		if (a->rightTabWidget()) a->setRightTabWidget(a->rightTabWidget());
+	for (int i = 0; i < area->count(); ++i) {
+		VipDisplayPlayerArea* a = area->displayPlayerArea(i);
+		// Reset left and right tab widgets, as they might be strucked on the last tab (with the '+')
+		if (!a->leftTabWidget())
+			a->setLeftTabWidget(new QToolBar());
+		else
+			a->setLeftTabWidget(a->leftTabWidget());
+		if (a->rightTabWidget())
+			a->setRightTabWidget(a->rightTabWidget());
 		a->leftTabWidget()->setIconSize(QSize(18, 18));
-		QToolButton * stream = a->leftTabWidget()->findChild<QToolButton*>("stream_workspace");
-		VipProcessingPool * pool = a->processingPool();
-		if (!pool->hasSequentialDevice() || !streamingButtonEnabled())
-		{
+		QToolButton* stream = a->leftTabWidget()->findChild<QToolButton*>("stream_workspace");
+		VipProcessingPool* pool = a->processingPool();
+		if (!pool->hasSequentialDevice() || !streamingButtonEnabled()) {
 			if (stream)
 				delete stream;
 		}
-		else
-		{
+		else {
 			if (!stream) {
 				stream = new QToolButton();
 				stream->setProperty("widget", QVariant::fromValue(a));
@@ -316,24 +351,19 @@ void VipDisplayTabBar::updateStreamingButton()
 			else
 				stream->setIcon(vipIcon("play.png"));
 		}
-
-
-
 	}
 }
 
-void	VipDisplayTabBar::tabInserted(int index)
+void VipDisplayTabBar::tabInserted(int index)
 {
-	if (index < count() - 1)
-	{
-		VipDisplayPlayerArea * area = qobject_cast<VipDisplayPlayerArea*>(displayTabWidget()->widget(index));
+	if (index < count() - 1) {
+		VipDisplayPlayerArea* area = qobject_cast<VipDisplayPlayerArea*>(displayTabWidget()->widget(index));
 		if (area) {
 
 			if (!area->rightTabWidget())
 				area->setRightTabWidget(new QToolBar());
 
 			if (!area->rightTabWidget()->findChild<QToolButton*>("close_workspace")) {
-
 
 				QToolButton* tool = new QToolButton();
 				QAction* tool_action = area->rightTabWidget()->addWidget(tool);
@@ -396,27 +426,25 @@ void	VipDisplayTabBar::tabInserted(int index)
 	updateIcons();
 }
 
-void VipDisplayTabBar::leaveEvent(QEvent *)
+void VipDisplayTabBar::leaveEvent(QEvent*)
 {
 	m_data->hoverIndex = -1;
 	updateIcons();
 }
 
-void	VipDisplayTabBar::mouseMoveEvent(QMouseEvent *event)
+void VipDisplayTabBar::mouseMoveEvent(QMouseEvent* event)
 {
-	//if(event->buttons())
+	// if(event->buttons())
 	QTabBar::mouseMoveEvent(event);
-	if (event->button() == Qt::NoButton && tabAt(event->pos()) != m_data->hoverIndex)
-	{
+	if (event->button() == Qt::NoButton && tabAt(event->pos()) != m_data->hoverIndex) {
 		m_data->hoverIndex = tabAt(event->pos());
 		updateIcons();
 	}
 }
 
-void VipDisplayTabBar::mouseDoubleClickEvent(QMouseEvent * evt)
+void VipDisplayTabBar::mouseDoubleClickEvent(QMouseEvent* evt)
 {
-	if ((evt->buttons() & Qt::RightButton))
-	{
+	if ((evt->buttons() & Qt::RightButton)) {
 		QTabBar::mouseDoubleClickEvent(evt);
 		return;
 	}
@@ -424,53 +452,51 @@ void VipDisplayTabBar::mouseDoubleClickEvent(QMouseEvent * evt)
 	int index = tabAt(evt->pos());
 	if (index < 0)
 		return;
-	VipDisplayPlayerArea * area = qobject_cast<VipDisplayPlayerArea*>(displayTabWidget()->widget(index));
+	VipDisplayPlayerArea* area = qobject_cast<VipDisplayPlayerArea*>(displayTabWidget()->widget(index));
 	if (!area)
 		return;
 	displayTabWidget()->setProperty("_vip_index", index);
 	displayTabWidget()->renameWorkspace();
 }
 
-void	VipDisplayTabBar::mousePressEvent(QMouseEvent * event)
+void VipDisplayTabBar::mousePressEvent(QMouseEvent* event)
 {
-	//id we press on the last tab, insert a new one
-	if (tabAt(event->pos()) == count() - 1)
-	{
+	// id we press on the last tab, insert a new one
+	if (tabAt(event->pos()) == count() - 1) {
 		displayTabWidget()->displayArea()->addWidget(new VipDisplayPlayerArea());
 	}
-	else
-	{
+	else {
 		QTabBar::mousePressEvent(event);
 	}
 }
 
-void	VipDisplayTabBar::mouseReleaseEvent(QMouseEvent* event)
+void VipDisplayTabBar::mouseReleaseEvent(QMouseEvent* event)
 {
 	QTabBar::mouseReleaseEvent(event);
-	//make sure the last tab is the "+" one
+	// make sure the last tab is the "+" one
 	for (int i = 0; i < count(); ++i) {
 		if (tabText(i) == "+" && i != count() - 1) {
-			//reorder
-			moveTab(i, count()-1);
+			// reorder
+			moveTab(i, count() - 1);
 			break;
 		}
 	}
 }
 
-void VipDisplayTabBar::dragEnterEvent(QDragEnterEvent * evt)
+void VipDisplayTabBar::dragEnterEvent(QDragEnterEvent* evt)
 {
 	evt->accept();
 	m_data->dragIndex = tabAt(evt->pos());
 }
 
-void VipDisplayTabBar::dragMoveEvent(QDragMoveEvent * evt)
+void VipDisplayTabBar::dragMoveEvent(QDragMoveEvent* evt)
 {
 	m_data->dragIndex = tabAt(evt->pos());
 	m_data->timer->stop();
 	m_data->timer->start();
 }
 
-void VipDisplayTabBar::dragLeaveEvent(QDragLeaveEvent *)
+void VipDisplayTabBar::dragLeaveEvent(QDragLeaveEvent*)
 {
 	m_data->dragIndex = -1;
 	m_data->timer->stop();
@@ -479,14 +505,11 @@ void VipDisplayTabBar::dragLeaveEvent(QDragLeaveEvent *)
 void VipDisplayTabBar::dragLongEnough()
 {
 	int index = m_data->dragIndex;
-	if (index >= 0)
-	{
-		if (index < count() - 1)
-		{
+	if (index >= 0) {
+		if (index < count() - 1) {
 			this->setCurrentIndex(index);
 		}
-		else
-		{
+		else {
 			displayTabWidget()->displayArea()->addWidget(new VipDisplayPlayerArea());
 		}
 	}
@@ -494,50 +517,50 @@ void VipDisplayTabBar::dragLongEnough()
 
 void VipDisplayTabBar::closeTab()
 {
-	QWidget * w = sender()->property("widget").value<QWidget*>();
+	QWidget* w = sender()->property("widget").value<QWidget*>();
 	int index = displayTabWidget()->indexOf(w);
-	if(index >= 0)
+	if (index >= 0)
 		displayTabWidget()->closeTab(index);
-	else if(w){
-		//close the current workspace
+	else if (w) {
+		// close the current workspace
 		delete w;
 	}
 }
 
 void VipDisplayTabBar::floatTab()
 {
-	if (VipDisplayPlayerArea * area = sender()->property("widget").value<VipDisplayPlayerArea*>())
+	if (VipDisplayPlayerArea* area = sender()->property("widget").value<VipDisplayPlayerArea*>())
 		area->setFloating(true);
 }
 
 void VipDisplayTabBar::updateIcons()
 {
-	int	current = currentIndex();
+	int current = currentIndex();
 	int hover = m_data->hoverIndex;
-	for (int i = 0; i < count(); ++i)
-	{
-		VipDisplayPlayerArea* area = qobject_cast<VipDisplayPlayerArea*> (this->displayTabWidget()->widget(i));
-		if (QWidget * buttons = tabButton(i, QTabBar::RightSide))
-		{
-			//QToolBar* bar = qobject_cast<QToolBar*>(buttons);
-			QToolButton * _close = buttons->findChild<QToolButton*>("close_workspace");
-			QToolButton * _float = buttons->findChild<QToolButton*>("float_workspace");
+	for (int i = 0; i < count(); ++i) {
+		VipDisplayPlayerArea* area = qobject_cast<VipDisplayPlayerArea*>(this->displayTabWidget()->widget(i));
+		if (QWidget* buttons = tabButton(i, QTabBar::RightSide)) {
+			// QToolBar* bar = qobject_cast<QToolBar*>(buttons);
+			QToolButton* _close = buttons->findChild<QToolButton*>("close_workspace");
+			QToolButton* _float = buttons->findChild<QToolButton*>("float_workspace");
 
-
-			if (i == current)
-			{
-				if (_close) _close->setIcon(selectedCloseIcon());
-				if (_float) _float->setIcon(selectedFloatIcon());
+			if (i == current) {
+				if (_close)
+					_close->setIcon(selectedCloseIcon());
+				if (_float)
+					_float->setIcon(selectedFloatIcon());
 			}
-			else if (i == hover)
-			{
-				if (_close) _close->setIcon(hoverCloseIcon());
-				if (_float) _float->setIcon(hoverFloatIcon());
+			else if (i == hover) {
+				if (_close)
+					_close->setIcon(hoverCloseIcon());
+				if (_float)
+					_float->setIcon(hoverFloatIcon());
 			}
-			else
-			{
-				if (_close) _close->setIcon(closeIcon());
-				if (_float) _float->setIcon(floatIcon());
+			else {
+				if (_close)
+					_close->setIcon(closeIcon());
+				if (_float)
+					_float->setIcon(floatIcon());
 			}
 
 			if (area) {
@@ -549,15 +572,12 @@ void VipDisplayTabBar::updateIcons()
 				if (_float)
 					_float->property("action").value<QAction*>()->setVisible(float_visible);
 			}
-
 		}
 	}
 }
 
-
-
-VipDisplayTabWidget::VipDisplayTabWidget(QWidget * parent)
-	:QTabWidget(parent)
+VipDisplayTabWidget::VipDisplayTabWidget(QWidget* parent)
+  : QTabWidget(parent)
 {
 	setTabBar(new VipDisplayTabBar(this));
 	displayTabBar()->setIconSize(QSize(16, 16));
@@ -566,17 +586,16 @@ VipDisplayTabWidget::VipDisplayTabWidget(QWidget * parent)
 	connect(this, SIGNAL(currentChanged(int)), this, SLOT(tabChanged(int)));
 }
 
-VipDisplayTabBar * VipDisplayTabWidget::displayTabBar() const
+VipDisplayTabBar* VipDisplayTabWidget::displayTabBar() const
 {
 	return static_cast<VipDisplayTabBar*>(tabBar());
 }
 
-VipDisplayArea * VipDisplayTabWidget::displayArea() const
+VipDisplayArea* VipDisplayTabWidget::displayArea() const
 {
-	QWidget * w = parentWidget();
-	while (w)
-	{
-		if (VipDisplayArea * area = qobject_cast<VipDisplayArea*>(w))
+	QWidget* w = parentWidget();
+	while (w) {
+		if (VipDisplayArea* area = qobject_cast<VipDisplayArea*>(w))
 			return area;
 		w = w->parentWidget();
 	}
@@ -589,7 +608,7 @@ void VipDisplayTabWidget::closeTab(int index)
 	if (destroy_current_tab)
 		vipGetMainWindow()->setCurrentTabDestroy(true);
 
-	QWidget * widget = this->widget(index);
+	QWidget* widget = this->widget(index);
 	removeTab(index);
 	delete widget;
 
@@ -602,7 +621,7 @@ void VipDisplayTabWidget::closeTab(int index)
 
 void VipDisplayTabWidget::tabChanged(int index)
 {
-	if (VipDisplayPlayerArea * area = qobject_cast<VipDisplayPlayerArea*>(this->widget(index)))
+	if (VipDisplayPlayerArea* area = qobject_cast<VipDisplayPlayerArea*>(this->widget(index)))
 		area->setFocus(true);
 }
 
@@ -625,7 +644,6 @@ void VipDisplayTabWidget::closeAllButTab()
 				}
 		}
 	}
-
 }
 
 void VipDisplayTabWidget::closeTab()
@@ -639,18 +657,19 @@ void VipDisplayTabWidget::makeFloat(bool enable)
 {
 	int index = property("_vip_index").toInt();
 	if (index >= 0 && index < count())
-		if (VipDisplayPlayerArea * area = qobject_cast<VipDisplayPlayerArea*>(widget(index)))
+		if (VipDisplayPlayerArea* area = qobject_cast<VipDisplayPlayerArea*>(widget(index)))
 			area->setFloating(enable);
 }
 
-
-
-struct EditWksTitle : QLineEdit {
-	EditWksTitle(QWidget * parent)
-		:QLineEdit(parent) {
+struct EditWksTitle : QLineEdit
+{
+	EditWksTitle(QWidget* parent)
+	  : QLineEdit(parent)
+	{
 		connect(this, SIGNAL(returnPressed()), this, SLOT(deleteLater()));
 	}
-	virtual void	focusOutEvent(QFocusEvent *) {
+	virtual void focusOutEvent(QFocusEvent*)
+	{
 		Q_EMIT returnPressed();
 		this->deleteLater();
 	}
@@ -661,7 +680,7 @@ void VipDisplayTabWidget::renameWorkspace()
 {
 	int index = property("_vip_index").toInt();
 	if (index >= 0 && index < count()) {
-		if (VipDisplayPlayerArea * area = qobject_cast<VipDisplayPlayerArea*>(widget(index))) {
+		if (VipDisplayPlayerArea* area = qobject_cast<VipDisplayPlayerArea*>(widget(index))) {
 			QRect r = this->tabBar()->tabRect(index);
 			_wks_title_editor = new EditWksTitle(this->tabBar());
 			//_wks_title_editor->resize(m_data->player->width(), _wks_title_editor->height());
@@ -680,9 +699,8 @@ void VipDisplayTabWidget::finishEditingTitle()
 {
 	int index = property("_vip_index").toInt();
 	if (index >= 0 && index < count() && _wks_title_editor) {
-		if (VipDisplayPlayerArea * area = qobject_cast<VipDisplayPlayerArea*>(widget(index))) {
-			if (_wks_title_editor->text().size())
-			{
+		if (VipDisplayPlayerArea* area = qobject_cast<VipDisplayPlayerArea*>(widget(index))) {
+			if (_wks_title_editor->text().size()) {
 				area->setWindowTitle(_wks_title_editor->text());
 				area->setProperty("_vip_customTitle", true);
 			}
@@ -690,20 +708,18 @@ void VipDisplayTabWidget::finishEditingTitle()
 	}
 }
 
-void VipDisplayTabWidget::mouseDoubleClickEvent(QMouseEvent * evt)
+void VipDisplayTabWidget::mouseDoubleClickEvent(QMouseEvent* evt)
 {
-	if (!(evt->buttons() & Qt::RightButton))
-	{
+	if (!(evt->buttons() & Qt::RightButton)) {
 		QTabWidget::mouseDoubleClickEvent(evt);
 		return;
 	}
 	renameWorkspace();
 }
 
-void VipDisplayTabWidget::mousePressEvent(QMouseEvent * evt)
+void VipDisplayTabWidget::mousePressEvent(QMouseEvent* evt)
 {
-	if (!(evt->buttons() & Qt::RightButton))
-	{
+	if (!(evt->buttons() & Qt::RightButton)) {
 		QTabWidget::mousePressEvent(evt);
 		return;
 	}
@@ -711,7 +727,7 @@ void VipDisplayTabWidget::mousePressEvent(QMouseEvent * evt)
 	int index = this->tabBar()->tabAt(evt->pos());
 	if (index < 0)
 		return;
-	VipDisplayPlayerArea * area = qobject_cast<VipDisplayPlayerArea*>(widget(index));
+	VipDisplayPlayerArea* area = qobject_cast<VipDisplayPlayerArea*>(widget(index));
 	if (!area)
 		return;
 	setProperty("_vip_index", index);
@@ -719,7 +735,7 @@ void VipDisplayTabWidget::mousePressEvent(QMouseEvent * evt)
 	QMenu menu;
 	connect(menu.addAction("Edit workspace title..."), SIGNAL(triggered(bool)), this, SLOT(renameWorkspace()));
 	menu.addSeparator();
-	QAction * _float = menu.addAction("Make workspace floating");
+	QAction* _float = menu.addAction("Make workspace floating");
 	_float->setCheckable(true);
 	_float->setChecked(area->isFloating());
 	connect(_float, SIGNAL(triggered(bool)), this, SLOT(makeFloat(bool)));
@@ -730,29 +746,27 @@ void VipDisplayTabWidget::mousePressEvent(QMouseEvent * evt)
 	menu.exec(evt->globalPos());
 }
 
-
-
 class VipPlayerAreaTitleBar::PrivateData
 {
 public:
 	QPoint pt, previous_pos;
-	QAction * icon;
-	QAction * title;
-	QLabel * titleLabel;
-	QWidget * additionals;
-	QHBoxLayout * additionals_layout;
-	QAction * spacer;
-	QAction * minimal;
-	QAction * pin;
-	QAction * minimizeButton;
-	QAction * maximizeButton;
-	QAction * closeButton;
-	VipDisplayPlayerArea * playerArea;
+	QAction* icon;
+	QAction* title;
+	QLabel* titleLabel;
+	QWidget* additionals;
+	QHBoxLayout* additionals_layout;
+	QAction* spacer;
+	QAction* minimal;
+	QAction* pin;
+	QAction* minimizeButton;
+	QAction* maximizeButton;
+	QAction* closeButton;
+	VipDisplayPlayerArea* playerArea;
 	QPalette palette;
 };
 
-VipPlayerAreaTitleBar::VipPlayerAreaTitleBar(VipDisplayPlayerArea * win)
-	:QToolBar(win)
+VipPlayerAreaTitleBar::VipPlayerAreaTitleBar(VipDisplayPlayerArea* win)
+  : QToolBar(win)
 {
 	m_data = new PrivateData();
 
@@ -761,7 +775,7 @@ VipPlayerAreaTitleBar::VipPlayerAreaTitleBar(VipDisplayPlayerArea * win)
 	m_data->playerArea = win;
 	m_data->palette = this->palette();
 
-	QLabel * _icon = new QLabel();
+	QLabel* _icon = new QLabel();
 	_icon->setPixmap(vipPixmap("thermavip.png").scaled(24, 24, Qt::IgnoreAspectRatio, Qt::SmoothTransformation));
 	m_data->icon = addWidget(_icon);
 	_icon->setStyleSheet("QLabel {background-color: transparent;}");
@@ -804,7 +818,7 @@ VipPlayerAreaTitleBar::~VipPlayerAreaTitleBar()
 	delete m_data;
 }
 
-void VipPlayerAreaTitleBar::setTitle(const QString & title)
+void VipPlayerAreaTitleBar::setTitle(const QString& title)
 {
 	setWindowTitle(title);
 	m_data->titleLabel->setText(title);
@@ -812,16 +826,13 @@ void VipPlayerAreaTitleBar::setTitle(const QString & title)
 
 bool VipPlayerAreaTitleBar::eventFilter(QObject*, QEvent* evt)
 {
-	if (evt->type() == QEvent::WindowStateChange)
-	{
+	if (evt->type() == QEvent::WindowStateChange) {
 
-		if (m_data->playerArea->isMaximized())
-		{
+		if (m_data->playerArea->isMaximized()) {
 			m_data->maximizeButton->setText(tr("Restore"));
 			m_data->maximizeButton->setIcon(vipIcon("restore.png"));
 		}
-		else
-		{
+		else {
 			m_data->maximizeButton->setText(tr("Maximize"));
 			m_data->maximizeButton->setIcon(vipIcon("maximize.png"));
 		}
@@ -837,27 +848,25 @@ void VipPlayerAreaTitleBar::maximizeOrShowNormal()
 		m_data->playerArea->showMaximized();
 }
 
-
-void VipPlayerAreaTitleBar::mouseDoubleClickEvent(QMouseEvent *)
+void VipPlayerAreaTitleBar::mouseDoubleClickEvent(QMouseEvent*)
 {
 	maximizeOrShowNormal();
 }
 
-void VipPlayerAreaTitleBar::mousePressEvent(QMouseEvent * evt)
+void VipPlayerAreaTitleBar::mousePressEvent(QMouseEvent* evt)
 {
 	m_data->pt = m_data->playerArea->mapToParent(evt->pos());
 	m_data->previous_pos = m_data->playerArea->pos();
 }
 
-void VipPlayerAreaTitleBar::mouseReleaseEvent(QMouseEvent *)
+void VipPlayerAreaTitleBar::mouseReleaseEvent(QMouseEvent*)
 {
 	m_data->pt = QPoint();
 }
 
-void VipPlayerAreaTitleBar::mouseMoveEvent(QMouseEvent * evt)
+void VipPlayerAreaTitleBar::mouseMoveEvent(QMouseEvent* evt)
 {
-	if (m_data->pt != QPoint())
-	{
+	if (m_data->pt != QPoint()) {
 		QPoint diff = m_data->playerArea->mapToParent(evt->pos()) - m_data->pt;
 		m_data->playerArea->move(m_data->previous_pos + diff);
 	}
@@ -867,13 +876,11 @@ void VipPlayerAreaTitleBar::setFloating(bool pin)
 {
 	m_data->playerArea->setFloating(pin);
 
-	if (!pin)
-	{
+	if (!pin) {
 		m_data->pin->setIcon(vipIcon("pin.png"));
 		m_data->pin->setToolTip("Set floating");
 	}
-	else
-	{
+	else {
 		m_data->pin->setIcon(vipIcon("unpin.png"));
 		m_data->pin->setToolTip("Attach to main window");
 	}
@@ -897,25 +904,25 @@ bool VipPlayerAreaTitleBar::hasFocus() const
 	return m_data->playerArea->hasFocus();
 }
 
-QAction * VipPlayerAreaTitleBar::floatAction() const
+QAction* VipPlayerAreaTitleBar::floatAction() const
 {
 	return m_data->pin;
 }
 
-QAction * VipPlayerAreaTitleBar::closeAction() const
+QAction* VipPlayerAreaTitleBar::closeAction() const
 {
 	return m_data->closeButton;
 }
 
-QList<QWidget * > VipPlayerAreaTitleBar::additionalWidgets() const
+QList<QWidget*> VipPlayerAreaTitleBar::additionalWidgets() const
 {
-	QList<QWidget * > res;
+	QList<QWidget*> res;
 	for (int i = 0; i < m_data->additionals_layout->count(); ++i)
 		if (m_data->additionals_layout->itemAt(i)->widget())
 			res.append(m_data->additionals_layout->itemAt(i)->widget());
 	return res;
 }
-void VipPlayerAreaTitleBar::setAdditionalWidget(const QList<QWidget *> & ws)
+void VipPlayerAreaTitleBar::setAdditionalWidget(const QList<QWidget*>& ws)
 {
 	while (m_data->additionals_layout->count())
 		delete m_data->additionals_layout->takeAt(0);
@@ -925,34 +932,34 @@ void VipPlayerAreaTitleBar::setAdditionalWidget(const QList<QWidget *> & ws)
 	}
 }
 
-
-
-
-
-class GlobalColorScaleWidget : public QWidget, public VipRenderObject
+class GlobalColorScaleWidget
+  : public QWidget
+  , public VipRenderObject
 {
 public:
-	GlobalColorScaleWidget(QWidget * parent = nullptr)
-		:QWidget(parent), VipRenderObject(this)
-	{}
+	GlobalColorScaleWidget(QWidget* parent = nullptr)
+	  : QWidget(parent)
+	  , VipRenderObject(this)
+	{
+	}
 
 protected:
-	virtual void startRender(VipRenderState & st) {
-		//hide tool bar
-		if (QToolBar * bar = findChild<QToolBar*>())
+	virtual void startRender(VipRenderState& st)
+	{
+		// hide tool bar
+		if (QToolBar* bar = findChild<QToolBar*>())
 			bar->hide();
-		//set scale colors to black
-		if (VipScaleWidget * sc = findChild<VipScaleWidget*>()) {
-			
+		// set scale colors to black
+		if (VipScaleWidget* sc = findChild<VipScaleWidget*>()) {
+
 			sc->setProperty("_vip_styleSheet", QVariant::fromValue(sc->scale()->styleSheet()));
 			sc->scale()->setStyleSheet("VipAbstractScale{"
 						   "title-color: black;"
 						   "label-color: black;"
-						   "}"
-			);
-			
-			//hide grips
-			VipAxisColorMap * a = static_cast<VipAxisColorMap*>(sc->scale());
+						   "}");
+
+			// hide grips
+			VipAxisColorMap* a = static_cast<VipAxisColorMap*>(sc->scale());
 			st.state(this)["grip1"] = a->grip1()->isVisible();
 			st.state(this)["grip2"] = a->grip2()->isVisible();
 			a->grip1()->setVisible(false);
@@ -960,25 +967,26 @@ protected:
 		}
 	}
 
-	virtual void endRender(VipRenderState & st) {
-		if (QToolBar * bar = findChild<QToolBar*>())
+	virtual void endRender(VipRenderState& st)
+	{
+		if (QToolBar* bar = findChild<QToolBar*>())
 			bar->show();
-		if (VipScaleWidget * sc = findChild<VipScaleWidget*>()) {
-			
+		if (VipScaleWidget* sc = findChild<VipScaleWidget*>()) {
+
 			VipStyleSheet ss = sc->property("_vip_styleSheet").value<VipStyleSheet>();
 			sc->setProperty("_vip_styleSheet", QVariant());
 			sc->scale()->setStyleSheet(ss);
 
-			VipAxisColorMap * a = static_cast<VipAxisColorMap*>(sc->scale());
+			VipAxisColorMap* a = static_cast<VipAxisColorMap*>(sc->scale());
 			a->grip1()->setVisible(st.state(this)["grip1"].toBool());
 			a->grip2()->setVisible(st.state(this)["grip2"].toBool());
 		}
 	}
 
-	virtual bool renderObject(QPainter * p, const QPointF & pos, bool )
+	virtual bool renderObject(QPainter* p, const QPointF& pos, bool)
 	{
 		if (isVisible()) {
-			if (VipScaleWidget * sc = findChild<VipScaleWidget*>()) {
+			if (VipScaleWidget* sc = findChild<VipScaleWidget*>()) {
 				QRectF target = sc->geometry();
 				target.moveTopLeft(pos);
 				sc->render(p, target);
@@ -987,7 +995,6 @@ protected:
 		return false;
 	}
 };
-
 
 static int _max_multi_width = 3;
 
@@ -1000,20 +1007,24 @@ public:
 	  , floating(false)
 	  , id(0)
 	  , maxColumns(_max_multi_width)
-		, useGlobalColorMap(false)
-	  ,
-		operations(AllOperations), dirtyColorMap(false), leftTabWidget(nullptr), rightTabWidget(nullptr){}
-	VipDragWidgetArea * dragWidgetArea;
-	VipPlayWidget * playWidget;
-	VipScaleWidget * colorMap;
-	VipAxisColorMap * colorMapAxis;
-	QToolBar * colorMapBar;
-	GlobalColorScaleWidget * colorMapWidget;
+	  , useGlobalColorMap(false)
+	  , operations(AllOperations)
+	  , dirtyColorMap(false)
+	  , leftTabWidget(nullptr)
+	  , rightTabWidget(nullptr)
+	{
+	}
+	VipDragWidgetArea* dragWidgetArea;
+	VipPlayWidget* playWidget;
+	VipScaleWidget* colorMap;
+	VipAxisColorMap* colorMapAxis;
+	QToolBar* colorMapBar;
+	GlobalColorScaleWidget* colorMapWidget;
 
-	QWidget * topWidget;
-	VipProcessingPool * pool;
-	VipPlayerAreaTitleBar * titleBar;
-	QSplitter * splitter;
+	QWidget* topWidget;
+	VipProcessingPool* pool;
+	VipPlayerAreaTitleBar* titleBar;
+	QSplitter* splitter;
 
 	QPointer<VipDisplayArea> parentArea;
 	bool floating;
@@ -1025,22 +1036,19 @@ public:
 	Operations operations;
 
 	bool dirtyColorMap;
-	VipColorScaleButton * scale;
-	QAction * auto_scale;
-	QAction * fit_to_grip;
-	QAction * histo_scale;
+	VipColorScaleButton* scale;
+	QAction* auto_scale;
+	QAction* fit_to_grip;
+	QAction* histo_scale;
 
-	QToolBar *leftTabWidget;
-	QToolBar *rightTabWidget;
+	QToolBar* leftTabWidget;
+	QToolBar* rightTabWidget;
 
 	QPointer<VipMultiDragWidget> mainDragWidget;
 };
 
-
-
-
-VipDisplayPlayerArea::VipDisplayPlayerArea(QWidget * parent)
-	:QWidget(parent)
+VipDisplayPlayerArea::VipDisplayPlayerArea(QWidget* parent)
+  : QWidget(parent)
 {
 	this->setAttribute(Qt::WA_DeleteOnClose);
 
@@ -1056,8 +1064,9 @@ VipDisplayPlayerArea::VipDisplayPlayerArea(QWidget * parent)
 	setProcessingPool(p);
 
 	VipImageArea2D area;
-	m_data->colorMap = new VipScaleWidget(m_data->colorMapAxis = area.createColorMap(VipAxisBase::Right, VipInterval(0, 100), VipLinearColorMap::createColorMap(VipGuiDisplayParamaters::instance()->playerColorScale())));
-	//m_data->colorMapAxis->setColorBarWidth(12);
+	m_data->colorMap = new VipScaleWidget(
+	  m_data->colorMapAxis = area.createColorMap(VipAxisBase::Right, VipInterval(0, 100), VipLinearColorMap::createColorMap(VipGuiDisplayParamaters::instance()->playerColorScale())));
+	// m_data->colorMapAxis->setColorBarWidth(12);
 	m_data->colorMapAxis->grip1()->setHandleDistance(0);
 	m_data->colorMapAxis->grip2()->setHandleDistance(0);
 	m_data->colorMapAxis->setUseBorderDistHintForLayout(true);
@@ -1065,7 +1074,7 @@ VipDisplayPlayerArea::VipDisplayPlayerArea(QWidget * parent)
 	m_data->colorMapAxis->setFlatHistogramStrength(VipGuiDisplayParamaters::instance()->flatHistogramStrength());
 	m_data->colorMapBar = new QToolBar();
 	m_data->colorMapBar->setIconSize(QSize(16, 16));
-	QVBoxLayout * vlay = new QVBoxLayout();
+	QVBoxLayout* vlay = new QVBoxLayout();
 	vlay->setSpacing(0);
 	vlay->setContentsMargins(0, 0, 0, 0);
 	vlay->addWidget(m_data->colorMapBar);
@@ -1073,8 +1082,8 @@ VipDisplayPlayerArea::VipDisplayPlayerArea(QWidget * parent)
 	m_data->colorMapWidget = new GlobalColorScaleWidget();
 	m_data->colorMapWidget->setLayout(vlay);
 	m_data->colorMapWidget->setMaximumWidth(100);
-	//m_data->colorMap->setStyleSheet("VipScaleWidget {background: red;}");
-	//m_data->colorMapWidget->setStyleSheet("QWidget{background: green;}");
+	// m_data->colorMap->setStyleSheet("VipScaleWidget {background: red;}");
+	// m_data->colorMapWidget->setStyleSheet("QWidget{background: green;}");
 
 	m_data->colorMapAxis->grip1()->setImage(vipPixmap("slider_handle.png").toImage());
 	m_data->colorMapAxis->grip2()->setImage(vipPixmap("slider_handle.png").toImage());
@@ -1088,7 +1097,7 @@ VipDisplayPlayerArea::VipDisplayPlayerArea(QWidget * parent)
 	m_data->histo_scale = m_data->colorMapBar->addAction(vipIcon("scalehisto.png"), "Adjust color scale to have the best dynamic");
 	m_data->histo_scale->setCheckable(true);
 	m_data->histo_scale->setChecked(m_data->colorMapAxis->useFlatHistogram());
-	//QAction * scale_params = m_data->colorMapBar->addAction(vipIcon("scaletools.png"), "Display color scale parameters");
+	// QAction * scale_params = m_data->colorMapBar->addAction(vipIcon("scaletools.png"), "Display color scale parameters");
 	m_data->scale = new VipColorScaleButton();
 	m_data->scale->setColorPalette(static_cast<VipLinearColorMap*>(m_data->colorMapAxis->colorMap())->type());
 	m_data->colorMapBar->addWidget(m_data->scale);
@@ -1096,17 +1105,17 @@ VipDisplayPlayerArea::VipDisplayPlayerArea(QWidget * parent)
 	connect(m_data->auto_scale, SIGNAL(triggered(bool)), this, SLOT(setAutomaticColorScale(bool)));
 	connect(m_data->fit_to_grip, SIGNAL(triggered(bool)), this, SLOT(fitColorScaleToGrips()));
 	connect(m_data->histo_scale, SIGNAL(triggered(bool)), this, SLOT(setFlatHistogramColorScale(bool)));
-	//QObject::connect(scale_params, SIGNAL(triggered(bool)), player, SLOT(showColorScaleParameters()));
+	// QObject::connect(scale_params, SIGNAL(triggered(bool)), player, SLOT(showColorScaleParameters()));
 	connect(m_data->scale, SIGNAL(colorPaletteChanged(int)), this, SLOT(setColorMap(int)));
 	connect(m_data->colorMapAxis, &VipAxisColorMap::valueChanged, this, std::bind(&VipDisplayPlayerArea::setAutomaticColorScale, this, false));
 	connect(m_data->colorMapAxis, SIGNAL(mouseButtonDoubleClick(VipAbstractScale*, VipPlotItem::MouseButton, double)), this, SLOT(editColorMap()));
 
-	QHBoxLayout * hlay = new QHBoxLayout();
+	QHBoxLayout* hlay = new QHBoxLayout();
 	hlay->setSpacing(0);
 	hlay->setContentsMargins(0, 0, 0, 0);
 	hlay->addWidget(m_data->dragWidgetArea);
 	hlay->addWidget(m_data->colorMapWidget);
-	QWidget * w = new QWidget();
+	QWidget* w = new QWidget();
 	w->setLayout(hlay);
 	m_data->colorMapWidget->hide();
 
@@ -1122,7 +1131,7 @@ VipDisplayPlayerArea::VipDisplayPlayerArea(QWidget * parent)
 	m_data->topWidget = new QWidget();
 	m_data->topWidget->hide();
 
-	QVBoxLayout * lay = new QVBoxLayout();
+	QVBoxLayout* lay = new QVBoxLayout();
 	lay->addWidget(m_data->titleBar);
 	lay->addWidget(m_data->topWidget);
 	lay->addWidget(m_data->splitter, 1);
@@ -1130,21 +1139,21 @@ VipDisplayPlayerArea::VipDisplayPlayerArea(QWidget * parent)
 	lay->setContentsMargins(0, 0, 0, 0);
 	setLayout(lay);
 
-	VipDragWidgetHandler * handler = VipDragWidgetHandler::find(dragWidgetArea()->widget());
-	connect(handler, SIGNAL(added(VipMultiDragWidget *)), this, SLOT(added(VipMultiDragWidget *)));
-	connect(handler, SIGNAL(contentChanged(VipMultiDragWidget *)), this, SLOT(contentChanged(VipMultiDragWidget *)));
+	VipDragWidgetHandler* handler = VipDragWidgetHandler::find(dragWidgetArea()->widget());
+	connect(handler, SIGNAL(added(VipMultiDragWidget*)), this, SLOT(added(VipMultiDragWidget*)));
+	connect(handler, SIGNAL(contentChanged(VipMultiDragWidget*)), this, SLOT(contentChanged(VipMultiDragWidget*)));
 
-	//VipDragWidgetHandler * handler = VipDragWidgetHandler::find(dragWidgetArea()->widget());
-	connect(handler, SIGNAL(minimized(VipMultiDragWidget *)), playWidget()->area(), SLOT(defferedUpdateProcessingPool()));
-	connect(handler, SIGNAL(maximized(VipMultiDragWidget *)), playWidget()->area(), SLOT(defferedUpdateProcessingPool()));
-	connect(handler, SIGNAL(restored(VipMultiDragWidget *)), playWidget()->area(), SLOT(defferedUpdateProcessingPool()));
-	connect(handler, SIGNAL(visibilityChanged(VipBaseDragWidget *)), playWidget()->area(), SLOT(defferedUpdateProcessingPool()));
+	// VipDragWidgetHandler * handler = VipDragWidgetHandler::find(dragWidgetArea()->widget());
+	connect(handler, SIGNAL(minimized(VipMultiDragWidget*)), playWidget()->area(), SLOT(defferedUpdateProcessingPool()));
+	connect(handler, SIGNAL(maximized(VipMultiDragWidget*)), playWidget()->area(), SLOT(defferedUpdateProcessingPool()));
+	connect(handler, SIGNAL(restored(VipMultiDragWidget*)), playWidget()->area(), SLOT(defferedUpdateProcessingPool()));
+	connect(handler, SIGNAL(visibilityChanged(VipBaseDragWidget*)), playWidget()->area(), SLOT(defferedUpdateProcessingPool()));
 
-	connect(this, SIGNAL(windowTitleChanged(const QString &)), m_data->titleBar, SLOT(setTitle(const QString &)));
+	connect(this, SIGNAL(windowTitleChanged(const QString&)), m_data->titleBar, SLOT(setTitle(const QString&)));
 
 	connect(qApp, SIGNAL(focusChanged(QWidget*, QWidget*)), this, SLOT(focusChanged(QWidget*, QWidget*)));
 
-	connect(m_data->dragWidgetArea, SIGNAL(textDropped(const QStringList &, const QPoint &)), this, SLOT(textDropped(const QStringList &, const QPoint &)));
+	connect(m_data->dragWidgetArea, SIGNAL(textDropped(const QStringList&, const QPoint&)), this, SLOT(textDropped(const QStringList&, const QPoint&)));
 	connect(m_data->dragWidgetArea, SIGNAL(mouseReleased(int)), this, SLOT(receiveMouseReleased(int)));
 
 	setUseGlobalColorMap(VipGuiDisplayParamaters::instance()->globalColorScale());
@@ -1152,16 +1161,15 @@ VipDisplayPlayerArea::VipDisplayPlayerArea(QWidget * parent)
 
 VipDisplayPlayerArea::~VipDisplayPlayerArea()
 {
-	if (VipDragWidgetHandler * handler = VipDragWidgetHandler::find(dragWidgetArea()->widget()))
-	{
+	if (VipDragWidgetHandler* handler = VipDragWidgetHandler::find(dragWidgetArea()->widget())) {
 		handler->disconnect();
-		//disconnect(handler, SIGNAL(minimized(VipMultiDragWidget *)), playWidget()->area(), SLOT(defferedUpdateProcessingPool()));
-		// disconnect(handler, SIGNAL(maximized(VipMultiDragWidget *)), playWidget()->area(), SLOT(defferedUpdateProcessingPool()));
-		// disconnect(handler, SIGNAL(restored(VipMultiDragWidget *)), playWidget()->area(), SLOT(defferedUpdateProcessingPool()));
-		// disconnect(handler, SIGNAL(visibilityChanged(VipBaseDragWidget *)), playWidget()->area(), SLOT(defferedUpdateProcessingPool()));
-		//disconnect(handler, SIGNAL(focusChanged(VipDragWidget *, VipDragWidget *)), this, SLOT(computeFocusWidget()));
+		// disconnect(handler, SIGNAL(minimized(VipMultiDragWidget *)), playWidget()->area(), SLOT(defferedUpdateProcessingPool()));
+		//  disconnect(handler, SIGNAL(maximized(VipMultiDragWidget *)), playWidget()->area(), SLOT(defferedUpdateProcessingPool()));
+		//  disconnect(handler, SIGNAL(restored(VipMultiDragWidget *)), playWidget()->area(), SLOT(defferedUpdateProcessingPool()));
+		//  disconnect(handler, SIGNAL(visibilityChanged(VipBaseDragWidget *)), playWidget()->area(), SLOT(defferedUpdateProcessingPool()));
+		// disconnect(handler, SIGNAL(focusChanged(VipDragWidget *, VipDragWidget *)), this, SLOT(computeFocusWidget()));
 	}
-	disconnect(this, SIGNAL(windowTitleChanged(const QString &)), m_data->titleBar, SLOT(setTitle(const QString &)));
+	disconnect(this, SIGNAL(windowTitleChanged(const QString&)), m_data->titleBar, SLOT(setTitle(const QString&)));
 	disconnect(qApp, SIGNAL(focusChanged(QWidget*, QWidget*)), this, SLOT(focusChanged(QWidget*, QWidget*)));
 
 	if (m_data->parentArea)
@@ -1171,26 +1179,26 @@ VipDisplayPlayerArea::~VipDisplayPlayerArea()
 
 void VipDisplayPlayerArea::relayoutColorMap()
 {
-	QWidget * w = m_data->splitter->widget(0);
-	QHBoxLayout * hlay = static_cast<QHBoxLayout*>(w->layout());
+	QWidget* w = m_data->splitter->widget(0);
+	QHBoxLayout* hlay = static_cast<QHBoxLayout*>(w->layout());
 	if (hlay->count() == 1) {
 		hlay->addWidget(m_data->colorMapWidget);
 	}
 }
 
-VipScaleWidget * VipDisplayPlayerArea::colorMapScaleWidget() const
+VipScaleWidget* VipDisplayPlayerArea::colorMapScaleWidget() const
 {
 	return m_data->colorMap;
 }
-VipAxisColorMap * VipDisplayPlayerArea::colorMapAxis() const
+VipAxisColorMap* VipDisplayPlayerArea::colorMapAxis() const
 {
 	return m_data->colorMapAxis;
 }
-QWidget * VipDisplayPlayerArea::colorMapWidget() const
+QWidget* VipDisplayPlayerArea::colorMapWidget() const
 {
 	return m_data->colorMapWidget;
 }
-QToolBar * VipDisplayPlayerArea::colorMapToolBar() const
+QToolBar* VipDisplayPlayerArea::colorMapToolBar() const
 {
 	return m_data->colorMapBar;
 }
@@ -1222,7 +1230,7 @@ void VipDisplayPlayerArea::saveImage()
 {
 	VipDisplayPlayerArea* area = this;
 	vipGetMainWindow()->displayArea()->setCurrentDisplayPlayerArea(this);
-	VipMultiDragWidget* mdrag = area->mainDragWidget(QList<QWidget*>(),false);
+	VipMultiDragWidget* mdrag = area->mainDragWidget(QList<QWidget*>(), false);
 	if (!mdrag)
 		return;
 	int supported_formats = VipRenderObject::supportedVectorFormats();
@@ -1273,11 +1281,10 @@ void VipDisplayPlayerArea::saveImage()
 	}
 }
 
-
 void VipDisplayPlayerArea::print()
 {
 	vipGetMainWindow()->displayArea()->setCurrentDisplayPlayerArea(this);
-	VipMultiDragWidget* mdrag = this->mainDragWidget(QList<QWidget*>(),false);
+	VipMultiDragWidget* mdrag = this->mainDragWidget(QList<QWidget*>(), false);
 	if (!mdrag)
 		return;
 
@@ -1302,9 +1309,9 @@ void VipDisplayPlayerArea::print()
 	qreal mm_per_pixel_y = screen_psize.height() / screen_size.height();
 	QSizeF paper_size(bounding.width() * mm_per_pixel_x, bounding.height() * mm_per_pixel_y);
 
-	//printer.setPageSize(QPrinter::Custom);
-	//printer.setPaperSize(paper_size, QPrinter::Millimeter);
-	//printer.setPageMargins(0, 0, 0, 0, QPrinter::Millimeter);
+	// printer.setPageSize(QPrinter::Custom);
+	// printer.setPaperSize(paper_size, QPrinter::Millimeter);
+	// printer.setPageMargins(0, 0, 0, 0, QPrinter::Millimeter);
 	printer.setPageSize(QPageSize(paper_size, QPageSize::Millimeter));
 	printer.setResolution(600);
 
@@ -1336,7 +1343,7 @@ void VipDisplayPlayerArea::copyImage()
 {
 	vipGetMainWindow()->displayArea()->setCurrentDisplayPlayerArea(this);
 	VipDisplayPlayerArea* area = this;
-	VipMultiDragWidget* mdrag = area->mainDragWidget(QList<QWidget*>(),false);
+	VipMultiDragWidget* mdrag = area->mainDragWidget(QList<QWidget*>(), false);
 	if (!mdrag)
 		return;
 
@@ -1397,7 +1404,7 @@ void VipDisplayPlayerArea::copySession()
 void VipDisplayPlayerArea::changeOrientation()
 {
 	vipGetMainWindow()->displayArea()->setCurrentDisplayPlayerArea(this);
-	VipMultiDragWidget* mdrag = this->mainDragWidget(QWidgetList(),false);
+	VipMultiDragWidget* mdrag = this->mainDragWidget(QWidgetList(), false);
 	if (!mdrag)
 		return;
 
@@ -1455,7 +1462,7 @@ void VipDisplayPlayerArea::internalLayoutColorMap()
 {
 	layoutColorMap();
 }
-void VipDisplayPlayerArea::layoutColorMap(const QList<VipVideoPlayer*> & pls)
+void VipDisplayPlayerArea::layoutColorMap(const QList<VipVideoPlayer*>& pls)
 {
 	m_data->dirtyColorMap = false;
 	if (m_data->useGlobalColorMap) {
@@ -1463,7 +1470,7 @@ void VipDisplayPlayerArea::layoutColorMap(const QList<VipVideoPlayer*> & pls)
 		if (players.isEmpty())
 			players = m_data->dragWidgetArea->findChildren<VipVideoPlayer*>();
 
-		//set title
+		// set title
 		QStringList lst;
 		for (int i = 0; i < players.size(); ++i)
 			lst.append(players[i]->viewer()->area()->colorMapAxis()->title().text());
@@ -1479,32 +1486,33 @@ void VipDisplayPlayerArea::layoutColorMap(const QList<VipVideoPlayer*> & pls)
 
 		QMetaObject::invokeMethod(m_data->colorMapAxis->grip1(), "updatePosition", Qt::QueuedConnection);
 		QMetaObject::invokeMethod(m_data->colorMapAxis->grip2(), "updatePosition", Qt::QueuedConnection);
-
 	}
 }
 
 void VipDisplayPlayerArea::setColorMapToPlayer(VipVideoPlayer* pl, bool enable)
 {
-	//check nothing to do
+	// check nothing to do
 	bool enable_on_player = pl->spectrogram()->colorMap() != pl->viewer()->area()->colorMapAxis();
 	if (enable_on_player && pl->spectrogram()->colorMap() != m_data->colorMapAxis)
 		enable_on_player = !enable;
 	if (enable == enable_on_player)
 		return;
 
-	//disconnect signal
+	// disconnect signal
 	disconnect(pl->viewer()->area()->colorMapAxis(), SIGNAL(titleChanged(VipText)), 0, 0);
 
 	if (enable) {
 		pl->spectrogram()->setColorMap(m_data->colorMapAxis);
-		//reconnect signal
+		// reconnect signal
 		connect(pl->viewer()->area()->colorMapAxis(), SIGNAL(titleChanged(VipText)), this, SLOT(internalLayoutColorMapDelay()));
 	}
 	else
 		pl->spectrogram()->setColorMap(pl->viewer()->area()->colorMapAxis());
 
-	if (enable) pl->setColorScaleVisible(false);
-	else pl->setColorScaleVisible(!pl->isColorImage());
+	if (enable)
+		pl->setColorScaleVisible(false);
+	else
+		pl->setColorScaleVisible(!pl->isColorImage());
 	pl->setColorMapOptionsVisible(!enable);
 	internalLayoutColorMapDelay();
 }
@@ -1603,7 +1611,7 @@ void ManageMainWidget::maximizeWorkspace()
 	}
 }*/
 
-VipMultiDragWidget* VipDisplayPlayerArea::mainDragWidget(const QWidgetList& widgets, bool create_if_null )
+VipMultiDragWidget* VipDisplayPlayerArea::mainDragWidget(const QWidgetList& widgets, bool create_if_null)
 {
 	// get the main MultiDragWidget for this area
 	VipMultiDragWidget* main = m_data->mainDragWidget; // this->property("_vip_main_multi_drag").value<MultiDragWidget>();
@@ -1624,7 +1632,7 @@ VipMultiDragWidget* VipDisplayPlayerArea::mainDragWidget(const QWidgetList& widg
 		if (!main)
 			main = new VipMultiDragWidget();
 
-		//if (!main->findChild<ManageMainWidget*>())
+		// if (!main->findChild<ManageMainWidget*>())
 		//	new ManageMainWidget(main);
 
 		// area->addWidget(main);
@@ -1638,7 +1646,7 @@ VipMultiDragWidget* VipDisplayPlayerArea::mainDragWidget(const QWidgetList& widg
 		main->setSupportedOperation(VipDragWidget::Maximize, true);
 		main->showMaximized();
 
-		//area->setProperty("_vip_main_multi_drag", QVariant::fromValue(main));
+		// area->setProperty("_vip_main_multi_drag", QVariant::fromValue(main));
 		m_data->mainDragWidget = main;
 
 		// set the global color map, and make sure to remove it on delete
@@ -1668,8 +1676,7 @@ bool VipDisplayPlayerArea::testSupportedOperation(Operation attribute) const
 
 void VipDisplayPlayerArea::setSupportedOperations(Operations attributes)
 {
-	if (m_data->operations != attributes)
-	{
+	if (m_data->operations != attributes) {
 		m_data->operations = attributes;
 		setInternalOperations();
 	}
@@ -1682,10 +1689,10 @@ VipDisplayPlayerArea::Operations VipDisplayPlayerArea::supportedOperations() con
 
 void VipDisplayPlayerArea::setInternalOperations()
 {
-	QToolBar * b = rightTabWidget();
+	QToolBar* b = rightTabWidget();
 	if (!b)
 		setRightTabWidget(b = new QToolBar());
-	if(QToolButton * _close = b->findChild<QToolButton*>("close_workspace"))
+	if (QToolButton* _close = b->findChild<QToolButton*>("close_workspace"))
 		_close->property("action").value<QAction*>()->setVisible(testSupportedOperation(Closable));
 	if (QToolButton* _float = b->findChild<QToolButton*>("float_workspace"))
 		_float->property("action").value<QAction*>()->setVisible(testSupportedOperation(Floatable));
@@ -1696,55 +1703,55 @@ void VipDisplayPlayerArea::setInternalOperations()
 	titleBar()->floatAction()->setVisible(testSupportedOperation(Floatable));
 }
 
-VipPlayerAreaTitleBar * VipDisplayPlayerArea::titleBar() const
+VipPlayerAreaTitleBar* VipDisplayPlayerArea::titleBar() const
 {
 	return m_data->titleBar;
 }
 
-VipDisplayTabWidget * VipDisplayPlayerArea::parentTabWidget() const
+VipDisplayTabWidget* VipDisplayPlayerArea::parentTabWidget() const
 {
-	QWidget * p = parentWidget();
+	QWidget* p = parentWidget();
 	while (p) {
-		if (VipDisplayTabWidget * t = qobject_cast<VipDisplayTabWidget*>(p))
+		if (VipDisplayTabWidget* t = qobject_cast<VipDisplayTabWidget*>(p))
 			return t;
 		p = p->parentWidget();
 	}
 	return nullptr;
 }
 
-QWidget * VipDisplayPlayerArea::topWidget() const
+QWidget* VipDisplayPlayerArea::topWidget() const
 {
 	return m_data->topWidget;
 }
 
-VipDragWidgetArea * VipDisplayPlayerArea::dragWidgetArea() const
+VipDragWidgetArea* VipDisplayPlayerArea::dragWidgetArea() const
 {
 	return const_cast<VipDragWidgetArea*>(m_data->dragWidgetArea);
 }
 
-VipDragWidgetHandler * VipDisplayPlayerArea::dragWidgetHandler() const
+VipDragWidgetHandler* VipDisplayPlayerArea::dragWidgetHandler() const
 {
 	return VipDragWidgetHandler::find(m_data->dragWidgetArea->widget());
 }
 
-QToolBar * VipDisplayPlayerArea::leftTabWidget() const
+QToolBar* VipDisplayPlayerArea::leftTabWidget() const
 {
 	return m_data->leftTabWidget;
 }
-QToolBar * VipDisplayPlayerArea::takeLeftTabWidget()
+QToolBar* VipDisplayPlayerArea::takeLeftTabWidget()
 {
 	m_data->leftTabWidget->hide();
 	m_data->leftTabWidget->setParent(nullptr);
 	return m_data->leftTabWidget;
 }
-void VipDisplayPlayerArea::setLeftTabWidget(QToolBar * w)
+void VipDisplayPlayerArea::setLeftTabWidget(QToolBar* w)
 {
 	if (w != m_data->leftTabWidget)
-		if(m_data->leftTabWidget)
+		if (m_data->leftTabWidget)
 			delete m_data->leftTabWidget;
 	m_data->leftTabWidget = w;
 	if (w) {
-		if (VipDisplayTabWidget * d = this->parentTabWidget()) {
+		if (VipDisplayTabWidget* d = this->parentTabWidget()) {
 			int index = d->indexOf(this);
 			if (index >= 0) {
 				w->setParent(d->tabBar());
@@ -1753,32 +1760,34 @@ void VipDisplayPlayerArea::setLeftTabWidget(QToolBar * w)
 				w->show();
 			}
 		}
-		else if(isFloating()) {
+		else if (isFloating()) {
 			QList<QWidget*> adds;
-			if (m_data->leftTabWidget) adds << m_data->leftTabWidget;
-			if (m_data->rightTabWidget) adds << m_data->rightTabWidget;
+			if (m_data->leftTabWidget)
+				adds << m_data->leftTabWidget;
+			if (m_data->rightTabWidget)
+				adds << m_data->rightTabWidget;
 			m_data->titleBar->setAdditionalWidget(adds);
 		}
 	}
 }
-QToolBar * VipDisplayPlayerArea::rightTabWidget() const
+QToolBar* VipDisplayPlayerArea::rightTabWidget() const
 {
 	return m_data->rightTabWidget;
 }
-QToolBar * VipDisplayPlayerArea::takeRightTabWidget()
+QToolBar* VipDisplayPlayerArea::takeRightTabWidget()
 {
 	m_data->rightTabWidget->hide();
 	m_data->rightTabWidget->setParent(nullptr);
 	return m_data->rightTabWidget;
 }
-void VipDisplayPlayerArea::setRightTabWidget(QToolBar * w)
+void VipDisplayPlayerArea::setRightTabWidget(QToolBar* w)
 {
 	if (w != m_data->rightTabWidget)
-		if(m_data->rightTabWidget)
+		if (m_data->rightTabWidget)
 			delete m_data->rightTabWidget;
 	m_data->rightTabWidget = w;
 	if (w) {
-		if (VipDisplayTabWidget * d = this->parentTabWidget()) {
+		if (VipDisplayTabWidget* d = this->parentTabWidget()) {
 			int index = d->indexOf(this);
 			if (index >= 0) {
 				w->setParent(d->tabBar());
@@ -1789,14 +1798,16 @@ void VipDisplayPlayerArea::setRightTabWidget(QToolBar * w)
 		}
 		else if (isFloating()) {
 			QList<QWidget*> adds;
-			if (m_data->leftTabWidget) adds << m_data->leftTabWidget;
-			if (m_data->rightTabWidget) adds << m_data->rightTabWidget;
+			if (m_data->leftTabWidget)
+				adds << m_data->leftTabWidget;
+			if (m_data->rightTabWidget)
+				adds << m_data->rightTabWidget;
 			m_data->titleBar->setAdditionalWidget(adds);
 		}
 	}
 }
 
-VipPlayWidget * VipDisplayPlayerArea::playWidget() const
+VipPlayWidget* VipDisplayPlayerArea::playWidget() const
 {
 	return const_cast<VipPlayWidget*>(m_data->playWidget);
 }
@@ -1807,23 +1818,20 @@ void VipDisplayPlayerArea::reloadPool()
 		m_data->pool->reload();
 }
 
-void VipDisplayPlayerArea::closeEvent(QCloseEvent *)
+void VipDisplayPlayerArea::closeEvent(QCloseEvent*)
 {
 	if (m_data->parentArea)
 		m_data->parentArea->removeWidget(this);
 }
 
-void VipDisplayPlayerArea::changeEvent(QEvent *)
+void VipDisplayPlayerArea::changeEvent(QEvent*)
 {
-	if (isFloating())
-	{
-		//when minimizing a floating player area, reset the standard title bar
-		if (isMinimized())
-		{
+	if (isFloating()) {
+		// when minimizing a floating player area, reset the standard title bar
+		if (isMinimized()) {
 			this->setWindowFlags(m_data->standardFlags | Qt::Window);
 		}
-		else
-		{
+		else {
 			this->setWindowFlags(Qt::CustomizeWindowHint | Qt::Window);
 			this->show();
 		}
@@ -1847,17 +1855,13 @@ void VipDisplayPlayerArea::setFocus(bool f)
 	if (f)
 		m_data->parentArea->setCurrentDisplayPlayerArea(this);
 
-	if (m_data->parentArea && f != hasFocus())
-	{
-		if (!f)
-		{
-			//set the focus to another player area if not already the case
-			if (m_data->parentArea->currentDisplayPlayerArea() == this)
-			{
+	if (m_data->parentArea && f != hasFocus()) {
+		if (!f) {
+			// set the focus to another player area if not already the case
+			if (m_data->parentArea->currentDisplayPlayerArea() == this) {
 				int count = m_data->parentArea->count();
 				for (int i = 0; i < count; ++i)
-					if (m_data->parentArea->widget(i) != this)
-					{
+					if (m_data->parentArea->widget(i) != this) {
 						m_data->parentArea->setCurrentDisplayPlayerArea(m_data->parentArea->widget(i));
 						break;
 					}
@@ -1865,7 +1869,7 @@ void VipDisplayPlayerArea::setFocus(bool f)
 		}
 	}
 
-	//repolish the title bar
+	// repolish the title bar
 	m_data->titleBar->setFocus(f);
 	this->style()->unpolish(this);
 	this->style()->polish(this);
@@ -1873,29 +1877,27 @@ void VipDisplayPlayerArea::setFocus(bool f)
 
 #include <qwidgetaction.h>
 
-static QAction * actionForWidget(QToolBar * bar, QWidget * w)
+static QAction* actionForWidget(QToolBar* bar, QWidget* w)
 {
 	const QList<QAction*> acts = bar->actions();
 	for (int i = 0; i < acts.size(); ++i)
-		//if (acts[i]->isWidgetType())
-			if(QWidgetAction * a = qobject_cast<QWidgetAction*>(acts[i]))
-				if(a->defaultWidget() == w)
-					return acts[i];
+		// if (acts[i]->isWidgetType())
+		if (QWidgetAction* a = qobject_cast<QWidgetAction*>(acts[i]))
+			if (a->defaultWidget() == w)
+				return acts[i];
 	return nullptr;
 }
 
 void VipDisplayPlayerArea::setFloating(bool pin)
 {
-	if (pin != m_data->floating)
-	{
+	if (pin != m_data->floating) {
 		m_data->floating = pin;
 		m_data->titleBar->setFloating(pin);
 		m_data->titleBar->setVisible(pin);
 
-		if (pin)
-		{
-			//add the tab buttons to the title bar
-			if (VipDisplayTabWidget * p = this->parentTabWidget()) {
+		if (pin) {
+			// add the tab buttons to the title bar
+			if (VipDisplayTabWidget* p = this->parentTabWidget()) {
 				int index = p->indexOf(this);
 				if (index >= 0) {
 					QList<QWidget*> ws;
@@ -1913,44 +1915,41 @@ void VipDisplayPlayerArea::setFloating(bool pin)
 						rightTabWidget()->setParent(nullptr);
 						rightTabWidget()->show();
 
-						//hide float and close buttons
+						// hide float and close buttons
 						actionForWidget(rightTabWidget(), rightTabWidget()->findChild<QToolButton*>("float_workspace"))->setVisible(false);
 						actionForWidget(rightTabWidget(), rightTabWidget()->findChild<QToolButton*>("close_workspace"))->setVisible(false);
 						rightTabWidget()->setMinimumSize(rightTabWidget()->sizeHint());
 					}
 
 					m_data->titleBar->setAdditionalWidget(ws);
-
 				}
 			}
 
 			vipProcessEvents(nullptr);
 
 			this->setParent(vipGetMainWindow());
-			//this->setParent(nullptr);
+			// this->setParent(nullptr);
 			this->setWindowFlags(Qt::CustomizeWindowHint | Qt::Window);
 
 			vipProcessEvents(nullptr);
 
 			show();
-			//change the current tab widget
+			// change the current tab widget
 			if (m_data->parentArea && m_data->parentArea->displayTabWidget()->count() > 1)
 				m_data->parentArea->displayTabWidget()->setCurrentIndex(m_data->parentArea->displayTabWidget()->count() - 2);
-
 		}
-		else if (m_data->parentArea)
-		{
+		else if (m_data->parentArea) {
 			this->setWindowFlags(m_data->standardFlags);
 			m_data->parentArea->addWidget(this);
 
 			vipProcessEvents(nullptr);
 
-			//add back the tab buttons and remove them from the title bar
-			if (VipDisplayTabWidget * p = this->parentTabWidget()) {
+			// add back the tab buttons and remove them from the title bar
+			if (VipDisplayTabWidget* p = this->parentTabWidget()) {
 				int index = p->indexOf(this);
 				if (index >= 0) {
 
-					//show again float and close buttons
+					// show again float and close buttons
 					actionForWidget(rightTabWidget(), rightTabWidget()->findChild<QToolButton*>("float_workspace"))->setVisible(true);
 					actionForWidget(rightTabWidget(), rightTabWidget()->findChild<QToolButton*>("close_workspace"))->setVisible(true);
 
@@ -1959,7 +1958,7 @@ void VipDisplayPlayerArea::setFloating(bool pin)
 				}
 			}
 
-			//change the current tab widget
+			// change the current tab widget
 			if (m_data->parentArea)
 				m_data->parentArea->displayTabWidget()->setCurrentIndex(m_data->parentArea->displayTabWidget()->indexOf(this));
 		}
@@ -1977,26 +1976,23 @@ int VipDisplayPlayerArea::id() const
 	return m_data->id;
 }
 
-void VipDisplayPlayerArea::setProcessingPool(VipProcessingPool *pool)
+void VipDisplayPlayerArea::setProcessingPool(VipProcessingPool* pool)
 {
 	if (pool == m_data->pool)
 		return;
 
-	if (m_data->pool && this->parentTabWidget())
-	{
+	if (m_data->pool && this->parentTabWidget()) {
 		disconnect(processingPool(), SIGNAL(objectRemoved(QObject*)), this, SLOT(updateStreamingButton()));
 		disconnect(processingPool(), SIGNAL(streamingChanged(bool)), this, SLOT(updateStreamingButton()));
 	}
 
-	if (m_data->pool)
-	{
+	if (m_data->pool) {
 		m_data->playWidget->setProcessingPool(nullptr);
 		delete m_data->pool;
 		m_data->pool = nullptr;
 	}
 
-	if (pool)
-	{
+	if (pool) {
 		m_data->pool = pool;
 		m_data->playWidget->setProcessingPool(pool);
 		setPoolToPlayers();
@@ -2015,14 +2011,13 @@ void VipDisplayPlayerArea::setProcessingPool(VipProcessingPool *pool)
 void VipDisplayPlayerArea::updateStreamingButton()
 {
 	vipGetMainWindow()->displayArea()->displayTabWidget()->displayTabBar()->updateStreamingButton();
-	//if (this->parentTabWidget())
+	// if (this->parentTabWidget())
 	//	this->parentTabWidget()->displayTabBar()->updateStreamingButton();
 }
 
 void VipDisplayPlayerArea::receiveMouseReleased(int button)
 {
-	if (button == VipPlotItem::RightButton)
-	{
+	if (button == VipPlotItem::RightButton) {
 		QMenu menu;
 		connect(menu.addAction(vipIcon("open_file.png"), "Open any files..."), SIGNAL(triggered(bool)), vipGetMainWindow(), SLOT(openFiles()));
 		connect(menu.addAction(vipIcon("open_dir.png"), "Open a directory..."), SIGNAL(triggered(bool)), vipGetMainWindow(), SLOT(openDir()));
@@ -2032,7 +2027,6 @@ void VipDisplayPlayerArea::receiveMouseReleased(int button)
 		}
 		menu.exec(QCursor::pos());
 	}
-
 }
 
 void VipDisplayPlayerArea::pasteItems()
@@ -2040,23 +2034,20 @@ void VipDisplayPlayerArea::pasteItems()
 	m_data->dragWidgetArea->dropMimeData(VipPlotItemClipboard::mimeData(), m_data->dragWidgetArea->mapFromGlobal(QCursor::pos()));
 }
 
-VipProcessingPool * VipDisplayPlayerArea::processingPool() const
+VipProcessingPool* VipDisplayPlayerArea::processingPool() const
 {
 	return const_cast<VipProcessingPool*>(m_data->pool);
 }
 
-VipDisplayPlayerArea * VipDisplayPlayerArea::fromChildWidget(QWidget * child)
+VipDisplayPlayerArea* VipDisplayPlayerArea::fromChildWidget(QWidget* child)
 {
-	QWidget * tmp = child;
+	QWidget* tmp = child;
 
 	while (tmp && !qobject_cast<VipDisplayPlayerArea*>(tmp))
 		tmp = tmp->parentWidget();
 
 	return qobject_cast<VipDisplayPlayerArea*>(tmp);
 }
-
-
-
 
 static void restore_widget(VipBaseDragWidget* main)
 {
@@ -2073,7 +2064,7 @@ static void restore_widget(VipBaseDragWidget* main)
 	}
 }
 
-void VipDisplayPlayerArea::addWidget(VipBaseDragWidget * widget)
+void VipDisplayPlayerArea::addWidget(VipBaseDragWidget* widget)
 {
 	VipMultiDragWidget* main = this->mainDragWidget(QList<QWidget*>() << widget);
 
@@ -2125,16 +2116,15 @@ void VipDisplayPlayerArea::addWidget(VipBaseDragWidget * widget)
 	}
 }
 
-
 void VipDisplayPlayerArea::added(VipMultiDragWidget*)
 {
 	setPoolToPlayers();
 
-	//update the play widget
+	// update the play widget
 	m_data->playWidget->updatePlayer();
 
 	vipGetMainWindow()->displayArea()->displayTabWidget()->displayTabBar()->updateStreamingButton();
-	//if (VipDisplayTabWidget * t = parentTabWidget())
+	// if (VipDisplayTabWidget * t = parentTabWidget())
 	//	t->displayTabBar()->updateStreamingButton();
 }
 
@@ -2143,21 +2133,18 @@ void VipDisplayPlayerArea::contentChanged(VipMultiDragWidget*)
 	setPoolToPlayers();
 }
 
-
 void VipDisplayPlayerArea::setPoolToPlayers()
 {
-	//set the processing pool to all players.
-	//also make sur that all VipIODevice have the processing pool as parent
+	// set the processing pool to all players.
+	// also make sur that all VipIODevice have the processing pool as parent
 
 	QList<VipAbstractPlayer*> players = findChildren<VipAbstractPlayer*>();
 	QSet<VipIODevice*> devices;
 
-	for (int i = 0; i < players.size(); ++i)
-	{
+	for (int i = 0; i < players.size(); ++i) {
 		players[i]->setProcessingPool(processingPool());
 		QList<VipDisplayObject*> displays = players[i]->displayObjects();
-		for (int j = 0; j < displays.size(); ++j)
-		{
+		for (int j = 0; j < displays.size(); ++j) {
 			// ALWAYS check for parent first, as setting the parent event to the same value can trigger weird bugs.
 			// Last bug:
 			// This function is called when a player is destroyed. This will reset the parent to all remaining players and display objects,
@@ -2174,8 +2161,7 @@ void VipDisplayPlayerArea::setPoolToPlayers()
 			(*it)->setParent(this->processingPool());
 }
 
-
-void VipDisplayPlayerArea::textDropped(const QStringList & lst, const QPoint &)
+void VipDisplayPlayerArea::textDropped(const QStringList& lst, const QPoint&)
 {
 	VipPathList paths;
 	for (int i = 0; i < lst.size(); ++i)
@@ -2187,43 +2173,38 @@ void VipDisplayPlayerArea::focusChanged(QWidget* old_w, QWidget* new_w)
 {
 	Q_UNUSED(old_w)
 
-	//raise the right VipMultiDragWidget
-	if (this->isAncestorOf(new_w))
-	{
-		//We set the focus if:
-		// -the mouse is inside the player area or the player area is floating
-		// -there are no modal widget (like a dialog box)
+	// raise the right VipMultiDragWidget
+	if (this->isAncestorOf(new_w)) {
+		// We set the focus if:
+		//  -the mouse is inside the player area or the player area is floating
+		//  -there are no modal widget (like a dialog box)
 		QPoint pos = QCursor::pos();
 		pos = this->mapFromGlobal(pos);
-		if (this->isFloating() || QRect(0, 0, width(), height()).contains(pos))
-		{
+		if (this->isFloating() || QRect(0, 0, width(), height()).contains(pos)) {
 			if (!QApplication::activeModalWidget())
 				setFocus(true);
 		}
 	}
 }
 
-void VipDisplayPlayerArea::showEvent(QShowEvent* //evt
+void VipDisplayPlayerArea::showEvent(QShowEvent* // evt
 )
 {
-	//just make sure that the play widget is updated once after the plugins are loaded
+	// just make sure that the play widget is updated once after the plugins are loaded
 	playWidget()->updatePlayer();
 
-	//if (VipDisplayTabWidget * t = parentTabWidget())
+	// if (VipDisplayTabWidget * t = parentTabWidget())
 	//	t->displayTabBar()->updateStreamingButton();
 	vipGetMainWindow()->displayArea()->displayTabWidget()->displayTabBar()->updateStreamingButtonDelayed();
 }
 
-
 static std::function<QVariantMap(const QString&)> _wks_generate_editable_symbol;
-void VipDisplayPlayerArea::setWorkspaceTitleEditable(const std::function<QVariantMap(const QString&)> & generate_editable_symbol)
+void VipDisplayPlayerArea::setWorkspaceTitleEditable(const std::function<QVariantMap(const QString&)>& generate_editable_symbol)
 {
 	_wks_generate_editable_symbol = generate_editable_symbol;
 }
 
-
-
-VipArchive & operator<<(VipArchive & ar, const VipDisplayPlayerArea * area)
+VipArchive& operator<<(VipArchive& ar, const VipDisplayPlayerArea* area)
 {
 	if (_wks_generate_editable_symbol) {
 		QVariantMap map = _wks_generate_editable_symbol(area->windowTitle());
@@ -2236,27 +2217,27 @@ VipArchive & operator<<(VipArchive & ar, const VipDisplayPlayerArea * area)
 	else
 		ar.content("WorkspaceTitle", area->windowTitle());
 
-	//ar.content("WorkspaceTitle", area->windowTitle());
+	// ar.content("WorkspaceTitle", area->windowTitle());
 	ar.content("floating", area->isFloating());
 	ar.content("geometry", area->geometry());
 
-	//since 2.2.18
+	// since 2.2.18
 	ar.content("useGlobalColorMap", area->useGlobalColorMap());
 	ar.start("colorMap");
 	ar.content(area->colorMapAxis());
 	ar.end();
 
 	ar.start("players");
-	//save the players
+	// save the players
 	QList<VipMultiDragWidget*> widgets = area->dragWidgetHandler()->topLevelMultiDragWidgets();
 	for (int i = 0; i < widgets.size(); ++i)
 		ar.content(widgets[i]);
 	ar.end();
 
-	//save the processing pool
+	// save the processing pool
 	ar.content(area->processingPool());
 
-	//save the play widget
+	// save the play widget
 	ar.content(area->playWidget());
 
 	vipSaveCustomProperties(ar, area);
@@ -2264,7 +2245,7 @@ VipArchive & operator<<(VipArchive & ar, const VipDisplayPlayerArea * area)
 	return ar;
 }
 
-VipArchive & operator>>(VipArchive & ar, VipDisplayPlayerArea * area)
+VipArchive& operator>>(VipArchive& ar, VipDisplayPlayerArea* area)
 {
 	ar.save();
 	QString title = ar.read("WorkspaceTitle").toString();
@@ -2278,7 +2259,7 @@ VipArchive & operator>>(VipArchive & ar, VipDisplayPlayerArea * area)
 	area->setFloating(ar.read("floating").toBool());
 	area->setGeometry(ar.read("geometry").toRect());
 
-	//since 2.2.18
+	// since 2.2.18
 	bool useGlobalColorMap = false;
 	bool hasUseGlobalColorMap = false;
 	ar.save();
@@ -2292,15 +2273,13 @@ VipArchive & operator>>(VipArchive & ar, VipDisplayPlayerArea * area)
 		ar.restore();
 
 	ar.start("players");
-	//load the players
+	// load the players
 	int count = 0;
-	while (true)
-	{
-		VipMultiDragWidget * widget = ar.read().value<VipMultiDragWidget*>();
-		if (widget)
-		{
+	while (true) {
+		VipMultiDragWidget* widget = ar.read().value<VipMultiDragWidget*>();
+		if (widget) {
 			QRect geometry = widget->geometry();
-			//widget->setParent(area->dragWidgetArea()->widget());
+			// widget->setParent(area->dragWidgetArea()->widget());
 			area->addWidget(widget);
 			widget->setGeometry(geometry);
 			++count;
@@ -2311,69 +2290,64 @@ VipArchive & operator>>(VipArchive & ar, VipDisplayPlayerArea * area)
 	ar.resetError();
 	ar.end();
 
-
-	//load the processing pool
+	// load the processing pool
 	ar.content(area->processingPool());
 
-	//load the play widget
+	// load the play widget
 	ar.content(area->playWidget());
 
 	vipLoadCustomProperties(ar, area);
 
-	//Now, we need to call again the playerCreated() function for all players to trigger again the vipFDPlayerCreated() dispatcher.
-	//Indeed, when loading a session, the dispatcher is first called on a non connected player which might be an issue for some plugins.
+	// Now, we need to call again the playerCreated() function for all players to trigger again the vipFDPlayerCreated() dispatcher.
+	// Indeed, when loading a session, the dispatcher is first called on a non connected player which might be an issue for some plugins.
 	QList<VipPlayer2D*> players = area->dragWidgetArea()->findChildren<VipPlayer2D*>();
 	for (int i = 0; i < players.size(); ++i)
 		QMetaObject::invokeMethod(players[i], "playerCreated", Qt::QueuedConnection);
 
-
-	//global color scale
+	// global color scale
 	if (hasUseGlobalColorMap)
 		area->setUseGlobalColorMap(useGlobalColorMap);
 
-	//reset processing pool
-	VipProcessingPool * pool = area->processingPool();
+	// reset processing pool
+	VipProcessingPool* pool = area->processingPool();
 	qint64 time = pool->time();
 
 	QMetaObject::invokeMethod(area->playWidget()->area(), "updateProcessingPool", Qt::QueuedConnection);
 	QMetaObject::invokeMethod(area->playWidget()->area(), "setTime", Qt::QueuedConnection, Q_ARG(double, (double)time));
-	//we still need to reload the processing pool to update Resource devices
+	// we still need to reload the processing pool to update Resource devices
 	QMetaObject::invokeMethod(pool, "reload", Qt::QueuedConnection);
 
 	return ar;
 }
 
-
-
-
-
-
-
-
 class VipDisplayArea::PrivateData
 {
 public:
-	PrivateData() : tabWidget(nullptr), focus(nullptr) {}
-	VipDisplayTabWidget * tabWidget;
-	VipDragWidget * focus;
+	PrivateData()
+	  : tabWidget(nullptr)
+	  , focus(nullptr)
+	{
+	}
+	VipDisplayTabWidget* tabWidget;
+	VipDragWidget* focus;
 	QPointer<VipDisplayPlayerArea> current;
 	QList<VipDisplayPlayerArea*> workspaces;
 };
 
-VipDisplayArea::VipDisplayArea(QWidget * parent)
-	:QWidget(parent)
+VipDisplayArea::VipDisplayArea(QWidget* parent)
+  : QWidget(parent)
 {
 	m_data = new PrivateData();
 	m_data->tabWidget = new VipDisplayTabWidget();
 
-	QVBoxLayout * lay = new QVBoxLayout();
+	QVBoxLayout* lay = new QVBoxLayout();
 	lay->addWidget(m_data->tabWidget);
 	lay->setContentsMargins(0, 0, 0, 0);
 	setLayout(lay);
 
 	addWidget(new VipDisplayPlayerArea());
 
-	//connect(m_data->tabWidget,SIGNAL(currentChanged(int)),this,SLOT(computeFocusWidget()));
+	// connect(m_data->tabWidget,SIGNAL(currentChanged(int)),this,SLOT(computeFocusWidget()));
 	connect(m_data->tabWidget, SIGNAL(tabCloseRequested(int)), this, SLOT(computeFocusWidget()));
 	connect(this, SIGNAL(currentDisplayPlayerAreaChanged(VipDisplayPlayerArea*)), this, SLOT(computeFocusWidget()));
 	connect(m_data->tabWidget->tabBar(), SIGNAL(tabMoved(int, int)), this, SLOT(tabMoved(int, int)));
@@ -2383,49 +2357,43 @@ VipDisplayArea::VipDisplayArea(QWidget * parent)
 VipDisplayArea::~VipDisplayArea()
 {
 	for (int i = 0; i < count(); ++i)
-		if (VipDisplayPlayerArea * area = displayPlayerArea(i))
-		{
+		if (VipDisplayPlayerArea* area = displayPlayerArea(i)) {
 			area->m_data->parentArea = nullptr;
 			area->disconnect();
-			if (VipDragWidgetHandler * handler = area->dragWidgetHandler())
-				disconnect(handler, SIGNAL(focusChanged(VipDragWidget *, VipDragWidget *)), this, SLOT(computeFocusWidget()));
+			if (VipDragWidgetHandler* handler = area->dragWidgetHandler())
+				disconnect(handler, SIGNAL(focusChanged(VipDragWidget*, VipDragWidget*)), this, SLOT(computeFocusWidget()));
 		}
 	delete m_data;
 }
 
 void VipDisplayArea::computeFocusWidget()
 {
-	//make sure all VipDragWidgetHandler are connected
-	for (int i = 0; i < count(); ++i)
-	{
-		if (VipDisplayPlayerArea * area = displayPlayerArea(i))
-		{
-			VipDragWidgetHandler * handler = area->dragWidgetHandler();
-			disconnect(handler, SIGNAL(focusChanged(VipDragWidget *, VipDragWidget *)), this, SLOT(computeFocusWidget()));
-			connect(handler, SIGNAL(focusChanged(VipDragWidget *, VipDragWidget *)), this, SLOT(computeFocusWidget()));
+	// make sure all VipDragWidgetHandler are connected
+	for (int i = 0; i < count(); ++i) {
+		if (VipDisplayPlayerArea* area = displayPlayerArea(i)) {
+			VipDragWidgetHandler* handler = area->dragWidgetHandler();
+			disconnect(handler, SIGNAL(focusChanged(VipDragWidget*, VipDragWidget*)), this, SLOT(computeFocusWidget()));
+			connect(handler, SIGNAL(focusChanged(VipDragWidget*, VipDragWidget*)), this, SLOT(computeFocusWidget()));
 		}
 	}
 
-	//retrieve the focus widget
-	//VipDisplayPlayerArea * area = currentDisplayPlayerArea();//qobject_cast<VipDisplayPlayerArea*>()//m_data->tabWidget->widget(m_data->tabWidget->currentIndex()));
-	if (VipDisplayPlayerArea * area = currentDisplayPlayerArea())
-	{
-		VipDragWidget * focus = area->dragWidgetHandler()->focusWidget();
-		if (focus != m_data->focus)
-		{
+	// retrieve the focus widget
+	// VipDisplayPlayerArea * area = currentDisplayPlayerArea();//qobject_cast<VipDisplayPlayerArea*>()//m_data->tabWidget->widget(m_data->tabWidget->currentIndex()));
+	if (VipDisplayPlayerArea* area = currentDisplayPlayerArea()) {
+		VipDragWidget* focus = area->dragWidgetHandler()->focusWidget();
+		if (focus != m_data->focus) {
 			m_data->focus = focus;
 			Q_EMIT focusWidgetChanged(focus);
 		}
 	}
-
 }
 
-void VipDisplayArea::widgetClosed(VipMultiDragWidget * w)
+void VipDisplayArea::widgetClosed(VipMultiDragWidget* w)
 {
 	if (w && w->isTopLevel()) {
-		//find parent VipDisplayPlayerArea
-		VipDisplayPlayerArea * p = nullptr;
-		QWidget * widget = w->parentWidget();
+		// find parent VipDisplayPlayerArea
+		VipDisplayPlayerArea* p = nullptr;
+		QWidget* widget = w->parentWidget();
 		while (widget) {
 			if ((p = qobject_cast<VipDisplayPlayerArea*>(widget)))
 				break;
@@ -2434,21 +2402,20 @@ void VipDisplayArea::widgetClosed(VipMultiDragWidget * w)
 		Q_EMIT topLevelWidgetClosed(p, w);
 		QMetaObject::invokeMethod(this, "computeFocusWidget", Qt::QueuedConnection);
 	}
-
 }
 
 void VipDisplayArea::tabMoved(int from, int to)
 {
 	(void)from;
 	(void)to;
-	//recompute workspaces indexes
+	// recompute workspaces indexes
 	QList<VipDisplayPlayerArea*> areas;
 	for (int i = 0; i < displayTabWidget()->count(); ++i) {
 		if (VipDisplayPlayerArea* a = qobject_cast<VipDisplayPlayerArea*>(displayTabWidget()->widget(i)))
 			areas.append(a);
 	}
 
-	QList< VipDisplayPlayerArea*> floating;
+	QList<VipDisplayPlayerArea*> floating;
 	for (int i = 0; i < m_data->workspaces.size(); ++i) {
 		if (areas.indexOf(m_data->workspaces[i]) < 0)
 			floating.append(m_data->workspaces[i]);
@@ -2457,7 +2424,7 @@ void VipDisplayArea::tabMoved(int from, int to)
 	m_data->workspaces = areas + floating;
 }
 
-VipDisplayTabWidget * VipDisplayArea::displayTabWidget() const
+VipDisplayTabWidget* VipDisplayArea::displayTabWidget() const
 {
 	return const_cast<VipDisplayTabWidget*>(m_data->tabWidget);
 }
@@ -2467,41 +2434,40 @@ int VipDisplayArea::count() const
 	return m_data->workspaces.size();
 }
 
-VipDisplayPlayerArea *VipDisplayArea::widget(int index) const
+VipDisplayPlayerArea* VipDisplayArea::widget(int index) const
 {
 	return m_data->workspaces[index];
 }
 
-VipDisplayPlayerArea * VipDisplayArea::displayPlayerArea(int index) const
+VipDisplayPlayerArea* VipDisplayArea::displayPlayerArea(int index) const
 {
 	return widget(index);
 }
 
-VipDisplayPlayerArea * VipDisplayArea::currentDisplayPlayerArea() const
+VipDisplayPlayerArea* VipDisplayArea::currentDisplayPlayerArea() const
 {
 	return m_data->current;
 }
 
-VipDragWidgetArea * VipDisplayArea::dragWidgetArea(int index) const
+VipDragWidgetArea* VipDisplayArea::dragWidgetArea(int index) const
 {
-	VipDisplayPlayerArea * area = displayPlayerArea(index);
+	VipDisplayPlayerArea* area = displayPlayerArea(index);
 	if (area)
 		return area->dragWidgetArea();
 	return nullptr;
 }
 
-VipPlayWidget * VipDisplayArea::playWidget(int index) const
+VipPlayWidget* VipDisplayArea::playWidget(int index) const
 {
-	VipDisplayPlayerArea * area = displayPlayerArea(index);
+	VipDisplayPlayerArea* area = displayPlayerArea(index);
 	if (area)
 		return area->playWidget();
 	return nullptr;
 }
 
-
-VipDragWidget * VipDisplayArea::focusWidget() const
+VipDragWidget* VipDisplayArea::focusWidget() const
 {
-	if (VipDisplayPlayerArea * area = currentDisplayPlayerArea()) {
+	if (VipDisplayPlayerArea* area = currentDisplayPlayerArea()) {
 		QList<VipDragWidget*> widgets = area->findChildren<VipDragWidget*>();
 		for (int i = 0; i < widgets.size(); ++i) {
 			if (widgets[i]->isFocusWidget())
@@ -2514,18 +2480,15 @@ VipDragWidget * VipDisplayArea::focusWidget() const
 QString VipDisplayArea::generateWorkspaceName() const
 {
 	QMap<int, int> ids;
-	for (int i = 0; i < count(); ++i)
-	{
-		if (widget(i)->windowTitle().startsWith("Workspace "))
-		{
+	for (int i = 0; i < count(); ++i) {
+		if (widget(i)->windowTitle().startsWith("Workspace ")) {
 			int id = widget(i)->windowTitle().split(" ").last().toInt();
 			ids.insert(id, id);
 		}
 	}
 
 	int id = 1;
-	for (QMap<int, int>::iterator it = ids.begin(); it != ids.end(); ++it, ++id)
-	{
+	for (QMap<int, int>::iterator it = ids.begin(); it != ids.end(); ++it, ++id) {
 		if (it.key() != id)
 			return "Workspace " + QString::number(id);
 	}
@@ -2533,25 +2496,23 @@ QString VipDisplayArea::generateWorkspaceName() const
 	return "Workspace " + QString::number(count() + 1);
 }
 
-void VipDisplayArea::addWidget(VipDisplayPlayerArea * widget)
+void VipDisplayArea::addWidget(VipDisplayPlayerArea* widget)
 {
 	QString title = widget->windowTitle().isEmpty() ? generateWorkspaceName() : widget->windowTitle();
 	widget->setWindowTitle(title);
 	widget->m_data->parentArea = this;
 	widget->setId(count() + 1);
 
-	if (m_data->workspaces.indexOf(widget) < 0)
-	{
+	if (m_data->workspaces.indexOf(widget) < 0) {
 		m_data->workspaces.append(widget);
 		connect(widget, SIGNAL(playingStarted()), this, SLOT(emitPlayingStarted()), Qt::DirectConnection);
 		connect(widget, SIGNAL(playingStopped()), this, SLOT(emitPlayingStopped()), Qt::DirectConnection);
 		connect(widget, SIGNAL(playingAdvancedOneFrame()), this, SLOT(emitPlayingAdvancedOneFrame()), Qt::DirectConnection);
-		connect(widget, SIGNAL(windowTitleChanged(const QString &)), this, SLOT(titleChanged(const QString &)));
-		connect(widget->dragWidgetHandler(), SIGNAL(closed(VipMultiDragWidget *)), this, SLOT(widgetClosed(VipMultiDragWidget *)));
+		connect(widget, SIGNAL(windowTitleChanged(const QString&)), this, SLOT(titleChanged(const QString&)));
+		connect(widget->dragWidgetHandler(), SIGNAL(closed(VipMultiDragWidget*)), this, SLOT(widgetClosed(VipMultiDragWidget*)));
 	}
 
-	if (displayTabWidget()->indexOf(widget) < 0)
-	{
+	if (displayTabWidget()->indexOf(widget) < 0) {
 		displayTabWidget()->insertTab(displayTabWidget()->count() - 1, widget, title);
 		displayTabWidget()->setCurrentIndex(displayTabWidget()->count() - 2);
 	}
@@ -2562,9 +2523,9 @@ void VipDisplayArea::addWidget(VipDisplayPlayerArea * widget)
 	Q_EMIT displayPlayerAreaAdded(widget);
 }
 
-void VipDisplayArea::titleChanged(const QString & title)
+void VipDisplayArea::titleChanged(const QString& title)
 {
-	VipDisplayPlayerArea * s = qobject_cast<VipDisplayPlayerArea*>(sender());
+	VipDisplayPlayerArea* s = qobject_cast<VipDisplayPlayerArea*>(sender());
 	if (s) {
 		int index = displayTabWidget()->indexOf(s);
 		if (index >= 0) {
@@ -2573,7 +2534,7 @@ void VipDisplayArea::titleChanged(const QString & title)
 	}
 }
 
-void VipDisplayArea::removeWidget(VipDisplayPlayerArea * widget)
+void VipDisplayArea::removeWidget(VipDisplayPlayerArea* widget)
 {
 	m_data->workspaces.removeOne(widget);
 
@@ -2582,31 +2543,27 @@ void VipDisplayArea::removeWidget(VipDisplayPlayerArea * widget)
 
 void VipDisplayArea::clear()
 {
-	while (count() > 0)
-	{
+	while (count() > 0) {
 		m_data->workspaces.first()->deleteLater();
 		m_data->workspaces.pop_front();
 		QCoreApplication::processEvents();
 	}
-
 }
 
 void VipDisplayArea::resetItemSelection()
 {
-	for (int i = 0; i < count(); ++i)
-	{
-		VipDisplayPlayerArea  * area = widget(i);
+	for (int i = 0; i < count(); ++i) {
+		VipDisplayPlayerArea* area = widget(i);
 		VipPlayer2D::resetSelection(area);
 	}
 }
 
 void VipDisplayArea::setCurrentDisplayPlayerArea(VipDisplayPlayerArea* area)
 {
-	if (m_data->current != area)
-	{
+	if (m_data->current != area) {
 		m_data->current = area;
 
-		//remove the focus to all other area
+		// remove the focus to all other area
 		for (int i = 0; i < count(); ++i)
 			if (widget(i) != area)
 				widget(i)->setFocus(false);
@@ -2614,7 +2571,7 @@ void VipDisplayArea::setCurrentDisplayPlayerArea(VipDisplayPlayerArea* area)
 		int index = m_data->tabWidget->indexOf(area);
 		if (index >= 0 && index != m_data->tabWidget->currentIndex())
 			m_data->tabWidget->setCurrentIndex(index);
-		//TEST: inside if
+		// TEST: inside if
 		Q_EMIT currentDisplayPlayerAreaChanged(area);
 	}
 }
@@ -2628,29 +2585,22 @@ bool VipDisplayArea::streamingButtonEnabled() const
 	return this->displayTabWidget()->displayTabBar()->streamingButtonEnabled();
 }
 
-
-
-
-VipArchive & operator<<(VipArchive & ar, const VipDisplayArea * area)
+VipArchive& operator<<(VipArchive& ar, const VipDisplayArea* area)
 {
-	for (int i = 0; i < area->count(); ++i)
-	{
+	for (int i = 0; i < area->count(); ++i) {
 		ar.content(area->widget(i));
 	}
 	return ar;
 }
 
-VipArchive & operator>>(VipArchive & ar, VipDisplayArea * area)
+VipArchive& operator>>(VipArchive& ar, VipDisplayArea* area)
 {
 	area->clear();
-	while (true)
-	{
-		if (VipDisplayPlayerArea * parea = ar.read().value<VipDisplayPlayerArea*>())
-		{
+	while (true) {
+		if (VipDisplayPlayerArea* parea = ar.read().value<VipDisplayPlayerArea*>()) {
 			QString title = parea->windowTitle();
 			bool floating = parea->isFloating();
 			QRect geometry = parea->geometry();
-
 
 			area->addWidget(parea);
 
@@ -2667,7 +2617,6 @@ VipArchive & operator>>(VipArchive & ar, VipDisplayArea * area)
 	return ar;
 }
 
-
 static int registerStreamOperators()
 {
 	vipRegisterArchiveStreamOperators<VipDisplayPlayerArea*>();
@@ -2676,8 +2625,6 @@ static int registerStreamOperators()
 }
 
 static int _registerStreamOperators = vipAddInitializationFunction(registerStreamOperators);
-
-
 
 static bool customSupportReparent(VipMultiDragWidget* drag, QWidget* new_parent)
 {
@@ -2728,42 +2675,37 @@ static bool customSupportReparent(VipMultiDragWidget* drag, QWidget* new_parent)
 	return res;
 }
 
-
-
-
-
-
-
-VipIconBar::VipIconBar(VipMainWindow * win)
-	:QToolBar(win), mainWindow(win)
+VipIconBar::VipIconBar(VipMainWindow* win)
+  : QToolBar(win)
+  , mainWindow(win)
 {
 	setIconSize(QSize(18, 18));
 
-	//add 5px space
-	QWidget * space = new QWidget();
+	// add 5px space
+	QWidget* space = new QWidget();
 	space->setMinimumWidth(5);
 	space->setStyleSheet("QWidget {background: transparent;}");
 	addWidget(space);
 
-	//add Thermavip icon
+	// add Thermavip icon
 	labelIcon = new QLabel();
 	labelIcon->setPixmap(vipPixmap("thermavip.png").scaled(24, 24, Qt::IgnoreAspectRatio, Qt::SmoothTransformation));
 	this->icon = addWidget(labelIcon);
 
-	//add 5px space
+	// add 5px space
 	space = new QWidget();
 	space->setMinimumWidth(5);
 	space->setStyleSheet("QWidget {background: transparent;}");
 	addWidget(space);
 
-	//add Thermavip title and version
+	// add Thermavip title and version
 	if (!vipEditionVersion().isEmpty())
 		this->titleLabel = new QLabel(" Thermavip - " + vipEditionVersion() + QString(" - v" VIP_VERSION " "));
 	else
 		this->titleLabel = new QLabel(" Thermavip - v" VIP_VERSION " ");
 	this->title = addWidget(titleLabel);
 
-	//add update progress bar
+	// add update progress bar
 	this->updateProgress = new QProgressBar();
 	this->update = addWidget(this->updateProgress);
 	this->updateProgress->setRange(0, 100);
@@ -2778,19 +2720,17 @@ VipIconBar::VipIconBar(VipMainWindow * win)
 	updateIconAction = addAction(vipIcon("update.png"), "<b>Update available</b><br>A Thermavip update is available, and you need to restart to install it.<br>Restart Thermavip?");
 	updateIconAction->setVisible(false);
 
-	//add 20px space
+	// add 20px space
 	space = new QWidget();
 	space->setMinimumWidth(20);
 	space->setStyleSheet("QWidget {background: transparent;}");
 	addWidget(space);
 
 	connect(updateIconAction, SIGNAL(triggered(bool)), mainWindow, SLOT(restart()));
-	connect(mainWindow, SIGNAL(windowTitleChanged(const QString &)), titleLabel, SLOT(setText(const QString&)));
+	connect(mainWindow, SIGNAL(windowTitleChanged(const QString&)), titleLabel, SLOT(setText(const QString&)));
 }
 
-VipIconBar::~VipIconBar()
-{
-}
+VipIconBar::~VipIconBar() {}
 
 void VipIconBar::setTitleIcon(const QPixmap& pix)
 {
@@ -2812,7 +2752,7 @@ void VipIconBar::updateTitle()
 		this->titleLabel->setText(customTitle);
 	}
 	else {
-		//add Thermavip title and version
+		// add Thermavip title and version
 		if (!vipEditionVersion().isEmpty())
 			this->titleLabel->setText(" Thermavip - " + vipEditionVersion() + QString(" - v" VIP_VERSION " "));
 		else
@@ -2832,7 +2772,7 @@ QString VipIconBar::mainTitle() const
 
 #include <QMouseEvent>
 
-static void showNormalOrMaximize(VipMainWindow * win)
+static void showNormalOrMaximize(VipMainWindow* win)
 {
 	if (!win)
 		return;
@@ -2841,7 +2781,7 @@ static void showNormalOrMaximize(VipMainWindow * win)
 	int screen = qApp->desktop()->screenNumber(win);
 	QRect screen_rect = qApp->desktop()->screenGeometry(screen);
 #else
-	QRect screen_rect; 
+	QRect screen_rect;
 	if (QScreen* screen = win->screen())
 		screen_rect = screen->availableGeometry();
 	else
@@ -2850,63 +2790,61 @@ static void showNormalOrMaximize(VipMainWindow * win)
 #endif
 
 	if (win->isMaximized()) {
-		//if maximized but not centered, re-maximize again
-		if (win->pos() != screen_rect.topLeft()){
+		// if maximized but not centered, re-maximize again
+		if (win->pos() != screen_rect.topLeft()) {
 			win->showNormal();
 			win->showMaximized();
 			win->setProperty("screen", screen);
 		}
-		else{
+		else {
 			win->setProperty("was_maximized", false);
 			win->showNormal();
 
-			//check if we need to change the screen
-			//int new_screen = qApp->desktop()->screenNumber(win);
-			// if (new_screen != win->property("screen").toInt() && win->property("screen").userType() != 0) {
-			// //change screen
-			// QPoint topleft = win->pos() - qApp->desktop()->screenGeometry(new_screen).topLeft();
-			// win->move(screen_rect.left() + topleft.x(), screen_rect.top() + topleft.y());
-			// }
+			// check if we need to change the screen
+			// int new_screen = qApp->desktop()->screenNumber(win);
+			//  if (new_screen != win->property("screen").toInt() && win->property("screen").userType() != 0) {
+			//  //change screen
+			//  QPoint topleft = win->pos() - qApp->desktop()->screenGeometry(new_screen).topLeft();
+			//  win->move(screen_rect.left() + topleft.x(), screen_rect.top() + topleft.y());
+			//  }
 		}
 	}
-	else{
-		//win->showNormal();
-		win->move(screen_rect.left(),screen_rect.top());
+	else {
+		// win->showNormal();
+		win->move(screen_rect.left(), screen_rect.top());
 		win->showMaximized();
 		win->setProperty("screen", screen);
 	}
 }
 
-void VipIconBar::mouseDoubleClickEvent(QMouseEvent *)
+void VipIconBar::mouseDoubleClickEvent(QMouseEvent*)
 {
 	showNormalOrMaximize(mainWindow);
 }
 
-void VipIconBar::mousePressEvent(QMouseEvent * evt)
+void VipIconBar::mousePressEvent(QMouseEvent* evt)
 {
 	this->pt = mainWindow->mapToParent(evt->pos());
 	this->previous_pos = mainWindow->pos();
 }
 
-void VipIconBar::mouseReleaseEvent(QMouseEvent *)
+void VipIconBar::mouseReleaseEvent(QMouseEvent*)
 {
 	this->pt = QPoint();
 }
 
-void VipIconBar::mouseMoveEvent(QMouseEvent * evt)
+void VipIconBar::mouseMoveEvent(QMouseEvent* evt)
 {
 	if (this->pt != QPoint() //&& !mainWindow->isMaximized()
-)
-	{
-		//if (mainWindow->isMaximized()) {
-		// mainWindow->setProperty("was_maximized", false);
-		// mainWindow->showNormal();
-		// }
+	) {
+		// if (mainWindow->isMaximized()) {
+		//  mainWindow->setProperty("was_maximized", false);
+		//  mainWindow->showNormal();
+		//  }
 		QPoint diff = mainWindow->mapToParent(evt->pos()) - this->pt;
 		mainWindow->move(this->previous_pos + diff);
 	}
 }
-
 
 void VipIconBar::setUpdateProgress(int value)
 {
@@ -2914,24 +2852,23 @@ void VipIconBar::setUpdateProgress(int value)
 	this->update->setVisible(true);
 }
 
+static QList<std::function<void(QMenu*)>> _extend_help;
 
-
-static QList<std::function<void(QMenu*)> > _extend_help;
-
-void vipExtendHelpMenu(const std::function<void(QMenu*)> & fun)
+void vipExtendHelpMenu(const std::function<void(QMenu*)>& fun)
 {
 	_extend_help.append(fun);
 }
 
-VipCloseBar::VipCloseBar(VipMainWindow * win)
-	:QToolBar(win), mainWindow(win)
+VipCloseBar::VipCloseBar(VipMainWindow* win)
+  : QToolBar(win)
+  , mainWindow(win)
 {
 	setIconSize(QSize(18, 18));
 
 	QWidget* empty = new QWidget();
 	empty->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
 	this->spacer = addWidget(empty);
-	//this->setMaximumWidth(500);
+	// this->setMaximumWidth(500);
 
 	this->hasFrame = VipCommandOptions::instance().count("frame") > 0;
 
@@ -2946,8 +2883,8 @@ VipCloseBar::VipCloseBar(VipMainWindow * win)
 
 	maximize = addAction(vipIcon("show_normal.png"), "<b>Maximize workspaces</b><br>Maximize workspaces by hiding all surrounding tool widgets");
 	maximize->setCheckable(true);
-	QObject::connect(maximize,SIGNAL(triggered(bool)), mainWindow, SLOT(maximizeWorkspaces(bool)));
-			
+	QObject::connect(maximize, SIGNAL(triggered(bool)), mainWindow, SLOT(maximizeWorkspaces(bool)));
+
 	this->toolsButton = new QToolButton();
 	toolsButton->setAutoRaise(true);
 	toolsButton->setIcon(vipIcon("scaletools2.png"));
@@ -2958,13 +2895,13 @@ VipCloseBar::VipCloseBar(VipMainWindow * win)
 	addWidget(toolsButton);
 	computeToolsMenu();
 
-	//setup the help button
+	// setup the help button
 	helpButton = new QToolButton();
 	helpButton->setIcon(vipIcon("help.png"));
 	helpButton->setToolTip("Help");
 	helpButton->setAutoRaise(true);
 
-	QMenu * menu = new QMenu(helpButton);
+	QMenu* menu = new QMenu(helpButton);
 	helpButton->setMenu(menu);
 	helpButton->setPopupMode(QToolButton::InstantPopup);
 	this->help = addWidget(helpButton);
@@ -2983,7 +2920,7 @@ VipCloseBar::VipCloseBar(VipMainWindow * win)
 	connect(this->minimizeButton, SIGNAL(triggered(bool)), mainWindow, SLOT(showMinimized()));
 	connect(this->closeButton, SIGNAL(triggered(bool)), mainWindow, SLOT(close()));
 
-	//add a button to display global options to the toolbar
+	// add a button to display global options to the toolbar
 	connect(toolsButton, SIGNAL(clicked(bool)), mainWindow, SLOT(showOptions()));
 }
 
@@ -2995,41 +2932,35 @@ VipCloseBar::~VipCloseBar()
 
 void VipCloseBar::computeHelpMenu()
 {
-	QMenu * menu = helpButton->menu();
+	QMenu* menu = helpButton->menu();
 	menu->clear();
 
-	QAction * _help = menu->addAction(vipIcon("help.png"), "Thermavip help...");
+	QAction* _help = menu->addAction(vipIcon("help.png"), "Thermavip help...");
 	connect(_help, SIGNAL(triggered(bool)), mainWindow, SLOT(showHelp()));
 
-	//find all folders in the help directory
+	// find all folders in the help directory
 	QStringList help_dirs = QDir("help").entryList(QDir::Dirs | QDir::NoDotAndDotDot);
-	for (int i = 0; i < help_dirs.size(); ++i)
-	{
-		if (help_dirs[i].startsWith("_"))
-		{
+	for (int i = 0; i < help_dirs.size(); ++i) {
+		if (help_dirs[i].startsWith("_")) {
 			help_dirs.removeAt(i);
 			--i;
 		}
 	}
-	if (help_dirs.size())
-	{
-		for (int i = 0; i < help_dirs.size(); ++i)
-		{
-			QAction * a = menu->addAction(vipIcon("help.png"), help_dirs[i] + " help...");
+	if (help_dirs.size()) {
+		for (int i = 0; i < help_dirs.size(); ++i) {
+			QAction* a = menu->addAction(vipIcon("help.png"), help_dirs[i] + " help...");
 			connect(a, SIGNAL(triggered(bool)), mainWindow, SLOT(showHelpCustom()));
 		}
 	}
 
-	//additional entries
+	// additional entries
 	for (int i = 0; i < _extend_help.size(); ++i)
 		_extend_help[i](menu);
 
 	menu->addSeparator();
-	QAction * about = menu->addAction(tr("About Thermavip..."));
+	QAction* about = menu->addAction(tr("About Thermavip..."));
 	connect(about, SIGNAL(triggered(bool)), mainWindow, SLOT(aboutDialog()));
 }
-
-
 
 static void selectLegendPosition(QAction* a)
 {
@@ -3195,8 +3126,8 @@ void VipCloseBar::computeToolsMenu()
 void VipCloseBar::startDetectState()
 {
 	stateTimer.start();
-	//restore cursor that might have been screwed up during the session loading
-	//QGuiApplication::restoreOverrideCursor();
+	// restore cursor that might have been screwed up during the session loading
+	// QGuiApplication::restoreOverrideCursor();
 }
 
 static qint64 __last_change = 0;
@@ -3206,7 +3137,7 @@ void VipCloseBar::onMaximized()
 		return;
 
 	{
-		if(!hasFrame)
+		if (!hasFrame)
 			mainWindow->setWindowFlags(Qt::FramelessWindowHint | Qt::Window);
 		this->maximizeButton->setText(tr("Restore"));
 		this->maximizeButton->setIcon(vipIcon("restore.png"));
@@ -3227,22 +3158,19 @@ void VipCloseBar::onRestored()
 	this->maximizeButton->setIcon(vipIcon("maximize.png"));
 	mainWindow->show();
 	__last_change = QDateTime::currentMSecsSinceEpoch();
-
 }
 
-void VipCloseBar::onMinimized()
-{
-}
+void VipCloseBar::onMinimized() {}
 
 void VipCloseBar::computeWindowState()
 {
 	static bool was_maximized_once = false;
-	//Recompute window state based on its visibility state
+	// Recompute window state based on its visibility state
 	if (!mainWindow)
 		return;
 
 #ifdef _WIN32
-	//Windows only, do nothing but reset the icons
+	// Windows only, do nothing but reset the icons
 	if (mainWindow->isMaximized() || mainWindow->isFullScreen()) {
 		this->maximizeButton->setText(tr("Restore"));
 		this->maximizeButton->setIcon(vipIcon("restore.png"));
@@ -3256,7 +3184,7 @@ void VipCloseBar::computeWindowState()
 	else {
 		this->maximizeButton->setText(tr("Maximize"));
 		this->maximizeButton->setIcon(vipIcon("maximize.png"));
-		if ((mainWindow->windowFlags() & Qt::FramelessWindowHint) && was_maximized_once){
+		if ((mainWindow->windowFlags() & Qt::FramelessWindowHint) && was_maximized_once) {
 			if (!hasFrame)
 				mainWindow->setWindowFlags(mainWindow->windowFlags() & (~Qt::FramelessWindowHint));
 			mainWindow->show();
@@ -3264,17 +3192,14 @@ void VipCloseBar::computeWindowState()
 	}
 #else
 
-
 	int st = mainWindow->windowState();
 	int state = mainWindow->property("visibility_state").toInt();
 	bool was_maximized = mainWindow->property("was_maximized").toBool();
 
-	if ((st & Qt::WindowMinimized) && state != Qt::WindowMinimized)
-	{
+	if ((st & Qt::WindowMinimized) && state != Qt::WindowMinimized) {
 		mainWindow->setProperty("visibility_state", (int)Qt::WindowMinimized);
 	}
-	else if ((st & Qt::WindowMaximized) && !(st & Qt::WindowMinimized) && state != Qt::WindowMaximized)
-	{
+	else if ((st & Qt::WindowMaximized) && !(st & Qt::WindowMinimized) && state != Qt::WindowMaximized) {
 		mainWindow->setProperty("was_maximized", true);
 		mainWindow->setProperty("visibility_state", (int)Qt::WindowMaximized);
 		if (!hasFrame)
@@ -3284,10 +3209,8 @@ void VipCloseBar::computeWindowState()
 		if (!mainWindow->isVisible())
 			mainWindow->show();
 	}
-	else if ((st == Qt::WindowNoState) && state != Qt::WindowNoState)
-	{
-		if (was_maximized)
-		{
+	else if ((st == Qt::WindowNoState) && state != Qt::WindowNoState) {
+		if (was_maximized) {
 			mainWindow->showMaximized();
 			return;
 		}
@@ -3308,34 +3231,27 @@ void VipCloseBar::maximizeOrShowNormal()
 	showNormalOrMaximize(mainWindow);
 }
 
-
-
-
-
-
-
-
 struct UpdateThread : QThread
 {
-	VipMainWindow * mainWindow;
-	VipUpdate *update;
-	UpdateThread(VipMainWindow * win) : mainWindow(win)
-	{}
+	VipMainWindow* mainWindow;
+	VipUpdate* update;
+	UpdateThread(VipMainWindow* win)
+	  : mainWindow(win)
+	{
+	}
 
 	virtual void run()
 	{
 		update = new VipUpdate();
 		connect(update, SIGNAL(updateProgressed(int)), mainWindow->iconBar()->updateProgress, SLOT(setValue(int)));
-		while (VipMainWindow * w = mainWindow)
-		{
+		while (VipMainWindow* w = mainWindow) {
 			bool downloaded = false;
-			if (update->process()->state() != QProcess::Running && update->hasUpdate("./", &downloaded) > 0)//QFileInfo(vipAppCanonicalPath()).canonicalPath(),&downloaded) > 0)
+			if (update->process()->state() != QProcess::Running && update->hasUpdate("./", &downloaded) > 0) // QFileInfo(vipAppCanonicalPath()).canonicalPath(),&downloaded) > 0)
 			{
-				if (!downloaded)
-				{
+				if (!downloaded) {
 					QMetaObject::invokeMethod(w->iconBar()->updateIconAction, "setVisible", Qt::QueuedConnection, Q_ARG(bool, false));
 					QMetaObject::invokeMethod(w->iconBar()->update, "setVisible", Qt::QueuedConnection, Q_ARG(bool, true));
-					update->startDownload("./");// QFileInfo(vipAppCanonicalPath()).canonicalPath());
+					update->startDownload("./"); // QFileInfo(vipAppCanonicalPath()).canonicalPath());
 				}
 				else
 					QMetaObject::invokeMethod(w->iconBar()->updateIconAction, "setVisible", Qt::QueuedConnection, Q_ARG(bool, true));
@@ -3344,8 +3260,7 @@ struct UpdateThread : QThread
 			if (update->process()->state() != QProcess::Running)
 				QMetaObject::invokeMethod(w->iconBar()->update, "setVisible", Qt::QueuedConnection, Q_ARG(bool, false));
 
-			for (int i = 0; i < 50; ++i)
-			{
+			for (int i = 0; i < 50; ++i) {
 				qint64 st = QDateTime::currentMSecsSinceEpoch();
 				update->process()->waitForFinished(100);
 				qint64 el = QDateTime::currentMSecsSinceEpoch() - st;
@@ -3359,34 +3274,41 @@ struct UpdateThread : QThread
 	}
 };
 
-
 class VipMainWindow::PrivateData
 {
 public:
-	PrivateData() :sessionSavingEnabled(true), left(nullptr), right(nullptr), bottom(nullptr), currentTabDestroy(false), loadSession(false){}
+	PrivateData()
+	  : sessionSavingEnabled(true)
+	  , left(nullptr)
+	  , right(nullptr)
+	  , bottom(nullptr)
+	  , currentTabDestroy(false)
+	  , loadSession(false)
+	{
+	}
 	QToolBar fileToolBar;
 	QToolButton fileButton;
 	QToolButton generate;
-	QAction * generateAction;
-	VipDragMenu * generateMenu;
-	QMenu *fileMenu;
-	QMenu * sessionMenu;
+	QAction* generateAction;
+	VipDragMenu* generateMenu;
+	QMenu* fileMenu;
+	QMenu* sessionMenu;
 	QToolButton dirButton;
 	QToolButton saveButton;
-	QAction * processing_view;
-	QAction * saveSessionAction;
+	QAction* processing_view;
+	QAction* saveSessionAction;
 	bool sessionSavingEnabled;
 
 	QToolBar toolsToolBar;
-	//VipTitleBar *closeToolBar;
-	VipIconBar * iconBar;
-	VipCloseBar * closeBar;
-	VipDisplayArea * displayArea;
+	// VipTitleBar *closeToolBar;
+	VipIconBar* iconBar;
+	VipCloseBar* closeBar;
+	VipDisplayArea* displayArea;
 
-	QToolBar * left, *right, *bottom, *top;
-	VipShowWidgetOnHover * showTabBar;
+	QToolBar *left, *right, *bottom, *top;
+	VipShowWidgetOnHover* showTabBar;
 
-	UpdateThread * updateThread;
+	UpdateThread* updateThread;
 
 	QTimer fileTimer;
 	bool currentTabDestroy;
@@ -3394,11 +3316,10 @@ public:
 	bool hasFrame;
 };
 
-
 VipMainWindow::VipMainWindow()
-	:QMainWindow()
+  : QMainWindow()
 {
-	//VipGuiDisplayParamaters::instance(this);
+	// VipGuiDisplayParamaters::instance(this);
 
 	this->setAttribute(Qt::WA_DeleteOnClose);
 	m_data = new PrivateData();
@@ -3414,7 +3335,6 @@ VipMainWindow::VipMainWindow()
 	m_data->toolsToolBar.setWindowTitle(tr("Tools tool bar"));
 	m_data->toolsToolBar.setIconSize(QSize(18, 18));
 
-
 	m_data->displayArea = new VipDisplayArea();
 
 	setCentralWidget(m_data->displayArea);
@@ -3429,19 +3349,16 @@ VipMainWindow::VipMainWindow()
 	m_data->fileButton.setMenu(m_data->fileMenu);
 	m_data->fileButton.setPopupMode(QToolButton::MenuButtonPopup);
 	m_data->sessionMenu = new QMenu(&m_data->fileButton);
-	QAction * session_menu_action = m_data->fileMenu->addMenu(m_data->sessionMenu);
+	QAction* session_menu_action = m_data->fileMenu->addMenu(m_data->sessionMenu);
 	session_menu_action->setText(tr("Available sessions"));
 	connect(m_data->sessionMenu, SIGNAL(aboutToShow()), this, SLOT(computeSessions()));
 	connect(m_data->sessionMenu, SIGNAL(triggered(QAction*)), this, SLOT(sessionTriggered(QAction*)));
 
-
-
 	m_data->dirButton.setToolTip(tr("<b>Open a directory...</b><p>Open all the files in a directory and interpret them as separate data or a single data stream</p>"));
 	m_data->dirButton.setIcon(vipIcon("open_dir.png"));
-	QAction * a = m_data->fileToolBar.addWidget(&m_data->dirButton);
+	QAction* a = m_data->fileToolBar.addWidget(&m_data->dirButton);
 	a->setObjectName("DirButton");
 	connect(&m_data->dirButton, SIGNAL(clicked(bool)), this, SLOT(openDir()));
-
 
 	m_data->generate.setIcon(vipIcon("generate_signals.png"));
 	m_data->generate.setText("Generate");
@@ -3457,13 +3374,12 @@ VipMainWindow::VipMainWindow()
 	m_data->fileToolBar.addSeparator();
 
 	m_data->saveButton.setToolTip(tr("<b>Save current session...</b>"
-		"<br>Save the whole Thermavip session or only the current Workspace<br>"
-		"<b>F5:</b> fast session saving<br><b>F9:</b> fast session loading"));
+					 "<br>Save the whole Thermavip session or only the current Workspace<br>"
+					 "<b>F5:</b> fast session saving<br><b>F9:</b> fast session loading"));
 	m_data->saveButton.setIcon(vipIcon("save.png"));
 	m_data->saveSessionAction = m_data->fileToolBar.addWidget(&m_data->saveButton);
 	connect(&m_data->saveButton, SIGNAL(clicked(bool)), this, SLOT(saveSession()));
 
-	
 	m_data->iconBar = new VipIconBar(this);
 	m_data->iconBar->setMovable(false);
 	m_data->iconBar->setObjectName("Icon bar");
@@ -3518,8 +3434,7 @@ VipMainWindow::~VipMainWindow()
 {
 	Q_EMIT aboutToClose();
 
-	if (m_data->updateThread)
-	{
+	if (m_data->updateThread) {
 		m_data->updateThread->mainWindow = nullptr;
 		m_data->updateThread->wait();
 		delete m_data->updateThread;
@@ -3532,16 +3447,16 @@ VipMainWindow::~VipMainWindow()
 	QCoreApplication::quit();
 }
 
-VipShowWidgetOnHover * VipMainWindow::showTabBar() const
+VipShowWidgetOnHover* VipMainWindow::showTabBar() const
 {
 	return m_data->showTabBar;
 }
 
-static QList<QPointer<QDockWidget> > _toolState;
-static QWidget * _lastModalWidget = nullptr;
+static QList<QPointer<QDockWidget>> _toolState;
+static QWidget* _lastModalWidget = nullptr;
 void VipMainWindow::openSharedMemoryFiles()
 {
-	//open possibles files
+	// open possibles files
 	bool new_workspace = false;
 	QStringList files = VipFileSharedMemory::instance().retrieveFilesToOpen(&new_workspace);
 	if (files.size()) {
@@ -3554,24 +3469,24 @@ void VipMainWindow::openSharedMemoryFiles()
 		vipGetMainWindow()->raiseOnTop();
 	}
 
-	//show/hide generate menu
+	// show/hide generate menu
 	m_data->generateAction->setVisible(m_data->generateMenu->actions().size());
 
-	//change the window title
+	// change the window title
 	iconBar()->updateTitle();
 
-	//multi-screen only
+	// multi-screen only
 #if QT_VERSION < QT_VERSION_CHECK(5, 15, 0)
 	if (qApp->desktop()->screenCount() > 1)
 #else
-	
-	if (qApp->screens().size() > 1) 
+
+	if (qApp->screens().size() > 1)
 #endif
 	{
-		//raise modal widget when the application is active to display it on top of dock widgets
+		// raise modal widget when the application is active to display it on top of dock widgets
 		if (QGuiApplication::applicationState() == Qt::ApplicationActive) {
 
-			if (QWidget * w = qApp->activeModalWidget()) {
+			if (QWidget* w = qApp->activeModalWidget()) {
 
 				if (w != _lastModalWidget) {
 					QList<QDockWidget*> ws = this->findChildren<QDockWidget*>();
@@ -3592,7 +3507,6 @@ void VipMainWindow::openSharedMemoryFiles()
 				_lastModalWidget = nullptr;
 				_toolState.clear();
 			}
-
 		}
 	}
 }
@@ -3603,10 +3517,8 @@ void VipMainWindow::computeSessions()
 	QFileInfoList lst = QDir(dir).entryInfoList(QDir::Files);
 	m_data->sessionMenu->clear();
 	QStringList files;
-	for (int i = 0; i < lst.size(); ++i)
-	{
-		if (lst[i].suffix() == "session")
-		{
+	for (int i = 0; i < lst.size(); ++i) {
+		if (lst[i].suffix() == "session") {
 			m_data->sessionMenu->addAction(lst[i].baseName());
 		}
 	}
@@ -3618,27 +3530,23 @@ void VipMainWindow::sessionTriggered(QAction* act)
 		loadSession(file);
 }
 
-QAction *  VipMainWindow::addToolWidget(VipToolWidget * widget, const QIcon & icon, const QString & text, bool set_tool_icon)
+QAction* VipMainWindow::addToolWidget(VipToolWidget* widget, const QIcon& icon, const QString& text, bool set_tool_icon)
 {
-	if (!widget->toolBar())
-	{
-		QAction * act = m_data->toolsToolBar.addAction(icon, text);
-		if (set_tool_icon)
-		{
+	if (!widget->toolBar()) {
+		QAction* act = m_data->toolsToolBar.addAction(icon, text);
+		if (set_tool_icon) {
 			widget->setWindowIcon(icon);
 			widget->setDisplayWindowIcon(true);
 		}
 		widget->setAction(act);
 		return act;
 	}
-	else
-	{
-		QToolBar  * bar = widget->toolBar();
+	else {
+		QToolBar* bar = widget->toolBar();
 		bar->setWindowTitle(widget->windowTitle());
-		QAction * act = new QAction(icon, text, bar);
+		QAction* act = new QAction(icon, text, bar);
 		bar->insertAction(bar->actions().size() ? bar->actions().first() : nullptr, act);
-		if (set_tool_icon)
-		{
+		if (set_tool_icon) {
 			widget->setWindowIcon(icon);
 			widget->setDisplayWindowIcon(true);
 		}
@@ -3673,36 +3581,42 @@ void VipMainWindow::init()
 	vipGetProcessingEditorToolWidget(this)->setFloating(true);
 	vipGetProcessingEditorToolWidget(this)->hide();
 	vipGetConsoleWidget(this)->hide();
-	//vipGetDirectoryBrowser(this)->setFloating(true);
+	// vipGetDirectoryBrowser(this)->setFloating(true);
 	vipGetDirectoryBrowser(this)->hide();
 	vipGetAnnotationToolWidget()->setFloating(true);
 	vipGetAnnotationToolWidget()->hide();
 
-	QAction * edit = m_data->toolsToolBar.addAction(vipIcon("edit.png"), tr("<b>Edit plot items</b><p>Edit axes, labels, color bar, etc.<br>Double click on an item to directly open this panel.</p>"));
+	QAction* edit =
+	  m_data->toolsToolBar.addAction(vipIcon("edit.png"), tr("<b>Edit plot items</b><p>Edit axes, labels, color bar, etc.<br>Double click on an item to directly open this panel.</p>"));
 	vipGetPlotToolWidgetPlayer(this)->setAction(edit);
-	//TEST: hide edit action
+	// TEST: hide edit action
 	edit->setVisible(false);
 
-	QAction * infos = m_data->toolsToolBar.addAction(vipIcon("infos.png"), tr("<b>Player properties</b><p>Dynamically display available information related to a movie, a signal, etc.<br>Click on an item (image, curve) to display its information.</p>"));
+	QAction* infos = m_data->toolsToolBar.addAction(
+	  vipIcon("infos.png"),
+	  tr("<b>Player properties</b><p>Dynamically display available information related to a movie, a signal, etc.<br>Click on an item (image, curve) to display its information.</p>"));
 	vipGetProcessingObjectInfo(this)->setWindowIcon(vipIcon("infos.png"));
 	vipGetProcessingObjectInfo(this)->setAction(infos);
 
-
-	QAction * proc = m_data->toolsToolBar.addAction(vipIcon("processing.png"), tr("<b>Edit processing</b><p>Edit all processings related to a signal.<br>Click on an item (image, curve) to edit the processings leading to this item.</p>"));
+	QAction* proc = m_data->toolsToolBar.addAction(
+	  vipIcon("processing.png"), tr("<b>Edit processing</b><p>Edit all processings related to a signal.<br>Click on an item (image, curve) to edit the processings leading to this item.</p>"));
 	vipGetProcessingEditorToolWidget(this)->setAction(proc);
 
-	//QAction * progress = m_data->toolsToolBar.addAction(vipIcon("progress.png"),tr("<b>Show/Hide current operations</b><p>Displays operations in progress<p>"));
-	//vipGetMultiProgressWidget(this)->setAction(progress);
+	// QAction * progress = m_data->toolsToolBar.addAction(vipIcon("progress.png"),tr("<b>Show/Hide current operations</b><p>Displays operations in progress<p>"));
+	// vipGetMultiProgressWidget(this)->setAction(progress);
 
-	QAction * console = m_data->toolsToolBar.addAction(vipIcon("console.png"), "<b>Show/Hide the console</b><p>The console displays information on the program workflow</p>");
+	QAction* console = m_data->toolsToolBar.addAction(vipIcon("console.png"), "<b>Show/Hide the console</b><p>The console displays information on the program workflow</p>");
 	vipGetConsoleWidget(this)->setAction(console);
 
-	
-	QAction * dir = m_data->toolsToolBar.addAction(vipIcon("open_dir.png"), "<b>Show/Hide directory browser</b><p>Displays a directory/file browser</p>");
+	QAction* dir = m_data->toolsToolBar.addAction(vipIcon("open_dir.png"), "<b>Show/Hide directory browser</b><p>Displays a directory/file browser</p>");
 	vipGetDirectoryBrowser(this)->setAction(dir);
 
-	addToolWidget(vipGetSceneModelWidgetPlayer(this), vipIcon("roi.png"), tr("<b>Edit Regions Of Interest</b><p>Create Regions Of Interest (ROIs), edit them, display image statistics inside ROIs, etc.</p>"), true);
-	addToolWidget(vipGetRecordToolWidget(this), vipIcon("record_icon.png"), tr("<b>Record signals or movies</b><p>Record any kind of signal in an archive, or create a video from a player</p>"), true);
+	addToolWidget(vipGetSceneModelWidgetPlayer(this),
+		      vipIcon("roi.png"),
+		      tr("<b>Edit Regions Of Interest</b><p>Create Regions Of Interest (ROIs), edit them, display image statistics inside ROIs, etc.</p>"),
+		      true);
+	addToolWidget(
+	  vipGetRecordToolWidget(this), vipIcon("record_icon.png"), tr("<b>Record signals or movies</b><p>Record any kind of signal in an archive, or create a video from a player</p>"), true);
 
 	closeBar()->startDetectState();
 }
@@ -3716,61 +3630,61 @@ QString VipMainWindow::mainTitle() const
 	return m_data->iconBar->mainTitle();
 }
 
-VipDisplayArea * VipMainWindow::displayArea() const
+VipDisplayArea* VipMainWindow::displayArea() const
 {
 	return m_data->displayArea;
 }
 
-QToolBar * VipMainWindow::fileToolBar() const
+QToolBar* VipMainWindow::fileToolBar() const
 {
 	return &m_data->fileToolBar;
 }
 
-QMenu * VipMainWindow::fileMenu() const
+QMenu* VipMainWindow::fileMenu() const
 {
 	return m_data->fileMenu;
 }
 
-QMenu * VipMainWindow::generateMenu() const
+QMenu* VipMainWindow::generateMenu() const
 {
 	return m_data->generateMenu;
 }
 
-QToolButton * VipMainWindow::generateButton() const
+QToolButton* VipMainWindow::generateButton() const
 {
 	return &m_data->generate;
 }
 
-QToolBar * VipMainWindow::toolsToolBar() const
+QToolBar* VipMainWindow::toolsToolBar() const
 {
 	return &m_data->toolsToolBar;
 }
 
-VipIconBar * VipMainWindow::iconBar() const
+VipIconBar* VipMainWindow::iconBar() const
 {
 	return m_data->iconBar;
 }
 
-VipCloseBar * VipMainWindow::closeBar() const
+VipCloseBar* VipMainWindow::closeBar() const
 {
 	return m_data->closeBar;
 }
 
-//VipTitleBar * VipMainWindow::titleBar() const
-// {
-// return nullptr;// m_data->closeToolBar;
-// }
+// VipTitleBar * VipMainWindow::titleBar() const
+//  {
+//  return nullptr;// m_data->closeToolBar;
+//  }
 
-bool VipMainWindow::saveSession(const QString & filename, int session_type, int session_content, const QByteArray & state)
+bool VipMainWindow::saveSession(const QString& filename, int session_type, int session_content, const QByteArray& state)
 {
 	VipXOfArchive arch(filename);
 	if (!arch)
 		return false;
 
-	//save the state before showing the progress widget
+	// save the state before showing the progress widget
 	QByteArray tools_state = state;
-	//if (tools_state.isEmpty())
-	// tools_state = saveState();
+	// if (tools_state.isEmpty())
+	//  tools_state = saveState();
 
 	VIP_LOG_INFO("Save session in " + filename + "...");
 	VipProgress progress;
@@ -3780,10 +3694,9 @@ bool VipMainWindow::saveSession(const QString & filename, int session_type, int 
 	return saveSession(arch, session_type, session_content, tools_state);
 }
 
-bool VipMainWindow::saveSession(VipXOArchive & arch, int session_type, int session_content, const QByteArray & state)
+bool VipMainWindow::saveSession(VipXOArchive& arch, int session_type, int session_content, const QByteArray& state)
 {
-	if (workspacesMaximized())
-	{
+	if (workspacesMaximized()) {
 		maximizeWorkspaces(false);
 	}
 
@@ -3795,16 +3708,15 @@ bool VipMainWindow::saveSession(VipXOArchive & arch, int session_type, int sessi
 	metadata["session_type"] = session_type;
 	arch.start("VipSession", metadata);
 
-	//save the Thermavip version
+	// save the Thermavip version
 	arch.content("version", QString(VIP_VERSION));
 
-	if ((session_content & MainWindowState) && session_type == MainWindow)
-	{
-		//save the state
+	if ((session_content & MainWindowState) && session_type == MainWindow) {
+		// save the state
 		arch.content("maximized", this->isMaximized());
 		arch.content("size", this->size());
 		arch.content("state", tools_state);
-		//new in 2.2.17
+		// new in 2.2.17
 #if QT_VERSION < QT_VERSION_CHECK(5, 15, 0)
 		int screen = qApp->desktop()->screenNumber(this);
 #else
@@ -3817,14 +3729,12 @@ bool VipMainWindow::saveSession(VipXOArchive & arch, int session_type, int sessi
 		arch.content("LogConsole", vipGetConsoleWidget());
 	}
 
-	if ((session_content & Plugins) && session_type == MainWindow)
-	{
-		//save the plugins
+	if ((session_content & Plugins) && session_type == MainWindow) {
+		// save the plugins
 		arch.start("Plugins");
 		QList<VipPluginInterface*> plugins = VipLoadPlugins::instance().loadedPlugins();
 		QStringList names = VipLoadPlugins::instance().loadedPluginNames();
-		for (int i = 0; i < names.size(); ++i)
-		{
+		for (int i = 0; i < names.size(); ++i) {
 			arch.start(names[i]);
 			plugins[i]->save(arch);
 			arch.end();
@@ -3832,39 +3742,35 @@ bool VipMainWindow::saveSession(VipXOArchive & arch, int session_type, int sessi
 		arch.end();
 	}
 
-	if ((session_content & Settings) && session_type == MainWindow)
-	{
-		//save the plugins
+	if ((session_content & Settings) && session_type == MainWindow) {
+		// save the plugins
 		arch.start("Settings");
 		vipSaveSettings(arch);
 		arch.end();
 	}
 
-	if ((session_content & DisplayAreas) && session_type == MainWindow)
-	{
-		//save the VipDisplayPlayerArea
+	if ((session_content & DisplayAreas) && session_type == MainWindow) {
+		// save the VipDisplayPlayerArea
 		arch.start("DisplayPlayerAreas");
 		arch.content(displayArea());
 		arch.end();
 	}
 
-	if (session_type == CurrentArea && displayArea()->currentDisplayPlayerArea())
-	{
+	if (session_type == CurrentArea && displayArea()->currentDisplayPlayerArea()) {
 		arch.start("CurrentArea");
 		arch.content(displayArea()->currentDisplayPlayerArea());
 		arch.end();
 	}
-	//else if (session_type == CurrentPlayer && displayArea()->currentDisplayPlayerArea())
-	// {
-	// if(VipDragWidget * focus_widget = displayArea()->currentDisplayPlayerArea()->dragWidgetHandler()->focusWidget())
-	// if (VipMultiDragWidget * multi = focus_widget->topLevelMultiDragWidget())
-	// {
-	// arch.start("CurrentPlayer");
-	// arch.content(multi);
-	// arch.end();
-	// }
-	// }
-
+	// else if (session_type == CurrentPlayer && displayArea()->currentDisplayPlayerArea())
+	//  {
+	//  if(VipDragWidget * focus_widget = displayArea()->currentDisplayPlayerArea()->dragWidgetHandler()->focusWidget())
+	//  if (VipMultiDragWidget * multi = focus_widget->topLevelMultiDragWidget())
+	//  {
+	//  arch.start("CurrentPlayer");
+	//  arch.content(multi);
+	//  arch.end();
+	//  }
+	//  }
 
 	arch.end();
 
@@ -3873,7 +3779,7 @@ bool VipMainWindow::saveSession(VipXOArchive & arch, int session_type, int sessi
 	return true;
 }
 
-void VipMainWindow::restoreDockState(const QByteArray & state)
+void VipMainWindow::restoreDockState(const QByteArray& state)
 {
 	QList<QDockWidget*> widgets = findChildren<QDockWidget*>();
 	for (int i = 0; i < widgets.size(); ++i)
@@ -3881,22 +3787,20 @@ void VipMainWindow::restoreDockState(const QByteArray & state)
 	this->restoreState(state);
 }
 
-bool VipMainWindow::loadSessionFallback(const QString & filename, const QString & fallback, VipProgress *progress)
+bool VipMainWindow::loadSessionFallback(const QString& filename, const QString& fallback, VipProgress* progress)
 {
 	if (!loadSessionShowProgress(filename, progress))
 		return loadSessionShowProgress(fallback, progress);
 	return true;
 }
 
-bool VipMainWindow::loadSession(const QString & filename) {
+bool VipMainWindow::loadSession(const QString& filename)
+{
 	VipProgress progress;
 	return loadSessionShowProgress(filename, &progress);
 }
 
-
-
-
-static bool isVersionValid(const QString & minimal, const QString & file_version)
+static bool isVersionValid(const QString& minimal, const QString& file_version)
 {
 	QStringList l1 = minimal.split(".");
 	QStringList l2 = file_version.split(".");
@@ -3904,8 +3808,7 @@ static bool isVersionValid(const QString & minimal, const QString & file_version
 	if (l1.size() != l2.size() || l1.isEmpty())
 		return false;
 
-	for (int i = 0; i < l1.size(); ++i)
-	{
+	for (int i = 0; i < l1.size(); ++i) {
 		bool ok1, ok2;
 		int i1 = l1[i].toInt(&ok1);
 		int i2 = l2[i].toInt(&ok2);
@@ -3920,12 +3823,15 @@ static bool isVersionValid(const QString & minimal, const QString & file_version
 	return true;
 }
 
-
 struct LockBool
 {
-	bool * value;
-	LockBool(bool * v) : value(v) {*v = true;}
-	~LockBool() {*value = false;}
+	bool* value;
+	LockBool(bool* v)
+	  : value(v)
+	{
+		*v = true;
+	}
+	~LockBool() { *value = false; }
 };
 
 bool VipMainWindow::isLoadingSession()
@@ -3933,14 +3839,14 @@ bool VipMainWindow::isLoadingSession()
 	return m_data->loadSession;
 }
 
-bool VipMainWindow::loadSessionShowProgress(const QString & filename, VipProgress * progress)
+bool VipMainWindow::loadSessionShowProgress(const QString& filename, VipProgress* progress)
 {
 	LockBool lock(&m_data->loadSession);
 	VipXIfArchive arch(filename);
 	if (!arch) {
 		return false;
 	}
-	//load the version number
+	// load the version number
 	arch.save();
 	arch.start("VipSession");
 	QString ver = arch.read("version").toString();
@@ -3955,15 +3861,13 @@ bool VipMainWindow::loadSessionShowProgress(const QString & filename, VipProgres
 	arch.restore();
 	arch.setVersion(ver);
 
-	//display editable content
-	if (VipImportSessionWidget::hasEditableContent(arch))
-	{
-		VipImportSessionWidget * edit = new VipImportSessionWidget();
+	// display editable content
+	if (VipImportSessionWidget::hasEditableContent(arch)) {
+		VipImportSessionWidget* edit = new VipImportSessionWidget();
 		edit->importArchive(arch);
 		QString title = (!edit->windowTitle().isEmpty()) ? " - " + edit->windowTitle() : QString();
 		VipGenericDialog dialog(edit, "Load session content" + title);
-		if (dialog.exec() == QDialog::Accepted)
-		{
+		if (dialog.exec() == QDialog::Accepted) {
 			edit->applyToArchive(arch);
 		}
 		else
@@ -3972,12 +3876,11 @@ bool VipMainWindow::loadSessionShowProgress(const QString & filename, VipProgres
 
 	VIP_LOG_INFO("Load session " + filename);
 
-	if (progress)
-	{
+	if (progress) {
 		progress->setModal(true);
 		progress->setText("<b>Load session </b> " + QFileInfo(filename).fileName() + "...");
 
-		//display the laoding progress
+		// display the laoding progress
 		connect(&arch, SIGNAL(rangeUpdated(double, double)), progress, SLOT(setRange(double, double)), Qt::DirectConnection);
 		connect(&arch, SIGNAL(valueUpdated(double)), progress, SLOT(setValue(double)), Qt::DirectConnection);
 		arch.setAutoRangeEnabled(true);
@@ -3991,32 +3894,30 @@ bool VipMainWindow::loadSessionShowProgress(const QString & filename, VipProgres
 
 	if (session_type == DragWidget) {
 		if (!displayArea()->currentDisplayPlayerArea()) {
-			VipDisplayPlayerArea * a = new VipDisplayPlayerArea();
+			VipDisplayPlayerArea* a = new VipDisplayPlayerArea();
 			displayArea()->addWidget(a);
 		}
-		VipBaseDragWidget * w = vipLoadBaseDragWidget(arch, displayArea()->currentDisplayPlayerArea());
+		VipBaseDragWidget* w = vipLoadBaseDragWidget(arch, displayArea()->currentDisplayPlayerArea());
 		return w != nullptr;
 	}
 
-	//load state
+	// load state
 	arch.save();
 	bool maximized = arch.read("maximized").toBool();
 	QSize s = arch.read("size").toSize();
 	QVariant state = arch.read("state");
 
-	//new in 2.2.17
+	// new in 2.2.17
 	arch.save();
 	int screen = -1;
 	if (arch.content("screen", screen)) {
-
 	}
 	else
 		arch.restore();
 
 	if (state.userType() == 0)
 		arch.restore();
-	else
-	{
+	else {
 		vipGetConsoleWidget()->removeConsole();
 		this->restoreState(state.toByteArray());
 		vipGetConsoleWidget()->resetConsole();
@@ -4029,16 +3930,13 @@ bool VipMainWindow::loadSessionShowProgress(const QString & filename, VipProgres
 		arch.content("LogConsole", vipGetConsoleWidget());
 	}
 
-	//load plugins
+	// load plugins
 	arch.save();
-	if (arch.start("Plugins"))
-	{
-		while (true)
-		{
+	if (arch.start("Plugins")) {
+		while (true) {
 			QString name;
-			if (arch.start(name))
-			{
-				VipPluginInterface * interface = VipLoadPlugins::instance().find(name);
+			if (arch.start(name)) {
+				VipPluginInterface* interface = VipLoadPlugins::instance().find(name);
 				if (interface)
 					interface->restore(arch);
 
@@ -4052,10 +3950,9 @@ bool VipMainWindow::loadSessionShowProgress(const QString & filename, VipProgres
 	else
 		arch.restore();
 
-	//load settings
+	// load settings
 	arch.save();
-	if (arch.start("Settings"))
-	{
+	if (arch.start("Settings")) {
 		vipRestoreSettings(arch);
 		arch.end();
 	}
@@ -4064,10 +3961,9 @@ bool VipMainWindow::loadSessionShowProgress(const QString & filename, VipProgres
 
 	QList<VipDisplayPlayerArea*> workspaces;
 
-	//load VipDisplayPlayerArea
+	// load VipDisplayPlayerArea
 	arch.save();
-	if (arch.start("DisplayPlayerAreas"))
-	{
+	if (arch.start("DisplayPlayerAreas")) {
 		arch.content(displayArea());
 		arch.end();
 		for (int i = 0; i < displayArea()->count(); ++i)
@@ -4076,19 +3972,16 @@ bool VipMainWindow::loadSessionShowProgress(const QString & filename, VipProgres
 	else
 		arch.restore();
 
-	if (session_type == CurrentArea)
-	{
-		if (arch.start("CurrentArea"))
-		{
-			//This is a session file containing only a VipDisplayPlayerArea.
-			//Therefore, we need to remove the processing pool name from the connections
+	if (session_type == CurrentArea) {
+		if (arch.start("CurrentArea")) {
+			// This is a session file containing only a VipDisplayPlayerArea.
+			// Therefore, we need to remove the processing pool name from the connections
 			//(no more 'Wrong connection format for address...' because the VipProcessingPool is called 'VipProcessingPool2')
 
 			arch.setProperty("_vip_removeProcessingPoolFromAddresses", true);
-			VipDisplayPlayerArea * area = arch.read().value<VipDisplayPlayerArea*>();
+			VipDisplayPlayerArea* area = arch.read().value<VipDisplayPlayerArea*>();
 			arch.setProperty("_vip_removeProcessingPoolFromAddresses", QVariant());
-			if (area)
-			{
+			if (area) {
 				displayArea()->addWidget(area);
 				if (workspaces.indexOf(area) < 0)
 					workspaces << area;
@@ -4123,13 +4016,11 @@ bool VipMainWindow::loadSessionShowProgress(const QString & filename, VipProgres
 #endif
 
 	if (state.userType() != 0) {
-		//restore the size only if available
-		if (maximized)
-		{
+		// restore the size only if available
+		if (maximized) {
 			this->showMaximized();
 		}
-		else
-		{
+		else {
 			this->showNormal();
 			this->resize(s);
 		}
@@ -4138,17 +4029,15 @@ bool VipMainWindow::loadSessionShowProgress(const QString & filename, VipProgres
 	if (vipGetMultiProgressWidget()->isFloating())
 		vipGetMultiProgressWidget()->hide();
 
-	if (VipDisplayPlayerArea * area = displayArea()->currentDisplayPlayerArea())
-		if (area->processingPool())
-		{
-			//reload the processing pool to make sure all processing has there data set
+	if (VipDisplayPlayerArea* area = displayArea()->currentDisplayPlayerArea())
+		if (area->processingPool()) {
+			// reload the processing pool to make sure all processing has there data set
 			area->processingPool()->reload();
 			area->processingPool()->wait();
 		}
 
-
 	if (session_type == MainWindow) {
-		//reopen all connections, in case some processings are connected to another processing's parent pool
+		// reopen all connections, in case some processings are connected to another processing's parent pool
 		for (int i = 0; i < displayArea()->count(); ++i)
 			displayArea()->widget(i)->processingPool()->openReadDeviceAndConnections();
 	}
@@ -4163,13 +4052,13 @@ bool VipMainWindow::loadSessionShowProgress(const QString & filename, VipProgres
 
 void VipMainWindow::resetStyleSheet()
 {
-	//reapply the style sheet
-	//TODO : correct crash on linux!
-	//QString style = qApp->styleSheet();
-	// qApp->setStyleSheet("");
-	// qApp->setStyleSheet(style);
-	// this->style()->unpolish(this);
-	// this->style()->polish(this);
+	// reapply the style sheet
+	// TODO : correct crash on linux!
+	// QString style = qApp->styleSheet();
+	//  qApp->setStyleSheet("");
+	//  qApp->setStyleSheet(style);
+	//  this->style()->unpolish(this);
+	//  this->style()->polish(this);
 }
 
 static qint64 _last_active_state = 0;
@@ -4177,7 +4066,7 @@ static qint64 _last_inactive_state = 0;
 void VipMainWindow::applicationStateChanged(Qt::ApplicationState state)
 {
 
-	//multi-screen only
+	// multi-screen only
 #if QT_VERSION < QT_VERSION_CHECK(5, 15, 0)
 	if (qApp->desktop()->screenCount() > 1) {
 #else
@@ -4205,9 +4094,9 @@ void VipMainWindow::applicationStateChanged(Qt::ApplicationState state)
 	}
 	else {
 #ifndef _WIN32
-		//linux only
+		// linux only
 		if (state == Qt::ApplicationActive) {
-			//raise all visible floating widgets
+			// raise all visible floating widgets
 			QList<QDockWidget*> ws = this->findChildren<QDockWidget*>();
 			for (int i = 0; i < ws.size(); ++i) {
 				if (ws[i]->isVisible() && ws[i]->isFloating())
@@ -4236,12 +4125,12 @@ void VipMainWindow::tabChanged()
 	}
 }
 
-void VipMainWindow::showEvent(QShowEvent* //evt
+void VipMainWindow::showEvent(QShowEvent* // evt
 )
 {
 }
 
-void VipMainWindow::keyPressEvent(QKeyEvent * evt)
+void VipMainWindow::keyPressEvent(QKeyEvent* evt)
 {
 	VipDisplayPlayerArea* area = displayArea()->currentDisplayPlayerArea();
 	if (evt->key() == Qt::Key_F5)
@@ -4264,11 +4153,11 @@ void VipMainWindow::keyPressEvent(QKeyEvent * evt)
 			}
 		}
 	}
-	else if(evt->key() == Qt::Key_Right) {
+	else if (evt->key() == Qt::Key_Right) {
 		if (area && area->processingPool()->deviceType() == VipIODevice::Temporal) {
 			if (evt->modifiers() & Qt::CTRL) {
 				qint64 time = area->processingPool()->time();
-				//advanced by 10% of total time range
+				// advanced by 10% of total time range
 				qint64 first = area->processingPool()->firstTime();
 				qint64 last = area->processingPool()->lastTime();
 				qint64 step = (last - first) * 0.1;
@@ -4282,7 +4171,7 @@ void VipMainWindow::keyPressEvent(QKeyEvent * evt)
 		if (area && area->processingPool()->deviceType() == VipIODevice::Temporal) {
 			if (evt->modifiers() & Qt::CTRL) {
 				qint64 time = area->processingPool()->time();
-				//advanced by 10% of total time range
+				// advanced by 10% of total time range
 				qint64 first = area->processingPool()->firstTime();
 				qint64 last = area->processingPool()->lastTime();
 				qint64 step = (last - first) * 0.1;
@@ -4315,11 +4204,10 @@ void VipMainWindow::keyPressEvent(QKeyEvent * evt)
 		}
 	}
 	else if (evt->key() == Qt::Key_Escape) {
-		if(isFullScreen())
+		if (isFullScreen())
 			showMaximized();
 	}
 }
-
 
 void VipMainWindow::setCurrentTabDestroy(bool is_destroy)
 {
@@ -4335,52 +4223,45 @@ void VipMainWindow::autoLoad()
 	loadSession(vipGetDataDirectory() + "auto_session.session");
 }
 
-void VipMainWindow::closeEvent(QCloseEvent * evt)
+void VipMainWindow::closeEvent(QCloseEvent* evt)
 {
 	bool no_close = false;
 
 	QList<VipAbstractPlayer*> lst = this->findChildren<VipAbstractPlayer*>();
 
-	//only ask for saving session if there is at least one SubWindow left
-	if (lst.size() >0 && m_data->sessionSavingEnabled)
-	{
+	// only ask for saving session if there is at least one SubWindow left
+	if (lst.size() > 0 && m_data->sessionSavingEnabled) {
 		int res = QMessageBox::question(this, "Save session", "Do you want to save your session?", QMessageBox::Yes | QMessageBox::No | QMessageBox::Cancel);
-		if (res == QMessageBox::Yes)
-		{
+		if (res == QMessageBox::Yes) {
 			saveSession(vipGetDataDirectory() + "last_session.session");
 		}
-		else if (res == QMessageBox::No)
-		{
+		else if (res == QMessageBox::No) {
 			saveSession(vipGetDataDirectory() + "base_session.session", 0, MainWindowState | Plugins | Settings);
-			//remove last_session file
+			// remove last_session file
 			QFile::remove(vipGetDataDirectory() + "last_session.session");
 		}
 		else
 			no_close = true;
 	}
-	else
-	{
+	else {
 		saveSession(vipGetDataDirectory() + "base_session.session", 0, MainWindowState | Plugins | Settings);
-		//remove last_session file
+		// remove last_session file
 		QFile::remove(vipGetDataDirectory() + "last_session.session");
 	}
 
-
 	if (no_close)
 		evt->ignore();
-	else
-	{
-		//unload all plugins before goind through the destructor
+	else {
+		// unload all plugins before goind through the destructor
 		VipLoadPlugins::instance().unloadPlugins();
 
-		//close all top level widgets except this one
+		// close all top level widgets except this one
 		QWidgetList toplevels = qApp->topLevelWidgets();
 		for (int i = 0; i < toplevels.size(); ++i)
 			if (QWidget* w = toplevels[i])
-				if (w != this)
-				{
+				if (w != this) {
 					w->hide();
-					//toplevels[i]->close();
+					// toplevels[i]->close();
 				}
 	}
 }
@@ -4395,7 +4276,7 @@ bool VipMainWindow::currentTabDestroying() const
 	return m_data->currentTabDestroy;
 }
 
-static void open_widgets(VipMainWindow * win, const QList<QWidget*> & widgets) 
+static void open_widgets(VipMainWindow* win, const QList<QWidget*>& widgets)
 {
 	if (!widgets.size())
 		return;
@@ -4437,8 +4318,7 @@ static void open_widgets(VipMainWindow * win, const QList<QWidget*> & widgets)
 	}
 }
 
-
-QList<VipAbstractPlayer*> VipMainWindow::openDevices(const QList<VipIODevice*> & all_devices, VipAbstractPlayer * player, VipDisplayPlayerArea * area)
+QList<VipAbstractPlayer*> VipMainWindow::openDevices(const QList<VipIODevice*>& all_devices, VipAbstractPlayer* player, VipDisplayPlayerArea* area)
 {
 	if (!area)
 		area = displayArea()->currentDisplayPlayerArea();
@@ -4446,36 +4326,32 @@ QList<VipAbstractPlayer*> VipMainWindow::openDevices(const QList<VipIODevice*> &
 		return QList<VipAbstractPlayer*>();
 
 	QList<VipAbstractPlayer*> res;
-	//if a player is given, open the devices in this player
-	if (player)
-	{
-		for (int i = 0; i < all_devices.size(); ++i)
-		{
+	// if a player is given, open the devices in this player
+	if (player) {
+		for (int i = 0; i < all_devices.size(); ++i) {
 			all_devices[i]->setParent(area->processingPool());
 			if (!vipCreatePlayersFromProcessings(all_devices, player).size())
 				delete all_devices[i];
 			else {
 				res << player;
-				//delete devices without outputs (usually VipFileHandler)
+				// delete devices without outputs (usually VipFileHandler)
 				if (all_devices[i]->topLevelOutputCount() == 0)
 					delete all_devices[i];
 			}
 		}
 	}
-	else
-	{
-		for (int i = 0; i < all_devices.size(); ++i)
-		{
+	else {
+		for (int i = 0; i < all_devices.size(); ++i) {
 			all_devices[i]->setParent(area->processingPool());
 		}
 		QList<VipAbstractPlayer*> players = vipCreatePlayersFromProcessings(all_devices, nullptr);
 
-		//check the player count
-		if (players.size() > 5)
-		{
-			if (QMessageBox::warning(nullptr, "Opening many players", QString("You are about to open %1 players.\nDo you wish to continue?").arg(players.size()), QMessageBox::Ok | QMessageBox::Cancel) != QMessageBox::Ok)
-			{
-				//delete the devices and players
+		// check the player count
+		if (players.size() > 5) {
+			if (QMessageBox::warning(
+			      nullptr, "Opening many players", QString("You are about to open %1 players.\nDo you wish to continue?").arg(players.size()), QMessageBox::Ok | QMessageBox::Cancel) !=
+			    QMessageBox::Ok) {
+				// delete the devices and players
 				for (int i = 0; i < all_devices.size(); ++i)
 					delete all_devices[i];
 				for (int i = 0; i < players.size(); ++i)
@@ -4484,9 +4360,8 @@ QList<VipAbstractPlayer*> VipMainWindow::openDevices(const QList<VipIODevice*> &
 			}
 		}
 
-		//delete devices without outputs (usually VipFileHandler)
-		for (int i = 0; i < all_devices.size(); ++i)
-		{
+		// delete devices without outputs (usually VipFileHandler)
+		for (int i = 0; i < all_devices.size(); ++i) {
 			if (all_devices[i]->topLevelOutputCount() == 0)
 				delete all_devices[i];
 		}
@@ -4510,7 +4385,7 @@ void VipMainWindow::openPlayers(const QList<VipAbstractPlayer*> players)
 	open_widgets(this, vipListCast<QWidget*>(players));
 }
 
-QList<VipAbstractPlayer*> VipMainWindow::openPaths(const VipPathList & paths, VipAbstractPlayer * player, VipDisplayPlayerArea * area)
+QList<VipAbstractPlayer*> VipMainWindow::openPaths(const VipPathList& paths, VipAbstractPlayer* player, VipDisplayPlayerArea* area)
 {
 	bool _vip_openPathShowDialogOnError = property("_vip_openPathShowDialogOnError").toBool();
 	setProperty("_vip_openPathShowDialogOnError", false);
@@ -4520,8 +4395,7 @@ QList<VipAbstractPlayer*> VipMainWindow::openPaths(const VipPathList & paths, Vi
 	if (!area)
 		area = displayArea()->currentDisplayPlayerArea();
 
-	if (!area && !(paths.size() == 1 && QFileInfo(paths.first().canonicalPath()).suffix() == "session"))
-	{
+	if (!area && !(paths.size() == 1 && QFileInfo(paths.first().canonicalPath()).suffix() == "session")) {
 		VIP_LOG_ERROR("Cannot open paths: you need to select a valid Workspace first");
 		if (_vip_openPathShowDialogOnError)
 			QMessageBox::warning(nullptr, "Error", "Cannot open paths: you need to select a valid Workspace first");
@@ -4538,39 +4412,33 @@ QList<VipAbstractPlayer*> VipMainWindow::openPaths(const VipPathList & paths, Vi
 
 	QList<VipIODevice*> all_devices;
 
-	for (int i = 0; i < paths.size(); ++i)
-	{
+	for (int i = 0; i < paths.size(); ++i) {
 		if (progress.canceled())
 			break;
 		progress.setValue(i);
 
 		VipPath path = paths[i];
 
-		if (path.isDir())
-		{
+		if (path.isDir()) {
 			progress.setText("<b>Open</b> " + QFileInfo((paths[i].canonicalPath())).fileName());
 			vipProcessEvents();
 
 			QString dirname = path.canonicalPath();
-			if (!dirname.isEmpty())
-			{
-				VipIODevice * device = VipCreateDevice::create(path);
+			if (!dirname.isEmpty()) {
+				VipIODevice* device = VipCreateDevice::create(path);
 
-				if (device)
-				{
+				if (device) {
 					device->setMapFileSystem(path.mapFileSystem());
-					//allow VipIODevice to display a progress bar
+					// allow VipIODevice to display a progress bar
 					device->setProperty("_vip_enableProgress", true);
 
-					if (!device->open(VipIODevice::ReadOnly))
-					{
+					if (!device->open(VipIODevice::ReadOnly)) {
 						VIP_LOG_WARNING("Fail to open " + dirname + (device->errorString().size() ? ", " + device->errorString() : ""));
 						if (device->errorString().size())
 							errors << dirname;
 						delete device;
 					}
-					else
-					{
+					else {
 						VIP_LOG_INFO("Open path: " + dirname);
 						all_devices.append(device);
 					}
@@ -4579,24 +4447,20 @@ QList<VipAbstractPlayer*> VipMainWindow::openPaths(const VipPathList & paths, Vi
 					errors << dirname;
 			}
 		}
-		else
-		{
+		else {
 			QString filename = paths[i].canonicalPath();
-			//session file
-			if (QFileInfo(filename).suffix() == "session")
-			{
+			// session file
+			if (QFileInfo(filename).suffix() == "session") {
 				progress.setText("<b>Open</b> " + QFileInfo(filename).fileName());
 				vipProcessEvents();
 				if (!this->loadSession(filename))
 					errors << filename;
 			}
-			else
-			{
+			else {
 
 				QList<VipIODevice::Info> devices = VipIODevice::possibleReadDevices(paths[i], QByteArray());
-				VipIODevice * dev = VipCreateDevice::create(devices, paths[i]);
-				if (dev)
-				{
+				VipIODevice* dev = VipCreateDevice::create(devices, paths[i]);
+				if (dev) {
 					dev->setPath(filename);
 					dev->setMapFileSystem(paths[i].mapFileSystem());
 
@@ -4607,16 +4471,14 @@ QList<VipAbstractPlayer*> VipMainWindow::openPaths(const VipPathList & paths, Vi
 					progress.setText("<b>Open</b> " + name);
 					vipProcessEvents();
 
-					//allow VipIODevice to display a progress bar
+					// allow VipIODevice to display a progress bar
 					dev->setProperty("_vip_enableProgress", true);
 
-					if (dev->open(VipIODevice::ReadOnly))
-					{
+					if (dev->open(VipIODevice::ReadOnly)) {
 						all_devices << dev;
 						VIP_LOG_INFO("Open path: " + filename);
 					}
-					else
-					{
+					else {
 						QString err = dev->errorString();
 						if (err.size())
 							errors << filename;
@@ -4624,8 +4486,7 @@ QList<VipAbstractPlayer*> VipMainWindow::openPaths(const VipPathList & paths, Vi
 						VIP_LOG_WARNING("Fail to open " + filename + (err.size() ? ", " + err : ""));
 					}
 				}
-				else
-				{
+				else {
 					errors << filename;
 					VIP_LOG_WARNING("No suitable device found for '" + filename + "'");
 				}
@@ -4636,7 +4497,7 @@ QList<VipAbstractPlayer*> VipMainWindow::openPaths(const VipPathList & paths, Vi
 	QList<VipAbstractPlayer*> res = openDevices(all_devices, player, area);
 
 	if (_vip_openPathShowDialogOnError && errors.size()) {
-		//display a dialog box
+		// display a dialog box
 		QString file_error;
 		for (int i = 0; i < errors.size(); ++i)
 			file_error += "\t" + errors[i] + "\n";
@@ -4648,22 +4509,18 @@ QList<VipAbstractPlayer*> VipMainWindow::openPaths(const VipPathList & paths, Vi
 	return res;
 }
 
-
 QList<VipAbstractPlayer*> VipMainWindow::openFiles()
 {
 	QStringList filters;
 	filters << "Session file (*.session)";
-	if (m_data->displayArea->currentDisplayPlayerArea())
-	{
+	if (m_data->displayArea->currentDisplayPlayerArea()) {
 		filters += VipIODevice::possibleReadFilters(QString(), QByteArray());
-		//create the All files filter
+		// create the All files filter
 		QString all_filters;
-		for (int i = 0; i < filters.size(); ++i)
-		{
+		for (int i = 0; i < filters.size(); ++i) {
 			int index1 = filters[i].indexOf('(');
 			int index2 = filters[i].indexOf(')', index1);
-			if (index1 >= 0 && index2 >= 0)
-			{
+			if (index1 >= 0 && index2 >= 0) {
 				all_filters += filters[i].mid(index1 + 1, index2 - index1 - 1) + " ";
 			}
 		}
@@ -4703,7 +4560,6 @@ void VipMainWindow::restart()
 		vipSetRestartEnabled(5000);
 }
 
-
 void VipMainWindow::raiseOnTop()
 {
 	if (parentWidget()) {
@@ -4722,7 +4578,6 @@ void VipMainWindow::raiseOnTop()
 
 	this->show();
 	this->raise();
-
 }
 
 void VipMainWindow::setOpenPathShowDialogOnError(bool enable)
@@ -4730,11 +4585,10 @@ void VipMainWindow::setOpenPathShowDialogOnError(bool enable)
 	this->setProperty("_vip_openPathShowDialogOnError", enable);
 }
 
-QList<VipAbstractPlayer*> VipMainWindow::openPaths(const QStringList & filenames)
+QList<VipAbstractPlayer*> VipMainWindow::openPaths(const QStringList& filenames)
 {
 	VipPathList paths;
-	for (int i = 0; i < filenames.size(); ++i)
-	{
+	for (int i = 0; i < filenames.size(); ++i) {
 		QFileInfo info(filenames[i]);
 		bool is_dir = (info.exists() && info.isDir());
 		paths.append(VipPath(filenames[i], is_dir));
@@ -4744,7 +4598,7 @@ QList<VipAbstractPlayer*> VipMainWindow::openPaths(const QStringList & filenames
 
 void VipMainWindow::saveSession()
 {
-	VipExportSessionWidget * edit = new VipExportSessionWidget();
+	VipExportSessionWidget* edit = new VipExportSessionWidget();
 	VipGenericDialog dialog(edit, "Save current session");
 	if (dialog.exec() == QDialog::Accepted)
 		edit->exportSession();
@@ -4766,12 +4620,10 @@ void VipMainWindow::showHelp()
 
 void VipMainWindow::showHelpCustom()
 {
-	if (QAction * act = qobject_cast<QAction*>(sender()))
-	{
+	if (QAction* act = qobject_cast<QAction*>(sender())) {
 		QString text = act->text();
 		text.remove(" help...");
-		if (QDir("help/" + text).exists())
-		{
+		if (QDir("help/" + text).exists()) {
 			QDesktopServices::openUrl(QUrl(QFileInfo("help/" + text + "/index.html").canonicalFilePath()));
 		}
 	}
@@ -4782,33 +4634,27 @@ bool VipMainWindow::workspacesMaximized() const
 	return closeBar()->maximize->isChecked();
 }
 
-QMenu * VipMainWindow::createPopupMenu()
+QMenu* VipMainWindow::createPopupMenu()
 {
-	if (QMenu * menu = QMainWindow::createPopupMenu())
-	{
-		//remove left, right and bottom tool bars
+	if (QMenu* menu = QMainWindow::createPopupMenu()) {
+		// remove left, right and bottom tool bars
 		QList<QAction*> acts = menu->actions();
-		for (int i = 0; i < acts.size(); ++i)
-		{
-			if (acts[i]->text() == "left area")
-			{
+		for (int i = 0; i < acts.size(); ++i) {
+			if (acts[i]->text() == "left area") {
 				menu->removeAction(acts[i]);
-				//delete acts[i];
+				// delete acts[i];
 			}
-			else if (acts[i]->text() == "right area")
-			{
+			else if (acts[i]->text() == "right area") {
 				menu->removeAction(acts[i]);
-				//delete acts[i];
+				// delete acts[i];
 			}
-			else if (acts[i]->text() == "bottom area")
-			{
+			else if (acts[i]->text() == "bottom area") {
 				menu->removeAction(acts[i]);
-				//delete acts[i];
+				// delete acts[i];
 			}
-			else if (acts[i]->text() == "top area")
-			{
+			else if (acts[i]->text() == "top area") {
 				menu->removeAction(acts[i]);
-				//delete acts[i];
+				// delete acts[i];
 			}
 		}
 		return menu;
@@ -4820,7 +4666,7 @@ QString VipMainWindow::customTitle() const
 {
 	return m_data->iconBar->customTitle;
 }
-void VipMainWindow::setCustomTitle(const QString & title)
+void VipMainWindow::setCustomTitle(const QString& title)
 {
 	m_data->iconBar->customTitle = title;
 	m_data->iconBar->updateTitle();
@@ -4833,8 +4679,7 @@ int VipMainWindow::margin() const
 
 void VipMainWindow::setMargin(int m)
 {
-	if (!m_data->left)
-	{
+	if (!m_data->left) {
 		m_data->left = new QToolBar();
 		m_data->left->setObjectName("left area");
 		m_data->left->setWindowTitle("left area");
@@ -4882,12 +4727,11 @@ void VipMainWindow::setMargin(int m)
 void VipMainWindow::setMaxColumnsForWorkspace(int maxc)
 {
 	if (VipDisplayPlayerArea* area = displayArea()->currentDisplayPlayerArea()) {
-		
+
 		closeBar()->maxCols->blockSignals(true);
 		closeBar()->maxCols->setValue(maxc);
 		closeBar()->maxCols->blockSignals(false);
 		area->setMaxColumns(maxc);
-		
 	}
 }
 
@@ -4914,7 +4758,7 @@ void VipMainWindow::maximizeWorkspaces(bool enable)
 		maximize_button->hide();
 		maximize_button->setParent(vipGetMainWindow());
 		maximize_button->move(vipGetMainWindow()->width() - maximize_button->width(), 0);
-		QObject::connect(maximize_button, &QToolButton::clicked, std::bind(&VipMainWindow::maximizeWorkspaces,this,false));
+		QObject::connect(maximize_button, &QToolButton::clicked, std::bind(&VipMainWindow::maximizeWorkspaces, this, false));
 		vipGetMainWindow()->setProperty("_vip_maximizedButton", QVariant::fromValue(maximize_button));
 	}
 
@@ -4964,21 +4808,20 @@ void VipMainWindow::maximizeWorkspaces(bool enable)
 
 void VipMainWindow::displayGraphicsProcessingPlayer()
 {
-	//if (VipDisplayPlayerArea * area = displayArea()->currentDisplayPlayerArea())
+	// if (VipDisplayPlayerArea * area = displayArea()->currentDisplayPlayerArea())
 	{
-		//VipGraphicsEditorPlayer * player = new VipGraphicsEditorPlayer();
-		// player->setWindowTitle("Workspace " + QString::number(area->id()) + " graphics processing tree");
-		// player->view()->scene()->setProcessingPool(area->processingPool());
-		// VipMultiDragWidget *w = vipCreateFromBaseDragWidget(vipCreateFromWidgets(QList<QWidget*>() << player));
-		// area->addWidget(w);
-		// w->show();
+		// VipGraphicsEditorPlayer * player = new VipGraphicsEditorPlayer();
+		//  player->setWindowTitle("Workspace " + QString::number(area->id()) + " graphics processing tree");
+		//  player->view()->scene()->setProcessingPool(area->processingPool());
+		//  VipMultiDragWidget *w = vipCreateFromBaseDragWidget(vipCreateFromWidgets(QList<QWidget*>() << player));
+		//  area->addWidget(w);
+		//  w->show();
 	}
 }
 
 void VipMainWindow::setSessionSavingEnabled(bool enable)
 {
-	if (m_data->sessionSavingEnabled != enable)
-	{
+	if (m_data->sessionSavingEnabled != enable) {
 		m_data->sessionSavingEnabled = enable;
 		m_data->saveSessionAction->setVisible(enable);
 	}
@@ -5022,40 +4865,33 @@ void VipMainWindow::stopUpdateThread()
 	}
 }
 
-
-VipMainWindow * vipGetMainWindow()
+VipMainWindow* vipGetMainWindow()
 {
-	static VipMainWindow * win = nullptr;
-	if (!win)
-	{
+	static VipMainWindow* win = nullptr;
+	if (!win) {
 		win = new VipMainWindow();
-		//init() function cannot be called from within the constructor, so just call it after
+		// init() function cannot be called from within the constructor, so just call it after
 		win->metaObject()->invokeMethod(win, "init", Qt::DirectConnection);
 	}
 	return win;
 }
 
-
-
-
-
-VipFunctionDispatcher<1> & vipFDCreateWidgetFromIODevice()
+VipFunctionDispatcher<1>& vipFDCreateWidgetFromIODevice()
 {
 	static VipFunctionDispatcher<1> disp;
 	return disp;
 }
 
-VipFunctionDispatcher<2> & vipFDSwitchToMinimalDisplay()
+VipFunctionDispatcher<2>& vipFDSwitchToMinimalDisplay()
 {
 	static VipFunctionDispatcher<2> disp;
 	return disp;
 }
 
-VipBaseDragWidget * vipCreateWidgetFromProcessingObject(VipProcessingObject* object)
+VipBaseDragWidget* vipCreateWidgetFromProcessingObject(VipProcessingObject* object)
 {
-	if (qobject_cast<VipIODevice*>(object))
-	{
-		VipIODevice * device = static_cast<VipIODevice*>(object);
+	if (qobject_cast<VipIODevice*>(object)) {
+		VipIODevice* device = static_cast<VipIODevice*>(object);
 		VipFunctionDispatcher<1>::function_list_type lst = vipFDCreateWidgetFromIODevice().exactMatch(device);
 		if (lst.size())
 			return lst.back()(device);
@@ -5065,35 +4901,31 @@ VipBaseDragWidget * vipCreateWidgetFromProcessingObject(VipProcessingObject* obj
 	return vipCreateFromWidgets(vipListCast<QWidget*>(players));
 }
 
-VipBaseDragWidget * vipCreateFromWidgets(const QList<QWidget*> & players)
+VipBaseDragWidget* vipCreateFromWidgets(const QList<QWidget*>& players)
 {
-	//we've got the widgets, now create the VipDragWidget objects
+	// we've got the widgets, now create the VipDragWidget objects
 	QList<VipDragWidget*> dragWidgets;
-	for (int i = 0; i < players.size(); ++i)
-	{
+	for (int i = 0; i < players.size(); ++i) {
 		VipDragWidget* drag = new VipDragWidget();
 		drag->setWidget(players[i]);
 		dragWidgets.append(drag);
 	}
 
-	//if size > 1, reorganize into a VipMultiDragWidget
+	// if size > 1, reorganize into a VipMultiDragWidget
 	if (dragWidgets.size() == 0)
 		return nullptr;
 	else if (dragWidgets.size() == 1)
 		return dragWidgets.first();
-	else
-	{
+	else {
 		int width = std::ceil(std::sqrt((double)dragWidgets.size()));
-		//int height = std::ceil(double(dragWidgets.size())/width);
+		// int height = std::ceil(double(dragWidgets.size())/width);
 
-		VipMultiDragWidget * drag = new VipMultiDragWidget();
+		VipMultiDragWidget* drag = new VipMultiDragWidget();
 
 		int w = 0, h = 0;
-		for (int i = 0; i < dragWidgets.size(); ++i)
-		{
-			//max width: go to next row
-			if (drag->subCount(h) >= width)
-			{
+		for (int i = 0; i < dragWidgets.size(); ++i) {
+			// max width: go to next row
+			if (drag->subCount(h) >= width) {
 				++h;
 				w = 0;
 			}
@@ -5101,55 +4933,45 @@ VipBaseDragWidget * vipCreateFromWidgets(const QList<QWidget*> & players)
 			if (drag->mainCount() <= h)
 				drag->mainResize(h + 1);
 
-			//width smaller than max width: resize
+			// width smaller than max width: resize
 			if (drag->subCount(h) <= w)
 				drag->subResize(h, w + 1);
 
-			//add the drag widget
+			// add the drag widget
 			drag->setWidget(h, w, dragWidgets[i]);
 			++w;
 		}
 
 		return drag;
 	}
-
-
 }
 
-VipMultiDragWidget * vipCreateFromBaseDragWidget(VipBaseDragWidget * w)
+VipMultiDragWidget* vipCreateFromBaseDragWidget(VipBaseDragWidget* w)
 {
 	if (!w)
 		return nullptr;
 
 	if (qobject_cast<VipMultiDragWidget*>(w))
 		return static_cast<VipMultiDragWidget*>(w);
-	else
-	{
-		VipMultiDragWidget * multi = new VipMultiDragWidget();
+	else {
+		VipMultiDragWidget* multi = new VipMultiDragWidget();
 		multi->setWidget(0, 0, w);
 		return multi;
 	}
 }
 
-
-
-
-
-
-
-//Handle drag & drop of VipPlotItem
+// Handle drag & drop of VipPlotItem
 #include "VipMimeData.h"
 #include "VipPlayer.h"
 
-static bool supportPlotItem(VipPlotMimeData * mime, QWidget * drop_widget)
+static bool supportPlotItem(VipPlotMimeData* mime, QWidget* drop_widget)
 {
 	Q_UNUSED(mime)
-		Q_UNUSED(drop_widget)
-		return true;
+	Q_UNUSED(drop_widget)
+	return true;
 }
 
 #include "VipMimeData.h"
-
 
 static VipBaseDragWidget* drop_mime_data_widget(VipDisplayPlayerArea* area, VipBaseDragWidget* widget, QWidget* target)
 {
@@ -5188,20 +5010,16 @@ static VipBaseDragWidget* drop_mime_data_widget(VipDisplayPlayerArea* area, VipB
 	return nullptr;
 }
 
-
-
-static VipBaseDragWidget * dropPlotItem(VipPlotMimeData * mime, QWidget * drop_widget)
+static VipBaseDragWidget* dropPlotItem(VipPlotMimeData* mime, QWidget* drop_widget)
 {
 	QList<VipPlotItem*> items = mime->plotData(nullptr, drop_widget);
-	VipAbstractPlayer * player = nullptr;
-	VipBaseDragWidget * res = nullptr;
+	VipAbstractPlayer* player = nullptr;
+	VipBaseDragWidget* res = nullptr;
 
-	if (VipMimeDataCoordinateSystem * mime_c = qobject_cast<VipMimeDataCoordinateSystem*>(mime))
-	{
-		//handle more complex VipMimeDataCoordinateSystem
+	if (VipMimeDataCoordinateSystem* mime_c = qobject_cast<VipMimeDataCoordinateSystem*>(mime)) {
+		// handle more complex VipMimeDataCoordinateSystem
 		QList<VipAbstractPlayer*> players = mime_c->players();
-		if (players.size())
-		{
+		if (players.size()) {
 			QList<VipPlotPlayer*> plots = vipListCast<VipPlotPlayer*>(players);
 			if (plots.size())
 				player = plots.first();
@@ -5214,36 +5032,33 @@ static VipBaseDragWidget * dropPlotItem(VipPlotMimeData * mime, QWidget * drop_w
 	if (!items.size())
 		return res;
 
-	VipAbstractPlayer * pl = player;
+	VipAbstractPlayer* pl = player;
 	if (!pl)
 		pl = VipAbstractPlayer::findAbstractPlayer(items.first());
 	if (!pl)
 		return nullptr;
 
+	VipProcessingPool* src_pool = pl->processingPool();
+	VipProcessingPool* dst_pool = VipMimeDataCoordinateSystem::fromWidget(drop_widget);
 
-	VipProcessingPool * src_pool = pl->processingPool();
-	VipProcessingPool * dst_pool = VipMimeDataCoordinateSystem::fromWidget(drop_widget);
+	// TODO: handle different dst processing pool
+	// handle drop inside a plot player from a different processing pool
 
-	//TODO: handle different dst processing pool
-	//handle drop inside a plot player from a different processing pool
+	if (src_pool == dst_pool) {
+		// create a new player (if required) and drop items inside
 
-	if (src_pool == dst_pool)
-	{
-		//create a new player (if required) and drop items inside
-
-		VipAbstractPlayer * _new = (pl == player ? pl : pl->createEmpty());
+		VipAbstractPlayer* _new = (pl == player ? pl : pl->createEmpty());
 		QList<VipAbstractScale*> scales;
 		VipCoordinateSystem::Type type = _new->plotWidget2D()->area()->standardScales(scales);
 
 		int count = 0;
 
-		for (int i = 0; i < items.size(); ++i)
-		{
-			//disable dropping of VipPlotSpectrogram
+		for (int i = 0; i < items.size(); ++i) {
+			// disable dropping of VipPlotSpectrogram
 			if (qobject_cast<VipPlotSpectrogram*>(items[i]))
 				continue;
 
-			//use the standard approach by setting the axes
+			// use the standard approach by setting the axes
 			items[i]->setParentItem(nullptr);
 			if (items[i]->scene())
 				items[i]->scene()->removeItem(items[i]);
@@ -5252,8 +5067,7 @@ static VipBaseDragWidget * dropPlotItem(VipPlotMimeData * mime, QWidget * drop_w
 			++count;
 		}
 
-		if (count)
-		{
+		if (count) {
 			if (!res) {
 				res = new VipDragWidget();
 				static_cast<VipDragWidget*>(res)->setWidget(_new);
@@ -5263,22 +5077,19 @@ static VipBaseDragWidget * dropPlotItem(VipPlotMimeData * mime, QWidget * drop_w
 				return res;
 			}
 		}
-		else
-		{
+		else {
 			if (_new != player)
-				delete _new; //delete newly created player
+				delete _new; // delete newly created player
 			return nullptr;
 		}
 	}
-	else
-	{
-		//different processing pool: copy the items
+	else {
+		// different processing pool: copy the items
 		VipMimeDataDuplicatePlotItem duplicate(items);
 		duplicate.plotData(nullptr, drop_widget);
 
 		QList<VipAbstractPlayer*> players = duplicate.players();
-		if (players.size())
-		{
+		if (players.size()) {
 			res = vipCreateFromWidgets(vipListCast<QWidget*>(players));
 			res = drop_mime_data_widget(VipDisplayPlayerArea::fromChildWidget(drop_widget), res, drop_widget);
 
@@ -5288,15 +5099,15 @@ static VipBaseDragWidget * dropPlotItem(VipPlotMimeData * mime, QWidget * drop_w
 	return nullptr;
 }
 
-static VipBaseDragWidget * dropMimeData(QMimeData * mime, QWidget * drop_widget)
+static VipBaseDragWidget* dropMimeData(QMimeData* mime, QWidget* drop_widget)
 {
 	if (mime->formats().size() == 1 && mime->formats().first() == "application/dragwidget") {
-		//drop a VipBaseDragWidget into another workspace
+		// drop a VipBaseDragWidget into another workspace
 		VipBaseDragWidgetMimeData* m = static_cast<VipBaseDragWidgetMimeData*>(mime);
-		if (VipDragWidget * d = qobject_cast<VipDragWidget*>(m->dragWidget)) {
+		if (VipDragWidget* d = qobject_cast<VipDragWidget*>(m->dragWidget)) {
 			if (VipDisplayPlayerArea* current_area = VipDisplayPlayerArea::fromChildWidget(m->dragWidget))
 				if (VipDisplayPlayerArea* area = VipDisplayPlayerArea::fromChildWidget(drop_widget)) {
-					if (area != current_area) { //drop from one workspace to another
+					if (area != current_area) { // drop from one workspace to another
 						if (VipAbstractPlayer* pl = qobject_cast<VipAbstractPlayer*>(d->widget())) {
 
 							QList<VipDisplayObject*> objs = pl->displayObjects();
@@ -5305,9 +5116,9 @@ static VipBaseDragWidget * dropMimeData(QMimeData * mime, QWidget * drop_widget)
 								srcs += objs[i]->allSources();
 							QList<VipDisplayObject*> all_disps;
 							for (int i = 0; i < srcs.size(); ++i)
-								all_disps += vipListCast< VipDisplayObject*>(srcs[i]->allSinks());
+								all_disps += vipListCast<VipDisplayObject*>(srcs[i]->allSinks());
 							if (vipToSet(objs) == vipToSet(all_disps)) {
-								//drop is allowed
+								// drop is allowed
 							}
 							else
 								return nullptr;
@@ -5335,34 +5146,31 @@ static VipBaseDragWidget * dropMimeData(QMimeData * mime, QWidget * drop_widget)
 	}
 }
 
-static void minimialDisplayMainWindow(VipMainWindow * window, bool minimal)
+static void minimialDisplayMainWindow(VipMainWindow* window, bool minimal)
 {
 	window->showTabBar()->setEnabled(minimal);
 
-	if (minimal)
-	{
-		//save the state
+	if (minimal) {
+		// save the state
 		if (window->property("save_state").userType() == 0)
 			window->setProperty("save_state", window->saveState());
 
-		//hide all dock widgets
+		// hide all dock widgets
 
-		QList<QDockWidget*> docks = window->findChildren<QDockWidget *>(QString(), Qt::FindDirectChildrenOnly);
+		QList<QDockWidget*> docks = window->findChildren<QDockWidget*>(QString(), Qt::FindDirectChildrenOnly);
 		for (int i = 0; i < docks.size(); ++i)
 			docks[i]->setVisible(!minimal);
 
-		//hide/show the tab area
+		// hide/show the tab area
 		window->displayArea()->displayTabWidget()->tabBar()->setVisible(!minimal);
 
-		if (window->displayArea()->currentDisplayPlayerArea())
-		{
+		if (window->displayArea()->currentDisplayPlayerArea()) {
 			window->setProperty("visible_timerange", window->displayArea()->currentDisplayPlayerArea()->playWidget()->timeRangeVisible());
 			window->displayArea()->currentDisplayPlayerArea()->playWidget()->setTimeRangeVisible(false);
 		}
 	}
-	else
-	{
-		//restore the state
+	else {
+		// restore the state
 
 		QByteArray state = window->property("save_state").toByteArray();
 		if (state.size())
@@ -5372,11 +5180,9 @@ static void minimialDisplayMainWindow(VipMainWindow * window, bool minimal)
 		if (window->displayArea()->currentDisplayPlayerArea())
 			window->displayArea()->currentDisplayPlayerArea()->playWidget()->setTimeRangeVisible(window->property("visible_timerange").toBool());
 	}
-
-
 }
 
-static void minimalDisplayCustomDragWidget(VipDragWidget * , bool )
+static void minimalDisplayCustomDragWidget(VipDragWidget*, bool)
 {
 	/* if (minimal) {
 		w->setProperty("show_toolbar", w->showPlayerToolBar());
@@ -5389,43 +5195,37 @@ static void minimalDisplayCustomDragWidget(VipDragWidget * , bool )
 	}*/
 }
 
-static void minimalDisplayPlayer(VipPlayer2D * player, bool minimal)
+static void minimalDisplayPlayer(VipPlayer2D* player, bool minimal)
 {
-	if (minimal)
-	{
-		if (player->isVisible())
-		{
-			if (VipPlotPlayer * p = qobject_cast<VipPlotPlayer*>(player))
-			{
+	if (minimal) {
+		if (player->isVisible()) {
+			if (VipPlotPlayer* p = qobject_cast<VipPlotPlayer*>(player)) {
 				p->setProperty("legendPosition", p->legendPosition());
 				p->setLegendPosition(Vip::LegendHidden);
 			}
 		}
 	}
-	else
-	{
-		if (VipPlotPlayer * pl = qobject_cast<VipPlotPlayer*>(player))
-		{
+	else {
+		if (VipPlotPlayer* pl = qobject_cast<VipPlotPlayer*>(player)) {
 			QVariant p = pl->property("legendPosition");
-			if (p.userType() != 0) pl->setLegendPosition((Vip::PlayerLegendPosition)p.toInt());
-			else pl->setLegendPosition(VipGuiDisplayParamaters::instance()->legendPosition());
+			if (p.userType() != 0)
+				pl->setLegendPosition((Vip::PlayerLegendPosition)p.toInt());
+			else
+				pl->setLegendPosition(VipGuiDisplayParamaters::instance()->legendPosition());
 			pl->setProperty("legendPosition", QVariant());
 		}
 	}
 }
 
-static void minimalDisplayVideoPlayer(VipVideoPlayer * player, bool minimal)
+static void minimalDisplayVideoPlayer(VipVideoPlayer* player, bool minimal)
 {
-	if (minimal)
-	{
+	if (minimal) {
 		player->setProperty("show_axes", player->isShowAxes());
 		player->showAxes(false);
 	}
-	else
-	{
+	else {
 		QVariant p = player->property("show_axes");
-		if (p.userType() != 0)
-		{
+		if (p.userType() != 0) {
 			player->showAxes(p.toBool());
 		}
 		else
@@ -5435,16 +5235,14 @@ static void minimalDisplayVideoPlayer(VipVideoPlayer * player, bool minimal)
 	}
 }
 
-
-
-VipArchive & vipSaveBaseDragWidget(VipArchive & arch, VipBaseDragWidget * w)
+VipArchive& vipSaveBaseDragWidget(VipArchive& arch, VipBaseDragWidget* w)
 {
 	if (!w) {
 		arch.setError("nullptr VipBaseDragWidget");
 		return arch;
 	}
 
-	//find all players and related processing objects
+	// find all players and related processing objects
 	QList<VipAbstractPlayer*> players = w->findChildren<VipAbstractPlayer*>();
 	QList<VipProcessingObject*> objects;
 	for (int i = 0; i < players.size(); ++i) {
@@ -5453,48 +5251,47 @@ VipArchive & vipSaveBaseDragWidget(VipArchive & arch, VipBaseDragWidget * w)
 		for (int j = 0; j < displays.size(); ++j)
 			objects += displays[j]->allSources();
 	}
-	//make unique
+	// make unique
 	objects = vipToSet(objects).values();
 
 	QVariantMap metadata;
 	metadata["session_type"] = VipMainWindow::DragWidget;
 	arch.start("VipSession", metadata);
 
-	//save the Thermavip version
+	// save the Thermavip version
 	arch.content("version", QString(VIP_VERSION));
 
 	arch.start("BaseDragWidget");
-	//new in 2.2.17
+	// new in 2.2.17
 	arch.content("width", w->width());
 	arch.content("height", w->height());
 
-	//save the players
+	// save the players
 	arch.start("Widgets");
 	arch.content(QVariant::fromValue(w));
 	arch.end();
 
-	//save the processings
+	// save the processings
 	arch.start("Processings");
 
 	if (objects.size() && objects.first()->parentObjectPool())
-		//save the processing pool time
+		// save the processing pool time
 		arch.content("time", objects.first()->parentObjectPool()->time());
 	else
 		arch.content("time", 0);
 
-	for (int i = 0; i < objects.size(); ++i)
-	{
+	for (int i = 0; i < objects.size(); ++i) {
 		if (!objects[i]->property("_vip_no_serialize").toBool())
 			arch.content(objects[i]);
 	}
-	arch.end(); //Processings
+	arch.end(); // Processings
 
-	arch.end(); //BaseDragWidget
-	arch.end(); //VipSession
+	arch.end(); // BaseDragWidget
+	arch.end(); // VipSession
 	return arch;
 }
 
-VipBaseDragWidget * vipLoadBaseDragWidget(VipArchive & arch, VipDisplayPlayerArea * target)
+VipBaseDragWidget* vipLoadBaseDragWidget(VipArchive& arch, VipDisplayPlayerArea* target)
 {
 	bool has_session = false;
 	arch.save();
@@ -5516,74 +5313,70 @@ VipBaseDragWidget * vipLoadBaseDragWidget(VipArchive & arch, VipDisplayPlayerAre
 	if (!arch.start("BaseDragWidget"))
 		return nullptr;
 
-	//new in 2.2.17
+	// new in 2.2.17
 	arch.save();
 	int width = 0, height = 0;
 	if (!arch.content("width", width) || !arch.content("height", height))
 		arch.restore();
 
-
-	//load players
+	// load players
 	arch.start("Widgets");
 
-
-	VipBaseDragWidget * w = arch.read().value<VipBaseDragWidget*>();
+	VipBaseDragWidget* w = arch.read().value<VipBaseDragWidget*>();
 	arch.end();
 	if (!w) {
 		arch.end();
 		return nullptr;
 	}
 
-	//load processings
+	// load processings
 	arch.start("Processings");
 	qint64 time = arch.read("time").toLongLong();
 	QList<VipProcessingObject*> objects;
 	while (!arch.hasError()) {
-		if (VipProcessingObject * obj = arch.read().value<VipProcessingObject*>()) {
-			//open the read only devices
-			if (VipIODevice * device = qobject_cast<VipIODevice*>(obj)) {
+		if (VipProcessingObject* obj = arch.read().value<VipProcessingObject*>()) {
+			// open the read only devices
+			if (VipIODevice* device = qobject_cast<VipIODevice*>(obj)) {
 				if (device->supportedModes() & VipIODevice::ReadOnly)
 					device->open(VipIODevice::ReadOnly);
 			}
 			objects << obj;
 		}
 	}
-	arch.end();//end Processings
-	arch.end(); //end BaseDragWidget
+	arch.end(); // end Processings
+	arch.end(); // end BaseDragWidget
 	if (has_session)
-		arch.end(); //VipSession
+		arch.end(); // VipSession
 
-					//first, add the processings in a temporary processing pool in order to open the connections
+	// first, add the processings in a temporary processing pool in order to open the connections
 	VipProcessingPool tmp;
 	for (int i = 0; i < objects.size(); ++i)
 		objects[i]->setParent(&tmp);
 
-	//open connections
+	// open connections
 	for (int i = 0; i < objects.size(); ++i)
 		objects[i]->openAllConnections();
 
-	//set the real parent processing pool
+	// set the real parent processing pool
 	for (int i = 0; i < objects.size(); ++i)
 		objects[i]->setParent(target->processingPool());
 
-	VipMultiDragWidget * m = vipCreateFromBaseDragWidget(w);
+	VipMultiDragWidget* m = vipCreateFromBaseDragWidget(w);
 	target->addWidget(m);
 
-
-	//Now, we need to call again the playerCreated() function for all players to trigger again the vipFDPlayerCreated() dispatcher.
-	//Indeed, when loading a session, the dispatcher is first called on a non connected player which might be an issue for some plugins.
+	// Now, we need to call again the playerCreated() function for all players to trigger again the vipFDPlayerCreated() dispatcher.
+	// Indeed, when loading a session, the dispatcher is first called on a non connected player which might be an issue for some plugins.
 	QList<VipPlayer2D*> players = target->dragWidgetArea()->findChildren<VipPlayer2D*>();
 	for (int i = 0; i < players.size(); ++i)
 		QMetaObject::invokeMethod(players[i], "playerCreated", Qt::QueuedConnection);
 
-
-	//reset processing pool
-	VipProcessingPool * pool = target->processingPool();
-	//qint64 time = pool->time();
+	// reset processing pool
+	VipProcessingPool* pool = target->processingPool();
+	// qint64 time = pool->time();
 
 	QMetaObject::invokeMethod(target->playWidget()->area(), "updateProcessingPool", Qt::QueuedConnection);
 	QMetaObject::invokeMethod(target->playWidget()->area(), "setTime", Qt::QueuedConnection, Q_ARG(double, (double)time));
-	//we still need to reload the processing pool to update Resource devices
+	// we still need to reload the processing pool to update Resource devices
 	QMetaObject::invokeMethod(pool, "reload", Qt::QueuedConnection);
 
 	if (width != 0 && height != 0 && !m->isMaximized())
@@ -5592,9 +5385,7 @@ VipBaseDragWidget * vipLoadBaseDragWidget(VipArchive & arch, VipDisplayPlayerAre
 	return m;
 }
 
-
-
-bool vipSaveImage(VipBaseDragWidget * w)
+bool vipSaveImage(VipBaseDragWidget* w)
 {
 	QString filename = VipFileDialog::getSaveFileName(nullptr, ("Save image as"), "Image file (*.png *.bmp *.jpg *.jpeg *.ppm *.tiff *.tif *.xbm *.xpm)");
 	if (!filename.isEmpty()) {
@@ -5645,7 +5436,7 @@ bool vipSaveSession(VipBaseDragWidget* w)
 	return false;
 }
 
-bool vipPrint(VipBaseDragWidget *w)
+bool vipPrint(VipBaseDragWidget* w)
 {
 	QPrinter printer(QPrinter::HighResolution);
 
@@ -5669,14 +5460,14 @@ bool vipPrint(VipBaseDragWidget *w)
 
 	QSizeF screen_psize = screen->physicalSize();
 	QSize screen_size = screen->size();
-	
+
 	qreal mm_per_pixel_x = screen_psize.width() / screen_size.width();
 	qreal mm_per_pixel_y = screen_psize.height() / screen_size.height();
 	QSizeF paper_size(bounding.width() * mm_per_pixel_x, bounding.height() * mm_per_pixel_y);
 
-	//printer.setPageSize(QPrinter::Custom);
-	//printer.setPaperSize(paper_size, QPrinter::Millimeter);
-	//printer.setPageMargins(0, 0, 0, 0, QPrinter::Millimeter);
+	// printer.setPageSize(QPrinter::Custom);
+	// printer.setPaperSize(paper_size, QPrinter::Millimeter);
+	// printer.setPageMargins(0, 0, 0, 0, QPrinter::Millimeter);
 	printer.setPageSize(QPageSize(paper_size, QPageSize::Millimeter));
 	printer.setResolution(600);
 
@@ -5699,15 +5490,11 @@ bool vipPrint(VipBaseDragWidget *w)
 	return false;
 }
 
-
-
 VipFunctionDispatcher<1>& vipFDAboutToRender()
 {
 	static VipFunctionDispatcher<1> inst;
 	return inst;
 }
-
-
 
 static int registerFunctions()
 {
@@ -5722,4 +5509,3 @@ static int registerFunctions()
 }
 
 static int _registerFunctions = vipAddInitializationFunction(registerFunctions);
-

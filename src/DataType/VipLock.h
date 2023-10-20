@@ -1,3 +1,34 @@
+/**
+ * BSD 3-Clause License
+ *
+ * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice, this
+ *    list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of the copyright holder nor the names of its
+ *    contributors may be used to endorse or promote products derived from
+ *    this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
 #ifndef VIP_LOCK_H
 #define VIP_LOCK_H
 
@@ -9,7 +40,6 @@
 #include <thread>
 #include <type_traits>
 
-
 /// @brief Lightweight and fast VipSpinlock implementation based on https://rigtorp.se/VipSpinlock/
 ///
 /// VipSpinlock is a lightweight VipSpinlock implementation following the TimedMutex requirements.
@@ -20,7 +50,7 @@ class VipSpinlock
 
 public:
 	constexpr VipSpinlock()
-		: d_lock(0)
+	  : d_lock(0)
 	{
 	}
 
@@ -99,7 +129,7 @@ class VipSharedSpinner
 
 public:
 	constexpr VipSharedSpinner()
-		: d_lock(0)
+	  : d_lock(0)
 	{
 	}
 	VipSharedSpinner(VipSharedSpinner const&) = delete;
@@ -111,19 +141,13 @@ public:
 		while ((!try_lock(expect)))
 			yield();
 	}
-	void unlock()
-	{
-		d_lock.fetch_and(~(write | need_lock), std::memory_order_release);
-	}
+	void unlock() { d_lock.fetch_and(~(write | need_lock), std::memory_order_release); }
 	void lock_shared()
 	{
 		while ((!try_lock_shared()))
 			yield();
 	}
-	void unlock_shared()
-	{
-		d_lock.fetch_add(-read, std::memory_order_release);
-	}
+	void unlock_shared() { d_lock.fetch_add(-read, std::memory_order_release); }
 	// Attempt to acquire writer permission. Return false if we didn't get it.
 	bool try_lock()
 	{
@@ -145,11 +169,10 @@ public:
 
 using VipSharedSpinlock = VipSharedSpinner<>;
 
-
 template<class Lock>
 class VipUniqueLock
 {
-	Lock * d_lock;
+	Lock* d_lock;
 
 public:
 	VipUniqueLock(Lock& l)
@@ -157,10 +180,7 @@ public:
 	{
 		l.lock();
 	}
-	~VipUniqueLock() 
-	{ 
-		d_lock->unlock();
-	}
+	~VipUniqueLock() { d_lock->unlock(); }
 };
 
 template<class Lock>

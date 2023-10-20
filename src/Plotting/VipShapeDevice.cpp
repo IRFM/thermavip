@@ -1,65 +1,97 @@
+/**
+ * BSD 3-Clause License
+ *
+ * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice, this
+ *    list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of the copyright holder nor the names of its
+ *    contributors may be used to endorse or promote products derived from
+ *    this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
 #include <QPaintEngine>
 #include <QPainterPathStroker>
 
 #include "VipShapeDevice.h"
 
-
 class PathEngine : public QPaintEngine
 {
 	friend class VipShapeDevice;
 
-	VipShapeDevice * m_device;
+	VipShapeDevice* m_device;
 	QTransform m_tr;
 	double m_penW2;
 	bool m_extractBoundingRectOnly;
-	QPainterPath * path();
-	void drawRect(const QRectF & rect);
+	QPainterPath* path();
+	void drawRect(const QRectF& rect);
 
 public:
+	PathEngine(VipShapeDevice*);
 
-	PathEngine(VipShapeDevice *);
-
-	virtual bool	begin ( QPaintDevice * pdev );
-	virtual void	drawEllipse ( const QRectF & rect );
-	virtual void	drawImage ( const QRectF & rectangle, const QImage & image, const QRectF & sr, Qt::ImageConversionFlags flags = Qt::AutoColor );
-	virtual void	drawPath ( const QPainterPath & path );
-	virtual void	drawPixmap ( const QRectF & r, const QPixmap & pm, const QRectF & sr );
-	virtual void	drawPoints ( const QPointF * points, int pointCount );
-	virtual void	drawPoints ( const QPoint * points, int pointCount );
-	virtual void	drawPolygon ( const QPointF * points, int pointCount, PolygonDrawMode mode );
-	virtual void	drawPolygon ( const QPoint * points, int pointCount, PolygonDrawMode mode );
-	virtual void	drawRects ( const QRectF * rects, int rectCount );
-	virtual void	drawRects ( const QRect * rects, int rectCount );
-	virtual void	drawTextItem ( const QPointF & p, const QTextItem & textItem );
-	virtual void	drawTiledPixmap ( const QRectF & rect, const QPixmap & pixmap, const QPointF & p );
-	virtual bool	end ();
-	virtual Type	type () const;
-	virtual void	updateState ( const QPaintEngineState & state );
+	virtual bool begin(QPaintDevice* pdev);
+	virtual void drawEllipse(const QRectF& rect);
+	virtual void drawImage(const QRectF& rectangle, const QImage& image, const QRectF& sr, Qt::ImageConversionFlags flags = Qt::AutoColor);
+	virtual void drawPath(const QPainterPath& path);
+	virtual void drawPixmap(const QRectF& r, const QPixmap& pm, const QRectF& sr);
+	virtual void drawPoints(const QPointF* points, int pointCount);
+	virtual void drawPoints(const QPoint* points, int pointCount);
+	virtual void drawPolygon(const QPointF* points, int pointCount, PolygonDrawMode mode);
+	virtual void drawPolygon(const QPoint* points, int pointCount, PolygonDrawMode mode);
+	virtual void drawRects(const QRectF* rects, int rectCount);
+	virtual void drawRects(const QRect* rects, int rectCount);
+	virtual void drawTextItem(const QPointF& p, const QTextItem& textItem);
+	virtual void drawTiledPixmap(const QRectF& rect, const QPixmap& pixmap, const QPointF& p);
+	virtual bool end();
+	virtual Type type() const;
+	virtual void updateState(const QPaintEngineState& state);
 };
 
+PathEngine::PathEngine(VipShapeDevice* device)
+  : QPaintEngine(QPaintEngine::AllFeatures)
+  , m_device(device)
+  , m_penW2(0)
+  , m_extractBoundingRectOnly(false)
+{
+}
 
-PathEngine::PathEngine(VipShapeDevice * device)
-:QPaintEngine (QPaintEngine::AllFeatures), m_device(device), m_penW2(0), m_extractBoundingRectOnly(false)
-{}
-
-QPainterPath * PathEngine::path()
+QPainterPath* PathEngine::path()
 {
 	return &m_device->shape();
 }
 
-bool	PathEngine::begin ( QPaintDevice * pdev )
+bool PathEngine::begin(QPaintDevice* pdev)
 {
 	Q_UNUSED(pdev)
 	return true;
 }
 
-void PathEngine::drawRect(const QRectF & rect)
+void PathEngine::drawRect(const QRectF& rect)
 {
 	if (m_extractBoundingRectOnly) {
 		if (m_tr.type() != QTransform::TxNone)
 			path()->addRect(m_tr.map(rect).boundingRect().adjusted(-m_penW2, -m_penW2, m_penW2, m_penW2));
 		else
-			path()->addRect(rect.adjusted(-m_penW2,-m_penW2,m_penW2,m_penW2));
+			path()->addRect(rect.adjusted(-m_penW2, -m_penW2, m_penW2, m_penW2));
 	}
 	else {
 		if (m_tr.type() != QTransform::TxNone)
@@ -69,7 +101,7 @@ void PathEngine::drawRect(const QRectF & rect)
 	}
 }
 
-void	PathEngine::drawEllipse ( const QRectF & rect )
+void PathEngine::drawEllipse(const QRectF& rect)
 {
 	if (m_extractBoundingRectOnly) {
 		if (m_tr.type() != QTransform::TxNone)
@@ -85,7 +117,7 @@ void	PathEngine::drawEllipse ( const QRectF & rect )
 	}
 }
 
-void	PathEngine::drawImage ( const QRectF & rectangle, const QImage & image, const QRectF & sr, Qt::ImageConversionFlags flags )
+void PathEngine::drawImage(const QRectF& rectangle, const QImage& image, const QRectF& sr, Qt::ImageConversionFlags flags)
 {
 	Q_UNUSED(image)
 	Q_UNUSED(flags)
@@ -102,10 +134,10 @@ void	PathEngine::drawImage ( const QRectF & rectangle, const QImage & image, con
 	}
 }
 
-void	PathEngine::drawPath ( const QPainterPath & p )
+void PathEngine::drawPath(const QPainterPath& p)
 {
 	QPainterPath tmp = p;
-	if(p.currentPosition() != QPointF(0,0))
+	if (p.currentPosition() != QPointF(0, 0))
 		tmp.closeSubpath();
 
 	if (m_extractBoundingRectOnly) {
@@ -124,7 +156,7 @@ void	PathEngine::drawPath ( const QPainterPath & p )
 	}
 }
 
-void	PathEngine::drawPixmap ( const QRectF & r, const QPixmap & pm, const QRectF & sr )
+void PathEngine::drawPixmap(const QRectF& r, const QPixmap& pm, const QRectF& sr)
 {
 	Q_UNUSED(pm)
 	Q_UNUSED(sr)
@@ -140,7 +172,7 @@ void	PathEngine::drawPixmap ( const QRectF & r, const QPixmap & pm, const QRectF
 	}
 }
 
-void	PathEngine::drawPoints ( const QPointF * points, int pointCount )
+void PathEngine::drawPoints(const QPointF* points, int pointCount)
 {
 	if (!m_device->testDrawPrimitive(VipShapeDevice::Points))
 		return;
@@ -150,23 +182,19 @@ void	PathEngine::drawPoints ( const QPointF * points, int pointCount )
 		std::copy(points, points + pointCount, p.begin());
 		if (m_tr.type() != QTransform::TxNone)
 			p = m_tr.map(p);
-		QRectF r = p.boundingRect().adjusted( -m_penW2, -m_penW2, m_penW2, m_penW2);
+		QRectF r = p.boundingRect().adjusted(-m_penW2, -m_penW2, m_penW2, m_penW2);
 		path()->addRect(r);
 	}
 	else {
-		if (m_tr.type() != QTransform::TxNone)
-		{
-			for (int i = 0; i < pointCount; ++i)
-			{
+		if (m_tr.type() != QTransform::TxNone) {
+			for (int i = 0; i < pointCount; ++i) {
 				QPointF p = m_tr.map(points[i]);
 				path()->moveTo(p);
 				path()->lineTo(p + QPointF(0.1, 0.1));
 			}
 		}
-		else
-		{
-			for (int i = 0; i < pointCount; ++i)
-			{
+		else {
+			for (int i = 0; i < pointCount; ++i) {
 				path()->moveTo(points[i]);
 				path()->lineTo(points[i] + QPointF(0.1, 0.1));
 			}
@@ -174,7 +202,7 @@ void	PathEngine::drawPoints ( const QPointF * points, int pointCount )
 	}
 }
 
-void	PathEngine::drawPoints ( const QPoint * points, int pointCount )
+void PathEngine::drawPoints(const QPoint* points, int pointCount)
 {
 	if (!m_device->testDrawPrimitive(VipShapeDevice::Points))
 		return;
@@ -192,19 +220,15 @@ void	PathEngine::drawPoints ( const QPoint * points, int pointCount )
 		path()->addRect(r);
 	}
 	else {
-		if (m_tr.type() != QTransform::TxNone)
-		{
-			for (int i = 0; i < pointCount; ++i)
-			{
+		if (m_tr.type() != QTransform::TxNone) {
+			for (int i = 0; i < pointCount; ++i) {
 				QPointF p = m_tr.map(QPointF(points[i]));
 				path()->moveTo(p);
 				path()->lineTo(p + QPointF(0.1, 0.1));
 			}
 		}
-		else
-		{
-			for (int i = 0; i < pointCount; ++i)
-			{
+		else {
+			for (int i = 0; i < pointCount; ++i) {
 				QPointF p(points[i]);
 				path()->moveTo(p);
 				path()->lineTo(p + QPointF(0.1, 0.1));
@@ -213,12 +237,12 @@ void	PathEngine::drawPoints ( const QPoint * points, int pointCount )
 	}
 }
 
-void	PathEngine::drawPolygon ( const QPointF * points, int pointCount, PolygonDrawMode mode )
+void PathEngine::drawPolygon(const QPointF* points, int pointCount, PolygonDrawMode mode)
 {
 	if (!m_device->testDrawPrimitive(VipShapeDevice::Polyline) && mode == QPaintEngine::PolylineMode)
 		return;
 
-	if(!pointCount)
+	if (!pointCount)
 		return;
 
 	if (m_extractBoundingRectOnly) {
@@ -231,12 +255,10 @@ void	PathEngine::drawPolygon ( const QPointF * points, int pointCount, PolygonDr
 	}
 	else {
 		QPolygonF p(pointCount + (mode != PolylineMode ? 1 : 0));
-		if (m_tr.type() != QTransform::TxNone)
-		{
+		if (m_tr.type() != QTransform::TxNone) {
 			std::copy(points, points + pointCount, p.data());
 		}
-		else
-		{
+		else {
 			for (int i = 0; i < pointCount; ++i)
 				p[i] = m_tr.map(points[i]);
 		}
@@ -252,9 +274,9 @@ void	PathEngine::drawPolygon ( const QPointF * points, int pointCount, PolygonDr
 	}
 }
 
-void	PathEngine::drawPolygon ( const QPoint * points, int pointCount, PolygonDrawMode mode )
+void PathEngine::drawPolygon(const QPoint* points, int pointCount, PolygonDrawMode mode)
 {
-	if(!pointCount)
+	if (!pointCount)
 		return;
 
 	if (m_extractBoundingRectOnly) {
@@ -271,18 +293,15 @@ void	PathEngine::drawPolygon ( const QPoint * points, int pointCount, PolygonDra
 	}
 	else {
 		QPolygonF p(pointCount + (mode != PolylineMode ? 1 : 0));
-		if (m_tr.type() != QTransform::TxNone)
-		{
+		if (m_tr.type() != QTransform::TxNone) {
 			std::copy(points, points + pointCount, p.data());
 		}
-		else
-		{
+		else {
 			for (int i = 0; i < pointCount; ++i)
 				p[i] = m_tr.map(QPointF(points[i]));
 		}
 		if (pointCount && mode != PolylineMode)
 			p.last() = p.first();
-
 
 		if (mode == QPaintEngine::WindingMode)
 			path()->setFillRule(Qt::WindingFill);
@@ -293,62 +312,56 @@ void	PathEngine::drawPolygon ( const QPoint * points, int pointCount, PolygonDra
 	}
 }
 
-void	PathEngine::drawRects ( const QRectF * rects, int rectCount )
+void PathEngine::drawRects(const QRectF* rects, int rectCount)
 {
-	for(int i=0; i < rectCount; ++i)
+	for (int i = 0; i < rectCount; ++i)
 		drawRect(rects[i]);
 }
 
-void	PathEngine::drawRects ( const QRect * rects, int rectCount )
+void PathEngine::drawRects(const QRect* rects, int rectCount)
 {
-	for(int i=0; i < rectCount; ++i)
+	for (int i = 0; i < rectCount; ++i)
 		drawRect(QRectF(rects[i]));
 }
 
-void	PathEngine::drawTextItem ( const QPointF & p, const QTextItem & textItem )
+void PathEngine::drawTextItem(const QPointF& p, const QTextItem& textItem)
 {
 	if (!m_device->testDrawPrimitive(VipShapeDevice::Text))
 		return;
 
-	const QFontMetricsF fm( textItem.font() );
-	const QRectF rect = fm.boundingRect(
-		QRectF( 0, 0, INT_MAX, INT_MAX ), 0, textItem.text() );
-	drawRect(rect.translated(p - QPointF(0,rect.height())));
+	const QFontMetricsF fm(textItem.font());
+	const QRectF rect = fm.boundingRect(QRectF(0, 0, INT_MAX, INT_MAX), 0, textItem.text());
+	drawRect(rect.translated(p - QPointF(0, rect.height())));
 }
 
-void	PathEngine::drawTiledPixmap ( const QRectF & rect, const QPixmap & , const QPointF &  )
+void PathEngine::drawTiledPixmap(const QRectF& rect, const QPixmap&, const QPointF&)
 {
 	if (!m_device->testDrawPrimitive(VipShapeDevice::Pixmap))
 		return;
 	drawRect(rect);
 }
 
-bool	PathEngine::end ()
+bool PathEngine::end()
 {
 	return true;
 }
 
-QPaintEngine::Type	PathEngine::type () const
+QPaintEngine::Type PathEngine::type() const
 {
 	return QPaintEngine::User;
 }
 
-void	PathEngine::updateState ( const QPaintEngineState & _state )
+void PathEngine::updateState(const QPaintEngineState& _state)
 {
-	if(_state.state() & QPaintEngine::DirtyTransform)
-	{
-		m_penW2 = _state.pen().widthF()/2;
+	if (_state.state() & QPaintEngine::DirtyTransform) {
+		m_penW2 = _state.pen().widthF() / 2;
 		m_tr = _state.transform();
 	}
 }
 
-
-
-
-
-
 VipShapeDevice::VipShapeDevice()
-: m_engine(nullptr), m_drawPrimitives(All)
+  : m_engine(nullptr)
+  , m_drawPrimitives(All)
 {
 	m_engine = new PathEngine(this);
 }
@@ -358,21 +371,21 @@ VipShapeDevice::~VipShapeDevice()
 	delete m_engine;
 }
 
-const QPainterPath & VipShapeDevice::shape() const
+const QPainterPath& VipShapeDevice::shape() const
 {
 	return m_path;
 }
 
-QPainterPath & VipShapeDevice::shape()
+QPainterPath& VipShapeDevice::shape()
 {
 	return m_path;
 }
 
 QPainterPath VipShapeDevice::shape(double penWidth)
 {
-	//TEST
+	// TEST
 	QRectF r = m_path.boundingRect();
-	if (std::isinf(r.width()) || std::isinf(r.height()) || r.width()==0 || r.height()==0)
+	if (std::isinf(r.width()) || std::isinf(r.height()) || r.width() == 0 || r.height() == 0)
 		return QPainterPath();
 	//
 	QPainterPathStroker stroke;
@@ -380,7 +393,7 @@ QPainterPath VipShapeDevice::shape(double penWidth)
 	return stroke.createStroke(shape());
 }
 
-QPaintEngine *	VipShapeDevice::paintEngine () const
+QPaintEngine* VipShapeDevice::paintEngine() const
 {
 	return const_cast<QPaintEngine*>(m_engine);
 }
@@ -406,10 +419,12 @@ bool VipShapeDevice::testDrawPrimitive(int p) const
 	return m_drawPrimitives & p;
 }
 
-void VipShapeDevice::setExtractBoundingRectOnly(bool enable) {
+void VipShapeDevice::setExtractBoundingRectOnly(bool enable)
+{
 	static_cast<PathEngine*>(m_engine)->m_extractBoundingRectOnly = enable;
 }
-bool VipShapeDevice::extractBoundingRectOnly() const{
+bool VipShapeDevice::extractBoundingRectOnly() const
+{
 	return static_cast<PathEngine*>(m_engine)->m_extractBoundingRectOnly;
 }
 
@@ -417,57 +432,57 @@ int VipShapeDevice::metric(PaintDeviceMetric metric) const
 {
 
 	switch (metric) {
-	case PdmWidth:
-		return INT_MAX;
-		break;
+		case PdmWidth:
+			return INT_MAX;
+			break;
 
-	case PdmHeight:
-		return INT_MAX;
-		break;
+		case PdmHeight:
+			return INT_MAX;
+			break;
 
-	case PdmWidthMM:
-		return INT_MAX;
-		break;
+		case PdmWidthMM:
+			return INT_MAX;
+			break;
 
-	case PdmHeightMM:
-		return INT_MAX;
-		break;
+		case PdmHeightMM:
+			return INT_MAX;
+			break;
 
-	case PdmNumColors:
-		return 2;
-		break;
+		case PdmNumColors:
+			return 2;
+			break;
 
-	case PdmDepth:
-		return 1;
-		break;
+		case PdmDepth:
+			return 1;
+			break;
 
-	case PdmDpiX:
-		return 300;
-		break;
+		case PdmDpiX:
+			return 300;
+			break;
 
-	case PdmDpiY:
-		return 300;
-		break;
+		case PdmDpiY:
+			return 300;
+			break;
 
-	case PdmPhysicalDpiX:
-		return 300;
-		break;
+		case PdmPhysicalDpiX:
+			return 300;
+			break;
 
-	case PdmPhysicalDpiY:
-		return 300;
-		break;
+		case PdmPhysicalDpiY:
+			return 300;
+			break;
 
-	case PdmDevicePixelRatio:
-		return 1;
-		break;
+		case PdmDevicePixelRatio:
+			return 1;
+			break;
 
-	case PdmDevicePixelRatioScaled:
-		return 1;
-		break;
+		case PdmDevicePixelRatioScaled:
+			return 1;
+			break;
 
-	default:
-		qWarning("VipShapeDevice::metric(): Unhandled metric type %d", metric);
-		break;
+		default:
+			qWarning("VipShapeDevice::metric(): Unhandled metric type %d", metric);
+			break;
 	}
 	return 0;
 }

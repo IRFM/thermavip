@@ -1,6 +1,36 @@
+/**
+ * BSD 3-Clause License
+ *
+ * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice, this
+ *    list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of the copyright holder nor the names of its
+ *    contributors may be used to endorse or promote products derived from
+ *    this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
 #ifndef VIP_PLOT_SCATTER
 #define VIP_PLOT_SCATTER
-
 
 #include "VipPlotItem.h"
 #include "VipSymbol.h"
@@ -20,32 +50,31 @@ Q_DECLARE_METATYPE(VipScatterPointVector)
 VIP_PLOTTING_EXPORT QDataStream& operator<<(QDataStream&, const VipScatterPoint&);
 VIP_PLOTTING_EXPORT QDataStream& operator>>(QDataStream&, VipScatterPoint&);
 
-
 /// @brief Plot item used to create scatter plots based on VipScatterPointVector
 ///
 /// VipPlotScatter displays scatter plots (cloud of points) based on a VipScatterPointVector object.
 /// A VipScatterPointVector is a vector of VipScatterPoint that basically stores a 2D position and a value.
 /// The value could be used to draw a specific text around/inside each point, can customize the item tool tip
 /// or can define the color of each point if a color map is affected to the item.
-/// 
+///
 /// Each point is drawn based on the item symbol passed with VipPlotScatter::setSymbol().
 /// The symbol controls the point style (rectangle, ellipse, start... see VipSymbol class for more details)
 /// and the point size. By default, each point has the same size given in item's unit.
 /// Use VipPlotScatter::setSizeUnit(VipPlotScatter::AxisUnit) to interpret the point size in scale unit instead.
-/// 
-/// The point size can also be controlled by each VipScatterPoint value. 
+///
+/// The point size can also be controlled by each VipScatterPoint value.
 /// Use setUseValueAsSize() to interpret the VipScatterPoint value as the point size in either scale or item unit.
-/// 
+///
 /// The symbol outline and filling style are controlled with VipPlotScatter::setPen() and VipPlotScatter::setBrush().
-/// Note that the filling color of each point might be based on the VipScatterPoint value if a color map is attached 
+/// Note that the filling color of each point might be based on the VipScatterPoint value if a color map is attached
 /// to the item.
-/// 
+///
 /// Optionally, VipPlotScatter can display a custom text inside/around each point. Use VipPlotScatter::setText() to
-/// define the displayed text. Note that occurrences of the sub-string '#value' will be replaced by the 
+/// define the displayed text. Note that occurrences of the sub-string '#value' will be replaced by the
 /// corresponding VipScatterPoint value.
-/// 
+///
 /// As other VipPlotItemDataType inheriting classes, VipPlotScatter::setData() is thread safe.
-/// 
+///
 /// VipPlotScatter support stylesheets and defines the following attributes:
 /// -	'text-alignment' : see VipPlotScatter::setTextAlignment(), combination of 'left|right|top|bottom|center|vcenter|hcenter'
 /// -	'text-position': see VipPlotScatter::setTextPosition(), combination of 'outside|xinside|yinside|xautomatic|yautomatic|automatic'
@@ -54,10 +83,10 @@ VIP_PLOTTING_EXPORT QDataStream& operator>>(QDataStream&, VipScatterPoint&);
 /// -	'use-value-as-size': equivalent to VipPlotScatter::setUseValueAsSize()
 /// -   'symbol': symbol, one of 'none', 'ellipse', 'rect', 'diamond', ....
 /// -   'symbol-size': symbol size with width==height
-/// 
+///
 /// In addition, VipPlotScatter defines the following selector: 'itemUnit' and 'axisUnit'.
-/// 
-class VIP_PLOTTING_EXPORT VipPlotScatter : public VipPlotItemDataType< VipScatterPointVector, VipScatterPoint>
+///
+class VIP_PLOTTING_EXPORT VipPlotScatter : public VipPlotItemDataType<VipScatterPointVector, VipScatterPoint>
 {
 	Q_OBJECT
 
@@ -93,20 +122,21 @@ public:
 	virtual QColor majorColor() const { return symbol().pen().color(); }
 
 	/// @brief Reimplemented from VipPlotItem, set the symbol pen
-	virtual void setPen(const QPen& p) { 
-		symbol().setPen(p); 
+	virtual void setPen(const QPen& p)
+	{
+		symbol().setPen(p);
 		emitItemChanged();
 	}
 	virtual QPen pen() const { return symbol().pen(); }
 
 	/// @brief Reimplemented from VipPlotItem, set the symbol filling brush
-	virtual void setBrush(const QBrush& b){
+	virtual void setBrush(const QBrush& b)
+	{
 		symbol().setBrush(b);
 		emitItemChanged();
 	}
 	virtual QBrush brush() const { return symbol().brush(); }
 
-	
 	/// @brief Reimplemented from VipPlotItem in order to be stylesheet aware
 	virtual void setTextStyle(const VipTextStyle& st);
 	virtual VipTextStyle textStyle() const { return text().textStyle(); }
@@ -157,7 +187,7 @@ protected:
 
 private:
 	virtual bool hasState(const QByteArray& state, bool enable) const;
-	
+
 	int findClosestPos(const VipScatterPointVector& vec, const QPointF& pos, double maxDistance, QRectF* out) const;
 	VipInterval computeInterval(const VipScatterPointVector& vec, const VipInterval& interval = Vip::InfinitInterval) const;
 	QList<VipInterval> dataBoundingIntervals(const VipScatterPointVector& data) const;

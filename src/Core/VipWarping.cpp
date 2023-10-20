@@ -1,9 +1,39 @@
-#include <QVector>
-#include <QPoint>
-#include <QColor>
-#include <qmutex.h>
-#include <cmath>
+/**
+ * BSD 3-Clause License
+ *
+ * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice, this
+ *    list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of the copyright holder nor the names of its
+ *    contributors may be used to endorse or promote products derived from
+ *    this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
 
+#include <QColor>
+#include <QPoint>
+#include <QVector>
+#include <cmath>
+#include <qmutex.h>
 
 #include "VipWarping.h"
 #include "p_Clarkson-Delaunay.h"
@@ -104,8 +134,7 @@ VipPointVector vipWarping(QVector<QPoint> pts1, QVector<QPoint> pts2, int width,
 	return res;
 }
 
-
-	// used float for complex_f, double otherwise
+// used float for complex_f, double otherwise
 template<class T>
 struct select_type
 {
@@ -298,10 +327,6 @@ inline VipNDArray warpAnyArray(const VipNDArray& ar, const VipPointVector& warpi
 	}
 }
 
-
-
-
-
 VipWarping::VipWarping(QObject* parent)
   : VipSceneModelBasedProcessing(parent)
 {
@@ -321,17 +346,14 @@ void VipWarping::apply()
 	if (!m_warping.size() || m_warping.size() != ar.size()) {
 		// setError("wrong warping size");
 		outputAt(0)->setData(any);
-		return ;
+		return;
 	}
 
 	ar = warpAnyArray(ar, m_warping);
 	VipAnyData out = create(QVariant::fromValue(ar));
 	out.setTime(any.time());
 	outputAt(0)->setData(out);
-
 }
-
-
 
 #include "VipArchive.h"
 

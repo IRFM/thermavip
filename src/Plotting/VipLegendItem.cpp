@@ -1,27 +1,57 @@
+/**
+ * BSD 3-Clause License
+ *
+ * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice, this
+ *    list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of the copyright holder nor the names of its
+ *    contributors may be used to endorse or promote products derived from
+ *    this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
+#include <QGraphicsSceneMouseEvent>
 #include <QPointer>
 #include <qcheckbox.h>
-#include <QGraphicsSceneMouseEvent>
 
 #include "VipDynGridLayout.h"
 #include "VipLegendItem.h"
 
-
 class VipLegendItem::PrivateData
 {
 public:
-
 	PrivateData()
-	: legendIndex(0),
-	  minimumSymbolSize(0,0),
-	  maximumSymbolSize(20, 20),
-	  spacing(5),
-	  left(5),
-	  displayMode(DisplayAllItems),
-		drawCheckbox(true),
-	  box(nullptr),
-		checked(false)
-	{}
-	 
+	  : legendIndex(0)
+	  , minimumSymbolSize(0, 0)
+	  , maximumSymbolSize(20, 20)
+	  , spacing(5)
+	  , left(5)
+	  , displayMode(DisplayAllItems)
+	  , drawCheckbox(true)
+	  , box(nullptr)
+	  , checked(false)
+	{
+	}
+
 	QPointer<VipPlotItem> item;
 	int legendIndex;
 	QSizeF minimumSymbolSize;
@@ -32,18 +62,18 @@ public:
 	VipTextStyle textStyle;
 	DisplayMode displayMode;
 	bool drawCheckbox;
-	QCheckBox *box;
+	QCheckBox* box;
 	QPixmap boxPixmap;
 	bool checked;
 };
 
-VipLegendItem::VipLegendItem(VipPlotItem * item, int index, QGraphicsItem* parent )
-:VipBoxGraphicsWidget(parent)
+VipLegendItem::VipLegendItem(VipPlotItem* item, int index, QGraphicsItem* parent)
+  : VipBoxGraphicsWidget(parent)
 {
 	d_data = new PrivateData();
 
-	setPlotItem(item,index);
-	this->setGeometry(QRectF(QPointF(0,0),this->minimumSize()));
+	setPlotItem(item, index);
+	this->setGeometry(QRectF(QPointF(0, 0), this->minimumSize()));
 }
 
 VipLegendItem::~VipLegendItem()
@@ -53,10 +83,10 @@ VipLegendItem::~VipLegendItem()
 	delete d_data;
 }
 
-VipLegend * VipLegendItem::legend() const
+VipLegend* VipLegendItem::legend() const
 {
-	if (QGraphicsItem * item = parentItem())
-		if (QGraphicsObject * obj = item->toGraphicsObject())
+	if (QGraphicsItem* item = parentItem())
+		if (QGraphicsObject* obj = item->toGraphicsObject())
 			return qobject_cast<VipLegend*>(obj);
 	return nullptr;
 }
@@ -64,7 +94,7 @@ VipLegend * VipLegendItem::legend() const
 bool VipLegendItem::emptyLegendText() const
 {
 	VipText text;
-	if(d_data->item && d_data->item->legendNames().size())
+	if (d_data->item && d_data->item->legendNames().size())
 		text = d_data->item->legendNames()[d_data->legendIndex];
 
 	return text.isEmpty();
@@ -72,28 +102,23 @@ bool VipLegendItem::emptyLegendText() const
 
 void VipLegendItem::updateVisibility()
 {
-	if(d_data->item)
-	{
-		if(emptyLegendText() && displayMode() == DisplayNamedItems)
-		{
-			//if(isVisible())
-				this->setVisible(false);
+	if (d_data->item) {
+		if (emptyLegendText() && displayMode() == DisplayNamedItems) {
+			// if(isVisible())
+			this->setVisible(false);
 		}
-		else if(!d_data->item->testItemAttribute(VipPlotItem::VisibleLegend))
-		{
-			//if (isVisible())
-				this->setVisible(false);
+		else if (!d_data->item->testItemAttribute(VipPlotItem::VisibleLegend)) {
+			// if (isVisible())
+			this->setVisible(false);
 		}
-		else
-		{
+		else {
 			bool vis = d_data->item->isVisible();
 			this->setVisible(vis);
 		}
 	}
-	else
-	{
-		//if (!isVisible())
-			this->setVisible(false);
+	else {
+		// if (!isVisible())
+		this->setVisible(false);
 	}
 }
 
@@ -124,27 +149,25 @@ void VipLegendItem::updateLegendItem()
 {
 	updateVisibility();
 
-	if(d_data->item && this->isVisible())
-	{
+	if (d_data->item && this->isVisible()) {
 		VipText text;
-		if(d_data->item->legendNames().size())
+		if (d_data->item->legendNames().size())
 			text = d_data->item->legendNames()[d_data->legendIndex];
 
 		VipTextStyle st = d_data->textStyle;
-		
+
 		text.setTextStyle(st);
 		QSizeF min_size = text.textSize();
-		double icon_width = min_size.height(); //by default, icon width = text height
+		double icon_width = min_size.height(); // by default, icon width = text height
 		if (icon_width > maximumSymbolSize().width())
 			icon_width = maximumSymbolSize().width();
-		min_size+= QSizeF(icon_width + left() + spacing(),0);
+		min_size += QSizeF(icon_width + left() + spacing(), 0);
 		min_size.setHeight(qMax(min_size.height(), minimumSymbolSize().height()));
 		if (isCheckable() && d_data->drawCheckbox)
 			min_size += QSizeF(d_data->box->width(), 2);
-		this->setPreferredSize (min_size);
+		this->setPreferredSize(min_size);
 		this->updateGeometry();
 	}
-
 }
 
 void VipLegendItem::setPlotItem(VipPlotItem* item, int legend_index)
@@ -154,7 +177,7 @@ void VipLegendItem::setPlotItem(VipPlotItem* item, int legend_index)
 	updateLegendItem();
 }
 
-VipPlotItem * VipLegendItem::plotItem() const
+VipPlotItem* VipLegendItem::plotItem() const
 {
 	return d_data->item;
 }
@@ -208,7 +231,7 @@ double VipLegendItem::left()
 	return d_data->left;
 }
 
-void VipLegendItem::setRenderHints( QPainter::RenderHints hints)
+void VipLegendItem::setRenderHints(QPainter::RenderHints hints)
 {
 	d_data->renderHints = hints;
 	this->update();
@@ -219,18 +242,18 @@ QPainter::RenderHints VipLegendItem::renderHints() const
 	return d_data->renderHints;
 }
 
-void VipLegendItem::setTextStyle(const VipTextStyle & ts)
+void VipLegendItem::setTextStyle(const VipTextStyle& ts)
 {
 	d_data->textStyle = ts;
 	updateLegendItem();
 }
 
-const VipTextStyle & VipLegendItem::textStyle() const
+const VipTextStyle& VipLegendItem::textStyle() const
 {
 	return d_data->textStyle;
 }
 
-VipTextStyle & VipLegendItem::textStyle()
+VipTextStyle& VipLegendItem::textStyle()
 {
 	return d_data->textStyle;
 }
@@ -242,85 +265,79 @@ VipTextStyle & VipLegendItem::textStyle()
 // }
 // VipBoxGraphicsWidget::update();
 // }
-void	VipLegendItem::paint ( QPainter * painter, const QStyleOptionGraphicsItem * option, QWidget * widget )
+void VipLegendItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget)
 {
-	VipBoxGraphicsWidget::paint(painter,option,widget);
+	VipBoxGraphicsWidget::paint(painter, option, widget);
 
-	if(!plotItem())
+	if (!plotItem())
 		return;
 
 	const QList<VipText> legends = plotItem()->legendNames();
-	if(d_data->legendIndex >= legends.size())
+	if (d_data->legendIndex >= legends.size())
 		return;
 
-	//set check box parent
-	//if (d_data->box)
-	// if (this->scene()->views().size())
-	// if (QWidget * p = this->scene()->views().first())
+	// set check box parent
+	// if (d_data->box)
+	//  if (this->scene()->views().size())
+	//  if (QWidget * p = this->scene()->views().first())
 	//	if (p != d_data->box->parentWidget())
 	//		d_data->box->setParent(p);
 
-
 	VipText text = legends[d_data->legendIndex];
 	VipTextStyle style = d_data->textStyle;
-	
+
 	text.setTextStyle(style);
 	QRectF rect = boundingRect();
 
-	//render check box
+	// render check box
 	if (d_data->box && d_data->drawCheckbox) {
-		painter->drawPixmap(QPoint(0,(rect.height()- d_data->boxPixmap.height())/2), d_data->boxPixmap);
+		painter->drawPixmap(QPoint(0, (rect.height() - d_data->boxPixmap.height()) / 2), d_data->boxPixmap);
 		rect.setLeft(rect.left() + d_data->box->width());
 	}
 
-	QRectF text_rect = text.textRect();//painter->boundingRect(QRectF(0,0,100,100),text.text());
+	QRectF text_rect = text.textRect(); // painter->boundingRect(QRectF(0,0,100,100),text.text());
 
 	QSizeF symbol_size(rect.width() - text_rect.width() - spacing() - left(), text_rect.height());
-	symbol_size.setWidth( qMin(maximumSymbolSize().width(), symbol_size.width()));
-	symbol_size.setWidth( qMax(minimumSymbolSize().width(), symbol_size.width()));
-	symbol_size.setHeight( qMin(maximumSymbolSize().height(), symbol_size.height()));
-	symbol_size.setHeight( qMax(minimumSymbolSize().height(), symbol_size.height()));
+	symbol_size.setWidth(qMin(maximumSymbolSize().width(), symbol_size.width()));
+	symbol_size.setWidth(qMax(minimumSymbolSize().width(), symbol_size.width()));
+	symbol_size.setHeight(qMin(maximumSymbolSize().height(), symbol_size.height()));
+	symbol_size.setHeight(qMax(minimumSymbolSize().height(), symbol_size.height()));
 
-	QRectF symbol_rect(QPointF(),symbol_size);
+	QRectF symbol_rect(QPointF(), symbol_size);
 
-	symbol_rect.moveTopLeft( QPointF( left() +rect.left(), (rect.height() - symbol_size.height())/2 ) );
-	text_rect.moveTopLeft( QPointF( symbol_rect.right() + spacing(), (rect.height() - text_rect.height())/2 ) );
+	symbol_rect.moveTopLeft(QPointF(left() + rect.left(), (rect.height() - symbol_size.height()) / 2));
+	text_rect.moveTopLeft(QPointF(symbol_rect.right() + spacing(), (rect.height() - text_rect.height()) / 2));
 
 	painter->setRenderHints(d_data->renderHints);
 
-	//draw the legend symbol
-	if(d_data->item->testItemAttribute(VipPlotItem::HasLegendIcon))
-	{
-		painter->setClipRect(symbol_rect.adjusted(-1,-1,1,1));
-		symbol_rect = d_data->item->drawLegend(painter,symbol_rect,d_data->legendIndex);
+	// draw the legend symbol
+	if (d_data->item->testItemAttribute(VipPlotItem::HasLegendIcon)) {
+		painter->setClipRect(symbol_rect.adjusted(-1, -1, 1, 1));
+		symbol_rect = d_data->item->drawLegend(painter, symbol_rect, d_data->legendIndex);
 		painter->setClipping(false);
 	}
-	else
-	{
-		symbol_rect = QRectF(left(),0,1,1);
+	else {
+		symbol_rect = QRectF(left(), 0, 1, 1);
 	}
 
-	//draw the legend text
+	// draw the legend text
 	text_rect.moveLeft(symbol_rect.right() + spacing());
-	text.draw(painter,text_rect);
+	text.draw(painter, text_rect);
 }
 
 void VipLegendItem::setCheckable(bool checkable)
 {
-	if (checkable != (bool)d_data->box)
-	{
-		if (checkable)
-		{
+	if (checkable != (bool)d_data->box) {
+		if (checkable) {
 			d_data->box = new QCheckBox();
 			d_data->box->setAutoFillBackground(false);
 			d_data->box->setAttribute(Qt::WA_TranslucentBackground, true);
 			d_data->box->resize(20, 20);
-			d_data->boxPixmap = d_data->box->grab();//QPixmap::grabWidget(d_data->box);
+			d_data->boxPixmap = d_data->box->grab(); // QPixmap::grabWidget(d_data->box);
 			d_data->box->setVisible(false);
 			d_data->box->setChecked(d_data->checked);
 		}
-		else
-		{
+		else {
 			delete d_data->box;
 			d_data->box = nullptr;
 		}
@@ -334,13 +351,11 @@ bool VipLegendItem::isCheckable() const
 
 void VipLegendItem::setChecked(bool checked)
 {
-	if (checked != d_data->checked)
-	{
+	if (checked != d_data->checked) {
 		d_data->checked = checked;
-		if (d_data->box)
-		{
+		if (d_data->box) {
 			d_data->box->setChecked(checked);
-			d_data->boxPixmap = d_data->box->grab(); //QPixmap::grabWidget(d_data->box);
+			d_data->boxPixmap = d_data->box->grab(); // QPixmap::grabWidget(d_data->box);
 			update();
 		}
 		Q_EMIT clicked(checked);
@@ -351,34 +366,24 @@ bool VipLegendItem::isChecked() const
 	return d_data->checked;
 }
 
-void	VipLegendItem::mousePressEvent(QGraphicsSceneMouseEvent * event)
+void VipLegendItem::mousePressEvent(QGraphicsSceneMouseEvent* event)
 {
-	if (isCheckable() && (event->buttons() & Qt::LeftButton) &&
-		event->pos().x() < this->geometry().width() && event->pos().y() < this->geometry().height() &&
-		event->pos().x() >= 0 && event->pos().y() >= 0)
-	{
+	if (isCheckable() && (event->buttons() & Qt::LeftButton) && event->pos().x() < this->geometry().width() && event->pos().y() < this->geometry().height() && event->pos().x() >= 0 &&
+	    event->pos().y() >= 0) {
 		setChecked(!isChecked());
 	}
 }
-void	VipLegendItem::mouseMoveEvent(QGraphicsSceneMouseEvent* event)
+void VipLegendItem::mouseMoveEvent(QGraphicsSceneMouseEvent* event)
 {
 	if (d_data->item && d_data->item->isSelected() && d_data->item->testItemAttribute(VipPlotItem::Droppable) && (event->buttons() & Qt::LeftButton))
 		d_data->item->startDragging(event->widget());
 }
-void	VipLegendItem::mouseReleaseEvent(QGraphicsSceneMouseEvent * )
-{
-
-}
-
-
-
-
+void VipLegendItem::mouseReleaseEvent(QGraphicsSceneMouseEvent*) {}
 
 static int registerLegendKeyWords()
 {
 	static VipKeyWords keywords;
 	if (keywords.isEmpty()) {
-		
 
 		QMap<QByteArray, int> checkstate;
 		checkstate["itemBased"] = VipLegend::ItemBased;
@@ -390,8 +395,7 @@ static int registerLegendKeyWords()
 		QMap<QByteArray, int> displaymode;
 		displaymode["allItems"] = VipLegendItem::DisplayAllItems;
 		displaymode["namedItems"] = VipLegendItem::DisplayNamedItems;
-		
-		
+
 		keywords["margin"] = VipParserPtr(new DoubleParser());
 		keywords["spacing"] = VipParserPtr(new DoubleParser());
 		keywords["max-columns"] = VipParserPtr(new DoubleParser());
@@ -415,20 +419,17 @@ static int registerLegendKeyWords()
 
 static int _registerLegendKeyWords = registerLegendKeyWords();
 
-
-
-
 class VipLegend::PrivateData
 {
 public:
-
 	PrivateData()
-	:legendItemSpacing(5),
-	 legendItemLeft(5),
-	 displayMode(VipLegendItem::DisplayNamedItems),
-	checkState(ItemBased),
-	drawCheckbox(true)
-	{}
+	  : legendItemSpacing(5)
+	  , legendItemLeft(5)
+	  , displayMode(VipLegendItem::DisplayNamedItems)
+	  , checkState(ItemBased)
+	  , drawCheckbox(true)
+	{
+	}
 
 	QList<VipPlotItem*> items;
 	double legendItemSpacing;
@@ -445,7 +446,7 @@ public:
 };
 
 VipLegend::VipLegend(QGraphicsItem* parent)
-:VipBoxGraphicsWidget(parent)
+  : VipBoxGraphicsWidget(parent)
 {
 	d_data = new PrivateData();
 
@@ -454,7 +455,7 @@ VipLegend::VipLegend(QGraphicsItem* parent)
 	this->setLayout(new VipDynGridLayout());
 	layout()->setSpacing(0);
 	layout()->setMargins(5);
-	layout()->setExpandingDirections(Qt::Horizontal|Qt::Vertical);
+	layout()->setExpandingDirections(Qt::Horizontal | Qt::Vertical);
 }
 
 VipLegend::~VipLegend()
@@ -467,8 +468,7 @@ void VipLegend::setCheckState(CheckState st)
 	d_data->checkState = st;
 	QList<VipLegendItem*> legends = legendItems();
 	for (int i = 0; i < legends.size(); ++i)
-		if (st != ItemBased)
-		{
+		if (st != ItemBased) {
 			legends[i]->setCheckable(st != NonCheckable);
 			if (d_data->checkState == CheckableSelection)
 				legends[i]->setChecked(legends[i]->plotItem()->isSelected());
@@ -500,15 +500,11 @@ void VipLegend::setDisplayMode(VipLegendItem::DisplayMode mode)
 	d_data->displayMode = mode;
 
 	QList<VipLegendItem*> legends = legendItems();
-	for(int i = 0; i < legends.size(); ++i)
-	{
+	for (int i = 0; i < legends.size(); ++i) {
 		legends[i]->setDisplayMode(mode);
 	}
 
 	layout()->invalidate();
-
-
-
 }
 
 VipLegendItem::DisplayMode VipLegend::displayMode() const
@@ -524,7 +520,7 @@ void VipLegend::setMargins(double m)
 {
 	layout()->setMargins(m);
 }
-void VipLegend::getContentsMargins(double *left, double *top, double *right, double *bottom) const
+void VipLegend::getContentsMargins(double* left, double* top, double* right, double* bottom) const
 {
 	return layout()->getContentsMargins(left, top, right, bottom);
 }
@@ -565,19 +561,15 @@ int VipLegend::maxColumns() const
 	return layout()->maxColumns();
 }
 
-
 void VipLegend::addItem(VipPlotItem* item)
 {
 	removeItem(item);
 
-	if(item)
-	{
+	if (item) {
 		QList<VipText> legends = item->legendNames();
-		if(legends.size())
-		{
-			for(int l = 0; l < legends.size(); ++l)
-			{
-				VipLegendItem * legend = new VipLegendItem(item,l,this);
+		if (legends.size()) {
+			for (int l = 0; l < legends.size(); ++l) {
+				VipLegendItem* legend = new VipLegendItem(item, l, this);
 				legend->setDisplayMode(displayMode());
 				legend->setSpacing(d_data->legendItemSpacing);
 				legend->setLeft(d_data->legendItemLeft);
@@ -592,9 +584,8 @@ void VipLegend::addItem(VipPlotItem* item)
 				this->addLegendItem(legend);
 			}
 		}
-		else
-		{
-			VipLegendItem * legend = new VipLegendItem(item,0,this);
+		else {
+			VipLegendItem* legend = new VipLegendItem(item, 0, this);
 			legend->setDisplayMode(displayMode());
 			legend->setSpacing(d_data->legendItemSpacing);
 			legend->setLeft(d_data->legendItemLeft);
@@ -613,18 +604,15 @@ void VipLegend::addItem(VipPlotItem* item)
 	this->layout()->updateGeometry();
 }
 
-void VipLegend::insertItem(int index,VipPlotItem* item)
+void VipLegend::insertItem(int index, VipPlotItem* item)
 {
 	removeItem(item);
 
-	if(item)
-	{
+	if (item) {
 		QList<VipText> legends = item->legendNames();
-		if(legends.size())
-		{
-			for(int l = 0; l < legends.size(); ++l)
-			{
-				VipLegendItem * legend = new VipLegendItem(item,l,this);
+		if (legends.size()) {
+			for (int l = 0; l < legends.size(); ++l) {
+				VipLegendItem* legend = new VipLegendItem(item, l, this);
 				legend->setDisplayMode(displayMode());
 				legend->setSpacing(d_data->legendItemSpacing);
 				legend->setLeft(d_data->legendItemLeft);
@@ -636,12 +624,11 @@ void VipLegend::insertItem(int index,VipPlotItem* item)
 					legend->setMinimumSymbolSize(d_data->minSymbolSize);
 				if (d_data->maxSymbolSize != QSizeF())
 					legend->setMaximumSymbolSize(d_data->maxSymbolSize);
-				this->insertLegendItem(index++,legend);
+				this->insertLegendItem(index++, legend);
 			}
 		}
-		else
-		{
-			VipLegendItem * legend = new VipLegendItem(item,0,this);
+		else {
+			VipLegendItem* legend = new VipLegendItem(item, 0, this);
 			legend->setDisplayMode(displayMode());
 			legend->setSpacing(d_data->legendItemSpacing);
 			legend->setLeft(d_data->legendItemLeft);
@@ -653,7 +640,7 @@ void VipLegend::insertItem(int index,VipPlotItem* item)
 				legend->setMinimumSymbolSize(d_data->minSymbolSize);
 			if (d_data->maxSymbolSize != QSizeF())
 				legend->setMaximumSymbolSize(d_data->maxSymbolSize);
-			this->insertLegendItem(index,legend);
+			this->insertLegendItem(index, legend);
 		}
 	}
 
@@ -662,42 +649,38 @@ void VipLegend::insertItem(int index,VipPlotItem* item)
 
 void VipLegend::addLegendItem(VipLegendItem* legendItem)
 {
-	if(legendItem && layout()->items().indexOf(legendItem) < 0)
-	{
-		if(d_data->items.indexOf(legendItem->plotItem()) < 0)
+	if (legendItem && layout()->items().indexOf(legendItem) < 0) {
+		if (d_data->items.indexOf(legendItem->plotItem()) < 0)
 			d_data->items.append(legendItem->plotItem());
-
 
 		layout()->addItem(legendItem);
 		legendItemAdded(legendItem);
 
-		connect(legendItem->plotItem(),SIGNAL(itemChanged(VipPlotItem*)),this,SLOT(itemChanged(VipPlotItem*)));//,Qt::QueuedConnection);
+		connect(legendItem->plotItem(), SIGNAL(itemChanged(VipPlotItem*)), this, SLOT(itemChanged(VipPlotItem*))); //,Qt::QueuedConnection);
 
 		layout()->invalidate();
 	}
 }
 
-void VipLegend::insertLegendItem(int index,VipLegendItem* legendItem)
+void VipLegend::insertLegendItem(int index, VipLegendItem* legendItem)
 {
-	if(legendItem && layout()->items().indexOf(legendItem) < 0)
-	{
-		if(d_data->items.indexOf(legendItem->plotItem()) < 0)
-			d_data->items.insert(index,legendItem->plotItem());
+	if (legendItem && layout()->items().indexOf(legendItem) < 0) {
+		if (d_data->items.indexOf(legendItem->plotItem()) < 0)
+			d_data->items.insert(index, legendItem->plotItem());
 
-		layout()->insertItem(index,legendItem);
+		layout()->insertItem(index, legendItem);
 		legendItemAdded(legendItem);
 
-		connect(legendItem->plotItem(),SIGNAL(itemChanged(VipPlotItem*)),this,SLOT(itemChanged(VipPlotItem*)));//,Qt::QueuedConnection);
+		connect(legendItem->plotItem(), SIGNAL(itemChanged(VipPlotItem*)), this, SLOT(itemChanged(VipPlotItem*))); //,Qt::QueuedConnection);
 
 		layout()->invalidate();
 	}
 }
 
-void VipLegend::legendItemAdded(VipLegendItem * legendItem)
+void VipLegend::legendItemAdded(VipLegendItem* legendItem)
 {
 	connect(legendItem, SIGNAL(clicked(bool)), this, SLOT(receiveClicked(bool)));
-	if (d_data->checkState != ItemBased)
-	{
+	if (d_data->checkState != ItemBased) {
 		legendItem->setCheckable(d_data->checkState != NonCheckable);
 		if (d_data->checkState == CheckableSelection)
 			legendItem->setChecked(legendItem->plotItem()->isSelected());
@@ -708,7 +691,7 @@ void VipLegend::legendItemAdded(VipLegendItem * legendItem)
 
 void VipLegend::receiveClicked(bool click)
 {
-	VipLegendItem * item = qobject_cast<VipLegendItem*>(sender());
+	VipLegendItem* item = qobject_cast<VipLegendItem*>(sender());
 	if (item) {
 		Q_EMIT clicked(item, click);
 
@@ -719,11 +702,10 @@ void VipLegend::receiveClicked(bool click)
 	}
 }
 
-QVariant VipLegend::itemChange(GraphicsItemChange change, const QVariant & value)
+QVariant VipLegend::itemChange(GraphicsItemChange change, const QVariant& value)
 {
-	if (change == QGraphicsItem::ItemVisibleHasChanged && isVisible())
-	{
-		//recompute items geometry
+	if (change == QGraphicsItem::ItemVisibleHasChanged && isVisible()) {
+		// recompute items geometry
 		QList<VipLegendItem*> items = legendItems();
 		for (int i = 0; i < items.size(); ++i)
 			items[i]->updateLegendItem();
@@ -731,7 +713,7 @@ QVariant VipLegend::itemChange(GraphicsItemChange change, const QVariant & value
 	return VipBoxGraphicsWidget::itemChange(change, value);
 }
 
-bool VipLegend::setItemProperty(const char* name, const QVariant& value, const QByteArray& index) 
+bool VipLegend::setItemProperty(const char* name, const QVariant& value, const QByteArray& index)
 {
 	if (value.userType() == 0)
 		return false;
@@ -818,14 +800,14 @@ bool VipLegend::setItemProperty(const char* name, const QVariant& value, const Q
 	return VipBoxGraphicsWidget::setItemProperty(name, value, index);
 }
 
-bool VipLegend::hasState(const QByteArray& state, bool enable) const 
+bool VipLegend::hasState(const QByteArray& state, bool enable) const
 {
 	if (state == "inner")
 		return property("_vip_inner").toBool() == enable;
 	return VipBoxGraphicsWidget::hasState(state, enable);
 }
 
-QSizeF VipLegend::sizeHint(Qt::SizeHint which, const QSizeF & constraint) const
+QSizeF VipLegend::sizeHint(Qt::SizeHint which, const QSizeF& constraint) const
 {
 	return layout()->sizeHint(which, constraint);
 }
@@ -833,19 +815,16 @@ QSizeF VipLegend::sizeHint(Qt::SizeHint which, const QSizeF & constraint) const
 int VipLegend::removeItem(VipPlotItem* item)
 {
 	int index = -1;
-	if(item && d_data->items.indexOf(item) >= 0)
-	{
+	if (item && d_data->items.indexOf(item) >= 0) {
 		d_data->items.removeOne(item);
 
 		QList<VipLegendItem*> legend_items = legendItems();
-		for(int i=0; i < legend_items.size(); ++i)
-		{
-			if(legend_items[i]->plotItem() == item)
-			{
-				disconnect(legend_items[i]->plotItem(),SIGNAL(itemChanged(VipPlotItem*)),this,SLOT(itemChanged(VipPlotItem*)));
+		for (int i = 0; i < legend_items.size(); ++i) {
+			if (legend_items[i]->plotItem() == item) {
+				disconnect(legend_items[i]->plotItem(), SIGNAL(itemChanged(VipPlotItem*)), this, SLOT(itemChanged(VipPlotItem*)));
 				layout()->remove(legend_items[i]);
 
-				if(index < 0)
+				if (index < 0)
 					index = i;
 			}
 		}
@@ -858,17 +837,14 @@ int VipLegend::removeItem(VipPlotItem* item)
 
 int VipLegend::removeLegendItem(VipLegendItem* legendItem)
 {
-	if(legendItem && d_data->items.indexOf(legendItem->plotItem()) >= 0)
-	{
-		VipPlotItem * item = legendItem->plotItem();
+	if (legendItem && d_data->items.indexOf(legendItem->plotItem()) >= 0) {
+		VipPlotItem* item = legendItem->plotItem();
 		layout()->remove(legendItem);
 
 		QList<VipLegendItem*> legend_items = legendItems();
-		for(int i=0; i < legend_items.size(); ++i)
-		{
-			if(legend_items[i]->plotItem() == item)
-			{
-				disconnect(legend_items[i]->plotItem(),SIGNAL(itemChanged(VipPlotItem*)),this,SLOT(itemChanged(VipPlotItem*)));
+		for (int i = 0; i < legend_items.size(); ++i) {
+			if (legend_items[i]->plotItem() == item) {
+				disconnect(legend_items[i]->plotItem(), SIGNAL(itemChanged(VipPlotItem*)), this, SLOT(itemChanged(VipPlotItem*)));
 				layout()->invalidate();
 				return i;
 			}
@@ -881,27 +857,25 @@ int VipLegend::removeLegendItem(VipLegendItem* legendItem)
 	return -1;
 }
 
-void VipLegend::setItems(const QList<VipPlotItem*> & items)
+void VipLegend::setItems(const QList<VipPlotItem*>& items)
 {
 	layout()->clear();
 	d_data->items.clear();
-	for(int i=0; i < items.size(); ++i)
-	{
+	for (int i = 0; i < items.size(); ++i) {
 		addItem(items[i]);
 	}
 }
 
-const QList<VipPlotItem*> & VipLegend::items() const
+const QList<VipPlotItem*>& VipLegend::items() const
 {
 	return d_data->items;
 }
 
-void VipLegend::setLegendItems(const QList<VipLegendItem*> & items)
+void VipLegend::setLegendItems(const QList<VipLegendItem*>& items)
 {
 	layout()->clear();
 	d_data->items.clear();
-	for(int i=0; i < items.size(); ++i)
-	{
+	for (int i = 0; i < items.size(); ++i) {
 		addLegendItem(items[i]);
 	}
 }
@@ -911,22 +885,21 @@ QList<VipLegendItem*> VipLegend::legendItems() const
 	QList<QGraphicsLayoutItem*> items = layout()->allItems();
 	QList<VipLegendItem*> res;
 
-	for(int i=0; i < items.size(); ++i)
-		res.append( static_cast<VipLegendItem*>(items[i]));
+	for (int i = 0; i < items.size(); ++i)
+		res.append(static_cast<VipLegendItem*>(items[i]));
 
 	return res;
 }
 
-QList<VipLegendItem*> VipLegend::legendItems(const VipPlotItem * item) const
+QList<VipLegendItem*> VipLegend::legendItems(const VipPlotItem* item) const
 {
 	QList<QGraphicsLayoutItem*> items = layout()->allItems();
 	QList<VipLegendItem*> res;
 
-	for(int i=0; i < items.size(); ++i)
-	{
-		VipLegendItem * it = static_cast<VipLegendItem*>(items[i]);
-		if(it->plotItem() == item)
-			res.append( static_cast<VipLegendItem*>(items[i]));
+	for (int i = 0; i < items.size(); ++i) {
+		VipLegendItem* it = static_cast<VipLegendItem*>(items[i]);
+		if (it->plotItem() == item)
+			res.append(static_cast<VipLegendItem*>(items[i]));
 	}
 
 	return res;
@@ -948,11 +921,9 @@ int VipLegend::count(const VipPlotItem* item) const
 {
 	int total = 0;
 	const QList<VipLegendItem*> legend_items = legendItems();
-	for(int i=0; i < legend_items.size(); ++i)
-	{
-		if(legend_items[i]->plotItem() == item)
-		{
-			++ total;
+	for (int i = 0; i < legend_items.size(); ++i) {
+		if (legend_items[i]->plotItem() == item) {
+			++total;
 		}
 	}
 	return total;
@@ -962,7 +933,7 @@ void VipLegend::setLegendItemSpacing(double spacing)
 {
 	d_data->legendItemSpacing = spacing;
 	QList<VipLegendItem*> legend_items = legendItems();
-	for(int i=0; i < legend_items.size(); ++i)
+	for (int i = 0; i < legend_items.size(); ++i)
 		legend_items[i]->setSpacing(spacing);
 	layout()->invalidate();
 	setGeometry(geometry());
@@ -977,7 +948,7 @@ void VipLegend::setLegendItemLeft(double left)
 {
 	d_data->legendItemLeft = left;
 	QList<VipLegendItem*> legend_items = legendItems();
-	for(int i=0; i < legend_items.size(); ++i)
+	for (int i = 0; i < legend_items.size(); ++i)
 		legend_items[i]->setLeft(left);
 	layout()->invalidate();
 }
@@ -987,11 +958,11 @@ double VipLegend::legendItemLeft() const
 	return d_data->legendItemLeft;
 }
 
-void VipLegend::setLegendItemRenderHints( QPainter::RenderHints hints )
+void VipLegend::setLegendItemRenderHints(QPainter::RenderHints hints)
 {
 	d_data->legendItemRenderHints = hints;
 	QList<VipLegendItem*> legend_items = legendItems();
-	for(int i=0; i < legend_items.size(); ++i)
+	for (int i = 0; i < legend_items.size(); ++i)
 		legend_items[i]->setRenderHints(hints);
 	update();
 }
@@ -1001,38 +972,37 @@ QPainter::RenderHints VipLegend::legendItemRenderHints() const
 	return d_data->legendItemRenderHints;
 }
 
-void VipLegend::setLegendItemBoxStyle(const VipBoxStyle & style)
+void VipLegend::setLegendItemBoxStyle(const VipBoxStyle& style)
 {
 	d_data->legendItemBoxStyle = style;
 	QList<VipLegendItem*> legend_items = legendItems();
-	for(int i=0; i < legend_items.size(); ++i)
+	for (int i = 0; i < legend_items.size(); ++i)
 		legend_items[i]->setBoxStyle(style);
 	update();
 }
 
-const VipBoxStyle & VipLegend::legendItemBoxStyle() const
+const VipBoxStyle& VipLegend::legendItemBoxStyle() const
 {
 	return d_data->legendItemBoxStyle;
 }
-VipBoxStyle& VipLegend::legendItemBoxStyle() 
+VipBoxStyle& VipLegend::legendItemBoxStyle()
 {
 	return d_data->legendItemBoxStyle;
 }
 
-void VipLegend::setLegendItemTextStyle(const VipTextStyle & t_style)
+void VipLegend::setLegendItemTextStyle(const VipTextStyle& t_style)
 {
 	d_data->legendItemTextStyle = t_style;
 	QList<VipLegendItem*> legend_items = legendItems();
-	for(int i=0; i < legend_items.size(); ++i)
+	for (int i = 0; i < legend_items.size(); ++i)
 		legend_items[i]->setTextStyle(t_style);
 	layout()->invalidate();
 }
 
-const VipTextStyle & VipLegend::legendItemTextStyle() const
+const VipTextStyle& VipLegend::legendItemTextStyle() const
 {
 	return d_data->legendItemTextStyle;
 }
-
 
 void VipLegend::setMinimumSymbolSize(const QSizeF& s)
 {
@@ -1051,7 +1021,7 @@ QSizeF VipLegend::minimumSymbolSize() const
 void VipLegend::setMaximumSymbolSize(const QSizeF& s)
 {
 	d_data->maxSymbolSize = s;
-	if(s != QSizeF()) {
+	if (s != QSizeF()) {
 		QList<VipLegendItem*> legend_items = legendItems();
 		for (int i = 0; i < legend_items.size(); ++i)
 			legend_items[i]->setMaximumSymbolSize(s);
@@ -1062,82 +1032,69 @@ QSizeF VipLegend::maximumSymbolSize() const
 	return d_data->maxSymbolSize;
 }
 
-VipDynGridLayout * VipLegend::layout() const
+VipDynGridLayout* VipLegend::layout() const
 {
 	return static_cast<VipDynGridLayout*>(VipBoxGraphicsWidget::layout());
 }
 
-QRectF VipLegend::preferredGeometry(const QRectF & bounding_rect, Qt::Alignment align)
+QRectF VipLegend::preferredGeometry(const QRectF& bounding_rect, Qt::Alignment align)
 {
 	QRectF legend_rect = bounding_rect;
 
 	double l = 0, r = 0, t = 0, b = 0;
-	this->getContentsMargins(&l,&t,&r,&b);
+	this->getContentsMargins(&l, &t, &r, &b);
 
-	if(!(layout()->expandingDirections() & Qt::Vertical))
-	{
-		legend_rect.setHeight( layout()->heightForWidth(bounding_rect.width()) + t + b);
+	if (!(layout()->expandingDirections() & Qt::Vertical)) {
+		legend_rect.setHeight(layout()->heightForWidth(bounding_rect.width()) + t + b);
 	}
-	if(!(layout()->expandingDirections() & Qt::Horizontal))
-	{
-		legend_rect.setWidth( layout()->maxRowWidth(layout()->columnsForWidth(bounding_rect.width())) + l + r);
+	if (!(layout()->expandingDirections() & Qt::Horizontal)) {
+		legend_rect.setWidth(layout()->maxRowWidth(layout()->columnsForWidth(bounding_rect.width())) + l + r);
 	}
 
-
-	if(align & Qt::AlignLeft)
-	{
+	if (align & Qt::AlignLeft) {
 		legend_rect.moveLeft(bounding_rect.left());
 	}
-	else if(align & Qt::AlignRight)
-	{
+	else if (align & Qt::AlignRight) {
 		legend_rect.moveRight(bounding_rect.right());
 	}
-	else
-	{
+	else {
 		legend_rect.moveLeft(bounding_rect.left() + (bounding_rect.width() - legend_rect.width()) / 2);
 	}
 
-	if(align & Qt::AlignTop)
-	{
+	if (align & Qt::AlignTop) {
 		legend_rect.moveTop(bounding_rect.top());
 	}
-	else if(align & Qt::AlignBottom)
-	{
+	else if (align & Qt::AlignBottom) {
 		legend_rect.moveBottom(bounding_rect.bottom());
 	}
-	else
-	{
+	else {
 		legend_rect.moveTop(bounding_rect.top() + (bounding_rect.height() - legend_rect.height()) / 2);
 	}
 
 	return legend_rect;
 }
 
-void VipLegend::itemChanged(VipPlotItem * item)
+void VipLegend::itemChanged(VipPlotItem* item)
 {
-	//legend count change for this item, update the legend items
-	if(item->legendNames().size() != this->count(item))
-	{
+	// legend count change for this item, update the legend items
+	if (item->legendNames().size() != this->count(item)) {
 		int index = removeItem(item);
-		this->insertItem(index,item);
+		this->insertItem(index, item);
 	}
 
-	//pass the renderHints attribute of the VipPlotItem to the VipLegendItem, update VipLegendItem visibility
+	// pass the renderHints attribute of the VipPlotItem to the VipLegendItem, update VipLegendItem visibility
 	QList<VipLegendItem*> legends = legendItems(item);
-	for(int i=0; i < legends.size(); ++i)
-	{
+	for (int i = 0; i < legends.size(); ++i) {
 		legends[i]->setRenderHints(item->renderHints());
 		legends[i]->updateLegendItem();
 	}
 
-	if (d_data->checkState == CheckableVisibility)
-	{
+	if (d_data->checkState == CheckableVisibility) {
 		legends = legendItems(item);
 		for (int i = 0; i < legends.size(); ++i)
 			legends[i]->setChecked(item->isVisible());
 	}
-	else if (d_data->checkState == CheckableSelection)
-	{
+	else if (d_data->checkState == CheckableSelection) {
 		legends = legendItems(item);
 		for (int i = 0; i < legends.size(); ++i)
 			legends[i]->setChecked(item->isSelected());
@@ -1146,24 +1103,22 @@ void VipLegend::itemChanged(VipPlotItem * item)
 	layout()->invalidate();
 }
 
-
-
-
 static bool registerVipBorderItem = vipSetKeyWordsForClass(&VipBorderLegend::staticMetaObject);
 
-VipBorderLegend::VipBorderLegend(Alignment pos, QGraphicsItem * parent )
-:VipBorderItem(pos,parent), d_legend(nullptr), d_margin(0), d_length(0)
+VipBorderLegend::VipBorderLegend(Alignment pos, QGraphicsItem* parent)
+  : VipBorderItem(pos, parent)
+  , d_legend(nullptr)
+  , d_margin(0)
+  , d_length(0)
 {
-	//Z value just above standard axis
+	// Z value just above standard axis
 	this->setZValue(21);
 	this->setCanvasProximity(1);
 }
 
-VipBorderLegend::~VipBorderLegend()
-{
-}
+VipBorderLegend::~VipBorderLegend() {}
 
-void VipBorderLegend::setLegend(VipLegend * legend)
+void VipBorderLegend::setLegend(VipLegend* legend)
 {
 	if (d_legend) {
 		delete d_legend;
@@ -1180,27 +1135,27 @@ VipLegend* VipBorderLegend::legend()
 {
 	if (!d_legend)
 		return nullptr;
-	if(d_legend->parentItem() != this)
+	if (d_legend->parentItem() != this)
 		return d_legend = nullptr;
 	else
 		return d_legend;
 }
 
-const VipLegend *VipBorderLegend::legend() const
+const VipLegend* VipBorderLegend::legend() const
 {
 	if (!d_legend)
 		return nullptr;
-	if(d_legend->parentItem() != this)
+	if (d_legend->parentItem() != this)
 		return const_cast<VipBorderLegend*>(this)->d_legend = nullptr;
 	else
 		return d_legend;
 }
 
-VipLegend * VipBorderLegend::takeLegend()
+VipLegend* VipBorderLegend::takeLegend()
 {
 	if (d_legend) {
 		d_legend->setParentItem(nullptr);
-		VipLegend * res = d_legend;
+		VipLegend* res = d_legend;
 		d_legend = nullptr;
 		return res;
 	}
@@ -1218,26 +1173,26 @@ double VipBorderLegend::margin() const
 	return d_margin;
 }
 
-//void VipBorderLegend::setLegendAlignment(Qt::Alignment align)
-// {
-// d_align = align;
-// emitGeometryNeedUpdate();
-// }
+// void VipBorderLegend::setLegendAlignment(Qt::Alignment align)
+//  {
+//  d_align = align;
+//  emitGeometryNeedUpdate();
+//  }
 //
-// Qt::Alignment VipBorderLegend::legendAlignment() const
-// {
-// return d_align;
-// }
+//  Qt::Alignment VipBorderLegend::legendAlignment() const
+//  {
+//  return d_align;
+//  }
 
 double VipBorderLegend::extentForLength(double length) const
 {
-	if(!legend())
+	if (!legend())
 		return 0;
 
-	if(d_legend->legendItems().size() == 0)
+	if (d_legend->legendItems().size() == 0)
 		return 0;
 
-	if(!d_legend->isVisible())
+	if (!d_legend->isVisible())
 		return 0;
 
 	if (d_length != length) {
@@ -1246,25 +1201,21 @@ double VipBorderLegend::extentForLength(double length) const
 	}
 
 	double ext;
-	if(this->orientation() == Qt::Horizontal)
-	{
-		ext= d_legend->layout()->heightForWidth(length - 2 * d_margin);
+	if (this->orientation() == Qt::Horizontal) {
+		ext = d_legend->layout()->heightForWidth(length - 2 * d_margin);
 	}
-	else
-	{
-		ext= d_legend->layout()->maxRowWidth(1);
+	else {
+		ext = d_legend->layout()->maxRowWidth(1);
 	}
 
-
-	return ext + 2* d_margin;
+	return ext + 2 * d_margin;
 }
 
-void VipBorderLegend::itemGeometryChanged(const QRectF & r)
+void VipBorderLegend::itemGeometryChanged(const QRectF& r)
 {
 	Q_UNUSED(r)
-	if(legend())
-	{
-		QRectF max_rect = this->boundingRect().adjusted(d_margin,d_margin,-d_margin,-d_margin);
+	if (legend()) {
+		QRectF max_rect = this->boundingRect().adjusted(d_margin, d_margin, -d_margin, -d_margin);
 		if (d_max_rect != max_rect) {
 			d_max_rect = max_rect;
 			d_legend->layout()->invalidate();
@@ -1274,4 +1225,3 @@ void VipBorderLegend::itemGeometryChanged(const QRectF & r)
 		d_legend->setGeometry(d_legend->preferredGeometry(max_rect, d_legend->legendAlignment()));
 	}
 }
-

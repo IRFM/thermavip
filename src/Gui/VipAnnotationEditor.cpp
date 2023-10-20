@@ -1,15 +1,46 @@
+/**
+ * BSD 3-Clause License
+ *
+ * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice, this
+ *    list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of the copyright holder nor the names of its
+ *    contributors may be used to endorse or promote products derived from
+ *    this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
 #include "VipAnnotationEditor.h"
 #include "VipCore.h"
-#include "VipSymbol.h"
-#include "VipQuiver.h"
 #include "VipDisplayArea.h"
 #include "VipPlayer.h"
+#include "VipQuiver.h"
+#include "VipSymbol.h"
 
-#include <qtextedit.h>
 #include <qboxlayout.h>
 #include <qfontdialog.h>
+#include <qtextedit.h>
 
-static const QPen nullPen = QPen(QColor(128,128,128), 1);
+static const QPen nullPen = QPen(QColor(128, 128, 128), 1);
 static const QBrush nullBrush = QBrush(QColor(128, 128, 128), Qt::SolidPattern);
 static const QFont nullFont = QFont();
 static const int nullDistanceToText = -1;
@@ -20,29 +51,57 @@ static const int nullArrowAngle = -1;
 static const int nullAlignment = 0;
 static const int nullPosition = -1;
 
-static bool isNullPen(const QPen & p) { return p.color() == Qt::transparent && p.width() == 1 && p.style() == Qt::SolidLine; }
-static bool isNullBrush(const QBrush & b) { return b.color() == Qt::transparent && b.style() == Qt::SolidPattern; }
-static bool isNullFont(const QFont & f) { return f == QFont(); }
-static bool isNullDistanceToText(int d) { return d == nullDistanceToText; }
-static bool isNullBorderRadius(int r) { return r == nullBorderRadius; }
-static bool isNullSymbolType(int t) { return t == nullSymbolType; }
-static bool isNullSymbolSize(int s) { return s == nullSymbolSize; }
-static bool isNullArrowAngle(int a) {return a == nullArrowAngle;}
-static bool isNullAlignment(int a) { return a == nullAlignment; }
-static bool isNullPosition(int a) { return a == nullPosition; }
+static bool isNullPen(const QPen& p)
+{
+	return p.color() == Qt::transparent && p.width() == 1 && p.style() == Qt::SolidLine;
+}
+static bool isNullBrush(const QBrush& b)
+{
+	return b.color() == Qt::transparent && b.style() == Qt::SolidPattern;
+}
+static bool isNullFont(const QFont& f)
+{
+	return f == QFont();
+}
+static bool isNullDistanceToText(int d)
+{
+	return d == nullDistanceToText;
+}
+static bool isNullBorderRadius(int r)
+{
+	return r == nullBorderRadius;
+}
+static bool isNullSymbolType(int t)
+{
+	return t == nullSymbolType;
+}
+static bool isNullSymbolSize(int s)
+{
+	return s == nullSymbolSize;
+}
+static bool isNullArrowAngle(int a)
+{
+	return a == nullArrowAngle;
+}
+static bool isNullAlignment(int a)
+{
+	return a == nullAlignment;
+}
+static bool isNullPosition(int a)
+{
+	return a == nullPosition;
+}
 
-
-static QString fontToStyleSheet(const QFont & font)
+static QString fontToStyleSheet(const QFont& font)
 {
 	QString res;
 	res += "font-family:" + font.family() + ";";
 	res += "font-style:" + QString(font.style() == QFont::StyleItalic ? "italic" : (font.style() == QFont::StyleOblique ? "oblique" : "normal")) + ";";
-	if(font.bold())
+	if (font.bold())
 		res += "font-weight: bold;";
 	res += "font-size:" + QString::number(font.pointSize()) + "pt;";
 	return res;
 }
-
 
 class TextEditor::PrivateData
 {
@@ -51,7 +110,7 @@ public:
 	VipPenButton* textPen;
 	VipPenButton* textBrush;
 	QSpinBox* boxRadius;
-	QSpinBox * textDistance;
+	QSpinBox* textDistance;
 	QComboBox* boxStyle;
 	QComboBox* textAlignment;
 	QComboBox* textPosition;
@@ -60,7 +119,7 @@ public:
 };
 
 TextEditor::TextEditor()
-	:QWidget()
+  : QWidget()
 {
 	m_data = new PrivateData();
 
@@ -103,7 +162,9 @@ TextEditor::TextEditor()
 
 	m_data->boxStyle = new QComboBox();
 	m_data->boxStyle->setToolTip("Edit text box style");
-	m_data->boxStyle->addItems(QStringList() <<QString()<< "No box"<< "Full box"<< "Underline");
+	m_data->boxStyle->addItems(QStringList() << QString() << "No box"
+						 << "Full box"
+						 << "Underline");
 	m_data->bar.addWidget(m_data->boxStyle);
 	m_data->boxStyle->setMaximumWidth(80);
 
@@ -111,7 +172,15 @@ TextEditor::TextEditor()
 
 	m_data->textAlignment = new QComboBox();
 	m_data->textAlignment->setToolTip("Text alignment");
-	m_data->textAlignment->addItems(QStringList() << QString() << "Center"<< "Top"<< "Left"<<"Right"<< "Bottom"<< "TopLeft"<< "TopRight"<< "BottomLeft"<< "BottomRight");
+	m_data->textAlignment->addItems(QStringList() << QString() << "Center"
+						      << "Top"
+						      << "Left"
+						      << "Right"
+						      << "Bottom"
+						      << "TopLeft"
+						      << "TopRight"
+						      << "BottomLeft"
+						      << "BottomRight");
 	m_data->textAlignment->setMaximumWidth(80);
 	m_data->bar.addWidget(m_data->textAlignment);
 
@@ -119,14 +188,17 @@ TextEditor::TextEditor()
 
 	m_data->textPosition = new QComboBox();
 	m_data->textPosition->setToolTip("Text position around the shape");
-	m_data->textPosition->addItems(QStringList() << QString() << "Inside" << "X Inside" << "Y Inside" <<"Outside" );
+	m_data->textPosition->addItems(QStringList() << QString() << "Inside"
+						     << "X Inside"
+						     << "Y Inside"
+						     << "Outside");
 	m_data->textPosition->setMaximumWidth(80);
 	m_data->bar.addWidget(m_data->textPosition);
 
 	m_data->editor.setStyleSheet(fontToStyleSheet(QFont()));
 	m_data->editor.setFont(QFont());
 
-	QVBoxLayout * lay = new QVBoxLayout();
+	QVBoxLayout* lay = new QVBoxLayout();
 	lay->setContentsMargins(0, 0, 0, 0);
 	lay->setSpacing(0);
 	lay->addWidget(&m_data->bar);
@@ -135,15 +207,14 @@ TextEditor::TextEditor()
 
 	connect(&m_data->editor, SIGNAL(textChanged()), this, SLOT(emitChanged()));
 	connect(m_data->font, SIGNAL(triggered(bool)), this, SLOT(changeFont()));
-	connect(m_data->textPen, SIGNAL(penChanged(const QPen &)), this, SLOT(emitChanged()));
-	connect(m_data->textBrush, SIGNAL(penChanged(const QPen &)), this, SLOT(emitChanged()));
-	connect(m_data->boxRadius,SIGNAL(valueChanged(int)), this, SLOT(emitChanged()));
+	connect(m_data->textPen, SIGNAL(penChanged(const QPen&)), this, SLOT(emitChanged()));
+	connect(m_data->textBrush, SIGNAL(penChanged(const QPen&)), this, SLOT(emitChanged()));
+	connect(m_data->boxRadius, SIGNAL(valueChanged(int)), this, SLOT(emitChanged()));
 	connect(m_data->textDistance, SIGNAL(valueChanged(int)), this, SLOT(emitChanged()));
 	connect(m_data->boxStyle, SIGNAL(currentIndexChanged(int)), this, SLOT(emitChanged()));
 	connect(m_data->textAlignment, SIGNAL(currentIndexChanged(int)), this, SLOT(emitChanged()));
 	connect(m_data->textPosition, SIGNAL(currentIndexChanged(int)), this, SLOT(emitChanged()));
 }
-
 
 TextEditor::~TextEditor()
 {
@@ -161,7 +232,8 @@ void TextEditor::changeFont()
 	}
 }
 
-void TextEditor::emitChanged() {
+void TextEditor::emitChanged()
+{
 
 	if (!isNullPen(m_data->textPen->pen()))
 		m_data->editor.setTextColor(m_data->textPen->pen().color());
@@ -175,7 +247,7 @@ void TextEditor::emitChanged() {
 	Q_EMIT changed();
 }
 
-QTextEdit * TextEditor::editor() const
+QTextEdit* TextEditor::editor() const
 {
 	return &m_data->editor;
 }
@@ -187,9 +259,12 @@ QString TextEditor::boxStyle() const
 int TextEditor::vipSides() const
 {
 	QString t = boxStyle();
-	if (t == "Full box") return Vip::AllSides;
-	else if (t == "Underline") return Vip::Bottom;
-	else return Vip::NoSide;
+	if (t == "Full box")
+		return Vip::AllSides;
+	else if (t == "Underline")
+		return Vip::Bottom;
+	else
+		return Vip::NoSide;
 }
 
 QString TextEditor::textAlignment() const
@@ -201,32 +276,46 @@ int TextEditor::qtAlignment() const
 	QString a = m_data->textAlignment->currentText();
 	if (a.isEmpty())
 		return nullAlignment;
-	else if (a == "Top") return Qt::AlignTop |Qt::AlignHCenter;
-	else if (a == "Left") return Qt::AlignLeft | Qt::AlignVCenter;
-	else if (a == "Right") return Qt::AlignRight | Qt::AlignVCenter;
-	else if (a == "Bottom") return Qt::AlignBottom | Qt::AlignHCenter;
-	else if (a == "TopLeft") return Qt::AlignTop |Qt::AlignLeft;
-	else if (a == "TopRight") return Qt::AlignTop | Qt::AlignRight;
-	else if (a == "BottomLeft") return Qt::AlignBottom | Qt::AlignLeft;
-	else if (a == "BottomRight") return Qt::AlignBottom | Qt::AlignRight;
-	else if (a == "Center") return Qt::AlignCenter;
-	else return nullAlignment;
+	else if (a == "Top")
+		return Qt::AlignTop | Qt::AlignHCenter;
+	else if (a == "Left")
+		return Qt::AlignLeft | Qt::AlignVCenter;
+	else if (a == "Right")
+		return Qt::AlignRight | Qt::AlignVCenter;
+	else if (a == "Bottom")
+		return Qt::AlignBottom | Qt::AlignHCenter;
+	else if (a == "TopLeft")
+		return Qt::AlignTop | Qt::AlignLeft;
+	else if (a == "TopRight")
+		return Qt::AlignTop | Qt::AlignRight;
+	else if (a == "BottomLeft")
+		return Qt::AlignBottom | Qt::AlignLeft;
+	else if (a == "BottomRight")
+		return Qt::AlignBottom | Qt::AlignRight;
+	else if (a == "Center")
+		return Qt::AlignCenter;
+	else
+		return nullAlignment;
 }
 
 QString TextEditor::textPosition() const
 {
 	return m_data->textPosition->currentText();
 }
-int TextEditor::vipTextPosition() const {
+int TextEditor::vipTextPosition() const
+{
 	QString t = textPosition();
-	if (t == "Inside") return Vip::XInside | Vip::YInside;
-	else if (t == "X Inside") return Vip::XInside;
-	else if (t == "Y Inside") return Vip::YInside;
-	else if (t == "Outside") return Vip::Outside;
-	else return nullPosition;
+	if (t == "Inside")
+		return Vip::XInside | Vip::YInside;
+	else if (t == "X Inside")
+		return Vip::XInside;
+	else if (t == "Y Inside")
+		return Vip::YInside;
+	else if (t == "Outside")
+		return Vip::Outside;
+	else
+		return nullPosition;
 }
-
-
 
 static QString sidesToString(int sides)
 {
@@ -234,29 +323,44 @@ static QString sidesToString(int sides)
 }
 static QString positionToString(int text_pos)
 {
-	if (text_pos == (Vip::XInside | Vip::YInside)) return "Inside";
-	else if (text_pos == Vip::XInside) return "X Inside";
-	else if (text_pos == Vip::YInside) return "Y Inside";
-	else if(text_pos == Vip::Outside) return "Outside";
-	else return QString();
+	if (text_pos == (Vip::XInside | Vip::YInside))
+		return "Inside";
+	else if (text_pos == Vip::XInside)
+		return "X Inside";
+	else if (text_pos == Vip::YInside)
+		return "Y Inside";
+	else if (text_pos == Vip::Outside)
+		return "Outside";
+	else
+		return QString();
 }
 static QString alignmentToString(int alignment)
 {
-	if (alignment == (Qt::AlignTop | Qt::AlignHCenter)) return "Top";
-	else if (alignment == (Qt::AlignLeft | Qt::AlignVCenter)) return "Left";
-	else if (alignment == (Qt::AlignRight | Qt::AlignVCenter)) return "Right";
-	else if (alignment == (Qt::AlignBottom | Qt::AlignHCenter)) return "Bottom";
-	else if (alignment == (Qt::AlignTop | Qt::AlignLeft)) return "TopLeft";
-	else if (alignment == (Qt::AlignTop | Qt::AlignRight)) return "TopRight";
-	else if (alignment == (Qt::AlignBottom | Qt::AlignLeft)) return "BottomLeft";
-	else if (alignment == (Qt::AlignBottom | Qt::AlignRight)) return "BottomRight";
-	else if (alignment == Qt::AlignCenter) return "Center";
-	else return QString();
+	if (alignment == (Qt::AlignTop | Qt::AlignHCenter))
+		return "Top";
+	else if (alignment == (Qt::AlignLeft | Qt::AlignVCenter))
+		return "Left";
+	else if (alignment == (Qt::AlignRight | Qt::AlignVCenter))
+		return "Right";
+	else if (alignment == (Qt::AlignBottom | Qt::AlignHCenter))
+		return "Bottom";
+	else if (alignment == (Qt::AlignTop | Qt::AlignLeft))
+		return "TopLeft";
+	else if (alignment == (Qt::AlignTop | Qt::AlignRight))
+		return "TopRight";
+	else if (alignment == (Qt::AlignBottom | Qt::AlignLeft))
+		return "BottomLeft";
+	else if (alignment == (Qt::AlignBottom | Qt::AlignRight))
+		return "BottomRight";
+	else if (alignment == Qt::AlignCenter)
+		return "Center";
+	else
+		return QString();
 }
 
 void TextEditor::setShapes(const QList<VipPlotShape*>& shapes)
 {
-	//check the number of closed shapes
+	// check the number of closed shapes
 	QList<VipShape> closed;
 	QString text;
 	QFont font = nullFont;
@@ -269,11 +373,10 @@ void TextEditor::setShapes(const QList<VipPlotShape*>& shapes)
 	int textDistance = nullDistanceToText;
 
 	bool first = true;
-	for (int i = 0; i < shapes.size(); ++i)
-	{
-		if (VipAnnotation*annot = shapes[i]->annotation())
+	for (int i = 0; i < shapes.size(); ++i) {
+		if (VipAnnotation* annot = shapes[i]->annotation())
 			if (strcmp(annot->name(), "VipSimpleAnnotation") == 0) {
-				VipSimpleAnnotation * a = static_cast<VipSimpleAnnotation*>(annot);
+				VipSimpleAnnotation* a = static_cast<VipSimpleAnnotation*>(annot);
 
 				if (first) {
 					text = a->text().text();
@@ -288,15 +391,24 @@ void TextEditor::setShapes(const QList<VipPlotShape*>& shapes)
 					first = false;
 				}
 				else {
-					if (a->text().text() != text) text = QString();
-					if (a->text().font() != font) font = nullFont;
-					if (a->text().textPen().color() != textPen.color()) textPen = nullPen;
-					if (a->text().backgroundBrush() != textBrush) textBrush = nullBrush;
-					if (sidesToString(a->text().boxStyle().drawLines()) != boxStyle) boxStyle = QString();
-					if (textAlign != a->textAlignment()) textAlign = nullAlignment;
-					if (textPos != a->textPosition()) textPos = nullPosition;
-					if (radius != a->text().borderRadius()) radius = nullBorderRadius;
-					if (textDistance != a->textDistance()) textDistance =nullDistanceToText;
+					if (a->text().text() != text)
+						text = QString();
+					if (a->text().font() != font)
+						font = nullFont;
+					if (a->text().textPen().color() != textPen.color())
+						textPen = nullPen;
+					if (a->text().backgroundBrush() != textBrush)
+						textBrush = nullBrush;
+					if (sidesToString(a->text().boxStyle().drawLines()) != boxStyle)
+						boxStyle = QString();
+					if (textAlign != a->textAlignment())
+						textAlign = nullAlignment;
+					if (textPos != a->textPosition())
+						textPos = nullPosition;
+					if (radius != a->text().borderRadius())
+						radius = nullBorderRadius;
+					if (textDistance != a->textDistance())
+						textDistance = nullDistanceToText;
 				}
 			}
 	}
@@ -309,7 +421,7 @@ void TextEditor::setShapes(const QList<VipPlotShape*>& shapes)
 	m_data->textBrush->setBrush(textBrush);
 	m_data->boxStyle->setCurrentText(boxStyle);
 	m_data->textAlignment->setCurrentText(alignmentToString(textAlign));
-	m_data->textPosition->setCurrentText(positionToString( textPos));
+	m_data->textPosition->setCurrentText(positionToString(textPos));
 	m_data->boxRadius->setValue(radius);
 	m_data->textDistance->setValue(textDistance);
 
@@ -324,37 +436,39 @@ void TextEditor::setShapes(const QList<VipPlotShape*>& shapes)
 	}
 
 	blockSignals(false);
-
 }
-
 
 void TextEditor::updateShapes(const QList<VipPlotShape*>& shapes)
 {
-	for (int i = 0; i < shapes.size(); ++i)
-	{
-		if (VipAnnotation*annot = shapes[i]->annotation())
+	for (int i = 0; i < shapes.size(); ++i) {
+		if (VipAnnotation* annot = shapes[i]->annotation())
 			if (strcmp(annot->name(), "VipSimpleAnnotation") == 0) {
-				VipSimpleAnnotation * a = static_cast<VipSimpleAnnotation*>(annot);
+				VipSimpleAnnotation* a = static_cast<VipSimpleAnnotation*>(annot);
 
-				if (m_data->editor.toPlainText().size()) a->setText(m_data->editor.toPlainText());
-				if (!isNullFont(m_data->editor.font())) a->text().setFont(m_data->editor.font());
-				if (!isNullPen(m_data->textPen->pen())) a->text().setTextPen(m_data->textPen->pen());
-				if (!isNullBrush(m_data->textBrush->pen().brush())) a->text().setBackgroundBrush(m_data->textBrush->pen().brush());
-				if (!isNullAlignment(qtAlignment())) a->setTextAlignment((Qt::Alignment)qtAlignment());
-				if (!isNullPosition(vipTextPosition())) a->setTextPosition((Vip::RegionPositions) vipTextPosition());
-				if (!isNullBorderRadius(m_data->boxRadius->value())) a->text().boxStyle().setBorderRadius(m_data->boxRadius->value());
-				if (!isNullDistanceToText(m_data->textDistance->value())) a->setTextDistance(m_data->textDistance->value());
+				if (m_data->editor.toPlainText().size())
+					a->setText(m_data->editor.toPlainText());
+				if (!isNullFont(m_data->editor.font()))
+					a->text().setFont(m_data->editor.font());
+				if (!isNullPen(m_data->textPen->pen()))
+					a->text().setTextPen(m_data->textPen->pen());
+				if (!isNullBrush(m_data->textBrush->pen().brush()))
+					a->text().setBackgroundBrush(m_data->textBrush->pen().brush());
+				if (!isNullAlignment(qtAlignment()))
+					a->setTextAlignment((Qt::Alignment)qtAlignment());
+				if (!isNullPosition(vipTextPosition()))
+					a->setTextPosition((Vip::RegionPositions)vipTextPosition());
+				if (!isNullBorderRadius(m_data->boxRadius->value()))
+					a->text().boxStyle().setBorderRadius(m_data->boxRadius->value());
+				if (!isNullDistanceToText(m_data->textDistance->value()))
+					a->setTextDistance(m_data->textDistance->value());
 				if (!m_data->boxStyle->currentText().isEmpty()) {
-					a->text().boxStyle().setDrawLines((Vip::Sides) vipSides());
+					a->text().boxStyle().setDrawLines((Vip::Sides)vipSides());
 				}
 
 				shapes[i]->update();
 			}
 	}
 }
-
-
-
 
 class ShapeEditor::PrivateData
 {
@@ -373,8 +487,8 @@ ShapeEditor::ShapeEditor()
 	m_data->brush.setText("Annotation background brush");
 	m_data->brush.setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
 
-	QHBoxLayout * lay = new QHBoxLayout();
-	//lay->setContentsMargins(0, 0, 0, 0);
+	QHBoxLayout* lay = new QHBoxLayout();
+	// lay->setContentsMargins(0, 0, 0, 0);
 	lay->setSpacing(5);
 	lay->addWidget(&m_data->pen);
 	lay->addWidget(&m_data->brush);
@@ -388,8 +502,14 @@ ShapeEditor::~ShapeEditor()
 	delete m_data;
 }
 
-QPen ShapeEditor::pen() const { return m_data->pen.pen(); }
-QBrush ShapeEditor::brush() const { return m_data->brush.pen().brush(); }
+QPen ShapeEditor::pen() const
+{
+	return m_data->pen.pen();
+}
+QBrush ShapeEditor::brush() const
+{
+	return m_data->brush.pen().brush();
+}
 
 void ShapeEditor::setShapes(const QList<VipPlotShape*>& shapes)
 {
@@ -397,11 +517,10 @@ void ShapeEditor::setShapes(const QList<VipPlotShape*>& shapes)
 	QBrush brush = nullBrush;
 	bool first = true;
 
-	for (int i = 0; i < shapes.size(); ++i)
-	{
-		if (VipAnnotation*annot = shapes[i]->annotation())
+	for (int i = 0; i < shapes.size(); ++i) {
+		if (VipAnnotation* annot = shapes[i]->annotation())
 			if (strcmp(annot->name(), "VipSimpleAnnotation") == 0) {
-				VipSimpleAnnotation * a = static_cast<VipSimpleAnnotation*>(annot);
+				VipSimpleAnnotation* a = static_cast<VipSimpleAnnotation*>(annot);
 
 				if (first) {
 					pen = a->pen();
@@ -409,8 +528,10 @@ void ShapeEditor::setShapes(const QList<VipPlotShape*>& shapes)
 					first = false;
 				}
 				else {
-					if (pen != a->pen()) pen = nullPen;
-					if (brush != a->brush()) brush = nullBrush;
+					if (pen != a->pen())
+						pen = nullPen;
+					if (brush != a->brush())
+						brush = nullBrush;
 				}
 			}
 	}
@@ -422,24 +543,22 @@ void ShapeEditor::setShapes(const QList<VipPlotShape*>& shapes)
 }
 void ShapeEditor::updateShapes(const QList<VipPlotShape*>& shapes)
 {
-	for (int i = 0; i < shapes.size(); ++i)
-	{
-		if (VipAnnotation*annot = shapes[i]->annotation())
+	for (int i = 0; i < shapes.size(); ++i) {
+		if (VipAnnotation* annot = shapes[i]->annotation())
 			if (strcmp(annot->name(), "VipSimpleAnnotation") == 0) {
-				VipSimpleAnnotation * a = static_cast<VipSimpleAnnotation*>(annot);
+				VipSimpleAnnotation* a = static_cast<VipSimpleAnnotation*>(annot);
 
 				if (!isNullPen(m_data->pen.pen())) {
 					a->setPen(m_data->pen.pen());
 					a->text().boxStyle().setBorderPen(m_data->pen.pen());
 				}
-				if (!isNullBrush(m_data->brush.pen().brush())) a->setBrush(m_data->brush.pen().brush());
+				if (!isNullBrush(m_data->brush.pen().brush()))
+					a->setBrush(m_data->brush.pen().brush());
 
 				shapes[i]->update();
 			}
 	}
 }
-
-
 
 class SymbolEditor::PrivateData
 {
@@ -452,13 +571,11 @@ SymbolEditor::SymbolEditor()
 {
 	m_data = new PrivateData();
 
-
 	m_data->type.setIconSize(QSize(30, 20));
 	m_data->type.setToolTip("Symbol type");
 	m_data->type.addItem(QString(), -2);
 	m_data->type.addItem("No symbol", -1);
-	for (int i = VipSymbol::Ellipse; i <= VipSymbol::Hexagon; ++i)
-	{
+	for (int i = VipSymbol::Ellipse; i <= VipSymbol::Hexagon; ++i) {
 		QPixmap pix(QSize(30, 20));
 		pix.fill(QColor(255, 255, 255, 0));
 		QPainter p(&pix);
@@ -471,7 +588,7 @@ SymbolEditor::SymbolEditor()
 		sym.drawSymbol(&p, QPointF(15, 10));
 		m_data->type.addItem(QIcon(pix), "", i);
 	}
-	//draw arrow
+	// draw arrow
 	{
 		QPixmap pix(QSize(30, 20));
 		pix.fill(QColor(255, 255, 255, 0));
@@ -479,8 +596,8 @@ SymbolEditor::SymbolEditor()
 		p.setRenderHint(QPainter::Antialiasing, true);
 		VipQuiverPath q;
 		q.setPen(QColor(Qt::red));
-		q.setExtremityPen(VipQuiverPath::End,QColor(Qt::red));
-		q.setExtremityBrush(VipQuiverPath::End,QColor(Qt::red));
+		q.setExtremityPen(VipQuiverPath::End, QColor(Qt::red));
+		q.setExtremityBrush(VipQuiverPath::End, QColor(Qt::red));
 		q.setStyle(VipQuiverPath::EndArrow);
 		q.setLength(VipQuiverPath::End, 9);
 		q.draw(&p, QLineF(QPointF(3, 10), QPointF(27, 10)));
@@ -495,7 +612,7 @@ SymbolEditor::SymbolEditor()
 	m_data->angle.setRange(nullArrowAngle, 180);
 	m_data->angle.setSpecialValueText(" ");
 
-	QGridLayout * lay = new QGridLayout();
+	QGridLayout* lay = new QGridLayout();
 	lay->addWidget(new QLabel("Symbol style"), 0, 0);
 	lay->addWidget(&m_data->type, 0, 1);
 	lay->addWidget(new QLabel("Symbol size"), 1, 0);
@@ -533,11 +650,10 @@ void SymbolEditor::setShapes(const QList<VipPlotShape*>& shapes)
 	int angle = nullArrowAngle;
 	bool first = true;
 
-	for (int i = 0; i < shapes.size(); ++i)
-	{
-		if (VipAnnotation*annot = shapes[i]->annotation())
+	for (int i = 0; i < shapes.size(); ++i) {
+		if (VipAnnotation* annot = shapes[i]->annotation())
 			if (strcmp(annot->name(), "VipSimpleAnnotation") == 0) {
-				VipSimpleAnnotation * a = static_cast<VipSimpleAnnotation*>(annot);
+				VipSimpleAnnotation* a = static_cast<VipSimpleAnnotation*>(annot);
 
 				if (first) {
 					type = a->endStyle();
@@ -546,9 +662,12 @@ void SymbolEditor::setShapes(const QList<VipPlotShape*>& shapes)
 					first = false;
 				}
 				else {
-					if (type != a->endStyle()) type = nullSymbolType;
-					if (size != a->endSize()) size = nullSymbolSize;
-					if (angle != a->arrowAngle()) angle = nullArrowAngle;
+					if (type != a->endStyle())
+						type = nullSymbolType;
+					if (size != a->endSize())
+						size = nullSymbolSize;
+					if (angle != a->arrowAngle())
+						angle = nullArrowAngle;
 				}
 			}
 	}
@@ -561,23 +680,22 @@ void SymbolEditor::setShapes(const QList<VipPlotShape*>& shapes)
 }
 void SymbolEditor::updateShapes(const QList<VipPlotShape*>& shapes)
 {
-	for (int i = 0; i < shapes.size(); ++i)
-	{
-		if (VipAnnotation*annot = shapes[i]->annotation())
+	for (int i = 0; i < shapes.size(); ++i) {
+		if (VipAnnotation* annot = shapes[i]->annotation())
 			if (strcmp(annot->name(), "VipSimpleAnnotation") == 0) {
-				VipSimpleAnnotation * a = static_cast<VipSimpleAnnotation*>(annot);
+				VipSimpleAnnotation* a = static_cast<VipSimpleAnnotation*>(annot);
 
-				if (!isNullSymbolType(symbolType())) a->setEndStyle(symbolType());
-				if (!isNullSymbolSize(symbolSize())) a->setEndSize(symbolSize());
-				if (!isNullArrowAngle(arrowAngle())) a->setArrowAngle(arrowAngle());
+				if (!isNullSymbolType(symbolType()))
+					a->setEndStyle(symbolType());
+				if (!isNullSymbolSize(symbolSize()))
+					a->setEndSize(symbolSize());
+				if (!isNullArrowAngle(arrowAngle()))
+					a->setArrowAngle(arrowAngle());
 
 				shapes[i]->update();
 			}
 	}
 }
-
-
-
 
 class VipAnnotationWidget::PrivateData
 {
@@ -590,7 +708,7 @@ VipAnnotationWidget::VipAnnotationWidget()
 {
 	m_data = new PrivateData();
 
-	QVBoxLayout * lay = new QVBoxLayout();
+	QVBoxLayout* lay = new QVBoxLayout();
 	lay->setContentsMargins(0, 0, 0, 0);
 	lay->setSpacing(0);
 	lay->addWidget(&m_data->textEditor);
@@ -612,9 +730,18 @@ VipAnnotationWidget::~VipAnnotationWidget()
 	delete m_data;
 }
 
-TextEditor * VipAnnotationWidget::textEditor() const { return &m_data->textEditor; }
-ShapeEditor * VipAnnotationWidget::shapeEditor() const { return &m_data->shapeEditor; }
-SymbolEditor * VipAnnotationWidget::symbolEditor() const { return &m_data->symbolEditor; }
+TextEditor* VipAnnotationWidget::textEditor() const
+{
+	return &m_data->textEditor;
+}
+ShapeEditor* VipAnnotationWidget::shapeEditor() const
+{
+	return &m_data->shapeEditor;
+}
+SymbolEditor* VipAnnotationWidget::symbolEditor() const
+{
+	return &m_data->symbolEditor;
+}
 
 void VipAnnotationWidget::setShapes(const QList<VipPlotShape*>& shapes)
 {
@@ -628,18 +755,16 @@ void VipAnnotationWidget::updateShapes(const QList<VipPlotShape*>& shapes)
 	m_data->shapeEditor.updateShapes(shapes);
 	m_data->symbolEditor.updateShapes(shapes);
 
-	//set the modifications to the underlying VipShape
+	// set the modifications to the underlying VipShape
 	for (int i = 0; i < shapes.size(); ++i) {
-		if (VipAnnotation * a = shapes[i]->annotation()) {
+		if (VipAnnotation* a = shapes[i]->annotation()) {
 			shapes[i]->rawData().setAttribute("_vip_annotation", vipSaveAnnotation(a));
 		}
 	}
 }
 
-
-
-VipAnnotationToolWidget::VipAnnotationToolWidget(VipMainWindow * w)
-	:VipToolWidgetPlayer(w)
+VipAnnotationToolWidget::VipAnnotationToolWidget(VipMainWindow* w)
+  : VipToolWidgetPlayer(w)
 {
 	m_widget = new VipAnnotationWidget();
 	setWidget(m_widget);
@@ -651,35 +776,35 @@ VipAnnotationToolWidget::VipAnnotationToolWidget(VipMainWindow * w)
 	connect(m_widget, SIGNAL(changed()), this, SLOT(updateShapes()));
 }
 
-bool VipAnnotationToolWidget::setPlayer(VipAbstractPlayer * pl)
+bool VipAnnotationToolWidget::setPlayer(VipAbstractPlayer* pl)
 {
 	if (m_player) {
-		disconnect(m_player->plotWidget2D()->area(), SIGNAL(childSelectionChanged(VipPlotItem *)), this, SLOT(importShapes()));
+		disconnect(m_player->plotWidget2D()->area(), SIGNAL(childSelectionChanged(VipPlotItem*)), this, SLOT(importShapes()));
 	}
 
 	m_player = qobject_cast<VipPlayer2D*>(pl);
 	if (!m_player)
 		return false;
 
-	connect(m_player->plotWidget2D()->area(), SIGNAL(childSelectionChanged(VipPlotItem *)), this, SLOT(importShapes()));
+	connect(m_player->plotWidget2D()->area(), SIGNAL(childSelectionChanged(VipPlotItem*)), this, SLOT(importShapes()));
 	importShapes();
 	return true;
 }
 
-VipAnnotationWidget * VipAnnotationToolWidget::annotationWidget() const
+VipAnnotationWidget* VipAnnotationToolWidget::annotationWidget() const
 {
 	return m_widget;
 }
 
-static QList<VipPlotShape*> findShapes(VipPlayer2D * player, bool with_annotation)
+static QList<VipPlotShape*> findShapes(VipPlayer2D* player, bool with_annotation)
 {
 	if (!player)
 		return QList<VipPlotShape*>();
-	//find shapes
+	// find shapes
 	QList<VipPlotSceneModel*> models = player->plotSceneModels();
 	QList<VipPlotShape*> shapes;
 	for (int i = 0; i < models.size(); ++i) {
-		QList<VipPlotShape* > tmp = models[i]->shapes(1);
+		QList<VipPlotShape*> tmp = models[i]->shapes(1);
 		for (int j = 0; j < tmp.size(); ++j) {
 			if (tmp[j]->annotation() || !with_annotation)
 				shapes.append(tmp[j]);
@@ -690,7 +815,7 @@ static QList<VipPlotShape*> findShapes(VipPlayer2D * player, bool with_annotatio
 
 void VipAnnotationToolWidget::importShapes()
 {
-	m_widget->setShapes(findShapes(m_player,true));
+	m_widget->setShapes(findShapes(m_player, true));
 }
 void VipAnnotationToolWidget::updateShapes()
 {
@@ -698,16 +823,16 @@ void VipAnnotationToolWidget::updateShapes()
 	m_player->update();
 }
 
-VipAnnotationToolWidget * vipGetAnnotationToolWidget(VipMainWindow * w)
+VipAnnotationToolWidget* vipGetAnnotationToolWidget(VipMainWindow* w)
 {
-	static VipAnnotationToolWidget * widget = new VipAnnotationToolWidget(w);
+	static VipAnnotationToolWidget* widget = new VipAnnotationToolWidget(w);
 	return widget;
 }
 
 #include "VipGui.h"
-static VipAnnotation * createDefaultAnnotation(VipPlayer2D * pl, VipPlotShape * sh)
+static VipAnnotation* createDefaultAnnotation(VipPlayer2D* pl, VipPlotShape* sh)
 {
-	VipSimpleAnnotation * a = new VipSimpleAnnotation();
+	VipSimpleAnnotation* a = new VipSimpleAnnotation();
 	a->setPen(QColor(Qt::red));
 	a->setBrush(QBrush());
 	a->setEndStyle(VipSimpleAnnotation::Ellipse);
@@ -718,39 +843,38 @@ static VipAnnotation * createDefaultAnnotation(VipPlayer2D * pl, VipPlotShape * 
 	a->setTextAlignment(Qt::AlignTop | Qt::AlignHCenter);
 
 	if (sh->rawData().type() == VipShape::Polyline) {
-		//a->text().boxStyle().setDrawLines(Vip::Bottom);
+		// a->text().boxStyle().setDrawLines(Vip::Bottom);
 		a->setEndStyle(VipSimpleAnnotation::Arrow);
 		a->setTextAlignment(Qt::AlignTop | Qt::AlignHCenter);
 	}
 	else if (sh->rawData().type() == VipShape::Point) {
 		a->setTextDistance(a->endSize());
 	}
-	else{
+	else {
 		a->text().boxStyle().setDrawLines(Vip::NoSide);
 		a->setTextPosition(Vip::XInside);
 	}
 	return a;
 }
 
-void vipEditAnnotations(VipPlayer2D * player)
+void vipEditAnnotations(VipPlayer2D* player)
 {
-	QList<VipPlotShape*> shapes = findShapes(player,false);
+	QList<VipPlotShape*> shapes = findShapes(player, false);
 	for (int i = 0; i < shapes.size(); ++i) {
 		if (!shapes[i]->annotation())
-			shapes[i]->setAnnotation(createDefaultAnnotation(player,shapes[i]));
+			shapes[i]->setAnnotation(createDefaultAnnotation(player, shapes[i]));
 	}
 	vipGetAnnotationToolWidget()->setPlayer(player);
 	vipGetAnnotationToolWidget()->show();
 }
-void vipRemoveAnnotations(VipPlayer2D * player)
+void vipRemoveAnnotations(VipPlayer2D* player)
 {
-	QList<VipPlotShape*> shapes = findShapes(player,true);
+	QList<VipPlotShape*> shapes = findShapes(player, true);
 	for (int i = 0; i < shapes.size(); ++i)
 		shapes[i]->setAnnotation(nullptr);
 }
 
-
-void vipRemoveAllAnnotations(VipPlayer2D * player)
+void vipRemoveAllAnnotations(VipPlayer2D* player)
 {
 	QList<VipPlotSceneModel*> models = player->plotSceneModels();
 	for (int i = 0; i < models.size(); ++i) {
@@ -765,24 +889,24 @@ void vipRemoveAllAnnotations(VipPlayer2D * player)
 	}
 }
 
-VipSimpleAnnotation* vipAnnotation(VipPlayer2D * player, const QString & type, const QString & text,
-	const QPointF & start, const QPointF & end , const QVariantMap & attributes,
-	const QString & yaxis , QString * error )
+VipSimpleAnnotation*
+vipAnnotation(VipPlayer2D* player, const QString& type, const QString& text, const QPointF& start, const QPointF& end, const QVariantMap& attributes, const QString& yaxis, QString* error)
 {
 	if (!player)
 		return nullptr;
 
-	//find the right VipPlotSceneModel
-	VipPlotSceneModel * model = player->plotSceneModel();
+	// find the right VipPlotSceneModel
+	VipPlotSceneModel* model = player->plotSceneModel();
 	if (!yaxis.isEmpty()) {
-		if (VipPlotPlayer * p = qobject_cast<VipPlotPlayer*>(player)) {
-			if (VipAbstractScale * scale = p->findYScale(yaxis)) {
+		if (VipPlotPlayer* p = qobject_cast<VipPlotPlayer*>(player)) {
+			if (VipAbstractScale* scale = p->findYScale(yaxis)) {
 				model = p->findPlotSceneModel(QList<VipAbstractScale*>() << p->xScale() << scale);
 			}
 		}
 	}
 	if (!model) {
-		if (error) *error = "cannot find a valid area to insert annotation";
+		if (error)
+			*error = "cannot find a valid area to insert annotation";
 		return nullptr;
 	}
 
@@ -802,7 +926,7 @@ VipSimpleAnnotation* vipAnnotation(VipPlayer2D * player, const QString & type, c
 		res.first.setGroup("ROI");
 
 	model->sceneModel().add(res.first);
-	if (VipPlotShape * sh = model->findShape(res.first))
+	if (VipPlotShape* sh = model->findShape(res.first))
 		return static_cast<VipSimpleAnnotation*>(sh->annotation());
 	return nullptr;
 }

@@ -1,18 +1,53 @@
+/**
+ * BSD 3-Clause License
+ *
+ * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice, this
+ *    list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of the copyright holder nor the names of its
+ *    contributors may be used to endorse or promote products derived from
+ *    this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
 #include "VipPolarWidgets.h"
-#include "VipPolarAxis.h"
-#include "VipPlotMarker.h"
-#include "VipPlotGrid.h"
 #include "VipPieChart.h"
+#include "VipPlotGrid.h"
+#include "VipPlotMarker.h"
+#include "VipPolarAxis.h"
 #include "VipSymbol.h"
 
 #include <qapplication.h>
 
 class OpaqueBackgroundPie : public VipPieItem
 {
-	QPointer< VipPlotPolarArea2D> area;
+	QPointer<VipPlotPolarArea2D> area;
+
 public:
-	OpaqueBackgroundPie(VipPlotPolarArea2D * a)
-		:VipPieItem(), area(a){}
+	OpaqueBackgroundPie(VipPlotPolarArea2D* a)
+	  : VipPieItem()
+	  , area(a)
+	{
+	}
 
 	virtual void draw(QPainter* painter, const VipCoordinateSystemPtr& m) const
 	{
@@ -35,14 +70,17 @@ public:
 
 class VipCustomPolarArea : public VipPlotPolarArea2D
 {
-	QPointer< VipPolarValueGauge> value;
+	QPointer<VipPolarValueGauge> value;
+
 public:
-	VipCustomPolarArea(VipPolarValueGauge * w)
-		:VipPlotPolarArea2D(), value(w)
-	{}
+	VipCustomPolarArea(VipPolarValueGauge* w)
+	  : VipPlotPolarArea2D()
+	  , value(w)
+	{
+	}
 
 protected:
-	virtual void	wheelEvent(QGraphicsSceneWheelEvent* event)
+	virtual void wheelEvent(QGraphicsSceneWheelEvent* event)
 	{
 		VipInterval bounds = value->range();
 		double val = value->value() + (event->delta() > 0 ? 1 : -1);
@@ -53,7 +91,6 @@ protected:
 		value->setValue(val);
 	}
 };
-
 
 class VipPolarValueGauge::PrivateData
 {
@@ -74,7 +111,7 @@ public:
 };
 
 VipPolarValueGauge::VipPolarValueGauge(QWidget* parent)
-	:VipPlotPolarWidget2D(parent)
+  : VipPlotPolarWidget2D(parent)
 {
 	d_data = new PrivateData();
 	this->setArea(new VipCustomPolarArea(this));
@@ -93,7 +130,7 @@ VipPolarValueGauge::VipPolarValueGauge(QWidget* parent)
 	this->area()->grid()->setMinorPen(white_transparent);
 	this->area()->grid()->enableAxisMin(1, true);
 
-	//add a left scale from 0 to 100
+	// add a left scale from 0 to 100
 	VipAxisBase* left = new VipAxisBase();
 	left->setAutoScale(false);
 	left->setScale(0, 100);
@@ -101,7 +138,6 @@ VipPolarValueGauge::VipPolarValueGauge(QWidget* parent)
 	left->setVisible(false);
 	this->area()->titleAxis()->setAutoScale(false);
 	this->area()->titleAxis()->setScale(0, 100);
-
 
 	VipScaleDiv div;
 	VipScaleDiv::TickList major, minor;
@@ -128,22 +164,22 @@ VipPolarValueGauge::VipPolarValueGauge(QWidget* parent)
 	grad.setConical();
 	grad.setGradientStops(QGradientStops() << QGradientStop(0, QColor(0xD02128)) << QGradientStop(0.5, QColor(0xFDF343)) << QGradientStop(1, QColor(0x11B34C)));
 	d_data->polarGradiant->boxStyle().setAdaptativeGradientBrush(grad);
-	//VipText t = "this is a long text";
-	// t.setAlignment(Qt::AlignLeft | Qt::AlignTop);
-	// p->setText(t);
-	// p->setTextPosition(Vip::Inside);
-	// p->setCurved(true);
-	// p->setRotation(20);
-	// p->setTextDirection(VipText::AutoDirection);
+	// VipText t = "this is a long text";
+	//  t.setAlignment(Qt::AlignLeft | Qt::AlignTop);
+	//  p->setText(t);
+	//  p->setTextPosition(Vip::Inside);
+	//  p->setCurved(true);
+	//  p->setRotation(20);
+	//  p->setTextDirection(VipText::AutoDirection);
 	d_data->polarGradiant->setAxes(scales, VipCoordinateSystem::Polar);
 	d_data->polarGradiant->setItemAttribute(VipPlotItem::ClipToScaleRect, false);
-	d_data->polarGradiant->setRenderHints(QPainter::Antialiasing );
+	d_data->polarGradiant->setRenderHints(QPainter::Antialiasing);
 
 	d_data->clipValue = new VipPieItem();
 	d_data->clipValue->setRawData(VipPie(0, 100, 60, 100, 0));
 	d_data->clipValue->setAxes(scales, VipCoordinateSystem::Polar);
 	d_data->clipValue->setItemAttribute(VipPlotItem::ClipToScaleRect, false);
-	d_data->clipValue->setRenderHints(QPainter::Antialiasing );
+	d_data->clipValue->setRenderHints(QPainter::Antialiasing);
 	d_data->clipValue->boxStyle().setBorderPen(QPen(Qt::white));
 	d_data->polarGradiant->setClipTo(d_data->clipValue);
 
@@ -165,26 +201,24 @@ VipPolarValueGauge::VipPolarValueGauge(QWidget* parent)
 	d_data->shadow->boxStyle().setBorderPen(QPen(shadow));
 	d_data->shadow->setAxes(scales, VipCoordinateSystem::Polar);
 	d_data->shadow->setItemAttribute(VipPlotItem::ClipToScaleRect, false);
-	d_data->shadow->setZValue(d_data->polarGradiant->zValue()-0.1);// area()->grid()->zValue() + 2);
-
+	d_data->shadow->setZValue(d_data->polarGradiant->zValue() - 0.1); // area()->grid()->zValue() + 2);
 
 	d_data->lightSize = 10;
 	d_data->light = new VipPieItem();
 	d_data->light->setRawData(VipPie(0, 100, 90, 100));
-	QColor c(//0x141720
-Qt::white);
+	QColor c( // 0x141720
+	  Qt::white);
 	c.setAlpha(50);
 	d_data->light->boxStyle().setBackgroundBrush(QBrush(c));
 	d_data->light->setAxes(scales, VipCoordinateSystem::Polar);
 	d_data->light->setItemAttribute(VipPlotItem::ClipToScaleRect, false);
-
 
 	d_data->centralText = new VipPlotMarker();
 	VipText t;
 	VipTextStyle textStyle = t.textStyle();
 	VipAdaptativeGradient gradText;
 	gradText.setLinear(Qt::Vertical);
-	gradText.setGradientStops(QGradientStops() << QGradientStop(0, QColor(0xF8DA46)) << QGradientStop(1, QColor(0xDD901E)) );
+	gradText.setGradientStops(QGradientStops() << QGradientStop(0, QColor(0xF8DA46)) << QGradientStop(1, QColor(0xDD901E)));
 	textStyle.textBoxStyle().setAdaptativeGradientBrush(gradText);
 	textStyle.textBoxStyle().setBorderPen(QPen(Qt::NoPen));
 	t.setTextStyle(textStyle);
@@ -220,10 +254,10 @@ void VipPolarValueGauge::recomputeFullGeometry()
 	d_data->polarGradiant->setRawData(VipPie(bounds.minValue(), bounds.maxValue(), 100 - d_data->radialWidth, 100, 0));
 	d_data->background->setRawData(VipPie(bounds.minValue(), bounds.maxValue(), 100 - d_data->radialWidth, 100, 0));
 	d_data->clipValue->setRawData(VipPie(bounds.minValue(), d_data->value, 100 - d_data->radialWidth, 100, 0));
-	double shadow_width = bounds.width() * (d_data->shadowSize / 100) /2.;
+	double shadow_width = bounds.width() * (d_data->shadowSize / 100) / 2.;
 	d_data->shadow->setRawData(VipPie(bounds.minValue() - shadow_width, bounds.maxValue() + shadow_width, 100 - d_data->radialWidth - d_data->shadowSize, 100 - d_data->shadowSize));
 	d_data->light->setRawData(VipPie(bounds.minValue(), bounds.maxValue(), 100 - d_data->lightSize, 100));
-	d_data->centralText->setRawData(QPointF(d_data->centralText->rawData().x(), (bounds.maxValue() - bounds.minValue())/2));
+	d_data->centralText->setRawData(QPointF(d_data->centralText->rawData().x(), (bounds.maxValue() - bounds.minValue()) / 2));
 	d_data->bottomText->setRawData(QPointF(d_data->bottomText->rawData().x(), (bounds.maxValue() - bounds.minValue()) / 2));
 }
 
@@ -238,11 +272,11 @@ void VipPolarValueGauge::setRange(double min, double max, double step)
 	double major_step = step * 4;
 	for (double i = min; i <= max; i += major_step)
 		major.append(i);
-	if(major.last() != max)
+	if (major.last() != max)
 		major.append(max);
 	div.setTicks(VipScaleDiv::MajorTick, major);
 	div.setTicks(VipScaleDiv::MinorTick, minor);
-	div.setInterval(min,max);
+	div.setInterval(min, max);
 	this->area()->polarAxis()->setScaleDiv(div);
 
 	if (d_data->value < min)
@@ -293,7 +327,7 @@ void VipPolarValueGauge::setShadowSize(double value)
 double VipPolarValueGauge::shadowSize() const
 {
 	return d_data->shadowSize;
-	//return d_data->value->rawData().minRadius() - d_data->shadow->rawData().minRadius();
+	// return d_data->value->rawData().minRadius() - d_data->shadow->rawData().minRadius();
 }
 
 void VipPolarValueGauge::setLightSize(double value)
@@ -305,7 +339,7 @@ void VipPolarValueGauge::setLightSize(double value)
 }
 double VipPolarValueGauge::lightSize() const
 {
-	return d_data->lightSize;//d_data->value->rawData().maxRadius() - d_data->light->rawData().minRadius();
+	return d_data->lightSize; // d_data->value->rawData().maxRadius() - d_data->light->rawData().minRadius();
 }
 
 void VipPolarValueGauge::setShadowColor(const QColor& c)
@@ -399,7 +433,6 @@ VipPieItem* VipPolarValueGauge::lightPie() const
 	return d_data->light;
 }
 
-
 double VipPolarValueGauge::value() const
 {
 	return d_data->value;
@@ -410,8 +443,7 @@ void VipPolarValueGauge::setValue(double value)
 	if (value != d_data->value) {
 		d_data->value = value;
 		VipText t = d_data->centralText->label();
-		if (!d_data->textFormat.isEmpty())
-		{
+		if (!d_data->textFormat.isEmpty()) {
 			t.setText(d_data->textFormat);
 			t.sprintf(value);
 		}

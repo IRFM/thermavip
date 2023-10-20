@@ -1,3 +1,34 @@
+/**
+ * BSD 3-Clause License
+ *
+ * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice, this
+ *    list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of the copyright holder nor the names of its
+ *    contributors may be used to endorse or promote products derived from
+ *    this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
 #ifndef VIP_PLOT_WIDGET_2D_H
 #define VIP_PLOT_WIDGET_2D_H
 
@@ -26,7 +57,6 @@ class VipToolTip;
 class QImage;
 class QPicture;
 class VipAbstractPlotArea;
-
 
 /// @brief Base class for VipAbstractPlotArea filters
 ///
@@ -61,12 +91,12 @@ private:
 ///
 /// VipRubberBand is a QGraphicsItem child of a VipAbstractPlotArea and used to filter its events
 /// and draw a selection rubber-band.
-/// 
+///
 /// A VipAbstractPlotArea always own a VipRubberBand as it is mandatory for its internal event filtering.
 /// Use VipAbstractPlotArea::setRubberBand() to affect a new VipRubberBand.
-/// 
+///
 /// By default, VipRubberBand can draw a selection rubber band for cartesian and polar coordinate systems.
-/// 
+///
 /// VipRubberBand supports stylesheets and adds the following attibutes:
 /// -	'color': if the item draw text, defines the text color
 /// -	'font': if the item draw text, defines the text font
@@ -78,9 +108,8 @@ private:
 /// -	'text-border-radius': if the item draw text, defines the text box border radius
 /// -	'text-background': if the item draw text, defines the text box background
 /// -	'text-border-margin': if the item draw text, defines the text box border margin
-/// 
-class VIP_PLOTTING_EXPORT VipRubberBand
-  : public VipBoxGraphicsWidget
+///
+class VIP_PLOTTING_EXPORT VipRubberBand : public VipBoxGraphicsWidget
 {
 	Q_OBJECT
 	friend class VipPlotAreaFilter;
@@ -133,7 +162,6 @@ public:
 	/// Returns true if the rubber band currently defines a non null area
 	bool hasRubberBandArea() const;
 
-
 public Q_SLOTS:
 	void updateGeometry();
 
@@ -155,7 +183,6 @@ private:
 	void setArea(VipAbstractPlotArea* area);
 	void installFilter(VipPlotAreaFilter* filter);
 	void removeFilter();
-	
 
 	class PrivateData;
 	PrivateData* d_data;
@@ -165,15 +192,15 @@ private:
 ///
 /// VipDrawSelectionOrder is attached to a VipAbstractPlotArea and used to display VipPlotItem
 /// selection order on top of the VipAbstractPlotArea.
-/// 
+///
 /// The items selection order might be used by several algorithm defined in Core module,
 /// like subtracting 2 curves.
-/// 
+///
 /// The selection order is drawn using provided font and a white text over a colored rectangle.
 /// The rectangle color is based on VipPlotItem::majorColor().
-/// 
+///
 /// The text position for each selected VipPlotItem is computed using VipPlotItem::drawSelectionOrderPosition(alignment())
-/// 
+///
 class VipDrawSelectionOrder : public QGraphicsObject
 {
 	Q_OBJECT
@@ -204,7 +231,6 @@ private:
 	QFont m_font;
 };
 
-
 namespace Vip
 {
 	namespace detail
@@ -229,47 +255,46 @@ namespace Vip
 	}
 }
 
-
 /// @brief Base class for all types of plotting areas
-/// 
+///
 /// VipAbstractPlotArea is the base class for plotting areas like VipPlotArea2D, VipImageArea2D or VipPolarArea2D.
-/// 
+///
 /// It defines several axes, optional color map(s), one or more legends, and plotting items are automatically added by setting their axes.
 /// Since VipAbstractPlotArea inherits VipBoxGraphicsWidget, it can display a background box using its box style, and can be inserted
 /// into QGraphicsLayout objects.
-/// 
+///
 /// VipAbstractPlotArea handle input events from children items and allow simple interactions with the plotting area like zooming
 /// or mouse panning.
-/// 
+///
 /// Legends
 /// -------
-/// 
+///
 /// By default, VipAbstractPlotArea displays a legend located outside the plotting area at the bottom.
 /// It is possible to move this legend around the plotting area by setting its alignment (for instance area->borderLegend()->setAlignment(VipBorderItem::Left);),
 /// or to hide it completely.
-/// 
+///
 /// In addition, VipAbstractPlotArea supports adding any number of inner legend (see VipAbstractPlotArea::addInnerLegend()) that will
 /// be displayed inside the plotting area canvas.
-/// 
+///
 /// See 'VStack' test code for an example of inner legend usage.
-/// 
+///
 ///
 /// Items management
 /// ----------------
-/// 
+///
 /// VipAbstractPlotArea controls the way its internal items (plotting items and scales) are drawn and how their geometry are computed.
 /// Updating a scale or an item will trigger a VipAbstractPlotArea update that will then render all items.
-/// 
+///
 /// Whatever are the updating frequencies of internal items, VipAbstractPlotArea will adjust its refresh frame rate to keep the GUI
 /// responsive. The resfresh rate of a VipAbstractPlotArea is bounded by its VipAbstractPlotArea::maximumFrameRate() value (default to 60).
 /// This ensures that no unecessary CPU time is wasted on display even if the refresh rate could be supported.
-/// 
+///
 /// By default, all items of a VipAbstractPlotArea are rendered independently using QGraphicsView rendering method, which could use opengl is the viewport is a QOpenGLWidget.
-/// 
-/// 
+///
+///
 /// Stylesheets
 /// -----------
-/// 
+///
 /// VipAbstractPlotArea supports stylesheets and adds the following properties:
 /// -	'mouse-selection-and-zoom' : boolean value equivalent to VipAbstractPlotArea::setMouseSelectionAndZoom()
 /// -	'mouse-panning': equivalent to VipAbstractPlotArea::setMousePanning(), possible values are 'leftButton', 'rightButton' and 'middleButton'
@@ -286,9 +311,9 @@ namespace Vip
 /// -	'rendering-threads': equivalent to VipAbstractPlotArea::setRenderThreads()
 ///	-	'track-scales-state': boolean value equivalent to VipAbstractPlotArea::setTrackScalesStateEnabled()
 /// -	'maximum-scales-states' : equivalent to VipAbstractPlotArea::setMaximumScalesStates()
-/// -	'legend-position': main legend position, one of 'none', 'left', 'right', 'top', 'bottom', 'innerLeft', 'innerRight', 'innerTop', 'innerBottom', 'innerTopLeft', 'innerTopRight', 'innerBottomLeft', 'innerBottomRight' 
-/// -	'legend-border-distance': for inner legends, set distance to borders. For outer legend, set its margin.
-/// 
+/// -	'legend-position': main legend position, one of 'none', 'left', 'right', 'top', 'bottom', 'innerLeft', 'innerRight', 'innerTop', 'innerBottom', 'innerTopLeft', 'innerTopRight',
+/// 'innerBottomLeft', 'innerBottomRight' -	'legend-border-distance': for inner legends, set distance to borders. For outer legend, set its margin.
+///
 class VIP_PLOTTING_EXPORT VipAbstractPlotArea : public VipBoxGraphicsWidget
 {
 	Q_OBJECT
@@ -302,7 +327,6 @@ class VIP_PLOTTING_EXPORT VipAbstractPlotArea : public VipBoxGraphicsWidget
 	friend class ComputeBorderGeometry;
 
 public:
-	
 	typedef QMap<const VipAbstractScale*, VipInterval> scales_state;
 
 	VipAbstractPlotArea(QGraphicsItem* parent = nullptr);
@@ -312,7 +336,7 @@ public:
 	QRectF visualizedSceneRect() const;
 
 	/// @brief Enable selection of plot items with the same mouse button as zooming.
-	/// 
+	///
 	/// If enabled, #mouseSelectionAndZoomMinimumSize() is used to select between selection and zooming.
 	/// If the area's width and height are lower than #mouseSelectionAndZoomMinimumSize(), item selection is performed.
 	/// Otherwise, zooming is performed.
@@ -323,7 +347,7 @@ public:
 	QSizeF mouseSelectionAndZoomMinimumSize() const;
 
 	/// @brief Enable mouse panning with given mouse button.
-	/// 
+	///
 	/// Use Qt::NoButton to disable it.
 	virtual void setMousePanning(Qt::MouseButton);
 	Qt::MouseButton mousePanning() const;
@@ -331,13 +355,13 @@ public:
 	bool isMousePanning() const;
 
 	/// @brief Enable mouse zooming with given mouse button.
-	/// 
+	///
 	/// Use Qt::NoButton to disable it.
 	virtual void setMouseZoomSelection(Qt::MouseButton);
 	Qt::MouseButton mouseZoomSelection() const;
 
 	/// @brief Enable selecting items in an area with given mouse button.
-	/// 
+	///
 	/// Use Qt::NoButton to disable it.
 	virtual void setMouseItemSelection(Qt::MouseButton);
 	Qt::MouseButton mouseItemSelection() const;
@@ -356,10 +380,9 @@ public:
 	virtual void setZoomEnabled(VipAbstractScale* sc, bool enable);
 	bool zoomEnabled(VipAbstractScale* sc);
 
-	
 	/// @brief Set the maximum refresh rate of this VipAbstractPlotArea
-	/// 
-	/// Default value is 60. 
+	///
+	/// Default value is 60.
 	/// Bounding the refresh rate is usefull to save some CPU time when we don't need a high update frequency.
 	/// Going beyond 60 is almost useless as the human eye won't see a difference.
 	void setMaximumFrameRate(int);
@@ -420,7 +443,7 @@ public:
 	VipBorderLegend* borderLegend() const;
 
 	/// @brief Set the default area legend
-	/// 
+	///
 	/// If own is true, the legend is inserted into the border legend item and the previous one is deleted.
 	virtual void setLegend(VipLegend* legend, bool own = true);
 	VipLegend* legend() const;
@@ -540,11 +563,11 @@ public:
 	/// VipPlotCurve * c = new VipPlotCurve();
 	/// c->setAxes(axes,csystem);
 	/// \endcode
-	/// 
+	///
 	virtual VipCoordinateSystem::Type standardScales(QList<VipAbstractScale*>& axes) const = 0;
 
 	/// @brief Creates and returns a VipAxisColorMap
-	/// 
+	///
 	/// The VipAxisColorMap is created with given alignment (Left, Right, Top or Bottom), scale div interval and VipColorMap.
 	/// The VipColorMap itself can be created quickly using VipLinearColorMap::createColorMap().
 	virtual VipAxisColorMap* createColorMap(VipAxisBase::Alignment, const VipInterval&, VipColorMap*);
@@ -557,7 +580,6 @@ public:
 	/// For each found item, fill out_points, out_styles and out_legends using VipPlotItem::areaOfInterest().
 	/// This function is mainly used to display a tool tip over the VipAbstractPlotArea based on the mouse position.
 	virtual PlotItemList plotItems(const QPointF& pos, int axis, double maxDistance, QList<VipPointVector>& out_points, VipBoxStyleList& out_styles, QList<int>& out_legends) const;
-
 
 	/// @brief Zoom on the rectangle represented by start and end positions in item's coordinates.
 	/// The zoom is applied to all spacial scales.
@@ -610,7 +632,7 @@ public:
 	QVector<QPointF> scaleToPosition(const VipPointVector& scale_values, bool* ok = nullptr) const;
 	QVector<QPointF> scaleToPosition(const VipPointVector& scale_values, const QList<VipAbstractScale*>& scales, bool* ok = nullptr) const;
 
-	/// @brief Returns the last mouse position on clicking. 
+	/// @brief Returns the last mouse position on clicking.
 	/// The position is valid until releasing the mouse.
 	QPointF lastMousePressPos() const;
 
@@ -633,7 +655,7 @@ public Q_SLOTS:
 	///
 	/// If enabled, spacial scales states will be saved before each scale operation like zooming or panning.
 	/// This allows undo/redo operations on scales states using undoScalesState() and redoScalesState().
-	/// 
+	///
 	/// The internal buffer of states is set to a maximum size of 10 states.
 	/// Use setMaximumScalesStates() to increase/decrease this number.
 	virtual void setTrackScalesStateEnabled(bool);
@@ -653,7 +675,7 @@ public Q_SLOTS:
 
 	/// @brief Restore spatial scales state using a QByteArray previously generated with saveSpatialScaleState().
 	void restoreSpatialScaleState(const QByteArray&);
-	
+
 	/// @brief Refresh the current content of displayed tool tip
 	void refreshToolTip();
 
@@ -665,10 +687,8 @@ public Q_SLOTS:
 	/// Should not be called directly
 	void setGeometryUpdateEnabled(bool enable);
 
-
-
 Q_SIGNALS:
-	
+
 	/// Emitted when the mouse move over an item
 	void mouseHoverMove(VipPlotItem*);
 
@@ -722,24 +742,23 @@ Q_SIGNALS:
 
 	/// Emitted when a child VipPlotItem emitted a dropped signal
 	void dropped(VipPlotItem* item, QMimeData* mime);
-	
-	/// Emitted when the tool tip is shown 
+
+	/// Emitted when the tool tip is shown
 	void toolTipStarted(const QPointF&);
-	/// Emitted when the tool tip is moved 
+	/// Emitted when the tool tip is moved
 	void toolTipMoved(const QPointF&);
-	/// Emitted when the tool tip is hidden 
+	/// Emitted when the tool tip is hidden
 	void toolTipEnded(const QPointF&);
 
-	/// Emitted when a mouse panning operation just ended 
+	/// Emitted when a mouse panning operation just ended
 	void endMousePanning();
-	/// Emitted when a mouse zooming operation just ended 
+	/// Emitted when a mouse zooming operation just ended
 	void endMouseZooming();
-	/// Emitted when a wheel zooming operation just ended 
+	/// Emitted when a wheel zooming operation just ended
 	void endMouseWheel();
 	// emitted whenever the scales are about to change due to a mouse operation (zoom, panning, wheel...)
 	void mouseScaleAboutToChange();
 
-	
 private Q_SLOTS:
 
 	void receivedDataChanged();
@@ -816,17 +835,14 @@ private:
 	PrivateData* d_data;
 };
 
-
-
-
 /// @brief A plotting area displaying 4 cartesian axes and suitable for most plot items
-/// 
+///
 /// VipPlotArea2D is the "standard" plotting area used to represent plotting items like curves, histograms,...
 /// in a cartesian system.
-/// 
+///
 /// By default, VipPlotArea2D displays 4 axes (left right, top and bottom scales), a top title axis,
 /// a bottom legend, an inner grid and canvas.
-/// 
+///
 class VIP_PLOTTING_EXPORT VipPlotArea2D : public VipAbstractPlotArea
 {
 	Q_OBJECT
@@ -873,7 +889,6 @@ private:
 	PrivateData* d_data;
 };
 
-
 /// @brief A plotting area displaying a polar and radial axis
 ///
 /// VipPlotPolarArea2D is used to represent plotting items in a polar coordinate system like pie charts.
@@ -881,15 +896,15 @@ private:
 /// By default, VipPlotPolarArea2D displays a polar axis, a radial axis, a top title axis,
 /// a bottom legend, an inner grid and canvas.
 ///
-/// VipPlotPolarArea2D supports adding additional border scales (inherting VipBorderItem), in which case 
-/// the polar area is organized inside the area defined by the border scales. For instance, the title axis is 
+/// VipPlotPolarArea2D supports adding additional border scales (inherting VipBorderItem), in which case
+/// the polar area is organized inside the area defined by the border scales. For instance, the title axis is
 /// a Top border scale.
-/// 
+///
 /// VipPlotPolarArea2D also supports adding extra polar or radial scales.
-/// 
+///
 /// VipPlotPolarArea2D supports stylesheets and adds the following attributes:
 /// -	'inner-margin': floating point value equivalent to VipPlotPolarArea2D::setInnerMargin()
-/// 
+///
 class VIP_PLOTTING_EXPORT VipPlotPolarArea2D : public VipAbstractPlotArea
 {
 	Q_OBJECT
@@ -917,32 +932,30 @@ public:
 	virtual VipCoordinateSystem::Type standardScales(QList<VipAbstractScale*>& axes) const;
 
 protected:
-	virtual bool setItemProperty(const char* name, const QVariant& value, const QByteArray& index );
+	virtual bool setItemProperty(const char* name, const QVariant& value, const QByteArray& index);
 
 private:
 	class PrivateData;
 	PrivateData* d_data;
 };
 
-
-
 /// @brief Cartesian plotting area displaying an image
-/// 
+///
 /// VipImageArea2D is a VipPlotArea2D customized to display
 /// color images or spectrograms based on an internal VipPlotSpectrogram.
-/// 
+///
 /// By default, VipImageArea2D keeps the image aspect ratio, which means
 /// that the displayed image (and surrounding axes) does not necessarly
 /// take the full item geometry.
-/// 
+///
 /// VipImageArea2D provides left, right, top and bottom scales, a title axis
 /// and a color map displayed on the right.
-/// 
+///
 /// Mouse panning and wheel zooming are bounded to the image size.
-/// 
+///
 /// VipImageArea2D supports stylesheets and adds the following attributes:
 /// -	'keep-aspect-ratio': boolean value equivalent to VipImageArea2D::setKeepAspectRatio()
-/// 
+///
 class VIP_PLOTTING_EXPORT VipImageArea2D : public VipPlotArea2D
 {
 	Q_OBJECT
@@ -971,7 +984,7 @@ public:
 	/// @brief Returns the currently visualized image rectangle
 	QRectF visualizedImageRect() const;
 
-	/// @brief Returns the current zoom factor 
+	/// @brief Returns the current zoom factor
 	/// The zoom factor is equivalent to the size of one pixel in item's coordinates/
 	double zoom() const;
 
@@ -990,10 +1003,9 @@ public:
 	/// @brief Returns the color map axis
 	VipAxisColorMap* colorMapAxis() const;
 
-	
 	/// @brief Reimplemented from VipPlotArea2D
 	virtual void recomputeGeometry(bool recompute_aligned_areas = true);
-	
+
 public Q_SLOTS:
 	/// @brief Set the visualized image rectangle.
 	/// The result might differ depending if keepAspectRatio() is true or not.
@@ -1003,7 +1015,6 @@ Q_SIGNALS:
 	/// @brief Emitted when the visualized image rectangle changed
 	void visualizedAreaChanged();
 
-	
 protected:
 	virtual bool setItemProperty(const char* name, const QVariant& value, const QByteArray& index);
 
@@ -1018,23 +1029,20 @@ private:
 	PrivateData* d_data;
 };
 
-
-
-
 /// @brief Base class for Thermavip QGraphicsView widgets
 ///
 /// VipBaseGraphicsView is the base class for all QGraphicsView widgets within Thermavip.
 /// A VipBaseGraphicsView can contain one unique VipAbstractPlotArea like subclasses
 /// VipPlotWidget2D, VipImageWidget2D and VipPlotPolarWidget2D, or might contain
 /// several areas when using a QGraphicsLayout (see VipMultiGraphicsView class).
-/// 
+///
 /// VipBaseGraphicsView mainly provides 2 featrues:
 /// -	Easy use of opengl rendering with VipBaseGraphicsView::setRenderingMode()
 /// -	Definition of a background color with the property 'backgroundColor'
-/// 
+///
 /// VipBaseGraphicsView is a VipRenderObject and its content can be saved as an image or pdf/ps/svg file
 /// (see VipRenderObject class for more details).
-/// 
+///
 class VIP_PLOTTING_EXPORT VipBaseGraphicsView
   : public QGraphicsView
   , public VipRenderObject
@@ -1046,8 +1054,8 @@ public:
 	/// @brief Rendering mode, modify the viewport widget
 	enum RenderingMode
 	{
-		Raster, // Use a QWidget viewport
-		OpenGL, // Use a QOpenGLWidget viewport
+		Raster,	     // Use a QWidget viewport
+		OpenGL,	     // Use a QOpenGLWidget viewport
 		OpenGLThread // Use a VipOpenGLWidget
 	};
 	VipBaseGraphicsView(QWidget* parent = nullptr);
@@ -1058,12 +1066,12 @@ public:
 	QRectF visualizedSceneRect() const;
 
 	/// @brief Set the rendering mode
-	/// 
+	///
 	/// The mode could be one of:
 	/// -	Raster: use a QWidget viewport,
 	/// -	OpenGL: use a QOpenGLWidget viewport,
 	/// -	OpenGLThread: use a VipOpenGLWidget viewport (fastest rendering)
-	/// 
+	///
 	/// Note that for opengl rendering, the scales cache mode is set to QGraphicsItem::DeviceCoordinateCache,
 	/// if VIP_CUSTOM_ITEM_CACHING is defined. Otherwise (default), the user is responsible of the items caching strategy.
 	///
@@ -1071,17 +1079,15 @@ public:
 	RenderingMode renderingMode() const;
 	bool isOpenGLBasedRendering() const;
 
-
 	/// @brief Enable/disable usage of custom viewport.
 	/// If true, setRenderingMode() has no effect.
 	void setUseInternalViewport(bool);
 	bool useInternalViewport() const;
-	
+
 	/// @brief Set/unset/get the view background color
 	QColor backgroundColor() const;
 	bool hasBackgroundColor() const;
-	
-	
+
 public Q_SLOTS:
 
 	void removeBackgroundColor();
@@ -1105,10 +1111,8 @@ private:
 	PrivateData* m_data;
 };
 
-
-
 /// @brief Base class for QGraphicsView that only contain one VipAbstractPlotArea
-/// 
+///
 /// VipAbstractPlotWidget2D is the base class for all 2D plotting widgets containing a unique plot area,
 /// like VipPlotWidget2D, VipImageWidget2D and VipPlotPolarWidget2D.
 ///
@@ -1138,12 +1142,11 @@ private:
 	QPointer<VipAbstractPlotArea> d_area;
 };
 
-
 /// @brief A VipAbstractPlotWidget2D that contains a VipPlotArea2D
 ///
 /// Based on the AreaType passed to the constructor, VipPlotWidget2D
 /// can manage a VipVMultiPlotArea2D instead of the default VipPlotArea2D.
-/// 
+///
 class VIP_PLOTTING_EXPORT VipPlotWidget2D : public VipAbstractPlotWidget2D
 {
 	Q_OBJECT;
@@ -1185,7 +1188,6 @@ private:
 	VipPlotPolarArea2D* d_area;
 };
 
-
 /// @brief A VipAbstractPlotWidget2D that contains a VipImageArea2D
 ///
 class VIP_PLOTTING_EXPORT VipImageWidget2D : public VipAbstractPlotWidget2D
@@ -1200,13 +1202,12 @@ public:
 	virtual void recomputeGeometry();
 
 	/// @brief Enable/disable scroll bars.
-	/// If true, vertical and/or horizontal scroll bars will be displayed 
+	/// If true, vertical and/or horizontal scroll bars will be displayed
 	/// when the visualized image rectangle is smaller than the full image rectangle.
 	void setScrollBarEnabled(bool enable);
 	bool scrollBarEnabled() const;
 
 protected:
-	
 	/// Overload mouse events to move the scroll bars when the user is trying to select an area close to the borders
 	virtual void mouseMoveEvent(QMouseEvent* event);
 	virtual void mousePressEvent(QMouseEvent* event);
@@ -1228,14 +1229,10 @@ private:
 
 class QGridLayout;
 
-
-
-
-
 /// @brief Graphics item used in VipMultiGraphicsView as the top level widget item.
 ///
 /// This class is only provided in order to be customized through style sheets.
-/// 
+///
 class VIP_PLOTTING_EXPORT VipMultiGraphicsWidget : public VipBoxGraphicsWidget
 {
 	Q_OBJECT
@@ -1243,7 +1240,6 @@ class VIP_PLOTTING_EXPORT VipMultiGraphicsWidget : public VipBoxGraphicsWidget
 public:
 	VipMultiGraphicsWidget(QGraphicsItem* parent = nullptr);
 };
-
 
 /// @brief VipMultiGraphicsView is a QGraphicsView widget containing a unique VipBoxGraphicsWidget that is always resized to fit the display area.
 ///
@@ -1305,10 +1301,8 @@ protected:
 	virtual void resizeEvent(QResizeEvent* event);
 };
 
-
-
 VIP_REGISTER_QOBJECT_METATYPE(VipMultiGraphicsWidget*)
-VIP_REGISTER_QOBJECT_METATYPE(VipAbstractPlotArea*) 
+VIP_REGISTER_QOBJECT_METATYPE(VipAbstractPlotArea*)
 VIP_REGISTER_QOBJECT_METATYPE(VipPlotArea2D*)
 VIP_REGISTER_QOBJECT_METATYPE(VipPlotPolarArea2D*)
 VIP_REGISTER_QOBJECT_METATYPE(VipImageArea2D*)
@@ -1318,12 +1312,10 @@ VIP_REGISTER_QOBJECT_METATYPE(VipPlotWidget2D*)
 VIP_REGISTER_QOBJECT_METATYPE(VipPlotPolarWidget2D*)
 VIP_REGISTER_QOBJECT_METATYPE(VipImageWidget2D*)
 
-//TODO: add serialization functions for all types
+// TODO: add serialization functions for all types
 
 VIP_PLOTTING_EXPORT VipArchive& operator<<(VipArchive& arch, const VipPlotArea2D* value);
 VIP_PLOTTING_EXPORT VipArchive& operator>>(VipArchive& arch, VipPlotArea2D* value);
-
-
 
 /// @}
 // end Plotting

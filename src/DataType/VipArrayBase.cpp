@@ -1,33 +1,50 @@
+/**
+ * BSD 3-Clause License
+ *
+ * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice, this
+ *    list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of the copyright holder nor the names of its
+ *    contributors may be used to endorse or promote products derived from
+ *    this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
 #include <QMap>
 
 #include "VipArrayBase.h"
-#include "VipIterator.h"
 #include "VipComplex.h"
+#include "VipIterator.h"
 
 bool vipIsArithmetic(uint type)
 {
-	return type == QMetaType::Bool ||
-		type == QMetaType::Char ||
-		type == QMetaType::SChar ||
-		type == QMetaType::UChar ||
-		type == QMetaType::Short ||
-		type == QMetaType::UShort ||
-		type == QMetaType::Int ||
-		type == QMetaType::UInt ||
-		type == QMetaType::Long ||
-		type == QMetaType::ULong ||
-		type == QMetaType::LongLong ||
-		type == QMetaType::ULongLong ||
-		type == QMetaType::Float ||
-		type == QMetaType::Double ||
-		type == (uint)qMetaTypeId<long double>();
+	return type == QMetaType::Bool || type == QMetaType::Char || type == QMetaType::SChar || type == QMetaType::UChar || type == QMetaType::Short || type == QMetaType::UShort ||
+	       type == QMetaType::Int || type == QMetaType::UInt || type == QMetaType::Long || type == QMetaType::ULong || type == QMetaType::LongLong || type == QMetaType::ULongLong ||
+	       type == QMetaType::Float || type == QMetaType::Double || type == (uint)qMetaTypeId<long double>();
 }
-
 
 bool vipIsComplex(uint type)
 {
-	return type == (uint)qMetaTypeId<complex_d>() ||
-		type == (uint)qMetaTypeId<complex_f>();
+	return type == (uint)qMetaTypeId<complex_d>() || type == (uint)qMetaTypeId<complex_f>();
 }
 
 bool vipCanConvertStdTypes(uint from, uint to)
@@ -36,27 +53,16 @@ bool vipCanConvertStdTypes(uint from, uint to)
 		return true;
 
 	if (vipIsArithmetic(from))
-		return vipIsArithmetic(to) ||
-		vipIsComplex(to) ||
-		to == QVariant::String ||
-		to == QMetaType::QByteArray;
+		return vipIsArithmetic(to) || vipIsComplex(to) || to == QVariant::String || to == QMetaType::QByteArray;
 
 	if (vipIsComplex(from))
 		return vipIsComplex(to) || to == QVariant::String || to == QMetaType::QByteArray;
 
 	if (from == QVariant::String)
-		return vipIsArithmetic(to) ||
-		vipIsComplex(to) ||
-		to == QVariant::String ||
-		to == QMetaType::QByteArray ||
-		to == (uint)qMetaTypeId<VipRGB>();
+		return vipIsArithmetic(to) || vipIsComplex(to) || to == QVariant::String || to == QMetaType::QByteArray || to == (uint)qMetaTypeId<VipRGB>();
 
 	if (from == QMetaType::QByteArray)
-		return vipIsArithmetic(to) ||
-		vipIsComplex(to) ||
-		to == QVariant::String ||
-		to == QMetaType::QByteArray ||
-		to == (uint)qMetaTypeId<VipRGB>();
+		return vipIsArithmetic(to) || vipIsComplex(to) || to == QVariant::String || to == QMetaType::QByteArray || to == (uint)qMetaTypeId<VipRGB>();
 
 	if (from == (uint)qMetaTypeId<VipRGB>())
 		return (to == QMetaType::QString || to == QMetaType::QByteArray);
@@ -64,32 +70,25 @@ bool vipCanConvertStdTypes(uint from, uint to)
 	return false;
 }
 
-
-
 bool vipCanConvert(uint from, uint to)
 {
 	QVariant v_from(from, nullptr);
 	bool res = v_from.canConvert(to);
 
-	//delete potential the QObject that was created
-	if (QObject * obj = v_from.value<QObject*>())
+	// delete potential the QObject that was created
+	if (QObject* obj = v_from.value<QObject*>())
 		delete obj;
 
 	return res;
 }
 
-
-
-
-
 static SharedHandle nullHandle = SharedHandle(new detail::NullHandle());
 
-static QMap<int, QMap<int, SharedHandle> > & tables()
+static QMap<int, QMap<int, SharedHandle>>& tables()
 {
-	static QMap<int, QMap<int, SharedHandle> > instances_;
+	static QMap<int, QMap<int, SharedHandle>> instances_;
 
-	if (!instances_.size())
-	{
+	if (!instances_.size()) {
 		instances_[0].insert(0, nullHandle);
 		instances_[VipNDArrayHandle::Standard][qMetaTypeId<bool>()] = SharedHandle(new detail::StdHandle<bool>());
 		instances_[VipNDArrayHandle::Standard][qMetaTypeId<char>()] = SharedHandle(new detail::StdHandle<char>());
@@ -108,8 +107,8 @@ static QMap<int, QMap<int, SharedHandle> > & tables()
 		instances_[VipNDArrayHandle::Standard][qMetaTypeId<long double>()] = SharedHandle(new detail::StdHandle<long double>());
 		instances_[VipNDArrayHandle::Standard][qMetaTypeId<complex_f>()] = SharedHandle(new detail::StdHandle<complex_f>());
 		instances_[VipNDArrayHandle::Standard][qMetaTypeId<complex_d>()] = SharedHandle(new detail::StdHandle<complex_d>());
-		instances_[VipNDArrayHandle::Standard][qMetaTypeId<QString >()] = SharedHandle(new detail::StdHandle<QString >());
-		instances_[VipNDArrayHandle::Standard][qMetaTypeId<VipRGB >()] = SharedHandle(new detail::StdHandle<VipRGB >());
+		instances_[VipNDArrayHandle::Standard][qMetaTypeId<QString>()] = SharedHandle(new detail::StdHandle<QString>());
+		instances_[VipNDArrayHandle::Standard][qMetaTypeId<VipRGB>()] = SharedHandle(new detail::StdHandle<VipRGB>());
 	}
 
 	return instances_;
@@ -119,12 +118,10 @@ namespace detail
 {
 	SharedHandle getHandle(int handle_type, int metatype)
 	{
-		QMap<int, QMap<int, SharedHandle> >::iterator it_type = tables().find(handle_type);
-		if (it_type != tables().end())
-		{
+		QMap<int, QMap<int, SharedHandle>>::iterator it_type = tables().find(handle_type);
+		if (it_type != tables().end()) {
 			QMap<int, SharedHandle>::iterator it_meta = it_type.value().find(metatype);
-			if (it_meta == it_type.value().end())
-			{
+			if (it_meta == it_type.value().end()) {
 				if (it_type.value().size() == 1 && it_type.value().begin().key() == 0)
 					return it_type.value().begin().value();
 			}
@@ -147,13 +144,13 @@ SharedHandle vipNullHandle()
 	return h;
 }
 
-int vipRegisterArrayType(int hanndle_type, int metaType, const SharedHandle & handle)
+int vipRegisterArrayType(int hanndle_type, int metaType, const SharedHandle& handle)
 {
 	tables()[hanndle_type][metaType] = handle;
 	return 0;
 }
 
-SharedHandle vipCreateArrayHandle(int hanndle_type, int metaType, const VipNDArrayShape & shape)
+SharedHandle vipCreateArrayHandle(int hanndle_type, int metaType, const VipNDArrayShape& shape)
 {
 	SharedHandle handle = detail::getHandle(hanndle_type, metaType);
 	if (handle->handleType() == VipNDArrayHandle::Null)
@@ -164,7 +161,7 @@ SharedHandle vipCreateArrayHandle(int hanndle_type, int metaType, const VipNDArr
 	return handle;
 }
 
-SharedHandle vipCreateArrayHandle(int hanndle_type, int metaType, void * ptr, const VipNDArrayShape & shape, const vip_deleter_type & del )
+SharedHandle vipCreateArrayHandle(int hanndle_type, int metaType, void* ptr, const VipNDArrayShape& shape, const vip_deleter_type& del)
 {
 	SharedHandle handle = detail::getHandle(hanndle_type, metaType);
 	if (handle->handleType() == VipNDArrayHandle::Null)

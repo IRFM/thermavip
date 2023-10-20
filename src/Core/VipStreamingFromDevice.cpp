@@ -1,17 +1,48 @@
+/**
+ * BSD 3-Clause License
+ *
+ * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice, this
+ *    list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of the copyright holder nor the names of its
+ *    contributors may be used to endorse or promote products derived from
+ *    this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
 #include "VipStreamingFromDevice.h"
 #include "VipSleep.h"
 
 namespace detail
 {
-	
+
 	struct ReadThread : public QThread
 	{
 		VipGeneratorSequential* generator;
 		ReadThread(VipGeneratorSequential* gen)
-			: generator(gen)
+		  : generator(gen)
 		{
 		}
-		virtual void run() 
+		virtual void run()
 		{
 			// qint64 very_start_absolute = vipGetMilliSecondsSinceEpoch() * 1000000;
 			qint64 start_absolute = vipGetMilliSecondsSinceEpoch() * 1000000;
@@ -47,7 +78,7 @@ namespace detail
 
 }
 
-VipGeneratorSequential::VipGeneratorSequential(QObject* parent )
+VipGeneratorSequential::VipGeneratorSequential(QObject* parent)
   : VipIODevice(parent)
 {
 	m_thread.reset(new detail::ReadThread(this));
@@ -65,13 +96,13 @@ void VipGeneratorSequential::close()
 	m_device.reset();
 }
 
-void VipGeneratorSequential::setIODevice(VipIODevice * device)
+void VipGeneratorSequential::setIODevice(VipIODevice* device)
 {
 	if (!isOpen())
 		m_device = QSharedPointer<VipIODevice>(device);
 }
 
-VipIODevice * VipGeneratorSequential::IODevice() const
+VipIODevice* VipGeneratorSequential::IODevice() const
 {
 	return m_device.data();
 }
@@ -89,16 +120,14 @@ bool VipGeneratorSequential::open(VipIODevice::OpenModes mode)
 		if (!m_device->open(mode))
 			return false;
 
-	if (m_device && (m_device->openMode() & VipIODevice::ReadOnly))
-	{
+	if (m_device && (m_device->openMode() & VipIODevice::ReadOnly)) {
 		setOpenMode(mode);
-		//read first data
-		readDeviceTime(m_device->firstTime(),vipGetNanoSecondsSinceEpoch());
+		// read first data
+		readDeviceTime(m_device->firstTime(), vipGetNanoSecondsSinceEpoch());
 		return true;
 	}
 	return false;
 }
-
 
 void VipGeneratorSequential::readDeviceTime(qint64 time, qint64 new_time)
 {
@@ -126,16 +155,15 @@ bool VipGeneratorSequential::enableStreaming(bool enable)
 	return true;
 }
 
-
-static VipArchive & operator<<(VipArchive & arch, const VipGeneratorSequential * gen)
+static VipArchive& operator<<(VipArchive& arch, const VipGeneratorSequential* gen)
 {
-	if(gen)
-		arch.content("device",gen->IODevice());
+	if (gen)
+		arch.content("device", gen->IODevice());
 	return arch;
 }
-static VipArchive & operator>>(VipArchive & arch, VipGeneratorSequential * gen)
+static VipArchive& operator>>(VipArchive& arch, VipGeneratorSequential* gen)
 {
-	if (VipIODevice * dev = arch.read("device").value<VipIODevice*>())
+	if (VipIODevice* dev = arch.read("device").value<VipIODevice*>())
 		gen->setIODevice(dev);
 	else
 		arch.resetError();

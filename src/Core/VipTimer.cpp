@@ -1,14 +1,52 @@
+/**
+ * BSD 3-Clause License
+ *
+ * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice, this
+ *    list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of the copyright holder nor the names of its
+ *    contributors may be used to endorse or promote products derived from
+ *    this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
 #include "VipTimer.h"
 #include "VipSleep.h"
 
-#include <qmutex.h>
 #include <qdatetime.h>
+#include <qmutex.h>
 #include <qwaitcondition.h>
 
 class VipTimer::PrivateData
 {
 public:
-	PrivateData() : start(0), interval(0), singleshot(true), stop(false), enable_restart_when_running(true){}
+	PrivateData()
+	  : start(0)
+	  , interval(0)
+	  , singleshot(true)
+	  , stop(false)
+	  , enable_restart_when_running(true)
+	{
+	}
 	qint64 start;
 	qint64 interval;
 	bool singleshot;
@@ -18,9 +56,8 @@ public:
 	QWaitCondition cond;
 };
 
-
-VipTimer::VipTimer(QObject * parent )
-	:QThread(parent)
+VipTimer::VipTimer(QObject* parent)
+  : QThread(parent)
 {
 	m_data = new PrivateData();
 	this->QThread::start();
@@ -100,18 +137,15 @@ void VipTimer::setRestartWhenRunningEnabled(bool enable)
 
 void VipTimer::run()
 {
-	while (!m_data->stop)
-	{
-		while(!m_data->start && !m_data->stop)
-		{
+	while (!m_data->stop) {
+		while (!m_data->start && !m_data->stop) {
 			QMutexLocker lock(&m_data->mutex);
-			m_data->cond.wait(&m_data->mutex,20);
+			m_data->cond.wait(&m_data->mutex, 20);
 		}
 		qint64 time = QDateTime::currentMSecsSinceEpoch();
 		qint64 elapsed = time - m_data->start;
 		qint64 remaining = m_data->interval - elapsed;
-		if (m_data->start && remaining <= 0 )
-		{
+		if (m_data->start && remaining <= 0) {
 			Q_EMIT timeout();
 			QMutexLocker lock(&m_data->mutex);
 			if (!m_data->singleshot)
@@ -119,8 +153,7 @@ void VipTimer::run()
 			else
 				m_data->start = 0;
 		}
-		else //wait by chunks of at most 10ms
-			vipSleep(remaining -1 > 0 ? qMin(remaining -1,(qint64)10) : 1);
+		else // wait by chunks of at most 10ms
+			vipSleep(remaining - 1 > 0 ? qMin(remaining - 1, (qint64)10) : 1);
 	}
 }
-

@@ -1,12 +1,41 @@
-#include "VipSqlQuery.h"
+/**
+ * BSD 3-Clause License
+ *
+ * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice, this
+ *    list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of the copyright holder nor the names of its
+ *    contributors may be used to endorse or promote products derived from
+ *    this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
 
+#include "VipSqlQuery.h"
 #include "VipStandardWidgets.h"
 
 #include <QStandardPaths>
-#include <qgridlayout.h>
 #include <qboxlayout.h>
+#include <qgridlayout.h>
 #include <qstandarditemmodel.h>
-
 
 static int register_db_pulse_type()
 {
@@ -15,8 +44,7 @@ static int register_db_pulse_type()
 }
 static int _register_db_pulse_type = register_db_pulse_type();
 
-
-VipRequestCondition vipRequestCondition(const QString & varname, const QVariant & min, const QVariant & max, VipRequestCondition::Separator sep)
+VipRequestCondition vipRequestCondition(const QString& varname, const QVariant& min, const QVariant& max, VipRequestCondition::Separator sep)
 {
 	VipRequestCondition c;
 	c.varname = varname;
@@ -25,14 +53,14 @@ VipRequestCondition vipRequestCondition(const QString & varname, const QVariant 
 	c.sep = sep;
 	return c;
 }
-VipRequestCondition vipRequestCondition(const QString & varname, const QString & equal)
+VipRequestCondition vipRequestCondition(const QString& varname, const QString& equal)
 {
 	VipRequestCondition c;
 	c.varname = varname;
 	c.equal = equal;
 	return c;
 }
-VipRequestCondition vipRequestCondition(const QString & varname, const QStringList & one_of_enum)
+VipRequestCondition vipRequestCondition(const QString& varname, const QStringList& one_of_enum)
 {
 	VipRequestCondition c;
 	c.varname = varname;
@@ -41,17 +69,21 @@ VipRequestCondition vipRequestCondition(const QString & varname, const QStringLi
 	return c;
 }
 
-static QString sepToStr(VipRequestCondition::Separator sep) {
-	if (sep == VipRequestCondition::OR) return "OR";
-	else return "AND";
+static QString sepToStr(VipRequestCondition::Separator sep)
+{
+	if (sep == VipRequestCondition::OR)
+		return "OR";
+	else
+		return "AND";
 }
-static QString addQuotes(const QString & str) {
+static QString addQuotes(const QString& str)
+{
 	if (!str.startsWith("'"))
 		return "'" + str + "'";
 	return str;
 }
 
-QString vipFormatRequestCondition(const VipRequestCondition & c)
+QString vipFormatRequestCondition(const VipRequestCondition& c)
 {
 	if (c.min.userType() != 0 || c.max.userType() != 0) {
 		QString cond = "(";
@@ -78,22 +110,20 @@ QString vipFormatRequestCondition(const VipRequestCondition & c)
 	return QString();
 }
 
-
 #include <qregion.h>
-static int regionArea(const QRegion & reg)
+static int regionArea(const QRegion& reg)
 {
 	int pixel_area = 0;
-	for (const QRect & r : reg)
+	for (const QRect& r : reg)
 		pixel_area += r.width() * r.height();
 	return pixel_area;
 }
 
-
-#include <qsqldatabase.h>
-#include <qsqlquery.h>
-#include <qsqlerror.h>
-#include <qsettings.h>
 #include "VipLogging.h"
+#include <qsettings.h>
+#include <qsqldatabase.h>
+#include <qsqlerror.h>
+#include <qsqlquery.h>
 
 struct DB
 {
@@ -107,9 +137,7 @@ struct DB
 	QString local_movie_suffix;
 };
 
-
-
-static QString removeQuote(const QString & line)
+static QString removeQuote(const QString& line)
 {
 	QByteArray ar = line.toLatin1();
 	// Remove '' or "" from string if it exists
@@ -149,7 +177,7 @@ static QString removeQuote(const QString & line)
 	return ar;
 }
 
-const DB & readDB()
+const DB& readDB()
 {
 	static DB db;
 	if (db.hostname.isEmpty()) {
@@ -183,7 +211,7 @@ const DB & readDB()
 		db.hostname = "localhost";
 		db.port = 3306;
 	}
-	
+
 	return db;
 }
 
@@ -200,23 +228,21 @@ static QSqlDatabase createConnection()
 		db.setConnectOptions("MYSQL_OPT_CONNECT_TIMEOUT=2");
 		db.setHostName(param.hostname);
 		db.setDatabaseName(param.name); //
-		db.setUserName(param.user); // root
-		db.setPort(param.port); // or 3307
-		db.setPassword(param.password);//
-
+		db.setUserName(param.user);	// root
+		db.setPort(param.port);		// or 3307
+		db.setPassword(param.password); //
 
 		if (!db.isValid()) {
 			VIP_LOG_ERROR("DataBase not valid!!!");
 			return db;
 		}
-		//else
+		// else
 		//	VIP_LOG_ERROR("DataBase valid!!!");
-		if (!db.open())
-		{
+		if (!db.open()) {
 			VIP_LOG_ERROR("DataBase not created!!!! " + db.lastError().text());
 			return db;
 		}
-		//else
+		// else
 		//	VIP_LOG_INFO( "DataBase %s created!!!!", db.databaseName().toLatin1().data());
 	}
 	return db;
@@ -273,8 +299,7 @@ QStringList vipAnalysisStatusDB()
 	return status;
 }
 
-
-QStringList vipDevicesDB() 
+QStringList vipDevicesDB()
 {
 	static QStringList devices;
 	if (!devices.isEmpty())
@@ -357,11 +382,10 @@ QString vipLocalMovieSuffix()
 	return readDB().local_movie_suffix;
 }
 
-
 static QStringList _users;
-bool vipHasReadRightsDB() 
+bool vipHasReadRightsDB()
 {
-	return true;// vipHasWriteRightsDB();
+	return true; // vipHasWriteRightsDB();
 }
 
 bool vipHasWriteRightsDB()
@@ -371,13 +395,10 @@ bool vipHasWriteRightsDB()
 	return _users.contains(vipUserName(), Qt::CaseInsensitive);
 }
 
-
-
-Vip_event_list vipCopyEvents(const Vip_event_list & events)
+Vip_event_list vipCopyEvents(const Vip_event_list& events)
 {
 	Vip_event_list res;
-	for (Vip_event_list::const_iterator it = events.begin(); it != events.end(); ++it)
-	{
+	for (Vip_event_list::const_iterator it = events.begin(); it != events.end(); ++it) {
 		const QList<VipShape> shs = it.value();
 		QList<VipShape> lst;
 		for (int i = 0; i < shs.size(); ++i) {
@@ -389,9 +410,9 @@ Vip_event_list vipCopyEvents(const Vip_event_list & events)
 }
 
 template<class Point>
-QString polygonToString(const QVector<Point> & poly)
+QString polygonToString(const QVector<Point>& poly)
 {
-	//check for rectangle, returns an empty string if polygon is a rectangle
+	// check for rectangle, returns an empty string if polygon is a rectangle
 	if (vipIsRect(poly))
 		return QString();
 
@@ -409,11 +430,10 @@ static QPolygon floorPolygonF(const QPolygonF& p)
 {
 	QPolygon res(p.size());
 	for (int i = 0; i < p.size(); ++i)
-		//res[i] = QPoint(std::floor(p[i].x()), std::floor(p[i].y()));
+		// res[i] = QPoint(std::floor(p[i].x()), std::floor(p[i].y()));
 		res[i] = p[i].toPoint();
 	return res;
 }
-
 
 static void convertShape(const VipShape& sh, QPolygon& p, QRect& r)
 {
@@ -431,7 +451,7 @@ static void convertShape(const VipShape& sh, QPolygon& p, QRect& r)
 		// special case for rectangle: use the same coordinates as when displaying the ROI with "Draw exact pixels"
 		const QRegion reg = sh.region();
 		r = reg.boundingRect();
-		p << r.topLeft() << r.topRight() + QPoint(1,0) << r.bottomRight() + QPoint(1, 1) << r.bottomLeft() + QPoint(0, 1);
+		p << r.topLeft() << r.topRight() + QPoint(1, 0) << r.bottomRight() + QPoint(1, 1) << r.bottomLeft() + QPoint(0, 1);
 	}
 	else {
 		p = sh.polygon().toPolygon();
@@ -441,15 +461,12 @@ static void convertShape(const VipShape& sh, QPolygon& p, QRect& r)
 	}
 }
 
-
-
-QList<qint64> vipSendToDB(const QString & userName, const QString & camera, const QString & device, Vip_experiment_id pulse, const Vip_event_list & all_shapes, VipProgress * p )
+QList<qint64> vipSendToDB(const QString& userName, const QString& camera, const QString& device, Vip_experiment_id pulse, const Vip_event_list& all_shapes, VipProgress* p)
 {
 	QSqlDatabase db = createConnection();
 	if (!db.isOpen())
 		return QList<qint64>();
 
-	
 	Vip_event_list shapes = all_shapes;
 	/* for (int i = 0; i < lst.size(); ++i)
 	{
@@ -461,7 +478,7 @@ QList<qint64> vipSendToDB(const QString & userName, const QString & camera, cons
 		p->setRange(0, shapes.size());
 	}
 
-	//create a new entry in thermal_events
+	// create a new entry in thermal_events
 	int count = 0;
 	QList<qint64> resids;
 	for (Vip_event_list::iterator it = shapes.begin(); it != shapes.end(); ++it, ++count) {
@@ -469,47 +486,48 @@ QList<qint64> vipSendToDB(const QString & userName, const QString & camera, cons
 		if (p) {
 			p->setValue(count);
 		}
-		//get thermal event type
+		// get thermal event type
 		QString thermal_event = it.value().first().group();
 
-		//get confidence
+		// get confidence
 		double confidence = it.value().first().attribute("confidence").toDouble();
 
 		QString analysis_status = it.value().first().attribute("analysis_status").toString();
 
-		//get method
+		// get method
 		QString method = it.value().first().attribute("method").toString();
 
-		//get is_automatic_detection
+		// get is_automatic_detection
 		int is_automatic_detection = it.value().first().attribute("is_automatic_detection").toInt();
 
-		//get comment
+		// get comment
 		QString comment = it.value().first().attribute("comments").toString();
 
-		//get dataset
+		// get dataset
 		QString dataset = it.value().first().attribute("dataset").toString();
 		if (dataset.isEmpty())
 			dataset = "1";
-		//else
+		// else
 		//	dataset = dataset.split(" ")[0];
 
-		//get name
+		// get name
 		QString name = it.value().first().attribute("name").toString();
 
-		//retrieve bounding polygon
-		QString polygon = it.value().first().attribute("polygon").toByteArray();	
+		// retrieve bounding polygon
+		QString polygon = it.value().first().attribute("polygon").toByteArray();
 
-
-		//find min and max timestamps, and max temperature
+		// find min and max timestamps, and max temperature
 		qint64 min = std::numeric_limits<qint64>::max();
 		qint64 max = std::numeric_limits<qint64>::min();
 		double max_t = -100000;
 		qint64 max_T_timestamp_ns = std::numeric_limits<double>::min();
-		const QList<VipShape> & sh = it.value();
+		const QList<VipShape>& sh = it.value();
 		for (int i = 0; i < sh.size(); ++i) {
 			qint64 t = sh[i].attribute("timestamp_ns").toLongLong();
-			if (t > max) max = t;
-			if (t < min) min = t;
+			if (t > max)
+				max = t;
+			if (t < min)
+				min = t;
 			double temp = sh[i].attribute("max_temperature_C").toDouble();
 			if (temp > max_t) {
 				max_t = temp;
@@ -519,36 +537,35 @@ QList<qint64> vipSendToDB(const QString & userName, const QString & camera, cons
 
 		it.value().first().setAttribute("max_temperature_C", max_t);
 
-		//send to thermal_events
+		// send to thermal_events
 		QString query = QString("INSERT IGNORE INTO `thermal_events` (`experiment_id`,`line_of_sight`,`device`,`initial_timestamp_ns`,`final_timestamp_ns`,"
-			"`duration_ns`,`category`,`is_automatic_detection`,`max_temperature_C`,`max_T_timestamp_ns`,`method`,`confidence`,"
-			"`user`,`comments`,`dataset`,`name`,  `analysis_status`) \n"
-			"VALUES\n"
-			"('%1','%2','%3',%4,%5,%6,'%7',%8,%9,%10,'%11',%12,'%13','%14','%15','%16','%17');")
-			.arg(QString::number(pulse))
-			.arg(camera)
-			.arg(device)
-			.arg(min)
-			.arg(max)
-			.arg(max - min)
-			.arg(thermal_event)
-			.arg(is_automatic_detection)
-			.arg(max_t)
-			.arg(max_T_timestamp_ns)
-			.arg(method)
-			.arg(confidence)
-			.arg(userName)
-			.arg(comment)
-			.arg(dataset)
-			.arg(name)
-			.arg(analysis_status);
-
+					"`duration_ns`,`category`,`is_automatic_detection`,`max_temperature_C`,`max_T_timestamp_ns`,`method`,`confidence`,"
+					"`user`,`comments`,`dataset`,`name`,  `analysis_status`) \n"
+					"VALUES\n"
+					"('%1','%2','%3',%4,%5,%6,'%7',%8,%9,%10,'%11',%12,'%13','%14','%15','%16','%17');")
+				  .arg(QString::number(pulse))
+				  .arg(camera)
+				  .arg(device)
+				  .arg(min)
+				  .arg(max)
+				  .arg(max - min)
+				  .arg(thermal_event)
+				  .arg(is_automatic_detection)
+				  .arg(max_t)
+				  .arg(max_T_timestamp_ns)
+				  .arg(method)
+				  .arg(confidence)
+				  .arg(userName)
+				  .arg(comment)
+				  .arg(dataset)
+				  .arg(name)
+				  .arg(analysis_status);
 
 		QSqlQuery q(db);
 		bool res = q.exec(query);
 
-		//vip_debug("'%s'\n",q.lastError().text().toLatin1().data());
-		//vip_debug("'%s'\n", db.lastError().text().toLatin1().data());
+		// vip_debug("'%s'\n",q.lastError().text().toLatin1().data());
+		// vip_debug("'%s'\n", db.lastError().text().toLatin1().data());
 
 		if (!res) {
 			VIP_LOG_ERROR(q.lastError().text());
@@ -564,42 +581,44 @@ QList<qint64> vipSendToDB(const QString & userName, const QString & camera, cons
 
 		resids << id;
 
-		//set the new ID to all shapes
+		// set the new ID to all shapes
 		for (int i = 0; i < sh.size(); ++i) {
 			VipShape(sh[i]).setAttribute("id", id);
 		}
 
-		//send to thermal_events_instances
+		// send to thermal_events_instances
 		query = QString("INSERT IGNORE INTO `thermal_events_instances` "
-			"(`timestamp_ns`,`thermal_event_id`,`bbox_x`,`bbox_y`,`bbox_width`,`bbox_height`,"
-			"`max_temperature_C`,`max_T_image_position_x`,`max_T_image_position_y`,`min_temperature_C`,`min_T_image_position_x`,`min_T_image_position_y`,`average_temperature_C`,"
-			"`pixel_area`,`centroid_image_position_x`,`centroid_image_position_y`,`polygon`,`pfc_id`,`overheating_factor`,`max_T_world_position_x_m`,`max_T_world_position_y_m`,"
-			"`max_T_world_position_z_m`,`min_T_world_position_x_m`,`min_T_world_position_y_m`,`min_T_world_position_z_m`,`max_overheating_world_position_x_m`,`max_overheating_world_position_y_m`,"
-			"`max_overheating_world_position_z_m`,`max_overheating_image_position_x`,`max_overheating_image_position_y`,`centroid_world_position_x_m`,`centroid_world_position_y_m`,`centroid_world_position_z_m`,`physical_area`) \n"
-			"VALUES\n");
-		
+				"(`timestamp_ns`,`thermal_event_id`,`bbox_x`,`bbox_y`,`bbox_width`,`bbox_height`,"
+				"`max_temperature_C`,`max_T_image_position_x`,`max_T_image_position_y`,`min_temperature_C`,`min_T_image_position_x`,`min_T_image_position_y`,`average_temperature_C`,"
+				"`pixel_area`,`centroid_image_position_x`,`centroid_image_position_y`,`polygon`,`pfc_id`,`overheating_factor`,`max_T_world_position_x_m`,`max_T_world_position_y_m`,"
+				"`max_T_world_position_z_m`,`min_T_world_position_x_m`,`min_T_world_position_y_m`,`min_T_world_position_z_m`,`max_overheating_world_position_x_m`,`max_overheating_"
+				"world_position_y_m`,"
+				"`max_overheating_world_position_z_m`,`max_overheating_image_position_x`,`max_overheating_image_position_y`,`centroid_world_position_x_m`,`centroid_world_position_y_m`"
+				",`centroid_world_position_z_m`,`physical_area`) \n"
+				"VALUES\n");
+
 		QStringList values;
 		for (int i = 0; i < sh.size(); ++i) {
 			const QVariantMap a = sh[i].attributes();
 
-			//fill spatial attributes
-			
-			QPolygon poly;// = floorPolygonF(sh[i].polygon());
-			QRect r;// = poly.boundingRect();
+			// fill spatial attributes
+
+			QPolygon poly; // = floorPolygonF(sh[i].polygon());
+			QRect r;       // = poly.boundingRect();
 			convertShape(sh[i], poly, r);
 			QPointF centroid(0, 0);
 			QString poly_string;
 			int pixel_area = r.width() * r.height();
-			//recompute centroid
-			for (const QPoint & pt : poly){
+			// recompute centroid
+			for (const QPoint& pt : poly) {
 				centroid.rx() += pt.x();
 				centroid.ry() += pt.y();
 			}
 			centroid.rx() /= poly.size();
 			centroid.ry() /= poly.size();
 			if (!vipIsRect(poly)) {
-				poly_string = polygonToString(poly);				
-				//recompute pixel_area
+				poly_string = polygonToString(poly);
+				// recompute pixel_area
 				pixel_area = sh[i].fillPixels().size();
 			}
 
@@ -645,7 +664,7 @@ QList<qint64> vipSendToDB(const QString & userName, const QString & camera, cons
 
 		query += values.join(",\n") + ";";
 
-		//vip_debug("%s\n", query.toLatin1().data());
+		// vip_debug("%s\n", query.toLatin1().data());
 
 		res = q.exec(query);
 		if (!res) {
@@ -659,9 +678,7 @@ QList<qint64> vipSendToDB(const QString & userName, const QString & camera, cons
 
 #include "VipIODevice.h"
 
-
-
-bool vipRemoveFromDB(const QList<qint64> & ids, VipProgress * p)
+bool vipRemoveFromDB(const QList<qint64>& ids, VipProgress* p)
 {
 	if (p) {
 		p->setText("Remove thermal events from DB...");
@@ -671,8 +688,7 @@ bool vipRemoveFromDB(const QList<qint64> & ids, VipProgress * p)
 	if (!db.isOpen())
 		return false;
 
-	for (int i = 0; i < ids.size(); ++i)
-	{
+	for (int i = 0; i < ids.size(); ++i) {
 		if (p)
 			p->setValue(i);
 		{
@@ -695,7 +711,7 @@ bool vipRemoveFromDB(const QList<qint64> & ids, VipProgress * p)
 	return true;
 }
 
-bool vipChangeColumnInfoDB(const QList<qint64> & ids, const QString & column, const QString & value, VipProgress * p)
+bool vipChangeColumnInfoDB(const QList<qint64>& ids, const QString& column, const QString& value, VipProgress* p)
 {
 	if (p) {
 		p->setText("Change column in DB...");
@@ -705,12 +721,12 @@ bool vipChangeColumnInfoDB(const QList<qint64> & ids, const QString & column, co
 	if (!db.isOpen())
 		return false;
 
-	for (int i = 0; i < ids.size(); ++i)
-	{
-		if (p) p->setValue(i);
+	for (int i = 0; i < ids.size(); ++i) {
+		if (p)
+			p->setValue(i);
 		QSqlQuery q(db);
-		bool res = q.exec("UPDATE `thermal_events` SET `" + column + "` = " +value + "  WHERE `id` = " + QString::number(ids[i]));
-		//vip_debug("%s\n", q.lastQuery().toLatin1().data());
+		bool res = q.exec("UPDATE `thermal_events` SET `" + column + "` = " + value + "  WHERE `id` = " + QString::number(ids[i]));
+		// vip_debug("%s\n", q.lastQuery().toLatin1().data());
 		if (!res) {
 			VIP_LOG_ERROR(q.lastError().text());
 			return false;
@@ -720,8 +736,7 @@ bool vipChangeColumnInfoDB(const QList<qint64> & ids, const QString & column, co
 	return true;
 }
 
-
-VipEventQueryResults vipQueryDB(const VipEventQuery & query, VipProgress * p)
+VipEventQueryResults vipQueryDB(const VipEventQuery& query, VipProgress* p)
 {
 	if (p) {
 		p->setText("Query DB...");
@@ -733,24 +748,22 @@ VipEventQueryResults vipQueryDB(const VipEventQuery & query, VipProgress * p)
 		return result;
 	}
 
-	//first, select Ids in thermal_events table that matches cameras, pulses, comments, durations,...
+	// first, select Ids in thermal_events table that matches cameras, pulses, comments, durations,...
 
 	QStringList conditions;
 
-	if (query.eventIds.size()) 
-	{
-		//find by ids...
+	if (query.eventIds.size()) {
+		// find by ids...
 
 		QStringList lst;
 		for (int i = 0; i < query.eventIds.size(); ++i)
-			lst << ("id = " + QString::number(query.eventIds[i]) );
+			lst << ("id = " + QString::number(query.eventIds[i]));
 		conditions << "(" + lst.join(" OR ") + ")";
 	}
-	else
-	{
+	else {
 		//...or find with other conditions
 
-		//camera condition
+		// camera condition
 		if (!query.cameras.isEmpty()) {
 			QStringList lst;
 			for (int i = 0; i < query.cameras.size(); ++i)
@@ -763,19 +776,19 @@ VipEventQueryResults vipQueryDB(const VipEventQuery & query, VipProgress * p)
 				lst << ("device = '" + query.devices[i] + "'");
 			conditions << "(" + lst.join(" OR ") + ")";
 		}
-		//method condition
+		// method condition
 		if (!query.method.isEmpty()) {
 			conditions << "(method LIKE '%" + query.method + "%')";
 		}
-		//PPO names
+		// PPO names
 		if (!query.users.isEmpty()) {
 			QStringList lst;
 			for (int i = 0; i < query.users.size(); ++i)
 				lst << ("user = '" + query.users[i] + "'");
 			conditions << "(" + lst.join(" OR ") + ")";
 		}
-		//pulse condition
-		//TODO
+		// pulse condition
+		// TODO
 		if (query.min_pulse >= 0) {
 			conditions << "(experiment_id >= '" + QString::number(query.min_pulse) + "')";
 		}
@@ -783,12 +796,11 @@ VipEventQueryResults vipQueryDB(const VipEventQuery & query, VipProgress * p)
 			conditions << "(experiment_id <= '" + QString::number(query.max_pulse) + "')";
 		}
 
-
-		//comment condition
+		// comment condition
 		if (!query.in_comment.isEmpty()) {
 			conditions << "(comments LIKE '%" + query.in_comment + "%')";
 		}
-		//dataset condition
+		// dataset condition
 		if (!query.dataset.isEmpty()) {
 			QStringList lst = query.dataset.split(" ");
 			QStringList queries;
@@ -797,55 +809,54 @@ VipEventQueryResults vipQueryDB(const VipEventQuery & query, VipProgress * p)
 			}
 			conditions << "(" + queries.join(" OR ") + ")";
 		}
-		//name condition
+		// name condition
 		if (!query.in_name.isEmpty()) {
 			conditions << "(name LIKE '%" + query.in_name + "%')";
 		}
-		//duration
+		// duration
 		if (query.min_duration >= 0) {
 			conditions << "(duration_ns >= " + QString::number(query.min_duration) + ")";
 		}
 		if (query.max_duration >= 0) {
 			conditions << "(duration_ns <= " + QString::number(query.max_duration) + ")";
 		}
-		//max temperature
+		// max temperature
 		if (query.min_temperature >= 0) {
 			conditions << "(max_temperature_C >= " + QString::number(query.min_temperature) + ")";
 		}
 		if (query.max_temperature >= 0) {
 			conditions << "(max_temperature_C <= " + QString::number(query.max_temperature) + ")";
 		}
-		
-		//automatic
+
+		// automatic
 		if (query.automatic >= 0) {
 			conditions << "(is_automatic_detection = " + QString::number(query.automatic) + ")";
 		}
-		//confidence
+		// confidence
 		if (query.min_confidence >= 0) {
 			conditions << "(confidence >= " + QString::number(query.min_confidence) + ")";
 		}
 		if (query.max_confidence >= 0) {
 			conditions << "(confidence <= " + QString::number(query.max_confidence) + ")";
 		}
-		//event type
+		// event type
 		if (query.event_types.size()) {
 			QStringList lst;
 			for (int i = 0; i < query.event_types.size(); ++i)
 				lst << ("category = '" + query.event_types[i] + "'");
 			conditions << "(" + lst.join(" OR ") + ")";
 		}
-
 	}
 
-	//find the list of ids satisfying the conditions
+	// find the list of ids satisfying the conditions
 	QString sql = "SELECT * FROM thermal_events ";
-	if (conditions.size() ){//&& query.id_thermaleventinfo <= 0) {
+	if (conditions.size()) { //&& query.id_thermaleventinfo <= 0) {
 		sql += " WHERE " + conditions.join(" AND ") + ";";
 	}
-	//else if (query.id_thermaleventinfo > 0) {
+	// else if (query.id_thermaleventinfo > 0) {
 	//	sql += " WHERE id = " + QString::number(query.id_thermaleventinfo);
-	//}
-	//vip_debug("%s\n", sql.toLatin1().data());
+	// }
+	// vip_debug("%s\n", sql.toLatin1().data());
 
 	QSqlQuery q(db);
 	if (!q.exec(sql)) {
@@ -867,7 +878,6 @@ VipEventQueryResults vipQueryDB(const VipEventQuery & query, VipProgress * p)
 			if (p->canceled())
 				return VipEventQueryResults();
 		}
-		
 
 		VipEventQueryResult res;
 		res.comment = q.value("comments").toString();
@@ -887,14 +897,13 @@ VipEventQueryResults vipQueryDB(const VipEventQuery & query, VipProgress * p)
 		res.analysis_status = (q.value("analysis_status").toString());
 		res.user = (q.value("user").toString());
 		res.camera = (q.value("line_of_sight").toString());
-		
+
 		result.events[res.eventId] = res;
 	}
 	return result;
 }
 
-
-VipFullQueryResult vipFullQueryDB(const VipEventQueryResults & evtres, VipProgress * p)
+VipFullQueryResult vipFullQueryDB(const VipEventQueryResults& evtres, VipProgress* p)
 {
 	if (p) {
 		p->setText("Query DB...");
@@ -907,13 +916,11 @@ VipFullQueryResult vipFullQueryDB(const VipEventQueryResults & evtres, VipProgre
 		return result;
 	}
 
-
-
-	//now let's query thermal_events_instances
+	// now let's query thermal_events_instances
 	QString query = "SELECT * FROM thermal_events_instances ";
 	QStringList conditions;
 
-	//additional conditions
+	// additional conditions
 	/* for (int i = 0; i < fullq.additional_conditions.size(); ++i)
 	{
 		const VipRequestCondition c = fullq.additional_conditions[i];
@@ -930,15 +937,17 @@ VipFullQueryResult vipFullQueryDB(const VipEventQueryResults & evtres, VipProgre
 	int total_count = 0;
 	QVector<QSqlQuery> queries;
 	if (evtres.events.size()) {
-		//event type, launch one query per event ID
+		// event type, launch one query per event ID
 		QList<qint64> id = evtres.events.keys();
 		for (int i = 0; i < id.size(); ++i) {
 			QString _q = query;
-			if (!_q.contains("WHERE")) _q += " WHERE ";
-			else _q += " AND ";
+			if (!_q.contains("WHERE"))
+				_q += " WHERE ";
+			else
+				_q += " AND ";
 			_q += " thermal_event_id = " + QString::number(id[i]) + ";";
 			QSqlQuery q(db);
-			//vip_debug("%s\n", _q.toLatin1().data());
+			// vip_debug("%s\n", _q.toLatin1().data());
 			if (!q.exec(_q)) {
 				VIP_LOG_ERROR(q.lastError().text());
 				result.error = q.lastError().text();
@@ -959,7 +968,7 @@ VipFullQueryResult vipFullQueryDB(const VipEventQueryResults & evtres, VipProgre
 		queries.push_back(q);
 	}*/
 
-	//vip_debug("%s\n", query.toLatin1().data());
+	// vip_debug("%s\n", query.toLatin1().data());
 
 	if (p) {
 		p->setText("Retrieve thermal events from DB...");
@@ -967,7 +976,7 @@ VipFullQueryResult vipFullQueryDB(const VipEventQueryResults & evtres, VipProgre
 	}
 	int count = 0;
 
-	//retrieve all shapes
+	// retrieve all shapes
 	Vip_event_list shapes;
 	for (int i = 0; i < queries.size(); ++i) {
 		QSqlQuery q = queries[i];
@@ -977,13 +986,13 @@ VipFullQueryResult vipFullQueryDB(const VipEventQueryResults & evtres, VipProgre
 				p->setValue(count++);
 
 			qint64 id = q.value("thermal_event_id").toLongLong();
-			const VipEventQueryResult & evt = evtres.events[id];
+			const VipEventQueryResult& evt = evtres.events[id];
 
-			//build shape 
+			// build shape
 			VipShape sh(QRectF(q.value("bbox_x").toDouble(), q.value("bbox_y").toDouble(), q.value("bbox_width").toDouble(), q.value("bbox_height").toDouble()));
 			sh.setGroup(evt.eventName);
 
-			//check polygon
+			// check polygon
 			QString polygon = q.value("polygon").toString();
 			if (polygon.size()) {
 				QPolygonF poly;
@@ -998,10 +1007,10 @@ VipFullQueryResult vipFullQueryDB(const VipEventQueryResults & evtres, VipProgre
 				sh.setPolygon(poly);
 			}
 
-			//set attributes from global event info
+			// set attributes from global event info
 			QVariantMap attrs;
 
-			//attrs.insert("ID", id);
+			// attrs.insert("ID", id);
 			sh.setId(id);
 			attrs.insert("comments", evt.comment);
 			attrs.insert("dataset", evt.dataset);
@@ -1019,7 +1028,7 @@ VipFullQueryResult vipFullQueryDB(const VipEventQueryResults & evtres, VipProgre
 			attrs.insert("line_of_sight", evt.camera);
 			attrs.insert("device", evt.device);
 
-			//set attributes from realtime table
+			// set attributes from realtime table
 			attrs.insert("timestamp_ns", q.value("timestamp_ns").toLongLong());
 			attrs.insert("id", q.value("thermal_event_id").toLongLong());
 			attrs.insert("id_hotspot", q.value("id").toLongLong());
@@ -1061,9 +1070,8 @@ VipFullQueryResult vipFullQueryDB(const VipEventQueryResults & evtres, VipProgre
 		}
 	}
 
-	//now fill result with shapes
-	for (Vip_event_list::const_iterator it = shapes.begin(); it != shapes.end(); ++it)
-	{
+	// now fill result with shapes
+	for (Vip_event_list::const_iterator it = shapes.begin(); it != shapes.end(); ++it) {
 		const QList<VipShape> sh = it.value();
 		const VipEventQueryResult evt = evtres.events[it.key()];
 		for (int i = 0; i < sh.size(); ++i) {
@@ -1074,7 +1082,7 @@ VipFullQueryResult vipFullQueryDB(const VipEventQueryResults & evtres, VipProgre
 			cam.device = evt.device;
 			VipEventQueryResult& event = cam.events.events[evt.eventId];
 			if (event.shapes.isEmpty()) {
-				//copy struct
+				// copy struct
 				event = evt;
 			}
 			event.shapes.push_back(sh[i]);
@@ -1084,7 +1092,7 @@ VipFullQueryResult vipFullQueryDB(const VipEventQueryResults & evtres, VipProgre
 	return result;
 }
 
-Vip_event_list vipExtractEvents(const VipFullQueryResult & fres)
+Vip_event_list vipExtractEvents(const VipFullQueryResult& fres)
 {
 	Vip_event_list res;
 	for (QMap<Vip_experiment_id, VipPulseResult>::const_iterator itp = fres.result.begin(); itp != fres.result.end(); ++itp) {
@@ -1092,7 +1100,7 @@ Vip_event_list vipExtractEvents(const VipFullQueryResult & fres)
 		for (QMap<QString, VipCameraResult>::const_iterator itc = p.cameras.begin(); itc != p.cameras.end(); ++itc) {
 			const VipEventQueryResults events = itc.value().events;
 			for (QMap<qint64, VipEventQueryResult>::const_iterator ite = events.events.begin(); ite != events.events.end(); ++ite) {
-				res.insert(ite.key(),ite.value().shapes);
+				res.insert(ite.key(), ite.value().shapes);
 			}
 		}
 	}
@@ -1100,7 +1108,6 @@ Vip_event_list vipExtractEvents(const VipFullQueryResult & fres)
 }
 
 #include "VipEnvironment.h"
-
 
 struct ExtractOption
 {
@@ -1128,29 +1135,29 @@ The result is stored in a HUGE map of:
 */
 QMap<QString, QMap<Vip_experiment_id, QMap<QString, QMap<QString, VipPointVector>>>> extractParameters(const ExtractOption& opts, const VipEventQueryResults& events, VipProgress* progress);
 
-
-static QCheckBox * createBox(const QString & text, bool state) {
-	QCheckBox * res = new QCheckBox(text);
+static QCheckBox* createBox(const QString& text, bool state)
+{
+	QCheckBox* res = new QCheckBox(text);
 	res->setChecked(state);
 	return res;
 }
-//Query the parameters to extract
-ExtractOption extractOptions(const ExtractOption & default_opt)
+// Query the parameters to extract
+ExtractOption extractOptions(const ExtractOption& default_opt)
 {
-	QCheckBox * max = createBox("Maximum intensity", default_opt.max);
-	QCheckBox * min = createBox("Minimum intensity", default_opt.min);
-	QCheckBox * mean = createBox("Average intensity", default_opt.mean);
+	QCheckBox* max = createBox("Maximum intensity", default_opt.max);
+	QCheckBox* min = createBox("Minimum intensity", default_opt.min);
+	QCheckBox* mean = createBox("Average intensity", default_opt.mean);
 	QCheckBox* pixel_area = createBox("Event pixel area", default_opt.pixel_area);
-	QCheckBox * maxX = createBox("Maximum intensity X", default_opt.maxX);
-	QCheckBox * maxY = createBox("Maximum intensity Y", default_opt.maxY);
-	QCheckBox * minX = createBox("Minimum intensity X", default_opt.minX);
-	QCheckBox * minY = createBox("Minimum intensity Y", default_opt.minY);
-	QCheckBox * mergePulses = createBox("Merge successive pulses", default_opt.mergePulses);
+	QCheckBox* maxX = createBox("Maximum intensity X", default_opt.maxX);
+	QCheckBox* maxY = createBox("Maximum intensity Y", default_opt.maxY);
+	QCheckBox* minX = createBox("Minimum intensity X", default_opt.minX);
+	QCheckBox* minY = createBox("Minimum intensity Y", default_opt.minY);
+	QCheckBox* mergePulses = createBox("Merge successive pulses", default_opt.mergePulses);
 	mergePulses->setToolTip("Merge the time traces for successive pulses in one curve");
-	QCheckBox * mergeCameras = createBox("Merge cameras for each experiment id", default_opt.mergeCameras);
+	QCheckBox* mergeCameras = createBox("Merge cameras for each experiment id", default_opt.mergeCameras);
 	mergeCameras->setToolTip("For a specific experiment id, merge the time traces of each cameras");
 
-	QVBoxLayout * lay = new QVBoxLayout();
+	QVBoxLayout* lay = new QVBoxLayout();
 	lay->addWidget(max);
 	lay->addWidget(min);
 	lay->addWidget(mean);
@@ -1163,10 +1170,10 @@ ExtractOption extractOptions(const ExtractOption & default_opt)
 	lay->addWidget(mergePulses);
 	lay->addWidget(mergeCameras);
 
-	QWidget *w = new QWidget();
+	QWidget* w = new QWidget();
 	w->setLayout(lay);
 
-	//hide this option, too complicated
+	// hide this option, too complicated
 	mergeCameras->hide();
 
 	VipGenericDialog dial(w, "Extraction parameters");
@@ -1190,99 +1197,97 @@ ExtractOption extractOptions(const ExtractOption & default_opt)
 	return res;
 }
 
-
-
-
-QMap<QString, QMap<Vip_experiment_id, QMap<QString, QMap<QString, VipPointVector> > > >
-	extractParameters(const ExtractOption & opts, const VipEventQueryResults & events, VipProgress * progress)
+QMap<QString, QMap<Vip_experiment_id, QMap<QString, QMap<QString, VipPointVector>>>> extractParameters(const ExtractOption& opts, const VipEventQueryResults& events, VipProgress* progress)
 {
-	//a time value thatd efault to 0
-	struct Time0 {
+	// a time value thatd efault to 0
+	struct Time0
+	{
 		qint64 time;
-		Time0() : time(0) {}
+		Time0()
+		  : time(0)
+		{
+		}
 	};
 
-	//extract events from DB
-	VipFullQueryResult fr = vipFullQueryDB( events, progress);
+	// extract events from DB
+	VipFullQueryResult fr = vipFullQueryDB(events, progress);
 
 	if (progress) {
 		progress->setText("Extract parmeters...");
 		progress->setRange(0, fr.totalEvents * 2);
 	}
 
-	//parameters to extract
+	// parameters to extract
 	QStringList colmuns;
 
-	//ROIs
-	//map of pulse -> camera - ROI name -> shape
+	// ROIs
+	// map of pulse -> camera - ROI name -> shape
 	QMap<Vip_experiment_id, QMap<QString, QMap<QString, VipShape>>> ROIs;
 
-	
-	QVector<VipShape> shape_list; //raw list of shapes
-	
-	//compute time range for each pulse
+	QVector<VipShape> shape_list; // raw list of shapes
+
+	// compute time range for each pulse
 	QMap<Vip_experiment_id, VipTimeRange> pulse_ranges;
 
 	QSet<Vip_experiment_id> available_pulses;
 	QSet<QString> available_cameras;
 
-	//QMap<QString, QMap<int, QMap<QString, qint64> > > min_times; //minimum events time for given camera (possibly merged, pulse and
-	//QMap<QString, QMap<int, QMap<QString, qint64> > > offset_times;
-	
+	// QMap<QString, QMap<int, QMap<QString, qint64> > > min_times; //minimum events time for given camera (possibly merged, pulse and
+	// QMap<QString, QMap<int, QMap<QString, qint64> > > offset_times;
+
 	int count = 0;
-	for (QMap<Vip_experiment_id, VipPulseResult>::const_iterator itp = fr.result.begin(); itp != fr.result.end(); ++itp)
-	{
-		const VipPulseResult & p = itp.value();
+	for (QMap<Vip_experiment_id, VipPulseResult>::const_iterator itp = fr.result.begin(); itp != fr.result.end(); ++itp) {
+		const VipPulseResult& p = itp.value();
 		available_pulses.insert(p.experiment_id);
-		for (QMap<QString, VipCameraResult>::const_iterator itc = p.cameras.begin(); itc != p.cameras.end(); ++itc)
-		{
-			const VipEventQueryResults & r_events = itc.value().events;
+		for (QMap<QString, VipCameraResult>::const_iterator itc = p.cameras.begin(); itc != p.cameras.end(); ++itc) {
+			const VipEventQueryResults& r_events = itc.value().events;
 			available_cameras.insert(itc.value().cameraName);
-			for (QMap<qint64, VipEventQueryResult>::const_iterator ite = r_events.events.begin(); ite != r_events.events.end(); ++ite)
-			{
-				const VipEventQueryResult & evt = ite.value();
-				const VipShapeList & lst = evt.shapes;
+			for (QMap<qint64, VipEventQueryResult>::const_iterator ite = r_events.events.begin(); ite != r_events.events.end(); ++ite) {
+				const VipEventQueryResult& evt = ite.value();
+				const VipShapeList& lst = evt.shapes;
 				const Vip_experiment_id experiment_id = evt.experiment_id;
 				const QString camera = evt.camera;
 
-				//load ROIs if needed
+				// load ROIs if needed
 				if (ROIs[experiment_id][camera].isEmpty()) {
 
-					//add the big 'All' shape
+					// add the big 'All' shape
 					ROIs[experiment_id][camera]["All"] = VipShape(QRectF(0, 0, 1000, 1000));
 				}
 
-				//get ROIs for this pulse and camera
+				// get ROIs for this pulse and camera
 				const QMap<QString, VipShape>& rois = ROIs[experiment_id][camera];
 
-				//sort shapes by timestamps (should already be the case) and ROI
+				// sort shapes by timestamps (should already be the case) and ROI
 
 				for (int i = 0; i < lst.size(); ++i) {
 					const VipShape sh = lst[i];
-					//find the ROI
+					// find the ROI
 					for (QMap<QString, VipShape>::const_iterator it = rois.begin(); it != rois.end(); ++it) {
 						QPointF pos(sh.attribute("max_T_image_position_x").toInt(), sh.attribute("max_T_image_position_y").toInt());
 						if (it.value().shape().contains(pos)) {
-							//qint64 time = sh.attribute("timestamp").toLongLong();
-							//all_shapes[opts.mergeCameras ? "All" : camera][opts.mergePulses ? -1 : pulse][it.key()][time].append( sh);
+							// qint64 time = sh.attribute("timestamp").toLongLong();
+							// all_shapes[opts.mergeCameras ? "All" : camera][opts.mergePulses ? -1 : pulse][it.key()][time].append( sh);
 							shape_list.push_back(sh);
-							//add ROI attribute
+							// add ROI attribute
 							VipShape(sh).setAttribute("ROI", it.key());
 
-							//update pulse time range
+							// update pulse time range
 							if (opts.mergePulses) {
 								qint64 time = sh.attribute("timestamp_ns").toLongLong();
 								if (pulse_ranges.find(experiment_id) == pulse_ranges.end())
 									pulse_ranges[experiment_id] = VipTimeRange(time, time);
 								else {
 									VipTimeRange& r = pulse_ranges[experiment_id];
-									if (time < r.first) r.first = time;
-									else if (time > r.second) r.second = time;
+									if (time < r.first)
+										r.first = time;
+									else if (time > r.second)
+										r.second = time;
 								}
 							}
 							break;
 						}
-						if (progress->canceled())
+						if (progress && progress->canceled())
 							return QMap<QString, QMap<Vip_experiment_id, QMap<QString, QMap<QString, VipPointVector>>>>();
 					}
 				}
@@ -1290,33 +1295,31 @@ QMap<QString, QMap<Vip_experiment_id, QMap<QString, QMap<QString, VipPointVector
 				count += lst.size();
 				if (progress)
 					progress->setValue(count);
-				if (progress->canceled())
+				if (progress && progress->canceled())
 					return QMap<QString, QMap<Vip_experiment_id, QMap<QString, QMap<QString, VipPointVector>>>>();
 			}
 		}
 	}
 
-	//compute time offset for each pulse
+	// compute time offset for each pulse
 	QMap<Vip_experiment_id, qint64> offsets;
 	if (opts.mergePulses) {
 		qint64 end = 0;
-		qint64 between_pulse = 1000000;//add 1ms between pulses
-		for (QMap<Vip_experiment_id, VipTimeRange>::const_iterator it = pulse_ranges.begin(); it != pulse_ranges.end(); ++it)
-		{
+		qint64 between_pulse = 1000000; // add 1ms between pulses
+		for (QMap<Vip_experiment_id, VipTimeRange>::const_iterator it = pulse_ranges.begin(); it != pulse_ranges.end(); ++it) {
 			offsets[it.key()] = -it.value().first + end;
 			end += (it.value().second - it.value().first) + between_pulse;
 		}
 	}
 
-	//sort all shapes by: camera ('All' if merged) -> pulse (-1 id merged) -> ROI ('All' if merged)-> time -> shape lists
+	// sort all shapes by: camera ('All' if merged) -> pulse (-1 id merged) -> ROI ('All' if merged)-> time -> shape lists
 	QMap<QString, QMap<Vip_experiment_id, QMap<QString, QMap<qint64, VipShapeList>>>> all_shapes;
-	for (int i = 0; i < shape_list.size(); ++i)
-	{
-		VipShape & sh = shape_list[i];
+	for (int i = 0; i < shape_list.size(); ++i) {
+		VipShape& sh = shape_list[i];
 		const Vip_experiment_id experiment_id = sh.attribute("experiment_id").value<Vip_experiment_id>();
-		const QString & camera = sh.attribute("line_of_sight").toString();
+		const QString& camera = sh.attribute("line_of_sight").toString();
 		qint64 time = sh.attribute("timestamp_ns").toLongLong();
-		//apply time offset
+		// apply time offset
 		if (opts.mergePulses) {
 			time += offsets[experiment_id];
 		}
@@ -1325,7 +1328,7 @@ QMap<QString, QMap<Vip_experiment_id, QMap<QString, QMap<QString, VipPointVector
 
 	QMap<QString, QMap<Vip_experiment_id, QMap<QString, QMap<QString, VipPointVector>>>> result;
 
-	//now we extract the time traces
+	// now we extract the time traces
 	const QStringList cameras = all_shapes.keys();
 	for (int c = 0; c < cameras.size(); ++c) {
 		const QString camera = cameras[c];
@@ -1339,23 +1342,28 @@ QMap<QString, QMap<Vip_experiment_id, QMap<QString, QMap<QString, VipPointVector
 
 				QMap<QString, VipPointVector>& res = result[camera][experiment_id][roi];
 
-				//keep track of pulses for mergePulses only
+				// keep track of pulses for mergePulses only
 				QSet<Vip_experiment_id> ids;
-				
-				//extract parameters
+
+				// extract parameters
 				for (QMap<qint64, VipShapeList>::const_iterator it = shapes.begin(); it != shapes.end(); ++it) {
-					const VipShapeList & lst = it.value();
+					const VipShapeList& lst = it.value();
 					double max, min, mean = 0;
 					int pixel_area = 0, maxX = 0, maxY = 0, minX = 0, minY = 0;
 					max = lst.first().attribute("max_temperature_C").toDouble();
-					min = lst.first().attribute("min_temperature_C").toDouble(); 
-					if(opts.mean) mean = lst.first().attribute("average_temperature_C").toDouble();
+					min = lst.first().attribute("min_temperature_C").toDouble();
+					if (opts.mean)
+						mean = lst.first().attribute("average_temperature_C").toDouble();
 					if (opts.pixel_area)
 						pixel_area = lst.first().attribute("pixel_area").toInt();
-					if (opts.maxX) maxX = lst.first().attribute("max_T_image_position_x").toInt();
-					if (opts.maxY) maxY = lst.first().attribute("max_T_image_position_y").toInt();
-					if (opts.minX) minX = lst.first().attribute("min_T_image_position_x").toInt();
-					if (opts.minY) minY = lst.first().attribute("min_T_image_position_y").toInt();
+					if (opts.maxX)
+						maxX = lst.first().attribute("max_T_image_position_x").toInt();
+					if (opts.maxY)
+						maxY = lst.first().attribute("max_T_image_position_y").toInt();
+					if (opts.minX)
+						minX = lst.first().attribute("min_T_image_position_x").toInt();
+					if (opts.minY)
+						minY = lst.first().attribute("min_T_image_position_y").toInt();
 
 					bool new_pulse = false;
 					if (opts.mergePulses) {
@@ -1371,44 +1379,64 @@ QMap<QString, QMap<Vip_experiment_id, QMap<QString, QMap<QString, VipPointVector
 						double _min = lst[i].attribute("min_temperature_C").toDouble();
 						if (_max > max) {
 							max = _max;
-							if (opts.maxX) maxX = lst[i].attribute("max_T_image_position_x").toInt();
-							if (opts.maxY) maxY = lst[i].attribute("max_T_image_position_y").toInt();
+							if (opts.maxX)
+								maxX = lst[i].attribute("max_T_image_position_x").toInt();
+							if (opts.maxY)
+								maxY = lst[i].attribute("max_T_image_position_y").toInt();
 						}
 						if (_min > min) {
 							min = _min;
-							if (opts.minX) minX = lst[i].attribute("min_T_image_position_x").toInt();
-							if (opts.minY) minY = lst[i].attribute("min_T_image_position_y").toInt();
+							if (opts.minX)
+								minX = lst[i].attribute("min_T_image_position_x").toInt();
+							if (opts.minY)
+								minY = lst[i].attribute("min_T_image_position_y").toInt();
 						}
-						if(opts.mean) mean += lst[i].attribute("average_temperature_C").toDouble();
+						if (opts.mean)
+							mean += lst[i].attribute("average_temperature_C").toDouble();
 						if (opts.pixel_area)
 							pixel_area += lst[i].attribute("pixel_area").toInt();
 					}
-					if (opts.mean) mean /= lst.size();
+					if (opts.mean)
+						mean /= lst.size();
 
-					//fill points
+					// fill points
 
 					if (new_pulse) {
-						//add NaN separator
-						if (opts.max) res["max_temperature_C"].push_back(VipPoint(vipNan(), vipNan()));
-						if (opts.min) res["min_temperature_C"].push_back(VipPoint(vipNan(), vipNan()));
-						if (opts.mean) res["average_temperature_C"].push_back(VipPoint(vipNan(), vipNan()));
+						// add NaN separator
+						if (opts.max)
+							res["max_temperature_C"].push_back(VipPoint(vipNan(), vipNan()));
+						if (opts.min)
+							res["min_temperature_C"].push_back(VipPoint(vipNan(), vipNan()));
+						if (opts.mean)
+							res["average_temperature_C"].push_back(VipPoint(vipNan(), vipNan()));
 						if (opts.pixel_area)
 							res["pixel_area"].push_back(VipPoint(vipNan(), vipNan()));
-						if (opts.maxX) res["max_T_image_position_x"].push_back(VipPoint(vipNan(), vipNan()));
-						if (opts.maxY) res["max_T_image_position_y"].push_back(VipPoint(vipNan(), vipNan()));
-						if (opts.minX) res["min_T_image_position_x"].push_back(VipPoint(vipNan(), vipNan()));
-						if (opts.minY) res["min_T_image_position_y"].push_back(VipPoint(vipNan(), vipNan()));
+						if (opts.maxX)
+							res["max_T_image_position_x"].push_back(VipPoint(vipNan(), vipNan()));
+						if (opts.maxY)
+							res["max_T_image_position_y"].push_back(VipPoint(vipNan(), vipNan()));
+						if (opts.minX)
+							res["min_T_image_position_x"].push_back(VipPoint(vipNan(), vipNan()));
+						if (opts.minY)
+							res["min_T_image_position_y"].push_back(VipPoint(vipNan(), vipNan()));
 					}
-					
-					if (opts.max) res["max_temperature_C"].push_back(VipPoint(it.key(), max));
-					if (opts.min) res["min_temperature_C"].push_back(VipPoint(it.key(), min));
-					if (opts.mean) res["average_temperature_C"].push_back(VipPoint(it.key(), mean));
+
+					if (opts.max)
+						res["max_temperature_C"].push_back(VipPoint(it.key(), max));
+					if (opts.min)
+						res["min_temperature_C"].push_back(VipPoint(it.key(), min));
+					if (opts.mean)
+						res["average_temperature_C"].push_back(VipPoint(it.key(), mean));
 					if (opts.pixel_area)
 						res["pixel_area"].push_back(VipPoint(it.key(), pixel_area));
-					if (opts.maxX) res["max_T_image_position_x"].push_back(VipPoint(it.key(), maxX));
-					if (opts.maxY) res["max_T_image_position_y"].push_back(VipPoint(it.key(), maxY));
-					if (opts.minX) res["min_T_image_position_x"].push_back(VipPoint(it.key(), minX));
-					if (opts.minY) res["min_T_image_position_y"].push_back(VipPoint(it.key(), minY));
+					if (opts.maxX)
+						res["max_T_image_position_x"].push_back(VipPoint(it.key(), maxX));
+					if (opts.maxY)
+						res["max_T_image_position_y"].push_back(VipPoint(it.key(), maxY));
+					if (opts.minX)
+						res["min_T_image_position_x"].push_back(VipPoint(it.key(), minX));
+					if (opts.minY)
+						res["min_T_image_position_y"].push_back(VipPoint(it.key(), minY));
 
 					count += lst.size();
 					if (progress)
@@ -1418,13 +1446,13 @@ QMap<QString, QMap<Vip_experiment_id, QMap<QString, QMap<QString, VipPointVector
 		}
 	}
 
-	//replace camera "All" if possible
+	// replace camera "All" if possible
 	if (opts.mergeCameras && available_cameras.size() == 1) {
 		result[*available_cameras.begin()] = result["All"];
 		result.remove("All");
 	}
 
-	//replace pulse -1 if possible
+	// replace pulse -1 if possible
 	const QStringList cams = result.keys();
 	if (opts.mergePulses && available_pulses.size() == 1) {
 		for (int c = 0; c < cams.size(); ++c) {
@@ -1437,10 +1465,6 @@ QMap<QString, QMap<Vip_experiment_id, QMap<QString, QMap<QString, VipPointVector
 	return result;
 }
 
-
-
-
-
 QPolygonF vipSimplifyPolygonDB(const QPolygonF& p, int max_points)
 {
 	QPolygonF poly = p;
@@ -1451,10 +1475,6 @@ QPolygonF vipSimplifyPolygonDB(const QPolygonF& p, int max_points)
 	}
 	return poly;
 }
-
-
-
-
 
 static QString polygonToJSON(const QPolygon& poly)
 {
@@ -1470,12 +1490,10 @@ static QString polygonToJSON(const QPolygon& poly)
 			str << ", ";
 	}
 
-
 	str << "]";
 	str.flush();
 	return res;
 }
-
 
 static QString polygonToJSON(const QPolygonF& poly)
 {
@@ -1487,11 +1505,10 @@ static QString polygonToJSON(const QPolygonF& poly)
 	for (int i = 0; i < poly.size(); ++i) {
 		QPoint pt = poly[i].toPoint();
 		str << "[" << pt.x() << ", " << pt.y() << "]";
-		//str << "[" << std::floor(poly[i].x()) << ", " << std::floor(poly[i].y()) << "]";
+		// str << "[" << std::floor(poly[i].x()) << ", " << std::floor(poly[i].y()) << "]";
 		if (i < poly.size() - 1)
 			str << ", ";
 	}
-
 
 	str << "]";
 	str.flush();
@@ -1511,7 +1528,7 @@ static QString polygonToJSON(const QString& polygon)
 			poly.push_back(QPoint(x, y));
 		}
 	}
-	return  polygonToJSON(poly);
+	return polygonToJSON(poly);
 }
 
 static QString addDoubleQuotes(const QString& str)
@@ -1528,7 +1545,7 @@ static QString addDoubleQuotes(const QString& str)
 	if (tmp.startsWith("\""))
 		tmp[0] = ' ';
 	if (tmp.endsWith("\""))
-		tmp[tmp.size()-1] = ' ';
+		tmp[tmp.size() - 1] = ' ';
 
 	return "\"" + tmp + "\"";
 }
@@ -1536,7 +1553,7 @@ static QString addDoubleQuotes(const QString& str)
 QByteArray vipEventsToJson(const Vip_event_list& all_shapes, VipProgress* p)
 {
 	Vip_event_list evts = all_shapes;
-	
+
 	if (p) {
 		p->setText("Pre-process thermal events...");
 		p->setRange(0, evts.size());
@@ -1549,7 +1566,7 @@ QByteArray vipEventsToJson(const Vip_event_list& all_shapes, VipProgress* p)
 		if (p) {
 			p->setValue(count);
 		}
-		
+
 		// find min and max timestamps, and max temperature
 		qint64 min = std::numeric_limits<qint64>::max();
 		qint64 max = -std::numeric_limits<qint64>::max();
@@ -1572,7 +1589,7 @@ QByteArray vipEventsToJson(const Vip_event_list& all_shapes, VipProgress* p)
 		it.value().first().setAttribute("max_temperature_C", max_t);
 		it.value().first().setAttribute("max_T_timestamp_ns", max_T_timestamp_ns);
 
-		//if (!device.isEmpty())
+		// if (!device.isEmpty())
 		//	it.value().first().setAttribute("device", device);
 
 		QStringList values;
@@ -1585,7 +1602,7 @@ QByteArray vipEventsToJson(const Vip_event_list& all_shapes, VipProgress* p)
 			QRect r = poly.boundingRect();
 			int pixel_area = r.width() * r.height();
 			// recompute centroid
-			for (const QPoint & pt : poly) {
+			for (const QPoint& pt : poly) {
 				centroid.rx() += pt.x();
 				centroid.ry() += pt.y();
 			}
@@ -1613,11 +1630,10 @@ QByteArray vipEventsToJson(const Vip_event_list& all_shapes, VipProgress* p)
 		p->setValue(0);
 	}
 
-
 	QString res;
 	QTextStream str(&res, QIODevice::WriteOnly);
 
-	//START
+	// START
 	str << "{\n";
 
 	int i = 0;
@@ -1630,32 +1646,50 @@ QByteArray vipEventsToJson(const Vip_event_list& all_shapes, VipProgress* p)
 		qint64 id = it.key();
 		const QList<VipShape> shs = it.value();
 
-		str <<"\t" << "\"" << id << "\":\n";
-		//Start event
-		str << "\t" << "{\n";
+		str << "\t"
+		    << "\"" << id << "\":\n";
+		// Start event
+		str << "\t"
+		    << "{\n";
 
 		QString device = shs.first().attribute("device").toString();
 
 		str << "\t\t"
 		    << "\"experiment_id\": " << QString::number(shs.first().attribute("experiment_id").toLongLong()) << ",\n";
-		str << "\t\t" << "\"line_of_sight\": " << addDoubleQuotes( shs.first().attribute("line_of_sight").toString()) << ",\n";
-		str << "\t\t" << "\"device\": " << addDoubleQuotes(device) << ",\n";
-		str << "\t\t" << "\"initial_timestamp_ns\": " << addDoubleQuotes(shs.first().attribute("initial_timestamp_ns").toString()) << ",\n";
-		str << "\t\t" << "\"final_timestamp_ns\": " << addDoubleQuotes(shs.first().attribute("final_timestamp_ns").toString()) << ",\n";
-		str << "\t\t" << "\"duration_ns\": " << addDoubleQuotes(shs.first().attribute("duration_ns").toString()) << ",\n";
-		str << "\t\t" << "\"category\": " << addDoubleQuotes(shs.first().group()) << ",\n";
-		str << "\t\t" << "\"is_automatic_detection\": " << shs.first().attribute("is_automatic_detection").toInt() << ",\n";
-		str << "\t\t" << "\"max_temperature_C\": " << shs.first().attribute("max_temperature_C").toInt() << ",\n";
-		str << "\t\t" << "\"method\": " << addDoubleQuotes(shs.first().attribute("method").toString()) << ",\n";
-		str << "\t\t" << "\"dataset\": " << addDoubleQuotes(shs.first().attribute("dataset").toString()) << ",\n";
-		str << "\t\t" << "\"confidence\": " << shs.first().attribute("confidence").toString() << ",\n";
-		str << "\t\t" << "\"user\": " << addDoubleQuotes(shs.first().attribute("user").toString()) << ",\n";
-		str << "\t\t" << "\"comments\": " << addDoubleQuotes( shs.first().attribute("comments").toString()) << ",\n";
-		str << "\t\t" << "\"name\": " << addDoubleQuotes(shs.first().attribute("name").toString()) << ",\n";
-		str << "\t\t" << "\"analysis_status\": " << addDoubleQuotes(shs.first().attribute("analysis_status").toString()) << ",\n";
-		
-		//Start images
-		str << "\t\t" << "\"thermal_events_instances\": [\n";
+		str << "\t\t"
+		    << "\"line_of_sight\": " << addDoubleQuotes(shs.first().attribute("line_of_sight").toString()) << ",\n";
+		str << "\t\t"
+		    << "\"device\": " << addDoubleQuotes(device) << ",\n";
+		str << "\t\t"
+		    << "\"initial_timestamp_ns\": " << addDoubleQuotes(shs.first().attribute("initial_timestamp_ns").toString()) << ",\n";
+		str << "\t\t"
+		    << "\"final_timestamp_ns\": " << addDoubleQuotes(shs.first().attribute("final_timestamp_ns").toString()) << ",\n";
+		str << "\t\t"
+		    << "\"duration_ns\": " << addDoubleQuotes(shs.first().attribute("duration_ns").toString()) << ",\n";
+		str << "\t\t"
+		    << "\"category\": " << addDoubleQuotes(shs.first().group()) << ",\n";
+		str << "\t\t"
+		    << "\"is_automatic_detection\": " << shs.first().attribute("is_automatic_detection").toInt() << ",\n";
+		str << "\t\t"
+		    << "\"max_temperature_C\": " << shs.first().attribute("max_temperature_C").toInt() << ",\n";
+		str << "\t\t"
+		    << "\"method\": " << addDoubleQuotes(shs.first().attribute("method").toString()) << ",\n";
+		str << "\t\t"
+		    << "\"dataset\": " << addDoubleQuotes(shs.first().attribute("dataset").toString()) << ",\n";
+		str << "\t\t"
+		    << "\"confidence\": " << shs.first().attribute("confidence").toString() << ",\n";
+		str << "\t\t"
+		    << "\"user\": " << addDoubleQuotes(shs.first().attribute("user").toString()) << ",\n";
+		str << "\t\t"
+		    << "\"comments\": " << addDoubleQuotes(shs.first().attribute("comments").toString()) << ",\n";
+		str << "\t\t"
+		    << "\"name\": " << addDoubleQuotes(shs.first().attribute("name").toString()) << ",\n";
+		str << "\t\t"
+		    << "\"analysis_status\": " << addDoubleQuotes(shs.first().attribute("analysis_status").toString()) << ",\n";
+
+		// Start images
+		str << "\t\t"
+		    << "\"thermal_events_instances\": [\n";
 
 		for (int j = 0; j < shs.size(); ++j) {
 			str << "\t\t{\n";
@@ -1664,41 +1698,73 @@ QByteArray vipEventsToJson(const Vip_event_list& all_shapes, VipProgress* p)
 			QRect r;
 			convertShape(shs[j], poly, r);
 
-			
-			str << "\t\t\t" << "\"polygon\": " << polygonToJSON(poly) << ",\n";
-			str << "\t\t\t" << "\"timestamp_ns\": " << addDoubleQuotes(shs[j].attribute("timestamp_ns").toString()) << ",\n";
-			str << "\t\t\t" << "\"bbox_x\": " << (r.left()) << ",\n";
-			str << "\t\t\t" << "\"bbox_y\": " << (r.top()) << ",\n";
-			str << "\t\t\t" << "\"bbox_width\": " << (r.width()) << ",\n";
-			str << "\t\t\t" << "\"bbox_height\": " << (r.height()) << ",\n";
-			str << "\t\t\t" << "\"max_temperature_C\": " << (shs[j].attribute("max_temperature_C").toDouble()) << ",\n";
-			str << "\t\t\t" << "\"min_temperature_C\": " << (shs[j].attribute("min_temperature_C").toDouble()) << ",\n";
-			str << "\t\t\t" << "\"max_T_image_position_x\": " << (shs[j].attribute("max_T_image_position_x").toInt()) << ",\n";
-			str << "\t\t\t" << "\"max_T_image_position_y\": " << (shs[j].attribute("max_T_image_position_y").toInt()) << ",\n";
-			str << "\t\t\t" << "\"min_T_image_position_x\": " << (shs[j].attribute("min_T_image_position_x").toInt()) << ",\n";
-			str << "\t\t\t" << "\"min_T_image_position_y\": " << (shs[j].attribute("min_T_image_position_y").toInt()) << ",\n";
-			str << "\t\t\t" << "\"average_temperature_C\": " << (shs[j].attribute("average_temperature_C").toDouble()) << ",\n";
-			str << "\t\t\t" << "\"pixel_area\": " << (shs[j].attribute("pixel_area").toInt()) << ",\n";
-			str << "\t\t\t" << "\"centroid_image_position_x\": " << (shs[j].attribute("centroid_image_position_x").toDouble()) << ",\n";
-			str << "\t\t\t" << "\"centroid_image_position_y\": " << (shs[j].attribute("centroid_image_position_y").toDouble()) << ",\n";
-			
-			str << "\t\t\t" << "\"pfc_id\": " << (shs[j].attribute("pfc_id").toLongLong()) << ",\n";
-			str << "\t\t\t" << "\"overheating_factor\": " << (shs[j].attribute("overheating_factor").toDouble()) << ",\n";
-			str << "\t\t\t" << "\"max_T_world_position_x_m\": " << (shs[j].attribute("max_T_world_position_x_m").toDouble()) << ",\n";
-			str << "\t\t\t" << "\"max_T_world_position_y_m\": " << (shs[j].attribute("max_T_world_position_y_m").toDouble()) << ",\n";
-			str << "\t\t\t" << "\"max_T_world_position_z_m\": " << (shs[j].attribute("max_T_world_position_z_m").toDouble()) << ",\n";
-			str << "\t\t\t" << "\"min_T_world_position_x_m\": " << (shs[j].attribute("min_T_world_position_x_m").toDouble()) << ",\n";
-			str << "\t\t\t" << "\"min_T_world_position_y_m\": " << (shs[j].attribute("min_T_world_position_y_m").toDouble()) << ",\n";
-			str << "\t\t\t" << "\"min_T_world_position_z_m\": " << (shs[j].attribute("min_T_world_position_z_m").toDouble()) << ",\n";
-			str << "\t\t\t" << "\"max_overheating_world_position_x_m\": " << (shs[j].attribute("max_overheating_world_position_x_m").toDouble()) << ",\n";
-			str << "\t\t\t" << "\"max_overheating_world_position_y_m\": " << (shs[j].attribute("max_overheating_world_position_y_m").toDouble()) << ",\n";
-			str << "\t\t\t" << "\"max_overheating_world_position_z_m\": " << (shs[j].attribute("max_overheating_world_position_z_m").toDouble()) << ",\n";
-			str << "\t\t\t" << "\"max_overheating_image_position_x\": " << (shs[j].attribute("max_overheating_image_position_x").toInt()) << ",\n";
-			str << "\t\t\t" << "\"max_overheating_image_position_y\": " << (shs[j].attribute("max_overheating_image_position_y").toInt()) << ",\n";
-			str << "\t\t\t" << "\"centroid_world_position_x_m\": " << (shs[j].attribute("centroid_world_position_x_m").toDouble()) << ",\n";
-			str << "\t\t\t" << "\"centroid_world_position_y_m\": " << (shs[j].attribute("centroid_world_position_y_m").toDouble()) << ",\n";
-			str << "\t\t\t" << "\"centroid_world_position_z_m\": " << (shs[j].attribute("centroid_world_position_z_m").toDouble()) << ",\n";
-			str << "\t\t\t" << "\"physical_area\": " << (shs[j].attribute("physical_area").toDouble()) << "\n";
+			str << "\t\t\t"
+			    << "\"polygon\": " << polygonToJSON(poly) << ",\n";
+			str << "\t\t\t"
+			    << "\"timestamp_ns\": " << addDoubleQuotes(shs[j].attribute("timestamp_ns").toString()) << ",\n";
+			str << "\t\t\t"
+			    << "\"bbox_x\": " << (r.left()) << ",\n";
+			str << "\t\t\t"
+			    << "\"bbox_y\": " << (r.top()) << ",\n";
+			str << "\t\t\t"
+			    << "\"bbox_width\": " << (r.width()) << ",\n";
+			str << "\t\t\t"
+			    << "\"bbox_height\": " << (r.height()) << ",\n";
+			str << "\t\t\t"
+			    << "\"max_temperature_C\": " << (shs[j].attribute("max_temperature_C").toDouble()) << ",\n";
+			str << "\t\t\t"
+			    << "\"min_temperature_C\": " << (shs[j].attribute("min_temperature_C").toDouble()) << ",\n";
+			str << "\t\t\t"
+			    << "\"max_T_image_position_x\": " << (shs[j].attribute("max_T_image_position_x").toInt()) << ",\n";
+			str << "\t\t\t"
+			    << "\"max_T_image_position_y\": " << (shs[j].attribute("max_T_image_position_y").toInt()) << ",\n";
+			str << "\t\t\t"
+			    << "\"min_T_image_position_x\": " << (shs[j].attribute("min_T_image_position_x").toInt()) << ",\n";
+			str << "\t\t\t"
+			    << "\"min_T_image_position_y\": " << (shs[j].attribute("min_T_image_position_y").toInt()) << ",\n";
+			str << "\t\t\t"
+			    << "\"average_temperature_C\": " << (shs[j].attribute("average_temperature_C").toDouble()) << ",\n";
+			str << "\t\t\t"
+			    << "\"pixel_area\": " << (shs[j].attribute("pixel_area").toInt()) << ",\n";
+			str << "\t\t\t"
+			    << "\"centroid_image_position_x\": " << (shs[j].attribute("centroid_image_position_x").toDouble()) << ",\n";
+			str << "\t\t\t"
+			    << "\"centroid_image_position_y\": " << (shs[j].attribute("centroid_image_position_y").toDouble()) << ",\n";
+
+			str << "\t\t\t"
+			    << "\"pfc_id\": " << (shs[j].attribute("pfc_id").toLongLong()) << ",\n";
+			str << "\t\t\t"
+			    << "\"overheating_factor\": " << (shs[j].attribute("overheating_factor").toDouble()) << ",\n";
+			str << "\t\t\t"
+			    << "\"max_T_world_position_x_m\": " << (shs[j].attribute("max_T_world_position_x_m").toDouble()) << ",\n";
+			str << "\t\t\t"
+			    << "\"max_T_world_position_y_m\": " << (shs[j].attribute("max_T_world_position_y_m").toDouble()) << ",\n";
+			str << "\t\t\t"
+			    << "\"max_T_world_position_z_m\": " << (shs[j].attribute("max_T_world_position_z_m").toDouble()) << ",\n";
+			str << "\t\t\t"
+			    << "\"min_T_world_position_x_m\": " << (shs[j].attribute("min_T_world_position_x_m").toDouble()) << ",\n";
+			str << "\t\t\t"
+			    << "\"min_T_world_position_y_m\": " << (shs[j].attribute("min_T_world_position_y_m").toDouble()) << ",\n";
+			str << "\t\t\t"
+			    << "\"min_T_world_position_z_m\": " << (shs[j].attribute("min_T_world_position_z_m").toDouble()) << ",\n";
+			str << "\t\t\t"
+			    << "\"max_overheating_world_position_x_m\": " << (shs[j].attribute("max_overheating_world_position_x_m").toDouble()) << ",\n";
+			str << "\t\t\t"
+			    << "\"max_overheating_world_position_y_m\": " << (shs[j].attribute("max_overheating_world_position_y_m").toDouble()) << ",\n";
+			str << "\t\t\t"
+			    << "\"max_overheating_world_position_z_m\": " << (shs[j].attribute("max_overheating_world_position_z_m").toDouble()) << ",\n";
+			str << "\t\t\t"
+			    << "\"max_overheating_image_position_x\": " << (shs[j].attribute("max_overheating_image_position_x").toInt()) << ",\n";
+			str << "\t\t\t"
+			    << "\"max_overheating_image_position_y\": " << (shs[j].attribute("max_overheating_image_position_y").toInt()) << ",\n";
+			str << "\t\t\t"
+			    << "\"centroid_world_position_x_m\": " << (shs[j].attribute("centroid_world_position_x_m").toDouble()) << ",\n";
+			str << "\t\t\t"
+			    << "\"centroid_world_position_y_m\": " << (shs[j].attribute("centroid_world_position_y_m").toDouble()) << ",\n";
+			str << "\t\t\t"
+			    << "\"centroid_world_position_z_m\": " << (shs[j].attribute("centroid_world_position_z_m").toDouble()) << ",\n";
+			str << "\t\t\t"
+			    << "\"physical_area\": " << (shs[j].attribute("physical_area").toDouble()) << "\n";
 
 			str << "\t\t}";
 			if (j < shs.size() - 1)
@@ -1709,32 +1775,33 @@ QByteArray vipEventsToJson(const Vip_event_list& all_shapes, VipProgress* p)
 		// Stop images
 		str << "\t\t]\n";
 
-		//end event
-		str << "\t" << "}";
+		// end event
+		str << "\t"
+		    << "}";
 		if (i < evts.size() - 1)
 			str << ", ";
 		str << "\n";
 	}
 
-
-	//END
+	// END
 	str << "}\n";
 
 	str.flush();
 	return res.toLatin1();
 }
 
+#include <qjsonarray.h>
 #include <qjsondocument.h>
 #include <qjsonobject.h>
 #include <qjsonvalue.h>
-#include <qjsonarray.h>
 
-
-static qint64 toTimestamp(const QJsonObject& obj, const QString & name)
+static qint64 toTimestamp(const QJsonObject& obj, const QString& name)
 {
 	QJsonValue val = obj.value(name);
-	if (val.isDouble()) return (qint64)val.toDouble();
-	else return val.toVariant().toLongLong();
+	if (val.isDouble())
+		return (qint64)val.toDouble();
+	else
+		return val.toVariant().toLongLong();
 }
 
 Vip_event_list vipEventsFromJson(const QByteArray& content)
@@ -1754,8 +1821,7 @@ Vip_event_list vipEventsFromJson(const QByteArray& content)
 	QJsonObject root = loadDoc.object();
 	Vip_event_list result;
 
-	for (QJsonObject::const_iterator evt = root.begin(); evt != root.end(); ++evt)
-	{
+	for (QJsonObject::const_iterator evt = root.begin(); evt != root.end(); ++evt) {
 		bool ok = false;
 		qint64 id = evt.key().toLongLong(&ok);
 		if (ok == false) {
@@ -1768,7 +1834,7 @@ Vip_event_list vipEventsFromJson(const QByteArray& content)
 		QJsonObject event = evt.value().toObject();
 		QList<VipShape> shapes;
 
-		//first , read all shapes
+		// first , read all shapes
 		QJsonArray thermal_events_instances = event.value("thermal_events_instances").toArray();
 		for (QJsonArray::const_iterator it = thermal_events_instances.begin(); it != thermal_events_instances.end(); ++it) {
 			QJsonObject obj = it->toObject();
@@ -1784,9 +1850,8 @@ Vip_event_list vipEventsFromJson(const QByteArray& content)
 					}
 					poly.push_back(QPoint(xy[0].toInt(), xy[1].toInt()));
 				}
-				
-				sh.setPolygon(poly);
 
+				sh.setPolygon(poly);
 			}
 			else {
 				QString p_string = obj.value("polygon").toString();
@@ -1798,19 +1863,22 @@ Vip_event_list vipEventsFromJson(const QByteArray& content)
 						str >> x >> y;
 						if (str.status() != QTextStream::Ok)
 							break;
-						poly.push_back(QPoint(x,y));
+						poly.push_back(QPoint(x, y));
 					}
 					sh.setPolygon(poly);
 				}
 				else {
-					QRect r(obj.value("bbox_x").toVariant().toInt(), obj.value("bbox_y").toVariant().toInt(), obj.value("bbox_width").toVariant().toInt(), obj.value("bbox_height").toVariant().toInt());
+					QRect r(obj.value("bbox_x").toVariant().toInt(),
+						obj.value("bbox_y").toVariant().toInt(),
+						obj.value("bbox_width").toVariant().toInt(),
+						obj.value("bbox_height").toVariant().toInt());
 					sh.setRect(r);
 				}
 			}
 
-			//TEST
-			sh.setAttribute("timestamp_ns", toTimestamp(obj,"timestamp_ns"));
-			
+			// TEST
+			sh.setAttribute("timestamp_ns", toTimestamp(obj, "timestamp_ns"));
+
 			sh.setAttribute("bbox_x", obj.value("bbox_x").toVariant().toInt());
 			sh.setAttribute("bbox_y", obj.value("bbox_y").toVariant().toInt());
 			sh.setAttribute("bbox_width", obj.value("bbox_width").toVariant().toInt());
@@ -1844,21 +1912,19 @@ Vip_event_list vipEventsFromJson(const QByteArray& content)
 			sh.setAttribute("centroid_world_position_z_m", obj.value("centroid_world_position_z_m").toVariant().toDouble());
 			sh.setAttribute("physical_area", obj.value("physical_area").toVariant().toDouble());
 
-
 			sh.setId(id);
 			shapes.append(sh);
 		}
 
-
 		if (shapes.size()) {
-			//add event infos
+			// add event infos
 
-			shapes.first().setAttribute("experiment_id",event.value("experiment_id").toVariant());
+			shapes.first().setAttribute("experiment_id", event.value("experiment_id").toVariant());
 			shapes.first().setAttribute("line_of_sight", event.value("line_of_sight").toString());
 			shapes.first().setAttribute("device", event.value("device").toString());
-			shapes.first().setAttribute("initial_timestamp_ns", toTimestamp(event,"initial_timestamp_ns"));
-			shapes.first().setAttribute("final_timestamp_ns", toTimestamp(event,"final_timestamp_ns"));
-			shapes.first().setAttribute("duration_ns", toTimestamp(event,"duration_ns"));
+			shapes.first().setAttribute("initial_timestamp_ns", toTimestamp(event, "initial_timestamp_ns"));
+			shapes.first().setAttribute("final_timestamp_ns", toTimestamp(event, "final_timestamp_ns"));
+			shapes.first().setAttribute("duration_ns", toTimestamp(event, "duration_ns"));
 			QString group = event.value("category").toString();
 			shapes.first().setAttribute("is_automatic_detection", event.value("is_automatic_detection").toVariant().toBool());
 			shapes.first().setAttribute("max_temperature_C", event.value("max_temperature_C").toVariant().toInt());
@@ -1868,7 +1934,7 @@ Vip_event_list vipEventsFromJson(const QByteArray& content)
 			shapes.first().setAttribute("user", event.value("user").toString());
 			shapes.first().setAttribute("comments", event.value("comments").toString());
 			shapes.first().setAttribute("dataset", event.value("dataset").toString());
-			
+
 			QJsonArray p = event.value("polygon").toArray();
 			if (p.count()) {
 				QPolygon poly;
@@ -1901,16 +1967,16 @@ Vip_event_list vipEventsFromJson(const QByteArray& content)
 			}
 
 			shapes.first().setAttribute("name", event.value("name").toString());
-			
-			//set group to all shapes and static attributes
+
+			// set group to all shapes and static attributes
 			for (int i = 0; i < shapes.size(); ++i) {
 				shapes[i].setGroup(group);
 				shapes[i].setAttribute("experiment_id", event.value("experiment_id").toVariant());
 				shapes[i].setAttribute("line_of_sight", event.value("line_of_sight").toString());
 				shapes[i].setAttribute("device", event.value("device").toString());
-				shapes[i].setAttribute("initial_timestamp_ns", toTimestamp(event,"initial_timestamp_ns"));
-				shapes[i].setAttribute("final_timestamp_ns", toTimestamp(event,"final_timestamp_ns"));
-				shapes[i].setAttribute("duration_ns", toTimestamp(event,"duration_ns"));
+				shapes[i].setAttribute("initial_timestamp_ns", toTimestamp(event, "initial_timestamp_ns"));
+				shapes[i].setAttribute("final_timestamp_ns", toTimestamp(event, "final_timestamp_ns"));
+				shapes[i].setAttribute("duration_ns", toTimestamp(event, "duration_ns"));
 				shapes[i].setAttribute("is_automatic_detection", event.value("is_automatic_detection").toVariant().toBool());
 				shapes[i].setAttribute("max_temperature_C", event.value("max_temperature_C").toVariant().toInt());
 				shapes[i].setAttribute("method", event.value("method").toString());
@@ -1920,26 +1986,22 @@ Vip_event_list vipEventsFromJson(const QByteArray& content)
 				shapes[i].setAttribute("comments", event.value("comments").toString());
 				shapes[i].setAttribute("dataset", event.value("dataset").toString());
 				shapes[i].setAttribute("name", event.value("name").toString());
-				
 			}
 
 			result.insert(id, shapes);
 		}
 	}
 
-
 	return result;
 }
-
-
 
 bool vipEventsToJsonFile(const QString& out_file, const Vip_event_list& evts, VipProgress* p)
 {
 	QFile out(out_file);
-	if (!out.open(QFile::WriteOnly ))
+	if (!out.open(QFile::WriteOnly))
 		return false;
 
-	QByteArray json = vipEventsToJson(evts,p);
+	QByteArray json = vipEventsToJson(evts, p);
 
 	if (p) {
 		p->setText("Write to file...");
@@ -1949,18 +2011,6 @@ bool vipEventsToJsonFile(const QString& out_file, const Vip_event_list& evts, Vi
 	out.close();
 	return true;
 }
-
-
-
-
-
-
-
-
-
-
-
-
 
 /// @brief W7X way of handling pulse parameters
 struct W7XDeviceParameters : public VipBaseDeviceParameters
@@ -2019,7 +2069,8 @@ struct WESTDeviceParameters : VipBaseDeviceParameters
 /// @brief Default way to handle experiment_id numbers using local movie folder
 struct DefaultDeviceParameters : VipBaseDeviceParameters
 {
-	virtual QString createDevicePath(Vip_experiment_id experiment_id, const QString& camera) const { 
+	virtual QString createDevicePath(Vip_experiment_id experiment_id, const QString& camera) const
+	{
 		return vipLocalMovieFolderDB() + "/" + QString::number(experiment_id) + "_" + camera + "." + vipLocalMovieSuffix();
 	}
 	virtual QSize defaultVideoSize() const { return QSize(); }
@@ -2052,15 +2103,6 @@ const VipBaseDeviceParameters* vipFindDeviceParameters(const QString& name)
 	return it.value().data();
 }
 
-
-
-
-
-
-
-
-
-
 class VipDatasetButton::PrivateData
 {
 public:
@@ -2071,17 +2113,16 @@ public:
 };
 
 VipDatasetButton::VipDatasetButton(QWidget* parent)
-	:QToolButton(parent)
+  : QToolButton(parent)
 {
 	m_data = new PrivateData();
 	m_data->menu = new VipDragMenu();
 
 	m_data->widget = new QWidget();
 	QVBoxLayout* lay = new QVBoxLayout();
-	
-	QMap<int, VipDataset>  dsets = vipDatasetsDB();
-	for (auto it = dsets.begin(); it != dsets.end(); ++it)
-	{
+
+	QMap<int, VipDataset> dsets = vipDatasetsDB();
+	for (auto it = dsets.begin(); it != dsets.end(); ++it) {
 		QCheckBox* box = new QCheckBox();
 		box->setProperty("id", it.key());
 		box->setText(it.value().creation_date + " " + it.value().annotation_type);
@@ -2095,7 +2136,7 @@ VipDatasetButton::VipDatasetButton(QWidget* parent)
 	m_data->all->setText("Check/uncheck all");
 	lay->addWidget(m_data->all);
 	connect(m_data->all, SIGNAL(clicked(bool)), this, SLOT(checkAll(bool)));
-	
+
 	m_data->widget->setLayout(lay);
 	m_data->widget->resize(100, 100);
 
@@ -2131,15 +2172,14 @@ void VipDatasetButton::setChecked(int index, bool checked)
 
 void VipDatasetButton::aboutToShow()
 {
-	//bool stop = true;
+	// bool stop = true;
 }
 
 QString VipDatasetButton::dataset() const
 {
 	// return list of checked ids
 	QStringList lst;
-	for (int i = 0; i < m_data->boxes.size(); ++i)
-	{
+	for (int i = 0; i < m_data->boxes.size(); ++i) {
 		if (m_data->boxes[i]->isChecked())
 			lst.push_back(m_data->boxes[i]->property("id").toString());
 	}
@@ -2149,9 +2189,8 @@ QString VipDatasetButton::dataset() const
 void VipDatasetButton::setDataset(const QString& dataset)
 {
 	this->blockSignals(true);
-	//unckeck all
-	for (int i = 0; i < m_data->boxes.size(); ++i)
-	{
+	// unckeck all
+	for (int i = 0; i < m_data->boxes.size(); ++i) {
 		m_data->boxes[i]->setChecked(false);
 	}
 
@@ -2166,8 +2205,7 @@ void VipDatasetButton::setDataset(const QString& dataset)
 		if (id == 0)
 			continue;
 
-		for (int j = 0; j < m_data->boxes.size(); ++j)
-		{
+		for (int j = 0; j < m_data->boxes.size(); ++j) {
 			if (m_data->boxes[j]->property("id").toInt() == id)
 				m_data->boxes[j]->setChecked(true);
 		}
@@ -2179,16 +2217,13 @@ void VipDatasetButton::setDataset(const QString& dataset)
 void VipDatasetButton::checkAll(bool enable)
 {
 	this->blockSignals(true);
-	
-	for (int i = 0; i < m_data->boxes.size(); ++i)
-	{
+
+	for (int i = 0; i < m_data->boxes.size(); ++i) {
 		m_data->boxes[i]->setChecked(enable);
 	}
-	
+
 	this->blockSignals(false);
 }
-
-
 
 class VipQueryDBWidget::PrivateData
 {
@@ -2216,7 +2251,6 @@ public:
 	QDoubleSpinBox minSHYBPTOT;
 	QDoubleSpinBox minSICHPTOT;*/
 
-
 	QComboBox automatic;
 	QDoubleSpinBox minConfidence;
 	QDoubleSpinBox maxConfidence;
@@ -2224,12 +2258,12 @@ public:
 	QCheckBox removePrevious;
 };
 
-VipQueryDBWidget::VipQueryDBWidget(const QString & device, QWidget * parent)
-	:QWidget(parent)
+VipQueryDBWidget::VipQueryDBWidget(const QString& device, QWidget* parent)
+  : QWidget(parent)
 {
 	m_data = new PrivateData();
 
-	QGridLayout * lay = new QGridLayout();
+	QGridLayout* lay = new QGridLayout();
 
 	m_data->minPulse = vipFindDeviceParameters(device)->pulseEditor();
 	m_data->maxPulse = vipFindDeviceParameters(device)->pulseEditor();
@@ -2239,7 +2273,7 @@ VipQueryDBWidget::VipQueryDBWidget(const QString & device, QWidget * parent)
 	lay->addWidget(m_data->minPulse, row, 1);
 	++row;
 	{
-		QHBoxLayout * hlay = new QHBoxLayout();
+		QHBoxLayout* hlay = new QHBoxLayout();
 		hlay->setSpacing(0);
 		hlay->setContentsMargins(0, 0, 0, 0);
 		hlay->addWidget(m_data->maxPulse);
@@ -2326,14 +2360,14 @@ VipQueryDBWidget::VipQueryDBWidget(const QString & device, QWidget * parent)
 	lay->addWidget(new QLabel("Detection method"), row, 0);
 	lay->addWidget(&m_data->method, row, 1);
 	++row;
-	
+
 	lay->addWidget(VipLineWidget::createHLine(), row, 0, 1, 2);
 	++row;
 
 	lay->addWidget(new QLabel("Automatic detection"), row, 0);
 	lay->addWidget(&m_data->automatic, row, 1);
 	++row;
-	
+
 	lay->addWidget(new QLabel("Min confidence"), row, 0);
 	lay->addWidget(&m_data->minConfidence, row, 1);
 	++row;
@@ -2365,14 +2399,13 @@ VipQueryDBWidget::VipQueryDBWidget(const QString & device, QWidget * parent)
 	m_data->minSICHPTOT.setRange(-1, 20000);
 	m_data->minSICHPTOT.setSingleStep(100);
 	m_data->minSICHPTOT.setValue(-1);*/
-	
-	
+
 	m_data->linked.setAutoRaise(true);
 	m_data->linked.setIcon(vipIcon("next_day.png"));
 	m_data->linked.setCheckable(true);
 	m_data->linked.setChecked(true);
 	m_data->linked.setToolTip("Start experiment and End experiment id are the same");
-	m_data->userName.addItems(QStringList()<<"All"<<vipUsersDB());
+	m_data->userName.addItems(QStringList() << "All" << vipUsersDB());
 	m_data->camera.addItems(QStringList() << "All" << vipCamerasDB());
 	m_data->device.addItems(QStringList() << "All" << vipDevicesDB());
 
@@ -2399,7 +2432,9 @@ VipQueryDBWidget::VipQueryDBWidget(const QString & device, QWidget * parent)
 	m_data->minTemperature.setValue(0);
 	m_data->minTemperature.setToolTip("Low limit of event maximum temperature (Celsius)");
 
-	m_data->automatic.addItems(QStringList() << "All" << "Automatic" << "Manual");
+	m_data->automatic.addItems(QStringList() << "All"
+						 << "Automatic"
+						 << "Manual");
 	m_data->minConfidence.setRange(0, 1);
 	m_data->minConfidence.setSingleStep(0.25);
 	m_data->minConfidence.setValue(0);
@@ -2423,7 +2458,6 @@ VipQueryDBWidget::~VipQueryDBWidget()
 {
 	delete m_data;
 }
-
 
 void VipQueryDBWidget::deviceChanged()
 {
@@ -2499,15 +2533,15 @@ bool VipQueryDBWidget::isAllDevicesEnabled() const
 void VipQueryDBWidget::enableAllCameras(bool enable)
 {
 	if (m_data->camera.count() == 0) {
-		if (enable) m_data->camera.addItem("All");
+		if (enable)
+			m_data->camera.addItem("All");
 		return;
 	}
-	
+
 	if (m_data->camera.itemText(0) == "All" && !enable)
 		m_data->camera.removeItem(0);
 	else if (m_data->camera.itemText(0) != "All" && enable)
 		m_data->camera.insertItem(0, "All");
-	
 }
 bool VipQueryDBWidget::isAllCamerasEnabled() const
 {
@@ -2533,25 +2567,27 @@ int VipQueryDBWidget::idThermalEventInfo() const
 	return m_data->idThermalEventInfo.value();
 }
 
-void VipQueryDBWidget::setUserName(const QString & name)
+void VipQueryDBWidget::setUserName(const QString& name)
 {
 	m_data->userName.setCurrentText(name);
 }
 QString VipQueryDBWidget::userName() const
 {
 	QString res = m_data->userName.currentText();
-	if (res == "All") return QString();
+	if (res == "All")
+		return QString();
 	return res;
 }
 
-void VipQueryDBWidget::setCamera(const QString & camera)
+void VipQueryDBWidget::setCamera(const QString& camera)
 {
 	m_data->camera.setCurrentText(camera);
 }
 QString VipQueryDBWidget::camera() const
 {
 	QString res = m_data->camera.currentText();
-	if (res == "All") return QString();
+	if (res == "All")
+		return QString();
 	return res;
 }
 
@@ -2567,7 +2603,6 @@ QString VipQueryDBWidget::device() const
 	return res;
 }
 
-
 void VipQueryDBWidget::setDataset(const QString& dataset)
 {
 	m_data->dataset.setDataset(dataset);
@@ -2577,7 +2612,7 @@ QString VipQueryDBWidget::dataset() const
 	return m_data->dataset.dataset();
 }
 
-void VipQueryDBWidget::setInComment(const QString & comment)
+void VipQueryDBWidget::setInComment(const QString& comment)
 {
 	m_data->inComment.setText(comment);
 }
@@ -2586,7 +2621,7 @@ QString VipQueryDBWidget::inComment() const
 	return m_data->inComment.text();
 }
 
-void VipQueryDBWidget::setInName(const QString & name)
+void VipQueryDBWidget::setInName(const QString& name)
 {
 	m_data->inName.setText(name);
 }
@@ -2595,7 +2630,7 @@ QString VipQueryDBWidget::inName() const
 	return m_data->inName.text();
 }
 
-void VipQueryDBWidget::setMethod(const QString & method)
+void VipQueryDBWidget::setMethod(const QString& method)
 {
 	m_data->method.setCurrentText(method);
 }
@@ -2607,7 +2642,7 @@ QString VipQueryDBWidget::method() const
 	return res;
 }
 
-void VipQueryDBWidget::setDurationRange(const QPair<qint64, qint64> & range)
+void VipQueryDBWidget::setDurationRange(const QPair<qint64, qint64>& range)
 {
 	m_data->minDuration.setValue(range.first / 1000000000.0);
 	m_data->maxDuration.setValue(range.second / 1000000000.0);
@@ -2617,11 +2652,10 @@ QPair<qint64, qint64> VipQueryDBWidget::durationRange() const
 	return QPair<qint64, qint64>(m_data->minDuration.value() * 1000000000, m_data->maxDuration.value() * 1000000000);
 }
 
-
-void VipQueryDBWidget::setMaxTemperatureRange(const QPair<double, double> & range)
+void VipQueryDBWidget::setMaxTemperatureRange(const QPair<double, double>& range)
 {
-	m_data->minTemperature.setValue(range.first );
-	m_data->maxTemperature.setValue(range.second );
+	m_data->minTemperature.setValue(range.first);
+	m_data->maxTemperature.setValue(range.second);
 }
 QPair<double, double> VipQueryDBWidget::maxTemperatureRange() const
 {
@@ -2630,15 +2664,20 @@ QPair<double, double> VipQueryDBWidget::maxTemperatureRange() const
 
 void VipQueryDBWidget::setAutomatic(int automatic)
 {
-	if (automatic < 0) m_data->automatic.setCurrentIndex(0);
-	else if (automatic == 0) m_data->automatic.setCurrentIndex(2);
-	else m_data->automatic.setCurrentIndex(1);
+	if (automatic < 0)
+		m_data->automatic.setCurrentIndex(0);
+	else if (automatic == 0)
+		m_data->automatic.setCurrentIndex(2);
+	else
+		m_data->automatic.setCurrentIndex(1);
 }
 int VipQueryDBWidget::automatic() const
 {
 	QString r = m_data->automatic.currentText();
-	if (r == "All") return - 1;
-	else if (r == "Automatic") return 1;
+	if (r == "All")
+		return -1;
+	else if (r == "Automatic")
+		return 1;
 	return 0;
 }
 
@@ -2660,14 +2699,15 @@ double VipQueryDBWidget::maxConfidence() const
 	return m_data->maxConfidence.value();
 }
 
-void VipQueryDBWidget::setThermalEvent(const QString & evt)
+void VipQueryDBWidget::setThermalEvent(const QString& evt)
 {
 	m_data->thermalEvent.setCurrentText(evt);
 }
 QString VipQueryDBWidget::thermalEvent() const
 {
-	QString res= m_data->thermalEvent.currentText();
-	if (res == "All") return QString();
+	QString res = m_data->thermalEvent.currentText();
+	if (res == "All")
+		return QString();
 	return res;
 }
 

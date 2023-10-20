@@ -23,36 +23,33 @@
 #include "VipWaitingSpinnerWidget.h"
 
 // Standard includes
-#include <cmath>
 #include <algorithm>
+#include <cmath>
 
 // Qt includes
 #include <QPainter>
 #include <QTimer>
 
-VipWaitingSpinnerWidget::VipWaitingSpinnerWidget(QWidget *parent,
-                                           bool centerOnParent,
-                                           bool disableParentWhenSpinning)
-    : QWidget(parent),
-      _centerOnParent(centerOnParent),
-      _disableParentWhenSpinning(disableParentWhenSpinning) {
-    initialize();
+VipWaitingSpinnerWidget::VipWaitingSpinnerWidget(QWidget* parent, bool centerOnParent, bool disableParentWhenSpinning)
+  : QWidget(parent)
+  , _centerOnParent(centerOnParent)
+  , _disableParentWhenSpinning(disableParentWhenSpinning)
+{
+	initialize();
 }
 
-VipWaitingSpinnerWidget::VipWaitingSpinnerWidget(Qt::WindowModality modality,
-                                           QWidget *parent,
-                                           bool centerOnParent,
-                                           bool disableParentWhenSpinning)
-    : QWidget(parent, Qt::Dialog | Qt::FramelessWindowHint),
-      _centerOnParent(centerOnParent),
-      _disableParentWhenSpinning(disableParentWhenSpinning){
-    initialize();
+VipWaitingSpinnerWidget::VipWaitingSpinnerWidget(Qt::WindowModality modality, QWidget* parent, bool centerOnParent, bool disableParentWhenSpinning)
+  : QWidget(parent, Qt::Dialog | Qt::FramelessWindowHint)
+  , _centerOnParent(centerOnParent)
+  , _disableParentWhenSpinning(disableParentWhenSpinning)
+{
+	initialize();
 
-    // We need to set the window modality AFTER we've hidden the
-    // widget for the first time since changing this property while
-    // the widget is visible has no effect.
-    setWindowModality(modality);
-    setAttribute(Qt::WA_TranslucentBackground);
+	// We need to set the window modality AFTER we've hidden the
+	// widget for the first time since changing this property while
+	// the widget is visible has no effect.
+	setWindowModality(modality);
+	setAttribute(Qt::WA_TranslucentBackground);
 }
 
 VipWaitingSpinnerWidget::~VipWaitingSpinnerWidget()
@@ -61,230 +58,248 @@ VipWaitingSpinnerWidget::~VipWaitingSpinnerWidget()
 	disconnect(_timer, SIGNAL(timeout()), this, SLOT(rotate()));
 }
 
-void VipWaitingSpinnerWidget::initialize() {
+void VipWaitingSpinnerWidget::initialize()
+{
 
 	setAttribute(Qt::WA_TransparentForMouseEvents);
 
-    _color = Qt::darkGray;
-	_roundness = 70.0;// 100.0;
-	_minimumTrailOpacity = 15.0;// 3.14159265358979323846;
-	_trailFadePercentage = 70.0;// 80.0;
-	_revolutionsPerSecond = 1;// 1.57079632679489661923;
-	_numberOfLines = 12;// 20;
-    _lineLength = 10;
-	_lineWidth = 3;// 2;
-	_innerRadius = 5;// 10;
-    _currentCounter = 0;
-    _isSpinning = false;
+	_color = Qt::darkGray;
+	_roundness = 70.0;	     // 100.0;
+	_minimumTrailOpacity = 15.0; // 3.14159265358979323846;
+	_trailFadePercentage = 70.0; // 80.0;
+	_revolutionsPerSecond = 1;   // 1.57079632679489661923;
+	_numberOfLines = 12;	     // 20;
+	_lineLength = 10;
+	_lineWidth = 3;	  // 2;
+	_innerRadius = 5; // 10;
+	_currentCounter = 0;
+	_isSpinning = false;
 
-    _timer = new QTimer(this);
-    connect(_timer, SIGNAL(timeout()), this, SLOT(rotate()));
-    updateSize();
-    updateTimer();
-    hide();
+	_timer = new QTimer(this);
+	connect(_timer, SIGNAL(timeout()), this, SLOT(rotate()));
+	updateSize();
+	updateTimer();
+	hide();
 }
 
-void VipWaitingSpinnerWidget::showEvent(QShowEvent * )
+void VipWaitingSpinnerWidget::showEvent(QShowEvent*)
 {
 	updatePosition();
 }
 
-void VipWaitingSpinnerWidget::paintEvent(QPaintEvent *) {
-    updatePosition();
-    QPainter painter(this);
-    painter.fillRect(this->rect(), Qt::transparent);
-    painter.setRenderHint(QPainter::Antialiasing, true);
+void VipWaitingSpinnerWidget::paintEvent(QPaintEvent*)
+{
+	updatePosition();
+	QPainter painter(this);
+	painter.fillRect(this->rect(), Qt::transparent);
+	painter.setRenderHint(QPainter::Antialiasing, true);
 
-    if (_currentCounter >= _numberOfLines) {
-        _currentCounter = 0;
-    }
+	if (_currentCounter >= _numberOfLines) {
+		_currentCounter = 0;
+	}
 
-    painter.setPen(Qt::NoPen);
-    for (int i = 0; i < _numberOfLines; ++i) {
-        painter.save();
-        painter.translate(_innerRadius + _lineLength,
-                          _innerRadius + _lineLength);
-        qreal rotateAngle =
-                static_cast<qreal>(360 * i) / static_cast<qreal>(_numberOfLines);
-        painter.rotate(rotateAngle);
-        painter.translate(_innerRadius, 0);
-        int distance =
-                lineCountDistanceFromPrimary(i, _currentCounter, _numberOfLines);
-        QColor color =
-                currentLineColor(distance, _numberOfLines, _trailFadePercentage,
-                                 _minimumTrailOpacity, _color);
-        painter.setBrush(color);
-        // TODO improve the way rounded rect is painted
-        painter.drawRoundedRect(
-                    QRect(0, -_lineWidth / 2, _lineLength, _lineWidth), _roundness,
-                    _roundness, Qt::RelativeSize);
-        painter.restore();
-    }
+	painter.setPen(Qt::NoPen);
+	for (int i = 0; i < _numberOfLines; ++i) {
+		painter.save();
+		painter.translate(_innerRadius + _lineLength, _innerRadius + _lineLength);
+		qreal rotateAngle = static_cast<qreal>(360 * i) / static_cast<qreal>(_numberOfLines);
+		painter.rotate(rotateAngle);
+		painter.translate(_innerRadius, 0);
+		int distance = lineCountDistanceFromPrimary(i, _currentCounter, _numberOfLines);
+		QColor color = currentLineColor(distance, _numberOfLines, _trailFadePercentage, _minimumTrailOpacity, _color);
+		painter.setBrush(color);
+		// TODO improve the way rounded rect is painted
+		painter.drawRoundedRect(QRect(0, -_lineWidth / 2, _lineLength, _lineWidth), _roundness, _roundness, Qt::RelativeSize);
+		painter.restore();
+	}
 }
 
-void VipWaitingSpinnerWidget::start() {
-    updatePosition();
-    _isSpinning = true;
-    show();
+void VipWaitingSpinnerWidget::start()
+{
+	updatePosition();
+	_isSpinning = true;
+	show();
 
-    if(parentWidget() && _disableParentWhenSpinning) {
-        parentWidget()->setEnabled(false);
-    }
+	if (parentWidget() && _disableParentWhenSpinning) {
+		parentWidget()->setEnabled(false);
+	}
 
-    if (!_timer->isActive()) {
-        _timer->start();
-        _currentCounter = 0;
-    }
+	if (!_timer->isActive()) {
+		_timer->start();
+		_currentCounter = 0;
+	}
 }
 
-void VipWaitingSpinnerWidget::stop() {
-    _isSpinning = false;
-    hide();
+void VipWaitingSpinnerWidget::stop()
+{
+	_isSpinning = false;
+	hide();
 
-    if(parentWidget() && _disableParentWhenSpinning) {
-        parentWidget()->setEnabled(true);
-    }
+	if (parentWidget() && _disableParentWhenSpinning) {
+		parentWidget()->setEnabled(true);
+	}
 
-    if (_timer->isActive()) {
-        _timer->stop();
-        _currentCounter = 0;
-    }
+	if (_timer->isActive()) {
+		_timer->stop();
+		_currentCounter = 0;
+	}
 }
 
-void VipWaitingSpinnerWidget::setNumberOfLines(int lines) {
-    _numberOfLines = lines;
-    _currentCounter = 0;
-    updateTimer();
+void VipWaitingSpinnerWidget::setNumberOfLines(int lines)
+{
+	_numberOfLines = lines;
+	_currentCounter = 0;
+	updateTimer();
 }
 
-void VipWaitingSpinnerWidget::setLineLength(int length) {
-    _lineLength = length;
-    updateSize();
+void VipWaitingSpinnerWidget::setLineLength(int length)
+{
+	_lineLength = length;
+	updateSize();
 }
 
-void VipWaitingSpinnerWidget::setLineWidth(int width) {
-    _lineWidth = width;
-    updateSize();
+void VipWaitingSpinnerWidget::setLineWidth(int width)
+{
+	_lineWidth = width;
+	updateSize();
 }
 
-void VipWaitingSpinnerWidget::setInnerRadius(int radius) {
-    _innerRadius = radius;
-    updateSize();
+void VipWaitingSpinnerWidget::setInnerRadius(int radius)
+{
+	_innerRadius = radius;
+	updateSize();
 }
 
-QColor VipWaitingSpinnerWidget::color() {
-    return _color;
+QColor VipWaitingSpinnerWidget::color()
+{
+	return _color;
 }
 
-qreal VipWaitingSpinnerWidget::roundness() {
-    return _roundness;
+qreal VipWaitingSpinnerWidget::roundness()
+{
+	return _roundness;
 }
 
-qreal VipWaitingSpinnerWidget::minimumTrailOpacity() {
-    return _minimumTrailOpacity;
+qreal VipWaitingSpinnerWidget::minimumTrailOpacity()
+{
+	return _minimumTrailOpacity;
 }
 
-qreal VipWaitingSpinnerWidget::trailFadePercentage() {
-    return _trailFadePercentage;
+qreal VipWaitingSpinnerWidget::trailFadePercentage()
+{
+	return _trailFadePercentage;
 }
 
-qreal VipWaitingSpinnerWidget::revolutionsPersSecond() {
-    return _revolutionsPerSecond;
+qreal VipWaitingSpinnerWidget::revolutionsPersSecond()
+{
+	return _revolutionsPerSecond;
 }
 
-int VipWaitingSpinnerWidget::numberOfLines() {
-    return _numberOfLines;
+int VipWaitingSpinnerWidget::numberOfLines()
+{
+	return _numberOfLines;
 }
 
-int VipWaitingSpinnerWidget::lineLength() {
-    return _lineLength;
+int VipWaitingSpinnerWidget::lineLength()
+{
+	return _lineLength;
 }
 
-int VipWaitingSpinnerWidget::lineWidth() {
-    return _lineWidth;
+int VipWaitingSpinnerWidget::lineWidth()
+{
+	return _lineWidth;
 }
 
-int VipWaitingSpinnerWidget::innerRadius() {
-    return _innerRadius;
+int VipWaitingSpinnerWidget::innerRadius()
+{
+	return _innerRadius;
 }
 
-bool VipWaitingSpinnerWidget::isSpinning() const {
-    return _isSpinning;
+bool VipWaitingSpinnerWidget::isSpinning() const
+{
+	return _isSpinning;
 }
 
-void VipWaitingSpinnerWidget::setRoundness(qreal roundness) {
-    _roundness = std::max(0.0, std::min(100.0, roundness));
+void VipWaitingSpinnerWidget::setRoundness(qreal roundness)
+{
+	_roundness = std::max(0.0, std::min(100.0, roundness));
 }
 
-void VipWaitingSpinnerWidget::setColor(QColor color) {
-    _color = color;
+void VipWaitingSpinnerWidget::setColor(QColor color)
+{
+	_color = color;
 }
 
-void VipWaitingSpinnerWidget::setRevolutionsPerSecond(qreal revolutionsPerSecond) {
-    _revolutionsPerSecond = revolutionsPerSecond;
-    updateTimer();
+void VipWaitingSpinnerWidget::setRevolutionsPerSecond(qreal revolutionsPerSecond)
+{
+	_revolutionsPerSecond = revolutionsPerSecond;
+	updateTimer();
 }
 
-void VipWaitingSpinnerWidget::setTrailFadePercentage(qreal trail) {
-    _trailFadePercentage = trail;
+void VipWaitingSpinnerWidget::setTrailFadePercentage(qreal trail)
+{
+	_trailFadePercentage = trail;
 }
 
-void VipWaitingSpinnerWidget::setMinimumTrailOpacity(qreal minimumTrailOpacity) {
-    _minimumTrailOpacity = minimumTrailOpacity;
+void VipWaitingSpinnerWidget::setMinimumTrailOpacity(qreal minimumTrailOpacity)
+{
+	_minimumTrailOpacity = minimumTrailOpacity;
 }
 
-void VipWaitingSpinnerWidget::rotate() {
-    ++_currentCounter;
-    if (_currentCounter >= _numberOfLines) {
-        _currentCounter = 0;
-    }
-    update();
+void VipWaitingSpinnerWidget::rotate()
+{
+	++_currentCounter;
+	if (_currentCounter >= _numberOfLines) {
+		_currentCounter = 0;
+	}
+	update();
 }
 
-void VipWaitingSpinnerWidget::updateSize() {
-    int size = (_innerRadius + _lineLength) * 2;
-    setFixedSize(size, size);
+void VipWaitingSpinnerWidget::updateSize()
+{
+	int size = (_innerRadius + _lineLength) * 2;
+	setFixedSize(size, size);
 }
 
-void VipWaitingSpinnerWidget::updateTimer() {
-    _timer->setInterval(1000 / (_numberOfLines * _revolutionsPerSecond));
+void VipWaitingSpinnerWidget::updateTimer()
+{
+	_timer->setInterval(1000 / (_numberOfLines * _revolutionsPerSecond));
 }
 
-void VipWaitingSpinnerWidget::updatePosition() {
-    if (parentWidget() && _centerOnParent) {
-        move(parentWidget()->width() / 2 - width() / 2,
-             parentWidget()->height() / 2 - height() / 2);
-    }
+void VipWaitingSpinnerWidget::updatePosition()
+{
+	if (parentWidget() && _centerOnParent) {
+		move(parentWidget()->width() / 2 - width() / 2, parentWidget()->height() / 2 - height() / 2);
+	}
 }
 
-int VipWaitingSpinnerWidget::lineCountDistanceFromPrimary(int current, int primary,
-                                                       int totalNrOfLines) {
-    int distance = primary - current;
-    if (distance < 0) {
-        distance += totalNrOfLines;
-    }
-    return distance;
+int VipWaitingSpinnerWidget::lineCountDistanceFromPrimary(int current, int primary, int totalNrOfLines)
+{
+	int distance = primary - current;
+	if (distance < 0) {
+		distance += totalNrOfLines;
+	}
+	return distance;
 }
 
-QColor VipWaitingSpinnerWidget::currentLineColor(int countDistance, int totalNrOfLines,
-                                              qreal trailFadePerc, qreal minOpacity,
-                                              QColor color) {
-    if (countDistance == 0) {
-        return color;
-    }
-    const qreal minAlphaF = minOpacity / 100.0;
-    int distanceThreshold =
-            static_cast<int>(ceil((totalNrOfLines - 1) * trailFadePerc / 100.0));
-    if (countDistance > distanceThreshold) {
-        color.setAlphaF(minAlphaF);
-    } else {
-        qreal alphaDiff = color.alphaF() - minAlphaF;
-        qreal gradient = alphaDiff / static_cast<qreal>(distanceThreshold + 1);
-        qreal resultAlpha = color.alphaF() - gradient * countDistance;
+QColor VipWaitingSpinnerWidget::currentLineColor(int countDistance, int totalNrOfLines, qreal trailFadePerc, qreal minOpacity, QColor color)
+{
+	if (countDistance == 0) {
+		return color;
+	}
+	const qreal minAlphaF = minOpacity / 100.0;
+	int distanceThreshold = static_cast<int>(ceil((totalNrOfLines - 1) * trailFadePerc / 100.0));
+	if (countDistance > distanceThreshold) {
+		color.setAlphaF(minAlphaF);
+	}
+	else {
+		qreal alphaDiff = color.alphaF() - minAlphaF;
+		qreal gradient = alphaDiff / static_cast<qreal>(distanceThreshold + 1);
+		qreal resultAlpha = color.alphaF() - gradient * countDistance;
 
-        // If alpha is out of bounds, clip it.
-        resultAlpha = std::min(1.0, std::max(0.0, resultAlpha));
-        color.setAlphaF(resultAlpha);
-    }
-    return color;
+		// If alpha is out of bounds, clip it.
+		resultAlpha = std::min(1.0, std::max(0.0, resultAlpha));
+		color.setAlphaF(resultAlpha);
+	}
+	return color;
 }

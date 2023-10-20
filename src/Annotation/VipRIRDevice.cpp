@@ -1,8 +1,38 @@
+/**
+ * BSD 3-Clause License
+ *
+ * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice, this
+ *    list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of the copyright holder nor the names of its
+ *    contributors may be used to endorse or promote products derived from
+ *    this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
 #include "VipRIRDevice.h"
 #include "VipLibRIR.h"
 
-
-VipRIRDevice::VipRIRDevice(QObject * parent)
+VipRIRDevice::VipRIRDevice(QObject* parent)
   : VipTimeRangeBasedGenerator(parent)
   , m_file(0)
   , m_count(0)
@@ -14,7 +44,7 @@ VipRIRDevice::VipRIRDevice(QObject * parent)
 
 VipRIRDevice::~VipRIRDevice()
 {
-	close();
+	VipRIRDevice::close();
 }
 
 bool VipRIRDevice::open(VipIODevice::OpenModes mode)
@@ -51,7 +81,7 @@ bool VipRIRDevice::open(VipIODevice::OpenModes mode)
 		QString pa = removePrefix(path());
 		setAttribute("Name", QFileInfo(pa).fileName());
 	}
-	
+
 	// set transform for WA camera
 	QString view = attribute("view").toString();
 	if (view.isEmpty())
@@ -78,7 +108,6 @@ bool VipRIRDevice::open(VipIODevice::OpenModes mode)
 		if (view.contains("DIVQ") || view.contains("WAQ") || view.contains("LHQ") || view.contains("ICRQ") || view.contains("HRQ"))
 			setAttribute("Device", "WEST");
 	}
-
 
 	m_count = VipLibRIR::instance()->get_image_count(m_file);
 	int w, h;
@@ -164,7 +193,7 @@ void VipRIRDevice::close()
 
 bool VipRIRDevice::readData(qint64 time)
 {
-	
+
 	// set bad pixels
 	int bp = VipLibRIR::instance()->bad_pixels_enabled(m_file);
 	if ((bool)bp != propertyName("BadPixels")->value<bool>()) {
@@ -180,7 +209,7 @@ bool VipRIRDevice::readData(qint64 time)
 
 	if (VipLibRIR::instance()->load_image(m_file, pos, calib, ar.ptr()) == 0) {
 		QVariantMap attributes = VipLibRIR::instance()->getAttributes(m_file);
-		
+
 		QString device = attribute("Device").toString();
 		QString camera = attribute("Camera").toString();
 		if (device == "WEST" && calib != 0) {
@@ -208,13 +237,6 @@ bool VipRIRDevice::readData(qint64 time)
 	return false;
 }
 
-
-
-
-
-
-
-
 #include "VipStandardWidgets.h"
 #include <qboxlayout.h>
 
@@ -223,7 +245,7 @@ class VipRIRDeviceEditor::PrivateData
 public:
 	QToolButton* badPixels;
 	QComboBox* calibrations;
-	
+
 	QPointer<VipRIRDevice> device;
 
 	QAction* badPixelsAction;
@@ -237,17 +259,16 @@ VipRIRDeviceEditor::VipRIRDeviceEditor(VipVideoPlayer* player)
 
 	m_data->badPixels = new QToolButton();
 	m_data->calibrations = new QComboBox();
-	
+
 	m_data->badPixelsAction = player->toolBar()->addWidget(m_data->badPixels);
 	m_data->calibrationsAction = player->toolBar()->addWidget(m_data->calibrations);
-	
+
 	m_data->badPixels->setAutoRaise(false);
 	m_data->badPixels->setText("BP");
 	m_data->badPixels->setCheckable(true);
 	m_data->badPixels->setToolTip("Remove bad pixels");
 
 	m_data->calibrations->setToolTip("Select calibration");
-	
 
 	connect(m_data->calibrations, SIGNAL(currentIndexChanged(int)), this, SLOT(updateDevice()));
 	connect(m_data->badPixels, SIGNAL(clicked(bool)), this, SLOT(setBadPixels(bool)));
@@ -266,7 +287,7 @@ void VipRIRDeviceEditor::setDevice(VipRIRDevice* dev)
 		bool has_calibrations = calibs.size() > 1;
 
 		m_data->calibrationsAction->setVisible(has_calibrations);
-		
+
 		if (has_calibrations) {
 
 			m_data->calibrations->blockSignals(true);
@@ -307,17 +328,14 @@ void VipRIRDeviceEditor::updateDevice()
 	if (m_data->device) {
 		int calib = m_data->device->propertyAt(0)->value<int>();
 		int new_calib = m_data->calibrations->currentIndex();
-		
-		if (new_calib != calib ) {
+
+		if (new_calib != calib) {
 			m_data->device->propertyAt(0)->setData(new_calib);
 			m_data->device->reload();
 			Q_EMIT deviceUpdated();
 		}
 	}
 }
-
-
-
 
 CustomizeRIRVideoPlayer::CustomizeRIRVideoPlayer(VipVideoPlayer* player, VipRIRDevice* device)
   : QObject(player)
@@ -329,22 +347,17 @@ CustomizeRIRVideoPlayer::CustomizeRIRVideoPlayer(VipVideoPlayer* player, VipRIRD
 		player->toolBar()->addSeparator();
 		m_options = new VipRIRDeviceEditor(player);
 		m_options->setDevice(device);
-			
-		//player->spectrogram()->setToolTipText("<b>X</b>: #avalue0%i<br><b>Y</b>: #avalue1%i<br><b>Value</b>: #value<br>#dINFOS");
+
+		// player->spectrogram()->setToolTipText("<b>X</b>: #avalue0%i<br><b>Y</b>: #avalue1%i<br><b>Value</b>: #value<br>#dINFOS");
 	}
-
 }
-
-
-
 
 static void displayVipRIRDeviceOptions(VipVideoPlayer* player)
 {
 	if (player->property("VipRIRDevice").toBool())
 		return;
 
-	if (VipDisplayObject* display = player->spectrogram()->property("VipDisplayObject").value<VipDisplayObject*>()) 
-	{
+	if (VipDisplayObject* display = player->spectrogram()->property("VipDisplayObject").value<VipDisplayObject*>()) {
 		QList<VipProcessingObject*> src = display->allSources();
 
 		// find the source VipRIRDevice
@@ -354,7 +367,6 @@ static void displayVipRIRDeviceOptions(VipVideoPlayer* player)
 		}
 	}
 }
-
 
 static int registerEditor()
 {

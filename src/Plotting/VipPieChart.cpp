@@ -1,17 +1,45 @@
-#include <QRadialGradient>
+/**
+ * BSD 3-Clause License
+ *
+ * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice, this
+ *    list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of the copyright holder nor the names of its
+ *    contributors may be used to endorse or promote products derived from
+ *    this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
 #include <QPointer>
+#include <QRadialGradient>
 #include <QSet>
 #include <qmath.h>
 
-#include "VipPainter.h"
 #include "VipColorMap.h"
+#include "VipPainter.h"
 #include "VipPieChart.h"
 #include "VipPolarAxis.h"
 
-
-
-
-static const QMap<QByteArray, int>& legendStyles() 
+static const QMap<QByteArray, int>& legendStyles()
 {
 	static QMap<QByteArray, int> styles;
 	if (styles.isEmpty()) {
@@ -56,8 +84,6 @@ static const QMap<QByteArray, int>& textDirections()
 	return tr;
 }
 
-
-
 static int registerPieItemKeyWords()
 {
 	static VipKeyWords keywords;
@@ -81,8 +107,6 @@ static int registerPieItemKeyWords()
 	return 0;
 }
 static int _registerPieItemKeyWords = registerPieItemKeyWords();
-
-
 
 static int registerPieChartKeyWords()
 {
@@ -108,76 +132,65 @@ static int registerPieChartKeyWords()
 }
 static int _registerPieChartKeyWords = registerPieChartKeyWords();
 
-
-
-
-
-VipAbstractPieItem::VipAbstractPieItem(const VipText & title )
+VipAbstractPieItem::VipAbstractPieItem(const VipText& title)
   : VipPlotItemDataType<VipPie>(title)
 {
-	this->setItemAttribute(ClipToScaleRect,false);
-	this->setItemAttribute(HasLegendIcon,true);
-	this->setItemAttribute(VisibleLegend,true);
+	this->setItemAttribute(ClipToScaleRect, false);
+	this->setItemAttribute(HasLegendIcon, true);
+	this->setItemAttribute(VisibleLegend, true);
 	this->setRenderHints(QPainter::Antialiasing);
 
-	//handle synchronization
-	//connect(this,SIGNAL(dataChanged()),this,SLOT(synchronize()), Qt::AutoConnection);
+	// handle synchronization
+	// connect(this,SIGNAL(dataChanged()),this,SLOT(synchronize()), Qt::AutoConnection);
 }
 
-VipAbstractPieItem::~VipAbstractPieItem()
-{
-}
+VipAbstractPieItem::~VipAbstractPieItem() {}
 
-void VipAbstractPieItem::setColor(const QColor & c)
+void VipAbstractPieItem::setColor(const QColor& c)
 {
 	markDirtyShape();
 
 	d_style.setBorderPen(c);
 
-	if(d_style.backgroundBrush().style() != Qt::NoBrush)
-	{
+	if (d_style.backgroundBrush().style() != Qt::NoBrush) {
 		QBrush brush = d_style.backgroundBrush();
 		brush.setColor(c);
 		d_style.setBackgroundBrush(brush);
 	}
-	else
-	{
+	else {
 		d_style.setBackgroundBrush(QBrush(c));
 	}
 }
 
-
-void VipAbstractPieItem::setBoxStyle(const VipBoxStyle & bs)
+void VipAbstractPieItem::setBoxStyle(const VipBoxStyle& bs)
 {
 	d_style = bs;
 	emitItemChanged();
 }
 
-const VipBoxStyle & VipAbstractPieItem::boxStyle() const
+const VipBoxStyle& VipAbstractPieItem::boxStyle() const
 {
 	return d_style;
 }
 
-VipBoxStyle & VipAbstractPieItem::boxStyle()
+VipBoxStyle& VipAbstractPieItem::boxStyle()
 {
 	return d_style;
 }
-
-
-
 
 class VipPieItem::PrivateData
 {
 public:
 	PrivateData()
-	  : value(Vip::InvalidValue) 
-		, spacing(0)
-		, legendStyle(VipPieItem::BackgroundAndDefaultPen)
-		, clipToPie(false)
+	  : value(Vip::InvalidValue)
+	  , spacing(0)
+	  , legendStyle(VipPieItem::BackgroundAndDefaultPen)
+	  , clipToPie(false)
 	  , textTransform(VipAbstractScaleDraw::TextHorizontal)
 	  , textPosition(VipAbstractScaleDraw::TextAutomaticPosition)
-	  , textDirection(VipText::AutoDirection),
-	  textHorizontalDistance(0), textAnglePosition(0.5)
+	  , textDirection(VipText::AutoDirection)
+	  , textHorizontalDistance(0)
+	  , textAnglePosition(0.5)
 	{
 		innerDistanceToBorder = Vip::Relative;
 		textInnerDistanceToBorder = 0.3;
@@ -218,23 +231,22 @@ public:
 	QSharedPointer<VipTextStyle> textStyle;
 };
 
-VipPieItem::VipPieItem(const VipText & title)
-:VipAbstractPieItem(title)
+VipPieItem::VipPieItem(const VipText& title)
+  : VipAbstractPieItem(title)
 {
 	d_data = new PrivateData;
 	d_data->quiverPath.setColor(Qt::black);
 	d_data->quiverPath.setStyle(VipQuiverPath::QuiverStyles());
-	//d_data->quiverPath.setExtremityBrush(VipQuiverPath::End,QBrush(Qt::red));
-	// d_data->quiverPath.setLength(VipQuiverPath::End,5);
-	//d_data->quiverPath.setVisible(false);
-	this->setRenderHints(QPainter::Antialiasing|QPainter::TextAntialiasing);
+	// d_data->quiverPath.setExtremityBrush(VipQuiverPath::End,QBrush(Qt::red));
+	//  d_data->quiverPath.setLength(VipQuiverPath::End,5);
+	// d_data->quiverPath.setVisible(false);
+	this->setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing);
 }
 
 VipPieItem::~VipPieItem()
 {
 	delete d_data;
 }
-
 
 VipInterval VipPieItem::plotInterval(const VipInterval& interval) const
 {
@@ -268,7 +280,7 @@ void VipPieItem::setText(const VipText& text)
 	if (d_data->textStyle)
 		d_data->text.setTextStyle(*d_data->textStyle);
 	// no need to mark style sheet dirty
-	emitItemChanged(true,true,true,false);
+	emitItemChanged(true, true, true, false);
 }
 
 const VipText& VipPieItem::text() const
@@ -276,19 +288,17 @@ const VipText& VipPieItem::text() const
 	return d_data->text;
 }
 
-
-void VipPieItem::setTextStyle(const VipTextStyle& st) 
+void VipPieItem::setTextStyle(const VipTextStyle& st)
 {
 	d_data->textStyle.reset(new VipTextStyle(st));
 	d_data->text.setTextStyle(st);
 	emitItemChanged();
 }
 
-
 QPainterPath VipPieItem::shape() const
 {
 	const_cast<VipPieItem*>(this)->recomputeItem(VipCoordinateSystemPtr());
-	QPainterPath p= boxStyle().background() + boxStyle().border() + d_data->textObject.shape();
+	QPainterPath p = boxStyle().background() + boxStyle().border() + d_data->textObject.shape();
 	return p;
 }
 
@@ -297,23 +307,23 @@ QRectF VipPieItem::boundingRect() const
 	return shape().boundingRect();
 }
 
-void VipPieItem::setQuiverPath(const VipQuiverPath & q)
+void VipPieItem::setQuiverPath(const VipQuiverPath& q)
 {
 	d_data->quiverPath = q;
 	emitItemChanged();
 }
 
-const VipQuiverPath & VipPieItem::quiverPath() const
+const VipQuiverPath& VipPieItem::quiverPath() const
 {
 	return d_data->quiverPath;
 }
 
-VipQuiverPath & VipPieItem::quiverPath()
+VipQuiverPath& VipPieItem::quiverPath()
 {
 	return d_data->quiverPath;
 }
 
-QString VipPieItem::formatText(const QString& str, const QPointF& pos) const 
+QString VipPieItem::formatText(const QString& str, const QPointF& pos) const
 {
 	QString res = VipPlotItem::formatText(str, pos);
 	if (vipIsValid(value()))
@@ -363,8 +373,7 @@ VipAbstractScaleDraw::TextPosition VipPieItem::textPosition() const
 	return d_data->textPosition;
 }
 
-
-void VipPieItem::setTextDirection(VipText::TextDirection dir) 
+void VipPieItem::setTextDirection(VipText::TextDirection dir)
 {
 	d_data->textDirection = dir;
 	emitItemChanged();
@@ -374,7 +383,7 @@ VipText::TextDirection VipPieItem::textDirection() const
 	return d_data->textDirection;
 }
 
-void VipPieItem::setTextAdditionalTransform(const QTransform& tr, const QPointF & ref)
+void VipPieItem::setTextAdditionalTransform(const QTransform& tr, const QPointF& ref)
 {
 	d_data->textAdditionalTransform = tr;
 	d_data->textAdditionalTransformInverted = tr.inverted();
@@ -385,17 +394,16 @@ QTransform VipPieItem::textAdditionalTransform() const
 {
 	return d_data->textAdditionalTransform;
 }
-QPointF VipPieItem::textAdditionalTransformReference() const 
+QPointF VipPieItem::textAdditionalTransformReference() const
 {
 	return d_data->textAdditionalTransformReference;
 }
-
 
 void VipPieItem::setTextInnerDistanceToBorder(double dist, Vip::ValueType d)
 {
 	d_data->textInnerDistanceToBorder = dist;
 	d_data->innerDistanceToBorder = d;
-	
+
 	emitItemChanged();
 }
 
@@ -408,7 +416,6 @@ Vip::ValueType VipPieItem::innerDistanceToBorder() const
 {
 	return d_data->innerDistanceToBorder;
 }
-
 
 void VipPieItem::setTextOuterDistanceToBorder(double dist, Vip::ValueType d)
 {
@@ -450,23 +457,23 @@ double VipPieItem::textAnglePosition() const
 	return d_data->textAnglePosition;
 }
 
-
-void VipPieItem::setSpacing(double spacing) {
+void VipPieItem::setSpacing(double spacing)
+{
 	d_data->spacing = spacing;
 	emitItemChanged();
 }
-double VipPieItem::spacing() const {
+double VipPieItem::spacing() const
+{
 	return d_data->spacing;
 }
 
-
-const VipTextObject & VipPieItem::textObject() const
+const VipTextObject& VipPieItem::textObject() const
 {
 	const_cast<VipPieItem*>(this)->recomputeItem(VipCoordinateSystemPtr());
 	return d_data->textObject;
 }
 
-const QPolygonF & VipPieItem::polyline() const
+const QPolygonF& VipPieItem::polyline() const
 {
 	const_cast<VipPieItem*>(this)->recomputeItem(VipCoordinateSystemPtr());
 	return d_data->polyline;
@@ -480,25 +487,21 @@ PainterPaths VipPieItem::piePath() const
 
 void VipPieItem::recomputeItem(const VipCoordinateSystemPtr& cm)
 {
-	if(textPosition() == VipAbstractScaleDraw::TextAutomaticPosition)
-	{
-		recomputeItem(cm,VipAbstractScaleDraw::TextInside);
-		if(!boxStyle().background().contains(d_data->textObject.shape()))
-		{
+	if (textPosition() == VipAbstractScaleDraw::TextAutomaticPosition) {
+		recomputeItem(cm, VipAbstractScaleDraw::TextInside);
+		if (!boxStyle().background().contains(d_data->textObject.shape())) {
 			markDirtyShape();
-			recomputeItem(cm,VipAbstractScaleDraw::TextOutside);
+			recomputeItem(cm, VipAbstractScaleDraw::TextOutside);
 		}
 	}
-	else
-	{
-		recomputeItem(cm,textPosition());
+	else {
+		recomputeItem(cm, textPosition());
 	}
 }
 
-void VipPieItem::recomputeItem(const VipCoordinateSystemPtr & cm, VipAbstractScaleDraw::TextPosition text_position)
+void VipPieItem::recomputeItem(const VipCoordinateSystemPtr& cm, VipAbstractScaleDraw::TextPosition text_position)
 {
-	if (!isDirtyShape())
-	{
+	if (!isDirtyShape()) {
 		return;
 	}
 	markDirtyShape(false);
@@ -506,7 +509,7 @@ void VipPieItem::recomputeItem(const VipCoordinateSystemPtr & cm, VipAbstractSca
 	VipCoordinateSystemPtr m = cm;
 	VipPlotItemComposite* parent = nullptr;
 
-	if(!m)
+	if (!m)
 		m = sceneMap();
 	if (m->axes().isEmpty()) {
 		if (parent = property("VipPlotItemComposite").value<VipPlotItemComposite*>())
@@ -537,26 +540,24 @@ void VipPieItem::recomputeItem(const VipCoordinateSystemPtr & cm, VipAbstractSca
 		d_data->quiverPath.setPen(p);
 	}*/
 
-	//draw the text
+	// draw the text
 
-	VipText t =  this->text();
+	VipText t = this->text();
 	t.setText(this->formatText(t.text(), QPointF()));
-	
-	if(t.isEmpty())
+
+	if (t.isEmpty())
 		return;
 
 	double text_angle = pie.startAngle() + d_data->textAnglePosition * pie.sweepLength();
 
 	QTransform text_transform;
-	//VipPie text_pie = pie;
+	// VipPie text_pie = pie;
 
 	double innerDistanceToBorder = 0;
-	if (d_data->innerDistanceToBorder == Vip::Absolute)
-	{
+	if (d_data->innerDistanceToBorder == Vip::Absolute) {
 		innerDistanceToBorder = d_data->textInnerDistanceToBorder;
 	}
-	else
-	{
+	else {
 		innerDistanceToBorder = d_data->textInnerDistanceToBorder * pie.radiusExtent();
 	}
 	double outerDistanceToBorder = 0;
@@ -566,26 +567,24 @@ void VipPieItem::recomputeItem(const VipCoordinateSystemPtr & cm, VipAbstractSca
 	else {
 		outerDistanceToBorder = d_data->textOuterDistanceToBorder * pie.radiusExtent();
 	}
-	
-	//horizontal text inside
-	if(text_position == VipAbstractScaleDraw::TextInside && textTransform() == VipAbstractScaleDraw::TextHorizontal)
-	{
+
+	// horizontal text inside
+	if (text_position == VipAbstractScaleDraw::TextInside && textTransform() == VipAbstractScaleDraw::TextHorizontal) {
 		QLineF line(center_point, QPointF(center_point.x(), center_point.y() - pie.offsetToCenter() - pie.maxRadius() + innerDistanceToBorder));
 		line.setAngle(text_angle);
 
 		QTransform tr;
-		tr.translate(line.p2().x(),line.p2().y());
-		tr.translate(-t.textSize().width()/2,-t.textSize().height()/2);
+		tr.translate(line.p2().x(), line.p2().y());
+		tr.translate(-t.textSize().width() / 2, -t.textSize().height() / 2);
 		QRectF rect = tr.map(t.textRect()).boundingRect();
 
-		d_data->textObject = VipTextObject(t,rect);
+		d_data->textObject = VipTextObject(t, rect);
 	}
-	//horizontal text outside
-	else if(text_position == VipAbstractScaleDraw::TextOutside && textTransform() == VipAbstractScaleDraw::TextHorizontal)
-	{
+	// horizontal text outside
+	else if (text_position == VipAbstractScaleDraw::TextOutside && textTransform() == VipAbstractScaleDraw::TextHorizontal) {
 		QPolygonF polyline;
 		bool left = false;
-		if( (text_angle > 90 && text_angle < 270) || (text_angle < -90 && text_angle > -270))
+		if ((text_angle > 90 && text_angle < 270) || (text_angle < -90 && text_angle > -270))
 			left = true;
 
 		QLineF line(center_point, QPointF(center_point.x(), center_point.y() - pie.offsetToCenter() - pie.maxRadius()));
@@ -596,52 +595,47 @@ void VipPieItem::recomputeItem(const VipCoordinateSystemPtr & cm, VipAbstractSca
 		line.setLength(line.length() + outerDistanceToBorder);
 		polyline << line.p2();
 
-		if(textHorizontalDistance() != 0)
-		{
-			polyline << line.p2() + QPointF(left ? -textHorizontalDistance():textHorizontalDistance(),0);
+		if (textHorizontalDistance() != 0) {
+			polyline << line.p2() + QPointF(left ? -textHorizontalDistance() : textHorizontalDistance(), 0);
 
-			//draw the polyline
+			// draw the polyline
 			QPainter painter;
-			QPair<double,double> additional_lengths = d_data->quiverPath.draw(&painter,polyline);
+			QPair<double, double> additional_lengths = d_data->quiverPath.draw(&painter, polyline);
 
 			QTransform tr;
-			tr.translate(polyline.back().x(),polyline.back().y()-t.textSize().height()/2);
-			if(left)
-				tr.translate(-t.textSize().width()-5 - additional_lengths.second,0);
+			tr.translate(polyline.back().x(), polyline.back().y() - t.textSize().height() / 2);
+			if (left)
+				tr.translate(-t.textSize().width() - 5 - additional_lengths.second, 0);
 			else
-				tr.translate(5 + additional_lengths.second,0);
+				tr.translate(5 + additional_lengths.second, 0);
 
 			QRectF rect = tr.map(t.textRect()).boundingRect();
-			d_data->textObject = VipTextObject(t,rect);
+			d_data->textObject = VipTextObject(t, rect);
 		}
-		else
-		{
-			//draw the polyline
+		else {
+			// draw the polyline
 			QPainter painter;
-			QPair<double,double> additional_lengths = d_data->quiverPath.draw(&painter,polyline);
+			QPair<double, double> additional_lengths = d_data->quiverPath.draw(&painter, polyline);
 			line.setLength(line.length() + additional_lengths.second + 5);
 
-			QTransform text_tr = textTransformation(textTransform(), text_position,text_angle, line.p2(), t.textSize() );
-			d_data->textObject = VipTextObject(t,t.textRect(),text_tr);
+			QTransform text_tr = textTransformation(textTransform(), text_position, text_angle, line.p2(), t.textSize());
+			d_data->textObject = VipTextObject(t, t.textRect(), text_tr);
 		}
 
 		d_data->polyline = polyline;
 	}
-	//curved text
-	else if(textTransform() == VipAbstractScaleDraw::TextCurved)
-	{
-		double height = t.textSize().height()*1.5;
+	// curved text
+	else if (textTransform() == VipAbstractScaleDraw::TextCurved) {
+		double height = t.textSize().height() * 1.5;
 
-		if(text_position == VipAbstractScaleDraw::TextInside)
-		{
+		if (text_position == VipAbstractScaleDraw::TextInside) {
 			VipPie tpie(pie);
 			tpie.setMeanAngle(text_angle);
 			tpie.setMaxRadius(pie.maxRadius() - innerDistanceToBorder);
 			tpie.setMinRadius(pie.maxRadius() - innerDistanceToBorder - height);
-			d_data->textObject = VipTextObject(t,tpie,center_point);
+			d_data->textObject = VipTextObject(t, tpie, center_point);
 		}
-		else
-		{
+		else {
 			VipPie tpie(pie);
 			tpie.setMeanAngle(text_angle);
 			tpie.setMinRadius(pie.maxRadius() + outerDistanceToBorder);
@@ -649,9 +643,8 @@ void VipPieItem::recomputeItem(const VipCoordinateSystemPtr & cm, VipAbstractSca
 			d_data->textObject = VipTextObject(t, tpie, center_point, textDirection());
 		}
 	}
-	//text perpendicular or parallel
-	else
-	{
+	// text perpendicular or parallel
+	else {
 		QLineF line(center_point, QPointF(center_point.x(), center_point.y() - pie.offsetToCenter() - pie.maxRadius()));
 		line.setAngle(text_angle);
 
@@ -660,33 +653,31 @@ void VipPieItem::recomputeItem(const VipCoordinateSystemPtr & cm, VipAbstractSca
 
 		d_data->polyline << line.p2();
 
-		if(text_position == VipAbstractScaleDraw::TextOutside)
-		{
+		if (text_position == VipAbstractScaleDraw::TextOutside) {
 			line.setLength(line.length() + outerDistanceToBorder);
 
 			d_data->polyline << line.p2();
 			line = QLineF(d_data->polyline[0], d_data->polyline[1]);
 
-			//draw the line
+			// draw the line
 			QPainter painter;
-			QPair<double,double> additional_lengths = d_data->quiverPath.draw(&painter,line);
-			line.setLength(line.length() + additional_lengths.second +5 );
+			QPair<double, double> additional_lengths = d_data->quiverPath.draw(&painter, line);
+			line.setLength(line.length() + additional_lengths.second + 5);
 			d_data->polyline[0] = line.p1();
 			d_data->polyline[1] = line.p2();
 		}
-		else
-		{
-			line.setLength(line.length() - innerDistanceToBorder -5);
+		else {
+			line.setLength(line.length() - innerDistanceToBorder - 5);
 			d_data->polyline.clear();
 		}
 
-		QTransform text_tr = textTransformation(textTransform(), text_position,text_angle, line.p2(), t.textSize() );
-		d_data->textObject = VipTextObject(t,t.textRect(),text_tr);
+		QTransform text_tr = textTransformation(textTransform(), text_position, text_angle, line.p2(), t.textSize());
+		d_data->textObject = VipTextObject(t, t.textRect(), text_tr);
 	}
 
 	if (!d_data->textAdditionalTransform.isIdentity() && d_data->textTransform != VipAbstractScaleDraw::TextCurved) {
 		QTransform tr;
-		QPointF ref = textAdditionalTransformReference(); 
+		QPointF ref = textAdditionalTransformReference();
 		ref.rx() *= d_data->textObject.rect().width();
 		ref.ry() *= d_data->textObject.rect().height();
 		QPointF tl = d_data->textObject.rect().topLeft() + ref;
@@ -699,14 +690,14 @@ void VipPieItem::recomputeItem(const VipCoordinateSystemPtr & cm, VipAbstractSca
 	}
 }
 
-void VipPieItem::draw(QPainter * painter, const VipCoordinateSystemPtr & m) const
+void VipPieItem::draw(QPainter* painter, const VipCoordinateSystemPtr& m) const
 {
 	Q_UNUSED(m)
 	const_cast<VipPieItem*>(this)->recomputeItem(m);
 
-	//draw pie
+	// draw pie
 	VipBoxStyle bstyle = boxStyle();
-	
+
 	const bool use_clip = d_data->clipToPie && !bstyle.isTransparentPen() && !bstyle.borderPen().isCosmetic();
 	if (use_clip) {
 		painter->save();
@@ -715,7 +706,7 @@ void VipPieItem::draw(QPainter * painter, const VipCoordinateSystemPtr & m) cons
 	if (colorMap() && vipIsValid(value())) {
 		QBrush b = boxStyle().backgroundBrush();
 		b.setColor(color(value()));
-		bstyle.draw(painter,b);
+		bstyle.draw(painter, b);
 	}
 	else {
 
@@ -723,19 +714,16 @@ void VipPieItem::draw(QPainter * painter, const VipCoordinateSystemPtr & m) cons
 	}
 	if (use_clip)
 		painter->restore();
-	
 
-	//draw polyline
+	// draw polyline
 
-	d_data->quiverPath.draw(painter,d_data->polyline);
+	d_data->quiverPath.draw(painter, d_data->polyline);
 
-	//draw text
+	// draw text
 	d_data->textObject.draw(painter);
 }
 
-
-
-bool VipPieItem::areaOfInterest(const QPointF& pos, int , double maxDistance, VipPointVector& out_pos, VipBoxStyle& style, int& legend) const
+bool VipPieItem::areaOfInterest(const QPointF& pos, int, double maxDistance, VipPointVector& out_pos, VipBoxStyle& style, int& legend) const
 {
 	const VipBoxStyle bstyle = boxStyle();
 	QPainterPath p = bstyle.background();
@@ -754,8 +742,7 @@ bool VipPieItem::areaOfInterest(const QPointF& pos, int , double maxDistance, Vi
 	return false;
 }
 
-
-bool VipPieItem::setItemProperty(const char* name, const QVariant& value, const QByteArray& index) 
+bool VipPieItem::setItemProperty(const char* name, const QVariant& value, const QByteArray& index)
 {
 	if (value.userType() == 0)
 		return false;
@@ -765,7 +752,7 @@ bool VipPieItem::setItemProperty(const char* name, const QVariant& value, const 
 		return true;
 	}
 	if (strcmp(name, "clip-to-pie") == 0) {
-		setClipToPie( value.toBool());
+		setClipToPie(value.toBool());
 		return true;
 	}
 	if (strcmp(name, "text-transform") == 0) {
@@ -813,13 +800,12 @@ bool VipPieItem::setItemProperty(const char* name, const QVariant& value, const 
 	return VipPlotItem::setItemProperty(name, value, index);
 }
 
-
-QList<VipText> VipPieItem:: legendNames() const
+QList<VipText> VipPieItem::legendNames() const
 {
-	return QList<VipText>()<< title();
+	return QList<VipText>() << title();
 }
 
-QRectF VipPieItem::drawLegend(QPainter * painter, const QRectF & r, int ) const
+QRectF VipPieItem::drawLegend(QPainter* painter, const QRectF& r, int) const
 {
 	QRectF square = vipInnerSquare(r);
 	square = square.adjusted(1.5, 1.5, -1.5, -1.5).normalized();
@@ -848,7 +834,7 @@ QRectF VipPieItem::drawLegend(QPainter * painter, const QRectF & r, int ) const
 		if (d_data->legendStyle == BackgroundOnly)
 			style.setBorderPen(QPen(Qt::NoPen));
 		else if (d_data->legendStyle == BackgroundAndDefaultPen) {
-			if (w) 
+			if (w)
 				style.setBorderPen(QPen(w->palette().color(QPalette::Text)));
 		}
 
@@ -858,7 +844,7 @@ QRectF VipPieItem::drawLegend(QPainter * painter, const QRectF & r, int ) const
 		if (d_data->legendStyle == BackgroundOnly)
 			style.setBorderPen(QPen(Qt::NoPen));
 		else if (d_data->legendStyle == BackgroundAndDefaultPen) {
-			if (w) 
+			if (w)
 				style.setBorderPen(QPen(w->palette().color(QPalette::Text)));
 		}
 		style.draw(painter);
@@ -869,14 +855,9 @@ QRectF VipPieItem::drawLegend(QPainter * painter, const QRectF & r, int ) const
 	return square;
 }
 
-
-
-
-
 class VipPieChart::PrivateData
 {
 public:
-
 	PrivateData()
 	  : pie(0, 100, 0, 100, 0)
 	  , sumValue(0)
@@ -888,11 +869,9 @@ public:
 
 		brushColorPalette = VipColorPalette(VipLinearColorMap::ColorPaletteRandom);
 		penColorPalette = brushColorPalette.lighter();
-
 	}
 
 	VipPie pie;
-
 
 	VipColorPalette brushColorPalette;
 	VipColorPalette penColorPalette;
@@ -901,25 +880,24 @@ public:
 	QVector<VipText> titles;
 	double sumValue;
 
-	VipPieItem * defaultItem;
+	VipPieItem* defaultItem;
 
-	//shape handling
+	// shape handling
 	QPainterPath shape;
 	QRectF boundingRect;
-
 };
 
-VipPieChart::VipPieChart(const VipText & title )
-  : VipPlotItemComposite(UniqueItem,title)
- {
+VipPieChart::VipPieChart(const VipText& title)
+  : VipPlotItemComposite(UniqueItem, title)
+{
 	d_data = new PrivateData();
-	//this->setFlag(ItemIsSelectable,false);
-	//this->setAcceptHoverEvents(false);
-	//this->setItemAttribute(VisibleLegend,false);
-	this->setItemAttribute(ClipToScaleRect,false);
+	// this->setFlag(ItemIsSelectable,false);
+	// this->setAcceptHoverEvents(false);
+	// this->setItemAttribute(VisibleLegend,false);
+	this->setItemAttribute(ClipToScaleRect, false);
 	this->setRenderHints(QPainter::Antialiasing);
 	this->setSavePainterBetweenItems(true);
- }
+}
 
 VipPieChart::~VipPieChart()
 {
@@ -927,24 +905,21 @@ VipPieChart::~VipPieChart()
 	delete d_data;
 }
 
-
 QRectF VipPieChart::boundingRect() const
 {
-	//recompute the shape if needed
+	// recompute the shape if needed
 	shape();
 	return d_data->boundingRect;
 }
 
 QPainterPath VipPieChart::shape() const
 {
-	if(!isDirtyShape())
-	{
+	if (!isDirtyShape()) {
 		return d_data->shape;
 	}
-	else
-	{
+	else {
 		markDirtyShape(false);
-		VipPieChart * _this = const_cast<VipPieChart*>(this);
+		VipPieChart* _this = const_cast<VipPieChart*>(this);
 		_this->d_data->shape = QPainterPath();
 		_this->d_data->boundingRect = QRectF();
 
@@ -959,8 +934,7 @@ QPainterPath VipPieChart::shape() const
 		QPointF center_point = sc->center();
 		VipPie p = static_cast<VipPolarSystem*>(m.get())->polarTransform(pie());
 
-		for(int i=0; i < this->count(); ++i)
-		{
+		for (int i = 0; i < this->count(); ++i) {
 			_this->d_data->shape += this->at(i)->shape();
 		}
 
@@ -973,13 +947,12 @@ QPainterPath VipPieChart::shape() const
 	}
 }
 
-void VipPieChart::setPie(const VipPie & p)
+void VipPieChart::setPie(const VipPie& p)
 {
 	d_data->pie = p;
 	double start_angle = p.startAngle();
 
-	for(int i=0; i < this->count(); ++i)
-	{
+	for (int i = 0; i < this->count(); ++i) {
 		VipPieItem* item = static_cast<VipPieItem*>(at(i));
 		VipPie tmp = item->rawData();
 		tmp.setMaxRadius(p.maxRadius());
@@ -996,11 +969,10 @@ void VipPieChart::setPie(const VipPie & p)
 	emitItemChanged();
 }
 
-const VipPie& VipPieChart::pie() const {
+const VipPie& VipPieChart::pie() const
+{
 	return d_data->pie;
 }
-
-
 
 /// @brief Set the legend style
 void VipPieChart::setLegendStyle(VipPieItem::LegendStyle style)
@@ -1009,14 +981,13 @@ void VipPieChart::setLegendStyle(VipPieItem::LegendStyle style)
 	for (int i = 0; i < count(); ++i)
 		pieItemAt(i)->setLegendStyle(style);
 	emitItemChanged();
-
 }
 VipPieItem::LegendStyle VipPieChart::legendStyle() const
 {
 	return d_data->defaultItem->legendStyle();
 }
 
-const QVector<double> & VipPieChart::values() const
+const QVector<double>& VipPieChart::values() const
 {
 	return d_data->values;
 }
@@ -1035,7 +1006,6 @@ void VipPieChart::setTitles(const QVector<VipText>& titles)
 		pieItemAt(i)->setTitle(d_data->titles[i]);
 	emitItemChanged();
 }
-
 
 void VipPieChart::setValues(const QVector<double>& values, const QVector<VipText>& titles)
 {
@@ -1069,7 +1039,6 @@ void VipPieChart::setValues(const QVector<double>& values, const QVector<VipText
 		start_angle += range;
 		p.setEndAngle(start_angle);
 
-
 		if (item->rawData().offsetToCenter())
 			p.setOffsetToCenter(item->rawData().offsetToCenter());
 		item->setRawData(p);
@@ -1079,20 +1048,18 @@ void VipPieChart::setValues(const QVector<double>& values, const QVector<VipText
 	emitItemChanged();
 }
 
-
-void VipPieChart::setQuiverPath(const VipQuiverPath & q)
+void VipPieChart::setQuiverPath(const VipQuiverPath& q)
 {
-	for(int i=0; i < count(); ++i)
+	for (int i = 0; i < count(); ++i)
 		pieItemAt(i)->setQuiverPath(q);
 	d_data->defaultItem->setQuiverPath(q);
 	emitItemChanged();
 }
 
-const VipQuiverPath & VipPieChart::quiverPath() const
+const VipQuiverPath& VipPieChart::quiverPath() const
 {
 	return d_data->defaultItem->quiverPath();
 }
-
 
 void VipPieChart::setClipToPie(bool enable)
 {
@@ -1106,11 +1073,10 @@ bool VipPieChart::clipToPie() const
 	return d_data->defaultItem->clipToPie();
 }
 
-
-void VipPieChart::setSpacing(double sp) 
+void VipPieChart::setSpacing(double sp)
 {
 	for (int i = 0; i < count(); ++i)
-		pieItemAt(i)->setSpacing(sp/2);
+		pieItemAt(i)->setSpacing(sp / 2);
 	d_data->defaultItem->setSpacing(sp);
 	emitItemChanged();
 }
@@ -1119,10 +1085,9 @@ double VipPieChart::spacing() const
 	return d_data->defaultItem->spacing();
 }
 
-
 void VipPieChart::setTextTransform(VipAbstractScaleDraw::TextTransform tr)
 {
-	for(int i=0; i < count(); ++i)
+	for (int i = 0; i < count(); ++i)
 		pieItemAt(i)->setTextTransform(tr);
 	d_data->defaultItem->setTextTransform(tr);
 	emitItemChanged();
@@ -1135,7 +1100,7 @@ VipAbstractScaleDraw::TextTransform VipPieChart::textTransform() const
 
 void VipPieChart::setTextPosition(VipAbstractScaleDraw::TextPosition tp)
 {
-	for(int i=0; i < count(); ++i)
+	for (int i = 0; i < count(); ++i)
 		pieItemAt(i)->setTextPosition(tp);
 
 	d_data->defaultItem->setTextPosition(tp);
@@ -1155,17 +1120,17 @@ void VipPieChart::setTextDirection(VipText::TextDirection dir)
 	d_data->defaultItem->setTextDirection(dir);
 	emitItemChanged();
 }
-VipText::TextDirection VipPieChart::textDirection() const 
+VipText::TextDirection VipPieChart::textDirection() const
 {
 	return d_data->defaultItem->textDirection();
 }
 
-void VipPieChart::setTextAdditionalTransform(const QTransform& tr, const QPointF& ref )
+void VipPieChart::setTextAdditionalTransform(const QTransform& tr, const QPointF& ref)
 {
 	for (int i = 0; i < count(); ++i)
-		pieItemAt(i)->setTextAdditionalTransform(tr,ref);
+		pieItemAt(i)->setTextAdditionalTransform(tr, ref);
 
-	d_data->defaultItem->setTextAdditionalTransform(tr,ref);
+	d_data->defaultItem->setTextAdditionalTransform(tr, ref);
 	emitItemChanged();
 }
 QTransform VipPieChart::textAdditionalTransform() const
@@ -1179,7 +1144,7 @@ QPointF VipPieChart::textAdditionalTransformReference() const
 
 void VipPieChart::setTextHorizontalDistance(double dist)
 {
-	for(int i=0; i < count(); ++i)
+	for (int i = 0; i < count(); ++i)
 		pieItemAt(i)->setTextHorizontalDistance(dist);
 
 	d_data->defaultItem->setTextHorizontalDistance(dist);
@@ -1193,7 +1158,7 @@ double VipPieChart::textHorizontalDistance() const
 
 void VipPieChart::setTextAnglePosition(double normalized_angle)
 {
-	for(int i=0; i < count(); ++i)
+	for (int i = 0; i < count(); ++i)
 		pieItemAt(i)->setTextAnglePosition(normalized_angle);
 
 	d_data->defaultItem->setTextAnglePosition(normalized_angle);
@@ -1205,8 +1170,7 @@ double VipPieChart::textAnglePosition() const
 	return d_data->defaultItem->textAnglePosition();
 }
 
-
-void VipPieChart::setBrushColorPalette(const VipColorPalette & palette)
+void VipPieChart::setBrushColorPalette(const VipColorPalette& palette)
 {
 	d_data->brushColorPalette = palette;
 
@@ -1217,12 +1181,12 @@ void VipPieChart::setBrushColorPalette(const VipColorPalette & palette)
 	emitItemChanged();
 }
 
-const VipColorPalette & VipPieChart::brushColorPalette() const
+const VipColorPalette& VipPieChart::brushColorPalette() const
 {
 	return d_data->brushColorPalette;
 }
 
-void VipPieChart::setPenColorPalette(const VipColorPalette & palette)
+void VipPieChart::setPenColorPalette(const VipColorPalette& palette)
 {
 	d_data->penColorPalette = palette;
 	for (int i = 0; i < count(); ++i) {
@@ -1234,15 +1198,15 @@ void VipPieChart::setPenColorPalette(const VipColorPalette & palette)
 	emitItemChanged();
 }
 
-const VipColorPalette & VipPieChart::penColorPalette() const
+const VipColorPalette& VipPieChart::penColorPalette() const
 {
 	return d_data->penColorPalette;
 }
 
-void VipPieChart::setColorPalette(const VipColorPalette & palette)
+void VipPieChart::setColorPalette(const VipColorPalette& palette)
 {
 	setBrushColorPalette(palette);
-	//setPenColorPalette(palette);
+	// setPenColorPalette(palette);
 }
 
 void VipPieChart::setTextStyle(const VipTextStyle& st)
@@ -1253,15 +1217,14 @@ void VipPieChart::setTextStyle(const VipTextStyle& st)
 	emitItemChanged();
 }
 
-VipTextStyle VipPieChart::textStyle() const 
+VipTextStyle VipPieChart::textStyle() const
 {
 	return d_data->defaultItem->textStyle();
 }
 
-
 void VipPieChart::setTextInnerDistanceToBorder(double dist, Vip::ValueType d)
 {
-	for(int i=0; i < count(); ++i)
+	for (int i = 0; i < count(); ++i)
 		pieItemAt(i)->setTextInnerDistanceToBorder(dist, d);
 
 	d_data->defaultItem->setTextInnerDistanceToBorder(dist, d);
@@ -1277,7 +1240,6 @@ Vip::ValueType VipPieChart::innerDistanceToBorder() const
 {
 	return d_data->defaultItem->innerDistanceToBorder();
 }
-
 
 void VipPieChart::setTextOuterDistanceToBorder(double dist, Vip::ValueType d)
 {
@@ -1297,8 +1259,6 @@ Vip::ValueType VipPieChart::outerDistanceToBorder() const
 {
 	return d_data->defaultItem->outerDistanceToBorder();
 }
-
-
 
 bool VipPieChart::setItemProperty(const char* name, const QVariant& value, const QByteArray& index)
 {
@@ -1358,8 +1318,7 @@ bool VipPieChart::setItemProperty(const char* name, const QVariant& value, const
 	return VipPlotItem::setItemProperty(name, value, index);
 }
 
-
-void VipPieChart::setText(const VipText & t)
+void VipPieChart::setText(const VipText& t)
 {
 	for (int i = 0; i < count(); ++i)
 		pieItemAt(i)->setText(t);
@@ -1373,16 +1332,13 @@ VipText VipPieChart::text() const
 	return d_data->defaultItem->text();
 }
 
-
-
 void VipPieChart::setItemsBoxStyle(const VipBoxStyle& bs)
 {
-	for(int i=0; i < count(); ++i)
-	{
+	for (int i = 0; i < count(); ++i) {
 		VipBoxStyle tmp = pieItemAt(i)->boxStyle();
 		QPen pen = bs.borderPen();
 		QBrush brush = bs.backgroundBrush();
-		//pen.setColor(tmp.borderPen().color());
+		// pen.setColor(tmp.borderPen().color());
 		brush.setColor(tmp.backgroundBrush().color());
 
 		tmp = bs;
@@ -1396,13 +1352,12 @@ void VipPieChart::setItemsBoxStyle(const VipBoxStyle& bs)
 	emitItemChanged();
 }
 
-const VipBoxStyle & VipPieChart::itemsBoxStyle() const
+const VipBoxStyle& VipPieChart::itemsBoxStyle() const
 {
 	return d_data->defaultItem->boxStyle();
 }
 
-
-VipPieItem * VipPieChart::createItem(int index)
+VipPieItem* VipPieChart::createItem(int index)
 {
 	VipPieItem* item = new VipPieItem();
 	item->setText(d_data->defaultItem->text());
@@ -1410,14 +1365,14 @@ VipPieItem * VipPieChart::createItem(int index)
 	item->setTextAdditionalTransform(this->textAdditionalTransform(), this->textAdditionalTransformReference());
 	item->setTextTransform(this->textTransform());
 	item->setTextDirection(this->textDirection());
-	item->setTextInnerDistanceToBorder(this->textInnerDistanceToBorder(),this->innerDistanceToBorder());
+	item->setTextInnerDistanceToBorder(this->textInnerDistanceToBorder(), this->innerDistanceToBorder());
 	item->setTextOuterDistanceToBorder(this->textOuterDistanceToBorder(), this->outerDistanceToBorder());
 	item->setQuiverPath(this->quiverPath());
 	item->setLegendStyle(this->legendStyle());
 	VipBoxStyle st = this->itemsBoxStyle();
 	QPen p = st.borderPen();
 	QBrush b = st.backgroundBrush();
-	//p.setColor(d_data->penColorPalette.color(index));
+	// p.setColor(d_data->penColorPalette.color(index));
 	b.setColor(d_data->brushColorPalette.color(index));
 	st.setBackgroundBrush(b);
 	st.setBorderPen(p);
@@ -1428,22 +1383,20 @@ VipPieItem * VipPieChart::createItem(int index)
 	return item;
 }
 
-void VipPieChart::draw(QPainter * p, const VipCoordinateSystemPtr & m) const
+void VipPieChart::draw(QPainter* p, const VipCoordinateSystemPtr& m) const
 {
-	VipPlotItemComposite::draw(p,m);
+	VipPlotItemComposite::draw(p, m);
 }
 
-
-VipInterval VipPieChart::plotInterval(const VipInterval & interval) const
+VipInterval VipPieChart::plotInterval(const VipInterval& interval) const
 {
 	VipInterval res;
 
-	for(int i=0; i < count(); ++i)
-	{
+	for (int i = 0; i < count(); ++i) {
 		VipInterval tmp = pieItemAt(i)->plotInterval(interval);
-		if(tmp.isValid() && !res.isValid())
+		if (tmp.isValid() && !res.isValid())
 			res = tmp;
-		else if(tmp.isValid() && res.isValid())
+		else if (tmp.isValid() && res.isValid())
 			res = res.unite(tmp);
 	}
 

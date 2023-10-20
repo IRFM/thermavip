@@ -1,9 +1,40 @@
-#include "VipLibRIR.h"
-#include "VipLogging.h"
-#include "VipCore.h"
+/**
+ * BSD 3-Clause License
+ *
+ * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice, this
+ *    list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of the copyright holder nor the names of its
+ *    contributors may be used to endorse or promote products derived from
+ *    this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
 
-#include <qfileinfo.h>
+#include "VipLibRIR.h"
+#include "VipCore.h"
+#include "VipLogging.h"
+
 #include <qapplication.h>
+#include <qfileinfo.h>
 
 static QLibrary _old_librir;
 static QLibrary _tools;
@@ -22,7 +53,8 @@ static bool loadLibraries()
 		QString path = vipAppCanonicalPath();
 		path = QFileInfo(path).canonicalPath();
 		path.replace("\\", "/");
-		if (!path.endsWith("/")) path += "/";
+		if (!path.endsWith("/"))
+			path += "/";
 		path += "librir/libs/";
 
 #ifdef WIN32
@@ -43,12 +75,17 @@ static bool loadLibraries()
 		_signal_processing.setFileName(signal_processing);
 		_video_io.setFileName(video_io);
 		_west.setFileName(west);
-		if (!_tools.load() || !_geometry.load() || !_signal_processing.load() || !_video_io.load() ) {
-			vip_debug("Error loading new librir: %s, fallback to old version\n", _tools.errorString().toLatin1().data()); fflush(stdout);
-			vip_debug("Error loading new librir: %s, fallback to old version\n", _geometry.errorString().toLatin1().data()); fflush(stdout);
-			vip_debug("Error loading new librir: %s, fallback to old version\n", _signal_processing.errorString().toLatin1().data()); fflush(stdout);
-			vip_debug("Error loading new librir: %s, fallback to old version\n", _video_io.errorString().toLatin1().data()); fflush(stdout);
-			vip_debug("Error loading new librir: %s, fallback to old version\n", _west.errorString().toLatin1().data()); fflush(stdout);
+		if (!_tools.load() || !_geometry.load() || !_signal_processing.load() || !_video_io.load()) {
+			vip_debug("Error loading new librir: %s, fallback to old version\n", _tools.errorString().toLatin1().data());
+			fflush(stdout);
+			vip_debug("Error loading new librir: %s, fallback to old version\n", _geometry.errorString().toLatin1().data());
+			fflush(stdout);
+			vip_debug("Error loading new librir: %s, fallback to old version\n", _signal_processing.errorString().toLatin1().data());
+			fflush(stdout);
+			vip_debug("Error loading new librir: %s, fallback to old version\n", _video_io.errorString().toLatin1().data());
+			fflush(stdout);
+			vip_debug("Error loading new librir: %s, fallback to old version\n", _west.errorString().toLatin1().data());
+			fflush(stdout);
 		}
 		else {
 			if (!_west.load()) {
@@ -57,11 +94,10 @@ static bool loadLibraries()
 			return res = true;
 		}
 
-		//Load old librir
+		// Load old librir
 		_old_librir.setFileName("librir64");
-		//bool e = QFileInfo("librir64.dll").exists();
-		if (!_old_librir.load())
-		{
+		// bool e = QFileInfo("librir64.dll").exists();
+		if (!_old_librir.load()) {
 			/*#ifdef __unix__
 						QString path = QFileInfo(qApp->arguments()[0]).canonicalPath();
 						path += "/librir.so";
@@ -69,18 +105,20 @@ static bool loadLibraries()
 						librir.library.setFileName(path);
 			#else*/
 			_old_librir.setFileName("librir");
-			//librir.library.setFileName("/Home/VM213788/Thermavip_git/Thermavip/bin/debug/librir.so");
-			vip_debug("load '%s'\n", _old_librir.fileName().toLatin1().data()); fflush(stdout);
+			// librir.library.setFileName("/Home/VM213788/Thermavip_git/Thermavip/bin/debug/librir.so");
+			vip_debug("load '%s'\n", _old_librir.fileName().toLatin1().data());
+			fflush(stdout);
 			//#endif
-			if (!_old_librir.load())
-			{
-				vip_debug("Cannot find librir on this computer: %s\n", _old_librir.errorString().toLatin1().data()); fflush(stdout);
+			if (!_old_librir.load()) {
+				vip_debug("Cannot find librir on this computer: %s\n", _old_librir.errorString().toLatin1().data());
+				fflush(stdout);
 				VIP_LOG_ERROR("Cannot find librir64 on this computer");
 				_old_librir.unload();
 				return res = false;
 			}
 			else {
-				vip_debug("success\n"); fflush(stdout);
+				vip_debug("success\n");
+				fflush(stdout);
 			}
 		}
 		return res = true;
@@ -88,50 +126,59 @@ static bool loadLibraries()
 	return res;
 }
 
-static QLibrary* toolsLib() {
-	if (_old_librir.isLoaded()) 
+static QLibrary* toolsLib()
+{
+	if (_old_librir.isLoaded())
 		return &_old_librir;
-	else if (_tools.isLoaded()) 
+	else if (_tools.isLoaded())
 		return &_tools;
 	return nullptr;
 }
-static QLibrary* geometrLib() {
-	if (_old_librir.isLoaded()) return &_old_librir;
-	else if (_geometry.isLoaded()) return &_geometry;
+static QLibrary* geometrLib()
+{
+	if (_old_librir.isLoaded())
+		return &_old_librir;
+	else if (_geometry.isLoaded())
+		return &_geometry;
 	return nullptr;
 }
-static QLibrary* signalProcessingLib() {
-	if (_old_librir.isLoaded()) return &_old_librir;
-	else if (_signal_processing.isLoaded()) return &_signal_processing;
+static QLibrary* signalProcessingLib()
+{
+	if (_old_librir.isLoaded())
+		return &_old_librir;
+	else if (_signal_processing.isLoaded())
+		return &_signal_processing;
 	return nullptr;
 }
-static QLibrary* videoIOLib() {
-	if (_old_librir.isLoaded()) return &_old_librir;
-	else if (_video_io.isLoaded()) return &_video_io;
+static QLibrary* videoIOLib()
+{
+	if (_old_librir.isLoaded())
+		return &_old_librir;
+	else if (_video_io.isLoaded())
+		return &_video_io;
 	return nullptr;
 }
-static QLibrary* westLib() {
-	if (_old_librir.isLoaded()) return &_old_librir;
-	else if (_west.isLoaded()) return &_west;
+static QLibrary* westLib()
+{
+	if (_old_librir.isLoaded())
+		return &_old_librir;
+	else if (_west.isLoaded())
+		return &_west;
 	return nullptr;
 }
 
-
-VipLibRIR::VipLibRIR()
-{}
+VipLibRIR::VipLibRIR() {}
 
 VipLibRIR::~VipLibRIR()
 {
 	// Unload the top level library (that will unload all the other)
 	if (westLib())
 		westLib()->unload();
-	
 }
 
-
-VipLibRIR * VipLibRIR::instance()
+VipLibRIR* VipLibRIR::instance()
 {
-	static VipLibRIR * librir = nullptr;
+	static VipLibRIR* librir = nullptr;
 	if (librir)
 		return librir;
 	if (!loadLibraries())
@@ -140,314 +187,301 @@ VipLibRIR * VipLibRIR::instance()
 	librir = new VipLibRIR();
 
 	librir->set_print_function = (_set_print_function)toolsLib()->resolve("set_print_function");
-	if (!librir->set_print_function)
-	{
+	if (!librir->set_print_function) {
 		VIP_LOG_ERROR("librir: missing set_print_function");
-		delete librir; return librir = nullptr;
+		delete librir;
+		return librir = nullptr;
 	}
 	librir->disable_print = (_disable_print)toolsLib()->resolve("disable_print");
-	if (!librir->disable_print)
-	{
+	if (!librir->disable_print) {
 		VIP_LOG_ERROR("librir: missing disable_print");
-		delete librir; return librir = nullptr;
+		delete librir;
+		return librir = nullptr;
 	}
 	librir->reset_print_functions = (_reset_print_functions)toolsLib()->resolve("reset_print_functions");
-	if (!librir->reset_print_functions)
-	{
+	if (!librir->reset_print_functions) {
 		VIP_LOG_ERROR("librir: missing reset_print_functions");
-		delete librir; return librir = nullptr;
+		delete librir;
+		return librir = nullptr;
 	}
 	librir->get_last_log_error = (_get_last_log_error)toolsLib()->resolve("get_last_log_error");
-	if (!librir->get_last_log_error)
-	{
+	if (!librir->get_last_log_error) {
 		VIP_LOG_ERROR("librir: missing get_last_log_error");
-		delete librir; return librir = nullptr;
+		delete librir;
+		return librir = nullptr;
 	}
-	
+
 	librir->open_camera_file = (_open_camera_file)videoIOLib()->resolve("open_camera_file");
-	if (!librir->open_camera_file)
-	{
+	if (!librir->open_camera_file) {
 		VIP_LOG_ERROR("librir: missing open_camera_file");
-		delete librir; return librir = nullptr;
+		delete librir;
+		return librir = nullptr;
 	}
 
 	librir->set_global_emissivity = (_set_global_emissivity)videoIOLib()->resolve("set_global_emissivity");
-	if (!librir->set_global_emissivity)
-	{
+	if (!librir->set_global_emissivity) {
 		VIP_LOG_ERROR("librir: missing set_global_emissivity");
-		delete librir; return librir = nullptr;
+		delete librir;
+		return librir = nullptr;
 	}
 	librir->set_emissivity = (_set_emissivity)videoIOLib()->resolve("set_emissivity");
-	if (!librir->set_emissivity)
-	{
+	if (!librir->set_emissivity) {
 		VIP_LOG_ERROR("librir: missing set_emissivity");
-		delete librir; return librir = nullptr;
+		delete librir;
+		return librir = nullptr;
 	}
 	librir->support_emissivity = (_support_emissivity)videoIOLib()->resolve("support_emissivity");
-	if (!librir->support_emissivity)
-	{
+	if (!librir->support_emissivity) {
 		VIP_LOG_ERROR("librir: missing support_emissivity");
-		delete librir; return librir = nullptr;
+		delete librir;
+		return librir = nullptr;
 	}
 	librir->get_emissivity = (_get_emissivity)videoIOLib()->resolve("get_emissivity");
-	if (!librir->get_emissivity)
-	{
+	if (!librir->get_emissivity) {
 		VIP_LOG_ERROR("librir: missing get_emissivity");
-		delete librir; return librir = nullptr;
+		delete librir;
+		return librir = nullptr;
 	}
-
 
 	librir->set_optical_temperature = (_set_optical_temperature)videoIOLib()->resolve("set_optical_temperature");
-	if (!librir->set_optical_temperature)
-	{
+	if (!librir->set_optical_temperature) {
 		VIP_LOG_ERROR("librir: missing set_optical_temperature");
-		delete librir; return librir = nullptr;
+		delete librir;
+		return librir = nullptr;
 	}
 	librir->get_optical_temperature = (_get_optical_temperature)videoIOLib()->resolve("get_optical_temperature");
-	if (!librir->get_optical_temperature)
-	{
+	if (!librir->get_optical_temperature) {
 		VIP_LOG_ERROR("librir: missing get_optical_temperature");
-		delete librir; return librir = nullptr;
+		delete librir;
+		return librir = nullptr;
 	}
 
 	librir->set_STEFI_temperature = (_set_optical_temperature)videoIOLib()->resolve("set_STEFI_temperature");
-	if (!librir->set_STEFI_temperature)
-	{
+	if (!librir->set_STEFI_temperature) {
 		VIP_LOG_ERROR("librir: missing set_STEFI_temperature");
-		delete librir; return librir = nullptr;
+		delete librir;
+		return librir = nullptr;
 	}
 	librir->get_STEFI_temperature = (_get_optical_temperature)videoIOLib()->resolve("get_STEFI_temperature");
-	if (!librir->get_STEFI_temperature)
-	{
+	if (!librir->get_STEFI_temperature) {
 		VIP_LOG_ERROR("librir: missing get_STEFI_temperature");
-		delete librir; return librir = nullptr;
+		delete librir;
+		return librir = nullptr;
 	}
 
 	librir->support_optical_temperature = (_support_optical_temperature)videoIOLib()->resolve("support_optical_temperature");
-	if (!librir->support_optical_temperature)
-	{
+	if (!librir->support_optical_temperature) {
 		VIP_LOG_ERROR("librir: missing support_optical_temperature");
-		delete librir; return librir = nullptr;
+		delete librir;
+		return librir = nullptr;
 	}
-
-
 
 	librir->load_motion_correction_file = (_load_motion_correction_file)videoIOLib()->resolve("load_motion_correction_file");
 	librir->enable_motion_correction = (_enable_motion_correction)videoIOLib()->resolve("enable_motion_correction");
 	librir->motion_correction_enabled = (_motion_correction_enabled)videoIOLib()->resolve("motion_correction_enabled");
 
-
-	
-		
-
 	librir->get_image_count = (_get_image_count)videoIOLib()->resolve("get_image_count");
-	if (!librir->get_image_count)
-	{
+	if (!librir->get_image_count) {
 		VIP_LOG_ERROR("librir: missing get_image_count");
-		delete librir; return librir = nullptr;
+		delete librir;
+		return librir = nullptr;
 	}
 	librir->get_image_time = (_get_image_time)videoIOLib()->resolve("get_image_time");
-	if (!librir->get_image_time)
-	{
+	if (!librir->get_image_time) {
 		VIP_LOG_ERROR("librir: missing get_image_time");
-		delete librir; return librir = nullptr;
+		delete librir;
+		return librir = nullptr;
 	}
 	librir->get_image_size = (_get_image_size)videoIOLib()->resolve("get_image_size");
-	if (!librir->get_image_size)
-	{
+	if (!librir->get_image_size) {
 		VIP_LOG_ERROR("librir: missing get_image_size");
-		delete librir; return librir = nullptr;
+		delete librir;
+		return librir = nullptr;
 	}
 	librir->supported_calibrations = (_supported_calibrations)videoIOLib()->resolve("supported_calibrations");
-	if (!librir->supported_calibrations)
-	{
+	if (!librir->supported_calibrations) {
 		VIP_LOG_ERROR("librir: missing supported_calibrations");
-		delete librir; return librir = nullptr;
+		delete librir;
+		return librir = nullptr;
 	}
 	librir->calibration_name = (_calibration_name)videoIOLib()->resolve("calibration_name");
-	if (!librir->calibration_name)
-	{
+	if (!librir->calibration_name) {
 		VIP_LOG_ERROR("librir: missing calibration_name");
-		delete librir; return librir = nullptr;
+		delete librir;
+		return librir = nullptr;
 	}
 	librir->load_image = (_load_image)videoIOLib()->resolve("load_image");
-	if (!librir->load_image)
-	{
+	if (!librir->load_image) {
 		VIP_LOG_ERROR("librir: missing load_image");
-		delete librir; return librir = nullptr;
+		delete librir;
+		return librir = nullptr;
 	}
-		
+
 	librir->get_last_image_raw_value = (_get_last_image_raw_value)videoIOLib()->resolve("get_last_image_raw_value");
-	if (!librir->get_last_image_raw_value)
-	{
+	if (!librir->get_last_image_raw_value) {
 		VIP_LOG_ERROR("librir: missing get_last_image_raw_value");
-		delete librir; return librir = nullptr;
+		delete librir;
+		return librir = nullptr;
 	}
 	librir->close_camera = (_close_camera)videoIOLib()->resolve("close_camera");
-	if (!librir->close_camera)
-	{
+	if (!librir->close_camera) {
 		VIP_LOG_ERROR("librir: missing close_camera");
-		delete librir; return librir = nullptr;
+		delete librir;
+		return librir = nullptr;
 	}
 	librir->get_filename = (_get_filename)videoIOLib()->resolve("get_filename");
-	if (!librir->get_filename)
-	{
+	if (!librir->get_filename) {
 		VIP_LOG_ERROR("librir: missing get_filename");
-		delete librir; return librir = nullptr;
+		delete librir;
+		return librir = nullptr;
 	}
-	
-
-	
 
 	librir->camera_saturate = (_camera_saturate)videoIOLib()->resolve("camera_saturate");
-	if (!librir->camera_saturate)
-	{
+	if (!librir->camera_saturate) {
 		VIP_LOG_ERROR("librir: missing camera_saturate");
-		delete librir; return librir = nullptr;
+		delete librir;
+		return librir = nullptr;
 	}
 
 	librir->calibration_files = (_calibration_files)videoIOLib()->resolve("calibration_files");
-	if (!librir->calibration_files)
-	{
+	if (!librir->calibration_files) {
 		VIP_LOG_ERROR("librir: missing camera_saturate");
-		delete librir; return librir = nullptr;
+		delete librir;
+		return librir = nullptr;
 	}
-		
-	
 
 	librir->get_attribute_count = (_get_attribute_count)videoIOLib()->resolve("get_attribute_count");
-	if (!librir->get_attribute_count)
-	{
+	if (!librir->get_attribute_count) {
 		VIP_LOG_ERROR("librir: missing get_attribute_count");
-		delete librir; return librir = nullptr;
+		delete librir;
+		return librir = nullptr;
 	}
 	librir->get_attribute = (_get_attribute)videoIOLib()->resolve("get_attribute");
-	if (!librir->get_attribute)
-	{
+	if (!librir->get_attribute) {
 		VIP_LOG_ERROR("librir: missing get_attribute");
-		delete librir; return librir = nullptr;
+		delete librir;
+		return librir = nullptr;
 	}
 	librir->get_global_attribute_count = (_get_attribute_count)videoIOLib()->resolve("get_global_attribute_count");
-	if (!librir->get_global_attribute_count)
-	{
+	if (!librir->get_global_attribute_count) {
 		VIP_LOG_ERROR("librir: missing get_global_attribute_count");
-		delete librir; return librir = nullptr;
+		delete librir;
+		return librir = nullptr;
 	}
 	librir->get_global_attribute = (_get_attribute)videoIOLib()->resolve("get_global_attribute");
-	if (!librir->get_global_attribute)
-	{
+	if (!librir->get_global_attribute) {
 		VIP_LOG_ERROR("librir: missing get_global_attribute");
-		delete librir; return librir = nullptr;
+		delete librir;
+		return librir = nullptr;
 	}
-
 
 	librir->enable_bad_pixels = (_enable_bad_pixels)videoIOLib()->resolve("enable_bad_pixels");
-	if (!librir->enable_bad_pixels)
-	{
+	if (!librir->enable_bad_pixels) {
 		VIP_LOG_ERROR("librir: missing enable_bad_pixels");
-		delete librir; return librir = nullptr;
+		delete librir;
+		return librir = nullptr;
 	}
 	librir->bad_pixels_enabled = (_bad_pixels_enabled)videoIOLib()->resolve("bad_pixels_enabled");
-	if (!librir->bad_pixels_enabled)
-	{
+	if (!librir->bad_pixels_enabled) {
 		VIP_LOG_ERROR("librir: missing bad_pixels_enabled");
-		delete librir; return librir = nullptr;
+		delete librir;
+		return librir = nullptr;
 	}
-
-
 
 	librir->open_video_write = (_open_video_write)videoIOLib()->resolve("open_video_write");
-	if (!librir->open_video_write)
-	{
+	if (!librir->open_video_write) {
 		VIP_LOG_ERROR("librir: missing open_video_write");
-		delete librir; return librir = nullptr;
+		delete librir;
+		return librir = nullptr;
 	}
 	librir->image_write = (_image_write)videoIOLib()->resolve("image_write");
-	if (!librir->image_write)
-	{
+	if (!librir->image_write) {
 		VIP_LOG_ERROR("librir: missing image_write");
-		delete librir; return librir = nullptr;
+		delete librir;
+		return librir = nullptr;
 	}
 	librir->close_video = (_close_video)videoIOLib()->resolve("close_video");
-	if (!librir->close_video)
-	{
+	if (!librir->close_video) {
 		VIP_LOG_ERROR("librir: missing close_video");
-		delete librir; return librir = nullptr;
+		delete librir;
+		return librir = nullptr;
 	}
 
 	librir->calibrate_image = (_calibrate_image)videoIOLib()->resolve("calibrate_image");
-	if (!librir->calibrate_image)
-	{
+	if (!librir->calibrate_image) {
 		VIP_LOG_ERROR("librir: missing calibrate_image");
-		delete librir; return librir = nullptr;
+		delete librir;
+		return librir = nullptr;
 	}
 	librir->calibrate_image_inplace = (_calibrate_image_inplace)videoIOLib()->resolve("calibrate_image_inplace");
-	if (!librir->calibrate_image_inplace)
-	{
+	if (!librir->calibrate_image_inplace) {
 		VIP_LOG_ERROR("librir: missing calibrate_image_inplace");
-		delete librir; return librir = nullptr;
+		delete librir;
+		return librir = nullptr;
 	}
-
-	
 
 	librir->zstd_compress_bound = (_zstd_compress_bound)toolsLib()->resolve("zstd_compress_bound");
-	if (!librir->zstd_compress_bound)
-	{
+	if (!librir->zstd_compress_bound) {
 		VIP_LOG_ERROR("librir: missing zstd_compress_bound");
-		delete librir; return librir = nullptr;
+		delete librir;
+		return librir = nullptr;
 	}
 	librir->zstd_decompress_bound = (_zstd_decompress_bound)toolsLib()->resolve("zstd_decompress_bound");
-	if (!librir->zstd_decompress_bound)
-	{
+	if (!librir->zstd_decompress_bound) {
 		VIP_LOG_ERROR("librir: missing zstd_decompress_bound");
-		delete librir; return librir = nullptr;
+		delete librir;
+		return librir = nullptr;
 	}
 	librir->zstd_compress = (_zstd_compress)toolsLib()->resolve("zstd_compress");
-	if (!librir->zstd_compress)
-	{
+	if (!librir->zstd_compress) {
 		VIP_LOG_ERROR("librir: missing zstd_compress");
-		
-		delete librir; return librir = nullptr;
+
+		delete librir;
+		return librir = nullptr;
 	}
 	librir->zstd_decompress = (_zstd_decompress)toolsLib()->resolve("zstd_decompress");
-	if (!librir->zstd_decompress)
-	{
+	if (!librir->zstd_decompress) {
 		VIP_LOG_ERROR("librir: missing zstd_decompress");
-		
-		delete librir; return librir = nullptr;
+
+		delete librir;
+		return librir = nullptr;
 	}
-
-
 
 	librir->h264_open_file = (_h264_open_file)videoIOLib()->resolve("h264_open_file");
-	if (!librir->h264_open_file){
+	if (!librir->h264_open_file) {
 		VIP_LOG_ERROR("librir: missing h264_open_file");
-		delete librir; return librir = nullptr;
+		delete librir;
+		return librir = nullptr;
 	}
 	librir->h264_close_file = (_h264_close_file)videoIOLib()->resolve("h264_close_file");
-	if (!librir->h264_close_file){
+	if (!librir->h264_close_file) {
 		VIP_LOG_ERROR("librir: missing h264_close_file");
-		delete librir; return librir = nullptr;
+		delete librir;
+		return librir = nullptr;
 	}
 	librir->h264_set_parameter = (_h264_set_parameter)videoIOLib()->resolve("h264_set_parameter");
 	if (!librir->h264_set_parameter) {
 		VIP_LOG_ERROR("librir: missing h264_set_parameter");
-		delete librir; return librir = nullptr;
+		delete librir;
+		return librir = nullptr;
 	}
 	librir->h264_set_global_attributes = (_h264_set_global_attributes)videoIOLib()->resolve("h264_set_global_attributes");
 	if (!librir->h264_set_global_attributes) {
 		VIP_LOG_ERROR("librir: missing h264_set_global_attributes");
-		delete librir; return librir = nullptr;
+		delete librir;
+		return librir = nullptr;
 	}
 	librir->h264_add_image_lossless = (_h264_add_image_lossless)videoIOLib()->resolve("h264_add_image_lossless");
 	if (!librir->h264_add_image_lossless) {
 		VIP_LOG_ERROR("librir: missing h264_add_image_lossless");
-		delete librir; return librir = nullptr;
+		delete librir;
+		return librir = nullptr;
 	}
 	librir->h264_add_image_lossy = (_h264_add_image_lossy)videoIOLib()->resolve("h264_add_image_lossy");
 	if (!librir->h264_add_image_lossy) {
 		VIP_LOG_ERROR("librir: missing h264_add_image_lossy");
-		delete librir; return librir = nullptr;
+		delete librir;
+		return librir = nullptr;
 	}
 
 	librir->unzip = (_unzip)toolsLib()->resolve("unzip");
@@ -457,9 +491,7 @@ VipLibRIR * VipLibRIR::instance()
 		return librir = nullptr;
 	}
 
-
 	if (westLib()) {
-
 
 		librir->get_temp_directory = (_get_temp_directory)westLib()->resolve("get_west_data_dir");
 		if (!librir->get_temp_directory) {
@@ -782,46 +814,38 @@ VipLibRIR * VipLibRIR::instance()
 			return librir = nullptr;
 		}
 	}
-	
 
 	vip_debug("Read all functions done\n");
-		
-	return librir;
-	
-}
 
+	return librir;
+}
 
 QByteArray VipLibRIR::getLastError() const
 {
 	QByteArray err(100, 0);
 	int len = err.size();
 	int cr = get_last_log_error(err.data(), &len);
-	if (cr != 0 && len > err.size())
-	{
+	if (cr != 0 && len > err.size()) {
 		err = QByteArray(len, 0);
 		cr = get_last_log_error(err.data(), &len);
 	}
 
-	if(cr == 0)
+	if (cr == 0)
 		return QByteArray(err.data());
 	return QByteArray();
 }
-
-
-
-
 
 QStringList VipLibRIR::availableCameraIdentifiers(int pulse)
 {
 	QStringList res;
 	int count = get_camera_count(pulse);
-	if (count > 0)
-	{
-		for (int i = 0; i < count; ++i)
-		{
-			//int num = 0;
-			char name[100]; memset(name, 0, sizeof(name));
-			char identifier[100]; memset(identifier, 0, sizeof(identifier));
+	if (count > 0) {
+		for (int i = 0; i < count; ++i) {
+			// int num = 0;
+			char name[100];
+			memset(name, 0, sizeof(name));
+			char identifier[100];
+			memset(identifier, 0, sizeof(identifier));
 			int exists = false;
 			get_camera_infos(pulse, i, identifier, name, &exists);
 			res.append(QString(identifier));
@@ -843,9 +867,9 @@ QVariantMap VipLibRIR::getAttributes(int camera)
 	int vlen = 200;
 	for (int i = 0; i < count; ++i) {
 		int tmp = get_attribute(camera, i, key.data(), &klen, value.data(), &vlen);
-		
+
 		if (tmp == -2) {
-			key.resize(klen );
+			key.resize(klen);
 			value.resize(vlen);
 			tmp = get_attribute(camera, i, key.data(), &klen, value.data(), &vlen);
 		}
@@ -863,7 +887,7 @@ QVariantMap VipLibRIR::getGlobalAttributesAsString(int camera)
 		return QVariantMap();
 
 	QVariantMap res;
-	std::string key(200,(char)0);
+	std::string key(200, (char)0);
 	std::string value(200, (char)0);
 	int klen, vlen;
 	for (int i = 0; i < count; ++i) {
@@ -871,7 +895,7 @@ QVariantMap VipLibRIR::getGlobalAttributesAsString(int camera)
 		int tmp = get_global_attribute(camera, i, (char*)key.data(), &klen, (char*)value.data(), &vlen);
 
 		if (tmp == -2) {
-			key.resize(klen,(char)0);
+			key.resize(klen, (char)0);
 			value.resize(vlen, (char)0);
 			tmp = get_global_attribute(camera, i, (char*)key.data(), &klen, (char*)value.data(), &vlen);
 		}
@@ -882,7 +906,6 @@ QVariantMap VipLibRIR::getGlobalAttributesAsString(int camera)
 	}
 	return res;
 }
-
 
 QVariantMap VipLibRIR::getGlobalAttributesAsRawData(int camera)
 {
@@ -916,7 +939,7 @@ QVariantMap VipLibRIR::getGlobalAttributesAsRawData(int camera)
 	return res;
 }
 
-
-bool VipLibRIR::hasWESTFeatures() const {
+bool VipLibRIR::hasWESTFeatures() const
+{
 	return westLib() != nullptr;
 }

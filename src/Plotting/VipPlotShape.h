@@ -1,11 +1,42 @@
+/**
+ * BSD 3-Clause License
+ *
+ * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice, this
+ *    list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of the copyright holder nor the names of its
+ *    contributors may be used to endorse or promote products derived from
+ *    this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
 #ifndef VIP_PLOT_SHAPE_H
 #define VIP_PLOT_SHAPE_H
 
 #include <QPointer>
 
 #include "VipPlotItem.h"
-#include "VipSceneModel.h"
 #include "VipResizeItem.h"
+#include "VipSceneModel.h"
 
 /// \addtogroup Plotting
 /// @{
@@ -17,9 +48,9 @@ class VipAnnotation;
 /// VipPlotShape is a plot item that draws a shape passed as a VipShape object using VipPlotShape::setData().
 /// VipPlotShape also draw additional text(s) inside/outside the shape depending on the item's draw components
 /// (see VipPlotShape::setDrawComponents()) and an optional custom text (see VipPlotShape::setText()).
-/// 
+///
 /// As other VipPlotItemDataType inheriting classes, VipPlotShape::setData() is thread safe.
-/// 
+///
 /// VipPlotShape support stylesheets and defines the following attributes:
 /// -	'text-alignment' : see VipPlotShape::setTextAlignment(), combination of 'left|right|top|bottom|center|vcenter|hcenter'
 /// -	'text-position': see VipPlotShape::setTextPosition(), combination of 'outside|xinside|yinside|xautomatic|yautomatic|automatic'
@@ -77,7 +108,7 @@ public:
 	VipAnnotation* annotation() const;
 
 	/// @brief Adjust the text color based on the item's background.
-	/// This is very convinient when drawing a VipPlotShape above a VipPlotRasterData in order to keep the text visible 
+	/// This is very convinient when drawing a VipPlotShape above a VipPlotRasterData in order to keep the text visible
 	void setAdjustTextColor(bool);
 	bool adjustTextColor() const;
 
@@ -94,13 +125,11 @@ public:
 	void setTextDistance(double distance);
 	double textDistance() const;
 
-	
 	/// @brief Set the text to be drawn inside or around the shape.
 	/// If a custom text is passed this way, the flags Id, Group, Title and Attributes are ignored, and only the provided text is drawn.
 	/// Note that the text will be formatted with VipPlotShape::formatText().
 	void setText(const VipText& text);
 	const VipText& text() const;
-
 
 	virtual void setTextStyle(const VipTextStyle& style);
 	virtual VipTextStyle textStyle() const;
@@ -171,43 +200,41 @@ private:
 
 Q_DECLARE_OPERATORS_FOR_FLAGS(VipPlotShape::DrawComponents)
 
-
 typedef QPointer<VipResizeItem> VipResizeItemPtr;
 Q_DECLARE_METATYPE(VipResizeItemPtr)
-
 
 /// @brief Plot item that displays a scene model passed as a VipSceneModel object
 ///
 /// A VipSceneModel is a collection of VipShape gathered in groups (unique string identifier).
-/// As such, VipPlotSceneModel is a collection of VipPlotShape managed through its VipPlotItemComposite 
+/// As such, VipPlotSceneModel is a collection of VipPlotShape managed through its VipPlotItemComposite
 /// base class.
-/// 
-/// VipPlotSceneModel uses several optimizations internally to avoid allocating/deallocating too many 
+///
+/// VipPlotSceneModel uses several optimizations internally to avoid allocating/deallocating too many
 /// VipPlotShape objects when the scene model changes, and is therefore very performant to display
 /// highly dynamic scene models. It is for instance used to display results of event detection techniques
 /// based on Computer Vision/AI on top of videos in firm real time applications.
-/// 
+///
 /// A scene model is set using VipPlotSceneModel::setSceneModel(). As VipSceneModel and VipShape are
 /// never deeply copied (they use shared ownership), it is also possible to modify inplace a VipSceneModel
 /// object. Any modification of a VipSceneModel previously set with setSceneModel() will be automatically
 /// reflected in the VipPlotSceneModel.
-/// 
+///
 /// By default, VipPlotSceneModel uses the Aggregate composition mode: each internal VipPlotShape
 /// is considered as an independant plot item and the user can interact with them. VipPlotSceneModel
 /// can use the UniqueItem composition mode in which case internal VipPlotShape objects are hidden
 /// to the user, and the VipPlotSceneModel is built as the union of each shape.
-/// 
+///
 /// In addition, VipPlotSceneModel provides its own way to modify internal VipPlotShape objects using setMode().
 /// If Fixed, the user cannot modify the VipPlotShape objects, only select/unselect them.
 /// If Movable, each VipPlotShape can be moved by the user through a VipResizeItem automatically created by the VipPlotSceneModel.
 /// If Resizable, each VipPlotShape can be moved/resized by the user through a VipResizeItem automatically created by the VipPlotSceneModel.
-/// 
+///
 /// Any move/resize performed by the user will be reflected in the underlying VipSceneModel/
-/// 
+///
 /// The styling of VipPlotSceneModel is controlled by the same functions as VipPlotShape (like setPen(), setBrush(), setText()...)
 /// but each function requires an additional string parameter which is the scene model group on which the style applies.
 /// Passing an empy string will apply the style to all groups.
-/// 
+///
 class VIP_PLOTTING_EXPORT VipPlotSceneModel : public VipPlotItemComposite
 {
 	Q_OBJECT
@@ -243,7 +270,7 @@ public:
 	void setAdjustTextColor(const QString& group, bool);
 	bool adjustTextColor(const QString& group) const;
 
-	/// @brief Set the rendering hints for the specified group, or for all groups if group is empty 
+	/// @brief Set the rendering hints for the specified group, or for all groups if group is empty
 	void setShapesRenderHints(const QString& group, QPainter::RenderHints hints);
 	QPainter::RenderHints shapesRenderHints(const QString& group) const;
 
@@ -273,7 +300,7 @@ public:
 	void setTextStyle(const QString& group, const VipTextStyle& style);
 	VipTextStyle textStyle(const QString& group) const;
 	virtual VipTextStyle textStyle() const;
-	
+
 	/// @brief Set the custom text for the specified group, or for all groups if group is empty (sse VipPlotShape::setText())
 	void setText(const QString& group, const VipText& text);
 	VipText text(const QString& group) const;
@@ -341,9 +368,7 @@ public Q_SLOTS:
 	/// @brief Set the scene model managed by this item.
 	/// This function is thread safe.
 	void setSceneModel(const VipSceneModel& scene);
-	void setData(const QVariant& scene) { 
-		setSceneModel(scene.value<VipSceneModel>());
-	}
+	void setData(const QVariant& scene) { setSceneModel(scene.value<VipSceneModel>()); }
 
 	/// @brief Reset the content of the internal scene model with given one
 	/// This function is thread safe.
@@ -400,9 +425,6 @@ private:
 	PrivateData* d_data;
 };
 
-
-
-
 VIP_REGISTER_QOBJECT_METATYPE(VipPlotShape*)
 VIP_PLOTTING_EXPORT VipArchive& operator<<(VipArchive& arch, const VipPlotShape* value);
 VIP_PLOTTING_EXPORT VipArchive& operator>>(VipArchive& arch, VipPlotShape* value);
@@ -410,8 +432,6 @@ VIP_PLOTTING_EXPORT VipArchive& operator>>(VipArchive& arch, VipPlotShape* value
 VIP_REGISTER_QOBJECT_METATYPE(VipPlotSceneModel*)
 VIP_PLOTTING_EXPORT VipArchive& operator<<(VipArchive& arch, const VipPlotSceneModel* value);
 VIP_PLOTTING_EXPORT VipArchive& operator>>(VipArchive& arch, VipPlotSceneModel* value);
-
-
 
 /// @}
 // end Plotting

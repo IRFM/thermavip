@@ -1,100 +1,83 @@
-#include <QDataStream>
-#include <QTextStream>
-#include <QByteArray>
-#include <QFile>
+/**
+ * BSD 3-Clause License
+ *
+ * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice, this
+ *    list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of the copyright holder nor the names of its
+ *    contributors may be used to endorse or promote products derived from
+ *    this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
 
+#include <QByteArray>
+#include <QDataStream>
+#include <QFile>
+#include <QTextStream>
 
 #include "VipNDArray.h"
 #include "VipNDArrayImage.h"
 
-
-
-
-
-
-
-
-//#include <qmutex.h>
-// static QMutex mutex;
-// static int count = 0;
-// static double size_mb = 0;
-// static QList<VipNDArrayHandle*> & _handles() {
-// static QList<VipNDArrayHandle*> h;
-// return h;
-// }
-// static void add_handle(VipNDArrayHandle * h)
-// {
-// QMutexLocker l(&mutex);
-// ++count;
-// _handles().append(h);
-// }
-// static void rm_handle(VipNDArrayHandle* h)
-// {
-// QMutexLocker l(&mutex);
-// --count;
-// _handles().removeOne(h);
-// double s = 0;
-// for (int i = 0; i < _handles().size(); ++i) {
-// if(!dynamic_cast<detail::ViewHandle*>(_handles()[i]))
-// s += _handles()[i]->dataSize() * _handles()[i]->size;
-// }
-// //vip_debug("%i arrays, s= %f MB\n", count, (double)s / 1000000);
-// }
-//
-// int vipNDArrayCount()
-// {
-// return -1;// count;
-// }
-
-bool vipIsNullArray(const VipNDArray & ar)
+bool vipIsNullArray(const VipNDArray& ar)
 {
 	return vipIsNullArray(ar.handle());
 }
-bool vipIsNullArray(const VipNDArrayHandle * h)
+bool vipIsNullArray(const VipNDArrayHandle* h)
 {
 	return !h || h->handleType() == VipNDArrayHandle::Null || h->dataType() == 0;
 }
 
-
-
-VipNDArrayHandle::VipNDArrayHandle() : size(0), opaque(nullptr){
-	//add_handle(this);
-
-}
-
-	//should destroy the underlying data only if own = true
-VipNDArrayHandle::~VipNDArrayHandle() {
-
-}
-
-VipNDArrayBase::VipNDArrayBase()
+VipNDArrayHandle::VipNDArrayHandle()
+  : size(0)
+  , opaque(nullptr)
 {
+	// add_handle(this);
 }
 
-VipNDArrayBase::~VipNDArrayBase()
-{
-}
+// should destroy the underlying data only if own = true
+VipNDArrayHandle::~VipNDArrayHandle() {}
+
+VipNDArrayBase::VipNDArrayBase() {}
+
+VipNDArrayBase::~VipNDArrayBase() {}
 
 VipNDArrayShape VipNDArrayBase::viewStart() const
 {
 	return handle()->handleType() == VipNDArrayHandle::View ? static_cast<const detail::ViewHandle*>(handle())->start : VipNDArrayShape(handle()->shape.size(), 0);
 }
 
-
-
-VipNDArray VipNDArray::makeView(const VipNDArray & other)
+VipNDArray VipNDArray::makeView(const VipNDArray& other)
 {
 	if (other.isView())
 		return other;
 	if (other.handle()->handleType() != VipNDArrayHandle::Standard)
 		return VipNDArray();
-	detail::ViewHandle * h = new detail::ViewHandle(other.sharedHandle(), VipNDArrayShape(other.shapeCount(), 0), other.shape());
+	detail::ViewHandle* h = new detail::ViewHandle(other.sharedHandle(), VipNDArrayShape(other.shapeCount(), 0), other.shape());
 	return VipNDArray(SharedHandle(h));
 }
 
-VipNDArray VipNDArray::makeView(void * ptr, int data_type, const VipNDArrayShape & shape, const VipNDArrayShape & strides)
+VipNDArray VipNDArray::makeView(void* ptr, int data_type, const VipNDArrayShape& shape, const VipNDArrayShape& strides)
 {
-	detail::ViewHandle * h = new detail::ViewHandle(ptr, data_type, shape, strides);
+	detail::ViewHandle* h = new detail::ViewHandle(ptr, data_type, shape, strides);
 	if (h->handle->handleType() == VipNDArrayHandle::Standard)
 		return VipNDArray(SharedHandle(h));
 	else
@@ -102,32 +85,30 @@ VipNDArray VipNDArray::makeView(void * ptr, int data_type, const VipNDArrayShape
 	return VipNDArray();
 }
 
-
 VipNDArray::VipNDArray()
-:VipNDArrayBase(vipNullHandle())
+  : VipNDArrayBase(vipNullHandle())
 {
 }
 
-
-VipNDArray::VipNDArray(int data_type, const VipNDArrayShape & shape)
-:VipNDArrayBase(vipCreateArrayHandle(VipNDArrayHandle::Standard, data_type,shape))
+VipNDArray::VipNDArray(int data_type, const VipNDArrayShape& shape)
+  : VipNDArrayBase(vipCreateArrayHandle(VipNDArrayHandle::Standard, data_type, shape))
 {
 }
 
-void VipNDArray::import(const void * ptr, int data_type, const VipNDArrayShape & shape)
+void VipNDArray::import(const void* ptr, int data_type, const VipNDArrayShape& shape)
 {
-	SharedHandle h = vipCreateArrayHandle(VipNDArrayHandle::Standard, data_type,const_cast<void*>(ptr),shape,vip_deleter_type());
-	if(!h)
+	SharedHandle h = vipCreateArrayHandle(VipNDArrayHandle::Standard, data_type, const_cast<void*>(ptr), shape, vip_deleter_type());
+	if (!h)
 		return;
 
 	this->setSharedHandle(h);
-	this->detach(); //detach, allocate and copy input data
+	this->detach(); // detach, allocate and copy input data
 	h->opaque = nullptr;
 }
 
-VipNDArray::VipNDArray(const void * ptr, int data_type, const VipNDArrayShape & shape)
+VipNDArray::VipNDArray(const void* ptr, int data_type, const VipNDArrayShape& shape)
 {
-	import(ptr,data_type,shape);
+	import(ptr, data_type, shape);
 }
 
 bool VipNDArray::isUnstrided() const
@@ -139,32 +120,30 @@ bool VipNDArray::isUnstrided() const
 
 bool VipNDArray::canConvert(int out_type) const
 {
-	if(handle()->canExport(out_type))
+	if (handle()->canExport(out_type))
 		return true;
-	else
-	{
+	else {
 		const SharedHandle h = detail::getHandle(VipNDArrayHandle::Standard, out_type);
-		if(!vipIsNullArray(h.data()))
+		if (!vipIsNullArray(h.data()))
 			return h->canImport(this->dataType());
 		else
 			return false;
 	}
 }
 
-bool VipNDArray::fill(const QVariant & value)
+bool VipNDArray::fill(const QVariant& value)
 {
-	return handle()->fill(VipNDArrayShape(shapeCount(),0), shape(),value);
+	return handle()->fill(VipNDArrayShape(shapeCount(), 0), shape(), value);
 }
 
 VipNDArray VipNDArray::copy() const
 {
-	VipNDArray res(dataType(),shape());
+	VipNDArray res(dataType(), shape());
 	convert(res);
 	return res;
 }
 
-
-bool VipNDArray::load(const char * filename, FileFormat format)
+bool VipNDArray::load(const char* filename, FileFormat format)
 {
 	QImage tmp;
 	if (format == AutoDetect) {
@@ -203,17 +182,17 @@ bool VipNDArray::load(const char * filename, FileFormat format)
 				return false;
 		}
 		else {
-			if (!fin.open(QFile::ReadOnly|QFile::Text))
+			if (!fin.open(QFile::ReadOnly | QFile::Text))
 				return false;
 		}
 		return load(&fin, format);
 	}
 }
 
-#include <qimagereader.h>
 #include <qfileinfo.h>
+#include <qimagereader.h>
 
-bool VipNDArray::load(QIODevice *device, FileFormat format)
+bool VipNDArray::load(QIODevice* device, FileFormat format)
 {
 	if (format == AutoDetect)
 		format = Binary;
@@ -245,23 +224,16 @@ bool VipNDArray::load(QIODevice *device, FileFormat format)
 		return true;
 	}
 }
-bool VipNDArray::save(const char * filename, FileFormat format )
+bool VipNDArray::save(const char* filename, FileFormat format)
 {
 	if (format == AutoDetect) {
 		QString suffix = QFileInfo(QString(filename)).suffix();
-		if (suffix.compare("png", Qt::CaseInsensitive) == 0 ||
-			suffix.compare("jpg", Qt::CaseInsensitive) == 0 ||
-			suffix.compare("jpeg", Qt::CaseInsensitive) == 0 ||
-			suffix.compare("bmp", Qt::CaseInsensitive) == 0 ||
-			suffix.compare("gif", Qt::CaseInsensitive) == 0 ||
-			suffix.compare("pbm", Qt::CaseInsensitive) == 0 ||
-			suffix.compare("pgm", Qt::CaseInsensitive) == 0 ||
-			suffix.compare("ppm", Qt::CaseInsensitive) == 0 ||
-			suffix.compare("xbm", Qt::CaseInsensitive) == 0 ||
-			suffix.compare("xpm", Qt::CaseInsensitive) == 0)
+		if (suffix.compare("png", Qt::CaseInsensitive) == 0 || suffix.compare("jpg", Qt::CaseInsensitive) == 0 || suffix.compare("jpeg", Qt::CaseInsensitive) == 0 ||
+		    suffix.compare("bmp", Qt::CaseInsensitive) == 0 || suffix.compare("gif", Qt::CaseInsensitive) == 0 || suffix.compare("pbm", Qt::CaseInsensitive) == 0 ||
+		    suffix.compare("pgm", Qt::CaseInsensitive) == 0 || suffix.compare("ppm", Qt::CaseInsensitive) == 0 || suffix.compare("xbm", Qt::CaseInsensitive) == 0 ||
+		    suffix.compare("xpm", Qt::CaseInsensitive) == 0)
 			format = Image;
-		else if (suffix.compare("txt", Qt::CaseInsensitive) == 0 ||
-			suffix.compare("text", Qt::CaseInsensitive) == 0)
+		else if (suffix.compare("txt", Qt::CaseInsensitive) == 0 || suffix.compare("text", Qt::CaseInsensitive) == 0)
 			format = Text;
 		else
 			format = Binary;
@@ -277,7 +249,7 @@ bool VipNDArray::save(const char * filename, FileFormat format )
 	}
 	return save(&fin, format);
 }
-bool VipNDArray::save(QIODevice * device, FileFormat format)
+bool VipNDArray::save(QIODevice* device, FileFormat format)
 {
 	if (format == AutoDetect)
 		format = Binary;
@@ -306,19 +278,16 @@ bool VipNDArray::save(QIODevice * device, FileFormat format)
 
 VipNDArray VipNDArray::convert(int out_type) const
 {
-	//try to avoid a copy if possible
-	if (out_type == dataType())
-	{
-		if(handle()->handleType() == VipNDArrayHandle::Standard)
+	// try to avoid a copy if possible
+	if (out_type == dataType()) {
+		if (handle()->handleType() == VipNDArrayHandle::Standard)
 			return *this;
-		else if (isView())
-		{
-			//check unstrided Standard view
-			const detail::ViewHandle * h = static_cast<const detail::ViewHandle*>(handle());
-			if (h->handle->handleType() == VipNDArrayHandle::Standard)
-			{
+		else if (isView()) {
+			// check unstrided Standard view
+			const detail::ViewHandle* h = static_cast<const detail::ViewHandle*>(handle());
+			if (h->handle->handleType() == VipNDArrayHandle::Standard) {
 				bool unstrided = false;
-				vipShapeToSize(shape(),strides(), &unstrided);
+				vipShapeToSize(shape(), strides(), &unstrided);
 				if (unstrided)
 					return *this;
 			}
@@ -327,21 +296,19 @@ VipNDArray VipNDArray::convert(int out_type) const
 
 	VipNDArray res(out_type, shape());
 
-	if(handle()->canExport(out_type))
-	{
-		handle()->exportData(VipNDArrayShape(shapeCount(), 0),shape(),res.handle(),VipNDArrayShape(shapeCount(),0), shape());
+	if (handle()->canExport(out_type)) {
+		handle()->exportData(VipNDArrayShape(shapeCount(), 0), shape(), res.handle(), VipNDArrayShape(shapeCount(), 0), shape());
 		return res;
 	}
-	else if(res.handle()->canImport(dataType()))
-	{
-		res.handle()->importData(VipNDArrayShape(shapeCount(),0), shape(), handle(), viewStart(), shape() );
+	else if (res.handle()->canImport(dataType())) {
+		res.handle()->importData(VipNDArrayShape(shapeCount(), 0), shape(), handle(), viewStart(), shape());
 		return res;
 	}
 	else
 		return VipNDArray();
 }
 
-bool VipNDArray::import(const VipNDArray & other)
+bool VipNDArray::import(const VipNDArray& other)
 {
 	if (isEmpty() || other.isEmpty())
 		return false;
@@ -354,8 +321,7 @@ bool VipNDArray::import(const VipNDArray & other)
 		return false;
 }
 
-
-bool VipNDArray::convert(VipNDArray & other) const
+bool VipNDArray::convert(VipNDArray& other) const
 {
 	if (isEmpty() || other.isEmpty())
 		return false;
@@ -370,127 +336,139 @@ bool VipNDArray::convert(VipNDArray & other) const
 
 VipNDArray VipNDArray::toInt8() const
 {
-	return convert(qMetaTypeId<qint8> ());
+	return convert(qMetaTypeId<qint8>());
 }
 
 VipNDArray VipNDArray::toUInt8() const
 {
-	return convert(qMetaTypeId<quint8> ());
+	return convert(qMetaTypeId<quint8>());
 }
 
 VipNDArray VipNDArray::toInt16() const
 {
-	return convert(qMetaTypeId<qint16> ());
+	return convert(qMetaTypeId<qint16>());
 }
 
 VipNDArray VipNDArray::toUInt16() const
 {
-	return convert(qMetaTypeId<quint16> ());
+	return convert(qMetaTypeId<quint16>());
 }
 
 VipNDArray VipNDArray::toInt32() const
 {
-	return convert(qMetaTypeId<qint32> ());
+	return convert(qMetaTypeId<qint32>());
 }
 
 VipNDArray VipNDArray::toUInt32() const
 {
-	return convert(qMetaTypeId<quint32> ());
+	return convert(qMetaTypeId<quint32>());
 }
 
 VipNDArray VipNDArray::toInt64() const
 {
-	return convert(qMetaTypeId<qint64> ());
+	return convert(qMetaTypeId<qint64>());
 }
 
 VipNDArray VipNDArray::toUInt64() const
 {
-	return convert(qMetaTypeId<quint64> ());
+	return convert(qMetaTypeId<quint64>());
 }
 
 VipNDArray VipNDArray::toFloat() const
 {
-	return convert(qMetaTypeId<float> ());
+	return convert(qMetaTypeId<float>());
 }
 
 VipNDArray VipNDArray::toDouble() const
 {
-	return convert(qMetaTypeId<double> ());
+	return convert(qMetaTypeId<double>());
 }
 
 VipNDArray VipNDArray::toComplexFloat() const
 {
-	return convert(qMetaTypeId<complex_f> ());
+	return convert(qMetaTypeId<complex_f>());
 }
 
 VipNDArray VipNDArray::toComplexDouble() const
 {
-	return convert(qMetaTypeId<complex_d> ());
+	return convert(qMetaTypeId<complex_d>());
 }
 
 VipNDArray VipNDArray::toString() const
 {
-	return convert(qMetaTypeId<QString> ());
+	return convert(qMetaTypeId<QString>());
 }
 
-struct ToReal {
-	template< class T> double operator()(T val) const { return val.real(); }
+struct ToReal
+{
+	template<class T>
+	double operator()(T val) const
+	{
+		return val.real();
+	}
 };
-struct ToImag {
-	template< class T> double operator()(T val) const { return val.imag(); }
+struct ToImag
+{
+	template<class T>
+	double operator()(T val) const
+	{
+		return val.imag();
+	}
 };
-struct ToAmplitude {
-	template< class T> double operator()(T val) const { return std::abs(val); }
+struct ToAmplitude
+{
+	template<class T>
+	double operator()(T val) const
+	{
+		return std::abs(val);
+	}
 };
-struct ToArgument {
-	template< class T> double operator()(T val) const { return std::arg(val); }
+struct ToArgument
+{
+	template<class T>
+	double operator()(T val) const
+	{
+		return std::arg(val);
+	}
 };
 
 VipNDArray VipNDArray::toReal() const
 {
-	if (dataType() == qMetaTypeId<complex_d>())
-	{
+	if (dataType() == qMetaTypeId<complex_d>()) {
 		VipNDArray out(QMetaType::Double, shape());
 		const complex_d* ptr = static_cast<const complex_d*>(handle()->opaque);
-		vipArrayTransform(ptr + vipFlatOffset<false>(strides(), viewStart()), shape(), strides(),
-			static_cast<double*>(out.data()), out.shape(), out.strides(), ToReal());
+		vipArrayTransform(ptr + vipFlatOffset<false>(strides(), viewStart()), shape(), strides(), static_cast<double*>(out.data()), out.shape(), out.strides(), ToReal());
 		return out;
 	}
-	else if (dataType() == qMetaTypeId<complex_f>())
-	{
+	else if (dataType() == qMetaTypeId<complex_f>()) {
 		VipNDArray out(QMetaType::Double, shape());
 		const complex_f* ptr = static_cast<const complex_f*>(handle()->opaque);
-		vipArrayTransform(ptr + vipFlatOffset<false>(strides(), viewStart()), shape(), strides(),
-			static_cast<double*>(out.data()), out.shape(), out.strides(), ToReal());
+		vipArrayTransform(ptr + vipFlatOffset<false>(strides(), viewStart()), shape(), strides(), static_cast<double*>(out.data()), out.shape(), out.strides(), ToReal());
 		return out;
 	}
-	else
-	{
+	else {
 		return toDouble();
 	}
 }
 VipNDArray VipNDArray::toImag() const
 {
-	if (dataType() == qMetaTypeId<complex_d>())
-	{
+	if (dataType() == qMetaTypeId<complex_d>()) {
 		VipNDArray out(QMetaType::Double, shape());
 		const complex_d* ptr = static_cast<const complex_d*>(handle()->opaque);
-		if (isView()) ptr += vipFlatOffset<false>(strides(), viewStart());
-		vipArrayTransform(ptr, shape(), strides(),
-			static_cast<double*>(out.data()), out.shape(), out.strides(), ToImag());
+		if (isView())
+			ptr += vipFlatOffset<false>(strides(), viewStart());
+		vipArrayTransform(ptr, shape(), strides(), static_cast<double*>(out.data()), out.shape(), out.strides(), ToImag());
 		return out;
 	}
-	else if (dataType() == qMetaTypeId<complex_f>())
-	{
+	else if (dataType() == qMetaTypeId<complex_f>()) {
 		VipNDArray out(QMetaType::Double, shape());
 		const complex_f* ptr = static_cast<const complex_f*>(handle()->opaque);
-		if (isView()) ptr += vipFlatOffset<false>(strides(), viewStart());
-		vipArrayTransform(ptr, shape(), strides(),
-			static_cast<double*>(out.data()), out.shape(), out.strides(), ToImag());
+		if (isView())
+			ptr += vipFlatOffset<false>(strides(), viewStart());
+		vipArrayTransform(ptr, shape(), strides(), static_cast<double*>(out.data()), out.shape(), out.strides(), ToImag());
 		return out;
 	}
-	else
-	{
+	else {
 		VipNDArray out(QMetaType::Double, shape());
 		out.fill(0);
 		return out;
@@ -499,26 +477,23 @@ VipNDArray VipNDArray::toImag() const
 
 VipNDArray VipNDArray::toArgument() const
 {
-	if (dataType() == qMetaTypeId<complex_d>())
-	{
+	if (dataType() == qMetaTypeId<complex_d>()) {
 		VipNDArray out(QMetaType::Double, shape());
 		const complex_d* ptr = static_cast<const complex_d*>(handle()->opaque);
-		if (isView()) ptr += vipFlatOffset<false>(strides(), viewStart());
-		vipArrayTransform(ptr, shape(), strides(),
-			static_cast<double*>(out.data()), out.shape(), out.strides(), ToArgument());
+		if (isView())
+			ptr += vipFlatOffset<false>(strides(), viewStart());
+		vipArrayTransform(ptr, shape(), strides(), static_cast<double*>(out.data()), out.shape(), out.strides(), ToArgument());
 		return out;
 	}
-	else if (dataType() == qMetaTypeId<complex_f>())
-	{
+	else if (dataType() == qMetaTypeId<complex_f>()) {
 		VipNDArray out(QMetaType::Double, shape());
 		const complex_f* ptr = static_cast<const complex_f*>(handle()->opaque);
-		if (isView()) ptr += vipFlatOffset<false>(strides(), viewStart());
-		vipArrayTransform(ptr, shape(), strides(),
-			static_cast<double*>(out.data()), out.shape(), out.strides(), ToArgument());
+		if (isView())
+			ptr += vipFlatOffset<false>(strides(), viewStart());
+		vipArrayTransform(ptr, shape(), strides(), static_cast<double*>(out.data()), out.shape(), out.strides(), ToArgument());
 		return out;
 	}
-	else
-	{
+	else {
 		VipNDArray out(QMetaType::Double, shape());
 		out.fill(0);
 		return out;
@@ -526,130 +501,121 @@ VipNDArray VipNDArray::toArgument() const
 }
 VipNDArray VipNDArray::toAmplitude() const
 {
-	if (dataType() == qMetaTypeId<complex_d>())
-	{
+	if (dataType() == qMetaTypeId<complex_d>()) {
 		VipNDArray out(QMetaType::Double, shape());
 		const complex_d* ptr = static_cast<const complex_d*>(handle()->opaque);
-		if (isView()) ptr += vipFlatOffset<false>(strides(), viewStart());
-		vipArrayTransform(ptr, shape(), strides(),
-			static_cast<double*>(out.data()), out.shape(), out.strides(), ToAmplitude());
+		if (isView())
+			ptr += vipFlatOffset<false>(strides(), viewStart());
+		vipArrayTransform(ptr, shape(), strides(), static_cast<double*>(out.data()), out.shape(), out.strides(), ToAmplitude());
 		return out;
 	}
-	else if (dataType() == qMetaTypeId<complex_f>())
-	{
+	else if (dataType() == qMetaTypeId<complex_f>()) {
 		VipNDArray out(QMetaType::Double, shape());
 		const complex_d* ptr = static_cast<const complex_d*>(handle()->opaque);
-		if (isView()) ptr += vipFlatOffset<false>(strides(), viewStart());
-		vipArrayTransform(ptr, shape(), strides(),
-			static_cast<double*>(out.data()), out.shape(), out.strides(), ToAmplitude());
+		if (isView())
+			ptr += vipFlatOffset<false>(strides(), viewStart());
+		vipArrayTransform(ptr, shape(), strides(), static_cast<double*>(out.data()), out.shape(), out.strides(), ToAmplitude());
 		return out;
 	}
-	else
-	{
+	else {
 		return toDouble();
 	}
 }
 
-VipNDArray VipNDArray::mid(const VipNDArrayShape & pos, const VipNDArrayShape & shape ) const
+VipNDArray VipNDArray::mid(const VipNDArrayShape& pos, const VipNDArrayShape& shape) const
 {
 	if (isEmpty())
 		return VipNDArray();
 
 	VipNDArrayShape _pos = pos;
 	VipNDArrayShape _shape = shape;
-	for (int i = 0; i < _pos.size(); ++i)
-	{
-		if (_pos[i] < 0) _pos[i] = 0;
-		else if (_pos[i] >= this->shape(i)) _pos[i] = this->shape(i) - 1;
+	for (int i = 0; i < _pos.size(); ++i) {
+		if (_pos[i] < 0)
+			_pos[i] = 0;
+		else if (_pos[i] >= this->shape(i))
+			_pos[i] = this->shape(i) - 1;
 	}
 	for (int i = _pos.size(); i < shapeCount(); ++i)
 		_pos.push_back(0);
 
-	for (int i = 0; i < _shape.size(); ++i)
-	{
-		if (_shape[i] < 0) _shape[i] = 0;
-		else if (_shape[i] + _pos[i] > this->shape(i) ) _shape[i] = this->shape(i) - _pos[i];
+	for (int i = 0; i < _shape.size(); ++i) {
+		if (_shape[i] < 0)
+			_shape[i] = 0;
+		else if (_shape[i] + _pos[i] > this->shape(i))
+			_shape[i] = this->shape(i) - _pos[i];
 	}
 	for (int i = _shape.size(); i < shapeCount(); ++i)
 		_shape.push_back(this->shape(i) - _pos[i]);
 
-	if (isView())
-	{
-		//work on a new ViewHandle
-		detail::ViewHandle * h = new detail::ViewHandle(*static_cast<const detail::ViewHandle*>(handle()),_pos,_shape);
-		//h->start = h->start + _pos;
-		//h->shape = _shape;
+	if (isView()) {
+		// work on a new ViewHandle
+		detail::ViewHandle* h = new detail::ViewHandle(*static_cast<const detail::ViewHandle*>(handle()), _pos, _shape);
+		// h->start = h->start + _pos;
+		// h->shape = _shape;
 		return VipNDArray(SharedHandle(h));
 	}
-	else
-	{
-		detail::ViewHandle * h = new detail::ViewHandle(sharedHandle(), _pos, _shape);
+	else {
+		detail::ViewHandle* h = new detail::ViewHandle(sharedHandle(), _pos, _shape);
 		return VipNDArray(SharedHandle(h));
 	}
 }
 
-
-void VipNDArray::swap(VipNDArray & other)
+void VipNDArray::swap(VipNDArray& other)
 {
-	qSwap(*this,other);
+	qSwap(*this, other);
 }
 
-
-
-bool VipNDArray::reshape(const VipNDArrayShape & new_shape)
+bool VipNDArray::reshape(const VipNDArrayShape& new_shape)
 {
 	if (isView() || !isUnstrided() || size() != vipShapeToSize(new_shape))
 		return false;
 	return handle()->reshape(new_shape);
 }
 
-bool VipNDArray::resize(VipNDArray & dst, Vip::InterpolationType type) const
+bool VipNDArray::resize(VipNDArray& dst, Vip::InterpolationType type) const
 {
-	if(isEmpty() || dst.isEmpty())
+	if (isEmpty() || dst.isEmpty())
 		return false;
 
-	if (shape() != dst.shape())
-	{
-		return handle()->resize(VipNDArrayShape(shapeCount(), 0), shape(), dst.handle(), type,dst.viewStart(),dst.shape());
+	if (shape() != dst.shape()) {
+		return handle()->resize(VipNDArrayShape(shapeCount(), 0), shape(), dst.handle(), type, dst.viewStart(), dst.shape());
 	}
 	else
 		return convert(dst);
 }
 
-VipNDArray VipNDArray::resize(const VipNDArrayShape & new_shape, Vip::InterpolationType type) const
+VipNDArray VipNDArray::resize(const VipNDArrayShape& new_shape, Vip::InterpolationType type) const
 {
-	if(isEmpty())
+	if (isEmpty())
 		return VipNDArray();
 
-	if(shape() == new_shape)
+	if (shape() == new_shape)
 		return *this;
 
-	VipNDArray res(dataType(),new_shape);
-	handle()->resize(VipNDArrayShape(shapeCount(), 0), shape(), res.handle(),type, VipNDArrayShape(shapeCount(), 0), new_shape);
+	VipNDArray res(dataType(), new_shape);
+	handle()->resize(VipNDArrayShape(shapeCount(), 0), shape(), res.handle(), type, VipNDArrayShape(shapeCount(), 0), new_shape);
 	return res;
 }
 
-bool VipNDArray::reset(const VipNDArrayShape & new_shape)
+bool VipNDArray::reset(const VipNDArrayShape& new_shape)
 {
-	//cannot reset if the data type is not already set
+	// cannot reset if the data type is not already set
 	if (dataType() == 0)
 		return false;
 
-	//just return true if the shape is the same
+	// just return true if the shape is the same
 	if (shape() == new_shape)
 		return true;
 	if (isView())
 		return false;
 
 	int type = this->constHandle()->handleType();
-	if (type == VipNDArrayHandle::Null)
-	{
+	if (type == VipNDArrayHandle::Null) {
 		type = VipNDArrayHandle::Standard;
 		setSharedHandle(vipCreateArrayHandle(type, dataType(), new_shape));
 		return constHandle()->handleType() != VipNDArrayHandle::Null;
 	}
-	else
-	{
+	else {
 		if (!this->handle()->realloc(new_shape))
 			return false;
 	}
@@ -657,10 +623,10 @@ bool VipNDArray::reset(const VipNDArrayShape & new_shape)
 	return constHandle()->handleType() != VipNDArrayHandle::Null;
 }
 
-bool VipNDArray::reset(const VipNDArrayShape & new_shape, int data_type)
+bool VipNDArray::reset(const VipNDArrayShape& new_shape, int data_type)
 {
-	//if (!isNull())
- {
+	// if (!isNull())
+	{
 		if (shape() == new_shape && dataType() == data_type)
 			return true;
 		if (isView())
@@ -671,38 +637,28 @@ bool VipNDArray::reset(const VipNDArrayShape & new_shape, int data_type)
 	return constHandle()->handleType() != VipNDArrayHandle::Null;
 }
 
-
 void VipNDArray::clear()
 {
 	setSharedHandle(vipNullHandle());
 }
 
-VipNDArray & VipNDArray::operator=(const VipNDArray & other)
+VipNDArray& VipNDArray::operator=(const VipNDArray& other)
 {
 	setSharedHandle(other.sharedHandle());
 	return *this;
 }
 
-
-
-
-
-
-
 #include "VipMath.h"
 #include "VipNDArrayImage.h"
 
-template< class T, class U>
-void applyWarping(const T * src, U * dst, int w, int h, U background, const QPointF* warping)
+template<class T, class U>
+void applyWarping(const T* src, U* dst, int w, int h, U background, const QPointF* warping)
 {
 	int i = 0;
-	for (int y = 0; y < h; ++y)
-	{
-		for (int x = 0; x < w; ++x, ++i)
-		{
+	for (int y = 0; y < h; ++y) {
+		for (int x = 0; x < w; ++x, ++i) {
 			const QPointF src_pt = warping[i];
-			if (!vipIsNan(src_pt.x()))
-			{
+			if (!vipIsNan(src_pt.x())) {
 				const int leftCellEdge = src_pt.x();
 				int rightCellEdge = (src_pt.x()) + 1;
 				if (rightCellEdge == w)
@@ -711,32 +667,28 @@ void applyWarping(const T * src, U * dst, int w, int h, U background, const QPoi
 				int bottomCellEdge = (src_pt.y() + 1);
 				if (bottomCellEdge == h)
 					bottomCellEdge = topCellEdge;
-				const T p1 = src[bottomCellEdge*w + leftCellEdge];
-				const T p2 = src[topCellEdge*w + leftCellEdge];
-				const T p3 = src[bottomCellEdge*w + rightCellEdge];
-				const T p4 = src[topCellEdge*w + rightCellEdge];
-				const double u = (src_pt.x() - leftCellEdge);// / (rightCellEdge - leftCellEdge);
-				const double v = (bottomCellEdge - src_pt.y());// / (topCellEdge - bottomCellEdge);
-				U value = (p1*(1 - v) + p2*v)*(1 - u) + (p3*(1 - v) + p4*v)*u;
+				const T p1 = src[bottomCellEdge * w + leftCellEdge];
+				const T p2 = src[topCellEdge * w + leftCellEdge];
+				const T p3 = src[bottomCellEdge * w + rightCellEdge];
+				const T p4 = src[topCellEdge * w + rightCellEdge];
+				const double u = (src_pt.x() - leftCellEdge);	// / (rightCellEdge - leftCellEdge);
+				const double v = (bottomCellEdge - src_pt.y()); // / (topCellEdge - bottomCellEdge);
+				U value = (p1 * (1 - v) + p2 * v) * (1 - u) + (p3 * (1 - v) + p4 * v) * u;
 				dst[i] = value;
 			}
 			else
 				dst[i] = background;
-
 		}
 	}
 }
 
-inline void applyWarpingRGB(const QRgb * src, QRgb * dst, int w, int h, QRgb background, const QPointF* warping)
+inline void applyWarpingRGB(const QRgb* src, QRgb* dst, int w, int h, QRgb background, const QPointF* warping)
 {
 	int i = 0;
-	for (int y = 0; y < h; ++y)
-	{
-		for (int x = 0; x < w; ++x, ++i)
-		{
+	for (int y = 0; y < h; ++y) {
+		for (int x = 0; x < w; ++x, ++i) {
 			const QPointF src_pt = warping[i];
-			if (!vipIsNan(src_pt.x()))
-			{
+			if (!vipIsNan(src_pt.x())) {
 				const int leftCellEdge = src_pt.x();
 				int rightCellEdge = (src_pt.x()) + 1;
 				if (rightCellEdge == w)
@@ -745,36 +697,32 @@ inline void applyWarpingRGB(const QRgb * src, QRgb * dst, int w, int h, QRgb bac
 				int bottomCellEdge = (src_pt.y() + 1);
 				if (bottomCellEdge == h)
 					bottomCellEdge = topCellEdge;
-				const QRgb p1 = src[bottomCellEdge*w + leftCellEdge];
-				const QRgb p2 = src[topCellEdge*w + leftCellEdge];
-				const QRgb p3 = src[bottomCellEdge*w + rightCellEdge];
-				const QRgb p4 = src[topCellEdge*w + rightCellEdge];
-				const double u = (src_pt.x() - leftCellEdge);/// (rightCellEdge - leftCellEdge);
-				const double v = (bottomCellEdge - src_pt.y());/// (topCellEdge - bottomCellEdge);
+				const QRgb p1 = src[bottomCellEdge * w + leftCellEdge];
+				const QRgb p2 = src[topCellEdge * w + leftCellEdge];
+				const QRgb p3 = src[bottomCellEdge * w + rightCellEdge];
+				const QRgb p4 = src[topCellEdge * w + rightCellEdge];
+				const double u = (src_pt.x() - leftCellEdge);	/// (rightCellEdge - leftCellEdge);
+				const double v = (bottomCellEdge - src_pt.y()); /// (topCellEdge - bottomCellEdge);
 
-
-				int a = (qAlpha(p1) * (1 - v) + qAlpha(p2) * v)*(1 - u) + (qAlpha(p3) * (1 - v) + qAlpha(p4) * v)*u;
-				int r = (qRed(p1) * (1 - v) + qRed(p2) * v)*(1 - u) + (qRed(p3) * (1 - v) + qRed(p4) * v)*u;
-				int g = (qGreen(p1) * (1 - v) + qGreen(p2) * v)*(1 - u) + (qGreen(p3) * (1 - v) + qGreen(p4) * v)*u;
-				int b = (qBlue(p1) * (1 - v) + qBlue(p2) * v)*(1 - u) + (qBlue(p3) * (1 - v) + qBlue(p4) * v)*u;
+				int a = (qAlpha(p1) * (1 - v) + qAlpha(p2) * v) * (1 - u) + (qAlpha(p3) * (1 - v) + qAlpha(p4) * v) * u;
+				int r = (qRed(p1) * (1 - v) + qRed(p2) * v) * (1 - u) + (qRed(p3) * (1 - v) + qRed(p4) * v) * u;
+				int g = (qGreen(p1) * (1 - v) + qGreen(p2) * v) * (1 - u) + (qGreen(p3) * (1 - v) + qGreen(p4) * v) * u;
+				int b = (qBlue(p1) * (1 - v) + qBlue(p2) * v) * (1 - u) + (qBlue(p3) * (1 - v) + qBlue(p4) * v) * u;
 
 				dst[i] = qRgba(r, g, b, a);
 			}
 			else
 				dst[i] = background;
-
 		}
 	}
 }
 
-
-bool vipApplyDeformation(const VipNDArray & in, const QPointF * deformation, VipNDArray & out, const QVariant & background)
+bool vipApplyDeformation(const VipNDArray& in, const QPointF* deformation, VipNDArray& out, const QVariant& background)
 {
 	if (in.isEmpty())
 		return false;
 
-	if (in.canConvert<double>() && background.canConvert<double>())
-	{
+	if (in.canConvert<double>() && background.canConvert<double>()) {
 		if (out.dataType() != QMetaType::Double || out.shape() != in.shape())
 			out = VipNDArray(QMetaType::Double, in.shape());
 
@@ -782,8 +730,7 @@ bool vipApplyDeformation(const VipNDArray & in, const QPointF * deformation, Vip
 		applyWarping((double*)input.data(), (double*)out.data(), input.shape(1), input.shape(0), background.toDouble(), deformation);
 		return true;
 	}
-	else if (in.canConvert<complex_d>() && background.canConvert<complex_d>())
-	{
+	else if (in.canConvert<complex_d>() && background.canConvert<complex_d>()) {
 		if (out.dataType() != qMetaTypeId<complex_d>() || out.shape() != in.shape())
 			out = VipNDArray(qMetaTypeId<complex_d>(), in.shape());
 
@@ -791,8 +738,7 @@ bool vipApplyDeformation(const VipNDArray & in, const QPointF * deformation, Vip
 		applyWarping((complex_d*)input.data(), (complex_d*)out.data(), input.shape(1), input.shape(0), background.value<complex_d>(), deformation);
 		return true;
 	}
-	else if (vipIsImageArray(in) && (background.canConvert<QRgb>() || background.canConvert<QColor>() || background.canConvert<VipRGB>()))
-	{
+	else if (vipIsImageArray(in) && (background.canConvert<QRgb>() || background.canConvert<QColor>() || background.canConvert<VipRGB>())) {
 		QRgb back = 0;
 		if (background.canConvert<QRgb>())
 			back = background.toUInt();
@@ -804,8 +750,8 @@ bool vipApplyDeformation(const VipNDArray & in, const QPointF * deformation, Vip
 		QImage imin = vipToImage(in);
 		QImage imout = QImage(imin.width(), imin.height(), QImage::Format_ARGB32);
 
-		QRgb * in_p = (QRgb*)imin.bits();
-		QRgb * out_p = (QRgb*)imout.bits();
+		QRgb* in_p = (QRgb*)imin.bits();
+		QRgb* out_p = (QRgb*)imout.bits();
 
 		applyWarpingRGB(in_p, out_p, in.shape(1), in.shape(0), back, deformation);
 
@@ -815,8 +761,6 @@ bool vipApplyDeformation(const VipNDArray & in, const QPointF * deformation, Vip
 	return false;
 }
 
-
-
 int vipHigherArrayType(int t1, int t2)
 {
 
@@ -825,20 +769,30 @@ int vipHigherArrayType(int t1, int t2)
 	if (!init) {
 		init = true;
 		int level = 0;
-		type_to_level[QMetaType::Bool] = level++; type_to_level[QMetaType::UChar] = level++; type_to_level[QMetaType::SChar] = level++;
-		type_to_level[QMetaType::Char] = level++; type_to_level[QMetaType::UShort] = level++; type_to_level[QMetaType::Short] = level++;
-		type_to_level[QMetaType::UInt] = level++; type_to_level[QMetaType::Int] = level++; type_to_level[QMetaType::ULong] = level++;
-		type_to_level[QMetaType::Long] = level++; type_to_level[QMetaType::ULongLong] = level++; type_to_level[QMetaType::LongLong] = level++;
-		type_to_level[QMetaType::Float] = level++; type_to_level[QMetaType::Double] = level++; type_to_level[qMetaTypeId<long double>()] = level++;
-		type_to_level[qMetaTypeId<complex_f>()] = level++; type_to_level[qMetaTypeId<complex_d>()] = level++;
+		type_to_level[QMetaType::Bool] = level++;
+		type_to_level[QMetaType::UChar] = level++;
+		type_to_level[QMetaType::SChar] = level++;
+		type_to_level[QMetaType::Char] = level++;
+		type_to_level[QMetaType::UShort] = level++;
+		type_to_level[QMetaType::Short] = level++;
+		type_to_level[QMetaType::UInt] = level++;
+		type_to_level[QMetaType::Int] = level++;
+		type_to_level[QMetaType::ULong] = level++;
+		type_to_level[QMetaType::Long] = level++;
+		type_to_level[QMetaType::ULongLong] = level++;
+		type_to_level[QMetaType::LongLong] = level++;
+		type_to_level[QMetaType::Float] = level++;
+		type_to_level[QMetaType::Double] = level++;
+		type_to_level[qMetaTypeId<long double>()] = level++;
+		type_to_level[qMetaTypeId<complex_f>()] = level++;
+		type_to_level[qMetaTypeId<complex_d>()] = level++;
 	}
 
 	if (t1 == t2)
 		return t1;
 
 	QMap<int, int>::const_iterator it1 = type_to_level.find(t1);
-	if (it1 != type_to_level.end())
-	{
+	if (it1 != type_to_level.end()) {
 		QMap<int, int>::const_iterator it2 = type_to_level.find(t2);
 		if (it2 != type_to_level.end())
 			return it1.value() > it2.value() ? t1 : t2;
@@ -859,11 +813,10 @@ int vipHigherArrayType(int t1, int t2)
 		return QMetaType(t1).sizeOf() > QMetaType(t2).sizeOf() ? t1 : t2;
 }
 
-int vipHigherArrayType(const QVector<VipNDArray> & in)
+int vipHigherArrayType(const QVector<VipNDArray>& in)
 {
 	int dtype = 0;
-	for (int i = 0; i < in.size(); ++i)
-	{
+	for (int i = 0; i < in.size(); ++i) {
 		if (dtype == 0)
 			dtype = in[i].dataType();
 		else {
@@ -878,20 +831,19 @@ int vipHigherArrayType(const QVector<VipNDArray> & in)
 	return dtype;
 }
 
-
-static bool isUnder(int t1, int t2) {
+static bool isUnder(int t1, int t2)
+{
 	return vipHigherArrayType(t1, t2) == t2;
 }
 
-int vipHigherArrayType(int dtype, const QList<int> & possible_types)
+int vipHigherArrayType(int dtype, const QList<int>& possible_types)
 {
-	//sort possible types
+	// sort possible types
 	QList<int> types = possible_types;
 	std::sort(types.begin(), types.end(), isUnder);
 
 	int res = 0;
-	for (int i = 0; i < types.size(); ++i)
-	{
+	for (int i = 0; i < types.size(); ++i) {
 		int tmp = vipHigherArrayType(types[i], dtype);
 		if ((res == 0 && tmp != 0) || tmp != 0)
 			res = types[i];
@@ -901,7 +853,7 @@ int vipHigherArrayType(int dtype, const QList<int> & possible_types)
 	return res;
 }
 
-int vipHigherArrayType(const QVector<VipNDArray> & in, const QList<int> & possible_types)
+int vipHigherArrayType(const QVector<VipNDArray>& in, const QList<int>& possible_types)
 {
 	int dtype = vipHigherArrayType(in);
 	if (dtype == 0)
@@ -909,7 +861,7 @@ int vipHigherArrayType(const QVector<VipNDArray> & in, const QList<int> & possib
 	return vipHigherArrayType(dtype, possible_types);
 }
 
-bool vipConvertToHigherType(const QVector<VipNDArray> & in, QVector<VipNDArray> & out)
+bool vipConvertToHigherType(const QVector<VipNDArray>& in, QVector<VipNDArray>& out)
 {
 	int dtype = vipHigherArrayType(in);
 	if (dtype == 0)
@@ -917,8 +869,7 @@ bool vipConvertToHigherType(const QVector<VipNDArray> & in, QVector<VipNDArray> 
 	if (out.size() != in.size())
 		out.resize(in.size());
 
-	for (int i = 0; i < in.size(); ++i)
-	{
+	for (int i = 0; i < in.size(); ++i) {
 		if (out[i].shape() == in[i].shape() && out[i].dataType() == dtype)
 			in[i].convert(out[i]);
 		else
@@ -927,12 +878,11 @@ bool vipConvertToHigherType(const QVector<VipNDArray> & in, QVector<VipNDArray> 
 	return true;
 }
 
-bool vipConvertToType(const QVector<VipNDArray> & in, QVector<VipNDArray> & out, int dtype)
+bool vipConvertToType(const QVector<VipNDArray>& in, QVector<VipNDArray>& out, int dtype)
 {
 	if (out.size() != in.size())
 		out.resize(in.size());
-	for (int i = 0; i < in.size(); ++i)
-	{
+	for (int i = 0; i < in.size(); ++i) {
 		if (out[i].shape() == in[i].shape() && out[i].dataType() == dtype)
 			in[i].convert(out[i]);
 		else
@@ -941,7 +891,7 @@ bool vipConvertToType(const QVector<VipNDArray> & in, QVector<VipNDArray> & out,
 	return true;
 }
 
-QVector<VipNDArray> vipConvertToHigherType(const QVector<VipNDArray> & in)
+QVector<VipNDArray> vipConvertToHigherType(const QVector<VipNDArray>& in)
 {
 	QVector<VipNDArray> res;
 	if (vipConvertToHigherType(in, res))
@@ -950,8 +900,7 @@ QVector<VipNDArray> vipConvertToHigherType(const QVector<VipNDArray> & in)
 		return QVector<VipNDArray>();
 }
 
-
-bool vipConvertToHigherType(const QVector<VipNDArray> & in, QVector<VipNDArray> & out, const QList<int> & possible_types)
+bool vipConvertToHigherType(const QVector<VipNDArray>& in, QVector<VipNDArray>& out, const QList<int>& possible_types)
 {
 	int dtype = vipHigherArrayType(in, possible_types);
 	if (dtype == 0)
@@ -960,8 +909,7 @@ bool vipConvertToHigherType(const QVector<VipNDArray> & in, QVector<VipNDArray> 
 	if (out.size() != in.size())
 		out.resize(in.size());
 
-	for (int i = 0; i < in.size(); ++i)
-	{
+	for (int i = 0; i < in.size(); ++i) {
 		if (out[i].shape() == in[i].shape() && out[i].dataType() == dtype)
 			in[i].convert(out[i]);
 		else
@@ -970,61 +918,52 @@ bool vipConvertToHigherType(const QVector<VipNDArray> & in, QVector<VipNDArray> 
 	return true;
 }
 
-QVector<VipNDArray> vipConvertToHigherType(const QVector<VipNDArray> & in, const QList<int> & possible_types)
+QVector<VipNDArray> vipConvertToHigherType(const QVector<VipNDArray>& in, const QList<int>& possible_types)
 {
 	QVector<VipNDArray> res;
-	if (vipConvertToHigherType(in, res,possible_types))
+	if (vipConvertToHigherType(in, res, possible_types))
 		return res;
 	else
 		return QVector<VipNDArray>();
 }
 
-
-
-
 #ifdef _COMPILE_TEST
 
-template< class T, class Fun>
-void apply_fun2(VipNDArray & out, const VipNDArray & s1, const VipNDArray & s2, Fun fun)
+template<class T, class Fun>
+void apply_fun2(VipNDArray& out, const VipNDArray& s1, const VipNDArray& s2, Fun fun)
 {
 #define BUFF_SIZE (1024)
-	T * p1 = new T[BUFF_SIZE];
-	T * p2 = new T[BUFF_SIZE];
-	T * dst = (T*)out.constHandle()->dataPointer(VipNDArrayShape());
+	T* p1 = new T[BUFF_SIZE];
+	T* p2 = new T[BUFF_SIZE];
+	T* dst = (T*)out.constHandle()->dataPointer(VipNDArrayShape());
 
 	int chunks = out.size() / BUFF_SIZE;
 	int end = chunks * BUFF_SIZE;
 	int rem = out.size() - end;
 
-	for (int i = 0; i < end; i += BUFF_SIZE)
-	{
+	for (int i = 0; i < end; i += BUFF_SIZE) {
 
-		//copy s1 to p1
+		// copy s1 to p1
 		if (s1.dataType() == QMetaType::Int) {
-			std::copy((int*)s1.handle()->dataPointer(VipNDArrayShape()) + i, (int*)s1.handle()->dataPointer(VipNDArrayShape()) + i+ BUFF_SIZE,
-				p1);
+			std::copy((int*)s1.handle()->dataPointer(VipNDArrayShape()) + i, (int*)s1.handle()->dataPointer(VipNDArrayShape()) + i + BUFF_SIZE, p1);
 		}
 		if (s2.dataType() == QMetaType::Int) {
-			std::copy((int*)s2.handle()->dataPointer(VipNDArrayShape()) + i, (int*)s2.handle()->dataPointer(VipNDArrayShape()) + i + BUFF_SIZE,
-				p2);
+			std::copy((int*)s2.handle()->dataPointer(VipNDArrayShape()) + i, (int*)s2.handle()->dataPointer(VipNDArrayShape()) + i + BUFF_SIZE, p2);
 		}
-		T * d = dst + i;
-		for(int j=0; j < BUFF_SIZE; ++j)
+		T* d = dst + i;
+		for (int j = 0; j < BUFF_SIZE; ++j)
 			d[j] = fun(p1[j], p2[j]);
-
 	}
 
 	if (rem) {
-		//copy s1 to p1
+		// copy s1 to p1
 		if (s1.dataType() == QMetaType::Int) {
-			std::copy((int*)s1.handle()->dataPointer(VipNDArrayShape()) + end, (int*)s1.handle()->dataPointer(VipNDArrayShape()) + out.size(),
-				p1);
+			std::copy((int*)s1.handle()->dataPointer(VipNDArrayShape()) + end, (int*)s1.handle()->dataPointer(VipNDArrayShape()) + out.size(), p1);
 		}
 		if (s2.dataType() == QMetaType::Int) {
-			std::copy((int*)s2.handle()->dataPointer(VipNDArrayShape()) + end, (int*)s2.handle()->dataPointer(VipNDArrayShape()) + out.size(),
-				p2);
+			std::copy((int*)s2.handle()->dataPointer(VipNDArrayShape()) + end, (int*)s2.handle()->dataPointer(VipNDArrayShape()) + out.size(), p2);
 		}
-		T * d = dst + end;
+		T* d = dst + end;
 		for (int j = 0; j < rem; ++j)
 			d[j] = fun(p1[j], p2[j]);
 	}
@@ -1033,66 +972,76 @@ void apply_fun2(VipNDArray & out, const VipNDArray & s1, const VipNDArray & s2, 
 	delete[] p2;
 }
 
-
 #include "VipEval.h"
-#include "VipStack.h"
 #include "VipNDArrayOperations.h"
-#include "VipReduction.h"
 #include "VipNDRect.h"
+#include "VipReduction.h"
+#include "VipStack.h"
 
-
+#include "VipAccumulate.h"
+#include "VipConvolve.h"
+#include "VipFunction.h"
 #include "VipRgb.h"
 #include "VipSceneModel.h"
-#include "VipConvolve.h"
 #include "VipTransform.h"
 #include "VipTranspose.h"
-#include "VipAccumulate.h"
-#include "VipFunction.h"
 
 #include <stdlib.h>
 #include <time.h>
 
-int mul(int a,int b, int c) { return a * b*c; }
-inline double intToDouble(const void * src) {return *((int*)src);};
-inline double doubleToDouble(const void * src) {return *((double*)src);};
-
-typedef double(*conv)(const void*);
-conv getConvert(int src) {
-	if(src == qMetaTypeId<double>()) return doubleToDouble;
-	else return intToDouble;
+int mul(int a, int b, int c)
+{
+	return a * b * c;
 }
-int test(int argc, char**argv)
+inline double intToDouble(const void* src)
+{
+	return *((int*)src);
+};
+inline double doubleToDouble(const void* src)
+{
+	return *((double*)src);
+};
+
+typedef double (*conv)(const void*);
+conv getConvert(int src)
+{
+	if (src == qMetaTypeId<double>())
+		return doubleToDouble;
+	else
+		return intToDouble;
+}
+int test(int argc, char** argv)
 {
 
-	//void * mem = malloc(500000000);
-	//for(int MSIZE = 10; MSIZE < 5000; MSIZE += 500)
-	// {
-	// VipMemory pool;
-	// //pool.reserve(100000000);
-	// size_t count = 500000000 / MSIZE;
-	// std::vector<void*> mems1(count);// pool.maxObjectsForSize(MSIZE + 1));
-	// std::vector<void*> mems2(count);// pool.maxObjectsForSize(MSIZE + 1));
-	// std::vector<int> sizes(mems1.size());
-	// srand(time(nullptr));
-	// for (int i = 0; i < mems1.size(); ++i)
-	// sizes[i] = (rand() % MSIZE + 1);
-//
-//
+	// void * mem = malloc(500000000);
+	// for(int MSIZE = 10; MSIZE < 5000; MSIZE += 500)
+	//  {
+	//  VipMemory pool;
+	//  //pool.reserve(100000000);
+	//  size_t count = 500000000 / MSIZE;
+	//  std::vector<void*> mems1(count);// pool.maxObjectsForSize(MSIZE + 1));
+	//  std::vector<void*> mems2(count);// pool.maxObjectsForSize(MSIZE + 1));
+	//  std::vector<int> sizes(mems1.size());
+	//  srand(time(nullptr));
+	//  for (int i = 0; i < mems1.size(); ++i)
+	//  sizes[i] = (rand() % MSIZE + 1);
+	//
+	//
 	// vip_debug("%i max objects: %i\n", MSIZE, count);
-//
+	//
 	// qint64 sta = QDateTime::currentMSecsSinceEpoch();
 	// for (int i = 0; i < mems1.size(); ++i)
 	// mems2[i] = pool.allocate(sizes[i]);
 	// qint64 el = QDateTime::currentMSecsSinceEpoch() - sta;
 	// vip_debug("pool.allocate: %i, %i\n", (int)el, (std::size_t)mems2.back() >> 4);
 	// //vip_debug("max free: %i %i\n", (int)pool.nodes.mostRightNode->size, pool.nodes.maximum() ? (int)pool.nodes.maximum()->size : 0);
-//
+	//
 	// sta = QDateTime::currentMSecsSinceEpoch();
 	// for (int i = 0; i < mems1.size(); ++i)
 	// mems1[i] = malloc(sizes[i]);
 	// el = QDateTime::currentMSecsSinceEpoch() - sta;
 	// vip_debug("malloc: %i\n", (int)el);
-//
+	//
 	// sta = QDateTime::currentMSecsSinceEpoch();
 	// for (int i = 0; i < mems1.size()-1; ++i)
 	// pool.deallocate(mems2[i]);
@@ -1101,15 +1050,15 @@ int test(int argc, char**argv)
 	// el = QDateTime::currentMSecsSinceEpoch() - sta;
 	// vip_debug("pool.deallocate: %i, %i\n", (int)el, (std::size_t)mems2.back());
 	// //vip_debug("max free: %i %i\n", (int)pool.nodes.mostRightNode->size, pool.nodes.maximum()?(int)pool.nodes.maximum()->size:0);
-//
+	//
 	// sta = QDateTime::currentMSecsSinceEpoch();
 	// for (int i = 0; i < mems1.size(); ++i)
 	// free(mems1[i]);
 	// el = QDateTime::currentMSecsSinceEpoch() - sta;
 	// vip_debug("free: %i\n", (int)el);
-//
+	//
 	// }
-//
+	//
 	// QMultiMap<int, QString> map;
 	// map.insert(2, QString());
 	// map.insert(2, QString());
@@ -1122,23 +1071,30 @@ int test(int argc, char**argv)
 		VipNDArrayType<int> e(vipVector(2, 3)), ee(vipVector(3, 2));
 		e.convert(ee);
 		VipNDArrayType<int> rev(vipVector(3, 3)), rev2(vipVector(3, 3)), rev3(vipVector(3, 3));
-		for (int i = 0; i < 9; ++i) { rev[i] = i; rev2[i] = i; rev3[i] = i; }
-		int vv = vipAccumulate(VipNDArray(rev), [](int a, int b) {return a + b; }, int(0));
-		rev = vipFunction(rev, rev2,rev3,&mul);
-		{
-			QByteArray data;
-			QTextStream str(&data, QIODevice::WriteOnly);
-			str << rev;//vipStack(pp, pp2, 0);
-			str.flush();
-			vip_debug("%s\n", data.data());fflush(stdout);
+		for (int i = 0; i < 9; ++i) {
+			rev[i] = i;
+			rev2[i] = i;
+			rev3[i] = i;
 		}
-		VipNDArray r2 = vipReverse<Vip::ReverseFlat>(VipNDArray(rev),0);
+		int vv = vipAccumulate(
+		  VipNDArray(rev), [](int a, int b) { return a + b; }, int(0));
+		rev = vipFunction(rev, rev2, rev3, &mul);
 		{
 			QByteArray data;
 			QTextStream str(&data, QIODevice::WriteOnly);
-			str << r2;//vipStack(pp, pp2, 0);
+			str << rev; // vipStack(pp, pp2, 0);
 			str.flush();
-			vip_debug("%s\n", data.data());fflush(stdout);
+			vip_debug("%s\n", data.data());
+			fflush(stdout);
+		}
+		VipNDArray r2 = vipReverse<Vip::ReverseFlat>(VipNDArray(rev), 0);
+		{
+			QByteArray data;
+			QTextStream str(&data, QIODevice::WriteOnly);
+			str << r2; // vipStack(pp, pp2, 0);
+			str.flush();
+			vip_debug("%s\n", data.data());
+			fflush(stdout);
 		}
 
 		{
@@ -1149,21 +1105,22 @@ int test(int argc, char**argv)
 			qint64 sta = QDateTime::currentMSecsSinceEpoch();
 			for (int i = 0; i < count; ++i) {
 				VipNDArrayType<double> out(vipVector(1000, 1000));
-								VipNDArrayType<int> in1(vipVector(1000, 1000));
-								VipNDArrayType<int> in2(vipVector(1000, 1000));
-				apply_fun2<double>(out, VipNDArray(in1), VipNDArray(in2), [](int a, int b) {return a*b; });
+				VipNDArrayType<int> in1(vipVector(1000, 1000));
+				VipNDArrayType<int> in2(vipVector(1000, 1000));
+				apply_fun2<double>(out, VipNDArray(in1), VipNDArray(in2), [](int a, int b) { return a * b; });
 			}
 			qint64 el = QDateTime::currentMSecsSinceEpoch() - sta;
-			vip_debug("apply_fun2: %i, %f\n", (int)el, out[out.size() - 1]);fflush(stdout);
+			vip_debug("apply_fun2: %i, %f\n", (int)el, out[out.size() - 1]);
+			fflush(stdout);
 
 			sta = QDateTime::currentMSecsSinceEpoch();
 			for (int i = 0; i < count; ++i) {
-				//out = (in1) * (in2);
-				vipEval(out,in1);
+				// out = (in1) * (in2);
+				vipEval(out, in1);
 			}
 			el = QDateTime::currentMSecsSinceEpoch() - sta;
-			vip_debug("eval: %i, %f\n", (int)el, out[out.size() - 1]);fflush(stdout);
-
+			vip_debug("eval: %i, %f\n", (int)el, out[out.size() - 1]);
+			fflush(stdout);
 
 			sta = QDateTime::currentMSecsSinceEpoch();
 			for (int i = 0; i < count; ++i) {
@@ -1171,18 +1128,19 @@ int test(int argc, char**argv)
 				VipNDArrayType<int> in1(vipVector(1000, 1000));
 				VipNDArrayType<int> in2(vipVector(1000, 1000));
 				int sizeOf = in1.dataSize();
-				const uchar * data1 = (uchar*)in1.data();
-				const uchar * data2 = (uchar*)in1.data();
+				const uchar* data1 = (uchar*)in1.data();
+				const uchar* data2 = (uchar*)in1.data();
 				register const conv co = getConvert(in1.dataType());
 				register const conv co2 = getConvert(in2.dataType());
-				const int s =in1.size();
-				double *p=out.ptr();
-				for(int i=0; i < s; ++i) {
-					p[i] = co(data1 + i *sizeOf) * co2(data2 + i *sizeOf);
+				const int s = in1.size();
+				double* p = out.ptr();
+				for (int i = 0; i < s; ++i) {
+					p[i] = co(data1 + i * sizeOf) * co2(data2 + i * sizeOf);
 				}
 			}
 			el = QDateTime::currentMSecsSinceEpoch() - sta;
-			vip_debug("mul fun ptr: %i, %f\n", (int)el, out[out.size() - 1]);fflush(stdout);
+			vip_debug("mul fun ptr: %i, %f\n", (int)el, out[out.size() - 1]);
+			fflush(stdout);
 
 			sta = QDateTime::currentMSecsSinceEpoch();
 			for (int i = 0; i < count; ++i) {
@@ -1192,9 +1150,8 @@ int test(int argc, char**argv)
 				out = VipNDArray(in1) * VipNDArray(in2);
 			}
 			el = QDateTime::currentMSecsSinceEpoch() - sta;
-			vip_debug("mul: %i, %f\n", (int)el, out[out.size() - 1]);fflush(stdout);
-
-
+			vip_debug("mul: %i, %f\n", (int)el, out[out.size() - 1]);
+			fflush(stdout);
 		}
 
 		{
@@ -1208,8 +1165,6 @@ int test(int argc, char**argv)
 						ar(y, x) = ar(y, x) * ar(y, x);
 			}
 
-
-
 			qint64 sta = QDateTime::currentMSecsSinceEpoch();
 			for (int i = 0; i < count; ++i) {
 				for (int y = 0; y < ar.shape(0); ++y)
@@ -1217,15 +1172,16 @@ int test(int argc, char**argv)
 						ar(y, x) = ar(y, x) * ar(y, x);
 			}
 			qint64 el = QDateTime::currentMSecsSinceEpoch() - sta;
-			vip_debug("y,x %i ms, %i\n", (int)el, ar[ar.size() - 1]);fflush(stdout);
+			vip_debug("y,x %i ms, %i\n", (int)el, ar[ar.size() - 1]);
+			fflush(stdout);
 
-			 sta = QDateTime::currentMSecsSinceEpoch();
+			sta = QDateTime::currentMSecsSinceEpoch();
 			for (int i = 0; i < count; ++i) {
-				vip_iter(Vip::FirstMajor, vipVector<2>(ar.shape()), pos)
-					ar(pos) = ar(pos) * ar(pos);
+				vip_iter(Vip::FirstMajor, vipVector<2>(ar.shape()), pos) ar(pos) = ar(pos) * ar(pos);
 			}
-			 el = QDateTime::currentMSecsSinceEpoch() - sta;
-			vip_debug("vip_iter %i ms, %i\n", (int)el, ar[ar.size() - 1]);fflush(stdout);
+			el = QDateTime::currentMSecsSinceEpoch() - sta;
+			vip_debug("vip_iter %i ms, %i\n", (int)el, ar[ar.size() - 1]);
+			fflush(stdout);
 
 			sta = QDateTime::currentMSecsSinceEpoch();
 			for (int i = 0; i < count; ++i) {
@@ -1234,18 +1190,17 @@ int test(int argc, char**argv)
 						ar(vipVector(y, x)) = ar(vipVector(y, x)) * ar(vipVector(y, x));
 			}
 			el = QDateTime::currentMSecsSinceEpoch() - sta;
-			vip_debug("vipVector %i ms, %i\n", (int)el, ar[ar.size() - 1]);fflush(stdout);
+			vip_debug("vipVector %i ms, %i\n", (int)el, ar[ar.size() - 1]);
+			fflush(stdout);
 
 			sta = QDateTime::currentMSecsSinceEpoch();
 			for (int i = 0; i < count; ++i) {
-				vip_iter(Vip::FirstMajor, vipVector<2>(ar.shape()), pos)
-					ar(pos) = ar(pos) * ar(pos);
+				vip_iter(Vip::FirstMajor, vipVector<2>(ar.shape()), pos) ar(pos) = ar(pos) * ar(pos);
 			}
 			el = QDateTime::currentMSecsSinceEpoch() - sta;
-			vip_debug("vip_iter %i ms, %i\n", (int)el, ar[ar.size() - 1]);fflush(stdout);
-
+			vip_debug("vip_iter %i ms, %i\n", (int)el, ar[ar.size() - 1]);
+			fflush(stdout);
 		}
-
 
 		QImage img("C:/Users/VM213788/Desktop/Thermavip.png");
 		VipNDArray ar("C:/Users/VM213788/Desktop/Thermavip.png");
@@ -1253,24 +1208,25 @@ int test(int argc, char**argv)
 		VipNDArrayTypeView<VipRGB> rgb = ar;
 
 		QTransform tr;
-		tr.rotate(40);// .scale(1, 1.2);
+		tr.rotate(40); // .scale(1, 1.2);
 		auto conv = vipTransform<Vip::TransformBoundingRect, Vip::NoInterpolation>(ar, tr, VipRGB(0, 0, 0));
 
 		VipNDArrayType<VipRGB> ar2(conv.shape());
 
 		qint64 sta = QDateTime::currentMSecsSinceEpoch();
-		for(int i=0; i < count; ++i)
+		for (int i = 0; i < count; ++i)
 			ar2 = conv;
 		qint64 el = QDateTime::currentMSecsSinceEpoch() - sta;
-		vip_debug("vipTransform %i ms\n", (int)el);fflush(stdout);
+		vip_debug("vipTransform %i ms\n", (int)el);
+		fflush(stdout);
 
 		QImage img3;
 		sta = QDateTime::currentMSecsSinceEpoch();
 		for (int i = 0; i < count; ++i)
-			img3 = img.transformed(tr);// , Qt::SmoothTransformation);
+			img3 = img.transformed(tr); // , Qt::SmoothTransformation);
 		el = QDateTime::currentMSecsSinceEpoch() - sta;
-		vip_debug("QImage::transform %i ms\n", (int)el);fflush(stdout);
-
+		vip_debug("QImage::transform %i ms\n", (int)el);
+		fflush(stdout);
 
 		QImage img2(ar2.shape(1), ar2.shape(0), QImage::Format_ARGB32);
 		memcpy(img2.bits(), ar2.ptr(), ar2.size() * sizeof(VipRGB));
@@ -1283,7 +1239,8 @@ int test(int argc, char**argv)
 		for (int i = 0; i < count; ++i)
 			tmp = vipConvolve<Vip::Nearest>(VipNDArray(ar2), kernel, vipVector(1, 1));
 		el = QDateTime::currentMSecsSinceEpoch() - sta;
-		vip_debug("convolve %i ms\n", (int)el);fflush(stdout);
+		vip_debug("convolve %i ms\n", (int)el);
+		fflush(stdout);
 
 		memcpy(img2.bits(), tmp.data(), tmp.size() * sizeof(VipRGB));
 		img2.save("C:/Users/VM213788/Desktop/Thermavip_mean.png");
@@ -1292,22 +1249,22 @@ int test(int argc, char**argv)
 		ok;
 	}
 
-	//vipArrayStats<double, Vip::AllStats>(VipNDArray());
+	// vipArrayStats<double, Vip::AllStats>(VipNDArray());
 	{
 		VipNDArrayType<complex_d> arc(vipVector(3, 3));
-		for (int i = 0; i < arc.size(); ++i)arc[i] = i;
+		for (int i = 0; i < arc.size(); ++i)
+			arc[i] = i;
 
 		VipArrayStats<double, Vip::AllStats> st = vipArrayStats<double, Vip::AllStats>(arc);
 		VipArrayStats<double, Vip::AllStats> st2 = vipArrayStats<double, Vip::AllStats>(VipNDArray(arc));
 		VipArrayStats<complex_d, Vip::AllStats> st3 = vipArrayStats<complex_d, Vip::AllStats>(VipNDArray(arc));
 
-
 		bool stop = true;
 	}
 
-	bool arg1 = detail::is_valid_functor<detail::FloorFun<int> >::value;
-	bool arg2 = detail::is_valid_functor<detail::FloorFun<QString> >::value;
-	bool arg3 = detail::is_valid_functor<detail::FloorFun<VipNDArray > >::value;
+	bool arg1 = detail::is_valid_functor<detail::FloorFun<int>>::value;
+	bool arg2 = detail::is_valid_functor<detail::FloorFun<QString>>::value;
+	bool arg3 = detail::is_valid_functor<detail::FloorFun<VipNDArray>>::value;
 	VipNDArrayType<int> djd;
 	djd.clear();
 	djd.reset(vipVector(10, 10));
@@ -1327,16 +1284,18 @@ int test(int argc, char**argv)
 		str >> in;
 
 		VipNDArray ar;
-		VipShape sh(QPolygonF()<<QPointF(240,150)<<QPointF(291,153)<< QPointF(300,300));
+		VipShape sh(QPolygonF() << QPointF(240, 150) << QPointF(291, 153) << QPointF(300, 300));
 		VipShapeStatistics st;
 		qint64 sta = QDateTime::currentMSecsSinceEpoch();
-		for(int i=0; i < count; ++i)
-			st = sh.statistics(in , QPoint(0, 0), &ar);
+		for (int i = 0; i < count; ++i)
+			st = sh.statistics(in, QPoint(0, 0), &ar);
 		qint64 el = QDateTime::currentMSecsSinceEpoch() - sta;
-		vip_debug("VipShape::statistics: %i ms %f %f %f %f %f\n", (int)el, st.min, st.max, st.average, st.std, (double)st.pixelCount);fflush(stdout);
+		vip_debug("VipShape::statistics: %i ms %f %f %f %f %f\n", (int)el, st.min, st.max, st.average, st.std, (double)st.pixelCount);
+		fflush(stdout);
 
-		VipNDArrayType<std::complex<double> > arc(vipVector(3, 3));
-		for (int i = 0; i < arc.size(); ++i)arc[i] = i;
+		VipNDArrayType<std::complex<double>> arc(vipVector(3, 3));
+		for (int i = 0; i < arc.size(); ++i)
+			arc[i] = i;
 		VipArrayStats<std::complex<double>, Vip::AllStats> stc = vipArrayStats<std::complex<double>, Vip::AllStats>(arc);
 
 		VipArrayStats<double, Vip::AllStats> st2;
@@ -1344,27 +1303,29 @@ int test(int argc, char**argv)
 		for (int i = 0; i < count; ++i)
 			st2 = vipArrayStats<double, Vip::AllStats>(in, vipOverRects(sh.region()));
 		el = QDateTime::currentMSecsSinceEpoch() - sta;
-		vip_debug("vipArrayStats: %i ms %f %f %f %f %f\n", (int)el, st2.min, st2.max, st2.mean, st2.std, (double)st2.count);fflush(stdout);
+		vip_debug("vipArrayStats: %i ms %f %f %f %f %f\n", (int)el, st2.min, st2.max, st2.mean, st2.std, (double)st2.count);
+		fflush(stdout);
 
 		VipArrayStats<double, Vip::AllStats> st3;
 		sta = QDateTime::currentMSecsSinceEpoch();
 		for (int i = 0; i < count; ++i)
-			st3 = sh.imageStats<double, Vip::AllStats>(in,QPoint(250,20));
+			st3 = sh.imageStats<double, Vip::AllStats>(in, QPoint(250, 20));
 		el = QDateTime::currentMSecsSinceEpoch() - sta;
-		vip_debug("vipArrayStats: %i ms %f %f %f %f %f\n", (int)el, st3.min, st3.max, st3.mean, st3.std, (double)st3.count);fflush(stdout);
+		vip_debug("vipArrayStats: %i ms %f %f %f %f %f\n", (int)el, st3.min, st3.max, st3.mean, st3.std, (double)st3.count);
+		fflush(stdout);
 	}
-
 
 	{
 		VipNDArrayShape shh = vipVector(2, 2);
 		VipNDArray img = vipToArray(QImage(10, 10, QImage::Format_ARGB32));
 		int index = 0;
 		for (int y = 0; y < 10; ++y)
-			for (int x = 0; x < 10; ++x, ++index) img.setValue(vipVector(y, x), QVariant::fromValue(QColor::fromRgba(index)));
-		VipNDArrayTypeView<VipRGB> rgb = img.mid(vipVector(1,1));
-		VipRGB * r1 = rgb.ptr();
+			for (int x = 0; x < 10; ++x, ++index)
+				img.setValue(vipVector(y, x), QVariant::fromValue(QColor::fromRgba(index)));
+		VipNDArrayTypeView<VipRGB> rgb = img.mid(vipVector(1, 1));
+		VipRGB* r1 = rgb.ptr();
 		VipNDArrayTypeView<VipRGB> rgb2 = rgb.mid(vipVector(1, 1));
-		VipRGB * r2 = rgb2.ptr();
+		VipRGB* r2 = rgb2.ptr();
 
 		VipNDArray img2(qMetaTypeId<VipRGB>(), vipVector(10, 10));
 		bool bb1 = img.convert(img2);
@@ -1377,10 +1338,10 @@ int test(int argc, char**argv)
 		VipRgb<float> e = a;
 		a = a + 2;
 		a = a - 2;
-		a = a*2;
+		a = a * 2;
 		a = a / 2;
-		a = a%2;
-		a = a&&2;
+		a = a % 2;
+		a = a && 2;
 		a = a || 2;
 		a = a < 2;
 		a = a > 2;
@@ -1389,8 +1350,8 @@ int test(int argc, char**argv)
 		bool h = a == b;
 		bool h2 = a != b;
 		a = a | 2;
-		a = a&2;
-		a = a^2;
+		a = a & 2;
+		a = a ^ 2;
 		a = ~a;
 		a = vipMin(a, (quint8)2);
 		a = vipMax(a, (quint8)2);
@@ -1399,8 +1360,7 @@ int test(int argc, char**argv)
 		bool b2 = vipIsInf(a);
 		a = vipWhere(a, b, e);
 
-		vipMin(VipNDArrayType<VipRGB>(), VipRGB(3,3,3));
-
+		vipMin(VipNDArrayType<VipRGB>(), VipRGB(3, 3, 3));
 	}
 
 	{
@@ -1414,9 +1374,9 @@ int test(int argc, char**argv)
 		VipNDArray a2(qMetaTypeId<complex_f>(), vipVector(3, 3));
 		VipNDArray a3(qMetaTypeId<complex_f>(), vipVector(3, 3));
 		VipNDArray a4(qMetaTypeId<int>(), vipVector(3, 3));
-		vipEval(a2, a2*a3);
-		vipEval(a1, a2>a3);
-		vipEval(a4, a2*a3);
+		vipEval(a2, a2 * a3);
+		vipEval(a1, a2 > a3);
+		vipEval(a4, a2 * a3);
 	}
 
 	auto r1 = vipRectStartEnd(vipVector(0, 1), vipVector(10, 11));
@@ -1452,44 +1412,49 @@ int test(int argc, char**argv)
 	VipNDArrayType<int> ar2(vipVector(999, 999));
 	VipNDArrayType<int> ar3(vipVector(999, 999));
 
-	VipNDArrayType<int> pp(vipVector(3,3)), pp2(vipVector(2,3));
-	pp = 1, 2, 3, 4, 5, 6,7,8,-1;
+	VipNDArrayType<int> pp(vipVector(3, 3)), pp2(vipVector(2, 3));
+	pp = 1, 2, 3, 4, 5, 6, 7, 8, -1;
 	pp2 = 7, 8, 9, 10, 11, 12;
-	VipArrayStats<float, Vip::AllStats> stats = vipArrayStats<float, Vip::AllStats>(pp, vipOverRects(QRect(0,0,2,2)));
+	VipArrayStats<float, Vip::AllStats> stats = vipArrayStats<float, Vip::AllStats>(pp, vipOverRects(QRect(0, 0, 2, 2)));
 	vipEval(pp, vipWhere(pp > 2 && pp < 7, pp, pp * 3));
 	QByteArray data;
 	QTextStream str(&data, QIODevice::WriteOnly);
-	str << pp;//vipStack(pp, pp2, 0);
+	str << pp; // vipStack(pp, pp2, 0);
 	str.flush();
-	vip_debug("%s\n", data.data());fflush(stdout);
+	vip_debug("%s\n", data.data());
+	fflush(stdout);
 
 	{
 		qint64 st = QDateTime::currentMSecsSinceEpoch();
 		for (int i = 0; i < count; ++i)
 			arv = vipTranspose(VipNDArray(ar));
 		qint64 el = QDateTime::currentMSecsSinceEpoch() - st;
-		vip_debug("transpose: %i\n", (int)el);fflush(stdout);
+		vip_debug("transpose: %i\n", (int)el);
+		fflush(stdout);
 	}
 	{
 		qint64 st = QDateTime::currentMSecsSinceEpoch();
 		for (int i = 0; i < count; ++i)
 			arv = vipReverse<Vip::ReverseFlat>(VipNDArray(ar));
 		qint64 el = QDateTime::currentMSecsSinceEpoch() - st;
-		vip_debug("reverse flat: %i\n", (int)el);fflush(stdout);
+		vip_debug("reverse flat: %i\n", (int)el);
+		fflush(stdout);
 	}
 	{
 		qint64 st = QDateTime::currentMSecsSinceEpoch();
 		for (int i = 0; i < count; ++i)
 			arv = vipReverse<Vip::ReverseAxis>(VipNDArray(ar), 0);
 		qint64 el = QDateTime::currentMSecsSinceEpoch() - st;
-		vip_debug("reverse axis 0: %i\n", (int)el);fflush(stdout);
+		vip_debug("reverse axis 0: %i\n", (int)el);
+		fflush(stdout);
 	}
 	{
 		qint64 st = QDateTime::currentMSecsSinceEpoch();
 		for (int i = 0; i < count; ++i)
 			arv = vipReverse<Vip::ReverseAxis>(VipNDArray(ar), 1);
 		qint64 el = QDateTime::currentMSecsSinceEpoch() - st;
-		vip_debug("reverse axis 1: %i\n", (int)el);fflush(stdout);
+		vip_debug("reverse axis 1: %i\n", (int)el);
+		fflush(stdout);
 	}
 
 	VipNDArrayTypeView<int> view = ar.mid(vipVector(1, 1));
@@ -1502,38 +1467,40 @@ int test(int argc, char**argv)
 
 	VipNDArrayType<int> tmp = arv * 3;
 
-	auto f1 = vipFuzzyCompare(3,3);
-	auto f2 = vipFuzzyCompare(3,3.2);
+	auto f1 = vipFuzzyCompare(3, 3);
+	auto f2 = vipFuzzyCompare(3, 3.2);
 	auto f3 = vipFuzzyCompare(VipNDArray(ar), VipNDArray(ar));
-	auto f4 = vipFuzzyCompare(ar,ar2);
+	auto f4 = vipFuzzyCompare(ar, ar2);
 	auto f5 = vipFuzzyCompare(ar, 3.4);
-
 
 	qint64 st = QDateTime::currentMSecsSinceEpoch();
 	for (int i = 0; i < count; ++i)
 		view.convert(ar2);
-	qint64 el = QDateTime::currentMSecsSinceEpoch()-st;
-	vip_debug("view to dense: %i\n", (int)el);fflush(stdout);
+	qint64 el = QDateTime::currentMSecsSinceEpoch() - st;
+	vip_debug("view to dense: %i\n", (int)el);
+	fflush(stdout);
 
 	st = QDateTime::currentMSecsSinceEpoch();
 	for (int i = 0; i < count; ++i)
 		view2.convert(view);
 	el = QDateTime::currentMSecsSinceEpoch() - st;
-	vip_debug("view to view: %i\n", (int)el);fflush(stdout);
+	vip_debug("view to view: %i\n", (int)el);
+	fflush(stdout);
 
 	ar3.detach();
 	st = QDateTime::currentMSecsSinceEpoch();
 	for (int i = 0; i < count; ++i)
 		ar2.convert(ar3);
 	el = QDateTime::currentMSecsSinceEpoch() - st;
-	vip_debug("dense to dense: %i\n", (int)el);fflush(stdout);
+	vip_debug("dense to dense: %i\n", (int)el);
+	fflush(stdout);
 
 	st = QDateTime::currentMSecsSinceEpoch();
 	for (int i = 0; i < count; ++i)
-		memcpy((void*)ar2.constData(), ar3.constData(), ar3.size()*ar3.dataSize());
+		memcpy((void*)ar2.constData(), ar3.constData(), ar3.size() * ar3.dataSize());
 	el = QDateTime::currentMSecsSinceEpoch() - st;
-	vip_debug("dense to dense memcpy: %i\n", (int)el);fflush(stdout);
-
+	vip_debug("dense to dense memcpy: %i\n", (int)el);
+	fflush(stdout);
 
 	ar.detach();
 
@@ -1541,30 +1508,33 @@ int test(int argc, char**argv)
 	detail::InternalCast<int, decltype(type)>::valid;
 	detail::InternalCast<int, decltype(type)>::cast(type);
 	detail::internal_cast<int>(decltype(type)());
-	detail::is_valid_functor<decltype(detail::internal_cast<int>(decltype(type)()))> jj ;
-	//test(jj);
+	detail::is_valid_functor<decltype(detail::internal_cast<int>(decltype(type)()))> jj;
+	// test(jj);
 	st = QDateTime::currentMSecsSinceEpoch();
 	for (int i = 0; i < count; ++i)
 		vipEval(arv, vipWhere(ar > 2 && ar < 7, ar * 2, ar * ar));
 	el = QDateTime::currentMSecsSinceEpoch() - st;
-	vip_debug("eval where : %i\n", (int)el);fflush(stdout);
+	vip_debug("eval where : %i\n", (int)el);
+	fflush(stdout);
 
 	st = QDateTime::currentMSecsSinceEpoch();
 	for (int i = 0; i < count; ++i)
-		vipEval(arv, vipReplaceNanInf(ar,3));
+		vipEval(arv, vipReplaceNanInf(ar, 3));
 	el = QDateTime::currentMSecsSinceEpoch() - st;
-	vip_debug("eval replace nan inf : %i\n", (int)el);fflush(stdout);
+	vip_debug("eval replace nan inf : %i\n", (int)el);
+	fflush(stdout);
 
 	st = QDateTime::currentMSecsSinceEpoch();
 	for (int i = 0; i < count; ++i)
-		vipEval(arv, vipClamp(ar, arv,3));
+		vipEval(arv, vipClamp(ar, arv, 3));
 	el = QDateTime::currentMSecsSinceEpoch() - st;
-	vip_debug("eval clamp : %i\n", (int)el);fflush(stdout);
+	vip_debug("eval clamp : %i\n", (int)el);
+	fflush(stdout);
 
 	st = QDateTime::currentMSecsSinceEpoch();
 	{
-		int * ptr1 = arv.ptr();
-		int * ptr2 = ar.ptr();
+		int* ptr1 = arv.ptr();
+		int* ptr2 = ar.ptr();
 		for (int i = 0; i < count; ++i) {
 			size_t size = ar.size();
 			for (int c = 0; c < size; ++c)
@@ -1572,64 +1542,67 @@ int test(int argc, char**argv)
 		}
 	}
 	el = QDateTime::currentMSecsSinceEpoch() - st;
-	vip_debug("eval clamp ptr : %i\n", (int)el);fflush(stdout);
+	vip_debug("eval clamp ptr : %i\n", (int)el);
+	fflush(stdout);
 
 	st = QDateTime::currentMSecsSinceEpoch();
 	for (int i = 0; i < count; ++i)
-		vipEval(arv, ar*arv2 +arv2 * 3 );// *3);
+		vipEval(arv, ar * arv2 + arv2 * 3); // *3);
 	el = QDateTime::currentMSecsSinceEpoch() - st;
-	vip_debug("eval add : %i\n", (int)el);fflush(stdout);
+	vip_debug("eval add : %i\n", (int)el);
+	fflush(stdout);
 
 	st = QDateTime::currentMSecsSinceEpoch();
 	{
-		int * ptr1 = arv.ptr();
-		int * ptr2 = ar.ptr();
-		int * ptr3 = arv2.ptr();
-//
+		int* ptr1 = arv.ptr();
+		int* ptr2 = ar.ptr();
+		int* ptr3 = arv2.ptr();
+		//
 		const VipNDArrayType<int> _ar = ar;
 		const VipNDArrayType<int> _arv = arv;
 		const VipNDArrayType<int> _arv2 = arv2;
-//#pragma loop(no_vector)
+		//#pragma loop(no_vector)
 		for (int i = 0; i < count; ++i) {
 			size_t size = ar.size();
-//#pragma loop(no_vector)
+			//#pragma loop(no_vector)
 			for (int c = 0; c < (int)size; ++c)
-				ptr1[c] =  (ptr2[c] * ptr3[c] + ptr2[c] * 3);
+				ptr1[c] = (ptr2[c] * ptr3[c] + ptr2[c] * 3);
 		}
 	}
 	el = QDateTime::currentMSecsSinceEpoch() - st;
-	vip_debug("eval add ptr : %i\n", (int)el);fflush(stdout);
-
-
+	vip_debug("eval add ptr : %i\n", (int)el);
+	fflush(stdout);
 
 	st = QDateTime::currentMSecsSinceEpoch();
 	{
 		VipArrayStats<int, Vip::Min> stats;
 		for (int i = 0; i < count; ++i)
-			stats = vipArrayStats<int, Vip::Min >(ar);// , vipOverRects(vipRectStartEnd(vipVector(0, 0), ar.shape())));
+			stats = vipArrayStats<int, Vip::Min>(ar); // , vipOverRects(vipRectStartEnd(vipVector(0, 0), ar.shape())));
 	}
 	el = QDateTime::currentMSecsSinceEpoch() - st;
-	vip_debug("reduce stats : %i\n", (int)el);fflush(stdout);
-
-
+	vip_debug("reduce stats : %i\n", (int)el);
+	fflush(stdout);
 
 	st = QDateTime::currentMSecsSinceEpoch();
 	for (int i = 0; i < count; ++i)
 		view3.resize(ar2);
 	el = QDateTime::currentMSecsSinceEpoch() - st;
-	vip_debug("resize view to dense: %i\n", (int)el);fflush(stdout);
+	vip_debug("resize view to dense: %i\n", (int)el);
+	fflush(stdout);
 
 	st = QDateTime::currentMSecsSinceEpoch();
 	for (int i = 0; i < count; ++i)
 		view3.resize(view2);
 	el = QDateTime::currentMSecsSinceEpoch() - st;
-	vip_debug("resize view to view: %i\n", (int)el);fflush(stdout);
+	vip_debug("resize view to view: %i\n", (int)el);
+	fflush(stdout);
 
 	st = QDateTime::currentMSecsSinceEpoch();
 	for (int i = 0; i < count; ++i)
-		ar.resize(ar3,Vip::LinearInterpolation);
+		ar.resize(ar3, Vip::LinearInterpolation);
 	el = QDateTime::currentMSecsSinceEpoch() - st;
-	vip_debug("resize dense to dense: %i\n", (int)el);fflush(stdout);
+	vip_debug("resize dense to dense: %i\n", (int)el);
+	fflush(stdout);
 
 	QImage img(1000, 1000, QImage::Format_ARGB32);
 	QImage img2(999, 999, QImage::Format_ARGB32);
@@ -1637,10 +1610,8 @@ int test(int argc, char**argv)
 	for (int i = 0; i < count; ++i)
 		img2 = img.scaled(QSize(999, 999), Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
 	el = QDateTime::currentMSecsSinceEpoch() - st;
-	vip_debug("resize img fast: %i\n", (int)el);fflush(stdout);
-
-
-
+	vip_debug("resize img fast: %i\n", (int)el);
+	fflush(stdout);
 
 	VipNDArrayType<int> kernel(vipVector(3, 3));
 
@@ -1649,8 +1620,8 @@ int test(int argc, char**argv)
 		vipEval(arv, vipConvolve<Vip::Nearest>(ar, kernel, vipVector(1, 1)));
 	}
 	el = QDateTime::currentMSecsSinceEpoch() - st;
-	vip_debug("conv test: %i\n", (int)el);fflush(stdout);
-
+	vip_debug("conv test: %i\n", (int)el);
+	fflush(stdout);
 
 	fflush(stdout);
 

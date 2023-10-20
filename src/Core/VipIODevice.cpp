@@ -1,3 +1,34 @@
+/**
+ * BSD 3-Clause License
+ *
+ * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice, this
+ *    list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of the copyright holder nor the names of its
+ *    contributors may be used to endorse or promote products derived from
+ *    this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
 #include <QChildEvent>
 #include <QDateTime>
 #include <QFile>
@@ -16,14 +47,9 @@
 #include "VipIODevice.h"
 #include "VipLogging.h"
 #include "VipProgress.h"
-#include "VipTextOutput.h"
-#include "VipSleep.h"
 #include "VipSet.h"
-
-
-
-
-
+#include "VipSleep.h"
+#include "VipTextOutput.h"
 
 // class ReadThread : public QThread
 // {
@@ -213,7 +239,7 @@ VipIODevice::VipIODevice(QObject* parent)
 
 VipIODevice::~VipIODevice()
 {
-	close();
+	VipIODevice::close();
 	emitDestroyed();
 	delete m_data;
 }
@@ -728,11 +754,9 @@ bool VipIODevice::isStreamingEnabled() const
 	return m_data->parameters.streamingEnabled;
 }
 
-
-
 static std::unordered_set<int> _unregistered_ids;
 static VipSpinlock _unregistered_lock;
-static bool isUnregistered(int id) 
+static bool isUnregistered(int id)
 {
 	VipUniqueLock<VipSpinlock> lock(_unregistered_lock);
 	return _unregistered_ids.find(id) != _unregistered_ids.end();
@@ -743,7 +767,7 @@ void VipIODevice::unregisterDeviceForPossibleReadWrite(int id)
 	if (id <= 0)
 		return;
 
-	QObject * obj = vipCreateVariant(id).value<QObject*>();
+	QObject* obj = vipCreateVariant(id).value<QObject*>();
 	if (obj) {
 		if (!qobject_cast<VipIODevice*>(obj)) {
 			delete obj;
@@ -773,8 +797,7 @@ QList<VipProcessingObject::Info> VipIODevice::possibleReadDevices(const VipPath&
 			prefix = path.canonicalPath().mid(0, index);
 	}
 
-	for (QMultiMap<QString, VipProcessingObject::Info>::const_iterator it = tmp.begin(); it != tmp.end(); ++it) 
-	{
+	for (QMultiMap<QString, VipProcessingObject::Info>::const_iterator it = tmp.begin(); it != tmp.end(); ++it) {
 		if (isUnregistered(it.value().metatype))
 			continue;
 		VipIODevice* device = qobject_cast<VipIODevice*>(it.value().create());
@@ -822,8 +845,7 @@ QList<VipProcessingObject::Info> VipIODevice::possibleWriteDevices(const VipPath
 	if (index >= 0)
 		prefix = path.canonicalPath().mid(0, index);
 
-	for (QMultiMap<QString, VipProcessingObject::Info>::const_iterator it = tmp.begin(); it != tmp.end(); ++it) 
-	{
+	for (QMultiMap<QString, VipProcessingObject::Info>::const_iterator it = tmp.begin(); it != tmp.end(); ++it) {
 		if (isUnregistered(it.value().metatype))
 			continue;
 
@@ -1032,7 +1054,7 @@ public:
 	QVector<VipIODevice*> read_devices; // use a vector to disable COW (very minor optimization, mainly for openmp)
 	QMutex device_mutex;
 	PlayThread thread;
-	//QSharedPointer<VipThreadPool> readPool;
+	// QSharedPointer<VipThreadPool> readPool;
 
 	QMap<int, VipProcessingPool::callback_function> playCallbacks;
 	QList<QPointer<CallbackObject<VipProcessingPool::read_data_function>>> readCallbacks;
@@ -1541,11 +1563,11 @@ bool VipProcessingPool::reload()
 	return res;
 }
 
-int VipProcessingPool::maxReadThreadCount() const 
+int VipProcessingPool::maxReadThreadCount() const
 {
 	return m_data->maxReadThreadCount;
 }
-void VipProcessingPool::setMaxReadThreadCount(int count) 
+void VipProcessingPool::setMaxReadThreadCount(int count)
 {
 	if (count < 0)
 		count = 0;
@@ -1608,10 +1630,9 @@ bool VipProcessingPool::readData(qint64 time)
 			devices.push_back(dev);
 			++enabled_temporal_count;
 		}
-	
-	
+
 	if (enabled_temporal_count > 1 && this->maxReadThreadCount() > 1) {
-		
+
 		std::atomic<int> res{ 0 };
 		int thread_count = std::min(this->maxReadThreadCount(), (int)QThread::idealThreadCount());
 		thread_count = std::min(thread_count, enabled_temporal_count);
@@ -2035,7 +2056,7 @@ void VipProcessingPool::computeChildren()
 			--i;
 		}
 	}
-	
+
 	if (this->children().indexOf(m_data->dirty_children) >= 0) {
 		// in case of VipIODevice added, also add all the sinks without parents
 		if (qobject_cast<VipIODevice*>(m_data->dirty_children)) {
@@ -2379,7 +2400,7 @@ void VipProcessingPool::runPlay()
 
 	qint64 elapsed = 0;
 	qint64 prev_elapsed = 0;
-	qint64 st = 0, el=0;
+	qint64 st = 0, el = 0;
 
 	while (m_data->run) {
 
@@ -2394,7 +2415,7 @@ void VipProcessingPool::runPlay()
 			else { // compute elapsed time since run started
 				prev_elapsed = elapsed;
 				elapsed = (vipGetMilliSecondsSinceEpoch() - _time) * 1000000 * m_data->parameters.speed; // elapsed time in nano seconds
-				// vip_debug("elapsed: %i\n",(int)((elapsed - prev_elapsed)/1000000));
+															 // vip_debug("elapsed: %i\n",(int)((elapsed - prev_elapsed)/1000000));
 			}
 
 			// compute the current time
@@ -2443,14 +2464,12 @@ void VipProcessingPool::runPlay()
 				st = QDateTime::currentMSecsSinceEpoch();
 				if (!read(previousTime(time())))
 					m_data->run = false;
-				
 			}
 			// in forward
 			else {
 				st = QDateTime::currentMSecsSinceEpoch();
 				if (!read(nextTime(time())))
 					m_data->run = false;
-				
 			}
 
 			// forward
@@ -2492,7 +2511,7 @@ void VipProcessingPool::runPlay()
 
 				el = QDateTime::currentMSecsSinceEpoch() - st;
 				if (m_data->run && m_data->min_ms && el < m_data->min_ms) {
-					//vip_debug("sleep for %f\n", m_data->min_ms - el);
+					// vip_debug("sleep for %f\n", m_data->min_ms - el);
 					vipSleep(m_data->min_ms - el);
 				}
 			}
@@ -3408,7 +3427,7 @@ bool VipCSVReader::open(VipIODevice::OpenModes mode)
 					float_sep = ",";
 			}
 
-			//QLocale locale;
+			// QLocale locale;
 			if (float_sep == ".")
 				locale = QLocale(QLocale::French);
 			else
@@ -4342,7 +4361,7 @@ bool VipDirectoryReader::reload()
 		return true;
 	}
 	VIP_UNREACHABLE();
-	//return false;
+	// return false;
 }
 
 bool VipDirectoryReader::readData(qint64 time)
@@ -4909,7 +4928,7 @@ bool VipArchiveReader::open(VipIODevice::OpenModes mode)
 				m_data->ranges.clear();
 
 				// find smallest sampling time
-				//int i = 0;
+				// int i = 0;
 				qint64 prev = 0;
 				qint64 sampling = 0;
 				for (QMultiMap<qint64, ArchFrame>::iterator it = m_data->frames.begin(); it != m_data->frames.end(); ++it /*, ++i*/) {

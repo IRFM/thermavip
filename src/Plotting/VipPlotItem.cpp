@@ -1,11 +1,42 @@
+/**
+ * BSD 3-Clause License
+ *
+ * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice, this
+ *    list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of the copyright holder nor the names of its
+ *    contributors may be used to endorse or promote products derived from
+ *    this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
 #include "VipPlotItem.h"
 #include "VipAxisColorMap.h"
 #include "VipPainter.h"
 #include "VipPlotMimeData.h"
 #include "VipPlotWidget2D.h"
+#include "VipSet.h"
 #include "VipShapeDevice.h"
 #include "VipStyleSheet.h"
-#include "VipSet.h"
 #include "VipUniqueId.h"
 #include "VipXmlArchive.h"
 
@@ -118,7 +149,7 @@ public:
 	  : graphicsObject(nullptr)
 	  , paintEnabled(true)
 	  , globalStyleSheetId(0)
-	  , renderHints(QPainter::Antialiasing | QPainter::TextAntialiasing) //TEST
+	  , renderHints(QPainter::Antialiasing | QPainter::TextAntialiasing) // TEST
 	  , compositionMode(QPainter::CompositionMode_SourceOver)
 	  , dirtyStyleSheet(true)
 	  , insideApply(false)
@@ -138,7 +169,7 @@ VipPaintItem::~VipPaintItem()
 	delete d_data;
 }
 
-void VipPaintItem::updateInternal() 
+void VipPaintItem::updateInternal()
 {
 	if (!d_data->insideApply)
 		this->updateOnStyleSheet();
@@ -165,7 +196,7 @@ void VipPaintItem::updateOnStyleSheet()
 		d_data->graphicsObject->update();
 }
 
-void VipPaintItem::updateStyleSheetString() 
+void VipPaintItem::updateStyleSheetString()
 {
 	d_data->styleSheetString = vipStyleSheetToString(d_data->styleSheet);
 }
@@ -183,9 +214,9 @@ bool VipPaintItem::hasStates(const QSet<QByteArray>& states) const
 	return true;
 }
 
-bool VipPaintItem::hasState(const QByteArray& state, bool enable) const 
+bool VipPaintItem::hasState(const QByteArray& state, bool enable) const
 {
-	
+
 	// handle hover and selected
 	if (state.startsWith("hover")) {
 		bool item_hover = d_data->graphicsObject->property("_vip_hover").toBool();
@@ -205,13 +236,13 @@ bool VipPaintItem::hasState(const QByteArray& state, bool enable) const
 			return true;
 		return false;
 	}
-	
+
 	return false;
 }
 
 QList<VipPaintItem*> VipPaintItem::paintItemChildren() const
 {
-	
+
 	QList<QGraphicsItem*> items = graphicsObject()->childItems();
 	QList<VipPaintItem*> pitems;
 	for (QGraphicsItem* it : items) {
@@ -223,7 +254,7 @@ QList<VipPaintItem*> VipPaintItem::paintItemChildren() const
 	return pitems;
 }
 
-void VipPaintItem::internalDispatchStyleSheet(const VipStyleSheet & st) const
+void VipPaintItem::internalDispatchStyleSheet(const VipStyleSheet& st) const
 {
 	// Recursively apply style sheet to children while adding new values
 
@@ -232,12 +263,12 @@ void VipPaintItem::internalDispatchStyleSheet(const VipStyleSheet & st) const
 		return;
 	VipStyleSheet stylesheet = st;
 	for (int i = 0; i < items.size(); ++i) {
-	
+
 		VipPaintItem* it = const_cast<VipPaintItem*>(items[i]);
 
 		// Enrich stylesheet with this item's stylesheet
 		if (!d_data->styleSheet.isEmpty()) {
-			//VipStyleSheet s = vipExtractRelevantStyleSheetFor(d_data->styleSheet, it);
+			// VipStyleSheet s = vipExtractRelevantStyleSheetFor(d_data->styleSheet, it);
 			stylesheet = vipMergeStyleSheet(stylesheet, d_data->styleSheet);
 		}
 		if (!(stylesheet.isEmpty() && it->d_data->inheritedStyleSheet.isEmpty())) {
@@ -249,7 +280,7 @@ void VipPaintItem::internalDispatchStyleSheet(const VipStyleSheet & st) const
 	}
 }
 
-void VipPaintItem::dispatchStyleSheetToChildren() 
+void VipPaintItem::dispatchStyleSheetToChildren()
 {
 	// Find top level parent VipPaintEvent, and cascade from there
 	VipPaintItem* parent = this;
@@ -302,7 +333,7 @@ bool VipPaintItem::internalApplyStyleSheet(const VipStyleSheet& sheet, const Vip
 		}
 	}
 	if (!sheet.isEmpty()) {
-		
+
 		QString error;
 		QSet<QByteArray> res;
 		if (!vipApplyStyleSheet(sheet, this, &error)) {
@@ -322,7 +353,7 @@ bool VipPaintItem::internalSetStyleSheet(const QByteArray& ar)
 	d_data->styleSheetString.clear();
 
 	QString error;
-	VipStyleSheet sheet = vipParseStyleSheet(ar, this,  &error);
+	VipStyleSheet sheet = vipParseStyleSheet(ar, this, &error);
 	if (!error.isEmpty()) {
 		qWarning(("Parse style sheet error: " + error).toLatin1().data());
 		return false;
@@ -339,10 +370,10 @@ bool VipPaintItem::internalSetStyleSheet(const QByteArray& ar)
 
 void VipPaintItem::setStyleSheet(const VipStyleSheet& sheet)
 {
-	
+
 	vipRegisterMetaObject(this->graphicsObject()->metaObject());
-	
-	if(internalApplyStyleSheet(sheet, d_data->inheritedStyleSheet)){
+
+	if (internalApplyStyleSheet(sheet, d_data->inheritedStyleSheet)) {
 		d_data->styleSheetString.clear();
 		d_data->styleSheet = sheet;
 
@@ -362,7 +393,7 @@ void VipPaintItem::setInheritedStyleSheet(const VipStyleSheet& sheet)
 VipStyleSheet VipPaintItem::setStyleSheet(const QString& style_sheet)
 {
 	const QByteArray latin = style_sheet.toLatin1();
-	
+
 	if (latin != d_data->styleSheetString) {
 		vipRegisterMetaObject(this->graphicsObject()->metaObject());
 		if (!internalSetStyleSheet(latin))
@@ -376,13 +407,16 @@ QString VipPaintItem::styleSheetString() const
 {
 	return d_data->styleSheetString;
 }
-const VipStyleSheet& VipPaintItem::styleSheet() const {
+const VipStyleSheet& VipPaintItem::styleSheet() const
+{
 	return d_data->styleSheet;
 }
-const VipStyleSheet& VipPaintItem::constStyleSheet() const {
+const VipStyleSheet& VipPaintItem::constStyleSheet() const
+{
 	return d_data->styleSheet;
 }
-VipStyleSheet& VipPaintItem::styleSheet() {
+VipStyleSheet& VipPaintItem::styleSheet()
+{
 	this->markStyleSheetDirty();
 	return d_data->styleSheet;
 }
@@ -391,7 +425,7 @@ void VipPaintItem::setIgnoreStyleSheet(bool enable)
 {
 	d_data->ignoreStyleSheet = enable;
 }
-bool VipPaintItem::ignoreStyleSheet() const 
+bool VipPaintItem::ignoreStyleSheet() const
 {
 	return d_data->ignoreStyleSheet;
 }
@@ -435,7 +469,7 @@ QPainter::CompositionMode VipPaintItem::compositionMode() const
 	return d_data->compositionMode;
 }
 
-bool VipPaintItem::setItemProperty(const char* name, const QVariant& value, const QByteArray& )
+bool VipPaintItem::setItemProperty(const char* name, const QVariant& value, const QByteArray&)
 {
 	if (value.userType() == 0)
 		return false;
@@ -474,7 +508,7 @@ bool VipPaintItem::setItemProperty(const char* name, const QVariant& value, cons
 		d_data->graphicsObject->setVisible(value.toBool());
 		return true;
 	}
-	else if (strcmp(name, "title") == 0){
+	else if (strcmp(name, "title") == 0) {
 		VipText t = title();
 		t.setText(value.toString());
 		setTitle(t);
@@ -483,8 +517,7 @@ bool VipPaintItem::setItemProperty(const char* name, const QVariant& value, cons
 	else {
 		VipText t = title();
 		VipTextStyle st = t.textStyle();
-		if (VipStandardStyleSheet::handleTextStyleKeyWord(name, value, st, "title-"))
-		{
+		if (VipStandardStyleSheet::handleTextStyleKeyWord(name, value, st, "title-")) {
 			t.setTextStyle(st);
 			setTitle(t);
 			return true;
@@ -562,7 +595,7 @@ static int _registerBaseKeyWords = registerBaseKeyWords();
 
 /// Default key words and related parsers for VipPlotItem objects
 
-static const QMap<QByteArray, int> & plotItemAttributes() 
+static const QMap<QByteArray, int>& plotItemAttributes()
 {
 	static QMap<QByteArray, int> attributes;
 	if (attributes.isEmpty()) {
@@ -967,7 +1000,6 @@ bool VipPlotItem::setItemProperty(const char* name, const QVariant& value, const
 		}
 		else
 			return false;
-		
 	}
 	else if (strcmp(name, "border") == 0) {
 		if (value.userType() == qMetaTypeId<QPen>()) {
@@ -992,7 +1024,7 @@ bool VipPlotItem::setItemProperty(const char* name, const QVariant& value, const
 		QPen p = this->pen();
 		p.setWidthF(w);
 		setPen(p);
-		
+
 		return true;
 	}
 	else if (strcmp(name, "background") == 0) {
@@ -1016,7 +1048,6 @@ bool VipPlotItem::setItemProperty(const char* name, const QVariant& value, const
 		}
 		else
 			return false;
-		
 	}
 	else if (strcmp(name, "colormap") == 0) {
 		if (value.userType() == QMetaType::QByteArray) {
@@ -1031,10 +1062,10 @@ bool VipPlotItem::setItemProperty(const char* name, const QVariant& value, const
 			if (v < 0 || v > VipLinearColorMap::Winter)
 				return false;
 			if (colorMap()) {
-					colorMap()->setColorMap((VipLinearColorMap::StandardColorMap)v);
+				colorMap()->setColorMap((VipLinearColorMap::StandardColorMap)v);
 			}
 		}
-		
+
 		return true;
 	}
 	else if (strcmp(name, "axis-unit") == 0) {
@@ -1075,7 +1106,7 @@ bool VipPlotItem::setItemProperty(const char* name, const QVariant& value, const
 		auto it = plotItemAttributes().find(index);
 		if (it == plotItemAttributes().end())
 			return false;
-		this->setItemAttribute((ItemAttribute)it.value(),value.toBool());
+		this->setItemAttribute((ItemAttribute)it.value(), value.toBool());
 		return true;
 	}
 	else {
@@ -1085,7 +1116,7 @@ bool VipPlotItem::setItemProperty(const char* name, const QVariant& value, const
 			return true;
 		}
 	}
-	
+
 	return VipPaintItem::setItemProperty(name, value, index);
 }
 
@@ -1272,7 +1303,6 @@ void VipPlotItem::markAxesDirty()
 				axis->emitScaleDivNeedUpdate();
 			}
 		}
-		
 	}
 }
 
@@ -1394,9 +1424,9 @@ static QOpenGLFramebufferObject* buffer(const QSize& size)
 }
 static QImage createImageWithFBO(VipPlotItem* item)
 {
-	//qint64 st = QDateTime::currentMSecsSinceEpoch();
+	// qint64 st = QDateTime::currentMSecsSinceEpoch();
 
-	//qint64 st2 = QDateTime::currentMSecsSinceEpoch();
+	// qint64 st2 = QDateTime::currentMSecsSinceEpoch();
 
 	context()->makeCurrent(window());
 
@@ -1447,7 +1477,7 @@ static QImage createImageWithFBO(VipPlotItem* item)
 
 	painter.end();
 
-	//qint64 el2 = QDateTime::currentMSecsSinceEpoch() - st2;
+	// qint64 el2 = QDateTime::currentMSecsSinceEpoch() - st2;
 
 	fbo->release();
 	QImage img = fbo->toImage();
@@ -1461,8 +1491,8 @@ static QImage createImageWithFBO(VipPlotItem* item)
 	//
 	// fbo->release();
 
-	//qint64 el = QDateTime::currentMSecsSinceEpoch() - st;
-	//vip_debug("opengl: %i , %i ms\n", (int)el, (int)el2);
+	// qint64 el = QDateTime::currentMSecsSinceEpoch() - st;
+	// vip_debug("opengl: %i , %i ms\n", (int)el, (int)el2);
 	return img;
 }
 
@@ -1508,16 +1538,16 @@ void VipPlotItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* optio
 		this->drawSelected(painter, sceneMap());
 	else
 		this->draw(painter, sceneMap());
-	
+
 	// draw the additional texts
 	if (d_data->drawText) {
 		QRectF rect = boundingRect();
-		//sceneMap()->invTransformRect(boundingRect());
+		// sceneMap()->invTransformRect(boundingRect());
 		for (QMap<int, ItemText>::const_iterator it = d_data->texts.begin(); it != d_data->texts.end(); ++it) {
 			if (!it.value().text.isEmpty()) {
 				VipText t = it.value().text;
 				t.setText(this->formatText(t.text(), QPointF(0, 0)));
-				//VipPainter::drawText(painter, sceneMap(), t, 0, it.value().position, it.value().alignment, rect.left(), rect.right(), rect.top(), rect.bottom());
+				// VipPainter::drawText(painter, sceneMap(), t, 0, it.value().position, it.value().alignment, rect.left(), rect.right(), rect.top(), rect.bottom());
 				VipPainter::drawText(painter, t, QTransform(), QPointF(), 0, it.value().position, it.value().alignment, rect);
 			}
 		}
@@ -1580,7 +1610,7 @@ int VipPlotItem::addText(const ItemText& text)
 	}
 
 	d_data->texts[index] = text;
-	emitItemChanged(false, false, true,false);
+	emitItemChanged(false, false, true, false);
 	return index;
 }
 
@@ -2663,13 +2693,13 @@ void VipPlotItemComposite::clear()
 		delete takeItem(0);
 }
 
-QList<VipPaintItem*> VipPlotItemComposite::paintItemChildren() const 
+QList<VipPaintItem*> VipPlotItemComposite::paintItemChildren() const
 {
 	QList<VipPaintItem*> res = VipPlotItem::paintItemChildren();
-	
+
 	for (const VipPlotItem* it : d_items)
 		res.push_back(const_cast<VipPlotItem*>(it));
-	
+
 	return res;
 }
 
@@ -2748,15 +2778,14 @@ void VipPlotItemData::setData(const QVariant& d)
 	}
 }
 
-QVariant VipPlotItemData::takeData() 
+QVariant VipPlotItemData::takeData()
 {
 	if (d_data->inDestroy)
 		return QVariant();
-	QVariant ret = d_data->data ;
+	QVariant ret = d_data->data;
 	d_data->data = QVariant();
 	return ret;
 }
-
 
 VipPlotItemData::Mutex* VipPlotItemData::dataLock() const
 {
@@ -2800,12 +2829,6 @@ QVariant VipPlotItemData::data() const
 	return res;
 }
 
-
-
-
-
-
-
 VipPlotItem* vipCopyPlotItem(const VipPlotItem* item)
 {
 	VipXOStringArchive arch;
@@ -2829,9 +2852,6 @@ bool vipRestorePlotItemState(VipPlotItem* item, const QByteArray& state)
 	iarch.setProperty("_vip_no_id_or_scale", true);
 	return iarch.content("item", item);
 }
-
-
-
 
 VipArchive& operator<<(VipArchive& arch, const VipPlotItem* value)
 {
@@ -2977,9 +2997,6 @@ VipArchive& operator>>(VipArchive& arch, VipPlotItem* value)
 	return arch;
 }
 
-
-
-
 VipArchive& operator<<(VipArchive& arch, const VipPlotItemData* value)
 {
 	// arch.content("maxSampleCount", value->maxSampleCount());
@@ -3007,7 +3024,6 @@ VipArchive& operator>>(VipArchive& arch, VipPlotItemData* value)
 	value->setData(arch.read("data"));
 	return arch;
 }
-
 
 static int register_types()
 {

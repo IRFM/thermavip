@@ -1,14 +1,44 @@
+/**
+ * BSD 3-Clause License
+ *
+ * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice, this
+ *    list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of the copyright holder nor the names of its
+ *    contributors may be used to endorse or promote products derived from
+ *    this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
 #include <qboxlayout.h>
 
-
-#include "VipWebBrowser.h"
 #include "VipDisplayArea.h"
 #include "VipProgress.h"
+#include "VipWebBrowser.h"
 
 #ifdef __VIP_USE_WEB_ENGINE
 
-#include <qwebenginesettings.h>
 #include <qwebenginecertificateerror.h>
+#include <qwebenginesettings.h>
 
 bool VipHTTPFileHandler::open(const QString& path, QString* error)
 {
@@ -22,15 +52,11 @@ bool VipHTTPFileHandler::open(const QString& path, QString* error)
 	VipBaseDragWidget* w = vipCreateFromBaseDragWidget(vipCreateFromWidgets(QWidgetList() << browser));
 	tab->addWidget(w);
 
-
 	return true;
 }
 
-
-
-
 VipWebBrowserToolBar::VipWebBrowserToolBar(QWidget* parent)
-	:QToolBar(parent)
+  : QToolBar(parent)
 {
 	prev = addAction(vipIcon("rotate_left.png"), "Previous page");
 	next = addAction(vipIcon("rotate_right.png"), "Next page");
@@ -45,7 +71,6 @@ VipWebBrowserToolBar::VipWebBrowserToolBar(QWidget* parent)
 	load.setMaximumHeight(20);
 	loadAction = addWidget(&load);
 
-
 	loadAction->setVisible(false);
 	stop->setVisible(false);
 
@@ -59,14 +84,13 @@ void VipWebBrowserToolBar::setIcon(const QIcon& icon)
 	url.setIcon(icon);
 }
 
-
-
-
 class WebPage : public QWebEnginePage
 {
 public:
 	explicit WebPage(QWidget* parent = 0)
-		:QWebEnginePage(parent) {}
+	  : QWebEnginePage(parent)
+	{
+	}
 
 protected:
 	virtual bool certificateError(const QWebEngineCertificateError& error) override
@@ -76,8 +100,6 @@ protected:
 		return true;
 	}
 };
-
-
 
 class VipWebBrowser::PrivateData
 {
@@ -97,22 +119,22 @@ static QWidget* makeWebBrowserWidget()
 }
 
 VipWebBrowser::VipWebBrowser(QWidget* parent)
-	:VipWidgetPlayer(makeWebBrowserWidget(), parent)
+  : VipWidgetPlayer(makeWebBrowserWidget(), parent)
 {
 	this->setObjectName("VipWebBrowser");
 	m_data = new PrivateData();
-	m_data->view = widget()->findChild< QWebEngineView*>();
-	m_data->bar = widget()->findChild< VipWebBrowserToolBar*>();
+	m_data->view = widget()->findChild<QWebEngineView*>();
+	m_data->bar = widget()->findChild<VipWebBrowserToolBar*>();
 
 	webEngine()->setPage(new WebPage());
 
-	connect(webEngine(),SIGNAL(titleChanged(const QString&)), this, SLOT(setWindowTitle(const QString&)));
+	connect(webEngine(), SIGNAL(titleChanged(const QString&)), this, SLOT(setWindowTitle(const QString&)));
 	connect(m_data->bar->prev, SIGNAL(triggered(bool)), webEngine(), SLOT(back()));
 	connect(m_data->bar->next, SIGNAL(triggered(bool)), webEngine(), SLOT(forward()));
 	connect(m_data->bar->reload, SIGNAL(triggered(bool)), webEngine(), SLOT(reload()));
 	connect(m_data->bar->stop, SIGNAL(triggered(bool)), webEngine(), SLOT(stop()));
 	connect(&m_data->bar->url, SIGNAL(returnPressed()), this, SLOT(setUrlInternal()));
-	connect(webEngine(), SIGNAL(iconChanged(const QIcon&)), &m_data->bar->url, SLOT(setIcon(const QIcon &)));
+	connect(webEngine(), SIGNAL(iconChanged(const QIcon&)), &m_data->bar->url, SLOT(setIcon(const QIcon&)));
 	connect(webEngine(), SIGNAL(urlChanged(const QUrl&)), this, SLOT(displayUrl(const QUrl&)));
 
 	connect(webEngine(), SIGNAL(loadStarted()), this, SLOT(loadStarted()));
@@ -121,10 +143,7 @@ VipWebBrowser::VipWebBrowser(QWidget* parent)
 
 	connect(webEngine(), SIGNAL(loadFinished(bool)), this, SLOT(loadFinished(bool)));
 
-	connect(webEngine()->page(),
-		SIGNAL(featurePermissionRequested(const QUrl&, QWebEnginePage::Feature)), this,
-		SLOT(featurePermissionRequested(const QUrl&, QWebEnginePage::Feature)));
-
+	connect(webEngine()->page(), SIGNAL(featurePermissionRequested(const QUrl&, QWebEnginePage::Feature)), this, SLOT(featurePermissionRequested(const QUrl&, QWebEnginePage::Feature)));
 
 	webEngine()->page()->settings()->setAttribute(QWebEngineSettings::AllowRunningInsecureContent, true);
 }
@@ -134,15 +153,13 @@ QWebEngineView* VipWebBrowser::webEngine() const
 	return m_data->view;
 }
 
-void VipWebBrowser::featurePermissionRequested(const QUrl& ,//securityOrigin,
-	QWebEnginePage::Feature feature)
+void VipWebBrowser::featurePermissionRequested(const QUrl&, // securityOrigin,
+					       QWebEnginePage::Feature feature)
 {
 
 	// grant permission
-	webEngine()->page()->setFeaturePermission(webEngine()->page()->url(),
-		feature, QWebEnginePage::PermissionGrantedByUser);
+	webEngine()->page()->setFeaturePermission(webEngine()->page()->url(), feature, QWebEnginePage::PermissionGrantedByUser);
 }
-
 
 void VipWebBrowser::setUrlInternal()
 {
@@ -175,12 +192,12 @@ void VipWebBrowser::loadFinished(bool ok)
 QWidget* VipWebBrowser::widgetForMouseEvents() const
 {
 	return widget();
-	//QObjectList lst = webEngine()->children();
-	// for (int i = 0; i < lst.size(); ++i) {
-	// if (QWidget* w = qobject_cast<QWidget*>(lst[i]))
-	// return w;
-	// }
-	// return nullptr;
+	// QObjectList lst = webEngine()->children();
+	//  for (int i = 0; i < lst.size(); ++i) {
+	//  if (QWidget* w = qobject_cast<QWidget*>(lst[i]))
+	//  return w;
+	//  }
+	//  return nullptr;
 }
 
 QToolBar* VipWebBrowser::playerToolBar() const
@@ -193,14 +210,12 @@ void VipWebBrowser::setUrl(const QString& url)
 	webEngine()->load(QUrl(url));
 }
 
-
-
 VipArchive& operator<<(VipArchive& arch, const VipWebBrowser* browser)
 {
 	return arch.content("url", browser->webEngine()->page()->url().toString()).content("toolBarVisible", browser->playerToolBar()->isVisible());
 }
 
-VipArchive& operator >>(VipArchive& arch, VipWebBrowser* browser)
+VipArchive& operator>>(VipArchive& arch, VipWebBrowser* browser)
 {
 	arch.save();
 	QString url;
@@ -209,7 +224,8 @@ VipArchive& operator >>(VipArchive& arch, VipWebBrowser* browser)
 	if (arch.content("toolBarVisible", toolBarVisible)) {
 		browser->webEngine()->page()->setUrl(QUrl(url));
 		browser->playerToolBar()->setVisible(toolBarVisible);
-		if (!toolBarVisible) browser->playerToolBar()->hide();
+		if (!toolBarVisible)
+			browser->playerToolBar()->hide();
 	}
 	else
 		arch.restore();
@@ -218,7 +234,7 @@ VipArchive& operator >>(VipArchive& arch, VipWebBrowser* browser)
 
 static int registerArchive()
 {
-	vipRegisterArchiveStreamOperators< VipWebBrowser*>();
+	vipRegisterArchiveStreamOperators<VipWebBrowser*>();
 	return 0;
 }
 static int _registerArchive = registerArchive();

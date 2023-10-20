@@ -1,3 +1,34 @@
+/**
+ * BSD 3-Clause License
+ *
+ * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice, this
+ *    list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of the copyright holder nor the names of its
+ *    contributors may be used to endorse or promote products derived from
+ *    this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
 #include <cmath>
 #include <map>
 
@@ -12,8 +43,6 @@
 #include "VipScaleMap.h"
 #include "VipShapeDevice.h"
 #include "VipValueTransform.h"
-
-
 
 // static QDateTime addDays(const QDateTime time, double days)
 // {
@@ -2303,8 +2332,6 @@ void VipScaleDraw::drawTick(QPainter* painter, vip_double value, double len, Vip
 	double tval = scaleMap().transform(value);
 	const double pw = componentPen(Backbone).widthF() / 2;
 
-	
-
 	switch (alignment()) {
 		case LeftScale: {
 			double x1, x2;
@@ -2393,9 +2420,9 @@ void VipScaleDraw::drawBackbone(QPainter* painter) const
 	bool remove_antialiazing = !painter->transform().isRotating() && painter->testRenderHint(QPainter::Antialiasing);
 	QPainter::RenderHints saved = painter->renderHints();
 	if (remove_antialiazing) {
-		painter->setRenderHint(QPainter::Antialiasing,false);
+		painter->setRenderHint(QPainter::Antialiasing, false);
 	}
-	
+
 	switch (alignment()) {
 		case LeftScale: {
 			double x = pos.x() - off + 0.5;
