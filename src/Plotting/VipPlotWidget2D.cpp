@@ -5969,3 +5969,61 @@ void VipMultiGraphicsView::resizeEvent(QResizeEvent* event)
 
 
 
+
+
+
+VipArchive& operator<<(VipArchive& arch, const VipPlotArea2D* value)
+{
+	arch.content("leftAxis", value->leftAxis());
+	arch.content("rightAxis", value->rightAxis());
+	arch.content("topAxis", value->topAxis());
+	arch.content("bottomAxis", value->bottomAxis());
+	arch.content("leftAxisVisible", value->leftAxis()->isVisible());
+	arch.content("rightAxisVisible", value->rightAxis()->isVisible());
+	arch.content("topAxisVisible", value->topAxis()->isVisible());
+	arch.content("bottomAxisVisible", value->bottomAxis()->isVisible());
+	arch.content("grid", value->grid());
+	arch.content("canvas", value->canvas());
+	// since 2.2.18
+	arch.content("title", value->titleAxis());
+	return arch;
+}
+VipArchive& operator>>(VipArchive& arch, VipPlotArea2D* value)
+{
+	arch.content("leftAxis", value->leftAxis());
+	arch.content("rightAxis", value->rightAxis());
+	arch.content("topAxis", value->topAxis());
+	arch.content("bottomAxis", value->bottomAxis());
+	value->leftAxis()->setVisible(arch.read("leftAxisVisible").toBool());
+	value->rightAxis()->setVisible(arch.read("rightAxisVisible").toBool());
+	value->topAxis()->setVisible(arch.read("topAxisVisible").toBool());
+	value->bottomAxis()->setVisible(arch.read("bottomAxisVisible").toBool());
+	arch.content("grid", value->grid());
+	arch.content("canvas", value->canvas());
+	// since 2.2.18
+	arch.save();
+	if (!arch.content("title", value->titleAxis()))
+		arch.restore();
+
+	return arch;
+}
+
+
+static int registerStreamOperators()
+{
+	qRegisterMetaType<VipMultiGraphicsWidget*>();
+	qRegisterMetaType<VipAbstractPlotArea*>();
+	qRegisterMetaType<VipPlotArea2D*>();
+	qRegisterMetaType<VipPlotPolarArea2D*>();
+	qRegisterMetaType<VipImageArea2D*>();
+	qRegisterMetaType<VipBaseGraphicsView*>();
+	qRegisterMetaType<VipMultiGraphicsView*>();
+	qRegisterMetaType<VipPlotWidget2D*>();
+	qRegisterMetaType<VipPlotPolarWidget2D*>();
+	qRegisterMetaType<VipImageWidget2D*>();
+
+	vipRegisterArchiveStreamOperators<VipPlotArea2D*>();
+	return 0;
+}
+
+static int _registerStreamOperators = registerStreamOperators();

@@ -387,11 +387,45 @@ QDataStream& operator>>(QDataStream& str, VipQuiverPoint& p)
 	return str >> p.destination >> p.position >> p.value;
 }
 
+
+VipArchive& operator<<(VipArchive& arch, const VipPlotQuiver* value)
+{
+	arch.content("quiverPath", value->quiverPath());
+	arch.content("textAlignment", (int)value->textAlignment());
+	arch.content("textPosition", (int)value->textPosition());
+	arch.content("textTransform", value->textTransform());
+	arch.content("textTransformReference", value->textTransformReference());
+	arch.content("textDistance", value->textDistance());
+	arch.content("text", value->text());
+	return arch;
+}
+
+VipArchive& operator>>(VipArchive& arch, VipPlotQuiver* value)
+{
+	value->setQuiverPath(arch.read("quiverPath").value<VipQuiverPath>());
+	value->setTextAlignment((Qt::Alignment)arch.read("textAlignment").value<int>());
+	value->setTextPosition((Vip::RegionPositions)arch.read("textPosition").value<int>());
+
+	QTransform textTransform = arch.read("textTransform").value<QTransform>();
+	QPointF textTransformReference = arch.read("textTransformReference").value<QPointF>();
+	value->setTextTransform(textTransform, textTransformReference);
+	value->setTextDistance(arch.read("textDistance").value<double>());
+	value->setText(arch.read("text").value<VipText>());
+	return arch;
+}
+
+
+
+
 static bool register_types()
 {
 	qRegisterMetaType<VipQuiverPoint>();
 	qRegisterMetaType<VipQuiverPointVector>();
 	qRegisterMetaTypeStreamOperators<VipQuiverPoint>();
+
+	qRegisterMetaType<VipPlotQuiver*>();
+	vipRegisterArchiveStreamOperators<VipPlotQuiver*>();
+
 	return true;
 }
 static bool _register_types = register_types();

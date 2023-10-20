@@ -2373,3 +2373,42 @@ void VipPlotCurve::dataBoundingRect(const VipPointVector & samples)
 	}
 	dataLock()->unlock();
 }
+
+
+
+VipArchive& operator<<(VipArchive& arch, const VipPlotCurve* value)
+{
+	arch.content("legendAttributes", (int)value->legendAttributes());
+	arch.content("curveAttributes", (int)value->curveAttributes());
+	arch.content("boxStyle", value->boxStyle());
+	arch.content("baseline", value->baseline());
+	arch.content("curveStyle", (int)value->style());
+	if (value->symbol())
+		arch.content("symbol", *value->symbol());
+	else
+		arch.content("symbol", VipSymbol());
+	arch.content("symbolVisible", value->symbolVisible());
+	return arch;
+}
+
+VipArchive& operator>>(VipArchive& arch, VipPlotCurve* value)
+{
+	value->setLegendAttributes(VipPlotCurve::LegendAttributes(arch.read("legendAttributes").value<int>()));
+	value->setCurveAttributes(VipPlotCurve::CurveAttributes(arch.read("curveAttributes").value<int>()));
+	value->setBoxStyle(arch.read("boxStyle").value<VipBoxStyle>());
+	value->setBaseline(arch.read("baseline").value<double>());
+	value->setStyle(VipPlotCurve::CurveStyle(arch.read("curveStyle").value<int>()));
+	value->setSymbol(new VipSymbol(arch.read("symbol").value<VipSymbol>()));
+	value->setSymbolVisible(arch.read("symbolVisible").toBool());
+	return arch;
+}
+
+
+static int registerStreamOperators()
+{
+	qRegisterMetaType<VipPlotCurve*>();
+	vipRegisterArchiveStreamOperators<VipPlotCurve*>();
+	return 0;
+}
+
+static int _registerStreamOperators = registerStreamOperators();

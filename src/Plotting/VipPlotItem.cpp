@@ -6,6 +6,8 @@
 #include "VipShapeDevice.h"
 #include "VipStyleSheet.h"
 #include "VipSet.h"
+#include "VipUniqueId.h"
+#include "VipXmlArchive.h"
 
 #include <QAtomicInt>
 #include <QCoreApplication>
@@ -2798,4 +2800,221 @@ QVariant VipPlotItemData::data() const
 	return res;
 }
 
-static int _id = qRegisterMetaType<VipPlotItem*>();
+
+
+
+
+
+
+VipPlotItem* vipCopyPlotItem(const VipPlotItem* item)
+{
+	VipXOStringArchive arch;
+	arch.content("item", QVariant::fromValue(const_cast<VipPlotItem*>(item)));
+
+	VipXIStringArchive iarch(arch.toString());
+	iarch.setProperty("_vip_no_id_or_scale", true);
+	return iarch.read("item").value<VipPlotItem*>();
+}
+
+QByteArray vipSavePlotItemState(const VipPlotItem* item)
+{
+	VipXOStringArchive arch;
+	arch.content("item", QVariant::fromValue(const_cast<VipPlotItem*>(item)));
+	return arch.toString().toLatin1();
+}
+
+bool vipRestorePlotItemState(VipPlotItem* item, const QByteArray& state)
+{
+	VipXIStringArchive iarch(state);
+	iarch.setProperty("_vip_no_id_or_scale", true);
+	return iarch.content("item", item);
+}
+
+
+
+
+VipArchive& operator<<(VipArchive& arch, const VipPlotItem* value)
+{
+	arch.content("id", VipUniqueId::id(value))
+	  .content("title", value->title())
+	  .content("attributes", (int)value->itemAttributes())
+	  .content("renderHints", (int)value->renderHints())
+	  .content("compositionMode", (int)value->compositionMode())
+	  .content("selectedPen", value->selectedPen())
+	  .content("axisUnits", value->axisUnits())
+	  .content("visible", value->isVisible());
+
+	// save text style and color palette (4.2.0)
+	arch.content("testStyle", value->textStyle());
+	arch.content("colorPalette", value->colorPalette());
+
+	// save the color map
+	if (value->colorMap())
+		// new in 2.2.17: save id as a VipAbstractScale instead of VipAxisColorMap
+		arch.content("colorMap", VipUniqueId::id<VipAbstractScale>(value->colorMap()));
+	else
+		arch.content("colorMap", 0);
+
+	// save the axes
+	arch.content("coordinateSystem", (int)value->coordinateSystemType());
+	QList<VipAbstractScale*> scales = value->axes();
+	arch.content("axisCount", scales.size());
+	for (int i = 0; i < scales.size(); ++i)
+		arch.content("axisId", VipUniqueId::id(scales[i]));
+
+	// save the properties
+	QList<QByteArray> names = value->dynamicPropertyNames();
+	QVariantMap properties;
+	for (int i = 0; i < names.size(); ++i)
+		if (!names[i].startsWith("_q_")) {
+			QVariant v = value->property(names[i]);
+			if (v.userType() > 0 && v.userType() < QMetaType::User) {
+				properties[names[i]] = v;
+			}
+		}
+
+	arch.content("properties", properties);
+
+	// save the additional texts
+	const QMap<int, VipPlotItem::ItemText> texts = value->texts();
+
+	arch.content("textCount", texts.size());
+	arch.start("texts");
+	for (QMap<int, VipPlotItem::ItemText>::const_iterator it = texts.begin(); it != texts.end(); ++it) {
+		arch.content("text", it.value().text);
+		arch.content("position", (int)it.value().position);
+		arch.content("alignment", (int)it.value().alignment);
+	}
+	arch.end();
+
+	arch.content("styleSheet", value->styleSheetString());
+	return arch;
+}
+
+VipArchive& operator>>(VipArchive& arch, VipPlotItem* value)
+{
+	int id = arch.read("id").value<int>();
+	if (!arch.property("_vip_no_id_or_scale").toBool())
+		VipUniqueId::setId(value, id);
+	value->setTitle(arch.read("title").value<VipText>());
+	value->setItemAttributes(VipPlotItem::ItemAttributes(arch.read("attributes").value<int>()));
+	value->setRenderHints(QPainter::RenderHints(arch.read("renderHints").value<int>()));
+	value->setCompositionMode(QPainter::CompositionMode(arch.read("compositionMode").value<int>()));
+	value->setSelectedPen(arch.read("selectedPen").value<QPen>());
+	QList<VipText> units = arch.read("axisUnits").value<QList<VipText>>();
+	for (int i = 0; i < units.size(); ++i)
+		value->setAxisUnit(i, units[i]);
+	value->setVisible(arch.read("visible").toBool());
+
+	// read text style and color palette (4.2.0)
+	VipTextStyle style;
+	VipColorPalette palette;
+	arch.save();
+	arch.content("testStyle", style);
+	if (arch.content("colorPalette", palette)) {
+		value->setTextStyle(style);
+		value->setColorPalette(palette);
+	}
+	else
+		arch.restore();
+
+	// load the color map
+	id = arch.read("colorMap").toInt();
+	if (id && !arch.property("_vip_no_id_or_scale").toBool()) {
+		// new in 2.2.17: interpret id as a VipAbstractScale instead of VipAxisColorMap
+		VipAxisColorMap* axis = qobject_cast<VipAxisColorMap*>(VipUniqueId::find<VipAbstractScale>(id));
+		if (!axis)
+			axis = VipUniqueId::find<VipAxisColorMap>(id);
+		if (axis)
+			value->setColorMap(axis);
+	}
+
+	// try to set the axes
+	int coordinateSystem = arch.read("coordinateSystem").toInt();
+	int count = arch.read("axisCount").toInt();
+	if (count) {
+		QList<VipAbstractScale*> scales;
+		for (int i = 0; i < count; ++i) {
+			VipAbstractScale* scale = VipUniqueId::find<VipAbstractScale>(arch.read("axisId").toInt());
+			scales.append(scale);
+		}
+		if (!arch.property("_vip_no_id_or_scale").toBool())
+			value->setAxes(scales, (VipCoordinateSystem::Type)coordinateSystem);
+	}
+
+	arch.save();
+	QVariantMap properties;
+	if (arch.content("properties", properties)) {
+		for (QVariantMap::const_iterator it = properties.begin(); it != properties.end(); ++it)
+			value->setProperty(it.key().toLatin1().data(), it.value());
+	}
+	else
+		arch.restore();
+
+	// read additional texts
+	count = arch.read("textCount").toInt();
+	if (count && (bool)arch.start("texts")) {
+		while (arch) {
+			VipText text = arch.read("text").value<VipText>();
+			Vip::RegionPositions position = (Vip::RegionPositions)arch.read("position").toInt();
+			Qt::Alignment alignment = (Qt::Alignment)arch.read("alignment").toInt();
+
+			if (arch) {
+				value->addText(text, position, alignment);
+			}
+		}
+		arch.end();
+	}
+	arch.resetError();
+
+	arch.save();
+	QString st;
+	if (arch.content("styleSheet", st))
+		value->setStyleSheet(st);
+	else
+		arch.restore();
+
+	return arch;
+}
+
+
+
+
+VipArchive& operator<<(VipArchive& arch, const VipPlotItemData* value)
+{
+	// arch.content("maxSampleCount", value->maxSampleCount());
+	QVariant v = value->data();
+	if (v.userType() == qMetaTypeId<VipPointVector>()) {
+		// for VipPointVector only, downsample to 100 points to avoid having too big session files
+		const VipPointVector pts = v.value<VipPointVector>();
+		if (pts.size() > 100) {
+			double step = pts.size() / 100.0;
+			VipPointVector tmp;
+			for (double s = 0; s < pts.size(); s += step) {
+				int index = (int)s;
+				tmp.push_back(pts[index]);
+			}
+			v = vipToVariant(tmp);
+		}
+	}
+	arch.content("data", v);
+	return arch;
+}
+
+VipArchive& operator>>(VipArchive& arch, VipPlotItemData* value)
+{
+	// value->setMaxSampleCount(arch.read("maxSampleCount").toInt());
+	value->setData(arch.read("data"));
+	return arch;
+}
+
+
+static int register_types()
+{
+	qRegisterMetaType<VipPlotItem*>();
+	qRegisterMetaType<VipPlotItemData*>();
+	vipRegisterArchiveStreamOperators<VipPlotItem*>();
+	vipRegisterArchiveStreamOperators<VipPlotItemData*>();
+	return 0;
+}
+static int _register_types = register_types();

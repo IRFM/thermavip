@@ -108,6 +108,13 @@ private:
 
 
 
+VIP_REGISTER_QOBJECT_METATYPE(VipPlotSpectrogram*)
+VIP_PLOTTING_EXPORT VipArchive& operator<<(VipArchive& arch, const VipPlotSpectrogram* value);
+VIP_PLOTTING_EXPORT VipArchive& operator>>(VipArchive& arch, VipPlotSpectrogram* value);
+
+
+
+
 /// @}
 //end Plotting
 

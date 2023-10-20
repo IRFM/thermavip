@@ -552,3 +552,58 @@ bool VipPlotCanvas::setItemProperty(const char* name, const QVariant& value, con
 	}
 	return VipPlotItem::setItemProperty(name, value, index);
 }
+
+
+
+VipArchive& operator<<(VipArchive& arch, const VipPlotGrid* value)
+{
+	arch.content("minorPen", value->minorPen());
+	arch.content("majorPen", value->majorPen());
+	arch.content("_vip_customDisplay", value->property("_vip_customDisplay").toInt());
+	return arch;
+}
+
+VipArchive& operator>>(VipArchive& arch, VipPlotGrid* value)
+{
+	value->setMinorPen(arch.read("minorPen").value<QPen>());
+	value->setMajorPen(arch.read("majorPen").value<QPen>());
+	// new in 2.2.18
+	int _vip_customDisplay;
+	if (arch.content("_vip_customDisplay", _vip_customDisplay))
+		value->setProperty("_vip_customDisplay", _vip_customDisplay);
+	else
+		arch.restore();
+	return arch;
+}
+
+VipArchive& operator<<(VipArchive& arch, const VipPlotCanvas* value)
+{
+	arch.content("boxStyle", value->boxStyle());
+	// new in 2.2.18
+	arch.content("_vip_customDisplay", value->property("_vip_customDisplay").toInt());
+	return arch;
+}
+
+VipArchive& operator>>(VipArchive& arch, VipPlotCanvas* value)
+{
+	value->setBoxStyle(arch.read("boxStyle").value<VipBoxStyle>());
+	// new in 2.2.18
+	int _vip_customDisplay;
+	if (arch.content("_vip_customDisplay", _vip_customDisplay))
+		value->setProperty("_vip_customDisplay", _vip_customDisplay);
+	else
+		arch.restore();
+	return arch;
+}
+
+static int registerStreamOperators()
+{
+	qRegisterMetaType<VipPlotGrid*>();
+	qRegisterMetaType<VipPlotCanvas*>();
+
+	vipRegisterArchiveStreamOperators<VipPlotGrid*>();
+	vipRegisterArchiveStreamOperators<VipPlotCanvas*>();
+	return 0;
+}
+
+static int _registerStreamOperators = registerStreamOperators();

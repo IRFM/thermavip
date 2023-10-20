@@ -400,6 +400,19 @@ private:
 	PrivateData* d_data;
 };
 
+
+
+
+VIP_REGISTER_QOBJECT_METATYPE(VipPlotShape*)
+VIP_PLOTTING_EXPORT VipArchive& operator<<(VipArchive& arch, const VipPlotShape* value);
+VIP_PLOTTING_EXPORT VipArchive& operator>>(VipArchive& arch, VipPlotShape* value);
+
+VIP_REGISTER_QOBJECT_METATYPE(VipPlotSceneModel*)
+VIP_PLOTTING_EXPORT VipArchive& operator<<(VipArchive& arch, const VipPlotSceneModel* value);
+VIP_PLOTTING_EXPORT VipArchive& operator>>(VipArchive& arch, VipPlotSceneModel* value);
+
+
+
 /// @}
 // end Plotting
 

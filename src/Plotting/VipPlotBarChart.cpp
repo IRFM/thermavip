@@ -819,11 +819,62 @@ QDataStream& operator>>(QDataStream& str, VipBar& b) {
 	return str;
 }
 
+
+VipArchive& operator<<(VipArchive& arch, const VipPlotBarChart* value)
+{
+	arch.content("boxStyle", value->boxStyle());
+	arch.content("valueType", (int)value->valueType());
+	arch.content("baseline", value->baseline());
+	arch.content("spacing", value->spacing());
+	arch.content("spacingUnit", (int)value->spacingUnit());
+	arch.content("barWidth", value->barWidth());
+	arch.content("barWidthUnit", (int)value->barWidthUnit());
+	arch.content("style", (int)value->style());
+
+	arch.content("textAlignment", (int)value->textAlignment());
+	arch.content("textPosition", (int)value->textPosition());
+	arch.content("textTransform", value->textTransform());
+	arch.content("textTransformReference", value->textTransformReference());
+	arch.content("textDistance", value->textDistance());
+	arch.content("text", value->text());
+	arch.content("barNames", value->barNames());
+	return arch;
+}
+VipArchive& operator>>(VipArchive& arch, VipPlotBarChart* value)
+{
+	value->setBoxStyle(arch.read("boxStyle").value<VipBoxStyle>());
+	value->setValueType((VipPlotBarChart::ValueType)arch.read("valueType").value<int>());
+	value->setBaseline(arch.read("baseline").value<double>());
+	double spacing = arch.read("spacing").value<double>();
+	int spacingUnit = arch.read("spacingUnit").value<int>();
+	value->setSpacing(spacing, (VipPlotBarChart::WidthUnit)spacingUnit);
+	double barWidth = arch.read("barWidth").value<double>();
+	int barWidthUnit = arch.read("barWidthUnit").value<int>();
+	value->setBarWidth(barWidth, (VipPlotBarChart::WidthUnit)barWidthUnit);
+	value->setStyle((VipPlotBarChart::Style)arch.read("style").value<int>());
+	value->setTextAlignment((Qt::Alignment)arch.read("textAlignment").value<int>());
+	value->setTextPosition((Vip::RegionPositions)arch.read("textPosition").value<int>());
+
+	QTransform textTransform = arch.read("textTransform").value<QTransform>();
+	QPointF textTransformReference = arch.read("textTransformReference").value<QPointF>();
+	value->setTextTransform(textTransform, textTransformReference);
+	value->setTextDistance(arch.read("textDistance").value<double>());
+	value->setText(arch.read("text").value<VipText>());
+	value->setBarNames(arch.read("barNames").value<VipTextList>());
+
+	return arch;
+}
+
+
 static bool register_types()
 {
 	qRegisterMetaType<VipBar>();
 	qRegisterMetaType<VipBarVector>();
 	qRegisterMetaTypeStreamOperators<VipBar>();
+
+	qRegisterMetaType<VipPlotBarChart*>();
+	vipRegisterArchiveStreamOperators<VipPlotBarChart*>();
+
 	return true;
 }
 static bool _register_types = register_types();

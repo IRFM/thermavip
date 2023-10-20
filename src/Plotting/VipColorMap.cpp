@@ -1531,10 +1531,62 @@ QDataStream & operator>>(QDataStream & stream, VipColorPalette & p)
 	return stream;
 }
 
+
+VipArchive& operator<<(VipArchive& arch, const VipColorMap* value)
+{
+	arch.content("format", (int)value->format());
+	arch.content("externalValue", (int)value->externalValue());
+	arch.content("externalColor", value->externalColor());
+	return arch;
+}
+
+VipArchive& operator>>(VipArchive& arch, VipColorMap* value)
+{
+	value->setFormat((VipColorMap::Format)arch.read("format").value<int>());
+	VipColorMap::ExternalValue ext_value = (VipColorMap::ExternalValue)arch.read("externalValue").value<int>();
+	QRgb ext_color = arch.read("externalColor").value<int>();
+	value->setExternalValue(ext_value, ext_color);
+	return arch;
+}
+
+VipArchive& operator<<(VipArchive& arch, const VipLinearColorMap* value)
+{
+	arch.content("type", (int)value->type());
+	return arch.content("gradientStops", value->gradientStops());
+}
+
+VipArchive& operator>>(VipArchive& arch, VipLinearColorMap* value)
+{
+	value->setType((VipLinearColorMap::StandardColorMap)arch.read("type").value<int>());
+	value->setGradientStops(arch.read("gradientStops").value<QGradientStops>());
+	return arch;
+}
+
+VipArchive& operator<<(VipArchive& arch, const VipAlphaColorMap* value)
+{
+	return arch.content("color", value->color());
+}
+
+VipArchive& operator>>(VipArchive& arch, VipAlphaColorMap* value)
+{
+	value->setColor(arch.read("color").value<QColor>());
+	return arch;
+}
+
+
 static int registerStreamOperators()
 {
 	qRegisterMetaType<VipColorPalette>();
 	qRegisterMetaTypeStreamOperators<VipColorPalette>("VipColorPalette");
+
+	qRegisterMetaType<VipColorMap*>();
+	qRegisterMetaType<VipLinearColorMap*>();
+	qRegisterMetaType<VipAlphaColorMap*>();
+
+	vipRegisterArchiveStreamOperators<VipColorMap*>();
+	vipRegisterArchiveStreamOperators<VipLinearColorMap*>();
+	vipRegisterArchiveStreamOperators<VipAlphaColorMap*>();
+
 	return 0;
 }
 

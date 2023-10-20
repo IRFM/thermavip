@@ -10,6 +10,7 @@
 #include "VipPainter.h"
 #include "VipBorderItem.h"
 #include "VipSet.h"
+#include "VipUniqueId.h"
 
 #include <QApplication>
 #include <QGraphicsView>
@@ -1607,3 +1608,123 @@ void VipScaleWidget::resizeEvent(QResizeEvent * evt)
 
 	QGraphicsView::resizeEvent(evt);
 }
+
+
+
+
+
+VipArchive& operator<<(VipArchive& arch, const VipAbstractScale* value)
+{
+	arch.content("id", VipUniqueId::id(value));
+	arch.content("boxStyle", value->boxStyle());
+	arch.content("isAutoScale", value->isAutoScale());
+	arch.content("title", value->title());
+	arch.content("majorTextStyle", value->textStyle(VipScaleDiv::MajorTick));
+	arch.content("mediumTextStyle", value->textStyle(VipScaleDiv::MediumTick));
+	arch.content("minorTextStyle", value->textStyle(VipScaleDiv::MinorTick));
+	arch.content("majorTransform", value->labelTransform(VipScaleDiv::MajorTick));
+	arch.content("mediumTransform", value->labelTransform(VipScaleDiv::MediumTick));
+	arch.content("minorTransform", value->labelTransform(VipScaleDiv::MinorTick));
+	arch.content("isDrawTitleEnabled", value->isDrawTitleEnabled());
+	arch.content("startBorderDist", value->startBorderDist());
+	arch.content("endBorderDist", value->endBorderDist());
+	arch.content("startMinBorderDist", value->startMinBorderDist());
+	arch.content("endMinBorderDist", value->endMinBorderDist());
+	arch.content("startMaxBorderDist", value->startMaxBorderDist());
+	arch.content("endMaxBorderDist", value->endMaxBorderDist());
+	arch.content("margin", value->margin());
+	arch.content("spacing", value->spacing());
+	arch.content("isScaleInverted", value->isScaleInverted());
+	arch.content("maxMajor", value->maxMajor());
+	arch.content("maxMinor", value->maxMinor());
+	// new in 3.0.1
+	arch.content("autoExponent", value->constScaleDraw()->valueToText()->automaticExponent());
+	arch.content("minLabelSize", value->constScaleDraw()->valueToText()->maxLabelSize());
+	arch.content("exponent", value->constScaleDraw()->valueToText()->exponent());
+
+	arch.content("scaleDiv", value->scaleDiv());
+	arch.content("renderHints", (int)value->renderHints());
+	arch.content("visible", (int)value->isVisible());
+	// save the y scale engine type
+	arch.content("yScaleEngine", value->scaleEngine() ? (int)value->scaleEngine()->scaleType() : 0);
+
+	arch.content("styleSheet", value->styleSheetString());
+
+	return arch;
+}
+
+VipArchive& operator>>(VipArchive& arch, VipAbstractScale* value)
+{
+	VipUniqueId::setId(value, arch.read("id").toInt());
+	value->setBoxStyle(arch.read("boxStyle").value<VipBoxStyle>());
+	value->setAutoScale(arch.read("isAutoScale").value<bool>());
+	value->setTitle(arch.read("title").value<VipText>());
+	value->setTextStyle(arch.read("majorTextStyle").value<VipTextStyle>(), VipScaleDiv::MajorTick);
+	value->setTextStyle(arch.read("mediumTextStyle").value<VipTextStyle>(), VipScaleDiv::MediumTick);
+	value->setTextStyle(arch.read("minorTextStyle").value<VipTextStyle>(), VipScaleDiv::MinorTick);
+	value->setLabelTransform(arch.read("majorTransform").value<QTransform>(), VipScaleDiv::MajorTick);
+	value->setLabelTransform(arch.read("mediumTransform").value<QTransform>(), VipScaleDiv::MediumTick);
+	value->setLabelTransform(arch.read("minorTransform").value<QTransform>(), VipScaleDiv::MinorTick);
+	value->enableDrawTitle(arch.read("isDrawTitleEnabled").value<bool>());
+	double startBorderDist = arch.read("startBorderDist").value<double>();
+	double endBorderDist = arch.read("endBorderDist").value<double>();
+	value->setBorderDist(startBorderDist, endBorderDist);
+	double startMinBorderDist = arch.read("startMinBorderDist").value<double>();
+	double endMinBorderDist = arch.read("endMinBorderDist").value<double>();
+	value->setMinBorderDist(startMinBorderDist, endMinBorderDist);
+	double startMaxBorderDist = arch.read("startMaxBorderDist").value<double>();
+	double endMaxBorderDist = arch.read("endMaxBorderDist").value<double>();
+	value->setMaxBorderDist(startMaxBorderDist, endMaxBorderDist);
+	value->setMargin(arch.read("margin").value<double>());
+	value->setSpacing(arch.read("spacing").value<double>());
+	value->setScaleInverted(arch.read("isScaleInverted").value<bool>());
+	value->setMaxMajor(arch.read("maxMajor").value<int>());
+	value->setMaxMinor(arch.read("maxMinor").value<int>());
+
+	// new in 3.0.1
+	arch.save();
+	bool autoExponent = false;
+	int minLabelSize = 0, exponent = 0;
+	if (arch.content("autoExponent", autoExponent)) {
+		arch.content("minLabelSize", minLabelSize);
+		arch.content("exponent", exponent);
+		value->scaleDraw()->valueToText()->setAutomaticExponent(autoExponent);
+		value->scaleDraw()->valueToText()->setMaxLabelSize(minLabelSize);
+		value->scaleDraw()->valueToText()->setExponent(exponent);
+	}
+	else
+		arch.restore();
+
+	value->setScaleDiv(arch.read("scaleDiv").value<VipScaleDiv>());
+	value->setRenderHints((QPainter::RenderHints)arch.read("renderHints").value<int>());
+	value->setVisible(arch.read("visible").toBool());
+	int engine = arch.read("yScaleEngine").toInt();
+	if (!value->scaleEngine() || engine != value->scaleEngine()->scaleType()) {
+		if (engine == VipScaleEngine::Linear)
+			value->setScaleEngine(new VipLinearScaleEngine());
+		else if (engine == VipScaleEngine::Log10)
+			value->setScaleEngine(new VipLog10ScaleEngine());
+	}
+
+	arch.resetError();
+
+	arch.save();
+	QString st;
+	if (arch.content("styleSheet", st)) {
+		if (!st.isEmpty())
+			value->setStyleSheet(st);
+	}
+	else
+		arch.restore();
+
+	return arch;
+}
+
+
+static int register_types()
+{
+	qRegisterMetaType<VipAbstractScale*>();
+	vipRegisterArchiveStreamOperators<VipAbstractScale*>();
+	return 0;
+}
+static int _register_types = register_types();

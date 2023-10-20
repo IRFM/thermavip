@@ -538,3 +538,39 @@ void VipPlotSpectrogram::draw(QPainter * painter, const VipCoordinateSystemPtr &
 	}
 }
 
+
+VipArchive& operator<<(VipArchive& arch, const VipPlotSpectrogram* value)
+{
+	arch.content("defaultContourPen", value->defaultContourPen());
+	arch.content("ignoreAllVerticesOnLevel", value->ignoreAllVerticesOnLevel());
+	QList<vip_double> levels = value->contourLevels();
+	for (int i = 0; i < levels.size(); ++i)
+		arch.content("level", levels[i]);
+	return arch;
+}
+
+VipArchive& operator>>(VipArchive& arch, VipPlotSpectrogram* value)
+{
+	value->setDefaultContourPen(arch.read("defaultContourPen").value<QPen>());
+	value->setIgnoreAllVerticesOnLevel(arch.read("ignoreAllVerticesOnLevel").value<bool>());
+	QList<vip_double> levels;
+	while (true) {
+		QVariant tmp = arch.read();
+		if (tmp.userType() == 0)
+			break;
+		levels.append(tmp.toDouble());
+	}
+	value->setContourLevels(levels);
+	arch.resetError();
+	return arch;
+}
+
+
+static int registerStreamOperators()
+{
+	qRegisterMetaType<VipPlotSpectrogram*>();
+	vipRegisterArchiveStreamOperators<VipPlotSpectrogram*>();
+	return 0;
+}
+
+static int _registerStreamOperators = registerStreamOperators();

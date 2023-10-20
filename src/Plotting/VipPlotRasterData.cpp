@@ -1264,3 +1264,24 @@ QString VipPlotRasterData::formatText(const QString & str, const QPointF & pos) 
 	}
 	return res.text();
 }
+
+
+
+VipArchive& operator<<(VipArchive& arch, const VipPlotRasterData*)
+{
+	return arch;
+}
+
+VipArchive& operator>>(VipArchive& arch, VipPlotRasterData*)
+{
+	return arch;
+}
+
+static int registerStreamOperators()
+{
+	qRegisterMetaType<VipPlotRasterData*>();
+	vipRegisterArchiveStreamOperators<VipPlotRasterData*>();
+	return 0;
+}
+
+static int _registerStreamOperators = registerStreamOperators();

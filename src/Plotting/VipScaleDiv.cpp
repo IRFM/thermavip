@@ -1,6 +1,8 @@
 
 
 #include "VipScaleDiv.h"
+#include "VipArchive.h"
+
 #include <qalgorithms.h>
 #include <qmath.h>
 
@@ -230,8 +232,48 @@ QDataStream & operator>>(QDataStream & stream, VipScaleDiv & div)
 }
 
 
+static DoubleVector toDoubleVector(const DoubleList& lst)
+{
+	DoubleVector res;
+	res.resize(lst.size());
+	for (int i = 0; i < lst.size(); ++i)
+		res[i] = lst[i];
+	return res;
+}
+
+VipArchive& operator<<(VipArchive& arch, const VipScaleDiv& value)
+{
+	arch.content("MinorTicks", value.ticks(VipScaleDiv::MinorTick));
+	arch.content("MediumTick", value.ticks(VipScaleDiv::MediumTick));
+	arch.content("MajorTick", value.ticks(VipScaleDiv::MajorTick));
+	arch.content("lowerBound", value.lowerBound());
+	arch.content("upperBound", value.upperBound());
+	return arch;
+}
+
+VipArchive& operator>>(VipArchive& arch, VipScaleDiv& value)
+{
+	value.setTicks(VipScaleDiv::MinorTick, arch.read("MinorTicks").value<DoubleVector>());
+	value.setTicks(VipScaleDiv::MediumTick, arch.read("MediumTick").value<DoubleVector>());
+	value.setTicks(VipScaleDiv::MajorTick, arch.read("MajorTick").value<DoubleVector>());
+	value.setLowerBound(arch.read("lowerBound").toDouble());
+	value.setUpperBound(arch.read("upperBound").toDouble());
+	return arch;
+}
+
+
 static int registerStreamOperators()
 {
+
+	qRegisterMetaType<DoubleList>("DoubleList");
+	qRegisterMetaTypeStreamOperators<DoubleList>();
+	qRegisterMetaType<DoubleVector>("DoubleVector");
+	qRegisterMetaTypeStreamOperators<DoubleVector>();
+	QMetaType::registerConverter<DoubleList, DoubleVector>(toDoubleVector);
+
+    qRegisterMetaType<VipScaleDiv>();
+	vipRegisterArchiveStreamOperators<VipScaleDiv>();
+
 	qRegisterMetaTypeStreamOperators<VipScaleDiv>("VipScaleDiv");
 	return 0;
 }

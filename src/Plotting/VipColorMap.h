@@ -9,6 +9,7 @@
 #include "VipAdaptativeGradient.h"
 #include "VipInterval.h"
 #include "VipGlobals.h"
+#include "VipArchive.h"
 
 /// \addtogroup Plotting
 /// @{
@@ -353,6 +354,21 @@ Q_DECLARE_METATYPE(VipColorPalette)
 class QDataStream;
 VIP_PLOTTING_EXPORT QDataStream & operator<<(QDataStream & stream, const VipColorPalette & p);
 VIP_PLOTTING_EXPORT QDataStream & operator>>(QDataStream & stream, VipColorPalette & p);
+
+
+
+VIP_REGISTER_QOBJECT_METATYPE(VipColorMap*)
+VIP_REGISTER_QOBJECT_METATYPE(VipLinearColorMap*)
+VIP_REGISTER_QOBJECT_METATYPE(VipAlphaColorMap*)
+
+VIP_PLOTTING_EXPORT VipArchive& operator<<(VipArchive& arch, const VipColorMap* value);
+VIP_PLOTTING_EXPORT VipArchive& operator>>(VipArchive& arch, VipColorMap* value);
+
+VIP_PLOTTING_EXPORT VipArchive& operator<<(VipArchive& arch, const VipLinearColorMap* value);
+VIP_PLOTTING_EXPORT VipArchive& operator>>(VipArchive& arch, VipLinearColorMap* value);
+
+VIP_PLOTTING_EXPORT VipArchive& operator<<(VipArchive& arch, const VipAlphaColorMap* value);
+VIP_PLOTTING_EXPORT VipArchive& operator>>(VipArchive& arch, VipAlphaColorMap* value);
 
 /// @}
 //end Plotting

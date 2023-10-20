@@ -467,6 +467,10 @@ void VipPlotCurve::updateSamples(F&& fun)
 Q_DECLARE_OPERATORS_FOR_FLAGS( VipPlotCurve::LegendAttributes )
 Q_DECLARE_OPERATORS_FOR_FLAGS( VipPlotCurve::CurveAttributes )
 
+VIP_REGISTER_QOBJECT_METATYPE(VipPlotCurve*)
+VIP_PLOTTING_EXPORT VipArchive& operator<<(VipArchive& arch, const VipPlotCurve* value);
+VIP_PLOTTING_EXPORT VipArchive& operator>>(VipArchive& arch, VipPlotCurve* value);
+
 /// @}
 //end Plotting
 

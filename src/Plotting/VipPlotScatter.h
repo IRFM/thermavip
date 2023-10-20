@@ -166,5 +166,9 @@ private:
 	PrivateData* d_data;
 };
 
+VIP_REGISTER_QOBJECT_METATYPE(VipPlotScatter*)
+
+VIP_PLOTTING_EXPORT VipArchive& operator<<(VipArchive& arch, const VipPlotScatter* value);
+VIP_PLOTTING_EXPORT VipArchive& operator>>(VipArchive& arch, VipPlotScatter* value);
 
 #endif

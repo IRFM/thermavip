@@ -737,3 +737,62 @@ VipPointVector VipPlotHistogram::columnRect( const VipIntervalSample &sample, QR
 
     return rect;
 }
+
+
+
+
+VipArchive& operator<<(VipArchive& arch, const VipPlotHistogram* value)
+{
+	arch.content("boxStyle", value->boxStyle())
+	  .content("textPosition", (int)value->textPosition())
+	  .content("textDistance", value->textDistance())
+	  .content("text", value->text())
+	  .content("baseline", value->baseline())
+	  .content("style", (int)value->style());
+
+	// new in 4.2.0
+
+	arch.content("textTransform", value->textTransform());
+	arch.content("textTransformReference", value->textTransformReference());
+	arch.content("textAlignment", value->textAlignment());
+	arch.content("textDistance", value->textDistance());
+	arch.content("text", value->text());
+
+	return arch;
+}
+
+VipArchive& operator>>(VipArchive& arch, VipPlotHistogram* value)
+{
+	value->setBoxStyle(arch.read("boxStyle").value<VipBoxStyle>());
+	value->setTextPosition((Vip::RegionPositions)arch.read("textPosition").value<int>());
+	value->setTextDistance(arch.read("textDistance").value<double>());
+	value->setText(arch.read("text").value<VipText>());
+	value->setBaseline(arch.read("baseline").value<double>());
+	value->setStyle((VipPlotHistogram::HistogramStyle)arch.read("style").value<int>());
+
+	arch.save();
+
+	QTransform textTransform = arch.read("textTransform").value<QTransform>();
+	QPointF textTransformReference = arch.read("textTransformReference").value<QPointF>();
+	if (arch) {
+
+		value->setTextTransform(textTransform, textTransformReference);
+		value->setTextAlignment((Qt::Alignment)arch.read("textAlignment").value<int>());
+		value->setTextDistance(arch.read("textDistance").value<double>());
+		value->setText(arch.read("text").value<VipText>());
+	}
+	else
+		arch.restore();
+
+	return arch;
+}
+
+
+static int registerStreamOperators()
+{
+	qRegisterMetaType<VipPlotHistogram*>();
+	vipRegisterArchiveStreamOperators<VipPlotHistogram*>();
+	return 0;
+}
+
+static int _registerStreamOperators = registerStreamOperators();

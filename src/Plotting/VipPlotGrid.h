@@ -155,6 +155,17 @@ private:
     PrivateData * d_data;
 };
 
+
+VIP_REGISTER_QOBJECT_METATYPE(VipPlotGrid*)
+VIP_REGISTER_QOBJECT_METATYPE(VipPlotCanvas*)
+
+VIP_PLOTTING_EXPORT VipArchive& operator<<(VipArchive& arch, const VipPlotGrid* value);
+VIP_PLOTTING_EXPORT VipArchive& operator>>(VipArchive& arch, VipPlotGrid* value);
+
+VIP_PLOTTING_EXPORT VipArchive& operator<<(VipArchive& arch, const VipPlotCanvas* value);
+VIP_PLOTTING_EXPORT VipArchive& operator>>(VipArchive& arch, VipPlotCanvas* value);
+
+
 /// @}
 //end Plotting
 

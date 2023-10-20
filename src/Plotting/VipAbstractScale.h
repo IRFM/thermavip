@@ -10,7 +10,8 @@
 #include "VipPlotItem.h"
 #include "VipRenderObject.h"
 #include "VipScaleDiv.h"
-#include "VipFunction.h"
+#include "VipArchive.h"
+
 
 /// \addtogroup Plotting
 /// @{
@@ -406,7 +407,9 @@ VipAbstractScale::independentScales(const QList<T*> scales)
 }
 
 
-VIP_REGISTER_QOBJECT_METATYPE(VipAbstractScale*);
+VIP_REGISTER_QOBJECT_METATYPE(VipAbstractScale*)
+VIP_PLOTTING_EXPORT VipArchive& operator<<(VipArchive& arch, const VipAbstractScale* value);
+VIP_PLOTTING_EXPORT VipArchive& operator>>(VipArchive& arch, VipAbstractScale* value);
 
 
 /// Helper widget representing a unique vertical or horizontal axis
@@ -444,8 +447,8 @@ private:
 	PrivateData* d_data;
 };
 
+VIP_REGISTER_QOBJECT_METATYPE(VipScaleWidget*)
 
-VIP_REGISTER_QOBJECT_METATYPE(VipScaleWidget*);
 
 /// @}
 // end Plotting

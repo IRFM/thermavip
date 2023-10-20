@@ -456,14 +456,50 @@ int VipPlotScatter::findClosestPos(const VipScatterPointVector &vec, const QPoin
 }
 
 
-VIP_PLOTTING_EXPORT QDataStream& operator<<(QDataStream& str, const VipScatterPoint& p)
+QDataStream& operator<<(QDataStream& str, const VipScatterPoint& p)
 {
 	return str << p.position << p.value;
 }
-VIP_PLOTTING_EXPORT QDataStream& operator>>(QDataStream& str, VipScatterPoint& p)
+QDataStream& operator>>(QDataStream& str, VipScatterPoint& p)
 {
 	return str >> p.position >> p.value;
 }
+
+
+VipArchive& operator<<(VipArchive& arch, const VipPlotScatter* value)
+{
+	arch.content("sizeUnit", (int)value->sizeUnit());
+	arch.content("useValueAsSize", value->useValueAsSize());
+	arch.content("symbol", value->symbol());
+
+	arch.content("textAlignment", (int)value->textAlignment());
+	arch.content("textPosition", (int)value->textPosition());
+	arch.content("textTransform", value->textTransform());
+	arch.content("textTransformReference", value->textTransformReference());
+	arch.content("textDistance", value->textDistance());
+	arch.content("text", value->text());
+	return arch;
+}
+
+VipArchive& operator>>(VipArchive& arch, VipPlotScatter* value)
+{
+	value->setSizeUnit((VipPlotScatter::SizeUnit)arch.read("sizeUnit").value<int>());
+	value->setUseValueAsSize(arch.read("useValueAsSize").value<bool>());
+	value->setSymbol(arch.read("symbol").value<VipSymbol>());
+
+	value->setTextAlignment((Qt::Alignment)arch.read("textAlignment").value<int>());
+	value->setTextPosition((Vip::RegionPositions)arch.read("textPosition").value<int>());
+
+	QTransform textTransform = arch.read("textTransform").value<QTransform>();
+	QPointF textTransformReference = arch.read("textTransformReference").value<QPointF>();
+	value->setTextTransform(textTransform, textTransformReference);
+	value->setTextDistance(arch.read("textDistance").value<double>());
+	value->setText(arch.read("text").value<VipText>());
+	return arch;
+}
+
+
+
 
 	// regiter types
 static bool register_types()
@@ -471,6 +507,8 @@ static bool register_types()
 	qRegisterMetaType<VipScatterPoint>();
 	qRegisterMetaType<VipScatterPointVector>();
 	qRegisterMetaTypeStreamOperators<VipScatterPoint>();
+	qRegisterMetaType<VipPlotScatter*>();
+	vipRegisterArchiveStreamOperators<VipPlotScatter*>();
 	return true;
 }
 static bool _register_types = register_types();

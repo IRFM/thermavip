@@ -2077,3 +2077,85 @@ QList<VipPlotShape*> VipPlotSceneModel::shapes(const QString& group, int selecti
 	}
 	return res;
 }
+
+
+
+VipArchive& operator<<(VipArchive& arch, const VipPlotShape* value)
+{
+	arch.content("dawComponents", (int)value->dawComponents());
+	arch.content("textStyle", value->textStyle());
+	arch.content("textPosition", (int)value->textPosition());
+	arch.content("textAlignment", (int)value->textAlignment());
+	arch.content("adjustTextColor", (int)value->adjustTextColor());
+
+	// new in 4.2.0
+	arch.content("textTransform", value->textTransform());
+	arch.content("textTransformReference", value->textTransformReference());
+	arch.content("textDistance", value->textDistance());
+	arch.content("text", value->text());
+
+	return arch;
+}
+
+VipArchive& operator>>(VipArchive& arch, VipPlotShape* value)
+{
+	value->setDrawComponents((VipPlotShape::DrawComponents)arch.read("dawComponents").value<int>());
+	value->setTextStyle(arch.read("textStyle").value<VipTextStyle>());
+	value->setTextPosition((Vip::RegionPositions)arch.read("textPosition").value<int>());
+	value->setTextAlignment((Qt::AlignmentFlag)arch.read("textAlignment").value<int>());
+	arch.save();
+	value->setAdjustTextColor(arch.read("adjustTextColor").value<bool>());
+	if (!arch)
+		arch.restore();
+	else {
+
+		arch.save();
+		QTransform textTransform = arch.read("textTransform").value<QTransform>();
+		QPointF textTransformReference = arch.read("textTransformReference").value<QPointF>();
+		if (arch) {
+
+			value->setTextTransform(textTransform, textTransformReference);
+			value->setTextDistance(arch.read("textDistance").value<double>());
+			value->setText(arch.read("text").value<VipText>());
+		}
+		else
+			arch.restore();
+	}
+	arch.resetError();
+	return arch;
+}
+
+VipArchive& operator<<(VipArchive& arch, const VipPlotSceneModel* value)
+{
+	// mark internal shapes as non serializable, they will recreated when reloading the VipPlotSceneModel
+	for (int i = 0; i < value->count(); ++i) {
+		if (VipPlotShape* sh = qobject_cast<VipPlotShape*>(value->at(i))) {
+			sh->setProperty("_vip_no_serialize", true);
+			if (VipResizeItem* re = (sh->property("VipResizeItem").value<VipResizeItemPtr>()))
+				re->setProperty("_vip_no_serialize", true);
+		}
+	}
+
+	return arch.content("mode", (int)value->mode()).content("sceneModel", value->sceneModel());
+}
+
+VipArchive& operator>>(VipArchive& arch, VipPlotSceneModel* value)
+{
+	value->setMode((VipPlotSceneModel::Mode)arch.read("mode").toInt());
+	value->setSceneModel(arch.read("sceneModel").value<VipSceneModel>());
+	return arch;
+}
+
+
+
+static bool register_types()
+{
+	qRegisterMetaType<VipPlotShape*>();
+	vipRegisterArchiveStreamOperators<VipPlotShape*>();
+
+	qRegisterMetaType<VipPlotSceneModel*>();
+	vipRegisterArchiveStreamOperators<VipPlotSceneModel*>();
+
+	return true;
+}
+static bool _register_types = register_types();

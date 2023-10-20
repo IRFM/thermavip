@@ -1236,7 +1236,7 @@ class QGridLayout;
 ///
 /// This class is only provided in order to be customized through style sheets.
 /// 
-class VipMultiGraphicsWidget : public VipBoxGraphicsWidget
+class VIP_PLOTTING_EXPORT VipMultiGraphicsWidget : public VipBoxGraphicsWidget
 {
 	Q_OBJECT
 
@@ -1288,6 +1288,8 @@ public:
 ///
 class VIP_PLOTTING_EXPORT VipMultiGraphicsView : public VipBaseGraphicsView
 {
+	Q_OBJECT
+
 	VipMultiGraphicsWidget* d_widget;
 
 public:
@@ -1302,6 +1304,24 @@ public:
 protected:
 	virtual void resizeEvent(QResizeEvent* event);
 };
+
+
+
+VIP_REGISTER_QOBJECT_METATYPE(VipMultiGraphicsWidget*)
+VIP_REGISTER_QOBJECT_METATYPE(VipAbstractPlotArea*) 
+VIP_REGISTER_QOBJECT_METATYPE(VipPlotArea2D*)
+VIP_REGISTER_QOBJECT_METATYPE(VipPlotPolarArea2D*)
+VIP_REGISTER_QOBJECT_METATYPE(VipImageArea2D*)
+VIP_REGISTER_QOBJECT_METATYPE(VipBaseGraphicsView*)
+VIP_REGISTER_QOBJECT_METATYPE(VipMultiGraphicsView*)
+VIP_REGISTER_QOBJECT_METATYPE(VipPlotWidget2D*)
+VIP_REGISTER_QOBJECT_METATYPE(VipPlotPolarWidget2D*)
+VIP_REGISTER_QOBJECT_METATYPE(VipImageWidget2D*)
+
+//TODO: add serialization functions for all types
+
+VIP_PLOTTING_EXPORT VipArchive& operator<<(VipArchive& arch, const VipPlotArea2D* value);
+VIP_PLOTTING_EXPORT VipArchive& operator>>(VipArchive& arch, VipPlotArea2D* value);
 
 
 

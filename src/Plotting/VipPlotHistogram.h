@@ -269,6 +269,12 @@ private:
     PrivateData *d_data;
 };
 
+
+VIP_REGISTER_QOBJECT_METATYPE(VipPlotHistogram*)
+VIP_PLOTTING_EXPORT VipArchive& operator<<(VipArchive& arch, const VipPlotHistogram* value);
+VIP_PLOTTING_EXPORT VipArchive& operator>>(VipArchive& arch, VipPlotHistogram* value);
+
+
 /// @}
 //end Plotting
 

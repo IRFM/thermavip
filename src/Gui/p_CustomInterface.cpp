@@ -661,6 +661,7 @@ bool CustomizeVideoPlayer::eventFilter(QObject * , QEvent * evt)
 	}
 	else if (evt->type() == QEvent::DragMove)
 	{
+		
 		QDragMoveEvent * event = static_cast<QDragMoveEvent*>(evt);
 
 		m_data->anchor = anchor(event->pos(), event->mimeData());

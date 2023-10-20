@@ -159,6 +159,13 @@ private:
 	PrivateData * d_data;
 };
 
+
+VIP_REGISTER_QOBJECT_METATYPE(VipAxisBase*)
+
+VIP_PLOTTING_EXPORT VipArchive& operator<<(VipArchive& arch, const VipAxisBase* value);
+VIP_PLOTTING_EXPORT VipArchive& operator>>(VipArchive& arch, VipAxisBase* value);
+
+
 /// @}
 //end Plotting
 

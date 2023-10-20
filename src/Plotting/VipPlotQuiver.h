@@ -140,6 +140,11 @@ private:
 	PrivateData *d_data;
 };
 
+VIP_REGISTER_QOBJECT_METATYPE(VipPlotQuiver*)
+
+VIP_PLOTTING_EXPORT VipArchive& operator<<(VipArchive& arch, const VipPlotQuiver* value);
+VIP_PLOTTING_EXPORT VipArchive& operator>>(VipArchive& arch, VipPlotQuiver* value);
+
 /// @}
 //end Plotting
 

@@ -188,6 +188,13 @@ private:
     PrivateData *d_data;
 };
 
+
+VIP_REGISTER_QOBJECT_METATYPE(VipPlotMarker*)
+
+VIP_PLOTTING_EXPORT VipArchive& operator<<(VipArchive& arch, const VipPlotMarker* value);
+VIP_PLOTTING_EXPORT VipArchive& operator>>(VipArchive& arch, VipPlotMarker* value);
+
+
 /// @}
 //end Plotting
 

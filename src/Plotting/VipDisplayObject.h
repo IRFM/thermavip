@@ -266,8 +266,6 @@ VIP_REGISTER_QOBJECT_METATYPE(VipDisplaySceneModel*)
 
 
 
-
-
 namespace detail
 {
 	/// @brief Base class for display objects using a VipPlotItemDataType
@@ -444,113 +442,8 @@ public:
 
 VIP_REGISTER_QOBJECT_METATYPE(VipDisplayMarker*)
 
-
-
-
-
 Q_DECLARE_METATYPE(QList<VipDisplayObject*> )
-typedef QList<vip_double> DoubleList;
-Q_DECLARE_METATYPE(DoubleList)
-typedef QVector<vip_double> DoubleVector;
-Q_DECLARE_METATYPE(DoubleVector)
 
-
-
-VIP_REGISTER_QOBJECT_METATYPE_NO_DECLARE(VipPlotItem*);
-
-VIP_REGISTER_QOBJECT_METATYPE(VipPlotItemData*);
-VIP_REGISTER_QOBJECT_METATYPE(VipPlotCurve*);
-VIP_REGISTER_QOBJECT_METATYPE(VipPlotHistogram*);
-VIP_REGISTER_QOBJECT_METATYPE(VipPlotGrid*);
-VIP_REGISTER_QOBJECT_METATYPE(VipPlotCanvas*);
-VIP_REGISTER_QOBJECT_METATYPE(VipPlotMarker*);
-VIP_REGISTER_QOBJECT_METATYPE(VipPlotScatter*);
-VIP_REGISTER_QOBJECT_METATYPE(VipPlotQuiver*);
-VIP_REGISTER_QOBJECT_METATYPE(VipPlotBarChart*);
-VIP_REGISTER_QOBJECT_METATYPE(VipPlotRasterData*);
-VIP_REGISTER_QOBJECT_METATYPE(VipPlotSpectrogram*);
-VIP_REGISTER_QOBJECT_METATYPE(VipPlotShape*);
-VIP_REGISTER_QOBJECT_METATYPE(VipPlotSceneModel*);
-VIP_REGISTER_QOBJECT_METATYPE(VipAxisBase*);
-VIP_REGISTER_QOBJECT_METATYPE(VipAxisColorMap*);
-VIP_REGISTER_QOBJECT_METATYPE(VipColorMap*);
-VIP_REGISTER_QOBJECT_METATYPE(VipLinearColorMap*);
-VIP_REGISTER_QOBJECT_METATYPE(VipAlphaColorMap*);
-
-VIP_PLOTTING_EXPORT VipArchive & operator<<(VipArchive & arch, const VipPlotItem * value);
-VIP_PLOTTING_EXPORT VipArchive & operator>>(VipArchive & arch, VipPlotItem * value);
-
-VIP_PLOTTING_EXPORT VipArchive & operator<<(VipArchive & arch, const VipPlotItemData * value);
-VIP_PLOTTING_EXPORT VipArchive & operator>>(VipArchive & arch, VipPlotItemData * value);
-
-VIP_PLOTTING_EXPORT VipArchive & operator<<(VipArchive & arch, const VipPlotCurve * value);
-VIP_PLOTTING_EXPORT VipArchive & operator>>(VipArchive & arch, VipPlotCurve * value);
-
-VIP_PLOTTING_EXPORT VipArchive & operator<<(VipArchive & arch, const VipPlotHistogram * value);
-VIP_PLOTTING_EXPORT VipArchive & operator>>(VipArchive & arch, VipPlotHistogram * value);
-
-VIP_PLOTTING_EXPORT VipArchive & operator<<(VipArchive & arch, const VipPlotGrid * value);
-VIP_PLOTTING_EXPORT VipArchive & operator>>(VipArchive & arch, VipPlotGrid * value);
-
-VIP_PLOTTING_EXPORT VipArchive & operator<<(VipArchive & arch, const VipPlotCanvas * value);
-VIP_PLOTTING_EXPORT VipArchive & operator>>(VipArchive & arch, VipPlotCanvas * value);
-
-VIP_PLOTTING_EXPORT VipArchive & operator<<(VipArchive & arch, const VipPlotMarker * value);
-VIP_PLOTTING_EXPORT VipArchive & operator>>(VipArchive & arch, VipPlotMarker * value);
-
-VIP_PLOTTING_EXPORT VipArchive& operator<<(VipArchive& arch, const VipPlotBarChart* value);
-VIP_PLOTTING_EXPORT VipArchive& operator>>(VipArchive& arch, VipPlotBarChart* value);
-
-VIP_PLOTTING_EXPORT VipArchive& operator<<(VipArchive& arch, const VipPlotQuiver* value);
-VIP_PLOTTING_EXPORT VipArchive& operator>>(VipArchive& arch, VipPlotQuiver* value);
-
-VIP_PLOTTING_EXPORT VipArchive& operator<<(VipArchive& arch, const VipPlotScatter* value);
-VIP_PLOTTING_EXPORT VipArchive& operator>>(VipArchive& arch, VipPlotScatter* value);
-
-VIP_PLOTTING_EXPORT VipArchive & operator<<(VipArchive & arch, const VipPlotRasterData * value);
-VIP_PLOTTING_EXPORT VipArchive & operator>>(VipArchive & arch, VipPlotRasterData * value);
-
-VIP_PLOTTING_EXPORT VipArchive & operator<<(VipArchive & arch, const VipPlotSpectrogram * value);
-VIP_PLOTTING_EXPORT VipArchive & operator>>(VipArchive & arch, VipPlotSpectrogram * value);
-
-VIP_PLOTTING_EXPORT VipArchive & operator<<(VipArchive & arch, const VipPlotShape * value);
-VIP_PLOTTING_EXPORT VipArchive & operator>>(VipArchive & arch, VipPlotShape * value);
-
-VIP_PLOTTING_EXPORT VipArchive & operator<<(VipArchive & arch, const VipPlotSceneModel * value);
-VIP_PLOTTING_EXPORT VipArchive & operator>>(VipArchive & arch, VipPlotSceneModel * value);
-
-VIP_PLOTTING_EXPORT VipArchive & operator<<(VipArchive & arch, const VipAbstractScale * value);
-VIP_PLOTTING_EXPORT VipArchive & operator>>(VipArchive & arch, VipAbstractScale * value);
-
-VIP_PLOTTING_EXPORT VipArchive & operator<<(VipArchive & arch, const VipAxisBase * value);
-VIP_PLOTTING_EXPORT VipArchive & operator>>(VipArchive & arch, VipAxisBase * value);
-
-VIP_PLOTTING_EXPORT VipArchive & operator<<(VipArchive & arch, const VipColorMap * value);
-VIP_PLOTTING_EXPORT VipArchive & operator>>(VipArchive & arch, VipColorMap * value);
-
-VIP_PLOTTING_EXPORT VipArchive & operator<<(VipArchive & arch, const VipLinearColorMap * value);
-VIP_PLOTTING_EXPORT VipArchive & operator>>(VipArchive & arch, VipLinearColorMap * value);
-
-VIP_PLOTTING_EXPORT VipArchive & operator<<(VipArchive & arch, const VipAlphaColorMap * value);
-VIP_PLOTTING_EXPORT VipArchive & operator>>(VipArchive & arch, VipAlphaColorMap * value);
-
-VIP_PLOTTING_EXPORT VipArchive & operator<<(VipArchive & arch, const VipAxisColorMap * value);
-VIP_PLOTTING_EXPORT VipArchive & operator>>(VipArchive & arch, VipAxisColorMap * value);
-
-VIP_PLOTTING_EXPORT VipArchive & operator<<(VipArchive & arch, const VipPlotArea2D * value);
-VIP_PLOTTING_EXPORT VipArchive & operator>>(VipArchive & arch, VipPlotArea2D * value);
-
-
-/// Returns a copy of given item.
-/// This function uses the serialize/deserialize mechanism to produce a copy of input VipPlotItem.
-/// You should always use this function to copy an item, as it will take care of internal IDs used to identify each item.
-/// Note that the output item will NOT share the input item axes and will have a different ID (as in #VipUniqueId::id()).
-VIP_PLOTTING_EXPORT VipPlotItem * vipCopyPlotItem(const VipPlotItem* item);
-
-/// Save the current item state, except its ID (as in #VipUniqueId::id()) and its axises.
-VIP_PLOTTING_EXPORT QByteArray vipSavePlotItemState(const VipPlotItem* item);
-/// Restore an item state previously saved with #vipSavePlotItemState.
-VIP_PLOTTING_EXPORT bool vipRestorePlotItemState(VipPlotItem* item, const QByteArray & state);
 
 
 /// @}

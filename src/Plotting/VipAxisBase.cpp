@@ -1229,3 +1229,38 @@ void VipMultiAxisBase::drawTitle(QPainter* painter, Alignment align, const QRect
 
 	painter->restore();
 }
+
+
+
+
+
+VipArchive& operator<<(VipArchive& arch, const VipAxisBase* value)
+{
+	arch.content("isMapScaleToScene", value->isMapScaleToScene());
+	arch.content("isTitleInverted", value->isTitleInverted());
+	arch.content("titleInside", value->titleInside());
+	return arch;
+}
+
+VipArchive& operator>>(VipArchive& arch, VipAxisBase* value)
+{
+	value->setMapScaleToScene(arch.read("isMapScaleToScene").value<bool>());
+	value->setTitleInverted(arch.read("isTitleInverted").value<bool>());
+	arch.save();
+	// since 2.2.18
+	bool titleInside;
+	if (arch.content("titleInside", titleInside))
+		value->setTitleInside(titleInside);
+	else
+		arch.restore();
+	return arch;
+}
+
+static bool register_types()
+{
+	qRegisterMetaType<VipAxisBase*>();
+	vipRegisterArchiveStreamOperators<VipAxisBase*>();
+
+	return true;
+}
+static bool _register_types = register_types();

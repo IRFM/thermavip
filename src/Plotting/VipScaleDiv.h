@@ -178,10 +178,18 @@ inline VipScaleDiv::TickList & VipScaleDiv::ticks(int tickType)
 
 
 Q_DECLARE_METATYPE( VipScaleDiv );
+typedef QList<vip_double> DoubleList;
+Q_DECLARE_METATYPE(DoubleList)
+typedef QVector<vip_double> DoubleVector;
+Q_DECLARE_METATYPE(DoubleVector)
 
 class QDataStream;
 VIP_PLOTTING_EXPORT QDataStream & operator<<(QDataStream & stream, const VipScaleDiv & div);
 VIP_PLOTTING_EXPORT QDataStream & operator>>(QDataStream & stream, VipScaleDiv & div);
+
+class VipArchive;
+VIP_PLOTTING_EXPORT VipArchive& operator<<(VipArchive& arch, const VipScaleDiv& value);
+VIP_PLOTTING_EXPORT VipArchive& operator>>(VipArchive& arch, VipScaleDiv& value);
 
 /// @}
 //end Plotting

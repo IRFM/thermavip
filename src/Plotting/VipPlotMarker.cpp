@@ -631,3 +631,40 @@ bool VipPlotMarker::setItemProperty(const char* name, const QVariant& value, con
 	}
 	return VipPlotItem::setItemProperty(name, value, index);
 }
+
+
+
+VipArchive& operator<<(VipArchive& arch, const VipPlotMarker* value)
+{
+	arch.content("lineStyle", (int)value->lineStyle())
+	  .content("linePen", value->linePen())
+	  .content("label", value->label())
+	  .content("labelAlignment", (int)value->labelAlignment())
+	  .content("labelOrientation", (int)value->labelOrientation())
+	  .content("spacing", value->spacing());
+	if (value->symbol())
+		return arch.content("symbol", *value->symbol());
+	else
+		return arch.content("symbol", VipSymbol());
+}
+
+VipArchive& operator>>(VipArchive& arch, VipPlotMarker* value)
+{
+	value->setLineStyle((VipPlotMarker::LineStyle)arch.read("lineStyle").value<int>());
+	value->setLinePen(arch.read("linePen").value<QPen>());
+	value->setLabel(arch.read("label").value<VipText>());
+	value->setLabelAlignment((Qt::AlignmentFlag)arch.read("labelAlignment").value<int>());
+	value->setLabelOrientation((Qt::Orientation)arch.read("labelOrientation").value<int>());
+	value->setSpacing(arch.read("spacing").value<double>());
+	value->setSymbol(new VipSymbol(arch.read("symbol").value<VipSymbol>()));
+	return arch;
+}
+
+static int registerStreamOperators()
+{
+	qRegisterMetaType<VipPlotMarker*>();
+	vipRegisterArchiveStreamOperators<VipPlotMarker*>();
+	return 0;
+}
+
+static int _registerStreamOperators = registerStreamOperators();

@@ -141,6 +141,11 @@ private:
 	PrivateData * d_data;
 };
 
+VIP_REGISTER_QOBJECT_METATYPE(VipAxisColorMap*)
+
+VIP_PLOTTING_EXPORT VipArchive& operator<<(VipArchive& arch, const VipAxisColorMap* value);
+VIP_PLOTTING_EXPORT VipArchive& operator>>(VipArchive& arch, VipAxisColorMap* value);
+
 /// @}
 //end Plotting
 

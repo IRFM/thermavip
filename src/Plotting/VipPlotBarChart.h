@@ -313,6 +313,9 @@ private:
     PrivateData *d_data;
 };
 
+VIP_REGISTER_QOBJECT_METATYPE(VipPlotBarChart*)
+VIP_PLOTTING_EXPORT VipArchive& operator<<(VipArchive& arch, const VipPlotBarChart* value);
+VIP_PLOTTING_EXPORT VipArchive& operator>>(VipArchive& arch, VipPlotBarChart* value);
 
 
 /// @}

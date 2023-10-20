@@ -328,6 +328,18 @@ public:
 };
 
 
+template<class T>
+QVector<T> toVector(const T* begin, const T* end)
+{
+#if QT_VERSION < QT_VERSION_CHECK(5, 15, 0)
+	QVector<T> res(static_cast<int>(end - begin));
+	std::copy(begin, end, res.begin());
+	return res;
+#else
+	return QVector<T>(begin, end);
+#endif
+}
+
 
 struct BaseHolder
 {
@@ -746,12 +758,12 @@ public:
 		if (d_batch_rendering && device->count() > 1) {
 			// previous command is also text: merge
 			if (device->back().commandType() == Command::DrawImage) {
-				ImageVector& vec = *device->back().value<ImageVector>();
+				ImageVector& vec = *device->back().template value<ImageVector>();
 				vec.push_back(ImageItem{ rectangle, image, sr, flags, QTransform(), false });
 				return;
 			}
 			if (device->back().commandType() == Command::ChangeState) {
-				PaintEngineState* state = device->back().value<PaintEngineState>();
+				PaintEngineState* state = device->back().template value<PaintEngineState>();
 				// Get command before ChangeState
 				Command& c = device->back_back();
 				if (c.commandType() == Command::DrawImage && state->dirty == QPaintEngine::DirtyTransform) {
@@ -761,7 +773,7 @@ public:
 
 					// remove state change
 					device->pop_back();
-					ImageVector& vec = *device->back().value<ImageVector>();
+					ImageVector& vec = *device->back().template value<ImageVector>();
 					vec.push_back(ImageItem{ rectangle, image, sr, flags, tr, true });
 					return;
 				}
@@ -778,7 +790,7 @@ public:
 
 	virtual void drawLines(const QLineF* lines, int lineCount) { 
 		if (d_batch_rendering && device->count() > 0 && device->back().commandType() == Command::DrawLinesF) {
-			LineFVector& vec = *device->back().value<LineFVector>();
+			LineFVector& vec = *device->back().template value<LineFVector>();
 			if (lineCount == 1) {
 				const QLineF& l = vec.back();
 				bool prev_no_alias = l.p1().x() == l.p2().x() || l.p1().y() == l.p2().y();
@@ -792,11 +804,11 @@ public:
 		}
 		// send previous
 		device->send();
-		device->emplace_back(Command::DrawLinesF, QVector<QLineF>(lines, lines + lineCount));
+		device->emplace_back(Command::DrawLinesF, toVector(lines, lines + lineCount));
 	}
 	virtual void drawLines(const QLine* lines, int lineCount) { 
 		if (d_batch_rendering && device->count() > 0 && device->back().commandType() == Command::DrawLines) {
-			LineVector& vec = *device->back().value<LineVector>();
+			LineVector& vec = *device->back().template value<LineVector>();
 			if (lineCount == 1) {
 				const QLine& l = vec.back();
 				bool prev_no_alias = l.p1().x() == l.p2().x() || l.p1().y() == l.p2().y();
@@ -810,7 +822,7 @@ public:
 		}
 		// send previous
 		device->send();
-		device->emplace_back(Command::DrawLines, QVector<QLine>(lines, lines + lineCount));
+		device->emplace_back(Command::DrawLines, toVector(lines, lines + lineCount));
 	}
 	virtual void drawPath(const QPainterPath& path) {
 		device->emplace_back(Command::DrawPath, path); 
@@ -821,12 +833,12 @@ public:
 		if (d_batch_rendering && device->count() > 1) {
 			// previous command is also text: merge
 			if (device->back().commandType() == Command::DrawPixmap) {
-				PixmapVector& vec = *device->back().value<PixmapVector>();
+				PixmapVector& vec = *device->back().template value<PixmapVector>();
 				vec.push_back(PixmapItem{ r, pm, sr, QTransform(), false });
 				return;
 			}
 			if (device->back().commandType() == Command::ChangeState) {
-				PaintEngineState* state = device->back().value<PaintEngineState>();
+				PaintEngineState* state = device->back().template value<PaintEngineState>();
 				// Get command before ChangeState
 				Command& c = device->back_back();
 				if (c.commandType() == Command::DrawPixmap && state->dirty == QPaintEngine::DirtyTransform) {
@@ -836,7 +848,7 @@ public:
 
 					// remove state change
 					device->pop_back();
-					PixmapVector& vec = *device->back().value<PixmapVector>();
+					PixmapVector& vec = *device->back().template value<PixmapVector>();
 					vec.push_back(PixmapItem{ r, pm, sr, tr, true });
 					return;
 				}
@@ -852,7 +864,7 @@ public:
 	virtual void drawPoints(const QPointF* points, int pointCount) { 
 
 		if (d_batch_rendering && device->count() > 0 && device->back().commandType() == Command::DrawPointsF) {
-			PointFVector& vec = *device->back().value<PointFVector>();
+			PointFVector& vec = *device->back().template value<PointFVector>();
 			for (int i = 0; i < pointCount; ++i)
 				vec.push_back(points[i]);
 			return;
@@ -860,31 +872,31 @@ public:
 		// send previous
 		device->send();
 
-		device->emplace_back(Command::DrawPointsF, PointFVector(points, points + pointCount)); 
+		device->emplace_back(Command::DrawPointsF, toVector(points, points + pointCount)); 
 	}
 	virtual void drawPoints(const QPoint* points, int pointCount) { 
 		if (d_batch_rendering && device->count() > 0 && device->back().commandType() == Command::DrawPoints) {
-			PointVector& vec = *device->back().value<PointVector>();
+			PointVector& vec = *device->back().template value<PointVector>();
 			for (int i = 0; i < pointCount; ++i)
 				vec.push_back(points[i]);
 			return;
 		}
 		// send previous
 		device->send();
-		device->emplace_back(Command::DrawPoints, PointVector(points, points + pointCount)); 
+		device->emplace_back(Command::DrawPoints, toVector(points, points + pointCount)); 
 	}
 	virtual void drawPolygon(const QPointF* points, int pointCount, QPaintEngine::PolygonDrawMode mode)
 	{
 		switch (mode) {
 			case QPaintEngine::OddEvenMode:
 			case QPaintEngine::ConvexMode:
-				device->emplace_back(Command::DrawOddPolygonF, (PointFVector(points, points + pointCount)));
+				device->emplace_back(Command::DrawOddPolygonF, (toVector(points, points + pointCount)));
 				break;
 			case QPaintEngine::WindingMode:
-				device->emplace_back(Command::DrawWiddingPolygonF, (PointFVector(points, points + pointCount)));
+				device->emplace_back(Command::DrawWiddingPolygonF, (toVector(points, points + pointCount)));
 				break;
 			case QPaintEngine::PolylineMode:
-				device->emplace_back(Command::DrawPolylineF, (PointFVector(points, points + pointCount)));
+				device->emplace_back(Command::DrawPolylineF, (toVector(points, points + pointCount)));
 				break;
 		}
 		device->send();
@@ -894,49 +906,49 @@ public:
 		switch (mode) {
 			case QPaintEngine::OddEvenMode:
 			case QPaintEngine::ConvexMode:
-				device->emplace_back(Command::DrawOddPolygon, (PointVector(points, points + pointCount)));
+				device->emplace_back(Command::DrawOddPolygon, (toVector(points, points + pointCount)));
 				break;
 			case QPaintEngine::WindingMode:
-				device->emplace_back(Command::DrawWiddingPolygon, (PointVector(points, points + pointCount)));
+				device->emplace_back(Command::DrawWiddingPolygon, (toVector(points, points + pointCount)));
 				break;
 			case QPaintEngine::PolylineMode:
-				device->emplace_back(Command::DrawPolyline, (PointVector(points, points + pointCount)));
+				device->emplace_back(Command::DrawPolyline, (toVector(points, points + pointCount)));
 				break;
 		}
 		device->send();
 	}
 	virtual void drawRects(const QRectF* rects, int rectCount) { 
 		if (d_batch_rendering && device->count() > 0 && device->back().commandType() == Command::DrawRectsF) {
-			RectFVector& vec = *device->back().value<RectFVector>();
+			RectFVector& vec = *device->back().template value<RectFVector>();
 			for (int i = 0; i < rectCount; ++i)
 				vec.push_back(rects[i]);
 			return;
 		}
 		// send previous
 		device->send();
-		device->emplace_back(Command::DrawRectsF, RectFVector(rects, rects + rectCount));
+		device->emplace_back(Command::DrawRectsF, toVector(rects, rects + rectCount));
 	}
 	virtual void drawRects(const QRect* rects, int rectCount) { 
 		if (d_batch_rendering && device->count() > 0 && device->back().commandType() == Command::DrawRects) {
-			RectVector& vec = *device->back().value<RectVector>();
+			RectVector& vec = *device->back().template value<RectVector>();
 			for (int i = 0; i < rectCount; ++i)
 				vec.push_back(rects[i]);
 			return;
 		}
 		// send previous
 		device->send();
-		device->emplace_back(Command::DrawRects, RectVector(rects, rects + rectCount));
+		device->emplace_back(Command::DrawRects, toVector(rects, rects + rectCount));
 	}
 	virtual void drawTextItem(const QPointF& p, const QTextItem& textItem) { 
 		if (d_batch_rendering && device->count() > 1) {
 			// previous command is also text: merge
 			if (device->back().commandType() == Command::DrawText) {
-				TextVector& vec = *device->back().value<TextVector>();
+				TextVector& vec = *device->back().template value<TextVector>();
 				vec.push_back(TextItem{ textItem.text(), p, textItem.font(), QTransform(), false });
 				return;
 			}
 			if (device->back().commandType() == Command::ChangeState) {
-				PaintEngineState* state = device->back().value<PaintEngineState>();
+				PaintEngineState* state = device->back().template value<PaintEngineState>();
 				// Get command before ChangeState
 				Command& c = device->back_back();
 				if (c.commandType() == Command::DrawText && state->dirty == QPaintEngine::DirtyTransform) {
@@ -946,7 +958,7 @@ public:
 
 					//remove state change
 					device->pop_back();
-					TextVector& vec = *device->back().value<TextVector>();
+					TextVector& vec = *device->back().template value<TextVector>();
 					vec.push_back(TextItem{ textItem.text(), p, textItem.font(), tr, true });
 					return;
 				}
@@ -971,7 +983,7 @@ public:
 
 		if (d_batch_rendering && device->count() > 0 && device->back().commandType() == Command::ChangeState) {
 			
-			PaintEngineState& last = *device->back().value<PaintEngineState>();
+			PaintEngineState& last = *device->back().template value<PaintEngineState>();
 			if (!(state.state() && QPaintEngine::DirtyTransform)) 
 			{
 				// Merge
@@ -1487,9 +1499,19 @@ public:
 	virtual void focusOutEvent(QFocusEvent* ev) { 
 		qApp->sendEvent(top_level, ev); 
 	}
-	virtual void paintEvent(QPaintEvent* ev) { 
-		//qApp->notify(top_level, ev);
-	}
+	
+	/* virtual bool event(QEvent* event)
+	{
+		switch (event->type()) {
+			case QEvent::UpdateRequest:
+			case QEvent::UpdateLater:
+			case QEvent::Paint:
+				qApp->notify(top_level, event);
+				return true;
+			default:
+				return QWindow::event(event);
+		}
+	}*/
 
 	QPaintEngine* paintEngine() const
 	{

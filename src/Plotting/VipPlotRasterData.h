@@ -197,6 +197,12 @@ private:
 };
 
 
+
+VIP_REGISTER_QOBJECT_METATYPE(VipPlotRasterData*)
+VIP_PLOTTING_EXPORT VipArchive& operator<<(VipArchive& arch, const VipPlotRasterData* value);
+VIP_PLOTTING_EXPORT VipArchive& operator>>(VipArchive& arch, VipPlotRasterData* value);
+
+
 /// @}
 //end Plotting
 

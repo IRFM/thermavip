@@ -698,3 +698,58 @@ void VipAxisColorMap::endRender(VipRenderState & state)
 	grip1()->setVisible(state.state(this)["grip1"].value<bool>());
 	grip2()->setVisible(state.state(this)["grip2"].value<bool>());
 }
+
+
+
+VipArchive& operator<<(VipArchive& arch, const VipAxisColorMap* value)
+{
+	arch.content("gripInterval", value->gripInterval());
+	arch.content("colorMap", value->colorMap());
+	arch.content("isColorBarEnabled", value->isColorBarEnabled());
+	arch.content("colorBarWidth", value->colorBarWidth());
+	arch.content("colorMapInterval", value->colorMapInterval());
+
+	// since 2.2.18
+	arch.content("hasAutoScaleMax", value->hasAutoScaleMax());
+	arch.content("autoScaleMax", value->autoScaleMax());
+	arch.content("hasAutoScaleMin", value->hasAutoScaleMin());
+	arch.content("autoScaleMin", value->autoScaleMin());
+	return arch;
+}
+
+VipArchive& operator>>(VipArchive& arch, VipAxisColorMap* value)
+{
+	VipInterval inter = arch.read("gripInterval").value<VipInterval>();
+	value->setColorMap(inter, arch.read("colorMap").value<VipColorMap*>());
+	value->setGripInterval(inter);
+	value->setColorBarEnabled(arch.read("isColorBarEnabled").value<bool>());
+	value->setColorBarWidth(arch.read("colorBarWidth").value<double>());
+	value->setColorMapInterval(arch.read("colorMapInterval").value<VipInterval>());
+
+	// since 2.2.18
+	bool hasAutoScaleMax, hasAutoScaleMin;
+	vip_double autoScaleMax, autoScaleMin;
+	arch.save();
+	if (arch.content("hasAutoScaleMax", hasAutoScaleMax)) {
+		arch.content("autoScaleMax", autoScaleMax);
+		arch.content("hasAutoScaleMin", hasAutoScaleMin);
+		arch.content("autoScaleMin", autoScaleMin);
+		value->setHasAutoScaleMax(hasAutoScaleMax);
+		value->setHasAutoScaleMin(hasAutoScaleMin);
+		value->setAutoScaleMax(autoScaleMax);
+		value->setAutoScaleMin(autoScaleMin);
+	}
+	else
+		arch.restore();
+
+	return arch;
+}
+
+static int registerStreamOperators()
+{
+	qRegisterMetaType<VipAxisColorMap*>();
+	vipRegisterArchiveStreamOperators<VipAxisColorMap*>();
+	return 0;
+}
+
+static int _registerStreamOperators = registerStreamOperators();

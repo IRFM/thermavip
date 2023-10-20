@@ -15,6 +15,7 @@
 #include "VipRenderObject.h"
 #include "VipStyleSheet.h"
 #include "VipText.h"
+#include "VipArchive.h"
 
 /// \addtogroup Plotting
 /// @{
@@ -868,10 +869,27 @@ private:
 	PrivateData* d_data;
 };
 
-Q_DECLARE_METATYPE(VipPlotItem*)
+VIP_REGISTER_QOBJECT_METATYPE(VipPlotItem*)
 Q_DECLARE_METATYPE(VipPlotItem::MouseButton);
 Q_DECLARE_OPERATORS_FOR_FLAGS(VipPlotItem::ItemAttributes)
 typedef QList<VipPlotItem*> PlotItemList;
+
+VIP_PLOTTING_EXPORT VipArchive& operator<<(VipArchive& arch, const VipPlotItem* value);
+VIP_PLOTTING_EXPORT VipArchive& operator>>(VipArchive& arch, VipPlotItem* value);
+
+
+
+/// Returns a copy of given item.
+/// This function uses the serialize/deserialize mechanism to produce a copy of input VipPlotItem.
+/// You should always use this function to copy an item, as it will take care of internal IDs used to identify each item.
+/// Note that the output item will NOT share the input item axes and will have a different ID (as in #VipUniqueId::id()).
+VIP_PLOTTING_EXPORT VipPlotItem* vipCopyPlotItem(const VipPlotItem* item);
+
+/// Save the current item state, except its ID (as in #VipUniqueId::id()) and its axises.
+VIP_PLOTTING_EXPORT QByteArray vipSavePlotItemState(const VipPlotItem* item);
+/// Restore an item state previously saved with #vipSavePlotItemState.
+VIP_PLOTTING_EXPORT bool vipRestorePlotItemState(VipPlotItem* item, const QByteArray& state);
+
 
 /// @brief Singleton class used to notify whever a VipPlotItem visibility or selection changed,
 /// or when an items is clicked over.
@@ -970,6 +988,8 @@ private:
 	bool d_savePainterBetweenItems;
 };
 
+VIP_REGISTER_QOBJECT_METATYPE(VipPlotItemComposite*)
+
 /// @brief Base VipPlotItem for classes representing a data that can be stored in a QVariant
 ///
 /// A VipPlotItemData draw its content based on a data set with VipPlotItemData::setData().
@@ -1039,6 +1059,12 @@ private:
 	class PrivateData;
 	PrivateData* d_data;
 };
+
+VIP_REGISTER_QOBJECT_METATYPE(VipPlotItemData*)
+
+VIP_PLOTTING_EXPORT VipArchive& operator<<(VipArchive& arch, const VipPlotItemData* value);
+VIP_PLOTTING_EXPORT VipArchive& operator>>(VipArchive& arch, VipPlotItemData* value);
+
 
 /// @brief Typied version of VipPlotItemData
 template<class Data, class Sample = Data>
