@@ -105,6 +105,9 @@ public:
 
 	static bool isInPainting();
 
+protected:
+	virtual void paintEvent(QPaintEvent* evt);
+
 private:
 	class PrivateData;
 	PrivateData* d_data;

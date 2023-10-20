@@ -24,6 +24,7 @@
 #include <qscrollarea.h>
 #include <qpointer.h>
 #include <qapplication.h>
+#include <qgraphicsview.h>
 
 
 namespace detail
@@ -1547,6 +1548,12 @@ void VipOpenGLWidget::stopRendering()
 bool VipOpenGLWidget::isInPainting()
 {
 	return is_in_opengl_widget_paint();
+}
+
+void VipOpenGLWidget::paintEvent(QPaintEvent* evt) 
+{
+	if (QGraphicsView* view = qobject_cast<QGraphicsView*>(parentWidget()))
+		view->update();
 }
 
 void VipOpenGLWidget::setBackgroundColor(const QColor& c)
