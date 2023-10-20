@@ -968,6 +968,8 @@ VipPathList VipPhysicalFileSystem::listPathContent(const VipPath & path)
 			p.setAttribute("Readable", info.isReadable());
 #if QT_VERSION >= QT_VERSION_CHECK(5, 10, 0)
 			p.setAttribute("Created", info.birthTime());
+#else
+			p.setAttribute("Created", info.created());
 #endif
 			p.setAttribute("Last modified", info.lastModified());
 			p.setAttribute("Last read", info.lastRead());
@@ -982,6 +984,8 @@ VipPathList VipPhysicalFileSystem::listPathContent(const VipPath & path)
 			p.setAttribute("Readable", info.isReadable());
 #if QT_VERSION >= QT_VERSION_CHECK(5,10,0)
 			p.setAttribute("Created", info.birthTime());
+#else
+			p.setAttribute("Created", info.created());
 #endif
 			p.setAttribute("Last modified", info.lastModified());
 			p.setAttribute("Last read", info.lastRead());
