@@ -953,7 +953,7 @@ static bool import_numpy_internal()
 	vip_debug("Initialize numpy...\n");
 	int numpy = PyRun_SimpleString("import numpy");
 	if (numpy == 0)
-		vip_debug("numpy module imported\n");
+		vip_debug("numpy module imported\n")
 	else {
 		vip_debug("Error while importing numpy");
 		return false;
