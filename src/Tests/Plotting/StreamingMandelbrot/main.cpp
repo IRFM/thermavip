@@ -148,7 +148,7 @@ public:
 			}
 			// compute time traces
 			for (int i = 0; i < traces.size(); ++i) {
-				VipShapeStatistics v = traces[i].shape.statistics(VipNDArray(img),QPoint(),NULL,VipShapeStatistics::Mean);
+				VipShapeStatistics v = traces[i].shape.statistics(VipNDArray(img),QPoint(),nullptr,VipShapeStatistics::Mean);
 
 				// Update VipPlotCurve content,
 				// and only keep the last 10s

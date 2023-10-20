@@ -30,7 +30,7 @@ class PYTHON_EXPORT IPythonConsoleProcess : public QProcess
 	Q_OBJECT
 		
 public:
-	IPythonConsoleProcess(QObject* parent = NULL);
+	IPythonConsoleProcess(QObject* parent = nullptr);
 	~IPythonConsoleProcess();
 
 	void setTimeout(int milli_timeout);
@@ -120,7 +120,7 @@ class PYTHON_EXPORT IPythonWidget : public QWidget
 	Q_OBJECT
 
 public:
-	IPythonWidget(int font_size = -1, const QString &style = QString(), QWidget* parent = NULL);
+	IPythonWidget(int font_size = -1, const QString &style = QString(), QWidget* parent = nullptr);
 	~IPythonWidget();
 
 	IPythonConsoleProcess* process() const;
@@ -202,7 +202,7 @@ class PYTHON_EXPORT IPythonTabWidget : public QTabWidget
 	Q_OBJECT
 
 public:
-	IPythonTabWidget(QWidget* parent = NULL);
+	IPythonTabWidget(QWidget* parent = nullptr);
 	~IPythonTabWidget();
 
 	IPythonWidget* widget(int) const;
@@ -235,4 +235,4 @@ private:
 	IPythonTabWidget* m_tabs;
 };
 
-PYTHON_EXPORT IPythonToolWidget* GetIPythonToolWidget(VipMainWindow* win = NULL);
+PYTHON_EXPORT IPythonToolWidget* GetIPythonToolWidget(VipMainWindow* win = nullptr);

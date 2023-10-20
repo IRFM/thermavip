@@ -15,10 +15,10 @@ std::list<int> get_video_codec(std::string ext, int /*audio_codec*/)
 
 	std::list<int> res;
 
-	AVOutputFormat * temp= av_oformat_next(NULL);
-	while(temp != NULL )
+	AVOutputFormat * temp= av_oformat_next(nullptr);
+	while(temp != nullptr )
 	{
-		if( temp->extensions != NULL && /*temp->audio_codec == audio_codec  && */(std::string(temp->extensions).find(ext.c_str()) != std::string::npos ))
+		if( temp->extensions != nullptr && /*temp->audio_codec == audio_codec  && */(std::string(temp->extensions).find(ext.c_str()) != std::string::npos ))
 		{
 			res.push_back(temp->video_codec);
 
@@ -57,16 +57,16 @@ VideoEncoder::~VideoEncoder()
 
 void VideoEncoder::init()
 {
-	fmt = NULL;
-	oc = NULL;
-	video_str = NULL;
-	picture = NULL;
-	tmp_picture = NULL;
-	rgb8_picture = NULL;
-	img_convert_context = NULL;
-	additional_GIF_context = NULL;
-	video_outbuf = NULL;
-	vc = NULL;
+	fmt = nullptr;
+	oc = nullptr;
+	video_str = nullptr;
+	picture = nullptr;
+	tmp_picture = nullptr;
+	rgb8_picture = nullptr;
+	img_convert_context = nullptr;
+	additional_GIF_context = nullptr;
+	video_outbuf = nullptr;
+	vc = nullptr;
 }
 
 
@@ -98,11 +98,11 @@ void VideoEncoder::Open(const std::string & name, int width, int height, double 
 
 
 
-    fmt = NULL;
+    fmt = nullptr;
 #if LIBAVFORMAT_VERSION_MAJOR > 52
-    fmt = av_guess_format(NULL,filename,NULL);
+    fmt = av_guess_format(nullptr,filename,nullptr);
 #else
-	fmt = guess_format(NULL,filename,NULL);
+	fmt = guess_format(nullptr,filename,nullptr);
 #endif
 
 	if (!fmt) {
@@ -131,9 +131,9 @@ void VideoEncoder::Open(const std::string & name, int width, int height, double 
     if (!fmt){
 	//default format "mpeg"
 #if LIBAVFORMAT_VERSION_MAJOR > 52
-		fmt = av_guess_format("mpeg",NULL,NULL);
+		fmt = av_guess_format("mpeg",nullptr,nullptr);
 #else
-		fmt = guess_format("mpeg",NULL,NULL);
+		fmt = guess_format("mpeg",nullptr,nullptr);
 #endif
 
     }
@@ -146,8 +146,8 @@ void VideoEncoder::Open(const std::string & name, int width, int height, double 
 	if( codec_id != -1)
 	{
 		std::string ext = QFileInfo(QString(filename)).suffix().toStdString();
-		AVOutputFormat * temp= av_oformat_next(NULL);
-		while(temp != NULL )
+		AVOutputFormat * temp= av_oformat_next(nullptr);
+		while(temp != nullptr )
 		{
 			if( temp->video_codec == codec_id /*&& temp->audio_codec == CODEC_ID_NONE*/  && (std::string(temp->extensions).find(ext.c_str()) != std::string::npos || codec_id == AV_CODEC_ID_RAWVIDEO) )
 			{
@@ -159,7 +159,7 @@ void VideoEncoder::Open(const std::string & name, int width, int height, double 
 				temp = temp->next;
 		}
 
-		if(temp == NULL)
+		if(temp == nullptr)
 		{
 			Close(true);
 			throw std::runtime_error("Wrong extention for this video codec");
@@ -175,7 +175,7 @@ void VideoEncoder::Open(const std::string & name, int width, int height, double 
 
 	
 
-    AVCodec *codec = NULL;
+    AVCodec *codec = nullptr;
 
     oc->oformat = fmt;
     strcpy(oc->filename,filename);
@@ -183,9 +183,9 @@ void VideoEncoder::Open(const std::string & name, int width, int height, double 
 
     //add video stream
     int stream_index = 0;
-    video_str = NULL;
+    video_str = nullptr;
     if (fmt->video_codec != AV_CODEC_ID_NONE) {
-	video_str = avformat_new_stream(oc,NULL);
+	video_str = avformat_new_stream(oc,nullptr);
 	video_str->id = stream_index;
 	if (!video_str){
 	    //no stream allocated
@@ -223,7 +223,7 @@ void VideoEncoder::Open(const std::string & name, int width, int height, double 
     if (c->codec_id == AV_CODEC_ID_MPEG1VIDEO)
         c->mb_decision = 2;
 
-    /*if (av_set_parameters(oc,NULL) < 0){
+    /*if (av_set_parameters(oc,nullptr) < 0){
         //parameters not properly set
         Close(true);
         throw std::runtime_error("Parameters for avcodec not properly set");
@@ -268,25 +268,25 @@ void VideoEncoder::Open(const std::string & name, int width, int height, double 
 	}*/
 
 
-	if (avcodec_open2(c,codec,NULL) < 0){
+	if (avcodec_open2(c,codec,nullptr) < 0){
         //fail to open codec
-		video_str->codec = NULL;
+		video_str->codec = nullptr;
 		Close(true);
 		throw std::runtime_error("Unable to open codec");
 	}
 
 	
 
-	img_convert_context = NULL;
+	img_convert_context = nullptr;
     img_convert_context = sws_getContext(c->width,c->height,src_pxl_fmt,
-                                         c->width,c->height, AV_PIX_FMT_YUV420P,sws_flags,NULL,NULL,NULL);
-	additional_GIF_context = NULL;
+                                         c->width,c->height, AV_PIX_FMT_YUV420P,sws_flags,nullptr,nullptr,nullptr);
+	additional_GIF_context = nullptr;
 	if (c->codec_id == AV_CODEC_ID_GIF)
 	{
 		//GIF only, we need to convert from YUV420 to RGB8
 
 		additional_GIF_context = sws_getContext(c->width, c->height, AV_PIX_FMT_YUV420P,
-			c->width, c->height, c->pix_fmt, sws_flags, NULL, NULL, NULL);
+			c->width, c->height, c->pix_fmt, sws_flags, nullptr, nullptr, nullptr);
 
 		rgb8_picture = alloc_picture(c->width, c->height, c->pix_fmt);
 		if (!rgb8_picture) {
@@ -333,7 +333,7 @@ void VideoEncoder::Open(const std::string & name, int width, int height, double 
 
 
     /* write the stream header, if any */
-    if( avformat_write_header(oc,NULL) != 0)
+    if( avformat_write_header(oc,nullptr) != 0)
 		throw std::runtime_error("Unable to write header");;
 
 }
@@ -348,12 +348,12 @@ AVFrame *VideoEncoder::alloc_picture(int width, int height, enum AVPixelFormat p
 
     pict = av_frame_alloc();
     if (!pict)
-        return NULL;
+        return nullptr;
     size = avpicture_get_size(pix, width, height);
     picture_buf = (uint8_t*) av_malloc(size);
     if (!picture_buf) {
         av_free(pict);
-        return NULL;
+        return nullptr;
     }
     avpicture_fill((AVPicture *)pict, picture_buf,
                    pix, width, height);
@@ -373,7 +373,7 @@ void VideoEncoder::Close(bool debug)
 #ifdef ENABLE_H264
 	if (vc) {
 		Finish(vc);
-		vc = NULL;
+		vc = nullptr;
 		return;
 	}
 #endif
@@ -383,46 +383,46 @@ void VideoEncoder::Close(bool debug)
 	{
 		if(!debug)
 			avcodec_close(video_str->codec);
-		video_str = NULL;
+		video_str = nullptr;
 	}
 
    if(picture)
    {
 	    av_free(picture->data[0]);
 		av_free(picture);
-		picture = NULL;
+		picture = nullptr;
    }
 
    if(tmp_picture)
    {
 	    av_free(tmp_picture->data[0]);
 		av_free(tmp_picture);
-		tmp_picture = NULL;
+		tmp_picture = nullptr;
    }
 
    if (rgb8_picture)
    {
 	   av_free(rgb8_picture->data[0]);
 	   av_free(rgb8_picture);
-	   rgb8_picture = NULL;
+	   rgb8_picture = nullptr;
    }
 
    if(video_outbuf)
    {
 	   av_free(video_outbuf);
-	   video_outbuf = NULL;
+	   video_outbuf = nullptr;
    }
 
    if (img_convert_context)
    {
 	   sws_freeContext(img_convert_context);
-	   img_convert_context = NULL;
+	   img_convert_context = nullptr;
    }
 
    if (additional_GIF_context)
    {
 	   sws_freeContext(additional_GIF_context);
-	   additional_GIF_context = NULL;
+	   additional_GIF_context = nullptr;
    }
 
    if(oc)
@@ -443,7 +443,7 @@ void VideoEncoder::Close(bool debug)
 	   if (oc)
 	   {
 		   avformat_free_context(oc);
-		   oc = NULL;
+		   oc = nullptr;
 	   }
 	   
    }
@@ -498,7 +498,7 @@ bool VideoEncoder::AddFrame(const QImage & im)
 
 		AVPacket pkt;
 		av_init_packet(&pkt);
-		pkt.data = NULL;
+		pkt.data = nullptr;
 		pkt.size = 0;
 
 		if (avcodec_receive_packet(c, &pkt) == 0) {
@@ -514,7 +514,7 @@ bool VideoEncoder::AddFrame(const QImage & im)
 	int got_packet = 0;
 	AVPacket pkt;
 	av_init_packet(&pkt);
-	pkt.data = NULL;    // packet data will be allocated by the encoder
+	pkt.data = nullptr;    // packet data will be allocated by the encoder
 	pkt.size = 0;
     int ret = avcodec_encode_video2(c, &pkt, frame,&got_packet);
     /* if zero size, it means the image was buffered */
@@ -631,12 +631,12 @@ bool VideoCapture::Init(const char * filename, int width, int height, int fpsrat
 
 	int err;
 
-	if (!(oformat = av_guess_format(NULL, tmp_name.c_str(), NULL))) {
+	if (!(oformat = av_guess_format(nullptr, tmp_name.c_str(), nullptr))) {
 		printf("Failed to define output format %i\n", 0);
 		return false;
 	}
 
-	if ((err = avformat_alloc_output_context2(&ofctx, oformat, NULL, tmp_name.c_str()) < 0)) {
+	if ((err = avformat_alloc_output_context2(&ofctx, oformat, nullptr, tmp_name.c_str()) < 0)) {
 		printf("Failed to allocate output context %i\n", err);
 		Free();
 		return false;
@@ -694,7 +694,7 @@ bool VideoCapture::Init(const char * filename, int width, int height, int fpsrat
 	}
 	avcodec_parameters_from_context(videoStream->codecpar, cctx);
 
-	if ((err = avcodec_open2(cctx, codec, NULL)) < 0) {
+	if ((err = avcodec_open2(cctx, codec, nullptr)) < 0) {
 		printf("Failed to open codec %i\n", err);
 		Free();
 		return false;
@@ -708,7 +708,7 @@ bool VideoCapture::Init(const char * filename, int width, int height, int fpsrat
 		}
 	}
 
-	if ((err = avformat_write_header(ofctx, NULL)) < 0) {
+	if ((err = avformat_write_header(ofctx, nullptr)) < 0) {
 		printf("Failed to write header %i\n", err);
 		Free();
 		return false;
@@ -785,7 +785,7 @@ bool VideoCapture::AddFrame(uint8_t *data) {
 
 	AVPacket pkt;
 	av_init_packet(&pkt);
-	pkt.data = NULL;
+	pkt.data = nullptr;
 	pkt.size = 0;
 
 	if (avcodec_receive_packet(cctx, &pkt) == 0) {
@@ -801,11 +801,11 @@ bool VideoCapture::Finish() {
 	//DELAYED FRAMES
 	AVPacket pkt;
 	av_init_packet(&pkt);
-	pkt.data = NULL;
+	pkt.data = nullptr;
 	pkt.size = 0;
 
 	for (;;) {
-		avcodec_send_frame(cctx, NULL);
+		avcodec_send_frame(cctx, nullptr);
 		if (avcodec_receive_packet(cctx, &pkt) == 0) {
 			av_interleaved_write_frame(ofctx, &pkt);
 			av_packet_unref(&pkt);
@@ -831,23 +831,23 @@ bool VideoCapture::Finish() {
 void VideoCapture::Free() {
 	if (videoFrame) {
 		av_frame_free(&videoFrame);
-		videoFrame = NULL;
+		videoFrame = nullptr;
 	}
 	if (cctx) {
 		avcodec_free_context(&cctx);
 	}
 	if (ofctx) {
 		avformat_free_context(ofctx);
-		ofctx = NULL;
+		ofctx = nullptr;
 	}
 	if (swsCtx) {
 		sws_freeContext(swsCtx);
-		swsCtx = NULL;
+		swsCtx = nullptr;
 	}
 }
 
 bool VideoCapture::Remux() {
-	AVFormatContext *ifmt_ctx = NULL, *ofmt_ctx = NULL;
+	AVFormatContext *ifmt_ctx = nullptr, *ofmt_ctx = nullptr;
 	int err;
 	bool res = true;
 	AVPacket videoPkt;
@@ -868,14 +868,14 @@ bool VideoCapture::Remux() {
 
 	
 	
-	if ((err = avformat_alloc_output_context2(&ofmt_ctx, NULL, NULL, fname.c_str()))) {
+	if ((err = avformat_alloc_output_context2(&ofmt_ctx, nullptr, nullptr, fname.c_str()))) {
 		printf("Failed to allocate output context %i\n", err);
 		res = false;
 		goto end;
 	}
 
 	inVideoStream = ifmt_ctx->streams[0];
-	outVideoStream = avformat_new_stream(ofmt_ctx, NULL);
+	outVideoStream = avformat_new_stream(ofmt_ctx, nullptr);
 	if (!outVideoStream) {
 		printf("Failed to allocate output video stream %i\n", 0);
 		res = false;

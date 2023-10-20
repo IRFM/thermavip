@@ -37,8 +37,8 @@ private:
 	void addCursor();
 	void removeCursors();
 	bool hasCustomCursor() const;
-	QPoint validPosition(const QPoint& pt, bool* ok = NULL) const;
-	QSize validSize(const QSize& s, bool* ok = NULL) const;
+	QPoint validPosition(const QPoint& pt, bool* ok = nullptr) const;
+	QSize validSize(const QSize& s, bool* ok = nullptr) const;
 	class PrivateData;
 	PrivateData* m_data;
 };

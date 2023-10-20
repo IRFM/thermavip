@@ -22,7 +22,7 @@ void PySignalGenerator::ReadThread::run()
 			msleep(sleep); 
 	}
 
-	generator = NULL;
+	generator = nullptr;
 }
 
 void PySignalGenerator::close()
@@ -168,7 +168,7 @@ bool PySignalGenerator::enableStreaming(bool enable)
 {
 	if (deviceType() != Sequential)
 	{
-		m_thread->generator = NULL;
+		m_thread->generator = nullptr;
 		m_thread->wait();
 		return false;
 	}
@@ -180,7 +180,7 @@ bool PySignalGenerator::enableStreaming(bool enable)
 	}
 	else
 	{
-		m_thread->generator = NULL;
+		m_thread->generator = nullptr;
 		m_thread->wait();
 	}
 
@@ -533,7 +533,7 @@ PySignalGenerator * PySignalGeneratorEditor::createGenerator(bool complex_script
 	}
 
 	delete gen;
-	return NULL;
+	return nullptr;
 }
 
 

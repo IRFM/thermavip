@@ -348,7 +348,7 @@ void	PathEngine::updateState ( const QPaintEngineState & _state )
 
 
 VipShapeDevice::VipShapeDevice()
-: m_engine(NULL), m_drawPrimitives(All)
+: m_engine(nullptr), m_drawPrimitives(All)
 {
 	m_engine = new PathEngine(this);
 }

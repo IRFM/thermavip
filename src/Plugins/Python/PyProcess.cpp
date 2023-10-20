@@ -186,7 +186,7 @@ static QByteArray fromNDArray(const VipNDArray & ar)
 	//printf("fromNDArray: %i\n", (int)el);
 	return  b;
 }
-VipNDArray toNDArray(const QByteArray & ar, int *len = NULL)
+VipNDArray toNDArray(const QByteArray & ar, int *len = nullptr)
 {
 	try {
 		//qint64 st = QDateTime::currentMSecsSinceEpoch();
@@ -749,7 +749,7 @@ struct PyProcRunThread : public QThread
 	PyProcRunnable * current;
 	int id;
 
-	PyProcRunThread() :state(0),process(NULL), local(NULL), current(NULL), id(1) {}
+	PyProcRunThread() :state(0),process(nullptr), local(nullptr), current(nullptr), id(1) {}
 
 
 	PyProcess::command_type add(PyProcRunnable *r);
@@ -843,8 +843,8 @@ struct PyProcRunThread : public QThread
 					state = 2;
 					delete process;
 					delete connection;
-					process = NULL;
-					connection = NULL;
+					process = nullptr;
+					connection = nullptr;
 					return;
 				}
 				//Reset working directory
@@ -885,8 +885,8 @@ struct PyProcRunThread : public QThread
 			state = 0;
 			delete process;
 			delete connection;
-			process = NULL;
-			connection = NULL;
+			process = nullptr;
+			connection = nullptr;
 			tmp->emitFinished();
 		}
 		
@@ -1149,7 +1149,7 @@ void PyProcRunThread::runOneLoop(PyProcess * loc)
 		current->run(loc);
 		PyProcRunnable * run = current;
 		QMutexLocker locker(&mutex);
-		current = NULL;
+		current = nullptr;
 		delete run;
 		cond.wakeAll();
 	}
@@ -1255,7 +1255,7 @@ void PyProcess::stop(bool wait)
 	//stop thread
 	if (d_data->runThread.local)
 	{
-		d_data->runThread.local = NULL;
+		d_data->runThread.local = nullptr;
 		if(wait)
 			d_data->runThread.QThread::wait();
 	}

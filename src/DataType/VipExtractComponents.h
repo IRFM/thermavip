@@ -11,8 +11,8 @@
 
 /// Helper function.
 /// Inplace clamp \a ar based on \a min and \a max.
-/// Clamp to \a min if \a min is not NULL.
-/// Clamp to \a max if \a max is not NULL.
+/// Clamp to \a min if \a min is not nullptr.
+/// Clamp to \a max if \a max is not nullptr.
 VIP_DATA_TYPE_EXPORT bool vipClamp(VipNDArray & ar, const double * min, const double *max);
 
 /// VipExtractComponents manages how to  extract components from an array of a specific pixel type,
@@ -563,7 +563,7 @@ inline VipExtractComponents * vipCreateExtractComponents(const QString & method)
 	else if (method == "Color ACMYK")
 		return new VipExtractCMYKComponents();
 	else
-		return NULL;
+		return nullptr;
 }
 
 

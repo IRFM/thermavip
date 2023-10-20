@@ -51,7 +51,7 @@ PyProcessingLocker::PyProcessingLocker()
 {
 	while (!PyOptions::operationMutex()->tryLock()) {
 		if (QCoreApplication::instance() && QCoreApplication::instance()->thread() == QThread::currentThread())
-			vipProcessEvents(NULL, 10);
+			vipProcessEvents(nullptr, 10);
 		else
 			QThread::msleep(5);
 	}
@@ -63,7 +63,7 @@ PyProcessingLocker::~PyProcessingLocker()
 
 
 
-PyBaseProcessing * _currentPyBaseProcessing = NULL;
+PyBaseProcessing * _currentPyBaseProcessing = nullptr;
 
 PyBaseProcessing * PyBaseProcessing::currentProcessing()
 {
@@ -80,7 +80,7 @@ void PyBaseProcessing::mergeData(int t1, int t2)
 	PyProcessingLocker lock;
 	this->applyPyProcessing(t1, t2);
 
-	_currentPyBaseProcessing = NULL;
+	_currentPyBaseProcessing = nullptr;
 }
 
 
@@ -97,7 +97,7 @@ public:
 PyFunctionProcessing::PyFunctionProcessing()
 {
 	m_data = new PrivateData();
-	m_data->function = NULL;
+	m_data->function = nullptr;
 	m_data->maxExecutionTime = 5000;
 }
 PyFunctionProcessing::~PyFunctionProcessing()
@@ -1343,7 +1343,7 @@ public:
 PyProcessingEditor::PyProcessingEditor()
 {
 	m_data = new PrivateData();
-	m_data->params = NULL;
+	m_data->params = nullptr;
 
 	QGridLayout * hlay = new QGridLayout();
 	hlay->addWidget(&m_data->maxTime, 0, 0);
@@ -1493,7 +1493,7 @@ void PyProcessingEditor::registerProcessing()
 	if (dialog.exec() == QDialog::Accepted) {
 		bool ret = m_data->proc->registerThisProcessing(m->category(), m->name(), m->description(), false);
 		if (!ret)
-			QMessageBox::warning(NULL, "Operation failure", "Failed to register this processing.\nPlease make sure you entered a valid name and category.");
+			QMessageBox::warning(nullptr, "Operation failure", "Failed to register this processing.\nPlease make sure you entered a valid name and category.");
 		else {
 			//make sure to update all processing menu
 			vipGetMainWindow()->displayArea()->resetItemSelection();

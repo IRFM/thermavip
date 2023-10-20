@@ -82,9 +82,9 @@ static QAction *createAction(QMenu * menu, const QString & name, bool *found)
 {
 	QStringList lst = name.split("/", QString::SkipEmptyParts);
 	if (name.isEmpty() || lst.size() == 0)
-		return NULL;
+		return nullptr;
 
-	QAction * tmp = NULL;
+	QAction * tmp = nullptr;
 	if (lst.size() == 1) {
 		QAction * tmp = menu->addAction(lst[0]);
 		tmp->setProperty("path", name);

@@ -42,7 +42,7 @@ class VipTimeRangeItem::PrivateData
 {
 public:
 	PrivateData()
-	: parentItem(NULL), heights(ITEM_START_HEIGHT,ITEM_END_HEIGHT),left(0),right(0),color(Qt::blue),reverse(false) , selection(-2){}
+	: parentItem(nullptr), heights(ITEM_START_HEIGHT,ITEM_END_HEIGHT),left(0),right(0),color(Qt::blue),reverse(false) , selection(-2){}
 
 	VipTimeRange initialTimeRange;
 	VipTimeRangeListItem *parentItem;
@@ -328,7 +328,7 @@ void	VipTimeRangeItem::mouseMoveEvent(QGraphicsSceneMouseEvent * event)
 {
 	if (parentItem()->area()->timeRangesLocked())
 	{
-		VipCorrectedTip::showText(QCursor::pos(),lockedMessage(),NULL,QRect(),5000);
+		VipCorrectedTip::showText(QCursor::pos(),lockedMessage(),nullptr,QRect(),5000);
 		return;
 	}
 
@@ -431,7 +431,7 @@ VipFunctionDispatcher<2> & vipCreateTimeRangeItemsDispatcher()
 class VipTimeRangeListItem::PrivateData
 {
 public:
-	PrivateData():device(NULL), heights(ITEM_START_HEIGHT,ITEM_END_HEIGHT), selection(-2),state(Visible) , drawComponents(VipTimeRangeListItem::All), area(NULL){}
+	PrivateData():device(nullptr), heights(ITEM_START_HEIGHT,ITEM_END_HEIGHT), selection(-2),state(Visible) , drawComponents(VipTimeRangeListItem::All), area(nullptr){}
 
 	QList<VipTimeRangeItem *> items;
 	QPointer<VipIODevice> device;
@@ -526,7 +526,7 @@ QList<VipInterval> VipTimeRangeListItem::plotBoundingIntervals() const
 void VipTimeRangeListItem::reset()
 {
 	VipIODevice * device = m_data->device;
-	setDevice(NULL);
+	setDevice(nullptr);
 
 	if(device)
 		device->resetTimestampingFilter();
@@ -537,7 +537,7 @@ void VipTimeRangeListItem::reset()
 void VipTimeRangeListItem::deviceTimestampingChanged()
 {
 	VipIODevice * dev = m_data->device;
-	setDevice(NULL);
+	setDevice(nullptr);
 	setDevice(dev);
 }
 
@@ -585,7 +585,7 @@ void VipTimeRangeListItem::setDevice(VipIODevice* device)
 		//remove the current managed items
 		while(m_data->items.size())
 			delete m_data->items.first();
-		m_data->device = NULL;
+		m_data->device = nullptr;
 	}
 
 	if(device)
@@ -938,7 +938,7 @@ void	VipTimeRangeListItem::mouseMoveEvent(QGraphicsSceneMouseEvent * event)
 {
 	if (area()->timeRangesLocked())
 	{
-		VipCorrectedTip::showText(QCursor::pos(), lockedMessage(), NULL, QRect(), 5000);
+		VipCorrectedTip::showText(QCursor::pos(), lockedMessage(), nullptr, QRect(), 5000);
 		return;
 	}
 
@@ -1170,8 +1170,8 @@ public:
 	QColor sliderColor;
 	QColor sliderFillColor;
 
-	TimeScale(VipProcessingPool* pool, QGraphicsItem* parent = NULL)
-		:VipAxisBase(Bottom, parent), lineWidth(4), gripZValue(2000), grip(NULL)
+	TimeScale(VipProcessingPool* pool, QGraphicsItem* parent = nullptr)
+		:VipAxisBase(Bottom, parent), lineWidth(4), gripZValue(2000), grip(nullptr)
 	{
 		sliderColor = QColor(0xC9DEFA);
 		sliderFillColor = QColor(0xFF5963);
@@ -1297,7 +1297,7 @@ public:
 			if (VipPlayerArea * a = qobject_cast<VipPlayerArea*>(this->area())) {
 				//get the parent VipPlayWidget to update its geometry
 				QWidget * p = a->view();
-				VipPlayWidget * w = NULL;
+				VipPlayWidget * w = nullptr;
 				while (p) {
 					if (w = qobject_cast<VipPlayWidget*>(p))
 						break;
@@ -1317,7 +1317,7 @@ public:
 class VipPlayerArea::PrivateData
 {
 public:
-	PrivateData():visible(true), timeRangesLocked(true), highlightedTime ( VipInvalidTime), boundTime(VipInvalidTime), highlightedItem(NULL), adjustFactor(0), dirtyProcessingPool(false){}
+	PrivateData():visible(true), timeRangesLocked(true), highlightedTime ( VipInvalidTime), boundTime(VipInvalidTime), highlightedItem(nullptr), adjustFactor(0), dirtyProcessingPool(false){}
 
 	QList<VipTimeRangeListItem*> items;
 	QPointer<VipProcessingPool> pool;
@@ -1356,7 +1356,7 @@ VipPlayerArea::VipPlayerArea( )
 	m_data->selectionTimeRange = VipInvalidTimeRange;
 	//m_data->palette = VipColorPalette(VipLinearColorMap::ColorPaletteRandom);//VipColorPalette(VipLinearColorMap::ColorPaletteStandard);
 
-	m_data->timeScale = new TimeScale(NULL);
+	m_data->timeScale = new TimeScale(nullptr);
 	this->addScale(m_data->timeScale,true);
 	this->bottomAxis()->setVisible(false);
 	m_data->timeScale->setZValue(2000);
@@ -1397,12 +1397,12 @@ VipPlayerArea::VipPlayerArea( )
 	m_data->timeMarker->setRenderHints(QPainter::RenderHints());
 	m_data->timeMarker->setIgnoreStyleSheet(true);
 
-	m_data->limit1Grip = new TimeSliderGripNoLimits(NULL,m_data->timeScale);
+	m_data->limit1Grip = new TimeSliderGripNoLimits(nullptr,m_data->timeScale);
 	m_data->limit1Grip->setHandleDistance(-10);
 	m_data->limit1Grip->setImage(vipPixmap("slider_limit.png").toImage().transformed(QTransform().rotate(90)));
 	m_data->limit1Grip->setGripAlwaysInsideScale(false);
 
-	m_data->limit2Grip = new TimeSliderGripNoLimits(NULL,m_data->timeScale);
+	m_data->limit2Grip = new TimeSliderGripNoLimits(nullptr,m_data->timeScale);
 	m_data->limit2Grip->setHandleDistance(-10);
 	m_data->limit2Grip->setImage(vipPixmap("slider_limit.png").toImage().transformed(QTransform().rotate(90)));
 	m_data->limit2Grip->setGripAlwaysInsideScale(false);
@@ -1424,7 +1424,7 @@ VipPlayerArea::VipPlayerArea( )
 	this->setMouseWheelZoom(true);
 	this->setZoomEnabled(this->leftAxis(), false);
 	this->setAutoScale(true);
-	this->setDrawSelectionOrder(NULL);
+	this->setDrawSelectionOrder(nullptr);
 
 	connect(this,SIGNAL(mouseButtonMove(VipPlotItem*, VipPlotItem::MouseButton)),this,SLOT(mouseMoved(VipPlotItem*, VipPlotItem::MouseButton)));
 	connect(this,SIGNAL(mouseButtonRelease(VipPlotItem*, VipPlotItem::MouseButton)),this,SLOT(mouseReleased(VipPlotItem*, VipPlotItem::MouseButton)));
@@ -1631,7 +1631,7 @@ VipTimeRangeListItem * VipPlayerArea::findItem(VipIODevice * device)const
 	for (int i = 0; i < m_data->items.size(); ++i)
 		if (m_data->items[i]->device() == device)
 			return m_data->items[i];
-	return NULL;
+	return nullptr;
 }
 
 void VipPlayerArea::updateAreaDevices()
@@ -2015,7 +2015,7 @@ void VipPlayerArea::addMissingDevices()
 //
 // void VipPlayerArea::deviceRemoved(QObject* obj)
 // {
-// //remove all items with a NULL device pointer or equal to obj
+// //remove all items with a nullptr device pointer or equal to obj
 // for(int i=0; i < m_data->items.size(); ++i)
 // {
 // VipIODevice * device = m_data->items[i]->device();
@@ -2238,7 +2238,7 @@ void VipPlayerArea::mouseReleased(VipPlotItem* item, VipPlotItem::MouseButton bu
 		//invalidate highlightedTime
 		m_data->highlightedTime = VipInvalidTime;
 		m_data->boundTime = VipInvalidTime;
-		m_data->highlightedItem = NULL;
+		m_data->highlightedItem = nullptr;
 		m_data->highlightedMarker->setVisible(false);
 	}
 	else if(button == VipPlotItem::RightButton)
@@ -3116,7 +3116,7 @@ void VipPlayWidget::updatePlayerInternal()
 		m_data->playerWidget->resize(w + 1, h + 1);
 		m_data->playerWidget->resize(w, h);
 		m_data->playerWidget->recomputeGeometry();
-		vipProcessEvents(NULL, 100);
+		vipProcessEvents(nullptr, 100);
 	}
 
 }

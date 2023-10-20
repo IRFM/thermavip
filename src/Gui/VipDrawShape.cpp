@@ -42,12 +42,12 @@ VipDrawGraphicsShape::VipDrawGraphicsShape(VipPlotPlayer * player, const QString
 void VipDrawGraphicsShape::reset(VipPlotSceneModel * plotSceneModel, const QString & group )
 {
 	m_scene_model = plotSceneModel;
-	m_player = NULL;
+	m_player = nullptr;
 	m_group = group;
 }
 void VipDrawGraphicsShape::reset(VipPlotPlayer * player, const QString & group)
 {
-	m_scene_model = NULL;
+	m_scene_model = nullptr;
 	m_player = player;
 	m_group = group;
 }
@@ -59,7 +59,7 @@ void VipDrawGraphicsShape::resetPlayer(VipPlayer2D * player, const QString & gro
 	else if (player)
 		reset(player->plotSceneModel(), group);
 	else
-		reset((VipPlotPlayer*)NULL, group);
+		reset((VipPlotPlayer*)nullptr, group);
 }
 
 VipShape VipDrawGraphicsShape::lastShape() const
@@ -1191,7 +1191,7 @@ VipSceneModelEditor::VipSceneModelEditor(QWidget * parent )
 
 VipSceneModelEditor::~VipSceneModelEditor()
 {
-	//vipProcessEvents(NULL, 20);
+	//vipProcessEvents(nullptr, 20);
 	delete m_data;
 }
 
@@ -1232,7 +1232,7 @@ void VipSceneModelEditor::recomputeAttributes()
 		QList<VipPlotSceneModel*> models = vipCastItemList<VipPlotSceneModel*>(m_data->scene->items());
 
 		//find the first VipPlotSceneModel with selected shapes (or the first one if there are no selected shapes) and set it to the scene model editor.
-		VipPlotSceneModel * model = NULL;
+		VipPlotSceneModel * model = nullptr;
 		for (int i = 0; i < models.size(); ++i)
 		{
 			if (!model)
@@ -1253,7 +1253,7 @@ void VipSceneModelEditor::recomputeAttributes()
 VipPlotSceneModel * VipSceneModelEditor::lastSelected() const
 {
 	if (!m_data->player2D)
-		return  NULL;
+		return  nullptr;
 	if (!m_data->lastSelected)
 		return m_data->player2D->plotSceneModel();
 	return m_data->lastSelected;
@@ -1286,13 +1286,13 @@ void VipSceneModelEditor::selectionChanged(VipPlotItem * item)
 void VipSceneModelEditor::setPlayer(VipPlayer2D * pl)
 {
 	if (m_data->player2D != pl)
-		m_data->lastSelected = NULL;
+		m_data->lastSelected = nullptr;
 	if (m_data->player2D) {
 		disconnect(m_data->player2D->plotWidget2D()->area(), SIGNAL(childSelectionChanged(VipPlotItem *)), this, SLOT(selectionChanged(VipPlotItem *)));
 	}
 
 	m_data->player2D = pl;
-	m_data->scene = pl ? pl->plotWidget2D()->scene() : NULL;
+	m_data->scene = pl ? pl->plotWidget2D()->scene() : nullptr;
 	if (!pl)
 		return;
 
@@ -1507,7 +1507,7 @@ void VipSceneModelEditor::uniteShapes()
 	if (!m_data->player2D) return;
 	//Find selected shapes and make sure they belong to the same VipPlotSceneModel
 	QSet<VipPlotSceneModel*> sms;
-	VipPlotSceneModel * insert_into = NULL; //result is add to this VipPlotSceneModel
+	VipPlotSceneModel * insert_into = nullptr; //result is add to this VipPlotSceneModel
 	QList<VipPlotShape*> shapes = m_data->player2D->plotWidget2D()->area()->findItems<VipPlotShape*>(QString(), 1, 1);
 	for (int i = 0; i < shapes.size(); ++i) {
 		if (VipPlotSceneModel * sm = shapes[i]->property("VipPlotSceneModel").value<VipPlotSceneModel*>())
@@ -1538,7 +1538,7 @@ void VipSceneModelEditor::uniteShapes()
 	}
 	else
 	{
-		QMessageBox::warning(NULL, "Unauthorized operation", "At least 2 shapes from the same scene model must be selected for this operation");
+		QMessageBox::warning(nullptr, "Unauthorized operation", "At least 2 shapes from the same scene model must be selected for this operation");
 	}
 }
 
@@ -1547,7 +1547,7 @@ void VipSceneModelEditor::intersectShapes()
 	if (!m_data->player2D) return;
 	//Find selected shapes and make sure they belong to the same VipPlotSceneModel
 	QSet<VipPlotSceneModel*> sms;
-	VipPlotSceneModel * insert_into = NULL; //result is add to this VipPlotSceneModel
+	VipPlotSceneModel * insert_into = nullptr; //result is add to this VipPlotSceneModel
 	QList<VipPlotShape*> shapes = m_data->player2D->plotWidget2D()->area()->findItems<VipPlotShape*>(QString(), 1, 1);
 	for (int i = 0; i < shapes.size(); ++i)
 		if (VipPlotSceneModel * sm = shapes[i]->property("VipPlotSceneModel").value<VipPlotSceneModel*>())
@@ -1580,7 +1580,7 @@ void VipSceneModelEditor::intersectShapes()
 	}
 	else
 	{
-		QMessageBox::warning(NULL, "Unauthorized operation", "At least 2 shapes from the same scene model must be selected for this operation");
+		QMessageBox::warning(nullptr, "Unauthorized operation", "At least 2 shapes from the same scene model must be selected for this operation");
 	}
 }
 
@@ -1590,7 +1590,7 @@ void VipSceneModelEditor::subtractShapes()
 	if (!m_data->player2D) return;
 	//Find selected shapes and make sure they belong to the same VipPlotSceneModel
 	QSet<VipPlotSceneModel*> sms;
-	VipPlotSceneModel * insert_into = NULL; //result is add to this VipPlotSceneModel
+	VipPlotSceneModel * insert_into = nullptr; //result is add to this VipPlotSceneModel
 	QList<VipPlotShape*> shapes = m_data->player2D->plotWidget2D()->area()->findItems<VipPlotShape*>(QString(), 1, 1);
 	for (int i = 0; i < shapes.size(); ++i)
 		if (VipPlotSceneModel * sm = shapes[i]->property("VipPlotSceneModel").value<VipPlotSceneModel*>())
@@ -1616,7 +1616,7 @@ void VipSceneModelEditor::subtractShapes()
 	}
 	else
 	{
-		QMessageBox::warning(NULL, "Unauthorized operation", "2 shapes from the same scene model must be selected for this operation");
+		QMessageBox::warning(nullptr, "Unauthorized operation", "2 shapes from the same scene model must be selected for this operation");
 	}
 }
 
@@ -1713,12 +1713,12 @@ void VipSceneModelEditor::saveShapes()
 	QList<VipPlotSceneModel*> pmodels = m_data->player2D->plotSceneModels();
 	VipSceneModelList models;
 	for (int i = 0; i < pmodels.size(); ++i) {
-		models << vipCopyVideoSceneModel( pmodels[i]->sceneModel(), qobject_cast<VipVideoPlayer*>(m_data->player2D), NULL);
+		models << vipCopyVideoSceneModel( pmodels[i]->sceneModel(), qobject_cast<VipVideoPlayer*>(m_data->player2D), nullptr);
 	}
 
 	if(models.size())
 	{
-		QString filename = VipFileDialog::getSaveFileName(NULL, "Save shapes", filters.join(";;"));
+		QString filename = VipFileDialog::getSaveFileName(nullptr, "Save shapes", filters.join(";;"));
 		if(!filename.isEmpty())
 		{
 			QList<VipIODevice::Info> devices = VipIODevice::possibleWriteDevices(filename, QVariantList() << QVariant::fromValue(VipSceneModelList()));
@@ -1908,7 +1908,7 @@ void VipSceneModelEditor::saveShapesAttribute()
 				QVariant value = dvalue->value();
 				int data_type = properties[name].userType();
 
-				QString filename = VipFileDialog::getSaveFileName(NULL,"Save attribute image","TEXT file (*.txt)");
+				QString filename = VipFileDialog::getSaveFileName(nullptr,"Save attribute image","TEXT file (*.txt)");
 				if(!filename.isEmpty())
 				{
 					//create the output image
@@ -1945,7 +1945,7 @@ void VipSceneModelEditor::saveShapesImage()
 	if(shapes.size())
 	{
 
-			QString filename = VipFileDialog::getSaveFileName(NULL,"Save image","TEXT file (*.txt)");
+			QString filename = VipFileDialog::getSaveFileName(nullptr,"Save image","TEXT file (*.txt)");
 			if(!filename.isEmpty())
 			{
 				//compute the bounding rect
@@ -1987,7 +1987,7 @@ QList<VipShape> VipSceneModelEditor::openShapes(const QString & filename, VipPla
 			if (lst.size()) {
 				for (int i = 0; i < lst.size(); ++i) {
 					res += lst[i].shapes();
-					lst[i] = vipCopyVideoSceneModel(lst[i], NULL, qobject_cast<VipVideoPlayer*>(pl));
+					lst[i] = vipCopyVideoSceneModel(lst[i], nullptr, qobject_cast<VipVideoPlayer*>(pl));
 				}
 				pl->addSceneModels(lst, remove_old);
 			}
@@ -2010,7 +2010,7 @@ void VipSceneModelEditor::openShapes()
 
 	
 	QStringList filters = VipIODevice::possibleReadFilters(QString(), QByteArray(), QVariant::fromValue(VipSceneModel()));
-	QString filename = VipFileDialog::getOpenFileName(NULL, "Load shapes", filters.join(";;"));
+	QString filename = VipFileDialog::getOpenFileName(nullptr, "Load shapes", filters.join(";;"));
 	openShapes(filename, m_data->player2D);
 }
 
@@ -2086,7 +2086,7 @@ ShapeToolBar::ShapeToolBar(VipSceneModelWidgetPlayer * tool)
 
 
 VipSceneModelWidgetPlayer::VipSceneModelWidgetPlayer(VipMainWindow * window)
-:VipToolWidgetPlayer(window),m_toolBar(NULL)
+:VipToolWidgetPlayer(window),m_toolBar(nullptr)
 {
 	setWindowTitle("Edit ROI");
 	setObjectName("Edit ROI");
@@ -2125,7 +2125,7 @@ VipSceneModelWidgetPlayer::VipSceneModelWidgetPlayer(VipMainWindow * window)
 	m_addShape->setIcon(vipIcon("rectangle.png"));
 	m_addMenu->hide();
 
-	m_draw = new VipDrawShapeRect((VipPlotPlayer*)NULL,"ROI");
+	m_draw = new VipDrawShapeRect((VipPlotPlayer*)nullptr,"ROI");
 	m_draw->hide();
 	connect(m_draw, SIGNAL(finished()), this, SLOT(stopAddingShape()));
 	connect(m_addShape,SIGNAL(clicked(bool)),this,SLOT(addShapeClicked(bool)));
@@ -2530,7 +2530,7 @@ void VipSceneModelWidgetPlayer::addShapeClicked(bool checked)
 
 /*VipPlotSceneModel * VipSceneModelWidgetPlayer::drawSceneModelForPlayer(VipAbstractPlayer* pl)
 {
-	VipPlotSceneModel * model = NULL;
+	VipPlotSceneModel * model = nullptr;
 	if (VipPlayer2D* pl2D = qobject_cast<VipPlayer2D*>(pl)) {
 		//returns the VipPlayer2D internal VipPlotSceneModel
 		model = pl2D->plotSceneModel();
@@ -2595,13 +2595,13 @@ void VipSceneModelWidgetPlayer::resetPlayer()
 
 VipShapeButton * VipSceneModelWidgetPlayer::createPlayerButton(VipAbstractPlayer * pl)
 {
-	return new VipShapeButton(pl->plotWidget2D(), NULL);
+	return new VipShapeButton(pl->plotWidget2D(), nullptr);
 }
 
 ShapeToolBar * VipSceneModelWidgetPlayer::toolBar()
 {
 	//For now, disable the tool bar shortcut (more confusing than anything)
-	return NULL;
+	return nullptr;
 	/*if (!m_toolBar)
 	{
 		m_toolBar = new ShapeToolBar(this);
@@ -2635,7 +2635,7 @@ struct SMStateKey
 {
 	VipPlayer2D* player;
 	VipPlotSceneModel* sm;
-	SMStateKey(VipPlayer2D* p = NULL, VipPlotSceneModel* s = NULL)
+	SMStateKey(VipPlayer2D* p = nullptr, VipPlotSceneModel* s = nullptr)
 		:player(p), sm(s) {}
 
 	bool operator<(const SMStateKey& other) const {
@@ -2654,7 +2654,7 @@ struct SMState
 	QPointer<VipPlayer2D> player;
 	QPointer<VipPlotSceneModel> sm;
 	QByteArray state;
-	SMState(VipPlayer2D* p = NULL, VipPlotSceneModel* s = NULL, const QByteArray& ar = QByteArray())
+	SMState(VipPlayer2D* p = nullptr, VipPlotSceneModel* s = nullptr, const QByteArray& ar = QByteArray())
 		:player(p), sm(s), state(ar) {}
 };
 
@@ -2751,7 +2751,7 @@ QPair<VipPlayer2D*, VipPlotSceneModel*> VipSceneModelState::currentSceneModel() 
 					return QPair<VipPlayer2D*, VipPlotSceneModel*>(pl,found);
 				}
 			}
-	return QPair<VipPlayer2D*, VipPlotSceneModel*>(NULL,NULL);
+	return QPair<VipPlayer2D*, VipPlotSceneModel*>(nullptr,nullptr);
 }
 	
 void VipSceneModelState::undo()
@@ -2896,7 +2896,7 @@ static VipSceneModelEditor * editSceneModel(VipPlotShape* shape)
 	{
 		//find the parent VipPlotSceneModel object
 		QList<VipPlotSceneModel*> plot_models = vipCastItemList<VipPlotSceneModel*>(shape->linkedItems(),QString(),2,1);
-		VipPlotSceneModel * found = NULL;
+		VipPlotSceneModel * found = nullptr;
 		for(int i=0; i < plot_models.size(); ++i)
 			if(plot_models[i]->indexOf(shape) >= 0)
 			{
@@ -2913,7 +2913,7 @@ static VipSceneModelEditor * editSceneModel(VipPlotShape* shape)
 		}
 	}
 
-	return NULL;
+	return nullptr;
 }
 
 static QWidget * editResizeItem(VipResizeItem* item)
@@ -2926,7 +2926,7 @@ static QWidget * editResizeItem(VipResizeItem* item)
 			return vipObjectEditor(QVariant::fromValue(lst[i]));
 		}
 	}
-	return NULL;
+	return nullptr;
 }
 
 

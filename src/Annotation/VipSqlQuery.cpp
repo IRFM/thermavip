@@ -1759,7 +1759,7 @@ Vip_event_list vipEventsFromJson(const QByteArray& content)
 		bool ok = false;
 		qint64 id = evt.key().toLongLong(&ok);
 		if (ok == false) {
-			VIP_LOG_ERROR("JSON error: NULL id");
+			VIP_LOG_ERROR("JSON error: nullptr id");
 			return Vip_event_list();
 		}
 

@@ -443,7 +443,7 @@ void TextEngineDict::setTextEngine(VipText::TextFormat format, VipTextEngine* en
 	if (format == VipText::AutoText)
 		return;
 
-	if (format == VipText::PlainText && engine == NULL)
+	if (format == VipText::PlainText && engine == nullptr)
 		return;
 
 	EngineMap::const_iterator it = d_map.find(format);
@@ -455,13 +455,13 @@ void TextEngineDict::setTextEngine(VipText::TextFormat format, VipTextEngine* en
 		d_map.remove(format);
 	}
 
-	if (engine != NULL)
+	if (engine != nullptr)
 		d_map.insert(format, engine);
 }
 
 const VipTextEngine* TextEngineDict::textEngine(VipText::TextFormat format) const
 {
-	const VipTextEngine* e = NULL;
+	const VipTextEngine* e = nullptr;
 
 	EngineMap::const_iterator it = d_map.find(format);
 	if (it != d_map.end())
@@ -476,7 +476,7 @@ VipTextStyle::PrivateData::PrivateData()
   : cached(false)
   , margin(0)
   , boxStyle(Qt::NoPen)
-  , textBoxStyle(NULL)
+  , textBoxStyle(nullptr)
   , alignment(Qt::AlignCenter)
   , renderHints(default_text_hints)
 {
@@ -489,7 +489,7 @@ VipTextStyle::PrivateData::PrivateData(const VipTextStyle::PrivateData& other)
   , font(other.font)
   , textPen(other.textPen)
   , boxStyle(other.boxStyle)
-  , textBoxStyle(NULL)
+  , textBoxStyle(nullptr)
   , alignment(other.alignment)
   , renderHints(other.renderHints)
 {
@@ -665,7 +665,7 @@ VipBoxStyle& VipTextStyle::textBoxStyle()
 
 bool VipTextStyle::hasTextBoxStyle() const
 {
-	return d_data->textBoxStyle != NULL;
+	return d_data->textBoxStyle != nullptr;
 }
 
 bool VipTextStyle::operator==(const VipTextStyle& other) const
@@ -681,7 +681,7 @@ bool VipTextStyle::operator!=(const VipTextStyle& other) const
 
 VipText::PrivateData::PrivateData()
   : QSharedData()
-  , textEngine(NULL)
+  , textEngine(nullptr)
 {
 }
 
@@ -1682,7 +1682,7 @@ const VipTextEngine* VipText::textEngine(const QString& text, VipText::TextForma
 /// With setTextEngine it is possible to extend  with
 /// other types of text formats.
 ///
-/// For VipText::PlainText it is not allowed to assign a engine == NULL.
+/// For VipText::PlainText it is not allowed to assign a engine == nullptr.
 ///
 /// \param format VipText format
 /// \param engine VipText engine
@@ -1699,7 +1699,7 @@ void VipText::setTextEngine(VipText::TextFormat format, VipTextEngine* engine)
 /// textEngine can be used to find out if a text format is supported.
 ///
 /// \param format VipText format
-/// \return The text engine, or NULL if no engine is available.
+/// \return The text engine, or nullptr if no engine is available.
 const VipTextEngine* VipText::textEngine(VipText::TextFormat format)
 {
 	return TextEngineDict::dict().textEngine(format);

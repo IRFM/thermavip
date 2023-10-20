@@ -131,7 +131,7 @@ VipAbstractPlotArea * VipBoxGraphicsWidget::area() const
 			return a;
 		p = p->parentItem();
 	}
-	return NULL;
+	return nullptr;
 }
 
 void VipBoxGraphicsWidget::setGeometry(const QRectF& rect) 
@@ -284,7 +284,7 @@ public:
 	PrivateData()
 	:spacing(0), margin(0), maxMinor(1), maxMajor(9), itemIntervalFactor(0), cacheFullExtent(-1),//spacing(2), margin(4),maxMinor(5), maxMajor(10),
 	 dirtyScaleDiv(1), autoScale(true), scaleInverted(false),drawTitle(true), dirtyItems(false),
-	 scaleDraw(NULL),scaleEngine(0)
+	 scaleDraw(nullptr),scaleEngine(0)
 	{
 		borderDist[0] = borderDist[1] = 0;
 		minBorderDist[0] = minBorderDist[1] = 0;
@@ -802,7 +802,7 @@ void VipAbstractScale::setTransformation( VipValueTransform *transformation )
     			if(transformation)
     				scale->setTransformation(transformation->copy());
     			else
-    				scale->setTransformation(NULL);
+    				scale->setTransformation(nullptr);
     		}
     	}
     }
@@ -919,7 +919,7 @@ const VipScaleDiv & VipAbstractScale::scaleDiv() const
 
 void VipAbstractScale::setScaleDraw( VipAbstractScaleDraw * scaleDraw )
 {
-    if ( ( scaleDraw == NULL ) || ( scaleDraw == d_data->scaleDraw ) )
+    if ( ( scaleDraw == nullptr ) || ( scaleDraw == d_data->scaleDraw ) )
         return;
 
     const VipAbstractScaleDraw* sd = d_data->scaleDraw;
@@ -927,7 +927,7 @@ void VipAbstractScale::setScaleDraw( VipAbstractScaleDraw * scaleDraw )
     {
         scaleDraw->setScaleDiv( sd->scaleDiv() );
 
-        VipValueTransform *transform = NULL;
+        VipValueTransform *transform = nullptr;
         if ( sd->scaleMap().transformation() )
             transform = sd->scaleMap().transformation()->copy();
 
@@ -1140,11 +1140,11 @@ QGraphicsView * VipAbstractScale::view() const
 QGraphicsView * VipAbstractScale::view(const QGraphicsItem * item)
 {
 	if(!item->scene())
-		return NULL;
+		return nullptr;
 
 	QList<QGraphicsView *>	v = item->scene()->views ();
 	if(!v.size())
-		return NULL;
+		return nullptr;
 
 	return v[0];
 }
@@ -1494,7 +1494,7 @@ VipScaleWidget::VipScaleWidget(VipAbstractScale * scale , QWidget * parent )
 :QGraphicsView(parent)
 {
 	d_data = new PrivateData();
-	d_data->scale = NULL;
+	d_data->scale = nullptr;
 	d_data->enableRecomputeGeometry = true;
 
 	QGraphicsScene * sc = new QGraphicsScene();

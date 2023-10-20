@@ -25,7 +25,7 @@ class VIP_CORE_EXPORT VipProcessingSnapshot : public VipProcessingObject
 	VIP_IO(VipMultiOutput outputs)
 	friend VIP_CORE_EXPORT bool vipLoadProcessingPoolSnapshot(VipProcessingPool * pool, VipArchive & arch);
 public:
-	VipProcessingSnapshot(QObject * parent = NULL)
+	VipProcessingSnapshot(QObject * parent = nullptr)
 		:VipProcessingObject(parent), m_processingTime(0), m_lastProcessingTime(0) {}
 	virtual Info info() const { return m_info; }
 	virtual QString inputDescription(const QString & input) const { return m_inputDescriptions[input]; }

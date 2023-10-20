@@ -32,7 +32,7 @@ QGroupBox* VipPageOption::createOptionGroup(const QString& label)
 class VipOptions::PrivateData
 {
 public:
-	PrivateData() : current(NULL) {}
+	PrivateData() : current(nullptr) {}
 	QMap<QTreeWidgetItem*, QScrollArea *> pages;
 	VipPageOption *			current;
 	QTreeWidget*			page_browser;
@@ -134,7 +134,7 @@ bool VipOptions::addPage(const QString & category, VipPageOption * page, const Q
 
 	for (int i = 0; i < path.size(); ++i)
 	{
-		QTreeWidgetItem * found = NULL;
+		QTreeWidgetItem * found = nullptr;
 		for (int child = 0; child < current->childCount(); ++child)
 		{
 			if (current->child(child)->text(0) == path[i])
@@ -186,7 +186,7 @@ QScrollArea * VipOptions::areaForPage(VipPageOption * page) const
 	for (QMap<QTreeWidgetItem*, QScrollArea *>::const_iterator it = m_data->pages.begin(); it != m_data->pages.end(); ++it)
 		if (qobject_cast<VipPageOption*>(it.value()->widget()) == page)
 			return it.value();
-	return NULL;
+	return nullptr;
 }
 
 void VipOptions::setCurrentPage(VipPageOption * page)
@@ -232,7 +232,7 @@ void VipOptions::itemClicked(QTreeWidgetItem * item, int )
 
 VipOptions * vipGetOptions()
 {
-	static VipOptions * dialog = NULL;
+	static VipOptions * dialog = nullptr;
 	if (!dialog)
 	{
 		dialog = new VipOptions();

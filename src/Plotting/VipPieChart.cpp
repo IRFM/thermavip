@@ -504,7 +504,7 @@ void VipPieItem::recomputeItem(const VipCoordinateSystemPtr & cm, VipAbstractSca
 	markDirtyShape(false);
 
 	VipCoordinateSystemPtr m = cm;
-	VipPlotItemComposite* parent = NULL;
+	VipPlotItemComposite* parent = nullptr;
 
 	if(!m)
 		m = sceneMap();

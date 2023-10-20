@@ -318,7 +318,7 @@ void VipSymbolWidget::redraw()
 
 
 VipPlotItemWidget::VipPlotItemWidget(QWidget * parent)
-:QWidget(parent),m_item(NULL), m_xAxisLabel("X axis"),m_yAxisLabel("Y axis")
+:QWidget(parent),m_item(nullptr), m_xAxisLabel("X axis"),m_yAxisLabel("Y axis")
 {
 	QGridLayout * lay = new QGridLayout();
 	int row = -1;
@@ -435,7 +435,7 @@ void VipPlotItemWidget::updatePlotItem(VipPlotItem* item)
 	item->setTitle(VipText(m_title.text(),item->title().textStyle()));
 	item->setDrawText(m_drawText.isChecked());
 
-	VipProcessingObject * to_reload = NULL;
+	VipProcessingObject * to_reload = nullptr;
 	if (sender() == &m_title) {
 		//try to set the title to the source processing object
 		if (VipDisplayObject * obj = item->property("VipDisplayObject").value<VipDisplayObject*>()) {
@@ -489,7 +489,7 @@ void VipPlotItemWidget::emitPlotItemChanged()
 
 
 VipPlotGridWidget::VipPlotGridWidget(QWidget * parent )
-:QWidget(parent), m_grid(NULL)
+:QWidget(parent), m_grid(nullptr)
 {
 	QGridLayout * glay = new QGridLayout();
 
@@ -620,7 +620,7 @@ void VipPlotGridWidget::emitGridChanged()
 
 
 VipPlotCanvasWidget::VipPlotCanvasWidget(QWidget * parent )
-:QWidget(parent), m_canvas(NULL)
+:QWidget(parent), m_canvas(nullptr)
 {
 	QGroupBox * inner = createGroup("Inner area");
 	inner->setFlat(true);
@@ -647,7 +647,7 @@ void VipPlotCanvasWidget::setCanvas(VipPlotCanvas * canvas)
 		return;
 
 	m_canvas = canvas;
-	//m_area = NULL;
+	//m_area = nullptr;
 
 	//if(QGraphicsItem * parent = canvas->parentItem())
 	//	if(QGraphicsObject * obj = parent->toGraphicsObject())
@@ -705,7 +705,7 @@ void VipPlotCanvasWidget::emitCanvasChanged()
 
 
 VipPlotCurveWidget::VipPlotCurveWidget(QWidget * parent )
-:QWidget(parent), m_curve(NULL)
+:QWidget(parent), m_curve(nullptr)
 {
 	QVBoxLayout * lay = new QVBoxLayout();
 
@@ -854,7 +854,7 @@ void VipPlotCurveWidget::emitCurveChanged()
 
 
 VipPlotHistogramWidget::VipPlotHistogramWidget(QWidget * parent)
-	:QWidget(parent), m_histo(NULL)
+	:QWidget(parent), m_histo(nullptr)
 {
 	QVBoxLayout * lay = new QVBoxLayout();
 	lay->addWidget(&m_item);
@@ -1181,7 +1181,7 @@ void VipPlotAxisWidget::updateAxis(VipAbstractScale * scale)
 class VipColorScaleWidget::PrivateData
 {
 public:
-	PrivateData(): thisColorScale(NULL), colorScale(NULL) {}
+	PrivateData(): thisColorScale(nullptr), colorScale(nullptr) {}
 
 	VipTextWidget title;
 	VipTextWidget labels;
@@ -1841,7 +1841,7 @@ void VipAbstractPlayerWidget::hideEvent(QHideEvent * )
 	//Delete current editor,
 	//but make sure it is not hidden because of a dialog box triggered by the current editor
 	if(!QApplication::modalWindow())
-		setEditor(NULL);
+		setEditor(nullptr);
 }
 
 void VipAbstractPlayerWidget::setPlayerInternal()

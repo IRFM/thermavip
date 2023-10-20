@@ -18,11 +18,11 @@
 
 QPoint sceneToScreenCoordinates(const QGraphicsScene * scene, const QPointF & pos)
 {
-	if (scene == NULL) return QPoint();
+	if (scene == nullptr) return QPoint();
 	const QList<QGraphicsView*> views = scene->views();
 	if(!views.isEmpty() // that scene is displayed in a view...
-	    && views.first() != NULL // ... which is not null...
-	    && views.first()->viewport() != NULL // ... and has a viewport
+	    && views.first() != nullptr // ... which is not null...
+	    && views.first()->viewport() != nullptr // ... and has a viewport
 	    )
 	{
 	    const QGraphicsView *v = views.first();
@@ -35,11 +35,11 @@ QPoint sceneToScreenCoordinates(const QGraphicsScene * scene, const QPointF & po
 
 QPointF screenToSceneCoordinates(const QGraphicsScene * scene, const QPoint & pos)
 {
-	if (scene == NULL) return QPoint();
+	if (scene == nullptr) return QPoint();
 	const QList<QGraphicsView*> views = scene->views();
 	if (!views.isEmpty() // that scene is displayed in a view...
-		&& views.first() != NULL // ... which is not null...
-		&& views.first()->viewport() != NULL // ... and has a viewport
+		&& views.first() != nullptr // ... which is not null...
+		&& views.first()->viewport() != nullptr // ... and has a viewport
 		)
 	{
 		const QGraphicsView *v = views.first();
@@ -62,7 +62,7 @@ public:
 	 intersectWith(),
 	 intersectValue(0),
 	 intersectValueType(Vip::Absolute),
-	 innerItem(NULL),
+	 innerItem(nullptr),
 	 alignment(pos),
 	 expandToCorners(0),
 	 canvasProximity(0),
@@ -147,14 +147,14 @@ double VipBorderItem::axisIntersectionValue() const
 
 void VipBorderItem::disableAxisIntersection()
 {
-	d_data->intersectWith = NULL;
+	d_data->intersectWith = nullptr;
 	d_data->intersectValue = 0;
 	emitGeometryNeedUpdate();
 }
 
 bool VipBorderItem::axisIntersectionEnabled() const
 {
-	return d_data->intersectWith != NULL;
+	return d_data->intersectWith != nullptr;
 }
 
 void VipBorderItem::emitScaleDivNeedUpdate()

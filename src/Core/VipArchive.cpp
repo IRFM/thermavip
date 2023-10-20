@@ -114,7 +114,7 @@ VipArchive::operator const void*() const
 	if( isOpen() && !this->hasError())
 		return this;
 	else
-		return NULL;
+		return nullptr;
 }
 
 void VipArchive::save()
@@ -415,17 +415,17 @@ static bool fromByteArray(QDataStream & stream, QVariant & v, int max_size)
 
 
 VipBinaryArchive::VipBinaryArchive()
-	:VipArchive(Binary, ReadBackward), m_device(NULL)
+	:VipArchive(Binary, ReadBackward), m_device(nullptr)
 {}
 
 VipBinaryArchive::VipBinaryArchive(QIODevice * d)
-	: VipArchive(Binary, ReadBackward), m_device(NULL)
+	: VipArchive(Binary, ReadBackward), m_device(nullptr)
 {
 	setDevice(d);
 }
 
 VipBinaryArchive::VipBinaryArchive(QByteArray * a, QIODevice::OpenMode mode)
-	: VipArchive(Binary, ReadBackward), m_device(NULL)
+	: VipArchive(Binary, ReadBackward), m_device(nullptr)
 {
 	QBuffer * buf = new QBuffer(a, this);
 	buf->open(mode);
@@ -433,7 +433,7 @@ VipBinaryArchive::VipBinaryArchive(QByteArray * a, QIODevice::OpenMode mode)
 }
 
 VipBinaryArchive::VipBinaryArchive(const QByteArray & a)
-	:VipArchive(Binary, ReadBackward), m_device(NULL)
+	:VipArchive(Binary, ReadBackward), m_device(nullptr)
 {
 	QBuffer * buf = new QBuffer(this);
 	buf->setData(a);
@@ -442,7 +442,7 @@ VipBinaryArchive::VipBinaryArchive(const QByteArray & a)
 }
 
 VipBinaryArchive::VipBinaryArchive(const QString & filename, QIODevice::OpenMode mode)
-	:VipArchive(Binary, ReadBackward), m_device(NULL)
+	:VipArchive(Binary, ReadBackward), m_device(nullptr)
 {
 	QFile * file = new QFile(this);
 	file->setFileName(filename);
@@ -459,7 +459,7 @@ void	VipBinaryArchive::setDevice(QIODevice * d)
 			m_device->close();
 			if (m_device->parent() == this)
 				delete m_device;
-			m_device = NULL;
+			m_device = nullptr;
 			setMode(NotOpen);
 		}
 
@@ -481,7 +481,7 @@ QIODevice * VipBinaryArchive::device() const
 
 void VipBinaryArchive::close()
 {
-	setDevice(NULL);
+	setDevice(nullptr);
 }
 
 void VipBinaryArchive::save()

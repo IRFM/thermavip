@@ -41,7 +41,7 @@ bool VipRIRDevice::open(VipIODevice::OpenModes mode)
 		}
 	}
 
-	m_file = VipLibRIR::instance()->open_camera_file(p.toLatin1().data(), NULL);
+	m_file = VipLibRIR::instance()->open_camera_file(p.toLatin1().data(), nullptr);
 	if (!m_file) {
 		return false;
 	}
@@ -260,7 +260,7 @@ VipRIRDeviceEditor::~VipRIRDeviceEditor()
 
 void VipRIRDeviceEditor::setDevice(VipRIRDevice* dev)
 {
-	m_data->device = NULL;
+	m_data->device = nullptr;
 	if (dev) {
 		QStringList calibs = dev->calibrations();
 		bool has_calibrations = calibs.size() > 1;

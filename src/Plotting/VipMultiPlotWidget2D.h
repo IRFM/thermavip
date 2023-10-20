@@ -102,7 +102,7 @@ class VIP_PLOTTING_EXPORT VipVMultiPlotArea2D : public VipPlotArea2D
 
 public:
 	
-	VipVMultiPlotArea2D(QGraphicsItem * parent = NULL);
+	VipVMultiPlotArea2D(QGraphicsItem * parent = nullptr);
 	virtual ~VipVMultiPlotArea2D();
 
 	/// @brief Reimplemented from VipPlotArea2D

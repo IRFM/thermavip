@@ -261,13 +261,13 @@ struct MultiCondition
 	static MultiCondition * parse(const QString & condition, QString * error)
 	{
 		if (condition.isEmpty())
-			return NULL;
+			return nullptr;
 
 		int c_and = condition.count("and");
 		int c_or = condition.count("or");
 		if (c_and + c_or > 1) {
 			if (error) *error = "Cannot have more than 2 conditions";
-			return NULL;
+			return nullptr;
 		}
 		QString sep = c_and == 1 ? "and" : (c_or == 1 ? "or" : "");
 		QStringList conds;
@@ -281,13 +281,13 @@ struct MultiCondition
 			int i_y = conds[i].indexOf("y");
 			if (i_x < 0 && i_y < 0) {
 				if (error) *error = "Invalid condition (no 'x' or 'y' provided)";
-				return NULL;
+				return nullptr;
 			}
 
 			QStringList parts = conds[i].split(" ");
 			if (parts.size() != 3) {
 				if (error) *error = "Invalid condition";
-				return NULL;
+				return nullptr;
 			}
 
 			if (parts[1] == ">") c[i].comp = Condition::Gr;
@@ -298,7 +298,7 @@ struct MultiCondition
 			else if (parts[1] == "!=") c[i].comp = Condition::NEq;
 			else {
 				if (error) *error = "Invalid condition: unknown operator '" + parts[1] + "'";
-				return NULL;
+				return nullptr;
 			}
 			if (parts[0] == "x" || parts[0] == "y") {
 				c[i].axis = parts[0] == "x" ? Condition::X : Condition::Y;
@@ -311,7 +311,7 @@ struct MultiCondition
 			}
 			else {
 				if (error) *error = "Invalid condition";
-				return NULL;
+				return nullptr;
 			}
 		}
 
@@ -473,7 +473,7 @@ VipPlotCurve::CurveStyle VipPlotCurve::style() const
 ///
 /// The curve will take the ownership of the symbol, hence the previously
 /// set symbol will be delete by setting a new one. If \p symbol is
-/// \c NULL no symbol will be drawn.
+/// \c nullptr no symbol will be drawn.
 ///
 /// \param symbol VipSymbol
 /// \sa symbol()
@@ -488,7 +488,7 @@ void VipPlotCurve::setSymbol( VipSymbol *symbol )
     }
 }
 
-/// \return Current symbol or NULL, when no symbol has been assigned
+/// \return Current symbol or nullptr, when no symbol has been assigned
 /// \sa setSymbol()
 VipSymbol *VipPlotCurve::symbol() const
 {

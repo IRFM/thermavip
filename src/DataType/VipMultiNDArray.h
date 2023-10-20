@@ -28,7 +28,7 @@ namespace detail
 			return currentHandle->resize(_start, _shape, h, type, out_start, out_shape);
 		}
 		virtual void * opaqueForPos(void * op, const VipNDArrayShape & pos) const { return currentHandle->opaqueForPos(op, pos); }
-		virtual const char* dataName() const { return currentHandle ? currentHandle->dataName() : NULL; }
+		virtual const char* dataName() const { return currentHandle ? currentHandle->dataName() : nullptr; }
 		virtual int dataSize() const { return currentHandle ? currentHandle->dataSize() : 0; }
 		virtual int dataType() const { return currentHandle ? currentHandle->dataType() : 0; }
 		virtual bool canExport(int type) const { return currentHandle->canExport(type); }

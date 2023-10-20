@@ -107,10 +107,10 @@ typedef QMap<qint64, QList<VipShape>> Vip_event_list;
 VIP_ANNOTATION_EXPORT Vip_event_list vipCopyEvents(const Vip_event_list& events);
 
 /// @brief Remove event from DB based on their ids in the 'thermal_events' table
-VIP_ANNOTATION_EXPORT bool vipRemoveFromDB(const QList<qint64>& ids, VipProgress* p = NULL);
+VIP_ANNOTATION_EXPORT bool vipRemoveFromDB(const QList<qint64>& ids, VipProgress* p = nullptr);
 
 /// @brief Set new value to given column for selected events only
-VIP_ANNOTATION_EXPORT bool vipChangeColumnInfoDB(const QList<qint64>& ids, const QString& column, const QString& value, VipProgress* p = NULL);
+VIP_ANNOTATION_EXPORT bool vipChangeColumnInfoDB(const QList<qint64>& ids, const QString& column, const QString& value, VipProgress* p = nullptr);
 
 /// @brief Send events to DB
 /// @param userName Current user name (use vipUserName())
@@ -120,7 +120,7 @@ VIP_ANNOTATION_EXPORT bool vipChangeColumnInfoDB(const QList<qint64>& ids, const
 /// @param shapes events to record
 /// @param p optional progress bar
 /// @return list of created ids in the 'thermal_events' table
-VIP_ANNOTATION_EXPORT QList<qint64> vipSendToDB(const QString& userName, const QString& camera, const QString& device, Vip_experiment_id pulse, const Vip_event_list& shapes, VipProgress* p = NULL);
+VIP_ANNOTATION_EXPORT QList<qint64> vipSendToDB(const QString& userName, const QString& camera, const QString& device, Vip_experiment_id pulse, const Vip_event_list& shapes, VipProgress* p = nullptr);
 
 /// @brief Gather information to query the 'thermal_events' table using vipQueryDB()
 struct VipEventQuery
@@ -217,7 +217,7 @@ struct VipEventQueryResults
 /// 
 /// The VipEventQueryResults can be used in vipFullQueryDB() to read actual thermal event instances
 /// (which is a lot heavier)
-VIP_ANNOTATION_EXPORT VipEventQueryResults vipQueryDB(const VipEventQuery& query, VipProgress* p = NULL);
+VIP_ANNOTATION_EXPORT VipEventQueryResults vipQueryDB(const VipEventQuery& query, VipProgress* p = nullptr);
 
 
 
@@ -250,7 +250,7 @@ struct VipFullQueryResult
 
 
 /// @brief Performs a full event query on the DB based on a VipEventQueryResults
-VIP_ANNOTATION_EXPORT VipFullQueryResult vipFullQueryDB(const VipEventQueryResults& evtres, VipProgress* p = NULL);
+VIP_ANNOTATION_EXPORT VipFullQueryResult vipFullQueryDB(const VipEventQueryResults& evtres, VipProgress* p = nullptr);
 
 
 
@@ -451,7 +451,7 @@ class VIP_ANNOTATION_EXPORT VipDatasetButton : public QToolButton
 	Q_OBJECT
 
 public:
-	VipDatasetButton(QWidget* parent = NULL);
+	VipDatasetButton(QWidget* parent = nullptr);
 	~VipDatasetButton();
 
 	QString dataset() const;
@@ -483,7 +483,7 @@ class VIP_ANNOTATION_EXPORT VipQueryDBWidget : public QWidget
 	Q_OBJECT
 
 public:
-	VipQueryDBWidget(const QString& device, QWidget* widget = NULL);
+	VipQueryDBWidget(const QString& device, QWidget* widget = nullptr);
 	~VipQueryDBWidget();
 
 	void enablePulseRange(bool);

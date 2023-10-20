@@ -82,7 +82,7 @@ class VIP_GUI_EXPORT VipAdditionalInfo : public VipProcessingObject
 	VIP_IO(VipOutput attributes)
 
 public:
-	VipAdditionalInfo(VipAbstractPlayer * pl, QObject * parent = NULL)
+	VipAdditionalInfo(VipAbstractPlayer * pl, QObject * parent = nullptr)
 		:VipProcessingObject(parent), m_player(pl)
 	{
 		//disable error logging for this type
@@ -114,7 +114,7 @@ class VIP_GUI_EXPORT VipExtractAttributeFromInfo : public VipProcessingObject
 	VIP_IO(VipOutput value)
 
 public:
-	VipExtractAttributeFromInfo(QObject * parent = NULL);
+	VipExtractAttributeFromInfo(QObject * parent = nullptr);
 	~VipExtractAttributeFromInfo();
 
 	void setVipAdditionalInfo(VipAdditionalInfo *);
@@ -205,8 +205,8 @@ public:
 	virtual bool setPlayer(VipAbstractPlayer *);
 
 	/// Set the source VipProcessingObject. The widget will display the attributes of \a output if provided.
-	/// If \a output is NULL, the widget will display all outputs of the processing.
-	void setProcessingObject(VipProcessingObject * obj, VipOutput * output = NULL);
+	/// If \a output is nullptr, the widget will display all outputs of the processing.
+	void setProcessingObject(VipProcessingObject * obj, VipOutput * output = nullptr);
 
 	/// Try to set the source processing object through a #VipPlotItem.
 	/// This function retrieve the #VipDisplayObject stored in \a item and ,if not null, find its source processing.
@@ -241,7 +241,7 @@ private:
 	PrivateData * m_data;
 };
 
-VIP_GUI_EXPORT VipProcessingObjectInfo * vipGetProcessingObjectInfo(VipMainWindow * window = NULL);
+VIP_GUI_EXPORT VipProcessingObjectInfo * vipGetProcessingObjectInfo(VipMainWindow * window = nullptr);
 
 
 #endif

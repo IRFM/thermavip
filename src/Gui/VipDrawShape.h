@@ -170,7 +170,7 @@ class VIP_GUI_EXPORT ShowHideGroups : public QWidget
 	Q_OBJECT
 
 public:
-	ShowHideGroups(QWidget * parent = NULL);
+	ShowHideGroups(QWidget * parent = nullptr);
 	~ShowHideGroups();
 
 	void computeGroups(const QList<VipPlotSceneModel*> & models);
@@ -202,7 +202,7 @@ class VIP_GUI_EXPORT VipSceneModelEditor : public QWidget
 	Q_OBJECT
 
 public:
-	VipSceneModelEditor(QWidget * parent = NULL);
+	VipSceneModelEditor(QWidget * parent = nullptr);
 	~VipSceneModelEditor();
 
 	void setPlayer(VipPlayer2D*);
@@ -251,7 +251,7 @@ class VIP_GUI_EXPORT VipShapeButton : public QToolButton
 	Q_OBJECT
 
 public:
-	VipShapeButton(QWidget * draw_area, QWidget * parent = NULL);
+	VipShapeButton(QWidget * draw_area, QWidget * parent = nullptr);
 	~VipShapeButton();
 
 	bool	eventFilter(QObject * watched, QEvent *event);
@@ -323,7 +323,7 @@ private:
 };
 
 /// Returns the global ROI editor tool widget
-VIP_GUI_EXPORT VipSceneModelWidgetPlayer * vipGetSceneModelWidgetPlayer(VipMainWindow * window=NULL);
+VIP_GUI_EXPORT VipSceneModelWidgetPlayer * vipGetSceneModelWidgetPlayer(VipMainWindow * window=nullptr);
 
 
 /// Manage the scene model states on all players.

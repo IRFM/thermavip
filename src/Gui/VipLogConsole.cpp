@@ -415,7 +415,7 @@ VipConsoleWidget::~VipConsoleWidget()
 
 void VipConsoleWidget::removeConsole()
 {
-	m_data->console->setParent(NULL);
+	m_data->console->setParent(nullptr);
 }
 void VipConsoleWidget::resetConsole()
 {
@@ -434,7 +434,7 @@ void VipConsoleWidget::clear()
 
 void VipConsoleWidget::save()
 {
-	QString filename = VipFileDialog::getSaveFileName(NULL, "Save to file", "TEXT file (*.txt)");
+	QString filename = VipFileDialog::getSaveFileName(nullptr, "Save to file", "TEXT file (*.txt)");
 	if (!filename.isEmpty())
 	{
 		QFile fout(filename);

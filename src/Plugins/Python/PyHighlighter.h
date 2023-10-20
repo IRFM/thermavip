@@ -25,7 +25,7 @@ public:
 	{}
 
 	virtual void updateEditor(CodeEditor*) const = 0;
-	virtual BaseHighlighter * clone(QTextDocument * parent = NULL) const = 0;
+	virtual BaseHighlighter * clone(QTextDocument * parent = nullptr) const = 0;
 	virtual QColor backgroundColor() const = 0;
 
 protected Q_SLOTS:
@@ -92,7 +92,7 @@ private:
 
 struct PyDevScheme : PyBaseHighlighter
 {
-	PyDevScheme(QTextDocument * parent = NULL) 
+	PyDevScheme(QTextDocument * parent = nullptr) 
 		:PyBaseHighlighter("Pydev", "Python", QStringList() << "py", parent) 
 	{
 		keywordFormat.setForeground(QColor(0x0000FF));
@@ -108,7 +108,7 @@ struct PyDevScheme : PyBaseHighlighter
 		updateRules();
 	}
 
-	virtual PyDevScheme * clone(QTextDocument * parent = NULL) const {
+	virtual PyDevScheme * clone(QTextDocument * parent = nullptr) const {
 		return new PyDevScheme(parent);
 	}
 
@@ -118,7 +118,7 @@ struct PyDevScheme : PyBaseHighlighter
 
 struct PyDarkScheme : PyBaseHighlighter
 {
-	PyDarkScheme(QTextDocument * parent = NULL)
+	PyDarkScheme(QTextDocument * parent = nullptr)
 		:PyBaseHighlighter("Dark", "Python", QStringList() << "py", parent)
 	{
 		keywordFormat.setForeground(QColor(0x558EFF));
@@ -134,7 +134,7 @@ struct PyDarkScheme : PyBaseHighlighter
 		updateRules();
 	}
 
-	virtual PyDarkScheme * clone(QTextDocument * parent = NULL) const {
+	virtual PyDarkScheme * clone(QTextDocument * parent = nullptr) const {
 		return new PyDarkScheme(parent);
 	}
 
@@ -144,7 +144,7 @@ struct PyDarkScheme : PyBaseHighlighter
 
 struct SpyderDarkScheme : PyBaseHighlighter
 {
-	SpyderDarkScheme(QTextDocument* parent = NULL)
+	SpyderDarkScheme(QTextDocument* parent = nullptr)
 		:PyBaseHighlighter("Spyder Dark", "Python", QStringList() << "py", parent)
 	{
 		keywordFormat.setForeground(QColor(0xC670E0));
@@ -160,7 +160,7 @@ struct SpyderDarkScheme : PyBaseHighlighter
 		updateRules();
 	}
 
-	virtual SpyderDarkScheme* clone(QTextDocument* parent = NULL) const {
+	virtual SpyderDarkScheme* clone(QTextDocument* parent = nullptr) const {
 		return new SpyderDarkScheme(parent);
 	}
 
@@ -170,7 +170,7 @@ struct SpyderDarkScheme : PyBaseHighlighter
 
 struct PyZenburnScheme : PyBaseHighlighter
 {
-	PyZenburnScheme(QTextDocument * parent = NULL)
+	PyZenburnScheme(QTextDocument * parent = nullptr)
 		:PyBaseHighlighter("Zenburn", "Python", QStringList() << "py", parent)
 	{
 		keywordFormat.setForeground(QColor(0xDFAF8F));
@@ -185,7 +185,7 @@ struct PyZenburnScheme : PyBaseHighlighter
 		updateRules();
 	}
 
-	virtual PyZenburnScheme * clone(QTextDocument * parent = NULL) const {
+	virtual PyZenburnScheme * clone(QTextDocument * parent = nullptr) const {
 		return new PyZenburnScheme(parent);
 	}
 
@@ -196,12 +196,12 @@ struct PyZenburnScheme : PyBaseHighlighter
 
 struct TextScheme : BaseHighlighter
 {
-	TextScheme(QTextDocument * parent = NULL)
+	TextScheme(QTextDocument * parent = nullptr)
 		:BaseHighlighter("Text", "Text", QStringList() << "txt", parent)
 	{
 	}
 
-	virtual TextScheme * clone(QTextDocument * parent = NULL) const {
+	virtual TextScheme * clone(QTextDocument * parent = nullptr) const {
 		return new TextScheme(parent);
 	}
 

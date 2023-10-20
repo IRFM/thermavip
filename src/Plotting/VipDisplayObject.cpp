@@ -108,7 +108,7 @@ void VipDisplayObject::apply()
 			m_data->cond.wait_for(m_data->lock, std::chrono::milliseconds(5));
 			qint64 current = QDateTime::currentMSecsSinceEpoch();
 			if ((current - time) > 50) {
-				vipProcessEvents(NULL, 100);
+				vipProcessEvents(nullptr, 100);
 				break;
 			}
 		}
@@ -415,7 +415,7 @@ QWidget* VipDisplayPlotItem::widget() const
 {
 	VipPlotItem * it = item();
 	if(!it)
-		return NULL;
+		return nullptr;
 
 	QWidget * w = it->view();
 	return w;

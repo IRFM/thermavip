@@ -1913,10 +1913,10 @@ VipInterval vipFindTemporalVectorsBoundaries(const QList<VipComplexPointVector> 
 VipInterval vipFindTemporalVectorsBoundaries(const QList<VipPointVector> & vectors, const QList<VipComplexPointVector> & cvectors, vip_double *min_sampling)
 {
 	vip_double sampling = 0;
-	VipInterval bounds = vipFindTemporalVectorsBoundaries(vectors, min_sampling ? &sampling: NULL);
+	VipInterval bounds = vipFindTemporalVectorsBoundaries(vectors, min_sampling ? &sampling: nullptr);
 
 	vip_double csampling = 0;
-	VipInterval cbounds = vipFindTemporalVectorsBoundaries(cvectors, min_sampling ? &csampling: NULL);
+	VipInterval cbounds = vipFindTemporalVectorsBoundaries(cvectors, min_sampling ? &csampling: nullptr);
 
 	if (min_sampling)
 	{

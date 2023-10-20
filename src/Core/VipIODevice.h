@@ -79,7 +79,7 @@ public:
 	// Functions common to all VipIODevice classes
 	//
 
-	VipIODevice(QObject * parent = NULL);
+	VipIODevice(QObject * parent = nullptr);
 	virtual ~VipIODevice();
 	///Return true if the device can handle given format based on a path and/or the first read bytes.
 	/// Default implementation just check if the path starts with 'class_name:' .
@@ -114,7 +114,7 @@ public:
 	/// <li>set the open mode to NotOpen,</li>
 	/// <li>close the internal QIODevice returned by #VipIODevice::device() (if any),</li>
 	/// <li>delete the internal QIODevice returned by #VipIODevice::device() if it is a children of this VipIODevice and this function is called from this object thread,</li>
-	/// <li>set the internal QIODevice to NULL</li>
+	/// <li>set the internal QIODevice to nullptr</li>
 	/// </ul>
 	virtual void close();
 
@@ -153,14 +153,14 @@ public:
 	///Resets the timestamping filter
 	void resetTimestampingFilter();
 	///Transforms a time based on the timestamping filter. If no timestamping filter is set, returns \a time.
-	/// If \a inside is not NULL, it is set to true if \a time is a valid time (inside the time ranges), false otherwise. Indeed,
+	/// If \a inside is not nullptr, it is set to true if \a time is a valid time (inside the time ranges), false otherwise. Indeed,
 	/// invTransformTime will always return a valid time value, and will select the closest valid time if \a time is outisde the time ranges.
-	/// If \a exact_time is not NULL, it will be set to true if given time is an exact valid timestamp for this device.
-	qint64 transformTime(qint64 time, bool * inside = NULL, bool *exact_time = NULL) const;
+	/// If \a exact_time is not nullptr, it will be set to true if given time is an exact valid timestamp for this device.
+	qint64 transformTime(qint64 time, bool * inside = nullptr, bool *exact_time = nullptr) const;
 	///Returns the inverse transform of a time based on the timestamping filter. If no timestamping filter is set, returns \a time.
-	/// If \a inside is not NULL, it is set to true if \a time is a valid time (inside the time ranges), false otherwise. Indeed,
+	/// If \a inside is not nullptr, it is set to true if \a time is a valid time (inside the time ranges), false otherwise. Indeed,
 	/// invTransformTime will always return a valid time value, and will select the closest valid time if \a time is outisde the time ranges.
-	qint64 invTransformTime(qint64 time, bool * inside = NULL, bool* exact_time = NULL) const;
+	qint64 invTransformTime(qint64 time, bool * inside = nullptr, bool* exact_time = nullptr) const;
 
 	///Return the time window for Temporal devices, taking into account the timestamping filter.
 	VipTimeRangeList timeWindow() const;
@@ -383,7 +383,7 @@ protected:
 	/// <li>If a VipMapFileSystem set with VipIODevice::setMapFileSystem(), use it and \a path to create the device. The device's parent is set to this.</li>
 	/// <li>Create and open a new QFile. The device's parent is set to this.</li>
 	/// </ul>
-	/// The user must check if returned device is not NULL.
+	/// The user must check if returned device is not nullptr.
 	/// If this function succeeds, the internal device will be set to the new one.
 	/// Returns a null device on error.
 	QIODevice * createDevice(const QString & path, QIODevice::OpenMode mode);
@@ -494,7 +494,7 @@ public:
 	static QList<VipProcessingPool*> pools();
 	static VipProcessingPool * findPool(const QString & name);
 
-	VipProcessingPool(QObject * parent = NULL);
+	VipProcessingPool(QObject * parent = nullptr);
 	virtual ~VipProcessingPool();
 
 	///Returns all children read only VipIODevice
@@ -729,7 +729,7 @@ class VIP_CORE_EXPORT VipAnyResource : public VipIODevice
 	VIP_IO(VipOutput data)
 
 public:
-	VipAnyResource(QObject * parent = NULL)
+	VipAnyResource(QObject * parent = nullptr)
 	:VipIODevice(parent)
 	{
 		this->setOpenMode(ReadOnly);
@@ -778,7 +778,7 @@ class VIP_CORE_EXPORT VipTimeRangeBasedGenerator : public VipIODevice
 	friend VIP_CORE_EXPORT VipArchive & operator>>(VipArchive & arch, VipTimeRangeBasedGenerator * r);
 public:
 
-	VipTimeRangeBasedGenerator(QObject * parent = NULL);
+	VipTimeRangeBasedGenerator(QObject * parent = nullptr);
 	~VipTimeRangeBasedGenerator();
 
 	virtual VipIODevice::OpenModes supportedModes() const {return ReadOnly;}
@@ -850,7 +850,7 @@ public:
 		XYYYRow
 	};
 
-	VipTextFileReader(QObject * parent = NULL);
+	VipTextFileReader(QObject * parent = nullptr);
 	~VipTextFileReader();
 
 	///Set the sampling time (time between each sample separated by empty lines)
@@ -914,7 +914,7 @@ public:
 		MultipleFiles //! each new data is saved in the same directory with an incremented filename
 	};
 
-	VipTextFileWriter(QObject * parent = NULL);
+	VipTextFileWriter(QObject * parent = nullptr);
 	~VipTextFileWriter();
 
 	///Set the saving type
@@ -970,7 +970,7 @@ class VIP_CORE_EXPORT VipImageReader : public VipTimeRangeBasedGenerator
 	Q_CLASSINFO("category","reader")
 
 public:
-	VipImageReader(QObject * parent = NULL);
+	VipImageReader(QObject * parent = nullptr);
 	~VipImageReader();
 
 	///Set the sampling time between each image (if the file contains more than 1 image)
@@ -1030,7 +1030,7 @@ public:
 		MultipleImages //!each new image is saved in the same directory with an incremented filename
 	};
 
-	VipImageWriter(QObject * parent = NULL);
+	VipImageWriter(QObject * parent = nullptr);
 	~VipImageWriter();
 
 	///Set the saving type
@@ -1092,7 +1092,7 @@ class VIP_CORE_EXPORT VipCSVReader : public VipTimeRangeBasedGenerator
 	Q_CLASSINFO("category", "reader")
 
 public:
-	VipCSVReader(QObject * parent = NULL);
+	VipCSVReader(QObject * parent = nullptr);
 	~VipCSVReader();
 
 	virtual DeviceType deviceType() const { return Resource; }
@@ -1122,7 +1122,7 @@ class VIP_CORE_EXPORT VipCSVWriter : public VipIODevice
 	Q_CLASSINFO("category", "writer")
 
 public:
-	VipCSVWriter(QObject * parent = NULL);
+	VipCSVWriter(QObject * parent = nullptr);
 	~VipCSVWriter();
 
 	/// Set whether the output should be formatted as a raw text file:
@@ -1177,7 +1177,7 @@ public:
 		IndependentData
 	};
 
-	VipDirectoryReader(QObject * parent = NULL);
+	VipDirectoryReader(QObject * parent = nullptr);
 	~VipDirectoryReader();
 
 	void setSupportedSuffixes(const QStringList & suffixes);
@@ -1245,7 +1245,7 @@ protected:
 
 private:
 	void computeFiles();
-	int closestDeviceIndex(qint64 time, qint64 * closest = NULL) const;
+	int closestDeviceIndex(qint64 time, qint64 * closest = nullptr) const;
 	class PrivateData;
 	PrivateData * m_data;
 							//directory options
@@ -1331,7 +1331,7 @@ public:
 		Trailer(): startTime(VipInvalidTime), endTime(VipInvalidTime) {}
 	};
 
-	VipArchiveRecorder(QObject * parent = NULL);
+	VipArchiveRecorder(QObject * parent = nullptr);
 	~VipArchiveRecorder();
 
 	virtual bool probe(const QString &filename, const QByteArray & ) const {
@@ -1371,7 +1371,7 @@ class VIP_CORE_EXPORT VipArchiveReader : public VipIODevice
 	Q_CLASSINFO("description", "Read a binary archive (.arch) containing any number of data stream")
 public:
 
-	VipArchiveReader(QObject * parent = NULL);
+	VipArchiveReader(QObject * parent = nullptr);
 	~VipArchiveReader();
 
 	virtual bool open(VipIODevice::OpenModes mode);

@@ -60,7 +60,7 @@ public:
 	  , singleStep(1)
 	  , value(0)
 	  , isMouseClickEnabled(false)
-	  , grip(NULL)
+	  , grip(nullptr)
 	{
 		VipAdaptativeGradient grad(QGradientStops()<<QGradientStop(0,QColor(0xBDBDBD))<<QGradientStop(1,QColor(0xDBDBDB)),Qt::Vertical);
 		lineBoxStyle.setBorderRadius(2);

@@ -108,7 +108,7 @@ static QWidget * create_player_top_toolbar(VipAbstractPlayer * player, QObject *
 
 	VipBaseDragWidget * w = VipBaseDragWidget::fromChild(player);
 	if (!w)
-		return NULL;
+		return nullptr;
 
 	VipPlayer2D* pl2D = qobject_cast<VipPlayer2D*>(player);
 
@@ -290,7 +290,7 @@ QGraphicsItem * BaseCustomPlayer2D::firstVisibleItem(const QPointF & scene_pos) 
 																	  qobject_cast<VipDrawSelectionOrder*>(items[i]->toGraphicsObject())*/) continue;
 		return items[i];
 	}
-	return NULL;
+	return nullptr;
 }
 
 
@@ -317,11 +317,11 @@ CustomizeVideoPlayer::CustomizeVideoPlayer(VipVideoPlayer * player)
 {
 	m_data = new PrivateData();
 	m_data->player = player;
-	m_data->dragWidget = NULL;
+	m_data->dragWidget = nullptr;
 
 	//m_data->area->SetBrush(QBrush(Qt::NoBrush));
 	QWidget * parent = player->parentWidget();
-	VipMultiDragWidget * top = NULL;
+	VipMultiDragWidget * top = nullptr;
 	while (parent) {
 		if (!m_data->dragWidget) m_data->dragWidget = qobject_cast<VipDragWidget*>(parent);
 		if ((top = qobject_cast<VipMultiDragWidget*>(parent))) {
@@ -699,7 +699,7 @@ bool CustomizeVideoPlayer::eventFilter(QObject * , QEvent * evt)
 		{
 			if (VipMultiDragWidget * mw = m_data->dragWidget->parentMultiDragWidget()) {
 				QPoint pos = mw->indexOf(m_data->dragWidget);
-				VipDragWidgetHandle * h = NULL;
+				VipDragWidgetHandle * h = nullptr;
 
 				if (mw->orientation() == Qt::Vertical) {
 
@@ -803,11 +803,11 @@ CustomWidgetPlayer::CustomWidgetPlayer(VipWidgetPlayer* player)
 {
 	m_data = new PrivateData();
 	m_data->player = player;
-	m_data->dragWidget = NULL;
+	m_data->dragWidget = nullptr;
 
 	//m_data->area->SetBrush(QBrush(Qt::NoBrush));
 	QWidget* parent = player->parentWidget();
-	VipMultiDragWidget* top = NULL;
+	VipMultiDragWidget* top = nullptr;
 	while (parent) {
 		if (!m_data->dragWidget) m_data->dragWidget = qobject_cast<VipDragWidget*>(parent);
 		if ((top = qobject_cast<VipMultiDragWidget*>(parent))) {
@@ -1098,7 +1098,7 @@ bool CustomWidgetPlayer::eventFilter(QObject* , QEvent* evt)
 		{
 			if (VipMultiDragWidget* mw = m_data->dragWidget->parentMultiDragWidget()) {
 				QPoint pos = mw->indexOf(m_data->dragWidget);
-				VipDragWidgetHandle* h = NULL;
+				VipDragWidgetHandle* h = nullptr;
 
 				if (mw->orientation() == Qt::Vertical) {
 
@@ -1164,7 +1164,7 @@ public:
 	Anchor anchor;
 
 	PrivateData()
-		:player(NULL), dragWidget(NULL), mousePress(-1, -1)
+		:player(nullptr), dragWidget(nullptr), mousePress(-1, -1)
 	{}
 };
 
@@ -1173,10 +1173,10 @@ CustomizePlotPlayer::CustomizePlotPlayer(VipPlotPlayer * player)
 {
 	m_data = new PrivateData();
 	m_data->player = player;
-	m_data->dragWidget = NULL;
+	m_data->dragWidget = nullptr;
 
 	QWidget * parent = player->parentWidget();
-	VipMultiDragWidget * top = NULL;
+	VipMultiDragWidget * top = nullptr;
 	while (parent) {
 		if (!m_data->dragWidget) m_data->dragWidget = qobject_cast<VipDragWidget*>(parent);
 		if ((top = qobject_cast<VipMultiDragWidget*>(parent))) {
@@ -1535,7 +1535,7 @@ bool CustomizePlotPlayer::eventFilter(QObject * w, QEvent * evt)
 		{
 			if (VipMultiDragWidget * mw = m_data->dragWidget->parentMultiDragWidget()) {
 				QPoint pos = mw->indexOf(m_data->dragWidget);
-				VipDragWidgetHandle * h = NULL;
+				VipDragWidgetHandle * h = nullptr;
 				if (mw->orientation() == Qt::Vertical) {
 
 					if (m_data->anchor.side == Vip::Right)
@@ -1781,7 +1781,7 @@ static void resizeSplitter(QSplitter * splitter)
 
 static QAction * createSeparator()
 {
-	QAction * sep = new QAction(NULL);
+	QAction * sep = new QAction(nullptr);
 	sep->setSeparator(true);
 	return sep;
 }
@@ -1791,7 +1791,7 @@ static QList<QAction*> additionalActions(VipPlotItem* /*item*/, VipPlayer2D* pla
 	QList<QAction*> res;
 
 	if (QObject * obj = player->findChild<BaseCustomPlayer2D*>(QString(), Qt::FindDirectChildrenOnly)) {
-		QAction * title = new QAction(NULL);
+		QAction * title = new QAction(nullptr);
 		title->setText("Edit title");
 		res << title << createSeparator();
 		QObject::connect(title, SIGNAL(triggered(bool)), obj, SLOT(editTitle()));
@@ -1805,7 +1805,7 @@ static QList<QAction*> additionalActions(VipPlotItem* /*item*/, VipPlayer2D* pla
 			if (pt != QPoint(-1, -1)) {
 				int s = mw->subCount(pt.y());
 				if (s > 1) {
-					QAction * actc = new QAction(NULL);
+					QAction * actc = new QAction(nullptr);
 					actc->setText("Resize columns");
 					QObject::connect(actc, &QAction::triggered, actc, std::bind(resizeSplitter, mw->subSplitter(pt.y())));
 					res << actc;
@@ -1814,7 +1814,7 @@ static QList<QAction*> additionalActions(VipPlotItem* /*item*/, VipPlayer2D* pla
 			}
 
 			if (mw->mainCount() > 1) {
-				QAction * actr = new QAction(NULL);
+				QAction * actr = new QAction(nullptr);
 				actr->setText("Resize rows");
 				QObject::connect(actr, &QAction::triggered, actr, std::bind(resizeSplitter, mw->mainSplitter()));
 				res << actr;
@@ -1824,8 +1824,8 @@ static QList<QAction*> additionalActions(VipPlotItem* /*item*/, VipPlayer2D* pla
 			if (count)
 				res << createSeparator();
 
-			QAction * savei = new QAction("Save as image...", NULL);
-			QAction * saves = new QAction("Save as session...", NULL);
+			QAction * savei = new QAction("Save as image...", nullptr);
+			QAction * saves = new QAction("Save as session...", nullptr);
 			res << savei << saves;
 			QObject::connect(savei, &QAction::triggered, std::bind(vipSaveImage, dw)); // dw, SLOT(saveImage()));
 			QObject::connect(saves, &QAction::triggered, std::bind(vipSaveSession, dw)); // dw, SLOT(saveSession()));
@@ -1833,17 +1833,17 @@ static QList<QAction*> additionalActions(VipPlotItem* /*item*/, VipPlayer2D* pla
 			if (mw->count() > 1) {
 				res << createSeparator();
 				if (!dw->isMaximized()) {
-					QAction * maximize = new QAction("Maximize window", NULL);
+					QAction * maximize = new QAction("Maximize window", nullptr);
 					QObject::connect(maximize, SIGNAL(triggered(bool)), dw, SLOT(showMaximized()));
 					res << maximize;
 				}
 				if (dw->isMaximized()) {
-					QAction * restore = new QAction("Restore window", NULL);
+					QAction * restore = new QAction("Restore window", nullptr);
 					QObject::connect(restore, SIGNAL(triggered(bool)), dw, SLOT(showNormal()));
 					res << restore;
 				}
 
-				QAction * close = new QAction("Close window", NULL);
+				QAction * close = new QAction("Close window", nullptr);
 				QObject::connect(close, &QAction::triggered, dw, std::bind(restoreAndClose, player));
 				res << close;
 			}
@@ -2064,7 +2064,7 @@ static QVariant reorganizeCurrentWorkspace(const QVariantList& )
 		for (int x = 0; x < main->subCount(y); ++x) {
 			if (VipDragWidget* w = qobject_cast<VipDragWidget*>(main->widget(y, x, 0))) {
 				players.append(w);
-				w->setParent(NULL);
+				w->setParent(nullptr);
 			}
 		}
 

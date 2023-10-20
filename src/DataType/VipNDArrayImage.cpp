@@ -82,7 +82,7 @@ namespace detail
 	struct QImageNDFxTable: public ImageHandle
 	{
 		QImage * image() const {return const_cast<QImage*>(static_cast<const QImage*>(opaque));}
-		QImageNDFxTable() { opaque = NULL; }
+		QImageNDFxTable() { opaque = nullptr; }
 		QImageNDFxTable(const QImageNDFxTable & other)
 		:ImageHandle()
 		{
@@ -95,7 +95,7 @@ namespace detail
 		}
 
 		virtual QImageNDFxTable * copy() const { return new QImageNDFxTable(*this); }
-		virtual void * dataPointer(const VipNDArrayShape & ) const { return NULL; }
+		virtual void * dataPointer(const VipNDArrayShape & ) const { return nullptr; }
 		virtual int handleType() const { return Image; }
 		virtual QPaintDevice * painteDevice() {return image();}
 		virtual const QPaintDevice * painteDevice() const {return image();}
@@ -105,7 +105,7 @@ namespace detail
 			if(image())
 			{
 				delete image();
-				opaque = NULL;
+				opaque = nullptr;
 			}
 		}
 

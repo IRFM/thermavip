@@ -322,7 +322,7 @@ vip_double VipScaleEngine::reference() const
 /// Return a transformation, for linear scales
 VipValueTransform *VipLinearScaleEngine::transformation() const
 {
-	return NULL;// new NullTransform();
+	return nullptr;// new NullTransform();
 }
 
 /// Align and divide an interval

@@ -141,7 +141,7 @@ void PySearch::setEditor(QTextEdit  * ed)
 	if(m_data->edit1)
 		disconnect(m_data->edit1, SIGNAL(cursorPositionChanged()), this, SLOT(restartFromCursor()));
 	m_data->edit1 = ed;
-	m_data->edit2 = NULL;
+	m_data->edit2 = nullptr;
 	if (ed) {
 		connect(m_data->edit1, SIGNAL(cursorPositionChanged()), this, SLOT(restartFromCursor()));
 		setDocument(ed->document());
@@ -151,7 +151,7 @@ void PySearch::setEditor(QPlainTextEdit  * ed)
 {
 	if (m_data->edit2)
 		disconnect(m_data->edit2, SIGNAL(cursorPositionChanged()), this, SLOT(restartFromCursor()));
-	m_data->edit1 = NULL;
+	m_data->edit1 = nullptr;
 	m_data->edit2 = ed;
 	if (ed) {
 		connect(m_data->edit2, SIGNAL(cursorPositionChanged()), this, SLOT(restartFromCursor()));
@@ -567,7 +567,7 @@ void PyEditor::SetCurrentIndex(int index)
 
 CodeEditor * PyEditor::Load()
 {
-	QString filename = VipFileDialog::getOpenFileName(NULL,"Open python file","Python file (*.py)");
+	QString filename = VipFileDialog::getOpenFileName(nullptr,"Open python file","Python file (*.py)");
 	if(!filename.isEmpty())
 	{
 		if (m_unique) {
@@ -585,7 +585,7 @@ CodeEditor * PyEditor::Load()
 		}
 	}
 
-	return NULL;
+	return nullptr;
 }
 
 CodeEditor * PyEditor::OpenFile(const QString & filename)
@@ -602,7 +602,7 @@ CodeEditor * PyEditor::OpenFile(const QString & filename)
 
 	int index= CreateEditor(filename);
 	if(index >= 0) return Editor(index);
-	else return NULL;
+	else return nullptr;
 }
 
 bool PyEditor::Save(CodeEditor* editor)
@@ -617,7 +617,7 @@ bool PyEditor::Save(CodeEditor* editor)
 		}
 		else
 		{
-			QString filename = VipFileDialog::getSaveFileName2(NULL, vipGetPythonScriptsDirectory(), "Save python file","Python file (*.py)");
+			QString filename = VipFileDialog::getSaveFileName2(nullptr, vipGetPythonScriptsDirectory(), "Save python file","Python file (*.py)");
 			if(!filename.isEmpty())
 			{
 				return editor->SaveToFile(filename);
@@ -644,7 +644,7 @@ void PyEditor::SaveAs()
 			CurrentEditor()->FileInfo().canonicalFilePath() :
 			vipGetPythonScriptsDirectory();
 
-		QString filename = VipFileDialog::getSaveFileName2(NULL, path,"Save python file","Python file (*.py)");
+		QString filename = VipFileDialog::getSaveFileName2(nullptr, path,"Save python file","Python file (*.py)");
 		if(!filename.isEmpty())
 		{
 			//m_tab.setTabText(m_tab.currentIndex (),CurrentEditor()->FileInfo().completeBaseName());
@@ -665,7 +665,7 @@ CodeEditor * PyEditor::NewFile()
 {
 	int index= CreateEditor();
 	if(index >= 0) return Editor(index);
-	else return NULL;
+	else return nullptr;
 }
 
 void PyEditor::Comment()
@@ -836,7 +836,7 @@ void PyEditor::CurrentChanged(int)
 	if (CurrentEditor())
 		m_search->setEditor(CurrentEditor());
 	else
-		m_search->setEditor((QTextEdit*)NULL);
+		m_search->setEditor((QTextEdit*)nullptr);
 }
 
 void PyEditor::ModificationChanged (bool modify)

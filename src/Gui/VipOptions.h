@@ -14,7 +14,7 @@ class VIP_GUI_EXPORT VipPageOption : public QWidget
 {
 	Q_OBJECT
 public:
-	VipPageOption(QWidget * parent = NULL)
+	VipPageOption(QWidget * parent = nullptr)
 		:QWidget(parent)
 	{}
 
@@ -36,7 +36,7 @@ class VipPageItems : public QTreeWidget
 {
 	Q_OBJECT
 public:
-	VipPageItems(QWidget * parent = NULL)
+	VipPageItems(QWidget * parent = nullptr)
 		:QTreeWidget(parent) {}
 };
 
@@ -48,7 +48,7 @@ class VIP_GUI_EXPORT VipOptions : public QDialog
 {
 	Q_OBJECT
 public:
-	VipOptions(QWidget * parent = NULL);
+	VipOptions(QWidget * parent = nullptr);
 	~VipOptions();
 
 	bool hasPage(VipPageOption * page) const;
@@ -80,7 +80,7 @@ class AppearanceSettings : public VipPageOption
 	Q_OBJECT
 
 public:
-	AppearanceSettings(QWidget * parent = NULL);
+	AppearanceSettings(QWidget * parent = nullptr);
 	~AppearanceSettings();
 
 public Q_SLOTS:
@@ -102,7 +102,7 @@ class ProcessingSettings : public VipPageOption
 	Q_OBJECT
 
 public:
-	ProcessingSettings(QWidget * parent = NULL);
+	ProcessingSettings(QWidget * parent = nullptr);
 	~ProcessingSettings();
 
 public Q_SLOTS:
@@ -120,7 +120,7 @@ class EnvironmentSettings : public VipPageOption
 	Q_OBJECT
 
 public:
-	EnvironmentSettings(QWidget * parent = NULL);
+	EnvironmentSettings(QWidget * parent = nullptr);
 	~EnvironmentSettings();
 
 public Q_SLOTS:
@@ -143,7 +143,7 @@ class RenderingSettings : public VipPageOption
 	Q_OBJECT
 
 public:
-	RenderingSettings(QWidget* parent = NULL);
+	RenderingSettings(QWidget* parent = nullptr);
 	~RenderingSettings();
 
 public Q_SLOTS:

@@ -38,7 +38,7 @@ class PyApplyToolBar : public QWidget
 	Q_OBJECT
 
 public:
-	PyApplyToolBar(QWidget * parent = NULL);
+	PyApplyToolBar(QWidget * parent = nullptr);
 	~PyApplyToolBar();
 
 	QPushButton *applyButton() const;
@@ -60,7 +60,7 @@ class PySignalFusionProcessingManager : public QWidget
 	Q_OBJECT
 
 public:
-	PySignalFusionProcessingManager(QWidget *parent = NULL);
+	PySignalFusionProcessingManager(QWidget *parent = nullptr);
 	~PySignalFusionProcessingManager();
 
 	QString name() const;

@@ -15,7 +15,7 @@ struct TreeWidgetItem : public QTreeWidgetItem
 static TreeWidgetItem * FromInfo(const VipProcessingObject::Info & info)
 {
 	if(!info.metatype)
-		return NULL;
+		return nullptr;
 
 	TreeWidgetItem* item = new TreeWidgetItem();
 	item->info = info;
@@ -48,7 +48,7 @@ static TreeWidgetItem * FindChild(QTreeWidgetItem* item,const QString & name)
 		if(item->child(i)->text(0) == name)
 			return static_cast<TreeWidgetItem*>(item->child(i));
 
-	return NULL;
+	return nullptr;
 }
 
 

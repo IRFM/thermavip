@@ -123,7 +123,7 @@ class VipLazyPointer
 public:
 
 	VipLazyPointer(int id = 0)
-	:m_id(id), m_meta(NULL){}
+	:m_id(id), m_meta(nullptr){}
 	template< class T>
 	VipLazyPointer(T * obj)
 	:m_id(VipUniqueId::id(obj)), m_meta(&T::staticMetaObject), m_object(obj) {}
@@ -152,7 +152,7 @@ public:
 	}
 
 	template< class T>
-	T * data(bool * just_found = NULL) const
+	T * data(bool * just_found = nullptr) const
 	{
 		if (m_meta)
 			return qobject_cast<T*>(const_cast<QObject*>(m_object.data()));

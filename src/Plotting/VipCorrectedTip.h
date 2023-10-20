@@ -113,7 +113,7 @@ class VIP_PLOTTING_EXPORT VipTipLabel : public QLabel
 	Q_PROPERTY(int expireTime READ expireTime WRITE setExpireTime)
 
 	friend class VipTipContainer;
-	VipTipLabel(VipTipContainer * parent = NULL);
+	VipTipLabel(VipTipContainer * parent = nullptr);
 public:
 
 	bool dropShadowEnabled() const;

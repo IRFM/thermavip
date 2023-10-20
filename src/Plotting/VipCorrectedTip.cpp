@@ -902,7 +902,7 @@ QRect VipCorrectedTip::showText(const QPoint &pos, const QString &text, QWidget 
 
 VipTipContainer * VipCorrectedTip::hiddenTip()
 {
-	static VipTipContainer * inst = new VipTipContainer(QString(), NULL, 0, true);
+	static VipTipContainer * inst = new VipTipContainer(QString(), nullptr, 0, true);
 	if (inst->isVisible())
 		inst->close();
 	return inst;

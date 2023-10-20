@@ -37,7 +37,7 @@ static QMap<QWidget*,QSharedPointer<VipDragWidgetHandler> > handlers;
 
 
 VipDragWidgetHandler::VipDragWidgetHandler()
-:QObject(), d_parent(NULL), d_focus(NULL)
+:QObject(), d_parent(nullptr), d_focus(nullptr)
 {}
 
 QWidget * VipDragWidgetHandler::parentWidget()
@@ -50,8 +50,8 @@ VipDragWidget * VipDragWidgetHandler::focusWidget()
 	VipDragWidget * w = qobject_cast<VipDragWidget*>(d_focus.data());
 	//ensure that the focus widget belong to this handler
 	if (w && topLevelMultiDragWidgets().indexOf(w->topLevelMultiDragWidget()) < 0) {
-		d_focus = NULL;
-		return NULL;
+		d_focus = nullptr;
+		return nullptr;
 	}
 	return w;
 }
@@ -82,7 +82,7 @@ VipMultiDragWidget * VipDragWidgetHandler::maximizedMultiDragWidgets()
 		if(VipMultiDragWidget * mdrag = d_widgets[i])
 			if(mdrag->isMaximized())
 				return mdrag;
-	return NULL;
+	return nullptr;
 }
 
 VipDragWidgetHandler * VipDragWidgetHandler::find(QWidget * parent)
@@ -150,7 +150,7 @@ static void minimizeDragWidget(VipBaseDragWidget* w, bool minimize)
 {
 	if (VipDragWidget* d = qobject_cast<VipDragWidget*>(w))
 		if (minimize) {
-			if (d->property("_vip_minimizeWidget").value<QWidget*>() == NULL) {
+			if (d->property("_vip_minimizeWidget").value<QWidget*>() == nullptr) {
 
 				// make sure the grand parent is a VipDragTabWidget
 				if (w->parentWidget())
@@ -686,7 +686,7 @@ VipBaseDragWidget * VipBaseDragWidget::fromChild(QWidget * child)
 			return static_cast<VipBaseDragWidget*>(child);
 		child = child->parentWidget();
 	}
-	return NULL;
+	return nullptr;
 }
 
 bool VipBaseDragWidget::dragThisWidget(QObject * watched, const QPoint & mouse_pos)
@@ -937,7 +937,7 @@ QString VipBaseDragWidget::title() const
 class VipDragWidget::PrivateData
 {
 public:
-	PrivateData() : widget(NULL), focus(false){}
+	PrivateData() : widget(nullptr), focus(false){}
 	QWidget *widget;
 	bool focus;
 };
@@ -1176,7 +1176,7 @@ public:
 	QColor closeBackgroundHover;
 
 	PrivateData()
-	  : dragWidget(NULL)
+	  : dragWidget(nullptr)
 	  , orientation(Qt::Vertical)
 	  , maxExtent(20)
 	  , inside(false)
@@ -1327,7 +1327,7 @@ void VipMinimizeWidget::mousePressEvent(QMouseEvent* )
 	parentWidget()->setMaximumWidth(16777215);
 	if (m_data->dragWidget)
 		m_data->dragWidget->show();
-	vipProcessEvents(NULL, 100);
+	vipProcessEvents(nullptr, 100);
 	m_data->dragWidget->showNormal(); 
 	m_data->dragWidget->setFocus();
 
@@ -1529,7 +1529,7 @@ QSize VipDragWidgetHandle::sizeHint() const
 /// Compute the new splitter sizes when adding a widget.
 /// new_widget_size is the size of the newly added widget.
 /// This function only make sense when the splitter does not change its size (when the top level drag widget is maximized for instance).
-static QList<int> addNewSplitterSize(QSplitter * s, int index, int * new_widget_size = NULL)
+static QList<int> addNewSplitterSize(QSplitter * s, int index, int * new_widget_size = nullptr)
 {
 	int width = s->orientation() == Qt::Horizontal ? s->width() : s->height();
 	//compute new size ratio for each widget
@@ -1567,7 +1567,7 @@ bool VipDragWidgetHandle::dropMimeData(const QMimeData * mime)
 		return false;
 
 	bool maximized = false;
-	VipBaseDragWidget * widget = NULL;
+	VipBaseDragWidget * widget = nullptr;
 	if (VipMultiDragWidget * top_level = multiDragWidget->validTopLevelMultiDragWidget()){
 		maximized = top_level->isMaximized();
 		widget = top_level->createFromMimeData(mime);
@@ -1768,8 +1768,8 @@ VipMultiDragWidget::VipMultiDragWidget(QWidget * parent )
 :VipBaseDragWidget(parent)
 {
 	d_data = new PrivateData;
-	d_data->header = NULL;
-	d_data->v_splitter = NULL;
+	d_data->header = nullptr;
+	d_data->v_splitter = nullptr;
 	d_data->extra = true;
 	d_data->maxWidth = 5;
 	d_data->orientation = Qt::Vertical;
@@ -2175,7 +2175,7 @@ VipMultiDragWidget * VipMultiDragWidget::fromChild(QWidget * child)
 			return static_cast<VipMultiDragWidget*>(child);
 		child = child->parentWidget();
 	}
-	return NULL;
+	return nullptr;
 }
 
 QGridLayout * VipMultiDragWidget::mainSplitterLayout() const
@@ -2223,7 +2223,7 @@ QTabWidget * VipMultiDragWidget::parentTabWidget(VipBaseDragWidget * w) const
 		}
 	}
 
-	return NULL;
+	return nullptr;
 }
 
 
@@ -2238,7 +2238,7 @@ VipBaseDragWidget * VipMultiDragWidget::widget(int y, int x, int index) const
 				return qobject_cast<VipBaseDragWidget*>(tab->widget(index));
 		}
 	}
-	return NULL;
+	return nullptr;
 }
 
 //QWidget * VipMultiDragWidget::GetSizeGrip() const
@@ -2332,7 +2332,7 @@ void VipMultiDragWidget::mainResize(int new_size, VipMultiDragWidget::VerticalSi
 
 	//remove bottom widget
 	QWidget * bottom = d_data->v_splitter->widget(mainCount());
-	bottom->setParent(NULL);
+	bottom->setParent(nullptr);
 
 	if(new_size < height)
 	{
@@ -2340,7 +2340,7 @@ void VipMultiDragWidget::mainResize(int new_size, VipMultiDragWidget::VerticalSi
 		{
 			while (d_data->v_splitter->count() > new_size) {
 				QWidget* w = d_data->v_splitter->widget(d_data->v_splitter->count() - 1);
-				w->setParent(NULL);
+				w->setParent(nullptr);
 				w->close();
 			}
 		}
@@ -2348,7 +2348,7 @@ void VipMultiDragWidget::mainResize(int new_size, VipMultiDragWidget::VerticalSi
 		{
 			while (d_data->v_splitter->count() > new_size) {
 				QWidget* w = d_data->v_splitter->widget(0);
-				w->setParent(NULL);
+				w->setParent(nullptr);
 				w->close();
 			}
 		}
@@ -2390,7 +2390,7 @@ void VipMultiDragWidget::subResize(int y, int new_size, VipMultiDragWidget::Hori
 
 	//remove right widget
 	QWidget * right = h_splitter->widget(width);
-	right->setParent(NULL);
+	right->setParent(nullptr);
 
 	if(new_size < width)
 	{
@@ -2398,7 +2398,7 @@ void VipMultiDragWidget::subResize(int y, int new_size, VipMultiDragWidget::Hori
 		{
 			while (h_splitter->count() > new_size) {
 				QWidget* w = h_splitter->widget(h_splitter->count() - 1);
-				w->setParent(NULL);
+				w->setParent(nullptr);
 				w->close();
 			}
 		}
@@ -2406,7 +2406,7 @@ void VipMultiDragWidget::subResize(int y, int new_size, VipMultiDragWidget::Hori
 		{
 			while (h_splitter->count() > new_size) {
 				QWidget* w = h_splitter->widget(0);
-				w->setParent(NULL);
+				w->setParent(nullptr);
 				w->close();
 			}
 		}
@@ -2501,7 +2501,7 @@ void VipMultiDragWidget::updateSizes(bool enable_resize)
 				else
 				{
 					int row_count;
-					int max_width = maxWidth(NULL, &row_count);
+					int max_width = maxWidth(nullptr, &row_count);
 					//we added the widget in an existing row: only recompute the width IF this is the row with the most elements
 					if (_width == max_width && row_count == 1)
 					{
@@ -2514,7 +2514,7 @@ void VipMultiDragWidget::updateSizes(bool enable_resize)
 					}
 				}
 			}
-			d_data->lastAdded = NULL;
+			d_data->lastAdded = nullptr;
 		}
 	}
 
@@ -2558,7 +2558,7 @@ void VipMultiDragWidget::updateSizes(bool enable_resize)
 	d_data->v_splitter->setSizes(h_sizes);
 
 	//TEST: comment this
-	//vipProcessEvents(NULL, 500);
+	//vipProcessEvents(nullptr, 500);
 }
 
 bool VipMultiDragWidget::insertSub(int y, int x,  VipBaseDragWidget * widget)
@@ -2831,7 +2831,7 @@ VipBaseDragWidget * VipMultiDragWidget::createFromMimeData(const QMimeData * mim
 		//check that the widget supports Drop operation
 		const VipBaseDragWidgetMimeData * mime = static_cast<const VipBaseDragWidgetMimeData*>(mime_data);
 		if(!mime->dragWidget->isDropable())
-			return NULL;
+			return nullptr;
 		else
 			return mime->dragWidget;
 	}
@@ -2842,7 +2842,7 @@ VipBaseDragWidget * VipMultiDragWidget::createFromMimeData(const QMimeData * mim
 		if(lst.size())
 			return lst.back()(mime,this).value<VipBaseDragWidget*>();
 	}
-	return NULL;
+	return nullptr;
 }
 
 bool VipMultiDragWidget::supportDrop(const QMimeData * mime_data)
@@ -2953,7 +2953,7 @@ void VipViewportArea::dropMimeData(const QMimeData * mimeData, const QPoint & po
 		//use the standard handing: retrieve the text from the mime data and emit VipDragWidgetArea::textDropped
 
 		//find the parent VipDragWidgetArea
-		VipDragWidgetArea * area = NULL;
+		VipDragWidgetArea * area = nullptr;
 		QWidget * parent = parentWidget();
 		while (parent)
 		{
@@ -3182,7 +3182,7 @@ VipFunctionDispatcher<2>& vipSetDragWidget()
 // }
 // //save current position of drag parent
 // QPoint drag_pos = drag_parent->pos();
-// VipBaseDragWidget * to_move = NULL;
+// VipBaseDragWidget * to_move = nullptr;
 //
 // //is the target a top level VipMultiDragWidget?
 // if (target_parent->isTopLevel()) {

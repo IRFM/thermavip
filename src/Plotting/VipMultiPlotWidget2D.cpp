@@ -25,7 +25,7 @@ public:
 		//yRight->setMaxBorderDist(0, 0);
 		yRight->setZValue(20);
 
-		to_remove = NULL;
+		to_remove = nullptr;
 		inConstructor = true;
 		insertionIndex = -1;
 	}
@@ -98,7 +98,7 @@ VipAxisBase * VipVMultiPlotArea2D::leftAxis() const
 	for (int i = 0; i < d_data->yLeft->count(); ++i)
 		if (const VipAxisBase* ax = qobject_cast<const VipAxisBase*>(d_data->yLeft->at(i)))
 			return const_cast<VipAxisBase*>(ax);
-	return NULL;
+	return nullptr;
 }
 
 VipAxisBase * VipVMultiPlotArea2D::rightAxis() const
@@ -106,7 +106,7 @@ VipAxisBase * VipVMultiPlotArea2D::rightAxis() const
 	for (int i = 0; i < d_data->yRight->count(); ++i)
 		if (const VipAxisBase* ax = qobject_cast<const VipAxisBase*>(d_data->yRight->at(i)))
 			return const_cast<VipAxisBase*>(ax);
-	return NULL;
+	return nullptr;
 }
 
 VipPlotGrid * VipVMultiPlotArea2D::grid() const
@@ -412,9 +412,9 @@ bool VipVMultiPlotArea2D::internalRemoveScale(VipAbstractScale * sc)
 
 				//remove the scale from the left AND right ones
 				VipAbstractScale *left = d_data->yLeft->takeItem(index);
-				left->setParentItem(NULL);
+				left->setParentItem(nullptr);
 				VipAbstractScale *right = d_data->yRight->takeItem(index);
-				right->setParentItem(NULL);
+				right->setParentItem(nullptr);
 
 				Q_EMIT canvasRemoved(d_data->canvas.at(index));
 
@@ -452,7 +452,7 @@ bool VipVMultiPlotArea2D::internalRemoveScale(VipAbstractScale * sc)
 
 				applyLabelOverlapping();
 
-				d_data->to_remove = NULL;
+				d_data->to_remove = nullptr;
 				return true;
 			}
 		}
@@ -706,7 +706,7 @@ void VipVMultiPlotArea2D::zoomOnPosition(const QPointF & item_pos, double sc)
 
 	//find the bottom/left axes involved
 	QPointF mouse_pos = item_pos;// this->mapFromScene(scenePos);
-	VipAxisBase *left = NULL, *bottom = NULL;
+	VipAxisBase *left = nullptr, *bottom = nullptr;
 	for (int i = 0; i < d_data->yLeft->count(); ++i)
 	{
 		QPainterPath p = plotArea(qobject_cast<VipAxisBase*>(d_data->yLeft->at(i)));
@@ -744,7 +744,7 @@ void VipVMultiPlotArea2D::translate(const QPointF &, const QPointF & dp)
 
 	//find the bottom/left axes involved
 	QPointF mouse_pos = (this->lastMousePressPos());
-	VipAxisBase *left = NULL, *bottom = NULL;
+	VipAxisBase *left = nullptr, *bottom = nullptr;
 	for (int i = 0; i < d_data->yLeft->count(); ++i)
 	{
 		QPainterPath p = plotArea(qobject_cast<VipAxisBase*>(d_data->yLeft->at(i)));

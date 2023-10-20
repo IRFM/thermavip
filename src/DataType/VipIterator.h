@@ -412,7 +412,7 @@ namespace detail
 	struct IncrementCoord<Size, Vip::FirstMajor, 1>
 	{
 		template< class Position, class Shape, class StartShape = void>
-		static void apply_inner(Position& pos, const Shape& sh, const StartShape* start = NULL)
+		static void apply_inner(Position& pos, const Shape& sh, const StartShape* start = nullptr)
 		{
 			pos.back() = GetStart<StartShape>::get(start, pos.size() - 1);
 			int index = pos.size() - 2;
@@ -424,7 +424,7 @@ namespace detail
 		}
 
 		template< class Position, class Shape, class StartShape = void>
-		static VIP_ALWAYS_INLINE void apply(Position & pos, const Shape & sh, int dimCount, const StartShape * start = NULL)
+		static VIP_ALWAYS_INLINE void apply(Position & pos, const Shape & sh, int dimCount, const StartShape * start = nullptr)
 		{
 			--dimCount;
 			if (++pos[dimCount] == sh[dimCount])
@@ -435,7 +435,7 @@ namespace detail
 	struct IncrementCoord<Size, Vip::FirstMajor, Incr>
 	{
 		template< class Position, class Shape, class StartShape = void>
-		static void apply(Position & pos, const Shape & sh,int dimCount, const StartShape * start = NULL)
+		static void apply(Position & pos, const Shape & sh,int dimCount, const StartShape * start = nullptr)
 		{
 			--dimCount;
 			if (sh[dimCount] - pos[dimCount] > Incr) {
@@ -455,7 +455,7 @@ namespace detail
 	struct IncrementCoordCheckContinue<Size, Vip::FirstMajor>
 	{
 		template< class Position, class Shape, class StartShape = void>
-		static bool apply_end_inner(Position& pos, const Shape& sh, const StartShape* start = NULL)
+		static bool apply_end_inner(Position& pos, const Shape& sh, const StartShape* start = nullptr)
 		{
 			pos.back() = GetStart<StartShape>::get(start, pos.size() - 1);
 			int index = pos.size() - 2;
@@ -468,7 +468,7 @@ namespace detail
 		}
 
 		template< class Position, class Shape, class StartShape = void>
-		static VIP_ALWAYS_INLINE  bool apply(Position & pos, const Shape & sh, int dimCount, const StartShape * start = NULL)
+		static VIP_ALWAYS_INLINE  bool apply(Position & pos, const Shape & sh, int dimCount, const StartShape * start = nullptr)
 		{
 
 				if (++pos[dimCount - 1] == sh[dimCount - 1]) {
@@ -484,7 +484,7 @@ namespace detail
 	struct IncrementCoord<1, Vip::FirstMajor, 1>
 	{
 		template< class Position, class Shape, class StartShape = void>
-		VIP_ALWAYS_INLINE static void apply(Position & pos, const Shape &, int,const StartShape * = NULL) {
+		VIP_ALWAYS_INLINE static void apply(Position & pos, const Shape &, int,const StartShape * = nullptr) {
 			++pos[0];
 		}
 	};
@@ -492,7 +492,7 @@ namespace detail
 	struct IncrementCoord<1, Vip::FirstMajor, Incr>
 	{
 		template< class Position, class Shape, class StartShape = void>
-		VIP_ALWAYS_INLINE static void apply(Position & pos, const Shape &, int,const StartShape * = NULL) {
+		VIP_ALWAYS_INLINE static void apply(Position & pos, const Shape &, int,const StartShape * = nullptr) {
 			pos[0] += Incr;
 		}
 	};
@@ -500,7 +500,7 @@ namespace detail
 	struct IncrementCoordCheckContinue<1, Vip::FirstMajor>
 	{
 		template< class Position, class Shape, class StartShape = void>
-		VIP_ALWAYS_INLINE static bool apply(Position & pos, const Shape & sh,int, const StartShape * = NULL) {
+		VIP_ALWAYS_INLINE static bool apply(Position & pos, const Shape & sh,int, const StartShape * = nullptr) {
 			return ++pos[0] != sh[0];
 		}
 	};
@@ -509,7 +509,7 @@ namespace detail
 	struct IncrementCoord<2, Vip::FirstMajor, 1>
 	{
 		template< class Position, class Shape, class StartShape = void>
-		VIP_ALWAYS_INLINE static void apply(Position & pos, const Shape & sh,int, const StartShape * start = NULL)
+		VIP_ALWAYS_INLINE static void apply(Position & pos, const Shape & sh,int, const StartShape * start = nullptr)
 		{
 			if (++pos[1] == sh[1]) {
 				pos[1] = GetStart<StartShape>::get(start, 1);
@@ -522,7 +522,7 @@ namespace detail
 	struct IncrementCoord<2, Vip::FirstMajor, Incr>
 	{
 		template< class Position, class Shape, class StartShape = void>
-		VIP_ALWAYS_INLINE static void apply(Position & pos, const Shape & sh,int, const StartShape * start = NULL)
+		VIP_ALWAYS_INLINE static void apply(Position & pos, const Shape & sh,int, const StartShape * start = nullptr)
 		{
 			pos[1] += Incr;
 			while (pos[1] >= sh[1]) {
@@ -535,7 +535,7 @@ namespace detail
 	struct IncrementCoordCheckContinue<2, Vip::FirstMajor>
 	{
 		template< class Position, class Shape, class StartShape = void>
-		VIP_ALWAYS_INLINE static bool apply(Position & pos, const Shape & sh,int, const StartShape * start = NULL)
+		VIP_ALWAYS_INLINE static bool apply(Position & pos, const Shape & sh,int, const StartShape * start = nullptr)
 		{
 			if (++pos[1] == sh[1]) {
 				pos[1] = GetStart<StartShape>::get(start, 1);
@@ -550,7 +550,7 @@ namespace detail
 	struct IncrementCoord<3, Vip::FirstMajor, 1>
 	{
 		template< class Position, class Shape, class StartShape = void>
-		VIP_ALWAYS_INLINE static void apply(Position & pos, const Shape & sh,int, const StartShape * start = NULL)
+		VIP_ALWAYS_INLINE static void apply(Position & pos, const Shape & sh,int, const StartShape * start = nullptr)
 		{
 			if (++pos[2] == sh[2]) {
 				pos[2] = GetStart<StartShape>::get(start, 2);
@@ -565,7 +565,7 @@ namespace detail
 	struct IncrementCoord<3, Vip::FirstMajor, Incr>
 	{
 		template< class Position, class Shape, class StartShape = void>
-		VIP_ALWAYS_INLINE static void apply(Position & pos, const Shape & sh,int, const StartShape * start = NULL)
+		VIP_ALWAYS_INLINE static void apply(Position & pos, const Shape & sh,int, const StartShape * start = nullptr)
 		{
 			pos[2] += Incr;
 			while (pos[2] >= sh[2]) {
@@ -581,7 +581,7 @@ namespace detail
 	struct IncrementCoordCheckContinue<3, Vip::FirstMajor>
 	{
 		template< class Position, class Shape, class StartShape = void>
-		VIP_ALWAYS_INLINE static bool apply(Position & pos, const Shape & sh,int, const StartShape * start = NULL)
+		VIP_ALWAYS_INLINE static bool apply(Position & pos, const Shape & sh,int, const StartShape * start = nullptr)
 		{
 			if (++pos[2] == sh[2]) {
 				pos[2] = GetStart<StartShape>::get(start, 2);
@@ -601,7 +601,7 @@ namespace detail
 	struct IncrementCoord<Size, Vip::LastMajor, 1>
 	{
 		template< class Position, class Shape, class StartShape = void>
-		static void apply(Position & pos, const Shape & sh,int, const StartShape * start = NULL)
+		static void apply(Position & pos, const Shape & sh,int, const StartShape * start = nullptr)
 		{
 			if (++pos[0] == sh[0]) {
 				//update position
@@ -622,7 +622,7 @@ namespace detail
 	struct IncrementCoord<Size, Vip::LastMajor, Incr>
 	{
 		template< class Position, class Shape, class StartShape = void>
-		static void apply(Position & pos, const Shape & sh, int,const StartShape * start = NULL)
+		static void apply(Position & pos, const Shape & sh, int,const StartShape * start = nullptr)
 		{
 			if (sh[0] - pos[0] > Incr) {
 				pos[0] += Incr;
@@ -640,7 +640,7 @@ namespace detail
 	struct IncrementCoordCheckContinue<Size, Vip::LastMajor>
 	{
 		template< class Position, class Shape, class StartShape = void>
-		static bool apply(Position & pos, const Shape & sh,int, const StartShape * start = NULL)
+		static bool apply(Position & pos, const Shape & sh,int, const StartShape * start = nullptr)
 		{
 			if (++pos[0] == sh[0]) {
 				//update position
@@ -663,7 +663,7 @@ namespace detail
 	struct IncrementCoord<2, Vip::LastMajor, 1>
 	{
 		template< class Position, class Shape, class StartShape = void>
-		VIP_ALWAYS_INLINE static void apply(Position & pos, const Shape & sh,int, const StartShape * start = NULL)
+		VIP_ALWAYS_INLINE static void apply(Position & pos, const Shape & sh,int, const StartShape * start = nullptr)
 		{
 			if (++pos[0] == sh[0]) {
 				pos[0] = GetStart<StartShape>::get(start, 0);
@@ -675,7 +675,7 @@ namespace detail
 	struct IncrementCoord<2, Vip::LastMajor, Incr>
 	{
 		template< class Position, class Shape, class StartShape = void>
-		VIP_ALWAYS_INLINE static void apply(Position & pos, const Shape & sh, int,const StartShape * start = NULL)
+		VIP_ALWAYS_INLINE static void apply(Position & pos, const Shape & sh, int,const StartShape * start = nullptr)
 		{
 			if (sh[0] - pos[0] > Incr)
 				pos[0] += Incr;
@@ -691,7 +691,7 @@ namespace detail
 	struct IncrementCoordCheckContinue<2, Vip::LastMajor>
 	{
 		template< class Position, class Shape, class StartShape = void>
-		VIP_ALWAYS_INLINE static bool apply(Position & pos, const Shape & sh,int, const StartShape * start = NULL)
+		VIP_ALWAYS_INLINE static bool apply(Position & pos, const Shape & sh,int, const StartShape * start = nullptr)
 		{
 			if (++pos[0] == sh[0]) {
 				pos[0] = GetStart<StartShape>::get(start, 0);;
@@ -705,7 +705,7 @@ namespace detail
 	struct IncrementCoord<1, Vip::LastMajor, 1>
 	{
 		template< class Position, class Shape, class StartShape = void>
-		VIP_ALWAYS_INLINE static void apply(Position & pos, const Shape &,int, const StartShape * = NULL) {
+		VIP_ALWAYS_INLINE static void apply(Position & pos, const Shape &,int, const StartShape * = nullptr) {
 			++pos[0];
 		}
 	};
@@ -713,7 +713,7 @@ namespace detail
 	struct IncrementCoord<1, Vip::LastMajor, Incr>
 	{
 		template< class Position, class Shape, class StartShape = void>
-		VIP_ALWAYS_INLINE static void apply(Position & pos, const Shape &,int, const StartShape * = NULL) {
+		VIP_ALWAYS_INLINE static void apply(Position & pos, const Shape &,int, const StartShape * = nullptr) {
 			pos[0] += Incr;
 		}
 	};
@@ -721,7 +721,7 @@ namespace detail
 	struct IncrementCoordCheckContinue<1, Vip::LastMajor>
 	{
 		template< class Position, class Shape, class StartShape = void>
-		VIP_ALWAYS_INLINE static bool apply(Position & pos, const Shape & sh,int, const StartShape * = NULL) {
+		VIP_ALWAYS_INLINE static bool apply(Position & pos, const Shape & sh,int, const StartShape * = nullptr) {
 			return ++pos[0] != sh[0];
 		}
 	};
@@ -731,7 +731,7 @@ namespace detail
 	struct IncrementCoord<3, Vip::LastMajor, 1>
 	{
 		template< class Position, class Shape, class StartShape = void>
-		VIP_ALWAYS_INLINE static void apply(Position & pos, const Shape & sh,int, const StartShape * start = NULL)
+		VIP_ALWAYS_INLINE static void apply(Position & pos, const Shape & sh,int, const StartShape * start = nullptr)
 		{
 			if (++pos[0] == sh[0]) {
 				pos[0] = GetStart<StartShape>::get(start, 0);
@@ -746,7 +746,7 @@ namespace detail
 	struct IncrementCoord<3, Vip::LastMajor, Incr>
 	{
 		template< class Position, class Shape, class StartShape = void>
-		VIP_ALWAYS_INLINE static void apply(Position & pos, const Shape & sh,int, const StartShape * start = NULL)
+		VIP_ALWAYS_INLINE static void apply(Position & pos, const Shape & sh,int, const StartShape * start = nullptr)
 		{
 			pos[0] += Incr;
 			while (pos[0] >= sh[0]) {
@@ -762,7 +762,7 @@ namespace detail
 	struct IncrementCoordCheckContinue<3, Vip::LastMajor>
 	{
 		template< class Position, class Shape, class StartShape = void>
-		VIP_ALWAYS_INLINE static bool apply(Position & pos, const Shape & sh,int, const StartShape * start = NULL)
+		VIP_ALWAYS_INLINE static bool apply(Position & pos, const Shape & sh,int, const StartShape * start = nullptr)
 		{
 			if (++pos[0] == sh[0]) {
 				pos[0] = GetStart<StartShape>::get(start, 0);
@@ -1825,7 +1825,7 @@ VIP_ALWAYS_INLINE bool operator>=(const VipNDSubArrayConstIterator<TYPE,Dim>& it
 // typedef const TYPE& const_reference;
 //
 // VipNDSubArrayIterator()
-// :data(NULL),end(NULL)
+// :data(nullptr),end(nullptr)
 // {}
 //
 // VipNDSubArrayIterator(const VipNDSubArrayIterator & other)
@@ -2013,7 +2013,7 @@ public:
 	typedef const void* const_reference;
 
 	VipNDSubArrayIterator(int data_size)
-	:data(NULL),end(NULL),data_size(data_size)
+	:data(nullptr),end(nullptr),data_size(data_size)
 	{}
 
 	VipNDSubArrayIterator(const VipNDSubArrayIterator & other)
@@ -2114,7 +2114,7 @@ public:
 	typedef void* reference;
 	typedef const void* const_reference;
 
-	VipVoidIterator(void * data = NULL, int data_size = 0)
+	VipVoidIterator(void * data = nullptr, int data_size = 0)
 	:data(data),data_size(data_size){}
 
 	VipVoidIterator(const VipVoidIterator & other)
@@ -2174,7 +2174,7 @@ public:
 	typedef TYPE& reference;
 	typedef const TYPE& const_reference;
 
-	VipLineIterator(const TYPE * p = NULL, int stride = 1)
+	VipLineIterator(const TYPE * p = nullptr, int stride = 1)
 	:data(const_cast<TYPE*>(p)), stride(stride) {}
 
 	reference	operator[](int pos){return data[pos * this->stride];}
@@ -2510,12 +2510,12 @@ inline bool vipArrayTransformVoid(const void* in, int in_type, const VipNDArrayS
 namespace iter_detail
 {
 	template<int Incr, Vip::Ordering order, class Position, class Shape, class StartShape = void>
-	VIP_ALWAYS_INLINE void incrementPos(Position& pos, const Shape& sh, int dimCount, const StartShape* start = NULL) {
+	VIP_ALWAYS_INLINE void incrementPos(Position& pos, const Shape& sh, int dimCount, const StartShape* start = nullptr) {
 		detail::IncrementCoord<Position::static_size, order, Incr>::apply(pos, sh, dimCount, start);
 	}
 
 	template< Vip::Ordering order, class Position, class Shape, class StartShape = void>
-	VIP_ALWAYS_INLINE bool incrementCheckContinue(Position& pos, const Shape& sh, int dimCount, const StartShape* start = NULL) {
+	VIP_ALWAYS_INLINE bool incrementCheckContinue(Position& pos, const Shape& sh, int dimCount, const StartShape* start = nullptr) {
 		return detail::IncrementCoordCheckContinue < Position::static_size, order>::apply(pos, sh, dimCount, start);
 	}
 

@@ -41,7 +41,7 @@ class VipSliderGrip::PrivateData
 public:
 	 
 	PrivateData()
-	  : axis(NULL)
+	  : axis(nullptr)
 	  , value(0)
 	  , gripAlwaysInsideScale(true)
 	  , toolTipDistance(0)

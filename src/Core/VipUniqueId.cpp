@@ -80,7 +80,7 @@ QObject * VipTypeId::find(int id) const
 	QMap<int,QPointer<QObject> >::const_iterator it = m_data->ids.find(id);
 	if(it != m_data->ids.end())
 		return it.value();
-	return NULL;
+	return nullptr;
 }
 
 int VipTypeId::setId(const QObject * obj, int id )
@@ -98,7 +98,7 @@ int VipTypeId::setId(const QObject * obj, int id )
 		connect(object, SIGNAL(destroyed(QObject*)), this, SLOT(objectDestroyed(QObject*)),Qt::DirectConnection);
 	}
 
-	//NULL id: return the current one or create a new one
+	//nullptr id: return the current one or create a new one
 	if (id == 0) {
 		//existing object, try to return the current id
 		if (it != m_data->objects_to_id.end())

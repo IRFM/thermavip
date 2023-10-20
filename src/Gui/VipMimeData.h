@@ -13,7 +13,7 @@ class VIP_GUI_EXPORT VipMimeDataCoordinateSystem : public VipPlotMimeData
 	Q_OBJECT
 
 public:
-	VipMimeDataCoordinateSystem(VipCoordinateSystem::Type type = VipCoordinateSystem::Cartesian, QObject * parent = NULL)
+	VipMimeDataCoordinateSystem(VipCoordinateSystem::Type type = VipCoordinateSystem::Cartesian, QObject * parent = nullptr)
 	:VipPlotMimeData(),m_type(type)
 	{
 		setParent(parent);
@@ -55,7 +55,7 @@ public:
 		if(pl)
 			setPlayers(vipCreatePlayersFromStringList(m_paths,pl,drop_target));
 		else
-			setPlayers(vipCreatePlayersFromStringList(m_paths,NULL));
+			setPlayers(vipCreatePlayersFromStringList(m_paths,nullptr));
 		return VipPlotMimeData::plotData(drop_target, drop_widget);
 	}
 
@@ -73,7 +73,7 @@ public:
 		if (pl)
 			setPlayers(vipCreatePlayersFromPaths(m_paths, pl, drop_target));
 		else
-			setPlayers(vipCreatePlayersFromPaths(m_paths, NULL));
+			setPlayers(vipCreatePlayersFromPaths(m_paths, nullptr));
 		return VipPlotMimeData::plotData(drop_target, drop_widget);
 	}
 
@@ -93,7 +93,7 @@ class VipMimeDataLazyEvaluation : public VipMimeDataCoordinateSystem
 	template<class T>
 	struct is_list {
 		static QList<VipAbstractPlayer*> create(const T & proc, VipAbstractPlayer * pl, QObject * target) {
-			return vipCreatePlayersFromProcessing(proc, pl, NULL, target);
+			return vipCreatePlayersFromProcessing(proc, pl, nullptr, target);
 		}
 	};
 	template<class T>
@@ -104,11 +104,11 @@ class VipMimeDataLazyEvaluation : public VipMimeDataCoordinateSystem
 	};
 public:
 
-	VipMimeDataLazyEvaluation(VipCoordinateSystem::Type type = VipCoordinateSystem::Null, QObject * parent = NULL)
+	VipMimeDataLazyEvaluation(VipCoordinateSystem::Type type = VipCoordinateSystem::Null, QObject * parent = nullptr)
 	:VipMimeDataCoordinateSystem(type,parent)
 	{}
 
-	VipMimeDataLazyEvaluation(const std::function<Return()> & fun, VipCoordinateSystem::Type type = VipCoordinateSystem::Null, QObject * parent = NULL)
+	VipMimeDataLazyEvaluation(const std::function<Return()> & fun, VipCoordinateSystem::Type type = VipCoordinateSystem::Null, QObject * parent = nullptr)
 	:VipMimeDataCoordinateSystem(type,parent)
 	{
 		setFunction(fun);
@@ -144,8 +144,8 @@ class VIP_GUI_EXPORT VipMimeDataDuplicatePlotItem : public VipMimeDataCoordinate
 	Q_OBJECT
 public:
 
-	VipMimeDataDuplicatePlotItem(QObject * parent = NULL);
-	VipMimeDataDuplicatePlotItem(const QList<VipPlotItem*> & lst, QObject * parent = NULL);
+	VipMimeDataDuplicatePlotItem(QObject * parent = nullptr);
+	VipMimeDataDuplicatePlotItem(const QList<VipPlotItem*> & lst, QObject * parent = nullptr);
 
 	virtual QList<VipPlotItem*> plotData(VipPlotItem * drop_target, QWidget * drop_widget) const;
 

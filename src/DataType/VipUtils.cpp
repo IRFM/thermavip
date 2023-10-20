@@ -559,7 +559,7 @@ QTextStream & operator >>(QTextStream & str, VipNDArray & ar)
 	//try to find the data type
 
 	int data_type = 0;
-	void * vector = NULL;
+	void * vector = nullptr;
 	{
 		QTextStream temp(&line);
 		char tmp[1000];

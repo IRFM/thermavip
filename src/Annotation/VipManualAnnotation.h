@@ -102,7 +102,7 @@ public:
 
 	VipVideoPlayer * player() const;
 
-	Vip_event_list generateShapes(VipProgress * p = NULL, QString * error = NULL);
+	Vip_event_list generateShapes(VipProgress * p = nullptr, QString * error = nullptr);
 
 	/**
 	* Filter key event 'K' at application level to put a key frame, and over shortcuts

@@ -385,7 +385,7 @@ int vipProcessEvents(bool * keep_going, int milli)
 	};
 
 	static QMutex mutex(QMutex::Recursive);
-	static QThread *thread_processing = NULL;
+	static QThread *thread_processing = nullptr;
 	static bool processing_result = false;
 	static bool main_thread_processing = false;
 
@@ -430,7 +430,7 @@ int vipProcessEvents(bool * keep_going, int milli)
 		}
 		{
 			QMutexLocker lock(&mutex);
-			thread_processing = NULL;
+			thread_processing = nullptr;
 			main_thread_processing = false;
 		}
 		if (keep_going && *keep_going == false)
@@ -487,7 +487,7 @@ int vipProcessEvents(bool * keep_going, int milli)
 		{
 			QMutexLocker lock(&mutex);
 			processing_result = !(*alive);
-			thread_processing = NULL;
+			thread_processing = nullptr;
 		}
 		if (keep_going && *keep_going == false)
 			res = -1;

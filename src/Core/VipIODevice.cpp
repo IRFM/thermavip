@@ -35,7 +35,7 @@
 // QMutex read_mutex;
 //
 // public:
-// ReadThread() : device(NULL), time(VipInvalidTime), forward(true)
+// ReadThread() : device(nullptr), time(VipInvalidTime), forward(true)
 // {}
 //
 // void start(VipIODevice * dev)
@@ -47,7 +47,7 @@
 //
 // void stop()
 // {
-// device = NULL;
+// device = nullptr;
 // wait();
 // }
 //
@@ -176,7 +176,7 @@ public:
 	PrivateData()
 	  : mode(NotOpen)
 	  , size(VipInvalidPosition)
-	  , device(NULL)
+	  , device(nullptr)
 	  , readTime(VipInvalidTime)
 	  , lastReadTime(0)
 	  , elapsed_time(0)
@@ -235,7 +235,7 @@ void VipIODevice::close()
 		device()->close();
 		if (device()->parent() == this && this->thread() == QThread::currentThread())
 			delete device();
-		setDevice(NULL);
+		setDevice(nullptr);
 	}
 	m_data->size = 0;
 }
@@ -356,7 +356,7 @@ QIODevice* VipIODevice::createDevice(const QString& path, QIODevice::OpenMode mo
 		else
 			delete file;
 	}
-	return NULL;
+	return nullptr;
 }
 
 bool VipIODevice::setPath(const QString& path)
@@ -937,7 +937,7 @@ bool VipFileHandler::open(VipIODevice::OpenModes mode)
 // }
 //
 // public:
-// VipThreadPool(QObject * parent = NULL)
+// VipThreadPool(QObject * parent = nullptr)
 // :QObject(parent), m_mutex(QMutex::Recursive)
 // {
 //
@@ -1009,7 +1009,7 @@ public:
 	  , has_temporal(false)
 	  , dirty_time_window(true)
 	  , device_type(Resource)
-	  , dirty_children(NULL)
+	  , dirty_children(nullptr)
 	  , device_mutex(QMutex::Recursive)
 	  , thread(parent)
 	  , maxReadThreadCount(0)
@@ -1168,7 +1168,7 @@ static void setPoolObjectName(VipProcessingPool* pool, const QString& name)
 	QMutexLocker lock(&getPoolsMutex());
 	QList<VipProcessingPool*>& pools = getPools();
 
-	VipProcessingPool* found = NULL;
+	VipProcessingPool* found = nullptr;
 
 	for (int i = 0; i < pools.size(); ++i) {
 		if (pool != pools[i] && pools[i]->objectName() == name) {
@@ -1238,7 +1238,7 @@ VipProcessingPool* VipProcessingPool::findPool(const QString& name)
 	for (int i = 0; i < pools.size(); ++i)
 		if (pools[i]->objectName() == name)
 			return pools[i];
-	return NULL;
+	return nullptr;
 }
 
 void VipProcessingPool::save()
@@ -1786,7 +1786,7 @@ VipTimeRangeList VipProcessingPool::computeTimeWindow() const
 		const_cast<VipProcessingPool*>(this)->computeDeviceType();
 		VipProcessingPool* _this = const_cast<VipProcessingPool*>(this);
 		_this->m_data->time_window.clear();
-		VipIODevice* temporal_device = NULL;
+		VipIODevice* temporal_device = nullptr;
 		int temporal_device_count = 0;
 		if (m_data->read_devices.size()) {
 			for (int i = 0; i < m_data->read_devices.size(); ++i) {
@@ -2085,7 +2085,7 @@ void VipProcessingPool::computeChildren()
 	computeDeviceType();
 
 	// notify that the time window has changed
-	m_data->dirty_children = NULL;
+	m_data->dirty_children = nullptr;
 }
 
 void VipProcessingPool::computeDeviceType()
@@ -2203,7 +2203,7 @@ void VipProcessingPool::stop()
 			if (QThread::currentThread() == qApp->thread())
 				QCoreApplication::processEvents();
 			else
-				vipProcessEvents(NULL, 10);
+				vipProcessEvents(nullptr, 10);
 		}
 
 		// m_data->thread.wait();
@@ -3069,7 +3069,7 @@ void VipTextFileWriter::apply()
 	VipAnyData any = inputAt(0)->data();
 
 	if (any.isEmpty()) {
-		setError("NULL input data", VipProcessingObject::WrongInput);
+		setError("nullptr input data", VipProcessingObject::WrongInput);
 		return;
 	}
 
@@ -3287,7 +3287,7 @@ void VipImageWriter::apply()
 	QImage img = vipToImage(any.value<VipNDArray>());
 
 	if (img.isNull()) {
-		setError("NULL input image", VipProcessingObject::WrongInput);
+		setError("nullptr input image", VipProcessingObject::WrongInput);
 		return;
 	}
 
@@ -3891,7 +3891,7 @@ VipIODevice* VipDirectoryReader::deviceFromOutput(int output_index) const
 
 		count += m_data->devices[i]->outputCount();
 	}
-	return NULL;
+	return nullptr;
 }
 
 VipIODevice* VipDirectoryReader::deviceAt(int index) const
@@ -4024,7 +4024,7 @@ bool VipDirectoryReader::open(VipIODevice::OpenModes mode)
 			have_template = true;
 			template_device = it.value();
 		}
-		VipIODevice* device = NULL;
+		VipIODevice* device = nullptr;
 
 		// create the device
 		if (have_template) {

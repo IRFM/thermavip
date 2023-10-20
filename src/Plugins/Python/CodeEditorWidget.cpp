@@ -34,7 +34,7 @@ CodeEditorWidget::CodeEditorWidget(QWidget * parent)
 	:QWidget(parent)
 {
 	m_data = new PrivateData();
-	m_data->progress = NULL;
+	m_data->progress = nullptr;
 	
 	m_data->runFileCode = "_vip_stop = 1\n"
 		"def runFile(file):\n"
@@ -236,7 +236,7 @@ void CodeEditorWidget::check()
 
 		if (m_data->progress) {
 			delete m_data->progress;
-			m_data->progress = NULL;
+			m_data->progress = nullptr;
 		}
 
 		Q_EMIT fileFinished();
@@ -259,7 +259,7 @@ void CodeEditorWidget::execFile(bool show_progress)
 	stopFile();
 
 	
-	QWidget* exec_in_shell = NULL;
+	QWidget* exec_in_shell = nullptr;
 	if (GetPyOptions()->launchCode() == PyOptions::InIPythonInterp) {
 		if(GetIPythonToolWidget() && GetIPythonToolWidget()->widget()->count())
 			exec_in_shell = qobject_cast<IPythonWidget*>(GetIPythonToolWidget()->widget()->currentWidget());
@@ -340,7 +340,7 @@ void CodeEditorWidget::stopFile(bool wait)
 {
 	if (m_data->progress) {
 		delete m_data->progress;
-		m_data->progress = NULL;
+		m_data->progress = nullptr;
 	}
 	if (m_data->running) {
 		
@@ -406,7 +406,7 @@ static VipArchive & operator>>(VipArchive & arch, CodeEditorToolWidget * w)
 
 PYTHON_EXPORT CodeEditorToolWidget * GetCodeEditorToolWidget()
 {
-	static CodeEditorToolWidget *python = NULL;
+	static CodeEditorToolWidget *python = nullptr;
 	if (!python) {
 		python = new CodeEditorToolWidget(vipGetMainWindow());
 		vipRegisterArchiveStreamOperators<CodeEditorToolWidget*>();

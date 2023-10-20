@@ -148,20 +148,20 @@ public:
 		Minimized,//!Widget is minimized
 	};
 
-	VipBaseDragWidget(QWidget * parent = NULL);
+	VipBaseDragWidget(QWidget * parent = nullptr);
 	virtual ~VipBaseDragWidget();
 
-	///Returns he parent VipMultiDragWidget, if this widget belongs to any. Might be NULL, meaning that this widget is a top level widget.
+	///Returns he parent VipMultiDragWidget, if this widget belongs to any. Might be nullptr, meaning that this widget is a top level widget.
 	VipMultiDragWidget * parentMultiDragWidget() const ;
 
 	///Returns the top level VipMultiDragWidget.
-	/// Returns a NULL VipMultiDragWidget if this widget IS the top level VipMultiDragWidget.
+	/// Returns a nullptr VipMultiDragWidget if this widget IS the top level VipMultiDragWidget.
 	VipMultiDragWidget * topLevelMultiDragWidget() const;
 
-	///Returns a valid (not NULL) top level VipMultiDragWidget. If this widget is the top level VipMultiDragWidget, returns this.
+	///Returns a valid (not nullptr) top level VipMultiDragWidget. If this widget is the top level VipMultiDragWidget, returns this.
 	VipMultiDragWidget * validTopLevelMultiDragWidget() const;
 
-	///Returns the top level parent (i.e. the parent widget of the top level VipMultiDragWidget). Might be NULL.
+	///Returns the top level parent (i.e. the parent widget of the top level VipMultiDragWidget). Might be nullptr.
 	virtual QWidget * topLevelParent();
 
 	///Returns true if this widget is a top level VipMultiDragWidget.
@@ -303,7 +303,7 @@ class VIP_GUI_EXPORT VipDragWidget : public VipBaseDragWidget
 
 public:
 
-	VipDragWidget(QWidget * parent = NULL);
+	VipDragWidget(QWidget * parent = nullptr);
 	~VipDragWidget();
 
 	///Returns true if the widget has the focus
@@ -337,7 +337,7 @@ class VipDragTabWidget : public QTabWidget
 {
 	Q_OBJECT
 public:
-	VipDragTabWidget(QWidget* parent = NULL);
+	VipDragTabWidget(QWidget* parent = nullptr);
 	~VipDragTabWidget();
 
 	QTabBar* TabBar() const;
@@ -532,7 +532,7 @@ public:
 		Right
 	};
 
-	VipMultiDragWidget(QWidget * parent = NULL);
+	VipMultiDragWidget(QWidget * parent = nullptr);
 	~VipMultiDragWidget();
 
 	/// @brief Set a custom reparent function used by VipMultiDragWidget::supportReparent()
@@ -581,8 +581,8 @@ public:
 	int count() const;
 
 	/// Returns the position of given VipBaseDragWidget inside this VipMultiDragWidget.
-	/// \param index if not NULL, filled with the index of given VipBaseDragWidget inside its parent QTabWidget (usually 0).
-	QPoint indexOf(VipBaseDragWidget * w, int *index = NULL) const;
+	/// \param index if not nullptr, filled with the index of given VipBaseDragWidget inside its parent QTabWidget (usually 0).
+	QPoint indexOf(VipBaseDragWidget * w, int *index = nullptr) const;
 
 	/// Vertically resize the VipMultiDragWidget from the top or the bottom by adding horizontal splitters containing one QTabWidget object.
 	/// You can safely fill the new slots by calling #setWidget().
@@ -703,7 +703,7 @@ protected:
 
 private:
 	/// Returns the maximum width
-	int maxWidth(int* row = NULL, int* row_count = NULL) const;
+	int maxWidth(int* row = nullptr, int* row_count = nullptr) const;
 	//create a new QTabWidget
 	QTabWidget * createTabWidget();
 	//create a new horizontal splitter
@@ -754,7 +754,7 @@ class VIP_GUI_EXPORT VipDragWidgetArea : public QScrollArea
 	friend class VipViewportArea;
 
 public:
-	VipDragWidgetArea(QWidget * parent = NULL);
+	VipDragWidgetArea(QWidget * parent = nullptr);
 	~VipDragWidgetArea();
 
 	virtual VipMultiDragWidget * createMultiDragWidget() const {

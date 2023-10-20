@@ -10,7 +10,7 @@ class VIP_CORE_EXPORT VipTimer : public QThread
 	Q_OBJECT
 
 public:
-	VipTimer(QObject * parent = NULL);
+	VipTimer(QObject * parent = nullptr);
 	~VipTimer();
 
 	///Returns the time interval in miliseconds

@@ -290,7 +290,7 @@ static QPolygon extractPixels(const QPolygonF & polygon)
 // QList<QPolygonF> p = pa.toFillPolygons();
 // return p;
 // }
-// static QList<QPolygon> extractContour(const QPainterPath & p, QRect * bounding = NULL)
+// static QList<QPolygon> extractContour(const QPainterPath & p, QRect * bounding = nullptr)
 // {
 // QList<QPolygon> res;
 //
@@ -1313,7 +1313,7 @@ void VipShape::setGroup(const QString & group)
 
 VipShapeSignals * VipShape::shapeSignals() const
 {
-	VipShapeSignals * res = NULL;
+	VipShapeSignals * res = nullptr;
 
 	d_data->mutex.lockForRead();
 	if (VipSceneModel s = this->parent())
@@ -1596,7 +1596,7 @@ public:
 	VipShapeSignals * shapeSignals;
 	QVariantMap attributes;
 
-	PrivateData() : sceneModel(NULL), shapeSignals(NULL)
+	PrivateData() : sceneModel(nullptr), shapeSignals(nullptr)
 	{
 		shapeSignals = new VipShapeSignals();
 

@@ -181,7 +181,7 @@ static QVariant merge_components(const QVariantList & lst, VipExtractComponents 
 
 
 VipSplitAndMerge::VipSplitAndMerge(QObject * parent)
-	:VipProcessingObject(parent), m_extract(NULL), m_is_applying(false)
+	:VipProcessingObject(parent), m_extract(nullptr), m_is_applying(false)
 {}
 
 VipSplitAndMerge::~VipSplitAndMerge()
@@ -221,7 +221,7 @@ bool VipSplitAndMerge::setMethod(const QString& method)
 	if (m_extract)
 	{
 		delete m_extract;
-		m_extract = NULL;
+		m_extract = nullptr;
 	}
 
 	if (method == "Complex Real/Imag")
@@ -354,7 +354,7 @@ void VipSplitAndMerge::applyInternal(bool update)
 	m_is_applying = true;
 	if (m_procList.size() == 0)
 	{
-		//NULL method: just return the input
+		//nullptr method: just return the input
 		outputAt(0)->setData(in);
 		m_is_applying = false;
 		return;
@@ -486,7 +486,7 @@ void VipExtractHistogram::apply()
 			{
 				if (m_extract) {
 					delete m_extract;
-					m_extract = NULL;
+					m_extract = nullptr;
 				}
 				if (!(m_extract = vipCreateExtractComponents(method))) {
 					setError("Invalid component splitting method: " + method);
@@ -573,7 +573,7 @@ void VipExtractPolyline::apply()
 			{
 				if (m_extract) {
 					delete m_extract;
-					m_extract = NULL;
+					m_extract = nullptr;
 				}
 				if (!(m_extract = vipCreateExtractComponents(method))) {
 					setError("Invalid component splitting method: " + method);

@@ -620,7 +620,7 @@ void VipXIArchive::doContent(QString& name, QVariant& value, QVariantMap& metada
 
 	if (!value.isValid()) {
 		value = vipCreateVariant(type_name.toLatin1().data());
-		if (!value.isValid() || ((QMetaType(value.userType()).flags() & QMetaType::PointerToQObject) && value.value<QObject*>() == NULL)) {
+		if (!value.isValid() || ((QMetaType(value.userType()).flags() & QMetaType::PointerToQObject) && value.value<QObject*>() == nullptr)) {
 			setError("Cannot create QVariant value with type name ='" + type_name + "'");
 			return;
 		}

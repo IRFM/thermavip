@@ -314,9 +314,9 @@ public:
 		hasChanged(false),
 		expandToFullArea(false),
 		autodelete(true),
-		plotSelection(NULL),
-		parent(NULL),
-		rotate(NULL)
+		plotSelection(nullptr),
+		parent(nullptr),
+		rotate(nullptr)
 	{
 		boxStyle.setBorderPen(QPen());
 	}
@@ -574,7 +574,7 @@ void VipResizeItem::setManagedItems(const PlotItemList & managed)
 			item->unsetCursor();
 			item->removeSceneEventFilter(this);
 			if(qobject_cast<VipResizeItem*>(item))
-					static_cast<VipResizeItem*>(item)->d_data->parent = NULL;
+					static_cast<VipResizeItem*>(item)->d_data->parent = nullptr;
 			disconnect(item,SIGNAL(parentChanged()),this,SLOT(managedItemsChanged()));
 			disconnect(item,SIGNAL(itemChanged(VipPlotItem*)),this,SLOT(managedItemsChanged()));
 			disconnect(d_data->managed[i],SIGNAL(destroyed(QObject*)),this,SLOT(itemDestroyed(QObject*)));
@@ -1202,7 +1202,7 @@ void	VipResizeItem::mousePressEvent ( QGraphicsSceneMouseEvent * event )
 	if(!ctrl_down && !(was_selected && selected))
 	{
 		//unselect all other items except the top level parent VipResizeItem (if any) and the unique managed item (if any)
-		VipPlotItem * managed = d_data->managed.size() ==1 ? d_data->managed.first() : NULL;
+		VipPlotItem * managed = d_data->managed.size() ==1 ? d_data->managed.first() : nullptr;
 
 		QList<QGraphicsItem *> items;
 		if(parentItem())

@@ -100,7 +100,7 @@ class VIP_GUI_EXPORT VipDisplayTabWidget : public QTabWidget
 {
 	Q_OBJECT
 public:
-	VipDisplayTabWidget(QWidget * parent = NULL);
+	VipDisplayTabWidget(QWidget * parent = nullptr);
 	VipDisplayTabBar * displayTabBar() const;
 	VipDisplayArea * displayArea() const;
 
@@ -188,7 +188,7 @@ public:
 	};
 	typedef QFlags<Operation> Operations;
 
-	VipDisplayPlayerArea(QWidget * parent = NULL);
+	VipDisplayPlayerArea(QWidget * parent = nullptr);
 	~VipDisplayPlayerArea();
 
 	VipMultiDragWidget* mainDragWidget(const QWidgetList& widgets = QWidgetList(), bool create_if_null = true);
@@ -316,7 +316,7 @@ class VIP_GUI_EXPORT VipDisplayArea : public QWidget
 	friend class VipDisplayPlayerArea;
 public:
 
-	VipDisplayArea(QWidget * parent = NULL);
+	VipDisplayArea(QWidget * parent = nullptr);
 	~VipDisplayArea();
 
 	///Returns the child VipDisplayTabWidget
@@ -551,8 +551,8 @@ public:
 	bool saveSession(const QString & filename,int session_type = MainWindow, int session_content = All, const QByteArray & state = QByteArray());
 	bool saveSession(VipXOArchive & arch, int session_type = MainWindow, int session_content = All, const QByteArray & state = QByteArray());
 
-	QList<VipAbstractPlayer*> openPaths(const VipPathList & paths, VipAbstractPlayer * player, VipDisplayPlayerArea * area = NULL);
-	QList<VipAbstractPlayer*> openDevices(const QList<VipIODevice*> & devices, VipAbstractPlayer * player, VipDisplayPlayerArea * area = NULL);
+	QList<VipAbstractPlayer*> openPaths(const VipPathList & paths, VipAbstractPlayer * player, VipDisplayPlayerArea * area = nullptr);
+	QList<VipAbstractPlayer*> openDevices(const QList<VipIODevice*> & devices, VipAbstractPlayer * player, VipDisplayPlayerArea * area = nullptr);
 	void openPlayers(const QList<VipAbstractPlayer*> players);
 	/// There is a Qt bug that causes a crash when trying to render a widget while it's parent is being destroyed.
 	/// This causes the VipMultiWidgetIcons to crash when closing a VipDisplayPlayerArea.
@@ -684,7 +684,7 @@ VIP_GUI_EXPORT VipBaseDragWidget * vipCreateWidgetFromProcessingObject(VipProces
 /// If \a w is already a VipMultiDragWidget, it is returned. Otherwise, it will be inserted into a new VipMultiDragWidget.
 VIP_GUI_EXPORT VipMultiDragWidget * vipCreateFromBaseDragWidget(VipBaseDragWidget * w);
 
-/// Returns a VipBaseDragWidget from a list of widgets. If the list is empty, NULL is returned.
+/// Returns a VipBaseDragWidget from a list of widgets. If the list is empty, nullptr is returned.
 /// The widgets are inserted into a VipDragWidget objects and, if the list has a size of 2 or more, they are inserted into a VipMultiDragWidget.
 VIP_GUI_EXPORT VipBaseDragWidget * vipCreateFromWidgets(const QList<QWidget*> & widgets);
 

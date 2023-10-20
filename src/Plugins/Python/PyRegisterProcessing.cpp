@@ -37,7 +37,7 @@ QMultiMap<QString, VipProcessingObject::Info> _validProcessingObjects(const QVar
 			continue;
 
 		int in_count, out_count;
-		VipProcessingObject::IOCount(meta, &in_count, NULL, &out_count);
+		VipProcessingObject::IOCount(meta, &in_count, nullptr, &out_count);
 		if (lst.size() && !in_count)
 			continue;
 		else if (output_count && !out_count)
@@ -243,7 +243,7 @@ void PyRegisterProcessing::openProcessingManager()
 	if (dialog.exec() == QDialog::Accepted) {
 		bool ret = m->applyChanges();
 		if (!ret)
-			QMessageBox::warning(NULL, "Operation failure", "Failed to modify registered processing.");
+			QMessageBox::warning(nullptr, "Operation failure", "Failed to modify registered processing.");
 	}
 }
 
@@ -439,7 +439,7 @@ void PySignalFusionProcessingManager::updateWidget()
 	m_data->procList->clear();
 	for (int i = 0; i < infos.size(); ++i) {
 		VipProcessingObject::Info info = infos[i];
-		VipProcessingObject * tmp = NULL;
+		VipProcessingObject * tmp = nullptr;
 		//copy the init member
 		if (PySignalFusionProcessingPtr p = info.init.value<PySignalFusionProcessingPtr>()) {
 			PySignalFusionProcessingPtr init(new PySignalFusionProcessing());
@@ -579,7 +579,7 @@ void PySignalFusionProcessingManager::itemClicked(QTreeWidgetItem * item, int)
 
 	m_data->procDescription->setEnabled(items.size() == 1);
 
-	QTreeWidgetItem * selected = NULL;
+	QTreeWidgetItem * selected = nullptr;
 	if (item->isSelected())
 		selected = item;
 	else if (items.size())

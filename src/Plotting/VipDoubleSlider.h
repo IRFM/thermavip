@@ -106,7 +106,7 @@ class VIP_PLOTTING_EXPORT VipDoubleSliderWidget : public VipScaleWidget
 	Q_PROPERTY(bool singleStepEnabled READ singleStepEnabled WRITE setSingleStepEnabled)
 	Q_PROPERTY(double value READ value WRITE setValue)
 public:
-	VipDoubleSliderWidget(VipBorderItem::Alignment align, QWidget* parent = NULL);
+	VipDoubleSliderWidget(VipBorderItem::Alignment align, QWidget* parent = nullptr);
 
 	/// @brief Set axis alignment
 	void setAlignment(VipBorderItem::Alignment align);

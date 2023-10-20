@@ -18,7 +18,7 @@ public:
 	  left(5),
 	  displayMode(DisplayAllItems),
 		drawCheckbox(true),
-	  box(NULL),
+	  box(nullptr),
 		checked(false)
 	{}
 	 
@@ -58,7 +58,7 @@ VipLegend * VipLegendItem::legend() const
 	if (QGraphicsItem * item = parentItem())
 		if (QGraphicsObject * obj = item->toGraphicsObject())
 			return qobject_cast<VipLegend*>(obj);
-	return NULL;
+	return nullptr;
 }
 
 bool VipLegendItem::emptyLegendText() const
@@ -322,7 +322,7 @@ void VipLegendItem::setCheckable(bool checkable)
 		else
 		{
 			delete d_data->box;
-			d_data->box = NULL;
+			d_data->box = nullptr;
 		}
 		updateLegendItem();
 	}
@@ -1152,7 +1152,7 @@ void VipLegend::itemChanged(VipPlotItem * item)
 static bool registerVipBorderItem = vipSetKeyWordsForClass(&VipBorderLegend::staticMetaObject);
 
 VipBorderLegend::VipBorderLegend(Alignment pos, QGraphicsItem * parent )
-:VipBorderItem(pos,parent), d_legend(NULL), d_margin(0), d_length(0)
+:VipBorderItem(pos,parent), d_legend(nullptr), d_margin(0), d_length(0)
 {
 	//Z value just above standard axis
 	this->setZValue(21);
@@ -1167,7 +1167,7 @@ void VipBorderLegend::setLegend(VipLegend * legend)
 {
 	if (d_legend) {
 		delete d_legend;
-		d_legend = NULL;
+		d_legend = nullptr;
 	}
 	d_legend = legend;
 	if (d_legend) {
@@ -1179,9 +1179,9 @@ void VipBorderLegend::setLegend(VipLegend * legend)
 VipLegend* VipBorderLegend::legend()
 {
 	if (!d_legend)
-		return NULL;
+		return nullptr;
 	if(d_legend->parentItem() != this)
-		return d_legend = NULL;
+		return d_legend = nullptr;
 	else
 		return d_legend;
 }
@@ -1189,9 +1189,9 @@ VipLegend* VipBorderLegend::legend()
 const VipLegend *VipBorderLegend::legend() const
 {
 	if (!d_legend)
-		return NULL;
+		return nullptr;
 	if(d_legend->parentItem() != this)
-		return const_cast<VipBorderLegend*>(this)->d_legend = NULL;
+		return const_cast<VipBorderLegend*>(this)->d_legend = nullptr;
 	else
 		return d_legend;
 }
@@ -1199,12 +1199,12 @@ const VipLegend *VipBorderLegend::legend() const
 VipLegend * VipBorderLegend::takeLegend()
 {
 	if (d_legend) {
-		d_legend->setParentItem(NULL);
+		d_legend->setParentItem(nullptr);
 		VipLegend * res = d_legend;
-		d_legend = NULL;
+		d_legend = nullptr;
 		return res;
 	}
-	return NULL;
+	return nullptr;
 }
 
 void VipBorderLegend::setMargin(double margin)

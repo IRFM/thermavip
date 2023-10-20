@@ -126,7 +126,7 @@ VipPluginInterface * VipLoadPlugins::find(const QString & name) const
 		if (pname == search)
 			return m_data->interfaces[i];
 	}
-	return NULL;
+	return nullptr;
 }
 
 void VipLoadPlugins::unloadPlugins()

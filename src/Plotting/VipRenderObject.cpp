@@ -22,12 +22,12 @@
 static VipRenderObject * getRenderObject(QObject * item)
 {
 	if(!item)
-		return NULL;
+		return nullptr;
 	QVariant data = item->property("VipRenderObject");
 	if(data.userType() == qMetaTypeId<VipRenderObject*>())
 		return data.value<VipRenderObject*>();
 	else
-		return NULL;
+		return nullptr;
 }
 
 

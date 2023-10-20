@@ -71,7 +71,7 @@ class VIP_GUI_EXPORT VipFindDataButton : public QToolButton
 	Q_OBJECT
 
 public:
-	VipFindDataButton(QWidget * parent = NULL);
+	VipFindDataButton(QWidget * parent = nullptr);
 	~VipFindDataButton();
 
 	VipOutput * selectedData() const;
@@ -100,7 +100,7 @@ class VIP_GUI_EXPORT VipEditDataFusionProcessing : public QWidget
 	Q_OBJECT
 
 public:
-	VipEditDataFusionProcessing(QWidget * parent = NULL);
+	VipEditDataFusionProcessing(QWidget * parent = nullptr);
 	~VipEditDataFusionProcessing();
 
 	void setDataFusionProcessing(VipBaseDataFusion *);
@@ -212,7 +212,7 @@ class VipSplitAndMergeEditor : public QWidget
 	Q_OBJECT
 
 public:
-	VipSplitAndMergeEditor(QWidget * parent = NULL);
+	VipSplitAndMergeEditor(QWidget * parent = nullptr);
 	~VipSplitAndMergeEditor();
 
 	void setProcessing(VipSplitAndMerge * proc);
@@ -598,7 +598,7 @@ class VIP_GUI_EXPORT VipWarpingEditor : public QWidget
 	friend class DrawWarpingPoints;
 
 public:
-	VipWarpingEditor(QWidget* parent = NULL);
+	VipWarpingEditor(QWidget* parent = nullptr);
 	~VipWarpingEditor();
 
 	void setWarpingTransform(VipWarping*);
@@ -680,7 +680,7 @@ class VIP_GUI_EXPORT VipUniqueProcessingObjectEditor : public QWidget
 	Q_OBJECT
 
 public:
-	VipUniqueProcessingObjectEditor(QWidget * parent = NULL);
+	VipUniqueProcessingObjectEditor(QWidget * parent = nullptr);
 	~VipUniqueProcessingObjectEditor();
 
 	/// Modify the widget's content and display the editors for this VipProcessingObject.
@@ -716,7 +716,7 @@ class VIP_GUI_EXPORT VipProcessingLeafSelector : public QToolButton
 {
 	Q_OBJECT
 public:
-	VipProcessingLeafSelector(QWidget * parent = NULL);
+	VipProcessingLeafSelector(QWidget * parent = nullptr);
 	~VipProcessingLeafSelector();
 
 	void setProcessingPool(VipProcessingPool * pool);
@@ -778,7 +778,7 @@ class VIP_GUI_EXPORT VipMultiProcessingObjectEditor : public QWidget
 	Q_OBJECT
 
 public:
-	VipMultiProcessingObjectEditor(QWidget * parent = NULL);
+	VipMultiProcessingObjectEditor(QWidget * parent = nullptr);
 	~VipMultiProcessingObjectEditor();
 
 	bool setProcessingObjects(const QList<VipProcessingObject*> & obj);
@@ -789,7 +789,7 @@ public:
 	T processingEditor(VipProcessingObject * obj) const {
 		if (VipUniqueProcessingObjectEditor * ed = processingEditor(obj))
 			return ed->findChild<T>();
-		return NULL;
+		return nullptr;
 	}
 
 	///Show/hide the editor for a given processing.
@@ -868,7 +868,7 @@ private:
 	PrivateData * m_data;
 };
 
-VIP_GUI_EXPORT VipProcessingEditorToolWidget * vipGetProcessingEditorToolWidget(VipMainWindow * window = NULL);
+VIP_GUI_EXPORT VipProcessingEditorToolWidget * vipGetProcessingEditorToolWidget(VipMainWindow * window = nullptr);
 
 
 
@@ -880,7 +880,7 @@ class VipDeviceChoiceDialog : public QDialog
 {
 	Q_OBJECT
 public:
-	VipDeviceChoiceDialog(QWidget * parent = NULL);
+	VipDeviceChoiceDialog(QWidget * parent = nullptr);
 	~VipDeviceChoiceDialog();
 	void setChoices(const QList<VipIODevice*> &devices);
 	void setPath(const QString & path);

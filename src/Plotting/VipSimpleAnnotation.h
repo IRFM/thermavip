@@ -50,7 +50,7 @@ void vipRegisterAnnotationClass(const char * name)
 }
 
 /// Create an annotation class based on its classname.
-/// Returns NULL on error.
+/// Returns nullptr on error.
 VIP_PLOTTING_EXPORT VipAnnotation * vipCreateAnnotation(const char * name);
 /// Returns the registered annotation classes.
 VIP_PLOTTING_EXPORT QStringList vipAnnotations();
@@ -198,9 +198,9 @@ private:
 /// - "symbol" : for 'line' only, symbol for the end point (one of 'none', 'ellipse', 'rect', 'diamond', 'triangle', 'dtriangle', 'utriangle', 'ltriangle', 'rtriangle', 'cross', 'xcross', 'hline', 'vline', 'star1', 'star2', 'hexagon')
 /// - "symbolsize" : for 'line' and 'arrow', symbol size for the end point
 ///
-/// @param error is not NULL and one of the attributes has a wrong syntax, this string gives an error message
+/// @param error is not nullptr and one of the attributes has a wrong syntax, this string gives an error message
 ///
 /// @return created shape and annotation
 VIP_PLOTTING_EXPORT QPair<VipShape, VipSimpleAnnotation*> vipAnnotation(const QString & type, const QString & text,
 	const QPointF & start, const QPointF & end = QPointF(), const QVariantMap & attributes = QVariantMap(),
-	 QString * error  = NULL);
+	 QString * error  = nullptr);

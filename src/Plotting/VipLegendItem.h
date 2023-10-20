@@ -25,7 +25,7 @@ public:
 	};
 
 	/// @brief Construct from a VipPlotItem and a legend index
-	VipLegendItem(VipPlotItem * item, int index, QGraphicsItem* parent = NULL);
+	VipLegendItem(VipPlotItem * item, int index, QGraphicsItem* parent = nullptr);
 	~VipLegendItem();
 
 	/// @brief Returns the parent VipLegend (if any)
@@ -141,7 +141,7 @@ public:
 		NonCheckable
 	};
 
-	VipLegend(QGraphicsItem* parent = NULL);
+	VipLegend(QGraphicsItem* parent = nullptr);
 	~VipLegend();
 
 	/// @brief Set the item's check state

@@ -374,7 +374,7 @@ static QVariant stdToVariant(void * pyobject)
 	}
 	else
 	{
-		PyObject * new_object = PyArray_FromAny(res_object, NULL, 0, 0, NPY_ARRAY_ENSUREARRAY | NPY_ARRAY_C_CONTIGUOUS, NULL);
+		PyObject * new_object = PyArray_FromAny(res_object, nullptr, 0, 0, NPY_ARRAY_ENSUREARRAY | NPY_ARRAY_C_CONTIGUOUS, nullptr);
 		if (new_object)
 			res = QVariant::fromValue(PyNDArray(new_object).copy());
 	}
@@ -385,7 +385,7 @@ static QVariant stdToVariant(void * pyobject)
 
 static void * stdToPython(const QVariant & obj)
 {
-	PyObject * obj_object = NULL;
+	PyObject * obj_object = nullptr;
 	switch (obj.userType())
 	{
 	case QMetaType::Bool:
@@ -588,7 +588,7 @@ bool PyDelayExec::waitForFinished(int msecs)
 }
 
 #ifdef VIP_ENABLE_PYTHON_LINK
-static PyObject * __traceback = NULL;
+static PyObject * __traceback = nullptr;
 #endif
 
 
@@ -655,7 +655,7 @@ PyError::PyError(bool compute)
 			{
 				if (PyObject * format_exc = PyObject_GetAttrString(__traceback, "format_exception"))
 				{
-					if (PyObject * lst = PyObject_CallFunctionObjArgs(format_exc, ptype, pvalue, ptraceback, NULL))
+					if (PyObject * lst = PyObject_CallFunctionObjArgs(format_exc, ptype, pvalue, ptraceback, nullptr))
 					{
 						traceback.clear();
 						Py_ssize_t size = PyList_Size(lst);
@@ -702,7 +702,7 @@ PyError::PyError(bool compute)
 		//retrieve the other info based on the traceback
 
 		PyTracebackObject *tstate = (PyTracebackObject*)ptraceback;
-		if (NULL != tstate && NULL != tstate->tb_frame) {
+		if (nullptr != tstate && nullptr != tstate->tb_frame) {
 			PyFrameObject *frame = tstate->tb_frame;
 			line = frame->f_lineno;
 			Py_ssize_t size;
@@ -835,7 +835,7 @@ static PyIOOperation * getCurrentPyIOOperation()
 	if (it != PyLocalThreads.end())
 		return it.value();
 	else
-		return NULL;
+		return nullptr;
 }
 
 
@@ -916,7 +916,7 @@ static PyMethodDef Redirect_methods[] =
 static struct PyModuleDef Redirect_module = {
 	PyModuleDef_HEAD_INIT,
 	"redirect",   /* name of module */
-	NULL, /* module documentation, may be NULL */
+	nullptr, /* module documentation, may be nullptr */
 	-1,       /* size of per-interpreter state of the module,
 			  or -1 if the module keeps state in global variables. */
 	Redirect_methods
@@ -926,7 +926,7 @@ static struct PyModuleDef Redirect_module = {
 static PyObject* PyInit_redirect()
 {
 	static QBasicAtomicInt reg = Q_BASIC_ATOMIC_INITIALIZER(0);
-	static PyObject* redirect = NULL;
+	static PyObject* redirect = nullptr;
 	if (reg.loadAcquire())
 		return redirect;
 	else
@@ -961,12 +961,12 @@ static bool import_numpy_internal()
 	//
 	PyObject *_numpy = PyImport_ImportModule("numpy.core.multiarray");
 	if (!_numpy) {
-		printf("error, NULL module numpy.core.multiarray\n");
+		printf("error, nullptr module numpy.core.multiarray\n");
 		return false;
 	}
 	PyObject * c_api = PyObject_GetAttrString(_numpy, "_ARRAY_API");
 	Py_DECREF(_numpy);
-	if (c_api == NULL) {
+	if (c_api == nullptr) {
 		printf("_ARRAY_API not found\n");
 		return false;
 	}
@@ -978,7 +978,7 @@ static bool import_numpy_internal()
 	Py_DECREF(c_api);
 	return ;
 	}*/
-	PyArray_API = (void **)PyCapsule_GetPointer(c_api, NULL);
+	PyArray_API = (void **)PyCapsule_GetPointer(c_api, nullptr);
 	printf("numpy properly imported\n");
 	return true;
 #endif
@@ -1094,7 +1094,7 @@ public:
 						}
 						if (tmp)
 							printf("load '%s'\n", libPython.toLatin1().data());
-						if (tmp == NULL) {
+						if (tmp == nullptr) {
 							printf("Cannot find python shared library'\n");
 						}
 					}*/
@@ -1111,7 +1111,7 @@ public:
 				QString libPython = dirname + "/libpython" + py_version + "m.so";
 				printf("load '%s'\n", libPython.toLatin1().data());
 				void * tmp = dlopen(libPython.toLatin1().data(), RTLD_GLOBAL | RTLD_NOW);
-				if (tmp == NULL) {
+				if (tmp == nullptr) {
 					fprintf(stderr, "%s\n", dlerror());
 				}
 				QString ver = py_version;
@@ -1379,13 +1379,13 @@ struct PyHandle : public VipNDArrayHandle
 	int type;
 
 	PyHandle()
-		: VipNDArrayHandle(), array(NULL), type(0)
+		: VipNDArrayHandle(), array(nullptr), type(0)
 	{
 		initPython();
 	}
 
 	PyHandle(PyObject * obj)
-		:array(NULL), type(0)
+		:array(nullptr), type(0)
 	{
 		initPython();
 		GIL_Locker lock;
@@ -1417,7 +1417,7 @@ struct PyHandle : public VipNDArrayHandle
 	}
 
 	PyHandle(const PyHandle & other)
-		:array(NULL), type(0)
+		:array(nullptr), type(0)
 	{
 		initPython();
 		shape = other.shape;
@@ -1615,7 +1615,7 @@ void * PyNDArray::array() const
 {
 	if (handle())
 		return const_cast<PyObject*>(static_cast<const PyHandle*>(handle())->array);
-	return NULL;
+	return nullptr;
 }
 
 PyNDArray & PyNDArray::operator=(const VipNDArray & other)
@@ -1636,7 +1636,7 @@ QVariant PyLocal::evalCode(const CodeObject & code, bool * ok)
 	}
 
 	GIL_Locker lock;
-	PyObject * res = PyEval_EvalCode((PyObject*)code.code, (PyObject*)globalDict(), NULL);
+	PyObject * res = PyEval_EvalCode((PyObject*)code.code, (PyObject*)globalDict(), nullptr);
 	if (!res)
 	{
 		if (ok) * ok = false;
@@ -1737,7 +1737,7 @@ bool PyLocal::handleMagicCommand(const QString& cmd)
 		setWriteToProcess(p);
 		p->start(c);
 		while (p && p->state() == QProcess::Running) {
-			vipProcessEvents(NULL, 20);
+			vipProcessEvents(nullptr, 20);
 		}
 		return true;
 		/*QString c;
@@ -1793,7 +1793,7 @@ struct PyRunThread : public QThread
 	qint64 threadId;
 	int id;
 
-	PyRunThread() : local(NULL), current(NULL), threadId(0), id(1) {}
+	PyRunThread() : local(nullptr), current(nullptr), threadId(0), id(1) {}
 
 
 	PyLocal::command_type add(PyRunnable *r);
@@ -1994,7 +1994,7 @@ bool PyRunThread::waitForRunnable(PyLocal::command_type c, unsigned long time)
 			mutex.unlock();
 			//We need to check this pointer, as it might be destroyed during vipProcessEvents().
 			QPointer< PyRunThread> _this = this;
-			vipProcessEvents(NULL, 10); //main thread: process events
+			vipProcessEvents(nullptr, 10); //main thread: process events
 			if (!_this.data())
 				return false;
 			mutex.lock();
@@ -2041,7 +2041,7 @@ void PyRunThread::runOneLoop(PyLocal * loc)
 		current->run(loc);
 		PyRunnable * run = current;
 		QMutexLocker locker(&mutex);
-		current = NULL;
+		current = nullptr;
 		delete run;
 		cond.wakeAll();
 	}
@@ -2051,7 +2051,7 @@ void PyRunThread::runOneLoop(PyLocal * loc)
 class PyLocal::PrivateData
 {
 public:
-	PrivateData() : globals(NULL), wait_for_line(false) {}
+	PrivateData() : globals(nullptr), wait_for_line(false) {}
 	PyObject * globals;
 
 	PyRunThread runThread;
@@ -2103,7 +2103,7 @@ PyLocal * PyLocal::instance(qint64 thread_id)
 		if (static_cast<PyRunThread*>(pylocal_instances[i]->thread())->threadId == thread_id)
 			return pylocal_instances[i];
 	}
-	return NULL;
+	return nullptr;
 }
 
 void PyLocal::setWriteToProcess(QProcess* p)
@@ -2161,7 +2161,7 @@ void PyLocal::stop(bool wait)
 	if (d_data->runThread.local)
 	{
 
-		d_data->runThread.local = NULL;
+		d_data->runThread.local = nullptr;
 		int res = d_data->runThread.QThread::wait(1000);
 
 		//first, stop the current Python code being executed (if any)
@@ -2172,7 +2172,7 @@ void PyLocal::stop(bool wait)
 		}
 
 		//stop the interpreter thread
-		d_data->runThread.local = NULL;
+		d_data->runThread.local = nullptr;
 		if (wait)
 			d_data->runThread.QThread::wait();
 
@@ -2198,7 +2198,7 @@ bool PyLocal::isRunning() const
 
 bool PyLocal::isStopping() const
 {
-	return d_data->runThread.local == NULL;
+	return d_data->runThread.local == nullptr;
 }
 
 void * PyLocal::globalDict()
@@ -2215,14 +2215,14 @@ void PyLocal::__addStandardOutput(const QByteArray & data)
 {
 	d_data->std_output += data;
 	emitReadyReadStandardOutput();
-	vipProcessEvents(NULL, 50);
+	vipProcessEvents(nullptr, 50);
 }
 
 void PyLocal::__addStandardError(const QByteArray & data)
 {
 	d_data->std_error += data;
 	emitReadyReadStandardError();
-	vipProcessEvents(NULL, 50);
+	vipProcessEvents(nullptr, 50);
 }
 
 QByteArray PyLocal::__readinput()
@@ -2335,8 +2335,8 @@ void uninitPython()
 
 PyLocal::PyLocal(QObject * parent) :PyIOOperation(parent) {}
 PyLocal::~PyLocal() {}
-void * PyLocal::globalDict() { return NULL; }
-QThread * PyLocal::thread() { return NULL; }
+void * PyLocal::globalDict() { return nullptr; }
+QThread * PyLocal::thread() { return nullptr; }
 QByteArray PyLocal::readAllStandardOutput() { return QByteArray(); }
 QByteArray PyLocal::readAllStandardError() { return QByteArray(); }
 qint64 PyLocal::write(const QByteArray &) { return 0; }
@@ -2372,7 +2372,7 @@ void uninitPython()
 CodeObject::CodeObject()
 {
 #ifdef VIP_ENABLE_PYTHON_LINK
-	code = NULL;
+	code = nullptr;
 #endif
 }
 
@@ -2593,7 +2593,7 @@ class PyOptions::PrivateData
 {
 public:
 	PrivateData()
-		:dirty(true), recurs(false), type(Local), python("python"), workingDirectory("./"), pyIOOperation(NULL), launchCode(PyOptions::InIPythonInterp)
+		:dirty(true), recurs(false), type(Local), python("python"), workingDirectory("./"), pyIOOperation(nullptr), launchCode(PyOptions::InIPythonInterp)
 	{
 #ifndef VIP_ENABLE_PYTHON_LINK
 		type = Distant;
@@ -2697,7 +2697,7 @@ void PyOptions::clear()
 	if (d_data->pyIOOperation)
 	{
 		delete d_data->pyIOOperation;
-		d_data->pyIOOperation = NULL;
+		d_data->pyIOOperation = nullptr;
 	}
 }
 
@@ -2738,7 +2738,7 @@ struct BoolLocker
 PyIOOperation * PyOptions::pyIOOperation(bool create_new) const
 {
 	if (__python_closed)
-		return NULL;
+		return nullptr;
 
 	//avoid recursicve call to this function
 	if (d_data->recurs)
@@ -2768,15 +2768,15 @@ PyIOOperation * PyOptions::pyIOOperation(bool create_new) const
 					PyProcessingLocker lock;
 					//printf("delete pyIOOperation\n");
 					delete _this->d_data->pyIOOperation;
-					//printf("NULL pyIOOperation\n");
-					_this->d_data->pyIOOperation = NULL;
+					//printf("nullptr pyIOOperation\n");
+					_this->d_data->pyIOOperation = nullptr;
 				}
 
 			}
 			else {
 				PyProcessingLocker lock;
 				delete _this->d_data->pyIOOperation;
-				_this->d_data->pyIOOperation = NULL;
+				_this->d_data->pyIOOperation = nullptr;
 			}
 
 		}
@@ -2840,7 +2840,7 @@ QVariant PyOptions::evalCode(const CodeObject & code, bool * ok)
 {
 	if (!__python_closed)
 		return pyIOOperation()->evalCode(code, ok);
-	return QVariant::fromValue(PyError("NULL PyOptions"));
+	return QVariant::fromValue(PyError("nullptr PyOptions"));
 }
 
 PyOptions::command_type PyOptions::sendObject(const QString & name, const QVariant & obj)
@@ -2894,14 +2894,14 @@ void PyOptions::startInteractiveInterpreter()
 PyIOOperation * PyOptions::createNew(QObject * parent)
 {
 	if (__python_closed)
-		return NULL;
+		return nullptr;
 
 	PyIOOperation * res = GetPyOptions()->pyType() == PyOptions::Local ?
 		(PyIOOperation*)new PyLocal(parent) :
 		(PyIOOperation*)new PyProcess(GetPyOptions()->python(), parent);
 	if (!res->start()) {
 		delete res;
-		return NULL;
+		return nullptr;
 	}
 
 	res->wait(res->execCode("import os;os.chdir('" + GetPyOptions()->workingDirectory() + "')"));

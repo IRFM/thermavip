@@ -168,12 +168,12 @@ double VipExtractComponents::ClamMax(int component) const
 const double *VipExtractComponents::ClampMinPtr(int component) const
 {
 	QMap<int, double*>::const_iterator found = m_clampMin.find(component);
-	return found == m_clampMin.end() ? NULL : found.value();
+	return found == m_clampMin.end() ? nullptr : found.value();
 }
 const double *VipExtractComponents::ClamMaxPtr(int component) const
 {
 	QMap<int, double*>::const_iterator found = m_clampMax.find(component);
-	return found == m_clampMax.end() ? NULL : found.value();
+	return found == m_clampMax.end() ? nullptr : found.value();
 }
 
 

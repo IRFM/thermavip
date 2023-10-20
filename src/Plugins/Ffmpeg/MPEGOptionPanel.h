@@ -18,7 +18,7 @@ class MPEGOptionPanel : public QGroupBox
 	
 public:
 
-	MPEGOptionPanel(QWidget * parent = NULL);
+	MPEGOptionPanel(QWidget * parent = nullptr);
 	~MPEGOptionPanel();
 
 	void setSaver(MPEGSaver * saver);

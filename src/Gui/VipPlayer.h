@@ -42,7 +42,7 @@ public:
 	QAction * selectionModeAction;
 	//QToolButton *	selectionMode;
 
-	VipPlayerToolBar(QWidget * parent = NULL);
+	VipPlayerToolBar(QWidget * parent = nullptr);
 	~VipPlayerToolBar() {}
 };
 
@@ -68,7 +68,7 @@ public:
 	static void paste(VipAbstractPlotArea * dst, QWidget * drop_target);
 
 	/// Tells if at least one of current copied items can be dropped into target player.
-	/// Given player might be NULL.
+	/// Given player might be nullptr.
 	static bool supportDestinationPlayer(VipAbstractPlayer * pl);
 
 	static bool supportSourceItems();
@@ -128,8 +128,8 @@ class VIP_GUI_EXPORT VipPlotWidget
 {
 	Q_OBJECT
 public:
-	VipPlotWidget(QWidget* parent = NULL);
-	VipPlotWidget(VipAbstractPlotWidget2D* plot, QWidget* parent = NULL);
+	VipPlotWidget(QWidget* parent = nullptr);
+	VipPlotWidget(VipAbstractPlotWidget2D* plot, QWidget* parent = nullptr);
 
 	virtual void setPlotWidget2D(VipAbstractPlotWidget2D* plot);
 	VipAbstractPlotWidget2D* plotWidget2D() const;
@@ -152,7 +152,7 @@ class VIP_GUI_EXPORT VipAbstractPlayer : public VipPlotWidget
 	Q_PROPERTY(bool automaticWindowTitle READ automaticWindowTitle WRITE setAutomaticWindowTitle)
 		
 public:
-	VipAbstractPlayer(QWidget * parent = NULL);
+	VipAbstractPlayer(QWidget * parent = nullptr);
 	~VipAbstractPlayer();
 
 	/// Returns a new instance inheriting VipAbstractPlayer class
@@ -160,7 +160,7 @@ public:
 	/// Retruns all instances of #VipDisplayObject this player contains
 	virtual QList<VipDisplayObject*> displayObjects() const = 0;
 	///Returns the main display object (if any) for this player
-	virtual VipDisplayObject* mainDisplayObject() const { return NULL; }
+	virtual VipDisplayObject* mainDisplayObject() const { return nullptr; }
 	/// Set the #VipProcessingPool for this player.
 	/// This function can be overloaded to provide a custom behavior based on the VipProcessingPool object.
 	/// When subclassing VipAbstractPlayer, you must call VipAbstractPlayer::setProcessingPool() at the start of your function to ensure integrity with setProcessingPool's built-in processing pool
@@ -172,7 +172,7 @@ public:
 
 	/// Returns the tool bar associated to this player if any.
 	/// This is mainly used by the AdvancedDisplay plugin.
-	virtual QToolBar* playerToolBar() const { return NULL; }
+	virtual QToolBar* playerToolBar() const { return nullptr; }
 
 	/// If set to true (default), the player's title is automatically set based on the displayed data name.
 	/// Disable it if you want to give a custom window title (VipAbstractPlayer::setWindowTitle)
@@ -230,10 +230,10 @@ class VIP_GUI_EXPORT VipWidgetPlayer : public VipAbstractPlayer
 {
 	Q_OBJECT
 public:
-	VipWidgetPlayer(QWidget* w =NULL, QWidget* parent = NULL);
+	VipWidgetPlayer(QWidget* w =nullptr, QWidget* parent = nullptr);
 	~VipWidgetPlayer();
 
-	virtual VipWidgetPlayer* createEmpty() const { return new VipWidgetPlayer(NULL); }
+	virtual VipWidgetPlayer* createEmpty() const { return new VipWidgetPlayer(nullptr); }
 	virtual QList<VipDisplayObject*> displayObjects() const { return  QList<VipDisplayObject*>(); }
 	virtual QSize sizeHint() const;
 
@@ -304,7 +304,7 @@ public:
 		Paste
 	};
 
-	VipPlayer2D(QWidget * parent = NULL);
+	VipPlayer2D(QWidget * parent = nullptr);
 	~VipPlayer2D();
 
 	virtual QMenu * generateToolTipMenu();
@@ -333,11 +333,11 @@ public:
 	virtual QList<VipPlotSceneModel *> plotSceneModels() const;
 
 	/// Find a VipPlayer2D's VipPlotSceneModel object based on a VipSceneModel.
-	/// Returns a NULL VipPlotSceneModel is no scene model has been found.
+	/// Returns a nullptr VipPlotSceneModel is no scene model has been found.
 	VipPlotSceneModel * findPlotSceneModel(const VipSceneModel & scene) const;
 
 	/// Find a VipPlayer2D's VipPlotSceneModel object based on its X and Y scales.
-	/// Returns a NULL VipPlotSceneModel is no valid object has been found.
+	/// Returns a nullptr VipPlotSceneModel is no valid object has been found.
 	VipPlotSceneModel * findPlotSceneModel(const QList<VipAbstractScale*> & scales) const;
 
 	/// Create a new VipPlotSceneModel for given scales and returns it.
@@ -352,10 +352,10 @@ public:
 	QList<VipShape> findSelectedShapes(int selected = 2, int visible = 2) const;
 
 	/// Helper function.
-	/// Returns the VipDisplaySceneModel corresponding to a given scene model or shape, or NULL if no VipDisplaySceneModel was found.
+	/// Returns the VipDisplaySceneModel corresponding to a given scene model or shape, or nullptr if no VipDisplaySceneModel was found.
 	VipDisplaySceneModel * findDisplaySceneModel(const VipSceneModel & scene) const;
 	/// Helper function.
-	/// Returns the VipDisplaySceneModel corresponding to a given scene model or shape, or NULL if no VipDisplaySceneModel was found.
+	/// Returns the VipDisplaySceneModel corresponding to a given scene model or shape, or nullptr if no VipDisplaySceneModel was found.
 	VipDisplaySceneModel * findDisplaySceneModel(const VipShape & scene) const;
 
 	/// Add the content of given VipSceneModels to the current editable scene models (used for ROI edition).
@@ -509,7 +509,7 @@ class VIP_GUI_EXPORT VipVideoPlayer : public VipPlayer2D
 		Q_PROPERTY(QPen defaultContourPen READ defaultContourPen WRITE setDefaultContourPen)
 
 public:
-	VipVideoPlayer(VipImageWidget2D * img = NULL, QWidget * parent = NULL);
+	VipVideoPlayer(VipImageWidget2D * img = nullptr, QWidget * parent = nullptr);
 	~VipVideoPlayer();
 
 	///Returns the #VipImageWidget2D widget
@@ -559,7 +559,7 @@ public:
 	///Returns the #VipRecordWidget widget used to handle the VipGenericRecorder
 	//VipRecordWidget * recordWidget() const;
 	///Returns the source #VipProcessingList, which must be a source of the inner #VipDisplayImage.
-	/// Returns a NULL pointer if this player does not have a #VipDisplayImage, or if the #VipDisplayImage does not have a source #VipProcessingList.
+	/// Returns a nullptr pointer if this player does not have a #VipDisplayImage, or if the #VipDisplayImage does not have a source #VipProcessingList.
 	VipProcessingList * sourceProcessingList() const;
 
 	///Returns a new, empty VipVideoPlayer instance
@@ -744,7 +744,7 @@ VIP_GUI_EXPORT VipSceneModel vipCopyVideoSceneModel(const VipSceneModel & sm, co
 class VipPlotPlayer;
 /// High level function.
 /// Extract the time trace of a shape from a video player, and display it in a new plot player inside the current display area.
-VIP_GUI_EXPORT VipPlotPlayer* vipExtractTimeTrace(const VipShapeList & shapes, VipVideoPlayer * pl, VipShapeStatistics::Statistics stats = 0, int one_frame_out_of = 1, int multi_shapes = -1, VipPlotPlayer* out = NULL);
+VIP_GUI_EXPORT VipPlotPlayer* vipExtractTimeTrace(const VipShapeList & shapes, VipVideoPlayer * pl, VipShapeStatistics::Statistics stats = 0, int one_frame_out_of = 1, int multi_shapes = -1, VipPlotPlayer* out = nullptr);
 
 class VipPlotMarker;
 
@@ -756,7 +756,7 @@ class VIP_GUI_EXPORT VipPlotPlayer : public VipPlayer2D
 public:
 	typedef VipValueToTime::TimeType(*function_type)(VipPlotPlayer *);
 
-	VipPlotPlayer(VipAbstractPlotWidget2D* viewer = NULL, QWidget * parent = NULL);
+	VipPlotPlayer(VipAbstractPlotWidget2D* viewer = nullptr, QWidget * parent = nullptr);
 	~VipPlotPlayer();
 
 	///Returns the underlying #VipPlotWidget2D
@@ -787,10 +787,10 @@ public:
 
 
 	///Returns the source #VipProcessingList for the selected #VipPlotItemData.
-	/// Returns a NULL pointer if the VipProcessingList cannot be found, if there are several or no VipPlotItemData selected.
+	/// Returns a nullptr pointer if the VipProcessingList cannot be found, if there are several or no VipPlotItemData selected.
 	VipProcessingList * currentProcessingList() const;
 	///Returns the #VipPlotItemData that is currently selected.
-	/// Returns NULL if there are several or no VipPlotItemData selected.
+	/// Returns nullptr if there are several or no VipPlotItemData selected.
 	VipPlotItemData * currentPlotItem() const;
 
 	virtual QGraphicsObject *  defaultEditableObject() const;

@@ -7,7 +7,7 @@
 
 MPEGOptionPanel::MPEGOptionPanel(QWidget * parent)
 :QGroupBox("Encoding options",parent),videoCodec("Video codec",this),rate("Rate(Kb/s)",this),fps("Frames per second",this)
-,videoCodecText(this),rateText(this),fpsText(this),saver(NULL)
+,videoCodecText(this),rateText(this),fpsText(this),saver(nullptr)
 {
 	videoCodec.hide();
 	videoCodecText.hide();

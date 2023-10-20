@@ -180,7 +180,7 @@ QWidget* VipWebBrowser::widgetForMouseEvents() const
 	// if (QWidget* w = qobject_cast<QWidget*>(lst[i]))
 	// return w;
 	// }
-	// return NULL;
+	// return nullptr;
 }
 
 QToolBar* VipWebBrowser::playerToolBar() const

@@ -578,9 +578,9 @@ inline QString VipText::replace(const QString & input, const QString& str, const
 }
 
 class QPicture;
-VIP_PLOTTING_EXPORT QByteArray vipToHtml(const QPixmap& pixmap, const QByteArray& additional_attributes = QByteArray(), bool* ok = NULL);
-VIP_PLOTTING_EXPORT QByteArray vipToHtml(const QImage& image, const QByteArray& additional_attributes = QByteArray(), bool* ok = NULL);
-VIP_PLOTTING_EXPORT QByteArray vipToHtml(const QPicture& picture, const QByteArray& additional_attributes = QByteArray(), bool* ok = NULL);
+VIP_PLOTTING_EXPORT QByteArray vipToHtml(const QPixmap& pixmap, const QByteArray& additional_attributes = QByteArray(), bool* ok = nullptr);
+VIP_PLOTTING_EXPORT QByteArray vipToHtml(const QImage& image, const QByteArray& additional_attributes = QByteArray(), bool* ok = nullptr);
+VIP_PLOTTING_EXPORT QByteArray vipToHtml(const QPicture& picture, const QByteArray& additional_attributes = QByteArray(), bool* ok = nullptr);
 
 class VIP_PLOTTING_EXPORT VipTextObject
 {

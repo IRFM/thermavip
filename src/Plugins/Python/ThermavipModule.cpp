@@ -364,7 +364,7 @@ static ResultType setWorkspaceTitle(int id, const QString & title)
 
 static ResultType openPath(const QVariant & p, int player = 0, const QString & side = QString())
 {
-	VipDragWidget * w = NULL;
+	VipDragWidget * w = nullptr;
 	VipPathList paths;
 	if (p.userType() == qMetaTypeId<QString>())
 		paths << p.toString();
@@ -399,8 +399,8 @@ static ResultType openPath(const QVariant & p, int player = 0, const QString & s
 			VipMultiDragWidget * mw = VipMultiDragWidget::fromChild(w);
 			QPoint pt = mw->indexOf(w);
 			//create new player
-			QList<VipAbstractPlayer*> pls = vipCreatePlayersFromPaths(paths, NULL);
-			pl = pls.size() ? pls.first() : NULL;
+			QList<VipAbstractPlayer*> pls = vipCreatePlayersFromPaths(paths, nullptr);
+			pl = pls.size() ? pls.first() : nullptr;
 			if (!pl)
 				return ResultType(QVariant(), "Cannot open data for given path(s)" );
 
@@ -431,7 +431,7 @@ static ResultType openPath(const QVariant & p, int player = 0, const QString & s
 
 	}
 	else {
-		QList<VipAbstractPlayer *> pl = vipGetMainWindow()->openPaths(paths,NULL);
+		QList<VipAbstractPlayer *> pl = vipGetMainWindow()->openPaths(paths,nullptr);
 		if (pl.isEmpty())
 			return ResultType(QVariant(), "Cannot open data ");
 
@@ -708,7 +708,7 @@ static VipDisplayPlotItem * findDisplay(VipPlayer2D * pl, const QString & partia
 {
 	//"image" is a valid name for video player
 	if (partial_name.isEmpty() || (QString("image").indexOf(partial_name) >= 0 && qobject_cast<VipVideoPlayer*>(pl))) {
-		VipDisplayPlotItem * item = NULL;
+		VipDisplayPlotItem * item = nullptr;
 		if (qobject_cast<VipVideoPlayer*>(pl))
 			item = qobject_cast<VipDisplayPlotItem*>(pl->mainDisplayObject());
 		else {
@@ -723,7 +723,7 @@ static VipDisplayPlotItem * findDisplay(VipPlayer2D * pl, const QString & partia
 
 	QList<VipDisplayPlotItem*> disps = vipListCast<VipDisplayPlotItem*>(pl->displayObjects());
 	if (disps.size() == 0)
-		return NULL;
+		return nullptr;
 
 	for (int i = disps.size() - 1; i >= 0; --i) {
 		VipDisplayPlotItem * item = disps[i];
@@ -737,12 +737,12 @@ static VipDisplayPlotItem * findDisplay(VipPlayer2D * pl, const QString & partia
 		int start = partial_name.lastIndexOf("[");
 		int end = partial_name.indexOf("]", start);
 		if (end < 0 || end != partial_name.size() - 1)
-			return NULL;
+			return nullptr;
 		QString num = partial_name.mid(start + 1, end - start - 1);
 		bool ok;
 		int index = num.toInt(&ok);
 		if (!ok || index < 1)
-			return NULL;
+			return nullptr;
 
 		int c = 0;
 		QString pname = partial_name.mid(0, start);
@@ -754,7 +754,7 @@ static VipDisplayPlotItem * findDisplay(VipPlayer2D * pl, const QString & partia
 			}
 		}
 	}
-	return NULL;
+	return nullptr;
 }
 
 #define PLOT_PLAYER  0 // a 2D player containing curves, histograms, ...
@@ -1248,7 +1248,7 @@ static ResultType extractTimeTrace(int player, const QVariantList & rois, const 
 	if (!pl)
 		return ResultType(QVariant(), "cannot find a valid video player for number " + QString::number(player));
 
-	VipPlotPlayer * out = NULL;
+	VipPlotPlayer * out = nullptr;
 	if (int id = attrs["player"].toInt()) {
 		VipDragWidget * w = qobject_cast<VipDragWidget*>(VipUniqueId::find<VipBaseDragWidget>(id));
 		if (!w)
@@ -1700,9 +1700,9 @@ static ResultType imShow(const VipNDArray & array, const QVariantMap & attribute
 		return ResultType(QVariant(), "wrong input array shape");
 	}
 
-	VipDragWidget * w = NULL;
-	VipVideoPlayer * pl = NULL;
-	VipAnyResource * res = NULL;
+	VipDragWidget * w = nullptr;
+	VipVideoPlayer * pl = nullptr;
+	VipAnyResource * res = nullptr;
 	int player = attributes["player"].toInt();
 	if (player) {
 		w = qobject_cast<VipDragWidget*>(VipUniqueId::find<VipBaseDragWidget>(player));
@@ -1735,7 +1735,7 @@ static ResultType imShow(const VipNDArray & array, const QVariantMap & attribute
 		res->setAttribute("Name", name);
 		res->setAttribute("ZUnit", zunit);
 		res->setData(QVariant::fromValue(array));
-		QList<VipAbstractPlayer*> pls = vipCreatePlayersFromProcessing(res, NULL);
+		QList<VipAbstractPlayer*> pls = vipCreatePlayersFromProcessing(res, nullptr);
 		if (!pls.size())
 			return ResultType(QVariant(), "unable to show image");
 
@@ -1755,9 +1755,9 @@ static ResultType imShow(const VipNDArray & array, const QVariantMap & attribute
 
 static ResultType plotData(const VipPointVector & vector, const QVariantMap & attributes)
 {
-	VipDragWidget * w = NULL;
-	VipPlotPlayer * pl = NULL;
-	VipAnyResource * res = NULL;
+	VipDragWidget * w = nullptr;
+	VipPlotPlayer * pl = nullptr;
+	VipAnyResource * res = nullptr;
 	int player = attributes["player"].toInt();
 	QString name = attributes["title"].toString();
 	if (name.isEmpty())
@@ -1855,9 +1855,9 @@ static ResultType plotsData(const QList<VipPointVector> & vectors, const QVarian
 	{
 		const VipPointVector vector = vectors[i];
 
-		VipDragWidget * w = NULL;
-		VipPlotPlayer * pl = NULL;
-		VipAnyResource * res = NULL;
+		VipDragWidget * w = nullptr;
+		VipPlotPlayer * pl = nullptr;
+		VipAnyResource * res = nullptr;
 		int player = getAttribute(attributes,"player",i).toInt();
 		QString name = getAttribute(attributes, "title", i).toString();
 		if (name.isEmpty())
@@ -2016,7 +2016,7 @@ static ResultType getFunction(int player, const QString & fun_name, const QStrin
 	VipProcessingList * p = lst.first();
 
 	//find a PyFunctionProcessing with given name
-	PyFunctionProcessing* found = NULL;
+	PyFunctionProcessing* found = nullptr;
 	for (int i = 0; i < p->size(); ++i) {
 		if (PyFunctionProcessing * proc = qobject_cast<PyFunctionProcessing*>(p->at(i)))
 			if (proc->property("_vip_processingName").toString() == fun_name) {
@@ -2036,7 +2036,7 @@ static ResultType testPid(qint64 pid)
 {
 	/*QWindow *l_container = QWindow::fromWinId(pid);
 	l_container->requestActivate();
-	QWidget *l_widget = QWidget::createWindowContainer(l_container,NULL, Qt::FramelessWindowHint);
+	QWidget *l_widget = QWidget::createWindowContainer(l_container,nullptr, Qt::FramelessWindowHint);
 	l_widget->setAutoFillBackground(true);
 	l_widget->setMinimumSize(50, 50);
 
@@ -2072,7 +2072,7 @@ static ResultType addWidgetToPlayer(int player, const QString & side, const QStr
 
 	//find widget
 	QList<QWidget*> ws = qApp->topLevelWidgets();
-	QWidget * found = NULL;
+	QWidget * found = nullptr;
 	for (int i = 0; i < ws.size(); ++i) {
 		if (ws[i]->objectName() == widget_name) {
 			found = ws[i];
@@ -2142,7 +2142,7 @@ static PyObject* current_player(PyObject*, PyObject* args)
 	size_t size = PyTuple_GET_SIZE(args);
 	if (size != 0) {
 		PyErr_SetString(PyExc_RuntimeError, "current_player: wrong number of argument (should be 0)");
-		return NULL;
+		return nullptr;
 	}
 	 
 	ResultType result;
@@ -2152,7 +2152,7 @@ static PyObject* current_player(PyObject*, PyObject* args)
 		 
 		if (!result.second.isEmpty()) {
 			PyErr_SetString(PyExc_RuntimeError, result.second.toLatin1().data());
-			return NULL;
+			return nullptr;
 		}
 	return (PyObject*)variantToPython(result.first);
 }
@@ -2163,7 +2163,7 @@ static PyObject* player_type(PyObject *, PyObject* args)
 	size_t size = PyTuple_GET_SIZE(args);
 	if (size != 1) {
 		PyErr_SetString(PyExc_RuntimeError, "player_type: wrong number of argument (should be 1)");
-		return NULL;
+		return nullptr;
 	}
 	int player = pythonToVariant(PyTuple_GetItem(args, 0)).toInt();
 
@@ -2174,7 +2174,7 @@ static PyObject* player_type(PyObject *, PyObject* args)
 
 		if (!result.second.isEmpty()) {
 			PyErr_SetString(PyExc_RuntimeError, result.second.toLatin1().data());
-			return NULL;
+			return nullptr;
 		}
 	return (PyObject*)variantToPython(result.first);
 }
@@ -2184,7 +2184,7 @@ static PyObject* item_list(PyObject *, PyObject* args)
 	size_t size = PyTuple_GET_SIZE(args);
 	if (size != 3) {
 		PyErr_SetString(PyExc_RuntimeError, "item_list: wrong number of argument (should be 3)");
-		return NULL;
+		return nullptr;
 	}
 	int player = pythonToVariant(PyTuple_GetItem(args, 0)).toInt();
 	int selection = pythonToVariant(PyTuple_GetItem(args, 1)).toInt();
@@ -2196,7 +2196,7 @@ static PyObject* item_list(PyObject *, PyObject* args)
 
 		if (!result.second.isEmpty()) {
 			PyErr_SetString(PyExc_RuntimeError, result.second.toLatin1().data());
-			return NULL;
+			return nullptr;
 		}
 	return (PyObject*)variantToPython(result.first);
 }
@@ -2206,7 +2206,7 @@ static PyObject* set_selected(PyObject *, PyObject* args)
 	size_t size = PyTuple_GET_SIZE(args);
 	if (size != 3) {
 		PyErr_SetString(PyExc_RuntimeError, "set_selected: wrong number of argument (should be 3)");
-		return NULL;
+		return nullptr;
 	}
 	int player = pythonToVariant(PyTuple_GetItem(args, 0)).toInt();
 	bool selection = pythonToVariant(PyTuple_GetItem(args, 1)).toBool();
@@ -2218,7 +2218,7 @@ static PyObject* set_selected(PyObject *, PyObject* args)
 
 		if (!result.second.isEmpty()) {
 			PyErr_SetString(PyExc_RuntimeError, result.second.toLatin1().data());
-			return NULL;
+			return nullptr;
 		}
 	Py_INCREF(Py_None);
 	return Py_None;
@@ -2229,7 +2229,7 @@ static PyObject* unselect_all(PyObject *, PyObject* args)
 	size_t size = PyTuple_GET_SIZE(args);
 	if (size != 1) {
 		PyErr_SetString(PyExc_RuntimeError, "unselect_all: wrong number of argument (should be 1)");
-		return NULL;
+		return nullptr;
 	}
 	int player = pythonToVariant(PyTuple_GetItem(args, 0)).toInt();
 
@@ -2240,7 +2240,7 @@ static PyObject* unselect_all(PyObject *, PyObject* args)
 
 		if (!result.second.isEmpty()) {
 			PyErr_SetString(PyExc_RuntimeError, result.second.toLatin1().data());
-			return NULL;
+			return nullptr;
 		}
 	Py_INCREF(Py_None);
 	return Py_None;
@@ -2251,7 +2251,7 @@ static PyObject* query(PyObject *, PyObject* args)
 	size_t size = PyTuple_GET_SIZE(args);
 	if (size != 2) {
 		PyErr_SetString(PyExc_RuntimeError, "query: wrong number of argument (should be 2)");
-		return NULL;
+		return nullptr;
 	}
 	QString title = pyToString(PyTuple_GetItem(args, 0));
 	QString default_value = pyToString(PyTuple_GetItem(args, 1));
@@ -2262,7 +2262,7 @@ static PyObject* query(PyObject *, PyObject* args)
 
 		if (!result.second.isEmpty()) {
 			PyErr_SetString(PyExc_RuntimeError, result.second.toLatin1().data());
-			return NULL;
+			return nullptr;
 		}
 	return PyUnicode_FromString(result.first.toString().toLatin1().data());
 }
@@ -2272,12 +2272,12 @@ static PyObject* open_path(PyObject *, PyObject* args)
 	size_t size = PyTuple_GET_SIZE(args);
 	if (size != 3) {
 		PyErr_SetString(PyExc_RuntimeError, "open: wrong number of argument (should be 3)");
-		return NULL;
+		return nullptr;
 	}
 	QVariant path = pythonToVariant(PyTuple_GetItem(args, 0));
 	if (path.userType() != qMetaTypeId<QString>() && path.userType() != qMetaTypeId<QVariantList>()) {
 		PyErr_SetString(PyExc_RuntimeError, "wrong path value");
-		return NULL;
+		return nullptr;
 	}
 
 	int player = PyLong_AsLong(PyTuple_GetItem(args, 1));
@@ -2290,7 +2290,7 @@ static PyObject* open_path(PyObject *, PyObject* args)
 
 		if (!result.second.isEmpty()) {
 			PyErr_SetString(PyExc_RuntimeError, result.second.toLatin1().data());
-			return NULL;
+			return nullptr;
 		}
 	return PyLong_FromLong(result.first.toInt());
 }
@@ -2300,7 +2300,7 @@ static PyObject* close_window(PyObject *, PyObject* args)
 	size_t size = PyTuple_GET_SIZE(args);
 	if (size != 1) {
 		PyErr_SetString(PyExc_RuntimeError, "close_window: wrong number of argument (should be 1)");
-		return NULL;
+		return nullptr;
 	}
 	int player = PyLong_AsLong(PyTuple_GetItem(args, 0));
 	ResultType result;
@@ -2310,7 +2310,7 @@ static PyObject* close_window(PyObject *, PyObject* args)
 
 		if (!result.second.isEmpty()) {
 			PyErr_SetString(PyExc_RuntimeError, result.second.toLatin1().data());
-			return NULL;
+			return nullptr;
 		}
 	Py_INCREF(Py_None);
 	return Py_None;
@@ -2321,7 +2321,7 @@ static PyObject* show_maximized(PyObject *, PyObject* args)
 	size_t size = PyTuple_GET_SIZE(args);
 	if (size != 1) {
 		PyErr_SetString(PyExc_RuntimeError, "show_maximized: wrong number of argument (should be 1)");
-		return NULL;
+		return nullptr;
 	}
 	int player = PyLong_AsLong(PyTuple_GetItem(args, 0));
 	ResultType result;
@@ -2331,7 +2331,7 @@ static PyObject* show_maximized(PyObject *, PyObject* args)
 
 		if (!result.second.isEmpty()) {
 			PyErr_SetString(PyExc_RuntimeError, result.second.toLatin1().data());
-			return NULL;
+			return nullptr;
 		}
 	Py_INCREF(Py_None);
 	return Py_None;
@@ -2341,7 +2341,7 @@ static PyObject* show_normal(PyObject *, PyObject* args)
 	size_t size = PyTuple_GET_SIZE(args);
 	if (size != 1) {
 		PyErr_SetString(PyExc_RuntimeError, "show_normal: wrong number of argument (should be 1)");
-		return NULL;
+		return nullptr;
 	}
 	int player = PyLong_AsLong(PyTuple_GetItem(args, 0));
 	ResultType result;
@@ -2351,7 +2351,7 @@ static PyObject* show_normal(PyObject *, PyObject* args)
 
 		if (!result.second.isEmpty()) {
 			PyErr_SetString(PyExc_RuntimeError, result.second.toLatin1().data());
-			return NULL;
+			return nullptr;
 		}
 	Py_INCREF(Py_None);
 	return Py_None;
@@ -2361,7 +2361,7 @@ static PyObject* show_minimized(PyObject *, PyObject* args)
 	size_t size = PyTuple_GET_SIZE(args);
 	if (size != 1) {
 		PyErr_SetString(PyExc_RuntimeError, "show_minimized: wrong number of argument (should be 1)");
-		return NULL;
+		return nullptr;
 	}
 	int player = PyLong_AsLong(PyTuple_GetItem(args, 0));
 	ResultType result;
@@ -2371,7 +2371,7 @@ static PyObject* show_minimized(PyObject *, PyObject* args)
 
 		if (!result.second.isEmpty()) {
 			PyErr_SetString(PyExc_RuntimeError, result.second.toLatin1().data());
-			return NULL;
+			return nullptr;
 		}
 	Py_INCREF(Py_None);
 	return Py_None;
@@ -2382,7 +2382,7 @@ static PyObject* workspace(PyObject *, PyObject* args)
 	size_t size = PyTuple_GET_SIZE(args);
 	if (size != 1) {
 		PyErr_SetString(PyExc_RuntimeError, "workspace: wrong number of argument (should be 1)");
-		return NULL;
+		return nullptr;
 	}
 	int wks = PyLong_AsLong(PyTuple_GetItem(args, 0));
 	ResultType result;
@@ -2392,7 +2392,7 @@ static PyObject* workspace(PyObject *, PyObject* args)
 
 		if (!result.second.isEmpty()) {
 			PyErr_SetString(PyExc_RuntimeError, result.second.toLatin1().data());
-			return NULL;
+			return nullptr;
 		}
 	return PyLong_FromLong(result.first.toInt());
 }
@@ -2402,7 +2402,7 @@ static PyObject* workspaces(PyObject *, PyObject* args)
 	size_t size = PyTuple_GET_SIZE(args);
 	if (size != 0) {
 		PyErr_SetString(PyExc_RuntimeError, "workspaces: wrong number of argument (should be 0)");
-		return NULL;
+		return nullptr;
 	}
 	ResultType result;
 	Py_BEGIN_ALLOW_THREADS
@@ -2411,7 +2411,7 @@ static PyObject* workspaces(PyObject *, PyObject* args)
 
 		if (!result.second.isEmpty()) {
 			PyErr_SetString(PyExc_RuntimeError, result.second.toLatin1().data());
-			return NULL;
+			return nullptr;
 		}
 
 	IntegerList lst = result.first.value<IntegerList>();
@@ -2426,7 +2426,7 @@ static PyObject* current_workspace(PyObject *, PyObject* args)
 	size_t size = PyTuple_GET_SIZE(args);
 	if (size != 0) {
 		PyErr_SetString(PyExc_RuntimeError, "current_workspace: wrong number of argument (should be 0)");
-		return NULL;
+		return nullptr;
 	}
 	ResultType result;
 	Py_BEGIN_ALLOW_THREADS
@@ -2435,7 +2435,7 @@ static PyObject* current_workspace(PyObject *, PyObject* args)
 
 		if (!result.second.isEmpty()) {
 			PyErr_SetString(PyExc_RuntimeError, result.second.toLatin1().data());
-			return NULL;
+			return nullptr;
 		}
 	return PyLong_FromLong(result.first.toInt());
 }
@@ -2446,7 +2446,7 @@ static PyObject* workspace_title(PyObject *, PyObject* args)
 	size_t size = PyTuple_GET_SIZE(args);
 	if (size != 1) {
 		PyErr_SetString(PyExc_RuntimeError, "workspace_title: wrong number of argument (should be 1)");
-		return NULL;
+		return nullptr;
 	}
 	int wks = PyLong_AsLong(PyTuple_GetItem(args, 0));
 	ResultType result;
@@ -2456,7 +2456,7 @@ static PyObject* workspace_title(PyObject *, PyObject* args)
 
 		if (!result.second.isEmpty()) {
 			PyErr_SetString(PyExc_RuntimeError, result.second.toLatin1().data());
-			return NULL;
+			return nullptr;
 		}
 	return (PyObject*)variantToPython(result.first);
 }
@@ -2466,7 +2466,7 @@ static PyObject* set_workspace_title(PyObject *, PyObject* args)
 	size_t size = PyTuple_GET_SIZE(args);
 	if (size != 2) {
 		PyErr_SetString(PyExc_RuntimeError, "set_workspace_title: wrong number of argument (should be 2)");
-		return NULL;
+		return nullptr;
 	}
 	int wks = PyLong_AsLong(PyTuple_GetItem(args, 0));
 	QString title = pyToString(PyTuple_GetItem(args, 1));
@@ -2477,7 +2477,7 @@ static PyObject* set_workspace_title(PyObject *, PyObject* args)
 
 		if (!result.second.isEmpty()) {
 			PyErr_SetString(PyExc_RuntimeError, result.second.toLatin1().data());
-			return NULL;
+			return nullptr;
 		}
 	Py_INCREF(Py_None);
 	return Py_None;
@@ -2490,7 +2490,7 @@ static PyObject* reorganize(PyObject *, PyObject* args)
 	size_t size = PyTuple_GET_SIZE(args);
 	if (size != 0) {
 		PyErr_SetString(PyExc_RuntimeError, "reorganize: wrong number of argument (should be 0)");
-		return NULL;
+		return nullptr;
 	}
 	ResultType result;
 	Py_BEGIN_ALLOW_THREADS
@@ -2499,7 +2499,7 @@ static PyObject* reorganize(PyObject *, PyObject* args)
 
 		if (!result.second.isEmpty()) {
 			PyErr_SetString(PyExc_RuntimeError, result.second.toLatin1().data());
-			return NULL;
+			return nullptr;
 		}
 	Py_INCREF(Py_None);
 	return Py_None;
@@ -2510,7 +2510,7 @@ static PyObject* time(PyObject *, PyObject* args)
 	size_t size = PyTuple_GET_SIZE(args);
 	if (size != 0) {
 		PyErr_SetString(PyExc_RuntimeError, "time: wrong number of argument (should be 0)");
-		return NULL;
+		return nullptr;
 	}
 	ResultType result;
 	Py_BEGIN_ALLOW_THREADS
@@ -2519,7 +2519,7 @@ static PyObject* time(PyObject *, PyObject* args)
 
 		if (!result.second.isEmpty()) {
 			PyErr_SetString(PyExc_RuntimeError, result.second.toLatin1().data());
-			return NULL;
+			return nullptr;
 		}
 	return PyLong_FromLongLong(result.first.toLongLong());
 }
@@ -2529,7 +2529,7 @@ static PyObject* set_time(PyObject *, PyObject* args)
 	size_t size = PyTuple_GET_SIZE(args);
 	if (size != 2) {
 		PyErr_SetString(PyExc_RuntimeError, "set_time: wrong number of argument (should be 2)");
-		return NULL;
+		return nullptr;
 	}
 
 	qint64 time = PyLong_AsLongLong(PyTuple_GetItem(args, 0));
@@ -2542,7 +2542,7 @@ static PyObject* set_time(PyObject *, PyObject* args)
 
 		if (!result.second.isEmpty()) {
 			PyErr_SetString(PyExc_RuntimeError, result.second.toLatin1().data());
-			return NULL;
+			return nullptr;
 		}
 	//Py_INCREF(Py_None);
 	//return Py_None;
@@ -2554,7 +2554,7 @@ static PyObject* next_time(PyObject *, PyObject* args)
 	size_t size = PyTuple_GET_SIZE(args);
 	if (size != 1) {
 		PyErr_SetString(PyExc_RuntimeError, "next_time: wrong number of argument (should be 1)");
-		return NULL;
+		return nullptr;
 	}
 
 	qint64 time = PyLong_AsLongLong(PyTuple_GetItem(args, 0));
@@ -2566,7 +2566,7 @@ static PyObject* next_time(PyObject *, PyObject* args)
 
 		if (!result.second.isEmpty()) {
 			PyErr_SetString(PyExc_RuntimeError, result.second.toLatin1().data());
-			return NULL;
+			return nullptr;
 		}
 	return PyLong_FromLongLong(result.first.toLongLong());
 }
@@ -2575,7 +2575,7 @@ static PyObject* previous_time(PyObject *, PyObject* args)
 	size_t size = PyTuple_GET_SIZE(args);
 	if (size != 1) {
 		PyErr_SetString(PyExc_RuntimeError, "previous_time: wrong number of argument (should be 1)");
-		return NULL;
+		return nullptr;
 	}
 
 	qint64 time = PyLong_AsLongLong(PyTuple_GetItem(args, 0));
@@ -2587,7 +2587,7 @@ static PyObject* previous_time(PyObject *, PyObject* args)
 
 		if (!result.second.isEmpty()) {
 			PyErr_SetString(PyExc_RuntimeError, result.second.toLatin1().data());
-			return NULL;
+			return nullptr;
 		}
 	return PyLong_FromLongLong(result.first.toLongLong());
 }
@@ -2596,7 +2596,7 @@ static PyObject* closest_time(PyObject *, PyObject* args)
 	size_t size = PyTuple_GET_SIZE(args);
 	if (size != 1) {
 		PyErr_SetString(PyExc_RuntimeError, "closest_time: wrong number of argument (should be 1)");
-		return NULL;
+		return nullptr;
 	}
 
 	qint64 time = PyLong_AsLongLong(PyTuple_GetItem(args, 0));
@@ -2608,7 +2608,7 @@ static PyObject* closest_time(PyObject *, PyObject* args)
 
 		if (!result.second.isEmpty()) {
 			PyErr_SetString(PyExc_RuntimeError, result.second.toLatin1().data());
-			return NULL;
+			return nullptr;
 		}
 	return PyLong_FromLongLong(result.first.toLongLong());
 }
@@ -2618,7 +2618,7 @@ static PyObject* time_range(PyObject *, PyObject* args)
 	size_t size = PyTuple_GET_SIZE(args);
 	if (size != 0) {
 		PyErr_SetString(PyExc_RuntimeError, "time_range: wrong number of argument (should be 0)");
-		return NULL;
+		return nullptr;
 	}
 	ResultType result;
 	Py_BEGIN_ALLOW_THREADS
@@ -2627,12 +2627,12 @@ static PyObject* time_range(PyObject *, PyObject* args)
 
 		if (!result.second.isEmpty()) {
 			PyErr_SetString(PyExc_RuntimeError, result.second.toLatin1().data());
-			return NULL;
+			return nullptr;
 		}
 	IntegerList range = result.first.value<IntegerList>();
 	if (range.isEmpty()) {
 		PyErr_SetString(PyExc_RuntimeError, "cannot retrieve time range");
-		return NULL;
+		return nullptr;
 	}
 	PyObject * res = PyList_New(2);
 	PyList_SetItem(res, 0, PyLong_FromLongLong(range[0]));
@@ -2646,7 +2646,7 @@ static PyObject* clamp_time(PyObject *, PyObject* args)
 	size_t size = PyTuple_GET_SIZE(args);
 	if (size != 3) {
 		PyErr_SetString(PyExc_RuntimeError, "clamp_time: wrong number of argument (should be 3)");
-		return NULL;
+		return nullptr;
 	}
 
 
@@ -2656,7 +2656,7 @@ static PyObject* clamp_time(PyObject *, PyObject* args)
 
 	if (ar.isEmpty() || ar.shapeCount() != 2 || ar.shape(0) != 2) {
 		PyErr_SetString(PyExc_RuntimeError, "clamp_time: wrong input array size");
-		return NULL;
+		return nullptr;
 	}
 
 	ResultType result;
@@ -2666,7 +2666,7 @@ static PyObject* clamp_time(PyObject *, PyObject* args)
 
 		if (!result.second.isEmpty()) {
 			PyErr_SetString(PyExc_RuntimeError, result.second.toLatin1().data());
-			return NULL;
+			return nullptr;
 		}
 	Py_INCREF(Py_None);
 	return (PyObject*)variantToPython(result.first);
@@ -2677,7 +2677,7 @@ static PyObject* set_stylesheet(PyObject *, PyObject* args)
 	size_t size = PyTuple_GET_SIZE(args);
 	if (size != 3) {
 		PyErr_SetString(PyExc_RuntimeError, "set_stylesheet: wrong number of argument (should be 3)");
-		return NULL;
+		return nullptr;
 	}
 
 	int player = PyLong_AsLong(PyTuple_GetItem(args, 0));
@@ -2691,7 +2691,7 @@ static PyObject* set_stylesheet(PyObject *, PyObject* args)
 
 		if (!result.second.isEmpty()) {
 			PyErr_SetString(PyExc_RuntimeError, result.second.toLatin1().data());
-			return NULL;
+			return nullptr;
 		}
 	Py_INCREF(Py_None);
 	return Py_None;
@@ -2702,7 +2702,7 @@ static PyObject* resize_workspace(PyObject*, PyObject* args)
 	size_t size = PyTuple_GET_SIZE(args);
 	if (size != 0) {
 		PyErr_SetString(PyExc_RuntimeError, "resize_workspace: wrong number of argument (should be 0)");
-		return NULL;
+		return nullptr;
 	}
 
 	ResultType result;
@@ -2712,7 +2712,7 @@ static PyObject* resize_workspace(PyObject*, PyObject* args)
 	  if (!result.second.isEmpty())
 	{
 		PyErr_SetString(PyExc_RuntimeError, result.second.toLatin1().data());
-		return NULL;
+		return nullptr;
 	}
 	Py_INCREF(Py_None);
 	return Py_None;
@@ -2723,7 +2723,7 @@ static PyObject* top_level(PyObject *, PyObject* args)
 	size_t size = PyTuple_GET_SIZE(args);
 	if (size != 1) {
 		PyErr_SetString(PyExc_RuntimeError, "top_level: wrong number of argument (should be 1)");
-		return NULL;
+		return nullptr;
 	}
 
 	int player = PyLong_AsLong(PyTuple_GetItem(args, 0));
@@ -2735,7 +2735,7 @@ static PyObject* top_level(PyObject *, PyObject* args)
 
 		if (!result.second.isEmpty()) {
 			PyErr_SetString(PyExc_RuntimeError, result.second.toLatin1().data());
-			return NULL;
+			return nullptr;
 		}
 
 	return PyLong_FromLong(result.first.toInt());
@@ -2747,7 +2747,7 @@ static PyObject* get(PyObject *, PyObject* args)
 	size_t size = PyTuple_GET_SIZE(args);
 	if (size != 2) {
 		PyErr_SetString(PyExc_RuntimeError, "get: wrong number of argument (should be 2)");
-		return NULL;
+		return nullptr;
 	}
 
 	int player = PyLong_AsLong(PyTuple_GetItem(args, 0));
@@ -2760,13 +2760,13 @@ static PyObject* get(PyObject *, PyObject* args)
 
 		if (!result.second.isEmpty()) {
 			PyErr_SetString(PyExc_RuntimeError, result.second.toLatin1().data());
-			return NULL;// PyLong_FromLong(0);
+			return nullptr;// PyLong_FromLong(0);
 		}
 
 	PyObject * res = (PyObject*)variantToPython(result.first);
 	if (!res) {
 		PyErr_SetString(PyExc_RuntimeError, "unable to convert data to a valid Python object");
-		return NULL;
+		return nullptr;
 	}
 	return res;
 }
@@ -2776,7 +2776,7 @@ static PyObject* get_attribute(PyObject *, PyObject* args)
 	size_t size = PyTuple_GET_SIZE(args);
 	if (size != 3) {
 		PyErr_SetString(PyExc_RuntimeError, "get_attribute: wrong number of argument (should be 3)");
-		return NULL;
+		return nullptr;
 	}
 
 	int player = PyLong_AsLong(PyTuple_GetItem(args, 0));
@@ -2790,13 +2790,13 @@ static PyObject* get_attribute(PyObject *, PyObject* args)
 
 		if (!result.second.isEmpty()) {
 			PyErr_SetString(PyExc_RuntimeError, result.second.toLatin1().data());
-			return NULL;
+			return nullptr;
 		}
 
 	PyObject * res = (PyObject*)variantToPython(result.first);
 	if (!res) {
 		PyErr_SetString(PyExc_RuntimeError, "unable to convert data to a valid Python object");
-		return NULL;
+		return nullptr;
 	}
 	return res;
 }
@@ -2806,7 +2806,7 @@ static PyObject* get_attributes(PyObject *, PyObject* args)
 	size_t size = PyTuple_GET_SIZE(args);
 	if (size != 2) {
 		PyErr_SetString(PyExc_RuntimeError, "get_attributes: wrong number of argument (should be 2)");
-		return NULL;
+		return nullptr;
 	}
 
 	int player = PyLong_AsLong(PyTuple_GetItem(args, 0));
@@ -2819,13 +2819,13 @@ static PyObject* get_attributes(PyObject *, PyObject* args)
 
 		if (!result.second.isEmpty()) {
 			PyErr_SetString(PyExc_RuntimeError, result.second.toLatin1().data());
-			return NULL;
+			return nullptr;
 		}
 
 	PyObject * res = (PyObject*)variantToPython(result.first);
 	if (!res) {
 		PyErr_SetString(PyExc_RuntimeError, "unable to convert data to a valid Python object");
-		return NULL;
+		return nullptr;
 	}
 	return res;
 }
@@ -2835,7 +2835,7 @@ static PyObject* set_attribute(PyObject *, PyObject* args)
 	size_t size = PyTuple_GET_SIZE(args);
 	if (size != 4) {
 		PyErr_SetString(PyExc_RuntimeError, "set_attribute: wrong number of argument (should be 4)");
-		return NULL;
+		return nullptr;
 	}
 
 	int player = PyLong_AsLong(PyTuple_GetItem(args, 0));
@@ -2850,7 +2850,7 @@ static PyObject* set_attribute(PyObject *, PyObject* args)
 
 		if (!result.second.isEmpty()) {
 			PyErr_SetString(PyExc_RuntimeError, result.second.toLatin1().data());
-			return NULL;
+			return nullptr;
 		}
 
 	Py_INCREF(Py_None);
@@ -2862,7 +2862,7 @@ static PyObject* roi(PyObject *, PyObject* args)
 	size_t size = PyTuple_GET_SIZE(args);
 	if (size != 4) {
 		PyErr_SetString(PyExc_RuntimeError, "roi: wrong number of argument (should be 4)");
-		return NULL;
+		return nullptr;
 	}
 
 	int player = PyLong_AsLong(PyTuple_GetItem(args, 0));
@@ -2877,13 +2877,13 @@ static PyObject* roi(PyObject *, PyObject* args)
 
 		if (!result.second.isEmpty()) {
 			PyErr_SetString(PyExc_RuntimeError, result.second.toLatin1().data());
-			return NULL;
+			return nullptr;
 		}
 
 	PyObject * res = (PyObject*)variantToPython(result.first);
 	if (!res) {
 		PyErr_SetString(PyExc_RuntimeError, "unable to convert data to a valid Python object");
-		return NULL;
+		return nullptr;
 	}
 	return res;
 }
@@ -2893,7 +2893,7 @@ static PyObject* roi_filled_points(PyObject *, PyObject* args)
 	size_t size = PyTuple_GET_SIZE(args);
 	if (size != 3) {
 		PyErr_SetString(PyExc_RuntimeError, "roi_filled_points: wrong number of argument (should be 3)");
-		return NULL;
+		return nullptr;
 	}
 
 	int player = PyLong_AsLong(PyTuple_GetItem(args, 0));
@@ -2907,13 +2907,13 @@ static PyObject* roi_filled_points(PyObject *, PyObject* args)
 
 		if (!result.second.isEmpty()) {
 			PyErr_SetString(PyExc_RuntimeError, result.second.toLatin1().data());
-			return NULL;
+			return nullptr;
 		}
 
 	PyObject * res = (PyObject*)variantToPython(result.first);
 	if (!res) {
 		PyErr_SetString(PyExc_RuntimeError, "unable to convert data to a valid Python object");
-		return NULL;
+		return nullptr;
 	}
 	return res;
 }
@@ -2924,7 +2924,7 @@ static PyObject* get_roi_bounding_rect(PyObject*, PyObject* args)
 	size_t size = PyTuple_GET_SIZE(args);
 	if (size != 4) {
 		PyErr_SetString(PyExc_RuntimeError, "get_roi_bounding_rect: wrong number of argument (should be 4)");
-		return NULL;
+		return nullptr;
 	}
 
 	int player = PyLong_AsLong(PyTuple_GetItem(args, 0));
@@ -2940,13 +2940,13 @@ static PyObject* get_roi_bounding_rect(PyObject*, PyObject* args)
 
 		if (!result.second.isEmpty()) {
 			PyErr_SetString(PyExc_RuntimeError, result.second.toLatin1().data());
-			return NULL;
+			return nullptr;
 		}
 
 	PyObject* res = (PyObject*)variantToPython(result.first);
 	if (!res) {
 		PyErr_SetString(PyExc_RuntimeError, "unable to convert data to a valid Python object");
-		return NULL;
+		return nullptr;
 	}
 	return res;
 }
@@ -2958,7 +2958,7 @@ static PyObject* clear_roi(PyObject *, PyObject* args)
 	size_t size = PyTuple_GET_SIZE(args);
 	if (size != 2) {
 		PyErr_SetString(PyExc_RuntimeError, "clear_roi: wrong number of argument (should be 2)");
-		return NULL;
+		return nullptr;
 	}
 
 	int player = PyLong_AsLong(PyTuple_GetItem(args, 0));
@@ -2971,7 +2971,7 @@ static PyObject* clear_roi(PyObject *, PyObject* args)
 
 		if (!result.second.isEmpty()) {
 			PyErr_SetString(PyExc_RuntimeError, result.second.toLatin1().data());
-			return NULL;
+			return nullptr;
 		}
 	Py_INCREF(Py_None);
 	return Py_None;
@@ -2981,7 +2981,7 @@ static PyObject* add_roi(PyObject *, PyObject* args)
 	size_t size = PyTuple_GET_SIZE(args);
 	if (size != 3) {
 		PyErr_SetString(PyExc_RuntimeError, "add_roi: wrong number of argument (should be 3)");
-		return NULL;
+		return nullptr;
 	}
 
 	int player = PyLong_AsLong(PyTuple_GetItem(args, 0));
@@ -2995,7 +2995,7 @@ static PyObject* add_roi(PyObject *, PyObject* args)
 
 		if (!result.second.isEmpty()) {
 			PyErr_SetString(PyExc_RuntimeError, result.second.toLatin1().data());
-			return NULL;
+			return nullptr;
 		}
 	return (PyObject*)variantToPython(result.first);
 }
@@ -3005,7 +3005,7 @@ static PyObject* add_ellipse(PyObject*, PyObject* args)
 	size_t size = PyTuple_GET_SIZE(args);
 	if (size != 3) {
 		PyErr_SetString(PyExc_RuntimeError, "add_ellipse: wrong number of argument (should be 3)");
-		return NULL;
+		return nullptr;
 	}
 
 	int player = PyLong_AsLong(PyTuple_GetItem(args, 0));
@@ -3019,7 +3019,7 @@ static PyObject* add_ellipse(PyObject*, PyObject* args)
 
 		if (!result.second.isEmpty()) {
 			PyErr_SetString(PyExc_RuntimeError, result.second.toLatin1().data());
-			return NULL;
+			return nullptr;
 		}
 	return (PyObject*)variantToPython(result.first);
 }
@@ -3029,7 +3029,7 @@ static PyObject* add_circle(PyObject*, PyObject* args)
 	size_t size = PyTuple_GET_SIZE(args);
 	if (size != 5) {
 		PyErr_SetString(PyExc_RuntimeError, "add_circle: wrong number of argument (should be 5)");
-		return NULL;
+		return nullptr;
 	}
 
 	int player = PyLong_AsLong(PyTuple_GetItem(args, 0));
@@ -3045,7 +3045,7 @@ static PyObject* add_circle(PyObject*, PyObject* args)
 
 		if (!result.second.isEmpty()) {
 			PyErr_SetString(PyExc_RuntimeError, result.second.toLatin1().data());
-			return NULL;
+			return nullptr;
 		}
 	return (PyObject*)variantToPython(result.first);
 }
@@ -3065,7 +3065,7 @@ static PyObject* time_trace(PyObject *, PyObject* args)
 	size_t size = PyTuple_GET_SIZE(args);
 	if (size != 3) {
 		PyErr_SetString(PyExc_RuntimeError, "time_trace: wrong number of argument (should be 3)");
-		return NULL;
+		return nullptr;
 	}
 
 	QVariantList rois;
@@ -3084,7 +3084,7 @@ static PyObject* time_trace(PyObject *, PyObject* args)
 
 		if (!result.second.isEmpty()) {
 			PyErr_SetString(PyExc_RuntimeError, result.second.toLatin1().data());
-			return NULL;
+			return nullptr;
 		}
 	return PyLong_FromLong(result.first.toInt());
 }
@@ -3095,7 +3095,7 @@ static PyObject* remove(PyObject *, PyObject* args)
 	size_t size = PyTuple_GET_SIZE(args);
 	if (size != 2) {
 		PyErr_SetString(PyExc_RuntimeError, "remove: wrong number of argument (should be 2)");
-		return NULL;
+		return nullptr;
 	}
 
 	int player = PyLong_AsLong(PyTuple_GetItem(args, 0));
@@ -3108,7 +3108,7 @@ static PyObject* remove(PyObject *, PyObject* args)
 
 		if (!result.second.isEmpty()) {
 			PyErr_SetString(PyExc_RuntimeError, result.second.toLatin1().data());
-			return NULL;
+			return nullptr;
 		}
 
 	return PyLong_FromLong(result.first.toInt());
@@ -3119,7 +3119,7 @@ static PyObject* set_time_marker(PyObject *, PyObject* args)
 	size_t size = PyTuple_GET_SIZE(args);
 	if (size != 2) {
 		PyErr_SetString(PyExc_RuntimeError, "set_time_marker: wrong number of argument (should be 2)");
-		return NULL;
+		return nullptr;
 	}
 
 	int player = PyLong_AsLong(PyTuple_GetItem(args, 0));
@@ -3132,7 +3132,7 @@ static PyObject* set_time_marker(PyObject *, PyObject* args)
 
 		if (!result.second.isEmpty()) {
 			PyErr_SetString(PyExc_RuntimeError, result.second.toLatin1().data());
-			return NULL;
+			return nullptr;
 		}
 
 	Py_INCREF(Py_None);
@@ -3144,7 +3144,7 @@ static PyObject* zoom(PyObject *, PyObject* args)
 	size_t size = PyTuple_GET_SIZE(args);
 	if (size != 6) {
 		PyErr_SetString(PyExc_RuntimeError, "zoom: wrong number of argument (should be 6)");
-		return NULL;
+		return nullptr;
 	}
 
 	int player = PyLong_AsLong(PyTuple_GetItem(args, 0));
@@ -3161,7 +3161,7 @@ static PyObject* zoom(PyObject *, PyObject* args)
 
 		if (!result.second.isEmpty()) {
 			PyErr_SetString(PyExc_RuntimeError, result.second.toLatin1().data());
-			return NULL;
+			return nullptr;
 		}
 
 	Py_INCREF(Py_None);
@@ -3174,7 +3174,7 @@ static PyObject* set_color_map_scale(PyObject *, PyObject* args)
 	size_t size = PyTuple_GET_SIZE(args);
 	if (size != 5) {
 		PyErr_SetString(PyExc_RuntimeError, "set_color_map_scale: wrong number of argument (should be 5)");
-		return NULL;
+		return nullptr;
 	}
 
 	int player = PyLong_AsLong(PyTuple_GetItem(args, 0));
@@ -3190,7 +3190,7 @@ static PyObject* set_color_map_scale(PyObject *, PyObject* args)
 
 		if (!result.second.isEmpty()) {
 			PyErr_SetString(PyExc_RuntimeError, result.second.toLatin1().data());
-			return NULL;
+			return nullptr;
 		}
 
 	Py_INCREF(Py_None);
@@ -3202,7 +3202,7 @@ static PyObject* x_range(PyObject *, PyObject* args)
 	size_t size = PyTuple_GET_SIZE(args);
 	if (size != 1) {
 		PyErr_SetString(PyExc_RuntimeError, "x_range: wrong number of argument (should be 1)");
-		return NULL;
+		return nullptr;
 	}
 
 	int player = PyLong_AsLong(PyTuple_GetItem(args, 0));
@@ -3214,7 +3214,7 @@ static PyObject* x_range(PyObject *, PyObject* args)
 
 		if (!result.second.isEmpty()) {
 			PyErr_SetString(PyExc_RuntimeError, result.second.toLatin1().data());
-			return NULL;
+			return nullptr;
 		}
 
 	DoubleList lst = result.first.value<DoubleList>();
@@ -3233,7 +3233,7 @@ static PyObject* player_range(PyObject *, PyObject* args)
 	size_t size = PyTuple_GET_SIZE(args);
 	if (size != 1) {
 		PyErr_SetString(PyExc_RuntimeError, "player_range: wrong number of argument (should be 1)");
-		return NULL;
+		return nullptr;
 	}
 
 	int player = PyLong_AsLong(PyTuple_GetItem(args, 0));
@@ -3245,7 +3245,7 @@ static PyObject* player_range(PyObject *, PyObject* args)
 
 		if (!result.second.isEmpty()) {
 			PyErr_SetString(PyExc_RuntimeError, result.second.toLatin1().data());
-			return NULL;
+			return nullptr;
 		}
 
 	DoubleList lst = result.first.value<DoubleList>();
@@ -3264,7 +3264,7 @@ static PyObject* auto_scale(PyObject *, PyObject* args)
 	size_t size = PyTuple_GET_SIZE(args);
 	if (size != 2) {
 		PyErr_SetString(PyExc_RuntimeError, "auto_scale: wrong number of argument (should be 2)");
-		return NULL;
+		return nullptr;
 	}
 
 	int player = PyLong_AsLong(PyTuple_GetItem(args, 0));
@@ -3277,7 +3277,7 @@ static PyObject* auto_scale(PyObject *, PyObject* args)
 
 		if (!result.second.isEmpty()) {
 			PyErr_SetString(PyExc_RuntimeError, result.second.toLatin1().data());
-			return NULL;
+			return nullptr;
 		}
 	Py_INCREF(Py_None);
 	return Py_None;
@@ -3288,7 +3288,7 @@ static PyObject* set_x_scale(PyObject *, PyObject* args)
 	size_t size = PyTuple_GET_SIZE(args);
 	if (size != 3) {
 		PyErr_SetString(PyExc_RuntimeError, "set_x_scale: wrong number of argument (should be 3)");
-		return NULL;
+		return nullptr;
 	}
 
 	int player = PyLong_AsLong(PyTuple_GetItem(args, 0));
@@ -3309,7 +3309,7 @@ static PyObject* set_x_scale(PyObject *, PyObject* args)
 
 		if (!result.second.isEmpty()) {
 			PyErr_SetString(PyExc_RuntimeError, result.second.toLatin1().data());
-			return NULL;
+			return nullptr;
 		}
 	Py_INCREF(Py_None);
 	return Py_None;
@@ -3320,7 +3320,7 @@ static PyObject* set_y_scale(PyObject *, PyObject* args)
 	size_t size = PyTuple_GET_SIZE(args);
 	if (size != 4) {
 		PyErr_SetString(PyExc_RuntimeError, "set_y_scale: wrong number of argument (should be 4)");
-		return NULL;
+		return nullptr;
 	}
 
 	int player = PyLong_AsLong(PyTuple_GetItem(args, 0));
@@ -3342,7 +3342,7 @@ static PyObject* set_y_scale(PyObject *, PyObject* args)
 
 		if (!result.second.isEmpty()) {
 			PyErr_SetString(PyExc_RuntimeError, result.second.toLatin1().data());
-			return NULL;
+			return nullptr;
 		}
 	Py_INCREF(Py_None);
 	return Py_None;
@@ -3353,7 +3353,7 @@ static PyObject* set_title(PyObject *, PyObject* args)
 	size_t size = PyTuple_GET_SIZE(args);
 	if (size != 2) {
 		PyErr_SetString(PyExc_RuntimeError, "set_title: wrong number of argument (should be 2)");
-		return NULL;
+		return nullptr;
 	}
 
 	int player = PyLong_AsLong(PyTuple_GetItem(args, 0));
@@ -3366,7 +3366,7 @@ static PyObject* set_title(PyObject *, PyObject* args)
 
 		if (!result.second.isEmpty()) {
 			PyErr_SetString(PyExc_RuntimeError, result.second.toLatin1().data());
-			return NULL;
+			return nullptr;
 		}
 	Py_INCREF(Py_None);
 	return Py_None;
@@ -3387,7 +3387,7 @@ static PyObject* annotation(PyObject *, PyObject* args)
 	size_t size = PyTuple_GET_SIZE(args);
 	if (size != 5) {
 		PyErr_SetString(PyExc_RuntimeError, "annotation: wrong number of argument (should be 5)");
-		return NULL;
+		return nullptr;
 	}
 
 	int player = PyLong_AsLong(PyTuple_GetItem(args, 0));
@@ -3398,7 +3398,7 @@ static PyObject* annotation(PyObject *, PyObject* args)
 
 	if (!(pos.size() == 2 || pos.size() == 4)) {
 		PyErr_SetString(PyExc_RuntimeError, "wrong position format (should be a list of 2 or 4 values)");
-		return NULL;
+		return nullptr;
 	}
 	QList<double> positions;
 	//invert x/y
@@ -3413,7 +3413,7 @@ static PyObject* annotation(PyObject *, PyObject* args)
 
 		if (!result.second.isEmpty()) {
 			PyErr_SetString(PyExc_RuntimeError, result.second.toLatin1().data());
-			return NULL;
+			return nullptr;
 		}
 	return PyLong_FromLong(result.first.toInt());
 }
@@ -3424,7 +3424,7 @@ static PyObject* remove_annotation(PyObject *, PyObject* args)
 	size_t size = PyTuple_GET_SIZE(args);
 	if (size != 1) {
 		PyErr_SetString(PyExc_RuntimeError, "remove_annotation: wrong number of argument (should be 1)");
-		return NULL;
+		return nullptr;
 	}
 
 	int id = PyLong_AsLong(PyTuple_GetItem(args, 0));
@@ -3434,7 +3434,7 @@ static PyObject* remove_annotation(PyObject *, PyObject* args)
 	Py_END_ALLOW_THREADS
 		if (!result.second.isEmpty()) {
 			PyErr_SetString(PyExc_RuntimeError, result.second.toLatin1().data());
-			return NULL;
+			return nullptr;
 		}
 	Py_INCREF(Py_None);
 	return Py_None;
@@ -3445,7 +3445,7 @@ static PyObject* clear_annotations(PyObject *, PyObject* args)
 	size_t size = PyTuple_GET_SIZE(args);
 	if (size != 2) {
 		PyErr_SetString(PyExc_RuntimeError, "clear_annotations: wrong number of argument (should be 2)");
-		return NULL;
+		return nullptr;
 	}
 
 	int player = PyLong_AsLong(PyTuple_GetItem(args, 0));
@@ -3456,7 +3456,7 @@ static PyObject* clear_annotations(PyObject *, PyObject* args)
 	Py_END_ALLOW_THREADS
 		if (!result.second.isEmpty()) {
 			PyErr_SetString(PyExc_RuntimeError, result.second.toLatin1().data());
-			return NULL;
+			return nullptr;
 		}
 	Py_INCREF(Py_None);
 	return Py_None;
@@ -3467,7 +3467,7 @@ static PyObject* set_time_markers(PyObject*, PyObject* args)
 	size_t size = PyTuple_GET_SIZE(args);
 	if (size != 2) {
 		PyErr_SetString(PyExc_RuntimeError, "set_time_markers: wrong number of argument (should be 2)");
-		return NULL;
+		return nullptr;
 	}
 
 	qint64 start = pythonToVariant(PyTuple_GetItem(args, 0)).toLongLong();
@@ -3478,7 +3478,7 @@ static PyObject* set_time_markers(PyObject*, PyObject* args)
 	Py_END_ALLOW_THREADS
 		if (!result.second.isEmpty()) {
 			PyErr_SetString(PyExc_RuntimeError, result.second.toLatin1().data());
-			return NULL;
+			return nullptr;
 		}
 	Py_INCREF(Py_None);
 	return Py_None;
@@ -3489,7 +3489,7 @@ static PyObject* remove_time_markers(PyObject*, PyObject* args)
 	size_t size = PyTuple_GET_SIZE(args);
 	if (size != 0) {
 		PyErr_SetString(PyExc_RuntimeError, "remove_time_markers: wrong number of argument (should be 2)");
-		return NULL;
+		return nullptr;
 	}
 
 	ResultType result;
@@ -3498,7 +3498,7 @@ static PyObject* remove_time_markers(PyObject*, PyObject* args)
 	Py_END_ALLOW_THREADS
 		if (!result.second.isEmpty()) {
 			PyErr_SetString(PyExc_RuntimeError, result.second.toLatin1().data());
-			return NULL;
+			return nullptr;
 		}
 	Py_INCREF(Py_None);
 	return Py_None;
@@ -3509,7 +3509,7 @@ static PyObject* set_row_ratio(PyObject*, PyObject* args)
 	size_t size = PyTuple_GET_SIZE(args);
 	if (size != 2) {
 		PyErr_SetString(PyExc_RuntimeError, "set_row_ratio: wrong number of argument (should be 2)");
-		return NULL;
+		return nullptr;
 	}
 
 	int row = pythonToVariant(PyTuple_GetItem(args, 0)).toInt();
@@ -3521,7 +3521,7 @@ static PyObject* set_row_ratio(PyObject*, PyObject* args)
 	Py_END_ALLOW_THREADS
 		if (!result.second.isEmpty()) {
 			PyErr_SetString(PyExc_RuntimeError, result.second.toLatin1().data());
-			return NULL;
+			return nullptr;
 		}
 	Py_INCREF(Py_None);
 	return Py_None;
@@ -3538,7 +3538,7 @@ static PyObject* imshow(PyObject *, PyObject* args)
 	size_t size = PyTuple_GET_SIZE(args);
 	if (size != 2) {
 		PyErr_SetString(PyExc_RuntimeError, "imshow: wrong number of argument (should be 2)");
-		return NULL;
+		return nullptr;
 	}
 
 	VipNDArray ar = pythonToVariant(PyTuple_GetItem(args, 0)).value<VipNDArray>();
@@ -3551,7 +3551,7 @@ static PyObject* imshow(PyObject *, PyObject* args)
 
 		if (!result.second.isEmpty()) {
 			PyErr_SetString(PyExc_RuntimeError, result.second.toLatin1().data());
-			return NULL;
+			return nullptr;
 		}
 	return PyLong_FromLong(result.first.toInt());
 }
@@ -3586,7 +3586,7 @@ static PyObject* plot(PyObject *, PyObject* args)
 	size_t size = PyTuple_GET_SIZE(args);
 	if (size != 2) {
 		PyErr_SetString(PyExc_RuntimeError, "plot: wrong number of argument (should be 2)");
-		return NULL;
+		return nullptr;
 	}
 
 	QVariant data = pythonToVariant(PyTuple_GetItem(args, 0));
@@ -3597,7 +3597,7 @@ static PyObject* plot(PyObject *, PyObject* args)
 		const VipNDArrayType<vip_double> r = data.value<VipNDArray>().convert<vip_double>();
 		if (r.isEmpty() || r.shapeCount() != 2 || r.shape(0) != 2) {
 			PyErr_SetString(PyExc_RuntimeError, "wrong input data, should be either a 2D array or a list of 2 1D array");
-			return NULL;
+			return nullptr;
 		}
 		vector.resize(r.shape(1));
 		for (int i = 0; i < vector.size(); ++i)
@@ -3608,13 +3608,13 @@ static PyObject* plot(PyObject *, PyObject* args)
 		QVariantList lst = data.value<QVariantList>();
 		if (lst.size() != 2) {
 			PyErr_SetString(PyExc_RuntimeError, "wrong input data, should be either a 2D array or a list of 2 1D array");
-			return NULL;
+			return nullptr;
 		}
 		VipNDArrayType<vip_double> x = __to1DArray(lst[0]);
 		VipNDArrayType<vip_double> y = __to1DArray(lst[1]);
 		if (x.isEmpty() || y.isEmpty() || x.size() != y.size() || x.shapeCount() != 1 || y.shapeCount() != 1) {
 			PyErr_SetString(PyExc_RuntimeError, "wrong input data, should be either a 2D array or a list of 2 1D array");
-			return NULL;
+			return nullptr;
 		}
 		vector.resize(x.size());
 		for (int i = 0; i < vector.size(); ++i)
@@ -3622,12 +3622,12 @@ static PyObject* plot(PyObject *, PyObject* args)
 	}
 	else {
 		PyErr_SetString(PyExc_RuntimeError, "wrong input data, should be either a 2D array or a list of 2 1D array");
-		return NULL;
+		return nullptr;
 	}
 
 	if (vector.isEmpty()) {
 		PyErr_SetString(PyExc_RuntimeError, "empty input data");
-		return NULL;
+		return nullptr;
 	}
 
 	ResultType result;
@@ -3637,7 +3637,7 @@ static PyObject* plot(PyObject *, PyObject* args)
 
 		if (!result.second.isEmpty()) {
 			PyErr_SetString(PyExc_RuntimeError, result.second.toLatin1().data());
-			return NULL;
+			return nullptr;
 		}
 	return PyLong_FromLong(result.first.toInt());
 }
@@ -3653,7 +3653,7 @@ static PyObject* plots(PyObject *, PyObject* args)
 	size_t size = PyTuple_GET_SIZE(args);
 	if (size != 2) {
 		PyErr_SetString(PyExc_RuntimeError, "plot: wrong number of argument (should be 2)");
-		return NULL;
+		return nullptr;
 	}
 
 	const QVariantList datas = pythonToVariant(PyTuple_GetItem(args, 0)).value<QVariantList>();
@@ -3669,7 +3669,7 @@ static PyObject* plots(PyObject *, PyObject* args)
 			const VipNDArrayType<vip_double> r = data.value<VipNDArray>().convert<vip_double>();
 			if (r.isEmpty() || r.shapeCount() != 2 || r.shape(0) != 2) {
 				PyErr_SetString(PyExc_RuntimeError, "wrong input data, should be either a 2D array or a list of 2 1D array");
-				return NULL;
+				return nullptr;
 			}
 			vector.resize(r.shape(1));
 			for (int i = 0; i < vector.size(); ++i)
@@ -3680,13 +3680,13 @@ static PyObject* plots(PyObject *, PyObject* args)
 			QVariantList lst = data.value<QVariantList>();
 			if (lst.size() != 2) {
 				PyErr_SetString(PyExc_RuntimeError, "wrong input data, should be either a 2D array or a list of 2 1D array");
-				return NULL;
+				return nullptr;
 			}
 			VipNDArrayType<vip_double> x = __to1DArray(lst[0]);
 			VipNDArrayType<vip_double> y = __to1DArray(lst[1]);
 			if (x.isEmpty() || y.isEmpty() || x.size() != y.size() || x.shapeCount() != 1 || y.shapeCount() != 1) {
 				PyErr_SetString(PyExc_RuntimeError, "wrong input data, should be either a 2D array or a list of 2 1D array");
-				return NULL;
+				return nullptr;
 			}
 			vector.resize(x.size());
 			for (int i = 0; i < vector.size(); ++i)
@@ -3694,12 +3694,12 @@ static PyObject* plots(PyObject *, PyObject* args)
 		}
 		else {
 			PyErr_SetString(PyExc_RuntimeError, "wrong input data, should be either a 2D array or a list of 2 1D array");
-			return NULL;
+			return nullptr;
 		}
 
 		if (vector.isEmpty()) {
 			PyErr_SetString(PyExc_RuntimeError, "empty input data");
-			return NULL;
+			return nullptr;
 		}
 
 		vectors << vector;
@@ -3712,7 +3712,7 @@ static PyObject* plots(PyObject *, PyObject* args)
 
 		if (!result.second.isEmpty()) {
 			PyErr_SetString(PyExc_RuntimeError, result.second.toLatin1().data());
-			return NULL;
+			return nullptr;
 		} 
 	return (PyObject*)variantToPython(result.first);
 }
@@ -3722,7 +3722,7 @@ static PyObject* resample(PyObject *, PyObject* args)
 	size_t size = PyTuple_GET_SIZE(args);
 	if (size != 4) {
 		PyErr_SetString(PyExc_RuntimeError, "resample: wrong number of argument (should be 4)");
-		return NULL;
+		return nullptr;
 	}
 
 	const QVariantList datas = pythonToVariant(PyTuple_GetItem(args, 0)).value<QVariantList>();
@@ -3733,7 +3733,7 @@ static PyObject* resample(PyObject *, PyObject* args)
 
 	if (datas.size() % 2 || datas.size() == 0) {
 		PyErr_SetString(PyExc_RuntimeError, "resample: wrong number of input array");
-		return NULL;
+		return nullptr;
 	}
 	QList<VipPointVector> vectors;
 	for (int i = 0; i < datas.size(); i += 2) {
@@ -3741,11 +3741,11 @@ static PyObject* resample(PyObject *, PyObject* args)
 		const VipNDArrayType<double> y = datas[i+1].value<VipNDArray>().toDouble();
 		if(x.isEmpty() || y.size() != x.size()) {
 			PyErr_SetString(PyExc_RuntimeError, "resample: x and y arrays have different sizes");
-			return NULL;
+			return nullptr;
 		}
 		if(x.shapeCount() != y.shapeCount()) {
 			PyErr_SetString(PyExc_RuntimeError, "resample: x and y arrays have different shapes");
-			return NULL;
+			return nullptr;
 		}
 		VipPointVector r(x.size());
 		for (int i = 0; i < r.size(); ++i)
@@ -3784,7 +3784,7 @@ static PyObject* resample(PyObject *, PyObject* args)
 	}
 	if (!ok) {
 		PyErr_SetString(PyExc_RuntimeError, "resample: cannot resample input arrays");
-		return NULL;
+		return nullptr;
 	}
 
 	//store results
@@ -3804,7 +3804,7 @@ static PyObject* test_pid(PyObject *, PyObject* args)
 	size_t size = PyTuple_GET_SIZE(args);
 	if (size != 1) {
 		PyErr_SetString(PyExc_RuntimeError, "test_pid: wrong number of argument (should be 1)");
-		return NULL;
+		return nullptr;
 	}
 
 	qint64 pid = pythonToVariant(PyTuple_GetItem(args, 0)).toLongLong();
@@ -3816,7 +3816,7 @@ static PyObject* test_pid(PyObject *, PyObject* args)
 
 		if (!result.second.isEmpty()) {
 			PyErr_SetString(PyExc_RuntimeError, result.second.toLatin1().data());
-			return NULL;
+			return nullptr;
 		}
 	Py_INCREF(Py_None);
 	return Py_None;
@@ -3828,7 +3828,7 @@ static PyObject* add_function(PyObject *, PyObject* args)
 	size_t size = PyTuple_GET_SIZE(args);
 	if (size != 4) {
 		PyErr_SetString(PyExc_RuntimeError, "add_function: wrong number of argument (should be 4)");
-		return NULL;
+		return nullptr;
 	}
 
 	int player = pythonToVariant(PyTuple_GetItem(args, 0)).toInt();
@@ -3843,7 +3843,7 @@ static PyObject* add_function(PyObject *, PyObject* args)
 
 		if (!result.second.isEmpty()) {
 			PyErr_SetString(PyExc_RuntimeError, result.second.toLatin1().data());
-			return NULL;
+			return nullptr;
 		}
 	Py_INCREF(Py_None);
 	return Py_None;
@@ -3854,7 +3854,7 @@ static PyObject* get_function(PyObject *, PyObject* args)
 	size_t size = PyTuple_GET_SIZE(args);
 	if (size != 3) {
 		PyErr_SetString(PyExc_RuntimeError, "get_function: wrong number of argument (should be 3)");
-		return NULL;
+		return nullptr;
 	}
 
 	int player = pythonToVariant(PyTuple_GetItem(args, 0)).toInt();
@@ -3868,7 +3868,7 @@ static PyObject* get_function(PyObject *, PyObject* args)
 
 		if (!result.second.isEmpty()) {
 			PyErr_SetString(PyExc_RuntimeError, result.second.toLatin1().data());
-			return NULL;
+			return nullptr;
 		}
 
 	VipProcessingObject * obj = result.first.value<VipProcessingObject*>();
@@ -3880,8 +3880,8 @@ static PyObject* get_function(PyObject *, PyObject* args)
 			return res;
 		}
 	}
-	PyErr_SetString(PyExc_RuntimeError, ("cannot retrieve function object " + function_name + ": NULL object").toLatin1().data());
-	return NULL;
+	PyErr_SetString(PyExc_RuntimeError, ("cannot retrieve function object " + function_name + ": nullptr object").toLatin1().data());
+	return nullptr;
 }
 
 
@@ -3891,7 +3891,7 @@ static PyObject* user_input(PyObject*, PyObject* args)
 	size_t size = PyTuple_GET_SIZE(args);
 	if (size < 2) {
 		PyErr_SetString(PyExc_RuntimeError, "user_input: wrong number of argument (should be at least 2)");
-		return NULL;
+		return nullptr;
 	}
 
 	QString title = pythonToVariant(PyTuple_GetItem(args, 0)).toString();
@@ -3907,7 +3907,7 @@ static PyObject* user_input(PyObject*, PyObject* args)
 
 		if (!result.second.isEmpty()) {
 			PyErr_SetString(PyExc_RuntimeError, result.second.toLatin1().data());
-			return NULL;
+			return nullptr;
 		}
 
 	return (PyObject*)variantToPython(result.first);
@@ -3919,7 +3919,7 @@ static PyObject* add_widget_to_player(PyObject *, PyObject* args)
 	size_t size = PyTuple_GET_SIZE(args);
 	if (size != 5) {
 		PyErr_SetString(PyExc_RuntimeError, "add_widget_to_player: wrong number of argument (should be 5)");
-		return NULL;
+		return nullptr;
 	}
 
 	int player = pythonToVariant(PyTuple_GetItem(args, 0)).toInt();
@@ -3935,7 +3935,7 @@ static PyObject* add_widget_to_player(PyObject *, PyObject* args)
 
 		if (!result.second.isEmpty()) {
 			PyErr_SetString(PyExc_RuntimeError, result.second.toLatin1().data());
-			return NULL;
+			return nullptr;
 		}
 	Py_INCREF(widget);
 	Py_INCREF(Py_None);
@@ -3954,7 +3954,7 @@ static PyObject* callRegisteredFun(PyObject*, PyObject* args)
 	VipFunctionObject obj = vipFindFunction(name);
 	if (!obj.isValid()) {
 		PyErr_SetString(PyExc_RuntimeError, ("Cannot find function " + name).toLatin1().data());
-		return NULL;
+		return nullptr;
 	}
 
 	if (obj.mainThread) {
@@ -3969,7 +3969,7 @@ static PyObject* callRegisteredFun(PyObject*, PyObject* args)
 	 
 	if (!result.second.isEmpty()) {
 		PyErr_SetString(PyExc_RuntimeError, result.second.toLatin1().data());
-		return NULL;
+		return nullptr;
 	}
 	if (result.first.userType() == 0) {
 		Py_INCREF(Py_None);
@@ -3978,12 +3978,12 @@ static PyObject* callRegisteredFun(PyObject*, PyObject* args)
 	else {
 		if (result.first.userType() == qMetaTypeId<VipErrorData>()) {
 			PyErr_SetString(PyExc_RuntimeError, result.first.value<VipErrorData>().errorString().toLatin1().data());
-			return NULL;
+			return nullptr;
 		}
 		PyObject * res =(PyObject*)variantToPython(result.first);
 		if (!res) {
 			PyErr_SetString(PyExc_RuntimeError, ("Cannot interpret result of function " + name + ", type is " + QString(result.first.typeName())).toLatin1().data());
-			return NULL;
+			return nullptr;
 		}
 		return res;
 	}
@@ -4082,7 +4082,7 @@ static PyMethodDef Thermavip_methods[] =
 static struct PyModuleDef Thermavip_module = {
 	PyModuleDef_HEAD_INIT,
 	"internal",   /* name of module */
-	NULL, /* module documentation, may be NULL */
+	nullptr, /* module documentation, may be nullptr */
 	-1,       /* size of per-interpreter state of the module,
 			  or -1 if the module keeps state in global variables. */
 	Thermavip_methods
@@ -4092,7 +4092,7 @@ static struct PyModuleDef Thermavip_module = {
 PyObject* PyInit_thermavip()
 {
 	static QBasicAtomicInt reg = Q_BASIC_ATOMIC_INITIALIZER(0);
-	static PyObject* thermavip = NULL;
+	static PyObject* thermavip = nullptr;
 	if (reg.loadAcquire())
 		return thermavip;
 	else

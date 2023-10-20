@@ -34,7 +34,7 @@ public:
 		Uncompress
 	};
 
-	VipCompressor(QObject* parent = NULL);
+	VipCompressor(QObject* parent = nullptr);
 	~VipCompressor();
 
 	/// Set the compression mode (compress or uncompress)

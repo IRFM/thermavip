@@ -72,7 +72,7 @@ void OpenStream::openFilePath()
 {
 	MPEGLoader l;
 	QString filters = l.fileFilters();
-	QString path = VipFileDialog::getOpenFileName(NULL, "Open video file", filters);
+	QString path = VipFileDialog::getOpenFileName(nullptr, "Open video file", filters);
 	if (!path.isEmpty()) {
 		open();
 	}
@@ -253,7 +253,7 @@ FfmpegInterface::LoadResult FfmpegInterface::load()
 
 	//VideoDecoder::list_devices();
 
-	//AVDictionary* options = NULL;
+	//AVDictionary* options = nullptr;
 	// set input resolution
 	//av_dict_set(&options, "video_size", "640x480", 0);
 	//av_dict_set(&options, "r", "25", 0);

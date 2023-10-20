@@ -264,7 +264,7 @@ class VIP_PLOTTING_EXPORT VipDateTimeScaleEngine : public VipLinearScaleEngine
 {
 	VipValueToTime * m_vt;
 public:
-	VipDateTimeScaleEngine() : m_vt(NULL) {}
+	VipDateTimeScaleEngine() : m_vt(nullptr) {}
 
 	void setValueToTime(VipValueToTime * vt) { m_vt = vt; }
 	VipValueToTime * valueToTime() const { return const_cast<VipValueToTime*>(m_vt); }

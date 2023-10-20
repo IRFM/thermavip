@@ -60,7 +60,7 @@ class VIP_GUI_EXPORT VipMapFileSystemEditor : public QWidget
 	QPointer<VipMapFileSystem> m_fs;
 
 public:
-	VipMapFileSystemEditor(QWidget * parent = NULL)
+	VipMapFileSystemEditor(QWidget * parent = nullptr)
 		:QWidget(parent)
 	{}
 
@@ -183,7 +183,7 @@ public:
 		NoCustomItems
 	};
 
-	VipMapFileSystemTree(QWidget * parent = NULL);
+	VipMapFileSystemTree(QWidget * parent = nullptr);
 	~VipMapFileSystemTree();
 
 	/// Set the #VipMapFileSystem to map.
@@ -291,7 +291,7 @@ class VIP_GUI_EXPORT VipFileSystemWidget : public QWidget
 	Q_OBJECT
 
 public:
-	VipFileSystemWidget(QWidget * parent = NULL);
+	VipFileSystemWidget(QWidget * parent = nullptr);
 	~VipFileSystemWidget();
 
 	VipMapFileSystemTree  *tree() const;
@@ -365,7 +365,7 @@ class VIP_GUI_EXPORT VipDirectoryBrowser : public VipToolWidget
 {
 	Q_OBJECT
 public:
-	VipDirectoryBrowser(VipMainWindow * w = NULL);
+	VipDirectoryBrowser(VipMainWindow * w = nullptr);
 	~VipDirectoryBrowser();
 
 	VipFileSystemWidget * currentFileSystemWidget() const;
@@ -387,7 +387,7 @@ private:
 	QTabWidget * m_widget;
 };
 
-VIP_GUI_EXPORT VipDirectoryBrowser* vipGetDirectoryBrowser(VipMainWindow * widget= NULL);
+VIP_GUI_EXPORT VipDirectoryBrowser* vipGetDirectoryBrowser(VipMainWindow * widget= nullptr);
 
 VIP_REGISTER_QOBJECT_METATYPE(VipDirectoryBrowser*)
 

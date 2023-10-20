@@ -65,11 +65,11 @@ class VideoCapture
 public:
 
 	VideoCapture() {
-		oformat = NULL;
-		ofctx = NULL;
-		videoStream = NULL;
-		videoFrame = NULL;
-		swsCtx = NULL;
+		oformat = nullptr;
+		ofctx = nullptr;
+		videoStream = nullptr;
+		videoFrame = nullptr;
+		swsCtx = nullptr;
 		frameCounter = 0;
 	}
 
@@ -120,7 +120,7 @@ inline VideoCapture* Init(const char * filename, int width, int height, int fps,
 	VideoCapture *vc = new VideoCapture();
 	if (vc->Init(filename, width, height, fps, bitrate))
 		return vc;
-	return NULL;
+	return nullptr;
 };
 inline bool AddFrame(uint8_t *data, VideoCapture *vc) {
 	return vc->AddFrame(data);

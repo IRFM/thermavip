@@ -130,7 +130,7 @@ bool vipLoadProcessingPoolSnapshot(VipProcessingPool * pool, VipArchive & arch)
 		//load the processing name
 		QString name = arch.read("objectname").toString();
 		QMap<QString, VipProcessingSnapshot*>::iterator it = procs.find(name);
-		VipProcessingSnapshot * p = NULL;
+		VipProcessingSnapshot * p = nullptr;
 		if (it == procs.end())
 		{
 			p = new VipProcessingSnapshot();

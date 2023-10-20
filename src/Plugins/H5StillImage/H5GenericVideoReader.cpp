@@ -55,8 +55,8 @@ bool H5GenericVideoReader::open(VipIODevice::OpenModes mode)
 	m_data->video_reader.setAttributes(this->attributes());
 	m_data->ecrh_reader.setAttributes(this->attributes());
 
-	m_data->video_reader.setDevice(NULL);
-	m_data->ecrh_reader.setDevice(NULL);
+	m_data->video_reader.setDevice(nullptr);
+	m_data->ecrh_reader.setDevice(nullptr);
 
 	m_data->still_reader.setDevice(dev);
 	if (m_data->still_reader.open(mode))
@@ -70,11 +70,11 @@ bool H5GenericVideoReader::open(VipIODevice::OpenModes mode)
 	}
 	else
 	{
-		m_data->still_reader.setDevice(NULL);
-		m_data->ecrh_reader.setDevice(NULL);
+		m_data->still_reader.setDevice(nullptr);
+		m_data->ecrh_reader.setDevice(nullptr);
 
 		delete dev;
-		setDevice(NULL);
+		setDevice(nullptr);
 		dev = createDevice(path(), QIODevice::ReadOnly);
 		if (!dev)
 			return false;
@@ -93,11 +93,11 @@ bool H5GenericVideoReader::open(VipIODevice::OpenModes mode)
 		
 		else
 		{
-			m_data->still_reader.setDevice(NULL);
-			m_data->video_reader.setDevice(NULL);
+			m_data->still_reader.setDevice(nullptr);
+			m_data->video_reader.setDevice(nullptr);
 
 			delete dev;
-			setDevice(NULL);
+			setDevice(nullptr);
 			dev = createDevice(path(), QIODevice::ReadOnly);
 			if (!dev)
 				return false;
@@ -114,7 +114,7 @@ bool H5GenericVideoReader::open(VipIODevice::OpenModes mode)
 			}
 			else
 			{
-				setDevice(NULL);
+				setDevice(nullptr);
 				delete dev;
 			}
 		}
@@ -126,9 +126,9 @@ bool H5GenericVideoReader::open(VipIODevice::OpenModes mode)
 
 void H5GenericVideoReader::close()
 {
-	/*setDevice(NULL);
-	m_data->still_reader.setDevice(NULL);
-	m_data->video_reader.setDevice(NULL);*/
+	/*setDevice(nullptr);
+	m_data->still_reader.setDevice(nullptr);
+	m_data->video_reader.setDevice(nullptr);*/
 	m_data->still_reader.close();
 	m_data->video_reader.close();
 	m_data->ecrh_reader.close();

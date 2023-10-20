@@ -201,7 +201,7 @@ void VipOtherPlayerDataEditor::apply()
 
 	VipPlayer2D* pl = VipUniqueId::find<VipPlayer2D>(player.toInt());
 	if (pl) {
-		VipDisplayObject* display = NULL;
+		VipDisplayObject* display = nullptr;
 		QList<VipDisplayObject*> displays = pl->displayObjects();
 		if (displays.size() > 1) {
 			display = VipUniqueId::find<VipDisplayObject>(m_data->displays.currentData().toInt());
@@ -269,12 +269,12 @@ VipOutput* VipFindDataButton::selectedData() const
 {
 	if (m_data->processing && m_data->index < m_data->processing->outputCount())
 		return m_data->processing->outputAt(m_data->index);
-	return NULL;
+	return nullptr;
 }
 
 void VipFindDataButton::setSelectedData(VipOutput* output)
 {
-	m_data->processing = output ? output->parentProcessing() : NULL;
+	m_data->processing = output ? output->parentProcessing() : nullptr;
 	m_data->index = m_data->processing ? m_data->processing->indexOf(output) : 0;
 	if (!output) {
 		this->setText("No data selected");
@@ -689,7 +689,7 @@ class ProcessingListWidgetItem : public QListWidgetItem
 {
 public:
 	ProcessingListWidgetItem(VipProcessingObject* obj)
-	  : QListWidgetItem(NULL, QListWidgetItem::UserType)
+	  : QListWidgetItem(nullptr, QListWidgetItem::UserType)
 	  , processing(obj)
 	{
 		// QString text = obj->objectName();
@@ -960,7 +960,7 @@ void VipProcessingListEditor::selectedItemChanged()
 
 void VipProcessingListEditor::clearEditor()
 {
-	m_data->editor->setProcessingObject(NULL);
+	m_data->editor->setProcessingObject(nullptr);
 }
 
 void VipProcessingListEditor::resetProcessingList()
@@ -1108,7 +1108,7 @@ QListWidgetItem* VipProcessingListEditor::item(VipProcessingObject* obj) const
 		if (item->processing == obj)
 			return item;
 	}
-	return NULL;
+	return nullptr;
 }
 
 static QString __copied_items;
@@ -2486,7 +2486,7 @@ void VipDirectoryReaderEditor::setDirectoryReader(VipDirectoryReader* reader)
 					else {
 						// do not add the editor to the layout, but add the meta object to editors to avoid this meta object for next devices
 						delete editor;
-						m_data->editors[meta] = NULL;
+						m_data->editors[meta] = nullptr;
 					}
 				}
 			}
@@ -2747,8 +2747,8 @@ public:
 	TrListWidgetItem(QListWidget* parent, Transform::TrType type)
 	  : QListWidgetItem(parent)
 	  , type(type)
-	  , x(NULL)
-	  , y(NULL)
+	  , x(nullptr)
+	  , y(nullptr)
 	{
 
 		if (type == Transform::Translate) {
@@ -3440,7 +3440,7 @@ void VipWarpingEditor::SaveTransform()
 		return;
 
 	if (d_data->warping->warping().size()) {
-		QString filename = VipFileDialog::getSaveFileName(NULL, "Save warping file", "VipWarping file (*.warp)");
+		QString filename = VipFileDialog::getSaveFileName(nullptr, "Save warping file", "VipWarping file (*.warp)");
 		if (!filename.isEmpty()) {
 			QFile out(filename);
 			if (out.open(QFile::WriteOnly)) {
@@ -3460,7 +3460,7 @@ void VipWarpingEditor::SaveTransform()
 
 void VipWarpingEditor::LoadTransform()
 {
-	QString filename = VipFileDialog::getOpenFileName((NULL), "Open a warping file", "VipWarping file (*.warp)");
+	QString filename = VipFileDialog::getOpenFileName((nullptr), "Open a warping file", "VipWarping file (*.warp)");
 	if (!filename.isEmpty()) {
 		QFile in(filename);
 		if (in.open(QFile::ReadOnly)) {
@@ -3493,7 +3493,7 @@ VipVideoPlayer* VipWarpingEditor::FindOutputPlayer() const
 {
 	if (d_data->warping)
 		return qobject_cast<VipVideoPlayer*>(VipPlayer2D::findPlayer2D(d_data->warping->sceneModel()));
-	return NULL;
+	return nullptr;
 }
 
 PlotWarpingPoints* VipWarpingEditor::PlotPoints() const
@@ -3963,7 +3963,7 @@ public:
 
 		for (int i = 0; i < lst.size(); ++i) {
 			const QString name = lst[i];
-			QTreeWidgetItem* item = NULL;
+			QTreeWidgetItem* item = nullptr;
 
 			// find child with name
 			for (int j = 0; j < root->childCount(); ++j) {
@@ -4016,10 +4016,10 @@ static bool IsDouble(const QVariant& v)
 
 PropertyEditor::PropertyEditor(VipProcessingObject* obj, const QString& property)
   : QWidget()
-  , editor(NULL)
+  , editor(nullptr)
   , property(property)
   , object(obj)
-  , parent(NULL)
+  , parent(nullptr)
 {
 	this->setObjectName("_vip_PropertyEditor");
 
@@ -4090,12 +4090,12 @@ void PropertyWidget::updateProperties()
 
 // Create a default editor for a VipProcessingObject.
 // This editor will display one widget per processing property.
-// If the processing has no property, a NULL widget is returned.
+// If the processing has no property, a nullptr widget is returned.
 static QWidget* defaultEditor(VipProcessingObject* obj)
 {
 	int count = obj->propertyCount();
 	if (!count)
-		return NULL;
+		return nullptr;
 
 	QList<PropertyEditor*> editors;
 	for (int i = 0; i < count; ++i) {
@@ -4110,7 +4110,7 @@ static QWidget* defaultEditor(VipProcessingObject* obj)
 	}
 
 	if (!editors.size())
-		return NULL;
+		return nullptr;
 
 	PropertyWidget* res = new PropertyWidget();
 
@@ -4133,7 +4133,7 @@ public:
 	VipProcessingObject* processingObject;
 	bool isShowExactProcessingOnly;
 	PrivateData()
-	  : processingObject(NULL)
+	  : processingObject(nullptr)
 	  , isShowExactProcessingOnly(true)
 	{
 	}
@@ -4282,7 +4282,7 @@ bool VipUniqueProcessingObjectEditor::setProcessingObject(VipProcessingObject* o
 		meta = meta->superClass();
 	}
 
-	QVector<QWidget*> editors(metas.size(), NULL);
+	QVector<QWidget*> editors(metas.size(), nullptr);
 
 	const auto lst = vipFDObjectEditor().match(obj);
 	for (int i = 0; i < lst.size(); ++i) {
@@ -4400,7 +4400,7 @@ VipProcessingLeafSelector::~VipProcessingLeafSelector()
 void VipProcessingLeafSelector::setProcessingPool(VipProcessingPool* pool)
 {
 	m_data->pool = pool;
-	m_data->processing = NULL;
+	m_data->processing = nullptr;
 }
 
 VipProcessingPool* VipProcessingLeafSelector::processingPool() const
@@ -4879,7 +4879,7 @@ VipUniqueProcessingObjectEditor* VipMultiProcessingObjectEditor::processingEdito
 		if (VipUniqueProcessingObjectEditor* ed = qobject_cast<VipUniqueProcessingObjectEditor*>(it.value().second)) //->findChild<VipUniqueProcessingObjectEditor*>())
 			return ed;
 	}
-	return NULL;
+	return nullptr;
 }
 
 void VipMultiProcessingObjectEditor::setProcessingObjectVisible(VipProcessingObject* object, bool visible)
@@ -4997,7 +4997,7 @@ public:
 	VipMultiProcessingObjectEditor* findEditor(VipProcessingObject* obj)
 	{
 		if (editors.size() == 0)
-			return NULL;
+			return nullptr;
 
 		// first, remove null objects
 		for (QMap<VipProcessingObject*, editor_type>::iterator it = editors.begin(); it != editors.end(); ++it) {
@@ -5009,11 +5009,11 @@ public:
 
 		QMap<VipProcessingObject*, editor_type>::iterator it = editors.find(obj);
 		if (it == editors.end())
-			return NULL;
+			return nullptr;
 		return it.value().first;
 	}
 
-	void setEditor(VipProcessingObject* obj, VipMultiProcessingObjectEditor* edit = NULL)
+	void setEditor(VipProcessingObject* obj, VipMultiProcessingObjectEditor* edit = nullptr)
 	{
 		// remove the current editor from the layout
 		if (layout->count()) {
@@ -5040,7 +5040,7 @@ public:
 	}
 
 	PrivateData()
-	  : current_editor(NULL, NULL)
+	  : current_editor(nullptr, nullptr)
 	  , isShowExactProcessingOnly(true)
 	{
 	}
@@ -5092,7 +5092,7 @@ bool VipProcessingEditorToolWidget::setPlayer(VipAbstractPlayer* player)
 {
 	// just for ease of use: if no processing has been selected yet, assign a processing from this player
 	if (!player) {
-		m_data->leafSelector->setProcessing(NULL);
+		m_data->leafSelector->setProcessing(nullptr);
 		return false;
 	}
 	// if (player == m_data->player)
@@ -5396,7 +5396,7 @@ VipIODevice* VipDeviceChoiceDialog::selection() const
 		if (m_data->tree.topLevelItem(i)->isSelected())
 			return m_data->devices[i];
 
-	return NULL;
+	return nullptr;
 }
 
 VipIODevice* VipCreateDevice::create(const QList<VipProcessingObject::Info>& dev, const VipPath& path, bool show_device_options)
@@ -5413,7 +5413,7 @@ VipIODevice* VipCreateDevice::create(const QList<VipProcessingObject::Info>& dev
 		}
 	}
 
-	VipIODevice* result = NULL;
+	VipIODevice* result = nullptr;
 
 	if (devices.size() > 1) {
 		// create the dialog used to use the device
@@ -5427,12 +5427,12 @@ VipIODevice* VipCreateDevice::create(const QList<VipProcessingObject::Info>& dev
 
 		delete dialog;
 		if (!result)
-			return NULL;
+			return nullptr;
 	}
 	else if (devices.size() == 1)
 		result = devices.first();
 	else
-		return NULL;
+		return nullptr;
 
 	if (!path.isEmpty()) {
 		result->setPath(path.canonicalPath());
@@ -5450,7 +5450,7 @@ VipIODevice* VipCreateDevice::create(const QList<VipProcessingObject::Info>& dev
 				VipGenericDialog dialog(editor, "Device options", vipGetMainWindow());
 				if (dialog.exec() != QDialog::Accepted) {
 					delete result;
-					return NULL;
+					return nullptr;
 				}
 				else {
 					// try to find the "apply" slot and call it

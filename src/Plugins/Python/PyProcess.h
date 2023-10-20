@@ -23,7 +23,7 @@
 Serialization function, convert raw bytes to QVariant.
 The bytes must have been created with #variantToBytes function.
 */
-PYTHON_EXPORT QVariant bytesToVariant(const QByteArray &, int * len = NULL);
+PYTHON_EXPORT QVariant bytesToVariant(const QByteArray &, int * len = nullptr);
 /**
 Deserialization function, convert a QVariant to a QByteArray object that can be sent to another process, a file or network.
 */
@@ -46,8 +46,8 @@ class PYTHON_EXPORT PyProcess : public PyIOOperation
 	friend struct PyProcRunnable;
 	friend struct PyProcRunThread;
 public:
-	PyProcess(QObject * parent = NULL);
-	PyProcess(const QString & pyprocess, QObject * parent = NULL);
+	PyProcess(QObject * parent = nullptr);
+	PyProcess(const QString & pyprocess, QObject * parent = nullptr);
 	~PyProcess();
 
 	void setInterpreter(const QString & name);
@@ -59,8 +59,8 @@ public:
 	virtual QByteArray readAllStandardError();
 	virtual qint64 write(const QByteArray & data);
 
-	QVariant evalCode(const QString & code, bool * ok = NULL);
-	virtual QVariant evalCode(const CodeObject & code, bool * ok = NULL) { return evalCode(code.pycode, ok); }
+	QVariant evalCode(const QString & code, bool * ok = nullptr);
+	virtual QVariant evalCode(const CodeObject & code, bool * ok = nullptr) { return evalCode(code.pycode, ok); }
 	virtual command_type execCode(const QString & code);
 	virtual command_type sendObject(const QString & name, const QVariant & obj);
 	virtual command_type retrieveObject(const QString & name);

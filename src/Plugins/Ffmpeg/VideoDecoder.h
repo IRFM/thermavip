@@ -49,7 +49,7 @@ class VideoDecoder
              VideoDecoder();
              VideoDecoder(const std::string & name);
 			 ~VideoDecoder();
-             void Open(const std::string & name, AVInputFormat * format = NULL, AVDictionary ** options = NULL);
+             void Open(const std::string & name, AVInputFormat * format = nullptr, AVDictionary ** options = nullptr);
 			 void Open(const QString & name, const QString & format, const QMap<QString, QString> & options);
              void Close();
 

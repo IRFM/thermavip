@@ -102,10 +102,10 @@ bool H5File::createFile(const QString& out_file, const QStringList& names, const
 		// select hyperslab
 		hsize_t offset[3] = { (hsize_t)0, (hsize_t)0, (hsize_t)0 };
 		// space = H5Dget_space(set);
-		H5Sselect_hyperslab(space, H5S_SELECT_SET, offset, NULL, dims, NULL);
+		H5Sselect_hyperslab(space, H5S_SELECT_SET, offset, nullptr, dims, nullptr);
 
 		// define memory space
-		hid_t memspace = H5Screate_simple(dim_count, dims, NULL);
+		hid_t memspace = H5Screate_simple(dim_count, dims, nullptr);
 
 		// write data
 		herr_t status = 0;
@@ -158,7 +158,7 @@ bool readDataSet(hid_t file, const QByteArray & name,  QStringList& names, QList
 
 	hsize_t dims[32];
 	int rank = H5Sget_simple_extent_ndims(space);
-	H5Sget_simple_extent_dims(space, dims, NULL);
+	H5Sget_simple_extent_dims(space, dims, nullptr);
 	if (rank == 2) {
 		// 3 dimensions, might be an image dataset
 		if (dims[0] > 0 && dims[1] > 0) {
@@ -168,10 +168,10 @@ bool readDataSet(hid_t file, const QByteArray & name,  QStringList& names, QList
 			hid_t data_type = H5T_NATIVE_DOUBLE;
 
 			hsize_t offset[2] = { 0, 0 };
-			H5Sselect_hyperslab(space, H5S_SELECT_SET, offset, NULL, dims, NULL);
+			H5Sselect_hyperslab(space, H5S_SELECT_SET, offset, nullptr, dims, nullptr);
 
 			// define memory space
-			hid_t mem = H5Screate_simple(2, dims, NULL);
+			hid_t mem = H5Screate_simple(2, dims, nullptr);
 
 			// read data
 			herr_t status = H5Dread(set, data_type, mem, space, H5P_DEFAULT, ptr);
@@ -196,10 +196,10 @@ bool readDataSet(hid_t file, const QByteArray & name,  QStringList& names, QList
 			hid_t data_type = H5T_NATIVE_DOUBLE;
 
 			hsize_t offset[3] = { 0, 0, 0 };
-			H5Sselect_hyperslab(space, H5S_SELECT_SET, offset, NULL, dims, NULL);
+			H5Sselect_hyperslab(space, H5S_SELECT_SET, offset, nullptr, dims, nullptr);
 
 			// define memory space
-			hid_t mem = H5Screate_simple(3, dims, NULL);
+			hid_t mem = H5Screate_simple(3, dims, nullptr);
 
 			// read data
 			herr_t status = H5Dread(set, data_type, mem, space, H5P_DEFAULT, ptr);
@@ -221,10 +221,10 @@ bool readDataSet(hid_t file, const QByteArray & name,  QStringList& names, QList
 			hid_t data_type = H5T_NATIVE_UINT8;
 
 			hsize_t offset[3] = { 0, 0, 0 };
-			H5Sselect_hyperslab(space, H5S_SELECT_SET, offset, NULL, dims, NULL);
+			H5Sselect_hyperslab(space, H5S_SELECT_SET, offset, nullptr, dims, nullptr);
 
 			// define memory space
-			hid_t mem = H5Screate_simple(3, dims, NULL);
+			hid_t mem = H5Screate_simple(3, dims, nullptr);
 
 			// read data
 			herr_t status = H5Dread(set, data_type, mem, space, H5P_DEFAULT, img.bits());
@@ -336,7 +336,7 @@ bool H5StillImageReader::open(VipIODevice::OpenModes mode)
 	QStringList names;
 	if (dev && H5File::readFile(H5OpenQIODevice(dev), names, arrays)) {
 		setOpenMode(mode);
-		setDevice(NULL);
+		setDevice(nullptr);
 		delete dev;
 		if (arrays.size() == 1) {
 			this->setData(QVariant::fromValue(VipNDArray(arrays.first())));
@@ -350,7 +350,7 @@ bool H5StillImageReader::open(VipIODevice::OpenModes mode)
 	}
 
 	if (dev) {
-		setDevice(NULL);
+		setDevice(nullptr);
 		// delete dev;
 	}
 

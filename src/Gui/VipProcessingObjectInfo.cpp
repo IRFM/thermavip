@@ -29,7 +29,7 @@ static int registerVipProcInfo()
 static int _registerVipProcInfo = registerVipProcInfo();
 
 
-static double ToDouble(const QVariant & var, bool * ok = NULL)
+static double ToDouble(const QVariant & var, bool * ok = nullptr)
 {
 	bool work = false;
 	double res = var.toDouble(&work);
@@ -56,7 +56,7 @@ static double ToDouble(const QVariant & var, bool * ok = NULL)
 
 
 VipExtractAttributeFromInfo::VipExtractAttributeFromInfo(QObject * parent )
-	:VipProcessingObject(parent),m_info(NULL)
+	:VipProcessingObject(parent),m_info(nullptr)
 {}
 
 VipExtractAttributeFromInfo::~VipExtractAttributeFromInfo()
@@ -70,7 +70,7 @@ void VipExtractAttributeFromInfo::setVipAdditionalInfo(VipAdditionalInfo * info)
 	if (m_info)
 	{
 		delete m_info;
-		m_info = NULL;
+		m_info = nullptr;
 	}
 	if (info)
 	{
@@ -153,7 +153,7 @@ void VipExtractImageInfos::apply()
 	if (ar.canConvert<double>())
 	{
 		VipShape sh(QRect(0, 0, ar.shape(1), ar.shape(0)));
-		VipShapeStatistics stats = sh.statistics(ar, QPoint(0, 0), NULL, VipShapeStatistics::Maximum | VipShapeStatistics::Minimum | VipShapeStatistics::Mean | VipShapeStatistics::Std);
+		VipShapeStatistics stats = sh.statistics(ar, QPoint(0, 0), nullptr, VipShapeStatistics::Maximum | VipShapeStatistics::Minimum | VipShapeStatistics::Mean | VipShapeStatistics::Std);
 
 		map.append("Global information/Image maximum", stats.max);
 		map.append("Global information/Image minimum", stats.min);
@@ -262,7 +262,7 @@ void VipExtractShapesInfos::apply()
 #if QT_VERSION_MAJOR >= 5 && QT_VERSION_MINOR >= 8
 				map[name + "/Area"] = QString::number(area(sh.region())) + " pixels�";
 #endif
-				VipShapeStatistics stats = sh.statistics(ar, QPoint(0, 0), NULL, VipShapeStatistics::Maximum | VipShapeStatistics::Minimum | VipShapeStatistics::Mean | VipShapeStatistics::Std | VipShapeStatistics::PixelCount);
+				VipShapeStatistics stats = sh.statistics(ar, QPoint(0, 0), nullptr, VipShapeStatistics::Maximum | VipShapeStatistics::Minimum | VipShapeStatistics::Mean | VipShapeStatistics::Std | VipShapeStatistics::PixelCount);
 				if (ar.canConvert<double>()) {
 					map.append(name + "/Maximum", stats.max);
 					map.append(name + "/Minimum", stats.min);
@@ -495,7 +495,7 @@ void VipExtractCurveInfos::apply()
 		if (full_continuous && points.size())
 		{
 			VipShape sh(QRect(0, 0, points.size(), 1));
-			VipShapeStatistics stats = sh.statistics(VipNDArrayTypeView<vip_double>(points.data(), vipVector(1, points.size())), QPoint(0, 0), NULL, VipShapeStatistics::Mean | VipShapeStatistics::Std);
+			VipShapeStatistics stats = sh.statistics(VipNDArrayTypeView<vip_double>(points.data(), vipVector(1, points.size())), QPoint(0, 0), nullptr, VipShapeStatistics::Mean | VipShapeStatistics::Std);
 			map.append(name + "/Y average", stats.average);
 			map.append(name + "/Y std. dev.", stats.std);
 		}
@@ -649,7 +649,7 @@ public:
 class InfoTreeWidgetItem : public QTreeWidgetItem
 {
 public:
-	InfoTreeWidgetItem() : output(NULL){}
+	InfoTreeWidgetItem() : output(nullptr){}
 	VipOutput * output;
 };
 
@@ -729,7 +729,7 @@ public:
 		for (int i = 0; i < topLevelItemCount(); ++i)
 			if (topLevelItem(i)->text(0) == name)
 				return topLevelItem(i);
-		return NULL;
+		return nullptr;
 	}
 
 	virtual void	mouseMoveEvent(QMouseEvent * evt)
@@ -778,7 +778,7 @@ public:
 class VipProcessingObjectInfo::PrivateData
 {
 public:
-	PrivateData() : output(NULL), lastUpdate(0), plotting(0)
+	PrivateData() : output(nullptr), lastUpdate(0), plotting(0)
 	{
 		filters.append(QPair<QString, QVector<QString> >("Global information", QVector<QString>() << "name" << "unit" << "title" << "date" << "size"<<"duration"));
 		filters.append(QPair<QString, QVector<QString> >("Camera", QVector<QString>() << "Filter" << "Camera" << "Focal" << "Focus" << "Field of"<<"Detector"<<"Lens"));
@@ -1029,8 +1029,8 @@ void VipProcessingObjectInfo::itemSelected(VipPlotItem* plot_item)
 			{
 				//check if the current processing is within this player
 				QList<VipDisplayObject*> displays = m_data->player->displayObjects();
-				VipProcessingObject * first = NULL;
-				VipOutput * src = NULL;
+				VipProcessingObject * first = nullptr;
+				VipOutput * src = nullptr;
 				for (int i = 0; i < displays.size(); ++i) {
 					if (VipOutput * s = displays[i]->inputAt(0)->connection()->source()) {
 						if (!first) {
@@ -1081,7 +1081,7 @@ void VipProcessingObjectInfo::copyToClipboard()
 
 void VipProcessingObjectInfo::saveToFile()
 {
-	QString filename = VipFileDialog::getSaveFileName(NULL, "Save processing information", "INI file (*.ini)");
+	QString filename = VipFileDialog::getSaveFileName(nullptr, "Save processing information", "INI file (*.ini)");
 	if (!filename.isEmpty())
 	{
 		QFile out(filename);
@@ -1127,7 +1127,7 @@ QList<VipProcessingObject*> VipProcessingObjectInfo::plotSelectedAttributes()
 	QStringList attributes;
 
 	qint64 time = VipInvalidTime;
-	VipProcessingPool * pool = NULL;
+	VipProcessingPool * pool = nullptr;
 
 	for (int i = 0; i < items.size(); ++i)
 	{
@@ -1168,7 +1168,7 @@ void VipProcessingObjectInfo::plotSelection()
 		QList<VipProcessingObject*> curves = this->plotSelectedAttributes();
 
 		//plot the result
-		QList<VipAbstractPlayer*> players = vipCreatePlayersFromProcessings((curves), NULL);
+		QList<VipAbstractPlayer*> players = vipCreatePlayersFromProcessings((curves), nullptr);
 		VipBaseDragWidget * drag = vipCreateFromWidgets(vipListCast<QWidget*>(players));
 
 		//display the new widget

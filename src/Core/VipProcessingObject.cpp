@@ -206,8 +206,8 @@ class VipConnection::PrivateData
 {
 public:
 	PrivateData()
-	  : parent(NULL)
-	  , io(NULL)
+	  : parent(nullptr)
+	  , io(nullptr)
 	  , openMode(UnknownConnection)
 	{
 	}
@@ -520,7 +520,7 @@ public:
 	PrivateData()
 	  : type(TypeInput)
 	  , enable(true)
-	  , parent(NULL)
+	  , parent(nullptr)
 	{
 	}
 	Type type;
@@ -558,7 +558,7 @@ VipInput* VipProcessingIO::toInput() const
 	if (m_data->type == TypeInput)
 		return static_cast<VipInput*>(const_cast<VipProcessingIO*>(this));
 	else
-		return NULL;
+		return nullptr;
 }
 
 VipMultiInput* VipProcessingIO::toMultiInput() const
@@ -566,7 +566,7 @@ VipMultiInput* VipProcessingIO::toMultiInput() const
 	if (m_data->type == TypeMultiInput)
 		return static_cast<VipMultiInput*>(const_cast<VipProcessingIO*>(this));
 	else
-		return NULL;
+		return nullptr;
 }
 
 VipProperty* VipProcessingIO::toProperty() const
@@ -574,7 +574,7 @@ VipProperty* VipProcessingIO::toProperty() const
 	if (m_data->type == TypeProperty)
 		return static_cast<VipProperty*>(const_cast<VipProcessingIO*>(this));
 	else
-		return NULL;
+		return nullptr;
 }
 
 VipMultiProperty* VipProcessingIO::toMultiProperty() const
@@ -582,7 +582,7 @@ VipMultiProperty* VipProcessingIO::toMultiProperty() const
 	if (m_data->type == TypeMultiProperty)
 		return static_cast<VipMultiProperty*>(const_cast<VipProcessingIO*>(this));
 	else
-		return NULL;
+		return nullptr;
 }
 
 VipOutput* VipProcessingIO::toOutput() const
@@ -590,7 +590,7 @@ VipOutput* VipProcessingIO::toOutput() const
 	if (m_data->type == TypeOutput)
 		return static_cast<VipOutput*>(const_cast<VipProcessingIO*>(this));
 	else
-		return NULL;
+		return nullptr;
 }
 
 VipMultiOutput* VipProcessingIO::toMultiOutput() const
@@ -598,7 +598,7 @@ VipMultiOutput* VipProcessingIO::toMultiOutput() const
 	if (m_data->type == TypeMultiOutput)
 		return static_cast<VipMultiOutput*>(const_cast<VipProcessingIO*>(this));
 	else
-		return NULL;
+		return nullptr;
 }
 
 VipProcessingIO::Type VipProcessingIO::type() const
@@ -1998,7 +1998,7 @@ void TaskPool::atomWait(int milli)
 	/*if (m_runMainEventLoop && QCoreApplication::instance() && QCoreApplication::instance()->thread() == this) {
 		m_mutex.unlock();
 		// process event loop
-		vipProcessEvents(NULL, milli);
+		vipProcessEvents(nullptr, milli);
 		m_mutex.lock();
 	}
 	else*/ {
@@ -2090,7 +2090,7 @@ public:
 	};
 
 	PrivateData()
-	  : pool(NULL)
+	  : pool(nullptr)
 	  , processingTime(0)
 	  , lastProcessingDate(0)
 	  , emit_destroy(false)
@@ -2164,7 +2164,7 @@ VipProcessingObject* VipProcessingObject::Info::create() const
 		obj->m_data->info = *this;
 		return obj;
 	}
-	return NULL;
+	return nullptr;
 }
 
 VipProcessingObject::VipProcessingObject(QObject* parent)
@@ -2590,7 +2590,7 @@ VipProcessingIO* VipProcessingObject::topLevelInputName(const QString& name) con
 	for (int i = 0; i < m_data->inputs.size(); ++i)
 		if (m_data->inputs[i]->name() == name)
 			return m_data->inputs[i];
-	return NULL;
+	return nullptr;
 }
 
 VipProcessingIO* VipProcessingObject::topLevelOutputName(const QString& name) const
@@ -2599,7 +2599,7 @@ VipProcessingIO* VipProcessingObject::topLevelOutputName(const QString& name) co
 	for (int i = 0; i < m_data->outputs.size(); ++i)
 		if (m_data->outputs[i]->name() == name)
 			return m_data->outputs[i];
-	return NULL;
+	return nullptr;
 }
 
 VipProcessingIO* VipProcessingObject::topLevelPropertyName(const QString& name) const
@@ -2608,7 +2608,7 @@ VipProcessingIO* VipProcessingObject::topLevelPropertyName(const QString& name) 
 	for (int i = 0; i < m_data->properties.size(); ++i)
 		if (m_data->properties[i]->name() == name)
 			return m_data->properties[i];
-	return NULL;
+	return nullptr;
 }
 
 VipInput* VipProcessingObject::inputName(const QString& input) const
@@ -2930,11 +2930,11 @@ QTransform VipProcessingObject::globalImageTransform()
 	VipProcessingObject* current = this;
 	while (current) {
 		// get all sources processing and sources objects
-		VipProcessingObject* src = NULL;
+		VipProcessingObject* src = nullptr;
 		if (current->inputCount() > 1)
 			return QTransform();
 		else if (current->inputCount() == 1) {
-			src = current->inputAt(0)->connection()->source() ? current->inputAt(0)->connection()->source()->parentProcessing() : NULL;
+			src = current->inputAt(0)->connection()->source() ? current->inputAt(0)->connection()->source()->parentProcessing() : nullptr;
 		}
 		else
 			break;
@@ -3300,7 +3300,7 @@ bool VipProcessingObject::wait(bool wait_for_sources, int max_milli_time)
 			if (QCoreApplication::instance() && useEventLoop()) {
 				while (this->scheduledUpdates()) {
 					// stop waiting if vipProcessEvents is called recursively
-					if (vipProcessEvents(NULL, 2) == -3)
+					if (vipProcessEvents(nullptr, 2) == -3)
 						break;
 
 					if (max_milli_time > 0) {
@@ -3620,7 +3620,7 @@ QList<const VipProcessingObject*> VipProcessingObject::allObjects()
 		if (strcmp(QMetaType::typeName(type), "VipProcessingPool*") == 0)
 			continue;
 		// create the object and initialize it
-		VipProcessingObject* obj = NULL;
+		VipProcessingObject* obj = nullptr;
 		if (i >= types.size())
 			obj = additionals[i - types.size()].create(); // easy way
 		else {
@@ -3962,7 +3962,7 @@ void VipProcessingList::setSourceProperty(const char* name, const QVariant& valu
 // //(like several functions of the Thermavip Python module).
 // while (!mutex->tryLock()) {
 // if (QThread::currentThread() == QCoreApplication::instance()->thread())
-//	vipProcessEvents(NULL, 100);
+//	vipProcessEvents(nullptr, 100);
 // }
 // }
 
@@ -4131,7 +4131,7 @@ void VipProcessingList::applyFrom(VipProcessingObject* obj)
 
 void VipProcessingList::apply()
 {
-	applyFrom(NULL);
+	applyFrom(nullptr);
 }
 
 void VipProcessingList::resetProcessing()

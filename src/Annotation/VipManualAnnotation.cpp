@@ -174,7 +174,7 @@ public:
 	QPointer<VipVideoPlayer> player;
 	QList<QPointer<VipTimeMarker> > plotMarkers;
 
-	TimeMarkersManager(VipVideoPlayer * player, QObject * parent = NULL)
+	TimeMarkersManager(VipVideoPlayer * player, QObject * parent = nullptr)
 		:QObject(parent), player(player)
 	{
 	}
@@ -184,7 +184,7 @@ public:
 		//remove time markers from time line
 		for (int i = 0; i < plotMarkers.size(); ++i) {
 			if (plotMarkers[i]) {
-				plotMarkers[i]->shape = NULL;
+				plotMarkers[i]->shape = nullptr;
 				plotMarkers[i]->deleteLater();
 			}
 		}
@@ -195,7 +195,7 @@ public:
 		//remove time markers from time line
 		for (int i = 0; i < plotMarkers.size(); ++i) {
 			if (plotMarkers[i]) {
-				plotMarkers[i]->shape = NULL;
+				plotMarkers[i]->shape = nullptr;
 				plotMarkers[i]->deleteLater();
 			}
 		}
@@ -203,7 +203,7 @@ public:
 
 		//We are going to add VipPlotMarker objects on the area time line, so find the area first
 		//get parent VipDisplayPlayerArea
-		VipDisplayPlayerArea* area = NULL;
+		VipDisplayPlayerArea* area = nullptr;
 		QWidget * p = (player->parentWidget());
 		while (p) {
 			area = qobject_cast<VipDisplayPlayerArea*>(p);
@@ -236,7 +236,7 @@ public:
 		computeTimeMarkers(shapes);
 	}
 
-	QMap<VipPlotShape*, VipTimeRange> timeRanges(VipTimeRange * union_range = NULL) const
+	QMap<VipPlotShape*, VipTimeRange> timeRanges(VipTimeRange * union_range = nullptr) const
 	{
 		VipTimeRange _union = VipInvalidTimeRange;
 		QMap<VipPlotShape*, VipTimeRange> res;
@@ -1081,7 +1081,7 @@ static VipVideoPlayer* currentPlayer()
 		if (VipDragWidget* drag = area->dragWidgetHandler()->focusWidget())
 			if (VipVideoPlayer* pl = qobject_cast<VipVideoPlayer*>(drag->widget()))
 				return pl;
-	return NULL;
+	return nullptr;
 }
 
 bool VipManualAnnotation::eventFilter(QObject* , QEvent* evt)
@@ -1172,7 +1172,7 @@ Vip_event_list VipManualAnnotation::generateShapes(VipProgress * p , QString * e
 	}
 
 	//try to retrieve the source VipOutput this VipDisplayObject
-	VipOutput * src_output = NULL;
+	VipOutput * src_output = nullptr;
 	if (VipInput * input = display->inputAt(0))
 		if (VipConnectionPtr con = input->connection())
 			if (VipOutput * source = con->source())
@@ -1262,7 +1262,7 @@ Vip_event_list VipManualAnnotation::generateShapes(VipProgress * p , QString * e
 			//create shape
 			VipShape sh(vipSimplifyPolygonDB(m_data->drawMarkers->createPolygon(time, m), VIP_DB_MAX_FRAME_POLYGON_POINTS));
 			const VipNDArray ar = src_output->data().value<VipNDArray>();
-			VipShapeStatistics st = sh.statistics(ar,QPoint(0,0),NULL,VipShapeStatistics::All);
+			VipShapeStatistics st = sh.statistics(ar,QPoint(0,0),nullptr,VipShapeStatistics::All);
 
 			//reset shape initial geometry (without transform) after extracting statistics
 			if (!tr.isIdentity()) {

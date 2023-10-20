@@ -669,7 +669,7 @@ static QList<QAction*> videoPlayerActions(VipPlotItem* item, VipVideoPlayer* pla
 	{
 		if ((shape->rawData().type() == VipShape::Path || shape->rawData().type() == VipShape::Polygon) && !vipIsImageArray(player->viewer()->area()->array()))
 		{
-			QAction * crop = new QAction("Crop image on shape bounding rect", NULL);
+			QAction * crop = new QAction("Crop image on shape bounding rect", nullptr);
 			QObject::connect(crop, &QAction::triggered, std::bind(cropOnShape, shape, player));
 			actions << crop;
 		}
@@ -679,7 +679,7 @@ static QList<QAction*> videoPlayerActions(VipPlotItem* item, VipVideoPlayer* pla
 	{
 		if (lst->processings<VipImageCrop*>().size())
 		{
-			QAction * remove = new QAction("Remove last crop", NULL);
+			QAction * remove = new QAction("Remove last crop", nullptr);
 			QObject::connect(remove, &QAction::triggered, std::bind(removeLastCrop, player));
 			actions << remove;
 		}
@@ -687,7 +687,7 @@ static QList<QAction*> videoPlayerActions(VipPlotItem* item, VipVideoPlayer* pla
 
 	if (actions.size())
 	{
-		Separator *sep = new Separator(NULL);
+		Separator *sep = new Separator(nullptr);
 		sep->setSeparator(true);
 		actions.insert(actions.begin(), sep);
 	}
@@ -716,7 +716,7 @@ int VipUpdateVideoPlayer::registerClass()
 
 
 VipDrawDistance2Points::VipDrawDistance2Points(VipAbstractPlotArea * area)
-	:startItem(NULL), endItem(NULL), hover(NULL)
+	:startItem(nullptr), endItem(nullptr), hover(nullptr)
 {
 	qApp->installEventFilter(this);
 	area->installFilter(this);
@@ -800,7 +800,7 @@ static VipPlotItem * findItemPoint(VipAbstractPlotArea* area, const QPointF & sc
 	QList<int> legends;
 	PlotItemList lst = area->plotItems(scene_pos, -1, VIP_PLOTTING_STICK_DISTANCE, points, styles, legends);
 	double d = std::numeric_limits<double>::max();
-	VipPlotItem * item = NULL;
+	VipPlotItem * item = nullptr;
 
 	//take the closest item 
 	for (int i = 0; i < points.size(); ++i) {
@@ -833,7 +833,7 @@ bool VipDrawDistance2Points::sceneEvent(QEvent * event)
 			if (begin == VipPoint()) {
 				//first point
 				startItem = hover;
-				endItem = NULL;
+				endItem = nullptr;
 				begin = end = startItem->sceneMap()->invTransform(hoverPt);
 			}
 		}

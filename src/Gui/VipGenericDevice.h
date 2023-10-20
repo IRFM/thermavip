@@ -22,7 +22,7 @@ class VIP_GUI_EXPORT VipGenericRecorder : public VipIODevice
 	Q_CLASSINFO("description","Record any type of input data into a single file of any supported format");
 
 public:
-	VipGenericRecorder(QObject * parent = NULL);
+	VipGenericRecorder(QObject * parent = nullptr);
 	~VipGenericRecorder();
 
 	///Returns true if any already registered VipIODevice supports given filename or first_bytes.
@@ -113,7 +113,7 @@ public:
 		Right
 	};
 
-	VipRecordWidget(InfosLocation loc = Bottom, QWidget * widget = NULL);
+	VipRecordWidget(InfosLocation loc = Bottom, QWidget * widget = nullptr);
 	~VipRecordWidget();
 
 	///Set the VipGenericRecorder instance managed by this widget

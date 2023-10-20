@@ -13,7 +13,7 @@
 class VIP_GUI_EXPORT VipBaseEditXMLSymbols : public QWidget
 {
 public:
-	VipBaseEditXMLSymbols(QWidget * parent = NULL)
+	VipBaseEditXMLSymbols(QWidget * parent = nullptr)
 		:QWidget(parent) {}
 	virtual void setEditableSymbols(const QList<VipEditableArchiveSymbol> & symbols) = 0;
 	virtual const QList<VipEditableArchiveSymbol> & editableSymbols() const = 0;
@@ -29,7 +29,7 @@ class VIP_GUI_EXPORT VipEditXMLSymbols : public VipBaseEditXMLSymbols
 {
 	Q_OBJECT
 public:
-	VipEditXMLSymbols(QWidget * parent = NULL);
+	VipEditXMLSymbols(QWidget * parent = nullptr);
 	~VipEditXMLSymbols();
 
 	void setEditableSymbols(const QList<VipEditableArchiveSymbol> & symbols);
@@ -51,7 +51,7 @@ class VIP_GUI_EXPORT VipExportSessionWidget : public QWidget
 {
 	Q_OBJECT
 public:
-	VipExportSessionWidget(QWidget * parent = NULL, bool export_current_area = false);
+	VipExportSessionWidget(QWidget * parent = nullptr, bool export_current_area = false);
 	~VipExportSessionWidget();
 
 	bool exportMainWindow() const;
@@ -78,7 +78,7 @@ class VIP_GUI_EXPORT VipImportSessionWidget : public QWidget
 	Q_OBJECT
 
 public:
-	VipImportSessionWidget(QWidget * parent = NULL);
+	VipImportSessionWidget(QWidget * parent = nullptr);
 	~VipImportSessionWidget();
 
 	static bool hasEditableContent(VipXArchive & arch);

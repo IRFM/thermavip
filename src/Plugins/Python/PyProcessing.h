@@ -29,7 +29,7 @@ class PYTHON_EXPORT PyBaseProcessing : public VipBaseDataFusion
 {
 	Q_OBJECT
 public:
-	PyBaseProcessing(QObject * parent = NULL)
+	PyBaseProcessing(QObject * parent = nullptr)
 		:VipBaseDataFusion(parent)
 	{}
 
@@ -118,7 +118,7 @@ public:
 		QString name; //parameter name
 	};
 
-	PyProcessing(QObject * parent = NULL);
+	PyProcessing(QObject * parent = nullptr);
 	~PyProcessing();
 
 	virtual DisplayHint displayHint() const;

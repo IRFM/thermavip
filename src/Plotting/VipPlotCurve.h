@@ -323,14 +323,14 @@ public:
     /// This will override the default pen from the box style.
 	void setSubPen(int index, const QPen &);
 	QPen subPen(int index) const;
-	bool hasSubPen(int index, QPen * p = NULL) const;
+	bool hasSubPen(int index, QPen * p = nullptr) const;
 
     /// @brief For sub-vectors (input VipPointVector containing NaN X value(s)), set the brush used to fill the space between 2 consecutive curves.
 	/// Using index 0 will fill the space between first and second curve, index 1 between second and third curve, etc.
     /// Filling the space between sub-curve only works with attribute FillMultiCurves set.
 	void setSubBrush(int index, const QBrush &);
 	QBrush subBrush(int index) const;
-	bool hasSubBrush(int index, QBrush * b = NULL) const;
+	bool hasSubBrush(int index, QBrush * b = nullptr) const;
 
     /// @brief Set the Y baseline value used to draw the curve background.
     /// The baseline is also used when using VipPlotCurve::Sticks style.

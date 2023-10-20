@@ -1393,7 +1393,7 @@ VipFunctionDispatcher<3>& vipFDCreateDisplayFromData()
 
 VipDisplayObject* vipCreateDisplayFromData(const VipAnyData& any, VipAbstractPlayer* pl)
 {
-	VipDisplayObject* res = NULL;
+	VipDisplayObject* res = nullptr;
 	const auto lst = vipFDCreateDisplayFromData().exactMatch(any.data(), pl);
 	if (lst.size())
 		res = lst.back()(any.data(), pl, any).value<VipDisplayObject*>();
@@ -1513,7 +1513,7 @@ QList<VipAbstractPlayer*> vipCreatePlayersFromData(const VipAnyData& any, VipAbs
 
 	if (display) {
 
-		VipProcessingObject* source = NULL;
+		VipProcessingObject* source = nullptr;
 		if (src)
 			source = src->parentProcessing();
 		if (source)
@@ -1559,7 +1559,7 @@ QList<VipAbstractPlayer*> vipCreatePlayersFromData(const VipAnyData& any, VipAbs
 			src->setConnection(display->inputAt(0));
 		}
 
-		QList<VipAbstractPlayer*> res = vipCreatePlayersFromProcessing(display, pl, NULL, target);
+		QList<VipAbstractPlayer*> res = vipCreatePlayersFromProcessing(display, pl, nullptr, target);
 		if (!res.size()) {
 			// we cannot insert the VipDisplayObject in an existing player: delete it
 			if (device)
@@ -1800,7 +1800,7 @@ QList<VipAbstractPlayer*> vipCreatePlayersFromProcessing(VipProcessingObject* di
 		if (pl) // if a player is given, try to insert the data inside it
 			tmp = vipCreatePlayersFromData(outputs[i], pl, proc_outputs[i], target, doutputs);
 		else if (!players.size()) // no created players: create a new one
-			tmp = vipCreatePlayersFromData(outputs[i], NULL, proc_outputs[i], target, doutputs);
+			tmp = vipCreatePlayersFromData(outputs[i], nullptr, proc_outputs[i], target, doutputs);
 		else // otherwise, try to insert it into an existing one
 		{
 			for (int p = 0; p < players.size(); ++p) {
@@ -1810,7 +1810,7 @@ QList<VipAbstractPlayer*> vipCreatePlayersFromProcessing(VipProcessingObject* di
 			}
 
 			if (!tmp.size()) // we cannot insert it: try to create a new player
-				tmp = vipCreatePlayersFromData(outputs[i], NULL, proc_outputs[i], target, doutputs);
+				tmp = vipCreatePlayersFromData(outputs[i], nullptr, proc_outputs[i], target, doutputs);
 		}
 
 		players += tmp;
@@ -1832,7 +1832,7 @@ QList<VipAbstractPlayer*> vipCreatePlayersFromProcessings(const QList<VipProcess
 
 	if (pl) {
 		for (int i = 0; i < procs.size(); ++i) {
-			QList<VipAbstractPlayer*> players = vipCreatePlayersFromProcessing(procs[i], pl, NULL, target, doutputs);
+			QList<VipAbstractPlayer*> players = vipCreatePlayersFromProcessing(procs[i], pl, nullptr, target, doutputs);
 			if (!players.size())
 				return QList<VipAbstractPlayer*>();
 		}
@@ -1840,13 +1840,13 @@ QList<VipAbstractPlayer*> vipCreatePlayersFromProcessings(const QList<VipProcess
 	}
 	else {
 		// create the new players
-		QList<VipAbstractPlayer*> players = vipCreatePlayersFromProcessing(procs.first(), NULL, NULL, target, doutputs);
+		QList<VipAbstractPlayer*> players = vipCreatePlayersFromProcessing(procs.first(), nullptr, nullptr, target, doutputs);
 
 		for (int i = 1; i < procs.size(); ++i) {
 			// try to insert the VipDisplayObject into an existing player
 			bool inserted = false;
 			for (int p = 0; p < players.size(); ++p) {
-				QList<VipAbstractPlayer*> tmp = vipCreatePlayersFromProcessing(procs[i], players[p], NULL, target, doutputs);
+				QList<VipAbstractPlayer*> tmp = vipCreatePlayersFromProcessing(procs[i], players[p], nullptr, target, doutputs);
 				if (tmp.size()) {
 					inserted = true;
 					break;
@@ -1855,7 +1855,7 @@ QList<VipAbstractPlayer*> vipCreatePlayersFromProcessings(const QList<VipProcess
 
 			// if not inserted, create a new player (if possible)
 			if (!inserted) {
-				QList<VipAbstractPlayer*> tmp = vipCreatePlayersFromProcessing(procs[i], NULL, NULL, target, doutputs);
+				QList<VipAbstractPlayer*> tmp = vipCreatePlayersFromProcessing(procs[i], nullptr, nullptr, target, doutputs);
 				if (tmp.size()) {
 					players.append(tmp);
 				}
@@ -1953,11 +1953,11 @@ QList<VipAbstractPlayer*> vipCreatePlayersFromPaths(const VipPathList& paths, Vi
 
 VipProcessingObject* vipCreateProcessing(VipOutput* output, const VipProcessingObject::Info& info)
 {
-	VipProcessingPool* pool = NULL;
-	VipProcessingList* lst = NULL;
+	VipProcessingPool* pool = nullptr;
+	VipProcessingList* lst = nullptr;
 	VipProcessingObject* res = info.create();
 	if (!res)
-		return NULL;
+		return nullptr;
 	// check output/input
 	if (res->outputCount() == 0)
 		goto error;
@@ -1996,16 +1996,16 @@ error:
 		delete res;
 	if (lst)
 		delete lst;
-	return NULL;
+	return nullptr;
 }
 
 VipProcessingObject* vipCreateDataFusionProcessing(const QList<VipOutput*>& outputs, const VipProcessingObject::Info& info)
 {
-	VipProcessingPool* pool = NULL;
-	VipProcessingList* lst = NULL;
+	VipProcessingPool* pool = nullptr;
+	VipProcessingList* lst = nullptr;
 	VipProcessingObject* res = info.create();
 	if (!res)
-		return NULL;
+		return nullptr;
 
 	// check input count
 	if (res->inputCount() != outputs.size()) {
@@ -2049,7 +2049,7 @@ error:
 		delete res;
 	if (lst)
 		delete lst;
-	return NULL;
+	return nullptr;
 }
 
 VipProcessingObject* vipCreateDataFusionProcessing(const QList<VipPlotItem*>& items, const VipProcessingObject::Info& info)
@@ -2061,9 +2061,9 @@ VipProcessingObject* vipCreateDataFusionProcessing(const QList<VipPlotItem*>& it
 				procs.append(out);
 		}
 		else
-			return NULL;
+			return nullptr;
 	}
 	if (procs.size() != items.size())
-		return NULL;
+		return nullptr;
 	return vipCreateDataFusionProcessing(procs, info);
 }

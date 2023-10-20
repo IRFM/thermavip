@@ -54,7 +54,7 @@ VipAxisColorMap::VipAxisColorMap(Alignment pos, QGraphicsItem * parent )
 :VipAxisBase(pos,parent)
 {
 	d_data = new PrivateData();
-	d_data->colorBar.colorMap = NULL;
+	d_data->colorBar.colorMap = nullptr;
 	d_data->colorBar.width = 15;
 	d_data->colorBar.isEnabled = true;
 	d_data->grip_1 = new VipColorMapGrip(this);

@@ -13,7 +13,7 @@ class PYTHON_EXPORT PySearch : public QToolBar
 	Q_OBJECT
 
 public:
-	PySearch(QWidget * parent = NULL);
+	PySearch(QWidget * parent = nullptr);
 	~PySearch();
 
 	bool exactMatch() const;
@@ -55,7 +55,7 @@ class PYTHON_EXPORT PyToolBar : public QToolBar
 
 public:
 
-	PyToolBar( QWidget * parent = NULL );
+	PyToolBar( QWidget * parent = nullptr );
 
 	QWidgetAction *open;
 	QWidgetAction *save;
@@ -74,7 +74,7 @@ class TabWidget : public QTabWidget
 {
 public:
 
-	TabWidget(QWidget * parent = NULL) : QTabWidget(parent) {
+	TabWidget(QWidget * parent = nullptr) : QTabWidget(parent) {
 		setStyleSheet("QTabWidget::pane { border: 0px; } QTabWidget{padding:0px; margin: 0px; }");
 	}
 
@@ -99,7 +99,7 @@ class PYTHON_EXPORT PyEditor : public QWidget
 
 public:
 
-	PyEditor(Qt::Orientation tool_bar_orientation = Qt::Horizontal, QWidget * parent = NULL);
+	PyEditor(Qt::Orientation tool_bar_orientation = Qt::Horizontal, QWidget * parent = nullptr);
 
 	TabWidget * GetTabWidget() {return &m_tab;}
 	PyToolBar * TabBar() const;

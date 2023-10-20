@@ -101,7 +101,7 @@ struct ScreenShot
 		return img;// .copy(r);
 	}
 };
-static ScreenShot *sshot = NULL;
+static ScreenShot *sshot = nullptr;
 
 QImage ScreenCap(const QRect & r)
 {
@@ -219,7 +219,7 @@ struct RecordThread : public QThread
 	bool started;
 
 	RecordThread()
-		:rec(NULL), encoder(NULL), started(false)
+		:rec(nullptr), encoder(nullptr), started(false)
 	{}
 
 	void addImage(const QImage & img)
@@ -315,7 +315,7 @@ struct RecordThread : public QThread
 			//encoder->Close();
 			encoder->close();
 			delete encoder;
-			encoder = NULL;
+			encoder = nullptr;
 			Q_EMIT r->stopped();
 			Q_EMIT r->stateChanged(false);
 			return;
@@ -327,7 +327,7 @@ struct RecordThread : public QThread
 		//encoder->Close();
 		encoder->close();
 		delete encoder;
-		encoder = NULL;
+		encoder = nullptr;
 		Q_EMIT r->stopped();
 		Q_EMIT r->stateChanged(false);
 	}
@@ -347,7 +347,7 @@ void RecordWindow::openFile()
 		VIP_LOG_ERROR("Could not create video encoder: " + QString(e.what()));
 		if (m_encoder) {
 			delete m_encoder;
-			m_encoder = NULL;
+			m_encoder = nullptr;
 		}
 	}
 }
@@ -359,14 +359,14 @@ void RecordWindow::closeFile()
 		if (m_encoder) {
 			m_encoder->Close();
 			delete m_encoder;
-			m_encoder = NULL;
+			m_encoder = nullptr;
 		}
 	}
 	catch (const std::exception & e) {
 		VIP_LOG_ERROR("Could not create video encoder: " + QString(e.what()));
 		if (m_encoder) {
 			delete m_encoder;
-			m_encoder = NULL;
+			m_encoder = nullptr;
 		}
 	}
 }
@@ -451,7 +451,7 @@ RecordWindow::RecordWindow(QWidget * parent)
 	"This option ignores the 'Acquisition FPS' parameter.");
 
 	m_thread = new RecordThread();
-	m_thread->rec = NULL;
+	m_thread->rec = nullptr;
 
 	m_timer.setSingleShot(false);
 	connect(&m_timer, SIGNAL(timeout()), this, SLOT(grabImage()));
@@ -466,8 +466,8 @@ RecordWindow::RecordWindow(QWidget * parent)
 	m_buttons = Qt::MouseButtons();
 	m_cursor = vipPixmap("std_cursor.png");
 	m_timeout = -1;
-	m_handler = NULL;
-	m_encoder = NULL;
+	m_handler = nullptr;
+	m_encoder = nullptr;
 	m_recordOnPlayEnabled = false;
 	resetParams();
 }
@@ -848,12 +848,12 @@ void RecordWindow::stop()
 	if (m_handler)
 	{
 		delete static_cast<ScreenShot*>(m_handler);
-		m_handler = NULL;
+		m_handler = nullptr;
 	}
 #endif
 
 	m_timer.stop();
-	m_thread->rec = NULL;
+	m_thread->rec = nullptr;
 	m_thread->wait();
 	m_thread->images.clear();
 }
@@ -881,7 +881,7 @@ volatile int done = 0;
 bool IsCloseEventReceived()
 {
 	//MSG msg;
-	//return PeekMessage(&msg, NULL, WM_CLOSE, WM_CLOSE, PM_NOREMOVE);
+	//return PeekMessage(&msg, nullptr, WM_CLOSE, WM_CLOSE, PM_NOREMOVE);
 	return done;
 }
 
@@ -912,13 +912,13 @@ static int registerCallback()
 	wc.lpfnWndProc = WndProc;
 	wc.cbClsExtra = 0;
 	wc.cbWndExtra = 0;
-	wc.hInstance = NULL;
-	wc.hIcon = LoadIcon(NULL, IDI_APPLICATION);
-	wc.hCursor = LoadCursor(NULL, IDC_ARROW);
+	wc.hInstance = nullptr;
+	wc.hIcon = LoadIcon(nullptr, IDI_APPLICATION);
+	wc.hCursor = LoadCursor(nullptr, IDC_ARROW);
 	wc.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
-	wc.lpszMenuName = NULL;
+	wc.lpszMenuName = nullptr;
 	wc.lpszClassName = L"test";
-	wc.hIconSm = LoadIcon(NULL, IDI_APPLICATION);
+	wc.hIconSm = LoadIcon(nullptr, IDI_APPLICATION);
 	// assign other properties...
 
 	if (!RegisterClassEx(&wc))
@@ -951,7 +951,7 @@ static int registerHandler()
 	struct sigaction action;
 	memset(&action, 0, sizeof(struct sigaction));
 	action.sa_handler = term;
-	sigaction(SIGTERM, &action, NULL);
+	sigaction(SIGTERM, &action, nullptr);
 	return 0;
 }
 static int _registerHandler = registerHandler();

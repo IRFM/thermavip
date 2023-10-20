@@ -251,7 +251,7 @@ protected:
 	virtual bool hasState(const QByteArray& state, bool enable) const;
 	virtual bool setItemProperty(const char* name, const QVariant& value, const QByteArray& index = QByteArray());
 
-    virtual VipPointVector columnRect( const VipIntervalSample &, QRectF * = NULL) const;
+    virtual VipPointVector columnRect( const VipIntervalSample &, QRectF * = nullptr) const;
 
     void drawColumns( QPainter *, const VipCoordinateSystemPtr & m) const;
 

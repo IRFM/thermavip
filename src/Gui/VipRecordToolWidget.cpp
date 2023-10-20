@@ -43,7 +43,7 @@ static void getNames(VipBaseDragWidget * player, VipPlotItem * item, QString & t
 static VipOutput * ressourceSourceObject(VipDisplayObject * disp)
 {
 	if (!disp)
-		return NULL;
+		return nullptr;
 
 	VipProcessingObjectList src = disp->allSources();
 	QList<VipIODevice*> devices = src.findAll<VipIODevice*>();
@@ -65,7 +65,7 @@ static VipOutput * ressourceSourceObject(VipDisplayObject * disp)
 			return out;
 	}
 
-	return NULL;
+	return nullptr;
 }
 
 
@@ -361,7 +361,7 @@ QList<QAction*> VipPlotItemSelector::createActions(const QList<VipPlotItem*> & i
 	{
 		QString text, tool_tip;
 		VipAbstractPlayer * pl = VipAbstractPlayer::findAbstractPlayer(items[i]);
-		VipBaseDragWidget * w = pl ? VipBaseDragWidget::fromChild(pl) : NULL;
+		VipBaseDragWidget * w = pl ? VipBaseDragWidget::fromChild(pl) : nullptr;
 		getNames(w, items[i], text, tool_tip);
 		QAction * act = new QAction(text,parent);
 		act->setToolTip(tool_tip);
@@ -384,7 +384,7 @@ void VipPlotItemSelector::aboutToShow()
 		m_data->menu->addAction(actions[i]);
 		//QString text, tool_tip;
 		// VipAbstractPlayer * pl = VipAbstractPlayer::findAbstractPlayer(_leafs[i]);
-		// VipBaseDragWidget * w = pl ? VipBaseDragWidget::fromChild(pl) : NULL;
+		// VipBaseDragWidget * w = pl ? VipBaseDragWidget::fromChild(pl) : nullptr;
 		// getNames(w, _leafs[i], text, tool_tip);
 		// QAction * act = m_data->menu->addAction(text);
 		// act->setToolTip(tool_tip);
@@ -408,7 +408,7 @@ class PlotListWidgetItem : public QListWidgetItem
 {
 public:
 	PlotListWidgetItem(VipBaseDragWidget * player, VipPlotItem * item)
-	:QListWidgetItem(NULL,QListWidgetItem::UserType ), player(player), item(item)
+	:QListWidgetItem(nullptr,QListWidgetItem::UserType ), player(player), item(item)
 	{
 		QString text, tool_tip;
 		getNames(player, item, text, tool_tip);
@@ -529,7 +529,7 @@ void SkipFrame::reset()
 class VipRecordToolWidget::PrivateData
 {
 public:
-	PrivateData():isRecording(false),recordType(SignalArchive) , sourceWidget(NULL), flag(VipIODevice::Resource){}
+	PrivateData():isRecording(false),recordType(SignalArchive) , sourceWidget(nullptr), flag(VipIODevice::Resource){}
 
 	QRadioButton *saveMovie;
 	QRadioButton *saveSignals;
@@ -721,7 +721,7 @@ VipVideoPlayer * VipRecordToolWidget::selectedVideoPlayer() const
 {
 	if(qobject_cast<VipDragWidget*>(m_data->sourceWidget))
 		return m_data->sourceWidget->findChild<VipVideoPlayer*>();
-	return NULL;
+	return nullptr;
 }
 
 bool VipRecordToolWidget::updateFileFiltersAndDevice(bool build_connections, bool close_device)
@@ -749,7 +749,7 @@ bool VipRecordToolWidget::updateFileFiltersAndDevice(bool build_connections, boo
 	m_data->sourceDevices.clear();
 	m_data->independantResourceProcessings.clear();
 	m_data->sources.clear();
-	m_data->sourceWidget = NULL;
+	m_data->sourceWidget = nullptr;
 
 	//first, retrieve the sources VipDisplayObject
 
@@ -1009,7 +1009,7 @@ void VipRecordToolWidget::setDisplayPlayerArea(VipDisplayPlayerArea * area)
 	for (int i = 0; i < items.size(); ++i)
 	{
 		VipAbstractPlayer * pl = VipAbstractPlayer::findAbstractPlayer(items[i]);
-		VipBaseDragWidget * w = pl ? VipBaseDragWidget::fromChild(pl) : NULL;
+		VipBaseDragWidget * w = pl ? VipBaseDragWidget::fromChild(pl) : nullptr;
 		m_data->itemList->addItem(new PlotListWidgetItem(w, items[i]));
 	}
 
@@ -1017,7 +1017,7 @@ void VipRecordToolWidget::setDisplayPlayerArea(VipDisplayPlayerArea * area)
 	if (area)
 		m_data->pool = area->processingPool();
 	else
-		m_data->pool = NULL;
+		m_data->pool = nullptr;
 
 }
 
@@ -1197,7 +1197,7 @@ bool VipRecordToolWidget::addPlotItem(VipPlotItem * item)
 		return false;
 
 	VipAbstractPlayer * pl = VipAbstractPlayer::findAbstractPlayer(item);
-	VipBaseDragWidget * w = pl ? VipBaseDragWidget::fromChild(pl) : NULL;
+	VipBaseDragWidget * w = pl ? VipBaseDragWidget::fromChild(pl) : nullptr;
 	//only add if the VipPlotItem * is related to a VipDisplayObject
 	if (item->property("VipDisplayObject").value<VipDisplayObject*>())
 	{
@@ -1317,10 +1317,10 @@ void VipRecordToolWidget::launchRecord(bool launch)
 
 		//TOCHECK:
 		//We comment this as it disable the possibility to reuse the saver parameters
-		//m_data->recorder->setRecorder(NULL);
+		//m_data->recorder->setRecorder(nullptr);
 
 
-		//m_data->sourceWidget = NULL;
+		//m_data->sourceWidget = nullptr;
 		return;
 	}
 

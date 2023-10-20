@@ -73,33 +73,33 @@ static const H5FD_class_t H5FD_device_g = {
 	"QIODevice",					/*name			*/
 	MAXADDR,					/*maxaddr		*/
 	H5F_CLOSE_WEAK,				/* fc_degree		*/
-	NULL,					/*sb_size		*/
-	NULL,					/*sb_encode		*/
-	NULL,					/*sb_decode		*/
+	nullptr,					/*sb_size		*/
+	nullptr,					/*sb_encode		*/
+	nullptr,					/*sb_decode		*/
 	0, 						/*fapl_size		*/
-	NULL,					/*fapl_get		*/
-	NULL,					/*fapl_copy		*/
-	NULL, 					/*fapl_free		*/
+	nullptr,					/*fapl_get		*/
+	nullptr,					/*fapl_copy		*/
+	nullptr, 					/*fapl_free		*/
 	0,						/*dxpl_size		*/
-	NULL,					/*dxpl_copy		*/
-	NULL,					/*dxpl_free		*/
+	nullptr,					/*dxpl_copy		*/
+	nullptr,					/*dxpl_free		*/
 	H5FD_device_open,			        /*open			*/
 	H5FD_device_close,		                /*close			*/
-	NULL,			        /*cmp			*/
-	NULL,		                /*query			*/
-	NULL,					/*get_type_map		*/
-	NULL,					/*alloc			*/
-	NULL,					/*free			*/
+	nullptr,			        /*cmp			*/
+	nullptr,		                /*query			*/
+	nullptr,					/*get_type_map		*/
+	nullptr,					/*alloc			*/
+	nullptr,					/*free			*/
 	H5FD_device_get_eoa,				/*get_eoa		*/
 	H5FD_device_set_eoa, 				/*set_eoa		*/
 	H5FD_device_get_eof,				/*get_eof		*/
-	NULL,                       /*get_handle            */
+	nullptr,                       /*get_handle            */
 	H5FD_device_read,				/*read			*/
 	H5FD_device_write,				/*write			*/
-	NULL,					/*flush			*/
-	NULL,				/*truncate		*/
-	NULL,                                       /*lock                  */
-	NULL,                                       /*unlock                */
+	nullptr,					/*flush			*/
+	nullptr,				/*truncate		*/
+	nullptr,                                       /*lock                  */
+	nullptr,                                       /*unlock                */
 	H5FD_FLMAP_SINGLE 				/*fl_map		*/
 };
 
@@ -109,34 +109,34 @@ static const H5FD_class_t H5FD_device_g = {
 	"QIODevice",					/*name			*/
 	MAXADDR,					/*maxaddr		*/
 	H5F_CLOSE_WEAK,				/* fc_degree		*/
-	NULL,					/*terminate*/
-	NULL,					/*sb_size		*/
-	NULL,					/*sb_encode		*/
-	NULL,					/*sb_decode		*/
+	nullptr,					/*terminate*/
+	nullptr,					/*sb_size		*/
+	nullptr,					/*sb_encode		*/
+	nullptr,					/*sb_decode		*/
 	0, 						/*fapl_size		*/
-	NULL,					/*fapl_get		*/
-	NULL,					/*fapl_copy		*/
-	NULL, 					/*fapl_free		*/
+	nullptr,					/*fapl_get		*/
+	nullptr,					/*fapl_copy		*/
+	nullptr, 					/*fapl_free		*/
 	0,						/*dxpl_size		*/
-	NULL,					/*dxpl_copy		*/
-	NULL,					/*dxpl_free		*/
+	nullptr,					/*dxpl_copy		*/
+	nullptr,					/*dxpl_free		*/
 	H5FD_device_open,			        /*open			*/
 	H5FD_device_close,		                /*close			*/
-	NULL,			        /*cmp			*/
-	NULL,		                /*query			*/
-	NULL,					/*get_type_map		*/
-	NULL,					/*alloc			*/
-	NULL,					/*free			*/
+	nullptr,			        /*cmp			*/
+	nullptr,		                /*query			*/
+	nullptr,					/*get_type_map		*/
+	nullptr,					/*alloc			*/
+	nullptr,					/*free			*/
 	H5FD_device_get_eoa,				/*get_eoa		*/
 	H5FD_device_set_eoa, 				/*set_eoa		*/
 	H5FD_device_get_eof,				/*get_eof		*/
-	NULL,                       /*get_handle            */
+	nullptr,                       /*get_handle            */
 	H5FD_device_read,				/*read			*/
 	H5FD_device_write,				/*write			*/
-	NULL,					/*flush			*/
-	NULL,				/*truncate		*/
-	NULL,                                       /*lock                  */
-	NULL,                                       /*unlock                */
+	nullptr,					/*flush			*/
+	nullptr,				/*truncate		*/
+	nullptr,                                       /*lock                  */
+	nullptr,                                       /*unlock                */
 	H5FD_FLMAP_SINGLE 				/*fl_map		*/
 };
 
@@ -173,7 +173,7 @@ qint64 H5OpenQIODevice(QIODevice * device)
 		return 0;
 
 	hid_t faplist_id = H5Pcreate(H5P_FILE_ACCESS);
-	/*herr_t status =*/ H5Pset_driver(faplist_id, H5FD_device_init(), NULL);
+	/*herr_t status =*/ H5Pset_driver(faplist_id, H5FD_device_init(), nullptr);
 	QByteArray filename = QByteArray::number(((qint64)(device)));
 
 	unsigned flags = 0;
@@ -191,23 +191,23 @@ qint64 H5OpenQIODevice(QIODevice * device)
 static H5FD_t *
 H5FD_device_open(const char *name, unsigned /*flags*/, hid_t /*fapl_id*/, haddr_t maxaddr)
 {
-	H5FD_device_t	*file = NULL;   /* sec2 VFD info */
+	H5FD_device_t	*file = nullptr;   /* sec2 VFD info */
 	
 	/* Check arguments */
 	if (!name || !*name)
 	{
-		return NULL;
+		return nullptr;
 	}
 		
 	if (0 == maxaddr || HADDR_UNDEF == maxaddr)
 	{
 		VIP_LOG_ERROR("bogus maxaddr");
-		return NULL;
+		return nullptr;
 	}
 	if (ADDR_OVERFLOW(maxaddr))
 	{
 		VIP_LOG_ERROR("bogus maxaddr");
-		return NULL;
+		return nullptr;
 	}
 
 	qint64 addr = QString(name).toLongLong();
@@ -215,14 +215,14 @@ H5FD_device_open(const char *name, unsigned /*flags*/, hid_t /*fapl_id*/, haddr_
 	if (!dev)
 	{
 		VIP_LOG_ERROR("wrong device pointer");
-		return NULL;
+		return nullptr;
 	}
 
 	/* Create the new file struct */
-	if (NULL == (file = (H5FD_device_t*)malloc(sizeof(H5FD_device_t))))
+	if (nullptr == (file = (H5FD_device_t*)malloc(sizeof(H5FD_device_t))))
 	{
 		VIP_LOG_ERROR("unable to allocate file struct");
-		return NULL;
+		return nullptr;
 	}
 
 	file->device = dev;
@@ -241,7 +241,7 @@ H5FD_device_close(H5FD_t *_file)
 	if (file->device)
 	{
 		file->device->close();
-		file->device = NULL;
+		file->device = nullptr;
 	}
 
 	//free(file);

@@ -13,7 +13,7 @@ class H5_STILL_IMAGE_EXPORT H5GenericVideoReader : public VipTimeRangeBasedGener
 	Q_CLASSINFO("category", "reader/video")
 public:
 
-	H5GenericVideoReader(QObject * parent = NULL);
+	H5GenericVideoReader(QObject * parent = nullptr);
 	~H5GenericVideoReader();
 
 	HDF5VideoReader * videoReader() const;

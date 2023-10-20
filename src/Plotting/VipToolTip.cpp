@@ -49,7 +49,7 @@ struct VipToolTip::PrivateData
 	QBrush overlayBrush;
 
 	PrivateData()
-		:area(NULL),
+		:area(nullptr),
 		displayFlags(VipToolTip::All),
 		stickDistance(10),
 		distanceToPointer(10),
@@ -545,7 +545,7 @@ void VipToolTip::setPlotAreaPos(const QPointF & pos)
 		tool_tip = "<p style=\"" + attributeMargins() + "\">" + tool_tip + "</p>";
 	}
 
-	QWidget * parent = NULL;
+	QWidget * parent = nullptr;
 	if (QGraphicsView * v = plotArea()->view())
 		parent = v->viewport();
 

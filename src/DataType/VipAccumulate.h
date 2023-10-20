@@ -31,9 +31,9 @@ namespace detail
 /// \endcode
 ///
 /// Note that the start value type determines the return type of vipAccumulate.
-/// If \a ok is not NULL, it is set to true or false depending on the accumation result.
+/// If \a ok is not nullptr, it is set to true or false depending on the accumation result.
 template<class Array, class Fun, class T>
-T vipAccumulate(const Array & ar, const Fun & functor, const T & start, bool * ok = NULL)
+T vipAccumulate(const Array & ar, const Fun & functor, const T & start, bool * ok = nullptr)
 {
 	detail::FunctorAccum<T, Fun> f(functor, start);
 	bool r = vipReduce(f, ar);
@@ -53,9 +53,9 @@ T vipAccumulate(const Array & ar, const Fun & functor, const T & start, bool * o
 /// \endcode
 ///
 /// Note that the start value type determines the return type of vipAccumulate.
-/// If \a ok is not NULL, it is set to true or false depending on the accumation result.
+/// If \a ok is not nullptr, it is set to true or false depending on the accumation result.
 template<class Array, class Fun, class T, class OverRoi>
-T vipAccumulate(const Array & ar, const Fun & functor, const T & start_value, const OverRoi & roi, bool * ok = NULL)
+T vipAccumulate(const Array & ar, const Fun & functor, const T & start_value, const OverRoi & roi, bool * ok = nullptr)
 {
 	detail::FunctorAccum<T, Fun> f(functor, start_value);
 	bool r = vipReduce(f, ar, roi);

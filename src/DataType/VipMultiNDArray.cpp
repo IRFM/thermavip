@@ -50,7 +50,7 @@ namespace detail
 		}
 		else
 		{
-			this->opaque = NULL;
+			this->opaque = nullptr;
 			this->shape.clear();
 			this->size = 0;
 			this->strides.clear();

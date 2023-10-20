@@ -54,7 +54,7 @@ protected:
 class NoSizeLable : public QLabel
 {
 public:
-	NoSizeLable(QWidget * parent = NULL)
+	NoSizeLable(QWidget * parent = nullptr)
 		:QLabel(parent)
 	{
 		setMinimumWidth(10);
@@ -318,7 +318,7 @@ void VipToolWidgetTitleBar::paintEvent(QPaintEvent *)
 	QPainter p(this);
 	style()->drawPrimitive(QStyle::PE_Widget, &opt, &p, this);
 
-	QWidget * endw = NULL;
+	QWidget * endw = nullptr;
 	if (m_data->restore->isVisible())
 		endw = m_data->restore;
 	else if (m_data->maximize->isVisible())
@@ -401,7 +401,7 @@ public:
 	QPointer<QAbstractButton> button;
 	QSize size;
 	QCursor cursor;
-	PrivateData() : enableOpacityChange(false), resetSizeRequest(false), keepFloatingUserSize(false), firstShow(true), scroll(NULL), action(NULL) {}
+	PrivateData() : enableOpacityChange(false), resetSizeRequest(false), keepFloatingUserSize(false), firstShow(true), scroll(nullptr), action(nullptr) {}
 };
 
 VipToolWidget::VipToolWidget(VipMainWindow * window)
@@ -873,7 +873,7 @@ void VipToolWidgetPlayer::showEvent(QShowEvent * evt)
 		}
 		else {
 			bar->setEnabled(false);
-			bar->setPlayer(NULL);
+			bar->setPlayer(nullptr);
 		}
 	}
 	if (widget())
@@ -901,24 +901,24 @@ void VipToolWidgetPlayer::showEvent(QShowEvent * evt)
 void VipToolWidgetPlayer::focusWidgetChanged(VipDragWidget* w)
 {
 	if (!w)
-		m_player = NULL;
+		m_player = nullptr;
 	else
 	{
 		QList<VipAbstractPlayer*> players = w->findChildren<VipAbstractPlayer*>();
 		if (!players.size())
-			m_player = NULL;
+			m_player = nullptr;
 		else
 			m_player = players.back();
 	}
 
 	//if (isHidden()) {
 	// //explicitly hidden
-	// setPlayer(NULL);
+	// setPlayer(nullptr);
 	// if (widget())
 	// widget()->setEnabled(false);
 	// if (VipToolWidgetToolBar* bar = toolBar()) {
 	// bar->setEnabled(false);
-	// bar->setPlayer(NULL);
+	// bar->setPlayer(nullptr);
 	// }
 	// }
 	// else 
@@ -951,7 +951,7 @@ void VipToolWidgetPlayer::focusWidgetChanged(VipDragWidget* w)
 			}
 			else {
 				bar->setEnabled(false);
-				bar->setPlayer(NULL);
+				bar->setPlayer(nullptr);
 			}
 		}
 	}
@@ -1000,12 +1000,12 @@ bool VipPlotToolWidgetPlayer::setPlayer(VipAbstractPlayer * pl)
 
 	if (m_data->scene)
 		m_data->scene->removeEventFilter(this);
-	m_data->scene = NULL;
+	m_data->scene = nullptr;
 
 	if (!pl)
 		return false;
 
-	m_data->scene = pl->plotWidget2D() ? pl->plotWidget2D()->scene() : NULL;
+	m_data->scene = pl->plotWidget2D() ? pl->plotWidget2D()->scene() : nullptr;
 	if (m_data->scene)
 		m_data->scene->installEventFilter(this);
 
@@ -1113,7 +1113,7 @@ struct ProgressWidget : public QFrame
 	QPointer<VipProgress> progress;
 	VipMultiProgressWidget * widget;
 
-	ProgressWidget(VipProgress * p, VipMultiProgressWidget * widget, QWidget * parent = NULL)
+	ProgressWidget(VipProgress * p, VipMultiProgressWidget * widget, QWidget * parent = nullptr)
 		:QFrame(parent), progress(p), widget(widget)
 	{
 		QGridLayout * lay = new QGridLayout();
@@ -1206,7 +1206,7 @@ public:
 		for (int i = 0; i < progresses.size(); ++i)
 			if (progresses[i]->progress == p)
 				return progresses[i];
-		return NULL;
+		return nullptr;
 	}
 
 };
@@ -1239,7 +1239,7 @@ VipMultiProgressWidget::VipMultiProgressWidget(VipMainWindow * window)
 	//this->setMinimumWidth(300);
 	this->resize(300, 100);
 
-	m_data->reuse.append(new ProgressWidget(NULL, this));
+	m_data->reuse.append(new ProgressWidget(nullptr, this));
 	m_data->layout->addWidget(m_data->reuse.last());
 	m_data->reuse.last()->hide();
 

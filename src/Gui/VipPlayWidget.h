@@ -305,7 +305,7 @@ public:
 
 	typedef VipValueToTime::TimeType(*function_type)(VipPlayWidget *);
 
-	VipPlayWidget(QWidget * parent=NULL);
+	VipPlayWidget(QWidget * parent=nullptr);
 	~VipPlayWidget();
 
 	QColor sliderColor() const;

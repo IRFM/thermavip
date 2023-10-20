@@ -92,7 +92,7 @@ static inline void qwtDrawPixmapSymbols(QPainter* painter, const QPointF* points
 
 static inline void qwtDrawSvgSymbols(QPainter* painter, const QPointF* points, int numPoints, QSvgRenderer* renderer, const VipSymbol& symbol)
 {
-	if (renderer == NULL || !renderer->isValid())
+	if (renderer == nullptr || !renderer->isValid())
 		return;
 
 	const QRectF viewBox = renderer->viewBoxF();
@@ -677,7 +677,7 @@ public:
 	{
 		cache.policy = VipSymbol::AutoCache;
 #ifdef QT_SVG_LIB
-		svg.renderer = NULL;
+		svg.renderer = nullptr;
 #endif
 	}
 
@@ -825,7 +825,7 @@ const QPixmap& VipSymbol::pixmap() const
 void VipSymbol::setSvgDocument(const QByteArray& svgDocument)
 {
 	d_data->style = VipSymbol::SvgDocument;
-	if (d_data->svg.renderer == NULL)
+	if (d_data->svg.renderer == nullptr)
 		d_data->svg.renderer = new QSvgRenderer();
 
 	d_data->svg.renderer->load(svgDocument);
@@ -1115,7 +1115,7 @@ void VipSymbol::drawSymbols(QPainter* painter, const QPointF* points, int numPoi
 		const QRectF rect(0, 0, br.width() + pen_w, br.height() + pen_w);
 
 		if (d_data->cache.pixmap.isNull() || painter->renderHints() != d_data->cache.hints) {
-			d_data->cache.pixmap = backingStore(NULL, rect.size().toSize());
+			d_data->cache.pixmap = backingStore(nullptr, rect.size().toSize());
 			d_data->cache.pixmap.fill(Qt::transparent);
 
 			QPainter p(&d_data->cache.pixmap);
@@ -1178,7 +1178,7 @@ QPainterPath VipSymbol::extractShape(QBitmap* bitmap, const QRect& rect, const Q
 	}
 	else {
 		// use a QBitmap to extract the shape
-		bool own = (bitmap == NULL);
+		bool own = (bitmap == nullptr);
 		if (bitmap) {
 			if (bitmap->width() != rect.width() / 2 || bitmap->height() != rect.height() / 2)
 				*bitmap = QBitmap(rect.width() / 2, rect.height() / 2);

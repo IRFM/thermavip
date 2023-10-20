@@ -693,5 +693,5 @@ VipCoordinateSystem * vipBuildCoordinateSystem(const QList<VipAbstractScale*> & 
 		return new VipMonoAxisSystem(axes);
 	}
 
-	return NULL;
+	return nullptr;
 }

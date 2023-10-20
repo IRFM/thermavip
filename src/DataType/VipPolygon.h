@@ -7,7 +7,7 @@
 
 /// @brief Close Component Labelling algorithm
 template< class T, class U>
-int vipLabelImage(const VipNDArrayType<T>& input, VipNDArrayType<U>& output, T background, bool connectivity_8 = false, int* relabel = NULL)
+int vipLabelImage(const VipNDArrayType<T>& input, VipNDArrayType<U>& output, T background, bool connectivity_8 = false, int* relabel = nullptr)
 {
 	QVector<int> buffer;
 	if (!relabel)
@@ -155,14 +155,14 @@ int vipLabelImage(const VipNDArrayType<T>& input, VipNDArrayType<U>& output, T b
 	return label_count;
 }
 
-/// @brief Tells if given polygon is a rectangle, and stores it in rect (if not NULL)
-VIP_DATA_TYPE_EXPORT bool vipIsRect(const QPolygon& p, QRect* rect = NULL);
-/// @brief Tells if given polygon is a rectangle, and stores it in rect (if not NULL)
-VIP_DATA_TYPE_EXPORT bool vipIsRect(const QPolygonF& p, QRectF* rect = NULL);
+/// @brief Tells if given polygon is a rectangle, and stores it in rect (if not nullptr)
+VIP_DATA_TYPE_EXPORT bool vipIsRect(const QPolygon& p, QRect* rect = nullptr);
+/// @brief Tells if given polygon is a rectangle, and stores it in rect (if not nullptr)
+VIP_DATA_TYPE_EXPORT bool vipIsRect(const QPolygonF& p, QRectF* rect = nullptr);
 
-/// @brief Tells if given polygon is a rectangle, and stores it in rect (if not NULL)
+/// @brief Tells if given polygon is a rectangle, and stores it in rect (if not nullptr)
 template<class Point>
-bool vipIsRect(const QVector<Point>& poly, QRectF* rect = NULL)
+bool vipIsRect(const QVector<Point>& poly, QRectF* rect = nullptr)
 {
 
 	if (poly.size() == 4 || poly.size() == 5) {

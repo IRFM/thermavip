@@ -295,7 +295,7 @@ public:
 	VideoGrabber();
 	VideoGrabber(const std::string & name);
 	~VideoGrabber();
-	void Open(const std::string & name, AVInputFormat * format = NULL, AVDictionary ** options = NULL);
+	void Open(const std::string & name, AVInputFormat * format = nullptr, AVDictionary ** options = nullptr);
 	void Open(const QString & name, const QString & format, const QMap<QString, QString> & options);
 	void Close();
 
@@ -411,7 +411,7 @@ int64_t __SeekFunc(void* ptr, int64_t pos, int whence)
 
 
 static void __destruct(AVPacket * pkt){
-	pkt->data = NULL;
+	pkt->data = nullptr;
 	pkt->size = 0;
 }
 static void __init_packet(AVPacket * pkt){
@@ -434,7 +434,7 @@ void log_to_array(void * 	avcl,
 }*/
 void VideoGrabber::free_packet()
 {
-	if (packet.data != NULL && packet.size > 0)
+	if (packet.data != nullptr && packet.size > 0)
 		//if(strcmp((const char*)packet.data,"")!=0)
 		av_free(packet.data);
 
@@ -447,23 +447,23 @@ VideoGrabber::VideoGrabber()
 {
 	m_file_open = false;
 	m_is_packet = false;
-	pFormatCtx = NULL;
-	pCodecCtx = NULL;
-	pCodec = NULL;
-	pFrame = NULL;
-	pSWSCtx = NULL;
-	buffer = NULL;
-	pFrameRGB = NULL;
+	pFormatCtx = nullptr;
+	pCodecCtx = nullptr;
+	pCodec = nullptr;
+	pFrame = nullptr;
+	pSWSCtx = nullptr;
+	buffer = nullptr;
+	pFrameRGB = nullptr;
 }
 VideoGrabber::VideoGrabber(const std::string & name)
 {
-	pFormatCtx = NULL;
-	pCodecCtx = NULL;
-	pCodec = NULL;
-	pFrame = NULL;
-	pSWSCtx = NULL;
-	pFrameRGB = NULL;
-	buffer = NULL;
+	pFormatCtx = nullptr;
+	pCodecCtx = nullptr;
+	pCodec = nullptr;
+	pFrame = nullptr;
+	pSWSCtx = nullptr;
+	pFrameRGB = nullptr;
+	buffer = nullptr;
 	m_is_packet = false;
 	Open(name);
 }
@@ -474,22 +474,22 @@ VideoGrabber::~VideoGrabber()
 
 void VideoGrabber::Open(const QString & name, const QString & format, const QMap<QString, QString> & options)
 {
-	AVDictionary* opt = NULL;
+	AVDictionary* opt = nullptr;
 	for (QMap<QString, QString>::const_iterator it = options.begin(); it != options.end(); ++it)
 	{
 		av_dict_set(&opt, it.key().toLatin1().data(), it.value().toLatin1().data(), 0);
 	}
 	
 	AVInputFormat *iformat = av_find_input_format(format.toLatin1().data());
-	AVDictionary **iopt = opt ? &opt : NULL;
+	AVDictionary **iopt = opt ? &opt : nullptr;
 
 	Open(name.toLatin1().data(), iformat, iopt);
 }
 
 void VideoGrabber::Open(const std::string & name, AVInputFormat * iformat, AVDictionary ** options)
 {
-	/*AVFormatContext *formatC = NULL;// avformat_alloc_context();
-	AVDictionary* options = NULL;
+	/*AVFormatContext *formatC = nullptr;// avformat_alloc_context();
+	AVDictionary* options = nullptr;
 	// set input resolution
 	av_dict_set(&options, "video_size", "640x480", 0);
 	av_dict_set(&options, "r", "25", 0);
@@ -514,7 +514,7 @@ void VideoGrabber::Open(const std::string & name, AVInputFormat * iformat, AVDic
 	m_file_open = true;
 
 	__init_packet(&packet);
-	packet.data = NULL;
+	packet.data = nullptr;
 	// Open video file
 #if LIBAVFORMAT_VERSION_MAJOR > 52
 	if (avformat_open_input(&pFormatCtx,
@@ -523,13 +523,13 @@ void VideoGrabber::Open(const std::string & name, AVInputFormat * iformat, AVDic
 		options) != 0)
 		throw std::runtime_error((std::string("Couldn't open file '") + name + "'").c_str());
 #else
-	if (av_open_input_file(&pFormatCtx, name.c_str(), NULL, 0, NULL) != 0)
+	if (av_open_input_file(&pFormatCtx, name.c_str(), nullptr, 0, nullptr) != 0)
 		throw std::runtime_error((std::string("Couldn't open file '") + name + "'").c_str());
 #endif
 
 	// Retrieve stream information
 	//TEST
-	if (avformat_find_stream_info(pFormatCtx, NULL)<0)
+	if (avformat_find_stream_info(pFormatCtx, nullptr)<0)
 		throw std::runtime_error("Couldn't find stream information");
 
 	// Find the first video stream
@@ -555,11 +555,11 @@ void VideoGrabber::Open(const std::string & name, AVInputFormat * iformat, AVDic
 
 	// Find the decoder for the video stream
 	pCodec = avcodec_find_decoder(pCodecCtx->codec_id);
-	if (pCodec == NULL)
+	if (pCodec == nullptr)
 		throw std::runtime_error("Codec not found");
 
 	// Open codec
-	int res = avcodec_open2(pCodecCtx, pCodec, NULL);
+	int res = avcodec_open2(pCodecCtx, pCodec, nullptr);
 	if (res<0)
 		throw std::runtime_error("Could not open codec");
 
@@ -567,11 +567,11 @@ void VideoGrabber::Open(const std::string & name, AVInputFormat * iformat, AVDic
 	pFrame = av_frame_alloc();
 	// Allocate an AVFrame structure
 	pFrameRGB = av_frame_alloc();
-	if (pFrameRGB == NULL)
+	if (pFrameRGB == nullptr)
 		throw std::runtime_error("Error in avcodec_alloc_frame()");
 	// Allocate an AVFrame structure
 	pFrameRGB = av_frame_alloc();
-	if (pFrameRGB == NULL)
+	if (pFrameRGB == nullptr)
 		throw std::runtime_error("Error in avcodec_alloc_frame()");
 
 	// Determine required buffer size and allocate buffer
@@ -587,7 +587,7 @@ void VideoGrabber::Open(const std::string & name, AVInputFormat * iformat, AVDic
 	//Initialize Context
 	if (pCodecCtx->pix_fmt == AV_PIX_FMT_NONE)
 		pCodecCtx->pix_fmt = AV_PIX_FMT_YUV420P;
-	pSWSCtx = sws_getContext(pCodecCtx->width, pCodecCtx->height, pCodecCtx->pix_fmt, pCodecCtx->width, pCodecCtx->height, AV_PIX_FMT_RGB24, SWS_FAST_BILINEAR, NULL, NULL, NULL);
+	pSWSCtx = sws_getContext(pCodecCtx->width, pCodecCtx->height, pCodecCtx->pix_fmt, pCodecCtx->width, pCodecCtx->height, AV_PIX_FMT_RGB24, SWS_FAST_BILINEAR, nullptr, nullptr, nullptr);
 
 
 	m_width = pCodecCtx->width;
@@ -630,36 +630,36 @@ void VideoGrabber::Close()
 	if (m_file_open)
 	{
 		// Free the DRGBPixel image
-		if (pFrameRGB != NULL)
+		if (pFrameRGB != nullptr)
 		{
 			av_free((AVPicture*)pFrameRGB);
 		}
 
 		// Free the YUV frame
-		if (pFrame != NULL)
+		if (pFrame != nullptr)
 		{
 			av_free((AVPicture*)pFrame);
 		}
 
 		// Close the codec
-		if (pCodecCtx != NULL && pCodec != NULL) avcodec_close(pCodecCtx);
+		if (pCodecCtx != nullptr && pCodec != nullptr) avcodec_close(pCodecCtx);
 
 		// Close the video file
-		if (pFormatCtx != NULL) avformat_close_input(&pFormatCtx);
+		if (pFormatCtx != nullptr) avformat_close_input(&pFormatCtx);
 
-		if (pSWSCtx != NULL) sws_freeContext(pSWSCtx);
+		if (pSWSCtx != nullptr) sws_freeContext(pSWSCtx);
 
 		if (packet.data)
 			av_free_packet(&packet);
 	}
 
-	pFormatCtx = NULL;
-	pCodecCtx = NULL;
-	pCodec = NULL;
-	pFrame = NULL;
-	pFrameRGB = NULL;
-	//buffer = NULL;
-	pSWSCtx = NULL;
+	pFormatCtx = nullptr;
+	pCodecCtx = nullptr;
+	pCodec = nullptr;
+	pFrame = nullptr;
+	pFrameRGB = nullptr;
+	//buffer = nullptr;
+	pSWSCtx = nullptr;
 	m_file_open = false;
 }
 
@@ -703,7 +703,7 @@ size_t VideoGrabber::MoveNextFrame(size_t target_dts )
 	{
 		if (packet.data && packet.size >0)
 			av_free_packet(&packet);
-		//pFormatCtx->cur_pkt.destruct=NULL;
+		//pFormatCtx->cur_pkt.destruct=nullptr;
 		if (av_read_frame(pFormatCtx, &packet) < 0)
 			return static_cast<size_t>(-1);
 		res = packet.dts;
@@ -714,7 +714,7 @@ size_t VideoGrabber::MoveNextFrame(size_t target_dts )
 	while (packet.stream_index != videoStream)
 	{
 		av_free_packet(&packet);
-		//pFormatCtx->cur_pkt.destruct=NULL;
+		//pFormatCtx->cur_pkt.destruct=nullptr;
 		if (av_read_frame(pFormatCtx, &packet) < 0)
 			return static_cast<size_t>(-1);
 		res = packet.dts;
@@ -762,7 +762,7 @@ size_t VideoGrabber::MoveNextFrame(size_t target_dts )
 			while (packet.stream_index != videoStream)
 			{
 				av_free_packet(&packet);
-				//pFormatCtx->cur_pkt.destruct=NULL;
+				//pFormatCtx->cur_pkt.destruct=nullptr;
 				if (av_read_frame(pFormatCtx, &packet) < 0)
 					return static_cast<size_t>(-1);
 				res = packet.dts;

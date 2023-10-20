@@ -395,12 +395,12 @@ static QList<QAction*> manualAnnotationHelperMenu(VipPlotShape* shape, VipVideoP
 			shs.append(shapes[i]->rawData());
 	}
 	if (shs.size()) { // p->plotSceneModel()->shapes(1).contains(shape) && sh.type() == VipShape::polygon /*&& vipIsRect(sh.polygon(), &r)*/) {
-		QAction* extract = new QAction("Create event with bounding boxes", NULL);
+		QAction* extract = new QAction("Create event with bounding boxes", nullptr);
 		QObject::connect(extract, &QAction::triggered, std::bind(extractBBoxFromPlayer, p, shs));
 		actions << extract;
 
 		if (ManualAnnotationHelper::supportSegmentation()) {
-			QAction* segm = new QAction("Create event with segmentation masks", NULL);
+			QAction* segm = new QAction("Create event with segmentation masks", nullptr);
 			QObject::connect(segm, &QAction::triggered, std::bind(extractSegmFromPlayer, p, shs));
 			actions << segm;
 		}
@@ -408,7 +408,7 @@ static QList<QAction*> manualAnnotationHelperMenu(VipPlotShape* shape, VipVideoP
 
 	if (actions.size()) {
 		// add separator at the beginning
-		QAction* a = new QAction(NULL);
+		QAction* a = new QAction(nullptr);
 		a->setSeparator(true);
 		actions.insert(0, a);
 	}

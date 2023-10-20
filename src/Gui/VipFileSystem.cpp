@@ -649,7 +649,7 @@ public:
 		Cut
 	};
 
-	PrivateData() : map(NULL), inside_scroll_bar(false), enableOverwrite(false), operation(Copy), operations(VipMapFileSystem::All) {}
+	PrivateData() : map(nullptr), inside_scroll_bar(false), enableOverwrite(false), operation(Copy), operations(VipMapFileSystem::All) {}
 	VipMapFileSystemPtr map;
 	QStringList suffixes;
 	bool inside_scroll_bar;
@@ -687,7 +687,7 @@ VipMapFileSystemTree::VipMapFileSystemTree(QWidget * parent)
 
 VipMapFileSystemTree::~VipMapFileSystemTree()
 {
-	m_data->update->tree = NULL;
+	m_data->update->tree = nullptr;
 	m_data->update->wait();
 	//clear before deleting the thread
 	clear();
@@ -832,7 +832,7 @@ QTreeWidgetItem * VipMapFileSystemTree::internalItemForPath(QTreeWidgetItem * ro
 		//printf("to_compare: '%s'\n", to_compare.toLatin1().data());
 
 
-		QTreeWidgetItem * found = NULL;
+		QTreeWidgetItem * found = nullptr;
 		for (int c = 0; c < item->childCount(); ++c)
 		{
 			VipPath p = pathForItem(item->child(c));
@@ -847,13 +847,13 @@ QTreeWidgetItem * VipMapFileSystemTree::internalItemForPath(QTreeWidgetItem * ro
 		}
 
 		if (!found)
-			return NULL;
+			return nullptr;
 		item = found;
 		if (i == sub_paths.size() - 1)
 			return item;
 	}
 
-	return NULL;
+	return nullptr;
 }
 
 QList<QTreeWidgetItem *> VipMapFileSystemTree::itemsForPath(const VipPath & path, ItemType type)
@@ -944,7 +944,7 @@ QTreeWidgetItem * VipMapFileSystemTree::addTopLevelPath(const VipPath & path)
 			return item;
 		}
 	}
-	return NULL;
+	return nullptr;
 }
 
 void VipMapFileSystemTree::addTopLevelPaths(const VipPathList & paths)
@@ -985,7 +985,7 @@ bool VipMapFileSystemTree::move(const VipPathList & paths, const VipPath & dst_f
 	for (int i = 0; i < paths.size(); ++i)
 		if (paths[i].isDir() && dst_folder.canonicalPath().startsWith(paths[i].canonicalPath()))
 		{
-			QMessageBox::warning(NULL, "Unsupported operation", "Cannot move selected paths");
+			QMessageBox::warning(nullptr, "Unsupported operation", "Cannot move selected paths");
 			return false;
 		}
 		else
@@ -1060,7 +1060,7 @@ bool VipMapFileSystemTree::copy(const VipPathList & paths, const VipPath & dst_f
 	for (int i = 0; i < paths.size(); ++i)
 		if (paths[i].isDir() && dst_folder.canonicalPath().startsWith(paths[i].canonicalPath()))
 		{
-			QMessageBox::warning(NULL, "Unsupported operation", "Cannot copy selected paths");
+			QMessageBox::warning(nullptr, "Unsupported operation", "Cannot copy selected paths");
 			return false;
 		}
 		else
@@ -1340,7 +1340,7 @@ void VipMapFileSystemTree::mouseMoveEvent(QMouseEvent * evt)
 		}
 
 		//check weather on of the top level parent is a custom dir
-		VipMapFileSystemTreeDirItem * top = NULL;
+		VipMapFileSystemTreeDirItem * top = nullptr;
 		for (int i = 0; i < items.size(); ++i)
 		{
 			QTreeWidgetItem * it = items[i];
@@ -1530,12 +1530,12 @@ void VipMapFileSystemTree::keyPressEvent(QKeyEvent * evt)
 		VipPathList lst = selectedPaths();
 		if (lst.size() == 0)
 		{
-			QMessageBox::warning(NULL, "Paste files", "No destination folder selected");
+			QMessageBox::warning(nullptr, "Paste files", "No destination folder selected");
 			return;
 		}
 		if (lst.size() > 1)
 		{
-			QMessageBox::warning(NULL, "Paste files", "Unauthorized operation");
+			QMessageBox::warning(nullptr, "Paste files", "Unauthorized operation");
 			return;
 		}
 
@@ -1555,12 +1555,12 @@ bool VipMapFileSystemTree::aboutToCopy(const VipPathList &, const VipPath &)
 
 bool VipMapFileSystemTree::aboutToMove(const VipPathList &, const VipPath &)
 {
-	return QMessageBox::question(NULL, "Move selection", "Do you want to move selection ?", QMessageBox::Ok, QMessageBox::Cancel) == QMessageBox::Ok;
+	return QMessageBox::question(nullptr, "Move selection", "Do you want to move selection ?", QMessageBox::Ok, QMessageBox::Cancel) == QMessageBox::Ok;
 }
 
 bool VipMapFileSystemTree::aboutToRemove(const VipPathList &)
 {
-	return QMessageBox::question(NULL, "Delete selection", "Do you want to remove selection ?", QMessageBox::Ok, QMessageBox::Cancel) == QMessageBox::Ok;
+	return QMessageBox::question(nullptr, "Delete selection", "Do you want to remove selection ?", QMessageBox::Ok, QMessageBox::Cancel) == QMessageBox::Ok;
 }
 
 bool VipMapFileSystemTree::rightClick()
@@ -1629,7 +1629,7 @@ void VipMapFileSystemTree::setRefreshEnabled(bool enable)
 	}
 	else if (!enable && refreshEnabled())
 	{
-		m_data->update->tree = NULL;
+		m_data->update->tree = nullptr;
 		m_data->update->wait();
 	}
 }
@@ -2502,7 +2502,7 @@ void VipFileSystemWidget::openSelectedFiles()
 		if (!lst[i].isDir())
 			files.append(lst[i]);
 
-	vipGetMainWindow()->openPaths(files, NULL);
+	vipGetMainWindow()->openPaths(files, nullptr);
 }
 
 void VipFileSystemWidget::openSelectedDirs()
@@ -2514,7 +2514,7 @@ void VipFileSystemWidget::openSelectedDirs()
 		if (lst[i].isDir())
 			dirs.append(lst[i]);
 
-	vipGetMainWindow()->openPaths(dirs, NULL);
+	vipGetMainWindow()->openPaths(dirs, nullptr);
 }
 
 //void VipFileSystemWidget::setSelectedPath()
@@ -2640,7 +2640,7 @@ VipFileSystemWidget* VipDirectoryBrowser::addFileSystem(VipMapFileSystem * m)
 {
 	for (int i = 0; i < m_filesystems.size(); ++i)
 		if (m_filesystems[i]->mapFileSystem() == m)
-			return NULL;
+			return nullptr;
 
 	VipFileSystemWidget * w = new VipFileSystemWidget();
 	w->setMapFileSystem(VipMapFileSystemPtr(m), true);
@@ -2788,8 +2788,8 @@ static VipArchive & operator >> (VipArchive & arch, VipDirectoryBrowser * b)
 
 
 		//create the VipMapFileSystem, open it and add it to the VipDirectoryBrowser
-		VipMapFileSystem * sys = NULL;
-		VipFileSystemWidget * w = NULL;
+		VipMapFileSystem * sys = nullptr;
+		VipFileSystemWidget * w = nullptr;
 
 		if (i > 0)
 		{

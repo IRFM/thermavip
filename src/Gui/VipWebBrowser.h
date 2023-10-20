@@ -48,7 +48,7 @@ public:
 	QProgressBar load;
 	QAction* stop;
 
-	VipWebBrowserToolBar(QWidget * parent = NULL);
+	VipWebBrowserToolBar(QWidget * parent = nullptr);
 
 public Q_SLOTS:
 	void setIcon(const QIcon& icon);
@@ -59,7 +59,7 @@ class VipWebBrowser : public VipWidgetPlayer
 	Q_OBJECT
 
 public:
-	VipWebBrowser(QWidget* parent = NULL);
+	VipWebBrowser(QWidget* parent = nullptr);
 
 	QWebEngineView* webEngine() const;
 	virtual QWidget* widgetForMouseEvents() const;

@@ -68,23 +68,23 @@ class VIP_GUI_EXPORT VipVerticalLine : public QFrame
 {
 	Q_OBJECT
 public:
-	VipVerticalLine(QWidget * parent = NULL);
+	VipVerticalLine(QWidget * parent = nullptr);
 };
 
 class VIP_GUI_EXPORT VipHorizontalLine : public QFrame
 {
 	Q_OBJECT
 public:
-	VipHorizontalLine(QWidget * parent = NULL);
+	VipHorizontalLine(QWidget * parent = nullptr);
 };
 
 class VIP_GUI_EXPORT VipLineWidget
 {
 public:
-	static QFrame *createHLine(QWidget * parent = NULL);
-	static QFrame *createVLine(QWidget * parent = NULL);
-	static QFrame *createSunkenHLine(QWidget * parent = NULL);
-	static QFrame *createSunkenVLine(QWidget * parent = NULL);
+	static QFrame *createHLine(QWidget * parent = nullptr);
+	static QFrame *createVLine(QWidget * parent = nullptr);
+	static QFrame *createSunkenHLine(QWidget * parent = nullptr);
+	static QFrame *createSunkenVLine(QWidget * parent = nullptr);
 };
 
 class VIP_GUI_EXPORT VipFileDialog
@@ -95,14 +95,14 @@ public:
 	static QString getExistingDirectory  ( QWidget * parent , const QString & caption , QFileDialog::Options options = QFileDialog::Options() );
 	/// Open a dialog box to select a file.
 	/// The selected path will be kept in memory and used in the next call to #VipFileDialog::getExistingDirectory, #VipFileDialog::getOpenFileName, #VipFileDialog::getOpenFileNames or #VipFileDialog::getSaveFileName.
-	static QString getOpenFileName ( QWidget * parent, const QString & caption , const QString & filter = QString(), QString * selectedFilter = NULL, QFileDialog::Options options= QFileDialog::Options() );
+	static QString getOpenFileName ( QWidget * parent, const QString & caption , const QString & filter = QString(), QString * selectedFilter = nullptr, QFileDialog::Options options= QFileDialog::Options() );
 	/// Open a dialog box to select one or more files.
 	/// The selected path will be kept in memory and used in the next call to #VipFileDialog::getExistingDirectory, #VipFileDialog::getOpenFileName, #VipFileDialog::getOpenFileNames or #VipFileDialog::getSaveFileName.
-	static QStringList getOpenFileNames ( QWidget * parent , const QString & caption , const QString & filter = QString(), QString * selectedFilter = NULL, QFileDialog::Options options= QFileDialog::Options() );
+	static QStringList getOpenFileNames ( QWidget * parent , const QString & caption , const QString & filter = QString(), QString * selectedFilter = nullptr, QFileDialog::Options options= QFileDialog::Options() );
 	/// Open a dialog box to select one file in saving mode.
 	/// The selected path will be kept in memory and used in the next call to #VipFileDialog::getExistingDirectory, #VipFileDialog::getOpenFileName, #VipFileDialog::getOpenFileNames or #VipFileDialog::getSaveFileName.
-	static QString getSaveFileName ( QWidget * parent, const QString & caption ,  const QString & filter = QString() , QString * selectedFilter = NULL , QFileDialog::Options options= QFileDialog::Options() );
-	static QString getSaveFileName2( QWidget * parent,const QString & filename, const QString & caption ,  const QString & filter = QString() , QString * selectedFilter = NULL , QFileDialog::Options options= QFileDialog::Options() );
+	static QString getSaveFileName ( QWidget * parent, const QString & caption ,  const QString & filter = QString() , QString * selectedFilter = nullptr , QFileDialog::Options options= QFileDialog::Options() );
+	static QString getSaveFileName2( QWidget * parent,const QString & filename, const QString & caption ,  const QString & filter = QString() , QString * selectedFilter = nullptr , QFileDialog::Options options= QFileDialog::Options() );
 
 	/// Set the default directory for the next call to one of the file dialog functions
 	static void setDefaultDirectory(const QString & dirname);
@@ -246,7 +246,7 @@ class VIP_GUI_EXPORT VipSpinBox : public QSpinBox
 	Q_OBJECT
 public:
 
-	VipSpinBox(QWidget * parent = NULL);
+	VipSpinBox(QWidget * parent = nullptr);
 
 private Q_SLOTS:
 	void valueHasChanged() {
@@ -264,7 +264,7 @@ class VIP_GUI_EXPORT VipBoolEdit : public QCheckBox
 	Q_PROPERTY(bool value READ value WRITE setValue)
 
 public:
-	VipBoolEdit(QWidget * parent = NULL);
+	VipBoolEdit(QWidget * parent = nullptr);
 
 	bool value() const;
 	void setValue(bool);
@@ -284,7 +284,7 @@ class VIP_GUI_EXPORT VipDoubleSpinBox : public QDoubleSpinBox
 	Q_OBJECT
 public:
 
-	VipDoubleSpinBox(QWidget * parent = NULL);
+	VipDoubleSpinBox(QWidget * parent = nullptr);
 
 	virtual QString textFromValue(double value) const;
 	virtual double valueFromText(const QString& text) const;
@@ -335,7 +335,7 @@ class VIP_GUI_EXPORT VipDoubleEdit : public VipPrefixSuffixLineEdit
 	Q_PROPERTY(QString format READ format WRITE setFormat )
 
 public:
-	VipDoubleEdit(QWidget * parent = NULL);
+	VipDoubleEdit(QWidget * parent = nullptr);
 	double value() const;
 	const QString & rightStyle() const;
 	const QString & wrongStyle() const;
@@ -343,7 +343,7 @@ public:
 	bool isValid() const;
 	bool integerFormat() const;
 
-	static double readValue(const QString & text, bool integer, bool * ok = NULL) ;
+	static double readValue(const QString & text, bool integer, bool * ok = nullptr) ;
 
 public Q_SLOTS:
 	void setValue(double value);
@@ -382,7 +382,7 @@ class VIP_GUI_EXPORT VipMultiComponentDoubleEdit : public QWidget
 	Q_PROPERTY(int maxNumberOfComponents READ maxNumberOfComponents WRITE setMaxNumberOfComponents)
 	Q_PROPERTY(int integer READ integerFormat WRITE setIntegerFormat)
 public:
-	VipMultiComponentDoubleEdit(QWidget * parent = NULL);
+	VipMultiComponentDoubleEdit(QWidget * parent = nullptr);
 	~VipMultiComponentDoubleEdit();
 
 	int fixedNumberOfComponents() const;
@@ -418,7 +418,7 @@ Q_SIGNALS:
 	void genericValueChanged(const QVariant &);
 
 private:
-	VipNDDoubleCoordinate readValue(bool * ok = NULL) const;
+	VipNDDoubleCoordinate readValue(bool * ok = nullptr) const;
 	void applyStyle();
 	void applyFormat();
 	class PrivateData;
@@ -440,7 +440,7 @@ class VIP_GUI_EXPORT VipDoubleSliderEdit : public QWidget
 	Q_PROPERTY(bool showSpinBox READ showSpinBox WRITE setShowSpinBox)
 
 public:
-	VipDoubleSliderEdit(QWidget * parent = NULL);
+	VipDoubleSliderEdit(QWidget * parent = nullptr);
 
 	double value() const;
 	double minimum() const;
@@ -476,7 +476,7 @@ class VIP_GUI_EXPORT VipLineEdit : public QLineEdit
 
 public:
 
-	VipLineEdit(QWidget * parent = NULL) : QLineEdit(parent) {
+	VipLineEdit(QWidget * parent = nullptr) : QLineEdit(parent) {
 		connect(this, SIGNAL(returnPressed()), this, SLOT(valueHasChanged()));
 	}
 
@@ -515,7 +515,7 @@ class VIP_GUI_EXPORT VipComboBox : public QComboBox
 	Q_PROPERTY(QString choices READ choices WRITE setChoices  )
 
 public:
-	VipComboBox(QWidget * parent = NULL);
+	VipComboBox(QWidget * parent = nullptr);
 
 	QStringList items() const {
 		QStringList res;
@@ -574,7 +574,7 @@ class VIP_GUI_EXPORT VipEnumEdit : public QComboBox
 	Q_PROPERTY(QString enumValues READ enumNames WRITE setEnumValues)
 
 public:
-	VipEnumEdit(QWidget * parent = NULL);
+	VipEnumEdit(QWidget * parent = nullptr);
 
 	QString enumNames() const;
 	QString enumValues() const;
@@ -603,7 +603,7 @@ class VIP_GUI_EXPORT VipColorWidget : public QToolButton
 	Q_OBJECT
 
 public:
-	VipColorWidget(QWidget * parent = NULL);
+	VipColorWidget(QWidget * parent = nullptr);
 	const QColor & color() const {return m_color;}
 
 public Q_SLOTS:
@@ -632,7 +632,7 @@ class VIP_GUI_EXPORT VipBrushWidget : public QWidget
 
 public:
 
-	VipBrushWidget(const QBrush & brush = QBrush(), QWidget * parent = NULL);
+	VipBrushWidget(const QBrush & brush = QBrush(), QWidget * parent = nullptr);
 
 	void setBrush(const QBrush & brush);
 	QBrush brush() const;
@@ -671,7 +671,7 @@ class VIP_GUI_EXPORT VipPenWidget : public QWidget
 
 public:
 
-	VipPenWidget(const QPen & pen = QPen(), QWidget * parent = NULL);
+	VipPenWidget(const QPen & pen = QPen(), QWidget * parent = nullptr);
 
 	QPen pen() const;
 
@@ -717,7 +717,7 @@ public:
 		Pen
 	};
 
-	VipPenButton(const QPen & pen = QPen(), QWidget * parent = NULL);
+	VipPenButton(const QPen & pen = QPen(), QWidget * parent = nullptr);
 	~VipPenButton();
 
 	QPen pen() const;
@@ -762,7 +762,7 @@ class VIP_GUI_EXPORT VipTextWidget : public QWidget
 	Q_OBJECT
 	Q_PROPERTY(VipText value READ getText WRITE setText)
 public:
-	VipTextWidget(QWidget * parent = NULL);
+	VipTextWidget(QWidget * parent = nullptr);
 
 	void setText(const VipText & t);
 	VipText getText() const;
@@ -792,7 +792,7 @@ class VIP_GUI_EXPORT VipBoxStyleWidget : public QWidget
 	Q_OBJECT
 
 public:
-	VipBoxStyleWidget(QWidget * parent = NULL);
+	VipBoxStyleWidget(QWidget * parent = nullptr);
 
 	void setBoxStyle(const VipBoxStyle & box);
 	VipBoxStyle getBoxStyle() const;
@@ -839,8 +839,8 @@ public:
 		Save
 	};
 
-	VipFileName(const QString & Filename , QWidget * parent = NULL);
-	VipFileName(QWidget * parent = NULL);
+	VipFileName(const QString & Filename , QWidget * parent = nullptr);
+	VipFileName(QWidget * parent = nullptr);
 
 	Mode mode() const;
 	QString filename() const;;
@@ -890,7 +890,7 @@ class VIP_GUI_EXPORT VipAdditionalToolBar : public QToolBar
 {
 	Q_OBJECT
 public:
-	VipAdditionalToolBar(VipToolBar * parent = NULL);
+	VipAdditionalToolBar(VipToolBar * parent = nullptr);
 	virtual bool eventFilter(QObject * watched, QEvent *event);
 protected:
 	virtual void showEvent(QShowEvent *);
@@ -915,7 +915,7 @@ public:
 		ShowInToolBar
 	};
 
-	VipToolBar(QWidget * parent = NULL);
+	VipToolBar(QWidget * parent = nullptr);
 	virtual ~VipToolBar();
 
 	virtual QSize sizeHint() const;
@@ -956,7 +956,7 @@ class VIP_GUI_EXPORT VipValueToTimeButton : public QToolButton
 	Q_OBJECT
 public:
 
-	VipValueToTimeButton(QWidget * parent = NULL);
+	VipValueToTimeButton(QWidget * parent = nullptr);
 	/// Returns the current \a VipValueToTime instance
 	const VipValueToTime & currentValueToTime() const;
 	///Set the current time unit
@@ -993,7 +993,7 @@ class VipCloseToolBar : public QToolBar
 	Q_OBJECT
 
 public:
-	VipCloseToolBar(QWidget  * widget = NULL, QWidget * parent = NULL);
+	VipCloseToolBar(QWidget  * widget = nullptr, QWidget * parent = nullptr);
 	~VipCloseToolBar();
 
 	void setWidget(QWidget* w);
@@ -1022,7 +1022,7 @@ class VIP_GUI_EXPORT VipGenericDialog : public QDialog
 	Q_OBJECT
 public:
 
-	VipGenericDialog(QWidget * inner_panel, const QString & title = QString(), QWidget * parent = NULL);
+	VipGenericDialog(QWidget * inner_panel, const QString & title = QString(), QWidget * parent = nullptr);
 	~VipGenericDialog();
 
 	QPushButton * applyButton();
@@ -1078,7 +1078,7 @@ class VipShowWidgetOnHover : public QObject
 	Q_OBJECT
 
 public:
-	VipShowWidgetOnHover(QObject * parent = NULL);
+	VipShowWidgetOnHover(QObject * parent = nullptr);
 	~VipShowWidgetOnHover();
 
 	void setHoverWidget(QWidget * hover);

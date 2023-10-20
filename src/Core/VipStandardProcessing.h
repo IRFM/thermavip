@@ -57,7 +57,7 @@ class VIP_CORE_EXPORT VipNormalize : public VipProcessingObject
 	Q_CLASSINFO("category","Miscellaneous")
 
 public:
-	VipNormalize(QObject * parent = NULL);
+	VipNormalize(QObject * parent = nullptr);
 	virtual DisplayHint displayHint() const { return InputTransform; }
 	virtual bool acceptInput(int //index
 , const QVariant & v) const;
@@ -82,7 +82,7 @@ class VIP_CORE_EXPORT VipClamp : public VipProcessingObject
 		Q_CLASSINFO("category", "Miscellaneous")
 
 public:
-	VipClamp(QObject * parent = NULL);
+	VipClamp(QObject * parent = nullptr);
 	virtual DisplayHint displayHint() const { return InputTransform; }
 	virtual bool acceptInput(int //index
 , const QVariant & v) const;
@@ -104,7 +104,7 @@ class VIP_CORE_EXPORT VipAbs : public VipProcessingObject
 		Q_CLASSINFO("category", "Miscellaneous")
 
 public:
-	VipAbs(QObject * parent = NULL);
+	VipAbs(QObject * parent = nullptr);
 	virtual DisplayHint displayHint() const { return InputTransform; }
 	virtual bool acceptInput(int //index
 , const QVariant & v) const;
@@ -128,7 +128,7 @@ class VIP_CORE_EXPORT VipConvert : public VipProcessingObject
 		Q_CLASSINFO("category", "Miscellaneous")
 
 public:
-	VipConvert(QObject * parent = NULL);
+	VipConvert(QObject * parent = nullptr);
 	virtual DisplayHint displayHint() const { return InputTransform; }
 	virtual bool acceptInput(int //index
 , const QVariant & v) const;
@@ -149,7 +149,7 @@ class VIP_CORE_EXPORT VipStartAtZero : public VipProcessingObject
 	Q_CLASSINFO("category", "Miscellaneous")
 
 public:
-	VipStartAtZero(QObject * parent = NULL);
+	VipStartAtZero(QObject * parent = nullptr);
 	virtual DisplayHint displayHint() const { return InputTransform; }
 	virtual bool acceptInput(int //index
 , const QVariant & v) const;
@@ -168,7 +168,7 @@ class VIP_CORE_EXPORT VipStartYAtZero : public VipProcessingObject
 		Q_CLASSINFO("category", "Miscellaneous")
 
 public:
-	VipStartYAtZero(QObject * parent = NULL);
+	VipStartYAtZero(QObject * parent = nullptr);
 	virtual DisplayHint displayHint() const { return InputTransform; }
 	virtual bool acceptInput(int //index
 , const QVariant & v) const;
@@ -188,7 +188,7 @@ class VIP_CORE_EXPORT VipXOffset : public VipProcessingObject
 		Q_CLASSINFO("category", "Miscellaneous")
 
 public:
-	VipXOffset(QObject * parent = NULL);
+	VipXOffset(QObject * parent = nullptr);
 	virtual DisplayHint displayHint() const { return InputTransform; }
 	virtual bool acceptInput(int //index
 , const QVariant & v) const;
@@ -237,7 +237,7 @@ class VIP_CORE_EXPORT VipNumericValueToPointVector : public VipProcessingObject
 	Q_CLASSINFO("category", "Miscellaneous")
 
 public:
-	VipNumericValueToPointVector(QObject * parent = NULL);
+	VipNumericValueToPointVector(QObject * parent = nullptr);
 	virtual bool acceptInput(int //index
 , const QVariant & v) const;
 
@@ -269,7 +269,7 @@ class VIP_CORE_EXPORT VipBaseDataFusion : public VipProcessingObject
 
 
 public:
-	VipBaseDataFusion(QObject * parent = NULL);
+	VipBaseDataFusion(QObject * parent = nullptr);
 	~VipBaseDataFusion();
 
 	void setAceptedInputs(const QList<int> & input_types);
@@ -347,7 +347,7 @@ class VIP_CORE_EXPORT VipSamplesFeature : public VipBaseDataFusion
 	VIP_PROPERTY_EDIT(Feature, "VipEnumEdit{ qproperty-enumNames:'min,max,mean,median';  qproperty-value:'max' ;}")
 
 public:
-	VipSamplesFeature(QObject * parent = NULL);
+	VipSamplesFeature(QObject * parent = nullptr);
 	~VipSamplesFeature();
 
 	virtual DisplayHint displayHint() const { return DisplayOnSameSupport; }
@@ -439,7 +439,7 @@ class VIP_CORE_EXPORT VipExtractBoundingBox : public VipProcessingObject
 	Q_CLASSINFO("category","Computer Vision")
 
 public:
-	VipExtractBoundingBox(QObject * parent = NULL);
+	VipExtractBoundingBox(QObject * parent = nullptr);
 	virtual bool acceptInput(int //index
 , const QVariant & v) const;
 	virtual VipProcessingObject::DisplayHint displayHint() const {return DisplayOnSameSupport;}
@@ -503,7 +503,7 @@ class VIP_CORE_EXPORT VipNumericOperation : public VipBaseDataFusion
 	VIP_PROPERTY_EDIT(Operator, "VipEnumEdit{ qproperty-enumNames:'+,-,*,/,&,|,^';  qproperty-value:'+' ;}")
 
 public:
-	VipNumericOperation(QObject * parent = NULL);
+	VipNumericOperation(QObject * parent = nullptr);
 	virtual DisplayHint displayHint() const { return DisplayOnSameSupport; }
 	virtual bool acceptInput(int //index
 , const QVariant & v) const {
@@ -534,7 +534,7 @@ class VIP_CORE_EXPORT VipAffineTransform : public VipProcessingObject
 	Q_CLASSINFO("category", "Numeric Operation")
 
 public:
-	VipAffineTransform(QObject * parent = NULL);
+	VipAffineTransform(QObject * parent = nullptr);
 	virtual DisplayHint displayHint() const { return InputTransform; }
 	virtual bool acceptInput(int //index
 , const QVariant & v) const { return v.canConvert<VipNDArray>() || v.userType() == qMetaTypeId<VipPointVector>()|| v.userType() == qMetaTypeId<VipComplexPointVector>(); }
@@ -561,7 +561,7 @@ class VIP_CORE_EXPORT VipAffineTimeTransform : public VipProcessingObject
 	Q_CLASSINFO("category", "Numeric Operation")
 
 public:
-	VipAffineTimeTransform(QObject * parent = NULL);
+	VipAffineTimeTransform(QObject * parent = nullptr);
 	virtual DisplayHint displayHint() const { return InputTransform; }
 	virtual bool acceptInput(int //index
 , const QVariant & v) const { return v.userType() == qMetaTypeId<VipPointVector>() || v.userType() == qMetaTypeId<VipComplexPointVector>(); }
@@ -587,7 +587,7 @@ class VIP_CORE_EXPORT VipSubtractBackground : public VipProcessingObject
 	Q_CLASSINFO("category", "Numeric Operation")
 
 public:
-	VipSubtractBackground(QObject * parent = NULL);
+	VipSubtractBackground(QObject * parent = nullptr);
 	virtual DisplayHint displayHint() const { return InputTransform; }
 	virtual bool acceptInput(int //index
 , const QVariant & v) const { return v.canConvert<VipNDArray>() || v.userType() == qMetaTypeId<VipPointVector>(); }
@@ -619,7 +619,7 @@ class VIP_CORE_EXPORT VipOperationBetweenPlayers : public VipProcessingObject
 	Q_CLASSINFO("category", "Numeric Operation")
 
 public:
-	VipOperationBetweenPlayers(QObject * parent = NULL)
+	VipOperationBetweenPlayers(QObject * parent = nullptr)
 	:VipProcessingObject(parent) {
 		propertyName("Operator")->setData(QString("-"));
 		VipOtherPlayerData data;
@@ -656,7 +656,7 @@ class VIP_CORE_EXPORT VipTimeDifference : public VipProcessingObject
 	VIP_PROPERTY_EDIT(Time_unit, "VipEnumEdit{ qproperty-enumNames:'ns,us,ms,s';  qproperty-value:'ns' ;}")
 
 public:
-	VipTimeDifference(QObject * parent = NULL);
+	VipTimeDifference(QObject * parent = nullptr);
 	virtual DisplayHint displayHint() const { return InputTransform; }
 	virtual bool acceptInput(int //index
 , const QVariant & v) const { return v.userType() == qMetaTypeId<VipPointVector>() ||
@@ -682,7 +682,7 @@ class VIP_CORE_EXPORT VipSignalDerivative : public VipProcessingObject
 		Q_CLASSINFO("category", "Numeric Operation")
 
 public:
-	VipSignalDerivative(QObject * parent = NULL);
+	VipSignalDerivative(QObject * parent = nullptr);
 	virtual DisplayHint displayHint() const { return InputTransform; }
 	virtual bool acceptInput(int //index
 , const QVariant & v) const {
@@ -709,7 +709,7 @@ VIP_REGISTER_QOBJECT_METATYPE(VipSignalDerivative*)
 // Q_CLASSINFO("category", "Numeric Operation")
 //
 // public:
-// VipSignalIntegral(QObject * parent = NULL);
+// VipSignalIntegral(QObject * parent = nullptr);
 // virtual bool isInputTransformation() const { return true; }
 // virtual bool acceptInput(int , const QVariant & v) const {
 // return v.userType() == qMetaTypeId<VipPointVector>() ||

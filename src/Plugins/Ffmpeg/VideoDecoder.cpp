@@ -81,7 +81,7 @@ QStringList VideoDecoder::list_devices()
 	av_log_set_callback(log_to_array);
 
 	AVFormatContext *formatC = avformat_alloc_context();
-	AVDictionary* options = NULL;
+	AVDictionary* options = nullptr;
 	av_dict_set(&options, "list_devices", "true", 0);
 	AVInputFormat *iformat = av_find_input_format("dshow");
 	int ret = avformat_open_input(&formatC, "video=dummy", iformat, &options);
@@ -122,7 +122,7 @@ QStringList VideoDecoder::list_devices()
 
 void VideoDecoder::free_packet()
 {
- if(packet.data != NULL && packet.size > 0)
+ if(packet.data != nullptr && packet.size > 0)
 	 //if(strcmp((const char*)packet.data,"")!=0)
 		av_free(packet.data);
 
@@ -136,26 +136,26 @@ VideoDecoder::VideoDecoder()
 	m_last_dts = 0;
 	m_file_open = false;
 	m_is_packet = false;
-	pFormatCtx = NULL;
-	pCodecCtx = NULL;
-	pCodec = NULL;
-	pFrame = NULL;
-	pFrameRGB = NULL;
-	buffer = NULL;
-	pSWSCtx = NULL;
+	pFormatCtx = nullptr;
+	pCodecCtx = nullptr;
+	pCodec = nullptr;
+	pFrame = nullptr;
+	pFrameRGB = nullptr;
+	buffer = nullptr;
+	pSWSCtx = nullptr;
 
 }
 
 VideoDecoder::VideoDecoder(const std::string & name)
 {
 	m_last_dts = 0;
-	pFormatCtx = NULL;
-	pCodecCtx = NULL;
-	pCodec = NULL;
-	pFrame = NULL;
-	pFrameRGB = NULL;
-	buffer = NULL;
-	pSWSCtx = NULL;
+	pFormatCtx = nullptr;
+	pCodecCtx = nullptr;
+	pCodec = nullptr;
+	pFrame = nullptr;
+	pFrameRGB = nullptr;
+	buffer = nullptr;
+	pSWSCtx = nullptr;
 	m_is_packet = false;
 
 	Open(name);
@@ -170,7 +170,7 @@ VideoDecoder::~VideoDecoder()
 
 void VideoDecoder::Open(const QString & name, const QString & format, const QMap<QString, QString> & options)
 {
-	AVDictionary* opt = NULL;
+	AVDictionary* opt = nullptr;
 	for (QMap<QString, QString>::const_iterator it = options.begin(); it != options.end(); ++it)
 	{
 		av_dict_set(&opt, it.key().toLatin1().data(), it.value().toLatin1().data(), 0);
@@ -179,15 +179,15 @@ void VideoDecoder::Open(const QString & name, const QString & format, const QMap
 	//av_dict_set(&options, "r", "25", 0);
 
 	AVInputFormat *iformat = av_find_input_format(format.toLatin1().data());
-	AVDictionary **iopt = opt ? &opt : NULL;
+	AVDictionary **iopt = opt ? &opt : nullptr;
 
 	Open(name.toLatin1().data(), iformat, iopt);
 }
 
 void VideoDecoder::Open(const std::string & name, AVInputFormat * iformat , AVDictionary ** options)
 {
-	/*AVFormatContext *formatC = NULL;// avformat_alloc_context();
-	AVDictionary* options = NULL;
+	/*AVFormatContext *formatC = nullptr;// avformat_alloc_context();
+	AVDictionary* options = nullptr;
 	// set input resolution
 	av_dict_set(&options, "video_size", "640x480", 0);
 	av_dict_set(&options, "r", "25", 0);
@@ -211,7 +211,7 @@ void VideoDecoder::Open(const std::string & name, AVInputFormat * iformat , AVDi
 
 
 	m_file_open = true;
-	AVDictionary* opts = NULL;
+	AVDictionary* opts = nullptr;
 	if (options)
 		opts = *options;
 	if (name.find(".sdp") != std::string::npos || name.find(".SDP") != std::string::npos || 
@@ -223,7 +223,7 @@ void VideoDecoder::Open(const std::string & name, AVInputFormat * iformat , AVDi
 	}
 
 	init_packet(&packet);
-	packet.data = NULL;
+	packet.data = nullptr;
     // Open video file
 #if LIBAVFORMAT_VERSION_MAJOR > 52
 	int err = avformat_open_input(&pFormatCtx,
@@ -232,7 +232,7 @@ void VideoDecoder::Open(const std::string & name, AVInputFormat * iformat , AVDi
 		&opts);
 		
 #else
-	int err = av_open_input_file(&pFormatCtx, name.c_str(), NULL, 0, NULL);
+	int err = av_open_input_file(&pFormatCtx, name.c_str(), nullptr, 0, nullptr);
 #endif
 	if (err != 0) {
 		char error[1000]; memset(error, 0, sizeof(error));
@@ -243,7 +243,7 @@ void VideoDecoder::Open(const std::string & name, AVInputFormat * iformat , AVDi
 	
     // Retrieve stream information
 	//TEST
-    if(avformat_find_stream_info(pFormatCtx,NULL)<0)
+    if(avformat_find_stream_info(pFormatCtx,nullptr)<0)
         throw std::runtime_error("Couldn't find stream information");
 
 	std::vector<AVStream*> streams;
@@ -273,11 +273,11 @@ void VideoDecoder::Open(const std::string & name, AVInputFormat * iformat , AVDi
 
     // Find the decoder for the video stream
     pCodec=avcodec_find_decoder(pCodecCtx->codec_id);
-    if(pCodec==NULL)
+    if(pCodec==nullptr)
         throw std::runtime_error("Codec not found");
 
     // Open codec
-	int res = avcodec_open2(pCodecCtx, pCodec,NULL);
+	int res = avcodec_open2(pCodecCtx, pCodec,nullptr);
     if(res<0)
         throw std::runtime_error("Could not open codec");
 
@@ -286,7 +286,7 @@ void VideoDecoder::Open(const std::string & name, AVInputFormat * iformat , AVDi
 
     // Allocate an AVFrame structure
     pFrameRGB= av_frame_alloc();
-    if(pFrameRGB==NULL)
+    if(pFrameRGB==nullptr)
         throw std::runtime_error("Error in avcodec_alloc_frame()");
 
     // Determine required buffer size and allocate buffer
@@ -302,7 +302,7 @@ void VideoDecoder::Open(const std::string & name, AVInputFormat * iformat , AVDi
 	//Initialize Context
 	if (pCodecCtx->pix_fmt == AV_PIX_FMT_NONE)
 		pCodecCtx->pix_fmt = AV_PIX_FMT_YUV420P;
-	pSWSCtx = sws_getContext(pCodecCtx->width, pCodecCtx->height, pCodecCtx->pix_fmt, pCodecCtx->width, pCodecCtx->height, AV_PIX_FMT_RGB24, SWS_FAST_BILINEAR, NULL, NULL, NULL);
+	pSWSCtx = sws_getContext(pCodecCtx->width, pCodecCtx->height, pCodecCtx->pix_fmt, pCodecCtx->width, pCodecCtx->height, AV_PIX_FMT_RGB24, SWS_FAST_BILINEAR, nullptr, nullptr, nullptr);
 
 	m_width = pCodecCtx->width;
 	m_height = pCodecCtx->height;
@@ -359,24 +359,24 @@ void VideoDecoder::Close()
 
 
 		// Free the DRGBPixel image
-		if(pFrameRGB!=NULL)
+		if(pFrameRGB!=nullptr)
 		{
 			av_free((AVPicture*)pFrameRGB);
 		}
 
 		// Free the YUV frame
-		if(pFrame!=NULL)
+		if(pFrame!=nullptr)
 		{
 			av_free((AVPicture*)pFrame);
 		}
 
 		// Close the codec
-		if(pCodecCtx!=NULL && pCodec != NULL) avcodec_close(pCodecCtx);
+		if(pCodecCtx!=nullptr && pCodec != nullptr) avcodec_close(pCodecCtx);
 
 		// Close the video file
-		if(pFormatCtx!=NULL) avformat_close_input(&pFormatCtx);
+		if(pFormatCtx!=nullptr) avformat_close_input(&pFormatCtx);
 
-		if(pSWSCtx!=NULL) sws_freeContext(pSWSCtx);
+		if(pSWSCtx!=nullptr) sws_freeContext(pSWSCtx);
 
 		if(packet.data)
 			av_free_packet(&packet);
@@ -384,13 +384,13 @@ void VideoDecoder::Close()
 
 
 
-	pFormatCtx = NULL;
-	pCodecCtx = NULL;
-	pCodec = NULL;
-	pFrame = NULL;
-	pFrameRGB = NULL;
-	//buffer = NULL;
-	pSWSCtx = NULL;
+	pFormatCtx = nullptr;
+	pCodecCtx = nullptr;
+	pCodec = nullptr;
+	pFrame = nullptr;
+	pFrameRGB = nullptr;
+	//buffer = nullptr;
+	pSWSCtx = nullptr;
 
 	m_file_open = false;
 
@@ -455,7 +455,7 @@ bool VideoDecoder::MoveNextFrame()
 	{
 		if(packet.data && packet.size >0)
 			av_free_packet(&packet);
-		//pFormatCtx->cur_pkt.destruct=NULL;
+		//pFormatCtx->cur_pkt.destruct=nullptr;
 		if(av_read_frame(pFormatCtx, &packet) < 0)
 			return false;
 	}
@@ -470,7 +470,7 @@ bool VideoDecoder::MoveNextFrame()
 	while(packet.stream_index!=videoStream)
 	{
 		av_free_packet(&packet);
-		//pFormatCtx->cur_pkt.destruct=NULL;
+		//pFormatCtx->cur_pkt.destruct=nullptr;
 		if(av_read_frame(pFormatCtx, &packet) < 0)
 			return false;
 
@@ -517,7 +517,7 @@ bool VideoDecoder::MoveNextFrame()
 				while(packet.stream_index!=videoStream)
 				{
 					av_free_packet(&packet);
-					//pFormatCtx->cur_pkt.destruct=NULL;
+					//pFormatCtx->cur_pkt.destruct=nullptr;
 					if(av_read_frame(pFormatCtx, &packet) < 0)
 						return false;
 
@@ -566,7 +566,7 @@ void VideoDecoder::SeekTime2(double )
 void VideoDecoder::SeekTime(double time)
 {
 	
-	//pFormatCtx->cur_pkt.destruct=NULL;
+	//pFormatCtx->cur_pkt.destruct=nullptr;
 	if( time < 0) time = 0;
 
 	if (false)
@@ -602,7 +602,7 @@ void VideoDecoder::SeekTime(double time)
 		AVRational r; r.num = 1; r.den = AV_TIME_BASE;
 		seek_target = av_rescale_q(seek_target, r, pFormatCtx->streams[videoStream]->time_base);
 
-		//pFormatCtx->cur_pkt.destruct=NULL;
+		//pFormatCtx->cur_pkt.destruct=nullptr;
 		av_seek_frame(pFormatCtx, videoStream, seek_target, AVSEEK_FLAG_BACKWARD);
 		avcodec_flush_buffers(pFormatCtx->streams[videoStream]->codec);
 	}
@@ -614,7 +614,7 @@ void VideoDecoder::SeekTime(double time)
 
 	do {
 
-	//pFormatCtx->cur_pkt.destruct=NULL;
+	//pFormatCtx->cur_pkt.destruct=nullptr;
 	int test = av_read_frame( pFormatCtx, &packet );
 	frameFinished = 1;
 

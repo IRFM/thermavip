@@ -202,7 +202,7 @@ class PYTHON_EXPORT ProcessOperation : public IOOperation
 	QProcess d_process;
 
 public:
-	ProcessOperation(QObject * parent = NULL)
+	ProcessOperation(QObject * parent = nullptr)
 	:IOOperation(parent), d_process(this)
 	{
 			connect(&d_process,SIGNAL(readyReadStandardOutput()),this,SLOT(emitReadyReadStandardOutput()),Qt::DirectConnection);
@@ -249,13 +249,13 @@ public:
 
 	PyIOOperation(QObject * parent): IOOperation(parent) {}
 
-	virtual QVariant evalCode(const CodeObject & code, bool * ok = NULL) = 0;
-	virtual QVariant setObject(const QString & name, const QVariant & var, bool *ok = NULL) {
+	virtual QVariant evalCode(const CodeObject & code, bool * ok = nullptr) = 0;
+	virtual QVariant setObject(const QString & name, const QVariant & var, bool *ok = nullptr) {
 		QVariant res = this->wait(this->sendObject(name, var));
 		if (ok) *ok = res.userType() == 0;
 		return res;
 	}
-	virtual QVariant getObject(const QString & name, bool *ok = NULL) {
+	virtual QVariant getObject(const QString & name, bool *ok = nullptr) {
 		QVariant res = this->wait(this->retrieveObject(name));
 		if (ok) *ok = res.userType() != qMetaTypeId<PyError>();
 		return res;
@@ -318,7 +318,7 @@ class PYTHON_EXPORT PyLocal : public PyIOOperation
 {
 	Q_OBJECT
 public:
-	PyLocal(QObject * parent =NULL);
+	PyLocal(QObject * parent =nullptr);
 	~PyLocal();
 
 	static QList<PyLocal*> instances();
@@ -356,10 +356,10 @@ public:
 
 	virtual void startInteractiveInterpreter();
 
-	virtual QVariant evalCode(const CodeObject & code,  bool * ok = NULL);
-	virtual QVariant evalCode(const QString & code, bool * ok = NULL);
-	virtual QVariant setObject(const QString & name, const QVariant & var, bool *ok = NULL);
-	virtual QVariant getObject(const QString & name, bool *ok = NULL);
+	virtual QVariant evalCode(const CodeObject & code,  bool * ok = nullptr);
+	virtual QVariant evalCode(const QString & code, bool * ok = nullptr);
+	virtual QVariant setObject(const QString & name, const QVariant & var, bool *ok = nullptr);
+	virtual QVariant getObject(const QString & name, bool *ok = nullptr);
 
 	virtual bool handleMagicCommand(const QString&);
 
@@ -395,7 +395,7 @@ public:
 		InIPythonInterp
 	};
 
-	PyOptions(QObject * parent = NULL);
+	PyOptions(QObject * parent = nullptr);
 	~PyOptions();
 
 	/** Set/get the type of interpreter (local or distant) */
@@ -434,7 +434,7 @@ public:
 	virtual QByteArray readAllStandardError() ;
 	virtual qint64 write(const QByteArray & data) ;
 
-	virtual QVariant evalCode(const CodeObject & code, bool * ok = NULL);
+	virtual QVariant evalCode(const CodeObject & code, bool * ok = nullptr);
 	virtual command_type execCode(const QString & code);
 	virtual command_type sendObject(const QString & name, const QVariant & obj);
 	virtual command_type retrieveObject(const QString & name);
@@ -444,7 +444,7 @@ public:
 
 	virtual void startInteractiveInterpreter();
 
-	static PyIOOperation * createNew(QObject * parent = NULL);
+	static PyIOOperation * createNew(QObject * parent = nullptr);
 
 	/**
 	If you need to preform operations sequentially (send objects in a specific order,...),

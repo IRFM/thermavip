@@ -145,7 +145,7 @@ public:
 
     static void drawColorBar( QPainter *painter,
          VipColorMap &, const VipInterval &,
-        const VipScaleMap &, Qt::Orientation, const QRectF &, QImage* pixmap = NULL);
+        const VipScaleMap &, Qt::Orientation, const QRectF &, QImage* pixmap = nullptr);
 
     /// Check if the painter is using a paint engine, that aligns
     /// coordinates to integers. Today these are all paint engines

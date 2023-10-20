@@ -282,7 +282,7 @@ bool HDF5VideoReader::open(VipIODevice::OpenModes mode)
 					int rank = H5Sget_simple_extent_ndims(space);
 					if (rank != 1)
 						continue;
-					H5Sget_simple_extent_dims(space, dims, NULL);
+					H5Sget_simple_extent_dims(space, dims, nullptr);
 					if (dims[0] == 0)
 						continue;
 
@@ -296,8 +296,8 @@ bool HDF5VideoReader::open(VipIODevice::OpenModes mode)
 						attribute.type = QVariant::Int;
 						//read the whole timestamp vector
 
-						H5Sselect_hyperslab(space, H5S_SELECT_SET, offset, NULL, dims, NULL);
-						hspace mem = H5Screate_simple(1, dims, NULL);
+						H5Sselect_hyperslab(space, H5S_SELECT_SET, offset, nullptr, dims, nullptr);
+						hspace mem = H5Screate_simple(1, dims, nullptr);
 						herr_t status = H5Dread(set, atype_mem.id, mem, space, H5P_DEFAULT, attribute.intAttribute.data());
 						if (status == 0)
 						{
@@ -311,8 +311,8 @@ bool HDF5VideoReader::open(VipIODevice::OpenModes mode)
 						attribute.type = QVariant::LongLong;
 						//read the whole timestamp vector
 
-						H5Sselect_hyperslab(space, H5S_SELECT_SET, offset, NULL, dims, NULL);
-						hspace mem = H5Screate_simple(1, dims, NULL);
+						H5Sselect_hyperslab(space, H5S_SELECT_SET, offset, nullptr, dims, nullptr);
+						hspace mem = H5Screate_simple(1, dims, nullptr);
 						herr_t status = H5Dread(set, atype_mem.id, mem, space, H5P_DEFAULT, attribute.int64Attribute.data());
 						if (status == 0)
 						{
@@ -326,8 +326,8 @@ bool HDF5VideoReader::open(VipIODevice::OpenModes mode)
 						attribute.type = QVariant::Double;
 						//read the whole timestamp vector
 
-						H5Sselect_hyperslab(space, H5S_SELECT_SET, offset, NULL, dims, NULL);
-						hspace mem = H5Screate_simple(1, dims, NULL);
+						H5Sselect_hyperslab(space, H5S_SELECT_SET, offset, nullptr, dims, nullptr);
+						hspace mem = H5Screate_simple(1, dims, nullptr);
 						herr_t status = H5Dread(set, atype_mem.id, mem, space, H5P_DEFAULT, attribute.doubleAttribute.data());
 						if (status == 0)
 						{
@@ -367,7 +367,7 @@ bool HDF5VideoReader::open(VipIODevice::OpenModes mode)
 
 					hsize_t dims[32];
 					int rank = H5Sget_simple_extent_ndims(space);
-					H5Sget_simple_extent_dims(space, dims, NULL);
+					H5Sget_simple_extent_dims(space, dims, nullptr);
 					if (rank == 3)
 					{
 						//3 dimensions, might be an image dataset
@@ -404,7 +404,7 @@ bool HDF5VideoReader::open(VipIODevice::OpenModes mode)
 	hsize_t dims[32];
 
 	rank = H5Sget_simple_extent_ndims(m_data->space);
-	H5Sget_simple_extent_dims(m_data->space, dims, NULL);
+	H5Sget_simple_extent_dims(m_data->space, dims, nullptr);
 
 	if (rank != 3)
 	{
@@ -426,7 +426,7 @@ bool HDF5VideoReader::open(VipIODevice::OpenModes mode)
 	m_data->t_set = H5Dopen(m_data->file, "timestamps", H5P_DEFAULT);
 	m_data->t_space = H5Dget_space(m_data->t_set);
 	rank = H5Sget_simple_extent_ndims(m_data->t_space);
-	H5Sget_simple_extent_dims(m_data->t_space, dims, NULL);
+	H5Sget_simple_extent_dims(m_data->t_space, dims, nullptr);
 	if (rank != 1 || dims[0] != (unsigned)m_data->count)
 	{
 		//create dumy timestamps
@@ -439,8 +439,8 @@ bool HDF5VideoReader::open(VipIODevice::OpenModes mode)
 		//read the whole timestamp vector
 		hsize_t t_dim[1] = { (hsize_t)m_data->count }, t_offset[1] = { (hsize_t)0 };
 		hspace t_space = H5Dget_space(m_data->t_set);
-		H5Sselect_hyperslab(t_space, H5S_SELECT_SET, t_offset, NULL, t_dim, NULL);
-		hspace t_mem = H5Screate_simple(1, t_dim, NULL);
+		H5Sselect_hyperslab(t_space, H5S_SELECT_SET, t_offset, nullptr, t_dim, nullptr);
+		hspace t_mem = H5Screate_simple(1, t_dim, nullptr);
 		H5Dread(m_data->t_set, H5T_NATIVE_INT64, t_mem, t_space, H5P_DEFAULT, timestamps.data());
 
 		//update timestamps unit if necessary
@@ -672,11 +672,11 @@ bool HDF5VideoReader::readData(qint64 time)
 	//select hyperslab
 	hspace space = H5Dget_space(m_data->set);
 	hsize_t offset[3] = { 0,0,(hsize_t)pos };
-	H5Sselect_hyperslab(space, H5S_SELECT_SET, offset, NULL, dims, NULL);
+	H5Sselect_hyperslab(space, H5S_SELECT_SET, offset, nullptr, dims, nullptr);
 
 
 	//define memory space
-	hspace mem = H5Screate_simple(3, dims, NULL);
+	hspace mem = H5Screate_simple(3, dims, nullptr);
 
 	//read data
 	herr_t status = H5Dread(m_data->set, data_type, mem, space, H5P_DEFAULT, data);
@@ -835,7 +835,7 @@ bool HDF5_ECRHVideoReader::open(VipIODevice::OpenModes mode)
 	hsize_t full_dims[32];
 
 	full_rank = H5Sget_simple_extent_ndims(m_data->space);
-	H5Sget_simple_extent_dims(m_data->space, full_dims, NULL);
+	H5Sget_simple_extent_dims(m_data->space, full_dims, nullptr);
 
 	if (full_rank != 3)
 	{
@@ -855,7 +855,7 @@ bool HDF5_ECRHVideoReader::open(VipIODevice::OpenModes mode)
 	hset t_set = H5Dopen(m_data->file, timestamps_dataset.toLatin1().data(), H5P_DEFAULT);
 	hspace t_space = H5Dget_space(t_set);
 	full_rank = H5Sget_simple_extent_ndims(t_space);
-	H5Sget_simple_extent_dims(t_space, full_dims, NULL);
+	H5Sget_simple_extent_dims(t_space, full_dims, nullptr);
 	if (full_rank != 1 || full_dims[0] != (unsigned)m_data->count)
 	{
 		close();
@@ -866,8 +866,8 @@ bool HDF5_ECRHVideoReader::open(VipIODevice::OpenModes mode)
 		//read the whole timestamp vector
 		hsize_t t_dim[1] = { (hsize_t)m_data->count }, t_offset[1] = { (hsize_t)0 };
 		hspace _t_space = H5Dget_space(t_set);
-		H5Sselect_hyperslab(_t_space, H5S_SELECT_SET, t_offset, NULL, t_dim, NULL);
-		hspace t_mem = H5Screate_simple(1, t_dim, NULL);
+		H5Sselect_hyperslab(_t_space, H5S_SELECT_SET, t_offset, nullptr, t_dim, nullptr);
+		hspace t_mem = H5Screate_simple(1, t_dim, nullptr);
 		QVector<qint64> timestamps(m_data->count);
 		H5Dread(t_set, H5T_NATIVE_INT64, t_mem, _t_space, H5P_DEFAULT, timestamps.data());
 		this->setTimestamps(timestamps);
@@ -918,7 +918,7 @@ bool HDF5_ECRHVideoReader::open(VipIODevice::OpenModes mode)
 					int rank = H5Sget_simple_extent_ndims(space);
 					if (rank != 0)
 						continue;
-					H5Sget_simple_extent_dims(space, dims, NULL);
+					H5Sget_simple_extent_dims(space, dims, nullptr);
 
 
 					htype atype = H5Dget_type(set);
@@ -929,8 +929,8 @@ bool HDF5_ECRHVideoReader::open(VipIODevice::OpenModes mode)
 					{
 						qint32 value = 0;
 						dims[0] = 1;
-						H5Sselect_hyperslab(space, H5S_SELECT_SET, offset, NULL, dims, NULL);
-						hspace mem = H5Screate_simple(1, dims, NULL);
+						H5Sselect_hyperslab(space, H5S_SELECT_SET, offset, nullptr, dims, nullptr);
+						hspace mem = H5Screate_simple(1, dims, nullptr);
 						herr_t status = H5Dread(set, atype_mem.id, mem, space, H5P_DEFAULT, &value);
 						if (status == 0)
 							attributes[name] = value;
@@ -939,8 +939,8 @@ bool HDF5_ECRHVideoReader::open(VipIODevice::OpenModes mode)
 					{
 						qint64 value = 0;
 						dims[0] = 1;
-						H5Sselect_hyperslab(space, H5S_SELECT_SET, offset, NULL, dims, NULL);
-						hspace mem = H5Screate_simple(1, dims, NULL);
+						H5Sselect_hyperslab(space, H5S_SELECT_SET, offset, nullptr, dims, nullptr);
+						hspace mem = H5Screate_simple(1, dims, nullptr);
 						herr_t status = H5Dread(set, atype_mem.id, mem, space, H5P_DEFAULT, &value);
 						if (status == 0)
 							attributes[name] = value;
@@ -949,8 +949,8 @@ bool HDF5_ECRHVideoReader::open(VipIODevice::OpenModes mode)
 					{
 						double value = 0;
 						dims[0] = 1;
-						H5Sselect_hyperslab(space, H5S_SELECT_SET, offset, NULL, dims, NULL);
-						hspace mem = H5Screate_simple(1, dims, NULL);
+						H5Sselect_hyperslab(space, H5S_SELECT_SET, offset, nullptr, dims, nullptr);
+						hspace mem = H5Screate_simple(1, dims, nullptr);
 						herr_t status = H5Dread(set, atype_mem.id, mem, space, H5P_DEFAULT, &value);
 						if (status == 0)
 							attributes[name] = value;
@@ -1032,11 +1032,11 @@ bool HDF5_ECRHVideoReader::readData(qint64 time)
 	//select hyperslab
 	hspace space = H5Dget_space(m_data->set);
 	hsize_t offset[3] = { 0,0,(hsize_t)pos };
-	H5Sselect_hyperslab(space, H5S_SELECT_SET, offset, NULL, dims, NULL);
+	H5Sselect_hyperslab(space, H5S_SELECT_SET, offset, nullptr, dims, nullptr);
 
 
 	//define memory space
-	hspace mem = H5Screate_simple(3, dims, NULL);
+	hspace mem = H5Screate_simple(3, dims, nullptr);
 
 	//read data
 	herr_t status = H5Dread(m_data->set, data_type, mem, space, H5P_DEFAULT, data);
@@ -1402,7 +1402,7 @@ void HDF5VideoWriter::apply()
 		hsize_t dims[3];
 		hsize_t dimsext[3] = { (hsize_t)m_data->computedImageSize.height(),(hsize_t)m_data->computedImageSize.width(),1 };
 		m_data->space = H5Dget_space(m_data->set);
-		H5Sget_simple_extent_dims(m_data->space, dims, NULL);
+		H5Sget_simple_extent_dims(m_data->space, dims, nullptr);
 		dims[2]++;
 
 		if (this->size() > 0)
@@ -1419,11 +1419,11 @@ void HDF5VideoWriter::apply()
 		//select hyperslab
 		hsize_t offset[3] = { (hsize_t)0,(hsize_t)0,(hsize_t)this->size() };
 		hspace space = H5Dget_space(m_data->set);
-		H5Sselect_hyperslab(space, H5S_SELECT_SET, offset, NULL,
-			dimsext, NULL);
+		H5Sselect_hyperslab(space, H5S_SELECT_SET, offset, nullptr,
+			dimsext, nullptr);
 
 		//define memory space
-		hspace memspace = H5Screate_simple(3, dimsext, NULL);
+		hspace memspace = H5Screate_simple(3, dimsext, nullptr);
 		//write data
 		herr_t status = H5Dwrite(m_data->set, qtToHDF5(ar.dataType()), memspace, space,
 			H5P_DEFAULT, ar.data());
@@ -1439,7 +1439,7 @@ void HDF5VideoWriter::apply()
 		hsize_t t_dims[1], t_dimsext[1] = { 1 };
 		hsize_t t_offset[1] = { (hsize_t)this->size() };
 		m_data->t_space = H5Dget_space(m_data->t_set);
-		H5Sget_simple_extent_dims(m_data->t_space, t_dims, NULL);
+		H5Sget_simple_extent_dims(m_data->t_space, t_dims, nullptr);
 		t_dims[0]++;
 		if (this->size() > 0)
 		{
@@ -1448,9 +1448,9 @@ void HDF5VideoWriter::apply()
 
 		//write timestamp
 		hspace t_space = H5Dget_space(m_data->t_set);
-		H5Sselect_hyperslab(t_space, H5S_SELECT_SET, t_offset, NULL,
-			t_dimsext, NULL);
-		hspace t_memspace = H5Screate_simple(1, t_dimsext, NULL);
+		H5Sselect_hyperslab(t_space, H5S_SELECT_SET, t_offset, nullptr,
+			t_dimsext, nullptr);
+		hspace t_memspace = H5Screate_simple(1, t_dimsext, nullptr);
 		// use a timestamp in nanoseconds!
 		qint64 timestamp_nano = in.time();
 		herr_t t_status = H5Dwrite(m_data->t_set, H5T_NATIVE_INT64, t_memspace, t_space,
@@ -1465,9 +1465,9 @@ void HDF5VideoWriter::apply()
 					H5Dset_extent(m_data->dynSets[i], t_dims);
 
 				hspace t_space = H5Dget_space(m_data->dynSets[i]);
-				H5Sselect_hyperslab(t_space, H5S_SELECT_SET, t_offset, NULL,
-					t_dimsext, NULL);
-				hspace t_memspace = H5Screate_simple(1, t_dimsext, NULL);
+				H5Sselect_hyperslab(t_space, H5S_SELECT_SET, t_offset, nullptr,
+					t_dimsext, nullptr);
+				hspace t_memspace = H5Screate_simple(1, t_dimsext, nullptr);
 				herr_t t_status = -1;
 				int qt_type = m_data->dynSetTypes[i];
 				if (qt_type == QVariant::Int)

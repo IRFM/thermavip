@@ -12,7 +12,7 @@ VipProcessingPool * VipMimeDataCoordinateSystem::fromWidget(QWidget * drop_widge
 			return static_cast<VipDisplayPlayerArea*>(drop_widget)->processingPool();
 		drop_widget = drop_widget->parentWidget();
 	}
-	return NULL;
+	return nullptr;
 }
 
 
@@ -21,7 +21,7 @@ QList<VipPlotItem*> VipMimeDataProcessingObjectList::plotData(VipPlotItem * drop
 {
 	//we cannot drop on a different processing pool
 	VipProcessingPool * target = fromWidget(drop_widget);
-	VipProcessingPool * current = m_procs.size() ? m_procs.first()->parentObjectPool() : NULL;
+	VipProcessingPool * current = m_procs.size() ? m_procs.first()->parentObjectPool() : nullptr;
 	if (target != current) {
 		VIP_LOG_ERROR("Cannot drop on a different workspace");
 		return QList<VipPlotItem*>();
@@ -31,7 +31,7 @@ QList<VipPlotItem*> VipMimeDataProcessingObjectList::plotData(VipPlotItem * drop
 	if (pl)
 		setPlayers(vipCreatePlayersFromProcessings(m_procs, pl,target));
 	else
-		setPlayers(vipCreatePlayersFromProcessings(m_procs, NULL));
+		setPlayers(vipCreatePlayersFromProcessings(m_procs, nullptr));
 	return VipPlotMimeData::plotData(drop_target, drop_widget);
 }
 
@@ -41,10 +41,10 @@ QList<VipPlotItem*> VipMimeDataProcessingObjectList::plotData(VipPlotItem * drop
 static VipOutput * findOutput_copy(VipDisplayObject * obj, VipProcessingPool * target_pool)
 {
 	if (!target_pool)
-		return NULL;
+		return nullptr;
 
 	if (!obj)
-		return NULL;
+		return nullptr;
 
 	if (obj->parentObjectPool() != target_pool)
 	{
@@ -100,8 +100,8 @@ static VipOutput * findOutput_copy(VipDisplayObject * obj, VipProcessingPool * t
 	}
 
 	//get the processing before the VipDisplayObject (skip the processing list if any)
-	VipProcessingObject * proc = NULL;
-	VipOutput * out = NULL;
+	VipProcessingObject * proc = nullptr;
+	VipOutput * out = nullptr;
 	if (obj)
 	{
 		if (obj->inputAt(0)->connection()->source()) {
@@ -136,10 +136,10 @@ static VipOutput * findOutput_copy(VipDisplayObject * obj, VipProcessingPool * t
 							target_pool->reload();
 					}
 					else
-						out = NULL;
+						out = nullptr;
 				}
 				else
-					out = NULL;
+					out = nullptr;
 			}
 		}
 	}
@@ -151,7 +151,7 @@ static VipPlotPlayer * firstPlotPlayer(const QList<VipAbstractPlayer*> & players
 	for (int i = 0; i < players.size(); ++i)
 		if (const VipPlotPlayer * p = qobject_cast<const VipPlotPlayer*>(players[i]))
 			return const_cast<VipPlotPlayer*>(p);
-	return NULL;
+	return nullptr;
 }
 
 
@@ -249,7 +249,7 @@ QList<VipPlotItem*> VipMimeDataDuplicatePlotItem::plotData(VipPlotItem * drop_ta
 				VipOutput * out= findOutput_copy(items[i]->property("VipDisplayObject").value<VipDisplayObject*>(), target);
 				if (out) {
 					//create the new  player
-					setPlayers(vipCreatePlayersFromProcessing(out->parentProcessing(), NULL,out,drop_target));
+					setPlayers(vipCreatePlayersFromProcessing(out->parentProcessing(), nullptr,out,drop_target));
 					pl = this->players().size() ? this->players().first() : pl; //get the new player if any
 				}
 			}

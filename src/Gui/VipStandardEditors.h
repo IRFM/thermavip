@@ -36,7 +36,7 @@ class VIP_GUI_EXPORT VipSymbolWidget : public QWidget
 	Q_PROPERTY(VipSymbol value READ getSymbol WRITE setSymbol)
 
 public:
-	VipSymbolWidget(QWidget * parent = NULL);
+	VipSymbolWidget(QWidget * parent = nullptr);
 
 	void setSymbol(const VipSymbol & );
 	VipSymbol getSymbol() const;
@@ -73,7 +73,7 @@ class VIP_GUI_EXPORT VipPlotItemWidget : public QWidget
 	Q_OBJECT
 	Q_PROPERTY(VipPlotItem* value READ getPlotItem WRITE setPlotItem)
 public:
-	VipPlotItemWidget(QWidget * parent = NULL);
+	VipPlotItemWidget(QWidget * parent = nullptr);
 	~VipPlotItemWidget();
 
 	void setPlotItem(VipPlotItem*);
@@ -115,7 +115,7 @@ class VIP_GUI_EXPORT VipPlotGridWidget : public QWidget
 	Q_PROPERTY(VipPlotGrid* value READ getGrid WRITE setGrid)
 
 public:
-	VipPlotGridWidget(QWidget * parent = NULL);
+	VipPlotGridWidget(QWidget * parent = nullptr);
 
 	void setGrid(VipPlotGrid * grid);
 	VipPlotGrid * getGrid() const;
@@ -148,7 +148,7 @@ class VIP_GUI_EXPORT VipPlotCanvasWidget : public QWidget
 	Q_PROPERTY(VipPlotCanvas* value READ getCanvas WRITE setCanvas)
 
 public:
-	VipPlotCanvasWidget(QWidget * parent = NULL);
+	VipPlotCanvasWidget(QWidget * parent = nullptr);
 
 	void setCanvas(VipPlotCanvas * );
 	VipPlotCanvas * getCanvas() const;
@@ -176,7 +176,7 @@ class VIP_GUI_EXPORT VipPlotCurveWidget : public QWidget
 	Q_PROPERTY(VipPlotCurve* value READ getCurve WRITE setCurve)
 
 public:
-	VipPlotCurveWidget(QWidget * parent = NULL);
+	VipPlotCurveWidget(QWidget * parent = nullptr);
 
 	void setCurve(VipPlotCurve * );
 	VipPlotCurve * getCurve() const;
@@ -221,7 +221,7 @@ class VIP_GUI_EXPORT VipPlotHistogramWidget : public QWidget
 	Q_PROPERTY(VipPlotHistogram* value READ getHistogram WRITE setHistogram)
 
 public:
-	VipPlotHistogramWidget(QWidget * parent = NULL);
+	VipPlotHistogramWidget(QWidget * parent = nullptr);
 
 	void setHistogram(VipPlotHistogram *);
 	VipPlotHistogram * getHistogram() const;
@@ -254,7 +254,7 @@ class VIP_GUI_EXPORT VipPlotAxisWidget : public QWidget
 	Q_PROPERTY(VipAbstractScale* value READ getAxis WRITE setAxis)
 
 public:
-	VipPlotAxisWidget( QWidget * parent = NULL);
+	VipPlotAxisWidget( QWidget * parent = nullptr);
 	~VipPlotAxisWidget();
 
 	void setAxis(VipAbstractScale * scale );
@@ -295,7 +295,7 @@ class VIP_GUI_EXPORT VipColorScaleWidget : public QWidget
 	Q_PROPERTY(VipAxisColorMap* value READ colorScale WRITE setColorScale)
 
 public:
-	VipColorScaleWidget(QWidget * parent = NULL);
+	VipColorScaleWidget(QWidget * parent = nullptr);
 	~VipColorScaleWidget();
 	VipAxisColorMap * colorScale() const;
 
@@ -322,7 +322,7 @@ class VIP_GUI_EXPORT VipColorScaleButton : public QToolButton
 {
 	Q_OBJECT
 public:
-	VipColorScaleButton(QWidget * parent = NULL);
+	VipColorScaleButton(QWidget * parent = nullptr);
 	int colorPalette() const;
 
 	static QMenu * generateColorScaleMenu();
@@ -347,7 +347,7 @@ class VIP_GUI_EXPORT VipAbstractPlayerWidget : public QWidget
 	Q_OBJECT
 
 public:
-	VipAbstractPlayerWidget(QWidget * parent = NULL);
+	VipAbstractPlayerWidget(QWidget * parent = nullptr);
 	~VipAbstractPlayerWidget();
 
 	VipAbstractPlayer * abstractPlayer() const;
@@ -388,7 +388,7 @@ class VIP_GUI_EXPORT VipDefaultPlotAreaSettings : public QWidget
 	Q_OBJECT
 
 public:
-	VipDefaultPlotAreaSettings(QWidget * parent=NULL);
+	VipDefaultPlotAreaSettings(QWidget * parent=nullptr);
 	~VipDefaultPlotAreaSettings();
 
 	VipPlotCurve * defaultCurve() const;

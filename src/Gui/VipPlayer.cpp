@@ -225,7 +225,7 @@ PlotItemList VipPlotItemClipboard::copiedItems()
 
 void VipPlotItemClipboard::paste(VipAbstractPlotArea * dst, QWidget * drop_widget)
 {
-	VipPlotItem* drop_target = NULL;
+	VipPlotItem* drop_target = nullptr;
 	if (dst) {
 		drop_target = dst->lastPressed();
 		if (!drop_target)
@@ -347,7 +347,7 @@ VipAbstractPlotWidget2D* VipPlotWidget::plotWidget2D() const
 	if (item)
 		return qobject_cast<VipAbstractPlotWidget2D*>(item->widget());
 	else
-		return NULL;
+		return nullptr;
 }
 
 QGridLayout* VipPlotWidget::gridLayout() const
@@ -391,7 +391,7 @@ VipAbstractPlayer::~VipAbstractPlayer()
 	{
 		m_data->pool->stop();
 		m_data->pool->stopStreaming();
-		vipProcessEvents(NULL, 500);
+		vipProcessEvents(nullptr, 500);
 	}
 
 	delete m_data;
@@ -492,7 +492,7 @@ VipDisplayPlayerArea * VipAbstractPlayer::parentDisplayArea() const
 
 		w = w->parentWidget();
 	}
-	return NULL;
+	return nullptr;
 }
 
 int VipAbstractPlayer::parentId() const
@@ -612,13 +612,13 @@ void VipAbstractPlayer::endRender(VipRenderState & state)
 VipAbstractPlayer * VipAbstractPlayer::findAbstractPlayer(QGraphicsItem * child)
 {
 	if (!child)
-		return NULL;
+		return nullptr;
 	if (!child->scene())
-		return NULL;
+		return nullptr;
 
 	QList<QGraphicsView *>	v = child->scene()->views();
 	if (!v.size())
-		return NULL;
+		return nullptr;
 
 	QWidget * w = v[0];
 	while (w)
@@ -629,7 +629,7 @@ VipAbstractPlayer * VipAbstractPlayer::findAbstractPlayer(QGraphicsItem * child)
 		w = w->parentWidget();
 	}
 
-	return NULL;
+	return nullptr;
 }
 
 VipAbstractPlayer * VipAbstractPlayer::findAbstractPlayer(VipDisplayObject * display)
@@ -646,7 +646,7 @@ VipAbstractPlayer * VipAbstractPlayer::findAbstractPlayer(VipDisplayObject * dis
 			}
 		}
 	}
-	return NULL;
+	return nullptr;
 }
 
 QList<VipAbstractPlayer *> VipAbstractPlayer::findOutputPlayers(VipProcessingObject * proc)
@@ -677,7 +677,7 @@ QList<VipAbstractPlayer *> VipAbstractPlayer::findOutputPlayers(VipProcessingObj
 class VipWidgetPlayer::PrivateData
 {
 public:
-	PrivateData() : widget(NULL) {}
+	PrivateData() : widget(nullptr) {}
 	QWidget* widget;
 };
 
@@ -708,7 +708,7 @@ void VipWidgetPlayer::setWidget(QWidget* w)
 				//delete m_data->transparent;
 			//data->transparent = new TransparentWidget(this);
 		}
-		resizeEvent(NULL);
+		resizeEvent(nullptr);
 	}
 }
 QWidget* VipWidgetPlayer::widget() const
@@ -932,7 +932,7 @@ VipPlayer2D * VipPlayer2D::findPlayer2D(const VipSceneModel & scene)
 			}
 		}
 	}
-	return NULL;
+	return nullptr;
 }
 
 void VipPlayer2D::toolTipChanged()
@@ -1055,7 +1055,7 @@ void VipPlayer2D::toolTipFlagsChanged(VipToolTip::DisplayFlags flags)
 }
 
 
-static VipPlayer2D * _drop_target = NULL;
+static VipPlayer2D * _drop_target = nullptr;
 
 VipPlayer2D * VipPlayer2D::dropTarget()
 {
@@ -1082,7 +1082,7 @@ void VipPlayer2D::itemsDropped(VipPlotItem* target, QMimeData* mimeData)
 			}
 
 			VipAbstractPlayer * pl_src = VipAbstractPlayer::findAbstractPlayer(items.first());
-			VipProcessingPool * pool_src = pl_src ? pl_src->processingPool() : NULL;
+			VipProcessingPool * pool_src = pl_src ? pl_src->processingPool() : nullptr;
 			VipProcessingPool * pool_dst = this->processingPool();
 
 			if (pool_dst == pool_src) {
@@ -1109,7 +1109,7 @@ void VipPlayer2D::itemsDropped(VipPlotItem* target, QMimeData* mimeData)
 				break;
 		}
 	}
-	_drop_target = NULL;
+	_drop_target = nullptr;
 }
 
 static bool is_selectable(VipPlotItem* item)
@@ -1143,13 +1143,13 @@ void VipPlayer2D::nextSelection(bool ctrl)
 	//change selection, like the TAB key for widgets
 	QList<VipPlotItem*> all_items = plotWidget2D()->area()->plotItems();
 	QList<VipPlotItem*> items = all_items;
-	VipPlotItem* last_selected = NULL;
-	VipPlotItem* next = NULL;
+	VipPlotItem* last_selected = nullptr;
+	VipPlotItem* next = nullptr;
 	for (int i = 0; i < items.size(); ++i) {
 		if (items[i]->isSelected()) {
 			last_selected = items[i];
-			if (next == last_selected) next = NULL;
-			next = i == items.size() - 1 ? NULL : items[i + 1];
+			if (next == last_selected) next = nullptr;
+			next = i == items.size() - 1 ? nullptr : items[i + 1];
 			items.removeAt(i);
 			--i;
 		}
@@ -1232,7 +1232,7 @@ QList<VipDisplayObject*> VipPlayer2D::displayObjects() const
 VipPlotSceneModel * VipPlayer2D::plotSceneModel() const
 {
 	if (inDestructor())
-		return NULL;
+		return nullptr;
 	return m_data->plotScene;
 }
 
@@ -1246,24 +1246,24 @@ QList<VipPlotSceneModel *> VipPlayer2D::plotSceneModels() const
 VipPlotSceneModel * VipPlayer2D::findPlotSceneModel(const VipSceneModel & scene) const
 {
 	if (inDestructor())
-		return NULL;
+		return nullptr;
 
 	QList<VipPlotSceneModel*> lst = this->plotWidget2D()->area()->findItems<VipPlotSceneModel*>();
 	for (int i = 0; i < lst.size(); ++i)
 		if (lst[i]->sceneModel() == scene)
 			return lst[i];
-	return NULL;
+	return nullptr;
 }
 
 VipPlotSceneModel * VipPlayer2D::findPlotSceneModel(const QList<VipAbstractScale*> & scales) const
 {
 	if (inDestructor())
-		return NULL;
+		return nullptr;
 	QList<VipPlotSceneModel*> lst = this->plotWidget2D()->area()->findItems<VipPlotSceneModel*>();
 	for (int i = 0; i < lst.size(); ++i)
 		if (lst[i]->axes() == scales)
 			return lst[i];
-	return NULL;
+	return nullptr;
 }
 
 QList<VipPlotShape*> VipPlayer2D::findSelectedPlotShapes(int selected, int visible) const
@@ -1286,9 +1286,9 @@ QList<VipShape> VipPlayer2D::findSelectedShapes(int selected, int visible) const
 VipDisplaySceneModel * VipPlayer2D::findDisplaySceneModel(const VipSceneModel & model) const
 {
 	if (model.isNull())
-		return NULL;
+		return nullptr;
 
-	VipDisplaySceneModel * disp_sm = NULL;
+	VipDisplaySceneModel * disp_sm = nullptr;
 	QList<VipDisplayObject*> displays = this->displayObjects();
 	for (int i = 0; i < displays.size(); ++i)
 		if (VipDisplaySceneModel * disp = qobject_cast<VipDisplaySceneModel*>(displays[i]))
@@ -1333,7 +1333,7 @@ int VipPlayer2D::toolBarCount() const
 QToolBar* VipPlayer2D::toolBarAt(int index)
 {
 	if (index < 0 || index >= m_data->bars.size())
-		return NULL;
+		return nullptr;
 	return m_data->bars[index];
 }
 int VipPlayer2D::indexOfToolBar(QToolBar * bar) const
@@ -1344,10 +1344,10 @@ QToolBar * VipPlayer2D::takeToolBar(int index) const
 {
 	if (index > 0 && index < m_data->bars.size()) {
 		QToolBar * b = m_data->bars.takeAt(index);
-		b->setParent(NULL);
+		b->setParent(nullptr);
 		return b;
 	}
-	return NULL;
+	return nullptr;
 }
 QList<QToolBar*> VipPlayer2D::toolBars() const
 {
@@ -1503,7 +1503,7 @@ void VipPlayer2D::setPlotWidget2D(VipAbstractPlotWidget2D * plot)
 
 void VipPlayer2D::mouseButtonRelease(VipPlotItem* item, VipPlotItem::MouseButton button)
 {
-	vipProcessEvents(NULL, 100);
+	vipProcessEvents(nullptr, 100);
 
 	if (this->plotItemClicked(item, button))
 		return;
@@ -1777,14 +1777,14 @@ void VipPlayer2D::saveMenuClicked(QAction* act)
 		if (supported_formats & VipRenderObject::PS) filters += ";;PS file(*.ps)";
 		if (supported_formats & VipRenderObject::EPS) filters += ";;EPS file(*.eps)";
 
-		QString filename = VipFileDialog::getSaveFileName(NULL, "Save image as", filters//"Image file (*.png *.bmp *.jpg *.jpeg *.ico *.gif *.gif *.xpm)"
+		QString filename = VipFileDialog::getSaveFileName(nullptr, "Save image as", filters//"Image file (*.png *.bmp *.jpg *.jpeg *.ico *.gif *.gif *.xpm)"
 );
 		if (!filename.isEmpty())
 		{
 			QFileInfo info(filename);
 
 			if (info.suffix().compare("pdf",Qt::CaseInsensitive)==0) {
-				VipRenderObject::saveAsPdf(this, filename, NULL);
+				VipRenderObject::saveAsPdf(this, filename, nullptr);
 			}
 			else if (info.suffix().compare("ps", Qt::CaseInsensitive) == 0 || info.suffix().compare("eps", Qt::CaseInsensitive) == 0 ) {
 				VipRenderObject::saveAsPs(this, filename);
@@ -1824,7 +1824,7 @@ void VipPlayer2D::saveMenuClicked(QAction* act)
 	}
 	else if (act->property("save_session").toBool()) {
 		if (VipDragWidget * w = qobject_cast<VipDragWidget*>(VipDragWidget::fromChild(this))) {
-			QString filename = VipFileDialog::getSaveFileName(NULL, "Save player as", "Session file (*.session)");
+			QString filename = VipFileDialog::getSaveFileName(nullptr, "Save player as", "Session file (*.session)");
 			if (!filename.isEmpty())
 			{
 				VipXOfArchive arch(filename);
@@ -1891,7 +1891,7 @@ void VipPlayer2D::setPlotSceneModel(VipPlotSceneModel * sm)
 // }
 //
 // QStringList filters = VipIODevice::possibleWriteFilters(QString(), QVariantList() << data);
-// QString filename = VipFileDialog::getSaveFileName(NULL, "Save text file", filters.join(";;"));
+// QString filename = VipFileDialog::getSaveFileName(nullptr, "Save text file", filters.join(";;"));
 // if (!filename.isEmpty())
 // {
 // QList<int> devices = VipIODevice::possibleWriteDevices(filename, QVariantList() << data);
@@ -1941,7 +1941,7 @@ bool VipPlayer2D::saveItemContent(VipPlotItemData * item, const QString & path)
 		if (filename.isEmpty())
 		{
 			QStringList filters = VipIODevice::possibleWriteFilters(QString(), lst_data);
-			filename = VipFileDialog::getSaveFileName2(NULL, item ? item->title().text() : QString(), "Save all data", filters.join(";;"));
+			filename = VipFileDialog::getSaveFileName2(nullptr, item ? item->title().text() : QString(), "Save all data", filters.join(";;"));
 		}
 
 		if (!filename.isEmpty())
@@ -1991,7 +1991,7 @@ bool VipPlayer2D::saveItemContent(VipPlotItemData * item, const QString & path)
 	}
 
 	VipAnyData any(item->data(), 0);
-	any.setSource(1); //do NOT set a NULL source or the data might not be loaded back
+	any.setSource(1); //do NOT set a nullptr source or the data might not be loaded back
 	any.setName(item->title().text());
 	if (VipDisplayObject * display = item->property("VipDisplayObject").value<VipDisplayObject*>())
 	{
@@ -2011,7 +2011,7 @@ bool VipPlayer2D::saveItemContent(VipPlotItemData * item, const QString & path)
 	if (filename.isEmpty())
 	{
 		QStringList filters = VipIODevice::possibleWriteFilters(QString(), QVariantList() << any.data());
-		filename = VipFileDialog::getSaveFileName2(NULL, any.name(), "Save data", filters.join(";;"));
+		filename = VipFileDialog::getSaveFileName2(nullptr, any.name(), "Save data", filters.join(";;"));
 		printf("%s\n", filename.toLatin1().data());
 	}
 	if (!filename.isEmpty())
@@ -2056,7 +2056,7 @@ bool VipPlayer2D::saveItemContent(VipPlotItemData * item, const QString & path)
 class VipVideoPlayer::PrivateData
 {
 public:
-	PrivateData() : currentDisplay(NULL), previousImageDataType(0), pendingRectTrial(0){}
+	PrivateData() : currentDisplay(nullptr), previousImageDataType(0), pendingRectTrial(0){}
 	~PrivateData() {
 		//if (recorder)
 		// delete recorder.data();
@@ -2561,7 +2561,7 @@ void VipVideoPlayer::superimposeTriggered(QAction* act)
 	if (!act->isChecked())
 	{
 		this->spectrogram()->setSuperimposeImage(QImage());
-		m_data->superimposePlayer = NULL;
+		m_data->superimposePlayer = nullptr;
 	}
 	else if (VipVideoPlayer * player = qobject_cast<VipVideoPlayer*>(act->property("player").value<QObjectPointer>()))
 	{
@@ -2577,7 +2577,7 @@ void VipVideoPlayer::addSelectedProcessing(const VipProcessingObject::Info & inf
 
 	if (info.displayHint == VipProcessingObject::DisplayOnSameSupport)
 	{
-		VipProcessingObject * last = NULL;
+		VipProcessingObject * last = nullptr;
 		//create a new pipeline and display it in this player
 		if (VipDisplayObject * obj = spectrogram()->property("VipDisplayObject").value<VipDisplayObject*>())
 			if (VipOutput * out = obj->inputAt(0)->connection()->source()) {
@@ -2593,14 +2593,14 @@ void VipVideoPlayer::addSelectedProcessing(const VipProcessingObject::Info & inf
 	}
 	else if (info.displayHint == VipProcessingObject::DisplayOnDifferentSupport)
 	{
-		VipProcessingObject * last = NULL;
-		VipAbstractPlayer * pl = NULL;
+		VipProcessingObject * last = nullptr;
+		VipAbstractPlayer * pl = nullptr;
 		//create a new player and display all new pipelines in this new player
 		//first, create the new player
 		if (VipDisplayObject * obj = spectrogram()->property("VipDisplayObject").value<VipDisplayObject*>())
 			if (VipOutput * out = obj->inputAt(0)->connection()->source()) {
 				if ((last = vipCreateProcessing(out, info))) {
-					QList<VipAbstractPlayer*> pls = vipCreatePlayersFromProcessing(obj, NULL);
+					QList<VipAbstractPlayer*> pls = vipCreatePlayersFromProcessing(obj, nullptr);
 					if (pls.size()) pl = pls[0];
 				}
 			}
@@ -2764,7 +2764,7 @@ VipProcessingList * VipVideoPlayer::sourceProcessingList() const
 		if (lst.size())
 			return lst.first();
 	}
-	return NULL;
+	return nullptr;
 }
 
 void VipVideoPlayer::updateContent()
@@ -2793,7 +2793,7 @@ void VipVideoPlayer::updateContent()
 				//VipAnyData data = out->data();
 				if (out->data().data().userType() == 0)
 				{
-					m_data->currentDisplay = NULL;
+					m_data->currentDisplay = nullptr;
 				}
 				else
 				{
@@ -3062,8 +3062,8 @@ void VipVideoPlayer::setSpectrogram(VipPlotSpectrogram * spectrogram)
 
 
 	//update image size and component choice
-	m_data->extract = NULL;
-	m_data->processingList = NULL;
+	m_data->extract = nullptr;
+	m_data->processingList = nullptr;
 	m_data->processing_tree_action->setVisible(false);
 
 	imageChanged();
@@ -3170,7 +3170,7 @@ VipDisplayObject* VipVideoPlayer::mainDisplayObject() const
 	QList<VipDisplayObject*> objs = displayObjects();
 	if (objs.size())
 		return objs.first();
-	return NULL;
+	return nullptr;
 }
 
 void VipVideoPlayer::refreshToolTip()
@@ -3438,7 +3438,7 @@ static QAction * findAction(QWidget * w, const char * name)
 	for (int i = 0; i < acts.size(); ++i)
 		if (acts[i]->objectName() == name)
 			return acts[i];
-	return NULL;
+	return nullptr;
 }
 void VipVideoPlayer::setColorMapOptionsVisible(bool visible)
 {
@@ -3716,8 +3716,8 @@ QList<VipDisplayCurve*> VipVideoPlayer::extractPolylines(const VipShapeList & sh
 		return QList<VipDisplayCurve*>();
 
 	//try to retrieve the source VipOutput and VipProcessingObject of this VipDisplayObject
-	VipOutput * src_output = NULL;
-	VipProcessingObject * src_proc = NULL;
+	VipOutput * src_output = nullptr;
+	VipProcessingObject * src_proc = nullptr;
 
 	if (VipInput * input = display->inputAt(0))
 		if (VipConnectionPtr con = input->connection())
@@ -3832,8 +3832,8 @@ QList<VipDisplayHistogram*> VipVideoPlayer::extractHistograms(const VipShape & s
 		return QList<VipDisplayHistogram*>();
 
 	//try to retrieve the source VipOutput and VipProcessingObject of this VipDisplayObject
-	VipOutput * src_output = NULL;
-	VipProcessingObject * src_proc = NULL;
+	VipOutput * src_output = nullptr;
+	VipProcessingObject * src_proc = nullptr;
 
 	if (VipInput * input = display->inputAt(0))
 		if (VipConnectionPtr con = input->connection())
@@ -4165,7 +4165,7 @@ QList<VipProcessingObject*> VipVideoPlayer::extractTimeEvolution(const ShapeInfo
 		return QList<VipProcessingObject*>();
 
 	//try to retrieve the source VipOutput this VipDisplayObject
-	VipOutput * src_output = NULL;
+	VipOutput * src_output = nullptr;
 	if (VipInput * input = display->inputAt(0))
 		if (VipConnectionPtr con = input->connection())
 			if (VipOutput * source = con->source())
@@ -4797,7 +4797,7 @@ VipProcessingObject* VipVideoPlayer::extractTimeStatistics()
 	if (array.isEmpty())
 	{
 		VIP_LOG_ERROR("Cannot extract time statistics on color or complex images");
-		return NULL;
+		return nullptr;
 	}
 
 
@@ -4805,10 +4805,10 @@ VipProcessingObject* VipVideoPlayer::extractTimeStatistics()
 
 	VipDisplayObject* display = spectrogram()->property("VipDisplayObject").value<VipDisplayObject*>();
 	if (!display)
-		return NULL;
+		return nullptr;
 
 	//try to retrieve the source VipOutput for this VipDisplayObject
-	VipOutput* src_output = NULL;
+	VipOutput* src_output = nullptr;
 	if (VipInput* input = display->inputAt(0))
 		if (VipConnectionPtr con = input->connection())
 			if (VipOutput* source = con->source())
@@ -4819,12 +4819,12 @@ VipProcessingObject* VipVideoPlayer::extractTimeStatistics()
 	VipProcessingPool* pool = display->parentObjectPool();
 	if (!pool || !src_output) {
 		VIP_LOG_ERROR("Canno find processing pool");
-		return NULL;
+		return nullptr;
 	}
 
 	if (pool->deviceType() != VipIODevice::Temporal) {
 		VIP_LOG_ERROR("Cannot extract time statistics on non temporal device");
-		return NULL;
+		return nullptr;
 	}
 
 	//find all displays within this players, and all their sources
@@ -4853,7 +4853,7 @@ VipProcessingObject* VipVideoPlayer::extractTimeStatistics()
 		{
 			//forbidden
 			VIP_LOG_ERROR("Cannot extract time statistics on non temporal device");
-			return NULL;
+			return nullptr;
 		}
 		else if (devices[i]->deviceType() == VipIODevice::Temporal) {
 			type = VipIODevice::Temporal;
@@ -4865,7 +4865,7 @@ VipProcessingObject* VipVideoPlayer::extractTimeStatistics()
 
 	if (type != VipIODevice::Temporal) {
 		VIP_LOG_ERROR("Cannot extract time statistics on non temporal device");
-		return NULL;
+		return nullptr;
 	}
 
 	pool->stop(); //stop playing
@@ -5096,11 +5096,11 @@ VipAnyResource* VipVideoPlayer::extractPolylineValuesAlongTime(const VipShape& s
 	if (!array.canConvert<double>())
 	{
 		VIP_LOG_ERROR("Cannot extract time trace on color or complex images");
-		return NULL;
+		return nullptr;
 	}
 	if (shape.type()!=VipShape::Polyline)
 	{
-		return NULL;
+		return nullptr;
 	}
 
 
@@ -5108,10 +5108,10 @@ VipAnyResource* VipVideoPlayer::extractPolylineValuesAlongTime(const VipShape& s
 
 	VipDisplayObject* display = spectrogram()->property("VipDisplayObject").value<VipDisplayObject*>();
 	if (!display)
-		return NULL;
+		return nullptr;
 
 	//try to retrieve the source VipOutput this VipDisplayObject
-	VipOutput* src_output = NULL;
+	VipOutput* src_output = nullptr;
 	if (VipInput* input = display->inputAt(0))
 		if (VipConnectionPtr con = input->connection())
 			if (VipOutput* source = con->source())
@@ -5121,10 +5121,10 @@ VipAnyResource* VipVideoPlayer::extractPolylineValuesAlongTime(const VipShape& s
 
 	VipProcessingPool* pool = display->parentObjectPool();
 	if (!pool || !src_output)
-		return NULL;
+		return nullptr;
 
 	if (pool->deviceType() == VipIODevice::Resource)
-		return NULL;
+		return nullptr;
 
 
 
@@ -5168,7 +5168,7 @@ VipAnyResource* VipVideoPlayer::extractPolylineValuesAlongTime(const VipShape& s
 		}
 
 	if (type != VipIODevice::Temporal)
-		return NULL;
+		return nullptr;
 
 	//for Sequential device only:
 
@@ -5270,7 +5270,7 @@ VipAnyResource* VipVideoPlayer::extractPolylineValuesAlongTime(const VipShape& s
 		return res;
 	}
 
-	return NULL;
+	return nullptr;
 }
 
 
@@ -5414,7 +5414,7 @@ VipPlotPlayer::VipPlotPlayer(VipAbstractPlotWidget2D * viewer, QWidget * parent)
 	m_data->needComputeStartDate = true;
 	m_data->timeMarkerAlwaysVisible = VipGuiDisplayParamaters::instance()->alwaysShowTimeMarker();
 	//printf("VipPlotPlayer::setTimeMarkerAlwaysVisible :%i\n", (int)m_data->timeMarkerAlwaysVisible);
-	m_data->viewer = viewer ? viewer : new VipPlotWidget2D(NULL, NULL, _VIP_PLOT_TYPE);
+	m_data->viewer = viewer ? viewer : new VipPlotWidget2D(nullptr, nullptr, _VIP_PLOT_TYPE);
 	m_data->viewer->setMinimumSize(100, 100);
 	QString className = m_data->viewer->metaObject()->className();
 	m_data->viewer->setStyleSheet(className + " {background-color:transparent;}");
@@ -6342,7 +6342,7 @@ Vip::PlayerLegendPosition VipPlotPlayer::legendPosition() const
 }
 VipLegend * VipPlotPlayer::innerLegend() const
 {
-	return NULL;// m_data->innerLegend;
+	return nullptr;// m_data->innerLegend;
 }
 
 void VipPlotPlayer::legendTriggered()
@@ -6367,7 +6367,7 @@ VipAbstractScale* VipPlotPlayer::insertLeftScale(int index, VipAbstractScale * s
 	if (VipAxisBase * axis = qobject_cast<VipAxisBase*>(scale))
 	{
 		if (axis->alignment() != VipAxisBase::Left)
-			return NULL;
+			return nullptr;
 
 		axis->scaleDraw()->setTicksPosition(VipScaleDraw::TicksInside);
 		axis->setRenderHints(QPainter::TextAntialiasing);
@@ -6398,7 +6398,7 @@ VipAbstractScale* VipPlotPlayer::insertLeftScale(int index, VipAbstractScale * s
 
 		return axis;
 	}
-	return NULL;
+	return nullptr;
 }
 
 VipAbstractScale* VipPlotPlayer::insertLeftScale(int index)
@@ -6454,7 +6454,7 @@ bool VipPlotPlayer::removeLeftScale(VipAbstractScale * scale)
 
 	//find another left scale
 	QList<VipAxisBase*> axes = vipListCast<VipAxisBase*>(plotWidget2D()->area()->scales());
-	VipAxisBase * new_left_scale = NULL;
+	VipAxisBase * new_left_scale = nullptr;
 	for (int i = 0; i < axes.size(); ++i)
 		if (axes[i]->alignment() == VipBorderItem::Left && axes[i] != scale) {
 			new_left_scale = axes[i];
@@ -6516,7 +6516,7 @@ VipProcessingList * VipPlotPlayer::currentProcessingList() const
 				return lst.first();
 		}
 	}
-	return NULL;
+	return nullptr;
 }
 
 VipPlotItemData * VipPlotPlayer::currentPlotItem() const
@@ -6524,7 +6524,7 @@ VipPlotItemData * VipPlotPlayer::currentPlotItem() const
 	QList<VipPlotItemData*> lst = m_data->viewer->area()->findItems<VipPlotItemData*>(QString(), 1, 1);
 	if (lst.size() == 1)
 		return lst.first();
-	return NULL;
+	return nullptr;
 }
 
 bool VipPlotPlayer::isNormalized() const
@@ -6686,7 +6686,7 @@ void VipPlotPlayer::addSelectedProcessing(const VipProcessingObject::Info & info
 		VipProcessingObject * obj = vipCreateDataFusionProcessing(vipCastItemListOrdered<VipPlotItem*>(items), info);
 		if (obj) {
 			if (info.displayHint == VipProcessingObject::DisplayOnDifferentSupport) {
-				QList<VipAbstractPlayer*> pls = vipCreatePlayersFromProcessing(obj, NULL);
+				QList<VipAbstractPlayer*> pls = vipCreatePlayersFromProcessing(obj, nullptr);
 				if (pls.size())
 					vipGetMainWindow()->openPlayers(pls);
 			}
@@ -6702,7 +6702,7 @@ void VipPlotPlayer::addSelectedProcessing(const VipProcessingObject::Info & info
 
 	if (info.displayHint == VipProcessingObject::DisplayOnSameSupport)
 	{
-		VipProcessingObject * last = NULL;
+		VipProcessingObject * last = nullptr;
 		//create a new pipeline for each item, and display them in this player
 		for (int i = 0; i < items.size(); ++i)
 		{
@@ -6721,15 +6721,15 @@ void VipPlotPlayer::addSelectedProcessing(const VipProcessingObject::Info & info
 	}
 	else if (info.displayHint == VipProcessingObject::DisplayOnDifferentSupport)
 	{
-		VipProcessingObject * last = NULL;
+		VipProcessingObject * last = nullptr;
 		//create a new player and display all new pipelines in this new player
 
 		//first, create the new player
-		VipAbstractPlayer * pl = NULL;
+		VipAbstractPlayer * pl = nullptr;
 		if (VipDisplayObject * obj = items[0]->property("VipDisplayObject").value<VipDisplayObject*>())
 			if (VipOutput * out = obj->inputAt(0)->connection()->source()) {
 				if (VipProcessingObject * tmp = vipCreateProcessing(out, info)) {
-					QList<VipAbstractPlayer*> pls = vipCreatePlayersFromProcessing(obj, NULL);
+					QList<VipAbstractPlayer*> pls = vipCreatePlayersFromProcessing(obj, nullptr);
 					if (items.size() == 1) last = tmp;
 					if (pls.size()) pl = pls[0];
 				}
@@ -6760,7 +6760,7 @@ void VipPlotPlayer::addSelectedProcessing(const VipProcessingObject::Info & info
 		for (int i = 0; i < items.size(); ++i)
 		{
 			//get the processing list
-			VipProcessingList * lst = NULL;
+			VipProcessingList * lst = nullptr;
 			if (VipDisplayObject * obj = items[i]->property("VipDisplayObject").value<VipDisplayObject*>())
 			{
 				QList<VipProcessingList*> all_lst = vipListCast<VipProcessingList*>(obj->allSources());
@@ -7098,7 +7098,7 @@ void VipPlotPlayer::setProcessingPool(VipProcessingPool * pool)
 
 QGraphicsObject *  VipPlotPlayer::defaultEditableObject() const
 {
-	QGraphicsObject * current = NULL;
+	QGraphicsObject * current = nullptr;
 	QList<VipPlotItem*> items = plotWidget2D()->area()->findItems<VipPlotItem*>(QString(), 1, 1);
 	if (items.size())
 		current = items.first();
@@ -7122,7 +7122,7 @@ QGraphicsObject *  VipPlotPlayer::defaultEditableObject() const
 VipDisplayObject* VipPlotPlayer::mainDisplayObject() const
 {
 	QList<VipDisplayObject*> disps = this->displayObjects();
-	return disps.size() ? disps.first() : NULL;
+	return disps.size() ? disps.first() : nullptr;
 }
 
 QList<VipPlotSceneModel *> VipPlotPlayer::plotSceneModels() const
@@ -7375,9 +7375,9 @@ VipAbstractScale* VipPlotPlayer::findYScale(const QString & title) const
 				if (ax->orientation() == Qt::Vertical && ax->title().text() == title)
 					return ax;
 		}
-		return NULL;
+		return nullptr;
 	}
-	return NULL;
+	return nullptr;
 }
 
 VipAbstractScale* VipPlotPlayer::xScale() const
@@ -7386,7 +7386,7 @@ VipAbstractScale* VipPlotPlayer::xScale() const
 	m_data->viewer->area()->standardScales(scales);
 	if (scales.size())
 		return scales.first();
-	return NULL;
+	return nullptr;
 }
 
 VipInterval VipPlotPlayer::itemsInterval() const
@@ -7417,7 +7417,7 @@ void VipPlotPlayer::setTimeUnitFunction(function_type fun)
 
 	QList<VipPlotPlayer*> widgets = VipUniqueId::objects<VipPlotPlayer>();
 	for (int i = 0; i < widgets.size(); ++i)
-		widgets[i]->plotItemAdded(NULL);
+		widgets[i]->plotItemAdded(nullptr);
 }
 
 VipPlotPlayer::function_type VipPlotPlayer::timeUnitFunction()
@@ -7578,7 +7578,7 @@ void VipPlotPlayer::setSlidingTimeWindow()
 
 void VipPlotPlayer::onPlayerCreated()
 {
-	plotItemAxisUnitChanged(NULL);
+	plotItemAxisUnitChanged(nullptr);
 	computePlayerTitle();
 	updateSlidingTimeWindow();
 	computeStartDate();
@@ -7636,7 +7636,7 @@ true) {
 void VipPlotPlayer::plotItemAdded(VipPlotItem * item)
 {
 	if (qobject_cast<VipPlotShape*>(item) || qobject_cast<VipResizeItem*>(item)) {
-		plotItemSelectionChanged(NULL);
+		plotItemSelectionChanged(nullptr);
 		return;
 	}
 	//reapply normalization and start at zero for the new plot item
@@ -7649,7 +7649,7 @@ void VipPlotPlayer::plotItemAdded(VipPlotItem * item)
 		this->setTimeType(timeUnitFunction()(this));
 		m_data->timeUnit->setAutomaticUnit(true);
 	}
-	plotItemAxisUnitChanged(NULL);
+	plotItemAxisUnitChanged(nullptr);
 
 	computePlayerTitle();
 	updateSlidingTimeWindow();
@@ -7660,7 +7660,7 @@ void VipPlotPlayer::plotItemAdded(VipPlotItem * item)
 		hist->setToolTipText("<b>From</b> #min<br><b>To</b> #max<br><b>Values</b>: #value");
 	}
 
-	plotItemSelectionChanged(NULL);
+	plotItemSelectionChanged(nullptr);
 	computeStartDate();
 	computeZoom();
 }
@@ -7669,7 +7669,7 @@ void VipPlotPlayer::plotItemRemoved(VipPlotItem *)
 	if (timeUnitFunction())
 		this->setTimeType(timeUnitFunction()(this));
 
-	plotItemSelectionChanged(NULL);
+	plotItemSelectionChanged(nullptr);
 	computePlayerTitle();
 	updateSlidingTimeWindow();
 	computeStartDate();
@@ -7827,7 +7827,7 @@ void VipPlotPlayer::plotItemSelectionChanged(VipPlotItem*)
 
 				if (poly.size()) {
 					QPicture& pic = pictures[s.player];
-					QPainter* p = NULL;
+					QPainter* p = nullptr;
 					if (all_painters.find(s.player) == all_painters.end()) {
 						p = all_painters[s.player] = new QPainter();
 						p->begin(&pic);
@@ -7856,8 +7856,8 @@ void VipPlotPlayer::plotItemSelectionChanged(VipPlotItem*)
 void VipPlotPlayer::updateCurveEditor()
 {
 	//show/hide the component choice
-	VipDisplayCurve* has_component = NULL;
-	VipDisplayCurve* curve = NULL;
+	VipDisplayCurve* has_component = nullptr;
+	VipDisplayCurve* curve = nullptr;
 	if (VipPlotItemData * it = currentPlotItem())
 		if (VipDisplayCurve * disp = it->property("VipDisplayObject").value<VipDisplayCurve*>())
 		{
@@ -7875,7 +7875,7 @@ void VipPlotPlayer::updateCurveEditor()
 		connect(m_data->curveEditor->display(), SIGNAL(displayed(const VipAnyDataList &)), this, SLOT(updateCurveEditor()));
 	}
 	else if (!curve && m_data->curveEditor->display())
-		m_data->curveEditor->setDisplay(NULL);
+		m_data->curveEditor->setDisplay(nullptr);
 
 	if (has_component)
 	{
@@ -8072,7 +8072,7 @@ static void extractHistogram(VipPlotShape* shape, VipVideoPlayer * pl)
 	VipShape sh = shape ? shape->rawData() : VipShape();
 	QList<VipDisplayHistogram*> curves = pl->extractHistograms(sh, QString());
 
-	QList<VipAbstractPlayer*> players = vipCreatePlayersFromProcessings(vipListCast<VipProcessingObject*>(curves), NULL);
+	QList<VipAbstractPlayer*> players = vipCreatePlayersFromProcessings(vipListCast<VipProcessingObject*>(curves), nullptr);
 
 	if (players.size()) {
 		vipGetMainWindow()->openPlayers(players);
@@ -8101,7 +8101,7 @@ static void extractPolyline(QList<VipPlotShape*> shapes, VipVideoPlayer * pl)
 
 	QList<VipDisplayCurve*> curves = pl->extractPolylines(shs, QString());
 
-	QList<VipAbstractPlayer*> players = vipCreatePlayersFromProcessings(vipListCast<VipProcessingObject*>(curves), NULL);
+	QList<VipAbstractPlayer*> players = vipCreatePlayersFromProcessings(vipListCast<VipProcessingObject*>(curves), nullptr);
 
 	if (players.size()) {
 		vipGetMainWindow()->openPlayers(players);
@@ -8114,7 +8114,7 @@ static void extractPolylineValuesAlongTime(VipPlotShape* shape, VipVideoPlayer* 
 
 	VipAnyResource * res = pl->extractPolylineValuesAlongTime(shape->rawData());
 
-	QList<VipAbstractPlayer*> players = vipCreatePlayersFromProcessings(QList<VipProcessingObject*>()<<res, NULL);
+	QList<VipAbstractPlayer*> players = vipCreatePlayersFromProcessings(QList<VipProcessingObject*>()<<res, nullptr);
 
 	if (players.size()) {
 		vipGetMainWindow()->openPlayers(players);
@@ -8129,7 +8129,7 @@ static void extractPixelsCoordinates(VipPlotShape* shape, VipVideoPlayer * pl)
 	const VipNDArray ar = pl->spectrogram()->rawData().extract(pl->spectrogram()->rawData().boundingRect(), &bound);
 	const QVector<QPoint> pixels = tmp;// sh.clip(tmp, QRect(bound.toRect().topLeft(), QSize(ar.shape(1), ar.shape(0))));
 
-	QString filename = VipFileDialog::getOpenFileName(NULL, "Save pixels coordinates", "TEXT file (*.txt)");
+	QString filename = VipFileDialog::getOpenFileName(nullptr, "Save pixels coordinates", "TEXT file (*.txt)");
 	if (!filename.isEmpty())
 	{
 		QFile out(filename);
@@ -8155,27 +8155,27 @@ VipPlotPlayer* vipExtractTimeTrace(const VipShapeList & shs, VipVideoPlayer * pl
 		if (players.size())
 			return qobject_cast<VipPlotPlayer*>(players.first());
 		else
-			return NULL;
+			return nullptr;
 	}
 
 	if (players.size()) {
 		vipGetMainWindow()->openPlayers(players);
 		return qobject_cast<VipPlotPlayer*>(players.first());
 	}
-	return NULL;
+	return nullptr;
 }
 
 VipPlotPlayer* vipExtractTimeStatistics(VipVideoPlayer* pl)
 {
 	VipProcessingObject* obj = pl->extractTimeStatistics();
 	if (!obj)
-		return NULL;
-	QList<VipAbstractPlayer*> players = vipCreatePlayersFromProcessing(obj, NULL);
+		return nullptr;
+	QList<VipAbstractPlayer*> players = vipCreatePlayersFromProcessing(obj, nullptr);
 	if (players.size()) {
 		vipGetMainWindow()->openPlayers(players);
 		return qobject_cast<VipPlotPlayer*>(players.first());
 	}
-	return NULL;
+	return nullptr;
 }
 
 
@@ -8187,8 +8187,8 @@ static QList<QAction*> standardActions(VipPlotItem* item, VipAbstractPlayer* pla
 	VipAbstractPlotArea *area = player->plotWidget2D()->area();
 	if (item != area->canvas())
 	{
-		QAction * foreground = new QAction(vipIcon("foreground.png"), "Move selection to foreground", NULL);
-		QAction * background = new QAction(vipIcon("background.png"), "Move selection to background", NULL);
+		QAction * foreground = new QAction(vipIcon("foreground.png"), "Move selection to foreground", nullptr);
+		QAction * background = new QAction(vipIcon("background.png"), "Move selection to background", nullptr);
 
 		
 		QObject::connect(foreground, &QAction::triggered, std::bind(moveSelectionToForeground, area));
@@ -8200,14 +8200,14 @@ static QList<QAction*> standardActions(VipPlotItem* item, VipAbstractPlayer* pla
 			QList<VipPlotItem*> items = p->plotWidget2D()->area()->findItems<VipPlotItem*>(QString(), 1, 1);
 			if (VipMimeDataDuplicatePlotItem::supportSourceItems(items))
 			{
-				QAction * copy = new QAction(vipIcon("copy.png"), "Copy selected items (curves, image, ROIs)", NULL);
+				QAction * copy = new QAction(vipIcon("copy.png"), "Copy selected items (curves, image, ROIs)", nullptr);
 				copy->setProperty("QMimeData", QVariant::fromValue(new VipMimeDataDuplicatePlotItem(items, copy)));
 				QObject::connect(copy, SIGNAL(triggered(bool)), player, SLOT(copySelectedItems()));
 				actions << copy;
 			}
 			if (VipPlotItemClipboard::supportDestinationPlayer(p))
 			{
-				QAction * paste = new QAction(vipIcon("paste.png"), "Paste items", NULL);
+				QAction * paste = new QAction(vipIcon("paste.png"), "Paste items", nullptr);
 				QObject::connect(paste, SIGNAL(triggered(bool)), player, SLOT(pasteItems()));
 				actions << paste;
 			}
@@ -8215,19 +8215,19 @@ static QList<QAction*> standardActions(VipPlotItem* item, VipAbstractPlayer* pla
 			if (VipPlotItemData * ditem = qobject_cast<VipPlotItemData*>(item))
 				if (!qobject_cast<VipPlotShape*>(item)) //do NOT save ROI this way
 				{
-					QAction * save = new QAction(vipIcon("save.png"), "Save item's content in file...", NULL);
+					QAction * save = new QAction(vipIcon("save.png"), "Save item's content in file...", nullptr);
 					QObject::connect(save, &QAction::triggered, std::bind(&VipPlayer2D::saveItemContent, p, ditem, QString()));
 					actions << save;
 				}
 
 			if (qobject_cast<VipPlotShape*>(item))
 			{
-				QAction * sep = new QAction(NULL);
+				QAction * sep = new QAction(nullptr);
 				sep->setSeparator(true);
 				actions << sep;
 
-				QAction * annot = new QAction("Create annotation...", NULL);
-				QAction * clear_annot = new QAction("Remove annotations", NULL);
+				QAction * annot = new QAction("Create annotation...", nullptr);
+				QAction * clear_annot = new QAction("Remove annotations", nullptr);
 				actions << annot << clear_annot;
 				QObject::connect(annot, &QAction::triggered,std::bind(vipEditAnnotations, p));
 				QObject::connect(clear_annot, &QAction::triggered,std::bind(vipRemoveAnnotations, p));
@@ -8235,7 +8235,7 @@ static QList<QAction*> standardActions(VipPlotItem* item, VipAbstractPlayer* pla
 		}
 
 		{
-			QAction* sep = new QAction(NULL);
+			QAction* sep = new QAction(nullptr);
 			sep->setSeparator(true);
 
 			actions << sep;
@@ -8247,7 +8247,7 @@ static QList<QAction*> standardActions(VipPlotItem* item, VipAbstractPlayer* pla
 			{
 				if (shape->rawData().type() != VipShape::Point)
 				{
-					QAction * histogram = new QAction("Extract the shape histogram", NULL);
+					QAction * histogram = new QAction("Extract the shape histogram", nullptr);
 					QObject::connect(histogram, &QAction::triggered, std::bind(extractHistogram, shape, pl));
 					actions << histogram;
 
@@ -8260,13 +8260,13 @@ static QList<QAction*> standardActions(VipPlotItem* item, VipAbstractPlayer* pla
 				}
 				if (shape->rawData().type() == VipShape::Polyline)
 				{
-					QAction * polyline = new QAction("Extract values along the polyline", NULL);
+					QAction * polyline = new QAction("Extract values along the polyline", nullptr);
 					QList<VipPlotShape*> shapes = pl->viewer()->area()->findItems<VipPlotShape*>(QString(), 1, 1);
 					QObject::connect(polyline, &QAction::triggered, std::bind(extractPolyline, shapes, pl));
 					actions << polyline;
 
 					if (shapes.size() == 1) {
-						QAction* time_polyline = new QAction("Extract time trace of values along the polyline", NULL);
+						QAction* time_polyline = new QAction("Extract time trace of values along the polyline", nullptr);
 						QObject::connect(time_polyline, &QAction::triggered, std::bind(extractPolylineValuesAlongTime, shapes.first(), pl));
 						actions << time_polyline;
 
@@ -8278,7 +8278,7 @@ static QList<QAction*> standardActions(VipPlotItem* item, VipAbstractPlayer* pla
 							)));
 					}
 
-					QAction * extract_coordinates = new QAction("Extract pixels coordinates along the polyline", NULL);
+					QAction * extract_coordinates = new QAction("Extract pixels coordinates along the polyline", nullptr);
 					QObject::connect(extract_coordinates, &QAction::triggered, std::bind(extractPixelsCoordinates, shape, pl));
 					actions << extract_coordinates;
 
@@ -8299,8 +8299,8 @@ static QList<QAction*> standardActions(VipPlotItem* item, VipAbstractPlayer* pla
 
 				if (shape->type() != VipShape::Unknown && pl->array().canConvert<double>())
 				{
-					QAction * time_trace = new QAction("Extract the shape time trace", NULL);
-					QObject::connect(time_trace, &QAction::triggered, std::bind(vipExtractTimeTrace, pl->findSelectedShapes(1, 1), pl, VipShapeStatistics::Statistics(), 1, 2,(VipPlotPlayer*)NULL));
+					QAction * time_trace = new QAction("Extract the shape time trace", nullptr);
+					QObject::connect(time_trace, &QAction::triggered, std::bind(vipExtractTimeTrace, pl->findSelectedShapes(1, 1), pl, VipShapeStatistics::Statistics(), 1, 2,(VipPlotPlayer*)nullptr));
 					actions << time_trace;
 
 					//make the menu action droppable
@@ -8319,7 +8319,7 @@ static QList<QAction*> standardActions(VipPlotItem* item, VipAbstractPlayer* pla
 							QPoint img_pos = pl->globalPosToImagePos(QCursor::pos());
 							if (img_pos.x() >= 0 && img_pos.y() >= 0 && img_pos.x() < img.shape(1) && img_pos.y() < img.shape(0)) {
 								//QMetaObject::invokeMethod(pl,"createShapeFromIsoLine",Qt::DirectConnection,Q_ARG(QPoint,img_pos));
-								QAction* _shape = new QAction("Update ROI from iso line", NULL);
+								QAction* _shape = new QAction("Update ROI from iso line", nullptr);
 								QObject::connect(_shape, &QAction::triggered, std::bind(&VipVideoPlayer::updateShapeFromIsoLine, pl, img_pos));
 								actions << _shape;
 							}
@@ -8329,8 +8329,8 @@ static QList<QAction*> standardActions(VipPlotItem* item, VipAbstractPlayer* pla
 			}
 			else
 			{
-				QAction * histogram = new QAction("Extract the full image histogram", NULL);
-				QObject::connect(histogram, &QAction::triggered, std::bind(extractHistogram, (VipPlotShape*)NULL, pl));
+				QAction * histogram = new QAction("Extract the full image histogram", nullptr);
+				QObject::connect(histogram, &QAction::triggered, std::bind(extractHistogram, (VipPlotShape*)nullptr, pl));
 				actions << histogram;
 
 				//make the menu action droppable
@@ -8346,7 +8346,7 @@ static QList<QAction*> standardActions(VipPlotItem* item, VipAbstractPlayer* pla
 						QPoint img_pos = pl->globalPosToImagePos(QCursor::pos());
 						if (img_pos.x() >= 0 && img_pos.y() >= 0 && img_pos.x() < img.shape(1) && img_pos.y() < img.shape(0)) {
 							//QMetaObject::invokeMethod(pl,"createShapeFromIsoLine",Qt::DirectConnection,Q_ARG(QPoint,img_pos));
-							QAction* _shape = new QAction("Create ROI from iso line", NULL);
+							QAction* _shape = new QAction("Create ROI from iso line", nullptr);
 							QObject::connect(_shape, &QAction::triggered, std::bind(&VipVideoPlayer::createShapeFromIsoLine, pl, img_pos));
 							actions << _shape;
 						}
@@ -8354,7 +8354,7 @@ static QList<QAction*> standardActions(VipPlotItem* item, VipAbstractPlayer* pla
 				}
 			}
 
-			QAction* time_stat = new QAction("Extract the cumulated maximum image", NULL);
+			QAction* time_stat = new QAction("Extract the cumulated maximum image", nullptr);
 			QObject::connect(time_stat, &QAction::triggered, std::bind(vipExtractTimeStatistics, pl));
 			actions << time_stat;
 
@@ -8369,7 +8369,7 @@ static QList<QAction*> standardActions(VipPlotItem* item, VipAbstractPlayer* pla
 	else if (VipPlayer2D * p = qobject_cast<VipPlayer2D*>(player))
 		if (VipPlotItemClipboard::supportDestinationPlayer(p))
 		{
-			QAction * paste = new QAction(vipIcon("paste.png"), "Paste items", NULL);
+			QAction * paste = new QAction(vipIcon("paste.png"), "Paste items", nullptr);
 			QObject::connect(paste, SIGNAL(triggered(bool)), player, SLOT(pasteItems()));
 			actions << paste;
 		}
@@ -8377,25 +8377,25 @@ static QList<QAction*> standardActions(VipPlotItem* item, VipAbstractPlayer* pla
 	//special plot player actions
 	if (VipPlotPlayer * pl = qobject_cast<VipPlotPlayer*>(player))
 	{
-		QAction * x_scale = new QAction("Apply x scale to all other players", NULL);
-		QAction * y_scale = new QAction("Apply y scale to all other players", NULL);
+		QAction * x_scale = new QAction("Apply x scale to all other players", nullptr);
+		QAction * y_scale = new QAction("Apply y scale to all other players", nullptr);
 		actions << x_scale << y_scale;
 		//separator
-		actions << new QAction(NULL); actions.last()->setSeparator(true);
-		QAction * undo = new QAction(vipIcon("undo.png"), "Undo last scale change", NULL);
-		QAction * redo = new QAction(vipIcon("redo.png"), "Redo last scale change", NULL);
+		actions << new QAction(nullptr); actions.last()->setSeparator(true);
+		QAction * undo = new QAction(vipIcon("undo.png"), "Undo last scale change", nullptr);
+		QAction * redo = new QAction(vipIcon("redo.png"), "Redo last scale change", nullptr);
 		actions << undo << redo;
 		//separator
-		actions << new QAction(NULL); actions.last()->setSeparator(true);
-		QAction * autoscale = new QAction(vipIcon("axises.png"), "Automatic scaling", NULL);
+		actions << new QAction(nullptr); actions.last()->setSeparator(true);
+		QAction * autoscale = new QAction(vipIcon("axises.png"), "Automatic scaling", nullptr);
 		actions << autoscale;
 		//separator
-		actions << new QAction(NULL); actions.last()->setSeparator(true);
+		actions << new QAction(nullptr); actions.last()->setSeparator(true);
 		QAction * x_zoom = new QAction(//vipIcon("zoom_h.png"),
- "Allow x zooming", NULL);
+ "Allow x zooming", nullptr);
 		QAction * y_zoom = new QAction(//vipIcon("zoom_v.png"),
- "Allow y zooming", NULL);
-		QAction * selectionZoomArea = new QAction(vipIcon("zoom_area.png"), "Selection zooming", NULL);
+ "Allow y zooming", nullptr);
+		QAction * selectionZoomArea = new QAction(vipIcon("zoom_area.png"), "Selection zooming", nullptr);
 		actions << x_zoom << y_zoom << selectionZoomArea;
 		x_zoom->setCheckable(true);
 		y_zoom->setCheckable(true);
@@ -8413,7 +8413,7 @@ static QList<QAction*> standardActions(VipPlotItem* item, VipAbstractPlayer* pla
 				break;
 			}
 		if (has_stylesheet) {
-			QAction * st = new QAction("Remove item(s) style sheet", NULL);
+			QAction * st = new QAction("Remove item(s) style sheet", nullptr);
 			QObject::connect(st, SIGNAL(triggered(bool)), player, SLOT(removeStyleSheet()));
 			actions << st;
 		}
@@ -8432,7 +8432,7 @@ static QList<QAction*> standardActions(VipPlotItem* item, VipAbstractPlayer* pla
 
 	//add the tool tip menu
 	if (VipPlayer2D * p = qobject_cast<VipPlayer2D*>(player)) {
-		QAction * tool_tip = new QAction("Tool tip management", NULL);
+		QAction * tool_tip = new QAction("Tool tip management", nullptr);
 		tool_tip->setMenu(p->generateToolTipMenu());
 		actions << tool_tip;
 	}
@@ -8454,7 +8454,7 @@ static QList<QAction*> applyDataProcessing(VipPlotItemData* item, VipPlayer2D* p
 
 		QObject::connect(menu, SIGNAL(selected(const VipProcessingObject::Info &)), player, SLOT(addSelectedProcessing(const VipProcessingObject::Info &)));
 
-		QAction * act = new QAction("Apply simple processing", NULL);
+		QAction * act = new QAction("Apply simple processing", nullptr);
 		act->setToolTip("Add a new processing to this item's processing list");
 		act->setMenu(menu);
 		return QList<QAction*>() << act;
@@ -8471,7 +8471,7 @@ static void setAxesTitle(VipPlotItem* //item
 {
 	if (!VipPlotPlayer::newItemBehaviorEnabled())
 		return;
-	//'exclude' is NULL if the item is added, non NULL otherwise
+	//'exclude' is nullptr if the item is added, non nullptr otherwise
 
 	//block signals to avoid emitting itemRemoved() and itemAdded() which lead to an infinite loop
 	//player->plotWidget2D()->area()->blockSignals(true);
@@ -8584,7 +8584,7 @@ static void setAxesTitle(VipPlotItem* //item
 		{
 			//for stacked plots:
 			//if a plot area just has 4 items (the grid, canvas, plot scene model and item being deleted), remove it.
-			//not that 'exclude' is not NULL only when removing an item.
+			//not that 'exclude' is not nullptr only when removing an item.
 
 			//get all items belonging to this scale and remove the VipPlotMarker, VipPlotShape and VipResizeItem
 			QList<VipPlotItem*> tmp_items = left_axes[i]->plotItems();
@@ -8615,12 +8615,12 @@ static void setAxesTitle(VipPlotItem* //item
 
 static void setAxesTitleUnitChanged(VipPlotItem* item, VipPlotPlayer* player)
 {
-	setAxesTitle(item, player, NULL);
+	setAxesTitle(item, player, nullptr);
 }
 
 static void setAxesTitleItemAdded(VipPlotItem* item, VipPlotPlayer* player)
 {
-	setAxesTitle(item, player, NULL);
+	setAxesTitle(item, player, nullptr);
 }
 
 static void setAxesTitleItemRemoved(VipPlotItem* item, VipPlotPlayer* player)

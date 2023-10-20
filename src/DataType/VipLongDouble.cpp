@@ -102,7 +102,7 @@ QByteArray vipLongDoubleToByteArrayLocale(const vip_long_double v, const QLocale
 //
 // int printlocales()
 // {
-// EnumSystemLocalesEx(MyFuncLocaleEx, LOCALE_ALL, NULL, NULL);
+// EnumSystemLocalesEx(MyFuncLocaleEx, LOCALE_ALL, nullptr, nullptr);
 //
 // for (vector<wstring>::const_iterator str = locals.begin(); str != locals.end(); ++str)
 // wcout << *str << endl;
@@ -211,11 +211,11 @@ static T fromLongDouble(vip_long_double v) { return (T)v; }
 
 static vip_long_double LongDoubleFromString(const QString & str)
 {
-	return vipLongDoubleFromString(str, NULL);
+	return vipLongDoubleFromString(str, nullptr);
 }
 static vip_long_double LongDoubleFromByteArray(const QByteArray & str)
 {
-	return vipLongDoubleFromByteArray(str, NULL);
+	return vipLongDoubleFromByteArray(str, nullptr);
 }
 
 static int registerLongDouble()

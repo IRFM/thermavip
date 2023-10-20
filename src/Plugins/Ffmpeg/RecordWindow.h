@@ -16,7 +16,7 @@ class PlayerSelection : public VipComboBox
 {
 	Q_OBJECT
 public:
-	PlayerSelection(QWidget * parent = NULL);
+	PlayerSelection(QWidget * parent = nullptr);
 	~PlayerSelection();
 
 	VipBaseDragWidget * selectedWidget() const;
@@ -36,7 +36,7 @@ class RecordWindow : public QWidget
 	Q_OBJECT
 	friend struct RecordThread;
 public:
-	RecordWindow(QWidget * parent = NULL);
+	RecordWindow(QWidget * parent = nullptr);
 	~RecordWindow();
 
 	void setRate(double);

@@ -14,7 +14,7 @@ VipScaleMap::VipScaleMap():
     d_cnv( 1.0 ),
     d_abs_cnv( 1.0 ),
     d_ts1( 0.0 ),
-    d_transform( NULL )
+    d_transform( nullptr )
 {
 }
 
@@ -27,7 +27,7 @@ VipScaleMap::VipScaleMap( const VipScaleMap& other ):
     d_cnv( other.d_cnv ),
     d_abs_cnv( other.d_abs_cnv ),
     d_ts1( other.d_ts1 ),
-    d_transform( NULL )
+    d_transform( nullptr )
 {
     if ( other.d_transform )
         d_transform = other.d_transform->copy();
@@ -53,7 +53,7 @@ VipScaleMap &VipScaleMap::operator=( const VipScaleMap & other )
 
 	if(d_transform)
 		delete d_transform;
-    d_transform = NULL;
+    d_transform = nullptr;
 
     if ( other.d_transform )
         d_transform = other.d_transform->copy();

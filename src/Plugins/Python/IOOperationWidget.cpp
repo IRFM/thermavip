@@ -145,7 +145,7 @@ IOOperationWidget::IOOperationWidget(QWidget * parent)
 
 	
 	m_error_color = vipDefaultTextErrorColor(this);
-	m_process = NULL;
+	m_process = nullptr;
 
 	/*QByteArray style = qApp->styleSheet().toLatin1();
 	int index = style.indexOf("QTextEdit");
@@ -509,7 +509,7 @@ void IOOperationWidget::PasteText(const QString & text)
 				//wait for prompt 
 				//PyIOOperation * op = qobject_cast<PyIOOperation*>(Process());
 				while (!m_wait_for_more &&/* !(op && op->isWaitingForInput()) &&*/ Process()->isRunning())
-					vipProcessEvents(NULL, 1000);
+					vipProcessEvents(nullptr, 1000);
 
 				//insert next line
 				this->moveCursor(QTextCursor::End);

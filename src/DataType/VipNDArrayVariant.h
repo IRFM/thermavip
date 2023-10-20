@@ -31,7 +31,7 @@ namespace detail
 
 		template< class T>
 		result_type apply(const VipNDArray & ar){
-			return applyWrapper(ar, (T*)(NULL));
+			return applyWrapper(ar, (T*)(nullptr));
 		}
 	};
 
@@ -182,7 +182,7 @@ namespace detail
 			int type_size = QMetaType(type).sizeOf();
 			for (QMultiMap<int, int>::const_iterator it = sizeTypes.begin(); it != sizeTypes.end(); ++it)
 			{
-				if (it.key() > type_size && QVariant(type, NULL).canConvert(it.value()))
+				if (it.key() > type_size && QVariant(type, nullptr).canConvert(it.value()))
 				{
 					return it.value();
 				}
@@ -192,7 +192,7 @@ namespace detail
 			i.toBack();
 			while (i.hasPrevious()) {
 				i.previous();
-				if (QVariant(type, NULL).canConvert(i.value()))
+				if (QVariant(type, nullptr).canConvert(i.value()))
 					return i.value();
 			}
 			return 0;
@@ -379,7 +379,7 @@ public:
 	/// The visitor should inherit VipNDArrayVisitor or provide the result_type typedef.
 	/// This will call the operator Visitor::operator().
 	template< class Visitor>
-	typename Visitor::result_type apply(const Visitor & visitor, bool * ok = NULL)
+	typename Visitor::result_type apply(const Visitor & visitor, bool * ok = nullptr)
 	{
 		return handler_type::template visitUnary<typename Visitor::result_type>(visitor, *this, ok);
 	}
@@ -396,7 +396,7 @@ public:
 ///
 	/// \endcode
 	template< class Ret, class Visitor>
-	Ret apply(const Visitor & visitor, bool * ok = NULL)
+	Ret apply(const Visitor & visitor, bool * ok = nullptr)
 	{
 		return handler_type::template visitUnary<Ret>(visitor, *this, ok);
 	}
@@ -406,7 +406,7 @@ public:
 	/// The visitor should inherit VipNDArrayVisitor or provide the result_type typedef.
 	/// This will call the operator Visitor::operator().
 	template< class Visitor, class VariantType>
-	typename Visitor::result_type applyBinary(const Visitor & visitor, const VariantType & other, bool * ok = NULL)
+	typename Visitor::result_type applyBinary(const Visitor & visitor, const VariantType & other, bool * ok = nullptr)
 	{
 		BinaryAdapter<Visitor, VariantType,typename Visitor::result_type> adapter;
 		adapter.ar2 = const_cast<VariantType*>(&other);
@@ -418,7 +418,7 @@ public:
 	/// Apply a binary visitor.
 	/// The visitor can be a #VipNDArrayVisitor object or a lambda.
 	template< class Ret, class Visitor, class VariantType>
-	Ret applyBinary(const Visitor & visitor, const VariantType & other, bool * ok = NULL)
+	Ret applyBinary(const Visitor & visitor, const VariantType & other, bool * ok = nullptr)
 	{
 		BinaryAdapter<Visitor, VariantType, Ret> adapter;
 		adapter.ar2 = const_cast<VariantType*>(&other);

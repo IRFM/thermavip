@@ -14,7 +14,7 @@ class VIP_PLOTTING_EXPORT VipAbstractPolarScale : public VipAbstractScale
 
 public:
 
-	VipAbstractPolarScale(QGraphicsItem * parent = NULL);
+	VipAbstractPolarScale(QGraphicsItem * parent = nullptr);
 
 	void setOuterRect(const QRectF &);
 	QRectF outerRect() const;
@@ -46,7 +46,7 @@ protected:
 
 public:
 
-	VipPolarAxis(QGraphicsItem * parent = NULL);
+	VipPolarAxis(QGraphicsItem * parent = nullptr);
 	~VipPolarAxis();
 
 	virtual QPainterPath shape() const;
@@ -112,7 +112,7 @@ protected:
 
 public:
 
-	VipRadialAxis(QGraphicsItem * parent = NULL);
+	VipRadialAxis(QGraphicsItem * parent = nullptr);
 	~VipRadialAxis();
 
 	virtual QPainterPath shape() const;
@@ -130,12 +130,12 @@ public:
 	QPointF center() const;
 
 	void setRadiusRange(double start_radius, double end_radius);
-	void setStartRadius(double start_radius, VipPolarAxis * axis = NULL );
-	void setEndRadius(double end_radius, VipPolarAxis * axis = NULL);
+	void setStartRadius(double start_radius, VipPolarAxis * axis = nullptr );
+	void setEndRadius(double end_radius, VipPolarAxis * axis = nullptr);
 	double startRadius() const;
 	double endRadius() const;
 
-	void setAngle(double start, VipPolarAxis * axis = NULL, Vip::ValueType type = Vip::Relative);
+	void setAngle(double start, VipPolarAxis * axis = nullptr, Vip::ValueType type = Vip::Relative);
 	double angle() const;
 
 	virtual void layoutScale();

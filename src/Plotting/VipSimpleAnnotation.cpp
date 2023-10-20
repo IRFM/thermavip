@@ -35,7 +35,7 @@ VipAnnotation * vipCreateAnnotation(const char * name)
 		detail::_annotations["VipSimpleAnnotation"] = detail::createAnnotation<VipSimpleAnnotation>;
 	QMap<QString, detail::annot_func>::const_iterator it = detail::_annotations.find(name);
 	if (it == detail::_annotations.end())
-		return NULL;
+		return nullptr;
 	return it.value()();
 }
 QStringList vipAnnotations() {
@@ -62,16 +62,16 @@ VipAnnotation * vipLoadAnnotation(const QByteArray & ar)
 	str >> len;
 
 	if (len > 100 || len <= 0 || str.status() != QDataStream::Ok)
-		return NULL;
+		return nullptr;
 	QByteArray name(len, 0);
 	str.readRawData(name.data(), len);
 	VipAnnotation * annot = vipCreateAnnotation(name.data());
 	if (!annot)
-		return NULL;
+		return nullptr;
 
 	if (!annot->load(str)) {
 		delete annot;
-		return NULL;
+		return nullptr;
 	}
 
 	return annot;
@@ -513,7 +513,7 @@ QPair<VipShape,VipSimpleAnnotation*> vipAnnotation(const QString & type, const Q
 		delete a;
 		if (error)
 			*error = "unrecognized type: " + type;
-		return QPair<VipShape, VipSimpleAnnotation*>(VipShape(), NULL);
+		return QPair<VipShape, VipSimpleAnnotation*>(VipShape(), nullptr);
 	}
 
 	//parse attributes
@@ -545,7 +545,7 @@ QPair<VipShape,VipSimpleAnnotation*> vipAnnotation(const QString & type, const Q
 				if (v.userType() == 0) {
 					delete a;
 					if (error) *error = "wrong 'textcolor' attribute: " + val;
-					return QPair<VipShape, VipSimpleAnnotation*>(VipShape(), NULL);
+					return QPair<VipShape, VipSimpleAnnotation*>(VipShape(), nullptr);
 				}
 				a->text().setTextPen(v.value<QPen>());
 			}
@@ -563,7 +563,7 @@ QPair<VipShape,VipSimpleAnnotation*> vipAnnotation(const QString & type, const Q
 				if (v.userType() == 0) {
 					delete a;
 					if (error) *error = "wrong 'textbackground' attribute: " + val;
-					return QPair<VipShape, VipSimpleAnnotation*>(VipShape(), NULL);
+					return QPair<VipShape, VipSimpleAnnotation*>(VipShape(), nullptr);
 				}
 				a->text().setBackgroundBrush(QBrush(v.value<QColor>()));
 			}
@@ -578,7 +578,7 @@ QPair<VipShape,VipSimpleAnnotation*> vipAnnotation(const QString & type, const Q
 			if (!ok) {
 				delete a;
 				if (error) *error = "wrong 'textsize' attribute: " + v.toString();
-				return QPair<VipShape, VipSimpleAnnotation*>(VipShape(), NULL);
+				return QPair<VipShape, VipSimpleAnnotation*>(VipShape(), nullptr);
 			}
 			QFont f = a->text().font();
 			f.setPointSizeF(size);
@@ -627,7 +627,7 @@ QPair<VipShape,VipSimpleAnnotation*> vipAnnotation(const QString & type, const Q
 				if (v.userType() == 0) {
 					delete a;
 					if (error) *error = "wrong 'textborder' attribute: " + val;
-					return QPair<VipShape, VipSimpleAnnotation*>(VipShape(), NULL);
+					return QPair<VipShape, VipSimpleAnnotation*>(VipShape(), nullptr);
 				}
 				a->text().setBorderPen(v.value<QPen>());
 			}
@@ -643,7 +643,7 @@ QPair<VipShape,VipSimpleAnnotation*> vipAnnotation(const QString & type, const Q
 			if (!ok) {
 				delete a;
 				if (error) *error = "wrong 'textradius' attribute: " + v.toString();
-				return QPair<VipShape, VipSimpleAnnotation*>(VipShape(), NULL);
+				return QPair<VipShape, VipSimpleAnnotation*>(VipShape(), nullptr);
 			}
 			a->text().boxStyle().setBorderRadius(dist);
 		}
@@ -661,7 +661,7 @@ QPair<VipShape,VipSimpleAnnotation*> vipAnnotation(const QString & type, const Q
 				if (v.userType() == 0) {
 					delete a;
 					if (error) *error = "wrong 'border' attribute: " + val;
-					return QPair<VipShape, VipSimpleAnnotation*>(VipShape(), NULL);
+					return QPair<VipShape, VipSimpleAnnotation*>(VipShape(), nullptr);
 				}
 				a->setPen(v.value<QPen>());
 			}
@@ -679,7 +679,7 @@ QPair<VipShape,VipSimpleAnnotation*> vipAnnotation(const QString & type, const Q
 				if (v.userType() == 0) {
 					delete a;
 					if (error) *error = "wrong 'background' attribute: " + val;
-					return QPair<VipShape, VipSimpleAnnotation*>(VipShape(), NULL);
+					return QPair<VipShape, VipSimpleAnnotation*>(VipShape(), nullptr);
 				}
 				a->setBrush(QBrush(v.value<QColor>()));
 			}
@@ -694,7 +694,7 @@ QPair<VipShape,VipSimpleAnnotation*> vipAnnotation(const QString & type, const Q
 			if (!ok) {
 				delete a;
 				if (error) *error = "wrong 'distance' attribute: " + v.toString();
-				return QPair<VipShape, VipSimpleAnnotation*>(VipShape(), NULL);
+				return QPair<VipShape, VipSimpleAnnotation*>(VipShape(), nullptr);
 			}
 			a->setTextDistance(dist);
 		}
@@ -710,7 +710,7 @@ QPair<VipShape,VipSimpleAnnotation*> vipAnnotation(const QString & type, const Q
 			if(!ok) {
 				delete a;
 				if (error) *error = "wrong 'alignment' attribute: " + v.toString();
-				return QPair<VipShape, VipSimpleAnnotation*>(VipShape(), NULL);
+				return QPair<VipShape, VipSimpleAnnotation*>(VipShape(), nullptr);
 			}
 			a->setTextAlignment((Qt::Alignment)align);
 		}
@@ -726,7 +726,7 @@ QPair<VipShape,VipSimpleAnnotation*> vipAnnotation(const QString & type, const Q
 			if (!ok) {
 				delete a;
 				if (error) *error = "wrong 'position' attribute: " + v.toString();
-				return QPair<VipShape, VipSimpleAnnotation*>(VipShape(), NULL);
+				return QPair<VipShape, VipSimpleAnnotation*>(VipShape(), nullptr);
 			}
 			a->setTextPosition((Vip::RegionPositions)pos);
 		}
@@ -742,7 +742,7 @@ QPair<VipShape,VipSimpleAnnotation*> vipAnnotation(const QString & type, const Q
 			if (!ok) {
 				delete a;
 				if (error) *error = "wrong 'symbol' attribute: " + v.toString();
-				return QPair<VipShape, VipSimpleAnnotation*>(VipShape(), NULL);
+				return QPair<VipShape, VipSimpleAnnotation*>(VipShape(), nullptr);
 			}
 			a->setEndStyle((VipSimpleAnnotation::EndStyle)sym);
 		}
@@ -756,7 +756,7 @@ QPair<VipShape,VipSimpleAnnotation*> vipAnnotation(const QString & type, const Q
 			if (!ok) {
 				delete a;
 				if (error) *error = "wrong 'symbolsize' attribute: " + v.toString();
-				return QPair<VipShape, VipSimpleAnnotation*>(VipShape(), NULL);
+				return QPair<VipShape, VipSimpleAnnotation*>(VipShape(), nullptr);
 			}
 			a->setEndSize(size);
 		}

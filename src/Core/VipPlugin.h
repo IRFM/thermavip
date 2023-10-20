@@ -129,7 +129,7 @@ public:
 
 	/// Load a plugin based on its name and return the #VipPluginInterface::LoadResult.
 	/// The plugin is searchd in the VipPlugins directory.
-	VipPluginInterface::LoadResult loadPlugin(const QString& name, QString* error = NULL);
+	VipPluginInterface::LoadResult loadPlugin(const QString& name, QString* error = nullptr);
 
 public Q_SLOTS:
 

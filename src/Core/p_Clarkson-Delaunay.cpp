@@ -225,7 +225,7 @@ static int  rdim,   /* region dimension: (max) number of sites specifying region
     return basis_s_list;
  };
  for (i=0; i<num_basis_s_blocks; i++) free(basis_s_block_table[i]);
- *basis_s_block_table = NULL;
+ *basis_s_block_table = nullptr;
  num_basis_s_blocks = 0;
  basis_s_list = 0;
  return 0;
@@ -590,7 +590,7 @@ if (search_st)
 }
 
 // ----------------------------------------------------------------
-static simplex *facet_test(simplex *s, void * /*dummy*/) {return (!s->peak.vert) ? s : NULL;}
+static simplex *facet_test(simplex *s, void * /*dummy*/) {return (!s->peak.vert) ? s : nullptr;}
 // -------------------------------------------
 static int hullt(simplex */*s*/, int i, void * /*dummy*/) {return i>-1;}
 // -------------------------------------------
@@ -618,7 +618,7 @@ static void build_convex_hull(void) {
    ptrToIntsToIndex  = listOfIntsToIndex;    // reset this in case the points are integers
    ptrFloatsToIndex = listOfFloatsToIndex;   // reset this in case the points are floats
 
-   ptrToOutputList = NULL;
+   ptrToOutputList = nullptr;
 
    get_next_site_s_num = 0;
    memset ((char*)site_blocks, 0, sizeof (site_blocks) );
@@ -628,16 +628,16 @@ static void build_convex_hull(void) {
    out_of_flat_p_neigh.simp = 0;
    out_of_flat_p_neigh.vert = 0;
 
-   sees_b = NULL;
+   sees_b = nullptr;
 
-   visit_triang_gen_st = NULL;
+   visit_triang_gen_st = nullptr;
    visit_triang_gen_vnum = -1;
    visit_triang_gen_ss = 2000;
 
-   search_st = NULL;
+   search_st = nullptr;
    search_ss = MAXDIM;
 
-   tt_basis.next = NULL;
+   tt_basis.next = nullptr;
    tt_basis.ref_count = 1;
    tt_basis.lscale = -1;
    tt_basis.sqa = 0;
@@ -647,14 +647,14 @@ static void build_convex_hull(void) {
    sc_lscale = 0;
    sc_max_scale = sc_ldetbound = sc_Sb = 0;
 
-   make_facets_ns = NULL;
+   make_facets_ns = nullptr;
 
    point_size = site_size = sizeof(Coord)*pdim;
    basis_vec_size = sizeof(Coord)*rdim;
    basis_s_size = sizeof(basis_s)+ (2*rdim-1)*sizeof(Coord);
    simplex_size = sizeof(simplex) + (rdim-1)*sizeof(neighbor);
 
-   root = NULL;
+   root = nullptr;
       p = hull_infinity;
       // NEWLRC(basis_s, infinity_basis);
       { infinity_basis = basis_s_list ? basis_s_list : new_block_basis_s(1);
@@ -737,7 +737,7 @@ static simplex *visit_triang_gen(simplex *s, visit_func *visit, test_func *test)
          if ((sn->simp->visit != visit_triang_gen_vnum) && sn->simp && test(t,i,0))
             pushv(sn->simp);
    }
-   return NULL;
+   return nullptr;
 }
 
 
@@ -819,7 +819,7 @@ static simplex *make_facets(simplex *seen) {
    int i;
 
 
-   if (!seen) return NULL;
+   if (!seen) return nullptr;
    seen->peak.vert = p;
 
    for (i=0,bn = seen->neigh; i<cdim; i++,bn++) {
@@ -913,7 +913,7 @@ static simplex *extend_simplices(simplex *s) {
       }; };
 
       s->neigh[ocdim].simp = ns;
-      ns->peak.vert = NULL;
+      ns->peak.vert = nullptr;
       ns->peak.simp = s;
       ns->neigh[ocdim] = s->peak;
       // inc_ref(basis_s,s->peak.basis);
@@ -954,7 +954,7 @@ static simplex *search(simplex *root) {
       if (!s->peak.vert) return s;
       for (i=0, sn=s->neigh; i<cdim; i++,sn++) pushs(sn->simp);
    }
-   return NULL;
+   return nullptr;
 }
 
 
@@ -1013,7 +1013,7 @@ static point get_another_site(void) {
 
    pnext = get_next_site();
 
-   if (!pnext) return NULL;
+   if (!pnext) return nullptr;
    pnum = site_numm(pnext)+2;
    return pnext;
 }
@@ -1046,7 +1046,7 @@ for (j=0;j<cdim;j++) v[j] = s->neigh[j].vert;
 
 triangleList_out ( site_numm(v[0]), site_numm(v[1]), site_numm(v[2]),
                    (pdim == 3) ? site_numm(v[3]) : 0 );
-return NULL;
+return nullptr;
 }
 
 // ---------------------------------------------------------------------------
@@ -1112,7 +1112,7 @@ int *BuildTriangleIndexList (void *pointList, float factor, int numberOfInputPoi
    // more than 64,000 triangles at a time
 
 if (factor)  {
-   ptrToIntsToIndex = NULL;     // set to NULL to show get_next_site() to process floating-points
+   ptrToIntsToIndex = nullptr;     // set to nullptr to show get_next_site() to process floating-points
    mult_up = factor;
    listOfFloatsToIndex = (float*)pointList;
 }

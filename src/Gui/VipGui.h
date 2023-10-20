@@ -26,7 +26,7 @@ T* vipFindParent(QWidget * w)
 /// setting a widget or application wide style sheet.
 /// This function takes care of these cases to return the proper text color.
 ///
-/// If \a w is NULL, the function uses the application palette.
+/// If \a w is nullptr, the function uses the application palette.
 VIP_GUI_EXPORT QBrush vipWidgetTextBrush(QWidget * w);
 /// Returns the default text error color used by QTextEdit derived classes.
 /// The default error color is usually red, but it might change depending on the loaded skin.
@@ -124,7 +124,7 @@ class VIP_GUI_EXPORT VipGuiDisplayParamaters : public QObject
 
 public:
 
-	static VipGuiDisplayParamaters * instance(VipMainWindow * win = NULL);
+	static VipGuiDisplayParamaters * instance(VipMainWindow * win = nullptr);
 
 	~VipGuiDisplayParamaters();
 
@@ -228,7 +228,7 @@ class VipAbstractPlayer;
 /// \endcode
 VIP_GUI_EXPORT VipFunctionDispatcher<3>& vipFDCreateDisplayFromData();
 
-/// Creates a VipDisplayObject able to display the data from \a any into \a player. The player might be NULL.
+/// Creates a VipDisplayObject able to display the data from \a any into \a player. The player might be nullptr.
 VIP_GUI_EXPORT VipDisplayObject* vipCreateDisplayFromData(const VipAnyData& any, VipAbstractPlayer*);
 
 /// Function dispatcher which create a list of VipAbstractPlayer instances that will display the given data.
@@ -249,9 +249,9 @@ VIP_GUI_EXPORT VipFunctionDispatcher<4>& vipFDCreatePlayersFromData();
 /// \a target is a QObject used to define the target in drop situations (in case of dropping, it is usually a #VipPlotItem).
 VIP_GUI_EXPORT QList<VipAbstractPlayer*> vipCreatePlayersFromData(const VipAnyData& any,
 								  VipAbstractPlayer* pl,
-								  VipOutput* src = NULL,
-								  QObject* target = NULL,
-								  QList<VipDisplayObject*>* outputs = NULL);
+								  VipOutput* src = nullptr,
+								  QObject* target = nullptr,
+								  QList<VipDisplayObject*>* outputs = nullptr);
 
 /// Function dispatcher which create a list of VipAbstractPlayer instances that will display the output(s) of a VipProcessingObject.
 /// This dispatcher is called within vipCreatePlayersFromProcessing to provide a custom behavior.
@@ -269,29 +269,29 @@ VIP_GUI_EXPORT VipFunctionDispatcher<4>& vipFDCreatePlayersFromProcessing();
 /// \a target is a QObject used to define the target in drop situations (in case of dropping, it is usually a #VipPlotItem).
 VIP_GUI_EXPORT QList<VipAbstractPlayer*> vipCreatePlayersFromProcessing(VipProcessingObject* proc,
 									VipAbstractPlayer* player,
-									VipOutput* src = NULL,
-									QObject* target = NULL,
-									QList<VipDisplayObject*>* outputs = NULL);
+									VipOutput* src = nullptr,
+									QObject* target = nullptr,
+									QList<VipDisplayObject*>* outputs = nullptr);
 
 /// Creates a list of VipAbstractPlayer instances that will display the output(s) of a several VipProcessingObject instances.
 /// This function try to minimize the number of returned players by inserting several display objects into the same player.
-VIP_GUI_EXPORT QList<VipAbstractPlayer*> vipCreatePlayersFromProcessings(const QList<VipProcessingObject*>&, VipAbstractPlayer*, QObject* target = NULL, QList<VipDisplayObject*>* outputs = NULL);
+VIP_GUI_EXPORT QList<VipAbstractPlayer*> vipCreatePlayersFromProcessings(const QList<VipProcessingObject*>&, VipAbstractPlayer*, QObject* target = nullptr, QList<VipDisplayObject*>* outputs = nullptr);
 
 /// Creates a list of VipAbstractPlayer instances that will display the output(s) of a several VipProcessingObject instances.
 /// This function try to minimize the number of returned players by inserting several display objects into the same player.
 template<class T>
-QList<VipAbstractPlayer*> vipCreatePlayersFromProcessings(const QList<T*>& lst, VipAbstractPlayer* player, QObject* target = NULL, QList<VipDisplayObject*>* outputs = NULL)
+QList<VipAbstractPlayer*> vipCreatePlayersFromProcessings(const QList<T*>& lst, VipAbstractPlayer* player, QObject* target = nullptr, QList<VipDisplayObject*>* outputs = nullptr)
 {
 	return vipCreatePlayersFromProcessings(vipListCast<VipProcessingObject*>(lst), player, target, outputs);
 }
 
 /// Creates a list of VipAbstractPlayer instances that will display the output(s) of the VipIODevice objects created from all the given strings.
 /// This function try to minimize the number of returned players by inserting several display objects into the same player.
-VIP_GUI_EXPORT QList<VipAbstractPlayer*> vipCreatePlayersFromStringList(const QStringList& lst, VipAbstractPlayer* player, QObject* target = NULL, QList<VipDisplayObject*>* outputs = NULL);
+VIP_GUI_EXPORT QList<VipAbstractPlayer*> vipCreatePlayersFromStringList(const QStringList& lst, VipAbstractPlayer* player, QObject* target = nullptr, QList<VipDisplayObject*>* outputs = nullptr);
 
 /// Creates a list of VipAbstractPlayer instances that will display the output(s) of the VipIODevice objects created from all the given paths and QIODevice objetcs.
 /// This function try to minimize the number of returned players by inserting several display objects into the same player.
-VIP_GUI_EXPORT QList<VipAbstractPlayer*> vipCreatePlayersFromPaths(const VipPathList& paths, VipAbstractPlayer* player, QObject* target = NULL, QList<VipDisplayObject*>* outputs = NULL);
+VIP_GUI_EXPORT QList<VipAbstractPlayer*> vipCreatePlayersFromPaths(const VipPathList& paths, VipAbstractPlayer* player, QObject* target = nullptr, QList<VipDisplayObject*>* outputs = nullptr);
 
 /// Helper function.
 /// Create a new processing object (\a info) based on given VipOutput.

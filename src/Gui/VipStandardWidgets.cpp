@@ -131,7 +131,7 @@ QWidget * VipStandardWidgets::fromStyleSheet(const QString & style_sheet)
 	//find widget's name
 	QStringList lst = style_sheet.split("{");
 	if (lst.size() == 0)
-		return NULL;
+		return nullptr;
 
 	QString class_name = lst[0].split("#")[0].remove(" ") + "*";
 	//take care of '--' for widget inside namespace
@@ -1009,7 +1009,7 @@ void VipColorWidget::setColor(const QColor & c)
 
 void VipColorWidget::triggered()
 {
-	QColorDialog dial(color(), NULL);
+	QColorDialog dial(color(), nullptr);
 	dial.setOption(QColorDialog::ShowAlphaChannel);
 	if (dial.exec() == QDialog::Accepted)
 	{
@@ -1143,7 +1143,7 @@ void VipBrushWidget::setPattern(int index)
 
 void VipBrushWidget::setColor()
 {
-	QColorDialog dial(m_brush.color(), NULL);
+	QColorDialog dial(m_brush.color(), nullptr);
 	dial.setOption(QColorDialog::ShowAlphaChannel);
 	if (dial.exec() == QDialog::Accepted)
 	{
@@ -1387,7 +1387,7 @@ void VipPenButton::setMode(VipPenButton::Mode mode)
 	{
 		m_pen->showFullOptions(false);
 		this->setPopupMode(QToolButton::DelayedPopup);
-		this->setMenu(NULL);
+		this->setMenu(nullptr);
 	}
 	else if (mode == Brush)
 	{
@@ -1460,7 +1460,7 @@ void VipPenButton::setBrush(const QBrush & brush)
 
 void VipPenButton::triggered()
 {
-	QColorDialog dial(pen().brush().color(), NULL);
+	QColorDialog dial(pen().brush().color(), nullptr);
 	dial.setOption(QColorDialog::ShowAlphaChannel);
 	if (dial.exec() == QDialog::Accepted)
 	{
@@ -2011,11 +2011,11 @@ struct Action {
 	QAction * action;
 	QWidget * widget;
 	QWidget * parent;
-	Action(QAction * act = NULL, QWidget * w = NULL, QWidget *p = NULL)
+	Action(QAction * act = nullptr, QWidget * w = nullptr, QWidget *p = nullptr)
 		:action(act), widget(w), parent(p) {}
 };
 
-static QList<Action> findActions(QWidget * bar, QAction * exclude = NULL) {
+static QList<Action> findActions(QWidget * bar, QAction * exclude = nullptr) {
 	QList<QAction*> acts = bar->actions();
 	QList<Action> res;
 	for (int i = 0; i < acts.size(); ++i) {
@@ -2036,13 +2036,13 @@ static QList<Action> findActions(QWidget * bar, QAction * exclude = NULL) {
 			if (ws.size() > 1)
 				res.append(Action(acts[i], ws[1], ws[0]));
 			else
-				res.append(Action(acts[i], NULL, ws[0]));
+				res.append(Action(acts[i], nullptr, ws[0]));
 		}
 	}
 	return res;
 }
 
-static QList<Action> hiddenActions(QWidget * parent, const QList<Action> & acts, int * visible_actions_width = NULL)
+static QList<Action> hiddenActions(QWidget * parent, const QList<Action> & acts, int * visible_actions_width = nullptr)
 {
 	int width = 0;
 	QList<Action> res;
@@ -2148,7 +2148,7 @@ public:
 	QTimer timer;
 
 	PrivateData()
-		: showAdditionalAction(NULL), _ShowAdditionals(ShowInMenu), aboutToShow(false), dirtyCompute(true), customBehaviorEnabled(true)
+		: showAdditionalAction(nullptr), _ShowAdditionals(ShowInMenu), aboutToShow(false), dirtyCompute(true), customBehaviorEnabled(true)
 	{}
 };
 
@@ -2438,7 +2438,7 @@ QAction * VipValueToTimeButton::findAction(const QString & unit_name) const
 	for (int i = 0; i < acts.size(); ++i)
 		if (acts[i]->property("unit").toString() == unit_name)
 			return acts[i];
-	return NULL;
+	return nullptr;
 }
 
 const VipValueToTime & VipValueToTimeButton::currentValueToTime() const
@@ -2460,7 +2460,7 @@ void VipValueToTimeButton::setDisplayType(VipValueToTime::DisplayType type)
 	if (type == VipValueToTime::Double) {
 		integer->setChecked(false);
 		datetime->setChecked(false);
-		timeUnitTriggered(NULL);
+		timeUnitTriggered(nullptr);
 	}
 	else if (type == VipValueToTime::Integer) {
 		integer->setChecked(true);
@@ -2759,7 +2759,7 @@ QPushButton * VipGenericDialog::applyButton()
 class VipDragMenu::PrivateData
 {
 public:
-	PrivateData() :widget(NULL) {}
+	PrivateData() :widget(nullptr) {}
 	QPoint pos;
 	QPointer<QWidget> widget;
 	QSizeGrip *grip;
@@ -2957,7 +2957,7 @@ void VipShowWidgetOnHover::setHoverWidget(QWidget * hover)
 {
 	if (m_data->hover)
 		m_data->hover->removeEventFilter(this);
-	m_data->hover = NULL;
+	m_data->hover = nullptr;
 	for (int i = 0; i < m_data->hovers.size(); ++i)
 		if (m_data->hovers[i])
 			m_data->hovers[i]->removeEventFilter(this);
@@ -2976,7 +2976,7 @@ void VipShowWidgetOnHover::setHoverWidgets(const QList<QWidget*> & hovers)
 {
 	if (m_data->hover)
 		m_data->hover->removeEventFilter(this);
-	m_data->hover = NULL;
+	m_data->hover = nullptr;
 	for (int i = 0; i < m_data->hovers.size(); ++i)
 		if (m_data->hovers[i])
 			m_data->hovers[i]->removeEventFilter(this);
@@ -3153,7 +3153,7 @@ QWidget * vipObjectEditor(const QVariant & obj)
 	VipFunctionDispatcher<1>::function_list_type lst = vipFDObjectEditor().match(obj);
 	if (lst.size())
 		return lst.back()(obj).value<QWidget*>();
-	return NULL;
+	return nullptr;
 }
 
 bool vipHasObjectEditor(const QVariant & obj)

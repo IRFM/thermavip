@@ -18,7 +18,7 @@ public:
 
 	VipWidgetResizerHandler(QObject* parent)
 	  : QObject(parent)
-	  , grabber(NULL)
+	  , grabber(nullptr)
 	{
 	}
 	void addResizer(VipWidgetResizer* r)
@@ -473,7 +473,7 @@ bool VipWidgetResizer::filter(QObject* watched, QEvent* event)
 		bool res = m_data->mousePressGlobal != QPoint();
 		m_data->mousePressGlobal = QPoint();
 		m_data->mousePress = QPoint();
-		handler()->grabber = NULL;
+		handler()->grabber = nullptr;
 		setProperty("area", 0);
 		return res;
 	}

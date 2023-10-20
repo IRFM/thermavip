@@ -347,7 +347,7 @@ public:
 	/// \sa VipPlotItem::selectedPen VipPlotItem::setSelectionPenCreator
 	typedef QPen (*create_selection_pen)(const VipPlotItem*, const QPen&);
 
-	/// Default create_effect_type function, returns a NULL QGraphicsEffect.
+	/// Default create_effect_type function, returns a nullptr QGraphicsEffect.
 	static QGraphicsEffect* nullEffect(VipPlotItem*);
 	/// Default create_selection_pen function, returns a pen semi transparent and
 	/// wider than given pen.
@@ -426,7 +426,7 @@ public:
 	VipPlotItem(const VipText& title = VipText());
 	virtual ~VipPlotItem();
 
-	/// Returns the parent #VipAbstractPlotArea or NULL if a valid parent cannot
+	/// Returns the parent #VipAbstractPlotArea or nullptr if a valid parent cannot
 	/// be found. This function scans all item's parents until finding a
 	/// #VipAbstractPlotArea object.
 	///
@@ -512,7 +512,7 @@ public:
 	virtual VipTextStyle textStyle() const { return VipTextStyle(); }
 
 	/// Set the selection pen creation function.
-	/// If the function is not NULL and returns a valid pen, it will be used to
+	/// If the function is not nullptr and returns a valid pen, it will be used to
 	/// draw the item outline when selected.
 	void setSelectionPenCreator(create_selection_pen p);
 

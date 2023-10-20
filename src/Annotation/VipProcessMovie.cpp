@@ -754,7 +754,7 @@ void VipPlayerDBAccess::changeSelectedPolygons()
 				continue;
 
 			//find shape with right timestamp
-			const VipShape* found = NULL;
+			const VipShape* found = nullptr;
 			const QList<VipShape>& shs = it.value();
 			for (int s = 0; s < shs.size(); ++s) {
 				if (shs[s].attribute("timestamp_ns").toLongLong() == time) {
@@ -1420,19 +1420,19 @@ void VipPlayerDBAccess::saveToJsonInternal(bool show_messages)
 
 		if (PPO.isEmpty()) {
 			if (show_messages)
-				QMessageBox::warning(NULL, "Warning", "Invalid user name");
+				QMessageBox::warning(nullptr, "Warning", "Invalid user name");
 			VIP_LOG_WARNING("Invalid user name");
 			return;
 		}
 		if (camera.isEmpty()) {
 			if (show_messages)
-				QMessageBox::warning(NULL, "Warning", "Invalid camera name");
+				QMessageBox::warning(nullptr, "Warning", "Invalid camera name");
 			VIP_LOG_WARNING("Invalid camera name");
 			return;
 		}
 		if (device.isEmpty()) {
 			if (show_messages)
-				QMessageBox::warning(NULL, "Warning", "Invalid device name");
+				QMessageBox::warning(nullptr, "Warning", "Invalid device name");
 			VIP_LOG_WARNING("Invalid device name");
 			return;
 		}
@@ -1457,7 +1457,7 @@ void VipPlayerDBAccess::saveToJsonInternal(bool show_messages)
 			//find the group
 			QString group = m_events[id].first().group();
 			//find the corresponding VipEventDevice
-			VipDisplaySceneModel* disp = NULL;
+			VipDisplaySceneModel* disp = nullptr;
 			for (int i = 0; i < events.size(); ++i) {
 				if (events[i]->group() == group) {
 					disp = qobject_cast<VipDisplaySceneModel*>(displays[i]);
@@ -1529,7 +1529,7 @@ void VipPlayerDBAccess::saveToJsonInternal(bool show_messages)
 
 		if (m_events.size() && !vipEventsToJsonFile(filename,m_events,&p)){//!sendToJSON(filename,PPO, camera,device, pulse, m_events, before_send_list_type() << computeEventPolygons, &p)) {
 			if (show_messages)
-				QMessageBox::warning(NULL, "Warning", "Failed to create JSON file!");
+				QMessageBox::warning(nullptr, "Warning", "Failed to create JSON file!");
 			VIP_LOG_WARNING("Failed to create JSON file!");
 			return;
 		}
@@ -1583,7 +1583,7 @@ void VipPlayerDBAccess::uploadInternal(bool show_messages)
 	{
 		if (to_remove_from_DB.isEmpty() && to_send.isEmpty()) {
 			if(show_messages)
-				QMessageBox::information(NULL, "Uploading", "No modifications to upload!");
+				QMessageBox::information(nullptr, "Uploading", "No modifications to upload!");
 			VIP_LOG_INFO("No modifications to upload!");
 			return;
 		}
@@ -1602,25 +1602,25 @@ void VipPlayerDBAccess::uploadInternal(bool show_messages)
 
 			if (PPO.isEmpty()) {
 				if (show_messages)
-					QMessageBox::warning(NULL, "Warning", "Invalid user name");
+					QMessageBox::warning(nullptr, "Warning", "Invalid user name");
 				VIP_LOG_WARNING("Invalid user name");
 				return;
 			}
 			if (camera.isEmpty()) {
 				if (show_messages)
-					QMessageBox::warning(NULL, "Warning", "Invalid camera name");
+					QMessageBox::warning(nullptr, "Warning", "Invalid camera name");
 				VIP_LOG_WARNING("Invalid camera name");
 				return;
 			}
 			if (device.isEmpty()) {
 				if (show_messages)
-					QMessageBox::warning(NULL, "Warning", "Invalid device name");
+					QMessageBox::warning(nullptr, "Warning", "Invalid device name");
 				VIP_LOG_WARNING("Invalid device name");
 				return;
 			}
 			if (pulse <= 0) {
 				if (show_messages)
-					QMessageBox::warning(NULL, "Warning", "Invalid experiment id value");
+					QMessageBox::warning(nullptr, "Warning", "Invalid experiment id value");
 				VIP_LOG_WARNING("Invalid experiment id value");
 				return;
 			}
@@ -1647,7 +1647,7 @@ void VipPlayerDBAccess::uploadInternal(bool show_messages)
 				//find the group
 				QString group = to_send[id].first().group();
 				//find the corresponding VipEventDevice
-				VipDisplaySceneModel* disp = NULL;
+				VipDisplaySceneModel* disp = nullptr;
 				for (int i = 0; i < events.size(); ++i) {
 					if (events[i]->group() == group) {
 						disp = qobject_cast<VipDisplaySceneModel*>(displays[i]);
@@ -1721,7 +1721,7 @@ void VipPlayerDBAccess::uploadInternal(bool show_messages)
 			//remove from db
 			if (to_remove_from_DB.size() && !vipRemoveFromDB(to_remove_from_DB)) {
 				if (show_messages)
-					QMessageBox::warning(NULL, "Warning", "Unable to remove events from DB");
+					QMessageBox::warning(nullptr, "Warning", "Unable to remove events from DB");
 				VIP_LOG_WARNING("Unable to remove events from DB");
 				return;
 			}
@@ -1735,7 +1735,7 @@ void VipPlayerDBAccess::uploadInternal(bool show_messages)
 			p.setText("Send events to DB...");
 			if (to_send.size() && vipSendToDB(PPO, camera, device, pulse, to_send).size() == 0) {
 				if (show_messages)
-					QMessageBox::warning(NULL, "Warning", "Failed to upload events!");
+					QMessageBox::warning(nullptr, "Warning", "Failed to upload events!");
 				VIP_LOG_WARNING("Failed to upload events!");
 				return;
 			}
@@ -1749,7 +1749,7 @@ void VipPlayerDBAccess::uploadInternal(bool show_messages)
 			//remove from db
 			if (to_remove_from_DB.size() && !vipRemoveFromDB(to_remove_from_DB)) {
 				if (show_messages)
-					QMessageBox::warning(NULL, "Warning", "Unable to remove events from DB");
+					QMessageBox::warning(nullptr, "Warning", "Unable to remove events from DB");
 				VIP_LOG_WARNING("Unable to remove events from DB");
 				return;
 			}
@@ -1780,14 +1780,14 @@ void VipPlayerDBAccess::displayFromJsonFile()
 
 	QFile fin(filename);
 	if (!fin.open(QFile::ReadOnly)) {
-		QMessageBox::warning(NULL, "Warning", "Failed to open JSON file!");
+		QMessageBox::warning(nullptr, "Warning", "Failed to open JSON file!");
 		return;
 	}
 
 	QByteArray ar = fin.readAll();
 	Vip_event_list evts = vipEventsFromJson(ar);
 	if (!evts.size()) {
-		QMessageBox::warning(NULL, "Warning", "Unable to load events from JSON file!");
+		QMessageBox::warning(nullptr, "Warning", "Unable to load events from JSON file!");
 		return;
 	}
 
@@ -1803,13 +1803,13 @@ void VipPlayerDBAccess::displayFromDataBaseQuery(const VipEventQuery& query, boo
 
 	VipEventQueryResults res = vipQueryDB(query, &progress);
 	if (!res.isValid()) {
-		QMessageBox::warning(NULL, "Warning", "Failed to retrieve events!");
+		QMessageBox::warning(nullptr, "Warning", "Failed to retrieve events!");
 		return;
 	}
 
 	VipFullQueryResult fres = vipFullQueryDB( res, &progress);
 	if (!fres.isValid()) {
-		QMessageBox::warning(NULL, "Warning", "Failed to retrieve events!");
+		QMessageBox::warning(nullptr, "Warning", "Failed to retrieve events!");
 		return;
 	}
 
@@ -1891,14 +1891,14 @@ void VipPlayerDBAccess::displayFromDataBase()
 
 	VipEventQueryResults res = vipQueryDB(query, &progress);
 	if (!res.isValid()) {
-		QMessageBox::warning(NULL, "Warning", "Failed to retrieve events!");
+		QMessageBox::warning(nullptr, "Warning", "Failed to retrieve events!");
 		return;
 	}
 
 	FullQuery fquery;
 	VipFullQueryResult fres = vipQueryDB(fquery, res, &progress);
 	if (!fres.isValid()) {
-		QMessageBox::warning(NULL, "Warning", "Failed to retrieve events!");
+		QMessageBox::warning(nullptr, "Warning", "Failed to retrieve events!");
 		return;
 	}
 
@@ -2208,7 +2208,7 @@ void VipPlayerDBAccess::applyChangesToSelection()
 	//build ids first
 	QList<qint64> ids;
 	QList<qint64> group_ids;
-	VipPlotShape* first = NULL;
+	VipPlotShape* first = nullptr;
 	QSet<QString> groups;
 	for (int i = 0; i < m_selection.size(); ++i) {
 		if (VipPlotShape* sh = m_selection[i]) {
@@ -2313,7 +2313,7 @@ VipEventDevice * VipPlayerDBAccess::device(const QString & group)
 	for (int i = 0; i < devs.size(); ++i)
 		if (devs[i]->group() == group)
 			return devs[i];
-	return NULL;
+	return nullptr;
 }
 
 void VipPlayerDBAccess::sendManualAnnotationToJson()
@@ -2329,7 +2329,7 @@ void VipPlayerDBAccess::sendManualAnnotationToJson()
 	Vip_event_list to_send = m_annotation->generateShapes(&p, &error);
 	if (to_send.isEmpty()) {
 		if (error.size())
-			QMessageBox::warning(NULL, "Warning", error);
+			QMessageBox::warning(nullptr, "Warning", error);
 		return;
 	}
 
@@ -2345,7 +2345,7 @@ void VipPlayerDBAccess::sendManualAnnotationToJson()
 		to_send.first().first().attribute("experiment_id").value< Vip_experiment_id>(),
 		to_send, before_send_list_type() << computeEventPolygons, &p))*/
 	{
-		QMessageBox::warning(NULL, "Error", "An error occured while saving manual annotation");
+		QMessageBox::warning(nullptr, "Error", "An error occured while saving manual annotation");
 		return;
 	}
 }
@@ -2363,7 +2363,7 @@ void VipPlayerDBAccess::sendManualAnnotation()
 	Vip_event_list to_send = m_annotation->generateShapes(&p, &error);
 	if (to_send.isEmpty()) {
 		if (error.size())
-			QMessageBox::warning(NULL, "Warning", error);
+			QMessageBox::warning(nullptr, "Warning", error);
 		return;
 	} 
 
@@ -2373,7 +2373,7 @@ void VipPlayerDBAccess::sendManualAnnotation()
 		to_send.first().first().attribute("experiment_id").value< Vip_experiment_id>(),
 		to_send, &p);
 	if (ids.size() == 0) {
-		QMessageBox::warning(NULL, "Error", "An error occured while sending manual annotation");
+		QMessageBox::warning(nullptr, "Error", "An error occured while sending manual annotation");
 		return;
 	}
 
@@ -2412,7 +2412,7 @@ void VipPlayerDBAccess::saveCSV()
 	QString pulse = QString::number(m_events.first().first().attribute("experiment_id").value< Vip_experiment_id>());
 	QString csv_name = pulse + "-" + m_events.first().first().attribute("line_of_sight").toString();
 
-	QString filename = VipFileDialog::getSaveFileName2(NULL, csv_name,"Save events as CSV file", "CSV file (*.csv)");
+	QString filename = VipFileDialog::getSaveFileName2(nullptr, csv_name,"Save events as CSV file", "CSV file (*.csv)");
 	if (filename.isEmpty())
 		return;
 
@@ -2488,7 +2488,7 @@ void VipPlayerDBAccess::saveCSV()
 VipPlayerDBAccess * VipPlayerDBAccess::fromPlayer(VipVideoPlayer * pl)
 {
 	if (!pl)
-		return NULL;
+		return nullptr;
 	if (!pl->property("VipPlayerDBAccess").toBool())
 		return new VipPlayerDBAccess(pl);
 	return pl->findChild<VipPlayerDBAccess*>();

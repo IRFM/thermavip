@@ -626,7 +626,7 @@ public:
 
 	PrivateData()
 	: startDist(0), endDist(0), startRadius(0), endRadius(1), angle(0),
-	  startRadiusAxis(NULL), endRadiusAxis(NULL), angleAxis(NULL), angleType(Vip::Relative)
+	  startRadiusAxis(nullptr), endRadiusAxis(nullptr), angleAxis(nullptr), angleType(Vip::Relative)
 	{}
 
 	double startDist;

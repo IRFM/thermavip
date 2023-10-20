@@ -130,7 +130,7 @@ struct VIP_DATA_TYPE_EXPORT VipNDArrayHandle : public QSharedData
 	///Returns a copy of this handle, copying the internal data
 	virtual VipNDArrayHandle * copy() const = 0;
 	///Returns the data pointer at given position.
-	/// This function should only return a non NULL value if the array is based on a dynamic flat array.
+	/// This function should only return a non nullptr value if the array is based on a dynamic flat array.
 	virtual void * dataPointer(const VipNDArrayShape & ) const = 0;
 	///Realloc the data with a new shape
 	virtual bool realloc(const VipNDArrayShape &) = 0;
@@ -203,12 +203,12 @@ namespace detail
 		NullHandle() {}
 		NullHandle(const NullHandle &) {}
 		virtual NullHandle * copy() const { return (NullHandle*)vipNullHandlePtr(); }
-		virtual void * dataPointer(const VipNDArrayShape &) const { return NULL; }
+		virtual void * dataPointer(const VipNDArrayShape &) const { return nullptr; }
 		virtual int handleType() const { return Null; }
 		virtual bool reshape(const VipNDArrayShape &) { return false; }
 		virtual bool realloc(const VipNDArrayShape &) { return false; }
 		virtual bool resize(const VipNDArrayShape &, const VipNDArrayShape &, VipNDArrayHandle *, Vip::InterpolationType, const VipNDArrayShape &, const VipNDArrayShape &) const { return false; }
-		virtual const char* dataName() const { return NULL; }
+		virtual const char* dataName() const { return nullptr; }
 		virtual int dataSize() const { return 1; }
 		virtual int dataType() const { return 0; }
 		virtual bool canExport(int) const { return false; }
@@ -251,7 +251,7 @@ namespace detail
 		VIP_ALWAYS_INLINE bool operator==(const SharedDataPointer &other) const noexcept { return d == other.d; }
 		VIP_ALWAYS_INLINE bool operator!=(const SharedDataPointer &other) const noexcept { return d != other.d; }
 
-		inline SharedDataPointer() : d(NULL) {}
+		inline SharedDataPointer() : d(nullptr) {}
 		inline ~SharedDataPointer() {
 			if (d && d->handleType() != VipNDArrayHandle::Null) {
 				if (!d->ref.deref())
@@ -391,7 +391,7 @@ namespace detail
 				else
 					delete[] static_cast<T*>(opaque);
 			}
-			opaque = NULL;
+			opaque = nullptr;
 		}
 
 		StdHandle(): own(true){}
@@ -709,7 +709,7 @@ namespace detail
 
 		~ViewHandle() {
 			if (pointerView) //for pointer view, the handle must not delete its data
-				const_cast<VipNDArrayHandle*>(handle.data())->opaque = NULL;
+				const_cast<VipNDArrayHandle*>(handle.data())->opaque = nullptr;
 		}
 		virtual ViewHandle * copy() const { return new ViewHandle(*this); }
 		virtual void * dataPointer(const VipNDArrayShape & pos) const { return handle->dataPointer(pos + start); }
@@ -790,7 +790,7 @@ namespace detail
 		dst->size = vipShapeToSize(out_shape);
 
 		bool res = vipResizeArray(&handle_src, dst, type);
-		handle_src.opaque = (void*)NULL;
+		handle_src.opaque = (void*)nullptr;
 		dst->opaque = saveOpaque;
 		dst->shape = saveShape;
 		dst->strides = saveStrides;

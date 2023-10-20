@@ -29,7 +29,7 @@ class VIP_CORE_EXPORT VipExtractComponent : public VipProcessingObject
 	VipGenericExtractComponent m_extract;
 
 public:
-	VipExtractComponent(QObject* parent = NULL)
+	VipExtractComponent(QObject* parent = nullptr)
 	  : VipProcessingObject(parent)
 	{
 	}
@@ -82,7 +82,7 @@ class VIP_CORE_EXPORT VipSplitAndMerge : public VipProcessingObject
 	Q_CLASSINFO("category", "Miscellaneous")
 
 public:
-	VipSplitAndMerge(QObject* parent = NULL);
+	VipSplitAndMerge(QObject* parent = nullptr);
 	~VipSplitAndMerge();
 
 	/// Set the split/merge method.
@@ -127,7 +127,7 @@ class VIP_CORE_EXPORT VipExtractShapeData : public VipSceneModelBasedProcessing
 	Q_OBJECT
 
 public:
-	VipExtractShapeData(QObject* parent = NULL)
+	VipExtractShapeData(QObject* parent = nullptr)
 	  : VipSceneModelBasedProcessing(parent)
 	{
 	}
@@ -162,9 +162,9 @@ class VIP_CORE_EXPORT VipExtractHistogram : public VipExtractShapeData
 	VIP_IO(VipMultiOutput histograms)
 	VIP_IO(VipProperty output_name)
 public:
-	VipExtractHistogram(QObject* parent = NULL)
+	VipExtractHistogram(QObject* parent = nullptr)
 	  : VipExtractShapeData(parent)
-	  , m_extract(NULL)
+	  , m_extract(nullptr)
 	{
 		propertyName("bins")->setData(1000);
 		propertyName("output_name")->setData(QString());
@@ -195,9 +195,9 @@ class VIP_CORE_EXPORT VipExtractPolyline : public VipExtractShapeData
 	VIP_IO(VipProperty method)
 	VIP_IO(VipProperty output_name)
 public:
-	VipExtractPolyline(QObject* parent = NULL)
+	VipExtractPolyline(QObject* parent = nullptr)
 	  : VipExtractShapeData(parent)
-	  , m_extract(NULL)
+	  , m_extract(nullptr)
 	{
 		propertyName("output_name")->setData(QString());
 		setReloadOnSceneChanges(true);
@@ -236,7 +236,7 @@ class VIP_CORE_EXPORT VipExtractStatistics : public VipExtractShapeData
 	VIP_IO(VipOutput skewness);
 	VIP_IO(VipOutput quantiles); // define as QList<QRect> (ot VipRectList)
 public:
-	VipExtractStatistics(QObject* parent = NULL)
+	VipExtractStatistics(QObject* parent = nullptr)
 	  : VipExtractShapeData(parent)
 	  , m_stats(VipShapeStatistics::All)
 	{

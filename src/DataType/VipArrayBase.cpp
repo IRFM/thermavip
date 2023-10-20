@@ -68,7 +68,7 @@ bool vipCanConvertStdTypes(uint from, uint to)
 
 bool vipCanConvert(uint from, uint to)
 {
-	QVariant v_from(from, NULL);
+	QVariant v_from(from, nullptr);
 	bool res = v_from.canConvert(to);
 
 	//delete potential the QObject that was created

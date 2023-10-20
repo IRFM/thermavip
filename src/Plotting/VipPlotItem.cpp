@@ -613,7 +613,7 @@ class VipPlotItem::PrivateData
 {
 public:
 	PrivateData()
-	  : axisColorMap(NULL)
+	  : axisColorMap(nullptr)
 	  , type(VipCoordinateSystem::Null)
 	  , attributes(VisibleLegend | AutoScale | ClipToScaleRect | ColorMapAutoScale)
 	  , timerId(-1)
@@ -690,7 +690,7 @@ public:
 
 QGraphicsEffect* VipPlotItem::nullEffect(VipPlotItem*)
 {
-	return NULL;
+	return nullptr;
 }
 
 bool _eventAccepted = false;
@@ -734,7 +734,7 @@ VipPlotItem::~VipPlotItem()
 	d_data->destruct = true;
 
 	this->blockSignals(true);
-	this->setParent(NULL);
+	this->setParent(nullptr);
 
 	// remove item's axes
 	for (int i = 0; i < d_data->axes.size(); ++i) {
@@ -760,7 +760,7 @@ VipAbstractPlotArea* VipPlotItem::parentPlotArea() const
 			return area;
 		item = item->parentItem();
 	}
-	return NULL;
+	return nullptr;
 }
 
 void VipPlotItem::setSceneMap(const VipCoordinateSystemPtr& map)
@@ -1105,10 +1105,10 @@ void VipPlotItem::setAxes(const QList<VipAbstractScale*>& axes, VipCoordinateSys
 		return;
 
 	// remove the graphics effect
-	this->setGraphicsEffect(NULL);
+	this->setGraphicsEffect(nullptr);
 
 	// remove item from any previous scene or parent
-	this->setParentItem(NULL);
+	this->setParentItem(nullptr);
 	if (this->scene())
 		this->scene()->removeItem(this);
 
@@ -1133,8 +1133,8 @@ void VipPlotItem::setAxes(const QList<VipAbstractScale*>& axes, VipCoordinateSys
 	d_data->axes = convert(axes);
 	d_data->type = type;
 
-	QGraphicsItem* parent = NULL;
-	QGraphicsScene* sc = NULL;
+	QGraphicsItem* parent = nullptr;
+	QGraphicsScene* sc = nullptr;
 
 	for (int i = 0; i < d_data->axes.size(); ++i) {
 		if (VipAbstractScale* axe = d_data->axes[i]) {
@@ -1235,7 +1235,7 @@ VipAbstractPlotArea* VipPlotItem::area() const
 			return a;
 		p = p->parentItem();
 	}
-	return NULL;
+	return nullptr;
 }
 
 void VipPlotItem::emitItemChanged(bool update_color_map, bool update_axes, bool update_shape, bool update_style_sheet)
@@ -1350,7 +1350,7 @@ void VipPlotItem::drawSelected(QPainter* painter, const VipCoordinateSystemPtr& 
 
 static QWindow* window()
 {
-	static QWindow* win = NULL;
+	static QWindow* win = nullptr;
 	if (!win) {
 		QSurfaceFormat format;
 		format.setMajorVersion(3);
@@ -1365,7 +1365,7 @@ static QWindow* window()
 }
 static QOpenGLContext* context()
 {
-	static QOpenGLContext* ctx = NULL;
+	static QOpenGLContext* ctx = nullptr;
 	if (!ctx) {
 		QSurfaceFormat format;
 		format.setMajorVersion(3);
@@ -1379,7 +1379,7 @@ static QOpenGLContext* context()
 }
 static QOpenGLFramebufferObject* buffer(const QSize& size)
 {
-	static QOpenGLFramebufferObject* buf = NULL;
+	static QOpenGLFramebufferObject* buf = nullptr;
 	if (!buf || buf->size() != size) {
 		if (buf) {
 			delete buf;
@@ -1529,7 +1529,7 @@ QRectF VipPlotItem::boundingRect() const
 	if (isDirtyShape()) {
 		const QRectF clip = sceneMap()->clipPath(this).boundingRect();
 
-		VipPlotItemData::Mutex* m = qobject_cast<const VipPlotItemData*>(this) ? static_cast<const VipPlotItemData*>(this)->dataLock() : NULL;
+		VipPlotItemData::Mutex* m = qobject_cast<const VipPlotItemData*>(this) ? static_cast<const VipPlotItemData*>(this)->dataLock() : nullptr;
 		if (m)
 			m->lock();
 		const QList<VipInterval> inters = plotBoundingIntervals();
@@ -1696,7 +1696,7 @@ QPainterPath VipPlotItem::shape() const
 		d_data->computeShape = true;
 
 		// Lock data mutex since shapeFromCoordinateSystem might call draw()
-		VipPlotItemData::Mutex* m = qobject_cast<const VipPlotItemData*>(this) ? static_cast<const VipPlotItemData*>(this)->dataLock() : NULL;
+		VipPlotItemData::Mutex* m = qobject_cast<const VipPlotItemData*>(this) ? static_cast<const VipPlotItemData*>(this)->dataLock() : nullptr;
 		if (m)
 			m->lock();
 		d_data->shape = this->shapeFromCoordinateSystem(this->sceneMap());
@@ -2218,7 +2218,7 @@ void VipPlotItem::dropMimeData(const QMimeData* mimedata)
 	if (const VipPlotMimeData* mime = qobject_cast<const VipPlotMimeData*>(mimedata)) {
 		if (testItemAttribute(AcceptDropItems)) {
 			// drop the items by setting there axes
-			QWidget* target = NULL;
+			QWidget* target = nullptr;
 			if (scene() && scene()->views().size())
 				target = scene()->views().first();
 
@@ -2592,7 +2592,7 @@ bool VipPlotItemComposite::append(VipPlotItem* item)
 		if (d_mode == Aggregate)
 			item->setAxes(axes(), coordinateSystemType());
 		else
-			item->setParentItem(NULL);
+			item->setParentItem(nullptr);
 		item->setColorMap(this->colorMap());
 		if (d_mode == UniqueItem)
 			item->setToolTipText(this->toolTipText());

@@ -35,7 +35,7 @@ class FFMPEG_EXPORT MPEGSaver : public VipIODevice
 	Q_CLASSINFO("description","Save a sequence of image as a mpeg video file. Internally uses ffmpeg.")
 public:
 
-	MPEGSaver(QObject * parent = NULL);
+	MPEGSaver(QObject * parent = nullptr);
 	virtual ~MPEGSaver();
 
 

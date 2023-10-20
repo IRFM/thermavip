@@ -17,7 +17,7 @@ class VIP_CORE_EXPORT DefaultProgressManager : public QObject
 {
 	Q_OBJECT
 public:
-	DefaultProgressManager(QObject * parent = NULL)
+	DefaultProgressManager(QObject * parent = nullptr)
 		:QObject(parent) {}
 
 public Q_SLOTS:

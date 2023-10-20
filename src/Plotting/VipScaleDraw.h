@@ -319,7 +319,7 @@ public:
 		return VipValueToFormattedText::convert(d_type == AbsoluteValue ? value : value - d_start, tick);
 	}
 
-	virtual vip_double fromString(const QString& text, bool* ok = NULL) const
+	virtual vip_double fromString(const QString& text, bool* ok = nullptr) const
 	{
 		vip_double res = VipValueToFormattedText::fromString(text, ok);
 		if (d_type != AbsoluteValue)
@@ -375,7 +375,7 @@ public:
     TimeType timeType() const;
 
     virtual QString convert(vip_double value, VipScaleDiv::TickType tick = VipScaleDiv::MajorTick) const;
-	virtual vip_double fromString(const QString& text, bool* ok = NULL) const;
+	virtual vip_double fromString(const QString& text, bool* ok = nullptr) const;
 	virtual QList<VipScaleText> additionalText(const VipAbstractScaleDraw*) const;
 
 private:

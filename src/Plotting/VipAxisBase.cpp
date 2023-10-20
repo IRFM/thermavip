@@ -165,7 +165,7 @@ void VipAxisBase::itemGeometryChanged(const QRectF&)
 
 void VipAxisBase::setScaleDraw(VipScaleDraw* _scaleDraw)
 {
-	if ((_scaleDraw == NULL) || (_scaleDraw == scaleDraw()))
+	if ((_scaleDraw == nullptr) || (_scaleDraw == scaleDraw()))
 		return;
 
 	const VipScaleDraw* sd = scaleDraw();
@@ -173,7 +173,7 @@ void VipAxisBase::setScaleDraw(VipScaleDraw* _scaleDraw)
 		_scaleDraw->setAlignment(sd->alignment());
 		_scaleDraw->setScaleDiv(sd->scaleDiv());
 
-		VipValueTransform* transform = NULL;
+		VipValueTransform* transform = nullptr;
 		if (sd->scaleMap().transformation())
 			transform = sd->scaleMap().transformation()->copy();
 
@@ -888,9 +888,9 @@ void VipMultiAxisBase::insertScale(int index, VipBorderItem* it)
 VipBorderItem* VipMultiAxisBase::takeItem(int index)
 {
 	VipBorderItem* it = at(index);
-	it->setProperty("_vip_VipMultiAxisBase", QVariant::fromValue((QObject*)NULL));
+	it->setProperty("_vip_VipMultiAxisBase", QVariant::fromValue((QObject*)nullptr));
 	it->setProperty("_vip_ignore_geometry", QVariant());
-	it->setParentItem(NULL);
+	it->setParentItem(nullptr);
 	d_data->scales.removeAt(index);
 	emitGeometryNeedUpdate();
 	disconnect(it, SIGNAL(geometryNeedUpdate()), this, SLOT(emitGeometryNeedUpdate()));

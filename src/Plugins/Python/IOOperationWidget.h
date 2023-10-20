@@ -47,7 +47,7 @@ class  PYTHON_EXPORT IOOperationWidget : public QTextEdit
 {
 	Q_OBJECT
 public:
-	IOOperationWidget(QWidget * parent = NULL);
+	IOOperationWidget(QWidget * parent = nullptr);
 	~IOOperationWidget();
 
 	void SetProcess(IOOperation * proc);

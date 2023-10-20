@@ -143,7 +143,7 @@ private:
 };
 
 /// Returns the global annotation widget
-VIP_GUI_EXPORT VipAnnotationToolWidget * vipGetAnnotationToolWidget(VipMainWindow * w=NULL);
+VIP_GUI_EXPORT VipAnnotationToolWidget * vipGetAnnotationToolWidget(VipMainWindow * w=nullptr);
 /// Create annotation from selected shapes inside given player and display the annotation widget
 VIP_GUI_EXPORT void vipEditAnnotations(VipPlayer2D * player);
 /// Remove annotation for selected shapes inside given player.
@@ -162,9 +162,9 @@ VIP_GUI_EXPORT void vipRemoveAllAnnotations(VipPlayer2D * player);
 /// @param end end position for line, arrow, rectangle or ellipse
 /// @param attributes additional annotation attributes. see #vipAnnotation() for more details.
 /// @param yaxis if not empty and for stacked plot only, yaxis is used to find the left axis where the annotation will be added
-/// @param error is not NULL and one of the attributes has a wrong syntax, this string gives an error message
+/// @param error is not nullptr and one of the attributes has a wrong syntax, this string gives an error message
 ///
 /// @return created annotation
 VIP_GUI_EXPORT VipSimpleAnnotation* vipAnnotation(VipPlayer2D * player, const QString & type, const QString & text,
 	const QPointF & start, const QPointF & end = QPointF(), const QVariantMap & attributes = QVariantMap(),
-	const QString & yaxis = QString(), QString * error = NULL);
+	const QString & yaxis = QString(), QString * error = nullptr);

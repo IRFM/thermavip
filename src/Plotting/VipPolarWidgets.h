@@ -25,7 +25,7 @@ class VIP_PLOTTING_EXPORT VipPolarValueGauge : public VipPlotPolarWidget2D
 	Q_OBJECT
 
 public:
-	VipPolarValueGauge(QWidget* parent = NULL);
+	VipPolarValueGauge(QWidget* parent = nullptr);
 	~VipPolarValueGauge();
 
 	/**

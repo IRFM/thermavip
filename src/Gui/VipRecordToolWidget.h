@@ -53,7 +53,7 @@ public:
 	QList<VipPlotItem*> possibleItems() const;
 
 	static QList<VipPlotItem*> possibleItems(VipDisplayPlayerArea * area, const QList<VipPlotItem*> & current_item = QList<VipPlotItem*>()) ;
-	static QList<QAction*> createActions(const QList<VipPlotItem*> & items, QObject * parent = NULL) ;
+	static QList<QAction*> createActions(const QList<VipPlotItem*> & items, QObject * parent = nullptr) ;
 
 Q_SIGNALS:
 	void itemSelected(VipPlotItem*);
@@ -72,7 +72,7 @@ class VIP_GUI_EXPORT SkipFrame : public  QWidget
 {
 	Q_OBJECT
 public:
-	SkipFrame(QWidget* parent = NULL);
+	SkipFrame(QWidget* parent = nullptr);
 	~SkipFrame();
 
 	int value();
@@ -148,7 +148,7 @@ private:
 	PrivateData * m_data;
 };
 
-VipRecordToolWidget * vipGetRecordToolWidget(VipMainWindow * window = NULL);
+VipRecordToolWidget * vipGetRecordToolWidget(VipMainWindow * window = nullptr);
 
 
 
@@ -159,7 +159,7 @@ class VIP_GUI_EXPORT VipRecordWidgetButton : public QToolButton
 	Q_OBJECT
 
 public:
-	VipRecordWidgetButton(VipBaseDragWidget * widget, QWidget * parent = NULL);
+	VipRecordWidgetButton(VipBaseDragWidget * widget, QWidget * parent = nullptr);
 	~VipRecordWidgetButton();
 
 	QString filename() const;

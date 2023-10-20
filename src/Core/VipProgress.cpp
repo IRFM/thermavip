@@ -68,7 +68,7 @@ void VipProgress::setText(const QString & text)
 	if(progressManager())
 		QMetaObject::invokeMethod(progressManager(),"setText", Qt::QueuedConnection, Q_ARG(QObjectPointer,this), Q_ARG(QString,text));
 
-	vipProcessEvents(NULL, 50);
+	vipProcessEvents(nullptr, 50);
 }
 
 void VipProgress::setValue(double value)
@@ -89,7 +89,7 @@ void VipProgress::setValue(double value)
 	if(time- m_data->lastTime > 200)
 	{
 		//process gui events every 200ms
-		int r = vipProcessEvents(NULL,1);
+		int r = vipProcessEvents(nullptr,1);
 		m_data->lastTime = QDateTime::currentMSecsSinceEpoch();
 		if (r == -3 && QCoreApplication::instance()->thread() == QThread::currentThread() && new_value) //recursice call and we are in the main thread
 		{

@@ -30,7 +30,7 @@ class PySignalFusionProcessing : public PyBaseProcessing
 		"a Python script for the x components and the y components.")
 	Q_CLASSINFO("category", "Miscellaneous")
 public:
-	PySignalFusionProcessing(QObject * parent = NULL);
+	PySignalFusionProcessing(QObject * parent = nullptr);
 	virtual DisplayHint displayHint() const { return DisplayOnSameSupport; }
 	virtual QVariant initializeProcessing(const QVariant & v);
 	virtual bool acceptInput(int /*index*/, const QVariant & v) const { return qMetaTypeId<VipPointVector>() == v.userType(); }
@@ -58,7 +58,7 @@ class PySignalFusionProcessingEditor : public QWidget
 	Q_OBJECT
 
 public:
-	PySignalFusionProcessingEditor(QWidget *parent = NULL);
+	PySignalFusionProcessingEditor(QWidget *parent = nullptr);
 	~PySignalFusionProcessingEditor();
 
 	void setPlotPlayer(VipPlotPlayer * player);

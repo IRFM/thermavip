@@ -173,11 +173,11 @@ public:
 	/// <li> If the source directory name already exists in the destination folder and \a merge is false, return false.</li>
 	/// <li> If the source directory name already exists in the destination folder and \a merge is true, merge the source folder in the destination one, and remove the source folder.</li>
 	/// </ul>
-	bool move(const VipPath & src, const VipPath & dst, bool merge = false, VipProgress * progress = NULL);
+	bool move(const VipPath & src, const VipPath & dst, bool merge = false, VipProgress * progress = nullptr);
 
 	/// Copy a files or directory to \a dst file or directory, specifying if the destination directory or file should be overwritten.
 	/// If \a overwrite is true and \a src is folder, its content will be merged with the destination folder.
-	bool copy(const VipPath & src, const VipPath & dst, bool merge = false, VipProgress * progress = NULL);
+	bool copy(const VipPath & src, const VipPath & dst, bool merge = false, VipProgress * progress = nullptr);
 
 	///Lists the content of a directory
 	VipPathList list(const VipPath & path, bool recursive = false);
@@ -230,7 +230,7 @@ protected:
 	/// The listing must not be recursive.
 	virtual VipPathList listPathContent(const VipPath & path) = 0;
 	/// Open a file in given \a mode and returns a QIODevice to manipulate this file.
-	/// Returns a NULL QIODevice on failure.
+	/// Returns a nullptr QIODevice on failure.
 	virtual QIODevice * openPath(const VipPath & path, QIODevice::OpenMode modes);
 
 	void setError(const QString & error_str, int error_code = -2);
@@ -245,7 +245,7 @@ Q_SIGNALS:
 
 private:
 	void listPathHelper(VipPathList & out, const VipPath & path);
-	bool copyDirContentHelper(const VipPath & src_dir, const VipPath & dst_dir, bool overwrite, VipProgress * progress = NULL);
+	bool copyDirContentHelper(const VipPath & src_dir, const VipPath & dst_dir, bool overwrite, VipProgress * progress = nullptr);
 
 	int m_error_code;
 	QString m_error_string;
@@ -269,7 +269,7 @@ public:
 	virtual QByteArray address() const { return QByteArray(); }
 	virtual bool isOpen() const { return true; }
 
-	static bool exists_timeout(const QString& path, int milli_timeout = -1, bool * timed_out = NULL);
+	static bool exists_timeout(const QString& path, int milli_timeout = -1, bool * timed_out = nullptr);
 	static bool has_network_issues();
 protected:
 	virtual QStringList standardFileSystemAttributes();

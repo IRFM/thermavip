@@ -178,7 +178,7 @@ QList<QGraphicsLayoutItem*> VipDynGridLayout::allItems() const
 QGraphicsLayoutItem *VipDynGridLayout::itemAt( int index ) const
 {
     if ( index < 0 || index >= d_data->itemList.count() )
-        return NULL;
+        return nullptr;
 
     return d_data->itemList.at( index );
 }
@@ -213,11 +213,11 @@ void VipDynGridLayout::remove(QGraphicsLayoutItem * item)
 QGraphicsLayoutItem *VipDynGridLayout::takeAt( int index )
 {
     if ( index < 0 || index >= d_data->itemList.count() )
-        return NULL;
+        return nullptr;
 
     d_data->isDirty = true;
     QGraphicsLayoutItem * item = d_data->itemList.takeAt( index );
-    item->setParentLayoutItem(NULL);
+    item->setParentLayoutItem(nullptr);
     return item;
 }
 
@@ -269,7 +269,7 @@ void VipDynGridLayout::clear()
 	for ( QList<QGraphicsLayoutItem*>::iterator it = d_data->itemList.begin();
 	        it != d_data->itemList.end(); ++it )
 	{
-		(*it)->setParentLayoutItem(NULL);
+		(*it)->setParentLayoutItem(nullptr);
 		delete ( *it );
 	}
 

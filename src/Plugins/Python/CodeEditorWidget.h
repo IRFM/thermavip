@@ -13,7 +13,7 @@ class PYTHON_EXPORT CodeEditorWidget : public QWidget
 
 public:
 
-	CodeEditorWidget(QWidget * parent = NULL);
+	CodeEditorWidget(QWidget * parent = nullptr);
 	~CodeEditorWidget();
 
 	PyEditor * editor() const;
@@ -62,7 +62,7 @@ class PYTHON_EXPORT CodeEditorToolWidget : public VipToolWidget
 	Q_OBJECT
 public:
 
-	CodeEditorToolWidget(VipMainWindow * parent = NULL)
+	CodeEditorToolWidget(VipMainWindow * parent = nullptr)
 		:VipToolWidget(parent)
 	{
 		this->setWidget(new CodeEditorWidget());

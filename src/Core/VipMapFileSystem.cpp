@@ -254,7 +254,7 @@ public:
 
 				++count_found;
 				if (count_found % 10 == 0)
-					vipProcessEvents(NULL, 10);
+					vipProcessEvents(nullptr, 10);
 			}
 
 			if (p.isDir())
@@ -308,7 +308,7 @@ public:
 
 						++count_found;
 						if (count_found % 10 == 0)
-							vipProcessEvents(NULL, 10);
+							vipProcessEvents(nullptr, 10);
 					}
 
 					if (tmp[j].isDir())
@@ -328,7 +328,7 @@ public:
 
 
 VipMapFileSystem::VipMapFileSystem(SupportedOperations operations)
-	:m_error_code(0), m_operations(operations), m_search(NULL)
+	:m_error_code(0), m_operations(operations), m_search(nullptr)
 {
 	VipUniqueId::id(this);
 }
@@ -733,11 +733,11 @@ QIODevice * VipMapFileSystem::open(const VipPath & path, QIODevice::OpenMode mod
 {
 	//setError("Cannot list path content: unsupported operation" - 1);
 	if ( (mode & QIODevice::ReadOnly) && !(m_operations & OpenRead))
-		return NULL;
+		return nullptr;
 	if ((mode & QIODevice::WriteOnly) && !(m_operations & OpenWrite))
-		return NULL;
+		return nullptr;
 	if ((mode & QIODevice::Text) && !(m_operations & OpenText))
-		return NULL;
+		return nullptr;
 	resetError();
 	return openPath(path,mode);
 }
@@ -753,7 +753,7 @@ void VipMapFileSystem::stopSearch()
 	if (m_search)
 	{
 		delete m_search;
-		m_search = NULL;
+		m_search = nullptr;
 	}
 }
 
@@ -817,7 +817,7 @@ bool VipMapFileSystem::copyPath(const VipPath & , const VipPath & )
 
 QIODevice * VipMapFileSystem::openPath(const VipPath & , QIODevice::OpenMode )
 {
-	return NULL;
+	return nullptr;
 }
 
 
@@ -1004,7 +1004,7 @@ QIODevice * VipPhysicalFileSystem::openPath(const VipPath & path, QIODevice::Ope
 		return file;
 	else
 		delete file;
-	return NULL;
+	return nullptr;
 }
 
 

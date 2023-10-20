@@ -24,7 +24,7 @@ class FFMPEG_EXPORT MPEGLoader : public VipTimeRangeBasedGenerator
 public:
 
 
-	MPEGLoader(QObject * parent = NULL);
+	MPEGLoader(QObject * parent = nullptr);
 	virtual ~MPEGLoader();
 
 	qint32 fullFrameWidth() const;

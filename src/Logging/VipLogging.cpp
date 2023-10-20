@@ -182,7 +182,7 @@ bool VipLogging::isEnabled() const
 
 bool VipLogging::open(Outputs outputs, const QString & identifier)
 {
-	VipFileLogger * logger = NULL;
+	VipFileLogger * logger = nullptr;
 	if(!identifier.isEmpty() && (outputs & File))
 		logger = new VipTextLogger(identifier,"./");
 	return open(outputs,logger);

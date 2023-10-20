@@ -296,7 +296,7 @@ int main(int argc, char** argv)
 		no_splashscreen = true;
 
 
-	QSplashScreen* splash = NULL;
+	QSplashScreen* splash = nullptr;
 	if (!no_splashscreen)
 	{
 		splash = new QSplashScreen();
@@ -360,7 +360,7 @@ int main(int argc, char** argv)
 				{
 					if (!no_splashscreen)
 						splash->hide();
-					QMessageBox::StandardButton button = QMessageBox::question(NULL, "Update Thermavip", "A Thermavip update is ready to be installed.\nInstall now?");
+					QMessageBox::StandardButton button = QMessageBox::question(nullptr, "Update Thermavip", "A Thermavip update is ready to be installed.\nInstall now?");
 					if (button == QMessageBox::Yes)
 					{
 						QString procname = QFileInfo(app.arguments()[0]).fileName();
@@ -531,11 +531,9 @@ int main(int argc, char** argv)
 	if (QFileInfo(user_base_session_filename).exists())
 	{
 		//vip_debug("load session file : %s\n", user_base_session_filename.toLatin1().data()); fflush(stdout);
-		if (!vipGetMainWindow()->loadSessionShowProgress(user_base_session_filename, NULL))
-			vipGetMainWindow()->loadSessionShowProgress("base_session.session", NULL);
+		if (!vipGetMainWindow()->loadSessionShowProgress(user_base_session_filename, nullptr))
+			vipGetMainWindow()->loadSessionShowProgress("base_session.session", nullptr);
 
-		//vipGetMainWindow()->metaObject()->invokeMethod(vipGetMainWindow(), "loadSessionFallback", Qt::QueuedConnection,
-		//	Q_ARG(QString, user_base_session_filename), Q_ARG(QString, "base_session.session"));
 	}
 
 

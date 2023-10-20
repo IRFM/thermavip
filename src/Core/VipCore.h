@@ -68,7 +68,7 @@ typedef QPointer<QObject> QObjectPointer;
 Q_DECLARE_METATYPE(QObjectPointer)
 
 /// @brief Cast a QList of QObject pointer to another list of QObject pointer.
-/// All NULL pointers or pointers that cannot be cast to the output type are removed.
+/// All nullptr pointers or pointers that cannot be cast to the output type are removed.
 template<class T, class U>
 QList<T> vipListCast(const QList<U>& lst)
 {
@@ -80,7 +80,7 @@ QList<T> vipListCast(const QList<U>& lst)
 }
 
 /// @brief Cast a QList of QObject pointer to another list of QObject pointer.
-/// All NULL pointers or pointers that cannot be cast to the output type are removed.
+/// All nullptr pointers or pointers that cannot be cast to the output type are removed.
 /// If obj_name is not empty, only QObject with given objectName() are kept.
 template<class T, class U>
 QList<T> vipListCast(const QList<U>& lst, const QString& obj_name)
@@ -94,7 +94,7 @@ QList<T> vipListCast(const QList<U>& lst, const QString& obj_name)
 }
 
 /// @brief Cast a QSet of QObject pointer to another set of QObject pointer.
-/// All NULL pointers or pointers that cannot be cast to the output type are removed.
+/// All nullptr pointers or pointers that cannot be cast to the output type are removed.
 template<class T, class U>
 QSet<T> vipListCast(const QSet<U>& lst)
 {
@@ -143,7 +143,7 @@ QList<T> vipListCast(const QVariantList& lst)
 }
 
 /// @brief Cast a QVector of QObject pointer to a QList of QObject pointer.
-/// All NULL pointers or pointers that cannot be cast to the output type are removed.
+/// All nullptr pointers or pointers that cannot be cast to the output type are removed.
 template<class T, class U>
 QList<T> vipListCast(const QVector<U>& lst)
 {
@@ -203,7 +203,7 @@ QList<T> vipCreateFromClipboard()
 ///
 /// This function can be called from any thread in order to keep the GUI responsive, and can even be called recursively without deadlock.
 ///
-/// If \a keep_going is not NULL, the function will return when *keep_going == false.
+/// If \a keep_going is not nullptr, the function will return when *keep_going == false.
 /// If \a milli is greater than 0, the function will return 0 if all events where processed before  given milli seconds.
 ///
 /// The return values are the following:
@@ -213,7 +213,7 @@ QList<T> vipCreateFromClipboard()
 /// <li>-2: stopped due to a timeout</li>
 /// <li>-3: stopped for another reason (like recursive call detected)</li>
 /// </ul>
-VIP_CORE_EXPORT int vipProcessEvents(bool* keep_going = NULL, int milli = -1);
+VIP_CORE_EXPORT int vipProcessEvents(bool* keep_going = nullptr, int milli = -1);
 
 class VipArchive;
 class QDataStream;

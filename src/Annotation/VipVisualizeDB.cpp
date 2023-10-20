@@ -281,7 +281,7 @@ VisualizeDB * VisualizeDB::fromChild(QWidget * w)
 			return static_cast<VisualizeDB*>(w);
 		w = w->parentWidget();
 	}
-	return NULL;
+	return nullptr;
 }
 
 VipQueryDBWidget * VisualizeDB::queryWidget() const
@@ -375,7 +375,7 @@ void VisualizeDB::plotTimeTrace()
 	QList<QWidget*> players;
 	for (QMap<QString, QList<VipAnyResource*> >::iterator it = curves.begin(); it != curves.end(); ++it)
 	{
-		QList<VipAbstractPlayer*> pls = vipCreatePlayersFromProcessings(it.value(), NULL);
+		QList<VipAbstractPlayer*> pls = vipCreatePlayersFromProcessings(it.value(), nullptr);
 		if (pls.size())
 			players.push_back(pls.first());
 	}
@@ -389,7 +389,7 @@ void VisualizeDB::plotTimeTrace()
 void VisualizeDB::suppressSelectedLines()
 {
 	if (!vipHasWriteRightsDB()){
-		QMessageBox::warning(NULL, "Error", "You do not have the rights to perform this action!");
+		QMessageBox::warning(nullptr, "Error", "You do not have the rights to perform this action!");
 		return;
 	}
 
@@ -402,7 +402,7 @@ void VisualizeDB::suppressSelectedLines()
 	//ask confirmation
 	if (ids.size()) {
 		QMessageBox::StandardButton b = 
-			QMessageBox::question(NULL, "Confirmation", "Are you sure to delete selected items (" + QString::number(ids.size()) + ") ?", 
+			QMessageBox::question(nullptr, "Confirmation", "Are you sure to delete selected items (" + QString::number(ids.size()) + ") ?", 
 			QMessageBox::Yes | QMessageBox::Cancel);
 		if (b != QMessageBox::Yes)
 			return;
@@ -475,7 +475,7 @@ QByteArray VisualizeDB::dumpSelection()
 
 void VisualizeDB::saveToCSV()
 {
-	QString filename = VipFileDialog::getSaveFileName(NULL, "Create CSV file", "CSV file (*.csv)");
+	QString filename = VipFileDialog::getSaveFileName(nullptr, "Create CSV file", "CSV file (*.csv)");
 	if (filename.isEmpty())
 		return;
 
@@ -484,7 +484,7 @@ void VisualizeDB::saveToCSV()
 
 	QFile fout(filename);
 	if (!fout.open(QFile::WriteOnly)) {
-		QMessageBox::warning(NULL, "Error while saving CSV file", "Unable to save to file " + QFileInfo(filename).fileName(), QMessageBox::Ok);
+		QMessageBox::warning(nullptr, "Error while saving CSV file", "Unable to save to file " + QFileInfo(filename).fileName(), QMessageBox::Ok);
 		return;
 	}
 	fout.write(ar);
@@ -498,7 +498,7 @@ void VisualizeDB::copyToClipBoard()
 void VisualizeDB::editSelectedColumn()
 {
 	if (!vipHasWriteRightsDB()) {
-		QMessageBox::warning(NULL, "Error", "You do not have the rights to perform this action!");
+		QMessageBox::warning(nullptr, "Error", "You do not have the rights to perform this action!");
 		return;
 	}
 
@@ -578,7 +578,7 @@ void VisualizeDB::editSelectedColumn()
 			value = QString("'" + value.toString() + "'");
 	}
 	else {
-		QMessageBox::warning(NULL, "Warning", "This column is not editable");
+		QMessageBox::warning(nullptr, "Warning", "This column is not editable");
 		return;
 	}
 
@@ -588,7 +588,7 @@ void VisualizeDB::editSelectedColumn()
 
 	VipProgress p;
 	if (!vipChangeColumnInfoDB(ids, name, value.toString(),&p))
-		QMessageBox::warning(NULL, "Error", "Unable to change values!");
+		QMessageBox::warning(nullptr, "Error", "Unable to change values!");
 	else
 		launchQuery();
 }
@@ -683,7 +683,7 @@ void VisualizeDB::launchQuery()
 	VipProgress p;
 	VipEventQueryResults res = vipQueryDB(query,&p);
 	if (!res.isValid()) {
-		QMessageBox::warning(NULL, "Warning", "Failed to retrieve events!");
+		QMessageBox::warning(nullptr, "Warning", "Failed to retrieve events!");
 		return;
 	}
 
@@ -769,7 +769,7 @@ void VisualizeDB::displaySelectedEvents(QAction* a)
 		}
 	}
 	if (pl) {
-		vipProcessEvents(NULL, 1000);
+		vipProcessEvents(nullptr, 1000);
 		if (VipPlayerDBAccess * db = /*VipPlayerDBAccess::fromPlayer(pl)*/pl->findChild<VipPlayerDBAccess*>()) {
 			db->addEvents(events, true);
 		}
@@ -802,7 +802,7 @@ void VisualizeDB::findRelatedEvents()
 	q.min_region_overlap = 0.5;
 	VipEventQueryResults r = vipQueryDB(q,&p);
 	if (r.events.size() < 2) {
-		QMessageBox::warning(NULL,"Warning","No related events found!");
+		QMessageBox::warning(nullptr,"Warning","No related events found!");
 		return;
 	}
 	displayEventResult(r, &p);*/

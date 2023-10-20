@@ -189,7 +189,7 @@ PythonParameters::PythonParameters()
 	vlay->addLayout(hlay);*/
 
 	vlay->addWidget(startupCode, 3);
-	actStartupCode = new QAction(NULL);
+	actStartupCode = new QAction(nullptr);
 	actStartupCode->setIcon(vipIcon("apply.png"));
 	actStartupCode->setText("Apply startup code");
 	startupCode->TabBar()->insertAction(startupCode->TabBar()->actions().first(), actStartupCode);
@@ -336,7 +336,7 @@ static void createPyGenerator()
 {
 	if (VipIODevice * dev = PySignalGeneratorEditor::createGenerator(false))
 	{
-		vipGetMainWindow()->openDevices(QList<VipIODevice*>() << dev, NULL, NULL);
+		vipGetMainWindow()->openDevices(QList<VipIODevice*>() << dev, nullptr, nullptr);
 	}
 }
 
@@ -344,7 +344,7 @@ static void createComplexPyGenerator()
 {
 	if (VipIODevice * dev = PySignalGeneratorEditor::createGenerator(true))
 	{
-		vipGetMainWindow()->openDevices(QList<VipIODevice*>() << dev, NULL, NULL);
+		vipGetMainWindow()->openDevices(QList<VipIODevice*>() << dev, nullptr, nullptr);
 	}
 }
 
@@ -354,7 +354,7 @@ static void createComplexPyGenerator()
 
 
 
-//static VipToolWidget * python = NULL;
+//static VipToolWidget * python = nullptr;
 
 #include "PyProcess.h"
 
@@ -499,7 +499,7 @@ public:
 
 protected:
 
-	bool sendObject(const QString& name, qint64 timeout = -1, QString* error = NULL)
+	bool sendObject(const QString& name, qint64 timeout = -1, QString* error = nullptr)
 	{
 		if (error)
 			error->clear();

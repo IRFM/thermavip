@@ -18,7 +18,7 @@ class H5_STILL_IMAGE_EXPORT HDF5VideoReader : public VipTimeRangeBasedGenerator
 	Q_CLASSINFO("category","reader/video")
 public:
 
-	HDF5VideoReader(QObject * parent = NULL);
+	HDF5VideoReader(QObject * parent = nullptr);
 	~HDF5VideoReader();
 
 	virtual QString fileFilters() const {return "H5 video file (*.h5)" ;}
@@ -56,7 +56,7 @@ class H5_STILL_IMAGE_EXPORT HDF5_ECRHVideoReader : public VipTimeRangeBasedGener
 		Q_CLASSINFO("category", "reader/video")
 public:
 
-	HDF5_ECRHVideoReader(QObject * parent = NULL);
+	HDF5_ECRHVideoReader(QObject * parent = nullptr);
 	~HDF5_ECRHVideoReader();
 
 	virtual QString fileFilters() const { return "H5 video file (*.h5)"; }
@@ -88,7 +88,7 @@ class H5_STILL_IMAGE_EXPORT HDF5VideoWriter : public VipIODevice
 
 public:
 
-	HDF5VideoWriter(QObject * parent = NULL);
+	HDF5VideoWriter(QObject * parent = nullptr);
 	~HDF5VideoWriter();
 
 	void setImagesName(const QString & name);

@@ -15,7 +15,7 @@ class VIP_CORE_EXPORT VipUpdate : public QObject
 	Q_OBJECT
 
 public:
-	VipUpdate(QObject * parent =NULL);
+	VipUpdate(QObject * parent =nullptr);
 	~VipUpdate();
 
 	static QString getUpdateProgram();
@@ -26,7 +26,7 @@ public Q_SLOTS:
 	bool stop();
 
 	///Checks if updates are available based on given output directory containing the Thermavip installation.
-	int hasUpdate(const QString & out_dir, bool * already_downloaded = NULL,  void ** stop = NULL);
+	int hasUpdate(const QString & out_dir, bool * already_downloaded = nullptr,  void ** stop = nullptr);
 
 	///Tells if all updates has been downloaded
 	bool isDownloadFinished();

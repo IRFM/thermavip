@@ -195,7 +195,7 @@ public:
 
 	///Returns the region exactly covered by this shape.
 	/// If \a out_rects is not null, fill it with the region rects.
-	QRegion region(QVector<QRect> *out_rects = NULL) const;
+	QRegion region(QVector<QRect> *out_rects = nullptr) const;
 
 	///Returns the shape identifier.
 	/// Within a #VipSceneModel group, each shape has a unique non null identifier.
@@ -218,7 +218,7 @@ public:
 
 	///Returns the shape's parent #VipSceneModel, or a null #VipSceneModel if it has no parent
 	VipSceneModel parent() const;
-	///Returns the #VipShapeSignals associated with the parent's #VipSceneModel, or a NULL VipShapeSignals if it has no parent.
+	///Returns the #VipShapeSignals associated with the parent's #VipSceneModel, or a nullptr VipShapeSignals if it has no parent.
 	/// The #VipShapeSignals class is used to emit signals whenever a VipShape or a VipSceneModel changes.
 	VipShapeSignals * shapeSignals() const;
 
@@ -229,12 +229,12 @@ public:
 	static QVector<QRect> fillRects(const QList<VipShape> & shapes);
 
 	///Given the list of pixels \a points, remove the pixels outside the bounding rectangle \a rect.
-	/// If \a bounding is non NULL, set it to the new pixels bounding rect.
-	static QVector<QPoint> clip(const QVector<QPoint> & points, const QRect & rect, QRect * bounding = NULL);
+	/// If \a bounding is non nullptr, set it to the new pixels bounding rect.
+	static QVector<QPoint> clip(const QVector<QPoint> & points, const QRect & rect, QRect * bounding = nullptr);
 
 	///Given the list of rectangles \a rects, clip all rectangle with given bounding rectangle \a rect.
-	/// If \a bounding is non NULL, set it to the new bounding rect.
-	static QVector<QRect> clip(const QVector<QRect> & rects, const QRect & rect, QRect * bounding = NULL);
+	/// If \a bounding is non nullptr, set it to the new bounding rect.
+	static QVector<QRect> clip(const QVector<QRect> & rects, const QRect & rect, QRect * bounding = nullptr);
 
 	///Extract the statistics inside an image for a list of pixels.
 	/// \param points The input pixels to consider
@@ -244,7 +244,7 @@ public:
 	/// \param buffer a buffer image that will speed up the computing. This only necessary if you intent to compute the statistics with the same shape for several images.
 	/// \return a list of #VipShapeStatistics (one per image component). If input image is a color image, output will contain the statistics for components Alpha, Red, Green, Blue.
 	/// If input image is complex, output will contain the statistics for components Real and Imag. Otherwise, only one component statistics is returned.
-	static VipShapeStatistics statistics(const QVector<QRect> & rects, const VipNDArray & img, const QPoint & img_offset = QPoint(0,0), const QRect & bounding_rect = QRect(), VipNDArray * buffer = NULL, VipShapeStatistics::Statistics stats = VipShapeStatistics::All, const QVector<double> & bbox_quantiles = QVector<double>());
+	static VipShapeStatistics statistics(const QVector<QRect> & rects, const VipNDArray & img, const QPoint & img_offset = QPoint(0,0), const QRect & bounding_rect = QRect(), VipNDArray * buffer = nullptr, VipShapeStatistics::Statistics stats = VipShapeStatistics::All, const QVector<double> & bbox_quantiles = QVector<double>());
 
 	///Extract the statistics inside an image for this shape.
 	/// \param img the input image
@@ -252,7 +252,7 @@ public:
 	/// \param buffer a buffer image that will speed up the computing. This only necessary if you intent to compute the statistics with the same shape for several images.
 	/// \return a list of #VipShapeStatistics (one per image component). If input image is a color image, output will contain the statistics for components Alpha, Red, Green, Blue.
 	/// If input image is complex, output will contain the statistics for components Real and Imag. Otherwise, only one component statistics is returned.
-	VipShapeStatistics statistics(const VipNDArray & img, const QPoint & img_offset = QPoint(0,0), VipNDArray * buffer = NULL, VipShapeStatistics::Statistics stats = VipShapeStatistics::All, const QVector<double>& bbox_quantiles = QVector<double>()) const;
+	VipShapeStatistics statistics(const VipNDArray & img, const QPoint & img_offset = QPoint(0,0), VipNDArray * buffer = nullptr, VipShapeStatistics::Statistics stats = VipShapeStatistics::All, const QVector<double>& bbox_quantiles = QVector<double>()) const;
 
 	template<class T, Vip::ArrayStats Stats>
 	VipArrayStats<T, Stats> imageStats(const VipNDArray & img, const QPoint & img_offset = QPoint(0, 0)) const
@@ -269,7 +269,7 @@ public:
 	/// \param buffer a buffer image that will speed up the computing. This only necessary if you intent to compute the statistics with the same shape for several images.
 	/// \return a list of #VipIntervalSample (one per image component). If input image is a color image, output will contain the histogram for components Alpha, Red, Green, Blue.
 	/// If input image is complex, output will contain the histogram for components Real and Imag. Otherwise, only one component histogam is returned.
-	static  QVector<VipIntervalSample> histogram(int bins, const QVector<QRect> & rects, const VipNDArray & img, const QPoint & img_offset = QPoint(0,0), const QRect & bounding_rect = QRect(), VipNDArray * buffer = NULL );
+	static  QVector<VipIntervalSample> histogram(int bins, const QVector<QRect> & rects, const VipNDArray & img, const QPoint & img_offset = QPoint(0,0), const QRect & bounding_rect = QRect(), VipNDArray * buffer = nullptr );
 	///Extract the histogram inside an image for this shape.
 	/// \param bins number of bins for the output histogram(s)
 	/// \param img the input image
@@ -277,7 +277,7 @@ public:
 	/// \param buffer a buffer image that will speed up the computing. This only necessary if you intent to compute the statistics with the same shape for several images.
 	/// \return a list of #VipIntervalSample (one per image component). If input image is a color image, output will contain the histogram for components Alpha, Red, Green, Blue.
 	/// If input image is complex, output will contain the histogram for components Real and Imag. Otherwise, only one component histogam is returned.
-	QVector<VipIntervalSample> histogram(int bins , const VipNDArray & img, const QPoint & img_offset = QPoint(0,0), VipNDArray * buffer = NULL ) const;
+	QVector<VipIntervalSample> histogram(int bins , const VipNDArray & img, const QPoint & img_offset = QPoint(0,0), VipNDArray * buffer = nullptr ) const;
 
 	///Extract the pixel values inside an image for a list of pixels.
 	/// \param points The input pixels to consider
@@ -287,14 +287,14 @@ public:
 	/// \param buffer a buffer image that will speed up the computing. This only necessary if you intent to compute the statistics with the same shape for several images.
 	/// \return a list of point vector (one per image component), where each point contains (pixel index, pixel value). If input image is a color image, output will contain the pixel values for components Alpha, Red, Green, Blue.
 	/// If input image is complex, output will contain the pixel values for components Real and Imag. Otherwise, only one component pixel values is returned.
-	static QVector<QPointF> polyline(const QVector<QPoint> & points, const VipNDArray & img, const QPoint & img_offset = QPoint(0,0), const QRect & bounding_rect = QRect(), VipNDArray * buffer = NULL );
+	static QVector<QPointF> polyline(const QVector<QPoint> & points, const VipNDArray & img, const QPoint & img_offset = QPoint(0,0), const QRect & bounding_rect = QRect(), VipNDArray * buffer = nullptr );
 	///Extract the pixel values inside an image for this shape (type() == Polyline).
 	/// \param img the input image
 	/// \param img_offset the input image offset
 	/// \param buffer a buffer image that will speed up the computing. This only necessary if you intent to compute the statistics with the same shape for several images.
 	/// \return a list of point vector (one per image component), where each point contains (pixel index, pixel value). If input image is a color image, output will contain the pixel values for components Alpha, Red, Green, Blue.
 	/// If input image is complex, output will contain the pixel values for components Real and Imag. Otherwise, only one component pixel values is returned.
-	QVector<QPointF> polyline(const VipNDArray & img, const QPoint & img_offset = QPoint(0,0), VipNDArray * buffer = NULL ) const;
+	QVector<QPointF> polyline(const VipNDArray & img, const QPoint & img_offset = QPoint(0,0), VipNDArray * buffer = nullptr ) const;
 
 	///Write a value for all given pixels in an output image
 	/// \param value pixel value to write
@@ -436,7 +436,7 @@ public:
 	///Returns the #VipShapeSignals associated to this scene model
 	VipShapeSignals * shapeSignals() const;
 
-	///Returns true if this scene model is NULL.
+	///Returns true if this scene model is nullptr.
 	/// A \a VipSceneModel can never be null, except in return of #VipShape::parent.
 	bool isNull() const {return !d_data;}
 

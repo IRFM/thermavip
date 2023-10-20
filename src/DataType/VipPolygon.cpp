@@ -255,10 +255,10 @@ static inline QLineF glue(const QLineF& seg1, const QLineF& seg2)
 		// we want that t_s[0] >= 0 and t_s[1] >= -1. If this fails, set t_s to None
 		// Also, don't allow segments to more than double
 		if (!((0 <= t_s[0] && t_s[0] <= 2) && (-1 <= t_s[1] && t_s[1] <= 1)))
-			t_s = NULL;
+			t_s = nullptr;
 	}
 	else // Singular matrix i.e.parallel
-		t_s = NULL;
+		t_s = nullptr;
 	if (!t_s)
 		// Just connect them with a line
 		return QLineF(seg1.p2(), seg2.p1());

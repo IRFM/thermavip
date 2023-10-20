@@ -310,7 +310,7 @@ void PySignalFusionProcessing::applyPyProcessing(int,int)
 	}*/
 
 	if (x_array.size() != y_array.size() || y_array.size() == 0) {
-		setError("invalid algorithms ('x' and 'y' does not have the same size, or NULL y)");
+		setError("invalid algorithms ('x' and 'y' does not have the same size, or nullptr y)");
 		return;
 	}
 
@@ -544,7 +544,7 @@ void PySignalFusionProcessingEditor::registerProcessing()
 	if (dialog.exec() == QDialog::Accepted) {
 		bool ret = m_data->proc->registerThisProcessing(m->category(), m->name(), m->description(), false);
 		if (!ret)
-			QMessageBox::warning(NULL, "Operation failure", "Failed to register this processing.\nPlease make sure you entered a valid name and category.");
+			QMessageBox::warning(nullptr, "Operation failure", "Failed to register this processing.\nPlease make sure you entered a valid name and category.");
 		else {
 			//make sure to update all processing menu
 			vipGetMainWindow()->displayArea()->resetItemSelection();
@@ -698,7 +698,7 @@ void PySignalFusionProcessingEditor::updateWidget()
 
 void PySignalFusionProcessingEditor::showError(const QPoint & pos, const QString & error)
 {
-	QToolTip::showText(pos, error, NULL, QRect(), 5000);
+	QToolTip::showText(pos, error, nullptr, QRect(), 5000);
 }
 void PySignalFusionProcessingEditor::showErrorDelayed(const QPoint & pos, const QString & error)
 {

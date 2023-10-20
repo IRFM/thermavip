@@ -746,7 +746,7 @@ void vipRemoveAnnotations(VipPlayer2D * player)
 {
 	QList<VipPlotShape*> shapes = findShapes(player,true);
 	for (int i = 0; i < shapes.size(); ++i)
-		shapes[i]->setAnnotation(NULL);
+		shapes[i]->setAnnotation(nullptr);
 }
 
 
@@ -770,7 +770,7 @@ VipSimpleAnnotation* vipAnnotation(VipPlayer2D * player, const QString & type, c
 	const QString & yaxis , QString * error )
 {
 	if (!player)
-		return NULL;
+		return nullptr;
 
 	//find the right VipPlotSceneModel
 	VipPlotSceneModel * model = player->plotSceneModel();
@@ -783,12 +783,12 @@ VipSimpleAnnotation* vipAnnotation(VipPlayer2D * player, const QString & type, c
 	}
 	if (!model) {
 		if (error) *error = "cannot find a valid area to insert annotation";
-		return NULL;
+		return nullptr;
 	}
 
 	QPair<VipShape, VipSimpleAnnotation*> res = vipAnnotation(type, text, start, end, attributes, error);
 	if (!res.second) {
-		return NULL;
+		return nullptr;
 	}
 
 	res.first.setAttribute("_vip_annotation", vipSaveAnnotation(res.second));
@@ -804,5 +804,5 @@ VipSimpleAnnotation* vipAnnotation(VipPlayer2D * player, const QString & type, c
 	model->sceneModel().add(res.first);
 	if (VipPlotShape * sh = model->findShape(res.first))
 		return static_cast<VipSimpleAnnotation*>(sh->annotation());
-	return NULL;
+	return nullptr;
 }

@@ -493,7 +493,7 @@ BaseHighlighter * CodeEditor::colorScheme(const QString & type, const QString & 
 	for (int i = 0; i < sh.size(); ++i)
 		if (sh[i]->type == type && sh[i]->name == name)
 			return sh[i];
-	return NULL;
+	return nullptr;
 }
 
 QString CodeEditor::typeForExtension(const QString & ext)
@@ -538,7 +538,7 @@ BaseHighlighter* CodeEditor::stdColorSchemeForType(const QString & type)
 {
 	QMap<QString, BaseHighlighter*>::iterator it = __schemes().stdSchemes.find(type);
 	if (it == __schemes().stdSchemes.end())
-		return NULL;
+		return nullptr;
 	else
 		return it.value();
 }
@@ -547,7 +547,7 @@ BaseHighlighter* CodeEditor::stdColorSchemeForExt(const QString & extension)
 {
 	QString type = typeForExtension(extension);
 	if (type.isEmpty())
-		return NULL;
+		return nullptr;
 	return stdColorSchemeForType(type);
 }
 

@@ -239,7 +239,7 @@ public:
 			// display a menu to remove or add a point
 			QMenu menu;
 			QAction* add = menu.addAction("Add point");
-			QAction* del = polygons[m_poly].size() > 2 ? menu.addAction("Remove point") : NULL;
+			QAction* del = polygons[m_poly].size() > 2 ? menu.addAction("Remove point") : nullptr;
 			QAction* res = menu.exec(QCursor::pos());
 			// add or remove a point
 			if (res && m_point >= 0 && m_point < polygons[m_poly].size()) {
@@ -366,8 +366,8 @@ public:
 	  , textPosition(Vip::XInside)
 	  , textAlignment(Qt::AlignLeft | Qt::AlignBottom)
 	  , adjustTextColor(true)
-	  , polygonMovers(NULL)
-	  , annotation(NULL)
+	  , polygonMovers(nullptr)
+	  , annotation(nullptr)
 	{
 	}
 
@@ -412,11 +412,11 @@ VipPlotShape::~VipPlotShape()
 {
 	if (d_data->polygonMovers) {
 		delete d_data->polygonMovers;
-		d_data->polygonMovers = NULL;
+		d_data->polygonMovers = nullptr;
 	}
 	if (d_data->annotation) {
 		delete d_data->annotation;
-		d_data->annotation = NULL;
+		d_data->annotation = nullptr;
 	}
 
 	Q_EMIT plotShapeDestroyed(this);
@@ -452,7 +452,7 @@ VipAnnotation* VipPlotShape::annotation() const
 			VipPlotShape* _this = const_cast<VipPlotShape*>(this);
 			if (d_data->annotation) {
 				delete _this->d_data->annotation;
-				_this->d_data->annotation = NULL;
+				_this->d_data->annotation = nullptr;
 			}
 			if (VipAnnotation* annot = vipLoadAnnotation(ar)) {
 				_this->d_data->annotation = annot;
@@ -701,7 +701,7 @@ void VipPlotShape::setPolygonEditable(bool editable)
 	}
 	else if (d_data->polygonMovers && !editable) {
 		// delete d_data->polygonMovers;
-		// d_data->polygonMovers = NULL;
+		// d_data->polygonMovers = nullptr;
 		d_data->polygonMovers->setVisible(false);
 		emitItemChanged();
 	}
@@ -784,7 +784,7 @@ void VipPlotShape::internalUpdateOnSetData()
 		if (annot.isEmpty()) {
 			if (d_data->annotation) {
 				delete d_data->annotation;
-				d_data->annotation = NULL;
+				d_data->annotation = nullptr;
 			}
 			d_data->annotationData.clear();
 		}
@@ -2056,7 +2056,7 @@ VipPlotShape* VipPlotSceneModel::findShape(const VipShape& sh) const
 		}
 	}
 
-	return NULL;
+	return nullptr;
 }
 
 QList<VipPlotShape*> VipPlotSceneModel::shapes(const QString& group, int selection) const

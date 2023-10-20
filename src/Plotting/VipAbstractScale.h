@@ -44,7 +44,7 @@ class VIP_PLOTTING_EXPORT VipBoxGraphicsWidget
 	friend class VipAbstractPlotArea;
 
 public:
-	VipBoxGraphicsWidget(QGraphicsItem* parent = NULL);
+	VipBoxGraphicsWidget(QGraphicsItem* parent = nullptr);
 	virtual ~VipBoxGraphicsWidget();
 
 	///Returns the #VipBoxStyle
@@ -112,7 +112,7 @@ class VIP_PLOTTING_EXPORT VipAbstractScale : public VipBoxGraphicsWidget
 	friend class VipPlotItem;
 
 public:
-	VipAbstractScale(QGraphicsItem* parent = NULL);
+	VipAbstractScale(QGraphicsItem* parent = nullptr);
 	virtual ~VipAbstractScale();
 
 	/// @brief Compute the scale layout (this does not change the item's geometry).
@@ -227,7 +227,7 @@ public:
 	/// @brief Returns true if at least one VipPlotItem using this axis has a unit for this axis
 	bool hasUnit() const;
 	/// @brief Returns true if no VipPlotItem using this axis has a unit for this axis, excluding \a excluded
-	bool hasNoUnit(VipPlotItem* excluded = NULL) const;
+	bool hasNoUnit(VipPlotItem* excluded = nullptr) const;
 
 	/// @brief Returns the position in item's coordinate of given axis value. See VipScaleDraw::position().
 	QPointF position(vip_double value, double length = 0, Vip::ValueType type = Vip::Absolute) const;
@@ -420,7 +420,7 @@ class VIP_PLOTTING_EXPORT VipScaleWidget : public QGraphicsView
 	Q_PROPERTY(QColor backgroundColor READ backgroundColor WRITE setBackgroundColor)
 
 public:
-	VipScaleWidget(VipAbstractScale* scale = NULL, QWidget* parent = NULL);
+	VipScaleWidget(VipAbstractScale* scale = nullptr, QWidget* parent = nullptr);
 	~VipScaleWidget();
 
 	virtual void setScale(VipAbstractScale* scale);

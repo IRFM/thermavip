@@ -131,7 +131,7 @@ static int numDigits(int x)
 #define ERROR(ret) \
 { if(ok) *ok = false; return ret;}
 
-static QColor parseColor(const QByteArray & ar, int & parse_end, bool *ok = NULL)
+static QColor parseColor(const QByteArray & ar, int & parse_end, bool *ok = nullptr)
 {
 	//build "default" colors
 	static QMap<QByteArray, QColor> default_colors;
@@ -217,7 +217,7 @@ static QColor parseColor(const QByteArray & ar, int & parse_end, bool *ok = NULL
 	//	ERROR(QColor());
 }
 
-static QPen parsePen(const QByteArray & ar, bool *ok = NULL)
+static QPen parsePen(const QByteArray & ar, bool *ok = nullptr)
 {
 	static QMap<QByteArray, int> styles;
 	if (styles.isEmpty()) {
@@ -271,7 +271,7 @@ static QPen parsePen(const QByteArray & ar, bool *ok = NULL)
 	return res;
 }
 
-static QString parseText(const QByteArray & ar, bool *ok = NULL)
+static QString parseText(const QByteArray & ar, bool *ok = nullptr)
 {
 	//format: 'text'
 	int start, end;
@@ -293,7 +293,7 @@ static QString parseText(const QByteArray & ar, bool *ok = NULL)
 
 }
 
-static int parseEnum(const QByteArray & ar, const QMap<QByteArray, int> & enums, bool *ok = NULL)
+static int parseEnum(const QByteArray & ar, const QMap<QByteArray, int> & enums, bool *ok = nullptr)
 {
 	int start, end;
 	if (!cleanLine(ar, start, end)) ERROR(0);
@@ -303,7 +303,7 @@ static int parseEnum(const QByteArray & ar, const QMap<QByteArray, int> & enums,
 	return it.value();
 }
 
-static int parseOrEnum(const QByteArray & ar, const QMap<QByteArray, int> & enums, bool *ok = NULL)
+static int parseOrEnum(const QByteArray & ar, const QMap<QByteArray, int> & enums, bool *ok = nullptr)
 {
 	int start, end;
 	if (!cleanLine(ar, start, end)) ERROR(0);

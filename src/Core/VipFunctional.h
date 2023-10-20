@@ -330,7 +330,7 @@ namespace details
 /// Q_DECLARE_METATYPE() has been called with a typedef)
 /// - Make sure that a QVariant created with this class id contains a valid non null pointer.
 ///
-/// A type registered with this macro changes the behavior of QVariant for this type: a QVariant created with the constructor QVariant(type_id,NULL) holds a VALID pointer instead of a NULL one.
+/// A type registered with this macro changes the behavior of QVariant for this type: a QVariant created with the constructor QVariant(type_id,nullptr) holds a VALID pointer instead of a nullptr one.
 /// This way, QVariant can be used as a factory for types declared with VIP_REGISTER_QOBJECT_METATYPE_NO_DECLARE. It also means that the underlying QObject must be destroyed after the QVariant is
 /// destroyed itself using vipReleaseVariant().
 #define VIP_REGISTER_QOBJECT_METATYPE_NO_DECLARE(Type)                                                                                                                                                 \
@@ -498,7 +498,7 @@ VIP_ALWAYS_INLINE QVariant vipCreateVariant(const char* name)
 
 /// @brief Returns a QVariant constructed with given \a id.
 /// If \a id represents a type declared with #VIP_REGISTER_QOBJECT_METATYPE_NO_DECLARE or #VIP_REGISTER_QOBJECT_METATYPE,
-/// the returned QVariant will still hold a NULL pointer to QObject.
+/// the returned QVariant will still hold a nullptr pointer to QObject.
 VIP_ALWAYS_INLINE QVariant vipCreateNullVariant(int id)
 {
 	if (QMetaType(id).flags() & QMetaType::PointerToQObject) {
@@ -512,7 +512,7 @@ VIP_ALWAYS_INLINE QVariant vipCreateNullVariant(int id)
 
 /// @brief Returns a QVariant constructed with given type name.
 /// If the type name represents a type declared with #VIP_REGISTER_QOBJECT_METATYPE_NO_DECLARE or #VIP_REGISTER_QOBJECT_METATYPE,
-/// the returned QVariant will still hold a NULL pointer to QObject.
+/// the returned QVariant will still hold a nullptr pointer to QObject.
 VIP_ALWAYS_INLINE QVariant vipCreateNullVariant(const char* name)
 {
 	return vipCreateNullVariant(QMetaType::type(name));

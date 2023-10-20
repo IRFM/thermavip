@@ -240,7 +240,7 @@ namespace detail
 		// VipNDArrayShape strides;
 		// int _dataType;
 		const T *  ptr;
-		ArrayWrapper():ptr(NULL) {}
+		ArrayWrapper():ptr(nullptr) {}
 		template<class Other>
 		ArrayWrapper(const Other & other)
 			:array(FunctorContext::instance().convert<VipNDArrayType<T,NDims> >(other)), ptr(array.ptr())

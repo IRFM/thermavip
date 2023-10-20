@@ -19,7 +19,7 @@ class VIP_ANNOTATION_EXPORT VisualizeDB : public QWidget
 	Q_OBJECT
 
 public:
-	VisualizeDB(QWidget * parent = NULL);
+	VisualizeDB(QWidget * parent = nullptr);
 	~VisualizeDB();
 
 	static VisualizeDB * fromChild(QWidget * w);
@@ -30,7 +30,7 @@ public:
 	QTableWidget * tableWidget() const;
 	VipEventQueryResults events() const;
 	
-	void displayEventResult(const VipEventQueryResults & res, VipProgress * p = NULL);
+	void displayEventResult(const VipEventQueryResults & res, VipProgress * p = nullptr);
 
 	virtual bool eventFilter(QObject* watched, QEvent * evt);
 	//virtual bool viewportEvent(QEvent *event);
@@ -62,7 +62,7 @@ class VIP_ANNOTATION_EXPORT VisualizeDBToolWidget : public VipToolWidget
 	Q_OBJECT
 
 public:
-	VisualizeDBToolWidget(VipMainWindow* = NULL);
+	VisualizeDBToolWidget(VipMainWindow* = nullptr);
 	VisualizeDB * getVisualizeDB() const;
 };
 

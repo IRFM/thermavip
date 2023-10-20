@@ -88,22 +88,22 @@ VIP_ALWAYS_INLINE qint64 vipRangeWidth(const VipTimeRange& range)
 	return range.second - range.first;
 }
 
-/// Return the distance of a value to a time range. If closest is not NULL, it is set to the closest valid point.
+/// Return the distance of a value to a time range. If closest is not nullptr, it is set to the closest valid point.
 /// If given value is inside the time range, returned distance is 0 and closest is set to value.
 VIP_CORE_EXPORT qint64 vipDistance(const VipTimeRange &pair, qint64 value, qint64 * closest);
 
 /// Return the distance of a value to a time range list.
-/// If closest is not NULL, it is set to the closest valid point.
-/// If index is not NULL, it is set to the closest valid index.
+/// If closest is not nullptr, it is set to the closest valid point.
+/// If index is not nullptr, it is set to the closest valid index.
 /// If given value is inside the time range list, returned distance is 0 and closest is set to value.
-VIP_CORE_EXPORT qint64 vipDistance(const VipTimeRangeList &ranges, qint64 value, qint64 * closest, int * index = NULL);
+VIP_CORE_EXPORT qint64 vipDistance(const VipTimeRangeList &ranges, qint64 value, qint64 * closest, int * index = nullptr);
 
 /// \brief Reorder the pair according to the given order.
 VIP_CORE_EXPORT VipTimeRange vipReorder(const VipTimeRange &pair, Vip::Order order);
 
 /// \brief Merges 2 time range if they intersect in given order. If they don't, returns VipInvalidTimeRange.
-/// If \a ok is not NULL, it specifies if the two pairs has been merged.
-VIP_CORE_EXPORT VipTimeRange vipMerge(const VipTimeRange &p1, const VipTimeRange &p2,  Vip::Order order, bool * ok = NULL);
+/// If \a ok is not nullptr, it specifies if the two pairs has been merged.
+VIP_CORE_EXPORT VipTimeRange vipMerge(const VipTimeRange &p1, const VipTimeRange &p2,  Vip::Order order, bool * ok = nullptr);
 
 ///Reorder a time range list in given order.
 /// If \a merge_ranges is true, also merge the mergeable time ranges.
@@ -130,11 +130,11 @@ VIP_CORE_EXPORT VipTimeRangeList vipToTimeRangeList(const QVector<qint64>& times
 /// - The string '-' is interpreted as [VipMinTime,VipMaxTime]
 /// - The string '!-' is interpreted as [VipMaxTime,VipMinTime]
 /// - The string '4' is interpreted as [4,4]
-VIP_CORE_EXPORT VipTimeRange vipToTimeRange(const QString &, bool * ok = NULL);
+VIP_CORE_EXPORT VipTimeRange vipToTimeRange(const QString &, bool * ok = nullptr);
 
 ///Create a time range list from a string representation.
 /// A time range follow the rules of #vipToTimeRange. Each time range are separated by a comma.
-VIP_CORE_EXPORT VipTimeRangeList vipToTimeRangeList(const QString &, bool * ok = NULL);
+VIP_CORE_EXPORT VipTimeRangeList vipToTimeRangeList(const QString &, bool * ok = nullptr);
 
 /// Convert a VipTimeRange into a string representation that can be read back through vipToTimeRange()
 VIP_CORE_EXPORT QString vipTimeRangeToString(const VipTimeRange & range);
@@ -190,10 +190,10 @@ public:
 	///Returns the output time range list. This computed by applying the transformations to the input time range list.
 	const VipTimeRangeList & outputTimeRangeList() const;
 
-	///Transform a given time value. If \a inside is not NULL, it is set to true if given time is inside the transformation range.
-	qint64 transform(qint64, bool * inside = NULL) const;
+	///Transform a given time value. If \a inside is not nullptr, it is set to true if given time is inside the transformation range.
+	qint64 transform(qint64, bool * inside = nullptr) const;
 	///Returns the inverse transform of given time.You should always have transform(invTransform(time)) == time.
-	qint64 invTransform(qint64, bool * inside = NULL) const;
+	qint64 invTransform(qint64, bool * inside = nullptr) const;
 };
 
 Q_DECLARE_METATYPE(VipTimeRange)

@@ -87,7 +87,7 @@ class VIP_PLOTTING_EXPORT VipRubberBand
 	friend class VipAbstractPlotArea;
 
 public:
-	VipRubberBand(VipAbstractPlotArea* parent = NULL);
+	VipRubberBand(VipAbstractPlotArea* parent = nullptr);
 	virtual ~VipRubberBand();
 
 	/// @brief Draw the rubber band based on its start  and end position
@@ -180,7 +180,7 @@ class VipDrawSelectionOrder : public QGraphicsObject
 	friend class VipAbstractPlotArea;
 
 public:
-	VipDrawSelectionOrder(VipAbstractPlotArea* parent = NULL);
+	VipDrawSelectionOrder(VipAbstractPlotArea* parent = nullptr);
 	/// @brief Returns the parent VipAbstractPlotArea
 	VipAbstractPlotArea* area() const;
 
@@ -305,7 +305,7 @@ public:
 	
 	typedef QMap<const VipAbstractScale*, VipInterval> scales_state;
 
-	VipAbstractPlotArea(QGraphicsItem* parent = NULL);
+	VipAbstractPlotArea(QGraphicsItem* parent = nullptr);
 	virtual ~VipAbstractPlotArea();
 
 	/// @brief If this area is inside a QGraphicsView, returns the visualized scene rectangle within the QGraphicsView
@@ -592,23 +592,23 @@ public:
 
 	/// @brief Helper function, convert a point in this item coordinates to scale coordinates.
 	/// This only works if this area defines 2 standard scales.
-	VipPoint positionToScale(const QPointF& pos, bool* ok = NULL) const;
-	VipPoint positionToScale(const QPointF& pos, const QList<VipAbstractScale*>& scales, bool* ok = NULL) const;
+	VipPoint positionToScale(const QPointF& pos, bool* ok = nullptr) const;
+	VipPoint positionToScale(const QPointF& pos, const QList<VipAbstractScale*>& scales, bool* ok = nullptr) const;
 
 	/// @brief Helper function, convert a point in scale coordinates to this item coordinates.
 	/// This only works if this area defines 2 standard scales.
-	QPointF scaleToPosition(const VipPoint& scale_value, bool* ok = NULL) const;
-	QPointF scaleToPosition(const VipPoint& scale_value, const QList<VipAbstractScale*>& scales, bool* ok = NULL) const;
+	QPointF scaleToPosition(const VipPoint& scale_value, bool* ok = nullptr) const;
+	QPointF scaleToPosition(const VipPoint& scale_value, const QList<VipAbstractScale*>& scales, bool* ok = nullptr) const;
 
 	/// @brief Helper function, convert a vector of points in this item coordinates to scale coordinates.
 	/// This only works if this area defines 2 standard scales.
-	VipPointVector positionToScale(const QVector<QPointF>& positions, bool* ok = NULL) const;
-	VipPointVector positionToScale(const QVector<QPointF>& positions, const QList<VipAbstractScale*>& scales, bool* ok = NULL) const;
+	VipPointVector positionToScale(const QVector<QPointF>& positions, bool* ok = nullptr) const;
+	VipPointVector positionToScale(const QVector<QPointF>& positions, const QList<VipAbstractScale*>& scales, bool* ok = nullptr) const;
 
 	/// @brief Helper function, convert a vector of points in scale coordinates to this item coordinates.
 	/// This only works if this area defines 2 standard scales.
-	QVector<QPointF> scaleToPosition(const VipPointVector& scale_values, bool* ok = NULL) const;
-	QVector<QPointF> scaleToPosition(const VipPointVector& scale_values, const QList<VipAbstractScale*>& scales, bool* ok = NULL) const;
+	QVector<QPointF> scaleToPosition(const VipPointVector& scale_values, bool* ok = nullptr) const;
+	QVector<QPointF> scaleToPosition(const VipPointVector& scale_values, const QList<VipAbstractScale*>& scales, bool* ok = nullptr) const;
 
 	/// @brief Returns the last mouse position on clicking. 
 	/// The position is valid until releasing the mouse.
@@ -832,7 +832,7 @@ class VIP_PLOTTING_EXPORT VipPlotArea2D : public VipAbstractPlotArea
 	Q_OBJECT
 
 public:
-	VipPlotArea2D(QGraphicsItem* parent = NULL);
+	VipPlotArea2D(QGraphicsItem* parent = nullptr);
 	virtual ~VipPlotArea2D();
 
 	/// @brief Returns the left axis
@@ -895,7 +895,7 @@ class VIP_PLOTTING_EXPORT VipPlotPolarArea2D : public VipAbstractPlotArea
 	Q_OBJECT
 
 public:
-	VipPlotPolarArea2D(QGraphicsItem* parent = NULL);
+	VipPlotPolarArea2D(QGraphicsItem* parent = nullptr);
 	virtual ~VipPlotPolarArea2D();
 
 	/// @brief Set the space between the inner most border scale and the outer most polar scale
@@ -948,7 +948,7 @@ class VIP_PLOTTING_EXPORT VipImageArea2D : public VipPlotArea2D
 	Q_OBJECT
 
 public:
-	VipImageArea2D(QGraphicsItem* parent = NULL);
+	VipImageArea2D(QGraphicsItem* parent = nullptr);
 	virtual ~VipImageArea2D();
 
 	/// @brief Enable/disable keeping the image aspect ratio
@@ -1050,8 +1050,8 @@ public:
 		OpenGL, // Use a QOpenGLWidget viewport
 		OpenGLThread // Use a VipOpenGLWidget
 	};
-	VipBaseGraphicsView(QWidget* parent = NULL);
-	VipBaseGraphicsView(QGraphicsScene* scene, QWidget* parent = NULL);
+	VipBaseGraphicsView(QWidget* parent = nullptr);
+	VipBaseGraphicsView(QGraphicsScene* scene, QWidget* parent = nullptr);
 	virtual ~VipBaseGraphicsView();
 
 	/// @brief Returns the part of the scene that is currently visualized by this QGraphicsView
@@ -1117,8 +1117,8 @@ class VIP_PLOTTING_EXPORT VipAbstractPlotWidget2D : public VipBaseGraphicsView
 	Q_OBJECT
 
 public:
-	VipAbstractPlotWidget2D(QWidget* parent = NULL);
-	VipAbstractPlotWidget2D(QGraphicsScene* scene, QWidget* parent = NULL);
+	VipAbstractPlotWidget2D(QWidget* parent = nullptr);
+	VipAbstractPlotWidget2D(QGraphicsScene* scene, QWidget* parent = nullptr);
 
 	/// @brief Returns the managed VipAbstractPlotArea
 	virtual VipAbstractPlotArea* area() const;
@@ -1155,7 +1155,7 @@ public:
 		VMulti	// VipVMultiPlotArea2D object
 	};
 
-	VipPlotWidget2D(QWidget* parent = NULL, QGraphicsScene* scene = NULL, AreaType type = Simple);
+	VipPlotWidget2D(QWidget* parent = nullptr, QGraphicsScene* scene = nullptr, AreaType type = Simple);
 	virtual ~VipPlotWidget2D();
 
 	virtual VipPlotArea2D* area() const;
@@ -1174,7 +1174,7 @@ class VIP_PLOTTING_EXPORT VipPlotPolarWidget2D : public VipAbstractPlotWidget2D
 	Q_OBJECT;
 
 public:
-	VipPlotPolarWidget2D(QWidget* parent = NULL, QGraphicsScene* scene = NULL);
+	VipPlotPolarWidget2D(QWidget* parent = nullptr, QGraphicsScene* scene = nullptr);
 	virtual ~VipPlotPolarWidget2D();
 
 	virtual VipPlotPolarArea2D* area() const;
@@ -1193,7 +1193,7 @@ class VIP_PLOTTING_EXPORT VipImageWidget2D : public VipAbstractPlotWidget2D
 	Q_OBJECT
 
 public:
-	VipImageWidget2D(QWidget* parent = NULL, QGraphicsScene* scene = NULL);
+	VipImageWidget2D(QWidget* parent = nullptr, QGraphicsScene* scene = nullptr);
 	~VipImageWidget2D();
 
 	VipImageArea2D* area() const;
@@ -1241,7 +1241,7 @@ class VIP_PLOTTING_EXPORT VipMultiGraphicsWidget : public VipBoxGraphicsWidget
 	Q_OBJECT
 
 public:
-	VipMultiGraphicsWidget(QGraphicsItem* parent = NULL);
+	VipMultiGraphicsWidget(QGraphicsItem* parent = nullptr);
 };
 
 
@@ -1294,9 +1294,9 @@ class VIP_PLOTTING_EXPORT VipMultiGraphicsView : public VipBaseGraphicsView
 
 public:
 	/// @brief Default constructor
-	VipMultiGraphicsView(QWidget* parent = NULL);
+	VipMultiGraphicsView(QWidget* parent = nullptr);
 	/// @brief Construct from a QGraphicsScene object
-	VipMultiGraphicsView(QGraphicsScene* scene, QWidget* parent = NULL);
+	VipMultiGraphicsView(QGraphicsScene* scene, QWidget* parent = nullptr);
 
 	/// @brief Returns the top level VipBoxGraphicsWidget used to represent multiple plotting area organized in a layout
 	VipMultiGraphicsWidget* widget() const;

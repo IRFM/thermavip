@@ -189,7 +189,7 @@ struct GraphicsSceneMouseEvent : public QGraphicsSceneMouseEvent
 
 
 VipPlotAreaFilter::VipPlotAreaFilter()
-	:QGraphicsObject(), d_area(NULL)
+	:QGraphicsObject(), d_area(nullptr)
 {
 }
 
@@ -281,7 +281,7 @@ void VipRubberBand::setArea(VipAbstractPlotArea * a)
 	}
 	else
 	{
-		this->setParentItem(NULL);
+		this->setParentItem(nullptr);
 	}
 }
 
@@ -522,10 +522,10 @@ void VipRubberBand::removeFilter()
 {
 	if (d_data->filter)
 	{
-		d_data->filter->setParent(NULL);
-		d_data->filter->d_area = NULL;
+		d_data->filter->setParent(nullptr);
+		d_data->filter->d_area = nullptr;
 	}
-	d_data->filter = NULL;
+	d_data->filter = nullptr;
 }
 
 VipPlotAreaFilter * VipRubberBand::filter() const
@@ -733,7 +733,7 @@ void VipDrawSelectionOrder::setArea(VipAbstractPlotArea * a)
 	}
 	else
 	{
-		this->setParentItem(NULL);
+		this->setParentItem(nullptr);
 	}
 }
 
@@ -816,7 +816,7 @@ void VipDrawSelectionOrder::paint(QPainter * painter, const QStyleOptionGraphics
 VipPlotAreaFilter::~VipPlotAreaFilter()
 {
 	if (VipAbstractPlotArea * area = qobject_cast<VipAbstractPlotArea*>(d_area))
-		area->rubberBand()->d_data->filter = NULL;
+		area->rubberBand()->d_data->filter = nullptr;
 }
 
 
@@ -835,7 +835,7 @@ struct Legend
 	Qt::Alignment alignment;
 	int border_margin;
 	bool moved;
-	Legend(VipLegend * l = NULL, Qt::Alignment align = Qt::AlignTop | Qt::AlignHCenter, int border_margin = 10)
+	Legend(VipLegend * l = nullptr, Qt::Alignment align = Qt::AlignTop | Qt::AlignHCenter, int border_margin = 10)
 		:legend(l), olegend(l), alignment(align), border_margin(border_margin), moved(false)
 	{}
 
@@ -892,7 +892,7 @@ static void updateCacheMode(VipAbstractPlotArea * w, bool useCache)
 static QWindow* window()
 {
 	//Create a QWindow
-	QWindow* win = NULL;
+	QWindow* win = nullptr;
 	if (!win) {
 		QSurfaceFormat format = QSurfaceFormat::defaultFormat();
 		win = new QWindow();
@@ -905,7 +905,7 @@ static QWindow* window()
 static QWindow* globalWindow()
 {
 	//Create a QWindow
-	static QWindow* win = NULL;
+	static QWindow* win = nullptr;
 	if (!win) {
 		QSurfaceFormat format = QSurfaceFormat::defaultFormat();
 		win = new QWindow();
@@ -919,7 +919,7 @@ static QWindow* globalWindow()
 static QOpenGLContext* context()
 {
 	//Create a QOpenGLContext
-	QOpenGLContext* ctx = NULL;
+	QOpenGLContext* ctx = nullptr;
 	if (!ctx) {
 		QSurfaceFormat format = QSurfaceFormat::defaultFormat();
 		ctx = new QOpenGLContext();
@@ -927,7 +927,7 @@ static QOpenGLContext* context()
 		if (!ctx->create()) {
 			VIP_LOG_WARNING("Cannot create the requested OpenGL context!");
 			delete ctx;
-			ctx = NULL;
+			ctx = nullptr;
 		}
 	}
 	return ctx;
@@ -935,7 +935,7 @@ static QOpenGLContext* context()
 static QOpenGLContext* globalContext()
 {
 	//Create a QOpenGLContext
-	static QOpenGLContext* ctx = NULL;
+	static QOpenGLContext* ctx = nullptr;
 	static bool initialized = false;
 	if (!initialized) {
 		initialized = true;
@@ -945,7 +945,7 @@ static QOpenGLContext* globalContext()
 		if (!ctx->create()) {
 			VIP_LOG_WARNING("Cannot create the requested OpenGL context!");
 			delete ctx;
-			return ctx = NULL;
+			return ctx = nullptr;
 		}
 	}
 	return ctx;
@@ -969,7 +969,7 @@ static QOpenGLFramebufferObject* createBuffer(QOpenGLFramebufferObject* buf, con
 
 static QOpenGLFramebufferObject* globalBuffer(const QSize& size)
 {
-	static QOpenGLFramebufferObject* buf = NULL;
+	static QOpenGLFramebufferObject* buf = nullptr;
 	//Create/reset a QOpenGLFramebufferObject with given size
 	if (!buf || buf->size().width() < size.width() || buf->size().height() < size.height()) { // 
 		if (buf) {
@@ -1064,7 +1064,7 @@ public:
 		title->scaleDraw()->enableComponent(VipAbstractScaleDraw::Ticks, false);
 		title->scaleDraw()->enableComponent(VipAbstractScaleDraw::Labels, false);
 
-		plotToolTip = NULL;
+		plotToolTip = nullptr;
 		trackScalesStateEnabled = false;
 		defaultLabelOverlapping = false;
 		isMousePanning = false;
@@ -1449,7 +1449,7 @@ static QImage createImageWithFBO(int mode, //QOpenGLFramebufferObject ** buffer,
 			t *= items[i]->transform();
 			painter.setTransform(t, true);
 			QGraphicsItem* o = items[i];
-			o->paint(&painter, NULL, NULL);
+			o->paint(&painter, nullptr, nullptr);
 			painter.restore();
 		}
 
@@ -1480,7 +1480,7 @@ static QImage createImageWithFBO(int mode, //QOpenGLFramebufferObject ** buffer,
 				QTransform t; t.translate(p.x(), p.y());
 				t *= items[i]->transform();
 				painter.setTransform(t, true);
-				items[i]->paint(&painter, NULL, NULL);
+				items[i]->paint(&painter, nullptr, nullptr);
 				painter.restore();
 			}
 		}
@@ -2110,7 +2110,7 @@ void VipAbstractPlotArea::setLegend(VipLegend * legend, bool own)
 		}
 		else
 		{
-			d_data->blegend->setLegend(NULL);
+			d_data->blegend->setLegend(nullptr);
 		}
 
 	}
@@ -2123,7 +2123,7 @@ VipLegend * VipAbstractPlotArea::legend() const
 
 void VipAbstractPlotArea::addInnerLegend(VipLegend * legend,  Qt::Alignment alignment, int border_margin)
 {
-	addInnerLegend(legend, NULL, alignment, border_margin);
+	addInnerLegend(legend, nullptr, alignment, border_margin);
 }
 VipAbstractScale * VipAbstractPlotArea::scaleForlegend(VipLegend * l) const
 {
@@ -2194,7 +2194,7 @@ VipLegend* VipAbstractPlotArea::takeInnerLegend(VipLegend * legend)
 		resetInnerLegendsPosition();
 		return l;
 	}
-	return NULL;
+	return nullptr;
 }
 void VipAbstractPlotArea::removeInnerLegend(VipLegend * legend)
 {
@@ -2265,7 +2265,7 @@ bool VipAbstractPlotArea::internalAddScale(VipAbstractScale * scale, bool //isSp
 )
 {
 	scale->setParentItem(this);
-	updateCacheMode(this, view() ? qobject_cast<QOpenGLWidget*>(view()->viewport()) != NULL : false);
+	updateCacheMode(this, view() ? qobject_cast<QOpenGLWidget*>(view()->viewport()) != nullptr : false);
 	return true;
 }
 
@@ -2312,7 +2312,7 @@ bool VipAbstractPlotArea::internalRemoveScale(VipAbstractScale * scale)
 {
 	if (scale->parentItem() == this)
 	{
-		scale->setParentItem(NULL);
+		scale->setParentItem(nullptr);
 	}
 	return true;
 }
@@ -2728,7 +2728,7 @@ void VipAbstractPlotArea::removeItem(VipPlotItem* item)
 		
 		d_data->items.removeOne(item);
 //		if(d_data->items.removeOne(item))
-//			item->setUpdater(NULL);
+//			item->setUpdater(nullptr);
 
 		//update main legend
 		if (d_data->legend)
@@ -2905,7 +2905,7 @@ void VipAbstractPlotArea::refreshToolTip()
 void	VipAbstractPlotArea::simulateMouseClick(const QGraphicsSceneMouseEvent * event)
 {
 	//send mouse press and release event
-	GraphicsSceneMouseEvent *pressed = new GraphicsSceneMouseEvent(QEvent::GraphicsSceneMousePress, NULL, false);
+	GraphicsSceneMouseEvent *pressed = new GraphicsSceneMouseEvent(QEvent::GraphicsSceneMousePress, nullptr, false);
 	GraphicsSceneMouseEvent *released = new GraphicsSceneMouseEvent(QEvent::GraphicsSceneMouseRelease, this, false);
 	pressed->import(*event);
 	released->import(*event);
@@ -3005,7 +3005,7 @@ void	VipAbstractPlotArea::hoverMoveEvent(QGraphicsSceneHoverEvent * event)
 		//So we manually handle hover move, enter and leave events to simulate the standard behavior.
 
 		//first, find the top most VipPlotItem under the mouse (if any)
-		VipPlotItem * pitem = NULL;
+		VipPlotItem * pitem = nullptr;
 		QList<QGraphicsItem *> items = scene()->items(event->scenePos());
 		for (int i = 0; i < items.size(); ++i)
 		{
@@ -3033,7 +3033,7 @@ void	VipAbstractPlotArea::hoverMoveEvent(QGraphicsSceneHoverEvent * event)
 			//no VipPlotItem under the mouse, send a hover leave event to the last VipPlotItem under the mouse (if any)
 			if (d_data->hoverItem)
 				d_data->hoverItem->hoverLeaveEvent(event);
-			d_data->hoverItem = NULL;
+			d_data->hoverItem = nullptr;
 		}
 
 		Q_EMIT mouseHoverMove(d_data->hoverItem);
@@ -3063,7 +3063,7 @@ QGraphicsView * VipAbstractPlotArea::view() const
 		if (views.size())
 			return views.first();
 	}
-	return NULL;
+	return nullptr;
 }
 
 VipPlotItem* VipAbstractPlotArea::lastPressed() const
@@ -3569,7 +3569,7 @@ public:
 	QRectF outerRect;
 
 	ComputeBorderGeometry()
-		: parent(NULL), left(0), right(0), top(0), bottom(0) {}
+		: parent(nullptr), left(0), right(0), top(0), bottom(0) {}
 
 
 	void computeItemsGeometry(const VipMargins & margins)
@@ -4878,7 +4878,7 @@ VipBaseGraphicsView::~VipBaseGraphicsView()
 {
 	if (QGraphicsScene * sc = scene())
 	{
-		setScene(NULL);
+		setScene(nullptr);
 		delete sc;
 	}
 	delete m_data;
@@ -5300,7 +5300,7 @@ static int _registerImageAreaKeywords = registerImageAreaKeywords();
 class VipImageArea2D::PrivateData
 {
 public:
-	PrivateData() : spectrogram(NULL), colorMap(NULL), keepAspectRatio(true){}
+	PrivateData() : spectrogram(nullptr), colorMap(nullptr), keepAspectRatio(true){}
 	QPointer<VipPlotSpectrogram> spectrogram;
 	VipAxisColorMap * colorMap;
 	QRectF imageRect;

@@ -41,7 +41,7 @@ namespace detail
 				gen->readDeviceTime(closest, time);
 			}
 
-			generator = NULL;
+			generator = nullptr;
 		}
 	};
 
@@ -119,7 +119,7 @@ bool VipGeneratorSequential::enableStreaming(bool enable)
 		m_thread->start();
 	}
 	else {
-		m_thread->generator = NULL;
+		m_thread->generator = nullptr;
 		m_thread->wait();
 	}
 

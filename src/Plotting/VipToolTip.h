@@ -37,7 +37,7 @@ class VIP_PLOTTING_EXPORT VipToolTip : public QObject
 	};
 	Q_DECLARE_FLAGS(DisplayFlags, DisplayFlag);
 
-	VipToolTip(QObject * parent = NULL);
+	VipToolTip(QObject * parent = nullptr);
 	virtual ~VipToolTip();
 
 	void setPlotArea(VipAbstractPlotArea *);

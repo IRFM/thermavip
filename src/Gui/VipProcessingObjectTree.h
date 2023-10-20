@@ -17,7 +17,7 @@ class VIP_GUI_EXPORT VipProcessingObjectTree : public QTreeWidget
 {
 	Q_OBJECT
 public:
-	VipProcessingObjectTree(QWidget * parent = NULL);
+	VipProcessingObjectTree(QWidget * parent = nullptr);
 	~VipProcessingObjectTree();
 
 	void setProcessingInfos(const QList<VipProcessingObject::Info> & infos);
@@ -41,7 +41,7 @@ private:
 class VipProcessingObjectTreeMenu : public VipDragMenu
 {
 public:
-	VipProcessingObjectTreeMenu(QWidget * parent = NULL);
+	VipProcessingObjectTreeMenu(QWidget * parent = nullptr);
 	VipProcessingObjectTree * processingTree() const;
 };
 
@@ -56,7 +56,7 @@ class VipProcessingObjectMenu : public VipDragMenu
 	Q_OBJECT
 
 public:
-	VipProcessingObjectMenu(QWidget * parent = NULL);
+	VipProcessingObjectMenu(QWidget * parent = nullptr);
 	~VipProcessingObjectMenu();
 
 	void setProcessingInfos(const QList<VipProcessingObject::Info> & infos);

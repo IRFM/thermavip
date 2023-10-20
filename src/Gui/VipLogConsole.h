@@ -24,7 +24,7 @@ class VIP_GUI_EXPORT VipLogConsole : public QTextEdit
 	Q_PROPERTY(QColor DebugColor READ debugColor WRITE setDebugColor)
 
 public:
-	VipLogConsole(QWidget * parent = NULL);
+	VipLogConsole(QWidget * parent = nullptr);
 	~VipLogConsole();
 
 public:
@@ -72,7 +72,7 @@ class VIP_GUI_EXPORT VipConsoleWidget : public VipToolWidget
 	Q_OBJECT
 public:
 
-	VipConsoleWidget(VipMainWindow * window = NULL);
+	VipConsoleWidget(VipMainWindow * window = nullptr);
 	~VipConsoleWidget();
 
 	VipLogConsole * logConsole() const;
@@ -101,7 +101,7 @@ private:
 
 VIP_REGISTER_QOBJECT_METATYPE(VipConsoleWidget*)
 
-VIP_GUI_EXPORT VipConsoleWidget * vipGetConsoleWidget(VipMainWindow * window = NULL);
+VIP_GUI_EXPORT VipConsoleWidget * vipGetConsoleWidget(VipMainWindow * window = nullptr);
 
 VIP_GUI_EXPORT VipArchive & operator << (VipArchive & arch, VipConsoleWidget * console);
 VIP_GUI_EXPORT VipArchive & operator >> (VipArchive & arch, VipConsoleWidget * console);

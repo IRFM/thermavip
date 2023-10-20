@@ -42,7 +42,7 @@ VIP_DATA_TYPE_EXPORT bool vipSort(VipNDArray & array, Vip::ComplexSorting sort =
 /// \param output histogram
 /// \param strategy bin strategy (either #Vip::SameBinWidth or #Vip::SameBinWidth)
 /// \param inter only values within interval (or all values if interval is invalid) are used to compute the histogram
-/// \param indexes new sorted indexes. Must be NULL or a preallocated array of size ar.size().
+/// \param indexes new sorted indexes. Must be nullptr or a preallocated array of size ar.size().
 /// \param index_offset start index  in \a indexes
 /// \param replace_inf replace infinit values by the value at given index
 /// \param replace_sup replace values outside valid interval by the value at given index
@@ -54,7 +54,7 @@ VIP_DATA_TYPE_EXPORT bool vipExtractHistogram(VipNDArray & ar,
 	int bins = -1,
 	Vip::BinsStrategy strategy = Vip::SameBinWidth,
 	const VipInterval & inter = VipInterval(),
-	int *indexes = NULL,
+	int *indexes = nullptr,
 	int index_offset = 0,
 	int replace_inf = -1,
 	int replace_sup = -1,

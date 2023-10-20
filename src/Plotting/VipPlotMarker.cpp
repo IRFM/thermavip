@@ -68,7 +68,7 @@ public:
         labelAlignment( Qt::AlignCenter ),
         labelOrientation( Qt::Horizontal ),
         spacing( 2 ),
-        symbol( NULL ),
+        symbol( nullptr ),
 		symbolVisible(false), 
 		expandToFullArea(true),
         style( VipPlotMarker::NoLine ),

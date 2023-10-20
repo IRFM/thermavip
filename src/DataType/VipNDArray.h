@@ -197,7 +197,7 @@ public:
 	}
 
 	template<class T>
-	VipNDArray(const T& expression, typename std::enable_if<VipIsExpression<T>::value, void>::type* = NULL);
+	VipNDArray(const T& expression, typename std::enable_if<VipIsExpression<T>::value, void>::type* = nullptr);
 
 	template<class T>
 	VipNDArray(std::initializer_list<T> init)
@@ -568,7 +568,7 @@ public:
 	}
 
 	template<class U>
-	VipNDArrayType(const U& expression, typename std::enable_if<VipIsExpression<U>::value, void>::type* = NULL);
+	VipNDArrayType(const U& expression, typename std::enable_if<VipIsExpression<U>::value, void>::type* = nullptr);
 
 	VipNDArrayType(std::initializer_list<T> init)
 	  : VipNDArray(init)

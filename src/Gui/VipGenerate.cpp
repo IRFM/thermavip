@@ -41,7 +41,7 @@ static VipIODevice * generateDeviceFromFile()
 {
 	VipPath path(openFile(), false);
 	if (path.isEmpty())
-		return NULL;
+		return nullptr;
 
 	QList<VipIODevice::Info> devices = VipIODevice::possibleReadDevices(path, QByteArray());
 	VipIODevice * dev = VipCreateDevice::create(devices, path);
@@ -72,17 +72,17 @@ static VipIODevice * generateDeviceFromFile()
 		{
 			delete dev;
 			VIP_LOG_WARNING("Fail to open : " + QFileInfo(name).fileName());
-			return NULL;
+			return nullptr;
 		}
 	}
-	return NULL;
+	return nullptr;
 }
 
 static void generateStreamingFromFile()
 {
 	if (VipIODevice * dev = generateDeviceFromFile())
 	{
-		vipGetMainWindow()->openDevices(QList<VipIODevice*>() << dev, NULL, NULL);
+		vipGetMainWindow()->openDevices(QList<VipIODevice*>() << dev, nullptr, nullptr);
 	}
 }
 

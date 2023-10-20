@@ -484,7 +484,7 @@ VipLinearColorMap::VipLinearColorMap( VipColorMap::Format format ):
     d_data = new PrivateData;
     d_data->mode = ScaledColors;
     d_data->type = Unknown;
-	d_data->renderColors = NULL;
+	d_data->renderColors = nullptr;
 	d_data->renderColorsCount = 1024;
 	d_data->useFlatHistogram = false;
 	d_data->flatHistogramStrength = 1;
@@ -650,7 +650,7 @@ void VipLinearColorMap::dirtyColorMap()
 {
 	if (d_data->renderColors)
 		delete[] d_data->renderColors;
-	d_data->renderColors = NULL;
+	d_data->renderColors = nullptr;
 }
 
 QRgb VipLinearColorMap::rgbFlatHistogram(const VipInterval & interval, double value) const

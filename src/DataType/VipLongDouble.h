@@ -38,17 +38,17 @@ VIP_DATA_TYPE_EXPORT QString vipLongDoubleToString(const vip_long_double v);
 /// Convert long double value to byte array with full precision
 VIP_DATA_TYPE_EXPORT QByteArray vipLongDoubleToByteArray(const vip_long_double v);
 /// Extract long double from string
-VIP_DATA_TYPE_EXPORT vip_long_double vipLongDoubleFromString(const QString & str, bool *ok = NULL);
+VIP_DATA_TYPE_EXPORT vip_long_double vipLongDoubleFromString(const QString & str, bool *ok = nullptr);
 /// Extract long double from QByteArray
-VIP_DATA_TYPE_EXPORT vip_long_double vipLongDoubleFromByteArray(const QByteArray & str, bool *ok=NULL);
+VIP_DATA_TYPE_EXPORT vip_long_double vipLongDoubleFromByteArray(const QByteArray & str, bool *ok=nullptr);
 /// Convert long double to string with full precision using given locale
 VIP_DATA_TYPE_EXPORT QString vipLongDoubleToStringLocale(const vip_long_double v, const QLocale &);
 /// Convert long double to byte array with full precision using given locale
 VIP_DATA_TYPE_EXPORT QByteArray vipLongDoubleToByteArrayLocale(const vip_long_double v, const QLocale &);
 /// Extract long double from string using given locale
-VIP_DATA_TYPE_EXPORT vip_long_double vipLongDoubleFromStringLocale(const QString & str, const QLocale &, bool *ok = NULL);
+VIP_DATA_TYPE_EXPORT vip_long_double vipLongDoubleFromStringLocale(const QString & str, const QLocale &, bool *ok = nullptr);
 /// Extract long double from byte array using given locale
-VIP_DATA_TYPE_EXPORT vip_long_double vipLongDoubleFromByteArrayLocale(const QByteArray & str, const QLocale &, bool *ok = NULL);
+VIP_DATA_TYPE_EXPORT vip_long_double vipLongDoubleFromByteArrayLocale(const QByteArray & str, const QLocale &, bool *ok = nullptr);
 /// Write long double to QTextStream
 VIP_DATA_TYPE_EXPORT QTextStream & operator<<(QTextStream & s, vip_long_double v);
 /// Read long double from QTextStream

@@ -368,7 +368,7 @@ class VipRasterData::PrivateData
 public:
 
 	PrivateData()
-		:converter(NULL),mTime(QDateTime::currentMSecsSinceEpoch()), isArray(0)
+		:converter(nullptr),mTime(QDateTime::currentMSecsSinceEpoch()), isArray(0)
 	{}
 
 	~PrivateData()

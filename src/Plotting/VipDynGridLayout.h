@@ -24,7 +24,7 @@ public:
 	/// \param parent Parent widget
 	/// \param margin Margin
 	/// \param spacing Spacing
-    explicit VipDynGridLayout( double space = -1 , QGraphicsLayoutItem * parent = NULL);
+    explicit VipDynGridLayout( double space = -1 , QGraphicsLayoutItem * parent = nullptr);
     virtual ~VipDynGridLayout();
 
     void	setAlignment ( Qt::Alignment alignment );

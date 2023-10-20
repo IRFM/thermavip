@@ -10,7 +10,7 @@ class NPZDevice : public VipIODevice
 	VIP_IO(VipInput input)
 
 public:
-	NPZDevice(QObject* parent = NULL);
+	NPZDevice(QObject* parent = nullptr);
 	~NPZDevice();
 
 	virtual bool probe(const QString& filename, const QByteArray&) const {
@@ -52,7 +52,7 @@ class MATDevice : public VipIODevice
 		VIP_IO(VipInput input)
 
 public:
-	MATDevice(QObject* parent = NULL);
+	MATDevice(QObject* parent = nullptr);
 	~MATDevice();
 
 	virtual bool probe(const QString& filename, const QByteArray&) const {

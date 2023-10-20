@@ -32,7 +32,7 @@ class PYTHON_EXPORT PySignalGenerator : public VipTimeRangeBasedGenerator
 	QVariant m_data;
 
 public:
-	PySignalGenerator(QObject * parent = NULL)
+	PySignalGenerator(QObject * parent = nullptr)
 		:VipTimeRangeBasedGenerator(parent)
 	{
 		propertyAt(0)->setData(20000000);
@@ -72,7 +72,7 @@ class PYTHON_EXPORT PySignalGeneratorEditor : public QWidget
 	Q_OBJECT
 
 public:
-	PySignalGeneratorEditor(QWidget * parent = NULL);
+	PySignalGeneratorEditor(QWidget * parent = nullptr);
 	~PySignalGeneratorEditor();
 
 	void setGenerator(PySignalGenerator * gen);

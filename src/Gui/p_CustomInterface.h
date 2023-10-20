@@ -12,7 +12,7 @@ struct Anchor {
 	QRect highlight;
 	QString text;
 	Anchor()
-		:side(Vip::NoSide), canvas(NULL)
+		:side(Vip::NoSide), canvas(nullptr)
 	{}
 };
 

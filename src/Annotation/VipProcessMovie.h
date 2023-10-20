@@ -19,7 +19,7 @@ class VIP_ANNOTATION_EXPORT VipEventDevice : public VipTimeRangeBasedGenerator
 	VIP_IO(VipOutput scene_model)
 
 public:
-	VipEventDevice(QObject * parent = NULL);
+	VipEventDevice(QObject * parent = nullptr);
 	~VipEventDevice();
 
 	virtual bool open(VipIODevice::OpenModes mode);
@@ -49,7 +49,7 @@ class VIP_ANNOTATION_EXPORT UploadToDB : public QWidget
 	Q_OBJECT
 
 public:
-	UploadToDB(const QString & device, QWidget * parent = NULL);
+	UploadToDB(const QString & device, QWidget * parent = nullptr);
 	~UploadToDB();
 
 	void setUserName(const QString &);

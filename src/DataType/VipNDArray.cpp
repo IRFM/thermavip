@@ -57,7 +57,7 @@ bool vipIsNullArray(const VipNDArrayHandle * h)
 
 
 
-VipNDArrayHandle::VipNDArrayHandle() : size(0), opaque(NULL){
+VipNDArrayHandle::VipNDArrayHandle() : size(0), opaque(nullptr){
 	//add_handle(this);
 
 }
@@ -122,7 +122,7 @@ void VipNDArray::import(const void * ptr, int data_type, const VipNDArrayShape &
 
 	this->setSharedHandle(h);
 	this->detach(); //detach, allocate and copy input data
-	h->opaque = NULL;
+	h->opaque = nullptr;
 }
 
 VipNDArray::VipNDArray(const void * ptr, int data_type, const VipNDArrayShape & shape)
@@ -1073,7 +1073,7 @@ int test(int argc, char**argv)
 	// std::vector<void*> mems1(count);// pool.maxObjectsForSize(MSIZE + 1));
 	// std::vector<void*> mems2(count);// pool.maxObjectsForSize(MSIZE + 1));
 	// std::vector<int> sizes(mems1.size());
-	// srand(time(NULL));
+	// srand(time(nullptr));
 	// for (int i = 0; i < mems1.size(); ++i)
 	// sizes[i] = (rand() % MSIZE + 1);
 //

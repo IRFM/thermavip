@@ -700,7 +700,7 @@ VipPlotCurve * FitDialogBox::selectedCurve() const
 	for (int i = 0; i < curves.size(); ++i)
 		if (curves[i]->title().text() == m_data->curves.currentText())
 			return curves[i];
-	return NULL;
+	return nullptr;
 }
 
 /**0=linear, 1 = exponential, 2 = polynomial*/
@@ -714,11 +714,11 @@ static void fitCurveShape( VipPlotCurve * curve, VipPlotPlayer * player, int fit
 {
 	VipProcessingPool * pool = player->processingPool();
 
-	VipOutput * src = NULL;
+	VipOutput * src = nullptr;
 	if (VipDisplayObject * disp = curve->property("VipDisplayObject").value<VipDisplayObject*>())
 		src = disp->inputAt(0)->connection()->source();
 
-	FitProcessing * fit = NULL;
+	FitProcessing * fit = nullptr;
 	if (fit_type == 0)
 		fit = new FitLinear();
 	else if (fit_type == 1)
@@ -768,7 +768,7 @@ static void fitCurveShape( VipPlotCurve * curve, VipPlotPlayer * player, int fit
 	text.setTextPen(QPen(vipWidgetTextBrush(player).color()));
 	disp->item()->addText(text);
 
-	vipCreatePlayersFromProcessing(disp, player, NULL, curve);
+	vipCreatePlayersFromProcessing(disp, player, nullptr, curve);
 }
 
 void fitCurve( VipPlotPlayer* player, const QString & fit)

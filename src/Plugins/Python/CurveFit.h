@@ -168,7 +168,7 @@ class FitDialogBox : public QDialog
 
 public:
 	//fit could be empty or "Linear", "Exponential", "Polynomial", "Gaussian".
-	FitDialogBox(VipPlotPlayer * pl,const QString & fit, QWidget * parent = NULL);
+	FitDialogBox(VipPlotPlayer * pl,const QString & fit, QWidget * parent = nullptr);
 	~FitDialogBox();
 
 	VipPlotCurve * selectedCurve() const;

@@ -89,7 +89,7 @@ class VIP_GUI_EXPORT VipToolWidgetToolBar : public QToolBar
 	VipToolWidget * m_toolWidget;
 
 public:
-	VipToolWidgetToolBar(VipToolWidget* tool, QWidget * parent = NULL)
+	VipToolWidgetToolBar(VipToolWidget* tool, QWidget * parent = nullptr)
 		:QToolBar(parent), m_toolWidget(tool) {}
 
 	virtual void setDisplayPlayerArea(VipDisplayPlayerArea *) {}
@@ -148,7 +148,7 @@ public:
 	/// When reimplementing this function, the new implementation should call the base class implementation to keep built-in compatibility.
 	virtual void setDisplayPlayerArea(VipDisplayPlayerArea * ) {}
 
-	virtual VipToolWidgetToolBar * toolBar()  { return NULL; }
+	virtual VipToolWidgetToolBar * toolBar()  { return nullptr; }
 
 public Q_SLOTS:
 	void setEnableOpacityChange(bool enable);
@@ -191,7 +191,7 @@ class VIP_GUI_EXPORT VipViewport : public QWidget
 {
 	Q_OBJECT
 public:
-	VipViewport(QWidget * parent = NULL)
+	VipViewport(QWidget * parent = nullptr)
 		:QWidget(parent)
 	{}
 };
@@ -201,7 +201,7 @@ class VIP_GUI_EXPORT VipToolWidgetScrollArea : public QScrollArea
 	Q_OBJECT
 		Q_PROPERTY(bool floatingTool READ floatingTool WRITE setFloatingTool)
 public:
-	VipToolWidgetScrollArea(QWidget * parent = NULL)
+	VipToolWidgetScrollArea(QWidget * parent = nullptr)
 		:QScrollArea(parent)
 	{
 		setViewport(new VipViewport());
@@ -269,7 +269,7 @@ private:
 	PrivateData * m_data;
 };
 
-VipPlotToolWidgetPlayer * vipGetPlotToolWidgetPlayer(VipMainWindow * window = NULL);
+VipPlotToolWidgetPlayer * vipGetPlotToolWidgetPlayer(VipMainWindow * window = nullptr);
 
 
 class VipProgress;
@@ -310,7 +310,7 @@ private:
 	PrivateData * m_data;
 };
 
-VIP_GUI_EXPORT VipMultiProgressWidget * vipGetMultiProgressWidget(VipMainWindow * window = NULL);
+VIP_GUI_EXPORT VipMultiProgressWidget * vipGetMultiProgressWidget(VipMainWindow * window = nullptr);
 
 /// @}
 //end Gui

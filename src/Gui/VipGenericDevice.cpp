@@ -12,7 +12,7 @@
 class VipGenericRecorder::PrivateData
 {
 public:
-	PrivateData() : recorder(NULL), datePrefix("dd.MM.yyyy_hh.mm.ss.zzz_"), hasDatePrefix(false), recorderAvailableDataOnOpen(true), recordedSize(0){}
+	PrivateData() : recorder(nullptr), datePrefix("dd.MM.yyyy_hh.mm.ss.zzz_"), hasDatePrefix(false), recorderAvailableDataOnOpen(true), recordedSize(0){}
 	VipIODevice * recorder;
 	QString datePrefix;
 	bool hasDatePrefix;
@@ -61,7 +61,7 @@ qint64 VipGenericRecorder::estimateFileSize() const
 		 if(m_data->recorder)
 		 {
 			 delete m_data->recorder;
-			 m_data->recorder = NULL;
+			 m_data->recorder = nullptr;
 		 }
 
 		 //fill the list of input data

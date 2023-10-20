@@ -269,7 +269,7 @@ public:
 	/**
 	* Send python object called 'name' through the shared memory
 	*/
-	bool writeObject(const QString& name, qint64 timeout = -1, QString* error = NULL)
+	bool writeObject(const QString& name, qint64 timeout = -1, QString* error = nullptr)
 	{
 		if (error)
 			error->clear();
@@ -299,7 +299,7 @@ public:
 	/**
 	* Send python object called 'name' through the shared memory
 	*/
-	bool writeObject(const QString& name, const QVariant & v, qint64 timeout = -1, QString* error = NULL)
+	bool writeObject(const QString& name, const QVariant & v, qint64 timeout = -1, QString* error = nullptr)
 	{
 		if (error)
 			error->clear();
@@ -334,7 +334,7 @@ public:
 		}
 		return true;
 	}
-	bool writeSendObject(const QString& name, qint64 timeout = -1, QString* error = NULL)
+	bool writeSendObject(const QString& name, qint64 timeout = -1, QString* error = nullptr)
 	{
 		QByteArray _name = name.toLatin1();
 		QByteArray ar = SH_SEND_OBJECT + toBinary(_name.size()) + _name;
@@ -386,7 +386,7 @@ public:
 		return this->write(ar.data(), ar.size(), timeout);
 	}
 
-	bool readObject( QByteArray ar, QVariant& v, QString* error = NULL)
+	bool readObject( QByteArray ar, QVariant& v, QString* error = nullptr)
 	{
 		if (error)
 			error->clear();
@@ -570,7 +570,7 @@ IPythonConsoleProcess::IPythonConsoleProcess(QObject* parent)
 	:QProcess(parent)
 {
 	m_data = new PrivateData();
-	m_data->mem = NULL; 
+	m_data->mem = nullptr; 
 	m_data->timeout = 3000;
 	m_data->embedded = false;
 	m_data->pid = 0;
@@ -631,7 +631,7 @@ qint64 IPythonConsoleProcess::start(int font_size, const QString& _style , const
 	//initialize shared memory
 	if (m_data->mem ) {
 		delete m_data->mem;
-		m_data->mem = NULL;
+		m_data->mem = nullptr;
 	}
 
 	QString shared_memory_name = _shared_memory_name;
@@ -646,7 +646,7 @@ qint64 IPythonConsoleProcess::start(int font_size, const QString& _style , const
 		m_data->mem = new SharedMemory(shared_memory_name, 50000000, true);
 		if (!m_data->mem->isValid()) {
 			delete m_data->mem;
-			m_data->mem = NULL;
+			m_data->mem = nullptr;
 			m_data->lastError = "cannot create shared memory object";
 			return 0;
 		}
@@ -1125,7 +1125,7 @@ IPythonWidget::IPythonWidget(int font_size, const QString& style, QWidget* paren
 	m_data = new PrivateData();
 	m_data->font_size = font_size;
 	m_data->style = style;
-	m_data->widget = NULL;
+	m_data->widget = nullptr;
 	m_data->process.setEmbedded(true);
 	qint64 pid = m_data->wid = m_data->process.start(font_size, style);
 
@@ -1174,7 +1174,7 @@ bool IPythonWidget::restartProcess()
 {
 	if (m_data->widget) {
 		delete m_data->widget;
-		m_data->widget = NULL;
+		m_data->widget = nullptr;
 	}
 	qint64 pid = m_data->wid = m_data->process.start(m_data->font_size, m_data->style);
 	if (pid) {
@@ -1212,7 +1212,7 @@ void IPythonWidget::focusChanged(QWidget* old, QWidget* now)
 class IPythonTabBar::PrivateData
 {
 public:
-	PrivateData() : tabWidget(NULL), dragIndex(-1),
+	PrivateData() : tabWidget(nullptr), dragIndex(-1),
 		closeIcon(vipIcon("close.png")), restartIcon(vipIcon("restart.png")),
 		hoverCloseIcon(vipIcon("close.png")), hoverRestartIcon(vipIcon("restart.png")),
 		selectedCloseIcon(vipIcon("close.png")), selectedRestartIcon(vipIcon("restart.png")) ,
@@ -1558,7 +1558,7 @@ IPythonTabWidget* IPythonToolWidget::widget() const
 IPythonToolWidget* GetIPythonToolWidget(VipMainWindow* win)
 {
 	static bool initialised = 0;
-	static IPythonToolWidget* inst = NULL;
+	static IPythonToolWidget* inst = nullptr;
 	if (!initialised) {
 		initialised = 1;
 
@@ -1566,7 +1566,7 @@ IPythonToolWidget* GetIPythonToolWidget(VipMainWindow* win)
 		w->widget()->addInterpreter();
 		if (w->widget()->widget(0)->process()->state() != QProcess::Running) {
 			delete w;
-			return inst = NULL;
+			return inst = nullptr;
 		}
 
 		inst = w;
