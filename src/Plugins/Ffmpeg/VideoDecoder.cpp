@@ -237,7 +237,7 @@ void VideoDecoder::Open(const std::string & name, AVInputFormat * iformat , AVDi
 	if (err != 0) {
 		char error[1000]; memset(error, 0, sizeof(error));
 		av_strerror(err, error, sizeof(error));
-		printf("ffmpeg error: %s\n", error);
+		vip_debug("ffmpeg error: %s\n", error);
 		throw std::runtime_error((std::string("Couldn't open file '") + name + "'").c_str());
 	}
 	

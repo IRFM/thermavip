@@ -4756,7 +4756,7 @@ void VipMainWindow::showHelp()
 	p.replace("\\", "/");
 	if (!p.endsWith("/"))
 		p += "/";
-	printf("help path: '%s'\n", p.toLatin1().data());
+	vip_debug("help path: '%s'\n", p.toLatin1().data());
 
 	if (QFileInfo(p + "help/index.html").exists())
 		QDesktopServices::openUrl(QUrl(QFileInfo(p + "help/index.html").canonicalFilePath()));

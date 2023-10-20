@@ -159,7 +159,7 @@ void CustomizePlayer::scriptSelected(QAction * act)
 	if (r != 0) {
 		PyError err(true);
 		if (!err.traceback.isEmpty()) {
-			printf("err: %s\n", err.traceback.toLatin1().data());
+			vip_debug("err: %s\n", err.traceback.toLatin1().data());
 			VIP_LOG_ERROR(err.traceback);
 		}
 		QMetaObject::invokeMethod(pyGetPythonInterpreter(), "showAndRaise", Qt::QueuedConnection);

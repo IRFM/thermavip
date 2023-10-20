@@ -364,9 +364,9 @@ static void createComplexPyGenerator()
 	p.start();
 
 	QVariant v1 = p.evalCode("import numpy as np");
-	printf("%s\n", v1.value<PyError>().traceback.toLatin1().data());
+	vip_debug("%s\n", v1.value<PyError>().traceback.toLatin1().data());
 	QVariant v2 = p.evalCode("np.sin(2)");
-	printf("%s\n", v2.value<PyError>().traceback.toLatin1().data());
+	vip_debug("%s\n", v2.value<PyError>().traceback.toLatin1().data());
 	double yy = v2.toDouble();
 	
 
@@ -382,7 +382,7 @@ static void createComplexPyGenerator()
 	qint64 st = QDateTime::currentMSecsSinceEpoch();
 	tmp = qCompress(tmp);
 	qint64 el = QDateTime::currentMSecsSinceEpoch() -st;
-	printf("compressed: %i %i, %i ms\n",array.dataSize()*array.size(), tmp.size(), (int)el);
+	vip_debug("compressed: %i %i, %i ms\n",array.dataSize()*array.size(), tmp.size(), (int)el);
 
 	for (int i = 0; i < 15; ++i)
 	{
@@ -391,29 +391,29 @@ static void createComplexPyGenerator()
 		QVariant v = p.wait(p.retrieveObject("i"));
 		const VipNDArray ar = v.value<VipNDArray>();
 		qint64 el = QDateTime::currentMSecsSinceEpoch() - st;
-		//printf("'%s'\n", v.toString().toLatin1().data());
-		printf("elapsed: %i\n", (int)el);
-		printf("shape: (%i, %i)\n", ar.shape(0), ar.shape(1));
+		//vip_debug("'%s'\n", v.toString().toLatin1().data());
+		vip_debug("elapsed: %i\n", (int)el);
+		vip_debug("shape: (%i, %i)\n", ar.shape(0), ar.shape(1));
 		qint64 st = QDateTime::currentMSecsSinceEpoch();
 		QVariant v = p.wait(p.sendObject("i", QVariant::fromValue(array)));
 		PyError err = v.value<PyError>();
 		qint64 el = QDateTime::currentMSecsSinceEpoch() - st;
-		printf("elapsed: %i\n", (int)el);
+		vip_debug("elapsed: %i\n", (int)el);
 		if (!err.isNull()) 
-			printf("error: %s\n", err.traceback.toLatin1().data());
+			vip_debug("error: %s\n", err.traceback.toLatin1().data());
 		else
 		{
 			st = QDateTime::currentMSecsSinceEpoch();
 			v = p.wait(p.retrieveObject("i"));
 			PyError err = v.value<PyError>();
 			qint64 el = QDateTime::currentMSecsSinceEpoch() - st;
-			printf("elapsed: %i\n", (int)el);
+			vip_debug("elapsed: %i\n", (int)el);
 			if (!err.isNull())
-				printf("error: %s\n", err.traceback.toLatin1().data());
+				vip_debug("error: %s\n", err.traceback.toLatin1().data());
 			else
 			{
 				const VipNDArray ar = v.value<VipNDArray>();
-				printf("shape: (%i, %i)\n",ar.shape(0),ar.shape(1));
+				vip_debug("shape: (%i, %i)\n",ar.shape(0),ar.shape(1));
 			}
 		}
 	}
@@ -423,7 +423,7 @@ static void createComplexPyGenerator()
 	p.execCode("i=i*3");
 	QVariant v = p.wait(p.retrieveObject("i"));
 	PyError err = v.value<PyError>();
-	printf("%s\n", err.traceback.toLatin1().data());
+	vip_debug("%s\n", err.traceback.toLatin1().data());
 	int hh = v.toInt();
 
 	bool stop = true;
@@ -512,7 +512,7 @@ protected:
 		if (!err.isNull()) {
 			if (error)
 				*error = err.traceback;
-			printf("%s\n", err.traceback.toLatin1().data());
+			vip_debug("%s\n", err.traceback.toLatin1().data());
 			return false;
 		}
 
@@ -532,7 +532,7 @@ protected:
 
 		PyError pyerr = d_loc.wait(d_loc.execCode(code)).value<PyError>();
 		if (!pyerr.isNull()) {
-			printf("%s\n", pyerr.traceback.toLatin1().data());
+			vip_debug("%s\n", pyerr.traceback.toLatin1().data());
 			return;
 		}
 		//send result
@@ -579,7 +579,7 @@ protected:
 						"__res = " + name + "(*__targs, **__dargs)\n";
 					PyError err = d_loc.wait(d_loc.execCode(code)).value<PyError>();
 					if (!err.isNull()) {
-						printf("%s\n", err.traceback.toLatin1().data());
+						vip_debug("%s\n", err.traceback.toLatin1().data());
 						sendError(err.traceback, timeout);
 						continue;
 					}
@@ -643,29 +643,29 @@ PythonInterface::LoadResult PythonInterface::load()
 	/*IPythonConsoleProcess* p = new IPythonConsoleProcess();
 	qint64 pid = p->start();
 
-	printf("'%s'\n", p->lastError().toLatin1().data());
+	vip_debug("'%s'\n", p->lastError().toLatin1().data());
 	
 	p->sendObject("toto", 3.45);
-	printf("'%s' '%s'\n", p->readAllStandardOutput().data(), p->readAllStandardError().data());
+	vip_debug("'%s' '%s'\n", p->readAllStandardOutput().data(), p->readAllStandardError().data());
 	p->sendObject("tutu", 6);
-	printf("'%s' '%s'\n", p->readAllStandardOutput().data(), p->readAllStandardError().data());
+	vip_debug("'%s' '%s'\n", p->readAllStandardOutput().data(), p->readAllStandardError().data());
 	p->sendObject("tata", 6);
-	printf("'%s' '%s'\n", p->readAllStandardOutput().data(), p->readAllStandardError().data());
+	vip_debug("'%s' '%s'\n", p->readAllStandardOutput().data(), p->readAllStandardError().data());
 	p->isRunningCode();
 	p->sendObject("ok", 9);
-	printf("'%s' '%s'\n", p->readAllStandardOutput().data(), p->readAllStandardError().data());
+	vip_debug("'%s' '%s'\n", p->readAllStandardOutput().data(), p->readAllStandardError().data());
 	std::thread(std::bind(&IPythonConsoleProcess::execCode, p, QString("_run=2\nwhile True: pass\n_run=1"))).detach();
 	QThread::msleep(5000);
 	p->start();
 	p->sendObject("_run", 3); 
 	QVariant v = p->retrieveObject("_run"); 
 	int uu = v.toInt();
-	printf("%s\n", v.toByteArray().data());
-	printf("%s\n", p->lastError().toLatin1().data());
+	vip_debug("%s\n", v.toByteArray().data());
+	vip_debug("%s\n", p->lastError().toLatin1().data());
 	bool r = p->execCode("uu=9");  
-	printf("%s\n", p->lastError().toLatin1().data());
+	vip_debug("%s\n", p->lastError().toLatin1().data());
 	r = p->execLine("for i in range(10):\n    print(i)");
-	printf("%s\n", p->lastError().toLatin1().data()); 
+	vip_debug("%s\n", p->lastError().toLatin1().data()); 
 	r = p->execLine("while True: print(hjk)");
 	p->restart();
 	r = p->execLine("while True: print(hjk)");

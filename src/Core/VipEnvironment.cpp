@@ -62,7 +62,7 @@ QString vipGetTempDirectory(const QString & suffix )
 {
 	QString path = QStandardPaths::writableLocation(QStandardPaths::TempLocation) +"/"+suffix+"/";
 	path.replace("\\","/");
-	//printf("Temp directory: %s\n",path.toAscii().data());fflush(stdout);
+	//vip_debug("Temp directory: %s\n",path.toAscii().data());fflush(stdout);
 	QDir dir(path);
 	if(!dir.exists())
 		dir.mkdir(path);

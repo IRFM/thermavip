@@ -162,7 +162,7 @@ void VipEventDevice::setVideoSamplingTime(qint64 s)
 bool VipEventDevice::readData(qint64 time)
 {
 	//QList<qint64> times = m_scenes.keys();
-	//for (int i = 0; i < times.size(); ++i) printf("%s\n", QString::number(times[i]).toLatin1().data());
+	//for (int i = 0; i < times.size(); ++i) vip_debug("%s\n", QString::number(times[i]).toLatin1().data());
 
 	QMap<qint64, VipSceneModel>::const_iterator it = m_scenes.find(time);
 	VipSceneModel sm = it != m_scenes.end() ? it.value() : VipSceneModel();
@@ -1482,11 +1482,11 @@ void VipPlayerDBAccess::saveToJsonInternal(bool show_messages)
 			int c = 0;
 			for (int i = 0; i < to_recomputeIds.size(); ++i) {
 				VipAnyResource* max = static_cast<VipAnyResource*>(stats[c++]);
-				printf("%s\n", max->path().toLatin1().data());
+				vip_debug("%s\n", max->path().toLatin1().data());
 				VipAnyResource* min = static_cast<VipAnyResource*>(stats[c++]);
-				printf("%s\n", min->path().toLatin1().data());
+				vip_debug("%s\n", min->path().toLatin1().data());
 				VipAnyResource* mean = static_cast<VipAnyResource*>(stats[c++]);
-				printf("%s\n", mean->path().toLatin1().data());
+				vip_debug("%s\n", mean->path().toLatin1().data());
 				
 				VipPointVector max_vals = max->outputAt(0)->value<VipPointVector>();
 				VipPointVector max_vals_pos = max->outputAt(0)->data().attribute("_vip_Pos").value<VipPointVector>();

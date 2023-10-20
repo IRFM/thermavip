@@ -115,7 +115,7 @@ QByteArray vipLongDoubleToByteArrayLocale(const vip_long_double v, const QLocale
 vip_long_double vipLongDoubleFromStringLocale(const QString & str ,const QLocale &l, bool * ok)
 {
 	//printlocales();
-	//printf("locale '%s'\n", l.name().toLatin1().data());
+	//vip_debug("locale '%s'\n", l.name().toLatin1().data());
 	std::istringstream ss(str.toLatin1().data());
 	if (l.language() != //_locale.language()
  QLocale::C)

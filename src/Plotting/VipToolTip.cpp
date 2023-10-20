@@ -534,7 +534,7 @@ void VipToolTip::setPlotAreaPos(const QPointF & pos)
 		pa->end();
 		delete pa;
 	}
-	//printf("setAdditionalPaintCommands %i\n", (int)additional.isNull());
+	//vip_debug("setAdditionalPaintCommands %i\n", (int)additional.isNull());
 	plotArea()->rubberBand()->setAdditionalPaintCommands(additional);
 
 
@@ -658,7 +658,7 @@ QPoint VipToolTip::toolTipPosition(VipText & text, const QPointF & pos, Vip::Reg
 			factor = -1;
 		//static int c = 0;
 		this_pos += *d_data->offset * factor;
-		//printf("offset:%i,  %i\n",++c,(int) d_data->offset->x());
+		//vip_debug("offset:%i,  %i\n",++c,(int) d_data->offset->x());
 		return this_pos;
 	}
 

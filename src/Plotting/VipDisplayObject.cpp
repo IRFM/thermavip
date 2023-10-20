@@ -153,7 +153,7 @@ void VipDisplayObject::display( const VipAnyDataList & dat)
 				QWidget* player = findWidgetWith_automaticWindowTitle(widget());
 				if (player && !title.isEmpty()){
 					if (player->property("automaticWindowTitle").toBool()) {
-						//printf("set window title\n");
+						//vip_debug("set window title\n");
 						QMetaObject::invokeMethod(player, "setWindowTitle", Qt::AutoConnection, Q_ARG(QString, title));
 					}
 					m_data->playerTitle = title;

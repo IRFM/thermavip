@@ -251,41 +251,6 @@ FfmpegInterface::LoadResult FfmpegInterface::load()
 
 	return FfmpegInterface::Success;
 
-	//VideoDecoder::list_devices();
-
-	//AVDictionary* options = nullptr;
-	// set input resolution
-	//av_dict_set(&options, "video_size", "640x480", 0);
-	//av_dict_set(&options, "r", "25", 0);
-
-	/*AVInputFormat *iformat = av_find_input_format("dshow");
-
-	VideoDecoder decode;
-	decode.Open("video=Lenovo EasyCamera",iformat,&options);
-
-	int i = 0;
-	qint64 start = QDateTime::currentMSecsSinceEpoch();
-	while (true)
-	{
-		bool res = decode.MoveNextFrame();
-		if (res)
-		{
-			qint64 el = QDateTime::currentMSecsSinceEpoch() - start;
-			printf("has frame: %i\n", (int)el); fflush(stdout);
-			start = QDateTime::currentMSecsSinceEpoch();
-		}
-		else
-		{
-			printf("no frame\n"); fflush(stdout);
-		}
-		
-		QThread::msleep(5);
-		//QImage img = decode.GetCurrentFrame();
-		//img.save("img" + QString::number(i) + ".png");
-		//++i;
-	}
-	*/
-
 	
 }
 
@@ -306,7 +271,7 @@ void FfmpegInterface::setRecording(bool enable)
 	if (!m_rec_win || !m_rec)
 		return;
 
-	printf("FfmpegInterface::setRecording %i\n", (int)enable);
+	vip_debug("FfmpegInterface::setRecording %i\n", (int)enable);
 
 	if (enable != m_rec_win->isRecording())
 	{

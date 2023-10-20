@@ -4106,12 +4106,12 @@ void VipProcessingList::applyFrom(VipProcessingObject* obj)
 	// for (int i = 0; i < m_data->objects.size(); ++i)
 	//	m_data->objects[i]->blockSignals(false);
 
-	// printf("1 %s name: %s\n",objectName().toLatin1().data(), attribute("Name").toString().toLatin1().data());
+	// vip_debug("1 %s name: %s\n",objectName().toLatin1().data(), attribute("Name").toString().toLatin1().data());
 	VipAnyData out = create(data.data(), data.attributes());
 	out.setTime(data.time());
 	if (!m_data->overrideName.isEmpty())
 		out.setName(m_data->overrideName);
-	// printf("2 %s name: %s\n", objectName().toLatin1().data(), out.name().toLatin1().data());
+	// vip_debug("2 %s name: %s\n", objectName().toLatin1().data(), out.name().toLatin1().data());
 
 	outputAt(0)->setData(out);
 

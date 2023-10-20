@@ -173,7 +173,7 @@ void PyFunctionProcessing::applyPyProcessing(int, int)
 	m_data->lastError = GetPyOptions()->wait(c, 10000).value<PyError>();
 	if (!m_data->lastError.isNull())
 	{
-		printf("err: %s\n", m_data->lastError.traceback.toLatin1().data());
+		vip_debug("err: %s\n", m_data->lastError.traceback.toLatin1().data());
 		setError("cannot send objects to the Python interpreter", VipProcessingObject::WrongInput);
 
 		QMetaObject::invokeMethod(pyGetPythonInterpreter(), "showAndRaise", Qt::QueuedConnection);
@@ -193,7 +193,7 @@ void PyFunctionProcessing::applyPyProcessing(int, int)
 			m_data->lastError = PyError(true);
 			if (!m_data->lastError.isNull())
 			{
-				printf("err: %s\n", m_data->lastError.traceback.toLatin1().data());
+				vip_debug("err: %s\n", m_data->lastError.traceback.toLatin1().data());
 				setError("cannot send objects to the Python interpreter", VipProcessingObject::WrongInput);
 				QMetaObject::invokeMethod(pyGetPythonInterpreter(), "showAndRaise", Qt::QueuedConnection);
 				outputAt(0)->setData(out);
@@ -209,7 +209,7 @@ void PyFunctionProcessing::applyPyProcessing(int, int)
 	m_data->lastError = GetPyOptions()->wait(c, m_data->maxExecutionTime).value<PyError>();
 	if (!m_data->lastError.isNull())
 	{
-		printf("err: %s\n", m_data->lastError.traceback.toLatin1().data());
+		vip_debug("err: %s\n", m_data->lastError.traceback.toLatin1().data());
 		setError(m_data->lastError.traceback);
 		QMetaObject::invokeMethod(pyGetPythonInterpreter(), "showAndRaise", Qt::QueuedConnection);
 		if (in.size() == 1)
@@ -223,7 +223,7 @@ void PyFunctionProcessing::applyPyProcessing(int, int)
 	if (!value.value<PyError>().isNull())
 	{
 		m_data->lastError = value.value<PyError>();
-		printf("err: %s\n", m_data->lastError.traceback.toLatin1().data());
+		vip_debug("err: %s\n", m_data->lastError.traceback.toLatin1().data());
 		setError(m_data->lastError.traceback);
 		pyGetPythonInterpreter()->show();
 		pyGetPythonInterpreter()->raise();
@@ -456,13 +456,13 @@ QList<PyProcessing::Parameter> PyProcessing::extractStdProcessingParameters()
 	PyError err = GetPyOptions()->wait(c, 5000).value<PyError>();
 	if (!err.isNull())
 	{
-		printf("err: %s\n", err.traceback.toLatin1().data());
+		vip_debug("err: %s\n", err.traceback.toLatin1().data());
 		return QList<Parameter>();
 	}
 	QVariant v = GetPyOptions()->wait(GetPyOptions()->retrieveObject("tmp"), 5000);
 	if (!v.value<PyError>().isNull())
 	{
-		printf("err: %s\n", v.value<PyError>().traceback.toLatin1().data());
+		vip_debug("err: %s\n", v.value<PyError>().traceback.toLatin1().data());
 		return QList<Parameter>();
 	}
 	QList<Parameter> res;
@@ -626,7 +626,7 @@ bool PyProcessing::setStdPyProcessingFile(const QString & proc_name)
 	PyError err = GetPyOptions()->wait(c, 5000).value<PyError>();
 	if (!err.isNull())
 	{
-		printf("err: %s\n", err.traceback.toLatin1().data());
+		vip_debug("err: %s\n", err.traceback.toLatin1().data());
 	}
 
 	//retrieve the valid dimensions
@@ -788,7 +788,7 @@ void PyProcessing::applyPyProcessing(int, int)
 	m_data->lastError = GetPyOptions()->wait(c, 10000).value<PyError>();
 	if (!m_data->lastError.isNull())
 	{
-		printf("err: %s\n", m_data->lastError.traceback.toLatin1().data());
+		vip_debug("err: %s\n", m_data->lastError.traceback.toLatin1().data());
 		setError("cannot send objects to the Python interpreter", VipProcessingObject::WrongInput);
 
 		QMetaObject::invokeMethod(pyGetPythonInterpreter(), "showAndRaise", Qt::QueuedConnection);
@@ -804,7 +804,7 @@ void PyProcessing::applyPyProcessing(int, int)
 	m_data->lastError = GetPyOptions()->wait(c, m_data->maxExecutionTime).value<PyError>();
 	if (!m_data->lastError.isNull())
 	{
-		printf("err: %s\n", m_data->lastError.traceback.toLatin1().data());
+		vip_debug("err: %s\n", m_data->lastError.traceback.toLatin1().data());
 		setError(m_data->lastError.traceback);
 		QMetaObject::invokeMethod(pyGetPythonInterpreter(), "showAndRaise", Qt::QueuedConnection);
 		if (in.size() == 1)
@@ -818,7 +818,7 @@ void PyProcessing::applyPyProcessing(int, int)
 	if (!value.value<PyError>().isNull())
 	{
 		m_data->lastError = value.value<PyError>();
-		printf("err: %s\n", m_data->lastError.traceback.toLatin1().data());
+		vip_debug("err: %s\n", m_data->lastError.traceback.toLatin1().data());
 		setError(m_data->lastError.traceback);
 		QMetaObject::invokeMethod(pyGetPythonInterpreter(), "showAndRaise", Qt::QueuedConnection);
 		if (in.size() == 1)

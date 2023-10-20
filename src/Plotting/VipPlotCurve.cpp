@@ -982,7 +982,7 @@ void VipPlotCurve::draw(QPainter * painter, const VipCoordinateSystemPtr & m) co
 					//qint64 st = QDateTime::currentMSecsSinceEpoch();
 					painter->drawPolygon(enveloppe);
 					//qint64 el = QDateTime::currentMSecsSinceEpoch() - st;
-					//printf("drawPolygon1: %i\n", (int)el);
+					//vip_debug("drawPolygon1: %i\n", (int)el);
 				}
 				else if (enveloppe.size())
 				{
@@ -1005,7 +1005,7 @@ void VipPlotCurve::draw(QPainter * painter, const VipCoordinateSystemPtr & m) co
 					painter->setBrush(QBrush());
 					painter->drawLines(lines.data(), lines.size());
 					//qint64 el = QDateTime::currentMSecsSinceEpoch() - st;
-					//printf("drawPolygon2 %i %i: %i\n", lines.size(),(int)length,(int)el);
+					//vip_debug("drawPolygon2 %i %i: %i\n", lines.size(),(int)length,(int)el);
 				}
 				painter->restore();
 
@@ -1035,7 +1035,7 @@ void VipPlotCurve::draw(QPainter * painter, const VipCoordinateSystemPtr & m) co
 	}
 
 	//qint64 el = QDateTime::currentMSecsSinceEpoch() - st;
-	//printf("curve %s: %i ms\n",title().text().toLatin1().data(), (int)el);
+	//vip_debug("curve %s: %i ms\n",title().text().toLatin1().data(), (int)el);
 }
 
 void VipPlotCurve::drawSelected(QPainter * painter, const VipCoordinateSystemPtr & m) const
@@ -2343,7 +2343,7 @@ QList<VipInterval> VipPlotCurve::dataBoundingRect(
 	}
 
 	//qint64 el = QDateTime::currentMSecsSinceEpoch() - st;
-	//printf("dataBoundingRect: %i ms\n", (int)el);
+	//vip_debug("dataBoundingRect: %i ms\n", (int)el);
 	out_vectors = vectors;
 
 	return QList<VipInterval>() << VipInterval(topleft.x(), bottomright.x()) << VipInterval(topleft.y(), bottomright.y());

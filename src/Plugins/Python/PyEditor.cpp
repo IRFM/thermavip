@@ -841,7 +841,7 @@ void PyEditor::CurrentChanged(int)
 
 void PyEditor::ModificationChanged (bool modify)
 {
-	//printf("fname: %s\n", filename(CurrentEditor()).toLatin1().data());
+	//vip_debug("fname: %s\n", filename(CurrentEditor()).toLatin1().data());
 	if(modify)
 	{
 		m_tab.setTabText(m_tab.currentIndex(),"*"+ filename(CurrentEditor()));

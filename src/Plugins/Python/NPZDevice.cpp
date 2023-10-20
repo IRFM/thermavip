@@ -65,7 +65,7 @@ void NPZDevice::apply()
 			"except:\n"
 			"  " + varname + "=" + newname + "\n";
 
-		//printf("%s\n", code.toLatin1().data());
+		//vip_debug("%s\n", code.toLatin1().data());
 
 		PyIOOperation::command_type c = GetPyOptions()->sendObject(newname, QVariant::fromValue(ar));
 		//check sending errors
@@ -222,7 +222,7 @@ void MATDevice::apply()
 			"except:\n"
 			"  " + varname + "=" + newname + "\n";
 
-		//printf("%s\n", code.toLatin1().data());
+		//vip_debug("%s\n", code.toLatin1().data());
 
 		PyIOOperation::command_type c = GetPyOptions()->sendObject(newname, QVariant::fromValue(ar));
 		//check sending errors
@@ -283,7 +283,7 @@ void MATDevice::close()
 		"del d";
 	
 
-	//printf("%s\n", code.toLatin1().data());
+	//vip_debug("%s\n", code.toLatin1().data());
 
 	d_data->dataname.clear();
 	d_data->previous = VipNDArray();

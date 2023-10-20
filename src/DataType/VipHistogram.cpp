@@ -161,8 +161,8 @@ VipIntervalSampleVector extractHistogram(const T * begin, const T * end, int bin
 	if (bins <= 0 || hist.size() <= bins)
 	{
 		//for (int i = 0; i < hist.size(); ++i)
-		// printf("%f %f, %f\n", hist[i].interval.minValue(), hist[i].interval.maxValue(), hist[i].value);
-		// printf(" \n");
+		// vip_debug("%f %f, %f\n", hist[i].interval.minValue(), hist[i].interval.maxValue(), hist[i].value);
+		// vip_debug(" \n");
 		if (strategy == Vip::SameBinWidth)
 			expandSampleWidth(hist, 1);
 		return hist;

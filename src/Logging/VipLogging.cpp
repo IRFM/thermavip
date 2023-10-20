@@ -1,17 +1,36 @@
+#include "VipLogging.h"
+
 #include <QByteArray>
 #include <QDateTime>
 #include <QStringList>
 #include <QSharedPointer>
 #include <QFileInfo>
-#include <iostream>
 
-#include "VipLogging.h"
+#include <iostream>
+#include <atomic>
 
 
 #define DATE_FORMAT "yy:MM:dd-hh:mm:ss.zzz"
 #define DATE_SIZE 25
 
 
+
+namespace vip_log_detail
+{
+	static std::atomic<bool>& _vip_debug()
+	{
+		static std::atomic<bool> enable{ false };
+		return enable;
+	}
+	bool _vip_enable_debug()
+	{ 
+		return _vip_debug().load(std::memory_order_relaxed);
+	}
+	void _vip_set_enable_debug(bool en) 
+	{ 
+		_vip_debug() = en;
+	}
+}
 
 
 

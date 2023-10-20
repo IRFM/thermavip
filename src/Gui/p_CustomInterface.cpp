@@ -381,11 +381,7 @@ CustomizeVideoPlayer::CustomizeVideoPlayer(VipVideoPlayer * player)
 	create_player_top_toolbar(player, this);
 
 	connect(player, SIGNAL(renderEnded(const VipRenderState&)), this, SLOT(endRender()));
-	/*
-	printf("area: %s\n", QString::number((qint64)m_data->area.data(),16).toLatin1().data());
-	printf("close: %s\n", QString::number((qint64)m_data->close, 16).toLatin1().data());
-	printf("status: %s\n", QString::number((qint64)m_data->player->statusBar(), 16).toLatin1().data());
-	printf("viewport: %s\n", QString::number((qint64)m_data->player->plotWidget2D()->viewport(), 16).toLatin1().data());*/
+	
 }
 CustomizeVideoPlayer::~CustomizeVideoPlayer()
 {

@@ -87,7 +87,7 @@ public:
 	{
 		if (!d_mem.attach()) { 
 			if (!d_mem.create(size)) {
-				printf("error: %s\n", d_mem.errorString().toLatin1().data());
+				vip_debug("error: %s\n", d_mem.errorString().toLatin1().data());
 				VIP_LOG_ERROR("error: %s\n", d_mem.errorString().toLatin1().data());
 				return;
 			}
@@ -110,7 +110,7 @@ public:
 			if (false) {//++d_header.connected > 2) {
 				d_mem.unlock();
 				d_mem.detach();
-				printf("error: shared memory already in use");
+				vip_debug("error: shared memory already in use");
 				VIP_LOG_ERROR("error: shared memory already in use");
 				return;
 			}
@@ -282,7 +282,7 @@ public:
 		if (!err.isNull()) {
 			if (error)
 				*error = err.traceback;
-			printf("%s\n", err.traceback.toLatin1().data());
+			vip_debug("%s\n", err.traceback.toLatin1().data());
 			VIP_LOG_ERROR("%s\n", err.traceback.toLatin1().data());
 			return false;
 		}
@@ -320,7 +320,7 @@ public:
 		if (!err.isNull()) {
 			if (error)
 				*error = err.traceback;
-			printf("%s\n", err.traceback.toLatin1().data());
+			vip_debug("%s\n", err.traceback.toLatin1().data());
 			VIP_LOG_ERROR("%s\n", err.traceback.toLatin1().data());
 			return false;
 		}
@@ -484,7 +484,7 @@ protected:
 						"__res = " + name + "(*__targs, **__dargs)\n";
 					PyError err = d_loc.wait(d_loc.execCode(code)).value<PyError>();
 					if (!err.isNull()) {
-						printf("%s\n", err.traceback.toLatin1().data());
+						vip_debug("%s\n", err.traceback.toLatin1().data());
 						VIP_LOG_ERROR("%s\n", err.traceback.toLatin1().data());
 						writeError(err.traceback, timeout);
 						continue;
@@ -495,7 +495,7 @@ protected:
 					}
 				}
 				else {
-					//printf("%s\n", ar.data());
+					//vip_debug("%s\n", ar.data());
 				}
 			}
 		}
@@ -661,7 +661,7 @@ qint64 IPythonConsoleProcess::start(int font_size, const QString& _style , const
 	path.replace("\\", "/");
 	sys_path.replace("\\", "/");
 	QString python = GetPyOptions()->python();
-	printf("Start IPython with %s\n", python.toLatin1().data());
+	vip_debug("Start IPython with %s\n", python.toLatin1().data());
 	python.replace("\\", "/");
 	QString cmd = python + " " + path + " " + QString::number(font_size) + " " + style +
 		" \"import sys; sys.path.append('" + sys_path + "');import Thermavip; Thermavip.setSharedMemoryName('" + shared_memory_name + "'); Thermavip._ipython_interp = __interp \""
@@ -669,7 +669,7 @@ qint64 IPythonConsoleProcess::start(int font_size, const QString& _style , const
 	
 	if (m_data->embedded)
 		cmd += " 1";
-	//printf("%s\n", cmd.toLatin1().data());
+	//vip_debug("%s\n", cmd.toLatin1().data());
 
 	QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
 
@@ -682,7 +682,7 @@ qint64 IPythonConsoleProcess::start(int font_size, const QString& _style , const
 	p.waitForFinished();
 	QByteArray ar = p.readAllStandardOutput();
 	if (!ar.isEmpty()) {
-		printf("found Python at %s\n", ar.data());
+		vip_debug("found Python at %s\n", ar.data());
 		VIP_LOG_INFO("Found Python at %s\n", ar.data());
 		QString pdir = QFileInfo(QString(ar)).absolutePath();
 		QStringList lst;
@@ -696,7 +696,7 @@ qint64 IPythonConsoleProcess::start(int font_size, const QString& _style , const
 			path += ";";
 		path = lst.join(";");
 		env.insert("PATH", path);
-		printf("path: %s\n",path.toLatin1().data());
+		vip_debug("path: %s\n", path.toLatin1().data());
 	}
 #endif
 
@@ -720,7 +720,7 @@ qint64 IPythonConsoleProcess::start(int font_size, const QString& _style , const
 	while (state() == Running) {
 		if (waitForReadyRead(timeout())) {
 			QByteArray tmp = readAllStandardOutput();
-			printf("%s\n", tmp.data());
+			vip_debug("%s\n", tmp.data());
 			pid = tmp.split('\n').first().toLongLong();
 			break;
 		} 
@@ -759,7 +759,7 @@ bool IPythonConsoleProcess::sendObject(const QString& name, const QVariant& obj)
 	m_data->lastError.clear();
 	if (state() != Running || !m_data->mem || !m_data->mem->isValid()) {
 		m_data->lastError = "IPythonConsoleProcess not running";
-		printf("%s\n", m_data->lastError.toLatin1().data());
+		vip_debug("%s\n", m_data->lastError.toLatin1().data());
 		return false;
 	}
 
@@ -771,7 +771,7 @@ bool IPythonConsoleProcess::sendObject(const QString& name, const QVariant& obj)
 	if (!r) {
 		m_data->lastError = error; 
 		m_data->mem->release();
-		printf("%s\n", m_data->lastError.toLatin1().data());
+		vip_debug("%s\n", m_data->lastError.toLatin1().data());
 		return false;
 	}
 	 
@@ -783,7 +783,7 @@ bool IPythonConsoleProcess::sendObject(const QString& name, const QVariant& obj)
 		if (!r.isEmpty())
 			m_data->lastError += "\n" + r;
 		m_data->mem->release();
-		printf("%s\n", m_data->lastError.toLatin1().data());
+		vip_debug("%s\n", m_data->lastError.toLatin1().data());
 		return false;
 	}
 	m_data->mem->release();
@@ -805,7 +805,7 @@ QVariant IPythonConsoleProcess::retrieveObject(const QString& name)
 	m_data->lastError.clear();
 	if (state() != Running || !m_data->mem || !m_data->mem->isValid()) {
 		m_data->lastError = "IPythonConsoleProcess not running";
-		printf("%s\n", m_data->lastError.toLatin1().data());
+		vip_debug("%s\n", m_data->lastError.toLatin1().data());
 		return QVariant::fromValue(PyError(m_data->lastError));
 	}
 
@@ -817,7 +817,7 @@ QVariant IPythonConsoleProcess::retrieveObject(const QString& name)
 	if (!r) {
 		m_data->lastError = error;
 		m_data->mem->release();
-		printf("%s\n", m_data->lastError.toLatin1().data());
+		vip_debug("%s\n", m_data->lastError.toLatin1().data());
 		return QVariant::fromValue(PyError(error + " "));
 	}
 
@@ -831,7 +831,7 @@ QVariant IPythonConsoleProcess::retrieveObject(const QString& name)
 		if (!r.isEmpty())
 			m_data->lastError += "\n" + r;
 		m_data->mem->release();
-		printf("%s\n", m_data->lastError.toLatin1().data());
+		vip_debug("%s\n", m_data->lastError.toLatin1().data());
 		return QVariant::fromValue(PyError(m_data->lastError ));
 	}
 
@@ -840,7 +840,7 @@ QVariant IPythonConsoleProcess::retrieveObject(const QString& name)
 		QString saved = error;
 		if (m_data->mem->readError(ar, error)) {
 			m_data->lastError = error;
-			printf("%s\n", m_data->lastError.toLatin1().data());
+			vip_debug("%s\n", m_data->lastError.toLatin1().data());
 			return QVariant::fromValue(PyError(error + " "));
 		} 
 		m_data->lastError = saved;
@@ -856,7 +856,7 @@ bool IPythonConsoleProcess::execCode(const QString& code)
 	m_data->lastError.clear();
 	if (state() != Running || !m_data->mem || !m_data->mem->isValid()) {
 		m_data->lastError = "IPythonConsoleProcess not running";
-		printf("%s\n", m_data->lastError.toLatin1().data());
+		vip_debug("%s\n", m_data->lastError.toLatin1().data());
 		return false;
 	}
 
@@ -867,7 +867,7 @@ bool IPythonConsoleProcess::execCode(const QString& code)
 	if (!r) {
 		m_data->lastError = "error while sending code to execute";
 		m_data->mem->release(); 
-		printf("%s\n", m_data->lastError.toLatin1().data());
+		vip_debug("%s\n", m_data->lastError.toLatin1().data());
 		return false; 
 	} 
 
@@ -878,7 +878,7 @@ bool IPythonConsoleProcess::execCode(const QString& code)
 		if (!r.isEmpty())
 			m_data->lastError += "\n" + r;
 		m_data->mem->release();
-		printf("%s\n", m_data->lastError.toLatin1().data());
+		vip_debug("%s\n", m_data->lastError.toLatin1().data());
 		return false;
 	}
 	m_data->mem->release();
@@ -887,7 +887,7 @@ bool IPythonConsoleProcess::execCode(const QString& code)
 	
 	if (!m_data->mem->readError(res, error)) {
 		m_data->lastError = "error while interpreting reply";
-		printf("%s\n", m_data->lastError.toLatin1().data());
+		vip_debug("%s\n", m_data->lastError.toLatin1().data());
 		return false; 
 	}
 
@@ -904,7 +904,7 @@ bool IPythonConsoleProcess::execLine(const QString& code)
 	m_data->lastError.clear();
 	if (state() != Running || !m_data->mem || !m_data->mem->isValid()) {
 		m_data->lastError = "IPythonConsoleProcess not running";
-		printf("%s\n", m_data->lastError.toLatin1().data());
+		vip_debug("%s\n", m_data->lastError.toLatin1().data());
 		return false;
 	}
 
@@ -915,7 +915,7 @@ bool IPythonConsoleProcess::execLine(const QString& code)
 	if (!r) {
 		m_data->lastError = "error while sending code to execute";
 		m_data->mem->release();
-		printf("%s\n", m_data->lastError.toLatin1().data());
+		vip_debug("%s\n", m_data->lastError.toLatin1().data());
 		return false;
 	}
 
@@ -926,16 +926,16 @@ bool IPythonConsoleProcess::execLine(const QString& code)
 		if (!r.isEmpty())
 			m_data->lastError += "\n" + r;
 		m_data->mem->release();
-		printf("%s\n", m_data->lastError.toLatin1().data());
+		vip_debug("%s\n", m_data->lastError.toLatin1().data());
 		return false;
 	}
 	m_data->mem->release();
 
 	QString error;
-	printf("%s\n", res.data());
+	vip_debug("%s\n", res.data());
 	if (!m_data->mem->readError(res, error)) {
 		m_data->lastError = "error while interpreting reply";
-		printf("%s\n", m_data->lastError.toLatin1().data());
+		vip_debug("%s\n", m_data->lastError.toLatin1().data());
 		return false;
 	}
 
@@ -943,7 +943,7 @@ bool IPythonConsoleProcess::execLine(const QString& code)
 		return true;
 
 	m_data->lastError = error;
-	printf("%s\n", m_data->lastError.toLatin1().data());
+	vip_debug("%s\n", m_data->lastError.toLatin1().data());
 	return false;
 }
 
@@ -953,7 +953,7 @@ bool IPythonConsoleProcess::execLineNoWait(const QString& code)
 	m_data->lastError.clear();
 	if (state() != Running || !m_data->mem || !m_data->mem->isValid()) {
 		m_data->lastError = "IPythonConsoleProcess not running";
-		printf("%s\n", m_data->lastError.toLatin1().data());
+		vip_debug("%s\n", m_data->lastError.toLatin1().data());
 		return false;
 	}
 
@@ -964,7 +964,7 @@ bool IPythonConsoleProcess::execLineNoWait(const QString& code)
 
 	if (!r) {
 		m_data->lastError = "error while sending code to execute";
-		printf("%s\n", m_data->lastError.toLatin1().data());
+		vip_debug("%s\n", m_data->lastError.toLatin1().data());
 		return false;
 	}
 	return true;
@@ -975,7 +975,7 @@ bool IPythonConsoleProcess::restart()
 	m_data->lastError.clear();
 	if (state() != Running || !m_data->mem || !m_data->mem->isValid()) {
 		m_data->lastError = "IPythonConsoleProcess not running";
-		printf("%s\n", m_data->lastError.toLatin1().data());
+		vip_debug("%s\n", m_data->lastError.toLatin1().data());
 		return false;
 	}
 
@@ -986,7 +986,7 @@ bool IPythonConsoleProcess::restart()
 	if (!r) { 
 		m_data->lastError = "error while sending 'restart' command";
 		m_data->mem->release();
-		printf("%s\n", m_data->lastError.toLatin1().data());
+		vip_debug("%s\n", m_data->lastError.toLatin1().data());
 		return false;
 	}
 
@@ -997,16 +997,16 @@ bool IPythonConsoleProcess::restart()
 		if (!r.isEmpty())
 			m_data->lastError += "\n" + r;
 		m_data->mem->release();
-		printf("%s\n", m_data->lastError.toLatin1().data());
+		vip_debug("%s\n", m_data->lastError.toLatin1().data());
 		return false;
 	}
 	m_data->mem->release();
 
 	QString error;
-	printf("%s\n", res.data());
+	vip_debug("%s\n", res.data());
 	if (!m_data->mem->readError(res, error)) {
 		m_data->lastError = "error while interpreting reply";
-		printf("%s\n", m_data->lastError.toLatin1().data());
+		vip_debug("%s\n", m_data->lastError.toLatin1().data());
 		return false;
 	}
 
@@ -1014,7 +1014,7 @@ bool IPythonConsoleProcess::restart()
 		return true;
 
 	m_data->lastError = error;
-	printf("%s\n", m_data->lastError.toLatin1().data());
+	vip_debug("%s\n", m_data->lastError.toLatin1().data());
 	return false;
 }
 
@@ -1023,7 +1023,7 @@ bool IPythonConsoleProcess::isRunningCode()
 	m_data->lastError.clear();
 	if (state() != Running || !m_data->mem || !m_data->mem->isValid()) {
 		m_data->lastError = "IPythonConsoleProcess not running";
-		printf("%s\n", m_data->lastError.toLatin1().data());
+		vip_debug("%s\n", m_data->lastError.toLatin1().data());
 		return false;
 	}
 
@@ -1041,7 +1041,7 @@ bool IPythonConsoleProcess::isRunningCode()
 	if (!r) {
 		m_data->lastError = "error while sending 'running' command";
 		m_data->mem->release();
-		printf("%s\n", m_data->lastError.toLatin1().data());
+		vip_debug("%s\n", m_data->lastError.toLatin1().data());
 		return false;
 	}
 
@@ -1051,12 +1051,12 @@ bool IPythonConsoleProcess::isRunningCode()
 		
 		waitForReadyRead(100);
 		QByteArray r = readAllStandardError();
-		printf("'%s' '%s'\n", readAllStandardOutput().data(), r.data());
+		vip_debug("'%s' '%s'\n", readAllStandardOutput().data(), r.data());
 		m_data->lastError = "Timeout";
 		if (!r.isEmpty())
 			m_data->lastError += "\n" + r;
 		m_data->mem->release(); 
-		printf("%s\n", m_data->lastError.toLatin1().data());
+		vip_debug("%s\n", m_data->lastError.toLatin1().data());
 		return true;
 	}
 	m_data->mem->release();
@@ -1149,7 +1149,7 @@ IPythonWidget::IPythonWidget(int font_size, const QString& style, QWidget* paren
 #endif
 	}
 	else {
-		printf("IPython error: %s\n", m_data->process.lastError().toLatin1().data());
+		vip_debug("IPython error: %s\n", m_data->process.lastError().toLatin1().data());
 	}
 
 	connect(qApp, SIGNAL(focusChanged(QWidget*, QWidget*)), this, SLOT(focusChanged(QWidget*, QWidget*)));
@@ -1188,7 +1188,7 @@ bool IPythonWidget::restartProcess()
 		return true;
 	}
 	else {
-		printf("IPython error: %s\n", m_data->process.lastError().toLatin1().data());
+		vip_debug("IPython error: %s\n", m_data->process.lastError().toLatin1().data());
 		return false;
 	}
 }

@@ -209,7 +209,7 @@ void IOOperationWidget::NewOutput()
 	m_last_output = str;
 	if (str.endsWith(">>> ") || str.endsWith("... ") || str.endsWith("] ") || str.endsWith("> "))
 		m_wait_for_more = true;
-	//printf("out: '%s'\n", str.toLatin1().data());
+	//vip_debug("out: '%s'\n", str.toLatin1().data());
 }
 
 
@@ -616,9 +616,9 @@ void PyInterpreterToolWidget::HideHistory() {
 }
 void PyInterpreterToolWidget::RestartInterpreter() {
 	m_data->interpreter->clear();
-	printf("RestartInterpreter\n");
+	vip_debug("RestartInterpreter\n");
 	qint64 interp = (qint64)GetPyOptions()->pyIOOperation(true);
-	printf("End %lld\n", interp);
+	vip_debug("End %lld\n", interp);
 }
 
 bool PyInterpreterToolWidget::eventFilter(QObject *, QEvent * evt)

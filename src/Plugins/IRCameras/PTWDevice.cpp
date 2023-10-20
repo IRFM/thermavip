@@ -123,29 +123,29 @@ bool PTWDevice::open(VipIODevice::OpenModes mode)
 
 	T_PTW_FILE_HEADER * ptPTWFileHeader = &PTWFileHeader;
 
-    printf( "\nSignature : %s\n", ptPTWFileHeader->Signature );
-    printf( "Version : %s\n", ptPTWFileHeader->Version );
-    printf( "FinDeFichier : %c\n", ptPTWFileHeader->FinDeFichier );
-    printf( "TailleHeaderFilm : %d\n", ptPTWFileHeader->TailleHeaderFilm );
-    printf( "TailleHeaderFrame : %d\n", ptPTWFileHeader->TailleHeaderFrame );
-    printf( "TailleBloc : %d\n", ptPTWFileHeader->TailleBloc );
-    printf( "TailleTrame : %d\n", ptPTWFileHeader->TailleTrame );
-    printf( "NombreTrame : %d\n", ptPTWFileHeader->NombreTrame );
-    printf( "NumeroTrame : %d\n", ptPTWFileHeader->NumeroTrame );
-    printf( "Annee : %hd\n", ptPTWFileHeader->Annee );
-    printf( "Jour : %hhd\n", ptPTWFileHeader->Jour );
-    printf( "Mois : %hhd\n", ptPTWFileHeader->Mois );
-    printf( "Minute : %hhd\n", ptPTWFileHeader->Minute );
-    printf( "Heure : %hhd\n", ptPTWFileHeader->Heure );
-    printf( "Centieme : %hhd\n", ptPTWFileHeader->Centieme );
-    printf( "Seconde : %hhd\n", ptPTWFileHeader->Seconde );
-    printf( "Millieme : %hhd\n", ptPTWFileHeader->Millieme );
-    printf( "Camera : %s\n", ptPTWFileHeader->Camera );
-    printf( "Lens : %s\n", ptPTWFileHeader->Lens );
-    printf( "Filter : %s\n", ptPTWFileHeader->Filter );
-    printf( "Aperture : %s\n", ptPTWFileHeader->Aperture );
-    printf( "NombreColonne : %hu\n", ptPTWFileHeader->NombreColonne );
-    printf( "NombreLigne : %hu\n", ptPTWFileHeader->NombreLigne );
+    vip_debug( "\nSignature : %s\n", ptPTWFileHeader->Signature );
+    vip_debug( "Version : %s\n", ptPTWFileHeader->Version );
+    vip_debug( "FinDeFichier : %c\n", ptPTWFileHeader->FinDeFichier );
+    vip_debug( "TailleHeaderFilm : %d\n", ptPTWFileHeader->TailleHeaderFilm );
+    vip_debug( "TailleHeaderFrame : %d\n", ptPTWFileHeader->TailleHeaderFrame );
+    vip_debug( "TailleBloc : %d\n", ptPTWFileHeader->TailleBloc );
+    vip_debug( "TailleTrame : %d\n", ptPTWFileHeader->TailleTrame );
+    vip_debug( "NombreTrame : %d\n", ptPTWFileHeader->NombreTrame );
+    vip_debug( "NumeroTrame : %d\n", ptPTWFileHeader->NumeroTrame );
+    vip_debug( "Annee : %hd\n", ptPTWFileHeader->Annee );
+    vip_debug( "Jour : %hhd\n", ptPTWFileHeader->Jour );
+    vip_debug( "Mois : %hhd\n", ptPTWFileHeader->Mois );
+    vip_debug( "Minute : %hhd\n", ptPTWFileHeader->Minute );
+    vip_debug( "Heure : %hhd\n", ptPTWFileHeader->Heure );
+    vip_debug( "Centieme : %hhd\n", ptPTWFileHeader->Centieme );
+    vip_debug( "Seconde : %hhd\n", ptPTWFileHeader->Seconde );
+    vip_debug( "Millieme : %hhd\n", ptPTWFileHeader->Millieme );
+    vip_debug( "Camera : %s\n", ptPTWFileHeader->Camera );
+    vip_debug( "Lens : %s\n", ptPTWFileHeader->Lens );
+    vip_debug( "Filter : %s\n", ptPTWFileHeader->Filter );
+    vip_debug( "Aperture : %s\n", ptPTWFileHeader->Aperture );
+    vip_debug( "NombreColonne : %hu\n", ptPTWFileHeader->NombreColonne );
+    vip_debug( "NombreLigne : %hu\n", ptPTWFileHeader->NombreLigne );
 
 
     // Allocate space for frame header

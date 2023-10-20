@@ -33,6 +33,7 @@
 #include "VipUpdate.h"  
 #include "VipIODevice.h"
 #include "VipFileSystem.h" 
+#include "VipLogging.h"
 #include "VipVisualizeDB.h"
 
 #include <qsurfaceformat.h>
@@ -52,16 +53,16 @@ static void myMessageOutput(QtMsgType type, const QMessageLogContext &context, c
 	(void)context;
 	switch (type) {
 	case QtDebugMsg:
-		fprintf(stderr, "Debug: %s\n", msg.toLatin1().data());
+		vip_debug("Debug: %s\n", msg.toLatin1().data());
 		break;
 	case QtWarningMsg:
-		fprintf(stderr, "Warning: %s\n", msg.toLatin1().data());
+		vip_debug( "Warning: %s\n", msg.toLatin1().data());
 		break;
 	case QtCriticalMsg:
-		fprintf(stderr, "Critical: %s\n", msg.toLatin1().data());
+		vip_debug( "Critical: %s\n", msg.toLatin1().data());
 		break;
 	case QtFatalMsg:
-		fprintf(stderr, "Fatal: %s\n", msg.toLatin1().data());
+		vip_debug( "Fatal: %s\n", msg.toLatin1().data());
 		abort();
 	}
 	return;
@@ -83,6 +84,7 @@ int main(int argc, char** argv)
 	VipCommandOptions::instance().add("scale", "Thermavip display scale factor", VipCommandOptions::ValueRequired);
 	VipCommandOptions::instance().add("frame", "Display a window frame around Thermavip", VipCommandOptions::NoValue);
 	VipCommandOptions::instance().add("workspace", "Open files in a new workspace", VipCommandOptions::NoValue);
+	VipCommandOptions::instance().add("debug", "Print debug information", VipCommandOptions::NoValue);
 
 	QStringList args;
 	for (int i = 0; i < argc; ++i) {
@@ -90,6 +92,9 @@ int main(int argc, char** argv)
 	}
 	VipCommandOptions::instance().parse(args);
 
+	if (VipCommandOptions::instance().count("debug")) {
+		vip_log_detail::_vip_set_enable_debug(true);
+	}
 
 	if (VipCommandOptions::instance().count("scale")) {
 		double scale = VipCommandOptions::instance().value("scale").toDouble();
@@ -103,7 +108,11 @@ int main(int argc, char** argv)
 	//qputenv("QT_OPENGL", "desktop");
 	//qputenv("QT_OPENGL", "angle");
 	//QCoreApplication::setAttribute(Qt::AA_UseOpenGLES);
+#ifdef WIN32
 	QCoreApplication::setAttribute(Qt::AA_UseDesktopOpenGL);
+#else
+	QCoreApplication::setAttribute(Qt::AA_UseOpenGLES);
+#endif
 	QSurfaceFormat format;
 	format.setSamples(4);
 	format.setSwapInterval(0); 

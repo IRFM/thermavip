@@ -2394,7 +2394,7 @@ void VipProcessingPool::runPlay()
 			else { // compute elapsed time since run started
 				prev_elapsed = elapsed;
 				elapsed = (vipGetMilliSecondsSinceEpoch() - _time) * 1000000 * m_data->parameters.speed; // elapsed time in nano seconds
-				// printf("elapsed: %i\n",(int)((elapsed - prev_elapsed)/1000000));
+				// vip_debug("elapsed: %i\n",(int)((elapsed - prev_elapsed)/1000000));
 			}
 
 			// compute the current time
@@ -2411,7 +2411,7 @@ void VipProcessingPool::runPlay()
 				m_data->run = false;
 			}
 			// qint64 el = QDateTime::currentMSecsSinceEpoch()-st;
-			// printf("read: %i\n", (int)el);
+			// vip_debug("read: %i\n", (int)el);
 
 			if (current_time > lastTime() && !(m_data->parameters.mode & Backward) && time() >= lastTime()) {
 				//...in forward mode
@@ -2492,7 +2492,7 @@ void VipProcessingPool::runPlay()
 
 				el = QDateTime::currentMSecsSinceEpoch() - st;
 				if (m_data->run && m_data->min_ms && el < m_data->min_ms) {
-					//printf("sleep for %f\n", m_data->min_ms - el);
+					//vip_debug("sleep for %f\n", m_data->min_ms - el);
 					vipSleep(m_data->min_ms - el);
 				}
 			}
@@ -2519,7 +2519,7 @@ void VipProcessingPool::runPlay()
 						m_data->run = false;
 			}
 			// qint64 el = QDateTime::currentMSecsSinceEpoch()-st;
-			// printf("update: %i\n", (int)el);
+			// vip_debug("update: %i\n", (int)el);
 			Q_EMIT playingAdvancedOneFrame();
 		}
 	}
@@ -4050,7 +4050,7 @@ bool VipDirectoryReader::open(VipIODevice::OpenModes mode)
 		if (template_device)
 			template_device->copyParameters(device);
 
-		printf("%s\n", m_data->files[i].toLatin1().data());
+		vip_debug("%s\n", m_data->files[i].toLatin1().data());
 		device->setPath(m_data->files[i]);
 		if (!device->open(VipIODevice::ReadOnly)) {
 			delete device;

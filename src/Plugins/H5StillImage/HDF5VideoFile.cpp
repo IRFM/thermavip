@@ -655,7 +655,8 @@ bool HDF5VideoReader::readData(qint64 time)
 	if (hid_t type = H5Dget_type(m_data->set))
 	{
 		H5T_order_t order = H5Tget_order(type);
-		if (order == H5T_ORDER_LE) printf("Little endian order \n");
+		if (order == H5T_ORDER_LE)
+			vip_debug("Little endian order \n");
 
 		if (int t = HDF5ToQt(type))
 			qt_type = t;

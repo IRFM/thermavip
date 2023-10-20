@@ -1827,7 +1827,7 @@ QString VipFileDialog::getSaveFileName2(QWidget * parent, const QString &filenam
 	fname.replace("|", "_");
 	if (!fname.isEmpty())
 		dir += "/" + fname;
-	//printf("fname: %s\n",fname.toLatin1().data());
+	//vip_debug("fname: %s\n",fname.toLatin1().data());
 	QString res = QFileDialog::getSaveFileName(parent, caption, dir, filter, &last_filter, options);
 	m_default_dir = QString();
 	if (!res.isEmpty())

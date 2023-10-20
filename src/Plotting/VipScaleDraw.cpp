@@ -901,7 +901,7 @@ void VipAbstractScaleDraw::setScaleDiv(const VipScaleDiv& scaleDiv)
 	d_data->map.setScaleInterval(scaleDiv.lowerBound(), scaleDiv.upperBound());
 	// qint64 el1 = QDateTime::currentMSecsSinceEpoch() - st;
 	// if (el1)
-	// printf("el1 %i\n", (int)el1);
+	// vip_debug("el1 %i\n", (int)el1);
 	// st = QDateTime::currentMSecsSinceEpoch();
 
 	if (d_data->valueToText->supportExponent() && d_data->valueToText->automaticExponent()) {
@@ -911,14 +911,14 @@ void VipAbstractScaleDraw::setScaleDiv(const VipScaleDiv& scaleDiv)
 
 	// qint64 el2 = QDateTime::currentMSecsSinceEpoch() - st;
 	// if (el2)
-	// printf("el2 %i\n", (int)el2);
+	// vip_debug("el2 %i\n", (int)el2);
 	// st = QDateTime::currentMSecsSinceEpoch();
 
 	invalidateCache();
 
 	// qint64 el3 = QDateTime::currentMSecsSinceEpoch() - st;
 	// if (el3)
-	// printf("el3 %i\n", (int)el3);
+	// vip_debug("el3 %i\n", (int)el3);
 	// st = QDateTime::currentMSecsSinceEpoch();
 
 	// //reset additional text

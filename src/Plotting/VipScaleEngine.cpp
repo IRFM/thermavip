@@ -1086,7 +1086,7 @@ VipScaleDiv VipDateTimeScaleEngine::divideScale(vip_double x1, vip_double x2,
 			{
 				VipScaleDiv div = VipLinearScaleEngine::divideScale(x1 - m_vt->startValue, x2 - m_vt->startValue, maxMajSteps, maxMinSteps, stepSize);
 
-				//printf("sc: %f to %f, in %f, ti %i\n", (double)(x1 - m_vt->startValue), (double)(x2 - m_vt->startValue), (double(x2 - x1)), div.ticks(2).size());
+				//vip_debug("sc: %f to %f, in %f, ti %i\n", (double)(x1 - m_vt->startValue), (double)(x2 - m_vt->startValue), (double(x2 - x1)), div.ticks(2).size());
 
 				VipScaleDiv::TickList ticks[VipScaleDiv::NTickTypes];
 				ticks[0] = div.ticks(VipScaleDiv::MinorTick);

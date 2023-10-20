@@ -547,8 +547,8 @@ QList<qint64> vipSendToDB(const QString & userName, const QString & camera, cons
 		QSqlQuery q(db);
 		bool res = q.exec(query);
 
-		//printf("'%s'\n",q.lastError().text().toLatin1().data());
-		//printf("'%s'\n", db.lastError().text().toLatin1().data());
+		//vip_debug("'%s'\n",q.lastError().text().toLatin1().data());
+		//vip_debug("'%s'\n", db.lastError().text().toLatin1().data());
 
 		if (!res) {
 			VIP_LOG_ERROR(q.lastError().text());
@@ -645,7 +645,7 @@ QList<qint64> vipSendToDB(const QString & userName, const QString & camera, cons
 
 		query += values.join(",\n") + ";";
 
-		//printf("%s\n", query.toLatin1().data());
+		//vip_debug("%s\n", query.toLatin1().data());
 
 		res = q.exec(query);
 		if (!res) {
@@ -710,7 +710,7 @@ bool vipChangeColumnInfoDB(const QList<qint64> & ids, const QString & column, co
 		if (p) p->setValue(i);
 		QSqlQuery q(db);
 		bool res = q.exec("UPDATE `thermal_events` SET `" + column + "` = " +value + "  WHERE `id` = " + QString::number(ids[i]));
-		//printf("%s\n", q.lastQuery().toLatin1().data());
+		//vip_debug("%s\n", q.lastQuery().toLatin1().data());
 		if (!res) {
 			VIP_LOG_ERROR(q.lastError().text());
 			return false;
@@ -845,7 +845,7 @@ VipEventQueryResults vipQueryDB(const VipEventQuery & query, VipProgress * p)
 	//else if (query.id_thermaleventinfo > 0) {
 	//	sql += " WHERE id = " + QString::number(query.id_thermaleventinfo);
 	//}
-	//printf("%s\n", sql.toLatin1().data());
+	//vip_debug("%s\n", sql.toLatin1().data());
 
 	QSqlQuery q(db);
 	if (!q.exec(sql)) {
@@ -938,7 +938,7 @@ VipFullQueryResult vipFullQueryDB(const VipEventQueryResults & evtres, VipProgre
 			else _q += " AND ";
 			_q += " thermal_event_id = " + QString::number(id[i]) + ";";
 			QSqlQuery q(db);
-			//printf("%s\n", _q.toLatin1().data());
+			//vip_debug("%s\n", _q.toLatin1().data());
 			if (!q.exec(_q)) {
 				VIP_LOG_ERROR(q.lastError().text());
 				result.error = q.lastError().text();
@@ -959,7 +959,7 @@ VipFullQueryResult vipFullQueryDB(const VipEventQueryResults & evtres, VipProgre
 		queries.push_back(q);
 	}*/
 
-	//printf("%s\n", query.toLatin1().data());
+	//vip_debug("%s\n", query.toLatin1().data());
 
 	if (p) {
 		p->setText("Retrieve thermal events from DB...");
@@ -1763,7 +1763,7 @@ Vip_event_list vipEventsFromJson(const QByteArray& content)
 			return Vip_event_list();
 		}
 
-		printf("%d\n", (int)id);
+		vip_debug("%d\n", (int)id);
 
 		QJsonObject event = evt.value().toObject();
 		QList<VipShape> shapes;

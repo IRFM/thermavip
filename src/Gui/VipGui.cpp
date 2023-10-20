@@ -446,8 +446,8 @@ VipGuiDisplayParamaters::VipGuiDisplayParamaters(VipMainWindow * win)
 	apppath.replace("\\", "/");
 	if (!apppath.endsWith("/")) apppath += "/";
 	QFileInfo thermavip = apppath + "gui_settings.xml";
-	//printf("current: %s\n", current.canonicalFilePath().toLatin1().data());
-	//printf("thermavip: %s, %s\n", thermavip.canonicalFilePath().toLatin1().data(), (apppath + "gui_settings.xml").toLatin1().data());
+	//vip_debug("current: %s\n", current.canonicalFilePath().toLatin1().data());
+	//vip_debug("thermavip: %s, %s\n", thermavip.canonicalFilePath().toLatin1().data(), (apppath + "gui_settings.xml").toLatin1().data());
 	if (thermavip.exists() && (!current.exists() || current.lastModified() < thermavip.lastModified())) {
 		if (current.exists()) {
 			if (!QFile::remove(current.canonicalFilePath()))
@@ -1147,7 +1147,7 @@ static void serialize_VipGuiDisplayParamaters(VipGuiDisplayParamaters * inst, Vi
 			QString skin;
 			bool diff_skin = true;
 			if (arch.content("skin", skin)) {
-				//printf("current: %s, read: %s\n", VipCoreSettings::instance()->skin().toLatin1().data(), skin.toLatin1().data());
+				//vip_debug("current: %s, read: %s\n", VipCoreSettings::instance()->skin().toLatin1().data(), skin.toLatin1().data());
 				diff_skin = VipCoreSettings::instance()->skin() != skin;
 				_skin = VipCoreSettings::instance()->skin();
 			}
@@ -1201,7 +1201,7 @@ static void serialize_VipGuiDisplayParamaters(VipGuiDisplayParamaters * inst, Vi
 				showTimeMarkerAlways = false;
 				inst->setAlwaysShowTimeMarker(false);
 			}
-			//printf("read showTimeMarkerAlways: %i\n", (int)showTimeMarkerAlways);
+			//vip_debug("read showTimeMarkerAlways: %i\n", (int)showTimeMarkerAlways);
 			arch.save();
 			bool globalColorScale;
 			if (arch.content("globalColorScale", globalColorScale))
@@ -1211,7 +1211,7 @@ static void serialize_VipGuiDisplayParamaters(VipGuiDisplayParamaters * inst, Vi
 				globalColorScale = false;
 				inst->setGlobalColorScale(false);
 			}
-			//printf("read globalColorScale: %i\n", (int)globalColorScale);
+			//vip_debug("read globalColorScale: %i\n", (int)globalColorScale);
 
 
 			//new in 3.3.3
@@ -1313,7 +1313,7 @@ static void serialize_VipGuiDisplayParamaters(VipGuiDisplayParamaters * inst, Vi
 		{
 			arch.content("version", QString(VIP_VERSION));
 			arch.content("skin", _skin);
-			//printf("save: %s\n", _skin.toLatin1().data());
+			//vip_debug("save: %s\n", _skin.toLatin1().data());
 
 			arch.content("itemPaletteFactor", inst->itemPaletteFactor());
 			arch.content("playerColorScale", (int)inst->playerColorScale());
@@ -1335,8 +1335,8 @@ static void serialize_VipGuiDisplayParamaters(VipGuiDisplayParamaters * inst, Vi
 			arch.content("videoRenderingMode", inst->videoRenderingStrategy());
 			arch.content("plotRenderingMode", inst->plotRenderingStrategy());
 
-			//printf("write showTimeMarkerAlways: %i\n", (int)inst->alwaysShowTimeMarker());
-			//printf("write globalColorScale: %i\n", (int)inst->globalColorScale());
+			//vip_debug("write showTimeMarkerAlways: %i\n", (int)inst->alwaysShowTimeMarker());
+			//vip_debug("write globalColorScale: %i\n", (int)inst->globalColorScale());
 
 			if (inst->hasTitleTextStyle())
 				arch.content("titleTextStyle", inst->titleTextStyle());

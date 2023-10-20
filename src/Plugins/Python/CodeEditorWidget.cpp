@@ -166,17 +166,6 @@ bool CodeEditorWidget::isDebugging() const
 	return m_data->running && m_data->debug;
 }
 
-/*struct Test
-{
-	Test() {
-		qint64 interp = (qint64)GetPyOptions()->pyIOOperation();
-		printf("isRunning() %lld\n", interp);
-	}
-	~Test() {
-		qint64 interp = (qint64)GetPyOptions()->pyIOOperation();
-		printf("~Test() %lld\n", interp);
-	}
-};*/
 bool CodeEditorWidget::isRunning()
 {
 	//Check if PyIOOperation still running

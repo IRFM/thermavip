@@ -10,7 +10,7 @@ ManualAnnotationHelper::ManualAnnotationHelper()
 
 	QString path = vipAppCanonicalPath();
 	path = QFileInfo(path).canonicalPath();
-	//printf("%s\n", path.toLatin1().data());
+	//vip_debug("%s\n", path.toLatin1().data());
 	QString thermavip_interface = path + "/Python/thermavip_interface.py";
 	QString activate = path + "/miniconda/condabin/activate.bat";
 
@@ -24,17 +24,17 @@ ManualAnnotationHelper::ManualAnnotationHelper()
 		// Use embedded miniconda installation
 
 		QString cd_path = path + "/Python";
-		// printf("%s\n", path.toLatin1().data());
+		// vip_debug("%s\n", path.toLatin1().data());
 		QString python_path = QFileInfo(vipAppCanonicalPath()).canonicalPath() + "/miniconda/python";
-		// printf("%s\n", path.toLatin1().data());
+		// vip_debug("%s\n", path.toLatin1().data());
 
 		
 
 		QString cmd = "cmd /c \"cd " + cd_path + " && " + activate + " && " + python_path + " " + thermavip_interface + "\"";
-		printf("cmd: '%s'\n", cmd.toLatin1().data());
+		vip_debug("cmd: '%s'\n", cmd.toLatin1().data());
 		m_process.start("cmd");
 		if (!m_process.waitForStarted(5000)) {
-			printf("error: %s\n", m_process.errorString().toLatin1().data());
+			vip_debug("error: %s\n", m_process.errorString().toLatin1().data());
 			return;
 		}
 
@@ -43,7 +43,7 @@ ManualAnnotationHelper::ManualAnnotationHelper()
 
 		m_process.waitForReadyRead(500);
 		// QByteArray out = m_process.readAllStandardError() + m_process.readAllStandardOutput();
-		// printf("out: %s\n", out.data());
+		// vip_debug("out: %s\n", out.data());
 
 		m_process.write((python_path + " " + thermavip_interface + "\n").toLatin1());
 		m_process.waitForBytesWritten();
@@ -59,14 +59,14 @@ ManualAnnotationHelper::ManualAnnotationHelper()
 		out += m_process.readAllStandardOutput();
 	//m_process.waitForReadyRead(3000);
 	//out = m_process.readAllStandardError() + m_process.readAllStandardOutput();
-	//printf("out: %s\n", out.data());
+	//vip_debug("out: %s\n", out.data());
 
 	
 	//QByteArray out = m_process.readAllStandardOutput();
 	if (!out.contains("ready")) {
-		printf("out: %s\n", out.data());
+		vip_debug("out: %s\n", out.data());
 		QByteArray err = m_process.readAllStandardError();
-		printf("err: %s\n", err.data());
+		vip_debug("err: %s\n", err.data());
 		m_process.kill();
 	}
 	return;
@@ -130,15 +130,15 @@ Vip_event_list ManualAnnotationHelper::createFromUserProposal(const QList<QPolyg
 		file += "/";
 	file += QString::number(QDateTime::currentMSecsSinceEpoch()) + ".json";
 	QString json = file;
-	printf("json file: %s\n", json.toLatin1().data());
+	vip_debug("json file: %s\n", json.toLatin1().data());
 	//sendToJSON(file, userName, camera, device, pulse, lst);
 	vipEventsToJsonFile(file,lst);
 
 	//TEST
 	//sendToJSON("C:/Users/VM213788/Desktop/tmp_json.json", userName, camera, pulse, lst);
-	//printf("filename: '%s'\n'", filename.toLatin1().data());
+	//vip_debug("filename: '%s'\n'", filename.toLatin1().data());
 	QString cmd = (type + " " + json + (filename.isEmpty() ? QString() : (" " + filename)) + "\n");
-	printf("cmd: %s\n", cmd.toLatin1().data());
+	vip_debug("cmd: %s\n", cmd.toLatin1().data());
 	m_process.write((type + " " + json + (filename.isEmpty() ? QString() : (" " + filename)) + "\n").toLatin1()); // use 'segm' for segmentation
 
 	VipProgress p;
@@ -176,8 +176,8 @@ Vip_event_list ManualAnnotationHelper::createFromUserProposal(const QList<QPolyg
 				QString percent = err.mid(index + 1);
 				percent.replace("%", "");
 				percent.replace(" ", "");
-				//printf("txt: '%s'\n", text.toLatin1().data());
-				//printf("value: '%s'\n", percent.toLatin1().data());
+				//vip_debug("txt: '%s'\n", text.toLatin1().data());
+				//vip_debug("value: '%s'\n", percent.toLatin1().data());
 				double value = percent.toDouble();
 				p.setText(text);
 				p.setValue(value);

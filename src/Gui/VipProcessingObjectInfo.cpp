@@ -1253,11 +1253,11 @@ void VipProcessingObjectInfo::updateInfos()
 		const QVariantMap attrs = outs[o]->data().attributes();
 		//QStringList keys = attrs.keys();
 		//for (int i = 0; i < keys.size(); ++i)
-		//	printf("%s\n", keys[i].toLatin1().data());
+		//	vip_debug("%s\n", keys[i].toLatin1().data());
 		for (QVariantMap::const_iterator it = attrs.begin(); it != attrs.end(); ++it)
 		{
 			const QString key = it.key();
-			//printf("%s\n", key.toLatin1().data());
+			//vip_debug("%s\n", key.toLatin1().data());
 			for (int i = 0; i < m_data->filters.size(); ++i)
 			{
 				if (Filter(key, m_data->filters[i].second))
@@ -1379,7 +1379,7 @@ void VipProcessingObjectInfo::updateInfos()
 			child->setToolTip(1, tip);
 			child->output = out[pos].second; //set the VipOutput as data to retrieve it when plotting time trace
 
-			//printf("'%s' '%s'\n", it.key().toLatin1().data(), it.value().toString().toLatin1().data());
+			//vip_debug("'%s' '%s'\n", it.key().toLatin1().data(), it.value().toString().toLatin1().data());
 
 			bool to_double = false;
 			ToDouble(map[pos].second, &to_double);

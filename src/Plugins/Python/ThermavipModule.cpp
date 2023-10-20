@@ -27,11 +27,11 @@ struct GIL_Lock_Event : QEvent
 	GIL_Locker lock;
 	GIL_Lock_Event()
 		:QEvent((QEvent::Type)(QEvent::MaxUser + 1)) {
-		//printf("lock GIL\n");fflush(stdout);
+		//vip_debug("lock GIL\n");fflush(stdout);
 	}
 
 	~GIL_Lock_Event() {
-		//printf("unlock GIL\n");fflush(stdout);
+		//vip_debug("unlock GIL\n");fflush(stdout);
 	}
 };
 

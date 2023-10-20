@@ -1264,7 +1264,7 @@ struct OpenGLWindow : public QWindow
 		void add(Command* cmd) { 
 			VipUniqueLock<VipSpinlock> ll(lock);
 			if (!to_draw) {
-				//printf("set %i \n", cmd->count);
+				//vip_debug("set %i \n", cmd->count);
 				to_draw = cmd;
 			}
 			else {
@@ -1351,9 +1351,9 @@ struct OpenGLWindow : public QWindow
 						} while (c != end);
 
 						// if (to_draw_count > 200)
-						//	printf("drawn: %i\n", to_draw_count);
+						//	vip_debug("drawn: %i\n", to_draw_count);
 						if (to_draw_count != drawn)
-							printf("error drawing!!!\n");
+							vip_debug("error drawing!!!\n");
 					}
 					cmd = nullptr;
 					VipUniqueLock<VipSpinlock> ll(lock);
@@ -1370,7 +1370,7 @@ struct OpenGLWindow : public QWindow
 				thread_context->doneCurrent();
 
 				//qint64 el = QDateTime::currentMSecsSinceEpoch() -st;
-				//printf("ogl: %i ms\n", (int)el);
+				//vip_debug("ogl: %i ms\n", (int)el);
 				finished = true;
 				cond.notify_one();
 			}
@@ -1457,7 +1457,7 @@ public:
 			}
 		}
 		is_in_opengl_widget_paint() = false;
-		//printf("count: %i\n", sentCount);
+		//vip_debug("count: %i\n", sentCount);
 	}
 
 	virtual void keyPressEvent(QKeyEvent* ev) { 
@@ -1577,8 +1577,8 @@ bool VipOpenGLWidget::isInPainting()
 
 void VipOpenGLWidget::paintEvent(QPaintEvent* evt) 
 {
-	//if (QGraphicsView* view = qobject_cast<QGraphicsView*>(parentWidget()))
-	//	view->update();
+	if (QGraphicsView* view = qobject_cast<QGraphicsView*>(parentWidget()))
+		view->update();
 }
 
 void VipOpenGLWidget::setBackgroundColor(const QColor& c)

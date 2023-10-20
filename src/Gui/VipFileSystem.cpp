@@ -798,9 +798,9 @@ QTreeWidgetItem * VipMapFileSystemTree::internalItemForPath(QTreeWidgetItem * ro
 
 
 	//if(root != invisibleRootItem())
-	// printf("root: '%s'\n", pathForItem(root).canonicalPath().toLatin1().data());
+	// vip_debug("root: '%s'\n", pathForItem(root).canonicalPath().toLatin1().data());
 	// for (int i = 0; i < sub_paths.size(); ++i)
-	// printf("%i: '%s'\n", i, sub_paths[i].toLatin1().data());
+	// vip_debug("%i: '%s'\n", i, sub_paths[i].toLatin1().data());
 
 	for (int i = 0; i < sub_paths.size(); ++i)
 	{
@@ -829,14 +829,14 @@ QTreeWidgetItem * VipMapFileSystemTree::internalItemForPath(QTreeWidgetItem * ro
 				to_compare = prefix + to_compare;
 		}
 
-		//printf("to_compare: '%s'\n", to_compare.toLatin1().data());
+		//vip_debug("to_compare: '%s'\n", to_compare.toLatin1().data());
 
 
 		QTreeWidgetItem * found = nullptr;
 		for (int c = 0; c < item->childCount(); ++c)
 		{
 			VipPath p = pathForItem(item->child(c));
-			//printf("p: '%s'\n", p.canonicalPath().toLatin1().data());
+			//vip_debug("p: '%s'\n", p.canonicalPath().toLatin1().data());
 			if (((p.canonicalPath().startsWith(to_compare) && to_compare != "/") || p.canonicalPath() == subpath || (p.canonicalPath().isEmpty() && subpath == "/")) && (p.isDir() || i == sub_paths.size() - 1))
 			{
 				found = item->child(c);
@@ -1354,8 +1354,8 @@ void VipMapFileSystemTree::mouseMoveEvent(QMouseEvent * evt)
 
 		VipPathList lst = selectedPaths();
 		for (int i = 0; i < lst.size(); ++i)
-			printf("%s\n", lst[i].canonicalPath().toLatin1().data());
-		printf("\n");
+			vip_debug("%s\n", lst[i].canonicalPath().toLatin1().data());
+		vip_debug("\n");
 		if (!lst.isEmpty())
 		{
 			QDrag drag(this);
@@ -1423,7 +1423,7 @@ void VipMapFileSystemTree::dropEvent(QDropEvent * evt)
 
 			for (int i = 0; i < _lst.size(); ++i)
 			{
-				printf("_lst: '%s'\n", _lst[i].canonicalPath().toLatin1().data());
+				vip_debug("_lst: '%s'\n", _lst[i].canonicalPath().toLatin1().data());
 
 				if (already_there.indexOf(_lst[i]) >= 0)
 					continue;
@@ -1458,7 +1458,7 @@ void VipMapFileSystemTree::dropEvent(QDropEvent * evt)
 	evt->accept();
 
 	//get the top level item
-	//printf("dst: '%s'\n", static_cast<VipMapFileSystemTreeItem*>(dst)->path().canonicalPath().toLatin1().data());
+	//vip_debug("dst: '%s'\n", static_cast<VipMapFileSystemTreeItem*>(dst)->path().canonicalPath().toLatin1().data());
 	QTreeWidgetItem * top = dst;
 	while (indexOfTopLevelItem(top) < 0)
 		top = top->parent();
@@ -1480,7 +1480,7 @@ void VipMapFileSystemTree::dropEvent(QDropEvent * evt)
 		//just add the paths in the custom item;
 		for (int i = 0; i < lst.size(); ++i)
 		{
-			//printf("lst: '%s'\n", lst[i].canonicalPath().toLatin1().data());
+			//vip_debug("lst: '%s'\n", lst[i].canonicalPath().toLatin1().data());
 
 			if (already_there.indexOf(lst[i]) >= 0)
 				continue;
@@ -2660,7 +2660,7 @@ VipFileSystemWidget* VipDirectoryBrowser::addFileSystem(VipMapFileSystem * m)
 	int index = m_widget->addTab(w, address);
 	m_widget->setCurrentIndex(index);
 	
-	//printf("add shortcut item, %i items\n",w->tree()->topLevelItemCount());
+	//vip_debug("add shortcut item, %i items\n",w->tree()->topLevelItemCount());
 	//create shortcut item
 	VipMapFileSystemTreeDirItem * shortcuts = new VipMapFileSystemTreeDirItem(VipPath("Shortcuts", true), w->tree());
 	shortcuts->setCustomDirItem(true);

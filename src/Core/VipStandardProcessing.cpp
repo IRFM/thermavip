@@ -1246,7 +1246,7 @@ void VipBaseDataFusion::apply()
 		{
 			if (!vipResampleVectors(pvectors,cvectors, s))
 			{
-				//printf("points: %i, %i\n",pvectors[0].size(),pvectors[1].size());
+				//vip_debug("points: %i, %i\n",pvectors[0].size(),pvectors[1].size());
 				setError("unable to resample point vectors");
 				return;
 			}
@@ -2389,7 +2389,7 @@ static QVariant __apply_operator(const QVariant & v1, const QVariant & v2, char 
 void VipNumericOperation::mergeData(int , int sub_data_type)
 {
 	QString _operator = propertyAt(1)->value<QString>();
-	//printf("op: '%s'\n", _operator.toLatin1().data());
+	//vip_debug("op: '%s'\n", _operator.toLatin1().data());
 	if (_operator != "+" && _operator != "-" && _operator != "*" && _operator != "/" && _operator != "&" && _operator != "|" && _operator != "^") {
 		setError("wrong operator");
 		return;

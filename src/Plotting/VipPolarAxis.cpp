@@ -548,7 +548,7 @@ void	VipPolarAxis::draw ( QPainter * painter, QWidget * widget  )
 
 	//qint64 el = QDateTime::currentMSecsSinceEpoch() - st;
 	// if(el > 1)
-	// printf("VipPolarAxis: %i ms\n", (int)el);
+	// vip_debug("VipPolarAxis: %i ms\n", (int)el);
 }
 
 double VipPolarAxis::minRadius() const
@@ -793,7 +793,7 @@ void	VipRadialAxis::draw ( QPainter * painter, QWidget * widget  )
 
 	//qint64 el = QDateTime::currentMSecsSinceEpoch() - st;
 	// if(el > 1)
-	// printf("VipRadialAxis: %i ms\n", (int)el);
+	// vip_debug("VipRadialAxis: %i ms\n", (int)el);
 
 }
 

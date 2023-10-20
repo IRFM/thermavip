@@ -3333,7 +3333,7 @@ VipArchive & operator>>(VipArchive & ar, VipMultiDragWidget * w)
 				}
 				else {
 					VIP_LOG_ERROR(ar.errorString());
-					printf("%s\n", ar.errorString().toLatin1().data());
+					vip_debug("%s\n", ar.errorString().toLatin1().data());
 				}
 			}
 			tab->setCurrentIndex(current);

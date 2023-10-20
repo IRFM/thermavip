@@ -393,7 +393,7 @@ inline QPolygonF rdp_closed(const QPolygonF& points, double epsilon = 0)
 	}
 
 	//qint64 el = QDateTime::currentMSecsSinceEpoch() - st;
-	//printf("vipRDPSimplifyPolygon: %i ms\n", (int)el);
+	//vip_debug("vipRDPSimplifyPolygon: %i ms\n", (int)el);
 	return res;
 }
 
@@ -525,7 +525,7 @@ static void startPoint(QPoint pt, QPolygonF& out, const VipNDArrayType<T>& ar, T
 		out = rdp_closed(out, epsilon);
 
 	//qint64 el2 = QDateTime::currentMSecsSinceEpoch() - st;
-	//printf("p: %i, el1: %i, el2: %i\n", out.size(), (int)el1, (int)el2);
+	//vip_debug("p: %i, el1: %i, el2: %i\n", out.size(), (int)el1, (int)el2);
 	//return;
 }
 
@@ -921,7 +921,7 @@ QPolygonF vipInterpolatePolygons(const QPolygonF& p1, const QPolygonF& p2, doubl
 	//qint64 st = QDateTime::currentMSecsSinceEpoch();
 	QPolygonF res = InterpolatePolygons(p1, p2, advance);
 	//qint64 el = QDateTime::currentMSecsSinceEpoch() - st;
-	//printf("vipInterpolatePolygons: %i ms\n", (int)el);
+	//vip_debug("vipInterpolatePolygons: %i ms\n", (int)el);
 	return res;
 }
 
@@ -1156,7 +1156,7 @@ QPolygonF vipConvexHull(const QPolygonF& poly)
 	//if (res.first() != res.last())
 	// res.push_back(res.first());
 
-	//printf("inspected: %i\n", count);
+	//vip_debug("inspected: %i\n", count);
 	return res;
 }
 
@@ -1260,7 +1260,7 @@ VipOrientedRect vipMinimumAreaBBox(const QPolygonF& poly, bool check_convex)
 		// get angle of segment to x axis
 
 		auto angle = angleToXAxis(segment);
-		//printf("POINT (%f;%f) DEG %f\n", current.x(), current.y(), angle * (180 / M_PI));
+		//vip_debug("POINT (%f;%f) DEG %f\n", current.x(), current.y(), angle * (180 / M_PI));
 
 		// rotate every point and get min and max values for each direction
 

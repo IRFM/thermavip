@@ -1422,7 +1422,7 @@ static QImage createImageWithFBO(int mode, //QOpenGLFramebufferObject ** buffer,
 			return res;
 		globalContext()->makeCurrent(globalWindow());
 		QOpenGLFramebufferObject * buffer = globalBuffer(s);
-		//printf("opengl: %s\n", (const char*)globalContext()->functions()->glGetString(GL_VERSION));
+		//vip_debug("opengl: %s\n", (const char*)globalContext()->functions()->glGetString(GL_VERSION));
 		if (!(globalContext()->functions()->openGLFeatures() & QOpenGLFunctions::Shaders)) {
 			return QImage();
 		}
@@ -1458,11 +1458,11 @@ static QImage createImageWithFBO(int mode, //QOpenGLFramebufferObject ** buffer,
 		//qint64 st = QDateTime::currentMSecsSinceEpoch();
 		const QImage tmp = (buffer)->toImage();
 		//qint64 el = QDateTime::currentMSecsSinceEpoch() - st;
-		//printf("toImage: %i ms %i\n", (int)el, (int)buffer->hasOpenGLFramebufferBlit());
+		//vip_debug("toImage: %i ms %i\n", (int)el, (int)buffer->hasOpenGLFramebufferBlit());
 
 		res = tmp.copy(QRect(QPoint(0, tmp.height() - s.height()), s));
 		//qint64 el2 = QDateTime::currentMSecsSinceEpoch() - st;
-		//printf("to image: %i %i ms\n", (int)el,(int)el2);
+		//vip_debug("to image: %i %i ms\n", (int)el,(int)el2);
 		(buffer)->release();
 
 
@@ -1492,7 +1492,7 @@ static QImage createImageWithFBO(int mode, //QOpenGLFramebufferObject ** buffer,
 
 
 	//qint64 el = QDateTime::currentMSecsSinceEpoch() - st;
-	//printf("opengl: %i , %i ms\n", (int)el, (int)el2);
+	//vip_debug("opengl: %i , %i ms\n", (int)el, (int)el2);
 	return res;
 }
 
@@ -1510,7 +1510,7 @@ QImage	VipAbstractPlotArea::renderOpengl(const QList<VipPaintItem*>& items) cons
 	//qint64 st = QDateTime::currentMSecsSinceEpoch();
 	const QImage res =  createImageWithFBO(MODE_OPENGL, objs, this);
 	//qint64 el = QDateTime::currentMSecsSinceEpoch() - st;
-	//printf("renderOpengl: %i\n", (int)el);
+	//vip_debug("renderOpengl: %i\n", (int)el);
 	return res;
 }
 
@@ -1620,7 +1620,7 @@ bool VipAbstractPlotArea::paintOpenGLInternal(QPainter* painter, const QStyleOpt
 		//qint64 st = QDateTime::currentMSecsSinceEpoch();
 		renderPool().push(areas);
 		//qint64 el = QDateTime::currentMSecsSinceEpoch() - st;
-		//printf("push: %i ms\n", (int)el);
+		//vip_debug("push: %i ms\n", (int)el);
 	}
 	
 
@@ -1688,11 +1688,11 @@ void	VipAbstractPlotArea::paint(QPainter * painter, const QStyleOptionGraphicsIt
 			qint64 el_opengl = QDateTime::currentMSecsSinceEpoch() - st;
 			if (el_opengl < el_raster && !img_opengl.isNull()) {
 				d_data->dirtyComputeStrategy = 3;
-				//printf("opengl better\n");
+				//vip_debug("opengl better\n");
 			}
 			else {
 				d_data->dirtyComputeStrategy = 2;
-				//printf("raster better\n");
+				//vip_debug("raster better\n");
 			}
 			//d_data->dirtyComputeStrategy = 3;
 		}
@@ -1701,7 +1701,7 @@ void	VipAbstractPlotArea::paint(QPainter * painter, const QStyleOptionGraphicsIt
 				//qint64 st = QDateTime::currentMSecsSinceEpoch();
 				img_opengl = renderOpengl(items);
 				//qint64 el_opengl = QDateTime::currentMSecsSinceEpoch() - st;
-				//printf("opengl: %i\n", (int)el_opengl);
+				//vip_debug("opengl: %i\n", (int)el_opengl);
 			}
 			painter->save();
 
@@ -1734,7 +1734,7 @@ void	VipAbstractPlotArea::paint(QPainter * painter, const QStyleOptionGraphicsIt
 	}*/
 
 	//qint64 el = QDateTime::currentMSecsSinceEpoch()-st;
-	//printf("%i ms, %s\n",(int)el, this->metaObject()->className());
+	//vip_debug("%i ms, %s\n",(int)el, this->metaObject()->className());
 }
 
 

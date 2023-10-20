@@ -155,7 +155,7 @@ void VipPlotMarker::draw(QPainter * painter, const VipCoordinateSystemPtr & m) c
     //if (label().hasTextBoxStyle()) {
     //  qint64 el = QDateTime::currentMSecsSinceEpoch() - st;
     //  if(el > 1)
-    //      printf("VipPlotMarker: %i ms\n", (int)el);
+    //      vip_debug("VipPlotMarker: %i ms\n", (int)el);
     // }
 }
 

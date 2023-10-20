@@ -183,7 +183,7 @@ static QByteArray fromNDArray(const VipNDArray & ar)
 	str.unsetDevice();
 
 	//qint64 el  = QDateTime::currentMSecsSinceEpoch() - st;
-	//printf("fromNDArray: %i\n", (int)el);
+	//vip_debug("fromNDArray: %i\n", (int)el);
 	return  b;
 }
 VipNDArray toNDArray(const QByteArray & ar, int *len = nullptr)
@@ -253,7 +253,7 @@ VipNDArray toNDArray(const QByteArray & ar, int *len = nullptr)
 		memcpy(res.data(), ar.data() + 1 + 4 + shape_count * 4, full_size*res.dataSize());
 
 		//qint64 el = QDateTime::currentMSecsSinceEpoch() - st;
-		//printf("to NDArray: %i\n", (int)el);
+		//vip_debug("to NDArray: %i\n", (int)el);
 
 		return res;
 	}
@@ -683,11 +683,11 @@ static void chunckedWrite(QIODevice * dev, const char* data, int size)
 
 	QString s = bytesToVariant(r.mid(start), &l).toString();
 	start += l;
-	printf("'%s'\n", s.toLatin1().data());
+	vip_debug("'%s'\n", s.toLatin1().data());
 
 	QByteArray b = bytesToVariant(r.mid(start), &l).toByteArray();
 	start += l;
-	printf("'%s'\n", b.data());
+	vip_debug("'%s'\n", b.data());
 
 	complex_d c = bytesToVariant(r.mid(start), &l).value<complex_d>();
 	start += l;
@@ -695,29 +695,29 @@ static void chunckedWrite(QIODevice * dev, const char* data, int size)
 	QVariantList lst = bytesToVariant(r.mid(start), &l).value<QVariantList>();
 	start += l;
 	for (int i = 0; i < lst.size(); ++i)
-		printf("%s\n", lst[i].toString().toLatin1().data());
+		vip_debug("%s\n", lst[i].toString().toLatin1().data());
 
 	ar = bytesToVariant(r.mid(start), &l).value<VipNDArray>();
 	start += l;
-	printf("shape count: %i\n", ar.shapeCount());
-	printf("shape 0: %i\n", ar.shape(0));
+	vip_debug("shape count: %i\n", ar.shapeCount());
+	vip_debug("shape 0: %i\n", ar.shape(0));
 	for (int i = 0; i < ar.shape(0); ++i)
-		printf("%f\n", ar.value(vipVector(i)).toDouble());
+		vip_debug("%f\n", ar.value(vipVector(i)).toDouble());
 
 	map = bytesToVariant(r.mid(start), &l).value<QVariantMap>();
 	start += l;
 	for (QVariantMap::iterator it = map.begin(); it != map.end(); ++it)
-		printf("'%s' : '%s'\n", it.key().toLatin1().data(), it.value().toString().toLatin1().data());
+		vip_debug("'%s' : '%s'\n", it.key().toLatin1().data(), it.value().toString().toLatin1().data());
 
 	pts = bytesToVariant(r.mid(start), &l).value<VipPointVector>();
 	start += l;
 	for (int i = 0; i < pts.size(); ++i)
-		printf("%f : %f\n", (double)pts[i].x(), (double)pts[i].y());
+		vip_debug("%f : %f\n", (double)pts[i].x(), (double)pts[i].y());
 
 	cpts = bytesToVariant(r.mid(start), &l).value<VipComplexPointVector>();
 	start += l;
 	for (int i = 0; i < cpts.size(); ++i)
-		printf("%f : %f, %f\n", (double)cpts[i].x(), (double)cpts[i].y().real(), (double)cpts[i].y().imag());
+		vip_debug("%f : %f, %f\n", (double)cpts[i].x(), (double)cpts[i].y().real(), (double)cpts[i].y().imag());
 }
 */
 
@@ -809,7 +809,7 @@ struct PyProcRunThread : public QThread
 				p.waitForFinished();
 				QByteArray ar = p.readAllStandardOutput();
 				if (!ar.isEmpty()) {
-					printf("found Python at %s\n", ar.data());
+					vip_debug("found Python at %s\n", ar.data());
 					QString pdir = QFileInfo(QString(ar)).absolutePath();
 					QStringList lst;
 					lst << pdir + "/Library/bin" <<
@@ -872,12 +872,12 @@ struct PyProcRunThread : public QThread
 
 			if (!process->errorString().isEmpty())
 			{
-				printf("%s\n", process->errorString().toLatin1().data());
+				vip_debug("%s\n", process->errorString().toLatin1().data());
 			}
 			QByteArray ar = process->readAllStandardOutput() + process->readAllStandardError();
 			if (!ar.isEmpty())
 			{
-				printf("%s\n", ar.data());
+				vip_debug("%s\n", ar.data());
 			}
 
 			QMutexLocker locker(&mutex);
@@ -988,7 +988,7 @@ struct PyProcRunnable
 				//local->connection()->waitForBytesWritten();
 				
 				//qint64 el = QDateTime::currentMSecsSinceEpoch() - st;
-				//printf("send object: %i\n", (int)el);
+				//vip_debug("send object: %i\n", (int)el);
 			}
 			else
 			{

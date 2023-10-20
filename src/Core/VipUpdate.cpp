@@ -58,12 +58,12 @@ QString VipUpdate::getUpdateProgram()
 	if (!initialized) {
 		initialized = true;
 		QString thermavipdir = QFileInfo(QCoreApplication::instance()->arguments()[0]).canonicalPath();
-		//printf("path: %s\n", thermavipdir.toLatin1().data());
+		//vip_debug("path: %s\n", thermavipdir.toLatin1().data());
 
 		QFileInfoList lst = QDir(thermavipdir).entryInfoList(QStringList() << "*.exe", QDir::Files | QDir::Executable);
 		for (int i = 0; i < lst.size(); ++i) {
 			QString fname = lst[i].fileName();
-			//printf("%s\n", fname.toLatin1().data());
+			//vip_debug("%s\n", fname.toLatin1().data());
 			if (fname.startsWith("vipupdate") && fname.endsWith(".exe"))
 				return update_program = fname;
 		}
@@ -94,14 +94,14 @@ bool VipUpdate::stop()
 
 int VipUpdate::hasUpdate(const QString & out_dir, bool * already_downloaded, void ** _stop)
 {
-	//printf("update out_dir: %s\n", out_dir.toLatin1().data());
+	//vip_debug("update out_dir: %s\n", out_dir.toLatin1().data());
 	if (already_downloaded)
 		*already_downloaded = false;
 
 	if(!stop())
 		return -1;
 
-	//printf("start '%s'\n", (getUpdateProgram() + " -c --hide -o " + out_dir).toLatin1().data());
+	//vip_debug("start '%s'\n", (getUpdateProgram() + " -c --hide -o " + out_dir).toLatin1().data());
 	//m_data->process.start(getUpdateProgram(), QStringList()<<"-c"<<"--hide"<<"-o"<<out_dir);
 	m_data->process.start(getUpdateProgram() + " -c --hide -o " + out_dir);
 	m_data->process.waitForStarted(3000);

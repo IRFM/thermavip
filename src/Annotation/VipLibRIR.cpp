@@ -44,11 +44,11 @@ static bool loadLibraries()
 		_video_io.setFileName(video_io);
 		_west.setFileName(west);
 		if (!_tools.load() || !_geometry.load() || !_signal_processing.load() || !_video_io.load() ) {
-			printf("Error loading new librir: %s, fallback to old version\n", _tools.errorString().toLatin1().data()); fflush(stdout);
-			printf("Error loading new librir: %s, fallback to old version\n", _geometry.errorString().toLatin1().data()); fflush(stdout);
-			printf("Error loading new librir: %s, fallback to old version\n", _signal_processing.errorString().toLatin1().data()); fflush(stdout);
-			printf("Error loading new librir: %s, fallback to old version\n", _video_io.errorString().toLatin1().data()); fflush(stdout);
-			printf("Error loading new librir: %s, fallback to old version\n", _west.errorString().toLatin1().data()); fflush(stdout);
+			vip_debug("Error loading new librir: %s, fallback to old version\n", _tools.errorString().toLatin1().data()); fflush(stdout);
+			vip_debug("Error loading new librir: %s, fallback to old version\n", _geometry.errorString().toLatin1().data()); fflush(stdout);
+			vip_debug("Error loading new librir: %s, fallback to old version\n", _signal_processing.errorString().toLatin1().data()); fflush(stdout);
+			vip_debug("Error loading new librir: %s, fallback to old version\n", _video_io.errorString().toLatin1().data()); fflush(stdout);
+			vip_debug("Error loading new librir: %s, fallback to old version\n", _west.errorString().toLatin1().data()); fflush(stdout);
 		}
 		else {
 			if (!_west.load()) {
@@ -65,22 +65,22 @@ static bool loadLibraries()
 			/*#ifdef __unix__
 						QString path = QFileInfo(qApp->arguments()[0]).canonicalPath();
 						path += "/librir.so";
-						printf("%s\n",path.toLatin1().data());
+						vip_debug("%s\n",path.toLatin1().data());
 						librir.library.setFileName(path);
 			#else*/
 			_old_librir.setFileName("librir");
 			//librir.library.setFileName("/Home/VM213788/Thermavip_git/Thermavip/bin/debug/librir.so");
-			printf("load '%s'\n", _old_librir.fileName().toLatin1().data()); fflush(stdout);
+			vip_debug("load '%s'\n", _old_librir.fileName().toLatin1().data()); fflush(stdout);
 			//#endif
 			if (!_old_librir.load())
 			{
-				printf("Cannot find librir on this computer: %s\n", _old_librir.errorString().toLatin1().data()); fflush(stdout);
+				vip_debug("Cannot find librir on this computer: %s\n", _old_librir.errorString().toLatin1().data()); fflush(stdout);
 				VIP_LOG_ERROR("Cannot find librir64 on this computer");
 				_old_librir.unload();
 				return res = false;
 			}
 			else {
-				printf("success\n"); fflush(stdout);
+				vip_debug("success\n"); fflush(stdout);
 			}
 		}
 		return res = true;
@@ -784,7 +784,7 @@ VipLibRIR * VipLibRIR::instance()
 	}
 	
 
-	printf("Read all functions done\n");
+	vip_debug("Read all functions done\n");
 		
 	return librir;
 	

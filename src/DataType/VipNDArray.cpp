@@ -38,7 +38,7 @@
 // if(!dynamic_cast<detail::ViewHandle*>(_handles()[i]))
 // s += _handles()[i]->dataSize() * _handles()[i]->size;
 // }
-// //printf("%i arrays, s= %f MB\n", count, (double)s / 1000000);
+// //vip_debug("%i arrays, s= %f MB\n", count, (double)s / 1000000);
 // }
 //
 // int vipNDArrayCount()
@@ -1078,20 +1078,20 @@ int test(int argc, char**argv)
 	// sizes[i] = (rand() % MSIZE + 1);
 //
 //
-	// printf("%i max objects: %i\n", MSIZE, count);
+	// vip_debug("%i max objects: %i\n", MSIZE, count);
 //
 	// qint64 sta = QDateTime::currentMSecsSinceEpoch();
 	// for (int i = 0; i < mems1.size(); ++i)
 	// mems2[i] = pool.allocate(sizes[i]);
 	// qint64 el = QDateTime::currentMSecsSinceEpoch() - sta;
-	// printf("pool.allocate: %i, %i\n", (int)el, (std::size_t)mems2.back() >> 4);
-	// //printf("max free: %i %i\n", (int)pool.nodes.mostRightNode->size, pool.nodes.maximum() ? (int)pool.nodes.maximum()->size : 0);
+	// vip_debug("pool.allocate: %i, %i\n", (int)el, (std::size_t)mems2.back() >> 4);
+	// //vip_debug("max free: %i %i\n", (int)pool.nodes.mostRightNode->size, pool.nodes.maximum() ? (int)pool.nodes.maximum()->size : 0);
 //
 	// sta = QDateTime::currentMSecsSinceEpoch();
 	// for (int i = 0; i < mems1.size(); ++i)
 	// mems1[i] = malloc(sizes[i]);
 	// el = QDateTime::currentMSecsSinceEpoch() - sta;
-	// printf("malloc: %i\n", (int)el);
+	// vip_debug("malloc: %i\n", (int)el);
 //
 	// sta = QDateTime::currentMSecsSinceEpoch();
 	// for (int i = 0; i < mems1.size()-1; ++i)
@@ -1099,14 +1099,14 @@ int test(int argc, char**argv)
 	// pool.deallocate(mems2[mems2.size()-1]);
 	// pool.clear();
 	// el = QDateTime::currentMSecsSinceEpoch() - sta;
-	// printf("pool.deallocate: %i, %i\n", (int)el, (std::size_t)mems2.back());
-	// //printf("max free: %i %i\n", (int)pool.nodes.mostRightNode->size, pool.nodes.maximum()?(int)pool.nodes.maximum()->size:0);
+	// vip_debug("pool.deallocate: %i, %i\n", (int)el, (std::size_t)mems2.back());
+	// //vip_debug("max free: %i %i\n", (int)pool.nodes.mostRightNode->size, pool.nodes.maximum()?(int)pool.nodes.maximum()->size:0);
 //
 	// sta = QDateTime::currentMSecsSinceEpoch();
 	// for (int i = 0; i < mems1.size(); ++i)
 	// free(mems1[i]);
 	// el = QDateTime::currentMSecsSinceEpoch() - sta;
-	// printf("free: %i\n", (int)el);
+	// vip_debug("free: %i\n", (int)el);
 //
 	// }
 //
@@ -1130,7 +1130,7 @@ int test(int argc, char**argv)
 			QTextStream str(&data, QIODevice::WriteOnly);
 			str << rev;//vipStack(pp, pp2, 0);
 			str.flush();
-			printf("%s\n", data.data());fflush(stdout);
+			vip_debug("%s\n", data.data());fflush(stdout);
 		}
 		VipNDArray r2 = vipReverse<Vip::ReverseFlat>(VipNDArray(rev),0);
 		{
@@ -1138,7 +1138,7 @@ int test(int argc, char**argv)
 			QTextStream str(&data, QIODevice::WriteOnly);
 			str << r2;//vipStack(pp, pp2, 0);
 			str.flush();
-			printf("%s\n", data.data());fflush(stdout);
+			vip_debug("%s\n", data.data());fflush(stdout);
 		}
 
 		{
@@ -1154,7 +1154,7 @@ int test(int argc, char**argv)
 				apply_fun2<double>(out, VipNDArray(in1), VipNDArray(in2), [](int a, int b) {return a*b; });
 			}
 			qint64 el = QDateTime::currentMSecsSinceEpoch() - sta;
-			printf("apply_fun2: %i, %f\n", (int)el, out[out.size() - 1]);fflush(stdout);
+			vip_debug("apply_fun2: %i, %f\n", (int)el, out[out.size() - 1]);fflush(stdout);
 
 			sta = QDateTime::currentMSecsSinceEpoch();
 			for (int i = 0; i < count; ++i) {
@@ -1162,7 +1162,7 @@ int test(int argc, char**argv)
 				vipEval(out,in1);
 			}
 			el = QDateTime::currentMSecsSinceEpoch() - sta;
-			printf("eval: %i, %f\n", (int)el, out[out.size() - 1]);fflush(stdout);
+			vip_debug("eval: %i, %f\n", (int)el, out[out.size() - 1]);fflush(stdout);
 
 
 			sta = QDateTime::currentMSecsSinceEpoch();
@@ -1182,7 +1182,7 @@ int test(int argc, char**argv)
 				}
 			}
 			el = QDateTime::currentMSecsSinceEpoch() - sta;
-			printf("mul fun ptr: %i, %f\n", (int)el, out[out.size() - 1]);fflush(stdout);
+			vip_debug("mul fun ptr: %i, %f\n", (int)el, out[out.size() - 1]);fflush(stdout);
 
 			sta = QDateTime::currentMSecsSinceEpoch();
 			for (int i = 0; i < count; ++i) {
@@ -1192,7 +1192,7 @@ int test(int argc, char**argv)
 				out = VipNDArray(in1) * VipNDArray(in2);
 			}
 			el = QDateTime::currentMSecsSinceEpoch() - sta;
-			printf("mul: %i, %f\n", (int)el, out[out.size() - 1]);fflush(stdout);
+			vip_debug("mul: %i, %f\n", (int)el, out[out.size() - 1]);fflush(stdout);
 
 
 		}
@@ -1217,7 +1217,7 @@ int test(int argc, char**argv)
 						ar(y, x) = ar(y, x) * ar(y, x);
 			}
 			qint64 el = QDateTime::currentMSecsSinceEpoch() - sta;
-			printf("y,x %i ms, %i\n", (int)el, ar[ar.size() - 1]);fflush(stdout);
+			vip_debug("y,x %i ms, %i\n", (int)el, ar[ar.size() - 1]);fflush(stdout);
 
 			 sta = QDateTime::currentMSecsSinceEpoch();
 			for (int i = 0; i < count; ++i) {
@@ -1225,7 +1225,7 @@ int test(int argc, char**argv)
 					ar(pos) = ar(pos) * ar(pos);
 			}
 			 el = QDateTime::currentMSecsSinceEpoch() - sta;
-			printf("vip_iter %i ms, %i\n", (int)el, ar[ar.size() - 1]);fflush(stdout);
+			vip_debug("vip_iter %i ms, %i\n", (int)el, ar[ar.size() - 1]);fflush(stdout);
 
 			sta = QDateTime::currentMSecsSinceEpoch();
 			for (int i = 0; i < count; ++i) {
@@ -1234,7 +1234,7 @@ int test(int argc, char**argv)
 						ar(vipVector(y, x)) = ar(vipVector(y, x)) * ar(vipVector(y, x));
 			}
 			el = QDateTime::currentMSecsSinceEpoch() - sta;
-			printf("vipVector %i ms, %i\n", (int)el, ar[ar.size() - 1]);fflush(stdout);
+			vip_debug("vipVector %i ms, %i\n", (int)el, ar[ar.size() - 1]);fflush(stdout);
 
 			sta = QDateTime::currentMSecsSinceEpoch();
 			for (int i = 0; i < count; ++i) {
@@ -1242,7 +1242,7 @@ int test(int argc, char**argv)
 					ar(pos) = ar(pos) * ar(pos);
 			}
 			el = QDateTime::currentMSecsSinceEpoch() - sta;
-			printf("vip_iter %i ms, %i\n", (int)el, ar[ar.size() - 1]);fflush(stdout);
+			vip_debug("vip_iter %i ms, %i\n", (int)el, ar[ar.size() - 1]);fflush(stdout);
 
 		}
 
@@ -1262,14 +1262,14 @@ int test(int argc, char**argv)
 		for(int i=0; i < count; ++i)
 			ar2 = conv;
 		qint64 el = QDateTime::currentMSecsSinceEpoch() - sta;
-		printf("vipTransform %i ms\n", (int)el);fflush(stdout);
+		vip_debug("vipTransform %i ms\n", (int)el);fflush(stdout);
 
 		QImage img3;
 		sta = QDateTime::currentMSecsSinceEpoch();
 		for (int i = 0; i < count; ++i)
 			img3 = img.transformed(tr);// , Qt::SmoothTransformation);
 		el = QDateTime::currentMSecsSinceEpoch() - sta;
-		printf("QImage::transform %i ms\n", (int)el);fflush(stdout);
+		vip_debug("QImage::transform %i ms\n", (int)el);fflush(stdout);
 
 
 		QImage img2(ar2.shape(1), ar2.shape(0), QImage::Format_ARGB32);
@@ -1283,7 +1283,7 @@ int test(int argc, char**argv)
 		for (int i = 0; i < count; ++i)
 			tmp = vipConvolve<Vip::Nearest>(VipNDArray(ar2), kernel, vipVector(1, 1));
 		el = QDateTime::currentMSecsSinceEpoch() - sta;
-		printf("convolve %i ms\n", (int)el);fflush(stdout);
+		vip_debug("convolve %i ms\n", (int)el);fflush(stdout);
 
 		memcpy(img2.bits(), tmp.data(), tmp.size() * sizeof(VipRGB));
 		img2.save("C:/Users/VM213788/Desktop/Thermavip_mean.png");
@@ -1333,7 +1333,7 @@ int test(int argc, char**argv)
 		for(int i=0; i < count; ++i)
 			st = sh.statistics(in , QPoint(0, 0), &ar);
 		qint64 el = QDateTime::currentMSecsSinceEpoch() - sta;
-		printf("VipShape::statistics: %i ms %f %f %f %f %f\n", (int)el, st.min, st.max, st.average, st.std, (double)st.pixelCount);fflush(stdout);
+		vip_debug("VipShape::statistics: %i ms %f %f %f %f %f\n", (int)el, st.min, st.max, st.average, st.std, (double)st.pixelCount);fflush(stdout);
 
 		VipNDArrayType<std::complex<double> > arc(vipVector(3, 3));
 		for (int i = 0; i < arc.size(); ++i)arc[i] = i;
@@ -1344,14 +1344,14 @@ int test(int argc, char**argv)
 		for (int i = 0; i < count; ++i)
 			st2 = vipArrayStats<double, Vip::AllStats>(in, vipOverRects(sh.region()));
 		el = QDateTime::currentMSecsSinceEpoch() - sta;
-		printf("vipArrayStats: %i ms %f %f %f %f %f\n", (int)el, st2.min, st2.max, st2.mean, st2.std, (double)st2.count);fflush(stdout);
+		vip_debug("vipArrayStats: %i ms %f %f %f %f %f\n", (int)el, st2.min, st2.max, st2.mean, st2.std, (double)st2.count);fflush(stdout);
 
 		VipArrayStats<double, Vip::AllStats> st3;
 		sta = QDateTime::currentMSecsSinceEpoch();
 		for (int i = 0; i < count; ++i)
 			st3 = sh.imageStats<double, Vip::AllStats>(in,QPoint(250,20));
 		el = QDateTime::currentMSecsSinceEpoch() - sta;
-		printf("vipArrayStats: %i ms %f %f %f %f %f\n", (int)el, st3.min, st3.max, st3.mean, st3.std, (double)st3.count);fflush(stdout);
+		vip_debug("vipArrayStats: %i ms %f %f %f %f %f\n", (int)el, st3.min, st3.max, st3.mean, st3.std, (double)st3.count);fflush(stdout);
 	}
 
 
@@ -1461,35 +1461,35 @@ int test(int argc, char**argv)
 	QTextStream str(&data, QIODevice::WriteOnly);
 	str << pp;//vipStack(pp, pp2, 0);
 	str.flush();
-	printf("%s\n", data.data());fflush(stdout);
+	vip_debug("%s\n", data.data());fflush(stdout);
 
 	{
 		qint64 st = QDateTime::currentMSecsSinceEpoch();
 		for (int i = 0; i < count; ++i)
 			arv = vipTranspose(VipNDArray(ar));
 		qint64 el = QDateTime::currentMSecsSinceEpoch() - st;
-		printf("transpose: %i\n", (int)el);fflush(stdout);
+		vip_debug("transpose: %i\n", (int)el);fflush(stdout);
 	}
 	{
 		qint64 st = QDateTime::currentMSecsSinceEpoch();
 		for (int i = 0; i < count; ++i)
 			arv = vipReverse<Vip::ReverseFlat>(VipNDArray(ar));
 		qint64 el = QDateTime::currentMSecsSinceEpoch() - st;
-		printf("reverse flat: %i\n", (int)el);fflush(stdout);
+		vip_debug("reverse flat: %i\n", (int)el);fflush(stdout);
 	}
 	{
 		qint64 st = QDateTime::currentMSecsSinceEpoch();
 		for (int i = 0; i < count; ++i)
 			arv = vipReverse<Vip::ReverseAxis>(VipNDArray(ar), 0);
 		qint64 el = QDateTime::currentMSecsSinceEpoch() - st;
-		printf("reverse axis 0: %i\n", (int)el);fflush(stdout);
+		vip_debug("reverse axis 0: %i\n", (int)el);fflush(stdout);
 	}
 	{
 		qint64 st = QDateTime::currentMSecsSinceEpoch();
 		for (int i = 0; i < count; ++i)
 			arv = vipReverse<Vip::ReverseAxis>(VipNDArray(ar), 1);
 		qint64 el = QDateTime::currentMSecsSinceEpoch() - st;
-		printf("reverse axis 1: %i\n", (int)el);fflush(stdout);
+		vip_debug("reverse axis 1: %i\n", (int)el);fflush(stdout);
 	}
 
 	VipNDArrayTypeView<int> view = ar.mid(vipVector(1, 1));
@@ -1513,26 +1513,26 @@ int test(int argc, char**argv)
 	for (int i = 0; i < count; ++i)
 		view.convert(ar2);
 	qint64 el = QDateTime::currentMSecsSinceEpoch()-st;
-	printf("view to dense: %i\n", (int)el);fflush(stdout);
+	vip_debug("view to dense: %i\n", (int)el);fflush(stdout);
 
 	st = QDateTime::currentMSecsSinceEpoch();
 	for (int i = 0; i < count; ++i)
 		view2.convert(view);
 	el = QDateTime::currentMSecsSinceEpoch() - st;
-	printf("view to view: %i\n", (int)el);fflush(stdout);
+	vip_debug("view to view: %i\n", (int)el);fflush(stdout);
 
 	ar3.detach();
 	st = QDateTime::currentMSecsSinceEpoch();
 	for (int i = 0; i < count; ++i)
 		ar2.convert(ar3);
 	el = QDateTime::currentMSecsSinceEpoch() - st;
-	printf("dense to dense: %i\n", (int)el);fflush(stdout);
+	vip_debug("dense to dense: %i\n", (int)el);fflush(stdout);
 
 	st = QDateTime::currentMSecsSinceEpoch();
 	for (int i = 0; i < count; ++i)
 		memcpy((void*)ar2.constData(), ar3.constData(), ar3.size()*ar3.dataSize());
 	el = QDateTime::currentMSecsSinceEpoch() - st;
-	printf("dense to dense memcpy: %i\n", (int)el);fflush(stdout);
+	vip_debug("dense to dense memcpy: %i\n", (int)el);fflush(stdout);
 
 
 	ar.detach();
@@ -1547,19 +1547,19 @@ int test(int argc, char**argv)
 	for (int i = 0; i < count; ++i)
 		vipEval(arv, vipWhere(ar > 2 && ar < 7, ar * 2, ar * ar));
 	el = QDateTime::currentMSecsSinceEpoch() - st;
-	printf("eval where : %i\n", (int)el);fflush(stdout);
+	vip_debug("eval where : %i\n", (int)el);fflush(stdout);
 
 	st = QDateTime::currentMSecsSinceEpoch();
 	for (int i = 0; i < count; ++i)
 		vipEval(arv, vipReplaceNanInf(ar,3));
 	el = QDateTime::currentMSecsSinceEpoch() - st;
-	printf("eval replace nan inf : %i\n", (int)el);fflush(stdout);
+	vip_debug("eval replace nan inf : %i\n", (int)el);fflush(stdout);
 
 	st = QDateTime::currentMSecsSinceEpoch();
 	for (int i = 0; i < count; ++i)
 		vipEval(arv, vipClamp(ar, arv,3));
 	el = QDateTime::currentMSecsSinceEpoch() - st;
-	printf("eval clamp : %i\n", (int)el);fflush(stdout);
+	vip_debug("eval clamp : %i\n", (int)el);fflush(stdout);
 
 	st = QDateTime::currentMSecsSinceEpoch();
 	{
@@ -1572,13 +1572,13 @@ int test(int argc, char**argv)
 		}
 	}
 	el = QDateTime::currentMSecsSinceEpoch() - st;
-	printf("eval clamp ptr : %i\n", (int)el);fflush(stdout);
+	vip_debug("eval clamp ptr : %i\n", (int)el);fflush(stdout);
 
 	st = QDateTime::currentMSecsSinceEpoch();
 	for (int i = 0; i < count; ++i)
 		vipEval(arv, ar*arv2 +arv2 * 3 );// *3);
 	el = QDateTime::currentMSecsSinceEpoch() - st;
-	printf("eval add : %i\n", (int)el);fflush(stdout);
+	vip_debug("eval add : %i\n", (int)el);fflush(stdout);
 
 	st = QDateTime::currentMSecsSinceEpoch();
 	{
@@ -1598,7 +1598,7 @@ int test(int argc, char**argv)
 		}
 	}
 	el = QDateTime::currentMSecsSinceEpoch() - st;
-	printf("eval add ptr : %i\n", (int)el);fflush(stdout);
+	vip_debug("eval add ptr : %i\n", (int)el);fflush(stdout);
 
 
 
@@ -1609,7 +1609,7 @@ int test(int argc, char**argv)
 			stats = vipArrayStats<int, Vip::Min >(ar);// , vipOverRects(vipRectStartEnd(vipVector(0, 0), ar.shape())));
 	}
 	el = QDateTime::currentMSecsSinceEpoch() - st;
-	printf("reduce stats : %i\n", (int)el);fflush(stdout);
+	vip_debug("reduce stats : %i\n", (int)el);fflush(stdout);
 
 
 
@@ -1617,19 +1617,19 @@ int test(int argc, char**argv)
 	for (int i = 0; i < count; ++i)
 		view3.resize(ar2);
 	el = QDateTime::currentMSecsSinceEpoch() - st;
-	printf("resize view to dense: %i\n", (int)el);fflush(stdout);
+	vip_debug("resize view to dense: %i\n", (int)el);fflush(stdout);
 
 	st = QDateTime::currentMSecsSinceEpoch();
 	for (int i = 0; i < count; ++i)
 		view3.resize(view2);
 	el = QDateTime::currentMSecsSinceEpoch() - st;
-	printf("resize view to view: %i\n", (int)el);fflush(stdout);
+	vip_debug("resize view to view: %i\n", (int)el);fflush(stdout);
 
 	st = QDateTime::currentMSecsSinceEpoch();
 	for (int i = 0; i < count; ++i)
 		ar.resize(ar3,Vip::LinearInterpolation);
 	el = QDateTime::currentMSecsSinceEpoch() - st;
-	printf("resize dense to dense: %i\n", (int)el);fflush(stdout);
+	vip_debug("resize dense to dense: %i\n", (int)el);fflush(stdout);
 
 	QImage img(1000, 1000, QImage::Format_ARGB32);
 	QImage img2(999, 999, QImage::Format_ARGB32);
@@ -1637,7 +1637,7 @@ int test(int argc, char**argv)
 	for (int i = 0; i < count; ++i)
 		img2 = img.scaled(QSize(999, 999), Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
 	el = QDateTime::currentMSecsSinceEpoch() - st;
-	printf("resize img fast: %i\n", (int)el);fflush(stdout);
+	vip_debug("resize img fast: %i\n", (int)el);fflush(stdout);
 
 
 
@@ -1649,7 +1649,7 @@ int test(int argc, char**argv)
 		vipEval(arv, vipConvolve<Vip::Nearest>(ar, kernel, vipVector(1, 1)));
 	}
 	el = QDateTime::currentMSecsSinceEpoch() - st;
-	printf("conv test: %i\n", (int)el);fflush(stdout);
+	vip_debug("conv test: %i\n", (int)el);fflush(stdout);
 
 
 	fflush(stdout);

@@ -413,7 +413,7 @@ bool VipMapFileSystem::remove(const VipPath & path)
 		return false;
 	}
 	resetError();
-	printf("%s\n", path.canonicalPath().toLatin1().data());
+	vip_debug("%s\n", path.canonicalPath().toLatin1().data());
 	return removePath(path);
 }
 

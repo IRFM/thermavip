@@ -2012,7 +2012,7 @@ bool VipPlayer2D::saveItemContent(VipPlotItemData * item, const QString & path)
 	{
 		QStringList filters = VipIODevice::possibleWriteFilters(QString(), QVariantList() << any.data());
 		filename = VipFileDialog::getSaveFileName2(nullptr, any.name(), "Save data", filters.join(";;"));
-		printf("%s\n", filename.toLatin1().data());
+		vip_debug("%s\n", filename.toLatin1().data());
 	}
 	if (!filename.isEmpty())
 	{
@@ -3596,7 +3596,7 @@ bool VipVideoPlayer::isColorImage() const
 
 void VipVideoPlayer::imageChanged()
 {
-	//printf("image changed\n");
+	//vip_debug("image changed\n");
 	//update the image size display
 	QSize size = m_data->viewer->area()->imageBoundingRect().size().toSize();
 	if (size != m_data->previousImageSize)
@@ -5413,7 +5413,7 @@ VipPlotPlayer::VipPlotPlayer(VipAbstractPlotWidget2D * viewer, QWidget * parent)
 	m_data = new PrivateData();
 	m_data->needComputeStartDate = true;
 	m_data->timeMarkerAlwaysVisible = VipGuiDisplayParamaters::instance()->alwaysShowTimeMarker();
-	//printf("VipPlotPlayer::setTimeMarkerAlwaysVisible :%i\n", (int)m_data->timeMarkerAlwaysVisible);
+	//vip_debug("VipPlotPlayer::setTimeMarkerAlwaysVisible :%i\n", (int)m_data->timeMarkerAlwaysVisible);
 	m_data->viewer = viewer ? viewer : new VipPlotWidget2D(nullptr, nullptr, _VIP_PLOT_TYPE);
 	m_data->viewer->setMinimumSize(100, 100);
 	QString className = m_data->viewer->metaObject()->className();
@@ -7157,7 +7157,7 @@ void VipPlotPlayer::showParameters()
 void VipPlotPlayer::setTimeMarkerAlwaysVisible(bool enable)
 {
 	m_data->timeMarkerAlwaysVisible = enable;
-	//printf("setTimeMarkerAlwaysVisible :%i\n", (int)enable);
+	//vip_debug("setTimeMarkerAlwaysVisible :%i\n", (int)enable);
 	poolTypeChanged();
 	if(!enable)
 		setTimeMarkerVisible(false);

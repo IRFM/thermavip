@@ -65,23 +65,13 @@
 
 
 
+namespace vip_log_detail{
+	VIP_LOGGING_EXPORT bool _vip_enable_debug();
+	VIP_LOGGING_EXPORT void _vip_set_enable_debug(bool);
+}
 
-/**
-Disable printf calls if required
-*/
-#if defined(NDEBUG)
-	#if VIP_ENABLE_PRINTF_RELEASE == 0
-		#define vip_debug(...)
-	#else
-		#define vip_debug(...) printf(__VA_ARGS__)
-	#endif
-#else
-	#if VIP_ENABLE_PRINTF_DEBUG == 0
-		#define vip_debug(...)
-	#else
-		#define vip_debug(...) printf(__VA_ARGS__)
-	#endif
-#endif
+// Print debug information
+#define vip_debug(...) { if(vip_log_detail::_vip_enable_debug()) printf(__VA_ARGS__);}
 
 
 

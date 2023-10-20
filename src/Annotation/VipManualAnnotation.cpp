@@ -621,9 +621,9 @@ QString VipAnnotationParameters::device() const
 	return m_data->device.currentText();
 }
 void VipAnnotationParameters::setPulse(Vip_experiment_id p) {
-	//printf("set pulse: %f\n",(double)p);fflush(stdout);
+	//vip_debug("set pulse: %f\n",(double)p);fflush(stdout);
 	m_data->pulse->setProperty("value",p);
-	//printf("set: %f\n",(double)m_data->pulse.value());fflush(stdout);
+	//vip_debug("set: %f\n",(double)m_data->pulse.value());fflush(stdout);
 }
 Vip_experiment_id VipAnnotationParameters::pulse() const
 {

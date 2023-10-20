@@ -674,7 +674,7 @@ QImage RecordWindow::grabCurrentImage()
 				p.setPen(m_pen);
 				p.setBrush(m_brush);
 				p.drawEllipse(QRectF(-radius / 2, -radius / 2, radius, radius).translated(QCursor::pos() - topleft));
-				//printf("grow %i\n", (int)radius);
+				//vip_debug("grow %i\n", (int)radius);
 			}
 			else
 			{
@@ -692,7 +692,7 @@ QImage RecordWindow::grabCurrentImage()
 					p.setPen(m_pen);
 					p.setBrush(m_brush);
 					p.drawEllipse(QRectF(-radius / 2, -radius / 2, radius, radius).translated(QCursor::pos() - topleft));
-					//printf("redu %i\n", (int)radius);
+					//vip_debug("redu %i\n", (int)radius);
 				}
 			}
 			//draw cursor
@@ -860,7 +860,7 @@ void RecordWindow::stop()
 
 void RecordWindow::setState(bool start)
 {
-	printf("setState %i\n",(int)start);
+	vip_debug("setState %i\n",(int)start);
 	if (start)
 		this->start();
 	else

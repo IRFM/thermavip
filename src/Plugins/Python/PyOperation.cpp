@@ -717,7 +717,7 @@ PyError::PyError(bool compute)
 			/*QByteArray v1 = pyToString(ptype).toLatin1();
 			QByteArray v2 = pyToString(pvalue).toLatin1();
 			QByteArray v3 = pyToString(ptraceback).toLatin1();
-			printf("'%s' '%s' '%s'\n", v1.data(), v2.data(), v3.data());
+			vip_debug("'%s' '%s' '%s'\n", v1.data(), v2.data(), v3.data());
 			if (PyObject* s = PyObject_Str(ptraceback)) {
 				Py_ssize_t size;
 				wchar_t* fname = PyUnicode_AsWideCharString(s, &size);
@@ -950,36 +950,36 @@ static bool import_numpy_internal()
 #else
 	//on Linux, PyCapsule_CheckExact failed for no valid reason.
 	//we do the same as _import_array() but without PyCapsule_CheckExact.
-	printf("Initialize numpy...\n");
+	vip_debug("Initialize numpy...\n");
 	int numpy = PyRun_SimpleString("import numpy");
 	if (numpy == 0)
-		printf("numpy module imported\n");
+		vip_debug("numpy module imported\n");
 	else {
-		printf("Error while importing numpy");
+		vip_debug("Error while importing numpy");
 		return false;
 	}
 	//
 	PyObject *_numpy = PyImport_ImportModule("numpy.core.multiarray");
 	if (!_numpy) {
-		printf("error, nullptr module numpy.core.multiarray\n");
+		vip_debug("error, nullptr module numpy.core.multiarray\n");
 		return false;
 	}
 	PyObject * c_api = PyObject_GetAttrString(_numpy, "_ARRAY_API");
 	Py_DECREF(_numpy);
 	if (c_api == nullptr) {
-		printf("_ARRAY_API not found\n");
+		vip_debug("_ARRAY_API not found\n");
 		return false;
 	}
 	//PyObject* name= PyObject_Bytes(Py_TYPE(c_api));
-	//printf("_ARRAY_API type: %s\n",Py_TYPE(c_api)->tp_name);
+	//vip_debug("_ARRAY_API type: %s\n",Py_TYPE(c_api)->tp_name);
 	/*if (!PyCapsule_CheckExact(c_api)) {
-	printf("_ARRAY_API is not PyCapsule object");
+	vip_debug("_ARRAY_API is not PyCapsule object");
 	PyErr_SetString(PyExc_RuntimeError, "_ARRAY_API is not PyCapsule object");
 	Py_DECREF(c_api);
 	return ;
 	}*/
 	PyArray_API = (void **)PyCapsule_GetPointer(c_api, nullptr);
-	printf("numpy properly imported\n");
+	vip_debug("numpy properly imported\n");
 	return true;
 #endif
 }
@@ -1004,10 +1004,10 @@ public:
 #ifdef VIP_PYTHONHOME
 			//use Python installation defined at compilation
 			python_path = VIP_PYTHONHOME;
-			printf("Use Python installation at %s\n", python_path.data());
+			vip_debug("Use Python installation at %s\n", python_path.data());
 			/*void * tmp =*/ dlopen(VIP_PYTHONDYNLIB, RTLD_GLOBAL | RTLD_NOW);
 #else
-			printf("Try to find Python installation...\n");
+			vip_debug("Try to find Python installation...\n");
 			QProcess p;
 			p.start("python3 -c \"import os;print(os.path.dirname(os.__file__))\"");
 			bool started = p.waitForStarted();
@@ -1017,7 +1017,7 @@ public:
 				started = p.waitForStarted();
 				if (!started)
 				{
-					printf("Error with command 'python3', try with 'python'...");
+					vip_debug("Error with command 'python3', try with 'python'...");
 					p.start("python -c 'import os;print(os.path.dirname(os.__file__))'");
 					started = p.waitForStarted();
 					if (started)
@@ -1040,12 +1040,12 @@ public:
 				QByteArray path = p.readAllStandardOutput();
 				path.replace("'", "");
 				path.replace("\n", "");
-				printf("Python command output: '%s'\n", path.data());
+				vip_debug("Python command output: '%s'\n", path.data());
 
 				if (QDir(path).exists())
 				{
 					python_path = path;
-					printf("Found Python in '%s'\n", path.data());
+					vip_debug("Found Python in '%s'\n", path.data());
 				}
 
 				//retrieve lib paths
@@ -1059,7 +1059,7 @@ public:
 				if (path.size() > 3)
 				{
 #ifdef VIP_PYTHON_SHARED_LIB
-					printf("Load library %s...\n", VIP_PYTHON_SHARED_LIB);
+					vip_debug("Load library %s...\n", VIP_PYTHON_SHARED_LIB);
 					void* tmp = dlopen(VIP_PYTHON_SHARED_LIB, RTLD_GLOBAL | RTLD_NOW);
 #endif
 					found_version = path;
@@ -1071,31 +1071,31 @@ public:
 					if (found_version == py_version)
 					{
 						QString libPython = "/usr/local/lib/libpython" + found_version + "m.so.1.0";
-						printf("Try %s ...\n", libPython.toLatin1().data());
+						vip_debug("Try %s ...\n", libPython.toLatin1().data());
 						void * tmp = dlopen(libPython.toLatin1().data(), RTLD_GLOBAL | RTLD_NOW);
 						if (!tmp)
 						{
 							libPython = "/usr/local/lib/libpython" + found_version + "m.so";
-							printf("Try %s ...\n", libPython.toLatin1().data());
+							vip_debug("Try %s ...\n", libPython.toLatin1().data());
 							tmp = dlopen(libPython.toLatin1().data(), RTLD_GLOBAL | RTLD_NOW);
 							if (!tmp)
 							{
 								libPython = path + "/../../bin/libpython" + found_version + "m.so.1.0";
-								printf("Try %s ...\n", libPython.toLatin1().data());
+								vip_debug("Try %s ...\n", libPython.toLatin1().data());
 								tmp = dlopen(libPython.toLatin1().data(), RTLD_GLOBAL | RTLD_NOW);
 								if (!tmp)
 								{
 									libPython = path + "/../../bin/libpython" + found_version + "m.so";
-									printf("Try %s ...\n", libPython.toLatin1().data());
+									vip_debug("Try %s ...\n", libPython.toLatin1().data());
 									tmp = dlopen(libPython.toLatin1().data(), RTLD_GLOBAL | RTLD_NOW);
 								}
 							}
 
 						}
 						if (tmp)
-							printf("load '%s'\n", libPython.toLatin1().data());
+							vip_debug("load '%s'\n", libPython.toLatin1().data());
 						if (tmp == nullptr) {
-							printf("Cannot find python shared library'\n");
+							vip_debug("Cannot find python shared library'\n");
 						}
 					}*/
 
@@ -1103,13 +1103,13 @@ public:
 			}
 			if (py_version != found_version)
 			{
-				printf("No valid Python installation found (got %s, expected %s), use the local one\n", found_version.toLatin1().data(), py_version.toLatin1().data());
+				vip_debug("No valid Python installation found (got %s, expected %s), use the local one\n", found_version.toLatin1().data(), py_version.toLatin1().data());
 				//no valid python 3 installation found: use the local one
 				QFileInfo info(qApp->arguments()[0]);
 				QString dirname = info.canonicalPath();
 				if (dirname.endsWith("/")) dirname = dirname.mid(0, dirname.size() - 1);
 				QString libPython = dirname + "/libpython" + py_version + "m.so";
-				printf("load '%s'\n", libPython.toLatin1().data());
+				vip_debug("load '%s'\n", libPython.toLatin1().data());
 				void * tmp = dlopen(libPython.toLatin1().data(), RTLD_GLOBAL | RTLD_NOW);
 				if (tmp == nullptr) {
 					fprintf(stderr, "%s\n", dlerror());
@@ -1122,7 +1122,7 @@ public:
 		}
 
 #endif
-		printf("python path: %s\n",python_path.data());fflush(stdout);
+		vip_debug("python path: %s\n",python_path.data());fflush(stdout);
 		//init Python
 		if (python_path.size())
 		{
@@ -1135,7 +1135,7 @@ public:
 			Py_SetPythonHome(home);
 			if(home)
 			PyMem_RawFree(home);*/
-			printf("Set Python path to %s\n", python_path.data());
+			vip_debug("Set Python path to %s\n", python_path.data());
 #endif
 		}
 		else
@@ -1145,7 +1145,7 @@ public:
 			if(!env)
 				env = VIP_PYTHONHOME;
 #endif
-printf("python env: %s\n",env);fflush(stdout);
+vip_debug("python env: %s\n",env);fflush(stdout);
 			if(env) {
 				python_path = env;
 				std::string str = env;
@@ -1157,14 +1157,14 @@ printf("python env: %s\n",env);fflush(stdout);
 				QString miniconda = QFileInfo(qApp->arguments()[0]).canonicalPath() + "/miniconda";
 				if (QFileInfo(miniconda).exists()) {
 					python_path = miniconda.toLatin1();
-					printf("found miniconda at %s\n", python_path.data());
+					vip_debug("found miniconda at %s\n", python_path.data());
 					local_pip = miniconda + "/Scripts/pip";
 
 					// For some miniconda version (and specific numpy version), we need to manually import mkl dll (?)
 					/* static QLibrary lib(miniconda + "/Library/bin/mkl_rt.2.dll");
 					if (!lib.isLoaded()) {
 						bool ok = lib.load();
-						printf("Load mkl_rt.2.dll: %i\n", (int)ok);
+						vip_debug("Load mkl_rt.2.dll: %i\n", (int)ok);
 					}*/
 
 					wchar_t home[256];
@@ -1218,7 +1218,7 @@ printf("python env: %s\n",env);fflush(stdout);
 					python_path += "/Lib";
 				}
 			}
-			//printf("%s\n", python_path.data());
+			//vip_debug("%s\n", python_path.data());
 			//for linux only, we need to add manually the site-packages and lib-dynload folders
 			PyRun_SimpleString(("sys.path.append('" + python_path + "/site-packages')").data());
 			PyRun_SimpleString(("sys.path.append('" + python_path + "/lib-dynload')").data());
@@ -1244,11 +1244,11 @@ printf("python env: %s\n",env);fflush(stdout);
 			}
 		} 
 
-		printf("Initialize numpy with python %s...\n", python_path.data());
-		printf("env PATH: %s\n", qgetenv("PATH").data());
+		vip_debug("Initialize numpy with python %s...\n", python_path.data());
+		vip_debug("env PATH: %s\n", qgetenv("PATH").data());
 		//import and configure numpy
 		import_numpy_internal();
-		printf("Done\n");
+		vip_debug("Done\n");
 
 		//import and configure matplotlib
 		/*PyRun_SimpleString(
@@ -1292,7 +1292,7 @@ printf("python env: %s\n",env);fflush(stdout);
 
 		if (i != 0)
 		{
-			printf("Init Python: an error occured\n");
+			vip_debug("Init Python: an error occured\n");
 		}
 		else {
 
@@ -1302,7 +1302,7 @@ printf("python env: %s\n",env);fflush(stdout);
 		//release lock
 		PyEval_SaveThread();
 		pythonInit = true;
-		printf("Python initialized\n");
+		vip_debug("Python initialized\n");
 	}
 
 public:
@@ -1315,7 +1315,7 @@ public:
 		pythonInit = false;
 		__python_closed = true;
 
-		printf("Stop Python...\n");
+		vip_debug("Stop Python...\n");
 
 		//stop all PyLocal objects
 		QList<PyLocal*> locals = PyLocal::instances();
@@ -1330,7 +1330,7 @@ public:
 			PyEval_RestoreThread(PyGILState_GetThisThreadState());
 
 		Py_Finalize();
-		printf("Python stopped\n");
+		vip_debug("Python stopped\n");
 	}
 
 	static PythonInit * instance()
@@ -2518,7 +2518,7 @@ void PyAddProcessingDirectory(const QString & dir, const QString & prefix, bool 
 			if (classnames.size() == 0)
 				continue;
 
-			printf("parsed %s, found %s\n", res[i].canonicalFilePath().toLatin1().data(), classnames.join(", ").toLatin1().data());
+			vip_debug("parsed %s, found %s\n", res[i].canonicalFilePath().toLatin1().data(), classnames.join(", ").toLatin1().data());
 
 			//run the file and extract the class description
 			QFile in(res[i].canonicalFilePath());
@@ -2529,7 +2529,7 @@ void PyAddProcessingDirectory(const QString & dir, const QString & prefix, bool 
 			if (!err.isNull())
 			{
 				VIP_LOG_WARNING("Cannot load Python processing: " + res[i].baseName());
-				printf("Python load error: \n%s\n", err.traceback.toLatin1().data());
+				vip_debug("Python load error: \n%s\n", err.traceback.toLatin1().data());
 				continue;
 			}
 
@@ -2546,7 +2546,7 @@ void PyAddProcessingDirectory(const QString & dir, const QString & prefix, bool 
 				if (!err.isNull())
 				{
 					VIP_LOG_WARNING("Cannot load Python processing: " + classnames[j]);
-					printf("Python load Python processing: \n%s\n", err.traceback.toLatin1().data());
+					vip_debug("Python load Python processing: \n%s\n", err.traceback.toLatin1().data());
 					continue;
 				}
 				c = GetPyOptions()->retrieveObject("s");
@@ -2571,7 +2571,7 @@ void PyAddProcessingDirectory(const QString & dir, const QString & prefix, bool 
 					info.description = doc.toString();
 					VipProcessingObject::registerAdditionalInfoObject(info);
 					VIP_LOG_INFO("Added Python processing " + cname + " in category " + info.category);
-					printf("Added Python processing %s in category %s\n", cname.toLatin1().data(), info.category.toLatin1().data());
+					vip_debug("Added Python processing %s in category %s\n", cname.toLatin1().data(), info.category.toLatin1().data());
 				}
 			}
 
@@ -2766,9 +2766,9 @@ PyIOOperation * PyOptions::pyIOOperation(bool create_new) const
 				}
 				else {
 					PyProcessingLocker lock;
-					//printf("delete pyIOOperation\n");
+					//vip_debug("delete pyIOOperation\n");
 					delete _this->d_data->pyIOOperation;
-					//printf("nullptr pyIOOperation\n");
+					//vip_debug("nullptr pyIOOperation\n");
 					_this->d_data->pyIOOperation = nullptr;
 				}
 
@@ -2801,7 +2801,7 @@ PyIOOperation * PyOptions::pyIOOperation(bool create_new) const
 		//register all files found in the Python directory
 		PyAddProcessingDirectory(vipGetPythonDirectory(), QString(), false);
 		QString std_path = QFileInfo(vipAppCanonicalPath()).canonicalPath() + "/Python";
-		printf("inspect path %s\n", std_path.toLatin1().data());
+		vip_debug("inspect path %s\n", std_path.toLatin1().data());
 		PyAddProcessingDirectory(/*"./Python"*/std_path, QString(), false);
 	}
 
@@ -2960,7 +2960,7 @@ static EvalResultType evalCode(const QString & code)
 		str = '"';
 
 	QString to_exec = QString("tmp=eval_code(") + str + code + str + QString(")");
-	printf("%s\n", to_exec.toLatin1().data());
+	vip_debug("%s\n", to_exec.toLatin1().data());
 
 	int r = PyRun_SimpleString(to_exec.toLatin1().data());
 

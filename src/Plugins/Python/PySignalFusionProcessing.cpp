@@ -200,7 +200,7 @@ void PySignalFusionProcessing::applyPyProcessing(int,int)
 		PyError err = GetPyOptions()->wait(c, 1000).value<PyError>();
 		if (!err.isNull()) {
 			QMetaObject::invokeMethod(pyGetPythonInterpreter(), "showAndRaise", Qt::QueuedConnection);
-			printf("err: %s\n", err.traceback.toLatin1().data());
+			vip_debug("err: %s\n", err.traceback.toLatin1().data());
 			setError(err.traceback);
 			return;
 		}
@@ -211,7 +211,7 @@ void PySignalFusionProcessing::applyPyProcessing(int,int)
 		PyError err = GetPyOptions()->wait(c, 1000).value<PyError>();
 		if (!err.isNull()) {
 			QMetaObject::invokeMethod(pyGetPythonInterpreter(), "showAndRaise", Qt::QueuedConnection);
-			printf("err: %s\n", err.traceback.toLatin1().data());
+			vip_debug("err: %s\n", err.traceback.toLatin1().data());
 			setError(err.traceback);
 			return;
 		}
@@ -227,7 +227,7 @@ void PySignalFusionProcessing::applyPyProcessing(int,int)
 		PyError err = GetPyOptions()->wait(c, 1000).value<PyError>();
 		if (!err.isNull()) {
 			QMetaObject::invokeMethod(pyGetPythonInterpreter(), "showAndRaise", Qt::QueuedConnection);
-			printf("err: %s\n", err.traceback.toLatin1().data());
+			vip_debug("err: %s\n", err.traceback.toLatin1().data());
 			setError(err.traceback);
 			return;
 		}
@@ -244,7 +244,7 @@ void PySignalFusionProcessing::applyPyProcessing(int,int)
 	PyError err = GetPyOptions()->wait(c, 5000).value<PyError>();
 	if (!err.isNull()) {
 		QMetaObject::invokeMethod(pyGetPythonInterpreter(), "showAndRaise", Qt::QueuedConnection);
-		printf("err: %s\n", err.traceback.toLatin1().data());
+		vip_debug("err: %s\n", err.traceback.toLatin1().data());
 		setError(err.traceback);
 		return;
 	}
@@ -267,7 +267,7 @@ void PySignalFusionProcessing::applyPyProcessing(int,int)
 		PyError err = GetPyOptions()->wait(c, 5000).value<PyError>();
 		if (!err.isNull()) {
 			QMetaObject::invokeMethod(pyGetPythonInterpreter(), "showAndRaise", Qt::QueuedConnection);
-			printf("err: %s\n", err.traceback.toLatin1().data());
+			vip_debug("err: %s\n", err.traceback.toLatin1().data());
 			setError(err.traceback);
 			return;
 		}
@@ -279,7 +279,7 @@ void PySignalFusionProcessing::applyPyProcessing(int,int)
 		QVariant v = GetPyOptions()->wait(c, 1000);
 		if (!v.value<PyError>().isNull()) {
 			QMetaObject::invokeMethod(pyGetPythonInterpreter(), "showAndRaise", Qt::QueuedConnection);
-			printf("err: %s\n", v.value<PyError>().traceback.toLatin1().data());
+			vip_debug("err: %s\n", v.value<PyError>().traceback.toLatin1().data());
 			setError(v.value<PyError>().traceback);
 			return;
 		}
@@ -297,7 +297,7 @@ void PySignalFusionProcessing::applyPyProcessing(int,int)
 		QVariant v = GetPyOptions()->wait(c, 1000);
 		if (!v.value<PyError>().isNull()) {
 			QMetaObject::invokeMethod(pyGetPythonInterpreter(), "showAndRaise", Qt::QueuedConnection);
-			printf("err: %s\n", v.value<PyError>().traceback.toLatin1().data());
+			vip_debug("err: %s\n", v.value<PyError>().traceback.toLatin1().data());
 			setError(v.value<PyError>().traceback);
 			return;
 		}
@@ -347,7 +347,7 @@ void PySignalFusionProcessing::applyPyProcessing(int,int)
 		QVariant v = GetPyOptions()->wait(GetPyOptions()->retrieveObject(*it), 1000);
 		if (!v.value<PyError>().isNull()) {
 			QMetaObject::invokeMethod(pyGetPythonInterpreter(), "showAndRaise", Qt::QueuedConnection);
-			printf("err: %s\n", v.value<PyError>().traceback.toLatin1().data());
+			vip_debug("err: %s\n", v.value<PyError>().traceback.toLatin1().data());
 			setError(v.value<PyError>().traceback);
 			return;
 		}
@@ -366,7 +366,7 @@ void PySignalFusionProcessing::applyPyProcessing(int,int)
 		QVariant v = GetPyOptions()->wait(GetPyOptions()->retrieveObject(*it), 1000);
 		if (!v.value<PyError>().isNull()) {
 			QMetaObject::invokeMethod(pyGetPythonInterpreter(), "showAndRaise", Qt::QueuedConnection);
-			printf("err: %s\n", v.value<PyError>().traceback.toLatin1().data());
+			vip_debug("err: %s\n", v.value<PyError>().traceback.toLatin1().data());
 			setError(v.value<PyError>().traceback);
 			return;
 		}
@@ -385,7 +385,7 @@ void PySignalFusionProcessing::applyPyProcessing(int,int)
 		QVariant v = GetPyOptions()->wait(GetPyOptions()->retrieveObject(*it), 1000);
 		if (!v.value<PyError>().isNull()) {
 			QMetaObject::invokeMethod(pyGetPythonInterpreter(), "showAndRaise", Qt::QueuedConnection);
-			printf("err: %s\n", v.value<PyError>().traceback.toLatin1().data());
+			vip_debug("err: %s\n", v.value<PyError>().traceback.toLatin1().data());
 			setError(v.value<PyError>().traceback);
 			return;
 		}

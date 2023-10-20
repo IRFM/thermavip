@@ -1462,7 +1462,7 @@ static QImage createImageWithFBO(VipPlotItem* item)
 	// fbo->release();
 
 	//qint64 el = QDateTime::currentMSecsSinceEpoch() - st;
-	//printf("opengl: %i , %i ms\n", (int)el, (int)el2);
+	//vip_debug("opengl: %i , %i ms\n", (int)el, (int)el2);
 	return img;
 }
 

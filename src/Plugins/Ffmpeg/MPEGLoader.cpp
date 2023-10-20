@@ -42,7 +42,7 @@ bool MPEGLoader::open(const QString & name, const QString & format, const QMap<Q
 
 		//compute the new path for this device, which concatenate all parameters
 		QString new_path = name + "|" + format;
-		printf("%s\n", new_path.toLatin1().data());
+		vip_debug("%s\n", new_path.toLatin1().data());
 		{
 			QMutexLocker lock(&_open_devices_mutex);
 			if (_open_devices.contains(new_path)) {

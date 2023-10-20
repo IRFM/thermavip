@@ -233,9 +233,9 @@ struct VipNDArrayVisitor
 /// {
 /// for (int i = 0; i < view.size(); ++i)
 /// {
-/// printf("%s\t", QString::number(view[i]).toLatin1().data());
+/// vip_debug("%s\t", QString::number(view[i]).toLatin1().data());
 /// }
-/// printf("\n");
+/// vip_debug("\n");
 /// }
 /// };
 ///

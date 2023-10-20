@@ -7,6 +7,7 @@
 #include <QFileInfo>
 
 #include "VideoEncoder.h"
+#include "VipConfig.h"
 
 
 std::list<int> get_video_codec(std::string ext, int /*audio_codec*/)
@@ -632,30 +633,30 @@ bool VideoCapture::Init(const char * filename, int width, int height, int fpsrat
 	int err;
 
 	if (!(oformat = av_guess_format(nullptr, tmp_name.c_str(), nullptr))) {
-		printf("Failed to define output format %i\n", 0);
+		vip_debug("Failed to define output format %i\n", 0);
 		return false;
 	}
 
 	if ((err = avformat_alloc_output_context2(&ofctx, oformat, nullptr, tmp_name.c_str()) < 0)) {
-		printf("Failed to allocate output context %i\n", err);
+		vip_debug("Failed to allocate output context %i\n", err);
 		Free();
 		return false;
 	}
 
 	if (!(codec = avcodec_find_encoder(oformat->video_codec))) {
-		printf("Failed to find encoder %i\n", 0);
+		vip_debug("Failed to find encoder %i\n", 0);
 		Free();
 		return false;
 	}
 
 	if (!(videoStream = avformat_new_stream(ofctx, codec))) {
-		printf("Failed to create new stream %i\n", 0);
+		vip_debug("Failed to create new stream %i\n", 0);
 		Free();
 		return false;
 	}
 
 	if (!(cctx = avcodec_alloc_context3(codec))) {
-		printf("Failed to allocate codec context %i\n", 0);
+		vip_debug("Failed to allocate codec context %i\n", 0);
 		Free();
 		return false;
 	}
@@ -695,21 +696,21 @@ bool VideoCapture::Init(const char * filename, int width, int height, int fpsrat
 	avcodec_parameters_from_context(videoStream->codecpar, cctx);
 
 	if ((err = avcodec_open2(cctx, codec, nullptr)) < 0) {
-		printf("Failed to open codec %i\n", err);
+		vip_debug("Failed to open codec %i\n", err);
 		Free();
 		return false;
 	}
 
 	if (!(oformat->flags & AVFMT_NOFILE)) {
 		if ((err = avio_open(&ofctx->pb, tmp_name.c_str(), AVIO_FLAG_WRITE)) < 0) {
-			printf("Failed to open file %i\n", err);
+			vip_debug("Failed to open file %i\n", err);
 			Free();
 			return false;
 		}
 	}
 
 	if ((err = avformat_write_header(ofctx, nullptr)) < 0) {
-		printf("Failed to write header %i\n", err);
+		vip_debug("Failed to write header %i\n", err);
 		Free();
 		return false;
 	}
@@ -745,7 +746,7 @@ bool VideoCapture::AddFrame(const QImage & image) {
 	qint64 el1 = QDateTime::currentMSecsSinceEpoch() - st;
 	bool res = AddFrame(img.data());
 	qint64 el2 = QDateTime::currentMSecsSinceEpoch() - st;
-	printf("encode: %i, %i\n", (int)el1, (int)el2);
+	vip_debug("encode: %i, %i\n", (int)el1, (int)el2);
 	return res;
 }
 
@@ -760,7 +761,7 @@ bool VideoCapture::AddFrame(uint8_t *data) {
 		videoFrame->height = cctx->height;
 
 		if ((err = av_frame_get_buffer(videoFrame, 32)) < 0) {
-			printf("Failed to allocate picture %i\n", err);
+			vip_debug("Failed to allocate picture %i\n", err);
 			return false;
 		}
 	}
@@ -779,7 +780,7 @@ bool VideoCapture::AddFrame(uint8_t *data) {
 	videoFrame->pts = frameCounter++;
 
 	if ((err = avcodec_send_frame(cctx, videoFrame)) < 0) {
-		printf("Failed to send frame %i\n", err);
+		vip_debug("Failed to send frame %i\n", err);
 		return false;
 	}
 
@@ -819,7 +820,7 @@ bool VideoCapture::Finish() {
 	if (!(oformat->flags & AVFMT_NOFILE)) {
 		int err = avio_close(ofctx->pb);
 		if (err < 0) {
-			printf("Failed to close file %i\n", err);
+			vip_debug("Failed to close file %i\n", err);
 		}
 	}
 
@@ -856,12 +857,12 @@ bool VideoCapture::Remux() {
 	AVStream *outVideoStream = 0;
 
 	if ((err = avformat_open_input(&ifmt_ctx, tmp_name.c_str(), 0, 0)) < 0) {
-		printf("Failed to open input file for remuxing %i\n", err);
+		vip_debug("Failed to open input file for remuxing %i\n", err);
 		res = false;
 		goto end;
 	}
 	if ((err = avformat_find_stream_info(ifmt_ctx, 0)) < 0) {
-		printf("Failed to retrieve input stream information %i\n", err);
+		vip_debug("Failed to retrieve input stream information %i\n", err);
 		res = false;
 		goto end;
 	}
@@ -869,7 +870,7 @@ bool VideoCapture::Remux() {
 	
 	
 	if ((err = avformat_alloc_output_context2(&ofmt_ctx, nullptr, nullptr, fname.c_str()))) {
-		printf("Failed to allocate output context %i\n", err);
+		vip_debug("Failed to allocate output context %i\n", err);
 		res = false;
 		goto end;
 	}
@@ -877,7 +878,7 @@ bool VideoCapture::Remux() {
 	inVideoStream = ifmt_ctx->streams[0];
 	outVideoStream = avformat_new_stream(ofmt_ctx, nullptr);
 	if (!outVideoStream) {
-		printf("Failed to allocate output video stream %i\n", 0);
+		vip_debug("Failed to allocate output video stream %i\n", 0);
 		res = false;
 		goto end;
 	}
@@ -887,14 +888,14 @@ bool VideoCapture::Remux() {
 
 	if (!(ofmt_ctx->oformat->flags & AVFMT_NOFILE)) {
 		if ((err = avio_open(&ofmt_ctx->pb, fname.c_str(), AVIO_FLAG_WRITE)) < 0) {
-			printf("Failed to open output file %i\n", err);
+			vip_debug("Failed to open output file %i\n", err);
 			res = false;
 			goto end;
 		}
 	}
 
 	if ((err = avformat_write_header(ofmt_ctx, 0)) < 0) {
-		printf("Failed to write header to output file %i\n", err);
+		vip_debug("Failed to write header to output file %i\n", err);
 		res = false;
 		goto end;
 	}
@@ -912,7 +913,7 @@ bool VideoCapture::Remux() {
 		videoPkt.pos = -1;
 
 		if ((err = av_interleaved_write_frame(ofmt_ctx, &videoPkt)) < 0) {
-			printf("Failed to mux packet %i\n", err);
+			vip_debug("Failed to mux packet %i\n", err);
 			av_packet_unref(&videoPkt);
 			break;
 		}
