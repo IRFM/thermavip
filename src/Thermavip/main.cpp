@@ -554,13 +554,16 @@ int main(int argc, char** argv)
 				if (!last_session) {
 					QMessageBox box(QMessageBox::Question, "Load previous session", "Do you want to load the last session?", QMessageBox::Yes | QMessageBox::No);
 					//center on same screen as vipGetMainWindow()
-					//int thisScreen = QApplication::desktop()->screenNumber(vipGetMainWindow());
-					//QRect r = QApplication::desktop()->screenGeometry(thisScreen);
+#if QT_VERSION < QT_VERSION_CHECK(5, 15, 0)
+					int thisScreen = QApplication::desktop()->screenNumber(vipGetMainWindow());
+					QRect r = QApplication::desktop()->screenGeometry(thisScreen);
+#else
 					QRect r;
 					if (vipGetMainWindow()->screen())
 						r = vipGetMainWindow()->screen()->geometry();
 					else
 						r = QGuiApplication::primaryScreen()->geometry();
+#endif
 					box.move(r.x() + r.width() / 2 - box.width() / 2, r.y() + r.height() / 2 - box.height() / 2);
 					if (box.exec() == QMessageBox::Yes)
 						last_session = true;
