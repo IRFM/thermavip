@@ -4,7 +4,6 @@
 #include <qapplication.h>
 #include <QGraphicsGridLayout>
 #include <qboxlayout.h>
-#include <qpushbutton>
 
 #include "VipPlotWidget2D.h"
 #include "VipColorMap.h"
@@ -19,7 +18,6 @@
 #include "VipLegendItem.h"
 #include "VipDoubleSlider.h"
 
-#include "VipSequentialGenerator.h"
 #include "VipExtractStatistics.h"
 #include "VipDisplayObject.h"
 
