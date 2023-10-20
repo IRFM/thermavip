@@ -1,7 +1,7 @@
 #include <cstring>
 #include <chrono>
 #include <thread>
-#include <cmath>
+#include <condition_variable>
 
 #include "VipDisplayObject.h"
 #include "VipXmlArchive.h"

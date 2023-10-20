@@ -10,6 +10,7 @@
 #include "VipPlotItem.h"
 #include "VipRenderObject.h"
 #include "VipScaleDiv.h"
+#include "VipFunction.h"
 
 /// \addtogroup Plotting
 /// @{
@@ -404,6 +405,10 @@ VipAbstractScale::independentScales(const QList<T*> scales)
 	return res;
 }
 
+
+VIP_REGISTER_QOBJECT_METATYPE(VipAbstractScale*);
+
+
 /// Helper widget representing a unique vertical or horizontal axis
 class VIP_PLOTTING_EXPORT VipScaleWidget : public QGraphicsView
 {
@@ -438,6 +443,9 @@ private:
 	class PrivateData;
 	PrivateData* d_data;
 };
+
+
+VIP_REGISTER_QOBJECT_METATYPE(VipScaleWidget*);
 
 /// @}
 // end Plotting

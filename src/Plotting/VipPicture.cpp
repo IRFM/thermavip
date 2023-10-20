@@ -1487,6 +1487,9 @@ public:
 	virtual void focusOutEvent(QFocusEvent* ev) { 
 		qApp->sendEvent(top_level, ev); 
 	}
+	virtual void paintEvent(QPaintEvent* ev) { 
+		//qApp->notify(top_level, ev);
+	}
 
 	QPaintEngine* paintEngine() const
 	{
@@ -1552,8 +1555,8 @@ bool VipOpenGLWidget::isInPainting()
 
 void VipOpenGLWidget::paintEvent(QPaintEvent* evt) 
 {
-	if (QGraphicsView* view = qobject_cast<QGraphicsView*>(parentWidget()))
-		view->update();
+	//if (QGraphicsView* view = qobject_cast<QGraphicsView*>(parentWidget()))
+	//	view->update();
 }
 
 void VipOpenGLWidget::setBackgroundColor(const QColor& c)
