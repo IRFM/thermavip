@@ -1168,7 +1168,7 @@ VipStyleSheet vipParseStyleSheet(const QByteArray & ar, VipPaintItem * item, QSt
 				//parse
 				QVariant value = found.value()->parse(pair[1]);
 				if (value.userType() == 0) {
-					ERROR("Unable to parse value of " + value_name + ", content is '" + pair[1] + "', parser is " + QByteArray(typeid(found.value().get()).name()));
+					ERROR("Unable to parse value of " + value_name + ", content is '" + pair[1] + "', parser is " + QByteArray(typeid(*found.value()).name()));
 				}
 				p = ParseValue(value_name, value, num, found.value());				
 			}
