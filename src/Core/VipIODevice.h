@@ -490,6 +490,13 @@ VIP_REGISTER_QOBJECT_METATYPE(VipFileHandler*)
 class VIP_CORE_EXPORT VipProcessingPool : public VipIODevice
 {
 	Q_OBJECT
+	Q_PROPERTY(double playSpeed READ playSpeed WRITE setPlaySpeed)
+	Q_PROPERTY(int maxListSize READ maxListSize WRITE setMaxListSize)
+	Q_PROPERTY(int maxListMemory READ maxListMemory WRITE setMaxListMemory)
+	Q_PROPERTY(qint64 stopBeginTime READ stopBeginTime WRITE setStopBeginTime)
+	Q_PROPERTY(qint64 stopEndTime READ stopEndTime WRITE setStopEndTime)
+	Q_PROPERTY(bool missFramesEnabled READ missFramesEnabled WRITE setMissFramesEnabled)
+
 	friend class PlayThread;
 	friend class VipIODevice;
 
@@ -535,6 +542,9 @@ public:
 	/// Returns the last time limit set with #VipProcessingPool::setStopEndTime
 	qint64 stopEndTime() const;
 
+	/// @brief Enable/disable missing frames when using a play speed
+	bool missFramesEnabled() const;
+	
 	/// Returns true if the VipProcessingPool has a Sequential child
 	bool hasSequentialDevice() const;
 	/// Returns true if the VipProcessingPool has a Temporal child
@@ -645,6 +655,8 @@ public Q_SLOTS:
 	void setTimeLimitsEnable(bool enable);
 	/// Enable/disable play repeat. This equivalent to setMode(Repeat,enable);
 	void setRepeat(bool enable);
+	/// @brief Enable/disable missing frames when using a play speed
+	void setMissFramesEnabled(bool);
 	/// Launch playing
 	void play();
 	/// Launch playing in forward mode. this is equivalent to:

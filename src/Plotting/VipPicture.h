@@ -93,7 +93,7 @@ private:
 
 namespace detail
 {
-	/// @brief Similar to QWindowContainer, but PUBLIC
+	/// @brief Similar to QWindowContainer (simplified version), but PUBLIC
 	class VIP_PLOTTING_EXPORT VipWindowContainer : public QWidget
 	{
 		Q_OBJECT

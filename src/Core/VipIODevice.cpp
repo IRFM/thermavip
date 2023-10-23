@@ -992,6 +992,7 @@ public:
 		// list of VipProcessingObject, only used for save() and restore()
 		VipProcessingObjectList objects;
 
+		bool enableMissFrames;
 		double speed;
 		RunMode mode;
 		qint64 begin_time;
@@ -1003,7 +1004,8 @@ public:
 		QSharedPointer<int> listLimitType;
 		QSharedPointer<ErrorCodes> logErrors;
 
-		Parameters(double speed = 1,
+		Parameters(bool enableMissFrames = false,
+			   double speed = 1,
 			   RunMode mode = RunMode(),
 			   qint64 begin_time = VipInvalidTime,
 			   qint64 end_time = VipInvalidTime,
@@ -1012,7 +1014,8 @@ public:
 			   QSharedPointer<int> maxListMemory = QSharedPointer<int>(),
 			   QSharedPointer<int> listLimitType = QSharedPointer<int>(),
 			   QSharedPointer<ErrorCodes> logErrors = QSharedPointer<ErrorCodes>())
-		  : speed(speed)
+		  : enableMissFrames(enableMissFrames)
+		  , speed(speed)
 		  , mode(mode)
 		  , begin_time(begin_time)
 		  , end_time(end_time)
@@ -1268,7 +1271,7 @@ void VipProcessingPool::save()
 	QMutexLocker lock(&m_data->device_mutex);
 
 	VipIODevice::save();
-	m_data->savedParameters.append(PrivateData::Parameters(playSpeed(),
+	m_data->savedParameters.append(PrivateData::Parameters(m_data->parameters.enableMissFrames, playSpeed(),
 							       modes(),
 							       m_data->parameters.begin_time,
 							       m_data->parameters.end_time,
@@ -1489,6 +1492,16 @@ qint64 VipProcessingPool::stopEndTime() const
 	return m_data->parameters.end_time;
 }
 
+bool VipProcessingPool::missFramesEnabled() const
+{
+	return m_data->parameters.enableMissFrames;
+}
+
+void VipProcessingPool::setMissFramesEnabled(bool enable)
+{
+	m_data->parameters.enableMissFrames = enable;
+}
+
 void VipProcessingPool::setLogErrorEnabled(int error_code, bool enable)
 {
 	computeChildren();
@@ -1606,7 +1619,8 @@ QList<VipProcessingObject*> VipProcessingPool::leafs(bool children_only) const
 
 bool VipProcessingPool::readData(qint64 time)
 {
-	computeChildren();
+	if (m_data->dirty_children)
+		computeChildren();
 
 	QMutexLocker lock(&m_data->device_mutex);
 
@@ -1623,19 +1637,17 @@ bool VipProcessingPool::readData(qint64 time)
 	std::vector<VipIODevice*> devices;
 	devices.reserve(m_data->read_devices.size());
 
-	int enabled_temporal_count = 0;
 
 	for (VipIODevice* dev : m_data->read_devices)
 		if ((dev->openMode() & VipIODevice::ReadOnly) && dev->deviceType() == Temporal && dev->isEnabled()) {
 			devices.push_back(dev);
-			++enabled_temporal_count;
 		}
 
-	if (enabled_temporal_count > 1 && this->maxReadThreadCount() > 1) {
+	if (devices.size() > 1 && this->maxReadThreadCount() > 1) {
 
 		std::atomic<int> res{ 0 };
 		int thread_count = std::min(this->maxReadThreadCount(), (int)QThread::idealThreadCount());
-		thread_count = std::min(thread_count, enabled_temporal_count);
+		thread_count = std::min(thread_count, (int)devices.size());
 
 #pragma omp parallel for shared(res) num_threads(thread_count)
 		for (int i = 0; i < (int)devices.size(); ++i)
@@ -2410,12 +2422,12 @@ void VipProcessingPool::runPlay()
 			if (speed != m_data->parameters.speed) {
 				start_time = time();
 				speed = m_data->parameters.speed;
-				_time = vipGetMilliSecondsSinceEpoch();
+				_time = QDateTime::currentMSecsSinceEpoch();
+				elapsed = 0;
 			}
 			else { // compute elapsed time since run started
 				prev_elapsed = elapsed;
-				elapsed = (vipGetMilliSecondsSinceEpoch() - _time) * 1000000 * m_data->parameters.speed; // elapsed time in nano seconds
-															 // vip_debug("elapsed: %i\n",(int)((elapsed - prev_elapsed)/1000000));
+				elapsed = (QDateTime::currentMSecsSinceEpoch() - _time) * 1000000 * m_data->parameters.speed; // elapsed time in nano seconds
 			}
 
 			// compute the current time
@@ -2425,21 +2437,14 @@ void VipProcessingPool::runPlay()
 			else
 				current_time = start_time + elapsed;
 
-			// qint64 st = QDateTime::currentMSecsSinceEpoch();
-			// read data
-			if (m_data->run && !read(current_time, !(m_data->parameters.mode & Backward))) {
-				VIP_LOG_ERROR("fail read " + QString::number(current_time));
-				m_data->run = false;
-			}
-			// qint64 el = QDateTime::currentMSecsSinceEpoch()-st;
-			// vip_debug("read: %i\n", (int)el);
-
+			bool ignore_sleep = false;
 			if (current_time > lastTime() && !(m_data->parameters.mode & Backward) && time() >= lastTime()) {
 				//...in forward mode
 				if (m_data->parameters.mode & Repeat) {
 					current_time = firstTime();
 					_time = vipGetMilliSecondsSinceEpoch();
 					start_time = current_time;
+					ignore_sleep = true;
 				}
 				else
 					m_data->run = false;
@@ -2450,10 +2455,49 @@ void VipProcessingPool::runPlay()
 					current_time = lastTime();
 					_time = vipGetMilliSecondsSinceEpoch();
 					start_time = current_time;
+					ignore_sleep = true;
 				}
 				else
 					m_data->run = false;
 			}
+
+			if (!ignore_sleep) {
+				qint64 pool_time = this->closestTime(this->time());
+				if (!(m_data->parameters.mode & Backward)) {
+					qint64 next = pool_time > this->time() ? pool_time : this->nextTime(pool_time);
+					if (next != VipInvalidTime) {
+						if (next > current_time) {
+							vipSleep(1);
+							continue;
+						}
+						if (!m_data->parameters.enableMissFrames)
+							current_time = next;
+					}
+				}
+				else {
+					qint64 prev = pool_time < this->time() ? pool_time : this->previousTime(pool_time);
+					if (prev != VipInvalidTime) {
+						if (prev < current_time) {
+							vipSleep(1);
+							continue;
+						}
+						if (!m_data->parameters.enableMissFrames)
+							current_time = prev;
+					}
+				}
+			}
+			
+
+			// qint64 st = QDateTime::currentMSecsSinceEpoch();
+			// read data
+			if (m_data->run && !read(current_time, !(m_data->parameters.mode & Backward))) {
+				VIP_LOG_ERROR("fail read " + QString::number(current_time));
+				m_data->run = false;
+			}
+
+			// qint64 el = QDateTime::currentMSecsSinceEpoch()-st;
+			// vip_debug("read: %i\n", (int)el);
+
 
 			// m_data->thread.msleep(1);
 		}

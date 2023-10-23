@@ -2,6 +2,7 @@ VipAbstractPlotArea
 { 
 	title-color: white; 
 	colorpalette: "random:120"; 
+	legend-border-distance : 10;
 }
 
 VipPlotItem 

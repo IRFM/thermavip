@@ -49,3 +49,5 @@ install(TARGETS Thermavip
 )
 install(FILES ${PROJECT_SOURCE_DIR}/base_session.session
         DESTINATION ${CMAKE_INSTALL_PREFIX}/thermavip )
+install(FILES ${PROJECT_SOURCE_DIR}/changelog.txt
+        DESTINATION ${CMAKE_INSTALL_PREFIX}/thermavip )

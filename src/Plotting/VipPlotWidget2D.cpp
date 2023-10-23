@@ -2466,6 +2466,11 @@ bool VipAbstractPlotArea::setItemProperty(const char* name, const QVariant& valu
 	if (strcmp(name, "legend-border-distance") == 0) {
 		borderLegend()->setMargin(value.toDouble());
 		resetInnerLegendsStyleSheet();
+		// set ALL parameters to ALL inner legends
+		for (int i = 0; i < innerLegendCount(); ++i) {
+			if(innerLegendMargin(i) != borderLegend()->margin())
+				setInnerLegendMargin(i, qMax(borderLegend()->margin(), 5.));
+		}
 		return true;
 	}
 	return VipBoxGraphicsWidget::setItemProperty(name, value, index);

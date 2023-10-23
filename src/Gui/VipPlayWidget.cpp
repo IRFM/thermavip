@@ -2405,7 +2405,9 @@ VipPlayWidget::VipPlayWidget(QWidget* parent)
 	m_data->marks->setCheckable(true);
 	m_data->repeat = m_data->playToolBar->addAction(vipIcon("repeat.png"), "Repeat");
 	m_data->repeat->setCheckable(true);
-	m_data->maxSpeed = m_data->playToolBar->addAction(vipIcon("speed.png"), "Use maximum speed");
+	m_data->maxSpeed = m_data->playToolBar->addAction(vipIcon("speed.png"), "<b>Use maximum speed</b><br>"
+	"If using a play speed, the speed will be capped in order to not miss frames"
+	);
 	m_data->maxSpeed->setCheckable(true);
 	m_data->maxSpeed->setChecked(true);
 	m_data->speed = m_data->playToolBar->addWidget(m_data->speedWidget);

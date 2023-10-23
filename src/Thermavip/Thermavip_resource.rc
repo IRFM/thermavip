@@ -21,11 +21,11 @@ VS_VERSION_INFO VERSIONINFO
 			BEGIN
 				VALUE "CompanyName", "Thermadiag\0"
 				VALUE "FileDescription", "Thermavip software\0"
-				VALUE "FileVersion", "3.6.0.0\0"
-				VALUE "LegalCopyright", "Copyright (C) 2015-2022\0"
+				VALUE "FileVersion", "4.2.0.0\0"
+				VALUE "LegalCopyright", "Copyright (C) 2015-2023\0"
 				VALUE "OriginalFilename", "Thermavip.exe\0"
 				VALUE "ProductName", "Thermavip\0"
-				VALUE "ProductVersion", "3.6.0.0\0"
+				VALUE "ProductVersion", "4.2.0.0\0"
 			END
 		END
 		BLOCK "VarFileInfo"

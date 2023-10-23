@@ -1,3 +1,16 @@
+Thermavip v4.2.0 - 23/10/2023
+
+Major code refactoring
+Enhanced GUI/skins/icons
+Major display optimizations
+New OpenGL rendering mode (optional)
+
+
+
+Thermavip v3.10.0 v4.0.0 v4.1.0
+
+Internal refactoring
+
 Thermavip v3.10.0 - 31/01/2023
 
 (Core) Added support for Excel CSV files (';' separator without header)

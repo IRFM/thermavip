@@ -308,11 +308,11 @@ namespace Vip
 /// -	'margins': floating point value that set the margins around the area
 /// -	'tool-tip-selection-border': pen used to highlight an element on the pot area
 /// -	'tool-tip-selection-background': brush color used to highlight an element on the pot area
-/// -	'rendering-threads': equivalent to VipAbstractPlotArea::setRenderThreads()
 ///	-	'track-scales-state': boolean value equivalent to VipAbstractPlotArea::setTrackScalesStateEnabled()
 /// -	'maximum-scales-states' : equivalent to VipAbstractPlotArea::setMaximumScalesStates()
 /// -	'legend-position': main legend position, one of 'none', 'left', 'right', 'top', 'bottom', 'innerLeft', 'innerRight', 'innerTop', 'innerBottom', 'innerTopLeft', 'innerTopRight',
-/// 'innerBottomLeft', 'innerBottomRight' -	'legend-border-distance': for inner legends, set distance to borders. For outer legend, set its margin.
+/// 'innerBottomLeft', 'innerBottomRight' 
+/// -	'legend-border-distance': for inner legends, set distance to borders. For outer legend, set its margin.
 ///
 class VIP_PLOTTING_EXPORT VipAbstractPlotArea : public VipBoxGraphicsWidget
 {
