@@ -1830,8 +1830,11 @@ VipRubberBand* VipAbstractPlotArea::rubberBand() const
 void VipAbstractPlotArea::setDrawSelectionOrder(VipDrawSelectionOrder* drawSelection)
 {
 	if (d_data->drawSelection != drawSelection) {
-		if (d_data->drawSelection)
-			delete d_data->drawSelection;
+		if (d_data->drawSelection) {
+
+			d_data->drawSelection->deleteLater();
+			d_data->drawSelection = nullptr;
+		}
 
 		d_data->drawSelection = drawSelection;
 		if (drawSelection)

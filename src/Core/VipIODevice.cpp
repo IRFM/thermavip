@@ -1675,8 +1675,17 @@ bool VipProcessingPool::enableStreaming(bool enable)
 	bool res = true;
 	for (int i = 0; i < m_data->read_devices.size(); ++i) {
 		if ((m_data->read_devices[i]->deviceType() == VipIODevice::Sequential))
-			if (!m_data->read_devices[i]->setStreamingEnabled(enable))
+			if (!m_data->read_devices[i]->setStreamingEnabled(enable)) {
 				res = false;
+				if (enable) {
+					// make sure to stop streaming on all devices
+					for (int j = i - 1; j >= 0; --j) {
+						if ((m_data->read_devices[j]->deviceType() == VipIODevice::Sequential))
+							m_data->read_devices[j]->setStreamingEnabled(false);
+					}
+				}
+				break;
+			}
 	}
 
 	if (enable)
@@ -4491,25 +4500,47 @@ bool VipShapeReader::open(VipIODevice::OpenModes mode)
 	if (!(mode & ReadOnly))
 		return false;
 
-	VipXIfArchive arch(removePrefix(path()));
-	if (arch.isOpen()) {
-		VipSceneModel model;
-		VipSceneModelList lst;
+	QString p = removePrefix(path());
+	QString suffix = QFileInfo(p).suffix();
 
-		arch.save();
-		if (arch.content(model)) {
-			setData(QVariant::fromValue(model));
-			setOpenMode(ReadOnly);
-			return true;
-		}
-		else {
-			arch.restore();
-			if (arch.content(lst)) {
-				setData(QVariant::fromValue(lst));
+	if (suffix == "xml") {
+
+		VipXIfArchive arch(removePrefix(path()));
+		if (arch.isOpen()) {
+			VipSceneModel model;
+			VipSceneModelList lst;
+
+			arch.save();
+			if (arch.content(model)) {
+				setData(QVariant::fromValue(model));
 				setOpenMode(ReadOnly);
 				return true;
 			}
+			else {
+				arch.restore();
+				if (arch.content(lst)) {
+					setData(QVariant::fromValue(lst));
+					setOpenMode(ReadOnly);
+					return true;
+				}
+			}
 		}
+	}
+	else if (suffix == "json") {
+		QFile in(p);
+		if (!in.open(QFile::ReadOnly | QFile::Text)) {
+			setError("unable to open input file",IOError);
+			return false;
+		}
+		VipSceneModelList lst = vipSceneModelListFromJSON(in.readAll());
+		if (lst.size() == 0) 
+			setData(QVariant::fromValue(VipSceneModel()));
+		else if (lst.size() == 1)
+			setData(QVariant::fromValue(lst[0]));
+		else
+			setData(QVariant::fromValue(lst));
+		setOpenMode(ReadOnly);
+		return true;
 	}
 	return false;
 }
@@ -4532,16 +4563,35 @@ bool VipShapeWriter::open(VipIODevice::OpenModes mode)
 void VipShapeWriter::apply()
 {
 	if (isOpen()) {
-		VipXOfArchive arch(removePrefix(path()));
-		if (arch.isOpen()) {
-			VipAnyData any = inputAt(0)->data();
-			if (any.data().userType() == qMetaTypeId<VipSceneModel>())
-				arch.content(any.value<VipSceneModel>());
-			else
-				arch.content(any.value<VipSceneModelList>());
-			if (!arch) {
-				setError("unable to write scene model", VipProcessingObject::IOError);
+
+		QString p = removePrefix(path());
+		if (QFileInfo(p).suffix() == "xml") {
+
+			VipXOfArchive arch(removePrefix(path()));
+			if (arch.isOpen()) {
+				VipAnyData any = inputAt(0)->data();
+				if (any.data().userType() == qMetaTypeId<VipSceneModel>())
+					arch.content(any.value<VipSceneModel>());
+				else
+					arch.content(any.value<VipSceneModelList>());
+				if (!arch) {
+					setError("unable to write scene model", VipProcessingObject::IOError);
+				}
 			}
+		}
+		else if (QFileInfo(p).suffix() == "json") {
+
+			QFile out(p);
+			if (!out.open(QFile::WriteOnly | QFile::Text)) {
+				setError("unable to open output file", VipProcessingObject::IOError);
+				return;
+			}
+			VipAnyData any = inputAt(0)->data();
+			QTextStream str(&out);
+			if (any.data().userType() == qMetaTypeId<VipSceneModel>())
+				vipSceneModelToJSON(str, any.value<VipSceneModel>());
+			else
+				vipSceneModelListToJSON(str, any.value<VipSceneModelList>());
 		}
 	}
 }

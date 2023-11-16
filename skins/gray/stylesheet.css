@@ -104,7 +104,9 @@ VipToolWidgetScrollArea {
 	border-bottom-right-radius: 5px;
 	padding: 3px;
 }
-VipToolWidgetTitleBar[isFloating="false"] {
+
+/* no status*/
+VipToolWidgetTitleBar[status="0"] {
 	border-top: 1px solid #D4D5D8;
 	border-left: 1px solid #D4D5D8;
 	border-right: 1px solid #D4D5D8;
@@ -114,13 +116,14 @@ VipToolWidgetTitleBar[isFloating="false"] {
 	qproperty-restoreButton: url(skins/gray/icons/restore.png);
 	qproperty-textColor: black;
 }
-VipToolWidgetScrollArea[isFloating="false"] {
+VipToolWidgetScrollArea[status="0"] {
     border-bottom: 3px solid #D4D5D8;
 	border-left: 3px solid #D4D5D8;
 	border-right: 3px solid #D4D5D8;
 	
 }
-VipToolWidgetTitleBar[isFloating="true"] {
+/* floating */
+VipToolWidgetTitleBar[status="3"] {
 	border-top: 1px solid #D4D5D8;
 	border-left: 1px solid #D4D5D8;
 	border-right: 1px solid #D4D5D8;
@@ -130,23 +133,26 @@ VipToolWidgetTitleBar[isFloating="true"] {
 	qproperty-restoreButton: url(skins/gray/icons/restore.png);
 	qproperty-textColor: black;
 }
-VipToolWidgetScrollArea[isFloating="true"] {
+VipToolWidgetScrollArea[status="3"] {
     border-bottom: 1px solid #D4D5D8;
 	border-left: 1px solid #D4D5D8;
 	border-right: 1px solid #D4D5D8;
 }
-VipToolWidgetTitleBar[hasHover="true"] {
+
+/* hover*/
+VipToolWidgetTitleBar[status="2"] {
 	border-top: 1px solid #007ACC;
 	border-left: 1px solid #007ACC;
 	border-right: 1px solid #007ACC;
 }
-VipToolWidgetScrollArea[hasHover="true"] {
+VipToolWidgetScrollArea[status="2"] {
     border-bottom: 1px solid #007ACC;
 	border-left: 1px solid #007ACC;
 	border-right: 1px solid #007ACC;
 }
 
-VipToolWidgetTitleBar[hasFocus="true"] {
+/* focus*/ 
+VipToolWidgetTitleBar[status="1"] {
 	border-top: 1px solid #007ACC;
 	border-left: 1px solid #007ACC;
 	border-right: 1px solid #007ACC;
@@ -157,7 +163,7 @@ VipToolWidgetTitleBar[hasFocus="true"] {
 	qproperty-restoreButton: url(skins/gray/icons/restore_white.png);
 	qproperty-textColor: white;
 }
-VipToolWidgetScrollArea[hasFocus="true"] {
+VipToolWidgetScrollArea[status="1"] {
     border-bottom: 1px solid #007ACC;
 	border-left: 1px solid #007ACC;
 	border-right: 1px solid #007ACC;

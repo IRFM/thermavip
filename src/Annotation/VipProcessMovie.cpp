@@ -41,6 +41,8 @@
 #include "VipProgress.h"
 #include "VipSet.h"
 #include "VipStandardWidgets.h"
+#include "VipNetwork.h"
+#include "VipSleep.h"
 
 #include <qgridlayout.h>
 #include <qmessagebox.h>
@@ -249,6 +251,211 @@ bool VipEventDevice::readInvalidTime(qint64 time)
 	outputAt(0)->setData(data);
 	return true;
 }
+
+
+
+
+
+class MyConnection
+  : public VipNetworkConnection
+{
+public:
+	MyConnection(QObject * parent = nullptr)
+	  : VipNetworkConnection(parent)
+	{
+	}
+
+
+protected:
+	virtual void onReadyRead() { 
+		QByteArray ar = this->readAll();
+		vip_debug("%i\n", ar.size());
+	}
+};
+
+class VipClientEventDevice::PrivateData : public QThread
+{
+public:
+	std::atomic<VipClientEventDevice*> parent{ nullptr };
+	std::atomic<int> status{ 0 }; // 0: connecting, 1: connected, -1: failed to connect
+	virtual void run()
+	{ 
+		QTcpSocket connection;
+		VipClientEventDevice* dev = parent.load();
+		if (!dev)
+			return;
+
+		QString path = dev->removePrefix(dev->path());
+		QStringList lst = path.split(";", VIP_SKIP_BEHAVIOR::SkipEmptyParts);
+		if (lst.size() != 3) {
+			VIP_LOG_ERROR("Wrong path format: ", path);
+			return;
+		}
+
+		QString host = lst[0];
+		int port = lst[1].toInt();
+		QString camera = lst[2];
+
+		connection.connectToHost(host, port);
+		if (!connection.waitForConnected(2000)) {
+			status = -1;
+			VIP_LOG_ERROR("Unable to connect to host ", host, ":", port);
+			return;
+		}
+		status = 1;
+		
+		qint64 last = QDateTime::currentMSecsSinceEpoch();
+
+		while (VipClientEventDevice* dev = parent.load()) {
+		
+			if (connection.state() != QTcpSocket::ConnectedState)
+				break;
+
+			qint64 start = QDateTime::currentMSecsSinceEpoch();
+
+			QByteArray cmd = "GET " + camera.toLatin1() + "eof";
+			vip_debug("%s\n", cmd.data());
+			connection.write(cmd);
+			if (!connection.waitForBytesWritten(1000)) {
+				VIP_LOG_ERROR("Unable to send request to event server");
+				vipSleep(100);
+				continue;
+			}
+
+			// read reply
+			qint64 time = QDateTime::currentMSecsSinceEpoch();
+			QByteArray res;
+			for (;;) {
+				if (!parent.load())
+					break;
+				if (connection.waitForReadyRead(100)) 
+					res += connection.readAll();
+					
+				if (res.endsWith("eof")) 
+					break;
+
+				qint64 el = QDateTime::currentMSecsSinceEpoch() - time;
+				if (el > 500)
+					break;
+			}
+
+			vip_debug("%s\n", res.data());
+			if (res.endsWith("eof")) 
+				res.remove(res.size() - 3, 3);
+
+			// interpret as JSON
+			Vip_event_list evts = vipEventsFromJson(res);
+			vip_debug("%i events\n", evts.size());
+			
+			time = QDateTime::currentMSecsSinceEpoch();
+			qint64 el = time-last;
+			last = time;
+			vip_debug("elapsed: %i ms\n", (int)el);
+
+			//send as output
+			
+			VipSceneModel sm;
+			// build the scene models for each frame
+			for (Vip_event_list::const_iterator it = evts.begin(); it != evts.end(); ++it) {
+				const QList<VipShape>& sh = it.value();
+				for (int i = 0; i < sh.size(); ++i) {
+					VipShape s = sh[i];
+					sm.add(s);
+				}
+			}
+
+			VipAnyData any = dev->create(QVariant::fromValue(sm));
+			if (evts.size() && evts.first().size())
+				any.setTime(evts.first().first().attribute("timestamp_ns").toLongLong());
+			else
+				any.setTime(QDateTime::currentMSecsSinceEpoch() * 1000000LL);
+			dev->outputAt(0)->setData(any);
+
+			qint64 full_time = QDateTime::currentMSecsSinceEpoch() - start;
+			if (full_time < 20)
+				vipSleep(20 - full_time);
+			
+		}
+	}
+};
+
+VipClientEventDevice::VipClientEventDevice(QObject* parent)
+  : VipIODevice(parent)
+  , d_data(nullptr)
+{
+	outputAt(0)->setData(QVariant::fromValue(VipSceneModel()));
+}
+
+VipClientEventDevice::~VipClientEventDevice()
+{
+	VipClientEventDevice::close();
+}
+
+bool VipClientEventDevice::open(VipIODevice::OpenModes mode)
+{
+	resetError();
+	QString path = this->removePrefix(this->path());
+	QStringList lst = path.split(";", VIP_SKIP_BEHAVIOR::SkipEmptyParts);
+	if (lst.size() != 3) {
+		setError("Wrong path format: "+ path);
+		return false;
+	}
+
+
+	setOpenMode(mode);
+	return true;
+}
+
+void VipClientEventDevice::close()
+{
+	if (d_data) {
+		d_data->parent = nullptr;
+		d_data->wait();
+		delete d_data;
+		d_data = nullptr;
+	}
+	VipIODevice::close();
+}
+
+bool VipClientEventDevice::enableStreaming(bool enable) 
+{
+	//stop
+	if (d_data) {
+		d_data->parent = nullptr;
+		d_data->wait();
+		delete d_data;
+		d_data = nullptr;
+	}
+
+	if (enable) {
+		// start
+		d_data = new PrivateData();
+		d_data->parent = this;
+		d_data->start();
+
+		// wait for status
+		while (d_data->status.load() == 0)
+			vipSleep(10);
+		if (d_data->status.load() < 0) {
+			d_data->parent = nullptr;
+			d_data->wait();
+			delete d_data;
+			d_data = nullptr;
+		}
+	}
+	
+	return true;
+}
+
+
+
+
+
+
+
+
+
+
 
 class UploadToDB::PrivateData
 {
@@ -665,6 +872,14 @@ void VipPlayerDBAccess::aboutToShow()
 		act->setCheckable(true);
 		act->setChecked(m_annotation && m_annotation->isVisible());
 		connect(act, SIGNAL(triggered(bool)), this, SLOT(showManualAnnotation(bool)));
+	}
+
+	if (m_player && m_player->processingPool() && m_player->processingPool()->deviceType() == VipIODevice::Sequential) {
+
+		// connection to event server
+		m_db->menu()->addSeparator();
+		QAction* act = m_db->menu()->addAction("Connect to event server...");
+		connect(act, SIGNAL(triggered(bool)), this, SLOT(connectToEventServerEdit()));
 	}
 
 	// chakib option
@@ -1282,6 +1497,59 @@ Vip_event_list VipPlayerDBAccess::applyActions(const Vip_event_list& events)
 		}
 	}
 	return res;
+}
+
+
+bool VipPlayerDBAccess::connectToEventServer(const QString& host)
+{
+	if (!m_player)
+		return false;
+
+	VipClientEventDevice* dev = new VipClientEventDevice();
+	dev->setPath(host);
+	if (!dev->open(VipIODevice::ReadOnly)) {
+		VIP_LOG_ERROR(dev->errorString());
+		delete dev;
+		return false;
+	}
+
+	if (m_sequential_events) {
+		m_sequential_events->close();
+		delete m_sequential_events;
+	}
+
+	m_sequential_events = dev;
+	m_sequential_events->setParent(m_player->processingPool());
+	if (!m_player->processingPool()->isStreamingEnabled())
+		m_player->processingPool()->startStreaming();
+	if (vipCreatePlayersFromProcessings(QList<VipProcessingObject*>() << m_sequential_events.data(), m_player.data()).size() == 0) {
+		VIP_LOG_ERROR("Unable to display events on player");
+		return false;
+	}
+	return true;
+}
+void VipPlayerDBAccess::connectToEventServerEdit()
+{
+	QLineEdit* edit = new QLineEdit();
+	edit->setMinimumWidth(200);
+	edit->setPlaceholderText("Format: 'host:ip:optional_camera'");
+	VipGenericDialog dial(edit, "Connect to event server", m_player);
+	if (dial.exec() == QDialog::Accepted) {
+	
+		QStringList lst = edit->text().split(":", VIP_SKIP_BEHAVIOR::SkipEmptyParts);
+		QString path;
+		if (lst.size() == 2) {
+			path = lst[0] + ";" + lst[1] + ";" + this->camera();
+		}
+		else if (lst.size() == 3) {
+			path = lst[0] + ";" + lst[1] + ";" + lst[2];
+		}
+		else {
+			VIP_LOG_ERROR("Wrong connection format: ", edit->text());
+			return;
+		}
+		connectToEventServer(path);
+	}
 }
 
 void VipPlayerDBAccess::updateUndoToolTip()
@@ -2271,6 +2539,11 @@ VipEventDevice* VipPlayerDBAccess::device(const QString& group)
 		if (devs[i]->group() == group)
 			return devs[i];
 	return nullptr;
+}
+
+VipManualAnnotation* VipPlayerDBAccess::manualAnnotationPanel() const
+{
+	return m_annotation;
 }
 
 void VipPlayerDBAccess::sendManualAnnotationToJson()

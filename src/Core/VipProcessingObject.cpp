@@ -2331,7 +2331,7 @@ void VipProcessingObject::internalInitIO(bool force) const
 
 void VipProcessingObject::initialize(bool force) const
 {
-	if (!m_data->updateCalled) // Once update has been called, we must not change IO
+	//if (!m_data->updateCalled) // Once update has been called, we must not change IO
 		if (force || !m_data->initializeIO || m_data->dirtyIO || m_data->initializeIO != metaObject()->propertyCount())
 			internalInitIO(force);
 }

@@ -191,6 +191,9 @@ public:
 
 	typedef int (*_pchrono)(int pulse, char* out, int* out_size);
 
+	typedef int (*_get_table_names)(int cam, char* dst, int* dst_size);
+	typedef int (*_get_table)(int cam, const char* name, float* dst, int* dst_size); 
+
 	_set_print_function set_print_function;
 	_disable_print disable_print;
 	_reset_print_functions reset_print_functions;
@@ -304,6 +307,9 @@ public:
 	_h264_set_global_attributes h264_set_global_attributes;
 	_h264_add_image_lossless h264_add_image_lossless;
 	_h264_add_image_lossy h264_add_image_lossy;
+
+	_get_table_names get_table_names;
+	_get_table get_table;
 
 	_get_views get_views;
 

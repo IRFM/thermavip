@@ -74,6 +74,40 @@ public:
 	qint64 m_video_sampling;
 };
 
+
+
+/// @brief VipIODevice that outputs events on the form of a VipSceneModel.
+/// Events are retrieved from an event server.
+class VIP_ANNOTATION_EXPORT VipClientEventDevice : public VipIODevice
+{
+	Q_OBJECT
+	VIP_IO(VipOutput scene_model)
+
+public:
+	VipClientEventDevice(QObject* parent = nullptr);
+	~VipClientEventDevice();
+
+	void setConnectionInfo(const QString& ip, int port, const QString& camera) { 
+		this->setPath(ip + ";" + QString::number(port) + ";" + camera);
+	}
+
+	virtual bool open(VipIODevice::OpenModes mode);
+	/// Return the device supported modes (read/write operations).
+	virtual VipIODevice::OpenModes supportedModes() const { return VipIODevice::ReadOnly; }
+	virtual DeviceType deviceType() const { return VipIODevice::Sequential; }
+	virtual void close();
+
+protected:
+	virtual bool enableStreaming(bool);
+
+public:
+	class PrivateData;
+	PrivateData* d_data;
+};
+
+
+
+
 /// @brief Defines several widget used to modify events parameters before upload to DB
 class VIP_ANNOTATION_EXPORT UploadToDB : public QWidget
 {
@@ -217,7 +251,7 @@ public:
 	QList<VipEventDevice*> devices();
 	const QList<Action>& actionsStack() const;
 	VipEventDevice* device(const QString& group);
-
+	VipManualAnnotation* manualAnnotationPanel() const;
 	void addEvents(const Vip_event_list& events, bool fromDB);
 
 public Q_SLOTS:
@@ -236,6 +270,10 @@ public Q_SLOTS:
 	void removeFramesToEvents();
 	void interpolateFrames();
 	void updateUndoToolTip();
+	/// @brief Connect to an event server using format 'host;ip;camera'
+	bool connectToEventServer(const QString & host);
+	void connectToEventServerEdit();
+
 private Q_SLOTS:
 	void aboutToShow();
 	void showEvents();
@@ -262,6 +300,7 @@ private:
 	QList<QPointer<VipEventDevice>> m_devices;
 	QPointer<VipVideoPlayer> m_player;
 	QPointer<VipPlotShape> m_selected_item;
+	QPointer<VipClientEventDevice> m_sequential_events;
 	QList<QPointer<VipPlotShape>> m_selection;
 	QList<Action> m_actions;
 	QToolButton* m_db;

@@ -118,6 +118,9 @@ int main(int argc, char** argv)
 	fmt.setSamples(4);
 	QSurfaceFormat::setDefaultFormat(fmt);*/
 
+	// Disallow GUI initialization functions for now
+	vipEnableGuiInitializationFunction(false);
+
 	QApplication app(argc, argv);
 
 	bool force_font = false;
@@ -555,6 +558,9 @@ int main(int argc, char** argv)
 #if defined(VIP_ALLOW_AUTO_UPDATE) && defined(_MSC_VER)
 	vipGetMainWindow()->startUpdateThread();
 #endif
+
+	// Allow GUI initialization functions
+	vipEnableGuiInitializationFunction(true);
 
 	int ret = app.exec();
 

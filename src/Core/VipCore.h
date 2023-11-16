@@ -260,6 +260,12 @@ VIP_CORE_EXPORT VipArchive& operator>>(VipArchive& arch, VipSceneModel& value);
 VIP_CORE_EXPORT VipArchive& operator<<(VipArchive& arch, const VipSceneModelList& value);
 VIP_CORE_EXPORT VipArchive& operator>>(VipArchive& arch, VipSceneModelList& value);
 
+
+VIP_CORE_EXPORT void vipShapeToJSON(QTextStream& str, const VipShape& value, const QByteArray& indent = QByteArray());
+VIP_CORE_EXPORT void vipSceneModelToJSON(QTextStream& str, const VipSceneModel& value, const QByteArray& indent = QByteArray());
+VIP_CORE_EXPORT void vipSceneModelListToJSON(QTextStream& str, const VipSceneModelList& value, const QByteArray& indent = QByteArray());
+VIP_CORE_EXPORT VipSceneModelList vipSceneModelListFromJSON(const QByteArray& content, QString* error = nullptr);
+
 /// Save a QVariant to a QDataStream.
 /// This function is equivalent to QDataStream & operator<<(QDataStream &, const QVariant&),
 /// except that it returns false on error instead of crashing on an assertion.
@@ -285,6 +291,8 @@ VIP_CORE_EXPORT bool vipPrependInitializationFunction(int (*fun)());
 /// \internal add a function that will be called in QCoreApplication event loop. Should only be used by Thermavip SDK libraries.
 VIP_CORE_EXPORT bool vipAddGuiInitializationFunction(int (*fun)());
 VIP_CORE_EXPORT bool vipAddGuiInitializationFunction(void (*fun)());
+
+VIP_CORE_EXPORT void vipEnableGuiInitializationFunction(bool);
 
 /// \internal add a function that will be called in QCoreApplication destructor. Should only be used by Thermavip SDK libraries.
 VIP_CORE_EXPORT bool vipAddUninitializationFunction(const VipFunction<0>& fun);

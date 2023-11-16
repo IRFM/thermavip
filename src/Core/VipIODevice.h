@@ -1269,14 +1269,14 @@ VIP_REGISTER_QOBJECT_METATYPE(VipDirectoryReader*)
 class VIP_CORE_EXPORT VipShapeReader : public VipAnyResource
 {
 	Q_OBJECT
-	Q_CLASSINFO("description", "Read a scene model from a XML file")
+	Q_CLASSINFO("description", "Read a scene model from a XML or JSON file")
 	Q_CLASSINFO("category", "reader")
 public:
 	VipShapeReader();
 	virtual bool probe(const QString& filename, const QByteArray&) const { return supportFilename(filename) || VipIODevice::probe(filename); }
 
 	virtual bool open(VipIODevice::OpenModes mode);
-	virtual QString fileFilters() const { return "ROI file (*.xml)"; }
+	virtual QString fileFilters() const { return "ROI file (*.xml *.json)"; }
 };
 
 VIP_REGISTER_QOBJECT_METATYPE(VipShapeReader*)
@@ -1285,14 +1285,14 @@ class VIP_CORE_EXPORT VipShapeWriter : public VipIODevice
 {
 	Q_OBJECT
 	VIP_IO(VipInput scene_model)
-	Q_CLASSINFO("description", "Write a scene model in a XML file")
+	Q_CLASSINFO("description", "Write a scene model in a XML or JSON file")
 	Q_CLASSINFO("category", "writer")
 public:
 	VipShapeWriter();
 	virtual bool probe(const QString& filename, const QByteArray&) const { return supportFilename(filename) || VipIODevice::probe(filename); }
 
 	virtual bool open(VipIODevice::OpenModes mode);
-	virtual QString fileFilters() const { return "ROI file (*.xml)"; }
+	virtual QString fileFilters() const { return "ROI file (*.xml *.json)"; }
 
 	virtual bool acceptInput(int, const QVariant& v) const { return v.canConvert<VipSceneModel>() || v.canConvert<VipSceneModelList>(); }
 	virtual DeviceType deviceType() const { return Resource; }

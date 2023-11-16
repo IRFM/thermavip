@@ -510,6 +510,10 @@ void VipAbstractScale::computeScaleDiv()
 			x2 = x1 + d_data->lastScaleIntervalWidth;
 		}
 
+		// having x1 == x2 causes strange bugs
+		if (x1 == x2)
+			x2 = x1 + 1.;
+
 		scaleEngine()->onComputeScaleDiv(this, VipInterval(x1, x2));
 		VipScaleDiv div = scaleEngine()->divideScale(x1, x2, maxMajor(), maxMinor(), stepSize);
 

@@ -483,6 +483,18 @@ VipLibRIR* VipLibRIR::instance()
 		delete librir;
 		return librir = nullptr;
 	}
+	librir->get_table_names = (_get_table_names)videoIOLib()->resolve("get_table_names");
+	if (!librir->get_table_names) {
+		VIP_LOG_ERROR("librir: missing get_table_names");
+		delete librir;
+		return librir = nullptr;
+	}
+	librir->get_table = (_get_table)videoIOLib()->resolve("get_table");
+	if (!librir->get_table) {
+		VIP_LOG_ERROR("librir: missing get_table");
+		delete librir;
+		return librir = nullptr;
+	}
 
 	librir->unzip = (_unzip)toolsLib()->resolve("unzip");
 	if (!librir->unzip) {

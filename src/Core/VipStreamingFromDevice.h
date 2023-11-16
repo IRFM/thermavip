@@ -63,6 +63,8 @@ public:
 	virtual DeviceType deviceType() const { return Sequential; }
 	virtual OpenModes supportedModes() const { return VipIODevice::ReadOnly; }
 
+	virtual QTransform imageTransform() const;
+
 protected:
 	void readDeviceTime(qint64 time, qint64 new_time);
 	virtual bool enableStreaming(bool enable);

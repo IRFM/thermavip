@@ -78,6 +78,44 @@ private:
 
 VIP_REGISTER_QOBJECT_METATYPE(VipRIRDevice*)
 
+
+
+
+class VIP_ANNOTATION_EXPORT VipRIRRecorder : public VipIODevice
+{
+	Q_OBJECT
+	VIP_IO(VipInput input)
+	VIP_IO(VipProperty compression) // compression level, default to 8
+	VIP_IO(VipProperty low_loss)  // low temperature loss (0)
+	VIP_IO(VipProperty high_loss) // high temperature loss (0)
+
+public:
+	VipRIRRecorder(QObject* parent = nullptr);
+	~VipRIRRecorder();
+
+	virtual void close();
+	virtual DeviceType deviceType() const { return Temporal; }
+	virtual VipIODevice::OpenModes supportedModes() const { return WriteOnly; }
+	virtual QString fileFilters() const { return "H264 video file (*.h264)"; }
+	virtual bool open(VipIODevice::OpenModes);
+	virtual bool probe(const QString& filename, const QByteArray&) const { return QFileInfo(filename).suffix().compare("h264", Qt::CaseInsensitive) == 0 || VipIODevice::probe(filename); }
+	virtual bool acceptInput(int, const QVariant& v) const {
+		const VipNDArray ar = v.value<VipNDArray>();
+		return ar.shapeCount() == 2 && ar.canConvert(QMetaType::UShort) && v.userType() == qMetaTypeId<VipNDArray>();
+	}
+
+
+protected:
+	virtual void apply();
+
+private:
+	VipNDArrayShape m_shape;
+	QVariantMap m_attrs;
+	int m_video;
+};
+VIP_REGISTER_QOBJECT_METATYPE(VipRIRRecorder*)
+
+
 /**
 Widget to edit a VipRIRDevice instance (either WEST_IR_Device or WEST_BIN_PCR_Device)
 */
@@ -95,6 +133,29 @@ public:
 public Q_SLOTS:
 	void updateDevice();
 	void setBadPixels(bool);
+
+Q_SIGNALS:
+	void deviceUpdated();
+
+private:
+	class PrivateData;
+	PrivateData* m_data;
+};
+
+
+class VipRIRRecorderEditor : public QWidget
+{
+	Q_OBJECT
+
+public:
+	VipRIRRecorderEditor(QWidget* player = nullptr);
+	~VipRIRRecorderEditor();
+
+	void setDevice(VipRIRRecorder* dev);
+	VipRIRRecorder* device() const;
+
+public Q_SLOTS:
+	void updateDevice();
 
 Q_SIGNALS:
 	void deviceUpdated();

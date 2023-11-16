@@ -115,7 +115,81 @@ VipToolWidgetScrollArea {
 	border-bottom-right-radius: 5px;
 	padding: 3px;
 }
-VipToolWidgetTitleBar[isFloating="false"] {
+
+
+
+
+
+
+/* no status*/
+VipToolWidgetTitleBar[status="0"] {
+	border-top: 1px solid #3D3D3D;
+	border-left: 1px solid #3D3D3D;
+	border-right: 1px solid #3D3D3D;
+	qproperty-closeButton: url(skins/dark/icons/close.png);
+	qproperty-floatButton: url(skins/dark/icons/pin.png);
+	qproperty-maximizeButton: url(skins/dark/icons/maximize.png);
+	qproperty-restoreButton: url(skins/dark/icons/restore.png);
+	qproperty-textColor: black;
+}
+VipToolWidgetScrollArea[status="0"] {
+    border-bottom: 3px solid #3D3D3D;
+	border-left: 3px solid #3D3D3D;
+	border-right: 3px solid #3D3D3D;
+}
+
+/* floating*/
+VipToolWidgetTitleBar[status="3"] {
+	border-top: 1px solid #777777;
+	border-left: 1px solid #777777;
+	border-right: 1px solid #777777;
+	qproperty-closeButton: url(skins/dark/icons/close.png);
+	qproperty-floatButton: url(skins/dark/icons/pin.png);
+	qproperty-maximizeButton: url(skins/dark/icons/maximize.png);
+	qproperty-restoreButton: url(skins/dark/icons/restore.png);
+	qproperty-textColor: black;
+}
+VipToolWidgetScrollArea[status="3"] {
+    border-bottom: 1px solid #777777;
+	border-left: 1px solid #777777;
+	border-right: 1px solid #777777;
+}
+
+/* hover*/
+VipToolWidgetTitleBar[status="2"] {
+	border-top: 1px solid #008BE8;
+	border-left: 1px solid #008BE8;
+	border-right: 1px solid #008BE8;
+}
+VipToolWidgetScrollArea[status="2"] {
+    border-bottom: 1px solid #008BE8;
+	border-left: 1px solid #008BE8;
+	border-right: 1px solid #008BE8;
+}
+
+/* focus*/
+VipToolWidgetTitleBar[status="1"] {
+	border-top: 1px solid #008BE8;
+	border-left: 1px solid #008BE8;
+	border-right: 1px solid #008BE8;
+	background-color: #008BE8;
+	qproperty-closeButton: url(skins/dark/icons/close_white.png);
+	qproperty-floatButton: url(skins/dark/icons/pin_white.png);
+	qproperty-maximizeButton: url(skins/dark/icons/maximize_white.png);
+	qproperty-restoreButton: url(skins/dark/icons/restore_white.png);
+	qproperty-textColor: white;
+}
+VipToolWidgetScrollArea[status="1"] {
+    border-bottom: 1px solid #008BE8;
+	border-left: 1px solid #008BE8;
+	border-right: 1px solid #008BE8;
+}
+
+
+
+
+
+/*VipToolWidgetTitleBar[isFloating="false"] {
 	border-top: 1px solid #3D3D3D;
 	border-left: 1px solid #3D3D3D;
 	border-right: 1px solid #3D3D3D;
@@ -129,12 +203,12 @@ VipToolWidgetScrollArea[isFloating="false"] {
     border-bottom: 3px solid #3D3D3D;
 	border-left: 3px solid #3D3D3D;
 	border-right: 3px solid #3D3D3D;
-	
 }
+
 VipToolWidgetTitleBar[isFloating="true"] {
-	border-top: 1px solid #3D3D3D;
-	border-left: 1px solid #3D3D3D;
-	border-right: 1px solid #3D3D3D;
+	border-top: 1px solid #777777;
+	border-left: 1px solid #777777;
+	border-right: 1px solid #777777;
 	qproperty-closeButton: url(skins/dark/icons/close.png);
 	qproperty-floatButton: url(skins/dark/icons/pin.png);
 	qproperty-maximizeButton: url(skins/dark/icons/maximize.png);
@@ -142,10 +216,11 @@ VipToolWidgetTitleBar[isFloating="true"] {
 	qproperty-textColor: black;
 }
 VipToolWidgetScrollArea[isFloating="true"] {
-    border-bottom: 1px solid #3D3D3D;
-	border-left: 1px solid #3D3D3D;
-	border-right: 1px solid #3D3D3D;
+    border-bottom: 1px solid #777777;
+	border-left: 1px solid #777777;
+	border-right: 1px solid #777777;
 }
+
 VipToolWidgetTitleBar[hasHover="true"] {
 	border-top: 1px solid #008BE8;
 	border-left: 1px solid #008BE8;
@@ -173,8 +248,7 @@ VipToolWidgetScrollArea[hasFocus="true"] {
 	border-left: 1px solid #008BE8;
 	border-right: 1px solid #008BE8;
 }
-
-
+*/
 
 
 QTabBar {

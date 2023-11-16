@@ -74,6 +74,7 @@ void OpenStream::openFilePath()
 	QString filters = l.fileFilters();
 	QString path = VipFileDialog::getOpenFileName(nullptr, "Open video file", filters);
 	if (!path.isEmpty()) {
+		m_paths.setCurrentText(path);
 		open();
 	}
 }

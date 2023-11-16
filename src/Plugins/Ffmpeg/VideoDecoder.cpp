@@ -72,6 +72,7 @@ void log_to_array(void * 	,
 )
 {
 	_stderr += QString::vasprintf(fmt, vl);
+	vip_debug(fmt, vl);
 }
 
 QStringList VideoDecoder::list_devices()
@@ -86,8 +87,8 @@ QStringList VideoDecoder::list_devices()
 	AVInputFormat *iformat = av_find_input_format("dshow");
 	int ret = avformat_open_input(&formatC, "video=dummy", iformat, &options);
 	av_log_set_callback(av_log_default_callback);
-	if (ret < 0)
-		return QStringList();
+	//if (ret < 0)
+	//	return QStringList();
 	
 	//freopen("CON", "w", stderr);
 

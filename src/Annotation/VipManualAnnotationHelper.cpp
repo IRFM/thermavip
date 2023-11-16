@@ -32,9 +32,15 @@
 #include "VipManualAnnotationHelper.h"
 #include "VipCore.h"
 #include "VipLogging.h"
+#include "VipStandardWidgets.h"
+
 #include <qdir.h>
 #include <qfileinfo.h>
 #include <qprocess.h>
+#include <qmessagebox.h>
+#include <qgridlayout.h>
+#include <qapplication.h>
+#include <qclipboard.h>
 
 ManualAnnotationHelper::ManualAnnotationHelper()
 {
@@ -400,6 +406,161 @@ static void extractSegmFromPlayer(VipVideoPlayer* pl, const QList<VipShape>& shs
 	extractAnnotationFromPlayer(pl, shs, "segm");
 }
 
+static void uploadROIsFromPlayer(VipVideoPlayer* pl, const QList<VipShape>& shs)
+{
+	QString event_type;
+	bool generate_url = false;
+	{
+		// Create dialog
+		QComboBox* type = new QComboBox();
+		type->setToolTip("Event type");
+		type->addItems(vipEventTypesDB());
+
+		QCheckBox* url = new QCheckBox("Generate URL for the thermal event(s)");
+		url->setChecked(true);
+
+		QGridLayout* lay = new QGridLayout();
+		lay->addWidget(new QLabel("Event(s) type"), 0, 0);
+		lay->addWidget(type, 0, 1);
+		lay->addWidget(url, 1, 0,1,2);
+		QWidget* w = new QWidget();
+		w->setLayout(lay);
+
+		VipGenericDialog dial(w, "Upload events");
+		if (dial.exec() != QDialog::Accepted)
+			return;
+
+		event_type = type->currentText();
+		generate_url = url->isChecked();
+	}
+
+	VipPlayerDBAccess* db = VipPlayerDBAccess::fromPlayer(pl);
+	if (!pl) {
+		QMessageBox::warning(nullptr, "Error", "Unable to send ROI to DB");
+		return;
+	}
+
+	VipManualAnnotation* annot = db->manualAnnotationPanel();
+	if (!pl) {
+		QMessageBox::warning(nullptr, "Error", "Unable to send ROI to DB");
+		return;
+	}
+
+	auto datasets = vipDatasetsDB();
+
+	int pulse = db->pulse();
+	QString camera = db->camera();
+	QString device = db->device();
+	QString dataset = "10"; // PPO dataset
+
+	QList<VipPlotShape*> selected = pl->plotSceneModel()->shapes(1);
+	VipDisplayObject* display = pl->spectrogram()->property("VipDisplayObject").value<VipDisplayObject*>();
+	if (!display) {
+		QMessageBox::warning(nullptr, "Error", "Unable to send ROI to DB");
+		return;
+	}
+
+	// try to retrieve the source VipOutput this VipDisplayObject
+	VipOutput* src_output = nullptr;
+	if (VipInput* input = display->inputAt(0))
+		if (VipConnectionPtr con = input->connection())
+			if (VipOutput* source = con->source())
+				src_output = source;
+
+	if ( !src_output) {
+		QMessageBox::warning(nullptr, "Error", "Unable to send ROI to DB");
+		return;
+	}
+	const VipAnyData any = src_output->data();
+	const VipNDArray ar = any.value<VipNDArray>();
+	qint64 time = any.time();
+
+	Vip_event_list res;
+	QString user_name = vipUserName();
+
+	// remove image transform from player
+	QTransform tr = pl->imageTransform().inverted();
+
+	QString default_status = "Analyzed (OK)";
+
+	qint64 duration = 0;
+	qint64 initial_time = time;
+	qint64 last_time = time;
+	int count = 0;
+
+	for (VipPlotShape * shape : selected) {
+		// create shape
+		VipShape sh = shape->rawData().copy();
+		VipShapeStatistics st = sh.statistics(ar, QPoint(0, 0), nullptr, VipShapeStatistics::All);
+
+		// reset shape initial geometry (without transform) after extracting statistics
+		if (!tr.isIdentity()) {
+			sh.transform(tr);
+			// apply to the max and min coordinates
+			st.maxPoint = tr.map(QPointF(st.maxPoint)).toPoint();
+			st.minPoint = tr.map(QPointF(st.minPoint)).toPoint();
+		}
+
+		QVariantMap attrs;
+		attrs.insert("comments", QString());
+		attrs.insert("name", QString());
+		attrs.insert("dataset", dataset);
+		attrs.insert("experiment_id", pulse);
+		attrs.insert("initial_timestamp_ns", initial_time);
+		attrs.insert("final_timestamp_ns", last_time);
+		attrs.insert("duration_ns", duration);
+		attrs.insert("is_automatic_detection", false);
+		attrs.insert("method", QString("manual annotation (bbox)"));
+		attrs.insert("confidence", 1.);
+		attrs.insert("analysis_status", default_status);
+		attrs.insert("user", user_name);
+		attrs.insert("line_of_sight", camera);
+		attrs.insert("device", device);
+
+		// set attributes from realtime table
+		attrs.insert("timestamp_ns", time);
+		QRect bounding = sh.boundingRect().toRect();
+		attrs.insert("bbox_x", bounding.left());
+		attrs.insert("bbox_y", bounding.top());
+		attrs.insert("bbox_width", bounding.width());
+		attrs.insert("bbox_height", bounding.height());
+		attrs.insert("max_temperature_C", st.max); // TODO
+		attrs.insert("max_T_image_position_x", st.maxPoint.x());
+		attrs.insert("max_T_image_position_y", st.maxPoint.y());
+		attrs.insert("min_temperature_C", st.min);
+		attrs.insert("min_T_image_position_x", st.minPoint.x());
+		attrs.insert("min_T_image_position_y", st.minPoint.y());
+		attrs.insert("average_temperature_C", st.average);
+		attrs.insert("pixel_area", bounding.width() * bounding.height());
+		attrs.insert("centroid_image_position_x", st.maxPoint.x());
+		attrs.insert("centroid_image_position_y", st.maxPoint.y());
+
+		// set the event flag
+		attrs.insert("origin", (int)VipPlayerDBAccess::New);
+		sh.setAttributes(attrs);
+		sh.setGroup(event_type);
+
+		res[count++].append(sh);
+	}
+
+
+	// Send events
+	VipProgress p;
+	QList<qint64> ids = vipSendToDB(user_name, camera, device, pulse, res, &p);
+	if (ids.size() == 0) {
+		QMessageBox::warning(nullptr, "Error", "Unable to upload ROI to DB");
+		return;
+	}
+
+	if (generate_url) {
+		QStringList ids_str;
+		for (qint64 id : ids)
+			ids_str.push_back(QString::number(id));
+		QString url = "thermavip://" + QString::number(pulse) + "&" + camera + "&" + ids_str.join("_");
+		qApp->clipboard()->setText(url);
+	}
+}
+
 static QList<QAction*> manualAnnotationHelperMenu(VipPlotShape* shape, VipVideoPlayer* p)
 {
 	(void)shape;
@@ -435,6 +596,15 @@ static QList<QAction*> manualAnnotationHelperMenu(VipPlotShape* shape, VipVideoP
 		a->setSeparator(true);
 		actions.insert(0, a);
 	}
+
+	// add possibillity to upload selected ROI to DB in the PPO dataset
+	if (vipHasWriteRightsDB()) {
+	
+		QAction* upload = new QAction("Add hot spot of interest to the database", nullptr);
+		QObject::connect(upload, &QAction::triggered, std::bind(uploadROIsFromPlayer, p, shs));
+		actions << upload;
+	}
+
 	return actions;
 }
 

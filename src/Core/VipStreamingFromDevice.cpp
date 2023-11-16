@@ -129,6 +129,12 @@ bool VipGeneratorSequential::open(VipIODevice::OpenModes mode)
 	return false;
 }
 
+QTransform VipGeneratorSequential::imageTransform() const {
+	if (m_device)
+		return m_device->imageTransform();
+	return VipIODevice::imageTransform();
+}
+
 void VipGeneratorSequential::readDeviceTime(qint64 time, qint64 new_time)
 {
 	if (m_device->read(time)) {

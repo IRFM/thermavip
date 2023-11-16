@@ -237,6 +237,142 @@ bool VipRIRDevice::readData(qint64 time)
 	return false;
 }
 
+
+
+
+VipRIRRecorder::VipRIRRecorder(QObject* parent)
+  : VipIODevice(parent)
+  , m_video(0)
+{
+	propertyAt(0)->setData(8);
+	propertyAt(1)->setData(0);
+	propertyAt(2)->setData(0);
+}
+	
+VipRIRRecorder::~VipRIRRecorder()
+{
+	VipRIRRecorder::close();
+}
+
+void VipRIRRecorder::close()
+{
+	if (m_video > 0)
+		VipLibRIR::instance()->h264_close_file(m_video);
+	m_video = 0;
+	VipIODevice::close();
+}
+
+bool VipRIRRecorder::open(VipIODevice::OpenModes modes) 
+{
+	close();
+	if (modes != WriteOnly)
+		return false;
+
+	QString p = removePrefix(path());
+	QFile out(p);
+	if (!out.open(QFile::WriteOnly))
+		return false;
+	setOpenMode(modes);
+	return true;
+}
+
+void VipRIRRecorder::apply()
+{
+	while (inputAt(0)->hasNewData()) {
+	
+		VipAnyData in = inputAt(0)->data();
+		const VipNDArray ar = in.value<VipNDArray>().toUInt16();
+		if (ar.shapeCount() != 2) {
+			setError("Wrong shape count");
+			return;
+		}
+
+		if (m_video == 0) {
+			//initialize
+			QString p = removePrefix(path());
+			m_shape = ar.shape();
+			m_video = VipLibRIR::instance()->h264_open_file(p.toLatin1().data(), m_shape[1], m_shape[0], m_shape[0]);
+			if (m_video <= 0) {
+				m_video = 0;
+				setError("Unable to open output file");
+				return;
+			}
+
+			m_attrs = in.attributes();
+
+			QByteArray keys, values;
+			QVector<int> key_lens, value_lens;
+			for (auto it = m_attrs.begin(); it != m_attrs.end(); ++it) {
+				QByteArray key = it.key().toLatin1();
+				QByteArray v = it.value().toByteArray();
+				keys += key;
+				values += v;
+				key_lens += key.size();
+				value_lens += v.size();
+			}
+
+			VipLibRIR::instance()->h264_set_global_attributes(m_video, key_lens.size(), keys.data(), key_lens.data(), values.data(), value_lens.data());
+
+			int compression = propertyAt(0)->value<int>();
+			if (compression < 0)
+				compression = 0;
+			if (compression > 8)
+				compression = 8;
+
+			VipLibRIR::instance()->h264_set_parameter(m_video, "compressionLevel", QByteArray::number(compression));
+			VipLibRIR::instance()->h264_set_parameter(m_video, "lowValueError", QByteArray::number(propertyAt(1)->value<int>()));
+			VipLibRIR::instance()->h264_set_parameter(m_video, "highValueError", QByteArray::number(propertyAt(2)->value<int>()));
+			VipLibRIR::instance()->h264_set_parameter(m_video, "threads","4");
+			VipLibRIR::instance()->h264_set_parameter(m_video, "slices", "4");
+		}
+	
+		if (ar.shape() != m_shape) {
+			setError("Wrong input image shape");
+			return;
+		}
+
+		// ComputeAttributes
+		QVariantMap attrs = in.attributes();
+		for (auto it = attrs.begin(); it != attrs.end();) {
+			auto found = m_attrs.find(it.key());
+			if (found != m_attrs.end() && found.value().toByteArray() == it.value().toByteArray())
+				it = attrs.erase(it);
+			else
+				++it;
+		}
+		QByteArray keys, values;
+		QVector<int> key_lens, value_lens;
+		for (auto it = attrs.begin(); it != attrs.end(); ++it) {
+			QByteArray key = it.key().toLatin1();
+			QByteArray v = it.value().toByteArray();
+			keys += key;
+			values += v;
+			key_lens += key.size();
+			value_lens += v.size();
+		}
+
+		int low_error = propertyAt(1)->value<int>();
+		int high_error = propertyAt(2)->value<int>();
+		int ret = 0;
+		if (low_error == 0 && high_error == 0)
+			ret = VipLibRIR::instance()->h264_add_image_lossless(m_video, (unsigned short*)ar.data(), in.time(), attrs.size(), keys.data(), key_lens.data(), values.data(), value_lens.data());
+		else
+			ret =
+			  VipLibRIR::instance()->h264_add_image_lossy(m_video, (unsigned short*)ar.data(), in.time(), attrs.size(), keys.data(), key_lens.data(), values.data(), value_lens.data());
+
+		if (ret < 0) {
+			setError("Unable to write image");
+			return;
+		}
+	}
+}
+
+
+
+
+
+
+
 #include "VipStandardWidgets.h"
 #include <qboxlayout.h>
 
@@ -337,6 +473,96 @@ void VipRIRDeviceEditor::updateDevice()
 	}
 }
 
+
+
+#include <qgridlayout.h>
+
+class VipRIRRecorderEditor::PrivateData
+{
+public:
+	QSpinBox compression;
+	QSpinBox lowError;
+	QSpinBox highError;
+	QPointer<VipRIRRecorder> device;
+};
+
+VipRIRRecorderEditor::VipRIRRecorderEditor(QWidget* parent)
+  : QWidget(parent)
+{
+	m_data = new PrivateData();
+
+	QGridLayout* lay = new QGridLayout();
+
+	lay->addWidget(new QLabel("Compression level"), 0, 0);
+	lay->addWidget(&m_data->compression, 0, 1);
+
+	lay->addWidget(new QLabel("Low temperature error"), 1, 0);
+	lay->addWidget(&m_data->lowError, 1, 1);
+
+	lay->addWidget(new QLabel("High temperature error"), 2, 0);
+	lay->addWidget(&m_data->highError, 2, 1);
+
+	setLayout(lay);
+
+	m_data->compression.setRange(0, 8);
+	m_data->compression.setValue(0);
+
+	m_data->lowError.setRange(0, 10);
+	m_data->lowError.setValue(0);
+
+	m_data->highError.setRange(0, 10);
+	m_data->highError.setValue(0);
+
+	connect(&m_data->compression, SIGNAL(valueChanged(int)), this, SLOT(updateDevice()));
+	connect(&m_data->lowError, SIGNAL(valueChanged(int)), this, SLOT(updateDevice()));
+	connect(&m_data->highError, SIGNAL(valueChanged(int)), this, SLOT(updateDevice()));
+}
+	
+VipRIRRecorderEditor::~VipRIRRecorderEditor()
+{
+	delete m_data;
+}
+
+void VipRIRRecorderEditor::setDevice(VipRIRRecorder* dev) {
+	if (dev != m_data->device) {
+		m_data->device = dev;
+		if (dev) {
+			m_data->compression.blockSignals(true);
+			m_data->lowError.blockSignals(true);
+			m_data->highError.blockSignals(true);
+
+			m_data->compression.setValue(dev->propertyAt(0)->value<int>());
+			m_data->lowError.setValue(dev->propertyAt(1)->value<int>());
+			m_data->highError.setValue(dev->propertyAt(2)->value<int>());
+
+			m_data->compression.blockSignals(false);
+			m_data->lowError.blockSignals(false);
+			m_data->highError.blockSignals(false);
+		}
+	}
+}
+VipRIRRecorder* VipRIRRecorderEditor::device() const
+{
+	return m_data->device;
+}
+
+void VipRIRRecorderEditor::updateDevice()
+{
+	if (VipRIRRecorder* r = m_data->device) {
+		r->propertyAt(0)->setData(m_data->compression.value());
+		r->propertyAt(1)->setData(m_data->lowError.value());
+		r->propertyAt(2)->setData(m_data->highError.value());
+	}
+}
+
+
+
+
+
+
+
+
+
 CustomizeRIRVideoPlayer::CustomizeRIRVideoPlayer(VipVideoPlayer* player, VipRIRDevice* device)
   : QObject(player)
   , m_device(device)
@@ -368,9 +594,17 @@ static void displayVipRIRDeviceOptions(VipVideoPlayer* player)
 	}
 }
 
+
+static QWidget* editRIRRecorder(VipRIRRecorder* r) {
+	VipRIRRecorderEditor* ed = new VipRIRRecorderEditor();
+	ed->setDevice(r);
+	return ed;
+}
+
 static int registerEditor()
 {
 	vipFDPlayerCreated().append<void(VipVideoPlayer*)>(displayVipRIRDeviceOptions);
+	vipFDObjectEditor().append<QWidget*(VipRIRRecorder*)>(editRIRRecorder);
 	return 0;
 }
 

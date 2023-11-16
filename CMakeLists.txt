@@ -12,7 +12,11 @@ project(thermavip
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-
+# Make sure (if possible) to use Release build of imported libraries (namely Qt)
+#set(CMAKE_MAP_IMPORTED_CONFIG_RELEASE Release)
+#set(CMAKE_MAP_IMPORTED_CONFIG_DEBUG Release)
+#set(CMAKE_MAP_IMPORTED_CONFIG_RELWITHDEBUGINFO Release)
+ 
 # add Qt
 
 set(CMAKE_AUTOMOC ON)

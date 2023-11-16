@@ -61,8 +61,8 @@ Default plugins shipped within the git reprository rely on the [HDF5](https://ww
 ## Authors
 
 * [Victor MONCADA](mailto:victor.moncada@cea.fr) (victor.moncada@cea.fr)
-* [Léo DUBUS](mailto:leo.dubus@cea.fr) (victor.moncada@cea.fr)
-* [Erwan GRELIER](mailto:erwan.grelier@cea.fr) (victor.moncada@cea.fr)
+* [Léo DUBUS](mailto:leo.dubus@cea.fr) (leo.dubus@cea.fr)
+* [Erwan GRELIER](mailto:erwan.grelier@cea.fr) (erwan.grelier@cea.fr)
 
 The software has been built with the collaboration and intensive testing of:
 

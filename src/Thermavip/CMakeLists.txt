@@ -10,15 +10,15 @@ set(CMAKE_AUTOMOC ON)
 include(GNUInstallDirs)
 
 if(MSVC)
-	if (CMAKE_BUILD_TYPE STREQUAL "Release" )
+	#if (CMAKE_BUILD_TYPE STREQUAL "Release" )
 		add_executable(Thermavip  WIN32
 			main.cpp Thermavip_resource.rc
 		)
-	else()
-		add_executable(Thermavip 
-			main.cpp Thermavip_resource.rc
-		)
-	endif()
+	#else()
+	#	add_executable(Thermavip 
+	#		main.cpp Thermavip_resource.rc
+	#	)
+	#endif()
 else()
 	add_executable(Thermavip  
 		main.cpp 
