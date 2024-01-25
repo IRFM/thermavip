@@ -20,6 +20,14 @@ MPEGLoader::~MPEGLoader()
 qint32 MPEGLoader::fullFrameWidth() const { return m_decoder->GetWidth(); }
 qint32 MPEGLoader::fullFrameHeight() const { return m_decoder->GetHeight(); }
 
+void MPEGLoader::setDrawFunction(const draw_function& f) {
+	m_draw_function = f;
+}
+const MPEGLoader::draw_function& MPEGLoader::drawFunction() const
+{
+	return m_draw_function;
+}
+
 QStringList MPEGLoader::listDevices()
 {
 	return VideoDecoder::list_devices();
@@ -185,6 +193,12 @@ VipNDArray MPEGLoader::fromImage(const QImage & img) const
 		return res;
 	}
 	else {
+		if (m_draw_function) {
+			QImage tmp = img;
+			m_draw_function(tmp);
+			return vipToArray(tmp);
+		}
+		
 		return vipToArray(img);
 	}
 }

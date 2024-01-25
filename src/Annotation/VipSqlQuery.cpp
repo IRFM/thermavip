@@ -31,6 +31,7 @@
 
 #include "VipSqlQuery.h"
 #include "VipStandardWidgets.h"
+#include "VipNetwork.h"
 
 #include <QStandardPaths>
 #include <qboxlayout.h>
@@ -236,8 +237,16 @@ static QSqlDatabase createConnection()
 			VIP_LOG_ERROR("DataBase not valid!!!");
 			return db;
 		}
-		// else
-		//	VIP_LOG_ERROR("DataBase valid!!!");
+
+		// First, ping host. Indeed Qt mysql plugin might crash if host is unreachable
+		QString host = param.hostname;
+		if (host.contains(":"))
+			host = host.split(":")[0];
+		if (!vipPing(host.toLatin1())) {
+			VIP_LOG_ERROR("Unable to reach host ", host, ", DataBase not valid!!!");
+			return db;
+		}
+
 		if (!db.open()) {
 			VIP_LOG_ERROR("DataBase not created!!!! " + db.lastError().text());
 			return db;

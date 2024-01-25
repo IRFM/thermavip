@@ -92,6 +92,10 @@ namespace detail
 
 }
 
+
+VIP_CORE_EXPORT bool vipPing(const QByteArray& host);
+
+
 /// VipNetworkConnection represents a thread safe socket connection that does not use the main event loop.
 ///
 /// It might be complicated in Qt to use sockets in a multi-threaded environment. Indeed, calling on of the QAbstractSocket methods in a different thread than the socket's thread

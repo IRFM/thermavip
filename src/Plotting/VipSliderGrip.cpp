@@ -397,8 +397,11 @@ void VipSliderGrip::paint(QPainter* painter,
 		return;
 
 	this->applyStyleSheetIfDirty();
-	painter->setRenderHints(this->renderHints());
-	painter->setCompositionMode(this->compositionMode());
+	auto r = this->renderHints();
+	//TEST: comment setRenderHints that crash sometimes (?)
+	//painter->setRenderHints(r);
+	auto c = this->compositionMode();
+	painter->setCompositionMode(c);
 
 	this->drawHandle(painter);
 }

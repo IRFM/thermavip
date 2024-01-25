@@ -2737,7 +2737,7 @@ void VipTimeRangeBasedGenerator::setTimestamps(const QVector<qint64>& timestamps
 
 		for (int i = 1; i < timestamps.size(); ++i) {
 			qint64 gap = timestamps[i] - current.second;
-			if (gap > 3 * sampling) {
+			if (gap > 4 * sampling) {
 				ranges << current;
 				current = VipTimeRange(timestamps[i], timestamps[i]);
 				m_data->sizes.append(1);

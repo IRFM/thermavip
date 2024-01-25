@@ -23,12 +23,16 @@ class FFMPEG_EXPORT MPEGLoader : public VipTimeRangeBasedGenerator
 	Q_CLASSINFO("description","Read a sequence of image from a mpeg video file. Internally uses ffmpeg.")
 public:
 
+	using draw_function = std::function<void(QImage &)>;
 
 	MPEGLoader(QObject * parent = nullptr);
 	virtual ~MPEGLoader();
 
 	qint32 fullFrameWidth() const;
 	qint32 fullFrameHeight() const;
+
+	void setDrawFunction(const draw_function&);
+	const draw_function & drawFunction() const;
 	
 	virtual bool probe(const QString &filename, const QByteArray &) const {
 		return supportFilename(filename) || VipIODevice::probe(filename);
@@ -75,7 +79,7 @@ protected:
 	double			m_sampling_time;
 	int				m_count;
 	QString			m_device_path;
-
+	draw_function	m_draw_function;
 };
 
 VIP_REGISTER_QOBJECT_METATYPE(MPEGLoader*)

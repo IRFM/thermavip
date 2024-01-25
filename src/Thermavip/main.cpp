@@ -65,8 +65,11 @@ static void myMessageOutput(QtMsgType type, const QMessageLogContext& context, c
 	return;
 }
 
+
+
 int main(int argc, char** argv)
 {
+
 	qInstallMessageHandler(myMessageOutput);
 
 	//_putenv("QT_SCALE_FACTOR=1.5");

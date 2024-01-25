@@ -33,6 +33,7 @@
 
 #include <QCoreApplication>
 #include <qdatetime.h>
+#include <qprocess.h>
 
 static void registerVipNetworkConnection()
 {
@@ -52,6 +53,28 @@ static void registerVipNetworkConnection()
 		qRegisterMetaType<qintptr>("qintptr");
 		reg = 1;
 	}
+}
+
+bool vipPing(const QByteArray& host)
+{
+	QProcess proc;
+	proc.setReadChannelMode(QProcess::MergedChannels);
+#ifdef WIN32
+	proc.start("ping",
+		   QStringList() << host << "/n"
+				 << "2",
+		   QIODevice::ReadOnly);
+#else
+	proc.start("ping",
+		   QStringList() << host << "-n"
+				 << "2",
+		   QIODevice::ReadOnly);
+#endif
+	proc.waitForStarted();
+	proc.waitForFinished();
+	// QByteArray ar = proc.readAllStandardOutput();
+	// printf("out: %s\n", ar.data());
+	return proc.exitCode() == 0;
 }
 
 namespace detail

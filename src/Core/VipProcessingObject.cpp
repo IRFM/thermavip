@@ -1945,7 +1945,7 @@ void TaskPool::run()
 }
 
 TaskPool::TaskPool(VipProcessingObject* parent, QThread::Priority p)
-  : QThread(parent)
+  : QThread()
   , m_run(0)
   , m_parent(parent)
   , m_stop(false)
@@ -2020,9 +2020,15 @@ bool TaskPool::waitForDone(int milli_time)
 		// wait for at most milli_time milliseconds
 		qint64 current = vipGetMilliSecondsSinceEpoch();
 		while (this->remaining() > 0) {
-			// LOCK(m_mutex);
-			// m_cond.wakeAll();
-			std::unique_lock<VipSpinlock> ll(lock);
+			
+			qint64 wait_time = milli_time - (vipGetMilliSecondsSinceEpoch() - current);
+			if (wait_time <= 0)
+				return false;
+
+			if (!lock.try_lock_for(std::chrono::milliseconds(wait_time)))
+				return false;
+
+			std::unique_lock<VipSpinlock> ll(lock, std::adopt_lock_t{});
 			cond.notify_all();
 			atomWait(10);
 			if (vipGetMilliSecondsSinceEpoch() - current > milli_time)
@@ -2079,6 +2085,7 @@ public:
 	  , emit_destroy(false)
 	  , inImageTransformChanged(false)
 	  , computeTimeStatistics(true)
+	  , thread_priority(0)
 	  , destruct(false)
 	  , initializeIO(0)
 	  , updateCalled(false)
@@ -2095,7 +2102,7 @@ public:
 	VipSpinlock run_mutex;
 	VipSpinlock error_mutex;
 	VipSpinlock init_lock;
-	TaskPool* pool;
+	std::atomic<TaskPool*> pool;
 	qint64 processingTime;
 	qint64 lastProcessingDate;
 	bool emit_destroy;
@@ -2106,7 +2113,7 @@ public:
 
 	Parameters parameters;
 	QList<Parameters> savedParameters;
-
+	int thread_priority;
 	bool destruct;
 
 	// inputs, outputs and properties
@@ -2134,6 +2141,29 @@ public:
 	qint64 lastTime;
 
 	QSet<int> logErrors;
+
+	TaskPool* createPoolInternal(VipProcessingObject* _this) 
+	{ 
+		TaskPool* p = nullptr;
+		QThread::Priority prio = thread_priority == 0 ? (QThread::Priority)VipProcessingManager::instance().defaultPriority(_this->metaObject()) : (QThread::Priority)thread_priority;
+		TaskPool* _new = new TaskPool(_this, prio);
+		
+		if (!pool.compare_exchange_strong(p, _new)) {
+			delete _new;
+			return p;
+		}
+		return _new;
+	}
+
+	VIP_ALWAYS_INLINE TaskPool* createPool(VipProcessingObject* _this)
+	{ 
+		TaskPool* p = pool.load(std::memory_order_relaxed);
+		if (!p) 
+			return createPoolInternal(_this);
+		return p;
+	}
+	VIP_ALWAYS_INLINE TaskPool* getPool() noexcept { return pool.load(std::memory_order_relaxed); }
+	VIP_ALWAYS_INLINE const TaskPool* getPool() const noexcept { return pool.load(std::memory_order_relaxed); }
 };
 
 VipProcessingObject* VipProcessingObject::Info::create() const
@@ -2172,13 +2202,13 @@ VipProcessingObject::~VipProcessingObject()
 		m_data->flatInputs[i]->setEnabled(false);
 
 	// wait for all remaining processing and delete the task pool
-	if (m_data->pool) {
-		m_data->pool->waitForDone();
-		m_data->pool->clear();
-		if (m_data->pool->thread() == this->thread())
-			delete m_data->pool;
+	if (TaskPool * p = m_data->getPool()) {
+		p->waitForDone();
+		p->clear();
+		if (p->thread() == this->thread())
+			delete p;
 		else
-			m_data->pool->deleteLater();
+			p->deleteLater();
 	}
 
 	// delete all inputs/outputs/properties
@@ -2755,21 +2785,24 @@ QString VipProcessingObject::generateUniqueInputName(const VipProcessingIO& io, 
 
 void VipProcessingObject::setPriority(QThread::Priority p)
 {
-	if (!m_data->pool)
-		m_data->pool = new TaskPool(this, p);
-	else {
+	if (p == QThread::IdlePriority)
+		// IdlePriority not valid
+		return;
+
+	m_data->thread_priority = (int)p;
+	if (TaskPool * pool = m_data->getPool()) {
 		if (p == QThread::InheritPriority)
 			p = this->thread()->priority();
 		if (p != QThread::InheritPriority)
-			m_data->pool->setPriority(p);
+			pool->setPriority(p);
 	}
 }
 
 QThread::Priority VipProcessingObject::priority() const
 {
-	if (!m_data->pool)
-		return QThread::InheritPriority;
-	return m_data->pool->priority();
+	if (TaskPool* p = m_data->getPool())
+		return p->priority();
+	return m_data->thread_priority == 0 ? QThread::InheritPriority : (QThread::Priority)m_data->thread_priority;
 }
 
 void VipProcessingObject::setAttributes(const QVariantMap& attrs)
@@ -2942,8 +2975,8 @@ void VipProcessingObject::clearInputBuffers()
 	for (size_t i = 0; i < m_data->flatInputs.size(); ++i)
 		m_data->flatInputs[i]->buffer()->clear();
 
-	if (m_data->pool)
-		m_data->pool->clear();
+	if (TaskPool * p = m_data->getPool())
+		p->clear();
 }
 
 void VipProcessingObject::clearInputConnections()
@@ -3040,10 +3073,10 @@ void VipProcessingObject::setScheduleStrategies(ScheduleStrategies st)
 		m_data->parameters.schedule_strategies = st;
 
 		// create the task pool if needed
-		if (!(st & NoThread) || (st & Asynchronous)) {
+		/* if (!(st & NoThread) || (st & Asynchronous)) {
 			if (!m_data->pool)
 				m_data->pool = new TaskPool(this, (QThread::Priority)VipProcessingManager::instance().defaultPriority(metaObject()));
-		}
+		}*/
 
 		// we clear the input buffers since switching from synchrone to asynchrone processing
 		// when having one input buffered might induce a delay in the processing (always one input late)
@@ -3063,10 +3096,10 @@ void VipProcessingObject::setScheduleStrategy(ScheduleStrategy s, bool on)
 		}
 
 		// create the task pool if needed
-		if (!(m_data->parameters.schedule_strategies & NoThread) || (m_data->parameters.schedule_strategies & Asynchronous)) {
+		/* if (!(m_data->parameters.schedule_strategies & NoThread) || (m_data->parameters.schedule_strategies & Asynchronous)) {
 			if (!m_data->pool)
 				m_data->pool = new TaskPool(this, (QThread::Priority)VipProcessingManager::instance().defaultPriority(metaObject()));
-		}
+		}*/
 		clearInputBuffers();
 		emitProcessingChanged();
 	}
@@ -3193,8 +3226,10 @@ bool VipProcessingObject::update(bool force_run)
 	}
 
 	// If SkipIfBusy is set, returns if a processing is scheduled
-	if ((m_data->parameters.schedule_strategies & SkipIfBusy) && m_data->pool && m_data->pool->remaining() > 0)
-		return false;
+	if ((m_data->parameters.schedule_strategies & SkipIfBusy) )//&& m_data->pool && m_data->pool->remaining() > 0)
+		if (TaskPool* p = m_data->getPool())
+			if (p->remaining() > 0)
+				return false;
 
 	if (!(m_data->parameters.schedule_strategies & Asynchronous)) {
 		// Synchronous processing
@@ -3202,16 +3237,17 @@ bool VipProcessingObject::update(bool force_run)
 			// Launch in the calling thread
 			this->run();
 		else {
+
 			// Just add the processing into the task pool.
 			// Even in synchroneous mode, launch the processing through the task pool.
 			// This ensures that the processing always runs in the same thread (which might be of importance for a few processings).
-			m_data->pool->push();
+			m_data->createPool(this)->push();
 			wait(false); // wait for the result
 		}
 	}
 	else
 		// Asynchronous processing: add to the task pool
-		m_data->pool->push();
+		m_data->createPool(this)->push();
 
 	return true;
 }
@@ -3270,11 +3306,24 @@ bool VipProcessingObject::wait(bool wait_for_sources, int max_milli_time)
 	// Since some processing might rely on the main event loop (mainly display processings),
 	// wait while processing the event loop to avoid a deadlock when calling this function from the main thread.
 
-	// Since only display processings use the event loop, start waiting for the processing 10 ms before going throught the event loop
-	if (m_data->pool) {
+	const bool use_event_loop = this->useEventLoop();
 
-		if (!m_data->pool->waitForDone(10)) {
-			if (QCoreApplication::instance() && useEventLoop()) {
+	// Since only display processings use the event loop, start waiting for the processing 10 ms before going throught the event loop
+	if (TaskPool * p = m_data->getPool()) {
+
+		// Special case: the processing needs the event loop, and we are waiting from within the GUI thread
+		while (use_event_loop && this->scheduledUpdates() && QCoreApplication::instance() && QThread::currentThread() == QCoreApplication::instance()->thread()) {
+			if (vipProcessEvents(nullptr, 20) == -3)
+				break;
+			if (max_milli_time > 0) {
+				qint64 remaining = max_milli_time - (QDateTime::currentMSecsSinceEpoch() - start);
+				if (remaining < 0)
+					return false;
+			}
+		}
+
+		if (!p->waitForDone(10)) {
+			if (QCoreApplication::instance() && use_event_loop) {
 				while (this->scheduledUpdates()) {
 					// stop waiting if vipProcessEvents is called recursively
 					if (vipProcessEvents(nullptr, 2) == -3)
@@ -3291,10 +3340,10 @@ bool VipProcessingObject::wait(bool wait_for_sources, int max_milli_time)
 				qint64 remaining = max_milli_time - (QDateTime::currentMSecsSinceEpoch() - start);
 				if (remaining < 0)
 					return false;
-				m_data->pool->waitForDone(remaining);
+				p->waitForDone(remaining);
 			}
 			else {
-				m_data->pool->waitForDone();
+				p->waitForDone();
 			}
 		}
 	}
@@ -3334,8 +3383,8 @@ double VipProcessingObject::processingRate() const
 
 int VipProcessingObject::scheduledUpdates() const
 {
-	if (m_data->pool)
-		return m_data->pool->remaining();
+	if (TaskPool * p = m_data->getPool())
+		return p->remaining();
 	return 0;
 }
 
@@ -3395,8 +3444,8 @@ void VipProcessingObject::run()
 			}
 		if (!has_input) {
 			// no new input: just remove all scheduled tasks
-			if (m_data->pool)
-				m_data->pool->clear();
+			if (TaskPool * p = m_data->getPool())
+				p->clear();
 			return;
 		}
 	}
