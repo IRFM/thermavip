@@ -408,13 +408,19 @@ static void extractSegmFromPlayer(VipVideoPlayer* pl, const QList<VipShape>& shs
 
 static void uploadROIsFromPlayer(VipVideoPlayer* pl, const QList<VipShape>& shs)
 {
+	VipPlayerDBAccess* db = VipPlayerDBAccess::fromPlayer(pl);
+	if (!pl) {
+		QMessageBox::warning(nullptr, "Error", "Unable to send ROI to DB");
+		return;
+	}
+
 	QString event_type;
 	bool generate_url = false;
 	{
 		// Create dialog
 		QComboBox* type = new QComboBox();
 		type->setToolTip("Event type");
-		type->addItems(vipEventTypesDB());
+		type->addItems(vipEventTypesDB(db->camera()));
 
 		QCheckBox* url = new QCheckBox("Generate URL for the thermal event(s)");
 		url->setChecked(true);
@@ -434,11 +440,7 @@ static void uploadROIsFromPlayer(VipVideoPlayer* pl, const QList<VipShape>& shs)
 		generate_url = url->isChecked();
 	}
 
-	VipPlayerDBAccess* db = VipPlayerDBAccess::fromPlayer(pl);
-	if (!pl) {
-		QMessageBox::warning(nullptr, "Error", "Unable to send ROI to DB");
-		return;
-	}
+	
 
 	VipManualAnnotation* annot = db->manualAnnotationPanel();
 	if (!pl) {

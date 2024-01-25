@@ -1339,10 +1339,12 @@ VipPenButton::VipPenButton(const QPen& pen, QWidget* parent)
 	this->setPen(pen);
 	this->setMaximumHeight(22);
 
-	QWidgetAction* action = new QWidgetAction(&m_menu);
+	m_menu = new QMenu();
+	QWidgetAction* action = new QWidgetAction(m_menu);
 	action->setDefaultWidget(m_pen);
-	m_menu.addAction(action);
-	this->setMenu(&m_menu);
+	
+	m_menu->addAction(action);
+	this->setMenu(m_menu);
 
 	connect(m_pen, SIGNAL(penChanged(const QPen&)), this, SLOT(setPen(const QPen&)));
 	connect(this, SIGNAL(clicked(bool)), this, SLOT(triggered()));
@@ -1350,9 +1352,10 @@ VipPenButton::VipPenButton(const QPen& pen, QWidget* parent)
 
 VipPenButton::~VipPenButton()
 {
-	QList<QAction*> act = m_menu.actions();
+	QList<QAction*> act = m_menu->actions();
 	for (int i = 0; i < act.size(); ++i)
 		delete act[i];
+	m_menu->deleteLater();
 }
 
 void VipPenButton::setMode(VipPenButton::Mode mode)
@@ -1367,12 +1370,12 @@ void VipPenButton::setMode(VipPenButton::Mode mode)
 	else if (mode == Brush) {
 		m_pen->showFullOptions(false);
 		this->setPopupMode(QToolButton::MenuButtonPopup);
-		this->setMenu(&m_menu);
+		this->setMenu(m_menu);
 	}
 	else {
 		m_pen->showFullOptions(true);
 		this->setPopupMode(QToolButton::MenuButtonPopup);
-		this->setMenu(&m_menu);
+		this->setMenu(m_menu);
 	}
 }
 

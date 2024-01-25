@@ -372,6 +372,26 @@ QStringList vipEventTypesDB()
 	return events;
 }
 
+QStringList vipEventTypesDB(const QString& line_of_sight) 
+{
+	QSqlDatabase db = createConnection();
+	QSqlQuery q = db.exec("SELECT * FROM thermal_event_category_lines_of_sight;");
+	if (!q.lastError().nativeErrorCode().isEmpty()) {
+		VIP_LOG_ERROR(q.lastError().nativeErrorCode());
+		return QStringList();
+	}
+
+	QStringList events;
+	while (q.next()) {
+		QString event = q.value(0).toString();
+		QString cam = q.value(1).toString();
+		if (cam.compare(line_of_sight, Qt::CaseInsensitive) == 0)
+			events.push_back(event);
+	}
+
+	return events;
+}
+
 QString vipLocalMovieFolderDB()
 {
 	return readDB().local_movie_folder;

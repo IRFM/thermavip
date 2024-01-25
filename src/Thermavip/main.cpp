@@ -282,13 +282,16 @@ int main(int argc, char** argv)
 		else if (QDir("skins/dark").exists())
 			vipLoadSkin("dark");
 	}
+	vip_debug("Finished loading skin\n");
 
 	bool no_splashscreen = VipCommandOptions::instance().count("no_splashscreen") > 0;
 	if (show_help)
 		no_splashscreen = true;
+	vip_debug("Check splashscreen\n");
 
 	QSplashScreen* splash = nullptr;
 	if (!no_splashscreen) {
+		vip_debug("Build splashscreen;..\n");
 		splash = new QSplashScreen();
 		QPixmap pixmap(vipPixmap("splashscreen.png"));
 		splash->setPixmap(pixmap);
@@ -296,6 +299,8 @@ int main(int argc, char** argv)
 		splash->showMessage("Initializing...", Qt::AlignBottom | Qt::AlignHCenter, Qt::white);
 		splash->show();
 		splash->raise();
+
+		vip_debug("Done\n");
 	}
 
 #ifndef _WIN32
@@ -315,19 +320,24 @@ int main(int argc, char** argv)
 	// vipGetMainWindow()->hide();
 	// splash->finish(vipGetMainWindow());
 	// load GUI settings
+	vip_debug("Create main window and load settings\n");
 	if (!VipGuiDisplayParamaters::instance(vipGetMainWindow())->restore(vipGetDataDirectory() + "gui_settings.xml"))
 		VipGuiDisplayParamaters::instance(vipGetMainWindow())->restore("gui_settings.xml");
 
+	vip_debug("Remove temp directory\n");
 	// clear the temp directory
 	if (!no_splashscreen)
 		splash->showMessage("Remove temp directory", Qt::AlignBottom | Qt::AlignHCenter, Qt::white);
 	// COMMENT CHB QDir(vipGetTempDirectory()).removeRecursively();
 
+	vip_debug("Set default directory\n");
 	// Set the default directory to open/save files
 	VipFileDialog::setDefaultDirectory(qgetenv("HOME"));
 
 	// auto update only works for Windows OS
 #if defined(VIP_ALLOW_AUTO_UPDATE) && defined(_MSC_VER)
+
+	vip_debug("Finish previous updates...\n");
 	// Finish previous update
 	if (!no_splashscreen)
 		splash->showMessage("Finish previous updates...", Qt::AlignBottom | Qt::AlignHCenter, Qt::white);

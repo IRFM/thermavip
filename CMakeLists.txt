@@ -3,7 +3,7 @@
 cmake_minimum_required(VERSION 3.16)
 
 project(thermavip
-    VERSION 4.2.0
+    VERSION 4.3.0
     DESCRIPTION "thermavip"
     HOMEPAGE_URL "https://github.com/IRFM/thermavip"
     LANGUAGES CXX C

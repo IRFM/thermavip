@@ -121,12 +121,12 @@ bool vipLoadSkin(const QString& skin_name)
 				// Now, read the plot_stylesheet.css file
 				QFile fin(skin + "/plot_stylesheet.css");
 				if (fin.open(QFile::ReadOnly)) {
-					vip_debug("plot skin fin: '%s'\n", QFileInfo(skin + "/plot_stylesheet.css").canonicalFilePath().toLatin1().data());
+					vip_debug("plot skin file: '%s'\n", QFileInfo(skin + "/plot_stylesheet.css").canonicalFilePath().toLatin1().data());
 
 					// read skin
 					QString _sk = fin.readAll();
 					VipGlobalStyleSheet::setStyleSheet(_sk);
-
+					vip_debug("VipGlobalStyleSheet::setStyleSheet\n");
 					return true;
 				}
 				else

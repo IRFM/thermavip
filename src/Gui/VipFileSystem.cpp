@@ -2629,6 +2629,10 @@ static VipArchive& operator<<(VipArchive& arch, const VipDirectoryBrowser* b)
 
 static VipArchive& operator>>(VipArchive& arch, VipDirectoryBrowser* b)
 {
+	// FIX, but how can this be null?
+	if (!b)
+		return arch;
+
 	b->clear();
 	int count = arch.read("count").toInt();
 	if (!arch)

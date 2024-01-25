@@ -896,7 +896,8 @@ bool vipInitializeVisualizeDBWidget()
 		button->setIcon(vipIcon("database.png"));
 		button->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
 		button->setCheckable(true);
-		/*QAction * act =*/vipGetMainWindow()->toolsToolBar()->addWidget(button);
+		QAction * act =vipGetMainWindow()->toolsToolBar()->addWidget(button);
+		act->setObjectName("Thermal events DB");
 		vipGetVisualizeDBToolWidget(vipGetMainWindow())->setButton(button);
 		return true;
 	}

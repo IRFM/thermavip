@@ -3924,8 +3924,15 @@ bool VipMainWindow::loadSessionShowProgress(const QString& filename, VipProgress
 
 		// DirectoryBrowser is not always present
 		arch.save();
-		if (!arch.content("DirectoryBrowser", vipGetDirectoryBrowser()))
-			arch.restore();
+		if (VipDirectoryBrowser* browser = vipGetDirectoryBrowser()) {
+			//TEST
+			QVariant v = vipToVariant(browser);
+			VipDirectoryBrowser* tmp = v.value<VipDirectoryBrowser*>();
+			if (tmp != browser)
+				bool stop = true;
+			if (!arch.content("DirectoryBrowser", browser))
+				arch.restore();
+		}
 
 		arch.content("LogConsole", vipGetConsoleWidget());
 	}

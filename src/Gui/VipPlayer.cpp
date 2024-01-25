@@ -2341,6 +2341,10 @@ VipVideoPlayer::VipVideoPlayer(VipImageWidget2D* img, QWidget* parent)
 	// add a button for quick ROI drawing
 	toolBar()->addWidget(vipGetSceneModelWidgetPlayer()->createPlayerButton(this));
 
+	//Add zoom options to tool bar
+	toolBar()->addWidget(m_data->sharedZoom);
+	toolBar()->addWidget(m_data->zoomChoice);
+
 	// TODO: uncomment
 	connect(m_data->viewer->area()->colorMapAxis(), SIGNAL(valueChanged(double)), this, SLOT(disableAutomaticColorScale()));
 	connect(this->spectrogram(), SIGNAL(mouseButtonDoubleClick(VipPlotItem*, VipPlotItem::MouseButton)), this, SLOT(showColorScaleParameters()));
@@ -8900,7 +8904,7 @@ static bool handleDropROIFileOnVideo(VipVideoPlayer* pl, VipPlotItem* sp, QMimeD
 	for (int i = 0; i < files.size(); ++i) {
 		QString fname = files[i];
 		std::string f = fname.toLatin1().data();
-		if (QFileInfo(fname).suffix() == "xml")
+		if (QFileInfo(fname).suffix() == "xml" || QFileInfo(fname).suffix() == "json")
 			roi_files.append(fname);
 	}
 
