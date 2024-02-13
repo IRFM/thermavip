@@ -50,6 +50,8 @@
 #include "VipSet.h"
 #include "VipSleep.h"
 #include "VipTextOutput.h"
+#include "VipHash.h"
+
 
 // class ReadThread : public QThread
 // {
@@ -2955,7 +2957,10 @@ void VipTextFileReader::close()
 
 bool VipTextFileReader::readData(qint64 time)
 {
-	qint64 pos = this->computeTimeToPos(time);
+	qint64 pos = 0;
+	if (deviceType() == Temporal)
+		pos = this->computeTimeToPos(time);
+
 	if (pos < 0 || pos >= m_arrays.size())
 		return false;
 
@@ -4490,8 +4495,26 @@ bool VipDirectoryReader::readData(qint64 time)
 
 #include "VipXmlArchive.h"
 
+
+struct FileShapeBuffer
+{
+	QString fname;
+	size_t hash{ 0 };
+	QVariant sceneModel;
+};
+Q_DECLARE_METATYPE(FileShapeBuffer)
+
+static FileShapeBuffer _shape_buffer;
+static QMutex _shape_buffer_mutex;
+
 VipShapeReader::VipShapeReader()
 {
+	static bool registered = false;
+	if (!registered) {
+		registered = true;
+		qRegisterMetaType<FileShapeBuffer>();
+	}
+	
 	outputAt(0)->setData(VipSceneModel());
 }
 
@@ -4502,6 +4525,25 @@ bool VipShapeReader::open(VipIODevice::OpenModes mode)
 
 	QString p = removePrefix(path());
 	QString suffix = QFileInfo(p).suffix();
+	QByteArray content;
+	{
+		QFile fin(p);
+		if (!fin.open(QFile::ReadOnly|QFile::Text))
+			return false;
+		content = fin.readAll();
+	}
+
+	size_t hash = vipHashBytes(content.data(), content.size());
+	{
+		
+		// Check inside buffered scene model
+		QMutexLocker lock(&_shape_buffer_mutex);
+		if (_shape_buffer.fname == p && hash == _shape_buffer.hash) {
+			setData(_shape_buffer.sceneModel);
+			setOpenMode(ReadOnly);
+			return true;
+		}
+	}
 
 	if (suffix == "xml") {
 
@@ -4514,6 +4556,11 @@ bool VipShapeReader::open(VipIODevice::OpenModes mode)
 			if (arch.content(model)) {
 				setData(QVariant::fromValue(model));
 				setOpenMode(ReadOnly);
+
+				QMutexLocker lock(&_shape_buffer_mutex);
+				_shape_buffer.fname = p;
+				_shape_buffer.hash = hash;
+				_shape_buffer.sceneModel = QVariant::fromValue(model);
 				return true;
 			}
 			else {
@@ -4521,24 +4568,36 @@ bool VipShapeReader::open(VipIODevice::OpenModes mode)
 				if (arch.content(lst)) {
 					setData(QVariant::fromValue(lst));
 					setOpenMode(ReadOnly);
+
+					QMutexLocker lock(&_shape_buffer_mutex);
+					_shape_buffer.fname = p;
+					_shape_buffer.hash = hash;
+					_shape_buffer.sceneModel = QVariant::fromValue(model);
+
 					return true;
 				}
 			}
 		}
 	}
 	else if (suffix == "json") {
-		QFile in(p);
-		if (!in.open(QFile::ReadOnly | QFile::Text)) {
-			setError("unable to open input file",IOError);
+		QString error;
+		VipSceneModelList lst = vipSceneModelListFromJSON(content,&error);
+		if (!error.isEmpty()) {
+			setError(error);
 			return false;
 		}
-		VipSceneModelList lst = vipSceneModelListFromJSON(in.readAll());
 		if (lst.size() == 0) 
 			setData(QVariant::fromValue(VipSceneModel()));
 		else if (lst.size() == 1)
 			setData(QVariant::fromValue(lst[0]));
 		else
 			setData(QVariant::fromValue(lst));
+
+		QMutexLocker lock(&_shape_buffer_mutex);
+		_shape_buffer.fname = p;
+		_shape_buffer.hash = hash;
+		_shape_buffer.sceneModel = data();
+
 		setOpenMode(ReadOnly);
 		return true;
 	}

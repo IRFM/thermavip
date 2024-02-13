@@ -405,13 +405,20 @@ static QVariantMap attributesFromJson(const QJsonObject& obj)
 	return res;
 }
 
-static VipShape shapeFromJson(const QJsonObject& obj)
+static VipShape shapeFromJson(const QJsonObject& obj, QString & error)
 {
 	VipShape res;
 	res.setGroup(obj.value("group").toString());
-	res.setId(obj.value("id").toInt());
+	if (!res.setId(obj.value("id").toInt())) {
+		error = "invalid shape id";
+		return res;
+	}
 	res.setAttributes(attributesFromJson(obj.value("attributes").toObject()));
 	int type = obj.value("type").toInt();
+	if (type == 0) {
+		error = "invalid shape type";
+		return res;
+	}
 	QString p = obj.value("points").toString();
 	QPolygonF poly = polygonFromJSON(p.toLatin1());
 	
@@ -425,15 +432,19 @@ static VipShape shapeFromJson(const QJsonObject& obj)
 	return res;
 }
 
-static VipSceneModel sceneModelFromJson(const QJsonObject& obj)
+static VipSceneModel sceneModelFromJson(const QJsonObject& obj, QString & error)
 {
 	VipSceneModel res;
 	for (auto it = obj.begin(); it != obj.end(); ++it) {
 		QString key = it.key();
 		if (key != "attributes") {
 			QJsonArray ar = it.value().toArray();
-			for (int i = 0; i < ar.size(); ++i)
-				res.add(key, shapeFromJson(ar[i].toObject()));
+			for (int i = 0; i < ar.size(); ++i) {
+
+				res.add(key, shapeFromJson(ar[i].toObject(),error));
+				if (!error.isEmpty())
+					return res;
+			}
 		}
 		else
 			res.setAttributes(attributesFromJson(it.value().toObject()));
@@ -453,8 +464,16 @@ VipSceneModelList vipSceneModelListFromJSON(const QByteArray& content, QString *
 	QJsonObject root = loadDoc.object();
 	
 	VipSceneModelList res;
-	for (auto it = root.begin(); it != root.end(); ++it)
-		res << sceneModelFromJson(it.value().toObject());
+	QString err;
+	for (auto it = root.begin(); it != root.end(); ++it) {
+
+		res << sceneModelFromJson(it.value().toObject(),err);
+		if (!err.isEmpty()) {
+			if (error_str)
+				*error_str = err;
+			return VipSceneModelList();
+		}
+	}
 	return res;
 }
 

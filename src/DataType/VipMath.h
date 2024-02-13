@@ -37,6 +37,19 @@
 #include <qmath.h>
 
 #include "VipConfig.h"
+#include "VipSIMD.h"
+
+
+
+// prefetching
+#if (defined(__GNUC__) || defined(__clang__)) && !defined(_MSC_VER)
+#define VIP_PREFETCH(p) __builtin_prefetch(reinterpret_cast<const char*>(p))
+#elif defined(__SSE2__)
+#define VIP_PREFETCH(p) _mm_prefetch(reinterpret_cast<const char*>(p), _MM_HINT_T0)
+#else
+#define VIP_PREFETCH(p)
+#endif
+
 
 /// \addtogroup DataType
 /// @{
@@ -388,6 +401,101 @@ static inline bool vipFuzzyLessOrEqual(long double d1, long double d2)
 {
 	return (d1 <= d2) || vipFuzzyCompare(d1, d2);
 }
+
+
+
+
+
+
+
+#if defined(__SIZEOF_INT128__)
+
+
+VIP_ALWAYS_INLINE void vipUmul128(const uint64_t m1, const uint64_t m2, uint64_t* const rl, uint64_t* const rh)
+{
+	const unsigned __int128 r = static_cast<unsigned __int128>(m1) * m2;
+
+	*rh = static_cast<uint64_t>(r >> 64);
+	*rl = static_cast<uint64_t>(r);
+}
+
+#define VIP_HAS_FAST_UMUL128 1
+
+#elif (defined(__IBMC__) || defined(__IBMCPP__)) && defined(__LP64__)
+
+
+VIP_ALWAYS_INLINE void vipUmul128(const uint64_t m1, const uint64_t m2, uint64_t* const rl, uint64_t* const rh)
+{
+	*rh = __mulhdu(m1, m2);
+	*rl = m1 * m2;
+}
+
+#define VIP_HAS_FAST_UMUL128 1
+
+#elif defined(_MSC_VER) && (defined(_M_ARM64) || (defined(_M_X64) && defined(__INTEL_COMPILER)))
+
+#include <intrin.h>
+
+
+VIP_ALWAYS_INLINE void vipUmul128(const uint64_t m1, const uint64_t m2, uint64_t* const rl, uint64_t* const rh)
+{
+	*rh = __umulh(m1, m2);
+	*rl = m1 * m2;
+}
+
+#define VIP_HAS_FAST_UMUL128 1
+
+#elif defined(_MSC_VER) && (defined(_M_X64) || defined(_M_IA64))
+
+#include <intrin.h>
+#pragma intrinsic(_umul128)
+
+
+static VIP_ALWAYS_INLINE void vipUmul128(const uint64_t m1, const uint64_t m2, uint64_t* const rl, uint64_t* const rh) { *rl = _umul128(m1, m2, rh); }
+
+#define VIP_HAS_FAST_UMUL128 1
+
+#else // defined( _MSC_VER )
+
+// _umul128() code for 32-bit systems, adapted from Hacker's Delight,
+// Henry S. Warren, Jr.
+
+#if defined(_MSC_VER) && !defined(__INTEL_COMPILER)
+
+#include <intrin.h>
+#pragma intrinsic(__emulu)
+#define __VIP_EMULU(x, y) __emulu(x, y)
+
+#else // defined( _MSC_VER ) && !defined( __INTEL_COMPILER )
+
+#define __VIP_EMULU(x, y) ((uint64_t)(x) * (y))
+
+#endif // defined( _MSC_VER ) && !defined( __INTEL_COMPILER )
+
+
+static inline void vipUmul128(const uint64_t u, const uint64_t v, uint64_t* const rl, uint64_t* const rh)
+{
+	*rl = u * v;
+
+	const uint32_t u0 = static_cast<uint32_t>(u);
+	const uint32_t v0 = static_cast<uint32_t>(v);
+	const uint64_t w0 = __VIP_EMULU(u0, v0);
+	const uint32_t u1 = static_cast<uint32_t>(u >> 32);
+	const uint32_t v1 = static_cast<uint32_t>(v >> 32);
+	const uint64_t t = __VIP_EMULU(u1, v0) + static_cast<uint32_t>(w0 >> 32);
+	const uint64_t w1 = __VIP_EMULU(u0, v1) + static_cast<uint32_t>(t);
+
+	*rh = __VIP_EMULU(u1, v1) + static_cast<uint32_t>(w1 >> 32) + static_cast<uint32_t>(t >> 32);
+}
+
+
+#endif
+
+
+
+
+
+
 
 /// @}
 // end DataType

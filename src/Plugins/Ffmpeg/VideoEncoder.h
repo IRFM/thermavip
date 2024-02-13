@@ -77,7 +77,7 @@ public:
 		Free();
 	}
 
-	bool Init(const char * filename, int width, int height, int fpsrate, double bitrate);
+	bool Init(const char * filename, int width, int height, int fpsrate, double bitrate, int threads = 1);
 
 	bool AddFrame(uint8_t *data);
 	bool AddFrame(const QImage & image);
@@ -116,9 +116,9 @@ private:
 
 
 
-inline VideoCapture* Init(const char * filename, int width, int height, int fps, double bitrate) {
+inline VideoCapture* Init(const char * filename, int width, int height, int fps, double bitrate, int threads ) {
 	VideoCapture *vc = new VideoCapture();
-	if (vc->Init(filename, width, height, fps, bitrate))
+	if (vc->Init(filename, width, height, fps, bitrate, threads))
 		return vc;
 	return nullptr;
 };
@@ -195,6 +195,9 @@ public:
 			m_frame_rate = bitrate;
 		}
 
+		void SetThreads(int th) { m_threads = th;}
+		int GetThreads() const { return m_threads; }
+
 		qint64 fileSize() const;
 
 protected:
@@ -202,6 +205,7 @@ protected:
 		std::string	m_filename;
 		int			m_width;
 		int			m_height;
+		int m_threads{ 1 };
 		double			m_fps;
 		long int		m_frame_pos;
 		double			m_time_pos;

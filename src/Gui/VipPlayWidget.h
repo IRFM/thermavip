@@ -55,8 +55,8 @@ public:
 	VipTimeRangeItem(VipTimeRangeListItem* item);
 	~VipTimeRangeItem();
 
-	virtual QPainterPath shape() const;
 	virtual QRectF boundingRect() const;
+	virtual QPainterPath shapeFromCoordinateSystem(const VipCoordinateSystemPtr& m) const;
 
 	void setInitialTimeRange(const VipTimeRange&);
 	VipTimeRange initialTimeRange() const;
@@ -101,6 +101,7 @@ protected:
 	virtual QVariant itemChange(GraphicsItemChange change, const QVariant& value);
 
 private:
+	int selection(const QPointF& pos) const;
 	class PrivateData;
 	PrivateData* m_data;
 };

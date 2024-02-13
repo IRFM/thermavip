@@ -47,6 +47,7 @@ public:
 	  , datePrefix("dd.MM.yyyy_hh.mm.ss.zzz_")
 	  , hasDatePrefix(false)
 	  , recorderAvailableDataOnOpen(true)
+	  , stopStreamingOnClose(false)
 	  , recordedSize(0)
 	{
 	}
@@ -54,6 +55,7 @@ public:
 	QString datePrefix;
 	bool hasDatePrefix;
 	bool recorderAvailableDataOnOpen;
+	bool stopStreamingOnClose;
 	qint64 recordedSize;
 	QVariantList probeInputs;
 };
@@ -271,11 +273,50 @@ VipIODevice* VipGenericRecorder::recorder() const
 	return m_data->recorder;
 }
 
+void VipGenericRecorder::setStopStreamingOnClose(bool enable)
+{
+	m_data->stopStreamingOnClose = enable;
+}
+bool VipGenericRecorder::stopStreamingOnClose() const {
+	return m_data->stopStreamingOnClose;
+}
+
 void VipGenericRecorder::close()
 {
 	this->setEnabled(false);
+
+	bool stop_streaming = stopStreamingOnClose();
+	bool is_streaming = false;
+	VipIODevice* pool = nullptr;
+
+	if (stop_streaming) {
+		// detect if we are streaming
+		if (pool = parentObjectPool()) {
+			is_streaming = pool->isStreamingEnabled();
+		}
+		else {
+			// find sources
+			QList<VipIODevice*> dev = vipListCast<VipIODevice*>(this->allSources());
+			// find the pool
+			for (VipIODevice* d : dev) {
+				if (pool = d->parentObjectPool())
+					break;
+			}
+			if (pool)
+				is_streaming = pool->isStreamingEnabled();
+		}
+	}
+
 	if (openMode() != NotOpen) {
+
+		if (stop_streaming && is_streaming)
+			pool->setStreamingEnabled(false);
+
 		wait();
+
+		if (stop_streaming && is_streaming)
+			pool->setStreamingEnabled(true);
+
 		if (m_data->recorder)
 			m_data->recorder->close();
 		setOpenMode(VipIODevice::NotOpen);

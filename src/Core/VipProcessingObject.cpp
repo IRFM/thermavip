@@ -1836,6 +1836,67 @@ void VipLastAvailableList::clear()
 	m_has_new_data = false;
 }
 
+
+
+struct SpinLocker
+{
+	using UniqueLock = std::unique_lock<VipSpinlock>;
+	VipSpinlock d_lock;
+	std::condition_variable_any d_cond;
+
+	UniqueLock lock() { return UniqueLock{ d_lock }; }
+	UniqueLock adopt_lock() { return UniqueLock{ d_lock, std::adopt_lock_t{} }; }
+	bool try_lock_for(unsigned ms) { return d_lock.try_lock_for(std::chrono::milliseconds(ms)); }
+	void notify_all() { d_cond.notify_all(); }
+	void wait(UniqueLock&){d_cond.wait(d_lock);}
+	void wait_for(UniqueLock&, unsigned ms){d_cond.wait_for(d_lock, std::chrono::milliseconds(ms));}
+};
+struct StdMutexLocker
+{
+	using UniqueLock = std::unique_lock<std::mutex>;
+	std::mutex d_lock;
+	std::condition_variable d_cond;
+
+	UniqueLock lock() { return UniqueLock{ d_lock }; }
+	UniqueLock adopt_lock() { return UniqueLock{ d_lock, std::adopt_lock_t{} }; }
+	bool try_lock_for(unsigned ms) { 
+		auto tp = std::chrono::system_clock::now() + std::chrono::milliseconds(ms);
+		for (;;) {
+			if (d_lock.try_lock())
+				return true;
+			if (std::chrono::system_clock::now() > tp)
+				return false;
+			std::this_thread::yield();
+		}
+	}
+	void notify_all() { d_cond.notify_all(); }
+	void wait(UniqueLock& ul)
+	{
+		d_cond.wait(ul);
+	}
+	void wait_for(UniqueLock& ul, unsigned ms)
+	{
+		d_cond.wait_for(ul, std::chrono::milliseconds(ms));
+	}
+};
+struct MutexLocker
+{
+	using UniqueLock = std::unique_lock<QMutex>;
+	QMutex d_lock;
+	QWaitCondition d_cond;
+
+	UniqueLock lock() { return UniqueLock{d_lock}; }
+	UniqueLock adopt_lock() { return UniqueLock{ d_lock, std::adopt_lock_t{} }; }
+	bool try_lock_for(unsigned ms) { return d_lock.try_lock_for(std::chrono::milliseconds(ms)); }
+
+	void notify_all() { d_cond.notify_all(); }
+	void wait(UniqueLock&) { d_cond.wait(&d_lock); }
+	void wait_for(UniqueLock&, unsigned ms)
+	{
+		d_cond.wait(&d_lock, ms);
+	}
+};
+
 /// @brief TaskPool is a thread that asynchronously executes VipProcessingObject::run().
 ///
 /// When a VipProcessingObject is Asynchronous, it uses internally a TaskPool to schedule its processing.
@@ -1843,17 +1904,16 @@ void VipLastAvailableList::clear()
 ///
 class TaskPool : public QThread
 {
-	// QMutex m_mutex;
-	// QWaitCondition m_cond;
+	using LockType = SpinLocker;//StdMutexLocker; // MutexLocker;
+	using UniqueLock = typename LockType::UniqueLock;
+	LockType lock;
+
 	std::atomic<int> m_run;
 	VipProcessingObject* m_parent;
 	bool m_stop;
 	bool m_running;
 	bool m_runMainEventLoop;
-	void atomWait(int milli);
-
-	VipSpinlock lock;
-	std::condition_variable_any cond;
+	void atomWait(UniqueLock & ll, int milli);
 
 protected:
 	virtual void run();
@@ -1889,24 +1949,19 @@ void TaskPool::run()
 {
 	// notify that the thread started
 	{
-		// LOCK(m_mutex);
-		// m_cond.wakeAll();
-		std::unique_lock<VipSpinlock> ll(lock);
-		cond.notify_all();
+		auto ll = lock.lock();
+		lock.notify_all();
 	}
 
-	// LOCK(m_mutex);
-	std::unique_lock<VipSpinlock> ll(lock);
+	auto ll = lock.lock();
 
 	while (!m_stop) {
 
 		// wait for incoming runnable objects.
-		// takes at most 10 ms to stop if required.
+		// takes at most 15 ms to stop if required.
 		while (m_run == 0 && !m_stop) {
-			// m_cond.wait(&m_mutex, 10);
-			// m_cond.wakeAll();
-			cond.wait_for(lock, std::chrono::milliseconds(10));
-			cond.notify_all();
+			lock.wait_for(ll,15);			
+			lock.notify_all();
 		}
 
 		int count = m_run;
@@ -1936,12 +1991,10 @@ void TaskPool::run()
 		}
 		m_run.fetch_sub(saved);
 
-		// m_cond.wakeAll();
-		cond.notify_all();
+		lock.notify_all();
 	}
 
-	// m_cond.wakeAll();
-	cond.notify_all();
+	lock.notify_all();
 }
 
 TaskPool::TaskPool(VipProcessingObject* parent, QThread::Priority p)
@@ -1952,25 +2005,21 @@ TaskPool::TaskPool(VipProcessingObject* parent, QThread::Priority p)
   , m_running(false)
   , m_runMainEventLoop(false)
 {
-	// LOCK(m_mutex);
-	std::unique_lock<VipSpinlock> ll(lock);
+	auto ll = lock.lock();
 	this->start(p);
-	// m_cond.wait(&m_mutex);
-	cond.wait(lock);
+	lock.wait(ll);
 }
 
 TaskPool::~TaskPool()
 {
 	m_stop = true;
-	// m_cond.wakeAll();
-	cond.notify_all();
+	lock.notify_all();
 	wait();
 }
 
 void TaskPool::setRunMainEventLoop(bool enable)
 {
-	// LOCK(m_mutex);
-	std::unique_lock<VipSpinlock> ll(lock);
+	auto ll = lock.lock();
 	m_runMainEventLoop = enable;
 }
 bool TaskPool::runMainEventLoop() const
@@ -1981,11 +2030,10 @@ bool TaskPool::runMainEventLoop() const
 void TaskPool::push()
 {
 	++m_run;
-	// m_cond.wakeAll();
-	cond.notify_all();
+	lock.notify_all();
 }
 
-void TaskPool::atomWait(int milli)
+void TaskPool::atomWait(UniqueLock& ll, int milli)
 {
 	// Wait one time at most milli ms.
 	// If m_runMainEventLoop is true and we are in the main thread, process pending events.
@@ -1998,8 +2046,8 @@ void TaskPool::atomWait(int milli)
 	}
 	else*/
 	{
-		// m_cond.wait(&m_mutex, milli);
-		cond.wait_for(lock, std::chrono::milliseconds(milli));
+		//cond.wait_for(lock, std::chrono::milliseconds(milli));
+		lock.wait_for( ll, milli);
 	}
 }
 
@@ -2008,11 +2056,9 @@ bool TaskPool::waitForDone(int milli_time)
 	if (milli_time < 0) {
 		// wait until finished
 		while (this->remaining() > 0) {
-			// LOCK(m_mutex);
-			// m_cond.wakeAll();
-			std::unique_lock<VipSpinlock> ll(lock);
-			cond.notify_all();
-			atomWait(10);
+			auto ll = lock.lock();
+			lock.notify_all();
+			atomWait(ll, 15);
 		}
 		return true;
 	}
@@ -2025,12 +2071,12 @@ bool TaskPool::waitForDone(int milli_time)
 			if (wait_time <= 0)
 				return false;
 
-			if (!lock.try_lock_for(std::chrono::milliseconds(wait_time)))
+			if (!lock.try_lock_for(wait_time))
 				return false;
 
-			std::unique_lock<VipSpinlock> ll(lock, std::adopt_lock_t{});
-			cond.notify_all();
-			atomWait(10);
+			auto ll = lock.adopt_lock();
+			lock.notify_all();
+			atomWait(ll, 15);
 			if (vipGetMilliSecondsSinceEpoch() - current > milli_time)
 				return this->remaining() == 0;
 		}
@@ -2045,8 +2091,7 @@ int TaskPool::remaining() const
 
 void TaskPool::clear()
 {
-	// LOCK(m_mutex);
-	std::unique_lock<VipSpinlock> ll(lock);
+	auto ll = lock.lock();
 	m_run = 0;
 }
 

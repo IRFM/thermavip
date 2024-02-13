@@ -108,7 +108,7 @@ void VipLogging::run()
 			directLog(frame);
 		}
 
-		QThread::msleep(2);
+		QThread::msleep(15);
 	}
 
 	while (logCount() > 0) {

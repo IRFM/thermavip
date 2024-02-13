@@ -1840,7 +1840,7 @@ struct PyRunThread : public QThread
 			while (PyLocal * loc = local)
 			{
 				runOneLoop(loc);
-				QThread::msleep(1);
+				QThread::msleep(15);
 			}
 			unregisterPyIOOperation(tmp);
 		}
@@ -2234,7 +2234,7 @@ QByteArray PyLocal::__readinput()
 	while (d_data->input.isEmpty())
 	{
 		d_data->runThread.runOneLoop(this);
-		d_data->line_cond.wait(&d_data->line_mutex, 5);
+		d_data->line_cond.wait(&d_data->line_mutex, 15);
 		if (__stopCodeIfNeeded())
 			return QByteArray("exit()\n");
 	}

@@ -121,7 +121,7 @@ void VideoEncoder::Open(const std::string & name, int width, int height, double 
 		if(height % 2)
 			m_height = ++height;
 
-		vc = Init(filename, width, height, fps, rate );
+		vc = Init(filename, width, height, fps, rate ,m_threads);
 		if (!vc) {
 			throw std::runtime_error("Could not determine format from filename");
 		}
@@ -624,7 +624,7 @@ double VideoEncoder::GetFps() const {return m_fps;}
 
 using namespace std;
 
-bool VideoCapture::Init(const char * filename, int width, int height, int fpsrate, double bitrate) {
+bool VideoCapture::Init(const char * filename, int width, int height, int fpsrate, double bitrate, int threads) {
 
 	fname = filename;
 	fps = fpsrate;
@@ -693,6 +693,16 @@ bool VideoCapture::Init(const char * filename, int width, int height, int fpsrat
 	if (ofctx->oformat->flags & AVFMT_GLOBALHEADER) {
 		cctx->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
 	}
+
+	if (threads <= 0)
+		threads = 1;
+	else if (threads > 12)
+		threads = 12;
+	std::string threadCount = QByteArray::number(threads).data();
+	av_opt_set(cctx->priv_data, "threads", threadCount.c_str(), AV_OPT_SEARCH_CHILDREN);
+	av_opt_set(cctx, "threads", threadCount.c_str(), AV_OPT_SEARCH_CHILDREN);
+
+
 	avcodec_parameters_from_context(videoStream->codecpar, cctx);
 
 	if ((err = avcodec_open2(cctx, codec, nullptr)) < 0) {

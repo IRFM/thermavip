@@ -75,6 +75,14 @@ public:
 	void setRecorder(VipIODevice* device);
 	VipIODevice* recorder() const;
 
+	/// @brief If enabled, stop the streaming when closing the device, and re-enabled it afterward.
+	/// This might be mandatory if some processing take longer than the streaming sampling time.
+	/// Indeed, closing the device will wait on its sources. And slower sources might keep accumulating data
+	/// if the streaming is still enabled, leading to an infinit loop.
+	/// Disabled by default.
+	void setStopStreamingOnClose(bool);
+	bool stopStreamingOnClose() const;
+
 	/// Returns the date prefix format, which must be compatible with QDateTime::toString function
 	QString datePrefix() const;
 	/// Returns true adding a date prefix to the output file is requested

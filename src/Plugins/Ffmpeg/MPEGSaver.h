@@ -46,6 +46,9 @@ public:
 	void setAdditionalInfo(const MPEGIODeviceHandler & info);
 	MPEGIODeviceHandler additionalInfo() const;
 
+	void setThreads(int);
+	int threads() const;
+
 	VideoEncoder * encoder() {return m_encoder;}
 
 	virtual qint64 estimateFileSize() const;

@@ -3245,6 +3245,7 @@ struct UpdateThread : QThread
 		update = new VipUpdate();
 		connect(update, SIGNAL(updateProgressed(int)), mainWindow->iconBar()->updateProgress, SLOT(setValue(int)));
 		while (VipMainWindow* w = mainWindow) {
+			
 			bool downloaded = false;
 			if (update->process()->state() != QProcess::Running && update->hasUpdate("./", &downloaded) > 0) // QFileInfo(vipAppCanonicalPath()).canonicalPath(),&downloaded) > 0)
 			{
@@ -3262,9 +3263,9 @@ struct UpdateThread : QThread
 
 			for (int i = 0; i < 50; ++i) {
 				qint64 st = QDateTime::currentMSecsSinceEpoch();
-				update->process()->waitForFinished(100);
+				update->process()->waitForFinished(200);
 				qint64 el = QDateTime::currentMSecsSinceEpoch() - st;
-				int sleep = 100 - el;
+				int sleep = 200 - el;
 				QThread::msleep(sleep > 0 ? sleep : 0);
 				if (!mainWindow)
 					break;

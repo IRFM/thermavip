@@ -544,7 +544,7 @@ public:
 	VipMapFileSystemTree* tree;
 	QList<QPointer<VipMapFileSystemTreeDirItem>> items;
 	int sleepTime;
-	bool trigger;
+	std::atomic<bool> trigger;
 	QMutex mutex;
 
 	VipMapFileSystemTreeUpdate(VipMapFileSystemTree* tree)
@@ -571,13 +571,15 @@ public:
 
 	void triggerUpdate()
 	{
-		QMutexLocker lock(&mutex);
-		trigger = true;
+		trigger.store( true);
 	}
 
 	virtual void run()
 	{
+		bool expired = false;
 		while (VipMapFileSystemTree* t = tree) {
+
+			if (!expired || tree->isVisible())
 			{
 				QMutexLocker lock(&mutex);
 				for (int i = 0; i < items.size(); ++i) {
@@ -598,13 +600,13 @@ public:
 
 			qint64 time = QDateTime::currentMSecsSinceEpoch();
 			while (QDateTime::currentMSecsSinceEpoch() - time < sleepTime) {
-				if (trigger || !tree) {
-					QMutexLocker lock(&mutex);
-					trigger = false;
+				if (trigger.load(std::memory_order_relaxed) || !tree) {
+					trigger.store(false);
 					break;
 				}
-				QThread::msleep(50);
+				QThread::msleep(20);
 			}
+			expired = (QDateTime::currentMSecsSinceEpoch() - time) >= sleepTime;
 		}
 	}
 };

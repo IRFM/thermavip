@@ -113,4 +113,12 @@ MPEGIODeviceHandler MPEGSaver::additionalInfo() const
 	return m_info;
 }
 
+void MPEGSaver::setThreads(int th)
+{
+	m_encoder->SetThreads(th);
+}
+int MPEGSaver::threads() const
+{
+	return m_encoder->GetThreads();
+}
 

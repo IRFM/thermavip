@@ -298,7 +298,8 @@ void VipPaintItem::dispatchStyleSheetToChildren()
 
 void VipPaintItem::markStyleSheetDirty()
 {
-	d_data->dirtyStyleSheet = true;
+	if (!d_data->insideApply) //TEST: avoid potential infinit loop
+		d_data->dirtyStyleSheet = true;
 }
 void VipPaintItem::applyStyleSheetIfDirty() const
 {

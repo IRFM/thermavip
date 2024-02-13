@@ -233,6 +233,10 @@ int vipShapeToSize(const ShapeType& shape)
 template<class ShapeType, class StrideType>
 int vipShapeToSize(const ShapeType& shape, const StrideType& strides, bool* is_unstrided)
 {
+	if (!shape.size()) {
+		*is_unstrided = true;
+		return 0;
+	}
 	*is_unstrided = strides.back() == 1;
 	int size_in = shape.back();
 	for (int i = strides.size() - 2; i >= 0; --i) {

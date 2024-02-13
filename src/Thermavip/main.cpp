@@ -66,7 +66,6 @@ static void myMessageOutput(QtMsgType type, const QMessageLogContext& context, c
 }
 
 
-
 int main(int argc, char** argv)
 {
 
@@ -125,6 +124,8 @@ int main(int argc, char** argv)
 	vipEnableGuiInitializationFunction(false);
 
 	QApplication app(argc, argv);
+
+
 
 	bool force_font = false;
 #if !defined(_WIN32) && (defined(__unix__) || defined(__unix) || (defined(__APPLE__) && defined(__MACH__)))

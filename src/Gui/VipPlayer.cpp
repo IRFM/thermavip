@@ -3199,13 +3199,17 @@ void VipVideoPlayer::setFrozen(bool enable)
 	if (m_data->isFrozen != enable) {
 		m_data->isFrozen = enable;
 		if (m_data->currentDisplay) {
-			// QList<VipIODevice*> devices = vipListCast<VipIODevice*>(m_data->currentDisplay->allSources());
-			//  if (devices.size() == 1)
-			//  devices.first()->setEnabled(!enable);
+			
 			// disable the processing before (usually processinglist)
-			if (m_data->currentDisplay->inputAt(0)->connection()->source())
-				if (VipProcessingObject* o = m_data->currentDisplay->inputAt(0)->connection()->source()->parentProcessing())
-					o->setEnabled(!enable);
+			QList<VipDisplayObject*> disp = this->displayObjects();
+			for (VipDisplayObject* d : disp) {
+				if (d->inputAt(0)->connection()->source())
+					if (VipProcessingObject* o =d->inputAt(0)->connection()->source()->parentProcessing())
+						o->setEnabled(!enable);
+			}
+			//if (m_data->currentDisplay->inputAt(0)->connection()->source())
+			//	if (VipProcessingObject* o = m_data->currentDisplay->inputAt(0)->connection()->source()->parentProcessing())
+			//		o->setEnabled(!enable);
 		}
 
 		if (!enable && processingPool())
@@ -8904,8 +8908,14 @@ static bool handleDropROIFileOnVideo(VipVideoPlayer* pl, VipPlotItem* sp, QMimeD
 	for (int i = 0; i < files.size(); ++i) {
 		QString fname = files[i];
 		std::string f = fname.toLatin1().data();
-		if (QFileInfo(fname).suffix() == "xml" || QFileInfo(fname).suffix() == "json")
-			roi_files.append(fname);
+		if (QFileInfo(fname).suffix() == "xml" || QFileInfo(fname).suffix() == "json") {
+
+			// check thta this is a valid ROI file
+			VipShapeReader reader;
+			reader.setPath(fname);
+			if (reader.open(VipIODevice::ReadOnly) )
+				roi_files.append(fname);
+		}
 	}
 
 	if (roi_files.isEmpty())

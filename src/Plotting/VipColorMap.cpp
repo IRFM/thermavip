@@ -33,6 +33,7 @@
 #include "VipHistogram.h"
 #include "VipNDArray.h"
 #include "VipScaleMap.h"
+#include "VipHash.h"
 #include <QDateTime>
 #include <QPainter>
 #include <QSet>
@@ -323,6 +324,8 @@ public:
 	std::vector<int> indexes;
 	VipNDArrayType<float> tmpArray;
 	QReadWriteLock histLock;
+	size_t arrayHash{ 0 };
+	VipInterval interval;
 };
 
 template<class T>
@@ -343,11 +346,7 @@ inline T clamp(T val, T lo, T hi)
 {
 	return (val > hi) ? hi : (val < lo) ? lo : val;
 }
-inline int fastrand(unsigned g_seed)
-{
-	g_seed = (214013 * g_seed + 2531011);
-	return (g_seed >> 16); // &0x7FFF; //no need to have the same range as rand() function
-}
+
 
 struct CastToFloat
 {
@@ -449,25 +448,31 @@ void applyColorMapLinear(const VipLinearColorMap* map, const VipInterval& interv
 		// protect histogram, that can be used to draw the color map
 		QWriteLocker lock(&map->d_data->histLock);
 
-		// input array
-		VipNDArrayTypeView<const T> tmp(values, vipVector(h, w));
-		// prepare array of indexes in the histogram
-		if ((int)map->d_data->indexes.size() != size)
-			map->d_data->indexes.resize(size);
-		// prepare histogram
-		map->d_data->histogram.clear();
-		// compute array histogram
-		if (std::is_integral<T>::value) {
-			if (map->d_data->tmpArray.shape() != tmp.shape())
-				map->d_data->tmpArray.reset(tmp.shape());
-			histogram(tmp, map->d_data->tmpArray, map->d_data->flatHistogramStrength, interval, map->d_data->histogram, map->d_data->indexes.data(), max_index, num_threads);
-		}
-		else {
-			vipExtractHistogram(tmp, map->d_data->histogram, num_colors, Vip::SameBinHeight, interval, map->d_data->indexes.data(), 2, 1, max_index, 0);
-		}
-		// std::vector<VipIntervalSample> hist(map->d_data->histogram.size());
-		// qCopy(map->d_data->histogram.begin(), map->d_data->histogram.end(), hist.begin());
+		// compute hash value
+		size_t hash = vipHashBytes(values, w * h * sizeof(T));
+		
+		if (hash != map->d_data->arrayHash || map->d_data->histogram.size() == 0 || map->d_data->interval != interval) {
+			map->d_data->arrayHash = hash;
+			map->d_data->interval = interval;
+			// input array
+			VipNDArrayTypeView<const T> tmp(values, vipVector(h, w));
+			// prepare array of indexes in the histogram
+			if ((int)map->d_data->indexes.size() != size)
+				map->d_data->indexes.resize(size);
+			// prepare histogram
+			map->d_data->histogram.clear();
+			// compute array histogram
+			if (std::is_integral<T>::value) {
+				if (map->d_data->tmpArray.shape() != tmp.shape())
+					map->d_data->tmpArray.reset(tmp.shape());
+				histogram(tmp, map->d_data->tmpArray, map->d_data->flatHistogramStrength, interval, map->d_data->histogram, map->d_data->indexes.data(), max_index, num_threads);
+			}
+			else {
+				vipExtractHistogram(tmp, map->d_data->histogram, num_colors, Vip::SameBinHeight, interval, map->d_data->indexes.data(), 2, 1, max_index, 0);
+			}
 
+		}
+		
 		// qint64 el1 = QDateTime::currentMSecsSinceEpoch() - start;
 		// apply color map
 		if (map->d_data->histogram.size() == 0) {

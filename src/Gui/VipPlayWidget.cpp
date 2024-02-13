@@ -88,9 +88,8 @@ public:
 	VipTimeRangeListItem* parentItem;
 	QPair<double, double> heights;
 	qint64 left, right;
-	QPainterPath resizeLeft;
-	QPainterPath resizeRight;
-	QPainterPath moveArea;
+	QRectF moveAreaRect;
+	QRectF boundingRect;
 	QColor color;
 	bool reverse;
 
@@ -149,8 +148,9 @@ void VipTimeRangeItem::setCurrentTimeRange(const VipTimeRange& r)
 		// bool first_set = m_data->left == 0 && m_data->right == 0;
 		m_data->left = r.first;
 		m_data->right = r.second;
+		
 		Q_EMIT timeRangeChanged();
-		update();
+		emitItemChanged();
 	}
 }
 
@@ -160,7 +160,7 @@ void VipTimeRangeItem::setCurrentTimeRange(qint64 left, qint64 right)
 		m_data->left = left;
 		m_data->right = right;
 		Q_EMIT timeRangeChanged();
-		update();
+		emitItemChanged();
 	}
 }
 
@@ -193,7 +193,7 @@ void VipTimeRangeItem::setHeights(double start, double end)
 {
 	if (m_data->heights != QPair<double, double>(start, end)) {
 		m_data->heights = QPair<double, double>(start, end);
-		update();
+		emitItemChanged();
 	}
 }
 
@@ -206,7 +206,7 @@ void VipTimeRangeItem::setColor(const QColor& c)
 {
 	if (m_data->color != c) {
 		m_data->color = c;
-		update();
+		emitItemChanged();
 	}
 }
 
@@ -215,42 +215,98 @@ QColor VipTimeRangeItem::color() const
 	return m_data->color;
 }
 
+static QLinearGradient& buildVerticalGradient(const QRectF& r, const QColor& c)
+{
+	static QLinearGradient grad;
+	const QGradientStops stops = grad.stops();
+	if (!stops.size() || stops[1].second != c || grad.start().y() != r.top() || grad.finalStop().y() != r.bottom()) {
+		grad = QLinearGradient(r.topLeft(), r.bottomLeft());
+		QGradientStops stops;
+		stops << QGradientStop(0, c.darker(120));
+		stops << QGradientStop(ITEM_START_HEIGHT, c);
+		stops << QGradientStop(ITEM_END_HEIGHT, c);
+		stops << QGradientStop(1, c.darker(120));
+		grad.setStops(stops);
+	}
+	return grad;
+}
+
+
+/* QRectF VipTimeRangeItem::boundingRect() const
+{
+	return shape().boundingRect();
+}*/
+
+//QPainterPath VipTimeRangeItem::shape() const
+QPainterPath VipTimeRangeItem::shapeFromCoordinateSystem(const VipCoordinateSystemPtr& m) const
+{
+	VipTimeRangeItem* _this = const_cast<VipTimeRangeItem*>(this);
+
+	QRectF r = m->transformRect(QRectF(QPointF(m_data->left, m_data->heights.second), QPointF(m_data->right, m_data->heights.first))).normalized();
+	if (r.width() == 0) {
+		r.setRight(r.right() + 1);
+		r.setLeft(r.left() - 1);
+	}
+	r.setTop(r.top() - 1);
+
+	/* if (r != m_data->moveAreaRect) {
+		_this->prepareGeometryChange();
+		_this->QGraphicsObject::update();
+	}*/
+	_this->m_data->moveAreaRect = r;
+
+	QPainterPath p;
+	if (m_data->left != m_data->right) {
+		r.setLeft(r.left() - 9);
+		r.setRight(r.right() + 9);
+	}
+	m_data->boundingRect = r;
+	p.addRect(r);
+	return p;
+}
+
+QRectF VipTimeRangeItem::boundingRect() const
+{
+	return shape().boundingRect();
+	if (this->isDirtyShape()) {
+		shape();
+	}
+	return m_data->boundingRect;
+}
+
+
 void VipTimeRangeItem::draw(QPainter* p, const VipCoordinateSystemPtr& m) const
 {
 	Q_UNUSED(m)
 
-	shape();
-	QRectF r = m_data->moveArea.boundingRect();
+	if (this->isDirtyShape()) {
+		shape();
+	}
+	QRectF r = m_data->moveAreaRect;
 	// draw the rectange
 	{
-		QLinearGradient grad(r.topLeft(), r.bottomLeft());
-		QGradientStops stops;
-		stops << QGradientStop(0, m_data->color.darker(120));
-		stops << QGradientStop(ITEM_START_HEIGHT, m_data->color);
-		stops << QGradientStop(ITEM_END_HEIGHT, m_data->color);
-		stops << QGradientStop(1, m_data->color.darker(120));
-		grad.setStops(stops);
-
-		QPen pen(m_data->color.darker(120));
-		QBrush brush(grad);
-		p->setPen(pen);
-		p->setBrush(brush);
+		const QLinearGradient& grad = buildVerticalGradient(r, m_data->color);
 
 		p->setRenderHint(QPainter::Antialiasing, false);
-		p->drawRect(r); // drawRoundedRect(r,3,3);
+		if (m_data->left != m_data->right) {
+
+			QPen pen(m_data->color.darker(120));
+			QBrush brush(grad);
+			p->setPen(pen);
+			p->setBrush(brush);
+
+			p->drawRect(r); 
+		}
+		else {
+			QPen pen(QBrush(grad), 1);
+			p->setPen(pen);
+			double x = r.center().x();
+			p->drawLine(QPointF(x, r.top()), QPointF(x, r.bottom()));
+		}
 	}
 
-	QLinearGradient grad(r.topLeft(), r.bottomLeft());
-	QGradientStops stops;
-	QColor c(255, 165, 0);
-	// stops << QGradientStop(0,c.darker(120));
-	//  stops << QGradientStop(ITEM_START_HEIGHT,c);
-	//  stops << QGradientStop(ITEM_END_HEIGHT,c);
-	//  stops << QGradientStop(1,c.darker(120));
-	//  grad.setStops(stops);
-	//
-	// QPen pen(c.darker(120));
-	QBrush brush(c); //(grad);
+	
+	
 	QRectF direction = r;
 	if (m_data->reverse)
 		direction.setLeft(r.right() - 5);
@@ -260,23 +316,30 @@ void VipTimeRangeItem::draw(QPainter* p, const VipCoordinateSystemPtr& m) const
 	// Draw the direction rectangle that indicates where the time range starts.
 	// If the time range is too small, do not draw it to avoid overriding the display
 	// p->setPen(pen);
-	p->setBrush(brush);
+	
 	QRectF direction_rect = direction & r;
-	if (direction_rect.width() > 4)
-		p->drawRect(direction & r);
-	// p->drawRoundedRect(direction & r,3,3);
+	if (direction_rect.width() > 4) {
+		
+		//QColor c(255, 165, 0);
+		QColor c = m_data->color.darker(150);
+		QBrush brush(c); 
+		p->setBrush(brush);
+		p->drawRect(direction_rect);
+	}
 
-	p->setRenderHints(QPainter::Antialiasing);
-	// draw the left and right arrow if the rectangle width is > 2
-	if (r.width() > 10) {
+	
+	// draw the left and right arrow if the rectangle width is > 10
+	/* if (r.width() > 10 && !m_data->resizeLeft.isEmpty() && !m_data->resizeRight.isEmpty()) {
+		p->setRenderHints(QPainter::Antialiasing);
 		p->setPen(QPen(m_data->color.darker(120), 1, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
 		p->setBrush(m_data->color);
 		p->drawPath(m_data->resizeLeft);
 		p->drawPath(m_data->resizeRight);
-	}
+	}*/
 
 	// draw the selection
 	if (isSelected()) {
+		p->setRenderHints(QPainter::Antialiasing);
 		p->setPen(QPen(m_data->color.darker(120)));
 		p->setBrush(QBrush(m_data->color.darker(120), Qt::BDiagPattern));
 		p->drawRect(r); // drawRoundedRect(r,3,3);
@@ -300,8 +363,9 @@ void VipTimeRangeItem::setReverse(bool reverse)
 {
 	if (reverse != m_data->reverse) {
 		m_data->reverse = reverse;
+		
 		Q_EMIT timeRangeChanged();
-		update();
+		emitItemChanged();
 	}
 }
 
@@ -310,45 +374,30 @@ bool VipTimeRangeItem::reverse() const
 	return m_data->reverse;
 }
 
-QRectF VipTimeRangeItem::boundingRect() const
+int VipTimeRangeItem::selection(const QPointF& pos) const
 {
-	return shape().boundingRect();
-}
-
-QPainterPath VipTimeRangeItem::shape() const
-{
-	QRectF r = sceneMap()->transformRect(QRectF(QPointF(m_data->left, m_data->heights.second), QPointF(m_data->right, m_data->heights.first))).normalized();
-	if (r.width() == 0) {
-		r.setRight(r.right() + 1);
-		r.setLeft(r.left() - 1);
-	}
-	r.setTop(r.top() - 1);
-
-	m_data->moveArea = QPainterPath();
-	m_data->moveArea.addRect(r);
-
-	m_data->resizeLeft = QPainterPath();
-	m_data->resizeRight = QPainterPath();
-
 	if (m_data->left != m_data->right) {
-		QSizeF size(7, 9);
-		size.setHeight(qMin(r.height(), size.height()));
-		QPolygonF leftArrow = QPolygonF() << QPointF(r.left() - size.width(), r.center().y()) << QPointF(r.left(), r.center().y() - size.height() / 2)
-						  << QPointF(r.left(), r.center().y() + size.height() / 2) << QPointF(r.left() - size.width(), r.center().y());
-		QPolygonF rightArrow = QPolygonF() << QPointF(r.right() + size.width(), r.center().y()) << QPointF(r.right(), r.center().y() - size.height() / 2)
-						   << QPointF(r.right(), r.center().y() + size.height() / 2) << QPointF(r.right() + size.width(), r.center().y());
-		m_data->resizeLeft.addPolygon(leftArrow);
-		m_data->resizeRight.addPolygon(rightArrow);
+		QRectF left = m_data->moveAreaRect;
+		left.setRight(left.left() - 9);
+		QRectF right = m_data->moveAreaRect;
+		right.setLeft(right.right() + 9);
+
+		if (left.contains(pos))
+			return -1;
+		else if (right.contains(pos))
+			return 1;
+		else
+			return 0;
 	}
-	return m_data->resizeLeft | m_data->resizeRight | m_data->moveArea;
+	else
+		return 0;
 }
 
 void VipTimeRangeItem::hoverMoveEvent(QGraphicsSceneHoverEvent* event)
 {
 	QPointF p = event->pos();
-	if (m_data->resizeLeft.contains(p))
-		this->setCursor(Qt::SizeHorCursor);
-	else if (m_data->resizeRight.contains(p))
+	int s = selection(p);
+	if (s != 0)
 		this->setCursor(Qt::SizeHorCursor);
 	else
 		this->setCursor( // Qt::SizeAllCursor
@@ -397,13 +446,8 @@ void VipTimeRangeItem::mousePressEvent(QGraphicsSceneMouseEvent* event)
 {
 	VipPlotItem::mousePressEvent(event);
 	m_data->pos = event->pos();
-	if (m_data->resizeLeft.contains(m_data->pos))
-		m_data->selection = -1;
-	else if (m_data->resizeRight.contains(m_data->pos))
-		m_data->selection = 1;
-	else
-		m_data->selection = 0;
-
+	m_data->selection = selection(m_data->pos);
+	
 	// Small trick: a time range of 1ns means that this is an empty time range.
 	// we just to specify a valid time range (> 0 ns) to display the actual VipTimeRangeItem.
 	if (m_data->selection != 0 && m_data->initialTimeRange.second - m_data->initialTimeRange.first == 0) // 1)
@@ -637,6 +681,7 @@ void VipTimeRangeListItem::setDevice(VipIODevice* device)
 					item->setColor(m_data->color);
 					item->setReverse(it.value().first > it.value().second);
 					item->setRenderHints(QPainter::Antialiasing);
+					item->setFlag(ItemHasNoContents);
 					item->blockSignals(false);
 				}
 			}
@@ -649,6 +694,7 @@ void VipTimeRangeListItem::setDevice(VipIODevice* device)
 					item->setInitialTimeRange(_lst[i]);
 					item->setRenderHints(QPainter::Antialiasing);
 					item->setColor(m_data->color);
+					item->setFlag(ItemHasNoContents);
 					item->blockSignals(false);
 				}
 			}
@@ -853,6 +899,12 @@ void VipTimeRangeListItem::draw(QPainter* p, const VipCoordinateSystemPtr& m) co
 void VipTimeRangeListItem::drawSelected(QPainter* p, const VipCoordinateSystemPtr& m) const
 {
 	if (m_data->items.size()) {
+
+		//TEST: draw items
+		for (const VipTimeRangeItem* it : m_data->items) {
+			it->draw(p, m);
+		}
+
 		// draw the device name
 		if (zValue() <= m_data->items.first()->zValue())
 			const_cast<VipTimeRangeListItem*>(this)->setZValue(m_data->items.first()->zValue() + 1);
@@ -2493,13 +2545,22 @@ VipPlayWidget::VipPlayWidget(QWidget* parent)
 	// timestamping area
 	m_data->playerArea = new VipPlayerArea();
 	m_data->playerWidget = new VipPlotWidget2D();
+	
 	m_data->playerWidget->setArea(m_data->playerArea);
 	m_data->playerArea->setMargins(VipMargins(10, 0, 10, 0));
 	m_data->playerArea->timeMarker()->installSceneEventFilter(m_data->playerArea->timeSliderGrip());
 	m_data->playerArea->limit1Marker()->installSceneEventFilter(m_data->playerArea->limit1SliderGrip());
 	m_data->playerArea->limit2Marker()->installSceneEventFilter(m_data->playerArea->limit2SliderGrip());
 	m_data->playerArea->timeScale()->scaleDraw()->enableLabelOverlapping(false);
-	// m_data->playerWidget->setStyleSheet("VipPlotWidget2D{background-color: transparent;}");
+
+	//TEST
+	/*m_data->playerWidget->setAttribute(Qt::WA_PaintUnclipped, false);
+	m_data->playerWidget->viewport()->setAttribute(Qt::WA_PaintUnclipped, false);
+
+	m_data->playerWidget->setAttribute(Qt::WA_NoSystemBackground, false);
+	m_data->playerWidget->setAttribute(Qt::WA_OpaquePaintEvent, false);
+	m_data->playerWidget->viewport()->setAttribute(Qt::WA_NoSystemBackground, false);
+	m_data->playerWidget->viewport()->setAttribute(Qt::WA_OpaquePaintEvent, false);*/
 
 	VipValueToTime* v = new VipValueToTime();
 	VipDateTimeScaleEngine* engine = new VipDateTimeScaleEngine();

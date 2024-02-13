@@ -245,7 +245,7 @@ public:
 			if (!s) {
 				if (until != -1 && QDateTime::currentMSecsSinceEpoch() >= until)
 					return false;
-				QThread::msleep(2);
+				QThread::msleep(15);
 				continue;
 			}
 
