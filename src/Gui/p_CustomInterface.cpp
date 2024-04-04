@@ -141,7 +141,8 @@ static QWidget* create_player_top_toolbar(VipAbstractPlayer* player, QObject* /*
 	// add the main tool bar and the title tool bar
 	// player->toolBar()->setCustomBehaviorEnabled(false);
 	//	player->toolBar()->setShowAdditionals(VipToolBar::ShowInMenu);
-	hlay->addWidget(player->playerToolBar());
+	if (QWidget* w = player->playerToolBar())
+		hlay->addWidget(w);
 	QToolBar* title = new QToolBar();
 	title->setIconSize(QSize(20, 20));
 	hlay->addStretch(1);
@@ -211,6 +212,191 @@ static void editTitle(VipPlayer2D* player)
 	_title_editor->setFocus();
 	QObject::connect(_title_editor.data(), &EditTitle::returnPressed, player, std::bind(finishEditingTitle, player));
 }
+
+
+
+
+
+
+class NavigatePlayers::PrivateData
+{
+public:
+	QPointer<VipDragWidget> parent;
+};
+
+NavigatePlayers::NavigatePlayers(VipDragWidget* p)
+  : QToolBar(p->widget())
+{
+	m_data = new PrivateData();
+	m_data->parent = p;
+	p->installEventFilter(this);
+	updatePos();
+
+	connect(this->addAction(vipIcon("previous.png"), "Go to previous player"), SIGNAL(triggered(bool)), this, SLOT(goPrev()));
+	connect(this->addAction(vipIcon("next.png"), "Go to next player"), SIGNAL(triggered(bool)), this, SLOT(goNext()));
+	connect(p, SIGNAL(visibilityChanged(VisibilityState)), this, SLOT(updatePos()));
+	this->setStyleSheet("QToolBar {background: transparent;}");
+}
+	
+NavigatePlayers::~NavigatePlayers()
+{
+	if (m_data->parent)
+		m_data->parent->removeEventFilter(this);
+	delete m_data;
+}
+
+VipDragWidget* NavigatePlayers::parentDragWidget() const
+{
+	return m_data->parent;
+}
+VipDragWidget* NavigatePlayers::next() const
+{
+	if (!m_data->parent)
+		return nullptr;
+
+	//TEST
+	VipDragWidget* w = m_data->parent->next();
+	for (;;) {
+		if (!w)
+			w = m_data->parent->topLevelMultiDragWidget()->firstDragWidget();
+		if (w == m_data->parent)
+			return nullptr;
+		if (qobject_cast<VipPlayer2D*>(w->widget()))
+			return w;
+		w = w->next();
+	}
+	return w;
+}
+VipDragWidget* NavigatePlayers::prev() const
+{
+	if (!m_data->parent)
+		return nullptr;
+
+	//TEST
+	{
+		VipDragWidget* w = m_data->parent->prev();
+		for (;;) {
+			if (!w)
+				w = m_data->parent->topLevelMultiDragWidget()->lastDragWidget();
+			if (w == m_data->parent)
+				return nullptr;
+			if (qobject_cast<VipPlayer2D*>(w->widget()))
+				return w;
+			w = w->prev();
+		}
+		return w;
+	}
+
+	VipMultiDragWidget* m = m_data->parent->topLevelMultiDragWidget();
+	if (!m)
+		return nullptr;
+
+	QList<VipDragWidget*> children = m->findChildren<VipDragWidget*>();
+	if (children.size() == 0)
+		return nullptr;
+
+	int idx = children.indexOf(m_data->parent);
+	if (idx < 0)
+		// impossible
+		return nullptr;
+
+	int _idx = idx;
+	for (;;) {
+		--idx;
+		if (idx < 0)
+			idx = children.size() - 1;
+		if (idx == _idx)
+			return nullptr;
+		if (qobject_cast<VipPlayer2D*>(children[idx]->widget()))
+			break;
+	}
+
+	return children[idx];
+}
+
+bool NavigatePlayers::eventFilter(QObject*, QEvent* evt)
+{
+	if (evt->type() == QEvent::Resize || evt->type() == QEvent::Show || evt->type() == QEvent::Hide) {
+		updatePos();
+	}
+	else if (evt->type() == QEvent::KeyPress) {
+		if (this->isVisible()) {
+			QKeyEvent* e = static_cast<QKeyEvent*>(evt);
+			if (e->key() == Qt::Key_Down) {
+				goNext();
+				return true;
+			}
+			else if (e->key() == Qt::Key_Up) {
+				goPrev();
+				return true;
+			}
+		}
+	}
+	return false;
+}
+
+void NavigatePlayers::goNext()
+{
+	if (VipDragWidget* n = this->next()) {
+		n->showMaximized();
+		n->setFocusWidget();
+		n->setFocus();
+	}
+}
+void NavigatePlayers::goPrev()
+{
+	if (VipDragWidget* p = this->prev()) {
+		p->showMaximized();
+		p->setFocusWidget();
+		p->setFocus();
+	}
+}
+	
+void NavigatePlayers::visibilityChanged()
+{
+	updatePos();
+}
+	
+void NavigatePlayers::updatePos()
+{
+	if (!m_data->parent) {
+		this->setVisible(false);
+		return;
+	}
+
+	bool vis = m_data->parent->isMaximized() && m_data->parent->isVisible();
+	if (vis) {
+
+		VipMultiDragWidget* m = m_data->parent->topLevelMultiDragWidget();
+		if (!m)
+			vis = false;
+		else {
+
+			auto c = m->findChildren<VipDragWidget*>();
+
+			if (c.size() <= 1)
+				vis = false;
+			else {
+				for (VipDragWidget* w : c) {
+					if (w != m_data->parent && w->isVisible()) {
+						if (!w->testSupportedOperation(VipDragWidget::NoHideOnMaximize)) {
+
+							vis = false;
+							break;
+						}
+					}
+				}
+			}
+		}
+	}
+
+	this->setVisible(vis);
+	//this->move(0, 0);
+}
+
+
+
+
 
 void BaseCustomPlayer::closePlayer()
 {
@@ -348,6 +534,9 @@ CustomizeVideoPlayer::CustomizeVideoPlayer(VipVideoPlayer* player)
 	}
 	if (!m_data->dragWidget)
 		return;
+
+	// Add a navigation widget that manages itself
+	new NavigatePlayers(m_data->dragWidget);
 
 	m_data->area = new VipDragRubberBand(vipGetMainWindow());
 	m_data->player->plotWidget2D()->viewport()->installEventFilter(this);
@@ -848,24 +1037,25 @@ void CustomWidgetPlayer::reorganizeCloseButton()
 	if (!m_data->player || !m_data->dragWidget || m_data->dragWidget->isDestroying())
 		return;
 
-	QWidget* w = m_data->player->widget();
+	if (QWidget* w = m_data->player->widget()) {
 
-	m_data->close->move(w->width() - m_data->close->width(), 0);
-	m_data->maximize->move(w->width() - m_data->close->width() - m_data->maximize->width(), 0);
-	m_data->minimize->move(w->width() - m_data->close->width() - m_data->maximize->width() - m_data->minimize->width(), 0);
+		m_data->close->move(w->width() - m_data->close->width(), 0);
+		m_data->maximize->move(w->width() - m_data->close->width() - m_data->maximize->width(), 0);
+		m_data->minimize->move(w->width() - m_data->close->width() - m_data->maximize->width() - m_data->minimize->width(), 0);
 
-	QPoint pt = w->mapFromGlobal(QCursor::pos());
-	// update visibility
-	QRect r = w->rect();
-	if (r.contains(pt)) {
-		m_data->close->setVisible(true);
-		m_data->maximize->setVisible(true);
-		m_data->minimize->setVisible(true);
-	}
-	else {
-		m_data->close->setVisible(false);
-		m_data->maximize->setVisible(false);
-		m_data->minimize->setVisible(false);
+		QPoint pt = w->mapFromGlobal(QCursor::pos());
+		// update visibility
+		QRect r = w->rect();
+		if (r.contains(pt)) {
+			m_data->close->setVisible(true);
+			m_data->maximize->setVisible(true);
+			m_data->minimize->setVisible(true);
+		}
+		else {
+			m_data->close->setVisible(false);
+			m_data->maximize->setVisible(false);
+			m_data->minimize->setVisible(false);
+		}
 	}
 }
 
@@ -1160,6 +1350,9 @@ CustomizePlotPlayer::CustomizePlotPlayer(VipPlotPlayer* player)
 	if (!m_data->dragWidget)
 		return;
 
+	// Add a navigation widget that manages itself
+	new NavigatePlayers(m_data->dragWidget);
+
 	m_data->player->plotWidget2D()->viewport()->installEventFilter(this);
 
 	m_data->area = new VipDragRubberBand(vipGetMainWindow());
@@ -1369,7 +1562,7 @@ bool CustomizePlotPlayer::eventFilter(QObject* w, QEvent* evt)
 		return false;
 
 	if (evt->type() == QEvent::Resize)
-		reorganizeCloseButtons();
+		QMetaObject::invokeMethod(this, "reorganizeCloseButtons", Qt::QueuedConnection);
 	else if (evt->type() == QEvent::Leave)
 		reorganizeCloseButtons();
 
@@ -1427,6 +1620,9 @@ bool CustomizePlotPlayer::eventFilter(QObject* w, QEvent* evt)
 			m_data->mousePress = QPoint(-1, -1);
 			return false;
 		}
+	}
+	else if (evt->type() == QEvent::Show) {
+		QMetaObject::invokeMethod(this, "reorganizeCloseButtons", Qt::QueuedConnection);
 	}
 	else if (evt->type() == QEvent::MouseMove) {
 		reorganizeCloseButtons();
@@ -1598,10 +1794,13 @@ void CustomizePlotPlayer::reorganizeCloseButtons()
 	else
 		canvas << m_data->player->plotWidget2D()->area()->canvas();
 
+	bool just_created = false;
+
 	// QList<VipPlotCanvas*> canvas = area->allCanvas();
 	for (int i = 0; i < canvas.size(); ++i) {
 		QToolButton* close = canvas[i]->property("_vip_close").value<QToolButton*>();
 		if (!close) {
+			just_created = true;
 			close = new QToolButton(m_data->player);
 			close->setAutoRaise(true);
 			close->setMaximumSize(QSize(20, 20));

@@ -917,6 +917,110 @@ VipDragWidget::~VipDragWidget()
 	delete m_data;
 }
 
+
+VipDragWidget* VipDragWidget::next() const
+{
+	VipDragWidget* next = nullptr;
+	VipMultiDragWidget* mw = this->parentMultiDragWidget();
+	bool takeNext = false;
+	int x = 0, y = 0;
+
+	for (;;) {
+start_loop:
+		if (!mw)
+			return nullptr;
+		
+		for (y = 0; y < mw->mainCount(); ++y) {
+			for (x = 0; x < mw->subCount(y); ++x) {
+				auto* t = mw->tabWidget(y, x);
+				for (int i = 0; i < t->count(); ++i) {
+
+					QWidget* tw = t->widget(i);
+					if (takeNext) {
+						if (VipBaseDragWidget* b = qobject_cast<VipBaseDragWidget*>(tw)) {
+
+							if (VipDragWidget* w = qobject_cast<VipDragWidget*>(b))
+								return w;
+							else if (VipMultiDragWidget* _mw = qobject_cast<VipMultiDragWidget*>(b)) {
+								// returns the first VipDragWidget in this multi drag widget
+								if (VipDragWidget* w = _mw->firstDragWidget())
+									return w;
+							}
+						}
+					}
+					else {
+						if (tw == this)
+							takeNext = true;
+						else {
+							if (VipMultiDragWidget* _mw = qobject_cast<VipMultiDragWidget*>(tw)) {
+								if (_mw->findChildren<const VipDragWidget*>().indexOf(this) >= 0) {
+									mw = _mw;
+									goto start_loop;
+								}
+							}
+						}
+					}
+
+				}
+			}
+		}
+
+		mw = mw->parentMultiDragWidget();
+	}
+	return nullptr;
+}
+
+VipDragWidget* VipDragWidget::prev() const
+{
+	VipDragWidget* next = nullptr;
+	VipMultiDragWidget* mw = this->parentMultiDragWidget();
+	bool takeNext = false;
+	int x = 0, y = 0;
+
+	for (;;) {
+	start_loop:
+		if (!mw)
+			return nullptr;
+
+		for (y = mw->mainCount() -1; y >= 0 ; --y) {
+			for (x = mw->subCount(y) -1; x >= 0 ; --x) {
+				auto* t = mw->tabWidget(y, x);
+				for (int i = t->count() -1; i >= 0 ; --i) {
+
+					QWidget* tw = t->widget(i);
+					if (takeNext) {
+						if (VipBaseDragWidget* b = qobject_cast<VipBaseDragWidget*>(tw)) {
+
+							if (VipDragWidget* w = qobject_cast<VipDragWidget*>(b))
+								return w;
+							else if (VipMultiDragWidget* _mw = qobject_cast<VipMultiDragWidget*>(b)) {
+								// returns the first VipDragWidget in this multi drag widget
+								if (VipDragWidget* w = _mw->lastDragWidget())
+									return w;
+							}
+						}
+					}
+					else {
+						if (tw == this)
+							takeNext = true;
+						else {
+							if (VipMultiDragWidget* _mw = qobject_cast<VipMultiDragWidget*>(tw)) {
+								if (_mw->findChildren<const VipDragWidget*>().indexOf(this) >= 0) {
+									mw = _mw;
+									goto start_loop;
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+
+		mw = mw->parentMultiDragWidget();
+	}
+	return nullptr;
+}
+
 void VipDragWidget::setFocusWidget()
 {
 
@@ -1154,6 +1258,11 @@ VipMinimizeWidget::VipMinimizeWidget(VipBaseDragWidget* widget)
 
 VipMinimizeWidget::~VipMinimizeWidget()
 {
+	if (QWidget* w = parentWidget()) {
+		w->removeEventFilter(this);
+		w->setMaximumHeight(16777215);
+		w->setMaximumWidth(16777215);
+	}
 	delete m_data;
 }
 
@@ -2095,6 +2204,37 @@ VipBaseDragWidget* VipMultiDragWidget::widget(int y, int x, int index) const
 	return nullptr;
 }
 
+VipDragWidget* VipMultiDragWidget::firstDragWidget() const
+{
+	for (int y = 0; y < mainCount(); ++y)
+		for (int x = 0; x < subCount(y); ++x) {
+			auto* t = tabWidget(y, x);
+			if (VipBaseDragWidget* b = qobject_cast<VipBaseDragWidget*>(t->currentWidget())) {
+				if (VipDragWidget* w = qobject_cast<VipDragWidget*>(b))
+					return w;
+				else {
+					return static_cast<VipMultiDragWidget*>(b)->firstDragWidget();
+				}
+			}
+		}
+	return nullptr;
+}
+VipDragWidget* VipMultiDragWidget::lastDragWidget() const
+{
+	for (int y = mainCount() -1; y >= 0 ; --y)
+		for (int x = subCount(y)-1; x >= 0 ; --x) {
+			auto* t = tabWidget(y, x);
+			if (VipBaseDragWidget* b = qobject_cast<VipBaseDragWidget*>(t->currentWidget())) {
+				if (VipDragWidget* w = qobject_cast<VipDragWidget*>(b))
+					return w;
+				else {
+					return static_cast<VipMultiDragWidget*>(b)->lastDragWidget();
+				}
+			}
+		}
+	return nullptr;
+}
+
 // QWidget * VipMultiDragWidget::GetSizeGrip() const
 //  {
 //  return const_cast<VipDragWidgetSizeGrip*>(d_data->grip);
@@ -2419,8 +2559,23 @@ void VipMultiDragWidget::hideAllExcept(VipBaseDragWidget* widget)
 		for (int x = 0; x < subCount(y); ++x) {
 			QTabWidget* tab = this->tabWidget(y, x);
 			int index = tab->indexOf(widget);
-			if (index < 0)
-				tab->hide();
+			if (index < 0) {
+				// check that widgets all support HideOnMaximize
+				bool support_hide = true;
+				for (int i = 0; i < tab->count(); ++i) {
+					if (VipBaseDragWidget* w = qobject_cast<VipBaseDragWidget*>(tab->widget(i))) {
+
+						if (w->testSupportedOperation(VipBaseDragWidget::NoHideOnMaximize)) {
+							support_hide = false;
+							break;
+						}
+						else if (w->visibility() == VipBaseDragWidget::Maximized)
+							w->setInternalVisibility(VipBaseDragWidget::Normal);
+					}
+				}
+				if (support_hide)
+					tab->hide();
+			}
 			else {
 				tab->show();
 				tab->setCurrentIndex(index);

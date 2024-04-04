@@ -1,5 +1,6 @@
 #define VIP_ENABLE_LOG_DEBUG
 
+
 #include <fstream>
 #include <iostream>
 
@@ -36,6 +37,7 @@
 
 #include <qsurfaceformat.h>
 
+
 #if !defined(_WIN32) && (defined(__unix__) || defined(__unix) || (defined(__APPLE__) && defined(__MACH__)))
 #include <unistd.h>
 #endif
@@ -46,7 +48,6 @@
 
 static void myMessageOutput(QtMsgType type, const QMessageLogContext& context, const QString& msg)
 {
-
 	(void)context;
 	switch (type) {
 		case QtDebugMsg:
@@ -68,7 +69,7 @@ static void myMessageOutput(QtMsgType type, const QMessageLogContext& context, c
 
 int main(int argc, char** argv)
 {
-
+	
 	qInstallMessageHandler(myMessageOutput);
 
 	//_putenv("QT_SCALE_FACTOR=1.5");
@@ -101,6 +102,8 @@ int main(int argc, char** argv)
 
 	QCoreApplication::addLibraryPath(QFileInfo(QString(argv[0])).canonicalPath());
 
+	QDir::setCurrent(QFileInfo(QString(argv[0])).canonicalPath());
+
 	// qputenv("QSG_INFO", "1");
 	// qputenv("QT_OPENGL", "desktop");
 	// qputenv("QT_OPENGL", "angle");
@@ -124,7 +127,6 @@ int main(int argc, char** argv)
 	vipEnableGuiInitializationFunction(false);
 
 	QApplication app(argc, argv);
-
 
 
 	bool force_font = false;

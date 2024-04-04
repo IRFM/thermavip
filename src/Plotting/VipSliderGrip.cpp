@@ -71,6 +71,9 @@ public:
 	  , gripAlwaysInsideScale(true)
 	  , toolTipDistance(0)
 	  , toolTipSide(Qt::AlignRight | Qt::AlignVCenter)
+	  , textAlignment(Qt::AlignTop | Qt::AlignHCenter)
+	  , textPosition(Vip::Outside)
+	  , textDistance(5)
 	{
 	}
 
@@ -87,6 +90,14 @@ public:
 	QImage image;
 	QImage rotatedImage;
 	QString toolTipText;
+
+	Qt::Alignment textAlignment;
+	Vip::RegionPositions textPosition;
+	QTransform textTransform;
+	QPointF textTransformReference;
+	double textDistance;
+	VipText text;
+	QSharedPointer<VipTextStyle> textStyle;
 };
 
 VipSliderGrip::VipSliderGrip(VipAbstractScale* parent)
@@ -362,6 +373,18 @@ void VipSliderGrip::drawHandle(QPainter* painter) const
 		}
 		//
 	}
+
+	if (!d_data->text.isEmpty()) {
+
+		QRectF geom(0, 0, d_data->rotatedImage.width(), d_data->rotatedImage.height());
+		geom.translate(-d_data->rotatedImage.width() / 2.0, -d_data->rotatedImage.height() / 2.0);
+
+		VipText t = d_data->text;
+		t.setText(VipText::replace(t.text(), "#value", value()));
+
+		// draw text
+		VipPainter::drawText(painter, t, textTransform(), textTransformReference(), textDistance(), textPosition(), textAlignment(), geom);
+	}
 }
 
 void VipSliderGrip::setToolTipText(const QString& text)
@@ -383,6 +406,77 @@ double VipSliderGrip::toolTipDistance() const
 {
 	return d_data->toolTipDistance;
 }
+
+
+
+void VipSliderGrip::setTextAlignment(Qt::Alignment align)
+{
+	d_data->textAlignment = align;
+	update();
+}
+
+Qt::Alignment VipSliderGrip::textAlignment() const
+{
+	return d_data->textAlignment;
+}
+
+void VipSliderGrip::setTextPosition(Vip::RegionPositions pos)
+{
+	d_data->textPosition = pos;
+	update();
+}
+
+Vip::RegionPositions VipSliderGrip::textPosition() const
+{
+	return d_data->textPosition;
+}
+
+void VipSliderGrip::setTextTransform(const QTransform& tr, const QPointF& ref)
+{
+	d_data->textTransform = tr;
+	d_data->textTransformReference = ref;
+	update();
+}
+const QTransform& VipSliderGrip::textTransform() const
+{
+	return d_data->textTransform;
+}
+const QPointF& VipSliderGrip::textTransformReference() const
+{
+	return d_data->textTransformReference;
+}
+
+void VipSliderGrip::setTextDistance(double vipDistance)
+{
+	d_data->textDistance = vipDistance;
+	update();
+}
+
+double VipSliderGrip::textDistance() const
+{
+	return d_data->textDistance;
+}
+
+void VipSliderGrip::setText(const VipText& text)
+{
+	d_data->text = text;
+	if (d_data->textStyle)
+		d_data->text.setTextStyle(*d_data->textStyle);
+	// no need to mark style sheet dirty
+	update();
+}
+
+const VipText& VipSliderGrip::text() const
+{
+	return d_data->text;
+}
+
+VipText& VipSliderGrip::text()
+{
+	return d_data->text;
+}
+
+
 
 void VipSliderGrip::paint(QPainter* painter,
 			  const QStyleOptionGraphicsItem* // option
@@ -592,6 +686,80 @@ void VipSliderGrip::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
 	d_data->selection = QPointF();
 	Q_EMIT mouseButtonRelease(this, static_cast<VipPlotItem::MouseButton>(event->button()));
 }
+
+void VipSliderGrip::keyPressEvent(QKeyEvent* event)
+{
+	if (this->singleStepEnabled()) {
+
+		if (VipBorderItem* it = qobject_cast<VipBorderItem*>(this->scale())) {
+			if (it->orientation() == Qt::Horizontal) {
+				VipInterval inter = it->scaleDiv().bounds();
+				if (event->key() == Qt::Key_Right) {
+					double val = this->value();
+					if (inter.width() > 0) {
+						val += this->singleStep();
+						if (val > inter.maxValue())
+							val = inter.maxValue();
+					}
+					else {
+						val -= this->singleStep();
+						if (val < inter.minValue())
+							val = inter.minValue();
+					}
+					setValue(val);
+				}
+				else if (event->key() == Qt::Key_Left) {
+					double val = this->value();
+					if (inter.width() > 0) {
+						val -= this->singleStep();
+						if (val < inter.minValue())
+							val = inter.minValue();
+					}
+					else {
+						val += this->singleStep();
+						if (val > inter.maxValue())
+							val = inter.maxValue();
+					}
+					setValue(val);
+				}
+			}
+			else {
+				VipInterval inter = it->scaleDiv().bounds();
+				if (event->key() == Qt::Key_Up) {
+					double val = this->value();
+					if (inter.width() > 0) {
+						val += this->singleStep();
+						if (val > inter.maxValue())
+							val = inter.maxValue();
+					}
+					else {
+						val -= this->singleStep();
+						if (val < inter.minValue())
+							val = inter.minValue();
+					}
+					setValue(val);
+				}
+				else if (event->key() == Qt::Key_Down) {
+					double val = this->value();
+					if (inter.width() > 0) {
+						val -= this->singleStep();
+						if (val < inter.minValue())
+							val = inter.minValue();
+					}
+					else {
+						val += this->singleStep();
+						if (val > inter.maxValue())
+							val = inter.maxValue();
+					}
+					setValue(val);
+				}
+			}
+		}
+	}
+}
+
+
+
 
 VipColorMapGrip::VipColorMapGrip(VipAxisColorMap* parent)
   : VipSliderGrip(parent)

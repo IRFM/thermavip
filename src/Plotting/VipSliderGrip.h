@@ -106,6 +106,33 @@ public:
 	void setToolTipText(const QString& text);
 	const QString& toolTipText() const;
 
+	/// @brief Set the bar text alignment within its bar based on the text position
+	void setTextAlignment(Qt::Alignment align);
+	Qt::Alignment textAlignment() const;
+
+	/// @brief Set the grip text position: inside or outside the grip
+	void setTextPosition(Vip::RegionPositions pos);
+	Vip::RegionPositions textPosition() const;
+
+	/// @brief Additional custom text transform.
+	/// By default, the transform is applied from the top left corner of the text rectangle.
+	/// You can specify a different origin using the ref parameter, which is a relative x and y distance from the rectangle dimensions.
+	/// For Instance, to apply a rotation around the text center, use QPointF(0.5,0.5).
+	void setTextTransform(const QTransform& tr, const QPointF& ref = QPointF(0, 0));
+	const QTransform& textTransform() const;
+	const QPointF& textTransformReference() const;
+
+	/// @brief Set the distance (in item's coordinate) between a grip border and its text
+	/// @param distance
+	void setTextDistance(double distance);
+	double textDistance() const;
+
+	/// @brief Set the text to be drawn within the grip.
+	/// Each occurrence of the content '#value' will be replaced by the grip current value.
+	void setText(const VipText& text);
+	const VipText& text() const;
+	VipText& text();
+
 	/// @brief Set the distance between the tooltip and the handle
 	void setToolTipDistance(double dist);
 	double toolTipDistance() const;
@@ -148,6 +175,8 @@ protected:
 	virtual void mouseMoveEvent(QGraphicsSceneMouseEvent* event);
 	virtual void mousePressEvent(QGraphicsSceneMouseEvent* event);
 	virtual void mouseReleaseEvent(QGraphicsSceneMouseEvent* event);
+
+	virtual void keyPressEvent(QKeyEvent* event);
 
 	virtual bool setItemProperty(const char* name, const QVariant& value, const QByteArray& index = QByteArray());
 	virtual bool hasState(const QByteArray& state, bool enable) const;

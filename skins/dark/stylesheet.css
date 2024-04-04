@@ -422,6 +422,11 @@ QTreeView::branch:closed:has-children {
     image: url(skins/dark/icons/right.png);
 }
 
+QTableView
+{
+    gridline-color: white;
+}
+
 QPushButton {
    border: 1px solid #3D3D3D;
    border-radius: 3px;

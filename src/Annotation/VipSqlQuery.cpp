@@ -226,7 +226,7 @@ static QSqlDatabase createConnection()
 
 		DB param = readDB();
 		db = QSqlDatabase::addDatabase("QMYSQL");
-		db.setConnectOptions("MYSQL_OPT_CONNECT_TIMEOUT=2");
+		db.setConnectOptions("MYSQL_OPT_CONNECT_TIMEOUT=4");
 		db.setHostName(param.hostname);
 		db.setDatabaseName(param.name); //
 		db.setUserName(param.user);	// root
@@ -469,6 +469,10 @@ static void convertShape(const VipShape& sh, QPolygon& p, QRect& r)
 	p.clear();
 	r = QRect();
 
+	if (sh.polygon().isEmpty()) {
+		return;
+	}
+
 	/*const QRegion reg = sh.region();
 	QPainterPath path;
 	path.addRegion(reg);
@@ -643,8 +647,11 @@ QList<qint64> vipSendToDB(const QString& userName, const QString& camera, const 
 				centroid.rx() += pt.x();
 				centroid.ry() += pt.y();
 			}
-			centroid.rx() /= poly.size();
-			centroid.ry() /= poly.size();
+			if (poly.size()) {
+
+				centroid.rx() /= poly.size();
+				centroid.ry() /= poly.size();
+			}
 			if (!vipIsRect(poly)) {
 				poly_string = polygonToString(poly);
 				// recompute pixel_area

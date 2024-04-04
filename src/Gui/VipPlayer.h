@@ -257,7 +257,9 @@ public:
 	virtual QList<VipDisplayObject*> displayObjects() const { return QList<VipDisplayObject*>(); }
 	virtual QSize sizeHint() const;
 
+	void setWidget(QWidget*);
 	QWidget* widget() const;
+
 	virtual QWidget* widgetForMouseEvents() const { return widget(); }
 
 protected:
@@ -265,7 +267,6 @@ protected:
 	virtual bool renderObject(QPainter* p, const QPointF& pos, bool draw_background);
 
 private:
-	void setWidget(QWidget*);
 	class PrivateData;
 	PrivateData* m_data;
 };
@@ -984,6 +985,12 @@ VIP_GUI_EXPORT VipFunctionDispatcher<2>& VipFDAddProcessingAction();
 /// If a valid action is performed, the function must return true.
 /// Its signature is bool(VipPlayer2D*, VipPlotItem*,QMimeData*);
 VIP_GUI_EXPORT VipFunctionDispatcher<3>& VipFDDropOnPlotItem();
+
+
+/// This function dispatcher is called whenever the user press a key on a VipPlayer2D.
+/// If a valid action is performed (i.e. the key is handled), the function must return true.
+/// Its signature is bool(VipPlayer2D*, int key, int modifiers);
+VIP_GUI_EXPORT VipFunctionDispatcher<3>& VipFDPlayerKeyPress();
 
 typedef QList<QAction*> ActionList;
 Q_DECLARE_METATYPE(ActionList)

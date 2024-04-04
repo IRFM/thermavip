@@ -102,6 +102,9 @@ public:
 	void setFormattingEnabled(bool);
 	bool formattingEnabled() const;
 
+	void setUpdateOnHidden(bool);
+	bool updateOnHidden() const;
+
 	/// @brief Reimplemented from VipProcessingObject
 	virtual bool useEventLoop() const { return true; }
 

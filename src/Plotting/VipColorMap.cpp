@@ -440,7 +440,9 @@ void applyColorMapLinear(const VipLinearColorMap* map, const VipInterval& interv
 #pragma omp parallel for num_threads(num_threads)
 		for (int i = 0; i < size; ++i) {
 			const T value = values[i];
-			const int index = isNan(value) ? 0 : clamp((value - min_value) * factor + 2, 1., (double)max_index);
+			unsigned index = isNan(value) ? 0 : (unsigned)clamp((value - min_value) * factor + 2, 1., (double)max_index);
+			if (index >= num_colors + 3)
+				index = 0;
 			out[i] = palette[index];
 		}
 	}

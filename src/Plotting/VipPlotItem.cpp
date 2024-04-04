@@ -1774,6 +1774,11 @@ void VipPlotItem::removeDynamicProperty(VipPlotItemDynamicProperty* prop)
 		}
 }
 
+void VipPlotItem::clearDynamicProperties()
+{
+	d_data->dynProperties.clear();
+}
+
 QList<VipPlotItemDynamicProperty*> VipPlotItem::dynamicProperties() const
 {
 	QList<VipPlotItemDynamicProperty*> res;

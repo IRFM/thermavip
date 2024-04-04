@@ -53,6 +53,7 @@ public:
 	  , formattingEnabled(true)
 	  , visible(true)
 	  , first(true)
+	  , updateOnHidden(false)
 	  , previousDisplayTime(0)
 	  , lastTitleUpdate(0)
 	  , lastVisibleUpdate(0)
@@ -64,6 +65,7 @@ public:
 	bool formattingEnabled;
 	bool visible;
 	bool first;
+	bool updateOnHidden;
 	QString playerTitle; // update parent VipAbstractPlayer title
 	qint64 previousDisplayTime;
 	qint64 lastTitleUpdate;
@@ -111,7 +113,7 @@ void VipDisplayObject::apply()
 		else
 			QMetaObject::invokeMethod(this, "checkVisibility", Qt::QueuedConnection);
 	}
-	if (!m_data->visible) {
+	if (!m_data->visible && !m_data->updateOnHidden) {
 		// clear input buffer
 		inputAt(0)->allData();
 		return;
@@ -207,6 +209,14 @@ void VipDisplayObject::setFormattingEnabled(bool enable)
 bool VipDisplayObject::formattingEnabled() const
 {
 	return m_data->formattingEnabled;
+}
+
+void VipDisplayObject::setUpdateOnHidden(bool enable) {
+	m_data->updateOnHidden = enable;
+}
+bool VipDisplayObject::updateOnHidden() const
+{
+	return m_data->updateOnHidden;
 }
 
 class VipDisplayPlotItem::PrivateData

@@ -650,10 +650,9 @@ class VipWidgetPlayer::PrivateData
 {
 public:
 	PrivateData()
-	  : widget(nullptr)
 	{
 	}
-	QWidget* widget;
+	QPointer<QWidget> widget;
 };
 
 VipWidgetPlayer::VipWidgetPlayer(QWidget* w, QWidget* parent)
@@ -663,7 +662,9 @@ VipWidgetPlayer::VipWidgetPlayer(QWidget* w, QWidget* parent)
 	setWidget(w);
 }
 
-VipWidgetPlayer::~VipWidgetPlayer() {}
+VipWidgetPlayer::~VipWidgetPlayer() {
+	delete m_data;
+}
 
 QSize VipWidgetPlayer::sizeHint() const
 {
@@ -703,6 +704,27 @@ bool VipWidgetPlayer::renderObject(QPainter* p, const QPointF& pos, bool)
 	this->render(p, pos.toPoint(), QRegion(), QWidget::DrawChildren);
 	return true;
 }
+
+static VipArchive& operator<<(VipArchive& arch, const VipWidgetPlayer* pl) 
+{
+	if (pl->widget())
+		arch.content("widget", pl->widget());
+	return arch;
+}
+static VipArchive& operator>>(VipArchive& arch, VipWidgetPlayer* pl)
+{
+	arch.save();
+	QWidget* w = arch.read("widget").value<QWidget*>();
+	if (!arch)
+		arch.restore();
+	if (w)
+		pl->setWidget(w);
+	return arch;
+}
+
+
+
+
 
 VipPlayerToolTip::VipPlayerToolTip() {}
 
@@ -1151,6 +1173,16 @@ void VipPlayer2D::keyPressEvent(QKeyEvent* evt)
 		nextSelection(evt->modifiers() & Qt::CTRL);
 		return;
 	}
+
+	// Apply dispatcher
+	auto fun = VipFDPlayerKeyPress().match(this);
+	for (auto& f : fun) {
+		if (f(this,(int) evt->key(), (int) evt->modifiers())) {
+			evt->accept();
+			return;
+		}
+	}
+
 	evt->ignore();
 }
 
@@ -3008,8 +3040,10 @@ bool VipVideoPlayer::decreaseContour()
 
 void VipVideoPlayer::keyPressEvent(QKeyEvent* evt)
 {
+
 	// Use Z and S to move contour level
 	evt->ignore();
+
 
 	if (evt->key() == Qt::Key_Z && !(evt->modifiers() & Qt::CTRL)) {
 		if (increaseContour())
@@ -3019,7 +3053,7 @@ void VipVideoPlayer::keyPressEvent(QKeyEvent* evt)
 		if (decreaseContour())
 			evt->accept();
 	}
-	else if (evt->key() == Qt::Key_U && !(evt->modifiers() & Qt::CTRL)) {
+	else if (evt->key() == Qt::Key_I && !(evt->modifiers() & Qt::CTRL)) {
 		updateSelectedShapesFromIsoLine();
 		evt->accept();
 	}
@@ -7624,6 +7658,13 @@ VipFunctionDispatcher<3>& VipFDDropOnPlotItem()
 	return disp;
 }
 
+VipFunctionDispatcher<3>& VipFDPlayerKeyPress()
+{
+	static VipFunctionDispatcher<3> disp;
+	return disp;
+}
+
+
 #include "VipDisplayArea.h"
 
 // default action on right click: menu with actions move to foreground/background.
@@ -8941,6 +8982,7 @@ static int registerStreamOperators()
 	vipRegisterArchiveStreamOperators<VipPlayer2D*>();
 	vipRegisterArchiveStreamOperators<VipVideoPlayer*>();
 	vipRegisterArchiveStreamOperators<VipPlotPlayer*>();
+	vipRegisterArchiveStreamOperators<VipWidgetPlayer*>();
 	// vipRegisterSettingsArchiveFunctions(serialize_VipDefaultSceneModelDisplayOptions, serialize_VipDefaultSceneModelDisplayOptions);
 	vipRegisterSettingsArchiveFunctions(saveVipPlayerToolTip, loadVipPlayerToolTip);
 	VipFDDropOnPlotItem().append<bool(VipVideoPlayer*, VipPlotItem*, QMimeData*)>(handleDropROIFileOnVideo);

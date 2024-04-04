@@ -691,6 +691,7 @@ public:
 	/// \sa VipPlotItemDynamicProperty
 	void addDynamicProperty(VipPlotItemDynamicProperty* prop);
 	void removeDynamicProperty(VipPlotItemDynamicProperty* prop);
+	void clearDynamicProperties();
 	QList<VipPlotItemDynamicProperty*> dynamicProperties() const;
 
 	/// Returns a modified version of given text.

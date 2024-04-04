@@ -49,6 +49,35 @@ struct Anchor
 	}
 };
 
+
+/// @brief Small tool bar to navigate through maximized players
+class NavigatePlayers : public QToolBar
+{
+	Q_OBJECT
+public:
+	NavigatePlayers(VipDragWidget* p);
+	~NavigatePlayers();
+
+	VipDragWidget* parentDragWidget() const;
+	VipDragWidget* next() const;
+	VipDragWidget* prev() const;
+
+protected:
+	virtual bool eventFilter(QObject*, QEvent* evt);
+
+private Q_SLOTS:
+	void goNext();
+	void goPrev();
+	void visibilityChanged();
+	void updatePos();
+
+private:
+	class PrivateData;
+	PrivateData* m_data;
+};
+
+
+
 class BaseCustomPlayer : public QObject
 {
 	Q_OBJECT

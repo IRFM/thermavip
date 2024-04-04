@@ -3,7 +3,7 @@
 cmake_minimum_required(VERSION 3.16)
 
 project(thermavip
-    VERSION 4.4.0
+    VERSION 4.5.1
     DESCRIPTION "thermavip"
     HOMEPAGE_URL "https://github.com/IRFM/thermavip"
     LANGUAGES CXX C
@@ -35,8 +35,11 @@ option(WITH_FFMEG "Build ffmpeg plugin" OFF)
 option(WITH_HDF5 "Build HDF5 plugin" OFF)
 option(WITH_PYTHON "Build Python plugin" OFF)
 option(WITH_LIBRIR "Build and install librir" OFF)
-option(WITH_WEST "Build and install WEST related features" OFF)
+#option(WITH_WEST "Build and install WEST related features" OFF)
 
+if(WITH_WEST)
+	set(WITH_LIBRIR ON)
+endif()
 
 IF(LOCAL_INSTALL)
 	SET(CMAKE_INSTALL_PREFIX ${CMAKE_BINARY_DIR}/install) 
@@ -55,15 +58,15 @@ IF(LOCAL_INSTALL)
 ENDIF()
 
 
-IF(WITH_WEST)
-	IF(EXISTS ${PROJECT_SOURCE_DIR}/src/External/thermavip_WEST_plugins)
-		message(STATUS "Pulling WEST repository...")
-		execute_process(COMMAND git pull WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/src/External/thermavip_WEST_plugins)
-	ELSE()
-		message(STATUS "Cloning WEST repository...")
-		execute_process(COMMAND git clone https://github.com/IRFM/thermavip_WEST_plugins.git ${PROJECT_SOURCE_DIR}/src/External/thermavip_WEST_plugins)
-	ENDIF()
-endif()
+#IF(WITH_WEST)
+#	IF(EXISTS ${PROJECT_SOURCE_DIR}/src/External/thermavip_WEST_plugins)
+#		message(STATUS "Pulling WEST repository...")
+#		execute_process(COMMAND git pull WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/src/External/thermavip_WEST_plugins)
+#	ELSE()
+#		message(STATUS "Cloning WEST repository...")
+#		execute_process(COMMAND git clone https://github.com/IRFM/thermavip_WEST_plugins.git ${PROJECT_SOURCE_DIR}/src/External/thermavip_WEST_plugins)
+#	ENDIF()
+#endif()
 
 
 # Make configure_ffmpeg executable

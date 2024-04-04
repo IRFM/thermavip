@@ -126,12 +126,17 @@ void VipDoubleSlider::setValue(double v)
 
 void VipDoubleSlider::scaleDivHasChanged()
 {
-	// smart grip update
 	VipInterval interval = scaleDiv().bounds().normalized();
-	if (grip()->value() < interval.minValue())
-		grip()->setValue(interval.minValue());
-	else if (grip()->value() > interval.maxValue())
-		grip()->setValue(interval.maxValue());
+	QList<QGraphicsItem*> items = this->childItems();
+	// smart grip update
+	for (QGraphicsItem* it : items) {
+		if (VipSliderGrip* g = qobject_cast<VipSliderGrip*>(it->toGraphicsObject())) {
+			if (g->value() < interval.minValue())
+				g->setValue(interval.minValue());
+			else if (g->value() > interval.maxValue())
+				g->setValue(interval.maxValue());
+		}
+	}
 }
 
 double VipDoubleSlider::additionalSpace() const
@@ -357,6 +362,9 @@ void VipDoubleSlider::gripValueChanged(double value)
 	Q_EMIT valueChanged(d_data->grip->value());
 }
 
+
+
+
 VipDoubleSliderWidget::VipDoubleSliderWidget(VipBorderItem::Alignment align, QWidget* parent)
   : VipScaleWidget(new VipDoubleSlider(align), parent)
 {
@@ -380,6 +388,14 @@ void VipDoubleSliderWidget::onResize()
 		this->setMinimumWidth(slider()->extentForLength(0));
 	else
 		this->setMinimumHeight(slider()->extentForLength(0));
+
+	QList<QGraphicsItem*> items = this->slider()->childItems();
+	// smart grip update
+	for (QGraphicsItem* it : items) {
+		if (VipSliderGrip* g = qobject_cast<VipSliderGrip*>(it->toGraphicsObject())) {
+			g->updatePosition();
+		}
+	}
 }
 
 void VipDoubleSliderWidget::showEvent(QShowEvent*)

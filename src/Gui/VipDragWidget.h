@@ -161,7 +161,8 @@ public:
 		Minimize = 0x0010,	    //! The widget can be minimized
 		Closable = 0x0020,	    //! The widget can be closed
 		DragWidgetExtract = 0x0080, //! A drag widget can be extracted from its parent to make it free
-		AllOperations = Move | Drop | ReceiveDrop | Maximize | Minimize | Closable | DragWidgetExtract
+		NoHideOnMaximize = 0x0100, //! cannot hide widget when another is maximized
+		AllOperations = Move | Drop | ReceiveDrop | Maximize | Minimize | Closable | DragWidgetExtract 
 	};
 	//! Supported operations attributes
 	typedef QFlags<Operation> Operations;
@@ -335,6 +336,9 @@ public:
 	virtual void setWidget(QWidget* widget);
 	/// Returns the inner widget
 	QWidget* widget() const;
+
+	VipDragWidget* next() const;
+	VipDragWidget* prev() const;
 
 	virtual QSize sizeHint() const;
 
@@ -577,6 +581,11 @@ public:
 	/// \param x position in the horizontal splitter.
 	/// \param index position in the QTabWidget.
 	VipBaseDragWidget* widget(int y, int x, int index) const;
+
+	/// @brief Returns the first VipDragWidget this widget contains, or nullptr
+	VipDragWidget* firstDragWidget() const;
+	/// @brief Returns the last VipDragWidget this widget contains, or nullptr
+	VipDragWidget* lastDragWidget() const;
 
 	/// Returns the number of horizontal splitters in the main vertical one.
 	int mainCount() const;

@@ -32,6 +32,7 @@
 #include "VipLibRIR.h"
 #include "VipCore.h"
 #include "VipLogging.h"
+#include "VipNetwork.h"
 
 #include <qapplication.h>
 #include <qfileinfo.h>
@@ -55,14 +56,17 @@ static bool loadLibraries()
 		path.replace("\\", "/");
 		if (!path.endsWith("/"))
 			path += "/";
+		QString thermavip = path;
 		path += "librir/libs/";
+
+		QString path_west = thermavip + "librir_west/libs/";
 
 #ifdef WIN32
 		QString tools = path + "tools.dll";
 		QString geometry = path + "geometry.dll";
 		QString signal_processing = path + "signal_processing.dll";
 		QString video_io = path + "video_io.dll";
-		QString west = path + "west.dll";
+		QString west = path_west + "west.dll";
 #else
 		QString tools = path + "tools.so";
 		QString geometry = path + "geometry.so";
@@ -88,6 +92,14 @@ static bool loadLibraries()
 			fflush(stdout);
 		}
 		else {
+			//TODO: set TSLIB_SERVER to deneb-bis
+			if (true){//vipPing("deneb-bis")) {
+				//VIP_LOG_INFO("Use ARCADE server deneb-bis");
+				//qputenv("TSLIB_SERVER", "deneb-bis");
+				//qputenv("TSLIB_COMPRESS", "1");
+			}
+			else
+				VIP_LOG_WARNING("Cannot reach server deneb-bis");
 			if (!_west.load()) {
 				VIP_LOG_WARNING("West plugin of librir not found!");
 			}
@@ -243,38 +255,7 @@ VipLibRIR* VipLibRIR::instance()
 		return librir = nullptr;
 	}
 
-	librir->set_optical_temperature = (_set_optical_temperature)videoIOLib()->resolve("set_optical_temperature");
-	if (!librir->set_optical_temperature) {
-		VIP_LOG_ERROR("librir: missing set_optical_temperature");
-		delete librir;
-		return librir = nullptr;
-	}
-	librir->get_optical_temperature = (_get_optical_temperature)videoIOLib()->resolve("get_optical_temperature");
-	if (!librir->get_optical_temperature) {
-		VIP_LOG_ERROR("librir: missing get_optical_temperature");
-		delete librir;
-		return librir = nullptr;
-	}
-
-	librir->set_STEFI_temperature = (_set_optical_temperature)videoIOLib()->resolve("set_STEFI_temperature");
-	if (!librir->set_STEFI_temperature) {
-		VIP_LOG_ERROR("librir: missing set_STEFI_temperature");
-		delete librir;
-		return librir = nullptr;
-	}
-	librir->get_STEFI_temperature = (_get_optical_temperature)videoIOLib()->resolve("get_STEFI_temperature");
-	if (!librir->get_STEFI_temperature) {
-		VIP_LOG_ERROR("librir: missing get_STEFI_temperature");
-		delete librir;
-		return librir = nullptr;
-	}
-
-	librir->support_optical_temperature = (_support_optical_temperature)videoIOLib()->resolve("support_optical_temperature");
-	if (!librir->support_optical_temperature) {
-		VIP_LOG_ERROR("librir: missing support_optical_temperature");
-		delete librir;
-		return librir = nullptr;
-	}
+	
 
 	librir->load_motion_correction_file = (_load_motion_correction_file)videoIOLib()->resolve("load_motion_correction_file");
 	librir->enable_motion_correction = (_enable_motion_correction)videoIOLib()->resolve("enable_motion_correction");
@@ -388,7 +369,7 @@ VipLibRIR* VipLibRIR::instance()
 		return librir = nullptr;
 	}
 
-	librir->open_video_write = (_open_video_write)videoIOLib()->resolve("open_video_write");
+	/* librir->open_video_write = (_open_video_write)videoIOLib()->resolve("open_video_write");
 	if (!librir->open_video_write) {
 		VIP_LOG_ERROR("librir: missing open_video_write");
 		delete librir;
@@ -405,7 +386,7 @@ VipLibRIR* VipLibRIR::instance()
 		VIP_LOG_ERROR("librir: missing close_video");
 		delete librir;
 		return librir = nullptr;
-	}
+	}*/
 
 	librir->calibrate_image = (_calibrate_image)videoIOLib()->resolve("calibrate_image");
 	if (!librir->calibrate_image) {
@@ -504,6 +485,40 @@ VipLibRIR* VipLibRIR::instance()
 	}
 
 	if (westLib()) {
+
+		librir->set_optical_temperature = (_set_optical_temperature)westLib()->resolve("set_optical_temperature");
+		if (!librir->set_optical_temperature) {
+			VIP_LOG_ERROR("librir: missing set_optical_temperature");
+			delete librir;
+			return librir = nullptr;
+		}
+		librir->get_optical_temperature = (_get_optical_temperature)westLib()->resolve("get_optical_temperature");
+		if (!librir->get_optical_temperature) {
+			VIP_LOG_ERROR("librir: missing get_optical_temperature");
+			delete librir;
+			return librir = nullptr;
+		}
+
+		librir->set_STEFI_temperature = (_set_optical_temperature)westLib()->resolve("set_STEFI_temperature");
+		if (!librir->set_STEFI_temperature) {
+			VIP_LOG_ERROR("librir: missing set_STEFI_temperature");
+			delete librir;
+			return librir = nullptr;
+		}
+		librir->get_STEFI_temperature = (_get_optical_temperature)westLib()->resolve("get_STEFI_temperature");
+		if (!librir->get_STEFI_temperature) {
+			VIP_LOG_ERROR("librir: missing get_STEFI_temperature");
+			delete librir;
+			return librir = nullptr;
+		}
+
+		librir->support_optical_temperature = (_support_optical_temperature)westLib()->resolve("support_optical_temperature");
+		if (!librir->support_optical_temperature) {
+			VIP_LOG_ERROR("librir: missing support_optical_temperature");
+			delete librir;
+			return librir = nullptr;
+		}
+
 
 		librir->get_temp_directory = (_get_temp_directory)westLib()->resolve("get_west_data_dir");
 		if (!librir->get_temp_directory) {

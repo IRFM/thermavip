@@ -561,7 +561,179 @@ static void uploadROIsFromPlayer(VipVideoPlayer* pl, const QList<VipShape>& shs)
 		QString url = "thermavip://" + QString::number(pulse) + "&" + camera + "&" + ids_str.join("_");
 		qApp->clipboard()->setText(url);
 	}
+
+
+	// Display events
+
+	VipEventQuery query;
+	query.eventIds = ids;
+
+	// open events
+	db->displayFromDataBaseQuery(query, false);
+
+	for (VipPlotShape* sh : selected) {
+		pl->plotSceneModel()->sceneModel().remove(sh->rawData());
+	}
+	//QList<VipPlotShape*> selected = pl->plotSceneModel()->shapes(1);
 }
+
+
+
+static void uploadImageEventFromPlayer(VipVideoPlayer* pl, bool remember = true)
+{
+	static QString last_class;
+	static QString last_dataset;
+	static bool remember_choices = false;
+	if (!remember)
+		remember_choices = false;
+
+	VipPlayerDBAccess* db = VipPlayerDBAccess::fromPlayer(pl);
+	if (!pl) {
+		QMessageBox::warning(nullptr, "Error", "Unable to send ROI to DB");
+		return;
+	}
+
+	if (!remember_choices)
+	{
+		// Create dialog
+		QComboBox* type = new QComboBox();
+		type->setToolTip("Event type");
+		type->addItems(vipEventTypesDB(db->camera()));
+		if (!last_class.isEmpty())
+			type->setCurrentText(last_class);
+
+		VipDatasetButton* dataset_b = new VipDatasetButton();
+		if (!last_dataset.isEmpty())
+			dataset_b->setDataset(last_dataset);
+
+		QCheckBox* remember = new QCheckBox("Remember my choices");
+		remember->setChecked(false);
+
+		QGridLayout* lay = new QGridLayout();
+		lay->addWidget(new QLabel("Event type"), 0, 0);
+		lay->addWidget(type, 0, 1);
+		lay->addWidget(new QLabel("Dataset"), 1, 0);
+		lay->addWidget(dataset_b, 1, 1);
+		lay->addWidget(remember, 2, 0, 1, 2);
+		QWidget* w = new QWidget();
+		w->setLayout(lay);
+
+		VipGenericDialog dial(w, "Upload image event");
+		if (dial.exec() != QDialog::Accepted)
+			return;
+
+		last_class = type->currentText();
+		last_dataset = dataset_b->dataset();
+		vip_debug("%s\n", last_dataset.toLatin1().data());
+		remember_choices = remember->isChecked();
+	}
+
+	VipManualAnnotation* annot = db->manualAnnotationPanel();
+	if (!pl) {
+		QMessageBox::warning(nullptr, "Error", "Unable to send ROI to DB");
+		return;
+	}
+
+
+	int pulse = db->pulse();
+	QString camera = db->camera();
+	QString device = db->device();
+
+	VipDisplayObject* display = pl->spectrogram()->property("VipDisplayObject").value<VipDisplayObject*>();
+	if (!display) {
+		QMessageBox::warning(nullptr, "Error", "Unable to send ROI to DB");
+		return;
+	}
+
+	// try to retrieve the source VipOutput this VipDisplayObject
+	VipOutput* src_output = nullptr;
+	if (VipInput* input = display->inputAt(0))
+		if (VipConnectionPtr con = input->connection())
+			if (VipOutput* source = con->source())
+				src_output = source;
+
+	if (!src_output) {
+		QMessageBox::warning(nullptr, "Error", "Unable to send ROI to DB");
+		return;
+	}
+	const VipAnyData any = src_output->data();
+	const VipNDArray ar = any.value<VipNDArray>();
+	qint64 time = any.time();
+
+	Vip_event_list res;
+	QString user_name = vipUserName();
+
+	
+	QString default_status = "Analyzed (OK)";
+
+	qint64 duration = 0;
+	qint64 initial_time = time;
+	qint64 last_time = time;
+	int count = 0;
+
+	{
+	
+		QVariantMap attrs;
+		attrs.insert("comments", QString());
+		attrs.insert("name", QString());
+		attrs.insert("dataset", last_dataset);
+		attrs.insert("experiment_id", pulse);
+		attrs.insert("initial_timestamp_ns", initial_time);
+		attrs.insert("final_timestamp_ns", last_time);
+		attrs.insert("duration_ns", duration);
+		attrs.insert("is_automatic_detection", false);
+		attrs.insert("method", QString("manual annotation (bbox)"));
+		attrs.insert("confidence", 1.);
+		attrs.insert("analysis_status", default_status);
+		attrs.insert("user", user_name);
+		attrs.insert("line_of_sight", camera);
+		attrs.insert("device", device);
+
+		// set attributes from realtime table
+		attrs.insert("timestamp_ns", time);
+		QRectF bounding;
+		attrs.insert("bbox_x", bounding.left());
+		attrs.insert("bbox_y", bounding.top());
+		attrs.insert("bbox_width", bounding.width());
+		attrs.insert("bbox_height", bounding.height());
+		attrs.insert("max_temperature_C", 0); // TODO
+		attrs.insert("max_T_image_position_x", 0);
+		attrs.insert("max_T_image_position_y", 0);
+		attrs.insert("min_temperature_C", 0);
+		attrs.insert("min_T_image_position_x", 0);
+		attrs.insert("min_T_image_position_y", 0);
+		attrs.insert("average_temperature_C", 0);
+		attrs.insert("pixel_area", bounding.width() * bounding.height());
+		attrs.insert("centroid_image_position_x", 0);
+		attrs.insert("centroid_image_position_y", 0);
+
+		// set the event flag
+		attrs.insert("origin", (int)VipPlayerDBAccess::New);
+
+		VipShape sh(bounding);
+		sh.setAttributes(attrs);
+		sh.setGroup(last_class);
+
+		res[count++].append(sh);
+	}
+
+	// Send events
+	VipProgress p;
+	QList<qint64> ids = vipSendToDB(user_name, camera, device, pulse, res, &p);
+	if (ids.size() == 0) {
+		QMessageBox::warning(nullptr, "Error", "Unable to upload ROI to DB");
+		return;
+	}
+
+	// Display events
+
+	VipEventQuery query;
+	query.eventIds = ids;
+
+	// open events
+	db->displayFromDataBaseQuery(query, false);
+}
+
 
 static QList<QAction*> manualAnnotationHelperMenu(VipPlotShape* shape, VipVideoPlayer* p)
 {
@@ -610,9 +782,42 @@ static QList<QAction*> manualAnnotationHelperMenu(VipPlotShape* shape, VipVideoP
 	return actions;
 }
 
+static QList<QAction*> imageAnnotationHelperMenu(VipPlotItem*, VipVideoPlayer* p) 
+{
+	QList<QAction*> actions;
+	// add possibillity to upload selected ROI to DB in the PPO dataset
+	if (vipHasWriteRightsDB()) {
+
+		QAction* image = new QAction("Add image of interest to the database (CTRL+U)", nullptr);
+		QObject::connect(image, &QAction::triggered, std::bind(uploadImageEventFromPlayer, p,true));
+		actions << image;
+	}
+
+	return actions;
+}
+
+
+static bool handleVideoKeyPress(VipVideoPlayer* pl, int key, int modifiers)
+{
+	if (key == Qt::Key_U) {
+	
+		bool remember = true;
+		if (modifiers & Qt::CTRL) {
+			remember = false;
+		}
+		uploadImageEventFromPlayer(pl, remember);
+		return true;
+	}
+	return false;
+}
+
+
+
 static int registerManualAnnotationHelperMenu()
 {
 	VipFDItemRightClick().append<QList<QAction*>(VipPlotShape*, VipVideoPlayer*)>(manualAnnotationHelperMenu);
+	VipFDItemRightClick().append<QList<QAction*>(VipPlotItem*, VipVideoPlayer*)>(imageAnnotationHelperMenu);
+	VipFDPlayerKeyPress().append<bool(VipVideoPlayer*, int, int)>(handleVideoKeyPress);
 	return 0;
 }
 

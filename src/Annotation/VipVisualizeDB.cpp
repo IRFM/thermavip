@@ -205,7 +205,6 @@ VisualizeDB::VisualizeDB(QWidget* parent)
 							       << "User"
 							       << "Comments"
 							       << "Name"
-#
 	);
 	// for now hide pulse date
 	m_data->table->setSortingEnabled(true);

@@ -272,9 +272,9 @@ public:
 	_enable_bad_pixels enable_bad_pixels;
 	_bad_pixels_enabled bad_pixels_enabled;
 
-	_open_video_write open_video_write;
-	_image_write image_write;
-	_close_video close_video;
+	//_open_video_write open_video_write;
+	//_image_write image_write;
+	//_close_video close_video;
 
 	_calibrate_image calibrate_image;
 	_calibrate_image_inplace calibrate_image_inplace;
