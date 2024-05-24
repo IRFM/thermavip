@@ -1,7 +1,7 @@
 /**
  * BSD 3-Clause License
  *
- * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Lï¿½o Dubus, Erwan Grelier
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -190,9 +190,10 @@ public:
 	typedef int (*_unzip)(const char* infile, const char* outdir);
 
 	typedef int (*_pchrono)(int pulse, char* out, int* out_size);
+	typedef int (*_open_with_filename)(const char* filename);
 
 	typedef int (*_get_table_names)(int cam, char* dst, int* dst_size);
-	typedef int (*_get_table)(int cam, const char* name, float* dst, int* dst_size); 
+	typedef int (*_get_table)(int cam, const char* name, float* dst, int* dst_size);
 
 	_set_print_function set_print_function;
 	_disable_print disable_print;
@@ -221,6 +222,7 @@ public:
 	_has_camera_preloaded has_camera_preloaded;
 	_get_camera_filename get_camera_filename;
 	_open_camera_file open_camera_file;
+	_open_with_filename open_with_filename;
 	_set_global_emissivity set_global_emissivity;
 	_set_emissivity set_emissivity;
 	_support_emissivity support_emissivity;
