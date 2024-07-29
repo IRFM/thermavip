@@ -67,9 +67,43 @@ static void myMessageOutput(QtMsgType type, const QMessageLogContext& context, c
 }
 
 
+
 int main(int argc, char** argv)
 {
+	// Load thermavip.env
+	QString env_file = vipGetDataDirectory() + "thermavip/thermavip.env";
+	printf("%s\n", env_file.toLatin1().data());
+	if (!QFileInfo(env_file).exists()) {
+		env_file = QFileInfo(QString(argv[0])).canonicalPath();
+		env_file.replace("\\", "/");
+		if (!env_file.endsWith("/"))
+			env_file += "/";
+		env_file += "thermavip.env";
+	}
+	if (QFileInfo(env_file).exists()) {
+		// Set env variables
+		QFile fin(env_file);
+		if (fin.open(QFile::ReadOnly | QFile::Text)) {
+			QTextStream str(&fin);
+			while (true) {
+				QString line = str.readLine();
+				if (line.isEmpty())
+					break;
+				QStringList lst = line.split(" ", Qt::SkipEmptyParts);
+				if (lst.size() == 2)
+					qputenv(lst[0].toLatin1().data(), lst[1].toLatin1());
+			}
+		}
+	}
+
+
+//#ifdef WITH_MICRO
+	// Load micro_proxy library
+//	QLibrary micro_proxy("micro_proxy");
+//	bool loaded = micro_proxy.load();
+//#endif
 	
+
 	qInstallMessageHandler(myMessageOutput);
 
 	//_putenv("QT_SCALE_FACTOR=1.5");
@@ -380,6 +414,7 @@ int main(int argc, char** argv)
 #ifdef _WIN32
 
 	// On windows only, create register key to support url on the form 'thermavip://' in browsers
+
 
 	QTemporaryDir dir;
 	QString p = dir.path();

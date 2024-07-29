@@ -153,7 +153,8 @@ void VipEventDevice::setEvents(const Vip_event_list& events, const QString& grou
 		QList<qint64> times = m_scenes.keys();
 		QVector<qint64> timestamps(times.size());
 		std::copy(times.begin(), times.end(), timestamps.begin());
-		setTimestamps(timestamps);
+		//setTimestamps(timestamps);
+		setTimestampsWithSampling(timestamps, m_video_sampling);
 
 		setProperty("_vip_showTimeLine", 1);
 	}

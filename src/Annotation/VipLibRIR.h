@@ -194,6 +194,51 @@ public:
 	typedef int (*_get_table_names)(int cam, char* dst, int* dst_size);
 	typedef int (*_get_table)(int cam, const char* name, float* dst, int* dst_size); 
 
+	typedef int (*_apply_calibration_nuc)(int cam, int enable);
+	typedef int (*_is_calibration_nuc)(int cam);
+	typedef int (*_convert_hcc_file)(const char* hcc_file,
+					 const char* lut_file,
+					 const char* tr_fut,
+					 const char* tr_hub,
+					 const char* tr_mir,
+					 const char* lopt,
+					 const char* nuc,
+					 int64_t start_timestamp_ns,
+					 const char* view,
+					 const char* out_file);
+	typedef int (*_hcc_extract_times_and_fw_pos)(int cam, int64_t* times, int* pos);
+	typedef int (*_hcc_extract_all_fw_pos)(int cam, int* pos, int* pos_count);
+
+	typedef void (*_set_hcc_lut_file)(const char* filename);
+	typedef void (*_get_hcc_lut_file)(char* filename);
+
+	typedef void (*_set_hcc_lopt_file)(const char* filename);
+	typedef void (*_get_hcc_lopt_file)(char* filename);
+
+	typedef void (*_set_hcc_nuc_file)(const char* filename);
+	typedef void (*_get_hcc_nuc_file)(char* filename);
+
+	typedef void (*_set_hcc_trhub_file)(const char* filename);
+	typedef void (*_get_hcc_trhub_file)(char* filename);
+
+	typedef void (*_set_hcc_trmir_file)(const char* filename);
+	typedef void (*_get_hcc_trmir_file)(char* filename);
+
+	typedef void (*_set_hcc_trfut_file)(const char* filename);
+	typedef void (*_get_hcc_trfut_file)(char* filename);
+
+	typedef int (*_attrs_open_file)(const char* filename);
+	typedef void (*_attrs_close)(int handle);
+	typedef int (*_attrs_image_count)(int handle);
+	typedef int (*_attrs_global_attribute_count)(int handle);
+	typedef int (*_attrs_global_attribute_name)(int handle, int pos, char* name, int* len);
+	typedef int (*_attrs_global_attribute_value)(int handle, int pos, char* value, int* len);
+	typedef int (*_attrs_frame_attribute_count)(int handle, int frame);
+	typedef int (*_attrs_frame_attribute_name)(int handle, int frame, int pos, char* name, int* len);
+	typedef int (*_attrs_frame_attribute_value)(int handle, int frame, int pos, char* value, int* len);
+	typedef int (*_attrs_frame_timestamp)(int handle, int frame, int64_t* time);
+	typedef int (*_attrs_timestamps)(int handle, int64_t* time);
+
 	_set_print_function set_print_function;
 	_disable_print disable_print;
 	_reset_print_functions reset_print_functions;
@@ -318,6 +363,42 @@ public:
 	_unzip unzip;
 
 	_pchrono pchrono;
+
+	_apply_calibration_nuc apply_calibration_nuc;
+	_is_calibration_nuc is_calibration_nuc;
+	_convert_hcc_file convert_hcc_file;
+	_hcc_extract_times_and_fw_pos hcc_extract_times_and_fw_pos;
+	_hcc_extract_all_fw_pos hcc_extract_all_fw_pos;
+
+	_set_hcc_lut_file set_hcc_lut_file;
+	_get_hcc_lut_file get_hcc_lut_file;
+
+	_set_hcc_lopt_file set_hcc_lopt_file;
+	_get_hcc_lopt_file get_hcc_lopt_file;
+
+	_set_hcc_nuc_file set_hcc_nuc_file;
+	_get_hcc_nuc_file get_hcc_nuc_file;
+
+	_set_hcc_trhub_file set_hcc_trhub_file;
+	_get_hcc_trhub_file get_hcc_trhub_file;
+
+	_set_hcc_trmir_file set_hcc_trmir_file;
+	_get_hcc_trmir_file get_hcc_trmir_file;
+
+	_set_hcc_trfut_file set_hcc_trfut_file;
+	_get_hcc_trfut_file get_hcc_trfut_file;
+
+	_attrs_open_file attrs_open_file;
+	_attrs_close attrs_close;
+	_attrs_image_count attrs_image_count;
+	_attrs_global_attribute_count attrs_global_attribute_count;
+	_attrs_global_attribute_name attrs_global_attribute_name;
+	_attrs_global_attribute_value attrs_global_attribute_value;
+	_attrs_frame_attribute_count attrs_frame_attribute_count;
+	_attrs_frame_attribute_name attrs_frame_attribute_name;
+	_attrs_frame_attribute_value attrs_frame_attribute_value;
+	_attrs_frame_timestamp attrs_frame_timestamp;
+	_attrs_timestamps attrs_timestamps;
 
 	// helper function
 	QStringList availableCameraIdentifiers(int pulse);

@@ -35,6 +35,7 @@ option(WITH_FFMEG "Build ffmpeg plugin" OFF)
 option(WITH_HDF5 "Build HDF5 plugin" OFF)
 option(WITH_PYTHON "Build Python plugin" OFF)
 option(WITH_LIBRIR "Build and install librir" OFF)
+option(WITH_MICRO "Experimental, use micro generic allocator to reduce memory footprint" OFF)
 #option(WITH_WEST "Build and install WEST related features" OFF)
 
 if(WITH_WEST)

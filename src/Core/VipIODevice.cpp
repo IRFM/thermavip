@@ -2762,6 +2762,57 @@ void VipTimeRangeBasedGenerator::setTimestamps(const QVector<qint64>& timestamps
 	this->emitTimestampingChanged();
 }
 
+void VipTimeRangeBasedGenerator::setTimestampsWithSampling(const QVector<qint64>& timestamps, qint64 sampling)
+{
+	m_data->ranges.clear();
+	m_data->step_size = 0;
+	m_data->sizes.clear();
+	m_data->timestamps = timestamps;
+	m_data->full_size = 0;
+
+	if (timestamps.size()) {
+		m_data->full_size = timestamps.size();
+		m_data->sizes = QList<qint64>() << timestamps.size();
+		m_data->ranges = VipTimeRangeList() << VipTimeRange(timestamps.first(), timestamps.last());
+		if (timestamps.size() > 1)
+			m_data->step_size = timestamps[1] - timestamps[0];
+	}
+
+	if (timestamps.size() > 1 ) {
+		
+		// reconstruct the time ranges.
+		// we consider that a gap > 3*sampling is enough to start a new range (more than 3 consecutive miss frames).
+		VipTimeRangeList ranges;
+		VipTimeRange current(timestamps.first(), timestamps.first());
+
+		m_data->sizes.clear();
+		m_data->sizes.append(1);
+
+		for (int i = 1; i < timestamps.size(); ++i) {
+			qint64 gap = timestamps[i] - current.second;
+			if ((double)gap > 1.5 * sampling) {
+				ranges << current;
+				current = VipTimeRange(timestamps[i], timestamps[i]);
+				m_data->sizes.append(1);
+			}
+			else {
+				current.second = timestamps[i];
+				m_data->sizes.last()++;
+			}
+		}
+		ranges << current;
+		m_data->step_size = sampling;
+		m_data->ranges = ranges;
+	}
+
+	this->setSize(timestamps.size());
+
+	VipTimestampingFilter filter = this->timestampingFilter();
+	filter.setInputTimeRangeList(m_data->ranges);
+	this->setTimestampingFilter(filter);
+	this->emitTimestampingChanged();
+}
+
 qint64 VipTimeRangeBasedGenerator::computePosToTime(qint64 pos) const
 {
 	if (m_data->timestamps.size()) {

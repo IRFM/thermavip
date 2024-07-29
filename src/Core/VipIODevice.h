@@ -837,6 +837,8 @@ public:
 	///  images is way above this sampling time.
 	void setTimestamps(const QVector<qint64>& timestamps, bool enable_multiple_time_range = true);
 
+	void setTimestampsWithSampling(const QVector<qint64>& timestamps, qint64 sampling);
+
 	/// Returns the sampling time
 	qint64 samplingTime() const;
 

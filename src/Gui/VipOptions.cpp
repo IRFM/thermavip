@@ -40,6 +40,7 @@
 #include <qgroupbox.h>
 #include <qicon.h>
 #include <qscrollarea.h>
+#include <qplaintextedit.h>
 
 #include "VipCore.h"
 #include "VipDisplayArea.h"
@@ -786,6 +787,8 @@ public:
 	QToolButton* openLogFile;
 	QCheckBox* overwrite;
 	QCheckBox* append_date;
+
+	QPlainTextEdit* env;
 };
 
 EnvironmentSettings::EnvironmentSettings(QWidget* parent)
@@ -814,6 +817,9 @@ EnvironmentSettings::EnvironmentSettings(QWidget* parent)
 	m_data->overwrite = new QCheckBox("Overwrite log file at each startup");
 	m_data->append_date = new QCheckBox("Append startup date to log file name");
 
+	m_data->env = new QPlainTextEdit();
+	m_data->env->setPlaceholderText("Environment variables on the form \"VARIABLE_NAME1 VARIABLE_VALUE1 new_line VARIABLE_NAME2 VARIABLE_VALUE2 \"");
+
 	QHBoxLayout* hlay = new QHBoxLayout();
 	hlay->addWidget(m_data->dataDir);
 	hlay->addWidget(m_data->openDataDir);
@@ -834,7 +840,13 @@ EnvironmentSettings::EnvironmentSettings(QWidget* parent)
 	vlay = new QVBoxLayout();
 	vlay->addWidget(m_data->data);
 	vlay->addWidget(m_data->log);
-	vlay->addStretch(1);
+
+	QGroupBox* env_box = new QGroupBox("Environment variables (thermavip.env)");
+	env_box->setFlat(true);
+	vlay->addWidget(env_box);
+	vlay->addWidget(m_data->env,1);
+
+	//vlay->addStretch(1);
 	setLayout(vlay);
 
 	connect(m_data->openDataDir, SIGNAL(clicked(bool)), this, SLOT(openDataDirectory()));
@@ -852,11 +864,37 @@ void EnvironmentSettings::applyPage()
 	VipCoreSettings::instance()->setLogFileOverwrite(m_data->overwrite->isChecked());
 
 	VipCoreSettings::instance()->save(vipGetDataDirectory() + "core_settings.xml");
+
+	// Save env. variables
+	QString env_file = vipGetDataDirectory() + "thermavip.env";
+	QFile fin(env_file);
+	if (fin.open(QFile::WriteOnly | QFile::Text)) {
+		fin.write(m_data->env->toPlainText().toLatin1());
+	}
+	else
+		VIP_LOG_ERROR("Unable to create file ", env_file);
 }
+
 void EnvironmentSettings::updatePage()
 {
 	m_data->append_date->setChecked(VipCoreSettings::instance()->logFileDate());
 	m_data->overwrite->setChecked(VipCoreSettings::instance()->logFileOverwrite());
+
+	m_data->env->clear();
+	QString env_file = vipGetDataDirectory() + "thermavip.env";
+	if (!QFileInfo(env_file).exists()) {
+		env_file = QFileInfo(vipAppCanonicalPath()).canonicalPath();
+		env_file.replace("\\", "/");
+		if (!env_file.endsWith("/"))
+			env_file += "/";
+		env_file += "thermavip.env";
+	}
+	if (QFileInfo(env_file).exists()) {
+		QFile fin(env_file);
+		if (fin.open(QFile::ReadOnly | QFile::Text)) {
+			m_data->env->setPlainText(fin.readAll());
+		}
+	}
 }
 
 void EnvironmentSettings::openDataDirectory()

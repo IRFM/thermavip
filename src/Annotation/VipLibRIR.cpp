@@ -223,6 +223,23 @@ VipLibRIR* VipLibRIR::instance()
 		return librir = nullptr;
 	}
 
+	librir->attrs_open_file = (_attrs_open_file)toolsLib()->resolve("attrs_open_file");
+	librir->attrs_close = (_attrs_close)toolsLib()->resolve("attrs_close");
+	librir->attrs_image_count = (_attrs_image_count)toolsLib()->resolve("attrs_image_count");
+	librir->attrs_global_attribute_count = (_attrs_global_attribute_count)toolsLib()->resolve("attrs_global_attribute_count");
+	librir->attrs_global_attribute_name = (_attrs_global_attribute_name)toolsLib()->resolve("attrs_global_attribute_name");
+	librir->attrs_global_attribute_value = (_attrs_global_attribute_value)toolsLib()->resolve("attrs_global_attribute_value");
+	librir->attrs_frame_attribute_count = (_attrs_frame_attribute_count)toolsLib()->resolve("attrs_frame_attribute_count");
+	librir->attrs_frame_attribute_name = (_attrs_frame_attribute_name)toolsLib()->resolve("attrs_frame_attribute_name");
+	librir->attrs_frame_attribute_value = (_attrs_frame_attribute_value)toolsLib()->resolve("attrs_frame_attribute_value");
+	librir->attrs_frame_timestamp = (_attrs_frame_timestamp)toolsLib()->resolve("attrs_frame_timestamp");
+	librir->attrs_timestamps = (_attrs_timestamps)toolsLib()->resolve("attrs_timestamps");
+	if (!librir->attrs_open_file) {
+		VIP_LOG_ERROR("librir: missing attrs_open_file");
+		delete librir;
+		return librir = nullptr;
+	}
+
 	librir->open_camera_file = (_open_camera_file)videoIOLib()->resolve("open_camera_file");
 	if (!librir->open_camera_file) {
 		VIP_LOG_ERROR("librir: missing open_camera_file");
@@ -837,6 +854,115 @@ VipLibRIR* VipLibRIR::instance()
 		librir->open_camera = (_open_camera)westLib()->resolve("open_camera");
 		if (!librir->open_camera) {
 			VIP_LOG_ERROR("librir: missing open_camera");
+			delete librir;
+			return librir = nullptr;
+		}
+
+		librir->apply_calibration_nuc = (_apply_calibration_nuc)westLib()->resolve("apply_calibration_nuc");
+		if (!librir->apply_calibration_nuc) {
+			VIP_LOG_ERROR("librir: missing apply_calibration_nuc");
+			delete librir;
+			return librir = nullptr;
+		}
+		librir->is_calibration_nuc = (_is_calibration_nuc)westLib()->resolve("is_calibration_nuc");
+		if (!librir->is_calibration_nuc) {
+			VIP_LOG_ERROR("librir: missing is_calibration_nuc");
+			delete librir;
+			return librir = nullptr;
+		}
+		librir->convert_hcc_file = (_convert_hcc_file)westLib()->resolve("convert_hcc_file");
+		if (!librir->convert_hcc_file) {
+			VIP_LOG_ERROR("librir: missing convert_hcc_file");
+			delete librir;
+			return librir = nullptr;
+		}
+		librir->set_hcc_lut_file = (_set_hcc_lut_file)westLib()->resolve("set_hcc_lut_file");
+		if (!librir->set_hcc_lut_file) {
+			VIP_LOG_ERROR("librir: missing set_hcc_lut_file");
+			delete librir;
+			return librir = nullptr;
+		}
+		librir->get_hcc_lut_file = (_get_hcc_lut_file)westLib()->resolve("get_hcc_lut_file");
+		if (!librir->get_hcc_lut_file) {
+			VIP_LOG_ERROR("librir: missing get_hcc_lut_file");
+			delete librir;
+			return librir = nullptr;
+		}
+		
+		librir->set_hcc_lopt_file = (_set_hcc_lopt_file)westLib()->resolve("set_hcc_lopt_file");
+		if (!librir->set_hcc_lopt_file) {
+			VIP_LOG_ERROR("librir: missing set_hcc_lopt_file");
+			delete librir;
+			return librir = nullptr;
+		}
+		librir->get_hcc_lopt_file = (_get_hcc_lopt_file)westLib()->resolve("get_hcc_lopt_file");
+		if (!librir->get_hcc_lopt_file) {
+			VIP_LOG_ERROR("librir: missing get_hcc_lopt_file");
+			delete librir;
+			return librir = nullptr;
+		}
+
+		librir->set_hcc_nuc_file = (_set_hcc_nuc_file)westLib()->resolve("set_hcc_nuc_file");
+		if (!librir->set_hcc_nuc_file) {
+			VIP_LOG_ERROR("librir: missing set_hcc_nuc_file");
+			delete librir;
+			return librir = nullptr;
+		}
+		librir->get_hcc_nuc_file = (_get_hcc_nuc_file)westLib()->resolve("get_hcc_nuc_file");
+		if (!librir->get_hcc_nuc_file) {
+			VIP_LOG_ERROR("librir: missing get_hcc_nuc_file");
+			delete librir;
+			return librir = nullptr;
+		}
+
+		librir->set_hcc_trhub_file = (_set_hcc_trhub_file)westLib()->resolve("set_hcc_trhub_file");
+		if (!librir->set_hcc_trhub_file) {
+			VIP_LOG_ERROR("librir: missing set_hcc_trhub_file");
+			delete librir;
+			return librir = nullptr;
+		}
+		librir->get_hcc_trhub_file = (_get_hcc_trhub_file)westLib()->resolve("get_hcc_trhub_file");
+		if (!librir->get_hcc_trhub_file) {
+			VIP_LOG_ERROR("librir: missing get_hcc_trhub_file");
+			delete librir;
+			return librir = nullptr;
+		}
+
+		librir->set_hcc_trmir_file = (_set_hcc_trmir_file)westLib()->resolve("set_hcc_trmir_file");
+		if (!librir->set_hcc_trmir_file) {
+			VIP_LOG_ERROR("librir: missing set_hcc_trmir_file");
+			delete librir;
+			return librir = nullptr;
+		}
+		librir->get_hcc_trmir_file = (_get_hcc_trmir_file)westLib()->resolve("get_hcc_trmir_file");
+		if (!librir->get_hcc_trmir_file) {
+			VIP_LOG_ERROR("librir: missing get_hcc_trmir_file");
+			delete librir;
+			return librir = nullptr;
+		}
+
+		librir->set_hcc_trfut_file = (_set_hcc_trfut_file)westLib()->resolve("set_hcc_trfut_file");
+		if (!librir->set_hcc_trfut_file) {
+			VIP_LOG_ERROR("librir: missing set_hcc_trfut_file");
+			delete librir;
+			return librir = nullptr;
+		}
+		librir->get_hcc_trfut_file = (_get_hcc_trfut_file)westLib()->resolve("get_hcc_trfut_file");
+		if (!librir->get_hcc_trfut_file) {
+			VIP_LOG_ERROR("librir: missing get_hcc_trfut_file");
+			delete librir;
+			return librir = nullptr;
+		}
+
+		librir->hcc_extract_times_and_fw_pos = (_hcc_extract_times_and_fw_pos)westLib()->resolve("hcc_extract_times_and_fw_pos");
+		if (!librir->hcc_extract_times_and_fw_pos) {
+			VIP_LOG_ERROR("librir: missing hcc_extract_times_and_fw_pos");
+			delete librir;
+			return librir = nullptr;
+		}
+		librir->hcc_extract_all_fw_pos = (_hcc_extract_all_fw_pos)westLib()->resolve("hcc_extract_all_fw_pos");
+		if (!librir->hcc_extract_all_fw_pos) {
+			VIP_LOG_ERROR("librir: missing hcc_extract_all_fw_pos");
 			delete librir;
 			return librir = nullptr;
 		}

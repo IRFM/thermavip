@@ -25,6 +25,47 @@ else()
 	)
 endif()
 
+
+
+# Configure mimalloc
+IF(WITH_MICRO)
+	
+	include(FetchContent)
+	set(MICRO_BUILD_TESTS OFF CACHE INTERNAL "")  # Forces the value
+	set(MICRO_BUILD_BENCHS OFF CACHE INTERNAL "")  # Forces the value
+	set(MICRO_BUILD_SHARED OFF CACHE INTERNAL "")  # Forces the value
+	set(MICRO_BUILD_STATIC OFF CACHE INTERNAL "")  # Forces the value
+	set(MICRO_BUILD_TOOLS OFF CACHE INTERNAL "")  # Forces the value
+	FetchContent_Declare(
+	  micro
+	  GIT_REPOSITORY https://github.com/Thermadiag/micro.git
+	  GIT_TAG        tiny_lock 
+	  CMAKE_ARGS
+	)
+	FetchContent_GetProperties(micro)
+	if(NOT micro)
+	  # Fetch the content using previously declared details
+	  FetchContent_Populate(micro)
+
+	  # Bring the populated content into the build
+	  add_subdirectory(${micro_SOURCE_DIR} ${micro_BINARY_DIR})
+	endif()
+	
+	target_compile_definitions(Thermavip PRIVATE -DWITH_MICRO)	
+	target_link_libraries(Thermavip PRIVATE micro_proxy)
+	
+	install(
+    DIRECTORY "${CMAKE_INSTALL_PREFIX}/bin/"
+    DESTINATION "${CMAKE_INSTALL_PREFIX}/thermavip"
+    FILES_MATCHING 
+    PATTERN "*micro_proxy.*"
+	)
+	#install(FILES "${CMAKE_INSTALL_PREFIX}/bin/*micro_proxy.*"
+    #    DESTINATION "${CMAKE_INSTALL_PREFIX}/thermavip" )
+endif()
+
+
+
 target_include_directories(Thermavip PRIVATE
     ${PROJECT_SOURCE_DIR}/../Logging ${PROJECT_SOURCE_DIR}/../DataType ${PROJECT_SOURCE_DIR}/../Core ${PROJECT_SOURCE_DIR}/../Plotting ${PROJECT_SOURCE_DIR}/../Gui ${PROJECT_SOURCE_DIR}/../Annotation
 )
