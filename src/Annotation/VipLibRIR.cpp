@@ -1,7 +1,7 @@
 /**
  * BSD 3-Clause License
  *
- * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, LÃ©o Dubus, Erwan Grelier
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -92,11 +92,11 @@ static bool loadLibraries()
 			fflush(stdout);
 		}
 		else {
-			//TODO: set TSLIB_SERVER to deneb-bis
-			if (true){//vipPing("deneb-bis")) {
-				//VIP_LOG_INFO("Use ARCADE server deneb-bis");
-				//qputenv("TSLIB_SERVER", "deneb-bis");
-				//qputenv("TSLIB_COMPRESS", "1");
+			// TODO: set TSLIB_SERVER to deneb-bis
+			if (true) { // vipPing("deneb-bis")) {
+				    // VIP_LOG_INFO("Use ARCADE server deneb-bis");
+				    // qputenv("TSLIB_SERVER", "deneb-bis");
+				    // qputenv("TSLIB_COMPRESS", "1");
 			}
 			else
 				VIP_LOG_WARNING("Cannot reach server deneb-bis");
@@ -120,7 +120,7 @@ static bool loadLibraries()
 			// librir.library.setFileName("/Home/VM213788/Thermavip_git/Thermavip/bin/debug/librir.so");
 			vip_debug("load '%s'\n", _old_librir.fileName().toLatin1().data());
 			fflush(stdout);
-			//#endif
+			// #endif
 			if (!_old_librir.load()) {
 				vip_debug("Cannot find librir on this computer: %s\n", _old_librir.errorString().toLatin1().data());
 				fflush(stdout);
@@ -271,8 +271,6 @@ VipLibRIR* VipLibRIR::instance()
 		delete librir;
 		return librir = nullptr;
 	}
-
-	
 
 	librir->load_motion_correction_file = (_load_motion_correction_file)videoIOLib()->resolve("load_motion_correction_file");
 	librir->enable_motion_correction = (_enable_motion_correction)videoIOLib()->resolve("enable_motion_correction");
@@ -535,7 +533,6 @@ VipLibRIR* VipLibRIR::instance()
 			delete librir;
 			return librir = nullptr;
 		}
-
 
 		librir->get_temp_directory = (_get_temp_directory)westLib()->resolve("get_west_data_dir");
 		if (!librir->get_temp_directory) {
@@ -963,6 +960,12 @@ VipLibRIR* VipLibRIR::instance()
 		librir->hcc_extract_all_fw_pos = (_hcc_extract_all_fw_pos)westLib()->resolve("hcc_extract_all_fw_pos");
 		if (!librir->hcc_extract_all_fw_pos) {
 			VIP_LOG_ERROR("librir: missing hcc_extract_all_fw_pos");
+			delete librir;
+			return librir = nullptr;
+		}
+		librir->open_with_filename = (_open_with_filename)westLib()->resolve("open_with_filename");
+		if (!librir->open_with_filename) {
+			VIP_LOG_ERROR("librir: missing open_camera_filename");
 			delete librir;
 			return librir = nullptr;
 		}

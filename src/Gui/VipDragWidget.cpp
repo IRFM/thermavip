@@ -1,7 +1,7 @@
 /**
  * BSD 3-Clause License
  *
- * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, LÃ©o Dubus, Erwan Grelier
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -917,7 +917,6 @@ VipDragWidget::~VipDragWidget()
 	delete m_data;
 }
 
-
 VipDragWidget* VipDragWidget::next() const
 {
 	VipDragWidget* next = nullptr;
@@ -926,10 +925,10 @@ VipDragWidget* VipDragWidget::next() const
 	int x = 0, y = 0;
 
 	for (;;) {
-start_loop:
+	start_loop:
 		if (!mw)
 			return nullptr;
-		
+
 		for (y = 0; y < mw->mainCount(); ++y) {
 			for (x = 0; x < mw->subCount(y); ++x) {
 				auto* t = mw->tabWidget(y, x);
@@ -960,7 +959,6 @@ start_loop:
 							}
 						}
 					}
-
 				}
 			}
 		}
@@ -982,10 +980,10 @@ VipDragWidget* VipDragWidget::prev() const
 		if (!mw)
 			return nullptr;
 
-		for (y = mw->mainCount() -1; y >= 0 ; --y) {
-			for (x = mw->subCount(y) -1; x >= 0 ; --x) {
+		for (y = mw->mainCount() - 1; y >= 0; --y) {
+			for (x = mw->subCount(y) - 1; x >= 0; --x) {
 				auto* t = mw->tabWidget(y, x);
-				for (int i = t->count() -1; i >= 0 ; --i) {
+				for (int i = t->count() - 1; i >= 0; --i) {
 
 					QWidget* tw = t->widget(i);
 					if (takeNext) {
@@ -1101,6 +1099,7 @@ void VipDragWidget::setWidget(QWidget* widget)
 		disconnect(m_data->widget, SIGNAL(windowTitleChanged(const QString&)), this, SLOT(titleChanged()));
 		disconnect(m_data->widget, SIGNAL(windowIconChanged(const QIcon&)), this, SLOT(titleChanged()));
 		m_data->widget->close();
+		m_data->widget->deleteLater();
 	}
 
 	m_data->widget = widget;
@@ -2221,8 +2220,8 @@ VipDragWidget* VipMultiDragWidget::firstDragWidget() const
 }
 VipDragWidget* VipMultiDragWidget::lastDragWidget() const
 {
-	for (int y = mainCount() -1; y >= 0 ; --y)
-		for (int x = subCount(y)-1; x >= 0 ; --x) {
+	for (int y = mainCount() - 1; y >= 0; --y)
+		for (int x = subCount(y) - 1; x >= 0; --x) {
 			auto* t = tabWidget(y, x);
 			if (VipBaseDragWidget* b = qobject_cast<VipBaseDragWidget*>(t->currentWidget())) {
 				if (VipDragWidget* w = qobject_cast<VipDragWidget*>(b))
