@@ -46,6 +46,7 @@
 #include "VipTextOutput.h"
 #include "VipTimer.h"
 #include "VipXmlArchive.h"
+#include "VipSet.h"
 
 #include <QApplication>
 #include <QBoxLayout>

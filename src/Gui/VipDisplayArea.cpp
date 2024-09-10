@@ -3899,6 +3899,7 @@ bool VipMainWindow::loadSessionShowProgress(const QString& filename, VipProgress
 			displayArea()->addWidget(a);
 		}
 		VipBaseDragWidget* w = vipLoadBaseDragWidget(arch, displayArea()->currentDisplayPlayerArea());
+		Q_EMIT sessionLoaded();
 		return w != nullptr;
 	}
 
@@ -4338,7 +4339,7 @@ QList<VipAbstractPlayer*> VipMainWindow::openDevices(const QList<VipIODevice*>& 
 	if (player) {
 		for (int i = 0; i < all_devices.size(); ++i) {
 			all_devices[i]->setParent(area->processingPool());
-			if (!vipCreatePlayersFromProcessings(all_devices, player).size())
+			if (!vipCreatePlayersFromProcessings(QList<VipIODevice*> ()<<all_devices[i], player).size())
 				delete all_devices[i];
 			else {
 				res << player;
@@ -5358,6 +5359,9 @@ VipBaseDragWidget* vipLoadBaseDragWidget(VipArchive& arch, VipDisplayPlayerArea*
 
 	// first, add the processings in a temporary processing pool in order to open the connections
 	VipProcessingPool tmp;
+	// Set the property _vip_useParentPool:
+	// when opening the connections, the pool name in the connection address won't be used
+	tmp.setProperty("_vip_useParentPool", true);
 	for (int i = 0; i < objects.size(); ++i)
 		objects[i]->setParent(&tmp);
 

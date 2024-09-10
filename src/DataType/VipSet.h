@@ -49,4 +49,14 @@ QSet<T> vipToSet(const QList<T>& lst)
 #endif
 }
 
+template<class T>
+QSet<T> vipToSet(const QVector<T>& lst)
+{
+#if QT_VERSION < QT_VERSION_CHECK(5, 14, 0)
+	return lst.toSet();
+#else
+	return QSet<T>(lst.cbegin(), lst.cend());
+#endif
+}
+
 #endif

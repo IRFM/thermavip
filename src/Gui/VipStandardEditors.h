@@ -347,6 +347,7 @@ public Q_SLOTS:
 private Q_SLOTS:
 	void itemChoiceChanged();
 	void selectionChanged();
+	void delayedSelectionChanged();
 
 Q_SIGNALS:
 	void abstractPlayerChanged(VipAbstractPlayer*);

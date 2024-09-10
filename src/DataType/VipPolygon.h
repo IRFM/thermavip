@@ -37,8 +37,8 @@
 #include "VipNDArray.h"
 
 /// @brief Close Component Labelling algorithm
-template<class T, class U>
-int vipLabelImage(const VipNDArrayType<T>& input, VipNDArrayType<U>& output, T background, bool connectivity_8 = false, int* relabel = nullptr)
+template<class T, int DimIn, class U, int DimOut>
+int vipLabelImage(const VipNDArrayTypeView<T, DimIn>& input, VipNDArrayTypeView<U, DimOut>& output, T background, bool connectivity_8 = false, int* relabel = nullptr)
 {
 	QVector<int> buffer;
 	if (!relabel) {
@@ -161,6 +161,14 @@ int vipLabelImage(const VipNDArrayType<T>& input, VipNDArrayType<U>& output, T b
 
 	return label_count;
 }
+
+/// @brief Close Component Labelling algorithm
+template<class T, int DimIn, class U, int DimOut>
+int vipLabelImage(const VipNDArrayType<T, DimIn>& input, VipNDArrayType<U, DimOut>& output, T background, bool connectivity_8 = false, int* relabel = nullptr)
+{
+	return vipLabelImage(VipNDArrayTypeView<T, DimIn>(input), VipNDArrayTypeView<U, DimOut>(output), background, connectivity_8, relabel);
+}
+
 
 /// @brief Tells if given polygon is a rectangle, and stores it in rect (if not nullptr)
 VIP_DATA_TYPE_EXPORT bool vipIsRect(const QPolygon& p, QRect* rect = nullptr);

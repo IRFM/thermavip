@@ -443,8 +443,12 @@ void VipConnection::doOpenConnection(IOType type)
 			QString addr = removeClassNamePrefix(m_data->address);
 			QStringList lst = addr.split(";");
 			VipProcessingPool* pool = parentProcessingObject()->parentObjectPool();
+			//VipProcessingPool* parent_pool = pool; 
 			if (lst.size() == 3) {
-				pool = VipProcessingPool::findPool(lst[0]);
+				// When loading a player session, processing objects are first inserted in a temporary pool set as parent,
+				// so use this pool and not the one given in the connection name
+				if (!pool || !pool->property("_vip_useParentPool").toBool())
+					pool = VipProcessingPool::findPool(lst[0]);
 				lst = lst.mid(1);
 			}
 
@@ -468,6 +472,9 @@ void VipConnection::doOpenConnection(IOType type)
 						this->setOpenMode(InputConnection);
 						return;
 					}
+				}
+				else {
+					VIP_LOG_ERROR("Cannot retrieve processing object with address ", m_data->address);
 				}
 			}
 

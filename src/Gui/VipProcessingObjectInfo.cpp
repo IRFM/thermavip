@@ -802,6 +802,8 @@ public:
 	VipTimer timer;
 	qint64 lastUpdate;
 
+	QPointer<VipPlotItem> delayedItem;
+
 	int plotting;
 };
 
@@ -988,8 +990,19 @@ void VipProcessingObjectInfo::setPlotItem(VipPlotItem* item)
 		}
 }
 
-void VipProcessingObjectInfo::itemSelected(VipPlotItem* plot_item)
+void VipProcessingObjectInfo::itemSelected(VipPlotItem* plot_item) 
 {
+	bool is_null = m_data->delayedItem.data() == nullptr;
+	m_data->delayedItem = plot_item;
+	if (is_null)
+		QMetaObject::invokeMethod(this, "delayedItemSelected", Qt::QueuedConnection);
+}
+
+
+void VipProcessingObjectInfo::delayedItemSelected()
+{
+	VipPlotItem* plot_item = m_data->delayedItem.data();
+	m_data->delayedItem = nullptr;
 
 	// add the plot item from the list if: this is a left click, the item is selected and not already added to the list
 	if (plot_item && plot_item->isSelected()) {

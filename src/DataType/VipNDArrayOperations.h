@@ -491,8 +491,48 @@ namespace detail
 	{
 	};
 
+
+	namespace helper
+	{
+	
+		template<typename T>
+		struct is_complete_helper
+		{
+			template<typename U>
+			static auto test(U*) -> std::integral_constant<bool, sizeof(U) == sizeof(U)>;
+			static auto test(...) -> std::false_type;
+			using type = decltype(test((T*)0));
+		};
+
+		template<class Array, bool Comp = is_complete_helper<Array>::type::value>
+		struct is_array_helper;
+
+		template<class Array>
+		struct is_array_helper<Array, true> : std::is_base_of<NullOperand, Array>
+		{
+		};
+
+		template<class Array>
+		struct is_array_helper<Array, false> : std::false_type
+		{
+		};
+
+	}
+
+	template<typename T>
+	struct is_complete : helper::is_complete_helper<T>::type
+	{
+	};
+	template<typename T>
+	struct is_nd_array : helper::is_array_helper<T>::type
+	{
+	};
+
+	
+
+
 	/// Deduce array type of Array with typedef array_type, and the value type with typedef value_type
-	template<class Array, bool IsArray = std::is_base_of<NullOperand, Array>::value>
+	template<class Array, bool IsArray = is_nd_array< Array>::value >
 	struct DeduceArrayType
 	{
 	};

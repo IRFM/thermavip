@@ -2034,6 +2034,8 @@ public:
 	QSlider* superimposeSlider;
 	QToolButton* superimposeButton;
 	QAction* superimposeAction;
+	QAction* sharedZoomAction;
+	QAction* zoomChoiceAction;
 	QPointer<VipVideoPlayer> superimposePlayer;
 	QTimer timer;
 	QRectF pendingRect;
@@ -2374,8 +2376,8 @@ VipVideoPlayer::VipVideoPlayer(VipImageWidget2D* img, QWidget* parent)
 	toolBar()->addWidget(vipGetSceneModelWidgetPlayer()->createPlayerButton(this));
 
 	//Add zoom options to tool bar
-	toolBar()->addWidget(m_data->sharedZoom);
-	toolBar()->addWidget(m_data->zoomChoice);
+	m_data->sharedZoomAction = toolBar()->addWidget(m_data->sharedZoom);
+	m_data->zoomChoiceAction = toolBar()->addWidget(m_data->zoomChoice);
 
 	// TODO: uncomment
 	connect(m_data->viewer->area()->colorMapAxis(), SIGNAL(valueChanged(double)), this, SLOT(disableAutomaticColorScale()));
@@ -2433,6 +2435,16 @@ VipVideoPlayer::~VipVideoPlayer()
 	delete m_data->processing_menu;
 	// vipProcessEvents();
 	delete m_data;
+}
+
+void VipVideoPlayer::setZoomFeaturesVisible(bool vis)
+{
+	m_data->sharedZoomAction->setVisible(vis);
+	m_data->zoomChoiceAction->setVisible(vis);
+}
+bool VipVideoPlayer::zoomFeaturesVisible() const
+{
+	return m_data->sharedZoomAction->isVisible();
 }
 
 QToolButton* VipVideoPlayer::superimposeButton() const

@@ -1693,6 +1693,7 @@ void VipColorScaleButton::menuTriggered(QAction* act)
 class VipAbstractPlayerWidget::PrivateData
 {
 public:
+	bool inDelayedSelection{ false };
 	QPointer<VipAbstractPlayer> player;
 	QComboBox selection;
 
@@ -1895,10 +1896,23 @@ void VipAbstractPlayerWidget::itemChoiceChanged()
 	}
 }
 
+void VipAbstractPlayerWidget::delayedSelectionChanged() 
+{
+	m_data->inDelayedSelection = false;
+	setAbstractPlayer(m_data->player);
+}
+
 void VipAbstractPlayerWidget::selectionChanged()
 {
-	if (qobject_cast<VipAbstractPlayer*>(m_data->player.data()))
-		setAbstractPlayer(m_data->player);
+	if (qobject_cast<VipAbstractPlayer*>(m_data->player.data())) {
+		// setAbstractPlayer(m_data->player);
+		//TEST
+		if (!m_data->inDelayedSelection) {
+			m_data->inDelayedSelection = true;
+			QMetaObject::invokeMethod(this, "delayedSelectionChanged", Qt::QueuedConnection);
+		}
+	}
+	
 }
 
 class VipDefaultPlotAreaSettings::PrivateData

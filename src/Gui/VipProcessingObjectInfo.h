@@ -260,6 +260,8 @@ private Q_SLOTS:
 	void currentDisplayPlayerAreaChanged(VipDisplayPlayerArea*);
 	void topLevelWidgetClosed(VipDisplayPlayerArea*, VipMultiDragWidget*);
 
+	void delayedItemSelected();
+
 protected:
 	virtual void showEvent(QShowEvent*);
 

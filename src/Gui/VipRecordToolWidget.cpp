@@ -1671,6 +1671,7 @@ void VipRecordWidgetButton::setStarted(bool enable)
 		m_data->state = VipRenderState();
 		VipRenderObject::startRender(m_data->widget, m_data->state);
 		m_data->timer.start();
+		Q_EMIT started();
 	}
 	else {
 		if (m_data->recorder->isOpen() || m_data->timer.isActive()) {
@@ -1682,6 +1683,7 @@ void VipRecordWidgetButton::setStarted(bool enable)
 		this->blockSignals(true);
 		this->setChecked(false);
 		this->blockSignals(false);
+		Q_EMIT stopped();
 	}
 }
 

@@ -202,6 +202,12 @@ private Q_SLOTS:
 	void filenameChanged();
 	void newImage();
 	void setStarted(bool);
+	void start() { setStarted(true); }
+	void stop() { setStarted(false); }
+
+ Q_SIGNALS :
+	void started();
+	void stopped();
 
 private:
 	class PrivateData;

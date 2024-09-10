@@ -632,6 +632,7 @@ public:
 	bool isColorScaleVisible() const;
 	bool isFrozen() const;
 	bool isSharedZoom() const;
+	bool zoomFeaturesVisible() const;
 
 	void addContourLevel(double);
 	void removeContourLevel(double);
@@ -660,6 +661,8 @@ public Q_SLOTS:
 	virtual void setColorMap(int);
 	virtual void setFrozen(bool);
 	virtual void setSharedZoom(bool);
+	void setZoomFeaturesVisible(bool vis);
+	
 	// add processings to the processing list (if any)
 	virtual void addSelectedProcessing(const VipProcessingObject::Info&);
 	virtual void setColorMapOptionsVisible(bool);
