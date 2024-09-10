@@ -89,7 +89,7 @@ int main(int argc, char** argv)
 				QString line = str.readLine();
 				if (line.isEmpty())
 					break;
-				QStringList lst = line.split(" ", Qt::SkipEmptyParts);
+				QStringList lst = line.split(" ", VIP_SKIP_BEHAVIOR::SkipEmptyParts);
 				if (lst.size() == 2)
 					qputenv(lst[0].toLatin1().data(), lst[1].toLatin1());
 			}

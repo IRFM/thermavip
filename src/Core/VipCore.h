@@ -43,6 +43,27 @@
 #include "VipFunctional.h"
 #include "VipSceneModel.h"
 
+#if QT_VERSION < QT_VERSION_CHECK(5,14,0)
+
+namespace Qt
+{
+	namespace detail
+	{
+		struct Endl {};
+	}
+	static const detail::Endl endl;
+}
+inline QTextStream & operator<<(QTextStream & str, const Qt::detail::Endl &)
+{
+	str << '\n';
+	str.flush();
+	return str;
+}
+
+#endif
+
+
+
 ///\defgroup Core Core
 ///
 /// Core is the base library of Thermavip's SDK and defines the main concepts and classes that should be used to extend Thermavip through plugins.

@@ -72,7 +72,7 @@ static bool loadLibraries()
 		QString geometry = path + "geometry.so";
 		QString signal_processing = path + "signal_processing.so";
 		QString video_io = path + "video_io.so";
-		QString west = path + "west.so";
+		QString west = path_west + "west.so";
 #endif
 		_tools.setFileName(tools);
 		_geometry.setFileName(geometry);
@@ -102,6 +102,9 @@ static bool loadLibraries()
 				VIP_LOG_WARNING("Cannot reach server deneb-bis");
 			if (!_west.load()) {
 				VIP_LOG_WARNING("West plugin of librir not found!");
+			}
+			else {
+				VIP_LOG_INFO("Loaded west librir at ",west);
 			}
 			return res = true;
 		}
