@@ -38,8 +38,8 @@ IF(WITH_MICRO)
 	set(MICRO_BUILD_TOOLS OFF CACHE INTERNAL "")  # Forces the value
 	FetchContent_Declare(
 	  micro
-	  GIT_REPOSITORY https://github.com/Thermadiag/micro.git
-	  GIT_TAG        tiny_lock 
+	  GIT_REPOSITORY https://github.com/Thermadiag/micromalloc.git
+	  GIT_TAG        main 
 	  CMAKE_ARGS
 	)
 	FetchContent_GetProperties(micro)

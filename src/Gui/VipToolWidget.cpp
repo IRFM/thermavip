@@ -486,6 +486,11 @@ QWidget* VipToolWidget::widget() const
 	return m_data->scroll->widget();
 }
 
+QWidget* VipToolWidget::takeWidget()
+{
+	return m_data->scroll->takeWidget();
+}
+
 QScrollArea* VipToolWidget::scrollArea() const
 {
 	return m_data->scroll;

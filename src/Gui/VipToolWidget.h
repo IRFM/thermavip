@@ -141,6 +141,7 @@ public:
 
 	void setWidget(QWidget* widget, Qt::Orientation widget_orientation = Qt::Vertical);
 	QWidget* widget() const;
+	QWidget* takeWidget();
 	VipToolWidgetTitleBar* titleBarWidget() const;
 	QScrollArea* scrollArea() const;
 	VipWidgetResizer* resizer() const;

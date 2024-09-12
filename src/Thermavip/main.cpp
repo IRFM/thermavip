@@ -97,11 +97,11 @@ int main(int argc, char** argv)
 	}
 
 
-//#ifdef WITH_MICRO
+#ifdef WITH_MICRO
 	// Load micro_proxy library
-//	QLibrary micro_proxy("micro_proxy");
-//	bool loaded = micro_proxy.load();
-//#endif
+	QLibrary micro_proxy("micro_proxy");
+	bool loaded = micro_proxy.load();
+#endif
 	
 
 	qInstallMessageHandler(myMessageOutput);
