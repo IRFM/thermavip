@@ -15,25 +15,13 @@ add_library(Python SHARED
     ${Sources} ${Headers}
 )
 
-target_include_directories(Python PRIVATE
-    ${PROJECT_SOURCE_DIR}/../../Logging 
-	${PROJECT_SOURCE_DIR}/../../DataType 
-	${PROJECT_SOURCE_DIR}/../../Core 
-	${PROJECT_SOURCE_DIR}/../../Plotting 
-	${PROJECT_SOURCE_DIR}/../../Gui
-)
-
-target_link_libraries(Python PRIVATE
-	VipDataType
-	VipLogging
-	VipCore
-	VipPlotting
-	VipGui
-)
+target_include_directories(Python PRIVATE ${THERMAVIP_INCLUDE_DIRS})
+target_link_libraries(Python PRIVATE ${THERMAVIP_LIBRARIES})
 
 # Add default compiler flags
 set(TARGET_PROJECT Python)
-include(${PROJECT_SOURCE_DIR}/../../compiler_flags.cmake)
+include(${THERMAVIP_COMPILER_FLAGS_FILE})
+
 
 # Specific plugin defines
 target_compile_definitions(Python PRIVATE BUILD_PYTHON_LIB VIP_ENABLE_PYTHON_LINK)
@@ -73,9 +61,9 @@ endif()
 
 # Plugin standard installation
 install(TARGETS Python
-	LIBRARY DESTINATION "${CMAKE_INSTALL_PREFIX}/thermavip/VipPlugins"
-    FRAMEWORK DESTINATION "${CMAKE_INSTALL_PREFIX}/thermavip/VipPlugins"
-    RUNTIME DESTINATION "${CMAKE_INSTALL_PREFIX}/thermavip/VipPlugins"
+	LIBRARY DESTINATION "${THERMAVIP_PLUGIN_DIR}"
+    FRAMEWORK DESTINATION "${THERMAVIP_PLUGIN_DIR}"
+    RUNTIME DESTINATION "${THERMAVIP_PLUGIN_DIR}"
 )
 
 # Plugin custom installation process

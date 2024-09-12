@@ -15,27 +15,14 @@ add_library(Ffmpeg SHARED
     ${Sources} ${Headers}
 )
 
-target_include_directories(Ffmpeg PRIVATE
-    ${PROJECT_SOURCE_DIR}/../../Logging 
-	${PROJECT_SOURCE_DIR}/../../DataType 
-	${PROJECT_SOURCE_DIR}/../../Core 
-	${PROJECT_SOURCE_DIR}/../../Plotting 
-	${PROJECT_SOURCE_DIR}/../../Gui
-)
+target_include_directories(Ffmpeg PRIVATE ${THERMAVIP_INCLUDE_DIRS})
+target_link_libraries(Ffmpeg PRIVATE ${THERMAVIP_LIBRARIES})
 
-target_link_libraries(Ffmpeg PRIVATE
-	VipDataType
-	VipLogging
-	VipCore
-	VipPlotting
-	VipGui
-)
-
+# Add default compiler flags
 set(TARGET_PROJECT Ffmpeg)
-include(${PROJECT_SOURCE_DIR}/../../compiler_flags.cmake)
+include(${THERMAVIP_COMPILER_FLAGS_FILE})
 
 target_compile_definitions(Ffmpeg PRIVATE ENABLE_H264 BUILD_FFMPEG_LIB)
-
 
 
 # Configure ffmpeg path, use librir ffmpeg install if possible
@@ -100,7 +87,7 @@ install(CODE "set(CMAKE_SOURCE_DIR \"${CMAKE_SOURCE_DIR}\")")
 install(SCRIPT InstallFfmpeg.cmake)
 
 install(TARGETS Ffmpeg
-	LIBRARY DESTINATION "${CMAKE_INSTALL_PREFIX}/thermavip/VipPlugins"
-    FRAMEWORK DESTINATION "${CMAKE_INSTALL_PREFIX}/thermavip/VipPlugins"
-    RUNTIME DESTINATION "${CMAKE_INSTALL_PREFIX}/thermavip/VipPlugins"
+	LIBRARY DESTINATION "${THERMAVIP_PLUGIN_DIR}"
+    FRAMEWORK DESTINATION "${THERMAVIP_PLUGIN_DIR}"
+    RUNTIME DESTINATION "${THERMAVIP_PLUGIN_DIR}"
 )

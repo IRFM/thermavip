@@ -56,39 +56,28 @@ IF(WITH_MICRO)
 	
 	install(
     DIRECTORY "${CMAKE_INSTALL_PREFIX}/bin/"
-    DESTINATION "${CMAKE_INSTALL_PREFIX}/thermavip"
+    DESTINATION "${THERMAVIP_APPLICATION_DIR}"
     FILES_MATCHING 
     PATTERN "*micro_proxy.*"
 	)
-	#install(FILES "${CMAKE_INSTALL_PREFIX}/bin/*micro_proxy.*"
-    #    DESTINATION "${CMAKE_INSTALL_PREFIX}/thermavip" )
+	
 endif()
 
 
+target_include_directories(Thermavip PRIVATE ${THERMAVIP_INCLUDE_DIRS})
 
-target_include_directories(Thermavip PRIVATE
-    ${PROJECT_SOURCE_DIR}/../Logging ${PROJECT_SOURCE_DIR}/../DataType ${PROJECT_SOURCE_DIR}/../Core ${PROJECT_SOURCE_DIR}/../Plotting ${PROJECT_SOURCE_DIR}/../Gui ${PROJECT_SOURCE_DIR}/../Annotation
-)
-
-target_link_libraries(Thermavip PRIVATE
-	VipDataType
-	VipLogging
-	VipCore
-	VipPlotting
-	VipGui
-	VipAnnotation
-)
+target_link_libraries(Thermavip PRIVATE ${THERMAVIP_LIBRARIES})
 
 
 set(TARGET_PROJECT Thermavip)
-include(${PROJECT_SOURCE_DIR}/../compiler_flags.cmake)
+include(${THERMAVIP_COMPILER_FLAGS_FILE})
 
 install(TARGETS Thermavip
-	LIBRARY DESTINATION "${CMAKE_INSTALL_PREFIX}/thermavip"
-    FRAMEWORK DESTINATION "${CMAKE_INSTALL_PREFIX}/thermavip"
-    RUNTIME DESTINATION "${CMAKE_INSTALL_PREFIX}/thermavip"
+	LIBRARY DESTINATION "${THERMAVIP_APPLICATION_DIR}"
+    FRAMEWORK DESTINATION "${THERMAVIP_APPLICATION_DIR}"
+    RUNTIME DESTINATION "${THERMAVIP_APPLICATION_DIR}"
 )
 install(FILES ${PROJECT_SOURCE_DIR}/base_session.session
-        DESTINATION ${CMAKE_INSTALL_PREFIX}/thermavip )
+        DESTINATION ${THERMAVIP_APPLICATION_DIR} )
 install(FILES ${PROJECT_SOURCE_DIR}/changelog.txt
-        DESTINATION ${CMAKE_INSTALL_PREFIX}/thermavip )
+        DESTINATION ${THERMAVIP_APPLICATION_DIR} )

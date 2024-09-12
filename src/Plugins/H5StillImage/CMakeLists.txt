@@ -15,25 +15,15 @@ add_library(H5StillImage SHARED
     ${Sources} ${Headers}
 )
 
-target_include_directories(H5StillImage PRIVATE
-    ${PROJECT_SOURCE_DIR}/../../Logging 
-	${PROJECT_SOURCE_DIR}/../../DataType 
-	${PROJECT_SOURCE_DIR}/../../Core 
-	${PROJECT_SOURCE_DIR}/../../Plotting 
-	${PROJECT_SOURCE_DIR}/../../Gui
-)
 
-target_link_libraries(H5StillImage PRIVATE
-	VipDataType
-	VipLogging
-	VipCore
-	VipPlotting
-	VipGui
-)
+target_include_directories(H5StillImage PRIVATE ${THERMAVIP_INCLUDE_DIRS})
+target_link_libraries(H5StillImage PRIVATE ${THERMAVIP_LIBRARIES})
 
 # Add default compiler flags
 set(TARGET_PROJECT H5StillImage)
-include(${PROJECT_SOURCE_DIR}/../../compiler_flags.cmake)
+include(${THERMAVIP_COMPILER_FLAGS_FILE})
+
+
 
 # Specific plugin defines
 target_compile_definitions(H5StillImage PRIVATE H5_BUILT_AS_DYNAMIC_LIB BUILD_H5_STILL_IMAGE_LIB)
@@ -46,12 +36,11 @@ message(STATUS "Found HDF5 in ${HDF5_INCLUDE_DIRS}")
 target_include_directories(H5StillImage PRIVATE ${HDF5_INCLUDE_DIRS} )
 target_link_libraries(H5StillImage PRIVATE ${HDF5_LIBRARIES})
 
-
 # Plugin standard installation
 install(TARGETS H5StillImage
-	LIBRARY DESTINATION "${CMAKE_INSTALL_PREFIX}/thermavip/VipPlugins"
-    FRAMEWORK DESTINATION "${CMAKE_INSTALL_PREFIX}/thermavip/VipPlugins"
-    RUNTIME DESTINATION "${CMAKE_INSTALL_PREFIX}/thermavip/VipPlugins"
+	LIBRARY DESTINATION "${THERMAVIP_PLUGIN_DIR}"
+    FRAMEWORK DESTINATION "${THERMAVIP_PLUGIN_DIR}"
+    RUNTIME DESTINATION "${THERMAVIP_PLUGIN_DIR}"
 )
 
 # Plugin custom installation process

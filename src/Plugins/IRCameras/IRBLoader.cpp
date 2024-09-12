@@ -23,7 +23,7 @@ template < class T>
 T get(const void * dat) {
 	T res;
 	memcpy(&res, dat, sizeof(T));
-	return res;
+	return res; 
 }
 
 template< class T>
