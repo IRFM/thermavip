@@ -121,7 +121,7 @@ VIP_ANNOTATION_EXPORT QStringList vipMethodsDB();
 /// @brief Returns the list of event types from the DB based on the 'thermal_event_categories' table
 VIP_ANNOTATION_EXPORT QStringList vipEventTypesDB();
 /// @brief Returns the list of event types from the DB based on the 'thermal_event_categories' table and valid for given line of sight
-VIP_ANNOTATION_EXPORT QStringList vipEventTypesDB(const QString & line_of_sight);
+VIP_ANNOTATION_EXPORT QStringList vipEventTypesDB(const QString& line_of_sight);
 /// @brief Returns the local folder containing movies as defined in the .env file (field LOCAL_MOVIE_FOLDER)
 VIP_ANNOTATION_EXPORT QString vipLocalMovieFolderDB();
 /// @brief Returns the movie files suffix from the local folder containing movies as defined in the .env file (field LOCAL_MOVIE_SUFFIX)

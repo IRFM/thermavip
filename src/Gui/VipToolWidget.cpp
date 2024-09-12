@@ -599,7 +599,6 @@ void VipToolWidget::setStyleProperty(const char* name, bool value)
 	bool scroll_current = m_data->scroll->property(name).value<bool>();
 	if (this_current != value || bar_current != value || scroll_current != value) {
 
-		
 		this->setProperty(name, value);
 		this->titleBarWidget()->setProperty(name, value);
 		m_data->scroll->setProperty(name, value);
@@ -830,7 +829,6 @@ void VipToolWidget::polish()
 	setProperty("isFloating", isFloating());
 	this->titleBarWidget()->setProperty("isFloating", isFloating());
 
-	
 	bool is_floating = property("isFloating").toBool();
 	bool is_hover = property("hasHover").toBool();
 	bool is_focus = property("hasFocus").toBool();
@@ -847,8 +845,7 @@ void VipToolWidget::polish()
 	this->setProperty("status", status);
 	m_data->scroll->setProperty("status", status);
 	titleBarWidget()->setProperty("status", status);
-	//vip_debug("set %s: %i\n", this->windowTitle().toLatin1().data(), status);
-
+	// vip_debug("set %s: %i\n", this->windowTitle().toLatin1().data(), status);
 
 	this->style()->unpolish(this);
 	this->style()->polish(this);

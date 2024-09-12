@@ -49,7 +49,6 @@ struct Anchor
 	}
 };
 
-
 /// @brief Small tool bar to navigate through maximized players
 class NavigatePlayers : public QToolBar
 {
@@ -75,8 +74,6 @@ private:
 	class PrivateData;
 	PrivateData* m_data;
 };
-
-
 
 class BaseCustomPlayer : public QObject
 {

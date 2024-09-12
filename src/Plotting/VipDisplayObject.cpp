@@ -211,7 +211,8 @@ bool VipDisplayObject::formattingEnabled() const
 	return m_data->formattingEnabled;
 }
 
-void VipDisplayObject::setUpdateOnHidden(bool enable) {
+void VipDisplayObject::setUpdateOnHidden(bool enable)
+{
 	m_data->updateOnHidden = enable;
 }
 bool VipDisplayObject::updateOnHidden() const

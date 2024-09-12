@@ -213,11 +213,6 @@ static void editTitle(VipPlayer2D* player)
 	QObject::connect(_title_editor.data(), &EditTitle::returnPressed, player, std::bind(finishEditingTitle, player));
 }
 
-
-
-
-
-
 class NavigatePlayers::PrivateData
 {
 public:
@@ -237,7 +232,7 @@ NavigatePlayers::NavigatePlayers(VipDragWidget* p)
 	connect(p, SIGNAL(visibilityChanged(VisibilityState)), this, SLOT(updatePos()));
 	this->setStyleSheet("QToolBar {background: transparent;}");
 }
-	
+
 NavigatePlayers::~NavigatePlayers()
 {
 	if (m_data->parent)
@@ -254,7 +249,7 @@ VipDragWidget* NavigatePlayers::next() const
 	if (!m_data->parent)
 		return nullptr;
 
-	//TEST
+	// TEST
 	VipDragWidget* w = m_data->parent->next();
 	for (;;) {
 		if (!w)
@@ -272,7 +267,7 @@ VipDragWidget* NavigatePlayers::prev() const
 	if (!m_data->parent)
 		return nullptr;
 
-	//TEST
+	// TEST
 	{
 		VipDragWidget* w = m_data->parent->prev();
 		for (;;) {
@@ -351,12 +346,12 @@ void NavigatePlayers::goPrev()
 		p->setFocus();
 	}
 }
-	
+
 void NavigatePlayers::visibilityChanged()
 {
 	updatePos();
 }
-	
+
 void NavigatePlayers::updatePos()
 {
 	if (!m_data->parent) {
@@ -391,12 +386,8 @@ void NavigatePlayers::updatePos()
 	}
 
 	this->setVisible(vis);
-	//this->move(0, 0);
+	// this->move(0, 0);
 }
-
-
-
-
 
 void BaseCustomPlayer::closePlayer()
 {

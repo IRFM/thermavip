@@ -88,9 +88,6 @@ private:
 	QSharedPointer<PrivateData> d_ptr;
 };
 
-
-
-
 namespace detail
 {
 	/// @brief Similar to QWindowContainer (simplified version), but PUBLIC
@@ -114,35 +111,33 @@ namespace detail
 
 }
 
-
-
 /// @brief Widget relying on opengl engine to draw its content
 ///
 /// VipOpenGLWidget is a widget which goal is to draw its content using Qt OpenGL drawing engine.
-/// 
+///
 /// In order to use opengl acceleration on a QGraphicsView, the standard approach is to set its viewport
 /// to a QOpenGLWidget object. This works in theory, but does not provide much benefits in practice.
 /// Indeed, using QOpenGLWidget as viewport does not reduce the CPU usage and the painting takes
 /// the same amount of time as the raster engine (at least most of the times).
-/// 
+///
 /// VipOpenGLWidget uses a different approach:
-/// 
+///
 /// -	Using a QPainter on a VipOpenGLWidget will use its own custom QPaintEngine.
 /// -	The paint engine serialize drawing commands in a structure similar to VipPicture.
 /// -	Drawing commands are periodically sent to a rendering thread.
-/// -	The rendering thread apply the drawing commands in an internal QWindow using QOpenGLPaintDevice. 
-/// 
+/// -	The rendering thread apply the drawing commands in an internal QWindow using QOpenGLPaintDevice.
+///
 /// This greatly reduces the time spent in QGraphicsView::paintEvent() and allow much higher frame rates.
-/// 
+///
 /// Like VipPicture, VipOpenGLWidget allows batch rendering: paint commands are (when possible) merged
 ///	together to reduce state changes and drawing commands when rendering to the opengl context.
 ///	Batch rendering can be disable using setBatchRenderingEnabled() member.
-/// 
+///
 /// The user must call VipOpenGLWidget::startRendering() before drawing onto a VipOpenGLWidget object,
 /// and VipOpenGLWidget::stopRendering() when finished. VipBaseGraphicsView class automatically detect
 /// the use of VipOpenGLWidget as viewport and will call these functions when necessary.
-/// 
-/// 
+///
+///
 class VIP_PLOTTING_EXPORT VipOpenGLWidget : public detail::VipWindowContainer
 {
 	Q_OBJECT
@@ -161,9 +156,9 @@ public:
 	void setBackgroundColor(const QColor& c);
 	QColor backgroundColor() const;
 
-	/// @brief Start rendering. Call this before painting to the VipOpenGLWidget (like at the beginning of paintEvent()). 
+	/// @brief Start rendering. Call this before painting to the VipOpenGLWidget (like at the beginning of paintEvent()).
 	void startRendering();
-	/// @brief Stop rendering. Call this after painting to the VipOpenGLWidget (like at the end of paintEvent()). 
+	/// @brief Stop rendering. Call this after painting to the VipOpenGLWidget (like at the end of paintEvent()).
 	void stopRendering();
 
 	/// @brief Returns true if we are in-between calls to startRendering() and stopRendering().

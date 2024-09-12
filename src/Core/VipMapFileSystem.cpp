@@ -882,12 +882,12 @@ VipPathList VipPhysicalFileSystem::rootPaths()
 bool VipPhysicalFileSystem::pathExists(const VipPath& path)
 {
 	QString p = path.canonicalPath();
-	
+
 #ifdef WIN32
 	vip_debug("Check path '%s'\n", p.toLatin1().data());
 	// Attempt to correct Qt bug when checking network drives
-	//if (p.endsWith(":")) {
-		vipSleep(50);
+	// if (p.endsWith(":")) {
+	vipSleep(50);
 	//}
 #endif
 	bool ret = QFileInfo(p).exists();

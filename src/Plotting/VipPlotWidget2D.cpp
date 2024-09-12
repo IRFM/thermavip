@@ -2471,7 +2471,7 @@ bool VipAbstractPlotArea::setItemProperty(const char* name, const QVariant& valu
 		resetInnerLegendsStyleSheet();
 		// set ALL parameters to ALL inner legends
 		for (int i = 0; i < innerLegendCount(); ++i) {
-			if(innerLegendMargin(i) != borderLegend()->margin())
+			if (innerLegendMargin(i) != borderLegend()->margin())
 				setInnerLegendMargin(i, qMax(borderLegend()->margin(), 5.));
 		}
 		return true;
@@ -3647,7 +3647,7 @@ public:
 				c.linkedBorders.append(item);
 				item->prepareGeometryChange();
 				item->QGraphicsObject::update(); // force an update in case of item caching (see QGraphicsItem::setCacheMode).
-				// indeed, the item is not properly updated with caching except with an explicit call to update()
+								 // indeed, the item is not properly updated with caching except with an explicit call to update()
 			}
 		}
 		c.computeItemsGeometry(area->margins() + area->d_data->aligned_margins);

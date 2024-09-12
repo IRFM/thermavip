@@ -1342,7 +1342,7 @@ VipPenButton::VipPenButton(const QPen& pen, QWidget* parent)
 	m_menu = new QMenu();
 	QWidgetAction* action = new QWidgetAction(m_menu);
 	action->setDefaultWidget(m_pen);
-	
+
 	m_menu->addAction(action);
 	this->setMenu(m_menu);
 

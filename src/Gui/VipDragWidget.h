@@ -161,8 +161,8 @@ public:
 		Minimize = 0x0010,	    //! The widget can be minimized
 		Closable = 0x0020,	    //! The widget can be closed
 		DragWidgetExtract = 0x0080, //! A drag widget can be extracted from its parent to make it free
-		NoHideOnMaximize = 0x0100, //! cannot hide widget when another is maximized
-		AllOperations = Move | Drop | ReceiveDrop | Maximize | Minimize | Closable | DragWidgetExtract 
+		NoHideOnMaximize = 0x0100,  //! cannot hide widget when another is maximized
+		AllOperations = Move | Drop | ReceiveDrop | Maximize | Minimize | Closable | DragWidgetExtract
 	};
 	//! Supported operations attributes
 	typedef QFlags<Operation> Operations;

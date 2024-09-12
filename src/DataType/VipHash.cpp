@@ -1,7 +1,6 @@
 #include "VipHash.h"
 
-
-	/// @brief Read 16 bits integer from src in little endian order
+/// @brief Read 16 bits integer from src in little endian order
 VIP_ALWAYS_INLINE auto read_LE_16(const void* src) -> std::uint16_t
 {
 	std::uint16_t value = 0;
@@ -32,7 +31,6 @@ VIP_ALWAYS_INLINE auto read_LE_64(const void* src) -> std::uint64_t
 #endif
 	return value;
 }
-
 
 namespace detail
 {
@@ -246,7 +244,6 @@ size_t vipHashBytesKomihash(const void* Msg0, size_t MsgLen) noexcept
 
 	return static_cast<size_t>(detail::komihash_long(Msg, MsgLen, Seed1, Seed5));
 }
-
 
 // fallthrough
 #ifndef __has_cpp_attribute

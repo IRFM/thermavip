@@ -491,10 +491,9 @@ namespace detail
 	{
 	};
 
-
 	namespace helper
 	{
-	
+
 		template<typename T>
 		struct is_complete_helper
 		{
@@ -528,11 +527,8 @@ namespace detail
 	{
 	};
 
-	
-
-
 	/// Deduce array type of Array with typedef array_type, and the value type with typedef value_type
-	template<class Array, bool IsArray = is_nd_array< Array>::value >
+	template<class Array, bool IsArray = is_nd_array<Array>::value>
 	struct DeduceArrayType
 	{
 	};

@@ -27,7 +27,6 @@ inline void cpuid(int info[4], int InfoType)
 #undef max
 #endif
 
-
 namespace detail
 {
 	void compute_cpu_feature(VipCPUFeatures& features, bool& initialized)

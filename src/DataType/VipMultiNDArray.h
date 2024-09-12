@@ -32,7 +32,6 @@
 #ifndef VIP_MULTI_NDARRAY_H
 #define VIP_MULTI_NDARRAY_H
 
-
 /// \addtogroup DataType
 /// @{
 
@@ -132,7 +131,6 @@ protected:
 };
 
 VIP_DATA_TYPE_EXPORT bool vipIsMultiNDArray(const VipNDArray& ar);
-
 
 /// @}
 // end DataType

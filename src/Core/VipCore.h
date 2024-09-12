@@ -43,17 +43,19 @@
 #include "VipFunctional.h"
 #include "VipSceneModel.h"
 
-#if QT_VERSION < QT_VERSION_CHECK(5,14,0)
+#if QT_VERSION < QT_VERSION_CHECK(5, 14, 0)
 
 namespace Qt
 {
 	namespace detail
 	{
-		struct Endl {};
+		struct Endl
+		{
+		};
 	}
 	static const detail::Endl endl;
 }
-inline QTextStream & operator<<(QTextStream & str, const Qt::detail::Endl &)
+inline QTextStream& operator<<(QTextStream& str, const Qt::detail::Endl&)
 {
 	str << '\n';
 	str.flush();
@@ -61,8 +63,6 @@ inline QTextStream & operator<<(QTextStream & str, const Qt::detail::Endl &)
 }
 
 #endif
-
-
 
 ///\defgroup Core Core
 ///
@@ -280,7 +280,6 @@ VIP_CORE_EXPORT VipArchive& operator>>(VipArchive& arch, VipSceneModel& value);
 /// @brief Stream a VipSceneModelList to/from a VipArchive
 VIP_CORE_EXPORT VipArchive& operator<<(VipArchive& arch, const VipSceneModelList& value);
 VIP_CORE_EXPORT VipArchive& operator>>(VipArchive& arch, VipSceneModelList& value);
-
 
 VIP_CORE_EXPORT void vipShapeToJSON(QTextStream& str, const VipShape& value, const QByteArray& indent = QByteArray());
 VIP_CORE_EXPORT void vipSceneModelToJSON(QTextStream& str, const VipSceneModel& value, const QByteArray& indent = QByteArray());

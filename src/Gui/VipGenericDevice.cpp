@@ -277,7 +277,8 @@ void VipGenericRecorder::setStopStreamingOnClose(bool enable)
 {
 	m_data->stopStreamingOnClose = enable;
 }
-bool VipGenericRecorder::stopStreamingOnClose() const {
+bool VipGenericRecorder::stopStreamingOnClose() const
+{
 	return m_data->stopStreamingOnClose;
 }
 

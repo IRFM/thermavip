@@ -544,7 +544,7 @@ public:
 
 	/// @brief Enable/disable missing frames when using a play speed
 	bool missFramesEnabled() const;
-	
+
 	/// Returns true if the VipProcessingPool has a Sequential child
 	bool hasSequentialDevice() const;
 	/// Returns true if the VipProcessingPool has a Temporal child

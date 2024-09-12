@@ -228,21 +228,12 @@ VipArchive& operator>>(VipArchive& arch, VipSceneModelList& value)
 	return arch;
 }
 
-
-
-
-
-
-
-
-
-
 static QString polygonToJSON(const QPolygonF& poly)
 {
 	QString res;
 	QTextStream str(&res, QIODevice::WriteOnly);
-	for (int i = 0; i < poly.size(); ++i) 
-		str  << poly[i].x() << " " << poly[i].y() << " ";
+	for (int i = 0; i < poly.size(); ++i)
+		str << poly[i].x() << " " << poly[i].y() << " ";
 	str.flush();
 	return res;
 }
@@ -263,12 +254,12 @@ static QPolygonF polygonFromJSON(const QByteArray& ar)
 void vipShapeToJSON(QTextStream& str, const VipShape& value, const QByteArray& indent)
 {
 	str << indent << "{" << Qt::endl;
-	str << indent << "\"id\": " << value.id() << ","<< Qt::endl;
+	str << indent << "\"id\": " << value.id() << "," << Qt::endl;
 	str << indent << "\"group\": "
 	    << "\"" << value.group() << "\""
 	    << "," << Qt::endl;
-	str << indent << "\"type\": " << (int) value.type() << "," << Qt::endl;
-	
+	str << indent << "\"type\": " << (int)value.type() << "," << Qt::endl;
+
 	QPolygonF p;
 	if (value.type() == VipShape::Path)
 		p = value.polygon();
@@ -297,8 +288,7 @@ void vipShapeToJSON(QTextStream& str, const VipShape& value, const QByteArray& i
 				str << "," << Qt::endl;
 			has_val = true;
 			str << indent << "\t"
-			    << "\"" << key << "\": "
-			     << val.toDouble() ;
+			    << "\"" << key << "\": " << val.toDouble();
 		}
 		else if (val.canConvert<QString>()) {
 			if (has_val)
@@ -310,7 +300,7 @@ void vipShapeToJSON(QTextStream& str, const VipShape& value, const QByteArray& i
 		}
 	}
 	if (has_val)
-		str <<  Qt::endl;
+		str << Qt::endl;
 
 	str << indent << "\t}" << Qt::endl;
 	str << indent << "}" << Qt::endl;
@@ -371,10 +361,9 @@ void vipSceneModelToJSON(QTextStream& str, const VipSceneModel& value, const QBy
 	str << indent << "}" << Qt::endl;
 }
 
-
-void vipSceneModelListToJSON(QTextStream& str, const VipSceneModelList& value, const QByteArray& indent )
+void vipSceneModelListToJSON(QTextStream& str, const VipSceneModelList& value, const QByteArray& indent)
 {
-	
+
 	str << indent << "{" << Qt::endl;
 
 	QByteArray indent2 = indent + '\t';
@@ -382,10 +371,9 @@ void vipSceneModelListToJSON(QTextStream& str, const VipSceneModelList& value, c
 	int count = value.size();
 	for (int i = 0; i < count; ++i) {
 		str << indent2 << "\""
-		    << "SceneModel" << QString::number(i)
-		    << "\": " << Qt::endl;
+		    << "SceneModel" << QString::number(i) << "\": " << Qt::endl;
 		vipSceneModelToJSON(str, value[i], indent2);
-		if (i != count-1)
+		if (i != count - 1)
 			str << indent2 << "," << Qt::endl;
 	}
 	str << indent << "}" << Qt::endl;
@@ -394,7 +382,6 @@ void vipSceneModelListToJSON(QTextStream& str, const VipSceneModelList& value, c
 #include <qjsondocument.h>
 #include <qjsonobject.h>
 #include <qjsonarray.h>
-
 
 static QVariantMap attributesFromJson(const QJsonObject& obj)
 {
@@ -405,7 +392,7 @@ static QVariantMap attributesFromJson(const QJsonObject& obj)
 	return res;
 }
 
-static VipShape shapeFromJson(const QJsonObject& obj, QString & error)
+static VipShape shapeFromJson(const QJsonObject& obj, QString& error)
 {
 	VipShape res;
 	res.setGroup(obj.value("group").toString());
@@ -421,7 +408,7 @@ static VipShape shapeFromJson(const QJsonObject& obj, QString & error)
 	}
 	QString p = obj.value("points").toString();
 	QPolygonF poly = polygonFromJSON(p.toLatin1());
-	
+
 	if (type == VipShape::Polygon || type == VipShape::Path)
 		res.setPolygon(poly);
 	else if (type == VipShape::Point && poly.size())
@@ -432,7 +419,7 @@ static VipShape shapeFromJson(const QJsonObject& obj, QString & error)
 	return res;
 }
 
-static VipSceneModel sceneModelFromJson(const QJsonObject& obj, QString & error)
+static VipSceneModel sceneModelFromJson(const QJsonObject& obj, QString& error)
 {
 	VipSceneModel res;
 	for (auto it = obj.begin(); it != obj.end(); ++it) {
@@ -441,7 +428,7 @@ static VipSceneModel sceneModelFromJson(const QJsonObject& obj, QString & error)
 			QJsonArray ar = it.value().toArray();
 			for (int i = 0; i < ar.size(); ++i) {
 
-				res.add(key, shapeFromJson(ar[i].toObject(),error));
+				res.add(key, shapeFromJson(ar[i].toObject(), error));
 				if (!error.isEmpty())
 					return res;
 			}
@@ -452,22 +439,23 @@ static VipSceneModel sceneModelFromJson(const QJsonObject& obj, QString & error)
 	return res;
 }
 
-VipSceneModelList vipSceneModelListFromJSON(const QByteArray& content, QString * error_str) 
+VipSceneModelList vipSceneModelListFromJSON(const QByteArray& content, QString* error_str)
 {
 	QJsonParseError error;
 	QJsonDocument loadDoc(QJsonDocument::fromJson(content, &error));
 	if (error.error != QJsonParseError::NoError) {
-		if(error_str) *error_str = error.errorString();
+		if (error_str)
+			*error_str = error.errorString();
 		return VipSceneModelList();
 	}
 
 	QJsonObject root = loadDoc.object();
-	
+
 	VipSceneModelList res;
 	QString err;
 	for (auto it = root.begin(); it != root.end(); ++it) {
 
-		res << sceneModelFromJson(it.value().toObject(),err);
+		res << sceneModelFromJson(it.value().toObject(), err);
 		if (!err.isEmpty()) {
 			if (error_str)
 				*error_str = err;
@@ -476,14 +464,6 @@ VipSceneModelList vipSceneModelListFromJSON(const QByteArray& content, QString *
 	}
 	return res;
 }
-
-
-
-
-
-
-
-
 
 #include "VipXmlArchive.h"
 #include <QClipboard>
@@ -853,7 +833,7 @@ void vipExecUnitializationFunction()
 
 #include "VipSleep.h"
 
-std::atomic<bool>& _enableGuiInitializationFunction() 
+std::atomic<bool>& _enableGuiInitializationFunction()
 {
 	static std::atomic<bool> inst;
 	return inst;

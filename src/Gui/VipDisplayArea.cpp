@@ -3245,7 +3245,7 @@ struct UpdateThread : QThread
 		update = new VipUpdate();
 		connect(update, SIGNAL(updateProgressed(int)), mainWindow->iconBar()->updateProgress, SLOT(setValue(int)));
 		while (VipMainWindow* w = mainWindow) {
-			
+
 			bool downloaded = false;
 			if (update->process()->state() != QProcess::Running && update->hasUpdate("./", &downloaded) > 0) // QFileInfo(vipAppCanonicalPath()).canonicalPath(),&downloaded) > 0)
 			{
@@ -3927,7 +3927,7 @@ bool VipMainWindow::loadSessionShowProgress(const QString& filename, VipProgress
 		// DirectoryBrowser is not always present
 		arch.save();
 		if (VipDirectoryBrowser* browser = vipGetDirectoryBrowser()) {
-			//TEST
+			// TEST
 			QVariant v = vipToVariant(browser);
 			VipDirectoryBrowser* tmp = v.value<VipDirectoryBrowser*>();
 			if (tmp != browser)
@@ -4339,7 +4339,7 @@ QList<VipAbstractPlayer*> VipMainWindow::openDevices(const QList<VipIODevice*>& 
 	if (player) {
 		for (int i = 0; i < all_devices.size(); ++i) {
 			all_devices[i]->setParent(area->processingPool());
-			if (!vipCreatePlayersFromProcessings(QList<VipIODevice*> ()<<all_devices[i], player).size())
+			if (!vipCreatePlayersFromProcessings(QList<VipIODevice*>() << all_devices[i], player).size())
 				delete all_devices[i];
 			else {
 				res << player;

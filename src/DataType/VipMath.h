@@ -39,8 +39,6 @@
 #include "VipConfig.h"
 #include "VipSIMD.h"
 
-
-
 // prefetching
 #if (defined(__GNUC__) || defined(__clang__)) && !defined(_MSC_VER)
 #define VIP_PREFETCH(p) __builtin_prefetch(reinterpret_cast<const char*>(p))
@@ -49,7 +47,6 @@
 #else
 #define VIP_PREFETCH(p)
 #endif
-
 
 /// \addtogroup DataType
 /// @{
@@ -402,14 +399,7 @@ static inline bool vipFuzzyLessOrEqual(long double d1, long double d2)
 	return (d1 <= d2) || vipFuzzyCompare(d1, d2);
 }
 
-
-
-
-
-
-
 #if defined(__SIZEOF_INT128__)
-
 
 VIP_ALWAYS_INLINE void vipUmul128(const uint64_t m1, const uint64_t m2, uint64_t* const rl, uint64_t* const rh)
 {
@@ -423,7 +413,6 @@ VIP_ALWAYS_INLINE void vipUmul128(const uint64_t m1, const uint64_t m2, uint64_t
 
 #elif (defined(__IBMC__) || defined(__IBMCPP__)) && defined(__LP64__)
 
-
 VIP_ALWAYS_INLINE void vipUmul128(const uint64_t m1, const uint64_t m2, uint64_t* const rl, uint64_t* const rh)
 {
 	*rh = __mulhdu(m1, m2);
@@ -435,7 +424,6 @@ VIP_ALWAYS_INLINE void vipUmul128(const uint64_t m1, const uint64_t m2, uint64_t
 #elif defined(_MSC_VER) && (defined(_M_ARM64) || (defined(_M_X64) && defined(__INTEL_COMPILER)))
 
 #include <intrin.h>
-
 
 VIP_ALWAYS_INLINE void vipUmul128(const uint64_t m1, const uint64_t m2, uint64_t* const rl, uint64_t* const rh)
 {
@@ -450,8 +438,10 @@ VIP_ALWAYS_INLINE void vipUmul128(const uint64_t m1, const uint64_t m2, uint64_t
 #include <intrin.h>
 #pragma intrinsic(_umul128)
 
-
-static VIP_ALWAYS_INLINE void vipUmul128(const uint64_t m1, const uint64_t m2, uint64_t* const rl, uint64_t* const rh) { *rl = _umul128(m1, m2, rh); }
+static VIP_ALWAYS_INLINE void vipUmul128(const uint64_t m1, const uint64_t m2, uint64_t* const rl, uint64_t* const rh)
+{
+	*rl = _umul128(m1, m2, rh);
+}
 
 #define VIP_HAS_FAST_UMUL128 1
 
@@ -472,7 +462,6 @@ static VIP_ALWAYS_INLINE void vipUmul128(const uint64_t m1, const uint64_t m2, u
 
 #endif // defined( _MSC_VER ) && !defined( __INTEL_COMPILER )
 
-
 static inline void vipUmul128(const uint64_t u, const uint64_t v, uint64_t* const rl, uint64_t* const rh)
 {
 	*rl = u * v;
@@ -488,14 +477,7 @@ static inline void vipUmul128(const uint64_t u, const uint64_t v, uint64_t* cons
 	*rh = __VIP_EMULU(u1, v1) + static_cast<uint32_t>(w1 >> 32) + static_cast<uint32_t>(t >> 32);
 }
 
-
 #endif
-
-
-
-
-
-
 
 /// @}
 // end DataType

@@ -50,8 +50,14 @@ namespace vip_log_detail
 		static std::atomic<bool> enable{ false };
 		return enable;
 	}
-	bool _vip_enable_debug() { return _vip_debug().load(std::memory_order_relaxed); }
-	void _vip_set_enable_debug(bool en) { _vip_debug() = en; }
+	bool _vip_enable_debug()
+	{
+		return _vip_debug().load(std::memory_order_relaxed);
+	}
+	void _vip_set_enable_debug(bool en)
+	{
+		_vip_debug() = en;
+	}
 }
 
 class VipLogging::PrivateData

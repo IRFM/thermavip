@@ -311,7 +311,7 @@ namespace Vip
 ///	-	'track-scales-state': boolean value equivalent to VipAbstractPlotArea::setTrackScalesStateEnabled()
 /// -	'maximum-scales-states' : equivalent to VipAbstractPlotArea::setMaximumScalesStates()
 /// -	'legend-position': main legend position, one of 'none', 'left', 'right', 'top', 'bottom', 'innerLeft', 'innerRight', 'innerTop', 'innerBottom', 'innerTopLeft', 'innerTopRight',
-/// 'innerBottomLeft', 'innerBottomRight' 
+/// 'innerBottomLeft', 'innerBottomRight'
 /// -	'legend-border-distance': for inner legends, set distance to borders. For outer legend, set its margin.
 ///
 class VIP_PLOTTING_EXPORT VipAbstractPlotArea : public VipBoxGraphicsWidget

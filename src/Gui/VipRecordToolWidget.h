@@ -205,7 +205,7 @@ private Q_SLOTS:
 	void start() { setStarted(true); }
 	void stop() { setStarted(false); }
 
- Q_SIGNALS :
+Q_SIGNALS:
 	void started();
 	void stopped();
 

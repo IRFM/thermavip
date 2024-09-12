@@ -777,7 +777,7 @@ protected:
 
 	Mode m_mode;
 	VipPenWidget* m_pen;
-	QMenu *m_menu;
+	QMenu* m_menu;
 };
 
 /// Widget used to edit a VipText object.

@@ -35,8 +35,6 @@
 #include <qdatetime.h>
 #include <qprocess.h>
 
-
-
 static void registerVipNetworkConnection()
 {
 	static QMutex mutex;
@@ -568,4 +566,3 @@ void VipTcpServer::incomingConnection(qintptr socketDescriptor)
 
 	m_data->connections.push_back(socketDescriptor);
 }
-

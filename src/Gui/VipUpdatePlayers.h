@@ -204,5 +204,4 @@ Q_SIGNALS:
 	void distanceCreated(const VipPoint& start, const VipPoint& end);
 };
 
-
 #endif

@@ -662,7 +662,7 @@ public Q_SLOTS:
 	virtual void setFrozen(bool);
 	virtual void setSharedZoom(bool);
 	void setZoomFeaturesVisible(bool vis);
-	
+
 	// add processings to the processing list (if any)
 	virtual void addSelectedProcessing(const VipProcessingObject::Info&);
 	virtual void setColorMapOptionsVisible(bool);
@@ -988,7 +988,6 @@ VIP_GUI_EXPORT VipFunctionDispatcher<2>& VipFDAddProcessingAction();
 /// If a valid action is performed, the function must return true.
 /// Its signature is bool(VipPlayer2D*, VipPlotItem*,QMimeData*);
 VIP_GUI_EXPORT VipFunctionDispatcher<3>& VipFDDropOnPlotItem();
-
 
 /// This function dispatcher is called whenever the user press a key on a VipPlayer2D.
 /// If a valid action is performed (i.e. the key is handled), the function must return true.

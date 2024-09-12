@@ -204,8 +204,7 @@ VisualizeDB::VisualizeDB(QWidget* parent)
 							       << "Confidence"
 							       << "User"
 							       << "Comments"
-							       << "Name"
-	);
+							       << "Name");
 	// for now hide pulse date
 	m_data->table->setSortingEnabled(true);
 	m_data->table->installEventFilter(this);
@@ -895,7 +894,7 @@ bool vipInitializeVisualizeDBWidget()
 		button->setIcon(vipIcon("database.png"));
 		button->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
 		button->setCheckable(true);
-		QAction * act =vipGetMainWindow()->toolsToolBar()->addWidget(button);
+		QAction* act = vipGetMainWindow()->toolsToolBar()->addWidget(button);
 		act->setObjectName("Thermal events DB");
 		vipGetVisualizeDBToolWidget(vipGetMainWindow())->setButton(button);
 		return true;

@@ -381,7 +381,7 @@ QStringList vipEventTypesDB()
 	return events;
 }
 
-QStringList vipEventTypesDB(const QString& line_of_sight) 
+QStringList vipEventTypesDB(const QString& line_of_sight)
 {
 	QSqlDatabase db = createConnection();
 	QSqlQuery q = db.exec("SELECT * FROM thermal_event_category_lines_of_sight;");

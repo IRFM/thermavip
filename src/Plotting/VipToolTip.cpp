@@ -448,9 +448,9 @@ void VipToolTip::setPlotAreaPos(const QPointF& pos)
 			for (int p = 0; p < points_of_intereset.size(); ++p) {
 				QString tooltip = item->formatToolTip((QPointF)points_of_intereset[p]);
 				if (!tooltip.isEmpty()) {
-					//TEST
+					// TEST
 					custom_tooltip += "<div>" + tooltip + "</div>";
-					//custom_tooltip += "<p style=\"padding-top:2px;\"> " + tooltip + "</p>";
+					// custom_tooltip += "<p style=\"padding-top:2px;\"> " + tooltip + "</p>";
 					if (++line >= d_data->maxLines)
 						break;
 				}
@@ -568,7 +568,7 @@ void VipToolTip::setPlotAreaPos(const QPointF& pos)
 		}
 
 		tool_tip = ("<div style = \"white-space:nowrap;\"><p align='left' style = \"white-space:nowrap; width: 1200px;\">" + tool_tip + "</p></div>");
-		//vip_debug("%s\n", tool_tip.toLatin1().data());
+		// vip_debug("%s\n", tool_tip.toLatin1().data());
 		VipText tip_text = tool_tip;
 		QPoint this_pos = toolTipPosition(tip_text, pos, d_data->position, d_data->alignment);
 		VipCorrectedTip::showText(this_pos, tip_text.text(), parent, QRect(), d_data->delayTime);

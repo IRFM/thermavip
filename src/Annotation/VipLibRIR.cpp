@@ -104,7 +104,7 @@ static bool loadLibraries()
 				VIP_LOG_WARNING("West plugin of librir not found!");
 			}
 			else {
-				VIP_LOG_INFO("Loaded west librir at ",west);
+				VIP_LOG_INFO("Loaded west librir at ", west);
 			}
 			return res = true;
 		}
@@ -888,7 +888,7 @@ VipLibRIR* VipLibRIR::instance()
 			delete librir;
 			return librir = nullptr;
 		}
-		
+
 		librir->set_hcc_lopt_file = (_set_hcc_lopt_file)westLib()->resolve("set_hcc_lopt_file");
 		if (!librir->set_hcc_lopt_file) {
 			VIP_LOG_ERROR("librir: missing set_hcc_lopt_file");

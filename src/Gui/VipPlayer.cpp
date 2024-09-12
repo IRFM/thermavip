@@ -649,9 +649,7 @@ QList<VipAbstractPlayer*> VipAbstractPlayer::findOutputPlayers(VipProcessingObje
 class VipWidgetPlayer::PrivateData
 {
 public:
-	PrivateData()
-	{
-	}
+	PrivateData() {}
 	QPointer<QWidget> widget;
 };
 
@@ -662,7 +660,8 @@ VipWidgetPlayer::VipWidgetPlayer(QWidget* w, QWidget* parent)
 	setWidget(w);
 }
 
-VipWidgetPlayer::~VipWidgetPlayer() {
+VipWidgetPlayer::~VipWidgetPlayer()
+{
 	delete m_data;
 }
 
@@ -705,7 +704,7 @@ bool VipWidgetPlayer::renderObject(QPainter* p, const QPointF& pos, bool)
 	return true;
 }
 
-static VipArchive& operator<<(VipArchive& arch, const VipWidgetPlayer* pl) 
+static VipArchive& operator<<(VipArchive& arch, const VipWidgetPlayer* pl)
 {
 	if (pl->widget())
 		arch.content("widget", pl->widget());
@@ -721,10 +720,6 @@ static VipArchive& operator>>(VipArchive& arch, VipWidgetPlayer* pl)
 		pl->setWidget(w);
 	return arch;
 }
-
-
-
-
 
 VipPlayerToolTip::VipPlayerToolTip() {}
 
@@ -1177,7 +1172,7 @@ void VipPlayer2D::keyPressEvent(QKeyEvent* evt)
 	// Apply dispatcher
 	auto fun = VipFDPlayerKeyPress().match(this);
 	for (auto& f : fun) {
-		if (f(this,(int) evt->key(), (int) evt->modifiers())) {
+		if (f(this, (int)evt->key(), (int)evt->modifiers())) {
 			evt->accept();
 			return;
 		}
@@ -2375,7 +2370,7 @@ VipVideoPlayer::VipVideoPlayer(VipImageWidget2D* img, QWidget* parent)
 	// add a button for quick ROI drawing
 	toolBar()->addWidget(vipGetSceneModelWidgetPlayer()->createPlayerButton(this));
 
-	//Add zoom options to tool bar
+	// Add zoom options to tool bar
 	m_data->sharedZoomAction = toolBar()->addWidget(m_data->sharedZoom);
 	m_data->zoomChoiceAction = toolBar()->addWidget(m_data->zoomChoice);
 
@@ -3056,7 +3051,6 @@ void VipVideoPlayer::keyPressEvent(QKeyEvent* evt)
 	// Use Z and S to move contour level
 	evt->ignore();
 
-
 	if (evt->key() == Qt::Key_Z && !(evt->modifiers() & Qt::CTRL)) {
 		if (increaseContour())
 			evt->accept();
@@ -3245,15 +3239,15 @@ void VipVideoPlayer::setFrozen(bool enable)
 	if (m_data->isFrozen != enable) {
 		m_data->isFrozen = enable;
 		if (m_data->currentDisplay) {
-			
+
 			// disable the processing before (usually processinglist)
 			QList<VipDisplayObject*> disp = this->displayObjects();
 			for (VipDisplayObject* d : disp) {
 				if (d->inputAt(0)->connection()->source())
-					if (VipProcessingObject* o =d->inputAt(0)->connection()->source()->parentProcessing())
+					if (VipProcessingObject* o = d->inputAt(0)->connection()->source()->parentProcessing())
 						o->setEnabled(!enable);
 			}
-			//if (m_data->currentDisplay->inputAt(0)->connection()->source())
+			// if (m_data->currentDisplay->inputAt(0)->connection()->source())
 			//	if (VipProcessingObject* o = m_data->currentDisplay->inputAt(0)->connection()->source()->parentProcessing())
 			//		o->setEnabled(!enable);
 		}
@@ -7676,7 +7670,6 @@ VipFunctionDispatcher<3>& VipFDPlayerKeyPress()
 	return disp;
 }
 
-
 #include "VipDisplayArea.h"
 
 // default action on right click: menu with actions move to foreground/background.
@@ -8966,7 +8959,7 @@ static bool handleDropROIFileOnVideo(VipVideoPlayer* pl, VipPlotItem* sp, QMimeD
 			// check thta this is a valid ROI file
 			VipShapeReader reader;
 			reader.setPath(fname);
-			if (reader.open(VipIODevice::ReadOnly) )
+			if (reader.open(VipIODevice::ReadOnly))
 				roi_files.append(fname);
 		}
 	}

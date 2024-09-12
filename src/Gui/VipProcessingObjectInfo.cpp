@@ -990,14 +990,13 @@ void VipProcessingObjectInfo::setPlotItem(VipPlotItem* item)
 		}
 }
 
-void VipProcessingObjectInfo::itemSelected(VipPlotItem* plot_item) 
+void VipProcessingObjectInfo::itemSelected(VipPlotItem* plot_item)
 {
 	bool is_null = m_data->delayedItem.data() == nullptr;
 	m_data->delayedItem = plot_item;
 	if (is_null)
 		QMetaObject::invokeMethod(this, "delayedItemSelected", Qt::QueuedConnection);
 }
-
 
 void VipProcessingObjectInfo::delayedItemSelected()
 {

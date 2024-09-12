@@ -52,7 +52,6 @@
 #include "VipTextOutput.h"
 #include "VipHash.h"
 
-
 // class ReadThread : public QThread
 // {
 // VipIODevice * device;
@@ -1273,7 +1272,8 @@ void VipProcessingPool::save()
 	QMutexLocker lock(&m_data->device_mutex);
 
 	VipIODevice::save();
-	m_data->savedParameters.append(PrivateData::Parameters(m_data->parameters.enableMissFrames, playSpeed(),
+	m_data->savedParameters.append(PrivateData::Parameters(m_data->parameters.enableMissFrames,
+							       playSpeed(),
 							       modes(),
 							       m_data->parameters.begin_time,
 							       m_data->parameters.end_time,
@@ -1638,7 +1638,6 @@ bool VipProcessingPool::readData(qint64 time)
 
 	std::vector<VipIODevice*> devices;
 	devices.reserve(m_data->read_devices.size());
-
 
 	for (VipIODevice* dev : m_data->read_devices)
 		if ((dev->openMode() & VipIODevice::ReadOnly) && dev->deviceType() == Temporal && dev->isEnabled()) {
@@ -2497,7 +2496,6 @@ void VipProcessingPool::runPlay()
 					}
 				}
 			}
-			
 
 			// qint64 st = QDateTime::currentMSecsSinceEpoch();
 			// read data
@@ -2508,7 +2506,6 @@ void VipProcessingPool::runPlay()
 
 			// qint64 el = QDateTime::currentMSecsSinceEpoch()-st;
 			// vip_debug("read: %i\n", (int)el);
-
 
 			// m_data->thread.msleep(1);
 		}
@@ -2778,8 +2775,8 @@ void VipTimeRangeBasedGenerator::setTimestampsWithSampling(const QVector<qint64>
 			m_data->step_size = timestamps[1] - timestamps[0];
 	}
 
-	if (timestamps.size() > 1 ) {
-		
+	if (timestamps.size() > 1) {
+
 		// reconstruct the time ranges.
 		// we consider that a gap > 3*sampling is enough to start a new range (more than 3 consecutive miss frames).
 		VipTimeRangeList ranges;
@@ -4546,7 +4543,6 @@ bool VipDirectoryReader::readData(qint64 time)
 
 #include "VipXmlArchive.h"
 
-
 struct FileShapeBuffer
 {
 	QString fname;
@@ -4565,7 +4561,7 @@ VipShapeReader::VipShapeReader()
 		registered = true;
 		qRegisterMetaType<FileShapeBuffer>();
 	}
-	
+
 	outputAt(0)->setData(VipSceneModel());
 }
 
@@ -4579,14 +4575,14 @@ bool VipShapeReader::open(VipIODevice::OpenModes mode)
 	QByteArray content;
 	{
 		QFile fin(p);
-		if (!fin.open(QFile::ReadOnly|QFile::Text))
+		if (!fin.open(QFile::ReadOnly | QFile::Text))
 			return false;
 		content = fin.readAll();
 	}
 
 	size_t hash = vipHashBytes(content.data(), content.size());
 	{
-		
+
 		// Check inside buffered scene model
 		QMutexLocker lock(&_shape_buffer_mutex);
 		if (_shape_buffer.fname == p && hash == _shape_buffer.hash) {
@@ -4632,12 +4628,12 @@ bool VipShapeReader::open(VipIODevice::OpenModes mode)
 	}
 	else if (suffix == "json") {
 		QString error;
-		VipSceneModelList lst = vipSceneModelListFromJSON(content,&error);
+		VipSceneModelList lst = vipSceneModelListFromJSON(content, &error);
 		if (!error.isEmpty()) {
 			setError(error);
 			return false;
 		}
-		if (lst.size() == 0) 
+		if (lst.size() == 0)
 			setData(QVariant::fromValue(VipSceneModel()));
 		else if (lst.size() == 1)
 			setData(QVariant::fromValue(lst[0]));

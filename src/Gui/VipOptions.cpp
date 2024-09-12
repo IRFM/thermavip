@@ -844,9 +844,9 @@ EnvironmentSettings::EnvironmentSettings(QWidget* parent)
 	QGroupBox* env_box = new QGroupBox("Environment variables (thermavip.env)");
 	env_box->setFlat(true);
 	vlay->addWidget(env_box);
-	vlay->addWidget(m_data->env,1);
+	vlay->addWidget(m_data->env, 1);
 
-	//vlay->addStretch(1);
+	// vlay->addStretch(1);
 	setLayout(vlay);
 
 	connect(m_data->openDataDir, SIGNAL(clicked(bool)), this, SLOT(openDataDirectory()));

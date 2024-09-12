@@ -148,7 +148,7 @@ void VipTimeRangeItem::setCurrentTimeRange(const VipTimeRange& r)
 		// bool first_set = m_data->left == 0 && m_data->right == 0;
 		m_data->left = r.first;
 		m_data->right = r.second;
-		
+
 		Q_EMIT timeRangeChanged();
 		emitItemChanged();
 	}
@@ -231,13 +231,12 @@ static QLinearGradient& buildVerticalGradient(const QRectF& r, const QColor& c)
 	return grad;
 }
 
-
 /* QRectF VipTimeRangeItem::boundingRect() const
 {
 	return shape().boundingRect();
 }*/
 
-//QPainterPath VipTimeRangeItem::shape() const
+// QPainterPath VipTimeRangeItem::shape() const
 QPainterPath VipTimeRangeItem::shapeFromCoordinateSystem(const VipCoordinateSystemPtr& m) const
 {
 	VipTimeRangeItem* _this = const_cast<VipTimeRangeItem*>(this);
@@ -274,7 +273,6 @@ QRectF VipTimeRangeItem::boundingRect() const
 	return m_data->boundingRect;
 }
 
-
 void VipTimeRangeItem::draw(QPainter* p, const VipCoordinateSystemPtr& m) const
 {
 	Q_UNUSED(m)
@@ -295,7 +293,7 @@ void VipTimeRangeItem::draw(QPainter* p, const VipCoordinateSystemPtr& m) const
 			p->setPen(pen);
 			p->setBrush(brush);
 
-			p->drawRect(r); 
+			p->drawRect(r);
 		}
 		else {
 			QPen pen(QBrush(grad), 1);
@@ -305,8 +303,6 @@ void VipTimeRangeItem::draw(QPainter* p, const VipCoordinateSystemPtr& m) const
 		}
 	}
 
-	
-	
 	QRectF direction = r;
 	if (m_data->reverse)
 		direction.setLeft(r.right() - 5);
@@ -316,18 +312,17 @@ void VipTimeRangeItem::draw(QPainter* p, const VipCoordinateSystemPtr& m) const
 	// Draw the direction rectangle that indicates where the time range starts.
 	// If the time range is too small, do not draw it to avoid overriding the display
 	// p->setPen(pen);
-	
+
 	QRectF direction_rect = direction & r;
 	if (direction_rect.width() > 4) {
-		
-		//QColor c(255, 165, 0);
+
+		// QColor c(255, 165, 0);
 		QColor c = m_data->color.darker(150);
-		QBrush brush(c); 
+		QBrush brush(c);
 		p->setBrush(brush);
 		p->drawRect(direction_rect);
 	}
 
-	
 	// draw the left and right arrow if the rectangle width is > 10
 	/* if (r.width() > 10 && !m_data->resizeLeft.isEmpty() && !m_data->resizeRight.isEmpty()) {
 		p->setRenderHints(QPainter::Antialiasing);
@@ -363,7 +358,7 @@ void VipTimeRangeItem::setReverse(bool reverse)
 {
 	if (reverse != m_data->reverse) {
 		m_data->reverse = reverse;
-		
+
 		Q_EMIT timeRangeChanged();
 		emitItemChanged();
 	}
@@ -447,7 +442,7 @@ void VipTimeRangeItem::mousePressEvent(QGraphicsSceneMouseEvent* event)
 	VipPlotItem::mousePressEvent(event);
 	m_data->pos = event->pos();
 	m_data->selection = selection(m_data->pos);
-	
+
 	// Small trick: a time range of 1ns means that this is an empty time range.
 	// we just to specify a valid time range (> 0 ns) to display the actual VipTimeRangeItem.
 	if (m_data->selection != 0 && m_data->initialTimeRange.second - m_data->initialTimeRange.first == 0) // 1)
@@ -900,7 +895,7 @@ void VipTimeRangeListItem::drawSelected(QPainter* p, const VipCoordinateSystemPt
 {
 	if (m_data->items.size()) {
 
-		//TEST: draw items
+		// TEST: draw items
 		for (const VipTimeRangeItem* it : m_data->items) {
 			it->draw(p, m);
 		}
@@ -2457,9 +2452,9 @@ VipPlayWidget::VipPlayWidget(QWidget* parent)
 	m_data->marks->setCheckable(true);
 	m_data->repeat = m_data->playToolBar->addAction(vipIcon("repeat.png"), "Repeat");
 	m_data->repeat->setCheckable(true);
-	m_data->maxSpeed = m_data->playToolBar->addAction(vipIcon("speed.png"), "<b>Use maximum speed</b><br>"
-	"If using a play speed, the speed will be capped in order to not miss frames"
-	);
+	m_data->maxSpeed = m_data->playToolBar->addAction(vipIcon("speed.png"),
+							  "<b>Use maximum speed</b><br>"
+							  "If using a play speed, the speed will be capped in order to not miss frames");
 	m_data->maxSpeed->setCheckable(true);
 	m_data->maxSpeed->setChecked(true);
 	m_data->speed = m_data->playToolBar->addWidget(m_data->speedWidget);
@@ -2545,7 +2540,7 @@ VipPlayWidget::VipPlayWidget(QWidget* parent)
 	// timestamping area
 	m_data->playerArea = new VipPlayerArea();
 	m_data->playerWidget = new VipPlotWidget2D();
-	
+
 	m_data->playerWidget->setArea(m_data->playerArea);
 	m_data->playerArea->setMargins(VipMargins(10, 0, 10, 0));
 	m_data->playerArea->timeMarker()->installSceneEventFilter(m_data->playerArea->timeSliderGrip());
@@ -2553,7 +2548,7 @@ VipPlayWidget::VipPlayWidget(QWidget* parent)
 	m_data->playerArea->limit2Marker()->installSceneEventFilter(m_data->playerArea->limit2SliderGrip());
 	m_data->playerArea->timeScale()->scaleDraw()->enableLabelOverlapping(false);
 
-	//TEST
+	// TEST
 	/*m_data->playerWidget->setAttribute(Qt::WA_PaintUnclipped, false);
 	m_data->playerWidget->viewport()->setAttribute(Qt::WA_PaintUnclipped, false);
 

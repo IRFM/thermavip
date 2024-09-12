@@ -67,7 +67,7 @@ ManualAnnotationHelper::ManualAnnotationHelper()
 
 		QString cmd = "cmd /c \"cd " + cd_path + " && " + activate + " && " + python_path + " " + thermavip_interface + "\"";
 		vip_debug("cmd: '%s'\n", cmd.toLatin1().data());
-		m_process.start("cmd",QStringList());
+		m_process.start("cmd", QStringList());
 		if (!m_process.waitForStarted(5000)) {
 			vip_debug("error: %s\n", m_process.errorString().toLatin1().data());
 			return;
@@ -84,7 +84,7 @@ ManualAnnotationHelper::ManualAnnotationHelper()
 		m_process.waitForBytesWritten();
 	}
 	else {
-		m_process.start("python " ,QStringList()<< thermavip_interface);
+		m_process.start("python ", QStringList() << thermavip_interface);
 		m_process.waitForStarted();
 	}
 
@@ -428,7 +428,7 @@ static void uploadROIsFromPlayer(VipVideoPlayer* pl, const QList<VipShape>& shs)
 		QGridLayout* lay = new QGridLayout();
 		lay->addWidget(new QLabel("Event(s) type"), 0, 0);
 		lay->addWidget(type, 0, 1);
-		lay->addWidget(url, 1, 0,1,2);
+		lay->addWidget(url, 1, 0, 1, 2);
 		QWidget* w = new QWidget();
 		w->setLayout(lay);
 
@@ -439,8 +439,6 @@ static void uploadROIsFromPlayer(VipVideoPlayer* pl, const QList<VipShape>& shs)
 		event_type = type->currentText();
 		generate_url = url->isChecked();
 	}
-
-	
 
 	VipManualAnnotation* annot = db->manualAnnotationPanel();
 	if (!pl) {
@@ -469,7 +467,7 @@ static void uploadROIsFromPlayer(VipVideoPlayer* pl, const QList<VipShape>& shs)
 			if (VipOutput* source = con->source())
 				src_output = source;
 
-	if ( !src_output) {
+	if (!src_output) {
 		QMessageBox::warning(nullptr, "Error", "Unable to send ROI to DB");
 		return;
 	}
@@ -490,7 +488,7 @@ static void uploadROIsFromPlayer(VipVideoPlayer* pl, const QList<VipShape>& shs)
 	qint64 last_time = time;
 	int count = 0;
 
-	for (VipPlotShape * shape : selected) {
+	for (VipPlotShape* shape : selected) {
 		// create shape
 		VipShape sh = shape->rawData().copy();
 		VipShapeStatistics st = sh.statistics(ar, QPoint(0, 0), nullptr, VipShapeStatistics::All);
@@ -545,7 +543,6 @@ static void uploadROIsFromPlayer(VipVideoPlayer* pl, const QList<VipShape>& shs)
 		res[count++].append(sh);
 	}
 
-
 	// Send events
 	VipProgress p;
 	QList<qint64> ids = vipSendToDB(user_name, camera, device, pulse, res, &p);
@@ -562,7 +559,6 @@ static void uploadROIsFromPlayer(VipVideoPlayer* pl, const QList<VipShape>& shs)
 		qApp->clipboard()->setText(url);
 	}
 
-
 	// Display events
 
 	VipEventQuery query;
@@ -574,10 +570,8 @@ static void uploadROIsFromPlayer(VipVideoPlayer* pl, const QList<VipShape>& shs)
 	for (VipPlotShape* sh : selected) {
 		pl->plotSceneModel()->sceneModel().remove(sh->rawData());
 	}
-	//QList<VipPlotShape*> selected = pl->plotSceneModel()->shapes(1);
+	// QList<VipPlotShape*> selected = pl->plotSceneModel()->shapes(1);
 }
-
-
 
 static void uploadImageEventFromPlayer(VipVideoPlayer* pl, bool remember = true)
 {
@@ -593,8 +587,7 @@ static void uploadImageEventFromPlayer(VipVideoPlayer* pl, bool remember = true)
 		return;
 	}
 
-	if (!remember_choices)
-	{
+	if (!remember_choices) {
 		// Create dialog
 		QComboBox* type = new QComboBox();
 		type->setToolTip("Event type");
@@ -634,7 +627,6 @@ static void uploadImageEventFromPlayer(VipVideoPlayer* pl, bool remember = true)
 		return;
 	}
 
-
 	int pulse = db->pulse();
 	QString camera = db->camera();
 	QString device = db->device();
@@ -663,7 +655,6 @@ static void uploadImageEventFromPlayer(VipVideoPlayer* pl, bool remember = true)
 	Vip_event_list res;
 	QString user_name = vipUserName();
 
-	
 	QString default_status = "Analyzed (OK)";
 
 	qint64 duration = 0;
@@ -672,7 +663,7 @@ static void uploadImageEventFromPlayer(VipVideoPlayer* pl, bool remember = true)
 	int count = 0;
 
 	{
-	
+
 		QVariantMap attrs;
 		attrs.insert("comments", QString());
 		attrs.insert("name", QString());
@@ -734,7 +725,6 @@ static void uploadImageEventFromPlayer(VipVideoPlayer* pl, bool remember = true)
 	db->displayFromDataBaseQuery(query, false);
 }
 
-
 static QList<QAction*> manualAnnotationHelperMenu(VipPlotShape* shape, VipVideoPlayer* p)
 {
 	(void)shape;
@@ -773,7 +763,7 @@ static QList<QAction*> manualAnnotationHelperMenu(VipPlotShape* shape, VipVideoP
 
 	// add possibillity to upload selected ROI to DB in the PPO dataset
 	if (vipHasWriteRightsDB()) {
-	
+
 		QAction* upload = new QAction("Add hot spot of interest to the database", nullptr);
 		QObject::connect(upload, &QAction::triggered, std::bind(uploadROIsFromPlayer, p, shs));
 		actions << upload;
@@ -782,25 +772,24 @@ static QList<QAction*> manualAnnotationHelperMenu(VipPlotShape* shape, VipVideoP
 	return actions;
 }
 
-static QList<QAction*> imageAnnotationHelperMenu(VipPlotItem*, VipVideoPlayer* p) 
+static QList<QAction*> imageAnnotationHelperMenu(VipPlotItem*, VipVideoPlayer* p)
 {
 	QList<QAction*> actions;
 	// add possibillity to upload selected ROI to DB in the PPO dataset
 	if (vipHasWriteRightsDB()) {
 
 		QAction* image = new QAction("Add image of interest to the database (CTRL+U)", nullptr);
-		QObject::connect(image, &QAction::triggered, std::bind(uploadImageEventFromPlayer, p,true));
+		QObject::connect(image, &QAction::triggered, std::bind(uploadImageEventFromPlayer, p, true));
 		actions << image;
 	}
 
 	return actions;
 }
 
-
 static bool handleVideoKeyPress(VipVideoPlayer* pl, int key, int modifiers)
 {
 	if (key == Qt::Key_U) {
-	
+
 		bool remember = true;
 		if (modifiers & Qt::CTRL) {
 			remember = false;
@@ -810,8 +799,6 @@ static bool handleVideoKeyPress(VipVideoPlayer* pl, int key, int modifiers)
 	}
 	return false;
 }
-
-
 
 static int registerManualAnnotationHelperMenu()
 {

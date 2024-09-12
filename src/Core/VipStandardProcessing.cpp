@@ -2434,7 +2434,7 @@ void VipAffineTransform::apply()
 	if (ar_out.userType() == qMetaTypeId<VipNDArray>()) {
 		const VipNDArray ar = ar_out.value<VipNDArray>();
 		if (vipIsImageArray(ar) && ar.shapeCount() == 2 && !ar.isEmpty()) {
-		
+
 			// Work on RGB image
 			QImage qimg = vipToImage(ar);
 			VipNDArrayTypeView<VipRGB> img = qimg;

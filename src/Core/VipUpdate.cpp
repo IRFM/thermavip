@@ -40,7 +40,6 @@
 #include <iostream>
 #include <qcoreapplication.h>
 
-
 #ifdef _MSC_VER
 // Remove deprecated warning
 #pragma warning(push)

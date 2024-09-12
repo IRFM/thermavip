@@ -153,7 +153,7 @@ void VipEventDevice::setEvents(const Vip_event_list& events, const QString& grou
 		QList<qint64> times = m_scenes.keys();
 		QVector<qint64> timestamps(times.size());
 		std::copy(times.begin(), times.end(), timestamps.begin());
-		//setTimestamps(timestamps);
+		// setTimestamps(timestamps);
 		setTimestampsWithSampling(timestamps, m_video_sampling);
 
 		setProperty("_vip_showTimeLine", 1);
@@ -253,22 +253,17 @@ bool VipEventDevice::readInvalidTime(qint64 time)
 	return true;
 }
 
-
-
-
-
-class MyConnection
-  : public VipNetworkConnection
+class MyConnection : public VipNetworkConnection
 {
 public:
-	MyConnection(QObject * parent = nullptr)
+	MyConnection(QObject* parent = nullptr)
 	  : VipNetworkConnection(parent)
 	{
 	}
 
-
 protected:
-	virtual void onReadyRead() { 
+	virtual void onReadyRead()
+	{
 		QByteArray ar = this->readAll();
 		vip_debug("%i\n", ar.size());
 	}
@@ -280,7 +275,7 @@ public:
 	std::atomic<VipClientEventDevice*> parent{ nullptr };
 	std::atomic<int> status{ 0 }; // 0: connecting, 1: connected, -1: failed to connect
 	virtual void run()
-	{ 
+	{
 		QTcpSocket connection;
 		VipClientEventDevice* dev = parent.load();
 		if (!dev)
@@ -304,11 +299,11 @@ public:
 			return;
 		}
 		status = 1;
-		
+
 		qint64 last = QDateTime::currentMSecsSinceEpoch();
 
 		while (VipClientEventDevice* dev = parent.load()) {
-		
+
 			if (connection.state() != QTcpSocket::ConnectedState)
 				break;
 
@@ -329,10 +324,10 @@ public:
 			for (;;) {
 				if (!parent.load())
 					break;
-				if (connection.waitForReadyRead(100)) 
+				if (connection.waitForReadyRead(100))
 					res += connection.readAll();
-					
-				if (res.endsWith("eof")) 
+
+				if (res.endsWith("eof"))
 					break;
 
 				qint64 el = QDateTime::currentMSecsSinceEpoch() - time;
@@ -341,20 +336,20 @@ public:
 			}
 
 			vip_debug("%s\n", res.data());
-			if (res.endsWith("eof")) 
+			if (res.endsWith("eof"))
 				res.remove(res.size() - 3, 3);
 
 			// interpret as JSON
 			Vip_event_list evts = vipEventsFromJson(res);
 			vip_debug("%i events\n", evts.size());
-			
+
 			time = QDateTime::currentMSecsSinceEpoch();
-			qint64 el = time-last;
+			qint64 el = time - last;
 			last = time;
 			vip_debug("elapsed: %i ms\n", (int)el);
 
-			//send as output
-			
+			// send as output
+
 			VipSceneModel sm;
 			// build the scene models for each frame
 			for (Vip_event_list::const_iterator it = evts.begin(); it != evts.end(); ++it) {
@@ -375,7 +370,6 @@ public:
 			qint64 full_time = QDateTime::currentMSecsSinceEpoch() - start;
 			if (full_time < 20)
 				vipSleep(20 - full_time);
-			
 		}
 	}
 };
@@ -398,10 +392,9 @@ bool VipClientEventDevice::open(VipIODevice::OpenModes mode)
 	QString path = this->removePrefix(this->path());
 	QStringList lst = path.split(";", VIP_SKIP_BEHAVIOR::SkipEmptyParts);
 	if (lst.size() != 3) {
-		setError("Wrong path format: "+ path);
+		setError("Wrong path format: " + path);
 		return false;
 	}
-
 
 	setOpenMode(mode);
 	return true;
@@ -418,9 +411,9 @@ void VipClientEventDevice::close()
 	VipIODevice::close();
 }
 
-bool VipClientEventDevice::enableStreaming(bool enable) 
+bool VipClientEventDevice::enableStreaming(bool enable)
 {
-	//stop
+	// stop
 	if (d_data) {
 		d_data->parent = nullptr;
 		d_data->wait();
@@ -444,19 +437,9 @@ bool VipClientEventDevice::enableStreaming(bool enable)
 			d_data = nullptr;
 		}
 	}
-	
+
 	return true;
 }
-
-
-
-
-
-
-
-
-
-
 
 class UploadToDB::PrivateData
 {
@@ -1500,7 +1483,6 @@ Vip_event_list VipPlayerDBAccess::applyActions(const Vip_event_list& events)
 	return res;
 }
 
-
 bool VipPlayerDBAccess::connectToEventServer(const QString& host)
 {
 	if (!m_player)
@@ -1536,7 +1518,7 @@ void VipPlayerDBAccess::connectToEventServerEdit()
 	edit->setPlaceholderText("Format: 'host:ip:optional_camera'");
 	VipGenericDialog dial(edit, "Connect to event server", m_player);
 	if (dial.exec() == QDialog::Accepted) {
-	
+
 		QStringList lst = edit->text().split(":", VIP_SKIP_BEHAVIOR::SkipEmptyParts);
 		QString path;
 		if (lst.size() == 2) {

@@ -204,5 +204,4 @@ VIP_GUI_EXPORT VipSimpleAnnotation* vipAnnotation(VipPlayer2D* player,
 						  const QString& yaxis = QString(),
 						  QString* error = nullptr);
 
-
 #endif

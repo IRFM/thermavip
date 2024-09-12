@@ -125,5 +125,4 @@ private:
 	PrivateData* m_data;
 };
 
-
 #endif

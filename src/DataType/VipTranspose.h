@@ -204,5 +204,4 @@ detail::Reverse<Rev, Array> vipReverse(const Array& array, int axis = 0)
 /// @}
 // end DataType
 
-
 #endif

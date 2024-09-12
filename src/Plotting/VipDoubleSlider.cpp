@@ -362,9 +362,6 @@ void VipDoubleSlider::gripValueChanged(double value)
 	Q_EMIT valueChanged(d_data->grip->value());
 }
 
-
-
-
 VipDoubleSliderWidget::VipDoubleSliderWidget(VipBorderItem::Alignment align, QWidget* parent)
   : VipScaleWidget(new VipDoubleSlider(align), parent)
 {

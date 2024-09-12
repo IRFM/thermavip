@@ -569,18 +569,14 @@ public:
 		}
 	}
 
-	void triggerUpdate()
-	{
-		trigger.store( true);
-	}
+	void triggerUpdate() { trigger.store(true); }
 
 	virtual void run()
 	{
 		bool expired = false;
 		while (VipMapFileSystemTree* t = tree) {
 
-			if (!expired || tree->isVisible())
-			{
+			if (!expired || tree->isVisible()) {
 				QMutexLocker lock(&mutex);
 				for (int i = 0; i < items.size(); ++i) {
 					if (VipMapFileSystemTreeDirItem* it = items[i]) {

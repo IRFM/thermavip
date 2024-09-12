@@ -42,7 +42,7 @@
 VIP_DATA_TYPE_EXPORT size_t vipHashBytesKomihash(const void* Msg0, size_t MsgLen) noexcept;
 VIP_DATA_TYPE_EXPORT size_t vipHashBytesMurmur64(const void* Msg0, size_t MsgLen) noexcept;
 
-inline size_t vipHashBytes(const void* Msg0, size_t MsgLen) noexcept 
+inline size_t vipHashBytes(const void* Msg0, size_t MsgLen) noexcept
 {
 #ifdef VIP_HAS_FAST_UMUL128
 	return vipHashBytesKomihash(Msg0, MsgLen);

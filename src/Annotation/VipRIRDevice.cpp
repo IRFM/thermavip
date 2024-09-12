@@ -237,9 +237,6 @@ bool VipRIRDevice::readData(qint64 time)
 	return false;
 }
 
-
-
-
 VipRIRRecorder::VipRIRRecorder(QObject* parent)
   : VipIODevice(parent)
   , m_video(0)
@@ -248,7 +245,7 @@ VipRIRRecorder::VipRIRRecorder(QObject* parent)
 	propertyAt(1)->setData(0);
 	propertyAt(2)->setData(0);
 }
-	
+
 VipRIRRecorder::~VipRIRRecorder()
 {
 	VipRIRRecorder::close();
@@ -262,7 +259,7 @@ void VipRIRRecorder::close()
 	VipIODevice::close();
 }
 
-bool VipRIRRecorder::open(VipIODevice::OpenModes modes) 
+bool VipRIRRecorder::open(VipIODevice::OpenModes modes)
 {
 	close();
 	if (modes != WriteOnly)
@@ -279,7 +276,7 @@ bool VipRIRRecorder::open(VipIODevice::OpenModes modes)
 void VipRIRRecorder::apply()
 {
 	while (inputAt(0)->hasNewData()) {
-	
+
 		VipAnyData in = inputAt(0)->data();
 		const VipNDArray ar = in.value<VipNDArray>().toUInt16();
 		if (ar.shapeCount() != 2) {
@@ -288,7 +285,7 @@ void VipRIRRecorder::apply()
 		}
 
 		if (m_video == 0) {
-			//initialize
+			// initialize
 			QString p = removePrefix(path());
 			m_shape = ar.shape();
 			m_video = VipLibRIR::instance()->h264_open_file(p.toLatin1().data(), m_shape[1], m_shape[0], m_shape[0]);
@@ -322,10 +319,10 @@ void VipRIRRecorder::apply()
 			VipLibRIR::instance()->h264_set_parameter(m_video, "compressionLevel", QByteArray::number(compression));
 			VipLibRIR::instance()->h264_set_parameter(m_video, "lowValueError", QByteArray::number(propertyAt(1)->value<int>()));
 			VipLibRIR::instance()->h264_set_parameter(m_video, "highValueError", QByteArray::number(propertyAt(2)->value<int>()));
-			VipLibRIR::instance()->h264_set_parameter(m_video, "threads","4");
+			VipLibRIR::instance()->h264_set_parameter(m_video, "threads", "4");
 			VipLibRIR::instance()->h264_set_parameter(m_video, "slices", "4");
 		}
-	
+
 		if (ar.shape() != m_shape) {
 			setError("Wrong input image shape");
 			return;
@@ -355,10 +352,10 @@ void VipRIRRecorder::apply()
 		int high_error = propertyAt(2)->value<int>();
 		int ret = 0;
 		if (low_error == 0 && high_error == 0)
-			ret = VipLibRIR::instance()->h264_add_image_lossless(m_video, (unsigned short*)ar.data(), in.time(), attrs.size(), keys.data(), key_lens.data(), values.data(), value_lens.data());
-		else
 			ret =
-			  VipLibRIR::instance()->h264_add_image_lossy(m_video, (unsigned short*)ar.data(), in.time(), attrs.size(), keys.data(), key_lens.data(), values.data(), value_lens.data());
+			  VipLibRIR::instance()->h264_add_image_lossless(m_video, (unsigned short*)ar.data(), in.time(), attrs.size(), keys.data(), key_lens.data(), values.data(), value_lens.data());
+		else
+			ret = VipLibRIR::instance()->h264_add_image_lossy(m_video, (unsigned short*)ar.data(), in.time(), attrs.size(), keys.data(), key_lens.data(), values.data(), value_lens.data());
 
 		if (ret < 0) {
 			setError("Unable to write image");
@@ -366,12 +363,6 @@ void VipRIRRecorder::apply()
 		}
 	}
 }
-
-
-
-
-
-
 
 #include "VipStandardWidgets.h"
 #include <qboxlayout.h>
@@ -473,8 +464,6 @@ void VipRIRDeviceEditor::updateDevice()
 	}
 }
 
-
-
 #include <qgridlayout.h>
 
 class VipRIRRecorderEditor::PrivateData
@@ -517,13 +506,14 @@ VipRIRRecorderEditor::VipRIRRecorderEditor(QWidget* parent)
 	connect(&m_data->lowError, SIGNAL(valueChanged(int)), this, SLOT(updateDevice()));
 	connect(&m_data->highError, SIGNAL(valueChanged(int)), this, SLOT(updateDevice()));
 }
-	
+
 VipRIRRecorderEditor::~VipRIRRecorderEditor()
 {
 	delete m_data;
 }
 
-void VipRIRRecorderEditor::setDevice(VipRIRRecorder* dev) {
+void VipRIRRecorderEditor::setDevice(VipRIRRecorder* dev)
+{
 	if (dev != m_data->device) {
 		m_data->device = dev;
 		if (dev) {
@@ -554,14 +544,6 @@ void VipRIRRecorderEditor::updateDevice()
 		r->propertyAt(2)->setData(m_data->highError.value());
 	}
 }
-
-
-
-
-
-
-
-
 
 CustomizeRIRVideoPlayer::CustomizeRIRVideoPlayer(VipVideoPlayer* player, VipRIRDevice* device)
   : QObject(player)
@@ -594,8 +576,8 @@ static void displayVipRIRDeviceOptions(VipVideoPlayer* player)
 	}
 }
 
-
-static QWidget* editRIRRecorder(VipRIRRecorder* r) {
+static QWidget* editRIRRecorder(VipRIRRecorder* r)
+{
 	VipRIRRecorderEditor* ed = new VipRIRRecorderEditor();
 	ed->setDevice(r);
 	return ed;

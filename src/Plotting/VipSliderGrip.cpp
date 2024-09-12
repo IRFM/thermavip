@@ -407,8 +407,6 @@ double VipSliderGrip::toolTipDistance() const
 	return d_data->toolTipDistance;
 }
 
-
-
 void VipSliderGrip::setTextAlignment(Qt::Alignment align)
 {
 	d_data->textAlignment = align;
@@ -476,8 +474,6 @@ VipText& VipSliderGrip::text()
 	return d_data->text;
 }
 
-
-
 void VipSliderGrip::paint(QPainter* painter,
 			  const QStyleOptionGraphicsItem* // option
 			  ,
@@ -492,8 +488,8 @@ void VipSliderGrip::paint(QPainter* painter,
 
 	this->applyStyleSheetIfDirty();
 	auto r = this->renderHints();
-	//TEST: comment setRenderHints that crash sometimes (?)
-	//painter->setRenderHints(r);
+	// TEST: comment setRenderHints that crash sometimes (?)
+	// painter->setRenderHints(r);
 	auto c = this->compositionMode();
 	painter->setCompositionMode(c);
 
@@ -757,9 +753,6 @@ void VipSliderGrip::keyPressEvent(QKeyEvent* event)
 		}
 	}
 }
-
-
-
 
 VipColorMapGrip::VipColorMapGrip(VipAxisColorMap* parent)
   : VipSliderGrip(parent)

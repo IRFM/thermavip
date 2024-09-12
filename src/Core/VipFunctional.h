@@ -701,11 +701,11 @@ namespace details
 		for (int i = 0; i < count; ++i) {
 			const VipType& _t1 = t1[i];
 			const VipType& _t2 = t2[i];
-			if (_t1.metaObject && _t2.metaObject) { //TEST: && instead of ||
+			if (_t1.metaObject && _t2.metaObject) { // TEST: && instead of ||
 				// compare meta objects instead of ids
 				if (_t1.metaObject == _t2.metaObject)
 					continue;
-				else 
+				else
 					return false;
 			}
 			else if (_t1.id != _t2.id)

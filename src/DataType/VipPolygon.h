@@ -169,7 +169,6 @@ int vipLabelImage(const VipNDArrayType<T, DimIn>& input, VipNDArrayType<U, DimOu
 	return vipLabelImage(VipNDArrayTypeView<T, DimIn>(input), VipNDArrayTypeView<U, DimOut>(output), background, connectivity_8, relabel);
 }
 
-
 /// @brief Tells if given polygon is a rectangle, and stores it in rect (if not nullptr)
 VIP_DATA_TYPE_EXPORT bool vipIsRect(const QPolygon& p, QRect* rect = nullptr);
 /// @brief Tells if given polygon is a rectangle, and stores it in rect (if not nullptr)

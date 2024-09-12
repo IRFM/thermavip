@@ -92,9 +92,7 @@ namespace detail
 
 }
 
-
 VIP_CORE_EXPORT bool vipPing(const QByteArray& host);
-
 
 /// VipNetworkConnection represents a thread safe socket connection that does not use the main event loop.
 ///
@@ -316,6 +314,5 @@ Q_DECLARE_METATYPE(QAbstractSocket::OpenMode)
 Q_DECLARE_METATYPE(QAbstractSocket::NetworkLayerProtocol)
 Q_DECLARE_METATYPE(QAbstractSocket::BindMode)
 Q_DECLARE_METATYPE(qintptr)
-
 
 #endif

@@ -129,7 +129,8 @@ bool VipGeneratorSequential::open(VipIODevice::OpenModes mode)
 	return false;
 }
 
-QTransform VipGeneratorSequential::imageTransform() const {
+QTransform VipGeneratorSequential::imageTransform() const
+{
 	if (m_device)
 		return m_device->imageTransform();
 	return VipIODevice::imageTransform();

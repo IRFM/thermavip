@@ -1,6 +1,5 @@
 #define VIP_ENABLE_LOG_DEBUG
 
-
 #include <fstream>
 #include <iostream>
 
@@ -37,7 +36,6 @@
 
 #include <qsurfaceformat.h>
 
-
 #if !defined(_WIN32) && (defined(__unix__) || defined(__unix) || (defined(__APPLE__) && defined(__MACH__)))
 #include <unistd.h>
 #endif
@@ -65,8 +63,6 @@ static void myMessageOutput(QtMsgType type, const QMessageLogContext& context, c
 	}
 	return;
 }
-
-
 
 int main(int argc, char** argv)
 {
@@ -96,13 +92,11 @@ int main(int argc, char** argv)
 		}
 	}
 
-
 #ifdef WITH_MICRO
 	// Load micro_proxy library
 	QLibrary micro_proxy("micro_proxy");
 	bool loaded = micro_proxy.load();
 #endif
-	
 
 	qInstallMessageHandler(myMessageOutput);
 
@@ -161,7 +155,6 @@ int main(int argc, char** argv)
 	vipEnableGuiInitializationFunction(false);
 
 	QApplication app(argc, argv);
-
 
 	bool force_font = false;
 #if !defined(_WIN32) && (defined(__unix__) || defined(__unix) || (defined(__APPLE__) && defined(__MACH__)))
@@ -414,7 +407,6 @@ int main(int argc, char** argv)
 #ifdef _WIN32
 
 	// On windows only, create register key to support url on the form 'thermavip://' in browsers
-
 
 	QTemporaryDir dir;
 	QString p = dir.path();

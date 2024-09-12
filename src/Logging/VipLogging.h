@@ -275,20 +275,44 @@ namespace details
 	{
 		return str;
 	}
-	static inline const char* __build_str(const char* str) { return str; }
-	static inline const char* __build_str(const std::string& str) { return str.c_str(); }
-	static inline const char* __build_str(const QByteArray& str) { return str.data(); }
-	static inline const char* __build_str(const QString& str) { return str.toLatin1().data(); }
+	static inline const char* __build_str(const char* str)
+	{
+		return str;
+	}
+	static inline const char* __build_str(const std::string& str)
+	{
+		return str.c_str();
+	}
+	static inline const char* __build_str(const QByteArray& str)
+	{
+		return str.data();
+	}
+	static inline const char* __build_str(const QString& str)
+	{
+		return str.toLatin1().data();
+	}
 
 	template<int N>
 	static inline QString __build_qstr(const char str[N])
 	{
 		return QString(str);
 	}
-	static inline QString __build_qstr(const char* str) { return QString(str); }
-	static inline QString __build_qstr(const std::string& str) { return QString(str.c_str()); }
-	static inline QString __build_qstr(const QByteArray& str) { return QString(str); }
-	static inline QString __build_qstr(const QString& str) { return str; }
+	static inline QString __build_qstr(const char* str)
+	{
+		return QString(str);
+	}
+	static inline QString __build_qstr(const std::string& str)
+	{
+		return QString(str.c_str());
+	}
+	static inline QString __build_qstr(const QByteArray& str)
+	{
+		return QString(str);
+	}
+	static inline QString __build_qstr(const QString& str)
+	{
+		return str;
+	}
 
 	template<class T1>
 	static inline QString _format(const T1& str)
