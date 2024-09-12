@@ -72,7 +72,7 @@ int main(int argc, char** argv)
 {
 	// Load thermavip.env
 	QString env_file = vipGetDataDirectory() + "thermavip/thermavip.env";
-	printf("%s\n", env_file.toLatin1().data());
+	vip_debug("env file: %s\n", env_file.toLatin1().data());
 	if (!QFileInfo(env_file).exists()) {
 		env_file = QFileInfo(QString(argv[0])).canonicalPath();
 		env_file.replace("\\", "/");
@@ -617,6 +617,13 @@ int main(int argc, char** argv)
 
 	VipLoadPlugins::instance().unloadPlugins();
 	VipLogging::instance().close();
+
+#ifdef _MSC_VER
+// Remove deprecated warning
+#pragma warning(push)
+#pragma warning(disable : 4996)
+#endif
+
 	if (vipIsRestartEnabled()) {
 		QProcess::startDetached(VipUpdate::getUpdateProgram() + " --hide --command Thermavip -l " + QString::number(vipRestartMSecs()));
 		/* QProcess::startDetached(VipUpdate::getUpdateProgram(),
@@ -625,5 +632,11 @@ int main(int argc, char** argv)
 						      << "Thermavip"
 						      << "-l" << QString::number(vipRestartMSecs()));*/
 	}
+
+#ifdef _MSC_VER
+// Remove deprecated warning
+#pragma warning(pop)
+#endif
+
 	return ret;
 }

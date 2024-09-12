@@ -347,7 +347,6 @@ inline T clamp(T val, T lo, T hi)
 	return (val > hi) ? hi : (val < lo) ? lo : val;
 }
 
-
 struct CastToFloat
 {
 	template<class T>
@@ -441,7 +440,7 @@ void applyColorMapLinear(const VipLinearColorMap* map, const VipInterval& interv
 		for (int i = 0; i < size; ++i) {
 			const T value = values[i];
 			unsigned index = isNan(value) ? 0 : (unsigned)clamp((value - min_value) * factor + 2, 1., (double)max_index);
-			if (index >= num_colors + 3)
+			if (index >= num_colors + 3u)
 				index = 0;
 			out[i] = palette[index];
 		}
@@ -452,7 +451,7 @@ void applyColorMapLinear(const VipLinearColorMap* map, const VipInterval& interv
 
 		// compute hash value
 		size_t hash = vipHashBytes(values, w * h * sizeof(T));
-		
+
 		if (hash != map->d_data->arrayHash || map->d_data->histogram.size() == 0 || map->d_data->interval != interval) {
 			map->d_data->arrayHash = hash;
 			map->d_data->interval = interval;
@@ -472,9 +471,8 @@ void applyColorMapLinear(const VipLinearColorMap* map, const VipInterval& interv
 			else {
 				vipExtractHistogram(tmp, map->d_data->histogram, num_colors, Vip::SameBinHeight, interval, map->d_data->indexes.data(), 2, 1, max_index, 0);
 			}
-
 		}
-		
+
 		// qint64 el1 = QDateTime::currentMSecsSinceEpoch() - start;
 		// apply color map
 		if (map->d_data->histogram.size() == 0) {

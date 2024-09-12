@@ -40,6 +40,13 @@
 #include <iostream>
 #include <qcoreapplication.h>
 
+
+#ifdef _MSC_VER
+// Remove deprecated warning
+#pragma warning(push)
+#pragma warning(disable : 4996)
+#endif
+
 class DetachableProcess : public QProcess
 {
 public:
@@ -314,3 +321,8 @@ bool VipUpdate::renameNewFiles(const QString& dir_name)
 
 	return !has_opened_files;
 }
+
+#ifdef _MSC_VER
+// Remove deprecated warning
+#pragma warning(pop)
+#endif

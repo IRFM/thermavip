@@ -81,6 +81,16 @@ else()
 	endif()
 	
 	
+	if(NO_WARNINGS)
+		if(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
+			target_compile_options(${TARGET_PROJECT} PRIVATE  /WX /W3 )
+		elseif(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+			target_compile_options(${TARGET_PROJECT} PRIVATE -Werror -Wall -Wno-c++98-compat -Wno-c++98-compat-pedantic)
+		else()
+			target_compile_options(${TARGET_PROJECT} PRIVATE -Werror -Wall)
+		endif()
+	endif()
+	
 	if (WIN32)
 		add_definitions("-DNOMINMAX")
 		add_definitions("-DWIN64")

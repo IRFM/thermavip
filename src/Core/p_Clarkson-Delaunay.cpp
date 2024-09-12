@@ -1110,7 +1110,7 @@ static long site_numm(site p)
 	if (!p)
 		return -2;
 	for (i = 0; i < num_blocks; i++)
-		if ((j = p - site_blocks[i]) >= 0 && j < BLOCKSIZE * pdim)
+		if ((j = static_cast<long>(p - site_blocks[i])) >= 0 && j < BLOCKSIZE * pdim)
 			return j / pdim + BLOCKSIZE * i;
 	return -3;
 }

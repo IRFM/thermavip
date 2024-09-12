@@ -35,6 +35,8 @@
 #include <qdatetime.h>
 #include <qprocess.h>
 
+
+
 static void registerVipNetworkConnection()
 {
 	static QMutex mutex;
@@ -58,7 +60,11 @@ static void registerVipNetworkConnection()
 bool vipPing(const QByteArray& host)
 {
 	QProcess proc;
+#if QT_VERSION < QT_VERSION_CHECK(5, 13, 0)
 	proc.setReadChannelMode(QProcess::MergedChannels);
+#else
+	proc.setProcessChannelMode(QProcess::MergedChannels);
+#endif
 #ifdef WIN32
 	proc.start("ping",
 		   QStringList() << host << "/n"
@@ -562,3 +568,4 @@ void VipTcpServer::incomingConnection(qintptr socketDescriptor)
 
 	m_data->connections.push_back(socketDescriptor);
 }
+
