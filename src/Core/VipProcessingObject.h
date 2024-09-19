@@ -1647,6 +1647,10 @@ public:
 	/// @brief Returns true if given class name is a valid type for given property index
 	bool acceptProperty(int index, const char* typeName) const { return acceptProperty(index, vipCreateVariant(typeName)); }
 
+	/// @brief Set a function called each time inputs/outputs/properties are initialized
+	void setIOInitializeFunction(const std::function<void()>&);
+	const std::function<void()>& IOInitializeFunction() const;
+
 	/// @brief Set the priority of the internal task pool
 	void setPriority(QThread::Priority);
 	/// @brief Returns the priority of the internal task pool

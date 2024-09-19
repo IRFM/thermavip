@@ -819,6 +819,12 @@ VipLibRIR* VipLibRIR::instance()
 			delete librir;
 			return librir = nullptr;
 		}
+		librir->ts_read_numeric_param = (_ts_read_numeric_param)westLib()->resolve("ts_read_numeric_param");
+		if (!librir->ts_read_numeric_param) {
+			VIP_LOG_ERROR("librir: missing ts_read_numeric_param");
+			delete librir;
+			return librir = nullptr;
+		}
 		librir->ts_pulse_infos = (_ts_pulse_infos)westLib()->resolve("ts_pulse_infos");
 		if (!librir->ts_pulse_infos) {
 			VIP_LOG_ERROR("librir: missing ts_pulse_infos");

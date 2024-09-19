@@ -69,6 +69,10 @@ else()
 		#else()
 			target_compile_options(${TARGET_PROJECT} PRIVATE /MP)
 		#endif()
+		
+		# For macro VIP_FOR_EACH_GENERIC, we need a compliant preprocessor
+		target_compile_definitions(${TARGET_PROJECT} PUBLIC /Zc:preprocessor)
+		
 		target_link_libraries(${TARGET_PROJECT} PRIVATE opengl32)
 	endif()
 	

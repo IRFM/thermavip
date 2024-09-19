@@ -2164,6 +2164,7 @@ public:
 	QVector<VipProcessingIO*> inputs;
 	QVector<VipProcessingIO*> outputs;
 	QVector<VipProcessingIO*> properties;
+	std::function<void()> onInitIO;
 
 	// flatten representations
 	bool dirtyIO;
@@ -2398,7 +2399,19 @@ void VipProcessingObject::internalInitIO(bool force) const
 			_this->m_data->flatProperties[i]->setParentProcessing(_this);
 
 		_this->m_data->dirtyIO = false;
+
+		if (_this->m_data->onInitIO)
+			_this->m_data->onInitIO();
 	}
+}
+
+void VipProcessingObject::setIOInitializeFunction(const std::function<void()>& f)
+{
+	m_data->onInitIO = f;
+}
+const std::function<void()>& VipProcessingObject::IOInitializeFunction() const
+{
+	return m_data->onInitIO;
 }
 
 void VipProcessingObject::initialize(bool force) const

@@ -73,6 +73,7 @@ public:
 	typedef int (*_ts_read_group_count)(int pulse, const char* group_name, int* signal_count, int* sample_count);
 	typedef int (*_ts_read_signal_group)(int pulse, const char* group_name, double* x, double* y, int* total_sample_count, int* sample_count, int* signal_count, char* y_unit, char* date);
 	typedef int (*_ts_signal_description)(const char* signal_name, char* description, int* description_length);
+	typedef int (*_ts_read_numeric_param)(int pulse, const char* NmProd, const char* NmObj, const char* NmPar, double* out_value);
 	typedef int (*_ts_pulse_infos)(int pulse,
 				       double* duration,
 				       double* IP,
@@ -258,6 +259,7 @@ public:
 	_ts_read_group_count ts_read_group_count;
 	_ts_read_signal_group ts_read_signal_group;
 	_ts_signal_description ts_signal_description;
+	_ts_read_numeric_param ts_read_numeric_param;
 	_ts_pulse_infos ts_pulse_infos;
 	_get_camera_rroi_info get_camera_rroi_info;
 	_get_camera_count get_camera_count;

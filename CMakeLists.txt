@@ -110,8 +110,12 @@ set(THERMAVIP_TEST_DIR "${CMAKE_INSTALL_PREFIX}/tests" CACHE INTERNAL "THERMAVIP
 set(THERMAVIP_EXAMPLE_SETUP_FILE ${PROJECT_SOURCE_DIR}/src/Examples/setup_example.cmake CACHE INTERNAL "THERMAVIP_EXAMPLE_SETUP_FILE")
 
 
-configure_file(VipConfig.h.in VipConfig.h)
-install(FILES ${CMAKE_BINARY_DIR}/VipConfig.h DESTINATION include)
+configure_file(VipBuildConfig.h.in VipBuildConfig.h)
+install(FILES ${CMAKE_BINARY_DIR}/VipBuildConfig.h DESTINATION include)
+
+# Just to put VipConfig.h in the build folder
+configure_file(${PROJECT_SOURCE_DIR}/src/VipConfig.h VipConfig.h)
+install(FILES ${PROJECT_SOURCE_DIR}/src/VipConfig.h DESTINATION include)
 
 INCLUDE_DIRECTORIES(${CMAKE_BINARY_DIR})
 

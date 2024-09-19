@@ -4,39 +4,39 @@
 #include <QtGlobal>
 
 #ifdef VIP_BUILD_LOGGING_LIB
-	#define VIP_LOGGING_EXPORT Q_DECL_EXPORT
+#define VIP_LOGGING_EXPORT Q_DECL_EXPORT
 #else
-	#define VIP_LOGGING_EXPORT Q_DECL_IMPORT
+#define VIP_LOGGING_EXPORT Q_DECL_IMPORT
 #endif
 
 #ifdef VIP_BUILD_DATA_TYPE_LIB
-	#define VIP_DATA_TYPE_EXPORT Q_DECL_EXPORT
+#define VIP_DATA_TYPE_EXPORT Q_DECL_EXPORT
 #else
-	#define VIP_DATA_TYPE_EXPORT Q_DECL_IMPORT
+#define VIP_DATA_TYPE_EXPORT Q_DECL_IMPORT
 #endif
 
 #ifdef VIP_BUILD_PLOTTING_LIB
-	#define VIP_PLOTTING_EXPORT Q_DECL_EXPORT
+#define VIP_PLOTTING_EXPORT Q_DECL_EXPORT
 #else
-	#define VIP_PLOTTING_EXPORT Q_DECL_IMPORT
+#define VIP_PLOTTING_EXPORT Q_DECL_IMPORT
 #endif
 
 #ifdef VIP_BUILD_CORE_LIB
-	#define VIP_CORE_EXPORT Q_DECL_EXPORT
+#define VIP_CORE_EXPORT Q_DECL_EXPORT
 #else
-	#define VIP_CORE_EXPORT Q_DECL_IMPORT
+#define VIP_CORE_EXPORT Q_DECL_IMPORT
 #endif
 
 #ifdef VIP_BUILD_GUI_LIB
-	#define VIP_GUI_EXPORT Q_DECL_EXPORT
+#define VIP_GUI_EXPORT Q_DECL_EXPORT
 #else
-	#define VIP_GUI_EXPORT Q_DECL_IMPORT
+#define VIP_GUI_EXPORT Q_DECL_IMPORT
 #endif
 
 #ifdef VIP_BUILD_ANNOTATION_LIB
-	#define VIP_ANNOTATION_EXPORT Q_DECL_EXPORT
+#define VIP_ANNOTATION_EXPORT Q_DECL_EXPORT
 #else
-	#define VIP_ANNOTATION_EXPORT Q_DECL_IMPORT
+#define VIP_ANNOTATION_EXPORT Q_DECL_IMPORT
 #endif
 
 
@@ -46,17 +46,10 @@
 #include <qmath.h>
 #endif
 
+// For unique_ptr
+#include <memory>
 
-/// @ Project name
-#define VIP_PROJECT_NAME "@PROJECT_NAME@"
-/// @ Version parsed out into numeric values 
-#define VIP_VERSION  "@PROJECT_VERSION@"
-#define VIP_MAJOR_VERSION "@PROJECT_VERSION_MAJOR@"
-#define VIP_MINOR_VERSION "@PROJECT_VERSION_MINOR@"
-#define VIP_MICRO_VERSION "@PROJECT_VERSION_PATCH@"
-
-/// @brief Use long double for VipPoint
-#define VIP_USE_LONG_DOUBLE @LONG_DOUBLE_VALUE@
+#include "VipBuildConfig.h"
 
 /// @Enable/disable printf function in debug/release
 #define VIP_ENABLE_PRINTF_DEBUG 1
@@ -65,7 +58,7 @@
 
 
 
-namespace vip_log_detail{
+namespace vip_log_detail {
 	VIP_LOGGING_EXPORT bool _vip_enable_debug();
 	VIP_LOGGING_EXPORT void _vip_set_enable_debug(bool);
 }
@@ -220,9 +213,9 @@ namespace vip_log_detail{
 
 // If constexpr
 #ifdef VIP_HAS_CPP_17
-	#define VIP_CONSTEXPR constexpr
+#define VIP_CONSTEXPR constexpr
 #else
-	#define VIP_CONSTEXPR
+#define VIP_CONSTEXPR
 #endif
 
 
@@ -250,6 +243,55 @@ namespace vip_log_detail{
 #define __has_attribute(x) 0
 #endif
 
+
+
+#define _VIP_VA_NUM_ARGS_HELPER(_1, _2, _3, _4, _5, _6, _7, _8, _9, _10, N, ...) N
+
+/// @brief Finde number of arguments passed to a macro
+#define VIP_VA_NUM_ARGS(...) _VIP_VA_NUM_ARGS_HELPER(__VA_ARGS__, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0)
+
+// Make a VIP_FOR_EACH macro
+#define _VIP_0(WHAT, SEP)
+#define _VIP_1(WHAT, SEP, X) WHAT(X)
+#define _VIP_2(WHAT, SEP, X, ...) WHAT(X) SEP() _VIP_1(WHAT, SEP, __VA_ARGS__)
+#define _VIP_3(WHAT, SEP, X, ...) WHAT(X) SEP() _VIP_2(WHAT, SEP, __VA_ARGS__)
+#define _VIP_4(WHAT, SEP, X, ...) WHAT(X) SEP() _VIP_3(WHAT, SEP, __VA_ARGS__)
+#define _VIP_5(WHAT, SEP, X, ...) WHAT(X) SEP() _VIP_4(WHAT, SEP, __VA_ARGS__)
+#define _VIP_6(WHAT, SEP, X, ...) WHAT(X) SEP() _VIP_5(WHAT, SEP, __VA_ARGS__)
+#define _VIP_7(WHAT, SEP, X, ...) WHAT(X) SEP() _VIP_6(WHAT, SEP, __VA_ARGS__)
+#define _VIP_8(WHAT, SEP, X, ...) WHAT(X) SEP() _VIP_7(WHAT, SEP, __VA_ARGS__)
+#define _VIP_9(WHAT, SEP, X, ...) WHAT(X) SEP() _VIP_8(WHAT, SEP, __VA_ARGS__)
+#define _VIP_10(WHAT, SEP, X, ...) WHAT(X) SEP() _VIP_9(WHAT, SEP, __VA_ARGS__)
+
+#define _VIP_GET_MACRO(_0, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, NAME, ...) NAME
+
+
+/// @brief Null separator for VIP_FOR_EACH_GENERIC
+#define VIP_NULL()
+
+/// @brief Comma separator for VIP_FOR_EACH_GENERIC
+#define VIP_COMMA() ,
+
+/// @brief Invoke macro for each argument with SEP separator
+#define VIP_FOR_EACH_GENERIC(action, SEP, ...) _VIP_GET_MACRO(_0, __VA_ARGS__, _VIP_10, _VIP_9, _VIP_8, _VIP_7, _VIP_6, _VIP_5, _VIP_4, _VIP_3, _VIP_2, _VIP_1, _VIP_0)(action, SEP, __VA_ARGS__)
+
+/// @brief Invoke macro for each argument with space separator
+#define VIP_FOR_EACH(action, ...) VIP_FOR_EACH_GENERIC(action,VIP_NULL, __VA_ARGS_)
+
+/// @brief Invoke macro for each argument with comma separator
+#define VIP_FOR_EACH_COMMA(action, ...) VIP_FOR_EACH_GENERIC(action,VIP_COMMA, __VA_ARGS_)
+
+/// @brief String representation of input
+#define VIP_STRINGIZE( val ) #val
+
+/// @brief Declare private data for Pimpl idiom, use in class definition, inside the private section
+#define VIP_DECLARE_PRIVATE_DATA(name)                                                                                                                                                                               \
+	class PrivateData;                                                                                                                                                                             \
+	std::unique_ptr<PrivateData> name
+
+/// @brief Declare private data for Pimpl idiom, use in class constructor
+#define VIP_CREATE_PRIVATE_DATA(name) \
+	name.reset(new PrivateData())
 
 
 //define this macro to disable multithreading

@@ -1,0 +1,15 @@
+#ifndef VIP_BUILD_CONFIG
+#define VIP_BUILD_CONFIG
+
+/// @ Project name
+#define VIP_PROJECT_NAME "@PROJECT_NAME@"
+/// @ Version parsed out into numeric values 
+#define VIP_VERSION  "@PROJECT_VERSION@"
+#define VIP_MAJOR_VERSION "@PROJECT_VERSION_MAJOR@"
+#define VIP_MINOR_VERSION "@PROJECT_VERSION_MINOR@"
+#define VIP_MICRO_VERSION "@PROJECT_VERSION_PATCH@"
+
+/// @brief Use long double for VipPoint
+#define VIP_USE_LONG_DOUBLE @LONG_DOUBLE_VALUE@
+
+#endif

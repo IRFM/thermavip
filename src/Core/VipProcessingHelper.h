@@ -71,6 +71,21 @@
 /// Shortcup for Q_CLASSINFO("category_MyPropertyName","MyCategory/MySubCategory").
 #define VIP_PROPERTY_CATEGORY(name, ...) Q_CLASSINFO("category_" #name, __VA_ARGS__)
 
+/// @brief Declare a processing property, equivalent to VIP_IO(VipProperty name)
+#define VIP_PROPERTY(name) Q_PROPERTY(VipProperty name READ io)
+
+/// @brief Declare a processing property with a description
+#define VIP_PROPERTY_2(name, ...)                                                                                                                                                                      \
+	Q_PROPERTY(VipProperty name READ io)                                                                                                                                                           \
+	Q_CLASSINFO(#name, __VA_ARGS__)
+
+/// @brief Declare a processing property with a description and an editor.
+/// Example: VIP_PROPERTY_3(MaximumTriangleArea, "Maximum area for each triangle", "VipSpinBox{}")
+#define VIP_PROPERTY_3(name, description, ...)                                                                                                                                                         \
+	Q_PROPERTY(VipProperty name READ io)                                                                                                                                                           \
+	Q_CLASSINFO(#name, description)                                                                                                                                                                \
+	Q_CLASSINFO("edit_" #name, __VA_ARGS__)
+
 /// @brief Builds the style sheet to create a VipSpinBox widget
 #define VIP_SPINBOX_EDIT(min, max, step, value) "VipSpinBox{  qproperty-minimum:" #min "; qproperty-maximum:" #max "; qproperty-singleStep:" #step "; qproperty-value:" #value ";}"
 /// @brief Builds the style sheet to create a VipDoubleSpinBox widget

@@ -59,4 +59,12 @@ QSet<T> vipToSet(const QVector<T>& lst)
 #endif
 }
 
+template<class Container>
+Container& vipUnique(Container & c)
+{
+	using value_type = typename Container::value_type;
+	QSet<value_type> tmp(c.begin(), c.end());
+	return c = Container(tmp.begin(), tmp.end());
+}
+
 #endif
