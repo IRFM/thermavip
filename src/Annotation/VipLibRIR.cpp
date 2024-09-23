@@ -974,7 +974,7 @@ VipLibRIR* VipLibRIR::instance()
 		}
 		librir->open_with_filename = (_open_with_filename)westLib()->resolve("open_with_filename");
 		if (!librir->open_with_filename) {
-			VIP_LOG_ERROR("librir: missing open_camera_filename");
+			VIP_LOG_ERROR("librir: missing open_with_filename");
 			delete librir;
 			return librir = nullptr;
 		}
