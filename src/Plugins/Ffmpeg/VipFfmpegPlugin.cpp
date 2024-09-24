@@ -1,8 +1,8 @@
-#include "FfmpegPlugin.h"
-#include "VideoDecoder.h"
+#include "VipFfmpegPlugin.h"
+#include "p_VideoDecoder.h"
 
-#include "MPEGLoader.h"
-#include "RecordWindow.h"
+#include "VipMPEGLoader.h"
+#include "VipRecordWindow.h"
 #include "VipDisplayArea.h"
 #include "VipLogging.h"
 #include "VipCommandOptions.h"
@@ -24,13 +24,10 @@ static int r4 = VipCommandOptions::instance().add("ffps", "output file frame rat
 static int r5 = VipCommandOptions::instance().add("fps", "recording frame rate in Hz", VipCommandOptions::ValueRequired);
 static int r6 = VipCommandOptions::instance().add("rate", "Bit rate in KB/s (default is 30000: high quality)", VipCommandOptions::ValueRequired);
 
-
-
-
 OpenStream::OpenStream()
-	:QWidget()
+  : QWidget()
 {
-	QHBoxLayout * hlay = new QHBoxLayout();
+	QHBoxLayout* hlay = new QHBoxLayout();
 	hlay->addWidget(&m_paths);
 	hlay->addWidget(&m_open);
 	hlay->setContentsMargins(0, 0, 0, 0);
@@ -60,7 +57,7 @@ QStringList OpenStream::recentPaths() const
 		res << m_paths.itemText(i);
 	return res;
 }
-void OpenStream::setRencentPaths(const QStringList & lst)
+void OpenStream::setRencentPaths(const QStringList& lst)
 {
 	m_paths.clear();
 	m_paths.addItems(lst);
@@ -70,7 +67,7 @@ void OpenStream::setRencentPaths(const QStringList & lst)
 
 void OpenStream::openFilePath()
 {
-	MPEGLoader l;
+	VipMPEGLoader l;
 	QString filters = l.fileFilters();
 	QString path = VipFileDialog::getOpenFileName(nullptr, "Open video file", filters);
 	if (!path.isEmpty()) {
@@ -85,61 +82,51 @@ void OpenStream::open()
 		return;
 
 	int index = m_paths.findText(path());
-	if (index > 0) 
+	if (index > 0)
 		m_paths.removeItem(index);
 	m_paths.insertItem(0, path());
 	while (m_paths.count() > 20)
 		m_paths.removeItem(20);
 	m_paths.setCurrentText(path());
 
-	VipDisplayArea & area = *vipGetMainWindow()->displayArea();
-	VipDisplayPlayerArea * plarea = area.currentDisplayPlayerArea();
-	if (plarea)
-	{
-		VipProcessingPool * pool = plarea->processingPool();
+	VipDisplayArea& area = *vipGetMainWindow()->displayArea();
+	VipDisplayPlayerArea* plarea = area.currentDisplayPlayerArea();
+	if (plarea) {
+		VipProcessingPool* pool = plarea->processingPool();
 
-		MPEGLoader * loader = new MPEGLoader(pool);
+		VipMPEGLoader* loader = new VipMPEGLoader(pool);
 		loader->setPath(this->path());
-		if (!loader->open(VipIODevice::ReadOnly))
-		{
+		if (!loader->open(VipIODevice::ReadOnly)) {
 			delete loader;
 			VIP_LOG_ERROR("Cannot open video: " + this->path());
 			return;
 		}
 
-		VipMultiDragWidget * bdw2 = vipCreateFromBaseDragWidget(vipCreateWidgetFromProcessingObject(loader));
+		VipMultiDragWidget* bdw2 = vipCreateFromBaseDragWidget(vipCreateWidgetFromProcessingObject(loader));
 		plarea->addWidget(bdw2);
 	}
 }
 
-
-
-
-
-
-//open webcams
-void FfmpegInterface::openVideoStream(QAction * action)
+// open webcams
+void FfmpegInterface::openVideoStream(QAction* action)
 {
-	VipDisplayArea & area = *vipGetMainWindow()->displayArea();
-	VipDisplayPlayerArea * plarea = area.currentDisplayPlayerArea();
-	if (plarea)
-	{
-		VipProcessingPool * pool = plarea->processingPool();
+	VipDisplayArea& area = *vipGetMainWindow()->displayArea();
+	VipDisplayPlayerArea* plarea = area.currentDisplayPlayerArea();
+	if (plarea) {
+		VipProcessingPool* pool = plarea->processingPool();
 
-		MPEGLoader * loader = new MPEGLoader(pool);
-		if (!loader->open("video=" + action->text(), "dshow"))
-		{
+		VipMPEGLoader* loader = new VipMPEGLoader(pool);
+		if (!loader->open("video=" + action->text(), "dshow")) {
 			delete loader;
 			VIP_LOG_ERROR("Cannot open video stream: " + action->text());
 			return;
 		}
 
-		//loader->setPath(action->text());
+		// loader->setPath(action->text());
 
-		VipMultiDragWidget * bdw2 = vipCreateFromBaseDragWidget(vipCreateWidgetFromProcessingObject(loader));
+		VipMultiDragWidget* bdw2 = vipCreateFromBaseDragWidget(vipCreateWidgetFromProcessingObject(loader));
 		plarea->addWidget(bdw2);
 	}
-	
 }
 
 #include <qwidgetaction.h>
@@ -147,9 +134,8 @@ void FfmpegInterface::openVideoStream(QAction * action)
 FfmpegInterface::LoadResult FfmpegInterface::load()
 {
 	VipCommandOptions::instance().parse(QCoreApplication::instance()->arguments());
-	if (VipCommandOptions::instance().count("record"))
-	{
-		//command line recording of the screen
+	if (VipCommandOptions::instance().count("record")) {
+		// command line recording of the screen
 
 		QString filename = VipCommandOptions::instance().value("record").toString();
 		double rate = 30000;
@@ -159,10 +145,14 @@ FfmpegInterface::LoadResult FfmpegInterface::load()
 		int fps = 15;
 		int timeout = -1;
 
-		if (VipCommandOptions::instance().count("rate")) rate = VipCommandOptions::instance().value("rate").toDouble();
-		if (VipCommandOptions::instance().count("ffps")) ffps = VipCommandOptions::instance().value("ffps").toDouble();
-		if (VipCommandOptions::instance().count("fps")) fps = VipCommandOptions::instance().value("fps").toDouble();
-		if (VipCommandOptions::instance().count("timeout")) timeout = VipCommandOptions::instance().value("timeout").toDouble();
+		if (VipCommandOptions::instance().count("rate"))
+			rate = VipCommandOptions::instance().value("rate").toDouble();
+		if (VipCommandOptions::instance().count("ffps"))
+			ffps = VipCommandOptions::instance().value("ffps").toDouble();
+		if (VipCommandOptions::instance().count("fps"))
+			fps = VipCommandOptions::instance().value("fps").toDouble();
+		if (VipCommandOptions::instance().count("timeout"))
+			timeout = VipCommandOptions::instance().value("timeout").toDouble();
 		if (VipCommandOptions::instance().count("rect")) {
 			QString tmp = VipCommandOptions::instance().value("rect").toString();
 			QStringList lst = tmp.split(":");
@@ -174,7 +164,7 @@ FfmpegInterface::LoadResult FfmpegInterface::load()
 			rect = rect.intersected(screen);
 		}
 
-		RecordWindow record;
+		VipRecordWindow record;
 		record.setFilename(filename);
 		record.setRate(rate);
 		record.setRecordingFps(fps);
@@ -189,13 +179,11 @@ FfmpegInterface::LoadResult FfmpegInterface::load()
 		connect(&record, SIGNAL(stopped()), &loop, SLOT(quit()));
 
 		QMetaObject::invokeMethod(&record, "start", Qt::QueuedConnection);
-		
-		loop.exec(/*QEventLoop::WaitForMoreEvents|*/QEventLoop::AllEvents);
-		
+
+		loop.exec(/*QEventLoop::WaitForMoreEvents|*/ QEventLoop::AllEvents);
 
 		return FfmpegInterface::ExitProcess;
 	}
-
 
 	/*QImage im("C:/Users/Moncada/Desktop/complex_img3.png");
 
@@ -207,22 +195,22 @@ FfmpegInterface::LoadResult FfmpegInterface::load()
 		Finish(vc);
 	}*/
 
-	//retrieve the list of available video devices
+	// retrieve the list of available video devices
 	QStringList lst = VideoDecoder::list_devices();
-	
-	if (true)//lst.size())
-	{ 
-		QToolButton * open = new QToolButton();
+
+	if (true) // lst.size())
+	{
+		QToolButton* open = new QToolButton();
 		open->setAutoRaise(true);
 		open->setPopupMode(QToolButton::InstantPopup);
 		open->setIcon(vipIcon("webcam.png"));
 		open->setToolTip("Open local webcam");
 
-		QMenu * menu = new QMenu(open);
+		QMenu* menu = new QMenu(open);
 		for (int i = 0; i < lst.size(); ++i)
 			menu->addAction(lst[i]);
 		menu->addSeparator();
-		QWidgetAction * act = new QWidgetAction(menu);
+		QWidgetAction* act = new QWidgetAction(menu);
 		act->setDefaultWidget(m_open_stream = new OpenStream());
 		menu->addAction(act);
 
@@ -232,34 +220,31 @@ FfmpegInterface::LoadResult FfmpegInterface::load()
 		vipGetMainWindow()->toolsToolBar()->addWidget(open)->setToolTip("Open local webcam or network stream");
 	}
 
-	//add button to make movies of thermavip (successive screenshots)
+	// add button to make movies of thermavip (successive screenshots)
 	m_rec = new QToolButton();
 	m_rec->setIcon(vipIcon("record.png"));
 	m_rec->setToolTip("<b>Record your actions</b><br>Create a video from successive screenshots of Thermavip in order to record your actions.<br>"
-	"Check/uncheck this button to start/stop the recording.<br>Use the right arrow to modify the recording parameters.");
+			  "Check/uncheck this button to start/stop the recording.<br>Use the right arrow to modify the recording parameters.");
 	m_rec->setAutoRaise(true);
 	m_rec->setCheckable(true);
-	VipDragMenu * menu = new VipDragMenu();
-	m_rec_win = new RecordWindow();
+	VipDragMenu* menu = new VipDragMenu();
+	m_rec_win = new VipRecordWindow();
 	menu->setWidget(m_rec_win);
 	m_rec->setMenu(menu);
 	m_rec->setPopupMode(QToolButton::MenuButtonPopup);
 	connect(m_rec, SIGNAL(clicked(bool)), this, SLOT(setRecording(bool)));
-	connect(m_rec_win, SIGNAL(stateChanged(bool)), this, SLOT(setRecording(bool)),Qt::QueuedConnection);
+	connect(m_rec_win, SIGNAL(stateChanged(bool)), this, SLOT(setRecording(bool)), Qt::QueuedConnection);
 
 	vipGetMainWindow()->closeBar()->insertWidget(vipGetMainWindow()->closeBar()->minimizeButton, m_rec);
 
-
 	return FfmpegInterface::Success;
-
-	
 }
 
-void FfmpegInterface::save(VipArchive & arch)
+void FfmpegInterface::save(VipArchive& arch)
 {
 	arch.content("recentPaths", m_open_stream ? m_open_stream->recentPaths() : QStringList());
 }
-void FfmpegInterface::restore(VipArchive & arch)
+void FfmpegInterface::restore(VipArchive& arch)
 {
 	if (m_open_stream) {
 		QStringList lst = arch.read("recentPaths").toStringList();
@@ -274,9 +259,8 @@ void FfmpegInterface::setRecording(bool enable)
 
 	vip_debug("FfmpegInterface::setRecording %i\n", (int)enable);
 
-	if (enable != m_rec_win->isRecording())
-	{
-		m_rec_win->setState(enable);//setRecordExternaProcess(enable);
+	if (enable != m_rec_win->isRecording()) {
+		m_rec_win->setState(enable); // setRecordExternaProcess(enable);
 	}
 	m_rec->blockSignals(true);
 	m_rec->setChecked(enable);
@@ -293,7 +277,7 @@ int main(int argc, char** argv)
 	QImage img("C:/Users/moncada/Desktop/photos/logo_simple.png");
 	img = img.scaled(50, 50);
 	img = img.convertToFormat(QImage::Format_ARGB32);
-	 
+
 	encoder.Open("C:/Users/moncada/Desktop/test.wmv", img.width(), img.height(), 25, 20000);
 	for (int i = 0; i < 100; ++i)
 	{
@@ -303,7 +287,7 @@ int main(int argc, char** argv)
 	}
 	img.save("C:/Users/moncada/Desktop/test.png");
 	encoder.Close();
-	
+
 
 	return 0;
 

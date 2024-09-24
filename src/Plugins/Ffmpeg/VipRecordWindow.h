@@ -2,6 +2,7 @@
 
 #include "VipStandardWidgets.h"
 #include "VipDragWidget.h"
+#include "VipFfmpegConfig.h"
 
 #include <qtimer.h>
 #include <qevent.h>
@@ -16,10 +17,10 @@ class PlayerSelection : public VipComboBox
 {
 	Q_OBJECT
 public:
-	PlayerSelection(QWidget * parent = nullptr);
+	PlayerSelection(QWidget* parent = nullptr);
 	~PlayerSelection();
 
-	VipBaseDragWidget * selectedWidget() const;
+	VipBaseDragWidget* selectedWidget() const;
 
 private Q_SLOTS:
 	void aboutToShow();
@@ -29,15 +30,15 @@ private:
 	QPointer<VipBaseDragWidget> m_widget;
 };
 
-
 /// @brief Settings for thermavip window recording
-class RecordWindow : public QWidget
+class FFMPEG_EXPORT VipRecordWindow : public QWidget
 {
 	Q_OBJECT
 	friend struct RecordThread;
+
 public:
-	RecordWindow(QWidget * parent = nullptr);
-	~RecordWindow();
+	VipRecordWindow(QWidget* parent = nullptr);
+	~VipRecordWindow();
 
 	void setRate(double);
 	double rate() const;
@@ -48,7 +49,7 @@ public:
 	void setMovieFps(int);
 	int movieFps() const;
 
-	void setFilename(const QString &);
+	void setFilename(const QString&);
 	QString filename() const;
 
 	void setRecordDelay(double secs);
@@ -57,22 +58,22 @@ public:
 	void setOutputSize(const QSize&);
 	QSize outputSize() const;
 	QSize videoSize() const;
-	
+
 	bool recordOnPlay() const;
 
-	void setMouseGrowTime(int msecs);//default to 200ms
+	void setMouseGrowTime(int msecs); // default to 200ms
 	int mouseGrowTime() const;
 
-	void setMousePen(const QPen &);
+	void setMousePen(const QPen&);
 	QPen mousePen() const;
 
-	void setMouseBrush(const QBrush &);
+	void setMouseBrush(const QBrush&);
 	QBrush mouseBrush() const;
 
 	void setDrawMouse(bool);
 	bool drawMouse() const;
 
-	void setScreenRect(const QRect &);
+	void setScreenRect(const QRect&);
 	QRect screenRect() const;
 
 	void setTimeout(int milli);
@@ -95,7 +96,7 @@ public Q_SLOTS:
 
 	void setRecordExternalProcess(bool);
 
-	//manual recording
+	// manual recording
 	void openFile();
 	void closeFile();
 	void recordCurrentImage();
@@ -106,8 +107,8 @@ Q_SIGNALS:
 	void stateChanged(bool);
 
 protected:
-	virtual void showEvent(QShowEvent * evt);
-	
+	virtual void showEvent(QShowEvent* evt);
+
 private Q_SLOTS:
 	void grabImage();
 
@@ -124,7 +125,7 @@ private:
 	PlayerSelection m_player;
 	bool m_recordOnPlayEnabled;
 	QTimer m_timer;
-	RecordThread * m_thread;
+	RecordThread* m_thread;
 	bool m_first_show;
 	qint64 m_press_date;
 	Qt::MouseButtons m_buttons;
@@ -137,12 +138,8 @@ private:
 	QBrush m_brush;
 	bool m_draw_mouse;
 
-	void * m_handler;
+	void* m_handler;
 	QProcess m_process;
 
-	VideoEncoder * m_encoder;
+	VideoEncoder* m_encoder;
 };
-
-
-
-

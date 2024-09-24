@@ -1157,20 +1157,24 @@ vip_debug("python env: %s\n",env);fflush(stdout);
 				QString miniconda = QFileInfo(qApp->arguments()[0]).canonicalPath() + "/miniconda";
 				if (QFileInfo(miniconda).exists()) {
 					python_path = miniconda.toLatin1();
+					python_path.replace("\\", "/");
 					vip_debug("found miniconda at %s\n", python_path.data());
 					local_pip = miniconda + "/Scripts/pip";
-
-					// For some miniconda version (and specific numpy version), we need to manually import mkl dll (?)
-					/* static QLibrary lib(miniconda + "/Library/bin/mkl_rt.2.dll");
-					if (!lib.isLoaded()) {
-						bool ok = lib.load();
-						vip_debug("Load mkl_rt.2.dll: %i\n", (int)ok);
-					}*/
 
 					wchar_t home[256];
 					memset(home, 0, sizeof(home));
 					miniconda.toWCharArray(home);
 					Py_SetPythonHome(home);
+
+					/* auto dlls = QDir(miniconda + "/Library/bin").entryInfoList(QStringList() << "*.dll");
+					for (auto p : dlls) {
+						QLibrary l(p.canonicalFilePath());
+						if (!l.load())
+							bool stop = true;
+					}*/
+
+					
+					
 				}
 				else {
 					python_path = "./";
@@ -1179,6 +1183,7 @@ vip_debug("python env: %s\n",env);fflush(stdout);
 				}
 			}
 		}
+
 		Py_Initialize();
 
 		//init threading and acquire lock
@@ -1194,16 +1199,18 @@ vip_debug("python env: %s\n",env);fflush(stdout);
 		{ 
 			if (python_path == "./") {
 				QString miniconda = QFileInfo(qApp->arguments()[0]).canonicalPath() + "/miniconda";
+				miniconda.replace("\\", "/");
 				if (QFileInfo(miniconda).exists()) {
 					local_pip = miniconda + "/Scripts/pip";
 
 					python_path = QFileInfo(qApp->arguments()[0]).canonicalPath().toLatin1() + "/miniconda/Lib";
 
 					//for miniconda, add path to Library/bin to PATH
-					QByteArray PATH = qgetenv("PATH");
-					PATH += ";" + miniconda + "/Library/bin";
-					qputenv("PATH", PATH);
+					//QByteArray PATH = qgetenv("PATH");
+					//PATH += ";" + miniconda + "/Library/bin";
+					//qputenv("PATH", PATH);
 
+					
 				}
 				else
 					python_path = QFileInfo(qApp->arguments()[0]).canonicalPath().toLatin1() + "/Lib";
@@ -1211,11 +1218,13 @@ vip_debug("python env: %s\n",env);fflush(stdout);
 			else {
 				if (python_path.endsWith("miniconda")) {
 
+					QString miniconda = python_path;
+
 					//for miniconda, add path to Library/bin to PATH
-					QByteArray PATH = qgetenv("PATH");
-					PATH += ";" + python_path + "/Library/bin";
-					qputenv("PATH", PATH);
-					python_path += "/Lib";
+					//QByteArray PATH = qgetenv("PATH");
+					//PATH += ";" + python_path + "/Library/bin";
+					//qputenv("PATH", PATH);
+					//python_path += "/Lib";
 				}
 			}
 			//vip_debug("%s\n", python_path.data());
@@ -1249,6 +1258,7 @@ vip_debug("python env: %s\n",env);fflush(stdout);
 		//import and configure numpy
 		import_numpy_internal();
 		vip_debug("Done\n");
+
 
 		//import and configure matplotlib
 		/*PyRun_SimpleString(
@@ -2011,23 +2021,6 @@ bool PyRunThread::waitForRunnable(PyLocal::command_type c, unsigned long time)
 	return true;
 }
 
-/*bool PyRunThread::waitForRunnable(PyLocal::command_type c, unsigned long time )
-{
-QMutexLocker locker(&mutex);
-
-int index = findIndex(c);
-
-
-//wait for it
-while (index >= 0 || (current && current->id == c))
-{
-if (!cond.wait(&mutex, time))
-return false;
-index = findIndex(c);
-}
-
-return true;
-}*/
 
 void PyRunThread::runOneLoop(PyLocal * loc)
 {

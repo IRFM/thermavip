@@ -66,6 +66,13 @@ install(TARGETS Python
     RUNTIME DESTINATION "${THERMAVIP_PLUGIN_DIR}"
 )
 
+# Make Python plugin usable as a library
+install(TARGETS Python
+    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}/Plugins
+)
+file(GLOB HEADER_FILES ${PROJECT_SOURCE_DIR}/*.h)
+install(FILES ${HEADER_FILES} DESTINATION "${CMAKE_INSTALL_PREFIX}/include/Plugins/Python/")
+
 # Plugin custom installation process
 install(CODE "set(PYTHON_RUNTIME \"${PYTHON_RUNTIME}\")")
 install(CODE "set(CMAKE_INSTALL_BINDIR \"${CMAKE_INSTALL_BINDIR}\")")

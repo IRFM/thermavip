@@ -5464,7 +5464,7 @@ VipVTKPlayer::VipVTKPlayer(QWidget* parent)
 	connect(cmenu->addAction(vipIcon("rotate_left.png"), "Rotate 90 degrees counterclockwise"), SIGNAL(triggered(bool)), d_data->view, SLOT(rotateCounterClockwise90()));
 	d_data->reset_camera = toolBar()->addWidget(camera);
 	d_data->camera = camera;
-	connect(camera, SIGNAL(clicked(bool)), this->view(), SLOT(setAutoCamera(bool)));
+	connect(camera, SIGNAL(clicked(bool)), this, SLOT(setAutoCamera(bool)));
 
 
 	d_data->sharedCamera = toolBar()->addAction(vipIcon("zoom.png"), "<b>Shared zoom</b><br>Zooming or panning within a video will apply the same zoom/panning to other videos in this workspace.");

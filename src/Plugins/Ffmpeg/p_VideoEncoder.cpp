@@ -6,7 +6,7 @@
 
 #include <QFileInfo>
 
-#include "VideoEncoder.h"
+#include "p_VideoEncoder.h"
 #include "VipConfig.h"
 
 

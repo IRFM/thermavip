@@ -3,7 +3,7 @@
 #include <qfile.h>
 
 #include "VipConfig.h"
-#include "VideoDecoder.h"
+#include "p_VideoDecoder.h"
 
 
 
