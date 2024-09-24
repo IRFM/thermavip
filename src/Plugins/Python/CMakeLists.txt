@@ -45,7 +45,7 @@ if(DEFINED ENV{VIP_PYTHONHOME} AND DEFINED ENV{VIP_PYTHON_VERSION})
 	# Use env. variables VIP_PYTHONHOME (interpreter folder) and VIP_PYTHON_VERSION (like '38') to link to a specific python version
 	message(STATUS "VIP_PYTHONHOME is defined and set to $ENV{VIP_PYTHONHOME}")
 	message(STATUS "Linking with python$ENV{VIP_PYTHON_VERSION}")
-	target_include_directories(Python PRIVATE "$ENV{VIP_PYTHONHOME}/include" "$ENV{VIP_PYTHONHOME}/Lib/site-packages/numpy/core/include" )
+	target_include_directories(Python PRIVATE "$ENV{VIP_PYTHONHOME}/include" "$ENV{VIP_PYTHONHOME}/Lib/site-packages/numpy/_core/include" )
 	target_link_directories(Python PRIVATE "$ENV{VIP_PYTHONHOME}/libs")
 	target_link_libraries(Python PRIVATE python$ENV{VIP_PYTHON_VERSION})
 		

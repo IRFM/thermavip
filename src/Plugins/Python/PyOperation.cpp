@@ -704,11 +704,11 @@ PyError::PyError(bool compute)
 		PyTracebackObject *tstate = (PyTracebackObject*)ptraceback;
 		if (nullptr != tstate && nullptr != tstate->tb_frame) {
 			PyFrameObject *frame = tstate->tb_frame;
-			line = frame->f_lineno;
+			line = PyFrame_GetLineNumber(frame);
 			Py_ssize_t size;
-			wchar_t *fname = PyUnicode_AsWideCharString(frame->f_code->co_filename, &size);
+			wchar_t* fname = PyUnicode_AsWideCharString(PyFrame_GetCode(frame)->co_filename, &size);
 			filename = QString::fromWCharArray(fname, size);
-			wchar_t *funcname = PyUnicode_AsWideCharString(frame->f_code->co_name, &size);
+			wchar_t* funcname = PyUnicode_AsWideCharString(PyFrame_GetCode(frame)->co_name, &size);
 			functionName = QString::fromWCharArray(funcname, size);
 		}
 
@@ -1154,14 +1154,14 @@ vip_debug("python env: %s\n",env);fflush(stdout);
 				Py_SetPath(ws.c_str());
 			}
 			else {
-				QString miniconda = QFileInfo(qApp->arguments()[0]).canonicalPath() + "/miniconda";
-				if (QFileInfo(miniconda).exists()) {
-					python_path = miniconda.toLatin1();
-					vip_debug("found miniconda at %s\n", python_path.data());
-					local_pip = miniconda + "/Scripts/pip";
+				QString micromamba = QFileInfo(qApp->arguments()[0]).canonicalPath() + "/micromamba";
+				if (QFileInfo(micromamba).exists()) {
+					python_path = micromamba.toLatin1();
+					vip_debug("found micromamba at %s\n", python_path.data());
+					local_pip = micromamba + "/Scripts/pip";
 
-					// For some miniconda version (and specific numpy version), we need to manually import mkl dll (?)
-					/* static QLibrary lib(miniconda + "/Library/bin/mkl_rt.2.dll");
+					// For some micromamba version (and specific numpy version), we need to manually import mkl dll (?)
+					/* static QLibrary lib(micromamba + "/Library/bin/mkl_rt.2.dll");
 					if (!lib.isLoaded()) {
 						bool ok = lib.load();
 						vip_debug("Load mkl_rt.2.dll: %i\n", (int)ok);
@@ -1169,7 +1169,7 @@ vip_debug("python env: %s\n",env);fflush(stdout);
 
 					wchar_t home[256];
 					memset(home, 0, sizeof(home));
-					miniconda.toWCharArray(home);
+					micromamba.toWCharArray(home);
 					Py_SetPythonHome(home);
 				}
 				else {
@@ -1193,15 +1193,15 @@ vip_debug("python env: %s\n",env);fflush(stdout);
 		if (python_path.size())
 		{ 
 			if (python_path == "./") {
-				QString miniconda = QFileInfo(qApp->arguments()[0]).canonicalPath() + "/miniconda";
-				if (QFileInfo(miniconda).exists()) {
-					local_pip = miniconda + "/Scripts/pip";
+				QString micromamba = QFileInfo(qApp->arguments()[0]).canonicalPath() + "/micromamba";
+				if (QFileInfo(micromamba).exists()) {
+					local_pip = micromamba + "/Scripts/pip";
 
-					python_path = QFileInfo(qApp->arguments()[0]).canonicalPath().toLatin1() + "/miniconda/Lib";
+					python_path = QFileInfo(qApp->arguments()[0]).canonicalPath().toLatin1() + "/micromamba/Lib";
 
-					//for miniconda, add path to Library/bin to PATH
+					//for micromamba, add path to Library/bin to PATH
 					QByteArray PATH = qgetenv("PATH");
-					PATH += ";" + miniconda + "/Library/bin";
+					PATH += ";" + micromamba + "/Library/bin";
 					qputenv("PATH", PATH);
 
 				}
@@ -1209,9 +1209,9 @@ vip_debug("python env: %s\n",env);fflush(stdout);
 					python_path = QFileInfo(qApp->arguments()[0]).canonicalPath().toLatin1() + "/Lib";
 			}
 			else {
-				if (python_path.endsWith("miniconda")) {
+				if (python_path.endsWith("micromamba")) {
 
-					//for miniconda, add path to Library/bin to PATH
+					//for micromamba, add path to Library/bin to PATH
 					QByteArray PATH = qgetenv("PATH");
 					PATH += ";" + python_path + "/Library/bin";
 					qputenv("PATH", PATH);
@@ -1231,11 +1231,11 @@ vip_debug("python env: %s\n",env);fflush(stdout);
 		}
 		else
 		{
-			if (QFileInfo(QFileInfo(qApp->arguments()[0]).canonicalPath() + "/miniconda").exists()) {
-				local_pip = QFileInfo(qApp->arguments()[0]).canonicalPath() + "/miniconda/Scripts/pip";
-				PyRun_SimpleString("sys.path.append('./miniconda/Lib/site-packages/matplotlib/backends')");
-				PyRun_SimpleString("sys.path.append('./miniconda/Lib/site-packages')");
-				PyRun_SimpleString("sys.path.append('./miniconda/Python')");
+			if (QFileInfo(QFileInfo(qApp->arguments()[0]).canonicalPath() + "/micromamba").exists()) {
+				local_pip = QFileInfo(qApp->arguments()[0]).canonicalPath() + "/micromamba/Scripts/pip";
+				PyRun_SimpleString("sys.path.append('./micromamba/Lib/site-packages/matplotlib/backends')");
+				PyRun_SimpleString("sys.path.append('./micromamba/Lib/site-packages')");
+				PyRun_SimpleString("sys.path.append('./micromamba/Python')");
 			}
 			else {
 				PyRun_SimpleString("sys.path.append('./Lib/site-packages/matplotlib/backends')");
@@ -1391,7 +1391,7 @@ struct PyHandle : public VipNDArrayHandle
 		GIL_Locker lock;
 		if (obj && PyArray_Check((PyObject*)obj))
 		{
-			if (!PyArray_ISCONTIGUOUS(obj))
+			if (!PyArray_ISCONTIGUOUS((PyArrayObject*)obj))
 			{
 				//copy the non contiguous array to flatten it
 				array = PyArray_NewCopy((PyArrayObject*)obj, NPY_CORDER);
@@ -1428,7 +1428,7 @@ struct PyHandle : public VipNDArrayHandle
 		{
 			GIL_Locker locker;
 			array = PyArray_NewCopy((PyArrayObject*)other.array, NPY_CORDER);
-			opaque = PyArray_DATA(array);
+			opaque = PyArray_DATA((PyArrayObject*)array);
 		}
 	}
 
@@ -1481,7 +1481,7 @@ struct PyHandle : public VipNDArrayHandle
 		if (obj)
 		{
 			array = (obj);
-			opaque = PyArray_DATA(array);
+			opaque = PyArray_DATA((PyArrayObject*)array);
 			shape = new_shape;
 			size = vipComputeDefaultStrides<Vip::FirstMajor>(shape, strides);
 		}
