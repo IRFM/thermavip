@@ -64,6 +64,8 @@ static void myMessageOutput(QtMsgType type, const QMessageLogContext& context, c
 	return;
 }
 
+
+
 int main(int argc, char** argv)
 {
 	// Load thermavip.env

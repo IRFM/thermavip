@@ -5351,6 +5351,7 @@ public:
 
 	VipCubeAxesActorWidget *axesEditor;
 
+	QToolButton* camera;
 	QAction* show_legend;
 	QAction* reset_camera;
 	QAction* sharedCamera;
@@ -5448,6 +5449,8 @@ VipVTKPlayer::VipVTKPlayer(QWidget* parent)
 	camera->setIcon(vipIcon("open_fov.png"));
 	camera->setToolTip("Reset camera");
 	camera->setPopupMode(QToolButton::MenuButtonPopup);
+	camera->setCheckable(true);
+	camera->setChecked(true);
 	VipDragMenu* cmenu = new VipDragMenu();
 	camera->setMenu(cmenu);
 	connect(cmenu->addAction(vipIcon("plusX.png"), "Set view direction to +X"), SIGNAL(triggered(bool)), d_data->view, SLOT(resetActiveCameraToPositiveX()));
@@ -5460,7 +5463,8 @@ VipVTKPlayer::VipVTKPlayer(QWidget* parent)
 	connect(cmenu->addAction(vipIcon("rotate_right.png"), "Rotate 90 degrees clockwise"), SIGNAL(triggered(bool)), d_data->view, SLOT(rotateClockwise90()));
 	connect(cmenu->addAction(vipIcon("rotate_left.png"), "Rotate 90 degrees counterclockwise"), SIGNAL(triggered(bool)), d_data->view, SLOT(rotateCounterClockwise90()));
 	d_data->reset_camera = toolBar()->addWidget(camera);
-	connect(camera, SIGNAL(clicked(bool)), this->view(), SLOT(resetCamera()));
+	d_data->camera = camera;
+	connect(camera, SIGNAL(clicked(bool)), this->view(), SLOT(setAutoCamera(bool)));
 
 
 	d_data->sharedCamera = toolBar()->addAction(vipIcon("zoom.png"), "<b>Shared zoom</b><br>Zooming or panning within a video will apply the same zoom/panning to other videos in this workspace.");
@@ -5545,6 +5549,20 @@ VipVTKPlayer::~VipVTKPlayer()
 VipCubeAxesActorWidget* VipVTKPlayer::cubeAxesActorEditor() const
 {
 	return d_data->axesEditor;
+}
+
+void VipVTKPlayer::setAutoCamera(bool enable)
+{
+	d_data->camera->blockSignals(true);
+	d_data->camera->setChecked(enable);
+	d_data->camera->blockSignals(false);
+	d_data->view->setResetCameraEnabled(enable);
+	if (enable)
+		d_data->view->resetCamera();
+}
+bool VipVTKPlayer::isAutoCamera() const
+{
+	return d_data->camera->isChecked();
 }
 
 bool VipVTKPlayer::isSharedCamera() const
@@ -5955,6 +5973,9 @@ static VipArchive& operator<<(VipArchive& arch, const VipVTKPlayer* w)
 	// max tree depth
 	arch.content("tree_depth", w->tree()->maxDepth());
 
+	// auto camera
+	arch.content("auto_camera", w->isAutoCamera());
+
 	// active camera
 	arch.content("camera", w->view()->currentCamera());
 	// visible FOV pyramid
@@ -5987,6 +6008,14 @@ static VipArchive& operator>>(VipArchive& arch, VipVTKPlayer* w)
 
 	// max tree depth
 	w->tree()->setMaxDepth(arch.read("tree_depth").toInt());
+
+	arch.save();
+	bool auto_camera = true;
+	// auto camera
+	if (arch.content("auto_camera", auto_camera)) 
+		w->setAutoCamera(auto_camera);
+	else
+		arch.restore();
 
 	w->leftWidget()->setMaximumWidth(max_width);
 	w->leftWidget()->setMinimumWidth(max_width);

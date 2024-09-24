@@ -590,6 +590,7 @@ public:
 
 	virtual void showAxes(bool);
 	bool isSharedCamera() const;
+	bool isAutoCamera() const;
 
 	// For session saving/loading only
 	void setPendingVisibleFOV(const QStringList& names);
@@ -599,6 +600,7 @@ public:
 
 public Q_SLOTS:
 
+	void setAutoCamera(bool);
 	void setSharedCamera(bool enable);
 	void loadCadDirectory();
 	void loadCadFiles();

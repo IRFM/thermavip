@@ -189,7 +189,7 @@ namespace detail
 
 #define VTK_CREATE_ALGORITHM(classname, ...)                                                                                                                                                           \
 	Vip##classname()                                                                                                                                                                                    \
-	  : base_type({ VIP_FOR_EACH_COMMA(VIP_STRINGIZE, __VA_ARGS__) })
+	  : base_type({ VIP_FOR_EACH(VIP_STRINGIZE, VIP_COMMA, __VA_ARGS__) })
 
 ////////////////////////////////////////////////
 // Collection of VTK algorithms
