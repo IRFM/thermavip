@@ -49,7 +49,7 @@ ManualAnnotationHelper::ManualAnnotationHelper()
 	path = QFileInfo(path).canonicalPath();
 	// vip_debug("%s\n", path.toLatin1().data());
 	QString thermavip_interface = path + "/Python/thermavip_interface.py";
-	QString activate = path + "/miniconda/condabin/activate.bat";
+	QString activate = path + "/micromamba/condabin/activate.bat";
 
 	if (!QFileInfo(thermavip_interface).exists())
 		return;
@@ -58,11 +58,11 @@ ManualAnnotationHelper::ManualAnnotationHelper()
 
 	if (QFileInfo(activate).exists()) {
 
-		// Use embedded miniconda installation
+		// Use embedded micromamba installation
 
 		QString cd_path = path + "/Python";
 		// vip_debug("%s\n", path.toLatin1().data());
-		QString python_path = QFileInfo(vipAppCanonicalPath()).canonicalPath() + "/miniconda/python";
+		QString python_path = QFileInfo(vipAppCanonicalPath()).canonicalPath() + "/micromamba/python";
 		// vip_debug("%s\n", path.toLatin1().data());
 
 		QString cmd = "cmd /c \"cd " + cd_path + " && " + activate + " && " + python_path + " " + thermavip_interface + "\"";
