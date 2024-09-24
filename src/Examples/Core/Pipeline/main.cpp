@@ -117,8 +117,9 @@ int main(int argc, char** argv)
 
 	st = QDateTime::currentMSecsSinceEpoch();
 
+	VipInput* in = mult.inputAt(0);
 	for (int i = 0; i < count; ++i) {
-		mult.inputAt(0)->setData(i);
+		in->setData(i);
 	}
 	qint64 el1 = QDateTime::currentMSecsSinceEpoch() - st;
 	mult.wait();

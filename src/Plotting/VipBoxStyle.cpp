@@ -228,7 +228,7 @@ bool VipBoxStyle::isEmpty() const
 void VipBoxStyle::update()
 {
 	if (!d_data)
-		d_data = new PrivateData;
+		d_data = new PrivateData();
 }
 
 void VipBoxStyle::setBorderPen(const QPen& p)

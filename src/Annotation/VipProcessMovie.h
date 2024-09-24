@@ -97,8 +97,8 @@ protected:
 	virtual bool enableStreaming(bool);
 
 public:
-	class PrivateData;
-	PrivateData* d_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 /// @brief Defines several widget used to modify events parameters before upload to DB
@@ -126,8 +126,8 @@ private Q_SLOTS:
 	void deviceChanged();
 
 private:
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 class VipPlayerDBAccess;
@@ -187,8 +187,8 @@ Q_SIGNALS:
 	void interpFrames();
 
 private:
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 /// @brief Class allowing interaction between a VipVideoPlayer and a connection to an event database

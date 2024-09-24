@@ -199,8 +199,8 @@ private:
 	void drawArrow(const VipShape&, QPainter*, const VipCoordinateSystemPtr&) const;
 	void drawPoint(const VipShape&, QPainter*, const VipCoordinateSystemPtr&) const;
 
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 /// Helper function.

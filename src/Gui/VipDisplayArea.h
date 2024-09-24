@@ -122,8 +122,8 @@ private Q_SLOTS:
 	void enableStreaming();
 
 private:
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 /// A QTabWidget holding a VipDisplayTabBar.
@@ -190,8 +190,8 @@ protected:
 	virtual void mouseMoveEvent(QMouseEvent* evt);
 
 private:
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 class VipScaleWidget;
@@ -331,8 +331,8 @@ private:
 	void setId(int id);
 	void setInternalOperations();
 
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 Q_DECLARE_OPERATORS_FOR_FLAGS(VipDisplayPlayerArea::Operations)
@@ -407,8 +407,8 @@ private:
 	void removeWidget(VipDisplayPlayerArea* widget);
 	QString generateWorkspaceName() const;
 
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 VIP_REGISTER_QOBJECT_METATYPE(VipDisplayArea*)
@@ -670,8 +670,8 @@ protected:
 private:
 	QAction* addToolWidget(VipToolWidget* widget, const QIcon& icon, const QString& text, bool set_tool_icon = false);
 	void setCurrentTabDestroy(bool);
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 /// Returns the main unique VipMainWindow

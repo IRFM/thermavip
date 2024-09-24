@@ -480,8 +480,8 @@ Q_SIGNALS:
 	void changed();
 
 private:
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 /// @brief Vertical widget used to query DB for events
@@ -559,8 +559,8 @@ private Q_SLOTS:
 	void deviceChanged();
 
 public:
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 #endif

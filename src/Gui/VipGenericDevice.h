@@ -117,8 +117,8 @@ protected:
 	virtual void apply();
 
 private:
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 class QToolButton;
@@ -202,8 +202,8 @@ Q_SIGNALS:
 private:
 	bool canDisplayRecorderParametersEditor() const;
 
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 /// @}

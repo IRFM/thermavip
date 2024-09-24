@@ -29,7 +29,7 @@ class PYTHON_EXPORT PySignalGenerator : public VipTimeRangeBasedGenerator
 
 	QSharedPointer<ReadThread> m_thread;
 	CodeObject	m_code;
-	QVariant m_data;
+	QVariant d_data;
 
 public:
 	PySignalGenerator(QObject * parent = nullptr)
@@ -88,8 +88,8 @@ private Q_SLOTS:
 	void updateVisibility();
 
 private:
-	class PrivateData;
-	PrivateData * m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 #endif

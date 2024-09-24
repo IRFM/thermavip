@@ -72,8 +72,8 @@ private Q_SLOTS:
 	void changeFont();
 
 private:
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 /// Edit the pen and brush of an annotation
@@ -95,8 +95,8 @@ Q_SIGNALS:
 	void changed() const;
 
 private:
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 /// Edit the symbol of an annotation
@@ -120,8 +120,8 @@ Q_SIGNALS:
 	void changed() const;
 
 private:
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 /// Edit on or more annotations
@@ -148,8 +148,8 @@ Q_SIGNALS:
 	void changed();
 
 private:
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 class VIP_GUI_EXPORT VipAnnotationToolWidget : public VipToolWidgetPlayer

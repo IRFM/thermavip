@@ -160,8 +160,8 @@ public Q_SLOTS:
 
 private:
 	void recomputeFullGeometry();
-	class PrivateData;
-	PrivateData* d_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 #endif

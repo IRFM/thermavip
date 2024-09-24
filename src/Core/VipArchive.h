@@ -312,8 +312,8 @@ private:
 	static VipFunctionDispatcher<2>& serializeDispatcher();
 	static VipFunctionDispatcher<2>& deserializeDispatcher();
 
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 Q_DECLARE_METATYPE(VipArchive*);

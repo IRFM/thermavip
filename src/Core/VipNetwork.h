@@ -203,7 +203,7 @@ private Q_SLOTS:
 	void _emit_stateChanged(QAbstractSocket::SocketState socketState) { Q_EMIT stateChanged(socketState); }
 
 private:
-	detail::VipNetworkConnectionPrivate* m_data;
+	detail::VipNetworkConnectionPrivate* d_data;
 	qintptr m_pending;
 };
 
@@ -304,8 +304,8 @@ protected:
 	virtual void incomingConnection(qintptr socketDescriptor);
 
 private:
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 Q_DECLARE_METATYPE(QAbstractSocket::PauseModes)

@@ -268,7 +268,7 @@ public:
 VipRubberBand::VipRubberBand(VipAbstractPlotArea* parent)
   : VipBoxGraphicsWidget(parent)
 {
-	d_data = new PrivateData();
+	VIP_CREATE_PRIVATE_DATA(d_data);
 	setArea(parent);
 	setAcceptHoverEvents(true);
 	this->setFlag(ItemIsFocusable, true);
@@ -282,7 +282,6 @@ VipRubberBand::VipRubberBand(VipAbstractPlotArea* parent)
 
 VipRubberBand::~VipRubberBand()
 {
-	delete d_data;
 }
 
 void VipRubberBand::setArea(VipAbstractPlotArea* a)
@@ -1165,7 +1164,7 @@ VipAbstractPlotArea::VipAbstractPlotArea(QGraphicsItem* parent)
   : VipBoxGraphicsWidget()
 {
 
-	d_data = new PrivateData();
+	VIP_CREATE_PRIVATE_DATA(d_data);
 	d_data->rubberBand = new VipRubberBand(this);
 	d_data->drawSelection = new VipDrawSelectionOrder(this);
 
@@ -1217,7 +1216,6 @@ VipAbstractPlotArea::VipAbstractPlotArea(QGraphicsItem* parent)
 VipAbstractPlotArea::~VipAbstractPlotArea()
 {
 	removeSharedAlignedArea(this);
-	delete d_data;
 }
 
 QRectF VipAbstractPlotArea::visualizedSceneRect() const
@@ -4017,7 +4015,7 @@ VipPlotArea2D::VipPlotArea2D(QGraphicsItem* parent)
   : VipAbstractPlotArea(parent)
 {
 
-	d_data = new PrivateData();
+	VIP_CREATE_PRIVATE_DATA(d_data);
 	addScale(d_data->xTop);
 	addScale(d_data->xBottom);
 	addScale(d_data->yLeft);
@@ -4034,7 +4032,6 @@ VipPlotArea2D::VipPlotArea2D(QGraphicsItem* parent)
 
 VipPlotArea2D::~VipPlotArea2D()
 {
-	delete d_data;
 }
 
 VipAxisBase* VipPlotArea2D::leftAxis() const
@@ -4262,7 +4259,7 @@ public:
 VipPlotPolarArea2D::VipPlotPolarArea2D(QGraphicsItem* parent)
   : VipAbstractPlotArea(parent)
 {
-	d_data = new PrivateData();
+	VIP_CREATE_PRIVATE_DATA(d_data);
 
 	addScale(d_data->raxis);
 	addScale(d_data->paxis);
@@ -4284,7 +4281,6 @@ VipPlotPolarArea2D::VipPlotPolarArea2D(QGraphicsItem* parent)
 
 VipPlotPolarArea2D::~VipPlotPolarArea2D()
 {
-	delete d_data;
 }
 
 bool VipPlotPolarArea2D::setItemProperty(const char* name, const QVariant& value, const QByteArray& index)
@@ -4538,8 +4534,8 @@ VipBaseGraphicsView::VipBaseGraphicsView(QGraphicsScene* sc, QWidget* parent)
   : QGraphicsView(parent)
   , VipRenderObject(this)
 {
-	m_data = new PrivateData();
-	m_data->useInternalViewport = false;
+	VIP_CREATE_PRIVATE_DATA(d_data);
+	d_data->useInternalViewport = false;
 
 #if !defined(_WIN32) && (defined(__unix__) || defined(__unix) || (defined(__APPLE__) && defined(__MACH__)))
 
@@ -4583,7 +4579,6 @@ VipBaseGraphicsView::~VipBaseGraphicsView()
 		setScene(nullptr);
 		delete sc;
 	}
-	delete m_data;
 }
 
 void VipBaseGraphicsView::updateCacheMode(bool enable_cache)
@@ -4613,7 +4608,7 @@ void VipBaseGraphicsView::setupViewport(QWidget* viewport)
 
 void VipBaseGraphicsView::setRenderingMode(RenderingMode mode)
 {
-	if (m_data->useInternalViewport)
+	if (d_data->useInternalViewport)
 		return;
 
 	if (mode == OpenGL) {
@@ -4684,11 +4679,11 @@ bool VipBaseGraphicsView::isOpenGLBasedRendering() const
 
 void VipBaseGraphicsView::setUseInternalViewport(bool enable)
 {
-	m_data->useInternalViewport = enable;
+	d_data->useInternalViewport = enable;
 }
 bool VipBaseGraphicsView::useInternalViewport() const
 {
-	return m_data->useInternalViewport;
+	return d_data->useInternalViewport;
 }
 
 void VipBaseGraphicsView::startRender(VipRenderState&)
@@ -4795,19 +4790,19 @@ QRectF VipBaseGraphicsView::visualizedSceneRect() const
 
 QColor VipBaseGraphicsView::backgroundColor() const
 {
-	return m_data->backgroundColor ? *m_data->backgroundColor : QColor();
+	return d_data->backgroundColor ? *d_data->backgroundColor : QColor();
 }
 bool VipBaseGraphicsView::hasBackgroundColor() const
 {
-	return m_data->backgroundColor;
+	return d_data->backgroundColor;
 }
 void VipBaseGraphicsView::removeBackgroundColor()
 {
-	m_data->backgroundColor.reset();
+	d_data->backgroundColor.reset();
 }
 void VipBaseGraphicsView::setBackgroundColor(const QColor& color)
 {
-	m_data->backgroundColor.reset(new QColor(color));
+	d_data->backgroundColor.reset(new QColor(color));
 	update();
 }
 
@@ -4981,7 +4976,7 @@ public:
 VipImageArea2D::VipImageArea2D(QGraphicsItem* parent)
   : VipPlotArea2D(parent)
 {
-	d_data = new PrivateData;
+	VIP_CREATE_PRIVATE_DATA(d_data);
 	d_data->colorMap = this->createColorMap(VipAxisBase::Right, VipInterval(0, 100), VipLinearColorMap::createColorMap(VipLinearColorMap::Jet));
 	setSpectrogram(new VipPlotSpectrogram());
 
@@ -4997,10 +4992,6 @@ VipImageArea2D::VipImageArea2D(QGraphicsItem* parent)
 
 VipImageArea2D::~VipImageArea2D()
 {
-	// if(d_data->spectrogram)
-	//  delete d_data->spectrogram.data();
-
-	delete d_data;
 }
 
 bool VipImageArea2D::setItemProperty(const char* name, const QVariant& value, const QByteArray& index)

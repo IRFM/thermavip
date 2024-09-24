@@ -250,8 +250,8 @@ protected:
 	virtual void keyPressEvent(QKeyEvent* event);
 
 private:
-	class PrivateData;
-	PrivateData* d_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 
 	void emitNewTransform(const QTransform& tr);
 	void setGeometry(const QRectF& r);

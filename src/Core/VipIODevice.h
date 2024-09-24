@@ -427,8 +427,8 @@ protected:
 private:
 	void setTime(qint64 time);
 
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 Q_DECLARE_OPERATORS_FOR_FLAGS(VipIODevice::OpenModes)
@@ -749,8 +749,8 @@ private:
 	void computeDeviceType();
 	void applyLimitsToChildren();
 
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 Q_DECLARE_OPERATORS_FOR_FLAGS(VipProcessingPool::RunMode)
@@ -776,22 +776,22 @@ public:
 
 	void setData(const QVariant& data)
 	{
-		m_data = data;
-		VipAnyData out = create(m_data);
+		d_data = data;
+		VipAnyData out = create(d_data);
 		outputAt(0)->setData(out);
 	}
-	const QVariant& data() const { return m_data; }
+	const QVariant& data() const { return d_data; }
 
 protected:
 	virtual bool readData(qint64)
 	{
-		VipAnyData out = create(m_data);
+		VipAnyData out = create(d_data);
 		outputAt(0)->setData(out);
 		return true;
 	}
 
 private:
-	QVariant m_data;
+	QVariant d_data;
 };
 
 VIP_REGISTER_QOBJECT_METATYPE(VipAnyResource*)
@@ -851,8 +851,8 @@ protected:
 	virtual VipTimeRangeList computeTimeWindow() const;
 
 private:
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 VIP_REGISTER_QOBJECT_METATYPE(VipTimeRangeBasedGenerator*)
@@ -1261,8 +1261,8 @@ protected:
 private:
 	void computeFiles();
 	int closestDeviceIndex(qint64 time, qint64* closest = nullptr) const;
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 	// directory options
 };
 
@@ -1357,8 +1357,8 @@ protected:
 	virtual void apply();
 
 private:
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 VIP_REGISTER_QOBJECT_METATYPE(VipArchiveRecorder*)
@@ -1399,8 +1399,8 @@ private Q_SLOTS:
 	void bufferData();
 
 private:
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 VIP_REGISTER_QOBJECT_METATYPE(VipArchiveReader*)

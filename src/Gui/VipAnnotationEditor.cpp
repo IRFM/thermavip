@@ -121,58 +121,58 @@ public:
 TextEditor::TextEditor()
   : QWidget()
 {
-	m_data = new PrivateData();
+	VIP_CREATE_PRIVATE_DATA(d_data);
 
-	m_data->bar.setIconSize(QSize(20, 20));
+	d_data->bar.setIconSize(QSize(20, 20));
 
-	m_data->font = m_data->bar.addAction(vipIcon("font.png"), "Edit text font");
-	m_data->font->setProperty("font", QVariant::fromValue(QFont()));
+	d_data->font = d_data->bar.addAction(vipIcon("font.png"), "Edit text font");
+	d_data->font->setProperty("font", QVariant::fromValue(QFont()));
 
-	m_data->textPen = new VipPenButton();
-	m_data->textPen->setMode(VipPenButton::Color);
-	m_data->bar.addWidget(m_data->textPen);
-	m_data->textPen->setToolTip("Edit text color");
+	d_data->textPen = new VipPenButton();
+	d_data->textPen->setMode(VipPenButton::Color);
+	d_data->bar.addWidget(d_data->textPen);
+	d_data->textPen->setToolTip("Edit text color");
 
-	m_data->textBrush = new VipPenButton();
-	m_data->textBrush->setMode(VipPenButton::Brush);
-	m_data->bar.addWidget(m_data->textBrush);
-	m_data->textBrush->setToolTip("Edit text background brush");
+	d_data->textBrush = new VipPenButton();
+	d_data->textBrush->setMode(VipPenButton::Brush);
+	d_data->bar.addWidget(d_data->textBrush);
+	d_data->textBrush->setToolTip("Edit text background brush");
 
-	m_data->boxRadius = new QSpinBox();
-	m_data->boxRadius->setToolTip("Text box border radius");
-	m_data->boxRadius->setRange(-1, 20);
-	m_data->boxRadius->setSpecialValueText(" ");
-	m_data->boxRadius->setValue(0);
-	m_data->boxRadius->setMaximumWidth(50);
-	m_data->bar.addWidget(m_data->boxRadius);
+	d_data->boxRadius = new QSpinBox();
+	d_data->boxRadius->setToolTip("Text box border radius");
+	d_data->boxRadius->setRange(-1, 20);
+	d_data->boxRadius->setSpecialValueText(" ");
+	d_data->boxRadius->setValue(0);
+	d_data->boxRadius->setMaximumWidth(50);
+	d_data->bar.addWidget(d_data->boxRadius);
 
-	m_data->bar.addWidget(new QLabel());
+	d_data->bar.addWidget(new QLabel());
 
-	m_data->textDistance = new QSpinBox();
-	m_data->textDistance->setToolTip("Distance between the text and the shape");
-	m_data->textDistance->setRange(-1, 100);
-	m_data->textDistance->setValue(0);
-	m_data->textDistance->setSpecialValueText(" ");
-	m_data->textDistance->setMaximumWidth(50);
-	m_data->bar.addWidget(m_data->textDistance);
+	d_data->textDistance = new QSpinBox();
+	d_data->textDistance->setToolTip("Distance between the text and the shape");
+	d_data->textDistance->setRange(-1, 100);
+	d_data->textDistance->setValue(0);
+	d_data->textDistance->setSpecialValueText(" ");
+	d_data->textDistance->setMaximumWidth(50);
+	d_data->bar.addWidget(d_data->textDistance);
 
-	m_data->bar.addWidget(new QLabel());
-	m_data->bar.addSeparator();
-	m_data->bar.addWidget(new QLabel());
+	d_data->bar.addWidget(new QLabel());
+	d_data->bar.addSeparator();
+	d_data->bar.addWidget(new QLabel());
 
-	m_data->boxStyle = new QComboBox();
-	m_data->boxStyle->setToolTip("Edit text box style");
-	m_data->boxStyle->addItems(QStringList() << QString() << "No box"
+	d_data->boxStyle = new QComboBox();
+	d_data->boxStyle->setToolTip("Edit text box style");
+	d_data->boxStyle->addItems(QStringList() << QString() << "No box"
 						 << "Full box"
 						 << "Underline");
-	m_data->bar.addWidget(m_data->boxStyle);
-	m_data->boxStyle->setMaximumWidth(80);
+	d_data->bar.addWidget(d_data->boxStyle);
+	d_data->boxStyle->setMaximumWidth(80);
 
-	m_data->bar.addWidget(new QLabel());
+	d_data->bar.addWidget(new QLabel());
 
-	m_data->textAlignment = new QComboBox();
-	m_data->textAlignment->setToolTip("Text alignment");
-	m_data->textAlignment->addItems(QStringList() << QString() << "Center"
+	d_data->textAlignment = new QComboBox();
+	d_data->textAlignment->setToolTip("Text alignment");
+	d_data->textAlignment->addItems(QStringList() << QString() << "Center"
 						      << "Top"
 						      << "Left"
 						      << "Right"
@@ -181,53 +181,52 @@ TextEditor::TextEditor()
 						      << "TopRight"
 						      << "BottomLeft"
 						      << "BottomRight");
-	m_data->textAlignment->setMaximumWidth(80);
-	m_data->bar.addWidget(m_data->textAlignment);
+	d_data->textAlignment->setMaximumWidth(80);
+	d_data->bar.addWidget(d_data->textAlignment);
 
-	m_data->bar.addWidget(new QLabel());
+	d_data->bar.addWidget(new QLabel());
 
-	m_data->textPosition = new QComboBox();
-	m_data->textPosition->setToolTip("Text position around the shape");
-	m_data->textPosition->addItems(QStringList() << QString() << "Inside"
+	d_data->textPosition = new QComboBox();
+	d_data->textPosition->setToolTip("Text position around the shape");
+	d_data->textPosition->addItems(QStringList() << QString() << "Inside"
 						     << "X Inside"
 						     << "Y Inside"
 						     << "Outside");
-	m_data->textPosition->setMaximumWidth(80);
-	m_data->bar.addWidget(m_data->textPosition);
+	d_data->textPosition->setMaximumWidth(80);
+	d_data->bar.addWidget(d_data->textPosition);
 
-	m_data->editor.setStyleSheet(fontToStyleSheet(QFont()));
-	m_data->editor.setFont(QFont());
+	d_data->editor.setStyleSheet(fontToStyleSheet(QFont()));
+	d_data->editor.setFont(QFont());
 
 	QVBoxLayout* lay = new QVBoxLayout();
 	lay->setContentsMargins(0, 0, 0, 0);
 	lay->setSpacing(0);
-	lay->addWidget(&m_data->bar);
-	lay->addWidget(&m_data->editor);
+	lay->addWidget(&d_data->bar);
+	lay->addWidget(&d_data->editor);
 	setLayout(lay);
 
-	connect(&m_data->editor, SIGNAL(textChanged()), this, SLOT(emitChanged()));
-	connect(m_data->font, SIGNAL(triggered(bool)), this, SLOT(changeFont()));
-	connect(m_data->textPen, SIGNAL(penChanged(const QPen&)), this, SLOT(emitChanged()));
-	connect(m_data->textBrush, SIGNAL(penChanged(const QPen&)), this, SLOT(emitChanged()));
-	connect(m_data->boxRadius, SIGNAL(valueChanged(int)), this, SLOT(emitChanged()));
-	connect(m_data->textDistance, SIGNAL(valueChanged(int)), this, SLOT(emitChanged()));
-	connect(m_data->boxStyle, SIGNAL(currentIndexChanged(int)), this, SLOT(emitChanged()));
-	connect(m_data->textAlignment, SIGNAL(currentIndexChanged(int)), this, SLOT(emitChanged()));
-	connect(m_data->textPosition, SIGNAL(currentIndexChanged(int)), this, SLOT(emitChanged()));
+	connect(&d_data->editor, SIGNAL(textChanged()), this, SLOT(emitChanged()));
+	connect(d_data->font, SIGNAL(triggered(bool)), this, SLOT(changeFont()));
+	connect(d_data->textPen, SIGNAL(penChanged(const QPen&)), this, SLOT(emitChanged()));
+	connect(d_data->textBrush, SIGNAL(penChanged(const QPen&)), this, SLOT(emitChanged()));
+	connect(d_data->boxRadius, SIGNAL(valueChanged(int)), this, SLOT(emitChanged()));
+	connect(d_data->textDistance, SIGNAL(valueChanged(int)), this, SLOT(emitChanged()));
+	connect(d_data->boxStyle, SIGNAL(currentIndexChanged(int)), this, SLOT(emitChanged()));
+	connect(d_data->textAlignment, SIGNAL(currentIndexChanged(int)), this, SLOT(emitChanged()));
+	connect(d_data->textPosition, SIGNAL(currentIndexChanged(int)), this, SLOT(emitChanged()));
 }
 
 TextEditor::~TextEditor()
 {
-	delete m_data;
 }
 
 void TextEditor::changeFont()
 {
 	QFontDialog dialog;
-	dialog.setFont(m_data->editor.font());
+	dialog.setFont(d_data->editor.font());
 	if (dialog.exec() == QDialog::Accepted) {
-		m_data->editor.setFont(dialog.selectedFont());
-		m_data->editor.setStyleSheet(fontToStyleSheet(dialog.selectedFont()));
+		d_data->editor.setFont(dialog.selectedFont());
+		d_data->editor.setStyleSheet(fontToStyleSheet(dialog.selectedFont()));
 		emitChanged();
 	}
 }
@@ -235,26 +234,26 @@ void TextEditor::changeFont()
 void TextEditor::emitChanged()
 {
 
-	if (!isNullPen(m_data->textPen->pen()))
-		m_data->editor.setTextColor(m_data->textPen->pen().color());
-	if (sender() == m_data->font || sender() == m_data->textPen) {
-		QString t = m_data->editor.toPlainText();
-		m_data->editor.blockSignals(true);
-		m_data->editor.clear();
-		m_data->editor.setPlainText(t);
-		m_data->editor.blockSignals(false);
+	if (!isNullPen(d_data->textPen->pen()))
+		d_data->editor.setTextColor(d_data->textPen->pen().color());
+	if (sender() == d_data->font || sender() == d_data->textPen) {
+		QString t = d_data->editor.toPlainText();
+		d_data->editor.blockSignals(true);
+		d_data->editor.clear();
+		d_data->editor.setPlainText(t);
+		d_data->editor.blockSignals(false);
 	}
 	Q_EMIT changed();
 }
 
 QTextEdit* TextEditor::editor() const
 {
-	return &m_data->editor;
+	return &d_data->editor;
 }
 
 QString TextEditor::boxStyle() const
 {
-	return m_data->boxStyle->currentText();
+	return d_data->boxStyle->currentText();
 }
 int TextEditor::vipSides() const
 {
@@ -269,11 +268,11 @@ int TextEditor::vipSides() const
 
 QString TextEditor::textAlignment() const
 {
-	return m_data->textAlignment->currentText();
+	return d_data->textAlignment->currentText();
 }
 int TextEditor::qtAlignment() const
 {
-	QString a = m_data->textAlignment->currentText();
+	QString a = d_data->textAlignment->currentText();
 	if (a.isEmpty())
 		return nullAlignment;
 	else if (a == "Top")
@@ -300,7 +299,7 @@ int TextEditor::qtAlignment() const
 
 QString TextEditor::textPosition() const
 {
-	return m_data->textPosition->currentText();
+	return d_data->textPosition->currentText();
 }
 int TextEditor::vipTextPosition() const
 {
@@ -415,24 +414,24 @@ void TextEditor::setShapes(const QList<VipPlotShape*>& shapes)
 
 	blockSignals(true);
 
-	m_data->editor.setPlainText(text);
-	m_data->editor.setFont(font);
-	m_data->textPen->setPen(textPen);
-	m_data->textBrush->setBrush(textBrush);
-	m_data->boxStyle->setCurrentText(boxStyle);
-	m_data->textAlignment->setCurrentText(alignmentToString(textAlign));
-	m_data->textPosition->setCurrentText(positionToString(textPos));
-	m_data->boxRadius->setValue(radius);
-	m_data->textDistance->setValue(textDistance);
+	d_data->editor.setPlainText(text);
+	d_data->editor.setFont(font);
+	d_data->textPen->setPen(textPen);
+	d_data->textBrush->setBrush(textBrush);
+	d_data->boxStyle->setCurrentText(boxStyle);
+	d_data->textAlignment->setCurrentText(alignmentToString(textAlign));
+	d_data->textPosition->setCurrentText(positionToString(textPos));
+	d_data->boxRadius->setValue(radius);
+	d_data->textDistance->setValue(textDistance);
 
-	QFont f = m_data->font->property("font").value<QFont>();
+	QFont f = d_data->font->property("font").value<QFont>();
 	if (!isNullFont(f))
-		m_data->editor.setFont(f);
-	if (!isNullPen(m_data->textPen->pen())) {
-		QString t = m_data->editor.toPlainText();
-		m_data->editor.clear();
-		m_data->editor.setTextColor(m_data->textPen->pen().color());
-		m_data->editor.setPlainText(t);
+		d_data->editor.setFont(f);
+	if (!isNullPen(d_data->textPen->pen())) {
+		QString t = d_data->editor.toPlainText();
+		d_data->editor.clear();
+		d_data->editor.setTextColor(d_data->textPen->pen().color());
+		d_data->editor.setPlainText(t);
 	}
 
 	blockSignals(false);
@@ -445,23 +444,23 @@ void TextEditor::updateShapes(const QList<VipPlotShape*>& shapes)
 			if (strcmp(annot->name(), "VipSimpleAnnotation") == 0) {
 				VipSimpleAnnotation* a = static_cast<VipSimpleAnnotation*>(annot);
 
-				if (m_data->editor.toPlainText().size())
-					a->setText(m_data->editor.toPlainText());
-				if (!isNullFont(m_data->editor.font()))
-					a->text().setFont(m_data->editor.font());
-				if (!isNullPen(m_data->textPen->pen()))
-					a->text().setTextPen(m_data->textPen->pen());
-				if (!isNullBrush(m_data->textBrush->pen().brush()))
-					a->text().setBackgroundBrush(m_data->textBrush->pen().brush());
+				if (d_data->editor.toPlainText().size())
+					a->setText(d_data->editor.toPlainText());
+				if (!isNullFont(d_data->editor.font()))
+					a->text().setFont(d_data->editor.font());
+				if (!isNullPen(d_data->textPen->pen()))
+					a->text().setTextPen(d_data->textPen->pen());
+				if (!isNullBrush(d_data->textBrush->pen().brush()))
+					a->text().setBackgroundBrush(d_data->textBrush->pen().brush());
 				if (!isNullAlignment(qtAlignment()))
 					a->setTextAlignment((Qt::Alignment)qtAlignment());
 				if (!isNullPosition(vipTextPosition()))
 					a->setTextPosition((Vip::RegionPositions)vipTextPosition());
-				if (!isNullBorderRadius(m_data->boxRadius->value()))
-					a->text().boxStyle().setBorderRadius(m_data->boxRadius->value());
-				if (!isNullDistanceToText(m_data->textDistance->value()))
-					a->setTextDistance(m_data->textDistance->value());
-				if (!m_data->boxStyle->currentText().isEmpty()) {
+				if (!isNullBorderRadius(d_data->boxRadius->value()))
+					a->text().boxStyle().setBorderRadius(d_data->boxRadius->value());
+				if (!isNullDistanceToText(d_data->textDistance->value()))
+					a->setTextDistance(d_data->textDistance->value());
+				if (!d_data->boxStyle->currentText().isEmpty()) {
 					a->text().boxStyle().setDrawLines((Vip::Sides)vipSides());
 				}
 
@@ -478,37 +477,36 @@ public:
 };
 ShapeEditor::ShapeEditor()
 {
-	m_data = new PrivateData();
+	VIP_CREATE_PRIVATE_DATA(d_data);
 
-	m_data->pen.setMode(VipPenButton::Pen);
-	m_data->pen.setText("Annotation border pen");
-	m_data->pen.setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
-	m_data->brush.setMode(VipPenButton::Brush);
-	m_data->brush.setText("Annotation background brush");
-	m_data->brush.setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
+	d_data->pen.setMode(VipPenButton::Pen);
+	d_data->pen.setText("Annotation border pen");
+	d_data->pen.setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
+	d_data->brush.setMode(VipPenButton::Brush);
+	d_data->brush.setText("Annotation background brush");
+	d_data->brush.setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
 
 	QHBoxLayout* lay = new QHBoxLayout();
 	// lay->setContentsMargins(0, 0, 0, 0);
 	lay->setSpacing(5);
-	lay->addWidget(&m_data->pen);
-	lay->addWidget(&m_data->brush);
+	lay->addWidget(&d_data->pen);
+	lay->addWidget(&d_data->brush);
 	setLayout(lay);
 
-	connect(&m_data->pen, SIGNAL(penChanged(const QPen&)), this, SLOT(emitChanged()));
-	connect(&m_data->brush, SIGNAL(penChanged(const QPen&)), this, SLOT(emitChanged()));
+	connect(&d_data->pen, SIGNAL(penChanged(const QPen&)), this, SLOT(emitChanged()));
+	connect(&d_data->brush, SIGNAL(penChanged(const QPen&)), this, SLOT(emitChanged()));
 }
 ShapeEditor::~ShapeEditor()
 {
-	delete m_data;
 }
 
 QPen ShapeEditor::pen() const
 {
-	return m_data->pen.pen();
+	return d_data->pen.pen();
 }
 QBrush ShapeEditor::brush() const
 {
-	return m_data->brush.pen().brush();
+	return d_data->brush.pen().brush();
 }
 
 void ShapeEditor::setShapes(const QList<VipPlotShape*>& shapes)
@@ -537,8 +535,8 @@ void ShapeEditor::setShapes(const QList<VipPlotShape*>& shapes)
 	}
 
 	blockSignals(true);
-	m_data->pen.setPen(pen);
-	m_data->brush.setBrush(brush);
+	d_data->pen.setPen(pen);
+	d_data->brush.setBrush(brush);
 	blockSignals(false);
 }
 void ShapeEditor::updateShapes(const QList<VipPlotShape*>& shapes)
@@ -548,12 +546,12 @@ void ShapeEditor::updateShapes(const QList<VipPlotShape*>& shapes)
 			if (strcmp(annot->name(), "VipSimpleAnnotation") == 0) {
 				VipSimpleAnnotation* a = static_cast<VipSimpleAnnotation*>(annot);
 
-				if (!isNullPen(m_data->pen.pen())) {
-					a->setPen(m_data->pen.pen());
-					a->text().boxStyle().setBorderPen(m_data->pen.pen());
+				if (!isNullPen(d_data->pen.pen())) {
+					a->setPen(d_data->pen.pen());
+					a->text().boxStyle().setBorderPen(d_data->pen.pen());
 				}
-				if (!isNullBrush(m_data->brush.pen().brush()))
-					a->setBrush(m_data->brush.pen().brush());
+				if (!isNullBrush(d_data->brush.pen().brush()))
+					a->setBrush(d_data->brush.pen().brush());
 
 				shapes[i]->update();
 			}
@@ -569,12 +567,12 @@ public:
 };
 SymbolEditor::SymbolEditor()
 {
-	m_data = new PrivateData();
+	VIP_CREATE_PRIVATE_DATA(d_data);
 
-	m_data->type.setIconSize(QSize(30, 20));
-	m_data->type.setToolTip("Symbol type");
-	m_data->type.addItem(QString(), -2);
-	m_data->type.addItem("No symbol", -1);
+	d_data->type.setIconSize(QSize(30, 20));
+	d_data->type.setToolTip("Symbol type");
+	d_data->type.addItem(QString(), -2);
+	d_data->type.addItem("No symbol", -1);
 	for (int i = VipSymbol::Ellipse; i <= VipSymbol::Hexagon; ++i) {
 		QPixmap pix(QSize(30, 20));
 		pix.fill(QColor(255, 255, 255, 0));
@@ -586,7 +584,7 @@ SymbolEditor::SymbolEditor()
 		sym.setSize(QSizeF(11, 11));
 		sym.setStyle(VipSymbol::Style(i));
 		sym.drawSymbol(&p, QPointF(15, 10));
-		m_data->type.addItem(QIcon(pix), "", i);
+		d_data->type.addItem(QIcon(pix), "", i);
 	}
 	// draw arrow
 	{
@@ -601,46 +599,45 @@ SymbolEditor::SymbolEditor()
 		q.setStyle(VipQuiverPath::EndArrow);
 		q.setLength(VipQuiverPath::End, 9);
 		q.draw(&p, QLineF(QPointF(3, 10), QPointF(27, 10)));
-		m_data->type.addItem(QIcon(pix), "", VipSimpleAnnotation::Arrow);
+		d_data->type.addItem(QIcon(pix), "", VipSimpleAnnotation::Arrow);
 	}
 
-	m_data->size.setToolTip("Symbol size");
-	m_data->size.setRange(0, 100);
-	m_data->size.setSpecialValueText(" ");
+	d_data->size.setToolTip("Symbol size");
+	d_data->size.setRange(0, 100);
+	d_data->size.setSpecialValueText(" ");
 
-	m_data->angle.setToolTip("Arrow angle in degree");
-	m_data->angle.setRange(nullArrowAngle, 180);
-	m_data->angle.setSpecialValueText(" ");
+	d_data->angle.setToolTip("Arrow angle in degree");
+	d_data->angle.setRange(nullArrowAngle, 180);
+	d_data->angle.setSpecialValueText(" ");
 
 	QGridLayout* lay = new QGridLayout();
 	lay->addWidget(new QLabel("Symbol style"), 0, 0);
-	lay->addWidget(&m_data->type, 0, 1);
+	lay->addWidget(&d_data->type, 0, 1);
 	lay->addWidget(new QLabel("Symbol size"), 1, 0);
-	lay->addWidget(&m_data->size, 1, 1);
+	lay->addWidget(&d_data->size, 1, 1);
 	lay->addWidget(new QLabel("Arrow angle"), 2, 0);
-	lay->addWidget(&m_data->angle, 2, 1);
+	lay->addWidget(&d_data->angle, 2, 1);
 	setLayout(lay);
 
-	connect(&m_data->type, SIGNAL(currentIndexChanged(int)), this, SLOT(emitChanged()));
-	connect(&m_data->size, SIGNAL(valueChanged(int)), this, SLOT(emitChanged()));
-	connect(&m_data->angle, SIGNAL(valueChanged(int)), this, SLOT(emitChanged()));
+	connect(&d_data->type, SIGNAL(currentIndexChanged(int)), this, SLOT(emitChanged()));
+	connect(&d_data->size, SIGNAL(valueChanged(int)), this, SLOT(emitChanged()));
+	connect(&d_data->angle, SIGNAL(valueChanged(int)), this, SLOT(emitChanged()));
 }
 SymbolEditor::~SymbolEditor()
 {
-	delete m_data;
 }
 
 int SymbolEditor::symbolType() const
 {
-	return m_data->type.currentData().toInt();
+	return d_data->type.currentData().toInt();
 }
 int SymbolEditor::symbolSize() const
 {
-	return m_data->size.value();
+	return d_data->size.value();
 }
 int SymbolEditor::arrowAngle() const
 {
-	return m_data->angle.value();
+	return d_data->angle.value();
 }
 
 void SymbolEditor::setShapes(const QList<VipPlotShape*>& shapes)
@@ -673,9 +670,9 @@ void SymbolEditor::setShapes(const QList<VipPlotShape*>& shapes)
 	}
 
 	blockSignals(true);
-	m_data->type.setCurrentIndex(type - nullSymbolType);
-	m_data->size.setValue(size);
-	m_data->angle.setValue(angle);
+	d_data->type.setCurrentIndex(type - nullSymbolType);
+	d_data->size.setValue(size);
+	d_data->angle.setValue(angle);
 	blockSignals(false);
 }
 void SymbolEditor::updateShapes(const QList<VipPlotShape*>& shapes)
@@ -706,54 +703,53 @@ public:
 };
 VipAnnotationWidget::VipAnnotationWidget()
 {
-	m_data = new PrivateData();
+	VIP_CREATE_PRIVATE_DATA(d_data);
 
 	QVBoxLayout* lay = new QVBoxLayout();
 	lay->setContentsMargins(0, 0, 0, 0);
 	lay->setSpacing(0);
-	lay->addWidget(&m_data->textEditor);
+	lay->addWidget(&d_data->textEditor);
 	lay->addWidget(VipLineWidget::createHLine());
-	lay->addWidget(&m_data->shapeEditor);
+	lay->addWidget(&d_data->shapeEditor);
 	lay->addWidget(VipLineWidget::createHLine());
-	lay->addWidget(&m_data->symbolEditor);
+	lay->addWidget(&d_data->symbolEditor);
 	lay->addStretch(1);
 	setLayout(lay);
 
-	connect(&m_data->textEditor, SIGNAL(changed()), this, SLOT(emitChanged()));
-	connect(&m_data->shapeEditor, SIGNAL(changed()), this, SLOT(emitChanged()));
-	connect(&m_data->symbolEditor, SIGNAL(changed()), this, SLOT(emitChanged()));
+	connect(&d_data->textEditor, SIGNAL(changed()), this, SLOT(emitChanged()));
+	connect(&d_data->shapeEditor, SIGNAL(changed()), this, SLOT(emitChanged()));
+	connect(&d_data->symbolEditor, SIGNAL(changed()), this, SLOT(emitChanged()));
 
 	this->setMaximumHeight(300);
 }
 VipAnnotationWidget::~VipAnnotationWidget()
 {
-	delete m_data;
 }
 
 TextEditor* VipAnnotationWidget::textEditor() const
 {
-	return &m_data->textEditor;
+	return &d_data->textEditor;
 }
 ShapeEditor* VipAnnotationWidget::shapeEditor() const
 {
-	return &m_data->shapeEditor;
+	return &d_data->shapeEditor;
 }
 SymbolEditor* VipAnnotationWidget::symbolEditor() const
 {
-	return &m_data->symbolEditor;
+	return &d_data->symbolEditor;
 }
 
 void VipAnnotationWidget::setShapes(const QList<VipPlotShape*>& shapes)
 {
-	m_data->textEditor.setShapes(shapes);
-	m_data->shapeEditor.setShapes(shapes);
-	m_data->symbolEditor.setShapes(shapes);
+	d_data->textEditor.setShapes(shapes);
+	d_data->shapeEditor.setShapes(shapes);
+	d_data->symbolEditor.setShapes(shapes);
 }
 void VipAnnotationWidget::updateShapes(const QList<VipPlotShape*>& shapes)
 {
-	m_data->textEditor.updateShapes(shapes);
-	m_data->shapeEditor.updateShapes(shapes);
-	m_data->symbolEditor.updateShapes(shapes);
+	d_data->textEditor.updateShapes(shapes);
+	d_data->shapeEditor.updateShapes(shapes);
+	d_data->symbolEditor.updateShapes(shapes);
 
 	// set the modifications to the underlying VipShape
 	for (int i = 0; i < shapes.size(); ++i) {

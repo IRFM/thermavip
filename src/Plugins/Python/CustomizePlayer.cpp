@@ -37,8 +37,8 @@ public:
 CustomizePlayer::CustomizePlayer(VipAbstractPlayer * player)
 	:QObject(player)
 {
-	m_data = new PrivateData();
-	m_data->player = player;
+	VIP_CREATE_PRIVATE_DATA(d_data);
+	d_data->player = player;
 
 	QMenu * menu = new QMenu();
 	bool found = false;
@@ -49,24 +49,23 @@ CustomizePlayer::CustomizePlayer(VipAbstractPlayer * player)
 	}
 
 	if (VipPlayer2D * pl = player2D()) {
-		m_data->button = new QToolButton();
-		m_data->button->setIcon(vipIcon("python.png"));
-		m_data->button->setToolTip("Apply Python script for this player");
-		m_data->button->setAutoRaise(true);
-		m_data->button->setMenu(menu);
-		m_data->button->setPopupMode(QToolButton::InstantPopup);
-		pl->toolBar()->addWidget(m_data->button);
+		d_data->button = new QToolButton();
+		d_data->button->setIcon(vipIcon("python.png"));
+		d_data->button->setToolTip("Apply Python script for this player");
+		d_data->button->setAutoRaise(true);
+		d_data->button->setMenu(menu);
+		d_data->button->setPopupMode(QToolButton::InstantPopup);
+		pl->toolBar()->addWidget(d_data->button);
 		connect(menu, SIGNAL(triggered(QAction*)), this, SLOT(scriptSelected(QAction *)));
 	}
 }
 CustomizePlayer::~CustomizePlayer()
 {
-	delete m_data;
 }
 
 VipAbstractPlayer * CustomizePlayer::player() const
 {
-	return m_data->player;
+	return d_data->player;
 }
 
 
@@ -124,10 +123,10 @@ void CustomizePlayer::buildScriptsMenu(QMenu * menu, bool * found)
 
 void CustomizePlayer::scriptSelected(QAction * act)
 {
-	if (!m_data->player)
+	if (!d_data->player)
 		return;
 
-	VipBaseDragWidget * w = VipBaseDragWidget::fromChild(m_data->player);
+	VipBaseDragWidget * w = VipBaseDragWidget::fromChild(d_data->player);
 	if (!w)
 		return;
 

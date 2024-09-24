@@ -543,79 +543,78 @@ public:
 PyInterpreterToolWidget::PyInterpreterToolWidget(VipMainWindow * win)
 	:VipToolWidget(win)
 {
-	m_data = new PrivateData();
-	m_data->interpreter = new IOOperationWidget();
-	m_data->interpreter->SetProcess(GetPyOptions());
-	GetPyOptions()->setParent(m_data->interpreter);
-	//QObject::connect(GetPyOptions(), SIGNAL(finished()), m_data->interpreter, SLOT(clear()));
+	VIP_CREATE_PRIVATE_DATA(d_data);
+	d_data->interpreter = new IOOperationWidget();
+	d_data->interpreter->SetProcess(GetPyOptions());
+	GetPyOptions()->setParent(d_data->interpreter);
+	//QObject::connect(GetPyOptions(), SIGNAL(finished()), d_data->interpreter, SLOT(clear()));
 	QObject::connect(GetPyOptions(), SIGNAL(started()), GetPyOptions(), SLOT(startInteractiveInterpreter()));
 	GetPyOptions()->startInteractiveInterpreter();
 
-	m_data->history = new CodeEditor();
-	m_data->splitter = new QSplitter(Qt::Horizontal);
-	m_data->splitter->addWidget(m_data->interpreter);
-	m_data->splitter->addWidget(m_data->history);
+	d_data->history = new CodeEditor();
+	d_data->splitter = new QSplitter(Qt::Horizontal);
+	d_data->splitter->addWidget(d_data->interpreter);
+	d_data->splitter->addWidget(d_data->history);
 
-	m_data->closeHistory = new QToolButton(m_data->history);
-	m_data->closeHistory->setIcon(vipIcon("close.png"));
-	m_data->closeHistory->setToolTip("Hide history file");
-	m_data->closeHistory->setAutoRaise(false);
-	m_data->closeHistory->setAutoFillBackground(false);
-	connect(m_data->closeHistory, SIGNAL(clicked(bool)), this, SLOT(HideHistory()));
+	d_data->closeHistory = new QToolButton(d_data->history);
+	d_data->closeHistory->setIcon(vipIcon("close.png"));
+	d_data->closeHistory->setToolTip("Hide history file");
+	d_data->closeHistory->setAutoRaise(false);
+	d_data->closeHistory->setAutoFillBackground(false);
+	connect(d_data->closeHistory, SIGNAL(clicked(bool)), this, SLOT(HideHistory()));
 
-	m_data->history->OpenFile(vipGetPythonHistoryFile());
-	m_data->history->setReadOnly(true);
+	d_data->history->OpenFile(vipGetPythonHistoryFile());
+	d_data->history->setReadOnly(true);
 	//go to the end of file
-	m_data->history->moveCursor(QTextCursor::End);
-	m_data->history->ensureCursorVisible();
-	//if (m_data->history->verticalScrollBar()->isVisible())
-	//	m_data->history->verticalScrollBar()->setValue(m_data->history->verticalScrollBar()->maximum());
-	m_data->history->hide();
-	m_data->history->installEventFilter(this);
-	connect(m_data->interpreter, SIGNAL(NewCommandAdded()), m_data->history, SLOT(reload()));
+	d_data->history->moveCursor(QTextCursor::End);
+	d_data->history->ensureCursorVisible();
+	//if (d_data->history->verticalScrollBar()->isVisible())
+	//	d_data->history->verticalScrollBar()->setValue(d_data->history->verticalScrollBar()->maximum());
+	d_data->history->hide();
+	d_data->history->installEventFilter(this);
+	connect(d_data->interpreter, SIGNAL(NewCommandAdded()), d_data->history, SLOT(reload()));
 
-	m_data->restart = this->titleBarWidget()->toolBar()->addAction(vipIcon("restart.png"), "Restart interpreter");
-	m_data->showHistory = this->titleBarWidget()->toolBar()->addAction(vipIcon("visible.png"), "Show/hide history file");
-	m_data->showHistory->setCheckable(true);
+	d_data->restart = this->titleBarWidget()->toolBar()->addAction(vipIcon("restart.png"), "Restart interpreter");
+	d_data->showHistory = this->titleBarWidget()->toolBar()->addAction(vipIcon("visible.png"), "Show/hide history file");
+	d_data->showHistory->setCheckable(true);
 
-	connect(m_data->restart, SIGNAL(triggered(bool)), this, SLOT(RestartInterpreter()));
-	connect(m_data->showHistory, SIGNAL(triggered(bool)), this, SLOT(SetHistoryVisible(bool)));
+	connect(d_data->restart, SIGNAL(triggered(bool)), this, SLOT(RestartInterpreter()));
+	connect(d_data->showHistory, SIGNAL(triggered(bool)), this, SLOT(SetHistoryVisible(bool)));
 
-	this->setWidget(m_data->splitter);
+	this->setWidget(d_data->splitter);
 	this->setWindowTitle("Python internal console");
 	this->setObjectName("Python internal console");
 }
 
 PyInterpreterToolWidget::~PyInterpreterToolWidget()
 {
-	m_data->history->removeEventFilter(this);
-	delete m_data;
+	d_data->history->removeEventFilter(this);
 }
 
 IOOperationWidget * PyInterpreterToolWidget::Interpreter() const {
-	return m_data->interpreter;
+	return d_data->interpreter;
 }
 CodeEditor * PyInterpreterToolWidget::HistoryFile() const {
-	return m_data->history;
+	return d_data->history;
 }
 QSplitter * PyInterpreterToolWidget::Splitter() const {
-	return m_data->splitter;
+	return d_data->splitter;
 }
 bool PyInterpreterToolWidget::HistoryVisible() const {
-	return m_data->history->isVisible();
+	return d_data->history->isVisible();
 }
 
 void PyInterpreterToolWidget::SetHistoryVisible(bool vis) {
-	m_data->showHistory->blockSignals(true);
-	m_data->showHistory->setChecked(vis);
-	m_data->showHistory->blockSignals(false);
-	m_data->history->setVisible(vis);
+	d_data->showHistory->blockSignals(true);
+	d_data->showHistory->setChecked(vis);
+	d_data->showHistory->blockSignals(false);
+	d_data->history->setVisible(vis);
 }
 void PyInterpreterToolWidget::HideHistory() {
 	SetHistoryVisible(false);
 }
 void PyInterpreterToolWidget::RestartInterpreter() {
-	m_data->interpreter->clear();
+	d_data->interpreter->clear();
 	vip_debug("RestartInterpreter\n");
 	qint64 interp = (qint64)GetPyOptions()->pyIOOperation(true);
 	vip_debug("End %lld\n", interp);
@@ -624,16 +623,16 @@ void PyInterpreterToolWidget::RestartInterpreter() {
 bool PyInterpreterToolWidget::eventFilter(QObject *, QEvent * evt)
 {
 	if (evt->type() == QEvent::Resize || evt->type() == QEvent::Show) {
-		int additinal = m_data->history->verticalScrollBar()->isVisible() ?
-			m_data->history->verticalScrollBar()->width() : 0;
-		m_data->closeHistory->move(m_data->history->width() - m_data->closeHistory->width() - additinal, 0);
+		int additinal = d_data->history->verticalScrollBar()->isVisible() ?
+			d_data->history->verticalScrollBar()->width() : 0;
+		d_data->closeHistory->move(d_data->history->width() - d_data->closeHistory->width() - additinal, 0);
 	}
 	else if (evt->type() == QEvent::KeyPress) {
 		QKeyEvent * key = static_cast<QKeyEvent *>(evt);
 		if (key->key() == Qt::Key_Return || key->key() == Qt::Key_F5) {
 
 			//run selected lines
-			QTextCursor c = m_data->history->textCursor();
+			QTextCursor c = d_data->history->textCursor();
 			int start = c.selectionStart();
 			int end = c.selectionEnd();
 			c.setPosition(start);
@@ -645,16 +644,16 @@ bool PyInterpreterToolWidget::eventFilter(QObject *, QEvent * evt)
 
 			QString text;
 			for (int i = firstLine; i <= lastLine; ++i)
-				text += m_data->history->document()->findBlockByLineNumber(i).text() + "\n";
+				text += d_data->history->document()->findBlockByLineNumber(i).text() + "\n";
 
-			m_data->interpreter->moveCursor(QTextCursor::End);
-			/*c = m_data->interpreter->textCursor();
-			int end_pos = m_data->interpreter->toPlainText().size();
+			d_data->interpreter->moveCursor(QTextCursor::End);
+			/*c = d_data->interpreter->textCursor();
+			int end_pos = d_data->interpreter->toPlainText().size();
 			c.setPosition(end_pos);
-			m_data->interpreter->setTextCursor(c);*/
-			m_data->interpreter->PasteText(text);
-			m_data->interpreter->raise();
-			m_data->interpreter->setFocus();
+			d_data->interpreter->setTextCursor(c);*/
+			d_data->interpreter->PasteText(text);
+			d_data->interpreter->raise();
+			d_data->interpreter->setFocus();
 			return true;
 		}
 	}

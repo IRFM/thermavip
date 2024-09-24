@@ -94,8 +94,8 @@ private Q_SLOTS:
 	void itemClicked(QTreeWidgetItem* item, int column);
 
 private:
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 VIP_GUI_EXPORT VipOptions* vipGetOptions();
@@ -121,8 +121,8 @@ private Q_SLOTS:
 private:
 	QPixmap colorMapPixmap(int color_map, const QSize& size);
 	QPixmap applyFactor(const QImage& img, int factor);
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 class ProcessingSettings : public VipPageOption
@@ -138,8 +138,8 @@ public Q_SLOTS:
 	void updatePage();
 
 private:
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 class EnvironmentSettings : public VipPageOption
@@ -160,8 +160,8 @@ private Q_SLOTS:
 	void openLogFile();
 
 private:
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 class RenderingSettings : public VipPageOption
@@ -177,8 +177,8 @@ public Q_SLOTS:
 	void updatePage();
 
 private:
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 #endif

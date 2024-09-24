@@ -79,7 +79,7 @@ VipVMultiPlotArea2D::VipVMultiPlotArea2D(QGraphicsItem* parent)
   : VipPlotArea2D(parent)
 {
 
-	d_data = new PrivateData();
+	VIP_CREATE_PRIVATE_DATA(d_data);
 
 	// remove the preivous left and right axes
 	removeScale(VipPlotArea2D::leftAxis());
@@ -118,7 +118,6 @@ VipVMultiPlotArea2D::VipVMultiPlotArea2D(QGraphicsItem* parent)
 
 VipVMultiPlotArea2D::~VipVMultiPlotArea2D()
 {
-	delete d_data;
 }
 
 VipAxisBase* VipVMultiPlotArea2D::leftAxis() const

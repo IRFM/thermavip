@@ -1179,13 +1179,13 @@ public:
 PyProcess::PyProcess(QObject * parent)
 	:PyIOOperation(parent)
 {
-	d_data = new PrivateData();
+	VIP_CREATE_PRIVATE_DATA(d_data);
 }
 
 PyProcess::PyProcess(const QString & pyprocess, QObject * parent )
 	:PyIOOperation(parent)
 {
-	d_data = new PrivateData();
+	VIP_CREATE_PRIVATE_DATA(d_data);
 	d_data->interpreter = pyprocess;
 }
 
@@ -1213,7 +1213,6 @@ void PyProcess::startInteractiveInterpreter()
 PyProcess::~PyProcess()
 {
 	stop();
-	delete d_data;
 }
 
 bool PyProcess::start()

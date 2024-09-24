@@ -58,80 +58,80 @@ public:
 };
 
 VipOtherPlayerData::VipOtherPlayerData()
-  : m_data(new PrivateData())
+  : d_data(new PrivateData())
 {
 }
 
 VipOtherPlayerData::VipOtherPlayerData(const VipAnyData& static_data)
-  : m_data(new PrivateData())
+  : d_data(new PrivateData())
 {
-	m_data->staticData = static_data;
+	d_data->staticData = static_data;
 }
 
 VipOtherPlayerData::VipOtherPlayerData(bool is_dynamic, VipProcessingObject* object, VipProcessingObject* parent, int outputIndex, int otherPlayerId, int otherDisplayIndex)
-  : m_data(new PrivateData())
+  : d_data(new PrivateData())
 {
-	m_data->isDynamic = is_dynamic;
-	m_data->processing = object;
-	m_data->parent = parent;
-	m_data->outputIndex = outputIndex;
-	m_data->otherPlayerId = otherPlayerId;
-	m_data->otherDisplayIndex = otherDisplayIndex;
-	m_data->staticData = dynamicData();
+	d_data->isDynamic = is_dynamic;
+	d_data->processing = object;
+	d_data->parent = parent;
+	d_data->outputIndex = outputIndex;
+	d_data->otherPlayerId = otherPlayerId;
+	d_data->otherDisplayIndex = otherDisplayIndex;
+	d_data->staticData = dynamicData();
 }
 
 void VipOtherPlayerData::setShouldResizeArray(bool enable)
 {
-	m_data->shouldResizeArray = enable;
+	d_data->shouldResizeArray = enable;
 }
 
 bool VipOtherPlayerData::shouldResizeArray() const
 {
-	return m_data->shouldResizeArray;
+	return d_data->shouldResizeArray;
 }
 
 void VipOtherPlayerData::setParentProcessing(VipProcessingObject* parent)
 {
-	m_data->parent = parent;
+	d_data->parent = parent;
 	// reset the static data
-	m_data->staticData = dynamicData();
+	d_data->staticData = dynamicData();
 }
 VipProcessingObject* VipOtherPlayerData::parentProcessingObject() const
 {
-	return m_data->parent.data<VipProcessingObject>();
+	return d_data->parent.data<VipProcessingObject>();
 }
 
 bool VipOtherPlayerData::isDynamic() const
 {
-	return m_data->isDynamic;
+	return d_data->isDynamic;
 }
 int VipOtherPlayerData::otherPlayerId() const
 {
-	return m_data->otherPlayerId;
+	return d_data->otherPlayerId;
 }
 int VipOtherPlayerData::otherDisplayIndex() const
 {
-	return m_data->otherDisplayIndex;
+	return d_data->otherDisplayIndex;
 }
 int VipOtherPlayerData::outputIndex() const
 {
-	return m_data->outputIndex;
+	return d_data->outputIndex;
 }
 VipProcessingObject* VipOtherPlayerData::processing() const
 {
-	return m_data->processing.data<VipProcessingObject>();
+	return d_data->processing.data<VipProcessingObject>();
 }
 VipAnyData VipOtherPlayerData::staticData() const
 {
-	return m_data->staticData;
+	return d_data->staticData;
 }
 VipAnyData VipOtherPlayerData::dynamicData()
 {
-	VipAnyData tmp = m_data->staticData;
-	if (tmp.isEmpty() || m_data->isDynamic) {
-		if (VipProcessingObject* obj = m_data->processing.data<VipProcessingObject>())
-			if (m_data->outputIndex < obj->outputCount())
-				if (VipOutput* output = obj->outputAt(m_data->outputIndex)) {
+	VipAnyData tmp = d_data->staticData;
+	if (tmp.isEmpty() || d_data->isDynamic) {
+		if (VipProcessingObject* obj = d_data->processing.data<VipProcessingObject>())
+			if (d_data->outputIndex < obj->outputCount())
+				if (VipOutput* output = obj->outputAt(d_data->outputIndex)) {
 					if (VipProcessingObject* parent = parentProcessingObject()) {
 						VipProcessingList* lst = qobject_cast<VipProcessingList*>(parent->property("VipProcessingList").value<VipProcessingList*>());
 						if (lst == obj) {
@@ -169,19 +169,19 @@ VipAnyData VipOtherPlayerData::dynamicData()
 
 VipAnyData VipOtherPlayerData::data()
 {
-	return m_data->isDynamic ? dynamicData() : staticData();
+	return d_data->isDynamic ? dynamicData() : staticData();
 }
 
 QDataStream& operator<<(QDataStream& arch, const VipOtherPlayerData& o)
 {
-	return arch << o.m_data->processing << o.m_data->parent << o.m_data->outputIndex << o.m_data->isDynamic << o.m_data->otherPlayerId << o.m_data->otherDisplayIndex << o.m_data->staticData
-		    << o.m_data->shouldResizeArray;
+	return arch << o.d_data->processing << o.d_data->parent << o.d_data->outputIndex << o.d_data->isDynamic << o.d_data->otherPlayerId << o.d_data->otherDisplayIndex << o.d_data->staticData
+		    << o.d_data->shouldResizeArray;
 }
 
 QDataStream& operator>>(QDataStream& arch, VipOtherPlayerData& o)
 {
-	return arch >> o.m_data->processing >> o.m_data->parent >> o.m_data->outputIndex >> o.m_data->isDynamic >> o.m_data->otherPlayerId >> o.m_data->otherDisplayIndex >> o.m_data->staticData >>
-	       o.m_data->shouldResizeArray;
+	return arch >> o.d_data->processing >> o.d_data->parent >> o.d_data->outputIndex >> o.d_data->isDynamic >> o.d_data->otherPlayerId >> o.d_data->otherDisplayIndex >> o.d_data->staticData >>
+	       o.d_data->shouldResizeArray;
 }
 
 int registerVipOtherPlayerData()
@@ -1002,45 +1002,44 @@ public:
 VipBaseDataFusion::VipBaseDataFusion(QObject* parent)
   : VipProcessingObject(parent)
 {
-	m_data = new PrivateData();
+	VIP_CREATE_PRIVATE_DATA(d_data);
 	propertyAt(0)->setData(QString("intersection"));
 }
 
 VipBaseDataFusion::~VipBaseDataFusion()
 {
-	delete m_data;
 }
 
 void VipBaseDataFusion::setAceptedInputs(const QList<int>& input_types)
 {
-	m_data->accepted_inputs = input_types;
+	d_data->accepted_inputs = input_types;
 }
 const QList<int>& VipBaseDataFusion::acceptedInputs() const
 {
-	return m_data->accepted_inputs;
+	return d_data->accepted_inputs;
 }
 
 void VipBaseDataFusion::setResampleEnabled(bool resample, bool merge_point_vector)
 {
-	m_data->resample = resample;
-	m_data->merge_point_vector = merge_point_vector;
+	d_data->resample = resample;
+	d_data->merge_point_vector = merge_point_vector;
 }
 bool VipBaseDataFusion::mergePointVectors() const
 {
-	return m_data->merge_point_vector;
+	return d_data->merge_point_vector;
 }
 bool VipBaseDataFusion::resampleEnabled() const
 {
-	return m_data->resample;
+	return d_data->resample;
 }
 
 void VipBaseDataFusion::setWorkOnSameObjectType(bool enable)
 {
-	m_data->same_object_type = enable;
+	d_data->same_object_type = enable;
 }
 bool VipBaseDataFusion::workOnSameObjectType() const
 {
-	return m_data->same_object_type;
+	return d_data->same_object_type;
 }
 
 VipAnyData VipBaseDataFusion::create(const QVariant& data) const
@@ -1066,30 +1065,30 @@ VipAnyData VipBaseDataFusion::create(const QVariant& data) const
 
 void VipBaseDataFusion::setSameDataType(bool enable, const QList<int>& possible_types)
 {
-	m_data->same_data_type = enable;
-	m_data->possible_types = possible_types;
+	d_data->same_data_type = enable;
+	d_data->possible_types = possible_types;
 }
 bool VipBaseDataFusion::sameDataType() const
 {
-	return m_data->same_data_type;
+	return d_data->same_data_type;
 }
 const QList<int>& VipBaseDataFusion::possibleDataTypes() const
 {
-	return m_data->possible_types;
+	return d_data->possible_types;
 }
 
 const QVector<VipAnyData>& VipBaseDataFusion::inputs() const
 {
-	return m_data->inputs;
+	return d_data->inputs;
 }
 
 void VipBaseDataFusion::setResizeArrayType(Vip::InterpolationType type)
 {
-	m_data->resize_array_type = type;
+	d_data->resize_array_type = type;
 }
 Vip::InterpolationType VipBaseDataFusion::resizeArrayType() const
 {
-	return m_data->resize_array_type;
+	return d_data->resize_array_type;
 }
 
 void VipBaseDataFusion::apply()
@@ -1099,8 +1098,8 @@ void VipBaseDataFusion::apply()
 		return;
 	}
 	// else if (inputCount() == 1) {
-	//  m_data->inputs.resize(1);
-	//  m_data->inputs[0] = inputAt(0)->data();
+	//  d_data->inputs.resize(1);
+	//  d_data->inputs[0] = inputAt(0)->data();
 	//  mergeData(0,0);
 	//  return;
 	//  }
@@ -1111,14 +1110,14 @@ void VipBaseDataFusion::apply()
 	for (int i = 0; i < count; ++i) {
 		inputs[i] = inputAt(i)->data();
 		// check input type accepted
-		if (m_data->accepted_inputs.size() && m_data->accepted_inputs.indexOf(inputs[i].data().userType()) < 0) {
+		if (d_data->accepted_inputs.size() && d_data->accepted_inputs.indexOf(inputs[i].data().userType()) < 0) {
 			setError("input type " + QString(inputs[i].data().typeName()) + " not accepted");
 			return;
 		}
 	}
 
 	int otype = 0;
-	if (m_data->same_object_type) {
+	if (d_data->same_object_type) {
 		// check that all inputs have the same object type (all VipNDArray, or all VipPointVector,...)
 		otype = inputs[0].data().userType();
 		for (int i = 1; i < count; ++i) {
@@ -1130,7 +1129,7 @@ void VipBaseDataFusion::apply()
 	}
 
 	int dtype = 0;
-	if (m_data->same_data_type) {
+	if (d_data->same_data_type) {
 		// check that all inputs can be converted to the same data type
 		dtype = __data_type(inputs[0].data());
 		for (int i = 1; i < count; ++i) {
@@ -1144,15 +1143,15 @@ void VipBaseDataFusion::apply()
 
 	if (dtype) {
 		// check that the data type is compatible with given types
-		if (!m_data->possible_types.isEmpty())
-			if (!(dtype = vipHigherArrayType(dtype, m_data->possible_types))) {
+		if (!d_data->possible_types.isEmpty())
+			if (!(dtype = vipHigherArrayType(dtype, d_data->possible_types))) {
 				setError("input types are not convertible to requested types");
 				return;
 			}
 	}
 
 	// resample inputs
-	if (m_data->resample) {
+	if (d_data->resample) {
 		QList<VipPointVector> pvectors;
 		QList<VipComplexPointVector> cvectors;
 		QVector<VipNDArray> arrays;
@@ -1190,7 +1189,7 @@ void VipBaseDataFusion::apply()
 		ResampleStrategies s = ResampleIntersection | ResampleInterpolation;
 		if (time_range == "union")
 			s = ResampleUnion | ResampleInterpolation;
-		if (!m_data->merge_point_vector) {
+		if (!d_data->merge_point_vector) {
 			vipResampleVectors(pvectors, s);
 			vipResampleVectors(cvectors, s);
 		}
@@ -1203,17 +1202,17 @@ void VipBaseDataFusion::apply()
 		}
 
 		// resample arrays using the internal vector of array, and cast to dtype if necessary
-		if (m_data->arrays.size() != arrays.size())
-			m_data->arrays.resize(arrays.size());
+		if (d_data->arrays.size() != arrays.size())
+			d_data->arrays.resize(arrays.size());
 		for (int i = 0; i < arrays.size(); ++i) {
-			bool valid_type = ((dtype == 0 && m_data->arrays[i].dataType() == arrays[i].dataType()) || (m_data->arrays[i].dataType() == dtype));
-			if (!(valid_type && m_data->arrays[i].shape() == sh)) {
+			bool valid_type = ((dtype == 0 && d_data->arrays[i].dataType() == arrays[i].dataType()) || (d_data->arrays[i].dataType() == dtype));
+			if (!(valid_type && d_data->arrays[i].shape() == sh)) {
 				if (dtype)
-					m_data->arrays[i] = VipNDArray(dtype, sh);
+					d_data->arrays[i] = VipNDArray(dtype, sh);
 				else
-					m_data->arrays[i] = VipNDArray(arrays[i].dataType(), sh);
+					d_data->arrays[i] = VipNDArray(arrays[i].dataType(), sh);
 			}
-			arrays[i].resize(m_data->arrays[i], resizeArrayType());
+			arrays[i].resize(d_data->arrays[i], resizeArrayType());
 		}
 
 		// copy back to input data
@@ -1221,7 +1220,7 @@ void VipBaseDataFusion::apply()
 		for (int i = 0; i < count; ++i) {
 			const QVariant v = inputs[i].data();
 			if (v.userType() == qMetaTypeId<VipNDArray>())
-				inputs[i].setData(QVariant::fromValue(m_data->arrays[i_a++]));
+				inputs[i].setData(QVariant::fromValue(d_data->arrays[i_a++]));
 			else if (v.userType() == qMetaTypeId<VipPointVector>())
 				inputs[i].setData(QVariant::fromValue(pvectors[i_p++]));
 			else if (v.userType() == qMetaTypeId<VipComplexPointVector>())
@@ -1241,7 +1240,7 @@ void VipBaseDataFusion::apply()
 		for (int i = 0; i < count; ++i) {
 			const QVariant v = inputs[i].data();
 			if (v.userType() == qMetaTypeId<VipNDArray>()) {
-				if (!m_data->resample)
+				if (!d_data->resample)
 					arrays.append(v.value<VipNDArray>());
 			}
 			else if (v.userType() == qMetaTypeId<VipPointVector>()) {
@@ -1284,26 +1283,26 @@ void VipBaseDataFusion::apply()
 		}
 
 		// cast VipNDArray
-		if (!m_data->resample) // id resample is enabled, the arrays are already casted to the right type
+		if (!d_data->resample) // id resample is enabled, the arrays are already casted to the right type
 		{
-			if (m_data->arrays.size() != arrays.size())
-				m_data->arrays.resize(arrays.size());
+			if (d_data->arrays.size() != arrays.size())
+				d_data->arrays.resize(arrays.size());
 			int i_a = 0;
 			for (int i = 0; i < count; ++i) {
 				const QVariant v = inputs[i].data();
 				if (v.userType() == qMetaTypeId<VipNDArray>()) {
 					const VipNDArray ar = arrays[i_a++];
-					if (m_data->arrays[i].dataType() == dtype && m_data->arrays[i].shape() == ar.shape())
-						ar.convert(m_data->arrays[i]);
+					if (d_data->arrays[i].dataType() == dtype && d_data->arrays[i].shape() == ar.shape())
+						ar.convert(d_data->arrays[i]);
 					else
-						m_data->arrays[i] = ar.convert(dtype);
-					inputs[i].setData(QVariant::fromValue(m_data->arrays[i]));
+						d_data->arrays[i] = ar.convert(dtype);
+					inputs[i].setData(QVariant::fromValue(d_data->arrays[i]));
 				}
 			}
 		}
 	}
 
-	m_data->inputs = inputs;
+	d_data->inputs = inputs;
 	mergeData(otype, dtype);
 }
 
@@ -1468,7 +1467,7 @@ public:
 VipSamplesFeature::VipSamplesFeature(QObject* parent)
   : VipBaseDataFusion(parent)
 {
-	// m_data = new PrivateData();
+	// VIP_CREATE_PRIVATE_DATA(d_data);
 	setWorkOnSameObjectType(true);
 	setSameDataType(true, QList<int>() << QMetaType::Int << QMetaType::Double << qMetaTypeId<complex_d>());
 	setResampleEnabled(true);
@@ -1480,7 +1479,7 @@ VipSamplesFeature::VipSamplesFeature(QObject* parent)
 }
 VipSamplesFeature::~VipSamplesFeature()
 {
-	// delete m_data;
+	// delete d_data;
 }
 
 void VipSamplesFeature::setOutput(const QVariant& v)

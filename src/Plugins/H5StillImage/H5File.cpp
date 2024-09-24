@@ -409,13 +409,13 @@ bool H5StillImageWriter::open(VipIODevice::OpenModes mode)
 void H5StillImageWriter::close()
 {
 	// actually write the data
-	if (m_data.size())
-		H5File::createFile(removePrefix(path()), m_data.keys(), m_data.values());
+	if (d_data.size())
+		H5File::createFile(removePrefix(path()), d_data.keys(), d_data.values());
 }
 
 void H5StillImageWriter::apply()
 {
-	// add all available data into m_data, using the VipAnyData name as key
+	// add all available data into d_data, using the VipAnyData name as key
 	while (inputAt(0)->hasNewData()) {
 		VipAnyData any = inputAt(0)->data();
 		VipNDArray ar = any.value<VipNDArray>();
@@ -423,13 +423,13 @@ void H5StillImageWriter::apply()
 			if (vipIsMultiNDArray(ar)) {
 				const QMap<QString, VipNDArray> arrays = VipMultiNDArray(ar).namedArrays();
 				for (QMap<QString, VipNDArray>::const_iterator it = arrays.begin(); it != arrays.end(); ++it)
-					m_data[it.key()] = it.value();
+					d_data[it.key()] = it.value();
 			}
 			else {
 				QString name = any.name();
 				if (name.isEmpty())
 					name = "unnamed_image";
-				m_data[name] = ar;
+				d_data[name] = ar;
 			}
 		}
 	}

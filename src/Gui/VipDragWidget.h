@@ -291,7 +291,7 @@ private Q_SLOTS:
 
 private:
 	struct PrivateData;
-	PrivateData* d_data;
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 VIP_REGISTER_QOBJECT_METATYPE(VipBaseDragWidget*)
@@ -347,8 +347,8 @@ private Q_SLOTS:
 
 private:
 	void relayout();
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 VIP_REGISTER_QOBJECT_METATYPE(VipDragWidget*)
@@ -413,8 +413,8 @@ protected:
 	virtual void endRender(VipRenderState&);
 
 private:
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 /// Custom QSplitterHandle class. In addition to its normal role, it provides several functionalities:
@@ -725,7 +725,7 @@ private:
 	QSplitter* createHSplitter();
 
 	struct PrivateData;
-	PrivateData* d_data;
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 VIP_REGISTER_QOBJECT_METATYPE(VipMultiDragWidget*)

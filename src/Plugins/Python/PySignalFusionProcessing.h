@@ -79,8 +79,8 @@ public Q_SLOTS:
 	void showError(const QPoint & pos, const QString & error);
 	void showErrorDelayed(const QPoint & pos, const QString & error);
 private:
-	class PrivateData;
-	PrivateData * m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 

@@ -109,69 +109,69 @@ public:
 VipToolWidgetTitleBar::VipToolWidgetTitleBar(VipToolWidget* parent)
   : QWidget(parent)
 {
-	m_data = new PrivateData();
-	m_data->icon = new QLabel(this);
-	m_data->label = new NoSizeLable(this);
-	m_data->bar = new QToolBar();
-	m_data->floating = new QToolButton();
-	m_data->close = new QToolButton();
-	m_data->maximize = new QToolButton();
-	m_data->restore = new QToolButton();
-	m_data->patternColor = Qt::gray;
-	m_data->displayWindowIcon = false;
+	VIP_CREATE_PRIVATE_DATA(d_data);
+	d_data->icon = new QLabel(this);
+	d_data->label = new NoSizeLable(this);
+	d_data->bar = new QToolBar();
+	d_data->floating = new QToolButton();
+	d_data->close = new QToolButton();
+	d_data->maximize = new QToolButton();
+	d_data->restore = new QToolButton();
+	d_data->patternColor = Qt::gray;
+	d_data->displayWindowIcon = false;
 
-	m_data->bar->setIconSize(QSize(18, 18));
-	m_data->bar->setAutoFillBackground(false);
+	d_data->bar->setIconSize(QSize(18, 18));
+	d_data->bar->setAutoFillBackground(false);
 
-	m_data->label->setIndent(5);
-	m_data->label->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
-	m_data->label->setAttribute(Qt::WA_TransparentForMouseEvents);
-	m_data->label->setFocusPolicy(Qt::NoFocus);
+	d_data->label->setIndent(5);
+	d_data->label->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
+	d_data->label->setAttribute(Qt::WA_TransparentForMouseEvents);
+	d_data->label->setFocusPolicy(Qt::NoFocus);
 
-	m_data->floating->setAutoRaise(true);
-	m_data->floating->setCheckable(true);
-	m_data->floating->setIcon(vipIcon("pin.png"));
-	m_data->floating->setToolTip("Make panel floating");
-	m_data->floating->setMaximumSize(18, 18);
+	d_data->floating->setAutoRaise(true);
+	d_data->floating->setCheckable(true);
+	d_data->floating->setIcon(vipIcon("pin.png"));
+	d_data->floating->setToolTip("Make panel floating");
+	d_data->floating->setMaximumSize(18, 18);
 
-	m_data->close->setAutoRaise(true);
-	m_data->close->setIcon(vipIcon("close.png"));
-	m_data->close->setToolTip("Close");
-	m_data->close->setMaximumSize(18, 18);
+	d_data->close->setAutoRaise(true);
+	d_data->close->setIcon(vipIcon("close.png"));
+	d_data->close->setToolTip("Close");
+	d_data->close->setMaximumSize(18, 18);
 
-	m_data->restore->setAutoRaise(true);
-	m_data->restore->setIcon(vipIcon("restore.png"));
-	m_data->restore->setToolTip("Restore");
-	m_data->restore->setMaximumSize(18, 18);
-	m_data->restore->hide();
+	d_data->restore->setAutoRaise(true);
+	d_data->restore->setIcon(vipIcon("restore.png"));
+	d_data->restore->setToolTip("Restore");
+	d_data->restore->setMaximumSize(18, 18);
+	d_data->restore->hide();
 
-	m_data->maximize->setAutoRaise(true);
-	m_data->maximize->setIcon(vipIcon("maximize.png"));
-	m_data->maximize->setToolTip("Maximize");
-	m_data->maximize->setMaximumSize(18, 18);
-	m_data->maximize->hide();
+	d_data->maximize->setAutoRaise(true);
+	d_data->maximize->setIcon(vipIcon("maximize.png"));
+	d_data->maximize->setToolTip("Maximize");
+	d_data->maximize->setMaximumSize(18, 18);
+	d_data->maximize->hide();
 
 	QHBoxLayout* lay = new QHBoxLayout();
 	lay->addItem(new QSpacerItem(3, 3));
-	lay->addWidget(m_data->icon);
+	lay->addWidget(d_data->icon);
 	lay->addItem(new QSpacerItem(3, 3));
-	lay->addWidget(m_data->label);
-	lay->addWidget(m_data->bar);
+	lay->addWidget(d_data->label);
+	lay->addWidget(d_data->bar);
 	lay->addStretch(1);
-	lay->addWidget(m_data->restore);
-	lay->addWidget(m_data->maximize);
-	lay->addWidget(m_data->floating);
-	lay->addWidget(m_data->close);
+	lay->addWidget(d_data->restore);
+	lay->addWidget(d_data->maximize);
+	lay->addWidget(d_data->floating);
+	lay->addWidget(d_data->close);
 	lay->setSpacing(0);
 	lay->setContentsMargins(0, 3, 2, 3);
 	setLayout(lay);
 
-	m_data->label->setMaximumWidth(350);
-	m_data->label->setText(parent->windowTitle());
+	d_data->label->setMaximumWidth(350);
+	d_data->label->setText(parent->windowTitle());
 	QSize s = parent->windowIcon().actualSize(QSize(100, 100));
 	if (!s.isEmpty())
-		m_data->icon->setPixmap(parent->windowIcon().pixmap(s));
-	m_data->icon->setVisible(false); // !parent->windowIcon().isNull());
+		d_data->icon->setPixmap(parent->windowIcon().pixmap(s));
+	d_data->icon->setVisible(false); // !parent->windowIcon().isNull());
 
 	// this->setMaximumHeight(30);
 	this->setFocusPolicy(Qt::ClickFocus);
@@ -184,20 +184,19 @@ VipToolWidgetTitleBar::VipToolWidgetTitleBar(VipToolWidget* parent)
 	connect(parent, SIGNAL(windowTitleChanged(const QString&)), this, SLOT(updateTitleAndPosition()));
 	connect(parent, SIGNAL(windowIconChanged(const QIcon&)), this, SLOT(updateTitleAndPosition()));
 
-	connect(m_data->restore, SIGNAL(clicked(bool)), parent, SLOT(showNormal()));
-	connect(m_data->maximize, SIGNAL(clicked(bool)), parent, SLOT(floatWidget()));
-	connect(m_data->maximize, SIGNAL(clicked(bool)), parent, SLOT(showMaximized()));
-	connect(m_data->restore, SIGNAL(clicked(bool)), this, SLOT(updateTitleAndPosition()));
-	connect(m_data->maximize, SIGNAL(clicked(bool)), this, SLOT(updateTitleAndPosition()));
-	connect(m_data->floating, SIGNAL(clicked(bool)), parent, SLOT(setFloatingTool(bool)));
-	connect(m_data->close, SIGNAL(clicked(bool)), parent, SLOT(close()));
+	connect(d_data->restore, SIGNAL(clicked(bool)), parent, SLOT(showNormal()));
+	connect(d_data->maximize, SIGNAL(clicked(bool)), parent, SLOT(floatWidget()));
+	connect(d_data->maximize, SIGNAL(clicked(bool)), parent, SLOT(showMaximized()));
+	connect(d_data->restore, SIGNAL(clicked(bool)), this, SLOT(updateTitleAndPosition()));
+	connect(d_data->maximize, SIGNAL(clicked(bool)), this, SLOT(updateTitleAndPosition()));
+	connect(d_data->floating, SIGNAL(clicked(bool)), parent, SLOT(setFloatingTool(bool)));
+	connect(d_data->close, SIGNAL(clicked(bool)), parent, SLOT(close()));
 
 	// this->setMinimumHeight(30);
 }
 
 VipToolWidgetTitleBar::~VipToolWidgetTitleBar()
 {
-	delete m_data;
 }
 
 VipToolWidget* VipToolWidgetTitleBar::parent() const
@@ -207,99 +206,99 @@ VipToolWidget* VipToolWidgetTitleBar::parent() const
 
 QToolBar* VipToolWidgetTitleBar::toolBar() const
 {
-	return m_data->bar;
+	return d_data->bar;
 }
 
 QIcon VipToolWidgetTitleBar::closeButton() const
 {
-	return m_data->close->icon();
+	return d_data->close->icon();
 }
 
 QIcon VipToolWidgetTitleBar::floatButton() const
 {
-	return m_data->floating->icon();
+	return d_data->floating->icon();
 }
 
 QColor VipToolWidgetTitleBar::textColor() const
 {
-	return m_data->label->palette().color(QPalette::WindowText);
+	return d_data->label->palette().color(QPalette::WindowText);
 }
 
 QColor VipToolWidgetTitleBar::patternColor() const
 {
-	return m_data->patternColor;
+	return d_data->patternColor;
 }
 
 bool VipToolWidgetTitleBar::displayWindowIcon() const
 {
-	return m_data->displayWindowIcon;
+	return d_data->displayWindowIcon;
 }
 
 void VipToolWidgetTitleBar::setPatternColor(const QColor& c)
 {
-	m_data->patternColor = c;
+	d_data->patternColor = c;
 	update();
 }
 
 void VipToolWidgetTitleBar::setDisplayWindowIcon(bool enable)
 {
-	m_data->displayWindowIcon = enable;
+	d_data->displayWindowIcon = enable;
 #if QT_VERSION < QT_VERSION_CHECK(5, 15, 0)
-	const QPixmap pix = m_data->icon->pixmap() ? *m_data->icon->pixmap() : QPixmap();
+	const QPixmap pix = d_data->icon->pixmap() ? *d_data->icon->pixmap() : QPixmap();
 #else
-	const QPixmap pix = m_data->icon->pixmap(Qt::ReturnByValue);
+	const QPixmap pix = d_data->icon->pixmap(Qt::ReturnByValue);
 #endif
-	m_data->icon->setVisible(enable && !pix.isNull());
+	d_data->icon->setVisible(enable && !pix.isNull());
 }
 
 void VipToolWidgetTitleBar::VipToolWidgetTitleBar::setCloseButton(const QIcon& icon)
 {
-	m_data->close->setIcon(icon);
+	d_data->close->setIcon(icon);
 }
 
 void VipToolWidgetTitleBar::setFloatButton(const QIcon& icon)
 {
-	m_data->floating->setIcon(icon);
+	d_data->floating->setIcon(icon);
 }
 
 void VipToolWidgetTitleBar::setTextColor(const QColor& c)
 {
-	QPalette p = m_data->label->palette();
+	QPalette p = d_data->label->palette();
 	p.setColor(QPalette::WindowText, c);
-	m_data->label->setPalette(p);
+	d_data->label->setPalette(p);
 }
 
 QIcon VipToolWidgetTitleBar::maximizeButton() const
 {
-	return m_data->maximize->icon();
+	return d_data->maximize->icon();
 }
 QIcon VipToolWidgetTitleBar::restoreButton() const
 {
-	return m_data->restore->icon();
+	return d_data->restore->icon();
 }
 
 void VipToolWidgetTitleBar::setMaximizeButton(const QIcon& i)
 {
-	m_data->maximize->setIcon(i);
+	d_data->maximize->setIcon(i);
 }
 void VipToolWidgetTitleBar::setRestoreButton(const QIcon& i)
 {
-	m_data->restore->setIcon(i);
+	d_data->restore->setIcon(i);
 }
 
 void VipToolWidgetTitleBar::updateTitle()
 {
 	if (VipToolWidget* tool = parent()) {
-		QFontMetrics m(m_data->label->font());
+		QFontMetrics m(d_data->label->font());
 		int width = this->width();
 		// if (width < 200)
 		//	width = 200;
 		QString text = m.elidedText(tool->windowTitle(),
-					    Qt::ElideRight, // m_data->label->maximumWidth()
+					    Qt::ElideRight, // d_data->label->maximumWidth()
 					    width - 45);
 
-		m_data->label->setText(text);
-		m_data->label->setToolTip(tool->windowTitle());
+		d_data->label->setText(text);
+		d_data->label->setToolTip(tool->windowTitle());
 		this->setToolTip(tool->windowTitle());
 	}
 }
@@ -308,27 +307,27 @@ void VipToolWidgetTitleBar::updateTitleAndPosition()
 {
 	if (VipToolWidget* tool = parent()) {
 		updateTitle();
-		if (m_data->displayWindowIcon) {
+		if (d_data->displayWindowIcon) {
 			QSize s = tool->windowIcon().actualSize(QSize(100, 100));
 			if (!s.isEmpty())
-				m_data->icon->setPixmap(tool->windowIcon().pixmap(s));
-			m_data->icon->setVisible(!tool->windowIcon().isNull());
+				d_data->icon->setPixmap(tool->windowIcon().pixmap(s));
+			d_data->icon->setVisible(!tool->windowIcon().isNull());
 		}
 
-		m_data->floating->blockSignals(true);
-		m_data->floating->setChecked(tool->isFloating());
-		m_data->floating->blockSignals(false);
+		d_data->floating->blockSignals(true);
+		d_data->floating->setChecked(tool->isFloating());
+		d_data->floating->blockSignals(false);
 
-		m_data->close->setVisible(tool->features() & QDockWidget::DockWidgetClosable);
-		m_data->floating->setVisible(tool->features() & QDockWidget::DockWidgetFloatable);
+		d_data->close->setVisible(tool->features() & QDockWidget::DockWidgetClosable);
+		d_data->floating->setVisible(tool->features() & QDockWidget::DockWidgetFloatable);
 
 		if (!tool->keepFloatingUserSize()) {
-			m_data->maximize->hide();
-			m_data->restore->hide();
+			d_data->maximize->hide();
+			d_data->restore->hide();
 		}
 		else {
-			m_data->restore->setVisible(tool->isMaximized());
-			m_data->maximize->setVisible(!tool->isMaximized());
+			d_data->restore->setVisible(tool->isMaximized());
+			d_data->maximize->setVisible(!tool->isMaximized());
 		}
 	}
 }
@@ -341,20 +340,20 @@ void VipToolWidgetTitleBar::paintEvent(QPaintEvent*)
 	style()->drawPrimitive(QStyle::PE_Widget, &opt, &p, this);
 
 	QWidget* endw = nullptr;
-	if (m_data->restore->isVisible())
-		endw = m_data->restore;
-	else if (m_data->maximize->isVisible())
-		endw = m_data->maximize;
-	else if (m_data->floating->isVisible())
-		endw = m_data->floating;
+	if (d_data->restore->isVisible())
+		endw = d_data->restore;
+	else if (d_data->maximize->isVisible())
+		endw = d_data->maximize;
+	else if (d_data->floating->isVisible())
+		endw = d_data->floating;
 	else
-		endw = m_data->close;
+		endw = d_data->close;
 
-	int start = m_data->bar->mapToParent(QPoint(m_data->bar->width(), 0)).x() + 5;
+	int start = d_data->bar->mapToParent(QPoint(d_data->bar->width(), 0)).x() + 5;
 	int end = endw->pos().x() - 2;
 	int h = 8;
 
-	QBrush brush(m_data->patternColor, Qt::Dense6Pattern);
+	QBrush brush(d_data->patternColor, Qt::Dense6Pattern);
 	QRect area;
 	if (parent())
 		area = QRect(start, height() / 2 - h / 2, end - start, h);
@@ -383,6 +382,15 @@ void VipToolWidgetTitleBar::resizeEvent(QResizeEvent*)
 void VipToolWidgetScrollArea::resizeEvent(QResizeEvent* evt)
 {
 	QScrollArea::resizeEvent(evt);
+}
+
+bool VipToolWidgetScrollArea::floatingTool() const
+{
+	return static_cast<VipToolWidget*>(parentWidget())->isFloating();
+}
+void VipToolWidgetScrollArea::setFloatingTool(bool f)
+{
+	static_cast<VipToolWidget*>(parentWidget())->setFloating(f);
 }
 
 void VipToolWidgetToolBar::setEnabled(bool enable)
@@ -433,7 +441,7 @@ public:
 VipToolWidget::VipToolWidget(VipMainWindow* window)
   : QDockWidget(window)
 {
-	m_data = new PrivateData();
+	VIP_CREATE_PRIVATE_DATA(d_data);
 
 	this->setWindowFlags(this->windowFlags() | Qt::Tool | Qt::WindowStaysOnTopHint | Qt::CustomizeWindowHint);
 	this->setAttribute(Qt::WA_TranslucentBackground);
@@ -442,9 +450,9 @@ VipToolWidget::VipToolWidget(VipMainWindow* window)
 	this->setFloating(true);
 	this->setTitleBarWidget(new VipToolWidgetTitleBar(this));
 
-	m_data->scroll = new VipToolWidgetScrollArea();
-	m_data->scroll->setWidgetResizable(true);
-	QDockWidget::setWidget(m_data->scroll);
+	d_data->scroll = new VipToolWidgetScrollArea();
+	d_data->scroll->setWidgetResizable(true);
+	QDockWidget::setWidget(d_data->scroll);
 
 	connect(this, SIGNAL(topLevelChanged(bool)), this, SLOT(resetSize())); // , Qt::QueuedConnection);
 	connect(this, SIGNAL(topLevelChanged(bool)), this, SLOT(polish()));
@@ -458,7 +466,7 @@ VipToolWidget::VipToolWidget(VipMainWindow* window)
 	setStyleProperty("isFloating", isFloating());
 	setStyleProperty("hasHover", false);
 
-	m_data->resizer = new VipToolWidgetResizer(this);
+	d_data->resizer = new VipToolWidgetResizer(this);
 
 	this->setStyleSheet("VipToolWidget {border-radius: 3px;}");
 }
@@ -466,8 +474,6 @@ VipToolWidget::VipToolWidget(VipMainWindow* window)
 VipToolWidget::~VipToolWidget()
 {
 	QApplication::instance()->removeEventFilter(this);
-
-	delete m_data;
 }
 
 VipToolWidgetTitleBar* VipToolWidget::titleBarWidget() const
@@ -477,28 +483,28 @@ VipToolWidgetTitleBar* VipToolWidget::titleBarWidget() const
 
 void VipToolWidget::setWidget(QWidget* widget, Qt::Orientation)
 {
-	m_data->scroll->setWidget(widget);
+	d_data->scroll->setWidget(widget);
 	widget->show();
 }
 
 QWidget* VipToolWidget::widget() const
 {
-	return m_data->scroll->widget();
+	return d_data->scroll->widget();
 }
 
 QWidget* VipToolWidget::takeWidget()
 {
-	return m_data->scroll->takeWidget();
+	return d_data->scroll->takeWidget();
 }
 
 QScrollArea* VipToolWidget::scrollArea() const
 {
-	return m_data->scroll;
+	return d_data->scroll;
 }
 
 VipWidgetResizer* VipToolWidget::resizer() const
 {
-	return m_data->resizer;
+	return d_data->resizer;
 }
 
 void VipToolWidget::setEnableOpacityChange(bool enable)
@@ -506,12 +512,12 @@ void VipToolWidget::setEnableOpacityChange(bool enable)
 	if (!enable)
 		this->setWindowOpacity(1);
 
-	m_data->enableOpacityChange = enable;
+	d_data->enableOpacityChange = enable;
 }
 
 bool VipToolWidget::enableOpacityChange() const
 {
-	return m_data->enableOpacityChange;
+	return d_data->enableOpacityChange;
 }
 
 void VipToolWidget::setVisibleInternal(bool vis)
@@ -523,40 +529,40 @@ void VipToolWidget::setVisibleInternal(bool vis)
 
 void VipToolWidget::setAction(QAction* action)
 {
-	if (m_data->action) {
-		disconnect(m_data->action, SIGNAL(triggered(bool)), this, SLOT(setVisibleInternal(bool)));
+	if (d_data->action) {
+		disconnect(d_data->action, SIGNAL(triggered(bool)), this, SLOT(setVisibleInternal(bool)));
 	}
 
-	m_data->action = action;
+	d_data->action = action;
 	if (action) {
 		action->setObjectName(this->objectName());
 		action->setCheckable(true);
 		action->setChecked(this->isVisible());
-		connect(m_data->action, SIGNAL(triggered(bool)), this, SLOT(setVisibleInternal(bool)));
+		connect(d_data->action, SIGNAL(triggered(bool)), this, SLOT(setVisibleInternal(bool)));
 	}
 }
 
 QAction* VipToolWidget::action() const
 {
-	return m_data->action;
+	return d_data->action;
 }
 
 void VipToolWidget::setButton(QAbstractButton* button)
 {
-	if (m_data->button) {
-		disconnect(m_data->button, SIGNAL(clicked(bool)), this, SLOT(setVisible(bool)));
+	if (d_data->button) {
+		disconnect(d_data->button, SIGNAL(clicked(bool)), this, SLOT(setVisible(bool)));
 	}
 
-	m_data->button = button;
+	d_data->button = button;
 	if (button) {
 		button->setCheckable(true);
 		button->setChecked(this->isVisible());
-		connect(m_data->button, SIGNAL(clicked(bool)), this, SLOT(setVisible(bool)));
+		connect(d_data->button, SIGNAL(clicked(bool)), this, SLOT(setVisible(bool)));
 	}
 }
 QAbstractButton* VipToolWidget::button() const
 {
-	return m_data->button;
+	return d_data->button;
 }
 
 bool VipToolWidget::displayWindowIcon() const
@@ -571,13 +577,13 @@ void VipToolWidget::setDisplayWindowIcon(bool enable)
 
 void VipToolWidget::setKeepFloatingUserSize(bool enable)
 {
-	m_data->keepFloatingUserSize = enable;
+	d_data->keepFloatingUserSize = enable;
 	QMetaObject::invokeMethod(titleBarWidget(), "updateTitleAndPosition");
 }
 
 bool VipToolWidget::keepFloatingUserSize() const
 {
-	return m_data->keepFloatingUserSize;
+	return d_data->keepFloatingUserSize;
 }
 
 void VipToolWidget::raise()
@@ -596,20 +602,20 @@ void VipToolWidget::setStyleProperty(const char* name, bool value)
 {
 	bool this_current = this->property(name).value<bool>();
 	bool bar_current = this->titleBarWidget()->property(name).value<bool>();
-	bool scroll_current = m_data->scroll->property(name).value<bool>();
+	bool scroll_current = d_data->scroll->property(name).value<bool>();
 	if (this_current != value || bar_current != value || scroll_current != value) {
 
 		this->setProperty(name, value);
 		this->titleBarWidget()->setProperty(name, value);
-		m_data->scroll->setProperty(name, value);
+		d_data->scroll->setProperty(name, value);
 		polish();
 	}
 }
 
 QSize VipToolWidget::sizeHint() const
 {
-	if (m_data->size.isEmpty())
-		return m_data->size;
+	if (d_data->size.isEmpty())
+		return d_data->size;
 	else
 		return QDockWidget::sizeHint();
 }
@@ -617,7 +623,7 @@ QSize VipToolWidget::sizeHint() const
 void VipToolWidget::enterEvent(QEvent*)
 {
 	setStyleProperty("hasHover", true);
-	if (m_data->enableOpacityChange)
+	if (d_data->enableOpacityChange)
 		this->setWindowOpacity(1);
 	raise();
 }
@@ -625,7 +631,7 @@ void VipToolWidget::enterEvent(QEvent*)
 void VipToolWidget::leaveEvent(QEvent*)
 {
 	setStyleProperty("hasHover", false);
-	if (m_data->enableOpacityChange)
+	if (d_data->enableOpacityChange)
 		this->setWindowOpacity(0.7);
 }
 
@@ -668,15 +674,15 @@ void VipToolWidget::focusChanged(QWidget* // old
 
 void VipToolWidget::showEvent(QShowEvent*)
 {
-	if (m_data->action) {
-		m_data->action->blockSignals(true);
-		m_data->action->setChecked(true);
-		m_data->action->blockSignals(false);
+	if (d_data->action) {
+		d_data->action->blockSignals(true);
+		d_data->action->setChecked(true);
+		d_data->action->blockSignals(false);
 	}
-	if (m_data->button) {
-		m_data->button->blockSignals(true);
-		m_data->button->setChecked(true);
-		m_data->button->blockSignals(false);
+	if (d_data->button) {
+		d_data->button->blockSignals(true);
+		d_data->button->setChecked(true);
+		d_data->button->blockSignals(false);
 	}
 
 	// if the dock widget is tabified with other dock widgets, raise it to be sure it is set as the current tab
@@ -690,7 +696,7 @@ void VipToolWidget::showEvent(QShowEvent*)
 	setFocus();
 
 	// change screen if necessary
-	if (m_data->firstShow && isFloating()) {
+	if (d_data->firstShow && isFloating()) {
 #if QT_VERSION < QT_VERSION_CHECK(5, 15, 0)
 		int screen = qApp->desktop()->screenNumber(this);
 		int main_screen = qApp->desktop()->screenNumber(parentWidget());
@@ -710,21 +716,21 @@ void VipToolWidget::showEvent(QShowEvent*)
 			this->move(offset);
 		}
 	}
-	m_data->firstShow = false;
+	d_data->firstShow = false;
 }
 
 void VipToolWidget::hideEvent(QHideEvent*)
 {
 
-	if (m_data->action) {
-		m_data->action->blockSignals(true);
-		m_data->action->setChecked(false);
-		m_data->action->blockSignals(false);
+	if (d_data->action) {
+		d_data->action->blockSignals(true);
+		d_data->action->setChecked(false);
+		d_data->action->blockSignals(false);
 	}
-	if (m_data->button) {
-		m_data->button->blockSignals(true);
-		m_data->button->setChecked(false);
-		m_data->button->blockSignals(false);
+	if (d_data->button) {
+		d_data->button->blockSignals(true);
+		d_data->button->setChecked(false);
+		d_data->button->blockSignals(false);
 	}
 }
 
@@ -738,23 +744,23 @@ void VipToolWidget::floatingChanged(bool)
 
 void VipToolWidget::resetSize()
 {
-	if (!m_data->resetSizeRequest && isVisible()) {
-		m_data->resetSizeRequest = true;
+	if (!d_data->resetSizeRequest && isVisible()) {
+		d_data->resetSizeRequest = true;
 		QMetaObject::invokeMethod(this, "internalResetSize", Qt::QueuedConnection);
 	}
 }
 
 void VipToolWidget::internalResetSize()
 {
-	m_data->resetSizeRequest = false;
+	d_data->resetSizeRequest = false;
 
 	// if(isFloating())
 	//  {
-	//  m_data->scroll->setFrameShape(QFrame::StyledPanel);
+	//  d_data->scroll->setFrameShape(QFrame::StyledPanel);
 	//  }
 	//  else
 	//  {
-	//  m_data->scroll->setFrameShape(QFrame::NoFrame);
+	//  d_data->scroll->setFrameShape(QFrame::NoFrame);
 	//  }
 
 	if (QWidget* w = widget()) {
@@ -777,13 +783,13 @@ void VipToolWidget::internalResetSize()
 				w->resize(w->sizeHint());
 				QSize s = this_rect.size();
 				resize(s + QSize(0, titleBarWidget()->sizeHint().height()));
-				m_data->size = s;
+				d_data->size = s;
 			}
 			raise();
 		}
 		else {
 			w->resize(scrollArea()->size());
-			// m_data->size = QSize();
+			// d_data->size = QSize();
 			//  Qt::DockWidgetArea area = vipGetMainWindow()->dockWidgetArea(this);
 			//  if( (area & Qt::LeftDockWidgetArea) || (area & Qt::RightDockWidgetArea) )
 			//  resize(width(), qMax(height(),this_rect.height()));
@@ -843,14 +849,14 @@ void VipToolWidget::polish()
 			status = 3; // floating
 	}
 	this->setProperty("status", status);
-	m_data->scroll->setProperty("status", status);
+	d_data->scroll->setProperty("status", status);
 	titleBarWidget()->setProperty("status", status);
 	// vip_debug("set %s: %i\n", this->windowTitle().toLatin1().data(), status);
 
 	this->style()->unpolish(this);
 	this->style()->polish(this);
-	m_data->scroll->style()->unpolish(m_data->scroll);
-	m_data->scroll->style()->polish(m_data->scroll);
+	d_data->scroll->style()->unpolish(d_data->scroll);
+	d_data->scroll->style()->polish(d_data->scroll);
 	titleBarWidget()->style()->unpolish(titleBarWidget());
 	titleBarWidget()->style()->polish(titleBarWidget());
 	this->update();
@@ -996,7 +1002,7 @@ public:
 VipPlotToolWidgetPlayer::VipPlotToolWidgetPlayer(VipMainWindow* window)
   : VipToolWidgetPlayer(window)
 {
-	m_data = new PrivateData();
+	VIP_CREATE_PRIVATE_DATA(d_data);
 	this->setEnableOpacityChange(true);
 	this->setFeatures(QDockWidget::DockWidgetClosable | QDockWidget::DockWidgetMovable | QDockWidget::DockWidgetFloatable);
 	this->setAllowedAreas(Qt::NoDockWidgetArea);
@@ -1005,27 +1011,26 @@ VipPlotToolWidgetPlayer::VipPlotToolWidgetPlayer(VipMainWindow* window)
 
 VipPlotToolWidgetPlayer::~VipPlotToolWidgetPlayer()
 {
-	if (m_data->scene)
-		m_data->scene->removeEventFilter(this);
-	delete m_data;
+	if (d_data->scene)
+		d_data->scene->removeEventFilter(this);
 }
 
 bool VipPlotToolWidgetPlayer::setPlayer(VipAbstractPlayer* pl)
 {
-	if (pl == m_data->player)
+	if (pl == d_data->player)
 		return pl;
-	m_data->player = pl;
+	d_data->player = pl;
 
-	if (m_data->scene)
-		m_data->scene->removeEventFilter(this);
-	m_data->scene = nullptr;
+	if (d_data->scene)
+		d_data->scene->removeEventFilter(this);
+	d_data->scene = nullptr;
 
 	if (!pl)
 		return false;
 
-	m_data->scene = pl->plotWidget2D() ? pl->plotWidget2D()->scene() : nullptr;
-	if (m_data->scene)
-		m_data->scene->installEventFilter(this);
+	d_data->scene = pl->plotWidget2D() ? pl->plotWidget2D()->scene() : nullptr;
+	if (d_data->scene)
+		d_data->scene->installEventFilter(this);
 
 	if (QWidget* w = vipObjectEditor(QVariant::fromValue(pl))) {
 		// we need to reset the internal widget, otherwise the new size won't be correct
@@ -1087,7 +1092,7 @@ bool VipPlotToolWidgetPlayer::eventFilter(QObject*, QEvent* evt)
 	if (evt->type() == QEvent::GraphicsSceneMouseDoubleClick) {
 
 		// set the default player's items if needed
-		if (VipPlayer2D* pl = qobject_cast<VipPlayer2D*>(m_data->player)) {
+		if (VipPlayer2D* pl = qobject_cast<VipPlayer2D*>(d_data->player)) {
 			QList<QGraphicsItem*> items = pl->plotWidget2D()->scene()->selectedItems();
 			if (items.isEmpty()) {
 				if (QGraphicsObject* obj = pl->defaultEditableObject()) {
@@ -1213,29 +1218,29 @@ VipMultiProgressWidget::VipMultiProgressWidget(VipMainWindow* window)
 	setWindowTitle("Operations");
 	setObjectName("Operations");
 
-	m_data = new PrivateData();
-	m_data->status.setText("No operation to display at this time");
+	VIP_CREATE_PRIVATE_DATA(d_data);
+	d_data->status.setText("No operation to display at this time");
 
-	m_data->modalTimer.setSingleShot(true);
-	m_data->modalTimer.setInterval(100);
-	m_data->changeModality = false;
+	d_data->modalTimer.setSingleShot(true);
+	d_data->modalTimer.setInterval(100);
+	d_data->changeModality = false;
 
-	connect(&m_data->modalTimer, SIGNAL(timeout()), this, SLOT(updateModality()), Qt::QueuedConnection);
+	connect(&d_data->modalTimer, SIGNAL(timeout()), this, SLOT(updateModality()), Qt::QueuedConnection);
 
 	QVBoxLayout* lay = new QVBoxLayout();
-	lay->addWidget(&m_data->status);
+	lay->addWidget(&d_data->status);
 	lay->setSpacing(2);
 
 	QWidget* w = new QWidget();
 	w->setLayout(lay);
 	this->setWidget(w);
-	m_data->layout = lay;
+	d_data->layout = lay;
 	// this->setMinimumWidth(300);
 	this->resize(300, 100);
 
-	m_data->reuse.append(new ProgressWidget(nullptr, this));
-	m_data->layout->addWidget(m_data->reuse.last());
-	m_data->reuse.last()->hide();
+	d_data->reuse.append(new ProgressWidget(nullptr, this));
+	d_data->layout->addWidget(d_data->reuse.last());
+	d_data->reuse.last()->hide();
 
 	VipProgress::setProgressManager(this);
 
@@ -1254,18 +1259,17 @@ VipMultiProgressWidget::~VipMultiProgressWidget()
 	changeModality(Qt::NonModal);
 	this->disconnect();
 	vipProcessEvents();
-	delete m_data;
 }
 
 QMultiMap<QString, int> VipMultiProgressWidget::currentProgresses() const
 {
 	QMultiMap<QString, int> res;
-	for (int i = 0; i < m_data->progresses.size(); ++i) {
-		if (m_data->progresses[i]->isVisible()) {
+	for (int i = 0; i < d_data->progresses.size(); ++i) {
+		if (d_data->progresses[i]->isVisible()) {
 			int value = -1;
-			if (m_data->progresses[i]->progressBar.isVisible())
-				value = m_data->progresses[i]->progressBar.value();
-			QString text = m_data->progresses[i]->text.text();
+			if (d_data->progresses[i]->progressBar.isVisible())
+				value = d_data->progresses[i]->progressBar.value();
+			QString text = d_data->progresses[i]->text.text();
 			res.insert(text, value);
 		}
 	}
@@ -1291,7 +1295,7 @@ void VipMultiProgressWidget::showEvent(QShowEvent* evt)
 		this->move(rect.x() + rect.width() / 2 - this->width() / 2, rect.y() + rect.height() / 2 - this->height() / 2);
 	}
 
-	if (m_data->changeModality) {
+	if (d_data->changeModality) {
 		QDockWidget::showEvent(evt);
 		setFocus();
 	}
@@ -1302,10 +1306,10 @@ void VipMultiProgressWidget::showEvent(QShowEvent* evt)
 void VipMultiProgressWidget::changeModality(Qt::WindowModality modality)
 {
 	this->hide();
-	m_data->changeModality = true;
+	d_data->changeModality = true;
 	this->setWindowModality(modality);
 	this->show();
-	m_data->changeModality = false;
+	d_data->changeModality = false;
 
 	// TEST: comment
 	// if(modality != Qt::NonModal)
@@ -1320,7 +1324,7 @@ void VipMultiProgressWidget::updateScrollBars()
 
 void VipMultiProgressWidget::updateModality()
 {
-	if (!m_data->modalWidgets.size()) {
+	if (!d_data->modalWidgets.size()) {
 		// remove modal attribute
 		changeModality(Qt::NonModal);
 	}
@@ -1328,7 +1332,7 @@ void VipMultiProgressWidget::updateModality()
 		// try to set modal attribute
 		if (QApplication::activeModalWidget() && QApplication::activeModalWidget() != this) {
 			// there is already a modal widget: do not set modal attribute, try later
-			m_data->modalTimer.start();
+			d_data->modalTimer.start();
 		}
 		else {
 			changeModality(Qt::ApplicationModal);
@@ -1340,12 +1344,12 @@ void VipMultiProgressWidget::cancelRequested()
 {
 	// make sure to cancel all sub operations
 	bool start_cancel = false;
-	for (int i = 0; i < m_data->progresses.size(); ++i) {
+	for (int i = 0; i < d_data->progresses.size(); ++i) {
 		if (start_cancel) {
-			if (m_data->progresses[i]->progress)
-				m_data->progresses[i]->progress->cancelRequested();
+			if (d_data->progresses[i]->progress)
+				d_data->progresses[i]->progress->cancelRequested();
 		}
-		else if (sender() == &m_data->progresses[i]->cancel) {
+		else if (sender() == &d_data->progresses[i]->cancel) {
 			start_cancel = true;
 		}
 	}
@@ -1354,20 +1358,20 @@ void VipMultiProgressWidget::cancelRequested()
 void VipMultiProgressWidget::addProgress(QObjectPointer ptr)
 {
 	if (VipProgress* p = qobject_cast<VipProgress*>(ptr.data())) {
-		ProgressWidget* w = m_data->reuse.size() ? m_data->reuse.first() : new ProgressWidget(p, this);
+		ProgressWidget* w = d_data->reuse.size() ? d_data->reuse.first() : new ProgressWidget(p, this);
 		w->setProgress(p);
 
-		if (m_data->reuse.size())
-			m_data->reuse.removeAt(0);
+		if (d_data->reuse.size())
+			d_data->reuse.removeAt(0);
 		else
-			m_data->layout->addWidget(w);
+			d_data->layout->addWidget(w);
 
-		m_data->status.hide();
-		m_data->progresses.append(w);
-		m_data->progresses.back()->progressBar.setRange(p->min(), p->max());
-		m_data->progresses.back()->text.setText(p->text());
+		d_data->status.hide();
+		d_data->progresses.append(w);
+		d_data->progresses.back()->progressBar.setRange(p->min(), p->max());
+		d_data->progresses.back()->text.setText(p->text());
 
-		m_data->progresses.back()->show();
+		d_data->progresses.back()->show();
 		this->show();
 		this->resetSize();
 	}
@@ -1378,17 +1382,17 @@ void VipMultiProgressWidget::removeProgress(QObjectPointer ptr)
 	VipProgress* p = qobject_cast<VipProgress*>(ptr.data());
 
 	// remove all invalid progress bar
-	for (int i = 0; i < m_data->progresses.size(); ++i) {
-		ProgressWidget* w = m_data->progresses[i];
+	for (int i = 0; i < d_data->progresses.size(); ++i) {
+		ProgressWidget* w = d_data->progresses[i];
 		if (w->progress == p || !w->progress) {
-			m_data->modalWidgets.remove(w);
-			m_data->progresses.removeAt(i);
+			d_data->modalWidgets.remove(w);
+			d_data->progresses.removeAt(i);
 			w->progressBar.hide();
 			w->progressBar.setValue(0);
 			w->text.setText(QString());
 
-			if (m_data->reuse.indexOf(w) < 0)
-				m_data->reuse.append(w);
+			if (d_data->reuse.indexOf(w) < 0)
+				d_data->reuse.append(w);
 			w->hide();
 
 			i--;
@@ -1396,12 +1400,12 @@ void VipMultiProgressWidget::removeProgress(QObjectPointer ptr)
 	}
 
 	// update status text visibility
-	m_data->status.setVisible(m_data->progresses.size() == 0);
+	d_data->status.setVisible(d_data->progresses.size() == 0);
 
 	// update this window modality
 	updateModality();
 
-	if (m_data->progresses.size() == 0) {
+	if (d_data->progresses.size() == 0) {
 #ifdef _WIN32
 		this->hide();
 #else
@@ -1417,7 +1421,7 @@ void VipMultiProgressWidget::removeProgress(QObjectPointer ptr)
 void VipMultiProgressWidget::setText(QObjectPointer ptr, const QString& text)
 {
 	if (VipProgress* p = qobject_cast<VipProgress*>(ptr.data())) {
-		if (ProgressWidget* w = m_data->find(p)) {
+		if (ProgressWidget* w = d_data->find(p)) {
 			bool reset_size = p->isModal();
 			if (text.size() && w->text.isHidden()) {
 				reset_size = true;
@@ -1437,7 +1441,7 @@ void VipMultiProgressWidget::setText(QObjectPointer ptr, const QString& text)
 void VipMultiProgressWidget::setValue(QObjectPointer ptr, int value)
 {
 	if (VipProgress* p = qobject_cast<VipProgress*>(ptr.data())) {
-		if (ProgressWidget* w = m_data->find(p)) {
+		if (ProgressWidget* w = d_data->find(p)) {
 			if (w->progressBar.isHidden()) {
 				w->setProgressBarVisible(true);
 				this->resetSize();
@@ -1453,7 +1457,7 @@ void VipMultiProgressWidget::setValue(QObjectPointer ptr, int value)
 void VipMultiProgressWidget::setCancelable(QObjectPointer ptr, bool cancelable)
 {
 	if (VipProgress* p = qobject_cast<VipProgress*>(ptr.data())) {
-		if (ProgressWidget* w = m_data->find(p))
+		if (ProgressWidget* w = d_data->find(p))
 			w->cancel.setVisible(cancelable);
 	}
 }
@@ -1461,10 +1465,10 @@ void VipMultiProgressWidget::setCancelable(QObjectPointer ptr, bool cancelable)
 void VipMultiProgressWidget::setModal(QObjectPointer ptr, bool modal)
 {
 	if (VipProgress* p = qobject_cast<VipProgress*>(ptr.data())) {
-		if (ProgressWidget* w = m_data->find(p)) {
+		if (ProgressWidget* w = d_data->find(p)) {
 			// set modal
-			if (modal && !m_data->modalWidgets.contains(w)) {
-				m_data->modalWidgets.insert(w);
+			if (modal && !d_data->modalWidgets.contains(w)) {
+				d_data->modalWidgets.insert(w);
 				updateModality();
 
 				// center the widget inside its parent (if any)
@@ -1506,8 +1510,8 @@ void VipMultiProgressWidget::setModal(QObjectPointer ptr, bool modal)
 					this->move(rect.x() + rect.width() / 2 - this->width() / 2, rect.y() + rect.height() / 2 - this->height() / 2);
 				}
 			}
-			else if (!modal && m_data->modalWidgets.contains(w)) {
-				m_data->modalWidgets.remove(w);
+			else if (!modal && d_data->modalWidgets.contains(w)) {
+				d_data->modalWidgets.remove(w);
 				updateModality();
 			}
 		}

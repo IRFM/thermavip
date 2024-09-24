@@ -160,8 +160,8 @@ protected:
 
 private:
 	void computeNodeList();
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 /// Basic XML output archive used to write into a QDomNode

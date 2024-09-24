@@ -2077,7 +2077,7 @@ PyLocal::PyLocal(QObject * parent)
 {
 	//init python
 	PythonInit::instance();
-	d_data = new PrivateData();
+	VIP_CREATE_PRIVATE_DATA(d_data);
 
 	GIL_Locker lock;
 	PyObject * __main__ = PyImport_ImportModule("__main__");
@@ -2135,7 +2135,6 @@ PyLocal::~PyLocal()
 	pylocal_instances.removeOne(this);
 
 	stop(true);
-	delete d_data;
 }
 
 bool PyLocal::isWaitingForInput() const
@@ -2614,7 +2613,7 @@ PyOptions::PyOptions(QObject * parent)
 	:PyIOOperation(parent)
 {
 
-	d_data = new PrivateData();
+	VIP_CREATE_PRIVATE_DATA(d_data);
 
 	//TEST
 	//d_data->type = Distant;
@@ -2624,7 +2623,6 @@ PyOptions::PyOptions(QObject * parent)
 PyOptions::~PyOptions()
 {
 	clear();
-	delete d_data;
 }
 
 void PyOptions::setPyType(PyType type)

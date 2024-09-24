@@ -452,8 +452,8 @@ private:
 	VipNDDoubleCoordinate readValue(bool* ok = nullptr) const;
 	void applyStyle();
 	void applyFormat();
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 class QSlider;
@@ -961,8 +961,8 @@ private Q_SLOTS:
 	void delayCompute();
 
 private:
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 /// A \a QToolButton used to modify a time scale unit, based on a \a VipValueToTime object.
@@ -1022,8 +1022,8 @@ protected:
 	virtual void mouseMoveEvent(QMouseEvent* evt);
 
 private:
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 /// \class VipGenericDialog
@@ -1038,8 +1038,8 @@ public:
 	QPushButton* applyButton();
 
 private:
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 /// A QMenu whose actions might be dragable.
@@ -1074,8 +1074,8 @@ protected:
 	virtual void resizeEvent(QResizeEvent* evt);
 
 private:
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 Q_DECLARE_METATYPE(QMimeData*)
@@ -1118,8 +1118,8 @@ private Q_SLOTS:
 	void resetStart();
 
 private:
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 #include "VipFunctional.h"

@@ -173,8 +173,8 @@ private:
 	/// Returns all plugins in given directory
 	static QStringList pluginsInDir(const QString directory);
 
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 /// @}

@@ -188,8 +188,8 @@ private:
 	// number of log entries in the buffer
 	int logCount();
 
-	class PrivateData;
-	PrivateData* d_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 Q_DECLARE_OPERATORS_FOR_FLAGS(VipLogging::Outputs)

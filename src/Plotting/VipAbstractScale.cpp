@@ -123,13 +123,12 @@ VipBoxGraphicsWidget::VipBoxGraphicsWidget(QGraphicsItem* parent)
   , VipPaintItem(this)
   , VipRenderObject(this)
 {
-	d_data = new PrivateData();
+	VIP_CREATE_PRIVATE_DATA(d_data);
 	this->setAcceptHoverEvents(true);
 }
 
 VipBoxGraphicsWidget::~VipBoxGraphicsWidget()
 {
-	delete d_data;
 }
 
 VipBoxStyle& VipBoxGraphicsWidget::boxStyle()
@@ -373,7 +372,7 @@ public:
 VipAbstractScale::VipAbstractScale(QGraphicsItem* parent)
   : VipBoxGraphicsWidget(parent)
 {
-	d_data = new PrivateData();
+	VIP_CREATE_PRIVATE_DATA(d_data);
 
 	this->setFlag(QGraphicsItem::ItemIsSelectable);
 
@@ -393,7 +392,6 @@ VipAbstractScale::~VipAbstractScale()
 {
 	// remove synchronized items
 	desynchronize();
-	delete d_data;
 }
 
 VipInterval VipAbstractScale::itemsInterval() const
@@ -1459,7 +1457,7 @@ public:
 VipScaleWidget::VipScaleWidget(VipAbstractScale* scale, QWidget* parent)
   : QGraphicsView(parent)
 {
-	d_data = new PrivateData();
+	VIP_CREATE_PRIVATE_DATA(d_data);
 	d_data->scale = nullptr;
 	d_data->enableRecomputeGeometry = true;
 
@@ -1479,7 +1477,6 @@ VipScaleWidget::VipScaleWidget(VipAbstractScale* scale, QWidget* parent)
 
 VipScaleWidget::~VipScaleWidget()
 {
-	delete d_data;
 }
 
 QColor VipScaleWidget::backgroundColor() const

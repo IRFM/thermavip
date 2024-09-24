@@ -77,14 +77,14 @@ public:
 VipSequentialGenerator::VipSequentialGenerator(QObject* parent)
   : VipIODevice(parent)
 {
-	d_data = new PrivateData(this);
+	VIP_CREATE_PRIVATE_DATA(d_data,this);
 	propertyAt(0)->setData(0.01);
 }
 
 VipSequentialGenerator::VipSequentialGenerator(const generator_function& fun, double sampling, QObject* parent)
   : VipIODevice(parent)
 {
-	d_data = new PrivateData(this);
+	VIP_CREATE_PRIVATE_DATA(d_data,this);
 	propertyAt(0)->setData(sampling);
 	setGeneratorFunction(fun);
 }
@@ -93,7 +93,6 @@ VipSequentialGenerator::~VipSequentialGenerator()
 {
 	d_data->stop = true;
 	d_data->wait();
-	delete d_data;
 }
 
 bool VipSequentialGenerator::open(VipIODevice::OpenModes modes)

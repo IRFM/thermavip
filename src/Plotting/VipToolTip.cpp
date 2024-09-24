@@ -96,12 +96,11 @@ struct VipToolTip::PrivateData
 VipToolTip::VipToolTip(QObject* parent)
   : QObject(parent)
 {
-	d_data = new PrivateData();
+	VIP_CREATE_PRIVATE_DATA(d_data);
 }
 
 VipToolTip::~VipToolTip()
 {
-	delete d_data;
 }
 
 void VipToolTip::setMargins(const QMargins& m)

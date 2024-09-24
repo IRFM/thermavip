@@ -126,8 +126,8 @@ public Q_SLOTS:
 	void RestartInterpreter();
 
 private:
-	class PrivateData;
-	PrivateData * m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 PYTHON_EXPORT PyInterpreterToolWidget * pyGetPythonInterpreter();

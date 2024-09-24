@@ -80,17 +80,16 @@ public:
 
 VipIconProvider::VipIconProvider()
 {
-	m_data = new PrivateData();
+	VIP_CREATE_PRIVATE_DATA(d_data);
 }
 
 VipIconProvider::~VipIconProvider()
 {
-	delete m_data;
 }
 
 QFileIconProvider* VipIconProvider::provider() const
 {
-	return &m_data->provider;
+	return &d_data->provider;
 }
 
 static bool checkIconValid(const QIcon& icon)
@@ -114,18 +113,18 @@ static bool checkIconValid(const QIcon& icon)
 
 QIcon VipIconProvider::iconPath(const VipPath& path) const
 {
-	QIcon ic = m_data->provider.icon(QFileInfo(path.canonicalPath()));
+	QIcon ic = d_data->provider.icon(QFileInfo(path.canonicalPath()));
 	if (ic.isNull()) //! checkIconValid(ic))
 	{
 		if (path.isDir()) {
-			if (m_data->dirIcon.isNull())
-				const_cast<QIcon&>(m_data->dirIcon) = m_data->provider.icon(QCoreApplication::applicationDirPath());
-			return m_data->dirIcon;
+			if (d_data->dirIcon.isNull())
+				const_cast<QIcon&>(d_data->dirIcon) = d_data->provider.icon(QCoreApplication::applicationDirPath());
+			return d_data->dirIcon;
 		}
 		else {
 			QString suffix = QFileInfo(path.canonicalPath()).suffix();
-			QMap<QString, QIcon>::const_iterator it = m_data->fileIcons.find(suffix);
-			if (it != m_data->fileIcons.end())
+			QMap<QString, QIcon>::const_iterator it = d_data->fileIcons.find(suffix);
+			if (it != d_data->fileIcons.end())
 				return it.value();
 			else {
 				// create the file icon if it does  not exist
@@ -134,10 +133,10 @@ QIcon VipIconProvider::iconPath(const VipPath& path) const
 					QFile file(dir.path() + "/" + QFileInfo(path.canonicalPath()).fileName());
 					if (file.open(QFile::WriteOnly)) {
 						file.close();
-						QIcon new_icon = m_data->provider.icon(QFileInfo(file.fileName()));
+						QIcon new_icon = d_data->provider.icon(QFileInfo(file.fileName()));
 						if (!new_icon.isNull()) {
 							new_icon = QIcon(new_icon.pixmap(30, 30));
-							const_cast<QMap<QString, QIcon>&>(m_data->fileIcons)[suffix] = new_icon;
+							const_cast<QMap<QString, QIcon>&>(d_data->fileIcons)[suffix] = new_icon;
 							return new_icon;
 						}
 					}
@@ -652,8 +651,8 @@ public:
 VipMapFileSystemTree::VipMapFileSystemTree(QWidget* parent)
   : QTreeWidget(parent)
 {
-	m_data = new PrivateData();
-	m_data->update = new VipMapFileSystemTreeUpdate(this);
+	VIP_CREATE_PRIVATE_DATA(d_data);
+	d_data->update = new VipMapFileSystemTreeUpdate(this);
 
 	this->setSortingEnabled(true);
 	this->sortByColumn(0, Qt::AscendingOrder);
@@ -665,32 +664,31 @@ VipMapFileSystemTree::VipMapFileSystemTree(QWidget* parent)
 
 	connect(this, SIGNAL(itemExpanded(QTreeWidgetItem*)), this, SLOT(itemExpanded(QTreeWidgetItem*)));
 
-	m_data->update->start();
+	d_data->update->start();
 }
 
 VipMapFileSystemTree::~VipMapFileSystemTree()
 {
-	m_data->update->tree = nullptr;
-	m_data->update->wait();
+	d_data->update->tree = nullptr;
+	d_data->update->wait();
 	// clear before deleting the thread
 	clear();
-	delete m_data->update;
-	delete m_data;
+	delete d_data->update;
 }
 
 void VipMapFileSystemTree::setMapFileSystem(VipMapFileSystemPtr map)
 {
-	if (map != m_data->map) {
+	if (map != d_data->map) {
 
-		m_data->map = map;
+		d_data->map = map;
 		clear();
 
-		if (m_data->map) {
+		if (d_data->map) {
 			// set the headers based on the VipMapFileSystem standard attributes
 			setHeaderLabels((QStringList() << "Name") + map->standardAttributes());
 			this->setColumnWidth(0, 200);
 
-			// setSupportedOperations(m_data->operations & map->supportedOperations());
+			// setSupportedOperations(d_data->operations & map->supportedOperations());
 			if (!(map->supportedOperations() & VipMapFileSystem::OpenWrite) || !(map->supportedOperations() & VipMapFileSystem::Rename) ||
 			    !(map->supportedOperations() & VipMapFileSystem::CopyFile))
 				setSupportedOperations(Operations());
@@ -700,42 +698,42 @@ void VipMapFileSystemTree::setMapFileSystem(VipMapFileSystemPtr map)
 
 VipMapFileSystemPtr VipMapFileSystemTree::mapFileSystem() const
 {
-	return m_data->map;
+	return d_data->map;
 }
 
 void VipMapFileSystemTree::setSupportedOperations(VipMapFileSystemTree::Operations op)
 {
-	m_data->operations = op;
+	d_data->operations = op;
 }
 
 void VipMapFileSystemTree::setSupportedOperation(Operation op, bool on)
 {
-	if (m_data->operations.testFlag(op) != on) {
+	if (d_data->operations.testFlag(op) != on) {
 		if (on)
-			m_data->operations |= op;
+			d_data->operations |= op;
 		else
-			m_data->operations &= ~op;
+			d_data->operations &= ~op;
 	}
 }
 
 VipMapFileSystemTree::Operations VipMapFileSystemTree::supportedOperations() const
 {
-	return m_data->operations;
+	return d_data->operations;
 }
 
 bool VipMapFileSystemTree::testOperation(Operation op) const
 {
-	return m_data->operations.testFlag(op);
+	return d_data->operations.testFlag(op);
 }
 
 void VipMapFileSystemTree::setEnableOverwrite(bool enable)
 {
-	m_data->enableOverwrite = enable;
+	d_data->enableOverwrite = enable;
 }
 
 bool VipMapFileSystemTree::enableOverwrite() const
 {
-	return m_data->enableOverwrite;
+	return d_data->enableOverwrite;
 }
 
 VipPath VipMapFileSystemTree::pathForItem(QTreeWidgetItem* item) const
@@ -746,7 +744,7 @@ VipPath VipMapFileSystemTree::pathForItem(QTreeWidgetItem* item) const
 // QList<QTreeWidgetItem *> VipMapFileSystemTree::itemsForPath(const VipPath & path, ItemType type)
 //  {
 //  typedef QMultiMap<QString, VipMapFileSystemTreeItem*>::iterator iterator;
-//  QPair<iterator, iterator> range = m_data->items.equal_range(path.canonicalPath());
+//  QPair<iterator, iterator> range = d_data->items.equal_range(path.canonicalPath());
 //
 //  QList<QTreeWidgetItem *> res;
 //  for (iterator it = range.first; it != range.second; ++it)
@@ -834,7 +832,7 @@ QTreeWidgetItem* VipMapFileSystemTree::internalItemForPath(QTreeWidgetItem* root
 
 QList<QTreeWidgetItem*> VipMapFileSystemTree::itemsForPath(const VipPath& path, ItemType type)
 {
-	if (!m_data->map)
+	if (!d_data->map)
 		return QList<QTreeWidgetItem*>();
 
 	// Check if this is a top level custom item
@@ -845,7 +843,7 @@ QList<QTreeWidgetItem*> VipMapFileSystemTree::itemsForPath(const VipPath& path, 
 	}
 
 	// Check if given path exists
-	if (!m_data->map->exists(path) && !m_data->map->hasError())
+	if (!d_data->map->exists(path) && !d_data->map->hasError())
 		return QList<QTreeWidgetItem*>();
 
 	QList<QTreeWidgetItem*> res;
@@ -900,8 +898,8 @@ QList<QTreeWidgetItem*> VipMapFileSystemTree::itemsForPath(const VipPath& path, 
 
 QTreeWidgetItem* VipMapFileSystemTree::addTopLevelPath(const VipPath& path)
 {
-	if (m_data->map) {
-		if (m_data->map->exists(path) || path.isEmpty()) {
+	if (d_data->map) {
+		if (d_data->map->exists(path) || path.isEmpty()) {
 			VipMapFileSystemTreeItem* item;
 			if (path.isDir())
 				item = new VipMapFileSystemTreeDirItem(path, this);
@@ -1005,7 +1003,7 @@ bool VipMapFileSystemTree::move(const VipPathList& paths, const VipPath& dst_fol
 		progress.setValue(count);
 	}
 
-	m_data->update->triggerUpdate();
+	d_data->update->triggerUpdate();
 	return true;
 }
 
@@ -1074,7 +1072,7 @@ bool VipMapFileSystemTree::copy(const VipPathList& paths, const VipPath& dst_fol
 		progress.setValue(count);
 	}
 
-	m_data->update->triggerUpdate();
+	d_data->update->triggerUpdate();
 	return true;
 }
 
@@ -1144,7 +1142,7 @@ bool VipMapFileSystemTree::remove(const VipPathList& _paths)
 
 		progress.setValue(count);
 	}
-	m_data->update->triggerUpdate();
+	d_data->update->triggerUpdate();
 	return true;
 }
 
@@ -1153,8 +1151,8 @@ bool VipMapFileSystemTree::copy(const VipPathList& paths)
 	if (!testOperation(Copy) || !mapFileSystem())
 		return false;
 
-	m_data->clipboard = paths;
-	m_data->operation = PrivateData::Copy;
+	d_data->clipboard = paths;
+	d_data->operation = PrivateData::Copy;
 	return true;
 }
 
@@ -1163,8 +1161,8 @@ bool VipMapFileSystemTree::cut(const VipPathList& paths)
 	if (!testOperation(Move) || !mapFileSystem())
 		return false;
 
-	m_data->clipboard = paths;
-	m_data->operation = PrivateData::Cut;
+	d_data->clipboard = paths;
+	d_data->operation = PrivateData::Cut;
 	return true;
 }
 
@@ -1173,12 +1171,12 @@ bool VipMapFileSystemTree::paste(const VipPath& dst_folder)
 	if (!mapFileSystem())
 		return false;
 
-	if (m_data->clipboard.size()) {
-		if (m_data->operation == PrivateData::Copy)
-			return copy(m_data->clipboard, dst_folder);
+	if (d_data->clipboard.size()) {
+		if (d_data->operation == PrivateData::Copy)
+			return copy(d_data->clipboard, dst_folder);
 		else {
-			VipPathList tmp = m_data->clipboard;
-			m_data->clipboard.clear();
+			VipPathList tmp = d_data->clipboard;
+			d_data->clipboard.clear();
 			return move(tmp, dst_folder);
 		}
 	}
@@ -1238,16 +1236,16 @@ void VipMapFileSystemTree::mousePressEvent(QMouseEvent* evt)
 {
 	QScrollBar* v_slider = this->verticalScrollBar();
 	QScrollBar* h_slider = this->horizontalScrollBar();
-	m_data->inside_scroll_bar = (v_slider->isVisible() && QRectF(QPoint(0, 0), v_slider->size()).contains(v_slider->mapFromGlobal(QCursor::pos()))) ||
+	d_data->inside_scroll_bar = (v_slider->isVisible() && QRectF(QPoint(0, 0), v_slider->size()).contains(v_slider->mapFromGlobal(QCursor::pos()))) ||
 				    (h_slider->isVisible() && QRectF(QPoint(0, 0), h_slider->size()).contains(h_slider->mapFromGlobal(QCursor::pos())));
 
-	m_data->press_position = evt->pos();
+	d_data->press_position = evt->pos();
 	QTreeWidget::mousePressEvent(evt);
 }
 
 void VipMapFileSystemTree::mouseMoveEvent(QMouseEvent* evt)
 {
-	if (m_data->inside_scroll_bar) {
+	if (d_data->inside_scroll_bar) {
 		QTreeWidget::mouseMoveEvent(evt);
 		return;
 	}
@@ -1255,7 +1253,7 @@ void VipMapFileSystemTree::mouseMoveEvent(QMouseEvent* evt)
 	if (!mapFileSystem())
 		return;
 
-	if ((evt->pos() - m_data->press_position).manhattanLength() < 5) {
+	if ((evt->pos() - d_data->press_position).manhattanLength() < 5) {
 		QTreeWidget::mouseMoveEvent(evt);
 		return;
 	}
@@ -1263,7 +1261,7 @@ void VipMapFileSystemTree::mouseMoveEvent(QMouseEvent* evt)
 	// if (!mapFileSystem() || !(mapFileSystem()->supportedOperations() & VipFileSystem::Rename))
 	//  return;
 
-	// if (!m_data->eventFromViewport)
+	// if (!d_data->eventFromViewport)
 	//  {
 	//  QTreeWidget::mouseMoveEvent(evt);
 	//  return;
@@ -1311,7 +1309,7 @@ void VipMapFileSystemTree::mouseMoveEvent(QMouseEvent* evt)
 			drag.setMimeData(mime);
 			drag.exec();
 
-			m_data->update->triggerUpdate();
+			d_data->update->triggerUpdate();
 		}
 	}
 }
@@ -1440,7 +1438,7 @@ void VipMapFileSystemTree::dropEvent(QDropEvent* evt)
 
 		move(lst, path);
 	}
-	else if (!dst && lst.size() && (m_data->operations & DropTopLevel)) {
+	else if (!dst && lst.size() && (d_data->operations & DropTopLevel)) {
 		this->addTopLevelPaths(lst);
 	}
 }
@@ -1505,7 +1503,7 @@ bool VipMapFileSystemTree::rightClick()
 	if (testOperation(Move))
 		connect(menu.addAction(vipIcon("cut.png"), "Cut selection"), SIGNAL(triggered(bool)), this, SLOT(cutSelection()));
 
-	if (lst.size() == 1 && m_data->clipboard.size()) {
+	if (lst.size() == 1 && d_data->clipboard.size()) {
 		menu.addSeparator();
 		connect(menu.addAction(vipIcon("paste.png"), "Paste"), SIGNAL(triggered(bool)), this, SLOT(pasteSelection()));
 	}
@@ -1520,7 +1518,7 @@ void VipMapFileSystemTree::setVisibleSuffixes(const QStringList& suffixes)
 
 	int pos = verticalScrollBar()->value();
 
-	m_data->suffixes = suffixes;
+	d_data->suffixes = suffixes;
 	for (int i = 0; i < topLevelItemCount(); ++i)
 		static_cast<VipMapFileSystemTreeItem*>(topLevelItem(i))->updateContent();
 
@@ -1532,33 +1530,33 @@ void VipMapFileSystemTree::setVisibleSuffixes(const QStringList& suffixes)
 
 QStringList VipMapFileSystemTree::visibleSuffixes() const
 {
-	return m_data->suffixes;
+	return d_data->suffixes;
 }
 
 void VipMapFileSystemTree::setRefreshTimeout(int msecs)
 {
-	m_data->update->sleepTime = msecs;
+	d_data->update->sleepTime = msecs;
 }
 
 int VipMapFileSystemTree::refreshTimeout() const
 {
-	return m_data->update->sleepTime;
+	return d_data->update->sleepTime;
 }
 
 void VipMapFileSystemTree::setRefreshEnabled(bool enable)
 {
 	if (enable && !refreshEnabled()) {
-		m_data->update->tree = this;
-		m_data->update->start();
+		d_data->update->tree = this;
+		d_data->update->start();
 	}
 	else if (!enable && refreshEnabled()) {
-		m_data->update->tree = nullptr;
-		m_data->update->wait();
+		d_data->update->tree = nullptr;
+		d_data->update->wait();
 	}
 }
 bool VipMapFileSystemTree::refreshEnabled() const
 {
-	return m_data->update->isRunning();
+	return d_data->update->isRunning();
 }
 
 VipPathList VipMapFileSystemTree::selectedPaths(ItemType type) const
@@ -1686,27 +1684,27 @@ void VipMapFileSystemTree::updateDirContent(const QObjectPointer& ptr)
 
 void VipMapFileSystemTree::addDirItem(QTreeWidgetItem* item)
 {
-	m_data->update->addItem(static_cast<VipMapFileSystemTreeDirItem*>(item));
+	d_data->update->addItem(static_cast<VipMapFileSystemTreeDirItem*>(item));
 }
 
 void VipMapFileSystemTree::removeDirItem(QTreeWidgetItem* item)
 {
-	m_data->update->removeItem(static_cast<VipMapFileSystemTreeDirItem*>(item));
+	d_data->update->removeItem(static_cast<VipMapFileSystemTreeDirItem*>(item));
 }
 
 void VipMapFileSystemTree::addItem(QTreeWidgetItem* item)
 {
 	VipMapFileSystemTreeDirItem* it = static_cast<VipMapFileSystemTreeDirItem*>(item);
-	m_data->items.insert(it->path().canonicalPath(), it);
+	d_data->items.insert(it->path().canonicalPath(), it);
 }
 
 void VipMapFileSystemTree::removeItem(QTreeWidgetItem* item)
 {
 	VipMapFileSystemTreeDirItem* it = static_cast<VipMapFileSystemTreeDirItem*>(item);
-	QMultiMap<QString, VipMapFileSystemTreeItem*>::iterator iter = m_data->items.find(it->path().canonicalPath());
-	for (; iter != m_data->items.end(); ++iter) {
+	QMultiMap<QString, VipMapFileSystemTreeItem*>::iterator iter = d_data->items.find(it->path().canonicalPath());
+	for (; iter != d_data->items.end(); ++iter) {
 		if (iter.value() == it) {
-			m_data->items.erase(iter);
+			d_data->items.erase(iter);
 			return;
 		}
 	}
@@ -1906,34 +1904,34 @@ public:
 
 VipFileSystemWidget::VipFileSystemWidget(QWidget*)
 {
-	m_data = new PrivateData();
+	VIP_CREATE_PRIVATE_DATA(d_data);
 
-	m_data->tree = new VipMapFileSystemTree();
-	m_data->searchResults = new VipMapFileSystemTree();
-	// m_data->shortcuts = new VipMapFileSystemTree();
-	m_data->searchPath = new QLabel();
-	m_data->searchPattern = new QLineEdit();
-	// m_data->selectionPath = new QLineEdit();
-	m_data->filterButton = new QToolButton();
-	m_data->toolBar = new QToolBar();
-	m_data->splitter = new QSplitter(Qt::Vertical);
+	d_data->tree = new VipMapFileSystemTree();
+	d_data->searchResults = new VipMapFileSystemTree();
+	// d_data->shortcuts = new VipMapFileSystemTree();
+	d_data->searchPath = new QLabel();
+	d_data->searchPattern = new QLineEdit();
+	// d_data->selectionPath = new QLineEdit();
+	d_data->filterButton = new QToolButton();
+	d_data->toolBar = new QToolBar();
+	d_data->splitter = new QSplitter(Qt::Vertical);
 
-	m_data->toolBar->setIconSize(QSize(18, 18));
+	d_data->toolBar->setIconSize(QSize(18, 18));
 
-	m_data->searchPattern->setPlaceholderText("Search pattern");
-	// m_data->selectionPath->setPlaceholderText("Selection address");
-	m_data->searchPattern->setToolTip("Search files and directories in selected directory");
-	m_data->searchPath->setWordWrap(true);
-	m_data->filterButton->setAutoRaise(true);
-	m_data->filterButton->setText("Filters");
-	m_data->filterButton->setToolTip("File filters");
-	m_data->menuFilter = new QMenu(m_data->filterButton);
-	m_data->filterButton->setMenu(m_data->menuFilter);
-	m_data->filterButton->setPopupMode(QToolButton::InstantPopup);
+	d_data->searchPattern->setPlaceholderText("Search pattern");
+	// d_data->selectionPath->setPlaceholderText("Selection address");
+	d_data->searchPattern->setToolTip("Search files and directories in selected directory");
+	d_data->searchPath->setWordWrap(true);
+	d_data->filterButton->setAutoRaise(true);
+	d_data->filterButton->setText("Filters");
+	d_data->filterButton->setToolTip("File filters");
+	d_data->menuFilter = new QMenu(d_data->filterButton);
+	d_data->filterButton->setMenu(d_data->menuFilter);
+	d_data->filterButton->setPopupMode(QToolButton::InstantPopup);
 
-	m_data->currentPath = new QLineEdit();
-	m_data->currentPath->setPlaceholderText("Enter a valid path");
-	m_data->currentPath->setToolTip("Enter a valid path and press ENTER");
+	d_data->currentPath = new QLineEdit();
+	d_data->currentPath->setPlaceholderText("Enter a valid path");
+	d_data->currentPath->setToolTip("Enter a valid path and press ENTER");
 
 	QToolButton* create = new QToolButton();
 	create->setAutoRaise(true);
@@ -1941,103 +1939,102 @@ VipFileSystemWidget::VipFileSystemWidget(QWidget*)
 	create->setIcon(vipIcon("new.png"));
 	create->setMenu(new QMenu());
 	create->setPopupMode(QToolButton::InstantPopup);
-	m_data->createButtonAction = m_data->toolBar->addWidget(m_data->create = create);
-	m_data->createButtonAction->setVisible(VipFileSystemManager::managers().size() > 0);
-	if (m_data->createButtonAction->isVisible())
-		m_data->toolBar->addSeparator();
+	d_data->createButtonAction = d_data->toolBar->addWidget(d_data->create = create);
+	d_data->createButtonAction->setVisible(VipFileSystemManager::managers().size() > 0);
+	if (d_data->createButtonAction->isVisible())
+		d_data->toolBar->addSeparator();
 	connect(create->menu(), SIGNAL(aboutToShow()), this, SLOT(showMenuCreate()));
 	connect(create->menu(), SIGNAL(triggered(QAction*)), this, SLOT(createFileSystemRequeted(QAction*)));
 
-	m_data->openSelectedFiles = m_data->toolBar->addAction(vipIcon("open_file.png"), "Open selected files");
-	m_data->openSelectedDirs = m_data->toolBar->addAction(vipIcon("open_dir.png"), "Open selected directories");
-	m_data->toolBar->addWidget(m_data->filterButton);
-	m_data->toolBar->addWidget(m_data->searchPattern);
-	m_data->stopSearch = m_data->toolBar->addAction(vipIcon("cancel.png"), "Stop search");
+	d_data->openSelectedFiles = d_data->toolBar->addAction(vipIcon("open_file.png"), "Open selected files");
+	d_data->openSelectedDirs = d_data->toolBar->addAction(vipIcon("open_dir.png"), "Open selected directories");
+	d_data->toolBar->addWidget(d_data->filterButton);
+	d_data->toolBar->addWidget(d_data->searchPattern);
+	d_data->stopSearch = d_data->toolBar->addAction(vipIcon("cancel.png"), "Stop search");
 
-	m_data->searchResults->hide();
-	m_data->searchResults->setRefreshEnabled(false);
-	m_data->stopSearch->setVisible(false);
+	d_data->searchResults->hide();
+	d_data->searchResults->setRefreshEnabled(false);
+	d_data->stopSearch->setVisible(false);
 
-	// m_data->showShortcut = new QToolButton();
-	//  m_data->showShortcut->setAutoRaise(true);
-	//  m_data->showShortcut->setToolTip("Show/Hide shortcuts");
-	//  m_data->showShortcut->setIcon(vipIcon("shortcuts.png"));
-	//  m_data->showShortcut->setCheckable(true);
+	// d_data->showShortcut = new QToolButton();
+	//  d_data->showShortcut->setAutoRaise(true);
+	//  d_data->showShortcut->setToolTip("Show/Hide shortcuts");
+	//  d_data->showShortcut->setIcon(vipIcon("shortcuts.png"));
+	//  d_data->showShortcut->setCheckable(true);
 	//
-	// m_data->shortcuts->hide();
-	// m_data->shortcuts->setSupportedOperations(VipMapFileSystemTree::Copy | VipMapFileSystemTree::Move | VipMapFileSystemTree::Delete | VipMapFileSystemTree::DropTopLevel);
+	// d_data->shortcuts->hide();
+	// d_data->shortcuts->setSupportedOperations(VipMapFileSystemTree::Copy | VipMapFileSystemTree::Move | VipMapFileSystemTree::Delete | VipMapFileSystemTree::DropTopLevel);
 
 	QVBoxLayout* vlay = new QVBoxLayout();
 	vlay->setContentsMargins(0, 0, 0, 0);
 	vlay->setSpacing(2);
-	vlay->addWidget(m_data->toolBar);
-	vlay->addWidget(m_data->currentPath);
+	vlay->addWidget(d_data->toolBar);
+	vlay->addWidget(d_data->currentPath);
 
-	vlay->addWidget(m_data->tree);
-	vlay->addWidget(m_data->searchPath);
+	vlay->addWidget(d_data->tree);
+	vlay->addWidget(d_data->searchPath);
 	QWidget* w = new QWidget();
 	w->setLayout(vlay);
 
-	m_data->splitter->addWidget(w);
-	m_data->splitter->addWidget(m_data->searchResults);
-	// m_data->splitter->addWidget(m_data->shortcuts);
+	d_data->splitter->addWidget(w);
+	d_data->splitter->addWidget(d_data->searchResults);
+	// d_data->splitter->addWidget(d_data->shortcuts);
 
-	m_data->password = new QLineEdit();
-	m_data->password->setEchoMode(QLineEdit::Password);
-	m_data->password->setPlaceholderText("Enter password");
+	d_data->password = new QLineEdit();
+	d_data->password->setEchoMode(QLineEdit::Password);
+	d_data->password->setPlaceholderText("Enter password");
 
 	QVBoxLayout* lay = new QVBoxLayout();
 	lay->setContentsMargins(5, 5, 5, 5);
-	lay->addWidget(m_data->password);
-	m_data->password->hide();
-	lay->addWidget(m_data->splitter);
+	lay->addWidget(d_data->password);
+	d_data->password->hide();
+	lay->addWidget(d_data->splitter);
 	setLayout(lay);
 
 	// connections
-	connect(m_data->menuFilter, SIGNAL(aboutToShow()), this, SLOT(aboutToOpenFilters()));
-	connect(m_data->menuFilter, SIGNAL(triggered(QAction*)), this, SLOT(filterSelected(QAction*)));
-	connect(m_data->stopSearch, SIGNAL(triggered(bool)), this, SLOT(stopSearch()));
-	connect(m_data->searchPattern, SIGNAL(textChanged(const QString&)), this, SLOT(startSearch()));
-	connect(m_data->searchPattern, SIGNAL(returnPressed()), this, SLOT(startSearch()));
-	connect(m_data->openSelectedFiles, SIGNAL(triggered(bool)), this, SLOT(openSelectedFiles()));
-	connect(m_data->openSelectedDirs, SIGNAL(triggered(bool)), this, SLOT(openSelectedDirs()));
-	connect(m_data->tree, SIGNAL(itemDoubleClicked(QTreeWidgetItem*, int)), this, SLOT(openSelectedFiles()));
-	// connect(m_data->shortcuts, SIGNAL(itemDoubleClicked(QTreeWidgetItem *, int)), this, SLOT(openSelectedFiles()));
-	connect(m_data->searchResults, SIGNAL(itemDoubleClicked(QTreeWidgetItem*, int)), this, SLOT(openSelectedFiles()));
-	// connect(m_data->showShortcut, SIGNAL(clicked(bool)), this, SLOT(setShortcutsVisible(bool)));
-	// connect(m_data->selectionPath, SIGNAL(textChanged(const QString &)), this, SLOT(setSelectedPath()));
-	// connect(m_data->selectionPath, SIGNAL(returnPressed()), this, SLOT(setSelectedPath()));
+	connect(d_data->menuFilter, SIGNAL(aboutToShow()), this, SLOT(aboutToOpenFilters()));
+	connect(d_data->menuFilter, SIGNAL(triggered(QAction*)), this, SLOT(filterSelected(QAction*)));
+	connect(d_data->stopSearch, SIGNAL(triggered(bool)), this, SLOT(stopSearch()));
+	connect(d_data->searchPattern, SIGNAL(textChanged(const QString&)), this, SLOT(startSearch()));
+	connect(d_data->searchPattern, SIGNAL(returnPressed()), this, SLOT(startSearch()));
+	connect(d_data->openSelectedFiles, SIGNAL(triggered(bool)), this, SLOT(openSelectedFiles()));
+	connect(d_data->openSelectedDirs, SIGNAL(triggered(bool)), this, SLOT(openSelectedDirs()));
+	connect(d_data->tree, SIGNAL(itemDoubleClicked(QTreeWidgetItem*, int)), this, SLOT(openSelectedFiles()));
+	// connect(d_data->shortcuts, SIGNAL(itemDoubleClicked(QTreeWidgetItem *, int)), this, SLOT(openSelectedFiles()));
+	connect(d_data->searchResults, SIGNAL(itemDoubleClicked(QTreeWidgetItem*, int)), this, SLOT(openSelectedFiles()));
+	// connect(d_data->showShortcut, SIGNAL(clicked(bool)), this, SLOT(setShortcutsVisible(bool)));
+	// connect(d_data->selectionPath, SIGNAL(textChanged(const QString &)), this, SLOT(setSelectedPath()));
+	// connect(d_data->selectionPath, SIGNAL(returnPressed()), this, SLOT(setSelectedPath()));
 
-	// connect(m_data->tree, SIGNAL(itemClicked(QTreeWidgetItem *, int)), this, SLOT(updateSelectedPath(QTreeWidgetItem *, int)));
-	// connect(m_data->searchResults, SIGNAL(itemClicked(QTreeWidgetItem *, int)), this, SLOT(updateSelectedPath(QTreeWidgetItem *, int)));
-	// connect(m_data->shortcuts, SIGNAL(itemClicked(QTreeWidgetItem *, int)), this, SLOT(updateSelectedPath(QTreeWidgetItem *, int)));
+	// connect(d_data->tree, SIGNAL(itemClicked(QTreeWidgetItem *, int)), this, SLOT(updateSelectedPath(QTreeWidgetItem *, int)));
+	// connect(d_data->searchResults, SIGNAL(itemClicked(QTreeWidgetItem *, int)), this, SLOT(updateSelectedPath(QTreeWidgetItem *, int)));
+	// connect(d_data->shortcuts, SIGNAL(itemClicked(QTreeWidgetItem *, int)), this, SLOT(updateSelectedPath(QTreeWidgetItem *, int)));
 
 	// selected an item in a VipMapFileSystemTree (tree or searchResults) will clear the selection in the other one
-	connect(m_data->tree, SIGNAL(itemClicked(QTreeWidgetItem*, int)), m_data->searchResults, SLOT(unselectAll()));
-	connect(m_data->tree, SIGNAL(itemClicked(QTreeWidgetItem*, int)), m_data->searchResults, SLOT(unselectAll()));
-	connect(m_data->tree, SIGNAL(itemClicked(QTreeWidgetItem*, int)), this, SLOT(updateDisplayPath()));
-	connect(m_data->currentPath, SIGNAL(returnPressed()), this, SLOT(fromDisplayPath()));
-	// connect(m_data->tree, SIGNAL(itemClicked(QTreeWidgetItem *, int)), m_data->shortcuts, SLOT(unselectAll()));
-	connect(m_data->searchResults, SIGNAL(itemClicked(QTreeWidgetItem*, int)), m_data->tree, SLOT(unselectAll()));
-	// connect(m_data->searchResults, SIGNAL(itemClicked(QTreeWidgetItem *, int)), m_data->shortcuts, SLOT(unselectAll()));
-	// connect(m_data->shortcuts, SIGNAL(itemClicked(QTreeWidgetItem *, int)), m_data->tree, SLOT(unselectAll()));
-	// connect(m_data->shortcuts, SIGNAL(itemClicked(QTreeWidgetItem *, int)), m_data->searchResults, SLOT(unselectAll()));
+	connect(d_data->tree, SIGNAL(itemClicked(QTreeWidgetItem*, int)), d_data->searchResults, SLOT(unselectAll()));
+	connect(d_data->tree, SIGNAL(itemClicked(QTreeWidgetItem*, int)), d_data->searchResults, SLOT(unselectAll()));
+	connect(d_data->tree, SIGNAL(itemClicked(QTreeWidgetItem*, int)), this, SLOT(updateDisplayPath()));
+	connect(d_data->currentPath, SIGNAL(returnPressed()), this, SLOT(fromDisplayPath()));
+	// connect(d_data->tree, SIGNAL(itemClicked(QTreeWidgetItem *, int)), d_data->shortcuts, SLOT(unselectAll()));
+	connect(d_data->searchResults, SIGNAL(itemClicked(QTreeWidgetItem*, int)), d_data->tree, SLOT(unselectAll()));
+	// connect(d_data->searchResults, SIGNAL(itemClicked(QTreeWidgetItem *, int)), d_data->shortcuts, SLOT(unselectAll()));
+	// connect(d_data->shortcuts, SIGNAL(itemClicked(QTreeWidgetItem *, int)), d_data->tree, SLOT(unselectAll()));
+	// connect(d_data->shortcuts, SIGNAL(itemClicked(QTreeWidgetItem *, int)), d_data->searchResults, SLOT(unselectAll()));
 
-	connect(m_data->password, SIGNAL(returnPressed()), this, SLOT(passwordEntered()));
+	connect(d_data->password, SIGNAL(returnPressed()), this, SLOT(passwordEntered()));
 }
 
 VipFileSystemWidget::~VipFileSystemWidget()
 {
 	stopSearch();
-	delete m_data;
 }
 
 void VipFileSystemWidget::showMenuCreate()
 {
 	QList<VipFileSystemManager*> ms = VipFileSystemManager::managers();
-	m_data->create->menu()->clear();
+	d_data->create->menu()->clear();
 	for (int i = 0; i < ms.size(); ++i) {
-		m_data->create->menu()->addAction(ms[i]->name());
+		d_data->create->menu()->addAction(ms[i]->name());
 	}
 }
 void VipFileSystemWidget::createFileSystemRequeted(QAction* act)
@@ -2053,91 +2050,91 @@ void VipFileSystemWidget::createFileSystemRequeted(QAction* act)
 
 VipMapFileSystemTree* VipFileSystemWidget::tree() const
 {
-	return m_data->tree;
+	return d_data->tree;
 }
 VipMapFileSystemTree* VipFileSystemWidget::searchResults() const
 {
-	return m_data->searchResults;
+	return d_data->searchResults;
 }
 // VipMapFileSystemTree  *VipFileSystemWidget::shortcuts() const
 //  {
-//  return m_data->shortcuts;
+//  return d_data->shortcuts;
 //  }
 QSplitter* VipFileSystemWidget::splitter() const
 {
-	return m_data->splitter;
+	return d_data->splitter;
 }
 QLabel* VipFileSystemWidget::searchPath() const
 {
-	return m_data->searchPath;
+	return d_data->searchPath;
 }
 QLineEdit* VipFileSystemWidget::searchPattern() const
 {
-	return m_data->searchPattern;
+	return d_data->searchPattern;
 }
 // QLineEdit *VipFileSystemWidget::selectionPath() const
 //  {
-//  return m_data->selectionPath;
+//  return d_data->selectionPath;
 //  }
 QToolButton* VipFileSystemWidget::filterButton() const
 {
-	return m_data->filterButton;
+	return d_data->filterButton;
 }
 QAction* VipFileSystemWidget::openSelectedFilesAction() const
 {
-	return m_data->openSelectedFiles;
+	return d_data->openSelectedFiles;
 }
 QAction* VipFileSystemWidget::openSelectedDirsAction() const
 {
-	return m_data->openSelectedDirs;
+	return d_data->openSelectedDirs;
 }
 QAction* VipFileSystemWidget::createButtonAction() const
 {
-	return m_data->createButtonAction;
+	return d_data->createButtonAction;
 }
 const QStringList& VipFileSystemWidget::possibleFilters() const
 {
-	return m_data->possibleFilters;
+	return d_data->possibleFilters;
 }
 const QString& VipFileSystemWidget::filter() const
 {
-	return m_data->filter;
+	return d_data->filter;
 }
 
 void VipFileSystemWidget::updateDisplayPath()
 {
-	QList<QTreeWidgetItem*> items = m_data->tree->selectedItems();
+	QList<QTreeWidgetItem*> items = d_data->tree->selectedItems();
 	QString res;
 	if (items.size())
 		res = static_cast<VipMapFileSystemTreeItem*>(items.back())->path().canonicalPath();
-	m_data->currentPath->setText(res);
+	d_data->currentPath->setText(res);
 }
 
 void VipFileSystemWidget::fromDisplayPath()
 {
-	QString tmp = m_data->currentPath->text();
+	QString tmp = d_data->currentPath->text();
 	if (!tmp.isEmpty())
-		m_data->tree->setPathExpanded(VipPath(tmp), true);
+		d_data->tree->setPathExpanded(VipPath(tmp), true);
 
-	QList<QTreeWidgetItem*> found = m_data->tree->itemsForPath(VipPath(tmp));
+	QList<QTreeWidgetItem*> found = d_data->tree->itemsForPath(VipPath(tmp));
 	for (QTreeWidgetItem* it : found) {
 		it->setSelected(true);
-		m_data->tree->scrollToItem(it);
+		d_data->tree->scrollToItem(it);
 	}
 }
 
 void VipFileSystemWidget::startSearch()
 {
-	if (m_data->searchPattern->text().isEmpty()) {
+	if (d_data->searchPattern->text().isEmpty()) {
 		stopSearch();
-		m_data->searchResults->hide();
-		m_data->searchResults->clear();
+		d_data->searchResults->hide();
+		d_data->searchResults->clear();
 		return;
 	}
 
-	if (m_data->tree->mapFileSystem()) {
-		m_data->tree->mapFileSystem()->stopSearch();
-		VipPathList lst = m_data->tree->selectedPaths();
+	if (d_data->tree->mapFileSystem()) {
+		d_data->tree->mapFileSystem()->stopSearch();
+		VipPathList lst = d_data->tree->selectedPaths();
 		QSet<QString> dirs;
 		for (int i = 0; i < lst.size(); ++i) {
 			if (lst[i].isDir())
@@ -2147,22 +2144,22 @@ void VipFileSystemWidget::startSearch()
 		}
 
 		if (dirs.size() > 1) {
-			m_data->searchPath->setText("Cannot search on multiple directories");
-			m_data->searchPath->setStyleSheet("color = red;");
+			d_data->searchPath->setText("Cannot search on multiple directories");
+			d_data->searchPath->setStyleSheet("color = red;");
 		}
 		else if (dirs.size() == 0) {
-			m_data->searchPath->setText("Search: no selected directory");
-			m_data->searchPath->setStyleSheet("color = red;");
+			d_data->searchPath->setText("Search: no selected directory");
+			d_data->searchPath->setStyleSheet("color = red;");
 		}
 		else if (dirs.size() == 1) {
-			m_data->searchPath->setStyleSheet("color = black;");
-			m_data->searchDir = *dirs.begin();
+			d_data->searchPath->setStyleSheet("color = black;");
+			d_data->searchDir = *dirs.begin();
 
-			m_data->searchResults->hide();
-			m_data->searchResults->clear();
-			m_data->stopSearch->setVisible(true);
+			d_data->searchResults->hide();
+			d_data->searchResults->clear();
+			d_data->stopSearch->setVisible(true);
 
-			QString search = m_data->searchPattern->text();
+			QString search = d_data->searchPattern->text();
 			search.replace("\t", " ");
 			QStringList _lst = search.split(" ", VIP_SKIP_BEHAVIOR::SkipEmptyParts);
 			QList<QRegExp> exps;
@@ -2172,25 +2169,25 @@ void VipFileSystemWidget::startSearch()
 				exps.last().setCaseSensitivity(Qt::CaseInsensitive);
 			}
 
-			m_data->tree->mapFileSystem()->search(VipPath(m_data->searchDir, true), exps, false, QDir::AllEntries);
+			d_data->tree->mapFileSystem()->search(VipPath(d_data->searchDir, true), exps, false, QDir::AllEntries);
 		}
 	}
 }
 
 void VipFileSystemWidget::stopSearch()
 {
-	if (m_data->tree->mapFileSystem())
-		m_data->tree->mapFileSystem()->stopSearch();
+	if (d_data->tree->mapFileSystem())
+		d_data->tree->mapFileSystem()->stopSearch();
 
-	m_data->stopSearch->setVisible(false);
+	d_data->stopSearch->setVisible(false);
 }
 
 void VipFileSystemWidget::setWaitForPassword()
 {
 	if (this->mapFileSystem()->isOpen())
 		return;
-	m_data->password->show();
-	m_data->splitter->hide();
+	d_data->password->show();
+	d_data->splitter->hide();
 	static_cast<QBoxLayout*>(layout())->addStretch(1);
 }
 
@@ -2198,13 +2195,13 @@ void VipFileSystemWidget::passwordEntered()
 {
 	VipMapFileSystemPtr sys = this->mapFileSystem();
 
-	sys->setPassword(m_data->password->text().toLatin1());
+	sys->setPassword(d_data->password->text().toLatin1());
 	if (!sys->open(sys->address())) {
-		m_data->password->setStyleSheet("border: 1px solid red;");
+		d_data->password->setStyleSheet("border: 1px solid red;");
 	}
 	else {
-		m_data->password->hide();
-		m_data->splitter->show();
+		d_data->password->hide();
+		d_data->splitter->show();
 		layout()->removeItem(layout()->itemAt(layout()->count() - 1));
 
 		// add again the map file system
@@ -2219,7 +2216,7 @@ void VipFileSystemWidget::passwordEntered()
 
 void VipFileSystemWidget::aboutToOpenFilters()
 {
-	if (m_data->possibleFilters.isEmpty()) {
+	if (d_data->possibleFilters.isEmpty()) {
 		QStringList filters = fileFilters();
 		setPossibleFilters(filters);
 		setFilter(filters.first());
@@ -2235,91 +2232,91 @@ void VipFileSystemWidget::updateFilters()
 
 void VipFileSystemWidget::setPossibleFilters(const QStringList& filters)
 {
-	m_data->possibleFilters = filters;
-	m_data->menuFilter->clear();
-	// m_data->menuFilter->addAction("No filter");
+	d_data->possibleFilters = filters;
+	d_data->menuFilter->clear();
+	// d_data->menuFilter->addAction("No filter");
 	for (int i = 0; i < filters.size(); ++i) {
-		m_data->menuFilter->addAction(filters[i]);
+		d_data->menuFilter->addAction(filters[i]);
 	}
 }
 
 bool VipFileSystemWidget::setFilter(const QString& filter)
 {
-	m_data->filter = filter;
-	m_data->filterButton->setText(filter);
+	d_data->filter = filter;
+	d_data->filterButton->setText(filter);
 
 	// if (filter == "No filter")
 	//  {
-	//  m_data->tree->setVisibleSuffixes(QStringList());
-	//  //m_data->shortcuts->setVisibleSuffixes(QStringList());
+	//  d_data->tree->setVisibleSuffixes(QStringList());
+	//  //d_data->shortcuts->setVisibleSuffixes(QStringList());
 	//  return true;
 	//  }
 
 	QStringList suffixes = suffixesFromFilter(filter);
-	m_data->tree->setVisibleSuffixes(suffixes);
+	d_data->tree->setVisibleSuffixes(suffixes);
 	QString text = filter;
 	if (text.size() > 15)
 		text = text.mid(0, 12) + "...";
-	m_data->filterButton->setText(text);
-	m_data->filterButton->setToolTip("File filters<br><b>Current filter</b>:" + filter);
+	d_data->filterButton->setText(text);
+	d_data->filterButton->setToolTip("File filters<br><b>Current filter</b>:" + filter);
 	return true;
 }
 
 void VipFileSystemWidget::setMapFileSystem(VipMapFileSystemPtr map, bool append_root_paths)
 {
-	if (m_data->tree->mapFileSystem()) {
-		disconnect(m_data->tree->mapFileSystem().data(), SIGNAL(found(const VipPath&)), this, SLOT(found(const VipPath&)));
-		disconnect(m_data->tree->mapFileSystem().data(), SIGNAL(searchEnterPath(const VipPath&)), this, SLOT(searchEnterPath(const VipPath&)));
-		disconnect(m_data->tree->mapFileSystem().data(), SIGNAL(searchStarted()), this, SLOT(searchStarted()));
-		disconnect(m_data->tree->mapFileSystem().data(), SIGNAL(searchEnded()), this, SLOT(searchEnded()));
+	if (d_data->tree->mapFileSystem()) {
+		disconnect(d_data->tree->mapFileSystem().data(), SIGNAL(found(const VipPath&)), this, SLOT(found(const VipPath&)));
+		disconnect(d_data->tree->mapFileSystem().data(), SIGNAL(searchEnterPath(const VipPath&)), this, SLOT(searchEnterPath(const VipPath&)));
+		disconnect(d_data->tree->mapFileSystem().data(), SIGNAL(searchStarted()), this, SLOT(searchStarted()));
+		disconnect(d_data->tree->mapFileSystem().data(), SIGNAL(searchEnded()), this, SLOT(searchEnded()));
 	}
 
-	m_data->tree->setMapFileSystem(map);
-	m_data->searchResults->setMapFileSystem(map);
-	// m_data->shortcuts->setMapFileSystem(map);
-	if (m_data->tree->mapFileSystem()) {
-		connect(m_data->tree->mapFileSystem().data(), SIGNAL(found(const VipPath&)), this, SLOT(found(const VipPath&)), Qt::QueuedConnection);
-		connect(m_data->tree->mapFileSystem().data(), SIGNAL(searchEnterPath(const VipPath&)), this, SLOT(searchEnterPath(const VipPath&)), Qt::QueuedConnection);
-		connect(m_data->tree->mapFileSystem().data(), SIGNAL(searchStarted()), this, SLOT(searchStarted()), Qt::QueuedConnection);
-		connect(m_data->tree->mapFileSystem().data(), SIGNAL(searchEnded()), this, SLOT(searchEnded()), Qt::QueuedConnection);
+	d_data->tree->setMapFileSystem(map);
+	d_data->searchResults->setMapFileSystem(map);
+	// d_data->shortcuts->setMapFileSystem(map);
+	if (d_data->tree->mapFileSystem()) {
+		connect(d_data->tree->mapFileSystem().data(), SIGNAL(found(const VipPath&)), this, SLOT(found(const VipPath&)), Qt::QueuedConnection);
+		connect(d_data->tree->mapFileSystem().data(), SIGNAL(searchEnterPath(const VipPath&)), this, SLOT(searchEnterPath(const VipPath&)), Qt::QueuedConnection);
+		connect(d_data->tree->mapFileSystem().data(), SIGNAL(searchStarted()), this, SLOT(searchStarted()), Qt::QueuedConnection);
+		connect(d_data->tree->mapFileSystem().data(), SIGNAL(searchEnded()), this, SLOT(searchEnded()), Qt::QueuedConnection);
 
 		if (append_root_paths) {
-			m_data->tree->addTopLevelPaths(map->roots());
+			d_data->tree->addTopLevelPaths(map->roots());
 		}
 	}
 }
 
 VipMapFileSystemPtr VipFileSystemWidget::mapFileSystem() const
 {
-	return m_data->tree->mapFileSystem();
+	return d_data->tree->mapFileSystem();
 }
 
 void VipFileSystemWidget::setSupportedOperations(VipMapFileSystemTree::Operations op)
 {
-	m_data->tree->setSupportedOperations(op);
-	// m_data->shortcuts->setSupportedOperations(op);
-	m_data->searchResults->setSupportedOperations(op);
+	d_data->tree->setSupportedOperations(op);
+	// d_data->shortcuts->setSupportedOperations(op);
+	d_data->searchResults->setSupportedOperations(op);
 }
 
 void VipFileSystemWidget::setSupportedOperation(VipMapFileSystemTree::Operation op, bool enable)
 {
-	m_data->tree->setSupportedOperation(op, enable);
-	// m_data->shortcuts->setSupportedOperation(op, enable);
-	m_data->searchResults->setSupportedOperation(op, enable);
+	d_data->tree->setSupportedOperation(op, enable);
+	// d_data->shortcuts->setSupportedOperation(op, enable);
+	d_data->searchResults->setSupportedOperation(op, enable);
 }
 
 VipMapFileSystemTree::Operations VipFileSystemWidget::supportedOperations() const
 {
-	return m_data->tree->supportedOperations();
+	return d_data->tree->supportedOperations();
 }
 
 bool VipFileSystemWidget::testOperation(VipMapFileSystemTree::Operation op) const
 {
-	return m_data->tree->testOperation(op);
+	return d_data->tree->testOperation(op);
 }
 // bool VipFileSystemWidget::shortcutsVisible() const
 // {
-// return m_data->shortcuts->isVisible();
+// return d_data->shortcuts->isVisible();
 // }
 
 void VipFileSystemWidget::filterSelected(QAction* act)
@@ -2330,41 +2327,41 @@ void VipFileSystemWidget::filterSelected(QAction* act)
 
 void VipFileSystemWidget::searchEnterPath(const VipPath& path)
 {
-	m_data->searchPath->setText(path.canonicalPath().remove(m_data->searchDir));
+	d_data->searchPath->setText(path.canonicalPath().remove(d_data->searchDir));
 }
 
 void VipFileSystemWidget::found(const VipPath& path)
 {
-	m_data->searchResults->show();
-	m_data->searchResults->addTopLevelPath(path);
+	d_data->searchResults->show();
+	d_data->searchResults->addTopLevelPath(path);
 }
 
 void VipFileSystemWidget::searchEnded()
 {
-	m_data->searchPath->setText("End of search");
-	m_data->stopSearch->setVisible(false);
+	d_data->searchPath->setText("End of search");
+	d_data->stopSearch->setVisible(false);
 }
 
 void VipFileSystemWidget::searchStarted()
 {
-	m_data->searchPath->setText("Search started...");
-	m_data->stopSearch->setVisible(true);
+	d_data->searchPath->setText("Search started...");
+	d_data->stopSearch->setVisible(true);
 }
 
 // void VipFileSystemWidget::updateSelectedPath(QTreeWidgetItem * item, int)
 //  {
 //  if (item)
 //  {
-//  m_data->selectionPath->blockSignals(true);
-//  VipPath path = m_data->tree->pathForItem(item);
-//  m_data->selectionPath->setText(path.canonicalPath());
-//  m_data->selectionPath->blockSignals(false);
+//  d_data->selectionPath->blockSignals(true);
+//  VipPath path = d_data->tree->pathForItem(item);
+//  d_data->selectionPath->setText(path.canonicalPath());
+//  d_data->selectionPath->blockSignals(false);
 //  }
 //  }
 
 void VipFileSystemWidget::openSelectedFiles()
 {
-	VipPathList lst = m_data->tree->selectedPaths() + m_data->searchResults->selectedPaths() //+ m_data->shortcuts->selectedPaths()
+	VipPathList lst = d_data->tree->selectedPaths() + d_data->searchResults->selectedPaths() //+ d_data->shortcuts->selectedPaths()
 	  ;
 	VipPathList files;
 	for (int i = 0; i < lst.size(); ++i)
@@ -2376,7 +2373,7 @@ void VipFileSystemWidget::openSelectedFiles()
 
 void VipFileSystemWidget::openSelectedDirs()
 {
-	VipPathList lst = m_data->tree->selectedPaths() + m_data->searchResults->selectedPaths() //+ m_data->shortcuts->selectedPaths()
+	VipPathList lst = d_data->tree->selectedPaths() + d_data->searchResults->selectedPaths() //+ d_data->shortcuts->selectedPaths()
 	  ;
 	VipPathList dirs;
 	for (int i = 0; i < lst.size(); ++i)
@@ -2388,21 +2385,21 @@ void VipFileSystemWidget::openSelectedDirs()
 
 // void VipFileSystemWidget::setSelectedPath()
 //  {
-//  QString path = m_data->selectionPath->text();
-//  m_data->tree->setPathExpanded(VipPath(path), true);
-//  if (QTreeWidgetItem * item = m_data->tree->itemForPath(VipPath(path)))
+//  QString path = d_data->selectionPath->text();
+//  d_data->tree->setPathExpanded(VipPath(path), true);
+//  if (QTreeWidgetItem * item = d_data->tree->itemForPath(VipPath(path)))
 //  {
 //  item->setSelected(true);
-//  m_data->tree->scrollToItem(item);
+//  d_data->tree->scrollToItem(item);
 //  }
 //  }
 //
 //  void VipFileSystemWidget::setShortcutsVisible(bool vis)
 //  {
-//  m_data->shortcuts->setVisible(vis);
-//  m_data->showShortcut->blockSignals(true);
-//  m_data->showShortcut->setChecked(vis);
-//  m_data->showShortcut->blockSignals(false);
+//  d_data->shortcuts->setVisible(vis);
+//  d_data->showShortcut->blockSignals(true);
+//  d_data->showShortcut->setChecked(vis);
+//  d_data->showShortcut->blockSignals(false);
 //  }
 
 class TabWidget : public QTabWidget

@@ -80,8 +80,8 @@ private:
 	VipNetworkConnection * connection() const;
 	int state() const;
 
-	class PrivateData;
-	PrivateData * d_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 

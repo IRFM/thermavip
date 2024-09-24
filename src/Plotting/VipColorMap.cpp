@@ -510,7 +510,7 @@ void applyColorMapLinear(const VipLinearColorMap* map, const VipInterval& interv
 VipLinearColorMap::VipLinearColorMap(VipColorMap::Format format)
   : VipColorMap(format)
 {
-	d_data = new PrivateData;
+	VIP_CREATE_PRIVATE_DATA(d_data);
 	d_data->mode = ScaledColors;
 	d_data->type = Unknown;
 	d_data->renderColors = nullptr;
@@ -529,7 +529,7 @@ VipLinearColorMap::VipLinearColorMap(VipColorMap::Format format)
 VipLinearColorMap::VipLinearColorMap(const QColor& color1, const QColor& color2, VipColorMap::Format format)
   : VipColorMap(format)
 {
-	d_data = new PrivateData;
+	VIP_CREATE_PRIVATE_DATA(d_data);
 	d_data->mode = ScaledColors;
 	setColorInterval(color1, color2);
 }
@@ -542,7 +542,6 @@ VipLinearColorMap::~VipLinearColorMap()
 		dirtyColorMap();
 	}
 
-	delete d_data;
 }
 
 const VipLinearColorMap::ColorStops& VipLinearColorMap::internalColorStops() const
@@ -1273,7 +1272,7 @@ public:
 VipAlphaColorMap::VipAlphaColorMap(const QColor& color)
   : VipColorMap(VipColorMap::RGB)
 {
-	d_data = new PrivateData;
+	VIP_CREATE_PRIVATE_DATA(d_data);
 	d_data->color = color;
 	d_data->rgb = color.rgb() & qRgba(255, 255, 255, 0);
 }
@@ -1281,7 +1280,6 @@ VipAlphaColorMap::VipAlphaColorMap(const QColor& color)
 //! Destructor
 VipAlphaColorMap::~VipAlphaColorMap()
 {
-	delete d_data;
 }
 
 /// Set the color

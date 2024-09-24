@@ -213,8 +213,8 @@ private:
 	/// \sa heightForWidth()
 	bool hasHeightForWidth() const;
 
-	class PrivateData;
-	PrivateData* d_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 /// @}

@@ -79,7 +79,7 @@ public:
 VipAxisColorMap::VipAxisColorMap(Alignment pos, QGraphicsItem* parent)
   : VipAxisBase(pos, parent)
 {
-	d_data = new PrivateData();
+	VIP_CREATE_PRIVATE_DATA(d_data);
 	d_data->colorBar.colorMap = nullptr;
 	d_data->colorBar.width = 15;
 	d_data->colorBar.isEnabled = true;
@@ -172,8 +172,6 @@ VipAxisColorMap::~VipAxisColorMap()
 {
 	if (d_data->colorBar.colorMap)
 		delete d_data->colorBar.colorMap;
-
-	delete d_data;
 }
 
 void VipAxisColorMap::reset(Alignment align)

@@ -228,8 +228,8 @@ protected:
 	virtual void renderSymbols(QPainter*, const QPointF*, int numPoints) const;
 
 private:
-	class PrivateData;
-	PrivateData* d_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 /// \brief Draw the symbol at a specified position

@@ -109,8 +109,8 @@ private:
 	VipPlotItemClipboard();
 	static VipPlotItemClipboard& instance();
 
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 class VipAbstractPlayer;
@@ -142,10 +142,11 @@ Q_SIGNALS:
 	void destroyed(VipAbstractPlayer*);
 
 private:
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
+/// @brief Base class for VipAbstractPlayer
 class VIP_GUI_EXPORT VipPlotWidget
   : public QWidget
   , public VipRenderObject
@@ -236,8 +237,8 @@ Q_SIGNALS:
 	void renderEnded(const VipRenderState&);
 
 private:
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 // expose VipAbstractPlayer* and QList<VipAbstractPlayer*> to the meta type system for the function dispatchers
@@ -245,7 +246,15 @@ typedef QList<VipAbstractPlayer*> AbstractPlayerList;
 Q_DECLARE_METATYPE(VipAbstractPlayer*)
 Q_DECLARE_METATYPE(AbstractPlayerList)
 
-/// A player that simply contains a widget
+/// @brief A player that simply contains a widget
+///
+/// VipWidgetPlayer is a VipAbstractPlayer which goal is just
+/// to contain any kind of widget, not necessarily related 
+/// to signal plotting.
+/// 
+/// For instance, thermavip provides a lightweight web browser 
+/// (VipWebBrowser) that inherits this class.
+///  
 class VIP_GUI_EXPORT VipWidgetPlayer : public VipAbstractPlayer
 {
 	Q_OBJECT
@@ -267,8 +276,8 @@ protected:
 	virtual bool renderObject(QPainter* p, const QPointF& pos, bool draw_background);
 
 private:
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 VIP_REGISTER_QOBJECT_METATYPE(VipWidgetPlayer*)
 
@@ -303,11 +312,12 @@ private:
 Q_DECLARE_METATYPE(VipPlayerToolTip*)
 
 /// Base class for all \a VipAbstractPlayer representing 2D + time data based on #VipPlotItem objects.
-/// It provides additional widgets like a tool bar (#VipPlayerToolBar) and a status bar.
-/// It also provides functions to save its content as a \a QPixmap.
+/// It provides additional widgets like a tool bar (VipPlayerToolBar) and a status bar.
+/// It also provides functions to save its content as a QPixmap.
 ///
 /// VipPlayer2D handles mouse click, item selection changes and item addtion/removal and forward them to the function dispatchers
 /// #VipFDItemRightClick, #VipFDItemSelected, #VipFDItemAddedOnPlayer and #VipFDItemRemovedFromPlayer.
+/// 
 class VIP_GUI_EXPORT VipPlayer2D : public VipAbstractPlayer
 {
 	Q_OBJECT
@@ -497,8 +507,8 @@ Q_SIGNALS:
 	void mouseSelectionChanged(bool);
 
 private:
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 VIP_REGISTER_QOBJECT_METATYPE(VipPlayer2D*)
@@ -740,8 +750,8 @@ protected:
 	bool zoomFeaturesEnabled() const;
 
 private:
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 VIP_REGISTER_QOBJECT_METATYPE(VipVideoPlayer*)
@@ -946,8 +956,8 @@ protected:
 	virtual void endRender(VipRenderState&);
 
 private:
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 VIP_REGISTER_QOBJECT_METATYPE(VipPlotPlayer*)

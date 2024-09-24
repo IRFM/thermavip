@@ -306,8 +306,8 @@ Q_SIGNALS:
 	void colorScaleChanged(VipAxisColorMap*);
 
 private:
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 class VIP_GUI_EXPORT VipColorScaleButton : public QToolButton
@@ -361,8 +361,8 @@ private:
 	void setEditor(QWidget*);
 	void setPlayerInternal();
 
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 /// Widget used to specify the default characteristics of a VipPlotCurve and a VipPlotArea2D.
@@ -396,8 +396,8 @@ private Q_SLOTS:
 	void updateItems();
 
 private:
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 /// @}

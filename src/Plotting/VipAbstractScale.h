@@ -102,8 +102,8 @@ protected:
 	virtual QVariant itemChange(GraphicsItemChange change, const QVariant& value);
 
 private:
-	class PrivateData;
-	PrivateData* d_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 /// @brief VipAbstractScale is the base abstract class for all scales.
@@ -373,8 +373,8 @@ private:
 	void addItem(VipPlotItem*);
 	void removeItem(VipPlotItem*);
 
-	class PrivateData;
-	PrivateData* d_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 template<class T>
@@ -466,8 +466,8 @@ protected:
 	virtual void paintEvent(QPaintEvent*);
 
 private:
-	class PrivateData;
-	PrivateData* d_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 VIP_REGISTER_QOBJECT_METATYPE(VipScaleWidget*)

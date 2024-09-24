@@ -262,42 +262,41 @@ public:
 PyApplyToolBar::PyApplyToolBar(QWidget * parent)
 	:QWidget(parent)
 {
-	m_data = new PrivateData();
-	m_data->apply = new QPushButton();
-	m_data->apply->setText("Update/Apply processing");
-	m_data->apply->setToolTip("<b>Update/Apply the processing</b><br>"
+	VIP_CREATE_PRIVATE_DATA(d_data);
+	d_data->apply = new QPushButton();
+	d_data->apply->setText("Update/Apply processing");
+	d_data->apply->setToolTip("<b>Update/Apply the processing</b><br>"
 		"Use this button to reapply the processing if you modified the Python scripts, the output signal title or the signal unit.");
-	m_data->save = new QToolButton();
-	m_data->save->setAutoRaise(true);
-	m_data->save->setIcon(vipIcon("save.png"));
-	m_data->save->setToolTip("<b>Register this processing</b><br>Register this processing and save it into your session.<br>This new processing will be available through the processing menu shortcut.");
-	m_data->manage = new QToolButton();
-	m_data->manage->setIcon(vipIcon("tools.png"));
-	m_data->manage->setToolTip("<b>Manage registered processing</b><br>Manage (edit/suppress) the processing that you already registered within your session.");
+	d_data->save = new QToolButton();
+	d_data->save->setAutoRaise(true);
+	d_data->save->setIcon(vipIcon("save.png"));
+	d_data->save->setToolTip("<b>Register this processing</b><br>Register this processing and save it into your session.<br>This new processing will be available through the processing menu shortcut.");
+	d_data->manage = new QToolButton();
+	d_data->manage->setIcon(vipIcon("tools.png"));
+	d_data->manage->setToolTip("<b>Manage registered processing</b><br>Manage (edit/suppress) the processing that you already registered within your session.");
 	QHBoxLayout * blay = new QHBoxLayout();
 	blay->setContentsMargins(0, 0, 0, 0);
 	blay->setSpacing(0);
-	blay->addWidget(m_data->apply);
-	blay->addWidget(m_data->save);
-	blay->addWidget(m_data->manage);
+	blay->addWidget(d_data->apply);
+	blay->addWidget(d_data->save);
+	blay->addWidget(d_data->manage);
 	setLayout(blay);
 }
 PyApplyToolBar::~PyApplyToolBar()
 {
-	delete m_data;
 }
 
 QPushButton *PyApplyToolBar::applyButton() const
 {
-	return m_data->apply;
+	return d_data->apply;
 }
 QToolButton * PyApplyToolBar::registerButton() const
 {
-	return m_data->save;
+	return d_data->save;
 }
 QToolButton * PyApplyToolBar::manageButton() const
 {
-	return m_data->manage;
+	return d_data->manage;
 }
 
 
@@ -321,114 +320,113 @@ public:
 PySignalFusionProcessingManager::PySignalFusionProcessingManager(QWidget * parent)
 	:QWidget(parent)
 {
-	m_data = new PrivateData();
+	VIP_CREATE_PRIVATE_DATA(d_data);
 
-	m_data->createWidget = new QGroupBox("Register new processing");
-	m_data->name = new QLineEdit();
-	m_data->name->setToolTip("Enter the processing name (mandatory)");
-	m_data->name->setPlaceholderText("Processing name");
-	m_data->category = new QLineEdit();
-	m_data->category->setToolTip("<b>Enter the processing category (mandatory)</b><br>You can define as many sub-categories as you need using a '/' separator.");
-	m_data->category->setPlaceholderText("Processing category");
-	m_data->category->setText("Data Fusion/");
-	m_data->description = new QPlainTextEdit();
-	m_data->description->setPlaceholderText("Processing short description (optional)");
-	m_data->description->setToolTip("Processing short description (optional)");
-	m_data->description->setMinimumHeight(100);
+	d_data->createWidget = new QGroupBox("Register new processing");
+	d_data->name = new QLineEdit();
+	d_data->name->setToolTip("Enter the processing name (mandatory)");
+	d_data->name->setPlaceholderText("Processing name");
+	d_data->category = new QLineEdit();
+	d_data->category->setToolTip("<b>Enter the processing category (mandatory)</b><br>You can define as many sub-categories as you need using a '/' separator.");
+	d_data->category->setPlaceholderText("Processing category");
+	d_data->category->setText("Data Fusion/");
+	d_data->description = new QPlainTextEdit();
+	d_data->description->setPlaceholderText("Processing short description (optional)");
+	d_data->description->setToolTip("Processing short description (optional)");
+	d_data->description->setMinimumHeight(100);
 
 	QGridLayout * glay = new QGridLayout();
 	glay->addWidget(new QLabel("Processing name: "), 0, 0);
-	glay->addWidget(m_data->name, 0, 1);
+	glay->addWidget(d_data->name, 0, 1);
 	glay->addWidget(new QLabel("Processing category: "), 1, 0);
-	glay->addWidget(m_data->category, 1, 1);
-	glay->addWidget(m_data->description, 2, 0, 1, 2);
-	m_data->createWidget->setLayout(glay);
+	glay->addWidget(d_data->category, 1, 1);
+	glay->addWidget(d_data->description, 2, 0, 1, 2);
+	d_data->createWidget->setLayout(glay);
 
 
-	m_data->editWidget = new QGroupBox("Edit registered processing");
-	m_data->procList = new QTreeWidget();
-	m_data->procList->header()->show();
-	m_data->procList->setColumnCount(2);
-	m_data->procList->setColumnWidth(0, 200);
-	m_data->procList->setColumnWidth(1, 200);
-	m_data->procList->setSelectionMode(QAbstractItemView::ExtendedSelection);
-	m_data->procList->setFrameShape(QFrame::NoFrame);
-	m_data->procList->setIndentation(10);
-	m_data->procList->setHeaderLabels(QStringList() << "Name" << "Category");
-	m_data->procList->setMinimumHeight(150);
-	m_data->procList->setMaximumHeight(200);
-	m_data->procList->setContextMenuPolicy(Qt::CustomContextMenu);
+	d_data->editWidget = new QGroupBox("Edit registered processing");
+	d_data->procList = new QTreeWidget();
+	d_data->procList->header()->show();
+	d_data->procList->setColumnCount(2);
+	d_data->procList->setColumnWidth(0, 200);
+	d_data->procList->setColumnWidth(1, 200);
+	d_data->procList->setSelectionMode(QAbstractItemView::ExtendedSelection);
+	d_data->procList->setFrameShape(QFrame::NoFrame);
+	d_data->procList->setIndentation(10);
+	d_data->procList->setHeaderLabels(QStringList() << "Name" << "Category");
+	d_data->procList->setMinimumHeight(150);
+	d_data->procList->setMaximumHeight(200);
+	d_data->procList->setContextMenuPolicy(Qt::CustomContextMenu);
 
-	m_data->procDescription = new QPlainTextEdit();
-	m_data->procDescription->setPlaceholderText("Processing short description (optional)");
-	m_data->procDescription->setToolTip("Processing short description (optional)");
-	m_data->procDescription->setMinimumHeight(100);
+	d_data->procDescription = new QPlainTextEdit();
+	d_data->procDescription->setPlaceholderText("Processing short description (optional)");
+	d_data->procDescription->setToolTip("Processing short description (optional)");
+	d_data->procDescription->setMinimumHeight(100);
 
-	m_data->procEditor = new PySignalFusionProcessingEditor();
-	m_data->procEditor->buttons()->manageButton()->hide();
-	m_data->procEditor->buttons()->registerButton()->hide();
-	m_data->pyEditor = new PyProcessingEditor();
-	m_data->pyEditor->buttons()->manageButton()->hide();
-	m_data->pyEditor->buttons()->registerButton()->hide();
-	m_data->pyEditor->setMaximumHeight(400);
-	m_data->pyEditor->setMinimumHeight(200);
+	d_data->procEditor = new PySignalFusionProcessingEditor();
+	d_data->procEditor->buttons()->manageButton()->hide();
+	d_data->procEditor->buttons()->registerButton()->hide();
+	d_data->pyEditor = new PyProcessingEditor();
+	d_data->pyEditor->buttons()->manageButton()->hide();
+	d_data->pyEditor->buttons()->registerButton()->hide();
+	d_data->pyEditor->setMaximumHeight(400);
+	d_data->pyEditor->setMinimumHeight(200);
 	QVBoxLayout * vlay = new QVBoxLayout();
-	vlay->addWidget(m_data->procList);
-	vlay->addWidget(m_data->procDescription);
-	vlay->addWidget(m_data->procEditor);
-	vlay->addWidget(m_data->pyEditor);
-	m_data->editWidget->setLayout(vlay);
-	m_data->procEditor->setEnabled(false);
-	m_data->procDescription->setEnabled(false);
-	m_data->procDescription->setMaximumHeight(120);
-	m_data->pyEditor->hide();
+	vlay->addWidget(d_data->procList);
+	vlay->addWidget(d_data->procDescription);
+	vlay->addWidget(d_data->procEditor);
+	vlay->addWidget(d_data->pyEditor);
+	d_data->editWidget->setLayout(vlay);
+	d_data->procEditor->setEnabled(false);
+	d_data->procDescription->setEnabled(false);
+	d_data->procDescription->setMaximumHeight(120);
+	d_data->pyEditor->hide();
 
 	QVBoxLayout * lay = new QVBoxLayout();
-	lay->addWidget(m_data->createWidget);
-	lay->addWidget(m_data->editWidget);
+	lay->addWidget(d_data->createWidget);
+	lay->addWidget(d_data->editWidget);
 	setLayout(lay);
 
-	connect(m_data->procList, SIGNAL(itemClicked(QTreeWidgetItem *, int)), this, SLOT(itemClicked(QTreeWidgetItem *, int)));
-	connect(m_data->procList, SIGNAL(itemDoubleClicked(QTreeWidgetItem *, int)), this, SLOT(itemDoubleClicked(QTreeWidgetItem *, int)));
-	connect(m_data->procList, SIGNAL(customContextMenuRequested(const QPoint &)), this, SLOT(showMenu(const QPoint &)));
-	connect(m_data->procList, SIGNAL(itemSelectionChanged()), this, SLOT(selectionChanged()));
-	connect(m_data->procDescription, SIGNAL(textChanged()), this, SLOT(descriptionChanged()));
+	connect(d_data->procList, SIGNAL(itemClicked(QTreeWidgetItem *, int)), this, SLOT(itemClicked(QTreeWidgetItem *, int)));
+	connect(d_data->procList, SIGNAL(itemDoubleClicked(QTreeWidgetItem *, int)), this, SLOT(itemDoubleClicked(QTreeWidgetItem *, int)));
+	connect(d_data->procList, SIGNAL(customContextMenuRequested(const QPoint &)), this, SLOT(showMenu(const QPoint &)));
+	connect(d_data->procList, SIGNAL(itemSelectionChanged()), this, SLOT(selectionChanged()));
+	connect(d_data->procDescription, SIGNAL(textChanged()), this, SLOT(descriptionChanged()));
 }
 
 PySignalFusionProcessingManager::~PySignalFusionProcessingManager()
 {
-	delete m_data;
 }
 
-QString PySignalFusionProcessingManager::name() const { return m_data->name->text(); }
-QString PySignalFusionProcessingManager::category() const { return m_data->category->text(); }
-QString PySignalFusionProcessingManager::description() const { return m_data->description->toPlainText(); }
+QString PySignalFusionProcessingManager::name() const { return d_data->name->text(); }
+QString PySignalFusionProcessingManager::category() const { return d_data->category->text(); }
+QString PySignalFusionProcessingManager::description() const { return d_data->description->toPlainText(); }
 
-void PySignalFusionProcessingManager::setName(const QString & name) { m_data->name->setText(name); }
-void PySignalFusionProcessingManager::setCategory(const QString & cat) { m_data->category->setText(cat); }
-void PySignalFusionProcessingManager::setDescription(const QString & desc) { m_data->description->setPlainText(desc); }
+void PySignalFusionProcessingManager::setName(const QString & name) { d_data->name->setText(name); }
+void PySignalFusionProcessingManager::setCategory(const QString & cat) { d_data->category->setText(cat); }
+void PySignalFusionProcessingManager::setDescription(const QString & desc) { d_data->description->setPlainText(desc); }
 
 void PySignalFusionProcessingManager::setManagerVisible(bool vis)
 {
-	m_data->editWidget->setVisible(vis);
+	d_data->editWidget->setVisible(vis);
 }
 bool PySignalFusionProcessingManager::managerVisible() const
 {
-	return m_data->editWidget->isVisible();
+	return d_data->editWidget->isVisible();
 }
 
 void PySignalFusionProcessingManager::setCreateNewVisible(bool vis)
 {
-	m_data->createWidget->setVisible(vis);
+	d_data->createWidget->setVisible(vis);
 }
 bool PySignalFusionProcessingManager::createNewVisible() const
 {
-	return m_data->createWidget->isVisible();
+	return d_data->createWidget->isVisible();
 }
 
 void PySignalFusionProcessingManager::updateWidget()
 {
-	//get all processing infos and copy them to m_data->processings
+	//get all processing infos and copy them to d_data->processings
 	QList<VipProcessingObject::Info> infos = PyRegisterProcessing::customProcessing();
 
 	//we set valid inputs to the processing in order to be applied properly
@@ -436,7 +434,7 @@ void PySignalFusionProcessingManager::updateWidget()
 	for (int i = 0; i < 100; ++i) v[i] = VipPoint(i * 1000, i * 1000);
 
 	//update tree widget
-	m_data->procList->clear();
+	d_data->procList->clear();
 	for (int i = 0; i < infos.size(); ++i) {
 		VipProcessingObject::Info info = infos[i];
 		VipProcessingObject * tmp = nullptr;
@@ -480,27 +478,27 @@ void PySignalFusionProcessingManager::updateWidget()
 		QFont f = item->font(0); f.setBold(true); item->setFont(0, f);
 		item->setData(0, 1000, QVariant::fromValue(info));
 		item->setFlags(item->flags() | Qt::ItemIsEditable);
-		m_data->procList->addTopLevelItem(item);
+		d_data->procList->addTopLevelItem(item);
 	}
 	
 
-	if (m_data->procList->topLevelItemCount() == 0) {
+	if (d_data->procList->topLevelItemCount() == 0) {
 		//No additional processing: add a dummy item
 		QTreeWidgetItem * item = new QTreeWidgetItem();
 		item->setText(0, "No registered processing available");
 		item->setToolTip(0, "No registered processing available");
-		m_data->procList->addTopLevelItem(item);
+		d_data->procList->addTopLevelItem(item);
 	}
 	else {
 		//select the first one
-		m_data->procList->topLevelItem(0)->setSelected(true);
+		d_data->procList->topLevelItem(0)->setSelected(true);
 	}
 
 }
 
 void PySignalFusionProcessingManager::itemDoubleClicked(QTreeWidgetItem * item, int column)
 {
-	m_data->procList->editItem(item, column);
+	d_data->procList->editItem(item, column);
 }
 
 bool PySignalFusionProcessingManager::applyChanges()
@@ -513,11 +511,11 @@ bool PySignalFusionProcessingManager::applyChanges()
 	
 	//add new ones
 	infos.clear();
-	for (int i = 0; i < m_data->procList->topLevelItemCount(); ++i) {
+	for (int i = 0; i < d_data->procList->topLevelItemCount(); ++i) {
 		//get the internal VipProcessingObject::Info object and set its classname and category (might have been modified by the user)
-		VipProcessingObject::Info info = m_data->procList->topLevelItem(i)->data(0, 1000).value<VipProcessingObject::Info>();
-		info.classname = m_data->procList->topLevelItem(i)->text(0);
-		info.category = m_data->procList->topLevelItem(i)->text(1);
+		VipProcessingObject::Info info = d_data->procList->topLevelItem(i)->data(0, 1000).value<VipProcessingObject::Info>();
+		info.classname = d_data->procList->topLevelItem(i)->text(0);
+		info.category = d_data->procList->topLevelItem(i)->text(1);
 		if (info.metatype) {
 			VipProcessingObject::registerAdditionalInfoObject(info);
 			infos.append(info);
@@ -531,7 +529,7 @@ bool PySignalFusionProcessingManager::applyChanges()
 void PySignalFusionProcessingManager::removeSelection()
 {
 	//remove selected registered processings
-	QList<QTreeWidgetItem*> items = m_data->procList->selectedItems();
+	QList<QTreeWidgetItem*> items = d_data->procList->selectedItems();
 	for (int i = 0; i < items.size(); ++i) {
 		delete items[i];
 	}
@@ -551,22 +549,22 @@ void PySignalFusionProcessingManager::showMenu(const QPoint & )
 void PySignalFusionProcessingManager::descriptionChanged()
 {
 	//udpate selected processing description
-	QList<QTreeWidgetItem*> items = m_data->procList->selectedItems();
+	QList<QTreeWidgetItem*> items = d_data->procList->selectedItems();
 	if (items.size() == 1) {
 		VipProcessingObject::Info info = items.first()->data(0, 1000).value<VipProcessingObject::Info>();
-		info.description = m_data->procDescription->toPlainText();
+		info.description = d_data->procDescription->toPlainText();
 		items.first()->setData(0, 1000, QVariant::fromValue(info));
 	}
 }
 
 void PySignalFusionProcessingManager::selectionChanged()
 {
-	QList<QTreeWidgetItem*> items = m_data->procList->selectedItems();
-	m_data->procDescription->setEnabled(items.size() == 1 && !items.first()->data(0, 1000).isNull());
-	m_data->procEditor->setEnabled(items.size() > 0 && !items.first()->data(0, 1000).isNull());
-	m_data->pyEditor->setEnabled(items.size() > 0 && !items.first()->data(0, 1000).isNull());
+	QList<QTreeWidgetItem*> items = d_data->procList->selectedItems();
+	d_data->procDescription->setEnabled(items.size() == 1 && !items.first()->data(0, 1000).isNull());
+	d_data->procEditor->setEnabled(items.size() > 0 && !items.first()->data(0, 1000).isNull());
+	d_data->pyEditor->setEnabled(items.size() > 0 && !items.first()->data(0, 1000).isNull());
 	if (items.isEmpty() || items.first()->data(0, 1000).isNull())
-		m_data->procDescription->setPlainText(QString());
+		d_data->procDescription->setPlainText(QString());
 
 	if (items.size() == 1) {
 		itemClicked(items.first(), 0);
@@ -575,9 +573,9 @@ void PySignalFusionProcessingManager::selectionChanged()
 
 void PySignalFusionProcessingManager::itemClicked(QTreeWidgetItem * item, int)
 {
-	QList<QTreeWidgetItem*> items = m_data->procList->selectedItems();
+	QList<QTreeWidgetItem*> items = d_data->procList->selectedItems();
 
-	m_data->procDescription->setEnabled(items.size() == 1);
+	d_data->procDescription->setEnabled(items.size() == 1);
 
 	QTreeWidgetItem * selected = nullptr;
 	if (item->isSelected())
@@ -585,40 +583,40 @@ void PySignalFusionProcessingManager::itemClicked(QTreeWidgetItem * item, int)
 	else if (items.size())
 		selected = items.last();
 
-	m_data->procEditor->setEnabled(selected);
-	m_data->pyEditor->setEnabled(selected);
+	d_data->procEditor->setEnabled(selected);
+	d_data->pyEditor->setEnabled(selected);
 
 	if (selected) {
 		VipProcessingObject::Info info = selected->data(0, 1000).value<VipProcessingObject::Info>();
 		if (info.metatype) {
 			//set description
-			m_data->procDescription->setPlainText(info.description);
+			d_data->procDescription->setPlainText(info.description);
 
 			//set the processing editor
 			if (PySignalFusionProcessingPtr ptr = info.init.value<PySignalFusionProcessingPtr>()) {
-				m_data->procEditor->setEnabled(true);
-				m_data->pyEditor->hide();
-				m_data->procEditor->show();
-				m_data->procEditor->setPySignalFusionProcessing(ptr.data());
+				d_data->procEditor->setEnabled(true);
+				d_data->pyEditor->hide();
+				d_data->procEditor->show();
+				d_data->procEditor->setPySignalFusionProcessing(ptr.data());
 			}
 			else if (PyProcessingPtr ptr = info.init.value<PyProcessingPtr>()) {
-				m_data->pyEditor->setEnabled(true);
-				m_data->procEditor->hide();
-				m_data->pyEditor->show();
-				m_data->pyEditor->setPyProcessing(ptr.data());
+				d_data->pyEditor->setEnabled(true);
+				d_data->procEditor->hide();
+				d_data->pyEditor->show();
+				d_data->pyEditor->setPyProcessing(ptr.data());
 			}
 			else {
-				m_data->pyEditor->hide();
-				m_data->procEditor->show();
-				m_data->procEditor->setEnabled(true);
-				m_data->pyEditor->setEnabled(false);
+				d_data->pyEditor->hide();
+				d_data->procEditor->show();
+				d_data->procEditor->setEnabled(true);
+				d_data->pyEditor->setEnabled(false);
 			}
 		}
 		else {
-			m_data->pyEditor->hide();
-			m_data->procEditor->show();
-			m_data->procEditor->setEnabled(true);
-			m_data->pyEditor->setEnabled(false);
+			d_data->pyEditor->hide();
+			d_data->procEditor->show();
+			d_data->procEditor->setEnabled(true);
+			d_data->pyEditor->setEnabled(false);
 		}
 	}
 }

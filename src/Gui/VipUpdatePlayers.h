@@ -38,7 +38,7 @@
 VipUpdateVideoPlayer is used to modify a VipVideoPlayer's content by adding new button for basic image processing.
 The buttons are automatically shown if the player displays a valid image.
 
-VipUpdateVideoPlayer add the following controls:
+VipUpdateVideoPlayer adds the following controls:
 - Vertical reflection
 - Horizontal reflection
 - Rotate 90 left

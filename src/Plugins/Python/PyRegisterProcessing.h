@@ -46,8 +46,8 @@ public:
 	QToolButton * manageButton() const;
 
 private:
-	class PrivateData;
-	PrivateData * m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 
@@ -90,6 +90,6 @@ public:
 protected:
 	virtual void keyPressEvent(QKeyEvent *);
 
-	class PrivateData;
-	PrivateData * m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };

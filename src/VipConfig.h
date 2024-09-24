@@ -290,8 +290,8 @@ namespace vip_log_detail {
 	std::unique_ptr<PrivateData> name
 
 /// @brief Declare private data for Pimpl idiom, use in class constructor
-#define VIP_CREATE_PRIVATE_DATA(name) \
-	name.reset(new PrivateData())
+#define VIP_CREATE_PRIVATE_DATA(name, ...) \
+	name.reset(new PrivateData(__VA_ARGS__))
 
 
 //define this macro to disable multithreading

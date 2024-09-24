@@ -1348,3 +1348,5 @@ QString vipUserName()
 	QString username = homePath.split("/").last();
 	return username;
 }
+
+

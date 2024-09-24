@@ -70,7 +70,7 @@ public:
 VipLegendItem::VipLegendItem(VipPlotItem* item, int index, QGraphicsItem* parent)
   : VipBoxGraphicsWidget(parent)
 {
-	d_data = new PrivateData();
+	VIP_CREATE_PRIVATE_DATA(d_data);
 
 	setPlotItem(item, index);
 	this->setGeometry(QRectF(QPointF(0, 0), this->minimumSize()));
@@ -80,7 +80,6 @@ VipLegendItem::~VipLegendItem()
 {
 	if (d_data->box)
 		delete d_data->box;
-	delete d_data;
 }
 
 VipLegend* VipLegendItem::legend() const
@@ -448,7 +447,7 @@ public:
 VipLegend::VipLegend(QGraphicsItem* parent)
   : VipBoxGraphicsWidget(parent)
 {
-	d_data = new PrivateData();
+	VIP_CREATE_PRIVATE_DATA(d_data);
 
 	d_data->legendItemTextStyle.setAlignment(Qt::AlignLeft);
 
@@ -460,7 +459,6 @@ VipLegend::VipLegend(QGraphicsItem* parent)
 
 VipLegend::~VipLegend()
 {
-	delete d_data;
 }
 
 void VipLegend::setCheckState(CheckState st)

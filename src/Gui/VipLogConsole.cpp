@@ -121,14 +121,14 @@ public:
 VipLogConsole::VipLogConsole(QWidget* parent)
   : QTextEdit(parent)
 {
-	m_data = new PrivateData();
-	m_data->errorColor = vipDefaultTextErrorColor(this);
-	m_data->levels = VipLogging::Info | VipLogging::Warning | VipLogging::Debug | VipLogging::Error;
-	m_data->device = new OutLogDevice(this);
-	m_data->stream.setDevice(m_data->device);
-	m_data->redirect = new VipStreambufToQTextStream(&m_data->stream);
-	m_data->oldcout = std::cout.rdbuf();
-	std::cout.rdbuf(m_data->redirect);
+	VIP_CREATE_PRIVATE_DATA(d_data);
+	d_data->errorColor = vipDefaultTextErrorColor(this);
+	d_data->levels = VipLogging::Info | VipLogging::Warning | VipLogging::Debug | VipLogging::Error;
+	d_data->device = new OutLogDevice(this);
+	d_data->stream.setDevice(d_data->device);
+	d_data->redirect = new VipStreambufToQTextStream(&d_data->stream);
+	d_data->oldcout = std::cout.rdbuf();
+	std::cout.rdbuf(d_data->redirect);
 
 	setFont(VipGuiDisplayParamaters::instance()->defaultEditorFont());
 	setLineWrapMode(QTextEdit::NoWrap);
@@ -143,22 +143,21 @@ VipLogConsole::VipLogConsole(QWidget* parent)
 VipLogConsole::~VipLogConsole()
 {
 	{
-		QMutexLocker lock(&m_data->mutex);
-		std::cout.rdbuf(m_data->oldcout);
-		delete m_data->redirect;
-		delete m_data->device;
+		QMutexLocker lock(&d_data->mutex);
+		std::cout.rdbuf(d_data->oldcout);
+		delete d_data->redirect;
+		delete d_data->device;
 	}
-	delete m_data;
 }
 
 void VipLogConsole::setVisibleSections(LogSections sections)
 {
-	if (m_data->sections != sections) {
-		m_data->sections = sections;
+	if (d_data->sections != sections) {
+		d_data->sections = sections;
 		QTextEdit::clear();
-		for (int i = 0; i < m_data->logs.size(); ++i) {
-			Entry entry = m_data->logs[i];
-			if (entry.level & m_data->levels) {
+		for (int i = 0; i < d_data->logs.size(); ++i) {
+			Entry entry = d_data->logs[i];
+			if (entry.level & d_data->levels) {
 				this->printMessage(entry.level, entry.line);
 			}
 		}
@@ -167,40 +166,40 @@ void VipLogConsole::setVisibleSections(LogSections sections)
 
 VipLogConsole::LogSections VipLogConsole::visibleSections() const
 {
-	return m_data->sections;
+	return d_data->sections;
 }
 
 void VipLogConsole::printMessage(VipLogging::Level level, const QString& msg)
 {
-	QColor color = m_data->lastColor;
+	QColor color = d_data->lastColor;
 	if (level == VipLogging::Info) {
-		color = m_data->infoColor;
+		color = d_data->infoColor;
 	}
 	else if (level == VipLogging::Debug) {
-		color = m_data->debugColor;
+		color = d_data->debugColor;
 	}
 	else if (level == VipLogging::Warning) {
-		color = m_data->warningColor; // orange
+		color = d_data->warningColor; // orange
 	}
 	else if (level == VipLogging::Error) {
-		color = m_data->errorColor;
+		color = d_data->errorColor;
 	}
-	m_data->lastColor = color;
+	d_data->lastColor = color;
 
-	// QMutexLocker lock(&m_data->mutex);
-	if ((level & m_data->levels) && isEnabled()) {
+	// QMutexLocker lock(&d_data->mutex);
+	if ((level & d_data->levels) && isEnabled()) {
 		moveCursor(QTextCursor::End);
 		setTextColor(color);
 
 		// split sections
-		if (m_data->sections != All) {
+		if (d_data->sections != All) {
 			QString type, date, text, entry;
 			VipLogging::splitLogEntry(msg, type, date, text);
-			if (m_data->sections & Type)
+			if (d_data->sections & Type)
 				entry += type;
-			if (m_data->sections & DateTime)
+			if (d_data->sections & DateTime)
 				entry += date;
-			if (m_data->sections & Text)
+			if (d_data->sections & Text)
 				entry += text;
 			if (!entry.endsWith("\n"))
 				entry += "\n";
@@ -213,43 +212,43 @@ void VipLogConsole::printMessage(VipLogging::Level level, const QString& msg)
 
 void VipLogConsole::printLogEntry(const QString& msg)
 {
-	QColor color = m_data->lastColor;
+	QColor color = d_data->lastColor;
 	VipLogging::Level level = VipLogging::Info;
 	if (msg.startsWith("Info")) {
-		color = m_data->infoColor;
+		color = d_data->infoColor;
 		level = VipLogging::Info;
 	}
 	else if (msg.startsWith("Debug")) {
-		color = m_data->debugColor;
+		color = d_data->debugColor;
 		level = VipLogging::Debug;
 	}
 	else if (msg.startsWith("Warning")) {
-		color = m_data->warningColor;
+		color = d_data->warningColor;
 		level = VipLogging::Warning;
 	}
 	else if (msg.startsWith("Error")) {
-		color = m_data->errorColor;
+		color = d_data->errorColor;
 		level = VipLogging::Error;
 	}
-	m_data->lastColor = color;
+	d_data->lastColor = color;
 
-	// QMutexLocker lock(&m_data->mutex);
-	m_data->logs.append(Entry(level, msg));
-	if (m_data->logs.size() > 10000)
-		m_data->logs.pop_front();
+	// QMutexLocker lock(&d_data->mutex);
+	d_data->logs.append(Entry(level, msg));
+	if (d_data->logs.size() > 10000)
+		d_data->logs.pop_front();
 
-	if ((level & m_data->levels) && isEnabled()) {
+	if ((level & d_data->levels) && isEnabled()) {
 		moveCursor(QTextCursor::End);
 		setTextColor(color);
 		// split sections
-		if (m_data->sections != All) {
+		if (d_data->sections != All) {
 			QString type, date, text, entry;
 			VipLogging::splitLogEntry(msg, type, date, text);
-			if (m_data->sections & Type)
+			if (d_data->sections & Type)
 				entry += type;
-			if (m_data->sections & DateTime)
+			if (d_data->sections & DateTime)
 				entry += date;
-			if (m_data->sections & Text)
+			if (d_data->sections & Text)
 				entry += text;
 			if (!entry.endsWith("\n"))
 				entry += "\n";
@@ -263,18 +262,18 @@ void VipLogConsole::printLogEntry(const QString& msg)
 void VipLogConsole::clear()
 {
 	QTextEdit::clear();
-	m_data->logs.clear();
+	d_data->logs.clear();
 }
 
 void VipLogConsole::setVisibleLogLevels(VipLogging::Levels levels)
 {
-	// QMutexLocker lock(&m_data->mutex);
-	if (m_data->levels != levels) {
-		m_data->levels = levels;
+	// QMutexLocker lock(&d_data->mutex);
+	if (d_data->levels != levels) {
+		d_data->levels = levels;
 
 		QTextEdit::clear();
-		for (int i = 0; i < m_data->logs.size(); ++i) {
-			Entry entry = m_data->logs[i];
+		for (int i = 0; i < d_data->logs.size(); ++i) {
+			Entry entry = d_data->logs[i];
 			if (entry.level & levels) {
 				this->printMessage(entry.level, entry.line);
 			}
@@ -284,53 +283,53 @@ void VipLogConsole::setVisibleLogLevels(VipLogging::Levels levels)
 
 VipLogging::Levels VipLogConsole::visibleLogLevels() const
 {
-	return m_data->levels;
+	return d_data->levels;
 }
 
 const QColor& VipLogConsole::infoColor() const
 {
-	return m_data->infoColor;
+	return d_data->infoColor;
 }
 const QColor& VipLogConsole::warningColor() const
 {
-	return m_data->warningColor;
+	return d_data->warningColor;
 }
 const QColor& VipLogConsole::errorColor() const
 {
-	return m_data->errorColor;
+	return d_data->errorColor;
 }
 const QColor& VipLogConsole::debugColor() const
 {
-	return m_data->debugColor;
+	return d_data->debugColor;
 }
 
 void VipLogConsole::setInfoColor(const QColor& color)
 {
-	if (m_data->infoColor != color) {
-		m_data->infoColor = color;
-		m_data->lastColor = color;
-		setVisibleLogLevels(m_data->levels);
+	if (d_data->infoColor != color) {
+		d_data->infoColor = color;
+		d_data->lastColor = color;
+		setVisibleLogLevels(d_data->levels);
 	}
 }
 void VipLogConsole::setWarningColor(const QColor& color)
 {
-	if (m_data->warningColor != color) {
-		m_data->warningColor = color;
-		setVisibleLogLevels(m_data->levels);
+	if (d_data->warningColor != color) {
+		d_data->warningColor = color;
+		setVisibleLogLevels(d_data->levels);
 	}
 }
 void VipLogConsole::setErrorColor(const QColor& color)
 {
-	if (m_data->errorColor != color) {
-		m_data->errorColor = color;
-		setVisibleLogLevels(m_data->levels);
+	if (d_data->errorColor != color) {
+		d_data->errorColor = color;
+		setVisibleLogLevels(d_data->levels);
 	}
 }
 void VipLogConsole::setDebugColor(const QColor& color)
 {
-	if (m_data->debugColor != color) {
-		m_data->debugColor = color;
-		setVisibleLogLevels(m_data->levels);
+	if (d_data->debugColor != color) {
+		d_data->debugColor = color;
+		setVisibleLogLevels(d_data->levels);
 	}
 }
 
@@ -350,52 +349,52 @@ VipConsoleWidget::VipConsoleWidget(VipMainWindow* window)
 	this->setKeepFloatingUserSize(true);
 	this->setObjectName("Console");
 	this->setWindowTitle("Console");
-	m_data = new PrivateData();
-	m_data->console = new VipLogConsole();
-	m_data->text = new QLabel();
-	m_data->toolBar = new QToolBar();
-	m_data->levelVisibility = new QToolButton();
+	VIP_CREATE_PRIVATE_DATA(d_data);
+	d_data->console = new VipLogConsole();
+	d_data->text = new QLabel();
+	d_data->toolBar = new QToolBar();
+	d_data->levelVisibility = new QToolButton();
 
 	QHBoxLayout* hlay = new QHBoxLayout();
-	hlay->addWidget(m_data->text);
+	hlay->addWidget(d_data->text);
 	hlay->addStretch(2);
-	hlay->addWidget(m_data->toolBar);
+	hlay->addWidget(d_data->toolBar);
 	hlay->setContentsMargins(0, 0, 0, 0);
 	hlay->setMargin(0);
 
 	QVBoxLayout* vlay = new QVBoxLayout();
 	vlay->addLayout(hlay);
-	vlay->addWidget(m_data->console);
+	vlay->addWidget(d_data->console);
 	vlay->setContentsMargins(0, 0, 0, 0);
 	vlay->setMargin(0);
 
-	m_data->widget = new QWidget();
-	m_data->widget->setLayout(vlay);
-	setWidget(m_data->widget, Qt::Horizontal);
+	d_data->widget = new QWidget();
+	d_data->widget->setLayout(vlay);
+	setWidget(d_data->widget, Qt::Horizontal);
 
-	m_data->text->setText("Console [All]");
-	m_data->text->setStyleSheet(""
+	d_data->text->setText("Console [All]");
+	d_data->text->setStyleSheet(""
 				    "padding:0px;"
 				    "text-indent : 0px;"
 				    "margin:0px;"
 				    "border: none;");
 
-	m_data->toolBar->setIconSize(QSize(18, 18));
-	QAction* copy = m_data->toolBar->addAction(vipIcon("copy.png"), "Copy content to clipboard");
-	QAction* save = m_data->toolBar->addAction(vipIcon("save.png"), "Save content to file...");
-	QAction* disable = m_data->toolBar->addAction(vipIcon("cancel.png"), "Stop/Resume the console");
-	QAction* clear = m_data->toolBar->addAction(vipIcon("close.png"), "Clear the console");
+	d_data->toolBar->setIconSize(QSize(18, 18));
+	QAction* copy = d_data->toolBar->addAction(vipIcon("copy.png"), "Copy content to clipboard");
+	QAction* save = d_data->toolBar->addAction(vipIcon("save.png"), "Save content to file...");
+	QAction* disable = d_data->toolBar->addAction(vipIcon("cancel.png"), "Stop/Resume the console");
+	QAction* clear = d_data->toolBar->addAction(vipIcon("close.png"), "Clear the console");
 	disable->setCheckable(true);
-	m_data->toolBar->addSeparator();
-	m_data->toolBar->addWidget(m_data->levelVisibility);
-	m_data->levelVisibility->setIcon(vipIcon("console.png"));
-	m_data->levelVisibility->setText("Display selected outputs");
-	m_data->levelVisibility->setAutoRaise(true);
-	m_data->levelVisibility->setPopupMode(QToolButton::InstantPopup);
-	m_data->levelVisibility->setIconSize(QSize(25, 18));
-	m_data->levelVisibility->setMinimumWidth(35);
+	d_data->toolBar->addSeparator();
+	d_data->toolBar->addWidget(d_data->levelVisibility);
+	d_data->levelVisibility->setIcon(vipIcon("console.png"));
+	d_data->levelVisibility->setText("Display selected outputs");
+	d_data->levelVisibility->setAutoRaise(true);
+	d_data->levelVisibility->setPopupMode(QToolButton::InstantPopup);
+	d_data->levelVisibility->setIconSize(QSize(25, 18));
+	d_data->levelVisibility->setMinimumWidth(35);
 
-	QMenu* menu = new QMenu(m_data->levelVisibility);
+	QMenu* menu = new QMenu(d_data->levelVisibility);
 	QAction* info = menu->addAction("Display Informations");
 	info->setCheckable(true);
 	info->setChecked(true);
@@ -415,7 +414,7 @@ VipConsoleWidget::VipConsoleWidget(VipMainWindow* window)
 	QAction* type = menu->addAction("Display log type");
 	type->setCheckable(true);
 	type->setChecked(true);
-	m_data->levelVisibility->setMenu(menu);
+	d_data->levelVisibility->setMenu(menu);
 
 	connect(info, SIGNAL(triggered(bool)), this, SLOT(setVisibleLogLevel()));
 	connect(deb, SIGNAL(triggered(bool)), this, SLOT(setVisibleLogLevel()));
@@ -424,7 +423,7 @@ VipConsoleWidget::VipConsoleWidget(VipMainWindow* window)
 	connect(date, SIGNAL(triggered(bool)), this, SLOT(setVisibleLogLevel()));
 	connect(type, SIGNAL(triggered(bool)), this, SLOT(setVisibleLogLevel()));
 
-	connect(clear, SIGNAL(triggered(bool)), m_data->console, SLOT(clear()));
+	connect(clear, SIGNAL(triggered(bool)), d_data->console, SLOT(clear()));
 	connect(disable, SIGNAL(triggered(bool)), this, SLOT(disable(bool)));
 	connect(copy, SIGNAL(triggered(bool)), this, SLOT(copy()));
 	connect(save, SIGNAL(triggered(bool)), this, SLOT(save()));
@@ -434,26 +433,25 @@ VipConsoleWidget::VipConsoleWidget(VipMainWindow* window)
 
 VipConsoleWidget::~VipConsoleWidget()
 {
-	delete m_data;
 }
 
 void VipConsoleWidget::removeConsole()
 {
-	m_data->console->setParent(nullptr);
+	d_data->console->setParent(nullptr);
 }
 void VipConsoleWidget::resetConsole()
 {
-	m_data->widget->layout()->addWidget(m_data->console);
+	d_data->widget->layout()->addWidget(d_data->console);
 }
 
 VipLogConsole* VipConsoleWidget::logConsole() const
 {
-	return const_cast<VipLogConsole*>(m_data->console);
+	return const_cast<VipLogConsole*>(d_data->console);
 }
 
 void VipConsoleWidget::clear()
 {
-	m_data->console->clear();
+	d_data->console->clear();
 }
 
 void VipConsoleWidget::save()
@@ -462,26 +460,26 @@ void VipConsoleWidget::save()
 	if (!filename.isEmpty()) {
 		QFile fout(filename);
 		if (fout.open(QFile::WriteOnly | QFile::Text))
-			fout.write(m_data->console->toPlainText().toLatin1());
+			fout.write(d_data->console->toPlainText().toLatin1());
 	}
 }
 
 void VipConsoleWidget::copy()
 {
 	QClipboard* clipboard = QApplication::clipboard();
-	clipboard->setText(m_data->console->toPlainText());
+	clipboard->setText(d_data->console->toPlainText());
 }
 
 void VipConsoleWidget::disable(bool dis)
 {
-	m_data->console->setEnabled(!dis);
+	d_data->console->setEnabled(!dis);
 	if (!dis)
 		setVisibleLogLevel();
 }
 
 void VipConsoleWidget::setVisibleLogLevel()
 {
-	QList<QAction*> actions = m_data->levelVisibility->menu()->actions();
+	QList<QAction*> actions = d_data->levelVisibility->menu()->actions();
 	VipLogging::Levels levels;
 	QStringList consoles;
 
@@ -515,21 +513,21 @@ void VipConsoleWidget::setVisibleLogLevel()
 	}
 
 	if (consoles.size() == 3)
-		m_data->text->setText("Console [All]");
+		d_data->text->setText("Console [All]");
 	else if (consoles.size() == 0)
-		m_data->text->setText("Console [None]");
+		d_data->text->setText("Console [None]");
 	else
-		m_data->text->setText("Console [" + consoles.join("|") + "]");
+		d_data->text->setText("Console [" + consoles.join("|") + "]");
 
-	m_data->console->setVisibleLogLevels(levels);
-	m_data->console->setVisibleSections(sections);
+	d_data->console->setVisibleLogLevels(levels);
+	d_data->console->setVisibleSections(sections);
 }
 
 void VipConsoleWidget::updateVisibleMenu()
 {
 	VipLogging::Levels levels = visibleLogLevels();
 	VipLogConsole::LogSections sections = visibleSections();
-	QList<QAction*> actions = m_data->levelVisibility->menu()->actions();
+	QList<QAction*> actions = d_data->levelVisibility->menu()->actions();
 	for (int i = 0; i < actions.size(); ++i)
 		actions[i]->blockSignals(true);
 

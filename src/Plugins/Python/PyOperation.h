@@ -369,8 +369,8 @@ public:
 private Q_SLOTS:
 	void writeBytesFromProcess();
 private:
-	class PrivateData;
-	PrivateData * d_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 
@@ -457,8 +457,8 @@ protected Q_SLOTS:
 		void printError();
 
 private:
-	class PrivateData;
-	PrivateData * d_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 PYTHON_EXPORT PyOptions * GetPyOptions();

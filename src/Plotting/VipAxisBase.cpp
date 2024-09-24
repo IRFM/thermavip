@@ -73,7 +73,7 @@ public:
 VipAxisBase::VipAxisBase(Alignment pos, QGraphicsItem* parent)
   : VipBorderItem(pos, parent)
 {
-	d_data = new PrivateData();
+	VIP_CREATE_PRIVATE_DATA(d_data);
 	// this->setLength(0);
 
 	d_data->layoutFlags = LayoutFlags();
@@ -88,7 +88,6 @@ VipAxisBase::VipAxisBase(Alignment pos, QGraphicsItem* parent)
 
 VipAxisBase::~VipAxisBase()
 {
-	delete d_data;
 }
 
 /// Toggle an layout flag
@@ -799,7 +798,7 @@ public:
 VipMultiAxisBase::VipMultiAxisBase(Alignment pos, QGraphicsItem* parent)
   : VipBorderItem(pos, parent)
 {
-	d_data = new PrivateData();
+	VIP_CREATE_PRIVATE_DATA(d_data);
 	d_data->scaleSpacing = 0;
 	d_data->layoutFlags = LayoutFlags();
 	if (pos == Right)
@@ -814,7 +813,6 @@ VipMultiAxisBase::~VipMultiAxisBase()
 	for (int i = 0; i < count(); ++i)
 		if (at(i))
 			delete at(i);
-	delete d_data;
 }
 
 void VipMultiAxisBase::setAlignment(Alignment align)

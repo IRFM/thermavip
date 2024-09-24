@@ -76,8 +76,8 @@ private Q_SLOTS:
 	void valueChanged(int);
 
 private:
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 /// Options to save a Thermavip session
@@ -101,8 +101,8 @@ private Q_SLOTS:
 	void exportTypeChanged();
 
 private:
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 /// Load a Thermavip session.
@@ -121,8 +121,8 @@ public:
 	void applyToArchive(VipXArchive& arch);
 
 private:
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 #endif

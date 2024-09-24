@@ -185,13 +185,12 @@ public:
 VipPlotBarChart::VipPlotBarChart(const VipText& title)
   : VipPlotItemDataType(title)
 {
-	d_data = new PrivateData();
+	VIP_CREATE_PRIVATE_DATA(d_data);
 	d_data->boxStyle.setBorderPen(QPen(Qt::NoPen));
 }
 
 VipPlotBarChart::~VipPlotBarChart()
 {
-	delete d_data;
 }
 
 void VipPlotBarChart::setData(const QVariant& v)

@@ -124,8 +124,8 @@ Q_SIGNALS:
 	void clicked(bool);
 
 private:
-	class PrivateData;
-	PrivateData* d_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 class VipDynGridLayout;
@@ -266,8 +266,8 @@ protected:
 
 private:
 	void legendItemAdded(VipLegendItem*);
-	class PrivateData;
-	PrivateData* d_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 /// @brief Legend item within a vertical or horizontal scale

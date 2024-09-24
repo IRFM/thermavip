@@ -53,6 +53,15 @@ class VipDisplayPlayerArea;
 class VipAbstractPlayer;
 class VipDragWidget;
 
+/// @brief Title bar of a VipToolWidget
+///
+/// VipToolWidget represents the title bar of a VipToolWidget.
+/// It provides optins to close the parent VipToolWidget,
+/// maximize it, make it floatable.
+///
+/// Its GUI parameters (text color, icons...) are defined as Qt
+/// properties in order to be controlled through style sheets.
+///
 class VIP_GUI_EXPORT VipToolWidgetTitleBar : public QWidget
 {
 	Q_OBJECT
@@ -98,15 +107,16 @@ protected:
 	virtual void resizeEvent(QResizeEvent*);
 
 private:
-	class PrivateData;
-	PrivateData* m_data;
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
-/// Tool bar related to a VipToolWidget that provides a few shortcuts.
+/// @brief Tool bar related to a VipToolWidget that provides a few shortcuts.
+///
 /// Since a VipToolWidget can be a wide widgets with a lot of options, it is sometimes convinent to provide
 /// a small tool bar (displayed in the main window) that provides the most important tools that the VipToolWidget provides.
 ///
-/// A VipToolWidgetToolBar is created through #VipToolWidgetToolBar::toolBar().
+/// A VipToolWidgetToolBar is created through #VipToolWidget::toolBar().
+///
 class VIP_GUI_EXPORT VipToolWidgetToolBar : public QToolBar
 {
 	Q_OBJECT
@@ -128,46 +138,99 @@ protected:
 	virtual void showEvent(QShowEvent* evt);
 };
 
+/// @brief Viewport widget used in VipToolWidgetScrollArea.
+/// Just provided for style sheet customization.
+class VIP_GUI_EXPORT VipViewport : public QWidget
+{
+	Q_OBJECT
+public:
+	VipViewport(QWidget* parent = nullptr)
+	  : QWidget(parent)
+	{
+	}
+};
+
+/// @brief QScrollArea used in VipToolWidget
+class VIP_GUI_EXPORT VipToolWidgetScrollArea : public QScrollArea
+{
+	Q_OBJECT
+	Q_PROPERTY(bool floatingTool READ floatingTool WRITE setFloatingTool)
+public:
+	VipToolWidgetScrollArea(QWidget* parent = nullptr)
+	  : QScrollArea(parent)
+	{
+		setViewport(new VipViewport());
+	}
+
+	bool floatingTool() const;
+	void setFloatingTool(bool f);
+
+protected:
+	virtual void resizeEvent(QResizeEvent* evt);
+};
+
 class VipWidgetResizer;
+
+/// @brief A QDockWidget with additional features.
+///
+/// VipToolWidget is the base class for all QDockWidget
+///
 class VIP_GUI_EXPORT VipToolWidget : public QDockWidget
 {
 	Q_OBJECT
 	Q_PROPERTY(bool floatingTool READ floatingTool WRITE setFloatingTool)
 	Q_PROPERTY(bool enableOpacityChange READ enableOpacityChange WRITE setEnableOpacityChange)
 	Q_PROPERTY(bool displayWindowIcon READ displayWindowIcon WRITE setDisplayWindowIcon)
+
+	friend class VipToolWidgetTitleBar;
+
 public:
 	VipToolWidget(VipMainWindow* window);
 	~VipToolWidget();
 
+	/// @brief Set the internal widget with its preferred orientation.
 	void setWidget(QWidget* widget, Qt::Orientation widget_orientation = Qt::Vertical);
 	QWidget* widget() const;
+
+	/// @brief Take and return the internal widget.
 	QWidget* takeWidget();
+
+	/// @brief Returns the title bar
 	VipToolWidgetTitleBar* titleBarWidget() const;
+	/// @brief Returns the internal scroll area
 	QScrollArea* scrollArea() const;
+
+	/// @brief Returns the VipWidgetResizer object used to resize this tool widget
 	VipWidgetResizer* resizer() const;
 
+	/// @brief Enable/disable opacity change.
+	/// If true, the widget will be semi transparent if it loses the focus.
 	bool enableOpacityChange() const;
+
+	/// @brief Set/get floating.
+	/// Make the tool widget floating.
 	bool floatingTool() const;
 
+	/// @brief Set an action that will trigger the tool widget visibility.
 	void setAction(QAction* action);
 	QAction* action() const;
 
+	/// @brief Set button that will trigger the tool widget visibility.
 	void setButton(QAbstractButton* action);
 	QAbstractButton* button() const;
 
+	/// @brief Enable/disable top left icon display
 	bool displayWindowIcon() const;
 	void setDisplayWindowIcon(bool);
 
-	/// When floating, tells if the widget should keet the size set manually by the user.
+	/// When floating, tells if the widget should keep the size set manually by the user.
 	///  Otherwise, when hidding and showing back the widget, its size will be set to its sizeHint() (default behavior).
-	///  A few tool widgets needs this, like the console that might be expanded bu the user for a better reading.
+	///  A few tool widgets need this, like the console that might be expanded by the user for a better reading.
 	void setKeepFloatingUserSize(bool enable);
 	bool keepFloatingUserSize() const;
 
 	void raise();
 	void setFocus();
-
-	void setStyleProperty(const char* name, bool value);
 
 	virtual QSize sizeHint() const;
 
@@ -175,6 +238,8 @@ public:
 	///  When reimplementing this function, the new implementation should call the base class implementation to keep built-in compatibility.
 	virtual void setDisplayPlayerArea(VipDisplayPlayerArea*) {}
 
+	/// @brief Returns the VipToolWidgetToolBar (if any) associated with this tool widget.
+	/// It will be displayed on the top part of the main window (VipMainWindow).
 	virtual VipToolWidgetToolBar* toolBar() { return nullptr; }
 
 public Q_SLOTS:
@@ -187,8 +252,22 @@ public Q_SLOTS:
 		show();
 		raise();
 	}
+	/// @brief Reset the size of this tool widget
+	/// and make sure it stays in the creen boundaries.
+	/// Should be called by inheriting classes when they
+	/// change their contents.
+	void resetSize();
+
+private Q_SLOTS:
+	void displayPlayerAreaChanged();
+	void internalResetSize();
+	void focusChanged(QWidget* old, QWidget* now);
+	void setVisibleInternal(bool vis);
+	void floatingChanged(bool);
+	void polish();
 
 protected:
+	void setStyleProperty(const char* name, bool value);
 	virtual void enterEvent(QEvent* event);
 	virtual void leaveEvent(QEvent* event);
 	virtual void closeEvent(QCloseEvent* evt);
@@ -198,48 +277,8 @@ protected:
 	virtual void resizeEvent(QResizeEvent* evt);
 	virtual void moveEvent(QMoveEvent* evt);
 
-public Q_SLOTS:
-	void resetSize();
-	void polish();
-
-private Q_SLOTS:
-	void displayPlayerAreaChanged();
-	void internalResetSize();
-	void focusChanged(QWidget* old, QWidget* now);
-	void setVisibleInternal(bool vis);
-	void floatingChanged(bool);
-
 private:
-	class PrivateData;
-	PrivateData* m_data;
-};
-
-class VIP_GUI_EXPORT VipViewport : public QWidget
-{
-	Q_OBJECT
-public:
-	VipViewport(QWidget* parent = nullptr)
-	  : QWidget(parent)
-	{
-	}
-};
-
-class VIP_GUI_EXPORT VipToolWidgetScrollArea : public QScrollArea
-{
-	Q_OBJECT
-	Q_PROPERTY(bool floatingTool READ floatingTool WRITE setFloatingTool)
-public:
-	VipToolWidgetScrollArea(QWidget* parent = nullptr)
-	  : QScrollArea(parent)
-	{
-		setViewport(new VipViewport());
-	}
-
-	bool floatingTool() const { return static_cast<VipToolWidget*>(parentWidget())->isFloating(); }
-	void setFloatingTool(bool f) { static_cast<VipToolWidget*>(parentWidget())->setFloating(f); }
-
-protected:
-	virtual void resizeEvent(QResizeEvent* evt);
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 /// @brief A VipToolWidget which is linked to a VipDisplayPlayerArea or to a VipAbstractPlayer
@@ -275,6 +314,9 @@ private:
 class QBoxLayout;
 class QGraphicsObject;
 
+/// @brief A VipToolWidgetPlayer that displays edition widget
+/// in order to customize the look of QGraphicsObject (usually
+/// a VipPlotItem object).
 class VIP_GUI_EXPORT VipPlotToolWidgetPlayer : public VipToolWidgetPlayer
 {
 	Q_OBJECT
@@ -290,13 +332,18 @@ public:
 	virtual bool eventFilter(QObject* watched, QEvent* evt);
 
 private:
-	class PrivateData;
-	PrivateData* m_data;
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
-
+/// @brief Returns the VipPlotToolWidgetPlayer tool widget
 VipPlotToolWidgetPlayer* vipGetPlotToolWidgetPlayer(VipMainWindow* window = nullptr);
 
 class VipProgress;
+
+/// @brief A VipToolWidget that displays one or more progress bars.
+///
+/// These progress bars are created/removed on creation/destruction
+/// of VipProgress objects.
+///
 class VIP_GUI_EXPORT VipMultiProgressWidget : public VipToolWidget
 {
 	Q_OBJECT
@@ -329,10 +376,9 @@ private Q_SLOTS:
 private:
 	void changeModality(Qt::WindowModality);
 
-	class PrivateData;
-	PrivateData* m_data;
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
-
+/// @brief Returns the VipMultiProgressWidget tool widget
 VIP_GUI_EXPORT VipMultiProgressWidget* vipGetMultiProgressWidget(VipMainWindow* window = nullptr);
 
 /// @}

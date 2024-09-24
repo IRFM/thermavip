@@ -239,14 +239,11 @@ VipTextEngine::~VipTextEngine() {}
 //! Constructor
 VipPlainTextEngine::VipPlainTextEngine()
 {
-	d_data = new PrivateData;
+	VIP_CREATE_PRIVATE_DATA(d_data);
 }
 
 //! Destructor
-VipPlainTextEngine::~VipPlainTextEngine()
-{
-	delete d_data;
-}
+VipPlainTextEngine::~VipPlainTextEngine() {}
 
 /// Find the height for a given width
 ///
@@ -507,7 +504,6 @@ VipTextStyle::PrivateData::PrivateData()
   : cached(false)
   , margin(0)
   , boxStyle(Qt::NoPen)
-  , textBoxStyle(nullptr)
   , alignment(Qt::AlignCenter)
   , renderHints(default_text_hints)
 {
@@ -520,18 +516,15 @@ VipTextStyle::PrivateData::PrivateData(const VipTextStyle::PrivateData& other)
   , font(other.font)
   , textPen(other.textPen)
   , boxStyle(other.boxStyle)
-  , textBoxStyle(nullptr)
   , alignment(other.alignment)
   , renderHints(other.renderHints)
 {
 	if (other.textBoxStyle)
-		textBoxStyle = new VipBoxStyle(*other.textBoxStyle);
+		textBoxStyle.reset(new VipBoxStyle(*other.textBoxStyle));
 }
 
 VipTextStyle::PrivateData::~PrivateData()
 {
-	if (textBoxStyle)
-		delete textBoxStyle;
 }
 
 VipTextStyle::VipTextStyle()
@@ -678,19 +671,19 @@ VipBoxStyle& VipTextStyle::boxStyle()
 void VipTextStyle::setTextBoxStyle(const VipBoxStyle& s)
 {
 	if (!d_data->textBoxStyle)
-		d_data->textBoxStyle = new VipBoxStyle();
+		d_data->textBoxStyle .reset(new VipBoxStyle());
 	*d_data->textBoxStyle = s;
 }
 const VipBoxStyle& VipTextStyle::textBoxStyle() const
 {
 	if (!d_data->textBoxStyle)
-		const_cast<VipTextStyle*>(this)->d_data->textBoxStyle = new VipBoxStyle();
+		const_cast<VipTextStyle*>(this)->d_data->textBoxStyle.reset( new VipBoxStyle());
 	return *d_data->textBoxStyle;
 }
 VipBoxStyle& VipTextStyle::textBoxStyle()
 {
 	if (!d_data->textBoxStyle)
-		d_data->textBoxStyle = new VipBoxStyle();
+		d_data->textBoxStyle.reset( new VipBoxStyle());
 	return *d_data->textBoxStyle;
 }
 
@@ -1792,7 +1785,7 @@ public:
 
 VipTextObject::VipTextObject(const VipText& text, const QRectF& rect, const QTransform& tr)
 {
-	d_data = new PrivateData();
+	VIP_CREATE_PRIVATE_DATA(d_data);
 	d_data->text = text;
 	d_data->rect = rect;
 	d_data->transform = tr;
@@ -1800,7 +1793,7 @@ VipTextObject::VipTextObject(const VipText& text, const QRectF& rect, const QTra
 
 VipTextObject::VipTextObject(const VipText& text, const VipPie& pie, const QPointF& center, VipText::TextDirection dir, const QTransform& tr)
 {
-	d_data = new PrivateData();
+	VIP_CREATE_PRIVATE_DATA(d_data);
 	d_data->text = text;
 	d_data->pie = pie;
 	d_data->dir = dir;
@@ -1810,8 +1803,10 @@ VipTextObject::VipTextObject(const VipText& text, const VipPie& pie, const QPoin
 
 VipTextObject::VipTextObject(const VipTextObject& other)
 {
-	d_data = new PrivateData(*other.d_data);
+	VIP_CREATE_PRIVATE_DATA(d_data, *other.d_data);
 }
+
+VipTextObject::~VipTextObject() = default;
 
 VipTextObject& VipTextObject::operator=(const VipTextObject& other)
 {

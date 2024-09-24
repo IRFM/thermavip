@@ -456,8 +456,8 @@ private:
 	void dataBoundingRect(const VipPointVector&);
 	int findClosestPos(const VipPointVector& data, const VipPoint& pos, int axis, double maxDistance, bool continuous) const;
 
-	class PrivateData;
-	PrivateData* d_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 template<class F>

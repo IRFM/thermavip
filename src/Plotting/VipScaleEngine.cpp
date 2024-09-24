@@ -159,13 +159,12 @@ public:
 //! Constructor
 VipScaleEngine::VipScaleEngine()
 {
-	d_data = new PrivateData;
+	VIP_CREATE_PRIVATE_DATA(d_data);
 }
 
 //! Destructor
 VipScaleEngine::~VipScaleEngine()
 {
-	delete d_data;
 }
 
 /// \return the margin at the lower end of the scale

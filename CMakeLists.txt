@@ -27,6 +27,7 @@ option(WITH_LONG_DOUBLE "Use long double as the default type for 2D point repres
 option(WITH_FFMEG "Build ffmpeg plugin" OFF)
 option(WITH_HDF5 "Build HDF5 plugin" OFF)
 option(WITH_PYTHON "Build Python plugin" OFF)
+option(WITH_VTK "Build VTK support" OFF)
 option(WITH_LIBRIR "Build and install librir" OFF)
 option(WITH_EXAMPLES "Build examples" ON)
 option(WITH_TESTS "Build tests" ON)

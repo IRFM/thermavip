@@ -422,7 +422,6 @@ VipResizeItem::~VipResizeItem()
 			d_data->managed[i]->deleteLater();
 		}
 	}
-	delete d_data;
 }
 
 void VipResizeItem::setCustomLeftResizer(const QPainterPath& p)

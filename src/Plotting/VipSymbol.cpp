@@ -760,12 +760,12 @@ public:
 /// black outline with zero width, no size .
 VipSymbol::VipSymbol(Style style)
 {
-	d_data = new PrivateData(style, QBrush(Qt::gray), QPen(Qt::black, 0), QSizeF());
+	VIP_CREATE_PRIVATE_DATA(d_data,style, QBrush(Qt::gray), QPen(Qt::black, 0), QSizeF());
 }
 
 VipSymbol::VipSymbol(const VipSymbol& other)
 {
-	d_data = new PrivateData(other.d_data->style, other.d_data->brush, other.d_data->pen, other.d_data->size);
+	VIP_CREATE_PRIVATE_DATA(d_data,other.d_data->style, other.d_data->brush, other.d_data->pen, other.d_data->size);
 	d_data->isPinPointEnabled = other.d_data->isPinPointEnabled;
 	d_data->pinPoint = other.d_data->pinPoint;
 	d_data->pixmap = other.d_data->pixmap;
@@ -781,19 +781,17 @@ VipSymbol::VipSymbol(const VipSymbol& other)
 /// \sa setStyle(), setBrush(), setPen(), setSize()
 VipSymbol::VipSymbol(VipSymbol::Style style, const QBrush& brush, const QPen& pen, const QSizeF& size)
 {
-	d_data = new PrivateData(style, brush, pen, size);
+	VIP_CREATE_PRIVATE_DATA(d_data,style, brush, pen, size);
 }
 
 //! Destructor
 VipSymbol::~VipSymbol()
 {
-	delete d_data;
 }
 
 VipSymbol& VipSymbol::operator=(const VipSymbol& other)
 {
-	delete d_data;
-	d_data = new PrivateData(other.d_data->style, other.d_data->brush, other.d_data->pen, other.d_data->size);
+	VIP_CREATE_PRIVATE_DATA(d_data,other.d_data->style, other.d_data->brush, other.d_data->pen, other.d_data->size);
 	d_data->isPinPointEnabled = other.d_data->isPinPointEnabled;
 	d_data->pinPoint = other.d_data->pinPoint;
 	d_data->pixmap = other.d_data->pixmap;

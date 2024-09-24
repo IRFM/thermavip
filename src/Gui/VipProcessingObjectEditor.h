@@ -89,8 +89,8 @@ Q_SIGNALS:
 	void valueChanged(const QVariant&);
 
 private:
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 /// Tool button that displays a menu to select a VipDisplayObject input (final processing data)
@@ -117,8 +117,8 @@ private Q_SLOTS:
 	void elideText();
 
 private:
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 /// Edit a VipBaseDataFusion processing.
@@ -142,8 +142,8 @@ private Q_SLOTS:
 
 private:
 	int indexOfInput(QObject*);
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 /// Widget to edit a VipProcessingObjectEditor
@@ -160,8 +160,8 @@ private Q_SLOTS:
 	void updateProcessingObject();
 
 private:
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 /// Widget to edit a VipIODeviceEditor
@@ -178,8 +178,8 @@ private Q_SLOTS:
 	void updateIODevice();
 
 private:
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 class QListWidgetItem;
@@ -229,8 +229,8 @@ private Q_SLOTS:
 	void resetProcessingList();
 
 private:
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 class VipSplitAndMergeEditor : public QWidget
@@ -252,8 +252,8 @@ Q_SIGNALS:
 	void selectionChanged(VipUniqueProcessingObjectEditor* ed);
 
 private:
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 class QComboBox;
@@ -282,8 +282,8 @@ Q_SIGNALS:
 	void componentChanged(const QString&);
 
 private:
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 /// Widget to edit a VipConvert
@@ -308,8 +308,8 @@ Q_SIGNALS:
 	void conversionChanged(int);
 
 private:
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 /// Widget to edit a VipDisplayImage.
@@ -332,8 +332,8 @@ private Q_SLOTS:
 	void updateExtractorVisibility();
 
 private:
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 /// Widget to edit a VipDisplayCurve.
@@ -354,8 +354,8 @@ private Q_SLOTS:
 	void updateExtractorVisibility();
 
 private:
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 /// Widget to edit a VipSwitch
@@ -374,8 +374,8 @@ public Q_SLOTS:
 	void resetSwitch();
 
 private:
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 /// Widget to edit a VipClamp
@@ -394,8 +394,8 @@ public Q_SLOTS:
 	void updateClamp();
 
 private:
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 /// Widget to edit a VipTextFileReader
@@ -411,8 +411,8 @@ private Q_SLOTS:
 	void updateTextFileReader();
 
 private:
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 /// Widget to edit a VipTextFileWriter
@@ -428,8 +428,8 @@ private Q_SLOTS:
 	void updateTextFileWriter();
 
 private:
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 /// Widget to edit a VipImageWriter
@@ -445,8 +445,8 @@ private Q_SLOTS:
 	void updateImageWriter();
 
 private:
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 class VIP_GUI_EXPORT VipCSVWriterEditor : public QWidget
@@ -462,8 +462,8 @@ private Q_SLOTS:
 	void updateWidgets();
 
 private:
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 /// Widget to edit a VipDirectoryReader
@@ -479,8 +479,8 @@ public Q_SLOTS:
 	void apply();
 
 private:
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 /// Widget to edit a VipOperationBetweenPlayers
@@ -496,8 +496,8 @@ public Q_SLOTS:
 	void apply();
 
 private:
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 class VIP_GUI_EXPORT VipCropEditor : public QWidget
@@ -563,8 +563,8 @@ protected:
 	// virtual void mousePressEvent(QMouseEvent * evt);
 
 private:
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 class VIP_GUI_EXPORT VipComponentLabellingEditor : public QCheckBox
@@ -648,8 +648,8 @@ private:
 	void LoadParametersFromWarpingObject();
 
 private:
-	class PrivateData;
-	PrivateData* d_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 class PropertyWidget;
@@ -705,8 +705,8 @@ Q_SIGNALS:
 
 private:
 	void removeEndStretch();
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 class VIP_GUI_EXPORT VipProcessingLeafSelector : public QToolButton
@@ -734,8 +734,8 @@ private Q_SLOTS:
 
 private:
 	QString title(VipProcessingObject* obj, QString& tool_tip) const;
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 /// Widget used to hide/show a VipProcessingObject editor in a VipMultiProcessingObjectEditor.
@@ -763,8 +763,8 @@ Q_SIGNALS:
 	void clicked(bool);
 
 private:
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 /// Displays all the editors for a chain of VipProcessingObject.
 /// Use VipMultiProcessingObjectEditor::setProcessingObjects to set the widget's content and display all the editors for a list of VipProcessingObject.
@@ -812,8 +812,8 @@ Q_SIGNALS:
 	void processingsChanged();
 
 private:
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 typedef QPointer<VipPlotItem> VipPlotItemPtr;
@@ -856,8 +856,8 @@ Q_SIGNALS:
 	void processingsChanged();
 
 private:
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 VIP_GUI_EXPORT VipProcessingEditorToolWidget* vipGetProcessingEditorToolWidget(VipMainWindow* window = nullptr);
@@ -876,8 +876,8 @@ public:
 	VipIODevice* selection() const;
 
 private:
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 class VIP_GUI_EXPORT VipCreateDevice

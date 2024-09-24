@@ -1212,12 +1212,11 @@ public:
 VipSFTPFileSystem::VipSFTPFileSystem()
   : VipMapFileSystem(OpenRead | OpenText)
 {
-	d_data = new PrivateData();
+	VIP_CREATE_PRIVATE_DATA(d_data);
 }
 
 VipSFTPFileSystem::~VipSFTPFileSystem()
 {
-	delete d_data;
 }
 
 bool VipSFTPFileSystem::open(const QByteArray& addr)

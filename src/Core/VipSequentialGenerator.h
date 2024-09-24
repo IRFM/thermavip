@@ -70,8 +70,8 @@ protected:
 	virtual bool enableStreaming(bool);
 
 private:
-	class PrivateData;
-	PrivateData* d_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 VIP_REGISTER_QOBJECT_METATYPE(VipSequentialGenerator*)

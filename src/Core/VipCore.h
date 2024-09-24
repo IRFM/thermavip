@@ -489,6 +489,9 @@ VIP_CORE_EXPORT QString vipAppCanonicalPath();
 /// @brief Returns the current user name
 VIP_CORE_EXPORT QString vipUserName();
 
+
+
+
 /// @}
 // end Core
 

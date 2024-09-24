@@ -91,7 +91,7 @@ public:
 VipProcessingObjectTree::VipProcessingObjectTree(QWidget* parent)
   : QTreeWidget(parent)
 {
-	m_data = new PrivateData();
+	VIP_CREATE_PRIVATE_DATA(d_data);
 
 	// behavior
 	this->setSelectionMode(QAbstractItemView::ExtendedSelection);
@@ -108,14 +108,13 @@ VipProcessingObjectTree::VipProcessingObjectTree(QWidget* parent)
 
 VipProcessingObjectTree::~VipProcessingObjectTree()
 {
-	delete m_data;
 }
 
 void VipProcessingObjectTree::setProcessingInfos(const QList<VipProcessingObject::Info>& infos)
 {
-	if (m_data->infos != infos) {
+	if (d_data->infos != infos) {
 		this->clear();
-		m_data->infos = infos;
+		d_data->infos = infos;
 
 		QTreeWidgetItem* top_level = this->invisibleRootItem();
 
@@ -187,7 +186,7 @@ void VipProcessingObjectTree::resetSize()
 
 const QList<VipProcessingObject::Info>& VipProcessingObjectTree::processingInfos() const
 {
-	return m_data->infos;
+	return d_data->infos;
 }
 
 QList<VipProcessingObject::Info> VipProcessingObjectTree::selectedProcessingInfos() const
@@ -248,7 +247,7 @@ public:
 VipProcessingObjectMenu::VipProcessingObjectMenu(QWidget* parent)
   : VipDragMenu(parent)
 {
-	m_data = new PrivateData();
+	VIP_CREATE_PRIVATE_DATA(d_data);
 
 	this->setToolTipsVisible(true);
 
@@ -258,13 +257,12 @@ VipProcessingObjectMenu::VipProcessingObjectMenu(QWidget* parent)
 
 VipProcessingObjectMenu::~VipProcessingObjectMenu()
 {
-	delete m_data;
 }
 
 void VipProcessingObjectMenu::setProcessingInfos(const QList<VipProcessingObject::Info>& infos)
 {
 	this->clear();
-	m_data->actions.clear();
+	d_data->actions.clear();
 
 	if (infos.isEmpty())
 		return;
@@ -323,32 +321,32 @@ void VipProcessingObjectMenu::setProcessingInfos(const QList<VipProcessingObject
 		act->setProperty("Info", QVariant::fromValue(it.value()));
 		act->setToolTip(it.value().description);
 		act->setFont(QFont());
-		m_data->actions.append(act);
+		d_data->actions.append(act);
 	}
 
-	m_data->infos = infos;
+	d_data->infos = infos;
 }
 
 const QList<VipProcessingObject::Info>& VipProcessingObjectMenu::processingInfos() const
 {
-	return m_data->infos;
+	return d_data->infos;
 }
 
 VipProcessingObject::Info VipProcessingObjectMenu::selectedProcessingInfo() const
 {
-	return m_data->last;
+	return d_data->last;
 }
 
 QList<QAction*> VipProcessingObjectMenu::processingActions() const
 {
-	return m_data->actions;
+	return d_data->actions;
 }
 
 void VipProcessingObjectMenu::selected(QAction* act)
 {
 	// we use the property '_vip_notrigger' to disable an action
 	if (!act->property("_vip_notrigger").toBool()) {
-		m_data->last = act->property("Info").value<VipProcessingObject::Info>();
+		d_data->last = act->property("Info").value<VipProcessingObject::Info>();
 		Q_EMIT selected(selectedProcessingInfo());
 	}
 }

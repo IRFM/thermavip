@@ -117,8 +117,8 @@ Q_SIGNALS:
 	void changed();
 
 private:
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 class VipPlayerDBAccess;
@@ -161,8 +161,8 @@ protected:
 	virtual void keyPressEvent(QKeyEvent* key);
 
 private:
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 #endif

@@ -43,13 +43,11 @@
 #include "VipPlayer.h"
 #include "VipStandardWidgets.h"
 
-static QRegExp& regExpForIp()
-{
-	static QRegExp inst("(\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3})");
-	return inst;
-}
 
-/// Manage HTML files as well as http addresses when opening a file from Thermavip tool bar
+/// @brief Manage HTML files as well as http addresses when opening a file from Thermavip tool bar.
+/// 
+/// HTTP/IP addresses and HTML files are opened in a VipWebBrowser player.
+/// 
 class VipHTTPFileHandler : public VipFileHandler
 {
 	Q_OBJECT
@@ -61,9 +59,16 @@ public:
 		QString file(removePrefix(filename));
 		return (QFileInfo(file).suffix().compare("html", Qt::CaseInsensitive) == 0 || file.startsWith("http://") || file.startsWith("https://") || regExpForIp().indexIn(file) == 0);
 	}
+
+	static inline QRegExp& regExpForIp()
+	{
+		static QRegExp inst("(\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3})");
+		return inst;
+	}
 };
 VIP_REGISTER_QOBJECT_METATYPE(VipHTTPFileHandler*)
 
+/// @brief Tool bar of a VipWebBrowser
 class VipWebBrowserToolBar : public QToolBar
 {
 	Q_OBJECT
@@ -84,6 +89,8 @@ public Q_SLOTS:
 	void setIcon(const QIcon& icon);
 };
 
+/// @brief A player used to display a lightweight web browser
+///
 class VipWebBrowser : public VipWidgetPlayer
 {
 	Q_OBJECT
@@ -106,8 +113,8 @@ private Q_SLOTS:
 	void featurePermissionRequested(const QUrl& securityOrigin, QWebEnginePage::Feature feature);
 
 private:
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 VIP_REGISTER_QOBJECT_METATYPE(VipWebBrowser*)
 

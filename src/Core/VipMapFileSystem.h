@@ -353,8 +353,8 @@ protected:
 	virtual VipPathList listPathContent(const VipPath& path);
 	virtual QIODevice* openPath(const VipPath& path, QIODevice::OpenMode modes);
 
-	class PrivateData;
-	PrivateData* d_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 VIP_REGISTER_QOBJECT_METATYPE(VipSFTPFileSystem*)

@@ -187,8 +187,8 @@ protected:
 	virtual QVariant itemChange(GraphicsItemChange change, const QVariant& value);
 
 private:
-	class PrivateData;
-	PrivateData* d_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 Q_DECLARE_METATYPE(VipSliderGrip*)

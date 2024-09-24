@@ -72,71 +72,70 @@ public:
 VipArchive::VipArchive(Flag flag, SupportedOperations op)
   : QObject()
 {
-	m_data = new PrivateData();
-	m_data->flag = flag;
-	m_data->operations = op;
-	m_data->io_mode = NotOpen;
-	m_data->parameters.errorCode = 0;
+	VIP_CREATE_PRIVATE_DATA(d_data);
+	d_data->flag = flag;
+	d_data->operations = op;
+	d_data->io_mode = NotOpen;
+	d_data->parameters.errorCode = 0;
 }
 
 VipArchive::~VipArchive()
 {
-	delete m_data;
 }
 
 void VipArchive::setReadMode(ReadMode mode)
 {
-	if (mode == Backward && (!(m_data->operations & ReadBackward)))
+	if (mode == Backward && (!(d_data->operations & ReadBackward)))
 		return;
 
-	m_data->parameters.readMode = mode;
+	d_data->parameters.readMode = mode;
 }
 
 VipArchive::ReadMode VipArchive::readMode() const
 {
-	return m_data->parameters.readMode;
+	return d_data->parameters.readMode;
 }
 
 void VipArchive::setError(const QString& error, int code)
 {
-	m_data->parameters.errorString = error;
-	m_data->parameters.errorCode = code;
+	d_data->parameters.errorString = error;
+	d_data->parameters.errorCode = code;
 }
 
 void VipArchive::resetError()
 {
-	m_data->parameters.errorString.clear();
-	m_data->parameters.errorCode = 0;
+	d_data->parameters.errorString.clear();
+	d_data->parameters.errorCode = 0;
 }
 
 QString VipArchive::errorString() const
 {
-	return m_data->parameters.errorString;
+	return d_data->parameters.errorString;
 }
 
 int VipArchive::errorCode() const
 {
-	return m_data->parameters.errorCode;
+	return d_data->parameters.errorCode;
 }
 
 bool VipArchive::hasError() const
 {
-	return m_data->parameters.errorCode != 0;
+	return d_data->parameters.errorCode != 0;
 }
 
 VipArchive::SupportedOperations VipArchive::supportedOperations() const
 {
-	return m_data->operations;
+	return d_data->operations;
 }
 
 VipArchive::Flag VipArchive::flag() const
 {
-	return m_data->flag;
+	return d_data->flag;
 }
 
 VipArchive::OpenMode VipArchive::mode() const
 {
-	return m_data->io_mode;
+	return d_data->io_mode;
 }
 
 bool VipArchive::isOpen() const
@@ -146,7 +145,7 @@ bool VipArchive::isOpen() const
 
 void VipArchive::setMode(OpenMode m)
 {
-	m_data->io_mode = m;
+	d_data->io_mode = m;
 }
 
 VipArchive::operator const void*() const
@@ -159,19 +158,19 @@ VipArchive::operator const void*() const
 
 void VipArchive::save()
 {
-	m_data->saved.append(m_data->parameters);
+	d_data->saved.append(d_data->parameters);
 }
 void VipArchive::restore()
 {
-	if (m_data->saved.size()) {
-		m_data->parameters = m_data->saved.back();
-		m_data->saved.pop_back();
+	if (d_data->saved.size()) {
+		d_data->parameters = d_data->saved.back();
+		d_data->saved.pop_back();
 	}
 }
 
 VipArchive& VipArchive::comment(const QString& cdata)
 {
-	if (m_data->operations & Comment) {
+	if (d_data->operations & Comment) {
 		resetError();
 		this->doComment(const_cast<QString&>(cdata));
 	}
@@ -188,7 +187,7 @@ VipArchive& VipArchive::start(const QString& name, const QVariantMap& metadata)
 	QVariantMap map;
 	this->doStart(const_cast<QString&>(name), const_cast<QVariantMap&>(metadata), true);
 	if (!hasError())
-		m_data->parameters.position.append(name);
+		d_data->parameters.position.append(name);
 	return *this;
 }
 
@@ -198,42 +197,42 @@ VipArchive& VipArchive::start(const QString& name)
 	QVariantMap map;
 	this->doStart(const_cast<QString&>(name), map, false);
 	if (!hasError())
-		m_data->parameters.position.append(name);
+		d_data->parameters.position.append(name);
 	return *this;
 }
 
 VipArchive& VipArchive::end()
 {
-	if (mode() == Write && m_data->parameters.position.size() == 0) {
+	if (mode() == Write && d_data->parameters.position.size() == 0) {
 		setError("end(): no related start()");
 		return *this;
 	}
 	resetError();
 	this->doEnd();
 	if (!hasError())
-		m_data->parameters.position.pop_back();
+		d_data->parameters.position.pop_back();
 	return *this;
 }
 
 QStringList VipArchive::currentPosition() const
 {
-	return m_data->parameters.position;
+	return d_data->parameters.position;
 }
 
 void VipArchive::setAttribute(const char* name, bool value)
 {
-	m_data->parameters.attributes[name] = value;
+	d_data->parameters.attributes[name] = value;
 }
 
 bool VipArchive::hasAttribue(const char* name) const
 {
-	return m_data->parameters.attributes.find(name) != m_data->parameters.attributes.end();
+	return d_data->parameters.attributes.find(name) != d_data->parameters.attributes.end();
 }
 
 bool VipArchive::attribute(const char* name, bool _default) const
 {
-	QMap<QByteArray, bool>::const_iterator it = m_data->parameters.attributes.find(name);
-	if (it != m_data->parameters.attributes.end())
+	QMap<QByteArray, bool>::const_iterator it = d_data->parameters.attributes.find(name);
+	if (it != d_data->parameters.attributes.end())
 		return it.value();
 	else
 		return _default;
@@ -241,11 +240,11 @@ bool VipArchive::attribute(const char* name, bool _default) const
 
 void VipArchive::setVersion(const QString& version)
 {
-	m_data->version = version;
+	d_data->version = version;
 }
 QString VipArchive::version() const
 {
-	return m_data->version;
+	return d_data->version;
 }
 
 QVariant VipArchive::read(const QString& name, QVariantMap& metadata)
@@ -293,8 +292,8 @@ VipFunctionDispatcher<2>& VipArchive::deserializeDispatcher()
 VipFunctionDispatcher<2>::function_list_type VipArchive::serializeFunctions(const QVariant& value)
 {
 	VipFunctionDispatcher<2>::function_list_type lst;
-	if (m_data->fastTypesS.count())
-		lst = m_data->fastTypesS.match(value);
+	if (d_data->fastTypesS.count())
+		lst = d_data->fastTypesS.match(value);
 	if (!lst.size())
 		lst = serializeDispatcher().match(value);
 	return lst;
@@ -303,8 +302,8 @@ VipFunctionDispatcher<2>::function_list_type VipArchive::serializeFunctions(cons
 VipFunctionDispatcher<2>::function_list_type VipArchive::deserializeFunctions(const QVariant& value)
 {
 	VipFunctionDispatcher<2>::function_list_type lst;
-	if (m_data->fastTypesD.count())
-		lst = m_data->fastTypesD.match(value);
+	if (d_data->fastTypesD.count())
+		lst = d_data->fastTypesD.match(value);
 	if (!lst.size())
 		lst = deserializeDispatcher().match(value);
 	return lst;
@@ -318,14 +317,14 @@ void VipArchive::registerFastType(int type)
 	VipFunctionDispatcher<2>::function_list_type serialize_lst = serializeDispatcher().match(lst);
 	VipFunctionDispatcher<2>::function_list_type deserialize_lst = deserializeDispatcher().match(lst);
 
-	m_data->fastTypesS.append(serialize_lst);
-	m_data->fastTypesD.append(deserialize_lst);
+	d_data->fastTypesS.append(serialize_lst);
+	d_data->fastTypesD.append(deserialize_lst);
 }
 
 void VipArchive::copyFastTypes(VipArchive& other)
 {
-	other.m_data->fastTypesS = m_data->fastTypesS;
-	other.m_data->fastTypesD = m_data->fastTypesD;
+	other.d_data->fastTypesS = d_data->fastTypesS;
+	other.d_data->fastTypesD = d_data->fastTypesD;
 }
 
 VipArchive& operator<<(VipArchive& arch, const QVariant& value)

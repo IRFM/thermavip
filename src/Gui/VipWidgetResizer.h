@@ -36,6 +36,9 @@
 
 #include "VipConfig.h"
 
+/// @brief Helper object that allows a QWidget to be resizable 
+/// using its borders, including non top level widgets.
+/// 
 class VIP_GUI_EXPORT VipWidgetResizer : public QObject
 {
 	Q_OBJECT
@@ -47,13 +50,18 @@ public:
 
 	QWidget* parent() const;
 
-	void setBounds(int inner_detect, int end_detect);
+	/// @brief Set the bounds in pixels to detect mouse interaction.
+	/// @param inner_detect inner distance from the widget bounding rect
+	/// @param outer_detect outer distance from the widget bounding rect
+	void setBounds(int inner_detect, int outer_detect);
 	int innerDetect() const;
 	int outerDetect() const;
 
+	/// @brief Enable/disable resizing
 	void setEnabled(bool);
 	bool isEnabled() const;
 
+	/// @brief Enable/disable resizing outside it parent
 	void enableOutsideParent(bool);
 	bool outsideParentEnabled() const;
 
@@ -70,8 +78,8 @@ private:
 	bool hasCustomCursor() const;
 	QPoint validPosition(const QPoint& pt, bool* ok = nullptr) const;
 	QSize validSize(const QSize& s, bool* ok = nullptr) const;
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 #endif

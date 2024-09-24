@@ -123,8 +123,8 @@ public Q_SLOTS:
 	void cancelRequested();
 
 private:
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 /// @}

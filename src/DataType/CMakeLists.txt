@@ -11,9 +11,18 @@ include(GNUInstallDirs)
 
 FILE(GLOB Sources *.cpp)
 FILE(GLOB Headers *.h)
+
+if(NOT WITH_VTK)
+	list(FILTER Sources EXCLUDE REGEX "^.*VTK.*$")
+	list(FILTER Headers EXCLUDE REGEX "^.*VTK.*$")
+	list(FILTER Sources EXCLUDE REGEX "^.*FieldOfView.*$")
+	list(FILTER Headers EXCLUDE REGEX "^.*FieldOfView.*$")
+endif()
+
 add_library(VipDataType SHARED
     ${Sources} ${Headers}
 )
+
 target_include_directories(VipDataType PRIVATE
     .
 )

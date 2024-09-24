@@ -111,7 +111,7 @@ public:
 VipPlotHistogram::VipPlotHistogram(const VipText& title)
   : VipPlotItemDataType(title)
 {
-	d_data = new PrivateData();
+	VIP_CREATE_PRIVATE_DATA(d_data);
 	this->setData(QVariant::fromValue(VipIntervalSampleVector()));
 	this->boxStyle().setBackgroundBrush(QBrush(QColor(Qt::blue)));
 }
@@ -119,7 +119,6 @@ VipPlotHistogram::VipPlotHistogram(const VipText& title)
 //! Destructor
 VipPlotHistogram::~VipPlotHistogram()
 {
-	delete d_data;
 }
 
 void VipPlotHistogram::setStyle(HistogramStyle style)
@@ -274,8 +273,8 @@ VipInterval VipPlotHistogram::plotInterval(const VipInterval& interval) const
 		for (int i = 1; i < data.size(); ++i)
 			inter = inter.extend(data[i].value);
 
-		const_cast<PrivateData*>(d_data)->plotInterval = inter;
-		const_cast<PrivateData*>(d_data)->plotValidInterval = interval;
+		const_cast<PrivateData*>(d_data.get())->plotInterval = inter;
+		const_cast<PrivateData*>(d_data.get())->plotValidInterval = interval;
 	}
 
 	return d_data->plotInterval;
@@ -286,7 +285,7 @@ QList<VipInterval> VipPlotHistogram::plotBoundingIntervals() const
 	Locker locker(dataLock());
 	QList<VipInterval> res = d_data->bounding;
 	if (res.isEmpty()) {
-		res = const_cast<PrivateData*>(d_data)->bounding = dataBoundingIntervals(rawData(), baseline());
+		res = const_cast<PrivateData*>(d_data.get())->bounding = dataBoundingIntervals(rawData(), baseline());
 	}
 	res.detach();
 	return res;

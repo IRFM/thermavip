@@ -2,6 +2,7 @@
 #define PY_EDITOR_H
 
 #include "CodeEditor.h"
+#include "VipConfig.h"
 
 #include <QTabWidget>
 #include <QWidgetAction>
@@ -46,8 +47,8 @@ protected:
 private:
 	void removePreviousFormat();
 	void format(const QTextBlock & b, int start, int end);
-	class PrivateData;
-	PrivateData * m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 class PYTHON_EXPORT PyToolBar : public QToolBar

@@ -235,14 +235,13 @@ public:
 VipIODevice::VipIODevice(QObject* parent)
   : VipProcessingObject(parent)
 {
-	m_data = new PrivateData();
+	VIP_CREATE_PRIVATE_DATA(d_data);
 }
 
 VipIODevice::~VipIODevice()
 {
 	VipIODevice::close();
 	emitDestroyed();
-	delete m_data;
 }
 
 void VipIODevice::close()
@@ -264,43 +263,43 @@ void VipIODevice::close()
 			delete device();
 		setDevice(nullptr);
 	}
-	m_data->size = 0;
+	d_data->size = 0;
 }
 
 void VipIODevice::save()
 {
 	VipProcessingObject::save();
-	m_data->savedParameters.append(PrivateData::Parameters(this->timestampingFilter(), this->isStreamingEnabled()));
+	d_data->savedParameters.append(PrivateData::Parameters(this->timestampingFilter(), this->isStreamingEnabled()));
 }
 
 VipIODevice::OpenModes VipIODevice::openMode() const
 {
-	return m_data->mode;
+	return d_data->mode;
 }
 
 QString VipIODevice::path() const
 {
-	return m_data->path;
+	return d_data->path;
 }
 
 QIODevice* VipIODevice::device() const
 {
-	return m_data->device.data();
+	return d_data->device.data();
 }
 
 void VipIODevice::setDevice(QIODevice* device)
 {
-	m_data->device = device;
+	d_data->device = device;
 }
 
 VipMapFileSystemPtr VipIODevice::mapFileSystem() const
 {
-	return m_data->map;
+	return d_data->map;
 }
 
 void VipIODevice::setMapFileSystem(const VipMapFileSystemPtr& map)
 {
-	m_data->map = map;
+	d_data->map = map;
 }
 
 QString VipIODevice::removePrefix(const QString& path, const QString& prefix)
@@ -321,7 +320,7 @@ qint64 VipIODevice::size() const
 	else if (deviceType() == Resource)
 		return 1;
 	else
-		return m_data->size;
+		return d_data->size;
 }
 
 bool VipIODevice::setSize(qint64 size)
@@ -329,14 +328,14 @@ bool VipIODevice::setSize(qint64 size)
 	if ((deviceType() == Sequential) || (deviceType() == Resource))
 		return false;
 	else
-		m_data->size = size;
+		d_data->size = size;
 	return true;
 }
 
 void VipIODevice::setTime(qint64 time)
 {
-	if (m_data->readTime != time) {
-		m_data->readTime = time;
+	if (d_data->readTime != time) {
+		d_data->readTime = time;
 		Q_EMIT timeChanged(time);
 	}
 }
@@ -388,15 +387,15 @@ QIODevice* VipIODevice::createDevice(const QString& path, QIODevice::OpenMode mo
 
 bool VipIODevice::setPath(const QString& path)
 {
-	m_data->path = this->removePrefix(path);
+	d_data->path = this->removePrefix(path);
 	setAttribute("Name", QFileInfo(path).fileName());
 	return true;
 }
 
 void VipIODevice::setTimestampingFilter(const VipTimestampingFilter& filter)
 {
-	m_data->parameters.filter = filter;
-	m_data->parameters.filter.setInputTimeRangeList(this->computeTimeWindow());
+	d_data->parameters.filter = filter;
+	d_data->parameters.filter.setInputTimeRangeList(this->computeTimeWindow());
 	// if (filter.isEmpty())
 	//	this->setProperty("_vip_timestampingFilter", QVariant());
 	// else
@@ -406,9 +405,9 @@ void VipIODevice::setTimestampingFilter(const VipTimestampingFilter& filter)
 
 void VipIODevice::resetTimestampingFilter()
 {
-	if (!m_data->parameters.filter.isEmpty()) {
+	if (!d_data->parameters.filter.isEmpty()) {
 		// this->setProperty("_vip_timestampingFilter", QVariant());
-		m_data->parameters.filter.reset();
+		d_data->parameters.filter.reset();
 		emitTimestampingFilterChanged();
 	}
 }
@@ -421,8 +420,8 @@ qint64 VipIODevice::transformTime(qint64 time, bool* inside, bool* exact_time) c
 	if (exact_time)
 		*exact_time = true;
 
-	if (!m_data->parameters.filter.isEmpty() && time != VipInvalidTime)
-		res = m_data->parameters.filter.transform(time, inside);
+	if (!d_data->parameters.filter.isEmpty() && time != VipInvalidTime)
+		res = d_data->parameters.filter.transform(time, inside);
 	else if (time != VipInvalidTime) {
 		// case no filter: we must return a valid time
 		res = computeClosestTime(time);
@@ -442,8 +441,8 @@ qint64 VipIODevice::invTransformTime(qint64 time, bool* inside, bool* exact_time
 	if (exact_time)
 		*exact_time = true;
 
-	if (!m_data->parameters.filter.isEmpty() && time != VipInvalidTime)
-		res = m_data->parameters.filter.invTransform(time, inside);
+	if (!d_data->parameters.filter.isEmpty() && time != VipInvalidTime)
+		res = d_data->parameters.filter.invTransform(time, inside);
 	else if (time != VipInvalidTime) {
 		// case no filter: we must return a valid time
 		res = computeClosestTime(time);
@@ -458,13 +457,13 @@ qint64 VipIODevice::invTransformTime(qint64 time, bool* inside, bool* exact_time
 
 const VipTimestampingFilter& VipIODevice::timestampingFilter() const
 {
-	return m_data->parameters.filter;
+	return d_data->parameters.filter;
 }
 
 VipTimeRangeList VipIODevice::timeWindow() const
 {
-	if (!m_data->parameters.filter.isEmpty())
-		return m_data->parameters.filter.outputTimeRangeList();
+	if (!d_data->parameters.filter.isEmpty())
+		return d_data->parameters.filter.outputTimeRangeList();
 	else
 		return computeTimeWindow();
 }
@@ -574,15 +573,15 @@ qint64 VipIODevice::closestTime(qint64 time) const
 
 qint64 VipIODevice::time() const
 {
-	if (m_data->readTime == VipInvalidTime) {
+	if (d_data->readTime == VipInvalidTime) {
 		return firstTime();
 	}
-	return m_data->readTime;
+	return d_data->readTime;
 }
 
 qint64 VipIODevice::processingTime() const
 {
-	return m_data->elapsed_time * 1000000;
+	return d_data->elapsed_time * 1000000;
 }
 
 bool VipIODevice::reload()
@@ -590,13 +589,13 @@ bool VipIODevice::reload()
 	if (!isOpen() || !isEnabled())
 		return false;
 
-	QMutexLocker locker(&m_data->readMutex);
-	LockBool lock(&m_data->is_reading);
+	QMutexLocker locker(&d_data->readMutex);
+	LockBool lock(&d_data->is_reading);
 
 	if (deviceType() == Resource) {
-		m_data->lastReadTime = vipGetMilliSecondsSinceEpoch();
+		d_data->lastReadTime = vipGetMilliSecondsSinceEpoch();
 		bool res = readData(time());
-		m_data->elapsed_time = vipGetMilliSecondsSinceEpoch() - m_data->lastReadTime;
+		d_data->elapsed_time = vipGetMilliSecondsSinceEpoch() - d_data->lastReadTime;
 		return res;
 	}
 	else if (deviceType() == Sequential) {
@@ -613,15 +612,15 @@ bool VipIODevice::reload()
 		t = firstTime();
 
 	// read the data
-	m_data->lastReadTime = vipGetMilliSecondsSinceEpoch();
+	d_data->lastReadTime = vipGetMilliSecondsSinceEpoch();
 	bool res = readData(invTransformTime(t));
-	m_data->elapsed_time = vipGetMilliSecondsSinceEpoch() - m_data->lastReadTime;
+	d_data->elapsed_time = vipGetMilliSecondsSinceEpoch() - d_data->lastReadTime;
 	return res;
 }
 
 bool VipIODevice::isReading() const
 {
-	return m_data->is_reading;
+	return d_data->is_reading;
 }
 
 bool VipIODevice::readCurrentData()
@@ -633,7 +632,7 @@ bool VipIODevice::readCurrentData()
 
 qint64 VipIODevice::lastProcessingTime() const
 {
-	return m_data->lastReadTime;
+	return d_data->lastReadTime;
 }
 
 bool VipIODevice::readInvalidTime(qint64)
@@ -646,8 +645,8 @@ bool VipIODevice::read(qint64 time, bool force)
 	if (!isOpen() || !isEnabled())
 		return false;
 
-	QMutexLocker locker(&m_data->readMutex);
-	LockBool lock(&m_data->is_reading);
+	QMutexLocker locker(&d_data->readMutex);
+	LockBool lock(&d_data->is_reading);
 
 	qint64 current_time = vipGetMilliSecondsSinceEpoch();
 
@@ -655,12 +654,12 @@ bool VipIODevice::read(qint64 time, bool force)
 		return readData(time);
 	}
 	else if (deviceType() == Sequential) {
-		if (time != m_data->readTime) {
-			m_data->readTime = time;
-			m_data->lastReadTime = current_time;
+		if (time != d_data->readTime) {
+			d_data->readTime = time;
+			d_data->lastReadTime = current_time;
 			// read the data, only emit the timeChanged() signal if a data has been read
 			bool res = readData(time);
-			m_data->elapsed_time = vipGetMilliSecondsSinceEpoch() - current_time;
+			d_data->elapsed_time = vipGetMilliSecondsSinceEpoch() - current_time;
 			if (res) {
 				Q_EMIT timeChanged(time);
 				return true;
@@ -687,7 +686,7 @@ bool VipIODevice::read(qint64 time, bool force)
 
 	if (!exact_time || !inside) {
 		bool _inside;
-		qint64 real_time = m_data->parameters.filter.invTransform(time_transform, &_inside);
+		qint64 real_time = d_data->parameters.filter.invTransform(time_transform, &_inside);
 		if (readInvalidTime(real_time))
 			return true;
 	}
@@ -698,14 +697,14 @@ bool VipIODevice::read(qint64 time, bool force)
 	}
 
 	time = closest;
-	if (time_transform != m_data->readTime || force) {
-		m_data->readTime = time_transform;
-		m_data->lastReadTime = current_time;
+	if (time_transform != d_data->readTime || force) {
+		d_data->readTime = time_transform;
+		d_data->lastReadTime = current_time;
 		Q_EMIT timeChanged(time_transform);
 
 		// read the data
 		bool res = readData(time);
-		m_data->elapsed_time = vipGetMilliSecondsSinceEpoch() - current_time;
+		d_data->elapsed_time = vipGetMilliSecondsSinceEpoch() - current_time;
 		return res;
 	}
 
@@ -717,9 +716,9 @@ bool VipIODevice::setStreamingEnabled(bool enable)
 	if (!isOpen())
 		return false;
 
-	if (enable != m_data->parameters.streamingEnabled) {
+	if (enable != d_data->parameters.streamingEnabled) {
 		if (enableStreaming(enable)) {
-			m_data->parameters.streamingEnabled = enable;
+			d_data->parameters.streamingEnabled = enable;
 			if (enable)
 				Q_EMIT streamingStarted();
 			else
@@ -727,7 +726,7 @@ bool VipIODevice::setStreamingEnabled(bool enable)
 			Q_EMIT streamingChanged(enable);
 		}
 	}
-	return m_data->parameters.streamingEnabled == enable;
+	return d_data->parameters.streamingEnabled == enable;
 }
 
 bool VipIODevice::startStreaming()
@@ -752,7 +751,7 @@ bool VipIODevice::supportFilename(const QString& fname) const
 
 bool VipIODevice::isStreamingEnabled() const
 {
-	return m_data->parameters.streamingEnabled;
+	return d_data->parameters.streamingEnabled;
 }
 
 static std::unordered_set<int> _unregistered_ids;
@@ -1075,7 +1074,7 @@ void VipIODevice::setEnabled(bool enable)
 	if (enable != isEnabled()) {
 		// dirty the parent processing pool time window since disabled devices are not used to compute the time window
 		if (VipProcessingPool* pool = qobject_cast<VipProcessingPool*>(parent())) {
-			pool->m_data->dirty_time_window = true;
+			pool->d_data->dirty_time_window = true;
 			pool->emitProcessingChanged();
 		}
 
@@ -1087,16 +1086,16 @@ void VipIODevice::restore()
 {
 	bool enabled = isEnabled();
 
-	if (m_data->savedParameters.size()) {
-		m_data->parameters = m_data->savedParameters.back();
-		m_data->savedParameters.pop_back();
+	if (d_data->savedParameters.size()) {
+		d_data->parameters = d_data->savedParameters.back();
+		d_data->savedParameters.pop_back();
 	}
 	VipProcessingObject::restore();
 
 	if (isEnabled() != enabled) {
 		// Enable changed during the restore operation: tells to the parent processing pool to recompute its time window
 		if (VipProcessingPool* pool = qobject_cast<VipProcessingPool*>(parent())) {
-			pool->m_data->dirty_time_window = true;
+			pool->d_data->dirty_time_window = true;
 			pool->emitProcessingChanged();
 		}
 	}
@@ -1110,17 +1109,17 @@ void VipIODevice::setOutputDataTime(VipAnyData& data)
 
 void VipIODevice::setOpenMode(VipIODevice::OpenModes mode)
 {
-	if (mode != m_data->mode) {
-		if ((mode & ReadOnly) && m_data->mode == NotOpen) {
+	if (mode != d_data->mode) {
+		if ((mode & ReadOnly) && d_data->mode == NotOpen) {
 			// we open a read-only device that was previously closed: reset the read time
-			m_data->readTime = VipInvalidTime;
+			d_data->readTime = VipInvalidTime;
 		}
 
-		m_data->mode = mode;
+		d_data->mode = mode;
 		if (mode != NotOpen) {
 			// dirty the parent processing pool time window since opening the devicemight change it
 			if (VipProcessingPool* pool = qobject_cast<VipProcessingPool*>(parent())) {
-				pool->m_data->dirty_time_window = true;
+				pool->d_data->dirty_time_window = true;
 				pool->emitProcessingChanged();
 			}
 
@@ -1214,12 +1213,12 @@ static void setPoolObjectName(VipProcessingPool* pool, const QString& name)
 VipProcessingPool::VipProcessingPool(QObject* parent)
   : VipIODevice(parent)
 {
-	m_data = new PrivateData(this);
+	VIP_CREATE_PRIVATE_DATA(d_data,this);
 	this->setOpenMode(ReadOnly);
 
-	m_data->streamingTimer.setSingleShot(false);
-	m_data->streamingTimer.setInterval(100);
-	connect(&m_data->streamingTimer, SIGNAL(timeout()), this, SLOT(checkForStreaming()), Qt::DirectConnection);
+	d_data->streamingTimer.setSingleShot(false);
+	d_data->streamingTimer.setInterval(100);
+	connect(&d_data->streamingTimer, SIGNAL(timeout()), this, SLOT(checkForStreaming()), Qt::DirectConnection);
 
 	// set a unique name to this pool
 	setObjectName(generatePoolObjectName());
@@ -1237,16 +1236,14 @@ VipProcessingPool::~VipProcessingPool()
 	stop();
 	setStreamingEnabled(false);
 	close();
-	m_data->streamingTimer.stop();
+	d_data->streamingTimer.stop();
 	setEnabled(false);
 	wait();
 
 	// remove callback
-	for (int i = 0; i < m_data->readCallbacks.size(); ++i)
-		if (m_data->readCallbacks[i])
-			m_data->readCallbacks[i]->deleteLater();
-
-	delete m_data;
+	for (int i = 0; i < d_data->readCallbacks.size(); ++i)
+		if (d_data->readCallbacks[i])
+			d_data->readCallbacks[i]->deleteLater();
 }
 
 QList<VipProcessingPool*> VipProcessingPool::pools()
@@ -1269,42 +1266,42 @@ VipProcessingPool* VipProcessingPool::findPool(const QString& name)
 
 void VipProcessingPool::save()
 {
-	QMutexLocker lock(&m_data->device_mutex);
+	QMutexLocker lock(&d_data->device_mutex);
 
 	VipIODevice::save();
-	m_data->savedParameters.append(PrivateData::Parameters(m_data->parameters.enableMissFrames,
+	d_data->savedParameters.append(PrivateData::Parameters(d_data->parameters.enableMissFrames,
 							       playSpeed(),
 							       modes(),
-							       m_data->parameters.begin_time,
-							       m_data->parameters.end_time,
+							       d_data->parameters.begin_time,
+							       d_data->parameters.end_time,
 							       time(),
-							       m_data->parameters.maxListSize,
-							       m_data->parameters.maxListMemory,
-							       m_data->parameters.listLimitType,
-							       m_data->parameters.logErrors));
-	m_data->savedParameters.back().objects = this->findChildren<VipProcessingObject*>();
-	m_data->savedParameters.back().objects.save();
+							       d_data->parameters.maxListSize,
+							       d_data->parameters.maxListMemory,
+							       d_data->parameters.listLimitType,
+							       d_data->parameters.logErrors));
+	d_data->savedParameters.back().objects = this->findChildren<VipProcessingObject*>();
+	d_data->savedParameters.back().objects.save();
 }
 
 void VipProcessingPool::restore()
 {
-	QMutexLocker lock(&m_data->device_mutex);
+	QMutexLocker lock(&d_data->device_mutex);
 
-	if (m_data->savedParameters.size()) {
-		m_data->parameters = m_data->savedParameters.back();
-		m_data->savedParameters.pop_back();
+	if (d_data->savedParameters.size()) {
+		d_data->parameters = d_data->savedParameters.back();
+		d_data->savedParameters.pop_back();
 	}
-	m_data->parameters.objects.restore();
+	d_data->parameters.objects.restore();
 	VipIODevice::restore();
 	applyLimitsToChildren();
 
-	if (m_data->parameters.time != VipInvalidTime)
-		this->read(m_data->parameters.time);
+	if (d_data->parameters.time != VipInvalidTime)
+		this->read(d_data->parameters.time);
 }
 
 void VipProcessingPool::setEnabled(bool enabled)
 {
-	QMutexLocker lock(&m_data->device_mutex);
+	QMutexLocker lock(&d_data->device_mutex);
 
 	VipIODevice::setEnabled(enabled);
 	VipProcessingObjectList lst = this->findChildren<VipProcessingObject*>();
@@ -1314,18 +1311,18 @@ void VipProcessingPool::setEnabled(bool enabled)
 
 const QVector<VipIODevice*>& VipProcessingPool::readDevices() const
 {
-	return m_data->read_devices;
+	return d_data->read_devices;
 }
 
 double VipProcessingPool::playSpeed() const
 {
-	return m_data->parameters.speed;
+	return d_data->parameters.speed;
 }
 
 VipProcessingPool::DeviceType VipProcessingPool::deviceType() const
 {
 	// computeChildren();
-	return m_data->device_type;
+	return d_data->device_type;
 }
 
 bool VipProcessingPool::seek(qint64 time)
@@ -1348,95 +1345,95 @@ void VipProcessingPool::setTimeLimitsEnable(bool enable)
 
 void VipProcessingPool::setPlaySpeed(double speed)
 {
-	m_data->parameters.speed = speed;
+	d_data->parameters.speed = speed;
 	emitProcessingChanged();
 }
 
 void VipProcessingPool::setModes(VipProcessingPool::RunMode mode)
 {
-	m_data->parameters.mode = mode;
-	m_data->dirty_time_window = true;
+	d_data->parameters.mode = mode;
+	d_data->dirty_time_window = true;
 	emitProcessingChanged();
 }
 
 VipProcessingPool::RunMode VipProcessingPool::modes() const
 {
-	return m_data->parameters.mode;
+	return d_data->parameters.mode;
 }
 
 void VipProcessingPool::setMode(RunModeFlag m, bool on)
 {
-	if (m_data->parameters.mode.testFlag(m) != on) {
+	if (d_data->parameters.mode.testFlag(m) != on) {
 		if (on)
-			m_data->parameters.mode |= m;
+			d_data->parameters.mode |= m;
 		else
-			m_data->parameters.mode &= ~m;
+			d_data->parameters.mode &= ~m;
 
-		m_data->dirty_time_window = true;
+		d_data->dirty_time_window = true;
 		emitProcessingChanged();
 	}
 }
 
 bool VipProcessingPool::testMode(RunModeFlag m) const
 {
-	return m_data->parameters.mode.testFlag(m);
+	return d_data->parameters.mode.testFlag(m);
 }
 
 void VipProcessingPool::setMaxListSize(int size)
 {
 	if (size >= 0)
-		m_data->parameters.maxListSize.reset(new int(size));
+		d_data->parameters.maxListSize.reset(new int(size));
 	else
-		m_data->parameters.maxListSize.reset();
+		d_data->parameters.maxListSize.reset();
 	applyLimitsToChildren();
 }
 
 void VipProcessingPool::setMaxListMemory(int memory)
 {
 	if (memory >= 0)
-		m_data->parameters.maxListMemory.reset(new int(memory));
+		d_data->parameters.maxListMemory.reset(new int(memory));
 	else
-		m_data->parameters.maxListMemory.reset();
+		d_data->parameters.maxListMemory.reset();
 	applyLimitsToChildren();
 }
 
 void VipProcessingPool::setListLimitType(int type)
 {
 	if (type >= 0)
-		m_data->parameters.listLimitType.reset(new int(type));
+		d_data->parameters.listLimitType.reset(new int(type));
 	else
-		m_data->parameters.listLimitType.reset();
+		d_data->parameters.listLimitType.reset();
 	applyLimitsToChildren();
 }
 
 int VipProcessingPool::listLimitType() const
 {
-	return m_data->parameters.listLimitType ? *m_data->parameters.listLimitType : VipProcessingManager::listLimitType();
+	return d_data->parameters.listLimitType ? *d_data->parameters.listLimitType : VipProcessingManager::listLimitType();
 }
 int VipProcessingPool::maxListSize() const
 {
-	return m_data->parameters.maxListSize ? *m_data->parameters.maxListSize : VipProcessingManager::maxListSize();
+	return d_data->parameters.maxListSize ? *d_data->parameters.maxListSize : VipProcessingManager::maxListSize();
 }
 int VipProcessingPool::maxListMemory() const
 {
-	return m_data->parameters.maxListMemory ? *m_data->parameters.maxListMemory : VipProcessingManager::maxListMemory();
+	return d_data->parameters.maxListMemory ? *d_data->parameters.maxListMemory : VipProcessingManager::maxListMemory();
 }
 bool VipProcessingPool::hasMaxListSize() const
 {
-	return m_data->parameters.maxListSize;
+	return d_data->parameters.maxListSize;
 }
 bool VipProcessingPool::hasMaxListMemory() const
 {
-	return m_data->parameters.maxListMemory;
+	return d_data->parameters.maxListMemory;
 }
 bool VipProcessingPool::hasListLimitType() const
 {
-	return m_data->parameters.listLimitType;
+	return d_data->parameters.listLimitType;
 }
 
 void VipProcessingPool::clearInputBuffers()
 {
-	QMutexLocker lock(&m_data->device_mutex);
+	QMutexLocker lock(&d_data->device_mutex);
 	QList<VipProcessingObject*> objects = this->findChildren<VipProcessingObject*>();
 	for (int i = 0; i < objects.size(); ++i) {
 		objects[i]->clearInputBuffers();
@@ -1445,7 +1442,7 @@ void VipProcessingPool::clearInputBuffers()
 
 void VipProcessingPool::resetProcessing()
 {
-	QMutexLocker lock(&m_data->device_mutex);
+	QMutexLocker lock(&d_data->device_mutex);
 
 	QList<VipProcessingObject*> objects = this->findChildren<VipProcessingObject*>();
 	for (int i = 0; i < objects.size(); ++i)
@@ -1454,23 +1451,23 @@ void VipProcessingPool::resetProcessing()
 
 bool VipProcessingPool::hasSequentialDevice() const
 {
-	return m_data->has_sequential;
+	return d_data->has_sequential;
 }
 
 bool VipProcessingPool::hasTemporalDevice() const
 {
-	return m_data->has_temporal;
+	return d_data->has_temporal;
 }
 
 QList<VipIODevice*> VipProcessingPool::ioDevices(VipIODevice::DeviceType type, bool should_be_opened)
 {
 	computeChildren();
 
-	QMutexLocker lock(&m_data->device_mutex);
+	QMutexLocker lock(&d_data->device_mutex);
 
 	QList<VipIODevice*> res;
-	for (int i = 0; i < m_data->read_devices.size(); ++i) {
-		if (VipIODevice* dev = m_data->read_devices[i])
+	for (int i = 0; i < d_data->read_devices.size(); ++i) {
+		if (VipIODevice* dev = d_data->read_devices[i])
 			if (dev->deviceType() == type) {
 				if (!should_be_opened || dev->isOpen())
 					res << dev;
@@ -1481,35 +1478,35 @@ QList<VipIODevice*> VipProcessingPool::ioDevices(VipIODevice::DeviceType type, b
 
 bool VipProcessingPool::isPlaying() const
 {
-	return m_data->run;
+	return d_data->run;
 }
 
 qint64 VipProcessingPool::stopBeginTime() const
 {
-	return m_data->parameters.begin_time;
+	return d_data->parameters.begin_time;
 }
 
 qint64 VipProcessingPool::stopEndTime() const
 {
-	return m_data->parameters.end_time;
+	return d_data->parameters.end_time;
 }
 
 bool VipProcessingPool::missFramesEnabled() const
 {
-	return m_data->parameters.enableMissFrames;
+	return d_data->parameters.enableMissFrames;
 }
 
 void VipProcessingPool::setMissFramesEnabled(bool enable)
 {
-	m_data->parameters.enableMissFrames = enable;
+	d_data->parameters.enableMissFrames = enable;
 }
 
 void VipProcessingPool::setLogErrorEnabled(int error_code, bool enable)
 {
 	computeChildren();
-	QMutexLocker lock(&m_data->device_mutex);
+	QMutexLocker lock(&d_data->device_mutex);
 	VipProcessingObject::setLogErrorEnabled(error_code, enable);
-	m_data->parameters.logErrors.reset(new ErrorCodes(this->logErrors()));
+	d_data->parameters.logErrors.reset(new ErrorCodes(this->logErrors()));
 	QList<VipProcessingObject*> objects = this->findChildren<VipProcessingObject*>();
 	for (int i = 0; i < objects.size(); ++i)
 		objects[i]->setLogErrorEnabled(error_code, enable);
@@ -1518,9 +1515,9 @@ void VipProcessingPool::setLogErrorEnabled(int error_code, bool enable)
 void VipProcessingPool::setLogErrors(const QSet<int>& errors)
 {
 	computeChildren();
-	QMutexLocker lock(&m_data->device_mutex);
+	QMutexLocker lock(&d_data->device_mutex);
 	VipProcessingObject::setLogErrors(errors);
-	m_data->parameters.logErrors.reset(new ErrorCodes(errors));
+	d_data->parameters.logErrors.reset(new ErrorCodes(errors));
 	QList<VipProcessingObject*> objects = this->findChildren<VipProcessingObject*>();
 	for (int i = 0; i < objects.size(); ++i)
 		objects[i]->setLogErrors(errors);
@@ -1528,25 +1525,25 @@ void VipProcessingPool::setLogErrors(const QSet<int>& errors)
 
 void VipProcessingPool::resetLogErrors()
 {
-	QMutexLocker lock(&m_data->device_mutex);
-	m_data->parameters.logErrors.reset();
+	QMutexLocker lock(&d_data->device_mutex);
+	d_data->parameters.logErrors.reset();
 }
 
 bool VipProcessingPool::hasLogErrors() const
 {
-	return m_data->parameters.logErrors;
+	return d_data->parameters.logErrors;
 }
 
 void VipProcessingPool::setReadMaxFPS(int fps)
 {
 	if (!fps)
 		fps = INT_MAX;
-	m_data->readMaxFPS = fps;
-	m_data->min_ms = (1. / fps) * 1000;
+	d_data->readMaxFPS = fps;
+	d_data->min_ms = (1. / fps) * 1000;
 }
 int VipProcessingPool::readMaxFPS() const
 {
-	return m_data->readMaxFPS;
+	return d_data->readMaxFPS;
 }
 
 bool VipProcessingPool::reload()
@@ -1560,15 +1557,15 @@ bool VipProcessingPool::reload()
 	stop();
 
 	computeChildren();
-	QMutexLocker lock(&m_data->device_mutex);
+	QMutexLocker lock(&d_data->device_mutex);
 
 	bool res = false;
 
 	// only reload the current data for non sequential devices
 
-	for (int i = 0; i < m_data->read_devices.size(); ++i) {
-		if ((m_data->read_devices[i]->openMode() & VipIODevice::ReadOnly) && m_data->read_devices[i]->deviceType() != Sequential)
-			if (m_data->read_devices[i]->read(time(), true)) // reload())
+	for (int i = 0; i < d_data->read_devices.size(); ++i) {
+		if ((d_data->read_devices[i]->openMode() & VipIODevice::ReadOnly) && d_data->read_devices[i]->deviceType() != Sequential)
+			if (d_data->read_devices[i]->read(time(), true)) // reload())
 				res = true;
 	}
 
@@ -1580,20 +1577,20 @@ bool VipProcessingPool::reload()
 
 int VipProcessingPool::maxReadThreadCount() const
 {
-	return m_data->maxReadThreadCount;
+	return d_data->maxReadThreadCount;
 }
 void VipProcessingPool::setMaxReadThreadCount(int count)
 {
 	if (count < 0)
 		count = 0;
-	m_data->maxReadThreadCount = count;
+	d_data->maxReadThreadCount = count;
 }
 
 QList<VipProcessingObject*> VipProcessingPool::leafs(bool children_only) const
 {
-	QMutexLocker lock(&m_data->device_mutex);
+	QMutexLocker lock(&d_data->device_mutex);
 
-	QSet<VipProcessingObject*> layer = vipToSet(vipListCast<VipProcessingObject*>(m_data->read_devices));
+	QSet<VipProcessingObject*> layer = vipToSet(vipListCast<VipProcessingObject*>(d_data->read_devices));
 	QSet<VipProcessingObject*> all;
 	QList<VipProcessingObject*> res;
 
@@ -1621,25 +1618,25 @@ QList<VipProcessingObject*> VipProcessingPool::leafs(bool children_only) const
 
 bool VipProcessingPool::readData(qint64 time)
 {
-	if (m_data->dirty_children)
+	if (d_data->dirty_children)
 		computeChildren();
 
-	QMutexLocker lock(&m_data->device_mutex);
+	QMutexLocker lock(&d_data->device_mutex);
 
 	// call callback functions
-	for (int i = 0; i < m_data->readCallbacks.size(); ++i) {
-		if (!m_data->readCallbacks[i]) {
-			m_data->readCallbacks.removeAt(i);
+	for (int i = 0; i < d_data->readCallbacks.size(); ++i) {
+		if (!d_data->readCallbacks[i]) {
+			d_data->readCallbacks.removeAt(i);
 			--i;
 		}
 		else
-			m_data->readCallbacks[i]->callback(time);
+			d_data->readCallbacks[i]->callback(time);
 	}
 
 	std::vector<VipIODevice*> devices;
-	devices.reserve(m_data->read_devices.size());
+	devices.reserve(d_data->read_devices.size());
 
-	for (VipIODevice* dev : m_data->read_devices)
+	for (VipIODevice* dev : d_data->read_devices)
 		if ((dev->openMode() & VipIODevice::ReadOnly) && dev->deviceType() == Temporal && dev->isEnabled()) {
 			devices.push_back(dev);
 		}
@@ -1671,18 +1668,18 @@ bool VipProcessingPool::enableStreaming(bool enable)
 
 	// reset();
 
-	QMutexLocker lock(&m_data->device_mutex);
+	QMutexLocker lock(&d_data->device_mutex);
 
 	bool res = true;
-	for (int i = 0; i < m_data->read_devices.size(); ++i) {
-		if ((m_data->read_devices[i]->deviceType() == VipIODevice::Sequential))
-			if (!m_data->read_devices[i]->setStreamingEnabled(enable)) {
+	for (int i = 0; i < d_data->read_devices.size(); ++i) {
+		if ((d_data->read_devices[i]->deviceType() == VipIODevice::Sequential))
+			if (!d_data->read_devices[i]->setStreamingEnabled(enable)) {
 				res = false;
 				if (enable) {
 					// make sure to stop streaming on all devices
 					for (int j = i - 1; j >= 0; --j) {
-						if ((m_data->read_devices[j]->deviceType() == VipIODevice::Sequential))
-							m_data->read_devices[j]->setStreamingEnabled(false);
+						if ((d_data->read_devices[j]->deviceType() == VipIODevice::Sequential))
+							d_data->read_devices[j]->setStreamingEnabled(false);
 					}
 				}
 				break;
@@ -1690,9 +1687,9 @@ bool VipProcessingPool::enableStreaming(bool enable)
 	}
 
 	if (enable)
-		m_data->streamingTimer.start();
+		d_data->streamingTimer.start();
 	else
-		m_data->streamingTimer.stop();
+		d_data->streamingTimer.stop();
 
 	emitProcessingChanged();
 	return res;
@@ -1702,13 +1699,13 @@ qint64 VipProcessingPool::computeNextTime(qint64 from_time) const
 {
 	const_cast<VipProcessingPool*>(this)->computeChildren();
 
-	QMutexLocker lock(&m_data->device_mutex);
+	QMutexLocker lock(&d_data->device_mutex);
 
 	qint64 time = VipInvalidTime;
 
-	for (int i = 0; i < m_data->read_devices.size(); ++i) {
-		if ((m_data->read_devices[i]->openMode() & VipIODevice::ReadOnly) && m_data->read_devices[i]->isEnabled()) {
-			qint64 t = m_data->read_devices[i]->nextTime(from_time);
+	for (int i = 0; i < d_data->read_devices.size(); ++i) {
+		if ((d_data->read_devices[i]->openMode() & VipIODevice::ReadOnly) && d_data->read_devices[i]->isEnabled()) {
+			qint64 t = d_data->read_devices[i]->nextTime(from_time);
 			if (t != VipInvalidTime && (t < time || time == VipInvalidTime) && t > from_time) //(t <= time || time == from_time))
 				time = t;
 		}
@@ -1721,13 +1718,13 @@ qint64 VipProcessingPool::computePreviousTime(qint64 from_time) const
 {
 	const_cast<VipProcessingPool*>(this)->computeChildren();
 
-	QMutexLocker lock(&m_data->device_mutex);
+	QMutexLocker lock(&d_data->device_mutex);
 
 	qint64 time = VipInvalidTime;
 
-	for (int i = 0; i < m_data->read_devices.size(); ++i) {
-		if ((m_data->read_devices[i]->openMode() & VipIODevice::ReadOnly) && m_data->read_devices[i]->isEnabled()) {
-			qint64 t = m_data->read_devices[i]->previousTime(from_time);
+	for (int i = 0; i < d_data->read_devices.size(); ++i) {
+		if ((d_data->read_devices[i]->openMode() & VipIODevice::ReadOnly) && d_data->read_devices[i]->isEnabled()) {
+			qint64 t = d_data->read_devices[i]->previousTime(from_time);
 			if (t != VipInvalidTime && (t > time || time == VipInvalidTime) && t < from_time) //(t >= time || time == from_time))
 				time = t;
 		}
@@ -1744,14 +1741,14 @@ void VipProcessingPool::setTimestampingFilter(const VipTimestampingFilter& filte
 qint64 VipProcessingPool::computeClosestTime(qint64 from_time) const
 {
 	const_cast<VipProcessingPool*>(this)->computeTimeWindow();
-	VipTimeRange range = timeLimits(m_data->time_window);
+	VipTimeRange range = timeLimits(d_data->time_window);
 	return computeClosestTime(from_time, range);
 }
 
 qint64 VipProcessingPool::closestTimeNoLimits(qint64 from_time) const
 {
 	const_cast<VipProcessingPool*>(this)->computeTimeWindow();
-	VipTimeRange range = timeLimits(m_data->time_window_no_limits);
+	VipTimeRange range = timeLimits(d_data->time_window_no_limits);
 	return computeClosestTime(from_time, range);
 }
 
@@ -1759,7 +1756,7 @@ qint64 VipProcessingPool::computeClosestTime(qint64 from_time, const VipTimeRang
 {
 	const_cast<VipProcessingPool*>(this)->computeChildren();
 
-	QMutexLocker lock(&m_data->device_mutex);
+	QMutexLocker lock(&d_data->device_mutex);
 
 	VipTimeRange range = time_limits;
 	if (from_time < range.first)
@@ -1769,8 +1766,8 @@ qint64 VipProcessingPool::computeClosestTime(qint64 from_time, const VipTimeRang
 
 	qint64 time = VipInvalidTime;
 
-	for (int i = 0; i < m_data->read_devices.size(); ++i) {
-		VipIODevice* d = m_data->read_devices[i];
+	for (int i = 0; i < d_data->read_devices.size(); ++i) {
+		VipIODevice* d = d_data->read_devices[i];
 		if ((d->openMode() & VipIODevice::ReadOnly) && d->isEnabled()) {
 			qint64 t = d->closestTime(from_time);
 			if (time == VipInvalidTime && t != VipInvalidTime)
@@ -1791,11 +1788,11 @@ qint64 VipProcessingPool::computeClosestTime(qint64 from_time, const VipTimeRang
 qint64 VipProcessingPool::computePosToTime(qint64 pos) const
 {
 	// use the first temporal device
-	QMutexLocker lock(&m_data->device_mutex);
+	QMutexLocker lock(&d_data->device_mutex);
 	if (size() > 0) {
-		for (int i = 0; i < m_data->read_devices.size(); ++i) {
-			if (m_data->read_devices[i]->deviceType() == VipIODevice::Temporal && m_data->read_devices[i]->size() > 1 && m_data->read_devices[i]->isEnabled())
-				return m_data->read_devices[i]->posToTime(pos);
+		for (int i = 0; i < d_data->read_devices.size(); ++i) {
+			if (d_data->read_devices[i]->deviceType() == VipIODevice::Temporal && d_data->read_devices[i]->size() > 1 && d_data->read_devices[i]->isEnabled())
+				return d_data->read_devices[i]->posToTime(pos);
 		}
 	}
 
@@ -1805,11 +1802,11 @@ qint64 VipProcessingPool::computePosToTime(qint64 pos) const
 qint64 VipProcessingPool::computeTimeToPos(qint64 time) const
 {
 	// use the first temporal device
-	QMutexLocker lock(&m_data->device_mutex);
+	QMutexLocker lock(&d_data->device_mutex);
 	if (size() > 0) {
-		for (int i = 0; i < m_data->read_devices.size(); ++i) {
-			if (m_data->read_devices[i]->deviceType() == VipIODevice::Temporal && m_data->read_devices[i]->size() > 1 && m_data->read_devices[i]->isEnabled())
-				return m_data->read_devices[i]->timeToPos(time);
+		for (int i = 0; i < d_data->read_devices.size(); ++i) {
+			if (d_data->read_devices[i]->deviceType() == VipIODevice::Temporal && d_data->read_devices[i]->size() > 1 && d_data->read_devices[i]->isEnabled())
+				return d_data->read_devices[i]->timeToPos(time);
 		}
 	}
 
@@ -1819,36 +1816,36 @@ qint64 VipProcessingPool::computeTimeToPos(qint64 time) const
 VipTimeRangeList VipProcessingPool::computeTimeWindow() const
 {
 	const_cast<VipProcessingPool*>(this)->computeChildren();
-	if (m_data->dirty_time_window) {
-		QMutexLocker lock(&m_data->device_mutex);
+	if (d_data->dirty_time_window) {
+		QMutexLocker lock(&d_data->device_mutex);
 
 		// Corrected bug when opening multiple players that trigger a recomputing of the time window
-		if (!m_data->dirty_time_window)
-			return m_data->time_window;
+		if (!d_data->dirty_time_window)
+			return d_data->time_window;
 
 		const_cast<VipProcessingPool*>(this)->computeDeviceType();
 		VipProcessingPool* _this = const_cast<VipProcessingPool*>(this);
-		_this->m_data->time_window.clear();
+		_this->d_data->time_window.clear();
 		VipIODevice* temporal_device = nullptr;
 		int temporal_device_count = 0;
-		if (m_data->read_devices.size()) {
-			for (int i = 0; i < m_data->read_devices.size(); ++i) {
-				VipIODevice* dev = m_data->read_devices[i];
+		if (d_data->read_devices.size()) {
+			for (int i = 0; i < d_data->read_devices.size(); ++i) {
+				VipIODevice* dev = d_data->read_devices[i];
 				// only compute the time window with temporal devices of size != 1
 				if (!dev->isEnabled() || !dev->isOpen() || dev->deviceType() != Temporal || dev->size() == 1)
 					continue;
 
-				_this->m_data->time_window += dev->timeWindow();
+				_this->d_data->time_window += dev->timeWindow();
 				temporal_device_count++;
 				temporal_device = dev;
 			}
-			_this->m_data->time_window = vipReorder(m_data->time_window, Vip::Ascending, true);
+			_this->d_data->time_window = vipReorder(d_data->time_window, Vip::Ascending, true);
 		}
 
-		_this->m_data->dirty_time_window = false;
+		_this->d_data->dirty_time_window = false;
 
 		// vipClamp to time limits if necessary
-		if (m_data->parameters.mode & UseTimeLimits) {
+		if (d_data->parameters.mode & UseTimeLimits) {
 			qint64 start = stopBeginTime();
 			if (start == VipInvalidTime)
 				start = firstTime();
@@ -1857,8 +1854,8 @@ VipTimeRangeList VipProcessingPool::computeTimeWindow() const
 			if (end == VipInvalidTime)
 				end = lastTime();
 
-			_this->m_data->time_window_no_limits = _this->m_data->time_window;
-			_this->m_data->time_window = vipClamp(_this->m_data->time_window, start, end);
+			_this->d_data->time_window_no_limits = _this->d_data->time_window;
+			_this->d_data->time_window = vipClamp(_this->d_data->time_window, start, end);
 		}
 
 		// set size
@@ -1866,37 +1863,37 @@ VipTimeRangeList VipProcessingPool::computeTimeWindow() const
 		if (temporal_device_count == 1)
 			_this->setSize(temporal_device->size());
 	}
-	return m_data->time_window;
+	return d_data->time_window;
 }
 
 void VipProcessingPool::clear()
 {
 	computeChildren();
 
-	QMutexLocker lock(&m_data->device_mutex);
+	QMutexLocker lock(&d_data->device_mutex);
 
 	QList<VipProcessingObject*> lst = this->findChildren<VipProcessingObject*>();
 	for (int i = 0; i < lst.size(); ++i)
 		delete lst[i];
 
-	m_data->read_devices.clear();
+	d_data->read_devices.clear();
 	emitProcessingChanged();
 }
 
 void VipProcessingPool::close()
 {
 	computeChildren();
-	QMutexLocker lock(&m_data->device_mutex);
+	QMutexLocker lock(&d_data->device_mutex);
 
-	for (int i = 0; i < m_data->read_devices.size(); ++i)
-		m_data->read_devices[i]->close();
+	for (int i = 0; i < d_data->read_devices.size(); ++i)
+		d_data->read_devices[i]->close();
 	emitProcessingChanged();
 }
 
 VipProcessingObjectList VipProcessingPool::processing(const QString& inherit_class_name) const
 {
 	const_cast<VipProcessingPool*>(this)->computeChildren();
-	QMutexLocker lock(&m_data->device_mutex);
+	QMutexLocker lock(&d_data->device_mutex);
 
 	VipProcessingObjectList lst = findChildren<VipProcessingObject*>();
 	if (inherit_class_name.isEmpty())
@@ -1923,7 +1920,7 @@ bool VipProcessingPool::open(VipIODevice::OpenModes mode)
 		return false;
 	}
 	computeChildren();
-	QMutexLocker lock(&m_data->device_mutex);
+	QMutexLocker lock(&d_data->device_mutex);
 
 	bool res = true;
 
@@ -1965,9 +1962,9 @@ void VipProcessingPool::checkForStreaming()
 	// check that streaming is still going on, and disable it if not
 	bool no_streaming = true;
 	{
-		QMutexLocker lock(&m_data->device_mutex);
-		for (int i = 0; i < m_data->read_devices.size(); ++i) {
-			if (m_data->read_devices[i]->deviceType() == Sequential && m_data->read_devices[i]->isOpen() && m_data->read_devices[i]->isStreamingEnabled()) {
+		QMutexLocker lock(&d_data->device_mutex);
+		for (int i = 0; i < d_data->read_devices.size(); ++i) {
+			if (d_data->read_devices[i]->deviceType() == Sequential && d_data->read_devices[i]->isOpen() && d_data->read_devices[i]->isStreamingEnabled()) {
 				no_streaming = false;
 				break;
 			}
@@ -1988,8 +1985,8 @@ void VipProcessingPool::childEvent(QChildEvent* event)
 	// we might need to process the previously added child before processing this new one
 	this->computeChildren();
 
-	m_data->dirty_children = event->child();
-	m_data->dirty_time_window = true;
+	d_data->dirty_children = event->child();
+	d_data->dirty_time_window = true;
 
 	if (event->added()) {
 		QMetaObject::invokeMethod(this, "emitObjectAdded", Qt::QueuedConnection, Q_ARG(QObjectPointer, QObjectPointer(event->child()))); // Q_EMIT objectAdded(event->child());
@@ -2010,26 +2007,26 @@ void VipProcessingPool::childEvent(QChildEvent* event)
 }
 // void VipProcessingPool::setDeviceIgnored(VipIODevice * device, bool ignored)
 // {
-// if (m_data->full_read_devices.indexOf(device) >= 0)
+// if (d_data->full_read_devices.indexOf(device) >= 0)
 // {
 // if (ignored)
-//	m_data->read_devices.removeOne(device);
-// else if (m_data->read_devices.indexOf(device) < 0)
-//	m_data->read_devices.append(device);
+//	d_data->read_devices.removeOne(device);
+// else if (d_data->read_devices.indexOf(device) < 0)
+//	d_data->read_devices.append(device);
 //
-// m_data->dirty_time_window = true;
+// d_data->dirty_time_window = true;
 // }
 // }
 //
 // void VipProcessingPool::clearIgnoredDevices()
 // {
-// m_data->read_devices = m_data->full_read_devices;
-// m_data->dirty_time_window = true;
+// d_data->read_devices = d_data->full_read_devices;
+// d_data->dirty_time_window = true;
 // }
 
 void VipProcessingPool::applyLimitsToChildren()
 {
-	QMutexLocker lock(&m_data->device_mutex);
+	QMutexLocker lock(&d_data->device_mutex);
 
 	if (!hasLogErrors() && !hasMaxListSize() && !hasMaxListMemory() && !hasListLimitType())
 		return;
@@ -2059,7 +2056,7 @@ void VipProcessingPool::applyLimitsToChildren()
 }
 void VipProcessingPool::computeChildren()
 {
-	if (!m_data->dirty_children)
+	if (!d_data->dirty_children)
 		return;
 
 	// Workaround to avoid potential crash when computeChildren() is called from within VipProcessingObject::run().
@@ -2067,22 +2064,22 @@ void VipProcessingPool::computeChildren()
 	if (QThread::currentThread() != QCoreApplication::instance()->thread())
 		return;
 
-	QMutexLocker lock(&m_data->device_mutex);
+	QMutexLocker lock(&d_data->device_mutex);
 
 	// retrieve read only devices
-	m_data->read_devices = this->findChildren<VipIODevice*>().toVector();
-	for (int i = 0; i < m_data->read_devices.size(); ++i) {
-		VipIODevice* dev = m_data->read_devices[i];
+	d_data->read_devices = this->findChildren<VipIODevice*>().toVector();
+	for (int i = 0; i < d_data->read_devices.size(); ++i) {
+		VipIODevice* dev = d_data->read_devices[i];
 		if (!(dev->openMode() & VipIODevice::ReadOnly) && !(dev->supportedModes() & VipIODevice::ReadOnly)) {
-			m_data->read_devices.removeAt(i);
+			d_data->read_devices.removeAt(i);
 			--i;
 		}
 	}
 
-	if (this->children().indexOf(m_data->dirty_children) >= 0) {
+	if (this->children().indexOf(d_data->dirty_children) >= 0) {
 		// in case of VipIODevice added, also add all the sinks without parents
-		if (qobject_cast<VipIODevice*>(m_data->dirty_children)) {
-			VipProcessingObjectList lst = static_cast<VipIODevice*>(m_data->dirty_children)->allSinks();
+		if (qobject_cast<VipIODevice*>(d_data->dirty_children)) {
+			VipProcessingObjectList lst = static_cast<VipIODevice*>(d_data->dirty_children)->allSinks();
 			for (int i = 0; i < lst.size(); ++i) {
 				if (!lst[i]->parent())
 					lst[i]->setParent(this);
@@ -2090,8 +2087,8 @@ void VipProcessingPool::computeChildren()
 		}
 
 		// make the new children has a unique name
-		if (qobject_cast<VipProcessingObject*>(m_data->dirty_children)) {
-			VipProcessingObject* new_child = static_cast<VipProcessingObject*>(m_data->dirty_children);
+		if (qobject_cast<VipProcessingObject*>(d_data->dirty_children)) {
+			VipProcessingObject* new_child = static_cast<VipProcessingObject*>(d_data->dirty_children);
 			if (new_child->objectName().isEmpty())
 				new_child->setObjectName(QString(new_child->info().classname));
 
@@ -2117,81 +2114,81 @@ void VipProcessingPool::computeChildren()
 	}
 
 	// connect VipIODevice objects timestampingChanged() signal to keep tracks of timestamping filters
-	for (int i = 0; i < m_data->read_devices.size(); ++i) {
-		disconnect(m_data->read_devices[i], SIGNAL(timestampingFilterChanged()), this, SLOT(childTimestampingFilterChanged()));
-		connect(m_data->read_devices[i], SIGNAL(timestampingFilterChanged()), this, SLOT(childTimestampingFilterChanged()), Qt::DirectConnection);
+	for (int i = 0; i < d_data->read_devices.size(); ++i) {
+		disconnect(d_data->read_devices[i], SIGNAL(timestampingFilterChanged()), this, SLOT(childTimestampingFilterChanged()));
+		connect(d_data->read_devices[i], SIGNAL(timestampingFilterChanged()), this, SLOT(childTimestampingFilterChanged()), Qt::DirectConnection);
 
-		disconnect(m_data->read_devices[i], SIGNAL(timestampingChanged()), this, SLOT(childTimestampingChanged()));
-		connect(m_data->read_devices[i], SIGNAL(timestampingChanged()), this, SLOT(childTimestampingChanged()), Qt::DirectConnection);
+		disconnect(d_data->read_devices[i], SIGNAL(timestampingChanged()), this, SLOT(childTimestampingChanged()));
+		connect(d_data->read_devices[i], SIGNAL(timestampingChanged()), this, SLOT(childTimestampingChanged()), Qt::DirectConnection);
 	}
 
 	computeDeviceType();
 
 	// notify that the time window has changed
-	m_data->dirty_children = nullptr;
+	d_data->dirty_children = nullptr;
 }
 
 void VipProcessingPool::computeDeviceType()
 {
 	// compute the device type
-	m_data->has_temporal = false;
-	m_data->has_sequential = false;
-	for (int i = 0; i < m_data->read_devices.size(); ++i) {
-		if (!m_data->read_devices[i]->isEnabled())
+	d_data->has_temporal = false;
+	d_data->has_sequential = false;
+	for (int i = 0; i < d_data->read_devices.size(); ++i) {
+		if (!d_data->read_devices[i]->isEnabled())
 			continue;
 
-		// VipIODevice* d = m_data->read_devices[i];
-		if (m_data->read_devices[i]->deviceType() == Temporal)
-			m_data->has_temporal = true;
-		else if (m_data->read_devices[i]->deviceType() == Sequential)
-			m_data->has_sequential = true;
+		// VipIODevice* d = d_data->read_devices[i];
+		if (d_data->read_devices[i]->deviceType() == Temporal)
+			d_data->has_temporal = true;
+		else if (d_data->read_devices[i]->deviceType() == Sequential)
+			d_data->has_sequential = true;
 	}
 
-	DeviceType saved = m_data->device_type;
+	DeviceType saved = d_data->device_type;
 
 	// Temporal has the priority
-	if (m_data->has_temporal)
-		m_data->device_type = Temporal;
+	if (d_data->has_temporal)
+		d_data->device_type = Temporal;
 	// then Sequential
-	else if (m_data->has_sequential)
-		m_data->device_type = Sequential;
+	else if (d_data->has_sequential)
+		d_data->device_type = Sequential;
 	// then Resource
 	else
-		m_data->device_type = Resource;
+		d_data->device_type = Resource;
 
-	if (saved != m_data->device_type) {
+	if (saved != d_data->device_type) {
 		Q_EMIT deviceTypeChanged();
 	}
 
 	// set size
 	this->setSize(VipInvalidPosition);
-	if (m_data->read_devices.size() == 1)
-		if (m_data->read_devices.first()->size() != VipInvalidPosition)
-			this->setSize(m_data->read_devices.first()->size());
+	if (d_data->read_devices.size() == 1)
+		if (d_data->read_devices.first()->size() != VipInvalidPosition)
+			this->setSize(d_data->read_devices.first()->size());
 }
 
 void VipProcessingPool::setStopBeginTime(qint64 begin)
 {
-	if (begin != m_data->parameters.begin_time) {
-		m_data->parameters.begin_time = begin;
-		if (m_data->parameters.end_time != VipInvalidTime && m_data->parameters.end_time < m_data->parameters.begin_time)
-			qSwap(m_data->parameters.begin_time, m_data->parameters.end_time);
+	if (begin != d_data->parameters.begin_time) {
+		d_data->parameters.begin_time = begin;
+		if (d_data->parameters.end_time != VipInvalidTime && d_data->parameters.end_time < d_data->parameters.begin_time)
+			qSwap(d_data->parameters.begin_time, d_data->parameters.end_time);
 
 		if (testMode(UseTimeLimits))
-			m_data->dirty_time_window = true;
+			d_data->dirty_time_window = true;
 		emitProcessingChanged();
 	}
 }
 
 void VipProcessingPool::setStopEndTime(qint64 end)
 {
-	if (m_data->parameters.end_time != end) {
-		m_data->parameters.end_time = end;
-		if (m_data->parameters.end_time != VipInvalidTime && m_data->parameters.end_time < m_data->parameters.begin_time)
-			qSwap(m_data->parameters.begin_time, m_data->parameters.end_time);
+	if (d_data->parameters.end_time != end) {
+		d_data->parameters.end_time = end;
+		if (d_data->parameters.end_time != VipInvalidTime && d_data->parameters.end_time < d_data->parameters.begin_time)
+			qSwap(d_data->parameters.begin_time, d_data->parameters.end_time);
 
 		if (testMode(UseTimeLimits))
-			m_data->dirty_time_window = true;
+			d_data->dirty_time_window = true;
 		emitProcessingChanged();
 	}
 }
@@ -2205,8 +2202,8 @@ void VipProcessingPool::play()
 {
 	computeChildren();
 	if (!isPlaying()) {
-		m_data->run = true;
-		m_data->thread.start();
+		d_data->run = true;
+		d_data->thread.start();
 		emitProcessingChanged();
 	}
 }
@@ -2240,16 +2237,16 @@ void VipProcessingPool::stop()
 {
 	if (isPlaying()) {
 
-		m_data->run = false;
+		d_data->run = false;
 		// wait for the thread to finish
-		while (m_data->thread.isRunning()) {
+		while (d_data->thread.isRunning()) {
 			if (QThread::currentThread() == qApp->thread())
 				QCoreApplication::processEvents();
 			else
 				vipProcessEvents(nullptr, 10);
 		}
 
-		// m_data->thread.wait();
+		// d_data->thread.wait();
 		emitProcessingChanged();
 	}
 }
@@ -2334,7 +2331,7 @@ bool VipProcessingPool::wait(uint msecs)
 
 void VipProcessingPool::childTimestampingChanged()
 {
-	m_data->dirty_time_window = true;
+	d_data->dirty_time_window = true;
 	computeDeviceType();
 	emitTimestampingChanged();
 	emitProcessingChanged();
@@ -2344,7 +2341,7 @@ void VipProcessingPool::childTimestampingChanged()
 
 void VipProcessingPool::childTimestampingFilterChanged()
 {
-	m_data->dirty_time_window = true;
+	d_data->dirty_time_window = true;
 	emitTimestampingFilterChanged();
 	emitProcessingChanged();
 	// Reload all devices
@@ -2354,47 +2351,47 @@ void VipProcessingPool::childTimestampingFilterChanged()
 int VipProcessingPool::addPlayCallbackFunction(const callback_function& callback)
 {
 	int i = 0;
-	for (QMap<int, callback_function>::iterator it = m_data->playCallbacks.begin(); it != m_data->playCallbacks.end(); ++it, ++i) {
+	for (QMap<int, callback_function>::iterator it = d_data->playCallbacks.begin(); it != d_data->playCallbacks.end(); ++it, ++i) {
 		if (it.key() != i)
 			break;
 	}
-	if (i == m_data->playCallbacks.size() - 1)
+	if (i == d_data->playCallbacks.size() - 1)
 		++i;
-	m_data->playCallbacks[i] = callback;
+	d_data->playCallbacks[i] = callback;
 	return i;
 }
 
 void VipProcessingPool::removePlayCallbackFunction(int id)
 {
-	QMap<int, callback_function>::iterator it = m_data->playCallbacks.find(id);
-	if (it != m_data->playCallbacks.end())
-		m_data->playCallbacks.erase(it);
+	QMap<int, callback_function>::iterator it = d_data->playCallbacks.find(id);
+	if (it != d_data->playCallbacks.end())
+		d_data->playCallbacks.erase(it);
 }
 
 QObject* VipProcessingPool::addReadDataCallback(const read_data_function& callback)
 {
-	QMutexLocker lock(&m_data->device_mutex);
+	QMutexLocker lock(&d_data->device_mutex);
 
 	// remove null callbacks
-	for (int i = 0; i < m_data->readCallbacks.size(); ++i) {
-		if (!m_data->readCallbacks[i]) {
-			m_data->readCallbacks.removeAt(i);
+	for (int i = 0; i < d_data->readCallbacks.size(); ++i) {
+		if (!d_data->readCallbacks[i]) {
+			d_data->readCallbacks.removeAt(i);
 			--i;
 		}
 	}
 	CallbackObject<VipProcessingPool::read_data_function>* c = new CallbackObject<VipProcessingPool::read_data_function>();
 	c->callback = callback;
-	m_data->readCallbacks.append(c);
+	d_data->readCallbacks.append(c);
 	return c;
 }
 
 void VipProcessingPool::removeReadDataCallback(QObject* obj)
 {
-	QMutexLocker lock(&m_data->device_mutex);
+	QMutexLocker lock(&d_data->device_mutex);
 	// remove null callbacks
-	for (int i = 0; i < m_data->readCallbacks.size(); ++i) {
-		if (!m_data->readCallbacks[i] || m_data->readCallbacks[i] == obj) {
-			m_data->readCallbacks.removeAt(i);
+	for (int i = 0; i < d_data->readCallbacks.size(); ++i) {
+		if (!d_data->readCallbacks[i] || d_data->readCallbacks[i] == obj) {
+			d_data->readCallbacks.removeAt(i);
 			--i;
 		}
 	}
@@ -2408,14 +2405,14 @@ void VipProcessingPool::runPlay()
 	// retrieve the list of final (no output) processing objects
 	VipProcessingObjectList objects = leafs(false);
 
-	m_data->run = true;
+	d_data->run = true;
 
 	qint64 _time = vipGetMilliSecondsSinceEpoch();
 	qint64 start_time = time();
-	double speed = m_data->parameters.speed;
+	double speed = d_data->parameters.speed;
 
 	// call the callback functions
-	for (QMap<int, callback_function>::iterator it = m_data->playCallbacks.begin(); it != m_data->playCallbacks.end(); ++it)
+	for (QMap<int, callback_function>::iterator it = d_data->playCallbacks.begin(); it != d_data->playCallbacks.end(); ++it)
 		it.value()(StartPlaying);
 
 	Q_EMIT playingStarted();
@@ -2424,63 +2421,63 @@ void VipProcessingPool::runPlay()
 	qint64 prev_elapsed = 0;
 	qint64 st = 0, el = 0;
 
-	while (m_data->run) {
+	while (d_data->run) {
 
 		// follow play speed
-		if ((m_data->parameters.mode & UsePlaySpeed)) {
+		if ((d_data->parameters.mode & UsePlaySpeed)) {
 
-			if (speed != m_data->parameters.speed) {
+			if (speed != d_data->parameters.speed) {
 				start_time = time();
-				speed = m_data->parameters.speed;
+				speed = d_data->parameters.speed;
 				_time = QDateTime::currentMSecsSinceEpoch();
 				elapsed = 0;
 			}
 			else { // compute elapsed time since run started
 				prev_elapsed = elapsed;
-				elapsed = (QDateTime::currentMSecsSinceEpoch() - _time) * 1000000 * m_data->parameters.speed; // elapsed time in nano seconds
+				elapsed = (QDateTime::currentMSecsSinceEpoch() - _time) * 1000000 * d_data->parameters.speed; // elapsed time in nano seconds
 			}
 
 			// compute the current time
 			qint64 current_time;
-			if (m_data->parameters.mode & Backward)
+			if (d_data->parameters.mode & Backward)
 				current_time = start_time - elapsed;
 			else
 				current_time = start_time + elapsed;
 
 			bool ignore_sleep = false;
-			if (current_time > lastTime() && !(m_data->parameters.mode & Backward) && time() >= lastTime()) {
+			if (current_time > lastTime() && !(d_data->parameters.mode & Backward) && time() >= lastTime()) {
 				//...in forward mode
-				if (m_data->parameters.mode & Repeat) {
+				if (d_data->parameters.mode & Repeat) {
 					current_time = firstTime();
 					_time = vipGetMilliSecondsSinceEpoch();
 					start_time = current_time;
 					ignore_sleep = true;
 				}
 				else
-					m_data->run = false;
+					d_data->run = false;
 			}
-			else if (current_time < firstTime() && (m_data->parameters.mode & Backward) && time() <= firstTime()) {
+			else if (current_time < firstTime() && (d_data->parameters.mode & Backward) && time() <= firstTime()) {
 				//...in backward mode
-				if (m_data->parameters.mode & Repeat) {
+				if (d_data->parameters.mode & Repeat) {
 					current_time = lastTime();
 					_time = vipGetMilliSecondsSinceEpoch();
 					start_time = current_time;
 					ignore_sleep = true;
 				}
 				else
-					m_data->run = false;
+					d_data->run = false;
 			}
 
 			if (!ignore_sleep) {
 				qint64 pool_time = this->closestTime(this->time());
-				if (!(m_data->parameters.mode & Backward)) {
+				if (!(d_data->parameters.mode & Backward)) {
 					qint64 next = pool_time > this->time() ? pool_time : this->nextTime(pool_time);
 					if (next != VipInvalidTime) {
 						if (next > current_time) {
 							vipSleep(1);
 							continue;
 						}
-						if (!m_data->parameters.enableMissFrames)
+						if (!d_data->parameters.enableMissFrames)
 							current_time = next;
 					}
 				}
@@ -2491,7 +2488,7 @@ void VipProcessingPool::runPlay()
 							vipSleep(1);
 							continue;
 						}
-						if (!m_data->parameters.enableMissFrames)
+						if (!d_data->parameters.enableMissFrames)
 							current_time = prev;
 					}
 				}
@@ -2499,95 +2496,95 @@ void VipProcessingPool::runPlay()
 
 			// qint64 st = QDateTime::currentMSecsSinceEpoch();
 			// read data
-			if (m_data->run && !read(current_time, !(m_data->parameters.mode & Backward))) {
+			if (d_data->run && !read(current_time, !(d_data->parameters.mode & Backward))) {
 				VIP_LOG_ERROR("fail read " + QString::number(current_time));
-				m_data->run = false;
+				d_data->run = false;
 			}
 
 			// qint64 el = QDateTime::currentMSecsSinceEpoch()-st;
 			// vip_debug("read: %i\n", (int)el);
 
-			// m_data->thread.msleep(1);
+			// d_data->thread.msleep(1);
 		}
 		else // goes as fast as possible
 		{
 			// in backward
-			if (m_data->parameters.mode & Backward) {
+			if (d_data->parameters.mode & Backward) {
 				st = QDateTime::currentMSecsSinceEpoch();
 				if (!read(previousTime(time())))
-					m_data->run = false;
+					d_data->run = false;
 			}
 			// in forward
 			else {
 				st = QDateTime::currentMSecsSinceEpoch();
 				if (!read(nextTime(time())))
-					m_data->run = false;
+					d_data->run = false;
 			}
 
 			// forward
-			if (!(m_data->parameters.mode & Backward)) {
+			if (!(d_data->parameters.mode & Backward)) {
 				if (time() >= lastTime()) {
 					// repeat mode
-					if (m_data->parameters.mode & Repeat) {
-						m_data->run = true;
+					if (d_data->parameters.mode & Repeat) {
+						d_data->run = true;
 						read(firstTime());
 					}
 					else
-						m_data->run = false;
+						d_data->run = false;
 				}
 			}
 			else // backward
 			{
 				if (time() <= firstTime()) {
 					// repeat mode
-					if (m_data->parameters.mode & Repeat) {
-						m_data->run = true;
+					if (d_data->parameters.mode & Repeat) {
+						d_data->run = true;
 						read(lastTime());
 					}
 					else
-						m_data->run = false;
+						d_data->run = false;
 				}
 			}
 		}
 
 		// wait for all the final processing objects
-		if (m_data->run) {
+		if (d_data->run) {
 			// qint64 st = QDateTime::currentMSecsSinceEpoch();
 			for (int i = 0; i < objects.size(); ++i)
 				if (objects[i])
 					objects[i]->wait();
 			// process events in order to avoid GUI freeze
-			vipProcessEvents(&m_data->run);
+			vipProcessEvents(&d_data->run);
 
-			if (!(m_data->parameters.mode & UsePlaySpeed)) {
+			if (!(d_data->parameters.mode & UsePlaySpeed)) {
 
 				el = QDateTime::currentMSecsSinceEpoch() - st;
-				if (m_data->run && m_data->min_ms && el < m_data->min_ms) {
-					// vip_debug("sleep for %f\n", m_data->min_ms - el);
-					vipSleep(m_data->min_ms - el);
+				if (d_data->run && d_data->min_ms && el < d_data->min_ms) {
+					// vip_debug("sleep for %f\n", d_data->min_ms - el);
+					vipSleep(d_data->min_ms - el);
 				}
 			}
 
 			// check if we still have valid temporal devices, stop otherwise
 			bool has_temporal_device = false;
 			{
-				QMutexLocker lock(&m_data->device_mutex);
+				QMutexLocker lock(&d_data->device_mutex);
 
-				for (int i = 0; i < m_data->read_devices.size(); ++i)
-					if (VipIODevice* d = m_data->read_devices[i])
+				for (int i = 0; i < d_data->read_devices.size(); ++i)
+					if (VipIODevice* d = d_data->read_devices[i])
 						if (d->isOpen() && d->deviceType() == Temporal) {
 							has_temporal_device = true;
 							break;
 						}
 			}
 			if (!has_temporal_device)
-				m_data->run = false;
+				d_data->run = false;
 
-			if (m_data->run) {
+			if (d_data->run) {
 				// call the callback functions
-				for (QMap<int, callback_function>::iterator it = m_data->playCallbacks.begin(); it != m_data->playCallbacks.end(); ++it)
+				for (QMap<int, callback_function>::iterator it = d_data->playCallbacks.begin(); it != d_data->playCallbacks.end(); ++it)
 					if (!it.value()(Playing))
-						m_data->run = false;
+						d_data->run = false;
 			}
 			// qint64 el = QDateTime::currentMSecsSinceEpoch()-st;
 			// vip_debug("update: %i\n", (int)el);
@@ -2596,7 +2593,7 @@ void VipProcessingPool::runPlay()
 	}
 
 	// call the callback functions
-	for (QMap<int, callback_function>::iterator it = m_data->playCallbacks.begin(); it != m_data->playCallbacks.end(); ++it)
+	for (QMap<int, callback_function>::iterator it = d_data->playCallbacks.begin(); it != d_data->playCallbacks.end(); ++it)
 		it.value()(StopPlaying);
 
 	Q_EMIT playingStopped();
@@ -2622,22 +2619,21 @@ public:
 VipTimeRangeBasedGenerator::VipTimeRangeBasedGenerator(QObject* parent)
   : VipIODevice(parent)
 {
-	m_data = new PrivateData();
+	VIP_CREATE_PRIVATE_DATA(d_data);
 }
 
 VipTimeRangeBasedGenerator::~VipTimeRangeBasedGenerator()
 {
-	delete m_data;
 }
 
 qint64 VipTimeRangeBasedGenerator::samplingTime() const
 {
-	return m_data->step_size;
+	return d_data->step_size;
 }
 
 const QVector<qint64>& VipTimeRangeBasedGenerator::timestamps() const
 {
-	return m_data->timestamps;
+	return d_data->timestamps;
 }
 
 void VipTimeRangeBasedGenerator::setTimeWindows(const VipTimeRange& range, qint64 size)
@@ -2663,58 +2659,58 @@ void VipTimeRangeBasedGenerator::setTimeWindows(const VipTimeRange& range, qint6
 void VipTimeRangeBasedGenerator::setTimeWindows(qint64 start, qint64 size, qint64 sampling)
 {
 	qint64 end = start + (size - 1) * sampling;
-	m_data->ranges = VipTimeRangeList() << VipTimeRange(start, end);
-	m_data->full_size = size;
-	m_data->sizes = QList<qint64>() << size;
-	m_data->timestamps.clear();
+	d_data->ranges = VipTimeRangeList() << VipTimeRange(start, end);
+	d_data->full_size = size;
+	d_data->sizes = QList<qint64>() << size;
+	d_data->timestamps.clear();
 	if (size)
-		m_data->step_size = sampling; //(end-start)/size;
+		d_data->step_size = sampling; //(end-start)/size;
 	else
-		m_data->step_size = 0;
+		d_data->step_size = 0;
 	this->setSize(size);
 
 	VipTimestampingFilter filter = this->timestampingFilter();
-	filter.setInputTimeRangeList(m_data->ranges);
+	filter.setInputTimeRangeList(d_data->ranges);
 	this->setTimestampingFilter(filter);
 	this->emitTimestampingChanged();
 }
 
 void VipTimeRangeBasedGenerator::setTimeWindows(const VipTimeRangeList& _ranges, qint64 _step_size)
 {
-	m_data->ranges = _ranges;
-	m_data->step_size = _step_size;
-	m_data->sizes.clear();
-	m_data->timestamps.clear();
-	m_data->full_size = 0;
+	d_data->ranges = _ranges;
+	d_data->step_size = _step_size;
+	d_data->sizes.clear();
+	d_data->timestamps.clear();
+	d_data->full_size = 0;
 
 	// compute the sizes
-	for (int i = 0; i < m_data->ranges.size(); ++i) {
-		m_data->sizes.append(qAbs(m_data->ranges[i].second - m_data->ranges[i].first) / m_data->step_size + 1);
-		m_data->full_size += m_data->sizes.back();
+	for (int i = 0; i < d_data->ranges.size(); ++i) {
+		d_data->sizes.append(qAbs(d_data->ranges[i].second - d_data->ranges[i].first) / d_data->step_size + 1);
+		d_data->full_size += d_data->sizes.back();
 	}
 
-	this->setSize(m_data->full_size);
+	this->setSize(d_data->full_size);
 
 	VipTimestampingFilter filter = this->timestampingFilter();
-	filter.setInputTimeRangeList(m_data->ranges);
+	filter.setInputTimeRangeList(d_data->ranges);
 	this->setTimestampingFilter(filter);
 	this->emitTimestampingChanged();
 }
 
 void VipTimeRangeBasedGenerator::setTimestamps(const QVector<qint64>& timestamps, bool enable_multiple_time_range)
 {
-	m_data->ranges.clear();
-	m_data->step_size = 0;
-	m_data->sizes.clear();
-	m_data->timestamps = timestamps;
-	m_data->full_size = 0;
+	d_data->ranges.clear();
+	d_data->step_size = 0;
+	d_data->sizes.clear();
+	d_data->timestamps = timestamps;
+	d_data->full_size = 0;
 
 	if (timestamps.size()) {
-		m_data->full_size = timestamps.size();
-		m_data->sizes = QList<qint64>() << timestamps.size();
-		m_data->ranges = VipTimeRangeList() << VipTimeRange(timestamps.first(), timestamps.last());
+		d_data->full_size = timestamps.size();
+		d_data->sizes = QList<qint64>() << timestamps.size();
+		d_data->ranges = VipTimeRangeList() << VipTimeRange(timestamps.first(), timestamps.last());
 		if (timestamps.size() > 1)
-			m_data->step_size = timestamps[1] - timestamps[0];
+			d_data->step_size = timestamps[1] - timestamps[0];
 	}
 
 	if (timestamps.size() > 1 && enable_multiple_time_range) {
@@ -2731,48 +2727,48 @@ void VipTimeRangeBasedGenerator::setTimestamps(const QVector<qint64>& timestamps
 		VipTimeRangeList ranges;
 		VipTimeRange current(timestamps.first(), timestamps.first());
 
-		m_data->sizes.clear();
-		m_data->sizes.append(1);
+		d_data->sizes.clear();
+		d_data->sizes.append(1);
 
 		for (int i = 1; i < timestamps.size(); ++i) {
 			qint64 gap = timestamps[i] - current.second;
 			if (gap > 4 * sampling) {
 				ranges << current;
 				current = VipTimeRange(timestamps[i], timestamps[i]);
-				m_data->sizes.append(1);
+				d_data->sizes.append(1);
 			}
 			else {
 				current.second = timestamps[i];
-				m_data->sizes.last()++;
+				d_data->sizes.last()++;
 			}
 		}
 		ranges << current;
-		m_data->step_size = sampling;
-		m_data->ranges = ranges;
+		d_data->step_size = sampling;
+		d_data->ranges = ranges;
 	}
 
 	this->setSize(timestamps.size());
 
 	VipTimestampingFilter filter = this->timestampingFilter();
-	filter.setInputTimeRangeList(m_data->ranges);
+	filter.setInputTimeRangeList(d_data->ranges);
 	this->setTimestampingFilter(filter);
 	this->emitTimestampingChanged();
 }
 
 void VipTimeRangeBasedGenerator::setTimestampsWithSampling(const QVector<qint64>& timestamps, qint64 sampling)
 {
-	m_data->ranges.clear();
-	m_data->step_size = 0;
-	m_data->sizes.clear();
-	m_data->timestamps = timestamps;
-	m_data->full_size = 0;
+	d_data->ranges.clear();
+	d_data->step_size = 0;
+	d_data->sizes.clear();
+	d_data->timestamps = timestamps;
+	d_data->full_size = 0;
 
 	if (timestamps.size()) {
-		m_data->full_size = timestamps.size();
-		m_data->sizes = QList<qint64>() << timestamps.size();
-		m_data->ranges = VipTimeRangeList() << VipTimeRange(timestamps.first(), timestamps.last());
+		d_data->full_size = timestamps.size();
+		d_data->sizes = QList<qint64>() << timestamps.size();
+		d_data->ranges = VipTimeRangeList() << VipTimeRange(timestamps.first(), timestamps.last());
 		if (timestamps.size() > 1)
-			m_data->step_size = timestamps[1] - timestamps[0];
+			d_data->step_size = timestamps[1] - timestamps[0];
 	}
 
 	if (timestamps.size() > 1) {
@@ -2782,89 +2778,89 @@ void VipTimeRangeBasedGenerator::setTimestampsWithSampling(const QVector<qint64>
 		VipTimeRangeList ranges;
 		VipTimeRange current(timestamps.first(), timestamps.first());
 
-		m_data->sizes.clear();
-		m_data->sizes.append(1);
+		d_data->sizes.clear();
+		d_data->sizes.append(1);
 
 		for (int i = 1; i < timestamps.size(); ++i) {
 			qint64 gap = timestamps[i] - current.second;
 			if ((double)gap > 1.5 * sampling) {
 				ranges << current;
 				current = VipTimeRange(timestamps[i], timestamps[i]);
-				m_data->sizes.append(1);
+				d_data->sizes.append(1);
 			}
 			else {
 				current.second = timestamps[i];
-				m_data->sizes.last()++;
+				d_data->sizes.last()++;
 			}
 		}
 		ranges << current;
-		m_data->step_size = sampling;
-		m_data->ranges = ranges;
+		d_data->step_size = sampling;
+		d_data->ranges = ranges;
 	}
 
 	this->setSize(timestamps.size());
 
 	VipTimestampingFilter filter = this->timestampingFilter();
-	filter.setInputTimeRangeList(m_data->ranges);
+	filter.setInputTimeRangeList(d_data->ranges);
 	this->setTimestampingFilter(filter);
 	this->emitTimestampingChanged();
 }
 
 qint64 VipTimeRangeBasedGenerator::computePosToTime(qint64 pos) const
 {
-	if (m_data->timestamps.size()) {
+	if (d_data->timestamps.size()) {
 		if (pos < 0)
-			return m_data->timestamps.first();
-		else if (pos >= m_data->timestamps.size())
-			return m_data->timestamps.last();
+			return d_data->timestamps.first();
+		else if (pos >= d_data->timestamps.size())
+			return d_data->timestamps.last();
 		else
-			return m_data->timestamps[pos];
+			return d_data->timestamps[pos];
 	}
 
 	qint64 cum_pos = 0;
-	for (int i = 0; i < m_data->ranges.size(); ++i) {
-		if (pos < m_data->sizes[i] + cum_pos) {
+	for (int i = 0; i < d_data->ranges.size(); ++i) {
+		if (pos < d_data->sizes[i] + cum_pos) {
 			qint64 p = pos - cum_pos;
-			return m_data->ranges[i].first + p * m_data->step_size;
+			return d_data->ranges[i].first + p * d_data->step_size;
 		}
 
-		cum_pos += m_data->sizes[i];
+		cum_pos += d_data->sizes[i];
 	}
 	return VipInvalidTime;
 }
 
 qint64 VipTimeRangeBasedGenerator::computeTimeToPos(qint64 time) const
 {
-	if (m_data->timestamps.size()) {
-		if (time <= m_data->timestamps.first())
+	if (d_data->timestamps.size()) {
+		if (time <= d_data->timestamps.first())
 			return 0;
-		else if (time >= m_data->timestamps.last())
-			return m_data->timestamps.size() - 1;
+		else if (time >= d_data->timestamps.last())
+			return d_data->timestamps.size() - 1;
 
 		qint64 avg_sampling = 1;
-		if (m_data->timestamps.size() > 1)
-			avg_sampling = (m_data->timestamps.last() - m_data->timestamps.first()) / (m_data->timestamps.size() - 1);
+		if (d_data->timestamps.size() > 1)
+			avg_sampling = (d_data->timestamps.last() - d_data->timestamps.first()) / (d_data->timestamps.size() - 1);
 
-		qint64 start_index = (time - m_data->timestamps.first()) / avg_sampling;
+		qint64 start_index = (time - d_data->timestamps.first()) / avg_sampling;
 
 		if (start_index < 0)
 			return 0;
-		else if (start_index >= m_data->timestamps.size())
-			return m_data->timestamps.size() - 1;
+		else if (start_index >= d_data->timestamps.size())
+			return d_data->timestamps.size() - 1;
 
-		if (m_data->timestamps[start_index] > time) {
+		if (d_data->timestamps[start_index] > time) {
 			// go before
 			for (int i = start_index - 1; i >= 0; --i) {
-				if (m_data->timestamps[i] < time) {
-					return (time - m_data->timestamps[i] < m_data->timestamps[i + 1] - time) ? i : i + 1;
+				if (d_data->timestamps[i] < time) {
+					return (time - d_data->timestamps[i] < d_data->timestamps[i + 1] - time) ? i : i + 1;
 				}
 			}
 		}
 		else {
 			// go after
-			for (int i = start_index + 1; i < m_data->timestamps.size(); ++i) {
-				if (m_data->timestamps[i] > time) {
-					return (time - m_data->timestamps[i - 1] < m_data->timestamps[i] - time) ? i - 1 : i;
+			for (int i = start_index + 1; i < d_data->timestamps.size(); ++i) {
+				if (d_data->timestamps[i] > time) {
+					return (time - d_data->timestamps[i - 1] < d_data->timestamps[i] - time) ? i - 1 : i;
 				}
 			}
 		}
@@ -2872,12 +2868,12 @@ qint64 VipTimeRangeBasedGenerator::computeTimeToPos(qint64 time) const
 	}
 
 	qint64 cum_pos = 0;
-	for (int i = 0; i < m_data->ranges.size(); ++i) {
-		if (time <= m_data->ranges[i].second) {
-			return cum_pos + qRound64((time - m_data->ranges[i].first) / vip_double(m_data->step_size));
+	for (int i = 0; i < d_data->ranges.size(); ++i) {
+		if (time <= d_data->ranges[i].second) {
+			return cum_pos + qRound64((time - d_data->ranges[i].first) / vip_double(d_data->step_size));
 		}
 
-		cum_pos += m_data->sizes[i];
+		cum_pos += d_data->sizes[i];
 	}
 
 	return VipInvalidTime;
@@ -2885,7 +2881,7 @@ qint64 VipTimeRangeBasedGenerator::computeTimeToPos(qint64 time) const
 
 VipTimeRangeList VipTimeRangeBasedGenerator::computeTimeWindow() const
 {
-	return m_data->ranges;
+	return d_data->ranges;
 }
 
 #include "VipNDArray.h"
@@ -3799,7 +3795,7 @@ public:
 VipDirectoryReader::VipDirectoryReader(QObject* parent)
   : VipIODevice(parent)
 {
-	m_data = new PrivateData();
+	VIP_CREATE_PRIVATE_DATA(d_data);
 	// set one output
 	this->topLevelOutputAt(0)->toMultiOutput()->add();
 }
@@ -3807,110 +3803,109 @@ VipDirectoryReader::VipDirectoryReader(QObject* parent)
 VipDirectoryReader::~VipDirectoryReader()
 {
 	close();
-	delete m_data;
 }
 
 void VipDirectoryReader::setSupportedSuffixes(const QStringList& suffixes)
 {
-	m_data->supported_suffixes = suffixes;
-	m_data->dirtyFiles = true;
+	d_data->supported_suffixes = suffixes;
+	d_data->dirtyFiles = true;
 }
 
 void VipDirectoryReader::setSupportedSuffixes(const QString& suffixes)
 {
 	QString tmp = suffixes;
 	tmp.replace(" ", "");
-	m_data->supported_suffixes = tmp.split(",", VIP_SKIP_BEHAVIOR::SkipEmptyParts);
-	m_data->dirtyFiles = true;
+	d_data->supported_suffixes = tmp.split(",", VIP_SKIP_BEHAVIOR::SkipEmptyParts);
+	d_data->dirtyFiles = true;
 }
 
 void VipDirectoryReader::setFixedSize(const QSize& size)
 {
-	m_data->fixed_size = size;
+	d_data->fixed_size = size;
 }
 
 void VipDirectoryReader::setFileCount(qint32 c)
 {
-	m_data->file_count = c;
-	m_data->dirtyFiles = true;
+	d_data->file_count = c;
+	d_data->dirtyFiles = true;
 }
 
 void VipDirectoryReader::setFileStart(qint32 s)
 {
-	m_data->file_start = s;
-	m_data->dirtyFiles = true;
+	d_data->file_start = s;
+	d_data->dirtyFiles = true;
 }
 
 void VipDirectoryReader::setSmoothResize(bool smooth)
 {
-	m_data->smooth_resize = smooth;
+	d_data->smooth_resize = smooth;
 }
 
 void VipDirectoryReader::setAlphabeticalOrder(bool order)
 {
-	m_data->alphabetical_order = order;
-	m_data->dirtyFiles = true;
+	d_data->alphabetical_order = order;
+	d_data->dirtyFiles = true;
 }
 
 void VipDirectoryReader::setType(Type t)
 {
-	m_data->type = t;
+	d_data->type = t;
 }
 
 void VipDirectoryReader::setRecursive(bool r)
 {
-	m_data->recursive = r;
-	m_data->dirtyFiles = true;
+	d_data->recursive = r;
+	d_data->dirtyFiles = true;
 }
 
 QStringList VipDirectoryReader::supportedSuffixes() const
 {
-	return m_data->supported_suffixes;
+	return d_data->supported_suffixes;
 }
 QSize VipDirectoryReader::fixedSize() const
 {
-	return m_data->fixed_size;
+	return d_data->fixed_size;
 }
 qint32 VipDirectoryReader::fileCount() const
 {
-	return m_data->file_count;
+	return d_data->file_count;
 }
 qint32 VipDirectoryReader::fileStart() const
 {
-	return m_data->file_start;
+	return d_data->file_start;
 }
 bool VipDirectoryReader::smoothResize() const
 {
-	return m_data->smooth_resize;
+	return d_data->smooth_resize;
 }
 bool VipDirectoryReader::alphabeticalOrder() const
 {
-	return m_data->alphabetical_order;
+	return d_data->alphabetical_order;
 }
 VipDirectoryReader::Type VipDirectoryReader::type() const
 {
-	return m_data->type;
+	return d_data->type;
 }
 bool VipDirectoryReader::recursive() const
 {
-	return m_data->recursive;
+	return d_data->recursive;
 }
 
 QStringList VipDirectoryReader::files() const
 {
 	const_cast<VipDirectoryReader*>(this)->computeFiles();
-	return m_data->files;
+	return d_data->files;
 }
 
 QStringList VipDirectoryReader::suffixes() const
 {
 	const_cast<VipDirectoryReader*>(this)->computeFiles();
-	return m_data->suffixes;
+	return d_data->suffixes;
 }
 
 bool VipDirectoryReader::setPath(const QString& dirname)
 {
-	m_data->dirtyFiles = true;
+	d_data->dirtyFiles = true;
 	return VipIODevice::setPath(dirname);
 }
 
@@ -3936,9 +3931,9 @@ bool VipDirectoryReader::probe(const QString& filename, const QByteArray&) const
 
 void VipDirectoryReader::computeFiles()
 {
-	if (!m_data->dirtyFiles)
+	if (!d_data->dirtyFiles)
 		return;
-	m_data->dirtyFiles = true;
+	d_data->dirtyFiles = true;
 
 	QString dirname = removePrefix(path());
 	dirname.replace("\\", "/");
@@ -3949,21 +3944,21 @@ void VipDirectoryReader::computeFiles()
 		setMapFileSystem(VipMapFileSystemPtr(new VipPhysicalFileSystem()));
 
 	// compute all files in dir
-	VipPathList paths = mapFileSystem()->list(VipPath(dirname, true), m_data->recursive);
+	VipPathList paths = mapFileSystem()->list(VipPath(dirname, true), d_data->recursive);
 	QStringList files;
 	for (int i = 0; i < paths.size(); ++i)
 		if (!paths[i].isDir())
 			files << paths[i].canonicalPath();
-	// QDirIterator it(dirname, QDir::Files, m_data->recursive? QDirIterator::Subdirectories : QDirIterator::NoIteratorFlags);
+	// QDirIterator it(dirname, QDir::Files, d_data->recursive? QDirIterator::Subdirectories : QDirIterator::NoIteratorFlags);
 	// while (it.hasNext())
 	// files.append(it.next());
 
 	// remove files that do not match the filters
 
-	if (m_data->supported_suffixes.size()) {
+	if (d_data->supported_suffixes.size()) {
 		for (int i = 0; i < files.size(); ++i) {
 			QString suffix = QFileInfo(files[i]).suffix();
-			if (!m_data->supported_suffixes.contains(suffix, Qt::CaseInsensitive)) {
+			if (!d_data->supported_suffixes.contains(suffix, Qt::CaseInsensitive)) {
 				files.removeAt(i);
 				--i;
 			}
@@ -3972,7 +3967,7 @@ void VipDirectoryReader::computeFiles()
 
 	// sort
 	files.sort();
-	if (!m_data->alphabetical_order) {
+	if (!d_data->alphabetical_order) {
 		// reverse the list
 		for (int k = 0; k < (files.size() / 2); k++)
 #if QT_VERSION < QT_VERSION_CHECK(5, 15, 0)
@@ -3983,7 +3978,7 @@ void VipDirectoryReader::computeFiles()
 	}
 
 	// crop
-	files = files.mid(m_data->file_start, m_data->file_count);
+	files = files.mid(d_data->file_start, d_data->file_count);
 
 	// retrieve suffixes
 	QSet<QString> suffixes;
@@ -3998,116 +3993,116 @@ void VipDirectoryReader::computeFiles()
 	// files[i] = dirname + "/" + files[i];
 	// }
 
-	m_data->files = files;
-	m_data->suffixes = suffixes.values();
+	d_data->files = files;
+	d_data->suffixes = suffixes.values();
 }
 
 void VipDirectoryReader::setSuffixTemplate(const QString& suffix, VipIODevice* device)
 {
-	m_data->suffix_templates[suffix.toLower()] = QSharedPointer<VipIODevice>(device);
+	d_data->suffix_templates[suffix.toLower()] = QSharedPointer<VipIODevice>(device);
 }
 
 VipIODevice* VipDirectoryReader::deviceFromOutput(int output_index) const
 {
 	int count = 0;
-	for (int i = 0; i < m_data->devices.size(); ++i) {
-		if (output_index < count + m_data->devices[i]->outputCount())
-			return m_data->devices[i].data();
+	for (int i = 0; i < d_data->devices.size(); ++i) {
+		if (output_index < count + d_data->devices[i]->outputCount())
+			return d_data->devices[i].data();
 
-		count += m_data->devices[i]->outputCount();
+		count += d_data->devices[i]->outputCount();
 	}
 	return nullptr;
 }
 
 VipIODevice* VipDirectoryReader::deviceAt(int index) const
 {
-	return m_data->devices[index].data();
+	return d_data->devices[index].data();
 }
 
 int VipDirectoryReader::deviceCount() const
 {
-	return m_data->devices.size();
+	return d_data->devices.size();
 }
 
 void VipDirectoryReader::setSourceProperty(const char* name, const QVariant& value)
 {
 	VipIODevice::setSourceProperty(name, value);
-	for (int i = 0; i < m_data->devices.size(); ++i) {
-		m_data->devices[i]->setSourceProperty(name, value);
+	for (int i = 0; i < d_data->devices.size(); ++i) {
+		d_data->devices[i]->setSourceProperty(name, value);
 	}
 }
 
 VipDirectoryReader::DeviceType VipDirectoryReader::deviceType() const
 {
-	return m_data->deviceType;
+	return d_data->deviceType;
 }
 
 void VipDirectoryReader::close()
 {
-	for (int i = 0; i < m_data->devices.size(); ++i) {
-		m_data->devices[i]->close();
+	for (int i = 0; i < d_data->devices.size(); ++i) {
+		d_data->devices[i]->close();
 	}
 
-	m_data->devices.clear();
-	m_data->timestamps.clear();
-	m_data->sampling = VipInvalidTime;
+	d_data->devices.clear();
+	d_data->timestamps.clear();
+	d_data->sampling = VipInvalidTime;
 	setOpenMode(NotOpen);
 }
 
 void VipDirectoryReader::recomputeTimestamps()
 {
-	m_data->sampling = VipInvalidTime;
+	d_data->sampling = VipInvalidTime;
 
-	for (int i = 0; i < m_data->devices.size(); ++i) {
-		VipIODevice* device = m_data->devices[i].data();
+	for (int i = 0; i < d_data->devices.size(); ++i) {
+		VipIODevice* device = d_data->devices[i].data();
 
 		// find smallest sampling time
 		qint64 sampling = device->estimateSamplingTime();
-		if (m_data->sampling == VipInvalidTime || (sampling != VipInvalidTime && sampling < m_data->sampling))
-			m_data->sampling = sampling;
+		if (d_data->sampling == VipInvalidTime || (sampling != VipInvalidTime && sampling < d_data->sampling))
+			d_data->sampling = sampling;
 	}
 
-	m_data->timestamps.clear();
-	if (m_data->sampling == VipInvalidTime)
-		m_data->sampling = 1000000; // 1s
+	d_data->timestamps.clear();
+	if (d_data->sampling == VipInvalidTime)
+		d_data->sampling = 1000000; // 1s
 
-	if (m_data->type == SequenceOfData) {
-		m_data->deviceType = Temporal;
+	if (d_data->type == SequenceOfData) {
+		d_data->deviceType = Temporal;
 		// compute the time range for each device
-		for (int i = 0; i < m_data->devices.size(); ++i) {
-			VipTimeRange d_range = m_data->devices[i]->timeLimits();
-			if (!m_data->timestamps.size()) {
+		for (int i = 0; i < d_data->devices.size(); ++i) {
+			VipTimeRange d_range = d_data->devices[i]->timeLimits();
+			if (!d_data->timestamps.size()) {
 				if (d_range.first != VipInvalidTime && d_range.second != VipInvalidTime)
-					m_data->timestamps.append(d_range);
+					d_data->timestamps.append(d_range);
 				else
-					m_data->timestamps.append(VipTimeRange(0, 0));
+					d_data->timestamps.append(VipTimeRange(0, 0));
 			}
 			else {
-				VipTimeRange last = m_data->timestamps.last();
+				VipTimeRange last = d_data->timestamps.last();
 
 				if (d_range.first == VipInvalidTime || d_range.second == VipInvalidTime) {
-					d_range = (VipTimeRange(last.second + m_data->sampling, last.second + m_data->sampling));
+					d_range = (VipTimeRange(last.second + d_data->sampling, last.second + d_data->sampling));
 				}
 				else if (d_range.first <= last.second) {
 					qint64 duration = d_range.second - d_range.first;
-					d_range.first = last.second + m_data->sampling;
+					d_range.first = last.second + d_data->sampling;
 					d_range.second = d_range.first + duration;
 				}
 
-				m_data->timestamps.append(d_range);
+				d_data->timestamps.append(d_range);
 			}
 		}
 	}
 	else {
-		m_data->deviceType = Resource;
+		d_data->deviceType = Resource;
 		// the time range window is the union of each time range
-		for (int i = 0; i < m_data->devices.size(); ++i) {
-			if (m_data->devices[i]->deviceType() == Temporal && m_data->devices[i]->size() != 1) {
-				m_data->deviceType = Temporal;
-				m_data->timestamps += (m_data->devices[i]->timeWindow());
+		for (int i = 0; i < d_data->devices.size(); ++i) {
+			if (d_data->devices[i]->deviceType() == Temporal && d_data->devices[i]->size() != 1) {
+				d_data->deviceType = Temporal;
+				d_data->timestamps += (d_data->devices[i]->timeWindow());
 			}
 		}
-		vipReorder(m_data->timestamps, Vip::Ascending, true);
+		vipReorder(d_data->timestamps, Vip::Ascending, true);
 	}
 
 	emitTimestampingChanged();
@@ -4120,7 +4115,7 @@ bool VipDirectoryReader::open(VipIODevice::OpenModes mode)
 		return false;
 
 	computeFiles();
-	if (!m_data->files.size()) {
+	if (!d_data->files.size()) {
 		VIP_LOG_WARNING("No file matching criteria in dir '" + removePrefix(path()) + "'");
 		return false;
 	}
@@ -4128,24 +4123,24 @@ bool VipDirectoryReader::open(VipIODevice::OpenModes mode)
 	// create the devices for each file, estimate the minimal sampling time
 
 	VipProgress progress;
-	progress.setRange(0, m_data->files.size());
+	progress.setRange(0, d_data->files.size());
 	progress.setCancelable(true);
 	progress.setModal(true);
 
 	int output_count = 0;
 	int max_output_per_device = 0;
 
-	for (int i = 0; i < m_data->files.size(); ++i) {
+	for (int i = 0; i < d_data->files.size(); ++i) {
 		if (progress.canceled())
 			break;
 
 		progress.setValue(i);
-		progress.setText("Read <b>" + QFileInfo(m_data->files[i]).fileName() + "</b>");
+		progress.setText("Read <b>" + QFileInfo(d_data->files[i]).fileName() + "</b>");
 
 		bool have_template = false;
 		QSharedPointer<VipIODevice> template_device;
-		QMap<QString, QSharedPointer<VipIODevice>>::iterator it = m_data->suffix_templates.find(QFileInfo(m_data->files[i]).suffix().toLower());
-		if (it != m_data->suffix_templates.end()) {
+		QMap<QString, QSharedPointer<VipIODevice>>::iterator it = d_data->suffix_templates.find(QFileInfo(d_data->files[i]).suffix().toLower());
+		if (it != d_data->suffix_templates.end()) {
 			have_template = true;
 			template_device = it.value();
 		}
@@ -4158,7 +4153,7 @@ bool VipDirectoryReader::open(VipIODevice::OpenModes mode)
 			device = vipCreateVariant((QByteArray(template_device->metaObject()->className()) + "*").data()).value<VipIODevice*>();
 		}
 		else {
-			QList<VipIODevice::Info> devices = VipIODevice::possibleReadDevices(m_data->files[i], QByteArray());
+			QList<VipIODevice::Info> devices = VipIODevice::possibleReadDevices(d_data->files[i], QByteArray());
 			if (devices.size())
 				device = qobject_cast<VipIODevice*>(devices.first().create());
 		}
@@ -4175,8 +4170,8 @@ bool VipDirectoryReader::open(VipIODevice::OpenModes mode)
 		if (template_device)
 			template_device->copyParameters(device);
 
-		vip_debug("%s\n", m_data->files[i].toLatin1().data());
-		device->setPath(m_data->files[i]);
+		vip_debug("%s\n", d_data->files[i].toLatin1().data());
+		device->setPath(d_data->files[i]);
 		if (!device->open(VipIODevice::ReadOnly)) {
 			delete device;
 			continue;
@@ -4186,10 +4181,10 @@ bool VipDirectoryReader::open(VipIODevice::OpenModes mode)
 
 		// find smallest sampling time
 		// qint64 sampling = device->estimateSamplingTime();
-		// if (m_data->sampling == VipInvalidTime || (sampling != VipInvalidTime && sampling < m_data->sampling) )
-		// m_data->sampling = sampling;
+		// if (d_data->sampling == VipInvalidTime || (sampling != VipInvalidTime && sampling < d_data->sampling) )
+		// d_data->sampling = sampling;
 
-		m_data->devices.append(QSharedPointer<VipIODevice>(device));
+		d_data->devices.append(QSharedPointer<VipIODevice>(device));
 
 		connect(device, SIGNAL(timestampingChanged()), this, SLOT(recomputeTimestamps()), Qt::DirectConnection);
 
@@ -4201,13 +4196,13 @@ bool VipDirectoryReader::open(VipIODevice::OpenModes mode)
 	this->blockSignals(false);
 
 	// create the ouputs and set their data
-	if (m_data->type == SequenceOfData) {
+	if (d_data->type == SequenceOfData) {
 		this->topLevelOutputAt(0)->toMultiOutput()->resize(max_output_per_device);
 		// for each output, try to set a valid data
 		for (int o = 0; o < max_output_per_device; ++o) {
-			for (int i = 0; i < m_data->devices.size(); ++i) {
-				if (m_data->devices[i]->outputCount() > o) {
-					VipAnyData data = m_data->devices[i]->outputAt(o)->data();
+			for (int i = 0; i < d_data->devices.size(); ++i) {
+				if (d_data->devices[i]->outputCount() > o) {
+					VipAnyData data = d_data->devices[i]->outputAt(o)->data();
 					if (data.data().userType() != 0) {
 						this->outputAt(o)->setData(data);
 						break;
@@ -4218,10 +4213,10 @@ bool VipDirectoryReader::open(VipIODevice::OpenModes mode)
 	}
 	else {
 
-		this->topLevelOutputAt(0)->toMultiOutput()->resize(output_count); // m_data->devices.size());
+		this->topLevelOutputAt(0)->toMultiOutput()->resize(output_count); // d_data->devices.size());
 		int out = 0;
-		for (int i = 0; i < m_data->devices.size(); ++i) {
-			VipIODevice* dev = m_data->devices[i].data();
+		for (int i = 0; i < d_data->devices.size(); ++i) {
+			VipIODevice* dev = d_data->devices[i].data();
 			for (int o = 0; o < dev->outputCount(); ++o, ++out)
 				this->outputAt(out)->setData(dev->outputAt(o)->data());
 		}
@@ -4230,7 +4225,7 @@ bool VipDirectoryReader::open(VipIODevice::OpenModes mode)
 	setOpenMode(ReadOnly);
 
 	// for Resource device only, load the data
-	if (m_data->deviceType == Resource)
+	if (d_data->deviceType == Resource)
 		read(0);
 
 	return true;
@@ -4238,46 +4233,46 @@ bool VipDirectoryReader::open(VipIODevice::OpenModes mode)
 
 VipTimeRangeList VipDirectoryReader::computeTimeWindow() const
 {
-	// if (m_data->timestamps.size())
-	// return VipTimeRangeList() << VipTimeRange(m_data->timestamps.first().first, m_data->timestamps.last().second);
+	// if (d_data->timestamps.size())
+	// return VipTimeRangeList() << VipTimeRange(d_data->timestamps.first().first, d_data->timestamps.last().second);
 	// return VipTimeRangeList();
-	return m_data->timestamps;
+	return d_data->timestamps;
 }
 
 int VipDirectoryReader::closestDeviceIndex(qint64 time, qint64* closest) const
 {
-	if (!m_data->timestamps.size())
+	if (!d_data->timestamps.size())
 		return -1;
-	else if (time <= m_data->timestamps.first().first)
+	else if (time <= d_data->timestamps.first().first)
 		return 0;
-	else if (time >= m_data->timestamps.last().second)
-		return m_data->timestamps.size() - 1;
+	else if (time >= d_data->timestamps.last().second)
+		return d_data->timestamps.size() - 1;
 
-	for (int i = 0; i < m_data->timestamps.size(); ++i) {
-		if (time >= m_data->timestamps[i].first && time <= m_data->timestamps[i].second) {
+	for (int i = 0; i < d_data->timestamps.size(); ++i) {
+		if (time >= d_data->timestamps[i].first && time <= d_data->timestamps[i].second) {
 			if (closest)
 				*closest = time;
 			return i;
 		}
-		else if (time < m_data->timestamps[i].first) {
+		else if (time < d_data->timestamps[i].first) {
 			// return the closest between i and i-1
 			if (i > 0) {
-				qint64 diff1 = time - m_data->timestamps[i - 1].second;
-				qint64 diff2 = m_data->timestamps[i].first - time;
+				qint64 diff1 = time - d_data->timestamps[i - 1].second;
+				qint64 diff2 = d_data->timestamps[i].first - time;
 				if (diff1 < diff2) {
 					if (closest)
-						*closest = m_data->timestamps[i - 1].second;
+						*closest = d_data->timestamps[i - 1].second;
 					return i - 1;
 				}
 				else {
 					if (closest)
-						*closest = m_data->timestamps[i].first;
+						*closest = d_data->timestamps[i].first;
 					return i;
 				}
 			}
 			else {
 				if (closest)
-					*closest = m_data->timestamps[i].first;
+					*closest = d_data->timestamps[i].first;
 				return i;
 			}
 		}
@@ -4293,13 +4288,13 @@ qint64 VipDirectoryReader::computeNextTime(qint64 intime) const
 	else if (intime >= lastTime())
 		return lastTime();
 
-	if (m_data->type == IndependentData) {
+	if (d_data->type == IndependentData) {
 		qint64 from_time = (intime);
 		qint64 time = VipInvalidTime;
 
-		for (int i = 0; i < m_data->devices.size(); ++i) {
-			if ((m_data->devices[i]->openMode() & VipIODevice::ReadOnly) && m_data->devices[i]->isEnabled()) {
-				qint64 t = m_data->devices[i]->nextTime(from_time);
+		for (int i = 0; i < d_data->devices.size(); ++i) {
+			if ((d_data->devices[i]->openMode() & VipIODevice::ReadOnly) && d_data->devices[i]->isEnabled()) {
+				qint64 t = d_data->devices[i]->nextTime(from_time);
 				if (t != VipInvalidTime && (t < time || time == VipInvalidTime) && t > from_time) //(t <= time || time == from_time))
 					time = t;
 			}
@@ -4313,24 +4308,24 @@ qint64 VipDirectoryReader::computeNextTime(qint64 intime) const
 		qint64 closest = VipInvalidTime;
 		int index = closestDeviceIndex(time, &closest);
 		if (index >= 0) {
-			bool use_sampling = (m_data->timestamps[index].first != m_data->devices[index]->firstTime());
+			bool use_sampling = (d_data->timestamps[index].first != d_data->devices[index]->firstTime());
 
 			qint64 time_offset_before = 0;
 			if (index > 0 && use_sampling)
-				time_offset_before = m_data->timestamps[index - 1].second + m_data->sampling;
+				time_offset_before = d_data->timestamps[index - 1].second + d_data->sampling;
 
-			qint64 next = m_data->devices[index]->nextTime(time - time_offset_before);
+			qint64 next = d_data->devices[index]->nextTime(time - time_offset_before);
 			if (next == time - time_offset_before || next == VipInvalidTime) {
-				if (index + 1 < m_data->timestamps.size())
-					res = (m_data->timestamps[index + 1].first);
+				if (index + 1 < d_data->timestamps.size())
+					res = (d_data->timestamps[index + 1].first);
 				else
-					res = (m_data->timestamps.last().second);
+					res = (d_data->timestamps.last().second);
 			}
 			else // we found a validtime: transform and check that the result is different than intime (might be equal due to rounding errors with time transforms)
 			{
 				res = (next + time_offset_before);
-				if (res == intime && (index + 1) < m_data->timestamps.size())
-					res = (m_data->timestamps[index + 1].first);
+				if (res == intime && (index + 1) < d_data->timestamps.size())
+					res = (d_data->timestamps[index + 1].first);
 			}
 		}
 		return res;
@@ -4344,13 +4339,13 @@ qint64 VipDirectoryReader::computePreviousTime(qint64 intime) const
 	else if (intime > lastTime())
 		return lastTime();
 
-	if (m_data->type == IndependentData) {
+	if (d_data->type == IndependentData) {
 		qint64 from_time = (intime);
 		qint64 time = VipInvalidTime;
 
-		for (int i = 0; i < m_data->devices.size(); ++i) {
-			if ((m_data->devices[i]->openMode() & VipIODevice::ReadOnly) && m_data->devices[i]->isEnabled()) {
-				qint64 t = m_data->devices[i]->previousTime(from_time);
+		for (int i = 0; i < d_data->devices.size(); ++i) {
+			if ((d_data->devices[i]->openMode() & VipIODevice::ReadOnly) && d_data->devices[i]->isEnabled()) {
+				qint64 t = d_data->devices[i]->previousTime(from_time);
 				if (t != VipInvalidTime && (t > time || time == VipInvalidTime) && t < from_time) //(t >= time || time == from_time))
 					time = t;
 			}
@@ -4364,24 +4359,24 @@ qint64 VipDirectoryReader::computePreviousTime(qint64 intime) const
 		qint64 closest = VipInvalidTime;
 		int index = closestDeviceIndex(time, &closest);
 		if (index >= 0) {
-			bool use_sampling = (m_data->timestamps[index].first != m_data->devices[index]->firstTime());
+			bool use_sampling = (d_data->timestamps[index].first != d_data->devices[index]->firstTime());
 
 			qint64 time_offset_before = 0;
 			if (index > 0 && use_sampling)
-				time_offset_before = m_data->timestamps[index - 1].second + m_data->sampling;
+				time_offset_before = d_data->timestamps[index - 1].second + d_data->sampling;
 
-			qint64 previous = m_data->devices[index]->previousTime(time - time_offset_before);
+			qint64 previous = d_data->devices[index]->previousTime(time - time_offset_before);
 			if (previous == time - time_offset_before || previous == VipInvalidTime) {
 				if (index - 1 >= 0)
-					res = (m_data->timestamps[index - 1].second);
+					res = (d_data->timestamps[index - 1].second);
 				else
-					res = (m_data->timestamps.first().first);
+					res = (d_data->timestamps.first().first);
 			}
 			else // we found a valid time: transform and check that the result is different than intime (might be equal due to rounding errors with time transforms)
 			{
 				res = (previous + time_offset_before);
 				if (res == intime && (index - 1) >= 0)
-					res = (m_data->timestamps[index - 1].second);
+					res = (d_data->timestamps[index - 1].second);
 			}
 		}
 		return res;
@@ -4395,14 +4390,14 @@ qint64 VipDirectoryReader::computeClosestTime(qint64 _time) const
 	else if (_time >= lastTime())
 		return lastTime();
 
-	if (m_data->type == IndependentData) {
+	if (d_data->type == IndependentData) {
 
 		qint64 from_time = (_time);
 		qint64 time = VipInvalidTime;
 
-		for (int i = 0; i < m_data->devices.size(); ++i) {
-			if ((m_data->devices[i]->openMode() & VipIODevice::ReadOnly) && m_data->devices[i]->isEnabled()) {
-				qint64 t = m_data->devices[i]->closestTime(from_time);
+		for (int i = 0; i < d_data->devices.size(); ++i) {
+			if ((d_data->devices[i]->openMode() & VipIODevice::ReadOnly) && d_data->devices[i]->isEnabled()) {
+				qint64 t = d_data->devices[i]->closestTime(from_time);
 				if (time == VipInvalidTime && t != VipInvalidTime)
 					time = t;
 				if (t != VipInvalidTime && (qAbs(from_time - t) < qAbs(from_time - time)))
@@ -4420,22 +4415,22 @@ qint64 VipDirectoryReader::computeClosestTime(qint64 _time) const
 		if (index < 0)
 			return VipInvalidTime;
 
-		bool use_sampling = (m_data->timestamps[index].first != m_data->devices[index]->firstTime());
+		bool use_sampling = (d_data->timestamps[index].first != d_data->devices[index]->firstTime());
 
 		qint64 time_offset_before = 0;
 		if (index > 0 && use_sampling)
-			time_offset_before = m_data->timestamps[index - 1].second + m_data->sampling;
+			time_offset_before = d_data->timestamps[index - 1].second + d_data->sampling;
 
-		return (m_data->devices[index]->closestTime(_time - time_offset_before) + time_offset_before);
+		return (d_data->devices[index]->closestTime(_time - time_offset_before) + time_offset_before);
 	}
 }
 
 bool VipDirectoryReader::reload()
 {
-	if (m_data->type == IndependentData) {
+	if (d_data->type == IndependentData) {
 		int out_index = 0;
-		for (int i = 0; i < m_data->devices.size(); ++i) {
-			if (VipIODevice* dev = m_data->devices[i].data()) {
+		for (int i = 0; i < d_data->devices.size(); ++i) {
+			if (VipIODevice* dev = d_data->devices[i].data()) {
 				if (dev->reload()) {
 					for (int o = 0; o < dev->outputCount(); ++o) {
 						VipAnyData out = dev->outputAt(o)->data();
@@ -4447,9 +4442,9 @@ bool VipDirectoryReader::reload()
 
 						// for image only
 						VipNDArray ar = out.data().value<VipNDArray>();
-						if (!ar.isEmpty() && m_data->fixed_size != QSize()) {
-							ar = ar.resize(vipVector(m_data->fixed_size.height(), m_data->fixed_size.width()),
-								       m_data->smooth_resize ? Vip::CubicInterpolation : Vip::NoInterpolation);
+						if (!ar.isEmpty() && d_data->fixed_size != QSize()) {
+							ar = ar.resize(vipVector(d_data->fixed_size.height(), d_data->fixed_size.width()),
+								       d_data->smooth_resize ? Vip::CubicInterpolation : Vip::NoInterpolation);
 							out.setData(QVariant::fromValue(ar));
 						}
 
@@ -4472,10 +4467,10 @@ bool VipDirectoryReader::reload()
 
 bool VipDirectoryReader::readData(qint64 time)
 {
-	if (m_data->type == IndependentData) {
+	if (d_data->type == IndependentData) {
 		int out_index = 0;
-		for (int i = 0; i < m_data->devices.size(); ++i) {
-			VipIODevice* dev = m_data->devices[i].data();
+		for (int i = 0; i < d_data->devices.size(); ++i) {
+			VipIODevice* dev = d_data->devices[i].data();
 			if (dev->deviceType() == Temporal) {
 				if (dev->read(time, true)) {
 					for (int o = 0; o < dev->outputCount(); ++o) {
@@ -4489,9 +4484,9 @@ bool VipDirectoryReader::readData(qint64 time)
 
 						// for image only
 						VipNDArray ar = out.data().value<VipNDArray>();
-						if (!ar.isEmpty() && m_data->fixed_size != QSize()) {
-							ar = ar.resize(vipVector(m_data->fixed_size.height(), m_data->fixed_size.width()),
-								       m_data->smooth_resize ? Vip::CubicInterpolation : Vip::NoInterpolation);
+						if (!ar.isEmpty() && d_data->fixed_size != QSize()) {
+							ar = ar.resize(vipVector(d_data->fixed_size.height(), d_data->fixed_size.width()),
+								       d_data->smooth_resize ? Vip::CubicInterpolation : Vip::NoInterpolation);
 							out.setData(QVariant::fromValue(ar));
 						}
 
@@ -4507,7 +4502,7 @@ bool VipDirectoryReader::readData(qint64 time)
 	else // SequenceOfData
 	{
 
-		if (!m_data->timestamps.size())
+		if (!d_data->timestamps.size())
 			return false;
 
 		int index = closestDeviceIndex(time);
@@ -4515,23 +4510,23 @@ bool VipDirectoryReader::readData(qint64 time)
 			return false;
 
 		qint64 time_offset_before = 0;
-		bool use_sampling = (m_data->timestamps[index].first != m_data->devices[index]->firstTime());
+		bool use_sampling = (d_data->timestamps[index].first != d_data->devices[index]->firstTime());
 
 		if (index > 0 && use_sampling)
-			time_offset_before = m_data->timestamps[index - 1].second + m_data->sampling;
+			time_offset_before = d_data->timestamps[index - 1].second + d_data->sampling;
 
-		m_data->devices[index]->read(time - time_offset_before);
+		d_data->devices[index]->read(time - time_offset_before);
 
 		for (int o = 0; o < outputCount(); ++o) {
-			VipAnyData out = m_data->devices[index]->outputAt(o)->data();
+			VipAnyData out = d_data->devices[index]->outputAt(o)->data();
 			out.mergeAttributes(attributes());
 			out.setSource((qint64)this);
 			out.setTime(time);
 
 			// for image only
 			VipNDArray ar = out.data().value<VipNDArray>();
-			if (!ar.isEmpty() && m_data->fixed_size != QSize()) {
-				ar = ar.resize(vipVector(m_data->fixed_size.height(), m_data->fixed_size.width()), m_data->smooth_resize ? Vip::CubicInterpolation : Vip::NoInterpolation);
+			if (!ar.isEmpty() && d_data->fixed_size != QSize()) {
+				ar = ar.resize(vipVector(d_data->fixed_size.height(), d_data->fixed_size.width()), d_data->smooth_resize ? Vip::CubicInterpolation : Vip::NoInterpolation);
 				out.setData(QVariant::fromValue(ar));
 			}
 
@@ -4774,26 +4769,25 @@ public:
 VipArchiveRecorder::VipArchiveRecorder(QObject* parent)
   : VipIODevice(parent)
 {
-	m_data = new PrivateData();
-	m_data->archive.registerFastType(qMetaTypeId<VipAnyData>());
-	m_data->archive.registerFastType(qMetaTypeId<QVariantMap>());
+	VIP_CREATE_PRIVATE_DATA(d_data);
+	d_data->archive.registerFastType(qMetaTypeId<VipAnyData>());
+	d_data->archive.registerFastType(qMetaTypeId<QVariantMap>());
 }
 
 VipArchiveRecorder::~VipArchiveRecorder()
 {
 	close();
-	delete m_data;
 }
 
 bool VipArchiveRecorder::open(VipIODevice::OpenModes mode)
 {
 	if (isOpen()) {
 		this->wait();
-		m_data->archive.content("ArchiveRecorderTrailer", m_data->trailer);
+		d_data->archive.content("ArchiveRecorderTrailer", d_data->trailer);
 	}
-	m_data->archive.close();
-	m_data->trailer = ArchiveRecorderTrailer();
-	m_data->previousTimes.clear();
+	d_data->archive.close();
+	d_data->trailer = ArchiveRecorderTrailer();
+	d_data->previousTimes.clear();
 	setOpenMode(NotOpen);
 	this->setSize(0);
 
@@ -4801,7 +4795,7 @@ bool VipArchiveRecorder::open(VipIODevice::OpenModes mode)
 		if (!createDevice(removePrefix(path()), QIODevice::WriteOnly))
 			return false;
 
-		m_data->archive.setDevice(device());
+		d_data->archive.setDevice(device());
 		this->setOpenMode(mode);
 		this->setSize(0);
 		return true;
@@ -4814,11 +4808,11 @@ void VipArchiveRecorder::close()
 {
 	if (isOpen()) {
 		this->wait();
-		m_data->archive.content("ArchiveRecorderTrailer", m_data->trailer);
+		d_data->archive.content("ArchiveRecorderTrailer", d_data->trailer);
 	}
-	m_data->archive.close();
-	m_data->trailer = ArchiveRecorderTrailer();
-	m_data->previousTimes.clear();
+	d_data->archive.close();
+	d_data->trailer = ArchiveRecorderTrailer();
+	d_data->previousTimes.clear();
 	setOpenMode(NotOpen);
 	this->setSize(0);
 	VipIODevice::close();
@@ -4826,7 +4820,7 @@ void VipArchiveRecorder::close()
 
 VipArchiveRecorder::Trailer VipArchiveRecorder::trailer() const
 {
-	return m_data->trailer;
+	return d_data->trailer;
 }
 
 void VipArchiveRecorder::apply()
@@ -4842,9 +4836,9 @@ void VipArchiveRecorder::apply()
 				const VipAnyData data = inputAt(i)->data();
 
 				// check that we are above the previous time for this source
-				QMap<qint64, qint64>::iterator it = m_data->previousTimes.find(data.source());
-				if (it == m_data->previousTimes.end() || data.time() > it.value())
-					m_data->previousTimes[data.source()] = data.time();
+				QMap<qint64, qint64>::iterator it = d_data->previousTimes.find(data.source());
+				if (it == d_data->previousTimes.end() || data.time() > it.value())
+					d_data->previousTimes[data.source()] = data.time();
 				else
 					continue;
 
@@ -4863,37 +4857,37 @@ void VipArchiveRecorder::apply()
 				continue;
 
 			// update trailer
-			QMap<qint64, QPair<qint64, qint64>>::iterator trailer_it = m_data->trailer.sourceLimits.find(data.source());
-			if (trailer_it == m_data->trailer.sourceLimits.end()) {
-				trailer_it = m_data->trailer.sourceLimits.insert(data.source(), QPair<qint64, qint64>(data.time(), data.time()));
+			QMap<qint64, QPair<qint64, qint64>>::iterator trailer_it = d_data->trailer.sourceLimits.find(data.source());
+			if (trailer_it == d_data->trailer.sourceLimits.end()) {
+				trailer_it = d_data->trailer.sourceLimits.insert(data.source(), QPair<qint64, qint64>(data.time(), data.time()));
 			}
 			else {
 				trailer_it.value().first = qMin(trailer_it.value().first, data.time());
 				trailer_it.value().second = qMax(trailer_it.value().second, data.time());
 			}
 
-			QMap<qint64, qint64>::iterator trailer_sample_it = m_data->trailer.sourceSamples.find(data.source());
-			if (trailer_sample_it == m_data->trailer.sourceSamples.end()) {
-				trailer_sample_it = m_data->trailer.sourceSamples.insert(data.source(), 1);
+			QMap<qint64, qint64>::iterator trailer_sample_it = d_data->trailer.sourceSamples.find(data.source());
+			if (trailer_sample_it == d_data->trailer.sourceSamples.end()) {
+				trailer_sample_it = d_data->trailer.sourceSamples.insert(data.source(), 1);
 			}
 			else {
 				trailer_sample_it.value()++;
 			}
 
-			if (m_data->trailer.startTime == VipInvalidTime)
-				m_data->trailer.startTime = trailer_it.value().first;
+			if (d_data->trailer.startTime == VipInvalidTime)
+				d_data->trailer.startTime = trailer_it.value().first;
 			else
-				m_data->trailer.startTime = qMin(m_data->trailer.startTime, trailer_it.value().first);
+				d_data->trailer.startTime = qMin(d_data->trailer.startTime, trailer_it.value().first);
 
-			if (m_data->trailer.endTime == VipInvalidTime)
-				m_data->trailer.endTime = trailer_it.value().second;
+			if (d_data->trailer.endTime == VipInvalidTime)
+				d_data->trailer.endTime = trailer_it.value().second;
 			else
-				m_data->trailer.endTime = qMax(m_data->trailer.endTime, trailer_it.value().second);
+				d_data->trailer.endTime = qMax(d_data->trailer.endTime, trailer_it.value().second);
 
-			m_data->trailer.sourceTypes[data.source()] = data.data().typeName();
+			d_data->trailer.sourceTypes[data.source()] = data.data().typeName();
 
 			// write data
-			m_data->archive.content(data);
+			d_data->archive.content(data);
 
 			this->setSize(size() + 1);
 		}
@@ -4953,118 +4947,117 @@ public:
 VipArchiveReader::VipArchiveReader(QObject* parent)
   : VipIODevice(parent)
 {
-	m_data = new PrivateData();
-	m_data->device_type = Temporal;
-	// connect(&m_data->timer, SIGNAL(timeout()), this, SLOT(bufferData()), Qt::DirectConnection);
+	VIP_CREATE_PRIVATE_DATA(d_data);
+	d_data->device_type = Temporal;
+	// connect(&d_data->timer, SIGNAL(timeout()), this, SLOT(bufferData()), Qt::DirectConnection);
 }
 
 VipArchiveReader::~VipArchiveReader()
 {
 	close();
-	delete m_data;
 }
 
 void VipArchiveReader::bufferData()
 {
-	if (m_data->time != VipInvalidTime) {
+	if (d_data->time != VipInvalidTime) {
 		{
-			QMutexLocker lock(&m_data->buffer_mutex);
-			m_data->buffer_time = m_data->forward ? computeNextTime(m_data->time) : computePreviousTime(m_data->time);
-			if (m_data->buffer_time == m_data->buffers[0].time())
+			QMutexLocker lock(&d_data->buffer_mutex);
+			d_data->buffer_time = d_data->forward ? computeNextTime(d_data->time) : computePreviousTime(d_data->time);
+			if (d_data->buffer_time == d_data->buffers[0].time())
 				return;
 		}
 
-		if (m_data->buffer_time != m_data->time && m_data->buffer_time != VipInvalidTime) {
+		if (d_data->buffer_time != d_data->time && d_data->buffer_time != VipInvalidTime) {
 			typedef QMultiMap<qint64, ArchFrame>::iterator iterator;
-			QPair<iterator, iterator> range = m_data->frames.equal_range(m_data->buffer_time);
+			QPair<iterator, iterator> range = d_data->frames.equal_range(d_data->buffer_time);
 
 			if (range.first == range.second)
 				return;
 
 			{
-				QMutexLocker lock(&m_data->buffer_mutex);
-				m_data->archive.setReadMode(VipArchive::Forward);
-				m_data->archive.setAttribute("skip_data", false);
+				QMutexLocker lock(&d_data->buffer_mutex);
+				d_data->archive.setReadMode(VipArchive::Forward);
+				d_data->archive.setAttribute("skip_data", false);
 			}
 
 			for (iterator it = range.first; it != range.second; ++it) {
 				// look for the data in the buffer
 				QByteArray ar;
 				{
-					QMutexLocker lock(&m_data->buffer_mutex);
-					m_data->archive.device()->seek(it.value().pos);
-					ar = m_data->archive.readBinary();
+					QMutexLocker lock(&d_data->buffer_mutex);
+					d_data->archive.device()->seek(it.value().pos);
+					ar = d_data->archive.readBinary();
 				}
-				VipAnyData any = m_data->archive.deserialize(ar).value<VipAnyData>();
+				VipAnyData any = d_data->archive.deserialize(ar).value<VipAnyData>();
 				if (!any.isEmpty()) {
-					QMutexLocker lock(&m_data->buffer_mutex);
-					any.setTime(m_data->buffer_time);
+					QMutexLocker lock(&d_data->buffer_mutex);
+					any.setTime(d_data->buffer_time);
 					any.setSource(qint64(this));
-					m_data->buffers[m_data->indexes[it.value().stream]] = any;
+					d_data->buffers[d_data->indexes[it.value().stream]] = any;
 				}
 			}
 		}
 		else {
-			QMutexLocker lock(&m_data->buffer_mutex);
-			m_data->buffer_time = m_data->buffers.first().time();
+			QMutexLocker lock(&d_data->buffer_mutex);
+			d_data->buffer_time = d_data->buffers.first().time();
 		}
 	}
 }
 
 bool VipArchiveReader::open(VipIODevice::OpenModes mode)
 {
-	m_data->archive.close();
-	m_data->trailer = ArchiveRecorderTrailer();
-	m_data->frames.clear();
-	m_data->resourceFrames.clear();
+	d_data->archive.close();
+	d_data->trailer = ArchiveRecorderTrailer();
+	d_data->frames.clear();
+	d_data->resourceFrames.clear();
 	setOpenMode(NotOpen);
 
 	if (mode == VipIODevice::ReadOnly) {
 		if (!createDevice(removePrefix(path()), QFile::ReadOnly))
 			return false;
 
-		m_data->device_type = Temporal;
-		m_data->archive.setDevice(device());
+		d_data->device_type = Temporal;
+		d_data->archive.setDevice(device());
 
 		// read the trailer
-		m_data->archive.setReadMode(VipArchive::Backward);
+		d_data->archive.setReadMode(VipArchive::Backward);
 		device()->seek(device()->size());
 
-		if (m_data->archive.content(m_data->trailer)) {
-			m_data->trailerPos = m_data->archive.device()->pos();
+		if (d_data->archive.content(d_data->trailer)) {
+			d_data->trailerPos = d_data->archive.device()->pos();
 
 			// create the outputs with a valid value
 			bool all_resource = true;
 			int i = 0;
-			topLevelOutputAt(0)->toMultiOutput()->resize(m_data->trailer.sourceTypes.size());
-			for (QMap<qint64, QString>::iterator it = m_data->trailer.sourceTypes.begin(); it != m_data->trailer.sourceTypes.end(); ++it, ++i) {
+			topLevelOutputAt(0)->toMultiOutput()->resize(d_data->trailer.sourceTypes.size());
+			for (QMap<qint64, QString>::iterator it = d_data->trailer.sourceTypes.begin(); it != d_data->trailer.sourceTypes.end(); ++it, ++i) {
 				QVariant v = vipCreateVariant(it.value().toLatin1().data());
 				outputAt(i)->setData(VipAnyData(v, VipInvalidTime));
 
-				m_data->indexes[it.key()] = i;
+				d_data->indexes[it.key()] = i;
 
-				VipTimeRange range = m_data->trailer.sourceLimits[it.key()];
+				VipTimeRange range = d_data->trailer.sourceLimits[it.key()];
 				if (range.second - range.first != 0)
 					all_resource = false;
 			}
 
 			// if all streams only have one data, set the device type to Resource
 			if (all_resource)
-				m_data->device_type = Resource;
+				d_data->device_type = Resource;
 
 			// now read all data without their content
 
-			m_data->archive.device()->seek(0);
-			m_data->archive.setReadMode(VipArchive::Forward);
-			m_data->archive.setAttribute("skip_data", true);
+			d_data->archive.device()->seek(0);
+			d_data->archive.setReadMode(VipArchive::Forward);
+			d_data->archive.setAttribute("skip_data", true);
 
 			qint64 count = 0;
 			while (true) {
-				qint64 pos = m_data->archive.device()->pos();
-				VipAnyData any = m_data->archive.read().value<VipAnyData>();
+				qint64 pos = d_data->archive.device()->pos();
+				VipAnyData any = d_data->archive.read().value<VipAnyData>();
 				if (any.source() != 0) {
-					m_data->frames.insert(any.time(), ArchFrame(any.source(), any.time(), pos));
-					if (m_data->trailer.sourceTypes.size() == 1)
+					d_data->frames.insert(any.time(), ArchFrame(any.source(), any.time(), pos));
+					if (d_data->trailer.sourceTypes.size() == 1)
 						++count;
 				}
 				else
@@ -5073,20 +5066,20 @@ bool VipArchiveReader::open(VipIODevice::OpenModes mode)
 
 			// affect a valid data to each output
 			QSet<qint64> streams;
-			for (QMultiMap<qint64, ArchFrame>::iterator it = m_data->frames.begin(); it != m_data->frames.end(); ++it) {
+			for (QMultiMap<qint64, ArchFrame>::iterator it = d_data->frames.begin(); it != d_data->frames.end(); ++it) {
 				if (!streams.contains(it.value().stream)) {
-					m_data->archive.device()->seek(it.value().pos);
-					m_data->archive.setAttribute("skip_data", false);
-					VipAnyData any = m_data->archive.read().value<VipAnyData>();
+					d_data->archive.device()->seek(it.value().pos);
+					d_data->archive.setAttribute("skip_data", false);
+					VipAnyData any = d_data->archive.read().value<VipAnyData>();
 					if (!any.isEmpty()) {
 						streams.insert(it.value().stream);
-						int index = m_data->indexes[it.value().stream];
+						int index = d_data->indexes[it.value().stream];
 						any.setSource((qint64)this);
 						if (!any.hasAttribute("Name"))
 							any.setAttribute("Name", this->name());
 						outputAt(index)->setData(any);
 
-						if (streams.size() == m_data->trailer.sourceTypes.size())
+						if (streams.size() == d_data->trailer.sourceTypes.size())
 							break;
 					}
 				}
@@ -5094,44 +5087,44 @@ bool VipArchiveReader::open(VipIODevice::OpenModes mode)
 
 			// move the frames with invalid times to resourceFrames
 			typedef QMultiMap<qint64, ArchFrame>::iterator iterator;
-			QPair<iterator, iterator> range = m_data->frames.equal_range(VipInvalidTime);
+			QPair<iterator, iterator> range = d_data->frames.equal_range(VipInvalidTime);
 			for (iterator it = range.first; it != range.second; ++it)
-				m_data->resourceFrames.insert(it.key(), it.value());
+				d_data->resourceFrames.insert(it.key(), it.value());
 
-			while (m_data->frames.size()) {
-				if (m_data->frames.begin().key() == VipInvalidTime)
-					m_data->frames.erase(m_data->frames.begin());
+			while (d_data->frames.size()) {
+				if (d_data->frames.begin().key() == VipInvalidTime)
+					d_data->frames.erase(d_data->frames.begin());
 				else
 					break;
 			}
 
 			// if the device is temporal and we have resource frames, move them at the beginning of the frames
 			// we should avoid mixing resource and temporal outputs in the same VipIODevice, or the outputs won't be properly saved
-			if (m_data->frames.size() && m_data->resourceFrames.size() && m_data->device_type == Temporal) {
-				qint64 start = m_data->frames.begin().key();
-				for (iterator it = m_data->resourceFrames.begin(); it != m_data->resourceFrames.end(); ++it) {
+			if (d_data->frames.size() && d_data->resourceFrames.size() && d_data->device_type == Temporal) {
+				qint64 start = d_data->frames.begin().key();
+				for (iterator it = d_data->resourceFrames.begin(); it != d_data->resourceFrames.end(); ++it) {
 					ArchFrame frame = it.value();
 					frame.time = start;
-					m_data->frames.insert(start, frame);
+					d_data->frames.insert(start, frame);
 				}
-				m_data->resourceFrames.clear();
+				d_data->resourceFrames.clear();
 			}
 
-			m_data->archive.setAttribute("skip_data", false);
-			m_data->buffers.resize(this->outputCount());
+			d_data->archive.setAttribute("skip_data", false);
+			d_data->buffers.resize(this->outputCount());
 
 			this->setOpenMode(mode);
 			if (count > 0) {
 				setSize(count);
 
 				// if there is only one stream, recreate the time range list
-				m_data->ranges.clear();
+				d_data->ranges.clear();
 
 				// find smallest sampling time
 				// int i = 0;
 				qint64 prev = 0;
 				qint64 sampling = 0;
-				for (QMultiMap<qint64, ArchFrame>::iterator it = m_data->frames.begin(); it != m_data->frames.end(); ++it /*, ++i*/) {
+				for (QMultiMap<qint64, ArchFrame>::iterator it = d_data->frames.begin(); it != d_data->frames.end(); ++it /*, ++i*/) {
 					if (i > 0) {
 						qint64 samp = it.key() - prev;
 						if (samp > 0) {
@@ -5145,31 +5138,31 @@ bool VipArchiveReader::open(VipIODevice::OpenModes mode)
 				}
 				if (sampling == 0) {
 					// case no valid sampling time found
-					m_data->ranges << VipTimeRange(m_data->trailer.startTime, m_data->trailer.endTime);
+					d_data->ranges << VipTimeRange(d_data->trailer.startTime, d_data->trailer.endTime);
 				}
 				else {
-					QMultiMap<qint64, ArchFrame>::iterator it = m_data->frames.begin();
+					QMultiMap<qint64, ArchFrame>::iterator it = d_data->frames.begin();
 					qint64 first = it.key();
 					qint64 last = it.key();
 					++it;
-					for (; it != m_data->frames.end(); ++it) {
+					for (; it != d_data->frames.end(); ++it) {
 						if (it.key() - last < sampling * 4)
 							last = it.key();
 						else {
-							m_data->ranges.append(VipTimeRange(first, last));
+							d_data->ranges.append(VipTimeRange(first, last));
 							first = last = it.key();
 						}
 					}
-					m_data->ranges.append(VipTimeRange(first, last));
+					d_data->ranges.append(VipTimeRange(first, last));
 				}
 			}
 			else
-				m_data->ranges = VipTimeRangeList() << VipTimeRange(m_data->trailer.startTime, m_data->trailer.endTime);
+				d_data->ranges = VipTimeRangeList() << VipTimeRange(d_data->trailer.startTime, d_data->trailer.endTime);
 
 			return true;
 		}
 
-		m_data->archive.close();
+		d_data->archive.close();
 	}
 
 	return false;
@@ -5177,15 +5170,15 @@ bool VipArchiveReader::open(VipIODevice::OpenModes mode)
 
 VipArchiveReader::DeviceType VipArchiveReader::deviceType() const
 {
-	return m_data->device_type;
+	return d_data->device_type;
 }
 
 void VipArchiveReader::close()
 {
-	m_data->archive.close();
-	m_data->trailer = ArchiveRecorderTrailer();
-	m_data->frames.clear();
-	m_data->resourceFrames.clear();
+	d_data->archive.close();
+	d_data->trailer = ArchiveRecorderTrailer();
+	d_data->frames.clear();
+	d_data->resourceFrames.clear();
 	VipIODevice::close();
 }
 
@@ -5210,23 +5203,23 @@ bool VipArchiveReader::probe(const QString& filename, const QByteArray& first_by
 
 VipArchiveRecorder::Trailer VipArchiveReader::trailer() const
 {
-	return m_data->trailer;
+	return d_data->trailer;
 }
 
 VipTimeRangeList VipArchiveReader::computeTimeWindow() const
 {
-	return m_data->ranges;
+	return d_data->ranges;
 }
 
 qint64 VipArchiveReader::computeNextTime(qint64 time) const
 {
-	if (time >= m_data->trailer.endTime)
-		return m_data->trailer.endTime;
-	else if (time < m_data->trailer.startTime)
-		return m_data->trailer.startTime;
+	if (time >= d_data->trailer.endTime)
+		return d_data->trailer.endTime;
+	else if (time < d_data->trailer.startTime)
+		return d_data->trailer.startTime;
 
-	QMultiMap<qint64, ArchFrame>::const_iterator it = m_data->frames.upperBound(time);
-	if (it != m_data->frames.end())
+	QMultiMap<qint64, ArchFrame>::const_iterator it = d_data->frames.upperBound(time);
+	if (it != d_data->frames.end())
 		return it.key();
 	else
 		return VipInvalidTime;
@@ -5234,15 +5227,15 @@ qint64 VipArchiveReader::computeNextTime(qint64 time) const
 
 qint64 VipArchiveReader::computePreviousTime(qint64 time) const
 {
-	if (time > m_data->trailer.endTime)
-		return m_data->trailer.endTime;
-	else if (time <= m_data->trailer.startTime)
-		return m_data->trailer.startTime;
+	if (time > d_data->trailer.endTime)
+		return d_data->trailer.endTime;
+	else if (time <= d_data->trailer.startTime)
+		return d_data->trailer.startTime;
 
-	QMultiMap<qint64, ArchFrame>::const_iterator it = m_data->frames.lowerBound(time);
-	if (it != m_data->frames.end()) {
+	QMultiMap<qint64, ArchFrame>::const_iterator it = d_data->frames.lowerBound(time);
+	if (it != d_data->frames.end()) {
 		--it;
-		if (it != m_data->frames.end())
+		if (it != d_data->frames.end())
 			return it.key();
 		else
 			return VipInvalidTime;
@@ -5253,20 +5246,20 @@ qint64 VipArchiveReader::computePreviousTime(qint64 time) const
 
 qint64 VipArchiveReader::computeClosestTime(qint64 time) const
 {
-	if (time >= m_data->trailer.endTime)
-		return m_data->trailer.endTime;
-	else if (time <= m_data->trailer.startTime)
-		return m_data->trailer.startTime;
+	if (time >= d_data->trailer.endTime)
+		return d_data->trailer.endTime;
+	else if (time <= d_data->trailer.startTime)
+		return d_data->trailer.startTime;
 
-	QMultiMap<qint64, ArchFrame>::const_iterator it = m_data->frames.lowerBound(time);
-	if (it != m_data->frames.end()) {
+	QMultiMap<qint64, ArchFrame>::const_iterator it = d_data->frames.lowerBound(time);
+	if (it != d_data->frames.end()) {
 		if (it.key() == time)
 			return time;
 
 		// get the previous time
 		QMultiMap<qint64, ArchFrame>::const_iterator it_prev = it;
 		--it_prev;
-		if (it_prev == m_data->frames.end())
+		if (it_prev == d_data->frames.end())
 			return it.key();
 
 		qint64 second = it.key();
@@ -5287,11 +5280,11 @@ bool VipArchiveReader::readData(qint64 time)
 	// QVector<VipAnyData> data;
 	// {
 	// //wait the data
-	// while (m_data->buffer_time == time) {
+	// while (d_data->buffer_time == time) {
 	// qint64 t = VipInvalidTime;
 	// {
-	//	QMutexLocker lock(&m_data->buffer_mutex);
-	//	t = m_data->buffers[0].time();
+	//	QMutexLocker lock(&d_data->buffer_mutex);
+	//	t = d_data->buffers[0].time();
 	// }
 	// if (t == time)
 	//	break;
@@ -5299,11 +5292,11 @@ bool VipArchiveReader::readData(qint64 time)
 	//	QThread::msleep(1);
 	// }
 	//
-	// QMutexLocker lock(&m_data->buffer_mutex);
-	// if (m_data->buffers[0].time() == time)
+	// QMutexLocker lock(&d_data->buffer_mutex);
+	// if (d_data->buffers[0].time() == time)
 	// {
 	// have_buffer_data = true;
-	// data = m_data->buffers;
+	// data = d_data->buffers;
 	// }
 	// }
 	// if (have_buffer_data)
@@ -5314,22 +5307,22 @@ bool VipArchiveReader::readData(qint64 time)
 	// else
 	{
 		typedef QMultiMap<qint64, ArchFrame>::iterator iterator;
-		QPair<iterator, iterator> range = m_data->frames.equal_range(time);
+		QPair<iterator, iterator> range = d_data->frames.equal_range(time);
 
 		if (range.first == range.second)
 			return false;
 
 		{
-			QMutexLocker lock(&m_data->buffer_mutex);
-			m_data->archive.setReadMode(VipArchive::Forward);
-			m_data->archive.setAttribute("skip_data", false);
+			QMutexLocker lock(&d_data->buffer_mutex);
+			d_data->archive.setReadMode(VipArchive::Forward);
+			d_data->archive.setAttribute("skip_data", false);
 		}
 
 		for (iterator it = range.first; it != range.second; ++it) {
-			int output_index = m_data->indexes[it.value().stream];
+			int output_index = d_data->indexes[it.value().stream];
 
 			// for streams having just one data or (Resource stream), just reset the output
-			VipTimeRange _range = m_data->trailer.sourceLimits[it.value().stream];
+			VipTimeRange _range = d_data->trailer.sourceLimits[it.value().stream];
 			if (_range.second - _range.first == 0) {
 				outputAt(output_index)->setData(outputAt(output_index)->data());
 				continue;
@@ -5340,30 +5333,30 @@ bool VipArchiveReader::readData(qint64 time)
 			// continue;
 
 			// look for the data in the buffer
-			VipAnyData any = m_data->buffer[it.value().stream];
+			VipAnyData any = d_data->buffer[it.value().stream];
 			if (any.time() != time || any.isEmpty()) {
 				QByteArray ar;
 				{
-					QMutexLocker lock(&m_data->buffer_mutex);
-					m_data->archive.device()->seek(it.value().pos);
-					ar = m_data->archive.readBinary();
+					QMutexLocker lock(&d_data->buffer_mutex);
+					d_data->archive.device()->seek(it.value().pos);
+					ar = d_data->archive.readBinary();
 				}
 
-				any = m_data->archive.deserialize(ar).value<VipAnyData>();
+				any = d_data->archive.deserialize(ar).value<VipAnyData>();
 				any.setTime(time);
 				any.setSource(qint64(this));
 				if (!any.hasAttribute("Name"))
 					any.setAttribute("Name", this->name());
-				m_data->buffer[it.value().stream] = any;
+				d_data->buffer[it.value().stream] = any;
 			}
 
 			outputAt(output_index)->setData(any);
 		}
 	}
 
-	m_data->forward = (time > m_data->time || m_data->time == VipInvalidTime);
-	m_data->time = time;
-	// m_data->timer.start();
+	d_data->forward = (time > d_data->time || d_data->time == VipInvalidTime);
+	d_data->time = time;
+	// d_data->timer.start();
 
 	return true;
 }
@@ -5375,13 +5368,13 @@ bool VipArchiveReader::reload()
 	// also reload the resource data
 	typedef QMultiMap<qint64, ArchFrame>::iterator iterator;
 	QSet<qint64> sources;
-	for (iterator it = m_data->resourceFrames.begin(); it != m_data->resourceFrames.end(); ++it) {
+	for (iterator it = d_data->resourceFrames.begin(); it != d_data->resourceFrames.end(); ++it) {
 		if (!sources.contains(it.value().stream)) {
-			m_data->archive.device()->seek(it.value().pos);
-			VipAnyData any = m_data->archive.read().value<VipAnyData>();
+			d_data->archive.device()->seek(it.value().pos);
+			VipAnyData any = d_data->archive.read().value<VipAnyData>();
 			if (!any.isEmpty()) {
 				any.setSource(qint64(this));
-				outputAt(m_data->indexes[it.value().stream])->setData(any);
+				outputAt(d_data->indexes[it.value().stream])->setData(any);
 				sources.insert(it.value().stream);
 			}
 		}

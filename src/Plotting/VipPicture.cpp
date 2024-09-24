@@ -127,7 +127,7 @@ namespace detail
 	VipWindowContainer::VipWindowContainer(QWindow* embeddedWindow, QWidget* parent, Qt::WindowFlags flags)
 	  : QWidget(parent, flags)
 	{
-		d_data = new PrivateData(this);
+		VIP_CREATE_PRIVATE_DATA(d_data,this);
 		if (Q_UNLIKELY(!embeddedWindow)) {
 			qWarning("VipWindowContainer: embedded window cannot be null");
 			return;
@@ -159,7 +159,6 @@ namespace detail
 		if (d_data->window)
 			d_data->window->destroy();
 		delete d_data->window;
-		delete d_data;
 	}
 	/*!
 	    \internal
@@ -1516,7 +1515,7 @@ public:
 VipOpenGLWidget::VipOpenGLWidget(QWidget* parent)
   : detail::VipWindowContainer(new OpenGLWindow(this), parent)
 {
-	d_data = new PrivateData();
+	VIP_CREATE_PRIVATE_DATA(d_data);
 	d_data->window = static_cast<OpenGLWindow*>(this->containedWindow());
 	d_data->window->show();
 
@@ -1527,7 +1526,6 @@ VipOpenGLWidget::VipOpenGLWidget(QWidget* parent)
 
 VipOpenGLWidget::~VipOpenGLWidget()
 {
-	delete d_data;
 }
 
 QPaintEngine* VipOpenGLWidget::paintEngine() const

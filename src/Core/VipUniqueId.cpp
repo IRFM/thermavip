@@ -52,30 +52,29 @@ public:
 
 VipTypeId::VipTypeId()
 {
-	m_data = new PrivateData();
+	VIP_CREATE_PRIVATE_DATA(d_data);
 }
 
 VipTypeId::~VipTypeId()
 {
 	{
-		QMutexLocker lock(&m_data->mutex);
-		m_data->ids.clear();
-		m_data->objects_to_id.clear();
+		QMutexLocker lock(&d_data->mutex);
+		d_data->ids.clear();
+		d_data->objects_to_id.clear();
 	}
-	delete m_data;
 }
 
 int VipTypeId::findNextId()
 {
-	int id = m_data->ids.size() + 1;
+	int id = d_data->ids.size() + 1;
 	int i = 0;
 
-	QMap<int, QPointer<QObject>>::iterator it = m_data->ids.begin();
-	while (it != m_data->ids.end()) {
+	QMap<int, QPointer<QObject>>::iterator it = d_data->ids.begin();
+	while (it != d_data->ids.end()) {
 		// remove entry if object has been deleted
 		if (!it.value()) {
-			it = m_data->ids.erase(it);
-			id = m_data->ids.size() + 1;
+			it = d_data->ids.erase(it);
+			id = d_data->ids.size() + 1;
 			continue;
 		}
 		else if (it.key() != i + 1) {
@@ -92,8 +91,8 @@ int VipTypeId::findNextId()
 
 QList<QObject*> VipTypeId::objects() const
 {
-	QMutexLocker lock(&m_data->mutex);
-	const QList<QPointer<QObject>> lst = m_data->ids.values();
+	QMutexLocker lock(&d_data->mutex);
+	const QList<QPointer<QObject>> lst = d_data->ids.values();
 	QList<QObject*> res;
 	for (int i = 0; i < lst.size(); ++i)
 		if (QObject* tmp = lst[i])
@@ -103,9 +102,9 @@ QList<QObject*> VipTypeId::objects() const
 
 QObject* VipTypeId::find(int id) const
 {
-	QMutexLocker lock(&m_data->mutex);
-	QMap<int, QPointer<QObject>>::const_iterator it = m_data->ids.find(id);
-	if (it != m_data->ids.end())
+	QMutexLocker lock(&d_data->mutex);
+	QMap<int, QPointer<QObject>>::const_iterator it = d_data->ids.find(id);
+	if (it != d_data->ids.end())
 		return it.value();
 	return nullptr;
 }
@@ -117,10 +116,10 @@ int VipTypeId::setId(const QObject* obj, int id)
 
 	QObject* object = const_cast<QObject*>(obj);
 
-	QMutexLocker lock(&m_data->mutex);
+	QMutexLocker lock(&d_data->mutex);
 
-	QMap<QObject*, int>::iterator it = m_data->objects_to_id.find(object);
-	if (it == m_data->objects_to_id.end()) {
+	QMap<QObject*, int>::iterator it = d_data->objects_to_id.find(object);
+	if (it == d_data->objects_to_id.end()) {
 		// new object
 		connect(object, SIGNAL(destroyed(QObject*)), this, SLOT(objectDestroyed(QObject*)), Qt::DirectConnection);
 	}
@@ -128,37 +127,37 @@ int VipTypeId::setId(const QObject* obj, int id)
 	// nullptr id: return the current one or create a new one
 	if (id == 0) {
 		// existing object, try to return the current id
-		if (it != m_data->objects_to_id.end())
+		if (it != d_data->objects_to_id.end())
 			return it.value();
 
 		// find next id
 		int next = findNextId();
 
 		// add object
-		m_data->ids[next] = object;
-		m_data->objects_to_id[object] = next;
+		d_data->ids[next] = object;
+		d_data->objects_to_id[object] = next;
 		Q_EMIT idChanged(object, next);
 		return next;
 	}
 
 	// set the id
-	int current_id = (it == m_data->objects_to_id.end()) ? 0 : it.value();
+	int current_id = (it == d_data->objects_to_id.end()) ? 0 : it.value();
 	if (id == current_id)
 		// same id, nothing to do
 		return id;
 
-	QMap<int, QPointer<QObject>>::iterator previous = m_data->ids.find(id);
-	if (previous == m_data->ids.end()) {
+	QMap<int, QPointer<QObject>>::iterator previous = d_data->ids.find(id);
+	if (previous == d_data->ids.end()) {
 		// this is is available, just set it
 
-		if (it != m_data->objects_to_id.end()) {
+		if (it != d_data->objects_to_id.end()) {
 			// remove first
 			int key = it.value();
-			m_data->objects_to_id.erase(it);
-			m_data->ids.remove(key);
+			d_data->objects_to_id.erase(it);
+			d_data->ids.remove(key);
 		}
-		m_data->objects_to_id.insert(object, id);
-		m_data->ids.insert(id, object);
+		d_data->objects_to_id.insert(object, id);
+		d_data->ids.insert(id, object);
 		Q_EMIT idChanged(object, id);
 		return id;
 	}
@@ -166,25 +165,25 @@ int VipTypeId::setId(const QObject* obj, int id)
 		// find next id
 		int next = findNextId();
 
-		if (it != m_data->objects_to_id.end()) {
+		if (it != d_data->objects_to_id.end()) {
 			// remove this object
 			int key = it.value();
-			m_data->objects_to_id.erase(it);
-			m_data->ids.remove(key);
+			d_data->objects_to_id.erase(it);
+			d_data->ids.remove(key);
 		}
 		// remove previous
 		QObject* prev = previous.value();
-		m_data->objects_to_id.remove(prev);
-		m_data->ids.erase(previous);
+		d_data->objects_to_id.remove(prev);
+		d_data->ids.erase(previous);
 
 		// add this object
-		m_data->objects_to_id.insert(object, id);
-		m_data->ids.insert(id, object);
+		d_data->objects_to_id.insert(object, id);
+		d_data->ids.insert(id, object);
 		Q_EMIT idChanged(object, id);
 
 		// add previously found
-		m_data->objects_to_id.insert(prev, next);
-		m_data->ids.insert(next, prev);
+		d_data->objects_to_id.insert(prev, next);
+		d_data->ids.insert(next, prev);
 		Q_EMIT idChanged(prev, next);
 		return id;
 	}
@@ -197,23 +196,23 @@ int VipTypeId::id(const QObject* object) const
 
 void VipTypeId::objectDestroyed(QObject* object)
 {
-	QMutexLocker lock(&m_data->mutex);
-	QMap<QObject*, int>::iterator it = m_data->objects_to_id.find(object);
-	if (it != m_data->objects_to_id.end()) {
+	QMutexLocker lock(&d_data->mutex);
+	QMap<QObject*, int>::iterator it = d_data->objects_to_id.find(object);
+	if (it != d_data->objects_to_id.end()) {
 		int id = it.value();
-		m_data->objects_to_id.erase(it);
-		m_data->ids.remove(id);
+		d_data->objects_to_id.erase(it);
+		d_data->ids.remove(id);
 	}
 }
 
 void VipTypeId::removeId(QObject* object)
 {
-	QMutexLocker lock(&m_data->mutex);
-	QMap<QObject*, int>::iterator it = m_data->objects_to_id.find(object);
-	if (it != m_data->objects_to_id.end()) {
+	QMutexLocker lock(&d_data->mutex);
+	QMap<QObject*, int>::iterator it = d_data->objects_to_id.find(object);
+	if (it != d_data->objects_to_id.end()) {
 		int id = it.value();
-		m_data->objects_to_id.erase(it);
-		m_data->ids.remove(id);
+		d_data->objects_to_id.erase(it);
+		d_data->ids.remove(id);
 		disconnect(object, SIGNAL(destroyed(QObject*)), this, SLOT(objectDestroyed(QObject*)));
 	}
 }
@@ -246,23 +245,22 @@ VipUniqueId& VipUniqueId::instance()
 
 VipUniqueId::VipUniqueId()
 {
-	m_data = new PrivateData();
+	VIP_CREATE_PRIVATE_DATA(d_data);
 }
 
 VipUniqueId::~VipUniqueId()
 {
 	{
-		QMutexLocker lock(&m_data->mutex);
-		m_data->ids.clear();
+		QMutexLocker lock(&d_data->mutex);
+		d_data->ids.clear();
 	}
-	delete m_data;
 }
 
 VipTypeId* VipUniqueId::typeId(const QMetaObject* metaobject)
 {
-	QMutexLocker lock(&instance().m_data->mutex);
-	VipTypeId* t = instance().m_data->ids[metaobject].type.data();
-	t->m_data->metaobject = metaobject;
+	QMutexLocker lock(&instance().d_data->mutex);
+	VipTypeId* t = instance().d_data->ids[metaobject].type.data();
+	t->d_data->metaobject = metaobject;
 	return t;
 }
 
@@ -270,8 +268,8 @@ int VipUniqueId::registerMetaType(const QMetaObject* metaobject, const QObject* 
 {
 	if (!obj)
 		return 0;
-	QMutexLocker lock(&instance().m_data->mutex);
-	return instance().m_data->ids[metaobject].type->setId(obj, id);
+	QMutexLocker lock(&instance().d_data->mutex);
+	return instance().d_data->ids[metaobject].type->setId(obj, id);
 }
 
 bool VipLazySceneModel::hasSceneModel() const

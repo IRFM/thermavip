@@ -69,8 +69,8 @@ protected:
 	virtual void applyPyProcessing(int, int);
 
 private:
-	class PrivateData;
-	PrivateData * m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 
@@ -168,8 +168,8 @@ protected:
 	virtual void resetProcessing();
 
 private:
-	class PrivateData;
-	PrivateData * m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 VIP_REGISTER_QOBJECT_METATYPE(PyProcessing*)
@@ -206,8 +206,8 @@ private Q_SLOTS:
 Q_SIGNALS:
 	void changed();
 private:
-	class PrivateData;
-	PrivateData * m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 /**
@@ -229,8 +229,8 @@ private Q_SLOTS:
 Q_SIGNALS:
 	void changed();
 private:
-	class PrivateData;
-	PrivateData * m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 
@@ -250,8 +250,8 @@ private Q_SLOTS:
 Q_SIGNALS:
 	void changed();
 private:
-	class PrivateData;
-	PrivateData * m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 
@@ -278,8 +278,8 @@ private Q_SLOTS:
 	void registerProcessing();
 	void manageProcessing();
 private:
-	class PrivateData;
-	PrivateData * m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 

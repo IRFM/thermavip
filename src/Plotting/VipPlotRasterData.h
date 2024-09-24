@@ -218,8 +218,7 @@ private:
 	QRectF computeArrayRect(const VipRasterData& raster) const;
 	void drawBackground(QPainter* painter, const VipCoordinateSystemPtr& m, const QRectF& rect, const QPolygonF& dst) const;
 
-	class PrivateData;
-	PrivateData* d_data;
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 VIP_REGISTER_QOBJECT_METATYPE(VipPlotRasterData*)

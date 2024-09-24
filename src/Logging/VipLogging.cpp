@@ -121,27 +121,26 @@ void VipLogging::run()
 VipLogging::VipLogging()
   : QThread()
 {
-	d_data = new PrivateData();
+	VIP_CREATE_PRIVATE_DATA(d_data);
 }
 
 VipLogging::VipLogging(Outputs outputs, VipFileLogger* logger)
   : QThread()
 {
-	d_data = new PrivateData();
+	VIP_CREATE_PRIVATE_DATA(d_data);
 	open(outputs, logger);
 }
 
 VipLogging::VipLogging(Outputs outputs, const QString& identifier)
   : QThread()
 {
-	d_data = new PrivateData();
+	VIP_CREATE_PRIVATE_DATA(d_data);
 	open(outputs, identifier);
 }
 
 VipLogging::~VipLogging()
 {
 	close();
-	delete d_data;
 }
 
 VipLogging& VipLogging::instance()

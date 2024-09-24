@@ -66,7 +66,7 @@ public:
 VipPlotGrid::VipPlotGrid()
   : VipPlotItem()
 {
-	d_data = new PrivateData();
+	VIP_CREATE_PRIVATE_DATA(d_data);
 	this->setZValue(10);
 	this->setItemAttribute(VisibleLegend, false);
 	this->setItemAttribute(HasLegendIcon, false);
@@ -77,7 +77,6 @@ VipPlotGrid::VipPlotGrid()
 
 VipPlotGrid::~VipPlotGrid()
 {
-	delete d_data;
 }
 
 void VipPlotGrid::enableAxis(int axis, bool enable)
@@ -442,7 +441,7 @@ static bool registerVipPlotCanvas = vipSetKeyWordsForClass(&VipPlotCanvas::stati
 VipPlotCanvas::VipPlotCanvas()
   : VipPlotItem()
 {
-	d_data = new PrivateData;
+	VIP_CREATE_PRIVATE_DATA(d_data);
 
 	this->setFlag(ItemIsSelectable, false);
 	this->setItemAttribute(VisibleLegend, false);
@@ -457,7 +456,6 @@ VipPlotCanvas::VipPlotCanvas()
 
 VipPlotCanvas::~VipPlotCanvas()
 {
-	delete d_data;
 }
 
 QPainterPath VipPlotCanvas::shape() const

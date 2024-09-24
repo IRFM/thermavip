@@ -41,7 +41,16 @@ class VipMultiDragWidget;
 class VipDisplayPlayerArea;
 class QTreeWidgetItem;
 
-/// Default structure that should be returned by #VipAdditionalInfo objects
+/// @brief Default structure that should be returned by #VipAdditionalInfo objects
+///
+/// VipProcInfo represent a set of information about a player or a processing object.
+/// These information are displayed in a VipProcessingObjectInfo widget.
+/// 
+/// Information are basically a list of key (string) ->attribute (variant).
+/// We don't use a QVariantMap here as the attributes ordering might matter.
+/// 
+/// VipProcInfo embedds information on the potential tooltip content for each attribute.
+/// 
 struct VIP_GUI_EXPORT VipProcInfo
 {
 	typedef QPair<QString, QVariant> info;
@@ -100,6 +109,9 @@ Q_DECLARE_METATYPE(VipProcInfo)
 
 /// Extract any kind of information from a processing output or from a player.
 /// The output of this processing must always be a #VipProcInfo or a QVariantMap containing the extracted infos.
+/// 
+/// Use VipFDProcessingOutputInfo() to register new VipAdditionalInfo.
+/// 
 class VIP_GUI_EXPORT VipAdditionalInfo : public VipProcessingObject
 {
 	Q_OBJECT
@@ -114,9 +126,11 @@ public:
 		// disable error logging for this type
 		this->setLogErrors(QSet<int>());
 	}
-
+	/// @brief Clone the VipAdditionalInfo
 	virtual VipAdditionalInfo* clone() const = 0;
+	/// @brief Tells if this VipAdditionalInfo returns information on a player or on a processing object
 	virtual bool isPlayerInfo() const = 0;
+	/// @brief Returns the player used to extract information
 	VipAbstractPlayer* player() const { return m_player; }
 
 protected Q_SLOTS:
@@ -130,28 +144,6 @@ private:
 	QPointer<VipAbstractPlayer> m_player;
 };
 
-class VIP_GUI_EXPORT VipExtractAttributeFromInfo : public VipProcessingObject
-{
-	Q_OBJECT
-	VIP_IO(VipInput attributes)
-	VIP_IO(VipOutput value)
-
-public:
-	VipExtractAttributeFromInfo(QObject* parent = nullptr);
-	~VipExtractAttributeFromInfo();
-
-	void setVipAdditionalInfo(VipAdditionalInfo*);
-
-	void setAttributeName(const QString&);
-	QString attributeName() const;
-
-protected:
-	virtual void apply();
-
-	VipAdditionalInfo* m_info;
-	QString m_name;
-	QString m_exactName;
-};
 
 /// Extract global info on a video player (matrix size, minimum value, maximum value, mean,...)
 class VIP_GUI_EXPORT VipExtractImageInfos : public VipAdditionalInfo
@@ -208,15 +200,46 @@ protected:
 	virtual void apply();
 };
 
+
+namespace detail
+{
+	class VIP_GUI_EXPORT VipExtractAttributeFromInfo : public VipProcessingObject
+	{
+		Q_OBJECT
+		VIP_IO(VipInput attributes)
+		VIP_IO(VipOutput value)
+
+	public:
+		VipExtractAttributeFromInfo(QObject* parent = nullptr);
+		~VipExtractAttributeFromInfo();
+
+		void setVipAdditionalInfo(VipAdditionalInfo*);
+
+		void setAttributeName(const QString&);
+		QString attributeName() const;
+
+	protected:
+		virtual void apply();
+
+		VipAdditionalInfo* m_info;
+		QString m_name;
+		QString m_exactName;
+	};
+
+}
+
+
+
 /// This function dispatcher is called by the VipProcessingObjectInfo to display additional informations on a processing output.
 /// Its signature is VipAdditionalInfo* (VipAbstractPlayer* player, VipOutput * src, const QVariant & data);
 /// The last argument is the output data type.
 VIP_GUI_EXPORT VipFunctionDispatcher<3>& VipFDProcessingOutputInfo();
 
-/// A tool widget that displays the attributes of a VipAnyData.
-/// The VipAnyData is always the output of a VipProcessingObject.
+/// @brief A tool widget that displays information on a processing object or a plyer.
+///
 /// The source VipProcessingObject is set through #VipProcessingObjectInfo::setProcessingObject or #VipProcessingObjectInfo::setPlotItem.
 /// The source VipProcessingObject is also modified when the focus player changes.
+/// 
 class VIP_GUI_EXPORT VipProcessingObjectInfo : public VipToolWidgetPlayer
 {
 	Q_OBJECT
@@ -267,8 +290,8 @@ protected:
 
 private:
 	QString content() const;
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 VIP_GUI_EXPORT VipProcessingObjectInfo* vipGetProcessingObjectInfo(VipMainWindow* window = nullptr);

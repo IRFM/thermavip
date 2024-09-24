@@ -95,14 +95,13 @@ public:
 VipPlotScatter::VipPlotScatter(const VipText& title)
   : VipPlotItemDataType(title)
 {
-	d_data = new PrivateData();
+	VIP_CREATE_PRIVATE_DATA(d_data);
 	this->setData(QVariant::fromValue(VipScatterPointVector()));
 	this->setMajorColor(QColor(Qt::blue));
 }
 
 VipPlotScatter::~VipPlotScatter()
 {
-	delete d_data;
 }
 
 void VipPlotScatter::setSizeUnit(SizeUnit unit)
@@ -281,7 +280,7 @@ QList<VipInterval> VipPlotScatter::plotBoundingIntervals() const
 	Locker locker(dataLock());
 	QList<VipInterval> res = d_data->bounding;
 	if (res.isEmpty()) {
-		res = const_cast<PrivateData*>(d_data)->bounding = dataBoundingIntervals(rawData());
+		res = const_cast<PrivateData*>(d_data.get())->bounding = dataBoundingIntervals(rawData());
 	}
 	res.detach();
 	return res;

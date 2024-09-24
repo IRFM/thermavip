@@ -41,13 +41,12 @@ public:
 
 VipPlotMimeData::VipPlotMimeData()
 {
-	d_data = new PrivateData();
+	VIP_CREATE_PRIVATE_DATA(d_data);
 	setText("VipPlotMimeData");
 }
 
 VipPlotMimeData::~VipPlotMimeData()
 {
-	delete d_data;
 }
 
 void VipPlotMimeData::setPlotData(const QList<VipPlotItem*>& items)

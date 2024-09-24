@@ -134,8 +134,8 @@ Q_SIGNALS:
 	void deviceUpdated();
 
 private:
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 class VipRIRRecorderEditor : public QWidget
@@ -156,8 +156,8 @@ Q_SIGNALS:
 	void deviceUpdated();
 
 private:
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 /**

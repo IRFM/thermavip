@@ -139,8 +139,7 @@ public:
 	virtual void textMargins(const QFont&, const QString&, double& left, double& right, double& top, double& bottom) const;
 
 private:
-	class PrivateData;
-	PrivateData* d_data;
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 #ifndef QT_NO_RICHTEXT
@@ -170,6 +169,11 @@ private:
 
 #endif
 
+/// @brief class representing the drawing style of a text
+///
+/// VipTextStyle defines the way a text is draw: color, font, background, caching, alignment, margins, box style...
+/// Uses COW internally.
+///
 class VIP_PLOTTING_EXPORT VipTextStyle //: public QSharedData
 {
 public:
@@ -178,44 +182,57 @@ public:
 
 	VipTextStyle& operator=(const VipTextStyle& other);
 
+	/// @brief Set/get the font
 	void setFont(const QFont&);
 	const QFont& font() const;
 	QFont& font();
 
+	/// @brief Enable/disable pixmap caching
 	void setCached(bool);
 	bool cached() const;
 
+	/// @brief Set/get the text pen
 	void setTextPen(const QPen&);
 	const QPen& textPen() const;
 	QPen& textPen();
 
+	/// @brief Set/get the border pen of the box style
 	void setBorderPen(const QPen&);
 	QPen borderPen() const;
 
+	/// @brief Set/get the background brush of the box style
 	void setBackgroundBrush(const QBrush&);
 	QBrush backgroundBrush() const;
 
+	/// @brief Set/get the border radius of the box style
 	double borderRadius() const;
 	void setBorderRadius(double);
 
+	/// @brief Set/get the text alignment inside its box
 	void setAlignment(Qt::Alignment align);
 	Qt::Alignment alignment() const;
 
+	/// @brief Set/get the render hints
 	void setRenderHints(QPainter::RenderHints);
 	QPainter::RenderHints renderHints() const;
 
+	/// @brief Set/get the margin to the text box
 	void setMargin(double);
 	double margin() const;
 
+	/// @brief Set/get the box style
 	void setBoxStyle(const VipBoxStyle&);
 	const VipBoxStyle& boxStyle() const;
 	VipBoxStyle& boxStyle();
 
+	/// @brief Set/get the text box style.
+	/// If defined, the text box style is used to draw the text based on independant glyphes rendered as QPainterPath objects.
 	void setTextBoxStyle(const VipBoxStyle&);
 	const VipBoxStyle& textBoxStyle() const;
 	VipBoxStyle& textBoxStyle();
 	bool hasTextBoxStyle() const;
 
+	/// @brief Comparison operator, check if all parameters are equals.
 	bool operator==(const VipTextStyle& other) const;
 	bool operator!=(const VipTextStyle& other) const;
 
@@ -232,7 +249,7 @@ private:
 		QFont font;
 		QPen textPen;
 		VipBoxStyle boxStyle;
-		VipBoxStyle* textBoxStyle;
+		std::unique_ptr<VipBoxStyle> textBoxStyle;
 		Qt::Alignment alignment;
 		QPainter::RenderHints renderHints;
 	};
@@ -242,7 +259,7 @@ private:
 
 /// \brief A class representing a text
 ///
-/// A VipText is a text including a set of attributes how to render it.
+/// A VipText is a text including a set of attributes to render it.
 ///
 /// - Format\n
 /// A text might include control sequences (f.e tags) describing
@@ -487,36 +504,6 @@ static QString formattingSequence(const QString& str, int start)
 
 	return QString();
 }
-// template<class T>
-// void vipReplaceFormattedText(QString & text, const QString & to_replace, const T & value)
-// {
-// int index = text.indexOf(to_replace);
-// while (index >= 0)
-// {
-// QString format = formattingSequence(text, index + to_replace.size());
-// QString replace;
-//
-// if (format.isEmpty())
-// {
-//	replace = QString("%1").arg(value);
-// }
-// else if (format == "%%")
-// {
-//	replace = QString("%1%").arg(value);
-// }
-// else
-// {
-//	char data[50];
-//	memset(data, 0, sizeof(data));
-//	snprintf(data, 50, format.toLatin1().data(), value);
-//	replace = QString(data);
-// }
-//
-// text.replace(index, to_replace.size() + format.size(), replace);
-// index = index + replace.size();
-// index = text.indexOf(to_replace, index);
-// }
-// }
 
 template<class T>
 VipText& VipText::replace(const QString& str, const T& value)
@@ -607,16 +594,25 @@ inline QString VipText::replace(const QString& input, const QString& str, const 
 }
 
 class QPicture;
+
+/// @brief Convert QImage/QPixmap/QPicture object to its html representation.
+/// @param pixmap input image
+/// @param additional_attributes additional html attributes to controll image position/alignment
+/// @param ok set to true on success, false on error (if not null)
+/// @return The HTML representation of the input image.
 VIP_PLOTTING_EXPORT QByteArray vipToHtml(const QPixmap& pixmap, const QByteArray& additional_attributes = QByteArray(), bool* ok = nullptr);
 VIP_PLOTTING_EXPORT QByteArray vipToHtml(const QImage& image, const QByteArray& additional_attributes = QByteArray(), bool* ok = nullptr);
 VIP_PLOTTING_EXPORT QByteArray vipToHtml(const QPicture& picture, const QByteArray& additional_attributes = QByteArray(), bool* ok = nullptr);
 
+/// @brief Class providing all information to draw a text in a specific geometry.
+///
 class VIP_PLOTTING_EXPORT VipTextObject
 {
 public:
 	VipTextObject(const VipText& text = VipText(), const QRectF& rect = QRectF(), const QTransform& tr = QTransform());
 	VipTextObject(const VipText& text, const VipPie& pie, const QPointF& center, VipText::TextDirection dir = VipText::AutoDirection, const QTransform& tr = QTransform());
 	VipTextObject(const VipTextObject&);
+	~VipTextObject();
 
 	VipTextObject& operator=(const VipTextObject&);
 
@@ -657,8 +653,7 @@ public:
 	VipText::TextDirection textDirection() const;
 
 private:
-	class PrivateData;
-	PrivateData* d_data;
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 Q_DECLARE_OPERATORS_FOR_FLAGS(VipText::LayoutAttributes);

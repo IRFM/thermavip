@@ -68,8 +68,8 @@ public:
 	virtual VipCoordinateSystem::Type coordinateSystemType() const;
 
 private:
-	class PrivateData;
-	PrivateData* d_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 /// @}

@@ -39,6 +39,7 @@
 #include <qmutex.h>
 #include <qtreewidget.h>
 
+/// @brief Icon provider used to retrieve an icon from a path
 class VIP_GUI_EXPORT VipIconProvider
 {
 public:
@@ -48,11 +49,10 @@ public:
 	QIcon iconPath(const VipPath& path) const;
 
 private:
-	class PrivateData;
-	PrivateData* m_data;
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
-/// \a VipAbstractFileSystem that represents the physical hard drive
+/// @brief VipAbstractFileSystem that represents the physical hard drive
 class VIP_GUI_EXPORT VipFileSystem : public VipPhysicalFileSystem
 {
 	Q_OBJECT
@@ -66,7 +66,7 @@ private:
 VIP_REGISTER_QOBJECT_METATYPE(VipFileSystem*)
 
 #ifdef _WIN32
-/// \a VipAbstractFileSystem that represents the physical hard drive
+/// @brief SFTP filesystem based on VipSFTPFileSystem
 class VIP_GUI_EXPORT VipPSFTPFileSystem : public VipSFTPFileSystem
 {
 	Q_OBJECT
@@ -81,6 +81,7 @@ VIP_REGISTER_QOBJECT_METATYPE(VipPSFTPFileSystem*)
 
 #endif
 
+/// @brief Base class for VipMapFileSystem editors
 class VIP_GUI_EXPORT VipMapFileSystemEditor : public QWidget
 {
 	Q_OBJECT
@@ -103,6 +104,7 @@ public Q_SLOTS:
 	virtual void updateEditor() = 0;
 	virtual void apply() = 0;
 };
+
 /// VipFileSystemManager provides functions for the creation and edition of VipMapFileSystem objects.
 /// You should create one VipFileSystemManager class for each VipMapFileSystem type, and register it
 /// with #VipFileSystemManager::registerManager().
@@ -294,8 +296,7 @@ private:
 	void addItem(QTreeWidgetItem*);
 	void removeItem(QTreeWidgetItem*);
 
-	class PrivateData;
-	PrivateData* m_data;
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 Q_DECLARE_OPERATORS_FOR_FLAGS(VipMapFileSystemTree::Operations)
@@ -370,8 +371,7 @@ private Q_SLOTS:
 	void createFileSystemRequeted(QAction*);
 
 private:
-	class PrivateData;
-	PrivateData* m_data;
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 #include "VipToolWidget.h"

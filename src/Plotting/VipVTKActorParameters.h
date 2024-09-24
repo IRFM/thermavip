@@ -29,16 +29,43 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef VIP_SLEEP_H
-#define VIP_SLEEP_H
+#ifndef VIP_VTK_ACTOR_PARAMETERS_H
+#define VIP_VTK_ACTOR_PARAMETERS_H
 
-#include "VipConfig.h"
+#include <qcolor.h>
+#include <qwidget.h>
+#include "VipVTKObject.h"
+#include "VipDisplayVTKObject.h"
 
-/// @brief Sleep for given amount of milliseconds
+class vtkActor;
+
+/// @brief Common rendering parameters for vtkActor
 ///
-/// vipSleep will use OS features to provide the most possibly precise sleep duration.
+class VIP_PLOTTING_EXPORT VipVTKActorParameters
+{
+
+public:
+	VipVTKActorParameters();
+
+	void import(VipPlotVTKObject*);
+	void apply(VipPlotVTKObject*);
+
+	int layer;
+	bool lighting;
+	QColor edgeColor;
+	QColor color;
+	QColor selectionColor;
+	double ambiantLighting;
+	double diffuseLighting;
+	double specularLighting;
+	double lineWidth;
+	double pointSize;
+	bool shading;
+};
+
+/// @brief Returns the global VipVTKActorParameters used to setup VipPlotVTKObject at creation
 ///
-/// @param ms sleep duration in milliseconds
-VIP_CORE_EXPORT void vipSleep(double ms);
+VIP_PLOTTING_EXPORT VipVTKActorParameters* vipGlobalActorParameters();
+
 
 #endif

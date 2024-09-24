@@ -79,66 +79,65 @@ public:
 VipOptions::VipOptions(QWidget* parent)
   : QDialog(parent)
 {
-	m_data = new PrivateData();
+	VIP_CREATE_PRIVATE_DATA(d_data);
 
 	this->setObjectName("Preferences");
 	this->setWindowTitle("Preferences");
 	this->resize(800, 600);
 
-	m_data->page_browser = new VipPageItems();
-	m_data->splitter = new QSplitter();
-	m_data->ok = new QPushButton();
-	m_data->cancel = new QPushButton();
+	d_data->page_browser = new VipPageItems();
+	d_data->splitter = new QSplitter();
+	d_data->ok = new QPushButton();
+	d_data->cancel = new QPushButton();
 
-	m_data->page_browser->header()->hide();
-	m_data->page_browser->setAcceptDrops(true);
-	m_data->page_browser->setFrameShape(QFrame::Box);
-	m_data->page_browser->setIndentation(10);
-	m_data->page_browser->setMinimumWidth(200);
+	d_data->page_browser->header()->hide();
+	d_data->page_browser->setAcceptDrops(true);
+	d_data->page_browser->setFrameShape(QFrame::Box);
+	d_data->page_browser->setIndentation(10);
+	d_data->page_browser->setMinimumWidth(200);
 
 	// create page widget
 	QWidget* page = new QWidget();
-	m_data->page_lay = new QVBoxLayout();
-	page->setLayout(m_data->page_lay);
+	d_data->page_lay = new QVBoxLayout();
+	page->setLayout(d_data->page_lay);
 
 	// create splitter
-	m_data->splitter->addWidget(m_data->page_browser);
-	m_data->splitter->addWidget(page);
-	m_data->splitter->setStretchFactor(1, 1);
+	d_data->splitter->addWidget(d_data->page_browser);
+	d_data->splitter->addWidget(page);
+	d_data->splitter->setStretchFactor(1, 1);
 
 	// create button layout
 	QHBoxLayout* button_lay = new QHBoxLayout();
 	button_lay->addStretch(1);
-	button_lay->addWidget(m_data->ok);
-	button_lay->addWidget(m_data->cancel);
+	button_lay->addWidget(d_data->ok);
+	button_lay->addWidget(d_data->cancel);
 	button_lay->setContentsMargins(0, 2, 2, 2);
 
 	// create final layout
 	QVBoxLayout* final_lay = new QVBoxLayout();
-	final_lay->addWidget(m_data->splitter);
+	final_lay->addWidget(d_data->splitter);
 	final_lay->addWidget(VipLineWidget::createSunkenHLine());
 	final_lay->addLayout(button_lay);
 	// final_lay->setContentsMargins(0, 0, 0, 0);
 
 	setLayout(final_lay);
 
-	m_data->ok->setText("Ok");
-	m_data->cancel->setText("Cancel");
+	d_data->ok->setText("Ok");
+	d_data->cancel->setText("Cancel");
 
-	connect(m_data->ok, SIGNAL(clicked(bool)), this, SLOT(ok()));
-	connect(m_data->ok, SIGNAL(clicked(bool)), this, SLOT(accept()));
-	connect(m_data->cancel, SIGNAL(clicked(bool)), this, SLOT(reject()));
-	connect(m_data->page_browser, SIGNAL(itemClicked(QTreeWidgetItem*, int)), this, SLOT(itemClicked(QTreeWidgetItem*, int)));
+	connect(d_data->ok, SIGNAL(clicked(bool)), this, SLOT(ok()));
+	connect(d_data->ok, SIGNAL(clicked(bool)), this, SLOT(accept()));
+	connect(d_data->cancel, SIGNAL(clicked(bool)), this, SLOT(reject()));
+	connect(d_data->page_browser, SIGNAL(itemClicked(QTreeWidgetItem*, int)), this, SLOT(itemClicked(QTreeWidgetItem*, int)));
 }
 
 VipOptions::~VipOptions()
 {
-	delete m_data;
 }
 
 void VipOptions::ok()
 {
-	for (QMap<QTreeWidgetItem*, QScrollArea*>::iterator it = m_data->pages.begin(); it != m_data->pages.end(); ++it) {
+	for (QMap<QTreeWidgetItem*, QScrollArea*>::iterator it = d_data->pages.begin(); it != d_data->pages.end(); ++it) {
 		VipPageOption* page = qobject_cast<VipPageOption*>(it.value()->widget());
 		page->applyPage();
 	}
@@ -146,7 +145,7 @@ void VipOptions::ok()
 
 bool VipOptions::hasPage(VipPageOption* page) const
 {
-	for (QMap<QTreeWidgetItem*, QScrollArea*>::const_iterator it = m_data->pages.begin(); it != m_data->pages.end(); ++it)
+	for (QMap<QTreeWidgetItem*, QScrollArea*>::const_iterator it = d_data->pages.begin(); it != d_data->pages.end(); ++it)
 		if (qobject_cast<VipPageOption*>(it.value()->widget()) == page)
 			return true;
 	return false;
@@ -161,8 +160,8 @@ bool VipOptions::addPage(const QString& category, VipPageOption* page, const QIc
 	if (path.size() == 0)
 		return false;
 
-	// create the page leaf inside m_data->page_browser
-	QTreeWidgetItem* current = m_data->page_browser->invisibleRootItem();
+	// create the page leaf inside d_data->page_browser
+	QTreeWidgetItem* current = d_data->page_browser->invisibleRootItem();
 
 	for (int i = 0; i < path.size(); ++i) {
 		QTreeWidgetItem* found = nullptr;
@@ -193,25 +192,25 @@ bool VipOptions::addPage(const QString& category, VipPageOption* page, const QIc
 	QScrollArea* area = new QScrollArea();
 	area->setWidgetResizable(true);
 	area->setWidget(page);
-	m_data->pages[current] = area;
-	m_data->page_lay->addWidget(area);
+	d_data->pages[current] = area;
+	d_data->page_lay->addWidget(area);
 	area->hide();
 
 	// set the focus to the first page
-	if (m_data->pages.size() > 0 && !m_data->current)
-		setCurrentPage(qobject_cast<VipPageOption*>(m_data->pages.begin().value()->widget()));
+	if (d_data->pages.size() > 0 && !d_data->current)
+		setCurrentPage(qobject_cast<VipPageOption*>(d_data->pages.begin().value()->widget()));
 
 	return true;
 }
 
 void VipOptions::setTreeWidth(int w)
 {
-	m_data->splitter->setSizes(QList<int>() << w << (width() - w));
+	d_data->splitter->setSizes(QList<int>() << w << (width() - w));
 }
 
 QScrollArea* VipOptions::areaForPage(VipPageOption* page) const
 {
-	for (QMap<QTreeWidgetItem*, QScrollArea*>::const_iterator it = m_data->pages.begin(); it != m_data->pages.end(); ++it)
+	for (QMap<QTreeWidgetItem*, QScrollArea*>::const_iterator it = d_data->pages.begin(); it != d_data->pages.end(); ++it)
 		if (qobject_cast<VipPageOption*>(it.value()->widget()) == page)
 			return it.value();
 	return nullptr;
@@ -219,20 +218,20 @@ QScrollArea* VipOptions::areaForPage(VipPageOption* page) const
 
 void VipOptions::setCurrentPage(VipPageOption* page)
 {
-	if (page && page != m_data->current) {
+	if (page && page != d_data->current) {
 		if (!hasPage(page))
 			return;
 
-		QTreeWidgetItem* item = m_data->pages.key(areaForPage(page));
+		QTreeWidgetItem* item = d_data->pages.key(areaForPage(page));
 
-		for (QMap<QTreeWidgetItem*, QScrollArea*>::const_iterator it = m_data->pages.begin(); it != m_data->pages.end(); ++it) {
+		for (QMap<QTreeWidgetItem*, QScrollArea*>::const_iterator it = d_data->pages.begin(); it != d_data->pages.end(); ++it) {
 			it.value()->setVisible(qobject_cast<VipPageOption*>(it.value()->widget()) == page);
 		}
 
-		m_data->page_browser->blockSignals(true);
-		m_data->page_browser->setCurrentItem(item);
-		m_data->page_browser->blockSignals(false);
-		m_data->current = page;
+		d_data->page_browser->blockSignals(true);
+		d_data->page_browser->setCurrentItem(item);
+		d_data->page_browser->blockSignals(false);
+		d_data->current = page;
 	}
 }
 
@@ -242,9 +241,9 @@ void VipOptions::itemClicked(QTreeWidgetItem* item, int)
 		return;
 
 	// find item
-	QMap<QTreeWidgetItem*, QScrollArea*>::iterator it = m_data->pages.find(item);
-	if (it == m_data->pages.end()) {
-		// if item is not inside m_data->pages, try set the focus to its first child
+	QMap<QTreeWidgetItem*, QScrollArea*>::iterator it = d_data->pages.find(item);
+	if (it == d_data->pages.end()) {
+		// if item is not inside d_data->pages, try set the focus to its first child
 		if (item->childCount() > 0)
 			itemClicked(item->child(0), 0);
 		return;
@@ -315,210 +314,209 @@ AppearanceSettings::AppearanceSettings(QWidget* parent)
   : VipPageOption(parent)
 {
 	this->setWindowTitle("General appearance");
-	m_data = new PrivateData();
+	VIP_CREATE_PRIVATE_DATA(d_data);
 
-	m_data->general = createGroup("General appearance");
-	m_data->skins = new QComboBox();
-	m_data->skins->addItems((QStringList() << "Default") + vipAvailableSkins());
+	d_data->general = createGroup("General appearance");
+	d_data->skins = new QComboBox();
+	d_data->skins->addItems((QStringList() << "Default") + vipAvailableSkins());
 
-	m_data->colorPalette = new QComboBox();
+	d_data->colorPalette = new QComboBox();
 	QImage palette = vipPixmap("palette.png").toImage().convertToFormat(QImage::Format_ARGB32);
 	if (!palette.isNull()) {
-		m_data->colorPalette->addItem("Default", 0);
-		m_data->colorPalette->addItem(applyFactor(palette, 60), "Very dark", 60);
-		m_data->colorPalette->addItem(applyFactor(palette, 80), "Dark", 80);
-		m_data->colorPalette->addItem(QPixmap::fromImage(palette), "Standard", 100);
-		m_data->colorPalette->addItem(applyFactor(palette, 120), "Light", 120);
-		m_data->colorPalette->addItem(applyFactor(palette, 140), "Very light", 140);
+		d_data->colorPalette->addItem("Default", 0);
+		d_data->colorPalette->addItem(applyFactor(palette, 60), "Very dark", 60);
+		d_data->colorPalette->addItem(applyFactor(palette, 80), "Dark", 80);
+		d_data->colorPalette->addItem(QPixmap::fromImage(palette), "Standard", 100);
+		d_data->colorPalette->addItem(applyFactor(palette, 120), "Light", 120);
+		d_data->colorPalette->addItem(applyFactor(palette, 140), "Very light", 140);
 	}
 
-	m_data->skins->setToolTip("Global Thermavip color theme");
-	m_data->colorPalette->setToolTip("Color palette used for curves and histograms");
+	d_data->skins->setToolTip("Global Thermavip color theme");
+	d_data->colorPalette->setToolTip("Color palette used for curves and histograms");
 
 	QGridLayout* glay = new QGridLayout();
 	glay->addWidget(new QLabel("Color theme"), 0, 0, Qt::AlignLeft);
-	glay->addWidget(m_data->skins, 0, 1, Qt::AlignLeft);
+	glay->addWidget(d_data->skins, 0, 1, Qt::AlignLeft);
 
 	glay->addWidget(new QLabel("Item color palette"), 1, 0, Qt::AlignLeft);
-	glay->addWidget(m_data->colorPalette, 1, 1, Qt::AlignLeft);
+	glay->addWidget(d_data->colorPalette, 1, 1, Qt::AlignLeft);
 
-	m_data->general->setLayout(glay);
+	d_data->general->setLayout(glay);
 
-	m_data->players = createGroup("Video player display");
-	m_data->colorMaps = new QComboBox();
-	m_data->showScale = new QToolButton();
+	d_data->players = createGroup("Video player display");
+	d_data->colorMaps = new QComboBox();
+	d_data->showScale = new QToolButton();
 
-	m_data->colorMaps->addItem(colorMapPixmap(VipLinearColorMap::Autumn, QSize(20, 20)), "Autumn");
-	m_data->colorMaps->addItem(colorMapPixmap(VipLinearColorMap::Bone, QSize(20, 20)), "Bone");
-	m_data->colorMaps->addItem(colorMapPixmap(VipLinearColorMap::BuRd, QSize(20, 20)), "BuRd");
-	m_data->colorMaps->addItem(colorMapPixmap(VipLinearColorMap::Cool, QSize(20, 20)), "Cool");
-	m_data->colorMaps->addItem(colorMapPixmap(VipLinearColorMap::Copper, QSize(20, 20)), "Copper");
-	m_data->colorMaps->addItem(colorMapPixmap(VipLinearColorMap::Gray, QSize(20, 20)), "Gray");
-	m_data->colorMaps->addItem(colorMapPixmap(VipLinearColorMap::Hot, QSize(20, 20)), "Hot");
-	m_data->colorMaps->addItem(colorMapPixmap(VipLinearColorMap::Hsv, QSize(20, 20)), "Hsv");
-	m_data->colorMaps->addItem(colorMapPixmap(VipLinearColorMap::Jet, QSize(20, 20)), "Jet");
-	m_data->colorMaps->addItem(colorMapPixmap(VipLinearColorMap::Fusion, QSize(20, 20)), "Fusion");
-	m_data->colorMaps->addItem(colorMapPixmap(VipLinearColorMap::Pink, QSize(20, 20)), "Pink");
-	m_data->colorMaps->addItem(colorMapPixmap(VipLinearColorMap::Rainbow, QSize(20, 20)), "Rainbow");
-	m_data->colorMaps->addItem(colorMapPixmap(VipLinearColorMap::Spring, QSize(20, 20)), "Spring");
-	m_data->colorMaps->addItem(colorMapPixmap(VipLinearColorMap::Summer, QSize(20, 20)), "Summer");
-	m_data->colorMaps->addItem(colorMapPixmap(VipLinearColorMap::Sunset, QSize(20, 20)), "Sunset");
-	m_data->colorMaps->addItem(colorMapPixmap(VipLinearColorMap::White, QSize(20, 20)), "White");
-	m_data->colorMaps->addItem(colorMapPixmap(VipLinearColorMap::Winter, QSize(20, 20)), "Winter");
-	m_data->colorMaps->setToolTip("Color scale used for videos (like infrared ones)");
-	m_data->showScale->setToolTip("Show/hide axes for video players");
-	m_data->showScale->setIcon(vipIcon("show_axes.png"));
-	m_data->showScale->setAutoRaise(true);
-	m_data->showScale->setCheckable(true);
+	d_data->colorMaps->addItem(colorMapPixmap(VipLinearColorMap::Autumn, QSize(20, 20)), "Autumn");
+	d_data->colorMaps->addItem(colorMapPixmap(VipLinearColorMap::Bone, QSize(20, 20)), "Bone");
+	d_data->colorMaps->addItem(colorMapPixmap(VipLinearColorMap::BuRd, QSize(20, 20)), "BuRd");
+	d_data->colorMaps->addItem(colorMapPixmap(VipLinearColorMap::Cool, QSize(20, 20)), "Cool");
+	d_data->colorMaps->addItem(colorMapPixmap(VipLinearColorMap::Copper, QSize(20, 20)), "Copper");
+	d_data->colorMaps->addItem(colorMapPixmap(VipLinearColorMap::Gray, QSize(20, 20)), "Gray");
+	d_data->colorMaps->addItem(colorMapPixmap(VipLinearColorMap::Hot, QSize(20, 20)), "Hot");
+	d_data->colorMaps->addItem(colorMapPixmap(VipLinearColorMap::Hsv, QSize(20, 20)), "Hsv");
+	d_data->colorMaps->addItem(colorMapPixmap(VipLinearColorMap::Jet, QSize(20, 20)), "Jet");
+	d_data->colorMaps->addItem(colorMapPixmap(VipLinearColorMap::Fusion, QSize(20, 20)), "Fusion");
+	d_data->colorMaps->addItem(colorMapPixmap(VipLinearColorMap::Pink, QSize(20, 20)), "Pink");
+	d_data->colorMaps->addItem(colorMapPixmap(VipLinearColorMap::Rainbow, QSize(20, 20)), "Rainbow");
+	d_data->colorMaps->addItem(colorMapPixmap(VipLinearColorMap::Spring, QSize(20, 20)), "Spring");
+	d_data->colorMaps->addItem(colorMapPixmap(VipLinearColorMap::Summer, QSize(20, 20)), "Summer");
+	d_data->colorMaps->addItem(colorMapPixmap(VipLinearColorMap::Sunset, QSize(20, 20)), "Sunset");
+	d_data->colorMaps->addItem(colorMapPixmap(VipLinearColorMap::White, QSize(20, 20)), "White");
+	d_data->colorMaps->addItem(colorMapPixmap(VipLinearColorMap::Winter, QSize(20, 20)), "Winter");
+	d_data->colorMaps->setToolTip("Color scale used for videos (like infrared ones)");
+	d_data->showScale->setToolTip("Show/hide axes for video players");
+	d_data->showScale->setIcon(vipIcon("show_axes.png"));
+	d_data->showScale->setAutoRaise(true);
+	d_data->showScale->setCheckable(true);
 
 	QGridLayout* dlay = new QGridLayout();
 	dlay->addWidget(new QLabel());
 	dlay->addWidget(new QLabel("Video color scale"), 0, 0, Qt::AlignLeft);
-	dlay->addWidget(m_data->colorMaps, 0, 1, Qt::AlignLeft);
+	dlay->addWidget(d_data->colorMaps, 0, 1, Qt::AlignLeft);
 	dlay->addWidget(new QLabel("Show/hide axes"), 1, 0, Qt::AlignLeft);
-	dlay->addWidget(m_data->showScale, 1, 1, Qt::AlignLeft);
-	m_data->players->setLayout(dlay);
+	dlay->addWidget(d_data->showScale, 1, 1, Qt::AlignLeft);
+	d_data->players->setLayout(dlay);
 
-	m_data->roi = createGroup("Regions Of Interest");
+	d_data->roi = createGroup("Regions Of Interest");
 	QGridLayout* lay = new QGridLayout();
 	int row = -1;
 
-	m_data->title = new VipTextWidget();
+	d_data->title = new VipTextWidget();
 	lay->addWidget(new QLabel("Shape text style"), ++row, 0);
-	lay->addWidget(m_data->title, row, 1);
+	lay->addWidget(d_data->title, row, 1);
 	lay->addWidget(VipLineWidget::createHLine(), ++row, 0, 1, 2);
 
-	m_data->pen = new VipPenButton();
+	d_data->pen = new VipPenButton();
 	lay->addWidget(new QLabel("Border pen"), ++row, 0);
-	lay->addWidget(m_data->pen, row, 1);
+	lay->addWidget(d_data->pen, row, 1);
 
-	m_data->brush = new VipPenButton();
+	d_data->brush = new VipPenButton();
 	lay->addWidget(new QLabel("Background brush"), ++row, 0);
-	lay->addWidget(m_data->brush, row, 1);
+	lay->addWidget(d_data->brush, row, 1);
 
 	lay->addWidget(VipLineWidget::createHLine(), ++row, 0, 1, 2);
 
-	m_data->titleVisible = new QCheckBox();
-	m_data->groupVisible = new QCheckBox();
-	m_data->idVisible = new QCheckBox();
-	m_data->innerPixels = new QCheckBox();
-	lay->addWidget(m_data->titleVisible, ++row, 0, 1, 2);
-	lay->addWidget(m_data->groupVisible, ++row, 0, 1, 2);
-	lay->addWidget(m_data->idVisible, ++row, 0, 1, 2);
-	lay->addWidget(m_data->innerPixels, ++row, 0, 1, 2);
+	d_data->titleVisible = new QCheckBox();
+	d_data->groupVisible = new QCheckBox();
+	d_data->idVisible = new QCheckBox();
+	d_data->innerPixels = new QCheckBox();
+	lay->addWidget(d_data->titleVisible, ++row, 0, 1, 2);
+	lay->addWidget(d_data->groupVisible, ++row, 0, 1, 2);
+	lay->addWidget(d_data->idVisible, ++row, 0, 1, 2);
+	lay->addWidget(d_data->innerPixels, ++row, 0, 1, 2);
 
-	m_data->roi->setLayout(lay);
+	d_data->roi->setLayout(lay);
 
-	m_data->title->edit()->hide();
-	m_data->pen->setMode(VipPenButton::Pen);
-	m_data->brush->setMode(VipPenButton::Brush);
+	d_data->title->edit()->hide();
+	d_data->pen->setMode(VipPenButton::Pen);
+	d_data->brush->setMode(VipPenButton::Brush);
 
-	m_data->titleVisible->setText("Display shapes title");
-	m_data->groupVisible->setText("Display shapes group");
-	m_data->idVisible->setText("Display shapes identifier");
-	m_data->innerPixels->setText("Display exact pixels");
+	d_data->titleVisible->setText("Display shapes title");
+	d_data->groupVisible->setText("Display shapes group");
+	d_data->idVisible->setText("Display shapes identifier");
+	d_data->innerPixels->setText("Display exact pixels");
 
-	m_data->displayTimeOffset.setText("Display time offset from left date");
-	m_data->displayTimeOffset.setToolTip("<div>For plot players only, if the time scale displays a time since Epoch, select the behavior of the scale values."
+	d_data->displayTimeOffset.setText("Display time offset from left date");
+	d_data->displayTimeOffset.setToolTip("<div>For plot players only, if the time scale displays a time since Epoch, select the behavior of the scale values."
 					     "If checked, displayed labels represent the time offset since the scale start value."
 					     "Otherwise, displayed labels represent the time offset since the start of the left most curve.</div>");
-	m_data->displayTimeInteger.setText("Display time as integer");
-	m_data->displayTimeInteger.setToolTip("<div>If checked, time values in plot players will be displayed as integer, without precision loss</div>");
-	m_data->displayAbsoluteDate.setText("Display absolute date time");
-	m_data->displayAbsoluteDate.setToolTip("<div>If checked, time labels in plot players will display absolute date time</div>");
-	m_data->displayNormal.setText("Display standard time values");
-	m_data->displayNormal.setToolTip("<div>If checked, time labels in plot players will be displayed as floating point values</div>");
+	d_data->displayTimeInteger.setText("Display time as integer");
+	d_data->displayTimeInteger.setToolTip("<div>If checked, time values in plot players will be displayed as integer, without precision loss</div>");
+	d_data->displayAbsoluteDate.setText("Display absolute date time");
+	d_data->displayAbsoluteDate.setToolTip("<div>If checked, time labels in plot players will display absolute date time</div>");
+	d_data->displayNormal.setText("Display standard time values");
+	d_data->displayNormal.setToolTip("<div>If checked, time labels in plot players will be displayed as floating point values</div>");
 
 	QVBoxLayout* tlay = new QVBoxLayout();
-	tlay->addWidget(&m_data->displayTimeOffset);
-	tlay->addWidget(&m_data->displayTimeInteger);
-	tlay->addWidget(&m_data->displayAbsoluteDate);
-	tlay->addWidget(&m_data->displayNormal);
+	tlay->addWidget(&d_data->displayTimeOffset);
+	tlay->addWidget(&d_data->displayTimeInteger);
+	tlay->addWidget(&d_data->displayAbsoluteDate);
+	tlay->addWidget(&d_data->displayNormal);
 	tlay->setContentsMargins(5, 5, 5, 5);
 
-	m_data->plots = createGroup("Default plot settings");
+	d_data->plots = createGroup("Default plot settings");
 	QVBoxLayout* play = new QVBoxLayout();
 	play->setContentsMargins(0, 0, 0, 0);
 	play->addLayout(tlay);
-	play->addWidget(&m_data->settings);
-	m_data->plots->setLayout(play);
+	play->addWidget(&d_data->settings);
+	d_data->plots->setLayout(play);
 
 	QVBoxLayout* vlay = new QVBoxLayout();
-	vlay->addWidget(m_data->general);
-	vlay->addWidget(m_data->players);
-	vlay->addWidget(m_data->plots);
-	vlay->addWidget(m_data->roi);
+	vlay->addWidget(d_data->general);
+	vlay->addWidget(d_data->players);
+	vlay->addWidget(d_data->plots);
+	vlay->addWidget(d_data->roi);
 	vlay->addStretch(1);
 	setLayout(vlay);
 
-	connect(m_data->skins, SIGNAL(currentIndexChanged(int)), this, SLOT(skinChanged()));
+	connect(d_data->skins, SIGNAL(currentIndexChanged(int)), this, SLOT(skinChanged()));
 	//	connect(&VipDefaultSceneModelDisplayOptions::instance(), SIGNAL(changed()), this, SLOT(updatePage()), Qt::QueuedConnection);
 	updatePage();
 }
 
 AppearanceSettings::~AppearanceSettings()
 {
-	delete m_data;
 }
 
 void AppearanceSettings::skinChanged()
 {
-	if (m_data->skins->currentText().contains("gray", Qt::CaseInsensitive)) {
-		m_data->colorPalette->setCurrentText("Standard");
+	if (d_data->skins->currentText().contains("gray", Qt::CaseInsensitive)) {
+		d_data->colorPalette->setCurrentText("Standard");
 	}
-	else if (m_data->skins->currentText().contains("dark", Qt::CaseInsensitive)) {
-		m_data->colorPalette->setCurrentText("Light");
+	else if (d_data->skins->currentText().contains("dark", Qt::CaseInsensitive)) {
+		d_data->colorPalette->setCurrentText("Light");
 	}
 }
 
 void AppearanceSettings::updatePage()
 {
 	// General settings
-	int index = m_data->skins->findText(VipCoreSettings::instance()->skin());
+	int index = d_data->skins->findText(VipCoreSettings::instance()->skin());
 	if (index >= 0)
-		m_data->skins->setCurrentIndex(index);
+		d_data->skins->setCurrentIndex(index);
 	else
-		m_data->skins->setCurrentIndex(0);
+		d_data->skins->setCurrentIndex(0);
 
 	int current = VipGuiDisplayParamaters::instance()->itemPaletteFactor();
 	if (current == 0)
-		m_data->colorPalette->setCurrentIndex(0);
+		d_data->colorPalette->setCurrentIndex(0);
 	else if (current == 60)
-		m_data->colorPalette->setCurrentIndex(1);
+		d_data->colorPalette->setCurrentIndex(1);
 	else if (current == 80)
-		m_data->colorPalette->setCurrentIndex(2);
+		d_data->colorPalette->setCurrentIndex(2);
 	else if (current == 100)
-		m_data->colorPalette->setCurrentIndex(3);
+		d_data->colorPalette->setCurrentIndex(3);
 	else if (current == 120)
-		m_data->colorPalette->setCurrentIndex(4);
+		d_data->colorPalette->setCurrentIndex(4);
 	else if (current == 140)
-		m_data->colorPalette->setCurrentIndex(5);
+		d_data->colorPalette->setCurrentIndex(5);
 
 	// Video player settings
-	m_data->colorMaps->setCurrentIndex(VipGuiDisplayParamaters::instance()->playerColorScale());
-	m_data->showScale->setChecked(VipGuiDisplayParamaters::instance()->videoPlayerShowAxes());
+	d_data->colorMaps->setCurrentIndex(VipGuiDisplayParamaters::instance()->playerColorScale());
+	d_data->showScale->setChecked(VipGuiDisplayParamaters::instance()->videoPlayerShowAxes());
 
 	// ROI settings
-	m_data->brush->setBrush(VipGuiDisplayParamaters::instance()->shapeBackgroundBrush());
-	m_data->pen->setPen(VipGuiDisplayParamaters::instance()->shapeBorderPen());
-	m_data->title->hide();
-	// m_data->title->setText(VipText("", VipDefaultSceneModelDisplayOptions::instance().textStyle()));
-	m_data->groupVisible->setChecked(VipGuiDisplayParamaters::instance()->shapeDrawComponents() & VipPlotShape::Group);
-	m_data->idVisible->setChecked(VipGuiDisplayParamaters::instance()->shapeDrawComponents() & VipPlotShape::Id);
-	m_data->titleVisible->setChecked(VipGuiDisplayParamaters::instance()->shapeDrawComponents() & VipPlotShape::Title);
-	m_data->innerPixels->setChecked(VipGuiDisplayParamaters::instance()->shapeDrawComponents() & VipPlotShape::FillPixels);
+	d_data->brush->setBrush(VipGuiDisplayParamaters::instance()->shapeBackgroundBrush());
+	d_data->pen->setPen(VipGuiDisplayParamaters::instance()->shapeBorderPen());
+	d_data->title->hide();
+	// d_data->title->setText(VipText("", VipDefaultSceneModelDisplayOptions::instance().textStyle()));
+	d_data->groupVisible->setChecked(VipGuiDisplayParamaters::instance()->shapeDrawComponents() & VipPlotShape::Group);
+	d_data->idVisible->setChecked(VipGuiDisplayParamaters::instance()->shapeDrawComponents() & VipPlotShape::Id);
+	d_data->titleVisible->setChecked(VipGuiDisplayParamaters::instance()->shapeDrawComponents() & VipPlotShape::Title);
+	d_data->innerPixels->setChecked(VipGuiDisplayParamaters::instance()->shapeDrawComponents() & VipPlotShape::FillPixels);
 
-	m_data->displayTimeOffset.setChecked(VipGuiDisplayParamaters::instance()->displayTimeOffset());
+	d_data->displayTimeOffset.setChecked(VipGuiDisplayParamaters::instance()->displayTimeOffset());
 
 	if (VipGuiDisplayParamaters::instance()->displayType() == VipValueToTime::Integer)
-		m_data->displayTimeInteger.setChecked(true);
+		d_data->displayTimeInteger.setChecked(true);
 	else if (VipGuiDisplayParamaters::instance()->displayType() == VipValueToTime::AbsoluteDateTime)
-		m_data->displayAbsoluteDate.setChecked(true);
+		d_data->displayAbsoluteDate.setChecked(true);
 	else
-		m_data->displayNormal.setChecked(true);
+		d_data->displayNormal.setChecked(true);
 
-	m_data->settings.setDefaultCurve(VipGuiDisplayParamaters::instance()->defaultCurve());
-	m_data->settings.setDefaultPlotArea(VipGuiDisplayParamaters::instance()->defaultPlotArea());
+	d_data->settings.setDefaultCurve(VipGuiDisplayParamaters::instance()->defaultCurve());
+	d_data->settings.setDefaultPlotArea(VipGuiDisplayParamaters::instance()->defaultPlotArea());
 }
 
 QPixmap AppearanceSettings::applyFactor(const QImage& img, int factor)
@@ -550,31 +548,31 @@ QPixmap AppearanceSettings::colorMapPixmap(int color_map, const QSize& size)
 void AppearanceSettings::applyPage()
 {
 	// General settings
-	if (m_data->skins->currentText() != "Default")
-		VipCoreSettings::instance()->setSkin(m_data->skins->currentText());
+	if (d_data->skins->currentText() != "Default")
+		VipCoreSettings::instance()->setSkin(d_data->skins->currentText());
 	else
 		VipCoreSettings::instance()->setSkin("gray");
 
-	VipGuiDisplayParamaters::instance()->setItemPaletteFactor(m_data->colorPalette->currentData().toInt());
+	VipGuiDisplayParamaters::instance()->setItemPaletteFactor(d_data->colorPalette->currentData().toInt());
 
 	// Video player settings
-	VipGuiDisplayParamaters::instance()->setPlayerColorScale(VipLinearColorMap::StandardColorMap(m_data->colorMaps->currentIndex()));
-	VipGuiDisplayParamaters::instance()->setVideoPlayerShowAxes(m_data->showScale->isChecked());
+	VipGuiDisplayParamaters::instance()->setPlayerColorScale(VipLinearColorMap::StandardColorMap(d_data->colorMaps->currentIndex()));
+	VipGuiDisplayParamaters::instance()->setVideoPlayerShowAxes(d_data->showScale->isChecked());
 
 	// ROI settings
 	// disconnect(&VipDefaultSceneModelDisplayOptions::instance(), SIGNAL(changed()), this, SLOT(updatePage()));
 
-	QBrush brush = m_data->brush->pen().brush();
-	QPen pen = m_data->pen->pen();
-	VipTextStyle style = m_data->title->getText().textStyle();
+	QBrush brush = d_data->brush->pen().brush();
+	QPen pen = d_data->pen->pen();
+	VipTextStyle style = d_data->title->getText().textStyle();
 	VipPlotShape::DrawComponents cmp = VipPlotShape::Background | VipPlotShape::Border;
-	if (m_data->groupVisible->isChecked())
+	if (d_data->groupVisible->isChecked())
 		cmp |= VipPlotShape::Group;
-	if (m_data->idVisible->isChecked())
+	if (d_data->idVisible->isChecked())
 		cmp |= VipPlotShape::Id;
-	if (m_data->titleVisible->isChecked())
+	if (d_data->titleVisible->isChecked())
 		cmp |= VipPlotShape::Title;
-	if (m_data->innerPixels->isChecked())
+	if (d_data->innerPixels->isChecked())
 		cmp |= VipPlotShape::FillPixels;
 
 	if (cmp != VipGuiDisplayParamaters::instance()->shapeDrawComponents() || brush != VipGuiDisplayParamaters::instance()->shapeBackgroundBrush() ||
@@ -591,35 +589,35 @@ void AppearanceSettings::applyPage()
 
 	// Plot settings
 
-	m_data->settings.applyToCurve(VipGuiDisplayParamaters::instance()->defaultCurve());
-	m_data->settings.applyToArea(VipGuiDisplayParamaters::instance()->defaultPlotArea());
+	d_data->settings.applyToCurve(VipGuiDisplayParamaters::instance()->defaultCurve());
+	d_data->settings.applyToArea(VipGuiDisplayParamaters::instance()->defaultPlotArea());
 
-	if (m_data->settings.shouldApplyToAllPlayers()) {
+	if (d_data->settings.shouldApplyToAllPlayers()) {
 		QList<VipPlotPlayer*> pls = vipGetMainWindow()->displayArea()->findChildren<VipPlotPlayer*>();
 		for (int i = 0; i < pls.size(); ++i) {
 			VipGuiDisplayParamaters::instance()->apply(pls[i]);
-			// m_data->settings.applyToArea(qobject_cast<VipPlotArea2D*>(pls[i]->plotWidget2D()->area()));
+			// d_data->settings.applyToArea(qobject_cast<VipPlotArea2D*>(pls[i]->plotWidget2D()->area()));
 			//
 			// QList<VipPlotCurve*> curves = pls[i]->plotWidget2D()->area()->findItems<VipPlotCurve*>();
 			// for (int j = 0; j < curves.size(); ++j)
-			// m_data->settings.applyToCurve(curves[j]);
+			// d_data->settings.applyToCurve(curves[j]);
 
-			pls[i]->valueToTimeButton()->setDisplayTimeOffset(m_data->displayTimeOffset.isChecked());
-			if (m_data->displayTimeInteger.isChecked())
+			pls[i]->valueToTimeButton()->setDisplayTimeOffset(d_data->displayTimeOffset.isChecked());
+			if (d_data->displayTimeInteger.isChecked())
 				pls[i]->valueToTimeButton()->setDisplayType(VipValueToTime::Integer);
-			else if (m_data->displayAbsoluteDate.isChecked())
+			else if (d_data->displayAbsoluteDate.isChecked())
 				pls[i]->valueToTimeButton()->setDisplayType(VipValueToTime::AbsoluteDateTime);
 			else
 				pls[i]->valueToTimeButton()->setDisplayType(VipValueToTime::Double);
 		}
 	}
 
-	m_data->settings.setShouldApplyToAllPlayers(false);
+	d_data->settings.setShouldApplyToAllPlayers(false);
 
-	VipGuiDisplayParamaters::instance()->setDisplayTimeOffset(m_data->displayTimeOffset.isChecked());
-	if (m_data->displayTimeInteger.isChecked())
+	VipGuiDisplayParamaters::instance()->setDisplayTimeOffset(d_data->displayTimeOffset.isChecked());
+	if (d_data->displayTimeInteger.isChecked())
 		VipGuiDisplayParamaters::instance()->setDisplayType(VipValueToTime::Integer);
-	else if (m_data->displayAbsoluteDate.isChecked())
+	else if (d_data->displayAbsoluteDate.isChecked())
 		VipGuiDisplayParamaters::instance()->setDisplayType(VipValueToTime::AbsoluteDateTime);
 	else
 		VipGuiDisplayParamaters::instance()->setDisplayType(VipValueToTime::Double);
@@ -646,84 +644,83 @@ public:
 ProcessingSettings::ProcessingSettings(QWidget* parent)
   : VipPageOption(parent)
 {
-	m_data = new PrivateData();
+	VIP_CREATE_PRIVATE_DATA(d_data);
 
-	m_data->general = createGroup("General processing settings");
-	m_data->procPriority = new QComboBox();
-	m_data->displayPriority = new QComboBox();
-	m_data->printDebug = new QCheckBox();
+	d_data->general = createGroup("General processing settings");
+	d_data->procPriority = new QComboBox();
+	d_data->displayPriority = new QComboBox();
+	d_data->printDebug = new QCheckBox();
 
-	m_data->printDebug->setText("Print debug informations");
+	d_data->printDebug->setText("Print debug informations");
 
-	m_data->procPriority->setToolTip("Set the default processing thread priority used within Thermavip");
-	m_data->procPriority->addItem("Idle Priority");
-	m_data->procPriority->addItem("Lowest Priority");
-	m_data->procPriority->addItem("Low Priority");
-	m_data->procPriority->addItem("Normal Priority");
-	m_data->procPriority->addItem("High Priority");
-	m_data->procPriority->addItem("Highest Priority");
-	m_data->procPriority->addItem("Time Critical Priority");
-	m_data->procPriority->addItem("Inherit Priority");
+	d_data->procPriority->setToolTip("Set the default processing thread priority used within Thermavip");
+	d_data->procPriority->addItem("Idle Priority");
+	d_data->procPriority->addItem("Lowest Priority");
+	d_data->procPriority->addItem("Low Priority");
+	d_data->procPriority->addItem("Normal Priority");
+	d_data->procPriority->addItem("High Priority");
+	d_data->procPriority->addItem("Highest Priority");
+	d_data->procPriority->addItem("Time Critical Priority");
+	d_data->procPriority->addItem("Inherit Priority");
 
-	m_data->displayPriority->setToolTip("Set the default processing thread priority used within Thermavip for display only");
-	m_data->displayPriority->addItem("Idle Priority");
-	m_data->displayPriority->addItem("Lowest Priority");
-	m_data->displayPriority->addItem("Low Priority");
-	m_data->displayPriority->addItem("Normal Priority");
-	m_data->displayPriority->addItem("High Priority");
-	m_data->displayPriority->addItem("Highest Priority");
-	m_data->displayPriority->addItem("Time Critical Priority");
-	m_data->displayPriority->addItem("Inherit Priority");
+	d_data->displayPriority->setToolTip("Set the default processing thread priority used within Thermavip for display only");
+	d_data->displayPriority->addItem("Idle Priority");
+	d_data->displayPriority->addItem("Lowest Priority");
+	d_data->displayPriority->addItem("Low Priority");
+	d_data->displayPriority->addItem("Normal Priority");
+	d_data->displayPriority->addItem("High Priority");
+	d_data->displayPriority->addItem("Highest Priority");
+	d_data->displayPriority->addItem("Time Critical Priority");
+	d_data->displayPriority->addItem("Inherit Priority");
 
 	QGridLayout* glay = new QGridLayout();
 	glay->addWidget(new QLabel("Processing thread priority"), 0, 0);
-	glay->addWidget(m_data->procPriority, 0, 1);
+	glay->addWidget(d_data->procPriority, 0, 1);
 	glay->addWidget(new QLabel("Display processing thread priority"), 1, 0);
-	glay->addWidget(m_data->displayPriority, 1, 1);
-	glay->addWidget(m_data->printDebug, 2, 0, 1, 2);
-	m_data->general->setLayout(glay);
+	glay->addWidget(d_data->displayPriority, 1, 1);
+	glay->addWidget(d_data->printDebug, 2, 0, 1, 2);
+	d_data->general->setLayout(glay);
 
-	m_data->inputs = createGroup("Input buffer settings");
-	m_data->maxSizeEnable = new QCheckBox();
-	m_data->maxSize = new QSpinBox();
-	m_data->maxMemoryEnable = new QCheckBox();
-	m_data->maxMemory = new QSpinBox();
+	d_data->inputs = createGroup("Input buffer settings");
+	d_data->maxSizeEnable = new QCheckBox();
+	d_data->maxSize = new QSpinBox();
+	d_data->maxMemoryEnable = new QCheckBox();
+	d_data->maxMemory = new QSpinBox();
 
 	QVBoxLayout* vlay = new QVBoxLayout();
-	vlay->addWidget(m_data->maxSizeEnable);
-	vlay->addWidget(m_data->maxSize);
-	vlay->addWidget(m_data->maxMemoryEnable);
-	vlay->addWidget(m_data->maxMemory);
-	vlay->addWidget(m_data->printDebug);
-	m_data->inputs->setLayout(vlay);
+	vlay->addWidget(d_data->maxSizeEnable);
+	vlay->addWidget(d_data->maxSize);
+	vlay->addWidget(d_data->maxMemoryEnable);
+	vlay->addWidget(d_data->maxMemory);
+	vlay->addWidget(d_data->printDebug);
+	d_data->inputs->setLayout(vlay);
 
-	m_data->maxSizeEnable->setText("Set maximum input buffer size");
-	m_data->maxMemoryEnable->setText("Set maximum input buffer memory");
-	m_data->printDebug->setText("Print debug informations");
-	m_data->maxSize->setRange(1, INT_MAX);
-	m_data->maxSize->setSuffix(" inputs");
-	m_data->maxSize->setToolTip("Maximum number of data for each processing input");
-	m_data->maxSize->setMaximumWidth(100);
-	m_data->maxMemory->setRange(1, INT_MAX);
-	m_data->maxMemory->setSuffix("MB");
-	m_data->maxMemory->setToolTip("Maximum amount of data for each processing input");
-	m_data->maxMemory->setMaximumWidth(100);
+	d_data->maxSizeEnable->setText("Set maximum input buffer size");
+	d_data->maxMemoryEnable->setText("Set maximum input buffer memory");
+	d_data->printDebug->setText("Print debug informations");
+	d_data->maxSize->setRange(1, INT_MAX);
+	d_data->maxSize->setSuffix(" inputs");
+	d_data->maxSize->setToolTip("Maximum number of data for each processing input");
+	d_data->maxSize->setMaximumWidth(100);
+	d_data->maxMemory->setRange(1, INT_MAX);
+	d_data->maxMemory->setSuffix("MB");
+	d_data->maxMemory->setToolTip("Maximum amount of data for each processing input");
+	d_data->maxMemory->setMaximumWidth(100);
 
 	QVBoxLayout* lay = new QVBoxLayout();
-	lay->addWidget(m_data->general);
-	lay->addWidget(m_data->inputs);
+	lay->addWidget(d_data->general);
+	lay->addWidget(d_data->inputs);
 	lay->addStretch(1);
 	setLayout(lay);
 
-	connect(m_data->maxSizeEnable, SIGNAL(clicked(bool)), m_data->maxSize, SLOT(setEnabled(bool)));
-	connect(m_data->maxMemoryEnable, SIGNAL(clicked(bool)), m_data->maxMemory, SLOT(setEnabled(bool)));
+	connect(d_data->maxSizeEnable, SIGNAL(clicked(bool)), d_data->maxSize, SLOT(setEnabled(bool)));
+	connect(d_data->maxMemoryEnable, SIGNAL(clicked(bool)), d_data->maxMemory, SLOT(setEnabled(bool)));
 	connect(&VipProcessingManager::instance(), SIGNAL(changed()), this, SLOT(updatePage()), Qt::QueuedConnection);
 	updatePage();
 }
 
 ProcessingSettings::~ProcessingSettings()
 {
-	delete m_data;
 }
 
 void ProcessingSettings::applyPage()
@@ -731,16 +728,16 @@ void ProcessingSettings::applyPage()
 	disconnect(&VipProcessingManager::instance(), SIGNAL(changed()), this, SLOT(updatePage()));
 
 	int type = 0;
-	if (m_data->maxSizeEnable->isChecked())
+	if (d_data->maxSizeEnable->isChecked())
 		type |= VipDataList::Number;
-	if (m_data->maxMemoryEnable->isChecked())
+	if (d_data->maxMemoryEnable->isChecked())
 		type |= VipDataList::MemorySize;
-	int maxSize = m_data->maxSize->value();
-	int maxMemory = m_data->maxMemory->value() * 1000000;
-	bool printDebug = m_data->printDebug->isChecked();
+	int maxSize = d_data->maxSize->value();
+	int maxMemory = d_data->maxMemory->value() * 1000000;
+	bool printDebug = d_data->printDebug->isChecked();
 
-	int priority = m_data->procPriority->currentIndex();
-	int displayPriority = m_data->displayPriority->currentIndex();
+	int priority = d_data->procPriority->currentIndex();
+	int displayPriority = d_data->displayPriority->currentIndex();
 
 	// bool printDebugEnabled = VipProcessingManager::isLogErrorEnabled(VipProcessingObject::InputBufferFull);
 
@@ -761,17 +758,17 @@ void ProcessingSettings::applyPage()
 
 void ProcessingSettings::updatePage()
 {
-	m_data->maxSizeEnable->setChecked(VipProcessingManager::listLimitType() & VipDataList::Number);
-	m_data->maxMemoryEnable->setChecked(VipProcessingManager::listLimitType() & VipDataList::MemorySize);
+	d_data->maxSizeEnable->setChecked(VipProcessingManager::listLimitType() & VipDataList::Number);
+	d_data->maxMemoryEnable->setChecked(VipProcessingManager::listLimitType() & VipDataList::MemorySize);
 
-	m_data->maxSize->setEnabled(VipProcessingManager::listLimitType() & VipDataList::Number);
-	m_data->maxMemory->setEnabled(VipProcessingManager::listLimitType() & VipDataList::MemorySize);
+	d_data->maxSize->setEnabled(VipProcessingManager::listLimitType() & VipDataList::Number);
+	d_data->maxMemory->setEnabled(VipProcessingManager::listLimitType() & VipDataList::MemorySize);
 
-	m_data->maxSize->setValue(VipProcessingManager::maxListSize());
-	m_data->maxMemory->setValue(VipProcessingManager::maxListMemory() / 1000000);
+	d_data->maxSize->setValue(VipProcessingManager::maxListSize());
+	d_data->maxMemory->setValue(VipProcessingManager::maxListMemory() / 1000000);
 
-	m_data->procPriority->setCurrentIndex(VipProcessingManager::defaultPriority(&VipProcessingObject::staticMetaObject));
-	m_data->displayPriority->setCurrentIndex(VipProcessingManager::defaultPriority(&VipDisplayObject::staticMetaObject));
+	d_data->procPriority->setCurrentIndex(VipProcessingManager::defaultPriority(&VipProcessingObject::staticMetaObject));
+	d_data->displayPriority->setCurrentIndex(VipProcessingManager::defaultPriority(&VipDisplayObject::staticMetaObject));
 }
 
 class EnvironmentSettings::PrivateData
@@ -794,74 +791,73 @@ public:
 EnvironmentSettings::EnvironmentSettings(QWidget* parent)
   : VipPageOption(parent)
 {
-	m_data = new PrivateData();
+	VIP_CREATE_PRIVATE_DATA(d_data);
 
-	m_data->data = createGroup("Thermavip data folder");
-	m_data->dataDir = new QLabel(vipGetDataDirectory());
-	m_data->openDataDir = new QToolButton();
-	m_data->openDataDir->setAutoRaise(true);
-	m_data->openDataDir->setIcon(vipIcon("open_dir.png"));
-	m_data->openDataDir->setToolTip("Open data directory");
+	d_data->data = createGroup("Thermavip data folder");
+	d_data->dataDir = new QLabel(vipGetDataDirectory());
+	d_data->openDataDir = new QToolButton();
+	d_data->openDataDir->setAutoRaise(true);
+	d_data->openDataDir->setIcon(vipIcon("open_dir.png"));
+	d_data->openDataDir->setToolTip("Open data directory");
 
-	m_data->log = createGroup("Thermavip log folder");
-	m_data->logDir = new QLabel(vipGetLogDirectory());
-	m_data->openLogDir = new QToolButton();
-	m_data->openLogDir->setAutoRaise(true);
-	m_data->openLogDir->setIcon(vipIcon("open_dir.png"));
-	m_data->openLogDir->setToolTip("Open log directory");
-	m_data->openLogFile = new QToolButton();
-	m_data->openLogFile->setAutoRaise(true);
-	m_data->openLogFile->setIcon(vipIcon("open.png"));
-	m_data->openLogFile->setToolTip("Open log file");
+	d_data->log = createGroup("Thermavip log folder");
+	d_data->logDir = new QLabel(vipGetLogDirectory());
+	d_data->openLogDir = new QToolButton();
+	d_data->openLogDir->setAutoRaise(true);
+	d_data->openLogDir->setIcon(vipIcon("open_dir.png"));
+	d_data->openLogDir->setToolTip("Open log directory");
+	d_data->openLogFile = new QToolButton();
+	d_data->openLogFile->setAutoRaise(true);
+	d_data->openLogFile->setIcon(vipIcon("open.png"));
+	d_data->openLogFile->setToolTip("Open log file");
 
-	m_data->overwrite = new QCheckBox("Overwrite log file at each startup");
-	m_data->append_date = new QCheckBox("Append startup date to log file name");
+	d_data->overwrite = new QCheckBox("Overwrite log file at each startup");
+	d_data->append_date = new QCheckBox("Append startup date to log file name");
 
-	m_data->env = new QPlainTextEdit();
-	m_data->env->setPlaceholderText("Environment variables on the form \"VARIABLE_NAME1 VARIABLE_VALUE1 new_line VARIABLE_NAME2 VARIABLE_VALUE2 \"");
+	d_data->env = new QPlainTextEdit();
+	d_data->env->setPlaceholderText("Environment variables on the form \"VARIABLE_NAME1 VARIABLE_VALUE1 new_line VARIABLE_NAME2 VARIABLE_VALUE2 \"");
 
 	QHBoxLayout* hlay = new QHBoxLayout();
-	hlay->addWidget(m_data->dataDir);
-	hlay->addWidget(m_data->openDataDir);
+	hlay->addWidget(d_data->dataDir);
+	hlay->addWidget(d_data->openDataDir);
 	hlay->addStretch(1);
-	m_data->data->setLayout(hlay);
+	d_data->data->setLayout(hlay);
 
 	hlay = new QHBoxLayout();
-	hlay->addWidget(m_data->logDir);
-	hlay->addWidget(m_data->openLogDir);
-	hlay->addWidget(m_data->openLogFile);
+	hlay->addWidget(d_data->logDir);
+	hlay->addWidget(d_data->openLogDir);
+	hlay->addWidget(d_data->openLogFile);
 	hlay->addStretch(1);
 	QVBoxLayout* vlay = new QVBoxLayout();
 	vlay->addLayout(hlay);
-	vlay->addWidget(m_data->overwrite);
-	vlay->addWidget(m_data->append_date);
-	m_data->log->setLayout(vlay);
+	vlay->addWidget(d_data->overwrite);
+	vlay->addWidget(d_data->append_date);
+	d_data->log->setLayout(vlay);
 
 	vlay = new QVBoxLayout();
-	vlay->addWidget(m_data->data);
-	vlay->addWidget(m_data->log);
+	vlay->addWidget(d_data->data);
+	vlay->addWidget(d_data->log);
 
 	QGroupBox* env_box = new QGroupBox("Environment variables (thermavip.env)");
 	env_box->setFlat(true);
 	vlay->addWidget(env_box);
-	vlay->addWidget(m_data->env, 1);
+	vlay->addWidget(d_data->env, 1);
 
 	// vlay->addStretch(1);
 	setLayout(vlay);
 
-	connect(m_data->openDataDir, SIGNAL(clicked(bool)), this, SLOT(openDataDirectory()));
-	connect(m_data->openLogDir, SIGNAL(clicked(bool)), this, SLOT(openLogDirectory()));
-	connect(m_data->openLogFile, SIGNAL(clicked(bool)), this, SLOT(openLogFile()));
+	connect(d_data->openDataDir, SIGNAL(clicked(bool)), this, SLOT(openDataDirectory()));
+	connect(d_data->openLogDir, SIGNAL(clicked(bool)), this, SLOT(openLogDirectory()));
+	connect(d_data->openLogFile, SIGNAL(clicked(bool)), this, SLOT(openLogFile()));
 }
 EnvironmentSettings::~EnvironmentSettings()
 {
-	delete m_data;
 }
 
 void EnvironmentSettings::applyPage()
 {
-	VipCoreSettings::instance()->setLogFileDate(m_data->append_date->isChecked());
-	VipCoreSettings::instance()->setLogFileOverwrite(m_data->overwrite->isChecked());
+	VipCoreSettings::instance()->setLogFileDate(d_data->append_date->isChecked());
+	VipCoreSettings::instance()->setLogFileOverwrite(d_data->overwrite->isChecked());
 
 	VipCoreSettings::instance()->save(vipGetDataDirectory() + "core_settings.xml");
 
@@ -869,7 +865,7 @@ void EnvironmentSettings::applyPage()
 	QString env_file = vipGetDataDirectory() + "thermavip.env";
 	QFile fin(env_file);
 	if (fin.open(QFile::WriteOnly | QFile::Text)) {
-		fin.write(m_data->env->toPlainText().toLatin1());
+		fin.write(d_data->env->toPlainText().toLatin1());
 	}
 	else
 		VIP_LOG_ERROR("Unable to create file ", env_file);
@@ -877,10 +873,10 @@ void EnvironmentSettings::applyPage()
 
 void EnvironmentSettings::updatePage()
 {
-	m_data->append_date->setChecked(VipCoreSettings::instance()->logFileDate());
-	m_data->overwrite->setChecked(VipCoreSettings::instance()->logFileOverwrite());
+	d_data->append_date->setChecked(VipCoreSettings::instance()->logFileDate());
+	d_data->overwrite->setChecked(VipCoreSettings::instance()->logFileOverwrite());
 
-	m_data->env->clear();
+	d_data->env->clear();
 	QString env_file = vipGetDataDirectory() + "thermavip.env";
 	if (!QFileInfo(env_file).exists()) {
 		env_file = QFileInfo(vipAppCanonicalPath()).canonicalPath();
@@ -892,7 +888,7 @@ void EnvironmentSettings::updatePage()
 	if (QFileInfo(env_file).exists()) {
 		QFile fin(env_file);
 		if (fin.open(QFile::ReadOnly | QFile::Text)) {
-			m_data->env->setPlainText(fin.readAll());
+			d_data->env->setPlainText(fin.readAll());
 		}
 	}
 }
@@ -926,38 +922,38 @@ public:
 RenderingSettings::RenderingSettings(QWidget* parent)
   : VipPageOption(parent)
 {
-	m_data = new PrivateData();
+	VIP_CREATE_PRIVATE_DATA(d_data);
 
-	m_data->vdirect = new QRadioButton("Direct rendering");
-	m_data->vdirect->setToolTip("Direct CPU based rendering (default), usually the fastest");
+	d_data->vdirect = new QRadioButton("Direct rendering");
+	d_data->vdirect->setToolTip("Direct CPU based rendering (default), usually the fastest");
 
-	m_data->vpureGPU = new QRadioButton("Opengl rendering");
-	m_data->vpureGPU->setToolTip("Direct opengl based rendering.\nDoes not work with multiple threads.");
+	d_data->vpureGPU = new QRadioButton("Opengl rendering");
+	d_data->vpureGPU->setToolTip("Direct opengl based rendering.\nDoes not work with multiple threads.");
 
-	m_data->vGPUThreaded = new QRadioButton("Threaded opengl rendering");
-	m_data->vGPUThreaded->setToolTip("Threaded opengl based rendering");
+	d_data->vGPUThreaded = new QRadioButton("Threaded opengl rendering");
+	d_data->vGPUThreaded->setToolTip("Threaded opengl based rendering");
 
-	m_data->pdirect = new QRadioButton("Direct rendering");
-	m_data->pdirect->setToolTip("Direct CPU based rendering (default), usually the fastest");
+	d_data->pdirect = new QRadioButton("Direct rendering");
+	d_data->pdirect->setToolTip("Direct CPU based rendering (default), usually the fastest");
 
-	m_data->ppureGPU = new QRadioButton("Opengl rendering");
-	m_data->ppureGPU->setToolTip("Direct opengl based rendering.\nDoes not work with multiple threads.");
+	d_data->ppureGPU = new QRadioButton("Opengl rendering");
+	d_data->ppureGPU->setToolTip("Direct opengl based rendering.\nDoes not work with multiple threads.");
 
-	m_data->pGPUThreaded = new QRadioButton("Threaded opengl rendering");
-	m_data->pGPUThreaded->setToolTip("Threaded opengl based rendering");
+	d_data->pGPUThreaded = new QRadioButton("Threaded opengl rendering");
+	d_data->pGPUThreaded->setToolTip("Threaded opengl based rendering");
 
 	QGroupBox* video = createGroup("Video rendering mode");
 	QVBoxLayout* vlay = new QVBoxLayout();
-	vlay->addWidget(m_data->vdirect);
-	vlay->addWidget(m_data->vpureGPU);
-	vlay->addWidget(m_data->vGPUThreaded);
+	vlay->addWidget(d_data->vdirect);
+	vlay->addWidget(d_data->vpureGPU);
+	vlay->addWidget(d_data->vGPUThreaded);
 	video->setLayout(vlay);
 
 	QGroupBox* plot = createGroup("Plot rendering mode");
 	QVBoxLayout* play = new QVBoxLayout();
-	play->addWidget(m_data->pdirect);
-	play->addWidget(m_data->ppureGPU);
-	play->addWidget(m_data->pGPUThreaded);
+	play->addWidget(d_data->pdirect);
+	play->addWidget(d_data->ppureGPU);
+	play->addWidget(d_data->pGPUThreaded);
 	plot->setLayout(play);
 
 	QVBoxLayout* lay = new QVBoxLayout();
@@ -968,40 +964,39 @@ RenderingSettings::RenderingSettings(QWidget* parent)
 }
 RenderingSettings::~RenderingSettings()
 {
-	delete m_data;
 }
 
 void RenderingSettings::applyPage()
 {
-	if (m_data->vdirect->isChecked())
+	if (d_data->vdirect->isChecked())
 		VipGuiDisplayParamaters::instance()->setVideoRenderingStrategy(VipBaseGraphicsView::Raster);
-	else if (m_data->vGPUThreaded->isChecked())
+	else if (d_data->vGPUThreaded->isChecked())
 		VipGuiDisplayParamaters::instance()->setVideoRenderingStrategy(VipBaseGraphicsView::OpenGLThread);
-	else if (m_data->vpureGPU->isChecked())
+	else if (d_data->vpureGPU->isChecked())
 		VipGuiDisplayParamaters::instance()->setVideoRenderingStrategy(VipBaseGraphicsView::OpenGL);
 
-	if (m_data->pdirect->isChecked())
+	if (d_data->pdirect->isChecked())
 		VipGuiDisplayParamaters::instance()->setPlotRenderingStrategy(VipBaseGraphicsView::Raster);
-	else if (m_data->pGPUThreaded->isChecked())
+	else if (d_data->pGPUThreaded->isChecked())
 		VipGuiDisplayParamaters::instance()->setPlotRenderingStrategy(VipBaseGraphicsView::OpenGLThread);
-	else if (m_data->ppureGPU->isChecked())
+	else if (d_data->ppureGPU->isChecked())
 		VipGuiDisplayParamaters::instance()->setPlotRenderingStrategy(VipBaseGraphicsView::OpenGL);
 }
 void RenderingSettings::updatePage()
 {
 	int st = VipGuiDisplayParamaters::instance()->videoRenderingStrategy();
 	if (st == VipBaseGraphicsView::Raster)
-		m_data->vdirect->setChecked(true);
+		d_data->vdirect->setChecked(true);
 	else if (st == VipBaseGraphicsView::OpenGLThread)
-		m_data->vGPUThreaded->setChecked(true);
+		d_data->vGPUThreaded->setChecked(true);
 	else if (st == VipBaseGraphicsView::OpenGL)
-		m_data->vpureGPU->setChecked(true);
+		d_data->vpureGPU->setChecked(true);
 
 	st = VipGuiDisplayParamaters::instance()->plotRenderingStrategy();
 	if (st == VipBaseGraphicsView::Raster)
-		m_data->pdirect->setChecked(true);
+		d_data->pdirect->setChecked(true);
 	else if (st == VipBaseGraphicsView::OpenGLThread)
-		m_data->pGPUThreaded->setChecked(true);
+		d_data->pGPUThreaded->setChecked(true);
 	else if (st == VipBaseGraphicsView::OpenGL)
-		m_data->ppureGPU->setChecked(true);
+		d_data->ppureGPU->setChecked(true);
 }

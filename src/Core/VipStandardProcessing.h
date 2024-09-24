@@ -67,7 +67,7 @@ public:
 
 private:
 	class PrivateData;
-	QSharedPointer<PrivateData> m_data;
+	QSharedPointer<PrivateData> d_data;
 };
 
 Q_DECLARE_METATYPE(VipOtherPlayerData)
@@ -367,8 +367,8 @@ protected:
 	const QVector<VipAnyData>& inputs() const;
 
 private:
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 /// Extract a feature (min, max, mean,...) from a set of samples (images, curves,...)
 class VIP_CORE_EXPORT VipSamplesFeature : public VipBaseDataFusion
@@ -391,8 +391,8 @@ protected:
 
 private:
 	void setOutput(const QVariant& v);
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 VIP_REGISTER_QOBJECT_METATYPE(VipSamplesFeature*)
@@ -682,7 +682,7 @@ protected:
 
 private:
 	VipNumericOperation m_op;
-	VipAnyData m_data;
+	VipAnyData d_data;
 };
 
 VIP_REGISTER_QOBJECT_METATYPE(VipOperationBetweenPlayers*)

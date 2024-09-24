@@ -122,19 +122,19 @@ VipWebBrowser::VipWebBrowser(QWidget* parent)
   : VipWidgetPlayer(makeWebBrowserWidget(), parent)
 {
 	this->setObjectName("VipWebBrowser");
-	m_data = new PrivateData();
-	m_data->view = widget()->findChild<QWebEngineView*>();
-	m_data->bar = widget()->findChild<VipWebBrowserToolBar*>();
+	VIP_CREATE_PRIVATE_DATA(d_data);
+	d_data->view = widget()->findChild<QWebEngineView*>();
+	d_data->bar = widget()->findChild<VipWebBrowserToolBar*>();
 
 	webEngine()->setPage(new WebPage());
 
 	connect(webEngine(), SIGNAL(titleChanged(const QString&)), this, SLOT(setWindowTitle(const QString&)));
-	connect(m_data->bar->prev, SIGNAL(triggered(bool)), webEngine(), SLOT(back()));
-	connect(m_data->bar->next, SIGNAL(triggered(bool)), webEngine(), SLOT(forward()));
-	connect(m_data->bar->reload, SIGNAL(triggered(bool)), webEngine(), SLOT(reload()));
-	connect(m_data->bar->stop, SIGNAL(triggered(bool)), webEngine(), SLOT(stop()));
-	connect(&m_data->bar->url, SIGNAL(returnPressed()), this, SLOT(setUrlInternal()));
-	connect(webEngine(), SIGNAL(iconChanged(const QIcon&)), &m_data->bar->url, SLOT(setIcon(const QIcon&)));
+	connect(d_data->bar->prev, SIGNAL(triggered(bool)), webEngine(), SLOT(back()));
+	connect(d_data->bar->next, SIGNAL(triggered(bool)), webEngine(), SLOT(forward()));
+	connect(d_data->bar->reload, SIGNAL(triggered(bool)), webEngine(), SLOT(reload()));
+	connect(d_data->bar->stop, SIGNAL(triggered(bool)), webEngine(), SLOT(stop()));
+	connect(&d_data->bar->url, SIGNAL(returnPressed()), this, SLOT(setUrlInternal()));
+	connect(webEngine(), SIGNAL(iconChanged(const QIcon&)), &d_data->bar->url, SLOT(setIcon(const QIcon&)));
 	connect(webEngine(), SIGNAL(urlChanged(const QUrl&)), this, SLOT(displayUrl(const QUrl&)));
 
 	connect(webEngine(), SIGNAL(loadStarted()), this, SLOT(loadStarted()));
@@ -150,7 +150,7 @@ VipWebBrowser::VipWebBrowser(QWidget* parent)
 
 QWebEngineView* VipWebBrowser::webEngine() const
 {
-	return m_data->view;
+	return d_data->view;
 }
 
 void VipWebBrowser::featurePermissionRequested(const QUrl&, // securityOrigin,
@@ -163,30 +163,30 @@ void VipWebBrowser::featurePermissionRequested(const QUrl&, // securityOrigin,
 
 void VipWebBrowser::setUrlInternal()
 {
-	webEngine()->load(QUrl(m_data->bar->url.text()));
+	webEngine()->load(QUrl(d_data->bar->url.text()));
 }
 void VipWebBrowser::displayUrl(const QUrl& url)
 {
-	m_data->bar->url.setText(url.toString());
+	d_data->bar->url.setText(url.toString());
 }
 
 void VipWebBrowser::loadStarted()
 {
-	m_data->bar->load.setValue(0);
-	m_data->bar->loadAction->setVisible(true);
-	m_data->bar->stop->setVisible(true);
+	d_data->bar->load.setValue(0);
+	d_data->bar->loadAction->setVisible(true);
+	d_data->bar->stop->setVisible(true);
 }
 void VipWebBrowser::loadProgress(int progress)
 {
-	m_data->bar->load.setValue(progress);
+	d_data->bar->load.setValue(progress);
 	if (progress == 100)
 		loadFinished(true);
 }
 void VipWebBrowser::loadFinished(bool ok)
 {
 	(bool)ok;
-	m_data->bar->loadAction->setVisible(false);
-	m_data->bar->stop->setVisible(false);
+	d_data->bar->loadAction->setVisible(false);
+	d_data->bar->stop->setVisible(false);
 }
 
 QWidget* VipWebBrowser::widgetForMouseEvents() const
@@ -202,7 +202,7 @@ QWidget* VipWebBrowser::widgetForMouseEvents() const
 
 QToolBar* VipWebBrowser::playerToolBar() const
 {
-	return m_data->bar;
+	return d_data->bar;
 }
 
 void VipWebBrowser::setUrl(const QString& url)

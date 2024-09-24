@@ -47,7 +47,7 @@ class QPainter;
 typedef QPair<QPainterPath, QPainterPath> PainterPaths;
 
 /// VipBoxStyle represents drawing parameters used to represent boxes, polygons or any kind of shape within the Plotting library.
-/// Uses Copy On Write.
+/// Uses Copy On Write internally.
 class VIP_PLOTTING_EXPORT VipBoxStyle
 {
 public:
@@ -137,11 +137,7 @@ public:
 	/// @brief Build the shape based on given pie
 	void computePie(const QPointF& center, const VipPie& pie, double spacing = 0);
 
-	/// @brief Create the background brush based on the shape and the given brush or gradient.
-	/// Only rectangles and pies can use adaptative gradients.
-	QBrush createBackgroundBrush() const;
-	QPen createBorderPen(const QPen& pen) const;
-
+	
 	/// @brief Returns true if the brush uses an adaptative gradient
 	bool hasBrushGradient() const;
 	/// @brief Returns true if the border pen uses an adaptative gradient
@@ -158,12 +154,17 @@ public:
 	void draw(QPainter* painter, const QBrush& brush) const;
 	void draw(QPainter* painter, const QBrush& brush, const QPen& pen) const;
 
-	/// @brief Compare 2 VipBoxStyle for equality. Only test drawinf style (pen, brush, adaptative gradients, draw lines, draw corners, radius...),
+	/// @brief Compare 2 VipBoxStyle for equality. Only test drawing style (pen, brush, adaptative gradients, draw lines, draw corners, radius...),
 	/// but not the shape itself.
 	bool operator==(const VipBoxStyle& other) const;
 	bool operator!=(const VipBoxStyle& other) const;
 
 private:
+	/// @brief Create the background brush based on the shape and the given brush or gradient.
+	/// Only rectangles and pies can use adaptative gradients.
+	QBrush createBackgroundBrush() const;
+	QPen createBorderPen(const QPen& pen) const;
+
 	void update();
 
 	struct PrivateData : QSharedData

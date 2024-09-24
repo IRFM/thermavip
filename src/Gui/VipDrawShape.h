@@ -211,8 +211,8 @@ private Q_SLOTS:
 	void checked();
 
 private:
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 class VipPlayer2D;
@@ -261,8 +261,8 @@ private Q_SLOTS:
 private:
 	// void populateStatistics(VipPlayer2D *, const QList<VipShape> & shapes);
 
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 class VIP_GUI_EXPORT VipShapeButton : public QToolButton
@@ -385,8 +385,8 @@ private Q_SLOTS:
 
 private:
 	void cleanStates();
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 /// @}

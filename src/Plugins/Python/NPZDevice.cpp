@@ -12,13 +12,12 @@ public:
 NPZDevice::NPZDevice(QObject* parent)
 	:VipIODevice(parent)
 {
-	d_data = new PrivateData();
+	VIP_CREATE_PRIVATE_DATA(d_data);
 }
 
 NPZDevice::~NPZDevice()
 {
 	close();
-	delete d_data;
 }
 
 bool NPZDevice::open(VipIODevice::OpenModes mode)
@@ -169,13 +168,12 @@ public:
 MATDevice::MATDevice(QObject* parent)
 	:VipIODevice(parent)
 {
-	d_data = new PrivateData();
+	VIP_CREATE_PRIVATE_DATA(d_data);
 }
 
 MATDevice::~MATDevice()
 {
 	close();
-	delete d_data;
 }
 
 bool MATDevice::open(VipIODevice::OpenModes mode)

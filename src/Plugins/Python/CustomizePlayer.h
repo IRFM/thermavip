@@ -25,8 +25,8 @@ private Q_SLOTS:
 private:
 	void buildScriptsMenu(QMenu *, bool * found);
 
-	class PrivateData;
-	PrivateData * m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 void customizePlayer(VipAbstractPlayer * player);

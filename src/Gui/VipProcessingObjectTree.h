@@ -64,11 +64,11 @@ public Q_SLOTS:
 
 private:
 	QSize itemSizeHint(QTreeWidgetItem* item);
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
-/// Display a VipProcessingObjectTree nto a QMenu
+/// Display a VipProcessingObjectTree into a QMenu
 class VipProcessingObjectTreeMenu : public VipDragMenu
 {
 public:
@@ -103,8 +103,8 @@ Q_SIGNALS:
 	void selected(const VipProcessingObject::Info& info);
 
 private:
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 /// @}

@@ -54,26 +54,26 @@ public:
 VipAboutDialog::VipAboutDialog()
   : QDialog(vipGetMainWindow())
 {
-	m_data = new PrivateData();
-	m_data->thermadiag = new QLabel();
-	m_data->infos = new QLabel();
-	m_data->products = new QListWidget();
-	m_data->warning = new QLabel();
-	m_data->ok = new QPushButton();
+	VIP_CREATE_PRIVATE_DATA(d_data);
+	d_data->thermadiag = new QLabel();
+	d_data->infos = new QLabel();
+	d_data->products = new QListWidget();
+	d_data->warning = new QLabel();
+	d_data->ok = new QPushButton();
 
-	m_data->thermadiag->setStyleSheet("QLabel {background: #2D2D30; }");
-	m_data->thermadiag->setPixmap(vipPixmap("Thermavip_banner.png"));
-	m_data->thermadiag->setAlignment(Qt::AlignCenter);
+	d_data->thermadiag->setStyleSheet("QLabel {background: #2D2D30; }");
+	d_data->thermadiag->setPixmap(vipPixmap("Thermavip_banner.png"));
+	d_data->thermadiag->setAlignment(Qt::AlignCenter);
 #if QT_VERSION < QT_VERSION_CHECK(5, 15, 0)
-	const QPixmap pix = m_data->thermadiag->pixmap() ? *m_data->thermadiag->pixmap() : QPixmap();
+	const QPixmap pix = d_data->thermadiag->pixmap() ? *d_data->thermadiag->pixmap() : QPixmap();
 #else
-	const QPixmap pix = m_data->thermadiag->pixmap(Qt::ReturnByValue);
+	const QPixmap pix = d_data->thermadiag->pixmap(Qt::ReturnByValue);
 #endif
-	m_data->thermadiag->setMinimumWidth(pix.width());   // +20);
-	m_data->thermadiag->setMinimumHeight(pix.height()); // +20);
-	m_data->thermadiag->setCursor(QCursor(Qt::PointingHandCursor));
-	m_data->thermadiag->installEventFilter(this);
-	// m_data->thermadiag->setProperty("href", QString("http://thermadiag.com/index.php/en/"));
+	d_data->thermadiag->setMinimumWidth(pix.width());   // +20);
+	d_data->thermadiag->setMinimumHeight(pix.height()); // +20);
+	d_data->thermadiag->setCursor(QCursor(Qt::PointingHandCursor));
+	d_data->thermadiag->installEventFilter(this);
+	// d_data->thermadiag->setProperty("href", QString("http://thermadiag.com/index.php/en/"));
 
 	QString infos = "Thermavip ";
 	if (!vipEditionVersion().isEmpty())
@@ -83,12 +83,12 @@ VipAboutDialog::VipAboutDialog()
 	infos += "<br>&#9400; " + build_time.toString("yyyy") + " <a href='http://irfm.cea.fr/'>CEA/IRFM</a>";
 	infos += "<br>All rights reserved";
 	infos += "<p>Installed products :</p>";
-	m_data->infos->setText(infos);
-	m_data->infos->setAlignment(Qt::AlignLeft);
-	m_data->infos->setTextFormat(Qt::RichText);
-	m_data->infos->setTextInteractionFlags(Qt::TextBrowserInteraction);
-	m_data->infos->setOpenExternalLinks(true);
-	m_data->infos->setStyleSheet("QLabel {margin: 5px;}");
+	d_data->infos->setText(infos);
+	d_data->infos->setAlignment(Qt::AlignLeft);
+	d_data->infos->setTextFormat(Qt::RichText);
+	d_data->infos->setTextInteractionFlags(Qt::TextBrowserInteraction);
+	d_data->infos->setOpenExternalLinks(true);
+	d_data->infos->setStyleSheet("QLabel {margin: 5px;}");
 
 	QList<VipPluginInterface*> interfaces = VipLoadPlugins::instance().loadedPlugins();
 	QStringList names = VipLoadPlugins::instance().loadedPluginNames();
@@ -101,33 +101,33 @@ VipAboutDialog::VipAboutDialog()
 
 		QListWidgetItem* item = new QListWidgetItem();
 		item->setSizeHint(pl->sizeHint());
-		m_data->products->addItem(item);
-		m_data->products->setItemWidget(item, pl);
+		d_data->products->addItem(item);
+		d_data->products->setItemWidget(item, pl);
 	}
-	m_data->products->setStyleSheet("QListWidget {margin: 5px;}");
-	// m_data->products->setMaximumWidth(500);
+	d_data->products->setStyleSheet("QListWidget {margin: 5px;}");
+	// d_data->products->setMaximumWidth(500);
 
-	m_data->warning->setText(
+	d_data->warning->setText(
 	  tr("This Software is protected by copyright law and international treaties. "
 	     "This Software is licensed (not sold), and its use is subject to a valid WRITTEN AND SIGNED Communique(r) License Agreement. "
 	     "The unauthorized use, copying or distribution of this Software may result in severe criminal or civil penalties, and will be prosecuted to the maximum extent allowed by law."));
-	m_data->warning->setWordWrap(true);
-	m_data->warning->setAlignment(Qt::AlignLeft);
-	m_data->warning->setStyleSheet("QLabel {margin: 5px;}");
+	d_data->warning->setWordWrap(true);
+	d_data->warning->setAlignment(Qt::AlignLeft);
+	d_data->warning->setStyleSheet("QLabel {margin: 5px;}");
 
 	QVBoxLayout* vlay = new QVBoxLayout();
-	vlay->addWidget(m_data->thermadiag);
-	vlay->addWidget(m_data->infos);
-	vlay->addWidget(m_data->products);
-	vlay->addWidget(m_data->warning);
+	vlay->addWidget(d_data->thermadiag);
+	vlay->addWidget(d_data->infos);
+	vlay->addWidget(d_data->products);
+	vlay->addWidget(d_data->warning);
 	// vlay->addWidget(VipLineWidget::createHLine());
 
-	m_data->ok->setText("Ok");
-	m_data->ok->setStyleSheet("QPushButton {margin: 5px;}");
+	d_data->ok->setText("Ok");
+	d_data->ok->setStyleSheet("QPushButton {margin: 5px;}");
 
 	QHBoxLayout* hlay = new QHBoxLayout();
 	hlay->addStretch(1);
-	hlay->addWidget(m_data->ok);
+	hlay->addWidget(d_data->ok);
 	vlay->addLayout(hlay);
 	vlay->setContentsMargins(0, 0, 0, 0);
 
@@ -158,12 +158,11 @@ VipAboutDialog::VipAboutDialog()
 	else
 		setLayout(vlay);
 
-	connect(m_data->ok, SIGNAL(clicked(bool)), this, SLOT(accept()));
+	connect(d_data->ok, SIGNAL(clicked(bool)), this, SLOT(accept()));
 }
 
 VipAboutDialog::~VipAboutDialog()
 {
-	delete m_data;
 }
 
 bool VipAboutDialog::eventFilter(QObject* watched, QEvent* evt)

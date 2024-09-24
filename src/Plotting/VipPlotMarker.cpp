@@ -116,14 +116,13 @@ public:
 VipPlotMarker::VipPlotMarker(const VipText& title)
   : VipPlotItemDataType(title)
 {
-	d_data = new PrivateData;
+	VIP_CREATE_PRIVATE_DATA(d_data);
 	this->setItemAttribute(VisibleLegend, false);
 }
 
 //! Destructor
 VipPlotMarker::~VipPlotMarker()
 {
-	delete d_data;
 }
 
 void VipPlotMarker::draw(QPainter* painter, const VipCoordinateSystemPtr& m) const

@@ -82,8 +82,8 @@ private Q_SLOTS:
 private:
 	QByteArray dumpSelection();
 
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 class VIP_ANNOTATION_EXPORT VisualizeDBToolWidget : public VipToolWidget

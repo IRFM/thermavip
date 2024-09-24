@@ -28,69 +28,68 @@ public:
 PySearch::PySearch(QWidget * parent)
 	:QToolBar(parent)
 {
-	m_data = new PrivateData();
-	m_data->foundEnd = m_data->foundStart = m_data->line = 0;
-	m_data->restartFromCursor = true;
+	VIP_CREATE_PRIVATE_DATA(d_data);
+	d_data->foundEnd = d_data->foundStart = d_data->line = 0;
+	d_data->restartFromCursor = true;
 	this->addSeparator();
-	m_data->close = this->addAction(vipIcon("close.png"), "Close search panel");
-	m_data->search = new QLineEdit();
-	m_data->search->setPlaceholderText("Search filter");
-	this->addWidget(m_data->search);
-	m_data->prev = this->addAction(vipIcon("search_prev.png"), "Search previous match");
-	m_data->next = this->addAction(vipIcon("search_next.png"), "Search next match");
-	m_data->reg = this->addAction(vipIcon("search_reg.png"), "Use regular expression");
-	m_data->case_sens = this->addAction(vipIcon("search_case_sensitive.png"), "Case sensitive");
-	m_data->exact = this->addAction(vipIcon("search_word.png"), "Whole word");
+	d_data->close = this->addAction(vipIcon("close.png"), "Close search panel");
+	d_data->search = new QLineEdit();
+	d_data->search->setPlaceholderText("Search filter");
+	this->addWidget(d_data->search);
+	d_data->prev = this->addAction(vipIcon("search_prev.png"), "Search previous match");
+	d_data->next = this->addAction(vipIcon("search_next.png"), "Search next match");
+	d_data->reg = this->addAction(vipIcon("search_reg.png"), "Use regular expression");
+	d_data->case_sens = this->addAction(vipIcon("search_case_sensitive.png"), "Case sensitive");
+	d_data->exact = this->addAction(vipIcon("search_word.png"), "Whole word");
 
-	m_data->reg->setCheckable(true);
-	m_data->case_sens->setCheckable(true);
-	m_data->exact->setCheckable(true);
+	d_data->reg->setCheckable(true);
+	d_data->case_sens->setCheckable(true);
+	d_data->exact->setCheckable(true);
 
 	this->setIconSize(QSize(18, 18));
 
-	connect(m_data->close, SIGNAL(triggered(bool)), this, SLOT(close(bool)));
-	connect(m_data->prev, SIGNAL(triggered(bool)), this, SLOT(searchPrev()));
-	connect(m_data->next, SIGNAL(triggered(bool)), this, SLOT(searchNext()));
-	connect(m_data->reg, SIGNAL(triggered(bool)), this, SLOT(setRegExp(bool)));
-	connect(m_data->case_sens, SIGNAL(triggered(bool)), this, SLOT(setCaseSensitive(bool)));
-	connect(m_data->exact, SIGNAL(triggered(bool)), this, SLOT(setExactMatch(bool)));
+	connect(d_data->close, SIGNAL(triggered(bool)), this, SLOT(close(bool)));
+	connect(d_data->prev, SIGNAL(triggered(bool)), this, SLOT(searchPrev()));
+	connect(d_data->next, SIGNAL(triggered(bool)), this, SLOT(searchNext()));
+	connect(d_data->reg, SIGNAL(triggered(bool)), this, SLOT(setRegExp(bool)));
+	connect(d_data->case_sens, SIGNAL(triggered(bool)), this, SLOT(setCaseSensitive(bool)));
+	connect(d_data->exact, SIGNAL(triggered(bool)), this, SLOT(setExactMatch(bool)));
 }
 
 PySearch::~PySearch()
 {
-	delete m_data;
 }
 
 void PySearch::removePreviousFormat()
 {
-	if (!m_data->document)
+	if (!d_data->document)
 		return;
-	if (m_data->foundStart >= m_data->foundEnd) 
+	if (d_data->foundStart >= d_data->foundEnd) 
 		return;
-	/*QTextBlock b = m_data->document->findBlockByLineNumber(m_data->line);
+	/*QTextBlock b = d_data->document->findBlockByLineNumber(d_data->line);
 	if (b.isValid()) {
 		QVector<QTextLayout::FormatRange> ranges = b.layout()->formats();
-		int len = m_data->foundEnd - m_data->foundStart;
+		int len = d_data->foundEnd - d_data->foundStart;
 		for (int i = 0; i < ranges.size(); ++i) {
-			if (ranges[i].start == m_data->foundStart && ranges[i].length == len) {
+			if (ranges[i].start == d_data->foundStart && ranges[i].length == len) {
 				ranges.removeAt(i);
 				--i;
 			}
 		}
 		b.layout()->setFormats(ranges);
-		m_data->document->markContentsDirty(b.position(), b.length());
+		d_data->document->markContentsDirty(b.position(), b.length());
 	}*/
 
-	if (!m_data->edit1 && !m_data->edit2) return;
-	QList<QTextEdit::ExtraSelection> selections = m_data->edit1 ? m_data->edit1->extraSelections() : m_data->edit2->extraSelections();
+	if (!d_data->edit1 && !d_data->edit2) return;
+	QList<QTextEdit::ExtraSelection> selections = d_data->edit1 ? d_data->edit1->extraSelections() : d_data->edit2->extraSelections();
 	//remove previous
 	for (int i = 0; i < selections.size(); ++i)
 		if (selections[i].format.property(QTextFormat::UserProperty + 2).toBool()) {
 			selections.removeAt(i);
 			--i;
 		}
-	if (m_data->edit1)m_data->edit1->setExtraSelections(selections);
-	else m_data->edit2->setExtraSelections(selections);
+	if (d_data->edit1)d_data->edit1->setExtraSelections(selections);
+	else d_data->edit2->setExtraSelections(selections);
 }
 
 void PySearch::format(const QTextBlock & b, int start, int end)
@@ -105,165 +104,165 @@ void PySearch::format(const QTextBlock & b, int start, int end)
 		f.format.setBackground(QBrush(Qt::yellow));
 		ranges.append(f);
 		b.layout()->setFormats(ranges);
-		m_data->document->markContentsDirty(b.position(), b.length());
+		d_data->document->markContentsDirty(b.position(), b.length());
 	}*/
 
-	if (!m_data->edit1 && !m_data->edit2) return;
+	if (!d_data->edit1 && !d_data->edit2) return;
 	removePreviousFormat();
-	QList<QTextEdit::ExtraSelection> selections = m_data->edit1 ? m_data->edit1->extraSelections() : m_data->edit2->extraSelections();
+	QList<QTextEdit::ExtraSelection> selections = d_data->edit1 ? d_data->edit1->extraSelections() : d_data->edit2->extraSelections();
 
 	QTextEdit::ExtraSelection selection;
 	selection.format.setBackground(Qt::yellow);
 	selection.format.setProperty(QTextFormat::UserProperty + 2, true);
-	selection.cursor = QTextCursor(m_data->document);
+	selection.cursor = QTextCursor(d_data->document);
 	selection.cursor.setPosition(b.position() + start);
 	selection.cursor.setPosition(b.position() + end, QTextCursor::KeepAnchor);
 	selections.append(selection);
-	if (m_data->edit1)m_data->edit1->setExtraSelections(selections);
-	else m_data->edit2->setExtraSelections(selections);
+	if (d_data->edit1)d_data->edit1->setExtraSelections(selections);
+	else d_data->edit2->setExtraSelections(selections);
 }
 
 bool PySearch::exactMatch() const
 {
-	return m_data->exact->isChecked();
+	return d_data->exact->isChecked();
 }
 bool PySearch::regExp() const
 {
-	return m_data->reg->isChecked();
+	return d_data->reg->isChecked();
 }
 bool PySearch::caseSensitive() const
 {
-	return m_data->case_sens->isChecked();
+	return d_data->case_sens->isChecked();
 }
 
 void PySearch::setEditor(QTextEdit  * ed)
 {
-	if(m_data->edit1)
-		disconnect(m_data->edit1, SIGNAL(cursorPositionChanged()), this, SLOT(restartFromCursor()));
-	m_data->edit1 = ed;
-	m_data->edit2 = nullptr;
+	if(d_data->edit1)
+		disconnect(d_data->edit1, SIGNAL(cursorPositionChanged()), this, SLOT(restartFromCursor()));
+	d_data->edit1 = ed;
+	d_data->edit2 = nullptr;
 	if (ed) {
-		connect(m_data->edit1, SIGNAL(cursorPositionChanged()), this, SLOT(restartFromCursor()));
+		connect(d_data->edit1, SIGNAL(cursorPositionChanged()), this, SLOT(restartFromCursor()));
 		setDocument(ed->document());
 	}	
 }
 void PySearch::setEditor(QPlainTextEdit  * ed)
 {
-	if (m_data->edit2)
-		disconnect(m_data->edit2, SIGNAL(cursorPositionChanged()), this, SLOT(restartFromCursor()));
-	m_data->edit1 = nullptr;
-	m_data->edit2 = ed;
+	if (d_data->edit2)
+		disconnect(d_data->edit2, SIGNAL(cursorPositionChanged()), this, SLOT(restartFromCursor()));
+	d_data->edit1 = nullptr;
+	d_data->edit2 = ed;
 	if (ed) {
-		connect(m_data->edit2, SIGNAL(cursorPositionChanged()), this, SLOT(restartFromCursor()));
+		connect(d_data->edit2, SIGNAL(cursorPositionChanged()), this, SLOT(restartFromCursor()));
 		setDocument(ed->document());
 	}
 }
 
 void PySearch::setDocument(QTextDocument * ed)
 {
-	if (m_data->document) {
+	if (d_data->document) {
 		removePreviousFormat();
-		m_data->foundStart = m_data->foundEnd = m_data->line = 0;
-		disconnect(m_data->document, SIGNAL(contentsChanged()), this, SLOT(restartFromCursor()));
+		d_data->foundStart = d_data->foundEnd = d_data->line = 0;
+		disconnect(d_data->document, SIGNAL(contentsChanged()), this, SLOT(restartFromCursor()));
 	}
-	m_data->document = ed;
+	d_data->document = ed;
 	if (ed) {
-		connect(m_data->document, SIGNAL(contentsChanged()), this, SLOT(restartFromCursor()));
+		connect(d_data->document, SIGNAL(contentsChanged()), this, SLOT(restartFromCursor()));
 	}
 }
 QTextDocument* PySearch::document() const
 {
-	return m_data->document;
+	return d_data->document;
 }
 
 QLineEdit * PySearch::search() const
 {
-	return m_data->search;
+	return d_data->search;
 }
 
 QPair<int, int> PySearch::lastFound(int * line) const
 {
 	if (*line)
-		*line = m_data->line;
-	return QPair<int, int>(m_data->foundStart, m_data->foundEnd);
+		*line = d_data->line;
+	return QPair<int, int>(d_data->foundStart, d_data->foundEnd);
 }
 
 void PySearch::search(bool forward)
 {
-	QString pattern = m_data->search->text();
-	Qt::CaseSensitivity case_sens = m_data->case_sens->isChecked() ? Qt::CaseSensitive : Qt::CaseInsensitive;
+	QString pattern = d_data->search->text();
+	Qt::CaseSensitivity case_sens = d_data->case_sens->isChecked() ? Qt::CaseSensitive : Qt::CaseInsensitive;
 	QRegExp exp;
 	if (regExp())
 	exp = QRegExp(pattern, case_sens, QRegExp::Wildcard);
 	else
 		exp = QRegExp(pattern, case_sens, QRegExp::FixedString);
 
-	QTextCursor c(m_data->document);
-	if (m_data->foundStart == m_data->foundEnd || m_data->restartFromCursor)
+	QTextCursor c(d_data->document);
+	if (d_data->foundStart == d_data->foundEnd || d_data->restartFromCursor)
 	{
-		if (m_data->edit1)
-			c = m_data->edit1->textCursor();
-		else if (m_data->edit2)
-			c = m_data->edit2->textCursor();
+		if (d_data->edit1)
+			c = d_data->edit1->textCursor();
+		else if (d_data->edit2)
+			c = d_data->edit2->textCursor();
 
-		m_data->restartFromCursor = false;
+		d_data->restartFromCursor = false;
 	}
 	else {
-		QTextBlock b = m_data->document->findBlockByLineNumber(m_data->line);
+		QTextBlock b = d_data->document->findBlockByLineNumber(d_data->line);
 		if (forward) {
-			c.setPosition(m_data->foundEnd + b.position());
-			c.setPosition(m_data->foundEnd + b.position(), QTextCursor::KeepAnchor);
+			c.setPosition(d_data->foundEnd + b.position());
+			c.setPosition(d_data->foundEnd + b.position(), QTextCursor::KeepAnchor);
 		}
 		else {
-			c.setPosition(m_data->foundStart + b.position());
-			c.setPosition(m_data->foundStart + b.position(), QTextCursor::KeepAnchor);
+			c.setPosition(d_data->foundStart + b.position());
+			c.setPosition(d_data->foundStart + b.position(), QTextCursor::KeepAnchor);
 		}
 	}
 
 	QTextDocument::FindFlags flags = 0;
-	if (m_data->case_sens->isChecked())
+	if (d_data->case_sens->isChecked())
 		flags |= QTextDocument::FindCaseSensitively;
-	if (m_data->exact->isChecked())
+	if (d_data->exact->isChecked())
 		flags |= QTextDocument::FindWholeWords;
 	if(!forward)
 		flags |= QTextDocument::FindBackward;
 
-	QTextCursor found = m_data->document->find(exp, c, flags);
+	QTextCursor found = d_data->document->find(exp, c, flags);
 	if (found.anchor() == found.position()) {
 		//restart from beginning
 		if (forward) {
-			c = QTextCursor(m_data->document);
+			c = QTextCursor(d_data->document);
 			c.setPosition(0);
 			c.setPosition(0, QTextCursor::KeepAnchor);
-			found = m_data->document->find(exp, c, flags);
+			found = d_data->document->find(exp, c, flags);
 		}
 		else {
-			c = QTextCursor(m_data->document);
-			c.setPosition(m_data->document->lastBlock().position() + m_data->document->lastBlock().length());
-			c.setPosition(m_data->document->lastBlock().position() + m_data->document->lastBlock().length(), QTextCursor::KeepAnchor);
-			found = m_data->document->find(exp, c, flags);
+			c = QTextCursor(d_data->document);
+			c.setPosition(d_data->document->lastBlock().position() + d_data->document->lastBlock().length());
+			c.setPosition(d_data->document->lastBlock().position() + d_data->document->lastBlock().length(), QTextCursor::KeepAnchor);
+			found = d_data->document->find(exp, c, flags);
 		}
 	}
 	if (found.anchor() != found.position()) {
-		QTextBlock b = m_data->document->findBlock(found.position());
+		QTextBlock b = d_data->document->findBlock(found.position());
 		if (b.isValid()) {
 			int bpos = b.position();
 			//format(b, found.anchor() - bpos, found.position() - bpos);
-			m_data->foundStart = found.anchor() - bpos;
-			m_data->foundEnd = found.position() - bpos;
-			m_data->line = b.firstLineNumber();
+			d_data->foundStart = found.anchor() - bpos;
+			d_data->foundEnd = found.position() - bpos;
+			d_data->line = b.firstLineNumber();
 
 			/*QTextCharFormat f = found.blockCharFormat();
 			f.setBackground(Qt::yellow);
 			found.setCharFormat(f);*/
 
-			if (m_data->edit1) {
-				m_data->edit1->setTextCursor(found);
-				m_data->edit1->ensureCursorVisible();
+			if (d_data->edit1) {
+				d_data->edit1->setTextCursor(found);
+				d_data->edit1->ensureCursorVisible();
 			}
-			else if (m_data->edit2) {
-				m_data->edit2->setTextCursor(found);
-				m_data->edit2->ensureCursorVisible();
+			else if (d_data->edit2) {
+				d_data->edit2->setTextCursor(found);
+				d_data->edit2->ensureCursorVisible();
 			}
 			
 		}
@@ -282,21 +281,21 @@ void PySearch::searchPrev()
 }
 void PySearch::setExactMatch(bool enable)
 {
-	m_data->exact->blockSignals(true);
-	m_data->exact->setChecked(enable);
-	m_data->exact->blockSignals(false);
+	d_data->exact->blockSignals(true);
+	d_data->exact->setChecked(enable);
+	d_data->exact->blockSignals(false);
 }
 void PySearch::setRegExp(bool enable)
 {
-	m_data->reg->blockSignals(true);
-	m_data->reg->setChecked(enable);
-	m_data->reg->blockSignals(false);
+	d_data->reg->blockSignals(true);
+	d_data->reg->setChecked(enable);
+	d_data->reg->blockSignals(false);
 }
 void PySearch::setCaseSensitive(bool enable)
 {
-	m_data->case_sens->blockSignals(true);
-	m_data->case_sens->setChecked(enable);
-	m_data->case_sens->blockSignals(false);
+	d_data->case_sens->blockSignals(true);
+	d_data->case_sens->setChecked(enable);
+	d_data->case_sens->blockSignals(false);
 }
 void PySearch::close(bool)
 {
@@ -305,7 +304,7 @@ void PySearch::close(bool)
 
 void PySearch::restartFromCursor()
 {
-	m_data->restartFromCursor = true;
+	d_data->restartFromCursor = true;
 }
 
 void PySearch::showEvent(QShowEvent *)
@@ -315,7 +314,7 @@ void PySearch::showEvent(QShowEvent *)
 void PySearch::hideEvent(QHideEvent *)
 {
 	removePreviousFormat();
-	m_data->foundStart = m_data->foundEnd = m_data->line = 0;
+	d_data->foundStart = d_data->foundEnd = d_data->line = 0;
 }
 
 

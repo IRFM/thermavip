@@ -118,10 +118,13 @@ private:
 	static double mapFromView(QGraphicsView* view, int length);
 	static int mapToView(QGraphicsView* view, double length);
 
-	class PrivateData;
-	PrivateData* d_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
+
+/// @brief A VipBorderItem used to add a spaces when multiple VipBorderItem
+/// are displayed on the same border.
 class VipSpacerItem : public VipBorderItem
 {
 public:

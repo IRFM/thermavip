@@ -71,7 +71,7 @@ class VIP_CORE_EXPORT VipAnyData
 	qint64 m_source;
 	qint64 m_time;
 	QVariantMap m_attributes;
-	QVariant m_data;
+	QVariant d_data;
 
 public:
 	VipAnyData();
@@ -108,9 +108,9 @@ public:
 	QString yUnit() const { return m_attributes["YUnit"].toString(); }
 	QString zUnit() const { return m_attributes["ZUnit"].toString(); }
 
-	void setData(const QVariant& data) { m_data = data; }
-	void setData(QVariant&& data) { m_data = std::move(data); }
-	const QVariant& data() const { return m_data; }
+	void setData(const QVariant& data) { d_data = data; }
+	void setData(QVariant&& data) { d_data = std::move(data); }
+	const QVariant& data() const { return d_data; }
 
 	void setTime(qint64 time) { m_time = time; }
 	qint64 time() const { return m_time; }
@@ -125,12 +125,12 @@ public:
 	}
 	qint64 source() const { return m_source; }
 
-	bool isEmpty() const { return m_data.userType() == 0; }
+	bool isEmpty() const { return d_data.userType() == 0; }
 	bool isValid() const { return !isEmpty(); }
 	template<class T>
 	T value() const
 	{
-		return m_data.value<T>();
+		return d_data.value<T>();
 	}
 
 	/// Returns an approximation of the memory footprint for this object.
@@ -267,8 +267,8 @@ private:
 	void add(VipProcessingObject*);
 	void remove(VipProcessingObject*);
 
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 /// @brief VipDataList is an abstract class representing a list of VipAnyData going to the input of a VipProcessingObject.
@@ -408,7 +408,7 @@ public:
 /// @brief A thread safe VipDataList that only stores and returns the last incoming data
 class VIP_CORE_EXPORT VipLastAvailableList : public VipDataList
 {
-	VipAnyData m_data;
+	VipAnyData d_data;
 	bool m_has_new_data;
 	VipSpinlock m_mutex;
 
@@ -591,8 +591,8 @@ Q_SIGNALS:
 	void dataSent(VipProcessingIO* io, const VipAnyData& data);
 
 private:
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 VIP_REGISTER_QOBJECT_METATYPE(VipConnection*)
@@ -688,15 +688,15 @@ public:
 	/// @brief Set the parent VipProcessingObject. You should not call this function yourself.
 	virtual void setParentProcessing(VipProcessingObject* parent);
 
-	bool operator==(const VipProcessingIO& other) { return m_data == other.m_data; }
-	bool operator!=(const VipProcessingIO& other) { return m_data != other.m_data; }
+	bool operator==(const VipProcessingIO& other) { return d_data == other.d_data; }
+	bool operator!=(const VipProcessingIO& other) { return d_data != other.d_data; }
 
 protected:
 	void dirtyParentProcessingIO(VipProcessingIO* io);
 
 private:
 	class PrivateData;
-	QSharedPointer<PrivateData> m_data;
+	QSharedPointer<PrivateData> d_data;
 };
 
 /// @brief A VipProcessingIO with a VipConnectionPtr.
@@ -725,7 +725,7 @@ public:
 
 private:
 	class PrivateData;
-	QSharedPointer<PrivateData> m_data;
+	QSharedPointer<PrivateData> d_data;
 };
 
 /// @brief A VipProcessingIO that is a container for any number of VipProcessingIO pointers.
@@ -738,42 +738,42 @@ public:
 
 	VipMultipleProcessingIO(Type t, const QString& name)
 	  : VipProcessingIO(t, name)
-	  , m_data(new PrivateData())
+	  , d_data(new PrivateData())
 	{
 	}
 	VipMultipleProcessingIO(const VipMultipleProcessingIO& other)
 	  : VipProcessingIO(other)
-	  , m_data(other.m_data)
+	  , d_data(other.d_data)
 	{
 	}
 	~VipMultipleProcessingIO() {}
 
 	/// @brief Returns the vector of VipProcessingIO pointers
-	const VectorType& vector() const { return m_data->vector; }
+	const VectorType& vector() const { return d_data->vector; }
 	/// @brief Returns the number of VipProcessingIO this VipMultipleProcessingIO conatins
-	int count() const { return m_data->vector.size(); }
+	int count() const { return d_data->vector.size(); }
 
 	/// @brief Set the maximum number of VipProcessingIO this object can contain
 	void setMaxSize(int size)
 	{
-		m_data->max_size = size;
+		d_data->max_size = size;
 		if (count() > size)
 			resize(size);
 	}
 	/// @brief Returns the maximum number of VipProcessingIO this object can contain
-	int maxSize() const { return m_data->max_size; }
+	int maxSize() const { return d_data->max_size; }
 
 	/// @brief Set the minimum number of VipProcessingIO this object can contain
 	void setMinSize(int size)
 	{
 		if (size < 0)
 			size = 0;
-		m_data->min_size = size;
+		d_data->min_size = size;
 		if (count() < size)
 			resize(size);
 	}
 	/// @brief Returns the minimum number of VipProcessingIO this object can contain
-	int minSize() const { return m_data->min_size; }
+	int minSize() const { return d_data->min_size; }
 
 	/// @brief Insert a VipProcessingIO at given position
 	/// @param pos insert position
@@ -781,12 +781,12 @@ public:
 	/// @return true on success, false otherwise
 	bool insert(int pos, const TYPE& val)
 	{
-		if (count() >= m_data->max_size)
+		if (count() >= d_data->max_size)
 			return false;
 		TYPE* t = new TYPE(val);
 		t->setParentProcessing(parentProcessing());
-		m_data->vector.insert(pos, t);
-		added(m_data->vector.back());
+		d_data->vector.insert(pos, t);
+		added(d_data->vector.back());
 		dirtyParentProcessingIO(this);
 		return true;
 	}
@@ -800,18 +800,18 @@ public:
 	/// Return true on success, false otherwise.
 	bool setAt(int pos, const TYPE& val)
 	{
-		if (pos >= m_data->max_size || pos < 0)
+		if (pos >= d_data->max_size || pos < 0)
 			return false;
 		if (pos >= count())
 			resize(pos + 1);
-		*m_data->vector[pos] = val;
-		added(m_data->vector[pos]);
+		*d_data->vector[pos] = val;
+		added(d_data->vector[pos]);
 		dirtyParentProcessingIO(this);
 		return true;
 	}
 
 	/// @brief Add a VipProcessingIO
-	bool add(const TYPE& val) { return insert(m_data->vector.size(), val); }
+	bool add(const TYPE& val) { return insert(d_data->vector.size(), val); }
 	/// @brief Add a new VipProcessingIO with given name
 	bool add(const QString& name) { return add(TYPE(name)); }
 	/// Add a new VipProcessingIO that inherits this VipMultipleProcessingIO name
@@ -819,14 +819,14 @@ public:
 	/// Resize this VipMultipleProcessingIO
 	bool resize(int size)
 	{
-		if (size < m_data->min_size || size > m_data->max_size)
+		if (size < d_data->min_size || size > d_data->max_size)
 			return false;
 		if (size < 0)
 			size = 0;
 		if (size < count()) {
 			for (int i = size; i < count(); ++i)
-				delete m_data->vector[i];
-			m_data->vector.resize(size);
+				delete d_data->vector[i];
+			d_data->vector.resize(size);
 			dirtyParentProcessingIO(this);
 		}
 		else if (size > count()) {
@@ -839,22 +839,22 @@ public:
 	/// Remove the VipProcessingIO at given index
 	bool removeAt(int index)
 	{
-		if (count() <= m_data->min_size)
+		if (count() <= d_data->min_size)
 			return false;
-		delete m_data->vector[index];
-		m_data->vector.removeAt(index);
+		delete d_data->vector[index];
+		d_data->vector.removeAt(index);
 		dirtyParentProcessingIO(this);
 		return true;
 	}
 	/// Clear the VipMultipleProcessingIO
 	bool clear()
 	{
-		if (m_data->min_size > 0)
+		if (d_data->min_size > 0)
 			return false;
-		while (m_data->vector.size()) {
-			m_data->vector[0]->clearConnection();
-			delete m_data->vector[0];
-			m_data->vector.removeAt(0);
+		while (d_data->vector.size()) {
+			d_data->vector[0]->clearConnection();
+			delete d_data->vector[0];
+			d_data->vector.removeAt(0);
 		}
 		dirtyParentProcessingIO(this);
 		return true;
@@ -862,33 +862,33 @@ public:
 	/// Returns the index of the VipProcessingIO with given name
 	int indexOf(const QString& name) const
 	{
-		for (int i = 0; i < m_data->vector.size(); ++i)
-			if (m_data->vector[i]->name() == name)
+		for (int i = 0; i < d_data->vector.size(); ++i)
+			if (d_data->vector[i]->name() == name)
 				return i;
 		return -1;
 	}
 	/// Returns the VipProcessingIO at given index
-	TYPE* at(int index) { return m_data->vector[index]; }
+	TYPE* at(int index) { return d_data->vector[index]; }
 	/// Returns the VipProcessingIO at given index
-	const TYPE* at(int index) const { return m_data->vector[index]; }
+	const TYPE* at(int index) const { return d_data->vector[index]; }
 	/// Reimplemented from #VipProcessingIO::data().
 	/// Returns the the data of the last VipProcessingIO.
-	virtual VipAnyData data() const { return m_data->vector.back()->data(); }
+	virtual VipAnyData data() const { return d_data->vector.back()->data(); }
 	/// Reimplemented from #VipProcessingIO::setData().
 	/// Set the data of the last VipProcessingIO.
-	virtual void setData(const VipAnyData& d) { m_data->vector.back()->setData(d); }
+	virtual void setData(const VipAnyData& d) { d_data->vector.back()->setData(d); }
 	/// Clear all VipProcessingIO connections
 	virtual void clearConnection()
 	{
-		for (int i = 0; i < m_data->vector.size(); ++i)
-			m_data->vector[i]->clearConnection();
+		for (int i = 0; i < d_data->vector.size(); ++i)
+			d_data->vector[i]->clearConnection();
 	}
 	/// Set the parent VipProcessingObject. You should not call this function yourself.
 	virtual void setParentProcessing(VipProcessingObject* parent)
 	{
 		VipProcessingIO::setParentProcessing(parent);
-		for (int i = 0; i < m_data->vector.size(); ++i)
-			m_data->vector[i]->setParentProcessing(parent);
+		for (int i = 0; i < d_data->vector.size(); ++i)
+			d_data->vector[i]->setParentProcessing(parent);
 		dirtyParentProcessingIO(this);
 	}
 
@@ -915,7 +915,7 @@ private:
 		int min_size;
 		int max_size;
 	};
-	QSharedPointer<PrivateData> m_data;
+	QSharedPointer<PrivateData> d_data;
 };
 
 /// A #VipProcessingObject input.
@@ -1035,7 +1035,7 @@ private:
 ///
 class VIP_CORE_EXPORT VipOutput : public UniqueProcessingIO
 {
-	QSharedPointer<VipAnyData> m_data;
+	QSharedPointer<VipAnyData> d_data;
 	QList<VipAnyData> m_buffer;
 	VipSpinlock m_buffer_lock;
 	bool m_bufferize_outputs;
@@ -1123,7 +1123,7 @@ public:
 /// It can be connected to a #VipOutput like a #VipInput.
 class VIP_CORE_EXPORT VipProperty : public UniqueProcessingIO
 {
-	QSharedPointer<VipAnyData> m_data;
+	QSharedPointer<VipAnyData> d_data;
 	VipSpinlock m_lock;
 
 public:
@@ -1984,8 +1984,8 @@ private:
 
 	void run();
 
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 template<class ProcessingType>
@@ -2378,8 +2378,8 @@ protected:
 
 private:
 	void computeParams();
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 VIP_REGISTER_QOBJECT_METATYPE(VipProcessingList*)
@@ -2455,8 +2455,8 @@ private Q_SLOTS:
 	void dirtyShape();
 
 private:
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 /// @brief Processing taking any kind and number of inputs, and send them one by one to the unique output.

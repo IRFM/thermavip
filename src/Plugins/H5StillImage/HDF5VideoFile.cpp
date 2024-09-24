@@ -204,33 +204,32 @@ public:
 HDF5VideoReader::HDF5VideoReader(QObject * parent)
 	:VipTimeRangeBasedGenerator(parent)
 {
-	m_data = new PrivateData();
+	VIP_CREATE_PRIVATE_DATA(d_data);
 	outputAt(0)->setData(VipNDArray());
 }
 
 HDF5VideoReader::~HDF5VideoReader()
 {
 	close();
-	delete m_data;
 }
 
 bool HDF5VideoReader::open(VipIODevice::OpenModes mode)
 {
-	m_data->imagesName.clear();
-	m_data->attributesName.clear();
-	m_data->file.clear();
-	m_data->set.clear();
-	m_data->space.clear();
-	m_data->t_set.clear();
-	m_data->t_space.clear();
-	m_data->a_set.clear();
-	m_data->a_space.clear();
-	m_data->imageSize = QSize(0, 0);
-	m_data->pos = 0;
-	m_data->count = 0;
-	m_data->dynAttributeValues.clear();
-	m_data->dynAttributes.clear();
-	m_data->dynSetNames.clear();
+	d_data->imagesName.clear();
+	d_data->attributesName.clear();
+	d_data->file.clear();
+	d_data->set.clear();
+	d_data->space.clear();
+	d_data->t_set.clear();
+	d_data->t_space.clear();
+	d_data->a_set.clear();
+	d_data->a_space.clear();
+	d_data->imageSize = QSize(0, 0);
+	d_data->pos = 0;
+	d_data->count = 0;
+	d_data->dynAttributeValues.clear();
+	d_data->dynAttributes.clear();
+	d_data->dynSetNames.clear();
 
 	setOpenMode(NotOpen);
 
@@ -239,43 +238,43 @@ bool HDF5VideoReader::open(VipIODevice::OpenModes mode)
 	if (mode != VipIODevice::ReadOnly)
 		return false;
 
-	//m_data->file = H5OpenQIODevice(createDevice(filename, QIODevice::ReadOnly));
-	m_data->file = H5Fopen(filename.toLatin1().data(), H5F_ACC_RDONLY, H5P_DEFAULT);
-	if (m_data->file.id < 0)
+	//d_data->file = H5OpenQIODevice(createDevice(filename, QIODevice::ReadOnly));
+	d_data->file = H5Fopen(filename.toLatin1().data(), H5F_ACC_RDONLY, H5P_DEFAULT);
+	if (d_data->file.id < 0)
 	{
-		m_data->file = H5OpenQIODevice(createDevice(filename, QIODevice::ReadOnly));
+		d_data->file = H5OpenQIODevice(createDevice(filename, QIODevice::ReadOnly));
 	}
 
-	if (m_data->file.id < 0)
+	if (d_data->file.id < 0)
 	{
 		close();
 		return false;
 	}
 
 	//look for dynamic attributes
-	m_data->dynAttributes = H5Gopen1(m_data->file, "dynamic_attributes");
-	if (m_data->dynAttributes.id > 0)
+	d_data->dynAttributes = H5Gopen1(d_data->file, "dynamic_attributes");
+	if (d_data->dynAttributes.id > 0)
 	{
 		//look for all datasets
 		H5G_info_t oinfo;
-		herr_t ret = H5Gget_info(m_data->dynAttributes, &oinfo);
+		herr_t ret = H5Gget_info(d_data->dynAttributes, &oinfo);
 
 		if (ret == 0)
 		{
 			for (int i = 0; i < (int)oinfo.nlinks; ++i)
 			{
 				QByteArray name(50, 0);
-				int size = H5Gget_objname_by_idx(m_data->dynAttributes, i, name.data(), name.size());
+				int size = H5Gget_objname_by_idx(d_data->dynAttributes, i, name.data(), name.size());
 				if (size > name.size())
 				{
 					name = QByteArray(size, 0);
-					H5Gget_objname_by_idx(m_data->dynAttributes, i, name.data(), name.size());
+					H5Gget_objname_by_idx(d_data->dynAttributes, i, name.data(), name.size());
 				}
-				H5G_obj_t type = H5Gget_objtype_by_idx(m_data->dynAttributes, i);
+				H5G_obj_t type = H5Gget_objtype_by_idx(d_data->dynAttributes, i);
 
 				if (type == H5G_DATASET)
 				{
-					hset set = H5Dopen(m_data->dynAttributes, name.data(), H5P_DEFAULT);
+					hset set = H5Dopen(d_data->dynAttributes, name.data(), H5P_DEFAULT);
 					hspace space = H5Dget_space(set);
 
 					hsize_t dims[32];
@@ -301,8 +300,8 @@ bool HDF5VideoReader::open(VipIODevice::OpenModes mode)
 						herr_t status = H5Dread(set, atype_mem.id, mem, space, H5P_DEFAULT, attribute.intAttribute.data());
 						if (status == 0)
 						{
-							m_data->dynAttributeValues.append(attribute);
-							m_data->dynSetNames.append(name);
+							d_data->dynAttributeValues.append(attribute);
+							d_data->dynSetNames.append(name);
 						}
 					}
 					else if (H5Tequal(atype_mem.id, H5T_NATIVE_INT64) > 0)
@@ -316,8 +315,8 @@ bool HDF5VideoReader::open(VipIODevice::OpenModes mode)
 						herr_t status = H5Dread(set, atype_mem.id, mem, space, H5P_DEFAULT, attribute.int64Attribute.data());
 						if (status == 0)
 						{
-							m_data->dynAttributeValues.append(attribute);
-							m_data->dynSetNames.append(name);
+							d_data->dynAttributeValues.append(attribute);
+							d_data->dynSetNames.append(name);
 						}
 					}
 					else if (H5Tequal(atype_mem.id, H5T_NATIVE_DOUBLE) > 0)
@@ -331,8 +330,8 @@ bool HDF5VideoReader::open(VipIODevice::OpenModes mode)
 						herr_t status = H5Dread(set, atype_mem.id, mem, space, H5P_DEFAULT, attribute.doubleAttribute.data());
 						if (status == 0)
 						{
-							m_data->dynAttributeValues.append(attribute);
-							m_data->dynSetNames.append(name);
+							d_data->dynAttributeValues.append(attribute);
+							d_data->dynSetNames.append(name);
 						}
 					}
 				}
@@ -344,25 +343,25 @@ bool HDF5VideoReader::open(VipIODevice::OpenModes mode)
 	QString images_dataset;
 	{
 		H5G_info_t oinfo;
-		herr_t ret = H5Gget_info(m_data->file, &oinfo);
+		herr_t ret = H5Gget_info(d_data->file, &oinfo);
 
 		if (ret == 0)
 		{
 			for (int i = 0; i < (int)oinfo.nlinks; ++i)
 			{
 				QByteArray name(50, 0);
-				int size = H5Gget_objname_by_idx(m_data->file, i, name.data(), name.size());
+				int size = H5Gget_objname_by_idx(d_data->file, i, name.data(), name.size());
 				if (size > name.size())
 				{
 					name = QByteArray(size, 0);
-					H5Gget_objname_by_idx(m_data->file, i, name.data(), name.size());
+					H5Gget_objname_by_idx(d_data->file, i, name.data(), name.size());
 				}
-				H5G_obj_t type = H5Gget_objtype_by_idx(m_data->file, i);
+				H5G_obj_t type = H5Gget_objtype_by_idx(d_data->file, i);
 				name = name.mid(0, size);
 				if (type == H5G_DATASET)
 				{
 					//we found a dataset, open it and retrieve its dimensions
-					hset set = H5Dopen(m_data->file, name.data(), H5P_DEFAULT);
+					hset set = H5Dopen(d_data->file, name.data(), H5P_DEFAULT);
 					hspace space = H5Dget_space(set);
 
 					hsize_t dims[32];
@@ -392,19 +391,19 @@ bool HDF5VideoReader::open(VipIODevice::OpenModes mode)
 		return false;
 	}
 
-	m_data->imagesName = images_dataset;
+	d_data->imagesName = images_dataset;
 
 
-	m_data->space.clear();
-	m_data->set.clear();
-	m_data->set = H5Dopen(m_data->file, images_dataset.toLatin1().data(), H5P_DEFAULT);
-	m_data->space = H5Dget_space(m_data->set);
+	d_data->space.clear();
+	d_data->set.clear();
+	d_data->set = H5Dopen(d_data->file, images_dataset.toLatin1().data(), H5P_DEFAULT);
+	d_data->space = H5Dget_space(d_data->set);
 
 	int rank;
 	hsize_t dims[32];
 
-	rank = H5Sget_simple_extent_ndims(m_data->space);
-	H5Sget_simple_extent_dims(m_data->space, dims, nullptr);
+	rank = H5Sget_simple_extent_ndims(d_data->space);
+	H5Sget_simple_extent_dims(d_data->space, dims, nullptr);
 
 	if (rank != 3)
 	{
@@ -412,22 +411,22 @@ bool HDF5VideoReader::open(VipIODevice::OpenModes mode)
 		return false;
 	}
 
-	m_data->count = dims[2];
-	m_data->imageSize = QSize(dims[1], dims[0]);
-	if (m_data->imageSize.width() == 0 || m_data->imageSize.height() == 0)
+	d_data->count = dims[2];
+	d_data->imageSize = QSize(dims[1], dims[0]);
+	if (d_data->imageSize.width() == 0 || d_data->imageSize.height() == 0)
 	{
 		close();
 		return false;
 	}
 
 	//open and read the timestamps dataset
-	VipTimestamps timestamps(m_data->count, 0);
+	VipTimestamps timestamps(d_data->count, 0);
 
-	m_data->t_set = H5Dopen(m_data->file, "timestamps", H5P_DEFAULT);
-	m_data->t_space = H5Dget_space(m_data->t_set);
-	rank = H5Sget_simple_extent_ndims(m_data->t_space);
-	H5Sget_simple_extent_dims(m_data->t_space, dims, nullptr);
-	if (rank != 1 || dims[0] != (unsigned)m_data->count)
+	d_data->t_set = H5Dopen(d_data->file, "timestamps", H5P_DEFAULT);
+	d_data->t_space = H5Dget_space(d_data->t_set);
+	rank = H5Sget_simple_extent_ndims(d_data->t_space);
+	H5Sget_simple_extent_dims(d_data->t_space, dims, nullptr);
+	if (rank != 1 || dims[0] != (unsigned)d_data->count)
 	{
 		//create dumy timestamps
 		for (int i = 0; i < timestamps.size(); ++i)
@@ -437,14 +436,14 @@ bool HDF5VideoReader::open(VipIODevice::OpenModes mode)
 	else
 	{
 		//read the whole timestamp vector
-		hsize_t t_dim[1] = { (hsize_t)m_data->count }, t_offset[1] = { (hsize_t)0 };
-		hspace t_space = H5Dget_space(m_data->t_set);
+		hsize_t t_dim[1] = { (hsize_t)d_data->count }, t_offset[1] = { (hsize_t)0 };
+		hspace t_space = H5Dget_space(d_data->t_set);
 		H5Sselect_hyperslab(t_space, H5S_SELECT_SET, t_offset, nullptr, t_dim, nullptr);
 		hspace t_mem = H5Screate_simple(1, t_dim, nullptr);
-		H5Dread(m_data->t_set, H5T_NATIVE_INT64, t_mem, t_space, H5P_DEFAULT, timestamps.data());
+		H5Dread(d_data->t_set, H5T_NATIVE_INT64, t_mem, t_space, H5P_DEFAULT, timestamps.data());
 
 		//update timestamps unit if necessary
-		/*if (m_data->count)
+		/*if (d_data->count)
 		{
 		//if stored timestamps are bigger than current date, they are in nanoseconds, don't touch
 		if (timestamps.first() > QDateTime::currentMSecsSinceEpoch())
@@ -466,11 +465,11 @@ bool HDF5VideoReader::open(VipIODevice::OpenModes mode)
 
 	//update fps (in images/s)
 	qint64 sampling = std::numeric_limits<qint64>::max();;
-	for (int i = 1; i < m_data->count; ++i)
+	for (int i = 1; i < d_data->count; ++i)
 		sampling = qMin(sampling, timestamps[i] - timestamps[i - 1]);
 
 	if (sampling)
-		m_data->fps = (1.0 / sampling) * 1000000000.0;
+		d_data->fps = (1.0 / sampling) * 1000000000.0;
 
 	//load attributes(if any)
 	AutoFindAttributesName();
@@ -487,38 +486,38 @@ bool HDF5VideoReader::open(VipIODevice::OpenModes mode)
 
 void HDF5VideoReader::close()
 {
-	m_data->imagesName.clear();
-	m_data->attributesName.clear();
-	m_data->file.clear();
-	m_data->set.clear();
-	m_data->space.clear();
-	m_data->t_set.clear();
-	m_data->t_space.clear();
-	m_data->a_set.clear();
-	m_data->a_space.clear();
-	m_data->imageSize = QSize(0, 0);
-	m_data->pos = 0;
-	m_data->count = 0;
-	m_data->dynAttributeValues.clear();
-	m_data->dynAttributes.clear();
-	m_data->dynSetNames.clear();
+	d_data->imagesName.clear();
+	d_data->attributesName.clear();
+	d_data->file.clear();
+	d_data->set.clear();
+	d_data->space.clear();
+	d_data->t_set.clear();
+	d_data->t_space.clear();
+	d_data->a_set.clear();
+	d_data->a_space.clear();
+	d_data->imageSize = QSize(0, 0);
+	d_data->pos = 0;
+	d_data->count = 0;
+	d_data->dynAttributeValues.clear();
+	d_data->dynAttributes.clear();
+	d_data->dynSetNames.clear();
 	setOpenMode(NotOpen);
 	VipIODevice::close();
 }
 
 QSize HDF5VideoReader::imageSize() const
 {
-	return m_data->imageSize;
+	return d_data->imageSize;
 }
 
 QString HDF5VideoReader::imageDataSet() const
 {
-	return m_data->imagesName;
+	return d_data->imagesName;
 }
 
 QString HDF5VideoReader::attributeDataSet() const
 {
-	return m_data->attributesName;
+	return d_data->attributesName;
 }
 
 bool HDF5VideoReader::AutoFindAttributesName()
@@ -526,7 +525,7 @@ bool HDF5VideoReader::AutoFindAttributesName()
 
 	H5G_info_t oinfo;
 
-	herr_t ret = H5Gget_info(m_data->file, &oinfo);
+	herr_t ret = H5Gget_info(d_data->file, &oinfo);
 
 	if (ret != 0)
 		return false;
@@ -534,13 +533,13 @@ bool HDF5VideoReader::AutoFindAttributesName()
 	for (int i = 0; i < (int)oinfo.nlinks; ++i)
 	{
 		QByteArray name(50, 0);
-		int size = H5Gget_objname_by_idx(m_data->file, i, name.data(), name.size());
+		int size = H5Gget_objname_by_idx(d_data->file, i, name.data(), name.size());
 		if (size > name.size())
 		{
 			name = QByteArray(size, 0);
-			H5Gget_objname_by_idx(m_data->file, i, name.data(), name.size());
+			H5Gget_objname_by_idx(d_data->file, i, name.data(), name.size());
 		}
-		H5G_obj_t type = H5Gget_objtype_by_idx(m_data->file, i);
+		H5G_obj_t type = H5Gget_objtype_by_idx(d_data->file, i);
 
 		if (type == H5G_DATASET)
 		{
@@ -549,7 +548,7 @@ bool HDF5VideoReader::AutoFindAttributesName()
 			if (attributes.size())
 			{
 				this->mergeAttributes(attributes);
-				m_data->attributesName = name;
+				d_data->attributesName = name;
 				return true;
 			}
 		}
@@ -562,7 +561,7 @@ bool HDF5VideoReader::AutoFindAttributesName()
 
 QVariantMap HDF5VideoReader::ReadAttributes(const QString & dataset_name) const
 {
-	hid_t set_id = H5Dopen(m_data->file, dataset_name.toLatin1().data(), H5P_DEFAULT);
+	hid_t set_id = H5Dopen(d_data->file, dataset_name.toLatin1().data(), H5P_DEFAULT);
 
 	if (set_id < 0)
 		return QVariantMap();
@@ -600,7 +599,7 @@ QVariantMap HDF5VideoReader::ReadAttributes(const QString & dataset_name) const
 		QVariant attribute_value;
 		//read the attributes value
 
-		/*	hattr attr = H5Aopen_name(m_data->a_set,attribute_name.toLatin1().data());
+		/*	hattr attr = H5Aopen_name(d_data->a_set,attribute_name.toLatin1().data());
 		if(attr.id < 0)
 		continue;
 		*/
@@ -652,7 +651,7 @@ bool HDF5VideoReader::readData(qint64 time)
 		return false;
 
 	int qt_type = QMetaType::Double;
-	if (hid_t type = H5Dget_type(m_data->set))
+	if (hid_t type = H5Dget_type(d_data->set))
 	{
 		H5T_order_t order = H5Tget_order(type);
 		if (order == H5T_ORDER_LE)
@@ -664,14 +663,14 @@ bool HDF5VideoReader::readData(qint64 time)
 	}
 
 	//store the data in a double image
-	VipNDArray ar(qt_type, vipVector(m_data->imageSize.height(), m_data->imageSize.width()));
+	VipNDArray ar(qt_type, vipVector(d_data->imageSize.height(), d_data->imageSize.width()));
 	void * data = ar.data();
 	hid_t data_type = qtToHDF5(ar.dataType());
 
-	hsize_t dims[3] = { (hsize_t)m_data->imageSize.height(),(hsize_t)m_data->imageSize.width(),1 };
+	hsize_t dims[3] = { (hsize_t)d_data->imageSize.height(),(hsize_t)d_data->imageSize.width(),1 };
 
 	//select hyperslab
-	hspace space = H5Dget_space(m_data->set);
+	hspace space = H5Dget_space(d_data->set);
 	hsize_t offset[3] = { 0,0,(hsize_t)pos };
 	H5Sselect_hyperslab(space, H5S_SELECT_SET, offset, nullptr, dims, nullptr);
 
@@ -680,7 +679,7 @@ bool HDF5VideoReader::readData(qint64 time)
 	hspace mem = H5Screate_simple(3, dims, nullptr);
 
 	//read data
-	herr_t status = H5Dread(m_data->set, data_type, mem, space, H5P_DEFAULT, data);
+	herr_t status = H5Dread(d_data->set, data_type, mem, space, H5P_DEFAULT, data);
 
 	if (status != 0)
 		return false;
@@ -688,10 +687,10 @@ bool HDF5VideoReader::readData(qint64 time)
 	VipAnyData out = create(QVariant::fromValue(ar));
 
 	//set the dynamic attributes
-	for (int i = 0; i < m_data->dynAttributeValues.size(); ++i)
+	for (int i = 0; i < d_data->dynAttributeValues.size(); ++i)
 	{
-		QString name = m_data->dynSetNames[i];
-		DynAttribute attrs = m_data->dynAttributeValues[i];
+		QString name = d_data->dynSetNames[i];
+		DynAttribute attrs = d_data->dynAttributeValues[i];
 		QVariant value;
 		if (attrs.type == QVariant::Int && pos < attrs.intAttribute.size())
 			value = attrs.intAttribute[pos];
@@ -743,26 +742,25 @@ public:
 HDF5_ECRHVideoReader::HDF5_ECRHVideoReader(QObject * parent)
 	:VipTimeRangeBasedGenerator(parent)
 {
-	m_data = new PrivateData();
+	VIP_CREATE_PRIVATE_DATA(d_data);
 	outputAt(0)->setData(VipNDArray());
 }
 
 HDF5_ECRHVideoReader::~HDF5_ECRHVideoReader()
 {
 	close();
-	delete m_data;
 }
 
 bool HDF5_ECRHVideoReader::open(VipIODevice::OpenModes mode)
 {
-	m_data->imagesName.clear();
-	m_data->attributesName.clear();
-	m_data->file.clear();
-	m_data->set.clear();
-	m_data->space.clear();
-	m_data->imageSize = QSize(0, 0);
-	m_data->pos = 0;
-	m_data->count = 0;
+	d_data->imagesName.clear();
+	d_data->attributesName.clear();
+	d_data->file.clear();
+	d_data->set.clear();
+	d_data->space.clear();
+	d_data->imageSize = QSize(0, 0);
+	d_data->pos = 0;
+	d_data->count = 0;
 
 	setOpenMode(NotOpen);
 
@@ -771,9 +769,9 @@ bool HDF5_ECRHVideoReader::open(VipIODevice::OpenModes mode)
 	if (mode != VipIODevice::ReadOnly)
 		return false;
 
-	m_data->file = H5OpenQIODevice(createDevice(filename, QIODevice::ReadOnly));
-	//m_data->file =H5Fopen  (filename.toLatin1().data(), H5F_ACC_RDONLY, H5P_DEFAULT);
-	if (m_data->file.id < 0)
+	d_data->file = H5OpenQIODevice(createDevice(filename, QIODevice::ReadOnly));
+	//d_data->file =H5Fopen  (filename.toLatin1().data(), H5F_ACC_RDONLY, H5P_DEFAULT);
+	if (d_data->file.id < 0)
 	{
 		close();
 		return false;
@@ -784,7 +782,7 @@ bool HDF5_ECRHVideoReader::open(VipIODevice::OpenModes mode)
 	QString module_name;
 	bool has_data = false;
 	H5G_info_t oinfo;
-	herr_t ret = H5Gget_info(m_data->file, &oinfo);
+	herr_t ret = H5Gget_info(d_data->file, &oinfo);
 
 
 	if (ret == 0)
@@ -792,14 +790,14 @@ bool HDF5_ECRHVideoReader::open(VipIODevice::OpenModes mode)
 		for (int i = 0; i < (int)oinfo.nlinks; ++i)
 		{
 			QByteArray name(50, 0);
-			int size = H5Gget_objname_by_idx(m_data->file, i, name.data(), name.size());
+			int size = H5Gget_objname_by_idx(d_data->file, i, name.data(), name.size());
 			if (size > name.size())
 			{
 				name = QByteArray(size, 0);
-				H5Gget_objname_by_idx(m_data->file, i, name.data(), name.size());
+				H5Gget_objname_by_idx(d_data->file, i, name.data(), name.size());
 			}
 			name = name.mid(0, size);
-			H5G_obj_t type = H5Gget_objtype_by_idx(m_data->file, i);
+			H5G_obj_t type = H5Gget_objtype_by_idx(d_data->file, i);
 
 			if (type == H5G_GROUP)
 			{
@@ -827,16 +825,16 @@ bool HDF5_ECRHVideoReader::open(VipIODevice::OpenModes mode)
 	QString timestamps_dataset = "/data/timestamps";
 
 	//open the image data set
-	m_data->space.clear();
-	m_data->set.clear();
-	m_data->set = H5Dopen(m_data->file, images_dataset.toLatin1().data(), H5P_DEFAULT);
-	m_data->space = H5Dget_space(m_data->set);
+	d_data->space.clear();
+	d_data->set.clear();
+	d_data->set = H5Dopen(d_data->file, images_dataset.toLatin1().data(), H5P_DEFAULT);
+	d_data->space = H5Dget_space(d_data->set);
 
 	int full_rank;
 	hsize_t full_dims[32];
 
-	full_rank = H5Sget_simple_extent_ndims(m_data->space);
-	H5Sget_simple_extent_dims(m_data->space, full_dims, nullptr);
+	full_rank = H5Sget_simple_extent_ndims(d_data->space);
+	H5Sget_simple_extent_dims(d_data->space, full_dims, nullptr);
 
 	if (full_rank != 3)
 	{
@@ -844,20 +842,20 @@ bool HDF5_ECRHVideoReader::open(VipIODevice::OpenModes mode)
 		return false;
 	}
 
-	m_data->count = full_dims[2];
-	m_data->imageSize = QSize(full_dims[1], full_dims[0]);
-	if (m_data->imageSize.width() == 0 || m_data->imageSize.height() == 0)
+	d_data->count = full_dims[2];
+	d_data->imageSize = QSize(full_dims[1], full_dims[0]);
+	if (d_data->imageSize.width() == 0 || d_data->imageSize.height() == 0)
 	{
 		close();
 		return false;
 	}
 
 	//open timestamps
-	hset t_set = H5Dopen(m_data->file, timestamps_dataset.toLatin1().data(), H5P_DEFAULT);
+	hset t_set = H5Dopen(d_data->file, timestamps_dataset.toLatin1().data(), H5P_DEFAULT);
 	hspace t_space = H5Dget_space(t_set);
 	full_rank = H5Sget_simple_extent_ndims(t_space);
 	H5Sget_simple_extent_dims(t_space, full_dims, nullptr);
-	if (full_rank != 1 || full_dims[0] != (unsigned)m_data->count)
+	if (full_rank != 1 || full_dims[0] != (unsigned)d_data->count)
 	{
 		close();
 		return false;
@@ -865,11 +863,11 @@ bool HDF5_ECRHVideoReader::open(VipIODevice::OpenModes mode)
 	else
 	{
 		//read the whole timestamp vector
-		hsize_t t_dim[1] = { (hsize_t)m_data->count }, t_offset[1] = { (hsize_t)0 };
+		hsize_t t_dim[1] = { (hsize_t)d_data->count }, t_offset[1] = { (hsize_t)0 };
 		hspace _t_space = H5Dget_space(t_set);
 		H5Sselect_hyperslab(_t_space, H5S_SELECT_SET, t_offset, nullptr, t_dim, nullptr);
 		hspace t_mem = H5Screate_simple(1, t_dim, nullptr);
-		QVector<qint64> timestamps(m_data->count);
+		QVector<qint64> timestamps(d_data->count);
 		H5Dread(t_set, H5T_NATIVE_INT64, t_mem, _t_space, H5P_DEFAULT, timestamps.data());
 		this->setTimestamps(timestamps);
 
@@ -877,18 +875,18 @@ bool HDF5_ECRHVideoReader::open(VipIODevice::OpenModes mode)
 			this->setAttribute("Date", QDateTime::fromMSecsSinceEpoch(timestamps.first() / 1000000).toString("dd.MM.yyyy hh.mm.ss.zzz"));
 		//update fps (in images/s)
 		qint64 sampling = std::numeric_limits<qint64>::max();;
-		for (int i = 1; i < m_data->count; ++i)
+		for (int i = 1; i < d_data->count; ++i)
 			sampling = qMin(sampling, timestamps[i] - timestamps[i - 1]);
 
 		if (sampling)
-			m_data->fps = (1.0 / sampling) * 1000000000.0;
+			d_data->fps = (1.0 / sampling) * 1000000000.0;
 	}
 
 	//open parameters
 
-	hgroup params = H5Gopen(m_data->file, ("/" + module_name + "/parms").toLatin1().data(), H5P_DEFAULT);
+	hgroup params = H5Gopen(d_data->file, ("/" + module_name + "/parms").toLatin1().data(), H5P_DEFAULT);
 	if (params.id < 0)
-		params = H5Gopen(m_data->file, ("/" + module_name + "/params").toLatin1().data(), H5P_DEFAULT);
+		params = H5Gopen(d_data->file, ("/" + module_name + "/params").toLatin1().data(), H5P_DEFAULT);
 	if (params.id >= 0)
 	{
 		QVariantMap attributes;
@@ -991,21 +989,21 @@ bool HDF5_ECRHVideoReader::open(VipIODevice::OpenModes mode)
 
 void HDF5_ECRHVideoReader::close()
 {
-	m_data->imagesName.clear();
-	m_data->attributesName.clear();
-	m_data->file.clear();
-	m_data->set.clear();
-	m_data->space.clear();
-	m_data->imageSize = QSize(0, 0);
-	m_data->pos = 0;
-	m_data->count = 0;
+	d_data->imagesName.clear();
+	d_data->attributesName.clear();
+	d_data->file.clear();
+	d_data->set.clear();
+	d_data->space.clear();
+	d_data->imageSize = QSize(0, 0);
+	d_data->pos = 0;
+	d_data->count = 0;
 	setOpenMode(NotOpen);
 	VipIODevice::close();
 }
 
 QSize HDF5_ECRHVideoReader::imageSize() const
 {
-	return m_data->imageSize;
+	return d_data->imageSize;
 }
 
 
@@ -1016,7 +1014,7 @@ bool HDF5_ECRHVideoReader::readData(qint64 time)
 		return false;
 
 	int qt_type = QMetaType::Double;
-	if (hid_t type = H5Dget_type(m_data->set))
+	if (hid_t type = H5Dget_type(d_data->set))
 	{
 		if (int t = HDF5ToQt(type))
 			qt_type = t;
@@ -1024,14 +1022,14 @@ bool HDF5_ECRHVideoReader::readData(qint64 time)
 	}
 
 	//store the data in a double image
-	VipNDArray ar(qt_type, vipVector(m_data->imageSize.height(), m_data->imageSize.width()));
+	VipNDArray ar(qt_type, vipVector(d_data->imageSize.height(), d_data->imageSize.width()));
 	void * data = ar.data();
 	hid_t data_type = qtToHDF5(ar.dataType());
 
-	hsize_t dims[3] = { (hsize_t)m_data->imageSize.height(),(hsize_t)m_data->imageSize.width(),1 };
+	hsize_t dims[3] = { (hsize_t)d_data->imageSize.height(),(hsize_t)d_data->imageSize.width(),1 };
 
 	//select hyperslab
-	hspace space = H5Dget_space(m_data->set);
+	hspace space = H5Dget_space(d_data->set);
 	hsize_t offset[3] = { 0,0,(hsize_t)pos };
 	H5Sselect_hyperslab(space, H5S_SELECT_SET, offset, nullptr, dims, nullptr);
 
@@ -1040,7 +1038,7 @@ bool HDF5_ECRHVideoReader::readData(qint64 time)
 	hspace mem = H5Screate_simple(3, dims, nullptr);
 
 	//read data
-	herr_t status = H5Dread(m_data->set, data_type, mem, space, H5P_DEFAULT, data);
+	herr_t status = H5Dread(d_data->set, data_type, mem, space, H5P_DEFAULT, data);
 
 	if (status != 0)
 		return false;
@@ -1095,87 +1093,86 @@ public:
 HDF5VideoWriter::HDF5VideoWriter(QObject * parent)
 	:VipIODevice(parent)
 {
-	m_data = new PrivateData();
+	VIP_CREATE_PRIVATE_DATA(d_data);
 	this->setRecordAllDynamicAttributes(true);
 }
 
 HDF5VideoWriter::~HDF5VideoWriter()
 {
 	close();
-	delete m_data;
 }
 
 void HDF5VideoWriter::setImagesName(const QString & name)
 {
-	m_data->imagesName = name;
+	d_data->imagesName = name;
 	emitProcessingChanged();
 }
 
 const QString & HDF5VideoWriter::imagesName() const
 {
-	return m_data->imagesName;
+	return d_data->imagesName;
 }
 
 void HDF5VideoWriter::setPixelType(int type)
 {
-	m_data->pixelType = type;
+	d_data->pixelType = type;
 	emitProcessingChanged();
 }
 
 int HDF5VideoWriter::pixelType() const
 {
-	return m_data->pixelType;
+	return d_data->pixelType;
 }
 
 void HDF5VideoWriter::setDynamicAttributeNames(const QStringList& names, const QString & dynamicAttributeGroup)
 {
-	m_data->dynamicAttributeNames = names;
+	d_data->dynamicAttributeNames = names;
 	if (!dynamicAttributeGroup.isEmpty())
-		m_data->dynamicAttributeGroup = dynamicAttributeGroup;
+		d_data->dynamicAttributeGroup = dynamicAttributeGroup;
 }
 
 QStringList HDF5VideoWriter::dynamicAttributeNames() const
 {
-	return m_data->dynamicAttributeNames;
+	return d_data->dynamicAttributeNames;
 }
 
 void HDF5VideoWriter::setRecordAllDynamicAttributes(bool enable, const QString & dynamicAttributeGroup)
 {
-	m_data->recordAllDynamicAttributes = enable;
+	d_data->recordAllDynamicAttributes = enable;
 	if (!dynamicAttributeGroup.isEmpty())
-		m_data->dynamicAttributeGroup = dynamicAttributeGroup;
+		d_data->dynamicAttributeGroup = dynamicAttributeGroup;
 }
 bool HDF5VideoWriter::recordAllDynamicAttributes() const
 {
-	return m_data->recordAllDynamicAttributes;
+	return d_data->recordAllDynamicAttributes;
 }
 
 void HDF5VideoWriter::setImageSize(const QSize & size)
 {
-	m_data->imageSize = size;
+	d_data->imageSize = size;
 	emitProcessingChanged();
 }
 
 const QSize & HDF5VideoWriter::imageSize() const
 {
-	return m_data->imageSize;
+	return d_data->imageSize;
 }
 
 void HDF5VideoWriter::close()
 {
 	VipIODevice::close();
-	m_data->file.clear();
-	m_data->set.clear();
-	m_data->space.clear();
-	m_data->t_set.clear();
-	m_data->t_space.clear();
-	m_data->a_set.clear();
-	m_data->a_space.clear();
+	d_data->file.clear();
+	d_data->set.clear();
+	d_data->space.clear();
+	d_data->t_set.clear();
+	d_data->t_space.clear();
+	d_data->a_set.clear();
+	d_data->a_space.clear();
 	for (int i = 0; i < 100; ++i)
-		m_data->dynSets[i].clear();
-	m_data->dynAttributes.clear();
-	m_data->dynSetTypes.clear();
-	m_data->dynSetNames.clear();
+		d_data->dynSets[i].clear();
+	d_data->dynAttributes.clear();
+	d_data->dynSetTypes.clear();
+	d_data->dynSetNames.clear();
 }
 
 bool HDF5VideoWriter::open(VipIODevice::OpenModes mode)
@@ -1190,8 +1187,8 @@ bool HDF5VideoWriter::open(VipIODevice::OpenModes mode)
 		return false;
 
 
-	m_data->file = H5Fcreate(filename.toLatin1().data(), H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
-	if (m_data->file.id < 0)
+	d_data->file = H5Fcreate(filename.toLatin1().data(), H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
+	if (d_data->file.id < 0)
 	{
 		close();
 		return false;
@@ -1227,33 +1224,33 @@ void HDF5VideoWriter::apply()
 			//write header and attributes on the first image
 
 			//compute image size
-			if (m_data->imageSize == QSize())
-				m_data->computedImageSize = QSize(ar.shape(1), ar.shape(0));
+			if (d_data->imageSize == QSize())
+				d_data->computedImageSize = QSize(ar.shape(1), ar.shape(0));
 			else
-				m_data->computedImageSize = m_data->imageSize;
+				d_data->computedImageSize = d_data->imageSize;
 
 			//compute pixel type
-			if (m_data->pixelType == 0)
-				m_data->computedPixelType = ar.dataType();
+			if (d_data->pixelType == 0)
+				d_data->computedPixelType = ar.dataType();
 			else
-				m_data->computedPixelType = m_data->pixelType;
+				d_data->computedPixelType = d_data->pixelType;
 
 			//create image dataset, alloc space for 1 image
-			hsize_t dims[3] = { (hsize_t)m_data->computedImageSize.height(),(hsize_t)m_data->computedImageSize.width(),(hsize_t)1 };
-			hsize_t maxdims[3] = { (hsize_t)m_data->computedImageSize.height(),(hsize_t)m_data->computedImageSize.width(),H5S_UNLIMITED };
-			hsize_t chunkdims[3] = { (hsize_t)m_data->computedImageSize.height(),(hsize_t)m_data->computedImageSize.width(),(hsize_t)1 };
+			hsize_t dims[3] = { (hsize_t)d_data->computedImageSize.height(),(hsize_t)d_data->computedImageSize.width(),(hsize_t)1 };
+			hsize_t maxdims[3] = { (hsize_t)d_data->computedImageSize.height(),(hsize_t)d_data->computedImageSize.width(),H5S_UNLIMITED };
+			hsize_t chunkdims[3] = { (hsize_t)d_data->computedImageSize.height(),(hsize_t)d_data->computedImageSize.width(),(hsize_t)1 };
 
-			m_data->space = H5Screate_simple(3, dims, maxdims);
+			d_data->space = H5Screate_simple(3, dims, maxdims);
 			hprop prop = H5Pcreate(H5P_DATASET_CREATE);
 			H5Pset_chunk(prop, 3, chunkdims);
 			//Create the chunked dataset.
-			m_data->set = H5Dcreate(m_data->file, m_data->imagesName.toLatin1().data(), qtToHDF5(m_data->computedPixelType), m_data->space, H5P_DEFAULT, prop, H5P_DEFAULT);
+			d_data->set = H5Dcreate(d_data->file, d_data->imagesName.toLatin1().data(), qtToHDF5(d_data->computedPixelType), d_data->space, H5P_DEFAULT, prop, H5P_DEFAULT);
 
 
-			if (m_data->set.id < 0)
+			if (d_data->set.id < 0)
 			{
 				close();
-				setError("wrong pixel type (" + QString(QMetaType::typeName(m_data->computedPixelType)) + ") or no space left on device");
+				setError("wrong pixel type (" + QString(QMetaType::typeName(d_data->computedPixelType)) + ") or no space left on device");
 				return;
 			}
 
@@ -1262,12 +1259,12 @@ void HDF5VideoWriter::apply()
 			hsize_t t_chunkdims[1] = { 1 };
 
 			//create timestamp dataset
-			m_data->t_space = H5Screate_simple(1, t_dims, t_maxdims);
+			d_data->t_space = H5Screate_simple(1, t_dims, t_maxdims);
 			hprop t_prop = H5Pcreate(H5P_DATASET_CREATE);
 			H5Pset_chunk(t_prop, 1, t_chunkdims);
 			//Create the chunked dataset.
-			m_data->t_set = H5Dcreate(m_data->file, "timestamps", H5T_NATIVE_INT64, m_data->t_space, H5P_DEFAULT, t_prop, H5P_DEFAULT);
-			if (m_data->t_set.id < 0)
+			d_data->t_set = H5Dcreate(d_data->file, "timestamps", H5T_NATIVE_INT64, d_data->t_space, H5P_DEFAULT, t_prop, H5P_DEFAULT);
+			if (d_data->t_set.id < 0)
 			{
 				close();
 				setError("cannot create 'timestamps' data set");
@@ -1275,8 +1272,8 @@ void HDF5VideoWriter::apply()
 			}
 
 			//create the attributes data set (in fact the image data set) and write the attributes
-			m_data->a_set = m_data->set.id;
-			m_data->a_set.own = false;
+			d_data->a_set = d_data->set.id;
+			d_data->a_set.own = false;
 
 			QVariantMap attrs = this->attributes();
 			QVariantMap img_attrs = in.attributes();
@@ -1293,21 +1290,21 @@ void HDF5VideoWriter::apply()
 				{
 					int v = value.value<int>();
 					hspace aid = H5Screate(H5S_SCALAR);
-					hattr attr = H5Acreate2(m_data->a_set, name.toLatin1().data(), H5T_NATIVE_INT, aid, H5P_DEFAULT, H5P_DEFAULT);
+					hattr attr = H5Acreate2(d_data->a_set, name.toLatin1().data(), H5T_NATIVE_INT, aid, H5P_DEFAULT, H5P_DEFAULT);
 					err = H5Awrite(attr, H5T_NATIVE_INT, &v);
 				}
 				else if (value.type() == QVariant::Double)
 				{
 					double v = value.value<double>();
 					hspace aid = H5Screate(H5S_SCALAR);
-					hattr attr = H5Acreate2(m_data->a_set, name.toLatin1().data(), H5T_NATIVE_DOUBLE, aid, H5P_DEFAULT, H5P_DEFAULT);
+					hattr attr = H5Acreate2(d_data->a_set, name.toLatin1().data(), H5T_NATIVE_DOUBLE, aid, H5P_DEFAULT, H5P_DEFAULT);
 					err = H5Awrite(attr, H5T_NATIVE_DOUBLE, &v);
 				}
 				else if (value.type() == QVariant::LongLong || value.type() == QVariant::ULongLong)
 				{
 					qint64 v = value.value<qint64>();
 					hspace aid = H5Screate(H5S_SCALAR);
-					hattr attr = H5Acreate2(m_data->a_set, name.toLatin1().data(), H5T_NATIVE_INT64, aid, H5P_DEFAULT, H5P_DEFAULT);
+					hattr attr = H5Acreate2(d_data->a_set, name.toLatin1().data(), H5T_NATIVE_INT64, aid, H5P_DEFAULT, H5P_DEFAULT);
 					err = H5Awrite(attr, H5T_NATIVE_INT64, &v);
 				}
 				else if (value.canConvert<QByteArray>())
@@ -1317,7 +1314,7 @@ void HDF5VideoWriter::apply()
 					H5Tset_size(atype, v.size());
 					H5Tset_strpad(atype, H5T_STR_NULLTERM);
 					hspace aid = H5Screate(H5S_SCALAR);
-					hattr attr = H5Acreate2(m_data->a_set, name.toLatin1().data(), atype, aid, H5P_DEFAULT, H5P_DEFAULT);
+					hattr attr = H5Acreate2(d_data->a_set, name.toLatin1().data(), atype, aid, H5P_DEFAULT, H5P_DEFAULT);
 					if (attr != 0)
 						err = H5Awrite(attr, atype, v.data());
 
@@ -1334,22 +1331,22 @@ void HDF5VideoWriter::apply()
 
 			 //now, write the dynmaic attributes
 			 //create the dynamic attribute group
-			if (m_data->recordAllDynamicAttributes || m_data->dynamicAttributeNames.size())
+			if (d_data->recordAllDynamicAttributes || d_data->dynamicAttributeNames.size())
 			{
-				QString group = m_data->dynamicAttributeGroup;
+				QString group = d_data->dynamicAttributeGroup;
 				if (group.isEmpty())
 					group = "dynamic_attributes";
-				m_data->dynAttributes = H5Gcreate(m_data->file, ("/" + group).toLatin1().data(), H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
-				if (m_data->dynAttributes.id <= 0)
+				d_data->dynAttributes = H5Gcreate(d_data->file, ("/" + group).toLatin1().data(), H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+				if (d_data->dynAttributes.id <= 0)
 					setError("cannot create group'" + group + "' data set");
 			}
-			if (m_data->dynAttributes.id >= 0)
+			if (d_data->dynAttributes.id >= 0)
 			{
 				QStringList to_record;
-				if (m_data->recordAllDynamicAttributes)
+				if (d_data->recordAllDynamicAttributes)
 					to_record = img_attrs.keys();
 				else
-					to_record = m_data->dynamicAttributeNames;
+					to_record = d_data->dynamicAttributeNames;
 
 				if (to_record.size())
 				{
@@ -1378,7 +1375,7 @@ void HDF5VideoWriter::apply()
 							hprop t_prop = H5Pcreate(H5P_DATASET_CREATE);
 							H5Pset_chunk(t_prop, 1, t_chunkdims);
 							//Create the chunked dataset.
-							hset t_set = H5Dcreate(m_data->dynAttributes, to_record[i].toLatin1().data(), qtToHDF5(qt_type), t_space, H5P_DEFAULT, t_prop, H5P_DEFAULT);
+							hset t_set = H5Dcreate(d_data->dynAttributes, to_record[i].toLatin1().data(), qtToHDF5(qt_type), t_space, H5P_DEFAULT, t_prop, H5P_DEFAULT);
 							if (t_set.id <= 0)
 							{
 								setError("cannot create '" + to_record[i] + "' data set");
@@ -1386,9 +1383,9 @@ void HDF5VideoWriter::apply()
 							}
 
 							t_set.own = false;
-							m_data->dynSets[attr_count].id = t_set.id;
-							m_data->dynSetTypes.append(qt_type);
-							m_data->dynSetNames.append(to_record[i]);
+							d_data->dynSets[attr_count].id = t_set.id;
+							d_data->dynSetTypes.append(qt_type);
+							d_data->dynSetNames.append(to_record[i]);
 							++attr_count;
 						}
 					}
@@ -1401,14 +1398,14 @@ void HDF5VideoWriter::apply()
 		 //first, write image
 
 		hsize_t dims[3];
-		hsize_t dimsext[3] = { (hsize_t)m_data->computedImageSize.height(),(hsize_t)m_data->computedImageSize.width(),1 };
-		m_data->space = H5Dget_space(m_data->set);
-		H5Sget_simple_extent_dims(m_data->space, dims, nullptr);
+		hsize_t dimsext[3] = { (hsize_t)d_data->computedImageSize.height(),(hsize_t)d_data->computedImageSize.width(),1 };
+		d_data->space = H5Dget_space(d_data->set);
+		H5Sget_simple_extent_dims(d_data->space, dims, nullptr);
 		dims[2]++;
 
 		if (this->size() > 0)
 		{
-			herr_t status = H5Dset_extent(m_data->set, dims);
+			herr_t status = H5Dset_extent(d_data->set, dims);
 			if (status != 0)
 			{
 				close();
@@ -1419,14 +1416,14 @@ void HDF5VideoWriter::apply()
 
 		//select hyperslab
 		hsize_t offset[3] = { (hsize_t)0,(hsize_t)0,(hsize_t)this->size() };
-		hspace space = H5Dget_space(m_data->set);
+		hspace space = H5Dget_space(d_data->set);
 		H5Sselect_hyperslab(space, H5S_SELECT_SET, offset, nullptr,
 			dimsext, nullptr);
 
 		//define memory space
 		hspace memspace = H5Screate_simple(3, dimsext, nullptr);
 		//write data
-		herr_t status = H5Dwrite(m_data->set, qtToHDF5(ar.dataType()), memspace, space,
+		herr_t status = H5Dwrite(d_data->set, qtToHDF5(ar.dataType()), memspace, space,
 			H5P_DEFAULT, ar.data());
 
 		if (status != 0)
@@ -1439,59 +1436,59 @@ void HDF5VideoWriter::apply()
 
 		hsize_t t_dims[1], t_dimsext[1] = { 1 };
 		hsize_t t_offset[1] = { (hsize_t)this->size() };
-		m_data->t_space = H5Dget_space(m_data->t_set);
-		H5Sget_simple_extent_dims(m_data->t_space, t_dims, nullptr);
+		d_data->t_space = H5Dget_space(d_data->t_set);
+		H5Sget_simple_extent_dims(d_data->t_space, t_dims, nullptr);
 		t_dims[0]++;
 		if (this->size() > 0)
 		{
-			H5Dset_extent(m_data->t_set, t_dims);
+			H5Dset_extent(d_data->t_set, t_dims);
 		}
 
 		//write timestamp
-		hspace t_space = H5Dget_space(m_data->t_set);
+		hspace t_space = H5Dget_space(d_data->t_set);
 		H5Sselect_hyperslab(t_space, H5S_SELECT_SET, t_offset, nullptr,
 			t_dimsext, nullptr);
 		hspace t_memspace = H5Screate_simple(1, t_dimsext, nullptr);
 		// use a timestamp in nanoseconds!
 		qint64 timestamp_nano = in.time();
-		herr_t t_status = H5Dwrite(m_data->t_set, H5T_NATIVE_INT64, t_memspace, t_space,
+		herr_t t_status = H5Dwrite(d_data->t_set, H5T_NATIVE_INT64, t_memspace, t_space,
 			H5P_DEFAULT, &timestamp_nano);
 
 		//write dynamic attributes
-		if (m_data->dynAttributes.id > 0)
+		if (d_data->dynAttributes.id > 0)
 		{
-			for (int i = 0; i < m_data->dynSetNames.size(); ++i)
+			for (int i = 0; i < d_data->dynSetNames.size(); ++i)
 			{
 				if (this->size() > 0)
-					H5Dset_extent(m_data->dynSets[i], t_dims);
+					H5Dset_extent(d_data->dynSets[i], t_dims);
 
-				hspace t_space = H5Dget_space(m_data->dynSets[i]);
+				hspace t_space = H5Dget_space(d_data->dynSets[i]);
 				H5Sselect_hyperslab(t_space, H5S_SELECT_SET, t_offset, nullptr,
 					t_dimsext, nullptr);
 				hspace t_memspace = H5Screate_simple(1, t_dimsext, nullptr);
 				herr_t t_status = -1;
-				int qt_type = m_data->dynSetTypes[i];
+				int qt_type = d_data->dynSetTypes[i];
 				if (qt_type == QVariant::Int)
 				{
-					int value = in.attribute(m_data->dynSetNames[i]).toInt();
-					t_status = H5Dwrite(m_data->dynSets[i], qtToHDF5(qt_type), t_memspace, t_space,
+					int value = in.attribute(d_data->dynSetNames[i]).toInt();
+					t_status = H5Dwrite(d_data->dynSets[i], qtToHDF5(qt_type), t_memspace, t_space,
 						H5P_DEFAULT, &value);
 				}
 				else if (qt_type == QVariant::Double)
 				{
-					double value = in.attribute(m_data->dynSetNames[i]).toDouble();
-					t_status = H5Dwrite(m_data->dynSets[i], qtToHDF5(qt_type), t_memspace, t_space,
+					double value = in.attribute(d_data->dynSetNames[i]).toDouble();
+					t_status = H5Dwrite(d_data->dynSets[i], qtToHDF5(qt_type), t_memspace, t_space,
 						H5P_DEFAULT, &value);
 				}
 				else if (qt_type == QVariant::LongLong)
 				{
-					qint64 value = in.attribute(m_data->dynSetNames[i]).toLongLong();
-					t_status = H5Dwrite(m_data->dynSets[i], qtToHDF5(qt_type), t_memspace, t_space,
+					qint64 value = in.attribute(d_data->dynSetNames[i]).toLongLong();
+					t_status = H5Dwrite(d_data->dynSets[i], qtToHDF5(qt_type), t_memspace, t_space,
 						H5P_DEFAULT, &value);
 				}
 
 				if (t_status != 0)
-					setError("Cannot write attribute '" + m_data->dynSetNames[i] + "'");
+					setError("Cannot write attribute '" + d_data->dynSetNames[i] + "'");
 			}
 		}
 

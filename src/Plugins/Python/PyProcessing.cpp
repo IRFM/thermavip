@@ -96,17 +96,16 @@ public:
 
 PyFunctionProcessing::PyFunctionProcessing()
 {
-	m_data = new PrivateData();
-	m_data->function = nullptr;
-	m_data->maxExecutionTime = 5000;
+	VIP_CREATE_PRIVATE_DATA(d_data);
+	d_data->function = nullptr;
+	d_data->maxExecutionTime = 5000;
 }
 PyFunctionProcessing::~PyFunctionProcessing()
 {
-	if (m_data->function) {
+	if (d_data->function) {
 		GIL_Locker lock;
-		Py_DECREF(m_data->function);
+		Py_DECREF(d_data->function);
 	}
-	delete m_data;
 }
 
 bool PyFunctionProcessing::acceptInput(int, const QVariant & v) const
@@ -124,15 +123,15 @@ void PyFunctionProcessing::setFunction(void * pyobject)
 {
 	GIL_Locker lock;
 	//PyObject * tmp = (PyObject*)pyobject;
-	if (m_data->function)
-		Py_DECREF(m_data->function);
-	m_data->function = (PyObject*)pyobject;
-	if (m_data->function)
-		Py_INCREF(m_data->function);
+	if (d_data->function)
+		Py_DECREF(d_data->function);
+	d_data->function = (PyObject*)pyobject;
+	if (d_data->function)
+		Py_INCREF(d_data->function);
 }
 void * PyFunctionProcessing::function() const
 {
-	return m_data->function;
+	return d_data->function;
 }
 
 void PyFunctionProcessing::applyPyProcessing(int, int)
@@ -144,7 +143,7 @@ void PyFunctionProcessing::applyPyProcessing(int, int)
 	}
 	VipAnyData out = create(in.size() ? in.first().data() : QVariant());
 
-	if (!m_data->function) {
+	if (!d_data->function) {
 		outputAt(0)->setData(out);
 		return;
 	}
@@ -170,10 +169,10 @@ void PyFunctionProcessing::applyPyProcessing(int, int)
 	c = GetPyOptions()->sendObject("this", in[0].data());
 
 	//check sending errors
-	m_data->lastError = GetPyOptions()->wait(c, 10000).value<PyError>();
-	if (!m_data->lastError.isNull())
+	d_data->lastError = GetPyOptions()->wait(c, 10000).value<PyError>();
+	if (!d_data->lastError.isNull())
 	{
-		vip_debug("err: %s\n", m_data->lastError.traceback.toLatin1().data());
+		vip_debug("err: %s\n", d_data->lastError.traceback.toLatin1().data());
 		setError("cannot send objects to the Python interpreter", VipProcessingObject::WrongInput);
 
 		QMetaObject::invokeMethod(pyGetPythonInterpreter(), "showAndRaise", Qt::QueuedConnection);
@@ -188,12 +187,12 @@ void PyFunctionProcessing::applyPyProcessing(int, int)
 		PyObject* __main__ = PyImport_ImportModule("__main__");
 		PyObject *globals = PyModule_GetDict(__main__);
 		Py_DECREF(__main__);
-		int r = PyDict_SetItemString(globals, "fun", m_data->function);
+		int r = PyDict_SetItemString(globals, "fun", d_data->function);
 		if (r != 0) {
-			m_data->lastError = PyError(true);
-			if (!m_data->lastError.isNull())
+			d_data->lastError = PyError(true);
+			if (!d_data->lastError.isNull())
 			{
-				vip_debug("err: %s\n", m_data->lastError.traceback.toLatin1().data());
+				vip_debug("err: %s\n", d_data->lastError.traceback.toLatin1().data());
 				setError("cannot send objects to the Python interpreter", VipProcessingObject::WrongInput);
 				QMetaObject::invokeMethod(pyGetPythonInterpreter(), "showAndRaise", Qt::QueuedConnection);
 				outputAt(0)->setData(out);
@@ -206,11 +205,11 @@ void PyFunctionProcessing::applyPyProcessing(int, int)
 
 	//execute actual processing code
 	c = GetPyOptions()->execCode(code);
-	m_data->lastError = GetPyOptions()->wait(c, m_data->maxExecutionTime).value<PyError>();
-	if (!m_data->lastError.isNull())
+	d_data->lastError = GetPyOptions()->wait(c, d_data->maxExecutionTime).value<PyError>();
+	if (!d_data->lastError.isNull())
 	{
-		vip_debug("err: %s\n", m_data->lastError.traceback.toLatin1().data());
-		setError(m_data->lastError.traceback);
+		vip_debug("err: %s\n", d_data->lastError.traceback.toLatin1().data());
+		setError(d_data->lastError.traceback);
 		QMetaObject::invokeMethod(pyGetPythonInterpreter(), "showAndRaise", Qt::QueuedConnection);
 		if (in.size() == 1)
 			outputAt(0)->setData(out);
@@ -222,9 +221,9 @@ void PyFunctionProcessing::applyPyProcessing(int, int)
 	QVariant value = GetPyOptions()->wait(c, 10000);
 	if (!value.value<PyError>().isNull())
 	{
-		m_data->lastError = value.value<PyError>();
-		vip_debug("err: %s\n", m_data->lastError.traceback.toLatin1().data());
-		setError(m_data->lastError.traceback);
+		d_data->lastError = value.value<PyError>();
+		vip_debug("err: %s\n", d_data->lastError.traceback.toLatin1().data());
+		setError(d_data->lastError.traceback);
 		pyGetPythonInterpreter()->show();
 		pyGetPythonInterpreter()->raise();
 		if (in.size() == 1)
@@ -254,8 +253,8 @@ void PyFunctionProcessing::applyPyProcessing(int, int)
 	value = GetPyOptions()->wait(GetPyOptions()->retrieveObject("units"), 2000);
 	if (!value.value<PyError>().isNull())
 	{
-		m_data->lastError = value.value<PyError>();
-		setError(m_data->lastError.traceback);
+		d_data->lastError = value.value<PyError>();
+		setError(d_data->lastError.traceback);
 		outputAt(0)->setData(out);
 		return;
 	}
@@ -306,46 +305,45 @@ public:
 PyProcessing::PyProcessing(QObject * parent)
 	:PyBaseProcessing(parent)
 {
-	m_data = new PrivateData();
-	m_data->lastError.traceback = "Uninitialized";
+	VIP_CREATE_PRIVATE_DATA(d_data);
+	d_data->lastError.traceback = "Uninitialized";
 	propertyAt(1)->setData(QString());
 	topLevelInputAt(0)->toMultiInput()->setMinSize(1);
 	topLevelInputAt(0)->toMultiInput()->resize(1);
-	setWorkOnSameObjectType(m_data->need_same_type);
-	setSameDataType(m_data->need_same_type);
-	setResampleEnabled(m_data->need_same_sub_type, true);
+	setWorkOnSameObjectType(d_data->need_same_type);
+	setSameDataType(d_data->need_same_type);
+	setResampleEnabled(d_data->need_same_sub_type, true);
 }
 
 PyProcessing::~PyProcessing()
 {
-	delete m_data;
 }
 
 
 void PyProcessing::setMaxExecutionTime(int milli)
 {
-	m_data->maxExecutionTime = milli;
+	d_data->maxExecutionTime = milli;
 	emitProcessingChanged();
 }
 
 int PyProcessing::maxExecutionTime()
 {
-	return m_data->maxExecutionTime;
+	return d_data->maxExecutionTime;
 }
 
 void PyProcessing::setState(State state)
 {
-	m_data->state = state;
+	d_data->state = state;
 }
 
 PyError PyProcessing::lastError() const
 {
-	return m_data->lastError;
+	return d_data->lastError;
 }
 
 QVariant PyProcessing::initializeProcessing(const QVariant & v)
 {
-	m_data->initialize = v;
+	d_data->initialize = v;
 	if (PyProcessingPtr ptr = v.value<PyProcessingPtr>()) {
 		//initialize from a PyProcessingPtr
 		topLevelInputAt(0)->toMultiInput()->resize(1);
@@ -356,15 +354,15 @@ QVariant PyProcessing::initializeProcessing(const QVariant & v)
 	}
 	else {
 		//initialize the processing based on the Python class name, without the prefix 'Thermavip'
-		//m_data->initialize = v.toString();
-		return QVariant::fromValue(setStdPyProcessingFile(m_data->initialize.toString()));
+		//d_data->initialize = v.toString();
+		return QVariant::fromValue(setStdPyProcessingFile(d_data->initialize.toString()));
 	}
 }
 
 QList<VipProcessingObject*> PyProcessing::directSources() const
 {
 	QList<VipProcessingObject*> res = VipProcessingObject::directSources();
-	for (QVariantMap::iterator it = m_data->stdProcessingParameters.begin(); it != m_data->stdProcessingParameters.end(); ++it)
+	for (QVariantMap::iterator it = d_data->stdProcessingParameters.begin(); it != d_data->stdProcessingParameters.end(); ++it)
 	{
 		QVariant value = it.value();
 		if (value.userType() == qMetaTypeId<VipOtherPlayerData>())
@@ -382,15 +380,15 @@ void PyProcessing::setStdProcessingParameters(const QVariantMap & args, const Vi
 	//for a standard processing (Py file in vipGetPythonDirectory()), set the processing class parameters.
 	//this will call the processing memeber 'setParameters'.
 
-	if (m_data->std_proc_name.isEmpty())
+	if (d_data->std_proc_name.isEmpty())
 		return;
 
-	m_data->stdProcessingParameters = args;
-	m_data->extractParameters.clear();
+	d_data->stdProcessingParameters = args;
+	d_data->extractParameters.clear();
 
 	//build the dict of parameters
 	QStringList parameters;
-	for (QVariantMap::iterator it = m_data->stdProcessingParameters.begin(); it != m_data->stdProcessingParameters.end(); ++it)
+	for (QVariantMap::iterator it = d_data->stdProcessingParameters.begin(); it != d_data->stdProcessingParameters.end(); ++it)
 	{
 		//for 'other' type, send the object before in the 'other' variable
 		if (it.value().userType() == qMetaTypeId<VipOtherPlayerData>())
@@ -418,7 +416,7 @@ void PyProcessing::setStdProcessingParameters(const QVariantMap & args, const Vi
 	//set the parameters if required
 	if (parameters.size())
 	{
-		QString classname = "Thermavip" + m_data->std_proc_name;
+		QString classname = "Thermavip" + d_data->std_proc_name;
 		QString id = QString::number(qint64(this));
 		QString code =
 			"pr = procs[" + id + "]\n"
@@ -432,16 +430,16 @@ void PyProcessing::setStdProcessingParameters(const QVariantMap & args, const Vi
 
 QVariantMap PyProcessing::stdProcessingParameters() const
 {
-	return m_data->stdProcessingParameters;
+	return d_data->stdProcessingParameters;
 }
 
 QList<PyProcessing::Parameter> PyProcessing::extractStdProcessingParameters()
 {
 	//extract the processing class parameters defined with the memeber 'parameters()'
 	//See "ThermavipPyProcessing' Python class for more details
-	if (m_data->extractParameters.size())
-		return m_data->extractParameters;
-	else if (m_data->std_proc_name.isEmpty())
+	if (d_data->extractParameters.size())
+		return d_data->extractParameters;
+	else if (d_data->std_proc_name.isEmpty())
 	{
 		return QList<PyProcessing::Parameter>();
 	}
@@ -449,7 +447,7 @@ QList<PyProcessing::Parameter> PyProcessing::extractStdProcessingParameters()
 	QString id = QString::number(qint64(this));
 	QString code =
 		"try: pr = procs[" + id + "]\n"
-		"except: pr= Thermavip" + m_data->std_proc_name + "()\n"
+		"except: pr= Thermavip" + d_data->std_proc_name + "()\n"
 		"tmp = pr.parameters()";
 
 	PyIOOperation::command_type c = GetPyOptions()->execCode(code);
@@ -502,57 +500,57 @@ QList<PyProcessing::Parameter> PyProcessing::extractStdProcessingParameters()
 
 	}
 
-	return  m_data->extractParameters = res;
+	return  d_data->extractParameters = res;
 }
 
 bool PyProcessing::acceptInput(int, const QVariant & v) const
 {
-	if (m_data->minDims < 0)
+	if (d_data->minDims < 0)
 		return true;
 
 	if (v.userType() == qMetaTypeId<VipNDArray>())
 	{
 		int shapeCount = v.value<VipNDArray>().shapeCount();
-		return shapeCount >= m_data->minDims && shapeCount <= m_data->maxDims;
+		return shapeCount >= d_data->minDims && shapeCount <= d_data->maxDims;
 	}
 	else if (v.userType() == qMetaTypeId<VipPointVector>())
-		return 1 >= m_data->minDims && 1 <= m_data->maxDims;
+		return 1 >= d_data->minDims && 1 <= d_data->maxDims;
 	else if (v.userType() == qMetaTypeId<VipComplexPointVector>())
-		return 1 >= m_data->minDims && 1 <= m_data->maxDims;
+		return 1 >= d_data->minDims && 1 <= d_data->maxDims;
 	return v.canConvert<QString>();
 }
 
 PyProcessing::DisplayHint PyProcessing::displayHint() const
 {
-	if (m_data->std_proc_name.size()) return m_data->info.displayHint;
+	if (d_data->std_proc_name.size()) return d_data->info.displayHint;
 	return InputTransform;
 }
 
 PyProcessing::Info PyProcessing::info() const
 {
-	if (m_data->info.metatype == 0) {
-		if (m_data->std_proc_name.size()) {
+	if (d_data->info.metatype == 0) {
+		if (d_data->std_proc_name.size()) {
 			const QList<VipProcessingObject::Info> infos = additionalInfoObjects();
 			for (int i = 0; i < infos.size(); ++i)
-				if (infos[i].classname == m_data->std_proc_name)
+				if (infos[i].classname == d_data->std_proc_name)
 				{
-					const_cast<PyProcessing::Info&>(m_data->info) = infos[i];
+					const_cast<PyProcessing::Info&>(d_data->info) = infos[i];
 					break;
 				}
 		}
-		else if (PyProcessingPtr ptr = m_data->initialize.value<PyProcessingPtr>()) {
+		else if (PyProcessingPtr ptr = d_data->initialize.value<PyProcessingPtr>()) {
 			const QList<VipProcessingObject::Info> infos = additionalInfoObjects();
 			for (int i = 0; i < infos.size(); ++i)
 				if (infos[i].init.value<PyProcessingPtr>() == ptr)
 				{
-					const_cast<PyProcessing::Info&>(m_data->info) = infos[i];
+					const_cast<PyProcessing::Info&>(d_data->info) = infos[i];
 					break;
 				}
 		}
 		else
-			const_cast<PyProcessing::Info&>(m_data->info) = VipProcessingObject::info();
+			const_cast<PyProcessing::Info&>(d_data->info) = VipProcessingObject::info();
 	}
-	return m_data->info;
+	return d_data->info;
 }
 
 bool PyProcessing::registerThisProcessing(const QString & category, const QString & name, const QString & description, bool overwrite)
@@ -635,28 +633,28 @@ bool PyProcessing::setStdPyProcessingFile(const QString & proc_name)
 	QVariantList dims = v.value<QVariantList>();
 	if (dims.size() == 2)
 	{
-		m_data->minDims = dims[0].toInt();
-		m_data->maxDims = dims[1].toInt();
+		d_data->minDims = dims[0].toInt();
+		d_data->maxDims = dims[1].toInt();
 	}
 
 	//retrieve other class parameters
-	m_data->need_resampling = GetPyOptions()->wait(GetPyOptions()->retrieveObject("need_resampling"), 2000).toBool();
-	m_data->need_same_type = GetPyOptions()->wait(GetPyOptions()->retrieveObject("need_same_type"), 2000).toBool();
-	m_data->need_same_sub_type = GetPyOptions()->wait(GetPyOptions()->retrieveObject("need_same_sub_type"), 2000).toBool();
+	d_data->need_resampling = GetPyOptions()->wait(GetPyOptions()->retrieveObject("need_resampling"), 2000).toBool();
+	d_data->need_same_type = GetPyOptions()->wait(GetPyOptions()->retrieveObject("need_same_type"), 2000).toBool();
+	d_data->need_same_sub_type = GetPyOptions()->wait(GetPyOptions()->retrieveObject("need_same_sub_type"), 2000).toBool();
 	QVariantList lst = GetPyOptions()->wait(GetPyOptions()->retrieveObject("input_count"), 2000).value<QVariantList>();
 	if (lst.size() == 2) {
-		m_data->minInputCount = lst[0].toInt();
-		m_data->maxInputCount = lst[1].toInt();
-		/*if(m_data->minInputCount > m_data->maxInputCount) std::swap(m_data->minInputCount,m_data->maxInputCount);
-		if(m_data->minInputCount <2)m_data->minInputCount = 2;
-		if(m_data->maxInputCount <2)m_data->maxInputCount = 2;*/
+		d_data->minInputCount = lst[0].toInt();
+		d_data->maxInputCount = lst[1].toInt();
+		/*if(d_data->minInputCount > d_data->maxInputCount) std::swap(d_data->minInputCount,d_data->maxInputCount);
+		if(d_data->minInputCount <2)d_data->minInputCount = 2;
+		if(d_data->maxInputCount <2)d_data->maxInputCount = 2;*/
 		VipMultiInput * input = topLevelInputAt(0)->toMultiInput();
-		input->setMinSize(m_data->minInputCount);
-		input->setMaxSize(m_data->maxInputCount);
-		input->resize(m_data->minInputCount);
-		setWorkOnSameObjectType(m_data->need_same_type);
-		setSameDataType(m_data->need_same_sub_type);
-		setResampleEnabled(m_data->need_resampling, true);
+		input->setMinSize(d_data->minInputCount);
+		input->setMaxSize(d_data->maxInputCount);
+		input->resize(d_data->minInputCount);
+		setWorkOnSameObjectType(d_data->need_same_type);
+		setSameDataType(d_data->need_same_sub_type);
+		setResampleEnabled(d_data->need_resampling, true);
 	}
 	else
 		topLevelInputAt(0)->toMultiInput()->resize(1);
@@ -688,40 +686,40 @@ bool PyProcessing::setStdPyProcessingFile(const QString & proc_name)
 		"  name = pr.name(names)\n";
 
 	propertyAt(1)->setData(code);
-	m_data->initialize = proc_name;
-	m_data->std_proc_name = proc_name;
-	m_data->extractParameters.clear();
+	d_data->initialize = proc_name;
+	d_data->std_proc_name = proc_name;
+	d_data->extractParameters.clear();
 	return true;
 }
 
 QString PyProcessing::stdPyProcessingFile() const
 {
-	return m_data->std_proc_name;
+	return d_data->std_proc_name;
 }
 
 void PyProcessing::resetProcessing()
 {
-	m_data->state = Init;
+	d_data->state = Init;
 }
 
 void PyProcessing::applyPyProcessing(int, int)
 {
 	//initialize the standard processing (if any) based on 'ThermavipPyProcessing' class
-	if (m_data->initialize.toString().size() && m_data->std_proc_name != m_data->initialize.toString())
+	if (d_data->initialize.toString().size() && d_data->std_proc_name != d_data->initialize.toString())
 	{
-		setStdPyProcessingFile(m_data->initialize.toString());
+		setStdPyProcessingFile(d_data->initialize.toString());
 	}
 
-	if (m_data->std_proc_name.size())
+	if (d_data->std_proc_name.size())
 	{
 		//Resend the Python processing class parameters if:
 		// - One of the parameter is a dynamic VipOtherPlayerData
 		// - One of the parameter is a VipOtherPlayerData that needs resizing
 		// - The current code is different that the last one executed
-		bool reset_parameters = (m_data->lastExecutedCode.isEmpty() || m_data->lastExecutedCode != propertyAt(1)->value<QString>());
+		bool reset_parameters = (d_data->lastExecutedCode.isEmpty() || d_data->lastExecutedCode != propertyAt(1)->value<QString>());
 		if (!reset_parameters)
 		{
-			for (QVariantMap::iterator it = m_data->stdProcessingParameters.begin(); it != m_data->stdProcessingParameters.end(); ++it)
+			for (QVariantMap::iterator it = d_data->stdProcessingParameters.begin(); it != d_data->stdProcessingParameters.end(); ++it)
 			{
 				if (it.value().userType() == qMetaTypeId<VipOtherPlayerData>())
 				{
@@ -743,14 +741,14 @@ void PyProcessing::applyPyProcessing(int, int)
 		if (reset_parameters)
 		{
 			//reset the parameters
-			setStdProcessingParameters(m_data->stdProcessingParameters, inputs()[0].value<VipNDArray>());
+			setStdProcessingParameters(d_data->stdProcessingParameters, inputs()[0].value<VipNDArray>());
 		}
 	}
 
 	const QVector<VipAnyData> in = inputs();
 	VipAnyData out = create(in.size() ? in.first().data() : QVariant());
 
-	/*if (m_data->state == Stop)
+	/*if (d_data->state == Stop)
 	{
 	if(in.size()==1)
 	outputAt(0)->setData(out);
@@ -775,7 +773,7 @@ void PyProcessing::applyPyProcessing(int, int)
 	c = GetPyOptions()->sendObject("time", QVariant::fromValue(out.time()));
 	c = GetPyOptions()->sendObject("player", QVariant::fromValue(player));
 	c = GetPyOptions()->sendObject("input_count", QVariant::fromValue(in.size()));
-	//c = GetPyOptions()->sendObject("init", (int)m_data->state);
+	//c = GetPyOptions()->sendObject("init", (int)d_data->state);
 	if (in.size() == 1)
 		c = GetPyOptions()->sendObject("this", in[0].data());
 	else {
@@ -785,10 +783,10 @@ void PyProcessing::applyPyProcessing(int, int)
 	}
 
 	//check sending errors
-	m_data->lastError = GetPyOptions()->wait(c, 10000).value<PyError>();
-	if (!m_data->lastError.isNull())
+	d_data->lastError = GetPyOptions()->wait(c, 10000).value<PyError>();
+	if (!d_data->lastError.isNull())
 	{
-		vip_debug("err: %s\n", m_data->lastError.traceback.toLatin1().data());
+		vip_debug("err: %s\n", d_data->lastError.traceback.toLatin1().data());
 		setError("cannot send objects to the Python interpreter", VipProcessingObject::WrongInput);
 
 		QMetaObject::invokeMethod(pyGetPythonInterpreter(), "showAndRaise", Qt::QueuedConnection);
@@ -801,11 +799,11 @@ void PyProcessing::applyPyProcessing(int, int)
 	QString code = propertyAt(1)->data().value<QString>();
 	c = GetPyOptions()->execCode(code); 
 	
-	m_data->lastError = GetPyOptions()->wait(c, m_data->maxExecutionTime).value<PyError>();
-	if (!m_data->lastError.isNull())
+	d_data->lastError = GetPyOptions()->wait(c, d_data->maxExecutionTime).value<PyError>();
+	if (!d_data->lastError.isNull())
 	{
-		vip_debug("err: %s\n", m_data->lastError.traceback.toLatin1().data());
-		setError(m_data->lastError.traceback);
+		vip_debug("err: %s\n", d_data->lastError.traceback.toLatin1().data());
+		setError(d_data->lastError.traceback);
 		QMetaObject::invokeMethod(pyGetPythonInterpreter(), "showAndRaise", Qt::QueuedConnection);
 		if (in.size() == 1)
 			outputAt(0)->setData(out);
@@ -817,9 +815,9 @@ void PyProcessing::applyPyProcessing(int, int)
 	QVariant value = GetPyOptions()->wait(c, 10000);
 	if (!value.value<PyError>().isNull())
 	{
-		m_data->lastError = value.value<PyError>();
-		vip_debug("err: %s\n", m_data->lastError.traceback.toLatin1().data());
-		setError(m_data->lastError.traceback);
+		d_data->lastError = value.value<PyError>();
+		vip_debug("err: %s\n", d_data->lastError.traceback.toLatin1().data());
+		setError(d_data->lastError.traceback);
 		QMetaObject::invokeMethod(pyGetPythonInterpreter(), "showAndRaise", Qt::QueuedConnection);
 		if (in.size() == 1)
 			outputAt(0)->setData(out);
@@ -848,8 +846,8 @@ void PyProcessing::applyPyProcessing(int, int)
 	value = GetPyOptions()->wait(GetPyOptions()->retrieveObject("units"), 2000);
 	if (!value.value<PyError>().isNull())
 	{
-		m_data->lastError = value.value<PyError>();
-		setError(m_data->lastError.traceback);
+		d_data->lastError = value.value<PyError>();
+		setError(d_data->lastError.traceback);
 		outputAt(0)->setData(out);
 		return;
 	}
@@ -876,8 +874,8 @@ void PyProcessing::applyPyProcessing(int, int)
 		value = GetPyOptions()->wait(GetPyOptions()->retrieveObject("name"), 2000);
 		if (!value.value<PyError>().isNull())
 		{
-			m_data->lastError = value.value<PyError>();
-			setError(m_data->lastError.traceback);
+			d_data->lastError = value.value<PyError>();
+			setError(d_data->lastError.traceback);
 			outputAt(0)->setData(out);
 			return;
 		}
@@ -886,7 +884,7 @@ void PyProcessing::applyPyProcessing(int, int)
 	}
 
 	outputAt(0)->setData(out);
-	m_data->lastExecutedCode = code;
+	d_data->lastExecutedCode = code;
 }
 
 
@@ -935,7 +933,7 @@ VipArchive & operator>>(VipArchive& ar, PyProcessing* p)
 	const QList<VipProcessingObject::Info> infos = VipProcessingObject::additionalInfoObjects();
 	for (int i = 0; i < infos.size(); ++i){
 	if (infos[i].category + infos[i].classname == registered) {
-	p->m_data->info = infos[i];
+	p->d_data->info = infos[i];
 	break;
 	}
 	}
@@ -971,33 +969,32 @@ public:
 
 PyArrayEditor::PyArrayEditor()
 {
-	m_data = new PrivateData();
-	m_data->info.setText("Enter your 2D array. Each column is separated by spaces or tabulations, each row is separated by a new line.");
-	m_data->info.setWordWrap(true);
-	m_data->send.setAutoRaise(true);
-	m_data->send.setToolTip("Click to finish your 2D array");
-	m_data->send.setIcon(vipIcon("apply.png"));
-	m_data->editor.setMinimumHeight(200);
+	VIP_CREATE_PRIVATE_DATA(d_data);
+	d_data->info.setText("Enter your 2D array. Each column is separated by spaces or tabulations, each row is separated by a new line.");
+	d_data->info.setWordWrap(true);
+	d_data->send.setAutoRaise(true);
+	d_data->send.setToolTip("Click to finish your 2D array");
+	d_data->send.setIcon(vipIcon("apply.png"));
+	d_data->editor.setMinimumHeight(200);
 
 	QGridLayout *lay = new QGridLayout();
 	lay->setContentsMargins(0, 0, 0, 0);
-	lay->addWidget(&m_data->info, 0, 0);
-	lay->addWidget(&m_data->send, 0, 1);
-	lay->addWidget(&m_data->editor, 1, 0, 1, 2);
+	lay->addWidget(&d_data->info, 0, 0);
+	lay->addWidget(&d_data->send, 0, 1);
+	lay->addWidget(&d_data->editor, 1, 0, 1, 2);
 	setLayout(lay);
 
-	connect(&m_data->send, SIGNAL(clicked(bool)), this, SLOT(finished()));
-	connect(&m_data->editor, SIGNAL(textChanged()), this, SLOT(textEntered()));
+	connect(&d_data->send, SIGNAL(clicked(bool)), this, SLOT(finished()));
+	connect(&d_data->editor, SIGNAL(textChanged()), this, SLOT(textEntered()));
 }
 
 PyArrayEditor::~PyArrayEditor()
 {
-	delete m_data;
 }
 
 VipNDArray PyArrayEditor::array() const
 {
-	return m_data->array;
+	return d_data->array;
 }
 
 void  PyArrayEditor::setText(const QString & text)
@@ -1010,9 +1007,9 @@ void  PyArrayEditor::setText(const QString & text)
 	out.remove("]");
 	out.remove(",");
 	out.remove("array");
-	m_data->editor.setPlainText(out);
+	d_data->editor.setPlainText(out);
 	QTextStream str(out.toLatin1());
-	str >> m_data->array;
+	str >> d_data->array;
 }
 void  PyArrayEditor::setArray(const VipNDArray & ar)
 {
@@ -1020,15 +1017,15 @@ void  PyArrayEditor::setArray(const VipNDArray & ar)
 	QTextStream str(&out, QIODevice::WriteOnly);
 	str << ar;
 	str.flush();
-	m_data->editor.setPlainText(out);
-	m_data->array = ar;
+	d_data->editor.setPlainText(out);
+	d_data->array = ar;
 }
 
 void PyArrayEditor::textEntered()
 {
-	m_data->array = VipNDArray();
+	d_data->array = VipNDArray();
 
-	QString text = m_data->editor.toPlainText();
+	QString text = d_data->editor.toPlainText();
 	text.replace("\t", " ");
 	QStringList lines = text.split("\n");
 	if (lines.size())
@@ -1050,21 +1047,21 @@ void PyArrayEditor::textEntered()
 		if (ok)
 		{
 			QTextStream str(text.toLatin1());
-			str >> m_data->array;
-			if (!m_data->array.isEmpty())
+			str >> d_data->array;
+			if (!d_data->array.isEmpty())
 			{
-				m_data->send.setIcon(vipIcon("apply_green.png"));
+				d_data->send.setIcon(vipIcon("apply_green.png"));
 				return;
 			}
 		}
 	}
 
-	m_data->send.setIcon(vipIcon("apply_red.png"));
+	d_data->send.setIcon(vipIcon("apply_red.png"));
 }
 
 void PyArrayEditor::finished()
 {
-	if (!m_data->array.isEmpty())
+	if (!d_data->array.isEmpty())
 		Q_EMIT changed();
 }
 
@@ -1089,58 +1086,57 @@ public:
 
 PyDataEditor::PyDataEditor()
 {
-	m_data = new PrivateData();
-	m_data->editArray = new QRadioButton("Create a 1D/2D array");
-	m_data->editArray->setToolTip("<b>Manually create a 1D/2D array</b><br>This is especially usefull for convolution functions.");
-	m_data->editPlayer = new QRadioButton("Take the data from another player");
-	m_data->editPlayer->setToolTip("<b>Selecte a data (image, curve,...) from another player</b>");
-	m_data->shouldResizeArray = new QCheckBox("Resize array to the current data shape");
-	m_data->shouldResizeArray->setToolTip("This usefull if you apply a processing/filter that only works on 2 arrays having the same shape.\n"
+	VIP_CREATE_PRIVATE_DATA(d_data);
+	d_data->editArray = new QRadioButton("Create a 1D/2D array");
+	d_data->editArray->setToolTip("<b>Manually create a 1D/2D array</b><br>This is especially usefull for convolution functions.");
+	d_data->editPlayer = new QRadioButton("Take the data from another player");
+	d_data->editPlayer->setToolTip("<b>Selecte a data (image, curve,...) from another player</b>");
+	d_data->shouldResizeArray = new QCheckBox("Resize array to the current data shape");
+	d_data->shouldResizeArray->setToolTip("This usefull if you apply a processing/filter that only works on 2 arrays having the same shape.\n"
 		"Selecting this option ensures you that given image/curve will be resized to the right dimension.");
-	m_data->editor = new PyArrayEditor();
-	m_data->player = new VipOtherPlayerDataEditor();
-	m_data->lineBefore = VipLineWidget::createHLine();
-	m_data->lineAfter = VipLineWidget::createHLine();
+	d_data->editor = new PyArrayEditor();
+	d_data->player = new VipOtherPlayerDataEditor();
+	d_data->lineBefore = VipLineWidget::createHLine();
+	d_data->lineAfter = VipLineWidget::createHLine();
 
 	QVBoxLayout * lay = new QVBoxLayout();
 	lay->setContentsMargins(0, 0, 0, 0);
-	lay->addWidget(m_data->lineBefore);
-	lay->addWidget(m_data->editArray);
-	lay->addWidget(m_data->editPlayer);
+	lay->addWidget(d_data->lineBefore);
+	lay->addWidget(d_data->editArray);
+	lay->addWidget(d_data->editPlayer);
 	lay->addWidget(VipLineWidget::createHLine());
-	lay->addWidget(m_data->shouldResizeArray);
-	lay->addWidget(m_data->editor);
-	lay->addWidget(m_data->player);
-	lay->addWidget(m_data->lineAfter);
+	lay->addWidget(d_data->shouldResizeArray);
+	lay->addWidget(d_data->editor);
+	lay->addWidget(d_data->player);
+	lay->addWidget(d_data->lineAfter);
 	//lay->setSizeConstraint(QLayout::SetFixedSize);
 	setLayout(lay);
 
-	m_data->editArray->setChecked(true);
-	m_data->player->setVisible(false);
+	d_data->editArray->setChecked(true);
+	d_data->player->setVisible(false);
 
-	connect(m_data->editArray, SIGNAL(clicked(bool)), m_data->editor, SLOT(setVisible(bool)));
-	connect(m_data->editArray, SIGNAL(clicked(bool)), m_data->player, SLOT(setHidden(bool)));
-	connect(m_data->editPlayer, SIGNAL(clicked(bool)), m_data->player, SLOT(setVisible(bool)));
-	connect(m_data->editPlayer, SIGNAL(clicked(bool)), m_data->editor, SLOT(setHidden(bool)));
+	connect(d_data->editArray, SIGNAL(clicked(bool)), d_data->editor, SLOT(setVisible(bool)));
+	connect(d_data->editArray, SIGNAL(clicked(bool)), d_data->player, SLOT(setHidden(bool)));
+	connect(d_data->editPlayer, SIGNAL(clicked(bool)), d_data->player, SLOT(setVisible(bool)));
+	connect(d_data->editPlayer, SIGNAL(clicked(bool)), d_data->editor, SLOT(setHidden(bool)));
 
-	connect(m_data->shouldResizeArray, SIGNAL(clicked(bool)), this, SLOT(emitChanged()));
-	connect(m_data->editor, SIGNAL(changed()), this, SLOT(emitChanged()));
-	connect(m_data->player, SIGNAL(valueChanged(const QVariant &)), this, SLOT(emitChanged()));
+	connect(d_data->shouldResizeArray, SIGNAL(clicked(bool)), this, SLOT(emitChanged()));
+	connect(d_data->editor, SIGNAL(changed()), this, SLOT(emitChanged()));
+	connect(d_data->player, SIGNAL(valueChanged(const QVariant &)), this, SLOT(emitChanged()));
 }
 
 PyDataEditor::~PyDataEditor()
 {
-	delete m_data;
 }
 
 VipOtherPlayerData PyDataEditor::value() const
 {
 	VipOtherPlayerData res;
-	if (m_data->editArray->isChecked())
-		res = VipOtherPlayerData(VipAnyData(QVariant::fromValue(m_data->editor->array()), 0));
+	if (d_data->editArray->isChecked())
+		res = VipOtherPlayerData(VipAnyData(QVariant::fromValue(d_data->editor->array()), 0));
 	else
-		res = m_data->player->value();
-	res.setShouldResizeArray(m_data->shouldResizeArray->isChecked());
+		res = d_data->player->value();
+	res.setShouldResizeArray(d_data->shouldResizeArray->isChecked());
 	return res;
 }
 
@@ -1148,34 +1144,34 @@ void PyDataEditor::setValue(const VipOtherPlayerData & data)
 {
 	VipNDArray ar = data.staticData().value<VipNDArray>();
 
-	m_data->editor->blockSignals(true);
-	m_data->player->blockSignals(true);
-	m_data->shouldResizeArray->blockSignals(true);
+	d_data->editor->blockSignals(true);
+	d_data->player->blockSignals(true);
+	d_data->shouldResizeArray->blockSignals(true);
 
 	if (!ar.isEmpty() && data.otherPlayerId() < 1)
 	{
-		m_data->editArray->setChecked(true);
-		m_data->editor->setArray(ar);
+		d_data->editArray->setChecked(true);
+		d_data->editor->setArray(ar);
 	}
 	else
 	{
-		m_data->editPlayer->setChecked(true);
-		m_data->player->setValue(data);
+		d_data->editPlayer->setChecked(true);
+		d_data->player->setValue(data);
 	}
-	m_data->player->setVisible(m_data->editPlayer->isChecked());
-	m_data->editor->setVisible(!m_data->editPlayer->isChecked());
+	d_data->player->setVisible(d_data->editPlayer->isChecked());
+	d_data->editor->setVisible(!d_data->editPlayer->isChecked());
 
-	m_data->shouldResizeArray->setChecked(data.shouldResizeArray());
+	d_data->shouldResizeArray->setChecked(data.shouldResizeArray());
 
-	m_data->editor->blockSignals(false);
-	m_data->player->blockSignals(false);
-	m_data->shouldResizeArray->blockSignals(false);
+	d_data->editor->blockSignals(false);
+	d_data->player->blockSignals(false);
+	d_data->shouldResizeArray->blockSignals(false);
 }
 
 void PyDataEditor::displayVLines(bool before, bool after)
 {
-	m_data->lineBefore->setVisible(before);
-	m_data->lineAfter->setVisible(after);
+	d_data->lineBefore->setVisible(before);
+	d_data->lineAfter->setVisible(after);
 }
 
 
@@ -1194,20 +1190,20 @@ public:
 
 PyParametersEditor::PyParametersEditor(PyProcessing * p)
 {
-	m_data = new PrivateData();
-	m_data->processing = p;
-	m_data->params = p->extractStdProcessingParameters();
+	VIP_CREATE_PRIVATE_DATA(d_data);
+	d_data->processing = p;
+	d_data->params = p->extractStdProcessingParameters();
 	QVariantMap args = p->stdProcessingParameters();
 
-	if (m_data->params.size())
+	if (d_data->params.size())
 	{
 		QGridLayout * lay = new QGridLayout();
 		lay->setContentsMargins(0, 0, 0, 0);
 		//lay->setSizeConstraint(QLayout::SetMinimumSize);
 
-		for (int i = 0; i < m_data->params.size(); ++i)
+		for (int i = 0; i < d_data->params.size(); ++i)
 		{
-			PyProcessing::Parameter pr = m_data->params[i];
+			PyProcessing::Parameter pr = d_data->params[i];
 			QVariant value = args[pr.name];
 
 			if (pr.type == "int") {
@@ -1222,7 +1218,7 @@ PyParametersEditor::PyParametersEditor(PyProcessing * p)
 				connect(box, SIGNAL(valueChanged(int)), this, SLOT(updateProcessing()), Qt::QueuedConnection);
 				lay->addWidget(new QLabel(vipSplitClassname(pr.name)), i, 0);
 				lay->addWidget(box, i, 1);
-				m_data->editors << box;
+				d_data->editors << box;
 			}
 			else if (pr.type == "float") {
 				VipDoubleSpinBox * box = new VipDoubleSpinBox();
@@ -1238,7 +1234,7 @@ PyParametersEditor::PyParametersEditor(PyProcessing * p)
 				connect(box, SIGNAL(valueChanged(double)), this, SLOT(updateProcessing()), Qt::QueuedConnection);
 				lay->addWidget(new QLabel(vipSplitClassname(pr.name)), i, 0);
 				lay->addWidget(box, i, 1);
-				m_data->editors << box;
+				d_data->editors << box;
 			}
 			else if (pr.type == "bool") {
 				QCheckBox * box = new QCheckBox(vipSplitClassname(pr.name));
@@ -1246,7 +1242,7 @@ PyParametersEditor::PyParametersEditor(PyProcessing * p)
 				if (value.userType()) box->setChecked(value.toInt());
 				connect(box, SIGNAL(clicked(bool)), this, SLOT(updateProcessing()), Qt::QueuedConnection);
 				lay->addWidget(box, i, 0, 1, 2);
-				m_data->editors << box;
+				d_data->editors << box;
 			}
 			else if (pr.type == "str" && pr.enumValues.size()) {
 				VipComboBox * box = new VipComboBox();
@@ -1256,15 +1252,15 @@ PyParametersEditor::PyParametersEditor(PyProcessing * p)
 				connect(box, SIGNAL(valueChanged(const QString &)), this, SLOT(updateProcessing()), Qt::QueuedConnection);
 				lay->addWidget(new QLabel(vipSplitClassname(pr.name)), i, 0);
 				lay->addWidget(box, i, 1);
-				m_data->editors << box;
+				d_data->editors << box;
 			}
 			else if (pr.type == "other") {
 				PyDataEditor * ed = new PyDataEditor();
 				if (value.userType()) ed->setValue(value.value<VipOtherPlayerData>());
-				ed->displayVLines(i > 0, i < m_data->params.size() - 1);
+				ed->displayVLines(i > 0, i < d_data->params.size() - 1);
 				connect(ed, SIGNAL(changed()), this, SLOT(updateProcessing()), Qt::QueuedConnection);
 				lay->addWidget(ed, i, 0, 1, 2);
-				m_data->editors << ed;
+				d_data->editors << ed;
 			}
 			else {
 				VipLineEdit * line = new VipLineEdit();
@@ -1273,10 +1269,10 @@ PyParametersEditor::PyParametersEditor(PyProcessing * p)
 				connect(line, SIGNAL(valueChanged(const QString &)), this, SLOT(updateProcessing()), Qt::QueuedConnection);
 				lay->addWidget(new QLabel(vipSplitClassname(pr.name)), i, 0);
 				lay->addWidget(line, i, 1);
-				m_data->editors << line;
+				d_data->editors << line;
 			}
 
-			m_data->previous << QVariant();
+			d_data->previous << QVariant();
 		}
 
 		//lay->setSizeConstraint(QLayout::SetFixedSize);
@@ -1286,19 +1282,18 @@ PyParametersEditor::PyParametersEditor(PyProcessing * p)
 }
 PyParametersEditor::~PyParametersEditor()
 {
-	delete m_data;
 }
 
 void PyParametersEditor::updateProcessing()
 {
-	if (!m_data->processing)
+	if (!d_data->processing)
 		return;
 
 	QVariantMap map;
-	for (int i = 0; i < m_data->params.size(); ++i)
+	for (int i = 0; i < d_data->params.size(); ++i)
 	{
-		QString name = m_data->params[i].name;
-		QWidget * ed = m_data->editors[i];
+		QString name = d_data->params[i].name;
+		QWidget * ed = d_data->editors[i];
 		QVariant value;
 
 		if (QSpinBox * box = qobject_cast<QSpinBox*>(ed))
@@ -1316,8 +1311,8 @@ void PyParametersEditor::updateProcessing()
 		map[name] = value;
 	}
 
-	m_data->processing->setStdProcessingParameters(map);
-	m_data->processing->reload();
+	d_data->processing->setStdProcessingParameters(map);
+	d_data->processing->reload();
 
 	Q_EMIT changed();
 }
@@ -1342,56 +1337,55 @@ public:
 
 PyProcessingEditor::PyProcessingEditor()
 {
-	m_data = new PrivateData();
-	m_data->params = nullptr;
+	VIP_CREATE_PRIVATE_DATA(d_data);
+	d_data->params = nullptr;
 
 	QGridLayout * hlay = new QGridLayout();
-	hlay->addWidget(&m_data->maxTime, 0, 0);
-	hlay->addWidget(&m_data->maxTimeEdit, 0, 1);
-	hlay->addWidget(&m_data->resampleText, 1, 0);
-	hlay->addWidget(&m_data->resampleBox, 1, 1);
+	hlay->addWidget(&d_data->maxTime, 0, 0);
+	hlay->addWidget(&d_data->maxTimeEdit, 0, 1);
+	hlay->addWidget(&d_data->resampleText, 1, 0);
+	hlay->addWidget(&d_data->resampleBox, 1, 1);
 	hlay->setContentsMargins(0, 0, 0, 0);
-	m_data->maxTime.setText("Python script timeout (ms)");
-	m_data->maxTimeEdit.setRange(-1, 200000);
-	m_data->maxTimeEdit.setValue(5000);
-	m_data->maxTimeEdit.setToolTip("Maximum time for the script execution.\n-1 means no maximum time.");
-	m_data->resampleText.setText("Resample input signals based on");
-	m_data->resampleBox.addItem("union");
-	m_data->resampleBox.addItem("intersection");
-	m_data->resampleBox.setCurrentIndex(1);
+	d_data->maxTime.setText("Python script timeout (ms)");
+	d_data->maxTimeEdit.setRange(-1, 200000);
+	d_data->maxTimeEdit.setValue(5000);
+	d_data->maxTimeEdit.setToolTip("Maximum time for the script execution.\n-1 means no maximum time.");
+	d_data->resampleText.setText("Resample input signals based on");
+	d_data->resampleBox.addItem("union");
+	d_data->resampleBox.addItem("intersection");
+	d_data->resampleBox.setCurrentIndex(1);
 
 	QVBoxLayout * vlay = new QVBoxLayout();
 	vlay->addLayout(hlay);
-	vlay->addWidget(&m_data->editor, 1);
-	vlay->addWidget(&m_data->apply);
+	vlay->addWidget(&d_data->editor, 1);
+	vlay->addWidget(&d_data->apply);
 	vlay->setContentsMargins(0, 0, 0, 0);
 	setLayout(vlay);
 
-	connect(m_data->apply.applyButton(), SIGNAL(clicked(bool)), this, SLOT(applyRequested()));
-	connect(m_data->apply.registerButton(), SIGNAL(clicked(bool)), this, SLOT(registerProcessing()));
-	connect(m_data->apply.manageButton(), SIGNAL(clicked(bool)), this, SLOT(manageProcessing()));
-	connect(&m_data->maxTimeEdit, SIGNAL(valueChanged(int)), this, SLOT(updatePyProcessing()));
-	connect(&m_data->resampleBox, SIGNAL(currentIndexChanged(int)), this, SLOT(updatePyProcessing()));
+	connect(d_data->apply.applyButton(), SIGNAL(clicked(bool)), this, SLOT(applyRequested()));
+	connect(d_data->apply.registerButton(), SIGNAL(clicked(bool)), this, SLOT(registerProcessing()));
+	connect(d_data->apply.manageButton(), SIGNAL(clicked(bool)), this, SLOT(manageProcessing()));
+	connect(&d_data->maxTimeEdit, SIGNAL(valueChanged(int)), this, SLOT(updatePyProcessing()));
+	connect(&d_data->resampleBox, SIGNAL(currentIndexChanged(int)), this, SLOT(updatePyProcessing()));
 }
 
 PyProcessingEditor::~PyProcessingEditor()
 {
-	delete m_data;
 }
 
 PyApplyToolBar * PyProcessingEditor::buttons() const
 {
-	return &m_data->apply;
+	return &d_data->apply;
 }
 
 void PyProcessingEditor::updatePyProcessing()
 {
-	if (m_data->proc)
+	if (d_data->proc)
 	{
-		m_data->proc->setMaxExecutionTime(m_data->maxTimeEdit.value());
-		if (m_data->resampleBox.currentText() != m_data->proc->propertyAt(0)->value<QString>()) {
-			m_data->proc->propertyAt(0)->setData(m_data->resampleBox.currentText());
-			m_data->proc->reload();
+		d_data->proc->setMaxExecutionTime(d_data->maxTimeEdit.value());
+		if (d_data->resampleBox.currentText() != d_data->proc->propertyAt(0)->value<QString>()) {
+			d_data->proc->propertyAt(0)->setData(d_data->resampleBox.currentText());
+			d_data->proc->reload();
 		}
 	}
 }
@@ -1399,52 +1393,52 @@ void PyProcessingEditor::updatePyProcessing()
 
 void PyProcessingEditor::setPyProcessing(PyProcessing * proc)
 {
-	m_data->proc = proc;
+	d_data->proc = proc;
 	if (proc)
 	{
 		if (proc->inputCount() > 1 && proc->inputAt(0)->probe().data().userType() == qMetaTypeId<VipPointVector>() && proc->resampleEnabled()) {
-			m_data->resampleBox.setVisible(true);
-			m_data->resampleText.setVisible(true);
+			d_data->resampleBox.setVisible(true);
+			d_data->resampleText.setVisible(true);
 		}
 		else {
-			m_data->resampleBox.setVisible(false);
-			m_data->resampleText.setVisible(false);
+			d_data->resampleBox.setVisible(false);
+			d_data->resampleText.setVisible(false);
 		}
-		m_data->resampleBox.setCurrentText(proc->propertyAt(0)->data().value<QString>());
+		d_data->resampleBox.setCurrentText(proc->propertyAt(0)->data().value<QString>());
 
-		if (m_data->params)
+		if (d_data->params)
 		{
-			m_data->params->setAttribute(Qt::WA_DeleteOnClose);
-			m_data->params->close();
+			d_data->params->setAttribute(Qt::WA_DeleteOnClose);
+			d_data->params->close();
 		}
 
 		QList<PyProcessing::Parameter> params = proc->extractStdProcessingParameters();
 		if (params.size())
 		{
-			m_data->params = new PyParametersEditor(proc);
-			this->layout()->addWidget(m_data->params);
-			m_data->editor.hide();
-			m_data->apply.hide();
+			d_data->params = new PyParametersEditor(proc);
+			this->layout()->addWidget(d_data->params);
+			d_data->editor.hide();
+			d_data->apply.hide();
 		}
 		else if (proc->stdPyProcessingFile().isEmpty())
 		{
-			m_data->editor.show();
-			m_data->apply.show();
-			if (!m_data->editor.CurrentEditor())
-				m_data->editor.NewFile();
-			m_data->editor.CurrentEditor()->setPlainText(proc->propertyAt(1)->data().value<QString>());
+			d_data->editor.show();
+			d_data->apply.show();
+			if (!d_data->editor.CurrentEditor())
+				d_data->editor.NewFile();
+			d_data->editor.CurrentEditor()->setPlainText(proc->propertyAt(1)->data().value<QString>());
 
 			/*if (proc->lastError().isNull())
-			m_data->editor.SetApplied();
+			d_data->editor.SetApplied();
 			else if (proc->lastError().traceback == "Uninitialized")
-			m_data->editor.SetUninit();
+			d_data->editor.SetUninit();
 			else
-			m_data->editor.SetError();*/
+			d_data->editor.SetError();*/
 		}
 		else
 		{
-			m_data->editor.hide();
-			m_data->apply.hide();
+			d_data->editor.hide();
+			d_data->apply.hide();
 		}
 
 
@@ -1453,35 +1447,35 @@ void PyProcessingEditor::setPyProcessing(PyProcessing * proc)
 
 void PyProcessingEditor::applyRequested()
 {
-	if (m_data->proc)
+	if (d_data->proc)
 	{
-		m_data->proc->setState(PyProcessing::Init);
-		m_data->proc->propertyAt(1)->setData(VipAnyData(QString(m_data->editor.CurrentEditor()->toPlainText()), VipInvalidTime));
-		m_data->proc->reload();
-		m_data->proc->wait();
-		/*if(m_data->proc->lastError().isNull())
-		m_data->editor.SetApplied();
+		d_data->proc->setState(PyProcessing::Init);
+		d_data->proc->propertyAt(1)->setData(VipAnyData(QString(d_data->editor.CurrentEditor()->toPlainText()), VipInvalidTime));
+		d_data->proc->reload();
+		d_data->proc->wait();
+		/*if(d_data->proc->lastError().isNull())
+		d_data->editor.SetApplied();
 		else
-		m_data->editor.SetError();*/
+		d_data->editor.SetError();*/
 	}
 }
 
 void PyProcessingEditor::uninitRequested()
 {
-	if (m_data->proc)
+	if (d_data->proc)
 	{
-		m_data->proc->setState(PyProcessing::Uninit);
-		m_data->proc->propertyAt(1)->setData(VipAnyData(QString(m_data->editor.CurrentEditor()->toPlainText()), VipInvalidTime));
-		m_data->proc->reload();
-		m_data->proc->wait();
-		//m_data->editor.SetUninit();
+		d_data->proc->setState(PyProcessing::Uninit);
+		d_data->proc->propertyAt(1)->setData(VipAnyData(QString(d_data->editor.CurrentEditor()->toPlainText()), VipInvalidTime));
+		d_data->proc->reload();
+		d_data->proc->wait();
+		//d_data->editor.SetUninit();
 	}
 }
 
 
 void PyProcessingEditor::registerProcessing()
 {
-	if (!m_data->proc)
+	if (!d_data->proc)
 		return;
 
 	//register the current processing
@@ -1491,7 +1485,7 @@ void PyProcessingEditor::registerProcessing()
 	m->setCategory("Python/");
 	VipGenericDialog dialog(m, "Register new processing");
 	if (dialog.exec() == QDialog::Accepted) {
-		bool ret = m_data->proc->registerThisProcessing(m->category(), m->name(), m->description(), false);
+		bool ret = d_data->proc->registerThisProcessing(m->category(), m->name(), m->description(), false);
 		if (!ret)
 			QMessageBox::warning(nullptr, "Operation failure", "Failed to register this processing.\nPlease make sure you entered a valid name and category.");
 		else {

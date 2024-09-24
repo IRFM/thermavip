@@ -210,7 +210,7 @@ VipBaseDragWidget::VipBaseDragWidget(QWidget* parent)
   : QFrame(parent)
   , VipRenderObject(this)
 {
-	d_data = new PrivateData;
+	VIP_CREATE_PRIVATE_DATA(d_data);
 	d_data->visibility = Normal;
 	d_data->operations = AllOperations;
 
@@ -231,7 +231,6 @@ VipBaseDragWidget::VipBaseDragWidget(QWidget* parent)
 VipBaseDragWidget::~VipBaseDragWidget()
 {
 	d_data->destroy = true;
-	delete d_data;
 }
 
 VipMultiDragWidget* VipBaseDragWidget::parentMultiDragWidget() const
@@ -897,7 +896,7 @@ public:
 VipDragWidget::VipDragWidget(QWidget* parent)
   : VipBaseDragWidget(parent)
 {
-	m_data = new PrivateData();
+	VIP_CREATE_PRIVATE_DATA(d_data);
 
 	setProperty("has_focus", false);
 	style()->unpolish(this);
@@ -909,12 +908,10 @@ VipDragWidget::~VipDragWidget()
 	this->VipBaseDragWidget::d_data->destroy = true;
 	VipMultiDragWidget* top_level = this->topLevelMultiDragWidget();
 
-	if (m_data->focus && top_level)
+	if (d_data->focus && top_level)
 		top_level->passFocus();
 	if (top_level)
 		Q_EMIT VipDragWidgetHandler::find(top_level)->contentChanged(top_level);
-
-	delete m_data;
 }
 
 VipDragWidget* VipDragWidget::next() const
@@ -1040,14 +1037,14 @@ void VipDragWidget::setFocusWidget()
 					if (!drag->property("has_focus").toBool())
 						continue;
 
-					drag->m_data->focus = false;
+					drag->d_data->focus = false;
 					drag->setProperty("has_focus", false);
 					drag->style()->unpolish(drags[i]);
 					drag->style()->polish(drags[i]);
 				}
 			}
 
-			new_focus->m_data->focus = true;
+			new_focus->d_data->focus = true;
 			handler->d_focus = new_focus;
 
 			Q_EMIT handler->focusChanged(old_focus, new_focus);
@@ -1060,7 +1057,7 @@ void VipDragWidget::setFocusWidget()
 	if (property("has_focus").toBool())
 		return;
 
-	this->m_data->focus = true;
+	this->d_data->focus = true;
 
 	setProperty("has_focus", true);
 	style()->unpolish(this);
@@ -1072,8 +1069,8 @@ void VipDragWidget::relayout()
 	QVBoxLayout* lay = new QVBoxLayout();
 	lay->setContentsMargins(0, 0, 0, 0);
 	lay->setSpacing(1);
-	if (m_data->widget)
-		lay->addWidget(m_data->widget);
+	if (d_data->widget)
+		lay->addWidget(d_data->widget);
 	else
 		lay->addStretch(1);
 
@@ -1085,31 +1082,31 @@ void VipDragWidget::relayout()
 
 bool VipDragWidget::isFocusWidget() const
 {
-	return m_data->focus;
+	return d_data->focus;
 }
 
 QWidget* VipDragWidget::widget() const
 {
-	return const_cast<VipDragWidget*>(this)->m_data->widget;
+	return const_cast<VipDragWidget*>(this)->d_data->widget;
 }
 
 void VipDragWidget::setWidget(QWidget* widget)
 {
-	if (m_data->widget) {
-		disconnect(m_data->widget, SIGNAL(windowTitleChanged(const QString&)), this, SLOT(titleChanged()));
-		disconnect(m_data->widget, SIGNAL(windowIconChanged(const QIcon&)), this, SLOT(titleChanged()));
-		m_data->widget->close();
-		m_data->widget->deleteLater();
+	if (d_data->widget) {
+		disconnect(d_data->widget, SIGNAL(windowTitleChanged(const QString&)), this, SLOT(titleChanged()));
+		disconnect(d_data->widget, SIGNAL(windowIconChanged(const QIcon&)), this, SLOT(titleChanged()));
+		d_data->widget->close();
+		d_data->widget->deleteLater();
 	}
 
-	m_data->widget = widget;
-	if (m_data->widget && !m_data->widget->windowTitle().isEmpty())
-		this->setWindowTitle(m_data->widget->windowTitle());
+	d_data->widget = widget;
+	if (d_data->widget && !d_data->widget->windowTitle().isEmpty())
+		this->setWindowTitle(d_data->widget->windowTitle());
 
-	if (m_data->widget) {
-		m_data->widget->setFocusPolicy(Qt::StrongFocus);
-		connect(m_data->widget, SIGNAL(windowTitleChanged(const QString&)), this, SLOT(titleChanged()));
-		connect(m_data->widget, SIGNAL(windowIconChanged(const QIcon&)), this, SLOT(titleChanged()));
+	if (d_data->widget) {
+		d_data->widget->setFocusPolicy(Qt::StrongFocus);
+		connect(d_data->widget, SIGNAL(windowTitleChanged(const QString&)), this, SLOT(titleChanged()));
+		connect(d_data->widget, SIGNAL(windowIconChanged(const QIcon&)), this, SLOT(titleChanged()));
 
 		vipSetDragWidget().callAllMatch(this, widget);
 	}
@@ -1125,20 +1122,20 @@ void VipDragWidget::setWidget(QWidget* widget)
 
 void VipDragWidget::titleChanged()
 {
-	if (m_data->widget) {
-		if (!m_data->widget->windowTitle().isEmpty())
-			this->setWindowTitle(m_data->widget->windowTitle());
-		if (!m_data->widget->windowIcon().isNull())
-			this->setWindowIcon(m_data->widget->windowIcon());
+	if (d_data->widget) {
+		if (!d_data->widget->windowTitle().isEmpty())
+			this->setWindowTitle(d_data->widget->windowTitle());
+		if (!d_data->widget->windowIcon().isNull())
+			this->setWindowIcon(d_data->widget->windowIcon());
 	}
 }
 
 QSize VipDragWidget::sizeHint() const
 {
-	if (!m_data->widget)
+	if (!d_data->widget)
 		return VipBaseDragWidget::sizeHint();
 
-	QSize res = m_data->widget->sizeHint();
+	QSize res = d_data->widget->sizeHint();
 	return res;
 }
 
@@ -1225,26 +1222,26 @@ VipMinimizeWidget::VipMinimizeWidget(VipBaseDragWidget* widget)
 {
 
 	// QWidget* p = this->parentWidget();
-	m_data = new PrivateData();
-	m_data->dragWidget = widget;
+	VIP_CREATE_PRIVATE_DATA(d_data);
+	d_data->dragWidget = widget;
 	widget->setProperty("_vip_minimizeWidget", QVariant::fromValue((QWidget*)this));
 
-	QString title = m_data->dragWidget->windowTitle();
-	if (VipDragWidget* d = qobject_cast<VipDragWidget*>(m_data->dragWidget))
+	QString title = d_data->dragWidget->windowTitle();
+	if (VipDragWidget* d = qobject_cast<VipDragWidget*>(d_data->dragWidget))
 		title = d->widget()->windowTitle();
 
-	if (m_data->wPixmap.isNull()) {
+	if (d_data->wPixmap.isNull()) {
 		VipText t("<div>" + title + "</div>");
 		const int w = t.textSize().width();
-		const int h = ((double)m_data->dragWidget->height() / m_data->dragWidget->width()) * w;
+		const int h = ((double)d_data->dragWidget->height() / d_data->dragWidget->width()) * w;
 		// draw player pixmap
-		m_data->wPixmap = QPixmap(m_data->dragWidget->width(), m_data->dragWidget->height());
+		d_data->wPixmap = QPixmap(d_data->dragWidget->width(), d_data->dragWidget->height());
 		{
-			QPainter p(&m_data->wPixmap);
-			m_data->dragWidget->render(&p, QPoint(), QRegion(), QWidget::DrawChildren);
+			QPainter p(&d_data->wPixmap);
+			d_data->dragWidget->render(&p, QPoint(), QRegion(), QWidget::DrawChildren);
 		}
-		m_data->wPixmap = m_data->wPixmap.scaled(QSize(w, h), Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
-		setToolTip(title + "<br>" + vipToHtml(m_data->wPixmap, "align='middle'"));
+		d_data->wPixmap = d_data->wPixmap.scaled(QSize(w, h), Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
+		setToolTip(title + "<br>" + vipToHtml(d_data->wPixmap, "align='middle'"));
 	}
 
 	widget->hide();
@@ -1262,63 +1259,62 @@ VipMinimizeWidget::~VipMinimizeWidget()
 		w->setMaximumHeight(16777215);
 		w->setMaximumWidth(16777215);
 	}
-	delete m_data;
 }
 
 QColor VipMinimizeWidget::background() const
 {
-	return m_data->background;
+	return d_data->background;
 }
 void VipMinimizeWidget::setBackground(const QColor& c)
 {
-	m_data->background = c;
+	d_data->background = c;
 	update();
 }
 QColor VipMinimizeWidget::backgroundHover() const
 {
-	return m_data->backgroundHover;
+	return d_data->backgroundHover;
 }
 void VipMinimizeWidget::setBackgroundHover(const QColor& c)
 {
-	m_data->backgroundHover = c;
+	d_data->backgroundHover = c;
 	update();
 }
 QColor VipMinimizeWidget::closeBackground() const
 {
-	return m_data->closeBackground;
+	return d_data->closeBackground;
 }
 void VipMinimizeWidget::setCloseBackground(const QColor& c)
 {
-	m_data->closeBackground = c;
+	d_data->closeBackground = c;
 	update();
 }
 QColor VipMinimizeWidget::closeBackgroundHover() const
 {
-	return m_data->closeBackgroundHover;
+	return d_data->closeBackgroundHover;
 }
 void VipMinimizeWidget::setCloseBackgroundHover(const QColor& c)
 {
-	m_data->closeBackgroundHover = c;
+	d_data->closeBackgroundHover = c;
 	update();
 }
 
 int VipMinimizeWidget::extent() const
 {
-	return m_data->maxExtent;
+	return d_data->maxExtent;
 }
 void VipMinimizeWidget::setExtent(int ext)
 {
-	m_data->maxExtent = ext;
+	d_data->maxExtent = ext;
 }
 
 void VipMinimizeWidget::enterEvent(QEvent*)
 {
-	m_data->inside = true;
+	d_data->inside = true;
 	update();
 }
 void VipMinimizeWidget::leaveEvent(QEvent*)
 {
-	m_data->inside = false;
+	d_data->inside = false;
 	update();
 }
 
@@ -1347,25 +1343,25 @@ void VipMinimizeWidget::mousePressEvent(QMouseEvent*)
 {
 	bool inside_close = false;
 	QPoint p = this->mapFromGlobal(QCursor::pos());
-	if (m_data->orientation == Qt::Vertical && p.y() < m_data->maxExtent)
+	if (d_data->orientation == Qt::Vertical && p.y() < d_data->maxExtent)
 		inside_close = true;
-	else if (m_data->orientation == Qt::Horizontal && p.x() < m_data->maxExtent)
+	else if (d_data->orientation == Qt::Horizontal && p.x() < d_data->maxExtent)
 		inside_close = true;
 	if (inside_close) {
-		m_data->dragWidget->deleteLater();
+		d_data->dragWidget->deleteLater();
 		return;
 	}
 
 	parentWidget()->removeEventFilter(this);
 	parentWidget()->setMaximumHeight(16777215);
 	parentWidget()->setMaximumWidth(16777215);
-	if (m_data->dragWidget)
-		m_data->dragWidget->show();
+	if (d_data->dragWidget)
+		d_data->dragWidget->show();
 	vipProcessEvents(nullptr, 100);
-	m_data->dragWidget->showNormal();
-	m_data->dragWidget->setFocus();
+	d_data->dragWidget->showNormal();
+	d_data->dragWidget->setFocus();
 
-	if (VipMultiDragWidget* w = m_data->dragWidget->topLevelMultiDragWidget())
+	if (VipMultiDragWidget* w = d_data->dragWidget->topLevelMultiDragWidget())
 		QMetaObject::invokeMethod(w, "reorganizeMinimizedChildren");
 }
 
@@ -1374,34 +1370,34 @@ void VipMinimizeWidget::paintEvent(QPaintEvent* evt)
 	QFrame::paintEvent(evt);
 	VipText text;
 
-	QString title = m_data->dragWidget->windowTitle();
-	if (VipDragWidget* d = qobject_cast<VipDragWidget*>(m_data->dragWidget))
+	QString title = d_data->dragWidget->windowTitle();
+	if (VipDragWidget* d = qobject_cast<VipDragWidget*>(d_data->dragWidget))
 		title = d->widget()->windowTitle();
 
 	text.setText(title);
 	text.setTextPen(QPen(vipWidgetTextBrush(this).color()));
 
 	bool inside_close = false;
-	if (m_data->inside) {
+	if (d_data->inside) {
 		QPoint p = this->mapFromGlobal(QCursor::pos());
-		if (m_data->orientation == Qt::Vertical && p.y() < m_data->maxExtent)
+		if (d_data->orientation == Qt::Vertical && p.y() < d_data->maxExtent)
 			inside_close = true;
-		else if (m_data->orientation == Qt::Horizontal && p.x() < m_data->maxExtent)
+		else if (d_data->orientation == Qt::Horizontal && p.x() < d_data->maxExtent)
 			inside_close = true;
 	}
-	if (m_data->inside) {
+	if (d_data->inside) {
 		if (inside_close)
-			text.setBackgroundBrush(m_data->background);
+			text.setBackgroundBrush(d_data->background);
 		else
-			text.setBackgroundBrush(m_data->backgroundHover);
+			text.setBackgroundBrush(d_data->backgroundHover);
 	}
 	else
-		text.setBackgroundBrush(m_data->background);
+		text.setBackgroundBrush(d_data->background);
 
 	QPainter p(this);
 
 	// draw text
-	if (m_data->orientation == Qt::Horizontal) {
+	if (d_data->orientation == Qt::Horizontal) {
 		text.draw(&p, QRectF(0, 0, width(), height()));
 	}
 	else {
@@ -1412,18 +1408,18 @@ void VipMinimizeWidget::paintEvent(QPaintEvent* evt)
 	p.resetTransform();
 
 	// draw close button
-	QBrush close_back = m_data->closeBackground;
-	if (m_data->inside && inside_close)
-		close_back.setColor(m_data->closeBackgroundHover);
-	if (m_data->orientation == Qt::Vertical) {
+	QBrush close_back = d_data->closeBackground;
+	if (d_data->inside && inside_close)
+		close_back.setColor(d_data->closeBackgroundHover);
+	if (d_data->orientation == Qt::Vertical) {
 		p.fillRect(QRect(0, 0, width(), width()), close_back);
-		QPoint pos((width() - m_data->close.width()) / 2, (width() - m_data->close.width()) / 2);
-		p.drawPixmap(pos, m_data->close);
+		QPoint pos((width() - d_data->close.width()) / 2, (width() - d_data->close.width()) / 2);
+		p.drawPixmap(pos, d_data->close);
 	}
 	else {
 		p.fillRect(QRect(0, 0, height(), height()), close_back);
-		QPoint pos((height() - m_data->close.height()) / 2, (height() - m_data->close.height()) / 2);
-		p.drawPixmap(pos, m_data->close);
+		QPoint pos((height() - d_data->close.height()) / 2, (height() - d_data->close.height()) / 2);
+		p.drawPixmap(pos, d_data->close);
 	}
 
 	// draw transparent border of 1px
@@ -1444,40 +1440,40 @@ bool VipMinimizeWidget::eventFilter(QObject*, QEvent* evt)
 
 void VipMinimizeWidget::reorganize()
 {
-	if (!m_data->dragWidget->isMinimized())
+	if (!d_data->dragWidget->isMinimized())
 		return;
 
 	// get parent multi drag widget
-	VipMultiDragWidget* m = m_data->dragWidget->parentMultiDragWidget();
+	VipMultiDragWidget* m = d_data->dragWidget->parentMultiDragWidget();
 	if (!m)
 		return;
 
-	QPoint pos = m->indexOf(m_data->dragWidget);
+	QPoint pos = m->indexOf(d_data->dragWidget);
 	m->subSplitter(pos.y());
 	int count = 0;
 	// count visible widgets
 	for (int i = 0; i < m->subCount(pos.y()); ++i)
 		if (VipBaseDragWidget* b = m->widget(pos.y(), i, 0))
-			if (b != m_data->dragWidget && !b->isHidden()) {
+			if (b != d_data->dragWidget && !b->isHidden()) {
 				++count;
 			}
 
 	if ((count && m->orientation() == Qt::Vertical) || (count == 0 && m->orientation() == Qt::Horizontal)) {
 		// there is at least one other visible drag widget in this row, organize minimized widgets vertically
-		setMaximumWidth(m_data->maxExtent);
+		setMaximumWidth(d_data->maxExtent);
 		setMaximumHeight(16777215);
-		parentWidget()->setMaximumWidth(m_data->maxExtent);
+		parentWidget()->setMaximumWidth(d_data->maxExtent);
 		parentWidget()->setMaximumHeight(16777215);
-		resize(m_data->maxExtent, parentWidget()->height());
-		m_data->orientation = Qt::Vertical;
+		resize(d_data->maxExtent, parentWidget()->height());
+		d_data->orientation = Qt::Vertical;
 	}
 	else {
-		setMaximumHeight(m_data->maxExtent);
+		setMaximumHeight(d_data->maxExtent);
 		setMaximumWidth(16777215);
-		parentWidget()->setMaximumHeight(m_data->maxExtent);
+		parentWidget()->setMaximumHeight(d_data->maxExtent);
 		parentWidget()->setMaximumWidth(16777215);
-		resize(parentWidget()->width(), m_data->maxExtent);
-		m_data->orientation = Qt::Horizontal;
+		resize(parentWidget()->width(), d_data->maxExtent);
+		d_data->orientation = Qt::Horizontal;
 	}
 	update();
 }
@@ -1771,7 +1767,7 @@ static std::function<void(VipMultiDragWidget*)> _on_multi_drag_widget_created;
 VipMultiDragWidget::VipMultiDragWidget(QWidget* parent)
   : VipBaseDragWidget(parent)
 {
-	d_data = new PrivateData;
+	VIP_CREATE_PRIVATE_DATA(d_data);
 	d_data->header = nullptr;
 	d_data->v_splitter = nullptr;
 	d_data->extra = true;
@@ -1835,8 +1831,6 @@ VipMultiDragWidget::~VipMultiDragWidget()
 	QList<QTabWidget*> lst = findChildren<QTabWidget*>();
 	for (int i = 0; i < lst.size(); ++i)
 		disconnect(lst[i], SIGNAL(currentChanged(int)), this, SLOT(updateContent()));
-
-	delete d_data;
 
 	// be sure that there are no more event that this widget should handle (like updateContent())
 	QCoreApplication::removePostedEvents(this);

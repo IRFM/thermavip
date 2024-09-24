@@ -1562,11 +1562,11 @@ public:
 
 VipSceneModel VipSceneModel::null()
 {
-	return VipSceneModel(QSharedPointer<VipSceneModel::PrivateData>());
+	return VipSceneModel(QSharedPointer<PrivateData>());
 }
 
 VipSceneModel::VipSceneModel()
-  : d_data(new VipSceneModel::PrivateData())
+  : d_data(new PrivateData())
 {
 	d_data->sceneModel = this;
 	d_data->shapeSignals->d_data = d_data;
@@ -1577,7 +1577,7 @@ VipSceneModel::VipSceneModel(const VipSceneModel& other)
 {
 }
 
-VipSceneModel::VipSceneModel(QSharedPointer<VipSceneModel::PrivateData> data)
+VipSceneModel::VipSceneModel(const QSharedPointer<PrivateData> &data)
   : d_data(data)
 {
 }

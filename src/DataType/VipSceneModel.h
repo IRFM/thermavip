@@ -375,7 +375,7 @@ private:
 	void emitShapeChanged();
 
 	class PrivateData;
-	QSharedPointer<VipShape::PrivateData> d_data;
+	QSharedPointer<PrivateData> d_data;
 };
 
 Q_DECLARE_METATYPE(VipShape)
@@ -516,9 +516,9 @@ public:
 
 private:
 	class PrivateData;
-	QSharedPointer<VipSceneModel::PrivateData> d_data;
+	QSharedPointer<PrivateData> d_data;
 
-	VipSceneModel(QSharedPointer<VipSceneModel::PrivateData> data);
+	VipSceneModel(const QSharedPointer<PrivateData> &data);
 };
 
 Q_DECLARE_METATYPE(VipSceneModel)

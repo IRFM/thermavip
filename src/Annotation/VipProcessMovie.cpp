@@ -405,8 +405,7 @@ void VipClientEventDevice::close()
 	if (d_data) {
 		d_data->parent = nullptr;
 		d_data->wait();
-		delete d_data;
-		d_data = nullptr;
+		d_data.reset();
 	}
 	VipIODevice::close();
 }
@@ -417,13 +416,12 @@ bool VipClientEventDevice::enableStreaming(bool enable)
 	if (d_data) {
 		d_data->parent = nullptr;
 		d_data->wait();
-		delete d_data;
-		d_data = nullptr;
+		d_data.reset();
 	}
 
 	if (enable) {
 		// start
-		d_data = new PrivateData();
+		VIP_CREATE_PRIVATE_DATA(d_data);
 		d_data->parent = this;
 		d_data->start();
 
@@ -433,8 +431,7 @@ bool VipClientEventDevice::enableStreaming(bool enable)
 		if (d_data->status.load() < 0) {
 			d_data->parent = nullptr;
 			d_data->wait();
-			delete d_data;
-			d_data = nullptr;
+			d_data.reset();
 		}
 	}
 
@@ -453,76 +450,75 @@ public:
 UploadToDB::UploadToDB(const QString& device, QWidget* parent)
   : QWidget(parent)
 {
-	m_data = new PrivateData();
+	VIP_CREATE_PRIVATE_DATA(d_data);
 
-	m_data->pulse = vipFindDeviceParameters(device)->pulseEditor();
+	d_data->pulse = vipFindDeviceParameters(device)->pulseEditor();
 
 	QGridLayout* lay = new QGridLayout();
 	lay->addWidget(new QLabel("User name"), 0, 0);
-	lay->addWidget(&m_data->userName, 0, 1);
+	lay->addWidget(&d_data->userName, 0, 1);
 	lay->addWidget(new QLabel("Camera name"), 1, 0);
-	lay->addWidget(&m_data->camera, 1, 1);
+	lay->addWidget(&d_data->camera, 1, 1);
 	lay->addWidget(new QLabel("Device name"), 2, 0);
-	lay->addWidget(&m_data->device, 2, 1);
+	lay->addWidget(&d_data->device, 2, 1);
 	lay->addWidget(new QLabel("Experiment id"), 3, 0);
-	lay->addWidget(m_data->pulse, 3, 1);
+	lay->addWidget(d_data->pulse, 3, 1);
 	setLayout(lay);
 
-	m_data->userName.addItems(vipUsersDB());
-	m_data->camera.addItems(vipCamerasDB());
-	m_data->device.addItems(vipDevicesDB());
-	m_data->pulse->setProperty("value", 0);
+	d_data->userName.addItems(vipUsersDB());
+	d_data->camera.addItems(vipCamerasDB());
+	d_data->device.addItems(vipDevicesDB());
+	d_data->pulse->setProperty("value", 0);
 
-	connect(&m_data->device, SIGNAL(currentIndexChanged(int)), this, SLOT(deviceChanged()));
+	connect(&d_data->device, SIGNAL(currentIndexChanged(int)), this, SLOT(deviceChanged()));
 }
 UploadToDB::~UploadToDB()
 {
-	delete m_data;
 }
 
 void UploadToDB::setUserName(const QString& user)
 {
-	m_data->userName.setCurrentText(user);
+	d_data->userName.setCurrentText(user);
 }
 QString UploadToDB::userName() const
 {
-	return m_data->userName.currentText();
+	return d_data->userName.currentText();
 }
 
 void UploadToDB::setCamera(const QString& cam)
 {
-	m_data->camera.setCurrentText(cam);
+	d_data->camera.setCurrentText(cam);
 }
 QString UploadToDB::camera() const
 {
-	return m_data->camera.currentText();
+	return d_data->camera.currentText();
 }
 
 void UploadToDB::setDevice(const QString& dev)
 {
-	m_data->device.setCurrentText(dev);
+	d_data->device.setCurrentText(dev);
 }
 QString UploadToDB::device() const
 {
-	return m_data->device.currentText();
+	return d_data->device.currentText();
 }
 
 void UploadToDB::deviceChanged()
 {
 	double pulse = this->pulse();
 	QWidget* p = vipFindDeviceParameters(device())->pulseEditor();
-	delete m_data->pulse;
-	static_cast<QGridLayout*>(layout())->addWidget(m_data->pulse = p, 3, 1);
+	delete d_data->pulse;
+	static_cast<QGridLayout*>(layout())->addWidget(d_data->pulse = p, 3, 1);
 	setPulse(pulse);
 }
 
 void UploadToDB::setPulse(Vip_experiment_id pulse)
 {
-	m_data->pulse->setProperty("value", pulse);
+	d_data->pulse->setProperty("value", pulse);
 }
 Vip_experiment_id UploadToDB::pulse() const
 {
-	return m_data->pulse->property("value").value<Vip_experiment_id>();
+	return d_data->pulse->property("value").value<Vip_experiment_id>();
 }
 
 class EventInfo::PrivateData
@@ -548,180 +544,179 @@ public:
 EventInfo::EventInfo(VipPlayerDBAccess* pdb)
   : QToolBar()
 {
-	m_data = new PrivateData();
-	m_data->pdb = pdb;
+	VIP_CREATE_PRIVATE_DATA(d_data);
+	d_data->pdb = pdb;
 	this->setIconSize(QSize(18, 18));
-	m_data->close = this->addAction(vipIcon("close.png"), "Close panel");
+	d_data->close = this->addAction(vipIcon("close.png"), "Close panel");
 	this->addSeparator();
 
-	m_data->undo = addAction(vipIcon("undo.png"), "Undo last action");
-	m_data->interp_frames = addAction(vipIcon("interp_frames.png"), "Interpolate polygons inside selected time range for selected events");
-	m_data->rm_frames = addAction(vipIcon("rm_frames.png"), "Remove selected time range from selected events");
-	m_data->split = addAction(vipIcon("split.png"), "Split selected events based on current time");
-	connect(m_data->undo, SIGNAL(triggered(bool)), this, SLOT(emitUndo()));
-	connect(m_data->interp_frames, SIGNAL(triggered(bool)), this, SLOT(emitInterpFrames()));
-	connect(m_data->rm_frames, SIGNAL(triggered(bool)), this, SLOT(emitRemoveFrames()));
-	connect(m_data->split, SIGNAL(triggered(bool)), this, SLOT(emitSplit()));
-
-	this->addSeparator();
-
-	m_data->apply = this->addAction(vipIcon("apply.png"), "Apply changes");
+	d_data->undo = addAction(vipIcon("undo.png"), "Undo last action");
+	d_data->interp_frames = addAction(vipIcon("interp_frames.png"), "Interpolate polygons inside selected time range for selected events");
+	d_data->rm_frames = addAction(vipIcon("rm_frames.png"), "Remove selected time range from selected events");
+	d_data->split = addAction(vipIcon("split.png"), "Split selected events based on current time");
+	connect(d_data->undo, SIGNAL(triggered(bool)), this, SLOT(emitUndo()));
+	connect(d_data->interp_frames, SIGNAL(triggered(bool)), this, SLOT(emitInterpFrames()));
+	connect(d_data->rm_frames, SIGNAL(triggered(bool)), this, SLOT(emitRemoveFrames()));
+	connect(d_data->split, SIGNAL(triggered(bool)), this, SLOT(emitSplit()));
 
 	this->addSeparator();
 
-	this->addWidget(new QLabel());
-	this->addWidget(&m_data->userName);
+	d_data->apply = this->addAction(vipIcon("apply.png"), "Apply changes");
+
+	this->addSeparator();
 
 	this->addWidget(new QLabel());
-	this->addWidget(&m_data->duration);
-	this->addWidget(new QLabel());
-	this->addWidget(&m_data->category);
-	this->addWidget(new QLabel());
-	this->addWidget(&m_data->dataset);
-	this->addWidget(new QLabel());
-	this->addWidget(&m_data->confidence);
-	this->addWidget(new QLabel());
-	this->addWidget(&m_data->analysisStatus);
+	this->addWidget(&d_data->userName);
 
 	this->addWidget(new QLabel());
-	this->addWidget(&m_data->method);
+	this->addWidget(&d_data->duration);
 	this->addWidget(new QLabel());
-	this->addWidget(&m_data->automatic);
+	this->addWidget(&d_data->category);
+	this->addWidget(new QLabel());
+	this->addWidget(&d_data->dataset);
+	this->addWidget(new QLabel());
+	this->addWidget(&d_data->confidence);
+	this->addWidget(new QLabel());
+	this->addWidget(&d_data->analysisStatus);
 
 	this->addWidget(new QLabel());
-	this->addWidget(&m_data->comment);
+	this->addWidget(&d_data->method);
 	this->addWidget(new QLabel());
-	this->addWidget(&m_data->name);
+	this->addWidget(&d_data->automatic);
+
 	this->addWidget(new QLabel());
-	this->addWidget(&m_data->mergeIds);
+	this->addWidget(&d_data->comment);
+	this->addWidget(new QLabel());
+	this->addWidget(&d_data->name);
+	this->addWidget(new QLabel());
+	this->addWidget(&d_data->mergeIds);
 
-	m_data->automatic.setText("Auto");
-	m_data->automatic.setToolTip("Automatic detection or not");
-	m_data->automatic.setTristate(true);
+	d_data->automatic.setText("Auto");
+	d_data->automatic.setToolTip("Automatic detection or not");
+	d_data->automatic.setTristate(true);
 
-	m_data->method.addItems(QStringList() << "" << vipMethodsDB());
-	m_data->method.setToolTip("Detection method");
+	d_data->method.addItems(QStringList() << "" << vipMethodsDB());
+	d_data->method.setToolTip("Detection method");
 
-	m_data->userName.setToolTip("Author name");
-	m_data->duration.setToolTip("Event duration");
+	d_data->userName.setToolTip("Author name");
+	d_data->duration.setToolTip("Event duration");
 
-	m_data->category.setToolTip("Event type");
-	m_data->dataset.setToolTip("Dataset names");
-	m_data->confidence.setToolTip("Detection confidence value (0 -> 1)");
-	m_data->analysisStatus.setToolTip("Analysis status");
-	m_data->comment.setToolTip("Additional comments");
-	m_data->comment.setPlaceholderText("User comment");
-	m_data->name.setToolTip("Event name");
-	m_data->name.setPlaceholderText("Event name");
+	d_data->category.setToolTip("Event type");
+	d_data->dataset.setToolTip("Dataset names");
+	d_data->confidence.setToolTip("Detection confidence value (0 -> 1)");
+	d_data->analysisStatus.setToolTip("Analysis status");
+	d_data->comment.setToolTip("Additional comments");
+	d_data->comment.setPlaceholderText("User comment");
+	d_data->name.setToolTip("Event name");
+	d_data->name.setPlaceholderText("Event name");
 
-	m_data->mergeIds.setPlaceholderText("Merge events...");
-	m_data->mergeIds.setToolTip("<b>Merge events</b><br>Enter a list of event ids to merge (like '1,45,67...')");
+	d_data->mergeIds.setPlaceholderText("Merge events...");
+	d_data->mergeIds.setToolTip("<b>Merge events</b><br>Enter a list of event ids to merge (like '1,45,67...')");
 
-	m_data->category.addItems(QStringList() << "" << vipEventTypesDB());
-	// m_data->category.addItems(QStringList() << "" << vipDatasetsDB());
+	d_data->category.addItems(QStringList() << "" << vipEventTypesDB());
+	// d_data->category.addItems(QStringList() << "" << vipDatasetsDB());
 
-	m_data->analysisStatus.addItems(QStringList() << QString() << vipAnalysisStatusDB());
+	d_data->analysisStatus.addItems(QStringList() << QString() << vipAnalysisStatusDB());
 
-	m_data->confidence.setRange(-0.25, 1);
-	m_data->confidence.setSingleStep(0.25);
-	m_data->confidence.setSpecialValueText(" ");
+	d_data->confidence.setRange(-0.25, 1);
+	d_data->confidence.setSingleStep(0.25);
+	d_data->confidence.setSpecialValueText(" ");
 
-	connect(m_data->close, SIGNAL(triggered(bool)), this, SLOT(hide()));
-	connect(m_data->apply, SIGNAL(triggered(bool)), this, SLOT(apply()));
+	connect(d_data->close, SIGNAL(triggered(bool)), this, SLOT(hide()));
+	connect(d_data->apply, SIGNAL(triggered(bool)), this, SLOT(apply()));
 }
 EventInfo::~EventInfo()
 {
-	delete m_data;
 }
 
 void EventInfo::setCategory(const QString& cat)
 {
-	m_data->category.setCurrentText(cat);
+	d_data->category.setCurrentText(cat);
 }
 QString EventInfo::category() const
 {
-	return m_data->category.currentText();
+	return d_data->category.currentText();
 }
 
 void EventInfo::setDataset(const QString& dataset)
 {
-	m_data->dataset.setDataset(dataset);
+	d_data->dataset.setDataset(dataset);
 }
 QString EventInfo::dataset() const
 {
-	return m_data->dataset.dataset();
+	return d_data->dataset.dataset();
 }
 
 void EventInfo::setAnalysisStatus(const QString& status)
 {
-	m_data->analysisStatus.setCurrentText(status);
+	d_data->analysisStatus.setCurrentText(status);
 }
 QString EventInfo::analysisStatus() const
 {
-	return m_data->analysisStatus.currentText();
+	return d_data->analysisStatus.currentText();
 }
 
 void EventInfo::setComment(const QString& comment)
 {
-	m_data->comment.setText(comment);
+	d_data->comment.setText(comment);
 }
 QString EventInfo::comment() const
 {
-	return m_data->comment.text();
+	return d_data->comment.text();
 }
 
 void EventInfo::setName(const QString& name)
 {
-	m_data->name.setText(name);
+	d_data->name.setText(name);
 }
 QString EventInfo::name() const
 {
-	return m_data->name.text();
+	return d_data->name.text();
 }
 
 void EventInfo::setConfidence(double value)
 {
-	m_data->confidence.setValue(value);
+	d_data->confidence.setValue(value);
 }
 double EventInfo::confidence() const
 {
-	return m_data->confidence.value();
+	return d_data->confidence.value();
 }
 
 void EventInfo::setAutomaticState(Qt::CheckState st)
 {
-	m_data->automatic.setCheckState(st);
+	d_data->automatic.setCheckState(st);
 }
 Qt::CheckState EventInfo::automaticState() const
 {
-	return m_data->automatic.checkState();
+	return d_data->automatic.checkState();
 }
 
 void EventInfo::setMethod(const QString& method)
 {
-	m_data->method.setCurrentText(method);
+	d_data->method.setCurrentText(method);
 }
 QString EventInfo::method() const
 {
-	return m_data->method.currentText();
+	return d_data->method.currentText();
 }
 
 void EventInfo::setUserName(const QString& user)
 {
-	m_data->userName.setText(user);
+	d_data->userName.setText(user);
 }
 
 void EventInfo::setDuration(double duration_s)
 {
 	if (vipIsNan(duration_s))
-		m_data->duration.setText(QString());
+		d_data->duration.setText(QString());
 	else
-		m_data->duration.setText(QString::number(duration_s) + "s");
+		d_data->duration.setText(QString::number(duration_s) + "s");
 }
 
 QList<qint64> EventInfo::mergeIds() const
 {
-	QString ids = m_data->mergeIds.text();
+	QString ids = d_data->mergeIds.text();
 	ids.replace(",", " ");
 	ids.replace(":", " ");
 	ids.replace(";", " ");
@@ -740,12 +735,12 @@ QList<qint64> EventInfo::mergeIds() const
 
 void EventInfo::clearMergeIds()
 {
-	m_data->mergeIds.setText(QString());
+	d_data->mergeIds.setText(QString());
 }
 
 void EventInfo::setUndoToolTip(const QString& str)
 {
-	m_data->undo->setToolTip(str);
+	d_data->undo->setToolTip(str);
 }
 
 void EventInfo::apply()

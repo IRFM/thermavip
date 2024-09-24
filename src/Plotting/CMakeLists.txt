@@ -11,6 +11,12 @@ include(GNUInstallDirs)
 
 FILE(GLOB Sources *.cpp)
 FILE(GLOB Headers *.h)
+
+if(NOT WITH_VTK)
+	list(FILTER Sources EXCLUDE REGEX "^.*VTK.*$")
+	list(FILTER Headers EXCLUDE REGEX "^.*VTK.*$")
+endif()
+
 add_library(VipPlotting SHARED
     ${Sources} ${Headers}
 )

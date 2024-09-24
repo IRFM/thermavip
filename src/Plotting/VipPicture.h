@@ -105,8 +105,8 @@ namespace detail
 		void focusWindowChanged(QWindow* focusWindow);
 
 	private:
-		class PrivateData;
-		PrivateData* d_data;
+		
+		VIP_DECLARE_PRIVATE_DATA(d_data);
 	};
 
 }
@@ -165,8 +165,8 @@ public:
 	static bool isInPainting();
 
 private:
-	class PrivateData;
-	PrivateData* d_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 #endif

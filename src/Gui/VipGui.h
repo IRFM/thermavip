@@ -101,8 +101,8 @@ class VIP_GUI_EXPORT VipFileSharedMemory
 	VipFileSharedMemory();
 	~VipFileSharedMemory();
 
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 
 public:
 	static VipFileSharedMemory& instance();
@@ -235,8 +235,8 @@ private Q_SLOTS:
 	void delaySaveToFile();
 
 private:
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 class VipAbstractPlayer;

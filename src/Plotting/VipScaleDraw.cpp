@@ -850,13 +850,12 @@ public:
 /// set to 4, the tick lengths are set to 4,6 and 8 pixels
 VipAbstractScaleDraw::VipAbstractScaleDraw()
 {
-	d_data = new VipAbstractScaleDraw::PrivateData;
+	VIP_CREATE_PRIVATE_DATA(d_data);
 }
 
 //! Destructor
 VipAbstractScaleDraw::~VipAbstractScaleDraw()
 {
-	delete d_data;
 }
 
 /// Change the transformation of the scale
@@ -1748,14 +1747,13 @@ public:
 /// The orientation is VipAbstractScaleDraw::Bottom.
 VipScaleDraw::VipScaleDraw()
 {
-	d_data = new VipScaleDraw::PrivateData;
+	VIP_CREATE_PRIVATE_DATA(d_data);
 	setLength(100);
 }
 
 //! Destructor
 VipScaleDraw::~VipScaleDraw()
 {
-	delete d_data;
 }
 
 /// Return alignment of the scale
@@ -2868,14 +2866,13 @@ public:
 /// The orientation is VipAbstractScaleDraw::Bottom.
 VipPolarScaleDraw::VipPolarScaleDraw()
 {
-	d_data = new VipPolarScaleDraw::PrivateData;
+	VIP_CREATE_PRIVATE_DATA(d_data);
 	this->setTicksPosition(TicksOutside);
 }
 
 //! Destructor
 VipPolarScaleDraw::~VipPolarScaleDraw()
 {
-	delete d_data;
 }
 
 void VipPolarScaleDraw::setScaleDiv(const VipScaleDiv& s)
@@ -3482,14 +3479,13 @@ public:
 /// The orientation is VipAbstractScaleDraw::Bottom.
 VipRadialScaleDraw::VipRadialScaleDraw()
 {
-	d_data = new PrivateData;
+	VIP_CREATE_PRIVATE_DATA(d_data);
 	setTicksPosition(TicksOutside);
 }
 
 //! Destructor
 VipRadialScaleDraw::~VipRadialScaleDraw()
 {
-	delete d_data;
 }
 
 void VipRadialScaleDraw::setCenter(const QPointF& center)

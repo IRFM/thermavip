@@ -151,8 +151,8 @@ public:
 	QString name() const;
 
 private:
-	class PrivateData;
-	PrivateData* d_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 /// @brief Base class for drawing items (VipPlotItem, VipAbstractScale...)
@@ -284,8 +284,8 @@ private:
 	bool internalSetStyleSheet(const QByteArray& ar);
 	bool internalApplyStyleSheet(const VipStyleSheet& sheet, const VipStyleSheet& inherited);
 
-	class PrivateData;
-	PrivateData* d_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 Q_DECLARE_METATYPE(VipPaintItem*)
@@ -897,8 +897,8 @@ private:
 	qint64 elapsed() const;
 	void computeSelectionOrder();
 
-	class PrivateData;
-	PrivateData* d_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 VIP_REGISTER_QOBJECT_METATYPE(VipPlotItem*)
@@ -1024,7 +1024,7 @@ VIP_REGISTER_QOBJECT_METATYPE(VipPlotItemComposite*)
 /// A VipPlotItemData draw its content based on a data set with VipPlotItemData::setData().
 /// Several items use this way of updateing their contents: VipPlotRasterData, VipPlotCurve, VipPlotHistogram...
 ///
-/// The functions VipPlotItemData::setData() and VipPlotItemData::data() are thread safe,a nd protected
+/// The functions VipPlotItemData::setData() and VipPlotItemData::data() are thread safe, and protected
 /// by a QMutex object returned by VipPlotItemData::dataLock().
 ///
 /// When (or if) overriding VipPlotItemData::setData(), the new member must also be thread safe and call the
@@ -1071,6 +1071,7 @@ public Q_SLOTS:
 	void markDirty();
 Q_SIGNALS:
 
+	/// @brief Emitted when the item's data changed
 	void dataChanged();
 
 private Q_SLOTS:
@@ -1085,8 +1086,8 @@ protected:
 	QVariant takeData();
 
 private:
-	class PrivateData;
-	PrivateData* d_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 VIP_REGISTER_QOBJECT_METATYPE(VipPlotItemData*)
@@ -1094,7 +1095,10 @@ VIP_REGISTER_QOBJECT_METATYPE(VipPlotItemData*)
 VIP_PLOTTING_EXPORT VipArchive& operator<<(VipArchive& arch, const VipPlotItemData* value);
 VIP_PLOTTING_EXPORT VipArchive& operator>>(VipArchive& arch, VipPlotItemData* value);
 
-/// @brief Typied version of VipPlotItemData
+/// @brief Typed version of VipPlotItemData.
+///
+/// Provides the convenient functions setRawData() and rawData().
+/// 
 template<class Data, class Sample = Data>
 class VipPlotItemDataType : public VipPlotItemData
 {
@@ -1107,9 +1111,15 @@ public:
 	{
 	}
 
+	/// @brief Set the item's data.
+	/// Internally calls VipPlotItemData::setData().
 	void setRawData(const Data& raw_data) { this->setData(QVariant::fromValue(raw_data)); }
+	/// @brief Returns the item's data.
 	Data rawData() const { return this->data().template value<Data>(); }
 
+	/// @brief Update the item's data using a functor.
+	/// This is usually more efficient than calling successively
+	/// rawData() and setRawData(). 
 	template<class F>
 	void updateData(F&& fun)
 	{

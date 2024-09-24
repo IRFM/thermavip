@@ -65,12 +65,11 @@ public:
 
 VipPlotItemDynamicProperty::VipPlotItemDynamicProperty(const QString& name)
 {
-	d_data = new PrivateData();
+	VIP_CREATE_PRIVATE_DATA(d_data);
 	d_data->name = name;
 }
 VipPlotItemDynamicProperty::~VipPlotItemDynamicProperty()
 {
-	delete d_data;
 }
 
 VipPlotItem* VipPlotItemDynamicProperty::parentItem() const
@@ -160,13 +159,12 @@ public:
 
 VipPaintItem::VipPaintItem(QGraphicsObject* obj)
 {
-	d_data = new PrivateData();
+	VIP_CREATE_PRIVATE_DATA(d_data);
 	d_data->graphicsObject = obj;
 	d_data->graphicsObject->setProperty("VipPaintItem", QVariant::fromValue(this));
 }
 VipPaintItem::~VipPaintItem()
 {
-	delete d_data;
 }
 
 void VipPaintItem::updateInternal()
@@ -783,7 +781,6 @@ VipPlotItem::~VipPlotItem()
 	}
 
 	this->blockSignals(false);
-	delete d_data;
 }
 
 VipAbstractPlotArea* VipPlotItem::parentPlotArea() const
@@ -816,7 +813,7 @@ VipCoordinateSystemPtr VipPlotItem::sceneMap() const
 		return SHARED_PTR_NAMESPACE::atomic_load(&d_data->externCoordinateSystem);
 	if ((int)d_data->dirtyCoordinateSystem) {
 
-		PrivateData* _data = const_cast<PrivateData*>(d_data);
+		PrivateData* _data = const_cast<PrivateData*>(d_data.get());
 
 		VipCoordinateSystemPtr tmp(vipBuildCoordinateSystem(axes(), d_data->type));
 		SHARED_PTR_NAMESPACE::atomic_store(&_data->sceneMap, tmp ? tmp : VipCoordinateSystemPtr(new VipNullCoordinateSystem(axes())));
@@ -1336,9 +1333,9 @@ bool VipPlotItem::isDirtyShape() const
 void VipPlotItem::markDirtyShape(bool dirty) const
 {
 	if (dirty)
-		const_cast<PrivateData*>(d_data)->cashedDirtyCoordinateSystem = VipCoordinateSystemPtr();
+		const_cast<PrivateData*>(d_data.get())->cashedDirtyCoordinateSystem = VipCoordinateSystemPtr();
 	else
-		const_cast<PrivateData*>(d_data)->cashedDirtyCoordinateSystem = sceneMap();
+		const_cast<PrivateData*>(d_data.get())->cashedDirtyCoordinateSystem = sceneMap();
 }
 
 void VipPlotItem::updateOnStyleSheet()
@@ -2736,7 +2733,7 @@ public:
 VipPlotItemData::VipPlotItemData(const VipText& title)
   : VipPlotItem(title)
 {
-	d_data = new PrivateData();
+	VIP_CREATE_PRIVATE_DATA(d_data);
 	connect(this, SIGNAL(colorMapChanged(VipPlotItem*)), this, SLOT(resetData()), Qt::DirectConnection);
 }
 
@@ -2746,7 +2743,6 @@ VipPlotItemData::~VipPlotItemData()
 	{
 		Locker acq(&d_data->dataLock);
 	}
-	delete d_data;
 }
 
 void VipPlotItemData::setAutoMarkDirty(bool enable)

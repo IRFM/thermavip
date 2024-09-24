@@ -1168,68 +1168,68 @@ public:
 VipColorScaleWidget::VipColorScaleWidget(QWidget* parent)
   : QWidget(parent)
 {
-	m_data = new PrivateData();
+	VIP_CREATE_PRIVATE_DATA(d_data);
 	QGridLayout* grid = new QGridLayout();
 
 	int row = -1;
 	grid->addWidget(new QLabel("Title"), ++row, 0);
-	grid->addWidget(&m_data->title, row, 1);
+	grid->addWidget(&d_data->title, row, 1);
 
 	grid->addWidget(new QLabel("Color map labels"), ++row, 0);
-	grid->addWidget(&m_data->labels, row, 1);
-	m_data->labels.edit()->hide();
+	grid->addWidget(&d_data->labels, row, 1);
+	d_data->labels.edit()->hide();
 
 	grid->addWidget(new QLabel("Color map"), ++row, 0);
-	grid->addWidget(&m_data->colorMaps, row, 1);
+	grid->addWidget(&d_data->colorMaps, row, 1);
 
-	grid->addWidget(&m_data->externalColor, ++row, 0);
-	grid->addWidget(&m_data->externalColorChoice, row, 1);
+	grid->addWidget(&d_data->externalColor, ++row, 0);
+	grid->addWidget(&d_data->externalColorChoice, row, 1);
 
 	grid->addWidget(VipLineWidget::createHLine(), ++row, 0, 1, 2);
 
 	grid->addWidget(new QLabel("Scale max"), ++row, 0);
-	grid->addWidget(&m_data->maximum, row, 1);
+	grid->addWidget(&d_data->maximum, row, 1);
 
 	grid->addWidget(new QLabel("Scale min"), ++row, 0);
-	grid->addWidget(&m_data->minimum, row, 1);
+	grid->addWidget(&d_data->minimum, row, 1);
 
 	grid->addWidget(VipLineWidget::createHLine(), ++row, 0, 1, 2);
 
 	grid->addWidget(new QLabel("Grip max"), ++row, 0);
-	grid->addWidget(&m_data->gripMaximum, row, 1);
+	grid->addWidget(&d_data->gripMaximum, row, 1);
 
 	grid->addWidget(new QLabel("Grip min"), ++row, 0);
-	grid->addWidget(&m_data->gripMinimum, row, 1);
+	grid->addWidget(&d_data->gripMinimum, row, 1);
 
 	grid->addWidget(VipLineWidget::createHLine(), ++row, 0, 1, 2);
 
-	grid->addWidget(&m_data->hasMax, ++row, 0);
-	grid->addWidget(&m_data->maxValue, row, 1);
+	grid->addWidget(&d_data->hasMax, ++row, 0);
+	grid->addWidget(&d_data->maxValue, row, 1);
 
-	grid->addWidget(&m_data->hasMin, ++row, 0);
-	grid->addWidget(&m_data->minValue, row, 1);
+	grid->addWidget(&d_data->hasMin, ++row, 0);
+	grid->addWidget(&d_data->minValue, row, 1);
 
 	grid->addWidget(VipLineWidget::createHLine(), ++row, 0, 1, 2);
 
 	grid->addWidget(new QLabel("Major graduations"), ++row, 0);
-	grid->addWidget(&m_data->maxMajor, row, 1);
+	grid->addWidget(&d_data->maxMajor, row, 1);
 
 	grid->addWidget(new QLabel("Minor graduations"), ++row, 0);
-	grid->addWidget(&m_data->maxMinor, row, 1);
+	grid->addWidget(&d_data->maxMinor, row, 1);
 
 	grid->addWidget(VipLineWidget::createHLine(), ++row, 0, 1, 2);
 
-	grid->addWidget(&m_data->visibleScale, ++row, 0, 1, 2);
-	grid->addWidget(&m_data->autoScale, ++row, 0, 1, 2);
-	grid->addWidget(&m_data->logScale, ++row, 0, 1, 2);
-	grid->addWidget(&m_data->manualExponent, ++row, 0);
-	grid->addWidget(&m_data->exponent, row, 1);
+	grid->addWidget(&d_data->visibleScale, ++row, 0, 1, 2);
+	grid->addWidget(&d_data->autoScale, ++row, 0, 1, 2);
+	grid->addWidget(&d_data->logScale, ++row, 0, 1, 2);
+	grid->addWidget(&d_data->manualExponent, ++row, 0);
+	grid->addWidget(&d_data->exponent, row, 1);
 
 	grid->addWidget(VipLineWidget::createHLine(), ++row, 0, 1, 2);
 
-	grid->addWidget(&m_data->applyAll, ++row, 0, 1, 2);
+	grid->addWidget(&d_data->applyAll, ++row, 0, 1, 2);
 
-	grid->addWidget(&m_data->scaleWidget, 0, 2, ++row, 1);
+	grid->addWidget(&d_data->scaleWidget, 0, 2, ++row, 1);
 
 	// add a stretch
 	QWidget* empty = new QWidget();
@@ -1238,88 +1238,88 @@ VipColorScaleWidget::VipColorScaleWidget(QWidget* parent)
 
 	setLayout(grid);
 
-	m_data->externalColor.setText("Fixed color outside");
-	m_data->thisColorScale = new VipAxisColorMap(VipAxisColorMap::Right);
-	m_data->thisColorScale->scaleDraw()->setTicksPosition(VipScaleDraw::TicksInside);
-	m_data->thisColorScale->setRenderHints(QPainter::TextAntialiasing);
-	m_data->thisColorScale->setColorBarEnabled(true);
-	m_data->thisColorScale->setBorderDist(5, 5);
-	m_data->thisColorScale->setExpandToCorners(true);
-	m_data->thisColorScale->setColorMap(VipInterval(0, 100), VipLinearColorMap::createColorMap(VipLinearColorMap::Jet));
-	m_data->thisColorScale->setUseBorderDistHintForLayout(true);
-	m_data->thisColorScale->setIgnoreStyleSheet(true);
-	m_data->scaleWidget.setScale(m_data->thisColorScale);
-	m_data->scaleWidget.setMaximumWidth(100);
-	m_data->scaleWidget.setStyleSheet("background-color:transparent;");
+	d_data->externalColor.setText("Fixed color outside");
+	d_data->thisColorScale = new VipAxisColorMap(VipAxisColorMap::Right);
+	d_data->thisColorScale->scaleDraw()->setTicksPosition(VipScaleDraw::TicksInside);
+	d_data->thisColorScale->setRenderHints(QPainter::TextAntialiasing);
+	d_data->thisColorScale->setColorBarEnabled(true);
+	d_data->thisColorScale->setBorderDist(5, 5);
+	d_data->thisColorScale->setExpandToCorners(true);
+	d_data->thisColorScale->setColorMap(VipInterval(0, 100), VipLinearColorMap::createColorMap(VipLinearColorMap::Jet));
+	d_data->thisColorScale->setUseBorderDistHintForLayout(true);
+	d_data->thisColorScale->setIgnoreStyleSheet(true);
+	d_data->scaleWidget.setScale(d_data->thisColorScale);
+	d_data->scaleWidget.setMaximumWidth(100);
+	d_data->scaleWidget.setStyleSheet("background-color:transparent;");
 
-	// m_data-> labels.edit()->hide();
-	m_data->labels.edit()->setText("Label example");
-	m_data->visibleScale.setText("Color scale visible");
-	m_data->autoScale.setText("Automatic scaling");
-	m_data->logScale.setText("Log10 scale");
-	m_data->logScale.hide();
-	m_data->applyAll.setText("Apply to all color scales");
+	// d_data-> labels.edit()->hide();
+	d_data->labels.edit()->setText("Label example");
+	d_data->visibleScale.setText("Color scale visible");
+	d_data->autoScale.setText("Automatic scaling");
+	d_data->logScale.setText("Log10 scale");
+	d_data->logScale.hide();
+	d_data->applyAll.setText("Apply to all color scales");
 
-	m_data->hasMin.setText("Clamp min");
-	m_data->hasMax.setText("Clamp max");
-	m_data->hasMin.setToolTip("Set the minimum value under which values are ignored when computing the automatic color scale");
-	m_data->hasMax.setToolTip("Set the maximum value above which values are ignored when computing the automatic color scale");
-	m_data->minValue.setToolTip(m_data->hasMin.toolTip());
-	m_data->maxValue.setToolTip(m_data->hasMax.toolTip());
+	d_data->hasMin.setText("Clamp min");
+	d_data->hasMax.setText("Clamp max");
+	d_data->hasMin.setToolTip("Set the minimum value under which values are ignored when computing the automatic color scale");
+	d_data->hasMax.setToolTip("Set the maximum value above which values are ignored when computing the automatic color scale");
+	d_data->minValue.setToolTip(d_data->hasMin.toolTip());
+	d_data->maxValue.setToolTip(d_data->hasMax.toolTip());
 
-	m_data->manualExponent.setText("Set scale exponent");
-	m_data->manualExponent.setToolTip("<b>Set scale exponent</b><br>If checked, the scale exponent is manually set.<br>Otherwise, the scale exponent is automatically computed.");
-	connect(&m_data->manualExponent, SIGNAL(clicked(bool)), &m_data->exponent, SLOT(setEnabled(bool)));
+	d_data->manualExponent.setText("Set scale exponent");
+	d_data->manualExponent.setToolTip("<b>Set scale exponent</b><br>If checked, the scale exponent is manually set.<br>Otherwise, the scale exponent is automatically computed.");
+	connect(&d_data->manualExponent, SIGNAL(clicked(bool)), &d_data->exponent, SLOT(setEnabled(bool)));
 
-	m_data->exponent.setRange(-300, 300);
-	m_data->exponent.setValue(0);
-	m_data->exponent.setToolTip("Set the common exponent factor to all scale labels");
-	m_data->exponent.setEnabled(false);
+	d_data->exponent.setRange(-300, 300);
+	d_data->exponent.setValue(0);
+	d_data->exponent.setToolTip("Set the common exponent factor to all scale labels");
+	d_data->exponent.setEnabled(false);
 
-	m_data->colorMaps.addItem(colorMapPixmap(VipLinearColorMap::Autumn, QSize(20, 20)), "Autumn");
-	m_data->colorMaps.addItem(colorMapPixmap(VipLinearColorMap::Bone, QSize(20, 20)), "Bone");
-	m_data->colorMaps.addItem(colorMapPixmap(VipLinearColorMap::BuRd, QSize(20, 20)), "BuRd");
-	m_data->colorMaps.addItem(colorMapPixmap(VipLinearColorMap::Cool, QSize(20, 20)), "Cool");
-	m_data->colorMaps.addItem(colorMapPixmap(VipLinearColorMap::Copper, QSize(20, 20)), "Copper");
-	m_data->colorMaps.addItem(colorMapPixmap(VipLinearColorMap::Gray, QSize(20, 20)), "Gray");
-	m_data->colorMaps.addItem(colorMapPixmap(VipLinearColorMap::Hot, QSize(20, 20)), "Hot");
-	m_data->colorMaps.addItem(colorMapPixmap(VipLinearColorMap::Hsv, QSize(20, 20)), "Hsv");
-	m_data->colorMaps.addItem(colorMapPixmap(VipLinearColorMap::Jet, QSize(20, 20)), "Jet");
-	m_data->colorMaps.addItem(colorMapPixmap(VipLinearColorMap::Fusion, QSize(20, 20)), "Fusion");
-	m_data->colorMaps.addItem(colorMapPixmap(VipLinearColorMap::Pink, QSize(20, 20)), "Pink");
-	m_data->colorMaps.addItem(colorMapPixmap(VipLinearColorMap::Rainbow, QSize(20, 20)), "Rainbow");
-	m_data->colorMaps.addItem(colorMapPixmap(VipLinearColorMap::Spring, QSize(20, 20)), "Spring");
-	m_data->colorMaps.addItem(colorMapPixmap(VipLinearColorMap::Summer, QSize(20, 20)), "Summer");
-	m_data->colorMaps.addItem(colorMapPixmap(VipLinearColorMap::Sunset, QSize(20, 20)), "Sunset");
-	m_data->colorMaps.addItem(colorMapPixmap(VipLinearColorMap::Viridis, QSize(20, 20)), "Viridis");
-	m_data->colorMaps.addItem(colorMapPixmap(VipLinearColorMap::White, QSize(20, 20)), "White");
-	m_data->colorMaps.addItem(colorMapPixmap(VipLinearColorMap::Winter, QSize(20, 20)), "Winter");
-	m_data->colorMaps.setCurrentIndex(VipLinearColorMap::Jet);
+	d_data->colorMaps.addItem(colorMapPixmap(VipLinearColorMap::Autumn, QSize(20, 20)), "Autumn");
+	d_data->colorMaps.addItem(colorMapPixmap(VipLinearColorMap::Bone, QSize(20, 20)), "Bone");
+	d_data->colorMaps.addItem(colorMapPixmap(VipLinearColorMap::BuRd, QSize(20, 20)), "BuRd");
+	d_data->colorMaps.addItem(colorMapPixmap(VipLinearColorMap::Cool, QSize(20, 20)), "Cool");
+	d_data->colorMaps.addItem(colorMapPixmap(VipLinearColorMap::Copper, QSize(20, 20)), "Copper");
+	d_data->colorMaps.addItem(colorMapPixmap(VipLinearColorMap::Gray, QSize(20, 20)), "Gray");
+	d_data->colorMaps.addItem(colorMapPixmap(VipLinearColorMap::Hot, QSize(20, 20)), "Hot");
+	d_data->colorMaps.addItem(colorMapPixmap(VipLinearColorMap::Hsv, QSize(20, 20)), "Hsv");
+	d_data->colorMaps.addItem(colorMapPixmap(VipLinearColorMap::Jet, QSize(20, 20)), "Jet");
+	d_data->colorMaps.addItem(colorMapPixmap(VipLinearColorMap::Fusion, QSize(20, 20)), "Fusion");
+	d_data->colorMaps.addItem(colorMapPixmap(VipLinearColorMap::Pink, QSize(20, 20)), "Pink");
+	d_data->colorMaps.addItem(colorMapPixmap(VipLinearColorMap::Rainbow, QSize(20, 20)), "Rainbow");
+	d_data->colorMaps.addItem(colorMapPixmap(VipLinearColorMap::Spring, QSize(20, 20)), "Spring");
+	d_data->colorMaps.addItem(colorMapPixmap(VipLinearColorMap::Summer, QSize(20, 20)), "Summer");
+	d_data->colorMaps.addItem(colorMapPixmap(VipLinearColorMap::Sunset, QSize(20, 20)), "Sunset");
+	d_data->colorMaps.addItem(colorMapPixmap(VipLinearColorMap::Viridis, QSize(20, 20)), "Viridis");
+	d_data->colorMaps.addItem(colorMapPixmap(VipLinearColorMap::White, QSize(20, 20)), "White");
+	d_data->colorMaps.addItem(colorMapPixmap(VipLinearColorMap::Winter, QSize(20, 20)), "Winter");
+	d_data->colorMaps.setCurrentIndex(VipLinearColorMap::Jet);
 
-	connect(&m_data->externalColor, SIGNAL(clicked(bool)), this, SLOT(emitColorScaleChanged()));
-	connect(&m_data->externalColorChoice, SIGNAL(colorChanged(const QColor&)), this, SLOT(emitColorScaleChanged()));
-	connect(&m_data->title, SIGNAL(changed(const VipText&)), this, SLOT(emitColorScaleChanged()));
-	connect(&m_data->labels, SIGNAL(changed(const VipText&)), this, SLOT(emitColorScaleChanged()));
-	connect(&m_data->colorMaps, SIGNAL(currentIndexChanged(int)), this, SLOT(emitColorScaleChanged()));
-	connect(&m_data->maximum, SIGNAL(valueChanged(double)), this, SLOT(emitColorScaleChanged()));
-	connect(&m_data->minimum, SIGNAL(valueChanged(double)), this, SLOT(emitColorScaleChanged()));
-	connect(&m_data->gripMaximum, SIGNAL(valueChanged(double)), this, SLOT(emitColorScaleChanged()));
-	connect(&m_data->gripMinimum, SIGNAL(valueChanged(double)), this, SLOT(emitColorScaleChanged()));
-	connect(&m_data->maxMajor, SIGNAL(valueChanged(int)), this, SLOT(emitColorScaleChanged()));
-	connect(&m_data->maxMinor, SIGNAL(valueChanged(int)), this, SLOT(emitColorScaleChanged()));
-	connect(&m_data->visibleScale, SIGNAL(clicked(bool)), this, SLOT(emitColorScaleChanged()));
-	connect(&m_data->autoScale, SIGNAL(clicked(bool)), this, SLOT(emitColorScaleChanged()));
-	connect(&m_data->logScale, SIGNAL(clicked(bool)), this, SLOT(emitColorScaleChanged()));
-	connect(&m_data->applyAll, SIGNAL(clicked(bool)), this, SLOT(emitColorScaleChanged()));
-	connect(m_data->thisColorScale, SIGNAL(scaleDivChanged(bool)), this, SLOT(emitColorScaleChanged()));
-	connect(m_data->thisColorScale, SIGNAL(valueChanged(double)), this, SLOT(emitColorScaleChanged()));
+	connect(&d_data->externalColor, SIGNAL(clicked(bool)), this, SLOT(emitColorScaleChanged()));
+	connect(&d_data->externalColorChoice, SIGNAL(colorChanged(const QColor&)), this, SLOT(emitColorScaleChanged()));
+	connect(&d_data->title, SIGNAL(changed(const VipText&)), this, SLOT(emitColorScaleChanged()));
+	connect(&d_data->labels, SIGNAL(changed(const VipText&)), this, SLOT(emitColorScaleChanged()));
+	connect(&d_data->colorMaps, SIGNAL(currentIndexChanged(int)), this, SLOT(emitColorScaleChanged()));
+	connect(&d_data->maximum, SIGNAL(valueChanged(double)), this, SLOT(emitColorScaleChanged()));
+	connect(&d_data->minimum, SIGNAL(valueChanged(double)), this, SLOT(emitColorScaleChanged()));
+	connect(&d_data->gripMaximum, SIGNAL(valueChanged(double)), this, SLOT(emitColorScaleChanged()));
+	connect(&d_data->gripMinimum, SIGNAL(valueChanged(double)), this, SLOT(emitColorScaleChanged()));
+	connect(&d_data->maxMajor, SIGNAL(valueChanged(int)), this, SLOT(emitColorScaleChanged()));
+	connect(&d_data->maxMinor, SIGNAL(valueChanged(int)), this, SLOT(emitColorScaleChanged()));
+	connect(&d_data->visibleScale, SIGNAL(clicked(bool)), this, SLOT(emitColorScaleChanged()));
+	connect(&d_data->autoScale, SIGNAL(clicked(bool)), this, SLOT(emitColorScaleChanged()));
+	connect(&d_data->logScale, SIGNAL(clicked(bool)), this, SLOT(emitColorScaleChanged()));
+	connect(&d_data->applyAll, SIGNAL(clicked(bool)), this, SLOT(emitColorScaleChanged()));
+	connect(d_data->thisColorScale, SIGNAL(scaleDivChanged(bool)), this, SLOT(emitColorScaleChanged()));
+	connect(d_data->thisColorScale, SIGNAL(valueChanged(double)), this, SLOT(emitColorScaleChanged()));
 
-	connect(&m_data->hasMin, SIGNAL(clicked(bool)), this, SLOT(emitColorScaleChanged()));
-	connect(&m_data->hasMax, SIGNAL(clicked(bool)), this, SLOT(emitColorScaleChanged()));
-	connect(&m_data->minValue, SIGNAL(valueChanged(double)), this, SLOT(emitColorScaleChanged()));
-	connect(&m_data->maxValue, SIGNAL(valueChanged(double)), this, SLOT(emitColorScaleChanged()));
-	connect(&m_data->exponent, SIGNAL(valueChanged(int)), this, SLOT(emitColorScaleChanged()));
-	connect(&m_data->manualExponent, SIGNAL(clicked(bool)), this, SLOT(emitColorScaleChanged()));
+	connect(&d_data->hasMin, SIGNAL(clicked(bool)), this, SLOT(emitColorScaleChanged()));
+	connect(&d_data->hasMax, SIGNAL(clicked(bool)), this, SLOT(emitColorScaleChanged()));
+	connect(&d_data->minValue, SIGNAL(valueChanged(double)), this, SLOT(emitColorScaleChanged()));
+	connect(&d_data->maxValue, SIGNAL(valueChanged(double)), this, SLOT(emitColorScaleChanged()));
+	connect(&d_data->exponent, SIGNAL(valueChanged(int)), this, SLOT(emitColorScaleChanged()));
+	connect(&d_data->manualExponent, SIGNAL(clicked(bool)), this, SLOT(emitColorScaleChanged()));
 
 	this->setMaximumHeight(470);
 	this->setMaximumWidth(450);
@@ -1327,7 +1327,6 @@ VipColorScaleWidget::VipColorScaleWidget(QWidget* parent)
 
 VipColorScaleWidget::~VipColorScaleWidget()
 {
-	delete m_data;
 }
 
 QPixmap VipColorScaleWidget::colorMapPixmap(int color_map, const QSize& size, const QPen& pen)
@@ -1351,266 +1350,266 @@ QPixmap VipColorScaleWidget::colorMapPixmap(int color_map, const QSize& size, co
 
 VipAxisColorMap* VipColorScaleWidget::colorScale() const
 {
-	return m_data->colorScale;
+	return d_data->colorScale;
 }
 
 void VipColorScaleWidget::updateColorScale()
 {
-	setColorScale(m_data->colorScale);
+	setColorScale(d_data->colorScale);
 }
 
 void VipColorScaleWidget::setColorScale(VipAxisColorMap* scale)
 {
-	if (m_data->colorScale) {
-		disconnect(m_data->colorScale, SIGNAL(scaleDivChanged(bool)), this, SLOT(updateColorScale()));
-		disconnect(m_data->colorScale, SIGNAL(valueChanged(double)), this, SLOT(updateColorScale()));
+	if (d_data->colorScale) {
+		disconnect(d_data->colorScale, SIGNAL(scaleDivChanged(bool)), this, SLOT(updateColorScale()));
+		disconnect(d_data->colorScale, SIGNAL(valueChanged(double)), this, SLOT(updateColorScale()));
 	}
 
-	m_data->colorScale = scale;
+	d_data->colorScale = scale;
 	if (!scale)
 		return;
 
-	connect(m_data->colorScale, SIGNAL(scaleDivChanged(bool)), this, SLOT(updateColorScale()));
-	connect(m_data->colorScale, SIGNAL(valueChanged(double)), this, SLOT(updateColorScale()));
+	connect(d_data->colorScale, SIGNAL(scaleDivChanged(bool)), this, SLOT(updateColorScale()));
+	connect(d_data->colorScale, SIGNAL(valueChanged(double)), this, SLOT(updateColorScale()));
 
-	m_data->title.blockSignals(true);
-	m_data->labels.blockSignals(true);
-	m_data->colorMaps.blockSignals(true);
-	m_data->externalColor.blockSignals(true);
-	m_data->externalColorChoice.blockSignals(true);
-	m_data->maximum.blockSignals(true);
-	m_data->minimum.blockSignals(true);
-	m_data->gripMaximum.blockSignals(true);
-	m_data->gripMinimum.blockSignals(true);
-	m_data->maxMajor.blockSignals(true);
-	m_data->maxMinor.blockSignals(true);
-	m_data->visibleScale.blockSignals(true);
-	m_data->autoScale.blockSignals(true);
-	m_data->logScale.blockSignals(true);
-	m_data->applyAll.blockSignals(true);
-	m_data->scaleWidget.blockSignals(true);
-	m_data->thisColorScale->blockSignals(true);
+	d_data->title.blockSignals(true);
+	d_data->labels.blockSignals(true);
+	d_data->colorMaps.blockSignals(true);
+	d_data->externalColor.blockSignals(true);
+	d_data->externalColorChoice.blockSignals(true);
+	d_data->maximum.blockSignals(true);
+	d_data->minimum.blockSignals(true);
+	d_data->gripMaximum.blockSignals(true);
+	d_data->gripMinimum.blockSignals(true);
+	d_data->maxMajor.blockSignals(true);
+	d_data->maxMinor.blockSignals(true);
+	d_data->visibleScale.blockSignals(true);
+	d_data->autoScale.blockSignals(true);
+	d_data->logScale.blockSignals(true);
+	d_data->applyAll.blockSignals(true);
+	d_data->scaleWidget.blockSignals(true);
+	d_data->thisColorScale->blockSignals(true);
 
-	m_data->hasMin.blockSignals(true);
-	m_data->hasMax.blockSignals(true);
-	m_data->minValue.blockSignals(true);
-	m_data->maxValue.blockSignals(true);
-	m_data->exponent.blockSignals(true);
-	m_data->manualExponent.blockSignals(true);
+	d_data->hasMin.blockSignals(true);
+	d_data->hasMax.blockSignals(true);
+	d_data->minValue.blockSignals(true);
+	d_data->maxValue.blockSignals(true);
+	d_data->exponent.blockSignals(true);
+	d_data->manualExponent.blockSignals(true);
 
-	m_data->colorScale = scale;
-	m_data->title.setText(scale->title());
-	m_data->labels.setText(VipText("", scale->scaleDraw()->textStyle()));
+	d_data->colorScale = scale;
+	d_data->title.setText(scale->title());
+	d_data->labels.setText(VipText("", scale->scaleDraw()->textStyle()));
 	int index = static_cast<VipLinearColorMap*>(scale->colorMap())->type();
 	if (index >= 0) {
-		m_data->colorMaps.setCurrentIndex(index);
-		m_data->thisColorScale->setColorMap(scale->gripInterval(), VipLinearColorMap::createColorMap(VipLinearColorMap::StandardColorMap(index)));
+		d_data->colorMaps.setCurrentIndex(index);
+		d_data->thisColorScale->setColorMap(scale->gripInterval(), VipLinearColorMap::createColorMap(VipLinearColorMap::StandardColorMap(index)));
 	}
-	m_data->externalColor.setChecked(scale->colorMap()->externalValue() == VipLinearColorMap::ColorFixed);
+	d_data->externalColor.setChecked(scale->colorMap()->externalValue() == VipLinearColorMap::ColorFixed);
 	QRgb ext = scale->colorMap()->externalColor();
-	m_data->externalColorChoice.setColor(QColor(qRed(ext), qGreen(ext), qBlue(ext), qAlpha(ext)));
-	m_data->maximum.setValue(scale->scaleDiv().bounds().normalized().maxValue());
-	m_data->minimum.setValue(scale->scaleDiv().bounds().normalized().minValue());
-	m_data->gripMaximum.setValue(scale->gripInterval().normalized().maxValue());
-	m_data->gripMinimum.setValue(scale->gripInterval().normalized().minValue());
-	m_data->maxMajor.setValue(scale->maxMajor());
-	m_data->maxMinor.setValue(scale->maxMinor());
-	m_data->thisColorScale->setScaleDiv(scale->scaleDiv());
-	m_data->thisColorScale->setTitle(scale->title());
-	m_data->thisColorScale->grip1()->setValue(m_data->gripMinimum.value());
-	m_data->thisColorScale->grip2()->setValue(m_data->gripMaximum.value());
-	m_data->thisColorScale->scaleDraw()->setTicksPosition(scale->scaleDraw()->ticksPosition());
-	m_data->thisColorScale->setRenderHints(scale->renderHints());
-	m_data->thisColorScale->setColorBarEnabled(scale->isColorBarEnabled());
-	m_data->thisColorScale->setColorBarWidth(scale->colorBarWidth());
-	m_data->thisColorScale->setMaxMajor(scale->maxMajor());
-	m_data->thisColorScale->setMaxMinor(scale->maxMinor());
-	m_data->thisColorScale->scaleDraw()->setTextStyle(scale->scaleDraw()->textStyle());
-	m_data->thisColorScale->scaleDraw()->setComponentPen(VipScaleDraw::Backbone, scale->scaleDraw()->componentPen(VipScaleDraw::Backbone));
-	m_data->thisColorScale->scaleDraw()->setComponentPen(VipScaleDraw::Ticks, scale->scaleDraw()->componentPen(VipScaleDraw::Ticks));
+	d_data->externalColorChoice.setColor(QColor(qRed(ext), qGreen(ext), qBlue(ext), qAlpha(ext)));
+	d_data->maximum.setValue(scale->scaleDiv().bounds().normalized().maxValue());
+	d_data->minimum.setValue(scale->scaleDiv().bounds().normalized().minValue());
+	d_data->gripMaximum.setValue(scale->gripInterval().normalized().maxValue());
+	d_data->gripMinimum.setValue(scale->gripInterval().normalized().minValue());
+	d_data->maxMajor.setValue(scale->maxMajor());
+	d_data->maxMinor.setValue(scale->maxMinor());
+	d_data->thisColorScale->setScaleDiv(scale->scaleDiv());
+	d_data->thisColorScale->setTitle(scale->title());
+	d_data->thisColorScale->grip1()->setValue(d_data->gripMinimum.value());
+	d_data->thisColorScale->grip2()->setValue(d_data->gripMaximum.value());
+	d_data->thisColorScale->scaleDraw()->setTicksPosition(scale->scaleDraw()->ticksPosition());
+	d_data->thisColorScale->setRenderHints(scale->renderHints());
+	d_data->thisColorScale->setColorBarEnabled(scale->isColorBarEnabled());
+	d_data->thisColorScale->setColorBarWidth(scale->colorBarWidth());
+	d_data->thisColorScale->setMaxMajor(scale->maxMajor());
+	d_data->thisColorScale->setMaxMinor(scale->maxMinor());
+	d_data->thisColorScale->scaleDraw()->setTextStyle(scale->scaleDraw()->textStyle());
+	d_data->thisColorScale->scaleDraw()->setComponentPen(VipScaleDraw::Backbone, scale->scaleDraw()->componentPen(VipScaleDraw::Backbone));
+	d_data->thisColorScale->scaleDraw()->setComponentPen(VipScaleDraw::Ticks, scale->scaleDraw()->componentPen(VipScaleDraw::Ticks));
 	if (scale->transformation())
-		m_data->thisColorScale->setTransformation(scale->transformation()->copy());
+		d_data->thisColorScale->setTransformation(scale->transformation()->copy());
 	double min, max;
 	scale->getBorderDistHint(min, max);
-	m_data->thisColorScale->setBorderDist(min, max);
-	m_data->thisColorScale->setExpandToCorners(scale->expandToCorners());
-	m_data->autoScale.setChecked(scale->isAutoScale());
-	m_data->visibleScale.setChecked(scale->isVisible());
-	m_data->logScale.setChecked(scale->scaleEngine()->scaleType() == VipScaleEngine::Log10);
+	d_data->thisColorScale->setBorderDist(min, max);
+	d_data->thisColorScale->setExpandToCorners(scale->expandToCorners());
+	d_data->autoScale.setChecked(scale->isAutoScale());
+	d_data->visibleScale.setChecked(scale->isVisible());
+	d_data->logScale.setChecked(scale->scaleEngine()->scaleType() == VipScaleEngine::Log10);
 
-	m_data->exponent.setValue(scale->constScaleDraw()->valueToText()->exponent());
-	m_data->manualExponent.setChecked(!scale->constScaleDraw()->valueToText()->automaticExponent());
-	m_data->exponent.setEnabled(m_data->manualExponent.isChecked());
+	d_data->exponent.setValue(scale->constScaleDraw()->valueToText()->exponent());
+	d_data->manualExponent.setChecked(!scale->constScaleDraw()->valueToText()->automaticExponent());
+	d_data->exponent.setEnabled(d_data->manualExponent.isChecked());
 
-	m_data->gripMaximum.setEnabled(!scale->isAutoScale());
-	m_data->gripMinimum.setEnabled(!scale->isAutoScale());
-	m_data->thisColorScale->grip1()->setVisible(!scale->isAutoScale());
-	m_data->thisColorScale->grip2()->setVisible(!scale->isAutoScale());
+	d_data->gripMaximum.setEnabled(!scale->isAutoScale());
+	d_data->gripMinimum.setEnabled(!scale->isAutoScale());
+	d_data->thisColorScale->grip1()->setVisible(!scale->isAutoScale());
+	d_data->thisColorScale->grip2()->setVisible(!scale->isAutoScale());
 
-	m_data->hasMin.setChecked(scale->hasAutoScaleMin());
-	m_data->hasMax.setChecked(scale->hasAutoScaleMax());
-	m_data->minValue.setValue(scale->autoScaleMin());
-	m_data->maxValue.setValue(scale->autoScaleMax());
+	d_data->hasMin.setChecked(scale->hasAutoScaleMin());
+	d_data->hasMax.setChecked(scale->hasAutoScaleMax());
+	d_data->minValue.setValue(scale->autoScaleMin());
+	d_data->maxValue.setValue(scale->autoScaleMax());
 
-	m_data->title.blockSignals(false);
-	m_data->labels.blockSignals(false);
-	m_data->colorMaps.blockSignals(false);
-	m_data->externalColor.blockSignals(false);
-	m_data->externalColorChoice.blockSignals(false);
-	m_data->maximum.blockSignals(false);
-	m_data->minimum.blockSignals(false);
-	m_data->gripMaximum.blockSignals(false);
-	m_data->gripMinimum.blockSignals(false);
-	m_data->maxMajor.blockSignals(false);
-	m_data->maxMinor.blockSignals(false);
-	m_data->visibleScale.blockSignals(false);
-	m_data->autoScale.blockSignals(false);
-	m_data->logScale.blockSignals(false);
-	m_data->applyAll.blockSignals(false);
-	m_data->scaleWidget.blockSignals(false);
-	m_data->thisColorScale->blockSignals(false);
-	m_data->hasMin.blockSignals(false);
-	m_data->hasMax.blockSignals(false);
-	m_data->minValue.blockSignals(false);
-	m_data->maxValue.blockSignals(false);
-	m_data->exponent.blockSignals(false);
-	m_data->manualExponent.blockSignals(false);
+	d_data->title.blockSignals(false);
+	d_data->labels.blockSignals(false);
+	d_data->colorMaps.blockSignals(false);
+	d_data->externalColor.blockSignals(false);
+	d_data->externalColorChoice.blockSignals(false);
+	d_data->maximum.blockSignals(false);
+	d_data->minimum.blockSignals(false);
+	d_data->gripMaximum.blockSignals(false);
+	d_data->gripMinimum.blockSignals(false);
+	d_data->maxMajor.blockSignals(false);
+	d_data->maxMinor.blockSignals(false);
+	d_data->visibleScale.blockSignals(false);
+	d_data->autoScale.blockSignals(false);
+	d_data->logScale.blockSignals(false);
+	d_data->applyAll.blockSignals(false);
+	d_data->scaleWidget.blockSignals(false);
+	d_data->thisColorScale->blockSignals(false);
+	d_data->hasMin.blockSignals(false);
+	d_data->hasMax.blockSignals(false);
+	d_data->minValue.blockSignals(false);
+	d_data->maxValue.blockSignals(false);
+	d_data->exponent.blockSignals(false);
+	d_data->manualExponent.blockSignals(false);
 
-	m_data->scaleWidget.setMinimumWidth(m_data->thisColorScale->minimumLengthHint() + 15);
-	m_data->scaleWidget.setMaximumWidth(m_data->scaleWidget.minimumWidth());
+	d_data->scaleWidget.setMinimumWidth(d_data->thisColorScale->minimumLengthHint() + 15);
+	d_data->scaleWidget.setMaximumWidth(d_data->scaleWidget.minimumWidth());
 }
 
 void VipColorScaleWidget::emitColorScaleChanged()
 {
 	// update this color scale scale div, grips and color map that can be modified by the VipDoubleEdit widgets and the VipComboBox
-	m_data->thisColorScale->blockSignals(true);
-	m_data->thisColorScale->setScale(qMin(m_data->minimum.value(), m_data->maximum.value()), qMax(m_data->minimum.value(), m_data->maximum.value()));
-	if (sender() != m_data->thisColorScale) {
-		m_data->thisColorScale->grip1()->setValue(m_data->gripMinimum.value());
-		m_data->thisColorScale->grip2()->setValue(m_data->gripMaximum.value());
+	d_data->thisColorScale->blockSignals(true);
+	d_data->thisColorScale->setScale(qMin(d_data->minimum.value(), d_data->maximum.value()), qMax(d_data->minimum.value(), d_data->maximum.value()));
+	if (sender() != d_data->thisColorScale) {
+		d_data->thisColorScale->grip1()->setValue(d_data->gripMinimum.value());
+		d_data->thisColorScale->grip2()->setValue(d_data->gripMaximum.value());
 	}
 
-	m_data->thisColorScale->setTitle(m_data->title.getText());
-	m_data->thisColorScale->colorMap()->setExternalValue(m_data->externalColor.isChecked() ? VipColorMap::ColorFixed : VipColorMap::ColorBounds, m_data->externalColorChoice.color().rgba());
+	d_data->thisColorScale->setTitle(d_data->title.getText());
+	d_data->thisColorScale->colorMap()->setExternalValue(d_data->externalColor.isChecked() ? VipColorMap::ColorFixed : VipColorMap::ColorBounds, d_data->externalColorChoice.color().rgba());
 
-	if (static_cast<VipLinearColorMap*>(m_data->thisColorScale->colorMap())->type() != m_data->colorMaps.currentIndex())
-		m_data->thisColorScale->setColorMap(m_data->thisColorScale->gripInterval(), VipLinearColorMap::createColorMap(VipLinearColorMap::StandardColorMap(m_data->colorMaps.currentIndex())));
+	if (static_cast<VipLinearColorMap*>(d_data->thisColorScale->colorMap())->type() != d_data->colorMaps.currentIndex())
+		d_data->thisColorScale->setColorMap(d_data->thisColorScale->gripInterval(), VipLinearColorMap::createColorMap(VipLinearColorMap::StandardColorMap(d_data->colorMaps.currentIndex())));
 
-	m_data->thisColorScale->setMaxMajor(m_data->maxMajor.value());
-	m_data->thisColorScale->setMaxMinor(m_data->maxMinor.value());
-	m_data->thisColorScale->scaleDraw()->setTextStyle(m_data->labels.getText().textStyle());
-	m_data->thisColorScale->scaleDraw()->valueToText()->setExponent(m_data->exponent.value());
-	m_data->thisColorScale->scaleDraw()->valueToText()->setAutomaticExponent(!m_data->manualExponent.isChecked());
-	m_data->thisColorScale->setScaleDiv(m_data->thisColorScale->scaleDiv(), true);
+	d_data->thisColorScale->setMaxMajor(d_data->maxMajor.value());
+	d_data->thisColorScale->setMaxMinor(d_data->maxMinor.value());
+	d_data->thisColorScale->scaleDraw()->setTextStyle(d_data->labels.getText().textStyle());
+	d_data->thisColorScale->scaleDraw()->valueToText()->setExponent(d_data->exponent.value());
+	d_data->thisColorScale->scaleDraw()->valueToText()->setAutomaticExponent(!d_data->manualExponent.isChecked());
+	d_data->thisColorScale->setScaleDiv(d_data->thisColorScale->scaleDiv(), true);
 
 	// change scale engine
-	if (m_data->logScale.isChecked() && m_data->thisColorScale->scaleEngine()->scaleType() == VipScaleEngine::Linear)
-		m_data->thisColorScale->setScaleEngine(new VipLog10ScaleEngine());
-	else if (!m_data->logScale.isChecked() && m_data->thisColorScale->scaleEngine()->scaleType() == VipScaleEngine::Log10)
-		m_data->thisColorScale->setScaleEngine(new VipLinearScaleEngine());
+	if (d_data->logScale.isChecked() && d_data->thisColorScale->scaleEngine()->scaleType() == VipScaleEngine::Linear)
+		d_data->thisColorScale->setScaleEngine(new VipLog10ScaleEngine());
+	else if (!d_data->logScale.isChecked() && d_data->thisColorScale->scaleEngine()->scaleType() == VipScaleEngine::Log10)
+		d_data->thisColorScale->setScaleEngine(new VipLinearScaleEngine());
 
-	m_data->thisColorScale->blockSignals(false);
-	m_data->thisColorScale->scaleDraw()->invalidateCache();
-	m_data->thisColorScale->computeScaleDiv();
+	d_data->thisColorScale->blockSignals(false);
+	d_data->thisColorScale->scaleDraw()->invalidateCache();
+	d_data->thisColorScale->computeScaleDiv();
 	// NEWPLOT
-	// m_data-> thisColorScale->recomputeGeometry();
+	// d_data-> thisColorScale->recomputeGeometry();
 
-	m_data->gripMaximum.setEnabled(!m_data->autoScale.isChecked());
-	m_data->gripMinimum.setEnabled(!m_data->autoScale.isChecked());
-	m_data->thisColorScale->grip1()->setVisible(!m_data->autoScale.isChecked());
-	m_data->thisColorScale->grip2()->setVisible(!m_data->autoScale.isChecked());
+	d_data->gripMaximum.setEnabled(!d_data->autoScale.isChecked());
+	d_data->gripMinimum.setEnabled(!d_data->autoScale.isChecked());
+	d_data->thisColorScale->grip1()->setVisible(!d_data->autoScale.isChecked());
+	d_data->thisColorScale->grip2()->setVisible(!d_data->autoScale.isChecked());
 
 	// compute the list of players
 	// QList<VipVideoPlayer*> players;
-	//  if(m_data->applyAll.isChecked() && displayArea()->currentDisplayPlayerArea())
+	//  if(d_data->applyAll.isChecked() && displayArea()->currentDisplayPlayerArea())
 	//  players = displayArea()->currentDisplayPlayerArea()->findChildren<VipVideoPlayer*>();
 	//  else if(VipVideoPlayer * pl = qobject_cast<VipVideoPlayer*>(currentPlayer()))
 	//  players << pl;
 
 	QList<VipAxisColorMap*> scales;
-	if (m_data->applyAll.isChecked()) {
+	if (d_data->applyAll.isChecked()) {
 		QList<VipAbstractPlayer*> players = VipFindChidren::findChildren<VipAbstractPlayer*>();
 		for (int i = 0; i < players.size(); ++i) {
 			if (players[i]->plotWidget2D())
 				scales.append(players[i]->plotWidget2D()->area()->findItems<VipAxisColorMap*>());
 		}
 	}
-	else if (m_data->colorScale)
-		scales << m_data->colorScale;
+	else if (d_data->colorScale)
+		scales << d_data->colorScale;
 
 	// apply modifications
 	for (int i = 0; i < scales.size(); ++i) {
 		// VipVideoPlayer * player = players[i];
 		VipAxisColorMap* scale = scales[i]; // player->viewer()->area()->colorMap();
 
-		if (scale->scaleDraw()->textStyle(VipScaleDiv::MajorTick).font() != m_data->thisColorScale->scaleDraw()->textStyle(VipScaleDiv::MajorTick).font())
-			scale->styleSheet().setProperty("VipAbstractScale", "label-font", QVariant::fromValue(m_data->thisColorScale->scaleDraw()->textStyle(VipScaleDiv::MajorTick).font()));
-		if (scale->scaleDraw()->textStyle(VipScaleDiv::MajorTick).textPen() != m_data->thisColorScale->scaleDraw()->textStyle(VipScaleDiv::MajorTick).textPen())
+		if (scale->scaleDraw()->textStyle(VipScaleDiv::MajorTick).font() != d_data->thisColorScale->scaleDraw()->textStyle(VipScaleDiv::MajorTick).font())
+			scale->styleSheet().setProperty("VipAbstractScale", "label-font", QVariant::fromValue(d_data->thisColorScale->scaleDraw()->textStyle(VipScaleDiv::MajorTick).font()));
+		if (scale->scaleDraw()->textStyle(VipScaleDiv::MajorTick).textPen() != d_data->thisColorScale->scaleDraw()->textStyle(VipScaleDiv::MajorTick).textPen())
 			scale->styleSheet().setProperty(
-			  "VipAbstractScale", "label-color", QVariant::fromValue(m_data->thisColorScale->scaleDraw()->textStyle(VipScaleDiv::MajorTick).textPen().color()));
-		if (scale->title().textStyle().font() != m_data->thisColorScale->title().textStyle().font())
-			scale->styleSheet().setProperty("VipAbstractScale", "title-font", QVariant::fromValue(m_data->thisColorScale->title().textStyle().font()));
-		if (scale->title().textStyle().textPen() != m_data->thisColorScale->title().textStyle().textPen())
-			scale->styleSheet().setProperty("VipAbstractScale", "title-color", QVariant::fromValue(m_data->thisColorScale->title().textStyle().textPen().color()));
-		if (scale->scaleDraw()->componentPen(VipScaleDraw::Backbone) != m_data->thisColorScale->scaleDraw()->componentPen(VipScaleDraw::Backbone))
-			scale->styleSheet().setProperty("VipAbstractScale", "pen", QVariant::fromValue(m_data->thisColorScale->scaleDraw()->componentPen(VipScaleDraw::Backbone)));
+			  "VipAbstractScale", "label-color", QVariant::fromValue(d_data->thisColorScale->scaleDraw()->textStyle(VipScaleDiv::MajorTick).textPen().color()));
+		if (scale->title().textStyle().font() != d_data->thisColorScale->title().textStyle().font())
+			scale->styleSheet().setProperty("VipAbstractScale", "title-font", QVariant::fromValue(d_data->thisColorScale->title().textStyle().font()));
+		if (scale->title().textStyle().textPen() != d_data->thisColorScale->title().textStyle().textPen())
+			scale->styleSheet().setProperty("VipAbstractScale", "title-color", QVariant::fromValue(d_data->thisColorScale->title().textStyle().textPen().color()));
+		if (scale->scaleDraw()->componentPen(VipScaleDraw::Backbone) != d_data->thisColorScale->scaleDraw()->componentPen(VipScaleDraw::Backbone))
+			scale->styleSheet().setProperty("VipAbstractScale", "pen", QVariant::fromValue(d_data->thisColorScale->scaleDraw()->componentPen(VipScaleDraw::Backbone)));
 		scale->updateStyleSheetString();
 
 		// update title
-		if (scale == m_data->colorScale)
-			scale->setTitle(m_data->title.getText());
+		if (scale == d_data->colorScale)
+			scale->setTitle(d_data->title.getText());
 
 		// update auto scaling
-		scale->setAutoScale(m_data->autoScale.isChecked());
-		if (scale == m_data->colorScale)
-			scale->setVisible(m_data->visibleScale.isChecked());
+		scale->setAutoScale(d_data->autoScale.isChecked());
+		if (scale == d_data->colorScale)
+			scale->setVisible(d_data->visibleScale.isChecked());
 
 		// update scale div and grip values
-		if (!m_data->autoScale.isChecked()) {
-			if (scale->scaleDiv() != m_data->thisColorScale->scaleDiv())
-				scale->setScaleDiv(m_data->thisColorScale->scaleDiv());
-			scale->grip1()->setValue(m_data->thisColorScale->grip1()->value());
-			scale->grip2()->setValue(m_data->thisColorScale->grip2()->value());
+		if (!d_data->autoScale.isChecked()) {
+			if (scale->scaleDiv() != d_data->thisColorScale->scaleDiv())
+				scale->setScaleDiv(d_data->thisColorScale->scaleDiv());
+			scale->grip1()->setValue(d_data->thisColorScale->grip1()->value());
+			scale->grip2()->setValue(d_data->thisColorScale->grip2()->value());
 		}
 
-		if (scale == m_data->colorScale)
+		if (scale == d_data->colorScale)
 			disconnect(scale, SIGNAL(scaleDivChanged(bool)), this, SLOT(updateColorScale()));
 
-		scale->setMaxMajor(m_data->maxMajor.value());
-		scale->setMaxMinor(m_data->maxMinor.value());
-		scale->scaleDraw()->setTextStyle(m_data->labels.getText().textStyle());
+		scale->setMaxMajor(d_data->maxMajor.value());
+		scale->setMaxMinor(d_data->maxMinor.value());
+		scale->scaleDraw()->setTextStyle(d_data->labels.getText().textStyle());
 
-		scale->scaleDraw()->valueToText()->setExponent(m_data->exponent.value());
-		scale->scaleDraw()->valueToText()->setAutomaticExponent(!m_data->manualExponent.isChecked());
+		scale->scaleDraw()->valueToText()->setExponent(d_data->exponent.value());
+		scale->scaleDraw()->valueToText()->setAutomaticExponent(!d_data->manualExponent.isChecked());
 		scale->setScaleDiv(scale->scaleDiv(), true);
 
 		// change scale engine
-		if (m_data->logScale.isChecked() && scale->scaleEngine()->scaleType() == VipScaleEngine::Linear)
+		if (d_data->logScale.isChecked() && scale->scaleEngine()->scaleType() == VipScaleEngine::Linear)
 			scale->setScaleEngine(new VipLog10ScaleEngine());
-		else if (!m_data->logScale.isChecked() && scale->scaleEngine()->scaleType() == VipScaleEngine::Log10)
+		else if (!d_data->logScale.isChecked() && scale->scaleEngine()->scaleType() == VipScaleEngine::Log10)
 			scale->setScaleEngine(new VipLinearScaleEngine());
 
-		if (scale == m_data->colorScale)
+		if (scale == d_data->colorScale)
 			connect(scale, SIGNAL(scaleDivChanged(bool)), this, SLOT(updateColorScale()));
 
 		// update color map
-		if (static_cast<VipLinearColorMap*>(scale->colorMap())->type() != m_data->colorMaps.currentIndex())
-			scale->setColorMap(m_data->thisColorScale->gripInterval(), VipLinearColorMap::createColorMap(VipLinearColorMap::StandardColorMap(m_data->colorMaps.currentIndex())));
+		if (static_cast<VipLinearColorMap*>(scale->colorMap())->type() != d_data->colorMaps.currentIndex())
+			scale->setColorMap(d_data->thisColorScale->gripInterval(), VipLinearColorMap::createColorMap(VipLinearColorMap::StandardColorMap(d_data->colorMaps.currentIndex())));
 
 		// update external color
-		scale->colorMap()->setExternalValue(m_data->externalColor.isChecked() ? VipColorMap::ColorFixed : VipColorMap::ColorBounds, m_data->externalColorChoice.color().rgba());
+		scale->colorMap()->setExternalValue(d_data->externalColor.isChecked() ? VipColorMap::ColorFixed : VipColorMap::ColorBounds, d_data->externalColorChoice.color().rgba());
 
 		// update min/max valid values
-		if (m_data->hasMin.isChecked()) {
-			scale->setAutoScaleMin(m_data->minValue.value());
+		if (d_data->hasMin.isChecked()) {
+			scale->setAutoScaleMin(d_data->minValue.value());
 			scale->setHasAutoScaleMin(true);
 		}
 		else {
 			scale->setAutoScaleMin(vipNan());
 			scale->setHasAutoScaleMin(false);
 		}
-		if (m_data->hasMax.isChecked()) {
-			scale->setAutoScaleMax(m_data->maxValue.value());
+		if (d_data->hasMax.isChecked()) {
+			scale->setAutoScaleMax(d_data->maxValue.value());
 			scale->setHasAutoScaleMax(true);
 		}
 		else {
@@ -1624,10 +1623,10 @@ void VipColorScaleWidget::emitColorScaleChanged()
 		// scale->recomputeGeometry();
 	}
 
-	m_data->scaleWidget.setMinimumWidth(m_data->thisColorScale->minimumLengthHint() + 15);
-	m_data->scaleWidget.setMaximumWidth(m_data->scaleWidget.minimumWidth());
+	d_data->scaleWidget.setMinimumWidth(d_data->thisColorScale->minimumLengthHint() + 15);
+	d_data->scaleWidget.setMaximumWidth(d_data->scaleWidget.minimumWidth());
 
-	Q_EMIT colorScaleChanged(m_data->colorScale);
+	Q_EMIT colorScaleChanged(d_data->colorScale);
 }
 
 QMenu* VipColorScaleButton::generateColorScaleMenu()
@@ -1706,45 +1705,44 @@ public:
 VipAbstractPlayerWidget::VipAbstractPlayerWidget(QWidget* parent)
   : QWidget(parent)
 {
-	m_data = new PrivateData();
+	VIP_CREATE_PRIVATE_DATA(d_data);
 
-	m_data->grid = new QGridLayout();
-	m_data->grid->addWidget(new QLabel("Available items"), 0, 0);
-	m_data->grid->addWidget(&m_data->selection, 0, 1);
-	m_data->grid->addWidget(VipLineWidget::createHLine(), 1, 0, 1, 2);
+	d_data->grid = new QGridLayout();
+	d_data->grid->addWidget(new QLabel("Available items"), 0, 0);
+	d_data->grid->addWidget(&d_data->selection, 0, 1);
+	d_data->grid->addWidget(VipLineWidget::createHLine(), 1, 0, 1, 2);
 
 	QVBoxLayout* vlay = new QVBoxLayout();
-	vlay->addLayout(m_data->grid);
+	vlay->addLayout(d_data->grid);
 	vlay->addStretch(2);
 	setLayout(vlay);
 
-	m_data->selection.setEditable(true);
-	// m_data->selection.setSizeAdjustPolicy(QComboBox::AdjustToContentsOnFirstShow);
-	m_data->selection.setMaximumWidth(200);
-	m_data->selection.setToolTip("Select an to edit among the list of all available items in the current player");
+	d_data->selection.setEditable(true);
+	// d_data->selection.setSizeAdjustPolicy(QComboBox::AdjustToContentsOnFirstShow);
+	d_data->selection.setMaximumWidth(200);
+	d_data->selection.setToolTip("Select an to edit among the list of all available items in the current player");
 
 	// TEST: hide item selection for more visibility
-	// m_data->selection.setVisible(false);
+	// d_data->selection.setVisible(false);
 
-	connect(&m_data->selection, SIGNAL(currentIndexChanged(int)), this, SLOT(itemChoiceChanged()));
+	connect(&d_data->selection, SIGNAL(currentIndexChanged(int)), this, SLOT(itemChoiceChanged()));
 }
 
 VipAbstractPlayerWidget::~VipAbstractPlayerWidget()
 {
-	delete m_data;
 }
 
 VipAbstractPlayer* VipAbstractPlayerWidget::abstractPlayer() const
 {
-	return const_cast<VipAbstractPlayer*>(m_data->player.data());
+	return const_cast<VipAbstractPlayer*>(d_data->player.data());
 }
 
 void VipAbstractPlayerWidget::setEditor(QWidget* editor)
 {
 	// delete the previous editor if needed
-	QLayoutItem* item = m_data->grid->itemAtPosition(2, 0);
+	QLayoutItem* item = d_data->grid->itemAtPosition(2, 0);
 	if (item && item->widget()) {
-		m_data->grid->removeItem(item);
+		d_data->grid->removeItem(item);
 		delete item->widget();
 		delete item;
 		// item->widget()->deleteLater();
@@ -1752,7 +1750,7 @@ void VipAbstractPlayerWidget::setEditor(QWidget* editor)
 
 	// add the new one
 	if (editor) {
-		m_data->grid->addWidget(editor, 2, 0, 1, 2);
+		d_data->grid->addWidget(editor, 2, 0, 1, 2);
 		editor->show();
 	}
 }
@@ -1772,18 +1770,18 @@ void VipAbstractPlayerWidget::hideEvent(QHideEvent*)
 
 void VipAbstractPlayerWidget::setPlayerInternal()
 {
-	if (!m_data->player)
+	if (!d_data->player)
 		return;
-	m_data->selection.blockSignals(true);
-	m_data->selection.clear();
-	m_data->items.clear();
+	d_data->selection.blockSignals(true);
+	d_data->selection.clear();
+	d_data->items.clear();
 
-	VipAbstractPlayer* player = m_data->player;
+	VipAbstractPlayer* player = d_data->player;
 
 	// retrieve all editable QGraphicsItem in the player, add the ones with a title or name to the combo box
 	QList<QGraphicsObject*> items;
-	if (m_data->player->plotWidget2D())
-		items = m_data->player->plotWidget2D()->area()->findItems<QGraphicsObject*>();
+	if (d_data->player->plotWidget2D())
+		items = d_data->player->plotWidget2D()->area()->findItems<QGraphicsObject*>();
 
 	// find all editable items
 	for (int i = 0; i < items.size(); ++i) {
@@ -1796,119 +1794,119 @@ void VipAbstractPlayerWidget::setPlayerInternal()
 
 			// only add items with a name to the combo box
 			if (!name.isEmpty()) {
-				m_data->selection.addItem(name);
-				m_data->items.append(items[i]);
+				d_data->selection.addItem(name);
+				d_data->items.append(items[i]);
 			}
 
 			if (items[i]->isSelected()) {
 				// std::cout<<"selected "<<items[i]->metaObject()->className()<<std::endl;
-				m_data->selected = items[i];
+				d_data->selected = items[i];
 			}
 		}
 	}
 
-	m_data->selection.blockSignals(false);
+	d_data->selection.blockSignals(false);
 
 	// if no editable items, return
-	if (m_data->items.size() == 0)
+	if (d_data->items.size() == 0)
 		return;
 
 	// if no selection, take the default one
-	if (!m_data->selected)
+	if (!d_data->selected)
 		if (VipPlayer2D* p = qobject_cast<VipPlayer2D*>(player))
-			m_data->selected = p->defaultEditableObject();
+			d_data->selected = p->defaultEditableObject();
 	// if no selection, take the last one
-	if (!m_data->selected)
-		m_data->selected = m_data->items.back();
+	if (!d_data->selected)
+		d_data->selected = d_data->items.back();
 
 	// set the selection combo box index
-	int index = m_data->items.indexOf(m_data->selected);
-	m_data->selection.blockSignals(true);
+	int index = d_data->items.indexOf(d_data->selected);
+	d_data->selection.blockSignals(true);
 	if (index >= 0)
-		m_data->selection.setCurrentIndex(index);
+		d_data->selection.setCurrentIndex(index);
 	else {
-		// m_data->selected = m_data->items.back();
-		// m_data->selection.setCurrentIndex(m_data->items.size()-1);
-		m_data->selection.setCurrentText(vipComprehensiveName(m_data->selected));
+		// d_data->selected = d_data->items.back();
+		// d_data->selection.setCurrentIndex(d_data->items.size()-1);
+		d_data->selection.setCurrentText(vipComprehensiveName(d_data->selected));
 	}
 
 	// set the selection combo box tool tip
-	// if (m_data->selected)
-	//  m_data->selection.setToolTip("<b>Current selected item: </b>" +
-	//  vipComprehensiveName(m_data->selected) +
-	//  "<br><b>Type: </b>" + vipSplitClassname(m_data->selected->metaObject()->className()));
+	// if (d_data->selected)
+	//  d_data->selection.setToolTip("<b>Current selected item: </b>" +
+	//  vipComprehensiveName(d_data->selected) +
+	//  "<br><b>Type: </b>" + vipSplitClassname(d_data->selected->metaObject()->className()));
 	//  else
-	//  m_data->selection.setToolTip("Select a plot item to edit among the list of all available items in the current player");
+	//  d_data->selection.setToolTip("Select a plot item to edit among the list of all available items in the current player");
 
-	m_data->selection.blockSignals(false);
+	d_data->selection.blockSignals(false);
 }
 
 #include <iostream>
 void VipAbstractPlayerWidget::setAbstractPlayer(VipAbstractPlayer* player)
 {
-	VipAbstractPlayer* previous_player = m_data->player;
-	QGraphicsObject* previous_selected = m_data->selected;
+	VipAbstractPlayer* previous_player = d_data->player;
+	QGraphicsObject* previous_selected = d_data->selected;
 
-	if (m_data->player && m_data->player->plotWidget2D())
-		disconnect(m_data->player->plotWidget2D()->scene(), SIGNAL(selectionChanged()), this, SLOT(selectionChanged()));
+	if (d_data->player && d_data->player->plotWidget2D())
+		disconnect(d_data->player->plotWidget2D()->scene(), SIGNAL(selectionChanged()), this, SLOT(selectionChanged()));
 
 	if (!player)
 		return;
 
-	m_data->player = player;
+	d_data->player = player;
 
-	if (m_data->player && m_data->player->plotWidget2D())
-		connect(m_data->player->plotWidget2D()->scene(), SIGNAL(selectionChanged()), this, SLOT(selectionChanged()));
+	if (d_data->player && d_data->player->plotWidget2D())
+		connect(d_data->player->plotWidget2D()->scene(), SIGNAL(selectionChanged()), this, SLOT(selectionChanged()));
 
 	if (!isHidden())
 		setPlayerInternal();
 
 	// find editor
-	QLayoutItem* item = m_data->grid->itemAtPosition(2, 0);
+	QLayoutItem* item = d_data->grid->itemAtPosition(2, 0);
 	bool has_editor = (item && item->widget());
 
-	if (m_data->player != previous_player || m_data->selected != previous_selected || !has_editor) {
-		if (m_data->selected != previous_selected)
-			Q_EMIT itemChanged(m_data->selected);
+	if (d_data->player != previous_player || d_data->selected != previous_selected || !has_editor) {
+		if (d_data->selected != previous_selected)
+			Q_EMIT itemChanged(d_data->selected);
 
 		// add the editor
 		if (!isHidden()) {
-			QWidget* editor = vipObjectEditor(QVariant::fromValue(m_data->selected.data()));
+			QWidget* editor = vipObjectEditor(QVariant::fromValue(d_data->selected.data()));
 			setEditor(editor);
 		}
 
-		if (m_data->player != previous_player)
-			Q_EMIT abstractPlayerChanged(m_data->player);
+		if (d_data->player != previous_player)
+			Q_EMIT abstractPlayerChanged(d_data->player);
 	}
 }
 
 void VipAbstractPlayerWidget::itemChoiceChanged()
 {
-	int index = m_data->selection.currentIndex();
-	if (index < m_data->items.size()) {
-		m_data->selected = m_data->items[index];
+	int index = d_data->selection.currentIndex();
+	if (index < d_data->items.size()) {
+		d_data->selected = d_data->items[index];
 
 		// add the editor
-		QWidget* editor = vipObjectEditor(QVariant::fromValue(m_data->selected.data()));
+		QWidget* editor = vipObjectEditor(QVariant::fromValue(d_data->selected.data()));
 		setEditor(editor);
 
-		Q_EMIT itemChanged(m_data->selected);
+		Q_EMIT itemChanged(d_data->selected);
 	}
 }
 
 void VipAbstractPlayerWidget::delayedSelectionChanged()
 {
-	m_data->inDelayedSelection = false;
-	setAbstractPlayer(m_data->player);
+	d_data->inDelayedSelection = false;
+	setAbstractPlayer(d_data->player);
 }
 
 void VipAbstractPlayerWidget::selectionChanged()
 {
-	if (qobject_cast<VipAbstractPlayer*>(m_data->player.data())) {
-		// setAbstractPlayer(m_data->player);
+	if (qobject_cast<VipAbstractPlayer*>(d_data->player.data())) {
+		// setAbstractPlayer(d_data->player);
 		// TEST
-		if (!m_data->inDelayedSelection) {
-			m_data->inDelayedSelection = true;
+		if (!d_data->inDelayedSelection) {
+			d_data->inDelayedSelection = true;
 			QMetaObject::invokeMethod(this, "delayedSelectionChanged", Qt::QueuedConnection);
 		}
 	}
@@ -1937,55 +1935,55 @@ public:
 VipDefaultPlotAreaSettings::VipDefaultPlotAreaSettings(QWidget* parent)
   : QWidget(parent)
 {
-	m_data = new PrivateData();
+	VIP_CREATE_PRIVATE_DATA(d_data);
 
-	m_data->m_curveEditor.baseItemEditor()->setVisible(false);
-	m_data->m_curveEditor.styleEditor()->backgroundEditor()->setColorOptionVisible(false);
-	m_data->m_curveEditor.styleEditor()->borderEditor()->setColorOptionVisible(false);
-	m_data->m_curveEditor.symbolEditor()->penEditor()->setColorOptionVisible(false);
-	m_data->m_curveEditor.symbolEditor()->brushEditor()->setColorOptionVisible(false);
+	d_data->m_curveEditor.baseItemEditor()->setVisible(false);
+	d_data->m_curveEditor.styleEditor()->backgroundEditor()->setColorOptionVisible(false);
+	d_data->m_curveEditor.styleEditor()->borderEditor()->setColorOptionVisible(false);
+	d_data->m_curveEditor.symbolEditor()->penEditor()->setColorOptionVisible(false);
+	d_data->m_curveEditor.symbolEditor()->brushEditor()->setColorOptionVisible(false);
 
-	m_data->m_leftAxis.setText("Show left axis");
-	m_data->m_leftAxis.setChecked(true);
-	m_data->m_rightAxis.setText("Show right axis");
-	m_data->m_rightAxis.setChecked(true);
-	m_data->m_topAxis.setText("Show top axis");
-	m_data->m_topAxis.setChecked(true);
-	m_data->m_bottomAxis.setText("Show bottom axis");
-	m_data->m_bottomAxis.setChecked(true);
-	m_data->m_majorGrid.setText("Show major grid");
-	m_data->m_majorGrid.setChecked(true);
-	m_data->m_minorGrid.setText("Show minor grid");
-	m_data->m_minorGrid.setChecked(false);
-	m_data->m_majorPen.setText("Major grid pen");
-	m_data->m_majorPen.setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
-	m_data->m_minorPen.setText("Minor grid pen");
-	m_data->m_minorPen.setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
-	m_data->m_backgroundBrush.setText("Background brush");
-	m_data->m_backgroundBrush.setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
-	m_data->m_drawAntialize.setText("Draw with anti-aliasing");
-	m_data->m_applyToExistingOnes.setText("Apply changes to all existing players");
-	m_data->m_applyToExistingOnes.setToolTip("If checked, apply the parameters to ALL existing players instead of just the new ones");
-	m_data->m_plotWidget.setMinimumHeight(160);
-	m_data->m_plotWidget.setAttribute(Qt::WA_TransparentForMouseEvents);
+	d_data->m_leftAxis.setText("Show left axis");
+	d_data->m_leftAxis.setChecked(true);
+	d_data->m_rightAxis.setText("Show right axis");
+	d_data->m_rightAxis.setChecked(true);
+	d_data->m_topAxis.setText("Show top axis");
+	d_data->m_topAxis.setChecked(true);
+	d_data->m_bottomAxis.setText("Show bottom axis");
+	d_data->m_bottomAxis.setChecked(true);
+	d_data->m_majorGrid.setText("Show major grid");
+	d_data->m_majorGrid.setChecked(true);
+	d_data->m_minorGrid.setText("Show minor grid");
+	d_data->m_minorGrid.setChecked(false);
+	d_data->m_majorPen.setText("Major grid pen");
+	d_data->m_majorPen.setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
+	d_data->m_minorPen.setText("Minor grid pen");
+	d_data->m_minorPen.setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
+	d_data->m_backgroundBrush.setText("Background brush");
+	d_data->m_backgroundBrush.setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
+	d_data->m_drawAntialize.setText("Draw with anti-aliasing");
+	d_data->m_applyToExistingOnes.setText("Apply changes to all existing players");
+	d_data->m_applyToExistingOnes.setToolTip("If checked, apply the parameters to ALL existing players instead of just the new ones");
+	d_data->m_plotWidget.setMinimumHeight(160);
+	d_data->m_plotWidget.setAttribute(Qt::WA_TransparentForMouseEvents);
 
 	QGroupBox* bcurve = createGroup("Default curve options");
 	QVBoxLayout* clay = new QVBoxLayout();
-	clay->addWidget(&m_data->m_drawAntialize);
-	clay->addWidget(&m_data->m_curveEditor);
+	clay->addWidget(&d_data->m_drawAntialize);
+	clay->addWidget(&d_data->m_curveEditor);
 	bcurve->setLayout(clay);
 
 	QGroupBox* barea = createGroup("Default plot area options");
 	QVBoxLayout* alay = new QVBoxLayout();
-	alay->addWidget(&m_data->m_leftAxis);
-	alay->addWidget(&m_data->m_rightAxis);
-	alay->addWidget(&m_data->m_bottomAxis);
-	alay->addWidget(&m_data->m_topAxis);
-	alay->addWidget(&m_data->m_majorGrid);
-	alay->addWidget(&m_data->m_minorGrid);
-	alay->addWidget(&m_data->m_majorPen);
-	alay->addWidget(&m_data->m_minorPen);
-	alay->addWidget(&m_data->m_backgroundBrush);
+	alay->addWidget(&d_data->m_leftAxis);
+	alay->addWidget(&d_data->m_rightAxis);
+	alay->addWidget(&d_data->m_bottomAxis);
+	alay->addWidget(&d_data->m_topAxis);
+	alay->addWidget(&d_data->m_majorGrid);
+	alay->addWidget(&d_data->m_minorGrid);
+	alay->addWidget(&d_data->m_majorPen);
+	alay->addWidget(&d_data->m_minorPen);
+	alay->addWidget(&d_data->m_backgroundBrush);
 	alay->addStretch(1);
 	barea->setLayout(alay);
 
@@ -1997,120 +1995,119 @@ VipDefaultPlotAreaSettings::VipDefaultPlotAreaSettings(QWidget* parent)
 	QVBoxLayout* vlay = new QVBoxLayout();
 	// vlay->setContentsMargins(0, 0, 0, 0);
 	vlay->addLayout(hlay);
-	vlay->addWidget(&m_data->m_plotWidget);
-	vlay->addWidget(&m_data->m_applyToExistingOnes);
+	vlay->addWidget(&d_data->m_plotWidget);
+	vlay->addWidget(&d_data->m_applyToExistingOnes);
 
 	setLayout(vlay);
 
-	m_data->m_curve = new VipPlotCurve();
-	m_data->m_curve->setPen(QPen(Qt::blue));
-	m_data->m_curve->setBrush(QBrush(QColor(0, 0, 255, 200), Qt::NoBrush));
-	m_data->m_curve->setRawData(VipPointVector() << QPointF(3, 3) << QPointF(6, 6) << QPointF(9, 4) << QPointF(12, 7));
+	d_data->m_curve = new VipPlotCurve();
+	d_data->m_curve->setPen(QPen(Qt::blue));
+	d_data->m_curve->setBrush(QBrush(QColor(0, 0, 255, 200), Qt::NoBrush));
+	d_data->m_curve->setRawData(VipPointVector() << QPointF(3, 3) << QPointF(6, 6) << QPointF(9, 4) << QPointF(12, 7));
 	VipSymbol* s = new VipSymbol();
 	s->setSize(QSizeF(9, 9));
 	s->setStyle(VipSymbol::Ellipse);
 	s->setBrush(QBrush(Qt::blue));
 	s->setPen(QPen(QColor(Qt::blue).darker(120)));
-	m_data->m_curve->setSymbol(s);
-	m_data->m_curve->setAxes(defaultPlotArea()->bottomAxis(), defaultPlotArea()->leftAxis(), VipCoordinateSystem::Cartesian);
+	d_data->m_curve->setSymbol(s);
+	d_data->m_curve->setAxes(defaultPlotArea()->bottomAxis(), defaultPlotArea()->leftAxis(), VipCoordinateSystem::Cartesian);
 
-	m_data->m_curveEditor.setCurve(m_data->m_curve);
+	d_data->m_curveEditor.setCurve(d_data->m_curve);
 
 	setDefaultPlotArea(VipGuiDisplayParamaters::instance()->defaultPlotArea());
 	setDefaultCurve(VipGuiDisplayParamaters::instance()->defaultCurve());
 
-	connect(&m_data->m_leftAxis, SIGNAL(clicked(bool)), this, SLOT(updateItems()));
-	connect(&m_data->m_rightAxis, SIGNAL(clicked(bool)), this, SLOT(updateItems()));
-	connect(&m_data->m_topAxis, SIGNAL(clicked(bool)), this, SLOT(updateItems()));
-	connect(&m_data->m_bottomAxis, SIGNAL(clicked(bool)), this, SLOT(updateItems()));
-	connect(&m_data->m_majorGrid, SIGNAL(clicked(bool)), this, SLOT(updateItems()));
-	connect(&m_data->m_minorGrid, SIGNAL(clicked(bool)), this, SLOT(updateItems()));
-	connect(&m_data->m_majorPen, SIGNAL(penChanged(const QPen&)), this, SLOT(updateItems()));
-	connect(&m_data->m_minorPen, SIGNAL(penChanged(const QPen&)), this, SLOT(updateItems()));
-	connect(&m_data->m_backgroundBrush, SIGNAL(penChanged(const QPen&)), this, SLOT(updateItems()));
-	connect(&m_data->m_drawAntialize, SIGNAL(clicked(bool)), this, SLOT(updateItems()));
-	// connect(&m_data->m_leftAxis, SIGNAL(clicked(bool)), this, SLOT(updateItems()));
-	//  connect(&m_data->m_leftAxis, SIGNAL(clicked(bool)), this, SLOT(updateItems()));
-	//  connect(&m_data->m_leftAxis, SIGNAL(clicked(bool)), this, SLOT(updateItems()));
+	connect(&d_data->m_leftAxis, SIGNAL(clicked(bool)), this, SLOT(updateItems()));
+	connect(&d_data->m_rightAxis, SIGNAL(clicked(bool)), this, SLOT(updateItems()));
+	connect(&d_data->m_topAxis, SIGNAL(clicked(bool)), this, SLOT(updateItems()));
+	connect(&d_data->m_bottomAxis, SIGNAL(clicked(bool)), this, SLOT(updateItems()));
+	connect(&d_data->m_majorGrid, SIGNAL(clicked(bool)), this, SLOT(updateItems()));
+	connect(&d_data->m_minorGrid, SIGNAL(clicked(bool)), this, SLOT(updateItems()));
+	connect(&d_data->m_majorPen, SIGNAL(penChanged(const QPen&)), this, SLOT(updateItems()));
+	connect(&d_data->m_minorPen, SIGNAL(penChanged(const QPen&)), this, SLOT(updateItems()));
+	connect(&d_data->m_backgroundBrush, SIGNAL(penChanged(const QPen&)), this, SLOT(updateItems()));
+	connect(&d_data->m_drawAntialize, SIGNAL(clicked(bool)), this, SLOT(updateItems()));
+	// connect(&d_data->m_leftAxis, SIGNAL(clicked(bool)), this, SLOT(updateItems()));
+	//  connect(&d_data->m_leftAxis, SIGNAL(clicked(bool)), this, SLOT(updateItems()));
+	//  connect(&d_data->m_leftAxis, SIGNAL(clicked(bool)), this, SLOT(updateItems()));
 }
 VipDefaultPlotAreaSettings::~VipDefaultPlotAreaSettings()
 {
-	delete m_data;
 }
 
 VipPlotCurve* VipDefaultPlotAreaSettings::defaultCurve() const
 {
-	return m_data->m_curve;
+	return d_data->m_curve;
 }
 void VipDefaultPlotAreaSettings::setDefaultCurve(VipPlotCurve* c)
 {
 	// import the curve parameters
 
-	// copy parameters to m_data->m_curve
+	// copy parameters to d_data->m_curve
 	if (!c)
 		return;
 
 	// apply the curve parameters, but keep the pen and brush color unchanged, as well as the symbol colors
-	m_data->m_curve->setBaseline(c->baseline());
-	m_data->m_curve->setStyle(c->style());
-	m_data->m_curve->setRenderHints(c->renderHints());
-	m_data->m_curve->setPen(c->pen());
-	m_data->m_curve->setPenColor(Qt::blue);
-	m_data->m_curve->setBrush(c->brush());
-	m_data->m_curve->setBrushColor(QColor(0, 0, 255, 200));
-	m_data->m_curve->setSymbolVisible(c->symbolVisible());
+	d_data->m_curve->setBaseline(c->baseline());
+	d_data->m_curve->setStyle(c->style());
+	d_data->m_curve->setRenderHints(c->renderHints());
+	d_data->m_curve->setPen(c->pen());
+	d_data->m_curve->setPenColor(Qt::blue);
+	d_data->m_curve->setBrush(c->brush());
+	d_data->m_curve->setBrushColor(QColor(0, 0, 255, 200));
+	d_data->m_curve->setSymbolVisible(c->symbolVisible());
 	if (c->symbol()) {
-		m_data->m_curve->symbol()->setStyle(c->symbol()->style());
-		m_data->m_curve->symbol()->setSize(c->symbol()->size());
-		m_data->m_curve->symbol()->setPen(c->symbol()->pen());
-		m_data->m_curve->symbol()->setPenColor(QColor(Qt::blue).darker(120));
-		m_data->m_curve->symbol()->setBrush(c->symbol()->brush());
-		m_data->m_curve->symbol()->setPenColor(QColor(Qt::blue));
+		d_data->m_curve->symbol()->setStyle(c->symbol()->style());
+		d_data->m_curve->symbol()->setSize(c->symbol()->size());
+		d_data->m_curve->symbol()->setPen(c->symbol()->pen());
+		d_data->m_curve->symbol()->setPenColor(QColor(Qt::blue).darker(120));
+		d_data->m_curve->symbol()->setBrush(c->symbol()->brush());
+		d_data->m_curve->symbol()->setPenColor(QColor(Qt::blue));
 	}
-	m_data->m_curveEditor.setCurve(m_data->m_curve);
+	d_data->m_curveEditor.setCurve(d_data->m_curve);
 
-	m_data->m_drawAntialize.blockSignals(true);
-	m_data->m_drawAntialize.setChecked(c->renderHints() & QPainter::Antialiasing);
-	m_data->m_drawAntialize.blockSignals(false);
+	d_data->m_drawAntialize.blockSignals(true);
+	d_data->m_drawAntialize.setChecked(c->renderHints() & QPainter::Antialiasing);
+	d_data->m_drawAntialize.blockSignals(false);
 }
 
 VipPlotArea2D* VipDefaultPlotAreaSettings::defaultPlotArea() const
 {
-	return m_data->m_plotWidget.area();
+	return d_data->m_plotWidget.area();
 }
 
 void VipDefaultPlotAreaSettings::setDefaultPlotArea(VipPlotArea2D* area)
 {
-	m_data->m_leftAxis.blockSignals(true);
-	m_data->m_rightAxis.blockSignals(true);
-	m_data->m_topAxis.blockSignals(true);
-	m_data->m_bottomAxis.blockSignals(true);
-	m_data->m_majorGrid.blockSignals(true);
-	m_data->m_minorGrid.blockSignals(true);
-	m_data->m_majorPen.blockSignals(true);
-	m_data->m_minorPen.blockSignals(true);
-	m_data->m_backgroundBrush.blockSignals(true);
+	d_data->m_leftAxis.blockSignals(true);
+	d_data->m_rightAxis.blockSignals(true);
+	d_data->m_topAxis.blockSignals(true);
+	d_data->m_bottomAxis.blockSignals(true);
+	d_data->m_majorGrid.blockSignals(true);
+	d_data->m_minorGrid.blockSignals(true);
+	d_data->m_majorPen.blockSignals(true);
+	d_data->m_minorPen.blockSignals(true);
+	d_data->m_backgroundBrush.blockSignals(true);
 
-	m_data->m_leftAxis.setChecked(area->leftAxis()->isVisible());
-	m_data->m_rightAxis.setChecked(area->rightAxis()->isVisible());
-	m_data->m_topAxis.setChecked(area->topAxis()->isVisible());
-	m_data->m_bottomAxis.setChecked(area->bottomAxis()->isVisible());
-	m_data->m_majorGrid.setChecked(area->grid()->axisEnabled(0));
-	m_data->m_minorGrid.setChecked(area->grid()->axisMinEnabled(0));
-	m_data->m_majorPen.setPen(area->grid()->majorPen());
-	m_data->m_minorPen.setPen(area->grid()->minorPen());
-	m_data->m_backgroundBrush.setBrush(area->canvas()->boxStyle().backgroundBrush());
+	d_data->m_leftAxis.setChecked(area->leftAxis()->isVisible());
+	d_data->m_rightAxis.setChecked(area->rightAxis()->isVisible());
+	d_data->m_topAxis.setChecked(area->topAxis()->isVisible());
+	d_data->m_bottomAxis.setChecked(area->bottomAxis()->isVisible());
+	d_data->m_majorGrid.setChecked(area->grid()->axisEnabled(0));
+	d_data->m_minorGrid.setChecked(area->grid()->axisMinEnabled(0));
+	d_data->m_majorPen.setPen(area->grid()->majorPen());
+	d_data->m_minorPen.setPen(area->grid()->minorPen());
+	d_data->m_backgroundBrush.setBrush(area->canvas()->boxStyle().backgroundBrush());
 	applyToArea(defaultPlotArea());
 
-	m_data->m_leftAxis.blockSignals(false);
-	m_data->m_rightAxis.blockSignals(false);
-	m_data->m_topAxis.blockSignals(false);
-	m_data->m_bottomAxis.blockSignals(false);
-	m_data->m_majorGrid.blockSignals(false);
-	m_data->m_minorGrid.blockSignals(false);
-	m_data->m_majorPen.blockSignals(false);
-	m_data->m_minorPen.blockSignals(false);
-	m_data->m_backgroundBrush.blockSignals(false);
+	d_data->m_leftAxis.blockSignals(false);
+	d_data->m_rightAxis.blockSignals(false);
+	d_data->m_topAxis.blockSignals(false);
+	d_data->m_bottomAxis.blockSignals(false);
+	d_data->m_majorGrid.blockSignals(false);
+	d_data->m_minorGrid.blockSignals(false);
+	d_data->m_majorPen.blockSignals(false);
+	d_data->m_minorPen.blockSignals(false);
+	d_data->m_backgroundBrush.blockSignals(false);
 }
 
 void VipDefaultPlotAreaSettings::applyToCurve(VipPlotCurve* c)
@@ -2127,7 +2124,7 @@ void VipDefaultPlotAreaSettings::applyToCurve(VipPlotCurve* c)
 
 	// save the title and reapply it after
 	VipText title = c->title();
-	m_data->m_curveEditor.updateCurve(c);
+	d_data->m_curveEditor.updateCurve(c);
 	c->setTitle(title);
 
 	// reset colors
@@ -2139,7 +2136,7 @@ void VipDefaultPlotAreaSettings::applyToCurve(VipPlotCurve* c)
 	}
 
 	// apply antialiazing
-	if (m_data->m_drawAntialize.isChecked())
+	if (d_data->m_drawAntialize.isChecked())
 		c->setRenderHints(QPainter::Antialiasing | QPainter::SmoothPixmapTransform | QPainter::TextAntialiasing);
 	else
 		c->setRenderHints(QPainter::RenderHints());
@@ -2149,33 +2146,33 @@ void VipDefaultPlotAreaSettings::applyToArea(VipPlotArea2D* area)
 	if (!area)
 		return;
 
-	area->leftAxis()->setVisible(m_data->m_leftAxis.isChecked());
-	area->rightAxis()->setVisible(m_data->m_rightAxis.isChecked());
-	area->topAxis()->setVisible(m_data->m_topAxis.isChecked());
-	area->bottomAxis()->setVisible(m_data->m_bottomAxis.isChecked());
-	area->grid()->enableAxis(0, m_data->m_majorGrid.isChecked());
-	area->grid()->enableAxis(1, m_data->m_majorGrid.isChecked());
-	area->grid()->enableAxisMin(0, m_data->m_minorGrid.isChecked());
-	area->grid()->enableAxisMin(1, m_data->m_minorGrid.isChecked());
-	area->grid()->setMajorPen(m_data->m_majorPen.pen());
-	area->grid()->setMinorPen(m_data->m_minorPen.pen());
-	area->canvas()->boxStyle().setBackgroundBrush(m_data->m_backgroundBrush.pen().brush());
+	area->leftAxis()->setVisible(d_data->m_leftAxis.isChecked());
+	area->rightAxis()->setVisible(d_data->m_rightAxis.isChecked());
+	area->topAxis()->setVisible(d_data->m_topAxis.isChecked());
+	area->bottomAxis()->setVisible(d_data->m_bottomAxis.isChecked());
+	area->grid()->enableAxis(0, d_data->m_majorGrid.isChecked());
+	area->grid()->enableAxis(1, d_data->m_majorGrid.isChecked());
+	area->grid()->enableAxisMin(0, d_data->m_minorGrid.isChecked());
+	area->grid()->enableAxisMin(1, d_data->m_minorGrid.isChecked());
+	area->grid()->setMajorPen(d_data->m_majorPen.pen());
+	area->grid()->setMinorPen(d_data->m_minorPen.pen());
+	area->canvas()->boxStyle().setBackgroundBrush(d_data->m_backgroundBrush.pen().brush());
 }
 
 void VipDefaultPlotAreaSettings::updateItems()
 {
-	applyToCurve(m_data->m_curve);
+	applyToCurve(d_data->m_curve);
 	applyToArea(defaultPlotArea());
-	m_data->m_plotWidget.update();
+	d_data->m_plotWidget.update();
 }
 
 bool VipDefaultPlotAreaSettings::shouldApplyToAllPlayers() const
 {
-	return m_data->m_applyToExistingOnes.isChecked();
+	return d_data->m_applyToExistingOnes.isChecked();
 }
 void VipDefaultPlotAreaSettings::setShouldApplyToAllPlayers(bool apply)
 {
-	m_data->m_applyToExistingOnes.setChecked(apply);
+	d_data->m_applyToExistingOnes.setChecked(apply);
 }
 
 static VipPlotItemWidget* editPlotItem(VipPlotItem* item)

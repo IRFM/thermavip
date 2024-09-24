@@ -184,8 +184,8 @@ private:
 	void installFilter(VipPlotAreaFilter* filter);
 	void removeFilter();
 
-	class PrivateData;
-	PrivateData* d_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 /// @brief QGraphicsObject used to draw plot items selection order over a VipAbstractPlotArea
@@ -831,8 +831,8 @@ private:
 	void markScaleDivDirty(VipAbstractScale*);
 	bool markGeometryDirty();
 	void applyLabelOverlapping();
-	class PrivateData;
-	PrivateData* d_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 /// @brief A plotting area displaying 4 cartesian axes and suitable for most plot items
@@ -885,8 +885,8 @@ protected:
 	virtual double titleOffset() const;
 
 private:
-	class PrivateData;
-	PrivateData* d_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 /// @brief A plotting area displaying a polar and radial axis
@@ -935,8 +935,8 @@ protected:
 	virtual bool setItemProperty(const char* name, const QVariant& value, const QByteArray& index);
 
 private:
-	class PrivateData;
-	PrivateData* d_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 /// @brief Cartesian plotting area displaying an image
@@ -1025,8 +1025,8 @@ private Q_SLOTS:
 private:
 	void recomputeGeometry(const QRectF& visualized_image_rect, bool recompute_aligned_areas = true);
 
-	class PrivateData;
-	PrivateData* d_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 /// @brief Base class for Thermavip QGraphicsView widgets
@@ -1107,8 +1107,8 @@ protected:
 	void updateCacheMode(bool enable_cache);
 
 private:
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 /// @brief Base class for QGraphicsView that only contain one VipAbstractPlotArea

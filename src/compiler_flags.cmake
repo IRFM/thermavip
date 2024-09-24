@@ -32,6 +32,18 @@ endif()
 target_link_libraries(${TARGET_PROJECT} PRIVATE ${QT_LIBS})
 
 
+# Add VTK libraries if required
+if(WITH_VTK)
+	find_package(VTK REQUIRED)
+	target_include_directories(${TARGET_PROJECT} PRIVATE ${VTK_INCLUDE_DIRS})
+	target_link_libraries(${TARGET_PROJECT} PRIVATE ${VTK_LIBRARIES})
+	target_compile_definitions(${TARGET_PROJECT} PUBLIC -DVIP_WITH_VTK)
+	
+	if(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
+		# for msvc, avoid using release VTK with debug STL
+		target_compile_definitions(${TARGET_PROJECT} PUBLIC -D_ITERATOR_DEBUG_LEVEL=0)
+	endif()
+endif()
 
 
 #external code added if exists
@@ -41,8 +53,8 @@ else()
 
 	if (CMAKE_BUILD_TYPE STREQUAL "Release" )
 		# Release build, all compilers
-		add_definitions(-DNDEBUG)
-		add_definitions(-DQT_NO_DEBUG)
+		target_compile_definitions(${TARGET_PROJECT} PUBLIC -DNDEBUG)
+		target_compile_definitions(${TARGET_PROJECT} PUBLIC -DQT_NO_DEBUG)
 	endif()
 
 	if (WIN32 AND CMAKE_CXX_COMPILER_ID MATCHES "GNU")
@@ -63,7 +75,7 @@ else()
 	
 	if(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
 		# for msvc
-		add_definitions(-DNOMINMAX)
+		target_compile_definitions(${TARGET_PROJECT} PUBLIC -DNOMINMAX)
 		#if (CMAKE_BUILD_TYPE STREQUAL "Release" )
 			#target_compile_options(${TARGET_PROJECT} PRIVATE /O2 /MP)
 		#else()
@@ -71,7 +83,7 @@ else()
 		#endif()
 		
 		# For macro VIP_FOR_EACH_GENERIC, we need a compliant preprocessor
-		target_compile_definitions(${TARGET_PROJECT} PUBLIC /Zc:preprocessor)
+		target_compile_options(${TARGET_PROJECT} PUBLIC /Zc:preprocessor)
 		
 		target_link_libraries(${TARGET_PROJECT} PRIVATE opengl32)
 	endif()
@@ -100,13 +112,13 @@ else()
 	endif()
 	
 	if (WIN32)
-		add_definitions("-DNOMINMAX")
-		add_definitions("-DWIN64")
-		add_definitions("-DDISABLE_WINRT_DEPRECATION")
-		add_definitions("-D_WINDOWS")
-		add_definitions("-DUNICODE")
-		add_definitions("-D_USE_MATH_DEFINES")
-		add_definitions("-D_WIN32")
+		target_compile_definitions(${TARGET_PROJECT} PUBLIC -DNOMINMAX)
+		#target_compile_definitions(${TARGET_PROJECT} PUBLIC -DWIN64)
+		target_compile_definitions(${TARGET_PROJECT} PUBLIC -DDISABLE_WINRT_DEPRECATION)
+		target_compile_definitions(${TARGET_PROJECT} PUBLIC -D_WINDOWS)
+		target_compile_definitions(${TARGET_PROJECT} PUBLIC -DUNICODE)
+		target_compile_definitions(${TARGET_PROJECT} PUBLIC -D_USE_MATH_DEFINES)
+		target_compile_definitions(${TARGET_PROJECT} PUBLIC -D_WIN32)
 	endif()
 	
 	

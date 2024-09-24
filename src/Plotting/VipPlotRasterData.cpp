@@ -703,7 +703,6 @@ VipPlotRasterData::VipPlotRasterData(const VipText& title)
 
 VipPlotRasterData::~VipPlotRasterData()
 {
-	delete d_data;
 }
 
 bool VipPlotRasterData::setItemProperty(const char* name, const QVariant& value, const QByteArray& index)

@@ -69,14 +69,14 @@ VipAnyData::VipAnyData()
 VipAnyData::VipAnyData(const QVariant& data, qint64 time)
   : m_source(0)
   , m_time(time)
-  , m_data(data)
+  , d_data(data)
 {
 }
 
 VipAnyData::VipAnyData(QVariant&& data, qint64 time)
   : m_source(0)
   , m_time(time)
-  , m_data(std::move(data))
+  , d_data(std::move(data))
 {
 }
 
@@ -95,7 +95,7 @@ QStringList VipAnyData::mergeAttributes(const QVariantMap& attrs)
 
 int VipAnyData::memoryFootprint() const
 {
-	return sizeof(qint64) * 2 + vipGetMemoryFootprint(m_data) + vipGetMemoryFootprint(QVariant::fromValue(m_attributes));
+	return sizeof(qint64) * 2 + vipGetMemoryFootprint(d_data) + vipGetMemoryFootprint(QVariant::fromValue(m_attributes));
 }
 
 // make VipAnyData and VipErrorData serializable
@@ -251,35 +251,34 @@ public:
 
 VipConnection::VipConnection()
 {
-	m_data = new PrivateData();
+	VIP_CREATE_PRIVATE_DATA(d_data);
 }
 
 VipConnection::~VipConnection()
 {
 	clearConnection();
-	delete m_data;
 }
 
 VipProcessingIO* VipConnection::parentProcessingIO() const
 {
-	return const_cast<VipProcessingIO*>(m_data->io);
+	return const_cast<VipProcessingIO*>(d_data->io);
 }
 
 void VipConnection::setParentProcessingObject(VipProcessingObject* proc, VipProcessingIO* io)
 {
-	m_data->parent = proc;
-	m_data->io = io;
+	d_data->parent = proc;
+	d_data->io = io;
 }
 
 VipProcessingObject* VipConnection::parentProcessingObject() const
 {
-	return const_cast<VipProcessingObject*>(m_data->parent);
+	return const_cast<VipProcessingObject*>(d_data->parent);
 }
 
 VipOutput* VipConnection::source() const
 {
-	if (m_data->connections.size())
-		return m_data->connections.first()->parentProcessingIO()->toOutput();
+	if (d_data->connections.size())
+		return d_data->connections.first()->parentProcessingIO()->toOutput();
 	else
 		return nullptr;
 }
@@ -287,19 +286,19 @@ VipOutput* VipConnection::source() const
 void VipConnection::setupConnection(const QString& addr, const VipConnectionPtr& con)
 {
 	resetError();
-	m_data->address = addr;
+	d_data->address = addr;
 
 	// remove previous connections
 	VipConnectionPtr this_con = sharedFromThis();
-	for (int i = 0; i < m_data->connections.size(); ++i) {
-		int index = m_data->connections[i]->m_data->connections.indexOf(this_con);
+	for (int i = 0; i < d_data->connections.size(); ++i) {
+		int index = d_data->connections[i]->d_data->connections.indexOf(this_con);
 		if (index >= 0)
-			m_data->connections[i]->m_data->connections.remove(index);
+			d_data->connections[i]->d_data->connections.remove(index);
 	}
 
-	m_data->connections.clear();
+	d_data->connections.clear();
 	if (con)
-		m_data->connections = VipConnectionVector() << con;
+		d_data->connections = VipConnectionVector() << con;
 }
 
 bool VipConnection::openConnection(IOType type)
@@ -307,7 +306,7 @@ bool VipConnection::openConnection(IOType type)
 	resetError();
 	doOpenConnection(type);
 	if (openMode() > 0) {
-		Q_EMIT connectionOpened(parentProcessingIO(), openMode(), m_data->address);
+		Q_EMIT connectionOpened(parentProcessingIO(), openMode(), d_data->address);
 		return true;
 	}
 	return false;
@@ -340,20 +339,20 @@ void VipConnection::clearConnection()
 {
 	resetError();
 	doClearConnection();
-	m_data->address.clear();
-	m_data->connections.clear();
+	d_data->address.clear();
+	d_data->connections.clear();
 	setOpenMode(UnknownConnection);
 }
 
 VipConnection::IOType VipConnection::openMode()
 {
-	return m_data->openMode;
+	return d_data->openMode;
 }
 
 void VipConnection::setOpenMode(IOType mode)
 {
-	int tmp = m_data->openMode;
-	m_data->openMode = mode;
+	int tmp = d_data->openMode;
+	d_data->openMode = mode;
 
 	if (tmp != UnknownConnection && mode == UnknownConnection)
 		Q_EMIT connectionClosed(parentProcessingIO());
@@ -362,26 +361,26 @@ void VipConnection::setOpenMode(IOType mode)
 QString VipConnection::address() const
 {
 	// recompute the address if needed ( the VipProcessingObject name might have changed in the meantime)
-	if (m_data->openMode == InputConnection) {
+	if (d_data->openMode == InputConnection) {
 		// build connection from given VipConnection instances
-		if (m_data->connections.size()) {
+		if (d_data->connections.size()) {
 			// use the last (probably unique) connection which is the output
-			VipConnectionPtr out = m_data->connections.back();
+			VipConnectionPtr out = d_data->connections.back();
 			if (VipProcessingPool* pool = out->parentProcessingObject()->parentObjectPool())
-				const_cast<QString&>(m_data->address) =
+				const_cast<QString&>(d_data->address) =
 				  "VipConnection:" + pool->objectName() + ";" + out->parentProcessingObject()->objectName() + ";" + out->parentProcessingIO()->name();
 			else
-				const_cast<QString&>(m_data->address) = "VipConnection:" + out->parentProcessingObject()->objectName() + ";" + out->parentProcessingIO()->name();
+				const_cast<QString&>(d_data->address) = "VipConnection:" + out->parentProcessingObject()->objectName() + ";" + out->parentProcessingIO()->name();
 		}
 	}
-	return m_data->address;
+	return d_data->address;
 }
 
 QList<VipInput*> VipConnection::sinks() const
 {
 	QList<VipInput*> res;
-	for (int i = 0; i < m_data->connections.size(); ++i)
-		if (VipProcessingIO* io = m_data->connections[i]->parentProcessingIO())
+	for (int i = 0; i < d_data->connections.size(); ++i)
+		if (VipProcessingIO* io = d_data->connections[i]->parentProcessingIO())
 			if (VipInput* in = io->toInput())
 				res << in;
 	return res;
@@ -390,8 +389,8 @@ QList<VipInput*> VipConnection::sinks() const
 QList<UniqueProcessingIO*> VipConnection::allSinks() const
 {
 	QList<UniqueProcessingIO*> res;
-	for (int i = 0; i < m_data->connections.size(); ++i)
-		if (VipProcessingIO* io = m_data->connections[i]->parentProcessingIO()) {
+	for (int i = 0; i < d_data->connections.size(); ++i)
+		if (VipProcessingIO* io = d_data->connections[i]->parentProcessingIO()) {
 			if (VipInput* in = io->toInput())
 				res << in;
 			else if (VipProperty* p = io->toProperty())
@@ -408,11 +407,11 @@ void VipConnection::receiveData(const VipAnyData& data)
 
 void VipConnection::removeProcessingPoolFromAddress()
 {
-	if (!m_data->address.isEmpty()) {
-		QString addr = removeClassNamePrefix(m_data->address);
+	if (!d_data->address.isEmpty()) {
+		QString addr = removeClassNamePrefix(d_data->address);
 		QStringList lst = addr.split(";");
 		if (lst.size() == 3) {
-			m_data->address = "VipConnection:" + lst[1] + ";" + lst[2];
+			d_data->address = "VipConnection:" + lst[1] + ";" + lst[2];
 		}
 	}
 }
@@ -421,26 +420,26 @@ void VipConnection::doOpenConnection(IOType type)
 {
 	if (type == InputConnection) {
 		// build connection from given VipConnection instances
-		if (m_data->connections.size()) {
+		if (d_data->connections.size()) {
 			// use the last (probably unique) connection which is the output
-			VipConnectionPtr out = m_data->connections.back();
+			VipConnectionPtr out = d_data->connections.back();
 			VipConnectionPtr in = sharedFromThis();
 
 			// add this connection to output connection vector
-			if (out->m_data->connections.indexOf(in) < 0)
-				out->m_data->connections.append(in);
+			if (out->d_data->connections.indexOf(in) < 0)
+				out->d_data->connections.append(in);
 
 			// save processing pool name if possible
 			if (VipProcessingPool* pool = out->parentProcessingObject()->parentObjectPool())
-				m_data->address = "VipConnection:" + pool->objectName() + ";" + out->parentProcessingObject()->objectName() + ";" + out->parentProcessingIO()->name();
+				d_data->address = "VipConnection:" + pool->objectName() + ";" + out->parentProcessingObject()->objectName() + ";" + out->parentProcessingIO()->name();
 			else
-				m_data->address = "VipConnection:" + out->parentProcessingObject()->objectName() + ";" + out->parentProcessingIO()->name();
-			m_data->connections = VipConnectionVector() << out;
+				d_data->address = "VipConnection:" + out->parentProcessingObject()->objectName() + ";" + out->parentProcessingIO()->name();
+			d_data->connections = VipConnectionVector() << out;
 			this->setOpenMode(InputConnection);
 		}
 		// for Inputs only, build from an address: 'VipConnection:processing_name;processing_io_name'
-		else if (m_data->address.length()) {
-			QString addr = removeClassNamePrefix(m_data->address);
+		else if (d_data->address.length()) {
+			QString addr = removeClassNamePrefix(d_data->address);
 			QStringList lst = addr.split(";");
 			VipProcessingPool* pool = parentProcessingObject()->parentObjectPool();
 			// VipProcessingPool* parent_pool = pool;
@@ -460,25 +459,25 @@ void VipConnection::doOpenConnection(IOType type)
 						VipConnectionPtr in = sharedFromThis();
 						VipConnectionPtr out = _output->connection();
 
-						if (out->m_data->connections.indexOf(in) < 0)
-							out->m_data->connections.append(in);
+						if (out->d_data->connections.indexOf(in) < 0)
+							out->d_data->connections.append(in);
 
 						if (VipProcessingPool* p = out->parentProcessingObject()->parentObjectPool())
-							m_data->address =
+							d_data->address =
 							  "VipConnection:" + p->objectName() + ";" + out->parentProcessingObject()->objectName() + ";" + out->parentProcessingIO()->name();
 						else
-							m_data->address = "VipConnection:" + out->parentProcessingObject()->objectName() + ";" + out->parentProcessingIO()->name();
-						m_data->connections = VipConnectionVector() << out;
+							d_data->address = "VipConnection:" + out->parentProcessingObject()->objectName() + ";" + out->parentProcessingIO()->name();
+						d_data->connections = VipConnectionVector() << out;
 						this->setOpenMode(InputConnection);
 						return;
 					}
 				}
 				else {
-					VIP_LOG_ERROR("Cannot retrieve processing object with address ", m_data->address);
+					VIP_LOG_ERROR("Cannot retrieve processing object with address ", d_data->address);
 				}
 			}
 
-			VIP_LOG_ERROR("Wrong connection format for " + this->parentProcessingIO()->parentProcessing()->objectName() + ", address: " + m_data->address);
+			VIP_LOG_ERROR("Wrong connection format for " + this->parentProcessingIO()->parentProcessing()->objectName() + ", address: " + d_data->address);
 			setError("Wrong connection format for " + this->parentProcessingIO()->parentProcessing()->objectName(), VipProcessingObject::ConnectionNotOpen);
 			this->setOpenMode(UnknownConnection);
 		}
@@ -490,29 +489,29 @@ void VipConnection::doOpenConnection(IOType type)
 
 void VipConnection::doSendData(const VipAnyData& data)
 {
-	for (int i = 0; i < m_data->connections.size(); ++i) {
-		m_data->connections[i]->receiveData(data);
+	for (int i = 0; i < d_data->connections.size(); ++i) {
+		d_data->connections[i]->receiveData(data);
 	}
 }
 
 void VipConnection::doClearConnection()
 {
 	VipConnectionPtr con = sharedFromThis();
-	for (int i = 0; i < m_data->connections.size(); ++i) {
-		int index = m_data->connections[i]->m_data->connections.indexOf(con);
+	for (int i = 0; i < d_data->connections.size(); ++i) {
+		int index = d_data->connections[i]->d_data->connections.indexOf(con);
 		if (index >= 0) {
-			m_data->connections[i]->m_data->connections.remove(index);
-			m_data->connections[i]->checkClosedConnections();
+			d_data->connections[i]->d_data->connections.remove(index);
+			d_data->connections[i]->checkClosedConnections();
 		}
 	}
 
-	m_data->connections.clear();
+	d_data->connections.clear();
 	setOpenMode(UnknownConnection);
 }
 
 void VipConnection::checkClosedConnections()
 {
-	if (m_data->connections.size() == 0)
+	if (d_data->connections.size() == 0)
 		setOpenMode(UnknownConnection);
 	else
 		Q_EMIT connectionClosed(parentProcessingIO());
@@ -563,14 +562,14 @@ public:
 };
 
 VipProcessingIO::VipProcessingIO(Type t, const QString& name)
-  : m_data(new PrivateData())
+  : d_data(new PrivateData())
 {
-	m_data->type = t;
-	m_data->name = name;
+	d_data->type = t;
+	d_data->name = name;
 }
 
 VipProcessingIO::VipProcessingIO(const VipProcessingIO& other)
-  : m_data(other.m_data)
+  : d_data(other.d_data)
 {
 }
 
@@ -578,17 +577,17 @@ VipProcessingIO::~VipProcessingIO() {}
 
 void VipProcessingIO::setEnabled(bool enable)
 {
-	m_data->enable = enable;
+	d_data->enable = enable;
 }
 
 bool VipProcessingIO::isEnabled() const
 {
-	return m_data->enable;
+	return d_data->enable;
 }
 
 VipInput* VipProcessingIO::toInput() const
 {
-	if (m_data->type == TypeInput)
+	if (d_data->type == TypeInput)
 		return static_cast<VipInput*>(const_cast<VipProcessingIO*>(this));
 	else
 		return nullptr;
@@ -596,7 +595,7 @@ VipInput* VipProcessingIO::toInput() const
 
 VipMultiInput* VipProcessingIO::toMultiInput() const
 {
-	if (m_data->type == TypeMultiInput)
+	if (d_data->type == TypeMultiInput)
 		return static_cast<VipMultiInput*>(const_cast<VipProcessingIO*>(this));
 	else
 		return nullptr;
@@ -604,7 +603,7 @@ VipMultiInput* VipProcessingIO::toMultiInput() const
 
 VipProperty* VipProcessingIO::toProperty() const
 {
-	if (m_data->type == TypeProperty)
+	if (d_data->type == TypeProperty)
 		return static_cast<VipProperty*>(const_cast<VipProcessingIO*>(this));
 	else
 		return nullptr;
@@ -612,7 +611,7 @@ VipProperty* VipProcessingIO::toProperty() const
 
 VipMultiProperty* VipProcessingIO::toMultiProperty() const
 {
-	if (m_data->type == TypeMultiProperty)
+	if (d_data->type == TypeMultiProperty)
 		return static_cast<VipMultiProperty*>(const_cast<VipProcessingIO*>(this));
 	else
 		return nullptr;
@@ -620,7 +619,7 @@ VipMultiProperty* VipProcessingIO::toMultiProperty() const
 
 VipOutput* VipProcessingIO::toOutput() const
 {
-	if (m_data->type == TypeOutput)
+	if (d_data->type == TypeOutput)
 		return static_cast<VipOutput*>(const_cast<VipProcessingIO*>(this));
 	else
 		return nullptr;
@@ -628,7 +627,7 @@ VipOutput* VipProcessingIO::toOutput() const
 
 VipMultiOutput* VipProcessingIO::toMultiOutput() const
 {
-	if (m_data->type == TypeMultiOutput)
+	if (d_data->type == TypeMultiOutput)
 		return static_cast<VipMultiOutput*>(const_cast<VipProcessingIO*>(this));
 	else
 		return nullptr;
@@ -636,29 +635,29 @@ VipMultiOutput* VipProcessingIO::toMultiOutput() const
 
 VipProcessingIO::Type VipProcessingIO::type() const
 {
-	return m_data->type;
+	return d_data->type;
 }
 
 QString VipProcessingIO::name() const
 {
-	return m_data->name;
+	return d_data->name;
 }
 
 VipProcessingObject* VipProcessingIO::parentProcessing() const
 {
-	return const_cast<VipProcessingObject*>(m_data->parent);
+	return const_cast<VipProcessingObject*>(d_data->parent);
 }
 
 void VipProcessingIO::setName(const QString& name)
 {
-	if (m_data->parent) {
-		if (m_data->type == TypeOutput || m_data->type == TypeMultiOutput)
-			m_data->name = m_data->parent->generateUniqueOutputName(*this, name);
+	if (d_data->parent) {
+		if (d_data->type == TypeOutput || d_data->type == TypeMultiOutput)
+			d_data->name = d_data->parent->generateUniqueOutputName(*this, name);
 		else
-			m_data->name = m_data->parent->generateUniqueInputName(*this, name);
+			d_data->name = d_data->parent->generateUniqueInputName(*this, name);
 	}
 	else
-		m_data->name = name;
+		d_data->name = name;
 }
 
 /* void VipProcessingIO::setData(const VipAny& any)
@@ -678,14 +677,14 @@ void VipProcessingIO::setData(QVariant&& data, qint64 time)
 
 void VipProcessingIO::setParentProcessing(VipProcessingObject* parent)
 {
-	m_data->parent = parent;
-	setName(m_data->name);
+	d_data->parent = parent;
+	setName(d_data->name);
 }
 
 void VipProcessingIO::dirtyParentProcessingIO(VipProcessingIO* io)
 {
-	if (m_data->parent)
-		m_data->parent->dirtyProcessingIO(io);
+	if (d_data->parent)
+		d_data->parent->dirtyProcessingIO(io);
 }
 
 class UniqueProcessingIO::PrivateData
@@ -702,7 +701,7 @@ public:
 
 UniqueProcessingIO::UniqueProcessingIO(Type t, const QString& name)
   : VipProcessingIO(t, name)
-  , m_data(new PrivateData())
+  , d_data(new PrivateData())
 {
 	// make sure the connection is ALWAYS valid
 	setConnection(VipConnection::newConnection());
@@ -710,7 +709,7 @@ UniqueProcessingIO::UniqueProcessingIO(Type t, const QString& name)
 
 UniqueProcessingIO::UniqueProcessingIO(const UniqueProcessingIO& other)
   : VipProcessingIO(other)
-  , m_data(other.m_data)
+  , d_data(other.d_data)
 {
 	// setParentProcessing(other.parentProcessing());
 	// setConnection(other.connection());
@@ -724,8 +723,8 @@ UniqueProcessingIO::~UniqueProcessingIO()
 void UniqueProcessingIO::setParentProcessing(VipProcessingObject* parent)
 {
 	VipProcessingIO::setParentProcessing(parent);
-	if (m_data->connection)
-		setConnection(m_data->connection);
+	if (d_data->connection)
+		setConnection(d_data->connection);
 }
 
 void UniqueProcessingIO::setConnection(const VipConnectionPtr& c)
@@ -733,46 +732,46 @@ void UniqueProcessingIO::setConnection(const VipConnectionPtr& c)
 	// make sure the connection is ALWAYS valid
 	Q_ASSERT(c);
 
-	if (m_data->connection && parentProcessing()) {
-		QObject::disconnect(m_data->connection.data(), SIGNAL(error(QObject*, const VipErrorData&)), parentProcessing(), SLOT(emitError(QObject*, const VipErrorData&)));
+	if (d_data->connection && parentProcessing()) {
+		QObject::disconnect(d_data->connection.data(), SIGNAL(error(QObject*, const VipErrorData&)), parentProcessing(), SLOT(emitError(QObject*, const VipErrorData&)));
 		QObject::disconnect(
-		  m_data->connection.data(), SIGNAL(connectionOpened(VipProcessingIO*, int, const QString&)), parentProcessing(), SLOT(receiveConnectionOpened(VipProcessingIO*, int, const QString&)));
-		QObject::disconnect(m_data->connection.data(), SIGNAL(connectionClosed(VipProcessingIO*)), parentProcessing(), SLOT(receiveConnectionClosed(VipProcessingIO*)));
+		  d_data->connection.data(), SIGNAL(connectionOpened(VipProcessingIO*, int, const QString&)), parentProcessing(), SLOT(receiveConnectionOpened(VipProcessingIO*, int, const QString&)));
+		QObject::disconnect(d_data->connection.data(), SIGNAL(connectionClosed(VipProcessingIO*)), parentProcessing(), SLOT(receiveConnectionClosed(VipProcessingIO*)));
 		QObject::disconnect(
-		  m_data->connection.data(), SIGNAL(dataReceived(VipProcessingIO*, const VipAnyData&)), parentProcessing(), SLOT(receiveDataReceived(VipProcessingIO*, const VipAnyData&)));
-		QObject::disconnect(m_data->connection.data(), SIGNAL(dataSent(VipProcessingIO*, const VipAnyData&)), parentProcessing(), SLOT(receiveDataSent(VipProcessingIO*, const VipAnyData&)));
+		  d_data->connection.data(), SIGNAL(dataReceived(VipProcessingIO*, const VipAnyData&)), parentProcessing(), SLOT(receiveDataReceived(VipProcessingIO*, const VipAnyData&)));
+		QObject::disconnect(d_data->connection.data(), SIGNAL(dataSent(VipProcessingIO*, const VipAnyData&)), parentProcessing(), SLOT(receiveDataSent(VipProcessingIO*, const VipAnyData&)));
 	}
-	m_data->connection = c;
+	d_data->connection = c;
 	if (c) {
-		m_data->connection->setParentProcessingObject(parentProcessing(), this);
+		d_data->connection->setParentProcessingObject(parentProcessing(), this);
 		if (parentProcessing()) {
 			QObject::connect(
-			  m_data->connection.data(), SIGNAL(error(QObject*, const VipErrorData&)), parentProcessing(), SLOT(emitError(QObject*, const VipErrorData&)), Qt::DirectConnection);
-			QObject::connect(m_data->connection.data(),
+			  d_data->connection.data(), SIGNAL(error(QObject*, const VipErrorData&)), parentProcessing(), SLOT(emitError(QObject*, const VipErrorData&)), Qt::DirectConnection);
+			QObject::connect(d_data->connection.data(),
 					 SIGNAL(connectionOpened(VipProcessingIO*, int, const QString&)),
 					 parentProcessing(),
 					 SLOT(receiveConnectionOpened(VipProcessingIO*, int, const QString&)),
 					 Qt::DirectConnection);
 			QObject::connect(
-			  m_data->connection.data(), SIGNAL(connectionClosed(VipProcessingIO*)), parentProcessing(), SLOT(receiveConnectionClosed(VipProcessingIO*)), Qt::DirectConnection);
-			QObject::connect(m_data->connection.data(),
+			  d_data->connection.data(), SIGNAL(connectionClosed(VipProcessingIO*)), parentProcessing(), SLOT(receiveConnectionClosed(VipProcessingIO*)), Qt::DirectConnection);
+			QObject::connect(d_data->connection.data(),
 					 SIGNAL(dataReceived(VipProcessingIO*, const VipAnyData&)),
 					 parentProcessing(),
 					 SLOT(receiveDataReceived(VipProcessingIO*, const VipAnyData&)),
 					 Qt::DirectConnection);
-			QObject::connect(m_data->connection.data(),
+			QObject::connect(d_data->connection.data(),
 					 SIGNAL(dataSent(VipProcessingIO*, const VipAnyData&)),
 					 parentProcessing(),
 					 SLOT(receiveDataSent(VipProcessingIO*, const VipAnyData&)),
 					 Qt::DirectConnection);
 
 			// for standard VipConnection type, directly open the connection
-			// if(strcmp(m_data->connection->metaObject()->className(),"VipConnection") == 0)
+			// if(strcmp(d_data->connection->metaObject()->className(),"VipConnection") == 0)
 			// {
 			// if( type() < TypeOutput)
-			// m_data->connection->openConnection(VipConnection::InputConnection);
+			// d_data->connection->openConnection(VipConnection::InputConnection);
 			// else
-			// m_data->connection->openConnection(VipConnection::OutputConnection);
+			// d_data->connection->openConnection(VipConnection::OutputConnection);
 			// }
 		}
 	}
@@ -846,17 +845,17 @@ bool UniqueProcessingIO::setConnection(const QString& address, const VipConnecti
 
 VipConnectionPtr UniqueProcessingIO::connection() const
 {
-	return m_data->connection;
+	return d_data->connection;
 }
 
 VipOutput* UniqueProcessingIO::source() const
 {
-	return m_data->connection ? m_data->connection->source() : nullptr;
+	return d_data->connection ? d_data->connection->source() : nullptr;
 }
 
 void UniqueProcessingIO::clearConnection()
 {
-	m_data->connection->clearConnection();
+	d_data->connection->clearConnection();
 }
 
 VipInput::VipInput(const QString& name, VipProcessingObject* parent)
@@ -934,10 +933,10 @@ void VipInput::setData(const VipAnyData& data)
 
 				// only update the parent processing if:
 				// - the input size has been increased
-				if ((previous_size != current_size))
+				if (VIP_LIKELY(previous_size != current_size))
 					proc->update();
 
-				if ((previous_size >= current_size)) {
+				if (VIP_UNLIKELY(previous_size >= current_size)) {
 					// the input data has been dropped, print debug info if required
 					if (proc->isLogErrorEnabled(VipProcessingObject::InputBufferFull)) {
 						const QString log = QString("drop input data, buffer size = ") + QString::number(m_input_list->remaining()) + QString(", buffer memory footprint = ") +
@@ -1002,7 +1001,7 @@ void VipMultiInput::added(VipInput* input)
 
 VipOutput::VipOutput(const QString& name, VipProcessingObject* parent)
   : UniqueProcessingIO(TypeOutput, name)
-  , m_data(new VipAnyData())
+  , d_data(new VipAnyData())
   , m_bufferize_outputs(false)
 {
 	setParentProcessing(parent);
@@ -1010,7 +1009,7 @@ VipOutput::VipOutput(const QString& name, VipProcessingObject* parent)
 
 VipOutput::VipOutput(const VipOutput& other)
   : UniqueProcessingIO(other)
-  , m_data(other.m_data)
+  , d_data(other.d_data)
   , m_buffer(other.m_buffer)
   , m_bufferize_outputs(other.m_bufferize_outputs)
 {
@@ -1055,16 +1054,16 @@ int VipOutput::bufferDataSize()
 
 VipAnyData VipOutput::data() const
 {
-	return *m_data;
+	return *d_data;
 }
 
 void VipOutput::setData(const VipAnyData& d)
 {
-	*m_data = d;
+	*d_data = d;
 	if (isEnabled()) {
 		if (VipProcessingObject* obj = parentProcessing())
-			obj->setOutputDataTime(*m_data);
-		connection()->sendData(*m_data);
+			obj->setOutputDataTime(*d_data);
+		connection()->sendData(*d_data);
 		if (m_bufferize_outputs) {
 			VipUniqueLock<VipSpinlock> lock(m_buffer_lock);
 			m_buffer.push_back(d);
@@ -1085,34 +1084,34 @@ VipMultiOutput::VipMultiOutput(const VipMultiOutput& other)
 
 VipProperty::VipProperty(const QString& name, VipProcessingObject* parent)
   : UniqueProcessingIO(TypeProperty, name)
-  , m_data(new VipAnyData())
+  , d_data(new VipAnyData())
 {
 	setParentProcessing(parent);
 }
 
 VipProperty::VipProperty(const VipProperty& other)
   : UniqueProcessingIO(other)
-  , m_data(other.m_data)
+  , d_data(other.d_data)
 {
 }
 
 VipProperty& VipProperty::operator=(const VipProperty& other)
 {
 	static_cast<UniqueProcessingIO&>(*this) = static_cast<const UniqueProcessingIO&>(other);
-	m_data = other.m_data;
+	d_data = other.d_data;
 	return *this;
 }
 VipAnyData VipProperty::data() const
 {
 	VipUniqueLock<VipSpinlock> lock(const_cast<VipSpinlock&>(m_lock));
-	return *m_data;
+	return *d_data;
 }
 
 void VipProperty::setData(const VipAnyData& d)
 {
 	{
 		VipUniqueLock<VipSpinlock> lock(m_lock);
-		*m_data = d;
+		*d_data = d;
 	}
 	// only emit signal if parent processing is enabled
 	if (parentProcessing() && parentProcessing()->isEnabled() && isEnabled()) {
@@ -1183,31 +1182,30 @@ public:
 
 VipProcessingManager::~VipProcessingManager()
 {
-	delete m_data;
 }
 
 void VipProcessingManager::setDefaultPriority(QThread::Priority priority, const QMetaObject* meta)
 {
-	instance().m_data->priorities[meta->className()] = priority;
+	instance().d_data->priorities[meta->className()] = priority;
 	applyAll();
 	Q_EMIT instance().changed();
 }
 int VipProcessingManager::defaultPriority(const QMetaObject* meta)
 {
-	PriorityMap::iterator it = instance().m_data->priorities.find(meta->className());
-	if (it != instance().m_data->priorities.end())
+	PriorityMap::iterator it = instance().d_data->priorities.find(meta->className());
+	if (it != instance().d_data->priorities.end())
 		return it.value();
 	return QThread::InheritPriority;
 }
 void VipProcessingManager::setDefaultPriorities(const PriorityMap& prio)
 {
-	instance().m_data->priorities = prio;
+	instance().d_data->priorities = prio;
 	applyAll();
 	Q_EMIT instance().changed();
 }
 PriorityMap VipProcessingManager::defaultPriorities()
 {
-	return instance().m_data->priorities;
+	return instance().d_data->priorities;
 }
 
 static QThread::Priority findPriority(const PriorityMap& prio, VipProcessingObject* obj)
@@ -1224,134 +1222,134 @@ static QThread::Priority findPriority(const PriorityMap& prio, VipProcessingObje
 
 void VipProcessingManager::applyAll()
 {
-	QList<VipDataList*> all = instance().m_data->instances;
+	QList<VipDataList*> all = instance().d_data->instances;
 	for (int i = 0; i < all.size(); ++i) {
 		// only apply the parameters if they are the default ones
 		VipDataList* lst = all[i];
-		if (lst->listLimitType() == instance().m_data->_list_limit_type && lst->maxListSize() == instance().m_data->_max_list_size &&
-		    lst->maxListMemory() == instance().m_data->_max_list_memory) {
-			all[i]->setListLimitType(instance().m_data->list_limit_type);
-			all[i]->setMaxListSize(instance().m_data->max_list_size);
-			all[i]->setMaxListMemory(instance().m_data->max_list_memory);
+		if (lst->listLimitType() == instance().d_data->_list_limit_type && lst->maxListSize() == instance().d_data->_max_list_size &&
+		    lst->maxListMemory() == instance().d_data->_max_list_memory) {
+			all[i]->setListLimitType(instance().d_data->list_limit_type);
+			all[i]->setMaxListSize(instance().d_data->max_list_size);
+			all[i]->setMaxListMemory(instance().d_data->max_list_memory);
 		}
 	}
 
-	QList<VipProcessingObject*> procs = instance().m_data->processingInstances;
+	QList<VipProcessingObject*> procs = instance().d_data->processingInstances;
 	for (int i = 0; i < procs.size(); ++i) {
 		// only apply the parameters if they are the default ones
 		VipProcessingObject* proc = procs[i];
-		if (proc->logErrors() == VipProcessingManager::instance().m_data->_log_errors) {
-			proc->setLogErrors(instance().m_data->errors);
+		if (proc->logErrors() == VipProcessingManager::instance().d_data->_log_errors) {
+			proc->setLogErrors(instance().d_data->errors);
 		}
 
 		// set priority
 		if (proc->priority() == QThread::InheritPriority) {
-			proc->setPriority(findPriority(instance().m_data->priorities, proc));
+			proc->setPriority(findPriority(instance().d_data->priorities, proc));
 		}
 	}
 
-	VipProcessingManager::instance().m_data->_log_errors = instance().m_data->errors;
-	VipProcessingManager::instance().m_data->_list_limit_type = instance().m_data->list_limit_type;
-	VipProcessingManager::instance().m_data->_max_list_size = instance().m_data->max_list_size;
-	VipProcessingManager::instance().m_data->_max_list_memory = instance().m_data->max_list_memory;
+	VipProcessingManager::instance().d_data->_log_errors = instance().d_data->errors;
+	VipProcessingManager::instance().d_data->_list_limit_type = instance().d_data->list_limit_type;
+	VipProcessingManager::instance().d_data->_max_list_size = instance().d_data->max_list_size;
+	VipProcessingManager::instance().d_data->_max_list_memory = instance().d_data->max_list_memory;
 }
 
 void VipProcessingManager::setLogErrorEnabled(int error_code, bool enable)
 {
-	QMutexLocker lock(&instance().m_data->mutex);
+	QMutexLocker lock(&instance().d_data->mutex);
 	if (enable) {
-		instance().m_data->errors.insert(error_code);
+		instance().d_data->errors.insert(error_code);
 	}
 	else {
-		instance().m_data->errors.remove(error_code);
+		instance().d_data->errors.remove(error_code);
 	}
 	Q_EMIT instance().changed();
 }
 
 bool VipProcessingManager::isLogErrorEnabled(int error)
 {
-	QMutexLocker lock(&instance().m_data->mutex);
-	bool found = (instance().m_data->errors.find(error) != instance().m_data->errors.end());
+	QMutexLocker lock(&instance().d_data->mutex);
+	bool found = (instance().d_data->errors.find(error) != instance().d_data->errors.end());
 	return found;
 }
 
 void VipProcessingManager::setLogErrors(const QSet<int>& errors)
 {
-	QMutexLocker lock(&instance().m_data->mutex);
+	QMutexLocker lock(&instance().d_data->mutex);
 
 	if (errors.contains(0)) {
 		// Patch (3.10.0): handle the old AllErrorsExcept (value 0)
 		QSet<int> errs = errors;
 		errs.remove(0);
-		instance().m_data->errors.clear();
-		instance().m_data->errors << VipProcessingObject::RuntimeError << VipProcessingObject::WrongInput << VipProcessingObject::InputBufferFull << VipProcessingObject::WrongInputNumber
+		instance().d_data->errors.clear();
+		instance().d_data->errors << VipProcessingObject::RuntimeError << VipProcessingObject::WrongInput << VipProcessingObject::InputBufferFull << VipProcessingObject::WrongInputNumber
 					  << VipProcessingObject::ConnectionNotOpen << VipProcessingObject::DeviceNotOpen << VipProcessingObject::IOError;
 		for (auto it = errs.begin(); it != errs.end(); ++it)
-			instance().m_data->errors.remove(*it);
+			instance().d_data->errors.remove(*it);
 	}
 	else
-		instance().m_data->errors = errors;
+		instance().d_data->errors = errors;
 	Q_EMIT instance().changed();
 }
 
 QSet<int> VipProcessingManager::logErrors()
 {
-	return instance().m_data->errors;
+	return instance().d_data->errors;
 }
 
 void VipProcessingManager::setLocked(bool locked)
 {
-	QMutexLocker lock(&instance().m_data->mutex);
-	instance().m_data->_lock_list_manager = locked;
+	QMutexLocker lock(&instance().d_data->mutex);
+	instance().d_data->_lock_list_manager = locked;
 }
 
 void VipProcessingManager::setListLimitType(int type)
 {
-	QMutexLocker lock(&instance().m_data->mutex);
-	instance().m_data->list_limit_type = type;
+	QMutexLocker lock(&instance().d_data->mutex);
+	instance().d_data->list_limit_type = type;
 	applyAll();
 	Q_EMIT instance().changed();
 }
 
 void VipProcessingManager::setMaxListSize(int size)
 {
-	QMutexLocker lock(&instance().m_data->mutex);
-	instance().m_data->max_list_size = size;
+	QMutexLocker lock(&instance().d_data->mutex);
+	instance().d_data->max_list_size = size;
 	applyAll();
 	Q_EMIT instance().changed();
 }
 
 void VipProcessingManager::setMaxListMemory(int size)
 {
-	QMutexLocker lock(&instance().m_data->mutex);
-	instance().m_data->max_list_memory = size;
+	QMutexLocker lock(&instance().d_data->mutex);
+	instance().d_data->max_list_memory = size;
 	applyAll();
 	Q_EMIT instance().changed();
 }
 
 int VipProcessingManager::listLimitType()
 {
-	return instance().m_data->list_limit_type;
+	return instance().d_data->list_limit_type;
 }
 int VipProcessingManager::maxListSize()
 {
-	return instance().m_data->max_list_size;
+	return instance().d_data->max_list_size;
 }
 int VipProcessingManager::maxListMemory()
 {
-	return instance().m_data->max_list_memory;
+	return instance().d_data->max_list_memory;
 }
 
 QList<VipDataList*> VipProcessingManager::dataListInstances()
 {
-	QMutexLocker lock(&instance().m_data->mutex);
-	return instance().m_data->instances;
+	QMutexLocker lock(&instance().d_data->mutex);
+	return instance().d_data->instances;
 }
 
 QList<VipProcessingObject*> VipProcessingManager::processingObjectInstances()
 {
-	QMutexLocker lock(&instance().m_data->mutex);
-	return instance().m_data->processingInstances;
+	QMutexLocker lock(&instance().d_data->mutex);
+	return instance().d_data->processingInstances;
 }
 
 VipProcessingManager& VipProcessingManager::instance()
@@ -1362,30 +1360,30 @@ VipProcessingManager& VipProcessingManager::instance()
 
 VipProcessingManager::VipProcessingManager()
 {
-	m_data = new PrivateData();
+	VIP_CREATE_PRIVATE_DATA(d_data);
 }
 
 void VipProcessingManager::add(VipDataList* lst)
 {
-	QMutexLocker lock(&m_data->mutex);
-	m_data->instances.append(lst);
+	QMutexLocker lock(&d_data->mutex);
+	d_data->instances.append(lst);
 }
 
 void VipProcessingManager::remove(VipDataList* lst)
 {
-	QMutexLocker lock(&m_data->mutex);
-	m_data->instances.removeOne(lst);
+	QMutexLocker lock(&d_data->mutex);
+	d_data->instances.removeOne(lst);
 }
 
 void VipProcessingManager::add(VipProcessingObject* obj)
 {
-	QMutexLocker lock(&m_data->mutex);
-	m_data->processingInstances.append(obj);
+	QMutexLocker lock(&d_data->mutex);
+	d_data->processingInstances.append(obj);
 }
 void VipProcessingManager::remove(VipProcessingObject* obj)
 {
-	QMutexLocker lock(&m_data->mutex);
-	m_data->processingInstances.removeOne(obj);
+	QMutexLocker lock(&d_data->mutex);
+	d_data->processingInstances.removeOne(obj);
 }
 
 VipDataList::VipDataList()
@@ -1752,7 +1750,7 @@ int VipLastAvailableList::push(const VipAnyData& data, int* previous)
 	_SPINLOCKER();
 	if (previous)
 		*previous = m_has_new_data;
-	m_data = data;
+	d_data = data;
 	m_has_new_data = (true);
 	return 1;
 }
@@ -1761,7 +1759,7 @@ int VipLastAvailableList::push(VipAnyData&& data, int* previous)
 	_SPINLOCKER();
 	if (previous)
 		*previous = m_has_new_data;
-	m_data = std::move(data);
+	d_data = std::move(data);
 	m_has_new_data = (true);
 	return 1;
 }
@@ -1769,20 +1767,20 @@ int VipLastAvailableList::push(VipAnyData&& data, int* previous)
 void VipLastAvailableList::reset(const VipAnyData& data)
 {
 	_SPINLOCKER();
-	m_data = data;
+	d_data = data;
 	m_has_new_data = (true);
 }
 void VipLastAvailableList::reset(VipAnyData&& data)
 {
 	_SPINLOCKER();
-	m_data = std::move(data);
+	d_data = std::move(data);
 	m_has_new_data = (true);
 }
 
 bool VipLastAvailableList::empty() const
 {
 	_SHAREDSPINLOCKER();
-	return !m_has_new_data && !m_data.isValid();
+	return !m_has_new_data && !d_data.isValid();
 }
 
 bool VipLastAvailableList::hasNewData() const
@@ -1794,14 +1792,14 @@ bool VipLastAvailableList::hasNewData() const
 int VipLastAvailableList::status() const
 {
 	_SHAREDSPINLOCKER();
-	return (!m_has_new_data && !m_data.isValid()) ? -1 : m_has_new_data;
+	return (!m_has_new_data && !d_data.isValid()) ? -1 : m_has_new_data;
 }
 
 VipAnyData VipLastAvailableList::next()
 {
 	_SHAREDSPINLOCKER();
 	m_has_new_data = (false);
-	return m_data;
+	return d_data;
 }
 
 VipAnyDataList VipLastAvailableList::allNext()
@@ -1809,30 +1807,30 @@ VipAnyDataList VipLastAvailableList::allNext()
 	_SHAREDSPINLOCKER();
 	VipAnyDataList res;
 	if (m_has_new_data)
-		res.push_back(m_data);
+		res.push_back(d_data);
 	return res;
 }
 
 VipAnyData VipLastAvailableList::probe()
 {
 	_SHAREDSPINLOCKER();
-	return m_data;
+	return d_data;
 }
 
 qint64 VipLastAvailableList::time() const
 {
 	_SHAREDSPINLOCKER();
-	if (!m_has_new_data && !m_data.isValid())
+	if (!m_has_new_data && !d_data.isValid())
 		return VipInvalidTime;
 	else
-		return m_data.time();
+		return d_data.time();
 }
 
 int VipLastAvailableList::memoryFootprint() const
 {
 	_SHAREDSPINLOCKER();
 	if (m_has_new_data)
-		return m_data.memoryFootprint();
+		return d_data.memoryFootprint();
 	else
 		return 0;
 }
@@ -2161,9 +2159,9 @@ public:
 	// inputs, outputs and properties
 	int initializeIO;
 	bool updateCalled;
-	QVector<VipProcessingIO*> inputs;
-	QVector<VipProcessingIO*> outputs;
-	QVector<VipProcessingIO*> properties;
+	std::vector<std::unique_ptr<VipProcessingIO>> inputs;
+	std::vector<std::unique_ptr<VipProcessingIO>> outputs;
+	std::vector<std::unique_ptr<VipProcessingIO>> properties;
 	std::function<void()> onInitIO;
 
 	// flatten representations
@@ -2201,7 +2199,7 @@ public:
 	VIP_ALWAYS_INLINE TaskPool* createPool(VipProcessingObject* _this)
 	{
 		TaskPool* p = pool.load(std::memory_order_relaxed);
-		if (!p)
+		if (VIP_UNLIKELY(!p))
 			return createPoolInternal(_this);
 		return p;
 	}
@@ -2217,7 +2215,7 @@ VipProcessingObject* VipProcessingObject::Info::create() const
 		// the init parameter.
 		// For instance multiple PyProcessing objects can have different python code and be seen as multiple processings represented by different Info structure.
 		obj->initializeProcessing(init);
-		obj->m_data->info = *this;
+		obj->d_data->info = *this;
 		return obj;
 	}
 	return nullptr;
@@ -2226,7 +2224,7 @@ VipProcessingObject* VipProcessingObject::Info::create() const
 VipProcessingObject::VipProcessingObject(QObject* parent)
   : VipErrorHandler()
 {
-	m_data = new PrivateData();
+	VIP_CREATE_PRIVATE_DATA(d_data);
 	this->setParent(parent);
 
 	VipProcessingManager::instance().add(this);
@@ -2235,17 +2233,17 @@ VipProcessingObject::VipProcessingObject(QObject* parent)
 
 VipProcessingObject::~VipProcessingObject()
 {
-	m_data->destruct = true;
+	d_data->destruct = true;
 	emitDestroyed();
 
 	VipProcessingManager::instance().remove(this);
 
 	// block the arrival of new data
-	for (size_t i = 0; i < m_data->flatInputs.size(); ++i)
-		m_data->flatInputs[i]->setEnabled(false);
+	for (size_t i = 0; i < d_data->flatInputs.size(); ++i)
+		d_data->flatInputs[i]->setEnabled(false);
 
 	// wait for all remaining processing and delete the task pool
-	if (TaskPool* p = m_data->getPool()) {
+	if (TaskPool* p = d_data->getPool()) {
 		p->waitForDone();
 		p->clear();
 		if (p->thread() == this->thread())
@@ -2253,32 +2251,22 @@ VipProcessingObject::~VipProcessingObject()
 		else
 			p->deleteLater();
 	}
-
-	// delete all inputs/outputs/properties
-	for (int i = 0; i < m_data->inputs.size(); ++i)
-		delete m_data->inputs[i];
-	for (int i = 0; i < m_data->outputs.size(); ++i)
-		delete m_data->outputs[i];
-	for (int i = 0; i < m_data->properties.size(); ++i)
-		delete m_data->properties[i];
-
-	delete m_data;
 }
 
 void VipProcessingObject::save()
 {
-	m_data->savedParameters.append(PrivateData::Parameters(scheduleStrategies(), isVisible(), isEnabled(), deleteOnOutputConnectionsClosed(), errorBufferMaxSize(), attributes()));
+	d_data->savedParameters.append(PrivateData::Parameters(scheduleStrategies(), isVisible(), isEnabled(), deleteOnOutputConnectionsClosed(), errorBufferMaxSize(), attributes()));
 }
 
 void VipProcessingObject::restore()
 {
-	if (m_data->savedParameters.size()) {
-		m_data->parameters = m_data->savedParameters.back();
-		m_data->savedParameters.pop_back();
+	if (d_data->savedParameters.size()) {
+		d_data->parameters = d_data->savedParameters.back();
+		d_data->savedParameters.pop_back();
 
 		// reset the schedule strategies to create the task pool if necessary
-		ScheduleStrategies st = m_data->parameters.schedule_strategies;
-		m_data->parameters.schedule_strategies = ScheduleStrategies();
+		ScheduleStrategies st = d_data->parameters.schedule_strategies;
+		d_data->parameters.schedule_strategies = ScheduleStrategies();
 		blockSignals(true);
 		setScheduleStrategies(st);
 		blockSignals(false);
@@ -2294,7 +2282,7 @@ void VipProcessingObject::restore()
 
 void VipProcessingObject::dirtyProcessingIO(VipProcessingIO* io)
 {
-	m_data->dirtyIO = true;
+	d_data->dirtyIO = true;
 	Q_EMIT IOChanged(io);
 
 	// send the source properties to the sources
@@ -2309,7 +2297,7 @@ void VipProcessingObject::setSourceProperty(const char* name, const QVariant& va
 	this->setProperty((QByteArray("__source_") + name).data(), value);
 	QList<VipProcessingObject*> sources = this->directSources();
 	for (int i = 0; i < sources.size(); ++i)
-		if (sources[i] != m_data->parentList)
+		if (sources[i] != d_data->parentList)
 			sources[i]->setSourceProperty(name, value);
 
 	emitProcessingChanged();
@@ -2345,7 +2333,7 @@ static TYPE* name(const std::vector<TYPE*>& io, const QString& name)
 }
 
 template<class TYPE>
-static std::vector<TYPE*> flatten(const QVector<VipProcessingIO*>& io)
+static std::vector<TYPE*> flatten(const std::vector<std::unique_ptr<VipProcessingIO>>& io)
 {
 	std::vector<TYPE*> flat;
 	for (int i = 0; i < io.size(); ++i) {
@@ -2361,63 +2349,63 @@ static std::vector<TYPE*> flatten(const QVector<VipProcessingIO*>& io)
 
 void VipProcessingObject::internalInitIO(bool force) const
 {
-	VipUniqueLock<VipSpinlock> locker(const_cast<VipSpinlock&>(m_data->init_lock));
-	if (force || !m_data->initializeIO || m_data->dirtyIO || m_data->initializeIO != metaObject()->propertyCount()) {
+	VipUniqueLock<VipSpinlock> locker(const_cast<VipSpinlock&>(d_data->init_lock));
+	if (force || !d_data->initializeIO || d_data->dirtyIO || d_data->initializeIO != metaObject()->propertyCount()) {
 
 		const QMetaObject* meta = metaObject();
 		VipProcessingObject* _this = const_cast<VipProcessingObject*>(this);
 
-		for (; m_data->initializeIO < meta->propertyCount(); ++m_data->initializeIO) {
-			const int i = m_data->initializeIO;
+		for (; d_data->initializeIO < meta->propertyCount(); ++d_data->initializeIO) {
+			const int i = d_data->initializeIO;
 			const int type = meta->property(i).userType();
 
 			if (type == qMetaTypeId<VipInput>())
-				_this->m_data->inputs.append(new VipInput(meta->property(i).name(), _this));
+				_this->d_data->inputs.push_back(std::unique_ptr<VipProcessingIO> (new VipInput(meta->property(i).name(), _this)));
 			else if (type == qMetaTypeId<VipMultiInput>())
-				_this->m_data->inputs.append(new VipMultiInput(meta->property(i).name(), _this));
+				_this->d_data->inputs.push_back(std::unique_ptr<VipProcessingIO>(new VipMultiInput(meta->property(i).name(), _this)));
 			else if (type == qMetaTypeId<VipProperty>())
-				_this->m_data->properties.append(new VipProperty(meta->property(i).name(), _this));
+				_this->d_data->properties.push_back(std::unique_ptr<VipProcessingIO>(new VipProperty(meta->property(i).name(), _this)));
 			else if (type == qMetaTypeId<VipMultiProperty>())
-				_this->m_data->properties.append(new VipMultiProperty(meta->property(i).name(), _this));
+				_this->d_data->properties.push_back(std::unique_ptr<VipProcessingIO>(new VipMultiProperty(meta->property(i).name(), _this)));
 			else if (type == qMetaTypeId<VipOutput>())
-				_this->m_data->outputs.append(new VipOutput(meta->property(i).name(), _this));
+				_this->d_data->outputs.push_back(std::unique_ptr<VipProcessingIO>(new VipOutput(meta->property(i).name(), _this)));
 			else if (type == qMetaTypeId<VipMultiOutput>())
-				_this->m_data->outputs.append(new VipMultiOutput(meta->property(i).name(), _this));
+				_this->d_data->outputs.push_back(std::unique_ptr<VipProcessingIO>(new VipMultiOutput(meta->property(i).name(), _this)));
 		}
 
-		_this->m_data->flatInputs = flatten<VipInput>(m_data->inputs);
-		_this->m_data->flatOutputs = flatten<VipOutput>(m_data->outputs);
-		_this->m_data->flatProperties = flatten<VipProperty>(m_data->properties);
+		_this->d_data->flatInputs = flatten<VipInput>(d_data->inputs);
+		_this->d_data->flatOutputs = flatten<VipOutput>(d_data->outputs);
+		_this->d_data->flatProperties = flatten<VipProperty>(d_data->properties);
 
-		for (size_t i = 0; i < m_data->flatInputs.size(); ++i)
-			_this->m_data->flatInputs[i]->setParentProcessing(_this);
+		for (size_t i = 0; i < d_data->flatInputs.size(); ++i)
+			_this->d_data->flatInputs[i]->setParentProcessing(_this);
 
-		for (size_t i = 0; i < m_data->flatOutputs.size(); ++i)
-			_this->m_data->flatOutputs[i]->setParentProcessing(_this);
+		for (size_t i = 0; i < d_data->flatOutputs.size(); ++i)
+			_this->d_data->flatOutputs[i]->setParentProcessing(_this);
 
-		for (size_t i = 0; i < m_data->flatProperties.size(); ++i)
-			_this->m_data->flatProperties[i]->setParentProcessing(_this);
+		for (size_t i = 0; i < d_data->flatProperties.size(); ++i)
+			_this->d_data->flatProperties[i]->setParentProcessing(_this);
 
-		_this->m_data->dirtyIO = false;
+		_this->d_data->dirtyIO = false;
 
-		if (_this->m_data->onInitIO)
-			_this->m_data->onInitIO();
+		if (_this->d_data->onInitIO)
+			_this->d_data->onInitIO();
 	}
 }
 
 void VipProcessingObject::setIOInitializeFunction(const std::function<void()>& f)
 {
-	m_data->onInitIO = f;
+	d_data->onInitIO = f;
 }
 const std::function<void()>& VipProcessingObject::IOInitializeFunction() const
 {
-	return m_data->onInitIO;
+	return d_data->onInitIO;
 }
 
 void VipProcessingObject::initialize(bool force) const
 {
-	// if (!m_data->updateCalled) // Once update has been called, we must not change IO
-	if (force || !m_data->initializeIO || m_data->dirtyIO || m_data->initializeIO != metaObject()->propertyCount())
+	// if (!d_data->updateCalled) // Once update has been called, we must not change IO
+	if (force || !d_data->initializeIO || d_data->dirtyIO || d_data->initializeIO != metaObject()->propertyCount())
 		internalInitIO(force);
 }
 
@@ -2430,8 +2418,8 @@ QList<VipProcessingObject*> VipProcessingObject::directSources() const
 {
 	initialize();
 	QList<VipProcessingObject*> res;
-	for (size_t s = 0; s < m_data->flatInputs.size(); ++s)
-		if (VipOutput* out = m_data->flatInputs[s]->source())
+	for (size_t s = 0; s < d_data->flatInputs.size(); ++s)
+		if (VipOutput* out = d_data->flatInputs[s]->source())
 			if (VipProcessingObject* obj = out->parentProcessing())
 				if (res.indexOf(obj) < 0 && obj != this)
 					res.append(obj);
@@ -2462,8 +2450,8 @@ QList<VipProcessingObject*> VipProcessingObject::directSinks() const
 {
 	initialize();
 	QList<VipProcessingObject*> res;
-	for (size_t s = 0; s < m_data->flatOutputs.size(); ++s)
-		if (VipOutput* out = m_data->flatOutputs[s]) {
+	for (size_t s = 0; s < d_data->flatOutputs.size(); ++s)
+		if (VipOutput* out = d_data->flatOutputs[s]) {
 			const QList<VipInput*> ins = out->connection()->sinks();
 			for (QList<VipInput*>::const_iterator it = ins.begin(); it != ins.end(); ++it)
 				if (VipProcessingObject* obj = (*it)->parentProcessing())
@@ -2518,19 +2506,19 @@ qint64 VipProcessingObject::time() const
 
 void VipProcessingObject::setComputeTimeStatistics(bool enable)
 {
-	if (m_data->computeTimeStatistics != enable) {
-		m_data->computeTimeStatistics = enable;
-		m_data->lastTime = VipInvalidTime;
+	if (d_data->computeTimeStatistics != enable) {
+		d_data->computeTimeStatistics = enable;
+		d_data->lastTime = VipInvalidTime;
 	}
 }
 bool VipProcessingObject::computeTimeStatistics() const
 {
-	return m_data->computeTimeStatistics;
+	return d_data->computeTimeStatistics;
 }
 
 qint64 VipProcessingObject::processingTime() const
 {
-	return m_data->processingTime;
+	return d_data->processingTime;
 }
 
 QString VipProcessingObject::className() const
@@ -2555,8 +2543,8 @@ QIcon VipProcessingObject::icon() const
 
 VipProcessingObject::Info VipProcessingObject::info() const
 {
-	if (m_data->info.metatype != 0)
-		return m_data->info;
+	if (d_data->info.metatype != 0)
+		return d_data->info;
 
 	Info res;
 	res.metatype = // vipMetaTypeFromQObject(this);
@@ -2572,142 +2560,142 @@ VipProcessingObject::Info VipProcessingObject::info() const
 		else if (this->metaObject()->classInfo(i).name() == QByteArray("description"))
 			res.description = this->metaObject()->classInfo(i).value();
 	}
-	return const_cast<Info&>(m_data->info) = res;
+	return const_cast<Info&>(d_data->info) = res;
 }
 
 QStringList VipProcessingObject::inputNames() const
 {
 	initialize();
-	return names<VipInput>(m_data->flatInputs);
+	return names<VipInput>(d_data->flatInputs);
 }
 
 QStringList VipProcessingObject::outputNames() const
 {
 	initialize();
-	return names<VipOutput>(m_data->flatOutputs);
+	return names<VipOutput>(d_data->flatOutputs);
 }
 
 QStringList VipProcessingObject::propertyNames() const
 {
 	initialize();
-	return names<VipProperty>(m_data->flatProperties);
+	return names<VipProperty>(d_data->flatProperties);
 }
 
 int VipProcessingObject::inputCount() const
 {
 	initialize();
-	return static_cast<int>(m_data->flatInputs.size());
+	return static_cast<int>(d_data->flatInputs.size());
 }
 
 int VipProcessingObject::outputCount() const
 {
 	initialize();
-	return static_cast<int>(m_data->flatOutputs.size());
+	return static_cast<int>(d_data->flatOutputs.size());
 }
 
 int VipProcessingObject::propertyCount() const
 {
 	initialize();
-	return static_cast<int>(m_data->flatProperties.size());
+	return static_cast<int>(d_data->flatProperties.size());
 }
 
 int VipProcessingObject::topLevelInputCount() const
 {
 	initialize();
-	return m_data->inputs.size();
+	return static_cast<int>(d_data->inputs.size());
 }
 
 int VipProcessingObject::topLevelOutputCount() const
 {
 	initialize();
-	return m_data->outputs.size();
+	return static_cast<int>(d_data->outputs.size());
 }
 
 int VipProcessingObject::topLevelPropertyCount() const
 {
 	initialize();
-	return m_data->properties.size();
+	return static_cast<int>(d_data->properties.size());
 }
 
 VipProcessingIO* VipProcessingObject::topLevelInputAt(int i) const
 {
 	initialize();
-	return m_data->inputs[i];
+	return d_data->inputs[i].get();
 }
 
 VipProcessingIO* VipProcessingObject::topLevelOutputAt(int i) const
 {
 	initialize();
-	return m_data->outputs[i];
+	return d_data->outputs[i].get();
 }
 
 VipProcessingIO* VipProcessingObject::topLevelPropertyAt(int i) const
 {
 	initialize();
-	return m_data->properties[i];
+	return d_data->properties[i].get();
 }
 
 VipProcessingIO* VipProcessingObject::topLevelInputName(const QString& name) const
 {
 	initialize();
-	for (int i = 0; i < m_data->inputs.size(); ++i)
-		if (m_data->inputs[i]->name() == name)
-			return m_data->inputs[i];
+	for (int i = 0; i < d_data->inputs.size(); ++i)
+		if (d_data->inputs[i]->name() == name)
+			return d_data->inputs[i].get();
 	return nullptr;
 }
 
 VipProcessingIO* VipProcessingObject::topLevelOutputName(const QString& name) const
 {
 	initialize();
-	for (int i = 0; i < m_data->outputs.size(); ++i)
-		if (m_data->outputs[i]->name() == name)
-			return m_data->outputs[i];
+	for (int i = 0; i < d_data->outputs.size(); ++i)
+		if (d_data->outputs[i]->name() == name)
+			return d_data->outputs[i].get();
 	return nullptr;
 }
 
 VipProcessingIO* VipProcessingObject::topLevelPropertyName(const QString& name) const
 {
 	initialize();
-	for (int i = 0; i < m_data->properties.size(); ++i)
-		if (m_data->properties[i]->name() == name)
-			return m_data->properties[i];
+	for (int i = 0; i < d_data->properties.size(); ++i)
+		if (d_data->properties[i]->name() == name)
+			return d_data->properties[i].get();
 	return nullptr;
 }
 
 VipInput* VipProcessingObject::inputName(const QString& input) const
 {
 	initialize();
-	return name<VipInput>(m_data->flatInputs, input);
+	return name<VipInput>(d_data->flatInputs, input);
 }
 
 VipOutput* VipProcessingObject::outputName(const QString& output) const
 {
 	initialize();
-	return name<VipOutput>(m_data->flatOutputs, output);
+	return name<VipOutput>(d_data->flatOutputs, output);
 }
 
 VipProperty* VipProcessingObject::propertyName(const QString& property) const
 {
 	initialize();
-	return name<VipProperty>(m_data->flatProperties, property);
+	return name<VipProperty>(d_data->flatProperties, property);
 }
 
 VipInput* VipProcessingObject::inputAt(int index) const
 {
 	initialize();
-	return m_data->flatInputs[static_cast<size_t>(index)];
+	return d_data->flatInputs[static_cast<size_t>(index)];
 }
 
 VipOutput* VipProcessingObject::outputAt(int index) const
 {
 	initialize();
-	return m_data->flatOutputs[static_cast<size_t>(index)];
+	return d_data->flatOutputs[static_cast<size_t>(index)];
 }
 
 VipProperty* VipProcessingObject::propertyAt(int index) const
 {
 	initialize();
-	return m_data->flatProperties[static_cast<size_t>(index)];
+	return d_data->flatProperties[static_cast<size_t>(index)];
 }
 
 QString VipProcessingObject::propertyEditor(const QString& property) const
@@ -2739,24 +2727,24 @@ QString VipProcessingObject::propertyCategory(const QString& property) const
 int VipProcessingObject::indexOf(VipInput* p) const
 {
 	initialize();
-	for (size_t i = 0; i < m_data->flatInputs.size(); ++i)
-		if (m_data->flatInputs[i] == p)
+	for (size_t i = 0; i < d_data->flatInputs.size(); ++i)
+		if (d_data->flatInputs[i] == p)
 			return static_cast<int>(i);
 	return -1;
 }
 int VipProcessingObject::indexOf(VipOutput* p) const
 {
 	initialize();
-	for (size_t i = 0; i < m_data->flatOutputs.size(); ++i)
-		if (m_data->flatOutputs[i] == p)
+	for (size_t i = 0; i < d_data->flatOutputs.size(); ++i)
+		if (d_data->flatOutputs[i] == p)
 			return static_cast<int>(i);
 	return -1;
 }
 int VipProcessingObject::indexOf(VipProperty* p) const
 {
 	initialize();
-	for (size_t i = 0; i < m_data->flatProperties.size(); ++i)
-		if (m_data->flatProperties[i] == p)
+	for (size_t i = 0; i < d_data->flatProperties.size(); ++i)
+		if (d_data->flatProperties[i] == p)
 			return static_cast<int>(i);
 	return -1;
 }
@@ -2791,12 +2779,12 @@ QString VipProcessingObject::generateUniqueOutputName(const VipProcessingIO& io,
 {
 
 	QStringList found;
-	for (int i = 0; i < m_data->outputs.size(); ++i) {
-		if (VipOutput* out = m_data->outputs[i]->toOutput()) {
+	for (int i = 0; i < d_data->outputs.size(); ++i) {
+		if (VipOutput* out = d_data->outputs[i]->toOutput()) {
 			if (*out != io && out->name().startsWith(name))
 				found << out->name();
 		}
-		else if (VipMultiOutput* mout = m_data->outputs[i]->toMultiOutput()) {
+		else if (VipMultiOutput* mout = d_data->outputs[i]->toMultiOutput()) {
 			for (int o = 0; o < mout->count(); ++o)
 				if (*mout->at(o) != io && mout->at(o)->name().startsWith(name))
 					found << mout->at(o)->name();
@@ -2816,12 +2804,12 @@ QString VipProcessingObject::generateUniqueOutputName(const VipProcessingIO& io,
 QString VipProcessingObject::generateUniqueInputName(const VipProcessingIO& io, const QString& name)
 {
 	QStringList found;
-	for (int i = 0; i < m_data->inputs.size(); ++i) {
-		if (VipInput* in = m_data->inputs[i]->toInput()) {
+	for (int i = 0; i < d_data->inputs.size(); ++i) {
+		if (VipInput* in = d_data->inputs[i]->toInput()) {
 			if (*in != io && in->name().startsWith(name))
 				found << in->name();
 		}
-		else if (VipMultiInput* min = m_data->inputs[i]->toMultiInput()) {
+		else if (VipMultiInput* min = d_data->inputs[i]->toMultiInput()) {
 			for (int o = 0; o < min->count(); ++o)
 				if (*min->at(o) != io && min->at(o)->name() == name)
 					found << min->at(o)->name();
@@ -2844,8 +2832,8 @@ void VipProcessingObject::setPriority(QThread::Priority p)
 		// IdlePriority not valid
 		return;
 
-	m_data->thread_priority = (int)p;
-	if (TaskPool* pool = m_data->getPool()) {
+	d_data->thread_priority = (int)p;
+	if (TaskPool* pool = d_data->getPool()) {
 		if (p == QThread::InheritPriority)
 			p = this->thread()->priority();
 		if (p != QThread::InheritPriority)
@@ -2855,28 +2843,28 @@ void VipProcessingObject::setPriority(QThread::Priority p)
 
 QThread::Priority VipProcessingObject::priority() const
 {
-	if (TaskPool* p = m_data->getPool())
+	if (TaskPool* p = d_data->getPool())
 		return p->priority();
-	return m_data->thread_priority == 0 ? QThread::InheritPriority : (QThread::Priority)m_data->thread_priority;
+	return d_data->thread_priority == 0 ? QThread::InheritPriority : (QThread::Priority)d_data->thread_priority;
 }
 
 void VipProcessingObject::setAttributes(const QVariantMap& attrs)
 {
-	m_data->parameters.attributes = attrs;
+	d_data->parameters.attributes = attrs;
 	emitProcessingChanged();
 }
 
 void VipProcessingObject::setAttribute(const QString& name, const QVariant& value)
 {
-	m_data->parameters.attributes[name] = value;
+	d_data->parameters.attributes[name] = value;
 	emitProcessingChanged();
 }
 
 bool VipProcessingObject::removeAttribute(const QString& name)
 {
-	QVariantMap::iterator it = m_data->parameters.attributes.find(name);
-	if (it != m_data->parameters.attributes.end()) {
-		m_data->parameters.attributes.erase(it);
+	QVariantMap::iterator it = d_data->parameters.attributes.find(name);
+	if (it != d_data->parameters.attributes.end()) {
+		d_data->parameters.attributes.erase(it);
 		emitProcessingChanged();
 		return true;
 	}
@@ -2885,26 +2873,26 @@ bool VipProcessingObject::removeAttribute(const QString& name)
 
 const QVariantMap& VipProcessingObject::attributes() const
 {
-	return m_data->parameters.attributes;
+	return d_data->parameters.attributes;
 }
 
 QVariant VipProcessingObject::attribute(const QString& attr) const
 {
-	return m_data->parameters.attributes[attr];
+	return d_data->parameters.attributes[attr];
 }
 
 bool VipProcessingObject::hasAttribute(const QString& name) const
 {
-	return m_data->parameters.attributes.find(name) != m_data->parameters.attributes.end();
+	return d_data->parameters.attributes.find(name) != d_data->parameters.attributes.end();
 }
 
 QStringList VipProcessingObject::mergeAttributes(const QVariantMap& attrs)
 {
 	QStringList res;
 	for (QVariantMap::const_iterator it = attrs.begin(); it != attrs.end(); ++it) {
-		QVariantMap::const_iterator found = m_data->parameters.attributes.find(it.key());
-		if (found == m_data->parameters.attributes.end() || it.value() != found.value()) {
-			m_data->parameters.attributes[it.key()] = it.value();
+		QVariantMap::const_iterator found = d_data->parameters.attributes.find(it.key());
+		if (found == d_data->parameters.attributes.end() || it.value() != found.value()) {
+			d_data->parameters.attributes[it.key()] = it.value();
 			res << it.key();
 		}
 	}
@@ -2915,9 +2903,9 @@ QStringList VipProcessingObject::addMissingAttributes(const QVariantMap& attrs)
 {
 	QStringList res;
 	for (QVariantMap::const_iterator it = attrs.begin(); it != attrs.end(); ++it) {
-		QVariantMap::const_iterator found = m_data->parameters.attributes.find(it.key());
-		if (found == m_data->parameters.attributes.end()) {
-			m_data->parameters.attributes[it.key()] = it.value();
+		QVariantMap::const_iterator found = d_data->parameters.attributes.find(it.key());
+		if (found == d_data->parameters.attributes.end()) {
+			d_data->parameters.attributes[it.key()] = it.value();
 			res << it.key();
 		}
 	}
@@ -3027,10 +3015,10 @@ QTransform VipProcessingObject::globalImageTransform()
 void VipProcessingObject::clearInputBuffers()
 {
 	initialize();
-	for (size_t i = 0; i < m_data->flatInputs.size(); ++i)
-		m_data->flatInputs[i]->buffer()->clear();
+	for (size_t i = 0; i < d_data->flatInputs.size(); ++i)
+		d_data->flatInputs[i]->buffer()->clear();
 
-	if (TaskPool* p = m_data->getPool())
+	if (TaskPool* p = d_data->getPool())
 		p->clear();
 }
 
@@ -3119,18 +3107,18 @@ void VipProcessingObject::removeProcessingPoolFromAddresses()
 
 VipProcessingObject::ScheduleStrategies VipProcessingObject::scheduleStrategies() const
 {
-	return m_data->parameters.schedule_strategies;
+	return d_data->parameters.schedule_strategies;
 }
 
 void VipProcessingObject::setScheduleStrategies(ScheduleStrategies st)
 {
-	if (st != m_data->parameters.schedule_strategies) {
-		m_data->parameters.schedule_strategies = st;
+	if (st != d_data->parameters.schedule_strategies) {
+		d_data->parameters.schedule_strategies = st;
 
 		// create the task pool if needed
 		/* if (!(st & NoThread) || (st & Asynchronous)) {
-			if (!m_data->pool)
-				m_data->pool = new TaskPool(this, (QThread::Priority)VipProcessingManager::instance().defaultPriority(metaObject()));
+			if (!d_data->pool)
+				d_data->pool = new TaskPool(this, (QThread::Priority)VipProcessingManager::instance().defaultPriority(metaObject()));
 		}*/
 
 		// we clear the input buffers since switching from synchrone to asynchrone processing
@@ -3142,18 +3130,18 @@ void VipProcessingObject::setScheduleStrategies(ScheduleStrategies st)
 
 void VipProcessingObject::setScheduleStrategy(ScheduleStrategy s, bool on)
 {
-	if (m_data->parameters.schedule_strategies.testFlag(s) != on) {
+	if (d_data->parameters.schedule_strategies.testFlag(s) != on) {
 		if (on) {
-			m_data->parameters.schedule_strategies |= s;
+			d_data->parameters.schedule_strategies |= s;
 		}
 		else {
-			m_data->parameters.schedule_strategies &= ~s;
+			d_data->parameters.schedule_strategies &= ~s;
 		}
 
 		// create the task pool if needed
-		/* if (!(m_data->parameters.schedule_strategies & NoThread) || (m_data->parameters.schedule_strategies & Asynchronous)) {
-			if (!m_data->pool)
-				m_data->pool = new TaskPool(this, (QThread::Priority)VipProcessingManager::instance().defaultPriority(metaObject()));
+		/* if (!(d_data->parameters.schedule_strategies & NoThread) || (d_data->parameters.schedule_strategies & Asynchronous)) {
+			if (!d_data->pool)
+				d_data->pool = new TaskPool(this, (QThread::Priority)VipProcessingManager::instance().defaultPriority(metaObject()));
 		}*/
 		clearInputBuffers();
 		emitProcessingChanged();
@@ -3162,40 +3150,40 @@ void VipProcessingObject::setScheduleStrategy(ScheduleStrategy s, bool on)
 
 bool VipProcessingObject::testScheduleStrategy(ScheduleStrategy s) const
 {
-	return m_data->parameters.schedule_strategies.testFlag(s);
+	return d_data->parameters.schedule_strategies.testFlag(s);
 }
 
 int VipProcessingObject::errorBufferMaxSize() const
 {
-	SPIN_LOCK(m_data->error_mutex);
-	return m_data->parameters.errorBufferMaxSize;
+	SPIN_LOCK(d_data->error_mutex);
+	return d_data->parameters.errorBufferMaxSize;
 }
 
 void VipProcessingObject::setErrorBufferMaxSize(int size)
 {
-	SPIN_LOCK(m_data->error_mutex);
-	m_data->parameters.errorBufferMaxSize = size;
-	while (m_data->errors.size() > size && m_data->errors.size())
-		m_data->errors.pop_front();
+	SPIN_LOCK(d_data->error_mutex);
+	d_data->parameters.errorBufferMaxSize = size;
+	while (d_data->errors.size() > size && d_data->errors.size())
+		d_data->errors.pop_front();
 }
 
 QList<VipErrorData> VipProcessingObject::lastErrors() const
 {
-	SPIN_LOCK(m_data->error_mutex);
-	QList<VipErrorData> res = m_data->errors;
+	SPIN_LOCK(d_data->error_mutex);
+	QList<VipErrorData> res = d_data->errors;
 	res.detach();
 	return res;
 }
 
 void VipProcessingObject::setDeleteOnOutputConnectionsClosed(bool enable)
 {
-	m_data->parameters.deleteOnOutputConnectionsClosed = enable;
+	d_data->parameters.deleteOnOutputConnectionsClosed = enable;
 	emitProcessingChanged();
 }
 
 bool VipProcessingObject::deleteOnOutputConnectionsClosed() const
 {
-	return m_data->parameters.deleteOnOutputConnectionsClosed;
+	return d_data->parameters.deleteOnOutputConnectionsClosed;
 }
 
 static std::atomic<bool>& atomic_ref(bool& value)
@@ -3212,7 +3200,7 @@ static const std::atomic<bool>& atomic_ref(const bool& value)
 void VipProcessingObject::setEnabled(bool enable)
 {
 	bool expect = !enable;
-	if (atomic_ref(m_data->parameters.enable).compare_exchange_weak(expect, enable)) {
+	if (atomic_ref(d_data->parameters.enable).compare_exchange_weak(expect, enable)) {
 		emitProcessingChanged();
 	}
 }
@@ -3220,54 +3208,54 @@ void VipProcessingObject::setEnabled(bool enable)
 void VipProcessingObject::setVisible(bool vis)
 {
 	bool expect = !vis;
-	if (atomic_ref(m_data->parameters.visible).compare_exchange_weak(expect, vis)) {
+	if (atomic_ref(d_data->parameters.visible).compare_exchange_weak(expect, vis)) {
 		emitProcessingChanged();
 	}
 }
 
 bool VipProcessingObject::isVisible() const
 {
-	return atomic_ref(m_data->parameters.visible).load(std::memory_order_relaxed);
-	// return m_data->parameters.visible;
+	return atomic_ref(d_data->parameters.visible).load(std::memory_order_relaxed);
+	// return d_data->parameters.visible;
 }
 
 bool VipProcessingObject::isEnabled() const
 {
-	return atomic_ref(m_data->parameters.enable).load(std::memory_order_relaxed);
-	// return m_data->parameters.enable;
+	return atomic_ref(d_data->parameters.enable).load(std::memory_order_relaxed);
+	// return d_data->parameters.enable;
 }
 
 bool VipProcessingObject::update(bool force_run)
 {
 
 	// Exit if disabled
-	if (!isEnabled())
+	if (VIP_UNLIKELY(!isEnabled()))
 		return false;
 
 	// Make sure the inputs/outputs/properties are correctly initialized
 	initialize();
 
 	// Make sure update() cannot be called simultaneously from different threads
-	SPIN_LOCK(m_data->update_mutex);
-	m_data->updateCalled = true;
+	SPIN_LOCK(d_data->update_mutex);
+	d_data->updateCalled = true;
 
 	// First step: if the schedule strategy is not Asynchronous, update first the source processings.
-	if (!(m_data->parameters.schedule_strategies & Asynchronous)) {
+	if (!(d_data->parameters.schedule_strategies & Asynchronous)) {
 
-		for (const VipInput* in : m_data->flatInputs)
+		for (const VipInput* in : d_data->flatInputs)
 			if (VipOutput* out = in->source())
 				if (VipProcessingObject* o = out->parentProcessing())
-					if (o != m_data->parentList)
+					if (o != d_data->parentList)
 						o->update();
 	}
 
 	// Check that all inputs are non empty
 	if (!force_run) {
 
-		const bool no_empy_input = !(m_data->parameters.schedule_strategies & AcceptEmptyInput);
-		const bool all_new = m_data->parameters.schedule_strategies & AllInputs;
+		const bool no_empy_input = !(d_data->parameters.schedule_strategies & AcceptEmptyInput);
+		const bool all_new = d_data->parameters.schedule_strategies & AllInputs;
 		int new_count = 0;
-		for (const VipInput* in : m_data->flatInputs) {
+		for (const VipInput* in : d_data->flatInputs) {
 			int status = in->status();
 			if (status == -1 && no_empy_input)
 				return false;
@@ -3281,14 +3269,14 @@ bool VipProcessingObject::update(bool force_run)
 	}
 
 	// If SkipIfBusy is set, returns if a processing is scheduled
-	if ((m_data->parameters.schedule_strategies & SkipIfBusy)) //&& m_data->pool && m_data->pool->remaining() > 0)
-		if (TaskPool* p = m_data->getPool())
+	if ((d_data->parameters.schedule_strategies & SkipIfBusy)) //&& d_data->pool && d_data->pool->remaining() > 0)
+		if (TaskPool* p = d_data->getPool())
 			if (p->remaining() > 0)
 				return false;
 
-	if (!(m_data->parameters.schedule_strategies & Asynchronous)) {
+	if (!(d_data->parameters.schedule_strategies & Asynchronous)) {
 		// Synchronous processing
-		if (m_data->parameters.schedule_strategies & NoThread)
+		if (d_data->parameters.schedule_strategies & NoThread)
 			// Launch in the calling thread
 			this->run();
 		else {
@@ -3296,20 +3284,20 @@ bool VipProcessingObject::update(bool force_run)
 			// Just add the processing into the task pool.
 			// Even in synchroneous mode, launch the processing through the task pool.
 			// This ensures that the processing always runs in the same thread (which might be of importance for a few processings).
-			m_data->createPool(this)->push();
+			d_data->createPool(this)->push();
 			wait(false); // wait for the result
 		}
 	}
 	else
 		// Asynchronous processing: add to the task pool
-		m_data->createPool(this)->push();
+		d_data->createPool(this)->push();
 
 	return true;
 }
 
 bool VipProcessingObject::reload()
 {
-	if (this->scheduledUpdates() < 2 && !m_data->update_mutex.is_locked())
+	if (this->scheduledUpdates() < 2 && !d_data->update_mutex.is_locked())
 		return this->update(true);
 	return false;
 }
@@ -3320,20 +3308,20 @@ void VipProcessingObject::resetProcessing() {}
 
 void VipProcessingObject::reset()
 {
-	SPIN_LOCK(m_data->run_mutex);
+	SPIN_LOCK(d_data->run_mutex);
 	this->resetError();
 	this->resetProcessing();
 }
 
 bool VipProcessingObject::isUpdating() const
 {
-	return m_data->update_mutex.is_locked();
+	return d_data->update_mutex.is_locked();
 }
 
 bool VipProcessingObject::wait(bool wait_for_sources, int max_milli_time)
 {
 	// wait might be called while the object is not fully destroyed, so use destruct variable
-	if (m_data->destruct)
+	if (d_data->destruct)
 		return false;
 
 	qint64 start = QDateTime::currentMSecsSinceEpoch();
@@ -3364,7 +3352,7 @@ bool VipProcessingObject::wait(bool wait_for_sources, int max_milli_time)
 	const bool use_event_loop = this->useEventLoop();
 
 	// Since only display processings use the event loop, start waiting for the processing 10 ms before going throught the event loop
-	if (TaskPool* p = m_data->getPool()) {
+	if (TaskPool* p = d_data->getPool()) {
 
 		// Special case: the processing needs the event loop, and we are waiting from within the GUI thread
 		while (use_event_loop && this->scheduledUpdates() && QCoreApplication::instance() && QThread::currentThread() == QCoreApplication::instance()->thread()) {
@@ -3424,21 +3412,21 @@ VipAnyData VipProcessingObject::create(const QVariant& data, const QVariantMap& 
 	any.setSource((qint64)this);
 	if (initial_attributes.size()) {
 		any.setAttributes(initial_attributes);
-		any.mergeAttributes(m_data->parameters.attributes);
+		any.mergeAttributes(d_data->parameters.attributes);
 	}
 	else
-		any.setAttributes(m_data->parameters.attributes);
+		any.setAttributes(d_data->parameters.attributes);
 	return any;
 }
 
 double VipProcessingObject::processingRate() const
 {
-	return m_data->processingRate;
+	return d_data->processingRate;
 }
 
 int VipProcessingObject::scheduledUpdates() const
 {
-	if (TaskPool* p = m_data->getPool())
+	if (TaskPool* p = d_data->getPool())
 		return p->remaining();
 	return 0;
 }
@@ -3451,8 +3439,8 @@ void VipProcessingObject::emitProcessingChanged()
 void VipProcessingObject::emitImageTransformChanged()
 {
 	// avoid recursion
-	if (!m_data->inImageTransformChanged) {
-		m_data->inImageTransformChanged = true;
+	if (!d_data->inImageTransformChanged) {
+		d_data->inImageTransformChanged = true;
 		Q_EMIT imageTransformChanged(this);
 
 		// propagate the signal to all sinks
@@ -3462,44 +3450,44 @@ void VipProcessingObject::emitImageTransformChanged()
 				inputs[i]->parentProcessing()->emitImageTransformChanged();
 		}
 
-		m_data->inImageTransformChanged = false;
+		d_data->inImageTransformChanged = false;
 	}
 }
 
 void VipProcessingObject::emitDestroyed()
 {
-	if (!m_data->emit_destroy) {
-		m_data->emit_destroy = true;
+	if (!d_data->emit_destroy) {
+		d_data->emit_destroy = true;
 		Q_EMIT destroyed(this);
 	}
 }
 
 qint64 VipProcessingObject::lastProcessingTime() const
 {
-	return m_data->lastProcessingDate;
+	return d_data->lastProcessingDate;
 }
 
 void VipProcessingObject::excludeFromProcessingRateComputation()
 {
-	--m_data->processingCount;
+	--d_data->processingCount;
 }
 
 void VipProcessingObject::run()
 {
 	// lock to avoid concurrent calls
-	SPIN_LOCK(m_data->run_mutex);
+	SPIN_LOCK(d_data->run_mutex);
 
 	if (testScheduleStrategy(SkipIfNoInput)) {
 		// if the processing has no new input, skip it
 		bool has_input = false;
-		for (const VipInput* in : m_data->flatInputs)
+		for (const VipInput* in : d_data->flatInputs)
 			if (in->hasNewData()) {
 				has_input = true;
 				break;
 			}
 		if (!has_input) {
 			// no new input: just remove all scheduled tasks
-			if (TaskPool* p = m_data->getPool())
+			if (TaskPool* p = d_data->getPool())
 				p->clear();
 			return;
 		}
@@ -3511,26 +3499,26 @@ void VipProcessingObject::run()
 	if (computeTimeStatistics()) {
 
 		time = QDateTime::currentMSecsSinceEpoch();
-		m_data->lastProcessingDate = time;
+		d_data->lastProcessingDate = time;
 
-		if (m_data->lastTime == VipInvalidTime)
-			m_data->lastTime = time;
+		if (d_data->lastTime == VipInvalidTime)
+			d_data->lastTime = time;
 		else {
-			if (time - m_data->lastTime > 500) {
+			if (time - d_data->lastTime > 500) {
 
-				m_data->processingRate = 1000.0 * static_cast<double>(m_data->processingCount + 1) / (time - m_data->lastTime);
-				m_data->processingCount = 0;
-				m_data->lastTime = time;
+				d_data->processingRate = 1000.0 * static_cast<double>(d_data->processingCount + 1) / (time - d_data->lastTime);
+				d_data->processingCount = 0;
+				d_data->lastTime = time;
 			}
-			m_data->processingCount++;
+			d_data->processingCount++;
 		}
 	}
 	this->apply();
 	if (computeTimeStatistics())
-		m_data->processingTime = (QDateTime::currentMSecsSinceEpoch() - time) * 1000000;
+		d_data->processingTime = (QDateTime::currentMSecsSinceEpoch() - time) * 1000000;
 	else
-		m_data->processingTime = 0;
-	Q_EMIT processingDone(this, m_data->processingTime);
+		d_data->processingTime = 0;
+	Q_EMIT processingDone(this, d_data->processingTime);
 }
 
 void VipProcessingObject::receiveConnectionOpened(VipProcessingIO* io, int type, const QString& address)
@@ -3542,11 +3530,11 @@ void VipProcessingObject::receiveConnectionClosed(VipProcessingIO* io)
 {
 	Q_EMIT connectionClosed(io);
 
-	if (m_data->parameters.deleteOnOutputConnectionsClosed && !m_data->destruct) {
+	if (d_data->parameters.deleteOnOutputConnectionsClosed && !d_data->destruct) {
 		// check all output connections. If they are all closed, close the VipProcessingIO
 
 		bool found = false;
-		for (VipOutput* out : m_data->flatOutputs) {
+		for (VipOutput* out : d_data->flatOutputs) {
 			if (out == io) {
 				found = true;
 				break;
@@ -3556,12 +3544,12 @@ void VipProcessingObject::receiveConnectionClosed(VipProcessingIO* io)
 		if (found) {
 			bool all_closed = true;
 
-			for (int o = 0; o < m_data->outputs.size(); ++o) {
-				if (VipOutput* out = m_data->outputs[o]->toOutput()) {
+			for (int o = 0; o < d_data->outputs.size(); ++o) {
+				if (VipOutput* out = d_data->outputs[o]->toOutput()) {
 					if (out->connection()->openMode() != VipConnection::UnknownConnection)
 						all_closed = false;
 				}
-				else if (VipMultiOutput* mout = m_data->outputs[o]->toMultiOutput()) {
+				else if (VipMultiOutput* mout = d_data->outputs[o]->toMultiOutput()) {
 					for (int m = 0; m < mout->count(); ++m) {
 						VipOutput* ot = mout->at(m);
 						if (ot->connection()->openMode() != VipConnection::UnknownConnection) {
@@ -3594,25 +3582,25 @@ void VipProcessingObject::receiveDataSent(VipProcessingIO* io, const VipAnyData&
 void VipProcessingObject::setLogErrorEnabled(int error_code, bool enable)
 {
 	if (enable) {
-		m_data->logErrors.insert(error_code);
+		d_data->logErrors.insert(error_code);
 	}
 	else {
-		m_data->logErrors.remove(error_code);
+		d_data->logErrors.remove(error_code);
 	}
 }
 bool VipProcessingObject::isLogErrorEnabled(int error) const
 {
-	bool found = (m_data->logErrors.find(error) != m_data->logErrors.end());
+	bool found = (d_data->logErrors.find(error) != d_data->logErrors.end());
 	return found;
 }
 
 void VipProcessingObject::setLogErrors(const QSet<int>& errors)
 {
-	m_data->logErrors = errors;
+	d_data->logErrors = errors;
 }
 QSet<int> VipProcessingObject::logErrors() const
 {
-	return m_data->logErrors;
+	return d_data->logErrors;
 }
 
 void VipProcessingObject::newError(const VipErrorData& error)
@@ -3621,10 +3609,10 @@ void VipProcessingObject::newError(const VipErrorData& error)
 		VIP_LOG_ERROR("(" + vipSplitClassname(this->objectName()) + ") " + error.errorString());
 	}
 
-	SPIN_LOCK(m_data->error_mutex);
-	m_data->errors.append(error);
-	while (m_data->errors.size() > m_data->parameters.errorBufferMaxSize && m_data->errors.size())
-		m_data->errors.pop_front();
+	SPIN_LOCK(d_data->error_mutex);
+	d_data->errors.append(error);
+	while (d_data->errors.size() > d_data->parameters.errorBufferMaxSize && d_data->errors.size())
+		d_data->errors.pop_front();
 }
 
 void VipProcessingObject::emitError(QObject* obj, const VipErrorData& err)
@@ -3638,36 +3626,36 @@ void VipProcessingObject::emitError(QObject* obj, const VipErrorData& err)
 
 void VipProcessingObject::registerAdditionalInfoObject(const VipProcessingObject::Info& info)
 {
-	QMutexLocker lock(&VipProcessingManager::instance().m_data->_additional_info_mutex);
-	VipProcessingManager::instance().m_data->_infos.insert(info.metatype, info);
-	VipProcessingManager::instance().m_data->_dirty_objects = 1;
+	QMutexLocker lock(&VipProcessingManager::instance().d_data->_additional_info_mutex);
+	VipProcessingManager::instance().d_data->_infos.insert(info.metatype, info);
+	VipProcessingManager::instance().d_data->_dirty_objects = 1;
 }
 QList<VipProcessingObject::Info> VipProcessingObject::additionalInfoObjects()
 {
-	QMutexLocker lock(&VipProcessingManager::instance().m_data->_additional_info_mutex);
-	return VipProcessingManager::instance().m_data->_infos.values();
+	QMutexLocker lock(&VipProcessingManager::instance().d_data->_additional_info_mutex);
+	return VipProcessingManager::instance().d_data->_infos.values();
 }
 QList<VipProcessingObject::Info> VipProcessingObject::additionalInfoObjects(int metatype)
 {
-	QMutexLocker lock(&VipProcessingManager::instance().m_data->_additional_info_mutex);
-	return VipProcessingManager::instance().m_data->_infos.values(metatype);
+	QMutexLocker lock(&VipProcessingManager::instance().d_data->_additional_info_mutex);
+	return VipProcessingManager::instance().d_data->_infos.values(metatype);
 }
 bool VipProcessingObject::removeInfoObject(const VipProcessingObject::Info& info, bool all)
 {
-	QMutexLocker lock(&VipProcessingManager::instance().m_data->_additional_info_mutex);
+	QMutexLocker lock(&VipProcessingManager::instance().d_data->_additional_info_mutex);
 	QPair<QMultiMap<int, VipProcessingObject::Info>::iterator, QMultiMap<int, VipProcessingObject::Info>::iterator> range =
-	  VipProcessingManager::instance().m_data->_infos.equal_range(info.metatype);
+	  VipProcessingManager::instance().d_data->_infos.equal_range(info.metatype);
 	bool erase = false;
 	for (QMultiMap<int, VipProcessingObject::Info>::iterator it = range.first; it != range.second;) {
 		QMultiMap<int, VipProcessingObject::Info>::iterator tmp = it++;
 		if (tmp.value().classname == info.classname && tmp.value().category == info.category) {
-			VipProcessingManager::instance().m_data->_infos.erase(tmp);
+			VipProcessingManager::instance().d_data->_infos.erase(tmp);
 			erase = true;
 			if (!all)
 				break;
 		}
 	}
-	VipProcessingManager::instance().m_data->_dirty_objects = 1;
+	VipProcessingManager::instance().d_data->_dirty_objects = 1;
 	return erase;
 }
 
@@ -3675,19 +3663,19 @@ QList<const VipProcessingObject*> VipProcessingObject::allObjects()
 {
 
 	// current number of object types (metatype id) and infos (as returned by additionalInfoObjects())
-	QMutexLocker lock(&VipProcessingManager::instance().m_data->_additional_info_mutex);
+	QMutexLocker lock(&VipProcessingManager::instance().d_data->_additional_info_mutex);
 
 	QList<int> types = vipUserTypes<VipProcessingObject*>();
 	QList<VipProcessingObject::Info> additionals = additionalInfoObjects();
-	if (types.size() == VipProcessingManager::instance().m_data->_obj_types && additionals.size() == VipProcessingManager::instance().m_data->_obj_infos &&
-	    !VipProcessingManager::instance().m_data->_dirty_objects)
-		return VipProcessingManager::instance().m_data->_allObjects;
+	if (types.size() == VipProcessingManager::instance().d_data->_obj_types && additionals.size() == VipProcessingManager::instance().d_data->_obj_infos &&
+	    !VipProcessingManager::instance().d_data->_dirty_objects)
+		return VipProcessingManager::instance().d_data->_allObjects;
 
-	VipProcessingManager::instance().m_data->_obj_types = types.size();
-	VipProcessingManager::instance().m_data->_obj_infos = additionals.size();
-	VipProcessingManager::instance().m_data->_dirty_objects = 0;
+	VipProcessingManager::instance().d_data->_obj_types = types.size();
+	VipProcessingManager::instance().d_data->_obj_infos = additionals.size();
+	VipProcessingManager::instance().d_data->_dirty_objects = 0;
 
-	VipProcessingManager::instance().m_data->_allObjects.clear();
+	VipProcessingManager::instance().d_data->_allObjects.clear();
 	int count = types.size() + additionals.size();
 	for (int i = 0; i < count; ++i) {
 		// get the metatype
@@ -3713,19 +3701,19 @@ QList<const VipProcessingObject*> VipProcessingObject::allObjects()
 			else
 				continue;
 		}
-		VipProcessingManager::instance().m_data->_allObjects.append(obj);
+		VipProcessingManager::instance().d_data->_allObjects.append(obj);
 
 		// unlock the mutex: VipProcessingManager and VipUniqueId are already protected
-		VipProcessingManager::instance().m_data->_additional_info_mutex.unlock();
+		VipProcessingManager::instance().d_data->_additional_info_mutex.unlock();
 		// remove from the VipProcessingManager
 		VipProcessingManager::instance().remove(obj);
 		// remove from the list of ids
 		VipTypeId* id = VipUniqueId::typeId(obj->metaObject());
 		if (id)
 			id->removeId(obj);
-		VipProcessingManager::instance().m_data->_additional_info_mutex.lock();
+		VipProcessingManager::instance().d_data->_additional_info_mutex.lock();
 	}
-	return VipProcessingManager::instance().m_data->_allObjects;
+	return VipProcessingManager::instance().d_data->_allObjects;
 }
 
 void VipProcessingObject::IOCount(const QMetaObject* meta, int* inputs, int* properties, int* outputs)
@@ -3865,7 +3853,7 @@ public:
 VipProcessingList::VipProcessingList(QObject* parent)
   : VipProcessingObject(parent)
 {
-	m_data = new PrivateData();
+	VIP_CREATE_PRIVATE_DATA(d_data);
 }
 
 VipProcessingList::~VipProcessingList()
@@ -3873,18 +3861,17 @@ VipProcessingList::~VipProcessingList()
 	setEnabled(false);
 	wait(false);
 	for (int i = 0; i < size(); ++i)
-		delete m_data->objects[i];
-	delete m_data;
+		delete d_data->objects[i];
 }
 
 void VipProcessingList::computeParams()
 {
-	m_data->useEventLoop = false;
-	// m_data->directSources = VipProcessingObject::directSources();
-	for (int i = 0; i < m_data->objects.size(); ++i) {
-		// m_data->directSources += m_data->objects[i]->directSources();
-		if (!m_data->useEventLoop && m_data->objects[i]->useEventLoop()) {
-			m_data->useEventLoop = true;
+	d_data->useEventLoop = false;
+	// d_data->directSources = VipProcessingObject::directSources();
+	for (int i = 0; i < d_data->objects.size(); ++i) {
+		// d_data->directSources += d_data->objects[i]->directSources();
+		if (!d_data->useEventLoop && d_data->objects[i]->useEventLoop()) {
+			d_data->useEventLoop = true;
 			break;
 		}
 	}
@@ -3892,17 +3879,17 @@ void VipProcessingList::computeParams()
 
 const QList<VipProcessingObject*>& VipProcessingList::processings() const
 {
-	return m_data->objects;
+	return d_data->objects;
 }
 
 QTransform VipProcessingList::computeTransform()
 {
 	QTransform tr;
-	for (int i = 0; i < m_data->objects.size(); ++i) {
-		if (m_data->objects[i]->hasError())
+	for (int i = 0; i < d_data->objects.size(); ++i) {
+		if (d_data->objects[i]->hasError())
 			break;
-		if (m_data->objects[i]->isEnabled())
-			tr *= m_data->objects[i]->imageTransform();
+		if (d_data->objects[i]->isEnabled())
+			tr *= d_data->objects[i]->imageTransform();
 	}
 	return tr;
 }
@@ -3914,12 +3901,12 @@ bool VipProcessingList::append(VipProcessingObject* obj)
 
 bool VipProcessingList::remove(VipProcessingObject* obj)
 {
-	QMutexLocker lock(&m_data->mutex);
+	QMutexLocker lock(&d_data->mutex);
 
-	int index = m_data->objects.indexOf(obj);
+	int index = d_data->objects.indexOf(obj);
 	if (index >= 0) {
 		delete take(index);
-		m_data->transform = computeTransform();
+		d_data->transform = computeTransform();
 		emitImageTransformChanged();
 		emitProcessingChanged();
 		return true;
@@ -3929,9 +3916,9 @@ bool VipProcessingList::remove(VipProcessingObject* obj)
 
 bool VipProcessingList::insert(int index, VipProcessingObject* obj)
 {
-	QMutexLocker lock(&m_data->mutex);
+	QMutexLocker lock(&d_data->mutex);
 
-	if (m_data->objects.indexOf(obj) < 0) {
+	if (d_data->objects.indexOf(obj) < 0) {
 		// make sur the object has at least on input and one output
 		if (obj->inputCount() == 0 && obj->topLevelInputCount() && obj->topLevelInputAt(0)->toMultiInput())
 			obj->topLevelInputAt(0)->toMultiInput()->resize(1);
@@ -3939,14 +3926,14 @@ bool VipProcessingList::insert(int index, VipProcessingObject* obj)
 			obj->topLevelOutputAt(0)->toMultiOutput()->resize(1);
 
 		if (obj->inputCount() >= 1 && obj->outputCount() >= 1) {
-			obj->m_data->parentList = this;
+			obj->d_data->parentList = this;
 			obj->setProperty("VipProcessingList", QVariant::fromValue(this));
 			obj->setScheduleStrategies(VipProcessingObject::OneInput | VipProcessingObject::NoThread);
 
 			// set the first input data
 			VipAnyData any;
 			if (index - 1 >= 0 && index - 1 < size())
-				any = m_data->objects[index - 1]->outputAt(0)->data();
+				any = d_data->objects[index - 1]->outputAt(0)->data();
 			else
 				any = inputAt(0)->probe();
 
@@ -3961,8 +3948,8 @@ bool VipProcessingList::insert(int index, VipProcessingObject* obj)
 
 			connect(obj, SIGNAL(processingDone(VipProcessingObject*, qint64)), this, SLOT(receivedProcessingDone(VipProcessingObject*, qint64)), Qt::DirectConnection);
 
-			m_data->objects.insert(index, obj);
-			m_data->transform = computeTransform();
+			d_data->objects.insert(index, obj);
+			d_data->transform = computeTransform();
 			computeParams();
 			emitImageTransformChanged();
 			emitProcessingChanged();
@@ -3976,23 +3963,23 @@ bool VipProcessingList::insert(int index, VipProcessingObject* obj)
 
 int VipProcessingList::indexOf(VipProcessingObject* obj) const
 {
-	QMutexLocker lock(&m_data->mutex);
-	return m_data->objects.indexOf(obj);
+	QMutexLocker lock(&d_data->mutex);
+	return d_data->objects.indexOf(obj);
 }
 
 VipProcessingObject* VipProcessingList::at(int i) const
 {
-	QMutexLocker lock(&m_data->mutex);
-	return const_cast<VipProcessingObject*>(m_data->objects[i]);
+	QMutexLocker lock(&d_data->mutex);
+	return const_cast<VipProcessingObject*>(d_data->objects[i]);
 }
 
 VipProcessingObject* VipProcessingList::take(int i)
 {
-	QMutexLocker lock(&m_data->mutex);
+	QMutexLocker lock(&d_data->mutex);
 
-	VipProcessingObject* obj = m_data->objects[i];
-	m_data->objects.removeOne(obj);
-	obj->m_data->parentList = nullptr;
+	VipProcessingObject* obj = d_data->objects[i];
+	d_data->objects.removeOne(obj);
+	obj->d_data->parentList = nullptr;
 	obj->setProperty("VipProcessingList", QVariant());
 
 	// remove the source properties from the VipProcessingObject
@@ -4002,7 +3989,7 @@ VipProcessingObject* VipProcessingList::take(int i)
 
 	disconnect(obj, SIGNAL(processingDone(VipProcessingObject*, qint64)), this, SLOT(receivedProcessingDone(VipProcessingObject*, qint64)));
 
-	m_data->transform = computeTransform();
+	d_data->transform = computeTransform();
 	computeParams();
 	emitImageTransformChanged();
 	emitProcessingChanged();
@@ -4011,27 +3998,27 @@ VipProcessingObject* VipProcessingList::take(int i)
 
 int VipProcessingList::size() const
 {
-	QMutexLocker lock(&m_data->mutex);
-	return m_data->objects.size();
+	QMutexLocker lock(&d_data->mutex);
+	return d_data->objects.size();
 }
 
 void VipProcessingList::setOverrideName(const QString& name)
 {
-	QMutexLocker lock(&m_data->mutex);
-	m_data->overrideName = name;
+	QMutexLocker lock(&d_data->mutex);
+	d_data->overrideName = name;
 }
 QString VipProcessingList::overrideName() const
 {
-	QMutexLocker lock(&m_data->mutex);
-	return m_data->overrideName;
+	QMutexLocker lock(&d_data->mutex);
+	return d_data->overrideName;
 }
 
 void VipProcessingList::setSourceProperty(const char* name, const QVariant& value)
 {
 	VipProcessingObject::setSourceProperty(name, value);
-	QMutexLocker lock(&m_data->mutex);
-	for (int i = 0; i < m_data->objects.size(); ++i)
-		m_data->objects[i]->setProperty(name, value);
+	QMutexLocker lock(&d_data->mutex);
+	for (int i = 0; i < d_data->objects.size(); ++i)
+		d_data->objects[i]->setProperty(name, value);
 }
 
 // static void safeLock(QMutex * mutex)
@@ -4050,128 +4037,128 @@ QList<VipProcessingObject*> VipProcessingList::directSources() const
 {
 	// TODO: to improve
 	// QList<VipProcessingObject*> res;
-	// if (m_data->mutex.tryLock()) {
+	// if (d_data->mutex.tryLock()) {
 	// const_cast<VipProcessingList*>(this)->computeParams();
-	// res = m_data->directSources;
+	// res = d_data->directSources;
 	// res.detach();
-	// m_data->mutex.unlock();
+	// d_data->mutex.unlock();
 	// }
 	// else
-	// res = m_data->directSources;
+	// res = d_data->directSources;
 	// return res;
 
 	QList<VipProcessingObject*> res = VipProcessingObject::directSources();
-	// safeLock(&m_data->mutex);
-	for (int i = 0; i < m_data->objects.size(); ++i) {
-		const QList<VipProcessingObject*> tmp = m_data->objects[i]->directSources();
+	// safeLock(&d_data->mutex);
+	for (int i = 0; i < d_data->objects.size(); ++i) {
+		const QList<VipProcessingObject*> tmp = d_data->objects[i]->directSources();
 		for (QList<VipProcessingObject*>::const_iterator it = tmp.begin(); it != tmp.end(); ++it)
 			if (res.indexOf(*it) < 0 && *it != this)
 				res += *it;
 	}
-	// m_data->mutex.unlock();
+	// d_data->mutex.unlock();
 	return res;
 }
 
 QTransform VipProcessingList::imageTransform(bool* from_center) const
 {
 	*from_center = false;
-	return m_data->transform;
+	return d_data->transform;
 }
 
 void VipProcessingList::receivedProcessingDone(VipProcessingObject* obj, qint64)
 {
 	// VipProcessingObject * obj = qobject_cast<VipProcessingObject*>(sender());
-	if (obj && !m_data->isApplying) {
+	if (obj && !d_data->isApplying) {
 		applyFrom(obj);
 	}
 }
 
 bool VipProcessingList::useEventLoop() const
 {
-	return m_data->useEventLoop;
+	return d_data->useEventLoop;
 }
 
 void VipProcessingList::applyFrom(VipProcessingObject* obj)
 {
 	qint64 st = vipGetNanoSecondsSinceEpoch();
 
-	QMutexLocker lock(&m_data->mutex);
+	QMutexLocker lock(&d_data->mutex);
 
-	if (m_data->isApplying)
+	if (d_data->isApplying)
 		return;
 
 	computeParams();
 
-	if (!m_data->objects.size()) {
+	if (!d_data->objects.size()) {
 		VipAnyData data = inputAt(0)->data();
 		VipAnyData out = create(data.data(), data.attributes());
-		m_data->lastTime = data.time();
+		d_data->lastTime = data.time();
 		out.setTime(data.time());
-		if (!m_data->overrideName.isEmpty())
-			out.setName(m_data->overrideName);
+		if (!d_data->overrideName.isEmpty())
+			out.setName(d_data->overrideName);
 		outputAt(0)->setData(out);
 		return;
 	}
 
-	m_data->isApplying = true;
+	d_data->isApplying = true;
 
 	int index = -1;
 	if (obj) {
-		index = m_data->objects.indexOf(obj);
+		index = d_data->objects.indexOf(obj);
 		// find an enabled processing
-		while (index >= 0 && !m_data->objects[index]->isEnabled())
+		while (index >= 0 && !d_data->objects[index]->isEnabled())
 			--index;
 	}
 
 	// avoid sending the processingDone() signal
-	// for (int i = 0; i < m_data->objects.size(); ++i)
-	//	m_data->objects[i]->blockSignals(true);
+	// for (int i = 0; i < d_data->objects.size(); ++i)
+	//	d_data->objects[i]->blockSignals(true);
 
 	VipAnyData data;
 	if (index < 0) {
 		data = inputAt(0)->data();
-		if (m_data->objects[0]->isEnabled()) {
-			m_data->objects[0]->inputAt(0)->setData(data);
-			m_data->objects[0]->update(true);
+		if (d_data->objects[0]->isEnabled()) {
+			d_data->objects[0]->inputAt(0)->setData(data);
+			d_data->objects[0]->update(true);
 
-			if (m_data->objects[0]->hasError()) {
-				this->setError(m_data->objects[0]->lastErrors().last());
+			if (d_data->objects[0]->hasError()) {
+				this->setError(d_data->objects[0]->lastErrors().last());
 			}
 			else {
-				VipAnyData tmp = m_data->objects[0]->outputAt(0)->data();
+				VipAnyData tmp = d_data->objects[0]->outputAt(0)->data();
 				data.mergeAttributes(tmp.attributes());
 				data.setData(tmp.data());
 			}
 		}
-		m_data->lastTime = data.time();
+		d_data->lastTime = data.time();
 	}
 	else {
-		VipAnyData tmp = m_data->objects[index]->outputAt(0)->data();
+		VipAnyData tmp = d_data->objects[index]->outputAt(0)->data();
 		data.mergeAttributes(tmp.attributes());
 		data.setData(tmp.data());
-		data.setTime(m_data->lastTime);
+		data.setTime(d_data->lastTime);
 	}
 
 	index = qMax(index, 0);
 
-	const VipNDArray src_ar = m_data->objects.size() ? m_data->objects.first()->inputAt(0)->probe().value<VipNDArray>() : VipNDArray();
+	const VipNDArray src_ar = d_data->objects.size() ? d_data->objects.first()->inputAt(0)->probe().value<VipNDArray>() : VipNDArray();
 
 	bool need_compute_transform = !src_ar.isEmpty() && src_ar.shapeCount() == 2;
 
-	if (!m_data->objects[index]->hasError()) {
-		for (int i = index + 1; i < m_data->objects.size(); ++i) {
-			if (!m_data->objects[i]->isEnabled())
+	if (!d_data->objects[index]->hasError()) {
+		for (int i = index + 1; i < d_data->objects.size(); ++i) {
+			if (!d_data->objects[i]->isEnabled())
 				continue;
-			m_data->objects[i]->inputAt(0)->setData(data);
-			m_data->objects[i]->update(true);
+			d_data->objects[i]->inputAt(0)->setData(data);
+			d_data->objects[i]->update(true);
 
-			if (m_data->objects[i]->hasError()) {
-				if (m_data->objects[i]->lastErrors().size())
-					this->setError(m_data->objects[i]->lastErrors().last());
+			if (d_data->objects[i]->hasError()) {
+				if (d_data->objects[i]->lastErrors().size())
+					this->setError(d_data->objects[i]->lastErrors().last());
 				break;
 			}
 
-			VipAnyData tmp = m_data->objects[i]->outputAt(0)->data();
+			VipAnyData tmp = d_data->objects[i]->outputAt(0)->data();
 			data.mergeAttributes(tmp.attributes());
 			data.setData(tmp.data());
 		}
@@ -4183,22 +4170,22 @@ void VipProcessingList::applyFrom(VipProcessingObject* obj)
 		tr = computeTransform();
 	}
 
-	// for (int i = 0; i < m_data->objects.size(); ++i)
-	//	m_data->objects[i]->blockSignals(false);
+	// for (int i = 0; i < d_data->objects.size(); ++i)
+	//	d_data->objects[i]->blockSignals(false);
 
 	// vip_debug("1 %s name: %s\n",objectName().toLatin1().data(), attribute("Name").toString().toLatin1().data());
 	VipAnyData out = create(data.data(), data.attributes());
 	out.setTime(data.time());
-	if (!m_data->overrideName.isEmpty())
-		out.setName(m_data->overrideName);
+	if (!d_data->overrideName.isEmpty())
+		out.setName(d_data->overrideName);
 	// vip_debug("2 %s name: %s\n", objectName().toLatin1().data(), out.name().toLatin1().data());
 
 	outputAt(0)->setData(out);
 
-	m_data->isApplying = false;
+	d_data->isApplying = false;
 
-	if (tr != m_data->transform) {
-		m_data->transform = tr;
+	if (tr != d_data->transform) {
+		d_data->transform = tr;
 		emitImageTransformChanged();
 	}
 
@@ -4216,9 +4203,9 @@ void VipProcessingList::apply()
 
 void VipProcessingList::resetProcessing()
 {
-	QMutexLocker lock(&m_data->mutex);
-	for (int i = 0; i < m_data->objects.size(); ++i) {
-		m_data->objects[i]->reset();
+	QMutexLocker lock(&d_data->mutex);
+	for (int i = 0; i < d_data->objects.size(); ++i) {
+		d_data->objects[i]->reset();
 	}
 }
 
@@ -4255,35 +4242,33 @@ public:
 VipSceneModelBasedProcessing::VipSceneModelBasedProcessing(QObject* parent)
   : VipProcessingObject(parent)
 {
-	m_data = new PrivateData();
+	VIP_CREATE_PRIVATE_DATA(d_data);
 	this->topLevelPropertyAt(1)->toMultiProperty()->resize(1);
 }
 
 VipSceneModelBasedProcessing::~VipSceneModelBasedProcessing()
 {
-	if (m_data->shapeSignals) {
-		disconnect(m_data->shapeSignals, SIGNAL(sceneModelChanged(const VipSceneModel&)), this, SLOT(dirtyShape()));
-		disconnect(m_data->shapeSignals, SIGNAL(sceneModelChanged(const VipSceneModel&)), this, SLOT(reload()));
+	if (d_data->shapeSignals) {
+		disconnect(d_data->shapeSignals, SIGNAL(sceneModelChanged(const VipSceneModel&)), this, SLOT(dirtyShape()));
+		disconnect(d_data->shapeSignals, SIGNAL(sceneModelChanged(const VipSceneModel&)), this, SLOT(reload()));
 	}
-
-	delete m_data;
 }
 
 void VipSceneModelBasedProcessing::dirtyShape()
 {
-	QWriteLocker lock(&m_data->shapeLock);
-	m_data->dirtyShape = VipShape();
+	QWriteLocker lock(&d_data->shapeLock);
+	d_data->dirtyShape = VipShape();
 }
 
 void VipSceneModelBasedProcessing::setMergeStrategy(MergeStrategy st)
 {
-	m_data->mergeStrategy = st;
+	d_data->mergeStrategy = st;
 	dirtyShape();
 }
 
 VipSceneModelBasedProcessing::MergeStrategy VipSceneModelBasedProcessing::mergeStrategy() const
 {
-	return m_data->mergeStrategy;
+	return d_data->mergeStrategy;
 }
 
 VipSceneModel VipSceneModelBasedProcessing::sceneModel()
@@ -4311,15 +4296,15 @@ VipSceneModel VipSceneModelBasedProcessing::sceneModel()
 		}
 		// Check if the first property is directly a VipLazySceneModel
 		else if (v.userType() == qMetaTypeId<VipLazySceneModel>()) {
-			if (m_data->lazyScene.isEmpty()) {
-				m_data->lazyScene = v.value<VipLazySceneModel>();
-				if (m_data->lazyScene.hasSceneModel()) {
-					sm = m_data->lazyScene.sceneModel();
+			if (d_data->lazyScene.isEmpty()) {
+				d_data->lazyScene = v.value<VipLazySceneModel>();
+				if (d_data->lazyScene.hasSceneModel()) {
+					sm = d_data->lazyScene.sceneModel();
 					found = true;
 				}
 			}
 			else {
-				sm = m_data->lazyScene.sceneModel();
+				sm = d_data->lazyScene.sceneModel();
 				found = true;
 			}
 		}
@@ -4336,18 +4321,18 @@ VipSceneModel VipSceneModelBasedProcessing::sceneModel()
 
 	// we did not find a scene model: return the raw scene (if any)
 	if (!found)
-		return m_data->rawScene;
+		return d_data->rawScene;
 
 	// connect the VipShapeSignals to the reload() slot
-	if (sm.shapeSignals() != m_data->shapeSignals) {
-		if (m_data->shapeSignals) {
-			disconnect(m_data->shapeSignals, SIGNAL(sceneModelChanged(const VipSceneModel&)), this, SLOT(dirtyShape()));
-			disconnect(m_data->shapeSignals, SIGNAL(sceneModelChanged(const VipSceneModel&)), this, SLOT(reload()));
+	if (sm.shapeSignals() != d_data->shapeSignals) {
+		if (d_data->shapeSignals) {
+			disconnect(d_data->shapeSignals, SIGNAL(sceneModelChanged(const VipSceneModel&)), this, SLOT(dirtyShape()));
+			disconnect(d_data->shapeSignals, SIGNAL(sceneModelChanged(const VipSceneModel&)), this, SLOT(reload()));
 		}
-		if (m_data->shapeSignals = sm.shapeSignals()) {
-			if (m_data->reloadOnSceneChanges)
-				connect(m_data->shapeSignals, SIGNAL(sceneModelChanged(const VipSceneModel&)), this, SLOT(reload()));
-			connect(m_data->shapeSignals, SIGNAL(sceneModelChanged(const VipSceneModel&)), this, SLOT(dirtyShape()));
+		if (d_data->shapeSignals = sm.shapeSignals()) {
+			if (d_data->reloadOnSceneChanges)
+				connect(d_data->shapeSignals, SIGNAL(sceneModelChanged(const VipSceneModel&)), this, SLOT(reload()));
+			connect(d_data->shapeSignals, SIGNAL(sceneModelChanged(const VipSceneModel&)), this, SLOT(dirtyShape()));
 		}
 	}
 
@@ -4356,29 +4341,29 @@ VipSceneModel VipSceneModelBasedProcessing::sceneModel()
 
 void VipSceneModelBasedProcessing::setReloadOnSceneChanges(bool enable)
 {
-	if (m_data->reloadOnSceneChanges != enable) {
-		if (m_data->shapeSignals) {
+	if (d_data->reloadOnSceneChanges != enable) {
+		if (d_data->shapeSignals) {
 			if (!enable)
-				disconnect(m_data->shapeSignals, SIGNAL(sceneModelChanged(const VipSceneModel&)), this, SLOT(reload()));
+				disconnect(d_data->shapeSignals, SIGNAL(sceneModelChanged(const VipSceneModel&)), this, SLOT(reload()));
 			else
-				connect(m_data->shapeSignals, SIGNAL(sceneModelChanged(const VipSceneModel&)), this, SLOT(reload()));
+				connect(d_data->shapeSignals, SIGNAL(sceneModelChanged(const VipSceneModel&)), this, SLOT(reload()));
 		}
-		m_data->reloadOnSceneChanges = enable;
+		d_data->reloadOnSceneChanges = enable;
 	}
 }
 bool VipSceneModelBasedProcessing::reloadOnSceneChanges() const
 {
-	return m_data->reloadOnSceneChanges;
+	return d_data->reloadOnSceneChanges;
 }
 
 void VipSceneModelBasedProcessing::setShapeTransform(const QTransform& tr)
 {
-	m_data->shapeTransform = tr;
+	d_data->shapeTransform = tr;
 	dirtyShape();
 }
 QTransform VipSceneModelBasedProcessing::shapeTransform() const
 {
-	return m_data->shapeTransform;
+	return d_data->shapeTransform;
 }
 
 static QList<VipShape> applyTr(const QList<VipShape>& input, const QTransform& tr)
@@ -4400,18 +4385,18 @@ QList<VipShape> VipSceneModelBasedProcessing::shapes()
 	if (v.userType() == qMetaTypeId<VipShape>()) {
 		VipShape sh = v.value<VipShape>();
 		VipSceneModel sm = sh.parent();
-		if (!sm.isNull() && sm.shapeSignals() != m_data->shapeSignals) {
-			if (m_data->shapeSignals) {
-				disconnect(m_data->shapeSignals, SIGNAL(sceneModelChanged(const VipSceneModel&)), this, SLOT(dirtyShape()));
-				disconnect(m_data->shapeSignals, SIGNAL(sceneModelChanged(const VipSceneModel&)), this, SLOT(reload()));
+		if (!sm.isNull() && sm.shapeSignals() != d_data->shapeSignals) {
+			if (d_data->shapeSignals) {
+				disconnect(d_data->shapeSignals, SIGNAL(sceneModelChanged(const VipSceneModel&)), this, SLOT(dirtyShape()));
+				disconnect(d_data->shapeSignals, SIGNAL(sceneModelChanged(const VipSceneModel&)), this, SLOT(reload()));
 			}
-			if (m_data->shapeSignals = sm.shapeSignals()) {
-				if (m_data->reloadOnSceneChanges)
-					connect(m_data->shapeSignals, SIGNAL(sceneModelChanged(const VipSceneModel&)), this, SLOT(reload()));
-				connect(m_data->shapeSignals, SIGNAL(sceneModelChanged(const VipSceneModel&)), this, SLOT(dirtyShape()));
+			if (d_data->shapeSignals = sm.shapeSignals()) {
+				if (d_data->reloadOnSceneChanges)
+					connect(d_data->shapeSignals, SIGNAL(sceneModelChanged(const VipSceneModel&)), this, SLOT(reload()));
+				connect(d_data->shapeSignals, SIGNAL(sceneModelChanged(const VipSceneModel&)), this, SLOT(dirtyShape()));
 			}
 		}
-		return applyTr(QList<VipShape>() << sh, m_data->shapeTransform);
+		return applyTr(QList<VipShape>() << sh, d_data->shapeTransform);
 	}
 
 	VipSceneModel sm = sceneModel();
@@ -4420,9 +4405,9 @@ QList<VipShape> VipSceneModelBasedProcessing::shapes()
 	QString shape_id = this->propertyAt(1)->data().value<QString>();
 	if (!shape_id.isEmpty()) {
 		if (sm.hasGroup(shape_id))
-			return applyTr(sm.shapes(shape_id), m_data->shapeTransform);
+			return applyTr(sm.shapes(shape_id), d_data->shapeTransform);
 		else
-			return applyTr(QList<VipShape>() << sm.find(shape_id), m_data->shapeTransform);
+			return applyTr(QList<VipShape>() << sm.find(shape_id), d_data->shapeTransform);
 	}
 
 	// get the shapes
@@ -4436,34 +4421,34 @@ QList<VipShape> VipSceneModelBasedProcessing::shapes()
 		if (!tmp.isNull())
 			shapes.append(tmp);
 	}
-	return applyTr(shapes, m_data->shapeTransform);
+	return applyTr(shapes, d_data->shapeTransform);
 }
 
 VipShape VipSceneModelBasedProcessing::shape()
 {
 	// returns the dirt shape if valid (combination of several shapes)
 	{
-		QReadLocker lock(&m_data->shapeLock);
-		if (!m_data->dirtyShape.isNull())
-			return m_data->dirtyShape;
+		QReadLocker lock(&d_data->shapeLock);
+		if (!d_data->dirtyShape.isNull())
+			return d_data->dirtyShape;
 	}
 
 	QList<VipShape> shapes = this->shapes();
 	if (shapes.isEmpty())
 		return VipShape();
-	else if (shapes.size() == 1 || m_data->mergeStrategy == NoMerge)
+	else if (shapes.size() == 1 || d_data->mergeStrategy == NoMerge)
 		return shapes.last();
 	else {
 		// merge shapes
 		VipShape res = shapes.first();
 		for (int i = 1; i < shapes.size(); ++i) {
-			if (m_data->mergeStrategy == MergeUnion)
+			if (d_data->mergeStrategy == MergeUnion)
 				res.unite(shapes[i]);
 			else
 				res.intersect(shapes[i]);
 		}
-		QWriteLocker lock(&m_data->shapeLock);
-		m_data->dirtyShape = res;
+		QWriteLocker lock(&d_data->shapeLock);
+		d_data->dirtyShape = res;
 		return res;
 	}
 }
@@ -4474,8 +4459,8 @@ void VipSceneModelBasedProcessing::setSceneModel(const VipSceneModel& scene, con
 	if (!identifier.isEmpty()) {
 		this->propertyAt(1)->setData(identifier);
 	}
-	m_data->rawScene = scene;
-	m_data->lazyScene = VipLazySceneModel(scene);
+	d_data->rawScene = scene;
+	d_data->lazyScene = VipLazySceneModel(scene);
 	dirtyShape();
 }
 
@@ -4494,8 +4479,8 @@ void VipSceneModelBasedProcessing::setSceneModel(const VipSceneModel& scene, con
 	this->propertyAt(0)->setData(VipAnyData(QVariant::fromValue(VipLazySceneModel(scene)), VipInvalidTime));
 	this->propertyAt(1)->setData(VipAnyData(QVariant::fromValue(identifiers), VipInvalidTime));
 
-	m_data->rawScene = scene;
-	m_data->lazyScene = VipLazySceneModel(scene);
+	d_data->rawScene = scene;
+	d_data->lazyScene = VipLazySceneModel(scene);
 	dirtyShape();
 }
 
@@ -4508,8 +4493,8 @@ void VipSceneModelBasedProcessing::setShape(const VipShape& shape)
 	}
 	else {
 		this->propertyAt(0)->setData(VipAnyData(QVariant::fromValue(shape), VipInvalidTime));
-		QWriteLocker lock(&m_data->shapeLock);
-		m_data->dirtyShape = shape;
+		QWriteLocker lock(&d_data->shapeLock);
+		d_data->dirtyShape = shape;
 	}
 }
 
@@ -4517,8 +4502,8 @@ void VipSceneModelBasedProcessing::setFixedShape(const VipShape& shape)
 {
 	dirtyShape();
 	this->propertyAt(0)->setData(VipAnyData(QVariant::fromValue(shape), VipInvalidTime));
-	QWriteLocker lock(&m_data->shapeLock);
-	m_data->dirtyShape = shape;
+	QWriteLocker lock(&d_data->shapeLock);
+	d_data->dirtyShape = shape;
 }
 
 void VipMultiInputToOne::apply()
@@ -4835,7 +4820,7 @@ VipArchive& operator>>(VipArchive& stream, VipProcessingObject* r)
 			const QList<VipProcessingObject::Info> infos = VipProcessingObject::additionalInfoObjects();
 			for (int i = 0; i < infos.size(); ++i) {
 				if (QString::number(infos[i].metatype) + infos[i].category + infos[i].classname == registered) {
-					r->m_data->info = infos[i];
+					r->d_data->info = infos[i];
 					break;
 				}
 			}
@@ -4930,7 +4915,7 @@ void serialize_VipDataListManager(VipArchive& arch)
 			bool has_error = arch.hasError();
 			arch.resetError();
 
-			if (!VipProcessingManager::instance().m_data->_lock_list_manager) {
+			if (!VipProcessingManager::instance().d_data->_lock_list_manager) {
 				VipProcessingManager::setListLimitType(limit_type);
 				VipProcessingManager::setMaxListSize(max_list_size);
 				VipProcessingManager::setMaxListMemory(max_memory);

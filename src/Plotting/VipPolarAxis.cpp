@@ -322,7 +322,7 @@ static bool registerVipPolarAxis = vipSetKeyWordsForClass(&VipPolarAxis::staticM
 VipPolarAxis::VipPolarAxis(QGraphicsItem* parent)
   : VipAbstractPolarScale(parent)
 {
-	d_data = new PrivateData();
+	VIP_CREATE_PRIVATE_DATA(d_data);
 
 	this->setScaleDraw(new VipPolarScaleDraw());
 	this->setMargin(2);
@@ -334,7 +334,6 @@ VipPolarAxis::VipPolarAxis(QGraphicsItem* parent)
 
 VipPolarAxis::~VipPolarAxis()
 {
-	delete d_data;
 }
 
 QPainterPath VipPolarAxis::shape() const
@@ -633,7 +632,7 @@ static bool registerVipRadialAxis = vipSetKeyWordsForClass(&VipRadialAxis::stati
 VipRadialAxis::VipRadialAxis(QGraphicsItem* parent)
   : VipAbstractPolarScale(parent)
 {
-	d_data = new PrivateData();
+	VIP_CREATE_PRIVATE_DATA(d_data);
 
 	this->setScaleDraw(new VipRadialScaleDraw());
 	this->setMargin(2);
@@ -642,7 +641,6 @@ VipRadialAxis::VipRadialAxis(QGraphicsItem* parent)
 
 VipRadialAxis::~VipRadialAxis()
 {
-	delete d_data;
 }
 
 bool VipRadialAxis::hasState(const QByteArray& state, bool enable) const

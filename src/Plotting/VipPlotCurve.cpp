@@ -431,13 +431,12 @@ VipPlotCurve::VipPlotCurve(const VipText& title)
 //! Destructor
 VipPlotCurve::~VipPlotCurve()
 {
-	delete d_data;
 }
 
 //! Initialize internal members
 void VipPlotCurve::init()
 {
-	d_data = new PrivateData;
+	VIP_CREATE_PRIVATE_DATA(d_data);
 	setRawData(VipPointVector());
 }
 

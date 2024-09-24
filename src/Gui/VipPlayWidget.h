@@ -47,6 +47,13 @@ class VipIODevice;
 class VipProcessingPool;
 class VipTimeRangeListItem;
 
+
+/// @brief Plot item representing a time range.
+///
+/// VipTimeRangeItem supports mouse interaction in order to move or resize the time range.
+/// Therefore, initialTimeRange() returns the initial time range before any user interaction,
+/// and currentTimeRange returns the time range after potential user interactions.
+/// 
 class VIP_GUI_EXPORT VipTimeRangeItem : public VipPlotItem
 {
 	Q_OBJECT
@@ -102,8 +109,8 @@ protected:
 
 private:
 	int selection(const QPointF& pos) const;
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 Q_DECLARE_METATYPE(VipTimeRangeItem*)
@@ -159,7 +166,7 @@ public:
 	void setDevice(VipIODevice*);
 	VipIODevice* device() const;
 
-	QList<VipTimeRangeItem*> items() const;
+	const QList<VipTimeRangeItem*> &items() const;
 	QList<qint64> stops() const;
 	VipTimeRangeTransforms transforms() const;
 
@@ -224,8 +231,8 @@ protected:
 private:
 	void addItem(VipTimeRangeItem*);
 	void removeItem(VipTimeRangeItem*);
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 Q_DECLARE_OPERATORS_FOR_FLAGS(VipTimeRangeListItem::DrawComponents)
 
@@ -312,8 +319,8 @@ Q_SIGNALS:
 private:
 	// int findBestColor(VipTimeRangeListItem *);
 
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 class VipValueToTime;
@@ -398,8 +405,8 @@ Q_SIGNALS:
 private:
 	void toolTipFlagsChanged(VipToolTip::DisplayFlags flags);
 
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 VIP_REGISTER_QOBJECT_METATYPE(VipPlayWidget*)

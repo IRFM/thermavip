@@ -2151,10 +2151,10 @@ public:
 VipDatasetButton::VipDatasetButton(QWidget* parent)
   : QToolButton(parent)
 {
-	m_data = new PrivateData();
-	m_data->menu = new VipDragMenu();
+	VIP_CREATE_PRIVATE_DATA(d_data);
+	d_data->menu = new VipDragMenu();
 
-	m_data->widget = new QWidget();
+	d_data->widget = new QWidget();
 	QVBoxLayout* lay = new QVBoxLayout();
 
 	QMap<int, VipDataset> dsets = vipDatasetsDB();
@@ -2163,47 +2163,46 @@ VipDatasetButton::VipDatasetButton(QWidget* parent)
 		box->setProperty("id", it.key());
 		box->setText(it.value().creation_date + " " + it.value().annotation_type);
 		lay->addWidget(box);
-		m_data->boxes.append(box);
+		d_data->boxes.append(box);
 		connect(box, SIGNAL(clicked(bool)), this, SLOT(emitChanged()));
 	}
 
 	lay->addWidget(VipLineWidget::createHLine());
-	m_data->all = new QCheckBox();
-	m_data->all->setText("Check/uncheck all");
-	lay->addWidget(m_data->all);
-	connect(m_data->all, SIGNAL(clicked(bool)), this, SLOT(checkAll(bool)));
+	d_data->all = new QCheckBox();
+	d_data->all->setText("Check/uncheck all");
+	lay->addWidget(d_data->all);
+	connect(d_data->all, SIGNAL(clicked(bool)), this, SLOT(checkAll(bool)));
 
-	m_data->widget->setLayout(lay);
-	m_data->widget->resize(100, 100);
+	d_data->widget->setLayout(lay);
+	d_data->widget->resize(100, 100);
 
-	m_data->menu->setWidget(m_data->widget);
+	d_data->menu->setWidget(d_data->widget);
 	this->setPopupMode(QToolButton::InstantPopup);
-	this->setMenu(m_data->menu);
+	this->setMenu(d_data->menu);
 	this->setText("Datasets...");
 
-	connect(m_data->menu, SIGNAL(aboutToShow()), this, SLOT(aboutToShow()));
+	connect(d_data->menu, SIGNAL(aboutToShow()), this, SLOT(aboutToShow()));
 }
 
 VipDatasetButton::~VipDatasetButton()
 {
-	delete m_data;
 }
 
 int VipDatasetButton::datasetCount() const
 {
-	return m_data->boxes.size();
+	return d_data->boxes.size();
 }
 QString VipDatasetButton::datasetName(int index) const
 {
-	return m_data->boxes[index]->text();
+	return d_data->boxes[index]->text();
 }
 bool VipDatasetButton::datasetChecked(int index) const
 {
-	return m_data->boxes[index]->isChecked();
+	return d_data->boxes[index]->isChecked();
 }
 void VipDatasetButton::setChecked(int index, bool checked)
 {
-	m_data->boxes[index]->setChecked(checked);
+	d_data->boxes[index]->setChecked(checked);
 }
 
 void VipDatasetButton::aboutToShow()
@@ -2215,9 +2214,9 @@ QString VipDatasetButton::dataset() const
 {
 	// return list of checked ids
 	QStringList lst;
-	for (int i = 0; i < m_data->boxes.size(); ++i) {
-		if (m_data->boxes[i]->isChecked())
-			lst.push_back(m_data->boxes[i]->property("id").toString());
+	for (int i = 0; i < d_data->boxes.size(); ++i) {
+		if (d_data->boxes[i]->isChecked())
+			lst.push_back(d_data->boxes[i]->property("id").toString());
 	}
 	return lst.join(" ");
 }
@@ -2226,8 +2225,8 @@ void VipDatasetButton::setDataset(const QString& dataset)
 {
 	this->blockSignals(true);
 	// unckeck all
-	for (int i = 0; i < m_data->boxes.size(); ++i) {
-		m_data->boxes[i]->setChecked(false);
+	for (int i = 0; i < d_data->boxes.size(); ++i) {
+		d_data->boxes[i]->setChecked(false);
 	}
 
 	if (dataset.isEmpty()) {
@@ -2241,9 +2240,9 @@ void VipDatasetButton::setDataset(const QString& dataset)
 		if (id == 0)
 			continue;
 
-		for (int j = 0; j < m_data->boxes.size(); ++j) {
-			if (m_data->boxes[j]->property("id").toInt() == id)
-				m_data->boxes[j]->setChecked(true);
+		for (int j = 0; j < d_data->boxes.size(); ++j) {
+			if (d_data->boxes[j]->property("id").toInt() == id)
+				d_data->boxes[j]->setChecked(true);
 		}
 	}
 	this->blockSignals(false);
@@ -2254,8 +2253,8 @@ void VipDatasetButton::checkAll(bool enable)
 {
 	this->blockSignals(true);
 
-	for (int i = 0; i < m_data->boxes.size(); ++i) {
-		m_data->boxes[i]->setChecked(enable);
+	for (int i = 0; i < d_data->boxes.size(); ++i) {
+		d_data->boxes[i]->setChecked(enable);
 	}
 
 	this->blockSignals(false);
@@ -2297,88 +2296,88 @@ public:
 VipQueryDBWidget::VipQueryDBWidget(const QString& device, QWidget* parent)
   : QWidget(parent)
 {
-	m_data = new PrivateData();
+	VIP_CREATE_PRIVATE_DATA(d_data);
 
 	QGridLayout* lay = new QGridLayout();
 
-	m_data->minPulse = vipFindDeviceParameters(device)->pulseEditor();
-	m_data->maxPulse = vipFindDeviceParameters(device)->pulseEditor();
+	d_data->minPulse = vipFindDeviceParameters(device)->pulseEditor();
+	d_data->maxPulse = vipFindDeviceParameters(device)->pulseEditor();
 
 	int row = 0;
 	lay->addWidget(new QLabel("Min experiment id"), row, 0);
-	lay->addWidget(m_data->minPulse, row, 1);
+	lay->addWidget(d_data->minPulse, row, 1);
 	++row;
 	{
 		QHBoxLayout* hlay = new QHBoxLayout();
 		hlay->setSpacing(0);
 		hlay->setContentsMargins(0, 0, 0, 0);
-		hlay->addWidget(m_data->maxPulse);
-		hlay->addWidget(&m_data->linked);
+		hlay->addWidget(d_data->maxPulse);
+		hlay->addWidget(&d_data->linked);
 		lay->addWidget(new QLabel("Max experiment id"), row, 0);
 		lay->addLayout(hlay, row, 1);
 		++row;
 	}
 
 	lay->addWidget(new QLabel("ID ThermalEventInfo"), row, 0);
-	lay->addWidget(&m_data->idThermalEventInfo, row, 1);
+	lay->addWidget(&d_data->idThermalEventInfo, row, 1);
 	++row;
 
 	lay->addWidget(VipLineWidget::createHLine(), row, 0, 1, 2);
 	++row;
 
 	lay->addWidget(new QLabel("User name"), row, 0);
-	lay->addWidget(&m_data->userName, row, 1);
+	lay->addWidget(&d_data->userName, row, 1);
 	++row;
 
 	lay->addWidget(new QLabel("Camera name"), row, 0);
-	lay->addWidget(&m_data->camera, row, 1);
+	lay->addWidget(&d_data->camera, row, 1);
 	++row;
 
 	lay->addWidget(new QLabel("Device name"), row, 0);
-	lay->addWidget(&m_data->device, row, 1);
+	lay->addWidget(&d_data->device, row, 1);
 	++row;
 
 	lay->addWidget(new QLabel("Dataset name"), row, 0);
-	lay->addWidget(&m_data->dataset, row, 1);
+	lay->addWidget(&d_data->dataset, row, 1);
 	++row;
 
 	lay->addWidget(new QLabel("Thermal event"), row, 0);
-	lay->addWidget(&m_data->thermalEvent, row, 1);
+	lay->addWidget(&d_data->thermalEvent, row, 1);
 	++row;
 
 	lay->addWidget(VipLineWidget::createHLine(), row, 0, 1, 2);
 	++row;
 
 	lay->addWidget(new QLabel("Min duration (s)"), row, 0);
-	lay->addWidget(&m_data->minDuration, row, 1);
+	lay->addWidget(&d_data->minDuration, row, 1);
 	++row;
 
 	lay->addWidget(new QLabel("Max duration (s)"), row, 0);
-	lay->addWidget(&m_data->maxDuration, row, 1);
+	lay->addWidget(&d_data->maxDuration, row, 1);
 	++row;
 
 	lay->addWidget(new QLabel("Min temperature"), row, 0);
-	lay->addWidget(&m_data->minTemperature, row, 1);
+	lay->addWidget(&d_data->minTemperature, row, 1);
 	++row;
 
 	lay->addWidget(new QLabel("Max temperature"), row, 0);
-	lay->addWidget(&m_data->maxTemperature, row, 1);
+	lay->addWidget(&d_data->maxTemperature, row, 1);
 	++row;
 
 	lay->addWidget(VipLineWidget::createHLine(), row, 0, 1, 2);
 	++row;
 
 	/*lay->addWidget(new QLabel("Min IP (kA)"), row, 0);
-	lay->addWidget(&m_data->minSMAG_IP, row, 1);
+	lay->addWidget(&d_data->minSMAG_IP, row, 1);
 	++row;
 	lay->addWidget(new QLabel("Min density (1E19 p/m^3)"), row, 0);
-	lay->addWidget(&m_data->minGINTLIDRT, row, 1);
+	lay->addWidget(&d_data->minGINTLIDRT, row, 1);
 	++row;
 	lay->addWidget(new QLabel("Min LH power (MW)"), row, 0);
-	lay->addWidget(&m_data->minSHYBPTOT, row, 1);
+	lay->addWidget(&d_data->minSHYBPTOT, row, 1);
 	++row;
 	lay->addWidget(new QLabel("Min ICRH power (kW)"), row, 0);
-	lay->addWidget(&m_data->minSICHPTOT, row, 1);
+	lay->addWidget(&d_data->minSICHPTOT, row, 1);
 	++row;
 
 
@@ -2386,113 +2385,112 @@ VipQueryDBWidget::VipQueryDBWidget(const QString& device, QWidget* parent)
 	++row;*/
 
 	lay->addWidget(new QLabel("Text in comments"), row, 0);
-	lay->addWidget(&m_data->inComment, row, 1);
+	lay->addWidget(&d_data->inComment, row, 1);
 	++row;
 
 	lay->addWidget(new QLabel("Text in name"), row, 0);
-	lay->addWidget(&m_data->inName, row, 1);
+	lay->addWidget(&d_data->inName, row, 1);
 	++row;
 
 	lay->addWidget(new QLabel("Detection method"), row, 0);
-	lay->addWidget(&m_data->method, row, 1);
+	lay->addWidget(&d_data->method, row, 1);
 	++row;
 
 	lay->addWidget(VipLineWidget::createHLine(), row, 0, 1, 2);
 	++row;
 
 	lay->addWidget(new QLabel("Automatic detection"), row, 0);
-	lay->addWidget(&m_data->automatic, row, 1);
+	lay->addWidget(&d_data->automatic, row, 1);
 	++row;
 
 	lay->addWidget(new QLabel("Min confidence"), row, 0);
-	lay->addWidget(&m_data->minConfidence, row, 1);
+	lay->addWidget(&d_data->minConfidence, row, 1);
 	++row;
 
 	lay->addWidget(new QLabel("Max confidence"), row, 0);
-	lay->addWidget(&m_data->maxConfidence, row, 1);
+	lay->addWidget(&d_data->maxConfidence, row, 1);
 	++row;
 
 	lay->addWidget(VipLineWidget::createHLine(), row, 0, 1, 2);
 	++row;
 
-	lay->addWidget(&m_data->removePrevious, row, 0, 1, 2);
+	lay->addWidget(&d_data->removePrevious, row, 0, 1, 2);
 
 	setLayout(lay);
 
-	m_data->minPulse->setToolTip("Minimum experiment id");
-	m_data->maxPulse->setToolTip("Maximum experiment id");
-	m_data->idThermalEventInfo.setRange(0, INT_MAX);
+	d_data->minPulse->setToolTip("Minimum experiment id");
+	d_data->maxPulse->setToolTip("Maximum experiment id");
+	d_data->idThermalEventInfo.setRange(0, INT_MAX);
 
-	/*m_data->minSMAG_IP.setRange(-1, 10000);
-	m_data->minSMAG_IP.setSingleStep(1);
-	m_data->minSMAG_IP.setValue(-1);
-	m_data->minGINTLIDRT.setRange(-1, 100);
-	m_data->minGINTLIDRT.setSingleStep(0.1);
-	m_data->minGINTLIDRT.setValue(-1);
-	m_data->minSHYBPTOT.setRange(-1, 20);
-	m_data->minSHYBPTOT.setSingleStep(0.1);
-	m_data->minSHYBPTOT.setValue(-1);
-	m_data->minSICHPTOT.setRange(-1, 20000);
-	m_data->minSICHPTOT.setSingleStep(100);
-	m_data->minSICHPTOT.setValue(-1);*/
+	/*d_data->minSMAG_IP.setRange(-1, 10000);
+	d_data->minSMAG_IP.setSingleStep(1);
+	d_data->minSMAG_IP.setValue(-1);
+	d_data->minGINTLIDRT.setRange(-1, 100);
+	d_data->minGINTLIDRT.setSingleStep(0.1);
+	d_data->minGINTLIDRT.setValue(-1);
+	d_data->minSHYBPTOT.setRange(-1, 20);
+	d_data->minSHYBPTOT.setSingleStep(0.1);
+	d_data->minSHYBPTOT.setValue(-1);
+	d_data->minSICHPTOT.setRange(-1, 20000);
+	d_data->minSICHPTOT.setSingleStep(100);
+	d_data->minSICHPTOT.setValue(-1);*/
 
-	m_data->linked.setAutoRaise(true);
-	m_data->linked.setIcon(vipIcon("next_day.png"));
-	m_data->linked.setCheckable(true);
-	m_data->linked.setChecked(true);
-	m_data->linked.setToolTip("Start experiment and End experiment id are the same");
-	m_data->userName.addItems(QStringList() << "All" << vipUsersDB());
-	m_data->camera.addItems(QStringList() << "All" << vipCamerasDB());
-	m_data->device.addItems(QStringList() << "All" << vipDevicesDB());
+	d_data->linked.setAutoRaise(true);
+	d_data->linked.setIcon(vipIcon("next_day.png"));
+	d_data->linked.setCheckable(true);
+	d_data->linked.setChecked(true);
+	d_data->linked.setToolTip("Start experiment and End experiment id are the same");
+	d_data->userName.addItems(QStringList() << "All" << vipUsersDB());
+	d_data->camera.addItems(QStringList() << "All" << vipCamerasDB());
+	d_data->device.addItems(QStringList() << "All" << vipDevicesDB());
 
-	m_data->inComment.setToolTip("Find given text in thermal event comments");
-	m_data->inComment.setPlaceholderText("Search in comments");
-	m_data->inName.setToolTip("Find given text in thermal event name");
-	m_data->inName.setPlaceholderText("Search in name");
-	m_data->method.setToolTip("Find detection method");
-	m_data->method.addItems(QStringList() << "All" << vipMethodsDB());
-	m_data->thermalEvent.addItems(QStringList() << "All" << vipEventTypesDB());
+	d_data->inComment.setToolTip("Find given text in thermal event comments");
+	d_data->inComment.setPlaceholderText("Search in comments");
+	d_data->inName.setToolTip("Find given text in thermal event name");
+	d_data->inName.setPlaceholderText("Search in name");
+	d_data->method.setToolTip("Find detection method");
+	d_data->method.addItems(QStringList() << "All" << vipMethodsDB());
+	d_data->thermalEvent.addItems(QStringList() << "All" << vipEventTypesDB());
 
-	m_data->minDuration.setRange(0, 1000);
-	m_data->minDuration.setValue(0);
-	m_data->minDuration.setToolTip("Event minimum duration in seconds");
-	m_data->maxDuration.setRange(0, 1000);
-	m_data->maxDuration.setValue(1000);
-	m_data->maxDuration.setToolTip("Event maximum duration in seconds");
+	d_data->minDuration.setRange(0, 1000);
+	d_data->minDuration.setValue(0);
+	d_data->minDuration.setToolTip("Event minimum duration in seconds");
+	d_data->maxDuration.setRange(0, 1000);
+	d_data->maxDuration.setValue(1000);
+	d_data->maxDuration.setToolTip("Event maximum duration in seconds");
 
-	m_data->maxTemperature.setRange(0, 50000);
-	m_data->maxTemperature.setValue(5000);
-	m_data->maxTemperature.setToolTip("High limit of event maximum temperature (Celsius)");
+	d_data->maxTemperature.setRange(0, 50000);
+	d_data->maxTemperature.setValue(5000);
+	d_data->maxTemperature.setToolTip("High limit of event maximum temperature (Celsius)");
 
-	m_data->minTemperature.setRange(0, 50000);
-	m_data->minTemperature.setValue(0);
-	m_data->minTemperature.setToolTip("Low limit of event maximum temperature (Celsius)");
+	d_data->minTemperature.setRange(0, 50000);
+	d_data->minTemperature.setValue(0);
+	d_data->minTemperature.setToolTip("Low limit of event maximum temperature (Celsius)");
 
-	m_data->automatic.addItems(QStringList() << "All"
+	d_data->automatic.addItems(QStringList() << "All"
 						 << "Automatic"
 						 << "Manual");
-	m_data->minConfidence.setRange(0, 1);
-	m_data->minConfidence.setSingleStep(0.25);
-	m_data->minConfidence.setValue(0);
-	m_data->minConfidence.setToolTip("Minimum confidence value (0->1)");
+	d_data->minConfidence.setRange(0, 1);
+	d_data->minConfidence.setSingleStep(0.25);
+	d_data->minConfidence.setValue(0);
+	d_data->minConfidence.setToolTip("Minimum confidence value (0->1)");
 
-	m_data->maxConfidence.setRange(0, 1);
-	m_data->maxConfidence.setSingleStep(0.25);
-	m_data->maxConfidence.setValue(1);
-	m_data->maxConfidence.setToolTip("Maximum confidence value (0->1)");
+	d_data->maxConfidence.setRange(0, 1);
+	d_data->maxConfidence.setSingleStep(0.25);
+	d_data->maxConfidence.setValue(1);
+	d_data->maxConfidence.setToolTip("Maximum confidence value (0->1)");
 
-	m_data->removePrevious.setText("Remove previous events");
-	m_data->removePrevious.setToolTip("Clear the playr's content before displaying retrieved events from DB");
-	m_data->removePrevious.setVisible(false);
+	d_data->removePrevious.setText("Remove previous events");
+	d_data->removePrevious.setToolTip("Clear the playr's content before displaying retrieved events from DB");
+	d_data->removePrevious.setVisible(false);
 
-	connect(m_data->minPulse, SIGNAL(valueChanged(Vip_experiment_id)), this, SLOT(pulseChanged(Vip_experiment_id)));
-	connect(m_data->maxPulse, SIGNAL(valueChanged(Vip_experiment_id)), this, SLOT(pulseChanged(Vip_experiment_id)));
+	connect(d_data->minPulse, SIGNAL(valueChanged(Vip_experiment_id)), this, SLOT(pulseChanged(Vip_experiment_id)));
+	connect(d_data->maxPulse, SIGNAL(valueChanged(Vip_experiment_id)), this, SLOT(pulseChanged(Vip_experiment_id)));
 
-	connect(&m_data->device, SIGNAL(currentIndexChanged(int)), this, SLOT(deviceChanged()));
+	connect(&d_data->device, SIGNAL(currentIndexChanged(int)), this, SLOT(deviceChanged()));
 }
 VipQueryDBWidget::~VipQueryDBWidget()
 {
-	delete m_data;
 }
 
 void VipQueryDBWidget::deviceChanged()
@@ -2501,115 +2499,115 @@ void VipQueryDBWidget::deviceChanged()
 	QWidget* minp = vipFindDeviceParameters(device())->pulseEditor();
 	QWidget* maxp = vipFindDeviceParameters(device())->pulseEditor();
 
-	auto* l1 = layout()->replaceWidget(m_data->minPulse, minp);
-	auto* l2 = layout()->replaceWidget(m_data->maxPulse, maxp);
+	auto* l1 = layout()->replaceWidget(d_data->minPulse, minp);
+	auto* l2 = layout()->replaceWidget(d_data->maxPulse, maxp);
 	delete l1;
-	delete m_data->minPulse;
-	m_data->minPulse = minp;
+	delete d_data->minPulse;
+	d_data->minPulse = minp;
 	delete l2;
-	delete m_data->maxPulse;
-	m_data->maxPulse = maxp;
+	delete d_data->maxPulse;
+	d_data->maxPulse = maxp;
 
-	connect(m_data->minPulse, SIGNAL(valueChanged(Vip_experiment_id)), this, SLOT(pulseChanged(Vip_experiment_id)));
-	connect(m_data->maxPulse, SIGNAL(valueChanged(Vip_experiment_id)), this, SLOT(pulseChanged(Vip_experiment_id)));
+	connect(d_data->minPulse, SIGNAL(valueChanged(Vip_experiment_id)), this, SLOT(pulseChanged(Vip_experiment_id)));
+	connect(d_data->maxPulse, SIGNAL(valueChanged(Vip_experiment_id)), this, SLOT(pulseChanged(Vip_experiment_id)));
 
 	setPulseRange(range);
 }
 
 void VipQueryDBWidget::setRemovePreviousVisible(bool vis)
 {
-	m_data->removePrevious.setVisible(vis);
+	d_data->removePrevious.setVisible(vis);
 }
 bool VipQueryDBWidget::isRemovepreviousVisible() const
 {
-	return m_data->removePrevious.isVisible();
+	return d_data->removePrevious.isVisible();
 }
 
 void VipQueryDBWidget::setRemovePrevious(bool enable)
 {
-	m_data->removePrevious.setChecked(enable);
+	d_data->removePrevious.setChecked(enable);
 }
 bool VipQueryDBWidget::removePrevious() const
 {
-	return m_data->removePrevious.isChecked();
+	return d_data->removePrevious.isChecked();
 }
 
 void VipQueryDBWidget::enablePulseRange(bool enable)
 {
 	if (enable) {
-		m_data->linked.setEnabled(true);
+		d_data->linked.setEnabled(true);
 	}
 	else {
-		m_data->linked.setChecked(true);
-		m_data->linked.setEnabled(false);
+		d_data->linked.setChecked(true);
+		d_data->linked.setEnabled(false);
 	}
 }
 bool VipQueryDBWidget::pulseRangeEnabled() const
 {
-	return m_data->linked.isEnabled();
+	return d_data->linked.isEnabled();
 }
 
 void VipQueryDBWidget::enableAllDevices(bool enable)
 {
-	if (m_data->device.count() == 0) {
+	if (d_data->device.count() == 0) {
 		if (enable)
-			m_data->device.addItem("All");
+			d_data->device.addItem("All");
 		return;
 	}
-	if (m_data->device.itemText(0) == "All" && !enable)
-		m_data->device.removeItem(0);
-	else if (m_data->device.itemText(0) != "All" && enable)
-		m_data->device.insertItem(0, "All");
+	if (d_data->device.itemText(0) == "All" && !enable)
+		d_data->device.removeItem(0);
+	else if (d_data->device.itemText(0) != "All" && enable)
+		d_data->device.insertItem(0, "All");
 }
 bool VipQueryDBWidget::isAllDevicesEnabled() const
 {
-	return m_data->device.count() > 0 && m_data->device.itemText(0) == "All";
+	return d_data->device.count() > 0 && d_data->device.itemText(0) == "All";
 }
 
 void VipQueryDBWidget::enableAllCameras(bool enable)
 {
-	if (m_data->camera.count() == 0) {
+	if (d_data->camera.count() == 0) {
 		if (enable)
-			m_data->camera.addItem("All");
+			d_data->camera.addItem("All");
 		return;
 	}
 
-	if (m_data->camera.itemText(0) == "All" && !enable)
-		m_data->camera.removeItem(0);
-	else if (m_data->camera.itemText(0) != "All" && enable)
-		m_data->camera.insertItem(0, "All");
+	if (d_data->camera.itemText(0) == "All" && !enable)
+		d_data->camera.removeItem(0);
+	else if (d_data->camera.itemText(0) != "All" && enable)
+		d_data->camera.insertItem(0, "All");
 }
 bool VipQueryDBWidget::isAllCamerasEnabled() const
 {
-	return m_data->camera.count() > 0 && m_data->camera.itemText(0) == "All";
+	return d_data->camera.count() > 0 && d_data->camera.itemText(0) == "All";
 }
 
 void VipQueryDBWidget::setPulseRange(const QPair<Vip_experiment_id, Vip_experiment_id>& range)
 {
-	m_data->minPulse->setProperty("value", range.first);
-	m_data->maxPulse->setProperty("value", range.second);
+	d_data->minPulse->setProperty("value", range.first);
+	d_data->maxPulse->setProperty("value", range.second);
 }
 QPair<Vip_experiment_id, Vip_experiment_id> VipQueryDBWidget::pulseRange() const
 {
-	return QPair<Vip_experiment_id, Vip_experiment_id>(m_data->minPulse->property("value").value<Vip_experiment_id>(), m_data->maxPulse->property("value").value<Vip_experiment_id>());
+	return QPair<Vip_experiment_id, Vip_experiment_id>(d_data->minPulse->property("value").value<Vip_experiment_id>(), d_data->maxPulse->property("value").value<Vip_experiment_id>());
 }
 
 void VipQueryDBWidget::setIDThermalEventInfo(int v)
 {
-	m_data->idThermalEventInfo.setValue(v);
+	d_data->idThermalEventInfo.setValue(v);
 }
 int VipQueryDBWidget::idThermalEventInfo() const
 {
-	return m_data->idThermalEventInfo.value();
+	return d_data->idThermalEventInfo.value();
 }
 
 void VipQueryDBWidget::setUserName(const QString& name)
 {
-	m_data->userName.setCurrentText(name);
+	d_data->userName.setCurrentText(name);
 }
 QString VipQueryDBWidget::userName() const
 {
-	QString res = m_data->userName.currentText();
+	QString res = d_data->userName.currentText();
 	if (res == "All")
 		return QString();
 	return res;
@@ -2617,11 +2615,11 @@ QString VipQueryDBWidget::userName() const
 
 void VipQueryDBWidget::setCamera(const QString& camera)
 {
-	m_data->camera.setCurrentText(camera);
+	d_data->camera.setCurrentText(camera);
 }
 QString VipQueryDBWidget::camera() const
 {
-	QString res = m_data->camera.currentText();
+	QString res = d_data->camera.currentText();
 	if (res == "All")
 		return QString();
 	return res;
@@ -2629,11 +2627,11 @@ QString VipQueryDBWidget::camera() const
 
 void VipQueryDBWidget::setDevice(const QString& device)
 {
-	m_data->device.setCurrentText(device);
+	d_data->device.setCurrentText(device);
 }
 QString VipQueryDBWidget::device() const
 {
-	QString res = m_data->device.currentText();
+	QString res = d_data->device.currentText();
 	if (res == "All")
 		return QString();
 	return res;
@@ -2641,38 +2639,38 @@ QString VipQueryDBWidget::device() const
 
 void VipQueryDBWidget::setDataset(const QString& dataset)
 {
-	m_data->dataset.setDataset(dataset);
+	d_data->dataset.setDataset(dataset);
 }
 QString VipQueryDBWidget::dataset() const
 {
-	return m_data->dataset.dataset();
+	return d_data->dataset.dataset();
 }
 
 void VipQueryDBWidget::setInComment(const QString& comment)
 {
-	m_data->inComment.setText(comment);
+	d_data->inComment.setText(comment);
 }
 QString VipQueryDBWidget::inComment() const
 {
-	return m_data->inComment.text();
+	return d_data->inComment.text();
 }
 
 void VipQueryDBWidget::setInName(const QString& name)
 {
-	m_data->inName.setText(name);
+	d_data->inName.setText(name);
 }
 QString VipQueryDBWidget::inName() const
 {
-	return m_data->inName.text();
+	return d_data->inName.text();
 }
 
 void VipQueryDBWidget::setMethod(const QString& method)
 {
-	m_data->method.setCurrentText(method);
+	d_data->method.setCurrentText(method);
 }
 QString VipQueryDBWidget::method() const
 {
-	QString res = m_data->method.currentText();
+	QString res = d_data->method.currentText();
 	if (res == "All")
 		return QString();
 	return res;
@@ -2680,36 +2678,36 @@ QString VipQueryDBWidget::method() const
 
 void VipQueryDBWidget::setDurationRange(const QPair<qint64, qint64>& range)
 {
-	m_data->minDuration.setValue(range.first / 1000000000.0);
-	m_data->maxDuration.setValue(range.second / 1000000000.0);
+	d_data->minDuration.setValue(range.first / 1000000000.0);
+	d_data->maxDuration.setValue(range.second / 1000000000.0);
 }
 QPair<qint64, qint64> VipQueryDBWidget::durationRange() const
 {
-	return QPair<qint64, qint64>(m_data->minDuration.value() * 1000000000, m_data->maxDuration.value() * 1000000000);
+	return QPair<qint64, qint64>(d_data->minDuration.value() * 1000000000, d_data->maxDuration.value() * 1000000000);
 }
 
 void VipQueryDBWidget::setMaxTemperatureRange(const QPair<double, double>& range)
 {
-	m_data->minTemperature.setValue(range.first);
-	m_data->maxTemperature.setValue(range.second);
+	d_data->minTemperature.setValue(range.first);
+	d_data->maxTemperature.setValue(range.second);
 }
 QPair<double, double> VipQueryDBWidget::maxTemperatureRange() const
 {
-	return QPair<double, double>(m_data->minTemperature.value(), m_data->maxTemperature.value());
+	return QPair<double, double>(d_data->minTemperature.value(), d_data->maxTemperature.value());
 }
 
 void VipQueryDBWidget::setAutomatic(int automatic)
 {
 	if (automatic < 0)
-		m_data->automatic.setCurrentIndex(0);
+		d_data->automatic.setCurrentIndex(0);
 	else if (automatic == 0)
-		m_data->automatic.setCurrentIndex(2);
+		d_data->automatic.setCurrentIndex(2);
 	else
-		m_data->automatic.setCurrentIndex(1);
+		d_data->automatic.setCurrentIndex(1);
 }
 int VipQueryDBWidget::automatic() const
 {
-	QString r = m_data->automatic.currentText();
+	QString r = d_data->automatic.currentText();
 	if (r == "All")
 		return -1;
 	else if (r == "Automatic")
@@ -2719,29 +2717,29 @@ int VipQueryDBWidget::automatic() const
 
 void VipQueryDBWidget::setMinConfidence(double value)
 {
-	m_data->minConfidence.setValue(value);
+	d_data->minConfidence.setValue(value);
 }
 double VipQueryDBWidget::minConfidence() const
 {
-	return m_data->minConfidence.value();
+	return d_data->minConfidence.value();
 }
 
 void VipQueryDBWidget::setMaxConfidence(double value)
 {
-	m_data->maxConfidence.setValue(value);
+	d_data->maxConfidence.setValue(value);
 }
 double VipQueryDBWidget::maxConfidence() const
 {
-	return m_data->maxConfidence.value();
+	return d_data->maxConfidence.value();
 }
 
 void VipQueryDBWidget::setThermalEvent(const QString& evt)
 {
-	m_data->thermalEvent.setCurrentText(evt);
+	d_data->thermalEvent.setCurrentText(evt);
 }
 QString VipQueryDBWidget::thermalEvent() const
 {
-	QString res = m_data->thermalEvent.currentText();
+	QString res = d_data->thermalEvent.currentText();
 	if (res == "All")
 		return QString();
 	return res;
@@ -2749,12 +2747,12 @@ QString VipQueryDBWidget::thermalEvent() const
 
 void VipQueryDBWidget::pulseChanged(Vip_experiment_id v)
 {
-	if (m_data->linked.isChecked()) {
-		m_data->minPulse->blockSignals(true);
-		m_data->maxPulse->blockSignals(true);
-		m_data->minPulse->setProperty("value", v);
-		m_data->maxPulse->setProperty("value", v);
-		m_data->minPulse->blockSignals(false);
-		m_data->maxPulse->blockSignals(false);
+	if (d_data->linked.isChecked()) {
+		d_data->minPulse->blockSignals(true);
+		d_data->maxPulse->blockSignals(true);
+		d_data->minPulse->setProperty("value", v);
+		d_data->maxPulse->setProperty("value", v);
+		d_data->minPulse->blockSignals(false);
+		d_data->maxPulse->blockSignals(false);
 	}
 }

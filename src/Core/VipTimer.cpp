@@ -59,99 +59,98 @@ public:
 VipTimer::VipTimer(QObject* parent)
   : QThread(parent)
 {
-	m_data = new PrivateData();
+	VIP_CREATE_PRIVATE_DATA(d_data);
 	this->QThread::start();
 }
 
 VipTimer::~VipTimer()
 {
-	m_data->stop = true;
+	d_data->stop = true;
 	stop();
 	wait();
-	delete m_data;
 }
 
 qint64 VipTimer::interval() const
 {
-	return m_data->interval;
+	return d_data->interval;
 }
 
 bool VipTimer::singleShot() const
 {
-	return m_data->singleshot;
+	return d_data->singleshot;
 }
 
 qint64 VipTimer::elapsed() const
 {
-	if (m_data->start)
-		return QDateTime::currentMSecsSinceEpoch() - m_data->start;
+	if (d_data->start)
+		return QDateTime::currentMSecsSinceEpoch() - d_data->start;
 	else
 		return 0;
 }
 
 bool VipTimer::isRunning() const
 {
-	return m_data->start != 0;
+	return d_data->start != 0;
 }
 
 bool VipTimer::restartWhenRunningEnabled() const
 {
-	return m_data->enable_restart_when_running;
+	return d_data->enable_restart_when_running;
 }
 
 void VipTimer::stop()
 {
-	QMutexLocker lock(&m_data->mutex);
-	m_data->start = 0;
-	m_data->cond.wakeAll();
+	QMutexLocker lock(&d_data->mutex);
+	d_data->start = 0;
+	d_data->cond.wakeAll();
 }
 
 bool VipTimer::start()
 {
-	if (m_data->start != 0 && !m_data->enable_restart_when_running)
+	if (d_data->start != 0 && !d_data->enable_restart_when_running)
 		return false;
 
-	QMutexLocker lock(&m_data->mutex);
-	m_data->start = QDateTime::currentMSecsSinceEpoch();
-	m_data->cond.wakeAll();
+	QMutexLocker lock(&d_data->mutex);
+	d_data->start = QDateTime::currentMSecsSinceEpoch();
+	d_data->cond.wakeAll();
 	return true;
 }
 
 void VipTimer::setInterval(qint64 inter)
 {
-	QMutexLocker lock(&m_data->mutex);
-	m_data->interval = inter;
+	QMutexLocker lock(&d_data->mutex);
+	d_data->interval = inter;
 }
 
 void VipTimer::setSingleShot(bool single)
 {
-	QMutexLocker lock(&m_data->mutex);
-	m_data->singleshot = single;
+	QMutexLocker lock(&d_data->mutex);
+	d_data->singleshot = single;
 }
 
 void VipTimer::setRestartWhenRunningEnabled(bool enable)
 {
-	QMutexLocker lock(&m_data->mutex);
-	m_data->enable_restart_when_running = enable;
+	QMutexLocker lock(&d_data->mutex);
+	d_data->enable_restart_when_running = enable;
 }
 
 void VipTimer::run()
 {
-	while (!m_data->stop) {
-		while (!m_data->start && !m_data->stop) {
-			QMutexLocker lock(&m_data->mutex);
-			m_data->cond.wait(&m_data->mutex, 20);
+	while (!d_data->stop) {
+		while (!d_data->start && !d_data->stop) {
+			QMutexLocker lock(&d_data->mutex);
+			d_data->cond.wait(&d_data->mutex, 20);
 		}
 		qint64 time = QDateTime::currentMSecsSinceEpoch();
-		qint64 elapsed = time - m_data->start;
-		qint64 remaining = m_data->interval - elapsed;
-		if (m_data->start && remaining <= 0) {
+		qint64 elapsed = time - d_data->start;
+		qint64 remaining = d_data->interval - elapsed;
+		if (d_data->start && remaining <= 0) {
 			Q_EMIT timeout();
-			QMutexLocker lock(&m_data->mutex);
-			if (!m_data->singleshot)
-				m_data->start = time;
+			QMutexLocker lock(&d_data->mutex);
+			if (!d_data->singleshot)
+				d_data->start = time;
 			else
-				m_data->start = 0;
+				d_data->start = 0;
 		}
 		else // wait by chunks of at most 10ms
 			vipSleep(remaining - 1 > 0 ? qMin(remaining - 1, (qint64)10) : 1);

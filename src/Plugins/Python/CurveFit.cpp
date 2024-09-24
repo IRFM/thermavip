@@ -648,34 +648,34 @@ FitDialogBox::FitDialogBox(VipPlotPlayer * pl,const QString & fit, QWidget * par
 	QList<VipPlotCurve*> curves = pl->viewer()->area()->findItems<VipPlotCurve*>(QString(), 1, 1);
 
 	
-	m_data = new PrivateData();
-	m_data->player = pl;
+	VIP_CREATE_PRIVATE_DATA(d_data);
+	d_data->player = pl;
 
 	QGridLayout * lay = new QGridLayout();
-	lay->addWidget(&m_data->curvesLabel, 0, 0);
-	lay->addWidget(&m_data->curves, 0, 1);
-	lay->addWidget(&m_data->fitLabel, 1, 0);
-	lay->addWidget(&m_data->fit, 1, 1);
+	lay->addWidget(&d_data->curvesLabel, 0, 0);
+	lay->addWidget(&d_data->curves, 0, 1);
+	lay->addWidget(&d_data->fitLabel, 1, 0);
+	lay->addWidget(&d_data->fit, 1, 1);
 
-	m_data->curvesLabel.setText(tr("Select curve to fit:"));
-	m_data->fitLabel.setText(tr("Select the fit type:"));
+	d_data->curvesLabel.setText(tr("Select curve to fit:"));
+	d_data->fitLabel.setText(tr("Select the fit type:"));
 	
 	for (int i = 0; i < curves.size(); ++i)
-		m_data->curves.addItem(curves[i]->title().text());
+		d_data->curves.addItem(curves[i]->title().text());
 
-	m_data->ok.setText(tr("Ok"));
-	m_data->cancel.setText(tr("Cancel"));
+	d_data->ok.setText(tr("Ok"));
+	d_data->cancel.setText(tr("Cancel"));
 
-	m_data->fit.addItem("Linear");
-	m_data->fit.addItem("Exponential");
-	m_data->fit.addItem("Polynomial");
-	m_data->fit.addItem("Gaussian");
-	m_data->fit.setCurrentText(fit);
+	d_data->fit.addItem("Linear");
+	d_data->fit.addItem("Exponential");
+	d_data->fit.addItem("Polynomial");
+	d_data->fit.addItem("Gaussian");
+	d_data->fit.setCurrentText(fit);
 
 	QHBoxLayout * hlay = new QHBoxLayout();
 	hlay->addStretch(1);
-	hlay->addWidget(&m_data->ok);
-	hlay->addWidget(&m_data->cancel);
+	hlay->addWidget(&d_data->ok);
+	hlay->addWidget(&d_data->cancel);
 
 	QVBoxLayout * vlay = new QVBoxLayout();
 	vlay->addLayout(lay);
@@ -683,22 +683,21 @@ FitDialogBox::FitDialogBox(VipPlotPlayer * pl,const QString & fit, QWidget * par
 	vlay->addLayout(hlay);
 	setLayout(vlay);
 
-	connect(&m_data->ok, SIGNAL(clicked(bool)), this, SLOT(accept()));
-	connect(&m_data->cancel, SIGNAL(clicked(bool)), this, SLOT(reject()));
+	connect(&d_data->ok, SIGNAL(clicked(bool)), this, SLOT(accept()));
+	connect(&d_data->cancel, SIGNAL(clicked(bool)), this, SLOT(reject()));
 
 	this->setWindowTitle("Fit plot");
 }
 
 FitDialogBox::~FitDialogBox()
 {
-	delete m_data;
 }
 
 VipPlotCurve * FitDialogBox::selectedCurve() const
 {
-	QList<VipPlotCurve*> curves = m_data->player->viewer()->area()->findItems<VipPlotCurve*>(QString(), 2, 1);
+	QList<VipPlotCurve*> curves = d_data->player->viewer()->area()->findItems<VipPlotCurve*>(QString(), 2, 1);
 	for (int i = 0; i < curves.size(); ++i)
-		if (curves[i]->title().text() == m_data->curves.currentText())
+		if (curves[i]->title().text() == d_data->curves.currentText())
 			return curves[i];
 	return nullptr;
 }
@@ -706,7 +705,7 @@ VipPlotCurve * FitDialogBox::selectedCurve() const
 /**0=linear, 1 = exponential, 2 = polynomial*/
 int FitDialogBox::selectedFit() const
 {
-	return m_data->fit.currentIndex();
+	return d_data->fit.currentIndex();
 }
 
 

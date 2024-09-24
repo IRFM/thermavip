@@ -165,8 +165,8 @@ protected:
 	VipInterval buildInterval(vip_double v) const;
 
 private:
-	class PrivateData;
-	PrivateData* d_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 /// \brief A scale engine for linear scales

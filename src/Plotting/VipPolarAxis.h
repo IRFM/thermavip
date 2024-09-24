@@ -118,8 +118,8 @@ private:
 	void getBorderRadius(double& min_radius, double& max_radius) const;
 	void computeScaleDrawRadiusAndCenter();
 
-	class PrivateData;
-	PrivateData* d_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 class VIP_PLOTTING_EXPORT VipRadialAxis : public VipAbstractPolarScale
@@ -161,8 +161,8 @@ public:
 	virtual QRectF axisRect() const;
 
 private:
-	class PrivateData;
-	PrivateData* d_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 /// @}

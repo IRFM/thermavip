@@ -68,8 +68,8 @@ private Q_SLOTS:
 	void execMenu();
 
 private:
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 class VIP_GUI_EXPORT VipPlotItemSelector : public QToolButton
@@ -93,8 +93,8 @@ private Q_SLOTS:
 	void processingSelected(QAction*);
 
 private:
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 class VIP_GUI_EXPORT SkipFrame : public QWidget
@@ -111,8 +111,8 @@ public Q_SLOTS:
 	void reset();
 
 private:
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 class VipPlotItem;
@@ -175,8 +175,8 @@ private Q_SLOTS:
 	void updateBuffer();
 
 private:
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 VipRecordToolWidget* vipGetRecordToolWidget(VipMainWindow* window = nullptr);
@@ -210,8 +210,8 @@ Q_SIGNALS:
 	void stopped();
 
 private:
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 /// @}

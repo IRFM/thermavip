@@ -88,7 +88,7 @@ VipDynGridLayout::VipDynGridLayout(double spacing, QGraphicsLayoutItem* parent)
 
 void VipDynGridLayout::init()
 {
-	d_data = new VipDynGridLayout::PrivateData;
+	VIP_CREATE_PRIVATE_DATA(d_data);
 	d_data->maxColumns = d_data->numRows = d_data->numColumns = 0;
 }
 
@@ -96,8 +96,6 @@ VipDynGridLayout::~VipDynGridLayout()
 {
 	for (int i = 0; i < d_data->itemList.size(); i++)
 		delete d_data->itemList[i];
-
-	delete d_data;
 }
 
 void VipDynGridLayout::setAlignment(Qt::Alignment alignment)

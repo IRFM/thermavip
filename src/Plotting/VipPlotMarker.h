@@ -210,8 +210,8 @@ protected:
 	virtual void drawLabel(QPainter*, const QRectF&, const VipCoordinateSystemPtr&, const QPointF&) const;
 
 private:
-	class PrivateData;
-	PrivateData* d_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 VIP_REGISTER_QOBJECT_METATYPE(VipPlotMarker*)

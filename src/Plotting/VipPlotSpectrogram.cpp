@@ -346,7 +346,6 @@ VipPlotSpectrogram::VipPlotSpectrogram(const VipText& title)
 VipPlotSpectrogram::~VipPlotSpectrogram()
 {
 	emitItemDestroyed();
-	delete d_data;
 }
 
 void VipPlotSpectrogram::setDefaultContourPen(const QPen& pen)

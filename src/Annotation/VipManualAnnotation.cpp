@@ -441,120 +441,119 @@ VipAnnotationParameters::VipAnnotationParameters(const QString& device)
   : QWidget()
 {
 	// setStyleSheet("QToolBar > QToolButton{ margin: 0px 10px; }");
-	m_data = new PrivateData();
-	m_data->commentChanged = false;
-	m_data->nameChanged = false;
+	VIP_CREATE_PRIVATE_DATA(d_data);
+	d_data->commentChanged = false;
+	d_data->nameChanged = false;
 
-	m_data->camera.addItems(QStringList() << QString() << vipCamerasDB());
-	m_data->camera.setToolTip("Camera name");
+	d_data->camera.addItems(QStringList() << QString() << vipCamerasDB());
+	d_data->camera.setToolTip("Camera name");
 
-	m_data->device.addItems(QStringList() << QString() << vipDevicesDB());
-	m_data->device.setToolTip("Device name");
+	d_data->device.addItems(QStringList() << QString() << vipDevicesDB());
+	d_data->device.setToolTip("Device name");
 
-	m_data->pulse = vipFindDeviceParameters(device)->pulseEditor();
+	d_data->pulse = vipFindDeviceParameters(device)->pulseEditor();
 
-	m_data->category.addItems(QStringList() << QString() << vipEventTypesDB());
-	m_data->category.setToolTip("Event type");
-	m_data->confidence.setRange(-0.25, 1);
-	m_data->confidence.setSpecialValueText(" ");
-	m_data->confidence.setValue(1);
-	m_data->confidence.setSingleStep(0.25);
-	m_data->confidence.setToolTip("confidence (0->1)");
-	m_data->comment.setPlaceholderText("User comments");
-	m_data->comment.setToolTip("<b>User comments (optional)</b><br>Press ENTER to validate");
-	m_data->name.setPlaceholderText("Event name");
-	m_data->comment.setToolTip("<b>Event name (optional)</b><br>Press ENTER to validate");
+	d_data->category.addItems(QStringList() << QString() << vipEventTypesDB());
+	d_data->category.setToolTip("Event type");
+	d_data->confidence.setRange(-0.25, 1);
+	d_data->confidence.setSpecialValueText(" ");
+	d_data->confidence.setValue(1);
+	d_data->confidence.setSingleStep(0.25);
+	d_data->confidence.setToolTip("confidence (0->1)");
+	d_data->comment.setPlaceholderText("User comments");
+	d_data->comment.setToolTip("<b>User comments (optional)</b><br>Press ENTER to validate");
+	d_data->name.setPlaceholderText("Event name");
+	d_data->comment.setToolTip("<b>Event name (optional)</b><br>Press ENTER to validate");
 
-	/*m_data->pulseAction = addWidget(&m_data->pulse);
-	m_data->camAction = addWidget(&m_data->camera);
+	/*d_data->pulseAction = addWidget(&d_data->pulse);
+	d_data->camAction = addWidget(&d_data->camera);
 
-	addWidget(&m_data->category);
-	addWidget(&m_data->dataset);
-	addWidget(&m_data->confidence);
-	addWidget(&m_data->comment);
-	addWidget(&m_data->name);*/
+	addWidget(&d_data->category);
+	addWidget(&d_data->dataset);
+	addWidget(&d_data->confidence);
+	addWidget(&d_data->comment);
+	addWidget(&d_data->name);*/
 	QHBoxLayout* lay = new QHBoxLayout();
 	lay->setContentsMargins(0, 0, 0, 0);
-	lay->addWidget(m_data->pulse);
-	lay->addWidget(&m_data->camera);
-	lay->addWidget(&m_data->device);
-	lay->addWidget(&m_data->category);
-	lay->addWidget(&m_data->dataset);
-	lay->addWidget(&m_data->confidence);
-	lay->addWidget(&m_data->comment);
-	lay->addWidget(&m_data->name);
+	lay->addWidget(d_data->pulse);
+	lay->addWidget(&d_data->camera);
+	lay->addWidget(&d_data->device);
+	lay->addWidget(&d_data->category);
+	lay->addWidget(&d_data->dataset);
+	lay->addWidget(&d_data->confidence);
+	lay->addWidget(&d_data->comment);
+	lay->addWidget(&d_data->name);
 	setLayout(lay);
 
-	connect(m_data->pulse, SIGNAL(valueChanged(double)), this, SLOT(emitChanged()));
-	connect(&m_data->camera, SIGNAL(currentIndexChanged(int)), this, SLOT(emitChanged()));
-	connect(&m_data->device, SIGNAL(currentIndexChanged(int)), this, SLOT(emitChanged()));
-	connect(&m_data->device, SIGNAL(currentIndexChanged(int)), this, SLOT(deviceChanged()));
-	connect(&m_data->category, SIGNAL(currentIndexChanged(int)), this, SLOT(emitChanged()));
-	connect(&m_data->dataset, SIGNAL(changed()), this, SLOT(emitChanged()));
-	connect(&m_data->confidence, SIGNAL(valueChanged(double)), this, SLOT(emitChanged()));
-	connect(&m_data->comment, SIGNAL(returnPressed()), this, SLOT(emitChanged()));
-	connect(&m_data->name, SIGNAL(returnPressed()), this, SLOT(emitChanged()));
+	connect(d_data->pulse, SIGNAL(valueChanged(double)), this, SLOT(emitChanged()));
+	connect(&d_data->camera, SIGNAL(currentIndexChanged(int)), this, SLOT(emitChanged()));
+	connect(&d_data->device, SIGNAL(currentIndexChanged(int)), this, SLOT(emitChanged()));
+	connect(&d_data->device, SIGNAL(currentIndexChanged(int)), this, SLOT(deviceChanged()));
+	connect(&d_data->category, SIGNAL(currentIndexChanged(int)), this, SLOT(emitChanged()));
+	connect(&d_data->dataset, SIGNAL(changed()), this, SLOT(emitChanged()));
+	connect(&d_data->confidence, SIGNAL(valueChanged(double)), this, SLOT(emitChanged()));
+	connect(&d_data->comment, SIGNAL(returnPressed()), this, SLOT(emitChanged()));
+	connect(&d_data->name, SIGNAL(returnPressed()), this, SLOT(emitChanged()));
 }
 VipAnnotationParameters::~VipAnnotationParameters()
 {
-	delete m_data;
 }
 
 void VipAnnotationParameters::deviceChanged()
 {
 	double pulse = this->pulse();
 	QWidget* p = vipFindDeviceParameters(device())->pulseEditor();
-	bool hidden = m_data->pulse->isHidden();
-	delete m_data->pulse;
-	static_cast<QHBoxLayout*>(layout())->insertWidget(0, m_data->pulse = p);
+	bool hidden = d_data->pulse->isHidden();
+	delete d_data->pulse;
+	static_cast<QHBoxLayout*>(layout())->insertWidget(0, d_data->pulse = p);
 	p->setVisible(!hidden);
 	setPulse(pulse);
 }
 
 QComboBox* VipAnnotationParameters::cameraBox() const
 {
-	return &m_data->camera;
+	return &d_data->camera;
 }
 QComboBox* VipAnnotationParameters::deviceBox() const
 {
-	return &m_data->device;
+	return &d_data->device;
 }
 QComboBox* VipAnnotationParameters::eventBox() const
 {
-	return &m_data->category;
+	return &d_data->category;
 }
 
 void VipAnnotationParameters::setCameraVisible(bool vis)
 {
-	// m_data->camAction->setVisible(vis);
-	m_data->camera.setVisible(vis);
+	// d_data->camAction->setVisible(vis);
+	d_data->camera.setVisible(vis);
 }
 bool VipAnnotationParameters::cameraVisible() const
 {
-	// return m_data->camAction->isVisible();
-	return m_data->camera.isVisible();
+	// return d_data->camAction->isVisible();
+	return d_data->camera.isVisible();
 }
 
 void VipAnnotationParameters::setDeviceVisible(bool vis)
 {
-	// m_data->camAction->setVisible(vis);
-	m_data->device.setVisible(vis);
+	// d_data->camAction->setVisible(vis);
+	d_data->device.setVisible(vis);
 }
 bool VipAnnotationParameters::deviceVisible() const
 {
-	// return m_data->camAction->isVisible();
-	return m_data->device.isVisible();
+	// return d_data->camAction->isVisible();
+	return d_data->device.isVisible();
 }
 
 void VipAnnotationParameters::setPulseVisible(bool vis)
 {
-	// m_data->pulseAction->setVisible(vis);
-	m_data->pulse->setVisible(vis);
+	// d_data->pulseAction->setVisible(vis);
+	d_data->pulse->setVisible(vis);
 }
 bool VipAnnotationParameters::pulseVisible() const
 {
-	//	return m_data->pulseAction->isVisible();
-	return m_data->pulse->isVisible();
+	//	return d_data->pulseAction->isVisible();
+	return d_data->pulse->isVisible();
 }
 
 bool VipAnnotationParameters::eventFilter(QObject*, QEvent* evt)
@@ -576,92 +575,92 @@ bool VipAnnotationParameters::eventFilter(QObject*, QEvent* evt)
 
 bool VipAnnotationParameters::commentChanged() const
 {
-	return m_data->commentChanged;
+	return d_data->commentChanged;
 }
 
 bool VipAnnotationParameters::nameChanged() const
 {
-	return m_data->nameChanged;
+	return d_data->nameChanged;
 }
 
 void VipAnnotationParameters::emitChanged()
 {
-	m_data->commentChanged = sender() == &m_data->comment;
-	m_data->nameChanged = sender() == &m_data->name;
+	d_data->commentChanged = sender() == &d_data->comment;
+	d_data->nameChanged = sender() == &d_data->name;
 	Q_EMIT changed();
 }
 
 void VipAnnotationParameters::setCategory(const QString& cat)
 {
-	m_data->category.setCurrentText(cat);
+	d_data->category.setCurrentText(cat);
 }
 QString VipAnnotationParameters::category() const
 {
-	return m_data->category.currentText();
+	return d_data->category.currentText();
 }
 
 void VipAnnotationParameters::setComment(const QString& comment)
 {
-	m_data->comment.setText(comment);
+	d_data->comment.setText(comment);
 }
 QString VipAnnotationParameters::comment() const
 {
-	return m_data->comment.text();
+	return d_data->comment.text();
 }
 
 void VipAnnotationParameters::setDataset(const QString& dataset)
 {
-	m_data->dataset.setDataset(dataset);
+	d_data->dataset.setDataset(dataset);
 }
 QString VipAnnotationParameters::dataset() const
 {
-	return m_data->dataset.dataset();
+	return d_data->dataset.dataset();
 }
 
 void VipAnnotationParameters::setName(const QString& name)
 {
-	m_data->name.setText(name);
+	d_data->name.setText(name);
 }
 QString VipAnnotationParameters::name() const
 {
-	return m_data->name.text();
+	return d_data->name.text();
 }
 
 void VipAnnotationParameters::setConfidence(double c)
 {
-	m_data->confidence.setValue(c);
+	d_data->confidence.setValue(c);
 }
 double VipAnnotationParameters::confidence() const
 {
-	return m_data->confidence.value();
+	return d_data->confidence.value();
 }
 
 void VipAnnotationParameters::setCamera(const QString& camera)
 {
-	m_data->camera.setCurrentText(camera);
+	d_data->camera.setCurrentText(camera);
 }
 QString VipAnnotationParameters::camera() const
 {
-	return m_data->camera.currentText();
+	return d_data->camera.currentText();
 }
 
 void VipAnnotationParameters::setDevice(const QString& device)
 {
-	m_data->device.setCurrentText(device);
+	d_data->device.setCurrentText(device);
 }
 QString VipAnnotationParameters::device() const
 {
-	return m_data->device.currentText();
+	return d_data->device.currentText();
 }
 void VipAnnotationParameters::setPulse(Vip_experiment_id p)
 {
 	// vip_debug("set pulse: %f\n",(double)p);fflush(stdout);
-	m_data->pulse->setProperty("value", p);
-	// vip_debug("set: %f\n",(double)m_data->pulse.value());fflush(stdout);
+	d_data->pulse->setProperty("value", p);
+	// vip_debug("set: %f\n",(double)d_data->pulse.value());fflush(stdout);
 }
 Vip_experiment_id VipAnnotationParameters::pulse() const
 {
-	return m_data->pulse->property("value").value<Vip_experiment_id>();
+	return d_data->pulse->property("value").value<Vip_experiment_id>();
 }
 
 #include <functional>
@@ -687,81 +686,81 @@ public:
 
 VipManualAnnotation::VipManualAnnotation(VipPlayerDBAccess* access)
 {
-	m_data = new PrivateData();
-	m_data->dbAccess = access;
-	m_data->player = access->player();
-	m_data->timer.setSingleShot(true);
+	VIP_CREATE_PRIVATE_DATA(d_data);
+	d_data->dbAccess = access;
+	d_data->player = access->player();
+	d_data->timer.setSingleShot(true);
 
-	m_data->playerTr = player()->imageTransform();
+	d_data->playerTr = player()->imageTransform();
 
-	m_data->close = new QToolButton();
-	m_data->close->setIcon(vipIcon("close.png"));
-	m_data->close->setToolTip("Close annotation panel.\nThis will NOT remove the annotations you defined.");
-	m_data->close->setAutoRaise(true);
-	m_data->create = new QToolButton();
-	m_data->create->setIcon(vipIcon("new.png"));
-	m_data->create->setToolTip("Create a new time marker for the selected shapes");
-	m_data->create->setAutoRaise(true);
-	m_data->create->setEnabled(false);
-	m_data->send = new QToolButton();
-	m_data->send->setIcon(vipIcon("database.png"));
-	m_data->send->setToolTip("<b>Send selected annotations to DataBase or to JSON file</b><br>Only selected events will be sent.");
-	m_data->send->setAutoRaise(true);
-	m_data->send->setEnabled(false);
-	m_data->send->setPopupMode(QToolButton::InstantPopup);
-	m_data->send->setMenu(new QMenu());
-	connect(m_data->send->menu()->addAction("Send to DB"), SIGNAL(triggered(bool)), this, SLOT(emitSendToDB()));
-	connect(m_data->send->menu()->addAction("Send to Json file..."), SIGNAL(triggered(bool)), this, SLOT(emitSendToJson()));
+	d_data->close = new QToolButton();
+	d_data->close->setIcon(vipIcon("close.png"));
+	d_data->close->setToolTip("Close annotation panel.\nThis will NOT remove the annotations you defined.");
+	d_data->close->setAutoRaise(true);
+	d_data->create = new QToolButton();
+	d_data->create->setIcon(vipIcon("new.png"));
+	d_data->create->setToolTip("Create a new time marker for the selected shapes");
+	d_data->create->setAutoRaise(true);
+	d_data->create->setEnabled(false);
+	d_data->send = new QToolButton();
+	d_data->send->setIcon(vipIcon("database.png"));
+	d_data->send->setToolTip("<b>Send selected annotations to DataBase or to JSON file</b><br>Only selected events will be sent.");
+	d_data->send->setAutoRaise(true);
+	d_data->send->setEnabled(false);
+	d_data->send->setPopupMode(QToolButton::InstantPopup);
+	d_data->send->setMenu(new QMenu());
+	connect(d_data->send->menu()->addAction("Send to DB"), SIGNAL(triggered(bool)), this, SLOT(emitSendToDB()));
+	connect(d_data->send->menu()->addAction("Send to Json file..."), SIGNAL(triggered(bool)), this, SLOT(emitSendToJson()));
 
-	m_data->remove = new QToolButton();
-	m_data->remove->setIcon(vipIcon("del.png"));
-	m_data->remove->setToolTip("Remove all time markers for the selected shapes");
-	m_data->remove->setAutoRaise(true);
-	m_data->remove->setEnabled(false);
-	m_data->drawMarkers = new TimeMarkersManager(m_data->player, this);
+	d_data->remove = new QToolButton();
+	d_data->remove->setIcon(vipIcon("del.png"));
+	d_data->remove->setToolTip("Remove all time markers for the selected shapes");
+	d_data->remove->setAutoRaise(true);
+	d_data->remove->setEnabled(false);
+	d_data->drawMarkers = new TimeMarkersManager(d_data->player, this);
 
-	m_data->params = new VipAnnotationParameters(m_data->dbAccess->device());
-	/*m_data->menu = new VipDragMenu();
-	m_data->menu->setWidget(m_data->params);
-	m_data->send->setMenu(m_data->menu);
-	m_data->send->setPopupMode(QToolButton::MenuButtonPopup);*/
-	m_data->params->setDataset(QString());
-	m_data->params->setCategory(QString()); //"localized heat flux");//"hotspot"
-	m_data->params->setCamera(m_data->dbAccess->camera());
-	m_data->params->setDevice(m_data->dbAccess->device());
-	m_data->params->setPulse(m_data->dbAccess->pulse());
-	m_data->params->setConfidence(1);
+	d_data->params = new VipAnnotationParameters(d_data->dbAccess->device());
+	/*d_data->menu = new VipDragMenu();
+	d_data->menu->setWidget(d_data->params);
+	d_data->send->setMenu(d_data->menu);
+	d_data->send->setPopupMode(QToolButton::MenuButtonPopup);*/
+	d_data->params->setDataset(QString());
+	d_data->params->setCategory(QString()); //"localized heat flux");//"hotspot"
+	d_data->params->setCamera(d_data->dbAccess->camera());
+	d_data->params->setDevice(d_data->dbAccess->device());
+	d_data->params->setPulse(d_data->dbAccess->pulse());
+	d_data->params->setConfidence(1);
 
-	if (m_data->dbAccess->camera().size() > 0)
-		m_data->params->setCameraVisible(false);
-	if (m_data->dbAccess->device().size() > 0)
-		m_data->params->setDeviceVisible(false);
-	if (m_data->dbAccess->pulse() > 0)
-		m_data->params->setPulseVisible(false);
+	if (d_data->dbAccess->camera().size() > 0)
+		d_data->params->setCameraVisible(false);
+	if (d_data->dbAccess->device().size() > 0)
+		d_data->params->setDeviceVisible(false);
+	if (d_data->dbAccess->pulse() > 0)
+		d_data->params->setPulseVisible(false);
 
 	QHBoxLayout* lay = new QHBoxLayout();
 	lay->setContentsMargins(0, 0, 0, 0);
-	lay->addWidget(m_data->close);
+	lay->addWidget(d_data->close);
 	lay->addWidget(VipLineWidget::createVLine());
-	lay->addWidget(m_data->create);
-	lay->addWidget(m_data->send);
-	lay->addWidget(m_data->remove);
+	lay->addWidget(d_data->create);
+	lay->addWidget(d_data->send);
+	lay->addWidget(d_data->remove);
 	lay->addWidget(VipLineWidget::createVLine());
-	lay->addWidget(m_data->params, 1);
+	lay->addWidget(d_data->params, 1);
 	setLayout(lay);
 
-	connect(m_data->close, SIGNAL(clicked(bool)), this, SLOT(deleteLater()));
-	connect(m_data->create, SIGNAL(clicked(bool)), this, SLOT(addMarker()));
-	connect(m_data->remove, SIGNAL(clicked(bool)), this, SLOT(clearMarkers()));
-	// connect(m_data->send, SIGNAL(clicked(bool)), this, SLOT(emitSendToDB()));
+	connect(d_data->close, SIGNAL(clicked(bool)), this, SLOT(deleteLater()));
+	connect(d_data->create, SIGNAL(clicked(bool)), this, SLOT(addMarker()));
+	connect(d_data->remove, SIGNAL(clicked(bool)), this, SLOT(clearMarkers()));
+	// connect(d_data->send, SIGNAL(clicked(bool)), this, SLOT(emitSendToDB()));
 	connect(player()->plotSceneModel(), SIGNAL(shapeSelectionChanged(VipPlotShape*)), this, SLOT(delayComputeMarkers()));
 	connect(player()->plotSceneModel(), SIGNAL(shapeDestroyed(VipPlotShape*)), this, SLOT(delayComputeMarkers()));
-	connect(&m_data->timer, SIGNAL(timeout()), this, SLOT(computeMarkers()));
+	connect(&d_data->timer, SIGNAL(timeout()), this, SLOT(computeMarkers()));
 	connect(player(), SIGNAL(imageTransformChanged(const QTransform&)), this, SLOT(imageTransformChanged(const QTransform&)));
-	connect(m_data->params, SIGNAL(changed()), this, SLOT(parametersChanged()));
+	connect(d_data->params, SIGNAL(changed()), this, SLOT(parametersChanged()));
 
 	// connect(player()->processingPool(), SIGNAL(timeChanged(qint64)), this, SLOT(setTime(qint64)),Qt::QueuedConnection);
-	// m_data->pool = player()->processingPool();
+	// d_data->pool = player()->processingPool();
 	QObject* obj = player()->processingPool()->addReadDataCallback(std::bind(&VipManualAnnotation::setTime, this, std::placeholders::_1));
 	obj->setParent(this);
 
@@ -772,13 +771,11 @@ VipManualAnnotation::VipManualAnnotation(VipPlayerDBAccess* access)
 VipManualAnnotation::~VipManualAnnotation()
 {
 	qApp->removeEventFilter(this);
-
-	delete m_data;
 }
 
 void VipManualAnnotation::delayComputeMarkers()
 {
-	m_data->timer.start(20);
+	d_data->timer.start(20);
 }
 
 static QString getParam(const QList<VipPlotShape*>& selected, const QString& name)
@@ -796,28 +793,28 @@ static QString getParam(const QList<VipPlotShape*>& selected, const QString& nam
 
 void VipManualAnnotation::parametersChanged()
 {
-	QList<VipPlotShape*> selected = m_data->player->plotSceneModel()->shapes(1);
-	if (selected.size() && m_data->drawMarkers->player) {
+	QList<VipPlotShape*> selected = d_data->player->plotSceneModel()->shapes(1);
+	if (selected.size() && d_data->drawMarkers->player) {
 		// push state before changing shapes parameters
-		VipSceneModelState::instance()->pushState(m_data->drawMarkers->player, m_data->drawMarkers->player->plotSceneModel());
+		VipSceneModelState::instance()->pushState(d_data->drawMarkers->player, d_data->drawMarkers->player->plotSceneModel());
 	}
 	for (int i = 0; i < selected.size(); ++i) {
-		if (m_data->params->pulse() >= 0)
-			selected[i]->rawData().setAttribute("_vip_Pulse", m_data->params->pulse());
-		if (m_data->params->confidence() >= 0)
-			selected[i]->rawData().setAttribute("_vip_Confidence", m_data->params->confidence());
-		if (m_data->params->camera().size())
-			selected[i]->rawData().setAttribute("_vip_Camera", m_data->params->camera());
-		if (m_data->params->device().size())
-			selected[i]->rawData().setAttribute("_vip_Device", m_data->params->device());
-		if (m_data->params->category().size())
-			selected[i]->rawData().setAttribute("_vip_Event", m_data->params->category());
-		// if (m_data->params->dataset().size())
-		selected[i]->rawData().setAttribute("_vip_Dataset", m_data->params->dataset());
-		if (m_data->params->commentChanged())
-			selected[i]->rawData().setAttribute("_vip_Comment", m_data->params->comment());
-		if (m_data->params->nameChanged())
-			selected[i]->rawData().setAttribute("_vip_Name", m_data->params->name());
+		if (d_data->params->pulse() >= 0)
+			selected[i]->rawData().setAttribute("_vip_Pulse", d_data->params->pulse());
+		if (d_data->params->confidence() >= 0)
+			selected[i]->rawData().setAttribute("_vip_Confidence", d_data->params->confidence());
+		if (d_data->params->camera().size())
+			selected[i]->rawData().setAttribute("_vip_Camera", d_data->params->camera());
+		if (d_data->params->device().size())
+			selected[i]->rawData().setAttribute("_vip_Device", d_data->params->device());
+		if (d_data->params->category().size())
+			selected[i]->rawData().setAttribute("_vip_Event", d_data->params->category());
+		// if (d_data->params->dataset().size())
+		selected[i]->rawData().setAttribute("_vip_Dataset", d_data->params->dataset());
+		if (d_data->params->commentChanged())
+			selected[i]->rawData().setAttribute("_vip_Comment", d_data->params->comment());
+		if (d_data->params->nameChanged())
+			selected[i]->rawData().setAttribute("_vip_Name", d_data->params->name());
 	}
 }
 
@@ -832,34 +829,34 @@ static QStringList comboBoxList(QComboBox* box)
 void VipManualAnnotation::computeMarkers()
 {
 
-	QList<VipPlotShape*> selected = m_data->player->plotSceneModel()->shapes(1);
-	m_data->drawMarkers->computeTimeMarkers(selected);
-	m_data->create->setEnabled(selected.size());
-	m_data->send->setEnabled(selected.size());
-	m_data->remove->setEnabled(selected.size());
+	QList<VipPlotShape*> selected = d_data->player->plotSceneModel()->shapes(1);
+	d_data->drawMarkers->computeTimeMarkers(selected);
+	d_data->create->setEnabled(selected.size());
+	d_data->send->setEnabled(selected.size());
+	d_data->remove->setEnabled(selected.size());
 
 	if (selected.size()) {
-		Vip_experiment_id current_pulse = m_data->dbAccess->pulse();
-		QString current_camera = m_data->dbAccess->camera();
-		QString current_device = m_data->dbAccess->device();
+		Vip_experiment_id current_pulse = d_data->dbAccess->pulse();
+		QString current_camera = d_data->dbAccess->camera();
+		QString current_device = d_data->dbAccess->device();
 
 		if (current_camera.size() >= 0) {
 
 			// Force the camera name
 			QStringList cameras = (QStringList() << current_camera);
-			if (comboBoxList(m_data->params->cameraBox()) != cameras) {
-				m_data->params->cameraBox()->clear();
-				m_data->params->cameraBox()->addItems(cameras);
+			if (comboBoxList(d_data->params->cameraBox()) != cameras) {
+				d_data->params->cameraBox()->clear();
+				d_data->params->cameraBox()->addItems(cameras);
 			}
 			// Force the list of events
 			QStringList events = vipEventTypesDB(); // current_camera);
 			if (events.size() > 1)
 				events.insert(0, QString());
-			if (comboBoxList(m_data->params->eventBox()) != events) {
-				QString text = m_data->params->eventBox()->currentText();
-				m_data->params->eventBox()->clear();
-				m_data->params->eventBox()->addItems(events);
-				m_data->params->eventBox()->setCurrentText(text);
+			if (comboBoxList(d_data->params->eventBox()) != events) {
+				QString text = d_data->params->eventBox()->currentText();
+				d_data->params->eventBox()->clear();
+				d_data->params->eventBox()->addItems(events);
+				d_data->params->eventBox()->setCurrentText(text);
 			}
 		}
 
@@ -867,9 +864,9 @@ void VipManualAnnotation::computeMarkers()
 
 			// Force the device name
 			QStringList devices = (QStringList() << current_device);
-			if (comboBoxList(m_data->params->deviceBox()) != devices) {
-				m_data->params->deviceBox()->clear();
-				m_data->params->deviceBox()->addItems(devices);
+			if (comboBoxList(d_data->params->deviceBox()) != devices) {
+				d_data->params->deviceBox()->clear();
+				d_data->params->deviceBox()->addItems(devices);
 			}
 		}
 
@@ -896,13 +893,13 @@ void VipManualAnnotation::computeMarkers()
 			QVariant v;
 			v = selected[i]->rawData().attribute("_vip_Pulse");
 			if (v.userType() == 0)
-				selected[i]->rawData().setAttribute("_vip_Pulse", m_data->dbAccess->pulse());
+				selected[i]->rawData().setAttribute("_vip_Pulse", d_data->dbAccess->pulse());
 			v = selected[i]->rawData().attribute("_vip_Camera");
 			if (v.userType() == 0)
-				selected[i]->rawData().setAttribute("_vip_Camera", m_data->dbAccess->camera());
+				selected[i]->rawData().setAttribute("_vip_Camera", d_data->dbAccess->camera());
 			v = selected[i]->rawData().attribute("_vip_Device");
 			if (v.userType() == 0)
-				selected[i]->rawData().setAttribute("_vip_Device", m_data->dbAccess->device());
+				selected[i]->rawData().setAttribute("_vip_Device", d_data->dbAccess->device());
 			v = selected[i]->rawData().attribute("_vip_Event");
 			if (v.userType() == 0)
 				selected[i]->rawData().setAttribute("_vip_Event", QString(/*"localized heat flux"*/)); // hotspot
@@ -929,23 +926,23 @@ void VipManualAnnotation::computeMarkers()
 		QString comment = getParam(selected, "Comment");
 		QString dataset = getParam(selected, "Dataset");
 		QString name = getParam(selected, "Name");
-		m_data->params->blockSignals(true);
-		m_data->params->setCategory(e);
-		m_data->params->setCamera(c);
-		m_data->params->setDevice(d);
-		m_data->params->setPulse(p.isEmpty() ? -1 : p.toLongLong());
-		m_data->params->setConfidence(conf.isEmpty() ? -1 : conf.toDouble());
-		m_data->params->setComment(comment);
-		m_data->params->setDataset(dataset);
-		m_data->params->setName(name);
-		m_data->params->blockSignals(false);
+		d_data->params->blockSignals(true);
+		d_data->params->setCategory(e);
+		d_data->params->setCamera(c);
+		d_data->params->setDevice(d);
+		d_data->params->setPulse(p.isEmpty() ? -1 : p.toLongLong());
+		d_data->params->setConfidence(conf.isEmpty() ? -1 : conf.toDouble());
+		d_data->params->setComment(comment);
+		d_data->params->setDataset(dataset);
+		d_data->params->setName(name);
+		d_data->params->blockSignals(false);
 	}
 }
 
 void VipManualAnnotation::imageTransformChanged(const QTransform& _new)
 {
 	// apply the image transform to the markers of all shapes
-	QTransform inv = m_data->playerTr.inverted();
+	QTransform inv = d_data->playerTr.inverted();
 	QList<VipPlotShape*> shapes = player()->plotSceneModel()->shapes();
 	for (int i = 0; i < shapes.size(); ++i) {
 		MarkersType m = shapes[i]->rawData().attribute("_vip_markers").value<MarkersType>();
@@ -956,40 +953,40 @@ void VipManualAnnotation::imageTransformChanged(const QTransform& _new)
 		}
 		shapes[i]->rawData().setAttribute("_vip_markers", QVariant::fromValue(m));
 	}
-	m_data->playerTr = _new;
+	d_data->playerTr = _new;
 }
 
 VipVideoPlayer* VipManualAnnotation::player() const
 {
-	return m_data->player;
+	return d_data->player;
 }
 
 void VipManualAnnotation::addMarker(qint64 time)
 {
-	m_data->drawMarkers->add(time);
+	d_data->drawMarkers->add(time);
 }
 void VipManualAnnotation::addMarker()
 {
-	m_data->drawMarkers->add(m_data->player->processingPool()->time());
+	d_data->drawMarkers->add(d_data->player->processingPool()->time());
 }
 /*void VipManualAnnotation::removeMarker(qint64 time)
 {
-	m_data->drawMarkers->remove(time);
+	d_data->drawMarkers->remove(time);
 }*/
 void VipManualAnnotation::setTime(qint64 time)
 {
-	m_data->drawMarkers->setTime(time, false);
+	d_data->drawMarkers->setTime(time, false);
 }
 void VipManualAnnotation::clearMarkers()
 {
-	m_data->drawMarkers->clearMarkers();
+	d_data->drawMarkers->clearMarkers();
 }
 
 void VipManualAnnotation::emitSendToDB()
 {
 
 	// check that all shapes have a valid event type, camera name and pulse number
-	QList<VipPlotShape*> selected = m_data->player->plotSceneModel()->shapes(1);
+	QList<VipPlotShape*> selected = d_data->player->plotSceneModel()->shapes(1);
 	bool has_one_marker = false;
 
 	for (int i = 0; i < selected.size(); ++i) {
@@ -998,29 +995,29 @@ void VipManualAnnotation::emitSendToDB()
 		if (m.size() == 1)
 			has_one_marker = true;
 		else if (m.size() == 0) {
-			QPoint pos = m_data->send->mapToGlobal(QPoint(0, 0));
+			QPoint pos = d_data->send->mapToGlobal(QPoint(0, 0));
 			QToolTip::showText(pos - QPoint(50, 0), "<b>Cannot send to DB:</b><br>No key frame defined.");
 			return;
 		}
 
 		QString event_type = selected[i]->rawData().attribute("_vip_Event").toString();
 		if (event_type.isEmpty()) {
-			QPoint pos = m_data->send->mapToGlobal(QPoint(0, 0));
+			QPoint pos = d_data->send->mapToGlobal(QPoint(0, 0));
 			QToolTip::showText(pos - QPoint(50, 0), "<b>Cannot send to DB:</b><br>one or more shapes do not define a valid event type.");
 			return;
 		}
 		if (selected[i]->rawData().attribute("_vip_Pulse").value<Vip_experiment_id>() <= 0) {
-			QPoint pos = m_data->send->mapToGlobal(QPoint(0, 0));
+			QPoint pos = d_data->send->mapToGlobal(QPoint(0, 0));
 			QToolTip::showText(pos - QPoint(50, 0), "<b>Cannot send to DB:</b><br>one or more shapes do not define a valid pulse number.");
 			return;
 		}
 		if (selected[i]->rawData().attribute("_vip_Camera").toString().isEmpty()) {
-			QPoint pos = m_data->send->mapToGlobal(QPoint(0, 0));
+			QPoint pos = d_data->send->mapToGlobal(QPoint(0, 0));
 			QToolTip::showText(pos - QPoint(50, 0), "<b>Cannot send to DB:</b><br>one or more shapes do not define a valid camera name.");
 			return;
 		}
 		if (selected[i]->rawData().attribute("_vip_Device").toString().isEmpty()) {
-			QPoint pos = m_data->send->mapToGlobal(QPoint(0, 0));
+			QPoint pos = d_data->send->mapToGlobal(QPoint(0, 0));
 			QToolTip::showText(pos - QPoint(50, 0), "<b>Cannot send to DB:</b><br>one or more shapes do not define a valid device name.");
 			return;
 		}
@@ -1043,7 +1040,7 @@ void VipManualAnnotation::emitSendToJson()
 {
 
 	// check that all shapes have a valid event type, camera name and pulse number
-	QList<VipPlotShape*> selected = m_data->player->plotSceneModel()->shapes(1);
+	QList<VipPlotShape*> selected = d_data->player->plotSceneModel()->shapes(1);
 	bool has_one_marker = false;
 
 	for (int i = 0; i < selected.size(); ++i) {
@@ -1052,7 +1049,7 @@ void VipManualAnnotation::emitSendToJson()
 		if (m.size() == 1)
 			has_one_marker = true;
 		else if (m.size() == 0) {
-			QPoint pos = m_data->send->mapToGlobal(QPoint(0, 0));
+			QPoint pos = d_data->send->mapToGlobal(QPoint(0, 0));
 			QToolTip::showText(pos - QPoint(50, 0), "<b>Cannot send to JSON:</b><br>No key frame defined.");
 			return;
 		}
@@ -1060,13 +1057,13 @@ void VipManualAnnotation::emitSendToJson()
 		QString event_type = selected[i]->rawData().attribute("_vip_Event").toString();
 		if (event_type.isEmpty()) {
 			selected[i]->rawData().setAttribute("_vip_Event", QString("hot spot"));
-			QPoint pos = m_data->send->mapToGlobal(QPoint(0, 0));
+			QPoint pos = d_data->send->mapToGlobal(QPoint(0, 0));
 			QToolTip::showText(pos - QPoint(50, 0), "<b>Warning:</b><br>one or more shapes do not define a valid event type.");
 			// return;
 		}
 		// Having a pulse of 0 is now allowed
 		/*if (selected[i]->rawData().attribute("_vip_Pulse").value< db_pulse_type>() <= 0) {
-			QPoint pos = m_data->send->mapToGlobal(QPoint(0, 0));
+			QPoint pos = d_data->send->mapToGlobal(QPoint(0, 0));
 			QToolTip::showText(pos - QPoint(50, 0), "<b>Cannot send to JSON:</b><br>one or more shapes do not define a valid pulse number.");
 			return;
 		}*/
@@ -1082,7 +1079,7 @@ void VipManualAnnotation::emitSendToJson()
 				}
 			}
 			if (file.isEmpty()) {
-				QPoint pos = m_data->send->mapToGlobal(QPoint(0, 0));
+				QPoint pos = d_data->send->mapToGlobal(QPoint(0, 0));
 				QToolTip::showText(pos - QPoint(50, 0), "<b>Cannot send to JSON:</b><br>one or more shapes do not define a valid camera name.");
 				return;
 			}
@@ -1129,32 +1126,32 @@ bool VipManualAnnotation::eventFilter(QObject*, QEvent* evt)
 
 		QKeyEvent* key = static_cast<QKeyEvent*>(evt);
 		if (key->key() == Qt::Key_K) {
-			if (currentPlayer() == m_data->player) {
+			if (currentPlayer() == d_data->player) {
 				addMarker();
 				return true;
 			}
 		}
 		else if (key->key() == Qt::Key_Z && !(key->modifiers() & Qt::CTRL)) {
-			if (currentPlayer() == m_data->player) {
-				if (m_data->player->increaseContour())
+			if (currentPlayer() == d_data->player) {
+				if (d_data->player->increaseContour())
 					return true;
 			}
 		}
 		else if (key->key() == Qt::Key_S && !(key->modifiers() & Qt::CTRL)) {
-			if (currentPlayer() == m_data->player) {
-				if (m_data->player->decreaseContour())
+			if (currentPlayer() == d_data->player) {
+				if (d_data->player->decreaseContour())
 					return true;
 			}
 		}
 		else if (key->key() == Qt::Key_N) {
-			if (currentPlayer() == m_data->player) {
-				m_data->player->nextSelection(key->modifiers() & Qt::CTRL);
+			if (currentPlayer() == d_data->player) {
+				d_data->player->nextSelection(key->modifiers() & Qt::CTRL);
 				return true;
 			}
 		}
 		else if (key->key() == Qt::Key_U && !(key->modifiers() & Qt::CTRL)) {
-			if (currentPlayer() == m_data->player) {
-				m_data->player->updateSelectedShapesFromIsoLine();
+			if (currentPlayer() == d_data->player) {
+				d_data->player->updateSelectedShapesFromIsoLine();
 				return true;
 			}
 		}
@@ -1174,12 +1171,12 @@ void VipManualAnnotation::keyPressEvent(QKeyEvent* evt)
 	}
 	else if (evt->key() == Qt::Key_Z || evt->key() == Qt::Key_S) {
 		// move contour level
-		qApp->sendEvent(m_data->player, evt);
+		qApp->sendEvent(d_data->player, evt);
 		return;
 	}
 	else if (evt->key() == Qt::Key_N) {
 		// move contour level
-		qApp->sendEvent(m_data->player, evt);
+		qApp->sendEvent(d_data->player, evt);
 		return;
 	}
 
@@ -1194,8 +1191,8 @@ static QByteArray rectToByteArray(const QRect& r)
 Vip_event_list VipManualAnnotation::generateShapes(VipProgress* p, QString* error)
 {
 	VipTimeRange union_range;
-	QList<VipPlotShape*> selected = m_data->player->plotSceneModel()->shapes(1);
-	QMap<VipPlotShape*, VipTimeRange> markers = m_data->drawMarkers->timeRanges(&union_range);
+	QList<VipPlotShape*> selected = d_data->player->plotSceneModel()->shapes(1);
+	QMap<VipPlotShape*, VipTimeRange> markers = d_data->drawMarkers->timeRanges(&union_range);
 
 	VipDisplayObject* display = player()->spectrogram()->property("VipDisplayObject").value<VipDisplayObject*>();
 	if (!display) {
@@ -1226,7 +1223,7 @@ Vip_event_list VipManualAnnotation::generateShapes(VipProgress* p, QString* erro
 	}
 
 	// find all displays within this players, and all their sources
-	QList<VipDisplayObject*> displays = m_data->player->displayObjects();
+	QList<VipDisplayObject*> displays = d_data->player->displayObjects();
 	QList<VipProcessingObject*> sources; // all sources
 	QList<VipProcessingObject*> leafs;   // last sources before the display
 	for (int i = 0; i < displays.size(); ++i) {
@@ -1265,7 +1262,7 @@ Vip_event_list VipManualAnnotation::generateShapes(VipProgress* p, QString* erro
 	QString user_name = vipUserName();
 
 	// remove image transform from player
-	QTransform tr = m_data->player->imageTransform().inverted();
+	QTransform tr = d_data->player->imageTransform().inverted();
 
 	QStringList status = vipAnalysisStatusDB();
 	QString default_status = "Analyzed (OK)"; // status.size() ? vipAnalysisStatusDB().first() : QString("To Analyze");
@@ -1294,7 +1291,7 @@ Vip_event_list VipManualAnnotation::generateShapes(VipProgress* p, QString* erro
 			qint64 last_time = it.value().second;
 
 			// create shape
-			VipShape sh(vipSimplifyPolygonDB(m_data->drawMarkers->createPolygon(time, m), VIP_DB_MAX_FRAME_POLYGON_POINTS));
+			VipShape sh(vipSimplifyPolygonDB(d_data->drawMarkers->createPolygon(time, m), VIP_DB_MAX_FRAME_POLYGON_POINTS));
 			const VipNDArray ar = src_output->data().value<VipNDArray>();
 			VipShapeStatistics st = sh.statistics(ar, QPoint(0, 0), nullptr, VipShapeStatistics::All);
 

@@ -173,26 +173,26 @@ public:
 VisualizeDB::VisualizeDB(QWidget* parent)
   : QWidget(parent)
 {
-	m_data = new PrivateData();
-	m_data->query = new VipQueryDBWidget(QString());
-	m_data->launch = new QPushButton();
-	m_data->reset = new QPushButton();
-	m_data->table = new QTableWidget();
+	VIP_CREATE_PRIVATE_DATA(d_data);
+	d_data->query = new VipQueryDBWidget(QString());
+	d_data->launch = new QPushButton();
+	d_data->reset = new QPushButton();
+	d_data->table = new QTableWidget();
 
-	m_data->launch->setIcon(vipIcon("apply.png"));
-	m_data->launch->setText("Launch query");
-	m_data->reset->setIcon(vipIcon("reset.png"));
-	m_data->reset->setToolTip("Reset search parameters");
+	d_data->launch->setIcon(vipIcon("apply.png"));
+	d_data->launch->setText("Launch query");
+	d_data->reset->setIcon(vipIcon("reset.png"));
+	d_data->reset->setToolTip("Reset search parameters");
 
-	m_data->query->enablePulseRange(true);
-	m_data->query->setRemovePreviousVisible(false);
+	d_data->query->enablePulseRange(true);
+	d_data->query->setRemovePreviousVisible(false);
 
 	// columns: Pulse, CameraName, initial_timestamp, duration, thermal_event,maximum,
 	// is_automatic_detection, method, confidence, user, comments, name
 	int col_count = 14;
 
-	m_data->table->setColumnCount(col_count);
-	m_data->table->setHorizontalHeaderLabels(QStringList() << "Experiment id"
+	d_data->table->setColumnCount(col_count);
+	d_data->table->setHorizontalHeaderLabels(QStringList() << "Experiment id"
 							       << "Camera"
 							       << "Device"
 							       << "Start(s)"
@@ -206,18 +206,18 @@ VisualizeDB::VisualizeDB(QWidget* parent)
 							       << "Comments"
 							       << "Name");
 	// for now hide pulse date
-	m_data->table->setSortingEnabled(true);
-	m_data->table->installEventFilter(this);
-	m_data->table->viewport()->installEventFilter(this);
+	d_data->table->setSortingEnabled(true);
+	d_data->table->installEventFilter(this);
+	d_data->table->viewport()->installEventFilter(this);
 
 	QVBoxLayout* vlay = new QVBoxLayout();
-	vlay->addWidget(m_data->query);
+	vlay->addWidget(d_data->query);
 
 	vlay->addWidget(VipLineWidget::createHLine());
 
 	QHBoxLayout* hlay = new QHBoxLayout();
-	hlay->addWidget(m_data->launch, 1);
-	hlay->addWidget(m_data->reset);
+	hlay->addWidget(d_data->launch, 1);
+	hlay->addWidget(d_data->reset);
 
 	vlay->addWidget(VipLineWidget::createHLine());
 	vlay->addLayout(hlay);
@@ -225,20 +225,19 @@ VisualizeDB::VisualizeDB(QWidget* parent)
 
 	QHBoxLayout* lay = new QHBoxLayout();
 	lay->addLayout(vlay);
-	lay->addWidget(m_data->table, 1);
+	lay->addWidget(d_data->table, 1);
 	setLayout(lay);
 
-	connect(m_data->launch, SIGNAL(clicked(bool)), this, SLOT(launchQuery()));
-	connect(m_data->reset, SIGNAL(clicked(bool)), this, SLOT(resetQueryParameters()));
+	connect(d_data->launch, SIGNAL(clicked(bool)), this, SLOT(launchQuery()));
+	connect(d_data->reset, SIGNAL(clicked(bool)), this, SLOT(resetQueryParameters()));
 }
 VisualizeDB::~VisualizeDB()
 {
-	delete m_data;
 }
 
 bool VisualizeDB::eventFilter(QObject* watched, QEvent* evt)
 {
-	if (watched == m_data->table || watched == m_data->table->viewport()) {
+	if (watched == d_data->table || watched == d_data->table->viewport()) {
 		if (evt->type() == QEvent::KeyPress && (vipHasWriteRightsDB())) {
 			int key = static_cast<QKeyEvent*>(evt)->key();
 			if (key == Qt::Key_Delete) {
@@ -250,7 +249,7 @@ bool VisualizeDB::eventFilter(QObject* watched, QEvent* evt)
 			if (static_cast<QMouseEvent*>(evt)->button() == Qt::RightButton) {
 
 				// check only one column selected
-				QList<QTableWidgetItem*> items = m_data->table->selectedItems();
+				QList<QTableWidgetItem*> items = d_data->table->selectedItems();
 				QSet<int> lines;
 				int col = -1;
 				for (int i = 0; i < items.size(); ++i)
@@ -324,23 +323,23 @@ VisualizeDB* VisualizeDB::fromChild(QWidget* w)
 
 VipQueryDBWidget* VisualizeDB::queryWidget() const
 {
-	return m_data->query;
+	return d_data->query;
 }
 QPushButton* VisualizeDB::launchQueryButton() const
 {
-	return m_data->launch;
+	return d_data->launch;
 }
 QPushButton* VisualizeDB::resetQueryButton() const
 {
-	return m_data->reset;
+	return d_data->reset;
 }
 QTableWidget* VisualizeDB::tableWidget() const
 {
-	return m_data->table;
+	return d_data->table;
 }
 VipEventQueryResults VisualizeDB::events() const
 {
-	return m_data->events;
+	return d_data->events;
 }
 
 void VisualizeDB::plotTimeTrace()
@@ -348,11 +347,11 @@ void VisualizeDB::plotTimeTrace()
 	/* if (!vipGetMainWindow()->displayArea()->currentDisplayPlayerArea())
 		return;
 
-	ExtractOption extr = extractOptions(m_data->extract);
+	ExtractOption extr = extractOptions(d_data->extract);
 	if (extr.hasError)
 		return;
 
-	m_data->extract = extr;
+	d_data->extract = extr;
 	VipProgress progress;
 	progress.setModal(true);
 	progress.setCancelable(true);
@@ -360,13 +359,13 @@ void VisualizeDB::plotTimeTrace()
 	//get selected events
 	VipEventQueryResults events;
 	QSet<int> lines;
-	QList<QTableWidgetItem*> items = m_data->table->selectedItems();
+	QList<QTableWidgetItem*> items = d_data->table->selectedItems();
 	for (int i = 0; i < items.size(); ++i) {
 		int row = items[i]->row();
 		if (lines.find(row) == lines.end()) {
 			lines.insert(row);
 			qint64 eventId = static_cast<DBItem*>(items[i])->eventId;
-			events.events[eventId] = m_data->events.events[eventId];
+			events.events[eventId] = d_data->events.events[eventId];
 		}
 	}
 
@@ -431,7 +430,7 @@ void VisualizeDB::suppressSelectedLines()
 		return;
 	}
 
-	QList<QTableWidgetItem*> items = m_data->table->selectedItems();
+	QList<QTableWidgetItem*> items = d_data->table->selectedItems();
 	// compute selected event ids and lines
 	QMap<int, qint64> ids;
 	for (int i = 0; i < items.size(); ++i)
@@ -453,7 +452,7 @@ void VisualizeDB::suppressSelectedLines()
 		// remove from table
 		QList<int> lines = ids.keys();
 		for (int i = lines.size() - 1; i >= 0; --i) {
-			m_data->table->removeRow(lines[i]);
+			d_data->table->removeRow(lines[i]);
 		}
 	}
 }
@@ -469,7 +468,7 @@ static QVariant edit(QWidget* editor, const QString& name)
 
 QByteArray VisualizeDB::dumpSelection()
 {
-	QList<QTableWidgetItem*> items = m_data->table->selectedItems();
+	QList<QTableWidgetItem*> items = d_data->table->selectedItems();
 	int min_row = -1, max_row = -1;
 	int min_col = -1, max_col = -1;
 	// Sort items by rows and columns
@@ -495,7 +494,7 @@ QByteArray VisualizeDB::dumpSelection()
 		QTextStream str(&ar, QIODevice::WriteOnly);
 		for (int y = min_row; y <= max_row; ++y) {
 			for (int x = min_col; x <= max_col; ++x) {
-				DBItem* item = static_cast<DBItem*>(m_data->table->item(y, x));
+				DBItem* item = static_cast<DBItem*>(d_data->table->item(y, x));
 				QString text = item ? item->text() : QString();
 				// if (item->type == DBItem::String)
 				//	text = "\"" + text + "\"";
@@ -539,7 +538,7 @@ void VisualizeDB::editSelectedColumn()
 	}
 
 	// check only one column selected
-	QList<QTableWidgetItem*> items = m_data->table->selectedItems();
+	QList<QTableWidgetItem*> items = d_data->table->selectedItems();
 	QList<qint64> ids;
 	int col = -1;
 	for (int i = 0; i < items.size(); ++i) {
@@ -637,11 +636,11 @@ void VisualizeDB::displayEventResult(const VipEventQueryResults& res, VipProgres
 		p->setRange(0, res.events.size());
 	}
 
-	m_data->events = res;
+	d_data->events = res;
 
 	// fill table
-	m_data->table->setRowCount(0);
-	m_data->table->setRowCount(res.events.size());
+	d_data->table->setRowCount(0);
+	d_data->table->setRowCount(res.events.size());
 	int row = 0;
 	for (QMap<qint64, VipEventQueryResult>::const_iterator it = res.events.begin(); it != res.events.end(); ++it, ++row) {
 		if (p)
@@ -652,67 +651,67 @@ void VisualizeDB::displayEventResult(const VipEventQueryResults& res, VipProgres
 		int col = 0;
 		const VipEventQueryResult& evt = it.value();
 		QTableWidgetItem* Pulse = new DBItem(evt.eventId, "experiment_id", QString::number(evt.experiment_id), DBItem::String);
-		m_data->table->setItem(row, col++, Pulse);
+		d_data->table->setItem(row, col++, Pulse);
 		QTableWidgetItem* CameraName = new DBItem(evt.eventId, "line_of_sight", evt.camera, DBItem::String);
-		m_data->table->setItem(row, col++, CameraName);
+		d_data->table->setItem(row, col++, CameraName);
 		QTableWidgetItem* Device = new DBItem(evt.eventId, "device", evt.device, DBItem::String);
-		m_data->table->setItem(row, col++, Device);
+		d_data->table->setItem(row, col++, Device);
 		QTableWidgetItem* initial_timestamp = new DBItem(evt.eventId, "initial_timestamp_ns", evt.initialTimestamp, DBItem::Time);
-		m_data->table->setItem(row, col++, initial_timestamp);
+		d_data->table->setItem(row, col++, initial_timestamp);
 		QTableWidgetItem* duration = new DBItem(evt.eventId, "duration_ns", evt.duration, DBItem::Time);
-		m_data->table->setItem(row, col++, duration);
+		d_data->table->setItem(row, col++, duration);
 		QTableWidgetItem* thermal_event = new DBItem(evt.eventId, "category", evt.eventName, DBItem::String);
-		m_data->table->setItem(row, col++, thermal_event);
+		d_data->table->setItem(row, col++, thermal_event);
 		QTableWidgetItem* maximum = new DBItem(evt.eventId, "max_temperature_C", evt.maximum, DBItem::Double);
-		m_data->table->setItem(row, col++, maximum);
+		d_data->table->setItem(row, col++, maximum);
 		QTableWidgetItem* is_automatic_detection = new DBItem(evt.eventId, "is_automatic_detection", evt.automatic, DBItem::Bool);
-		m_data->table->setItem(row, col++, is_automatic_detection);
+		d_data->table->setItem(row, col++, is_automatic_detection);
 		QTableWidgetItem* method = new DBItem(evt.eventId, "method", evt.method, DBItem::String);
-		m_data->table->setItem(row, col++, method);
+		d_data->table->setItem(row, col++, method);
 		QTableWidgetItem* confidence = new DBItem(evt.eventId, "confidence", evt.confidence, DBItem::Double);
-		m_data->table->setItem(row, col++, confidence);
+		d_data->table->setItem(row, col++, confidence);
 		QTableWidgetItem* user = new DBItem(evt.eventId, "user", evt.user, DBItem::String);
-		m_data->table->setItem(row, col++, user);
+		d_data->table->setItem(row, col++, user);
 		QTableWidgetItem* comments = new DBItem(evt.eventId, "comments", evt.comment, DBItem::String);
-		m_data->table->setItem(row, col++, comments);
+		d_data->table->setItem(row, col++, comments);
 		QTableWidgetItem* name = new DBItem(evt.eventId, "name", evt.name, DBItem::String);
-		m_data->table->setItem(row, col++, name);
+		d_data->table->setItem(row, col++, name);
 	}
 
-	m_data->table->resizeColumnsToContents();
-	m_data->table->resizeRowsToContents();
+	d_data->table->resizeColumnsToContents();
+	d_data->table->resizeRowsToContents();
 }
 
 void VisualizeDB::launchQuery()
 {
 	VipEventQuery query;
-	query.automatic = m_data->query->automatic();
-	if (m_data->query->camera().size())
-		query.cameras << m_data->query->camera();
-	if (m_data->query->device().size())
-		query.devices << m_data->query->device();
-	if (m_data->query->thermalEvent().size())
-		query.event_types << m_data->query->thermalEvent();
-	query.in_comment = m_data->query->inComment();
-	query.in_name = m_data->query->inName();
+	query.automatic = d_data->query->automatic();
+	if (d_data->query->camera().size())
+		query.cameras << d_data->query->camera();
+	if (d_data->query->device().size())
+		query.devices << d_data->query->device();
+	if (d_data->query->thermalEvent().size())
+		query.event_types << d_data->query->thermalEvent();
+	query.in_comment = d_data->query->inComment();
+	query.in_name = d_data->query->inName();
 
-	query.min_duration = m_data->query->durationRange().first;
-	query.max_duration = m_data->query->durationRange().second;
-	query.min_temperature = m_data->query->maxTemperatureRange().first;
-	query.max_temperature = m_data->query->maxTemperatureRange().second;
+	query.min_duration = d_data->query->durationRange().first;
+	query.max_duration = d_data->query->durationRange().second;
+	query.min_temperature = d_data->query->maxTemperatureRange().first;
+	query.max_temperature = d_data->query->maxTemperatureRange().second;
 
-	query.min_confidence = m_data->query->minConfidence();
-	query.max_confidence = m_data->query->maxConfidence();
-	if (m_data->query->userName().size())
-		query.users << m_data->query->userName();
+	query.min_confidence = d_data->query->minConfidence();
+	query.max_confidence = d_data->query->maxConfidence();
+	if (d_data->query->userName().size())
+		query.users << d_data->query->userName();
 
-	query.method = m_data->query->method();
-	query.dataset = m_data->query->dataset();
-	query.min_pulse = m_data->query->pulseRange().first;
-	query.max_pulse = m_data->query->pulseRange().second;
+	query.method = d_data->query->method();
+	query.dataset = d_data->query->dataset();
+	query.min_pulse = d_data->query->pulseRange().first;
+	query.max_pulse = d_data->query->pulseRange().second;
 
-	if (m_data->query->idThermalEventInfo() > 0)
-		query.eventIds.append(m_data->query->idThermalEventInfo());
+	if (d_data->query->idThermalEventInfo() > 0)
+		query.eventIds.append(d_data->query->idThermalEventInfo());
 
 	VipProgress p;
 	VipEventQueryResults res = vipQueryDB(query, &p);
@@ -725,21 +724,21 @@ void VisualizeDB::launchQuery()
 }
 void VisualizeDB::resetQueryParameters()
 {
-	m_data->query->setIDThermalEventInfo(0);
-	m_data->query->setUserName("All");
-	m_data->query->setCamera("All");
-	m_data->query->setDevice("All");
-	m_data->query->setInComment(QString());
-	m_data->query->setInName(QString());
+	d_data->query->setIDThermalEventInfo(0);
+	d_data->query->setUserName("All");
+	d_data->query->setCamera("All");
+	d_data->query->setDevice("All");
+	d_data->query->setInComment(QString());
+	d_data->query->setInName(QString());
 
-	m_data->query->setDataset(QString());
-	m_data->query->setMethod(QString());
-	m_data->query->setDurationRange(VipTimeRange(0, 1000000000000ULL));
+	d_data->query->setDataset(QString());
+	d_data->query->setMethod(QString());
+	d_data->query->setDurationRange(VipTimeRange(0, 1000000000000ULL));
 
-	m_data->query->setMaxTemperatureRange(QPair<double, double>(0, 5000));
-	m_data->query->setAutomatic(-1);
-	m_data->query->setMinConfidence(0);
-	m_data->query->setThermalEvent("All");
+	d_data->query->setMaxTemperatureRange(QPair<double, double>(0, 5000));
+	d_data->query->setAutomatic(-1);
+	d_data->query->setMinConfidence(0);
+	d_data->query->setThermalEvent("All");
 }
 
 void VisualizeDB::displaySelectedEvents(QAction* a)
@@ -747,7 +746,7 @@ void VisualizeDB::displaySelectedEvents(QAction* a)
 	VipProgress progress;
 
 	// extract the ids of selected events
-	QList<QTableWidgetItem*> items = m_data->table->selectedItems();
+	QList<QTableWidgetItem*> items = d_data->table->selectedItems();
 	QList<qint64> ids;
 	for (int i = 0; i < items.size(); ++i)
 		ids.append(static_cast<DBItem*>(items[i])->eventId);
@@ -812,8 +811,8 @@ void VisualizeDB::displaySelectedEvents(QAction* a)
 
 void VisualizeDB::findRelatedEvents()
 {
-	/* DBItem* item = static_cast<DBItem*>(m_data->table->selectedItems().first());
-	const VipEventQueryResult & evt = m_data->events.events[item->eventId];
+	/* DBItem* item = static_cast<DBItem*>(d_data->table->selectedItems().first());
+	const VipEventQueryResult & evt = d_data->events.events[item->eventId];
 
 	//read event polygon
 	QPolygonF poly;
