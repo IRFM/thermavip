@@ -14,7 +14,7 @@
 #include "VipDisplayArea.h"
 
 #include "PyOperation.h"
-#include "CodeEditor.h"
+#include "VipTextEditor.h"
 #include "IOOperationWidget.h"
 
 
@@ -175,12 +175,12 @@ IOOperationWidget::~IOOperationWidget()
 }
 
 
-IOOperation * IOOperationWidget::Process()
+VipBaseIOOperation * IOOperationWidget::Process()
 {
 	return m_process;
 }
 
-void IOOperationWidget::SetProcess(IOOperation * proc)
+void IOOperationWidget::SetProcess(VipBaseIOOperation * proc)
 {
 	if (m_process)
 	{
@@ -297,7 +297,7 @@ void IOOperationWidget::ExecCommand(const QString & command)
 	if (command.startsWith("!")) {
 		//exec in main thread
 		QString c = command.mid(1);
-		EvalResultType t= evalCodeMainThread(c);
+		auto t= VipPyLocal::evalCodeMainThread(c);
 		QString to_print = t.first;
 		if (to_print.isEmpty())
 			to_print = t.second;
@@ -353,7 +353,7 @@ void IOOperationWidget::keyPressEvent(QKeyEvent * event)
 				//exec in main thread
 				text.remove("\n");
 				QString c = text.mid(1);
-				EvalResultType t = evalCodeMainThread(c);
+				auto t = VipPyLocal::evalCodeMainThread(c);
 				QString to_print = t.first;
 				if (to_print.isEmpty())
 					to_print = t.second;
@@ -507,7 +507,7 @@ void IOOperationWidget::PasteText(const QString & text)
 				this->keyPressEvent(&evt);
 
 				//wait for prompt 
-				//PyIOOperation * op = qobject_cast<PyIOOperation*>(Process());
+				//VipPyIOOperation * op = qobject_cast<VipPyIOOperation*>(Process());
 				while (!m_wait_for_more &&/* !(op && op->isWaitingForInput()) &&*/ Process()->isRunning())
 					vipProcessEvents(nullptr, 1000);
 
@@ -533,7 +533,7 @@ class PyInterpreterToolWidget::PrivateData
 {
 public:
 	IOOperationWidget * interpreter;
-	CodeEditor * history;
+	VipTextEditor * history;
 	QSplitter * splitter;
 
 	QToolButton * closeHistory;
@@ -545,13 +545,13 @@ PyInterpreterToolWidget::PyInterpreterToolWidget(VipMainWindow * win)
 {
 	VIP_CREATE_PRIVATE_DATA(d_data);
 	d_data->interpreter = new IOOperationWidget();
-	d_data->interpreter->SetProcess(GetPyOptions());
-	GetPyOptions()->setParent(d_data->interpreter);
-	//QObject::connect(GetPyOptions(), SIGNAL(finished()), d_data->interpreter, SLOT(clear()));
-	QObject::connect(GetPyOptions(), SIGNAL(started()), GetPyOptions(), SLOT(startInteractiveInterpreter()));
-	GetPyOptions()->startInteractiveInterpreter();
+	d_data->interpreter->SetProcess(VipPyInterpreter::instance());
+	//VipPyInterpreter::instance()->setParent(d_data->interpreter);
+	//QObject::connect(VipPyInterpreter::instance(), SIGNAL(finished()), d_data->interpreter, SLOT(clear()));
+	QObject::connect(VipPyInterpreter::instance(), SIGNAL(started()), VipPyInterpreter::instance(), SLOT(startInteractiveInterpreter()));
+	VipPyInterpreter::instance()->startInteractiveInterpreter();
 
-	d_data->history = new CodeEditor();
+	d_data->history = new VipTextEditor();
 	d_data->splitter = new QSplitter(Qt::Horizontal);
 	d_data->splitter->addWidget(d_data->interpreter);
 	d_data->splitter->addWidget(d_data->history);
@@ -563,7 +563,7 @@ PyInterpreterToolWidget::PyInterpreterToolWidget(VipMainWindow * win)
 	d_data->closeHistory->setAutoFillBackground(false);
 	connect(d_data->closeHistory, SIGNAL(clicked(bool)), this, SLOT(HideHistory()));
 
-	d_data->history->OpenFile(vipGetPythonHistoryFile());
+	d_data->history->openFile(vipGetPythonHistoryFile());
 	d_data->history->setReadOnly(true);
 	//go to the end of file
 	d_data->history->moveCursor(QTextCursor::End);
@@ -584,6 +584,8 @@ PyInterpreterToolWidget::PyInterpreterToolWidget(VipMainWindow * win)
 	this->setWidget(d_data->splitter);
 	this->setWindowTitle("Python internal console");
 	this->setObjectName("Python internal console");
+
+	VipPyInterpreter::instance()->setMainInterpreter(this);
 }
 
 PyInterpreterToolWidget::~PyInterpreterToolWidget()
@@ -594,7 +596,7 @@ PyInterpreterToolWidget::~PyInterpreterToolWidget()
 IOOperationWidget * PyInterpreterToolWidget::Interpreter() const {
 	return d_data->interpreter;
 }
-CodeEditor * PyInterpreterToolWidget::HistoryFile() const {
+VipTextEditor * PyInterpreterToolWidget::HistoryFile() const {
 	return d_data->history;
 }
 QSplitter * PyInterpreterToolWidget::Splitter() const {
@@ -616,7 +618,7 @@ void PyInterpreterToolWidget::HideHistory() {
 void PyInterpreterToolWidget::RestartInterpreter() {
 	d_data->interpreter->clear();
 	vip_debug("RestartInterpreter\n");
-	qint64 interp = (qint64)GetPyOptions()->pyIOOperation(true);
+	qint64 interp = (qint64)VipPyInterpreter::instance()->pyIOOperation(true);
 	vip_debug("End %lld\n", interp);
 }
 

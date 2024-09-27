@@ -6,9 +6,17 @@
 #include "PyOperation.h"
 
 
-/**
-Sequential device that simulates video/plot streaming based on a python expression.
-*/
+/// @brief Sequential device that simulates video/plot streaming based on a python expression.
+/// 
+/// PySignalGenerator can be either sequential or temporal based on the start/end times.
+/// If the property start_time or end_time is VipInvalidTime, the generator is sequential.
+/// 
+/// The Python code can be a single or multi line expression like 'value = np.cos(t-st)',
+/// where 't' is the current time in seconds and 'st' is the start time, and 'value'
+/// is the actual value to generate.
+/// 
+/// For sequential device, 't' and 'st' are expressed in seconds since Epoch.
+/// 
 class PYTHON_EXPORT PySignalGenerator : public VipTimeRangeBasedGenerator
 {
 	Q_OBJECT
@@ -17,7 +25,6 @@ class PYTHON_EXPORT PySignalGenerator : public VipTimeRangeBasedGenerator
 	VIP_IO(VipProperty start_time)
 	VIP_IO(VipProperty end_time)
 	VIP_IO(VipProperty expression)
-	VIP_IO(VipProperty complex_expression)
 	VIP_IO(VipProperty unit)
 
 	struct ReadThread : public QThread
@@ -28,8 +35,9 @@ class PYTHON_EXPORT PySignalGenerator : public VipTimeRangeBasedGenerator
 	};
 
 	QSharedPointer<ReadThread> m_thread;
-	CodeObject	m_code;
+	QString	m_code;
 	QVariant d_data;
+	qint64 m_startTime{0 };
 
 public:
 	PySignalGenerator(QObject * parent = nullptr)
@@ -39,8 +47,7 @@ public:
 		propertyAt(1)->setData(VipInvalidTime);
 		propertyAt(2)->setData(VipInvalidTime);
 		propertyAt(3)->setData(QString());
-		propertyAt(4)->setData(false);
-		propertyAt(5)->setData(QString());
+		propertyAt(4)->setData(QString());
 		m_thread.reset(new ReadThread(this));
 	}
 
@@ -56,7 +63,6 @@ public:
 protected:
 	virtual bool readData(qint64 time);
 	virtual bool enableStreaming(bool enable);
-
 	QVariant computeValue(qint64 time, bool & ok);
 };
 
@@ -78,9 +84,7 @@ public:
 	void setGenerator(PySignalGenerator * gen);
 	PySignalGenerator * generator() const;
 
-	static PySignalGenerator * createSimpleGenerator() {return createGenerator(false);}
-	static PySignalGenerator * createComplexGenerator() { return createGenerator(true); }
-	static PySignalGenerator * createGenerator(bool complex_script);
+	static PySignalGenerator * createGenerator();
 
 private Q_SLOTS:
 	void updateGenerator();

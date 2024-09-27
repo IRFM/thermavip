@@ -67,7 +67,7 @@ public:
 
 	/**
 	* Retrieve a Python object from the distant console.
-	* Returns the object on success, a PyError object on error.
+	* Returns the object on success, a VipPyError object on error.
 	*/
 	QVariant retrieveObject(const QString& name);
 

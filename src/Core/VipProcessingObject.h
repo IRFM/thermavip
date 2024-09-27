@@ -163,20 +163,20 @@ class VIP_CORE_EXPORT VipErrorHandler : public QObject
 public:
 	VipErrorHandler(QObject* parent = nullptr);
 	~VipErrorHandler();
-	/// Set the current error status.
+	/// @brief Set the current error status.
 	/// The error will be redirected to the parent VipProcessingObject.
 	void setError(const QString& error, int code = -1);
 	void setError(const VipErrorData&);
 	void setError(VipErrorData&& err);
-	/// Resets the current error status.
+	/// @brief Resets the current error status.
 	void resetError();
-	/// Return the last error.
+	/// @brief Return the last error.
 	VipErrorData error() const;
-	/// Returns the last error string
+	/// @brief Returns the last error string
 	QString errorString() const;
-	/// Returns the last error code, ot 0 if no error occured.
+	/// @brief Returns the last error code, ot 0 if no error occured.
 	int errorCode() const;
-	/// Returns true if an error occurred during the last operation.
+	/// @brief Returns true if an error occurred during the last operation.
 	bool hasError() const;
 
 protected:
@@ -1562,7 +1562,7 @@ public:
 	/// @brief Tells if the processing is using internally the GUI event loop.
 	/// This has an impact in the way the wait() function behaves.
 	/// Most processing objects do not use the event loop, that's why this function returns false by default.
-	/// Within Thermavip SDK, only #VipDisplayObject use it.
+	/// Within Thermavip SDK, only VipDisplayObject uses it.
 	virtual bool useEventLoop() const { return false; }
 
 	/// @brief Returns all inputs names, including the VipInput inside the VipMultiInput

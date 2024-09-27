@@ -136,7 +136,7 @@ void CustomizePlayer::scriptSelected(QAction * act)
 	if (!info.exists())
 		return;
 
-	GIL_Locker lock;
+	VipGILLocker lock;
 	PyErr_Clear();
 	//import module and launch apply(player_id) in the main thread
 
@@ -156,7 +156,7 @@ void CustomizePlayer::scriptSelected(QAction * act)
 
 	int r = PyRun_SimpleString(code.toLatin1().data());
 	if (r != 0) {
-		PyError err(true);
+		VipPyError err(compute_error_t{});
 		if (!err.traceback.isEmpty()) {
 			vip_debug("err: %s\n", err.traceback.toLatin1().data());
 			VIP_LOG_ERROR(err.traceback);

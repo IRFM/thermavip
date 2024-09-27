@@ -6,9 +6,9 @@
 static bool initializeCurveFit()
 {
 	static bool init = false;
-	if (!init && GetPyOptions()->isRunning())
+	if (!init && VipPyInterpreter::instance()->isRunning())
 	{
-		PyIOOperation::command_type com = GetPyOptions()->execCode(
+		auto c = VipPyInterpreter::instance()->execCode(
 			"import numpy as np\n"
 			"from scipy.optimize import curve_fit\n"
 			"\n"
@@ -41,7 +41,7 @@ static bool initializeCurveFit()
 			"  return popt\n"
 		);
 
-		init = GetPyOptions()->wait(com).value<PyError>().isNull();
+		init = c.value().value<VipPyError>().isNull();
 
 	}
 	return init;
@@ -222,20 +222,7 @@ static QVariantList applyCurveFit(const VipAnyData & any,
 			y[i] = curve[i].y();
 		}
 
-		//send the data to the python env
-		PyError err1 = GetPyOptions()->wait(GetPyOptions()->sendObject("x", QVariant::fromValue(VipNDArray(x)))).value<PyError>();
-		PyError err2 = GetPyOptions()->wait(GetPyOptions()->sendObject("y", QVariant::fromValue(VipNDArray(y)))).value<PyError>();
-		if (!err1.isNull())
-		{
-			error = (err1.traceback);
-			return QVariantList();
-		}
-		if (!err2.isNull())
-		{
-			error = (err2.traceback);
-			return QVariantList();
-		}
-
+		
 		QString add = additional;
 		int type = 0;
 		if (fit_func == "fit_exponential")
@@ -257,29 +244,33 @@ static QVariantList applyCurveFit(const VipAnyData & any,
 			add = "p0=[" + QString::number(a) + "," + QString::number(b) + "," + QString::number(c) + "," + QString::number(d) + "]";
 		}
 
+		QVariantMap map;
+		map["x"] = QVariant::fromValue(VipNDArray(x));
+		map["y"] = QVariant::fromValue(VipNDArray(y));
 		QString code = add.isEmpty() ? "opt=" + fit_func + "(x,y)" : "opt=" + fit_func + "(x,y," + add + ")";
-		//apply the script
-		PyError err3 = GetPyOptions()->wait(GetPyOptions()->execCode(code)).value<PyError>();
 
-		if (!err3.isNull())
+		VipPyCommandList cmds;
+		cmds << vipCSendObject("x", VipNDArray(x));
+		cmds << vipCSendObject("y", VipNDArray(y));
+		cmds << vipCExecCode(code, "code");
+		cmds << vipCRetrieveObject("opt");
+
+		QVariant r = VipPyInterpreter::instance()->sendCommands(cmds).value();
+
+		//send the data to the python env
+		VipPyError err = r.value<VipPyError>();
+		if (!err.isNull())
 		{
-			error = "Unable to find fitting parameters";//(err3.traceback);
+			error = (err.traceback);
 			return QVariantList();
 		}
 
-		//retrieve the result
-		QVariant v = GetPyOptions()->wait(GetPyOptions()->retrieveObject("opt"));
-		PyError err4 = v.value<PyError>();
-		if (!err4.isNull())
-		{
-			error = (err4.traceback);
-			return QVariantList();
-		}
-
-		VipNDArrayType<double> ar = v.value<VipNDArray>().toDouble();
+		const QVariantMap vals= r.value<QVariantMap>();
+		
+		VipNDArrayType<double> ar = vals["opt"].value<VipNDArray>().toDouble();
 		QVariantList res;
 		for (int i = 0; i < ar.size(); ++i)
-			res += ar[i];
+			res.push_back(ar[i]);
 
 		QString time = time_uint;
 		QString inv_time = time.isEmpty() ? QString() : time + "<sup>-1</sup>";

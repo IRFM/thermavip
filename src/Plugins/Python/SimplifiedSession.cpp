@@ -246,9 +246,9 @@ bool SimplifiedSession::open(const QString & file, QString * error)
 
 		p.setValue(i);
 		p.setText(comment[i].isEmpty() ? " " : comment[i]);
-		QVariant res = GetPyOptions()->wait(GetPyOptions()->execCode(code[i]));
-		if (!res.value<PyError>().isNull()) {
-			if (error) *error = res.value<PyError>().traceback;
+		QVariant res = VipPyInterpreter::instance()->execCode(code[i]).value();
+		if (!res.value<VipPyError>().isNull()) {
+			if (error) *error = res.value<VipPyError>().traceback;
 			return false; 
 		}
 	}

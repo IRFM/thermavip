@@ -24,7 +24,7 @@
 */
 struct GIL_Lock_Event : QEvent
 {
-	GIL_Locker lock;
+	VipGILLocker lock;
 	GIL_Lock_Event()
 		:QEvent((QEvent::Type)(QEvent::MaxUser + 1)) {
 		//vip_debug("lock GIL\n");fflush(stdout);
@@ -155,7 +155,7 @@ static ResultType execDelayFunction(const T & fun) {
 		Event * evt = new Event(alive, result);
 		evt->fun = std::function<ResultType()>(fun);
 		QCoreApplication::instance()->postEvent(object(), evt);
-		QPointer<PyLocal> loc = PyLocal::instance(threadId());
+		QPointer<VipPyLocal> loc = VipPyLocal::instance(vipPyThreadId());
 		while (*alive)
 		{
 			if (loc) {
@@ -2044,7 +2044,7 @@ static ResultType testPid(qint64 pid)
 	l_main_win->setWindowTitle("DOLPHIN EMBEDDED IN QT APPLICATION!");
 	l_main_win->setCentralWidget(l_widget);
 	l_main_win->show();*/
-	GIL_Locker lock;
+	VipGILLocker lock;
 	int r = PyRun_SimpleString("import PyQt5\nfrom PyQt5.QtWidgets import QLabel\nl=QLabel('toto')\nl.show()");
 	return ResultType();
 }
@@ -2154,7 +2154,7 @@ static PyObject* current_player(PyObject*, PyObject* args)
 			PyErr_SetString(PyExc_RuntimeError, result.second.toLatin1().data());
 			return nullptr;
 		}
-	return (PyObject*)variantToPython(result.first);
+	return (PyObject*)vipVariantToPython(result.first);
 }
 
 
@@ -2165,7 +2165,7 @@ static PyObject* player_type(PyObject *, PyObject* args)
 		PyErr_SetString(PyExc_RuntimeError, "player_type: wrong number of argument (should be 1)");
 		return nullptr;
 	}
-	int player = pythonToVariant(PyTuple_GetItem(args, 0)).toInt();
+	int player = vipPythonToVariant(PyTuple_GetItem(args, 0)).toInt();
 
 	ResultType result;
 	Py_BEGIN_ALLOW_THREADS
@@ -2176,7 +2176,7 @@ static PyObject* player_type(PyObject *, PyObject* args)
 			PyErr_SetString(PyExc_RuntimeError, result.second.toLatin1().data());
 			return nullptr;
 		}
-	return (PyObject*)variantToPython(result.first);
+	return (PyObject*)vipVariantToPython(result.first);
 }
 
 static PyObject* item_list(PyObject *, PyObject* args)
@@ -2186,8 +2186,8 @@ static PyObject* item_list(PyObject *, PyObject* args)
 		PyErr_SetString(PyExc_RuntimeError, "item_list: wrong number of argument (should be 3)");
 		return nullptr;
 	}
-	int player = pythonToVariant(PyTuple_GetItem(args, 0)).toInt();
-	int selection = pythonToVariant(PyTuple_GetItem(args, 1)).toInt();
+	int player = vipPythonToVariant(PyTuple_GetItem(args, 0)).toInt();
+	int selection = vipPythonToVariant(PyTuple_GetItem(args, 1)).toInt();
 	QString name = pyToString(PyTuple_GetItem(args, 2));
 	ResultType result;
 	Py_BEGIN_ALLOW_THREADS
@@ -2198,7 +2198,7 @@ static PyObject* item_list(PyObject *, PyObject* args)
 			PyErr_SetString(PyExc_RuntimeError, result.second.toLatin1().data());
 			return nullptr;
 		}
-	return (PyObject*)variantToPython(result.first);
+	return (PyObject*)vipVariantToPython(result.first);
 }
 
 static PyObject* set_selected(PyObject *, PyObject* args)
@@ -2208,8 +2208,8 @@ static PyObject* set_selected(PyObject *, PyObject* args)
 		PyErr_SetString(PyExc_RuntimeError, "set_selected: wrong number of argument (should be 3)");
 		return nullptr;
 	}
-	int player = pythonToVariant(PyTuple_GetItem(args, 0)).toInt();
-	bool selection = pythonToVariant(PyTuple_GetItem(args, 1)).toBool();
+	int player = vipPythonToVariant(PyTuple_GetItem(args, 0)).toInt();
+	bool selection = vipPythonToVariant(PyTuple_GetItem(args, 1)).toBool();
 	QString name = pyToString(PyTuple_GetItem(args, 2));
 	ResultType result;
 	Py_BEGIN_ALLOW_THREADS
@@ -2231,7 +2231,7 @@ static PyObject* unselect_all(PyObject *, PyObject* args)
 		PyErr_SetString(PyExc_RuntimeError, "unselect_all: wrong number of argument (should be 1)");
 		return nullptr;
 	}
-	int player = pythonToVariant(PyTuple_GetItem(args, 0)).toInt();
+	int player = vipPythonToVariant(PyTuple_GetItem(args, 0)).toInt();
 
 	ResultType result;
 	Py_BEGIN_ALLOW_THREADS
@@ -2274,7 +2274,7 @@ static PyObject* open_path(PyObject *, PyObject* args)
 		PyErr_SetString(PyExc_RuntimeError, "open: wrong number of argument (should be 3)");
 		return nullptr;
 	}
-	QVariant path = pythonToVariant(PyTuple_GetItem(args, 0));
+	QVariant path = vipPythonToVariant(PyTuple_GetItem(args, 0));
 	if (path.userType() != qMetaTypeId<QString>() && path.userType() != qMetaTypeId<QVariantList>()) {
 		PyErr_SetString(PyExc_RuntimeError, "wrong path value");
 		return nullptr;
@@ -2458,7 +2458,7 @@ static PyObject* workspace_title(PyObject *, PyObject* args)
 			PyErr_SetString(PyExc_RuntimeError, result.second.toLatin1().data());
 			return nullptr;
 		}
-	return (PyObject*)variantToPython(result.first);
+	return (PyObject*)vipVariantToPython(result.first);
 }
 
 static PyObject* set_workspace_title(PyObject *, PyObject* args)
@@ -2650,7 +2650,7 @@ static PyObject* clamp_time(PyObject *, PyObject* args)
 	}
 
 
-	VipNDArray ar = pythonToVariant(PyTuple_GetItem(args, 0)).value<VipNDArray>().convert<vip_double>();
+	VipNDArray ar = vipPythonToVariant(PyTuple_GetItem(args, 0)).value<VipNDArray>().convert<vip_double>();
 	qint64 min = PyLong_AsLongLong(PyTuple_GetItem(args, 1));
 	qint64 max = PyLong_AsLongLong(PyTuple_GetItem(args, 2));
 
@@ -2669,7 +2669,7 @@ static PyObject* clamp_time(PyObject *, PyObject* args)
 			return nullptr;
 		}
 	Py_INCREF(Py_None);
-	return (PyObject*)variantToPython(result.first);
+	return (PyObject*)vipVariantToPython(result.first);
 }
 
 static PyObject* set_stylesheet(PyObject *, PyObject* args)
@@ -2763,7 +2763,7 @@ static PyObject* get(PyObject *, PyObject* args)
 			return nullptr;// PyLong_FromLong(0);
 		}
 
-	PyObject * res = (PyObject*)variantToPython(result.first);
+	PyObject * res = (PyObject*)vipVariantToPython(result.first);
 	if (!res) {
 		PyErr_SetString(PyExc_RuntimeError, "unable to convert data to a valid Python object");
 		return nullptr;
@@ -2793,7 +2793,7 @@ static PyObject* get_attribute(PyObject *, PyObject* args)
 			return nullptr;
 		}
 
-	PyObject * res = (PyObject*)variantToPython(result.first);
+	PyObject * res = (PyObject*)vipVariantToPython(result.first);
 	if (!res) {
 		PyErr_SetString(PyExc_RuntimeError, "unable to convert data to a valid Python object");
 		return nullptr;
@@ -2822,7 +2822,7 @@ static PyObject* get_attributes(PyObject *, PyObject* args)
 			return nullptr;
 		}
 
-	PyObject * res = (PyObject*)variantToPython(result.first);
+	PyObject * res = (PyObject*)vipVariantToPython(result.first);
 	if (!res) {
 		PyErr_SetString(PyExc_RuntimeError, "unable to convert data to a valid Python object");
 		return nullptr;
@@ -2840,7 +2840,7 @@ static PyObject* set_attribute(PyObject *, PyObject* args)
 
 	int player = PyLong_AsLong(PyTuple_GetItem(args, 0));
 	QString attr = pyToString(PyTuple_GetItem(args, 1));
-	QVariant value = pythonToVariant(PyTuple_GetItem(args, 2));
+	QVariant value = vipPythonToVariant(PyTuple_GetItem(args, 2));
 	QString name = pyToString(PyTuple_GetItem(args, 3));
 
 	ResultType result;
@@ -2880,7 +2880,7 @@ static PyObject* roi(PyObject *, PyObject* args)
 			return nullptr;
 		}
 
-	PyObject * res = (PyObject*)variantToPython(result.first);
+	PyObject * res = (PyObject*)vipVariantToPython(result.first);
 	if (!res) {
 		PyErr_SetString(PyExc_RuntimeError, "unable to convert data to a valid Python object");
 		return nullptr;
@@ -2910,7 +2910,7 @@ static PyObject* roi_filled_points(PyObject *, PyObject* args)
 			return nullptr;
 		}
 
-	PyObject * res = (PyObject*)variantToPython(result.first);
+	PyObject * res = (PyObject*)vipVariantToPython(result.first);
 	if (!res) {
 		PyErr_SetString(PyExc_RuntimeError, "unable to convert data to a valid Python object");
 		return nullptr;
@@ -2943,7 +2943,7 @@ static PyObject* get_roi_bounding_rect(PyObject*, PyObject* args)
 			return nullptr;
 		}
 
-	PyObject* res = (PyObject*)variantToPython(result.first);
+	PyObject* res = (PyObject*)vipVariantToPython(result.first);
 	if (!res) {
 		PyErr_SetString(PyExc_RuntimeError, "unable to convert data to a valid Python object");
 		return nullptr;
@@ -2985,7 +2985,7 @@ static PyObject* add_roi(PyObject *, PyObject* args)
 	}
 
 	int player = PyLong_AsLong(PyTuple_GetItem(args, 0));
-	QVariant roi = pythonToVariant(PyTuple_GetItem(args, 1));
+	QVariant roi = vipPythonToVariant(PyTuple_GetItem(args, 1));
 	QString axis = pyToString(PyTuple_GetItem(args, 2));
 
 	ResultType result;
@@ -2997,7 +2997,7 @@ static PyObject* add_roi(PyObject *, PyObject* args)
 			PyErr_SetString(PyExc_RuntimeError, result.second.toLatin1().data());
 			return nullptr;
 		}
-	return (PyObject*)variantToPython(result.first);
+	return (PyObject*)vipVariantToPython(result.first);
 }
 
 static PyObject* add_ellipse(PyObject*, PyObject* args)
@@ -3009,7 +3009,7 @@ static PyObject* add_ellipse(PyObject*, PyObject* args)
 	}
 
 	int player = PyLong_AsLong(PyTuple_GetItem(args, 0));
-	QVariant roi = pythonToVariant(PyTuple_GetItem(args, 1));
+	QVariant roi = vipPythonToVariant(PyTuple_GetItem(args, 1));
 	QString axis = pyToString(PyTuple_GetItem(args, 2));
 
 	ResultType result;
@@ -3021,7 +3021,7 @@ static PyObject* add_ellipse(PyObject*, PyObject* args)
 			PyErr_SetString(PyExc_RuntimeError, result.second.toLatin1().data());
 			return nullptr;
 		}
-	return (PyObject*)variantToPython(result.first);
+	return (PyObject*)vipVariantToPython(result.first);
 }
 
 static PyObject* add_circle(PyObject*, PyObject* args)
@@ -3033,9 +3033,9 @@ static PyObject* add_circle(PyObject*, PyObject* args)
 	}
 
 	int player = PyLong_AsLong(PyTuple_GetItem(args, 0));
-	double y = pythonToVariant(PyTuple_GetItem(args, 1)).toDouble();
-	double x = pythonToVariant(PyTuple_GetItem(args, 2)).toDouble();
-	double radius = pythonToVariant(PyTuple_GetItem(args, 3)).toDouble();
+	double y = vipPythonToVariant(PyTuple_GetItem(args, 1)).toDouble();
+	double x = vipPythonToVariant(PyTuple_GetItem(args, 2)).toDouble();
+	double radius = vipPythonToVariant(PyTuple_GetItem(args, 3)).toDouble();
 	QString axis = pyToString(PyTuple_GetItem(args, 4));
 
 	ResultType result;
@@ -3047,7 +3047,7 @@ static PyObject* add_circle(PyObject*, PyObject* args)
 			PyErr_SetString(PyExc_RuntimeError, result.second.toLatin1().data());
 			return nullptr;
 		}
-	return (PyObject*)variantToPython(result.first);
+	return (PyObject*)vipVariantToPython(result.first);
 }
 
 
@@ -3070,8 +3070,8 @@ static PyObject* time_trace(PyObject *, PyObject* args)
 
 	QVariantList rois;
 	int player = PyLong_AsLong(PyTuple_GetItem(args, 0));
-	QVariant tmp = pythonToVariant(PyTuple_GetItem(args, 1));
-	QVariantMap attributes = pythonToVariant(PyTuple_GetItem(args, 2)).value<QVariantMap>();
+	QVariant tmp = vipPythonToVariant(PyTuple_GetItem(args, 1));
+	QVariantMap attributes = vipPythonToVariant(PyTuple_GetItem(args, 2)).value<QVariantMap>();
 	if (tmp.userType() == qMetaTypeId<QVariantList>())
 		rois = tmp.value<QVariantList>();
 	else
@@ -3292,8 +3292,8 @@ static PyObject* set_x_scale(PyObject *, PyObject* args)
 	}
 
 	int player = PyLong_AsLong(PyTuple_GetItem(args, 0));
-	QVariant min = pythonToVariant(PyTuple_GetItem(args, 1));
-	QVariant max = pythonToVariant(PyTuple_GetItem(args, 2));
+	QVariant min = vipPythonToVariant(PyTuple_GetItem(args, 1));
+	QVariant max = vipPythonToVariant(PyTuple_GetItem(args, 2));
 	vip_double _min, _max;
 	if (min.userType() == QMetaType::LongLong) _min = min.toLongLong();
 	else if (min.userType() == qMetaTypeId<vip_double>()) _min = min.value<vip_double>();
@@ -3324,8 +3324,8 @@ static PyObject* set_y_scale(PyObject *, PyObject* args)
 	}
 
 	int player = PyLong_AsLong(PyTuple_GetItem(args, 0));
-	QVariant min = pythonToVariant(PyTuple_GetItem(args, 1));
-	QVariant max = pythonToVariant(PyTuple_GetItem(args, 2));
+	QVariant min = vipPythonToVariant(PyTuple_GetItem(args, 1));
+	QVariant max = vipPythonToVariant(PyTuple_GetItem(args, 2));
 	QString unit = pyToString(PyTuple_GetItem(args, 3));
 	vip_double _min, _max;
 	if (min.userType() == QMetaType::LongLong) _min = min.toLongLong();
@@ -3393,8 +3393,8 @@ static PyObject* annotation(PyObject *, PyObject* args)
 	int player = PyLong_AsLong(PyTuple_GetItem(args, 0));
 	QString style = pyToString(PyTuple_GetItem(args, 1));
 	QString text = pyToString(PyTuple_GetItem(args, 2));
-	QVariantList pos = pythonToVariant(PyTuple_GetItem(args, 3)).value<QVariantList>();
-	QVariantMap attributes = pythonToVariant(PyTuple_GetItem(args, 4)).value<QVariantMap>();
+	QVariantList pos = vipPythonToVariant(PyTuple_GetItem(args, 3)).value<QVariantList>();
+	QVariantMap attributes = vipPythonToVariant(PyTuple_GetItem(args, 4)).value<QVariantMap>();
 
 	if (!(pos.size() == 2 || pos.size() == 4)) {
 		PyErr_SetString(PyExc_RuntimeError, "wrong position format (should be a list of 2 or 4 values)");
@@ -3470,8 +3470,8 @@ static PyObject* set_time_markers(PyObject*, PyObject* args)
 		return nullptr;
 	}
 
-	qint64 start = pythonToVariant(PyTuple_GetItem(args, 0)).toLongLong();
-	qint64 end = pythonToVariant(PyTuple_GetItem(args, 1)).toLongLong();
+	qint64 start = vipPythonToVariant(PyTuple_GetItem(args, 0)).toLongLong();
+	qint64 end = vipPythonToVariant(PyTuple_GetItem(args, 1)).toLongLong();
 	ResultType result;
 	Py_BEGIN_ALLOW_THREADS
 		result = execDelayFunction(std::bind(setTimeMarkers, start, end));
@@ -3512,8 +3512,8 @@ static PyObject* set_row_ratio(PyObject*, PyObject* args)
 		return nullptr;
 	}
 
-	int row = pythonToVariant(PyTuple_GetItem(args, 0)).toInt();
-	double ratio = pythonToVariant(PyTuple_GetItem(args, 1)).toDouble();
+	int row = vipPythonToVariant(PyTuple_GetItem(args, 0)).toInt();
+	double ratio = vipPythonToVariant(PyTuple_GetItem(args, 1)).toDouble();
 
 	ResultType result;
 	Py_BEGIN_ALLOW_THREADS
@@ -3541,8 +3541,8 @@ static PyObject* imshow(PyObject *, PyObject* args)
 		return nullptr;
 	}
 
-	VipNDArray ar = pythonToVariant(PyTuple_GetItem(args, 0)).value<VipNDArray>();
-	QVariantMap attributes = pythonToVariant(PyTuple_GetItem(args, 1)).value<QVariantMap>();
+	VipNDArray ar = vipPythonToVariant(PyTuple_GetItem(args, 0)).value<VipNDArray>();
+	QVariantMap attributes = vipPythonToVariant(PyTuple_GetItem(args, 1)).value<QVariantMap>();
 
 	ResultType result;
 	Py_BEGIN_ALLOW_THREADS
@@ -3589,8 +3589,8 @@ static PyObject* plot(PyObject *, PyObject* args)
 		return nullptr;
 	}
 
-	QVariant data = pythonToVariant(PyTuple_GetItem(args, 0));
-	QVariantMap attributes = pythonToVariant(PyTuple_GetItem(args, 1)).value<QVariantMap>();
+	QVariant data = vipPythonToVariant(PyTuple_GetItem(args, 0));
+	QVariantMap attributes = vipPythonToVariant(PyTuple_GetItem(args, 1)).value<QVariantMap>();
 
 	VipPointVector vector;
 	if (data.userType() == qMetaTypeId<VipNDArray>()) {
@@ -3656,8 +3656,8 @@ static PyObject* plots(PyObject *, PyObject* args)
 		return nullptr;
 	}
 
-	const QVariantList datas = pythonToVariant(PyTuple_GetItem(args, 0)).value<QVariantList>();
-	QVariantMap attributes = pythonToVariant(PyTuple_GetItem(args, 1)).value<QVariantMap>();
+	const QVariantList datas = vipPythonToVariant(PyTuple_GetItem(args, 0)).value<QVariantList>();
+	QVariantMap attributes = vipPythonToVariant(PyTuple_GetItem(args, 1)).value<QVariantMap>();
 
 	
 
@@ -3714,7 +3714,7 @@ static PyObject* plots(PyObject *, PyObject* args)
 			PyErr_SetString(PyExc_RuntimeError, result.second.toLatin1().data());
 			return nullptr;
 		} 
-	return (PyObject*)variantToPython(result.first);
+	return (PyObject*)vipVariantToPython(result.first);
 }
 
 static PyObject* resample(PyObject *, PyObject* args)
@@ -3725,10 +3725,10 @@ static PyObject* resample(PyObject *, PyObject* args)
 		return nullptr;
 	}
 
-	const QVariantList datas = pythonToVariant(PyTuple_GetItem(args, 0)).value<QVariantList>();
+	const QVariantList datas = vipPythonToVariant(PyTuple_GetItem(args, 0)).value<QVariantList>();
 	const QString strategy = pyToString(PyTuple_GetItem(args, 1));
-	double step = pythonToVariant(PyTuple_GetItem(args, 2)).toDouble();
-	double padd = pythonToVariant(PyTuple_GetItem(args, 3)).toDouble();
+	double step = vipPythonToVariant(PyTuple_GetItem(args, 2)).toDouble();
+	double padd = vipPythonToVariant(PyTuple_GetItem(args, 3)).toDouble();
 	
 
 	if (datas.size() % 2 || datas.size() == 0) {
@@ -3792,8 +3792,8 @@ static PyObject* resample(PyObject *, PyObject* args)
 	for (int i = 0; i < vectors.size(); ++i) {
 		VipNDArray x = vipExtractXValues(vectors[i]);
 		VipNDArray y = vipExtractYValues(vectors[i]);
-		PyTuple_SetItem(res, i * 2, (PyObject*)variantToPython(QVariant::fromValue(x)));
-		PyTuple_SetItem(res, i * 2 +1, (PyObject*)variantToPython(QVariant::fromValue(y)));
+		PyTuple_SetItem(res, i * 2, (PyObject*)vipVariantToPython(QVariant::fromValue(x)));
+		PyTuple_SetItem(res, i * 2 +1, (PyObject*)vipVariantToPython(QVariant::fromValue(y)));
 	}
 	return res;
 }
@@ -3807,7 +3807,7 @@ static PyObject* test_pid(PyObject *, PyObject* args)
 		return nullptr;
 	}
 
-	qint64 pid = pythonToVariant(PyTuple_GetItem(args, 0)).toLongLong();
+	qint64 pid = vipPythonToVariant(PyTuple_GetItem(args, 0)).toLongLong();
 
 	ResultType result;
 	Py_BEGIN_ALLOW_THREADS
@@ -3831,10 +3831,10 @@ static PyObject* add_function(PyObject *, PyObject* args)
 		return nullptr;
 	}
 
-	int player = pythonToVariant(PyTuple_GetItem(args, 0)).toInt();
+	int player = vipPythonToVariant(PyTuple_GetItem(args, 0)).toInt();
 	PyObject * fun = PyTuple_GetItem(args, 1);
-	QString function_name = pythonToVariant(PyTuple_GetItem(args, 2)).toString();
-	QString item_name = pythonToVariant(PyTuple_GetItem(args, 3)).toString();
+	QString function_name = vipPythonToVariant(PyTuple_GetItem(args, 2)).toString();
+	QString item_name = vipPythonToVariant(PyTuple_GetItem(args, 3)).toString();
 
 	ResultType result;
 	Py_BEGIN_ALLOW_THREADS
@@ -3857,9 +3857,9 @@ static PyObject* get_function(PyObject *, PyObject* args)
 		return nullptr;
 	}
 
-	int player = pythonToVariant(PyTuple_GetItem(args, 0)).toInt();
-	QString function_name = pythonToVariant(PyTuple_GetItem(args, 1)).toString();
-	QString item_name = pythonToVariant(PyTuple_GetItem(args, 2)).toString();
+	int player = vipPythonToVariant(PyTuple_GetItem(args, 0)).toInt();
+	QString function_name = vipPythonToVariant(PyTuple_GetItem(args, 1)).toString();
+	QString item_name = vipPythonToVariant(PyTuple_GetItem(args, 2)).toString();
 
 	ResultType result;
 	Py_BEGIN_ALLOW_THREADS
@@ -3894,10 +3894,10 @@ static PyObject* user_input(PyObject*, PyObject* args)
 		return nullptr;
 	}
 
-	QString title = pythonToVariant(PyTuple_GetItem(args, 0)).toString();
+	QString title = vipPythonToVariant(PyTuple_GetItem(args, 0)).toString();
 	QList<QVariantList> lst;
 	for (size_t i = 1; i < size; ++i) {
-		lst.append(pythonToVariant(PyTuple_GetItem(args, i)).value<QVariantList>());
+		lst.append(vipPythonToVariant(PyTuple_GetItem(args, i)).value<QVariantList>());
 	}
 	 
 	ResultType result;
@@ -3910,7 +3910,7 @@ static PyObject* user_input(PyObject*, PyObject* args)
 			return nullptr;
 		}
 
-	return (PyObject*)variantToPython(result.first);
+	return (PyObject*)vipVariantToPython(result.first);
 }
 
 
@@ -3922,10 +3922,10 @@ static PyObject* add_widget_to_player(PyObject *, PyObject* args)
 		return nullptr;
 	}
 
-	int player = pythonToVariant(PyTuple_GetItem(args, 0)).toInt();
-	QString side = pythonToVariant(PyTuple_GetItem(args, 1)).toString();
-	QString wname = pythonToVariant(PyTuple_GetItem(args, 2)).toString();
-	QString oname = pythonToVariant(PyTuple_GetItem(args, 3)).toString();
+	int player = vipPythonToVariant(PyTuple_GetItem(args, 0)).toInt();
+	QString side = vipPythonToVariant(PyTuple_GetItem(args, 1)).toString();
+	QString wname = vipPythonToVariant(PyTuple_GetItem(args, 2)).toString();
+	QString oname = vipPythonToVariant(PyTuple_GetItem(args, 3)).toString();
 	PyObject * widget = PyTuple_GetItem(args, 4);
 
 	ResultType result;
@@ -3946,7 +3946,7 @@ static PyObject* add_widget_to_player(PyObject *, PyObject* args)
 
 static PyObject* callRegisteredFun(PyObject*, PyObject* args)
 {
-	QVariantList lst = pythonToVariant(args).value<QVariantList>();
+	QVariantList lst = vipPythonToVariant(args).value<QVariantList>();
 	QString name = lst[0].toString();
 	lst = lst.mid(1);
 	 
@@ -3980,7 +3980,7 @@ static PyObject* callRegisteredFun(PyObject*, PyObject* args)
 			PyErr_SetString(PyExc_RuntimeError, result.first.value<VipErrorData>().errorString().toLatin1().data());
 			return nullptr;
 		}
-		PyObject * res =(PyObject*)variantToPython(result.first);
+		PyObject * res =(PyObject*)vipVariantToPython(result.first);
 		if (!res) {
 			PyErr_SetString(PyExc_RuntimeError, ("Cannot interpret result of function " + name + ", type is " + QString(result.first.typeName())).toLatin1().data());
 			return nullptr;

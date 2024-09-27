@@ -78,7 +78,7 @@ class SharedMemory : public QThread
 	MemHeader d_header;
 	bool d_main;
 	bool d_stop;
-	PyLocal d_loc;
+	VipPyLocal d_loc;
 	QMutex d_mutex;
 public: 
 	 
@@ -278,7 +278,7 @@ public:
 			"import struct\n"
 			"__res = b'" SH_OBJECT "' +struct.pack('i',len('" + name + "')) + b'" + name + "' + pickle.dumps(" + name + ")";
 
-		PyError err = d_loc.wait(d_loc.execCode(code)).value<PyError>();
+		VipPyError err = d_loc.execCode(code).value().value<VipPyError>();
 		if (!err.isNull()) {
 			if (error)
 				*error = err.traceback;
@@ -288,7 +288,7 @@ public:
 		}
 
 		//send result
-		QVariant v = d_loc.wait(d_loc.retrieveObject("__res"));
+		QVariant v = d_loc.retrieveObject("__res").value();
 		QByteArray tmp = v.toByteArray();
 		if (!this->write(tmp.data(), tmp.size(), timeout)) {
 			if (error) *error = "Error writing to shared memory";
@@ -304,7 +304,7 @@ public:
 		if (error)
 			error->clear();
 
-		PyError err = d_loc.wait(d_loc.sendObject(name, v)).value<PyError>();
+		VipPyError err =d_loc.sendObject(name, v).value().value<VipPyError>();
 		if (!err.isNull()) {
 			if (error)
 				*error = err.traceback;
@@ -316,7 +316,7 @@ public:
 			"import struct\n"
 			"__res = b'" SH_OBJECT "' +struct.pack('i',len('" + name + "')) + b'" + name + "' + pickle.dumps(" + name + ")";
 
-		err = d_loc.wait(d_loc.execCode(code)).value<PyError>();
+		err = d_loc.execCode(code).value().value<VipPyError>();
 		if (!err.isNull()) {
 			if (error)
 				*error = err.traceback;
@@ -326,7 +326,7 @@ public:
 		}
 
 		//send result 
-		QVariant _v = d_loc.wait(d_loc.retrieveObject("__res")); 
+		QVariant _v = d_loc.retrieveObject("__res").value(); 
 		QByteArray tmp = _v.toByteArray(); 
 		if (!this->write(tmp.data(), tmp.size(), timeout)) { 
 			if (error) *error = "Error writing to shared memory";
@@ -403,7 +403,7 @@ public:
 		ar = ar.mid(len);
 
 		//load object with pickle
-		PyError err = d_loc.wait(d_loc.sendObject("__ar", QVariant::fromValue(ar))).value<PyError>();
+		VipPyError err = d_loc.sendObject("__ar", QVariant::fromValue(ar)).value().value<VipPyError>();
 		if (!err.isNull()) {
 			if (error) *error = err.traceback;
 			return false;
@@ -412,15 +412,15 @@ public:
 		QString code =
 			"import pickle\n"
 			"__res =  pickle.loads(__ar)";
-		err = d_loc.wait(d_loc.execCode(code)).value<PyError>();
+		err = d_loc.execCode(code).value().value<VipPyError>();
 		if (!err.isNull()) {
 			if (error) *error = err.traceback;
 			return false;
 		}
 
-		v = d_loc.wait(d_loc.retrieveObject("__res"));
-		if (!v.value<PyError>().isNull()) {
-			if (error) *error = v.value<PyError>().traceback;
+		v = d_loc.retrieveObject("__res").value();
+		if (!v.value<VipPyError>().isNull()) {
+			if (error) *error = v.value<VipPyError>().traceback;
 			return false;
 		}
 		return true;
@@ -482,7 +482,7 @@ protected:
 						"__targs = pickle.loads(__targs)\n"
 						"__dargs = pickle.loads(__dargs)\n"
 						"__res = " + name + "(*__targs, **__dargs)\n";
-					PyError err = d_loc.wait(d_loc.execCode(code)).value<PyError>();
+					VipPyError err =d_loc.execCode(code).value().value<VipPyError>();
 					if (!err.isNull()) {
 						vip_debug("%s\n", err.traceback.toLatin1().data());
 						VIP_LOG_ERROR("%s\n", err.traceback.toLatin1().data());
@@ -659,7 +659,7 @@ qint64 IPythonConsoleProcess::start(int font_size, const QString& _style , const
 	QString sys_path = QFileInfo(vipAppCanonicalPath()).canonicalPath() + "/Python";
 	path.replace("\\", "/");
 	sys_path.replace("\\", "/");
-	QString python = GetPyOptions()->python();
+	QString python = VipPyInterpreter::instance()->python();
 	vip_debug("Start IPython with %s\n", python.toLatin1().data());
 	python.replace("\\", "/");
 	QString cmd = python + " " + path + " " + QString::number(font_size) + " " + style +
@@ -805,7 +805,7 @@ QVariant IPythonConsoleProcess::retrieveObject(const QString& name)
 	if (state() != Running || !d_data->mem || !d_data->mem->isValid()) {
 		d_data->lastError = "IPythonConsoleProcess not running";
 		vip_debug("%s\n", d_data->lastError.toLatin1().data());
-		return QVariant::fromValue(PyError(d_data->lastError));
+		return QVariant::fromValue(VipPyError(d_data->lastError));
 	}
 
 	QString error;
@@ -817,7 +817,7 @@ QVariant IPythonConsoleProcess::retrieveObject(const QString& name)
 		d_data->lastError = error;
 		d_data->mem->release();
 		vip_debug("%s\n", d_data->lastError.toLatin1().data());
-		return QVariant::fromValue(PyError(error + " "));
+		return QVariant::fromValue(VipPyError(error + " "));
 	}
 
 	//read reply
@@ -831,7 +831,7 @@ QVariant IPythonConsoleProcess::retrieveObject(const QString& name)
 			d_data->lastError += "\n" + r;
 		d_data->mem->release();
 		vip_debug("%s\n", d_data->lastError.toLatin1().data());
-		return QVariant::fromValue(PyError(d_data->lastError ));
+		return QVariant::fromValue(VipPyError(d_data->lastError ));
 	}
 
 	QVariant v;
@@ -840,10 +840,10 @@ QVariant IPythonConsoleProcess::retrieveObject(const QString& name)
 		if (d_data->mem->readError(ar, error)) {
 			d_data->lastError = error;
 			vip_debug("%s\n", d_data->lastError.toLatin1().data());
-			return QVariant::fromValue(PyError(error + " "));
+			return QVariant::fromValue(VipPyError(error + " "));
 		} 
 		d_data->lastError = saved;
-		return QVariant::fromValue(PyError(saved + " "));
+		return QVariant::fromValue(VipPyError(saved + " "));
 	}
 
 	return v;
@@ -1140,7 +1140,7 @@ IPythonWidget::IPythonWidget(int font_size, const QString& style, QWidget* paren
 
 		d_data->process.setStyleSheet(qApp->styleSheet() );
 		//launch startup code
-		d_data->process.execCode(GetPyOptions()->startupCode());
+		d_data->process.execCode(VipPyInterpreter::instance()->startupCode());
 
 
 #ifdef _WIN32
@@ -1182,7 +1182,7 @@ bool IPythonWidget::restartProcess()
 		d_data->layout->addWidget(d_data->widget);
 		d_data->process.setStyleSheet(qApp->styleSheet());
 		//launch startup code
-		d_data->process.execCode(GetPyOptions()->startupCode());
+		d_data->process.execCode(VipPyInterpreter::instance()->startupCode());
 		return true;
 	}
 	else {

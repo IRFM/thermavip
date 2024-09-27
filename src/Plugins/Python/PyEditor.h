@@ -1,161 +1,111 @@
 #ifndef PY_EDITOR_H
 #define PY_EDITOR_H
 
-#include "CodeEditor.h"
-#include "VipConfig.h"
 
-#include <QTabWidget>
-#include <QWidgetAction>
-#include <QToolBar>
+#include "VipTabEditor.h"
+#include "PyOperation.h"
+#include "IOOperationWidget.h"
 
-class QLineEdit;
-class PYTHON_EXPORT PySearch : public QToolBar
+#include "VipToolWidget.h"
+
+/// @brief A VipTabEditor dedicated to Python file edition
+/// and execution.
+/// 
+class PYTHON_EXPORT PyEditor : public VipTabEditor
 {
 	Q_OBJECT
 
 public:
-	PySearch(QWidget * parent = nullptr);
-	~PySearch();
 
-	bool exactMatch() const;
-	bool caseSensitive() const;
-	bool regExp() const;
+	PyEditor(QWidget * parent = nullptr);
+	~PyEditor();
 
-	void setEditor(QTextEdit  *);
-	void setEditor(QPlainTextEdit  *);
-	void setDocument(QTextDocument *);
-	QTextDocument  *document() const;
-	QLineEdit * search() const;
-	QPair<int, int> lastFound(int * line) const;
+	/// @brief Returns the shell that runs the script, either a IOOperationWidget or a IPythonWidget.
+	/// Note that the shell widget is null until launching a Python file. 
+	QWidget * shellWidget() const;
+
+	/// @brief Returns the object running the code, either a VipPyIOOperation or a IPythonConsoleProcess
+	/// Note that the object is null until launching a Python file. 
+	QObject * interpreter() const;
+
+	/// @brief Returns true if a file is currently running.
+	bool isFileRunning() const;
+	/// @brief Returns true if a file is currently running in debug mode.
+	bool isDebugging() const;
 
 public Q_SLOTS:
-	void searchNext();
-	void searchPrev();
-	void setExactMatch(bool);
-	void setRegExp(bool);
-	void setCaseSensitive(bool);
-	void close(bool);
-	void restartFromCursor();
-	void search(bool forward);
+	void execFile();
+	void debugFile();
+	void stopFile(bool wait);
+	void stopFile() { stopFile(true); }
+	void nextStep();
+	void stepIn();
+	void stepOut();
+	void pause();
+	void _continue();
+	/// @brief Start or restart the interpreter if it is a VipPyIOOperation
+	void startInteractiveInterpreter();
+	/// @brief Next file executions will be performed in the internal Python shell
+	void execInInternal();
+	/// @brief Next file executions will be performed in the external IPython shell if available
+	void execInIPython();
 
 Q_SIGNALS:
-	void closeRequested();
-protected:
-	virtual void showEvent(QShowEvent *);
-	virtual void hideEvent(QHideEvent *);
+	/// @brief Emitted when a file execution finished
+	void fileFinished();
 
+private Q_SLOTS:
+	void aboutToDisplayLaunchMode();
+	void check();
+
+protected:
+	virtual void keyPressEvent(QKeyEvent * evt);
 private:
-	void removePreviousFormat();
-	void format(const QTextBlock & b, int start, int end);
+	bool isRunning();
 	
 	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
-class PYTHON_EXPORT PyToolBar : public QToolBar
-{
-
-public:
-
-	PyToolBar( QWidget * parent = nullptr );
-
-	QWidgetAction *open;
-	QWidgetAction *save;
-	QWidgetAction *saveAs;
-	QWidgetAction *saveAll;
-	QWidgetAction *newfile;
-
-	QWidgetAction *comment;
-	QWidgetAction *uncomment;
-	QWidgetAction *indent;
-	QWidgetAction *unindent;
-};
 
 
-class TabWidget : public QTabWidget
-{
-public:
 
-	TabWidget(QWidget * parent = nullptr) : QTabWidget(parent) {
-		setStyleSheet("QTabWidget::pane { border: 0px; } QTabWidget{padding:0px; margin: 0px; }");
-	}
-
-	QTabBar * TabBar() { return this->tabBar(); }
-};
-
-
-class PYTHON_EXPORT PyEditor : public QWidget
+/// @brief Global PyEditor tool widget class
+class PYTHON_EXPORT PyEditorToolWidget : public VipToolWidget
 {
 	Q_OBJECT
-
-	TabWidget m_tab;
-	PyToolBar m_bar;
-	PySearch *m_search;
-	QAction * m_searchAction;
-	QString m_default_code;
-	bool m_unique;
-	QMap<int, int> m_ids;
-
-	bool Save(CodeEditor* editor);
-	int CreateEditor(const QString & filename = QString());
-
 public:
 
-	PyEditor(Qt::Orientation tool_bar_orientation = Qt::Horizontal, QWidget * parent = nullptr);
+	PyEditorToolWidget(VipMainWindow * parent = nullptr)
+		:VipToolWidget(parent)
+	{
+		PyEditor* editor = new PyEditor();
+		editor->setDefaultSaveDirectory(vipGetPythonScriptsDirectory());
+		this->setWidget(editor);
+		this->setWindowTitle("Python code editor");
+		this->setObjectName("Python code editor");
+		this->setKeepFloatingUserSize(true);
+		this->connect(editor->tabWidget(), SIGNAL(currentChanged(int)), this, SLOT(currentFileChanged()));
+		this->connect(editor, SIGNAL(modified(bool)), this, SLOT(currentFileChanged()));
+		this->resize(500, 700);
+		this->currentFileChanged();
+	} 
 
-	TabWidget * GetTabWidget() {return &m_tab;}
-	PyToolBar * TabBar() const;
-	CodeEditor * CurrentEditor()const;
-	CodeEditor * Editor(int pos)const;
-	int EditorCount() const;
-	int CurrentIndex() const;
+	PyEditor * editor() const {
+		return static_cast<PyEditor*>(widget());
+	}
 
-	void setUniqueFile(bool unique);
-	bool uniqueFile() const;
-
-	QString filename(CodeEditor * ed) const;
-	QString canonicalFilename(CodeEditor * ed) const;
-
-public slots:
-
-	void SetDefaultCode(const QString & code);
-	void SetCurrentIndex(int index);
-
-	CodeEditor * Load();
-	CodeEditor * OpenFile(const QString & filename);
-	CodeEditor * NewFile();
-
-	void Save();
-	void SaveAs();
-	void SaveAll();
-
-	void Comment();
-	void Uncomment();
-	void Indent();
-	void Unindent();
-
-	void CloseSearch();
-	void ShowSearch();
-	void ShowSearchAndFocus();
-	void SetSearchVisible(bool);
-
-	QByteArray SaveState() const;
-	void RestoreState(const QByteArray & state) ;
-	
-private Q_SLOTS:
-
-	void AboutToClose(int);
-	void SetHeaderBarVisibility();
-	void ModificationChanged (bool modify);
-	void CurrentChanged(int);
-	//void ReceivedSaved(const QString &);
-
-Q_SIGNALS:
-	void modified(bool);
-
-private:
-	int nextId() const;
-	
+public Q_SLOTS:
+	void currentFileChanged()
+	{
+		QString title = "Python code editor";
+		if (VipTextEditor * ed = editor()->currentEditor())
+			title += " - " + QString(ed->document()->isModified() ? "*" : "") +editor()->filename(ed) ;
+		setWindowTitle(title);
+	}
 };
 
+VIP_REGISTER_QOBJECT_METATYPE(PyEditorToolWidget*)
+
+PYTHON_EXPORT PyEditorToolWidget * vipGetPyEditorToolWidget();
 
 #endif

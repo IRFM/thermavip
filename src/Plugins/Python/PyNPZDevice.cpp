@@ -1,26 +1,24 @@
-#include "NPZDevice.h"
+#include "PyNPZDevice.h"
 
-
-class NPZDevice::PrivateData
+class PyNPZDevice::PrivateData
 {
 public:
 	VipNDArray previous;
 	QString dataname;
 };
 
-
-NPZDevice::NPZDevice(QObject* parent)
-	:VipIODevice(parent)
+PyNPZDevice::PyNPZDevice(QObject* parent)
+  : VipIODevice(parent)
 {
 	VIP_CREATE_PRIVATE_DATA(d_data);
 }
 
-NPZDevice::~NPZDevice()
+PyNPZDevice::~PyNPZDevice()
 {
 	close();
 }
 
-bool NPZDevice::open(VipIODevice::OpenModes mode)
+bool PyNPZDevice::open(VipIODevice::OpenModes mode)
 {
 	if (mode != WriteOnly)
 		return false;
@@ -35,7 +33,7 @@ bool NPZDevice::open(VipIODevice::OpenModes mode)
 	return true;
 }
 
-void NPZDevice::apply()
+void PyNPZDevice::apply()
 {
 	while (inputAt(0)->hasNewData()) {
 		VipAnyData any = inputAt(0)->data();
@@ -55,38 +53,39 @@ void NPZDevice::apply()
 
 		QString varname = "arr" + QString::number((qint64)this);
 		QString newname = "new" + QString::number((qint64)this);
-		QString code =
-			"import numpy as np\n"
-			"try: \n"
-			"  if " + varname + ".shape == " + newname + ".shape: " + varname + ".shape=(1,*" + varname + ".shape)\n"
-			"  " + newname + ".shape=(1,*" + newname + ".shape)\n"
-			"  " + varname + " = np.vstack((" + varname + "," + newname + "))\n"
-			"except:\n"
-			"  " + varname + "=" + newname + "\n";
+		QString code = "import numpy as np\n"
+			       "try: \n"
+			       "  if " +
+			       varname + ".shape == " + newname + ".shape: " + varname + ".shape=(1,*" + varname +
+			       ".shape)\n"
+			       "  " +
+			       newname + ".shape=(1,*" + newname +
+			       ".shape)\n"
+			       "  " +
+			       varname + " = np.vstack((" + varname + "," + newname +
+			       "))\n"
+			       "except:\n"
+			       "  " +
+			       varname + "=" + newname + "\n";
 
-		//vip_debug("%s\n", code.toLatin1().data());
+		// vip_debug("%s\n", code.toLatin1().data());
 
-		PyIOOperation::command_type c = GetPyOptions()->sendObject(newname, QVariant::fromValue(ar));
-		//check sending errors
-		PyError lastError = GetPyOptions()->wait(c, 10000).value<PyError>();
-		if (!lastError.isNull())
-		{
+		VipPyError lastError = VipPyInterpreter::instance()->sendObject(newname, QVariant::fromValue(ar)).value(10000).value<VipPyError>();
+		// check sending errors
+		if (!lastError.isNull()) {
 			setError(lastError.traceback);
 			return;
 		}
 
-		c = GetPyOptions()->execCode(code);
-		lastError = GetPyOptions()->wait(c, 10000).value<PyError>();
-		if (!lastError.isNull())
-		{
+		lastError = VipPyInterpreter::instance()->execCode(code).value(10000).value<VipPyError>();
+		if (!lastError.isNull()) {
 			setError(lastError.traceback);
 			return;
 		}
 	}
 }
 
-
-void NPZDevice::close()
+void PyNPZDevice::close()
 {
 	if (d_data->previous.isEmpty())
 		return;
@@ -115,47 +114,26 @@ void NPZDevice::close()
 	file.replace("\\", "/");
 	QString code;
 	{
-		code =
-			"import numpy as np\n"
-			"np.savez('" + file + "', " + dataname + "=" + varname + ")\n"
-			"del " + varname + "\n"
-			"del " + newname;
+		code = "import numpy as np\n"
+		       "np.savez('" +
+		       file + "', " + dataname + "=" + varname +
+		       ")\n"
+		       "del " +
+		       varname +
+		       "\n"
+		       "del " +
+		       newname;
 	}
-	
+
 	d_data->dataname.clear();
 	d_data->previous = VipNDArray();
 
-	PyIOOperation::command_type c = GetPyOptions()->execCode(code);
-	PyError lastError = GetPyOptions()->wait(c, 10000).value<PyError>();
-	if (!lastError.isNull())
-	{
+	VipPyError lastError = VipPyInterpreter::instance()->execCode(code).value(10000).value<VipPyError>();
+	if (!lastError.isNull()) {
 		setError(lastError.traceback);
 		return;
 	}
 }
-
-
-
-	
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 class MATDevice::PrivateData
 {
@@ -164,9 +142,8 @@ public:
 	QString dataname;
 };
 
-
 MATDevice::MATDevice(QObject* parent)
-	:VipIODevice(parent)
+  : VipIODevice(parent)
 {
 	VIP_CREATE_PRIVATE_DATA(d_data);
 }
@@ -211,30 +188,32 @@ void MATDevice::apply()
 
 		QString varname = "arr" + QString::number((qint64)this);
 		QString newname = "new" + QString::number((qint64)this);
-		QString code =
-			"import numpy as np\n"
-			"try: \n"
-			"  if " + varname + ".shape == " + newname + ".shape: " + varname + ".shape=(1,*" + varname + ".shape)\n"
-			"  " + newname + ".shape=(1,*" + newname + ".shape)\n"
-			"  " + varname + " = np.vstack((" + varname + "," + newname + "))\n"
-			"except:\n"
-			"  " + varname + "=" + newname + "\n";
+		QString code = "import numpy as np\n"
+			       "try: \n"
+			       "  if " +
+			       varname + ".shape == " + newname + ".shape: " + varname + ".shape=(1,*" + varname +
+			       ".shape)\n"
+			       "  " +
+			       newname + ".shape=(1,*" + newname +
+			       ".shape)\n"
+			       "  " +
+			       varname + " = np.vstack((" + varname + "," + newname +
+			       "))\n"
+			       "except:\n"
+			       "  " +
+			       varname + "=" + newname + "\n";
 
-		//vip_debug("%s\n", code.toLatin1().data());
+		// vip_debug("%s\n", code.toLatin1().data());
 
-		PyIOOperation::command_type c = GetPyOptions()->sendObject(newname, QVariant::fromValue(ar));
-		//check sending errors
-		PyError lastError = GetPyOptions()->wait(c, 10000).value<PyError>();
-		if (!lastError.isNull())
-		{
+		VipPyError lastError = VipPyInterpreter::instance()->sendObject(newname, QVariant::fromValue(ar)).value(10000).value<VipPyError>();
+		// check sending errors
+		if (!lastError.isNull()) {
 			setError(lastError.traceback);
 			return;
 		}
 
-		c = GetPyOptions()->execCode(code);
-		lastError = GetPyOptions()->wait(c, 10000).value<PyError>();
-		if (!lastError.isNull())
-		{
+		lastError = VipPyInterpreter::instance()->execCode(code).value(10000).value<VipPyError>();
+		if (!lastError.isNull()) {
 			setError(lastError.traceback);
 			return;
 		}
@@ -269,31 +248,31 @@ void MATDevice::close()
 	QString file = removePrefix(path());
 	file.replace("\\", "/");
 	QString code;
-	
-		
-	code =
-		"from scipy.io import savemat\n"
-		"d={'" + dataname + "':" + varname + "}\n"
-		//"print(d)\n"
-		"savemat('" + file + "', d)\n"
-		"del " + varname + "\n"
-		"del " + newname + "\n"
-		"del d";
-	
 
-	//vip_debug("%s\n", code.toLatin1().data());
+	code = "from scipy.io import savemat\n"
+	       "d={'" +
+	       dataname + "':" + varname +
+	       "}\n"
+	       //"print(d)\n"
+	       "savemat('" +
+	       file +
+	       "', d)\n"
+	       "del " +
+	       varname +
+	       "\n"
+	       "del " +
+	       newname +
+	       "\n"
+	       "del d";
+
+	// vip_debug("%s\n", code.toLatin1().data());
 
 	d_data->dataname.clear();
 	d_data->previous = VipNDArray();
 
-	PyIOOperation::command_type c = GetPyOptions()->execCode(code);
-	PyError lastError = GetPyOptions()->wait(c, 10000).value<PyError>();
-	if (!lastError.isNull())
-	{
+	VipPyError lastError = VipPyInterpreter::instance()->execCode(code).value(10000).value<VipPyError>();
+	if (!lastError.isNull()) {
 		setError(lastError.traceback);
 		return;
 	}
 }
-
-
-
