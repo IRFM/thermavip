@@ -187,6 +187,9 @@ public:
 	QColor defaultPlayerTextColor() const;
 	QColor defaultPlayerBackgroundColor() const;
 
+	void setInSessionLoading(bool);
+	bool inSessionLoading() const;
+
 public Q_SLOTS:
 
 	void setItemPaletteFactor(int);

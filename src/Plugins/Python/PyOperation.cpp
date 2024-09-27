@@ -2029,6 +2029,8 @@ QStringList VipPyInterpreter::addProcessingDirectoryInternal(const QString& dir,
 	// Inspect a directory (recursive), find all Python files, find all classes starting with Thermavip in these files, and exec these files
 	// to add the classes in the global dict.
 
+	vip_debug("inspect %s\n", dir.toLatin1().data());
+
 	QStringList found;
 
 	// keep track of loaded directories for the current global Python interpreter
@@ -2288,10 +2290,10 @@ VipPyIOOperation* VipPyInterpreter::reset(bool create_new)
 	this->d_data->pyIOOperation->execCode(d_data->startupCode).wait();
 
 	// register all files found in the Python directory
-	this->addProcessingDirectory(vipGetPythonDirectory(), false);
+	/* this->addProcessingDirectory(vipGetPythonDirectory(), false);
 	QString std_path = QFileInfo(vipAppCanonicalPath()).canonicalPath() + "/Python";
 	vip_debug("inspect path %s\n", std_path.toLatin1().data());
-	this->addProcessingDirectory(/*"./Python"*/ std_path, false);
+	this->addProcessingDirectory( std_path, false);*/
 	return d_data->pyIOOperation.get();
 }
 

@@ -4,9 +4,16 @@
 #include "PyProcessing.h"
 #include "PySignalFusionProcessing.h"
 #include "VipStandardProcessing.h"
+#include "VipPlayer.h"
+#include "CurveFit.h"
 #include "qwidget.h"
+#include <qdialog.h>
 
-/**
+class QPushButton;
+class QToolButton;
+class QTreeWidgetItem;
+
+  /**
 Edit a small 2D array
 */
 class PyArrayEditor : public QWidget
@@ -201,6 +208,59 @@ private:
 };
 
 /// @brief Open the processing manager widget
-void openProcessingManager();
+PYTHON_EXPORT void openProcessingManager();
+
+
+
+
+class VipPlotCurve;
+class FitProcessing;
+
+class PYTHON_EXPORT FitDialogBox : public QDialog
+{
+	Q_OBJECT
+
+public:
+	// fit could be empty or "Linear", "Exponential", "Polynomial", "Gaussian".
+	FitDialogBox(VipPlotPlayer* pl, const QString& fit, QWidget* parent = nullptr);
+	~FitDialogBox();
+
+	VipPlotCurve* selectedCurve() const;
+	int selectedFit() const;
+
+private:
+	VIP_DECLARE_PRIVATE_DATA(d_data);
+};
+
+
+namespace detail
+{
+	/// @brief FitManage used to automatically change the fit time unit
+	/// and update the fit when moving the time window
+	class AttachFitToPlayer : public FitManage
+	{
+		Q_OBJECT
+		QPointer<VipPlotPlayer> m_player;
+	public:
+		AttachFitToPlayer(FitProcessing* fit, VipPlotPlayer* player);
+		VipPlotPlayer* player() const;
+		virtual VipInterval xBounds() const;
+	private Q_SLOTS:
+		void timeUnitChanged();
+	};
+}
+
+/// @brief Fit a curve inside a plot player
+/// Uses a dialog box to select the curve and fit type.
+/// Returns the FitProcessing object on success.
+/// The result of the FitProcessing object will be displayed 
+/// as a dash curve on the same player, with overlayed fit equation.
+PYTHON_EXPORT FitProcessing* fitCurve(VipPlotPlayer* player, const QString& fit);
+
+/// @brief Fit a curve inside a plot player with given fit type (one of FitProcessing::Type).
+/// Returns the FitProcessing object on success.
+/// The result of the FitProcessing object will be displayed
+/// as a dash curve on the same player, with overlayed fit equation.
+PYTHON_EXPORT FitProcessing* fitCurve(VipPlotCurve* curve, VipPlotPlayer* player, int fit_type);
 
 #endif

@@ -12,6 +12,7 @@
 #include "PySignalFusionProcessing.h"
 #include "PyRegisterProcessing.h"
 #include "PyEditor.h"
+#include "PyProcessingEditor.h"
 #include "VipTextEditor.h"
 #include "CurveFit.h"
 #include "CustomizePlayer.h"
@@ -294,7 +295,7 @@ void PythonParameters::openWorkingDirectory()
 
 void PythonParameters::openManager()
 {
-	PyRegisterProcessing::openProcessingManager();
+	openProcessingManager();
 }
 
 void PythonParameters::applyStartupCode()
@@ -542,8 +543,8 @@ PythonInterface::LoadResult PythonInterface::load()
 		)));
 
 	//register all files found in the Python directory
-	VipPyInterpreter::instance()->addProcessingDirectory(vipGetPythonDirectory(), QString());
-	VipPyInterpreter::instance()->addProcessingDirectory("./Python", QString());
+	VipPyInterpreter::instance()->addProcessingDirectory(vipGetPythonDirectory());
+	VipPyInterpreter::instance()->addProcessingDirectory("./Python");
 
 	//register PyPlotPlayer
 	vipFDPlayerCreated().append<void(VipPlotPlayer*)>(updatePlotPlayer);

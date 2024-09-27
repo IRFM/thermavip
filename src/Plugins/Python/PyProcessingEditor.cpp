@@ -8,7 +8,17 @@
 #include "VipDisplayArea.h"
 #include "VipPlayer.h"
 #include "VipCore.h"
+#include "VipSymbol.h"
+#include "VipPlotShape.h"
+#include "VipPlotCurve.h"
+#include "VipDisplayObject.h"
+#include "VipIODevice.h"
+#include "VipGui.h"
 
+#include "CurveFit.h"
+
+#include <qcombobox.h>
+#include <qpushbutton.h>
 #include <qclipboard.h>
 #include <qapplication.h>
 #include <qtooltip.h>
@@ -408,6 +418,8 @@ PyProcessingEditor::PyProcessingEditor()
 	d_data->resampleBox.addItem("intersection");
 	d_data->resampleBox.setCurrentIndex(1);
 
+	d_data->editor.setDefaultColorSchemeType("Python");
+
 	QVBoxLayout* vlay = new QVBoxLayout();
 	vlay->addLayout(hlay);
 	vlay->addWidget(&d_data->editor, 1);
@@ -767,7 +779,6 @@ void PySignalFusionProcessingManager::updateWidget()
 			init->topLevelInputAt(0)->toMultiInput()->resize(p->topLevelInputAt(0)->toMultiInput()->count());
 			init->propertyName("code")->setData(p->propertyName("code")->data());
 			init->propertyName("Time_range")->setData(p->propertyName("Time_range")->data());
-			init->propertyName("output_unit")->setData(p->propertyName("output_unit")->data());
 			info.init = QVariant::fromValue(init);
 			tmp = init.data();
 		}
@@ -1001,6 +1012,7 @@ PySignalFusionProcessingEditor::PySignalFusionProcessingEditor(QWidget* parent)
 						  << "intersection");
 	d_data->resampling.setToolTip("Input signals will be resampled based on given method (union or intersection of input time ranges)");
 
+	d_data->editor.setDefaultColorSchemeType("Python");
 	d_data->editor.setUniqueFile(true);
 	d_data->editor.tabBar()->actions().first()->setVisible(false);
 	d_data->editor.tabBar()->actions()[1]->setVisible(false);
@@ -1074,7 +1086,7 @@ void PySignalFusionProcessingEditor::setPlotPlayer(VipPlotPlayer* player)
 	if (d_data->player != player) {
 		d_data->player = player;
 
-		QList<VipPlotCurve*> tmp = player->plotWidget2D()->area()->findItems<VipPlotCurve*>(QString(), 2, 1);
+		QList<VipPlotCurve*> tmp = player->plotWidget2D()->area()->findItems<VipPlotCurve*>(QString(), 1, 1);
 		QString yunit;
 
 		// grab curves from the player
@@ -1377,5 +1389,221 @@ void openProcessingManager()
 		bool ret = m->applyChanges();
 		if (!ret)
 			QMessageBox::warning(nullptr, "Operation failure", "Failed to modify registered processing.");
+	}
+}
+
+
+
+
+
+class FitDialogBox::PrivateData
+{
+public:
+	QLabel curvesLabel;
+	QComboBox curves;
+	QLabel fitLabel;
+	QComboBox fit;
+
+	QPushButton ok, cancel;
+
+	VipPlotPlayer* player;
+};
+
+FitDialogBox::FitDialogBox(VipPlotPlayer* pl, const QString& fit, QWidget* parent)
+  : QDialog(parent)
+{
+	// retrieve all visible and selected curves
+	QList<VipPlotCurve*> curves = pl->viewer()->area()->findItems<VipPlotCurve*>(QString(), 1, 1);
+
+	VIP_CREATE_PRIVATE_DATA(d_data);
+	d_data->player = pl;
+
+	QGridLayout* lay = new QGridLayout();
+	lay->addWidget(&d_data->curvesLabel, 0, 0);
+	lay->addWidget(&d_data->curves, 0, 1);
+	lay->addWidget(&d_data->fitLabel, 1, 0);
+	lay->addWidget(&d_data->fit, 1, 1);
+
+	d_data->curvesLabel.setText(tr("Select curve to fit:"));
+	d_data->fitLabel.setText(tr("Select the fit type:"));
+
+	for (int i = 0; i < curves.size(); ++i)
+		d_data->curves.addItem(curves[i]->title().text());
+
+	d_data->ok.setText(tr("Ok"));
+	d_data->cancel.setText(tr("Cancel"));
+
+	d_data->fit.addItem("Linear");
+	d_data->fit.addItem("Exponential");
+	d_data->fit.addItem("Polynomial");
+	d_data->fit.addItem("Gaussian");
+	d_data->fit.setCurrentText(fit);
+
+	QHBoxLayout* hlay = new QHBoxLayout();
+	hlay->addStretch(1);
+	hlay->addWidget(&d_data->ok);
+	hlay->addWidget(&d_data->cancel);
+
+	QVBoxLayout* vlay = new QVBoxLayout();
+	vlay->addLayout(lay);
+	vlay->addWidget(VipLineWidget::createSunkenHLine());
+	vlay->addLayout(hlay);
+	setLayout(vlay);
+
+	connect(&d_data->ok, SIGNAL(clicked(bool)), this, SLOT(accept()));
+	connect(&d_data->cancel, SIGNAL(clicked(bool)), this, SLOT(reject()));
+
+	this->setWindowTitle("Fit plot");
+}
+
+FitDialogBox::~FitDialogBox() {}
+
+VipPlotCurve* FitDialogBox::selectedCurve() const
+{
+	QList<VipPlotCurve*> curves = d_data->player->viewer()->area()->findItems<VipPlotCurve*>(QString(), 2, 1);
+	for (int i = 0; i < curves.size(); ++i)
+		if (curves[i]->title().text() == d_data->curves.currentText())
+			return curves[i];
+	return nullptr;
+}
+
+int FitDialogBox::selectedFit() const
+{
+	return d_data->fit.currentIndex();
+}
+
+FitProcessing* fitCurve(VipPlotCurve* curve, VipPlotPlayer* player, int fit_type)
+{
+	VipProcessingPool* pool = player->processingPool();
+
+	VipOutput* src = nullptr;
+	if (VipDisplayObject* disp = curve->property("VipDisplayObject").value<VipDisplayObject*>())
+		src = disp->inputAt(0)->connection()->source();
+
+	FitProcessing* fit = nullptr;
+	if (fit_type == 0)
+		fit = new FitLinear();
+	else if (fit_type == 1)
+		fit = new FitExponential();
+	else if (fit_type == 2)
+		fit = new FitPolynomial();
+	else
+		fit = new FitGaussian();
+	fit->setParent(pool);
+
+	fit->inputAt(0)->setData(curve->rawData());
+	if (src)
+		fit->inputAt(0)->setConnection(src);
+	fit->update();
+	fit->setScheduleStrategy(VipProcessingObject::Asynchronous);
+	fit->setDeleteOnOutputConnectionsClosed(true);
+	//fit->setPlotPlayer(player);
+	new detail::AttachFitToPlayer(fit, player);
+
+	/*if (src)
+	{
+		fit->inputAt(0)->setConnection(src);
+	}*/
+
+	VipDisplayCurve* disp = static_cast<VipDisplayCurve*>(vipCreateDisplayFromData(fit->outputAt(0)->data(), player));
+	disp->setParent(pool);
+	disp->inputAt(0)->setConnection(fit->outputAt(0));
+
+	QPen pen = curve->boxStyle().borderPen();
+	pen.setStyle(Qt::DotLine);
+	pen.setWidth(2);
+	disp->item()->boxStyle().setBorderPen(pen);
+
+	QString name = "Fit " + FitProcessing::fitName((FitProcessing::Type)fit_type) + " " + curve->title().text();
+	disp->item()->setTitle(name);
+	fit->setAttribute("Name", name);
+
+	VipText text(QString("<b>Fit</b>: #pequation"));
+	QColor c = curve->boxStyle().borderPen().color();
+	c.setAlpha(120);
+	text.setBackgroundBrush(c);
+	text.setTextPen(QPen(vipWidgetTextBrush(player).color()));
+	disp->item()->addText(text);
+
+	vipCreatePlayersFromProcessing(disp, player, nullptr, curve);
+	
+	// Apply the pen as a style sheet for session saving/loading
+	disp->item()->styleSheet().setProperty("VipPlotItem", "border", QVariant::fromValue(pen));
+	disp->item()->updateStyleSheetString();
+
+	return fit;
+}
+
+FitProcessing* fitCurve(VipPlotPlayer* player, const QString& fit)
+{
+	if (!player)
+		return nullptr;
+	FitDialogBox dial(player, fit);
+	if (dial.exec() == QDialog::Accepted) {
+		return fitCurve(dial.selectedCurve(), player, dial.selectedFit());
+	}
+	return nullptr;
+}
+
+namespace detail
+{
+
+	AttachFitToPlayer::AttachFitToPlayer(FitProcessing* fit, VipPlotPlayer* pl) 
+		: FitManage(fit)
+	  , m_player(pl)
+	{
+		// remove previous AttachFitToPlayer
+		QList<AttachFitToPlayer*> lst = fit->findChildren<AttachFitToPlayer*>();
+		for (int i = 0; i < lst.size(); ++i)
+			if (lst[i] != this)
+				delete lst[i];
+
+		if (pl) {
+			connect(pl, SIGNAL(timeUnitChanged(const QString&)), this, SLOT(timeUnitChanged()));
+			connect(pl->verticalWindow()->rawData().shapeSignals(), SIGNAL(sceneModelChanged(const VipSceneModel&)), fit, SLOT(reload()));
+			connect(pl->verticalWindow(), SIGNAL(visibilityChanged(VipPlotItem*)), fit, SLOT(reload()));
+			timeUnitChanged();
+		}
+		
+	}
+
+	VipInterval AttachFitToPlayer::xBounds() const
+	{
+		if (VipPlotPlayer* pl = player()) {
+			VipInterval bounds = pl->defaultXAxis()->scaleDiv().bounds();
+			if (pl->displayVerticalWindow()) {
+				QRectF r = pl->verticalWindow()->rawData().polygon().boundingRect();
+				VipInterval inter(r.left(), r.right());
+				VipInterval intersect = inter.intersect(bounds);
+				if (intersect.isValid())
+					bounds = intersect;
+			}
+			return bounds;
+		}
+		return VipInterval();
+	}
+
+	VipPlotPlayer* AttachFitToPlayer::player() const
+	{
+		FitProcessing* fit = this->parent();
+		if (!fit)
+			return nullptr;
+		if (m_player)
+			return m_player;
+		QList<VipDisplayObject*> displays = vipListCast<VipDisplayObject*>(fit->allSinks());
+		for (int i = 0; i < displays.size(); ++i)
+			if (VipPlotPlayer* pl = qobject_cast<VipPlotPlayer*>(displays[i]->widget())) {
+				connect(pl, SIGNAL(timeUnitChanged(const QString&)), this, SLOT(timeUnitChanged()));
+				connect(pl->verticalWindow()->rawData().shapeSignals(), SIGNAL(sceneModelChanged(const VipSceneModel&)), fit, SLOT(reload()));
+				connect(pl->verticalWindow(), SIGNAL(visibilityChanged(VipPlotItem*)), fit, SLOT(reload()));
+				return const_cast<AttachFitToPlayer*>(this)->m_player = pl;
+			}
+		return m_player;
+	}
+
+	void AttachFitToPlayer::timeUnitChanged()
+	{
+		if (VipPlotPlayer * pl = player())
+			parent()->setTimeUnit(pl->timeUnit());
 	}
 }

@@ -237,9 +237,7 @@ VipFileSharedMemory::VipFileSharedMemory()
 	VIP_CREATE_PRIVATE_DATA(d_data);
 }
 
-VipFileSharedMemory::~VipFileSharedMemory()
-{
-}
+VipFileSharedMemory::~VipFileSharedMemory() {}
 
 VipFileSharedMemory& VipFileSharedMemory::instance()
 {
@@ -368,6 +366,7 @@ public:
 	bool displayExactPixels;
 	bool dirty;
 	bool setAndApply;
+	bool inSessionLoading{ false };
 	VipLinearColorMap::StandardColorMap playerColorScale;
 	Vip::PlayerLegendPosition legendPosition;
 	VipValueToTime::DisplayType displayType;
@@ -922,6 +921,15 @@ QColor VipGuiDisplayParamaters::defaultPlayerBackgroundColor() const
 	return d_data->resetPlotWidget->backgroundColor();
 }
 
+void VipGuiDisplayParamaters::setInSessionLoading(bool enable)
+{
+	d_data->inSessionLoading = enable;
+}
+bool VipGuiDisplayParamaters::inSessionLoading() const
+{
+	return d_data->inSessionLoading;
+}
+
 bool VipGuiDisplayParamaters::hasTitleTextStyle() const
 {
 	return d_data->titleTextStyle;
@@ -1019,6 +1027,7 @@ bool VipGuiDisplayParamaters::displayExactPixels() const
 
 void VipGuiDisplayParamaters::apply(QWidget* w)
 {
+	
 	if (VipAbstractPlayer* pl = qobject_cast<VipAbstractPlayer*>(w)) {
 
 		if (VipVideoPlayer* v = qobject_cast<VipVideoPlayer*>(pl)) {

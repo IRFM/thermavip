@@ -896,8 +896,7 @@ static ResultType setStyleSheet(int player, const QString & data_name, const QSt
 	if (!item)
 		return ResultType(QVariant(), "cannot find data name for player " + QString::number(player));
 	item->setAttribute("stylesheet", stylesheet);
-	if (!PyBaseProcessing::currentProcessing())
-		vipGetMainWindow()->displayArea()->currentDisplayPlayerArea()->processingPool()->reload();
+	vipGetMainWindow()->displayArea()->currentDisplayPlayerArea()->processingPool()->reload();
 	return ResultType(QVariant(), QString());
 }
 
@@ -1311,8 +1310,7 @@ static ResultType setDataAttribute(int player, const QString & data_name, const 
 	if (VipOutput * out = item->inputAt(0)->connection()->source()) {
 		out->parentProcessing()->setAttribute(attr_name, value);
 
-		if (!PyBaseProcessing::currentProcessing())
-			out->parentProcessing()->reload();
+		out->parentProcessing()->reload();
 	}
 
 	return ResultType(QVariant(), QString());
@@ -1563,7 +1561,7 @@ static ResultType setPlayerTitle(int player, const QString & title)
 	}
 	else {
 		pl->setAutomaticWindowTitle(true);
-		if (pl->processingPool() && (!PyBaseProcessing::currentProcessing()))
+		if (pl->processingPool() )
 			pl->processingPool()->reload();
 	}
 	return ResultType();
@@ -1985,8 +1983,7 @@ static ResultType addFunction(int player, PyObject * fun, const QString & fun_na
 		p->append(proc);
 	}
 
-	if (!PyBaseProcessing::currentProcessing())
-		vipGetMainWindow()->displayArea()->currentDisplayPlayerArea()->processingPool()->reload();
+	vipGetMainWindow()->displayArea()->currentDisplayPlayerArea()->processingPool()->reload();
 	return ResultType();
 }
 

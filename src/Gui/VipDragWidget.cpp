@@ -1117,7 +1117,8 @@ void VipDragWidget::setWidget(QWidget* widget)
 	relayout();
 
 	// at this point, the style sheet is reapplied, we need to reset the GUI parameters
-	VipGuiDisplayParamaters::instance()->apply(widget);
+	if (!VipGuiDisplayParamaters::instance()->inSessionLoading())
+		VipGuiDisplayParamaters::instance()->apply(widget);
 }
 
 void VipDragWidget::titleChanged()

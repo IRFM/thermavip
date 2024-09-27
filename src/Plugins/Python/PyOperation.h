@@ -6,6 +6,7 @@
 #include <QMetaType>
 #include <QVector>
 #include <QThread>
+#include <QFileInfo>
 #include <functional>
 
 #include "VipNDArray.h"

@@ -4,6 +4,8 @@
 
 #include "VipXmlArchive.h"
 
+#include <QFile>
+
 template<class ProcessingType>
 static QMultiMap<QString, VipProcessingObject::Info> _validProcessingObjects(const QVariantList& lst, int output_count, VipProcessingObject::DisplayHint maxDisplayHint)
 {

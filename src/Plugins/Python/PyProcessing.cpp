@@ -246,7 +246,6 @@ QVariant PyProcessing::initializeProcessing(const QVariant& v)
 		topLevelInputAt(0)->toMultiInput()->resize(1);
 		propertyName("code")->setData(ptr->propertyName("code")->data());
 		propertyName("Time_range")->setData(ptr->propertyName("Time_range")->data());
-		propertyName("output_unit")->setData(ptr->propertyName("output_unit")->data());
 		return QVariant(true);
 	}
 	else {
@@ -456,7 +455,6 @@ bool PyProcessing::registerThisProcessing(const QString& category, const QString
 	init->topLevelInputAt(0)->toMultiInput()->resize(1);
 	init->propertyName("code")->setData(this->propertyName("code")->data());
 	init->propertyName("Time_range")->setData(this->propertyName("Time_range")->data());
-	init->propertyName("output_unit")->setData(this->propertyName("output_unit")->data());
 	info.init = QVariant::fromValue(init);
 
 	// check if already registerd

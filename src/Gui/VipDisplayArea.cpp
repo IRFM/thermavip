@@ -92,7 +92,6 @@
 #include "VipVTKPlayer.h"
 #endif
 
-
 class VipDisplayTabBar::PrivateData
 {
 public:
@@ -820,9 +819,7 @@ VipPlayerAreaTitleBar::VipPlayerAreaTitleBar(VipDisplayPlayerArea* win)
 	connect(d_data->pin, SIGNAL(triggered(bool)), this, SLOT(setFloating(bool)));
 }
 
-VipPlayerAreaTitleBar::~VipPlayerAreaTitleBar()
-{
-}
+VipPlayerAreaTitleBar::~VipPlayerAreaTitleBar() {}
 
 void VipPlayerAreaTitleBar::setTitle(const QString& title)
 {
@@ -3561,7 +3558,6 @@ QAction* VipMainWindow::addToolWidget(VipToolWidget* widget, const QIcon& icon, 
 	}
 }
 
-
 void VipMainWindow::init()
 {
 	addDockWidget(Qt::LeftDockWidgetArea, vipGetPlotToolWidgetPlayer(this));
@@ -3624,7 +3620,6 @@ void VipMainWindow::init()
 	addToolWidget(
 	  vipGetRecordToolWidget(this), vipIcon("record_icon.png"), tr("<b>Record signals or movies</b><p>Record any kind of signal in an archive, or create a video from a player</p>"), true);
 
-
 	// Add VTK stuff
 #ifdef VIP_WITH_VTK
 
@@ -3633,12 +3628,10 @@ void VipMainWindow::init()
 	vtkOutputWindow::SetInstance(w);
 	w->Delete();
 
-	
 	vipGetFOVSequenceEditorTool(this)->setAllowedAreas(Qt::NoDockWidgetArea);
 	this->addDockWidget(Qt::LeftDockWidgetArea, vipGetFOVSequenceEditorTool(this));
 	this->addDockWidget(Qt::LeftDockWidgetArea, vipGetVTKPlayerToolWidget(this));
 #endif
-
 
 	closeBar()->startDetectState();
 }
@@ -3861,8 +3854,15 @@ bool VipMainWindow::isLoadingSession()
 	return d_data->loadSession;
 }
 
+struct InSessionLoading
+{
+	InSessionLoading() { VipGuiDisplayParamaters::instance()->setInSessionLoading(true); }
+	~InSessionLoading() { VipGuiDisplayParamaters::instance()->setInSessionLoading(false); }
+};
+
 bool VipMainWindow::loadSessionShowProgress(const QString& filename, VipProgress* progress)
 {
+	InSessionLoading inSessionLoading;
 	LockBool lock(&d_data->loadSession);
 	VipXIfArchive arch(filename);
 	if (!arch) {
