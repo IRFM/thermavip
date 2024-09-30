@@ -34,6 +34,7 @@
 
 #include <cmath>
 #include <complex>
+#include <limits>
 #include <qmath.h>
 
 #include "VipConfig.h"
