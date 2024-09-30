@@ -112,10 +112,11 @@ namespace detail
 		}
 
 		template<class T>
-		std::complex<T> operator()(std::complex<T> y0, std::complex<T> y1, std::complex<T> y2, std::complex<T> y3, double mu) const
+		std::complex<T> operator()(std::complex<T> y0, std::complex<T> y1, std::complex<T> y2, std::complex<T> y3, double _mu) const
 		{
 			std::complex<T> a0, a1, a2, a3;
-			const double mu2 = mu * mu;
+			const T mu = static_cast<T>(_mu);
+			const T mu2 = mu * mu;
 
 			a0 = y3 - y2 - y0 + y1;
 			a1 = y0 - y1 - a0;
