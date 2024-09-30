@@ -2919,6 +2919,10 @@ VipDragWidgetArea::VipDragWidgetArea(QWidget* parent)
 	// connect(horizontalScrollBar(),SIGNAL(valueChanged(int)),VipDragWidgetHandler::find(QScrollArea::widget()),SLOT(reorganizeMinimizedChildren()));
 	// connect(verticalScrollBar(),SIGNAL(valueChanged(int)),VipDragWidgetHandler::find(QScrollArea::widget()),SLOT(reorganizeMinimizedChildren()));
 
+	// disable scroll bars
+	setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+	setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+
 	QScrollArea::widget()->installEventFilter(this);
 }
 

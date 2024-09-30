@@ -33,6 +33,7 @@
 #define VIP_TRANSFORM_ARRAY_H
 
 #include "VipNDArrayOperations.h"
+#include "VipMath.h"
 #include <qtransform.h>
 
 /// \addtogroup DataType
