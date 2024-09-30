@@ -415,7 +415,7 @@ VipGuiDisplayParamaters::VipGuiDisplayParamaters(VipMainWindow* win)
 	d_data->resetPlotWidget->hide();
 	d_data->defaultArea = d_data->defaultPlotWidget->area(); // new VipPlotArea2D();
 	d_data->defaultArea->setVisible(true);
-	d_data->defaultArea->grid()->setVisible(false);
+	//d_data->defaultArea->grid()->setVisible(false);
 	// d_data->defaultArea->titleAxis()->setVisible(true);
 	d_data->defaultCurve = new VipPlotCurve();
 	d_data->defaultCurve->setPen(QPen(Qt::blue, 1.5));

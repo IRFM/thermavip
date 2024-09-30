@@ -1082,6 +1082,12 @@ void VipPlotAxisWidget::updateAxis(VipAbstractScale* scale)
 	scale->setTitle(m_title.getText());
 	scale->scaleDraw()->setTextStyle(m_labels.getText().textStyle());
 	scale->setVisible(m_visible.isChecked());
+
+	if (auto* multi = scale->property("_vip_VipMultiAxisBase").value<VipMultiAxisBase*>()) {
+		if (scale->isVisible())
+			multi->setVisible(true);
+	}
+
 	scale->scaleDraw()->enableComponent(VipAbstractScaleDraw::Labels, m_labelVisible.isChecked());
 	if (!m_auto_scale.isChecked()) {
 		scale->setScale(m_min.value(), m_max.value());
