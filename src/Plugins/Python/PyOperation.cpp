@@ -1456,7 +1456,7 @@ QVariant vipRetrievePythonVariable(const QString& name, VipPyLocal* local)
 	if (obj)
 		result = vipPythonToVariant(obj);
 	else {
-		VipPyError error(false);
+		VipPyError error;
 		error.traceback = "Cannot convert object to Python";
 		result = QVariant::fromValue(error);
 	}
