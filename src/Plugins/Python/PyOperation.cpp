@@ -892,8 +892,28 @@ public:
 	{
 		QString python;
 		QByteArray python_path;
+
+
+#ifdef VIP_PYTHON_SHARED_LIBS
+		python_path = VIP_PYTHON_STDLIB;
+		vip_debug("stdlib: %s\n", python_path.data());
+
+		//Load python libs
+		QList<QByteArray> libs = QByteArray(VIP_PYTHON_SHARED_LIBS).split(" ");
+		for ( QByteArray& lib : libs) {
+			if (lib.isEmpty())
+				continue;
+			lib.replace("\\", "/");
+			QLibrary l(lib);
+			if (l.load()) {
+				vip_debug("loaded %s\n", lib.data());
+			}
+		}
+
+#endif
+
 		// QStringList additional_lib_paths;
-#if !defined(_WIN32) && (defined(__unix__) || defined(__unix) || (defined(__APPLE__) && defined(__MACH__)))
+#if 0 && !defined(_WIN32) && (defined(__unix__) || defined(__unix) || (defined(__APPLE__) && defined(__MACH__)))
 		/* UNIX-style OS. ------------------------------------------- */
 		// try to find a Python3 installation and use it
 		{
