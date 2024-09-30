@@ -476,10 +476,6 @@ static int registerTypes()
 }
 static int _registerTypes = registerTypes();
 
-static complex_f operator*(const complex_f& c, double v)
-{
-	return complex_f(c.real() * v, c.imag() * v);
-}
 
 VipNDArray VipGenericImageTransform::applyProcessing(const VipNDArray& ar)
 {
