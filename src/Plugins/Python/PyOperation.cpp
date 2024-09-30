@@ -1436,7 +1436,7 @@ QVariant vipSendPythonVariable(const QString& name, const QVariant& value, VipPy
 		Py_DECREF(obj_object);
 	}
 	else {
-		VipPyError error(false);
+		VipPyError error;
 		error.traceback = "Cannot convert object to Python";
 		result = QVariant::fromValue(error);
 	}
