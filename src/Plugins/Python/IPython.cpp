@@ -668,9 +668,10 @@ qint64 IPythonConsoleProcess::start(int font_size, const QString& _style , const
 	
 	if (d_data->embedded)
 		cmd += " 1";
-	//vip_debug("%s\n", cmd.toLatin1().data());
+	vip_debug("IPython shell cmd: %s\n", cmd.toLatin1().data());
 
 	QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
+
 
 #ifdef _WIN32
 	// For windows, we must add some paths to PATH in case of anaconda install
@@ -697,11 +698,15 @@ qint64 IPythonConsoleProcess::start(int font_size, const QString& _style , const
 		env.insert("PATH", path);
 		vip_debug("path: %s\n", path.toLatin1().data());
 	}
-#endif
-
 	
-	setProcessEnvironment(env);
-
+#else
+	#ifndef VIP_PYTHONHOME
+		//remove PYTHONHOME and PYTHONPATH set by thermavip
+		env.remove("PYTHONHOME");
+		env.remove("PYTHONPATH");
+	#endif
+#endif
+	this->setProcessEnvironment(env);
 
 #ifdef _WIN32
 	QDir::setCurrent(env.value("USERPROFILE"));

@@ -893,7 +893,6 @@ public:
 		QString python;
 		QByteArray python_path;
 
-
 #ifdef VIP_PYTHON_SHARED_LIBS
 		python_path = VIP_PYTHON_STDLIB;
 		vip_debug("stdlib: %s\n", python_path.data());
@@ -1841,7 +1840,7 @@ static QStringList classNames(const QString& filename)
 	QStringList lines = ar.split("\n");
 	for (int i = 0; i < lines.size(); ++i) {
 		if (lines[i].startsWith("class ")) {
-			QStringList elems = lines[i].split(" ", VIP_SPLIT_BEHAVIOR::SkipEmptyParts);
+			QStringList elems = lines[i].split(" ", VIP_SKIP_BEHAVIOR::SkipEmptyParts);
 			if (elems.size() > 1 && elems[1].startsWith("Thermavip")) {
 				QString classname = elems[1];
 				int index = classname.indexOf("(");
