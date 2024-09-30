@@ -622,7 +622,7 @@ public:
 	/// Time statistics can be extract from a list of VipShape (that could be merged with union or intersection) or a list of shape identifier
 	/// and VipDisplaySceneModel (in which case they cannot be merged, and multi_shape is forced to 2).
 	QList<VipProcessingObject*> extractTimeEvolution(const ShapeInfo& infos,
-							 VipShapeStatistics::Statistics stats = 0,
+							 VipShapeStatistics::Statistics stats = VipShapeStatistics::Statistics(),
 							 int one_frame_out_of = 1,
 							 int multi_shape = -1,
 							 const QVector<double>& quantiles = QVector<double>());
@@ -778,7 +778,7 @@ class VipPlotPlayer;
 /// Extract the time trace of a shape from a video player, and display it in a new plot player inside the current display area.
 VIP_GUI_EXPORT VipPlotPlayer* vipExtractTimeTrace(const VipShapeList& shapes,
 						  VipVideoPlayer* pl,
-						  VipShapeStatistics::Statistics stats = 0,
+						  VipShapeStatistics::Statistics stats = VipShapeStatistics::Statistics(),
 						  int one_frame_out_of = 1,
 						  int multi_shapes = -1,
 						  VipPlotPlayer* out = nullptr);

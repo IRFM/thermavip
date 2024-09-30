@@ -148,6 +148,8 @@ VipWebBrowser::VipWebBrowser(QWidget* parent)
 	webEngine()->page()->settings()->setAttribute(QWebEngineSettings::AllowRunningInsecureContent, true);
 }
 
+VipWebBrowser::~VipWebBrowser() {}
+
 QWebEngineView* VipWebBrowser::webEngine() const
 {
 	return d_data->view;

@@ -97,6 +97,7 @@ class VipWebBrowser : public VipWidgetPlayer
 
 public:
 	VipWebBrowser(QWidget* parent = nullptr);
+	~VipWebBrowser();
 
 	QWebEngineView* webEngine() const;
 	virtual QWidget* widgetForMouseEvents() const;
