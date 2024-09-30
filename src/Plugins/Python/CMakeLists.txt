@@ -43,18 +43,19 @@ if(DEFINED ENV{VIP_PYTHONHOME} AND DEFINED ENV{VIP_PYTHON_VERSION})
 	
 else()
 	# Use find_package to get the Python paths
-	find_package (Python COMPONENTS Interpreter Development NumPy )
+	find_package (Python3 COMPONENTS Interpreter Development NumPy )
 	
-	message(STATUS "Use Python include dirs: ${Python_INCLUDE_DIRS} ${Python_NumPy_INCLUDE_DIRS}" )
-	message(STATUS "Use Python lib dirs: ${Python_LIBRARY_DIRS}" )
-	message(STATUS "Use Python libraries: ${Python_LIBRARIES}" )
+	message(STATUS "Use Python include dirs: ${Python3_INCLUDE_DIRS} ${Python3_NumPy_INCLUDE_DIRS}" )
+	message(STATUS "Use Python lib dirs: ${Python3_LIBRARY_DIRS}" )
+	message(STATUS "Use Python libraries: ${Python3_LIBRARIES}" )
+	message(STATUS "Use Python library: ${Python3_LIBRARY}" )
+	message(STATUS "Use Python interpreter: ${Python3_EXECUTABLE}" )
 	
-	target_include_directories(Python PRIVATE ${Python_INCLUDE_DIRS} ${Python_NumPy_INCLUDE_DIRS})
-	target_link_directories(Python PRIVATE ${Python_LIBRARY_DIRS})
-	target_link_libraries(Python PRIVATE ${Python_LIBRARIES})
-	
-	target_compile_definitions(Python PRIVATE "VIP_PYTHON_SHARED_LIB=\"${Python_LIBRARIES}\"")
-	
+	target_include_directories(Python PRIVATE ${Python3_INCLUDE_DIRS} ${Python3_NumPy_INCLUDE_DIRS})
+	target_link_directories(Python PRIVATE ${Python3_LIBRARY_DIRS})
+	target_link_libraries(Python PRIVATE ${Python3_LIBRARIES})
+	target_compile_definitions(Python PRIVATE -DVIP_PYTHON_INTERPRETER="${Python3_EXECUTABLE}")	
+	target_compile_definitions(Python PRIVATE -DVIP_PYTHON_SHARED_LIB="${Python3_LIBRARY}")
 	#target_compile_definitions(Python PRIVATE "VIP_PYTHONHOME=$ENV{VIP_PYTHONHOME}")
 	
 	SET(PYTHON_RUNTIME ${Python_RUNTIME_LIBRARY_DIRS})	
