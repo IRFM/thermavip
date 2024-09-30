@@ -563,7 +563,7 @@ VipNDArray VipComponentLabelling::applyProcessing(const VipNDArray& ar)
 	}
 	else if (ar.canConvert<complex_d>()) {
 		VipNDArrayType<complex_d> in = ar.toComplexDouble();
-		vipLabelImage(in, out, complex_d(0., 0.));
+		vipLabelImage(in, out, complex_d(0., 0.), m_connectivity_8, m_buffer.data());
 	}
 	else {
 		setError("invalid image type (" + QString(ar.dataName()) + ")");

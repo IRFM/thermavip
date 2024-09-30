@@ -166,7 +166,8 @@ int vipLabelImage(const VipNDArrayTypeView<T, DimIn>& input, VipNDArrayTypeView<
 template<class T, int DimIn, class U, int DimOut>
 int vipLabelImage(const VipNDArrayType<T, DimIn>& input, VipNDArrayType<U, DimOut>& output, T background, bool connectivity_8 = false, int* relabel = nullptr)
 {
-	return vipLabelImage(VipNDArrayTypeView<T, DimIn>(input), VipNDArrayTypeView<U, DimOut>(output), background, connectivity_8, relabel);
+	VipNDArrayTypeView<U, DimOut> out(output);
+	return vipLabelImage(VipNDArrayTypeView<T, DimIn>(input),out, background, connectivity_8, relabel);
 }
 
 /// @brief Tells if given polygon is a rectangle, and stores it in rect (if not nullptr)
