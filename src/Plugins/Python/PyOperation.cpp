@@ -905,146 +905,29 @@ public:
 				continue;
 			lib.replace("\\", "/");
 			QLibrary l(lib);
+			l.setLoadHints(QLibrary::ExportExternalSymbolsHint);
 			if (l.load()) {
+			//if(dlopen(lib.data(), RTLD_GLOBAL | RTLD_NOW)){
 				vip_debug("loaded %s\n", lib.data());
 			}
 		}
+		std::string str = "/Applications/software/mamba/envs/python39/lib/python3.9";
+		std::wstring ws(str.begin(), str.end());
+		Py_SetPythonHome((wchar_t*)ws.c_str());
+		vip_debug("Py_SetPythonHome %s\n",str.c_str()); 
+
 
 #endif
 
-		// QStringList additional_lib_paths;
-#if 0 && !defined(_WIN32) && (defined(__unix__) || defined(__unix) || (defined(__APPLE__) && defined(__MACH__)))
-		/* UNIX-style OS. ------------------------------------------- */
-		// try to find a Python3 installation and use it
-		{
-#ifdef VIP_PYTHONHOME
-			// use Python installation defined at compilation
-			python_path = VIP_PYTHONHOME;
-			vip_debug("Use Python installation at %s\n", python_path.data());
-			/*void * tmp =*/dlopen(VIP_PYTHONDYNLIB, RTLD_GLOBAL | RTLD_NOW);
-#else
-			vip_debug("Try to find Python installation...\n");
-			QProcess p;
-			p.start("python3 -c \"import os;print(os.path.dirname(os.__file__))\"");
-			bool started = p.waitForStarted();
-			if (!started) {
-				p.start("./python3 -c \"import os;print(os.path.dirname(os.__file__))\"");
-				started = p.waitForStarted();
-				if (!started) {
-					vip_debug("Error with command 'python3', try with 'python'...");
-					p.start("python -c 'import os;print(os.path.dirname(os.__file__))'");
-					started = p.waitForStarted();
-					if (started)
-						python = "python";
-				}
-				else
-					python = "./python3";
-			}
-			else
-				python = "python3";
-
-			bool finished = started ? p.waitForFinished() : false;
-
-			// the expected python version
-			QString py_version = QString::number(PY_MAJOR_VERSION) + "." + QString::number(PY_MINOR_VERSION);
-			QString found_version; // the found one
-			if (started && finished) {
-				QByteArray path = p.readAllStandardOutput();
-				path.replace("'", "");
-				path.replace("\n", "");
-				vip_debug("Python command output: '%s'\n", path.data());
-
-				if (QDir(path).exists()) {
-					python_path = path;
-					vip_debug("Found Python in '%s'\n", path.data());
-				}
-
-				// retrieve lib paths
-				// p.start(python + " -c \"import sys;print('\\n'.join(sys.path))\"");
-				// p.waitForStarted();
-				// p.waitForFinished();
-				// QString out = p.readAllStandardOutput() + p.readAllStandardError();;
-				// additional_lib_paths = out.split("\n",QString::SkipEmptyParts);
-
-				// get the version and load the library
-				if (path.size() > 3) {
-#ifdef VIP_PYTHON_SHARED_LIB
-					vip_debug("Load library %s...\n", VIP_PYTHON_SHARED_LIB);
-					void* tmp = dlopen(VIP_PYTHON_SHARED_LIB, RTLD_GLOBAL | RTLD_NOW);
-#endif
-					found_version = path;
-					int start = found_version.lastIndexOf("/");
-					if (start >= 0)
-						found_version = found_version.mid(start + 1);
-					found_version.replace("python", "");
-					/* found_version = path.mid(path.size() - 3);
-					if (found_version == py_version)
-					{
-						QString libPython = "/usr/local/lib/libpython" + found_version + "m.so.1.0";
-						vip_debug("Try %s ...\n", libPython.toLatin1().data());
-						void * tmp = dlopen(libPython.toLatin1().data(), RTLD_GLOBAL | RTLD_NOW);
-						if (!tmp)
-						{
-							libPython = "/usr/local/lib/libpython" + found_version + "m.so";
-							vip_debug("Try %s ...\n", libPython.toLatin1().data());
-							tmp = dlopen(libPython.toLatin1().data(), RTLD_GLOBAL | RTLD_NOW);
-							if (!tmp)
-							{
-								libPython = path + "/../../bin/libpython" + found_version + "m.so.1.0";
-								vip_debug("Try %s ...\n", libPython.toLatin1().data());
-								tmp = dlopen(libPython.toLatin1().data(), RTLD_GLOBAL | RTLD_NOW);
-								if (!tmp)
-								{
-									libPython = path + "/../../bin/libpython" + found_version + "m.so";
-									vip_debug("Try %s ...\n", libPython.toLatin1().data());
-									tmp = dlopen(libPython.toLatin1().data(), RTLD_GLOBAL | RTLD_NOW);
-								}
-							}
-
-						}
-						if (tmp)
-							vip_debug("load '%s'\n", libPython.toLatin1().data());
-						if (tmp == nullptr) {
-							vip_debug("Cannot find python shared library'\n");
-						}
-					}*/
-				}
-			}
-			if (py_version != found_version) {
-				vip_debug("No valid Python installation found (got %s, expected %s), use the local one\n", found_version.toLatin1().data(), py_version.toLatin1().data());
-				// no valid python 3 installation found: use the local one
-				QFileInfo info(qApp->arguments()[0]);
-				QString dirname = info.canonicalPath();
-				if (dirname.endsWith("/"))
-					dirname = dirname.mid(0, dirname.size() - 1);
-				QString libPython = dirname + "/libpython" + py_version + "m.so";
-				vip_debug("load '%s'\n", libPython.toLatin1().data());
-				void* tmp = dlopen(libPython.toLatin1().data(), RTLD_GLOBAL | RTLD_NOW);
-				if (tmp == nullptr) {
-					fprintf(stderr, "%s\n", dlerror());
-				}
-				QString ver = py_version;
-				ver.remove(".");
-				python_path = (dirname + "/python" + ver).toLatin1();
-			}
-#endif
-		}
-
-#endif
 		vip_debug("python path: %s\n", python_path.data());
 		fflush(stdout);
+
 		// init Python
 		if (python_path.size()) {
 #if !defined(_WIN32) && (defined(__unix__) || defined(__unix) || (defined(__APPLE__) && defined(__MACH__)))
+			// PYTHONPATH is required for linux (and probably other unix based OS)
 			setenv("PYTHONPATH", python_path.data(), 1);
 			setenv("PYTHONHOME", python_path.data(), 1);
-
-			/*size_t size = python_path.size();
-			wchar_t* home = Py_DecodeLocale(python_path.data(), &size);
-			Py_SetPythonHome(home);
-			if(home)
-			PyMem_RawFree(home);*/
-			vip_debug("Set Python path to %s\n", python_path.data());
 #endif
 		}
 		else {
@@ -1053,6 +936,7 @@ public:
 			if (env.isEmpty()) {
 				// VIP_PYTHONHOME specifies an absolute path.
 				// We need to translate it (if possible) to a local path from thermavip folder
+				// for local Python install (and shipping)
 				QByteArray thermavip_folder = QFileInfo(qApp->arguments()[0]).canonicalPath().toLatin1();
 				QByteArray python_folder = thermavip_folder + "/" + QFileInfo(VIP_PYTHONHOME).fileName().toLatin1();
 				if (QFileInfo(python_folder).exists())
@@ -1157,7 +1041,6 @@ public:
 		}
 
 		vip_debug("Initialize numpy with python %s...\n", python_path.data());
-		vip_debug("env PATH: %s\n", qgetenv("PATH").data());
 		// import and configure numpy
 		import_numpy_internal();
 		vip_debug("Done\n");
@@ -1958,7 +1841,7 @@ static QStringList classNames(const QString& filename)
 	QStringList lines = ar.split("\n");
 	for (int i = 0; i < lines.size(); ++i) {
 		if (lines[i].startsWith("class ")) {
-			QStringList elems = lines[i].split(" ", QString::SkipEmptyParts);
+			QStringList elems = lines[i].split(" ", VIP_SPLIT_BEHAVIOR::SkipEmptyParts);
 			if (elems.size() > 1 && elems[1].startsWith("Thermavip")) {
 				QString classname = elems[1];
 				int index = classname.indexOf("(");

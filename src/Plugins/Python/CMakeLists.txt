@@ -27,6 +27,10 @@ include(${THERMAVIP_COMPILER_FLAGS_FILE})
 target_compile_definitions(Python PRIVATE BUILD_PYTHON_LIB VIP_ENABLE_PYTHON_LINK)
 target_compile_definitions(Python PRIVATE "PY_ARRAY_UNIQUE_SYMBOL=NUMPY_SYMBOL")
 
+if(NOT MSVC)
+	target_link_options(Python PUBLIC "LINKER:-export-dynamic")
+endif()
+
 
 # configure CPython
 if(DEFINED ENV{VIP_PYTHONHOME} AND DEFINED ENV{VIP_PYTHON_VERSION})

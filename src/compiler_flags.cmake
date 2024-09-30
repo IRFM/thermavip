@@ -69,6 +69,7 @@ else()
 			target_compile_options(${TARGET_PROJECT} PRIVATE -std=gnu++14)
 		else()
 			target_compile_options(${TARGET_PROJECT} PRIVATE -std=c++11)
+			target_compile_definitions(${TARGET_PROJECT} PRIVATE -DQ_COMPILER_ATOMICS -DQ_COMPILER_CONSTEXPR)
 		endif()
 		target_link_options(${TARGET_PROJECT} PRIVATE -lgomp )
 		
