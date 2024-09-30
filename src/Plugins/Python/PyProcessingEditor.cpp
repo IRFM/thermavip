@@ -104,7 +104,7 @@ void PyArrayEditor::textEntered()
 	text.replace("\t", " ");
 	QStringList lines = text.split("\n");
 	if (lines.size()) {
-		int columns = lines.first().split(" ", QString::SkipEmptyParts).size();
+		int columns = lines.first().split(" ", VIP_SKIP_BEHAVIOR::SkipEmptyParts).size();
 		bool ok = true;
 		for (int i = 1; i < lines.size(); ++i) {
 			if (lines[i].split(" ", QString::SkipEmptyParts).size() != columns) {
