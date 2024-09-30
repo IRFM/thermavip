@@ -64,12 +64,15 @@ else()
 	
 	if (CMAKE_CXX_COMPILER_ID MATCHES "GNU")
 		# for gcc
-		target_compile_options(${TARGET_PROJECT} PRIVATE -march=native -fopenmp -fPIC -mno-bmi2 -mno-fma -mno-avx -std=gnu++14 -Wno-maybe-uninitialized)
+		target_compile_options(${TARGET_PROJECT} PRIVATE -march=native -fopenmp -fPIC -mno-bmi2 -mno-fma -mno-avx -Wno-maybe-uninitialized)
+		if(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 6.0)
+			target_compile_options(${TARGET_PROJECT} PRIVATE -std=gnu++14)
+		endif()
 		target_link_options(${TARGET_PROJECT} PRIVATE -lgomp )
 		
 		if (CMAKE_BUILD_TYPE STREQUAL "Release" )
 			# gcc release
-			target_compile_options(${TARGET_PROJECT} PRIVATE -O3 -ftree-vectorize -march=native -fopenmp -fPIC -mno-bmi2 -mno-fma -mno-avx -std=gnu++14 -Wno-maybe-uninitialized)
+			target_compile_options(${TARGET_PROJECT} PRIVATE -O3 -ftree-vectorize -march=native -fopenmp -fPIC -mno-bmi2 -mno-fma -mno-avx -Wno-maybe-uninitialized)
 		endif()
 	endif()
 	
