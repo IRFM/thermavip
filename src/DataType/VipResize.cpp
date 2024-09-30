@@ -35,24 +35,7 @@
 namespace detail
 {
 
-	// for complex types, we are missing a few operators, so define them
-	inline complex_f operator*(double v, const complex_f& c)
-	{
-		return complex_f(c.real() * v, c.imag() * v);
-	}
-	inline complex_d operator*(float v, const complex_d& c)
-	{
-		return complex_d(c.real() * v, c.imag() * v);
-	}
-	inline complex_f operator*(const complex_f& c, double v)
-	{
-		return complex_f(c.real() * v, c.imag() * v);
-	}
-	inline complex_d operator*(const complex_d& c, float v)
-	{
-		return complex_d(c.real() * v, c.imag() * v);
-	}
-
+	
 	template<class Src, class Dst>
 	void vipResizeArrayView(const Src& src, Dst& dst, Vip::InterpolationType type)
 	{
