@@ -67,6 +67,8 @@ else()
 		target_compile_options(${TARGET_PROJECT} PRIVATE -march=native -fopenmp -fPIC -mno-bmi2 -mno-fma -mno-avx -Wno-maybe-uninitialized)
 		if(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 6.0)
 			target_compile_options(${TARGET_PROJECT} PRIVATE -std=gnu++14)
+		else()
+			target_compile_options(${TARGET_PROJECT} PRIVATE -std=gnu++11)
 		endif()
 		target_link_options(${TARGET_PROJECT} PRIVATE -lgomp )
 		
