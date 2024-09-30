@@ -899,7 +899,7 @@ public:
 		vip_debug("stdlib: %s\n", python_path.data());
 
 		//Load python libs
-		QList<QByteArray> libs = QByteArray(VIP_PYTHON_SHARED_LIBS).split(" ");
+		QList<QByteArray> libs = QByteArray(VIP_PYTHON_SHARED_LIBS).split(' ');
 		for ( QByteArray& lib : libs) {
 			if (lib.isEmpty())
 				continue;
@@ -1065,7 +1065,7 @@ public:
 			fflush(stdout);
 			if (!env.isEmpty()) {
 				python_path = env;
-				std::string str = env;
+				std::string str = env.data();
 				std::wstring ws(str.begin(), str.end());
 				Py_SetPythonHome((wchar_t*)ws.c_str());
 			}
