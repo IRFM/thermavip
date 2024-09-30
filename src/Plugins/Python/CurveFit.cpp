@@ -339,7 +339,6 @@ QString FitProcessing::timeUnit() const
 
 double FitProcessing::timeFactor() const
 {
-	QObjectPointer;
 	return m_timeFactor;
 }
 
