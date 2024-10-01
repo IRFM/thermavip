@@ -82,7 +82,7 @@ public:
 
 #ifdef __GNUC__
 #pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Werror=stringop-overflow="
+#pragma GCC diagnostic ignored "-Wstringop-overflow="
 #endif
 	VipAnyData(VipAnyData&&) = default;
 	VipAnyData& operator=(VipAnyData&&) = default;
