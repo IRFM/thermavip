@@ -1416,7 +1416,7 @@ int VipFIFOList::push(const VipAnyData& data, int* previous)
 	m_list.push_back(data);
 
 	if (listLimitType() & Number) {
-		while (m_list.size() > this->maxListSize())
+		while (static_cast<int>(m_list.size()) > this->maxListSize())
 			m_list.pop_front();
 	}
 	if (listLimitType() & MemorySize) {
@@ -1445,7 +1445,7 @@ int VipFIFOList::push(VipAnyData&& data, int* previous)
 	m_list.push_back(std::move(data));
 
 	if (listLimitType() & Number) {
-		while (m_list.size() > this->maxListSize())
+		while (static_cast<int>(m_list.size()) > this->maxListSize())
 			m_list.pop_front();
 	}
 	if (listLimitType() & MemorySize) {
@@ -1563,7 +1563,7 @@ int VipFIFOList::memoryFootprint() const
 {
 	_SHAREDSPINLOCKER();
 	int size = 0;
-	for (int i = 0; i < m_list.size(); ++i)
+	for (size_t i = 0; i < m_list.size(); ++i)
 		size += m_list[i].memoryFootprint();
 	return size;
 }
@@ -1589,7 +1589,7 @@ int VipLIFOList::push(const VipAnyData& data, int* previous)
 	m_list.push_back(data);
 
 	if (listLimitType() & Number) {
-		while (m_list.size() > this->maxListSize())
+		while (static_cast<int>(m_list.size()) > this->maxListSize())
 			m_list.pop_back();
 	}
 	if (listLimitType() & MemorySize) {
@@ -1600,11 +1600,11 @@ int VipLIFOList::push(const VipAnyData& data, int* previous)
 			if (size >= maxListMemory())
 				break;
 		}
-		if (i < m_list.size())
+		if (i < static_cast<int>(m_list.size()))
 			m_list.erase(m_list.begin() + i + 1, m_list.end());
 		// m_list = m_list.mid(0, i + 1);
 	}
-	return (int)m_list.size();
+	return static_cast<int>(m_list.size());
 }
 
 int VipLIFOList::push(VipAnyData&& data, int* previous)
@@ -1617,7 +1617,7 @@ int VipLIFOList::push(VipAnyData&& data, int* previous)
 	m_list.push_back(std::move(data));
 
 	if (listLimitType() & Number) {
-		while (m_list.size() > this->maxListSize())
+		while (static_cast<int>(m_list.size()) > this->maxListSize())
 			m_list.pop_back();
 	}
 	if (listLimitType() & MemorySize) {
@@ -1628,11 +1628,11 @@ int VipLIFOList::push(VipAnyData&& data, int* previous)
 			if (size >= maxListMemory())
 				break;
 		}
-		if (i < m_list.size())
+		if (i < static_cast<int>(m_list.size()))
 			m_list.erase(m_list.begin() + i + 1, m_list.end());
 		// m_list = m_list.mid(0, i + 1);
 	}
-	return (int)m_list.size();
+	return static_cast<int>(m_list.size());
 }
 
 void VipLIFOList::reset(const VipAnyData& data)
@@ -1729,7 +1729,7 @@ int VipLIFOList::memoryFootprint() const
 {
 	_SHAREDSPINLOCKER();
 	int size = 0;
-	for (int i = 0; i < m_list.size(); ++i)
+	for (int i = 0; i <static_cast<int>( m_list.size()); ++i)
 		size += m_list[i].memoryFootprint();
 	return size;
 }
@@ -2336,7 +2336,7 @@ template<class TYPE>
 static std::vector<TYPE*> flatten(const std::vector<std::unique_ptr<VipProcessingIO>>& io)
 {
 	std::vector<TYPE*> flat;
-	for (int i = 0; i < io.size(); ++i) {
+	for (size_t i = 0; i < io.size(); ++i) {
 		if (VipMultipleProcessingIO<TYPE>* multi = io[i]->to<VipMultipleProcessingIO<TYPE>>()) {
 			for (int c = 0; c < multi->count(); ++c)
 				flat.push_back(multi->at(c));
@@ -2638,7 +2638,7 @@ VipProcessingIO* VipProcessingObject::topLevelPropertyAt(int i) const
 VipProcessingIO* VipProcessingObject::topLevelInputName(const QString& name) const
 {
 	initialize();
-	for (int i = 0; i < d_data->inputs.size(); ++i)
+	for (size_t i = 0; i < d_data->inputs.size(); ++i)
 		if (d_data->inputs[i]->name() == name)
 			return d_data->inputs[i].get();
 	return nullptr;
@@ -2647,7 +2647,7 @@ VipProcessingIO* VipProcessingObject::topLevelInputName(const QString& name) con
 VipProcessingIO* VipProcessingObject::topLevelOutputName(const QString& name) const
 {
 	initialize();
-	for (int i = 0; i < d_data->outputs.size(); ++i)
+	for (size_t i = 0; i < d_data->outputs.size(); ++i)
 		if (d_data->outputs[i]->name() == name)
 			return d_data->outputs[i].get();
 	return nullptr;
@@ -2656,7 +2656,7 @@ VipProcessingIO* VipProcessingObject::topLevelOutputName(const QString& name) co
 VipProcessingIO* VipProcessingObject::topLevelPropertyName(const QString& name) const
 {
 	initialize();
-	for (int i = 0; i < d_data->properties.size(); ++i)
+	for (size_t i = 0; i < d_data->properties.size(); ++i)
 		if (d_data->properties[i]->name() == name)
 			return d_data->properties[i].get();
 	return nullptr;
@@ -2779,7 +2779,7 @@ QString VipProcessingObject::generateUniqueOutputName(const VipProcessingIO& io,
 {
 
 	QStringList found;
-	for (int i = 0; i < d_data->outputs.size(); ++i) {
+	for (size_t i = 0; i < d_data->outputs.size(); ++i) {
 		if (VipOutput* out = d_data->outputs[i]->toOutput()) {
 			if (*out != io && out->name().startsWith(name))
 				found << out->name();
@@ -2804,7 +2804,7 @@ QString VipProcessingObject::generateUniqueOutputName(const VipProcessingIO& io,
 QString VipProcessingObject::generateUniqueInputName(const VipProcessingIO& io, const QString& name)
 {
 	QStringList found;
-	for (int i = 0; i < d_data->inputs.size(); ++i) {
+	for (size_t i = 0; i < d_data->inputs.size(); ++i) {
 		if (VipInput* in = d_data->inputs[i]->toInput()) {
 			if (*in != io && in->name().startsWith(name))
 				found << in->name();
@@ -3191,11 +3191,11 @@ static std::atomic<bool>& atomic_ref(bool& value)
 	static_assert(sizeof(bool) == sizeof(std::atomic<bool>), "unsupported atomic ref on this platform");
 	return reinterpret_cast<std::atomic<bool>&>(value);
 }
-static const std::atomic<bool>& atomic_ref(const bool& value)
+/* static const std::atomic<bool>& atomic_ref(const bool& value)
 {
 	static_assert(sizeof(bool) == sizeof(std::atomic<bool>), "unsupported atomic ref on this platform");
 	return reinterpret_cast<const std::atomic<bool>&>(value);
-}
+}*/
 
 void VipProcessingObject::setEnabled(bool enable)
 {
@@ -3544,7 +3544,7 @@ void VipProcessingObject::receiveConnectionClosed(VipProcessingIO* io)
 		if (found) {
 			bool all_closed = true;
 
-			for (int o = 0; o < d_data->outputs.size(); ++o) {
+			for (size_t o = 0; o < d_data->outputs.size(); ++o) {
 				if (VipOutput* out = d_data->outputs[o]->toOutput()) {
 					if (out->connection()->openMode() != VipConnection::UnknownConnection)
 						all_closed = false;
@@ -4329,7 +4329,7 @@ VipSceneModel VipSceneModelBasedProcessing::sceneModel()
 			disconnect(d_data->shapeSignals, SIGNAL(sceneModelChanged(const VipSceneModel&)), this, SLOT(dirtyShape()));
 			disconnect(d_data->shapeSignals, SIGNAL(sceneModelChanged(const VipSceneModel&)), this, SLOT(reload()));
 		}
-		if (d_data->shapeSignals = sm.shapeSignals()) {
+		if ((d_data->shapeSignals = sm.shapeSignals())) {
 			if (d_data->reloadOnSceneChanges)
 				connect(d_data->shapeSignals, SIGNAL(sceneModelChanged(const VipSceneModel&)), this, SLOT(reload()));
 			connect(d_data->shapeSignals, SIGNAL(sceneModelChanged(const VipSceneModel&)), this, SLOT(dirtyShape()));
@@ -4390,7 +4390,7 @@ QList<VipShape> VipSceneModelBasedProcessing::shapes()
 				disconnect(d_data->shapeSignals, SIGNAL(sceneModelChanged(const VipSceneModel&)), this, SLOT(dirtyShape()));
 				disconnect(d_data->shapeSignals, SIGNAL(sceneModelChanged(const VipSceneModel&)), this, SLOT(reload()));
 			}
-			if (d_data->shapeSignals = sm.shapeSignals()) {
+			if ((d_data->shapeSignals = sm.shapeSignals())) {
 				if (d_data->reloadOnSceneChanges)
 					connect(d_data->shapeSignals, SIGNAL(sceneModelChanged(const VipSceneModel&)), this, SLOT(reload()));
 				connect(d_data->shapeSignals, SIGNAL(sceneModelChanged(const VipSceneModel&)), this, SLOT(dirtyShape()));
