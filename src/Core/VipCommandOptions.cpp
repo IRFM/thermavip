@@ -379,8 +379,8 @@ QMultiHash<QString, QVariant> VipCommandOptions::parameters() const
 			params.insert(option.canonicalName, true);
 		}
 		else {
-			for (const QVariant& value : option.values)
-				params.insert(option.canonicalName, value);
+			for (const QString& value : option.values)
+				params.insert(option.canonicalName,QVariant::fromValue( value));
 		}
 	}
 	return params;
