@@ -486,7 +486,7 @@ void VipSliderGrip::paint(QPainter* painter,
 		return;
 
 	this->applyStyleSheetIfDirty();
-	auto r = this->renderHints();
+	//auto r = this->renderHints();
 	// TEST: comment setRenderHints that crash sometimes (?)
 	// painter->setRenderHints(r);
 	auto c = this->compositionMode();
@@ -598,12 +598,12 @@ bool VipSliderGrip::hasState(const QByteArray& state, bool enable) const
 		return false;
 	}
 	if (state == "radial") {
-		if (const VipRadialAxis* it = qobject_cast<const VipRadialAxis*>(scale()))
+		if (/* const VipRadialAxis* it =*/ qobject_cast<const VipRadialAxis*>(scale()))
 			return enable;
 		return false;
 	}
 	if (state == "polar") {
-		if (const VipPolarAxis* it = qobject_cast<const VipPolarAxis*>(scale()))
+		if (/* const VipPolarAxis* it = */qobject_cast<const VipPolarAxis*>(scale()))
 			return enable;
 		return false;
 	}
