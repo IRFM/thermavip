@@ -53,6 +53,18 @@ namespace Vip
 
 namespace detail
 {
+	template<class Coord, int Pos, bool IsValid = (Coord::static_size == -1 || Coord::static_size > Pos)>
+	struct GetCoord
+	{
+		static int get(const Coord& c) { return c[Pos]; }
+	};
+	template<class Coord, int Pos>
+	struct GetCoord<Coord,Pos,false>
+	{
+		static int get(const Coord& ) { return 0; }
+	};
+
+
 	template<class Array>
 	typename Array::value_type getVal(const Array& ar, int y, int x)
 	{
@@ -164,8 +176,8 @@ namespace detail
 			if (type == QTransform::TxNone)
 				return this->array1(pos);
 
-			const double fx = pos[1] + origin.x(); // (Size == Vip::TransformBoundingRect ? origin.x() : 0);
-			const double fy = pos[0] + origin.y(); // (Size == Vip::TransformBoundingRect ? origin.y() : 0);
+			const double fx = GetCoord<Coord,1>::get( pos) + origin.x(); // (Size == Vip::TransformBoundingRect ? origin.x() : 0);
+			const double fy = GetCoord<Coord,0>::get(pos) + origin.y(); // (Size == Vip::TransformBoundingRect ? origin.y() : 0);
 			double x = fx, y = fy;
 
 			if (type == QTransform::TxTranslate) {
