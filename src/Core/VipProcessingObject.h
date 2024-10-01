@@ -78,9 +78,17 @@ public:
 	VipAnyData(const QVariant& data, qint64 time = 0);
 	VipAnyData(QVariant&& data, qint64 time = 0);
 	VipAnyData(const VipAnyData&) = default;
-	VipAnyData(VipAnyData&&) = default;
 	VipAnyData& operator=(const VipAnyData&) = default;
+
+#ifdef __GNUC__
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Werror=stringop-overflow="
+#endif
+	VipAnyData(VipAnyData&&) = default;
 	VipAnyData& operator=(VipAnyData&&) = default;
+#ifdef __GNUC__
+#pragma GCC diagnostic pop
+#endif
 
 	/// @brief Set the data attributes.
 	/// You can set any kind of attribute that can be used for display purpose, for processing or as simple annotations.
@@ -267,7 +275,6 @@ private:
 	void add(VipProcessingObject*);
 	void remove(VipProcessingObject*);
 
-	
 	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
@@ -591,7 +598,6 @@ Q_SIGNALS:
 	void dataSent(VipProcessingIO* io, const VipAnyData& data);
 
 private:
-	
 	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
@@ -1984,7 +1990,6 @@ private:
 
 	void run();
 
-	
 	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
@@ -2378,7 +2383,7 @@ protected:
 
 private:
 	void computeParams();
-	
+
 	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
@@ -2455,7 +2460,6 @@ private Q_SLOTS:
 	void dirtyShape();
 
 private:
-	
 	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
