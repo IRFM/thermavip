@@ -455,11 +455,11 @@ void VipAxisBase::drawTitle(QPainter* painter, Alignment align, const QRectF& re
 	double angle;
 	int flags = title().alignment() & ~(Qt::AlignTop | Qt::AlignBottom | Qt::AlignVCenter);
 
-	int sign = 1;
+	/* int sign = 1;
 	QSizeF tsize(0, 0);
 	if (titleInside()) {
 		sign = -1;
-	}
+	}*/
 
 	VipText exponent;
 	if (constScaleDraw()->valueToText()->supportExponent())
