@@ -208,7 +208,7 @@ public:
 					 int64_t start_timestamp_ns,
 					 const char* view,
 					 const char* out_file);
-	typedef int (*_hcc_extract_times_and_fw_pos)(int cam, int64_t* times, int* pos);
+	typedef int (*_hcc_extract_times_and_fw_pos)(int cam, qint64* times, int* pos);
 	typedef int (*_hcc_extract_all_fw_pos)(int cam, int* pos, int* pos_count);
 
 	typedef void (*_set_hcc_lut_file)(const char* filename);
