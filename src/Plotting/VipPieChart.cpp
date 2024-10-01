@@ -511,7 +511,7 @@ void VipPieItem::recomputeItem(const VipCoordinateSystemPtr& cm, VipAbstractScal
 	if (!m)
 		m = sceneMap();
 	if (m->axes().isEmpty()) {
-		if (parent = property("VipPlotItemComposite").value<VipPlotItemComposite*>())
+		if ((parent = property("VipPlotItemComposite").value<VipPlotItemComposite*>()))
 			m = parent->sceneMap();
 	}
 	const QList<VipAbstractScale*> scales = m->axes(); // this->axes();
