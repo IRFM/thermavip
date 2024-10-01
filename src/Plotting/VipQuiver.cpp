@@ -462,4 +462,6 @@ static bool register_types()
 	qRegisterMetaType<VipQuiver>();
 	qRegisterMetaType<VipQuiverPath>();
 	qRegisterMetaTypeStreamOperators<VipQuiverPath>();
+	return true;
 }
+static bool _register_types = register_types();
