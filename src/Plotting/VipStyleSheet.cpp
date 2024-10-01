@@ -1343,7 +1343,7 @@ bool vipApplyStyleSheet(const VipStyleSheet& p, VipPaintItem* item, QString* err
 	}
 
 	// apply from the lower class to the higher one
-	for (int i = 0; i < to_use.size(); ++i) {
+	for (size_t i = 0; i < to_use.size(); ++i) {
 		// get the VipParseResult
 		const VipParseResult parse = to_use[i];
 		for (VipParseResult::const_iterator it = parse.begin(); it != parse.end(); ++it) {
