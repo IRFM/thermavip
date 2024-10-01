@@ -99,7 +99,7 @@ static int _registerSharedAlignedArea()
 /// @brief Returns the SharedAlignedArea (possibly null) associated to given area for given orientation
 static SharedAlignedArea getSharedAlignedArea(const VipAbstractPlotArea* area, Qt::Orientation align)
 {
-	static int _reg = _registerSharedAlignedArea();
+	_registerSharedAlignedArea();
 
 	if (align == Qt::Vertical)
 		return area->property("_vip_vAlignedArea").value<SharedAlignedArea>();
@@ -841,7 +841,7 @@ static void updateCacheMode(VipAbstractPlotArea* w, bool useCache)
 #endif
 }
 
-static QWindow* window()
+/* static QWindow* window()
 {
 	// Create a QWindow
 	QWindow* win = nullptr;
@@ -853,7 +853,7 @@ static QWindow* window()
 		win->create();
 	}
 	return win;
-}
+}*/
 static QWindow* globalWindow()
 {
 	// Create a QWindow
@@ -903,7 +903,7 @@ static QOpenGLContext* globalContext()
 	return ctx;
 }
 
-static QOpenGLFramebufferObject* createBuffer(QOpenGLFramebufferObject* buf, const QSize& size)
+/* static QOpenGLFramebufferObject* createBuffer(QOpenGLFramebufferObject* buf, const QSize& size)
 {
 	// Create/reset a QOpenGLFramebufferObject with given size
 	if (!buf || buf->size().width() < size.width() || buf->size().height() < size.height()) { // buf->size() != size
@@ -917,7 +917,7 @@ static QOpenGLFramebufferObject* createBuffer(QOpenGLFramebufferObject* buf, con
 		buf = new QOpenGLFramebufferObject(size, fboFormat);
 	}
 	return buf;
-}
+}*/
 
 static QOpenGLFramebufferObject* globalBuffer(const QSize& size)
 {
@@ -1446,7 +1446,7 @@ void VipAbstractPlotArea::doUpdateScaleLogic()
 {
 	d_data->insideUpdate = true;
 	d_data->insideComputeScaleDiv = true;
-	bool need_update = d_data->markNeedUpdate;
+	//bool need_update = d_data->markNeedUpdate;
 
 	if (d_data->dirtyScaleDiv.size()) {
 
@@ -1461,7 +1461,7 @@ void VipAbstractPlotArea::doUpdateScaleLogic()
 			// for (QSet<VipAbstractScale*>::iterator it = d_data->dirtyScaleDiv.begin(); it != d_data->dirtyScaleDiv.end(); ++it) {
 			//  (*it)->computeScaleDiv();
 			//  }
-			need_update = true;
+			//need_update = true;
 			d_data->dcount = 0;
 		}
 	}
@@ -1471,7 +1471,7 @@ void VipAbstractPlotArea::doUpdateScaleLogic()
 	if (d_data->markGeometryDirty-- > 0 || d_data->boundingRect != boundingRect()) {
 		d_data->boundingRect = boundingRect();
 		recomputeGeometry();
-		need_update = true;
+		//need_update = true;
 		if (d_data->rubberBand) {
 			d_data->rubberBand->updateGeometry();
 		}
@@ -2837,7 +2837,6 @@ void VipAbstractPlotArea::mouseMoveEvent(QGraphicsSceneMouseEvent* event)
 
 QList<VipAbstractScale*> VipAbstractPlotArea::scalesForPos(const QPointF& pos) const
 {
-	QRectF r = canvas()->shape().boundingRect();
 	if (canvas()->shape().contains(pos))
 		return VipAbstractScale::independentScales(scales());
 	return QList<VipAbstractScale*>();
@@ -3686,20 +3685,15 @@ public:
 					for (auto it = areaInnerRects.begin(); it != areaInnerRects.end(); ++it) {
 						VipAbstractPlotArea* a = it.key();
 						QRectF inner = it.value();
-						// VipMargins margins = a->margins();
-						bool need_update = false;
+
 						if (!vipFuzzyCompare(inner.top(), top)) {
-							need_update = true;
-							// margins.top += top - inner.top();
+
 							a->d_data->aligned_margins.top = top - inner.top();
 						}
 						if (!vipFuzzyCompare(inner.bottom(), bottom)) {
-							need_update = true;
 							a->d_data->aligned_margins.bottom = inner.bottom() - bottom;
-							// margins.bottom += inner.bottom() - bottom;
 						}
-						// if (need_update)
-						// a->setMargins(margins);
+
 					}
 				}
 			}
