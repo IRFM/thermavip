@@ -4,9 +4,11 @@
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
+#include <QMutex>
 //#define int  unsigned int
 
 #include "p_Clarkson-Delaunay.h"
+
 
 /*
  * Ken Clarkson wrote this.  Copyright (c) 1995 by AT&T..
@@ -115,6 +117,84 @@ Then free the array:
 
 --------------------------------------------------------------------------------------
 -------------------------------------------------------------------------------------- */
+
+typedef double Coord;
+typedef Coord* point;
+
+#define max_blocks 10000
+#define Nobj 10000
+
+#define MAXDIM 4
+#define BLOCKSIZE 100000
+#define MAXBLOCKS 1000
+
+#define VA(x) ((x)->vecs + rdim)
+#define VB(x) ((x)->vecs)
+
+typedef point site;
+
+typedef struct basis_s
+{
+	struct basis_s* next; /* free list */
+	int ref_count;	      /* storage management */
+	int lscale;	      /* the log base 2 of total scaling of vector */
+	Coord sqa, sqb;	      /* sums of squared norms of a part and b part */
+	Coord vecs[1];	      /* the actual vectors, extended by malloc'ing bigger */
+} basis_s;
+
+// STORAGE_GLOBALS(basis_s)
+
+
+typedef struct neighbor
+{
+	site vert;	      /* vertex of simplex */
+	struct simplex* simp; /* neighbor sharing all vertices but vert */
+	basis_s* basis;	      /* derived vectors */
+} neighbor;
+
+typedef struct simplex
+{
+	struct simplex* next; /* free list */
+	long visit;	      /* number of last site visiting this simplex */
+	short mark;
+	basis_s* normal;   /* normal vector pointing inward */
+	neighbor peak;	   /* if null, remaining vertices give facet */
+	neighbor neigh[1]; /* neighbors of simplex */
+} simplex;
+// STORAGE_GLOBALS(simplex)
+
+
+typedef struct fg_node fg;
+typedef struct tree_node Tree;
+struct tree_node
+{
+	Tree *left, *right;
+	site key;
+	int size; /* maintained to be the number of nodes rooted here */
+	fg* fgs;
+	Tree* next; /* freelist */
+};
+// STORAGE_GLOBALS(Tree)
+
+typedef struct fg_node
+{
+	Tree* facets;
+	double dist, vol; /* of Voronoi face dual to this */
+	fg* next;	  /* freelist */
+	short mark;
+	int ref_count;
+} fg_node;
+// STORAGE_GLOBALS(fg)
+
+
+typedef simplex* visit_func(simplex*, void*);
+typedef int test_func(simplex*, int, void*);
+
+
+static void get_normal_sede(simplex* s);
+static simplex* facets_print(simplex* s, void* /*p*/);
+static void buildhull(simplex* root);
+
 
 static int *ptrToIntsToIndex, *listOfIntsToIndex;
 static float *ptrFloatsToIndex, *listOfFloatsToIndex, mult_up;
@@ -513,57 +593,6 @@ static int out_of_flat(simplex* root, point p)
 	return 0;
 }
 
-// ----------------------------------------------------------------
-static void get_normal_sede(simplex* s)
-{
-
-	neighbor* rn;
-	int i, j;
-
-	get_basis_sede(s);
-	if (rdim == 3 && cdim == 3) {
-		point c, a = VB(s->neigh[1].basis), b = VB(s->neigh[2].basis);
-		// NEWLRC(basis_s,s->normal);
-		{
-			s->normal = basis_s_list ? basis_s_list : new_block_basis_s(1);
-			basis_s_list = s->normal->next;
-			s->normal->ref_count = 1;
-		};
-		// c = VB(s->normal);
-		c = ((s->normal)->vecs);
-		c[0] = a[1] * b[2] - a[2] * b[1];
-		c[1] = a[2] * b[0] - a[0] * b[2];
-		c[2] = a[0] * b[1] - a[1] * b[0];
-		s->normal->sqb = Norm2(c);
-		for (i = cdim + 1, rn = ch_root->neigh + cdim - 1; i; i--, rn--) {
-			for (j = 0; j < cdim && rn->vert != s->neigh[j].vert; j++)
-				;
-			if (j < cdim)
-				continue;
-			if (rn->vert == hull_infinity) {
-				if (c[2] > -B_ERR_MIN)
-					continue;
-			}
-			else if (!sees(rn->vert, s))
-				continue;
-			c[0] = -c[0];
-			c[1] = -c[1];
-			c[2] = -c[2];
-			break;
-		}
-		return;
-	}
-
-	for (i = cdim + 1, rn = ch_root->neigh + cdim - 1; i; i--, rn--) {
-		for (j = 0; j < cdim && rn->vert != s->neigh[j].vert; j++)
-			;
-		if (j < cdim)
-			continue;
-		reduce(&s->normal, rn->vert, s, cdim);
-		if (s->normal->sqb != 0)
-			break;
-	}
-}
 
 // ----------------------------------------------------------------
 static int sees(site p, simplex* s)
@@ -624,6 +653,58 @@ static int sees(site p, simplex* s)
 }
 
 // ----------------------------------------------------------------
+static void get_normal_sede(simplex* s)
+{
+
+	neighbor* rn;
+	int i, j;
+
+	get_basis_sede(s);
+	if (rdim == 3 && cdim == 3) {
+		point c, a = VB(s->neigh[1].basis), b = VB(s->neigh[2].basis);
+		// NEWLRC(basis_s,s->normal);
+		{
+			s->normal = basis_s_list ? basis_s_list : new_block_basis_s(1);
+			basis_s_list = s->normal->next;
+			s->normal->ref_count = 1;
+		};
+		// c = VB(s->normal);
+		c = ((s->normal)->vecs);
+		c[0] = a[1] * b[2] - a[2] * b[1];
+		c[1] = a[2] * b[0] - a[0] * b[2];
+		c[2] = a[0] * b[1] - a[1] * b[0];
+		s->normal->sqb = Norm2(c);
+		for (i = cdim + 1, rn = ch_root->neigh + cdim - 1; i; i--, rn--) {
+			for (j = 0; j < cdim && rn->vert != s->neigh[j].vert; j++)
+				;
+			if (j < cdim)
+				continue;
+			if (rn->vert == hull_infinity) {
+				if (c[2] > -B_ERR_MIN)
+					continue;
+			}
+			else if (!sees(rn->vert, s))
+				continue;
+			c[0] = -c[0];
+			c[1] = -c[1];
+			c[2] = -c[2];
+			break;
+		}
+		return;
+	}
+
+	for (i = cdim + 1, rn = ch_root->neigh + cdim - 1; i; i--, rn--) {
+		for (j = 0; j < cdim && rn->vert != s->neigh[j].vert; j++)
+			;
+		if (j < cdim)
+			continue;
+		reduce(&s->normal, rn->vert, s, cdim);
+		if (s->normal->sqb != 0)
+			break;
+	}
+}
+
+// ----------------------------------------------------------------
 static void ReleaseMemory(void)
 {
 	int i;
@@ -655,6 +736,48 @@ static int truet(simplex* /*s*/, int /*i*/, void* /*dum*/)
 {
 	return 1;
 }
+
+// -------------------------------------------
+static simplex* visit_triang_gen(simplex* s, visit_func* visit, test_func* test)
+{
+	/*
+	 * starting at s, visit simplices t such that test(s,i,0) is true,
+	 * and t is the i'th neighbor of s;
+	 * apply visit function to all visited simplices;
+	 * when visit returns nonNULL, exit and return its value
+	 */
+	neighbor* sn;
+	void* v;
+	simplex* t;
+	int i;
+	long tms = 0;
+#define pushv(x) *(visit_triang_gen_st + tms++) = x;
+#define popv(x) x = *(visit_triang_gen_st + --tms);
+
+	visit_triang_gen_vnum--;
+	if (!visit_triang_gen_st)
+		visit_triang_gen_st = (simplex**)malloc((visit_triang_gen_ss + MAXDIM + 1) * sizeof(simplex*));
+	if (s)
+		pushv(s);
+	while (tms) {
+		if (tms > visit_triang_gen_ss) { // DEBEXP(-1,tms);
+			visit_triang_gen_st = (simplex**)realloc(visit_triang_gen_st, ((visit_triang_gen_ss += visit_triang_gen_ss) + MAXDIM + 1) * sizeof(simplex*));
+		}
+		popv(t);
+		if (!t || t->visit == visit_triang_gen_vnum)
+			continue;
+		t->visit = visit_triang_gen_vnum;
+		v = (*visit)(t, 0);
+		if (v) {
+			return (simplex*)v;
+		}
+		for (i = -1, sn = t->neigh - 1; i < cdim; i++, sn++)
+			if ((sn->simp->visit != visit_triang_gen_vnum) && sn->simp && test(t, i, 0))
+				pushv(sn->simp);
+	}
+	return nullptr;
+}
+
 // -------------------------------------------
 static simplex* visit_triang(simplex* root, visit_func* visit)
 /* visit the whole triangulation */
@@ -763,47 +886,6 @@ static void build_convex_hull(void)
 	visit_triang_gen(visit_triang(root, facet_test), facets_print, hullt); // create a triangle list
 
 	ReleaseMemory();
-}
-
-// -------------------------------------------
-static simplex* visit_triang_gen(simplex* s, visit_func* visit, test_func* test)
-{
-	/*
-	 * starting at s, visit simplices t such that test(s,i,0) is true,
-	 * and t is the i'th neighbor of s;
-	 * apply visit function to all visited simplices;
-	 * when visit returns nonNULL, exit and return its value
-	 */
-	neighbor* sn;
-	void* v;
-	simplex* t;
-	int i;
-	long tms = 0;
-#define pushv(x) *(visit_triang_gen_st + tms++) = x;
-#define popv(x) x = *(visit_triang_gen_st + --tms);
-
-	visit_triang_gen_vnum--;
-	if (!visit_triang_gen_st)
-		visit_triang_gen_st = (simplex**)malloc((visit_triang_gen_ss + MAXDIM + 1) * sizeof(simplex*));
-	if (s)
-		pushv(s);
-	while (tms) {
-		if (tms > visit_triang_gen_ss) { // DEBEXP(-1,tms);
-			visit_triang_gen_st = (simplex**)realloc(visit_triang_gen_st, ((visit_triang_gen_ss += visit_triang_gen_ss) + MAXDIM + 1) * sizeof(simplex*));
-		}
-		popv(t);
-		if (!t || t->visit == visit_triang_gen_vnum)
-			continue;
-		t->visit = visit_triang_gen_vnum;
-		v = (*visit)(t, 0);
-		if (v) {
-			return (simplex*)v;
-		}
-		for (i = -1, sn = t->neigh - 1; i < cdim; i++, sn++)
-			if ((sn->simp->visit != visit_triang_gen_vnum) && sn->simp && test(t, i, 0))
-				pushv(sn->simp);
-	}
-	return nullptr;
 }
 
 // ----------------------------------------------------------------
@@ -1213,6 +1295,9 @@ static void triangleList_out(int v0, int v1, int v2, int v3)
 // ------------------------------------------------------
 int* BuildTriangleIndexList(void* pointList, float factor, int numberOfInputPoints, int numDimensions, int clockwise, int* numTriangleVertices)
 {
+	static QMutex mutex;
+	QMutexLocker lock(&mutex);
+
 	// returns an index list that can be used by: ->IASetIndexBuffer(), using the format: DXGI_FORMAT_R16_UINT
 	// Adjust triangleList_out() if you do not want to spend time putting the triangles into clockwise order,
 	// or to put them in anti-clockwise order.
