@@ -117,7 +117,16 @@ public:
 	QString zUnit() const { return m_attributes["ZUnit"].toString(); }
 
 	void setData(const QVariant& data) { d_data = data; }
-	void setData(QVariant&& data) { d_data = std::move(data); }
+	void setData(QVariant&& data) { 
+#ifdef __GNUC__
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wstringop-overflow="
+#endif
+		d_data = std::move(data); 
+#ifdef __GNUC__
+#pragma GCC diagnostic pop
+#endif
+	}
 	const QVariant& data() const { return d_data; }
 
 	void setTime(qint64 time) { m_time = time; }
