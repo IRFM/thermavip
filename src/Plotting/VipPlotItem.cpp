@@ -652,7 +652,6 @@ public:
 	  , startTime(0)
 	  , fpsCounter(0)
 	  , fpsStart(0)
-	  , sceneMap()
 	  , dirtyCoordinateSystem(1)
 	  , computeShape(false)
 	  , updateScheduled(false)
@@ -660,8 +659,6 @@ public:
 	  , destroy_emitted(false)
 	  , numThreads(1)
 	  , selectionOrder(0)
-	  , cashedDirtyCoordinateSystem()
-	  , externCoordinateSystem()
 	  , drawText(true)
 	{
 		hover = nullEffect;
