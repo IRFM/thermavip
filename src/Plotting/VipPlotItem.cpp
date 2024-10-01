@@ -1373,7 +1373,7 @@ void VipPlotItem::drawSelected(QPainter* painter, const VipCoordinateSystemPtr& 
 #include <qopenglpaintdevice.h>
 #include <qwindow.h>
 
-static QWindow* window()
+/* static QWindow* window()
 {
 	static QWindow* win = nullptr;
 	if (!win) {
@@ -1489,7 +1489,7 @@ static QImage createImageWithFBO(VipPlotItem* item)
 	// qint64 el = QDateTime::currentMSecsSinceEpoch() - st;
 	// vip_debug("opengl: %i , %i ms\n", (int)el, (int)el2);
 	return img;
-}
+}*/
 
 void VipPlotItem::resetFpsCounter()
 {
@@ -1665,10 +1665,10 @@ QList<VipPlotItem*> VipPlotItem::linkedItems() const
 {
 	QSet<VipPlotItem*> res;
 
-	bool valid_axes = false;
+	//bool valid_axes = false;
 	for (int i = 0; i < d_data->axes.size(); ++i) {
 		if (VipAbstractScale* axis = d_data->axes[i]) {
-			valid_axes = true;
+			//valid_axes = true;
 			res += vipToSet(axis->plotItems());
 		}
 	}
