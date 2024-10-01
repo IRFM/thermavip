@@ -350,7 +350,7 @@ VipIntervalSampleVector extractHistogram(const T* begin,
 	int size = end - begin;
 
 	static thread_local std::vector<std::pair<T, int>> values;
-	if (values.size() != size)
+	if (static_cast<int>(values.size()) != size)
 		values.resize(size);
 
 	// extract index: we must sort a pair of value -> index
