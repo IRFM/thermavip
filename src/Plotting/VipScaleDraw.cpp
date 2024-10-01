@@ -1014,11 +1014,11 @@ bool VipAbstractScaleDraw::drawLabelOverlap(QPainter* painter, vip_double v, con
 		if (!d_data->otherLabelArea.isEmpty())
 			text_shape = d_data->painterTransform.map(device.shape());
 
-		QRectF bounding = text_shape.boundingRect();
+		//QRectF bounding = text_shape.boundingRect();
 		if (!d_data->labelArea->intersects(text_shape)) {
 			// check additional label overlapp
 			for (int i = 0; i < d_data->otherLabelArea.size(); ++i) {
-				QRectF b = d_data->otherLabelArea[i]->boundingRect();
+				//QRectF b = d_data->otherLabelArea[i]->boundingRect();
 				if (d_data->otherLabelArea[i]->intersects(text_shape))
 					return false;
 			}
