@@ -70,8 +70,7 @@ static void SleepInUs(std::uint32_t us)
 		;
 }
 
-#ifndef __APPLE__
-static std::uint64_t NowInUs()
+/*#ifndef __APPLE__ static std::uint64_t NowInUs()
 {
 	struct timespec now;
 	clock_gettime(CLOCK_MONOTONIC, &now);
@@ -91,7 +90,7 @@ static std::uint64_t NowInUs()
 	return static_cast<std::uint64_t>(ts.tv_sec) * 1000000 + ts.tv_nsec / 1000;
 }
 #endif // __APPLE__
-
+*/
 void vipSleep(double milliseconds)
 {
 	if (milliseconds > 20) {
