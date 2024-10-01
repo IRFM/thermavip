@@ -132,40 +132,28 @@ class VipPlotBarChart::PrivateData
 {
 public:
 	PrivateData()
-	  : spacing(0)
-	  , spacingUnit(ItemUnit)
-	  , width(20)
-	  , widthUnit(ItemUnit)
-	  , style(SideBySide)
-	  , textValue(EachValue)
-	  , textAlignment(Qt::AlignTop | Qt::AlignHCenter)
-	  , textPosition(Vip::Outside)
-	  , textDistance(5)
-	  , baseline(0)
-	  , palette(VipLinearColorMap::ColorPaletteRandom)
-	  , valueType(ScaleValue)
 	{
 	}
 
-	double spacing;
-	WidthUnit spacingUnit;
-	double width;
-	WidthUnit widthUnit;
-	Style style;
-	TextValue textValue;
-	Qt::Alignment textAlignment;
-	Vip::RegionPositions textPosition;
-	double textDistance;
+	double spacing{ 0 };
+	WidthUnit spacingUnit{ ItemUnit };
+	double width{ 20 };
+	WidthUnit widthUnit{ ItemUnit };
+	Style style{ SideBySide };
+	TextValue textValue{ EachValue };
+	Qt::Alignment textAlignment{ Qt::AlignTop | Qt::AlignHCenter };
+	Vip::RegionPositions textPosition{ Vip::Outside };
+	double textDistance{ 5 };
 	QTransform textTransform;
 	QPointF textTransformReference;
 	VipText text;
 	QSharedPointer<VipTextStyle> textStyle;
 
-	double baseline;
-	VipPlotBarChart::ValueType valueType;
+	double baseline{ 0 };
+	VipPlotBarChart::ValueType valueType{ ScaleValue };
 	QVector<VipBoxStyle> boxStyles;
 	VipBoxStyle boxStyle;
-	VipColorPalette palette;
+	VipColorPalette palette{ VipLinearColorMap::ColorPaletteRandom };
 	QList<VipText> names;
 
 	QRectF plotRect;
