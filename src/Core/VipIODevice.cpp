@@ -680,7 +680,6 @@ bool VipIODevice::read(qint64 time, bool force)
 
 	bool inside = true, exact_time = true;
 	qint64 time_transform = time;
-	this;
 	time = invTransformTime(time, &inside, &exact_time);
 	qint64 closest = computeClosestTime(time);
 
@@ -2418,7 +2417,7 @@ void VipProcessingPool::runPlay()
 	Q_EMIT playingStarted();
 
 	qint64 elapsed = 0;
-	qint64 prev_elapsed = 0;
+	//qint64 prev_elapsed = 0;
 	qint64 st = 0, el = 0;
 
 	while (d_data->run) {
