@@ -208,8 +208,15 @@ bool VipUpdate::startDownload(const QString& out_dir)
 	connect(&d_data->process, SIGNAL(readyReadStandardOutput()), this, SLOT(newOutput()), Qt::DirectConnection);
 	connect(&d_data->process, SIGNAL(finished(int, QProcess::ExitStatus)), this, SLOT(emitFinished()), Qt::DirectConnection);
 
+#ifdef __GNUC__
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+#endif
 	// d_data->process.start(getUpdateProgram() ,QStringList()<< "-u"<< "-d" << "--hide" << "-o" << out_dir);
 	d_data->process.start(getUpdateProgram() + " -u -d --hide -o " + out_dir);
+#ifdef __GNUC__
+#pragma GCC diagnostic pop
+#endif
 	return d_data->process.waitForStarted(10000);
 }
 
@@ -222,8 +229,15 @@ bool VipUpdate::startUpdate(const QString& out_dir)
 	connect(&d_data->process, SIGNAL(readyReadStandardOutput()), this, SLOT(newOutput()), Qt::DirectConnection);
 	connect(&d_data->process, SIGNAL(finished(int, QProcess::ExitStatus)), this, SLOT(emitFinished()), Qt::DirectConnection);
 
+#ifdef __GNUC__
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+#endif
 	// d_data->process.start(getUpdateProgram() ,QStringList()<< "-u" <<"--hide"<< "-o" << out_dir);
 	d_data->process.start(getUpdateProgram() + " -u --hide -o " + out_dir);
+#ifdef __GNUC__
+#pragma GCC diagnostic pop
+#endif
 	return d_data->process.waitForStarted(30000);
 }
 
