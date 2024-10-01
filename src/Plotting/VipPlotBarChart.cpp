@@ -813,7 +813,7 @@ QDataStream& operator>>(QDataStream& str, VipBar& b)
 {
 	QVector<double> values;
 	double position;
-	str >> position, values;
+	str >> position>> values;
 	b.setValues(values);
 	b.setPosition(position);
 	return str;
