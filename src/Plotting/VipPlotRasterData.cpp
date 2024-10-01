@@ -788,7 +788,7 @@ void VipPlotRasterData::drawSelected(QPainter* painter, const VipCoordinateSyste
 	VipPainter::drawPolygon(painter, poly);
 }
 
-static void convertToOpenGL(const QImage& src, QImage& dst)
+/* static void convertToOpenGL(const QImage& src, QImage& dst)
 {
 
 	if (dst.size() != src.size()) {
@@ -825,7 +825,7 @@ static void convertToOpenGL(const QImage& src, QImage& dst)
 			p -= 2 * width;
 		}
 	}
-}
+}*/
 
 #include <qopenglcontext.h>
 #include <qopenglfunctions.h>
