@@ -137,9 +137,16 @@ int VipUpdate::hasUpdate(const QString& out_dir, bool* already_downloaded, void*
 	if (!stop())
 		return -1;
 
+#ifdef __GNUC__
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+#endif
 	// vip_debug("start '%s'\n", (getUpdateProgram() + " -c --hide -o " + out_dir).toLatin1().data());
 	// d_data->process.start(getUpdateProgram(), QStringList()<<"-c"<<"--hide"<<"-o"<<out_dir);
 	d_data->process.start(getUpdateProgram() + " -c --hide -o " + out_dir);
+#ifdef __GNUC__
+#pragma GCC diagnostic pop
+#endif
 	d_data->process.waitForStarted(3000);
 
 	if (!_stop) {
@@ -183,8 +190,15 @@ bool VipUpdate::isDownloadFinished()
 	if (!stop())
 		return false;
 
+#ifdef __GNUC__
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+#endif
 	// d_data->process.start(getUpdateProgram(), QStringList()<< "-w"<< "--hide");
 	d_data->process.start(getUpdateProgram() + " -w --hide");
+#ifdef __GNUC__
+#pragma GCC diagnostic pop
+#endif
 	if (!d_data->process.waitForFinished(30000))
 		return false;
 
