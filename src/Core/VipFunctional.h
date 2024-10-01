@@ -872,7 +872,7 @@ public:
 	/// This includes the functions that match exactly given argument types, but also the ones that can accept these arguments through implicit conversion.
 	function_list_type match(const VipTypeList& lst) const
 	{
-		if (lst.size() > NArgs)
+		if (lst.size() > static_cast<int>(NArgs))
 			return function_list_type();
 		function_list_type res;
 		for (const function_type& f : m_functions) {
