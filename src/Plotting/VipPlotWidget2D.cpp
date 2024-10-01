@@ -868,7 +868,7 @@ static QWindow* globalWindow()
 	return win;
 }
 
-static QOpenGLContext* context()
+/* static QOpenGLContext* context()
 {
 	// Create a QOpenGLContext
 	QOpenGLContext* ctx = nullptr;
@@ -883,7 +883,7 @@ static QOpenGLContext* context()
 		}
 	}
 	return ctx;
-}
+}*/
 static QOpenGLContext* globalContext()
 {
 	// Create a QOpenGLContext
