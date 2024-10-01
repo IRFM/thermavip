@@ -425,7 +425,10 @@ static QDataStream& operator<<(QDataStream& str, const Transform& tr)
 }
 static QDataStream& operator>>(QDataStream& str, Transform& tr)
 {
-	return str >> (int&)tr.type >> tr.x >> tr.y;
+	int type = 0;
+	str >> type >> tr.x >> tr.y;
+	tr.type = static_cast<Transform::TrType>(type);
+	return str;
 }
 static QDataStream& operator<<(QDataStream& str, const TransformList& trs)
 {
