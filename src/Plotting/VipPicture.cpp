@@ -64,8 +64,8 @@ namespace detail
 		PrivateData(QWidget* w)
 		  : window(nullptr)
 		  , oldFocusWindow(nullptr)
-		  , usesNativeWidgets(false)
 		  , q(w)
+		  , usesNativeWidgets(false)
 		{
 		}
 		~PrivateData() {}
@@ -1013,7 +1013,7 @@ public:
 		if (d_batch_rendering && device->count() > 0 && device->back().commandType() == Command::ChangeState) {
 
 			PaintEngineState& last = *device->back().template value<PaintEngineState>();
-			if (!(state.state() && QPaintEngine::DirtyTransform)) {
+			if (!(state.state() & QPaintEngine::DirtyTransform)) {
 				// Merge
 				last.dirty |= flags;
 
