@@ -400,9 +400,9 @@ void TextEditor::setShapes(const QList<VipPlotShape*>& shapes)
 						textBrush = nullBrush;
 					if (sidesToString(a->text().boxStyle().drawLines()) != boxStyle)
 						boxStyle = QString();
-					if (textAlign != a->textAlignment())
+					if (textAlign != static_cast<int>(a->textAlignment()))
 						textAlign = nullAlignment;
-					if (textPos != a->textPosition())
+					if (textPos != static_cast<int>(a->textPosition()))
 						textPos = nullPosition;
 					if (radius != a->text().borderRadius())
 						radius = nullBorderRadius;
