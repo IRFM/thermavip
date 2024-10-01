@@ -103,7 +103,7 @@ int vipSafeVariantMapSave(QDataStream& s, const QVariantMap& c)
 	auto begin = c.constBegin();
 	while (it != begin) {
 		--it;
-		if (it.value().userType() < QVariant::UserType) {
+		if (it.value().userType() < static_cast<int>(QVariant::UserType)) {
 			str << it.key() << it.value();
 			++count;
 		}
