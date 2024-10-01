@@ -362,7 +362,7 @@ protected:
 
 	/// Same as #VipProcessingObject::create, but also set the output time (max time of all inputs)
 	/// and merge all inputs attributes.
-	virtual VipAnyData create(const QVariant& data) const;
+	virtual VipAnyData create(const QVariant& data, const QVariantMap & attr = QVariantMap()) const;
 
 	const QVector<VipAnyData>& inputs() const;
 

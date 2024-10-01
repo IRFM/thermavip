@@ -1042,9 +1042,9 @@ bool VipBaseDataFusion::workOnSameObjectType() const
 	return d_data->same_object_type;
 }
 
-VipAnyData VipBaseDataFusion::create(const QVariant& data) const
+VipAnyData VipBaseDataFusion::create(const QVariant& data, const QVariantMap& attr) const
 {
-	VipAnyData res = VipProcessingObject::create(data);
+	VipAnyData res = VipProcessingObject::create(data, attr);
 	if (inputs().size()) {
 		qint64 time = inputs().first().time();
 		for (int i = 0; i < inputs().size(); ++i) {
