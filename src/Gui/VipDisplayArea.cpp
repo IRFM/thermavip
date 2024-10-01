@@ -309,7 +309,7 @@ void VipDisplayTabBar::updateStreamingButton()
 	VipDisplayArea* area = nullptr;
 	QWidget* w = parentWidget();
 	while (w) {
-		if (area = qobject_cast<VipDisplayArea*>(w))
+		if ((area = qobject_cast<VipDisplayArea*>(w)))
 			break;
 		w = w->parentWidget();
 	}
@@ -3165,12 +3165,12 @@ void VipCloseBar::onMinimized() {}
 
 void VipCloseBar::computeWindowState()
 {
-	static bool was_maximized_once = false;
 	// Recompute window state based on its visibility state
 	if (!mainWindow)
 		return;
 
 #ifdef _WIN32
+	static bool was_maximized_once = false;
 	// Windows only, do nothing but reset the icons
 	if (mainWindow->isMaximized() || mainWindow->isFullScreen()) {
 		this->maximizeButton->setText(tr("Restore"));
@@ -3467,7 +3467,7 @@ void VipMainWindow::openSharedMemoryFiles()
 		}
 		vipGetMainWindow()->openPaths(files);
 		if (vipGetMainWindow()->isMinimized())
-			vipGetMainWindow()->setWindowState(vipGetMainWindow()->windowState() & ~Qt::WindowMinimized | Qt::WindowActive);
+			vipGetMainWindow()->setWindowState(vipGetMainWindow()->windowState() & (~Qt::WindowMinimized | Qt::WindowActive));
 		vipGetMainWindow()->raiseOnTop();
 	}
 
@@ -3951,8 +3951,7 @@ bool VipMainWindow::loadSessionShowProgress(const QString& filename, VipProgress
 			// TEST
 			QVariant v = vipToVariant(browser);
 			VipDirectoryBrowser* tmp = v.value<VipDirectoryBrowser*>();
-			if (tmp != browser)
-				bool stop = true;
+			
 			if (!arch.content("DirectoryBrowser", browser))
 				arch.restore();
 		}
@@ -4091,8 +4090,7 @@ void VipMainWindow::resetStyleSheet()
 	//  this->style()->polish(this);
 }
 
-static qint64 _last_active_state = 0;
-static qint64 _last_inactive_state = 0;
+
 void VipMainWindow::applicationStateChanged(Qt::ApplicationState state)
 {
 
@@ -5176,7 +5174,7 @@ static VipBaseDragWidget* dropMimeData(QMimeData* mime, QWidget* drop_widget)
 	}
 }
 
-static void minimialDisplayMainWindow(VipMainWindow* window, bool minimal)
+/* static void minimialDisplayMainWindow(VipMainWindow* window, bool minimal)
 {
 	window->showTabBar()->setEnabled(minimal);
 
@@ -5210,22 +5208,10 @@ static void minimialDisplayMainWindow(VipMainWindow* window, bool minimal)
 		if (window->displayArea()->currentDisplayPlayerArea())
 			window->displayArea()->currentDisplayPlayerArea()->playWidget()->setTimeRangeVisible(window->property("visible_timerange").toBool());
 	}
-}
+}*/
 
-static void minimalDisplayCustomDragWidget(VipDragWidget*, bool)
-{
-	/* if (minimal) {
-		w->setProperty("show_toolbar", w->showPlayerToolBar());
-		w->setShowPlayerToolBar(false);
-	}
-	else {
-		QVariant p = w->property("show_toolbar");
-		bool was_shown = p.userType() == 0 ? true : p.toBool();
-		w->setShowPlayerToolBar(was_shown);
-	}*/
-}
 
-static void minimalDisplayPlayer(VipPlayer2D* player, bool minimal)
+/* static void minimalDisplayPlayer(VipPlayer2D* player, bool minimal)
 {
 	if (minimal) {
 		if (player->isVisible()) {
@@ -5245,9 +5231,9 @@ static void minimalDisplayPlayer(VipPlayer2D* player, bool minimal)
 			pl->setProperty("legendPosition", QVariant());
 		}
 	}
-}
+}*/
 
-static void minimalDisplayVideoPlayer(VipVideoPlayer* player, bool minimal)
+/* static void minimalDisplayVideoPlayer(VipVideoPlayer* player, bool minimal)
 {
 	if (minimal) {
 		player->setProperty("show_axes", player->isShowAxes());
@@ -5263,7 +5249,7 @@ static void minimalDisplayVideoPlayer(VipVideoPlayer* player, bool minimal)
 
 		player->setProperty("show_axes", QVariant());
 	}
-}
+}*/
 
 VipArchive& vipSaveBaseDragWidget(VipArchive& arch, VipBaseDragWidget* w)
 {
