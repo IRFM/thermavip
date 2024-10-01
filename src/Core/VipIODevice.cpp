@@ -2432,7 +2432,7 @@ void VipProcessingPool::runPlay()
 				elapsed = 0;
 			}
 			else { // compute elapsed time since run started
-				prev_elapsed = elapsed;
+				//prev_elapsed = elapsed;
 				elapsed = (QDateTime::currentMSecsSinceEpoch() - _time) * 1000000 * d_data->parameters.speed; // elapsed time in nano seconds
 			}
 
