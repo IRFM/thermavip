@@ -303,12 +303,13 @@ namespace detail
 
 		virtual bool acceptInput(int top_level_index, const QVariant& v) const { return v.canConvert<Data>() || (!std::is_same<Data, Sample>::value && v.canConvert<Sample>()); }
 		virtual PlotItemType* item() const { return static_cast<PlotItemType*>(VipDisplayPlotItem::item()); }
-		virtual void setItem(PlotItemType* it)
+		virtual void setItem(VipPlotItem* it)
 		{
-			if (it && it != item()) {
-				it->setAutoMarkDirty(false);
-				VipDisplayPlotItem::setItem(it);
-			}
+			if (PlotItemType* pit = qobject_cast<PlotItemType*>(it))
+				if (pit != item()) {
+					pit->setAutoMarkDirty(false);
+					VipDisplayPlotItem::setItem(pit);
+				}
 		}
 
 	protected:
