@@ -133,9 +133,9 @@ namespace detail
 			if (dst.isUnstrided()) {
 				if (src.shape().size() == 1) {
 					const int w = src.shape()[0];
-					VipHybridVector<int, 1> p = { { 0 } };
+					VipHybridVector<int, 2> p = { { 0,0 } }; // Use NDims 2 to avoid gcc warning on image processing algorithm like vipTransform
 					for (p[0] = 0; p[0] < w; ++p[0]) {
-						ptr[p[0]] = vipCast<dtype>(src(p));
+						ptr[p[0]] = vipCast<dtype>(src(p[0]));
 					}
 				}
 				else if (src.shape().size() == 2) {
@@ -204,9 +204,9 @@ namespace detail
 
 			if (src.shape().size() == 1) {
 				const int w = src.shape()[0];
-				VipHybridVector<int, 1> p = { { 0 } };
+				VipHybridVector<int, 2> p = { { 0,0 } }; // Use NDims 2 to avoid gcc warning on image processing algorithm like vipTransform
 				for (p[0] = 0; p[0] < w; ++p[0])
-					ptr[dst.stride(0) * p[0]] = vipCast<dtype>(src(p));
+					ptr[dst.stride(0) * p[0]] = vipCast<dtype>(src(p[0]));
 			}
 			else if (src.shape().size() == 2) {
 				const int h = src.shape()[0];
@@ -263,10 +263,10 @@ namespace detail
 			if ((Dst::access_type & Vip::Flat) && dst.isUnstrided()) {
 				if (src.shape().size() == 1) {
 					const int w = src.shape()[0];
-					VipHybridVector<int, 1> p = { { 0 } };
+					VipHybridVector<int, 2> p = { { 0,0 } }; // Use NDims 2 to avoid gcc warning on image processing algorithm like vipTransform
 					for (p[0] = 0; p[0] < w; ++p[0])
 						if (roi(p))
-							ptr[p[0]] = vipCast<dtype>(src(p));
+							ptr[p[0]] = vipCast<dtype>(src(p[0]));
 				}
 				else if (src.shape().size() == 2) {
 					const int h = src.shape()[0];
@@ -304,7 +304,7 @@ namespace detail
 			if ((Src::access_type & Vip::Flat) && src.isUnstrided()) {
 				if (src.shape().size() == 1) {
 					const int w = src.shape()[0];
-					VipHybridVector<int, 1> p = { { 0 } };
+					VipHybridVector<int, 2> p = { { 0,0 } }; // Use NDims 2 to avoid gcc warning on image processing algorithm like vipTransform
 					for (p[0] = 0; p[0] < w; ++p[0])
 						if (roi(p))
 							ptr[dst.stride(0) * p[0]] = vipCast<dtype>(src[p[0]]);
@@ -345,10 +345,10 @@ namespace detail
 
 			if (src.shape().size() == 1) {
 				const int w = src.shape()[0];
-				VipHybridVector<int, 1> p = { { 0 } };
+				VipHybridVector<int, 2> p = { { 0,0 } }; // Use NDims 2 to avoid gcc warning on image processing algorithm like vipTransform
 				for (p[0] = 0; p[0] < w; ++p[0])
 					if (roi(p))
-						ptr[dst.stride(0) * p[0]] = vipCast<dtype>(src(p));
+						ptr[dst.stride(0) * p[0]] = vipCast<dtype>(src(p[0]));
 			}
 			else if (src.shape().size() == 2) {
 				const int h = src.shape()[0];
@@ -403,10 +403,10 @@ namespace detail
 			if (roi.rects()[0].dimCount() == 1) {
 				for (int r = 0; r < roi.size(); ++r) {
 					const VipNDRect<Dim>& rect = roi.rects()[r];
-					VipHybridVector<int, 1> p = { { 0 } };
+					VipHybridVector<int, 2> p = { { 0,0 } }; // Use NDims 2 to avoid gcc warning on image processing algorithm like vipTransform
 					for (p[0] = rect.start(0); p[0] < rect.end(0); ++p[0]) {
 						if (roi(p))
-							ptr[p[0] * dst.stride(0)] = vipCast<dtype>(src(p));
+							ptr[p[0] * dst.stride(0)] = vipCast<dtype>(src(p[0]));
 					}
 				}
 			}
