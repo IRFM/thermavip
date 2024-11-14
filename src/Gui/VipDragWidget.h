@@ -442,9 +442,9 @@ protected:
 
 private:
 	QPoint mouse;
-	QRect rect;
-	int maxWidth;
+	QRect rect;	
 	VipMultiDragWidget* multiDragWidget;
+	int maxWidth;
 };
 
 /// Custom QSplitter, which only goal is to use the VipDragWidgetSplitter class

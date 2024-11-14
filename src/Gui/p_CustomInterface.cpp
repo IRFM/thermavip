@@ -725,13 +725,13 @@ void CustomizeVideoPlayer::addToolBarWidget(QWidget* w)
 		d_data->player->toolBar()->addWidget(w);
 }
 
-static void unselectAll(QGraphicsScene* scene)
+/*static void unselectAll(QGraphicsScene* scene)
 {
 	QList<QGraphicsItem*> items = scene->items();
 	foreach (QGraphicsItem* item, items) {
 		item->setSelected(false);
 	}
-}
+}*/
 
 bool CustomizeVideoPlayer::eventFilter(QObject*, QEvent* evt)
 {
@@ -1781,13 +1781,13 @@ void CustomizePlotPlayer::reorganizeCloseButtons()
 	else
 		canvas << d_data->player->plotWidget2D()->area()->canvas();
 
-	bool just_created = false;
+	//bool just_created = false;
 
 	// QList<VipPlotCanvas*> canvas = area->allCanvas();
 	for (int i = 0; i < canvas.size(); ++i) {
 		QToolButton* close = canvas[i]->property("_vip_close").value<QToolButton*>();
 		if (!close) {
-			just_created = true;
+			//just_created = true;
 			close = new QToolButton(d_data->player);
 			close->setAutoRaise(true);
 			close->setMaximumSize(QSize(20, 20));
@@ -1867,7 +1867,7 @@ void CustomizePlotPlayer::closeCanvas()
 	}
 	else {
 		if (QToolButton* tool = qobject_cast<QToolButton*>(sender())) {
-			if (VipPlotCanvas* c = tool->property("_vip_canvas").value<VipPlotCanvas*>()) {
+			if (/*VipPlotCanvas* c = */ tool->property("_vip_canvas").value<VipPlotCanvas*>()) {
 				closePlayer();
 			}
 		}

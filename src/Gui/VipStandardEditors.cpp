@@ -589,8 +589,8 @@ void VipPlotGridWidget::updateGrid(VipPlotGrid* grid)
 	if (!grid)
 		return;
 
-	QColor prev = grid->majorPen().color();
-	QColor _new = m_maj_pen.pen().color();
+	//QColor prev = grid->majorPen().color();
+	//QColor _new = m_maj_pen.pen().color();
 
 	m_item.updatePlotItem(grid);
 	grid->enableAxis(0, m_enableX.isChecked());
@@ -671,8 +671,8 @@ void VipPlotCanvasWidget::updateCanvas(VipPlotCanvas* canvas)
 	if (!canvas)
 		return;
 
-	QColor prev = canvas->boxStyle().backgroundBrush().color();
-	QColor _new = m_inner.getBoxStyle().backgroundBrush().color();
+	//QColor prev = canvas->boxStyle().backgroundBrush().color();
+	//QColor _new = m_inner.getBoxStyle().backgroundBrush().color();
 
 	canvas->setBoxStyle(m_inner.getBoxStyle());
 	applyAsStyleSheet(m_inner.getBoxStyle(), canvas);

@@ -149,22 +149,22 @@ static QLibrary* toolsLib()
 		return &_tools;
 	return nullptr;
 }
-static QLibrary* geometrLib()
+/*static QLibrary* geometrLib()
 {
 	if (_old_librir.isLoaded())
 		return &_old_librir;
 	else if (_geometry.isLoaded())
 		return &_geometry;
 	return nullptr;
-}
-static QLibrary* signalProcessingLib()
+}*/
+/*static QLibrary* signalProcessingLib()
 {
 	if (_old_librir.isLoaded())
 		return &_old_librir;
 	else if (_signal_processing.isLoaded())
 		return &_signal_processing;
 	return nullptr;
-}
+}*/
 static QLibrary* videoIOLib()
 {
 	if (_old_librir.isLoaded())

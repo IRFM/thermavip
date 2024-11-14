@@ -93,7 +93,7 @@ bool SimplifiedSession::open(const QString & file, QString * error)
 		return false;
 	}
 
-	QStringList lines = QString(fin.readAll()).split("\n", QString::SkipEmptyParts);
+	QStringList lines = QString(fin.readAll()).split("\n", VIP_SKIP_BEHAVIOR::SkipEmptyParts);
 	if (lines.isEmpty()) {
 		if (error) *error = "Empty file '" + file + "'";
 		return false;

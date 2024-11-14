@@ -2809,7 +2809,7 @@ void VipVideoPlayer::updateProcessingMenu()
 void VipVideoPlayer::updateImageTransform()
 {
 	// apply the global image transform (extracted from the pipeline) to all ROIs
-	QTransform old = d_data->transform;
+	//QTransform old = d_data->transform;
 	QTransform tr = computeImageTransform();
 
 	QList<VipPlotSceneModel*> scenes = this->plotWidget2D()->area()->findItems<VipPlotSceneModel*>(QString(), 2, 1);
@@ -3345,14 +3345,14 @@ static void setActionVisible(QAction* a, bool vis)
 	if (QWidgetAction* wa = qobject_cast<QWidgetAction*>(a))
 		wa->defaultWidget()->setVisible(vis);
 }
-static QAction* findAction(QWidget* w, const char* name)
+/*static QAction* findAction(QWidget* w, const char* name)
 {
 	const QList<QAction*> acts = w->actions();
 	for (int i = 0; i < acts.size(); ++i)
 		if (acts[i]->objectName() == name)
 			return acts[i];
 	return nullptr;
-}
+}*/
 void VipVideoPlayer::setColorMapOptionsVisible(bool visible)
 {
 	if (QAction* a = this->property("show_scale").value<QAction*>())
@@ -3964,13 +3964,11 @@ void VipVideoPlayer::updateSelectedShapesFromIsoLine()
 		if (inter.size()) {
 			// find maximum intersection
 			int max = 0;
-			int label = 0;
 			QPoint start;
 			for (QMap<int, QPair<int, QPoint>>::iterator it = inter.begin(); it != inter.end(); ++it) {
 				if (it.value().first > max) {
 					max = it.value().first;
 					start = it.value().second;
-					label = it.key();
 				}
 			}
 			// update shape
@@ -4068,7 +4066,7 @@ QList<VipProcessingObject*> VipVideoPlayer::extractTimeEvolution(const ShapeInfo
 	bool can_merge = infos.shapes.size() > 1;
 	if (can_merge) {
 		for (int i = 0; i < infos.shapes.size(); ++i) {
-			if (VipDisplaySceneModel* disp_sm = findDisplaySceneModel(infos.shapes[i])) {
+			if (findDisplaySceneModel(infos.shapes[i])) {
 				can_merge = false;
 				break;
 			}
@@ -7074,7 +7072,7 @@ QList<VipAbstractScale*> VipPlotPlayer::leftScales() const
 {
 	QList<VipAbstractScale*> scales = d_data->viewer->area()->scales();
 	QList<VipAbstractScale*> res;
-	if (VipPlotArea2D* area = qobject_cast<VipPlotArea2D*>(d_data->viewer->area())) {
+	if (qobject_cast<VipPlotArea2D*>(d_data->viewer->area())) {
 		for (int i = 0; i < scales.size(); ++i) {
 			if (VipAxisBase* ax = qobject_cast<VipAxisBase*>(scales[i]))
 				if (ax->alignment() == VipBorderItem::Left)
@@ -8805,7 +8803,7 @@ static VipArchive& operator>>(VipArchive& arch, VipPlotPlayer* value)
 	}
 
 	// load additional axes
-	if (VipVMultiPlotArea2D* area = qobject_cast<VipVMultiPlotArea2D*>(value->plotWidget2D()->area())) {
+	if (qobject_cast<VipVMultiPlotArea2D*>(value->plotWidget2D()->area())) {
 		arch.save();
 		if (arch.start("MultiAxes")) {
 			// VipMultiAxisBase * left = area->leftMultiAxis();

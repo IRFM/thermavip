@@ -79,7 +79,7 @@ static QAction * findAction(QMenu * menu, const QString & name) {
 }
 static QAction *createAction(QMenu * menu, const QString & name, bool *found)
 {
-	QStringList lst = name.split("/", QString::SkipEmptyParts);
+	QStringList lst = name.split("/", VIP_SKIP_BEHAVIOR::SkipEmptyParts);
 	if (name.isEmpty() || lst.size() == 0)
 		return nullptr;
 

@@ -92,7 +92,7 @@ QFileIconProvider* VipIconProvider::provider() const
 	return &d_data->provider;
 }
 
-static bool checkIconValid(const QIcon& icon)
+/*static bool checkIconValid(const QIcon& icon)
 {
 	if (icon.isNull())
 		return false;
@@ -109,7 +109,7 @@ static bool checkIconValid(const QIcon& icon)
 			return true;
 	}
 	return false;
-}
+}*/
 
 QIcon VipIconProvider::iconPath(const VipPath& path) const
 {

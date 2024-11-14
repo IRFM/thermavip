@@ -111,14 +111,14 @@ QString vipFormatRequestCondition(const VipRequestCondition& c)
 	return QString();
 }
 
-#include <qregion.h>
+/*#include <qregion.h>
 static int regionArea(const QRegion& reg)
 {
 	int pixel_area = 0;
 	for (const QRect& r : reg)
 		pixel_area += r.width() * r.height();
 	return pixel_area;
-}
+}*/
 
 #include "VipLogging.h"
 #include <qsettings.h>
@@ -455,14 +455,14 @@ QString polygonToString(const QVector<Point>& poly)
 	return res;
 }
 
-static QPolygon floorPolygonF(const QPolygonF& p)
+/*static QPolygon floorPolygonF(const QPolygonF& p)
 {
 	QPolygon res(p.size());
 	for (int i = 0; i < p.size(); ++i)
 		// res[i] = QPoint(std::floor(p[i].x()), std::floor(p[i].y()));
 		res[i] = p[i].toPoint();
 	return res;
-}
+}*/
 
 static void convertShape(const VipShape& sh, QPolygon& p, QRect& r)
 {
@@ -1531,7 +1531,7 @@ static QString polygonToJSON(const QPolygon& poly)
 	return res;
 }
 
-static QString polygonToJSON(const QPolygonF& poly)
+/*static QString polygonToJSON(const QPolygonF& poly)
 {
 	QString res;
 	QTextStream str(&res, QIODevice::WriteOnly);
@@ -1549,9 +1549,9 @@ static QString polygonToJSON(const QPolygonF& poly)
 	str << "]";
 	str.flush();
 	return res;
-}
+}*/
 
-static QString polygonToJSON(const QString& polygon)
+/*static QString polygonToJSON(const QString& polygon)
 {
 	QPolygon poly;
 	{
@@ -1565,7 +1565,7 @@ static QString polygonToJSON(const QString& polygon)
 		}
 	}
 	return polygonToJSON(poly);
-}
+}*/
 
 static QString addDoubleQuotes(const QString& str)
 {

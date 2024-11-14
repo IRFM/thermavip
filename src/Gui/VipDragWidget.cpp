@@ -160,7 +160,7 @@ void VipDragWidgetHandler::setParent(VipMultiDragWidget* top_level, QWidget* par
 
 static void minimizeDragWidget(VipBaseDragWidget* w, bool minimize)
 {
-	if (VipDragWidget* d = qobject_cast<VipDragWidget*>(w))
+	if (VipDragWidget* d = qobject_cast<VipDragWidget*>(w)){
 		if (minimize) {
 			if (d->property("_vip_minimizeWidget").value<QWidget*>() == nullptr) {
 
@@ -188,6 +188,7 @@ static void minimizeDragWidget(VipBaseDragWidget* w, bool minimize)
 				m->deleteLater();
 			}
 		}
+	}
 }
 
 struct VipBaseDragWidget::PrivateData
@@ -916,7 +917,6 @@ VipDragWidget::~VipDragWidget()
 
 VipDragWidget* VipDragWidget::next() const
 {
-	VipDragWidget* next = nullptr;
 	VipMultiDragWidget* mw = this->parentMultiDragWidget();
 	bool takeNext = false;
 	int x = 0, y = 0;
@@ -967,7 +967,6 @@ VipDragWidget* VipDragWidget::next() const
 
 VipDragWidget* VipDragWidget::prev() const
 {
-	VipDragWidget* next = nullptr;
 	VipMultiDragWidget* mw = this->parentMultiDragWidget();
 	bool takeNext = false;
 	int x = 0, y = 0;

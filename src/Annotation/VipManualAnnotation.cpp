@@ -1183,10 +1183,10 @@ void VipManualAnnotation::keyPressEvent(QKeyEvent* evt)
 	evt->ignore();
 }
 
-static QByteArray rectToByteArray(const QRect& r)
+/*static QByteArray rectToByteArray(const QRect& r)
 {
 	return QString::asprintf("%i %i %i %i", r.left(), r.top(), r.width(), r.height()).toLatin1();
-}
+}*/
 
 Vip_event_list VipManualAnnotation::generateShapes(VipProgress* p, QString* error)
 {

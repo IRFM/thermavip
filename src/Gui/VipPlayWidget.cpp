@@ -1320,7 +1320,7 @@ public:
 				QWidget* p = a->view();
 				VipPlayWidget* w = nullptr;
 				while (p) {
-					if (w = qobject_cast<VipPlayWidget*>(p))
+					if ((w = qobject_cast<VipPlayWidget*>(p)))
 						break;
 					p = p->parentWidget();
 				}

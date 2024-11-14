@@ -129,7 +129,7 @@ bool PySignalGenerator::open(VipIODevice::OpenModes mode)
 			return false;
 	}
 
-	QStringList lst = code.split("\n", QString::SkipEmptyParts);
+	QStringList lst = code.split("\n", VIP_SKIP_BEHAVIOR::SkipEmptyParts);
 	if (lst.size() == 1)
 		setAttribute("Name", lst[0]);
 	else

@@ -440,7 +440,7 @@ static void uploadROIsFromPlayer(VipVideoPlayer* pl, const QList<VipShape>& shs)
 		generate_url = url->isChecked();
 	}
 
-	VipManualAnnotation* annot = db->manualAnnotationPanel();
+	//VipManualAnnotation* annot = db->manualAnnotationPanel();
 	if (!pl) {
 		QMessageBox::warning(nullptr, "Error", "Unable to send ROI to DB");
 		return;
@@ -621,7 +621,7 @@ static void uploadImageEventFromPlayer(VipVideoPlayer* pl, bool remember = true)
 		remember_choices = remember->isChecked();
 	}
 
-	VipManualAnnotation* annot = db->manualAnnotationPanel();
+	//VipManualAnnotation* annot = db->manualAnnotationPanel();
 	if (!pl) {
 		QMessageBox::warning(nullptr, "Error", "Unable to send ROI to DB");
 		return;

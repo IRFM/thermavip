@@ -291,7 +291,7 @@ void VipGenericRecorder::close()
 
 	if (stop_streaming) {
 		// detect if we are streaming
-		if (pool = parentObjectPool()) {
+		if ((pool = parentObjectPool())) {
 			is_streaming = pool->isStreamingEnabled();
 		}
 		else {
@@ -299,7 +299,7 @@ void VipGenericRecorder::close()
 			QList<VipIODevice*> dev = vipListCast<VipIODevice*>(this->allSources());
 			// find the pool
 			for (VipIODevice* d : dev) {
-				if (pool = d->parentObjectPool())
+				if ((pool = d->parentObjectPool()))
 					break;
 			}
 			if (pool)

@@ -107,7 +107,7 @@ void PyArrayEditor::textEntered()
 		int columns = lines.first().split(" ", VIP_SKIP_BEHAVIOR::SkipEmptyParts).size();
 		bool ok = true;
 		for (int i = 1; i < lines.size(); ++i) {
-			if (lines[i].split(" ", QString::SkipEmptyParts).size() != columns) {
+			if (lines[i].split(" ", VIP_SKIP_BEHAVIOR::SkipEmptyParts).size() != columns) {
 				if (lines[i].count('\n') + lines[i].count('\t') + lines[i].count(' ') != lines[i].size()) {
 					ok = false;
 					break;

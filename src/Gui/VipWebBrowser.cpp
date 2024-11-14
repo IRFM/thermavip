@@ -186,7 +186,7 @@ void VipWebBrowser::loadProgress(int progress)
 }
 void VipWebBrowser::loadFinished(bool ok)
 {
-	(bool)ok;
+	(void)ok;
 	d_data->bar->loadAction->setVisible(false);
 	d_data->bar->stop->setVisible(false);
 }

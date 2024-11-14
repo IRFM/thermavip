@@ -1276,7 +1276,7 @@ static ResultType extractTimeTrace(int player, const QVariantList & rois, const 
 	}
 
 	QString stat = attrs["statistics"].toString();
-	VipShapeStatistics::Statistics stats = 0;
+	VipShapeStatistics::Statistics stats {};
 	if (!stat.isEmpty()) {
 		if (stat.contains("min"))
 			stats |= VipShapeStatistics::Minimum;

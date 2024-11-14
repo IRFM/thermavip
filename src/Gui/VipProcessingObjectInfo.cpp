@@ -248,7 +248,7 @@ void VipExtractShapesInfos::apply()
 		return;
 	}
 
-	if (VipVideoPlayer* video = qobject_cast<VipVideoPlayer*>(player())) {
+	if (/*VipVideoPlayer* video =*/ qobject_cast<VipVideoPlayer*>(player())) {
 		// const VipSceneModel sm = video->plotSceneModel()->sceneModel();
 		// QList<VipPlotShape*> shapes = video->plotSceneModel()->shapes();
 		for (int i = 0; i < shapes.size(); ++i) {

@@ -2746,7 +2746,7 @@ void VipDragMenu::mouseReleaseEvent(QMouseEvent* evt)
 	QMenu::mouseReleaseEvent(evt);
 }
 
-static void execDrag(QMimeData* m)
+/*static void execDrag(QMimeData* m)
 {
 	QDrag d(vipGetMainWindow());
 	d.setMimeData(m);
@@ -2754,7 +2754,7 @@ static void execDrag(QMimeData* m)
 	d.exec();
 	// QObject* w = d.target();
 	QCoreApplication::removePostedEvents(&d, QEvent::DeferredDelete);
-}
+}*/
 
 void VipDragMenu::mouseMoveEvent(QMouseEvent* evt)
 {

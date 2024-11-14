@@ -1636,10 +1636,10 @@ void VipPlayerDBAccess::saveToJson()
 	saveToJsonInternal(true);
 }
 
-static QByteArray rectToByteArray(const QRect& r)
+/*static QByteArray rectToByteArray(const QRect& r)
 {
 	return QString::asprintf("%i %i %i %i", r.left(), r.top(), r.width(), r.height()).toLatin1();
-}
+}*/
 
 void VipPlayerDBAccess::saveToJsonInternal(bool show_messages)
 {
@@ -2269,7 +2269,7 @@ void VipPlayerDBAccess::shapeDestroyed(VipPlotShape* sh)
 	VipShape shape = sh->rawData();
 	if (VipPlotSceneModel* plot = sh->property("VipPlotSceneModel").value<VipPlotSceneModel*>()) {
 		if (VipDisplayObject* obj = plot->property("VipDisplayObject").value<VipDisplayObject*>())
-			if (VipEventDevice* dev = vipListCast<VipEventDevice*>(obj->allSources()).first())
+			if (/*VipEventDevice* dev = */vipListCast<VipEventDevice*>(obj->allSources()).first())
 				this->remove(/*shape.attribute("ID").toInt()*/ shape.id());
 	}
 
@@ -2277,7 +2277,7 @@ void VipPlayerDBAccess::shapeDestroyed(VipPlotShape* sh)
 	if (VipDisplayPlayerArea* a = VipDisplayPlayerArea::fromChildWidget(m_player)) {
 		QList<VipTimeRangeListItem*> items = a->playWidget()->area()->findItems<VipTimeRangeListItem*>(QString(), 2, 1);
 		for (int i = 0; i < items.size(); ++i) {
-			if (VipEventDevice* dev = qobject_cast<VipEventDevice*>(items[i]->device())) {
+			if (/*VipEventDevice* dev =*/ qobject_cast<VipEventDevice*>(items[i]->device())) {
 				items[i]->setAdditionalDrawFunction(VipTimeRangeListItem::draw_function());
 			}
 		}
