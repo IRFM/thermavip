@@ -1,7 +1,7 @@
 /**
  * BSD 3-Clause License
  *
- * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Lï¿½o Dubus, Erwan Grelier
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -1163,6 +1163,7 @@ void VipPlayer2D::keyPressEvent(QKeyEvent* evt)
 		nextSelection(evt->modifiers() & Qt::CTRL);
 		return;
 	}
+	
 
 	// Apply dispatcher
 	auto fun = VipFDPlayerKeyPress().match(this);
@@ -3078,6 +3079,11 @@ void VipVideoPlayer::keyPressEvent(QKeyEvent* evt)
 	}
 	else if (evt->key() == '.' || evt->key() == ';') {
 		QMetaObject::invokeMethod(vipGetSceneModelWidgetPlayer(), "addPixel");
+		evt->accept();
+	}
+	else if (evt->key() == Qt::Key_H) {
+		// Switch flat histogram on/off
+		setFlatHistogramColorScale(!isFlatHistogramColorScale());
 		evt->accept();
 	}
 

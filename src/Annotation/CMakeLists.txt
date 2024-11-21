@@ -8,6 +8,7 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 # qt_standard_project_setup()
 set(CMAKE_AUTOMOC ON)
 include(GNUInstallDirs)
+include(FetchContent)
 
 FILE(GLOB Sources *.cpp)
 FILE(GLOB Headers *.h)
@@ -38,6 +39,26 @@ include(${THERMAVIP_COMPILER_FLAGS_FILE})
 
 
 # Configure Librir
+
+# if(WITH_LIBRIR)
+# 	if(NOT librir_FOUND)
+# 		FetchContent_Declare(
+# 			librir
+# 			GIT_REPOSITORY
+# 			https://github.com/IRFM/librir.git
+# 			GIT_TAG         main
+# 			OVERRIDE_FIND_PACKAGE 
+# 		)
+# 		#FetchContent_GetProperties(librir)
+		
+# 			# Fetch the content using previously declared details
+# 			FetchContent_Populate(librir)
+# 		FetchContent_MakeAvailable(librir)
+# 		#install(DIRECTORY ${CMAKE_BINARY_DIR}/src/Annotation/librir-prefix/src/librir-build/install/python/librir DESTINATION "${CMAKE_INSTALL_PREFIX}/thermavip")
+# 	endif()
+# endif()
+
+
 IF(WITH_LIBRIR)
 	include(ExternalProject)
 	
@@ -45,8 +66,29 @@ IF(WITH_LIBRIR)
 	  GIT_REPOSITORY https://github.com/IRFM/librir.git
 	  GIT_TAG main
 	)
+
+	# trick from https://stackoverflow.com/questions/17446981/cmake-externalproject-add-and-findpackage
+	# Run cmake twice to populate librirmake
+	# if(NOT ${librir_FOUND})
+	# 	#rerun cmake in initial build
+	# 	#will update cmakecache/project files on first build
+	# 	#so you may have to reload project after first build
+	# 	add_custom_target(Rescan ${CMAKE_COMMAND} ${CMAKE_SOURCE_DIR} "CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}" ${CMAKE_ARGS} DEPENDS librir)
+	# else()
+	# 	#Rescan becomes a dummy target after first build
+	# 	#this prevents cmake from rebuilding cache/projects on subsequent builds
+	# 	add_custom_target(Rescan)
+	# endif()
+
 	
+	# if(${librir_FOUND})
+	# 	add_dependencies(VipAnnotation librir)
+	# else()
+	# 	add_dependencies(VipAnnotation Rescan)
+	# endif()
+
 	add_dependencies(VipAnnotation librir)
+	#find_package(librir)
 	install(DIRECTORY ${CMAKE_BINARY_DIR}/src/Annotation/librir-prefix/src/librir-build/install/python/librir DESTINATION "${CMAKE_INSTALL_PREFIX}/thermavip")
 	
 endif()
