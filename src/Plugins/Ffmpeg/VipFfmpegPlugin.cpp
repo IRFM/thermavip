@@ -217,7 +217,12 @@ FfmpegInterface::LoadResult FfmpegInterface::load()
 		open->setMenu(menu);
 		QObject::connect(menu, SIGNAL(triggered(QAction*)), this, SLOT(openVideoStream(QAction*)));
 
-		vipGetMainWindow()->toolsToolBar()->addWidget(open)->setToolTip("Open local webcam or network stream");
+		if (QAction* act = vipGetMainWindow()->fileToolBar()->findChild<QAction*>("GenerateButton")) {
+			vipGetMainWindow()->fileToolBar()->insertWidget(act, open)->setToolTip("Open local webcam or network stream");
+		}
+		else
+			vipGetMainWindow()->fileToolBar()->addWidget(open)->setToolTip("Open local webcam or network stream");
+		//vipGetMainWindow()->toolsToolBar()->addWidget(open)->setToolTip("Open local webcam or network stream");
 	}
 
 	// add button to make movies of thermavip (successive screenshots)

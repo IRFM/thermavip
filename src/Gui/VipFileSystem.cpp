@@ -135,6 +135,8 @@ QIcon VipIconProvider::iconPath(const VipPath& path) const
 		if (isDrive(path, info)) {
 			if (d_data->driveIcon.isNull())
 				const_cast<QIcon&>(d_data->driveIcon) = d_data->provider.icon(info).pixmap(1);
+			if (d_data->driveIcon.isNull())
+				const_cast<QIcon&>(d_data->driveIcon) = d_data->provider.icon(QFileInfo(QCoreApplication::applicationDirPath())).pixmap(1);
 			return d_data->driveIcon;
 		}
 		//if (d_data->dirIcon.isNull())

@@ -3635,9 +3635,9 @@ void VipMainWindow::init()
 	this->addDockWidget(Qt::LeftDockWidgetArea, vipGetVTKPlayerToolWidget(this));
 #endif
 
-	// TEST
+	// Add search line edit
 	d_data->searchLineEdit = new VipSearchLineEdit();
-	d_data->toolsToolBar.addWidget(d_data->searchLineEdit);
+	d_data->fileToolBar.addWidget(d_data->searchLineEdit);
 
 	// Add shortcuts
 	VipShortcutsHelper::registerShorcut("Open files...", [this]() { this->openFiles(); });

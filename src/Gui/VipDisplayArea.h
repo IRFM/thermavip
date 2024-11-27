@@ -41,6 +41,7 @@
 
 #include "VipDragWidget.h"
 #include "VipMapFileSystem.h"
+#include "VipFunctional.h"
 
 /// Minimal accepted version of a session file in order to be properly loaded
 #define VIP_MINIMAL_SESSION_VERSION "2.2.5"
@@ -677,7 +678,7 @@ private:
 /// Returns the main unique VipMainWindow
 VIP_GUI_EXPORT VipMainWindow* vipGetMainWindow();
 
-#include "VipFunctional.h"
+
 
 /// Function dispatcher which create a VipBaseDragWidget object from an input VipIODevice object
 /// The default behavior would normally use the dispatcher vipCreatePlayersFromProcessing() to create a VipDragWidget instance.

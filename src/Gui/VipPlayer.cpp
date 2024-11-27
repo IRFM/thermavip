@@ -3043,48 +3043,50 @@ void VipVideoPlayer::keyPressEvent(QKeyEvent* evt)
 	// Use Z and S to move contour level
 	evt->ignore();
 
-	if (evt->key() == Qt::Key_Z && !(evt->modifiers() & Qt::CTRL)) {
-		if (increaseContour())
+	if (!evt->modifiers()) {
+		if (evt->key() == Qt::Key_Z && !(evt->modifiers() & Qt::CTRL)) {
+			if (increaseContour())
+				evt->accept();
+		}
+		else if (evt->key() == Qt::Key_S && !(evt->modifiers() & Qt::CTRL)) {
+			if (decreaseContour())
+				evt->accept();
+		}
+		else if (evt->key() == Qt::Key_I && !(evt->modifiers() & Qt::CTRL)) {
+			updateSelectedShapesFromIsoLine();
 			evt->accept();
-	}
-	else if (evt->key() == Qt::Key_S && !(evt->modifiers() & Qt::CTRL)) {
-		if (decreaseContour())
-			evt->accept();
-	}
-	else if (evt->key() == Qt::Key_I && !(evt->modifiers() & Qt::CTRL)) {
-		updateSelectedShapesFromIsoLine();
-		evt->accept();
-	}
+		}
 
-	// Shortcuts to draw ROI
-	else if (evt->key() == Qt::Key_R) {
-		QMetaObject::invokeMethod(vipGetSceneModelWidgetPlayer(), "addRect");
-		evt->accept();
-	}
-	else if (evt->key() == Qt::Key_E) {
-		QMetaObject::invokeMethod(vipGetSceneModelWidgetPlayer(), "addEllipse");
-		evt->accept();
-	}
-	else if (evt->key() == Qt::Key_P) {
-		QMetaObject::invokeMethod(vipGetSceneModelWidgetPlayer(), "addPolygon");
-		evt->accept();
-	}
-	else if (evt->key() == Qt::Key_F) {
-		QMetaObject::invokeMethod(vipGetSceneModelWidgetPlayer(), "addMask");
-		evt->accept();
-	}
-	else if (evt->key() == Qt::Key_L) {
-		QMetaObject::invokeMethod(vipGetSceneModelWidgetPlayer(), "addPolyline");
-		evt->accept();
-	}
-	else if (evt->key() == '.' || evt->key() == ';') {
-		QMetaObject::invokeMethod(vipGetSceneModelWidgetPlayer(), "addPixel");
-		evt->accept();
-	}
-	else if (evt->key() == Qt::Key_H) {
-		// Switch flat histogram on/off
-		setFlatHistogramColorScale(!isFlatHistogramColorScale()); 
-		evt->accept();
+		// Shortcuts to draw ROI
+		else if (evt->key() == Qt::Key_R) {
+			QMetaObject::invokeMethod(vipGetSceneModelWidgetPlayer(), "addRect");
+			evt->accept();
+		}
+		else if (evt->key() == Qt::Key_E) {
+			QMetaObject::invokeMethod(vipGetSceneModelWidgetPlayer(), "addEllipse");
+			evt->accept();
+		}
+		else if (evt->key() == Qt::Key_P) {
+			QMetaObject::invokeMethod(vipGetSceneModelWidgetPlayer(), "addPolygon");
+			evt->accept();
+		}
+		else if (evt->key() == Qt::Key_F) {
+			QMetaObject::invokeMethod(vipGetSceneModelWidgetPlayer(), "addMask");
+			evt->accept();
+		}
+		else if (evt->key() == Qt::Key_L) {
+			QMetaObject::invokeMethod(vipGetSceneModelWidgetPlayer(), "addPolyline");
+			evt->accept();
+		}
+		else if (evt->key() == '.' || evt->key() == ';') {
+			QMetaObject::invokeMethod(vipGetSceneModelWidgetPlayer(), "addPixel");
+			evt->accept();
+		}
+		else if (evt->key() == Qt::Key_H) {
+			// Switch flat histogram on/off
+			setFlatHistogramColorScale(!isFlatHistogramColorScale());
+			evt->accept();
+		}
 	}
 
 	if (!evt->isAccepted())
