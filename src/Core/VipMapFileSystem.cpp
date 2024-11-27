@@ -1305,7 +1305,7 @@ VipPathList VipSFTPFileSystem::listPathContent(const VipPath& path)
 
 	d_data->listPath = path;
 	d_data->finished = false;
-	while (!d_data->finished) {
+	while (!d_data->finished && d_data->isRunning()) {
 		vipSleep(5);
 	}
 	return d_data->result;
@@ -1316,12 +1316,18 @@ QIODevice* VipSFTPFileSystem::openPath(const VipPath& path, QIODevice::OpenMode 
 	if (!(modes & QIODevice::ReadOnly))
 		return nullptr;
 
+	if (!isOpen()) {
+		// TODO: check for password and ask if necessary
+		return nullptr;
+	}
+
 	// build temporary filename
 	QString tmp = vipGetTempDirectory();
 	if (!tmp.endsWith("/"))
 		tmp += "/";
 
 	QString fname = tmp + QFileInfo(path.canonicalPath()).fileName();
+	vip_debug("%s\n", fname.toLatin1().data());
 
 	QMutexLocker lock(&d_data->mutex);
 
@@ -1336,11 +1342,16 @@ QIODevice* VipSFTPFileSystem::openPath(const VipPath& path, QIODevice::OpenMode 
 
 		VipProgress p;
 		p.setRange(0, outsize);
+		p.setCancelable(true);
 		p.setText("<b>Load file </b>" + QFileInfo(path.canonicalPath()).fileName());
-		while (!d_data->finished) {
+		while (!d_data->finished && d_data->isRunning()) {
 
 			p.setValue(QFileInfo(fname).size());
 			vipSleep(5);
+
+			if (p.canceled()) {
+				return nullptr;
+			}
 		}
 	}
 

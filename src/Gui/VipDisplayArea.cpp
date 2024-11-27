@@ -59,6 +59,7 @@
 #include "VipUpdate.h"
 #include "VipWidgetResizer.h"
 #include "VipXmlArchive.h"
+#include "VipSearchLineEdit.h"
 
 #include <QApplication>
 #include <QBoxLayout>
@@ -3306,6 +3307,7 @@ public:
 	VipIconBar* iconBar;
 	VipCloseBar* closeBar;
 	VipDisplayArea* displayArea;
+	VipSearchLineEdit* searchLineEdit{ nullptr };
 
 	QToolBar *left, *right, *bottom, *top;
 	VipShowWidgetOnHover* showTabBar;
@@ -3632,6 +3634,19 @@ void VipMainWindow::init()
 	this->addDockWidget(Qt::LeftDockWidgetArea, vipGetFOVSequenceEditorTool(this));
 	this->addDockWidget(Qt::LeftDockWidgetArea, vipGetVTKPlayerToolWidget(this));
 #endif
+
+	// TEST
+	d_data->searchLineEdit = new VipSearchLineEdit();
+	d_data->toolsToolBar.addWidget(d_data->searchLineEdit);
+
+	// Add shortcuts
+	VipShortcutsHelper::registerShorcut("Open files...", [this]() { this->openFiles(); });
+	VipShortcutsHelper::registerShorcut("Open directory...", [this]() { this->openDir(); });
+	VipShortcutsHelper::registerShorcut("About...", [this]() { this->aboutDialog(); });
+	VipShortcutsHelper::registerShorcut("Preferences...", [this]() { this->showOptions(); });
+	VipShortcutsHelper::registerShorcut("Save current session...", [this]() { this->saveSession(); });
+	VipShortcutsHelper::registerShorcut("Preferences...", [this]() { this->showOptions(); });
+	VipShortcutsHelper::registerShorcut("Help...", [this]() { this->showHelp(); });
 
 	closeBar()->startDetectState();
 }
@@ -4160,6 +4175,8 @@ void VipMainWindow::showEvent(QShowEvent* // evt
 
 void VipMainWindow::keyPressEvent(QKeyEvent* evt)
 {
+	//TODO: replace for of this by QShortcut objects
+
 	VipDisplayPlayerArea* area = displayArea()->currentDisplayPlayerArea();
 	if (evt->key() == Qt::Key_F5)
 		autoSave();
@@ -4234,6 +4251,12 @@ void VipMainWindow::keyPressEvent(QKeyEvent* evt)
 	else if (evt->key() == Qt::Key_Escape) {
 		if (isFullScreen())
 			showMaximized();
+	}
+	else if (evt->key() == Qt::Key_F && (evt->modifiers() & Qt::CTRL)) {
+		if (d_data->searchLineEdit) {
+			d_data->searchLineEdit->selectAll();
+			d_data->searchLineEdit->setFocus(Qt::OtherFocusReason);
+		}
 	}
 }
 
@@ -4353,6 +4376,8 @@ QList<VipAbstractPlayer*> VipMainWindow::openDevices(const QList<VipIODevice*>& 
 	if (!area)
 		return QList<VipAbstractPlayer*>();
 
+	QStringList paths;
+
 	QList<VipAbstractPlayer*> res;
 	// if a player is given, open the devices in this player
 	if (player) {
@@ -4361,6 +4386,10 @@ QList<VipAbstractPlayer*> VipMainWindow::openDevices(const QList<VipIODevice*>& 
 			if (!vipCreatePlayersFromProcessings(QList<VipIODevice*>() << all_devices[i], player).size())
 				delete all_devices[i];
 			else {
+
+				// add to paths
+				paths.push_back(all_devices[i]->fullPath());
+
 				res << player;
 				// delete devices without outputs (usually VipFileHandler)
 				if (all_devices[i]->topLevelOutputCount() == 0)
@@ -4371,6 +4400,9 @@ QList<VipAbstractPlayer*> VipMainWindow::openDevices(const QList<VipIODevice*>& 
 	else {
 		for (int i = 0; i < all_devices.size(); ++i) {
 			all_devices[i]->setParent(area->processingPool());
+
+			// add to paths
+			paths.push_back(all_devices[i]->fullPath());
 		}
 		QList<VipAbstractPlayer*> players = vipCreatePlayersFromProcessings(all_devices, nullptr);
 
@@ -4398,6 +4430,9 @@ QList<VipAbstractPlayer*> VipMainWindow::openDevices(const QList<VipIODevice*>& 
 			res = players;
 		else
 			return QList<VipAbstractPlayer*>();
+
+		//Add paths to history
+		VipDeviceOpenHelper::addToHistory(paths);
 
 		open_widgets(this, vipListCast<QWidget*>(players));
 	}

@@ -38,6 +38,7 @@
 #include "VipProgress.h"
 #include "VipSet.h"
 #include "VipStandardEditors.h"
+#include "VipSearchLineEdit.h"
 
 #include <QApplication>
 #include <QFileIconProvider>
@@ -74,6 +75,7 @@ class VipIconProvider::PrivateData
 {
 public:
 	QIcon dirIcon;
+	QIcon driveIcon;
 	QMap<QString, QIcon> fileIcons;
 	QFileIconProvider provider;
 };
@@ -111,41 +113,65 @@ QFileIconProvider* VipIconProvider::provider() const
 	return false;
 }*/
 
+static bool isDrive(const VipPath& path, const QFileInfo& info)
+{
+#ifdef WIN32
+	if (info.isRoot())
+		return true;
+	int idx = path.canonicalPath().indexOf(":");
+	if (idx < 0)
+		return false;
+	return idx == 1 && path.canonicalPath().size() <= 3;
+#endif
+	return false;
+}
+
 QIcon VipIconProvider::iconPath(const VipPath& path) const
 {
-	QIcon ic = d_data->provider.icon(QFileInfo(path.canonicalPath()));
-	if (ic.isNull()) //! checkIconValid(ic))
-	{
-		if (path.isDir()) {
-			if (d_data->dirIcon.isNull())
-				const_cast<QIcon&>(d_data->dirIcon) = d_data->provider.icon(QCoreApplication::applicationDirPath());
-			return d_data->dirIcon;
+	vip_debug("icon1: %s\n", path.canonicalPath().toLatin1().data());
+
+	QFileInfo info(path.canonicalPath());
+	if (info.isDir()) {
+		if (isDrive(path, info)) {
+			if (d_data->driveIcon.isNull())
+				const_cast<QIcon&>(d_data->driveIcon) = d_data->provider.icon(info).pixmap(1);
+			return d_data->driveIcon;
 		}
-		else {
-			QString suffix = QFileInfo(path.canonicalPath()).suffix();
-			QMap<QString, QIcon>::const_iterator it = d_data->fileIcons.find(suffix);
-			if (it != d_data->fileIcons.end())
-				return it.value();
-			else {
-				// create the file icon if it does  not exist
-				QTemporaryDir dir;
-				if (dir.isValid()) {
-					QFile file(dir.path() + "/" + QFileInfo(path.canonicalPath()).fileName());
-					if (file.open(QFile::WriteOnly)) {
-						file.close();
-						QIcon new_icon = d_data->provider.icon(QFileInfo(file.fileName()));
-						if (!new_icon.isNull()) {
-							new_icon = QIcon(new_icon.pixmap(30, 30));
-							const_cast<QMap<QString, QIcon>&>(d_data->fileIcons)[suffix] = new_icon;
-							return new_icon;
-						}
-					}
-				}
+		//if (d_data->dirIcon.isNull())
+		//	const_cast<QIcon&>(d_data->dirIcon) = d_data->provider.icon(info).pixmap(1);
+		if (d_data->dirIcon.isNull())
+			const_cast<QIcon&>(d_data->dirIcon) = d_data->provider.icon(QFileInfo(QCoreApplication::applicationDirPath())).pixmap(1);
+		return d_data->dirIcon;
+	}
+
+	QString suffix = info.suffix();
+	auto it = d_data->fileIcons.find(suffix);
+	if (it != d_data->fileIcons.end())
+		return it.value();
+
+	// Convert icon to pixmap to avoid "Warning: SHGetFileInfo() timed out for..."
+	QIcon ic = d_data->provider.icon(info).pixmap(1);
+	if (!ic.isNull())
+		return const_cast<QMap<QString, QIcon>&>(d_data->fileIcons)[suffix] = ic;
+
+	if (!info.exists())
+	{
+		// create the file icon if it does  not exist
+		QTemporaryDir dir;
+		if (dir.isValid()) {
+			QFile file(dir.path() + "/" + info.fileName());
+			if (file.open(QFile::WriteOnly)) {
+				file.close();
+				QIcon new_icon = d_data->provider.icon(QFileInfo(file.fileName())).pixmap(1);
+				//if (!new_icon.isNull()) {
+					new_icon = QIcon(new_icon.pixmap(30, 30));
+					const_cast<QMap<QString, QIcon>&>(d_data->fileIcons)[suffix] = new_icon;
+					return new_icon;
+				//}
 			}
 		}
 	}
-
-	return ic;
+	return const_cast<QMap<QString, QIcon>&>(d_data->fileIcons)[suffix] = ic;
 }
 
 QIcon VipFileSystem::iconPath(const VipPath& path) const
@@ -167,7 +193,8 @@ QIcon VipPSFTPFileSystem::iconPath(const VipPath& path) const
 	if (path.isDir())
 		return m_provider.provider()->icon(QFileIconProvider::Folder);
 	else {
-		QString tmp = vipGetTempDirectory();
+		return m_provider.iconPath(path);
+		/*QString tmp = vipGetTempDirectory();
 		if (!tmp.endsWith("/"))
 			tmp += "/";
 
@@ -177,7 +204,7 @@ QIcon VipPSFTPFileSystem::iconPath(const VipPath& path) const
 			QFile out(fname);
 			out.open(QFile::WriteOnly);
 		}
-		return m_provider.iconPath(VipPath(fname));
+		return m_provider.iconPath(VipPath(fname));*/
 	}
 }
 
@@ -214,7 +241,7 @@ class PSFTPFileManager : public VipFileSystemManager
 {
 public:
 	virtual const char* className() const { return "VipPSFTPFileSystem"; }
-	virtual QString name() const { return "SFTP"; }
+	virtual QString name() const { return "SFTP connection"; }
 	virtual VipMapFileSystemEditor* edit(VipMapFileSystem*) const { return new PSFTPFileSystemEditor(); }
 	virtual VipMapFileSystem* create() const { return new VipPSFTPFileSystem(); };
 };
@@ -643,6 +670,7 @@ public:
 	QPoint press_position;
 	VipMapFileSystemTree::Operations operations;
 	VipMapFileSystemTreeUpdate* update;
+	VipMapFileSystemTreeItem* shorcuts{ nullptr };
 
 	// all items sortd by path
 	QMultiMap<QString, VipMapFileSystemTreeItem*> items;
@@ -1205,6 +1233,11 @@ bool VipMapFileSystemTree::pasteSelection()
 	return false;
 }
 
+void VipMapFileSystemTree::addSelectionToShortcuts()
+{
+	addToShortcuts(selectedPaths());
+}
+
 void VipMapFileSystemTree::unselectAll()
 {
 	unselectHelper(this->invisibleRootItem());
@@ -1332,6 +1365,43 @@ void VipMapFileSystemTree::dragMoveEvent(QDragMoveEvent* event)
 	}
 	else
 		QTreeWidget::dragMoveEvent(event);
+}
+
+VipMapFileSystemTreeItem* VipMapFileSystemTree::shortcutsItem() const
+{
+	if (d_data->shorcuts)
+		return d_data->shorcuts;
+	for (int i = 0; i < topLevelItemCount(); ++i) {
+		auto* it = topLevelItem(i);
+		if (it->text(0) == "Shortcuts")
+			return const_cast<PrivateData*>(d_data.get())->shorcuts = static_cast<VipMapFileSystemTreeItem*>(it);
+	}
+	return nullptr;
+}
+
+void VipMapFileSystemTree::addToShortcuts(const VipPathList& lst)
+{
+	VipMapFileSystemTreeItem* shortcuts = shortcutsItem();
+	if (!shortcuts)
+		return;
+
+	VipPathList already_there = shortcuts->childrenPaths();
+
+	for (int i = 0; i < lst.size(); ++i) {
+		vip_debug("lst: '%s'\n", lst[i].canonicalPath().toLatin1().data());
+
+		if (already_there.indexOf(lst[i]) >= 0)
+			continue;
+
+		VipMapFileSystemTreeItem* child = lst[i].isDir() ? new VipMapFileSystemTreeDirItem(lst[i], this) : new VipMapFileSystemTreeItem(lst[i], this);
+		child->setFlags(child->flags() & (~Qt::ItemIsDragEnabled));
+		shortcuts->addChild(child);
+
+		if (!lst[i].isDir())
+			child->setAttributes(lst[i].attributes());
+		else
+			child->updateContent();
+	}
 }
 
 void VipMapFileSystemTree::dropEvent(QDropEvent* evt)
@@ -1507,6 +1577,10 @@ bool VipMapFileSystemTree::rightClick()
 		menu.addSeparator();
 		connect(menu.addAction(vipIcon("paste.png"), "Paste"), SIGNAL(triggered(bool)), this, SLOT(pasteSelection()));
 	}
+
+	menu.addSeparator();
+	connect(menu.addAction("Add to shortcuts"), SIGNAL(triggered(bool)), this, SLOT(addSelectionToShortcuts()));
+
 	menu.exec(QCursor::pos());
 	return true;
 }
@@ -2197,9 +2271,10 @@ void VipFileSystemWidget::passwordEntered()
 
 	sys->setPassword(d_data->password->text().toLatin1());
 	if (!sys->open(sys->address())) {
-		d_data->password->setStyleSheet("border: 1px solid red;");
+		d_data->password->setStyleSheet("QLineEdit{border: 1px solid red;}");
 	}
 	else {
+		d_data->password->setStyleSheet("");
 		d_data->password->hide();
 		d_data->splitter->show();
 		layout()->removeItem(layout()->itemAt(layout()->count() - 1));
@@ -2415,6 +2490,8 @@ protected:
 	virtual void tabRemoved(int) { tabBar()->setVisible(count() > 1); }
 };
 
+
+
 VipDirectoryBrowser::VipDirectoryBrowser(VipMainWindow* win)
   : VipToolWidget(win)
 {
@@ -2436,6 +2513,11 @@ VipDirectoryBrowser::VipDirectoryBrowser(VipMainWindow* win)
 	m_timer->setInterval(500);
 	connect(m_timer, SIGNAL(timeout()), this, SLOT(checkAvailableFileSystems()));
 	m_timer->start();
+
+#ifdef WIN32
+	// Add shortcut for SFTP connection
+	VipShortcutsHelper::registerShorcut("Connect to SFTP host...", [this]() { this->createFileSystem("SFTP connection"); });
+#endif
 }
 
 VipDirectoryBrowser::~VipDirectoryBrowser()

@@ -249,6 +249,9 @@ public:
 	QList<int> columnWidths() const;
 	void setColumnWidths(const QList<int>&);
 
+	VipMapFileSystemTreeItem* shortcutsItem() const;
+	void addToShortcuts(const VipPathList& lst);
+
 public Q_SLOTS:
 
 	bool move(const VipPathList& paths, const VipPath& dst_folder);
@@ -261,7 +264,7 @@ public Q_SLOTS:
 	bool copySelection();
 	bool cutSelection();
 	bool pasteSelection();
-
+	void addSelectionToShortcuts();
 	void unselectAll();
 
 protected:

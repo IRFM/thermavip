@@ -3083,7 +3083,7 @@ void VipVideoPlayer::keyPressEvent(QKeyEvent* evt)
 	}
 	else if (evt->key() == Qt::Key_H) {
 		// Switch flat histogram on/off
-		setFlatHistogramColorScale(!isFlatHistogramColorScale());
+		setFlatHistogramColorScale(!isFlatHistogramColorScale()); 
 		evt->accept();
 	}
 

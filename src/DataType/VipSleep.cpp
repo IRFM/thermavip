@@ -129,7 +129,7 @@ void vipSleep(double milliseconds)
 
 		LARGE_INTEGER interval;
 		interval.QuadPart = -1 * (int)(milliseconds * 10000.0f);
-		NtDelayExecution(false, &interval);
+		NtDelayExecution(false, &interval); 
 	}
 }
 
