@@ -110,7 +110,7 @@ public:
 	virtual bool directOpen(const QString& format) const { return true; }
 	virtual bool open(const QString& valid_path) const;
 
-	static void registerShorcut(const QString& format, const std::function<void()>& fun);
+	static bool registerShorcut(const QString& format, const std::function<void()>& fun);
 };
 
 

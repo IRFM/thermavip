@@ -102,6 +102,10 @@ public:
 	QWebEngineView* webEngine() const;
 	virtual QWidget* widgetForMouseEvents() const;
 	virtual QToolBar* playerToolBar() const;
+
+	/// @brief Helper function, open a web browser in a new workspace
+	static void openWebBrowser(const QString& url);
+
 public Q_SLOTS:
 	void setUrl(const QString& url);
 

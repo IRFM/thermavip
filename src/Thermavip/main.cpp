@@ -135,6 +135,13 @@ int main(int argc, char** argv)
 
 	QDir::setCurrent(QFileInfo(QString(argv[0])).canonicalPath());
 
+	
+#ifdef WIN32
+	QString qtwebengine = QFileInfo(QString(argv[0])).canonicalPath() + "/QtWebEngineProcessd.exe";
+	if (QFileInfo(qtwebengine).exists())
+		qputenv("QTWEBENGINEPROCESS_PATH", qtwebengine.toLatin1().data());
+#endif
+	qputenv("QTWEBENGINE_CHROMIUM_FLAGS", "--blink-settings=forceDarkModeEnabled=true,forceDarkModeImagePolicy=2,forceDarkModePagePolicy=1,forceDarkModeInversionAlgorithm=4");
 	// qputenv("QSG_INFO", "1");
 	// qputenv("QT_OPENGL", "desktop");
 	// qputenv("QT_OPENGL", "angle");

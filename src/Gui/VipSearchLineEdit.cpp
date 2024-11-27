@@ -34,6 +34,10 @@
 #include "VipDisplayArea.h"
 #include "VipToolWidget.h"
 
+#ifdef __VIP_USE_WEB_ENGINE
+#include "VipWebBrowser.h"
+#endif
+
 #include <QStandardPaths>
 #include <QListWidget>
 #include <QApplication>
@@ -189,6 +193,15 @@ QStringList VipFileOpenHelper::format(const QString& user_input) const
 
 QString VipFileOpenHelper::validPathFromFormat(const QString& format) const 
 {
+#ifdef __VIP_USE_WEB_ENGINE
+	VipHTTPFileHandler h;
+	if (h.probe(format, QByteArray()))
+		return format;
+#endif
+
+	if (format.startsWith("thermavip://"))
+		return format;
+
 	QFileInfo info(format);
 	if (info.exists()) {
 		QString path = info.canonicalFilePath();
@@ -201,6 +214,15 @@ QString VipFileOpenHelper::validPathFromFormat(const QString& format) const
 }
 QString VipFileOpenHelper::formatFromValidPath(const QString& path) const
 {
+#ifdef __VIP_USE_WEB_ENGINE
+	VipHTTPFileHandler h;
+	if (h.probe(path, QByteArray()))
+		return path;
+#endif
+
+	if (path.startsWith("thermavip://"))
+		return path;
+
 	// first, we need to remove potential class prefix
 	int idx = path.indexOf(":");
 	if (idx == 0)
@@ -254,9 +276,10 @@ QString VipShortcutsHelper::formatFromValidPath(const QString& path) const
 	return it.key();
 }
 
-void VipShortcutsHelper::registerShorcut(const QString& format, const std::function<void()>& fun)
+bool VipShortcutsHelper::registerShorcut(const QString& format, const std::function<void()>& fun)
 {
 	_shortcuts.insert(format, fun);
+	return true;
 }
 
 bool VipShortcutsHelper::open(const QString& valid_path) const 

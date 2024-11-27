@@ -42,6 +42,12 @@ QFrame[frameShape="5"] {
 	max-width: 1px;
 }
 
+/*QCheckBox::indicator{ 
+background-color : cyan; 
+}
+QRadioButton::indicator{ 
+background-color : cyan; 
+}*/
 
 
 QMenu {

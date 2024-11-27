@@ -34,11 +34,16 @@
 #include "VipDisplayArea.h"
 #include "VipProgress.h"
 #include "VipWebBrowser.h"
+#include "VipSearchLineEdit.h"
 
 #ifdef __VIP_USE_WEB_ENGINE
 
 #include <qwebenginecertificateerror.h>
 #include <qwebenginesettings.h>
+
+
+static bool registerHelper = VipShortcutsHelper::registerShorcut("web browser", []() { VipWebBrowser::openWebBrowser(QString()); });
+
 
 bool VipHTTPFileHandler::open(const QString& path, QString* error)
 {
@@ -205,6 +210,17 @@ QWidget* VipWebBrowser::widgetForMouseEvents() const
 QToolBar* VipWebBrowser::playerToolBar() const
 {
 	return d_data->bar;
+}
+
+void VipWebBrowser::openWebBrowser(const QString& url)
+{
+	VipDisplayPlayerArea* area = new VipDisplayPlayerArea();
+	vipGetMainWindow()->displayArea()->addWidget(area);
+
+	VipWebBrowser* b = new VipWebBrowser();
+	auto * mw = vipCreateFromBaseDragWidget(vipCreateFromWidgets(QWidgetList() << b));
+	area->addWidget(mw);
+	b->setUrl(url);
 }
 
 void VipWebBrowser::setUrl(const QString& url)
