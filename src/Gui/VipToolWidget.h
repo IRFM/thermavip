@@ -212,11 +212,13 @@ public:
 	bool floatingTool() const;
 
 	/// @brief Set an action that will trigger the tool widget visibility.
-	void setAction(QAction* action);
+	/// If take_icon is true, the tool widget top left icon will be set
+	/// to the QAction's icon.
+	void setAction(QAction* action, bool take_icon = true);
 	QAction* action() const;
 
 	/// @brief Set button that will trigger the tool widget visibility.
-	void setButton(QAbstractButton* action);
+	void setButton(QAbstractButton* action, bool take_icon = true);
 	QAbstractButton* button() const;
 
 	/// @brief Enable/disable top left icon display

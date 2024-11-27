@@ -488,6 +488,7 @@ public:
 	~VipCloseBar();
 
 	void startDetectState();
+	void computeToolsMenu(QToolButton* button);
 
 private Q_SLOTS:
 	void maximizeOrShowNormal();
@@ -658,6 +659,7 @@ private Q_SLOTS:
 	void applicationStateChanged(Qt::ApplicationState state);
 	void setFlatHistogramStrength(); // internal use only, for AdvancedDisplay plugin
 	void tabChanged();
+	void finalizeToolsToolBar();
 Q_SIGNALS:
 	void aboutToClose();
 	void sessionLoaded();

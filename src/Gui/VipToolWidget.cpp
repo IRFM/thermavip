@@ -170,7 +170,7 @@ VipToolWidgetTitleBar::VipToolWidgetTitleBar(VipToolWidget* parent)
 	d_data->label->setText(parent->windowTitle());
 	QSize s = parent->windowIcon().actualSize(QSize(100, 100));
 	if (!s.isEmpty())
-		d_data->icon->setPixmap(parent->windowIcon().pixmap(s));
+		d_data->icon->setPixmap(parent->windowIcon().pixmap(s).scaled(22, 22, Qt::KeepAspectRatio, Qt::SmoothTransformation));
 	d_data->icon->setVisible(false); // !parent->windowIcon().isNull());
 
 	// this->setMaximumHeight(30);
@@ -310,7 +310,7 @@ void VipToolWidgetTitleBar::updateTitleAndPosition()
 		if (d_data->displayWindowIcon) {
 			QSize s = tool->windowIcon().actualSize(QSize(100, 100));
 			if (!s.isEmpty())
-				d_data->icon->setPixmap(tool->windowIcon().pixmap(s));
+				d_data->icon->setPixmap(tool->windowIcon().pixmap(s).scaled(22, 22,Qt::KeepAspectRatio,Qt::SmoothTransformation));
 			d_data->icon->setVisible(!tool->windowIcon().isNull());
 		}
 
@@ -527,7 +527,7 @@ void VipToolWidget::setVisibleInternal(bool vis)
 		raise();
 }
 
-void VipToolWidget::setAction(QAction* action)
+void VipToolWidget::setAction(QAction* action, bool take_icon)
 {
 	if (d_data->action) {
 		disconnect(d_data->action, SIGNAL(triggered(bool)), this, SLOT(setVisibleInternal(bool)));
@@ -539,6 +539,14 @@ void VipToolWidget::setAction(QAction* action)
 		action->setCheckable(true);
 		action->setChecked(this->isVisible());
 		connect(d_data->action, SIGNAL(triggered(bool)), this, SLOT(setVisibleInternal(bool)));
+
+		if (take_icon) {
+			QIcon ic = action->icon();
+			if (!ic.isNull()) {
+				this->setWindowIcon(ic);
+				this->setDisplayWindowIcon(true);
+			}
+		}
 	}
 }
 
@@ -547,7 +555,7 @@ QAction* VipToolWidget::action() const
 	return d_data->action;
 }
 
-void VipToolWidget::setButton(QAbstractButton* button)
+void VipToolWidget::setButton(QAbstractButton* button, bool take_icon )
 {
 	if (d_data->button) {
 		disconnect(d_data->button, SIGNAL(clicked(bool)), this, SLOT(setVisible(bool)));
@@ -558,6 +566,14 @@ void VipToolWidget::setButton(QAbstractButton* button)
 		button->setCheckable(true);
 		button->setChecked(this->isVisible());
 		connect(d_data->button, SIGNAL(clicked(bool)), this, SLOT(setVisible(bool)));
+
+		if (take_icon) {
+			QIcon ic = button->icon();
+			if (!ic.isNull()) {
+				this->setWindowIcon(ic);
+				this->setDisplayWindowIcon(true);
+			}
+		}
 	}
 }
 QAbstractButton* VipToolWidget::button() const

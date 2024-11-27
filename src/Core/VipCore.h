@@ -311,6 +311,7 @@ VIP_CORE_EXPORT bool vipPrependInitializationFunction(int (*fun)());
 /// \internal add a function that will be called in QCoreApplication event loop. Should only be used by Thermavip SDK libraries.
 VIP_CORE_EXPORT bool vipAddGuiInitializationFunction(int (*fun)());
 VIP_CORE_EXPORT bool vipAddGuiInitializationFunction(void (*fun)());
+VIP_CORE_EXPORT bool vipAddGuiInitializationFunction(const VipFunction<0>& fun);
 
 VIP_CORE_EXPORT void vipEnableGuiInitializationFunction(bool);
 

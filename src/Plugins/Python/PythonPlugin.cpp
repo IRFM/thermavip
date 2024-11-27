@@ -471,7 +471,7 @@ PythonInterface::LoadResult PythonInterface::load()
 	pyGetPythonInterpreter()->setFloating(true);
 	pyGetPythonInterpreter()->hide();
 
-	QAction * pyaction = vipGetMainWindow()->toolsToolBar()->addAction(vipIcon("python.png"),"Show/hide Python console");
+	QAction * pyaction = vipGetMainWindow()->toolsToolBar()->addAction(vipIcon("PYTHON.png"),"Show/hide Python console");
 	pyGetPythonInterpreter()->setAction(pyaction);
 
 	vipGetMainWindow()->addDockWidget(Qt::LeftDockWidgetArea, vipGetPyEditorToolWidget());
@@ -480,7 +480,7 @@ PythonInterface::LoadResult PythonInterface::load()
 
 	 
 	showEditor = new QToolButton();
-	showEditor->setIcon(vipIcon("start_streaming.png"));
+	showEditor->setIcon(vipIcon("CODE.png"));
 	showEditor->setToolTip("Show/hide Python code editor");
 	showEditor->setAutoRaise(true); 
 	showEditor->setMenu(new QMenu(showEditor));

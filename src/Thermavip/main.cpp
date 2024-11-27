@@ -150,15 +150,12 @@ int main(int argc, char** argv)
 	QSurfaceFormat::setDefaultFormat(format);
 	VipText::setCacheTextWhenPossible(false);
 
-	/*QSurfaceFormat fmt;
-	fmt.setSamples(4);
-	QSurfaceFormat::setDefaultFormat(fmt);*/
-
 	// Disallow GUI initialization functions for now
 	vipEnableGuiInitializationFunction(false);
 
 	QApplication app(argc, argv);
 
+	
 	bool force_font = false;
 #if !defined(_WIN32) && (defined(__unix__) || defined(__unix) || (defined(__APPLE__) && defined(__MACH__)))
 	// on linux, set the application dir as the current dir/
@@ -247,6 +244,7 @@ int main(int argc, char** argv)
 		}
 	}
 	//QApplication::setFont(QFont("Segoe UI"));//TEST
+
 
 	QString plugin_path = QApplication::applicationDirPath();
 	plugin_path.replace("\\", "/");

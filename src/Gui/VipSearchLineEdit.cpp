@@ -304,7 +304,7 @@ public:
 				setCurrentItem(item(0));
 
 			setFixedSize(edit->width(),//sizeHintForColumn(0) + frameWidth() * 2,
-						     sizeHintForRow(0) * count() + 2 * frameWidth() + 20);
+						     sizeHintForRow(0) * count() + 2 * frameWidth() + 10);
 		}
 	}
 	bool setSelectionToLineEdit(bool try_open)

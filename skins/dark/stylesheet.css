@@ -45,14 +45,16 @@ QFrame[frameShape="5"] {
 
 
 QMenu {
-	border: 1px solid #5B5B5B;
-	background: #2F2F2F;
+	border: 1px solid #454545;
+	border-radius : 5px;
+	background: #1F1F1F;
+	spacing: 5px;
 }
 QMenu::separator {
     height:1px;
-	margin-left:5px;
-	margin-right:5px;
-	background: #D1CECF;
+	margin-left:0px;
+	margin-right:0px;
+	background: #454545;
 }
 QMenu::item:selected {
 	background-color: #3991EF;

@@ -886,7 +886,7 @@ bool vipInitializeVisualizeDBWidget()
 
 	if (vipHasReadRightsDB()) {
 
-		QToolButton* button = new QToolButton();
+		/*QToolButton* button = new QToolButton();
 		button->setAutoRaise(true);
 		button->setText("Thermal events DB");
 		button->setObjectName("Thermal events DB");
@@ -895,7 +895,13 @@ bool vipInitializeVisualizeDBWidget()
 		button->setCheckable(true);
 		QAction* act = vipGetMainWindow()->toolsToolBar()->addWidget(button);
 		act->setObjectName("Thermal events DB");
-		vipGetVisualizeDBToolWidget(vipGetMainWindow())->setButton(button);
+		vipGetVisualizeDBToolWidget(vipGetMainWindow())->setButton(button);*/
+
+		//TEST
+		QAction* db = vipGetMainWindow()->toolsToolBar()->addAction(vipIcon("DB.png"), "<b>Thermal events DB");
+		db->setObjectName("Thermal events DB");
+		vipGetVisualizeDBToolWidget(vipGetMainWindow())->setAction(db);
+
 		return true;
 	}
 	return false;

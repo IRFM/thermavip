@@ -2923,7 +2923,7 @@ VipCloseBar::VipCloseBar(VipMainWindow* win)
 	connect(this->closeButton, SIGNAL(triggered(bool)), mainWindow, SLOT(close()));
 
 	// add a button to display global options to the toolbar
-	connect(toolsButton, SIGNAL(clicked(bool)), mainWindow, SLOT(showOptions()));
+	//connect(toolsButton, SIGNAL(clicked(bool)), mainWindow, SLOT(showOptions()));
 }
 
 VipCloseBar::~VipCloseBar()
@@ -2977,7 +2977,13 @@ static void setColorMap(QAction* a)
 {
 	VipGuiDisplayParamaters::instance()->setPlayerColorScale((VipLinearColorMap::StandardColorMap)a->property("index").toInt());
 }
+
 void VipCloseBar::computeToolsMenu()
+{
+	computeToolsMenu(toolsButton);
+}
+
+void VipCloseBar::computeToolsMenu(QToolButton * button)
 {
 	/*
 	video player:
@@ -2991,7 +2997,12 @@ void VipCloseBar::computeToolsMenu()
 	- title inside
 	*/
 
-	QMenu* menu = toolsButton->menu();
+	QMenu* menu = button->menu();
+	if (!menu) {
+		button->setMenu(new QMenu());
+		button->setPopupMode(QToolButton::InstantPopup);
+		menu = button->menu();
+	}
 	menu->clear();
 
 	// global options
@@ -3337,7 +3348,10 @@ VipMainWindow::VipMainWindow()
 
 	d_data->toolsToolBar.setObjectName("Tools tool bar");
 	d_data->toolsToolBar.setWindowTitle(tr("Tools tool bar"));
-	d_data->toolsToolBar.setIconSize(QSize(18, 18));
+	//d_data->toolsToolBar.setIconSize(QSize(18, 18));
+	//TEST
+	d_data->toolsToolBar.setIconSize(QSize(22, 22));
+	d_data->toolsToolBar.setStyleSheet("QToolBar{spacing: 10px;}");
 
 	d_data->displayArea = new VipDisplayArea();
 
@@ -3432,6 +3446,9 @@ VipMainWindow::VipMainWindow()
 
 	// register the custom reparent function for VipMultiDragWidget
 	VipMultiDragWidget::setReparentFunction(customSupportReparent);
+
+	// Add finalizitation function
+	vipAddGuiInitializationFunction([this]() { this->finalizeToolsToolBar(); });
 }
 
 VipMainWindow::~VipMainWindow()
@@ -3597,30 +3614,30 @@ void VipMainWindow::init()
 	edit->setVisible(false);
 
 	QAction* infos = d_data->toolsToolBar.addAction(
-	  vipIcon("infos.png"),
+	  vipIcon("INFOS.png"),
 	  tr("<b>Player properties</b><p>Dynamically display available information related to a movie, a signal, etc.<br>Click on an item (image, curve) to display its information.</p>"));
 	vipGetProcessingObjectInfo(this)->setWindowIcon(vipIcon("infos.png"));
 	vipGetProcessingObjectInfo(this)->setAction(infos);
 
 	QAction* proc = d_data->toolsToolBar.addAction(
-	  vipIcon("processing.png"), tr("<b>Edit processing</b><p>Edit all processings related to a signal.<br>Click on an item (image, curve) to edit the processings leading to this item.</p>"));
+	  vipIcon("PROCESSING.png"), tr("<b>Edit processing</b><p>Edit all processings related to a signal.<br>Click on an item (image, curve) to edit the processings leading to this item.</p>"));
 	vipGetProcessingEditorToolWidget(this)->setAction(proc);
 
 	// QAction * progress = d_data->toolsToolBar.addAction(vipIcon("progress.png"),tr("<b>Show/Hide current operations</b><p>Displays operations in progress<p>"));
 	// vipGetMultiProgressWidget(this)->setAction(progress);
 
-	QAction* console = d_data->toolsToolBar.addAction(vipIcon("console.png"), "<b>Show/Hide the console</b><p>The console displays information on the program workflow</p>");
+	QAction* console = d_data->toolsToolBar.addAction(vipIcon("LOG.png"), "<b>Show/Hide the console</b><p>The console displays information on the program workflow</p>");
 	vipGetConsoleWidget(this)->setAction(console);
 
-	QAction* dir = d_data->toolsToolBar.addAction(vipIcon("open_dir.png"), "<b>Show/Hide directory browser</b><p>Displays a directory/file browser</p>");
+	QAction* dir = d_data->toolsToolBar.addAction(vipIcon("BROWSER.png"), "<b>Show/Hide directory browser</b><p>Displays a directory/file browser</p>");
 	vipGetDirectoryBrowser(this)->setAction(dir);
 
 	addToolWidget(vipGetSceneModelWidgetPlayer(this),
-		      vipIcon("roi.png"),
+		      vipIcon("ROI.png"),
 		      tr("<b>Edit Regions Of Interest</b><p>Create Regions Of Interest (ROIs), edit them, display image statistics inside ROIs, etc.</p>"),
 		      true);
 	addToolWidget(
-	  vipGetRecordToolWidget(this), vipIcon("record_icon.png"), tr("<b>Record signals or movies</b><p>Record any kind of signal in an archive, or create a video from a player</p>"), true);
+	  vipGetRecordToolWidget(this), vipIcon("RECORD.png"), tr("<b>Record signals or movies</b><p>Record any kind of signal in an archive, or create a video from a player</p>"), true);
 
 	// Add VTK stuff
 #ifdef VIP_WITH_VTK
@@ -3645,7 +3662,7 @@ void VipMainWindow::init()
 	VipShortcutsHelper::registerShorcut("About...", [this]() { this->aboutDialog(); });
 	VipShortcutsHelper::registerShorcut("Preferences...", [this]() { this->showOptions(); });
 	VipShortcutsHelper::registerShorcut("Save current session...", [this]() { this->saveSession(); });
-	VipShortcutsHelper::registerShorcut("Preferences...", [this]() { this->showOptions(); });
+	VipShortcutsHelper::registerShorcut("Options...", [this]() { this->showOptions(); });
 	VipShortcutsHelper::registerShorcut("Help...", [this]() { this->showHelp(); });
 
 	closeBar()->startDetectState();
@@ -4166,6 +4183,23 @@ void VipMainWindow::tabChanged()
 		if (num_cols != closeBar()->maxCols->value())
 			closeBar()->maxCols->setValue(num_cols);
 	}
+}
+
+void VipMainWindow::finalizeToolsToolBar() 
+{
+	// Add stretch
+	QWidget* empty = new QWidget();
+	empty->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+	d_data->toolsToolBar.addWidget(empty);
+
+	QToolButton* tools = new QToolButton();
+	tools->setIcon(vipIcon("tools.png"));
+	tools->setToolTip("<b>Global options and preferences");
+	d_data->closeBar->computeToolsMenu(tools);
+
+	d_data->toolsToolBar.addWidget(tools);
+
+	connect(tools->menu(), &QMenu::aboutToShow, this, [this, tools]() { this->d_data->closeBar->computeToolsMenu(tools); });
 }
 
 void VipMainWindow::showEvent(QShowEvent* // evt

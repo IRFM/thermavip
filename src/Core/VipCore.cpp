@@ -907,6 +907,11 @@ bool vipAddGuiInitializationFunction(void (*fun)())
 	GuiFunctions::instance().addFunction(fun);
 	return true;
 }
+bool vipAddGuiInitializationFunction(const VipFunction<0>& fun)
+{
+	GuiFunctions::instance().addFunction(fun);
+	return true;
+}
 
 Q_COREAPP_STARTUP_FUNCTION(vipExecInitializationFunction);
 

@@ -128,21 +128,21 @@ static bool isDrive(const VipPath& path, const QFileInfo& info)
 
 QIcon VipIconProvider::iconPath(const VipPath& path) const
 {
-	vip_debug("icon1: %s\n", path.canonicalPath().toLatin1().data());
-
 	QFileInfo info(path.canonicalPath());
 	if (info.isDir()) {
 		if (isDrive(path, info)) {
 			if (d_data->driveIcon.isNull())
 				const_cast<QIcon&>(d_data->driveIcon) = d_data->provider.icon(info).pixmap(1);
 			if (d_data->driveIcon.isNull())
-				const_cast<QIcon&>(d_data->driveIcon) = d_data->provider.icon(QFileInfo(QCoreApplication::applicationDirPath())).pixmap(1);
+				const_cast<QIcon&>(d_data->driveIcon) = vipIcon("open_dir.png");
 			return d_data->driveIcon;
 		}
 		//if (d_data->dirIcon.isNull())
 		//	const_cast<QIcon&>(d_data->dirIcon) = d_data->provider.icon(info).pixmap(1);
 		if (d_data->dirIcon.isNull())
 			const_cast<QIcon&>(d_data->dirIcon) = d_data->provider.icon(QFileInfo(QCoreApplication::applicationDirPath())).pixmap(1);
+		if (d_data->dirIcon.isNull())
+			const_cast<QIcon&>(d_data->dirIcon) = vipIcon("open_dir.png");
 		return d_data->dirIcon;
 	}
 
