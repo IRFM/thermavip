@@ -446,6 +446,8 @@ VipSearchLineEdit::VipSearchLineEdit(QWidget* parent)
 
 	this->setClearButtonEnabled(true);
 	this->setMinimumWidth(200);
+	this->setMaximumWidth(800);
+
 	//d_data->open = this->addAction(vipIcon("open.png"), QLineEdit::LeadingPosition);
 	//d_data->open->setToolTip("Open path");
 	d_data->displayHistory = this->addAction(vipIcon("search.png"), QLineEdit::TrailingPosition);

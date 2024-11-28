@@ -135,13 +135,6 @@ int main(int argc, char** argv)
 
 	QDir::setCurrent(QFileInfo(QString(argv[0])).canonicalPath());
  
-	
-#ifdef WIN32
-	QString qtwebengine = QFileInfo(QString(argv[0])).canonicalPath() + "/QtWebEngineProcessd.exe";
-	if (QFileInfo(qtwebengine).exists())
-		qputenv("QTWEBENGINEPROCESS_PATH", qtwebengine.toLatin1().data());
-#endif
-	qputenv("QTWEBENGINE_CHROMIUM_FLAGS", "--use-gl=egl --use_virtualized_gl_contexts --blink-settings=forceDarkModeEnabled=true,forceDarkModeImagePolicy=2,forceDarkModePagePolicy=1,forceDarkModeInversionAlgorithm=4");
 	// qputenv("QSG_INFO", "1");
 	// qputenv("QT_OPENGL", "desktop");
 	// qputenv("QT_OPENGL", "angle");
@@ -474,6 +467,33 @@ int main(int argc, char** argv)
 
 	// Before loading plugins, initialize annotation lib
 	vipInitializeVisualizeDBWidget();
+
+	// Before loading plugins, configure QtWebEngine
+
+	// Detect dark skin
+	QColor c = vipWidgetTextBrush(vipGetMainWindow()).color();
+	bool is_dark = c.red() > 200 && c.green() > 200 && c.blue() > 200;
+	vip_debug("Dark skin detected: %i\n",(int)is_dark);
+#ifdef WIN32
+	// On windows, we might need to specify the QtWebEngineProcess path
+#ifdef NDEBUG
+	QString qtwebengine = QFileInfo(QString(argv[0])).canonicalPath() + "/QtWebEngineProcess.exe";
+#else
+	QString qtwebengine = QFileInfo(QString(argv[0])).canonicalPath() + "/QtWebEngineProcessd.exe";
+#endif
+	if (QFileInfo(qtwebengine).exists())
+		qputenv("QTWEBENGINEPROCESS_PATH", qtwebengine.toLatin1().data());
+#endif
+	// Chromium flags
+	QByteArray chromium_flags;
+	vip_debug("Platform name: %s\n",app.platformName().toLatin1().data());
+	if(app.platformName() == "xcb" || app.platformName() == "wayland")
+		// disable gpu, or possible crash
+		chromium_flags += "--disable-gpu ";
+	if(is_dark)
+		chromium_flags += "--blink-settings=forceDarkModeEnabled=true,forceDarkModeImagePolicy=2,forceDarkModePagePolicy=1,forceDarkModeInversionAlgorithm=4";
+	qputenv("QTWEBENGINE_CHROMIUM_FLAGS", chromium_flags);
+
 
 	// Load plugins
 

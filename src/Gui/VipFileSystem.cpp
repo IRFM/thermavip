@@ -131,16 +131,22 @@ QIcon VipIconProvider::iconPath(const VipPath& path) const
 	QFileInfo info(path.canonicalPath());
 	if (info.isDir()) {
 		if (isDrive(path, info)) {
-			if (d_data->driveIcon.isNull())
-				const_cast<QIcon&>(d_data->driveIcon) = d_data->provider.icon(info).pixmap(1);
+			if (d_data->driveIcon.isNull()){
+				const_cast<QIcon&>(d_data->driveIcon) = d_data->provider.icon(info).pixmap(QSize(20,20));
+				if(d_data->driveIcon.isNull()){
+					vip_debug("Null icon for %s\n",path.canonicalPath().toLatin1().data());
+				}
+			}
 			if (d_data->driveIcon.isNull())
 				const_cast<QIcon&>(d_data->driveIcon) = vipIcon("open_dir.png");
 			return d_data->driveIcon;
 		}
 		//if (d_data->dirIcon.isNull())
 		//	const_cast<QIcon&>(d_data->dirIcon) = d_data->provider.icon(info).pixmap(1);
-		if (d_data->dirIcon.isNull())
-			const_cast<QIcon&>(d_data->dirIcon) = d_data->provider.icon(QFileInfo(QCoreApplication::applicationDirPath())).pixmap(1);
+		if (d_data->dirIcon.isNull()){
+			const_cast<QIcon&>(d_data->dirIcon) = d_data->provider.icon(QFileInfo(QCoreApplication::applicationDirPath())).pixmap(QSize(20,20));
+			vip_debug("Null icon for %s\n",path.canonicalPath().toLatin1().data());
+		}
 		if (d_data->dirIcon.isNull())
 			const_cast<QIcon&>(d_data->dirIcon) = vipIcon("open_dir.png");
 		return d_data->dirIcon;
