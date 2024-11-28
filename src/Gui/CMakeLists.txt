@@ -31,30 +31,6 @@ target_compile_definitions(VipGui PRIVATE
     VIP_BUILD_GUI_LIB
 )
 
-# Add WebEnging if possible
-find_package(Qt${QT_VERSION_MAJOR}WebEngine REQUIRED)
-find_package(Qt${QT_VERSION_MAJOR}WebEngineWidgets REQUIRED)
-if (Qt${QT_VERSION_MAJOR}WebEngine_FOUND)
-	if (Qt${QT_VERSION_MAJOR}WebEngine_VERSION VERSION_LESS 5.15.0)
-		message(STATUS "Too old web engine version!")
-	else()
-		message(STATUS "Using web engine")
-		find_package(Qt${QT_VERSION_MAJOR}WebEngineWidgets REQUIRED)
-		if(${QT_VERSION_MAJOR} LESS 6)
-		target_link_libraries(VipGui PRIVATE
-		Qt5::WebEngine
-		Qt5::WebEngineWidgets
-		)
-		else()
-		target_link_libraries(VipGui PRIVATE
-		Qt::WebEngine
-		Qt::WebEngineWidgets
-		)
-		endif()
-		target_compile_definitions(VipGui PRIVATE __VIP_USE_WEB_ENGINE)
-	endif()
-endif()
-
 
 target_link_libraries(VipGui PRIVATE
 	VipDataType

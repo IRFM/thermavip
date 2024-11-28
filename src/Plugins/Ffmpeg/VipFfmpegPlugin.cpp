@@ -227,7 +227,7 @@ FfmpegInterface::LoadResult FfmpegInterface::load()
 
 	// add button to make movies of thermavip (successive screenshots)
 	m_rec = new QToolButton();
-	m_rec->setIcon(vipIcon("record.png"));
+	m_rec->setIcon(vipIcon("RECORD.png"));
 	m_rec->setToolTip("<b>Record your actions</b><br>Create a video from successive screenshots of Thermavip in order to record your actions.<br>"
 			  "Check/uncheck this button to start/stop the recording.<br>Use the right arrow to modify the recording parameters.");
 	m_rec->setAutoRaise(true);

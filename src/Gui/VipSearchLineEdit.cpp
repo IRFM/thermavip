@@ -124,7 +124,7 @@ bool VipDeviceOpenHelper::addToHistory(const QString& valid_path)
 {
 	const VipDeviceOpenHelper* helper = fromValidPath(valid_path);
 	if (!helper)
-		return nullptr;
+		return false;
 	return addToHistory(ShortcupPath{ helper->formatFromValidPath(valid_path), helper });
 }
 

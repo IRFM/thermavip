@@ -108,7 +108,7 @@ class PYTHON_EXPORT PyProcessing : public PyBaseProcessing
 		    "\t 'stylesheet' string variable represents the css style sheet applied to the output data.\n"
 		    "PyProcessing always uses the global Python interpreter.")
 	Q_CLASSINFO("category", "Miscellaneous")
-	Q_CLASSINFO("icon", "Icons/python.png")
+	Q_CLASSINFO("icon", "Icons/PYTHON.png")
 
 	friend VipArchive& operator<<(VipArchive& ar, PyProcessing* p);
 	friend VipArchive& operator>>(VipArchive& ar, PyProcessing* p);

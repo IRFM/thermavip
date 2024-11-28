@@ -50,7 +50,7 @@ CustomizePlayer::CustomizePlayer(VipAbstractPlayer * player)
 
 	if (VipPlayer2D * pl = player2D()) {
 		d_data->button = new QToolButton();
-		d_data->button->setIcon(vipIcon("python.png"));
+		d_data->button->setIcon(vipIcon("PYTHON.png"));
 		d_data->button->setToolTip("Apply Python script for this player");
 		d_data->button->setAutoRaise(true);
 		d_data->button->setMenu(menu);

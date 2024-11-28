@@ -799,7 +799,7 @@ PyPlotPlayer::PyPlotPlayer(VipPlotPlayer * pl)
 	:QObject(pl)
 {
 	pl->setProperty("PyPlotPlayer", true);
-	QAction * act = pl->advancedTools()->menu()->addAction(vipIcon("python.png"), "Create a Python data fusion processing");
+	QAction * act = pl->advancedTools()->menu()->addAction(vipIcon("PYTHON.png"), "Create a Python data fusion processing");
 	act->setProperty("_vip_player", QVariant::fromValue(pl));
 	connect(act, SIGNAL(triggered(bool)), _interface, SLOT(applyPySignalFusion()));
 

@@ -3616,7 +3616,7 @@ void VipMainWindow::init()
 	QAction* infos = d_data->toolsToolBar.addAction(
 	  vipIcon("INFOS.png"),
 	  tr("<b>Player properties</b><p>Dynamically display available information related to a movie, a signal, etc.<br>Click on an item (image, curve) to display its information.</p>"));
-	vipGetProcessingObjectInfo(this)->setWindowIcon(vipIcon("infos.png"));
+	vipGetProcessingObjectInfo(this)->setWindowIcon(vipIcon("INFOS.png"));
 	vipGetProcessingObjectInfo(this)->setAction(infos);
 
 	QAction* proc = d_data->toolsToolBar.addAction(

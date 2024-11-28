@@ -2305,7 +2305,7 @@ VipVideoPlayer::VipVideoPlayer(VipImageWidget2D* img, QWidget* parent)
 	d_data->processing_tree_button = new QToolButton();
 	d_data->processing_tree_button->setAutoRaise(true);
 	d_data->processing_tree_button->setToolTip("<b>Apply an image processing</b><br>This will display the processing editor panel");
-	d_data->processing_tree_button->setIcon(vipIcon("processing.png"));
+	d_data->processing_tree_button->setIcon(vipIcon("PROCESSING.png"));
 	d_data->processing_tree_button->setPopupMode(QToolButton::InstantPopup);
 
 	d_data->processing_menu.reset( new VipProcessingObjectMenu());
@@ -5473,7 +5473,7 @@ VipPlotPlayer::VipPlotPlayer(VipAbstractPlotWidget2D* viewer, QWidget* parent)
 	d_data->processing_tree_button = new QToolButton();
 	d_data->processing_tree_button->setAutoRaise(true);
 	d_data->processing_tree_button->setToolTip("Add a new processing for the selected curves");
-	d_data->processing_tree_button->setIcon(vipIcon("processing.png"));
+	d_data->processing_tree_button->setIcon(vipIcon("PROCESSING.png"));
 	d_data->processing_tree_button->setPopupMode(QToolButton::InstantPopup);
 
 	d_data->processing_menu.reset(new VipProcessingObjectMenu());

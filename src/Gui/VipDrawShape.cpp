@@ -637,7 +637,7 @@ VipShapeButton::VipShapeButton(QWidget* draw_area, QWidget* parent)
 
 	this->setPopupMode(QToolButton::MenuButtonPopup);
 	this->setMenu(addMenu);
-	this->setIcon(vipIcon("roi.png"));
+	this->setIcon(vipIcon("ROI.png"));
 	addMenu->hide();
 	// connect(this, SIGNAL(clicked(bool)), vipGetSceneModelWidgetPlayer(), SLOT(addRect()));
 	connect(this, SIGNAL(clicked(bool)), this, SLOT(buttonClicked(bool)));

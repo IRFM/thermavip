@@ -32,6 +32,31 @@ endif()
 target_link_libraries(${TARGET_PROJECT} PRIVATE ${QT_LIBS})
 
 
+# Add WebEnging if possible
+find_package(Qt${QT_VERSION_MAJOR}WebEngine REQUIRED)
+find_package(Qt${QT_VERSION_MAJOR}WebEngineWidgets REQUIRED)
+if (Qt${QT_VERSION_MAJOR}WebEngine_FOUND)
+	if (Qt${QT_VERSION_MAJOR}WebEngine_VERSION VERSION_LESS 5.15.0)
+		message(STATUS "Too old web engine version!")
+	else()
+		message(STATUS "Using web engine for ${TARGET_PROJECT}")
+		find_package(Qt${QT_VERSION_MAJOR}WebEngineWidgets REQUIRED)
+		if(${QT_VERSION_MAJOR} LESS 6)
+		target_link_libraries(${TARGET_PROJECT} PRIVATE
+		Qt5::WebEngine
+		Qt5::WebEngineWidgets
+		)
+		else()
+		target_link_libraries(${TARGET_PROJECT} PRIVATE
+		Qt::WebEngine
+		Qt::WebEngineWidgets
+		)
+		endif()
+		target_compile_definitions(${TARGET_PROJECT} PRIVATE __VIP_USE_WEB_ENGINE)
+	endif()
+endif()
+
+
 # Add VTK libraries if required
 if(WITH_VTK)
 	find_package(VTK REQUIRED)

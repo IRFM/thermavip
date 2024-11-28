@@ -142,7 +142,7 @@ VipRecordToolBar::VipRecordToolBar(VipRecordToolWidget* tool)
 
 	d_data->record->setAutoRaise(true);
 	d_data->record->setCheckable(true);
-	d_data->record->setIcon(vipIcon("record.png"));
+	d_data->record->setIcon(vipIcon("RECORD.png"));
 	d_data->record->setToolTip("Launch recording");
 
 	addWidget(d_data->selectItems);

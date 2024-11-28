@@ -923,7 +923,7 @@ VipProcessingListEditor::VipProcessingListEditor()
 	d_data->addProcessing->setAutoRaise(true);
 	d_data->addProcessing->setMenu(d_data->tree);
 	d_data->addProcessing->setPopupMode(QToolButton::InstantPopup);
-	d_data->addProcessing->setIcon(vipIcon("processing.png"));
+	d_data->addProcessing->setIcon(vipIcon("PROCESSING.png"));
 	d_data->addProcessing->setText("Add a processing");
 	d_data->addProcessing->setToolTip("<b>Add a new processing into the processing list</b><br>The processing will be added at the end of the list. Use the mouse to change the processing order.");
 	d_data->addProcessing->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);

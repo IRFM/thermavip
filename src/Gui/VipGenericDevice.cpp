@@ -490,7 +490,7 @@ VipRecordWidget::VipRecordWidget(InfosLocation loc, QWidget* parent)
 	d_data->date.setText("yyyy.MM.dd_hh.mm.ss.zzz_");
 	d_data->date.hide();
 	d_data->record.setToolTip("Start/Stop recording");
-	d_data->record.setIcon(vipIcon("record.png"));
+	d_data->record.setIcon(vipIcon("RECORD.png"));
 	d_data->record.setCheckable(true);
 	d_data->record.setAutoRaise(true);
 	d_data->suspend.setToolTip("Suspend/resume recording");
