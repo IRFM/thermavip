@@ -318,7 +318,7 @@ bool ManualAnnotationHelper::supportBBox()
 #include "VipPlayer.h"
 #include "VipProcessMovie.h"
 
-static void extractAnnotationFromPlayer(VipVideoPlayer* pl, const QList<VipShape>& shs, const QString& method = "bbox")
+static void extractAnnotationFromPlayer(VipVideoPlayer* pl, const VipShapeList& shs, const QString& method = "bbox")
 {
 	double pulse = 0;
 	qint64 time = VipInvalidTime;
@@ -396,17 +396,17 @@ static void extractAnnotationFromPlayer(VipVideoPlayer* pl, const QList<VipShape
 	}
 }
 
-static void extractBBoxFromPlayer(VipVideoPlayer* pl, const QList<VipShape>& shs)
+static void extractBBoxFromPlayer(VipVideoPlayer* pl, const VipShapeList& shs)
 {
 	extractAnnotationFromPlayer(pl, shs, "bbox");
 }
 
-static void extractSegmFromPlayer(VipVideoPlayer* pl, const QList<VipShape>& shs)
+static void extractSegmFromPlayer(VipVideoPlayer* pl, const VipShapeList& shs)
 {
 	extractAnnotationFromPlayer(pl, shs, "segm");
 }
 
-static void uploadROIsFromPlayer(VipVideoPlayer* pl, const QList<VipShape>& shs)
+static void uploadROIsFromPlayer(VipVideoPlayer* pl, const VipShapeList& shs)
 {
 	VipPlayerDBAccess* db = VipPlayerDBAccess::fromPlayer(pl);
 	if (!pl) {
@@ -737,7 +737,7 @@ static QList<QAction*> manualAnnotationHelperMenu(VipPlotShape* shape, VipVideoP
 	// VipShape sh = shape->rawData();
 	// QRectF r;
 	QList<VipPlotShape*> shapes = p->plotSceneModel()->shapes(1);
-	QList<VipShape> shs;
+	VipShapeList shs;
 	for (int i = 0; i < shapes.size(); ++i) {
 		if (shapes[i]->rawData().type() == VipShape::Polygon || shapes[i]->rawData().type() == VipShape::Path)
 			shs.append(shapes[i]->rawData());

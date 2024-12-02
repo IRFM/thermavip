@@ -33,8 +33,16 @@ target_link_libraries(${TARGET_PROJECT} PRIVATE ${QT_LIBS})
 
 
 # Add WebEnging if possible
-find_package(Qt${QT_VERSION_MAJOR}WebEngine REQUIRED)
-find_package(Qt${QT_VERSION_MAJOR}WebEngineWidgets REQUIRED)
+
+if(${QT_VERSION_MAJOR} LESS 6)
+set(WEB_ENGINE Qt${QT_VERSION_MAJOR}WebEngine)
+else()
+set(WEB_ENGINE Qt${QT_VERSION_MAJOR}WebEngineCore)
+endif()
+
+#find_package(Qt${QT_VERSION_MAJOR}WebEngine REQUIRED)
+find_package(${WEB_ENGINE} )
+find_package(Qt${QT_VERSION_MAJOR}WebEngineWidgets )
 if (Qt${QT_VERSION_MAJOR}WebEngine_FOUND)
 	if (Qt${QT_VERSION_MAJOR}WebEngine_VERSION VERSION_LESS 5.15.0)
 		message(STATUS "Too old web engine version!")
@@ -120,6 +128,17 @@ else()
 		
 		# For macro VIP_FOR_EACH_GENERIC, we need a compliant preprocessor
 		target_compile_options(${TARGET_PROJECT} PUBLIC /Zc:preprocessor)
+		
+		# Weird bug with msvc 2022...
+		target_compile_options(${TARGET_PROJECT} PUBLIC /wd"4828")
+		
+		
+		#string(REPLACE "/utf-8" "" CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE}")
+		#string(REPLACE "-utf-8" "" CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE}")
+		#string(REPLACE "/utf-8" "" CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_DEBUG}")
+		#string(REPLACE "-utf-8" "" CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_DEBUG}")
+		#set_target_properties(${TARGET_PROJECT} PROPERTIES COMPILE_FLAGS "${_compile_flags}")
+		#target_compile_options(${TARGET_PROJECT} PUBLIC /execution-charset:utf-8 /source-charset:utf-8)
 		
 		target_link_libraries(${TARGET_PROJECT} PRIVATE opengl32)
 	endif()

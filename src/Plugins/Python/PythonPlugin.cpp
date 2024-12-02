@@ -528,7 +528,7 @@ PythonInterface::LoadResult PythonInterface::load()
 	
 	
 	
-	vipGetOptions()->addPage("Python", GetPythonParameters());
+	vipGetOptions()->addPage("Python", GetPythonParameters(),vipIcon("PYTHON.png"));
 	  
 	//add the generators 
 

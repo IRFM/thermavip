@@ -174,7 +174,7 @@ VipArchive& operator<<(VipArchive& arch, const VipSceneModel& value)
 	//
 	QStringList groups = value.groups();
 	for (int g = 0; g < groups.size(); ++g) {
-		QList<VipShape> shapes = value.shapes(groups[g]);
+		VipShapeList shapes = value.shapes(groups[g]);
 		for (int i = 0; i < shapes.size(); ++i)
 			arch.content(shapes[i]);
 	}
@@ -316,7 +316,7 @@ void vipSceneModelToJSON(QTextStream& str, const VipSceneModel& value, const QBy
 		str << indent << "[" << Qt::endl;
 
 		QByteArray indent2 = indent + '\t';
-		const QList<VipShape> shapes = value.shapes(groups[i]);
+		const VipShapeList shapes = value.shapes(groups[i]);
 		for (int j = 0; j < shapes.size(); ++j) {
 			vipShapeToJSON(str, shapes[j], indent2);
 			if (j != shapes.size() - 1)

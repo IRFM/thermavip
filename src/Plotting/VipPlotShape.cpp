@@ -1753,7 +1753,7 @@ void VipPlotSceneModel::resetSceneModel()
 
 	for (int i = 0; i < groups.size(); ++i) {
 		const QString group = groups[i];
-		const QList<VipShape> gr_shapes = d_data->sceneModel.shapes(group);
+		const VipShapeList gr_shapes = d_data->sceneModel.shapes(group);
 		bool visible = groupVisible(group);
 		for (int s = 0; s < gr_shapes.size(); ++s) {
 			VipShape sh = gr_shapes[s];

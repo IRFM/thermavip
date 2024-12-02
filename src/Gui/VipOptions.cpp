@@ -50,6 +50,8 @@
 #include "VipStandardEditors.h"
 #include "VipStandardWidgets.h"
 
+
+
 QGroupBox* VipPageOption::createOptionGroup(const QString& label)
 {
 	QGroupBox* res = new QGroupBox(label);
@@ -59,6 +61,15 @@ QGroupBox* VipPageOption::createOptionGroup(const QString& label)
 	res->setFont(f);
 	return res;
 }
+
+VipPageItems::VipPageItems(QWidget* parent )
+  : QTreeWidget(parent)
+{
+	QFont f;
+	f.setBold(true);
+	setFont(f);
+}
+
 
 class VipOptions::PrivateData
 {
@@ -257,10 +268,10 @@ VipOptions* vipGetOptions()
 	static VipOptions* dialog = nullptr;
 	if (!dialog) {
 		dialog = new VipOptions();
-		dialog->addPage("General display", new AppearanceSettings());
-		dialog->addPage("Rendering modes", new RenderingSettings());
-		dialog->addPage("Environment", new EnvironmentSettings());
-		dialog->addPage("Processings", new ProcessingSettings());
+		dialog->addPage("General display", new AppearanceSettings(), vipIcon("ROI.png"));
+		dialog->addPage("Rendering modes", new RenderingSettings(), vipIcon("RENDERING.png"));
+		dialog->addPage("Environment", new EnvironmentSettings(), vipIcon("BROWSER.png"));
+		dialog->addPage("Processings", new ProcessingSettings(), vipIcon("PROCESSING.png"));
 		dialog->setTreeWidth(150);
 	}
 	return dialog;

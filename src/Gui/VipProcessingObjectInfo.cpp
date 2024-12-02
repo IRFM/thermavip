@@ -221,7 +221,7 @@ void VipExtractShapesInfos::apply()
 	VipProcInfo map;
 
 	// retrieve the shapes
-	QList<VipShape> shapes;
+	VipShapeList shapes;
 	VipAbstractPlayer* pl = player();
 	if (!pl || !player()->plotWidget2D())
 		return;

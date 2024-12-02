@@ -1105,7 +1105,7 @@ static ResultType addROI(int player, const QVariant & v, const QString & yaxis)
 	if (yx.isEmpty()) {
 		if (v.userType() == qMetaTypeId<QString>() || v.userType() == qMetaTypeId<QByteArray>()) {
 			QString filename = v.toString();
-			QList<VipShape> res = vipGetSceneModelWidgetPlayer()->editor()->openShapes(filename, pl);
+			VipShapeList res = vipGetSceneModelWidgetPlayer()->editor()->openShapes(filename, pl);
 			if (res.size())
 			{
 				QStringList lst;
@@ -1673,7 +1673,7 @@ static ResultType clearAnnotations(int player, bool all)
 	QList<VipPlotSceneModel*> models = pl->plotSceneModels();
 	for (int i = 0; i < models.size(); ++i) {
 		QList<VipPlotShape*> shapes = models[i]->shapes();
-		QList<VipShape> to_remove;
+		VipShapeList to_remove;
 		for (int j = 0; j < shapes.size(); ++j) {
 			if (shapes[j]->annotation()) {
 				int id = shapes[j]->rawData().attribute("_vip_annotation_id").toInt();

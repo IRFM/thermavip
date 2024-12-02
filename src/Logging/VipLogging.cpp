@@ -393,11 +393,7 @@ QStringList VipLogging::lastLogEntries()
 		}
 
 		QString str(QByteArray(static_cast<char*>(d_data->memory.data()) + sizeof(qint32), size));
-#if QT_VERSION < QT_VERSION_CHECK(5, 14, 0)
 		lst = str.split("\n", VIP_SKIP_BEHAVIOR::SkipEmptyParts);
-#else
-		lst = str.split("\n", Qt::SkipEmptyParts);
-#endif
 
 		memset(d_data->memory.data(), 0, d_data->memory.size());
 

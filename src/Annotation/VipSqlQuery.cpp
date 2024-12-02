@@ -216,15 +216,31 @@ const DB& readDB()
 	return db;
 }
 
-static QSqlDatabase createConnection()
+
+
+QSqlDatabase& globalDB()
+{
+	static QSqlDatabase inst;
+	return inst;
+}
+
+QSqlDatabase vipGetGlobalSQLConnection()
+{
+	return globalDB();
+}
+
+static QSqlDatabase createConnection(const DB & param, bool reset = false)
 {
 	static int try_count = 3;
-	static QSqlDatabase db;
+	QSqlDatabase& db = globalDB();
+	if (reset) {
+		db.close();
+		try_count = 3;
+	}
 	if (!db.isOpen() && --try_count > 0) {
 		QSqlDatabase::database("in_mem_db", false).close();
 		QSqlDatabase::removeDatabase("in_mem_db");
 
-		DB param = readDB();
 		db = QSqlDatabase::addDatabase("QMYSQL");
 		db.setConnectOptions("MYSQL_OPT_CONNECT_TIMEOUT=4");
 		db.setHostName(param.hostname);
@@ -255,6 +271,35 @@ static QSqlDatabase createConnection()
 		//	VIP_LOG_INFO( "DataBase %s created!!!!", db.databaseName().toLatin1().data());
 	}
 	return db;
+}
+
+static QSqlDatabase createConnection()
+{ 
+	return createConnection(readDB());
+}
+
+
+static VipThermalEventDBOptions _thermal_event_db_options;
+
+void vipSetThermalEventDBOptions(const VipThermalEventDBOptions& opt) 
+{
+	_thermal_event_db_options = opt;
+}
+const VipThermalEventDBOptions& vipGetThermalEventDBOptions() noexcept
+{
+	return _thermal_event_db_options;
+}
+
+bool vipCreateSQLConnection(const QString& hostname, int port, const QString& db_name, const QString& user_name, const QString& password)
+{
+	DB db;
+	db.hostname = hostname;
+	db.port = port;
+	db.name = db_name;
+	db.user = user_name;
+	db.password = password;
+	globalDB().close();
+	return createConnection(db,true).isOpen();
 }
 
 QStringList vipCamerasDB()
@@ -428,8 +473,8 @@ Vip_event_list vipCopyEvents(const Vip_event_list& events)
 {
 	Vip_event_list res;
 	for (Vip_event_list::const_iterator it = events.begin(); it != events.end(); ++it) {
-		const QList<VipShape> shs = it.value();
-		QList<VipShape> lst;
+		const VipShapeList &shs = it.value();
+		VipShapeList lst;
 		for (int i = 0; i < shs.size(); ++i) {
 			lst.append(shs[i].copy());
 		}
@@ -554,7 +599,7 @@ QList<qint64> vipSendToDB(const QString& userName, const QString& camera, const 
 		qint64 max = std::numeric_limits<qint64>::min();
 		double max_t = -100000;
 		qint64 max_T_timestamp_ns = std::numeric_limits<double>::min();
-		const QList<VipShape>& sh = it.value();
+		const VipShapeList& sh = it.value();
 		for (int i = 0; i < sh.size(); ++i) {
 			qint64 t = sh[i].attribute("timestamp_ns").toLongLong();
 			if (t > max)
@@ -1108,7 +1153,7 @@ VipFullQueryResult vipFullQueryDB(const VipEventQueryResults& evtres, VipProgres
 
 	// now fill result with shapes
 	for (Vip_event_list::const_iterator it = shapes.begin(); it != shapes.end(); ++it) {
-		const QList<VipShape> sh = it.value();
+		const VipShapeList& sh = it.value();
 		const VipEventQueryResult evt = evtres.events[it.key()];
 		for (int i = 0; i < sh.size(); ++i) {
 			VipPulseResult& experiment_id = result.result[evt.experiment_id];
@@ -1608,7 +1653,7 @@ QByteArray vipEventsToJson(const Vip_event_list& all_shapes, VipProgress* p)
 		qint64 max = -std::numeric_limits<qint64>::max();
 		double max_t = -std::numeric_limits<double>::max();
 		qint64 max_T_timestamp_ns = -std::numeric_limits<qint64>::max();
-		const QList<VipShape>& sh = it.value();
+		const VipShapeList& sh = it.value();
 		for (int i = 0; i < sh.size(); ++i) {
 			qint64 t = sh[i].attribute("timestamp_ns").toLongLong();
 			if (t > max)
@@ -1680,7 +1725,7 @@ QByteArray vipEventsToJson(const Vip_event_list& all_shapes, VipProgress* p)
 		}
 
 		qint64 id = it.key();
-		const QList<VipShape> shs = it.value();
+		const VipShapeList shs = it.value();
 
 		str << "\t"
 		    << "\"" << id << "\":\n";
@@ -1868,7 +1913,7 @@ Vip_event_list vipEventsFromJson(const QByteArray& content)
 		vip_debug("%d\n", (int)id);
 
 		QJsonObject event = evt.value().toObject();
-		QList<VipShape> shapes;
+		VipShapeList shapes;
 
 		// first , read all shapes
 		QJsonArray thermal_events_instances = event.value("thermal_events_instances").toArray();

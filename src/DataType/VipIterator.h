@@ -2348,7 +2348,13 @@ namespace detail
 		  , outType(o)
 		{
 		}
-		void operator()(const void* src, void* dst) { QMetaType::convert(src, inType, dst, outType); }
+		void operator()(const void* src, void* dst) { 
+			#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
+			QMetaType::convert(src, inType, dst, outType); 
+			#else
+			QMetaType::convert(QMetaType(inType), src, QMetaType(outType), dst); 
+			#endif
+		}
 	};
 
 	template<class T, class U, class CONVERTER>

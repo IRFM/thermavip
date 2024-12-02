@@ -360,7 +360,7 @@ static QString alignmentToString(int alignment)
 void TextEditor::setShapes(const QList<VipPlotShape*>& shapes)
 {
 	// check the number of closed shapes
-	QList<VipShape> closed;
+	VipShapeList closed;
 	QString text;
 	QFont font = nullFont;
 	QPen textPen = nullPen;
@@ -875,7 +875,7 @@ void vipRemoveAllAnnotations(VipPlayer2D* player)
 	QList<VipPlotSceneModel*> models = player->plotSceneModels();
 	for (int i = 0; i < models.size(); ++i) {
 		QList<VipPlotShape*> shapes = models[i]->shapes();
-		QList<VipShape> to_remove;
+		VipShapeList to_remove;
 		for (int j = 0; j < shapes.size(); ++j) {
 			if (shapes[j]->annotation()) {
 				to_remove << shapes[j]->rawData();

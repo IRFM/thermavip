@@ -38,6 +38,7 @@
 
 #include <qstring.h>
 #include <qtextstream.h>
+#include <QIODevice>
 
 #include "VipComplex.h"
 #include "VipHybridVector.h"

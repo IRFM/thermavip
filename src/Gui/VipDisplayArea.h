@@ -371,8 +371,7 @@ public:
 	VipDisplayPlayerArea* widget(int index) const;
 	/// Add a tab to the VipDisplayTabWidget
 	void addWidget(VipDisplayPlayerArea* widget);
-	/// Remove all tabs
-	void clear();
+	
 
 	/// A lot of widgets rely on the item selection in players.
 	/// This function unselect and reselect ALL VipPlotItem within players in order to trigger again
@@ -381,8 +380,17 @@ public:
 
 	void setCurrentDisplayPlayerArea(VipDisplayPlayerArea*);
 
-	void setStreamingEnabled(bool);
 	bool streamingButtonEnabled() const;
+
+public Q_SLOTS:
+	/// Remove all workspaces
+	void clear();
+	/// @brief Go to next workspace
+	void nextWorkspace();
+	/// @brief Go to previous workspace
+	void previousWorkspace();
+	/// @brief Enable/disable streaming button for all workspaces
+	void setStreamingEnabled(bool);
 
 Q_SIGNALS:
 	/// This signal is emitted whenever the VipDragWidget having the focus changed
@@ -648,6 +656,9 @@ public Q_SLOTS:
 	void setOpenPathShowDialogOnError(bool);
 
 	void resetStyleSheet();
+
+	/// @brief Apply QApplication global font to this widget and all of its children
+	void applyAppFont();
 
 private Q_SLOTS:
 	void init();

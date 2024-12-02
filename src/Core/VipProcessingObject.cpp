@@ -4366,9 +4366,9 @@ QTransform VipSceneModelBasedProcessing::shapeTransform() const
 	return d_data->shapeTransform;
 }
 
-static QList<VipShape> applyTr(const QList<VipShape>& input, const QTransform& tr)
+static VipShapeList applyTr(const VipShapeList& input, const QTransform& tr)
 {
-	QList<VipShape> res;
+	VipShapeList res;
 	for (int i = 0; i < input.size(); ++i) {
 		VipShape s = input[i].copy();
 		if (!tr.isIdentity())
@@ -4378,7 +4378,7 @@ static QList<VipShape> applyTr(const QList<VipShape>& input, const QTransform& t
 	return res;
 }
 
-QList<VipShape> VipSceneModelBasedProcessing::shapes()
+VipShapeList VipSceneModelBasedProcessing::shapes()
 {
 	// first check if the first property is directly a VipShape, in which case we use it
 	QVariant v = this->propertyAt(0)->data().data();
@@ -4396,7 +4396,7 @@ QList<VipShape> VipSceneModelBasedProcessing::shapes()
 				connect(d_data->shapeSignals, SIGNAL(sceneModelChanged(const VipSceneModel&)), this, SLOT(dirtyShape()));
 			}
 		}
-		return applyTr(QList<VipShape>() << sh, d_data->shapeTransform);
+		return applyTr(VipShapeList() << sh, d_data->shapeTransform);
 	}
 
 	VipSceneModel sm = sceneModel();
@@ -4407,15 +4407,15 @@ QList<VipShape> VipSceneModelBasedProcessing::shapes()
 		if (sm.hasGroup(shape_id))
 			return applyTr(sm.shapes(shape_id), d_data->shapeTransform);
 		else
-			return applyTr(QList<VipShape>() << sm.find(shape_id), d_data->shapeTransform);
+			return applyTr(VipShapeList() << sm.find(shape_id), d_data->shapeTransform);
 	}
 
 	// get the shapes
 	QStringList ids = this->propertyAt(1)->data().value<QStringList>();
 	if (!ids.size())
-		return QList<VipShape>();
+		return VipShapeList();
 
-	QList<VipShape> shapes;
+	VipShapeList shapes;
 	for (int i = 0; i < ids.size(); ++i) {
 		VipShape tmp = sm.find(ids[i]);
 		if (!tmp.isNull())
@@ -4433,7 +4433,7 @@ VipShape VipSceneModelBasedProcessing::shape()
 			return d_data->dirtyShape;
 	}
 
-	QList<VipShape> shapes = this->shapes();
+	VipShapeList shapes = this->shapes();
 	if (shapes.isEmpty())
 		return VipShape();
 	else if (shapes.size() == 1 || d_data->mergeStrategy == NoMerge)
@@ -4464,7 +4464,7 @@ void VipSceneModelBasedProcessing::setSceneModel(const VipSceneModel& scene, con
 	dirtyShape();
 }
 
-void VipSceneModelBasedProcessing::setSceneModel(const VipSceneModel& scene, const QList<VipShape>& shapes)
+void VipSceneModelBasedProcessing::setSceneModel(const VipSceneModel& scene, const VipShapeList& shapes)
 {
 	QStringList ids;
 	for (int i = 0; i < shapes.size(); ++i)

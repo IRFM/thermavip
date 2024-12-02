@@ -204,7 +204,7 @@ FfmpegInterface::LoadResult FfmpegInterface::load()
 		open->setAutoRaise(true);
 		open->setPopupMode(QToolButton::InstantPopup);
 		open->setIcon(vipIcon("webcam.png"));
-		open->setToolTip("Open local webcam");
+		open->setToolTip("Open a connected camera");
 
 		QMenu* menu = new QMenu(open);
 		for (int i = 0; i < lst.size(); ++i)

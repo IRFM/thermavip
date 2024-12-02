@@ -36,6 +36,8 @@
 
 #include <QSharedDataPointer>
 #include <QTextStream>
+#include <QVariant>
+#include <QIODevice>
 
 #include "VipConfig.h"
 #include "VipHybridVector.h"
@@ -294,54 +296,30 @@ namespace detail
 			detach();
 			return *d;
 		}
-		VIP_ALWAYS_INLINE const U& operator*() const noexcept
-		{
-			return *d;
-		}
+		VIP_ALWAYS_INLINE const U& operator*() const noexcept { return *d; }
 		VIP_ALWAYS_INLINE U* operator->()
 		{
 			detach();
 			return d;
 		}
-		VIP_ALWAYS_INLINE const U* operator->() const noexcept
-		{
-			return d;
-		}
+		VIP_ALWAYS_INLINE const U* operator->() const noexcept { return d; }
 		VIP_ALWAYS_INLINE operator U*()
 		{
 			detach();
 			return d;
 		}
-		VIP_ALWAYS_INLINE operator const U*() const noexcept
-		{
-			return d;
-		}
+		VIP_ALWAYS_INLINE operator const U*() const noexcept { return d; }
 		VIP_ALWAYS_INLINE U* data()
 		{
 			detach();
 			return d;
 		}
-		VIP_ALWAYS_INLINE const U* data() const noexcept
-		{
-			return d;
-		}
-		VIP_ALWAYS_INLINE const U* constData() const noexcept
-		{
-			return d;
-		}
-		VIP_ALWAYS_INLINE bool unique() const noexcept
-		{
-			return static_cast<int>(d->ref) == 1;
-		}
+		VIP_ALWAYS_INLINE const U* data() const noexcept { return d; }
+		VIP_ALWAYS_INLINE const U* constData() const noexcept { return d; }
+		VIP_ALWAYS_INLINE bool unique() const noexcept { return static_cast<int>(d->ref) == 1; }
 
-		VIP_ALWAYS_INLINE bool operator==(const SharedDataPointer& other) const noexcept
-		{
-			return d == other.d;
-		}
-		VIP_ALWAYS_INLINE bool operator!=(const SharedDataPointer& other) const noexcept
-		{
-			return d != other.d;
-		}
+		VIP_ALWAYS_INLINE bool operator==(const SharedDataPointer& other) const noexcept { return d == other.d; }
+		VIP_ALWAYS_INLINE bool operator!=(const SharedDataPointer& other) const noexcept { return d != other.d; }
 
 		inline SharedDataPointer()
 		  : d(nullptr)
@@ -391,15 +369,9 @@ namespace detail
 			return *this;
 		}
 
-		inline bool operator!() const noexcept
-		{
-			return !d;
-		}
+		inline bool operator!() const noexcept { return !d; }
 
-		inline void swap(SharedDataPointer& other) noexcept
-		{
-			std::swap(d, other.d);
-		}
+		inline void swap(SharedDataPointer& other) noexcept { std::swap(d, other.d); }
 
 	private:
 		void detach_helper()
@@ -587,7 +559,14 @@ namespace detail
 				    Vip::InterpolationType type,
 				    const VipNDArrayShape& out_start,
 				    const VipNDArrayShape& out_shape) const;
-		virtual const char* dataName() const { return QMetaType::typeName(qMetaTypeId<T>()); }
+		virtual const char* dataName() const
+		{
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+			return QMetaType(qMetaTypeId<T>()).name();
+#else
+			return QMetaType::typeName(qMetaTypeId<T>());
+#endif
+		}
 		virtual int dataSize() const { return sizeof(T); }
 		virtual int dataType() const { return qMetaTypeId<T>(); }
 		virtual bool canExport(int data_type) const { return vipCanConvertStdTypes(qMetaTypeId<T>(), data_type) || vipCanConvert(qMetaTypeId<T>(), data_type); }
@@ -681,7 +660,7 @@ namespace detail
 
 		virtual bool fill(const VipNDArrayShape& _start, const VipNDArrayShape& _shape, const QVariant& value)
 		{
-			if (!value.canConvert<T>())
+			if (!value.canConvert(VIP_META(qMetaTypeId<T>())))
 				return false;
 
 			vipInplaceArrayTransform(static_cast<T*>(opaque) + vipFlatOffset<false>(strides, _start), _shape, strides, VipFillTransform<T>(value.value<T>()));

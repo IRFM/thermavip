@@ -237,12 +237,12 @@ namespace detail
 			// find the first convertible type that has a bigger size
 			int type_size = QMetaType(type).sizeOf();
 			for (QMultiMap<int, int>::const_iterator it = sizeTypes.begin(); it != sizeTypes.end(); ++it) {
-				if (it.key() > type_size && QVariant(type, nullptr).canConvert(it.value())) {
+				if (it.key() > type_size && vipFromVoid(type, nullptr).canConvert(VIP_META(it.value()))) {
 					return it.value();
 				}
 			}
 			// no match, then find the biggest convertible type
-			QMapIterator<int, int> i(sizeTypes);
+			QMultiMapIterator<int, int> i(sizeTypes);
 			i.toBack();
 			while (i.hasPrevious()) {
 				i.previous();

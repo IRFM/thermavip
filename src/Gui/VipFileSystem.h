@@ -266,6 +266,7 @@ public Q_SLOTS:
 	bool pasteSelection();
 	void addSelectionToShortcuts();
 	void unselectAll();
+	void removeSelection();
 
 protected:
 	virtual void mousePressEvent(QMouseEvent* evt);

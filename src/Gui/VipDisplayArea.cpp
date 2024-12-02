@@ -376,7 +376,7 @@ void VipDisplayTabBar::tabInserted(int index)
 				QAction* tool_action = area->rightTabWidget()->addWidget(tool);
 				tool->setProperty("action", QVariant::fromValue(tool_action));
 
-				tool->setIcon(vipIcon("tools.png"));
+				tool->setIcon(vipIcon("additional.png"));
 				tool->setToolTip("Save as image or session, or print current workspace");
 				tool->setAutoRaise(true);
 				tool->setMenu(new QMenu());
@@ -2552,6 +2552,25 @@ void VipDisplayArea::clear()
 	}
 }
 
+void VipDisplayArea::nextWorkspace()
+{
+	int idx = d_data->tabWidget->currentIndex();
+	if (d_data->tabWidget->count() > 1)
+		idx = (idx + 1) % (d_data->tabWidget->count() - 1);
+	if (idx < d_data->tabWidget->count())
+		d_data->tabWidget->setCurrentIndex(idx);
+}
+
+void VipDisplayArea::previousWorkspace()
+{
+	int idx = d_data->tabWidget->currentIndex();
+	--idx;
+	if (idx < 0)
+		idx = (d_data->tabWidget->count() - 2);
+	if (idx >= 0 && idx < d_data->tabWidget->count())
+		d_data->tabWidget->setCurrentIndex(idx);
+}
+
 void VipDisplayArea::resetItemSelection()
 {
 	for (int i = 0; i < count(); ++i) {
@@ -3319,6 +3338,7 @@ public:
 	VipCloseBar* closeBar;
 	VipDisplayArea* displayArea;
 	VipSearchLineEdit* searchLineEdit{ nullptr };
+	QWidget* searchWidget;
 
 	QToolBar *left, *right, *bottom, *top;
 	VipShowWidgetOnHover* showTabBar;
@@ -3345,19 +3365,24 @@ VipMainWindow::VipMainWindow()
 
 	d_data->fileToolBar.setObjectName("File tool bar");
 	d_data->fileToolBar.setWindowTitle(tr("File tool bar"));
+	d_data->fileToolBar.setMovable(false);
 
-	d_data->toolsToolBar.setObjectName("Tools tool bar");
-	d_data->toolsToolBar.setWindowTitle(tr("Tools tool bar"));
-	//d_data->toolsToolBar.setIconSize(QSize(18, 18));
-	//TEST
-	d_data->toolsToolBar.setIconSize(QSize(22, 22));
+	d_data->toolsToolBar.setObjectName("Tool widgets bar");
+	d_data->toolsToolBar.setWindowTitle(tr("Tool widgets bar"));
+	d_data->toolsToolBar.setIconSize(QSize(20, 20));
 	d_data->toolsToolBar.setStyleSheet("QToolBar{spacing: 10px;}");
+	d_data->toolsToolBar.setMovable(false);
+	// Add space
+	QWidget* tools_spacer = new QWidget();
+	tools_spacer->setMaximumWidth(20);
+	tools_spacer->setMinimumWidth(20);
+	d_data->toolsToolBar.addWidget(tools_spacer);
 
 	d_data->displayArea = new VipDisplayArea();
 
 	setCentralWidget(d_data->displayArea);
 
-	d_data->fileToolBar.setIconSize(QSize(18, 18));
+	d_data->fileToolBar.setIconSize(QSize(20, 20));
 	d_data->fileButton.setToolTip(tr("<b>Open any files...</b><p>Open any kind of file (videos, signals, previous session,...) supported by Thermavip</p>"));
 	d_data->fileButton.setIcon(vipIcon("open_file.png"));
 	d_data->fileToolBar.addWidget(&d_data->fileButton);
@@ -3378,10 +3403,17 @@ VipMainWindow::VipMainWindow()
 	a->setObjectName("DirButton");
 	connect(&d_data->dirButton, SIGNAL(clicked(bool)), this, SLOT(openDir()));
 
+	d_data->saveButton.setToolTip(tr("<b>Save current session...</b>"
+					 "<br>Save the whole Thermavip session or only the current Workspace<br>"
+					 "<b>F5:</b> fast session saving<br><b>F9:</b> fast session loading"));
+	d_data->saveButton.setIcon(vipIcon("save.png"));
+	d_data->saveSessionAction = d_data->fileToolBar.addWidget(&d_data->saveButton);
+	connect(&d_data->saveButton, SIGNAL(clicked(bool)), this, SLOT(saveSession()));
+
 	d_data->generate.setIcon(vipIcon("generate_signals.png"));
-	d_data->generate.setText("Generate");
+	//d_data->generate.setText("Generate");
 	d_data->generate.setToolTip("Generate a signal, a sequential video device,...");
-	d_data->generate.setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
+	//d_data->generate.setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
 	d_data->generate.setPopupMode(QToolButton::InstantPopup);
 	d_data->generateMenu = new VipDragMenu(&d_data->generate);
 	d_data->generateMenu->setToolTipsVisible(true);
@@ -3389,14 +3421,46 @@ VipMainWindow::VipMainWindow()
 	d_data->generateAction = d_data->fileToolBar.addWidget(&d_data->generate);
 	d_data->generateAction->setObjectName("GenerateButton");
 
-	d_data->fileToolBar.addSeparator();
+	// Add space
+	/*QWidget* spacer = new QWidget();
+	spacer->setMaximumWidth(10);
+	spacer->setMinimumWidth(10);
+	d_data->fileToolBar.addWidget(spacer);*/
+	// Add stretch
+	QWidget* left_stretch = new QWidget();
+	left_stretch->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+	QWidget* right_stretch = new QWidget();
+	right_stretch->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+	d_data->fileToolBar.addWidget(left_stretch);
 
-	d_data->saveButton.setToolTip(tr("<b>Save current session...</b>"
-					 "<br>Save the whole Thermavip session or only the current Workspace<br>"
-					 "<b>F5:</b> fast session saving<br><b>F9:</b> fast session loading"));
-	d_data->saveButton.setIcon(vipIcon("save.png"));
-	d_data->saveSessionAction = d_data->fileToolBar.addWidget(&d_data->saveButton);
-	connect(&d_data->saveButton, SIGNAL(clicked(bool)), this, SLOT(saveSession()));
+	d_data->searchWidget = new QWidget();
+	QHBoxLayout* hlay = new QHBoxLayout();
+	hlay->setContentsMargins(0, 0, 0, 0);
+	d_data->searchWidget->setLayout(hlay);
+	// Add search line edit
+	d_data->searchLineEdit = new VipSearchLineEdit();
+	d_data->searchLineEdit->setMinimumWidth(600);
+	d_data->searchLineEdit->setMinimumHeight(20);
+	
+	//d_data->searchLineEdit->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+	d_data->fileToolBar.addWidget(d_data->searchWidget);
+	d_data->fileToolBar.addWidget(right_stretch);
+	d_data->fileToolBar.setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+
+	// Add next/prev workspace buttons
+	QToolButton* prev = new QToolButton();
+	prev->setIcon(vipIcon("prev_workspace.png"));
+	prev->setToolTip("Previous workspace");
+	connect(prev, SIGNAL(clicked(bool)), displayArea(), SLOT(previousWorkspace()));
+	QToolButton* next = new QToolButton();
+	next->setIcon(vipIcon("next_workspace.png"));
+	next->setToolTip("Next workspace");
+	connect(next, SIGNAL(clicked(bool)), displayArea(), SLOT(nextWorkspace()));
+
+	hlay->addWidget(prev);
+	hlay->addWidget(next);
+	hlay->addWidget(d_data->searchLineEdit);
+	
 
 	d_data->iconBar = new VipIconBar(this);
 	d_data->iconBar->setMovable(false);
@@ -3410,8 +3474,10 @@ VipMainWindow::VipMainWindow()
 
 	this->addToolBar(Qt::TopToolBarArea, d_data->iconBar);
 	this->addToolBar(Qt::TopToolBarArea, &d_data->fileToolBar);
-	this->addToolBar(Qt::TopToolBarArea, &d_data->toolsToolBar);
-	this->addToolBar(Qt::TopToolBarArea, d_data->closeBar);
+	this->addToolBar(Qt::LeftToolBarArea, &d_data->toolsToolBar);
+	//this->addToolBar(Qt::TopToolBarArea, d_data->closeBar);
+	//TEST
+	d_data->fileToolBar.addWidget(d_data->closeBar);
 
 	d_data->showTabBar = new VipShowWidgetOnHover(this);
 	d_data->showTabBar->setShowWidget(displayArea()->displayTabWidget()->tabBar());
@@ -3432,7 +3498,6 @@ VipMainWindow::VipMainWindow()
 		setWindowFlags(windowFlags() | Qt::FramelessWindowHint);
 
 	connect(qApp, SIGNAL(applicationStateChanged(Qt::ApplicationState)), this, SLOT(applicationStateChanged(Qt::ApplicationState)));
-
 	connect(displayArea(), SIGNAL(currentDisplayPlayerAreaChanged(VipDisplayPlayerArea*)), this, SLOT(tabChanged()));
 
 #ifdef _MSC_VER
@@ -3652,10 +3717,7 @@ void VipMainWindow::init()
 	this->addDockWidget(Qt::LeftDockWidgetArea, vipGetVTKPlayerToolWidget(this));
 #endif
 
-	// Add search line edit
-	d_data->searchLineEdit = new VipSearchLineEdit();
-	d_data->fileToolBar.addWidget(d_data->searchLineEdit);
-
+	
 	// Add shortcuts
 	VipShortcutsHelper::registerShorcut("Open files...", [this]() { this->openFiles(); });
 	VipShortcutsHelper::registerShorcut("Open directory...", [this]() { this->openDir(); });
@@ -4121,6 +4183,16 @@ void VipMainWindow::resetStyleSheet()
 	//  this->style()->unpolish(this);
 	//  this->style()->polish(this);
 }
+ 
+
+void VipMainWindow::applyAppFont()
+{
+	QFont font = qApp->font();
+	this->setFont(font);
+	QList<QWidget*> lst = this->findChildren<QWidget*>();
+	for (QWidget* w : lst)
+		w->setFont(font);
+}
 
 
 void VipMainWindow::applicationStateChanged(Qt::ApplicationState state)
@@ -4193,7 +4265,7 @@ void VipMainWindow::finalizeToolsToolBar()
 	d_data->toolsToolBar.addWidget(empty);
 
 	QToolButton* tools = new QToolButton();
-	tools->setIcon(vipIcon("tools.png"));
+	tools->setIcon(vipIcon("additional.png"));
 	tools->setToolTip("<b>Global options and preferences");
 	d_data->closeBar->computeToolsMenu(tools);
 

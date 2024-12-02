@@ -38,6 +38,7 @@
 #include "VipProgress.h"
 #include "VipSet.h"
 #include "VipStandardEditors.h"
+#include "VipDisplayArea.h"
 #include "VipSearchLineEdit.h"
 
 #include <QApplication>
@@ -1112,6 +1113,24 @@ bool VipMapFileSystemTree::copy(const VipPathList& paths, const VipPath& dst_fol
 	return true;
 }
 
+void VipMapFileSystemTree::removeSelection()
+{
+	auto lst = this->selectedItems();
+	for (int i = 0; i < lst.size(); ++i) {
+	
+		auto* parent = lst[i]->parent();
+		if (invisibleRootItem()->indexOfChild(parent) >= 0) {
+			//parent is a top level item
+			
+			if (!static_cast<VipMapFileSystemTreeItem*>(parent)->path().canonicalPath().contains("/")) {
+				// This is a custom item
+				delete parent->takeChild(parent->indexOfChild(lst[i]));
+			}
+		}
+
+	}
+}
+
 bool VipMapFileSystemTree::remove(const VipPathList& _paths)
 {
 	VipPathList paths = _paths;
@@ -1523,14 +1542,19 @@ void VipMapFileSystemTree::dropEvent(QDropEvent* evt)
 
 void VipMapFileSystemTree::keyPressEvent(QKeyEvent* evt)
 {
+	evt->ignore();
 	if (evt->key() == Qt::Key_Delete) {
-		remove(selectedPaths());
+		//remove(selectedPaths());
+		removeSelection();
+		evt->accept();
 	}
 	else if (evt->key() == Qt::Key_X && (evt->modifiers() & Qt::CTRL)) {
 		cut(selectedPaths());
+		evt->accept();
 	}
 	else if (evt->key() == Qt::Key_C && (evt->modifiers() & Qt::CTRL)) {
 		copy(selectedPaths());
+		evt->accept();
 	}
 	else if (evt->key() == Qt::Key_V && (evt->modifiers() & Qt::CTRL)) {
 		VipPathList lst = selectedPaths();
@@ -1548,6 +1572,20 @@ void VipMapFileSystemTree::keyPressEvent(QKeyEvent* evt)
 			dst = dst.parent();
 
 		paste(dst);
+		evt->accept();
+	}
+	else if (evt->key() == Qt::Key_Enter || evt->key() == Qt::Key_Return) {
+		auto lst = selectedItems();
+		VipPathList to_open;
+		for (int i = 0; i < lst.size(); ++i) {
+			VipMapFileSystemTreeItem* it = static_cast<VipMapFileSystemTreeItem*>(lst[i]);
+			if (it->path().isDir())
+				it->setExpanded(true);
+			else
+				to_open.push_back(it->path());
+		}
+		vipGetMainWindow()->openPaths(to_open,nullptr);
+		evt->accept();
 	}
 }
 

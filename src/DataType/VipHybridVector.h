@@ -58,7 +58,7 @@ namespace Vip
 template<class T, int N>
 struct VipHybridVector
 {
-
+	static_assert(N <= VIP_MAX_DIMS, "");
 	enum
 	{
 		static_size = N
@@ -528,6 +528,13 @@ VipHybridVector<T, Vip::None> vipVector(const QVector<T>& v) noexcept
 	res = v;
 	return res;
 }
+
+template<qsizetype... Sizes >
+auto vipVector(Sizes... sizes) noexcept
+{
+	return VipHybridVector<qsizetype, sizeof...(Sizes)> { { std::forward(sizes)... } };
+}
+
 /// Create a static VipHybridVector of size 1
 template<class T>
 VipHybridVector<T, 1> vipVector(T c0) noexcept

@@ -227,7 +227,7 @@ public:
 	void setPlayer(VipPlayer2D*);
 	void updateSceneModels();
 	VipMultiNDArray createH5ShapeAttributes(const QVariant& background);
-	QList<VipShape> openShapes(const QString& filename, VipPlayer2D* pl, bool remove_old = true);
+	VipShapeList openShapes(const QString& filename, VipPlayer2D* pl, bool remove_old = true);
 	VipPlotSceneModel* lastSelected() const;
 	QGraphicsScene* scene() const;
 	VipPlayer2D* player() const;
@@ -259,7 +259,7 @@ private Q_SLOTS:
 	void recomputeAttributes();
 
 private:
-	// void populateStatistics(VipPlayer2D *, const QList<VipShape> & shapes);
+	// void populateStatistics(VipPlayer2D *, const VipShapeList & shapes);
 
 	
 	VIP_DECLARE_PRIVATE_DATA(d_data);

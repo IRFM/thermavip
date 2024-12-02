@@ -53,16 +53,16 @@ bool vipCanConvertStdTypes(uint from, uint to)
 		return true;
 
 	if (vipIsArithmetic(from))
-		return vipIsArithmetic(to) || vipIsComplex(to) || to == QVariant::String || to == QMetaType::QByteArray;
+		return vipIsArithmetic(to) || vipIsComplex(to) || to == QMetaType::QString || to == QMetaType::QByteArray;
 
 	if (vipIsComplex(from))
-		return vipIsComplex(to) || to == QVariant::String || to == QMetaType::QByteArray;
+		return vipIsComplex(to) || to == QMetaType::QString || to == QMetaType::QByteArray;
 
-	if (from == QVariant::String)
-		return vipIsArithmetic(to) || vipIsComplex(to) || to == QVariant::String || to == QMetaType::QByteArray || to == (uint)qMetaTypeId<VipRGB>();
+	if (from == QMetaType::QString)
+		return vipIsArithmetic(to) || vipIsComplex(to) || to == QMetaType::QString || to == QMetaType::QByteArray || to == (uint)qMetaTypeId<VipRGB>();
 
 	if (from == QMetaType::QByteArray)
-		return vipIsArithmetic(to) || vipIsComplex(to) || to == QVariant::String || to == QMetaType::QByteArray || to == (uint)qMetaTypeId<VipRGB>();
+		return vipIsArithmetic(to) || vipIsComplex(to) || to == QMetaType::QString || to == QMetaType::QByteArray || to == (uint)qMetaTypeId<VipRGB>();
 
 	if (from == (uint)qMetaTypeId<VipRGB>())
 		return (to == QMetaType::QString || to == QMetaType::QByteArray);
@@ -72,8 +72,8 @@ bool vipCanConvertStdTypes(uint from, uint to)
 
 bool vipCanConvert(uint from, uint to)
 {
-	QVariant v_from(from, nullptr);
-	bool res = v_from.canConvert(to);
+	QVariant v_from = vipFromVoid(from, nullptr);
+	bool res = v_from.canConvert(VIP_META(to));
 
 	// delete potential the QObject that was created
 	if (QObject* obj = v_from.value<QObject*>())

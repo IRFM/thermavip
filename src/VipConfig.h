@@ -51,6 +51,7 @@
 
 #include "VipBuildConfig.h"
 
+
 /// @Enable/disable printf function in debug/release
 #define VIP_ENABLE_PRINTF_DEBUG 1
 #define VIP_ENABLE_PRINTF_RELEASE 0

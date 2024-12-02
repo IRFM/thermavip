@@ -176,7 +176,7 @@ public:
 	virtual QList<QByteArray> InputDataTypes() const { return QList<QByteArray>() << "QImage"; }
 	virtual QList<QByteArray> PixelComponentTypes() const
 	{
-		QByteArray name = QMetaType::typeName(qMetaTypeId<quint8>());
+		QByteArray name = QMetaType(qMetaTypeId<quint8>()).name();
 		return QList<QByteArray>() << name << name << name << name;
 	}
 	virtual QStringList PixelComponentNames() const
@@ -212,8 +212,8 @@ public:
 	virtual QList<QByteArray> InputDataTypes() const { return QList<QByteArray>() << "QImage"; }
 	virtual QList<QByteArray> PixelComponentTypes() const
 	{
-		QByteArray name = QMetaType::typeName(qMetaTypeId<int>());
-		QByteArray name_uchar = QMetaType::typeName(qMetaTypeId<quint8>());
+		QByteArray name = QMetaType(qMetaTypeId<int>()).name();
+		QByteArray name_uchar = QMetaType(qMetaTypeId<quint8>()).name();
 		return QList<QByteArray>() << name << name << name << name_uchar;
 	}
 	virtual QStringList PixelComponentNames() const
@@ -253,8 +253,8 @@ public:
 	virtual QList<QByteArray> InputDataTypes() const { return QList<QByteArray>() << "QImage"; }
 	virtual QList<QByteArray> PixelComponentTypes() const
 	{
-		QByteArray name = QMetaType::typeName(qMetaTypeId<int>());
-		QByteArray name_uchar = QMetaType::typeName(qMetaTypeId<quint8>());
+		QByteArray name = QMetaType(qMetaTypeId<int>()).name();
+		QByteArray name_uchar = QMetaType(qMetaTypeId<quint8>()).name();
 		return QList<QByteArray>() << name << name << name << name_uchar;
 	}
 	virtual QStringList PixelComponentNames() const
@@ -293,7 +293,7 @@ public:
 	virtual QList<QByteArray> InputDataTypes() const { return QList<QByteArray>() << "QImage"; }
 	virtual QList<QByteArray> PixelComponentTypes() const
 	{
-		QByteArray name = QMetaType::typeName(qMetaTypeId<quint8>());
+		QByteArray name = QMetaType(qMetaTypeId<quint8>()).name();
 		return QList<QByteArray>() << name << name << name << name << name;
 	}
 	QStringList PixelComponentNames() const

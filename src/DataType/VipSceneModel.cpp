@@ -607,7 +607,7 @@ static QVector<QPointF> extractPolyline(const T* input, int OuterStride, const Q
 	return res;
 }
 
-static int findId(const QList<VipShape>& shapes, int id, int& insert_index)
+static int findId(const VipShapeList& shapes, int id, int& insert_index)
 {
 	if (id > 0) {
 		insert_index = shapes.size();
@@ -1115,7 +1115,7 @@ QVector<QRect> VipShape::fillRects() const
 	return res;
 }
 
-QVector<QPoint> VipShape::fillPixels(const QList<VipShape>& shapes)
+QVector<QPoint> VipShape::fillPixels(const VipShapeList& shapes)
 {
 	QRegion full_region;
 	for (int i = 0; i < shapes.size(); ++i) {
@@ -1126,7 +1126,7 @@ QVector<QPoint> VipShape::fillPixels(const QList<VipShape>& shapes)
 	return extractPixels(rects, QPoint(0, 0));
 }
 
-QVector<QRect> VipShape::fillRects(const QList<VipShape>& shapes)
+QVector<QRect> VipShape::fillRects(const VipShapeList& shapes)
 {
 	QRegion full_region;
 	for (int i = 0; i < shapes.size(); ++i) {
@@ -1443,7 +1443,7 @@ bool VipShape::writeAttribute(const QVariant& value, const QVector<QPoint>& poin
 		return false;
 
 	QVariant v = value;
-	if (!v.convert(img.dataType()))
+	if (!v.convert(VIP_META(img.dataType())))
 		return false;
 	for (int i = 0; i < points.size(); ++i) {
 		const QPoint pt = points[i] - img_offset;
@@ -1532,7 +1532,7 @@ QVector<QRect> VipShape::clip(const QVector<QRect>& rects, const QRect& rect, QR
 class VipSceneModel::PrivateData
 {
 public:
-	QMap<QString, QList<VipShape>> shapes;
+	QMap<QString, VipShapeList> shapes;
 	VipSceneModel* sceneModel;
 	VipShapeSignals* shapeSignals;
 	QVariantMap attributes;
@@ -1546,8 +1546,8 @@ public:
 
 	~PrivateData()
 	{
-		for (QMap<QString, QList<VipShape>>::iterator it = shapes.begin(); it != shapes.end(); ++it) {
-			QList<VipShape>& in = it.value();
+		for (QMap<QString, VipShapeList>::iterator it = shapes.begin(); it != shapes.end(); ++it) {
+			VipShapeList& in = it.value();
 			for (int i = 0; i < in.size(); ++i)
 				in[i].d_data->parent = QWeakPointer<PrivateData>();
 		}
@@ -1602,7 +1602,7 @@ bool VipSceneModel::operator==(const VipSceneModel& other) const
 
 void VipSceneModel::clear()
 {
-	for (QMap<QString, QList<VipShape>>::const_iterator it = d_data->shapes.begin(); it != d_data->shapes.end(); ++it)
+	for (QMap<QString, VipShapeList>::const_iterator it = d_data->shapes.begin(); it != d_data->shapes.end(); ++it)
 		Q_EMIT shapeSignals()->groupRemoved(it.key());
 
 	d_data->shapes.clear();
@@ -1612,9 +1612,9 @@ void VipSceneModel::clear()
 VipSceneModel VipSceneModel::copy() const
 {
 	VipSceneModel model;
-	for (QMap<QString, QList<VipShape>>::const_iterator it = d_data->shapes.begin(); it != d_data->shapes.end(); ++it) {
-		QList<VipShape>& out = model.d_data->shapes[it.key()];
-		const QList<VipShape>& in = it.value();
+	for (QMap<QString, VipShapeList>::const_iterator it = d_data->shapes.begin(); it != d_data->shapes.end(); ++it) {
+		VipShapeList& out = model.d_data->shapes[it.key()];
+		const VipShapeList& in = it.value();
 
 		for (int i = 0; i < in.size(); ++i) {
 			out.append(in[i].copy());
@@ -1628,8 +1628,8 @@ VipSceneModel VipSceneModel::copy() const
 void VipSceneModel::transform(const QTransform& tr)
 {
 	shapeSignals()->blockSignals(true);
-	for (QMap<QString, QList<VipShape>>::iterator it = d_data->shapes.begin(); it != d_data->shapes.end(); ++it) {
-		QList<VipShape>& in = it.value();
+	for (QMap<QString, VipShapeList>::iterator it = d_data->shapes.begin(); it != d_data->shapes.end(); ++it) {
+		VipShapeList& in = it.value();
 		for (int i = 0; i < in.size(); ++i) {
 			in[i].transform(tr);
 		}
@@ -1646,7 +1646,7 @@ VipSceneModel& VipSceneModel::add(const QString& group, const VipShape& shape)
 	if (sh.parent())
 		sh.parent().remove(sh);
 
-	QList<VipShape>& shapes = d_data->shapes[group];
+	VipShapeList& shapes = d_data->shapes[group];
 	if (shapes.isEmpty())
 		Q_EMIT shapeSignals()->groupAdded(group);
 
@@ -1662,7 +1662,7 @@ VipSceneModel& VipSceneModel::add(const QString& group, const VipShape& shape)
 	return *this;
 }
 
-VipSceneModel& VipSceneModel::add(const QString& group, const QList<VipShape>& shapes)
+VipSceneModel& VipSceneModel::add(const QString& group, const VipShapeList& shapes)
 {
 	bool empty_group = d_data->shapes.find(group) == d_data->shapes.end();
 	shapeSignals()->blockSignals(true);
@@ -1676,7 +1676,7 @@ VipSceneModel& VipSceneModel::add(const QString& group, const QList<VipShape>& s
 	return *this;
 }
 
-VipSceneModel& VipSceneModel::add(const QList<VipShape>& shapes)
+VipSceneModel& VipSceneModel::add(const VipShapeList& shapes)
 {
 	QSet<QString> new_groups;
 
@@ -1697,7 +1697,7 @@ VipSceneModel& VipSceneModel::add(const QList<VipShape>& shapes)
 
 bool VipSceneModel::add(const VipShape& shape, int id)
 {
-	QMap<QString, QList<VipShape>>::iterator it = d_data->shapes.find(shape.group());
+	QMap<QString, VipShapeList>::iterator it = d_data->shapes.find(shape.group());
 	if (it != d_data->shapes.end()) {
 		if (it.value().indexOf(shape) >= 0)
 			// already there
@@ -1738,8 +1738,8 @@ VipSceneModel& VipSceneModel::reset(const VipSceneModel& other)
 	model.d_data->shapes.clear();
 
 	// set the shape parent
-	for (QMap<QString, QList<VipShape>>::const_iterator it = d_data->shapes.begin(); it != d_data->shapes.end(); ++it) {
-		const QList<VipShape> shs = it.value();
+	for (QMap<QString, VipShapeList>::const_iterator it = d_data->shapes.begin(); it != d_data->shapes.end(); ++it) {
+		const VipShapeList shs = it.value();
 		for (int i = 0; i < shs.size(); ++i) {
 			VipShape tmp(shs[i]);
 			tmp.d_data->parent = d_data;
@@ -1788,8 +1788,8 @@ VipSceneModel& VipSceneModel::add(const VipSceneModel& other)
 		if (d_data->shapes.find(group) == d_data->shapes.end())
 			new_groups.insert(group);
 
-		QList<VipShape>& this_shapes = d_data->shapes[group];
-		const QList<VipShape> other_shapes = other.shapes(group);
+		VipShapeList& this_shapes = d_data->shapes[group];
+		const VipShapeList other_shapes = other.shapes(group);
 
 		for (int s = 0; s < other_shapes.size(); ++s) {
 			VipShape sh = other_shapes[s];
@@ -1818,7 +1818,7 @@ VipSceneModel& VipSceneModel::add(const VipSceneModel& other)
 
 VipSceneModel& VipSceneModel::remove(const VipShape& shape)
 {
-	QMap<QString, QList<VipShape>>::iterator it = d_data->shapes.find(shape.group());
+	QMap<QString, VipShapeList>::iterator it = d_data->shapes.find(shape.group());
 	if (it != d_data->shapes.end()) {
 		if (it.value().removeOne(shape)) {
 			shape.d_data->parent = QWeakPointer<PrivateData>();
@@ -1839,7 +1839,7 @@ VipSceneModel& VipSceneModel::remove(const VipShapeList& shapes)
 		return *this;
 	QSet<QString> groups;
 	for (int i = 0; i < shapes.size(); ++i) {
-		QMap<QString, QList<VipShape>>::iterator it = d_data->shapes.find(shapes[i].group());
+		QMap<QString, VipShapeList>::iterator it = d_data->shapes.find(shapes[i].group());
 		if (it.value().removeOne(shapes[i])) {
 			shapes[i].d_data->parent = QWeakPointer<PrivateData>();
 			if (it.value().isEmpty()) {
@@ -1857,7 +1857,7 @@ VipSceneModel& VipSceneModel::remove(const VipShapeList& shapes)
 
 VipSceneModel& VipSceneModel::removeGroup(const QString& group)
 {
-	QMap<QString, QList<VipShape>>::iterator it = d_data->shapes.find(group);
+	QMap<QString, VipShapeList>::iterator it = d_data->shapes.find(group);
 	if (it != d_data->shapes.end()) {
 		d_data->shapes.erase(it);
 
@@ -1869,13 +1869,13 @@ VipSceneModel& VipSceneModel::removeGroup(const QString& group)
 
 bool VipSceneModel::hasGroup(const QString& group)
 {
-	QMap<QString, QList<VipShape>>::iterator it = d_data->shapes.find(group);
+	QMap<QString, VipShapeList>::iterator it = d_data->shapes.find(group);
 	return (it != d_data->shapes.end());
 }
 
 int VipSceneModel::shapeCount(const QString& group) const
 {
-	QMap<QString, QList<VipShape>>::iterator it = d_data->shapes.find(group);
+	QMap<QString, VipShapeList>::iterator it = d_data->shapes.find(group);
 	if (it != d_data->shapes.end())
 		return it.value().size();
 	return 0;
@@ -1884,7 +1884,7 @@ int VipSceneModel::shapeCount(const QString& group) const
 int VipSceneModel::shapeCount() const
 {
 	int count = 0;
-	for (QMap<QString, QList<VipShape>>::iterator it = d_data->shapes.begin(); it != d_data->shapes.end(); ++it) {
+	for (QMap<QString, VipShapeList>::iterator it = d_data->shapes.begin(); it != d_data->shapes.end(); ++it) {
 		count += it.value().size();
 	}
 	return count;
@@ -1902,7 +1902,7 @@ QStringList VipSceneModel::groups() const
 
 int VipSceneModel::indexOf(const QString& group, const VipShape& sh) const
 {
-	QMap<QString, QList<VipShape>>::iterator it = d_data->shapes.find(group);
+	QMap<QString, VipShapeList>::iterator it = d_data->shapes.find(group);
 	if (it != d_data->shapes.end())
 		return it.value().indexOf(sh);
 	return -1;
@@ -1910,7 +1910,7 @@ int VipSceneModel::indexOf(const QString& group, const VipShape& sh) const
 
 VipShape VipSceneModel::at(const QString& group, int index) const
 {
-	QMap<QString, QList<VipShape>>::iterator it = d_data->shapes.find(group);
+	QMap<QString, VipShapeList>::iterator it = d_data->shapes.find(group);
 	if (it != d_data->shapes.end())
 		return it.value()[index];
 	return VipShape();
@@ -1918,9 +1918,9 @@ VipShape VipSceneModel::at(const QString& group, int index) const
 
 VipShape VipSceneModel::find(const QString& group, int id) const
 {
-	QMap<QString, QList<VipShape>>::iterator it = d_data->shapes.find(group);
+	QMap<QString, VipShapeList>::iterator it = d_data->shapes.find(group);
 	if (it != d_data->shapes.end()) {
-		const QList<VipShape> shapes = it.value();
+		const VipShapeList shapes = it.value();
 		for (int i = 0; i < shapes.size(); ++i)
 			if (shapes[i].id() == id)
 				return shapes[i];
@@ -1937,34 +1937,34 @@ VipShape VipSceneModel::find(const QString& path) const
 	return find(lst[0], lst[1].toInt());
 }
 
-QList<VipShape> VipSceneModel::shapes(const QString& group) const
+VipShapeList VipSceneModel::shapes(const QString& group) const
 {
-	QMap<QString, QList<VipShape>>::iterator it = d_data->shapes.find(group);
+	QMap<QString, VipShapeList>::iterator it = d_data->shapes.find(group);
 	if (it != d_data->shapes.end())
 		return it.value();
-	return QList<VipShape>();
+	return VipShapeList();
 }
 
-QList<VipShape> VipSceneModel::shapes() const
+VipShapeList VipSceneModel::shapes() const
 {
-	QList<VipShape> res;
-	for (QMap<QString, QList<VipShape>>::iterator it = d_data->shapes.begin(); it != d_data->shapes.end(); ++it) {
+	VipShapeList res;
+	for (QMap<QString, VipShapeList>::iterator it = d_data->shapes.begin(); it != d_data->shapes.end(); ++it) {
 		res << it.value();
 	}
 	return res;
 }
 
-QMap<QString, QList<VipShape>> VipSceneModel::groupShapes() const
+QMap<QString, VipShapeList> VipSceneModel::groupShapes() const
 {
 	return d_data->shapes;
 }
 
-// QList<VipShape> VipSceneModel::selectedShapes() const
+// VipShapeList VipSceneModel::selectedShapes() const
 //  {
-//  QList<VipShape> res;
-//  for(QMap<QString, QList<VipShape> >::const_iterator it = d_data->shapes.begin(); it != d_data->shapes.end(); ++it)
+//  VipShapeList res;
+//  for(QMap<QString, VipShapeList >::const_iterator it = d_data->shapes.begin(); it != d_data->shapes.end(); ++it)
 //  {
-//  const QList<VipShape> & in = it.value();
+//  const VipShapeList & in = it.value();
 //  for(int i=0; i < in.size(); ++i)
 //  if(in[i].isSelected())
 //  res.append(in[i]);
@@ -1975,8 +1975,8 @@ QMap<QString, QList<VipShape>> VipSceneModel::groupShapes() const
 QPainterPath VipSceneModel::shape() const
 {
 	QPainterPath res;
-	for (QMap<QString, QList<VipShape>>::const_iterator it = d_data->shapes.begin(); it != d_data->shapes.end(); ++it) {
-		const QList<VipShape>& in = it.value();
+	for (QMap<QString, VipShapeList>::const_iterator it = d_data->shapes.begin(); it != d_data->shapes.end(); ++it) {
+		const VipShapeList& in = it.value();
 		for (int i = 0; i < in.size(); ++i) {
 			res |= in[i].shape();
 		}
@@ -1987,8 +1987,8 @@ QPainterPath VipSceneModel::shape() const
 QRectF VipSceneModel::boundingRect() const
 {
 	QRectF res;
-	for (QMap<QString, QList<VipShape>>::const_iterator it = d_data->shapes.begin(); it != d_data->shapes.end(); ++it) {
-		const QList<VipShape>& in = it.value();
+	for (QMap<QString, VipShapeList>::const_iterator it = d_data->shapes.begin(); it != d_data->shapes.end(); ++it) {
+		const VipShapeList& in = it.value();
 		for (int i = 0; i < in.size(); ++i) {
 			res |= in[i].boundingRect();
 		}

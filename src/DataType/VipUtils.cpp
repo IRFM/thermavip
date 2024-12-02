@@ -844,7 +844,7 @@ static VipPointVector pointVectorFromArray(const VipNDArray& ar)
 
 static VipNDArray arrayFromPointVector(const VipPointVector& vector)
 {
-	VipNDArrayType<vip_double> res(vipVector(2, vector.size()));
+	VipNDArrayType<vip_double> res(vipVector(2, (int)vector.size()));
 	for (int i = 0; i < vector.size(); ++i) {
 		res(vipVector(0, i)) = vector[i].x();
 		res(vipVector(1, i)) = vector[i].y();
@@ -870,7 +870,7 @@ static VipComplexPointVector complexPointVectorFromArray(const VipNDArray& ar)
 
 static VipNDArray arrayFromComplexPointVector(const VipComplexPointVector& vector)
 {
-	VipNDArrayType<complex_d> res(vipVector(2, vector.size()));
+	VipNDArrayType<complex_d> res(vipVector(2, (int)vector.size()));
 	for (int i = 0; i < vector.size(); ++i) {
 		res(vipVector(0, i)) = vector[i].x();
 		res(vipVector(1, i)) = vector[i].y();
@@ -881,8 +881,8 @@ static VipNDArray arrayFromComplexPointVector(const VipComplexPointVector& vecto
 static QVariantList variantListFromIntervalSampleVector(const VipIntervalSampleVector& vec)
 {
 	// list of 2 arrays: values and intervals
-	VipNDArrayType<vip_double> values(vipVector(vec.size()));
-	VipNDArrayType<vip_double> intervals(vipVector(vec.size() * 2));
+	VipNDArrayType<vip_double> values(vipVector((int)vec.size()));
+	VipNDArrayType<vip_double> intervals(vipVector((int)vec.size() * 2));
 	for (int i = 0; i < vec.size(); ++i) {
 		values(vipVector(i)) = vec[i].value;
 		intervals(vipVector(i * 2)) = vec[i].interval.minValue();

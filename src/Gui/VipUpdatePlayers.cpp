@@ -455,7 +455,7 @@ void VipUpdateVideoPlayer::updateMarkers()
 			VipSceneModel model = plot_scene->sceneModel();
 
 			QList<VipPlotShape*> plot_shapes = p->viewer()->area()->findItems<VipPlotShape*>(QString(), 2, 1);
-			QList<VipShape> shapes;
+			VipShapeList shapes;
 			double level = -1;
 			for (int i = 0; i < plot_shapes.size(); ++i) {
 				// if (plot_shapes[i]->rawData().type() != VipShape::Point)

@@ -2434,7 +2434,7 @@ public:
 	/// Set the scene model by setting the 'scene_model' property, and optionally set a shape identifier
 	void setSceneModel(const VipSceneModel& scene, const QString& identifier = QString());
 	/// Set the scene model by setting the 'scene_model' property, and set a shape identifiers (property 'shape_ids')
-	void setSceneModel(const VipSceneModel& scene, const QList<VipShape>& shapes);
+	void setSceneModel(const VipSceneModel& scene, const VipShapeList& shapes);
 	/// Set the scene model by setting the 'scene_model' property, and set a shape identifiers (property 'shape_ids')
 	void setSceneModel(const VipSceneModel& scene, const QStringList& identifiers);
 	/// Set the shape by setting the 'scene_model' property and the 'shape_ids' property
@@ -2455,7 +2455,7 @@ public:
 	/// Returns all shapes set as properties without applying the merge strategy.
 	/// The shape transform (if any) is applied.
 	/// Note that this will alwayse return a copy of the set shape that can be freely modified.
-	QList<VipShape> shapes();
+	VipShapeList shapes();
 
 	/// Enable/disable a call to VipProcessingObject::reload() whenever the a shape changes within the scene model.
 	/// True by default.

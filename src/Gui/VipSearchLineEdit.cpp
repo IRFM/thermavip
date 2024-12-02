@@ -444,9 +444,9 @@ VipSearchLineEdit::VipSearchLineEdit(QWidget* parent)
 			 "Press ENTER to open entered file/signal.<br>"
 			 "Press TAB to select entry from the completer.");
 
+	this->setStyleSheet("QLineEdit{border-radius:5px;}");
 	this->setClearButtonEnabled(true);
-	this->setMinimumWidth(200);
-	this->setMaximumWidth(800);
+	
 
 	//d_data->open = this->addAction(vipIcon("open.png"), QLineEdit::LeadingPosition);
 	//d_data->open->setToolTip("Open path");

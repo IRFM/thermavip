@@ -930,7 +930,7 @@ class AttributesEditor : public QWidget
 	QGridLayout* lay;
 	QList<QLabel*> names;
 	QList<QLineEdit*> values;
-	QList<VipShape> shapes;
+	VipShapeList shapes;
 	QPointer<VipSceneModelEditor> editor;
 
 public:
@@ -941,7 +941,7 @@ public:
 		setLayout(lay = new QGridLayout());
 	}
 
-	void setShapes(const QList<VipShape>& sh)
+	void setShapes(const VipShapeList& sh)
 	{
 		shapes = sh;
 		for (int i = 0; i < values.size(); ++i)
@@ -1172,7 +1172,7 @@ void VipSceneModelEditor::resetPlayer()
 void VipSceneModelEditor::recomputeAttributes()
 {
 	if (!d_data->scene) {
-		d_data->editor->setShapes(QList<VipShape>());
+		d_data->editor->setShapes(VipShapeList());
 		return;
 	}
 
@@ -1181,7 +1181,7 @@ void VipSceneModelEditor::recomputeAttributes()
 	if (d_data->scene)
 		models = vipCastItemList<VipPlotSceneModel*>(d_data->scene->items());
 	// set attributes
-	QList<VipShape> shapes;
+	VipShapeList shapes;
 	for (int i = 0; i < models.size(); ++i) {
 		QList<VipPlotShape*> sh = models[i]->shapes(1);
 		for (int j = 0; j < sh.size(); ++j)
@@ -1883,15 +1883,15 @@ void VipSceneModelEditor::saveShapesImage()
 	}
 }
 
-QList<VipShape> VipSceneModelEditor::openShapes(const QString& filename, VipPlayer2D* pl, bool remove_old)
+VipShapeList VipSceneModelEditor::openShapes(const QString& filename, VipPlayer2D* pl, bool remove_old)
 {
 	if (!pl)
-		return QList<VipShape>();
+		return VipShapeList();
 
 	if (filename.isEmpty())
-		return QList<VipShape>();
+		return VipShapeList();
 
-	QList<VipShape> res;
+	VipShapeList res;
 	QList<VipIODevice::Info> devices = VipIODevice::possibleReadDevices(filename, QByteArray(), QVariant::fromValue(VipSceneModel()));
 	VipIODevice* dev = VipCreateDevice::create(devices, filename);
 	if (dev && dev->open(VipIODevice::ReadOnly)) {

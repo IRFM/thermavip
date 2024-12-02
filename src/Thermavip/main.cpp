@@ -243,6 +243,8 @@ int main(int argc, char** argv)
 			vip_debug("Set font to %s\n", font.family().toLatin1().data());
 		}
 	}
+	
+
 	//QApplication::setFont(QFont("Segoe UI"));//TEST
 
 

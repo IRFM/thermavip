@@ -30,6 +30,7 @@
  */
 
 #include "VipLongDouble.h"
+#include <QLocale>
 #include <complex>
 
 static std::locale toStdLocale(const QLocale& l)
@@ -94,7 +95,7 @@ QString vipLongDoubleToStringLocale(const vip_long_double v, const QLocale& l)
 	std::ostringstream ss;
 	if (l.language() != //_locale.language()
 	    QLocale::C)
-		ss.imbue(toStdLocale(l.name()));
+		ss.imbue(toStdLocale(l));
 	ss << std::setprecision(std::numeric_limits<vip_long_double>::digits10 + 1) << v;
 	return QString(ss.str().c_str());
 }
@@ -103,7 +104,7 @@ QByteArray vipLongDoubleToByteArrayLocale(const vip_long_double v, const QLocale
 	std::ostringstream ss;
 	if (l.language() != //_locale.language()
 	    QLocale::C)
-		ss.imbue(toStdLocale(l.name()));
+		ss.imbue(toStdLocale(l));
 	ss << std::setprecision(std::numeric_limits<vip_long_double>::digits10 + 1) << v;
 	return QByteArray(ss.str().c_str());
 }
@@ -254,7 +255,10 @@ static int registerLongDouble()
 	qRegisterMetaType<VipLongPoint>();
 #endif
 	qRegisterMetaType<vip_long_double>();
+
+	#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
 	qRegisterMetaTypeStreamOperators<vip_long_double>("vip_long_double");
+	#endif
 
 	QMetaType::registerConverter<vip_long_double, signed char>(fromLongDouble<signed char>);
 	QMetaType::registerConverter<vip_long_double, char>(fromLongDouble<char>);

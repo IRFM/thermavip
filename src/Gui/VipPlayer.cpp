@@ -978,7 +978,7 @@ void VipPlayer2D::addSceneModels(const VipSceneModelList& lst, bool remove_old_s
 //  if (op == Copy || op == Cut)
 //  {
 //	//compute the list of selected VipShape
-//	QList<VipShape> shapes;
+//	VipShapeList shapes;
 //	QList<VipPlotShape*> plot_shapes = scene->shapes();
 //	for (int i = 0; i < plot_shapes.size(); ++i)
 //	{
@@ -1001,7 +1001,7 @@ void VipPlayer2D::addSceneModels(const VipSceneModelList& lst, bool remove_old_s
 //  else
 //  {
 //	//paste
-//	QList<VipShape> shapes = vipCreateFromClipboard<VipShape>();
+//	VipShapeList shapes = vipCreateFromClipboard<VipShape>();
 //	model.add(shapes);
 //  }
 //
@@ -1247,10 +1247,10 @@ QList<VipPlotShape*> VipPlayer2D::findSelectedPlotShapes(int selected, int visib
 	return QList<VipPlotShape*>();
 }
 
-QList<VipShape> VipPlayer2D::findSelectedShapes(int selected, int visible) const
+VipShapeList VipPlayer2D::findSelectedShapes(int selected, int visible) const
 {
 	QList<VipPlotShape*> pshapes = findSelectedPlotShapes(selected, visible);
-	QList<VipShape> res;
+	VipShapeList res;
 	for (int i = 0; i < pshapes.size(); ++i)
 		res.append(pshapes[i]->rawData());
 	return res;
@@ -2825,7 +2825,7 @@ void VipVideoPlayer::updateImageTransform()
 		}
 
 		VipSceneModel sm = p_scene->sceneModel();
-		QList<VipShape> shapes = sm.shapes();
+		VipShapeList shapes = sm.shapes();
 
 		// first, revert back the current shapes
 		if (!d_data->transform.isIdentity()) {
@@ -3942,7 +3942,7 @@ void VipVideoPlayer::updateSelectedShapesFromIsoLine()
 		return;
 	}
 
-	QList<VipShape> shs;
+	VipShapeList shs;
 	for (int i = 0; i < shapes.size(); ++i) {
 		shs.append(shapes[i]->rawData());
 	}

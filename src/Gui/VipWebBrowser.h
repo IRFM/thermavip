@@ -48,7 +48,7 @@
 /// 
 /// HTTP/IP addresses and HTML files are opened in a VipWebBrowser player.
 /// 
-class VipHTTPFileHandler : public VipFileHandler
+class VIP_GUI_EXPORT VipHTTPFileHandler : public VipFileHandler
 {
 	Q_OBJECT
 public:
@@ -69,7 +69,7 @@ public:
 VIP_REGISTER_QOBJECT_METATYPE(VipHTTPFileHandler*)
 
 /// @brief Tool bar of a VipWebBrowser
-class VipWebBrowserToolBar : public QToolBar
+class VIP_GUI_EXPORT VipWebBrowserToolBar : public QToolBar
 {
 	Q_OBJECT
 public:
@@ -91,7 +91,7 @@ public Q_SLOTS:
 
 /// @brief A player used to display a lightweight web browser
 ///
-class VipWebBrowser : public VipWidgetPlayer
+class VIP_GUI_EXPORT VipWebBrowser : public VipWidgetPlayer
 {
 	Q_OBJECT
 

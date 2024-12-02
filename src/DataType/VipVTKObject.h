@@ -121,7 +121,12 @@ namespace detail
 class VIP_DATA_TYPE_EXPORT VipVTKObject
 {
 	friend class VipVTKObjectLocker;
-	friend uint qHash(const VipVTKObject& key, uint seed);
+
+	#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
+	friend size_t qHash(const VipVTKObject& key, size_t seed);
+#else
+	friend size_t qHash(const VipVTKObject& key, size_t seed);
+#endif
 
 	class PrivateData;
 	using SharedPointer = QSharedPointer<PrivateData>;
@@ -331,7 +336,7 @@ public:
 	static bool saveToDirectory(const QVector<VipVTKObject>& lst, const QString& directory, const QString& format = "default");
 
 private:
-	QMutex* mutex() const;
+	QRecursiveMutex* mutex() const;
 	vtkDataObject* setObject(vtkDataObject* obj);
 	/// @brief Import data (through deep copies) from other.
 	void importData(const VipVTKObject& other);
@@ -394,10 +399,17 @@ VIP_DATA_TYPE_EXPORT QStringList supportedFileSuffix(const VipVTKObjectList& lst
 VIP_DATA_TYPE_EXPORT QStringList commonAttributes(const VipVTKObjectList& lst, VipVTKObject::AttributeType type);
 
 /// @brief Define qHash for VipVTKObject
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
 inline uint qHash(const VipVTKObject& key, uint seed)
 {
-	return qHash(key.d_data, seed);
+	return qHash(static_cast<void*>(key.d_data.data()), seed);
 }
+#else
+inline size_t qHash(const VipVTKObject& key, size_t seed)
+{
+	return qHash(static_cast<void*>(key.d_data.data()), seed);
+}
+#endif
 
 inline VipVTKObjectLocker vipLockVTKObjects(const VipVTKObject& obj)
 {

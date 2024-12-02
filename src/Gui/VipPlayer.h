@@ -376,7 +376,7 @@ public:
 	/// Returns all selected/unselected and/or visible/hidden  VipPlotShape objects within this player
 	QList<VipPlotShape*> findSelectedPlotShapes(int selected = 2, int visible = 2) const;
 	/// Returns all selected/unselected and/or visible/hidden  VipShape objects within this player
-	QList<VipShape> findSelectedShapes(int selected = 2, int visible = 2) const;
+	VipShapeList findSelectedShapes(int selected = 2, int visible = 2) const;
 
 	/// Helper function.
 	/// Returns the VipDisplaySceneModel corresponding to a given scene model or shape, or nullptr if no VipDisplaySceneModel was found.

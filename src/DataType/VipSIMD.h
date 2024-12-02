@@ -41,7 +41,9 @@
 
 #if defined(_MSC_VER) && !defined(__clang__)
 // Silence msvc warning message about alignment
+#ifndef _ENABLE_EXTENDED_ALIGNED_STORAGE
 #define _ENABLE_EXTENDED_ALIGNED_STORAGE
+#endif
 #endif
 
 #if defined(__MINGW64_VERSION_MAJOR) || defined(_MSC_VER)

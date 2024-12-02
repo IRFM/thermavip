@@ -98,6 +98,8 @@ public:
 
 Q_DECLARE_OPERATORS_FOR_FLAGS(VipShapeStatistics::Statistics);
 
+typedef QVector<VipShape> VipShapeList;
+
 /// \a VipShape represents a 2D shape.
 /// A 2D shape can be of several types:
 /// - Any kind of closed path represented by the QPainterPath class
@@ -261,10 +263,10 @@ public:
 	VipShapeSignals* shapeSignals() const;
 
 	/// Returns all pixels filled by a list of shapes
-	static QVector<QPoint> fillPixels(const QList<VipShape>& shapes);
+	static QVector<QPoint> fillPixels(const VipShapeList& shapes);
 
 	/// Returns all rectangle filled by a list of shapes
-	static QVector<QRect> fillRects(const QList<VipShape>& shapes);
+	static QVector<QRect> fillRects(const VipShapeList& shapes);
 
 	/// Given the list of pixels \a points, remove the pixels outside the bounding rectangle \a rect.
 	///  If \a bounding is non nullptr, set it to the new pixels bounding rect.
@@ -380,8 +382,6 @@ private:
 
 Q_DECLARE_METATYPE(VipShape)
 Q_DECLARE_METATYPE(QPainterPath)
-
-typedef QList<VipShape> VipShapeList;
 Q_DECLARE_METATYPE(VipShapeList);
 
 VIP_DATA_TYPE_EXPORT int vipShapeCount();
@@ -431,10 +431,10 @@ public:
 	/// Add a shape to given \a group
 	VipSceneModel& add(const QString& group, const VipShape& shape);
 	/// Add a list of shapes to given \a group
-	VipSceneModel& add(const QString& group, const QList<VipShape>& shapes);
+	VipSceneModel& add(const QString& group, const VipShapeList& shapes);
 	/// Add a list of shapes.
 	///  Each shape will be inserted in the group returned by #vipShape::group with, if possible, the id returned by #VipShape::id.
-	VipSceneModel& add(const QList<VipShape>& shapes);
+	VipSceneModel& add(const VipShapeList& shapes);
 	/// Add a shape. The shape will be inserted in the group returned by #vipShape::group with, if possible, the id returned by #VipShape::id.
 	VipSceneModel& add(const VipShape& shape);
 	/// Add the content of a scene model in this scene model. This will clear the content of \a other.
@@ -478,12 +478,12 @@ public:
 	///  \sa VipShape::identifier()
 	VipShape find(const QString& path) const;
 	/// Returns all shapes that belong to \a group
-	QList<VipShape> shapes(const QString& group) const;
+	VipShapeList shapes(const QString& group) const;
 	/// Returns scene model shapes
-	QList<VipShape> shapes() const;
+	VipShapeList shapes() const;
 	/// Returns scene model shapes sorted by groups
-	QMap<QString, QList<VipShape>> groupShapes() const;
-	// QList<VipShape> selectedShapes() const;
+	QMap<QString, VipShapeList> groupShapes() const;
+	// VipShapeList selectedShapes() const;
 
 	/// Returns the full scene model path
 	QPainterPath shape() const;

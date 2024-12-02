@@ -3532,8 +3532,8 @@ void VipWarpingEditor::ChangeWarping()
 		return;
 	}
 
-	QList<VipShape> to = player->plotSceneModel()->sceneModel().shapes("Points");
-	QList<VipShape> from = d_data->warping->sceneModel().shapes("Points");
+	VipShapeList to = player->plotSceneModel()->sceneModel().shapes("Points");
+	VipShapeList from = d_data->warping->sceneModel().shapes("Points");
 
 	/*QPointF to_p[10];
 	QPointF from_p[10];

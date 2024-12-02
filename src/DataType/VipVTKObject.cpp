@@ -32,7 +32,6 @@
 #include "VipVTKObject.h"
 #include "VipVTKImage.h"
 
-
 #include <vtkAbstractArray.h>
 #include <vtkCellArray.h>
 #include <vtkCellData.h>
@@ -88,7 +87,7 @@
 namespace detail
 {
 
-	static QMutex _vtk_objects_mutex(QMutex::Recursive);
+	static QRecursiveMutex _vtk_objects_mutex;
 
 	struct VTKObjectList
 	{
@@ -140,7 +139,7 @@ namespace detail
 			int line = list.lines[index];
 			QString file = list.files[index];
 			list.remove(object);
-			printf("delete object %s at address %lld, file %s, line %d, remaining = %i\n", object->GetClassName(), (qint64)object, file.toLatin1().data(), line, list.objects.size());
+			printf("delete object %s at address %lld, file %s, line %d, remaining = %i\n", object->GetClassName(), (qint64)object, file.toLatin1().data(), line, (int)list.objects.size());
 		}
 	}
 
@@ -223,7 +222,7 @@ public:
 
 	//QList<DynamicProperty> dynProperties;
 
-	QMutex mutex;
+	QRecursiveMutex mutex;
 
 	PrivateData();
 	~PrivateData();
@@ -235,7 +234,7 @@ public:
 VipVTKObject::PrivateData::PrivateData()
   : cadMTime(0)
   , simplified(false)
-  , mutex(QMutex::Recursive)
+  , mutex()
 {
 }
 
@@ -296,7 +295,7 @@ VipVTKObject::~VipVTKObject()
 
 QStringList VipVTKObject::supportedFileSuffix() const
 {
-	QMutexLocker lock(const_cast<QMutex*>(&d_data->mutex));
+	QMutexLocker lock(const_cast<QRecursiveMutex*>(&d_data->mutex));
 
 	if (!d_data->data)
 		return QStringList();
@@ -338,7 +337,7 @@ QString VipVTKObject::preferredSuffix() const
 
 vtkDataObject* VipVTKObject::setObject(vtkDataObject* obj)
 {
-	QMutexLocker lock(const_cast<QMutex*>(&d_data->mutex));
+	QMutexLocker lock(const_cast<QRecursiveMutex*>(&d_data->mutex));
 
 	if (obj == d_data->data)
 		return obj;
@@ -382,7 +381,7 @@ vtkDataObject* VipVTKObject::setObject(vtkDataObject* obj)
 
 void VipVTKObject::modified()
 {
-	QMutexLocker lock(const_cast<QMutex*>(&d_data->mutex));
+	QMutexLocker lock(const_cast<QRecursiveMutex*>(&d_data->mutex));
 	if (d_data->data) {
 		d_data->data->Modified();
 		d_data->cadMTime = d_data->data->GetMTime();
@@ -410,7 +409,7 @@ void VipVTKObject::clear()
 
 QVariantMap VipVTKObject::buildAllAttributes() const
 {
-	QMutexLocker lock(const_cast<QMutex*>(&d_data->mutex));
+	QMutexLocker lock(const_cast<QRecursiveMutex*>(&d_data->mutex));
 
 	QVariantMap attrs;
 	
@@ -501,15 +500,15 @@ vtkPolyData * VipVTKObject::Simplified() const
 
 
 
-QMutex* VipVTKObject::mutex() const
+QRecursiveMutex* VipVTKObject::mutex() const
 {
-	return const_cast<QMutex*>(&d_data->mutex);
+	return const_cast<QRecursiveMutex*>(&d_data->mutex);
 }
 
 
 QString VipVTKObject::description(int pointId, int cellId) const
 {
-	QMutexLocker lock(const_cast<QMutex*>(&d_data->mutex));
+	QMutexLocker lock(const_cast<QRecursiveMutex*>(&d_data->mutex));
 
 	QStringList text;
 
@@ -574,13 +573,13 @@ QString VipVTKObject::description(int pointId, int cellId) const
 
 QString VipVTKObject::dataName() const
 {
-	QMutexLocker lock(const_cast<QMutex*>(&d_data->mutex));
+	QMutexLocker lock(const_cast<QRecursiveMutex*>(&d_data->mutex));
 	return d_data->data ? QString(d_data->data->GetObjectName().c_str()) : QString();
 }
 
 void VipVTKObject::setDataName(const QString& name)
 {
-	QMutexLocker lock(const_cast<QMutex*>(&d_data->mutex));
+	QMutexLocker lock(const_cast<QRecursiveMutex*>(&d_data->mutex));
 	if (d_data->data)
 		d_data->data->SetObjectName(name.toLatin1().data());
 }
@@ -828,7 +827,7 @@ QPair<QString, vtkVariantList> VipVTKObject::makeAttribute(vtkAbstractArray* arr
 
 void VipVTKObject::setFieldAttributes(const QMap<QString, vtkVariantList>& attr)
 {
-	QMutexLocker lock(const_cast<QMutex*>(&d_data->mutex));
+	QMutexLocker lock(const_cast<QRecursiveMutex*>(&d_data->mutex));
 	if (d_data->data) {
 		for (QMap<QString, vtkVariantList>::const_iterator it = attr.begin(); it != attr.end(); ++it) {
 			setFieldAttribute(it.key(), it.value());
@@ -838,7 +837,7 @@ void VipVTKObject::setFieldAttributes(const QMap<QString, vtkVariantList>& attr)
 
 void VipVTKObject::setFieldAttribute(const QString& name, const vtkVariantList& values)
 {
-	QMutexLocker lock(const_cast<QMutex*>(&d_data->mutex));
+	QMutexLocker lock(const_cast<QRecursiveMutex*>(&d_data->mutex));
 
 	if (d_data->data) {
 		vtkFieldData* field = d_data->data->GetFieldData();
@@ -856,7 +855,7 @@ void VipVTKObject::setFieldAttribute(const QString& name, const vtkVariantList& 
 
 QMap<QString, vtkVariantList> VipVTKObject::fieldAttributes() const
 {
-	QMutexLocker lock(const_cast<QMutex*>(&d_data->mutex));
+	QMutexLocker lock(const_cast<QRecursiveMutex*>(&d_data->mutex));
 
 	QMap<QString, vtkVariantList> res;
 	if (d_data->data) {
@@ -872,7 +871,7 @@ QMap<QString, vtkVariantList> VipVTKObject::fieldAttributes() const
 
 vtkVariantList VipVTKObject::fieldAttribute(const QString& name) const
 {
-	QMutexLocker lock(const_cast<QMutex*>(&d_data->mutex));
+	QMutexLocker lock(const_cast<QRecursiveMutex*>(&d_data->mutex));
 
 	if (d_data->data) {
 		vtkFieldData* field = d_data->data->GetFieldData();
@@ -886,7 +885,7 @@ vtkVariantList VipVTKObject::fieldAttribute(const QString& name) const
 
 vtkAbstractArray* VipVTKObject::fieldAttributeArray(const QString& name) const
 {
-	QMutexLocker lock(const_cast<QMutex*>(&d_data->mutex));
+	QMutexLocker lock(const_cast<QRecursiveMutex*>(&d_data->mutex));
 
 	if (d_data->data) {
 		vtkFieldData* field = d_data->data->GetFieldData();
@@ -898,7 +897,7 @@ vtkAbstractArray* VipVTKObject::fieldAttributeArray(const QString& name) const
 
 QVector<vtkAbstractArray*> VipVTKObject::fieldAttributeArrays() const
 {
-	QMutexLocker lock(const_cast<QMutex*>(&d_data->mutex));
+	QMutexLocker lock(const_cast<QRecursiveMutex*>(&d_data->mutex));
 
 	QVector<vtkAbstractArray*> res;
 	if (d_data->data) {
@@ -911,7 +910,7 @@ QVector<vtkAbstractArray*> VipVTKObject::fieldAttributeArrays() const
 
 QStringList VipVTKObject::fieldAttributesNames() const
 {
-	QMutexLocker lock(const_cast<QMutex*>(&d_data->mutex));
+	QMutexLocker lock(const_cast<QRecursiveMutex*>(&d_data->mutex));
 
 	QStringList res;
 
@@ -962,7 +961,7 @@ VipVTKObject VipVTKObject::copy() const
 
 QVector<vtkAbstractArray*> VipVTKObject::pointsAttributes() const
 {
-	QMutexLocker lock(const_cast<QMutex*>(&d_data->mutex));
+	QMutexLocker lock(const_cast<QRecursiveMutex*>(&d_data->mutex));
 
 	QVector<vtkAbstractArray*> res;
 
@@ -981,7 +980,7 @@ QVector<vtkAbstractArray*> VipVTKObject::pointsAttributes() const
 
 vtkAbstractArray* VipVTKObject::pointsAttribute(const QString& name) const
 {
-	QMutexLocker lock(const_cast<QMutex*>(&d_data->mutex));
+	QMutexLocker lock(const_cast<QRecursiveMutex*>(&d_data->mutex));
 
 	if (this->d_data->data && this->d_data->data->IsA("vtkDataSet")) {
 		vtkDataSet* in = const_cast<vtkDataSet*>(static_cast<const vtkDataSet*>(this->d_data->data.GetPointer()));
@@ -994,7 +993,7 @@ vtkAbstractArray* VipVTKObject::pointsAttribute(const QString& name) const
 
 QStringList VipVTKObject::pointsAttributesName() const
 {
-	QMutexLocker lock(const_cast<QMutex*>(&d_data->mutex));
+	QMutexLocker lock(const_cast<QRecursiveMutex*>(&d_data->mutex));
 
 	QStringList res;
 	if (this->d_data->data && this->d_data->data->IsA("vtkDataSet")) {
@@ -1010,7 +1009,7 @@ QStringList VipVTKObject::pointsAttributesName() const
 
 vtkAbstractArray* VipVTKObject::setPointsAttribute(const QString& name, const vtkVariantList& default_components)
 {
-	QMutexLocker lock(const_cast<QMutex*>(&d_data->mutex));
+	QMutexLocker lock(const_cast<QRecursiveMutex*>(&d_data->mutex));
 
 	if (this->d_data->data && this->d_data->data->IsA("vtkDataSet")) {
 		vtkDataSet* in = const_cast<vtkDataSet*>(static_cast<const vtkDataSet*>(this->d_data->data.GetPointer()));
@@ -1072,7 +1071,7 @@ vtkDataArray* VipVTKObject::setPointsAttribute(const QString& name, const vtkVar
 		c_2.append(components_2[i].ToDouble());
 	}
 
-	QMutexLocker lock(const_cast<QMutex*>(&d_data->mutex));
+	QMutexLocker lock(const_cast<QRecursiveMutex*>(&d_data->mutex));
 
 	if (this->d_data->data && this->d_data->data->IsA("vtkDataSet")) {
 		vtkDataSet* in = const_cast<vtkDataSet*>(static_cast<const vtkDataSet*>(this->d_data->data.GetPointer()));
@@ -1124,7 +1123,7 @@ vtkDataArray* VipVTKObject::setPointsAttribute(const QString& name, const vtkVar
 
 QVector<vtkAbstractArray*> VipVTKObject::cellsAttributes() const
 {
-	QMutexLocker lock(const_cast<QMutex*>(&d_data->mutex));
+	QMutexLocker lock(const_cast<QRecursiveMutex*>(&d_data->mutex));
 
 	QVector<vtkAbstractArray*> res;
 
@@ -1143,7 +1142,7 @@ QVector<vtkAbstractArray*> VipVTKObject::cellsAttributes() const
 
 vtkAbstractArray* VipVTKObject::cellsAttribute(const QString& name) const
 {
-	QMutexLocker lock(const_cast<QMutex*>(&d_data->mutex));
+	QMutexLocker lock(const_cast<QRecursiveMutex*>(&d_data->mutex));
 
 	if (this->d_data->data && this->d_data->data->IsA("vtkDataSet")) {
 		vtkDataSet* in = const_cast<vtkDataSet*>(static_cast<const vtkDataSet*>(this->d_data->data.GetPointer()));
@@ -1156,7 +1155,7 @@ vtkAbstractArray* VipVTKObject::cellsAttribute(const QString& name) const
 
 QStringList VipVTKObject::cellsAttributesName() const
 {
-	QMutexLocker lock(const_cast<QMutex*>(&d_data->mutex));
+	QMutexLocker lock(const_cast<QRecursiveMutex*>(&d_data->mutex));
 
 	QStringList res;
 	if (this->d_data->data && this->d_data->data->IsA("vtkDataSet")) {
@@ -1172,7 +1171,7 @@ QStringList VipVTKObject::cellsAttributesName() const
 
 vtkAbstractArray* VipVTKObject::setCellsAttribute(const QString& name, const vtkVariantList& default_components)
 {
-	QMutexLocker lock(const_cast<QMutex*>(&d_data->mutex));
+	QMutexLocker lock(const_cast<QRecursiveMutex*>(&d_data->mutex));
 
 	if (this->d_data->data && this->d_data->data->IsA("vtkDataSet")) {
 		vtkDataSet* in = const_cast<vtkDataSet*>(static_cast<const vtkDataSet*>(this->d_data->data.GetPointer()));
@@ -1239,7 +1238,7 @@ bool VipVTKObject::hasAttribute(AttributeType t, const QString& name) const
 
 bool VipVTKObject::removeAttribute(AttributeType t, const QString& name)
 {
-	QMutexLocker lock(const_cast<QMutex*>(&d_data->mutex));
+	QMutexLocker lock(const_cast<QRecursiveMutex*>(&d_data->mutex));
 
 	vtkAbstractArray* array = attribute(t, name);
 	if (!array || t == Unknown)
@@ -1994,7 +1993,7 @@ bool VipVTKObject::saveToDirectory(const QVector<VipVTKObject>& lst, const QStri
 
 
 		QString file = directory + "/" + name;
-		QFileInfo info = file;
+		QFileInfo info(file);
 
 
 		//display.setValue(i);

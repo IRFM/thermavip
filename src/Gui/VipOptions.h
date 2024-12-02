@@ -66,10 +66,7 @@ class VipPageItems : public QTreeWidget
 {
 	Q_OBJECT
 public:
-	VipPageItems(QWidget* parent = nullptr)
-	  : QTreeWidget(parent)
-	{
-	}
+	VipPageItems(QWidget* parent = nullptr);
 };
 
 /// A dialog widget that displays general settings of Thermavip.
