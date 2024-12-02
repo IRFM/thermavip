@@ -530,7 +530,7 @@ VipHybridVector<T, Vip::None> vipVector(const QVector<T>& v) noexcept
 }
 
 template<qsizetype... Sizes >
-auto vipVector(Sizes... sizes) noexcept
+auto vipVector(qsizetype... sizes) noexcept
 {
 	return VipHybridVector<qsizetype, sizeof...(Sizes)> { { std::forward(sizes)... } };
 }
