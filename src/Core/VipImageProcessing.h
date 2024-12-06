@@ -407,7 +407,7 @@ protected:
 	virtual VipNDArray applyProcessing(const VipNDArray& ar);
 
 private:
-	QVector<int> m_buffer;
+	QVector<qsizetype> m_buffer;
 };
 
 #endif

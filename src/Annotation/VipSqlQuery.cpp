@@ -32,11 +32,23 @@
 #include "VipSqlQuery.h"
 #include "VipStandardWidgets.h"
 #include "VipNetwork.h"
+#include "VipLogging.h"
+#include "VipIODevice.h"
+#include "VipEnvironment.h"
 
+#include <qsettings.h>
+#include <qsqldatabase.h>
+#include <qsqlerror.h>
+#include <qsqlquery.h>
 #include <QStandardPaths>
 #include <qboxlayout.h>
 #include <qgridlayout.h>
 #include <qstandarditemmodel.h>
+#include <qjsonarray.h>
+#include <qjsondocument.h>
+#include <qjsonobject.h>
+#include <qjsonvalue.h>
+
 
 static int register_db_pulse_type()
 {
@@ -104,7 +116,7 @@ QString vipFormatRequestCondition(const VipRequestCondition& c)
 	}
 	else if (c.enums.size()) {
 		QStringList lst = c.enums;
-		for (int i = 0; i < lst.size(); ++i)
+		for (qsizetype i = 0; i < lst.size(); ++i)
 			lst[i] = " " + c.varname + " = " + addQuotes(lst[i]) + " ";
 		return "(" + lst.join(sepToStr(c.sep)) + ")";
 	}
@@ -112,19 +124,14 @@ QString vipFormatRequestCondition(const VipRequestCondition& c)
 }
 
 /*#include <qregion.h>
-static int regionArea(const QRegion& reg)
+static qsizetype regionArea(const QRegion& reg)
 {
-	int pixel_area = 0;
+	qsizetype pixel_area = 0;
 	for (const QRect& r : reg)
 		pixel_area += r.width() * r.height();
 	return pixel_area;
 }*/
 
-#include "VipLogging.h"
-#include <qsettings.h>
-#include <qsqldatabase.h>
-#include <qsqlerror.h>
-#include <qsqlquery.h>
 
 struct DB
 {
@@ -142,12 +149,12 @@ static QString removeQuote(const QString& line)
 {
 	QByteArray ar = line.toLatin1();
 	// Remove '' or "" from string if it exists
-	int ids = ar.indexOf("'");
-	int idd = ar.indexOf('"');
+	qsizetype ids = ar.indexOf("'");
+	qsizetype idd = ar.indexOf('"');
 	if (ids == -1 && idd == -1)
 		return line; // no double quote, find
 
-	int start = 0;
+	qsizetype start = 0;
 	char q = '"';
 
 	if (ids != -1) {
@@ -173,7 +180,7 @@ static QString removeQuote(const QString& line)
 	if (q == '\'' && idd > ids)
 		return QString(); // starts with ', finish with "
 
-	int end = q == '"' ? idd : ids;
+	qsizetype end = q == '"' ? idd : ids;
 	ar = ar.mid(start + 1, end - start - 1);
 	return ar;
 }
@@ -208,10 +215,10 @@ const DB& readDB()
 			}
 		}
 	}
-	else {
+	/* else {
 		db.hostname = "localhost";
 		db.port = 3306;
-	}
+	}*/
 
 	return db;
 }
@@ -220,13 +227,42 @@ const DB& readDB()
 
 QSqlDatabase& globalDB()
 {
-	static QSqlDatabase inst;
+	static QSqlDatabase inst = QSqlDatabase::addDatabase("QMYSQL", "mysql_database");
+	if (inst.connectionName() != "mysql_database")
+		inst = QSqlDatabase::database("QMYSQL", "mysql_database");
 	return inst;
 }
 
 QSqlDatabase vipGetGlobalSQLConnection()
 {
 	return globalDB();
+}
+
+static bool reconnectDB(bool close = false)
+{
+	QSqlDatabase& db = globalDB();
+	VIP_LOG_INFO("Connecting to ", db.hostName(), ":", QString::number(db.port()), " ", db.userName(), " ", db.databaseName());
+	if (close)
+		db.close();
+	if (!db.isValid()) {
+		VIP_LOG_ERROR("DataBase not valid!!!");
+		return false;
+	}
+
+	// First, ping host. Indeed Qt mysql plugin might crash if host is unreachable
+	QString host = db.hostName();
+	if (host.contains(":"))
+		host = host.split(":")[0];
+	if (!vipPing(host.toLatin1())) {
+		VIP_LOG_ERROR("Unable to reach host ", host, ", DataBase not valid!!!");
+		return false;
+	}
+
+	if (!db.open()) {
+		VIP_LOG_ERROR("DataBase not created!!!! " + db.lastError().text());
+		return false;
+	}
+	return true;
 }
 
 static QSqlDatabase createConnection(const DB & param, bool reset = false)
@@ -238,37 +274,22 @@ static QSqlDatabase createConnection(const DB & param, bool reset = false)
 		try_count = 3;
 	}
 	if (!db.isOpen() && --try_count > 0) {
-		QSqlDatabase::database("in_mem_db", false).close();
-		QSqlDatabase::removeDatabase("in_mem_db");
+		//QSqlDatabase::database("in_mem_db", false).close();
+		//QSqlDatabase::removeDatabase("in_mem_db");
 
-		db = QSqlDatabase::addDatabase("QMYSQL");
-		db.setConnectOptions("MYSQL_OPT_CONNECT_TIMEOUT=4");
+		//db = QSqlDatabase::addDatabase("QMYSQL", "mysql_database");
+		db.setConnectOptions("MYSQL_OPT_CONNECT_TIMEOUT=36000;MYSQL_OPT_READ_TIMEOUT=100;MYSQL_OPT_WRITE_TIMEOUT=100;MYSQL_OPT_RECONNECT=1");
+		//db.setConnectOptions("MYSQL_OPT_READ_TIMEOUT=100");
+		//db.setConnectOptions("MYSQL_OPT_WRITE_TIMEOUT=100");
+		//db.setConnectOptions("MYSQL_OPT_RECONNECT=1");
+		//db.setConnectOptions("MYSQL_OPT_MAX_ALLOWED_PACKET=500M");
 		db.setHostName(param.hostname);
 		db.setDatabaseName(param.name); //
 		db.setUserName(param.user);	// root
 		db.setPort(param.port);		// or 3307
 		db.setPassword(param.password); //
 
-		if (!db.isValid()) {
-			VIP_LOG_ERROR("DataBase not valid!!!");
-			return db;
-		}
-
-		// First, ping host. Indeed Qt mysql plugin might crash if host is unreachable
-		QString host = param.hostname;
-		if (host.contains(":"))
-			host = host.split(":")[0];
-		if (!vipPing(host.toLatin1())) {
-			VIP_LOG_ERROR("Unable to reach host ", host, ", DataBase not valid!!!");
-			return db;
-		}
-
-		if (!db.open()) {
-			VIP_LOG_ERROR("DataBase not created!!!! " + db.lastError().text());
-			return db;
-		}
-		// else
-		//	VIP_LOG_INFO( "DataBase %s created!!!!", db.databaseName().toLatin1().data());
+		reconnectDB(false);
 	}
 	return db;
 }
@@ -302,6 +323,28 @@ bool vipCreateSQLConnection(const QString& hostname, int port, const QString& db
 	return createConnection(db,true).isOpen();
 }
 
+static QSqlQuery execQuery( QSqlDatabase& db, const QString& query, int trial = 0)
+{
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
+	QSqlQuery q = db.exec(query);
+#else
+	QSqlQuery q(db);
+	q.exec(query);
+#endif
+
+	if (q.lastError().isValid()) {
+		if (trial == 0) {
+			reconnectDB(true);
+			return execQuery(db, query, ++trial);
+		}
+		VIP_LOG_ERROR(q.lastError().nativeErrorCode());
+		VIP_LOG_ERROR(q.lastError().databaseText());
+		VIP_LOG_ERROR(q.lastError().text());
+	}
+
+	return q;
+}
+
 QStringList vipCamerasDB()
 {
 	static QStringList cameras;
@@ -309,8 +352,8 @@ QStringList vipCamerasDB()
 		return cameras;
 
 	QSqlDatabase db = createConnection();
-	QSqlQuery q = db.exec("SELECT * FROM lines_of_sight;");
-	if (!q.lastError().nativeErrorCode().isEmpty()) {
+	QSqlQuery q = execQuery(db,("SELECT * FROM lines_of_sight;"));
+	if (q.lastError().isValid()) {
 		VIP_LOG_ERROR(q.lastError().nativeErrorCode());
 		return QStringList();
 	}
@@ -325,8 +368,8 @@ QStringList vipUsersDB()
 	if (!users.isEmpty())
 		return users;
 	QSqlDatabase db = createConnection();
-	QSqlQuery q = db.exec("SELECT * FROM users;");
-	if (!q.lastError().nativeErrorCode().isEmpty()) {
+	QSqlQuery q = execQuery(db,("SELECT * FROM users;"));
+	if (q.lastError().isValid()) {
 		VIP_LOG_ERROR(q.lastError().nativeErrorCode());
 		return QStringList();
 	}
@@ -342,8 +385,8 @@ QStringList vipAnalysisStatusDB()
 	if (!status.isEmpty())
 		return status;
 	QSqlDatabase db = createConnection();
-	QSqlQuery q = db.exec("SELECT * FROM analysis_status;");
-	if (!q.lastError().nativeErrorCode().isEmpty()) {
+	QSqlQuery q = execQuery(db,("SELECT * FROM analysis_status;"));
+	if (q.lastError().isValid()) {
 		VIP_LOG_ERROR(q.lastError().nativeErrorCode());
 		return QStringList();
 	}
@@ -359,8 +402,8 @@ QStringList vipDevicesDB()
 	if (!devices.isEmpty())
 		return devices;
 	QSqlDatabase db = createConnection();
-	QSqlQuery q = db.exec("SELECT * FROM devices;");
-	if (!q.lastError().nativeErrorCode().isEmpty()) {
+	QSqlQuery q = execQuery(db,("SELECT * FROM devices;"));
+	if (q.lastError().isValid()) {
 		VIP_LOG_ERROR(q.lastError().nativeErrorCode());
 		return QStringList();
 	}
@@ -370,17 +413,17 @@ QStringList vipDevicesDB()
 	return devices;
 }
 
-QMap<int, VipDataset> vipDatasetsDB()
+QMap<qsizetype, VipDataset> vipDatasetsDB()
 {
-	static QMap<int, VipDataset> res;
+	static QMap<qsizetype, VipDataset> res;
 	if (!res.isEmpty())
 		return res;
 
 	QSqlDatabase db = createConnection();
-	QSqlQuery q = db.exec("SELECT * FROM datasets;");
-	if (!q.lastError().nativeErrorCode().isEmpty()) {
+	QSqlQuery q = execQuery(db,"SELECT * FROM datasets;");
+	if (q.lastError().isValid()) {
 		VIP_LOG_ERROR(q.lastError().nativeErrorCode());
-		return QMap<int, VipDataset>();
+		return QMap<qsizetype, VipDataset>();
 	}
 	while (q.next()) {
 		VipDataset d;
@@ -395,13 +438,16 @@ QMap<int, VipDataset> vipDatasetsDB()
 
 QStringList vipMethodsDB()
 {
+	static QStringList methods;
+	if (!methods.isEmpty())
+		return methods;
 	QSqlDatabase db = createConnection();
-	QSqlQuery q = db.exec("SELECT * FROM methods;");
-	if (!q.lastError().nativeErrorCode().isEmpty()) {
+	QSqlQuery q = execQuery(db,"SELECT * FROM methods;");
+	if (q.lastError().isValid()) {
 		VIP_LOG_ERROR(q.lastError().nativeErrorCode());
 		return QStringList();
 	}
-	QStringList methods;
+	
 	while (q.next()) {
 		methods.append(q.value(0).toString());
 	}
@@ -411,13 +457,16 @@ QStringList vipMethodsDB()
 
 QStringList vipEventTypesDB()
 {
+	static QStringList events;
+	if (!events.isEmpty())
+		return events;
 	QSqlDatabase db = createConnection();
-	QSqlQuery q = db.exec("SELECT * FROM thermal_event_categories;");
-	if (!q.lastError().nativeErrorCode().isEmpty()) {
+	QSqlQuery q = execQuery(db,"SELECT * FROM thermal_event_categories;");
+	if (q.lastError().isValid()) {
 		VIP_LOG_ERROR(q.lastError().nativeErrorCode());
 		return QStringList();
 	}
-	QStringList events, cams;
+	QStringList cams;
 	while (q.next()) {
 		events.append(q.value(0).toString());
 		cams.append(q.value(1).toString());
@@ -429,8 +478,8 @@ QStringList vipEventTypesDB()
 QStringList vipEventTypesDB(const QString& line_of_sight)
 {
 	QSqlDatabase db = createConnection();
-	QSqlQuery q = db.exec("SELECT * FROM thermal_event_category_lines_of_sight;");
-	if (!q.lastError().nativeErrorCode().isEmpty()) {
+	QSqlQuery q = execQuery(db,"SELECT * FROM thermal_event_category_lines_of_sight;");
+	if (q.lastError().isValid()) {
 		VIP_LOG_ERROR(q.lastError().nativeErrorCode());
 		return QStringList();
 	}
@@ -475,7 +524,7 @@ Vip_event_list vipCopyEvents(const Vip_event_list& events)
 	for (Vip_event_list::const_iterator it = events.begin(); it != events.end(); ++it) {
 		const VipShapeList &shs = it.value();
 		VipShapeList lst;
-		for (int i = 0; i < shs.size(); ++i) {
+		for (qsizetype i = 0; i < shs.size(); ++i) {
 			lst.append(shs[i].copy());
 		}
 		res[it.key()] = lst;
@@ -493,7 +542,7 @@ QString polygonToString(const QVector<Point>& poly)
 	QString res;
 	{
 		QTextStream stream(&res, QIODevice::WriteOnly);
-		for (int i = 0; i < poly.size(); ++i) {
+		for (qsizetype i = 0; i < poly.size(); ++i) {
 			stream << qRound((double)poly[i].x()) << " " << qRound((double)poly[i].y()) << " ";
 		}
 	}
@@ -503,7 +552,7 @@ QString polygonToString(const QVector<Point>& poly)
 /*static QPolygon floorPolygonF(const QPolygonF& p)
 {
 	QPolygon res(p.size());
-	for (int i = 0; i < p.size(); ++i)
+	for (qsizetype i = 0; i < p.size(); ++i)
 		// res[i] = QPoint(std::floor(p[i].x()), std::floor(p[i].y()));
 		res[i] = p[i].toPoint();
 	return res;
@@ -546,7 +595,7 @@ QList<qint64> vipSendToDB(const QString& userName, const QString& camera, const 
 		return QList<qint64>();
 
 	Vip_event_list shapes = all_shapes;
-	/* for (int i = 0; i < lst.size(); ++i)
+	/* for (qsizetype i = 0; i < lst.size(); ++i)
 	{
 		lst[i](shapes);
 	}*/
@@ -557,7 +606,7 @@ QList<qint64> vipSendToDB(const QString& userName, const QString& camera, const 
 	}
 
 	// create a new entry in thermal_events
-	int count = 0;
+	qsizetype count = 0;
 	QList<qint64> resids;
 	for (Vip_event_list::iterator it = shapes.begin(); it != shapes.end(); ++it, ++count) {
 
@@ -600,7 +649,7 @@ QList<qint64> vipSendToDB(const QString& userName, const QString& camera, const 
 		double max_t = -100000;
 		qint64 max_T_timestamp_ns = std::numeric_limits<double>::min();
 		const VipShapeList& sh = it.value();
-		for (int i = 0; i < sh.size(); ++i) {
+		for (qsizetype i = 0; i < sh.size(); ++i) {
 			qint64 t = sh[i].attribute("timestamp_ns").toLongLong();
 			if (t > max)
 				max = t;
@@ -660,7 +709,7 @@ QList<qint64> vipSendToDB(const QString& userName, const QString& camera, const 
 		resids << id;
 
 		// set the new ID to all shapes
-		for (int i = 0; i < sh.size(); ++i) {
+		for (qsizetype i = 0; i < sh.size(); ++i) {
 			VipShape(sh[i]).setAttribute("id", id);
 		}
 
@@ -676,7 +725,7 @@ QList<qint64> vipSendToDB(const QString& userName, const QString& camera, const 
 				"VALUES\n");
 
 		QStringList values;
-		for (int i = 0; i < sh.size(); ++i) {
+		for (qsizetype i = 0; i < sh.size(); ++i) {
 			const QVariantMap a = sh[i].attributes();
 
 			// fill spatial attributes
@@ -686,7 +735,7 @@ QList<qint64> vipSendToDB(const QString& userName, const QString& camera, const 
 			convertShape(sh[i], poly, r);
 			QPointF centroid(0, 0);
 			QString poly_string;
-			int pixel_area = r.width() * r.height();
+			qsizetype pixel_area = r.width() * r.height();
 			// recompute centroid
 			for (const QPoint& pt : poly) {
 				centroid.rx() += pt.x();
@@ -757,7 +806,7 @@ QList<qint64> vipSendToDB(const QString& userName, const QString& camera, const 
 	return resids;
 }
 
-#include "VipIODevice.h"
+
 
 bool vipRemoveFromDB(const QList<qint64>& ids, VipProgress* p)
 {
@@ -769,7 +818,7 @@ bool vipRemoveFromDB(const QList<qint64>& ids, VipProgress* p)
 	if (!db.isOpen())
 		return false;
 
-	for (int i = 0; i < ids.size(); ++i) {
+	for (qsizetype i = 0; i < ids.size(); ++i) {
 		if (p)
 			p->setValue(i);
 		{
@@ -802,7 +851,7 @@ bool vipChangeColumnInfoDB(const QList<qint64>& ids, const QString& column, cons
 	if (!db.isOpen())
 		return false;
 
-	for (int i = 0; i < ids.size(); ++i) {
+	for (qsizetype i = 0; i < ids.size(); ++i) {
 		if (p)
 			p->setValue(i);
 		QSqlQuery q(db);
@@ -837,7 +886,7 @@ VipEventQueryResults vipQueryDB(const VipEventQuery& query, VipProgress* p)
 		// find by ids...
 
 		QStringList lst;
-		for (int i = 0; i < query.eventIds.size(); ++i)
+		for (qsizetype i = 0; i < query.eventIds.size(); ++i)
 			lst << ("id = " + QString::number(query.eventIds[i]));
 		conditions << "(" + lst.join(" OR ") + ")";
 	}
@@ -847,13 +896,13 @@ VipEventQueryResults vipQueryDB(const VipEventQuery& query, VipProgress* p)
 		// camera condition
 		if (!query.cameras.isEmpty()) {
 			QStringList lst;
-			for (int i = 0; i < query.cameras.size(); ++i)
+			for (qsizetype i = 0; i < query.cameras.size(); ++i)
 				lst << ("line_of_sight = '" + query.cameras[i] + "'");
 			conditions << "(" + lst.join(" OR ") + ")";
 		}
 		if (!query.devices.isEmpty()) {
 			QStringList lst;
-			for (int i = 0; i < query.devices.size(); ++i)
+			for (qsizetype i = 0; i < query.devices.size(); ++i)
 				lst << ("device = '" + query.devices[i] + "'");
 			conditions << "(" + lst.join(" OR ") + ")";
 		}
@@ -864,7 +913,7 @@ VipEventQueryResults vipQueryDB(const VipEventQuery& query, VipProgress* p)
 		// PPO names
 		if (!query.users.isEmpty()) {
 			QStringList lst;
-			for (int i = 0; i < query.users.size(); ++i)
+			for (qsizetype i = 0; i < query.users.size(); ++i)
 				lst << ("user = '" + query.users[i] + "'");
 			conditions << "(" + lst.join(" OR ") + ")";
 		}
@@ -885,7 +934,7 @@ VipEventQueryResults vipQueryDB(const VipEventQuery& query, VipProgress* p)
 		if (!query.dataset.isEmpty()) {
 			QStringList lst = query.dataset.split(" ");
 			QStringList queries;
-			for (int i = 0; i < lst.size(); ++i) {
+			for (qsizetype i = 0; i < lst.size(); ++i) {
 				queries.append("(dataset LIKE '%" + lst[i] + "%')");
 			}
 			conditions << "(" + queries.join(" OR ") + ")";
@@ -923,7 +972,7 @@ VipEventQueryResults vipQueryDB(const VipEventQuery& query, VipProgress* p)
 		// event type
 		if (query.event_types.size()) {
 			QStringList lst;
-			for (int i = 0; i < query.event_types.size(); ++i)
+			for (qsizetype i = 0; i < query.event_types.size(); ++i)
 				lst << ("category = '" + query.event_types[i] + "'");
 			conditions << "(" + lst.join(" OR ") + ")";
 		}
@@ -938,9 +987,8 @@ VipEventQueryResults vipQueryDB(const VipEventQuery& query, VipProgress* p)
 	//	sql += " WHERE id = " + QString::number(query.id_thermaleventinfo);
 	// }
 	// vip_debug("%s\n", sql.toLatin1().data());
-
-	QSqlQuery q(db);
-	if (!q.exec(sql)) {
+	QSqlQuery q = execQuery(db, sql);
+	if (q.lastError().isValid()) {
 		VIP_LOG_ERROR(q.lastError().text());
 		result.error = q.lastError().text();
 		return result;
@@ -951,7 +999,7 @@ VipEventQueryResults vipQueryDB(const VipEventQuery& query, VipProgress* p)
 		p->setRange(0, q.size());
 	}
 
-	int count = 0;
+	qsizetype count = 0;
 	while (q.next()) {
 
 		if (p) {
@@ -1002,7 +1050,7 @@ VipFullQueryResult vipFullQueryDB(const VipEventQueryResults& evtres, VipProgres
 	QStringList conditions;
 
 	// additional conditions
-	/* for (int i = 0; i < fullq.additional_conditions.size(); ++i)
+	/* for (qsizetype i = 0; i < fullq.additional_conditions.size(); ++i)
 	{
 		const VipRequestCondition c = fullq.additional_conditions[i];
 		QString cond = vipFormatRequestCondition(c);
@@ -1015,27 +1063,30 @@ VipFullQueryResult vipFullQueryDB(const VipEventQueryResults& evtres, VipProgres
 		query += " WHERE " + conditions.join(" AND ");
 	}
 
-	int total_count = 0;
+	qsizetype total_count = 0;
 	QVector<QSqlQuery> queries;
 	if (evtres.events.size()) {
 		// event type, launch one query per event ID
 		QList<qint64> id = evtres.events.keys();
-		for (int i = 0; i < id.size(); ++i) {
+		for (qsizetype i = 0; i < id.size(); ++i) {
 			QString _q = query;
 			if (!_q.contains("WHERE"))
 				_q += " WHERE ";
 			else
 				_q += " AND ";
 			_q += " thermal_event_id = " + QString::number(id[i]) + ";";
-			QSqlQuery q(db);
+			QSqlQuery q = execQuery(db,_q);
 			// vip_debug("%s\n", _q.toLatin1().data());
-			if (!q.exec(_q)) {
+			if (q.lastError().isValid()) {
 				VIP_LOG_ERROR(q.lastError().text());
 				result.error = q.lastError().text();
 				return result;
 			}
 			total_count += q.size();
 			queries.push_back(q);
+
+			if (p && p->canceled())
+				break;
 		}
 	}
 	/*else {
@@ -1055,16 +1106,19 @@ VipFullQueryResult vipFullQueryDB(const VipEventQueryResults& evtres, VipProgres
 		p->setText("Retrieve thermal events from DB...");
 		p->setRange(0, total_count);
 	}
-	int count = 0;
+	qsizetype count = 0;
 
 	// retrieve all shapes
 	Vip_event_list shapes;
-	for (int i = 0; i < queries.size(); ++i) {
-		QSqlQuery q = queries[i];
+	for (qsizetype i = 0; i < queries.size(); ++i) {
+		QSqlQuery& q = queries[i];
 		while (q.next()) {
 
-			if (p)
+			if (p) {
 				p->setValue(count++);
+				if (p->canceled())
+					break;
+			}
 
 			qint64 id = q.value("thermal_event_id").toLongLong();
 			const VipEventQueryResult& evt = evtres.events[id];
@@ -1079,7 +1133,7 @@ VipFullQueryResult vipFullQueryDB(const VipEventQueryResults& evtres, VipProgres
 				QPolygonF poly;
 				QTextStream stream(polygon.toLatin1());
 				while (true) {
-					int x, y;
+					qsizetype x, y;
 					stream >> x >> y;
 					if (stream.status() != QTextStream::Ok)
 						break;
@@ -1155,7 +1209,7 @@ VipFullQueryResult vipFullQueryDB(const VipEventQueryResults& evtres, VipProgres
 	for (Vip_event_list::const_iterator it = shapes.begin(); it != shapes.end(); ++it) {
 		const VipShapeList& sh = it.value();
 		const VipEventQueryResult evt = evtres.events[it.key()];
-		for (int i = 0; i < sh.size(); ++i) {
+		for (qsizetype i = 0; i < sh.size(); ++i) {
 			VipPulseResult& experiment_id = result.result[evt.experiment_id];
 			experiment_id.experiment_id = evt.experiment_id;
 			VipCameraResult& cam = experiment_id.cameras[evt.camera];
@@ -1188,7 +1242,7 @@ Vip_event_list vipExtractEvents(const VipFullQueryResult& fres)
 	return res;
 }
 
-#include "VipEnvironment.h"
+
 
 struct ExtractOption
 {
@@ -1313,10 +1367,10 @@ QMap<QString, QMap<Vip_experiment_id, QMap<QString, QMap<QString, VipPointVector
 	QSet<Vip_experiment_id> available_pulses;
 	QSet<QString> available_cameras;
 
-	// QMap<QString, QMap<int, QMap<QString, qint64> > > min_times; //minimum events time for given camera (possibly merged, pulse and
-	// QMap<QString, QMap<int, QMap<QString, qint64> > > offset_times;
+	// QMap<QString, QMap<qsizetype, QMap<QString, qint64> > > min_times; //minimum events time for given camera (possibly merged, pulse and
+	// QMap<QString, QMap<qsizetype, QMap<QString, qint64> > > offset_times;
 
-	int count = 0;
+	qsizetype count = 0;
 	for (QMap<Vip_experiment_id, VipPulseResult>::const_iterator itp = fr.result.begin(); itp != fr.result.end(); ++itp) {
 		const VipPulseResult& p = itp.value();
 		available_pulses.insert(p.experiment_id);
@@ -1341,7 +1395,7 @@ QMap<QString, QMap<Vip_experiment_id, QMap<QString, QMap<QString, VipPointVector
 
 				// sort shapes by timestamps (should already be the case) and ROI
 
-				for (int i = 0; i < lst.size(); ++i) {
+				for (qsizetype i = 0; i < lst.size(); ++i) {
 					const VipShape sh = lst[i];
 					// find the ROI
 					for (QMap<QString, VipShape>::const_iterator it = rois.begin(); it != rois.end(); ++it) {
@@ -1395,7 +1449,7 @@ QMap<QString, QMap<Vip_experiment_id, QMap<QString, QMap<QString, VipPointVector
 
 	// sort all shapes by: camera ('All' if merged) -> pulse (-1 id merged) -> ROI ('All' if merged)-> time -> shape lists
 	QMap<QString, QMap<Vip_experiment_id, QMap<QString, QMap<qint64, VipShapeList>>>> all_shapes;
-	for (int i = 0; i < shape_list.size(); ++i) {
+	for (qsizetype i = 0; i < shape_list.size(); ++i) {
 		VipShape& sh = shape_list[i];
 		const Vip_experiment_id experiment_id = sh.attribute("experiment_id").value<Vip_experiment_id>();
 		const QString& camera = sh.attribute("line_of_sight").toString();
@@ -1411,13 +1465,13 @@ QMap<QString, QMap<Vip_experiment_id, QMap<QString, QMap<QString, VipPointVector
 
 	// now we extract the time traces
 	const QStringList cameras = all_shapes.keys();
-	for (int c = 0; c < cameras.size(); ++c) {
+	for (qsizetype c = 0; c < cameras.size(); ++c) {
 		const QString camera = cameras[c];
 		const QList<Vip_experiment_id> pulses = all_shapes[camera].keys();
-		for (int p = 0; p < pulses.size(); ++p) {
+		for (qsizetype p = 0; p < pulses.size(); ++p) {
 			const Vip_experiment_id experiment_id = pulses[p];
 			const QStringList rois = all_shapes[camera][experiment_id].keys();
-			for (int r = 0; r < rois.size(); ++r) {
+			for (qsizetype r = 0; r < rois.size(); ++r) {
 				const QString roi = rois[r];
 				const QMap<qint64, VipShapeList>& shapes = all_shapes[camera][experiment_id][roi];
 
@@ -1430,7 +1484,7 @@ QMap<QString, QMap<Vip_experiment_id, QMap<QString, QMap<QString, VipPointVector
 				for (QMap<qint64, VipShapeList>::const_iterator it = shapes.begin(); it != shapes.end(); ++it) {
 					const VipShapeList& lst = it.value();
 					double max, min, mean = 0;
-					int pixel_area = 0, maxX = 0, maxY = 0, minX = 0, minY = 0;
+					qsizetype pixel_area = 0, maxX = 0, maxY = 0, minX = 0, minY = 0;
 					max = lst.first().attribute("max_temperature_C").toDouble();
 					min = lst.first().attribute("min_temperature_C").toDouble();
 					if (opts.mean)
@@ -1455,7 +1509,7 @@ QMap<QString, QMap<Vip_experiment_id, QMap<QString, QMap<QString, VipPointVector
 						}
 					}
 
-					for (int i = 1; i < lst.size(); ++i) {
+					for (qsizetype i = 1; i < lst.size(); ++i) {
 						double _max = lst[i].attribute("max_temperature_C").toDouble();
 						double _min = lst[i].attribute("min_temperature_C").toDouble();
 						if (_max > max) {
@@ -1536,7 +1590,7 @@ QMap<QString, QMap<Vip_experiment_id, QMap<QString, QMap<QString, VipPointVector
 	// replace pulse -1 if possible
 	const QStringList cams = result.keys();
 	if (opts.mergePulses && available_pulses.size() == 1) {
-		for (int c = 0; c < cams.size(); ++c) {
+		for (qsizetype c = 0; c < cams.size(); ++c) {
 			QMap<Vip_experiment_id, QMap<QString, QMap<QString, VipPointVector>>>& tmp = result[cams[c]];
 			tmp[*available_pulses.begin()] = tmp[-1];
 			tmp.remove(-1);
@@ -1546,7 +1600,7 @@ QMap<QString, QMap<Vip_experiment_id, QMap<QString, QMap<QString, VipPointVector
 	return result;
 }
 
-QPolygonF vipSimplifyPolygonDB(const QPolygonF& p, int max_points)
+QPolygonF vipSimplifyPolygonDB(const QPolygonF& p, qsizetype max_points)
 {
 	QPolygonF poly = p;
 	double epsilon = 0.1;
@@ -1564,7 +1618,7 @@ static QString polygonToJSON(const QPolygon& poly)
 
 	str << "[";
 
-	for (int i = 0; i < poly.size(); ++i) {
+	for (qsizetype i = 0; i < poly.size(); ++i) {
 
 		str << "[" << poly[i].x() << ", " << poly[i].y() << "]";
 		if (i < poly.size() - 1)
@@ -1583,7 +1637,7 @@ static QString polygonToJSON(const QPolygon& poly)
 
 	str << "[";
 
-	for (int i = 0; i < poly.size(); ++i) {
+	for (qsizetype i = 0; i < poly.size(); ++i) {
 		QPoint pt = poly[i].toPoint();
 		str << "[" << pt.x() << ", " << pt.y() << "]";
 		// str << "[" << std::floor(poly[i].x()) << ", " << std::floor(poly[i].y()) << "]";
@@ -1601,7 +1655,7 @@ static QString polygonToJSON(const QPolygon& poly)
 	QPolygon poly;
 	{
 		QTextStream str(polygon.toLatin1());
-		int x, y;
+		qsizetype x, y;
 		while (str.status() == QTextStream::Ok) {
 			str >> x >> y;
 			if (str.status() != QTextStream::Ok)
@@ -1615,7 +1669,7 @@ static QString polygonToJSON(const QPolygon& poly)
 static QString addDoubleQuotes(const QString& str)
 {
 	QString tmp = str;
-	for (int i = 0; i < str.size(); ++i) {
+	for (qsizetype i = 0; i < str.size(); ++i) {
 		if (tmp[i] == '"' && i > 0 && i < str.size() - 1)
 			tmp[i] = ' ';
 	}
@@ -1640,7 +1694,7 @@ QByteArray vipEventsToJson(const Vip_event_list& all_shapes, VipProgress* p)
 		p->setRange(0, evts.size());
 	}
 
-	int count = 0;
+	qsizetype count = 0;
 	QList<qint64> resids;
 	for (Vip_event_list::iterator it = evts.begin(); it != evts.end(); ++it, ++count) {
 
@@ -1654,7 +1708,7 @@ QByteArray vipEventsToJson(const Vip_event_list& all_shapes, VipProgress* p)
 		double max_t = -std::numeric_limits<double>::max();
 		qint64 max_T_timestamp_ns = -std::numeric_limits<qint64>::max();
 		const VipShapeList& sh = it.value();
-		for (int i = 0; i < sh.size(); ++i) {
+		for (qsizetype i = 0; i < sh.size(); ++i) {
 			qint64 t = sh[i].attribute("timestamp_ns").toLongLong();
 			if (t > max)
 				max = t;
@@ -1674,14 +1728,14 @@ QByteArray vipEventsToJson(const Vip_event_list& all_shapes, VipProgress* p)
 		//	it.value().first().setAttribute("device", device);
 
 		QStringList values;
-		for (int i = 0; i < sh.size(); ++i) {
+		for (qsizetype i = 0; i < sh.size(); ++i) {
 			const QVariantMap a = sh[i].attributes();
 
 			// fill spatial attributes
 			QPolygon poly = sh[i].polygon().toPolygon();
 			QPointF centroid(0, 0);
 			QRect r = poly.boundingRect();
-			int pixel_area = r.width() * r.height();
+			qsizetype pixel_area = r.width() * r.height();
 			// recompute centroid
 			for (const QPoint& pt : poly) {
 				centroid.rx() += pt.x();
@@ -1717,7 +1771,7 @@ QByteArray vipEventsToJson(const Vip_event_list& all_shapes, VipProgress* p)
 	// START
 	str << "{\n";
 
-	int i = 0;
+	qsizetype i = 0;
 	for (Vip_event_list::const_iterator it = evts.begin(); it != evts.end(); ++it, ++i) {
 
 		if (p) {
@@ -1772,7 +1826,7 @@ QByteArray vipEventsToJson(const Vip_event_list& all_shapes, VipProgress* p)
 		str << "\t\t"
 		    << "\"thermal_events_instances\": [\n";
 
-		for (int j = 0; j < shs.size(); ++j) {
+		for (qsizetype j = 0; j < shs.size(); ++j) {
 			str << "\t\t{\n";
 
 			QPolygon poly;
@@ -1870,11 +1924,6 @@ QByteArray vipEventsToJson(const Vip_event_list& all_shapes, VipProgress* p)
 	str.flush();
 	return res.toLatin1();
 }
-
-#include <qjsonarray.h>
-#include <qjsondocument.h>
-#include <qjsonobject.h>
-#include <qjsonvalue.h>
 
 static qint64 toTimestamp(const QJsonObject& obj, const QString& name)
 {
@@ -2019,7 +2068,7 @@ Vip_event_list vipEventsFromJson(const QByteArray& content)
 			QJsonArray p = event.value("polygon").toArray();
 			if (p.count()) {
 				QPolygon poly;
-				for (int i = 0; i < p.count(); ++i) {
+				for (qsizetype i = 0; i < p.count(); ++i) {
 					QJsonArray xy = p.at(i).toArray();
 					if (xy.size() != 2) {
 						VIP_LOG_ERROR("Json file: wrong polygon format");
@@ -2050,7 +2099,7 @@ Vip_event_list vipEventsFromJson(const QByteArray& content)
 			shapes.first().setAttribute("name", event.value("name").toString());
 
 			// set group to all shapes and static attributes
-			for (int i = 0; i < shapes.size(); ++i) {
+			for (qsizetype i = 0; i < shapes.size(); ++i) {
 				shapes[i].setGroup(group);
 				shapes[i].setAttribute("experiment_id", event.value("experiment_id").toVariant());
 				shapes[i].setAttribute("line_of_sight", event.value("line_of_sight").toString());
@@ -2202,7 +2251,7 @@ VipDatasetButton::VipDatasetButton(QWidget* parent)
 	d_data->widget = new QWidget();
 	QVBoxLayout* lay = new QVBoxLayout();
 
-	QMap<int, VipDataset> dsets = vipDatasetsDB();
+	QMap<qsizetype, VipDataset> dsets = vipDatasetsDB();
 	for (auto it = dsets.begin(); it != dsets.end(); ++it) {
 		QCheckBox* box = new QCheckBox();
 		box->setProperty("id", it.key());
@@ -2250,6 +2299,16 @@ void VipDatasetButton::setChecked(int index, bool checked)
 	d_data->boxes[index]->setChecked(checked);
 }
 
+void VipDatasetButton::showEvent(QShowEvent* evt)
+{
+	init();
+}
+
+void VipDatasetButton::init()
+{
+
+}
+
 void VipDatasetButton::aboutToShow()
 {
 	// bool stop = true;
@@ -2259,7 +2318,7 @@ QString VipDatasetButton::dataset() const
 {
 	// return list of checked ids
 	QStringList lst;
-	for (int i = 0; i < d_data->boxes.size(); ++i) {
+	for (qsizetype i = 0; i < d_data->boxes.size(); ++i) {
 		if (d_data->boxes[i]->isChecked())
 			lst.push_back(d_data->boxes[i]->property("id").toString());
 	}
@@ -2270,7 +2329,7 @@ void VipDatasetButton::setDataset(const QString& dataset)
 {
 	this->blockSignals(true);
 	// unckeck all
-	for (int i = 0; i < d_data->boxes.size(); ++i) {
+	for (qsizetype i = 0; i < d_data->boxes.size(); ++i) {
 		d_data->boxes[i]->setChecked(false);
 	}
 
@@ -2280,12 +2339,12 @@ void VipDatasetButton::setDataset(const QString& dataset)
 	}
 
 	QStringList lst = dataset.split(" ");
-	for (int i = 0; i < lst.size(); ++i) {
-		int id = lst[i].toInt();
+	for (qsizetype i = 0; i < lst.size(); ++i) {
+		qsizetype id = lst[i].toInt();
 		if (id == 0)
 			continue;
 
-		for (int j = 0; j < d_data->boxes.size(); ++j) {
+		for (qsizetype j = 0; j < d_data->boxes.size(); ++j) {
 			if (d_data->boxes[j]->property("id").toInt() == id)
 				d_data->boxes[j]->setChecked(true);
 		}
@@ -2298,7 +2357,7 @@ void VipDatasetButton::checkAll(bool enable)
 {
 	this->blockSignals(true);
 
-	for (int i = 0; i < d_data->boxes.size(); ++i) {
+	for (qsizetype i = 0; i < d_data->boxes.size(); ++i) {
 		d_data->boxes[i]->setChecked(enable);
 	}
 
@@ -2342,6 +2401,15 @@ VipQueryDBWidget::VipQueryDBWidget(const QString& device, QWidget* parent)
   : QWidget(parent)
 {
 	VIP_CREATE_PRIVATE_DATA(d_data);
+
+	// Populate everything
+	/* vipEventTypesDB();
+	vipMethodsDB();
+	vipDatasetsDB();
+	vipDevicesDB();
+	vipAnalysisStatusDB();
+	vipUsersDB();
+	vipCamerasDB();*/
 
 	QGridLayout* lay = new QGridLayout();
 
@@ -2801,3 +2869,29 @@ void VipQueryDBWidget::pulseChanged(Vip_experiment_id v)
 		d_data->maxPulse->blockSignals(false);
 	}
 }
+
+
+// Save/restore event parameters
+
+static void save_SQLParameters(VipArchive & arch)
+{
+	arch.start("ThermalEventParameters");
+	arch.content("minimumSize", vipGetThermalEventDBOptions().minimumSize);
+	arch.end();
+}
+static void load_SQLParameters(VipArchive& arch)
+{
+	arch.save();
+	if (!arch.start("ThermalEventParameters")) {
+		arch.restore();
+		return;
+	}
+	VipThermalEventDBOptions th = vipGetThermalEventDBOptions();
+	th.minimumSize = arch.read("minimumSize").value<QSize>();
+	vipSetThermalEventDBOptions(th);
+	arch.end();
+}
+
+ 
+
+static bool _register = vipRegisterSettingsArchiveFunctions(save_SQLParameters, load_SQLParameters);

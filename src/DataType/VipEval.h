@@ -77,7 +77,7 @@ namespace detail
 				return false;
 
 			typedef DType dtype;
-			const int size = dst.size();
+			const qsizetype size = dst.size();
 			dtype* ptr = (dtype*)dst.constHandle()->dataPointer(VipNDArrayShape());
 			if (!ptr)
 				return false;
@@ -86,33 +86,33 @@ namespace detail
 			if ((Src::access_type & Vip::Cwise) && (Dst::access_type & Vip::Cwise) && size > 4096) { // parallel access
 				if ((Src::access_type & Vip::Flat) && dst.isUnstrided() && src.isUnstrided()) {
 					PARALLEL_FOR
-					for (int i = 0; i < size; ++i)
+					for (qsizetype i = 0; i < size; ++i)
 						ptr[i] = vipCast<dtype>(src[i]);
 					return true;
 				}
 				else {
 					if (src.shape().size() == 1) {
-						const int w = src.shape()[0];
+						const qsizetype w = src.shape()[0];
 						PARALLEL_FOR
-						for (int i = 0; i < w; ++i)
+						for (qsizetype i = 0; i < w; ++i)
 							ptr[i * dst.stride(0)] = src(vip_vector(i));
 					}
 					else if (src.shape().size() == 2) {
-						const int h = src.shape()[0];
-						const int w = src.shape()[1];
+						const qsizetype h = src.shape()[0];
+						const qsizetype w = src.shape()[1];
 						PARALLEL_FOR
-						for (int y = 0; y < h; ++y)
-							for (int x = 0; x < w; ++x)
+						for (qsizetype y = 0; y < h; ++y)
+							for (qsizetype x = 0; x < w; ++x)
 								ptr[y * dst.stride(0) + x * dst.stride(1)] = src(vip_vector(y, x));
 					}
 					else if (src.shape().size() == 3) {
-						const int l = src.shape()[0];
-						const int h = src.shape()[1];
-						const int w = src.shape()[2];
+						const qsizetype l = src.shape()[0];
+						const qsizetype h = src.shape()[1];
+						const qsizetype w = src.shape()[2];
 						PARALLEL_FOR
-						for (int z = 0; z < l; ++z)
-							for (int y = 0; y < h; ++y)
-								for (int x = 0; x < w; ++x)
+						for (qsizetype z = 0; z < l; ++z)
+							for (qsizetype y = 0; y < h; ++y)
+								for (qsizetype x = 0; x < w; ++x)
 									ptr[z * dst.stride(0) + y * dst.stride(1) + x * dst.stride(2)] = src(vip_vector(z, y, x));
 					}
 					else {
@@ -125,34 +125,34 @@ namespace detail
 
 			if ((Src::access_type & Vip::Flat) && dst.isUnstrided() && src.isUnstrided()) {
 				const Src s = src;
-				for (int i = 0; i < size; ++i)
+				for (qsizetype i = 0; i < size; ++i)
 					ptr[i] = vipCast<dtype>(s[i]);
 				return true;
 			}
 
 			if (dst.isUnstrided()) {
 				if (src.shape().size() == 1) {
-					const int w = src.shape()[0];
-					VipHybridVector<int, 1> p = { { 0 } }; 
+					const qsizetype w = src.shape()[0];
+					VipCoordinate<1> p = { { 0 } }; 
 					for (p[0] = 0; p[0] < w; ++p[0]) {
 						ptr[p[0]] = vipCast<dtype>(src(p));
 					}
 				}
 				else if (src.shape().size() == 2) {
-					const int h = src.shape()[0];
-					const int w = src.shape()[1];
-					int i = 0;
-					VipHybridVector<int, 2> p = { { 0, 0 } };
+					const qsizetype h = src.shape()[0];
+					const qsizetype w = src.shape()[1];
+					qsizetype i = 0;
+					VipCoordinate<2> p = { { 0, 0 } };
 					for (p[0] = 0; p[0] < h; ++p[0])
 						for (p[1] = 0; p[1] < w; ++p[1], ++i)
 							ptr[i] = vipCast<dtype>(src(p));
 				}
 				else if (src.shape().size() == 3) {
-					const int z = src.shape()[0];
-					const int h = src.shape()[1];
-					const int w = src.shape()[2];
-					int i = 0;
-					VipHybridVector<int, 3> p = { { 0, 0, 0 } };
+					const qsizetype z = src.shape()[0];
+					const qsizetype h = src.shape()[1];
+					const qsizetype w = src.shape()[2];
+					qsizetype i = 0;
+					VipCoordinate<3> p = { { 0, 0, 0 } };
 					for (p[0] = 0; p[0] < z; ++p[0])
 						for (p[1] = 0; p[1] < h; ++p[1])
 							for (p[2] = 0; p[2] < w; ++p[2], ++i)
@@ -160,7 +160,7 @@ namespace detail
 				}
 				else {
 					CIteratorFMajorNoSkip<VipNDArrayShape> iter(src.shape());
-					for (int i = 0; i < size; ++i) {
+					for (qsizetype i = 0; i < size; ++i) {
 						ptr[i] = vipCast<dtype>(src(iter.pos));
 						iter.increment();
 					}
@@ -170,31 +170,31 @@ namespace detail
 
 			if ((Src::access_type & Vip::Flat) && src.isUnstrided()) {
 				if (src.shape().size() == 1) {
-					const int w = src.shape()[0];
-					for (int i = 0; i < w; ++i)
+					const qsizetype w = src.shape()[0];
+					for (qsizetype i = 0; i < w; ++i)
 						ptr[dst.stride(0) * i] = vipCast<dtype>(src[i]);
 				}
 				else if (src.shape().size() == 2) {
-					const int h = src.shape()[0];
-					const int w = src.shape()[1];
-					int i = 0;
-					for (int y = 0; y < h; ++y)
-						for (int x = 0; x < w; ++x, ++i)
+					const qsizetype h = src.shape()[0];
+					const qsizetype w = src.shape()[1];
+					qsizetype i = 0;
+					for (qsizetype y = 0; y < h; ++y)
+						for (qsizetype x = 0; x < w; ++x, ++i)
 							ptr[dst.stride(0) * y + dst.stride(1) * x] = vipCast<dtype>(src[i]);
 				}
 				else if (src.shape().size() == 3) {
-					const int z = src.shape()[0];
-					const int h = src.shape()[1];
-					const int w = src.shape()[2];
-					int i = 0;
-					for (int d = 0; d < z; ++d)
-						for (int y = 0; y < h; ++y)
-							for (int x = 0; x < w; ++x, ++i)
+					const qsizetype z = src.shape()[0];
+					const qsizetype h = src.shape()[1];
+					const qsizetype w = src.shape()[2];
+					qsizetype i = 0;
+					for (qsizetype d = 0; d < z; ++d)
+						for (qsizetype y = 0; y < h; ++y)
+							for (qsizetype x = 0; x < w; ++x, ++i)
 								ptr[dst.stride(0) * d + dst.stride(1) * y + dst.stride(2) * x] = vipCast<dtype>(src[i]);
 				}
 				else {
 					CIteratorFMajorNoSkip<VipNDArrayShape> iter(src.shape());
-					for (int i = 0; i < size; ++i) {
+					for (qsizetype i = 0; i < size; ++i) {
 						ptr[vipFlatOffset<false>(dst.strides(), iter.pos)] = vipCast<dtype>(src[i]);
 						iter.increment();
 					}
@@ -203,24 +203,24 @@ namespace detail
 			}
 
 			if (src.shape().size() == 1) {
-				const int w = src.shape()[0];
-				VipHybridVector<int, 1> p = { { 0 } }; 
+				const qsizetype w = src.shape()[0];
+				VipCoordinate<1> p = { { 0 } }; 
 				for (p[0] = 0; p[0] < w; ++p[0])
 					ptr[dst.stride(0) * p[0]] = vipCast<dtype>(src(p));
 			}
 			else if (src.shape().size() == 2) {
-				const int h = src.shape()[0];
-				const int w = src.shape()[1];
-				VipHybridVector<int, 2> p = { { 0, 0 } };
+				const qsizetype h = src.shape()[0];
+				const qsizetype w = src.shape()[1];
+				VipCoordinate<2> p = { { 0, 0 } };
 				for (p[0] = 0; p[0] < h; ++p[0])
 					for (p[1] = 0; p[1] < w; ++p[1])
 						ptr[vipFlatOffset<false>(dst.strides(), p)] = vipCast<dtype>(src(p));
 			}
 			else if (src.shape().size() == 3) {
-				const int z = src.shape()[0];
-				const int h = src.shape()[1];
-				const int w = src.shape()[2];
-				VipHybridVector<int, 3> p = { { 0, 0, 0 } };
+				const qsizetype z = src.shape()[0];
+				const qsizetype h = src.shape()[1];
+				const qsizetype w = src.shape()[2];
+				VipCoordinate<3> p = { { 0, 0, 0 } };
 				for (p[0] = 0; p[0] < z; ++p[0])
 					for (p[1] = 0; p[1] < h; ++p[1])
 						for (p[2] = 0; p[2] < w; ++p[2])
@@ -228,7 +228,7 @@ namespace detail
 			}
 			else {
 				CIteratorFMajorNoSkip<VipNDArrayShape> iter(src.shape());
-				for (int i = 0; i < size; ++i) {
+				for (qsizetype i = 0; i < size; ++i) {
 					ptr[vipFlatOffset<false>(dst.strides(), iter.pos)] = vipCast<dtype>(src(iter.pos));
 					iter.increment();
 				}
@@ -247,14 +247,14 @@ namespace detail
 		{
 			typedef DType dtype;
 
-			int size = dst.size();
+			qsizetype size = dst.size();
 			dtype* ptr = (dtype*)dst.constHandle()->dataPointer(VipNDArrayShape());
 			if (!ptr)
 				return false;
 
 			if ((Dst::access_type & Vip::Flat) && (Src::access_type & Vip::Flat) && (OverRoi::access_type & Vip::Flat) && dst.isUnstrided() && src.isUnstrided() && roi.isUnstrided()) {
 				const Src s = src;
-				for (int i = 0; i < size; ++i)
+				for (qsizetype i = 0; i < size; ++i)
 					if (roi[i])
 						ptr[i] = vipCast<dtype>(s[i]);
 				return true;
@@ -262,28 +262,28 @@ namespace detail
 
 			if ((Dst::access_type & Vip::Flat) && dst.isUnstrided()) {
 				if (src.shape().size() == 1) {
-					const int w = src.shape()[0];
-					VipHybridVector<int, 1> p = { { 0 } }; 
+					const qsizetype w = src.shape()[0];
+					VipCoordinate<1> p = { { 0 } }; 
 					for (p[0] = 0; p[0] < w; ++p[0])
 						if (roi(p))
 							ptr[p[0]] = vipCast<dtype>(src(p));
 				}
 				else if (src.shape().size() == 2) {
-					const int h = src.shape()[0];
-					const int w = src.shape()[1];
-					int i = 0;
-					VipHybridVector<int, 2> p = { { 0, 0 } };
+					const qsizetype h = src.shape()[0];
+					const qsizetype w = src.shape()[1];
+					qsizetype i = 0;
+					VipCoordinate<2> p = { { 0, 0 } };
 					for (p[0] = 0; p[0] < h; ++p[0])
 						for (p[1] = 0; p[1] < w; ++p[1], ++i)
 							if (roi(p))
 								ptr[i] = vipCast<dtype>(src(p));
 				}
 				else if (src.shape().size() == 3) {
-					const int z = src.shape()[0];
-					const int h = src.shape()[1];
-					const int w = src.shape()[2];
-					int i = 0;
-					VipHybridVector<int, 3> p = { { 0, 0, 0 } };
+					const qsizetype z = src.shape()[0];
+					const qsizetype h = src.shape()[1];
+					const qsizetype w = src.shape()[2];
+					qsizetype i = 0;
+					VipCoordinate<3> p = { { 0, 0, 0 } };
 					for (p[0] = 0; p[0] < z; ++p[0])
 						for (p[1] = 0; p[1] < h; ++p[1])
 							for (p[2] = 0; p[2] < w; ++p[2], ++i)
@@ -292,7 +292,7 @@ namespace detail
 				}
 				else {
 					CIteratorFMajorNoSkip<VipNDArrayShape> iter(src.shape());
-					for (int i = 0; i < size; ++i) {
+					for (qsizetype i = 0; i < size; ++i) {
 						if (roi(iter.pos))
 							ptr[i] = vipCast<dtype>(src(iter.pos));
 						iter.increment();
@@ -303,29 +303,29 @@ namespace detail
 
 			if ((Src::access_type & Vip::Flat) && src.isUnstrided()) {
 				if (src.shape().size() == 1) {
-					const int w = src.shape()[0];
-					VipHybridVector<int, 1> p = { { 0 } }; 
+					const qsizetype w = src.shape()[0];
+					VipCoordinate<1> p = { { 0 } }; 
 					for (p[0] = 0; p[0] < w; ++p[0])
 						if (roi(p))
 							ptr[dst.stride(0) * p[0]] = vipCast<dtype>(src[p[0]]);
 				}
 				else if (src.shape().size() == 2) {
 					// const Src s = src;
-					const int h = src.shape()[0];
-					const int w = src.shape()[1];
-					VipHybridVector<int, 2> p = { { 0, 0 } };
-					int i = 0;
+					const qsizetype h = src.shape()[0];
+					const qsizetype w = src.shape()[1];
+					VipCoordinate<2> p = { { 0, 0 } };
+					qsizetype i = 0;
 					for (p[0] = 0; p[0] < h; ++p[0])
 						for (p[1] = 0; p[1] < w; ++p[1], ++i)
 							if (roi(p))
 								ptr[dst.stride(0) * p[0] + dst.stride(1) * p[1]] = vipCast<dtype>(src[i]);
 				}
 				else if (src.shape().size() == 3) {
-					const int z = src.shape()[0];
-					const int h = src.shape()[1];
-					const int w = src.shape()[2];
-					VipHybridVector<int, 3> p = { { 0, 0, 0 } };
-					int i = 0;
+					const qsizetype z = src.shape()[0];
+					const qsizetype h = src.shape()[1];
+					const qsizetype w = src.shape()[2];
+					VipCoordinate<3> p = { { 0, 0, 0 } };
+					qsizetype i = 0;
 					for (p[0] = 0; p[0] < z; ++p[0])
 						for (p[1] = 0; p[1] < h; ++p[1])
 							for (p[2] = 0; p[2] < w; ++p[2], ++i)
@@ -334,7 +334,7 @@ namespace detail
 				}
 				else {
 					CIteratorFMajorNoSkip<VipNDArrayShape> iter(src.shape());
-					for (int i = 0; i < size; ++i) {
+					for (qsizetype i = 0; i < size; ++i) {
 						if (roi(iter.pos))
 							ptr[vipFlatOffset<false>(dst.strides(), iter.pos)] = vipCast<dtype>(src[i]);
 						iter.increment();
@@ -344,26 +344,26 @@ namespace detail
 			}
 
 			if (src.shape().size() == 1) {
-				const int w = src.shape()[0];
-				VipHybridVector<int, 1> p = { { 0 } }; 
+				const qsizetype w = src.shape()[0];
+				VipCoordinate<1> p = { { 0 } }; 
 				for (p[0] = 0; p[0] < w; ++p[0])
 					if (roi(p))
 						ptr[dst.stride(0) * p[0]] = vipCast<dtype>(src(p));
 			}
 			else if (src.shape().size() == 2) {
-				const int h = src.shape()[0];
-				const int w = src.shape()[1];
-				VipHybridVector<int, 2> p = { { 0, 0 } };
+				const qsizetype h = src.shape()[0];
+				const qsizetype w = src.shape()[1];
+				VipCoordinate<2> p = { { 0, 0 } };
 				for (p[0] = 0; p[0] < h; ++p[0])
 					for (p[1] = 0; p[1] < w; ++p[1])
 						if (roi(p))
 							ptr[vipFlatOffset<false>(dst.strides(), p)] = vipCast<dtype>(src(p));
 			}
 			else if (src.shape().size() == 3) {
-				const int z = src.shape()[0];
-				const int h = src.shape()[1];
-				const int w = src.shape()[2];
-				VipHybridVector<int, 3> p = { { 0, 0, 0 } };
+				const qsizetype z = src.shape()[0];
+				const qsizetype h = src.shape()[1];
+				const qsizetype w = src.shape()[2];
+				VipCoordinate<3> p = { { 0, 0, 0 } };
 				for (p[0] = 0; p[0] < z; ++p[0])
 					for (p[1] = 0; p[1] < h; ++p[1])
 						for (p[2] = 0; p[2] < w; ++p[2])
@@ -372,7 +372,7 @@ namespace detail
 			}
 			else {
 				CIteratorFMajorNoSkip<VipNDArrayShape> iter(src.shape());
-				for (int i = 0; i < size; ++i) {
+				for (qsizetype i = 0; i < size; ++i) {
 					if (roi(iter.pos))
 						ptr[vipFlatOffset<false>(dst.strides(), iter.pos)] = vipCast<dtype>(src(iter.pos));
 					iter.increment();
@@ -382,7 +382,7 @@ namespace detail
 		}
 	};
 
-	template<class DType, int Dim>
+	template<class DType, qsizetype Dim>
 	struct Eval<DType, false, true, VipOverNDRects<Dim>>
 	{
 		/// Evaluate src into dst.
@@ -401,9 +401,9 @@ namespace detail
 				return false;
 
 			if (roi.rects()[0].dimCount() == 1) {
-				for (int r = 0; r < roi.size(); ++r) {
+				for (qsizetype r = 0; r < roi.size(); ++r) {
 					const VipNDRect<Dim>& rect = roi.rects()[r];
-					VipHybridVector<int, 1> p = { { 0 } };
+					VipCoordinate<1> p = { { 0 } };
 					for (p[0] = rect.start(0); p[0] < rect.end(0); ++p[0]) {
 						if (roi(p))
 							ptr[p[0] * dst.stride(0)] = vipCast<dtype>(src(p));
@@ -411,9 +411,9 @@ namespace detail
 				}
 			}
 			else if (roi.rects()[0].dimCount() == 2) {
-				for (int r = 0; r < roi.size(); ++r) {
+				for (qsizetype r = 0; r < roi.size(); ++r) {
 					const VipNDRect<Dim>& rect = roi.rects()[r];
-					VipHybridVector<int, 2> p = { { 0, 0 } };
+					VipCoordinate<2> p = { { 0, 0 } };
 					for (p[0] = rect.start(0); p[0] < rect.end(0); ++p[0])
 						for (p[1] = rect.start(1); p[1] < rect.end(1); ++p[1]) {
 							if (roi(p))
@@ -422,9 +422,9 @@ namespace detail
 				}
 			}
 			else if (roi.rects()[0].dimCount() == 3) {
-				for (int r = 0; r < roi.size(); ++r) {
+				for (qsizetype r = 0; r < roi.size(); ++r) {
 					const VipNDRect<Dim>& rect = roi.rects()[r];
-					VipHybridVector<int, 3> p = { { 0, 0, 0 } };
+					VipCoordinate<3> p = { { 0, 0, 0 } };
 					for (p[0] = rect.start(0); p[0] < rect.end(0); ++p[0])
 						for (p[1] = rect.start(1); p[1] < rect.end(1); ++p[1])
 							for (p[2] = rect.start(2); p[2] < rect.end(2); ++p[2]) {
@@ -434,12 +434,12 @@ namespace detail
 				}
 			}
 			else {
-				for (int r = 0; r < roi.size(); ++r) {
+				for (qsizetype r = 0; r < roi.size(); ++r) {
 					const VipNDRect<Dim>& rect = roi.rects()[r];
 					CIteratorFMajorNoSkip<VipNDArrayShape> iter(rect.shape());
 					iter.pos = rect.start();
-					int size = rect.shapeSize();
-					for (int i = 0; i < size; ++i) {
+					qsizetype size = rect.shapeSize();
+					for (qsizetype i = 0; i < size; ++i) {
 						if (roi(iter.pos))
 							ptr[vipFlatOffset<false>(dst.strides(), iter.pos)] = vipCast<dtype>(src(iter.pos));
 						iter.increment();

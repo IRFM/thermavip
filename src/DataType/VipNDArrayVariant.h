@@ -246,7 +246,7 @@ namespace detail
 			i.toBack();
 			while (i.hasPrevious()) {
 				i.previous();
-				if (QVariant(type, nullptr).canConvert(i.value()))
+				if (vipFromVoid(type, nullptr).canConvert(QMetaType(i.value())))
 					return i.value();
 			}
 			return 0;

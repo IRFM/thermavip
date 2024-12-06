@@ -53,7 +53,7 @@ namespace detail
 		Q_OBJECT
 
 	public:
-		QMutex mutex;
+		QRecursiveMutex mutex;
 		QAbstractSocket* socket;
 		VipNetworkConnection* connection;
 		QString host;

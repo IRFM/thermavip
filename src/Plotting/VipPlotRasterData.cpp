@@ -39,7 +39,6 @@
 
 #include <limits>
 
-#include <QGLWidget>
 #include <qapplication.h>
 #include <qthread.h>
 

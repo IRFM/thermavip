@@ -812,10 +812,10 @@ struct Legend
 	{
 	}
 
-	bool operator==(const Legend& other) { return legend == other.legend; }
-	bool operator==(const VipLegend* other) { return legend == other; }
-	bool operator!=(const Legend& other) { return legend != other.legend; }
-	bool operator!=(const VipLegend* other) { return legend != other; }
+	bool operator==(const Legend& other) const noexcept { return legend == other.legend; }
+	bool operator==(const VipLegend* other) const noexcept { return legend.data() == other; }
+	bool operator!=(const Legend& other) const noexcept { return legend != other.legend; }
+	bool operator!=(const VipLegend* other) const noexcept { return legend.data() != other; }
 };
 
 static void updateCacheMode(VipAbstractPlotArea* w, bool useCache)
@@ -2341,11 +2341,11 @@ QByteArray VipAbstractPlotArea::saveSpatialScaleState() const
 		str.setByteOrder(QDataStream::LittleEndian);
 
 		// save the number of scales
-		str << d_data->scales.size();
+		str << (int)d_data->scales.size();
 
 		// for each scale, save its title and bounds
 		// we also save the fact that vip_double is bigger than double
-		for (int i = 0; i < d_data->scales.size(); ++i)
+		for (qsizetype i = 0; i < d_data->scales.size(); ++i)
 			str << d_data->scales[i]->title().text() << d_data->scales[i]->scaleDiv().bounds();
 	}
 	return ar;
@@ -4784,11 +4784,11 @@ QRectF VipBaseGraphicsView::visualizedSceneRect() const
 
 QColor VipBaseGraphicsView::backgroundColor() const
 {
-	return d_data->backgroundColor ? *d_data->backgroundColor : QColor();
+	return d_data->backgroundColor.data() ? *d_data->backgroundColor : QColor();
 }
 bool VipBaseGraphicsView::hasBackgroundColor() const
 {
-	return d_data->backgroundColor;
+	return d_data->backgroundColor.data();
 }
 void VipBaseGraphicsView::removeBackgroundColor()
 {

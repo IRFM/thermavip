@@ -221,7 +221,7 @@ VipFOVItem::VipFOVItem(VipVTKGraphicsView* v, QTreeWidgetItem* parent)
 	d_data->toolBar->setToolButtonStyle(Qt::ToolButtonIconOnly);
 	d_data->toolBar->setMaximumHeight(22);
 	d_data->toolBar->setMaximumWidth(150);
-	d_data->toolBar->setStyleSheet("QToolBar {border-style: flat;}");
+	//d_data->toolBar->setStyleSheet("QToolBar {border-style: flat;}");
 
 	d_data->show_fov_pyramid = d_data->toolBar->addAction(vipIcon("fov_displayed.png"), QString("Show/hide camera field of view"));
 	d_data->show_fov_pyramid->setCheckable(true);
@@ -1373,7 +1373,7 @@ VipFOVTreeWidget::VipFOVTreeWidget(VipVTKGraphicsView* view, QWidget* parent)
 	setLayout(lay);
 
 	d_data->tools.setIconSize(QSize(20, 20));
-	d_data->tools.setStyleSheet("");
+	//d_data->tools.setStyleSheet("");
 	QAction* save = d_data->tools.addAction(vipIcon("save_as.png"), "Save selected cameras in file...");
 	d_data->tools.addSeparator();
 	QAction* add = d_data->tools.addAction(vipIcon("new_fov.png"), "Create new camera...");
@@ -1393,7 +1393,7 @@ VipFOVTreeWidget::VipFOVTreeWidget(VipVTKGraphicsView* view, QWidget* parent)
 	d_data->tree.headerItem()->setHidden(true);
 	d_data->tree.setColumnCount(2);
 	d_data->tree.setColumnWidth(0, 150);
-	d_data->tree.setStyleSheet("QTreeWidget {border-style: flat;}");
+	//d_data->tree.setStyleSheet("QTreeWidget {border-style: flat;}");
 	d_data->tree.setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 	d_data->tree.setAcceptDrops(true);
 	d_data->tree.setDragDropMode(QAbstractItemView::DragDrop);
@@ -1818,7 +1818,7 @@ bool VipFOVTreeWidget::eventFilter(QObject* watched, QEvent* evt)
 			// internal move, from CAD files to CAD Computed (or converse)
 			QDropEvent* event = static_cast<QDropEvent*>(evt);
 			if (event->source() == &d_data->tree) {
-				if (QTreeWidgetItem* it = d_data->tree.itemAt(event->pos())) {
+				if (QTreeWidgetItem* it = d_data->tree.itemAt(event->VIP_EVT_POSITION())) {
 					if (const VipMimeDataProcessingObjectList* mime = qobject_cast<const VipMimeDataProcessingObjectList*>(static_cast<QDropEvent*>(evt)->mimeData())) {
 						/* bool is_file = false;
 						while (it) {
@@ -2679,7 +2679,7 @@ VipVTKObjectItem::VipVTKObjectItem(QTreeWidgetItem* parent)
 	toolBar->setToolButtonStyle(Qt::ToolButtonIconOnly);
 	// toolBar->setMaximumHeight(18);
 	// toolBar->setMaximumWidth(250);
-	toolBar->setStyleSheet("QToolBar {border-style: flat;}");
+	//toolBar->setStyleSheet("QToolBar {border-style: flat;}");
 
 	/*QWidget* empty = new QWidget();
 	empty->setSizePolicy(QSizePolicy::Expanding,QSizePolicy::Preferred);
@@ -3079,7 +3079,7 @@ VipVTKObjectTreeWidget::VipVTKObjectTreeWidget(VipVTKGraphicsView* v, QWidget* p
 	// this->header()->setSectionResizeMode(QHeaderView::ResizeToContents);
 	// this->setColumnCount(2);
 	// this->setIndentation(10);
-	d_data->tree->setStyleSheet("QTreeWidget {border-style: flat;}");
+	//d_data->tree->setStyleSheet("QTreeWidget {border-style: flat;}");
 	d_data->tree->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 	d_data->tree->setAcceptDrops(true);
 
@@ -3889,7 +3889,7 @@ bool VipVTKObjectTreeWidget::eventFilter(QObject* watched, QEvent* evt)
 			// internal move, from CAD files to CAD Computed (or converse)
 			QDropEvent* event = static_cast<QDropEvent*>(evt);
 			if (event->source() == d_data->tree) {
-				if (QTreeWidgetItem* it = d_data->tree->itemAt(event->pos())) {
+				if (QTreeWidgetItem* it = d_data->tree->itemAt(event->VIP_EVT_POSITION())) {
 					if (const VipMimeDataProcessingObjectList* mime = qobject_cast<const VipMimeDataProcessingObjectList*>(static_cast<QDropEvent*>(evt)->mimeData())) {
 						bool is_file = false;
 						while (it) {
@@ -5406,14 +5406,14 @@ VipVTKPlayer::VipVTKPlayer(QWidget* parent)
 	d_data->properties = new VipSelectDisplayedAttributeWidget(d_data->view);
 	d_data->properties->setStyleSheet("QToolBar {border-style: flat; spacing: 3px;}");
 
-	d_data->tree->setStyleSheet("QWidget { background-color: transparent; }");
+	//d_data->tree->setStyleSheet("QWidget { background-color: transparent; }");
 	d_data->tree->resize(100, d_data->tree->height());
 
-	d_data->fov->setStyleSheet("QWidget { background-color: transparent; }");
+	//d_data->fov->setStyleSheet("QWidget { background-color: transparent; }");
 	d_data->fov->resize(200, d_data->fov->height());
 
 	QSplitter* left = new QSplitter(Qt::Vertical);
-	left->setStyleSheet("QSplitter { background-color: transparent; }");
+	//left->setStyleSheet("QSplitter { background-color: transparent; }");
 	left->addWidget(d_data->tree);
 	left->addWidget(d_data->fov);
 	d_data->splitter = left;

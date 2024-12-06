@@ -37,26 +37,26 @@
 #include "VipNDArray.h"
 
 /// @brief Close Component Labelling algorithm
-template<class T, int DimIn, class U, int DimOut>
-int vipLabelImage(const VipNDArrayTypeView<T, DimIn>& input, VipNDArrayTypeView<U, DimOut>& output, T background, bool connectivity_8 = false, int* relabel = nullptr)
+template<class T, qsizetype DimIn, class U, qsizetype DimOut>
+qsizetype vipLabelImage(const VipNDArrayTypeView<T, DimIn>& input, VipNDArrayTypeView<U, DimOut>& output, T background, bool connectivity_8 = false, qsizetype* relabel = nullptr)
 {
-	QVector<int> buffer;
+	QVector<qsizetype> buffer;
 	if (!relabel) {
 		buffer.resize(input.size());
 		relabel = buffer.data();
 	}
 
-	const int size = input.size();
-	for (int i = 0; i < size; ++i)
+	const qsizetype size = input.size();
+	for (qsizetype i = 0; i < size; ++i)
 		relabel[i] = i;
 
 	output.fill(0);
-	int h = input.shape(0);
-	int w = input.shape(1);
-	int next_label = 1;
+	qsizetype h = input.shape(0);
+	qsizetype w = input.shape(1);
+	qsizetype next_label = 1;
 
-	for (int y = 0; y < h; ++y) {
-		for (int x = 0; x < w; ++x) {
+	for (qsizetype y = 0; y < h; ++y) {
+		for (qsizetype x = 0; x < w; ++x) {
 			const T value = input(vipVector(y, x));
 
 			// ignore background value
@@ -136,12 +136,12 @@ int vipLabelImage(const VipNDArrayTypeView<T, DimIn>& input, VipNDArrayTypeView<
 	// so we need to modify the relabel vector to have consecutive ids
 
 	// just find the labels that don't move: they are the remaining ones
-	QVector<int> final_labels(next_label);
-	for (int i = 0; i < next_label; ++i)
+	QVector<qsizetype> final_labels(next_label);
+	for (qsizetype i = 0; i < next_label; ++i)
 		final_labels[i] = i;
 
-	int label_count = 0;
-	for (int i = 0; i < next_label; ++i) {
+	qsizetype label_count = 0;
+	for (qsizetype i = 0; i < next_label; ++i) {
 		if (relabel[i] == i && i != 0)
 			final_labels[i] = ++label_count;
 	}
@@ -150,7 +150,7 @@ int vipLabelImage(const VipNDArrayTypeView<T, DimIn>& input, VipNDArrayTypeView<
 	U* out = output.ptr();
 
 #pragma omp parallel for
-	for (int i = 0; i < size; ++i) {
+	for (int i = 0; i <(int) size; ++i) {
 		// follow all indirections
 		U value = out[i];
 		while (value != relabel[value])
@@ -163,8 +163,8 @@ int vipLabelImage(const VipNDArrayTypeView<T, DimIn>& input, VipNDArrayTypeView<
 }
 
 /// @brief Close Component Labelling algorithm
-template<class T, int DimIn, class U, int DimOut>
-int vipLabelImage(const VipNDArrayType<T, DimIn>& input, VipNDArrayType<U, DimOut>& output, T background, bool connectivity_8 = false, int* relabel = nullptr)
+template<class T, qsizetype DimIn, class U, qsizetype DimOut>
+qsizetype vipLabelImage(const VipNDArrayType<T, DimIn>& input, VipNDArrayType<U, DimOut>& output, T background, bool connectivity_8 = false, qsizetype* relabel = nullptr)
 {
 	VipNDArrayTypeView<U, DimOut> out(output);
 	return vipLabelImage(VipNDArrayTypeView<T, DimIn>(input),out, background, connectivity_8, relabel);
@@ -182,7 +182,7 @@ bool vipIsRect(const QVector<Point>& poly, QRectF* rect = nullptr)
 
 	if (poly.size() == 4 || poly.size() == 5) {
 		std::set<double> x, y;
-		for (int i = 0; i < poly.size(); ++i) {
+		for (qsizetype i = 0; i < poly.size(); ++i) {
 			x.insert(poly[i].x());
 			y.insert(poly[i].y());
 		}
@@ -210,7 +210,7 @@ VIP_DATA_TYPE_EXPORT QPolygonF vipRDPSimplifyPolygon(const QPolygonF& polygon, d
 
 /// Simplify given polygon using Ramer-Douglas-Peucker algorithm.
 /// @param  max_points: unlinke vipRDPSimplifyPolygon, this function takes a maximum number of points as input.
-VIP_DATA_TYPE_EXPORT QPolygonF vipRDPSimplifyPolygon2(const QPolygonF& polygon, int max_points);
+VIP_DATA_TYPE_EXPORT QPolygonF vipRDPSimplifyPolygon2(const QPolygonF& polygon, qsizetype max_points);
 
 /// This is an overload function.
 /// Returns the minimum distance between a point and a segment.
@@ -235,7 +235,7 @@ VIP_DATA_TYPE_EXPORT QPolygonF vipInterpolatePolygons(const QPolygonF& p1, const
 
 /// Reorder polygon based on its new starting point (>=0).
 /// The output polygon keeps the original size.
-VIP_DATA_TYPE_EXPORT QPolygonF vipReorderPolygon(const QPolygonF& p, int new_start);
+VIP_DATA_TYPE_EXPORT QPolygonF vipReorderPolygon(const QPolygonF& p, qsizetype new_start);
 
 /// Tells if given polygon's points are given in clockwise order.
 VIP_DATA_TYPE_EXPORT bool vipIsClockwise(const QPolygonF& poly);
@@ -244,7 +244,7 @@ VIP_DATA_TYPE_EXPORT bool vipIsClockwise(const QPolygonF& poly);
 VIP_DATA_TYPE_EXPORT double vipPolygonArea(const QPolygonF& poly);
 
 /// Compute polygon area using rasterization
-VIP_DATA_TYPE_EXPORT int vipPolygonAreaRasterize(const QPolygonF& poly);
+VIP_DATA_TYPE_EXPORT qsizetype vipPolygonAreaRasterize(const QPolygonF& poly);
 
 /// Returns the polygon centroid point
 VIP_DATA_TYPE_EXPORT QPointF vipPolygonCentroid(const QPolygonF& poly);

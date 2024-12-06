@@ -36,7 +36,6 @@
 #include <QFont>
 #include <QPainter>
 #include <QPen>
-#include <QRegExp>
 #include <QSharedDataPointer>
 #include <QString>
 

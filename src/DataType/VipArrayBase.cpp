@@ -35,19 +35,19 @@
 #include "VipComplex.h"
 #include "VipIterator.h"
 
-bool vipIsArithmetic(uint type)
+bool vipIsArithmetic(uint type) noexcept
 {
 	return type == QMetaType::Bool || type == QMetaType::Char || type == QMetaType::SChar || type == QMetaType::UChar || type == QMetaType::Short || type == QMetaType::UShort ||
 	       type == QMetaType::Int || type == QMetaType::UInt || type == QMetaType::Long || type == QMetaType::ULong || type == QMetaType::LongLong || type == QMetaType::ULongLong ||
 	       type == QMetaType::Float || type == QMetaType::Double || type == (uint)qMetaTypeId<long double>();
 }
 
-bool vipIsComplex(uint type)
+bool vipIsComplex(uint type) noexcept
 {
 	return type == (uint)qMetaTypeId<complex_d>() || type == (uint)qMetaTypeId<complex_f>();
 }
 
-bool vipCanConvertStdTypes(uint from, uint to)
+bool vipCanConvertStdTypes(uint from, uint to) noexcept
 {
 	if (from == to)
 		return true;
@@ -132,13 +132,13 @@ namespace detail
 	}
 }
 
-VipNDArrayHandle* vipNullHandlePtr()
+VipNDArrayHandle* vipNullHandlePtr() noexcept
 {
 	static detail::NullHandle handle;
 	return &handle;
 }
 
-SharedHandle vipNullHandle()
+SharedHandle vipNullHandle() noexcept
 {
 	static SharedHandle h = SharedHandle(vipNullHandlePtr());
 	return h;

@@ -70,6 +70,10 @@ public:
 	/// @brief Open from well formatted path
 	virtual bool open(const QString& valid_path) const;
 
+	/// @brief Clean a valid format string
+	/// For instance, this will remove redundant ../../ from local paths.
+	virtual QString cleanFormat(const QString& format) const { return format; }
+
 	/// @brief Register a VipDeviceOpenHelper object.
 	/// Note that this function takes ownership of the object.
 	static void registerHelper(VipDeviceOpenHelper*);
@@ -97,6 +101,7 @@ public:
 	virtual QString validPathFromFormat(const QString& format) const;
 	virtual QString formatFromValidPath(const QString& path) const;
 	virtual bool directOpen(const QString& format) const;
+	virtual QString cleanFormat(const QString& format) const;
 };
 
 /// @brief A VipDeviceOpenHelper providing GUI features shortcuts

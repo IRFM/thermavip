@@ -245,6 +245,14 @@ namespace vip_log_detail {
 #endif
 
 
+// Default move copy/construct
+#define VIP_DEFAULT_MOVE(Type) \
+	Type(const Type& other) = default;\
+	Type(Type&& other) noexcept = default;\
+	Type& operator=(const Type&) = default;\
+	Type& operator=(Type&&) noexcept = default
+
+
 
 #define _VIP_VA_NUM_ARGS_HELPER(_1, _2, _3, _4, _5, _6, _7, _8, _9, _10, N, ...) N
 
@@ -293,6 +301,108 @@ namespace vip_log_detail {
 /// @brief Declare private data for Pimpl idiom, use in class constructor
 #define VIP_CREATE_PRIVATE_DATA(name, ...) \
 	name.reset(new PrivateData(__VA_ARGS__))
+
+
+#include <QMetaType>
+#include <QVariant>
+#include <QMutex>
+
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
+
+#include <QRegExp>
+using QRegularExpression = QRegExp;
+
+inline QRegExp vipFromWildcard(const QString& pattern, Qt::CaseSensitivity s)
+{
+/*                                                                                                                                                                                                  \
+  #if QT_VERSION >= QT_VERSION_CHECK(5, 15, 0)
+	QString wildcardExp = QRegularExpression::wildcardToRegularExpression(pattern);
+	QRegularExpression re(QRegularExpression::anchoredPattern(wildcardExp), s == Qt::CaseInsensitive ? QRegularExpression::CaseInsensitiveOption : QRegularExpression::NoPatternOption);
+	return re;
+#else*/
+	return QRegExp(pattern, Qt::CaseInsensitive, QRegExp::Wildcard);
+	//#endif
+}
+
+
+class QRecursiveMutex : public QMutex
+{
+	QRecursiveMutex()
+	  : QMutex(QMutex::Recursive)
+	{
+	}
+};
+
+// For QVariant::canConvert()
+#define VIP_META(meta) meta
+
+// For QMouseEvent::position(), QDropEvent::position()...
+#define VIP_EVT_POSITION() pos()
+
+
+inline QVariant vipFromVoid(int meta, const void* p)
+{
+	return QVariant(meta, p);
+}
+
+inline QMetaType vipFromName(const char* name)
+{
+	return QMetaType(QMetaType::type(name));
+}
+
+inline const char* vipTypeName(int id)
+{
+	return QMetaType::typeName(id);
+}
+
+using qsizetype = int;
+
+#else
+
+#include <QRegExp>
+#include <QRecursiveMutex>
+
+inline QRegExp vipFromWildcard(const QString& pattern, Qt::CaseSensitivity s)
+{
+	/* QString wildcardExp = QRegularExpression::wildcardToRegularExpression(pattern);
+	QRegularExpression re(QRegularExpression::anchoredPattern(wildcardExp), s == Qt::CaseInsensitive ? QRegularExpression::CaseInsensitiveOption : QRegularExpression::NoPatternOption);
+	return re;*/
+	return QRegExp(pattern, Qt::CaseInsensitive, QRegExp::Wildcard);
+}
+
+// For QVariant::canConvert()
+#define VIP_META(meta) QMetaType(meta)
+
+// For QMouseEvent::position(), QDropEvent::position()...
+#define VIP_EVT_POSITION() position().toPoint()
+
+
+inline QVariant vipFromVoid(int meta, const void* p) {
+	return QVariant(QMetaType(meta), p);
+}
+
+template<class T>
+void qRegisterMetaTypeStreamOperators(const char* name = nullptr)
+{
+	if (name)
+		qRegisterMetaType<T>(name);
+	else
+		qRegisterMetaType<T>();
+}
+
+inline QMetaType vipFromName(const char* name)
+{
+	return QMetaType::fromName(name);
+}
+
+inline const char* vipTypeName(int id)
+{
+	return QMetaType(id).name();
+}
+
+#endif
+
+
 
 
 //define this macro to disable multithreading

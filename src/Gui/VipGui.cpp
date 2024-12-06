@@ -43,7 +43,10 @@
 #include "VipUniqueId.h"
 #include "VipXmlArchive.h"
 
-#include <qapplication.h>
+#include <QApplication>
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
+#include <QDesktopWidget>
+#endif
 
 QBrush vipWidgetTextBrush(QWidget* w)
 {
@@ -77,8 +80,7 @@ QStringList vipAvailableSkins()
 	return QStringList();
 }
 
-#include <QApplication>
-#include <QDesktopWidget>
+
 
 bool vipLoadSkin(const QString& skin_name)
 {
@@ -442,12 +444,12 @@ VipGuiDisplayParamaters::VipGuiDisplayParamaters(VipMainWindow* win)
 	connect(this, SIGNAL(changed()), this, SLOT(delaySaveToFile()), Qt::QueuedConnection);
 
 	// use the one in Thermavip installation if more recent
-	QFileInfo current = vipGetDataDirectory() + "gui_settings.xml";
+	QFileInfo current( vipGetDataDirectory() + "gui_settings.xml");
 	QString apppath = QFileInfo(vipAppCanonicalPath()).canonicalPath();
 	apppath.replace("\\", "/");
 	if (!apppath.endsWith("/"))
 		apppath += "/";
-	QFileInfo thermavip = apppath + "gui_settings.xml";
+	QFileInfo thermavip( apppath + "gui_settings.xml");
 	// vip_debug("current: %s\n", current.canonicalFilePath().toLatin1().data());
 	// vip_debug("thermavip: %s, %s\n", thermavip.canonicalFilePath().toLatin1().data(), (apppath + "gui_settings.xml").toLatin1().data());
 	if (thermavip.exists() && (!current.exists() || current.lastModified() < thermavip.lastModified())) {
@@ -932,11 +934,11 @@ bool VipGuiDisplayParamaters::inSessionLoading() const
 
 bool VipGuiDisplayParamaters::hasTitleTextStyle() const
 {
-	return d_data->titleTextStyle;
+	return d_data->titleTextStyle.data();
 }
 bool VipGuiDisplayParamaters::hasDefaultTextStyle() const
 {
-	return d_data->defaultTextStyle;
+	return d_data->defaultTextStyle.data();
 }
 
 int VipGuiDisplayParamaters::flatHistogramStrength() const

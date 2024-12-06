@@ -37,7 +37,7 @@
 /// @brief Stack a1 and a2 arrays along axis, and store the result in dst
 /// Returns true on success, false otherwise
 template<class A1, class A2, class Dst>
-bool vipStack(Dst& dst, const A1& a1, const A2& a2, int axis)
+bool vipStack(Dst& dst, const A1& a1, const A2& a2, qsizetype axis)
 {
 	const VipNDArrayShape sh1 = a1.shape();
 	const VipNDArrayShape sh2 = a2.shape();
@@ -46,7 +46,7 @@ bool vipStack(Dst& dst, const A1& a1, const A2& a2, int axis)
 	if (sh1.size() != sh2.size())
 		return false;
 	// test same shape except for given axis
-	for (int i = 0; i < sh1.size(); ++i) {
+	for (qsizetype i = 0; i < sh1.size(); ++i) {
 		if (i != axis && (sh1[i] != sh2[i] || sh1[i] != dst.shape(i)))
 			return false;
 	}
@@ -70,7 +70,7 @@ bool vipStack(Dst& dst, const A1& a1, const A2& a2, int axis)
 
 /// @brief @brief Stack a1 and a2 arrays along axis, and return the result or an empty VipNDArray on error.
 template<class A1, class A2>
-VipNDArray vipStack(const A1& a1, const A2& a2, int axis)
+VipNDArray vipStack(const A1& a1, const A2& a2, qsizetype axis)
 {
 	VipNDArrayShape sh = a1.shape();
 	sh[axis] = a1.shape()[axis] + a2.shape()[axis];
@@ -86,8 +86,8 @@ VipNDArray vipStack(const A1& a1, const A2& a2, int axis)
 
 /// @brief Stack v1 and v2 arrays along axis, and store the result in dst
 /// Returns true on success, false otherwise
-VIP_DATA_TYPE_EXPORT bool vipStack(VipNDArray& dst, const VipNDArray& v1, const VipNDArray& v2, int axis);
+VIP_DATA_TYPE_EXPORT bool vipStack(VipNDArray& dst, const VipNDArray& v1, const VipNDArray& v2, qsizetype axis);
 /// @brief @brief Stack v1 and v2 arrays along axis, and return the result or an empty VipNDArray on error.
-VIP_DATA_TYPE_EXPORT VipNDArray vipStack(const VipNDArray& v1, const VipNDArray& v2, int axis);
+VIP_DATA_TYPE_EXPORT VipNDArray vipStack(const VipNDArray& v1, const VipNDArray& v2, qsizetype axis);
 
 #endif

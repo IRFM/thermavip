@@ -31,13 +31,13 @@
 
 #include "VipStack.h"
 
-bool vipStack(VipNDArray& dst, const VipNDArray& v1, const VipNDArray& v2, int axis)
+bool vipStack(VipNDArray& dst, const VipNDArray& v1, const VipNDArray& v2, qsizetype axis)
 {
 	// test same dim count
 	if (v1.shapeCount() != v2.shapeCount())
 		return false;
 	// test same shape except for given axis
-	for (int i = 0; i < v1.shapeCount(); ++i) {
+	for (qsizetype i = 0; i < v1.shapeCount(); ++i) {
 		if (i != axis && (v1.shape(i) != v2.shape(i) || v1.shape(i) != v2.shape(i)))
 			return false;
 	}
@@ -60,7 +60,7 @@ bool vipStack(VipNDArray& dst, const VipNDArray& v1, const VipNDArray& v2, int a
 }
 
 #include <qimage.h>
-VipNDArray vipStack(const VipNDArray& v1, const VipNDArray& v2, int axis)
+VipNDArray vipStack(const VipNDArray& v1, const VipNDArray& v2, qsizetype axis)
 {
 	VipNDArrayShape sh = v1.shape();
 	sh[axis] = v1.shape()[axis] + v2.shape()[axis];

@@ -1149,7 +1149,6 @@ public:
 	  , _obj_types(0)
 	  , _obj_infos(0)
 	  , _dirty_objects(1)
-	  , _additional_info_mutex(QMutex::Recursive)
 	{
 		_log_errors << VipProcessingObject::RuntimeError << VipProcessingObject::WrongInput << VipProcessingObject::WrongInputNumber << VipProcessingObject::ConnectionNotOpen
 			    << VipProcessingObject::DeviceNotOpen << VipProcessingObject::IOError;
@@ -1176,7 +1175,7 @@ public:
 	int _obj_types;
 	int _obj_infos;
 	int _dirty_objects;
-	QMutex _additional_info_mutex;
+	QRecursiveMutex _additional_info_mutex;
 	QList<const VipProcessingObject*> _allObjects;
 };
 
@@ -1899,7 +1898,7 @@ struct MutexLocker
 ///
 class TaskPool : public QThread
 {
-	using LockType = SpinLocker; // StdMutexLocker; // MutexLocker;
+	using LockType = StdMutexLocker;//SpinLocker; // StdMutexLocker; // MutexLocker;
 	using UniqueLock = typename LockType::UniqueLock;
 	LockType lock;
 
@@ -2547,8 +2546,8 @@ VipProcessingObject::Info VipProcessingObject::info() const
 		return d_data->info;
 
 	Info res;
-	res.metatype = // vipMetaTypeFromQObject(this);
-	  QVariant::fromValue(const_cast<VipProcessingObject*>(this)).userType();
+	res.metatype =  vipMetaTypeFromQObject(this);//TEST
+	  //QVariant::fromValue(const_cast<VipProcessingObject*>(this)).userType();
 	res.classname = className();
 	res.displayHint = this->displayHint();
 
@@ -3685,7 +3684,7 @@ QList<const VipProcessingObject*> VipProcessingObject::allObjects()
 		else
 			type = additionals[i - types.size()].metatype;
 		// remove the VipProcessingPool from the result
-		if (strcmp(QMetaType::typeName(type), "VipProcessingPool*") == 0)
+		if (strcmp(vipTypeName(type), "VipProcessingPool*") == 0)
 			continue;
 		// create the object and initialize it
 		VipProcessingObject* obj = nullptr;
@@ -3837,7 +3836,6 @@ public:
 	  : isApplying(false)
 	  , useEventLoop(false)
 	  , lastTime(VipInvalidTime)
-	  , mutex(QMutex::Recursive)
 	{
 	}
 	QList<VipProcessingObject*> objects;
@@ -3845,7 +3843,7 @@ public:
 	bool isApplying;
 	bool useEventLoop;
 	qint64 lastTime;
-	QMutex mutex;
+	QRecursiveMutex mutex;
 	QString overrideName;
 	QTransform transform;
 };

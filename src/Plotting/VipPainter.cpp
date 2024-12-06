@@ -38,7 +38,9 @@
 #include <QVector2D>
 #include <qabstracttextdocumentlayout.h>
 #include <qapplication.h>
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
 #include <qdesktopwidget.h>
+#endif
 #include <qdrawutil.h>
 #include <qframe.h>
 #include <qmath.h>
@@ -115,11 +117,17 @@ QSize VipPainter::screenResolution()
 {
 	static QSize screenResolution;
 	if (!screenResolution.isValid()) {
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
 		QDesktopWidget* desktop = QApplication::desktop();
 		if (desktop) {
 			screenResolution.setWidth(desktop->logicalDpiX());
 			screenResolution.setHeight(desktop->logicalDpiY());
 		}
+#else
+		QScreen* s = QGuiApplication::primaryScreen();
+		screenResolution.setWidth((int)qRound(s->logicalDotsPerInchX()));
+		screenResolution.setHeight((int)qRound(s->logicalDotsPerInchY()));
+#endif
 	}
 
 	return screenResolution;
@@ -139,9 +147,11 @@ static bool vipNeedUnscaledFont(QPainter* painter)
 }
 static void vipForceUnscaleFont(QPainter* painter)
 {
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
 	QFont pixelFont(painter->font(), QApplication::desktop());
 	pixelFont.setPixelSize(QFontInfo(pixelFont).pixelSize());
 	painter->setFont(pixelFont);
+#endif
 }
 
 static inline void vipUnscaleFont(QPainter* painter)
@@ -155,10 +165,7 @@ static inline void vipUnscaleFont(QPainter* painter)
 	if (!pd)
 		return;
 	if (pd->logicalDpiX() != screenResolution.width() || pd->logicalDpiY() != screenResolution.height()) {
-		QFont pixelFont(painter->font(), QApplication::desktop());
-		pixelFont.setPixelSize(QFontInfo(pixelFont).pixelSize());
-
-		painter->setFont(pixelFont);
+		vipForceUnscaleFont(painter);
 	}
 }
 
@@ -206,8 +213,10 @@ bool VipPainter::isVectoriel(QPainter* painter)
 {
 	return painter->paintEngine() &&
 	       (painter->paintEngine()->type() == QPaintEngine::SVG || painter->paintEngine()->type() == QPaintEngine::MacPrinter || painter->paintEngine()->type() == QPaintEngine::Picture ||
-		painter->paintEngine()->type() == QPaintEngine::Pdf || painter->paintEngine()->type() == QPaintEngine::PostScript //||
-																  // painter->paintEngine()->type() == QPaintEngine::User
+		painter->paintEngine()->type() == QPaintEngine::Pdf 
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0) 
+			   || painter->paintEngine()->type() == QPaintEngine::PostScript 
+#endif
 	       );
 }
 
@@ -931,7 +940,11 @@ void VipPainter::drawFocusRect(QPainter* painter, const QWidget* widget)
 void VipPainter::drawFocusRect(QPainter* painter, const QWidget* widget, const QRect& rect)
 {
 	QStyleOptionFocusRect opt;
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
 	opt.init(widget);
+#else
+	opt.initFrom(widget);
+#endif
 	opt.rect = rect;
 	opt.state |= QStyle::State_HasFocus;
 

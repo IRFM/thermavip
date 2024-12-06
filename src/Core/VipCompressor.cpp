@@ -324,14 +324,14 @@ QVariant VipGzipCompressor::uncompressVariant(const QByteArray& raw_data, bool& 
 	}
 	else if (id == qMetaTypeId<VipPointVector>()) {
 		QByteArray tmp = qUncompress(buffer.readAll());
-		int size = tmp.size() / sizeof(QPointF);
+		qsizetype size = tmp.size() / sizeof(QPointF);
 		VipPointVector res(size);
 		std::copy((const QPointF*)(tmp.data()), (const QPointF*)(tmp.data()) + size, res.begin());
 		return QVariant::fromValue(res);
 	}
 	else if (id == qMetaTypeId<VipIntervalSampleVector>()) {
 		QByteArray tmp = qUncompress(buffer.readAll());
-		int size = tmp.size() / sizeof(VipIntervalSample);
+		qsizetype size = tmp.size() / sizeof(VipIntervalSample);
 		VipIntervalSampleVector res(size);
 		std::copy((const VipIntervalSample*)(tmp.data()), (const VipIntervalSample*)(tmp.data()) + size, res.begin());
 		return QVariant::fromValue(res);

@@ -765,7 +765,7 @@ bool CustomizeVideoPlayer::eventFilter(QObject*, QEvent* evt)
 
 			// Get plot items behind the mouse,
 			// check if there are only canvas or grids
-			QPointF scene_pt = scenePos(event->pos());
+			QPointF scene_pt = scenePos(event->VIP_EVT_POSITION());
 			bool ok = true;
 			if (QGraphicsItem* item = firstVisibleItem(scene_pt)) {
 				if (!item->toGraphicsObject())
@@ -782,7 +782,7 @@ bool CustomizeVideoPlayer::eventFilter(QObject*, QEvent* evt)
 				if (key_modifiers && !(key_modifiers & event->modifiers()))
 					return false;
 				// yes, only canvas or grids
-				d_data->mousePress = event->pos();
+				d_data->mousePress = event->VIP_EVT_POSITION();
 				return false; // true;
 			}
 		}
@@ -790,7 +790,7 @@ bool CustomizeVideoPlayer::eventFilter(QObject*, QEvent* evt)
 	else if (evt->type() == QEvent::MouseButtonRelease) {
 		// disable further dragging
 		if (d_data->mousePress != QPoint(-1, -1)) {
-			bool same_pos = (d_data->mousePress - QPointF(static_cast<QMouseEvent*>(evt)->pos())).manhattanLength() < 10;
+			bool same_pos = (d_data->mousePress - QPointF(static_cast<QMouseEvent*>(evt)->VIP_EVT_POSITION())).manhattanLength() < 10;
 			d_data->mousePress = QPoint(-1, -1);
 			// we need to unselect all items since this is a simple click
 			if (same_pos)
@@ -807,7 +807,7 @@ bool CustomizeVideoPlayer::eventFilter(QObject*, QEvent* evt)
 			d_data->player->spectrogram()->setItemAttribute(VipPlotItem::Droppable, false);
 		if (d_data->mousePress != QPoint(-1, -1) && !d_data->player->plotWidget2D()->area()->mouseInUse()) {
 			// drag
-			if ((event->pos() - d_data->mousePress).manhattanLength() > 10) {
+			if ((event->VIP_EVT_POSITION() - d_data->mousePress).manhattanLength() > 10) {
 				VipBaseDragWidget* w = VipDragWidget::fromChild(d_data->player);
 				QPoint pt = d_data->mousePress;
 				d_data->mousePress = QPoint(-1, -1);
@@ -823,7 +823,7 @@ bool CustomizeVideoPlayer::eventFilter(QObject*, QEvent* evt)
 	if (evt->type() == QEvent::DragEnter) {
 		QDragEnterEvent* event = static_cast<QDragEnterEvent*>(evt);
 
-		d_data->anchor = anchor(event->pos(), event->mimeData());
+		d_data->anchor = anchor(event->VIP_EVT_POSITION(), event->mimeData());
 
 		if (d_data->anchor.side != Vip::NoSide && !d_data->anchor.canvas && !event->mimeData()->data("application/dragwidget").isEmpty()) {
 			event->acceptProposedAction();
@@ -845,7 +845,7 @@ bool CustomizeVideoPlayer::eventFilter(QObject*, QEvent* evt)
 
 		QDragMoveEvent* event = static_cast<QDragMoveEvent*>(evt);
 
-		d_data->anchor = anchor(event->pos(), event->mimeData());
+		d_data->anchor = anchor(event->VIP_EVT_POSITION(), event->mimeData());
 		if (d_data->anchor.side != Vip::NoSide) {
 			// higlight area
 			anchorToArea(d_data->anchor, *d_data->area, d_data->player->plotWidget2D());
@@ -1149,14 +1149,14 @@ bool CustomWidgetPlayer::eventFilter(QObject*, QEvent* evt)
 			if (key_modifiers && !(key_modifiers & event->modifiers()))
 				return false;
 			// yes, only canvas or grids
-			d_data->mousePress = event->pos();
+			d_data->mousePress = event->VIP_EVT_POSITION();
 			return false; // true;
 		}
 	}
 	else if (evt->type() == QEvent::MouseButtonRelease) {
 		// disable further dragging
 		if (d_data->mousePress != QPoint(-1, -1)) {
-			// bool same_pos = (d_data->mousePress - QPointF(static_cast<QMouseEvent*>(evt)->pos())).manhattanLength() < 10;
+			// bool same_pos = (d_data->mousePress - QPointF(static_cast<QMouseEvent*>(evt)->VIP_EVT_POSITION())).manhattanLength() < 10;
 			d_data->mousePress = QPoint(-1, -1);
 			return false;
 		}
@@ -1165,7 +1165,7 @@ bool CustomWidgetPlayer::eventFilter(QObject*, QEvent* evt)
 		QMouseEvent* event = static_cast<QMouseEvent*>(evt);
 		if (d_data->mousePress != QPoint(-1, -1)) {
 			// drag
-			if ((event->pos() - d_data->mousePress).manhattanLength() > 10) {
+			if ((event->VIP_EVT_POSITION() - d_data->mousePress).manhattanLength() > 10) {
 				VipBaseDragWidget* w = VipDragWidget::fromChild(d_data->player);
 				QPoint pt = d_data->mousePress;
 				d_data->mousePress = QPoint(-1, -1);
@@ -1181,7 +1181,7 @@ bool CustomWidgetPlayer::eventFilter(QObject*, QEvent* evt)
 	if (evt->type() == QEvent::DragEnter) {
 		QDragEnterEvent* event = static_cast<QDragEnterEvent*>(evt);
 
-		d_data->anchor = anchor(event->pos(), event->mimeData());
+		d_data->anchor = anchor(event->VIP_EVT_POSITION(), event->mimeData());
 
 		if (d_data->anchor.side != Vip::NoSide && !event->mimeData()->data("application/dragwidget").isEmpty()) {
 			event->acceptProposedAction();
@@ -1202,7 +1202,7 @@ bool CustomWidgetPlayer::eventFilter(QObject*, QEvent* evt)
 	else if (evt->type() == QEvent::DragMove) {
 		QDragMoveEvent* event = static_cast<QDragMoveEvent*>(evt);
 
-		d_data->anchor = anchor(event->pos(), event->mimeData());
+		d_data->anchor = anchor(event->VIP_EVT_POSITION(), event->mimeData());
 		if (d_data->anchor.side != Vip::NoSide) {
 			// higlight area
 			anchorToArea(d_data->anchor, *d_data->area, d_data->player);
@@ -1559,7 +1559,7 @@ bool CustomizePlotPlayer::eventFilter(QObject* w, QEvent* evt)
 	if (evt->type() == QEvent::MouseButtonDblClick) {
 		QMouseEvent* event = static_cast<QMouseEvent*>(evt);
 		// convert to scene pos
-		QPointF pt = d_data->player->plotWidget2D()->mapToScene(event->pos());
+		QPointF pt = d_data->player->plotWidget2D()->mapToScene(event->VIP_EVT_POSITION());
 		QRectF b = d_data->player->plotWidget2D()->area()->titleAxis()->boundingRect();
 		if (b.contains(pt)) {
 			editTitle();
@@ -1583,7 +1583,7 @@ bool CustomizePlotPlayer::eventFilter(QObject* w, QEvent* evt)
 
 			// Get plot items behind the mouse,
 			// check if there are only canvas or grids
-			QPointF scene_pt = scenePos(event->pos());
+			QPointF scene_pt = scenePos(event->VIP_EVT_POSITION());
 			bool ok = true;
 			if (QGraphicsItem* item = firstVisibleItem(scene_pt)) {
 				if (!item->toGraphicsObject())
@@ -1596,7 +1596,7 @@ bool CustomizePlotPlayer::eventFilter(QObject* w, QEvent* evt)
 			}
 			if (ok) {
 				// yes, only canvas or grids
-				d_data->mousePress = event->pos();
+				d_data->mousePress = event->VIP_EVT_POSITION();
 				return false;
 			}
 		}
@@ -1617,7 +1617,7 @@ bool CustomizePlotPlayer::eventFilter(QObject* w, QEvent* evt)
 		if (d_data->mousePress != QPoint(-1, -1) && !d_data->player->plotWidget2D()->area()->mouseInUse()) {
 			// drag
 			if (event->buttons() & Qt::LeftButton) {
-				if ((event->pos() - d_data->mousePress).manhattanLength() > 10) {
+				if ((event->VIP_EVT_POSITION() - d_data->mousePress).manhattanLength() > 10) {
 					VipBaseDragWidget* _w = VipDragWidget::fromChild(d_data->player);
 					QPoint pt = d_data->mousePress;
 					d_data->mousePress = QPoint(-1, -1);
@@ -1634,7 +1634,7 @@ bool CustomizePlotPlayer::eventFilter(QObject* w, QEvent* evt)
 	if (evt->type() == QEvent::DragEnter) {
 		QDragEnterEvent* event = static_cast<QDragEnterEvent*>(evt);
 
-		d_data->anchor = anchor(event->pos(), event->mimeData());
+		d_data->anchor = anchor(event->VIP_EVT_POSITION(), event->mimeData());
 
 		if (d_data->anchor.side != Vip::NoSide && !d_data->anchor.canvas && !event->mimeData()->data("application/dragwidget").isEmpty()) {
 			event->acceptProposedAction();
@@ -1654,7 +1654,7 @@ bool CustomizePlotPlayer::eventFilter(QObject* w, QEvent* evt)
 	else if (evt->type() == QEvent::DragMove) {
 		QDragMoveEvent* event = static_cast<QDragMoveEvent*>(evt);
 
-		d_data->anchor = anchor(event->pos(), event->mimeData());
+		d_data->anchor = anchor(event->VIP_EVT_POSITION(), event->mimeData());
 		if (d_data->anchor.side != Vip::NoSide) {
 			event->acceptProposedAction();
 			// higlight area

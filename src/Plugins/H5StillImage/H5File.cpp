@@ -163,7 +163,7 @@ bool readDataSet(hid_t file, const QByteArray & name,  QStringList& names, QList
 		// 3 dimensions, might be an image dataset
 		if (dims[0] > 0 && dims[1] > 0) {
 			// store the data in a double image
-			VipNDArray array = VipNDArray(QMetaType::Double, vipVector(dims[0], dims[1]));
+			VipNDArray array = VipNDArray(QMetaType::Double, vipVector((qsizetype)dims[0], (qsizetype)dims[1]));
 			void* ptr = array.data();
 			hid_t data_type = H5T_NATIVE_DOUBLE;
 

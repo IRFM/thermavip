@@ -252,12 +252,7 @@ bool VipVTKFileReader::open(VipIODevice::OpenModes mode)
 			d_data = create(QVariant::fromValue(data));
 			d_data.setName(QFileInfo(info.canonicalFilePath()).fileName());
 			d_data.mergeAttributes(data.buildAllAttributes());
-			// TEST
-			VipTimestamps times(1000);
-			for (int i = 0; i < times.size(); ++i)
-				times[i] = i * 1000000ll;
-			setTimestamps(times);
-
+			
 			this->setOpenMode(mode);
 			read(0);
 			return true;

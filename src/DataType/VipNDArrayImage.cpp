@@ -196,7 +196,7 @@ namespace detail
 		}
 
 		virtual const char* dataName() const { return "QImage"; }
-		virtual int dataSize() const { return sizeof(QRgb); }
+		virtual qsizetype dataSize() const { return sizeof(QRgb); }
 		virtual int dataType() const { return qMetaTypeId<QImage>(); }
 
 		virtual bool canExport(int data_type) const
@@ -289,7 +289,7 @@ namespace detail
 		}
 		virtual QVariant toVariant(const VipNDArrayShape& sh) const
 		{
-			int pos = 0;
+			qsizetype pos = 0;
 			if (sh.size() == 1)
 				pos = sh[0] * image()->width();
 			else if (sh.size() > 1)
@@ -300,7 +300,7 @@ namespace detail
 
 		virtual void fromVariant(const VipNDArrayShape& sh, const QVariant& val)
 		{
-			int pos = 0;
+			qsizetype pos = 0;
 			if (sh.size() == 1)
 				pos = sh[0] * image()->width();
 			else if (sh.size() > 1)
@@ -328,8 +328,8 @@ namespace detail
 		virtual QTextStream& oTextStream(const VipNDArrayShape& _start, const VipNDArrayShape& _shape, QTextStream& stream, const QString& separator) const
 		{
 			const VipRGB* rgb = reinterpret_cast<const VipRGB*>(image()->bits()); // +shape[1] + shape[0] * image()->width();
-			for (int y = _start[0]; y < _start[0] + _shape[0]; ++y)
-				for (int x = _start[1]; x < _start[1] + _shape[1]; ++x) {
+			for (qsizetype y = _start[0]; y < _start[0] + _shape[0]; ++y)
+				for (qsizetype x = _start[1]; x < _start[1] + _shape[1]; ++x) {
 					const VipRGB value = rgb[x + y * image()->width()];
 					stream << value << separator;
 				}
@@ -360,7 +360,7 @@ VipNDArray vipToArray(const QImage& image)
 #if !(QT_VERSION < QT_VERSION_CHECK(5, 13, 0))
 	if (image.format() == QImage::Format_Grayscale16) {
 		VipNDArrayType<unsigned short> res(vip_vector(image.height(), image.width()));
-		for (int y = 0; y < image.height(); ++y) {
+		for (qsizetype y = 0; y < image.height(); ++y) {
 			memcpy(res.ptr(vip_vector(y, 0)), image.scanLine(y), image.width() * sizeof(unsigned short));
 		}
 		return res;

@@ -996,7 +996,7 @@ public:
 
 					// for miniconda, add path to Library/bin to PATH
 					QByteArray PATH = qgetenv("PATH");
-					PATH += ";" + miniconda + "/Library/bin";
+					PATH += (";" + miniconda + "/Library/bin").toLatin1();
 					qputenv("PATH", PATH);
 				}
 				else

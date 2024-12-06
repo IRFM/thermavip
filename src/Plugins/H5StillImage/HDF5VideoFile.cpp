@@ -1250,7 +1250,7 @@ void HDF5VideoWriter::apply()
 			if (d_data->set.id < 0)
 			{
 				close();
-				setError("wrong pixel type (" + QString(QMetaType::typeName(d_data->computedPixelType)) + ") or no space left on device");
+				setError("wrong pixel type (" + QString(vipTypeName(d_data->computedPixelType)) + ") or no space left on device");
 				return;
 			}
 

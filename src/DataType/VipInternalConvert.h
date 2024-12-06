@@ -457,21 +457,21 @@ namespace detail
 
 	///\internal
 	template<class From, class To>
-	void convertVoid(const void* ptr, void* dst, int, int size)
+	void convertVoid(const void* ptr, void* dst, int, qsizetype size)
 	{
 		const From* in = (const From*)ptr;
 		To* out = (To*)(dst);
-		for (int i = 0; i < size; ++i)
+		for (qsizetype i = 0; i < size; ++i)
 			out[i] = Converter<From, To>::apply(in[i]);
 	}
 
 	///\internal
 	template<class To>
-	void genericConverterVoid(const void* ptr, void* dst, int data_type, int size)
+	void genericConverterVoid(const void* ptr, void* dst, int data_type, qsizetype size)
 	{
 		int out_type = qMetaTypeId<To>();
-		int in_size = QMetaType(data_type).sizeOf();
-		for (int i = 0; i < size; ++i) {
+		qsizetype in_size = QMetaType(data_type).sizeOf();
+		for (qsizetype i = 0; i < size; ++i) {
 			QMetaType::convert(ptr, data_type, dst, out_type);
 			ptr = (uchar*)(ptr) + in_size;
 			dst = (uchar*)(dst) + sizeof(To);
@@ -482,7 +482,7 @@ namespace detail
 	template<class To>
 	struct GetConverterFunction
 	{
-		typedef void (*cast)(const void*, void*, int, int);
+		typedef void (*cast)(const void*, void*, int, qsizetype);
 		static cast get(int data_type)
 		{
 			if (data_type == QMetaType::Char)

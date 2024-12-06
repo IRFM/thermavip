@@ -67,7 +67,7 @@ struct VipType
 	}
 	VipType(int id)
 	  : id(id)
-	  , name(QMetaType::typeName(id))
+	  , name(QMetaType(id).name())
 	  , metaObject(QMetaType(id).metaObject())
 	{
 	}
@@ -78,6 +78,20 @@ struct VipType
 	inline bool operator==(const VipType& other) const noexcept { return id == other.id || (metaObject == other.metaObject && metaObject); }
 	inline bool operator!=(const VipType& other) const noexcept { return !((*this) == other); }
 };
+
+
+/// @brief Returns the type id for given QObject pointer.
+/// Note that this function returns the highest possible type id based on object's QMetaObject.
+template<class T>
+VIP_ALWAYS_INLINE int vipMetaTypeFromQObject(const T* obj)
+{
+	int id = 0;
+	if (obj)
+		id = vipFromName(QByteArray(obj->metaObject()->className()) + "*").id();
+	if (id)
+		return id;
+	return qMetaTypeId<T*>();
+}
 
 /// The \a VipAny class is a kind of variant type used to store any kind of object type declared to the Qt meta type system.
 /// The stored object is internally stored in a QVariant.
@@ -124,16 +138,23 @@ public:
 	/// @brief Returns the VipType associated to the QVariant's content
 	VipType type() const
 	{
-		if (variant.userType() == 0)
+		int id = variant.userType();
+		if (id == 0)
 			return VipType();
 		const QMetaObject* meta = nullptr;
 		const char* name = variant.typeName();
-		if (QObject* obj = variant.value<QObject*>())
+		if (QObject* obj = variant.value<QObject*>()) {
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+			// correct id and name
+			id = vipMetaTypeFromQObject(obj);
+			name = QMetaType(id).name();
+#endif
 			meta = obj->metaObject();
+		}
 		else
-			meta = QMetaType(variant.userType()).metaObject();
+			meta = QMetaType(id).metaObject();
 
-		return VipType(variant.userType(), name, meta);
+		return VipType(id, name, meta);
 	}
 
 	template<class T>
@@ -162,50 +183,42 @@ public:
 Q_DECLARE_METATYPE(VipAny)
 typedef QVector<VipType> VipTypeList;
 
+
+template<class T>
+struct make_void
+{
+	using type = void;
+};
+
 namespace details
 {
 
-	namespace has_operator_impl
-	{
-		typedef char no;
-		typedef char yes[2];
-
-		no operator<<(QDataStream const&, VipAny const&);
-		no operator>>(QDataStream const&, VipAny const&);
-
-		yes& test(QDataStream&);
-		no test(no);
-
-		template<typename T>
-		struct has_insertion_operator
-		{
-			static QDataStream& s;
-			static T const& t;
-			static bool const value = sizeof(test(s << t)) == sizeof(yes);
-		};
-
-		template<typename T>
-		struct has_extraction_operator
-		{
-			static QDataStream& s;
-			static T& t;
-			static bool const value = sizeof(test(s >> t)) == sizeof(yes);
-		};
-	}
-
+	
 	////////////////////////////////////////////////////////////////////////////////
 	// Few helper type traits
 	////////////////////////////////////////////////////////////////////////////////
 
-	template<typename T>
-	struct has_insertion_operator : has_operator_impl::has_insertion_operator<T>
+	template<class T, class = void>
+	struct has_insertion_operator : std::false_type
+	{
+	};
+	
+	template<class T>
+	struct has_insertion_operator<T, make_void<decltype(std::declval<QDataStream&>() << std::declval<T&>())>> : std::true_type
 	{
 	};
 
-	template<typename T>
-	struct has_extraction_operator : has_operator_impl::has_extraction_operator<T>
+	template<class T, class = void>
+	struct has_extraction_operator : std::false_type
 	{
 	};
+
+	template<class T>
+	struct has_extraction_operator<T, make_void<decltype(std::declval<QDataStream&>() >> std::declval<T&>())>> : std::true_type
+	{
+	};
+
+	
 
 	template<class T>
 	struct remove_const_pointer
@@ -340,7 +353,7 @@ namespace details
 		else {
 			reg.storeRelease(1);
 			registerTypeCreate<Type>();
-			registerMetaTypeStreamOperators<Type>(QMetaType::typeName(qRegisterMetaType<Type>()));
+			registerMetaTypeStreamOperators<Type>(vipTypeName(qRegisterMetaType<Type>()));
 			// register alias
 			qRegisterMetaType<Type>(name);
 		}
@@ -350,6 +363,18 @@ namespace details
 
 #define _VIP_CONCAT_IMPL(x, y) x##y
 #define _VIP_MACRO_CONCAT(x, y) _VIP_CONCAT_IMPL(x, y)
+
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
+#define _VIP_SPECIALIZE_FROM_VALUE(Type) \
+template<>                                                                                                                                                                                     \
+	inline QVariant qVariantFromValue(Type const& value)                                                                                                                                           \
+	{                                                                                                                                                                                              \
+		return QVariant::fromValue(value);                                                                                                                                                     \
+	}
+
+#else
+#define _VIP_SPECIALIZE_FROM_VALUE(Type)
+#endif
 
 /// Register a QObject inheriting class to the Thermavip type system. The class must be registered first with Q_DECLARE_METATYPE.
 /// Use #VIP_REGISTER_QOBJECT_METATYPE if it is not the case.
@@ -387,22 +412,20 @@ namespace details
 		/* make sure to take the highest metatype*/                                                                                                                                            \
 		int id = 0;                                                                                                                                                                            \
 		if (value)                                                                                                                                                                             \
-			id = QMetaType::type(QByteArray(value->metaObject()->className()) + "*");                                                                                                      \
+			id = vipFromName(QByteArray(value->metaObject()->className()) + "*").id();                                                                                                      \
 		if (id)                                                                                                                                                                                \
-			return QVariant(id, &value);                                                                                                                                                   \
-		return QVariant(qMetaTypeId<Type>(), &value);                                                                                                                                          \
+			return vipFromVoid(id, &value);                                                                                                                                                   \
+		return vipFromVoid(qMetaTypeId<Type>(), &value);                                                                                                                                          \
 	}                                                                                                                                                                                              \
-	template<>                                                                                                                                                                                     \
-	inline QVariant qVariantFromValue(Type const& value)                                                                                                                                           \
-	{                                                                                                                                                                                              \
-		return QVariant::fromValue(value);                                                                                                                                                     \
-	}
+	_VIP_SPECIALIZE_FROM_VALUE(Type)
+
 
 /// @brief Same as VIP_REGISTER_QOBJECT_METATYPE_NO_DECLARE, but also add the Q_DECLARE_METATYPE declaration
 #define VIP_REGISTER_QOBJECT_METATYPE(Type)                                                                                                                                                            \
 	Q_DECLARE_METATYPE(Type)                                                                                                                                                                       \
 	VIP_REGISTER_QOBJECT_METATYPE_NO_DECLARE(Type)
 
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
 template<>
 inline QVariant qVariantFromValue(const VipAny& any)
 {
@@ -414,6 +437,7 @@ inline void qVariantSetValue(QVariant& v, const VipAny& any)
 {
 	v = any.variant;
 }
+#endif
 
 template<>
 inline VipAny qvariant_cast(const QVariant& v)
@@ -427,53 +451,14 @@ VIP_CORE_EXPORT void vipReleaseVariant(const QVariant& v);
 /// Check if type \a type_from is convertible to type \a type_to.
 /// This is done by checking if the types are convertible with QVariant::canConvert() function,
 /// but also by using (in case of QObject inheriting classes) an equivalent of \a qobject_cast function.
-VIP_ALWAYS_INLINE bool vipIsConvertible(const VipType& type_from, const VipType& type_to)
-{
-	if (type_from == type_to || type_to.id == 0)
-		return true;
-
-	// bug with QVariantMap: any map seems to be convertible to a QVariantMap. So disable this behavior.
-	if (type_to == QMetaType::QVariantMap)
-		return false;
-
-	if (const QMetaObject* meta_from = type_from.metaObject) {
-		if (const QMetaObject* meta_to = type_to.metaObject) {
-			// check id conversion id possible
-			const QMetaObject* meta = meta_from;
-			while (meta) {
-				if (meta == meta_to)
-					return true;
-				meta = meta->superClass();
-			}
-			return false;
-		}
-
-		return false;
-	}
-
-	QVariant variant(type_from.id, nullptr);
-	bool res = variant.canConvert(type_to.id);
-	vipReleaseVariant(variant);
-	return res;
-}
+VIP_CORE_EXPORT bool vipIsConvertible(const VipType& type_from, const VipType& type_to);
 
 /// @brief Returns a QVariant constructed with given \a id.
 /// If \a id represents a type declared with #VIP_REGISTER_QOBJECT_METATYPE_NO_DECLARE or #VIP_REGISTER_QOBJECT_METATYPE,
 /// the returned QVariant will hold a VALID pointer to QObject. If you don't use the QObject, call #vipReleaseVariant to delete it
 VIP_CORE_EXPORT QVariant vipCreateVariant(int id);
 
-/// @brief Returns the type id for given QObject pointer.
-/// Note that this function returns the highest possible type id based on object's QMetaObject.
-template<class T>
-VIP_ALWAYS_INLINE int vipMetaTypeFromQObject(const T* obj)
-{
-	int id = 0;
-	if (obj)
-		id = QMetaType::type(QByteArray(obj->metaObject()->className()) + "*");
-	if (id)
-		return id;
-	return qMetaTypeId<T*>();
-}
+
 
 /// @brief Converts a pointer to QObject to QVariant.
 /// Note that this function returns the highest possible type id based on object's QMetaObject.
@@ -481,7 +466,7 @@ template<class T>
 VIP_ALWAYS_INLINE QVariant vipVariantFromQObject(const T* obj)
 {
 	int id = vipMetaTypeFromQObject(obj);
-	return QVariant(id, &obj);
+	return vipFromVoid(id, &obj);
 }
 
 namespace details
@@ -522,7 +507,7 @@ VIP_ALWAYS_INLINE QVariant QVariant::fromValue<QWidget*>(QWidget* const& value)
 /// \sa vipCreateVariant(int id)
 VIP_ALWAYS_INLINE QVariant vipCreateVariant(const char* name)
 {
-	return vipCreateVariant(QMetaType::type(name));
+	return vipCreateVariant(vipFromName(name).id());
 }
 
 /// @brief Returns a QVariant constructed with given \a id.
@@ -533,10 +518,10 @@ VIP_ALWAYS_INLINE QVariant vipCreateNullVariant(int id)
 	if (QMetaType(id).flags() & QMetaType::PointerToQObject) {
 		QObject* ptr1 = nullptr;
 		QObject** ptr2 = &ptr1;
-		return QVariant(id, ptr2);
+		return vipFromVoid(id, ptr2);
 	}
 	else
-		return QVariant(id, nullptr);
+		return vipFromVoid(id, nullptr);
 }
 
 /// @brief Returns a QVariant constructed with given type name.
@@ -544,36 +529,20 @@ VIP_ALWAYS_INLINE QVariant vipCreateNullVariant(int id)
 /// the returned QVariant will still hold a nullptr pointer to QObject.
 VIP_ALWAYS_INLINE QVariant vipCreateNullVariant(const char* name)
 {
-	return vipCreateNullVariant(QMetaType::type(name));
+	return vipCreateNullVariant(vipFromName(name).id());
 }
 
 /// @brief Returns the QMetaObject associated to given class name (must end with '*')
 VIP_ALWAYS_INLINE const QMetaObject* vipMetaObjectFromName(const char* name)
 {
-	int id = QMetaType::type(name);
+	int id = vipFromName(name).id();
 	if (id)
 		return QMetaType(id).metaObject();
 	return nullptr;
 }
 
 /// @brief Returns all user types (id >= QMetaType::User)
-inline QList<int> vipUserTypes()
-{
-	QList<int> types;
-	int id = QMetaType::User;
-
-	while (id) {
-		if (QMetaType::isRegistered(id)) {
-			types << id;
-			++id;
-		}
-		else {
-			id = 0;
-		}
-	}
-
-	return types;
-}
+VIP_CORE_EXPORT QList<int> vipUserTypes();
 
 /// @brief Returns all user types (id >= QMetaType::User) that are convertible to given type.
 VIP_CORE_EXPORT QList<int> vipUserTypes(int type);
@@ -615,7 +584,7 @@ namespace details
 			if (std::is_same<valid_arg_type, QVariant>::value || std::is_same<valid_arg_type, VipAny>::value)
 				lst[NArgs] = VipType(0, nullptr, nullptr); // QVariant case
 			else
-				lst[NArgs] = VipType(id, QMetaType::typeName(id), QMetaType(id).metaObject());
+				lst[NArgs] = VipType(id, QMetaType(id).name(), QMetaType(id).metaObject());
 			BuildTypeListFromSignature<Signature, NArgs - 1>::update(lst);
 		}
 	};

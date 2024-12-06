@@ -725,7 +725,7 @@ public:
 	{
 		QString val = m_value.text();
 		QVariant v = val;
-		if (v.convert(QMetaType::Double))
+		if (v.convert(VIP_META(QMetaType::Double)))
 			return v;
 		else if (!m_value.text().isEmpty())
 			return QVariant(m_value.text());
@@ -775,11 +775,11 @@ public:
 			return QVariant::fromValue(c);
 
 		QVariant v = val;
-		if (v.convert(QMetaType::Double))
+		if (v.convert(VIP_META(QMetaType::Double)))
 			return v;
-		else if (v.convert(qMetaTypeId<complex_d>()))
+		else if (v.convert(VIP_META(qMetaTypeId<complex_d>())))
 			return v;
-		else if (v.convert(qMetaTypeId<complex_f>()))
+		else if (v.convert(VIP_META(qMetaTypeId<complex_f>())))
 			return v;
 		else if (!m_value.text().isEmpty())
 			return QVariant(m_value.text());

@@ -278,7 +278,11 @@ void IOOperationWidget::Restart()
 void IOOperationWidget::paintEvent(QPaintEvent * evt)
 {
 	QStyleOption opt;
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
 	opt.init(this);
+#else
+	opt.initFrom(this);
+#endif
 	QPainter p(viewport());
 	style()->drawPrimitive(QStyle::PE_Widget, &opt, &p, this);
 	QTextEdit::paintEvent(evt);

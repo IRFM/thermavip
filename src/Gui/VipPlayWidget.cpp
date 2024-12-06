@@ -28,7 +28,7 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-
+ 
 #include "VipPlayWidget.h"
 #include "VipColorMap.h"
 #include "VipCorrectedTip.h"
@@ -319,15 +319,6 @@ void VipTimeRangeItem::draw(QPainter* p, const VipCoordinateSystemPtr& m) const
 		p->setBrush(brush);
 		p->drawRect(direction_rect);
 	}
-
-	// draw the left and right arrow if the rectangle width is > 10
-	/* if (r.width() > 10 && !d_data->resizeLeft.isEmpty() && !d_data->resizeRight.isEmpty()) {
-		p->setRenderHints(QPainter::Antialiasing);
-		p->setPen(QPen(d_data->color.darker(120), 1, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
-		p->setBrush(d_data->color);
-		p->drawPath(d_data->resizeLeft);
-		p->drawPath(d_data->resizeRight);
-	}*/
 
 	// draw the selection
 	if (isSelected()) {
@@ -885,9 +876,26 @@ void VipTimeRangeListItem::draw(QPainter* p, const VipCoordinateSystemPtr& m) co
 	drawSelected(p, m);
 }
 
+static bool isLight(const QColor& c) 
+{
+	return c.red() > 200 && c.green() > 200 && c.blue() > 200;
+}
+static bool isDark(const QColor& c)
+{
+	return c.red() < 50 && c.green() < 50 && c.blue() < 50;
+}
+
+static bool isDarkSkin(QWidget * w)
+{
+	QColor c = vipWidgetTextBrush(w).color();
+	return isLight(c);
+}
+
 void VipTimeRangeListItem::drawSelected(QPainter* p, const VipCoordinateSystemPtr& m) const
 {
 	if (d_data->items.size()) {
+
+		static bool is_dark_skin = isDarkSkin(this->view());
 
 		// TEST: draw items
 		for (const VipTimeRangeItem* it : d_data->items) {
@@ -903,15 +911,21 @@ void VipTimeRangeListItem::drawSelected(QPainter* p, const VipCoordinateSystemPt
 
 		if (d_data->drawComponents & Text) {
 			p->save();
-			p->setRenderHints(QPainter::TextAntialiasing);
-			// p->setCompositionMode(QPainter::CompositionMode_Difference);
+			p->setRenderHints(QPainter::TextAntialiasing | QPainter::Antialiasing);
 			QColor c = d_data->items.first()->color();
-			c.setRed(255 - c.red());
-			c.setGreen(255 - c.green());
-			c.setBlue(255 - c.blue());
+			if (isLight(c) || isDark(c)) {
+				c.setRed(255 - c.red());
+				c.setGreen(255 - c.green());
+				c.setBlue(255 - c.blue());
+			}
+			else {
+				c = is_dark_skin ? Qt::white : Qt::black;
+			}
+			
 			p->setPen(c);
 			QFont f = p->font();
-			f.setPointSizeF(bounding.height() / 1.5);
+			f.setBold(true);
+			f.setPointSizeF(bounding.height() / 1.4);
 			p->setFont(f);
 			p->drawText(left, device()->name());
 			p->restore();
@@ -1471,6 +1485,7 @@ VipPlayerArea::VipPlayerArea()
 	VipToolTip* tip = new VipToolTip();
 	tip->setRegionPositions(Vip::RegionPositions(Vip::XInside));
 	tip->setAlignment(Qt::AlignTop | Qt::AlignRight);
+	tip->setMaxItems(1);
 	this->setPlotToolTip(tip);
 }
 

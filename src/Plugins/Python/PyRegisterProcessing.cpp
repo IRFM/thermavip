@@ -176,7 +176,7 @@ int PyRegisterProcessing::loadCustomProcessings(bool overwrite)
 
 		VipProcessingObject::Info info;
 		info.classname = name;
-		info.category = category.split("/", QString::SkipEmptyParts).join("/");
+		info.category = category.split("/", VIP_SKIP_BEHAVIOR::SkipEmptyParts).join("/");
 		info.description = description;
 
 		if (PySignalFusionProcessingPtr ptr = PySignalFusionProcessingPtr(proc.value<PySignalFusionProcessing*>())) {

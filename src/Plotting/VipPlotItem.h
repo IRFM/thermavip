@@ -1035,9 +1035,12 @@ class VIP_PLOTTING_EXPORT VipPlotItemData : public VipPlotItem
 	Q_OBJECT
 
 public:
-	typedef QMutex Mutex;
-	typedef QMutexLocker Locker;
-
+	using Mutex = QRecursiveMutex ;
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
+	using Locker =  QMutexLocker;
+#else
+	using Locker = QMutexLocker<QRecursiveMutex> ;
+#endif
 	VipPlotItemData(const VipText& title = VipText());
 	~VipPlotItemData();
 

@@ -547,7 +547,11 @@ bool isDarkSkin()
 	static bool res = false;
 	if (!inisialised) {
 		inisialised = true;
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
 		QColor c = vipGetMainWindow()->palette().color(QPalette::Background);
+#else
+		QColor c = vipGetMainWindow()->palette().color(QPalette::Window);
+#endif
 		res = c.lightness() < 128;
 	}
 	return res;

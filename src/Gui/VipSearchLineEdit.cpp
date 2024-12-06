@@ -250,6 +250,16 @@ bool VipFileOpenHelper::directOpen(const QString& format) const
 	return info.exists() && !info.isDir();
 }
 
+QString VipFileOpenHelper::cleanFormat(const QString& format) const
+{
+	QFileInfo info(format);
+	QString res = info.canonicalFilePath();
+	res.replace("\\", "/");
+	if ((info.isDir() || info.isRoot()) && !res.endsWith("/"))
+		res += "/";
+	return res;
+}
+
 
 
 static QMap<QString, std::function<void()>> _shortcuts;
@@ -326,8 +336,8 @@ public:
 			if (count())
 				setCurrentItem(item(0));
 
-			setFixedSize(edit->width(),//sizeHintForColumn(0) + frameWidth() * 2,
-						     sizeHintForRow(0) * count() + 2 * frameWidth() + 10);
+			int height = sizeHintForRow(0) * count() + 2 * frameWidth() + 10;
+			setFixedSize(edit->width(),qMin(height,800));
 		}
 	}
 	bool setSelectionToLineEdit(bool try_open)
@@ -337,6 +347,11 @@ public:
 		if (this->currentItem()) {
 			QString previous = edit->text();
 			QString text = this->currentItem()->text();
+
+			const VipDeviceOpenHelper* helper = VipDeviceOpenHelper::fromFormat(text);
+			if (helper)
+				text = helper->cleanFormat(text);
+
 			edit->setText(text);
 
 			// hide if the current item was the only one
@@ -345,7 +360,6 @@ public:
 
 			// try to open
 			if (try_open) {
-				const VipDeviceOpenHelper* helper = VipDeviceOpenHelper::fromFormat(text);
 				if (!helper)
 					return false;
 				if (helper->directOpen(text) || previous == text)

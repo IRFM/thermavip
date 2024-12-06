@@ -281,7 +281,7 @@ QTabBar::tab {
 	padding-left:10px;
 	padding-right:10px;
     background: #303030;
-    border: none;
+    border: 1px solid #181818;
 	color: white;
 	font: bold;
 }
@@ -419,7 +419,9 @@ QPlainTextEdit{
 QListWidget, QTreeView{
 background-color: #252621;
 }
-
+QListWidget::item:selected{
+	background-color: #56A0EA;
+}
 QTreeView::item:selected{
 	background-color: #56A0EA;
 }

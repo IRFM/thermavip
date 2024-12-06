@@ -148,6 +148,7 @@ private:
 	QSharedDataPointer<PrivateData> d_data;
 };
 
+Q_DECLARE_METATYPE(QGradientStop)
 Q_DECLARE_METATYPE(QGradientStops)
 Q_DECLARE_METATYPE(VipAdaptativeGradient)
 

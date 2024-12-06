@@ -36,7 +36,9 @@
 #include <QPdfWriter>
 #include <QPrinter>
 #include <qapplication.h>
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
 #include <qdesktopwidget.h>
+#endif
 #include <qfileinfo.h>
 #include <qpagesize.h>
 #include <qpicture.h>
@@ -318,9 +320,14 @@ bool VipRenderObject::saveAsPdf(VipRenderObject* render, const QString& filename
 	// get bounding rect in millimeters
 	QScreen* screen = qApp->primaryScreen();
 	if (w) {
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
 		int thisScreen = QApplication::desktop()->screenNumber(w);
 		if (thisScreen >= 0)
 			screen = qApp->screens()[thisScreen];
+#else
+		if (w->screen())
+			screen = w->screen();
+#endif
 	}
 	QSizeF screen_psize = screen->physicalSize();
 	QSize screen_size = screen->size();

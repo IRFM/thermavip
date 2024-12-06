@@ -40,7 +40,32 @@
 
 #include <qwebenginecertificateerror.h>
 #include <qwebenginesettings.h>
+#include <QWebEngineUrlScheme>
+#include <QWebEngineUrlSchemeHandler>
+#include <QWebEngineUrlRequestJob>
+#include <QWebEngineProfile>
 
+class ThermavipSchemeHandler : public QWebEngineUrlSchemeHandler
+{
+public:
+	ThermavipSchemeHandler(QObject* parent = nullptr)
+	  : QWebEngineUrlSchemeHandler(parent)
+	{
+	}
+	void requestStarted(QWebEngineUrlRequestJob* job)
+	{
+		const QByteArray method = job->requestMethod();
+		const QUrl url = job->requestUrl();
+		QString _url = url.toString();
+		if (_url.startsWith("thermavip://")) {
+			vipGetMainWindow()->openPaths(QStringList() << _url);
+		}
+		else {
+			// Invalid URL
+			job->fail(QWebEngineUrlRequestJob::UrlInvalid);
+		}
+	}
+};
 
 static bool registerHelper = VipShortcutsHelper::registerShorcut("web browser", []() { VipWebBrowser::openWebBrowser(QString()); });
 
@@ -91,19 +116,83 @@ void VipWebBrowserToolBar::setIcon(const QIcon& icon)
 
 class WebPage : public QWebEnginePage
 {
+	VipWebBrowser* browser;
+
 public:
-	explicit WebPage(QWidget* parent = 0)
+	explicit WebPage(VipWebBrowser * br, QWidget* parent = 0)
 	  : QWebEnginePage(parent)
+	  , browser(br)
 	{
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+		connect(this, &QWebEnginePage::certificateError, this, &WebPage::receiveCertificateError);
+#endif
+		connect(this, &QWebEnginePage::linkHovered, this, &WebPage::handleLinkHover);
+
+		static bool once = false;
+		if (!once) {
+			once = true;
+			// installUrlSchemeHandler does not take ownership of the handler.
+			// For unknown reason, the scheme thermavip is still not recognized...
+			ThermavipSchemeHandler* handler = new ThermavipSchemeHandler(vipGetMainWindow());
+			QWebEngineProfile::defaultProfile()->installUrlSchemeHandler("thermavip", handler);
+		}
+	}
+
+	virtual ~WebPage() noexcept
+	{ 
+		bool stop = true;
+	}
+
+	void handleLinkHover(const QString& url)
+	{ 
+		//bool stop = true;
 	}
 
 protected:
+
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+	void receiveCertificateError(const QWebEngineCertificateError& error) 
+	{
+		const_cast<QWebEngineCertificateError&>(error).acceptCertificate();
+	}
+#else
 	virtual bool certificateError(const QWebEngineCertificateError& error) override
 	{
 		QWebEngineCertificateError& mutableError = const_cast<QWebEngineCertificateError&>(error);
 		mutableError.ignoreCertificateError();
 		return true;
 	}
+#endif
+
+	
+	virtual bool acceptNavigationRequest(const QUrl& url, QWebEnginePage::NavigationType type, bool isMainFrame) 
+	{
+		QString _url = url.toString(QUrl::None);
+		if(_url.isEmpty())
+			_url = url.errorString();
+		if (_url.contains("thermavip://")) {
+			int start = _url.indexOf("\"");
+			if (start > 0) {
+				int end = _url.indexOf("\"", start + 1);
+				_url = _url.mid(start + 1, end - start - 1);
+				// Handle requests to open url of type 'thermavip://'
+				if (_url.startsWith("thermavip://")) {
+
+					QMetaObject::invokeMethod(vipGetMainWindow(), [_url]() { vipGetMainWindow()->openPaths(QStringList() << _url); }, Qt::QueuedConnection);
+					this->deleteLater();
+					return false;
+				}
+			}
+		}
+		return QWebEnginePage::acceptNavigationRequest(url, type, isMainFrame); 
+	}
+
+	virtual QWebEnginePage* createWindow(QWebEnginePage::WebWindowType type) 
+	{ 
+		// return WebPage object
+		return new WebPage(browser); 
+	}
+
 };
 
 class VipWebBrowser::PrivateData
@@ -131,7 +220,7 @@ VipWebBrowser::VipWebBrowser(QWidget* parent)
 	d_data->view = widget()->findChild<QWebEngineView*>();
 	d_data->bar = widget()->findChild<VipWebBrowserToolBar*>();
 
-	webEngine()->setPage(new WebPage());
+	webEngine()->setPage(new WebPage(this));
 
 	connect(webEngine(), SIGNAL(titleChanged(const QString&)), this, SLOT(setWindowTitle(const QString&)));
 	connect(d_data->bar->prev, SIGNAL(triggered(bool)), webEngine(), SLOT(back()));
@@ -149,7 +238,9 @@ VipWebBrowser::VipWebBrowser(QWidget* parent)
 	connect(webEngine(), SIGNAL(loadFinished(bool)), this, SLOT(loadFinished(bool)));
 
 	connect(webEngine()->page(), SIGNAL(featurePermissionRequested(const QUrl&, QWebEnginePage::Feature)), this, SLOT(featurePermissionRequested(const QUrl&, QWebEnginePage::Feature)));
-
+#if QT_VERSION >= QT_VERSION_CHECK(6, 8, 0)
+	connect(webEngine()->page(), &QWebEnginePage::permissionRequested, this, &VipWebBrowser::handlePermissionRequested);
+#endif
 	webEngine()->page()->settings()->setAttribute(QWebEngineSettings::AllowRunningInsecureContent, true);
 }
 
@@ -163,10 +254,22 @@ QWebEngineView* VipWebBrowser::webEngine() const
 void VipWebBrowser::featurePermissionRequested(const QUrl&, // securityOrigin,
 					       QWebEnginePage::Feature feature)
 {
-
+	bool stop = true;
 	// grant permission
-	webEngine()->page()->setFeaturePermission(webEngine()->page()->url(), feature, QWebEnginePage::PermissionGrantedByUser);
+	//webEngine()->page()->setFeaturePermission(webEngine()->page()->url(), feature, QWebEnginePage::PermissionGrantedByUser);
 }
+
+#if QT_VERSION >= QT_VERSION_CHECK(6, 8, 0)
+void VipWebBrowser::handlePermissionRequested(QWebEnginePermission perm)
+{
+	bool stop = true;
+	auto type = perm.permissionType();
+	perm.grant();
+	// grant permission
+	// webEngine()->page()->setFeaturePermission(webEngine()->page()->url(), feature, QWebEnginePage::PermissionGrantedByUser);
+}
+#endif
+
 
 void VipWebBrowser::setUrlInternal()
 {

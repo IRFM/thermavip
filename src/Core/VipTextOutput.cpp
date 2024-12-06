@@ -60,7 +60,7 @@ VipStreambufToQTextStream::int_type VipStreambufToQTextStream::overflow(int_type
 {
 	if (m_enable) {
 		QMutexLocker loxk(&m_mutex);
-		(*m_stream) << QString(1, c);
+		(*m_stream) << QString(1, QChar(c));
 		m_stream->flush();
 		return c;
 	}

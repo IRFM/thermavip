@@ -192,11 +192,33 @@ void VipTextSearchBar::search(bool forward)
 {
 	QString pattern = d_data->search->text();
 	Qt::CaseSensitivity case_sens = d_data->case_sens->isChecked() ? Qt::CaseSensitive : Qt::CaseInsensitive;
+
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+	QRegularExpression exp;
+#else
 	QRegExp exp;
-	if (regExp())
-		exp = QRegExp(pattern, case_sens, QRegExp::Wildcard);
-	else
+#endif
+
+	
+	if (regExp()) {
+
+		
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+		QString wildcardExp = QRegularExpression::wildcardToRegularExpression(pattern);
+		exp = QRegularExpression(QRegularExpression::anchoredPattern(wildcardExp),
+				      case_sens == Qt::CaseInsensitive ? QRegularExpression::CaseInsensitiveOption : QRegularExpression::NoPatternOption);
+#else
+		exp = vipFromWildcard(pattern, case_sens);
+#endif
+	}
+	else {
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
 		exp = QRegExp(pattern, case_sens, QRegExp::FixedString);
+#else
+		exp =
+		  QRegularExpression(QRegularExpression::escape(pattern), case_sens == Qt::CaseInsensitive ? QRegularExpression::CaseInsensitiveOption : QRegularExpression::NoPatternOption);
+#endif
+	}
 
 	QTextCursor c(d_data->document);
 	if (d_data->foundStart == d_data->foundEnd || d_data->restartFromCursor) {

@@ -7,7 +7,6 @@
 #include <QBitmap>
 #include <QBoxLayout>
 #include <QDateTime>
-#include <QDesktopWidget>
 #include <QDir>
 #include <QFile>
 #include <QFileInfo>
@@ -44,6 +43,14 @@
 #define VIP_ALLOW_AUTO_UPDATE
 #endif
 
+#ifdef __VIP_USE_WEB_ENGINE
+
+#include <QWebEngineUrlScheme>
+
+
+#endif
+
+
 static void myMessageOutput(QtMsgType type, const QMessageLogContext& context, const QString& msg)
 {
 	(void)context;
@@ -62,6 +69,24 @@ static void myMessageOutput(QtMsgType type, const QMessageLogContext& context, c
 			abort();
 	}
 	return;
+}
+
+static void applyAppFont(QWidget * top, const QFont& previous)
+{
+	QFont font = qApp->font();
+	QString family = font.family();
+	QString pfamily = previous.family();
+	top->setFont(font);
+	QList<QWidget*> lst = top->findChildren<QWidget*>();
+	for (QWidget* w : lst) {
+		const QFont f = w->font();
+		QString wfamily = f.family();
+		if (wfamily == pfamily) {
+			// Same as original font family and different from current one: update font
+			if (wfamily != family)
+				w->setFont(font);
+		}
+	}
 }
 
 int main(int argc, char** argv)
@@ -153,9 +178,18 @@ int main(int argc, char** argv)
 	// Disallow GUI initialization functions for now
 	vipEnableGuiInitializationFunction(false);
 
+	// register 'thermavip' url scheme
+#ifdef __VIP_USE_WEB_ENGINE
+	QWebEngineUrlScheme sc;
+	sc.setSyntax(QWebEngineUrlScheme::Syntax::Path);
+	sc.setName("thermavip");
+	sc.setDefaultPort(QWebEngineUrlScheme::PortUnspecified);
+	sc.setFlags(QWebEngineUrlScheme::SecureScheme);
+	QWebEngineUrlScheme::registerScheme(sc);
+#endif
+	 
 	QApplication app(argc, argv);
 
-	
 	bool force_font = false;
 #if !defined(_WIN32) && (defined(__unix__) || defined(__unix) || (defined(__APPLE__) && defined(__MACH__)))
 	// on linux, set the application dir as the current dir/
@@ -226,8 +260,8 @@ int main(int argc, char** argv)
 	// load fonts embedded within Thermavip
 	QFontDatabase base;
 	QStringList families = base.families(QFontDatabase::Any);
-	/*for (int i = 0; i < families.size(); ++i)
-	vip_debug("familiy: %s\n", families[i].toLatin1().data());*/
+	QFont previous_font = app.font();
+
 	if (QFileInfo("fonts").exists() && QFileInfo("fonts").isDir()) {
 		QFileInfoList files = QDir("fonts").entryInfoList(QStringList() << "*.ttf", QDir::Files);
 		for (int i = 0; i < files.size(); ++i)
@@ -243,9 +277,25 @@ int main(int argc, char** argv)
 			vip_debug("Set font to %s\n", font.family().toLatin1().data());
 		}
 	}
-	
 
-	//QApplication::setFont(QFont("Segoe UI"));//TEST
+	QFontDatabase db;
+	if (db.hasFamily("Segoe UI")) {
+		QFont font("Segoe UI");
+		font.setPointSize(9);
+		QApplication::setFont(font);
+	}
+	else if (db.hasFamily("Noto Sans")) {
+		QFont font("Noto Sans");
+		font.setPointSize(9);
+		QApplication::setFont(font);
+	}
+	else if (db.hasFamily("DejaVu Sans")) {
+		QFont font("DejaVu Sans");
+		font.setPointSize(8);
+		QApplication::setFont(font);
+	}
+
+	vip_debug("Application font: %s\n", app.font().family().toLatin1().data());
 
 
 	QString plugin_path = QApplication::applicationDirPath();
@@ -496,6 +546,7 @@ int main(int argc, char** argv)
 		chromium_flags += "--blink-settings=forceDarkModeEnabled=true,forceDarkModeImagePolicy=2,forceDarkModePagePolicy=1,forceDarkModeInversionAlgorithm=4";
 	qputenv("QTWEBENGINE_CHROMIUM_FLAGS", chromium_flags);
 
+	
 
 	// Load plugins
 
@@ -635,6 +686,9 @@ int main(int argc, char** argv)
 
 	// Allow GUI initialization functions
 	vipEnableGuiInitializationFunction(true);
+
+	// Apply current font
+	applyAppFont(vipGetMainWindow(), previous_font);
 
 	int ret = app.exec();
 

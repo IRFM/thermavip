@@ -657,8 +657,28 @@ public Q_SLOTS:
 
 	void resetStyleSheet();
 
-	/// @brief Apply QApplication global font to this widget and all of its children
-	void applyAppFont();
+	// Start of stop playing/streaming for the current active workspace
+	void startStopPlaying();
+	// Go to next time for the current active workspace
+	void nextTime();
+	// Go to previous time for the current active workspace
+	void previousTime();
+	// Go to first time for the current active workspace
+	void firstTime();
+	// Go to last time for the current active workspace
+	void lastTime();
+	// Advance time by 10% of the time range for the current active workspace
+	void forward10Time();
+	// Go backward in time by 10% of the time range for the current active workspace
+	void backward10Time();
+	void nextWorkspace();
+	void previousWorkspace();
+	void newWorkspace();
+	void closeWorkspace();
+	void focusToSearchLine();
+	void toogleFullScreen();
+	void exitFullScreen();
+
 
 private Q_SLOTS:
 	void init();
@@ -679,8 +699,7 @@ Q_SIGNALS:
 protected:
 	virtual void closeEvent(QCloseEvent* evt);
 	virtual void showEvent(QShowEvent*);
-	virtual void keyPressEvent(QKeyEvent* evt);
-	// virtual void paintEvent(QPaintEvent *);
+
 private:
 	QAction* addToolWidget(VipToolWidget* widget, const QIcon& icon, const QString& text, bool set_tool_icon = false);
 	void setCurrentTabDestroy(bool);

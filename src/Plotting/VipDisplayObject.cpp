@@ -590,7 +590,7 @@ bool VipDisplayCurve::prepareForDisplay(const VipAnyDataList& lst)
 			else if (v.userType() == qMetaTypeId<complex_d>()) {
 				cvector.append(VipComplexPoint(any.time(), v.value<complex_d>()));
 			}
-			else if (v.canConvert(QMetaType::Double) && any.time() != VipInvalidTime) {
+			else if (v.canConvert(VIP_META(QMetaType::Double)) && any.time() != VipInvalidTime) {
 				// if (vector.isEmpty())
 				//	vector = curve->rawData();
 				vector.append(QPointF(any.time(), v.toDouble()));

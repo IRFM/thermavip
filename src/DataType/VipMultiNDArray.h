@@ -68,7 +68,7 @@ namespace detail
 		}
 		virtual void* opaqueForPos(void* op, const VipNDArrayShape& pos) const { return currentHandle->opaqueForPos(op, pos); }
 		virtual const char* dataName() const { return currentHandle ? currentHandle->dataName() : nullptr; }
-		virtual int dataSize() const { return currentHandle ? currentHandle->dataSize() : 0; }
+		virtual qsizetype dataSize() const { return currentHandle ? currentHandle->dataSize() : 0; }
 		virtual int dataType() const { return currentHandle ? currentHandle->dataType() : 0; }
 		virtual bool canExport(int type) const { return currentHandle->canExport(type); }
 		virtual bool canImport(int type) const { return currentHandle->canImport(type); }
@@ -117,7 +117,7 @@ public:
 
 	void addArray(const QString& name, const VipNDArray& array);
 	void removeArray(const QString& name);
-	int arrayCount() const;
+	qsizetype arrayCount() const;
 	QStringList arrayNames() const;
 	QList<VipNDArray> arrays() const;
 	VipNDArray array(const QString& name) const;

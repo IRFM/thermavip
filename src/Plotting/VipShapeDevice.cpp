@@ -434,51 +434,45 @@ int VipShapeDevice::metric(PaintDeviceMetric metric) const
 	switch (metric) {
 		case PdmWidth:
 			return INT_MAX;
-			break;
 
 		case PdmHeight:
 			return INT_MAX;
-			break;
 
 		case PdmWidthMM:
 			return INT_MAX;
-			break;
 
 		case PdmHeightMM:
 			return INT_MAX;
-			break;
 
 		case PdmNumColors:
 			return 2;
-			break;
 
 		case PdmDepth:
 			return 1;
-			break;
 
 		case PdmDpiX:
 			return 300;
-			break;
 
 		case PdmDpiY:
 			return 300;
-			break;
 
 		case PdmPhysicalDpiX:
 			return 300;
-			break;
 
 		case PdmPhysicalDpiY:
 			return 300;
-			break;
 
 		case PdmDevicePixelRatio:
 			return 1;
-			break;
 
 		case PdmDevicePixelRatioScaled:
 			return 1;
-			break;
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+		case PdmDevicePixelRatioF_EncodedA:
+			Q_FALLTHROUGH();
+		case PdmDevicePixelRatioF_EncodedB:
+			return QPaintDevice::encodeMetricF(metric, 1.);
+#endif
 
 		default:
 			qWarning("VipShapeDevice::metric(): Unhandled metric type %d", metric);

@@ -433,10 +433,12 @@ void VipPolarAxis::computeScaleDrawRadiusAndCenter()
 	scaleDraw()->setRadius(radius);
 }
 
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
 static bool qFuzzyCompare(const QPointF& p1, const QPointF& p2)
 {
 	return qFuzzyCompare(p1.x(), p2.x()) && qFuzzyCompare(p1.y(), p2.y());
 }
+#endif
 
 void VipPolarAxis::setCenter(const QPointF& c)
 {

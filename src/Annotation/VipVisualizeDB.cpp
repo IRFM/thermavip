@@ -300,8 +300,13 @@ bool VisualizeDB::eventFilter(QObject* watched, QEvent* evt)
 					connect(menu.addAction("Copy selection to clipboard"), SIGNAL(triggered(bool)), this, SLOT(copyToClipBoard()));
 				}
 
-				if (menu.actions().size() > 0)
+				if (menu.actions().size() > 0) {
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
 					menu.exec(static_cast<QMouseEvent*>(evt)->globalPos());
+#else
+					menu.exec(static_cast<QMouseEvent*>(evt)->globalPosition().toPoint());
+#endif
+				}
 
 				return true;
 			}
@@ -862,12 +867,23 @@ void VisualizeDB::findRelatedEvents()
 VisualizeDBToolWidget::VisualizeDBToolWidget(VipMainWindow* win)
   : VipToolWidget(win)
 {
-	this->setWidget(new VisualizeDB());
+	//this->setWidget(new VisualizeDB());
 	this->setObjectName("Event database");
 	this->setWindowTitle("Event database");
 	this->setKeepFloatingUserSize(true);
 	this->setMinimumSize(700, 600);
 	// setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
+}
+
+void VisualizeDBToolWidget::showEvent(QShowEvent*)
+{
+	static bool init = false;
+	if (!init) {
+		// Set the inner widget at first show.
+		// This avoids any SQL query at startup, when the event loop is not running.
+		init = true;
+		this->setWidget(new VisualizeDB());
+	}
 }
 
 VisualizeDB* VisualizeDBToolWidget::getVisualizeDB() const

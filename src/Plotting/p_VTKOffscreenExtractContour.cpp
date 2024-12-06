@@ -149,7 +149,8 @@ struct ExtractContour
 		}
 		labels.fill(0);
 
-		vipLabelImage(img, VipNDArrayTypeView<unsigned, 2>(labels), background);
+		VipNDArrayTypeView<unsigned, 2> out(labels);
+		vipLabelImage(img, out , background);
 
 		ContourLevels res;
 
@@ -177,12 +178,8 @@ struct ExtractContour
 class OffscreenExtractContour::PrivateData
 {
 public:
-	PrivateData()
-	  : mutex(QMutex::Recursive)
-	{
-	}
-
-	QMutex mutex;
+	
+	QRecursiveMutex mutex;
 	std::map<const VipPlotVTKObject*, VipPlotVTKObject> data;
 	std::map<const VipPlotVTKObject*, QPainterPath> shapes;
 	std::map<const VipPlotVTKObject*, QRegion> regions;

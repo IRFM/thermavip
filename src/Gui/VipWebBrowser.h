@@ -116,6 +116,9 @@ private Q_SLOTS:
 	void loadProgress(int progress);
 	void loadFinished(bool ok);
 	void featurePermissionRequested(const QUrl& securityOrigin, QWebEnginePage::Feature feature);
+#if QT_VERSION >= QT_VERSION_CHECK(6, 8, 0)
+	void handlePermissionRequested(QWebEnginePermission perm);
+#endif
 
 private:
 	

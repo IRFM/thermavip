@@ -52,6 +52,18 @@
 #include "VipDragWidget.h"
 #include "VipWidgetResizer.h"
 
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
+static bool isTopLevel(const QWidget* w)
+{
+	return w->isTopLevel();
+}
+#else
+static bool isTopLevel(const QWidget* w)
+{
+	return w->isWindow();
+}
+#endif
+
 class VipToolWidgetResizer : public VipWidgetResizer
 {
 public:
@@ -63,16 +75,16 @@ public:
 protected:
 	virtual bool isTopLevelWidget(const QPoint& screen_pos = QPoint()) const
 	{
-		if (!parent()->isTopLevel())
+		if (!isTopLevel(parent()))
 			return false;
 		if (screen_pos == QPoint())
 			return true;
 
 		QWidget* under_mouse = QApplication::widgetAt(screen_pos);
 		while (under_mouse) {
-			if (under_mouse->isTopLevel() && under_mouse == parent())
+			if (isTopLevel(under_mouse) && under_mouse == parent())
 				return true;
-			else if (under_mouse->isTopLevel() && under_mouse != vipGetMainWindow())
+			else if (isTopLevel(under_mouse) && under_mouse != vipGetMainWindow())
 				return false;
 			under_mouse = under_mouse->parentWidget();
 		}
@@ -335,7 +347,11 @@ void VipToolWidgetTitleBar::updateTitleAndPosition()
 void VipToolWidgetTitleBar::paintEvent(QPaintEvent*)
 {
 	QStyleOption opt;
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
 	opt.init(this);
+#else
+	opt.initFrom(this);
+#endif
 	QPainter p(this);
 	style()->drawPrimitive(QStyle::PE_Widget, &opt, &p, this);
 

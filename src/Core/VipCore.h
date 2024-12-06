@@ -194,6 +194,7 @@ QList<T> vipListCast(const QVariantList& lst)
 	return res;
 }
 
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
 /// @brief Cast a QVector of QObject pointer to a QList of QObject pointer.
 /// All nullptr pointers or pointers that cannot be cast to the output type are removed.
 template<class T, class U>
@@ -205,6 +206,7 @@ QList<T> vipListCast(const QVector<U>& lst)
 			res.append(tmp);
 	return res;
 }
+#endif
 
 /// @brief Make a QList unique (remove all duplicates)
 template<class T>
@@ -296,7 +298,7 @@ VIP_CORE_EXPORT bool vipSafeVariantSave(QDataStream& s, const QVariant& v);
 /// except that it only save the valid entries (and silently drop the unvalid ones with #vipSafeVariantSave).
 /// Returns the number of entry saved.
 /// The QVariantMap can be read back with the standard version of QDataStream & operator>>(QDataStream &, QVariantMap&);
-VIP_CORE_EXPORT int vipSafeVariantMapSave(QDataStream& s, const QVariantMap& c);
+VIP_CORE_EXPORT qsizetype vipSafeVariantMapSave(QDataStream& s, const QVariantMap& c);
 
 /// \internal add a function that will be called in QCoreApplication constructor. Should only be used by Thermavip SDK libraries.
 VIP_CORE_EXPORT bool vipAddInitializationFunction(const VipFunction<0>& fun);
@@ -393,7 +395,7 @@ VIP_CORE_EXPORT QList<VipFunctionObject> vipAllFunctions();
 
 /// \internal Add a serialize and deserialize function that will be used to save/load specific settings from the session file.
 /// This is only used in Thermavip SDK, plugins have their own way to manage serialization.
-VIP_CORE_EXPORT void vipRegisterSettingsArchiveFunctions(void (*save)(VipArchive&), void (*restore)(VipArchive&));
+VIP_CORE_EXPORT bool vipRegisterSettingsArchiveFunctions(void (*save)(VipArchive&), void (*restore)(VipArchive&));
 VIP_CORE_EXPORT void vipSaveSettings(VipArchive& arch);
 VIP_CORE_EXPORT void vipRestoreSettings(VipArchive& arch);
 

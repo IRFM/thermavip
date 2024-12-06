@@ -209,7 +209,6 @@ public:
 	  , elapsed_time(0)
 	  , is_reading(false)
 	  , lastTimeValid(true)
-	  , readMutex(QMutex::Recursive)
 	{
 	}
 
@@ -229,7 +228,7 @@ public:
 	Parameters parameters;
 	QList<Parameters> savedParameters;
 
-	QMutex readMutex;
+	QRecursiveMutex readMutex;
 };
 
 VipIODevice::VipIODevice(QObject* parent)
@@ -502,14 +501,6 @@ VipTimeRange VipIODevice::timeLimits() const
 
 qint64 VipIODevice::posToTime(qint64 pos) const
 {
-	// qint64 time;
-	// if(pos < 0)
-	// time= VipInvalidTime;//firstTime();
-	// else if(pos >= size())
-	// time= VipInvalidTime;//lastTime();
-	// else
-	// time= transformTime(computePosToTime(pos));
-	// return time;
 	if (pos < 0)
 		pos = 0;
 	else if (pos >= size())
@@ -519,17 +510,6 @@ qint64 VipIODevice::posToTime(qint64 pos) const
 
 qint64 VipIODevice::timeToPos(qint64 time) const
 {
-	// time = invTransformTime(time);
-	// const VipTimeRangeList window = computeTimeWindow();
-	// qint64 pos = VipInvalidPosition;
-	// if(window.size() && time >= window.first().first && time <= window.last().second)
-	// {
-	// qint64 valid_time;
-	// vipDistance(window,time,&valid_time);
-	// pos = computeTimeToPos(valid_time);
-	// }
-	//
-	// return pos;
 	VipTimeRange range = timeLimits();
 	if (time < range.first)
 		time = range.first;
@@ -738,7 +718,6 @@ bool VipIODevice::stopStreaming()
 	return setStreamingEnabled(false);
 }
 
-#include <qregexp.h>
 bool VipIODevice::supportFilename(const QString& fname) const
 {
 	QString suffix = QFileInfo(fname).suffix();
@@ -807,7 +786,7 @@ QList<VipProcessingObject::Info> VipIODevice::possibleReadDevices(const VipPath&
 				if (!accept_output) {
 					for (int o = 0; o < device->outputCount(); ++o) {
 						QVariant v = device->outputAt(o)->data().data();
-						if (v.canConvert(out_value.userType()) || v.userType() == 0) {
+						if (v.canConvert(VIP_META(out_value.userType())) || v.userType() == 0) {
 							accept_output = true;
 							break;
 						}
@@ -1034,7 +1013,6 @@ public:
 	  , dirty_time_window(true)
 	  , device_type(Resource)
 	  , dirty_children(nullptr)
-	  , device_mutex(QMutex::Recursive)
 	  , thread(parent)
 	  , maxReadThreadCount(0)
 	  , readMaxFPS(100)
@@ -1054,7 +1032,7 @@ public:
 	DeviceType device_type;
 	QObject* dirty_children;
 	QVector<VipIODevice*> read_devices; // use a vector to disable COW (very minor optimization, mainly for openmp)
-	QMutex device_mutex;
+	QRecursiveMutex device_mutex;
 	PlayThread thread;
 	// QSharedPointer<VipThreadPool> readPool;
 
@@ -1419,15 +1397,15 @@ int VipProcessingPool::maxListMemory() const
 }
 bool VipProcessingPool::hasMaxListSize() const
 {
-	return d_data->parameters.maxListSize;
+	return d_data->parameters.maxListSize.data();
 }
 bool VipProcessingPool::hasMaxListMemory() const
 {
-	return d_data->parameters.maxListMemory;
+	return d_data->parameters.maxListMemory.data();
 }
 bool VipProcessingPool::hasListLimitType() const
 {
-	return d_data->parameters.listLimitType;
+	return d_data->parameters.listLimitType.data();
 }
 
 void VipProcessingPool::clearInputBuffers()
@@ -1530,7 +1508,7 @@ void VipProcessingPool::resetLogErrors()
 
 bool VipProcessingPool::hasLogErrors() const
 {
-	return d_data->parameters.logErrors;
+	return d_data->parameters.logErrors.data();
 }
 
 void VipProcessingPool::setReadMaxFPS(int fps)

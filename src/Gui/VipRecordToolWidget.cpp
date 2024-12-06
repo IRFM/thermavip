@@ -1303,12 +1303,12 @@ void VipRecordToolWidget::launchRecord(bool launch)
 	else {
 		if (d_data->itemList->count() == 1) {
 			PlotListWidgetItem* item = static_cast<PlotListWidgetItem*>(d_data->itemList->item(0));
-			if (VipAbstractPlayer* player = d_data->sourceWidget->findChild<VipAbstractPlayer*>()) {
-				d_data->recorder->recorder()->setProperty("player", QVariant::fromValue(player));
-			}
-			else if (VipAbstractPlayer* player2 = VipAbstractPlayer::findAbstractPlayer(item->item)) {
-				d_data->recorder->recorder()->setProperty("player", QVariant::fromValue(player2));
-			}
+			VipAbstractPlayer* player = nullptr;
+			if (d_data->sourceWidget)
+				player = d_data->sourceWidget->findChild<VipAbstractPlayer*>();
+			if (!player)
+				player = VipAbstractPlayer::findAbstractPlayer(item->item);
+			d_data->recorder->recorder()->setProperty("player", QVariant::fromValue(player));
 		}
 	}
 

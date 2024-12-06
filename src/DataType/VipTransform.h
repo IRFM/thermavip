@@ -53,22 +53,22 @@ namespace Vip
 
 namespace detail
 {
-	template<class Coord, int Pos, bool IsValid = (Coord::static_size == -1 || Coord::static_size > Pos)>
+	template<class Coord, qsizetype Pos, bool IsValid = (Coord::static_size == -1 || Coord::static_size > Pos)>
 	struct GetCoord
 	{
-		static int get(const Coord& c) { return c[Pos]; }
+		static qsizetype get(const Coord& c) { return c[Pos]; }
 	};
-	template<class Coord, int Pos>
+	template<class Coord, qsizetype Pos>
 	struct GetCoord<Coord,Pos,false>
 	{
-		static int get(const Coord& ) { return 0; }
+		static qsizetype get(const Coord& ) { return 0; }
 	};
 
 
 	template<class Array>
-	typename Array::value_type getVal(const Array& ar, int y, int x)
+	typename Array::value_type getVal(const Array& ar, qsizetype y, qsizetype x)
 	{
-		VipHybridVector<int, 2> p; // = { {y,x} };
+		VipCoordinate<2> p; // = { {y,x} };
 		p[0] = y;
 		p[1] = x;
 		return ar(p);
@@ -83,14 +83,14 @@ namespace detail
 	struct InterpVal
 	{
 		template<class Array, class T>
-		static VIP_ALWAYS_INLINE typename Array::value_type apply(const Array& ar, double x, double y, int w, int h, const T& background)
+		static VIP_ALWAYS_INLINE typename Array::value_type apply(const Array& ar, double x, double y, qsizetype w, qsizetype h, const T& background)
 		{
-			int _x = (int)(x + 0.5);
-			int _y = (int)(y + 0.5);
+			qsizetype _x = (qsizetype)(x + 0.5);
+			qsizetype _y = (qsizetype)(y + 0.5);
 			if (_x < 0 || _x >= w || _y < 0 || _y >= h)
 				return background;
 
-			VipHybridVector<int, 2> p;
+			VipCoordinate<2> p;
 			(p[0]) = _y;
 			(p[1]) = _x;
 			return ar(p);
@@ -100,15 +100,15 @@ namespace detail
 	struct InterpVal<true>
 	{
 		template<class Array, class T>
-		static VIP_ALWAYS_INLINE typename Array::value_type apply(const Array& ar, double x, double y, int w, int h, const T& background)
+		static VIP_ALWAYS_INLINE typename Array::value_type apply(const Array& ar, double x, double y, qsizetype w, qsizetype h, const T& background)
 		{
 			if (x < -1 || x > w || y < -1 || y > h)
 				return background;
 
-			const int leftCellEdge = x < 0 ? -1 : x;
-			const int topCellEdge = y < 0 ? -1 : y;
-			const int rightCellEdge = leftCellEdge + 1;
-			const int bottomCellEdge = topCellEdge + 1;
+			const qsizetype leftCellEdge = x < 0 ? -1 : x;
+			const qsizetype topCellEdge = y < 0 ? -1 : y;
+			const qsizetype rightCellEdge = leftCellEdge + 1;
+			const qsizetype bottomCellEdge = topCellEdge + 1;
 			const bool inBottom = bottomCellEdge < h;
 			const bool inTop = topCellEdge >= 0;
 			const bool inLeft = leftCellEdge >= 0;
@@ -132,7 +132,7 @@ namespace detail
 	{
 		_ENSURE_OPERATOR1_DEF(BaseOperator1<typename DeduceArrayType<Array>::value_type, Array>)
 
-		static const int access_type = Vip::Position;
+		static const qsizetype access_type = Vip::Position;
 
 		QTransform tr;
 		QPoint origin;
@@ -140,7 +140,7 @@ namespace detail
 		VipNDArrayShape sh;
 		const QTransform::TransformationType type;
 		value_type background;
-		const int w, h;
+		const qsizetype w, h;
 		QRect rect;
 
 		Transform()

@@ -47,7 +47,7 @@ namespace detail
 		  , value(start)
 		{
 		}
-		void setAt(int, const value_type& v) { value = functor(value, v); }
+		void setAt(qsizetype, const value_type& v) { value = functor(value, v); }
 		template<class ShapeType>
 		void setPos(const ShapeType&, const value_type& v)
 		{
@@ -65,7 +65,7 @@ namespace detail
 /// VipNDArrayType<int> ar(vipVector(3, 3));
 /// for (int i = 0; i < ar.size(); ++i)
 /// ar[i] = i;
-/// int cum_sum = vipAccumulate(ar, [](int a, int b) {return a + b; }, 0);
+/// int cum_sum = vipAccumulate(ar, [](qsizetype a, qsizetype b) {return a + b; }, 0);
 /// \endcode
 ///
 /// Note that the start value type determines the return type of vipAccumulate.
@@ -87,7 +87,7 @@ T vipAccumulate(const Array& ar, const Fun& functor, const T& start, bool* ok = 
 /// VipNDArrayType<int> ar(vipVector(3, 3));
 /// for (int i = 0; i < ar.size(); ++i)
 /// ar[i] = i;
-/// int cum_sum = vipAccumulate(ar, [](int a, int b) {return a + b; }, 0);
+/// int cum_sum = vipAccumulate(ar, [](qsizetype a, qsizetype b) {return a + b; }, 0);
 /// \endcode
 ///
 /// Note that the start value type determines the return type of vipAccumulate.

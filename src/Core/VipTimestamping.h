@@ -226,14 +226,16 @@ public:
 
 Q_DECLARE_METATYPE(VipTimeRange)
 Q_DECLARE_METATYPE(VipTimeRangeList)
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
 Q_DECLARE_METATYPE(VipTimeRangeVector)
+#endif
 Q_DECLARE_METATYPE(VipTimestamps)
 Q_DECLARE_METATYPE(VipTimeRangeTransforms)
 Q_DECLARE_METATYPE(VipTimestampingFilter)
 
 class QDataStream;
-QDataStream& operator<<(QDataStream&, const VipTimestampingFilter& filter);
-QDataStream& operator>>(QDataStream&, VipTimestampingFilter& filter);
+VIP_CORE_EXPORT QDataStream& operator<<(QDataStream&, const VipTimestampingFilter& filter);
+VIP_CORE_EXPORT QDataStream& operator>>(QDataStream&, VipTimestampingFilter& filter);
 
 /// @}
 // end Core

@@ -41,13 +41,12 @@ class VipTypeId::PrivateData
 {
 public:
 	PrivateData()
-	  : mutex(QMutex::Recursive)
 	{
 	}
 	const QMetaObject* metaobject;
 	QMap<int, QPointer<QObject>> ids;
 	QMap<QObject*, int> objects_to_id;
-	QMutex mutex;
+	QRecursiveMutex mutex;
 };
 
 VipTypeId::VipTypeId()
@@ -229,12 +228,8 @@ struct TypeIdPtr
 class VipUniqueId::PrivateData
 {
 public:
-	PrivateData()
-	  : mutex(QMutex::Recursive)
-	{
-	}
 	QMap<const QMetaObject*, TypeIdPtr> ids;
-	QMutex mutex;
+	QRecursiveMutex mutex;
 };
 
 VipUniqueId& VipUniqueId::instance()

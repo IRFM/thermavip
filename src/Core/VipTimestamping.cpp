@@ -482,7 +482,7 @@ bool VipTimestampingFilter::setTransform(const QTransform& tr, int index)
 		return false;
 
 	VipTimeRangeTransforms::iterator it = m_transforms.begin();
-	it += index;
+	std::advance(it , index);
 
 	VipTimeRange r = it.key();
 	VipTimeRange out(tr.map(QPointF(r.first, 0)).x(), tr.map(QPointF(r.second, 0)).x());

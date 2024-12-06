@@ -792,12 +792,12 @@ protected:
 		// {
 		// //find the right insertion position
 		// int insertPos = this->count();
-		// QListWidgetItem * item = itemAt(evt->pos());
+		// QListWidgetItem * item = itemAt(evt->VIP_EVT_POSITION());
 		// if(item)
 		// {
 		// QRect rect = this->visualItemRect(item);
 		// insertPos = this->indexFromItem(item).row();
-		// if(evt->pos().y() > rect.center().y())
+		// if(evt->VIP_EVT_POSITION().y() > rect.center().y())
 		//	insertPos++;
 		// }
 		//
@@ -820,11 +820,11 @@ protected:
 		// find the right insertion position
 
 		int insertPos = this->count();
-		QListWidgetItem* item = itemAt(evt->pos());
+		QListWidgetItem* item = itemAt(evt->VIP_EVT_POSITION());
 		if (item) {
 			QRect rect = this->visualItemRect(item);
 			insertPos = this->indexFromItem(item).row();
-			if (evt->pos().y() > rect.center().y())
+			if (evt->VIP_EVT_POSITION().y() > rect.center().y())
 				insertPos++;
 		}
 
@@ -875,8 +875,11 @@ protected:
 			connect(copy, SIGNAL(triggered(bool)), editor, SLOT(copySelection()));
 			connect(cut, SIGNAL(triggered(bool)), editor, SLOT(cutSelection()));
 			connect(paste, SIGNAL(triggered(bool)), editor, SLOT(pasteCopiedItems()));
-
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
 			menu.exec(evt->screenPos().toPoint());
+#else
+			menu.exec(evt->globalPosition().toPoint());
+#endif
 		}
 	}
 };
@@ -2854,7 +2857,11 @@ protected:
 			connect(menu.addAction("Add shear"), SIGNAL(triggered(bool)), editor, SLOT(addShear()));
 			menu.addSeparator();
 			connect(menu.addAction("Remove selection"), SIGNAL(triggered(bool)), editor, SLOT(removeSelectedTransform()));
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
 			menu.exec(evt->globalPos());
+#else
+			menu.exec(evt->globalPosition().toPoint());
+#endif
 		}
 	}
 	virtual void keyPressEvent(QKeyEvent* evt)
@@ -2886,12 +2893,12 @@ protected:
 		{
 			//find the right insertion position
 			int insertPos = this->count();
-			QListWidgetItem * item = itemAt(evt->pos());
+			QListWidgetItem * item = itemAt(evt->VIP_EVT_POSITION());
 			if (item)
 			{
 				QRect rect = this->visualItemRect(item);
 				insertPos = this->indexFromItem(item).row();
-				if (evt->pos().y() > rect.center().y())
+				if (evt->VIP_EVT_POSITION().y() > rect.center().y())
 					insertPos++;
 			}
 

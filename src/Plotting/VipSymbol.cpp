@@ -34,7 +34,6 @@
 #include "VipShapeDevice.h"
 
 #include <QApplication>
-#include <QGLWidget>
 #include <QPaintEngine>
 #include <QPainter>
 #include <QPainterPath>

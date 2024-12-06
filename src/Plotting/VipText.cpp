@@ -45,7 +45,6 @@
 #include <QTextStream>
 #include <qabstracttextdocumentlayout.h>
 #include <qapplication.h>
-#include <qdesktopwidget.h>
 #include <qimage.h>
 #include <qmap.h>
 #include <qmath.h>

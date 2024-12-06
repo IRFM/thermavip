@@ -45,7 +45,7 @@
 #include <qguiapplication.h>
 #include <qopenglcontext.h>
 #include <qopenglpaintdevice.h>
-#include <qopenglwidget.h>
+#include <QOpenGLWidget>
 #include <qpaintengine.h>
 #include <qpainter.h>
 #include <qpainterpath.h>
@@ -250,37 +250,45 @@ namespace detail
 
 struct TiledPixmapItem
 {
-	const QRectF rect;
-	const QPixmap pixmap;
-	const QPointF pos;
+	QRectF rect;
+	QPixmap pixmap;
+	QPointF pos;
+	TiledPixmapItem() = default;
+	VIP_DEFAULT_MOVE(TiledPixmapItem);
 };
 
 struct PixmapItem
 {
-	const QRectF rect;
-	const QPixmap pixmap;
-	const QRectF src;
-	const QTransform tr;
-	const bool has_tr{ false };
+	QRectF rect;
+	QPixmap pixmap;
+	QRectF src;
+	QTransform tr;
+	bool has_tr{ false };
+	PixmapItem() = default;
+	VIP_DEFAULT_MOVE(PixmapItem);
 };
 
 struct ImageItem
 {
-	const QRectF rect;
-	const QImage image;
-	const QRectF src;
-	const Qt::ImageConversionFlags flags;
-	const QTransform tr;
-	const bool has_tr{ false };
+	QRectF rect;
+	QImage image;
+	QRectF src;
+	Qt::ImageConversionFlags flags;
+	QTransform tr;
+	bool has_tr{ false };
+	ImageItem() = default;
+	VIP_DEFAULT_MOVE(ImageItem);
 };
 
 struct TextItem
 {
-	const QString item;
-	const QPointF pos;
-	const QFont font;
-	const QTransform tr;
-	const bool has_tr{ false };
+	QString item;
+	QPointF pos;
+	QFont font;
+	QTransform tr;
+	bool has_tr{ false };
+	TextItem() = default;
+	VIP_DEFAULT_MOVE(TextItem);
 };
 
 using PixmapVector = QVector<PixmapItem>;

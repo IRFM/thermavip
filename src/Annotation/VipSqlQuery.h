@@ -128,7 +128,7 @@ VIP_ANNOTATION_EXPORT QStringList vipAnalysisStatusDB();
 /// @brief Returns the list of possible devices from the DB based on the 'devices' table
 VIP_ANNOTATION_EXPORT QStringList vipDevicesDB();
 /// @brief Returns the possible datasets from the DB based on the 'datasets' table
-VIP_ANNOTATION_EXPORT QMap<int, VipDataset> vipDatasetsDB();
+VIP_ANNOTATION_EXPORT QMap<qsizetype, VipDataset> vipDatasetsDB();
 /// @brief Returns the possible annotation methods from the DB based on the 'methods' table
 VIP_ANNOTATION_EXPORT QStringList vipMethodsDB();
 /// @brief Returns the list of event types from the DB based on the 'thermal_event_categories' table
@@ -301,7 +301,7 @@ VIP_ANNOTATION_EXPORT Vip_event_list vipExtractEvents(const VipFullQueryResult& 
 
 /// @brief Simplify input polygon in order to have at most max_points.
 /// Internally uses vipRDPSimplifyPolygon().
-VIP_ANNOTATION_EXPORT QPolygonF vipSimplifyPolygonDB(const QPolygonF& poly, int max_points);
+VIP_ANNOTATION_EXPORT QPolygonF vipSimplifyPolygonDB(const QPolygonF& poly, qsizetype max_points);
 
 /// @brief Convert input events to JSON format
 VIP_ANNOTATION_EXPORT QByteArray vipEventsToJson(const Vip_event_list& evts, VipProgress* progress = nullptr);
@@ -492,8 +492,11 @@ private Q_SLOTS:
 Q_SIGNALS:
 	void changed();
 
+protected:
+	virtual void showEvent(QShowEvent* evt);
+
 private:
-	
+	void init();
 	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 

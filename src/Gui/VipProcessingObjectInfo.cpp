@@ -1409,9 +1409,7 @@ void VipProcessingObjectInfo::showEvent(QShowEvent* evt)
 
 void VipProcessingObjectInfo::search()
 {
-	QRegExp exp(d_data->search.text());
-	exp.setCaseSensitivity(Qt::CaseInsensitive);
-	exp.setPatternSyntax(QRegExp::Wildcard);
+	QRegExp exp = vipFromWildcard(d_data->search.text(),Qt::CaseInsensitive);
 
 	bool restore = d_data->search.text().isEmpty();
 

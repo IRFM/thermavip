@@ -49,7 +49,7 @@ public:
 	  : QVector<VipPoint>()
 	{
 	}
-	VipPointVector(int size)
+	VipPointVector(qsizetype size)
 	  : QVector<VipPoint>(size)
 	{
 	}
@@ -95,7 +95,7 @@ public:
 			return QRectF(first(), first());
 		else {
 			QRectF r = QRectF(at(0), at(1)).normalized();
-			for (int i = 2; i < size(); ++i) {
+			for (qsizetype i = 2; i < size(); ++i) {
 				const VipPoint p = (*this)[i];
 				if (p.x() > r.right())
 					r.setRight(p.x());
@@ -113,7 +113,7 @@ public:
 	QVector<QPointF> toPointF() const
 	{
 		QVector<QPointF> res(size());
-		for (int i = 0; i < size(); ++i)
+		for (qsizetype i = 0; i < size(); ++i)
 			res[i] = (*this)[i].toPointF();
 		return res;
 	}

@@ -73,6 +73,7 @@
 #include "vtkCommand.h"
 #include "vtkObjectFactory.h"
 #include "vtkRenderWindow.h"
+#include "VipConfig.h"
 
 #include <QEvent>
 #include <QResizeEvent>
@@ -84,6 +85,7 @@
 
 #include <map>
 #include <vector>
+
 
 // function to get VTK keysyms from ascii characters
 static const char* ascii_to_key_sym(int);
@@ -138,8 +140,12 @@ bool QVTKInteractorAdapter::ProcessEvent(QEvent* e, vtkRenderWindowInteractor* i
 		QMouseEvent* e2 = static_cast<QMouseEvent*>(e);
 
 		// give interactor the event information
-		iren->SetEventInformationFlipY(
-		  e2->x(), e2->y(), (e2->modifiers() & Qt::ControlModifier) > 0 ? 1 : 0, (e2->modifiers() & Qt::ShiftModifier) > 0 ? 1 : 0, 0, e2->type() == QEvent::MouseButtonDblClick ? 1 : 0);
+		iren->SetEventInformationFlipY(e2->VIP_EVT_POSITION().x(),
+					       e2->VIP_EVT_POSITION().y(),
+					       (e2->modifiers() & Qt::ControlModifier) > 0 ? 1 : 0,
+					       (e2->modifiers() & Qt::ShiftModifier) > 0 ? 1 : 0,
+					       0,
+					       e2->type() == QEvent::MouseButtonDblClick ? 1 : 0);
 
 		if (t == QEvent::MouseMove) {
 			iren->InvokeEvent(vtkCommand::MouseMoveEvent, e2);
@@ -229,7 +235,7 @@ bool QVTKInteractorAdapter::ProcessEvent(QEvent* e, vtkRenderWindowInteractor* i
 	if (t == QEvent::Wheel) {
 		QWheelEvent* e2 = static_cast<QWheelEvent*>(e);
 
-		iren->SetEventInformationFlipY(e2->position().x(), e2->position() .y(), (e2->modifiers() & Qt::ControlModifier) > 0 ? 1 : 0, (e2->modifiers() & Qt::ShiftModifier) > 0 ? 1 : 0);
+		iren->SetEventInformationFlipY(e2->VIP_EVT_POSITION().x(), e2->VIP_EVT_POSITION().y(), (e2->modifiers() & Qt::ControlModifier) > 0 ? 1 : 0, (e2->modifiers() & Qt::ShiftModifier) > 0 ? 1 : 0);
 
 		// invoke vtk event
 		// if delta is positive, it is a forward wheel event
@@ -276,7 +282,7 @@ bool QVTKInteractorAdapter::ProcessEvent(QEvent* e, vtkRenderWindowInteractor* i
 		QDragMoveEvent* e2 = static_cast<QDragMoveEvent*>(e);
 
 		// give interactor the event information
-		iren->SetEventInformationFlipY(e2->pos().x(), e2->pos().y());
+		iren->SetEventInformationFlipY(e2->VIP_EVT_POSITION().x(), e2->VIP_EVT_POSITION().y());
 
 		// invoke event and pass qt event for additional data as well
 		iren->InvokeEvent(QVTKInteractor::DragMoveEvent, e2);
@@ -287,7 +293,7 @@ bool QVTKInteractorAdapter::ProcessEvent(QEvent* e, vtkRenderWindowInteractor* i
 		QDropEvent* e2 = static_cast<QDropEvent*>(e);
 
 		// give interactor the event information
-		iren->SetEventInformationFlipY(e2->pos().x(), e2->pos().y());
+		iren->SetEventInformationFlipY(e2->VIP_EVT_POSITION().x(), e2->VIP_EVT_POSITION().y());
 
 		// invoke event and pass qt event for additional data as well
 		iren->InvokeEvent(QVTKInteractor::DropEvent, e2);
@@ -736,7 +742,7 @@ void QVTKInteractor::Initialize()
 #endif
 	this->Initialized = 1;
 	this->Enable();
-}
+} 
 
 #if defined(VTK_USE_TDX) && defined(Q_WS_X11)
 // ----------------------------------------------------------------------------

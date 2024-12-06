@@ -146,15 +146,15 @@ namespace detail
 	};
 
 	/// Compute offset based on strides and position for VipNDArrayType only
-	template<int Dim>
+	template<qsizetype Dim>
 	struct Offset
 	{
 		template<class Strides>
-		static int compute(const Strides& str, const VipHybridVector<int, Dim>& pos)
+		static qsizetype compute(const Strides& str, const VipCoordinate<Dim>& pos)
 		{
 			// default implementation
-			int p = pos.last();
-			for (int i = pos.size() - 2; i >= 0; --i)
+			qsizetype p = pos.last();
+			for (qsizetype i = pos.size() - 2; i >= 0; --i)
 				p += str[i] * pos[i];
 			return p;
 		}
@@ -163,7 +163,7 @@ namespace detail
 	struct Offset<1>
 	{
 		template<class Strides>
-		static int compute(const Strides&, const VipHybridVector<int, 1>& pos)
+		static qsizetype compute(const Strides&, const VipCoordinate<1>& pos)
 		{
 			return pos[0];
 		}
@@ -172,7 +172,7 @@ namespace detail
 	struct Offset<2>
 	{
 		template<class Strides>
-		static int compute(const Strides& str, const VipHybridVector<int, 2>& pos)
+		static qsizetype compute(const Strides& str, const VipCoordinate<2>& pos)
 		{
 			return pos[0] * str[0] + pos[1];
 		}
@@ -181,7 +181,7 @@ namespace detail
 	struct Offset<3>
 	{
 		template<class Strides>
-		static int compute(const Strides& str, const VipHybridVector<int, 3>& pos)
+		static qsizetype compute(const Strides& str, const VipCoordinate<3>& pos)
 		{
 			return pos[0] * str[0] + pos[1] * str[1] + pos[2];
 		}
@@ -202,7 +202,7 @@ namespace detail
 	struct ConstValue : BaseExpression
 	{
 		typedef T value_type;
-		static const int access_type = Vip::Flat | Vip::Position | Vip::Cwise;
+		static const qsizetype access_type = Vip::Flat | Vip::Position | Vip::Cwise;
 		const T value;
 		ConstValue()
 		  : value(T())
@@ -239,7 +239,7 @@ namespace detail
 		{
 			return value;
 		}
-		value_type operator[](int) const { return value; }
+		value_type operator[](qsizetype) const { return value; }
 	};
 
 	/// Specialization for QVariant
@@ -247,7 +247,7 @@ namespace detail
 	struct ConstValue<QVariant> : BaseExpression
 	{
 		typedef NullType value_type;
-		static const int access_type = Vip::Flat | Vip::Position | Vip::Cwise;
+		static const qsizetype access_type = Vip::Flat | Vip::Position | Vip::Cwise;
 		const QVariant value;
 		ConstValue() {}
 		template<class T>
@@ -268,7 +268,7 @@ namespace detail
 		{
 			return value;
 		}
-		QVariant operator[](int) const { return QVariant(); }
+		QVariant operator[](qsizetype) const { return QVariant(); }
 	};
 
 	/// Get object shape
@@ -277,12 +277,12 @@ namespace detail
 	{
 		return obj.shape();
 	}
-	template<class T, int Dims>
+	template<class T, qsizetype Dims>
 	const VipNDArrayShape& GetShape(const VipNDArrayType<T, Dims>& obj) noexcept
 	{
 		return obj.VipNDArray::shape();
 	}
-	template<class T, int Dims>
+	template<class T, qsizetype Dims>
 	const VipNDArrayShape& GetShape(const VipNDArrayTypeView<T, Dims>& obj) noexcept
 	{
 		return obj.VipNDArray::shape();
@@ -296,7 +296,7 @@ namespace detail
 	struct ArrayWrapper : BaseExpression
 	{
 		typedef typename Array::value_type value_type;
-		static const int access_type = Array::access_type;
+		static const qsizetype access_type = Array::access_type;
 		const Array& array;
 		const value_type* ptr;
 		ArrayWrapper() {}
@@ -314,14 +314,14 @@ namespace detail
 		{
 			return array(pos);
 		}
-		value_type operator[](int i) const { return ptr[i]; }
+		value_type operator[](qsizetype i) const { return ptr[i]; }
 	};
 	/// Specialization for VipNDArrayType
-	template<class T, int NDims>
+	template<class T, qsizetype NDims>
 	struct ArrayWrapper<VipNDArrayType<T, NDims>> : BaseExpression
 	{
 		typedef T value_type;
-		static const int access_type = Vip::Flat | Vip::Position | Vip::Cwise;
+		static const qsizetype access_type = Vip::Flat | Vip::Position | Vip::Cwise;
 		const VipNDArrayType<T, NDims> array;
 		// VipNDArrayShape _shape;
 		//  VipNDArrayShape strides;
@@ -359,7 +359,7 @@ namespace detail
 		  // _dataType = array.dataType();
 		  // ptr = array.ptr();
 		// }
-		template<int ONDims>
+		template<qsizetype ONDims>
 		ArrayWrapper(const VipNDArrayType<T, ONDims>& array)
 		  : array(array)
 		  , ptr(array.ptr())
@@ -380,7 +380,7 @@ namespace detail
 		{
 			return ptr[Offset<ShapeType::static_size>::compute(array.strides(), pos)];
 		}
-		value_type operator[](int i) const { return ptr[i]; }
+		value_type operator[](qsizetype i) const { return ptr[i]; }
 	};
 
 	// rebind U to T
@@ -405,14 +405,14 @@ namespace detail
 		static type cast(const U& a) { return type(a); }
 	};
 	// rebind VipNDArrayType class (does not change the type)
-	template<class T, class U, int NDims>
+	template<class T, class U, qsizetype NDims>
 	struct rebind<T, VipNDArrayType<U, NDims>, true>
 	{
 		typedef ArrayWrapper<VipNDArrayType<U, NDims>> type;
 		static type cast(const VipNDArrayType<U, NDims>& a) { return a; }
 	};
 	// rebind VipNDArrayTypeView class (does not change the type)
-	template<class T, class U, int NDims>
+	template<class T, class U, qsizetype NDims>
 	struct rebind<T, VipNDArrayTypeView<U, NDims>, true>
 	{
 		typedef VipNDArrayTypeView<U, NDims> type;
@@ -538,13 +538,13 @@ namespace detail
 		typedef Array array_type;
 		typedef typename Array::value_type value_type;
 	};
-	template<class T, int NDims>
+	template<class T, qsizetype NDims>
 	struct DeduceArrayType<VipNDArrayType<T, NDims>, true>
 	{
 		typedef ArrayWrapper<VipNDArrayType<T, NDims>> array_type;
 		typedef T value_type;
 	};
-	template<class T, int NDims>
+	template<class T, qsizetype NDims>
 	struct DeduceArrayType<VipNDArrayTypeView<T, NDims>, true>
 	{
 		typedef ArrayWrapper<VipNDArrayTypeView<T, NDims>> array_type;
@@ -624,7 +624,7 @@ namespace detail
 		typedef BaseOperator1<T, ArrayType> base_type;
 		typedef T value_type;
 		typedef typename DeduceArrayType<ArrayType>::array_type array_type1;
-		static const int access_type = array_type1::access_type;
+		static const qsizetype access_type = array_type1::access_type;
 		const array_type1 array1;
 		int dataType() const { return std::is_same<T, NullType>::value ? array1.dataType() : qMetaTypeId<T>(); }
 		bool isEmpty() const { return array1.isEmpty(); }
@@ -641,7 +641,7 @@ namespace detail
 		{
 			return value_type();
 		}
-		value_type operator[](int) const { return value_type(); }
+		value_type operator[](qsizetype) const { return value_type(); }
 	};
 
 #define _ENSURE_OPERATOR1_DEF(...)                                                                                                                                                                     \
@@ -662,7 +662,7 @@ namespace detail
 		typedef T value_type;
 		typedef typename DeduceArrayType<ArrayType1>::array_type array_type1;
 		typedef typename DeduceArrayType<ArrayType2>::array_type array_type2;
-		static const int access_type = array_type1::access_type & array_type2::access_type;
+		static const qsizetype access_type = array_type1::access_type & array_type2::access_type;
 		const array_type1 array1;
 		const array_type2 array2;
 		const VipNDArrayShape* sh;
@@ -710,7 +710,7 @@ namespace detail
 		{
 			return value_type();
 		}
-		value_type operator[](int) const { return value_type(); }
+		value_type operator[](qsizetype) const { return value_type(); }
 	};
 
 #define _ENSURE_OPERATOR2_DEF(...)                                                                                                                                                                     \
@@ -730,7 +730,7 @@ namespace detail
 		typedef typename DeduceArrayType<ArrayType1>::array_type array_type1;
 		typedef typename DeduceArrayType<ArrayType2>::array_type array_type2;
 		typedef typename DeduceArrayType<ArrayType3>::array_type array_type3;
-		static const int access_type = array_type1::access_type & array_type2::access_type & array_type3::access_type;
+		static const qsizetype access_type = array_type1::access_type & array_type2::access_type & array_type3::access_type;
 		const array_type1 array1;
 		const array_type2 array2;
 		const array_type3 array3;
@@ -778,7 +778,7 @@ namespace detail
 		{
 			return value_type();
 		}
-		value_type operator[](int) const { return value_type(); }
+		value_type operator[](qsizetype) const { return value_type(); }
 	};
 
 #define _ENSURE_OPERATOR3_DEF(...)                                                                                                                                                                     \
@@ -886,7 +886,7 @@ namespace detail
 			{                                                                                                                                                                              \
 				return cast::invariant_cast(this->array1(pos)) op cast::invariant_cast(this->array2(pos));                                                                             \
 			}                                                                                                                                                                              \
-			typename base_type::value_type operator[](int index) const { return cast::invariant_cast(this->array1[index]) op cast::invariant_cast(this->array2[index]); }                  \
+			typename base_type::value_type operator[](qsizetype index) const { return cast::invariant_cast(this->array1[index]) op cast::invariant_cast(this->array2[index]); }                  \
 		};                                                                                                                                                                                     \
 		template<class A1, class A2>                                                                                                                                                           \
 		struct Fun<A1, A2, true> : BaseOperator2<NullType, A1, A2>                                                                                                                             \
@@ -968,7 +968,7 @@ namespace detail
 			{                                                                                                                                                                              \
 				return Function(this->array1(pos));                                                                                                                                    \
 			}                                                                                                                                                                              \
-			typename base_type::value_type operator[](int index) const { return Function(this->array1[index]); }                                                                           \
+			typename base_type::value_type operator[](qsizetype index) const { return Function(this->array1[index]); }                                                                           \
 		};                                                                                                                                                                                     \
 		template<class A1>                                                                                                                                                                     \
 		struct Functor<A1, true> : BaseOperator1<NullType, A1>                                                                                                                                 \
@@ -1037,7 +1037,7 @@ namespace detail
 			{                                                                                                                                                                              \
 				return Function(this->array1(pos), this->array2(pos));                                                                                                                 \
 			}                                                                                                                                                                              \
-			typename base_type::value_type operator[](int index) const { return Function(this->array1[index], this->array2[index]); }                                                      \
+			typename base_type::value_type operator[](qsizetype index) const { return Function(this->array1[index], this->array2[index]); }                                                      \
 		};                                                                                                                                                                                     \
 		template<class A1, class A2>                                                                                                                                                           \
 		struct Functor<A1, A2, true> : BaseOperator2<NullType, A1, A2>                                                                                                                         \
@@ -1109,7 +1109,7 @@ namespace detail
 			{                                                                                                                                                                              \
 				return Function(this->array1(pos), this->array2(pos), this->array3(pos));                                                                                              \
 			}                                                                                                                                                                              \
-			typename base_type::value_type operator[](int index) const { return Function(this->array1[index], this->array2[index], this->array3[index]); }                                 \
+			typename base_type::value_type operator[](qsizetype index) const { return Function(this->array1[index], this->array2[index], this->array3[index]); }                                 \
 		};                                                                                                                                                                                     \
 		template<class A1, class A2, class A3>                                                                                                                                                 \
 		struct Functor<A1, A2, A3, true> : BaseOperator3<NullType, A1, A2, A3>                                                                                                                 \
@@ -1142,7 +1142,7 @@ namespace detail
 		const char* p1 = (const char*)&v1;
 		const char* p2 = (const char*)&v2;
 		char* pr = (char*)&res;
-		for (int i = 0; i < sizeof(T); ++i)
+		for (qsizetype i = 0; i < sizeof(T); ++i)
 			pr[i] = p1[i] & p2[i];
 		return res;
 	}
@@ -1158,7 +1158,7 @@ namespace detail
 		const char* p1 = (const char*)&v1;
 		const char* p2 = (const char*)&v2;
 		char* pr = (char*)&res;
-		for (int i = 0; i < sizeof(T); ++i)
+		for (qsizetype i = 0; i < sizeof(T); ++i)
 			pr[i] = p1[i] | p2[i];
 		return res;
 	}
@@ -1174,7 +1174,7 @@ namespace detail
 		const char* p1 = (const char*)&v1;
 		const char* p2 = (const char*)&v2;
 		char* pr = (char*)&res;
-		for (int i = 0; i < sizeof(T); ++i)
+		for (qsizetype i = 0; i < sizeof(T); ++i)
 			pr[i] = p1[i] ^ p2[i];
 		return res;
 	}
@@ -1190,7 +1190,7 @@ namespace detail
 		const char* p1 = (const char*)&v1;
 		const char* p2 = (const char*)&v2;
 		char* pr = (char*)&res;
-		for (int i = 0; i < sizeof(T); ++i)
+		for (qsizetype i = 0; i < sizeof(T); ++i)
 			pr[i] = p1[i] << p2[i];
 		return res;
 	}
@@ -1206,7 +1206,7 @@ namespace detail
 		const char* p1 = (const char*)&v1;
 		const char* p2 = (const char*)&v2;
 		char* pr = (char*)&res;
-		for (int i = 0; i < sizeof(T); ++i)
+		for (qsizetype i = 0; i < sizeof(T); ++i)
 			pr[i] = p1[i] >> p2[i];
 		return res;
 	}
@@ -1264,7 +1264,7 @@ namespace detail
 		T res;
 		const char* p1 = (const char*)&v1;
 		char* pr = (char*)&res;
-		for (int i = 0; i < sizeof(T); ++i)
+		for (qsizetype i = 0; i < sizeof(T); ++i)
 			pr[i] = ~p1[i];
 		return res;
 	}
@@ -1288,7 +1288,7 @@ namespace detail
 		{
 			return ~this->array1(pos);
 		}
-		typename DeduceArrayType<A1>::value_type operator[](int index) const { return reverse(this->array1[index]); }
+		typename DeduceArrayType<A1>::value_type operator[](qsizetype index) const { return reverse(this->array1[index]); }
 	};
 	template<class A1>
 	struct ReverseBits<A1, true> : BaseOperator1<NullType, A1>
@@ -1333,7 +1333,7 @@ namespace detail
 		{
 			return !this->array1(pos);
 		}
-		typename DeduceArrayType<A1>::value_type operator[](int index) const { return !(this->array1[index]); }
+		typename DeduceArrayType<A1>::value_type operator[](qsizetype index) const { return !(this->array1[index]); }
 	};
 	template<class A1>
 	struct Not<A1, true> : BaseOperator1<NullType, A1>
@@ -1444,7 +1444,7 @@ namespace detail
 		{
 			return cast::cast(this->array1(pos));
 		}
-		T operator[](int index) const { return cast::cast(this->array1[index]); }
+		T operator[](qsizetype index) const { return cast::cast(this->array1[index]); }
 	};
 	template<class T, class A1>
 	struct CastOp<T, A1, true> : public BaseOperator1<T, A1>
@@ -1494,28 +1494,28 @@ namespace detail
 		static type cast(const U& u) { return type(rebind<T, U>::cast(u)); }
 	};
 	/// cast VipNDArrayType : return a CastOp
-	template<class T, class U, int NDims>
+	template<class T, class U, qsizetype NDims>
 	struct Cast<T, VipNDArrayType<U, NDims>>
 	{
 		typedef CastOp<T, VipNDArrayType<U, NDims>> type;
 		static type cast(const VipNDArrayType<U, NDims>& u) { return type(u); }
 	};
 	/// cast VipNDArrayType to same type : return array
-	template<class T, int NDims>
+	template<class T, qsizetype NDims>
 	struct Cast<T, VipNDArrayType<T, NDims>>
 	{
 		typedef const VipNDArrayType<T, NDims>& type;
 		static type cast(const VipNDArrayType<T, NDims>& u) { return u; }
 	};
 	/// cast VipNDArrayTypeView : return a CastOp
-	template<class T, class U, int NDims>
+	template<class T, class U, qsizetype NDims>
 	struct Cast<T, VipNDArrayTypeView<U, NDims>>
 	{
 		typedef CastOp<T, VipNDArrayTypeView<U, NDims>> type;
 		static type cast(const VipNDArrayTypeView<U, NDims>& u) { return type(u); }
 	};
 	/// cast VipNDArrayTypeView to same type: return array
-	template<class T, int NDims>
+	template<class T, qsizetype NDims>
 	struct Cast<T, VipNDArrayTypeView<T, NDims>>
 	{
 		typedef const VipNDArrayTypeView<T, NDims>& type;
@@ -1744,7 +1744,7 @@ namespace detail
 		{
 			return (this->array1(pos) ? this->array2(pos) : this->array3(pos));
 		}
-		typename base_type::value_type operator[](int index) const { return this->array1[index] ? this->array2[index] : this->array3[index]; }
+		typename base_type::value_type operator[](qsizetype index) const { return this->array1[index] ? this->array2[index] : this->array3[index]; }
 	};
 	template<class A1, class A2, class A3>
 	struct WhereFun<A1, A2, A3, true> : BaseOperator3<NullType, A1, A2, A3>

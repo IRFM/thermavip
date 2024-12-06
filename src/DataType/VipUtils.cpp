@@ -285,7 +285,7 @@ QTextStream& operator>>(QTextStream& str, VipIntervalSample& p)
 QTextStream& operator<<(QTextStream& stream, const VipIntervalSampleVector& p)
 {
 	stream.setRealNumberPrecision(17);
-	for (int i = 0; i < p.size(); ++i)
+	for (qsizetype i = 0; i < p.size(); ++i)
 		stream << p[i];
 	return stream;
 }
@@ -293,7 +293,7 @@ QTextStream& operator<<(QTextStream& stream, const VipIntervalSampleVector& p)
 QTextStream& operator>>(QTextStream& stream, VipIntervalSampleVector& p)
 {
 	while (true) {
-		int pos = stream.pos();
+		qsizetype pos = stream.pos();
 		VipIntervalSample sample;
 		stream >> sample;
 		if (stream.status() == QTextStream::Ok)
@@ -379,10 +379,10 @@ QTextStream& operator<<(QTextStream& stream, const VipPointVector& p)
 		stream << "\n";
 	}
 	else {
-		for (int i = 0; i < p.size(); ++i)
+		for (qsizetype i = 0; i < p.size(); ++i)
 			stream << (double)p[i].x() << "\t";
 		stream << "\n";
-		for (int i = 0; i < p.size(); ++i)
+		for (qsizetype i = 0; i < p.size(); ++i)
 			stream << (double)p[i].y() << "\t";
 		stream << "\n";
 	}
@@ -410,7 +410,7 @@ QTextStream& operator>>(QTextStream& stream, VipPointVector& p)
 			return stream;
 		}
 		p.resize(values1.size());
-		for (int i = 0; i < p.size(); ++i)
+		for (qsizetype i = 0; i < p.size(); ++i)
 			p[i] = VipPoint(values1[i], values2[i]);
 	}
 	else {
@@ -433,10 +433,10 @@ QTextStream& operator<<(QTextStream& stream, const VipComplexPointVector& p)
 	stream.setRealNumberPrecision(17);
 	// first write the x in a line, then the y
 
-	for (int i = 0; i < p.size(); ++i)
+	for (qsizetype i = 0; i < p.size(); ++i)
 		stream << p[i].x() << "\t";
 	stream << "\n";
-	for (int i = 0; i < p.size(); ++i)
+	for (qsizetype i = 0; i < p.size(); ++i)
 		stream << p[i].y() << "\t";
 	stream << "\n";
 	return stream;
@@ -512,18 +512,18 @@ QDataStream& operator>>(QDataStream& stream, VipNDArray& ar)
 QDataStream& operator<<(QDataStream& s, const VipPointVector& c)
 {
 	s << c.size();
-	for (int i = 0; i < c.size(); ++i)
+	for (qsizetype i = 0; i < c.size(); ++i)
 		s << c[i];
 	return s;
 }
 QDataStream& operator>>(QDataStream& s, VipPointVector& c)
 {
-	int size;
+	qsizetype size;
 	s >> size;
 	c.resize(size);
 
 	unsigned LD_support = s.device()->property("_vip_LD").toUInt();
-	for (int i = 0; i < size; ++i) {
+	for (qsizetype i = 0; i < size; ++i) {
 		c[i].rx() = vipReadLEDouble(LD_support, s);
 		c[i].ry() = vipReadLEDouble(LD_support, s);
 	}
@@ -533,18 +533,18 @@ QDataStream& operator>>(QDataStream& s, VipPointVector& c)
 QDataStream& operator<<(QDataStream& s, const VipComplexPointVector& c)
 {
 	s << c.size();
-	for (int i = 0; i < c.size(); ++i)
+	for (qsizetype i = 0; i < c.size(); ++i)
 		s << c[i];
 	return s;
 }
 QDataStream& operator>>(QDataStream& s, VipComplexPointVector& c)
 {
-	int size;
+	qsizetype size;
 	s >> size;
 	c.resize(size);
 
 	unsigned LD_support = s.device()->property("_vip_LD").toUInt();
-	for (int i = 0; i < size; ++i) {
+	for (qsizetype i = 0; i < size; ++i) {
 		c[i].rx() = vipReadLEDouble(LD_support, s);
 		s >> c[i].ry();
 	}
@@ -554,18 +554,18 @@ QDataStream& operator>>(QDataStream& s, VipComplexPointVector& c)
 QDataStream& operator<<(QDataStream& s, const VipIntervalSampleVector& c)
 {
 	s << c.size();
-	for (int i = 0; i < c.size(); ++i)
+	for (qsizetype i = 0; i < c.size(); ++i)
 		s << c[i];
 	return s;
 }
 QDataStream& operator>>(QDataStream& s, VipIntervalSampleVector& c)
 {
-	int size;
+	qsizetype size;
 	s >> size;
 	c.resize(size);
 
 	unsigned LD_support = s.device()->property("_vip_LD").toUInt();
-	for (int i = 0; i < size; ++i) {
+	for (qsizetype i = 0; i < size; ++i) {
 		c[i].interval.setMinValue(vipReadLEDouble(LD_support, s));
 		c[i].interval.setMaxValue(vipReadLEDouble(LD_support, s));
 		c[i].value = (vipReadLEDouble(LD_support, s));
@@ -578,7 +578,7 @@ static bool isLineEmpty(const QString& line)
 	if (line.isEmpty())
 		return true;
 
-	for (int i = 0; i < line.size(); ++i)
+	for (qsizetype i = 0; i < line.size(); ++i)
 		if (line[i] != ' ' && line[i] != '\t')
 			return false;
 
@@ -637,13 +637,13 @@ QTextStream& operator>>(QTextStream& str, VipNDArray& ar)
 	}
 
 	// read line by line in vector
-	int line_count = 0;
-	int previous_column = 0;
+	qsizetype line_count = 0;
+	qsizetype previous_column = 0;
 	while (true) {
 		if (isLineEmpty(line))
 			break;
 
-		int column_count = 0;
+		qsizetype column_count = 0;
 
 		QTextStream line_stream(&line);
 		if (data_type == qMetaTypeId<VipRGB>()) {
@@ -772,7 +772,7 @@ QTextStream& operator<<(QTextStream& stream, const VipNDArray& ar)
 	// if(array.shapeCount() == 1)
 	// {
 	// VipNDArrayShape pos(1);
-	// for(int i=0; i < array.size(); ++i)
+	// for(qsizetype i=0; i < array.size(); ++i)
 	// {
 	// pos[0]=i;
 	// stream << *static_cast<const QString*>(array.data(pos));
@@ -783,10 +783,10 @@ QTextStream& operator<<(QTextStream& stream, const VipNDArray& ar)
 	// else if(ar.shapeCount()==2)
 	// {
 	// VipNDArrayShape pos(2);
-	// for(int y=0; y < ar.shape(0); ++y)
+	// for(qsizetype y=0; y < ar.shape(0); ++y)
 	// {
 	// pos[0]=y;
-	// for(int x=0; x< ar.shape(1); ++x)
+	// for(qsizetype x=0; x< ar.shape(1); ++x)
 	// {
 	// pos[1] = x;
 	// stream << *static_cast<const QString*>(array.data(pos));
@@ -806,7 +806,7 @@ QTextStream& operator<<(QTextStream& stream, const VipNDArray& ar)
 		stream << "\n";
 	}
 	else if (ar.shapeCount() == 2) {
-		for (int y = 0; y < ar.shape(0); ++y) {
+		for (qsizetype y = 0; y < ar.shape(0); ++y) {
 			ar.handle()->oTextStream(vipVector(y, 0), vipVector(1, ar.shape(1)), stream, "\t");
 			stream << "\n";
 		}
@@ -836,7 +836,7 @@ static VipPointVector pointVectorFromArray(const VipNDArray& ar)
 	VipPointVector res(dar.shape(1));
 	std::vector<vip_double> x(dar.ptr(), dar.ptr() + dar.shape(1));
 	std::vector<vip_double> y(dar.ptr() + dar.shape(1), dar.ptr() + dar.shape(1) * 2);
-	for (int i = 0; i < dar.shape(1); ++i) {
+	for (qsizetype i = 0; i < dar.shape(1); ++i) {
 		res[i] = VipPoint(dar(vipVector(0, i)), dar(vipVector(1, i)));
 	}
 	return res;
@@ -844,8 +844,8 @@ static VipPointVector pointVectorFromArray(const VipNDArray& ar)
 
 static VipNDArray arrayFromPointVector(const VipPointVector& vector)
 {
-	VipNDArrayType<vip_double> res(vipVector(2, (int)vector.size()));
-	for (int i = 0; i < vector.size(); ++i) {
+	VipNDArrayType<vip_double> res(vipVector(2, (qsizetype)vector.size()));
+	for (qsizetype i = 0; i < vector.size(); ++i) {
 		res(vipVector(0, i)) = vector[i].x();
 		res(vipVector(1, i)) = vector[i].y();
 	}
@@ -862,7 +862,7 @@ static VipComplexPointVector complexPointVectorFromArray(const VipNDArray& ar)
 
 	VipNDArrayTypeView<complex_d> dar(tmp);
 	VipComplexPointVector res(dar.shape(1));
-	for (int i = 0; i < dar.shape(1); ++i) {
+	for (qsizetype i = 0; i < dar.shape(1); ++i) {
 		res[i] = VipComplexPoint(dar(vipVector(0, i)).real(), dar(vipVector(1, i)));
 	}
 	return res;
@@ -870,8 +870,8 @@ static VipComplexPointVector complexPointVectorFromArray(const VipNDArray& ar)
 
 static VipNDArray arrayFromComplexPointVector(const VipComplexPointVector& vector)
 {
-	VipNDArrayType<complex_d> res(vipVector(2, (int)vector.size()));
-	for (int i = 0; i < vector.size(); ++i) {
+	VipNDArrayType<complex_d> res(vipVector(2, (qsizetype)vector.size()));
+	for (qsizetype i = 0; i < vector.size(); ++i) {
 		res(vipVector(0, i)) = vector[i].x();
 		res(vipVector(1, i)) = vector[i].y();
 	}
@@ -881,9 +881,9 @@ static VipNDArray arrayFromComplexPointVector(const VipComplexPointVector& vecto
 static QVariantList variantListFromIntervalSampleVector(const VipIntervalSampleVector& vec)
 {
 	// list of 2 arrays: values and intervals
-	VipNDArrayType<vip_double> values(vipVector((int)vec.size()));
-	VipNDArrayType<vip_double> intervals(vipVector((int)vec.size() * 2));
-	for (int i = 0; i < vec.size(); ++i) {
+	VipNDArrayType<vip_double> values(vipVector((qsizetype)vec.size()));
+	VipNDArrayType<vip_double> intervals(vipVector((qsizetype)vec.size() * 2));
+	for (qsizetype i = 0; i < vec.size(); ++i) {
 		values(vipVector(i)) = vec[i].value;
 		intervals(vipVector(i * 2)) = vec[i].interval.minValue();
 		intervals(vipVector(i * 2 + 1)) = vec[i].interval.maxValue();
@@ -912,7 +912,7 @@ static VipIntervalSampleVector intervalSampleVectorFromVariantList(const QVarian
 		return VipIntervalSampleVector();
 
 	VipIntervalSampleVector res;
-	for (int i = 0; i < values.shape(0); ++i) {
+	for (qsizetype i = 0; i < values.shape(0); ++i) {
 		VipIntervalSample sample;
 		sample.value = values(vipVector(i));
 		sample.interval = VipInterval(intervals(vipVector(i * 2)), intervals(vipVector(i * 2 + 1)));
@@ -1104,7 +1104,7 @@ VipNDArray vipExtractXValues(const VipPointVector& samples)
 {
 	VipNDArray res(qMetaTypeId<vip_double>(), vipVector(samples.size()));
 	vip_double* ptr = (vip_double*)res.data();
-	for (int i = 0; i < samples.size(); ++i)
+	for (qsizetype i = 0; i < samples.size(); ++i)
 		ptr[i] = samples[i].x();
 	return res;
 }
@@ -1112,7 +1112,7 @@ VipNDArray vipExtractYValues(const VipPointVector& samples)
 {
 	VipNDArray res(qMetaTypeId<vip_double>(), vipVector(samples.size()));
 	vip_double* ptr = (vip_double*)res.data();
-	for (int i = 0; i < samples.size(); ++i)
+	for (qsizetype i = 0; i < samples.size(); ++i)
 		ptr[i] = samples[i].y();
 	return res;
 }
@@ -1120,7 +1120,7 @@ VipNDArray vipExtractXValues(const VipComplexPointVector& samples)
 {
 	VipNDArray res(qMetaTypeId<vip_double>(), vipVector(samples.size()));
 	vip_double* ptr = (vip_double*)res.data();
-	for (int i = 0; i < samples.size(); ++i)
+	for (qsizetype i = 0; i < samples.size(); ++i)
 		ptr[i] = samples[i].x();
 	return res;
 }
@@ -1128,7 +1128,7 @@ VipNDArray vipExtractYValues(const VipComplexPointVector& samples)
 {
 	VipNDArray res(qMetaTypeId<complex_d>(), vipVector(samples.size()));
 	complex_d* ptr = (complex_d*)res.data();
-	for (int i = 0; i < samples.size(); ++i)
+	for (qsizetype i = 0; i < samples.size(); ++i)
 		ptr[i] = samples[i].y();
 	return res;
 }
@@ -1143,7 +1143,7 @@ VipPointVector vipCreatePointVector(const VipNDArray& x, const VipNDArray& y)
 
 	const vip_double* _x = (const vip_double*)tx.constData();
 	const vip_double* _y = (const vip_double*)ty.constData();
-	for (int i = 0; i < res.size(); ++i)
+	for (qsizetype i = 0; i < res.size(); ++i)
 		res[i] = VipPoint(_x[i], _y[i]);
 	return res;
 }
@@ -1157,7 +1157,7 @@ VipComplexPointVector vipCreateComplexPointVector(const VipNDArray& x, const Vip
 
 	const vip_double* _x = (const vip_double*)tx.constData();
 	const complex_d* _y = (const complex_d*)ty.constData();
-	for (int i = 0; i < res.size(); ++i)
+	for (qsizetype i = 0; i < res.size(); ++i)
 		res[i] = VipComplexPoint(_x[i], _y[i]);
 	return res;
 }
@@ -1167,7 +1167,7 @@ bool vipSetYValues(VipPointVector& samples, const VipNDArray& y)
 	if (ty.shapeCount() != 1 || ty.size() != samples.size())
 		return false;
 	const vip_double* _y = (const vip_double*)ty.constData();
-	for (int i = 0; i < samples.size(); ++i)
+	for (qsizetype i = 0; i < samples.size(); ++i)
 		samples[i].setY(_y[i]);
 	return true;
 }
@@ -1177,7 +1177,7 @@ bool vipSetYValues(VipComplexPointVector& samples, const VipNDArray& y)
 	if (ty.shapeCount() != 1 || ty.size() != samples.size())
 		return false;
 	const complex_d* _y = (const complex_d*)ty.constData();
-	for (int i = 0; i < samples.size(); ++i)
+	for (qsizetype i = 0; i < samples.size(); ++i)
 		samples[i].setY(_y[i]);
 	return true;
 }
@@ -1185,7 +1185,7 @@ bool vipSetYValues(VipComplexPointVector& samples, const VipNDArray& y)
 VipComplexPointVector vipToComplexPointVector(const VipPointVector& samples)
 {
 	VipComplexPointVector res(samples.size());
-	for (int i = 0; i < samples.size(); ++i) {
+	for (qsizetype i = 0; i < samples.size(); ++i) {
 		res[i].setX(samples[i].x());
 		res[i].setY(samples[i].y());
 	}
@@ -1206,7 +1206,7 @@ bool __vipResampleVectors(QVector<T>& a, QVector<U>& b, ResampleStrategies s, co
 			return false;
 
 		// clamp lower boundary
-		int i = 0;
+		qsizetype i = 0;
 		while (i + 1 < a.size() && a[i].x() < b.first().x() && a[i + 1].x() < b.first().x())
 			++i;
 		a = a.mid(i);
@@ -1231,7 +1231,7 @@ bool __vipResampleVectors(QVector<T>& a, QVector<U>& b, ResampleStrategies s, co
 		QVector<U> prev_b, next_b;
 
 		// add missing points at the beginning
-		int i = 0;
+		qsizetype i = 0;
 		while (i + 1 < a.size() && a[i].x() < b.first().x() && a[i + 1].x() < b.first().x()) {
 			if (s & ResamplePadd0)
 				prev_b.append(U(a[i].x(), padd_b));
@@ -1412,13 +1412,13 @@ static QVector<vip_double> vipExtractTimes(const QVector<Vector1>& vectors, cons
 		return QVector<vip_double>();
 	else if (vectors.size() == 1 && cvectors.isEmpty()) {
 		QVector<vip_double> times(vectors.first().size());
-		for (int i = 0; i < times.size(); ++i)
+		for (qsizetype i = 0; i < times.size(); ++i)
 			times[i] = vectors.first()[i].x();
 		return times;
 	}
 	else if (cvectors.size() == 1 && vectors.isEmpty()) {
 		QVector<vip_double> times(cvectors.first().size());
-		for (int i = 0; i < times.size(); ++i)
+		for (qsizetype i = 0; i < times.size(); ++i)
 			times[i] = cvectors.first()[i].x();
 		return times;
 	}
@@ -1428,10 +1428,10 @@ static QVector<vip_double> vipExtractTimes(const QVector<Vector1>& vectors, cons
 
 	// create our time iterators
 	QVector<TimeIterator> iters, ends;
-	for (int i = 0; i < vectors.size(); ++i) {
+	for (qsizetype i = 0; i < vectors.size(); ++i) {
 		// search for nan time value
 		const Vector1& v = vectors[i];
-		int p = 0;
+		qsizetype p = 0;
 		for (; p < v.size(); ++p) {
 			if (vipIsNan(v[p].x()))
 				break;
@@ -1450,10 +1450,10 @@ static QVector<vip_double> vipExtractTimes(const QVector<Vector1>& vectors, cons
 			ends.append(TimeIterator(vectors[i], false));
 		}
 	}
-	for (int i = 0; i < cvectors.size(); ++i) {
+	for (qsizetype i = 0; i < cvectors.size(); ++i) {
 		// search for nan time value
 		const Vector2& v = cvectors[i];
-		int p = 0;
+		qsizetype p = 0;
 		for (; p < v.size(); ++p) {
 			if (vipIsNan(v[p].x()))
 				break;
@@ -1477,7 +1477,7 @@ static QVector<vip_double> vipExtractTimes(const QVector<Vector1>& vectors, cons
 		// resample on intersection:
 		// find the intersection time range
 		vip_double start = 0, end = -1;
-		for (int i = 0; i < vectors.size(); ++i) {
+		for (qsizetype i = 0; i < vectors.size(); ++i) {
 			if (end < start) { // init
 				start = vectors[i].first().x();
 				end = vectors[i].last().x();
@@ -1491,7 +1491,7 @@ static QVector<vip_double> vipExtractTimes(const QVector<Vector1>& vectors, cons
 				end = qMin(end, vectors[i].last().x());
 			}
 		}
-		for (int i = 0; i < cvectors.size(); ++i) {
+		for (qsizetype i = 0; i < cvectors.size(); ++i) {
 			if (end < start) { // init
 				start = cvectors[i].first().x();
 				end = cvectors[i].last().x();
@@ -1507,7 +1507,7 @@ static QVector<vip_double> vipExtractTimes(const QVector<Vector1>& vectors, cons
 		}
 
 		// reduce the iterator ranges
-		for (int i = 0; i < iters.size(); ++i) {
+		for (qsizetype i = 0; i < iters.size(); ++i) {
 			while (*iters[i] < start)
 				++iters[i];
 			if (ends[i].prevTime() > end) {
@@ -1521,11 +1521,11 @@ static QVector<vip_double> vipExtractTimes(const QVector<Vector1>& vectors, cons
 	while (iters.size()) {
 		// find minimum time among all time vectors
 		vip_double min_time = *iters.first();
-		for (int i = 1; i < iters.size(); ++i)
+		for (qsizetype i = 1; i < iters.size(); ++i)
 			min_time = qMin(min_time, *iters[i]);
 
 		// increment each iterator equal to min_time
-		for (int i = 0; i < iters.size(); ++i) {
+		for (qsizetype i = 0; i < iters.size(); ++i) {
 			if (iters[i] != ends[i])
 				if (*iters[i] == min_time)
 					if (++iters[i] == ends[i]) {
@@ -1547,7 +1547,7 @@ Vector vipResampleInternal(const Vector& sample, const QVector<vip_double>& time
 	typename Vector::const_iterator iters = sample.constBegin();
 	typename Vector::const_iterator ends = sample.constEnd();
 
-	for (int t = 0; t < times.size(); ++t) {
+	for (qsizetype t = 0; t < times.size(); ++t) {
 		const vip_double time = times[t];
 
 		// we already reached the last sample value
@@ -1676,7 +1676,7 @@ bool vipResampleVectors(QList<VipPointVector>& lst, ResampleStrategies s, vip_do
 	QVector<vip_double> times = vipExtractTimes(lst.toVector(), QVector<VipPointVector>(), s);
 	if (times.isEmpty())
 		return false;
-	for (int i = 0; i < lst.size(); ++i)
+	for (qsizetype i = 0; i < lst.size(); ++i)
 		lst[i] = vipResampleInternal<VipPoint>(lst[i], times, s, padd);
 	return true;
 }
@@ -1693,11 +1693,11 @@ bool vipResampleVectors(QList<VipPointVector>& lst, vip_double x_step, ResampleS
 	vip_double xmin = times.first();
 	vip_double xmax = times.last();
 	times.clear();
-	// int pts = (xmax - xmin) / x_step;
+	// qsizetype pts = (xmax - xmin) / x_step;
 	for (vip_double v = xmin; v <= xmax; v += x_step)
 		times.push_back(v);
 
-	for (int i = 0; i < lst.size(); ++i)
+	for (qsizetype i = 0; i < lst.size(); ++i)
 		lst[i] = vipResampleInternal<VipPoint>(lst[i], times, s, padd);
 	return true;
 }
@@ -1712,7 +1712,7 @@ bool vipResampleVectors(QList<VipComplexPointVector>& lst, ResampleStrategies s,
 	QVector<vip_double> times = vipExtractTimes(lst.toVector(), QVector<VipComplexPointVector>(), s);
 	if (times.isEmpty())
 		return false;
-	for (int i = 0; i < lst.size(); ++i)
+	for (qsizetype i = 0; i < lst.size(); ++i)
 		lst[i] = vipResampleInternal<VipComplexPoint>(lst[i], times, s, padd);
 	return true;
 }
@@ -1725,9 +1725,9 @@ bool vipResampleVectors(QList<VipPointVector>& lst_a, QList<VipComplexPointVecto
 	if (times.isEmpty())
 		return false;
 
-	for (int i = 0; i < lst_a.size(); ++i)
+	for (qsizetype i = 0; i < lst_a.size(); ++i)
 		lst_a[i] = vipResampleInternal<VipPoint>(lst_a[i], times, s, padd_a);
-	for (int i = 0; i < lst_b.size(); ++i)
+	for (qsizetype i = 0; i < lst_b.size(); ++i)
 		lst_b[i] = vipResampleInternal<VipComplexPoint>(lst_b[i], times, s, padd_b);
 	return true;
 }
@@ -1742,18 +1742,18 @@ VipNDArray vipResampleVectorsAsNDArray(const QList<VipPointVector>& vectors, Res
 
 	VipNDArray res(qMetaTypeId<vip_double>(), vipVector(tmp.first().size(), tmp.size() + 1));
 	vip_double* values = (vip_double*)res.data();
-	int width = tmp.size() + 1;
+	qsizetype width = tmp.size() + 1;
 
 	// copy X values;
 	const VipPointVector& first = tmp.first();
-	for (int i = 0; i < first.size(); ++i)
+	for (qsizetype i = 0; i < first.size(); ++i)
 		values[i * width] = first[i].x();
 
 	// copy all y values
-	for (int j = 0; j < tmp.size(); ++j) {
+	for (qsizetype j = 0; j < tmp.size(); ++j) {
 		const VipPointVector& vec = tmp[j];
-		int start = j + 1;
-		for (int i = 0; i < vec.size(); ++i)
+		qsizetype start = j + 1;
+		for (qsizetype i = 0; i < vec.size(); ++i)
 			values[start + i * width] = vec[i].y();
 	}
 

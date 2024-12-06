@@ -46,7 +46,7 @@
 namespace Vip
 {
 	/// Constant value for invalid indexes
-	const int None = -1;
+	const qsizetype None = -1;
 }
 
 /// VipHybridVector is a container that follows an interface and a behavior similar to std::array.
@@ -55,7 +55,7 @@ namespace Vip
 /// -If N is positive, VipHybridVector is a fixed size static vector
 /// -If N is negative, VipHybridVector is a dynamic-size vector working on a static array of VIP_MAX_DIMS elements.
 /// Use one of the #vipVector overloads to create static VipHybridVector objects.
-template<class T, int N>
+template<class T, qsizetype N>
 struct VipHybridVector
 {
 	static_assert(N <= VIP_MAX_DIMS, "");
@@ -71,8 +71,8 @@ struct VipHybridVector
 	typedef const T* const_iterator;
 	typedef T& reference;
 	typedef const T& const_reference;
-	typedef int size_type;
-	typedef int difference_type;
+	typedef qsizetype size_type;
+	typedef qsizetype difference_type;
 
 	// iterator support
 	VIP_ALWAYS_INLINE iterator begin() noexcept { return elems; }
@@ -116,11 +116,11 @@ struct VipHybridVector
 	VIP_ALWAYS_INLINE T* data() noexcept { return elems; }
 
 	// assignment with type conversion
-	template<typename T2, int N2>
+	template<typename T2, qsizetype N2>
 	VipHybridVector& operator=(const VipHybridVector<T2, N2>& rhs) noexcept
 	{
-		int s = qMin(size(), rhs.size());
-		for (int i = 0; i < s; ++i)
+		qsizetype s = qMin(size(), rhs.size());
+		for (qsizetype i = 0; i < s; ++i)
 			elems[i] = rhs[i];
 		return *this;
 	}
@@ -140,8 +140,8 @@ struct VipHybridVector
 
 	void fromVector(const QVector<T>& vec) noexcept
 	{
-		int s = qMin(vec.size(), (int)size());
-		for (int i = 0; i < s; ++i)
+		qsizetype s = qMin(vec.size(), (qsizetype)size());
+		for (qsizetype i = 0; i < s; ++i)
 			elems[i] = vec[i];
 	}
 
@@ -156,7 +156,7 @@ struct VipHybridVector
 
 	explicit operator bool() const noexcept { return true; }
 
-	template<class T2, int Dim2>
+	template<class T2, qsizetype Dim2>
 	bool operator==(const VipHybridVector<T2, Dim2>& other) const noexcept
 	{
 		if (other.size() != size())
@@ -171,7 +171,7 @@ struct VipHybridVector
 		return std::equal(begin(), end(), other.begin());
 	}
 
-	template<class T2, int Dim2>
+	template<class T2, qsizetype Dim2>
 	bool operator!=(const VipHybridVector<T2, Dim2>& other) const noexcept
 	{
 		if (other.size() != size())
@@ -185,7 +185,7 @@ class VipHybridVector<T, Vip::None>
 {
 
 	T m_elems[VIP_MAX_DIMS];
-	int m_size;
+	qsizetype m_size;
 
 public:
 	enum
@@ -199,18 +199,18 @@ public:
 	typedef const T* const_iterator;
 	typedef T& reference;
 	typedef const T& const_reference;
-	typedef int size_type;
-	typedef int difference_type;
+	typedef qsizetype size_type;
+	typedef qsizetype difference_type;
 
 	VipHybridVector() noexcept
 	  : m_size(0)
 	{
 	}
-	VipHybridVector(int size) noexcept
+	VipHybridVector(qsizetype size) noexcept
 	  : m_size(size)
 	{
 	}
-	VipHybridVector(int size, const T& elem) noexcept
+	VipHybridVector(qsizetype size, const T& elem) noexcept
 	  : m_size(size)
 	{
 		fill(elem);
@@ -220,7 +220,7 @@ public:
 	VipHybridVector(const QVector<T2>& v) noexcept
 	{
 		resize(v.size());
-		for (int i = 0; i < m_size; ++i)
+		for (qsizetype i = 0; i < m_size; ++i)
 			m_elems[i] = static_cast<T>(v[i]);
 	}
 
@@ -231,15 +231,15 @@ public:
 		// std::copy(other.m_elems,other.m_elems + VIP_MAX_DIMS,m_elems);
 	}
 
-	template<class T2, int N2>
+	template<class T2, qsizetype N2>
 	VipHybridVector(const VipHybridVector<T2, N2>& v) noexcept
 	{
 		resize(v.size());
-		for (int i = 0; i < m_size; ++i)
+		for (qsizetype i = 0; i < m_size; ++i)
 			m_elems[i] = static_cast<T>(v[i]);
 	}
 
-	template<int N2>
+	template<qsizetype N2>
 	VipHybridVector(const VipHybridVector<T, N2>& v) noexcept
 	{
 		m_size = N2;
@@ -349,11 +349,11 @@ public:
 	}
 
 	// assignment with type conversion
-	template<typename T2, int N>
+	template<typename T2, qsizetype N>
 	VipHybridVector& operator=(const VipHybridVector<T2, N>& rhs) noexcept
 	{
 		m_size = rhs.size();
-		for (int i = 0; i < m_size; ++i)
+		for (qsizetype i = 0; i < m_size; ++i)
 			m_elems[i] = static_cast<T>(rhs[i]);
 		return *this;
 	}
@@ -391,7 +391,7 @@ public:
 	void fromVector(const QVector<T>& vec) noexcept
 	{
 		resize(vec.size());
-		for (int i = 0; i < m_size; ++i)
+		for (qsizetype i = 0; i < m_size; ++i)
 			m_elems[i] = vec[i];
 	}
 
@@ -412,7 +412,7 @@ public:
 		return size() > 0;
 	}
 
-	template<int Dim2>
+	template<qsizetype Dim2>
 	operator VipHybridVector<T, Dim2>() const noexcept
 	{
 		VipHybridVector<T, Dim2> res;
@@ -420,7 +420,7 @@ public:
 		return res;
 	}
 
-	template<class T2, int N2>
+	template<class T2, qsizetype N2>
 	bool operator==(const VipHybridVector<T2, N2>& other) const noexcept
 	{
 		if (size() != other.size())
@@ -428,7 +428,7 @@ public:
 		return std::equal(begin(), end(), other.begin());
 	}
 
-	template<class T2, int N2>
+	template<class T2, qsizetype N2>
 	bool operator!=(const VipHybridVector<T2, N2>& other) const noexcept
 	{
 		if (size() != other.size())
@@ -443,48 +443,54 @@ public:
 	}
 };
 
-template<int N1, int N2>
-VipHybridVector<int, Vip::None> operator+(const VipHybridVector<int, N1>& v1, const VipHybridVector<int, N2>& v2) noexcept
+
+/// @brief ND coordinate typedef
+template<qsizetype NDims>
+using VipCoordinate = VipHybridVector<qsizetype, NDims>;
+
+/// @brief VipNDArrayShape is a dynamic VipHybridVector. It is used to represent the shape of a #ipNDArray.
+using VipNDArrayShape = VipCoordinate<Vip::None>;
+
+
+template<qsizetype N1, qsizetype N2>
+VipCoordinate< Vip::None> operator+(const VipCoordinate< N1>& v1, const VipCoordinate< N2>& v2) noexcept
 {
-	VipHybridVector<int, Vip::None> tmp;
+	VipCoordinate< Vip::None> tmp;
 	if (v1.size() >= v2.size()) {
 		tmp = v1;
-		for (int i = 0; i < v2.size(); ++i)
+		for (qsizetype i = 0; i < v2.size(); ++i)
 			tmp[i] += v2[i];
 	}
 	else {
 		tmp = v2;
-		for (int i = 0; i < v1.size(); ++i)
+		for (qsizetype i = 0; i < v1.size(); ++i)
 			tmp[i] += v1[i];
 	}
 	return tmp;
 }
 
-template<class T, int N>
+template<class T, qsizetype N>
 QDataStream& operator<<(QDataStream& os, const VipHybridVector<T, N>& v)
 {
 	os << v.size();
-	for (int i = 0; i < v.size(); ++i)
+	for (qsizetype i = 0; i < v.size(); ++i)
 		os << v[i];
 	return os;
 }
 
-template<class T, int N>
+template<class T, qsizetype N>
 QDataStream& operator>>(QDataStream& is, VipHybridVector<T, N>& v)
 {
-	int size;
+	qsizetype size;
 	is >> size;
 	v.resize(size);
-	for (int i = 0; i < size; ++i)
+	for (qsizetype i = 0; i < size; ++i)
 		is >> v[i];
 	return is;
 }
 
-/// VipNDArrayShape is a dynamic VipHybridVector. It is used to represent the shape of a #VipNDArray.
-typedef VipHybridVector<int, Vip::None> VipNDArrayShape;
-
-/// Reverse \a vec into \a reverse
-template<class T, int N>
+/// @brief Reverse \a vec into \a reverse
+template<class T, qsizetype N>
 void vipReverse(const VipHybridVector<T, N>& vec, VipHybridVector<T, N>& reverse) noexcept
 {
 	if (N == 1) {
@@ -501,12 +507,12 @@ void vipReverse(const VipHybridVector<T, N>& vec, VipHybridVector<T, N>& reverse
 	}
 	else {
 		reverse.resize(vec.size());
-		for (int i = 0; i < vec.size(); ++i)
+		for (qsizetype i = 0; i < vec.size(); ++i)
 			reverse[i] = vec[vec.size() - i - 1];
 	}
 }
-/// Return a reversed version of \a vec
-template<class T, int N>
+/// @brief Return a reversed version of \a vec
+template<class T, qsizetype N>
 VipHybridVector<T, N> vipReverse(const VipHybridVector<T, N>& vec) noexcept
 {
 	VipHybridVector<T, N> res;
@@ -514,13 +520,13 @@ VipHybridVector<T, N> vipReverse(const VipHybridVector<T, N>& vec) noexcept
 	return res;
 }
 
-/// Returns a copy of \a v and change its static size. Note that this won't work if N != N2 && N > 0 && N2 > 0.
-template<int N, int N2>
-VipHybridVector<int, N> vipVector(const VipHybridVector<int, N2>& v) noexcept
+/// @brief Returns a copy of \a v and change its static size. Note that this won't work if N != N2 && N > 0 && N2 > 0.
+template<qsizetype N, qsizetype N2>
+VipCoordinate<N> vipVector(const VipCoordinate<N2>& v) noexcept
 {
 	return v;
 }
-/// Create a dynamic VipHybridVector from a QVector
+/// @brief Create a dynamic VipHybridVector from a QVector
 template<class T>
 VipHybridVector<T, Vip::None> vipVector(const QVector<T>& v) noexcept
 {
@@ -529,88 +535,19 @@ VipHybridVector<T, Vip::None> vipVector(const QVector<T>& v) noexcept
 	return res;
 }
 
-template<qsizetype... Sizes >
-auto vipVector(qsizetype... sizes) noexcept
+/// @brief Create a VipCoordinate object
+template<class... Args >
+auto vipVector(Args... sizes) noexcept
 {
-	return VipHybridVector<qsizetype, sizeof...(Sizes)> { { std::forward(sizes)... } };
+	return VipCoordinate<sizeof...(Args)>{ { std::forward<qsizetype>(sizes)... } };
 }
 
-/// Create a static VipHybridVector of size 1
-template<class T>
-VipHybridVector<T, 1> vipVector(T c0) noexcept
-{
-	VipHybridVector<T, 1> res = { { c0 } };
-	return res;
-}
-/// Create a static VipHybridVector of size 2
-template<class T>
-VipHybridVector<T, 2> vipVector(T c0, T c1) noexcept
-{
-	VipHybridVector<T, 2> res = { { c0, c1 } };
-	return res;
-}
-/// Create a static VipHybridVector of size 3
-template<class T>
-VipHybridVector<T, 3> vipVector(T c0, T c1, T c2) noexcept
-{
-	VipHybridVector<T, 3> res = { { c0, c1, c2 } };
-	return res;
-}
-/// Create a static VipHybridVector of size 4
-template<class T>
-VipHybridVector<T, 4> vipVector(T c0, T c1, T c2, T c3) noexcept
-{
-	VipHybridVector<T, 4> res = { { c0, c1, c2, c3 } };
-	return res;
-}
-/// Create a static VipHybridVector of size 5
-template<class T>
-VipHybridVector<T, 5> vipVector(T c0, T c1, T c2, T c3, T c4) noexcept
-{
-	VipHybridVector<T, 5> res = { { c0, c1, c2, c3, c4 } };
-	return res;
-}
-/// Create a static VipHybridVector of size 6
-template<class T>
-VipHybridVector<T, 6> vipVector(T c0, T c1, T c2, T c3, T c4, T c5) noexcept
-{
-	VipHybridVector<T, 6> res = { { c0, c1, c2, c3, c4, c5 } };
-	return res;
-}
-/// Create a static VipHybridVector of size 7
-template<class T>
-VipHybridVector<T, 7> vipVector(T c0, T c1, T c2, T c3, T c4, T c5, T c6) noexcept
-{
-	VipHybridVector<T, 7> res = { { c0, c1, c2, c3, c4, c5, c6 } };
-	return res;
-}
-/// Create a static VipHybridVector of size 8
-template<class T>
-VipHybridVector<T, 8> vipVector(T c0, T c1, T c2, T c3, T c4, T c5, T c6, T c7) noexcept
-{
-	VipHybridVector<T, 8> res = { { c0, c1, c2, c3, c4, c5, c6, c7 } };
-	return res;
-}
-/// Create a static VipHybridVector of size 9
-template<class T>
-VipHybridVector<T, 9> vipVector(T c0, T c1, T c2, T c3, T c4, T c5, T c6, T c7, T c8) noexcept
-{
-	VipHybridVector<T, 9> res = { { c0, c1, c2, c3, c4, c5, c6, c7, c8 } };
-	return res;
-}
-/// Create a static VipHybridVector of size 10
-template<class T>
-VipHybridVector<T, 10> vipVector(T c0, T c1, T c2, T c3, T c4, T c5, T c6, T c7, T c8, T c9) noexcept
-{
-	VipHybridVector<T, 10> res = { { c0, c1, c2, c3, c4, c5, c6, c7, c8, c9 } };
-	return res;
-}
 
 #include <tuple>
 /// https://stackoverflow.com/questions/2124339/c-preprocessor-va-args-number-of-arguments
 /// MACRO version of vipVector, much faster on msvc (?)
 #define vip_vector(...)                                                                                                                                                                                \
-	VipHybridVector<int, std::tuple_size<decltype(std::make_tuple(__VA_ARGS__))>::value>                                                                                                           \
+	VipCoordinate<std::tuple_size<decltype(std::make_tuple(__VA_ARGS__))>::value>                                                                                                           \
 	{                                                                                                                                                                                              \
 		__VA_ARGS__                                                                                                                                                                            \
 	}

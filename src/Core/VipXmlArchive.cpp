@@ -58,7 +58,7 @@ static bool toByteArray(const QVariant& v, QByteArray& array)
 	else {
 		QByteArray res;
 		QDataStream stream(&res, QIODevice::WriteOnly);
-		if (!QMetaType::save(stream, v.userType(), v.data())) // stream << v;
+		if (!QMetaType(v.userType()).save(stream, v.data())) // stream << v;
 			return false;
 		array = res.toBase64();
 		return array.size() > 0;
@@ -74,12 +74,12 @@ static bool fromByteArray(const QByteArray& array, QVariant& v)
 	else if (v.canConvert<QString>() && v.userType() != QMetaType::QStringList) {
 		int type = v.userType();
 		v = QVariant(QString(array));
-		return v.convert(type);
+		return v.convert(VIP_META(type));
 	}
 	else {
 		QDataStream stream(QByteArray::fromBase64(array));
 		// v.clear();
-		QMetaType::load(stream, v.userType(), v.data());
+		QMetaType(v.userType()).load(stream, v.data());
 		return v.isValid();
 	}
 }
@@ -905,14 +905,30 @@ bool VipXIfArchive::open(const QString& filename)
 		setError("Unable to open file: " + filename);
 		return false;
 	}
+
 	QString error;
 	int errorLine, errorCol;
+
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+	QDomDocument::ParseResult r = doc.setContent(&file);
+	if (!r) {
+		error = r.errorMessage;
+		errorLine = r.errorLine;
+		errorCol = r.errorColumn;
+		setError(QString::asprintf("error at line %d, col %d:\n%s\n", errorLine, errorCol, error.toLatin1().data()));
+		vip_debug("error at line %d, col %d:\n%s\n", errorLine, errorCol, error.toLatin1().data());
+		file.close();
+		return false;
+	}
+#else
+
 	if (!doc.setContent(&file, &error, &errorLine, &errorCol)) {
 		setError(QString::asprintf("error at line %d, col %d:\n%s\n", errorLine, errorCol, error.toLatin1().data()));
 		vip_debug("error at line %d, col %d:\n%s\n", errorLine, errorCol, error.toLatin1().data());
 		file.close();
 		return false;
 	}
+#endif
 	file.close();
 	if (!doc.isNull()) {
 		setMode(Read);

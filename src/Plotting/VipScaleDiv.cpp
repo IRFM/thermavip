@@ -244,6 +244,7 @@ QDataStream& operator>>(QDataStream& stream, VipScaleDiv& div)
 	return stream;
 }
 
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
 static DoubleVector toDoubleVector(const DoubleList& lst)
 {
 	DoubleVector res;
@@ -252,6 +253,12 @@ static DoubleVector toDoubleVector(const DoubleList& lst)
 		res[i] = lst[i];
 	return res;
 }
+#else
+static const DoubleVector& toDoubleVector(const DoubleList& lst)
+{
+	return lst;
+}
+#endif
 
 VipArchive& operator<<(VipArchive& arch, const VipScaleDiv& value)
 {

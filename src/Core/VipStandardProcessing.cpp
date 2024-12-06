@@ -560,7 +560,7 @@ void VipConvert::apply()
 			v = QVariant::fromValue(vipToComplexPointVector(in.data().value<VipPointVector>()));
 		}
 		else {
-			setError("cannot convert from VipPointVector to " + QString(QMetaType::typeName(out_type)));
+			setError("cannot convert from VipPointVector to " + QString(QMetaType(out_type).name()));
 			return;
 		}
 		VipAnyData out = create(v);
@@ -576,19 +576,19 @@ void VipConvert::apply()
 			outputAt(0)->setData(out);
 		}
 		else {
-			setError("cannot convert from VipNDArray to type " + QString(QMetaType::typeName(out_type)));
+			setError("cannot convert from VipNDArray to type " + QString(QMetaType(out_type).name()));
 			return;
 		}
 	}
-	else if (in.data().canConvert(out_type)) {
+	else if (in.data().canConvert(VIP_META(out_type))) {
 		QVariant v = in.data();
-		v.convert(out_type);
+		v.convert(VIP_META(out_type));
 		VipAnyData out = create(v);
 		out.setTime(in.time());
 		outputAt(0)->setData(out);
 	}
 	else {
-		setError("cannot convert from " + QString(in.data().typeName()) + " to  " + QString(QMetaType::typeName(out_type)));
+		setError("cannot convert from " + QString(in.data().typeName()) + " to  " + QString(QMetaType(out_type).name()));
 		return;
 	}
 }
@@ -901,7 +901,7 @@ VipNumericValueToPointVector::VipNumericValueToPointVector(QObject* parent)
 
 bool VipNumericValueToPointVector::acceptInput(int, const QVariant& v) const
 {
-	return v.canConvert(QMetaType::Double) || v.userType() == qMetaTypeId<VipPoint>();
+	return v.canConvert(VIP_META(QMetaType::Double)) || v.userType() == qMetaTypeId<VipPoint>();
 }
 
 void VipNumericValueToPointVector::resetProcessing()
@@ -1256,17 +1256,17 @@ void VipBaseDataFusion::apply()
 					inputs[i].setData(QVariant::fromValue(cvector));
 				}
 				else {
-					setError("cannot convert from type VipPointVector to type " + QString(QMetaType::typeName(dtype)));
+					setError("cannot convert from type VipPointVector to type " + QString(vipTypeName(dtype)));
 					return;
 				}
 			}
 			else if (v.userType() == qMetaTypeId<VipComplexPointVector>()) {
 				if (!is_complex) {
-					setError("cannot convert from type VipComplexPointVector to type " + QString(QMetaType::typeName(dtype)));
+					setError("cannot convert from type VipComplexPointVector to type " + QString(vipTypeName(dtype)));
 					return;
 				}
 			}
-			else if (v.canConvert<double>() && is_complex) {
+			else if (v.canConvert(VIP_META(QMetaType::Double)) && is_complex) {
 				if (dtype == qMetaTypeId<complex_f>())
 					inputs[i].setData(QVariant::fromValue(complex_f(v.toFloat())));
 				else
@@ -1274,8 +1274,8 @@ void VipBaseDataFusion::apply()
 			}
 			else {
 				QVariant _tmp = v;
-				if (!_tmp.convert(dtype)) {
-					setError("cannot convert from type " + QString(v.typeName()) + " to type " + QString(QMetaType::typeName(dtype)));
+				if (!_tmp.convert(VIP_META(dtype))) {
+					setError("cannot convert from type " + QString(v.typeName()) + " to type " + QString(vipTypeName(dtype)));
 					return;
 				}
 				inputs[i].setData(_tmp);

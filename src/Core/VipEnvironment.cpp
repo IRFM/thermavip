@@ -45,7 +45,11 @@
 
 QString vipGetDataDirectory(const QString& suffix)
 {
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
 	QString path = QStandardPaths::writableLocation(QStandardPaths::DataLocation);
+#else
+	QString path = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation);
+#endif
 	path.replace("\\", "/");
 	if (!QDir(path).exists()) {
 		path = QDir::homePath() + "/." + suffix + "/";

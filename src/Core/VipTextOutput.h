@@ -36,7 +36,7 @@
 #include <iostream>
 
 #include <QTextStream>
-#include <qmutex.h>
+#include <QIODevice>
 
 #include "VipConfig.h"
 

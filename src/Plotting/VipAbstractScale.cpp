@@ -1486,7 +1486,7 @@ QColor VipScaleWidget::backgroundColor() const
 
 bool VipScaleWidget::hasBackgroundColor() const
 {
-	return d_data->params.backgroundColor;
+	return d_data->params.backgroundColor.data();
 }
 
 void VipScaleWidget::removeBackgroundColor()

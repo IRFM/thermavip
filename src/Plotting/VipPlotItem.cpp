@@ -2711,7 +2711,6 @@ class VipPlotItemData::PrivateData
 public:
 	PrivateData()
 	  : inDestroy(false)
-	  , dataLock(QMutex::Recursive)
 	  , max_sample(std::numeric_limits<int>::max())
 	  , lastDataTime(0)
 	  , lastPaintTime(0)

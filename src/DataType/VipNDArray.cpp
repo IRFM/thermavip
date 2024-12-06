@@ -37,16 +37,16 @@
 #include "VipNDArray.h"
 #include "VipNDArrayImage.h"
 
-bool vipIsNullArray(const VipNDArray& ar)
+bool vipIsNullArray(const VipNDArray& ar) noexcept
 {
 	return vipIsNullArray(ar.handle());
 }
-bool vipIsNullArray(const VipNDArrayHandle* h)
+bool vipIsNullArray(const VipNDArrayHandle* h) noexcept
 {
 	return !h || h->handleType() == VipNDArrayHandle::Null || h->dataType() == 0;
 }
 
-VipNDArrayHandle::VipNDArrayHandle()
+VipNDArrayHandle::VipNDArrayHandle() noexcept
   : size(0)
   , opaque(nullptr)
 {
@@ -54,11 +54,11 @@ VipNDArrayHandle::VipNDArrayHandle()
 }
 
 // should destroy the underlying data only if own = true
-VipNDArrayHandle::~VipNDArrayHandle() {}
+VipNDArrayHandle::~VipNDArrayHandle() noexcept {}
 
-VipNDArrayBase::VipNDArrayBase() {}
+VipNDArrayBase::VipNDArrayBase() noexcept {}
 
-VipNDArrayBase::~VipNDArrayBase() {}
+VipNDArrayBase::~VipNDArrayBase() noexcept {}
 
 VipNDArrayShape VipNDArrayBase::viewStart() const
 {
@@ -85,7 +85,7 @@ VipNDArray VipNDArray::makeView(void* ptr, int data_type, const VipNDArrayShape&
 	return VipNDArray();
 }
 
-VipNDArray::VipNDArray()
+VipNDArray::VipNDArray() noexcept
   : VipNDArrayBase(vipNullHandle())
 {
 }
@@ -111,14 +111,14 @@ VipNDArray::VipNDArray(const void* ptr, int data_type, const VipNDArrayShape& sh
 	import(ptr, data_type, shape);
 }
 
-bool VipNDArray::isUnstrided() const
+bool VipNDArray::isUnstrided() const noexcept
 {
 	bool unstrided = false;
 	vipShapeToSize(shape(), strides(), &unstrided);
 	return unstrided;
 }
 
-bool VipNDArray::canConvert(int out_type) const
+bool VipNDArray::canConvert(int out_type) const noexcept
 {
 	if (handle()->canExport(out_type))
 		return true;
@@ -155,7 +155,7 @@ bool VipNDArray::load(const char* filename, FileFormat format)
 			if (!fin.open(QFile::ReadOnly))
 				return false;
 			QDataStream str(&fin);
-			int htype, dtype;
+			qsizetype htype, dtype;
 			str >> htype;
 			str >> dtype;
 			SharedHandle h = vipCreateArrayHandle(htype, dtype);
@@ -529,22 +529,22 @@ VipNDArray VipNDArray::mid(const VipNDArrayShape& pos, const VipNDArrayShape& sh
 
 	VipNDArrayShape _pos = pos;
 	VipNDArrayShape _shape = shape;
-	for (int i = 0; i < _pos.size(); ++i) {
+	for (qsizetype i = 0; i < _pos.size(); ++i) {
 		if (_pos[i] < 0)
 			_pos[i] = 0;
 		else if (_pos[i] >= this->shape(i))
 			_pos[i] = this->shape(i) - 1;
 	}
-	for (int i = _pos.size(); i < shapeCount(); ++i)
+	for (qsizetype i = _pos.size(); i < shapeCount(); ++i)
 		_pos.push_back(0);
 
-	for (int i = 0; i < _shape.size(); ++i) {
+	for (qsizetype i = 0; i < _shape.size(); ++i) {
 		if (_shape[i] < 0)
 			_shape[i] = 0;
 		else if (_shape[i] + _pos[i] > this->shape(i))
 			_shape[i] = this->shape(i) - _pos[i];
 	}
-	for (int i = _shape.size(); i < shapeCount(); ++i)
+	for (qsizetype i = _shape.size(); i < shapeCount(); ++i)
 		_shape.push_back(this->shape(i) - _pos[i]);
 
 	if (isView()) {
@@ -560,7 +560,7 @@ VipNDArray VipNDArray::mid(const VipNDArrayShape& pos, const VipNDArrayShape& sh
 	}
 }
 
-void VipNDArray::swap(VipNDArray& other)
+void VipNDArray::swap(VipNDArray& other) noexcept
 {
 	qSwap(*this, other);
 }
@@ -637,7 +637,7 @@ bool VipNDArray::reset(const VipNDArrayShape& new_shape, int data_type)
 	return constHandle()->handleType() != VipNDArrayHandle::Null;
 }
 
-void VipNDArray::clear()
+void VipNDArray::clear() noexcept
 {
 	setSharedHandle(vipNullHandle());
 }
@@ -652,19 +652,19 @@ VipNDArray& VipNDArray::operator=(const VipNDArray& other)
 #include "VipNDArrayImage.h"
 
 template<class T, class U>
-void applyWarping(const T* src, U* dst, int w, int h, U background, const QPointF* warping)
+void applyWarping(const T* src, U* dst, qsizetype w, qsizetype h, U background, const QPointF* warping)
 {
-	int i = 0;
-	for (int y = 0; y < h; ++y) {
-		for (int x = 0; x < w; ++x, ++i) {
+	qsizetype i = 0;
+	for (qsizetype y = 0; y < h; ++y) {
+		for (qsizetype x = 0; x < w; ++x, ++i) {
 			const QPointF src_pt = warping[i];
 			if (!vipIsNan(src_pt.x())) {
-				const int leftCellEdge = src_pt.x();
-				int rightCellEdge = (src_pt.x()) + 1;
+				const qsizetype leftCellEdge = src_pt.x();
+				qsizetype rightCellEdge = (src_pt.x()) + 1;
 				if (rightCellEdge == w)
 					rightCellEdge = leftCellEdge;
-				const int topCellEdge = src_pt.y();
-				int bottomCellEdge = (src_pt.y() + 1);
+				const qsizetype topCellEdge = src_pt.y();
+				qsizetype bottomCellEdge = (src_pt.y() + 1);
 				if (bottomCellEdge == h)
 					bottomCellEdge = topCellEdge;
 				const T p1 = src[bottomCellEdge * w + leftCellEdge];
@@ -682,19 +682,19 @@ void applyWarping(const T* src, U* dst, int w, int h, U background, const QPoint
 	}
 }
 
-inline void applyWarpingRGB(const QRgb* src, QRgb* dst, int w, int h, QRgb background, const QPointF* warping)
+inline void applyWarpingRGB(const QRgb* src, QRgb* dst, qsizetype w, qsizetype h, QRgb background, const QPointF* warping)
 {
-	int i = 0;
-	for (int y = 0; y < h; ++y) {
-		for (int x = 0; x < w; ++x, ++i) {
+	qsizetype i = 0;
+	for (qsizetype y = 0; y < h; ++y) {
+		for (qsizetype x = 0; x < w; ++x, ++i) {
 			const QPointF src_pt = warping[i];
 			if (!vipIsNan(src_pt.x())) {
-				const int leftCellEdge = src_pt.x();
-				int rightCellEdge = (src_pt.x()) + 1;
+				const qsizetype leftCellEdge = src_pt.x();
+				qsizetype rightCellEdge = (src_pt.x()) + 1;
 				if (rightCellEdge == w)
 					rightCellEdge = leftCellEdge;
-				const int topCellEdge = src_pt.y();
-				int bottomCellEdge = (src_pt.y() + 1);
+				const qsizetype topCellEdge = src_pt.y();
+				qsizetype bottomCellEdge = (src_pt.y() + 1);
 				if (bottomCellEdge == h)
 					bottomCellEdge = topCellEdge;
 				const QRgb p1 = src[bottomCellEdge * w + leftCellEdge];
@@ -816,7 +816,7 @@ int vipHigherArrayType(int t1, int t2)
 int vipHigherArrayType(const QVector<VipNDArray>& in)
 {
 	int dtype = 0;
-	for (int i = 0; i < in.size(); ++i) {
+	for (qsizetype i = 0; i < in.size(); ++i) {
 		if (dtype == 0)
 			dtype = in[i].dataType();
 		else {
@@ -869,7 +869,7 @@ bool vipConvertToHigherType(const QVector<VipNDArray>& in, QVector<VipNDArray>& 
 	if (out.size() != in.size())
 		out.resize(in.size());
 
-	for (int i = 0; i < in.size(); ++i) {
+	for (qsizetype i = 0; i < in.size(); ++i) {
 		if (out[i].shape() == in[i].shape() && out[i].dataType() == dtype)
 			in[i].convert(out[i]);
 		else
@@ -882,7 +882,7 @@ bool vipConvertToType(const QVector<VipNDArray>& in, QVector<VipNDArray>& out, i
 {
 	if (out.size() != in.size())
 		out.resize(in.size());
-	for (int i = 0; i < in.size(); ++i) {
+	for (qsizetype i = 0; i < in.size(); ++i) {
 		if (out[i].shape() == in[i].shape() && out[i].dataType() == dtype)
 			in[i].convert(out[i]);
 		else
@@ -909,7 +909,7 @@ bool vipConvertToHigherType(const QVector<VipNDArray>& in, QVector<VipNDArray>& 
 	if (out.size() != in.size())
 		out.resize(in.size());
 
-	for (int i = 0; i < in.size(); ++i) {
+	for (qsizetype i = 0; i < in.size(); ++i) {
 		if (out[i].shape() == in[i].shape() && out[i].dataType() == dtype)
 			in[i].convert(out[i]);
 		else
@@ -937,11 +937,11 @@ void apply_fun2(VipNDArray& out, const VipNDArray& s1, const VipNDArray& s2, Fun
 	T* p2 = new T[BUFF_SIZE];
 	T* dst = (T*)out.constHandle()->dataPointer(VipNDArrayShape());
 
-	int chunks = out.size() / BUFF_SIZE;
-	int end = chunks * BUFF_SIZE;
-	int rem = out.size() - end;
+	qsizetype chunks = out.size() / BUFF_SIZE;
+	qsizetype end = chunks * BUFF_SIZE;
+	qsizetype rem = out.size() - end;
 
-	for (int i = 0; i < end; i += BUFF_SIZE) {
+	for (qsizetype i = 0; i < end; i += BUFF_SIZE) {
 
 		// copy s1 to p1
 		if (s1.dataType() == QMetaType::Int) {
@@ -951,7 +951,7 @@ void apply_fun2(VipNDArray& out, const VipNDArray& s1, const VipNDArray& s2, Fun
 			std::copy((int*)s2.handle()->dataPointer(VipNDArrayShape()) + i, (int*)s2.handle()->dataPointer(VipNDArrayShape()) + i + BUFF_SIZE, p2);
 		}
 		T* d = dst + i;
-		for (int j = 0; j < BUFF_SIZE; ++j)
+		for (qsizetype j = 0; j < BUFF_SIZE; ++j)
 			d[j] = fun(p1[j], p2[j]);
 	}
 
@@ -964,7 +964,7 @@ void apply_fun2(VipNDArray& out, const VipNDArray& s1, const VipNDArray& s2, Fun
 			std::copy((int*)s2.handle()->dataPointer(VipNDArrayShape()) + end, (int*)s2.handle()->dataPointer(VipNDArrayShape()) + out.size(), p2);
 		}
 		T* d = dst + end;
-		for (int j = 0; j < rem; ++j)
+		for (qsizetype j = 0; j < rem; ++j)
 			d[j] = fun(p1[j], p2[j]);
 	}
 

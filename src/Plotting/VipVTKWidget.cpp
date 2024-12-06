@@ -90,7 +90,7 @@ public:
 	vtkSmartPointer<vtkEventQtSlotConnect> Connect{ vtkSmartPointer<vtkEventQtSlotConnect>::New() };
 
 	// Protect rendering while potentially modifying camera
-	QMutex DisplayMutex{ QMutex::Recursive };
+	QRecursiveMutex DisplayMutex;
 };
 
 
@@ -108,9 +108,11 @@ VipVTKWidget::VipVTKWidget(QWidget* p)
 
 void VipVTKWidget::InitInteractor()
 {
-	QMouseEvent press(QEvent::MouseButtonPress, QPoint(10, 10), Qt::LeftButton, Qt::LeftButton, Qt::NoModifier);
-	QMouseEvent move(QEvent::MouseButtonPress, QPoint(11, 11), Qt::LeftButton, Qt::LeftButton, Qt::NoModifier);
-	QMouseEvent release(QEvent::MouseButtonPress, QPoint(11, 11), Qt::LeftButton, Qt::LeftButton, Qt::NoModifier);
+	QPoint glob1010 = this->mapToGlobal(QPoint(10, 10));
+	QPoint glob1111 = this->mapToGlobal(QPoint(11, 11));
+	QMouseEvent press(QEvent::MouseButtonPress, QPoint(10, 10), glob1010, Qt::LeftButton, Qt::LeftButton, Qt::NoModifier);
+	QMouseEvent move(QEvent::MouseButtonPress, QPoint(11, 11), glob1111, Qt::LeftButton, Qt::LeftButton, Qt::NoModifier);
+	QMouseEvent release(QEvent::MouseButtonPress, QPoint(11, 11), glob1111, Qt::LeftButton, Qt::LeftButton, Qt::NoModifier);
 	if (d_data->RenWin) {
 		d_data->IrenAdapter->ProcessEvent(&press, d_data->RenWin->GetInteractor());
 		d_data->IrenAdapter->ProcessEvent(&move, d_data->RenWin->GetInteractor());
@@ -476,10 +478,11 @@ void VipVTKWidget::applyCameraToAllLayers()
 #include "VipCore.h"
 void VipVTKWidget::simulateMouseClick(const QPoint& from, const QPoint& to)
 {
-
-	QMouseEvent press(QEvent::MouseButtonPress, from, Qt::LeftButton, Qt::LeftButton, Qt::NoModifier);
-	QMouseEvent move(QEvent::MouseMove, to, Qt::LeftButton, Qt::LeftButton, Qt::NoModifier);
-	QMouseEvent release(QEvent::MouseButtonRelease, to, Qt::LeftButton, Qt::LeftButton, Qt::NoModifier);
+	QPoint glob_from = this->mapToGlobal(from);
+	QPoint glob_to = this->mapToGlobal(to);
+	QMouseEvent press(QEvent::MouseButtonPress, from, glob_from, Qt::LeftButton, Qt::LeftButton, Qt::NoModifier);
+	QMouseEvent move(QEvent::MouseMove, to, glob_to, Qt::LeftButton, Qt::LeftButton, Qt::NoModifier);
+	QMouseEvent release(QEvent::MouseButtonRelease, to, glob_to, Qt::LeftButton, Qt::LeftButton, Qt::NoModifier);
 
 	d_data->IgnoreMouse = true;
 	this->mousePressEvent(&press);
@@ -618,7 +621,7 @@ void VipVTKWidget::IsCurrent(vtkObject*, unsigned long, void*, void* call_data)
 	*ptr = QOpenGLContext::currentContext() == this->context();
 }
 
-#include <QGLFormat>
+
 void VipVTKWidget::IsDirect(vtkObject*, unsigned long, void*, void* call_data)
 {
 	int* ptr = reinterpret_cast<int*>(call_data);

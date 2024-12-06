@@ -98,6 +98,10 @@ public:
 	void setMargins(double);
 	const QMargins& margins() const;
 
+	/// @brief The display tooltip will display information for at most maxItems() VipPlotItem
+	void setMaxItems(int);
+	int maxItems() const;
+
 
 	void setDelayTime(int msec);
 	int delayTime() const;

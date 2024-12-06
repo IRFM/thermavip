@@ -37,7 +37,7 @@
 #include "VipSleep.h"
 
 #include <QMutex>
-#include <QRegExp>
+
 
 VipPath::VipPath()
   : m_dir(false)

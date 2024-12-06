@@ -1,7 +1,7 @@
 
 
 find_package(QT NAMES Qt5 Qt6 REQUIRED )
-find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets OpenGL Core Gui Xml Network Sql PrintSupport Svg)
+find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets OpenGL Core Gui Xml Network Sql PrintSupport Svg Concurrent)
 
 set(QT_PREFIX Qt${QT_VERSION_MAJOR})
 set(CMAKE_AUTOMOC ON)
@@ -16,6 +16,7 @@ set(QT_LIBS Qt5::Core
     Qt5::Xml
 	Qt5::Sql
 	Qt5::Svg
+	Qt5::Concurrent
 	)
 else()
 set(QT_LIBS Qt::Core
@@ -27,6 +28,7 @@ set(QT_LIBS Qt::Core
     Qt::Xml
 	Qt::Sql
 	Qt::Svg
+	Qt::Concurrent
 	)
 endif()
 target_link_libraries(${TARGET_PROJECT} PRIVATE ${QT_LIBS})
@@ -40,11 +42,19 @@ else()
 set(WEB_ENGINE Qt${QT_VERSION_MAJOR}WebEngineCore)
 endif()
 
+if(${QT_VERSION_MAJOR} LESS 6)
+else()
+find_package(Qt6 REQUIRED COMPONENTS Core5Compat)
+find_package(Qt6 REQUIRED COMPONENTS OpenGLWidgets)
+target_link_libraries(${TARGET_PROJECT} PRIVATE Qt6::Core5Compat)
+target_link_libraries(${TARGET_PROJECT} PRIVATE Qt6::OpenGLWidgets)
+endif()
+
 #find_package(Qt${QT_VERSION_MAJOR}WebEngine REQUIRED)
 find_package(${WEB_ENGINE} )
 find_package(Qt${QT_VERSION_MAJOR}WebEngineWidgets )
-if (Qt${QT_VERSION_MAJOR}WebEngine_FOUND)
-	if (Qt${QT_VERSION_MAJOR}WebEngine_VERSION VERSION_LESS 5.15.0)
+if (${WEB_ENGINE}_FOUND)
+	if (${WEB_ENGINE}_VERSION VERSION_LESS 5.15.0)
 		message(STATUS "Too old web engine version!")
 	else()
 		message(STATUS "Using web engine for ${TARGET_PROJECT}")
@@ -56,7 +66,7 @@ if (Qt${QT_VERSION_MAJOR}WebEngine_FOUND)
 		)
 		else()
 		target_link_libraries(${TARGET_PROJECT} PRIVATE
-		Qt::WebEngine
+		Qt::WebEngineCore
 		Qt::WebEngineWidgets
 		)
 		endif()
@@ -132,6 +142,8 @@ else()
 		# Weird bug with msvc 2022...
 		target_compile_options(${TARGET_PROJECT} PUBLIC /wd"4828")
 		
+		# For BIG source files
+		target_compile_options(${TARGET_PROJECT} PUBLIC /bigobj)
 		
 		#string(REPLACE "/utf-8" "" CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE}")
 		#string(REPLACE "-utf-8" "" CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE}")

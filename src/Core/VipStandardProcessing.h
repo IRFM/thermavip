@@ -38,8 +38,8 @@
 /// Represents a data comming from another processing object.
 class VIP_CORE_EXPORT VipOtherPlayerData
 {
-	friend QDataStream& operator<<(QDataStream& arch, const VipOtherPlayerData& o);
-	friend QDataStream& operator>>(QDataStream& arch, VipOtherPlayerData& o);
+	friend VIP_CORE_EXPORT QDataStream& operator<<(QDataStream& arch, const VipOtherPlayerData& o);
+	friend VIP_CORE_EXPORT QDataStream& operator>>(QDataStream& arch, VipOtherPlayerData& o);
 
 public:
 	VipOtherPlayerData();

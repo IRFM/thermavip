@@ -32,7 +32,9 @@
 #include "VipWidgetResizer.h"
 
 #include <qapplication.h>
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
 #include <qdesktopwidget.h>
+#endif
 #include <qevent.h>
 #include <qtimer.h>
 
@@ -256,8 +258,12 @@ static QSize parentSize(QWidget* w)
 	else if (w->parentWidget())
 		return w->parentWidget()->size();
 	else {
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
 		QDesktopWidget* d = qApp->desktop();
 		return d->screenGeometry(w).size();
+#else
+		return qApp->primaryScreen()->geometry().size();
+#endif
 	}
 }
 
@@ -310,8 +316,11 @@ bool VipWidgetResizer::filter(QObject* watched, QEvent* event)
 	}
 	if (event->type() == QEvent::MouseMove) {
 		d_data->custom_cursor = false;
-
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
 		QPoint screen = static_cast<QMouseEvent*>(event)->screenPos().toPoint();
+#else
+		QPoint screen = static_cast<QMouseEvent*>(event)->globalPosition().toPoint();
+#endif
 		QPoint p = parent()->mapFromGlobal(screen);
 		// if a widget is above this widget, ignore
 		if (handler()->grabber != parent()) {
@@ -483,7 +492,11 @@ bool VipWidgetResizer::filter(QObject* watched, QEvent* event)
 	else if (event->type() == QEvent::MouseButtonPress) {
 		if (static_cast<QMouseEvent*>(event)->buttons() & Qt::LeftButton)
 			if (property("area").toInt()) {
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
 				QPoint screen = static_cast<QMouseEvent*>(event)->screenPos().toPoint();
+#else
+				QPoint screen = static_cast<QMouseEvent*>(event)->globalPosition().toPoint();
+#endif
 				if (!isTopLevelWidget(screen))
 					return false;
 

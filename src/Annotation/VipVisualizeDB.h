@@ -93,6 +93,9 @@ class VIP_ANNOTATION_EXPORT VisualizeDBToolWidget : public VipToolWidget
 public:
 	VisualizeDBToolWidget(VipMainWindow* = nullptr);
 	VisualizeDB* getVisualizeDB() const;
+
+protected:
+	virtual void showEvent(QShowEvent*);
 };
 
 VIP_ANNOTATION_EXPORT VisualizeDBToolWidget* vipGetVisualizeDBToolWidget(VipMainWindow* win = nullptr);

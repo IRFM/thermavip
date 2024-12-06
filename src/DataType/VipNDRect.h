@@ -40,13 +40,13 @@
 
 namespace detail
 {
-	template<int NDim>
+	template<qsizetype NDim>
 	struct Contains
 	{
 		template<class Rect, class Coord>
 		static bool apply(const Rect& r, const Coord& pos)
 		{
-			for (int i = 0; i < pos.size(); ++i)
+			for (qsizetype i = 0; i < pos.size(); ++i)
 				if (pos[i] < r.start(i) || pos[i] >= r.end(i))
 					return false;
 			return true;
@@ -83,14 +83,14 @@ namespace detail
 
 /// VipNDRect represents a N-dimension rectangle.
 /// It is represented as a start and end (excluded) position.
-template<int NDim = Vip::None>
+template<qsizetype NDim = Vip::None>
 class VipNDRect
 {
 public:
-	typedef VipHybridVector<int, NDim> shape_type;
+	typedef VipCoordinate<NDim> shape_type;
 
 	//! static size if known at compile time, or -1
-	static const int static_size = NDim;
+	static const qsizetype static_size = NDim;
 
 	/// Default constructor, create an invalid rectangle (isEmpty() == true)
 	VipNDRect()
@@ -116,23 +116,23 @@ public:
 	{
 		if (m_start.size() == 0 || m_end.size() == 0)
 			return true;
-		for (int i = 0; i < m_start.size(); ++i)
+		for (qsizetype i = 0; i < m_start.size(); ++i)
 			if (shape(i) <= 0)
 				return true;
 		return false;
 	}
 	bool isValid() const { return (m_start.size() == m_end.size()) && !isEmpty(); }
 	/// Returns the number of dimensions
-	int size() const { return m_start.size(); }
+	qsizetype size() const { return m_start.size(); }
 	/// Returns the number of dimensions
-	int dimCount() const { return size(); }
+	qsizetype dimCount() const { return size(); }
 	/// Returns the full shape size (cumulative multiplication of all shapes)
-	int shapeSize() const
+	qsizetype shapeSize() const
 	{
 		if (size() == 0)
 			return 0;
-		int s = shape(0);
-		for (int i = 1; i < size(); ++i)
+		qsizetype s = shape(0);
+		for (qsizetype i = 1; i < size(); ++i)
 			s *= shape(i);
 		return s;
 	}
@@ -144,58 +144,58 @@ public:
 	shape_type shape() const
 	{
 		shape_type res = m_end;
-		for (int i = 0; i < res.size(); ++i)
+		for (qsizetype i = 0; i < res.size(); ++i)
 			res[i] -= m_start[i];
 		return res;
 	}
 	/// Returns the shape (end -start) for given dimension
-	int shape(int index) const { return m_end[index] - m_start[index]; }
+	qsizetype shape(qsizetype index) const { return m_end[index] - m_start[index]; }
 	/// Returns the start position for given dimension
-	int start(int index) const { return m_start[index]; }
+	qsizetype start(qsizetype index) const { return m_start[index]; }
 	/// Returns the end position for given dimension
-	int end(int index) const { return m_end[index]; }
+	qsizetype end(qsizetype index) const { return m_end[index]; }
 
 	/// Moves the start position, leaving the shape unchanged (this might change the end position).
 	void moveStart(const shape_type& start)
 	{
-		for (int i = 0; i < start.size(); ++i) {
-			int w = m_end[i] - m_start[i];
+		for (qsizetype i = 0; i < start.size(); ++i) {
+			qsizetype w = m_end[i] - m_start[i];
 			m_start[i] = start[i];
 			m_end[i] = start[i] + w;
 		}
 	}
 	/// Moves the start position for given dimension, leaving the shape unchanged (this might change the end position).
-	void moveStart(int index, int new_pos)
+	void moveStart(qsizetype index, qsizetype new_pos)
 	{
-		int w = m_end[index] - m_start[index];
+		qsizetype w = m_end[index] - m_start[index];
 		m_start[index] = new_pos;
 		m_end[index] = new_pos + w;
 	}
 	/// Set the start position. This might change the shape, but never the end position.
 	void setStart(const shape_type& start) { m_start = start; }
 	/// Set the start position for given index. This might change the shape, but never the end position.
-	void setStart(int index, int new_pos) { m_start[index] = new_pos; }
+	void setStart(qsizetype index, qsizetype new_pos) { m_start[index] = new_pos; }
 
 	/// Moves the end position, leaving the shape unchanged (this might change the start position).
 	void moveEnd(const shape_type& end)
 	{
-		for (int i = 0; i < end.size(); ++i) {
-			int w = m_end[i] - m_start[i];
+		for (qsizetype i = 0; i < end.size(); ++i) {
+			qsizetype w = m_end[i] - m_start[i];
 			m_end[i] = end[i];
 			m_start[i] = end[i] - w;
 		}
 	}
 	/// Moves the end position for given dimension, leaving the shape unchanged (this might change the start position).
-	void moveEnd(int index, int new_pos)
+	void moveEnd(qsizetype index, qsizetype new_pos)
 	{
-		int w = m_end[index] - m_start[index];
+		qsizetype w = m_end[index] - m_start[index];
 		m_end[index] = new_pos;
 		m_start[index] = new_pos - w;
 	}
 	/// Set the end position. This might change the shape, but never the start position.
 	void setEnd(const shape_type& end) { m_end = end; }
 	/// Set the end position for given index. This might change the shape, but never the start position.
-	void setEnd(int index, int new_pos) { m_end[index] = new_pos; }
+	void setEnd(qsizetype index, qsizetype new_pos) { m_end[index] = new_pos; }
 
 	/// Returns a normalized rectangle; i.e., a rectangle that has a non-negative shapes.
 	///  If a shape is negative, this function swaps start and end position for given dimension.
@@ -203,7 +203,7 @@ public:
 	{
 		VipNDRect res;
 		res.resize(size());
-		for (int i = 0; i < size(); ++i)
+		for (qsizetype i = 0; i < size(); ++i)
 			if (end(i) < start(i)) {
 				res.setStart(i, end(i));
 				res.setEnd(i, start(i));
@@ -225,7 +225,7 @@ public:
 	/// Translate rectangle by a given offset
 	void translate(const shape_type& offset)
 	{
-		for (int i = 0; i < offset.size(); ++i) {
+		for (qsizetype i = 0; i < offset.size(); ++i) {
 			m_start += offset[i];
 			m_end += offset[i];
 		}
@@ -243,7 +243,7 @@ public:
 	{
 		VipNDRect res;
 		res.resize(size());
-		for (int i = 0; i < size(); ++i) {
+		for (qsizetype i = 0; i < size(); ++i) {
 			if (end(i) <= rect.start(i) || start(i) >= rect.end(i))
 				return VipNDRect();
 			if (end(i) > rect.start(i)) {
@@ -260,14 +260,14 @@ public:
 	/// Returns true if \a rect intersects this rectangle
 	bool intersects(const VipNDRect rect) const
 	{
-		for (int i = 0; i < size(); ++i) {
+		for (qsizetype i = 0; i < size(); ++i) {
 			if (end(i) <= rect.start(i) || start(i) >= rect.end(i))
 				return false;
 		}
 		return true;
 	}
 
-	void resize(int size)
+	void resize(qsizetype size)
 	{
 		m_start.resize(size);
 		m_end.resize(size);
@@ -278,7 +278,7 @@ public:
 	{
 		VipNDRect res;
 		res.resize(size());
-		for (int i = 0; i < size(); ++i) {
+		for (qsizetype i = 0; i < size(); ++i) {
 			res.setStart(i, qMin(start(i), rect.start(i)));
 			res.setEnd(i, qMax(end(i), rect.end(i)));
 		}
@@ -286,23 +286,23 @@ public:
 	}
 
 	/// Comparison operator
-	template<int Dim>
+	template<qsizetype Dim>
 	bool operator==(const VipNDRect<Dim>& other) const
 	{
 		if (size() != other.size())
 			return false;
-		for (int i = 0; i < size(); ++i)
+		for (qsizetype i = 0; i < size(); ++i)
 			if (start(i) != other.start(i) || end(i) != other.end(i))
 				return false;
 		return true;
 	}
 	/// Comparison operator
-	template<int Dim>
+	template<qsizetype Dim>
 	bool operator!=(const VipNDRect<Dim>& other) const
 	{
 		if (size() != other.size())
 			return true;
-		for (int i = 0; i < size(); ++i)
+		for (qsizetype i = 0; i < size(); ++i)
 			if (start(i) != other.start(i) || end(i) != other.end(i))
 				return true;
 		return false;
@@ -333,10 +333,10 @@ template<>
 class VipNDRect<2>
 {
 public:
-	typedef VipHybridVector<int, 2> shape_type;
+	typedef VipCoordinate<2> shape_type;
 
 	//! static size if known at compile time, or -1
-	static const int static_size = 2;
+	static const qsizetype static_size = 2;
 
 	/// Default constructor, create an invalid rectangle (isEmpty() == true)
 	VipNDRect(){};
@@ -365,11 +365,11 @@ public:
 	bool isEmpty() const { return m_rect.isEmpty(); }
 	bool isValid() const { return m_rect.isValid(); }
 	/// Returns the number of dimensions
-	int size() const { return 2; }
+	qsizetype size() const { return 2; }
 	/// Returns the number of dimensions
-	int dimCount() const { return 2; }
+	qsizetype dimCount() const { return 2; }
 	/// Returns the full shape size (cumulative multiplication of all shapes)
-	int shapeSize() const { return m_rect.width() * m_rect.height(); }
+	qsizetype shapeSize() const { return m_rect.width() * m_rect.height(); }
 	/// Returns the start position
 	shape_type start() const { return vipVector(m_rect.top(), m_rect.left()); }
 	/// Returns the end of dimensions
@@ -377,16 +377,16 @@ public:
 	/// Returns the shape (end -start)
 	shape_type shape() const { return vipVector(m_rect.height(), m_rect.width()); }
 	/// Returns the shape (end -start) for given dimension
-	int shape(int index) const { return end(index) - start(index); }
+	qsizetype shape(qsizetype index) const { return end(index) - start(index); }
 	/// Returns the start position for given dimension
-	int start(int index) const { return ((int*)&m_rect)[(1 - index)]; }
+	qsizetype start(qsizetype index) const { return ((qsizetype*)&m_rect)[(1 - index)]; }
 	/// Returns the end position for given dimension
-	int end(int index) const { return ((int*)&m_rect)[(1 - index) + 2] + 1; }
+	qsizetype end(qsizetype index) const { return ((qsizetype*)&m_rect)[(1 - index) + 2] + 1; }
 
 	/// Moves the start position, leaving the shape unchanged (this might change the end position).
 	void moveStart(const shape_type& start) { m_rect.moveTopLeft(QPoint(start[1], start[0])); }
 	/// Moves the start position for given dimension, leaving the shape unchanged (this might change the end position).
-	void moveStart(int index, int new_pos)
+	void moveStart(qsizetype index, qsizetype new_pos)
 	{
 		if (index == 0)
 			m_rect.moveTop(new_pos);
@@ -396,7 +396,7 @@ public:
 	/// Set the start position. This might change the shape, but never the end position.
 	void setStart(const shape_type& start) { m_rect.setTopLeft(QPoint(start[1], start[0])); }
 	/// Set the start position for given index. This might change the shape, but never the end position.
-	void setStart(int index, int new_pos)
+	void setStart(qsizetype index, qsizetype new_pos)
 	{
 		if (index == 0)
 			m_rect.setTop(new_pos);
@@ -407,7 +407,7 @@ public:
 	/// Moves the end position, leaving the shape unchanged (this might change the start position).
 	void moveEnd(const shape_type& end) { m_rect.moveBottomRight(QPoint(end[1] - 1, end[0] - 1)); }
 	/// Moves the end position for given dimension, leaving the shape unchanged (this might change the start position).
-	void moveEnd(int index, int new_pos)
+	void moveEnd(qsizetype index, qsizetype new_pos)
 	{
 		if (index == 0)
 			m_rect.moveBottom(new_pos - 1);
@@ -417,7 +417,7 @@ public:
 	/// Set the end position. This might change the shape, but never the start position.
 	void setEnd(const shape_type& end) { m_rect.setBottomRight(QPoint(end[1] - 1, end[0] - 1)); }
 	/// Set the end position for given index. This might change the shape, but never the start position.
-	void setEnd(int index, int new_pos)
+	void setEnd(qsizetype index, qsizetype new_pos)
 	{
 		if (index == 0)
 			m_rect.setBottom(new_pos - 1);
@@ -451,7 +451,7 @@ public:
 
 	/// Returns true if \a rect intersects this rectangle
 	bool intersects(const VipNDRect rect) const { return m_rect.intersects(rect.m_rect); }
-	void resize(int) {}
+	void resize(qsizetype) {}
 
 	/// Returns the union of \a rect and this rectangle
 	VipNDRect united(const VipNDRect rect) const { return VipNDRect(m_rect.united(rect.m_rect)); }
@@ -459,23 +459,23 @@ public:
 	const QRect& rect() const { return m_rect; }
 
 	/// Comparison operator
-	template<int Dim>
+	template<qsizetype Dim>
 	bool operator==(const VipNDRect<Dim>& other) const
 	{
 		if (size() != other.size())
 			return false;
-		for (int i = 0; i < size(); ++i)
+		for (qsizetype i = 0; i < size(); ++i)
 			if (start(i) != other.start(i) || end(i) != other.end(i))
 				return false;
 		return true;
 	}
 	/// Comparison operator
-	template<int Dim>
+	template<qsizetype Dim>
 	bool operator!=(const VipNDRect<Dim>& other) const
 	{
 		if (size() != other.size())
 			return true;
-		for (int i = 0; i < size(); ++i)
+		for (qsizetype i = 0; i < size(); ++i)
 			if (start(i) != other.start(i) || end(i) != other.end(i))
 				return true;
 		return false;
@@ -502,21 +502,21 @@ private:
 };
 
 /// @brief Build a VipNDRect from a start and end position
-template<int N1, int N2>
-VipNDRect<(N1 < 0 ? N2 : N1)> vipRectStartEnd(const VipHybridVector<int, N1>& start, const VipHybridVector<int, N2>& end)
+template<qsizetype N1, qsizetype N2>
+VipNDRect<(N1 < 0 ? N2 : N1)> vipRectStartEnd(const VipCoordinate<N1>& start, const VipCoordinate<N2>& end)
 {
 	typedef VipNDRect<(N1 < 0 ? N2 : N1)> result;
 	return result(start, end);
 }
 
 /// @brief Build a VipNDRect from a start position and a shape
-template<int N1, int N2>
-VipNDRect<(N1 < 0 ? N2 : N1)> vipRectStartShape(const VipHybridVector<int, N1>& start, const VipHybridVector<int, N2>& shape)
+template<qsizetype N1, qsizetype N2>
+VipNDRect<(N1 < 0 ? N2 : N1)> vipRectStartShape(const VipCoordinate<N1>& start, const VipCoordinate<N2>& shape)
 {
 	typedef VipNDRect<(N1 < 0 ? N2 : N1)> result;
-	VipHybridVector<int, (N1 < 0 ? N2 : N1)> end;
+	VipCoordinate<(N1 < 0 ? N2 : N1)> end;
 	end.resize(start.size());
-	for (int i = 0; i < start.size(); ++i)
+	for (qsizetype i = 0; i < start.size(); ++i)
 		end[i] = start[i] + shape[i];
 	return result(start, end);
 }

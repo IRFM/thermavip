@@ -39,7 +39,9 @@
 #include <QApplication>
 #include <QBoxLayout>
 #include <QCursor>
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
 #include <QDesktopWidget>
+#endif
 #include <QDrag>
 #include <QDragEnterEvent>
 #include <QGridLayout>
@@ -1633,7 +1635,11 @@ bool VipDragWidgetHandle::dropMimeData(const QMimeData* mime)
 void VipDragWidgetHandle::paintEvent(QPaintEvent*)
 {
 	QStyleOption opt;
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
 	opt.init(this);
+#else
+	opt.initFrom(this);
+#endif
 	QPainter p(this);
 	style()->drawPrimitive(QStyle::PE_Widget, &opt, &p, this);
 }
@@ -1671,7 +1677,11 @@ QSplitterHandle* VipDragWidgetSplitter::createHandle()
 void VipDragWidgetSplitter::paintEvent(QPaintEvent*)
 {
 	QStyleOption opt;
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
 	opt.init(this);
+#else
+	opt.initFrom(this);
+#endif
 	QPainter p(this);
 	style()->drawPrimitive(QStyle::PE_Widget, &opt, &p, this);
 }
@@ -2905,7 +2915,7 @@ void VipViewportArea::dropMimeData(const QMimeData* mimeData, const QPoint& pos)
 
 void VipViewportArea::dropEvent(QDropEvent* evt)
 {
-	dropMimeData(evt->mimeData(), evt->pos());
+	dropMimeData(evt->mimeData(), evt->VIP_EVT_POSITION());
 }
 
 VipDragWidgetArea::VipDragWidgetArea(QWidget* parent)

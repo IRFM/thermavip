@@ -35,6 +35,7 @@
 #include "VipTransform.h"
 
 #include <qdatastream.h>
+#include <qtextstream.h>
 
 template<class IN_, class OUT_>
 void rotate90Right(const IN_& in, OUT_ out)
@@ -291,7 +292,7 @@ void VipImageCrop::setEndPosition(const VipNDArrayShape& sh)
 	propertyName("Bottom_right")->setData(lst.join(","));
 }
 
-#include <qtextstream.h>
+
 
 QTransform VipImageCrop::imageTransform(bool* from_center) const
 {

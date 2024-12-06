@@ -120,9 +120,9 @@ namespace detail
 	{
 		QString c;
 		arrays.clear();
-		int _size = 0;
+		qsizetype _size = 0;
 		i >> c >> _size;
-		for (int s = 0; s < _size; ++s) {
+		for (qsizetype s = 0; s < _size; ++s) {
 			QString name;
 			VipNDArray ar;
 			i >> name >> ar;
@@ -198,7 +198,7 @@ void VipMultiNDArray::removeArray(const QString& name)
 	handle()->removeArray(name);
 }
 
-int VipMultiNDArray::arrayCount() const
+qsizetype VipMultiNDArray::arrayCount() const
 {
 	return handle()->arrays.size();
 }

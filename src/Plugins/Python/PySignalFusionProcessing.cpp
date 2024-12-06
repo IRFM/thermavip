@@ -131,7 +131,7 @@ bool PySignalFusionProcessing::registerThisProcessing(const QString& category, c
 
 	VipProcessingObject::Info info = this->info();
 	info.classname = name;
-	info.category = category.split("/", QString::SkipEmptyParts).join("/"); // remove empty strings
+	info.category = category.split("/", VIP_SKIP_BEHAVIOR::SkipEmptyParts).join("/"); // remove empty strings
 	info.description = description;
 	info.displayHint = VipProcessingObject::DisplayOnSameSupport;
 

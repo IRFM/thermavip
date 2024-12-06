@@ -201,8 +201,11 @@ inline VipScaleDiv::TickList& VipScaleDiv::ticks(int tickType)
 Q_DECLARE_METATYPE(VipScaleDiv);
 typedef QList<vip_double> DoubleList;
 Q_DECLARE_METATYPE(DoubleList)
+
 typedef QVector<vip_double> DoubleVector;
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
 Q_DECLARE_METATYPE(DoubleVector)
+#endif
 
 class QDataStream;
 VIP_PLOTTING_EXPORT QDataStream& operator<<(QDataStream& stream, const VipScaleDiv& div);

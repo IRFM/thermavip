@@ -360,13 +360,17 @@ VipConsoleWidget::VipConsoleWidget(VipMainWindow* window)
 	hlay->addStretch(2);
 	hlay->addWidget(d_data->toolBar);
 	hlay->setContentsMargins(0, 0, 0, 0);
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
 	hlay->setMargin(0);
+#endif
 
 	QVBoxLayout* vlay = new QVBoxLayout();
 	vlay->addLayout(hlay);
 	vlay->addWidget(d_data->console);
 	vlay->setContentsMargins(0, 0, 0, 0);
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
 	vlay->setMargin(0);
+#endif
 
 	d_data->widget = new QWidget();
 	d_data->widget->setLayout(vlay);

@@ -161,7 +161,7 @@ namespace detail
 			initialize();
 			if (list.objects.indexOf(object) < 0) {
 				// print create object
-				printf("create object %s at address %lld, objects = %i\n", object->GetClassName(), (qint64)object, list.objects.size());
+				printf("create object %s at address %lld, objects = %i\n", object->GetClassName(), (qint64)object, (int)list.objects.size());
 				object->AddObserver(vtkCommand::DeleteEvent, _callback);
 				list.add(object, file, line);
 			}

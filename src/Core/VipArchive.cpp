@@ -370,11 +370,15 @@ static bool toByteArray(const QVariant& v, QDataStream& stream)
 		return true;
 	}
 	else {
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
 		return QMetaType::save(stream, v.userType(), v.data());
+#else
+		return QMetaType(v.userType()).save(stream, v.data());
+#endif
 	}
 }
 
-static bool fromByteArray(QDataStream& stream, QVariant& v, int max_size)
+static bool fromByteArray(QDataStream& stream, QVariant& v, qsizetype max_size)
 {
 	if (v.userType() == QMetaType::QByteArray) {
 		QByteArray ar(max_size, 0);
@@ -383,7 +387,7 @@ static bool fromByteArray(QDataStream& stream, QVariant& v, int max_size)
 		return true;
 	}
 	else if (v.userType() == QMetaType::QString) {
-		int size;
+		qsizetype size;
 		stream >> size;
 		QByteArray ar(size, 0);
 		stream.readRawData(ar.data(), size);
@@ -391,7 +395,11 @@ static bool fromByteArray(QDataStream& stream, QVariant& v, int max_size)
 		return true;
 	}
 	else {
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
 		return QMetaType::load(stream, v.userType(), v.data());
+#else
+		return QMetaType(v.userType()).load(stream, v.data());
+#endif
 	}
 }
 
@@ -403,7 +411,7 @@ static bool fromByteArray(QDataStream& stream, QVariant& v, int max_size)
 
 #define WRITE_DEVICE_INTEGER(value)                                                                                                                                                                    \
 	{                                                                                                                                                                                              \
-		qint32 unused_tmp = qToLittleEndian(value);                                                                                                                                            \
+		qsizetype unused_tmp = qToLittleEndian(value);                                                                                                                                            \
 		if (m_device->write(reinterpret_cast<char*>(&unused_tmp), sizeof(unused_tmp)) != sizeof(unused_tmp)) {                                                                                 \
 			this->setError("Cannot write data to the device");                                                                                                                             \
 			return;                                                                                                                                                                        \
@@ -418,7 +426,7 @@ static bool fromByteArray(QDataStream& stream, QVariant& v, int max_size)
 
 #define READ_DEVICE_INTEGER(value, m_device, return_value)                                                                                                                                             \
 	{                                                                                                                                                                                              \
-		qint32 unused_tmp = 0;                                                                                                                                                                 \
+		qsizetype unused_tmp = 0;                                                                                                                                                                 \
 		if (m_device->read(reinterpret_cast<char*>(&unused_tmp), (sizeof(unused_tmp))) != sizeof(unused_tmp)) {                                                                                \
 			this->setError("Cannot read data from the device");                                                                                                                            \
 			return return_value;                                                                                                                                                           \
@@ -428,8 +436,8 @@ static bool fromByteArray(QDataStream& stream, QVariant& v, int max_size)
 
 #define READ_DEVICE_INTEGER_BACKWARD(value, m_device, return_value)                                                                                                                                    \
 	{                                                                                                                                                                                              \
-		qint32 unused_tmp = 0;                                                                                                                                                                 \
-		if (!m_device->seek(m_device->pos() - 4)) {                                                                                                                                            \
+		qsizetype unused_tmp = 0;                                                                                                                                                                 \
+		if (!m_device->seek(m_device->pos() - sizeof(qsizetype))) {                                                                                                                                            \
 			this->setError("Cannot read data from the device");                                                                                                                            \
 			return return_value;                                                                                                                                                           \
 		}                                                                                                                                                                                      \
@@ -545,7 +553,7 @@ void VipBinaryArchive::doStart(QString& name, QVariantMap&, bool)
 		while (true) {
 			qint64 pos = m_device->pos();
 			// TEST qint64
-			qint32 full_size = 0;
+			qsizetype full_size = 0;
 			QByteArray object_name;
 
 			// read the value size;
@@ -558,7 +566,7 @@ void VipBinaryArchive::doStart(QString& name, QVariantMap&, bool)
 			}
 
 			// read the name
-			int size;
+			qsizetype size;
 			READ_DEVICE_INTEGER(size, m_device, );
 			object_name.resize(size);
 			READ_DEVICE(object_name.data(), size, m_device, );
@@ -575,7 +583,7 @@ void VipBinaryArchive::doStart(QString& name, QVariantMap&, bool)
 			}
 			else // otherwise, go to next data
 			{
-				m_device->seek(pos + 8 + full_size);
+				m_device->seek(pos + sizeof(qsizetype)*2 + full_size);
 			}
 		}
 	}
@@ -588,12 +596,12 @@ void VipBinaryArchive::doEnd()
 		WRITE_DEVICE_INTEGER(-2);
 	}
 	else if (mode() == Read) {
-		int level = 0;
+		qsizetype level = 0;
 		// skip data until we find a end tag at the right level
 		while (true) {
 			qint64 pos = m_device->pos();
 			// TEST qint64
-			qint32 full_size = 0;
+			qsizetype full_size = 0;
 
 			// read the value size;
 			READ_DEVICE_INTEGER(full_size, m_device, );
@@ -608,7 +616,7 @@ void VipBinaryArchive::doEnd()
 			}
 			else // otherwise, go to next data
 			{
-				m_device->seek(pos + 4 + full_size);
+				m_device->seek(pos + sizeof(qsizetype) + full_size);
 			}
 		}
 	}
@@ -624,8 +632,8 @@ QByteArray VipBinaryArchive::readBinary(const QString& n)
 
 	qint64 current_pos = m_device->pos();
 
-	int full_size;
-	int name_size = 0;
+	qsizetype full_size;
+	qsizetype name_size = 0;
 	QByteArray object_name;
 
 	// skip data until we find one with the right name
@@ -640,7 +648,7 @@ QByteArray VipBinaryArchive::readBinary(const QString& n)
 			// read the size, go back at the beginning of the data
 			READ_DEVICE_INTEGER_BACKWARD(full_size, m_device, QByteArray());
 			if (full_size > 0)
-				m_device->seek(m_device->pos() - 4 - full_size);
+				m_device->seek(m_device->pos() - sizeof(qsizetype) - full_size);
 		}
 
 		if (full_size == -1 || full_size == -2) // start or end tag found: stop
@@ -665,21 +673,21 @@ QByteArray VipBinaryArchive::readBinary(const QString& n)
 		}
 		else {
 			if (readMode() == Forward)
-				m_device->seek(pos + 8 + full_size);
+				m_device->seek(pos + sizeof(qsizetype)*2 + full_size);
 			else
-				m_device->seek(pos - 8 - full_size);
+				m_device->seek(pos - sizeof(qsizetype)*2 - full_size);
 
 			current_pos = m_device->pos();
 		}
 	}
 
-	QByteArray res = m_device->read(full_size - name_size - 4);
+	QByteArray res = m_device->read(full_size - name_size - sizeof(qsizetype));
 
 	// go to the next data
 	if (readMode() == Forward)
-		m_device->seek(current_pos + 8 + full_size);
+		m_device->seek(current_pos + sizeof(qsizetype)*2 + full_size);
 	else
-		m_device->seek(current_pos - 8 - full_size);
+		m_device->seek(current_pos - sizeof(qsizetype)*2 - full_size);
 
 	return res;
 }
@@ -691,7 +699,7 @@ QVariant VipBinaryArchive::deserialize(const QByteArray& ar)
 
 	// read the type name
 	QByteArray type_name;
-	int size;
+	qsizetype size;
 	if (buffer.read((char*)(&size), sizeof(size)) != sizeof(size))
 		return QVariant();
 	type_name.resize(size);
@@ -712,7 +720,7 @@ QVariant VipBinaryArchive::deserialize(const QByteArray& ar)
 		// use the dispatcher approach
 		VipFunctionDispatcher<2>::function_list_type lst = deserializeFunctions(value);
 		if (lst.size()) {
-			for (int i = 0; i < lst.size(); ++i) {
+			for (qsizetype i = 0; i < lst.size(); ++i) {
 				value = lst[i](value, &bin);
 				if (hasError()) {
 					return QVariant();
@@ -724,9 +732,9 @@ QVariant VipBinaryArchive::deserialize(const QByteArray& ar)
 
 	if (!serialized) {
 		// use the standard approach
-		int to_read = ar.size() - size - 4;
+		qsizetype to_read = ar.size() - size - sizeof(qsizetype);
 		QDataStream str(&buffer);
-		buffer.seek(size + 4);
+		buffer.seek(size + sizeof(qsizetype));
 		str.setByteOrder(QDataStream::LittleEndian);
 		if (!fromByteArray(str, value, to_read)) {
 			setError("Cannot create QVariant value with type name ='" + type_name + "'");
@@ -759,7 +767,7 @@ void VipBinaryArchive::doContent(QString& name, QVariant& value, QVariantMap& me
 
 		// write the type_name
 		const char* type_name = use_device ? "QByteArray" : value.typeName();
-		quint32 size = (quint32)(type_name ? strlen(type_name) : 0);
+		qsizetype size = (qsizetype)(type_name ? strlen(type_name) : 0);
 		stream << size;
 		if (type_name)
 			stream.writeRawData(type_name, size);
@@ -776,7 +784,7 @@ void VipBinaryArchive::doContent(QString& name, QVariant& value, QVariantMap& me
 				VipBinaryArchive arch(&to_write, QIODevice::WriteOnly);
 				this->copyFastTypes(arch);
 				arch.device()->seek(to_write.size());
-				for (int i = 0; i < lst.size(); ++i) {
+				for (qsizetype i = 0; i < lst.size(); ++i) {
 					lst[i](value, &arch);
 					if (arch.hasError())
 						break;
@@ -789,15 +797,15 @@ void VipBinaryArchive::doContent(QString& name, QVariant& value, QVariantMap& me
 			if (use_device) {
 				// write the input device content
 
-				quint32 _size = device->size() + to_write.size();
+				qsizetype _size = device->size() + to_write.size();
 				WRITE_DEVICE_INTEGER(_size);
 				WRITE_DEVICE(to_write.data(), to_write.size());
 
 				// write the device content by chunks of 10k
 				QByteArray tmp(10000, 0);
-				quint32 tot_size = 0;
+				qsizetype tot_size = 0;
 				while (true) {
-					quint32 read = device->read(tmp.data(), tmp.size());
+					qsizetype read = device->read(tmp.data(), tmp.size());
 					tot_size += read;
 					WRITE_DEVICE(tmp.data(), read);
 					if (read != (uint)tmp.size())
@@ -808,24 +816,24 @@ void VipBinaryArchive::doContent(QString& name, QVariant& value, QVariantMap& me
 			}
 			else {
 				qint64 p = m_device->pos();
-				// we need to write 4 bytes (size) + content of to_write
-				WRITE_DEVICE_INTEGER(quint32(0));
+				// we need to write sizeof(qsizetype) bytes (size) + content of to_write
+				WRITE_DEVICE_INTEGER(qsizetype(0));
 				WRITE_DEVICE(to_write.data(), to_write.size());
 
 				// then write serialized content
 				QDataStream str(m_device);
 				str.setByteOrder(QDataStream::LittleEndian);
-				// m_device->seek(p + 4 + to_write.size());
+				// m_device->seek(p + sizeof(qsizetype) + to_write.size());
 				toByteArray(value, str);
 
-				quint32 written_size = m_device->pos() - p - 4;
+				qsizetype written_size = m_device->pos() - p - sizeof(qsizetype);
 				// write end size
 				WRITE_DEVICE_INTEGER(written_size);
 				// write start size
 				m_device->seek(p);
 				WRITE_DEVICE_INTEGER(written_size);
 				// go to end device
-				m_device->seek(m_device->size()); // p + 4 + written_size);
+				m_device->seek(m_device->size()); // p + sizeof(qsizetype) + written_size);
 
 				// convert to QByteArray and write to device
 
@@ -854,7 +862,7 @@ void VipBinaryArchive::doContent(QString& name, QVariant& value, QVariantMap& me
 	else if (mode() == Read) {
 		qint64 current_pos = m_device->pos();
 
-		int full_size;
+		qsizetype full_size;
 		QByteArray object_name;
 
 		// skip data until we find one with the right name
@@ -869,7 +877,7 @@ void VipBinaryArchive::doContent(QString& name, QVariant& value, QVariantMap& me
 				// read the size, go back at the beginning of the data
 				READ_DEVICE_INTEGER_BACKWARD(full_size, m_device, );
 				if (full_size > 0)
-					m_device->seek(m_device->pos() - 4 - full_size);
+					m_device->seek(m_device->pos() - sizeof(qsizetype) - full_size);
 			}
 
 			if (full_size == -1 || full_size == -2) // start or end tag found: stop
@@ -880,7 +888,7 @@ void VipBinaryArchive::doContent(QString& name, QVariant& value, QVariantMap& me
 			}
 
 			// read the name
-			int size;
+			qsizetype size;
 			READ_DEVICE_INTEGER(size, m_device, );
 			object_name.resize(size);
 			READ_DEVICE(object_name.data(), size, m_device, );
@@ -894,9 +902,9 @@ void VipBinaryArchive::doContent(QString& name, QVariant& value, QVariantMap& me
 			}
 			else {
 				if (readMode() == Forward)
-					m_device->seek(pos + 8 + full_size);
+					m_device->seek(pos + sizeof(qsizetype)*2 + full_size);
 				else
-					m_device->seek(pos - 8 - full_size);
+					m_device->seek(pos - sizeof(qsizetype)*2 - full_size);
 
 				current_pos = m_device->pos();
 			}
@@ -904,7 +912,7 @@ void VipBinaryArchive::doContent(QString& name, QVariant& value, QVariantMap& me
 
 		// read the type name
 		QByteArray type_name;
-		int size;
+		qsizetype size;
 		READ_DEVICE_INTEGER(size, m_device, );
 		type_name.resize(size);
 		READ_DEVICE(type_name.data(), size, m_device, );
@@ -917,9 +925,9 @@ void VipBinaryArchive::doContent(QString& name, QVariant& value, QVariantMap& me
 
 				// skip the whole value
 				if (readMode() == Forward)
-					m_device->seek(current_pos + 8 + full_size);
+					m_device->seek(current_pos + sizeof(qsizetype)*2 + full_size);
 				else
-					m_device->seek(current_pos - 8 - full_size);
+					m_device->seek(current_pos - sizeof(qsizetype)*2 - full_size);
 				return;
 			}
 		}
@@ -933,15 +941,15 @@ void VipBinaryArchive::doContent(QString& name, QVariant& value, QVariantMap& me
 				ReadMode mode = readMode();
 				setReadMode(Forward);
 
-				for (int i = 0; i < lst.size(); ++i) {
+				for (qsizetype i = 0; i < lst.size(); ++i) {
 					value = lst[i](value, this);
 					if (hasError()) {
 						// break;
 						// skip the whole value
 						if (readMode() == Forward)
-							m_device->seek(current_pos + 8 + full_size);
+							m_device->seek(current_pos + sizeof(qsizetype)*2 + full_size);
 						else
-							m_device->seek(current_pos - 8 - full_size);
+							m_device->seek(current_pos - sizeof(qsizetype)*2 - full_size);
 						setReadMode(mode);
 						return;
 					}
@@ -954,7 +962,7 @@ void VipBinaryArchive::doContent(QString& name, QVariant& value, QVariantMap& me
 
 		if (!serialized) {
 			// use the standard approach
-			int to_read = readMode() == Forward ? current_pos + 4 + full_size - m_device->pos() : current_pos - m_device->pos() - 4;
+			qsizetype to_read = readMode() == Forward ? current_pos + sizeof(qsizetype) + full_size - m_device->pos() : current_pos - m_device->pos() - sizeof(qsizetype);
 			QDataStream str(m_device);
 			str.setByteOrder(QDataStream::LittleEndian);
 			if (value.userType() && !fromByteArray(str, value, to_read)) {
@@ -962,9 +970,9 @@ void VipBinaryArchive::doContent(QString& name, QVariant& value, QVariantMap& me
 
 				// skip the whole value
 				if (readMode() == Forward)
-					m_device->seek(current_pos + 8 + full_size);
+					m_device->seek(current_pos + sizeof(qsizetype)*2 + full_size);
 				else
-					m_device->seek(current_pos - 8 - full_size);
+					m_device->seek(current_pos - sizeof(qsizetype)*2 - full_size);
 				return;
 			}
 		}
@@ -974,9 +982,9 @@ void VipBinaryArchive::doContent(QString& name, QVariant& value, QVariantMap& me
 
 		// go to the next data
 		if (readMode() == Forward)
-			m_device->seek(current_pos + 8 + full_size);
+			m_device->seek(current_pos + sizeof(qsizetype)*2 + full_size);
 		else
-			m_device->seek(current_pos - 8 - full_size);
+			m_device->seek(current_pos - sizeof(qsizetype)*2 - full_size);
 
 	} // end mode() == Read
 }

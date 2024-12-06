@@ -85,8 +85,7 @@ namespace detail
 {
 
 	VipNetworkConnectionPrivate::VipNetworkConnectionPrivate(VipNetworkConnection* con)
-	  : mutex(QMutex::Recursive)
-	  , socket(nullptr)
+	  : socket(nullptr)
 	  , connection(con)
 	  , port(0)
 	  , openMode(QAbstractSocket::NotOpen)

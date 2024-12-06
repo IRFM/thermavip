@@ -347,8 +347,8 @@ void VipUpdateVideoPlayer::cropAdded(const QPointF& start, const QPointF& end)
 			QPointF en(qMax(start.x(), end.x()), qMax(start.y(), end.y()));
 
 			VipImageCrop* crop = new VipImageCrop();
-			crop->setStartPosition(vipVector(st.y(), st.x()));
-			crop->setEndPosition(vipVector(en.y(), en.x()));
+			crop->setStartPosition(vipVector((qsizetype)st.y(), (qsizetype)st.x()));
+			crop->setEndPosition(vipVector((qsizetype)en.y(), (qsizetype)en.x()));
 			lst->append(crop);
 			lst->reload();
 		}

@@ -1496,8 +1496,8 @@ public:
 
 		VipProcessingObject* create() const;
 
-		bool operator==(const Info& other) { return metatype == other.metatype && init == other.init; }
-		bool operator!=(const Info& other) { return metatype != other.metatype || init != other.init; }
+		bool operator==(const Info& other) const { return metatype == other.metatype && init == other.init; }
+		bool operator!=(const Info& other) const { return metatype != other.metatype || init != other.init; }
 	};
 
 	/// @brief Constructor. Usually, the parent is a VipProcessingPool object.
@@ -2102,10 +2102,17 @@ using VipProcessingObjectInfoList = QList<VipProcessingObject::Info>;
 Q_DECLARE_METATYPE(VipProcessingObjectInfoList);
 VIP_REGISTER_QOBJECT_METATYPE(VipProcessingObject*)
 
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
 inline uint qHash(const QPointer<VipProcessingObject>& key, uint seed = 0)
 {
 	return qHash(key.data(), seed);
 }
+#else
+inline size_t qHash(const QPointer<VipProcessingObject>& key, size_t seed = 0)
+{
+	return qHash(key.data(), seed);
+}
+#endif
 
 /// @brief List of VipProcessingObject with additional convenient functions
 class VIP_CORE_EXPORT VipProcessingObjectList : public QList<QPointer<VipProcessingObject>>

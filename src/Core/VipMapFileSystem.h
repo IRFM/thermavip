@@ -98,10 +98,17 @@ private:
 VIP_CORE_EXPORT bool operator==(const VipPath& p1, const VipPath& p2);
 VIP_CORE_EXPORT bool operator!=(const VipPath& p1, const VipPath& p2);
 
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
 inline uint qHash(const VipPath& key)
 {
 	return qHash(key.canonicalPath());
 }
+#else
+inline size_t qHash(const VipPath& key)
+{
+	return qHash(key.canonicalPath());
+}
+#endif
 
 class VipPathList : public QList<VipPath>
 {

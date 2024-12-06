@@ -1969,11 +1969,19 @@ static QList<Action> findActions(QWidget* bar, QAction* exclude = nullptr)
 				// if (QToolBar* b = qobject_cast<QToolBar*>(w))
 				//  res += findActions(b);
 				//  else
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
 				res.append(Action(a, w, a->associatedWidgets()[0]));
+#else
+				res.append(Action(a, w, qobject_cast<QWidget*>(a->associatedObjects()[0])));
+#endif
 			}
 		}
 		else {
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
 			QList<QWidget*> ws = acts[i]->associatedWidgets();
+#else
+			QList<QWidget*> ws = vipListCast<QWidget*>(acts[i]->associatedObjects());
+#endif
 			if (ws.size() > 1)
 				res.append(Action(acts[i], ws[1], ws[0]));
 			else
@@ -2586,7 +2594,7 @@ void VipCloseToolBar::mousePressEvent(QMouseEvent* evt)
 	if (!widget())
 		return;
 
-	d_data->pt = widget()->mapToParent(evt->pos());
+	d_data->pt = widget()->mapToParent(evt->VIP_EVT_POSITION());
 	d_data->previous_pos = widget()->pos();
 }
 
@@ -2601,7 +2609,7 @@ void VipCloseToolBar::mouseMoveEvent(QMouseEvent* evt)
 		return;
 
 	if (d_data->pt != QPoint()) {
-		QPoint diff = widget()->mapToParent(evt->pos()) - d_data->pt;
+		QPoint diff = widget()->mapToParent(evt->VIP_EVT_POSITION()) - d_data->pt;
 		widget()->move(d_data->previous_pos + diff);
 	}
 }
@@ -2736,7 +2744,7 @@ bool VipDragMenu::isResizable() const
 
 void VipDragMenu::mousePressEvent(QMouseEvent* evt)
 {
-	d_data->pos = evt->pos();
+	d_data->pos = evt->VIP_EVT_POSITION();
 	QMenu::mousePressEvent(evt);
 }
 
@@ -2758,7 +2766,7 @@ void VipDragMenu::mouseReleaseEvent(QMouseEvent* evt)
 
 void VipDragMenu::mouseMoveEvent(QMouseEvent* evt)
 {
-	QPoint pt = evt->pos();
+	QPoint pt = evt->VIP_EVT_POSITION();
 	if ((pt - d_data->pos).manhattanLength() > 5 && d_data->pos != QPoint(0, 0)) {
 		// start dragging
 		QAction* action = this->actionAt(pt);

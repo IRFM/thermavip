@@ -49,6 +49,7 @@ QSet<T> vipToSet(const QList<T>& lst)
 #endif
 }
 
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
 template<class T>
 QSet<T> vipToSet(const QVector<T>& lst)
 {
@@ -58,6 +59,7 @@ QSet<T> vipToSet(const QVector<T>& lst)
 	return QSet<T>(lst.cbegin(), lst.cend());
 #endif
 }
+#endif
 
 template<class Container>
 Container& vipUnique(Container & c)

@@ -92,6 +92,7 @@ void Print(const QVector<T> & vect, const QString & before = QString())
 	std::cout << std::endl;
 }
 
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
 template< class T>
 void Print(const QList<T> & vect, const QString & before = QString())
 {
@@ -100,6 +101,7 @@ void Print(const QList<T> & vect, const QString & before = QString())
 		std::cout << vect[i] << " ";
 	std::cout << std::endl;
 }
+#endif
 
 static IRB_BLOCK_INFO read_blocks(QIODevice * device, qint32 reord, qint32 /*next_iblock*/, qint32 nr_iblock)
 {
