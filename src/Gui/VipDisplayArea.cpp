@@ -3661,9 +3661,9 @@ void VipMainWindow::init()
 	new QShortcut(QKeySequence(QKeyCombination(Qt::ALT, Qt::Key_Left)), this, SLOT(backward10Time()), nullptr, Qt::ApplicationShortcut);
 	new QShortcut(QKeySequence(Qt::Key_PageUp), this,  SLOT(firstTime()), nullptr, Qt::ApplicationShortcut);
 	new QShortcut(QKeySequence(Qt::Key_PageDown), this,  SLOT(lastTime()), nullptr, Qt::ApplicationShortcut);
-	new QShortcut(QKeySequence("Ctrl+F"), this,  SLOT(focusToSearchLine()), nullptr, Qt::ApplicationShortcut);
-	new QShortcut(QKeySequence("Ctrl+W"), this,  SLOT(newWorkspace()), nullptr, Qt::ApplicationShortcut);
-	new QShortcut(QKeySequence("Ctrl+X"), this, SLOT(closeWorkspace()), nullptr, Qt::ApplicationShortcut);
+	//new QShortcut(QKeySequence("Ctrl+F"), this,  SLOT(focusToSearchLine()), nullptr, Qt::ApplicationShortcut);
+	new QShortcut(QKeySequence("Ctrl+T"), this,  SLOT(newWorkspace()), nullptr, Qt::ApplicationShortcut);
+	new QShortcut(QKeySequence("Ctrl+W"), this, SLOT(closeWorkspace()), nullptr, Qt::ApplicationShortcut);
 	new QShortcut(QKeySequence(QKeyCombination(Qt::CTRL, Qt::Key_Right)), this,  SLOT(nextWorkspace()), nullptr, Qt::ApplicationShortcut);
 	new QShortcut(QKeySequence(QKeyCombination(Qt::CTRL, Qt::Key_Left)), this,  SLOT(previousWorkspace()), nullptr, Qt::ApplicationShortcut);
 
@@ -4300,6 +4300,19 @@ void VipMainWindow::showEvent(QShowEvent* // evt
 {
 }
 
+void VipMainWindow::keyPressEvent(QKeyEvent* evt)
+{
+	// Handle CTRL+F through keyPressEvent instead
+	// of QShortcut as multiple windows use this 
+	// shortcut.
+	if (evt->key() == Qt::Key_F && (evt->modifiers() & Qt::CTRL))
+	{
+		focusToSearchLine();
+		evt->accept();
+	}
+	evt->ignore();
+}
+
 void VipMainWindow::startStopPlaying()
 {
 	VipDisplayPlayerArea* area = displayArea()->currentDisplayPlayerArea();
@@ -4388,7 +4401,13 @@ void VipMainWindow::closeWorkspace()
 	VipDisplayPlayerArea* area = displayArea()->currentDisplayPlayerArea();
 	if (!area)
 		return;
-	area->deleteLater();
+	
+	delete area;
+	if (!displayArea()->currentDisplayPlayerArea()) {
+		auto* tab = displayArea()->displayTabWidget();
+		if (tab->count() > 1)
+			tab->setCurrentIndex(tab->count()-2);
+	}
 }
 
 void VipMainWindow::focusToSearchLine()

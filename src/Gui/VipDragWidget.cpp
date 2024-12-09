@@ -937,11 +937,13 @@ VipDragWidget* VipDragWidget::next() const
 					if (takeNext) {
 						if (VipBaseDragWidget* b = qobject_cast<VipBaseDragWidget*>(tw)) {
 
-							if (VipDragWidget* w = qobject_cast<VipDragWidget*>(b))
-								return w;
+							if (VipDragWidget* w = qobject_cast<VipDragWidget*>(b)) {
+								if (!w->isMinimized())
+									return w;
+							}
 							else if (VipMultiDragWidget* _mw = qobject_cast<VipMultiDragWidget*>(b)) {
 								// returns the first VipDragWidget in this multi drag widget
-								if (VipDragWidget* w = _mw->firstDragWidget())
+								if (VipDragWidget* w = _mw->firstVisibleDragWidget())
 									return w;
 							}
 						}
@@ -987,11 +989,13 @@ VipDragWidget* VipDragWidget::prev() const
 					if (takeNext) {
 						if (VipBaseDragWidget* b = qobject_cast<VipBaseDragWidget*>(tw)) {
 
-							if (VipDragWidget* w = qobject_cast<VipDragWidget*>(b))
-								return w;
+							if (VipDragWidget* w = qobject_cast<VipDragWidget*>(b)) {
+								if (!w->isMinimized())
+									return w;
+							}
 							else if (VipMultiDragWidget* _mw = qobject_cast<VipMultiDragWidget*>(b)) {
 								// returns the first VipDragWidget in this multi drag widget
-								if (VipDragWidget* w = _mw->lastDragWidget())
+								if (VipDragWidget* w = _mw->lastVisibleDragWidget())
 									return w;
 							}
 						}
@@ -2222,6 +2226,23 @@ VipDragWidget* VipMultiDragWidget::firstDragWidget() const
 		}
 	return nullptr;
 }
+VipDragWidget* VipMultiDragWidget::firstVisibleDragWidget() const
+{
+	for (int y = 0; y < mainCount(); ++y)
+		for (int x = 0; x < subCount(y); ++x) {
+			auto* t = tabWidget(y, x);
+			if (VipBaseDragWidget* b = qobject_cast<VipBaseDragWidget*>(t->currentWidget())) {
+				if (VipDragWidget* w = qobject_cast<VipDragWidget*>(b)) {
+					if (!w->isMinimized())
+						return w;
+				}
+				else {
+					return static_cast<VipMultiDragWidget*>(b)->firstDragWidget();
+				}
+			}
+		}
+	return nullptr;
+}
 VipDragWidget* VipMultiDragWidget::lastDragWidget() const
 {
 	for (int y = mainCount() - 1; y >= 0; --y)
@@ -2230,6 +2251,23 @@ VipDragWidget* VipMultiDragWidget::lastDragWidget() const
 			if (VipBaseDragWidget* b = qobject_cast<VipBaseDragWidget*>(t->currentWidget())) {
 				if (VipDragWidget* w = qobject_cast<VipDragWidget*>(b))
 					return w;
+				else {
+					return static_cast<VipMultiDragWidget*>(b)->lastDragWidget();
+				}
+			}
+		}
+	return nullptr;
+}
+VipDragWidget* VipMultiDragWidget::lastVisibleDragWidget() const
+{
+	for (int y = mainCount() - 1; y >= 0; --y)
+		for (int x = subCount(y) - 1; x >= 0; --x) {
+			auto* t = tabWidget(y, x);
+			if (VipBaseDragWidget* b = qobject_cast<VipBaseDragWidget*>(t->currentWidget())) {
+				if (VipDragWidget* w = qobject_cast<VipDragWidget*>(b)) {
+					if (!w->isMinimized())
+						return w;
+				}
 				else {
 					return static_cast<VipMultiDragWidget*>(b)->lastDragWidget();
 				}

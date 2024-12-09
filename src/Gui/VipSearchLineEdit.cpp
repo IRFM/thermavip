@@ -33,6 +33,7 @@
 #include "VipSearchLineEdit.h"
 #include "VipDisplayArea.h"
 #include "VipToolWidget.h"
+#include "VipMimeData.h"
 
 #ifdef __VIP_USE_WEB_ENGINE
 #include "VipWebBrowser.h"
@@ -42,6 +43,7 @@
 #include <QListWidget>
 #include <QApplication>
 #include <QKeyEvent>
+#include <QDrag>
 
 #include <memory>
 #include <vector>
@@ -133,6 +135,20 @@ int VipDeviceOpenHelper::addToHistory(const QStringList& valid_paths)
 	int res = 0;
 	for (const QString& path : valid_paths) {
 		if (addToHistory(path))
+			++res;
+	}
+	return res;
+}
+
+int VipDeviceOpenHelper::addFormatsToHistory(const QStringList& valid_formats)
+{
+	int res = 0;
+	for (const QString& fmt : valid_formats) {
+
+		const VipDeviceOpenHelper* helper = fromFormat(fmt);
+		if (!helper)
+			continue;
+		if(addToHistory(ShortcupPath{ fmt, helper }))
 			++res;
 	}
 	return res;
@@ -409,6 +425,30 @@ protected:
 			QApplication::instance()->sendEvent(edit, evt);
 			return true;
 		}
+		else if (event->type() == QEvent::MouseMove) {
+			QMouseEvent* evt = static_cast<QMouseEvent*>(event);
+			QStringList paths;
+			if (evt->buttons() == Qt::LeftButton) {
+				auto lst = this->selectedItems();
+				for (auto* it : lst) {
+					QString fmt = it->text();
+					if (const VipDeviceOpenHelper* helper = VipDeviceOpenHelper::fromFormat(fmt)) {
+						QString path = helper->validPathFromFormat(fmt);
+						if (!path.isEmpty())
+							paths.push_back(path);
+					}
+				}
+				if (!paths.isEmpty()) {
+					QDrag drag(this);
+					VipMimeDataPaths* mime = new VipMimeDataPaths();
+					mime->setPaths(paths);
+					drag.setMimeData(mime);
+					drag.exec();
+					return true;
+				}
+				
+			}
+		}
 		return false;
 	}
 
@@ -516,6 +556,15 @@ void VipSearchLineEdit::textEntered()
 	QStringList formats;
 	if (!user_input.isEmpty())
 		formats = VipDeviceOpenHelper::possibleFormats(user_input);
+
+	// Add formats from history
+	const auto& history = VipDeviceOpenHelper::history();
+	QStringList entries;
+	for (const auto& s : history) {
+		if (s.format.contains(user_input, Qt::CaseInsensitive) && !formats.contains(s.format,Qt::CaseSensitive))
+			formats.push_back(s.format);
+	}
+
 	if (formats.isEmpty())
 		d_data->history->clear();
 	showHistoryWidget(formats);
@@ -554,3 +603,43 @@ bool VipSearchLineEdit::event(QEvent* event)
 	}
 	return QLineEdit::event( event);
 }
+
+void VipSearchLineEdit::mouseMoveEvent(QMouseEvent* evt)
+{
+	if (evt->buttons() == Qt::LeftButton) {
+		QString fmt = this->selectedText();
+		if (const VipDeviceOpenHelper* helper = VipDeviceOpenHelper::fromFormat(fmt)) {
+			QString path = helper->validPathFromFormat(fmt);
+			if (!path.isEmpty()) {
+				QDrag drag(this);
+				VipMimeDataPaths* mime = new VipMimeDataPaths();
+				mime->setPaths(QStringList() << path);
+				drag.setMimeData(mime);
+				drag.exec();
+				return;
+			}
+		}
+	}
+	QLineEdit::mouseMoveEvent(evt);
+}
+
+
+static void save_history(VipArchive& arch)
+{
+	const auto & lst = VipDeviceOpenHelper::history();
+	QStringList formats;
+	for (const auto& s : lst) {
+		formats.push_back(s.format);
+	}
+	arch.content("searchHistory", formats);
+}
+static void load_history(VipArchive& arch)
+{
+	arch.save();
+	QStringList lst;
+	if (!arch.content("searchHistory", lst))
+		arch.restore();
+	else
+		VipDeviceOpenHelper::addFormatsToHistory(lst);
+}
+static bool r = vipRegisterSettingsArchiveFunctions(save_history, load_history);

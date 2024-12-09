@@ -7311,8 +7311,9 @@ bool VipPlotPlayer::plotItemClicked(VipPlotItem*, VipPlotItem::MouseButton butto
 					if (VipProcessingPool* pool = this->processingPool()) {
 						QPoint p = QCursor::pos();
 						p = this->plotWidget2D()->mapFromGlobal(p);
-
 						QPointF pf = this->plotWidget2D()->mapToScene(p);
+						pf = this->plotWidget2D()->area()->mapFromScene(pf);
+
 						QList<VipPointVector> points;
 						VipBoxStyleList styles;
 						QList<int> legends;

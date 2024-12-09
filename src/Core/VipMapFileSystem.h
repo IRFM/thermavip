@@ -121,12 +121,17 @@ public:
 	  : QList<VipPath>(other)
 	{
 	}
+	VipPathList(const VipPathList&) = default;
+	VipPathList(VipPathList&&) noexcept = default;
 	VipPathList(const QStringList& lst, bool all_dirs)
 	  : QList<VipPath>()
 	{
 		for (int i = 0; i < lst.size(); ++i)
 			append(VipPath(lst[i], all_dirs));
 	}
+
+	VipPathList& operator=(const VipPathList&) = default;
+	VipPathList& operator=(VipPathList&&) noexcept = default;
 
 	QStringList paths() const
 	{

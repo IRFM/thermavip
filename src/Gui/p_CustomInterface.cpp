@@ -252,7 +252,7 @@ VipDragWidget* NavigatePlayers::next() const
 	VipDragWidget* w = d_data->parent->next();
 	for (;;) {
 		if (!w)
-			w = d_data->parent->topLevelMultiDragWidget()->firstDragWidget();
+			w = d_data->parent->topLevelMultiDragWidget()->firstVisibleDragWidget();
 		if (w == d_data->parent)
 			return nullptr;
 		if (qobject_cast<VipPlayer2D*>(w->widget()))
@@ -271,7 +271,7 @@ VipDragWidget* NavigatePlayers::prev() const
 		VipDragWidget* w = d_data->parent->prev();
 		for (;;) {
 			if (!w)
-				w = d_data->parent->topLevelMultiDragWidget()->lastDragWidget();
+				w = d_data->parent->topLevelMultiDragWidget()->lastVisibleDragWidget();
 			if (w == d_data->parent)
 				return nullptr;
 			if (qobject_cast<VipPlayer2D*>(w->widget()))
@@ -314,7 +314,7 @@ bool NavigatePlayers::eventFilter(QObject*, QEvent* evt)
 		updatePos();
 	}
 	else if (evt->type() == QEvent::KeyPress) {
-		if (this->isVisible()) {
+		//if (this->isVisible()) {
 			QKeyEvent* e = static_cast<QKeyEvent*>(evt);
 			if (e->key() == Qt::Key_Down) {
 				goNext();
@@ -324,7 +324,7 @@ bool NavigatePlayers::eventFilter(QObject*, QEvent* evt)
 				goPrev();
 				return true;
 			}
-		}
+		//}
 	}
 	return false;
 }
@@ -332,7 +332,8 @@ bool NavigatePlayers::eventFilter(QObject*, QEvent* evt)
 void NavigatePlayers::goNext()
 {
 	if (VipDragWidget* n = this->next()) {
-		n->showMaximized();
+		if (this->isVisible())
+			n->showMaximized();
 		n->setFocusWidget();
 		n->setFocus();
 	}
@@ -340,7 +341,8 @@ void NavigatePlayers::goNext()
 void NavigatePlayers::goPrev()
 {
 	if (VipDragWidget* p = this->prev()) {
-		p->showMaximized();
+		if (this->isVisible())
+			p->showMaximized();
 		p->setFocusWidget();
 		p->setFocus();
 	}

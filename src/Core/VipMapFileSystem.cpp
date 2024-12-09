@@ -1091,6 +1091,7 @@ public:
 		if (proc.state() != QProcess::Running)
 			_OPEN_ERROR("Unable to connect to " + address + ", please check address and password");
 
+		QThread::msleep(100);
 		proc.write("y\n");
 		if (!proc.waitForBytesWritten(4000))
 			_OPEN_ERROR("Unable to write to psftp process, please check address and password");

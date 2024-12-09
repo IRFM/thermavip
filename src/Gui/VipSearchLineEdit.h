@@ -90,6 +90,7 @@ public:
 	static bool addToHistory(const ShortcupPath& shortcut);
 	static bool addToHistory(const QString& valid_path);
 	static int addToHistory(const QStringList& valid_paths);
+	static int addFormatsToHistory(const QStringList& valid_formats);
 	static const QList<ShortcupPath>& history();
 };
 
@@ -147,6 +148,7 @@ private Q_SLOTS:
 protected:
 	virtual void focusOutEvent(QFocusEvent* evt);
 	virtual bool event(QEvent* evt);
+	virtual void mouseMoveEvent(QMouseEvent* evt);
 
 private:
 	VIP_DECLARE_PRIVATE_DATA(d_data);

@@ -42,6 +42,7 @@
 #include "VipStandardProcessing.h"
 #include "VipUniqueId.h"
 #include "VipXmlArchive.h"
+#include "VipSearchLineEdit.h"
 
 #include <QApplication>
 #if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
@@ -1894,6 +1895,10 @@ QList<VipAbstractPlayer*> vipCreatePlayersFromStringList(const QStringList& lst,
 		for (int i = 0; i < devices.size(); ++i)
 			delete devices[i];
 	}
+	else {
+		// Add to history
+		VipDeviceOpenHelper::addToHistory(lst);
+	}
 	return res;
 }
 
@@ -1931,6 +1936,10 @@ QList<VipAbstractPlayer*> vipCreatePlayersFromPaths(const VipPathList& paths, Vi
 		// delete devices
 		for (int i = 0; i < devices.size(); ++i)
 			delete devices[i];
+	}
+	else {
+		// Add to history
+		VipDeviceOpenHelper::addToHistory(paths.paths());
 	}
 	return res;
 }

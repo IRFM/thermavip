@@ -607,18 +607,19 @@ int VipPlotCurve::findClosestPos(const VipPointVector& data, const VipPoint& pos
 
 	// try to find a point at a vipDistance < maxDistance (in item's coordinates)
 	for (int i = 0; i < data.size(); ++i) {
-		if (vipIsNan(data[i].x()) || vipIsNan(data[i].y()))
+		VipPoint pt = data[i];
+		if (vipIsNan(pt.x()) || vipIsNan(pt.y()))
 			continue;
 
 		if (can_query_sub_part) {
 			// optimize search if can_query_sub_part is true
-			if (data[i].x() < min_x)
+			if (pt.x() < min_x)
 				continue;
-			else if (data[i].x() > max_x)
+			else if (pt.x() > max_x)
 				break;
 		}
 
-		const VipPoint p = map->transform(data[i]);
+		const VipPoint p = map->transform(pt);
 
 		if (axis == 0) {
 			item_pos.setY(p.y()); // y should always be valid

@@ -27,7 +27,7 @@ vtkSmartPointer<vtkImageData>  VipVTKImage::createVTKImage(int w, int h, double 
 
 	for(int y=0; y < h; ++y)
 	{
-		for(int x=0;x<w;++x)
+		for(int x=0;x<w;++x) 
 		{
 			res->SetScalarComponentFromDouble(x,y,0,0,value);
 		}

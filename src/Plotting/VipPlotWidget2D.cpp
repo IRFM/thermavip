@@ -3334,7 +3334,7 @@ PlotItemList VipAbstractPlotArea::plotItems(const QPointF& pos, int axis, double
 			int legend_index = -1;
 			QPointF item_pos = mapToItem(item, pos);
 			bool r = item->areaOfInterest(item_pos, axis, maxDistance, out, st, legend_index);
-
+			 
 			if (r || item->shape().contains(item_pos)) {
 				res << item;
 				out_points << out;

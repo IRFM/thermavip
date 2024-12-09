@@ -1619,6 +1619,7 @@ void VipMapFileSystemTree::keyPressEvent(QKeyEvent* evt)
 		vipGetMainWindow()->openPaths(to_open,nullptr);
 		evt->accept();
 	}
+	return QTreeWidget::keyPressEvent(evt);
 }
 
 bool VipMapFileSystemTree::aboutToCopy(const VipPathList&, const VipPath&)

@@ -697,8 +697,9 @@ Q_SIGNALS:
 	void workspaceLoaded(VipDisplayPlayerArea*);
 
 protected:
-	virtual void closeEvent(QCloseEvent* evt);
+	virtual void closeEvent(QCloseEvent* );
 	virtual void showEvent(QShowEvent*);
+	virtual void keyPressEvent(QKeyEvent*);
 
 private:
 	QAction* addToolWidget(VipToolWidget* widget, const QIcon& icon, const QString& text, bool set_tool_icon = false);

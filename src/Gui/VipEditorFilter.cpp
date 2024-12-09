@@ -1,5 +1,6 @@
 #include <QTextCursor>
 #include <QTextBlock>
+#include <QShortcut>
 
 #include "VipTextEditor.h"
 #include "VipEditorFilter.h"
@@ -60,6 +61,7 @@ VipEditorFilter::VipEditorFilter(VipTextEditor* parent)
   : QObject(parent)
   , m_editor(parent)
 {
+	
 	m_editor->installEventFilter(this);
 }
 

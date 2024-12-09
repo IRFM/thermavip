@@ -483,13 +483,15 @@ PythonInterface::LoadResult PythonInterface::load()
 	showEditor->setIcon(vipIcon("CODE.png"));
 	showEditor->setToolTip("Show/hide Python code editor");
 	showEditor->setAutoRaise(true); 
-	showEditor->setMenu(new QMenu(showEditor));
-	showEditor->setPopupMode(QToolButton::MenuButtonPopup);
-	/*QAction * pyactionEditor =*/ vipGetMainWindow()->toolsToolBar()->addWidget(showEditor);
+	vipGetMainWindow()->toolsToolBar()->addWidget(showEditor);
 	vipGetPyEditorToolWidget()->setButton(showEditor);
+
+	// Disable to shortcut menu for now
+	/* showEditor->setMenu(new QMenu(showEditor));
+	showEditor->setPopupMode(QToolButton::MenuButtonPopup);
 	connect(showEditor->menu(), SIGNAL(aboutToShow()), this, SLOT(aboutToShowScripts()));
 	connect(showEditor->menu(), SIGNAL(triggered(QAction*)), this, SLOT(scriptTriggered(QAction*)));
-	
+	*/
 	initPython(); 
 	 
 	//TEST

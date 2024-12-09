@@ -205,7 +205,7 @@ public:
 
 	/// Equivalent to
 	/// \code
-	/// visibility() == Maximized
+	/// visibility() == Minimized
 	/// \endcode
 	bool isMinimized() const;
 
@@ -584,8 +584,12 @@ public:
 
 	/// @brief Returns the first VipDragWidget this widget contains, or nullptr
 	VipDragWidget* firstDragWidget() const;
+	/// @brief Returns the first non minimized VipDragWidget this widget contains, or nullptr
+	VipDragWidget* firstVisibleDragWidget() const;
 	/// @brief Returns the last VipDragWidget this widget contains, or nullptr
 	VipDragWidget* lastDragWidget() const;
+	/// @brief Returns the last non minimized VipDragWidget this widget contains, or nullptr
+	VipDragWidget* lastVisibleDragWidget() const;
 
 	/// Returns the number of horizontal splitters in the main vertical one.
 	int mainCount() const;

@@ -49,6 +49,10 @@ public:
 	void commentSelection();
 	void uncommentSelection();
 
+public Q_SLOTS:
+	void emitSaveTriggered() { Q_EMIT saveTriggered(); }
+	void emitSearchTriggered() { Q_EMIT searchTriggered(); }
+
 Q_SIGNALS:
 
 	void saveTriggered();
