@@ -411,13 +411,14 @@ public:
 	PrivateData()
 	  : converter(nullptr)
 	  , mTime(QDateTime::currentMSecsSinceEpoch())
-	  , isArray(0)
+	  , isArray(false)
+	  , deleteConverter(true)
 	{
 	}
 
-	~PrivateData()
+	virtual ~PrivateData() noexcept
 	{
-		if (converter)
+		if (converter && deleteConverter)
 			delete converter;
 	}
 
@@ -427,32 +428,45 @@ public:
 	QRectF outRect;
 	qint64 mTime;
 	bool isArray;
+	bool deleteConverter;
 };
+
+template<class Converter>
+class VipRasterDataEmbedConverter
+	: public VipRasterData::PrivateData
+{
+public:
+	Converter c;
+	VipRasterDataEmbedConverter()
+	  : VipRasterData::PrivateData()
+	{
+		this->converter = &c;
+		this->deleteConverter = false;
+	}
+};
+
 
 VipRasterData::VipRasterData() {}
 
 VipRasterData::VipRasterData(const VipNDArray& ar, const QPointF& p)
-  : d_data(new PrivateData())
+  : d_data(new VipRasterDataEmbedConverter<ArrayConverter>())
 {
-	d_data->converter = new ArrayConverter();
 	static_cast<ArrayConverter*>(d_data->converter)->setArray(ar);
 	static_cast<ArrayConverter*>(d_data->converter)->setPosition(p);
 	d_data->isArray = true;
 }
 
 VipRasterData::VipRasterData(const QImage& image, const QPointF& p)
-  : d_data(new PrivateData())
+  : d_data(new VipRasterDataEmbedConverter<ArrayConverter>())
 {
-	d_data->converter = new ArrayConverter();
 	static_cast<ArrayConverter*>(d_data->converter)->setArray(vipToArray(image));
 	static_cast<ArrayConverter*>(d_data->converter)->setPosition(p);
 	d_data->isArray = true;
 }
 
 VipRasterData::VipRasterData(const QPixmap& pixmap, const QPointF& p)
-  : d_data(new PrivateData())
+  : d_data(new VipRasterDataEmbedConverter<ArrayConverter>())
 {
-	d_data->converter = new ArrayConverter();
 	static_cast<ArrayConverter*>(d_data->converter)->setArray(vipToArray(pixmap.toImage()));
 	static_cast<ArrayConverter*>(d_data->converter)->setPosition(p);
 	d_data->isArray = true;
@@ -462,19 +476,6 @@ VipRasterData::VipRasterData(VipRasterConverter* converter)
   : d_data(new PrivateData())
 {
 	d_data->converter = converter;
-}
-
-VipRasterData::VipRasterData(const VipRasterData& raster)
-  : d_data(raster.d_data)
-{
-}
-
-VipRasterData::~VipRasterData() {}
-
-VipRasterData& VipRasterData::operator=(const VipRasterData& raster)
-{
-	d_data = raster.d_data;
-	return *this;
 }
 
 qint64 VipRasterData::modifiedTime() const
@@ -1061,11 +1062,14 @@ void VipPlotRasterData::setData(const QVariant& v)
 		carray = true;
 	}
 
-	VipRasterData _new = v.value<VipRasterData>();
+	VipRasterData _new;
 	if (v.userType() == qMetaTypeId<VipNDArray>())
 		_new = VipRasterData(v.value<VipNDArray>());
 	else if (v.userType() == qMetaTypeId<QImage>())
 		_new = VipRasterData(vipToArray(v.value<QImage>()));
+	else
+		_new = v.value<VipRasterData>();
+
 	QRectF nrect = _new.boundingRect();
 
 	d_data->empty_data = _new.isEmpty();

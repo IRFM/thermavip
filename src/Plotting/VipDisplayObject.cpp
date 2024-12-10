@@ -822,10 +822,15 @@ bool VipDisplayImage::prepareForDisplay(const VipAnyDataList& data)
 			// curve->markDirty();
 			const QVariant& v = data.last().data();
 			if (v.userType() == qMetaTypeId<VipNDArray>()) {
-				const VipNDArray ar = v.value<VipNDArray>();
-				d_data->extract.inputAt(0)->setData(ar);
-				d_data->extract.update();
-				curve->setData(d_data->extract.outputAt(0)->data().data());
+				QString component = d_data->extract.propertyAt(0)->value<QString>();
+				if (!component.isEmpty() && component != "Invariant") {
+					const VipNDArray ar = v.value<VipNDArray>();
+					d_data->extract.inputAt(0)->setData(ar);
+					d_data->extract.update();
+					curve->setData(d_data->extract.outputAt(0)->data().data());
+				}
+				else
+					curve->setData(v);
 			}
 			else if (v.userType() == qMetaTypeId<VipRasterData>()) {
 				const VipRasterData raster = v.value<VipRasterData>();

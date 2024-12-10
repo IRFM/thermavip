@@ -55,7 +55,7 @@ VIP_CORE_EXPORT VipArchive& operator>>(VipArchive& arch, VipFieldOfViewList& fov
 /**
 Reads a VTK file and return a VipVTKObject
 */
-class VIP_CORE_EXPORT VipVTKFileReader : public VipTimeRangeBasedGenerator//VipIODevice
+class VIP_CORE_EXPORT VipVTKFileReader : public VipIODevice
 {
 	Q_OBJECT
 	VIP_IO(VipOutput output)
@@ -65,7 +65,7 @@ class VIP_CORE_EXPORT VipVTKFileReader : public VipTimeRangeBasedGenerator//VipI
 public:
 
 	VipVTKFileReader(QObject * parent = nullptr)
-	  : VipTimeRangeBasedGenerator (parent)// VipIODevice(parent)
+	  : VipIODevice(parent) // VipIODevice(parent)
 	{
 		this->outputAt(0)->setData(QVariant::fromValue(VipVTKObject()));
 	}
@@ -76,7 +76,7 @@ public:
 	}
 	virtual bool open(VipIODevice::OpenModes);
 	virtual VipIODevice::OpenModes supportedModes() const { return ReadOnly; }
-	//virtual VipIODevice::DeviceType deviceType() const { return Resource; }
+	virtual VipIODevice::DeviceType deviceType() const { return Resource; }
 	virtual QString fileFilters() const { return "3D model file (*.stl *.vtk *.vtp *.vtr *.vts *.vtu)"; }
 
 protected:

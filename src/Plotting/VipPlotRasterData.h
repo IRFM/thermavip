@@ -65,6 +65,8 @@ public:
 ///
 class VIP_PLOTTING_EXPORT VipRasterData
 {
+	template<class Conv>
+	friend class VipRasterDataEmbedConverter;
 public:
 	VipRasterData();
 	/// @brief Construct from a VipNDArray and an origin position
@@ -75,10 +77,9 @@ public:
 	VipRasterData(const QPixmap& pixmap, const QPointF& p = QPointF());
 	/// @brief Construct from a VipRasterConverter object
 	VipRasterData(VipRasterConverter* converter);
-	VipRasterData(const VipRasterData& raster);
-	~VipRasterData();
-	VipRasterData& operator=(const VipRasterData& raster);
 
+	VIP_DEFAULT_MOVE(VipRasterData);
+	
 	/// @brief Returns true if the VipRasterData is null (default constructed)
 	bool isNull() const { return !d_data; }
 	/// @brief Returns true if the VipRasterData is empty (null or empty bounding rect)

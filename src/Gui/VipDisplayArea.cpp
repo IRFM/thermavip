@@ -4508,6 +4508,7 @@ static void open_widgets(VipMainWindow* win, const QList<QWidget*>& widgets)
 	if (!widgets.size())
 		return;
 
+	VipDragWidget* last = nullptr;
 	if (VipDisplayPlayerArea* area = win->displayArea()->currentDisplayPlayerArea()) {
 		// get the main MultiDragWidget for this area
 		VipMultiDragWidget* main = area->mainDragWidget(widgets);
@@ -4519,6 +4520,7 @@ static void open_widgets(VipMainWindow* win, const QList<QWidget*>& widgets)
 
 			VipDragWidget* w = new VipDragWidget();
 			w->setWidget(widgets[i]);
+			last = w;
 
 			if (main->mainCount()) {
 
@@ -4543,6 +4545,8 @@ static void open_widgets(VipMainWindow* win, const QList<QWidget*>& widgets)
 			}
 		}
 	}
+	if (last)
+		last->setFocusWidget();
 }
 
 QList<VipAbstractPlayer*> VipMainWindow::openDevices(const QList<VipIODevice*>& all_devices, VipAbstractPlayer* player, VipDisplayPlayerArea* area)
@@ -5312,6 +5316,7 @@ static VipBaseDragWidget* dropPlotItem(VipPlotMimeData* mime, QWidget* drop_widg
 				static_cast<VipDragWidget*>(res)->setWidget(_new);
 
 				res = drop_mime_data_widget(VipDisplayPlayerArea::fromChildWidget(drop_widget), res, drop_widget);
+				res->setFocusWidget();
 
 				return res;
 			}
@@ -5331,7 +5336,7 @@ static VipBaseDragWidget* dropPlotItem(VipPlotMimeData* mime, QWidget* drop_widg
 		if (players.size()) {
 			res = vipCreateFromWidgets(vipListCast<QWidget*>(players));
 			res = drop_mime_data_widget(VipDisplayPlayerArea::fromChildWidget(drop_widget), res, drop_widget);
-
+			res->setFocusWidget();
 			return res;
 		}
 	}
@@ -5365,6 +5370,7 @@ static VipBaseDragWidget* dropMimeData(QMimeData* mime, QWidget* drop_widget)
 						if (d->isMaximized()) {
 							d->showNormal();
 						}
+						d->setFocusWidget();
 						area->addWidget(d);
 					}
 				}

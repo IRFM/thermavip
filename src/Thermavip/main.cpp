@@ -70,7 +70,7 @@ static void myMessageOutput(QtMsgType type, const QMessageLogContext& context, c
 	}
 	return;
 }
-
+ 
 static void applyAppFont(QWidget * top, const QFont& previous)
 {
 	QFont font = qApp->font();
@@ -144,7 +144,7 @@ int main(int argc, char** argv)
 	for (int i = 0; i < argc; ++i) {
 		args << QString(argv[i]);
 	}
-	VipCommandOptions::instance().parse(args);
+	VipCommandOptions::instance().parse(args); 
 
 	if (VipCommandOptions::instance().count("debug")) {
 		vip_log_detail::_vip_set_enable_debug(true);

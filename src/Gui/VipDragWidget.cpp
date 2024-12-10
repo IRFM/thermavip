@@ -1051,6 +1051,8 @@ void VipDragWidget::setFocusWidget()
 
 			new_focus->d_data->focus = true;
 			handler->d_focus = new_focus;
+			if (this->widget())
+				this->widget()->setFocus(Qt::MouseFocusReason);
 
 			Q_EMIT handler->focusChanged(old_focus, new_focus);
 		}

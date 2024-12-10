@@ -1,3 +1,91 @@
+Thermavip v5.0.0 - 10/12/2024
+
+(Gui) Major Gui/skins updates
+(Gui) Switched to Qt6 while keeping Qt5 support
+(Gui) Corrected filesystem browser behavior (no more freezes, navigation through keys...)
+(Gui) Corrected wrong behavior when shift+clicking on a time signal (go to clicked time)
+(Gui) Added shortcuts for new workspace (Ctrl+T), close workspace (Ctrl+W), next and prev workspace (Ctrl+Left/Right)
+(Gui) Added possibility to switch between players using Top/Down arrows (even if not maximized)
+(Gui) Added shortcut (H) on video player to toggle color scale flatening
+(Gui) Corrected crash when saving raw signals using he recording tool widget
+(Gui) Added a top search line edit accessible through Ctrl+F. Possibility to open files, signals, videos, pChrono, Discharge summary and much more.
+
+(Gui, Core) Added VTK support to the DSK to open and visualize 3D models
+
+(Annotation) Added possibility to cancel SQL queries
+(Annotation) Added option to define minimum thermal event siz
+(Annotation) Added SQL connection options and possibility to reconnect to the event DB
+
+(Python) Switched to standard Python installation instead of miniconda
+
+(WEST) Corrected wrong ROI order when opening an IR movie
+(WEST) DWMS control summary now uses DWMS signals to assess DWMS feedbacks
+(WEST) Added support to Evenio and PPO dashboard web pages to the internal web browser
+
+
+Thermavip v4.5.1 - 06/03/2024
+
+(librir) Corrected crash when setting optical/STEFI temperature to loaded video file
+(librir) Modified bad pixels correction algorithm
+
+(GUI) Added arrow up/down key shrotcuts to switch between maximized players
+(GUI) Corrected wrong order when switching between maximized players
+
+(WEST) Corrected Pulse Explorer internal cashing
+(WEST) Added support for disruptions in Pulse Explorer
+
+Thermavip v4.5.0 - 26/02/2024
+
+(WEST) Added pulse explorer: retrieve pulses based on discharge criteria
+(WEST) ROI editor: added mandatory modification message
+(WEST) Shot summary: added shot summary compuation before, during and after disruption
+(WEST) Shot summary possibility to go next/previous player when player is maximized
+(WEST) Shot summary: corrected timestamp image from T IGNITRON
+(WEST) Switched to librir v5.0.0
+(WEST) Switched SEGPA server from alioth to alnair
+
+(librir) Used dcamir user to store west data (except movies) when available
+(librir) Switched to librir v5.0.0
+
+(NVF) Correction for calibration of IR videos using invalide IT
+
+
+Thermavip v4.4.0 - 13/02/2024
+
+(GUI) Optimized histogram computation for flattened color map
+(GUI) Another try to optimize CPU usage by reducing the number of threads
+(GUI) Better handling of discontinuous videos
+(GUI) Corrected drag&drop of XML/JSON ROI files on video players
+
+(WEST) Optimized computation of list of cameras for a given pulse
+(WEST) Optimized computation of pulse duration, max power,...
+
+(librir) Corrected signals timestamping, now in sync with tsbase
+(librir) Adjusted IR videos timestamping based on IGNITRON time
+
+(AIA) Huge update, added new functions (contrast, brightness and gamma correction, display centered cross, draw date time in image...)
+(AIA) Several bug corrections
+
+Thermavip v4.3.0 - 19/01/2024
+
+(GUI) Updated skins
+(GUI) Yet another display optimization
+
+(Core) Corrected bugs due to major refactoring
+
+(WEST) Added possibility to preload videos for several pulses
+(WEST) Added possibility to download files from ARCADE
+(WEST) Modified DWMS status feature
+(WEST) Added support for continuous signals
+(WEST) Added option to save to DB a unique event for one frame
+(WEST) ShotSummary: added time slider to display at which time maximums appear
+(WEST) Minor change in the ROI editor
+(WEST) Added time slider in Shot Summary
+(WEST) Added SEGPA automatic scene model generation
+
+(AIA) Minor updates
+
+
 Thermavip v4.2.0 - 23/10/2023
 
 Major code refactoring

@@ -335,7 +335,6 @@ void NavigatePlayers::goNext()
 		if (this->isVisible())
 			n->showMaximized();
 		n->setFocusWidget();
-		n->setFocus();
 	}
 }
 void NavigatePlayers::goPrev()
@@ -344,7 +343,6 @@ void NavigatePlayers::goPrev()
 		if (this->isVisible())
 			p->showMaximized();
 		p->setFocusWidget();
-		p->setFocus();
 	}
 }
 
