@@ -670,8 +670,16 @@ qint64 IPythonConsoleProcess::start(int font_size, const QString& _style , const
 		" \"import sys; sys.path.append('" + sys_path + "');import Thermavip; Thermavip.setSharedMemoryName('" + shared_memory_name + "'); Thermavip._ipython_interp = __interp \""
 		" \"" + current + "\" " + QString::number(qApp->applicationPid());
 	
-	if (d_data->embedded)
+	QStringList args;
+	args << path << QString::number(font_size) << style
+	     << "import sys; sys.path.append('" + sys_path + "');import Thermavip; Thermavip.setSharedMemoryName('" + shared_memory_name + "'); Thermavip._ipython_interp = __interp"
+	     << current << QString::number(qApp->applicationPid());
+
+	if (d_data->embedded) {
+
 		cmd += " 1";
+		args << "1";
+	}
 	vip_debug("IPython shell cmd: %s\n", cmd.toLatin1().data());
 
 	QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
@@ -681,10 +689,14 @@ qint64 IPythonConsoleProcess::start(int font_size, const QString& _style , const
 	// For windows, we must add some paths to PATH in case of anaconda install
 	// First, we need the python path
 	QProcess p;
-	p.start(python + " -c \"import sys; print(sys.executable)\"");
+	QStringList _args;
+	_args << "-c" << "import sys; print(sys.executable)";
+	p.start(python, _args);
 	p.waitForStarted();
 	p.waitForFinished();
-	QByteArray ar = p.readAllStandardOutput();
+	
+	QByteArray ar = p.readAllStandardOutput() ;
+	QString err = p.errorString();
 	if (!ar.isEmpty()) {
 		vip_debug("found Python at %s\n", ar.data());
 		VIP_LOG_INFO("Found Python at %s\n", ar.data());
@@ -718,16 +730,17 @@ qint64 IPythonConsoleProcess::start(int font_size, const QString& _style , const
 	QDir::setCurrent(env.value("HOME"));
 #endif
 
-	this->QProcess::start(cmd);
+	this->QProcess::start(python,args);
 	this->waitForStarted(5000);
 
+	QString err_ipython = p.errorString();
 	QDir::setCurrent(current);
 
 	//read pid
 	qint64 pid = 0;
 	while (state() == Running) {
 		if (waitForReadyRead(timeout())) {
-			QByteArray tmp = readAllStandardOutput();
+			QByteArray tmp = readAllStandardOutput() + readAllStandardError();
 			vip_debug("%s\n", tmp.data());
 			pid = tmp.split('\n').first().toLongLong();
 			break;
@@ -740,11 +753,14 @@ qint64 IPythonConsoleProcess::start(int font_size, const QString& _style , const
 		if (!waitForFinished(1000))
 			kill();
 		d_data->lastError = this->errorString() + "\n" + readAllStandardError();
+		vip_debug("%s\n", d_data->lastError.toLatin1().data());
 		return 0;
 	}
 
-	if(pid == 0)
+	if (pid == 0) {
 		d_data->lastError = this->errorString() + "\n" + readAllStandardError();
+		vip_debug("%s\n", d_data->lastError.toLatin1().data());
+	}
 
 	
 	return d_data->pid = pid; 
@@ -1139,11 +1155,19 @@ IPythonWidget::IPythonWidget(int font_size, const QString& style, QWidget* paren
 
 	if (pid) { 
 		WId handle = (WId)pid;
+
+		//TEST
+/* #ifdef _WIN32
+		SetParent((HWND)handle, (HWND)this->window()->winId());
+		SetWindowLongPtrW((HWND)handle, GWL_STYLE, WS_POPUP);
+#endif*/
+
 		d_data->window = QWindow::fromWinId((WId)handle);
-		d_data->widget = QWidget::createWindowContainer(d_data->window);
+		d_data->widget = QWidget::createWindowContainer(d_data->window,this);
 		d_data->widget->setObjectName("IPythonWidget");
 		d_data->layout = new QVBoxLayout();
-		d_data->layout->setContentsMargins(0, 0, 0, 0);
+		//d_data->layout->setContentsMargins(0, 0, 0, 0);
+		d_data->layout->setContentsMargins(5, 5, 5, 5);
 		d_data->layout->addWidget(d_data->widget);
 		setLayout(d_data->layout);
 
@@ -1165,6 +1189,7 @@ IPythonWidget::IPythonWidget(int font_size, const QString& style, QWidget* paren
 
 IPythonWidget::~IPythonWidget()
 {
+	disconnect(qApp, SIGNAL(focusChanged(QWidget*, QWidget*)), this, SLOT(focusChanged(QWidget*, QWidget*)));
 }
 
 IPythonConsoleProcess* IPythonWidget::process() const
@@ -1543,9 +1568,11 @@ IPythonToolWidget::IPythonToolWidget(VipMainWindow* win)
 	:VipToolWidget(win)
 {
 	m_tabs = new IPythonTabWidget();
-	this->setWidget(m_tabs, Qt::Horizontal);
+	//this->setWidget(m_tabs, Qt::Horizontal);
+	this->QDockWidget::setWidget(m_tabs); // With Qt6, embedding an external window inside a QScrollArea causes display bugs
 	this->setWindowTitle("IPython external consoles");
 	this->setObjectName("IPython external consoles");
+	m_tabs->setStyleSheet("IPythonTabWidget{padding: 3px;}");
 	this->setFeatures(QDockWidget::DockWidgetClosable | QDockWidget::DockWidgetMovable );
 }
 

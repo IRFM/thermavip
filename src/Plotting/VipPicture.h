@@ -156,13 +156,15 @@ public:
 	void setBackgroundColor(const QColor& c);
 	QColor backgroundColor() const;
 
+	/// @brief Returns true if we are in-between calls to startRendering() and stopRendering().
+	static bool isInPainting();
+
+public Q_SLOTS:
 	/// @brief Start rendering. Call this before painting to the VipOpenGLWidget (like at the beginning of paintEvent()).
 	void startRendering();
 	/// @brief Stop rendering. Call this after painting to the VipOpenGLWidget (like at the end of paintEvent()).
 	void stopRendering();
 
-	/// @brief Returns true if we are in-between calls to startRendering() and stopRendering().
-	static bool isInPainting();
 
 private:
 	

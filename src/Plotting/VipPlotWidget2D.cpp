@@ -280,9 +280,7 @@ VipRubberBand::VipRubberBand(VipAbstractPlotArea* parent)
 	boxStyle().setBackgroundBrush(QBrush(c));
 }
 
-VipRubberBand::~VipRubberBand()
-{
-}
+VipRubberBand::~VipRubberBand() {}
 
 void VipRubberBand::setArea(VipAbstractPlotArea* a)
 {
@@ -818,159 +816,6 @@ struct Legend
 	bool operator!=(const VipLegend* other) const noexcept { return legend.data() != other; }
 };
 
-static void updateCacheMode(VipAbstractPlotArea* w, bool useCache)
-{
-#ifndef VIP_CUSTOM_ITEM_CACHING
-	(void)w;
-	(void)useCache;
-#else // VIP_CUSTOM_ITEM_CACHING
-	if (useCache) {
-		if (QPixmapCache::cacheLimit() < 100000)
-			QPixmapCache::setCacheLimit(120000);
-	}
-	if (!w)
-		return;
-	const QList<VipAbstractScale*> scales = w->allScales();
-	for (int i = 0; i < scales.size(); ++i) {
-		QGraphicsItem::CacheMode mode = scales[i]->cacheMode();
-		if (useCache && mode != QGraphicsItem::DeviceCoordinateCache)
-			scales[i]->setCacheMode(QGraphicsItem::DeviceCoordinateCache);
-		else if (!useCache && mode != QGraphicsItem::NoCache)
-			scales[i]->setCacheMode(QGraphicsItem::NoCache);
-	}
-#endif
-}
-
-/* static QWindow* window()
-{
-	// Create a QWindow
-	QWindow* win = nullptr;
-	if (!win) {
-		QSurfaceFormat format = QSurfaceFormat::defaultFormat();
-		win = new QWindow();
-		win->setSurfaceType(QWindow::OpenGLSurface);
-		win->setFormat(format);
-		win->create();
-	}
-	return win;
-}*/
-static QWindow* globalWindow()
-{
-	// Create a QWindow
-	static QWindow* win = nullptr;
-	if (!win) {
-		QSurfaceFormat format = QSurfaceFormat::defaultFormat();
-		win = new QWindow();
-		win->setSurfaceType(QWindow::OpenGLSurface);
-		win->setFormat(format);
-		win->create();
-	}
-	return win;
-}
-
-/* static QOpenGLContext* context()
-{
-	// Create a QOpenGLContext
-	QOpenGLContext* ctx = nullptr;
-	if (!ctx) {
-		QSurfaceFormat format = QSurfaceFormat::defaultFormat();
-		ctx = new QOpenGLContext();
-		ctx->setFormat(format);
-		if (!ctx->create()) {
-			VIP_LOG_WARNING("Cannot create the requested OpenGL context!");
-			delete ctx;
-			ctx = nullptr;
-		}
-	}
-	return ctx;
-}*/
-static QOpenGLContext* globalContext()
-{
-	// Create a QOpenGLContext
-	static QOpenGLContext* ctx = nullptr;
-	static bool initialized = false;
-	if (!initialized) {
-		initialized = true;
-		QSurfaceFormat format = QSurfaceFormat::defaultFormat();
-		ctx = new QOpenGLContext();
-		ctx->setFormat(format);
-		if (!ctx->create()) {
-			VIP_LOG_WARNING("Cannot create the requested OpenGL context!");
-			delete ctx;
-			return ctx = nullptr;
-		}
-	}
-	return ctx;
-}
-
-/* static QOpenGLFramebufferObject* createBuffer(QOpenGLFramebufferObject* buf, const QSize& size)
-{
-	// Create/reset a QOpenGLFramebufferObject with given size
-	if (!buf || buf->size().width() < size.width() || buf->size().height() < size.height()) { // buf->size() != size
-		if (buf) {
-			delete buf;
-		}
-
-		QOpenGLFramebufferObjectFormat fboFormat;
-		fboFormat.setSamples(QSurfaceFormat::defaultFormat().samples());
-		fboFormat.setAttachment(QOpenGLFramebufferObject::CombinedDepthStencil);
-		buf = new QOpenGLFramebufferObject(size, fboFormat);
-	}
-	return buf;
-}*/
-
-static QOpenGLFramebufferObject* globalBuffer(const QSize& size)
-{
-	static QOpenGLFramebufferObject* buf = nullptr;
-	// Create/reset a QOpenGLFramebufferObject with given size
-	if (!buf || buf->size().width() < size.width() || buf->size().height() < size.height()) { //
-		if (buf) {
-			delete buf;
-		}
-
-		QOpenGLFramebufferObjectFormat fboFormat;
-		fboFormat.setSamples(QSurfaceFormat::defaultFormat().samples());
-		fboFormat.setAttachment(QOpenGLFramebufferObject::CombinedDepthStencil);
-		buf = new QOpenGLFramebufferObject(size, fboFormat);
-	}
-	return buf;
-}
-
-struct ImageOrPixmap
-{
-	QImage image;
-	QPixmap pixmap;
-	ImageOrPixmap() {}
-	ImageOrPixmap(const QImage& img)
-	  : image(img)
-	{
-	}
-	ImageOrPixmap(const QPixmap& pix)
-	  : pixmap(pix)
-	{
-	}
-	QPaintDevice* device()
-	{
-		if (!image.isNull())
-			return &image;
-		return &pixmap;
-	}
-	bool isNull() const { return image.isNull() && pixmap.isNull(); }
-	QSize size() const
-	{
-		if (!image.isNull())
-			return image.size();
-		return pixmap.size();
-	}
-	void draw(QPainter* p, const QRectF& dst) const
-	{
-		if (!image.isNull())
-			p->drawImage(dst, image);
-		else
-			p->drawPixmap(dst.toRect(), pixmap);
-	}
-};
-
 class VipAbstractPlotArea::PrivateData
 {
 public:
@@ -1302,151 +1147,11 @@ bool VipAbstractPlotArea::markGeometryDirty()
 	return true;
 }
 
-#define MODE_OPENGL 1
-#define MODE_RASTER 0
-
-static QImage createImageWithFBO(int mode, // QOpenGLFramebufferObject ** buffer, QOpenGLContext * context, QWindow * window,
-				 const QList<QGraphicsItem*>& items,
-				 const QGraphicsItem* parent)
-{
-	static const int max_width = 4000;
-
-	QTransform tr;
-	QRectF bounding = parent->boundingRect();
-	QPointF topLeft = parent->boundingRect().topLeft();
-	tr.translate(-topLeft.x(), -topLeft.y());
-	// limit image size to max_width*max_width
-	QSize s = bounding.size().toSize();
-	double max = qMax(bounding.width(), bounding.height());
-	if (max > max_width) {
-		if (max == bounding.width()) {
-			double factor = max_width / bounding.width();
-			tr.scale(factor, factor);
-			s.setWidth(max_width);
-			s.setHeight(bounding.height() * factor);
-		}
-		else {
-			double factor = max_width / bounding.height();
-			tr.scale(factor, factor);
-			s.setHeight(max_width);
-			s.setWidth(bounding.width() * factor);
-		}
-	}
-
-	// qint64 st = QDateTime::currentMSecsSinceEpoch();
-
-	QImage res;
-	if (mode == MODE_OPENGL) {
-
-		if (!globalContext())
-			return res;
-		globalContext()->makeCurrent(globalWindow());
-		QOpenGLFramebufferObject* buffer = globalBuffer(s);
-		// vip_debug("opengl: %s\n", (const char*)globalContext()->functions()->glGetString(GL_VERSION));
-		if (!(globalContext()->functions()->openGLFeatures() & QOpenGLFunctions::Shaders)) {
-			return QImage();
-		}
-
-		(buffer)->bind();
-
-		QOpenGLPaintDevice device(s);
-		QPainter painter;
-		painter.begin(&device);
-
-		painter.beginNativePainting();
-		glClearColor(0.0, 0.0, 0.0, 0.0);
-		glClear(GL_COLOR_BUFFER_BIT);
-		painter.endNativePainting();
-		painter.setTransform(tr, false);
-
-		for (int i = 0; i < items.size(); ++i) {
-			if (!items[i]->isVisible())
-				continue;
-			painter.save();
-			QPointF p = items[i]->pos();
-			QTransform t;
-			t.translate(p.x(), p.y());
-			t *= items[i]->transform();
-			painter.setTransform(t, true);
-			QGraphicsItem* o = items[i];
-			o->paint(&painter, nullptr, nullptr);
-			painter.restore();
-		}
-
-		painter.end();
-
-		// qint64 st = QDateTime::currentMSecsSinceEpoch();
-		const QImage tmp = (buffer)->toImage();
-		// qint64 el = QDateTime::currentMSecsSinceEpoch() - st;
-		// vip_debug("toImage: %i ms %i\n", (int)el, (int)buffer->hasOpenGLFramebufferBlit());
-
-		res = tmp.copy(QRect(QPoint(0, tmp.height() - s.height()), s));
-		// qint64 el2 = QDateTime::currentMSecsSinceEpoch() - st;
-		// vip_debug("to image: %i %i ms\n", (int)el,(int)el2);
-		(buffer)->release();
-	}
-	else {
-		QImage img(s.width(), s.height(), QImage::Format_ARGB32);
-		{
-			QPainter painter(&img);
-			painter.setTransform(tr);
-			for (int i = 0; i < items.size(); ++i) {
-				if (!items[i]->isVisible())
-					continue;
-				painter.save();
-				QPointF p = items[i]->pos();
-				QTransform t;
-				t.translate(p.x(), p.y());
-				t *= items[i]->transform();
-				painter.setTransform(t, true);
-				items[i]->paint(&painter, nullptr, nullptr);
-				painter.restore();
-			}
-		}
-		res = img;
-	}
-
-	// qint64 el2 = QDateTime::currentMSecsSinceEpoch() - st;
-
-	// qint64 el = QDateTime::currentMSecsSinceEpoch() - st;
-	// vip_debug("opengl: %i , %i ms\n", (int)el, (int)el2);
-	return res;
-}
-
-QImage VipAbstractPlotArea::renderOpengl(const QList<VipPaintItem*>& items) const
-{
-	QList<QGraphicsItem*> objs;
-	for (VipPaintItem* it : items) {
-		it->setPaintingEnabled(true);
-		if (QGraphicsObject* o = it->graphicsObject())
-			objs.push_back(o);
-	}
-
-	// render
-	// qint64 st = QDateTime::currentMSecsSinceEpoch();
-	const QImage res = createImageWithFBO(MODE_OPENGL, objs, this);
-	// qint64 el = QDateTime::currentMSecsSinceEpoch() - st;
-	// vip_debug("renderOpengl: %i\n", (int)el);
-	return res;
-}
-
-QImage VipAbstractPlotArea::renderRaster(const QList<VipPaintItem*>& items) const
-{
-	QList<QGraphicsItem*> objs;
-	for (VipPaintItem* it : items) {
-		it->setPaintingEnabled(true);
-		if (QGraphicsObject* o = it->graphicsObject())
-			objs.push_back(o);
-	}
-	// render
-	return createImageWithFBO(MODE_RASTER, objs, this);
-}
-
 void VipAbstractPlotArea::doUpdateScaleLogic()
 {
 	d_data->insideUpdate = true;
 	d_data->insideComputeScaleDiv = true;
-	//bool need_update = d_data->markNeedUpdate;
+	// bool need_update = d_data->markNeedUpdate;
 
 	if (d_data->dirtyScaleDiv.size()) {
 
@@ -1458,10 +1163,6 @@ void VipAbstractPlotArea::doUpdateScaleLogic()
 				scales[i]->computeScaleDiv();
 			}
 
-			// for (QSet<VipAbstractScale*>::iterator it = d_data->dirtyScaleDiv.begin(); it != d_data->dirtyScaleDiv.end(); ++it) {
-			//  (*it)->computeScaleDiv();
-			//  }
-			//need_update = true;
 			d_data->dcount = 0;
 		}
 	}
@@ -1471,7 +1172,7 @@ void VipAbstractPlotArea::doUpdateScaleLogic()
 	if (d_data->markGeometryDirty-- > 0 || d_data->boundingRect != boundingRect()) {
 		d_data->boundingRect = boundingRect();
 		recomputeGeometry();
-		//need_update = true;
+		// need_update = true;
 		if (d_data->rubberBand) {
 			d_data->rubberBand->updateGeometry();
 		}
@@ -1489,163 +1190,12 @@ void VipAbstractPlotArea::doUpdateScaleLogic()
 	d_data->dirtyScaleDiv.clear();
 }
 
-/*
-static int __renderThreads = 1;
-
-void VipAbstractPlotArea::setRenderingThreads(int count)
-{
-	if (__renderThreads != count && count > 0)
-	{
-		__renderThreads = count;
-		// compute screen resolution as it will crash if done for the first time in non GUI thread
-		VipPainter::screenResolution();
-	}
-}
-
-int VipAbstractPlotArea::renderingThreads()
-{
-	return __renderThreads;
-}
-
-bool VipAbstractPlotArea::paintOpenGLInternal(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget)
-{
-	//for opengl widget, use paint()
-	if (VipPainter::isOpenGL(painter) || VipPainter::isVectoriel(painter) || __renderThreads < 2)
-		return false;
-
-	if (renderPool().numberOfThreads() != __renderThreads)
-		renderPool().setNumberOfThreads(__renderThreads);
-
-	if (d_data->markNeedUpdate) {
-		//qint64 started = QDateTime::currentMSecsSinceEpoch();
-
-		// trigger all areas that need update
-		QList< VipAbstractPlotArea*> areas;
-		for (int i = 0; i < allAreas.size(); ++i) {
-			VipAbstractPlotArea* area = allAreas[i];
-			if (area->d_data->markNeedUpdate) {
-				area->doUpdateScaleLogic();
-				if (area->isVisible() && area->view()->isVisible())
-					areas.append(area);
-			}
-		}
-		//qint64 st = QDateTime::currentMSecsSinceEpoch();
-		renderPool().push(areas);
-		//qint64 el = QDateTime::currentMSecsSinceEpoch() - st;
-		//vip_debug("push: %i ms\n", (int)el);
-	}
-
-
-
-	// draw itself
-	VipBoxGraphicsWidget::paint(painter, option, widget);
-
-	const ImageOrPixmap img_opengl = renderPool().retrieve(this);
-
-	if (!img_opengl.isNull()) {
-		painter->save();
-		QRect r = boundingRect().toRect();
-		if (r.size() == img_opengl.size()) {
-			painter->setRenderHints(QPainter::RenderHints());
-			img_opengl.draw(painter, r);
-		}
-		else {
-			painter->setRenderHint(QPainter::SmoothPixmapTransform);
-			img_opengl.draw(painter, boundingRect());
-		}
-		painter->restore();
-	}
-
-	return true;
-}*/
-
 void VipAbstractPlotArea::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget)
 {
-	/* bool opengl = VipPainter::isOpenGL(painter);
-	if (widget && !opengl && __renderThreads > 1 && paintOpenGLInternal(painter, option, widget))
-		return;
-
-	if (renderPool().numberOfThreads() != __renderThreads)
-		renderPool().setNumberOfThreads(__renderThreads);*/
-
 	doUpdateScaleLogic();
 
 	// draw itself
 	VipBoxGraphicsWidget::paint(painter, option, widget);
-
-	// draw children with opengl only when drawing on a non opengl widget
-	/* if (widget && !VipPainter::isOpenGL(painter) && ((d_data->renderStrategy == AutoStrategy) || (d_data->renderStrategy == OpenGLOffscreen))) {
-		QImage img_raster;
-		QImage img_opengl;
-		//compute the list of children VipPaintItem
-		QList<VipPaintItem*> items = paintItemChildren();
-
-
-		if ((d_data->renderStrategy == AutoStrategy) && d_data->dirtyComputeStrategy == 1) {
-			// Note that d_data->dirtyComputeStrategy is 1 when dirty, 2 when non dirty and Default strategy is best,
-			// 3 when non dirty and OpenGLOffscreen strategy is best
-
-			//render a first time to initialize opengl context which takes time
-			if (d_data->testOpenGL) {
-				d_data->testOpenGL = false;
-				renderOpengl(items);
-			}
-
-			qint64 st = QDateTime::currentMSecsSinceEpoch();
-			img_raster = renderRaster(items);
-			qint64 el_raster = QDateTime::currentMSecsSinceEpoch() - st;
-			st = QDateTime::currentMSecsSinceEpoch();
-			img_opengl = renderOpengl(items);
-			qint64 el_opengl = QDateTime::currentMSecsSinceEpoch() - st;
-			if (el_opengl < el_raster && !img_opengl.isNull()) {
-				d_data->dirtyComputeStrategy = 3;
-				//vip_debug("opengl better\n");
-			}
-			else {
-				d_data->dirtyComputeStrategy = 2;
-				//vip_debug("raster better\n");
-			}
-			//d_data->dirtyComputeStrategy = 3;
-		}
-		if ((d_data->renderStrategy == OpenGLOffscreen) || d_data->dirtyComputeStrategy == 3) {
-			if (img_opengl.isNull()) {
-				//qint64 st = QDateTime::currentMSecsSinceEpoch();
-				img_opengl = renderOpengl(items);
-				//qint64 el_opengl = QDateTime::currentMSecsSinceEpoch() - st;
-				//vip_debug("opengl: %i\n", (int)el_opengl);
-			}
-			painter->save();
-
-			QRectF r = boundingRect().toRect();
-			if(r.size().toSize() == img_opengl.size())
-				painter->drawImage(r, img_opengl); //avoid a pixmap transform if possible
-			else {
-				painter->setRenderHint(QPainter::SmoothPixmapTransform);
-				painter->drawImage(boundingRect(), img_opengl);
-			}
-			painter->restore();
-
-			//disable painting opengl items
-			for (int i = 0; i < items.size(); ++i) {
-				items[i]->setPaintingEnabled(false);
-
-			}
-		}
-		else {
-			//enable all items for painting
-			for (int i = 0; i < items.size(); ++i)
-				items[i]->setPaintingEnabled(true);
-		}
-	}
-	else if ((d_data->renderStrategy == OpenGLOffscreen) || d_data->dirtyComputeStrategy == 3) {
-		//enable all items for painting
-		QList<VipPaintItem*> items = paintItemChildren();
-		for (VipPaintItem* it : items)
-			it->setPaintingEnabled(true);
-	}*/
-
-	// qint64 el = QDateTime::currentMSecsSinceEpoch()-st;
-	// vip_debug("%i ms, %s\n",(int)el, this->metaObject()->className());
 }
 
 void VipAbstractPlotArea::applyLabelOverlapping()
@@ -2157,7 +1707,6 @@ bool VipAbstractPlotArea::internalAddScale(VipAbstractScale* scale, bool // isSp
 )
 {
 	scale->setParentItem(this);
-	updateCacheMode(this, view() ? qobject_cast<QOpenGLWidget*>(view()->viewport()) != nullptr : false);
 	return true;
 }
 
@@ -3334,7 +2883,7 @@ PlotItemList VipAbstractPlotArea::plotItems(const QPointF& pos, int axis, double
 			int legend_index = -1;
 			QPointF item_pos = mapToItem(item, pos);
 			bool r = item->areaOfInterest(item_pos, axis, maxDistance, out, st, legend_index);
-			 
+
 			if (r || item->shape().contains(item_pos)) {
 				res << item;
 				out_points << out;
@@ -3693,7 +3242,6 @@ public:
 						if (!vipFuzzyCompare(inner.bottom(), bottom)) {
 							a->d_data->aligned_margins.bottom = inner.bottom() - bottom;
 						}
-
 					}
 				}
 			}
@@ -4024,9 +3572,7 @@ VipPlotArea2D::VipPlotArea2D(QGraphicsItem* parent)
 	d_data->yRight->setObjectName("Right axis");
 }
 
-VipPlotArea2D::~VipPlotArea2D()
-{
-}
+VipPlotArea2D::~VipPlotArea2D() {}
 
 VipAxisBase* VipPlotArea2D::leftAxis() const
 {
@@ -4273,9 +3819,7 @@ VipPlotPolarArea2D::VipPlotPolarArea2D(QGraphicsItem* parent)
 	radialAxis()->setAngle(90);
 }
 
-VipPlotPolarArea2D::~VipPlotPolarArea2D()
-{
-}
+VipPlotPolarArea2D::~VipPlotPolarArea2D() {}
 
 bool VipPlotPolarArea2D::setItemProperty(const char* name, const QVariant& value, const QByteArray& index)
 {
@@ -4441,87 +3985,13 @@ void VipPlotPolarArea2D::recomputeGeometry(bool recompute_aligned_areas)
 	this->update();
 }
 
-/* struct DisplayRateFilter : QObject
-{
-	int d_displayRate;
-	int d_displayTime;
-	qint64 d_lastUpdate;
-	QTimer d_timer;
-	QPointer<QWidget> d_widget;
-
-	DisplayRateFilter(QWidget * widget, int displayRate = 30)
-		: QObject(widget), d_displayRate(0), d_displayTime(0), d_lastUpdate(0), d_widget(widget)
-	{
-		setDisplayRate(displayRate);
-		d_timer.setSingleShot(true);
-		connect(&d_timer, SIGNAL(timeout()), widget, SLOT(update()), Qt::DirectConnection);
-		widget->installEventFilter(this);
-	}
-	~DisplayRateFilter()
-	{
-		if (d_widget)
-			disconnect(&d_timer, SIGNAL(timeout()), d_widget, SLOT(update()));
-		d_timer.stop();
-	}
-
-	void setDisplayRate(int rate)
-	{
-		d_displayRate = rate;
-		d_displayTime = (1.0 / rate) * 1000;
-		d_lastUpdate = 0;
-	}
-
-	virtual bool eventFilter(QObject * , QEvent * evt)
-	{
-		if (evt->type() == QEvent::Paint) {
-			qint64 current = QDateTime::currentMSecsSinceEpoch();
-			if (d_lastUpdate == 0) {
-				d_lastUpdate = current;
-				return false;
-			}
-			qint64 elapsed = current - d_lastUpdate;
-			if (elapsed > d_displayTime) {
-				d_lastUpdate = current;
-				return false;
-			}
-			d_timer.start(d_displayTime - elapsed);
-			return true;
-		}
-		return false;
-	}
-};
-
-void vipSetMaxDisplayRate(QGraphicsView * view, int displayRate)
-{
-	DisplayRateFilter * filter = static_cast<DisplayRateFilter*>(view->findChild<QObject*>("_vip_displayRateFilter"));
-	if (displayRate <= 0) {
-		if(filter)
-			delete filter;
-		view->setProperty("_vip_displayRateFilter", QVariant());
-		view->setProperty("_vip_displayRate", QVariant());
-		return;
-	}
-
-	if (!filter) {
-		filter = new DisplayRateFilter(view->viewport(), displayRate);
-		view->setProperty("_vip_displayRateFilter", QVariant::fromValue((QObject*)filter));
-	}
-	else
-		filter->setDisplayRate(displayRate);
-	view->setProperty("_vip_displayRate", displayRate);
-}
-int vipMaxDisplayRate(QGraphicsView * view)
-{
-	return view->property("_vip_displayRate").toInt();
-}
-
-*/
-
 class VipBaseGraphicsView::PrivateData
 {
 public:
 	QSharedPointer<QColor> backgroundColor;
 	bool useInternalViewport;
+	QPointer<QWidget> viewport;
+	bool hasStartRendering{ false };
 };
 
 VipBaseGraphicsView::VipBaseGraphicsView(QGraphicsScene* sc, QWidget* parent)
@@ -4556,8 +4026,6 @@ VipBaseGraphicsView::VipBaseGraphicsView(QGraphicsScene* sc, QWidget* parent)
 	this->scene()->setParent(this);
 
 	this->scene()->setItemIndexMethod(QGraphicsScene::NoIndex);
-	// if (qobject_cast<)
-	updateCacheMode(false);
 
 	setMouseTracking(true);
 }
@@ -4573,16 +4041,6 @@ VipBaseGraphicsView::~VipBaseGraphicsView()
 		setScene(nullptr);
 		delete sc;
 	}
-}
-
-void VipBaseGraphicsView::updateCacheMode(bool enable_cache)
-{
-	if (!this->scene())
-		return;
-	QList<QGraphicsItem*> items = this->scene()->items();
-	for (int i = 0; i < items.size(); ++i)
-		if (VipAbstractPlotArea* a = qobject_cast<VipAbstractPlotArea*>(items[i]->toGraphicsObject()))
-			::updateCacheMode(a, enable_cache);
 }
 
 void VipBaseGraphicsView::keyPressEvent(QKeyEvent* event)
@@ -4621,7 +4079,6 @@ void VipBaseGraphicsView::setRenderingMode(RenderingMode mode)
 				if (VipPaintItem* it = o->property("VipPaintItem").value<VipPaintItem*>())
 					it->setPaintingEnabled(true);
 		}
-		updateCacheMode(true);
 		update();
 		return;
 	}
@@ -4643,7 +4100,6 @@ void VipBaseGraphicsView::setRenderingMode(RenderingMode mode)
 				if (VipPaintItem* it = o->property("VipPaintItem").value<VipPaintItem*>())
 					it->setPaintingEnabled(true);
 		}
-		updateCacheMode(true);
 		update();
 		return;
 	}
@@ -4652,7 +4108,6 @@ void VipBaseGraphicsView::setRenderingMode(RenderingMode mode)
 		if (renderingMode() == Raster)
 			return;
 		setViewport(new QWidget());
-		updateCacheMode(false);
 		update();
 		return;
 	}
@@ -4680,15 +4135,9 @@ bool VipBaseGraphicsView::useInternalViewport() const
 	return d_data->useInternalViewport;
 }
 
-void VipBaseGraphicsView::startRender(VipRenderState&)
-{
-	updateCacheMode(false);
-}
+void VipBaseGraphicsView::startRender(VipRenderState&) {}
 
-void VipBaseGraphicsView::endRender(VipRenderState&)
-{
-	updateCacheMode(isOpenGLBasedRendering());
-}
+void VipBaseGraphicsView::endRender(VipRenderState&) {}
 
 bool VipBaseGraphicsView::renderObject(QPainter* p, const QPointF& pos, bool draw_background)
 {
@@ -4762,19 +4211,22 @@ void VipBaseGraphicsView::paintEvent(QPaintEvent* evt)
 	else
 		c = qApp->palette(this).color(QPalette::Window);
 
-	VipOpenGLWidget* w = qobject_cast<VipOpenGLWidget*>(viewport());
-	if (w)
-		w->startRendering();
-	// qint64 st = QDateTime::currentMSecsSinceEpoch();
+	QWidget* v = viewport();
+	if (v != d_data->viewport) {
+		d_data->viewport = v;
+		d_data->hasStartRendering = (v->metaObject()->indexOfMethod("startRendering()") >= 0 && v->metaObject()->indexOfMethod("stopRendering()") >= 0);
+	}
+	if (d_data->hasStartRendering)
+		QMetaObject::invokeMethod(v, "startRendering", Qt::DirectConnection);
+
 	{
 		QPainter p(viewport());
 		p.fillRect(QRect(0, 0, width(), height()), c);
 	}
 	QGraphicsView::paintEvent(evt);
-	if (w)
-		w->stopRendering();
-	// qint64 el = QDateTime::currentMSecsSinceEpoch() - st;
-	// printf("el : %i ms\n", (int)el);
+	
+	if (d_data->hasStartRendering)
+		QMetaObject::invokeMethod(v, "stopRendering", Qt::DirectConnection);
 }
 
 QRectF VipBaseGraphicsView::visualizedSceneRect() const
@@ -4812,13 +4264,9 @@ VipAbstractPlotWidget2D::VipAbstractPlotWidget2D(QGraphicsScene* scene, QWidget*
 
 void VipAbstractPlotWidget2D::setArea(VipAbstractPlotArea* area)
 {
-
 	d_area = area;
-
 	if (area && !scene()->focusItem())
 		area->setFocus();
-
-	this->updateCacheMode(isOpenGLBasedRendering());
 }
 
 VipAbstractPlotArea* VipAbstractPlotWidget2D::area() const
@@ -4896,18 +4344,10 @@ VipPlotPolarWidget2D::VipPlotPolarWidget2D(QWidget* parent, QGraphicsScene* sc)
 {
 	d_area = new VipPlotPolarArea2D();
 
-	// Set-up the scene
-	// QGraphicsScene * sc = new QGraphicsScene(this);
-	// setScene(sc);
 	viewport()->setMouseTracking(true);
 
 	scene()->addItem(d_area);
 	scene()->setSceneRect(QRectF(0, 0, 1000, 1000));
-
-	// setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-	// setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-	// setViewportUpdateMode(QGraphicsView::FullViewportUpdate);
-
 	area()->setGeometry(sceneRect());
 	VipAbstractPlotWidget2D::setArea(d_area);
 }
@@ -4934,8 +4374,6 @@ VipPlotPolarArea2D* VipPlotPolarWidget2D::area() const
 
 void VipPlotPolarWidget2D::recomputeGeometry()
 {
-	// this->setSceneRect(QRectF(0, 0, width(), height()));
-	//  d_area->setGeometry(QRectF(0, 0, width(), height()));
 	QRectF scene_rect = QRectF(0, 0, width(), height()); // sceneRect();
 	setSceneRect(scene_rect);
 	d_area->setGeometry(scene_rect);
@@ -4984,9 +4422,7 @@ VipImageArea2D::VipImageArea2D(QGraphicsItem* parent)
 	connect(bottomAxis(), SIGNAL(scaleDivChanged(bool)), this, SLOT(emitVisualizedAreaChanged()));
 }
 
-VipImageArea2D::~VipImageArea2D()
-{
-}
+VipImageArea2D::~VipImageArea2D() {}
 
 bool VipImageArea2D::setItemProperty(const char* name, const QVariant& value, const QByteArray& index)
 {
@@ -5159,45 +4595,6 @@ void VipImageArea2D::recomputeGeometry(const QRectF& visualized_image_rect, bool
 			requested_rect.setTop(im_bounding_rect.top());
 		if (requested_rect.bottom() > im_bounding_rect.bottom())
 			requested_rect.setBottom(im_bounding_rect.bottom());
-
-		//
-		// adjust the requested rect to the real image rect without changing the visualized width/height ratio
-		//
-
-		// change the left and right position if necessary
-		// EDIT: commented and replaced by above if conditions
-		// if (requested_rect.width() > im_bounding_rect.width())
-		//  {
-		//  //center horizontally
-		//  requested_rect.moveLeft(im_bounding_rect.left() - (requested_rect.width() - im_bounding_rect.width()) / 2);
-		//  }
-		//  else if (requested_rect.left() < im_bounding_rect.left())
-		//  {
-		//  //move to the right
-		//  requested_rect.moveLeft(im_bounding_rect.left());
-		//  }
-		//  else if (requested_rect.right() > im_bounding_rect.right())
-		//  {
-		//  //move to the left
-		//  requested_rect.moveRight(im_bounding_rect.right());
-		//  }
-		//
-		// //change the top and bottom position if necessary
-		// if (requested_rect.height() > im_bounding_rect.height())
-		// {
-		// //center horizontally
-		// requested_rect.moveTop(im_bounding_rect.top() - (requested_rect.height() - im_bounding_rect.height()) / 2);
-		// }
-		// else if (requested_rect.top() < im_bounding_rect.top())
-		// {
-		// //move to the right
-		// requested_rect.moveTop(im_bounding_rect.top());
-		// }
-		// else if (requested_rect.bottom() > im_bounding_rect.bottom())
-		// {
-		// //move to the left
-		// requested_rect.moveBottom(im_bounding_rect.bottom());
-		// }
 
 		double scene_w_on_h = usable_scene_rect.width() / usable_scene_rect.height();
 		double image_w_on_h = requested_rect.width() / requested_rect.height();

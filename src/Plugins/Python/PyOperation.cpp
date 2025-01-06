@@ -1205,7 +1205,8 @@ bool VipPyLocal::handleMagicCommand(const QString& cmd)
 		QString c = cmd;
 		c.replace("%pip", PythonInit::instance()->local_pip);
 		setWriteToProcess(p);
-		p->start(c);
+		QStringList args = c.split(" ", VIP_SKIP_BEHAVIOR::SkipEmptyParts);
+		p->start(args[0],args.mid(1));
 		while (p && p->state() == QProcess::Running) {
 			vipProcessEvents(nullptr, 20);
 		}

@@ -1137,6 +1137,7 @@ static void serialize_VipGuiDisplayParamaters(VipGuiDisplayParamaters* inst, Vip
 		if (arch.start("VipGuiDisplayParamaters")) {
 			arch.save();
 			QString version = arch.read("version").toString();
+			
 			if (version.isEmpty())
 				arch.restore();
 
@@ -1145,6 +1146,10 @@ static void serialize_VipGuiDisplayParamaters(VipGuiDisplayParamaters* inst, Vip
 			QList<int> ivers;
 			for (int i = 0; i < vers.size(); ++i)
 				ivers.append(vers[i].toInt());
+
+			int major = ivers.size() ? ivers.front() : 0;
+			if (major < 5)
+				return;
 
 			arch.save();
 			QString skin;

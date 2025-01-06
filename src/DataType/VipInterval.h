@@ -67,53 +67,53 @@ public:
 	//! Border flags
 	typedef QFlags<BorderFlag> BorderFlags;
 
-	VipInterval();
-	VipInterval(vip_double minValue, vip_double maxValue, BorderFlags = IncludeBorders);
+	VipInterval() noexcept;
+	VipInterval(vip_double minValue, vip_double maxValue, BorderFlags = IncludeBorders) noexcept;
 
-	void setInterval(vip_double minValue, vip_double maxValue, BorderFlags = IncludeBorders);
+	void setInterval(vip_double minValue, vip_double maxValue, BorderFlags = IncludeBorders) noexcept;
 
-	VipInterval normalized() const;
-	VipInterval inverted() const;
-	VipInterval limited(vip_double minValue, vip_double maxValue) const;
+	VipInterval normalized() const noexcept;
+	VipInterval inverted() const noexcept;
+	VipInterval limited(vip_double minValue, vip_double maxValue) const noexcept;
 
-	bool operator==(const VipInterval&) const;
-	bool operator!=(const VipInterval&) const;
+	bool operator==(const VipInterval&) const noexcept;
+	bool operator!=(const VipInterval&) const noexcept;
 
-	void setBorderFlags(BorderFlags);
-	BorderFlags borderFlags() const;
+	void setBorderFlags(BorderFlags) noexcept;
+	BorderFlags borderFlags() const noexcept;
 
-	vip_double minValue() const;
-	vip_double maxValue() const;
+	vip_double minValue() const noexcept;
+	vip_double maxValue() const noexcept;
 
-	vip_double width() const;
+	vip_double width() const noexcept;
 
-	void setMinValue(vip_double);
-	void setMaxValue(vip_double);
+	void setMinValue(vip_double) noexcept;
+	void setMaxValue(vip_double) noexcept;
 
-	bool contains(vip_double value) const;
+	bool contains(vip_double value) const noexcept;
 
-	bool intersects(const VipInterval&) const;
-	VipInterval intersect(const VipInterval&) const;
-	VipInterval unite(const VipInterval&) const;
+	bool intersects(const VipInterval&) const noexcept;
+	VipInterval intersect(const VipInterval&) const noexcept;
+	VipInterval unite(const VipInterval&) const noexcept;
 
-	VipInterval operator|(const VipInterval&) const;
-	VipInterval operator&(const VipInterval&) const;
+	VipInterval operator|(const VipInterval&) const noexcept;
+	VipInterval operator&(const VipInterval&) const noexcept;
 
-	VipInterval& operator|=(const VipInterval&);
-	VipInterval& operator&=(const VipInterval&);
+	VipInterval& operator|=(const VipInterval&) noexcept;
+	VipInterval& operator&=(const VipInterval&) noexcept;
 
-	VipInterval extend(vip_double value) const;
-	VipInterval operator|(vip_double) const;
-	VipInterval& operator|=(vip_double);
+	VipInterval extend(vip_double value) const noexcept;
+	VipInterval operator|(vip_double) const noexcept;
+	VipInterval& operator|=(vip_double) noexcept;
 
-	bool isValid() const;
-	bool isNull() const;
-	void invalidate();
+	bool isValid() const noexcept;
+	bool isNull() const noexcept;
+	void invalidate() noexcept;
 
-	VipInterval symmetrize(vip_double value) const;
+	VipInterval symmetrize(vip_double value) const noexcept;
 
-	static QRectF toRect(const QList<VipInterval>&);
-	static QList<VipInterval> fromRect(const QRectF&);
+	static QRectF toRect(const QList<VipInterval>&) noexcept;
+	static QList<VipInterval> fromRect(const QRectF&) noexcept;
 
 private:
 	vip_double d_minValue;
@@ -128,7 +128,7 @@ Q_DECLARE_TYPEINFO(VipInterval, Q_MOVABLE_TYPE);
 ///
 /// Creates an invalid interval [0.0, -1.0]
 /// \sa setInterval(), isValid()
-inline VipInterval::VipInterval()
+VIP_ALWAYS_INLINE VipInterval::VipInterval() noexcept
   : d_minValue(0.0)
   , d_maxValue(-1.0)
   , d_borderFlags(IncludeBorders)
@@ -142,7 +142,7 @@ inline VipInterval::VipInterval()
 /// \param minValue Minimum value
 /// \param maxValue Maximum value
 /// \param borderFlags Include/Exclude borders
-inline VipInterval::VipInterval(vip_double minValue, vip_double maxValue, BorderFlags borderFlags)
+VIP_ALWAYS_INLINE VipInterval::VipInterval(vip_double minValue, vip_double maxValue, BorderFlags borderFlags) noexcept
   : d_minValue(minValue)
   , d_maxValue(maxValue)
   , d_borderFlags(borderFlags)
@@ -154,7 +154,7 @@ inline VipInterval::VipInterval(vip_double minValue, vip_double maxValue, Border
 /// \param minValue Minimum value
 /// \param maxValue Maximum value
 /// \param borderFlags Include/Exclude borders
-inline void VipInterval::setInterval(vip_double minValue, vip_double maxValue, BorderFlags borderFlags)
+VIP_ALWAYS_INLINE void VipInterval::setInterval(vip_double minValue, vip_double maxValue, BorderFlags borderFlags) noexcept
 {
 	d_minValue = minValue;
 	d_maxValue = maxValue;
@@ -165,14 +165,14 @@ inline void VipInterval::setInterval(vip_double minValue, vip_double maxValue, B
 ///
 /// \param borderFlags Or'd BorderMode flags
 /// \sa borderFlags()
-inline void VipInterval::setBorderFlags(BorderFlags borderFlags)
+VIP_ALWAYS_INLINE void VipInterval::setBorderFlags(BorderFlags borderFlags) noexcept
 {
 	d_borderFlags = borderFlags;
 }
 
 /// \return Border flags
 /// \sa setBorderFlags()
-inline VipInterval::BorderFlags VipInterval::borderFlags() const
+VIP_ALWAYS_INLINE VipInterval::BorderFlags VipInterval::borderFlags() const noexcept
 {
 	return d_borderFlags;
 }
@@ -180,7 +180,7 @@ inline VipInterval::BorderFlags VipInterval::borderFlags() const
 /// Assign the lower limit of the interval
 ///
 /// \param minValue Minimum value
-inline void VipInterval::setMinValue(vip_double minValue)
+VIP_ALWAYS_INLINE void VipInterval::setMinValue(vip_double minValue) noexcept
 {
 	d_minValue = minValue;
 }
@@ -188,19 +188,19 @@ inline void VipInterval::setMinValue(vip_double minValue)
 /// Assign the upper limit of the interval
 ///
 /// \param maxValue Maximum value
-inline void VipInterval::setMaxValue(vip_double maxValue)
+VIP_ALWAYS_INLINE void VipInterval::setMaxValue(vip_double maxValue) noexcept
 {
 	d_maxValue = maxValue;
 }
 
 //! \return Lower limit of the interval
-inline vip_double VipInterval::minValue() const
+VIP_ALWAYS_INLINE vip_double VipInterval::minValue() const noexcept
 {
 	return d_minValue;
 }
 
 //! \return Upper limit of the interval
-inline vip_double VipInterval::maxValue() const
+VIP_ALWAYS_INLINE vip_double VipInterval::maxValue() const noexcept
 {
 	return d_maxValue;
 }
@@ -210,7 +210,7 @@ inline vip_double VipInterval::maxValue() const
 /// when minValue() < maxValue()
 ///
 /// \return True, when the interval is valid
-inline bool VipInterval::isValid() const
+VIP_ALWAYS_INLINE bool VipInterval::isValid() const noexcept
 {
 	if ((d_borderFlags & ExcludeBorders) == 0)
 		return d_minValue <= d_maxValue;
@@ -225,7 +225,7 @@ inline bool VipInterval::isValid() const
 ///
 /// \return VipInterval width
 /// \sa isValid()
-inline vip_double VipInterval::width() const
+VIP_ALWAYS_INLINE vip_double VipInterval::width() const noexcept
 {
 	return isValid() ? (d_maxValue - d_minValue) : 0.0;
 }
@@ -236,7 +236,7 @@ inline vip_double VipInterval::width() const
 /// \return Intersection of this and other
 ///
 /// \sa intersect()
-inline VipInterval VipInterval::operator&(const VipInterval& other) const
+VIP_ALWAYS_INLINE VipInterval VipInterval::operator&(const VipInterval& other) const noexcept
 {
 	return intersect(other);
 }
@@ -247,7 +247,7 @@ inline VipInterval VipInterval::operator&(const VipInterval& other) const
 /// \return Union of this and other
 ///
 /// \sa unite()
-inline VipInterval VipInterval::operator|(const VipInterval& other) const
+VIP_ALWAYS_INLINE VipInterval VipInterval::operator|(const VipInterval& other) const noexcept
 {
 	return unite(other);
 }
@@ -256,7 +256,7 @@ inline VipInterval VipInterval::operator|(const VipInterval& other) const
 ///
 /// \param other VipInterval to compare with
 /// \return True, when this and other are equal
-inline bool VipInterval::operator==(const VipInterval& other) const
+VIP_ALWAYS_INLINE bool VipInterval::operator==(const VipInterval& other) const noexcept
 {
 	return (d_minValue == other.d_minValue) && (d_maxValue == other.d_maxValue) && (d_borderFlags == other.d_borderFlags);
 }
@@ -264,7 +264,7 @@ inline bool VipInterval::operator==(const VipInterval& other) const
 ///
 /// \param other VipInterval to compare with
 /// \return True, when this and other are not equal
-inline bool VipInterval::operator!=(const VipInterval& other) const
+VIP_ALWAYS_INLINE bool VipInterval::operator!=(const VipInterval& other) const noexcept
 {
 	return (!(*this == other));
 }
@@ -274,13 +274,13 @@ inline bool VipInterval::operator!=(const VipInterval& other) const
 /// \param value Value
 /// \return Extended interval
 /// \sa extend()
-inline VipInterval VipInterval::operator|(vip_double value) const
+VIP_ALWAYS_INLINE VipInterval VipInterval::operator|(vip_double value) const noexcept
 {
 	return extend(value);
 }
 
 //! \return true, if isValid() && (minValue() >= maxValue())
-inline bool VipInterval::isNull() const
+VIP_ALWAYS_INLINE bool VipInterval::isNull() const noexcept
 {
 	return isValid() && d_minValue >= d_maxValue;
 }
@@ -289,7 +289,7 @@ inline bool VipInterval::isNull() const
 ///
 /// The limits are set to interval [0.0, -1.0]
 /// \sa isValid()
-inline void VipInterval::invalidate()
+VIP_ALWAYS_INLINE void VipInterval::invalidate() noexcept
 {
 	d_minValue = 0.0;
 	d_maxValue = -1.0;
@@ -302,12 +302,32 @@ Q_DECLARE_METATYPE(VipInterval)
 class VIP_DATA_TYPE_EXPORT VipIntervalSample
 {
 public:
-	VipIntervalSample();
-	VipIntervalSample(vip_double, const VipInterval&);
-	VipIntervalSample(vip_double value, vip_double min, vip_double max);
+	/// Constructor
+	/// The value is set to 0.0, the interval is invalid
+	VIP_ALWAYS_INLINE VipIntervalSample() noexcept
+	  : value(0.0)
+	{
+	}
 
-	bool operator==(const VipIntervalSample&) const;
-	bool operator!=(const VipIntervalSample&) const;
+	//! Constructor
+	VIP_ALWAYS_INLINE VipIntervalSample(vip_double v, const VipInterval& intv) noexcept
+	  : value(v)
+	  , interval(intv)
+	{
+	}
+
+	//! Constructor
+	VIP_ALWAYS_INLINE VipIntervalSample(vip_double v, vip_double min, vip_double max) noexcept
+	  : value(v)
+	  , interval(min, max)
+	{
+	}
+
+	//! Compare operator
+	VIP_ALWAYS_INLINE bool operator==(const VipIntervalSample& other) const noexcept { return value == other.value && interval == other.interval; }
+
+	//! Compare operator
+	VIP_ALWAYS_INLINE bool operator!=(const VipIntervalSample& other) const noexcept { return !(*this == other); }
 
 	//! Value
 	vip_double value;
@@ -316,38 +336,6 @@ public:
 	VipInterval interval;
 };
 
-/// Constructor
-/// The value is set to 0.0, the interval is invalid
-inline VipIntervalSample::VipIntervalSample()
-  : value(0.0)
-{
-}
-
-//! Constructor
-inline VipIntervalSample::VipIntervalSample(vip_double v, const VipInterval& intv)
-  : value(v)
-  , interval(intv)
-{
-}
-
-//! Constructor
-inline VipIntervalSample::VipIntervalSample(vip_double v, vip_double min, vip_double max)
-  : value(v)
-  , interval(min, max)
-{
-}
-
-//! Compare operator
-inline bool VipIntervalSample::operator==(const VipIntervalSample& other) const
-{
-	return value == other.value && interval == other.interval;
-}
-
-//! Compare operator
-inline bool VipIntervalSample::operator!=(const VipIntervalSample& other) const
-{
-	return !(*this == other);
-}
 
 Q_DECLARE_METATYPE(VipIntervalSample)
 

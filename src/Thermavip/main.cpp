@@ -695,25 +695,25 @@ int main(int argc, char** argv)
 	VipLoadPlugins::instance().unloadPlugins();
 	VipLogging::instance().close();
 
-#ifdef _MSC_VER
+/* #ifdef _MSC_VER
 // Remove deprecated warning
 #pragma warning(push)
 #pragma warning(disable : 4996)
-#endif
+#endif*/
 
 	if (vipIsRestartEnabled()) {
-		QProcess::startDetached(VipUpdate::getUpdateProgram() + " --hide --command Thermavip -l " + QString::number(vipRestartMSecs()));
-		/* QProcess::startDetached(VipUpdate::getUpdateProgram(),
+		//QProcess::startDetached(VipUpdate::getUpdateProgram() + " --hide --command Thermavip -l " + QString::number(vipRestartMSecs()));
+		QProcess::startDetached(VipUpdate::getUpdateProgram(),
 					QStringList() << "--hide"
 						      << "--command"
 						      << "Thermavip"
-						      << "-l" << QString::number(vipRestartMSecs()));*/
+						      << "-l" << QString::number(vipRestartMSecs()));
 	}
 
-#ifdef _MSC_VER
+/* #ifdef _MSC_VER
 // Remove deprecated warning
 #pragma warning(pop)
-#endif
+#endif*/
 
 	return ret;
 }

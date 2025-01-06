@@ -56,17 +56,17 @@
 /// Returns true if value is NaN, false otherwise.
 /// Works for complex types, VipNDArray and functor expressions.
 template<class T>
-Q_DECL_CONSTEXPR static inline typename std::enable_if<std::is_integral<T>::value, T>::type vipIsNan(T)
+Q_DECL_CONSTEXPR static inline typename std::enable_if<std::is_integral<T>::value, T>::type vipIsNan(T) noexcept
 {
 	return false;
 }
 template<class T>
-Q_DECL_CONSTEXPR static inline typename std::enable_if<std::is_floating_point<T>::value, T>::type vipIsNan(T v)
+Q_DECL_CONSTEXPR static inline typename std::enable_if<std::is_floating_point<T>::value, T>::type vipIsNan(T v) noexcept
 {
 	return std::isnan(v);
 }
 template<class T>
-Q_DECL_CONSTEXPR static inline bool vipIsNan(const std::complex<T>& c)
+Q_DECL_CONSTEXPR static inline bool vipIsNan(const std::complex<T>& c) noexcept
 {
 	return vipIsNan(c.real()) || vipIsNan(c.imag());
 }
@@ -74,17 +74,17 @@ Q_DECL_CONSTEXPR static inline bool vipIsNan(const std::complex<T>& c)
 /// Returns true if value is positive or negative infinit, false otherwise.
 /// Works for complex types, VipNDArray and functor expressions.
 template<class T>
-Q_DECL_CONSTEXPR static inline typename std::enable_if<std::is_integral<T>::value, T>::type vipIsInf(T)
+Q_DECL_CONSTEXPR static inline typename std::enable_if<std::is_integral<T>::value, T>::type vipIsInf(T) noexcept
 {
 	return false;
 }
 template<class T>
-Q_DECL_CONSTEXPR static inline typename std::enable_if<std::is_floating_point<T>::value, T>::type vipIsInf(T v)
+Q_DECL_CONSTEXPR static inline typename std::enable_if<std::is_floating_point<T>::value, T>::type vipIsInf(T v) noexcept
 {
 	return std::isinf(v);
 }
 template<class T>
-Q_DECL_CONSTEXPR static inline bool vipIsInf(const std::complex<T>& c)
+Q_DECL_CONSTEXPR static inline bool vipIsInf(const std::complex<T>& c) noexcept
 {
 	return vipIsInf(c.real()) || vipIsInf(c.imag());
 }
@@ -92,17 +92,17 @@ Q_DECL_CONSTEXPR static inline bool vipIsInf(const std::complex<T>& c)
 /// Floor given value.
 /// Works for complex types, VipNDArray and functor expressions.
 template<class T>
-Q_DECL_CONSTEXPR static inline typename std::enable_if<std::is_integral<T>::value, T>::type vipFloor(T v)
+Q_DECL_CONSTEXPR static inline typename std::enable_if<std::is_integral<T>::value, T>::type vipFloor(T v) noexcept
 {
 	return v;
 }
 template<class T>
-Q_DECL_CONSTEXPR static inline typename std::enable_if<std::is_floating_point<T>::value, T>::type vipFloor(T v)
+Q_DECL_CONSTEXPR static inline typename std::enable_if<std::is_floating_point<T>::value, T>::type vipFloor(T v) noexcept
 {
 	return std::floor(v);
 }
 template<class T>
-Q_DECL_CONSTEXPR static inline bool vipFloor(const std::complex<T>& c)
+Q_DECL_CONSTEXPR static inline bool vipFloor(const std::complex<T>& c) noexcept
 {
 	return std::complex<T>(vipFloor(c.real()), vipFloor(c.imag()));
 }
@@ -110,17 +110,17 @@ Q_DECL_CONSTEXPR static inline bool vipFloor(const std::complex<T>& c)
 /// Ceil given value.
 /// Works for complex types, VipNDArray and functor expressions.
 template<class T>
-Q_DECL_CONSTEXPR static inline typename std::enable_if<std::is_integral<T>::value, T>::type vipCeil(T v)
+Q_DECL_CONSTEXPR static inline typename std::enable_if<std::is_integral<T>::value, T>::type vipCeil(T v) noexcept
 {
 	return v;
 }
 template<class T>
-Q_DECL_CONSTEXPR static inline typename std::enable_if<std::is_floating_point<T>::value, T>::type vipCeil(T v)
+Q_DECL_CONSTEXPR static inline typename std::enable_if<std::is_floating_point<T>::value, T>::type vipCeil(T v) noexcept
 {
 	return std::ceil(v);
 }
 template<class T>
-Q_DECL_CONSTEXPR static inline bool vipCeil(const std::complex<T>& c)
+Q_DECL_CONSTEXPR static inline bool vipCeil(const std::complex<T>& c) noexcept
 {
 	return std::complex<T>(vipCeil(c.real()), vipCeil(c.imag()));
 }
@@ -128,17 +128,17 @@ Q_DECL_CONSTEXPR static inline bool vipCeil(const std::complex<T>& c)
 /// Round given value to the nearest integer.
 /// Works for complex types, VipNDArray and functor expressions.
 template<class T>
-Q_DECL_CONSTEXPR static inline typename std::enable_if<std::is_integral<T>::value, T>::type vipRound(T v)
+Q_DECL_CONSTEXPR static inline typename std::enable_if<std::is_integral<T>::value, T>::type vipRound(T v) noexcept
 {
 	return v;
 }
 template<class T>
-Q_DECL_CONSTEXPR static inline typename std::enable_if<std::is_floating_point<T>::value, T>::type vipRound(T v)
+Q_DECL_CONSTEXPR static inline typename std::enable_if<std::is_floating_point<T>::value, T>::type vipRound(T v) noexcept
 {
 	return std::round(v);
 }
 template<class T>
-Q_DECL_CONSTEXPR static inline bool vipRound(const std::complex<T>& c)
+Q_DECL_CONSTEXPR static inline bool vipRound(const std::complex<T>& c) noexcept
 {
 	return std::complex<T>(vipRound(c.real()), vipRound(c.imag()));
 }
@@ -146,31 +146,31 @@ Q_DECL_CONSTEXPR static inline bool vipRound(const std::complex<T>& c)
 /// Returns absolute value of given value.
 /// Works for complex types, VipNDArray and functor expressions.
 template<class T>
-Q_DECL_CONSTEXPR static inline typename std::enable_if<std::is_integral<T>::value, T>::type vipAbs(T v)
+Q_DECL_CONSTEXPR static inline typename std::enable_if<std::is_integral<T>::value, T>::type vipAbs(T v) noexcept
 {
 	return v < 0 ? -v : v;
 }
 template<class T>
-Q_DECL_CONSTEXPR static inline typename std::enable_if<std::is_floating_point<T>::value, T>::type vipAbs(T v)
+Q_DECL_CONSTEXPR static inline typename std::enable_if<std::is_floating_point<T>::value, T>::type vipAbs(T v) noexcept
 {
 	return std::abs(v);
 }
 template<class T>
-Q_DECL_CONSTEXPR static inline bool vipAbs(const std::complex<T>& c)
+Q_DECL_CONSTEXPR static inline bool vipAbs(const std::complex<T>& c) noexcept
 {
 	return std::abs(c);
 }
 
-Q_DECL_CONSTEXPR static inline double vipNan()
+Q_DECL_CONSTEXPR static inline double vipNan() noexcept
 {
 	return std::numeric_limits<double>::quiet_NaN();
 }
-Q_DECL_CONSTEXPR static inline long double vipLNan()
+Q_DECL_CONSTEXPR static inline long double vipLNan() noexcept
 {
-	return std::numeric_limits<long double>::quiet_NaN();
+	return std::numeric_limits<long double>::quiet_NaN() ;
 }
 
-static inline double vipFrexp10(double arg, int* exp)
+static inline double vipFrexp10(double arg, int* exp) 
 {
 	*exp = (arg == 0) ? 0 : (int)(1 + std::log10(qAbs(arg)));
 	return arg * pow(10, -(*exp));
@@ -249,7 +249,7 @@ Q_DECL_CONSTEXPR static inline typename std::enable_if<std::is_integral<T1>::val
 #endif
 
 template<class T1, class T2>
-static inline typename std::enable_if<detail::NumericMixFloating<T1, T2>::value, bool>::type vipFuzzyCompare(T1 v1, T2 v2)
+static inline typename std::enable_if<detail::NumericMixFloating<T1, T2>::value, bool>::type vipFuzzyCompare(T1 v1, T2 v2) noexcept
 {
 	if VIP_CONSTEXPR (std::is_same<T1, long double>::value || std::is_same<T2, long double>::value)
 		return (qAbs((long double)v1 - (long double)v2) * 100000000000000. <= qMin(qAbs((long double)v1), qAbs((long double)v2)));
@@ -259,7 +259,7 @@ static inline typename std::enable_if<detail::NumericMixFloating<T1, T2>::value,
 		return (qAbs((float)v1 - (float)v2) * 100000.f <= qMin(qAbs((float)v1), qAbs((float)v2)));
 }
 template<class T>
-static inline bool vipFuzzyCompare(const std::complex<T>& v1, std::complex<T>& v2)
+static inline bool vipFuzzyCompare(const std::complex<T>& v1, std::complex<T>& v2) noexcept
 {
 	return vipFuzzyCompare(v1.real(), v2.real()) && vipFuzzyCompare(v1.imag(), v2.imag());
 }
@@ -268,12 +268,12 @@ static inline bool vipFuzzyCompare(const std::complex<T>& v1, std::complex<T>& v
 /// For floating point values, check that the value is within a few epsilons.
 /// This function works for complex values as well.
 template<class T>
-Q_DECL_CONSTEXPR static inline typename std::enable_if<std::is_integral<T>::value, bool>::type vipFuzzyIsNull(T d)
+Q_DECL_CONSTEXPR static inline typename std::enable_if<std::is_integral<T>::value, bool>::type vipFuzzyIsNull(T d) noexcept
 {
 	return d == 0;
 }
 template<class T>
-static inline typename std::enable_if<std::is_floating_point<T>::value, bool>::type vipFuzzyIsNull(T d)
+static inline typename std::enable_if<std::is_floating_point<T>::value, bool>::type vipFuzzyIsNull(T d) noexcept
 {
 	if VIP_CONSTEXPR (std::is_same<T, float>::value)
 		return qAbs(d) <= 0.00001f;
@@ -288,7 +288,7 @@ static inline typename std::enable_if<std::is_floating_point<T>::value, bool>::t
 #endif
 
 template<class T>
-Q_DECL_CONSTEXPR static inline bool vipFuzzyIsNull(const std::complex<T>& v)
+Q_DECL_CONSTEXPR static inline bool vipFuzzyIsNull(const std::complex<T>& v) noexcept
 {
 	return vipFuzzyIsNull(v.real()) && vipFuzzyIsNull(v.imag());
 }
@@ -296,30 +296,30 @@ Q_DECL_CONSTEXPR static inline bool vipFuzzyIsNull(const std::complex<T>& v)
 /// Returns -1, 0 or 1 depending on the sign of \a d.
 /// This function works for VipNDArray and functor expressions as well.
 template<class T>
-Q_DECL_CONSTEXPR static inline typename std::enable_if<std::is_arithmetic<T>::value, int>::type vipSign(T d)
+Q_DECL_CONSTEXPR static inline typename std::enable_if<std::is_arithmetic<T>::value, int>::type vipSign(T d) noexcept
 {
 	return (int)(T(0) < d) - (int)(d < T(0));
 }
 
 /// Round long double value to the nearest integer
-Q_DECL_CONSTEXPR static inline qint64 vipRound64(long double d)
+Q_DECL_CONSTEXPR static inline qint64 vipRound64(long double d) noexcept
 {
 	return d >= (long double)0.0 ? qint64(d + (long double)0.5) : qint64(d - (long double)(qint64(d - 1)) + (long double)0.5) + qint64(d - (long double)1);
 }
 
 /// Overload qRound for long double values
-Q_DECL_CONSTEXPR static inline int qRound(long double d)
+Q_DECL_CONSTEXPR static inline int qRound(long double d) noexcept
 {
 	return d >= (long double)0.0 ? int(d + (long double)0.5) : int(d - (long double)(int(d - 1)) + (long double)0.5) + int(d - (long double)1);
 }
 
 /// Overload qRound64 for long double values
-Q_DECL_CONSTEXPR static inline qint64 qRound64(long double d)
+Q_DECL_CONSTEXPR static inline qint64 qRound64(long double d) noexcept
 {
 	return d >= (long double)0.0 ? qint64(d + (long double)0.5) : qint64(d - (long double)(qint64(d - 1)) + (long double)0.5) + qint64(d - (long double)1);
 }
 
-Q_DECL_CONSTEXPR static inline qint64 qFuzzyIsNull(long double d)
+Q_DECL_CONSTEXPR static inline qint64 qFuzzyIsNull(long double d) noexcept
 {
 	return qAbs(d) <= 0.00000000000001L;
 }
@@ -334,7 +334,7 @@ Q_DECL_CONSTEXPR static inline qint64 qFuzzyIsNull(long double d)
 /// \param intervalSize interval size
 ///
 /// \return 0: if equal, -1: if value2 > value1, 1: if value1 > value2
-static inline int vipFuzzyCompare(double value1, double value2, double intervalSize)
+static inline int vipFuzzyCompare(double value1, double value2, double intervalSize) noexcept
 {
 	const double eps = qAbs(1.0e-6 * intervalSize);
 
@@ -346,7 +346,7 @@ static inline int vipFuzzyCompare(double value1, double value2, double intervalS
 
 	return 0;
 }
-static inline int vipFuzzyCompare(long double value1, long double value2, long double intervalSize)
+static inline int vipFuzzyCompare(long double value1, long double value2, long double intervalSize) noexcept
 {
 	const long double eps = sizeof(long double) > sizeof(double) ? qAbs(1.0e-8L * intervalSize) : qAbs(1.0e-6L * intervalSize);
 
@@ -358,7 +358,7 @@ static inline int vipFuzzyCompare(long double value1, long double value2, long d
 
 	return 0;
 }
-static inline int qFuzzyCompare(long double value1, long double value2, long double intervalSize)
+static inline int qFuzzyCompare(long double value1, long double value2, long double intervalSize) noexcept
 {
 	const long double eps = sizeof(long double) > sizeof(double) ? qAbs(1.0e-8L * intervalSize) : qAbs(1.0e-6L * intervalSize);
 
@@ -370,7 +370,7 @@ static inline int qFuzzyCompare(long double value1, long double value2, long dou
 
 	return 0;
 }
-static inline int qFuzzyCompare(long double value1, long double value2)
+static inline int qFuzzyCompare(long double value1, long double value2) noexcept
 {
 	const long double eps = sizeof(long double) > sizeof(double) ? 1.0e-8L : 1.0e-6L;
 
@@ -383,27 +383,27 @@ static inline int qFuzzyCompare(long double value1, long double value2)
 	return 0;
 }
 
-static inline bool vipFuzzyGreaterOrEqual(double d1, double d2)
+static inline bool vipFuzzyGreaterOrEqual(double d1, double d2) noexcept
 {
 	return (d1 >= d2) || vipFuzzyCompare(d1, d2);
 }
-inline bool vipFuzzyGreaterOrEqual(long double d1, long double d2)
+inline bool vipFuzzyGreaterOrEqual(long double d1, long double d2) noexcept
 {
 	return (d1 >= d2) || vipFuzzyCompare(d1, d2);
 }
 
-static inline bool vipFuzzyLessOrEqual(double d1, double d2)
+static inline bool vipFuzzyLessOrEqual(double d1, double d2) noexcept
 {
 	return (d1 <= d2) || vipFuzzyCompare(d1, d2);
 }
-static inline bool vipFuzzyLessOrEqual(long double d1, long double d2)
+static inline bool vipFuzzyLessOrEqual(long double d1, long double d2) noexcept
 {
 	return (d1 <= d2) || vipFuzzyCompare(d1, d2);
 }
 
 #if defined(__SIZEOF_INT128__)
 
-VIP_ALWAYS_INLINE void vipUmul128(const uint64_t m1, const uint64_t m2, uint64_t* const rl, uint64_t* const rh)
+VIP_ALWAYS_INLINE void vipUmul128(const uint64_t m1, const uint64_t m2, uint64_t* const rl, uint64_t* const rh) noexcept
 {
 	const unsigned __int128 r = static_cast<unsigned __int128>(m1) * m2;
 
@@ -415,7 +415,7 @@ VIP_ALWAYS_INLINE void vipUmul128(const uint64_t m1, const uint64_t m2, uint64_t
 
 #elif (defined(__IBMC__) || defined(__IBMCPP__)) && defined(__LP64__)
 
-VIP_ALWAYS_INLINE void vipUmul128(const uint64_t m1, const uint64_t m2, uint64_t* const rl, uint64_t* const rh)
+VIP_ALWAYS_INLINE void vipUmul128(const uint64_t m1, const uint64_t m2, uint64_t* const rl, uint64_t* const rh) noexcept
 {
 	*rh = __mulhdu(m1, m2);
 	*rl = m1 * m2;
@@ -427,7 +427,7 @@ VIP_ALWAYS_INLINE void vipUmul128(const uint64_t m1, const uint64_t m2, uint64_t
 
 #include <intrin.h>
 
-VIP_ALWAYS_INLINE void vipUmul128(const uint64_t m1, const uint64_t m2, uint64_t* const rl, uint64_t* const rh)
+VIP_ALWAYS_INLINE void vipUmul128(const uint64_t m1, const uint64_t m2, uint64_t* const rl, uint64_t* const rh) noexcept
 {
 	*rh = __umulh(m1, m2);
 	*rl = m1 * m2;
@@ -440,7 +440,7 @@ VIP_ALWAYS_INLINE void vipUmul128(const uint64_t m1, const uint64_t m2, uint64_t
 #include <intrin.h>
 #pragma intrinsic(_umul128)
 
-static VIP_ALWAYS_INLINE void vipUmul128(const uint64_t m1, const uint64_t m2, uint64_t* const rl, uint64_t* const rh)
+static VIP_ALWAYS_INLINE void vipUmul128(const uint64_t m1, const uint64_t m2, uint64_t* const rl, uint64_t* const rh) noexcept
 {
 	*rl = _umul128(m1, m2, rh);
 }
@@ -464,7 +464,7 @@ static VIP_ALWAYS_INLINE void vipUmul128(const uint64_t m1, const uint64_t m2, u
 
 #endif // defined( _MSC_VER ) && !defined( __INTEL_COMPILER )
 
-static inline void vipUmul128(const uint64_t u, const uint64_t v, uint64_t* const rl, uint64_t* const rh)
+static inline void vipUmul128(const uint64_t u, const uint64_t v, uint64_t* const rl, uint64_t* const rh) noexcept
 {
 	*rl = u * v;
 
@@ -484,19 +484,19 @@ static inline void vipUmul128(const uint64_t u, const uint64_t v, uint64_t* cons
 
 
 // for complex types, we are missing a few operators, so define them
-inline complex_f operator*(double v, const complex_f& c)
+inline complex_f operator*(double v, const complex_f& c) noexcept
 {
 	return complex_f(c.real() * v, c.imag() * v);
 }
-inline complex_d operator*(float v, const complex_d& c)
+inline complex_d operator*(float v, const complex_d& c) noexcept
 {
 	return complex_d(c.real() * v, c.imag() * v);
 }
-inline complex_f operator*(const complex_f& c, double v)
+inline complex_f operator*(const complex_f& c, double v) noexcept
 {
 	return complex_f(c.real() * v, c.imag() * v);
 }
-inline complex_d operator*(const complex_d& c, float v)
+inline complex_d operator*(const complex_d& c, float v) noexcept
 {
 	return complex_d(c.real() * v, c.imag() * v);
 }

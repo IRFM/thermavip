@@ -157,41 +157,6 @@ class QDataStream;
 VIP_PLOTTING_EXPORT QDataStream& operator<<(QDataStream& stream, const VipAdaptativeGradient& grad);
 VIP_PLOTTING_EXPORT QDataStream& operator>>(QDataStream& stream, VipAdaptativeGradient& grad);
 
-// class Brush
-// {
-// public:
-//
-// Brush();
-// Brush(const QBrush& , const VipAdaptativeGradient & = VipAdaptativeGradient());
-//
-// void setBrush(const QBrush &);
-// const QBrush & brush() const;
-//
-// void setAdaptativeGradient(const VipAdaptativeGradient&);
-// const VipAdaptativeGradient& adaptativeGradient() const;
-//
-// QBrush createBrush() const;
-// operator QBrush() const;
-// };
-//
-//
-// class Pen
-// {
-// public:
-//
-// Pen();
-// Pen(const Pen& , const VipAdaptativeGradient & = VipAdaptativeGradient());
-//
-// void setBrush(const Pen &);
-// const Pen & brush() const;
-//
-// void setAdaptativeGradient(const VipAdaptativeGradient&);
-// const VipAdaptativeGradient& adaptativeGradient() const;
-//
-// Pen createBrush() const;
-// operator QBrush() const;
-// };
-
 /// @}
 // end Plotting
 

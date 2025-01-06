@@ -868,6 +868,23 @@ void VipBaseDragWidget::addIdToTitle()
 		this->setWindowTitle(t);
 }
 
+void VipBaseDragWidget::setTitleWithId(const QString & text)
+{
+	if (!this->property("showIdInTitle").toBool()) {
+		if (this->windowTitle() != text)
+			this->setWindowTitle(text);
+		return;
+	}
+
+	int new_id = VipUniqueId::id<VipBaseDragWidget>(this);
+	QString t = QString::number(new_id) + "-" + text;
+	if (t.size() > 16)
+		t = t.mid(0, 16) + "...";
+	d_data->id = new_id;
+	if (this->windowTitle() != t)
+		this->setWindowTitle(t);
+}
+
 QString VipBaseDragWidget::title() const
 {
 	// title start iwth 'id- '
@@ -1132,7 +1149,7 @@ void VipDragWidget::titleChanged()
 {
 	if (d_data->widget) {
 		if (!d_data->widget->windowTitle().isEmpty())
-			this->setWindowTitle(d_data->widget->windowTitle());
+			this->setTitleWithId(d_data->widget->windowTitle());
 		if (!d_data->widget->windowIcon().isNull())
 			this->setWindowIcon(d_data->widget->windowIcon());
 	}

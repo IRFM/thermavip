@@ -55,7 +55,7 @@ typedef long double vip_long_double;
 Q_DECLARE_METATYPE(vip_long_double)
 
 /// Byte swap long double
-inline vip_long_double vipSwapLongDouble(const vip_long_double v)
+inline vip_long_double vipSwapLongDouble(const vip_long_double v) noexcept
 {
 	vip_long_double r = v;
 	char* raw = (char*)(&r);
@@ -93,7 +93,7 @@ VIP_DATA_TYPE_EXPORT int vipReadNLongDouble(QTextStream& s, vip_long_double* val
 /// Read up to \a max_count long double from QTextStream
 VIP_DATA_TYPE_EXPORT int vipReadNLongDouble(QTextStream& s, QVector<vip_long_double>& values, int max_count);
 
-inline double vipLELongDoubleToDouble(const unsigned char x[10])
+inline double vipLELongDoubleToDouble(const unsigned char x[10]) noexcept
 {
 	// https://stackoverflow.com/questions/2963055/msvc-win32-convert-extended-precision-float-80-bit-to-double-64-bit
 
@@ -192,12 +192,12 @@ inline QDataStream& vipReadLELongDouble(QDataStream& s, vip_long_double& v)
 }
 
 /// Write long double to QDataStream
-inline QDataStream& operator<<(QDataStream& s, vip_long_double v)
+VIP_ALWAYS_INLINE QDataStream& operator<<(QDataStream& s, vip_long_double v)
 {
 	return vipWriteLELongDouble(s, v);
 }
 /// Read long double from QDataStream
-inline QDataStream& operator>>(QDataStream& s, vip_long_double& v)
+VIP_ALWAYS_INLINE QDataStream& operator>>(QDataStream& s, vip_long_double& v)
 {
 	return vipReadLELongDouble(s, v);
 }
@@ -208,50 +208,50 @@ template<class T>
 class VipFloatPoint
 {
 public:
-	Q_DECL_CONSTEXPR VipFloatPoint();
-	Q_DECL_CONSTEXPR VipFloatPoint(const QPoint& p);
-	Q_DECL_CONSTEXPR VipFloatPoint(const QPointF& p);
-	Q_DECL_CONSTEXPR VipFloatPoint(T xpos, T ypos);
+	Q_DECL_CONSTEXPR VipFloatPoint() noexcept;
+	Q_DECL_CONSTEXPR VipFloatPoint(const QPoint& p) noexcept;
+	Q_DECL_CONSTEXPR VipFloatPoint(const QPointF& p) noexcept;
+	Q_DECL_CONSTEXPR VipFloatPoint(T xpos, T ypos) noexcept;
 	template<class U>
-	VipFloatPoint(const VipFloatPoint<U>& other)
+	VipFloatPoint(const VipFloatPoint<U>& other) noexcept
 	  : xp(other.x())
 	  , yp(other.y())
 	{
 	}
 
-	Q_DECL_CONSTEXPR inline T manhattanLength() const;
+	Q_DECL_CONSTEXPR VIP_ALWAYS_INLINE T manhattanLength() const noexcept;
 
-	inline bool isNull() const;
+	VIP_ALWAYS_INLINE bool isNull() const noexcept;
 
-	Q_DECL_CONSTEXPR inline T x() const;
-	Q_DECL_CONSTEXPR inline T y() const;
-	Q_DECL_RELAXED_CONSTEXPR inline void setX(T x);
-	Q_DECL_RELAXED_CONSTEXPR inline void setY(T y);
+	Q_DECL_CONSTEXPR VIP_ALWAYS_INLINE T x() const noexcept;
+	Q_DECL_CONSTEXPR VIP_ALWAYS_INLINE T y() const noexcept;
+	Q_DECL_RELAXED_CONSTEXPR VIP_ALWAYS_INLINE void setX(T x) noexcept;
+	Q_DECL_RELAXED_CONSTEXPR VIP_ALWAYS_INLINE void setY(T y) noexcept;
 
-	Q_DECL_RELAXED_CONSTEXPR inline T& rx();
-	Q_DECL_RELAXED_CONSTEXPR inline T& ry();
+	Q_DECL_RELAXED_CONSTEXPR VIP_ALWAYS_INLINE T& rx() noexcept;
+	Q_DECL_RELAXED_CONSTEXPR VIP_ALWAYS_INLINE T& ry() noexcept;
 
-	Q_DECL_RELAXED_CONSTEXPR inline VipFloatPoint& operator+=(const VipFloatPoint& p);
-	Q_DECL_RELAXED_CONSTEXPR inline VipFloatPoint& operator-=(const VipFloatPoint& p);
-	Q_DECL_RELAXED_CONSTEXPR inline VipFloatPoint& operator*=(T c);
-	Q_DECL_RELAXED_CONSTEXPR inline VipFloatPoint& operator/=(T c);
+	Q_DECL_RELAXED_CONSTEXPR VIP_ALWAYS_INLINE VipFloatPoint& operator+=(const VipFloatPoint& p) noexcept;
+	Q_DECL_RELAXED_CONSTEXPR VIP_ALWAYS_INLINE VipFloatPoint& operator-=(const VipFloatPoint& p) noexcept;
+	Q_DECL_RELAXED_CONSTEXPR VIP_ALWAYS_INLINE VipFloatPoint& operator*=(T c) noexcept;
+	Q_DECL_RELAXED_CONSTEXPR VIP_ALWAYS_INLINE VipFloatPoint& operator/=(T c) noexcept;
 
-	Q_DECL_CONSTEXPR static inline T dotProduct(const VipFloatPoint& p1, const VipFloatPoint& p2) { return p1.xp * p2.xp + p1.yp * p2.yp; }
+	Q_DECL_CONSTEXPR static VIP_ALWAYS_INLINE T dotProduct(const VipFloatPoint& p1, const VipFloatPoint& p2) noexcept { return p1.xp * p2.xp + p1.yp * p2.yp; }
 
-	QPoint toPoint() const;
-	Q_DECL_CONSTEXPR QPointF toPointF() const;
+	QPoint toPoint() const noexcept;
+	Q_DECL_CONSTEXPR QPointF toPointF() const noexcept;
 
-	operator QPointF() const { return toPointF(); }
+	operator QPointF() const noexcept { return toPointF(); }
 	template<class U>
-	operator VipFloatPoint<U>() const
+	operator VipFloatPoint<U>() const noexcept
 	{
 		return VipFloatPoint<U>(*this);
 	}
 
-	static QPoint toPoint(const VipFloatPoint& pt) { return pt.toPoint(); }
-	static QPointF toPointF(const VipFloatPoint& pt) { return pt.toPointF(); }
-	static VipFloatPoint fromPoint(const QPoint& pt) { return VipFloatPoint(pt.x(), pt.y()); }
-	static VipFloatPoint fromPointF(const QPointF& pt) { return VipFloatPoint(pt.x(), pt.y()); }
+	static QPoint toPoint(const VipFloatPoint& pt) noexcept { return pt.toPoint(); }
+	static QPointF toPointF(const VipFloatPoint& pt) noexcept { return pt.toPointF(); }
+	static VipFloatPoint fromPoint(const QPoint& pt) noexcept { return VipFloatPoint(pt.x(), pt.y()); }
+	static VipFloatPoint fromPointF(const QPointF& pt) noexcept { return VipFloatPoint(pt.x(), pt.y()); }
 
 private:
 	T xp;
@@ -259,88 +259,88 @@ private:
 };
 
 //****************************************************************************
-// VipFloatPoint inline functions
+// VipFloatPoint VIP_ALWAYS_INLINE functions
 //*****************************************************************************
 template<class T>
-Q_DECL_CONSTEXPR inline VipFloatPoint<T>::VipFloatPoint()
+Q_DECL_CONSTEXPR VIP_ALWAYS_INLINE VipFloatPoint<T>::VipFloatPoint() noexcept
   : xp(0)
   , yp(0)
 {
 }
 template<class T>
-Q_DECL_CONSTEXPR inline VipFloatPoint<T>::VipFloatPoint(T xpos, T ypos)
+Q_DECL_CONSTEXPR VIP_ALWAYS_INLINE VipFloatPoint<T>::VipFloatPoint(T xpos, T ypos) noexcept
   : xp(xpos)
   , yp(ypos)
 {
 }
 template<class T>
-Q_DECL_CONSTEXPR inline VipFloatPoint<T>::VipFloatPoint(const QPoint& p)
+Q_DECL_CONSTEXPR VIP_ALWAYS_INLINE VipFloatPoint<T>::VipFloatPoint(const QPoint& p) noexcept
   : xp(p.x())
   , yp(p.y())
 {
 }
 template<class T>
-Q_DECL_CONSTEXPR inline VipFloatPoint<T>::VipFloatPoint(const QPointF& p)
+Q_DECL_CONSTEXPR VIP_ALWAYS_INLINE VipFloatPoint<T>::VipFloatPoint(const QPointF& p) noexcept
   : xp(p.x())
   , yp(p.y())
 {
 }
 template<class T>
-Q_DECL_CONSTEXPR inline T VipFloatPoint<T>::manhattanLength() const
+Q_DECL_CONSTEXPR VIP_ALWAYS_INLINE T VipFloatPoint<T>::manhattanLength() const noexcept
 {
 	return qAbs(x()) + qAbs(y());
 }
 template<class T>
-inline bool VipFloatPoint<T>::isNull() const
+VIP_ALWAYS_INLINE bool VipFloatPoint<T>::isNull() const noexcept
 {
 	return xp == (T)0 && yp == (T)0;
 }
 template<class T>
-Q_DECL_CONSTEXPR inline T VipFloatPoint<T>::x() const
+Q_DECL_CONSTEXPR VIP_ALWAYS_INLINE T VipFloatPoint<T>::x() const noexcept
 {
 	return xp;
 }
 template<class T>
-Q_DECL_CONSTEXPR inline T VipFloatPoint<T>::y() const
+Q_DECL_CONSTEXPR VIP_ALWAYS_INLINE T VipFloatPoint<T>::y() const noexcept
 {
 	return yp;
 }
 template<class T>
-Q_DECL_RELAXED_CONSTEXPR inline void VipFloatPoint<T>::setX(T xpos)
+Q_DECL_RELAXED_CONSTEXPR VIP_ALWAYS_INLINE void VipFloatPoint<T>::setX(T xpos) noexcept
 {
 	xp = xpos;
 }
 template<class T>
-Q_DECL_RELAXED_CONSTEXPR inline void VipFloatPoint<T>::setY(T ypos)
+Q_DECL_RELAXED_CONSTEXPR VIP_ALWAYS_INLINE void VipFloatPoint<T>::setY(T ypos) noexcept
 {
 	yp = ypos;
 }
 template<class T>
-Q_DECL_RELAXED_CONSTEXPR inline T& VipFloatPoint<T>::rx()
+Q_DECL_RELAXED_CONSTEXPR VIP_ALWAYS_INLINE T& VipFloatPoint<T>::rx() noexcept
 {
 	return xp;
 }
 template<class T>
-Q_DECL_RELAXED_CONSTEXPR inline T& VipFloatPoint<T>::ry()
+Q_DECL_RELAXED_CONSTEXPR VIP_ALWAYS_INLINE T& VipFloatPoint<T>::ry() noexcept
 {
 	return yp;
 }
 template<class T>
-Q_DECL_RELAXED_CONSTEXPR inline VipFloatPoint<T>& VipFloatPoint<T>::operator+=(const VipFloatPoint<T>& p)
+Q_DECL_RELAXED_CONSTEXPR VIP_ALWAYS_INLINE VipFloatPoint<T>& VipFloatPoint<T>::operator+=(const VipFloatPoint<T>& p) noexcept
 {
 	xp += p.xp;
 	yp += p.yp;
 	return *this;
 }
 template<class T>
-Q_DECL_RELAXED_CONSTEXPR inline VipFloatPoint<T>& VipFloatPoint<T>::operator-=(const VipFloatPoint<T>& p)
+Q_DECL_RELAXED_CONSTEXPR VIP_ALWAYS_INLINE VipFloatPoint<T>& VipFloatPoint<T>::operator-=(const VipFloatPoint<T>& p) noexcept
 {
 	xp -= p.xp;
 	yp -= p.yp;
 	return *this;
 }
 template<class T>
-Q_DECL_RELAXED_CONSTEXPR inline VipFloatPoint<T>& VipFloatPoint<T>::operator*=(T c)
+Q_DECL_RELAXED_CONSTEXPR VIP_ALWAYS_INLINE VipFloatPoint<T>& VipFloatPoint<T>::operator*=(T c) noexcept
 {
 	xp *= c;
 	yp *= c;
@@ -348,64 +348,64 @@ Q_DECL_RELAXED_CONSTEXPR inline VipFloatPoint<T>& VipFloatPoint<T>::operator*=(T
 }
 
 template<class T>
-inline bool operator==(const VipFloatPoint<T>& p1, const VipFloatPoint<T>& p2)
+VIP_ALWAYS_INLINE bool operator==(const VipFloatPoint<T>& p1, const VipFloatPoint<T>& p2) noexcept
 {
 	return qFuzzyIsNull(p1.x() - p2.x()) && qFuzzyIsNull(p1.y() - p2.y());
 }
 template<class T>
-inline bool operator!=(const VipFloatPoint<T>& p1, const VipFloatPoint<T>& p2)
+VIP_ALWAYS_INLINE bool operator!=(const VipFloatPoint<T>& p1, const VipFloatPoint<T>& p2) noexcept
 {
 	return !qFuzzyIsNull(p1.x() - p2.x()) || !qFuzzyIsNull(p1.y() - p2.y());
 }
 template<class T>
-Q_DECL_CONSTEXPR inline const VipFloatPoint<T> operator+(const VipFloatPoint<T>& p1, const VipFloatPoint<T>& p2)
+Q_DECL_CONSTEXPR VIP_ALWAYS_INLINE const VipFloatPoint<T> operator+(const VipFloatPoint<T>& p1, const VipFloatPoint<T>& p2) noexcept
 {
 	return VipFloatPoint<T>(p1.x() + p2.x(), p1.y() + p2.y());
 }
 template<class T>
-Q_DECL_CONSTEXPR inline const VipFloatPoint<T> operator-(const VipFloatPoint<T>& p1, const VipFloatPoint<T>& p2)
+Q_DECL_CONSTEXPR VIP_ALWAYS_INLINE const VipFloatPoint<T> operator-(const VipFloatPoint<T>& p1, const VipFloatPoint<T>& p2) noexcept
 {
 	return VipFloatPoint<T>(p1.x() - p2.x(), p1.y() - p2.y());
 }
 template<class T>
-Q_DECL_CONSTEXPR inline const VipFloatPoint<T> operator*(const VipFloatPoint<T>& p, T c)
+Q_DECL_CONSTEXPR VIP_ALWAYS_INLINE const VipFloatPoint<T> operator*(const VipFloatPoint<T>& p, T c) noexcept
 {
 	return VipFloatPoint<T>(p.x() * c, p.y() * c);
 }
 template<class T>
-Q_DECL_CONSTEXPR inline const VipFloatPoint<T> operator*(T c, const VipFloatPoint<T>& p)
+Q_DECL_CONSTEXPR VIP_ALWAYS_INLINE const VipFloatPoint<T> operator*(T c, const VipFloatPoint<T>& p) noexcept
 {
 	return VipFloatPoint<T>(p.x() * c, p.y() * c);
 }
 template<class T>
-Q_DECL_CONSTEXPR inline const VipFloatPoint<T> operator+(const VipFloatPoint<T>& p)
+Q_DECL_CONSTEXPR VIP_ALWAYS_INLINE const VipFloatPoint<T> operator+(const VipFloatPoint<T>& p) noexcept
 {
 	return p;
 }
 template<class T>
-Q_DECL_CONSTEXPR inline const VipFloatPoint<T> operator-(const VipFloatPoint<T>& p)
+Q_DECL_CONSTEXPR VIP_ALWAYS_INLINE const VipFloatPoint<T> operator-(const VipFloatPoint<T>& p) noexcept
 {
 	return VipFloatPoint<T>(-p.x(), -p.y());
 }
 template<class T>
-Q_DECL_RELAXED_CONSTEXPR inline VipFloatPoint<T>& VipFloatPoint<T>::operator/=(T divisor)
+Q_DECL_RELAXED_CONSTEXPR VIP_ALWAYS_INLINE VipFloatPoint<T>& VipFloatPoint<T>::operator/=(T divisor) noexcept
 {
 	xp /= divisor;
 	yp /= divisor;
 	return *this;
 }
 template<class T>
-Q_DECL_CONSTEXPR inline const VipFloatPoint<T> operator/(const VipFloatPoint<T>& p, T divisor)
+Q_DECL_CONSTEXPR VIP_ALWAYS_INLINE const VipFloatPoint<T> operator/(const VipFloatPoint<T>& p, T divisor) noexcept
 {
 	return VipFloatPoint<T>(p.x() / divisor, p.y() / divisor);
 }
 template<class T>
-inline QPoint VipFloatPoint<T>::toPoint() const
+VIP_ALWAYS_INLINE QPoint VipFloatPoint<T>::toPoint() const noexcept
 {
 	return QPoint(qRound(xp), qRound(yp));
 }
 template<class T>
-Q_DECL_CONSTEXPR inline QPointF VipFloatPoint<T>::toPointF() const
+Q_DECL_CONSTEXPR VIP_ALWAYS_INLINE QPointF VipFloatPoint<T>::toPointF() const noexcept
 {
 	return QPointF((xp), (yp));
 }
@@ -439,7 +439,7 @@ static constexpr quint32 vip_LD_support = sizeof(long double);
 /// Read a vip_double from a QDataStream.
 /// \a LD_support describe the way the vip_double was stored (with long double support or not and with the sizeof long double).
 /// \a LD_support correspond to the \a vip_LD_support value when the data was stored.
-inline vip_double vipReadLEDouble(unsigned LD_support, QDataStream& stream)
+VIP_ALWAYS_INLINE vip_double vipReadLEDouble(unsigned LD_support, QDataStream& stream)
 {
 	// Check whever the double was saved with long double support and grab the long double size
 	unsigned has_LD = LD_support & (1U << 31U);
@@ -480,7 +480,7 @@ inline vip_double vipReadLEDouble(unsigned LD_support, QDataStream& stream)
 /// Read a vip_long_double from a QDataStream.
 /// \a LD_support describe the way the vip_long_double was stored (with long double support or not and with the sizeof long double).
 /// \a LD_support corresponds to the \a vip_LD_support value when the data was stored.
-inline vip_long_double vipReadLELongDouble(unsigned LD_support, QDataStream& stream)
+VIP_ALWAYS_INLINE vip_long_double vipReadLELongDouble(unsigned LD_support, QDataStream& stream)
 {
 	// Check whever the double was saved with long double support and grab the long double size
 	unsigned LD_size = LD_support & ~(1U << 31U);

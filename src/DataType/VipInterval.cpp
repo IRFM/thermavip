@@ -38,7 +38,7 @@
 /// \return Normalized interval
 ///
 /// \sa isValid(), inverted()
-VipInterval VipInterval::normalized() const
+VipInterval VipInterval::normalized() const noexcept
 {
 	if (d_minValue > d_maxValue) {
 		return inverted();
@@ -53,7 +53,7 @@ VipInterval VipInterval::normalized() const
 /// Invert the limits of the interval
 /// \return Inverted interval
 /// \sa normalized()
-VipInterval VipInterval::inverted() const
+VipInterval VipInterval::inverted() const noexcept
 {
 	BorderFlags borderFlags = IncludeBorders;
 	if (d_borderFlags & ExcludeMinimum)
@@ -68,7 +68,7 @@ VipInterval VipInterval::inverted() const
 ///
 /// \param value Value
 /// \return true, if value >= minValue() && value <= maxValue()
-bool VipInterval::contains(vip_double value) const
+bool VipInterval::contains(vip_double value) const noexcept
 {
 	if (!isValid())
 		return false;
@@ -86,7 +86,7 @@ bool VipInterval::contains(vip_double value) const
 }
 
 //! Unite 2 intervals
-VipInterval VipInterval::unite(const VipInterval& other) const
+VipInterval VipInterval::unite(const VipInterval& other) const noexcept
 {
 	// If one of the intervals is invalid return the other one.
 	// If both are invalid return an invalid default interval
@@ -140,7 +140,7 @@ VipInterval VipInterval::unite(const VipInterval& other) const
 ///
 /// \param other VipInterval to be intersect with
 /// \return Intersection
-VipInterval VipInterval::intersect(const VipInterval& other) const
+VipInterval VipInterval::intersect(const VipInterval& other) const noexcept
 {
 	if (!other.isValid() || !isValid())
 		return VipInterval();
@@ -197,7 +197,7 @@ VipInterval VipInterval::intersect(const VipInterval& other) const
 ///
 /// \param other VipInterval to be united with
 /// \return This interval
-VipInterval& VipInterval::operator|=(const VipInterval& other)
+VipInterval& VipInterval::operator|=(const VipInterval& other) noexcept
 {
 	*this = *this | other;
 	return *this;
@@ -207,7 +207,7 @@ VipInterval& VipInterval::operator|=(const VipInterval& other)
 ///
 /// \param other VipInterval to be intersected with
 /// \return This interval
-VipInterval& VipInterval::operator&=(const VipInterval& other)
+VipInterval& VipInterval::operator&=(const VipInterval& other) noexcept
 {
 	*this = *this & other;
 	return *this;
@@ -217,7 +217,7 @@ VipInterval& VipInterval::operator&=(const VipInterval& other)
 ///
 /// \param other VipInterval
 /// \return True, when the intervals are intersecting
-bool VipInterval::intersects(const VipInterval& other) const
+bool VipInterval::intersects(const VipInterval& other) const noexcept
 {
 	if (!isValid() || !other.isValid())
 		return false;
@@ -249,7 +249,7 @@ bool VipInterval::intersects(const VipInterval& other) const
 ///
 /// \param value Center
 /// \return VipInterval with value as center
-VipInterval VipInterval::symmetrize(vip_double value) const
+VipInterval VipInterval::symmetrize(vip_double value) const noexcept
 {
 	if (!isValid())
 		return *this;
@@ -259,7 +259,7 @@ VipInterval VipInterval::symmetrize(vip_double value) const
 	return VipInterval(value - delta, value + delta);
 }
 
-QRectF VipInterval::toRect(const QList<VipInterval>& intervals)
+QRectF VipInterval::toRect(const QList<VipInterval>& intervals) noexcept
 {
 	if (intervals.size() == 2)
 		return QRectF(intervals[0].minValue(), intervals[1].minValue(), intervals[0].width(), intervals[1].width());
@@ -267,7 +267,7 @@ QRectF VipInterval::toRect(const QList<VipInterval>& intervals)
 		return QRectF();
 }
 
-QList<VipInterval> VipInterval::fromRect(const QRectF& rect)
+QList<VipInterval> VipInterval::fromRect(const QRectF& rect) noexcept
 {
 	return QList<VipInterval>() << VipInterval(rect.left(), rect.right()).normalized() << VipInterval(rect.top(), rect.bottom()).normalized();
 }
@@ -278,7 +278,7 @@ QList<VipInterval> VipInterval::fromRect(const QRectF& rect)
 /// \param upperBound Upper limit
 ///
 /// \return Limited interval
-VipInterval VipInterval::limited(vip_double lowerBound, vip_double upperBound) const
+VipInterval VipInterval::limited(vip_double lowerBound, vip_double upperBound) const noexcept
 {
 	if (!isValid() || lowerBound > upperBound)
 		return VipInterval();
@@ -303,7 +303,7 @@ VipInterval VipInterval::limited(vip_double lowerBound, vip_double upperBound) c
 /// \return extended interval
 ///
 /// \sa isValid()
-VipInterval VipInterval::extend(vip_double value) const
+VipInterval VipInterval::extend(vip_double value) const noexcept
 {
 	if (!isValid()) {
 		return VipInterval(value, value, d_borderFlags);
@@ -318,7 +318,7 @@ VipInterval VipInterval::extend(vip_double value) const
 /// \return Reference of the extended interval
 ///
 /// \sa extend()
-VipInterval& VipInterval::operator|=(vip_double value)
+VipInterval& VipInterval::operator|=(vip_double value) noexcept
 {
 	*this = *this | value;
 	return *this;

@@ -44,7 +44,7 @@ namespace detail
 	struct Contains
 	{
 		template<class Rect, class Coord>
-		static bool apply(const Rect& r, const Coord& pos)
+		static bool apply(const Rect& r, const Coord& pos) noexcept
 		{
 			for (qsizetype i = 0; i < pos.size(); ++i)
 				if (pos[i] < r.start(i) || pos[i] >= r.end(i))
@@ -56,7 +56,7 @@ namespace detail
 	struct Contains<1>
 	{
 		template<class Rect, class Coord>
-		static bool apply(const Rect& r, const Coord& pos)
+		static bool apply(const Rect& r, const Coord& pos) noexcept
 		{
 			return pos[0] >= r.start(0) && pos[0] < r.end(0);
 		}
@@ -65,7 +65,7 @@ namespace detail
 	struct Contains<2>
 	{
 		template<class Rect, class Coord>
-		static bool apply(const Rect& r, const Coord& pos)
+		static bool apply(const Rect& r, const Coord& pos) noexcept
 		{
 			return pos[0] >= r.start(0) && pos[0] < r.end(0) && pos[1] >= r.start(1) && pos[1] < r.end(1);
 		}
@@ -74,7 +74,7 @@ namespace detail
 	struct Contains<3>
 	{
 		template<class Rect, class Coord>
-		static bool apply(const Rect& r, const Coord& pos)
+		static bool apply(const Rect& r, const Coord& pos) noexcept
 		{
 			return pos[0] >= r.start(0) && pos[0] < r.end(0) && pos[1] >= r.start(1) && pos[1] < r.end(1) && pos[2] >= r.start(2) && pos[2] < r.end(2);
 		}
@@ -93,26 +93,26 @@ public:
 	static const qsizetype static_size = NDim;
 
 	/// Default constructor, create an invalid rectangle (isEmpty() == true)
-	VipNDRect()
+	VipNDRect() noexcept
 	{
 		m_start.fill(0);
 		m_end.fill(0);
 	};
 	/// Copy constructor
-	VipNDRect(const VipNDRect& other)
+	VipNDRect(const VipNDRect& other) noexcept
 	  : m_start(other.m_start)
 	  , m_end(other.m_end)
 	{
 	}
 	/// Construct from a start and end position
-	VipNDRect(const shape_type& st, const shape_type& en)
+	VipNDRect(const shape_type& st, const shape_type& en) noexcept
 	  : m_start(st)
 	  , m_end(en)
 	{
 	}
 
 	/// Returns true if at least one of the dimensions is empty
-	bool isEmpty() const
+	bool isEmpty() const noexcept
 	{
 		if (m_start.size() == 0 || m_end.size() == 0)
 			return true;
@@ -121,13 +121,13 @@ public:
 				return true;
 		return false;
 	}
-	bool isValid() const { return (m_start.size() == m_end.size()) && !isEmpty(); }
+	bool isValid() const noexcept { return (m_start.size() == m_end.size()) && !isEmpty(); }
 	/// Returns the number of dimensions
-	qsizetype size() const { return m_start.size(); }
+	qsizetype size() const noexcept { return m_start.size(); }
 	/// Returns the number of dimensions
-	qsizetype dimCount() const { return size(); }
+	qsizetype dimCount() const noexcept { return size(); }
 	/// Returns the full shape size (cumulative multiplication of all shapes)
-	qsizetype shapeSize() const
+	qsizetype shapeSize() const noexcept
 	{
 		if (size() == 0)
 			return 0;
@@ -137,11 +137,11 @@ public:
 		return s;
 	}
 	/// Returns the start position
-	const shape_type& start() const { return m_start; }
+	const shape_type& start() const noexcept { return m_start; }
 	/// Returns the end of dimensions
-	const shape_type& end() const { return m_end; }
+	const shape_type& end() const noexcept { return m_end; }
 	/// Returns the shape (end -start)
-	shape_type shape() const
+	shape_type shape() const noexcept
 	{
 		shape_type res = m_end;
 		for (qsizetype i = 0; i < res.size(); ++i)
@@ -149,14 +149,14 @@ public:
 		return res;
 	}
 	/// Returns the shape (end -start) for given dimension
-	qsizetype shape(qsizetype index) const { return m_end[index] - m_start[index]; }
+	qsizetype shape(qsizetype index) const noexcept { return m_end[index] - m_start[index]; }
 	/// Returns the start position for given dimension
-	qsizetype start(qsizetype index) const { return m_start[index]; }
+	qsizetype start(qsizetype index) const noexcept { return m_start[index]; }
 	/// Returns the end position for given dimension
-	qsizetype end(qsizetype index) const { return m_end[index]; }
+	qsizetype end(qsizetype index) const noexcept { return m_end[index]; }
 
 	/// Moves the start position, leaving the shape unchanged (this might change the end position).
-	void moveStart(const shape_type& start)
+	void moveStart(const shape_type& start) noexcept
 	{
 		for (qsizetype i = 0; i < start.size(); ++i) {
 			qsizetype w = m_end[i] - m_start[i];
@@ -165,19 +165,19 @@ public:
 		}
 	}
 	/// Moves the start position for given dimension, leaving the shape unchanged (this might change the end position).
-	void moveStart(qsizetype index, qsizetype new_pos)
+	void moveStart(qsizetype index, qsizetype new_pos) noexcept
 	{
 		qsizetype w = m_end[index] - m_start[index];
 		m_start[index] = new_pos;
 		m_end[index] = new_pos + w;
 	}
 	/// Set the start position. This might change the shape, but never the end position.
-	void setStart(const shape_type& start) { m_start = start; }
+	void setStart(const shape_type& start) noexcept { m_start = start; }
 	/// Set the start position for given index. This might change the shape, but never the end position.
-	void setStart(qsizetype index, qsizetype new_pos) { m_start[index] = new_pos; }
+	void setStart(qsizetype index, qsizetype new_pos) noexcept { m_start[index] = new_pos; }
 
 	/// Moves the end position, leaving the shape unchanged (this might change the start position).
-	void moveEnd(const shape_type& end)
+	void moveEnd(const shape_type& end) noexcept
 	{
 		for (qsizetype i = 0; i < end.size(); ++i) {
 			qsizetype w = m_end[i] - m_start[i];
@@ -186,20 +186,20 @@ public:
 		}
 	}
 	/// Moves the end position for given dimension, leaving the shape unchanged (this might change the start position).
-	void moveEnd(qsizetype index, qsizetype new_pos)
+	void moveEnd(qsizetype index, qsizetype new_pos) noexcept
 	{
 		qsizetype w = m_end[index] - m_start[index];
 		m_end[index] = new_pos;
 		m_start[index] = new_pos - w;
 	}
 	/// Set the end position. This might change the shape, but never the start position.
-	void setEnd(const shape_type& end) { m_end = end; }
+	void setEnd(const shape_type& end) noexcept { m_end = end; }
 	/// Set the end position for given index. This might change the shape, but never the start position.
-	void setEnd(qsizetype index, qsizetype new_pos) { m_end[index] = new_pos; }
+	void setEnd(qsizetype index, qsizetype new_pos) noexcept { m_end[index] = new_pos; }
 
 	/// Returns a normalized rectangle; i.e., a rectangle that has a non-negative shapes.
 	///  If a shape is negative, this function swaps start and end position for given dimension.
-	VipNDRect normalized() const
+	VipNDRect normalized() const noexcept
 	{
 		VipNDRect res;
 		res.resize(size());
@@ -217,13 +217,13 @@ public:
 
 	/// Returns true if the rectangle contains the point \a pos
 	template<class Coord>
-	bool contains(const Coord& pos) const
+	bool contains(const Coord& pos) const noexcept
 	{
 		return detail::Contains<(NDim > 0 ? NDim : Coord::static_size)>::apply(*this, pos);
 	}
 
 	/// Translate rectangle by a given offset
-	void translate(const shape_type& offset)
+	void translate(const shape_type& offset) noexcept
 	{
 		for (qsizetype i = 0; i < offset.size(); ++i) {
 			m_start += offset[i];
@@ -231,7 +231,7 @@ public:
 		}
 	}
 	/// Returns a translated version of this rectangle
-	VipNDRect translated(const shape_type& offset) const
+	VipNDRect translated(const shape_type& offset) const noexcept
 	{
 		VipNDRect res(*this);
 		res.translate(offset);
@@ -239,7 +239,7 @@ public:
 	}
 
 	/// Returns the intersection of this rectangle with \a rect. Returns an empty rectangle if the rectangles do not intersect.
-	VipNDRect intersected(const VipNDRect rect) const
+	VipNDRect intersected(const VipNDRect rect) const noexcept
 	{
 		VipNDRect res;
 		res.resize(size());
@@ -258,7 +258,7 @@ public:
 		return res;
 	}
 	/// Returns true if \a rect intersects this rectangle
-	bool intersects(const VipNDRect rect) const
+	bool intersects(const VipNDRect rect) const noexcept
 	{
 		for (qsizetype i = 0; i < size(); ++i) {
 			if (end(i) <= rect.start(i) || start(i) >= rect.end(i))
@@ -267,14 +267,14 @@ public:
 		return true;
 	}
 
-	void resize(qsizetype size)
+	void resize(qsizetype size) noexcept
 	{
 		m_start.resize(size);
 		m_end.resize(size);
 	}
 
 	/// Returns the union of \a rect and this rectangle
-	VipNDRect united(const VipNDRect rect) const
+	VipNDRect united(const VipNDRect rect) const noexcept
 	{
 		VipNDRect res;
 		res.resize(size());
@@ -287,7 +287,7 @@ public:
 
 	/// Comparison operator
 	template<qsizetype Dim>
-	bool operator==(const VipNDRect<Dim>& other) const
+	bool operator==(const VipNDRect<Dim>& other) const noexcept
 	{
 		if (size() != other.size())
 			return false;
@@ -298,7 +298,7 @@ public:
 	}
 	/// Comparison operator
 	template<qsizetype Dim>
-	bool operator!=(const VipNDRect<Dim>& other) const
+	bool operator!=(const VipNDRect<Dim>& other) const noexcept
 	{
 		if (size() != other.size())
 			return true;
@@ -308,7 +308,7 @@ public:
 		return false;
 	}
 	/// Intersection operator
-	VipNDRect operator&(const VipNDRect& rect) const { return this->intersected(rect); }
+	VipNDRect operator&(const VipNDRect& rect) const noexcept { return this->intersected(rect); }
 	/// Inplace intersection operator
 	VipNDRect& operator&=(const VipNDRect& rect)
 	{
@@ -316,7 +316,7 @@ public:
 		return *this;
 	}
 	/// Union operator
-	VipNDRect operator|(const VipNDRect& rect) const { return this->united(rect); }
+	VipNDRect operator|(const VipNDRect& rect) const noexcept { return this->united(rect); }
 	/// Inplace union operator
 	VipNDRect& operator|=(const VipNDRect& rect)
 	{
@@ -339,54 +339,54 @@ public:
 	static const qsizetype static_size = 2;
 
 	/// Default constructor, create an invalid rectangle (isEmpty() == true)
-	VipNDRect(){};
+	VipNDRect() noexcept {};
 	/// Copy constructor
-	VipNDRect(const VipNDRect& other)
+	VipNDRect(const VipNDRect& other) noexcept
 	  : m_rect(other.m_rect)
 	{
 	}
 	/// Construct from a start and end position
-	VipNDRect(const shape_type& st, const shape_type& en)
+	VipNDRect(const shape_type& st, const shape_type& en) noexcept
 	  : m_rect(QPoint(st[1], st[0]), QPoint(en[1] - 1, en[0] - 1))
 	{
 	}
-	VipNDRect(const QRect& r)
+	VipNDRect(const QRect& r) noexcept
 	  : m_rect(r)
 	{
 	}
 
-	VipNDRect& operator=(const VipNDRect& other)
+	VipNDRect& operator=(const VipNDRect& other) noexcept
 	{
 		m_rect = other.m_rect;
 		return *this;
 	}
 
 	/// Returns true if at least one of the dimensions is empty
-	bool isEmpty() const { return m_rect.isEmpty(); }
-	bool isValid() const { return m_rect.isValid(); }
+	bool isEmpty() const noexcept { return m_rect.isEmpty(); }
+	bool isValid() const noexcept { return m_rect.isValid(); }
 	/// Returns the number of dimensions
-	qsizetype size() const { return 2; }
+	qsizetype size() const noexcept { return 2; }
 	/// Returns the number of dimensions
-	qsizetype dimCount() const { return 2; }
+	qsizetype dimCount() const noexcept { return 2; }
 	/// Returns the full shape size (cumulative multiplication of all shapes)
-	qsizetype shapeSize() const { return m_rect.width() * m_rect.height(); }
+	qsizetype shapeSize() const noexcept { return m_rect.width() * m_rect.height(); }
 	/// Returns the start position
-	shape_type start() const { return vipVector(m_rect.top(), m_rect.left()); }
+	shape_type start() const noexcept { return vipVector(m_rect.top(), m_rect.left()); }
 	/// Returns the end of dimensions
-	shape_type end() const { return vipVector(m_rect.bottom() + 1, m_rect.right() + 1); }
+	shape_type end() const noexcept { return vipVector(m_rect.bottom() + 1, m_rect.right() + 1); }
 	/// Returns the shape (end -start)
-	shape_type shape() const { return vipVector(m_rect.height(), m_rect.width()); }
+	shape_type shape() const noexcept { return vipVector(m_rect.height(), m_rect.width()); }
 	/// Returns the shape (end -start) for given dimension
-	qsizetype shape(qsizetype index) const { return end(index) - start(index); }
+	qsizetype shape(qsizetype index) const noexcept { return end(index) - start(index); }
 	/// Returns the start position for given dimension
-	qsizetype start(qsizetype index) const { return ((qsizetype*)&m_rect)[(1 - index)]; }
+	qsizetype start(qsizetype index) const noexcept { return ((qsizetype*)&m_rect)[(1 - index)]; }
 	/// Returns the end position for given dimension
-	qsizetype end(qsizetype index) const { return ((qsizetype*)&m_rect)[(1 - index) + 2] + 1; }
+	qsizetype end(qsizetype index) const noexcept { return ((qsizetype*)&m_rect)[(1 - index) + 2] + 1; }
 
 	/// Moves the start position, leaving the shape unchanged (this might change the end position).
-	void moveStart(const shape_type& start) { m_rect.moveTopLeft(QPoint(start[1], start[0])); }
+	void moveStart(const shape_type& start) noexcept { m_rect.moveTopLeft(QPoint(start[1], start[0])); }
 	/// Moves the start position for given dimension, leaving the shape unchanged (this might change the end position).
-	void moveStart(qsizetype index, qsizetype new_pos)
+	void moveStart(qsizetype index, qsizetype new_pos) noexcept
 	{
 		if (index == 0)
 			m_rect.moveTop(new_pos);
@@ -394,9 +394,9 @@ public:
 			m_rect.moveLeft(new_pos);
 	}
 	/// Set the start position. This might change the shape, but never the end position.
-	void setStart(const shape_type& start) { m_rect.setTopLeft(QPoint(start[1], start[0])); }
+	void setStart(const shape_type& start) noexcept { m_rect.setTopLeft(QPoint(start[1], start[0])); }
 	/// Set the start position for given index. This might change the shape, but never the end position.
-	void setStart(qsizetype index, qsizetype new_pos)
+	void setStart(qsizetype index, qsizetype new_pos) noexcept
 	{
 		if (index == 0)
 			m_rect.setTop(new_pos);
@@ -405,9 +405,9 @@ public:
 	}
 
 	/// Moves the end position, leaving the shape unchanged (this might change the start position).
-	void moveEnd(const shape_type& end) { m_rect.moveBottomRight(QPoint(end[1] - 1, end[0] - 1)); }
+	void moveEnd(const shape_type& end) noexcept { m_rect.moveBottomRight(QPoint(end[1] - 1, end[0] - 1)); }
 	/// Moves the end position for given dimension, leaving the shape unchanged (this might change the start position).
-	void moveEnd(qsizetype index, qsizetype new_pos)
+	void moveEnd(qsizetype index, qsizetype new_pos) noexcept
 	{
 		if (index == 0)
 			m_rect.moveBottom(new_pos - 1);
@@ -415,9 +415,9 @@ public:
 			m_rect.moveRight(new_pos - 1);
 	}
 	/// Set the end position. This might change the shape, but never the start position.
-	void setEnd(const shape_type& end) { m_rect.setBottomRight(QPoint(end[1] - 1, end[0] - 1)); }
+	void setEnd(const shape_type& end) noexcept { m_rect.setBottomRight(QPoint(end[1] - 1, end[0] - 1)); }
 	/// Set the end position for given index. This might change the shape, but never the start position.
-	void setEnd(qsizetype index, qsizetype new_pos)
+	void setEnd(qsizetype index, qsizetype new_pos) noexcept
 	{
 		if (index == 0)
 			m_rect.setBottom(new_pos - 1);
@@ -427,19 +427,19 @@ public:
 
 	/// Returns a normalized rectangle; i.e., a rectangle that has a non-negative shapes.
 	///  If a shape is negative, this function swaps start and end position for given dimension.
-	VipNDRect normalized() const { return VipNDRect(m_rect.normalized()); }
+	VipNDRect normalized() const noexcept { return VipNDRect(m_rect.normalized()); }
 
 	/// Returns true if the rectangle contains the point \a pos
 	template<class Coord>
-	bool contains(const Coord& pos) const
+	bool contains(const Coord& pos) const noexcept
 	{
 		return m_rect.contains(pos[1], pos[0]);
 	}
 
 	/// Translate rectangle by a given offset
-	void translate(const shape_type& offset) { m_rect.translate(offset[1], offset[0]); }
+	void translate(const shape_type& offset) noexcept { m_rect.translate(offset[1], offset[0]); }
 	/// Returns a translated version of this rectangle
-	VipNDRect translated(const shape_type& offset) const
+	VipNDRect translated(const shape_type& offset) const noexcept
 	{
 		VipNDRect res(*this);
 		res.translate(offset);
@@ -447,20 +447,20 @@ public:
 	}
 
 	/// Returns the intersection of this rectangle with \a rect. Returns an empty rectangle if the rectangles do not intersect.
-	VipNDRect intersected(const VipNDRect rect) const { return VipNDRect(m_rect.intersected(rect.m_rect)); }
+	VipNDRect intersected(const VipNDRect rect) const noexcept { return VipNDRect(m_rect.intersected(rect.m_rect)); }
 
 	/// Returns true if \a rect intersects this rectangle
-	bool intersects(const VipNDRect rect) const { return m_rect.intersects(rect.m_rect); }
-	void resize(qsizetype) {}
+	bool intersects(const VipNDRect rect) const noexcept { return m_rect.intersects(rect.m_rect); }
+	void resize(qsizetype) noexcept {}
 
 	/// Returns the union of \a rect and this rectangle
-	VipNDRect united(const VipNDRect rect) const { return VipNDRect(m_rect.united(rect.m_rect)); }
+	VipNDRect united(const VipNDRect rect) const noexcept { return VipNDRect(m_rect.united(rect.m_rect)); }
 
-	const QRect& rect() const { return m_rect; }
+	const QRect& rect() const noexcept { return m_rect; }
 
 	/// Comparison operator
 	template<qsizetype Dim>
-	bool operator==(const VipNDRect<Dim>& other) const
+	bool operator==(const VipNDRect<Dim>& other) const noexcept
 	{
 		if (size() != other.size())
 			return false;
@@ -471,7 +471,7 @@ public:
 	}
 	/// Comparison operator
 	template<qsizetype Dim>
-	bool operator!=(const VipNDRect<Dim>& other) const
+	bool operator!=(const VipNDRect<Dim>& other) const noexcept
 	{
 		if (size() != other.size())
 			return true;
@@ -481,17 +481,17 @@ public:
 		return false;
 	}
 	/// Intersection operator
-	VipNDRect operator&(const VipNDRect& rect) const { return this->intersected(rect); }
+	VipNDRect operator&(const VipNDRect& rect) const noexcept { return this->intersected(rect); }
 	/// Inplace intersection operator
-	VipNDRect& operator&=(const VipNDRect& rect)
+	VipNDRect& operator&=(const VipNDRect& rect) noexcept
 	{
 		*this = this->intersected(rect);
 		return *this;
 	}
 	/// Union operator
-	VipNDRect operator|(const VipNDRect& rect) const { return this->united(rect); }
+	VipNDRect operator|(const VipNDRect& rect) const noexcept { return this->united(rect); }
 	/// Inplace union operator
-	VipNDRect& operator|=(const VipNDRect& rect)
+	VipNDRect& operator|=(const VipNDRect& rect) noexcept
 	{
 		*this = this->united(rect);
 		return *this;
@@ -503,7 +503,7 @@ private:
 
 /// @brief Build a VipNDRect from a start and end position
 template<qsizetype N1, qsizetype N2>
-VipNDRect<(N1 < 0 ? N2 : N1)> vipRectStartEnd(const VipCoordinate<N1>& start, const VipCoordinate<N2>& end)
+VipNDRect<(N1 < 0 ? N2 : N1)> vipRectStartEnd(const VipCoordinate<N1>& start, const VipCoordinate<N2>& end) noexcept
 {
 	typedef VipNDRect<(N1 < 0 ? N2 : N1)> result;
 	return result(start, end);
@@ -511,7 +511,7 @@ VipNDRect<(N1 < 0 ? N2 : N1)> vipRectStartEnd(const VipCoordinate<N1>& start, co
 
 /// @brief Build a VipNDRect from a start position and a shape
 template<qsizetype N1, qsizetype N2>
-VipNDRect<(N1 < 0 ? N2 : N1)> vipRectStartShape(const VipCoordinate<N1>& start, const VipCoordinate<N2>& shape)
+VipNDRect<(N1 < 0 ? N2 : N1)> vipRectStartShape(const VipCoordinate<N1>& start, const VipCoordinate<N2>& shape) noexcept
 {
 	typedef VipNDRect<(N1 < 0 ? N2 : N1)> result;
 	VipCoordinate<(N1 < 0 ? N2 : N1)> end;

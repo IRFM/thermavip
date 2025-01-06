@@ -149,9 +149,9 @@ public:
 	bool operator==(const VipShape& other) const;
 
 	/// Returns true if the shape is valid
-	bool isValid() const { return type() != Unknown; }
+	VIP_ALWAYS_INLINE bool isValid() const { return type() != Unknown; }
 	/// Returns true if the shape is null
-	bool isNull() const { return type() == Unknown; }
+	VIP_ALWAYS_INLINE bool isNull() const { return type() == Unknown; }
 	/// Returns a copy of this shape
 	VipShape copy() const;
 

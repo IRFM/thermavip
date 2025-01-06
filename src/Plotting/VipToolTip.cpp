@@ -345,7 +345,11 @@ void VipToolTip::refresh()
 	if (auto* v = plotArea()->view()) {
 		if (!v->isVisible() || v->isHidden())
 			return;
-		if (!v->underMouse())
+
+		//TEST
+		QWidget * cur = qApp->widgetAt(QCursor::pos());
+
+		if (!v->underMouse() && !v->viewport()->underMouse())
 			return;
 	}
 	else

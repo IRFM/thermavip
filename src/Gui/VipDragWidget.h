@@ -274,12 +274,13 @@ public Q_SLOTS:
 protected:
 	/// Set the inner visibility state flag and send the #visibilityChanged() signal if needed.
 	virtual void setInternalVisibility(VisibilityState);
-
 	virtual bool event(QEvent* event);
 	virtual void dragEnterEvent(QDragEnterEvent* evt);
 	virtual void dropEvent(QDropEvent* evt);
 	virtual void changeEvent(QEvent* evt);
 	virtual void closeEvent(QCloseEvent* evt);
+
+	void setTitleWithId(const QString& text);
 
 Q_SIGNALS:
 

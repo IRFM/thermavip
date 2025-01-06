@@ -817,11 +817,6 @@ protected:
 	/// This distance is used to compute the position of the inner legends.
 	virtual double titleOffset() const { return 0; }
 
-	/// Render items using raster engine based on the current rendering strategy.
-	QImage renderRaster(const QList<VipPaintItem*>& items) const;
-	/// Render the VipAbstractPlotArea using opengl engine based on the current rendering strategy.
-	QImage renderOpengl(const QList<VipPaintItem*>& items) const;
-
 	/// @brief Apply the current color palette to all items
 	void applyColorPalette();
 
@@ -1104,7 +1099,6 @@ protected:
 	virtual void paintEvent(QPaintEvent* evt);
 	virtual void keyPressEvent(QKeyEvent* event);
 	virtual void setupViewport(QWidget* viewport);
-	void updateCacheMode(bool enable_cache);
 
 private:
 	

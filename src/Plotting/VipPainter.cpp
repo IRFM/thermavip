@@ -418,10 +418,6 @@ void VipPainter::drawText(QPainter* painter, const QPointF& pos, const QString& 
 	painter->drawText(pos, text);
 	if (unscaled_font)
 		painter->restore();
-	/* painter->save();
-	vipUnscaleFont( painter );
-	painter->drawText( pos, text );
-	painter->restore();*/
 }
 
 //! Wrapper for QPainter::drawText()
@@ -438,16 +434,9 @@ void VipPainter::drawText(QPainter* painter, const QRectF& rect, int flags, cons
 		painter->save();
 		vipForceUnscaleFont(painter);
 	}
-	// painter->setRenderHints(QPainter::Antialiasing | QPainter::SmoothPixmapTransform | QPainter::HighQualityAntialiasing | QPainter::TextAntialiasing);
 	painter->drawText(rect, flags, text);
 	if (unscaled_font)
 		painter->restore();
-
-	/* if (vipNeedUnscaledFont())
-    painter->save();
-    vipUnscaleFont( painter );
-    painter->drawText( rect, flags, text );
-    painter->restore();*/
 }
 
 #ifndef QT_NO_RICHTEXT

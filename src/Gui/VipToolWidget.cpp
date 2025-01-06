@@ -437,7 +437,7 @@ public:
 	bool resetSizeRequest;
 	bool keepFloatingUserSize;
 	bool firstShow;
-	QScrollArea* scroll;
+	QPointer <QScrollArea> scroll;
 	VipToolWidgetResizer* resizer;
 	QPointer<QAction> action;
 	QPointer<QAbstractButton> button;
@@ -459,7 +459,7 @@ VipToolWidget::VipToolWidget(VipMainWindow* window)
 {
 	VIP_CREATE_PRIVATE_DATA(d_data);
 
-	this->setWindowFlags(this->windowFlags() | Qt::Tool | Qt::WindowStaysOnTopHint | Qt::CustomizeWindowHint);
+	this->setWindowFlags(this->windowFlags() | Qt::Tool | Qt::WindowStaysOnTopHint | Qt::CustomizeWindowHint );
 	this->setAttribute(Qt::WA_TranslucentBackground);
 	this->setSizePolicy(QSizePolicy::Maximum, QSizePolicy::Maximum);
 	this->resize(20, 20);
@@ -499,18 +499,25 @@ VipToolWidgetTitleBar* VipToolWidget::titleBarWidget() const
 
 void VipToolWidget::setWidget(QWidget* widget, Qt::Orientation)
 {
+	if (!d_data->scroll) {
+		d_data->scroll = new VipToolWidgetScrollArea();
+		d_data->scroll->setWidgetResizable(true);
+		QDockWidget::setWidget(d_data->scroll);
+	}
 	d_data->scroll->setWidget(widget);
 	widget->show();
 }
 
 QWidget* VipToolWidget::widget() const
 {
-	return d_data->scroll->widget();
+	return d_data->scroll ? d_data->scroll->widget() : QDockWidget::widget();
 }
 
 QWidget* VipToolWidget::takeWidget()
 {
-	return d_data->scroll->takeWidget();
+	if (d_data->scroll)
+		return d_data->scroll->takeWidget();
+	return nullptr;
 }
 
 QScrollArea* VipToolWidget::scrollArea() const
@@ -634,12 +641,13 @@ void VipToolWidget::setStyleProperty(const char* name, bool value)
 {
 	bool this_current = this->property(name).value<bool>();
 	bool bar_current = this->titleBarWidget()->property(name).value<bool>();
-	bool scroll_current = d_data->scroll->property(name).value<bool>();
+	bool scroll_current = d_data->scroll ? d_data->scroll->property(name).value<bool>() : false;
 	if (this_current != value || bar_current != value || scroll_current != value) {
 
 		this->setProperty(name, value);
 		this->titleBarWidget()->setProperty(name, value);
-		d_data->scroll->setProperty(name, value);
+		if (d_data->scroll)
+			d_data->scroll->setProperty(name, value);
 		polish();
 	}
 }
@@ -881,14 +889,18 @@ void VipToolWidget::polish()
 			status = 3; // floating
 	}
 	this->setProperty("status", status);
+	if (d_data->scroll)
 	d_data->scroll->setProperty("status", status);
 	titleBarWidget()->setProperty("status", status);
 	// vip_debug("set %s: %i\n", this->windowTitle().toLatin1().data(), status);
 
 	this->style()->unpolish(this);
 	this->style()->polish(this);
-	d_data->scroll->style()->unpolish(d_data->scroll);
-	d_data->scroll->style()->polish(d_data->scroll);
+	if (d_data->scroll) {
+
+		d_data->scroll->style()->unpolish(d_data->scroll);
+		d_data->scroll->style()->polish(d_data->scroll);
+	}
 	titleBarWidget()->style()->unpolish(titleBarWidget());
 	titleBarWidget()->style()->polish(titleBarWidget());
 	this->update();

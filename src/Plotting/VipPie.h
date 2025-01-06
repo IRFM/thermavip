@@ -49,32 +49,32 @@ class VipPolarCoordinate
 	vip_double d_angle;
 
 public:
-	VipPolarCoordinate(vip_double radius = 0, vip_double angle = 0)
+	VipPolarCoordinate(vip_double radius = 0, vip_double angle = 0) noexcept
 	  : d_radius(radius)
 	  , d_angle(angle)
 	{
 	}
 
-	VipPolarCoordinate(const QPointF& pt)
+	VipPolarCoordinate(const QPointF& pt) noexcept
 	  : d_radius(pt.x())
 	  , d_angle(pt.y())
 	{
 	}
 
-	vip_double radius() const { return d_radius; }
-	vip_double angle() const { return d_angle; }
+	vip_double radius() const noexcept { return d_radius; }
+	vip_double angle() const noexcept { return d_angle; }
 
-	void setRadius(vip_double radius) { d_radius = radius; }
-	void setAngle(vip_double angle) { d_angle = angle; }
+	void setRadius(vip_double radius) noexcept { d_radius = radius; }
+	void setAngle(vip_double angle) noexcept { d_angle = angle; }
 
-	QLineF line(const QPointF& center) const
+	QLineF line(const QPointF& center) const noexcept
 	{
 		QLineF res(center, center + QPointF(d_radius, 0));
 		res.setAngle(d_angle + (d_radius > 0 ? 0 : 180));
 		return res;
 	}
 
-	QPointF position(const QPointF& center) const { return line(center).p2(); }
+	QPointF position(const QPointF& center) const noexcept { return line(center).p2(); }
 };
 
 /// @brief Class representing a Pie with he angle being given in degrees
@@ -88,64 +88,64 @@ class VIP_PLOTTING_EXPORT VipPie
 
 public:
 	/// @brief Construct from a start and end angle, a start and end radius, and an offset to the center
-	VipPie(vip_double start_angle = 0, vip_double end_angle = 0, vip_double min_radius = 0, vip_double max_radius = 0, vip_double offset_to_center = 0);
+	VipPie(vip_double start_angle = 0, vip_double end_angle = 0, vip_double min_radius = 0, vip_double max_radius = 0, vip_double offset_to_center = 0) noexcept;
 	/// @brief Construct from the top left and bottom right polar coordinates, and an optional offset to the center
-	VipPie(const VipPolarCoordinate& top_left, const VipPolarCoordinate& bottom_right, vip_double offset_to_center = 0);
+	VipPie(const VipPolarCoordinate& top_left, const VipPolarCoordinate& bottom_right, vip_double offset_to_center = 0) noexcept;
 	/// @brief Construct from a rectangle, considering that the left and right values are angles and the top and bottom values are radiuses.
-	VipPie(const QRectF& r, vip_double offset_to_center = 0);
+	VipPie(const QRectF& r, vip_double offset_to_center = 0) noexcept;
 
 	/// @brief Returns true if the pie is empty (all values to 0)
-	bool isEmpty() const;
+	bool isEmpty() const noexcept;
 
 	/// @brief Set start and end angles
-	VipPie& setAngleRange(vip_double start, vip_double end);
+	VipPie& setAngleRange(vip_double start, vip_double end) noexcept;
 
 	/// @brief Set the start angle
-	VipPie& setStartAngle(vip_double start_angle);
-	vip_double startAngle() const;
+	VipPie& setStartAngle(vip_double start_angle) noexcept;
+	vip_double startAngle() const noexcept;
 
 	/// @brief Set the end angle
-	VipPie& setEndAngle(vip_double end_angle);
-	vip_double endAngle() const;
+	VipPie& setEndAngle(vip_double end_angle) noexcept;
+	vip_double endAngle() const noexcept;
 
 	/// @brief Returns the sweep length in degrees
-	vip_double sweepLength() const;
+	vip_double sweepLength() const noexcept;
 	/// @brief  Returns themean angle
-	vip_double meanAngle() const;
+	vip_double meanAngle() const noexcept;
 	/// @brief Set the mean angle, and keep the sweep length unchanged
-	VipPie& setMeanAngle(vip_double mean_angle);
+	VipPie& setMeanAngle(vip_double mean_angle) noexcept;
 
 	/// @brief Set the min and max radius
-	void setRadiusRange(vip_double start, vip_double end);
+	void setRadiusRange(vip_double start, vip_double end) noexcept;
 
 	/// @brief Set the min radius
-	VipPie& setMinRadius(vip_double min_radius);
-	vip_double minRadius() const;
+	VipPie& setMinRadius(vip_double min_radius) noexcept;
+	vip_double minRadius() const noexcept;
 
 	/// @brief Set the max radius
-	VipPie& setMaxRadius(vip_double max_radius);
-	vip_double maxRadius() const;
+	VipPie& setMaxRadius(vip_double max_radius) noexcept;
+	vip_double maxRadius() const noexcept;
 
 	/// @brief Returns the radius extent
-	vip_double radiusExtent() const;
+	vip_double radiusExtent() const noexcept;
 	/// @brief Returns the mean radius
-	vip_double meanRadius() const;
+	vip_double meanRadius() const noexcept;
 	/// @brief Set the mean radius while keeping the radius extent unchanged
-	VipPie& setMeanRadius(vip_double mean_radius);
+	VipPie& setMeanRadius(vip_double mean_radius) noexcept;
 
 	/// @brief Set the offset to the center
-	VipPie& setOffsetToCenter(vip_double offset_to_center);
-	vip_double offsetToCenter() const;
+	VipPie& setOffsetToCenter(vip_double offset_to_center) noexcept;
+	vip_double offsetToCenter() const noexcept;
 
 	/// @brief Returns the top left position in polar coordinates
-	VipPolarCoordinate topLeft() const;
+	VipPolarCoordinate topLeft() const noexcept;
 	/// @brief Returns the bottom right position in polar coordinates
-	VipPolarCoordinate bottomRight() const;
+	VipPolarCoordinate bottomRight() const noexcept;
 
 	/// @brief Returns the pie as a rectangle, with the x axis representing angles and the y axis representing radiuses
-	QRectF rect() const;
+	QRectF rect() const noexcept;
 	/// @brief Normalize the pie
-	VipPie normalized() const;
+	VipPie normalized() const noexcept;
 };
 
 Q_DECLARE_METATYPE(VipPolarCoordinate);

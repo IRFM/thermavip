@@ -10,6 +10,7 @@
 #include "VipToolTip.h"
 #include "VipSleep.h"
 #include "VipPicture.h"
+#include "VipLegendItem.h"
 
 
 /// @brief Generate 400 rotating arrows with an x/y step of 2 units
@@ -82,29 +83,32 @@ protected:
 
 
 #include <qsurface.h>
+#include <qdir.h>
 
 int main(int argc, char** argv)
 {
+	//qputenv("QT_PLUGIN_PATH", QDir::currentPath().toLatin1());
+
 	QCoreApplication::setAttribute(Qt::AA_UseDesktopOpenGL);
 	QSurfaceFormat format;
-	format.setSamples(4);
+	format.setSamples(2);
 	format.setSwapInterval(0);
-	//format.setMajorVersion(3);
-	//format.setMinorVersion(3);
 	QSurfaceFormat::setDefaultFormat(format);
 
 	QApplication app(argc, argv);
 
 	VipPlotWidget2D w;
-	w.setRenderingMode(VipPlotWidget2D::OpenGLThread);
+	//w.setRenderingMode(VipPlotWidget2D::OpenGLThread);
+
 	
-	VipText::setCacheTextWhenPossible(true);
+	VipText::setCacheTextWhenPossible(false);
 	
 
-	// Enable zooming/panning
+	// Enable zooming/panning 
 	w.area()->setMousePanning(Qt::RightButton);
 	w.area()->setMouseWheelZoom(true);
 	w.area()->setTitle("<b>Dynamic quivers plot");
+	w.area()->legend()->setVisible(false);
 	
 	w.area()->setPlotToolTip(new VipToolTip());
 	w.area()->plotToolTip()->setDisplayFlags(VipToolTip::ItemsToolTips);
@@ -118,7 +122,6 @@ int main(int argc, char** argv)
 
 	auto* map = w.area()->createColorMap(VipAxisBase::Right, VipInterval(), VipLinearColorMap::createColorMap(VipLinearColorMap::Sunset));
 	
-	//TEST
 	VipPlotQuiver* p = new VipPlotQuiver("Quivers");
 	p->setPen(QPen(Qt::blue));
 	p->quiverPath().setStyle(VipQuiverPath::EndArrow);

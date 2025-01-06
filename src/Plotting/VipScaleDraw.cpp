@@ -2552,9 +2552,7 @@ void VipScaleDraw::drawLabel(QPainter* painter, vip_double value, const VipText&
 		return;
 
 	QPointF pos = labelPosition(value, tick);
-
 	QSizeF labelSize = lbl.textSize();
-
 	const QTransform transform = labelTransformation(value, pos, labelSize, tick, lbl.alignment());
 
 	const QTransform tr = painter->worldTransform();

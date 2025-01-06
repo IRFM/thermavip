@@ -62,32 +62,14 @@ public:
 	{
 		std::copy(other.begin(), other.end(), begin());
 	}
-	VipPointVector(const VipPointVector& other)
-	  : QVector<VipPoint>(other)
-	{
-	}
-	VipPointVector(VipPointVector&& other) noexcept
-	  : QVector<VipPoint>(std::move(other))
-	{
-	}
-
-	VipPointVector& operator=(const VipPointVector& other)
-	{
-		static_cast<QVector<VipPoint>&>(*this) = static_cast<const QVector<VipPoint>&>(other);
-		return *this;
-	}
-	VipPointVector& operator=(VipPointVector&& other) noexcept
-	{
-		static_cast<QVector<VipPoint>&>(*this) = std::move(static_cast<const QVector<VipPoint>&>(other));
-		return *this;
-	}
 	VipPointVector& operator=(const QVector<VipPoint>& other)
 	{
 		static_cast<QVector<VipPoint>&>(*this) = other;
 		return *this;
 	}
+	VIP_DEFAULT_MOVE(VipPointVector);
 
-	QRectF boundingRect() const
+	QRectF boundingRect() const noexcept
 	{
 		if (size() == 0)
 			return QRectF();
@@ -127,25 +109,25 @@ class VipComplexPoint
 	complex_d yp;
 
 public:
-	VipComplexPoint()
+	VipComplexPoint() noexcept
 	  : xp(0)
 	  , yp(0)
 	{
 	}
-	VipComplexPoint(vip_double x, const complex_d& y)
+	VipComplexPoint(vip_double x, const complex_d& y) noexcept
 	  : xp(x)
 	  , yp(y)
 	{
 	}
 
-	vip_double x() const { return xp; }
-	complex_d y() const { return yp; }
+	vip_double x() const noexcept { return xp; }
+	complex_d y() const noexcept { return yp; }
 
-	vip_double& rx() { return xp; }
-	complex_d& ry() { return yp; }
+	vip_double& rx() noexcept { return xp; }
+	complex_d& ry() noexcept { return yp; }
 
-	void setX(vip_double x) { xp = x; }
-	void setY(const complex_d& y) { yp = y; }
+	void setX(vip_double x) noexcept { xp = x; }
+	void setY(const complex_d& y) noexcept { yp = y; }
 };
 
 typedef QVector<VipComplexPoint> VipComplexPointVector;

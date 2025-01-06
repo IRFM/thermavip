@@ -40,11 +40,11 @@
 #include <iostream>
 #include <qcoreapplication.h>
 
-#ifdef _MSC_VER
+/* #ifdef _MSC_VER
 // Remove deprecated warning
 #pragma warning(push)
 #pragma warning(disable : 4996)
-#endif
+#endif*/
 
 class DetachableProcess : public QProcess
 {
@@ -123,7 +123,7 @@ bool VipUpdate::stop()
 	disconnect(&d_data->process, SIGNAL(finished(int, QProcess::ExitStatus)), this, SLOT(emitFinished()));
 
 	d_data->process.terminate();
-	if (!d_data->process.waitForFinished(10000))
+	if (!d_data->process.waitForFinished(1000))
 		d_data->process.kill();
 	return d_data->process.state() == QProcess::NotRunning;
 }
@@ -137,16 +137,11 @@ int VipUpdate::hasUpdate(const QString& out_dir, bool* already_downloaded, void*
 	if (!stop())
 		return -1;
 
-#ifdef __GNUC__
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-#endif
+
 	// vip_debug("start '%s'\n", (getUpdateProgram() + " -c --hide -o " + out_dir).toLatin1().data());
-	// d_data->process.start(getUpdateProgram(), QStringList()<<"-c"<<"--hide"<<"-o"<<out_dir);
-	d_data->process.start(getUpdateProgram() + " -c --hide -o " + out_dir);
-#ifdef __GNUC__
-#pragma GCC diagnostic pop
-#endif
+	d_data->process.start(getUpdateProgram(), QStringList()<<"-c"<<"--hide"<<"-o"<<out_dir);
+	//d_data->process.start(getUpdateProgram() + " -c --hide -o " + out_dir);
+
 	d_data->process.waitForStarted(3000);
 
 	if (!_stop) {
@@ -190,15 +185,10 @@ bool VipUpdate::isDownloadFinished()
 	if (!stop())
 		return false;
 
-#ifdef __GNUC__
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-#endif
-	// d_data->process.start(getUpdateProgram(), QStringList()<< "-w"<< "--hide");
-	d_data->process.start(getUpdateProgram() + " -w --hide");
-#ifdef __GNUC__
-#pragma GCC diagnostic pop
-#endif
+
+	d_data->process.start(getUpdateProgram(), QStringList()<< "-w"<< "--hide");
+	//d_data->process.start(getUpdateProgram() + " -w --hide");
+
 	if (!d_data->process.waitForFinished(30000))
 		return false;
 
@@ -222,15 +212,10 @@ bool VipUpdate::startDownload(const QString& out_dir)
 	connect(&d_data->process, SIGNAL(readyReadStandardOutput()), this, SLOT(newOutput()), Qt::DirectConnection);
 	connect(&d_data->process, SIGNAL(finished(int, QProcess::ExitStatus)), this, SLOT(emitFinished()), Qt::DirectConnection);
 
-#ifdef __GNUC__
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-#endif
-	// d_data->process.start(getUpdateProgram() ,QStringList()<< "-u"<< "-d" << "--hide" << "-o" << out_dir);
-	d_data->process.start(getUpdateProgram() + " -u -d --hide -o " + out_dir);
-#ifdef __GNUC__
-#pragma GCC diagnostic pop
-#endif
+
+	d_data->process.start(getUpdateProgram() ,QStringList()<< "-u"<< "-d" << "--hide" << "-o" << out_dir);
+	//d_data->process.start(getUpdateProgram() + " -u -d --hide -o " + out_dir);
+
 	return d_data->process.waitForStarted(10000);
 }
 
@@ -243,15 +228,9 @@ bool VipUpdate::startUpdate(const QString& out_dir)
 	connect(&d_data->process, SIGNAL(readyReadStandardOutput()), this, SLOT(newOutput()), Qt::DirectConnection);
 	connect(&d_data->process, SIGNAL(finished(int, QProcess::ExitStatus)), this, SLOT(emitFinished()), Qt::DirectConnection);
 
-#ifdef __GNUC__
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-#endif
-	// d_data->process.start(getUpdateProgram() ,QStringList()<< "-u" <<"--hide"<< "-o" << out_dir);
-	d_data->process.start(getUpdateProgram() + " -u --hide -o " + out_dir);
-#ifdef __GNUC__
-#pragma GCC diagnostic pop
-#endif
+	d_data->process.start(getUpdateProgram() ,QStringList()<< "-u" <<"--hide"<< "-o" << out_dir);
+	//d_data->process.start(getUpdateProgram() + " -u --hide -o " + out_dir);
+
 	return d_data->process.waitForStarted(30000);
 }
 
@@ -348,7 +327,7 @@ bool VipUpdate::renameNewFiles(const QString& dir_name)
 	return !has_opened_files;
 }
 
-#ifdef _MSC_VER
+/* #ifdef _MSC_VER
 // Remove deprecated warning
 #pragma warning(pop)
-#endif
+#endif*/

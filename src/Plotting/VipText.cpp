@@ -33,8 +33,8 @@
 #include "VipPainter.h"
 #include "VipPie.h"
 #include "VipShapeDevice.h"
+#include "VipPicture.h"
 
-#include <iostream>
 #include <limits>
 #include <numeric>
 
@@ -53,6 +53,10 @@
 #include <qtextdocument.h>
 #include <qtextobject.h>
 #include <qwidget.h>
+#include <qstatictext.h>
+#include <qtextoption.h>
+#include <qhash.h>
+#include <qthread.h>
 
 template<class Image>
 Image makeImage(const QSize& s)
@@ -272,8 +276,8 @@ QSizeF VipPlainTextEngine::textSize(const QFont& font, int flags, const QString&
 	const QFontMetricsF fm(font);
 	const QRectF rect = fm.boundingRect(QRectF(0, 0, QWIDGETSIZE_MAX, QWIDGETSIZE_MAX), flags, text);
 
-	return rect.size(); //+QSizeF(10,0);
-}
+	return rect.size(); //+QSizeF(10,0); 
+} 
 
 /// Return margins around the texts
 ///
@@ -531,39 +535,6 @@ VipTextStyle::VipTextStyle()
 {
 }
 
-VipTextStyle::VipTextStyle(const VipTextStyle& other)
-  : d_data(other.d_data)
-{
-}
-
-VipTextStyle& VipTextStyle::operator=(const VipTextStyle& other)
-{
-	d_data = other.d_data;
-	return *this;
-}
-// bool VipTextStyle::operator==(const VipTextStyle &other) const
-// {
-// return d_data->font == other.d_data->font &&
-//	d_data->textPen == other.d_data->textPen &&
-//	d_data->boxStyle == other.d_data->boxStyle &&
-//	d_data->alignment == other.d_data->alignment &&
-//	d_data->renderHints == other.d_data->renderHints;
-// }
-//
-// bool VipTextStyle::operator!=(const VipTextStyle &other) const
-// {
-// return !(operator==(other));
-// }
-const QFont& VipTextStyle::font() const
-{
-	return d_data->font;
-}
-
-QFont& VipTextStyle::font()
-{
-	return d_data->font;
-}
-
 void VipTextStyle::setFont(const QFont& font)
 {
 	d_data->font = font;
@@ -573,49 +544,20 @@ void VipTextStyle::setCached(bool cached)
 {
 	d_data->cached = cached;
 }
-bool VipTextStyle::cached() const
-{
-	return d_data->cached;
-}
-
-const QPen& VipTextStyle::textPen() const
-{
-	return d_data->textPen;
-}
-
-QPen& VipTextStyle::textPen()
-{
-	return d_data->textPen;
-}
 
 void VipTextStyle::setTextPen(const QPen& textPen)
 {
 	d_data->textPen = textPen;
 }
 
-QPen VipTextStyle::borderPen() const
-{
-	return d_data->boxStyle.borderPen();
-}
-
 void VipTextStyle::setBorderPen(const QPen& borderPen)
 {
 	d_data->boxStyle.setBorderPen(borderPen);
-}
-
-QBrush VipTextStyle::backgroundBrush() const
-{
-	return d_data->boxStyle.backgroundBrush();
-}
+} 
 
 void VipTextStyle::setBackgroundBrush(const QBrush& backgroundBrush)
 {
 	d_data->boxStyle.setBackgroundBrush(backgroundBrush);
-}
-
-double VipTextStyle::borderRadius() const
-{
-	return d_data->boxStyle.borderRadius();
 }
 
 void VipTextStyle::setBorderRadius(double borderRadius)
@@ -628,43 +570,19 @@ void VipTextStyle::setAlignment(Qt::Alignment align)
 	d_data->alignment = align;
 }
 
-Qt::Alignment VipTextStyle::alignment() const
-{
-	return d_data->alignment;
-}
-
 void VipTextStyle::setRenderHints(QPainter::RenderHints renderHints)
 {
 	d_data->renderHints = renderHints;
-}
-
-QPainter::RenderHints VipTextStyle::renderHints() const
-{
-	return d_data->renderHints;
 }
 
 void VipTextStyle::setMargin(double margin)
 {
 	d_data->margin = margin;
 }
-double VipTextStyle::margin() const
-{
-	return d_data->margin;
-}
 
 void VipTextStyle::setBoxStyle(const VipBoxStyle& bs)
 {
 	d_data->boxStyle = bs;
-}
-
-const VipBoxStyle& VipTextStyle::boxStyle() const
-{
-	return d_data->boxStyle;
-}
-
-VipBoxStyle& VipTextStyle::boxStyle()
-{
-	return d_data->boxStyle;
 }
 
 void VipTextStyle::setTextBoxStyle(const VipBoxStyle& s)
@@ -684,11 +602,6 @@ VipBoxStyle& VipTextStyle::textBoxStyle()
 	if (!d_data->textBoxStyle)
 		d_data->textBoxStyle.reset( new VipBoxStyle());
 	return *d_data->textBoxStyle;
-}
-
-bool VipTextStyle::hasTextBoxStyle() const
-{
-	return d_data->textBoxStyle != nullptr;
 }
 
 bool VipTextStyle::operator==(const VipTextStyle& other) const
@@ -738,28 +651,12 @@ VipText::VipText(const QString& text, const VipTextStyle& p, TextFormat textForm
 	d_data->parameters = p;
 }
 
-//! Copy constructor
-VipText::VipText(const VipText& other)
-  : d_data(other.d_data)
-  , d_dirtyTextSize(1)
-{
-}
-
 VipText::VipText(const QString& text, const VipTextEngine* engine)
   : d_data(new PrivateData())
   , d_dirtyTextSize(1)
 {
 	d_data->text = text;
 	d_data->textEngine = engine;
-}
-
-//! Assignment operator
-VipText& VipText::operator=(const VipText& other)
-{
-	d_data = other.d_data;
-	d_dirtyTextSize = other.d_dirtyTextSize;
-	d_textSize = other.d_textSize;
-	return *this;
 }
 
 //! Relational operator
@@ -787,20 +684,6 @@ void VipText::setText(const QString& text, VipText::TextFormat textFormat)
 	d_dirtyTextSize = 1;
 }
 
-/// \return VipText as QString.
-/// \sa setText()
-const QString& VipText::text() const
-{
-	return d_data->text;
-}
-
-/// \return VipText as QString.
-/// \sa setText()
-QString& VipText::text()
-{
-	return d_data->text;
-}
-
 /// \brief Change the render flags
 ///
 /// The default setting is Qt::AlignCenter
@@ -815,21 +698,10 @@ VipText& VipText::setAlignment(Qt::Alignment align)
 	return *this;
 }
 
-/// \return Render flags
-/// \sa setRenderFlags()
-Qt::Alignment VipText::alignment() const
-{
-	return d_data->parameters.alignment();
-}
-
 VipText& VipText::setCached(bool cached)
 {
 	d_data->parameters.setCached(cached);
 	return *this;
-}
-bool VipText::cached() const
-{
-	return d_data->parameters.cached();
 }
 
 static bool& cache_text_when_possible()
@@ -858,17 +730,7 @@ VipText& VipText::setFont(const QFont& font)
 	return *this;
 }
 
-//! Return the font.
-const QFont& VipText::font() const
-{
-	return d_data->parameters.font();
-}
 
-//! Return the font.
-QFont& VipText::font()
-{
-	return d_data->parameters.font();
-}
 
 /// Set the pen color used for drawing the text.
 ///
@@ -881,17 +743,6 @@ VipText& VipText::setTextPen(const QPen& pen)
 	return *this;
 }
 
-//! Return the pen color, used for painting the text
-const QPen& VipText::textPen() const
-{
-	return d_data->parameters.textPen();
-}
-
-//! Return the pen color, used for painting the text
-QPen& VipText::textPen()
-{
-	return d_data->parameters.textPen();
-}
 
 /// Set the radius for the corners of the border frame
 ///
@@ -901,13 +752,6 @@ VipText& VipText::setBorderRadius(double radius)
 {
 	d_data->parameters.setBorderRadius(qMax(0.0, radius));
 	return *this;
-}
-
-/// \return Radius for the corners of the border frame
-/// \sa setBorderRadius(), borderPen(), backgroundBrush()
-double VipText::borderRadius() const
-{
-	return d_data->parameters.borderRadius();
 }
 
 /// Set the background pen
@@ -920,13 +764,6 @@ VipText& VipText::setBorderPen(const QPen& pen)
 	return *this;
 }
 
-/// \return Background pen
-/// \sa setBorderPen(), backgroundBrush()
-QPen VipText::borderPen() const
-{
-	return d_data->parameters.borderPen();
-}
-
 /// Set the background brush
 ///
 /// \param brush Background brush
@@ -937,22 +774,10 @@ VipText& VipText::setBackgroundBrush(const QBrush& brush)
 	return *this;
 }
 
-/// \return Background brush
-/// \sa setBackgroundBrush(), borderPen()
-QBrush VipText::backgroundBrush() const
-{
-	return d_data->parameters.backgroundBrush();
-}
-
 VipText& VipText::setRenderHints(QPainter::RenderHints hints)
 {
 	d_data->parameters.setRenderHints(hints);
 	return *this;
-}
-
-QPainter::RenderHints VipText::renderHints() const
-{
-	return d_data->parameters.renderHints();
 }
 
 VipText& VipText::setTextStyle(const VipTextStyle& p)
@@ -961,30 +786,10 @@ VipText& VipText::setTextStyle(const VipTextStyle& p)
 	return *this;
 }
 
-const VipTextStyle& VipText::textStyle() const
-{
-	return d_data->parameters;
-}
-
-VipTextStyle& VipText::textStyle()
-{
-	return d_data->parameters;
-}
-
 VipText& VipText::setBoxStyle(const VipBoxStyle& bs)
 {
 	d_data->parameters.setBoxStyle(bs);
 	return *this;
-}
-
-const VipBoxStyle& VipText::boxStyle() const
-{
-	return d_data->parameters.boxStyle();
-}
-
-VipBoxStyle& VipText::boxStyle()
-{
-	return d_data->parameters.boxStyle();
 }
 
 VipText& VipText::setTextBoxStyle(const VipBoxStyle& p)
@@ -992,18 +797,7 @@ VipText& VipText::setTextBoxStyle(const VipBoxStyle& p)
 	d_data->parameters.setTextBoxStyle(p);
 	return *this;
 }
-const VipBoxStyle& VipText::textBoxStyle() const
-{
-	return d_data->parameters.textBoxStyle();
-}
-VipBoxStyle& VipText::textBoxStyle()
-{
-	return d_data->parameters.textBoxStyle();
-}
-bool VipText::hasTextBoxStyle() const
-{
-	return d_data->parameters.hasTextBoxStyle();
-}
+
 
 /// Change a layout attribute
 ///
@@ -1025,22 +819,6 @@ VipText& VipText::setLayoutAttributes(LayoutAttributes attrs)
 	d_data->layoutAttributes = attrs;
 	d_dirtyTextSize = 1;
 	return *this;
-}
-
-/// Test a layout attribute
-///
-/// \param attribute Layout attribute
-/// \return true, if attribute is enabled
-///
-/// \sa setLayoutAttribute()
-bool VipText::testLayoutAttribute(LayoutAttribute attribute) const
-{
-	return d_data->layoutAttributes | attribute;
-}
-
-VipText::LayoutAttributes VipText::layoutAttributes() const
-{
-	return d_data->layoutAttributes;
 }
 
 /// Find the height for a given width
@@ -1193,7 +971,45 @@ static QRectF computeRect(const QRectF& outer, const QRectF& inner, int flags)
 	return res & outer;
 }
 
-#include "VipPicture.h"
+
+
+#ifndef VIP_TEXT_CACHE_SIZE
+#define VIP_TEXT_CACHE_SIZE 10000
+#endif
+
+
+bool drawThroughCache(QPainter* p, const QString& text, const QRectF& r, Qt::Alignment align, Qt::TextFormat fmt)
+{
+	// Draw given text using a cache of QStaticText.
+	// Since labels are usually drawn using the same font
+	// and no transformation except translation, this
+	// greatly fasten text drawing.
+
+	static QHash<QString,QStaticText> map;
+
+	if (text.size() > 6)
+		return false;
+	if (QThread::currentThread() != QCoreApplication::instance()->thread())
+		return false;
+	
+	auto it = map.find(text);
+	if (it == map.end()) {
+		if (map.size() > VIP_TEXT_CACHE_SIZE)
+			return false;
+		it = map.insert(text,QStaticText(text));
+	}
+	QStaticText& stext = it.value();
+	if (stext.textFormat() != fmt)
+		stext.setTextFormat(fmt);
+	auto opt = stext.textOption();
+	if (opt.alignment() != align) {
+		opt.setAlignment(align);
+		stext.setTextOption(opt);
+	}
+	p->drawStaticText(r.topLeft(), stext);
+	return true;
+}
+
 
 /// Draw a text into a rectangle
 ///
@@ -1308,7 +1124,8 @@ void VipText::draw(QPainter* painter, const QRectF& rect) const
 		}
 
 		if (!hasTextBoxStyle()) {
-			d_data->textEngine->draw(painter, expandedRect, alignment(), d_data->text);
+			if (is_opengl || !drawThroughCache(painter, d_data->text, expandedRect, alignment(), d_data->textEngine->format()))
+				d_data->textEngine->draw(painter, expandedRect, alignment(), d_data->text);
 		}
 		else {
 
@@ -1805,11 +1622,21 @@ VipTextObject::VipTextObject(const VipTextObject& other)
 	VIP_CREATE_PRIVATE_DATA(d_data, *other.d_data);
 }
 
+VipTextObject::VipTextObject(VipTextObject&& other) noexcept
+  : d_data(std::move(other.d_data))
+{
+}
+
 VipTextObject::~VipTextObject() = default;
 
 VipTextObject& VipTextObject::operator=(const VipTextObject& other)
 {
 	*d_data = *other.d_data;
+	return *this;
+}
+VipTextObject& VipTextObject::operator=( VipTextObject&& other) noexcept
+{
+	d_data = std::move(other.d_data);
 	return *this;
 }
 
