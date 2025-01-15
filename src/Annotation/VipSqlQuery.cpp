@@ -419,7 +419,10 @@ QMap<qsizetype, VipDataset> vipDatasetsDB()
 	if (!res.isEmpty())
 		return res;
 
+	qint64 st = QDateTime::currentMSecsSinceEpoch();
 	QSqlDatabase db = createConnection();
+	qint64 el = QDateTime::currentMSecsSinceEpoch() - st;
+	printf("connect : %i ms\n", (int)el);
 	QSqlQuery q = execQuery(db,"SELECT * FROM datasets;");
 	if (q.lastError().isValid()) {
 		VIP_LOG_ERROR(q.lastError().nativeErrorCode());
