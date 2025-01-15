@@ -569,7 +569,9 @@ public:
 EventInfo::EventInfo(VipPlayerDBAccess* pdb)
   : QToolBar()
 {
+	qint64 st = QDateTime::currentMSecsSinceEpoch();
 	VIP_CREATE_PRIVATE_DATA(d_data);
+	qint64 el1 = QDateTime::currentMSecsSinceEpoch() - st;
 	d_data->pdb = pdb;
 	this->setIconSize(QSize(18, 18));
 	d_data->close = this->addAction(vipIcon("close.png"), "Close panel");
@@ -583,6 +585,8 @@ EventInfo::EventInfo(VipPlayerDBAccess* pdb)
 	connect(d_data->interp_frames, SIGNAL(triggered(bool)), this, SLOT(emitInterpFrames()));
 	connect(d_data->rm_frames, SIGNAL(triggered(bool)), this, SLOT(emitRemoveFrames()));
 	connect(d_data->split, SIGNAL(triggered(bool)), this, SLOT(emitSplit()));
+
+	qint64 el2 = QDateTime::currentMSecsSinceEpoch() - st;
 
 	this->addSeparator();
 
@@ -604,6 +608,8 @@ EventInfo::EventInfo(VipPlayerDBAccess* pdb)
 	this->addWidget(new QLabel());
 	this->addWidget(&d_data->analysisStatus);
 
+	qint64 el3 = QDateTime::currentMSecsSinceEpoch() - st;
+
 	this->addWidget(new QLabel());
 	this->addWidget(&d_data->method);
 	this->addWidget(new QLabel());
@@ -615,6 +621,8 @@ EventInfo::EventInfo(VipPlayerDBAccess* pdb)
 	this->addWidget(&d_data->name);
 	this->addWidget(new QLabel());
 	this->addWidget(&d_data->mergeIds);
+
+	qint64 el4 = QDateTime::currentMSecsSinceEpoch() - st;
 
 	d_data->automatic.setText("Auto");
 	d_data->automatic.setToolTip("Automatic detection or not");
@@ -638,10 +646,15 @@ EventInfo::EventInfo(VipPlayerDBAccess* pdb)
 	d_data->mergeIds.setPlaceholderText("Merge events...");
 	d_data->mergeIds.setToolTip("<b>Merge events</b><br>Enter a list of event ids to merge (like '1,45,67...')");
 
+	qint64 el5 = QDateTime::currentMSecsSinceEpoch() - st;
+
 	d_data->category.addItems(QStringList() << "" << vipEventTypesDB());
 	// d_data->category.addItems(QStringList() << "" << vipDatasetsDB());
+	qint64 el6 = QDateTime::currentMSecsSinceEpoch() - st;
 
 	d_data->analysisStatus.addItems(QStringList() << QString() << vipAnalysisStatusDB());
+
+	qint64 el7 = QDateTime::currentMSecsSinceEpoch() - st;
 
 	d_data->confidence.setRange(-0.25, 1);
 	d_data->confidence.setSingleStep(0.25);
@@ -649,6 +662,9 @@ EventInfo::EventInfo(VipPlayerDBAccess* pdb)
 
 	connect(d_data->close, SIGNAL(triggered(bool)), this, SLOT(hide()));
 	connect(d_data->apply, SIGNAL(triggered(bool)), this, SLOT(apply()));
+
+	qint64 el8 = QDateTime::currentMSecsSinceEpoch() - st;
+	printf("%i %i %i %i %i %i %i %i\n", (int)el1, (int)el2, (int)el3, (int)el4, (int)el5, (int)el6, (int)el7, (int)el8);
 }
 EventInfo::~EventInfo()
 {
@@ -789,10 +805,8 @@ VipPlayerDBAccess::VipPlayerDBAccess(VipVideoPlayer* player)
 	m_db->setAutoRaise(true);
 	m_db->setPopupMode(QToolButton::InstantPopup);
 
-	qint64 st = QDateTime::currentMSecsSinceEpoch();
 	m_infos = new EventInfo(this);
-	qint64 el = QDateTime::currentMSecsSinceEpoch() - st;
-	printf("EventInfo: %i ms\n", (int)el);
+	
 	m_player->gridLayout()->addWidget(m_infos, 18, 10);
 	m_infos->hide();
 
