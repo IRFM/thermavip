@@ -346,9 +346,6 @@ void VipToolTip::refresh()
 		if (!v->isVisible() || v->isHidden())
 			return;
 
-		//TEST
-		QWidget * cur = qApp->widgetAt(QCursor::pos());
-
 		if (!v->underMouse() && !v->viewport()->underMouse())
 			return;
 	}
