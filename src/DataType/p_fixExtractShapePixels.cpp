@@ -877,14 +877,14 @@ static void miRegionOp(_QRegionPrivate& dest, const _QRegionPrivate* reg1, const
 	const QRect* r2;	// Pointer into 2d region
 	const QRect* r1End;	// End of 1st region
 	const QRect* r2End;	// End of 2d region
-	qsizetype ybot;		// Bottom of intersection
-	qsizetype ytop;		// Top of intersection
+	int ybot;		// Bottom of intersection
+	int ytop;		// Top of intersection
 	qsizetype prevBand;		// Index of start of previous band in dest
 	qsizetype curBand;		// Index of start of current band in dest
 	const QRect* r1BandEnd; // End of current band in r1
 	const QRect* r2BandEnd; // End of current band in r2
-	qsizetype top;		// Top of non-overlapping band
-	qsizetype bot;		// Bottom of non-overlapping band
+	int top;		// Top of non-overlapping band
+	int bot;		// Bottom of non-overlapping band
 
 	// Initialization:
 	// set r1, r2, r1End and r2End appropriately, preserve the important
@@ -1040,7 +1040,7 @@ static void miRegionOp(_QRegionPrivate& dest, const _QRegionPrivate* reg1, const
 	//
 	// Only do this stuff if the number of rectangles allocated is more than
 	// twice the number of rectangles in the region (a simple optimization).
-	if (qMax(4, dest.numRects) < (dest.rects.size() >> 1))
+	if (qMax((qsizetype)4, dest.numRects) < (dest.rects.size() >> 1))
 		dest.rects.resize(dest.numRects);
 }
 
