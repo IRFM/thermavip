@@ -789,7 +789,10 @@ VipPlayerDBAccess::VipPlayerDBAccess(VipVideoPlayer* player)
 	m_db->setAutoRaise(true);
 	m_db->setPopupMode(QToolButton::InstantPopup);
 
+	qint64 st = QDateTime::currentMSecsSinceEpoch();
 	m_infos = new EventInfo(this);
+	qint64 el = QDateTime::currentMSecsSinceEpoch() - st;
+	printf("EventInfo: %i ms\n", (int)el);
 	m_player->gridLayout()->addWidget(m_infos, 18, 10);
 	m_infos->hide();
 
