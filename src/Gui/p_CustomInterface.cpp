@@ -78,13 +78,14 @@ public:
 			background = c.lighter(120);
 		else
 			background = c.darker(120);
-		QString cs = QString("rgb(%1,%2,%2)").arg(background.red()).arg(background.green()).arg(background.blue());
-		setStyleSheet("QWidget{background:" + cs + ";}");
+		//QString cs = QString("rgb(%1,%2,%2)").arg(background.red()).arg(background.green()).arg(background.blue());
+		//setStyleSheet("QWidget{background:" + cs + ";}");
+		setStyleSheet("QWidget{background:transparent;}");
 		pen = QPen(Qt::green, 2);
 		this->setAcceptDrops(true);
 	}
 
-	bool hasMouseInside() const { return geometry().contains(QCursor::pos()); }
+	bool hasMouseInside() const { return false; }
 
 protected:
 #if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
@@ -117,8 +118,9 @@ protected:
 	{
 		QPainter p(this);
 		p.setPen(pen);
-		// c.setAlpha(150);
-		p.setBrush(QBrush(background)); // Qt::NoBrush);
+		QColor c = background;
+		c.setAlpha(150);
+		p.setBrush(QBrush(c)); // Qt::NoBrush);
 		QRect r(0, 0, width(), height());
 		p.drawRoundedRect(r.adjusted(1, 1, -1, -1), 2, 2);
 
