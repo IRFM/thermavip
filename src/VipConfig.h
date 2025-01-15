@@ -353,7 +353,7 @@ inline QVariant vipFromVoid(int meta, const void* p)
 
 inline QMetaType vipFromName(const char* name)
 {
-	return QMetaType(QMetaType::type(name));
+	return (QMetaType::type(name));
 }
 
 inline const char* vipTypeName(int id)
@@ -361,7 +361,9 @@ inline const char* vipTypeName(int id)
 	return QMetaType::typeName(id);
 }
 
+#if QT_VERSION < QT_VERSION_CHECK(5, 10, 0)
 using qsizetype = int;
+#endif
 
 #else
 
