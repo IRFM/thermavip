@@ -579,7 +579,7 @@ static bool isLineEmpty(const QString& line)
 		return true;
 
 	for (qsizetype i = 0; i < line.size(); ++i)
-		if (line[i] != ' ' && line[i] != '\t')
+		if (line[(QString::size_type)i] != ' ' && line[(QString::size_type)i] != '\t')
 			return false;
 
 	return true;
