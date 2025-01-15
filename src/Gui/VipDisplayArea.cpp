@@ -3205,7 +3205,6 @@ void VipCloseBar::computeWindowState()
 	if (!mainWindow)
 		return;
 
-//#ifdef _WIN32 //TEST
 	static bool was_maximized_once = false;
 	// Windows only, do nothing but reset the icons
 	if (mainWindow->isMaximized() || mainWindow->isFullScreen()) {
@@ -3227,41 +3226,6 @@ void VipCloseBar::computeWindowState()
 			mainWindow->show();
 		}
 	}
-//#else
-
-	return;//TEST
-	int st = mainWindow->windowState();
-	int state = mainWindow->property("visibility_state").toInt();
-	bool was_maximized = mainWindow->property("was_maximized").toBool();
-
-	if ((st & Qt::WindowMinimized) && state != Qt::WindowMinimized) {
-		mainWindow->setProperty("visibility_state", (int)Qt::WindowMinimized);
-	}
-	else if ((st & Qt::WindowMaximized) && !(st & Qt::WindowMinimized) && state != Qt::WindowMaximized) {
-		mainWindow->setProperty("was_maximized", true);
-		mainWindow->setProperty("visibility_state", (int)Qt::WindowMaximized);
-		if (!hasFrame)
-			mainWindow->setWindowFlags(Qt::FramelessWindowHint);
-		this->maximizeButton->setText(tr("Restore"));
-		this->maximizeButton->setIcon(vipIcon("restore.png"));
-		if (!mainWindow->isVisible())
-			mainWindow->show();
-	}
-	else if ((st == Qt::WindowNoState) && state != Qt::WindowNoState) {
-		if (was_maximized) {
-			mainWindow->showMaximized();
-			return;
-		}
-		mainWindow->setProperty("was_maximized", false);
-		mainWindow->setProperty("visibility_state", (int)Qt::WindowNoState);
-		if (!hasFrame)
-			mainWindow->setWindowFlags(mainWindow->windowFlags() & (~Qt::FramelessWindowHint));
-		this->maximizeButton->setText(tr("Maximize"));
-		this->maximizeButton->setIcon(vipIcon("maximize.png"));
-		if (state != -1)
-			mainWindow->show();
-	}
-//#endif
 }
 
 void VipCloseBar::maximizeOrShowNormal()

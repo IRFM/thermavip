@@ -421,10 +421,14 @@ protected:
 				return true;
 			}
 			if (evt->key() == Qt::Key_Enter || evt->key() == Qt::Key_Return) {
-				if(setSelectionToLineEdit(true)) {
+				/* if (setSelectionToLineEdit(true)) {
 					evt->accept();
 					return true;
-				}
+				}*/
+				//TEST
+				setSelectionToLineEdit(true);
+				evt->accept();
+				return true;
 			}
 			QApplication::instance()->sendEvent(edit, evt);
 			return true;

@@ -60,7 +60,7 @@ Q_DECLARE_METATYPE(WidgetPointer)
 /// We use this other VipDragRubberBand as it works over native windows.
 class DragRubberBand : public QWidget
 {
-	QPen pen;
+	
 
 	class Widget : public QWidget
 	{
@@ -101,16 +101,18 @@ class DragRubberBand : public QWidget
 			}
 		}
 	};
+	Widget* widget;
 
 public:
 	QString text;
+	QPen pen;
 	QColor background;
 
 	DragRubberBand(QWidget* parent)
 	  : QWidget(parent)
 	{
 		setWindowFlags(Qt::ToolTip);
-		setAttribute(Qt::WA_TransparentForMouseEvents);
+		//setAttribute(Qt::WA_TransparentForMouseEvents);
 		QColor c = vipGetMainWindow()->palette().color(QPalette::Window);
 		bool is_light = c.red() > 200 && c.green() > 200 && c.blue() > 200;
 		if (!is_light)
@@ -120,7 +122,9 @@ public:
 		QString cs = QString("rgb(%1,%2,%2)").arg(background.red()).arg(background.green()).arg(background.blue());
 		setStyleSheet("QWidget{background:" + cs  + ";}");
 		pen = QPen(Qt::green, 2);
-		
+		widget = new Widget(this);
+		widget->move(0, 0);
+		widget->resize(this->size());
 	}
 
 	void setBorderColor(const QColor& c) { pen.setColor(c); }
@@ -130,7 +134,10 @@ public:
 	double borderWidth() const { return pen.widthF(); }
 
 protected:
-	
+	virtual void resizeEvent(QResizeEvent*)
+	{ 
+		widget->resize(this->size());
+	}
 	virtual void paintEvent(QPaintEvent*)
 	{
 		QPainter p(this);
