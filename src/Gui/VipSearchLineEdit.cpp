@@ -360,6 +360,8 @@ public:
 	{
 		if (!this->currentItem() && count())
 			setCurrentItem(item(0));
+
+		printf("item: %\n", (int)(bool)this->currentItem());//TEST
 		if (this->currentItem()) {
 			QString previous = edit->text();
 			QString text = this->currentItem()->text();

@@ -62,6 +62,46 @@ class DragRubberBand : public QWidget
 {
 	QPen pen;
 
+	class Widget : public QWidget
+	{
+		DragRubberBand* drag;
+	public:
+		Widget(DragRubberBand* parent = nullptr)
+		  : QWidget(parent)
+		  , drag(parent)
+		{
+		}
+		virtual void paintEvent(QPaintEvent*)
+		{
+			QPainter p(this);
+			p.setPen(drag->pen);
+			// c.setAlpha(150);
+			p.setBrush(QBrush(drag->background)); // Qt::NoBrush);
+			QRect r(0, 0, width(), height());
+			p.drawRoundedRect(r.adjusted(1, 1, -1, -1), 2, 2);
+
+			VipText t = drag->text;
+			t.setTextPen(QPen(VipGuiDisplayParamaters::instance()->defaultPlayerTextColor()));
+			if (!t.isEmpty()) {
+				QSize s = t.textSize().toSize();
+				if (s.width() < r.width()) {
+					t.setAlignment(Qt::AlignCenter);
+					t.draw(&p, r);
+				}
+				else if (s.width() < r.height()) {
+					QTransform tr;
+					tr.translate(r.center().x(), r.center().y());
+					tr.rotate(-90);
+					p.setTransform(tr);
+					t.setAlignment(Qt::AlignCenter);
+					r = QRect(0, 0, r.height(), r.width());
+					r.moveCenter(QPoint(0, 0));
+					t.draw(&p, r);
+				}
+			}
+		}
+	};
+
 public:
 	QString text;
 	QColor background;
@@ -90,11 +130,7 @@ public:
 	double borderWidth() const { return pen.widthF(); }
 
 protected:
-	virtual void mouseMoveEvent(QMouseEvent*)
-	{ 
-		printf("move\n");//TEST
-		this->show();
-	}
+	
 	virtual void paintEvent(QPaintEvent*)
 	{
 		QPainter p(this);

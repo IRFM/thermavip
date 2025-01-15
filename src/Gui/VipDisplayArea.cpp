@@ -3205,7 +3205,7 @@ void VipCloseBar::computeWindowState()
 	if (!mainWindow)
 		return;
 
-#ifdef _WIN32
+//#ifdef _WIN32 //TEST
 	static bool was_maximized_once = false;
 	// Windows only, do nothing but reset the icons
 	if (mainWindow->isMaximized() || mainWindow->isFullScreen()) {
@@ -3227,7 +3227,7 @@ void VipCloseBar::computeWindowState()
 			mainWindow->show();
 		}
 	}
-#else
+//#else
 
 	return;//TEST
 	int st = mainWindow->windowState();
