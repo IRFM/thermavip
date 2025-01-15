@@ -69,7 +69,7 @@ public:
 	  : QWidget(parent)
 	{
 		setWindowFlags(Qt::Popup);
-		// setAttribute(Qt::WA_TransparentForMouseEvents);
+		setAttribute(Qt::WA_TransparentForMouseEvents);
 		QColor c = vipGetMainWindow()->palette().color(QPalette::Window);
 		bool is_light = c.red() > 200 && c.green() > 200 && c.blue() > 200;
 		if (!is_light)
