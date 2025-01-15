@@ -3261,7 +3261,7 @@ void VipCloseBar::computeWindowState()
 		if (state != -1)
 			mainWindow->show();
 	}
-#endif
+//#endif
 }
 
 void VipCloseBar::maximizeOrShowNormal()
