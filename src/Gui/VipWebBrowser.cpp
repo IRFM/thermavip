@@ -140,12 +140,10 @@ public:
 
 	virtual ~WebPage() noexcept
 	{ 
-		bool stop = true;
 	}
 
 	void handleLinkHover(const QString& url)
 	{ 
-		//bool stop = true;
 	}
 
 protected:
@@ -254,7 +252,6 @@ QWebEngineView* VipWebBrowser::webEngine() const
 void VipWebBrowser::featurePermissionRequested(const QUrl&, // securityOrigin,
 					       QWebEnginePage::Feature feature)
 {
-	bool stop = true;
 	// grant permission
 	//webEngine()->page()->setFeaturePermission(webEngine()->page()->url(), feature, QWebEnginePage::PermissionGrantedByUser);
 }
@@ -262,8 +259,7 @@ void VipWebBrowser::featurePermissionRequested(const QUrl&, // securityOrigin,
 #if QT_VERSION >= QT_VERSION_CHECK(6, 8, 0)
 void VipWebBrowser::handlePermissionRequested(QWebEnginePermission perm)
 {
-	bool stop = true;
-	auto type = perm.permissionType();
+	//auto type = perm.permissionType();
 	perm.grant();
 	// grant permission
 	// webEngine()->page()->setFeaturePermission(webEngine()->page()->url(), feature, QWebEnginePage::PermissionGrantedByUser);
