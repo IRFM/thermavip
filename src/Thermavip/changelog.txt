@@ -17,6 +17,7 @@ Thermavip v5.0.0 - 10/12/2024
 (Annotation) Added SQL connection options and possibility to reconnect to the event DB
 
 (Python) Switched to standard Python installation instead of miniconda
+(Python) Corrected matlab video/signal files saving (.mat files)
 
 (WEST) Corrected wrong ROI order when opening an IR movie
 (WEST) DWMS control summary now uses DWMS signals to assess DWMS feedbacks

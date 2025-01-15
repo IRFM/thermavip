@@ -66,12 +66,12 @@ bool vipPing(const QByteArray& host)
 #ifdef WIN32
 	proc.start("ping",
 		   QStringList() << host << "/n"
-				 << "2",
+				 << "1" << "/w"<< "2",
 		   QIODevice::ReadOnly);
 #else
 	proc.start("ping",
-		   QStringList() << host << "-n"
-				 << "2",
+		   QStringList() << host << "-c"
+				 << "1" << "-w" << "2",
 		   QIODevice::ReadOnly);
 #endif
 	proc.waitForStarted();

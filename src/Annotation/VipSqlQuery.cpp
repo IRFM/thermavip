@@ -240,20 +240,15 @@ QSqlDatabase vipGetGlobalSQLConnection()
 
 static bool reconnectDB(bool close = false)
 {
-	qint64 st = QDateTime::currentMSecsSinceEpoch();
 	QSqlDatabase& db = globalDB();
 	VIP_LOG_INFO("Connecting to ", db.hostName(), ":", QString::number(db.port()), " ", db.userName(), " ", db.databaseName());
 	if (close)
 		db.close();
 
-	qint64 el1 = QDateTime::currentMSecsSinceEpoch() - st;
-
 	if (!db.isValid()) {
 		VIP_LOG_ERROR("DataBase not valid!!!");
 		return false;
 	}
-
-	qint64 el2 = QDateTime::currentMSecsSinceEpoch() - st;
 
 	// First, ping host. Indeed Qt mysql plugin might crash if host is unreachable
 	QString host = db.hostName();
@@ -264,14 +259,11 @@ static bool reconnectDB(bool close = false)
 		return false;
 	}
 
-	qint64 el3 = QDateTime::currentMSecsSinceEpoch() - st;
-
 	if (!db.open()) {
 		VIP_LOG_ERROR("DataBase not created!!!! " + db.lastError().text());
 		return false;
 	}
-	qint64 el4 = QDateTime::currentMSecsSinceEpoch() - st;
-	printf("%i %i %i %i\n", (int)el1, (int)el2, (int)el3, (int)el4);
+	
 	return true;
 }
 
@@ -429,10 +421,7 @@ QMap<qsizetype, VipDataset> vipDatasetsDB()
 	if (!res.isEmpty())
 		return res;
 
-	qint64 st = QDateTime::currentMSecsSinceEpoch();
 	QSqlDatabase db = createConnection();
-	qint64 el = QDateTime::currentMSecsSinceEpoch() - st;
-	printf("connect : %i ms\n", (int)el);
 	QSqlQuery q = execQuery(db,"SELECT * FROM datasets;");
 	if (q.lastError().isValid()) {
 		VIP_LOG_ERROR(q.lastError().nativeErrorCode());
