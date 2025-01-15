@@ -34,6 +34,11 @@
 
 #include "VipNDArrayImage.h"
 
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+#include <QMultiMapIterator>
+#else
+#include <QMapIterator>
+#endif
 namespace detail
 {
 	///\internal Function used to return a default value
@@ -242,11 +247,19 @@ namespace detail
 				}
 			}
 			// no match, then find the biggest convertible type
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
 			QMultiMapIterator<int, int> i(sizeTypes);
+#else
+			QMapIterator<int, int> i(sizeTypes);
+#endif
 			i.toBack();
 			while (i.hasPrevious()) {
-				i.previous();
+				i.previous()
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
 				if (vipFromVoid(type, nullptr).canConvert(QMetaType(i.value())))
+#else
+				if (vipFromVoid(type, nullptr).canConvert(i.value()))
+#endif
 					return i.value();
 			}
 			return 0;
