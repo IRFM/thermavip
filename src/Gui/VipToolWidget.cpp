@@ -1500,8 +1500,13 @@ void VipMultiProgressWidget::setValue(QObjectPointer ptr, int value)
 			}
 			w->progressBar.setValue(value);
 
-			if (this->windowModality() == Qt::ApplicationModal)
+			if (this->windowModality() == Qt::ApplicationModal) {
+			
 				setFocus();
+				if (isFloating()) {
+					this->showAndRaise();
+				}
+			}
 		}
 	}
 }
@@ -1546,7 +1551,7 @@ void VipMultiProgressWidget::setModal(QObjectPointer ptr, bool modal)
 #endif
 					printf("%i %i %i %i\n", rect.left(), rect.top(), rect.width(), rect.height());//TEST
 					this->move(rect.x() + rect.width() / 2 - this->width() / 2, rect.y() + rect.height() / 2 - this->height() / 2);
-					if (isFloating()) {
+					if (this->windowModality() == Qt::ApplicationModal && isFloating()) {
 						this->showAndRaise();
 					}
 				}
