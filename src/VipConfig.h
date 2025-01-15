@@ -351,7 +351,7 @@ inline QVariant vipFromVoid(int meta, const void* p)
 	return QVariant(meta, p);
 }
 
-inline QMetaType vipFromName(const char* name)
+inline int vipIdFromName(const char* name)
 {
 	return (QMetaType::type(name));
 }
@@ -398,9 +398,9 @@ void qRegisterMetaTypeStreamOperators(const char* name = nullptr)
 		qRegisterMetaType<T>();
 }
 
-inline QMetaType vipFromName(const char* name)
+inline int vipIdFromName(const char* name)
 {
-	return QMetaType::fromName(name);
+	return QMetaType::fromName(name).id();
 }
 
 inline const char* vipTypeName(int id)

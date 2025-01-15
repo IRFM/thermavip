@@ -132,7 +132,7 @@ bool VipExtractComponents::SetComponent(const QString& component, const VipNDArr
 	else {
 		VipNDArray temp = array;
 		QByteArray pixel_type = this->PixelComponentTypes()[index];
-		int type = vipFromName(pixel_type.data()).id();
+		int type = vipIdFromName(pixel_type.data());
 
 		if (pixel_type.isEmpty())
 			m_components[index] = array;
@@ -427,7 +427,7 @@ VipNDArray VipExtractComplexRealImag::MergeComponents() const
 	VipNDArrayShape shape = components[0].shape();
 	qsizetype size = components[0].size();
 
-	VipNDArray res(vipFromName("complex_d").id(), shape);
+	VipNDArray res(vipIdFromName("complex_d"), shape);
 	std::complex<double>* data = (std::complex<double>*)res.data();
 
 	double* r = (double*)components[0].data();
@@ -464,7 +464,7 @@ VipNDArray VipExtractComplexAmplitudeArgument::MergeComponents() const
 	VipNDArrayShape shape = components[0].shape();
 	qsizetype size = components[0].size();
 
-	VipNDArray res(vipFromName("complex_d").id(), shape);
+	VipNDArray res(vipIdFromName("complex_d"), shape);
 	std::complex<double>* data = (std::complex<double>*)res.data();
 
 	double* am = (double*)components[0].data();

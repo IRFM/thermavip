@@ -87,7 +87,7 @@ VIP_ALWAYS_INLINE int vipMetaTypeFromQObject(const T* obj)
 {
 	int id = 0;
 	if (obj)
-		id = vipFromName(QByteArray(obj->metaObject()->className()) + "*").id();
+		id = vipIdFromName(QByteArray(obj->metaObject()->className()) + "*");
 	if (id)
 		return id;
 	return qMetaTypeId<T*>();
@@ -412,7 +412,7 @@ template<>                                                                      
 		/* make sure to take the highest metatype*/                                                                                                                                            \
 		int id = 0;                                                                                                                                                                            \
 		if (value)                                                                                                                                                                             \
-			id = vipFromName(QByteArray(value->metaObject()->className()) + "*").id();                                                                                                      \
+			id = vipIdFromName(QByteArray(value->metaObject()->className()) + "*");                                                                                                      \
 		if (id)                                                                                                                                                                                \
 			return vipFromVoid(id, &value);                                                                                                                                                   \
 		return vipFromVoid(qMetaTypeId<Type>(), &value);                                                                                                                                          \
@@ -507,7 +507,7 @@ VIP_ALWAYS_INLINE QVariant QVariant::fromValue<QWidget*>(QWidget* const& value)
 /// \sa vipCreateVariant(int id)
 VIP_ALWAYS_INLINE QVariant vipCreateVariant(const char* name)
 {
-	return vipCreateVariant(vipFromName(name).id());
+	return vipCreateVariant(vipIdFromName(name));
 }
 
 /// @brief Returns a QVariant constructed with given \a id.
@@ -529,13 +529,13 @@ VIP_ALWAYS_INLINE QVariant vipCreateNullVariant(int id)
 /// the returned QVariant will still hold a nullptr pointer to QObject.
 VIP_ALWAYS_INLINE QVariant vipCreateNullVariant(const char* name)
 {
-	return vipCreateNullVariant(vipFromName(name).id());
+	return vipCreateNullVariant(vipIdFromName(name));
 }
 
 /// @brief Returns the QMetaObject associated to given class name (must end with '*')
 VIP_ALWAYS_INLINE const QMetaObject* vipMetaObjectFromName(const char* name)
 {
-	int id = vipFromName(name).id();
+	int id = vipIdFromName(name);
 	if (id)
 		return QMetaType(id).metaObject();
 	return nullptr;
