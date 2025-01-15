@@ -63,36 +63,29 @@ public:
 	QString text;
 	QPen pen;
 	QColor background;
-	bool mouseInside{ false };
 
 	DragRubberBand(QWidget* parent)
 	  : QWidget(parent)
 	{
-		//setWindowFlags(Qt::Popup);
 		setWindowFlags(Qt::Popup | Qt::WindowDoesNotAcceptFocus | Qt::WindowTransparentForInput);
 		setAttribute(Qt::WA_AlwaysStackOnTop, true);
-		setAttribute(Qt::WA_NoSystemBackground, true);
-		setAttribute(Qt::WA_TranslucentBackground, true);
 		QColor c = vipGetMainWindow()->palette().color(QPalette::Window);
 		bool is_light = c.red() > 200 && c.green() > 200 && c.blue() > 200;
 		if (!is_light)
 			background = c.lighter(120);
 		else
 			background = c.darker(120);
-		//QString cs = QString("rgb(%1,%2,%2)").arg(background.red()).arg(background.green()).arg(background.blue());
-		//setStyleSheet("QWidget{background:" + cs + ";}");
-		//setStyleSheet("QWidget{background:transparent;}");
+		QString cs = QString("rgb(%1,%2,%2)").arg(background.red()).arg(background.green()).arg(background.blue());
+		setStyleSheet("QWidget{background:" + cs + ";}");
+		this->setWindowOpacity(0.7);
 		pen = QPen(Qt::green, 2);
-		this->setAcceptDrops(true);
 	}
 protected:
 	virtual void paintEvent(QPaintEvent*)
 	{
 		QPainter p(this);
 		p.setPen(pen);
-		QColor c = background;
-		c.setAlpha(150);
-		p.setBrush(QBrush(c));
+		p.setBrush(QBrush(background));
 		QRect r(0, 0, width(), height());
 		p.drawRoundedRect(r.adjusted(1, 1, -1, -1), 2, 2);
 
