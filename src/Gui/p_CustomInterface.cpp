@@ -55,64 +55,21 @@
 typedef QPointer<QWidget> WidgetPointer;
 Q_DECLARE_METATYPE(WidgetPointer)
 
-
 /// @brief Custom rubber band displayed to highlight potential drop areas.
 /// We use this other VipDragRubberBand as it works over native windows.
 class DragRubberBand : public QWidget
 {
-	
-
-	class Widget : public QWidget
-	{
-		DragRubberBand* drag;
-	public:
-		Widget(DragRubberBand* parent = nullptr)
-		  : QWidget(parent)
-		  , drag(parent)
-		{
-		}
-		virtual void paintEvent(QPaintEvent*)
-		{
-			QPainter p(this);
-			p.setPen(drag->pen);
-			// c.setAlpha(150);
-			p.setBrush(QBrush(drag->background)); // Qt::NoBrush);
-			QRect r(0, 0, width(), height());
-			p.drawRoundedRect(r.adjusted(1, 1, -1, -1), 2, 2);
-
-			VipText t = drag->text;
-			t.setTextPen(QPen(VipGuiDisplayParamaters::instance()->defaultPlayerTextColor()));
-			if (!t.isEmpty()) {
-				QSize s = t.textSize().toSize();
-				if (s.width() < r.width()) {
-					t.setAlignment(Qt::AlignCenter);
-					t.draw(&p, r);
-				}
-				else if (s.width() < r.height()) {
-					QTransform tr;
-					tr.translate(r.center().x(), r.center().y());
-					tr.rotate(-90);
-					p.setTransform(tr);
-					t.setAlignment(Qt::AlignCenter);
-					r = QRect(0, 0, r.height(), r.width());
-					r.moveCenter(QPoint(0, 0));
-					t.draw(&p, r);
-				}
-			}
-		}
-	};
-	Widget* widget;//TEST
-
 public:
 	QString text;
 	QPen pen;
 	QColor background;
+	bool mouseInside{ false };
 
 	DragRubberBand(QWidget* parent)
 	  : QWidget(parent)
 	{
 		setWindowFlags(Qt::ToolTip);
-		//setAttribute(Qt::WA_TransparentForMouseEvents);
+		// setAttribute(Qt::WA_TransparentForMouseEvents);
 		QColor c = vipGetMainWindow()->palette().color(QPalette::Window);
 		bool is_light = c.red() > 200 && c.green() > 200 && c.blue() > 200;
 		if (!is_light)
@@ -120,29 +77,27 @@ public:
 		else
 			background = c.darker(120);
 		QString cs = QString("rgb(%1,%2,%2)").arg(background.red()).arg(background.green()).arg(background.blue());
-		setStyleSheet("QWidget{background:" + cs  + ";}");
+		setStyleSheet("QWidget{background:" + cs + ";}");
 		pen = QPen(Qt::green, 2);
-		widget = new Widget(this);
-		widget->move(0, 0);
-		widget->resize(this->size());
 	}
-
-	void setBorderColor(const QColor& c) { pen.setColor(c); }
-	QColor borderColor() const { return pen.color(); }
-
-	void setBorderWidth(double w) { pen.setWidthF(w); }
-	double borderWidth() const { return pen.widthF(); }
 
 protected:
-	virtual void resizeEvent(QResizeEvent*)
-	{ 
-		widget->resize(this->size());
+	virtual void paintEvent(QPaintEvent* evt);
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
+	virtual void enterEvent(QEvent*)
+#else
+	virtual void enterEvent(QEnterEvent*)
+#endif
+	{
+		mouseInside = true;
 	}
+	virtual void leavEvent(QEvent*) { mouseInside = false; }
+
 	virtual void paintEvent(QPaintEvent*)
 	{
 		QPainter p(this);
 		p.setPen(pen);
-		//c.setAlpha(150);
+		// c.setAlpha(150);
 		p.setBrush(QBrush(background)); // Qt::NoBrush);
 		QRect r(0, 0, width(), height());
 		p.drawRoundedRect(r.adjusted(1, 1, -1, -1), 2, 2);
@@ -170,7 +125,7 @@ protected:
 };
 
 CloseToolBar::CloseToolBar(QWidget* parent)
-	: QToolBar(parent)
+  : QToolBar(parent)
 {
 	minimize = addAction(vipIcon("minimize.png"), "Minimize player");
 	maximize = addAction(vipIcon("restore.png"), "Maximize/restore player");
@@ -201,16 +156,16 @@ void CloseToolBar::setHasToolTip(bool enable)
 {
 	if (enable == (bool)(windowFlags() & Qt::ToolTip))
 		return;
-	
-	setWindowFlag(Qt::ToolTip,enable);
+
+	setWindowFlag(Qt::ToolTip, enable);
 	QWidget* p = this->parentWidget();
 	if (enable && p) {
 		VipAbstractPlayer* pl = qobject_cast<VipAbstractPlayer*>(p);
 		QColor c = p->palette().color(QPalette::Window);
 		if (pl && pl->plotWidget2D())
 			c = pl->plotWidget2D()->backgroundColor();
-		QString cs = QString("rgb(%1,%2,%3)").arg(c.red()).arg(c.green()).arg( c.blue());
-		setStyleSheet("QToolBar{background: " + cs+ "; spacing:0px; margin:0px; padding: 0px;}");
+		QString cs = QString("rgb(%1,%2,%3)").arg(c.red()).arg(c.green()).arg(c.blue());
+		setStyleSheet("QToolBar{background: " + cs + "; spacing:0px; margin:0px; padding: 0px;}");
 	}
 	else
 		setStyleSheet("QToolBar{background: transparent; spacing:0px; margin:0px; padding: 0px;}");
@@ -233,8 +188,7 @@ bool CloseToolBar::eventFilter(QObject* obj, QEvent* evt)
 	return false;
 }
 
-
-static void moveTopRight(CloseToolBar* bar, QWidget* parent, int rightMargin = 0, int top=0)
+static void moveTopRight(CloseToolBar* bar, QWidget* parent, int rightMargin = 0, int top = 0)
 {
 	if (!(bar->windowFlags() & Qt::ToolTip))
 		bar->move(parent->width() - bar->width() - rightMargin, top);
@@ -510,16 +464,16 @@ bool NavigatePlayers::eventFilter(QObject* obj, QEvent* evt)
 		updatePos();
 	}
 	else if (evt->type() == QEvent::KeyPress) {
-		//if (this->isVisible()) {
-			QKeyEvent* e = static_cast<QKeyEvent*>(evt);
-			if (e->key() == Qt::Key_Down) {
-				goNext();
-				return true;
-			}
-			else if (e->key() == Qt::Key_Up) {
-				goPrev();
-				return true;
-			}
+		// if (this->isVisible()) {
+		QKeyEvent* e = static_cast<QKeyEvent*>(evt);
+		if (e->key() == Qt::Key_Down) {
+			goNext();
+			return true;
+		}
+		else if (e->key() == Qt::Key_Up) {
+			goPrev();
+			return true;
+		}
 		//}
 	}
 	return false;
@@ -681,10 +635,6 @@ QGraphicsItem* BaseCustomPlayer2D::firstVisibleItem(const QPointF& scene_pos) co
 	return nullptr;
 }
 
-
-
-
-
 class CustomizeVideoPlayer::PrivateData
 {
 public:
@@ -786,7 +736,7 @@ void CustomizeVideoPlayer::reorganizeCloseButton()
 
 	QScrollBar* bar = d_data->player->plotWidget2D()->verticalScrollBar();
 	moveTopRight(d_data->closeBar, d_data->player, (bar->isVisible() ? bar->width() : 0));
-	
+
 	QPoint pt = d_data->player->plotWidget2D()->mapFromGlobal(QCursor::pos());
 	// update visibility
 	QRect r = d_data->player->plotWidget2D()->rect();
@@ -1032,7 +982,8 @@ bool CustomizeVideoPlayer::eventFilter(QObject*, QEvent* evt)
 	}
 	else if (evt->type() == QEvent::DragLeave) {
 		// if(!d_data->area->geometry().contains(QCursor::pos()) || !d_data->area->isVisible())
-		d_data->area->hide();
+		if (!d_data->area->mouseInside)
+			d_data->area->hide();
 	}
 	else if (evt->type() == QEvent::Drop) {
 		d_data->area->hide();
@@ -1146,7 +1097,7 @@ CustomWidgetPlayer::CustomWidgetPlayer(VipWidgetPlayer* player)
 		d_data->player->widgetForMouseEvents()->installEventFilter(this);
 
 	d_data->closeBar = new CloseToolBar(d_data->player);
-	
+
 	connect(d_data->closeBar->close, SIGNAL(triggered(bool)), this, SLOT(closePlayer()));
 	connect(d_data->closeBar->maximize, SIGNAL(triggered(bool)), this, SLOT(maximizePlayer()));
 	connect(d_data->closeBar->minimize, SIGNAL(triggered(bool)), this, SLOT(minimizePlayer()));
@@ -1175,7 +1126,7 @@ void CustomWidgetPlayer::reorganizeCloseButton()
 	if (QWidget* w = d_data->player->widget()) {
 
 		moveTopRight(d_data->closeBar, w);
-		
+
 		QPoint pt = w->mapFromGlobal(QCursor::pos());
 		// update visibility
 		QRect r = w->rect();
@@ -1366,7 +1317,8 @@ bool CustomWidgetPlayer::eventFilter(QObject*, QEvent* evt)
 	}
 	else if (evt->type() == QEvent::DragLeave) {
 		// if(!d_data->area->geometry().contains(QCursor::pos()) || !d_data->area->isVisible())
-		d_data->area->hide();
+		if (!d_data->area->mouseInside)
+			d_data->area->hide();
 	}
 	else if (evt->type() == QEvent::Drop) {
 		d_data->area->hide();
@@ -1805,7 +1757,7 @@ bool CustomizePlotPlayer::eventFilter(QObject* w, QEvent* evt)
 		}
 		else {
 			event->setAccepted(false);
-			printf("no side hide\n");//TEST
+			printf("no side hide\n"); // TEST
 			d_data->area->hide();
 		}
 		return false;
@@ -1813,7 +1765,8 @@ bool CustomizePlotPlayer::eventFilter(QObject* w, QEvent* evt)
 	else if (evt->type() == QEvent::DragLeave) {
 		// if(!d_data->area->geometry().contains(QCursor::pos()) || !d_data->area->isVisible())
 		printf("drag leave hide\n"); // TEST
-		d_data->area->hide();
+		if (!d_data->area->mouseInside)
+			d_data->area->hide();
 	}
 	else if (evt->type() == QEvent::Drop) {
 		printf("drop hide\n"); // TEST
@@ -1925,13 +1878,13 @@ void CustomizePlotPlayer::reorganizeCloseButtons()
 	else
 		canvas << d_data->player->plotWidget2D()->area()->canvas();
 
-	//bool just_created = false;
+	// bool just_created = false;
 
 	// QList<VipPlotCanvas*> canvas = area->allCanvas();
 	for (int i = 0; i < canvas.size(); ++i) {
 		CloseToolBar* closeBar = static_cast<CloseToolBar*>(canvas[i]->property("_vip_close").value<QToolBar*>());
 		if (!closeBar) {
-			//just_created = true;
+			// just_created = true;
 			closeBar = new CloseToolBar(d_data->player);
 			closeBar->close->setProperty("_vip_canvas", QVariant::fromValue(canvas[i]));
 			closeBar->maximize->setProperty("_vip_canvas", QVariant::fromValue(canvas[i]));
@@ -1942,7 +1895,7 @@ void CustomizePlotPlayer::reorganizeCloseButtons()
 			connect(closeBar->minimize, SIGNAL(triggered(bool)), this, SLOT(minimizePlayer()));
 			connect(canvas[i], SIGNAL(destroyed(VipPlotItem*)), closeBar, SLOT(deleteLater()));
 		}
-		
+
 		// update visibility
 		QRectF r;
 		if (VipVMultiPlotArea2D* area = qobject_cast<VipVMultiPlotArea2D*>(d_data->player->plotWidget2D()->area())) {
