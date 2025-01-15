@@ -82,7 +82,6 @@ public:
 	}
 
 protected:
-	virtual void paintEvent(QPaintEvent* evt);
 #if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
 	virtual void enterEvent(QEvent*)
 #else
