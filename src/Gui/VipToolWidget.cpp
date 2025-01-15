@@ -1546,6 +1546,9 @@ void VipMultiProgressWidget::setModal(QObjectPointer ptr, bool modal)
 #endif
 					printf("%i %i %i %i\n", rect.left(), rect.top(), rect.width(), rect.height());//TEST
 					this->move(rect.x() + rect.width() / 2 - this->width() / 2, rect.y() + rect.height() / 2 - this->height() / 2);
+					if (isFloating()) {
+						this->showAndRaise();
+					}
 				}
 				else {
 
