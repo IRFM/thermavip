@@ -3229,6 +3229,7 @@ void VipCloseBar::computeWindowState()
 	}
 #else
 
+	return;//TEST
 	int st = mainWindow->windowState();
 	int state = mainWindow->property("visibility_state").toInt();
 	bool was_maximized = mainWindow->property("was_maximized").toBool();

@@ -378,8 +378,10 @@ public:
 			if (try_open) {
 				if (!helper)
 					return false;
-				if (helper->directOpen(text) || previous == text)
+				if (helper->directOpen(text) || previous == text) {
+					printf("direct: % i %i %s\n", (int)helper->directOpen(text), (int)(previous == text), previous.toLatin1().data());//TEST
 					return helper->open(helper->validPathFromFormat(text));
+				}
 			}
 			return false;
 		}

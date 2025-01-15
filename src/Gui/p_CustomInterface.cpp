@@ -90,6 +90,11 @@ public:
 	double borderWidth() const { return pen.widthF(); }
 
 protected:
+	virtual void mouseMoveEvent(QMouseEvent*)
+	{ 
+		printf("move\n");//TEST
+		this->show();
+	}
 	virtual void paintEvent(QPaintEvent*)
 	{
 		QPainter p(this);
