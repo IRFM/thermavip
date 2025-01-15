@@ -92,7 +92,10 @@ protected:
 	{
 		mouseInside = true;
 	}
-	virtual void leavEvent(QEvent*) { mouseInside = false; }
+	virtual void leavEvent(QEvent*) {
+		mouseInside = false; 
+		printf("leave\n");
+	}
 
 	virtual void paintEvent(QPaintEvent*)
 	{
