@@ -240,14 +240,20 @@ QSqlDatabase vipGetGlobalSQLConnection()
 
 static bool reconnectDB(bool close = false)
 {
+	qint64 st = QDateTime::currentMSecsSinceEpoch();
 	QSqlDatabase& db = globalDB();
 	VIP_LOG_INFO("Connecting to ", db.hostName(), ":", QString::number(db.port()), " ", db.userName(), " ", db.databaseName());
 	if (close)
 		db.close();
+
+	qint64 el1 = QDateTime::currentMSecsSinceEpoch() - st;
+
 	if (!db.isValid()) {
 		VIP_LOG_ERROR("DataBase not valid!!!");
 		return false;
 	}
+
+	qint64 el2 = QDateTime::currentMSecsSinceEpoch() - st;
 
 	// First, ping host. Indeed Qt mysql plugin might crash if host is unreachable
 	QString host = db.hostName();
@@ -258,10 +264,14 @@ static bool reconnectDB(bool close = false)
 		return false;
 	}
 
+	qint64 el3 = QDateTime::currentMSecsSinceEpoch() - st;
+
 	if (!db.open()) {
 		VIP_LOG_ERROR("DataBase not created!!!! " + db.lastError().text());
 		return false;
 	}
+	qint64 el4 = QDateTime::currentMSecsSinceEpoch() - st;
+	printf("%i %i %i %i\n", (int)el1, (int)el2, (int)el3, (int)el4);
 	return true;
 }
 
@@ -278,7 +288,7 @@ static QSqlDatabase createConnection(const DB & param, bool reset = false)
 		//QSqlDatabase::removeDatabase("in_mem_db");
 
 		//db = QSqlDatabase::addDatabase("QMYSQL", "mysql_database");
-		db.setConnectOptions("MYSQL_OPT_CONNECT_TIMEOUT=36000;MYSQL_OPT_READ_TIMEOUT=100;MYSQL_OPT_WRITE_TIMEOUT=100;MYSQL_OPT_RECONNECT=1");
+		db.setConnectOptions("MYSQL_OPT_CONNECT_TIMEOUT=36000;MYSQL_OPT_READ_TIMEOUT=100;MYSQL_OPT_WRITE_TIMEOUT=100;");
 		//db.setConnectOptions("MYSQL_OPT_READ_TIMEOUT=100");
 		//db.setConnectOptions("MYSQL_OPT_WRITE_TIMEOUT=100");
 		//db.setConnectOptions("MYSQL_OPT_RECONNECT=1");
