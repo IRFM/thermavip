@@ -81,6 +81,8 @@ public:
 		pen = QPen(Qt::green, 2);
 	}
 
+	bool hasMouseInside() const { return geometry().contains(QCursor::pos()); }
+
 protected:
 #if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
 	virtual void enterEvent(QEvent*)
@@ -981,7 +983,7 @@ bool CustomizeVideoPlayer::eventFilter(QObject*, QEvent* evt)
 	}
 	else if (evt->type() == QEvent::DragLeave) {
 		// if(!d_data->area->geometry().contains(QCursor::pos()) || !d_data->area->isVisible())
-		if (!d_data->area->mouseInside)
+		if (!d_data->area->hasMouseInside())
 			d_data->area->hide();
 	}
 	else if (evt->type() == QEvent::Drop) {
@@ -1316,7 +1318,7 @@ bool CustomWidgetPlayer::eventFilter(QObject*, QEvent* evt)
 	}
 	else if (evt->type() == QEvent::DragLeave) {
 		// if(!d_data->area->geometry().contains(QCursor::pos()) || !d_data->area->isVisible())
-		if (!d_data->area->mouseInside)
+		if (!d_data->area->hasMouseInside())
 			d_data->area->hide();
 	}
 	else if (evt->type() == QEvent::Drop) {
@@ -1764,7 +1766,7 @@ bool CustomizePlotPlayer::eventFilter(QObject* w, QEvent* evt)
 	else if (evt->type() == QEvent::DragLeave) {
 		// if(!d_data->area->geometry().contains(QCursor::pos()) || !d_data->area->isVisible())
 		printf("drag leave hide\n"); // TEST
-		if (!d_data->area->mouseInside)
+		if (!d_data->area->hasMouseInside())
 			d_data->area->hide();
 	}
 	else if (evt->type() == QEvent::Drop) {
