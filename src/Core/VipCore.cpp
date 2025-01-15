@@ -81,8 +81,11 @@ bool vipSafeVariantSave(QDataStream& s, const QVariant& v)
 			s << QString();
 		return true;
 	}
-
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
+	if (!QMetaType::save(s, v.userType(), v.constData())) {
+#else
 	if (!QMetaType(v.userType()).save(s, v.constData())) {
+#endif
 		s.device()->seek(pos);
 		return false;
 	}
