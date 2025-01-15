@@ -68,7 +68,7 @@ public:
 	DragRubberBand(QWidget* parent)
 	  : QWidget(parent)
 	{
-		setWindowFlags(Qt::ToolTip);
+		setWindowFlags(Qt::Popup);
 		// setAttribute(Qt::WA_TransparentForMouseEvents);
 		QColor c = vipGetMainWindow()->palette().color(QPalette::Window);
 		bool is_light = c.red() > 200 && c.green() > 200 && c.blue() > 200;
@@ -96,6 +96,10 @@ protected:
 		mouseInside = false; 
 		printf("leave\n");
 	}
+
+	//virtual void dragLeaveEvent(QDragLeaveEvent* event) { printf("dragLeaveEvent\n");
+	//}
+	//virtual void dropEvent()
 
 	virtual void paintEvent(QPaintEvent*)
 	{
