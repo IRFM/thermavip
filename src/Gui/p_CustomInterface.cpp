@@ -96,7 +96,11 @@ protected:
 		mouseInside = false; 
 		printf("leave\n");
 	}
-
+	virtual void dragEnterEvent(QDragEnterEvent* event)
+	{
+		printf("dragEnterEvent\n");
+		event->accept();
+	}
 	virtual void dragLeaveEvent(QDragLeaveEvent* event) { printf("dragLeaveEvent\n");}
 	virtual void dragMoveEvent(QDragMoveEvent* event)
 	{ 
