@@ -3131,8 +3131,8 @@ void VipDragWidgetArea::moving(VipMultiDragWidget* widget)
 	Q_UNUSED(widget)
 
 	// get the position in this widget coordinate system, and move the scroll bars if we are close to a border
-	QPoint pos = this->mapFromGlobal(QCursor::pos());
-	int vipDistance = 50;
+	//QPoint pos = this->mapFromGlobal(QCursor::pos());
+	//int vipDistance = 50;
 
 	/* if (pos.x() < vipDistance) {
 		// left border
