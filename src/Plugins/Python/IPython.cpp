@@ -733,7 +733,6 @@ qint64 IPythonConsoleProcess::start(int font_size, const QString& _style , const
 	this->QProcess::start(python,args);
 	this->waitForStarted(5000);
 
-	QString err_ipython = p.errorString();
 	QDir::setCurrent(current);
 
 	//read pid
