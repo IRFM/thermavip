@@ -307,10 +307,23 @@ namespace vip_log_detail {
 #include <QVariant>
 #include <QMutex>
 
+#if QT_VERSION < QT_VERSION_CHECK(5, 14, 0)
+/// @brief Recursive mutex introduced in Qt5.14.0
+class QRecursiveMutex : public QMutex
+{
+	QRecursiveMutex()
+	  : QMutex(QMutex::Recursive)
+	{
+	}
+};
+
+#endif
+
 #if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
 
 #include <QRegExp>
-using QRegularExpression = QRegExp;
+#include <QRegularExpression>
+//using QRegularExpression = QRegExp;
 
 inline QRegExp vipFromWildcard(const QString& pattern, Qt::CaseSensitivity s)
 {
@@ -325,13 +338,6 @@ inline QRegExp vipFromWildcard(const QString& pattern, Qt::CaseSensitivity s)
 }
 
 
-class QRecursiveMutex : public QMutex
-{
-	QRecursiveMutex()
-	  : QMutex(QMutex::Recursive)
-	{
-	}
-};
 
 // For QVariant::canConvert()
 #define VIP_META(meta) meta
