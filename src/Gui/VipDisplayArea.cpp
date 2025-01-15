@@ -3657,15 +3657,15 @@ void VipMainWindow::init()
 	new QShortcut(QKeySequence(Qt::Key_Space), this,  SLOT(startStopPlaying()), nullptr, Qt::ApplicationShortcut);
 	new QShortcut(QKeySequence(Qt::Key_Right), this,  SLOT(nextTime()), nullptr, Qt::ApplicationShortcut);
 	new QShortcut(QKeySequence(Qt::Key_Left), this,  SLOT(previousTime()), nullptr, Qt::ApplicationShortcut);
-	new QShortcut(QKeySequence(QKeyCombination(Qt::ALT, Qt::Key_Right)), this,  SLOT(forward10Time()), nullptr, Qt::ApplicationShortcut);
-	new QShortcut(QKeySequence(QKeyCombination(Qt::ALT, Qt::Key_Left)), this, SLOT(backward10Time()), nullptr, Qt::ApplicationShortcut);
+	new QShortcut(QKeySequence("Alt+right" /* QKeyCombination(Qt::ALT, Qt::Key_Right)*/), this, SLOT(forward10Time()), nullptr, Qt::ApplicationShortcut);
+	new QShortcut(QKeySequence("Alt+left" /*QKeyCombination(Qt::ALT, Qt::Key_Left)*/), this, SLOT(backward10Time()), nullptr, Qt::ApplicationShortcut);
 	new QShortcut(QKeySequence(Qt::Key_PageUp), this,  SLOT(firstTime()), nullptr, Qt::ApplicationShortcut);
 	new QShortcut(QKeySequence(Qt::Key_PageDown), this,  SLOT(lastTime()), nullptr, Qt::ApplicationShortcut);
 	//new QShortcut(QKeySequence("Ctrl+F"), this,  SLOT(focusToSearchLine()), nullptr, Qt::ApplicationShortcut);
 	new QShortcut(QKeySequence("Ctrl+T"), this,  SLOT(newWorkspace()), nullptr, Qt::ApplicationShortcut);
 	new QShortcut(QKeySequence("Ctrl+W"), this, SLOT(closeWorkspace()), nullptr, Qt::ApplicationShortcut);
-	new QShortcut(QKeySequence(QKeyCombination(Qt::CTRL, Qt::Key_Right)), this,  SLOT(nextWorkspace()), nullptr, Qt::ApplicationShortcut);
-	new QShortcut(QKeySequence(QKeyCombination(Qt::CTRL, Qt::Key_Left)), this,  SLOT(previousWorkspace()), nullptr, Qt::ApplicationShortcut);
+	new QShortcut(QKeySequence("Ctrl+right" /*QKeyCombination(Qt::CTRL, Qt::Key_Right)*/), this,  SLOT(nextWorkspace()), nullptr, Qt::ApplicationShortcut);
+	new QShortcut(QKeySequence("Ctrl+left" /*QKeyCombination(Qt::CTRL, Qt::Key_Left)*/), this,  SLOT(previousWorkspace()), nullptr, Qt::ApplicationShortcut);
 
 	// Add dock widgets
 
