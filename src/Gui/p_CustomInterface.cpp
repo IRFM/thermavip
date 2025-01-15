@@ -71,7 +71,7 @@ public:
 		//setWindowFlags(Qt::Popup);
 		setWindowFlags(Qt::Popup | Qt::WindowDoesNotAcceptFocus | Qt::WindowTransparentForInput);
 		setAttribute(Qt::WA_AlwaysStackOnTop, true);
-		//setAttribute(Qt::WA_TransparentForMouseEvents);
+		setAttribute(Qt::WA_NoSystemBackground);
 		QColor c = vipGetMainWindow()->palette().color(QPalette::Window);
 		bool is_light = c.red() > 200 && c.green() > 200 && c.blue() > 200;
 		if (!is_light)
@@ -84,36 +84,7 @@ public:
 		pen = QPen(Qt::green, 2);
 		this->setAcceptDrops(true);
 	}
-
-	bool hasMouseInside() const { return false; }
-
 protected:
-#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
-	virtual void enterEvent(QEvent*)
-#else
-	virtual void enterEvent(QEnterEvent*)
-#endif
-	{
-		mouseInside = true;
-	}
-	virtual void leavEvent(QEvent*) {
-		mouseInside = false; 
-		printf("leave\n");
-	}
-	virtual void dragEnterEvent(QDragEnterEvent* event)
-	{
-		printf("dragEnterEvent\n");
-		event->accept();
-	}
-	virtual void dragLeaveEvent(QDragLeaveEvent* event) { printf("dragLeaveEvent\n");}
-	virtual void dragMoveEvent(QDragMoveEvent* event)
-	{ 
-		event->accept();
-		printf("dragMoveEvent\n");
-	}
-	virtual void dropEvent(QDropEvent* evt) { printf("dropEvent\n");
-	}
-
 	virtual void paintEvent(QPaintEvent*)
 	{
 		QPainter p(this);
@@ -419,7 +390,6 @@ VipDragWidget* NavigatePlayers::next() const
 	if (!d_data->parent)
 		return nullptr;
 
-	// TEST
 	VipDragWidget* w = d_data->parent->next();
 	for (;;) {
 		if (!w)
@@ -437,7 +407,6 @@ VipDragWidget* NavigatePlayers::prev() const
 	if (!d_data->parent)
 		return nullptr;
 
-	// TEST
 	{
 		VipDragWidget* w = d_data->parent->prev();
 		for (;;) {
@@ -1003,9 +972,7 @@ bool CustomizeVideoPlayer::eventFilter(QObject*, QEvent* evt)
 		return false;
 	}
 	else if (evt->type() == QEvent::DragLeave) {
-		// if(!d_data->area->geometry().contains(QCursor::pos()) || !d_data->area->isVisible())
-		if (!d_data->area->hasMouseInside())
-			d_data->area->hide();
+		d_data->area->hide();
 	}
 	else if (evt->type() == QEvent::Drop) {
 		d_data->area->hide();
@@ -1338,9 +1305,7 @@ bool CustomWidgetPlayer::eventFilter(QObject*, QEvent* evt)
 		return false;
 	}
 	else if (evt->type() == QEvent::DragLeave) {
-		// if(!d_data->area->geometry().contains(QCursor::pos()) || !d_data->area->isVisible())
-		if (!d_data->area->hasMouseInside())
-			d_data->area->hide();
+		d_data->area->hide();
 	}
 	else if (evt->type() == QEvent::Drop) {
 		d_data->area->hide();
@@ -1779,19 +1744,14 @@ bool CustomizePlotPlayer::eventFilter(QObject* w, QEvent* evt)
 		}
 		else {
 			event->setAccepted(false);
-			printf("no side hide\n"); // TEST
 			d_data->area->hide();
 		}
 		return false;
 	}
 	else if (evt->type() == QEvent::DragLeave) {
-		// if(!d_data->area->geometry().contains(QCursor::pos()) || !d_data->area->isVisible())
-		printf("drag leave hide\n"); // TEST
-		if (!d_data->area->hasMouseInside())
-			d_data->area->hide();
+		d_data->area->hide();
 	}
 	else if (evt->type() == QEvent::Drop) {
-		printf("drop hide\n"); // TEST
 		d_data->area->hide();
 		QDropEvent* event = static_cast<QDropEvent*>(evt);
 
