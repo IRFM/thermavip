@@ -1425,6 +1425,7 @@ void VipMultiProgressWidget::addProgress(QObjectPointer ptr)
 		d_data->progresses.back()->show();
 		this->show();
 		this->resetSize();
+		this->raise();
 	}
 }
 
