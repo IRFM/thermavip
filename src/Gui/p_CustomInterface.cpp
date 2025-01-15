@@ -79,6 +79,7 @@ public:
 		QString cs = QString("rgb(%1,%2,%2)").arg(background.red()).arg(background.green()).arg(background.blue());
 		setStyleSheet("QWidget{background:" + cs + ";}");
 		pen = QPen(Qt::green, 2);
+		this->setAcceptDrops(true);
 	}
 
 	bool hasMouseInside() const { return geometry().contains(QCursor::pos()); }
