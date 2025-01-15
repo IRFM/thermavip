@@ -97,9 +97,14 @@ protected:
 		printf("leave\n");
 	}
 
-	//virtual void dragLeaveEvent(QDragLeaveEvent* event) { printf("dragLeaveEvent\n");
-	//}
-	//virtual void dropEvent()
+	virtual void dragLeaveEvent(QDragLeaveEvent* event) { printf("dragLeaveEvent\n");}
+	virtual void dragMoveEvent(QDragMoveEvent* event)
+	{ 
+		event->accept();
+		printf("dragMoveEvent\n");
+	}
+	virtual void dropEvent(QDropEvent* evt) { printf("dropEvent\n");
+	}
 
 	virtual void paintEvent(QPaintEvent*)
 	{
