@@ -70,7 +70,7 @@ public:
 	  : QWidget(parent)
 	{
 		setWindowFlags(Qt::ToolTip);
-		//setAttribute(Qt::WA_NoSystemBackground);
+		setAttribute(Qt::WA_TransparentForMouseEvents);
 		QColor c = vipGetMainWindow()->palette().color(QPalette::Window);
 		bool is_light = c.red() > 200 && c.green() > 200 && c.blue() > 200;
 		if (!is_light)
@@ -230,7 +230,9 @@ static void anchorToArea(const Anchor& a, DragRubberBand& area, QWidget* widget)
 		}
 	}
 
-	geom = QRect(vipGetMainWindow()->mapFromGlobal(geom.topLeft()), vipGetMainWindow()->mapFromGlobal(geom.bottomRight()));
+	if (!(area.windowFlags() & Qt::ToolTip))
+		// Not a tooltip: since vipGetMainWindow() is the area parent, we need coordinates in vipGetMainWindow() reference
+		geom = QRect(vipGetMainWindow()->mapFromGlobal(geom.topLeft()), vipGetMainWindow()->mapFromGlobal(geom.bottomRight()));
 	area.setGeometry(geom);
 	area.text = a.text;
 }
