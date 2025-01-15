@@ -1670,8 +1670,8 @@ static QString addDoubleQuotes(const QString& str)
 {
 	QString tmp = str;
 	for (qsizetype i = 0; i < str.size(); ++i) {
-		if (tmp[i] == '"' && i > 0 && i < str.size() - 1)
-			tmp[i] = ' ';
+		if (tmp[(QString::size_type)i] == '"' && i > 0 && i < str.size() - 1)
+			tmp[(QString::size_type)i] = ' ';
 	}
 
 	if (tmp.startsWith("\"") && tmp.endsWith("\""))
