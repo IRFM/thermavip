@@ -1,7 +1,7 @@
 /**
  * BSD 3-Clause License
  *
- * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Leo Dubus, Erwan Grelier
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -745,7 +745,7 @@ VipShape VipShape::copy() const
 	shape.d_data->type = d_data->type;
 	shape.d_data->attributes = d_data->attributes;
 	// TEST: detach
-	shape.d_data->attributes.detach();
+	//shape.d_data->attributes.detach();
 	shape.d_data->region = d_data->region;
 	shape.d_data->rects = d_data->rects;
 	shape.d_data->polygonBased = d_data->polygonBased;

@@ -254,7 +254,7 @@ void setup_plot_area(VipPlotArea2D* area)
 
 int main(int argc, char** argv)
 {
-	//qputenv("QT_PLUGIN_PATH", QDir::currentPath().toLatin1());
+	qputenv("QT_PLUGIN_PATH", QDir::currentPath().toLatin1());
 
 	// Setup opengl features (in case we render using opengl)
 	QCoreApplication::setAttribute(Qt::AA_UseDesktopOpenGL);
@@ -267,8 +267,7 @@ int main(int argc, char** argv)
 	VipMultiGraphicsView w;
 	
 	// Optional, use opengl rendering
-	//w.setRenderingMode(VipBaseGraphicsView::OpenGLThread);
-	//w.setViewport(new QPaintOpenGLWidget());
+	w.setRenderingMode(VipBaseGraphicsView::OpenGLThread);
 
 	QGraphicsGridLayout* grid = new QGraphicsGridLayout();
 

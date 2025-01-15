@@ -1,7 +1,7 @@
 /**
  * BSD 3-Clause License
  *
- * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Leo Dubus, Erwan Grelier
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -55,7 +55,152 @@
 typedef QPointer<QWidget> WidgetPointer;
 Q_DECLARE_METATYPE(WidgetPointer)
 
-static void anchorToArea(const Anchor& a, VipDragRubberBand& area, QWidget* widget)
+
+/// @brief Custom rubber band displayed to highlight potential drop areas.
+/// We use this other VipDragRubberBand as it works over native windows.
+class DragRubberBand : public QWidget
+{
+	QPen pen;
+
+public:
+	QString text;
+	QColor background;
+
+	DragRubberBand(QWidget* parent)
+	  : QWidget(parent)
+	{
+		setWindowFlags(Qt::ToolTip);
+		//setAttribute(Qt::WA_NoSystemBackground);
+		QColor c = vipGetMainWindow()->palette().color(QPalette::Window);
+		bool is_light = c.red() > 200 && c.green() > 200 && c.blue() > 200;
+		if (!is_light)
+			background = c.lighter(120);
+		else
+			background = c.darker(120);
+		QString cs = QString("rgb(%1,%2,%2)").arg(background.red()).arg(background.green()).arg(background.blue());
+		setStyleSheet("QWidget{background:" + cs  + ";}");
+		pen = QPen(Qt::green, 2);
+		
+	}
+
+	void setBorderColor(const QColor& c) { pen.setColor(c); }
+	QColor borderColor() const { return pen.color(); }
+
+	void setBorderWidth(double w) { pen.setWidthF(w); }
+	double borderWidth() const { return pen.widthF(); }
+
+protected:
+	virtual void paintEvent(QPaintEvent*)
+	{
+		QPainter p(this);
+		p.setPen(pen);
+		//c.setAlpha(150);
+		p.setBrush(QBrush(background)); // Qt::NoBrush);
+		QRect r(0, 0, width(), height());
+		p.drawRoundedRect(r.adjusted(1, 1, -1, -1), 2, 2);
+
+		VipText t = this->text;
+		t.setTextPen(QPen(VipGuiDisplayParamaters::instance()->defaultPlayerTextColor()));
+		if (!t.isEmpty()) {
+			QSize s = t.textSize().toSize();
+			if (s.width() < r.width()) {
+				t.setAlignment(Qt::AlignCenter);
+				t.draw(&p, r);
+			}
+			else if (s.width() < r.height()) {
+				QTransform tr;
+				tr.translate(r.center().x(), r.center().y());
+				tr.rotate(-90);
+				p.setTransform(tr);
+				t.setAlignment(Qt::AlignCenter);
+				r = QRect(0, 0, r.height(), r.width());
+				r.moveCenter(QPoint(0, 0));
+				t.draw(&p, r);
+			}
+		}
+	}
+};
+
+CloseToolBar::CloseToolBar(QWidget* parent)
+	: QToolBar(parent)
+{
+	minimize = addAction(vipIcon("minimize.png"), "Minimize player");
+	maximize = addAction(vipIcon("restore.png"), "Maximize/restore player");
+	close = addAction(vipIcon("close.png"), "Close player");
+	setIconSize(QSize(16, 16));
+	setStyleSheet("QToolBar{background: transparent; spacing:0px; margin:0px; padding: 0px;}");
+	setMouseTracking(true);
+	setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
+	setMaximumWidth(80);
+	setHasToolTip(true);
+	if (parent)
+		parent->installEventFilter(this);
+}
+
+CloseToolBar::~CloseToolBar()
+{
+	if (parent())
+		parent()->removeEventFilter(this);
+}
+
+void CloseToolBar::mouseMoveEvent(QMouseEvent* evt)
+{
+	update();
+	QToolBar::mouseMoveEvent(evt);
+}
+
+void CloseToolBar::setHasToolTip(bool enable)
+{
+	if (enable == (bool)(windowFlags() & Qt::ToolTip))
+		return;
+	
+	setWindowFlag(Qt::ToolTip,enable);
+	QWidget* p = this->parentWidget();
+	if (enable && p) {
+		VipAbstractPlayer* pl = qobject_cast<VipAbstractPlayer*>(p);
+		QColor c = p->palette().color(QPalette::Window);
+		if (pl && pl->plotWidget2D())
+			c = pl->plotWidget2D()->backgroundColor();
+		QString cs = QString("rgb(%1,%2,%3)").arg(c.red()).arg(c.green()).arg( c.blue());
+		setStyleSheet("QToolBar{background: " + cs+ "; spacing:0px; margin:0px; padding: 0px;}");
+	}
+	else
+		setStyleSheet("QToolBar{background: transparent; spacing:0px; margin:0px; padding: 0px;}");
+}
+
+bool CloseToolBar::hasToolTip() const
+{
+	return (bool)(windowFlags() & Qt::ToolTip);
+}
+
+bool CloseToolBar::eventFilter(QObject* obj, QEvent* evt)
+{
+	switch (evt->type()) {
+		case QEvent::Hide:
+			this->hide();
+			break;
+		default:
+			break;
+	}
+	return false;
+}
+
+
+static void moveTopRight(CloseToolBar* bar, QWidget* parent, int rightMargin = 0, int top=0)
+{
+	if (!(bar->windowFlags() & Qt::ToolTip))
+		bar->move(parent->width() - bar->width() - rightMargin, top);
+	else {
+		QWidget* p = bar->parentWidget();
+		if (!p)
+			parent = p;
+		QPoint pt(parent->width() - bar->width() - rightMargin, top);
+		pt = p->mapToGlobal(pt);
+		bar->move(pt);
+	}
+}
+
+static void anchorToArea(const Anchor& a, DragRubberBand& area, QWidget* widget)
 {
 	QPoint top_left = widget->mapToGlobal(a.highlight.topLeft());
 
@@ -308,8 +453,9 @@ VipDragWidget* NavigatePlayers::prev() const
 	return children[idx];
 }
 
-bool NavigatePlayers::eventFilter(QObject*, QEvent* evt)
+bool NavigatePlayers::eventFilter(QObject* obj, QEvent* evt)
 {
+	(void)obj;
 	if (evt->type() == QEvent::Resize || evt->type() == QEvent::Show || evt->type() == QEvent::Hide) {
 		updatePos();
 	}
@@ -485,17 +631,19 @@ QGraphicsItem* BaseCustomPlayer2D::firstVisibleItem(const QPointF& scene_pos) co
 	return nullptr;
 }
 
+
+
+
+
 class CustomizeVideoPlayer::PrivateData
 {
 public:
 	VipVideoPlayer* player;
 	VipDragWidget* dragWidget;
-	QToolButton* close;
-	QToolButton* maximize;
-	QToolButton* minimize;
+	CloseToolBar* closeBar;
 	QPoint mousePress;
 	Anchor anchor;
-	QPointer<VipDragRubberBand> area;
+	QPointer<DragRubberBand> area;
 	bool closeRequested;
 	PrivateData()
 	  : mousePress(-1, -1)
@@ -528,32 +676,16 @@ CustomizeVideoPlayer::CustomizeVideoPlayer(VipVideoPlayer* player)
 	// Add a navigation widget that manages itself
 	new NavigatePlayers(d_data->dragWidget);
 
-	d_data->area = new VipDragRubberBand(vipGetMainWindow());
+	d_data->area = new DragRubberBand(vipGetMainWindow());
 	d_data->player->plotWidget2D()->viewport()->installEventFilter(this);
 
 	// TEST: comment
 	// player->plotWidget2D()->setBackgroundColor(defaultPlayerBackground());
 
-	d_data->close = new QToolButton(d_data->player);
-	d_data->close->setAutoRaise(true);
-	d_data->close->setToolTip("Close video");
-	d_data->close->setIcon(vipIcon("close.png"));
-	d_data->close->resize(20, 20);
-	connect(d_data->close, SIGNAL(clicked(bool)), this, SLOT(closePlayer()));
-
-	d_data->maximize = new QToolButton(d_data->player);
-	d_data->maximize->setAutoRaise(true);
-	d_data->maximize->setToolTip("Maximize/restore video");
-	d_data->maximize->setIcon(vipIcon("restore.png"));
-	d_data->maximize->resize(20, 20);
-	connect(d_data->maximize, SIGNAL(clicked(bool)), this, SLOT(maximizePlayer()));
-
-	d_data->minimize = new QToolButton(d_data->player);
-	d_data->minimize->setAutoRaise(true);
-	d_data->minimize->setToolTip("Maximize/restore video");
-	d_data->minimize->setIcon(vipIcon("minimize.png"));
-	d_data->minimize->resize(20, 20);
-	connect(d_data->minimize, SIGNAL(clicked(bool)), this, SLOT(minimizePlayer()));
+	d_data->closeBar = new CloseToolBar(d_data->player);
+	connect(d_data->closeBar->close, SIGNAL(triggered(bool)), this, SLOT(closePlayer()));
+	connect(d_data->closeBar->maximize, SIGNAL(triggered(bool)), this, SLOT(maximizePlayer()));
+	connect(d_data->closeBar->minimize, SIGNAL(triggered(bool)), this, SLOT(minimizePlayer()));
 
 	connect(d_data->player->plotWidget2D()->area(), SIGNAL(visualizedAreaChanged()), this, SLOT(reorganizeCloseButton()));
 	reorganizeCloseButton();
@@ -590,17 +722,9 @@ void CustomizeVideoPlayer::updateViewport(QWidget* viewport)
 	viewport->installEventFilter(this);
 }
 
-QToolButton* CustomizeVideoPlayer::maximizeButton() const
+CloseToolBar* CustomizeVideoPlayer::closeToolBar() const
 {
-	return d_data->maximize;
-}
-QToolButton* CustomizeVideoPlayer::minimizeButton() const
-{
-	return d_data->minimize;
-}
-QToolButton* CustomizeVideoPlayer::closeButton() const
-{
-	return d_data->close;
+	return d_data->closeBar;
 }
 
 void CustomizeVideoPlayer::endRender()
@@ -615,22 +739,16 @@ void CustomizeVideoPlayer::reorganizeCloseButton()
 		return;
 
 	QScrollBar* bar = d_data->player->plotWidget2D()->verticalScrollBar();
-	d_data->close->move(d_data->player->width() - d_data->close->width() - (bar->isVisible() ? bar->width() : 0), 0);
-	d_data->maximize->move(d_data->player->width() - d_data->close->width() - d_data->maximize->width() - (bar->isVisible() ? bar->width() : 0), 0);
-	d_data->minimize->move(d_data->player->width() - d_data->close->width() - d_data->maximize->width() - d_data->minimize->width() - (bar->isVisible() ? bar->width() : 0), 0);
-
+	moveTopRight(d_data->closeBar, d_data->player, (bar->isVisible() ? bar->width() : 0));
+	
 	QPoint pt = d_data->player->plotWidget2D()->mapFromGlobal(QCursor::pos());
 	// update visibility
 	QRect r = d_data->player->plotWidget2D()->rect();
-	if (r.contains(pt)) {
-		d_data->close->setVisible(true);
-		d_data->maximize->setVisible(true);
-		d_data->minimize->setVisible(true);
+	if (r.contains(pt) && d_data->player->isVisible()) {
+		d_data->closeBar->setVisible(true);
 	}
 	else {
-		d_data->close->setVisible(false);
-		d_data->maximize->setVisible(false);
-		d_data->minimize->setVisible(false);
+		d_data->closeBar->setVisible(false);
 	}
 }
 
@@ -944,12 +1062,10 @@ class CustomWidgetPlayer::PrivateData
 public:
 	VipWidgetPlayer* player;
 	VipDragWidget* dragWidget;
-	QToolButton* close;
-	QToolButton* maximize;
-	QToolButton* minimize;
+	CloseToolBar* closeBar;
 	QPoint mousePress;
 	Anchor anchor;
-	QPointer<VipDragRubberBand> area;
+	QPointer<DragRubberBand> area;
 	bool closeRequested;
 	PrivateData()
 	  : mousePress(-1, -1)
@@ -979,30 +1095,15 @@ CustomWidgetPlayer::CustomWidgetPlayer(VipWidgetPlayer* player)
 	if (!d_data->dragWidget)
 		return;
 
-	d_data->area = new VipDragRubberBand(vipGetMainWindow());
+	d_data->area = new DragRubberBand(vipGetMainWindow());
 	if (d_data->player->widgetForMouseEvents())
 		d_data->player->widgetForMouseEvents()->installEventFilter(this);
 
-	d_data->close = new QToolButton(d_data->player);
-	d_data->close->setAutoRaise(true);
-	d_data->close->setToolTip("Close widget");
-	d_data->close->setIcon(vipIcon("close.png"));
-	d_data->close->resize(20, 20);
-	connect(d_data->close, SIGNAL(clicked(bool)), this, SLOT(closePlayer()));
-
-	d_data->maximize = new QToolButton(d_data->player);
-	d_data->maximize->setAutoRaise(true);
-	d_data->maximize->setToolTip("Maximize/restore widget");
-	d_data->maximize->setIcon(vipIcon("restore.png"));
-	d_data->maximize->resize(20, 20);
-	connect(d_data->maximize, SIGNAL(clicked(bool)), this, SLOT(maximizePlayer()));
-
-	d_data->minimize = new QToolButton(d_data->player);
-	d_data->minimize->setAutoRaise(true);
-	d_data->minimize->setToolTip("Maximize/restore widget");
-	d_data->minimize->setIcon(vipIcon("minimize.png"));
-	d_data->minimize->resize(20, 20);
-	connect(d_data->minimize, SIGNAL(clicked(bool)), this, SLOT(minimizePlayer()));
+	d_data->closeBar = new CloseToolBar(d_data->player);
+	
+	connect(d_data->closeBar->close, SIGNAL(triggered(bool)), this, SLOT(closePlayer()));
+	connect(d_data->closeBar->maximize, SIGNAL(triggered(bool)), this, SLOT(maximizePlayer()));
+	connect(d_data->closeBar->minimize, SIGNAL(triggered(bool)), this, SLOT(minimizePlayer()));
 
 	// connect(d_data->player->plotWidget2D()->area(), SIGNAL(visualizedAreaChanged()), this, SLOT(reorganizeCloseButton()));
 	reorganizeCloseButton();
@@ -1027,22 +1128,16 @@ void CustomWidgetPlayer::reorganizeCloseButton()
 
 	if (QWidget* w = d_data->player->widget()) {
 
-		d_data->close->move(w->width() - d_data->close->width(), 0);
-		d_data->maximize->move(w->width() - d_data->close->width() - d_data->maximize->width(), 0);
-		d_data->minimize->move(w->width() - d_data->close->width() - d_data->maximize->width() - d_data->minimize->width(), 0);
-
+		moveTopRight(d_data->closeBar, w);
+		
 		QPoint pt = w->mapFromGlobal(QCursor::pos());
 		// update visibility
 		QRect r = w->rect();
-		if (r.contains(pt)) {
-			d_data->close->setVisible(true);
-			d_data->maximize->setVisible(true);
-			d_data->minimize->setVisible(true);
+		if (r.contains(pt) && d_data->player->isVisible()) {
+			d_data->closeBar->setVisible(true);
 		}
 		else {
-			d_data->close->setVisible(false);
-			d_data->maximize->setVisible(false);
-			d_data->minimize->setVisible(false);
+			d_data->closeBar->setVisible(false);
 		}
 	}
 }
@@ -1307,7 +1402,7 @@ public:
 	QToolButton* title;
 	QRect topWidgetsRect;
 	QPoint mousePress;
-	QPointer<VipDragRubberBand> area;
+	QPointer<DragRubberBand> area;
 	Anchor anchor;
 
 	PrivateData()
@@ -1343,7 +1438,7 @@ CustomizePlotPlayer::CustomizePlotPlayer(VipPlotPlayer* player)
 
 	d_data->player->plotWidget2D()->viewport()->installEventFilter(this);
 
-	d_data->area = new VipDragRubberBand(vipGetMainWindow());
+	d_data->area = new DragRubberBand(vipGetMainWindow());
 	d_data->area->setAttribute(Qt::WA_TransparentForMouseEvents);
 	d_data->area->setEnabled(false);
 	d_data->area->setFocusPolicy(Qt::NoFocus);
@@ -1785,47 +1880,20 @@ void CustomizePlotPlayer::reorganizeCloseButtons()
 
 	// QList<VipPlotCanvas*> canvas = area->allCanvas();
 	for (int i = 0; i < canvas.size(); ++i) {
-		QToolButton* close = canvas[i]->property("_vip_close").value<QToolButton*>();
-		if (!close) {
+		CloseToolBar* closeBar = static_cast<CloseToolBar*>(canvas[i]->property("_vip_close").value<QToolBar*>());
+		if (!closeBar) {
 			//just_created = true;
-			close = new QToolButton(d_data->player);
-			close->setAutoRaise(true);
-			close->setMaximumSize(QSize(20, 20));
-			close->setAutoFillBackground(true);
-			close->setIcon(vipIcon("close.png"));
-			close->setProperty("_vip_canvas", QVariant::fromValue(canvas[i]));
-			canvas[i]->setProperty("_vip_close", QVariant::fromValue(close));
-			connect(close, SIGNAL(clicked(bool)), this, SLOT(closeCanvas()));
-			connect(canvas[i], SIGNAL(destroyed(VipPlotItem*)), close, SLOT(deleteLater()));
+			closeBar = new CloseToolBar(d_data->player);
+			closeBar->close->setProperty("_vip_canvas", QVariant::fromValue(canvas[i]));
+			closeBar->maximize->setProperty("_vip_canvas", QVariant::fromValue(canvas[i]));
+			closeBar->minimize->setProperty("_vip_canvas", QVariant::fromValue(canvas[i]));
+			canvas[i]->setProperty("_vip_close", QVariant::fromValue(closeBar));
+			connect(closeBar->close, SIGNAL(triggered(bool)), this, SLOT(closeCanvas()));
+			connect(closeBar->maximize, SIGNAL(triggered(bool)), this, SLOT(maximizePlayer()));
+			connect(closeBar->minimize, SIGNAL(triggered(bool)), this, SLOT(minimizePlayer()));
+			connect(canvas[i], SIGNAL(destroyed(VipPlotItem*)), closeBar, SLOT(deleteLater()));
 		}
-		close->setToolTip(canvas.size() == 1 ? "Close window" : "Close this stacked plot area");
-
-		QToolButton* maximize = canvas[i]->property("_vip_maximize").value<QToolButton*>();
-		if (!maximize) {
-			maximize = new QToolButton(d_data->player);
-			maximize->setAutoRaise(true);
-			maximize->setMaximumSize(QSize(20, 20));
-			maximize->setAutoFillBackground(true);
-			maximize->setIcon(vipIcon("restore.png"));
-			maximize->setProperty("_vip_canvas", QVariant::fromValue(canvas[i]));
-			maximize->setToolTip("Maximize/restore window");
-			canvas[i]->setProperty("_vip_maximize", QVariant::fromValue(maximize));
-			connect(maximize, SIGNAL(clicked(bool)), this, SLOT(maximizePlayer()));
-		}
-
-		QToolButton* minimize = canvas[i]->property("_vip_minimize").value<QToolButton*>();
-		if (!minimize) {
-			minimize = new QToolButton(d_data->player);
-			minimize->setAutoRaise(true);
-			minimize->setMaximumSize(QSize(20, 20));
-			minimize->setAutoFillBackground(true);
-			minimize->setIcon(vipIcon("minimize.png"));
-			minimize->setProperty("_vip_canvas", QVariant::fromValue(canvas[i]));
-			minimize->setToolTip("Minimize window");
-			canvas[i]->setProperty("_vip_minimize", QVariant::fromValue(minimize));
-			connect(minimize, SIGNAL(clicked(bool)), this, SLOT(minimizePlayer()));
-		}
-
+		
 		// update visibility
 		QRectF r;
 		if (VipVMultiPlotArea2D* area = qobject_cast<VipVMultiPlotArea2D*>(d_data->player->plotWidget2D()->area())) {
@@ -1835,29 +1903,24 @@ void CustomizePlotPlayer::reorganizeCloseButtons()
 		else {
 			r = d_data->player->plotWidget2D()->mapFromScene(d_data->player->plotWidget2D()->sceneRect()).boundingRect();
 		}
-		if (r.contains(pt)) {
-			close->setVisible(true);
-			maximize->setVisible(true);
-			minimize->setVisible(true);
+		if (r.contains(pt) && d_data->player->isVisible()) {
+			closeBar->setVisible(true);
 		}
 		else {
-			close->setVisible(false);
-			maximize->setVisible(false);
-			minimize->setVisible(false);
+			closeBar->setVisible(false);
 		}
 
 		QRect crect = d_data->player->plotWidget2D()->mapFromScene(canvas[i]->mapToScene(canvas[i]->boundingRect())).boundingRect();
-		close->move(crect.right() - close->width(), crect.top());
-		maximize->move(crect.right() - maximize->width() - close->width(), crect.top());
-		minimize->move(crect.right() - maximize->width() - close->width() - minimize->width(), crect.top());
+		int margin = d_data->player->plotWidget2D()->width() - crect.right();
+		moveTopRight(closeBar, d_data->player, margin + 1, crect.top() + 1);
 	}
 }
 
 void CustomizePlotPlayer::closeCanvas()
 {
 	if (VipVMultiPlotArea2D* area = qobject_cast<VipVMultiPlotArea2D*>(d_data->player->plotWidget2D()->area())) {
-		if (QToolButton* tool = qobject_cast<QToolButton*>(sender())) {
-			if (VipPlotCanvas* c = tool->property("_vip_canvas").value<VipPlotCanvas*>()) {
+		if (sender()) {
+			if (VipPlotCanvas* c = sender()->property("_vip_canvas").value<VipPlotCanvas*>()) {
 				if (area->allCanvas().size() == 1)
 					closePlayer();
 				else
@@ -1866,8 +1929,8 @@ void CustomizePlotPlayer::closeCanvas()
 		}
 	}
 	else {
-		if (QToolButton* tool = qobject_cast<QToolButton*>(sender())) {
-			if (/*VipPlotCanvas* c = */ tool->property("_vip_canvas").value<VipPlotCanvas*>()) {
+		if (sender()) {
+			if (/*VipPlotCanvas* c = */ sender()->property("_vip_canvas").value<VipPlotCanvas*>()) {
 				closePlayer();
 			}
 		}
@@ -1906,8 +1969,6 @@ static void resizeSplitter(QSplitter* splitter)
 		sizes.append(1);
 	splitter->setSizes(sizes);
 	splitter->setOpaqueResize(true);
-	// TEST: comment
-	// splitter->setProperty("_vip_dirtySplitter", 0);
 }
 
 static QAction* createSeparator()
@@ -1973,11 +2034,13 @@ static QList<QAction*> additionalActions(VipPlotItem* /*item*/, VipPlayer2D* pla
 					QObject::connect(restore, SIGNAL(triggered(bool)), dw, SLOT(showNormal()));
 					res << restore;
 				}
-
-				QAction* close = new QAction("Close window", nullptr);
-				QObject::connect(close, &QAction::triggered, dw, std::bind(restoreAndClose, player));
-				res << close;
+				QAction* minimize = new QAction("Minimize window", nullptr);
+				QObject::connect(minimize, SIGNAL(triggered(bool)), dw, SLOT(showMinimized()));
+				res << minimize;
 			}
+			QAction* close = new QAction("Close window", nullptr);
+			QObject::connect(close, &QAction::triggered, dw, std::bind(restoreAndClose, player));
+			res << close;
 		}
 	return res;
 }

@@ -1,7 +1,7 @@
 /**
  * BSD 3-Clause License
  *
- * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Leo Dubus, Erwan Grelier
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -380,7 +380,11 @@ void VipToolWidgetTitleBar::paintEvent(QPaintEvent*)
 	painter.drawRect(area);
 }
 
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
 void VipToolWidgetTitleBar::enterEvent(QEvent*)
+#else
+void VipToolWidgetTitleBar::enterEvent(QEnterEvent*)
+#endif
 {
 	if (VipToolWidget* tool = parent())
 		tool->setStyleProperty("hasHover", true);
@@ -659,8 +663,11 @@ QSize VipToolWidget::sizeHint() const
 	else
 		return QDockWidget::sizeHint();
 }
-
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
 void VipToolWidget::enterEvent(QEvent*)
+#else
+void VipToolWidget::enterEvent(QEnterEvent*)
+#endif
 {
 	setStyleProperty("hasHover", true);
 	if (d_data->enableOpacityChange)

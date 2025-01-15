@@ -173,7 +173,6 @@ void setup_plot_area(VipPlotArea2D* area)
 
 
 #include <qsurfaceformat.h>
-#include "VipPicture.h"
 
 int main(int argc, char** argv)
 {

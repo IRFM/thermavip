@@ -19,6 +19,7 @@
 #include <qopenglfunctions.h>
 #include <qprocess.h>
 #include <qscreen.h>
+#include <qwindow.h>
 
 #include "VipCommandOptions.h"
 #include "VipCore.h"
@@ -189,6 +190,7 @@ int main(int argc, char** argv)
 #endif
 	 
 	QApplication app(argc, argv);
+	app.setAttribute(Qt::AA_DontCreateNativeWidgetSiblings);//TEST
 
 	bool force_font = false;
 #if !defined(_WIN32) && (defined(__unix__) || defined(__unix) || (defined(__APPLE__) && defined(__MACH__)))
@@ -690,16 +692,23 @@ int main(int argc, char** argv)
 	// Apply current font
 	applyAppFont(vipGetMainWindow(), previous_font);
 
+	//TEST
+	/* QWindow* win = new QWindow();
+	win->setSurfaceType(QSurface::OpenGLSurface);
+	win->setFormat(QSurfaceFormat::defaultFormat());
+	QWidget* wid = QWidget::createWindowContainer(win);
+	//QWidget* wid2 = new QWidget();
+	//wid2->setLayout(new QVBoxLayout());
+	//wid2->layout()->addWidget(wid);
+	QGraphicsView* view = new QGraphicsView();
+	view->setViewport(wid); // new QPaintOpenGLWidget(QSurfaceFormat::defaultFormat(),QPaintRecord::BatchCommands));
+	VipBaseDragWidget* drag = (vipCreateFromWidgets(QWidgetList() << view));
+	vipGetMainWindow()->displayArea()->currentDisplayPlayerArea()->addWidget(drag);
+	*/
 	int ret = app.exec();
 
 	VipLoadPlugins::instance().unloadPlugins();
 	VipLogging::instance().close();
-
-/* #ifdef _MSC_VER
-// Remove deprecated warning
-#pragma warning(push)
-#pragma warning(disable : 4996)
-#endif*/
 
 	if (vipIsRestartEnabled()) {
 		//QProcess::startDetached(VipUpdate::getUpdateProgram() + " --hide --command Thermavip -l " + QString::number(vipRestartMSecs()));
@@ -709,11 +718,6 @@ int main(int argc, char** argv)
 						      << "Thermavip"
 						      << "-l" << QString::number(vipRestartMSecs()));
 	}
-
-/* #ifdef _MSC_VER
-// Remove deprecated warning
-#pragma warning(pop)
-#endif*/
 
 	return ret;
 }

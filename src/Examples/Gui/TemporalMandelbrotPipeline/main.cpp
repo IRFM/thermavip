@@ -99,10 +99,11 @@ void setup_plot_area(VipPlotArea2D* area)
 
 
 #include <qsurfaceformat.h>
-#include "VipPicture.h"
 
 int main(int argc, char** argv)
 {
+	//qputenv("QT_PLUGIN_PATH", QDir::currentPath().toLatin1());
+
 	// Setup opengl features (in case we render using opengl)
 	QCoreApplication::setAttribute(Qt::AA_UseDesktopOpenGL);
 	QSurfaceFormat format;
@@ -114,7 +115,6 @@ int main(int argc, char** argv)
 	VipMultiGraphicsView w;
 	
 	// Optional, use opengl rendering
-	//w.setOpenGLRendering(true);
 	//w.setRenderingMode(VipMultiGraphicsView::OpenGLThread);
 	//VipText::setCacheTextWhenPossible(false);
 	// Create all widgets/plotting areas

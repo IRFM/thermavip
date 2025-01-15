@@ -1,7 +1,7 @@
 /**
  * BSD 3-Clause License
  *
- * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Leo Dubus, Erwan Grelier
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -33,7 +33,6 @@
 #include "VipPainter.h"
 #include "VipPie.h"
 #include "VipShapeDevice.h"
-#include "VipPicture.h"
 
 #include <limits>
 #include <numeric>
@@ -706,7 +705,7 @@ VipText& VipText::setCached(bool cached)
 
 static bool& cache_text_when_possible()
 {
-	static bool inst = true;
+	static bool inst = false;
 	return inst;
 }
 bool VipText::cacheTextWhenPossible()
@@ -1101,11 +1100,11 @@ void VipText::draw(QPainter* painter, const QRectF& rect) const
 				painter->setCompositionMode(QPainter::CompositionMode_SourceOver);
 
 			// For default QOpenglWidget, this draws a black pixmap if SmoothPixmapTransform is not set (?)
-			if (!VipOpenGLWidget::isInPainting()) {
+			/* if (!QThreadOpenGLWidget::isInPainting()) {
 
 				if (!painter->testRenderHint(QPainter::SmoothPixmapTransform))
 					painter->setRenderHint(QPainter::SmoothPixmapTransform);
-			}
+			}*/
 		}
 
 		VipPainter::drawPixmap(painter, QRectF(expandedRect.topLeft() - QPointF(1, 1), QSizeF(pixmap.size())), pixmap);
@@ -1124,7 +1123,8 @@ void VipText::draw(QPainter* painter, const QRectF& rect) const
 		}
 
 		if (!hasTextBoxStyle()) {
-			if (is_opengl || !drawThroughCache(painter, d_data->text, expandedRect, alignment(), d_data->textEngine->format()))
+			// Disable caching for now as it causes change bugs
+			//if (is_opengl || !drawThroughCache(painter, d_data->text, expandedRect, alignment(), d_data->textEngine->format()))
 				d_data->textEngine->draw(painter, expandedRect, alignment(), d_data->text);
 		}
 		else {

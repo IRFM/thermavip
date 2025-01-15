@@ -27,6 +27,7 @@ option(WITH_LONG_DOUBLE "Use long double as the default type for 2D point repres
 option(WITH_FFMEG "Build ffmpeg plugin" OFF)
 option(WITH_HDF5 "Build HDF5 plugin" OFF)
 option(WITH_PYTHON "Build Python plugin" OFF)
+option(WITH_WEBENGINE "Build components based on Qt webengine module (if webengine is available)" ON)
 option(WITH_VTK "Build VTK support" OFF)
 option(WITH_LIBRIR "Build and install librir" OFF)
 option(WITH_EXAMPLES "Build examples" ON)
@@ -95,7 +96,7 @@ set(THERMAVIP_LIBRARIES
 	VipPlotting
 	VipGui
 	VipAnnotation
-	CACHE INTERNAL "THERMAVIP_INCLUDE_DIRS")
+	CACHE INTERNAL "THERMAVIP_LIBRARIES")
 	
 # Define thermavip SDK compiler flags file for internal plugins and SDK libraries
 set(THERMAVIP_COMPILER_FLAGS_FILE 
@@ -150,12 +151,102 @@ if(WIN32)
 endif()
 
 
+# Check Qt web engine and additional Qt libraries
+set(QT_PREFIX Qt${QT_VERSION_MAJOR})
+set(QT_ADDITIONAL_LIBS "")
+set(QT_WEBENGINE_LIBS "")
+if(${QT_VERSION_MAJOR} LESS 6)
+set(WEB_ENGINE Qt${QT_VERSION_MAJOR}WebEngine)
+else()
+set(WEB_ENGINE Qt${QT_VERSION_MAJOR}WebEngineCore)
+endif()
+
+if(${QT_VERSION_MAJOR} LESS 6)
+else()
+find_package(Qt6 REQUIRED COMPONENTS Core5Compat)
+find_package(Qt6 REQUIRED COMPONENTS OpenGLWidgets)
+list(APPEND QT_ADDITIONAL_LIBS Qt6::Core5Compat Qt6::OpenGLWidgets)
+endif()
+
+if(WITH_WEBENGINE)
+	find_package(${WEB_ENGINE} )
+	find_package(Qt${QT_VERSION_MAJOR}WebEngineWidgets )
+	if (${WEB_ENGINE}_FOUND)
+		if (${WEB_ENGINE}_VERSION VERSION_LESS 5.15.0)
+		else()
+			find_package(Qt${QT_VERSION_MAJOR}WebEngineWidgets REQUIRED)
+			if(${QT_VERSION_MAJOR} LESS 6)
+			list(APPEND QT_WEBENGINE_LIBS Qt5::WebEngine Qt5::WebEngineWidgets)
+			else()
+			list(APPEND QT_WEBENGINE_LIBS Qt::WebEngineCore Qt::WebEngineWidgets)
+			endif()
+		endif()
+	endif()
+endif()
+
+list(JOIN QT_ADDITIONAL_LIBS " " QT_ADDITIONAL_LIBS)
+list(JOIN QT_WEBENGINE_LIBS " " QT_WEBENGINE_LIBS)
+
+# VTK
+if(WITH_VTK)
+	find_package(VTK REQUIRED)
+	set(HAS_VTK ON)
+else()
+	set(HAS_VTK OFF)
+endif()
+
+
+# Add targets
+target_include_directories(VipLogging  PUBLIC
+						   "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/VipLogging>"
+						   "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/VipLogging>"
+						   "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>")	   
+install(TARGETS VipLogging EXPORT thermavip DESTINATION "${CMAKE_INSTALL_LIBDIR}" LIBRARY)
+install(EXPORT thermavip DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/thermavip")
+
+target_include_directories(VipDataType  PUBLIC
+						   "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/VipDataType>"
+						   "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/VipDataType>"
+						   "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>")	   
+install(TARGETS VipDataType EXPORT thermavip DESTINATION "${CMAKE_INSTALL_LIBDIR}" LIBRARY)
+install(EXPORT thermavip DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/thermavip")
+
+target_include_directories(VipCore  PUBLIC
+						   "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/VipCore>"
+						   "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/VipCore>"
+						   "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>")	   
+install(TARGETS VipCore EXPORT thermavip DESTINATION "${CMAKE_INSTALL_LIBDIR}" LIBRARY)
+install(EXPORT thermavip DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/thermavip")
+
+target_include_directories(VipPlotting  PUBLIC
+						   "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/VipPlotting>"
+						   "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/VipPlotting>"
+						   "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>")	   
+install(TARGETS VipPlotting EXPORT thermavip DESTINATION "${CMAKE_INSTALL_LIBDIR}" LIBRARY)
+install(EXPORT thermavip DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/thermavip")
+
+target_include_directories(VipGui  PUBLIC
+						   "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/VipGui>"
+						   "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/VipGui>"
+						   "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>")	   
+install(TARGETS VipGui EXPORT thermavip DESTINATION "${CMAKE_INSTALL_LIBDIR}" LIBRARY)
+install(EXPORT thermavip DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/thermavip")
+
+target_include_directories(VipAnnotation  PUBLIC
+						   "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/VipAnnotation>"
+						   "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/VipAnnotation>"
+						   "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>")	   
+install(TARGETS VipAnnotation EXPORT thermavip DESTINATION "${CMAKE_INSTALL_LIBDIR}" LIBRARY)
+install(EXPORT thermavip DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/thermavip")
+
+
+# Generate thermavipConfig.cmake
 include(CMakePackageConfigHelpers)
 configure_package_config_file(cmake/thermavipConfig.cmake.in
   ${CMAKE_CURRENT_BINARY_DIR}/thermavipConfig.cmake
   INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/thermavip
   PATH_VARS 
-  PLUGINS_LIBS)
+  PLUGINS_LIBS QT_ADDITIONAL_LIBS QT_WEBENGINE_LIBS HAS_VTK)
   
 write_basic_package_version_file(
   ${CMAKE_CURRENT_BINARY_DIR}/thermavipConfigVersion.cmake
@@ -171,4 +262,7 @@ install(FILES ${CMAKE_CURRENT_BINARY_DIR}/thermavipConfig.cmake
 list(TRANSFORM PLUGINS_LIBS PREPEND "-l")
 configure_file(thermavip.pc.in thermavip.pc @ONLY)
 install(FILES ${CMAKE_BINARY_DIR}/thermavip.pc DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/pkgconfig)
+
+
+
 

@@ -142,7 +142,6 @@ void setup_plot_area(VipPlotArea2D* area)
 
 
 #include <qsurfaceformat.h>
-#include "VipPicture.h"
 
 VipAnyData test(const VipAnyData& v)
 {
@@ -178,7 +177,6 @@ int main(int argc, char** argv)
 
 
 	VipPlotWidget2D w; 
-	w.setViewport(new VipOpenGLWidget());
 
 	VipPlotArea2D* area = w.area();
 	

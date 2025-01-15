@@ -15,7 +15,6 @@
 #include "VipColorMap.h"
 #include "VipSliderGrip.h"
 #include "VipAxisColorMap.h"
-#include "VipPicture.h"
 
 /// @brief Generate a cosinus curve of at most 500 points with X values being in seconds
 class CurveStreaming : public QThread
@@ -196,7 +195,7 @@ int main(int argc, char** argv)
 	
 
 	VipMultiGraphicsView w; 
-	//w.setViewport(new VipOpenGLWidget());
+	//w.setViewport(new QPaintOpenGLWidget());
 	w.setRenderingMode(VipMultiGraphicsView::OpenGLThread);
 	VipText::setCacheTextWhenPossible(false);
 

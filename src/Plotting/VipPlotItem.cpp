@@ -1,7 +1,7 @@
 /**
  * BSD 3-Clause License
  *
- * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Leo Dubus, Erwan Grelier
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -734,7 +734,7 @@ void VipPlotItem::setEventAccepted(bool accepted)
 }
 
 VipPlotItem::VipPlotItem(const VipText& title)
-  : QGraphicsObject()
+  : QOpenGLGraphicsObject()
   , VipPaintItem(this)
   , VipRenderObject(this)
   , d_data(new PrivateData())
@@ -1274,6 +1274,7 @@ void VipPlotItem::emitItemChanged(bool update_color_map, bool update_axes, bool 
 		this->markCoordinateSystemDirty();
 	if (update_style_sheet)
 		this->markStyleSheetDirty();
+	this->markItemDirty();
 	Q_EMIT itemChanged(this);
 }
 
@@ -1295,7 +1296,8 @@ void VipPlotItem::markAxesDirty()
 	if (this->testItemAttribute(VipPlotItem::AutoScale)) {
 		for (int i = 0; i < d_data->axes.size(); ++i) {
 			if (VipAbstractScale* axis = d_data->axes[i]) {
-				axis->emitScaleDivNeedUpdate();
+				if (axis->isAutoScale()) //TEST
+					axis->emitScaleDivNeedUpdate();
 			}
 		}
 	}
@@ -1527,8 +1529,15 @@ void VipPlotItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* optio
 		painter->setClipPath(d_data->clipTo->shape(), Qt::IntersectClip);
 
 	d_data->fpsCounter++;
+	
+	if (!computingShape()) {
+		if (drawThroughCache(painter, option, widget))
+			return;
+	}
+
 	painter->setRenderHints(renderHints());
 	painter->setCompositionMode(compositionMode());
+
 	if (isSelected() && !computingShape())
 		this->drawSelected(painter, sceneMap());
 	else
@@ -1537,12 +1546,10 @@ void VipPlotItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* optio
 	// draw the additional texts
 	if (d_data->drawText) {
 		QRectF rect = boundingRect();
-		// sceneMap()->invTransformRect(boundingRect());
 		for (QMap<int, ItemText>::const_iterator it = d_data->texts.begin(); it != d_data->texts.end(); ++it) {
 			if (!it.value().text.isEmpty()) {
 				VipText t = it.value().text;
 				t.setText(this->formatText(t.text(), QPointF(0, 0)));
-				// VipPainter::drawText(painter, sceneMap(), t, 0, it.value().position, it.value().alignment, rect.left(), rect.right(), rect.top(), rect.bottom());
 				VipPainter::drawText(painter, t, QTransform(), QPointF(), 0, it.value().position, it.value().alignment, rect);
 			}
 		}
@@ -1567,7 +1574,10 @@ QRectF VipPlotItem::boundingRect() const
 		const QPointF p2 = sceneMap()->transform(inters[0].maxValue(), inters[1].maxValue());
 		const_cast<QRectF&>(d_data->boundingRect) = (QRectF(p1, p2).normalized() & clip).adjusted(0, 0, 1, 1);
 
-		if (d_data->boundingRect == QRectF(0, 0, 1, 1)) {
+		if (vipIsNan(p1.x()) || vipIsNan(p1.y()) || vipIsNan(p2.x()) || vipIsNan(p2.y())) {
+			d_data->boundingRect = QRectF();
+		}
+		else if (d_data->boundingRect == QRectF(0, 0, 1, 1)) {
 			// The installed QGraphicsEffect create an internal pixmap of the size of the item's bounding rect.
 			// So clip the bounding rect with the axes clip path (or the parent bounding rect) to avoid creating a gigantic pixmap.
 
@@ -2296,6 +2306,7 @@ void VipPlotItem::update()
 {
 	if (!d_data->updateScheduled) {
 		d_data->updateScheduled = 1;
+		this->markItemDirty();
 		if (VipAbstractPlotArea* a = area()) {
 			a->markNeedUpdate();
 			if (cacheMode() != NoCache)

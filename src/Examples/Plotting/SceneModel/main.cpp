@@ -9,7 +9,6 @@
 #include "VipSymbol.h"
 #include "VipShapeDevice.h"
 #include "VipToolTip.h"
-#include "VipPicture.h"
 
 /// @brief Create a star polygon
 QPolygonF createStar(const QPointF & center, double width)
@@ -174,13 +173,24 @@ QString darkPlotStyleSheet()
 	return st;
 }
 
+
+#include <qsurface.h>
+#include <qdir.h>
+
 int main(int argc, char** argv)
 {
+	qputenv("QT_PLUGIN_PATH", QDir::currentPath().toLatin1());
+	QCoreApplication::setAttribute(Qt::AA_UseDesktopOpenGL);
+	QSurfaceFormat format;
+	format.setSamples(10);
+	format.setSwapInterval(0);
+	QSurfaceFormat::setDefaultFormat(format);
+
 	QApplication app(argc, argv);
 
 	// grid of 2 horizontal plot areas
 	VipMultiGraphicsView w;
-	//w.setViewport(new VipOpenGLWidget());
+	w.setRenderingMode(VipBaseGraphicsView::OpenGLThread);
 
 	w.setStyleSheet(darkStyleSheet());
 	w.widget()->setStyleSheet(darkPlotStyleSheet());
@@ -188,6 +198,7 @@ int main(int argc, char** argv)
 	QGraphicsLinearLayout* lay = new QGraphicsLinearLayout(Qt::Horizontal);
 	w.widget()->setLayout(lay);
 
+	GenSceneModel* gen = nullptr;
 	{
 		// create plot area that will contain the dynamic scene model
 		VipPlotArea2D* area = new VipPlotArea2D();
@@ -241,7 +252,7 @@ int main(int argc, char** argv)
 		lay->addItem(area);
 
 		// launch thread
-		GenSceneModel* gen = new GenSceneModel(plot);
+		gen = new GenSceneModel(plot);
 		gen->start();
 	}
 	{
@@ -305,5 +316,8 @@ int main(int argc, char** argv)
 
 	w.show();
 
-	return app.exec();
+	int ret = app.exec();
+
+	delete gen;
+	return ret;
 }

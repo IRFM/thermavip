@@ -1,7 +1,7 @@
 /**
  * BSD 3-Clause License
  *
- * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Leo Dubus, Erwan Grelier
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -1075,8 +1075,9 @@ void VipDragWidget::setFocusWidget()
 		}
 	}
 
-	if (this->parentMultiDragWidget()->VipBaseDragWidget::d_data->destroy)
-		return;
+	if (VipMultiDragWidget* w = this->parentMultiDragWidget())
+		if (w->VipBaseDragWidget::d_data->destroy)
+			return;
 
 	if (property("has_focus").toBool())
 		return;
@@ -1332,7 +1333,11 @@ void VipMinimizeWidget::setExtent(int ext)
 	d_data->maxExtent = ext;
 }
 
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
 void VipMinimizeWidget::enterEvent(QEvent*)
+#else
+void VipMinimizeWidget::enterEvent(QEnterEvent*)
+#endif
 {
 	d_data->inside = true;
 	update();
@@ -1354,13 +1359,12 @@ void VipMinimizeWidget::endRender(VipRenderState&)
 
 bool VipMinimizeWidget::event(QEvent* evt)
 {
-	if (evt->type() == QEvent::ToolTip) {
-	}
 	return QFrame::event(evt);
 }
 
 void VipMinimizeWidget::mouseMoveEvent(QMouseEvent*)
 {
+	d_data->inside = true;
 	update();
 }
 
@@ -1392,6 +1396,9 @@ void VipMinimizeWidget::mousePressEvent(QMouseEvent*)
 
 void VipMinimizeWidget::paintEvent(QPaintEvent* evt)
 {
+	if (!d_data->dragWidget)
+		return;
+
 	QFrame::paintEvent(evt);
 	VipText text;
 
@@ -1457,8 +1464,25 @@ void VipMinimizeWidget::paintEvent(QPaintEvent* evt)
 
 bool VipMinimizeWidget::eventFilter(QObject*, QEvent* evt)
 {
-	if (evt->type() == QEvent::Resize) {
-		reorganize();
+	switch (evt->type()) {
+		case QEvent::MouseButtonPress: {
+			this->mousePressEvent(static_cast<QMouseEvent*>(evt));
+			return true;
+		}
+		case QEvent::MouseMove:
+			d_data->inside = true;
+			break;
+		case QEvent::Enter:
+			d_data->inside = true;
+			break;
+		case QEvent::Leave:
+			d_data->inside = false;
+			break;
+		case QEvent::Resize:
+			reorganize();
+			break;
+		default:
+			break;
 	}
 	return false;
 }
@@ -2883,6 +2907,9 @@ void VipMultiDragWidget::closeEvent(QCloseEvent* evt)
 	VipBaseDragWidget::closeEvent(evt);
 }
 
+
+
+
 VipViewportArea::VipViewportArea()
   : QWidget()
   , VipRenderObject(this)
@@ -2976,25 +3003,26 @@ void VipViewportArea::dropEvent(QDropEvent* evt)
 }
 
 VipDragWidgetArea::VipDragWidgetArea(QWidget* parent)
-  : QScrollArea(parent)
+  : QWidget(parent)
 {
-	setWidget(new VipViewportArea());
-	connect(VipDragWidgetHandler::find(QScrollArea::widget()), SIGNAL(geometryChanged(VipMultiDragWidget*)), this, SLOT(recomputeSize()), Qt::QueuedConnection);
-	connect(VipDragWidgetHandler::find(QScrollArea::widget()), SIGNAL(moving(VipMultiDragWidget*)), this, SLOT(moving(VipMultiDragWidget*)), Qt::QueuedConnection);
-
-	// connect(horizontalScrollBar(),SIGNAL(valueChanged(int)),VipDragWidgetHandler::find(QScrollArea::widget()),SLOT(reorganizeMinimizedChildren()));
-	// connect(verticalScrollBar(),SIGNAL(valueChanged(int)),VipDragWidgetHandler::find(QScrollArea::widget()),SLOT(reorganizeMinimizedChildren()));
+	/* setWidget*/(d_area = new VipViewportArea());
+	d_area->setParent(this);
+	d_area->move(0, 0);
+	d_area->resize(this->size());
+	
+	connect(VipDragWidgetHandler::find(widget()), SIGNAL(geometryChanged(VipMultiDragWidget*)), this, SLOT(recomputeSize()), Qt::QueuedConnection);
+	connect(VipDragWidgetHandler::find(widget()), SIGNAL(moving(VipMultiDragWidget*)), this, SLOT(moving(VipMultiDragWidget*)), Qt::QueuedConnection);
 
 	// disable scroll bars
-	setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-	setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+	//setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+	//setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
 
-	QScrollArea::widget()->installEventFilter(this);
+	d_area->installEventFilter(this);
 }
 
 VipDragWidgetArea::~VipDragWidgetArea()
 {
-	QScrollArea::widget()->removeEventFilter(this);
+	d_area->removeEventFilter(this);
 }
 
 bool VipDragWidgetArea::eventFilter(QObject*, QEvent* event)
@@ -3015,8 +3043,10 @@ bool VipDragWidgetArea::eventFilter(QObject*, QEvent* event)
 
 void VipDragWidgetArea::resizeEvent(QResizeEvent* evt)
 {
+	d_area->move(0, 0);
+	d_area->resize(this->size());
 	recomputeSize();
-	QScrollArea::resizeEvent(evt);
+	//QScrollArea::resizeEvent(evt);
 }
 
 void VipDragWidgetArea::keyPressEvent(QKeyEvent* evt)
@@ -3038,7 +3068,7 @@ VipDragWidgetArea* VipDragWidgetArea::fromChildWidget(QWidget* child)
 void VipDragWidgetArea::recomputeSize()
 {
 	// compute the union of all geometry
-	VipDragWidgetHandler* handler = VipDragWidgetHandler::find(QScrollArea::widget());
+	VipDragWidgetHandler* handler = VipDragWidgetHandler::find(d_area);
 	QList<VipMultiDragWidget*> mdrags = handler->topLevelMultiDragWidgets();
 	QRect rect;
 	QList<VipMultiDragWidget*> maximized;
@@ -3065,11 +3095,9 @@ void VipDragWidgetArea::recomputeSize()
 	}
 
 	if (maximized.size()) {
-		// this->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-		// this->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-		// QScrollArea::widget()->resize(size());
-		QScrollArea::widget()->move(0, 0);
-		QScrollArea::widget()->resize(size());
+		
+		d_area->move(0, 0);
+		d_area->resize(size());
 		// TODO: also resize the maximized VipMultiDragWidget
 		for (int i = 0; i < maximized.size(); ++i) {
 			maximized[i]->move(0, 0);
@@ -3077,7 +3105,7 @@ void VipDragWidgetArea::recomputeSize()
 		}
 	}
 	else {
-		if (width() >= rect.right())
+		/* if (width() >= rect.right())
 			this->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
 		else
 			this->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
@@ -3086,16 +3114,16 @@ void VipDragWidgetArea::recomputeSize()
 			this->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
 		else
 			this->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
-
+		*/
 		// compute the preferred size
 		QSize preferred(qMax(rect.right(), width()), qMax(rect.bottom(), height()));
-		QScrollArea::widget()->resize(preferred);
+		d_area->resize(preferred);
 	}
 }
 
 void VipDragWidgetArea::dropMimeData(const QMimeData* mime, const QPoint& pos)
 {
-	static_cast<VipViewportArea*>(QScrollArea::widget())->dropMimeData(mime, pos);
+	this->widget()->dropMimeData(mime, pos);
 }
 
 void VipDragWidgetArea::moving(VipMultiDragWidget* widget)
@@ -3106,7 +3134,7 @@ void VipDragWidgetArea::moving(VipMultiDragWidget* widget)
 	QPoint pos = this->mapFromGlobal(QCursor::pos());
 	int vipDistance = 50;
 
-	if (pos.x() < vipDistance) {
+	/* if (pos.x() < vipDistance) {
 		// left border
 		this->horizontalScrollBar()->setValue(this->horizontalScrollBar()->value() - 10);
 	}
@@ -3122,7 +3150,7 @@ void VipDragWidgetArea::moving(VipMultiDragWidget* widget)
 	else if (pos.y() > height() - vipDistance) {
 		// bottom border
 		this->verticalScrollBar()->setValue(this->verticalScrollBar()->value() + 10);
-	}
+	}*/
 }
 
 VipFunctionDispatcher<2>& vipAcceptDragMimeData()

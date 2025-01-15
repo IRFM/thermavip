@@ -13,7 +13,6 @@
 #include "VipPolarAxis.h"
 #include "VipPlotHistogram.h"
 #include "VipPlotSpectrogram.h"
-#include "VipPicture.h"
 
 
 /// @brief Generate a gray theme stylesheet

@@ -1,7 +1,7 @@
 /**
  * BSD 3-Clause License
  *
- * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Leo Dubus, Erwan Grelier
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -113,7 +113,7 @@ public:
 	virtual void setExponent(int);
 	int exponent() const;
 
-	/// @brief If exponent is not null, returns a HTML string like '*10²' (for exponent==2).
+	/// @brief If exponent is not null, returns a HTML string like '*10^2' (for exponent==2).
 	QString exponentText() const;
 
 	/// @brief Let the VipValueToText automatically select the best exponent.

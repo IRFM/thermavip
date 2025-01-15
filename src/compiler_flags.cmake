@@ -16,7 +16,6 @@ set(QT_LIBS Qt5::Core
     Qt5::Xml
 	Qt5::Sql
 	Qt5::Svg
-	Qt5::Concurrent
 	)
 else()
 set(QT_LIBS Qt::Core
@@ -28,19 +27,11 @@ set(QT_LIBS Qt::Core
     Qt::Xml
 	Qt::Sql
 	Qt::Svg
-	Qt::Concurrent
 	)
 endif()
 target_link_libraries(${TARGET_PROJECT} PRIVATE ${QT_LIBS})
 
 
-# Add WebEnging if possible
-
-if(${QT_VERSION_MAJOR} LESS 6)
-set(WEB_ENGINE Qt${QT_VERSION_MAJOR}WebEngine)
-else()
-set(WEB_ENGINE Qt${QT_VERSION_MAJOR}WebEngineCore)
-endif()
 
 if(${QT_VERSION_MAJOR} LESS 6)
 else()
@@ -50,27 +41,37 @@ target_link_libraries(${TARGET_PROJECT} PRIVATE Qt6::Core5Compat)
 target_link_libraries(${TARGET_PROJECT} PRIVATE Qt6::OpenGLWidgets)
 endif()
 
-#find_package(Qt${QT_VERSION_MAJOR}WebEngine REQUIRED)
-find_package(${WEB_ENGINE} )
-find_package(Qt${QT_VERSION_MAJOR}WebEngineWidgets )
-if (${WEB_ENGINE}_FOUND)
-	if (${WEB_ENGINE}_VERSION VERSION_LESS 5.15.0)
-		message(STATUS "Too old web engine version!")
-	else()
-		message(STATUS "Using web engine for ${TARGET_PROJECT}")
-		find_package(Qt${QT_VERSION_MAJOR}WebEngineWidgets REQUIRED)
+if(WITH_WEBENGINE)
+	if((NOT ${TARGET_PROJECT} STREQUAL "VipLogging") AND (NOT ${TARGET_PROJECT} STREQUAL "VipDataType") AND (NOT ${TARGET_PROJECT} STREQUAL "VipCore") AND (NOT ${TARGET_PROJECT} STREQUAL "VipPlotting"))
+		# Add WebEnging if possible
 		if(${QT_VERSION_MAJOR} LESS 6)
-		target_link_libraries(${TARGET_PROJECT} PRIVATE
-		Qt5::WebEngine
-		Qt5::WebEngineWidgets
-		)
+		set(WEB_ENGINE Qt${QT_VERSION_MAJOR}WebEngine)
 		else()
-		target_link_libraries(${TARGET_PROJECT} PRIVATE
-		Qt::WebEngineCore
-		Qt::WebEngineWidgets
-		)
+		set(WEB_ENGINE Qt${QT_VERSION_MAJOR}WebEngineCore)
 		endif()
-		target_compile_definitions(${TARGET_PROJECT} PRIVATE __VIP_USE_WEB_ENGINE)
+
+		find_package(${WEB_ENGINE} )
+		find_package(Qt${QT_VERSION_MAJOR}WebEngineWidgets )
+		if (${WEB_ENGINE}_FOUND)
+			if (${WEB_ENGINE}_VERSION VERSION_LESS 5.15.0)
+				message(STATUS "Too old web engine version!")
+			else()
+				message(STATUS "Using web engine for ${TARGET_PROJECT}")
+				find_package(Qt${QT_VERSION_MAJOR}WebEngineWidgets REQUIRED)
+				if(${QT_VERSION_MAJOR} LESS 6)
+				target_link_libraries(${TARGET_PROJECT} PRIVATE
+				Qt5::WebEngine
+				Qt5::WebEngineWidgets
+				)
+				else()
+				target_link_libraries(${TARGET_PROJECT} PRIVATE
+				Qt::WebEngineCore
+				Qt::WebEngineWidgets
+				)
+				endif()
+				target_compile_definitions(${TARGET_PROJECT} PRIVATE __VIP_USE_WEB_ENGINE)
+			endif()
+		endif()
 	endif()
 endif()
 
@@ -82,10 +83,10 @@ if(WITH_VTK)
 	target_link_libraries(${TARGET_PROJECT} PRIVATE ${VTK_LIBRARIES})
 	target_compile_definitions(${TARGET_PROJECT} PUBLIC -DVIP_WITH_VTK)
 	
-	if(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
+	#if(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
 		# for msvc, avoid using release VTK with debug STL
-		target_compile_definitions(${TARGET_PROJECT} PUBLIC -D_ITERATOR_DEBUG_LEVEL=0)
-	endif()
+		#target_compile_definitions(${TARGET_PROJECT} PUBLIC -D_ITERATOR_DEBUG_LEVEL=0)
+	#endif()
 endif()
 
 

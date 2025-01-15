@@ -7,7 +7,6 @@
 #include "VipPlotCurve.h"
 #include "VipPolarAxis.h"
 #include "VipSliderGrip.h"
-#include "VipPicture.h"
 #include "VipStyleSheet.h"
 
 #include <iostream>
@@ -28,7 +27,7 @@ int main(int argc, char** argv)
 	QApplication app(argc, argv);
 
 	VipPlotPolarWidget2D w;
-	//w.setViewport(new VipOpenGLWidget());
+	//w.setViewport(new QPaintOpenGLWidget());
 
 	VipPlotPolarArea2D* area = w.area();
 	area->setInnerMargin(20);

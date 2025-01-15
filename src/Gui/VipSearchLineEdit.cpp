@@ -1,7 +1,7 @@
 /**
  * BSD 3-Clause License
  *
- * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Leo Dubus, Erwan Grelier
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -558,12 +558,12 @@ void VipSearchLineEdit::textEntered()
 		formats = VipDeviceOpenHelper::possibleFormats(user_input);
 
 	// Add formats from history
-	const auto& history = VipDeviceOpenHelper::history();
+	/* const auto& history = VipDeviceOpenHelper::history();
 	QStringList entries;
 	for (const auto& s : history) {
 		if (s.format.contains(user_input, Qt::CaseInsensitive) && !formats.contains(s.format,Qt::CaseSensitive))
 			formats.push_back(s.format);
-	}
+	}*/
 
 	if (formats.isEmpty())
 		d_data->history->clear();

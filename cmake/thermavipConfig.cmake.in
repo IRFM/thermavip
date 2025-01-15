@@ -1,5 +1,6 @@
 
 @PACKAGE_INIT@
+include(${CMAKE_CURRENT_LIST_DIR}/thermavip.cmake)
 
 set(THERMAVIP_FOUND true)
 set(THERMAVIP_INCLUDE_DIRS ${PACKAGE_PREFIX_DIR}/include ${PACKAGE_PREFIX_DIR}/include/VipLogging ${PACKAGE_PREFIX_DIR}/include/VipDataType ${PACKAGE_PREFIX_DIR}/include/VipPlotting ${PACKAGE_PREFIX_DIR}/include/VipCore ${PACKAGE_PREFIX_DIR}/include/VipGui ${PACKAGE_PREFIX_DIR}/include/VipAnnotation)
@@ -19,20 +20,27 @@ ENDIF()
 
 set_and_check(THERMAVIP_APPLICATION_DIR ${PACKAGE_PREFIX_DIR}/thermavip)
 set_and_check(THERMAVIP_ICON_DIR ${PACKAGE_PREFIX_DIR}/icons)
+set_and_check(THERMAVIP_SKIN_DIR ${PACKAGE_PREFIX_DIR}/skins)
 set_and_check(THERMAVIP_PLUGIN_DIR ${PACKAGE_PREFIX_DIR}/thermavip/VipPlugins)
 
-set(THERMAVIP_LIBRARIES VipLogging VipDataType VipPlotting VipCore VipGui VipAnnotation @PLUGINS_LIBS@)
-
+set(THERMAVIP_LIBRARIES_NO_GUI VipLogging VipDataType VipCore VipPlotting)
+set(THERMAVIP_LIBRARIES ${THERMAVIP_LIBRARIES_NO_GUI} VipGui VipAnnotation )
 
 # Setup Qt
 find_package(QT NAMES Qt5 Qt6 REQUIRED )
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets OpenGL Core Gui Xml Network Sql PrintSupport Svg)
+if(${QT_VERSION_MAJOR} LESS 6)
+else()
+find_package(Qt6 REQUIRED COMPONENTS Core5Compat)
+find_package(Qt6 REQUIRED COMPONENTS OpenGLWidgets)
+endif()
 
 set(QT_PREFIX Qt${QT_VERSION_MAJOR})
 set(CMAKE_AUTOMOC ON)
 
+
 if(${QT_VERSION_MAJOR} LESS 6)
-set(THERMAVIP_QT_LIBRARIES Qt5::Core
+set(THERMAVIP_QT_LIBRARIES_NO_GUI Qt5::Core
     Qt5::Gui
     Qt5::Network
 	Qt5::Widgets
@@ -41,19 +49,43 @@ set(THERMAVIP_QT_LIBRARIES Qt5::Core
     Qt5::Xml
 	Qt5::Sql
 	Qt5::Svg
+	@QT_ADDITIONAL_LIBS@
 	)
 else()
-set(THERMAVIP_QT_LIBRARIES Qt::Core
+set(THERMAVIP_QT_LIBRARIES_NO_GUI Qt::Core
     Qt::Gui
     Qt::Network
 	Qt::Widgets
 	Qt::OpenGL
-	Qt::PrintSupport
+	Qt::Core5Compat
+	Qt::OpenGL
+	Qt::OpenGLWidgets
     Qt::Xml
 	Qt::Sql
 	Qt::Svg
+	@QT_ADDITIONAL_LIBS@
 	)
 endif()
 
+set(THERMAVIP_QT_LIBRARIES "${THERMAVIP_QT_LIBRARIES_NO_GUI} @QT_WEBENGINE_LIBS@")
+
+
+#VTK
+if(@HAS_VTK@)
+	find_package(VTK REQUIRED)
+	set(THERMAVIP_VTK_LIBRARIES ${VTK_LIBRARIES})
+	include_directories(${VTK_INCLUDE_DIRS})
+
+	if(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
+		# for msvc, avoid using release VTK with debug STL
+		add_compile_definitions(VIP_WITH_VTK)
+	endif()
+else()
+	set(THERMAVIP_VTK_LIBRARIES "")
+endif()
+
+if("@QT_WEBENGINE_LIBS@")
+	add_compile_definitions(__VIP_USE_WEB_ENGINE)
+endif()
 
 check_required_components(thermavip)

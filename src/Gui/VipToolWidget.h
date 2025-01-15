@@ -1,7 +1,7 @@
 /**
  * BSD 3-Clause License
  *
- * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Leo Dubus, Erwan Grelier
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -102,7 +102,11 @@ private Q_SLOTS:
 
 protected:
 	virtual void paintEvent(QPaintEvent* evt);
-	virtual void enterEvent(QEvent* event);
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
+	virtual void enterEvent(QEvent*);
+#else
+	virtual void enterEvent(QEnterEvent*);
+#endif
 	virtual void leaveEvent(QEvent* event);
 	virtual void resizeEvent(QResizeEvent*);
 
@@ -270,7 +274,11 @@ private Q_SLOTS:
 
 protected:
 	void setStyleProperty(const char* name, bool value);
-	virtual void enterEvent(QEvent* event);
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
+	virtual void enterEvent(QEvent*);
+#else
+	virtual void enterEvent(QEnterEvent*);
+#endif
 	virtual void leaveEvent(QEvent* event);
 	virtual void closeEvent(QCloseEvent* evt);
 	// virtual void paintEvent(QPaintEvent * evt);

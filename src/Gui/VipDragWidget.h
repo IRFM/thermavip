@@ -1,7 +1,7 @@
 /**
  * BSD 3-Clause License
  *
- * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Leo Dubus, Erwan Grelier
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -405,7 +405,11 @@ public:
 	virtual void mousePressEvent(QMouseEvent* evt);
 	virtual void mouseMoveEvent(QMouseEvent* evt);
 	virtual void paintEvent(QPaintEvent*);
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
 	virtual void enterEvent(QEvent*);
+#else
+	virtual void enterEvent(QEnterEvent*);
+#endif
 	virtual void leaveEvent(QEvent*);
 	virtual bool event(QEvent*);
 
@@ -763,10 +767,11 @@ protected:
 
 /// VipMultiDragWidget instances can have any kind of parent widget, but we provide the VipDragWidgetArea class in order to have an equivalent to QMdiArea.
 /// In this case the parent widget of the VipMultiDragWidget should be the one returned by VipDragWidgetArea::widget() function.
-class VIP_GUI_EXPORT VipDragWidgetArea : public QScrollArea
+class VIP_GUI_EXPORT VipDragWidgetArea : public QWidget//QScrollArea
 {
 	Q_OBJECT
 	friend class VipViewportArea;
+	VipViewportArea* d_area;
 
 public:
 	VipDragWidgetArea(QWidget* parent = nullptr);
@@ -774,8 +779,8 @@ public:
 
 	virtual VipMultiDragWidget* createMultiDragWidget() const { return new VipMultiDragWidget(); }
 
-	VipViewportArea* widget() const { return qobject_cast<VipViewportArea*>(QScrollArea::widget()); }
-
+	VipViewportArea* widget() const { return d_area; }
+	
 	void dropMimeData(const QMimeData* mime, const QPoint& pos);
 
 	static VipDragWidgetArea* fromChildWidget(QWidget* widget);

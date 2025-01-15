@@ -1,7 +1,7 @@
 /**
  * BSD 3-Clause License
  *
- * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Leo Dubus, Erwan Grelier
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -382,7 +382,11 @@ void VipVTKWidget::mouseMoveEvent(QMouseEvent* e)
 
 /*! handle enter event
  */
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
 void VipVTKWidget::enterEvent(QEvent* e)
+#else
+void VipVTKWidget::enterEvent(QEnterEvent* e)
+#endif
 {
 	if (d_data->RenWin) {
 		d_data->IrenAdapter->ProcessEvent(e, d_data->RenWin->GetInteractor());

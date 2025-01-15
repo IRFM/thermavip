@@ -9,11 +9,11 @@ Thermavip v5.0.0 - 10/12/2024
 (Gui) Added shortcut (H) on video player to toggle color scale flatening
 (Gui) Corrected crash when saving raw signals using he recording tool widget
 (Gui) Added a top search line edit accessible through Ctrl+F. Possibility to open files, signals, videos, pChrono, Discharge summary and much more.
-
-(Gui, Core) Added VTK support to the DSK to open and visualize 3D models
+(Gui) Added support for a new opengl based video/plot rendering
+(Gui, Core) Added VTK support to the SDK to open and visualize 3D models
 
 (Annotation) Added possibility to cancel SQL queries
-(Annotation) Added option to define minimum thermal event siz
+(Annotation) Added option to define minimum thermal event size
 (Annotation) Added SQL connection options and possibility to reconnect to the event DB
 
 (Python) Switched to standard Python installation instead of miniconda

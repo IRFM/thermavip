@@ -1,7 +1,7 @@
 /**
  * BSD 3-Clause License
  *
- * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Leo Dubus, Erwan Grelier
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -1051,7 +1051,7 @@ public:
 	{
 		Raster,	     // Use a QWidget viewport
 		OpenGL,	     // Use a QOpenGLWidget viewport
-		OpenGLThread // Use a VipOpenGLWidget
+		OpenGLThread // Use a QThreadOpenGLWidget
 	};
 	VipBaseGraphicsView(QWidget* parent = nullptr);
 	VipBaseGraphicsView(QGraphicsScene* scene, QWidget* parent = nullptr);
@@ -1065,7 +1065,7 @@ public:
 	/// The mode could be one of:
 	/// -	Raster: use a QWidget viewport,
 	/// -	OpenGL: use a QOpenGLWidget viewport,
-	/// -	OpenGLThread: use a VipOpenGLWidget viewport (fastest rendering)
+	/// -	OpenGLThread: use a QThreadOpenGLWidget viewport (fastest rendering)
 	///
 	/// Note that for opengl rendering, the scales cache mode is set to QGraphicsItem::DeviceCoordinateCache,
 	/// if VIP_CUSTOM_ITEM_CACHING is defined. Otherwise (default), the user is responsible of the items caching strategy.

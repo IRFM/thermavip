@@ -1,7 +1,7 @@
 /**
  * BSD 3-Clause License
  *
- * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Leo Dubus, Erwan Grelier
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -47,6 +47,7 @@
 #include "VipRenderObject.h"
 #include "VipStyleSheet.h"
 #include "VipText.h"
+#include "QThreadOpenGLWidget.h"
 
 /// \addtogroup Plotting
 /// @{
@@ -333,7 +334,7 @@ Q_DECLARE_METATYPE(VipPaintItem*)
 /// -	'text-border-margin': if the item draw text, defines the text box border margin
 ///
 class VIP_PLOTTING_EXPORT VipPlotItem
-  : public QGraphicsObject
+  : public QOpenGLGraphicsObject
   , public VipPaintItem
   , public VipRenderObject
 {

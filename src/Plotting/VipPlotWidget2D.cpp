@@ -1,7 +1,7 @@
 /**
  * BSD 3-Clause License
  *
- * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Leo Dubus, Erwan Grelier
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -70,7 +70,7 @@
 #include "VipNDArray.h"
 #include "VipNDArrayImage.h"
 #include "VipPainter.h"
-#include "VipPicture.h"
+#include "QThreadOpenGLWidget.h"
 #include "VipPlotCurve.h"
 #include "VipPlotGrid.h"
 #include "VipPlotShape.h"
@@ -4091,7 +4091,7 @@ void VipBaseGraphicsView::setRenderingMode(RenderingMode mode)
 	if (mode == OpenGLThread) {
 		if (renderingMode() == OpenGLThread)
 			return;
-		setViewport(new VipOpenGLWidget());
+		setViewport(new QThreadOpenGLWidget());
 
 		// enable back item's painting
 		QList<QGraphicsItem*> items = scene()->items();
@@ -4117,13 +4117,13 @@ VipBaseGraphicsView::RenderingMode VipBaseGraphicsView::renderingMode() const
 {
 	if (qobject_cast<QOpenGLWidget*>(viewport()))
 		return OpenGL;
-	if (qobject_cast<VipOpenGLWidget*>(viewport()))
+	if (qobject_cast<QThreadOpenGLWidget*>(viewport()))
 		return OpenGLThread;
 	return Raster;
 }
 bool VipBaseGraphicsView::isOpenGLBasedRendering() const
 {
-	return qobject_cast<QOpenGLWidget*>(viewport()) != nullptr || qobject_cast<VipOpenGLWidget*>(viewport()) != nullptr;
+	return qobject_cast<QOpenGLWidget*>(viewport()) != nullptr || qobject_cast<QThreadOpenGLWidget*>(viewport()) != nullptr;
 }
 
 void VipBaseGraphicsView::setUseInternalViewport(bool enable)

@@ -9,7 +9,6 @@
 #include "VipPlotQuiver.h"
 #include "VipToolTip.h"
 #include "VipSleep.h"
-#include "VipPicture.h"
 #include "VipLegendItem.h"
 
 
@@ -87,19 +86,18 @@ protected:
 
 int main(int argc, char** argv)
 {
-	//qputenv("QT_PLUGIN_PATH", QDir::currentPath().toLatin1());
+	qputenv("QT_PLUGIN_PATH", QDir::currentPath().toLatin1());
 
 	QCoreApplication::setAttribute(Qt::AA_UseDesktopOpenGL);
 	QSurfaceFormat format;
-	format.setSamples(2);
+	format.setSamples(10);
 	format.setSwapInterval(0);
 	QSurfaceFormat::setDefaultFormat(format);
 
 	QApplication app(argc, argv);
 
 	VipPlotWidget2D w;
-	//w.setRenderingMode(VipPlotWidget2D::OpenGLThread);
-
+	
 	
 	VipText::setCacheTextWhenPossible(false);
 	
