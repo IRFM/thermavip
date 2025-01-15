@@ -101,7 +101,7 @@ class DragRubberBand : public QWidget
 			}
 		}
 	};
-	Widget* widget;
+	Widget* widget;//TEST
 
 public:
 	QString text;
@@ -728,10 +728,6 @@ CustomizeVideoPlayer::CustomizeVideoPlayer(VipVideoPlayer* player)
 
 	d_data->area = new DragRubberBand(vipGetMainWindow());
 	d_data->player->plotWidget2D()->viewport()->installEventFilter(this);
-
-	// TEST: comment
-	// player->plotWidget2D()->setBackgroundColor(defaultPlayerBackground());
-
 	d_data->closeBar = new CloseToolBar(d_data->player);
 	connect(d_data->closeBar->close, SIGNAL(triggered(bool)), this, SLOT(closePlayer()));
 	connect(d_data->closeBar->maximize, SIGNAL(triggered(bool)), this, SLOT(maximizePlayer()));
@@ -1809,15 +1805,18 @@ bool CustomizePlotPlayer::eventFilter(QObject* w, QEvent* evt)
 		}
 		else {
 			event->setAccepted(false);
+			printf("no side hide\n");//TEST
 			d_data->area->hide();
 		}
 		return false;
 	}
 	else if (evt->type() == QEvent::DragLeave) {
 		// if(!d_data->area->geometry().contains(QCursor::pos()) || !d_data->area->isVisible())
+		printf("drag leave hide\n"); // TEST
 		d_data->area->hide();
 	}
 	else if (evt->type() == QEvent::Drop) {
+		printf("drop hide\n"); // TEST
 		d_data->area->hide();
 		QDropEvent* event = static_cast<QDropEvent*>(evt);
 

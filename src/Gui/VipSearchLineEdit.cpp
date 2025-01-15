@@ -361,7 +361,6 @@ public:
 		if (!this->currentItem() && count())
 			setCurrentItem(item(0));
 
-		printf("item: %i\n", (int)(bool)this->currentItem());//TEST
 		if (this->currentItem()) {
 			QString previous = edit->text();
 			QString text = this->currentItem()->text();
@@ -381,7 +380,6 @@ public:
 				if (!helper)
 					return false;
 				if (helper->directOpen(text) || previous == text) {
-					printf("direct: % i %i %s\n", (int)helper->directOpen(text), (int)(previous == text), previous.toLatin1().data());//TEST
 					return helper->open(helper->validPathFromFormat(text));
 				}
 			}
