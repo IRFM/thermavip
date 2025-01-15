@@ -58,7 +58,11 @@ static bool toByteArray(const QVariant& v, QByteArray& array)
 	else {
 		QByteArray res;
 		QDataStream stream(&res, QIODevice::WriteOnly);
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
+		if (!QMetaType::save(stream, v.userType(), v.data()))
+#else
 		if (!QMetaType(v.userType()).save(stream, v.data())) // stream << v;
+#endif
 			return false;
 		array = res.toBase64();
 		return array.size() > 0;
@@ -78,8 +82,11 @@ static bool fromByteArray(const QByteArray& array, QVariant& v)
 	}
 	else {
 		QDataStream stream(QByteArray::fromBase64(array));
-		// v.clear();
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
+		QMetaType::load(stream, v.userType(), v.data());
+#else
 		QMetaType(v.userType()).load(stream, v.data());
+#endif
 		return v.isValid();
 	}
 }
