@@ -254,7 +254,7 @@ namespace detail
 #endif
 			i.toBack();
 			while (i.hasPrevious()) {
-				i.previous()
+				i.previous();
 #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
 				if (vipFromVoid(type, nullptr).canConvert(QMetaType(i.value())))
 #else
