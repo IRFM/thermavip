@@ -371,7 +371,7 @@ public:
 protected:
 	virtual void closeEvent(QCloseEvent* evt);
 	virtual void showEvent(QShowEvent*);
-
+	virtual bool eventFilter(QObject * obj, QEvent * evt);
 private Q_SLOTS:
 	void addProgress(QObjectPointer p);
 	void removeProgress(QObjectPointer p);

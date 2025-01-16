@@ -764,6 +764,9 @@ void VipToolWidget::showEvent(QShowEvent*)
 		}
 	}
 	d_data->firstShow = false;
+
+	if(isFloating())
+		raise();
 }
 
 void VipToolWidget::hideEvent(QHideEvent*)
@@ -825,7 +828,6 @@ void VipToolWidget::internalResetSize()
 		QRect this_rect(this->mapToGlobal(QPoint(0, 0)), w->sizeHint() + QSize(25, 25));
 		this_rect = this_rect & d_rect;
 #endif
-		printf("reset size %i %i %i %i\n", this_rect.left(), this_rect.top(), this_rect.width(), this_rect.height());
 		if (isFloating()) {
 			if (!keepFloatingUserSize()) {
 				w->resize(w->sizeHint());
@@ -1036,8 +1038,6 @@ void VipToolWidgetPlayer::focusWidgetChanged(VipDragWidget* w)
 		}
 	}
 
-	// TEST resetSize()
-	// QMetaObject::invokeMethod(this,"resetSize",Qt::QueuedConnection);
 	resetSize();
 }
 
@@ -1254,6 +1254,7 @@ public:
 	QTimer modalTimer;
 	QBoxLayout* layout;
 	bool changeModality;
+	bool isModal{false}; 
 
 	ProgressWidget* find(VipProgress* p) const
 	{
@@ -1348,24 +1349,92 @@ void VipMultiProgressWidget::showEvent(QShowEvent* evt)
 	}
 
 	if (d_data->changeModality) {
-		QDockWidget::showEvent(evt);
+		//QDockWidget::showEvent(evt);
 		setFocus();
 	}
 	else
 		VipToolWidget::showEvent(evt);
 }
 
+static bool isModalWidget(QWidget * w)
+{
+	while(w){
+		if(w->windowModality() == Qt::ApplicationModal)
+			return true;
+		w = w->parentWidget();
+	} 
+	return false;
+}
+
+
+bool VipMultiProgressWidget::eventFilter(QObject * obj, QEvent * evt)
+{
+	// Simulate a (kinf of) modal widget by filtering events at application level.
+	// On used on non Windows plateform that do not necessarly support changing 
+	// widget modality several times.
+	switch(evt->type()){
+		case QEvent::MouseButtonPress:
+		case QEvent::MouseButtonRelease:
+		case QEvent::MouseButtonDblClick:
+		case QEvent::MouseMove:
+		case QEvent::KeyPress:
+		case QEvent::KeyRelease:
+		case QEvent::HoverEnter:
+		case QEvent::HoverLeave:
+		case QEvent::HoverMove:
+		case QEvent::TouchBegin:
+		case QEvent::TouchCancel:
+		case QEvent::TouchEnd:
+		case QEvent::TouchUpdate:
+		case QEvent::Wheel:
+		case QEvent::FocusIn:
+		case QEvent::Enter:
+		{
+			if(QWidget * w = qobject_cast<QWidget*>(obj)){
+				if(this->isAncestorOf(w) || isModalWidget(w) )
+					return false;
+				else
+					return true;
+			}
+			break;
+		}	
+		case QEvent::Shortcut:
+		case QEvent::ShortcutOverride:
+			return true;
+		default:
+		break;
+	}
+	return false;
+}
+
+
 void VipMultiProgressWidget::changeModality(Qt::WindowModality modality)
 {
-	this->hide();
-	d_data->changeModality = true;
-	this->setWindowModality(modality);
-	this->show();
-	d_data->changeModality = false;
+#ifdef WIN32
+	if(this->windowModality() != modality){ 
+		this->hide();
+		d_data->changeModality = true;
+		this->setWindowModality(modality);
+		this->show();
+		d_data->changeModality = false;
+	}
 
-	// TEST: comment
-	// if(modality != Qt::NonModal)
-	//	QCoreApplication::processEvents(QEventLoop::AllEvents);
+#else
+
+	bool requestModal = modality == Qt::ApplicationModal;
+	if(requestModal != d_data->isModal)
+	{
+		if(requestModal){
+			qApp->installEventFilter(this);
+			vipGetMainWindow()->installEventFilter(this);
+		} 
+		else{
+			qApp->removeEventFilter(this);
+			vipGetMainWindow()->removeEventFilter(this);
+		} 
+		d_data->isModal = requestModal;
+	}	
+#endif	
 }
 
 void VipMultiProgressWidget::updateScrollBars()
@@ -1459,17 +1528,7 @@ void VipMultiProgressWidget::removeProgress(QObjectPointer ptr)
 	updateModality();
 
 	if (d_data->progresses.size() == 0) {
-//#ifdef _WIN32
-		this->show();
 		this->hide();
-printf("hide\n");//TEST
-/* #else
-		// On some linux config, only this works properly to hide the progress tool widget (??)
-		QMetaObject::invokeMethod(this, "update", Qt::QueuedConnection);
-		QMetaObject::invokeMethod(this, "hide", Qt::QueuedConnection);
-		QMetaObject::invokeMethod(this, "update", Qt::QueuedConnection);
-		QCoreApplication::processEvents();
-#endif*/
 	}
 }
 
@@ -1552,7 +1611,6 @@ void VipMultiProgressWidget::setModal(QObjectPointer ptr, bool modal)
 							rect = QGuiApplication::primaryScreen()->availableGeometry();
 					}
 #endif
-					printf("setModal %i %i %i %i\n", rect.left(), rect.top(), rect.width(), rect.height());//TEST
 					this->move(rect.x() + rect.width() / 2 - this->width() / 2, rect.y() + rect.height() / 2 - this->height() / 2);
 					if (this->windowModality() == Qt::ApplicationModal && isFloating()) {
 						
@@ -1581,8 +1639,6 @@ void VipMultiProgressWidget::setModal(QObjectPointer ptr, bool modal)
 			}
 		}
 
-		// TEST resetSize();
-		// this->resetSize();
 	}
 }
 

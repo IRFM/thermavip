@@ -832,6 +832,8 @@ bool VipBaseDragWidget::isDestroying() const
 {
 	const VipBaseDragWidget* w = this;
 	while (w) {
+		if(!w->d_data)
+			return true;
 		if (w->d_data->destroy)
 			return true;
 		w = qobject_cast<const VipBaseDragWidget*>(w->parentWidget());

@@ -124,8 +124,11 @@ else()
 				target_compile_options(${TARGET_PROJECT} PRIVATE -std=gnu++14)
 			else()
 				target_compile_options(${TARGET_PROJECT} PRIVATE -std=c++11)
+			endif()
+		else()
+			target_compile_options(${TARGET_PROJECT} PRIVATE -g)
 		endif()
-		endif()
+
 	endif()
 	
 	if(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
