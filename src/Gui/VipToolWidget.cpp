@@ -1458,15 +1458,15 @@ void VipMultiProgressWidget::removeProgress(QObjectPointer ptr)
 	updateModality();
 
 	if (d_data->progresses.size() == 0) {
-#ifdef _WIN32
+//#ifdef _WIN32
 		this->hide();
-#else
+/* #else
 		// On some linux config, only this works properly to hide the progress tool widget (??)
 		QMetaObject::invokeMethod(this, "update", Qt::QueuedConnection);
 		QMetaObject::invokeMethod(this, "hide", Qt::QueuedConnection);
 		QMetaObject::invokeMethod(this, "update", Qt::QueuedConnection);
 		QCoreApplication::processEvents();
-#endif
+#endif*/
 	}
 }
 
@@ -1549,7 +1549,7 @@ void VipMultiProgressWidget::setModal(QObjectPointer ptr, bool modal)
 							rect = QGuiApplication::primaryScreen()->availableGeometry();
 					}
 #endif
-					printf("%i %i %i %i\n", rect.left(), rect.top(), rect.width(), rect.height());//TEST
+					//printf("%i %i %i %i\n", rect.left(), rect.top(), rect.width(), rect.height());//TEST
 					this->move(rect.x() + rect.width() / 2 - this->width() / 2, rect.y() + rect.height() / 2 - this->height() / 2);
 					if (this->windowModality() == Qt::ApplicationModal && isFloating()) {
 						this->showAndRaise();
