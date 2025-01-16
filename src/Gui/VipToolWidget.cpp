@@ -1460,7 +1460,7 @@ void VipMultiProgressWidget::removeProgress(QObjectPointer ptr)
 
 	if (d_data->progresses.size() == 0) {
 //#ifdef _WIN32
-		this->hide();
+		//TEST this->hide();
 printf("hide\n");//TEST
 /* #else
 		// On some linux config, only this works properly to hide the progress tool widget (??)
@@ -1523,7 +1523,6 @@ void VipMultiProgressWidget::setCancelable(QObjectPointer ptr, bool cancelable)
 
 void VipMultiProgressWidget::setModal(QObjectPointer ptr, bool modal)
 {
-	return;//TEST
 	if (VipProgress* p = qobject_cast<VipProgress*>(ptr.data())) {
 		if (ProgressWidget* w = d_data->find(p)) {
 			// set modal
