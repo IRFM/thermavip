@@ -1551,9 +1551,10 @@ void VipMultiProgressWidget::setModal(QObjectPointer ptr, bool modal)
 							rect = QGuiApplication::primaryScreen()->availableGeometry();
 					}
 #endif
-					//printf("%i %i %i %i\n", rect.left(), rect.top(), rect.width(), rect.height());//TEST
+					printf("setModal %i %i %i %i\n", rect.left(), rect.top(), rect.width(), rect.height());//TEST
 					this->move(rect.x() + rect.width() / 2 - this->width() / 2, rect.y() + rect.height() / 2 - this->height() / 2);
 					if (this->windowModality() == Qt::ApplicationModal && isFloating()) {
+						
 						this->showAndRaise();
 					}
 				}
