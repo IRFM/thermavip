@@ -1337,6 +1337,7 @@ void VipMultiProgressWidget::closeEvent(QCloseEvent* evt)
 
 void VipMultiProgressWidget::showEvent(QShowEvent* evt)
 {
+	return;//TEST
 	if (isFloating()) {
 		// center the widget on the main screen
 #if QT_VERSION < QT_VERSION_CHECK(5, 15, 0)
