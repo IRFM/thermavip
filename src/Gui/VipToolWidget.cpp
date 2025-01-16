@@ -1337,7 +1337,6 @@ void VipMultiProgressWidget::closeEvent(QCloseEvent* evt)
 
 void VipMultiProgressWidget::showEvent(QShowEvent* evt)
 {
-	return;//TEST
 	if (isFloating()) {
 		// center the widget on the main screen
 #if QT_VERSION < QT_VERSION_CHECK(5, 15, 0)
@@ -1524,6 +1523,7 @@ void VipMultiProgressWidget::setCancelable(QObjectPointer ptr, bool cancelable)
 
 void VipMultiProgressWidget::setModal(QObjectPointer ptr, bool modal)
 {
+	return;//TEST
 	if (VipProgress* p = qobject_cast<VipProgress*>(ptr.data())) {
 		if (ProgressWidget* w = d_data->find(p)) {
 			// set modal
