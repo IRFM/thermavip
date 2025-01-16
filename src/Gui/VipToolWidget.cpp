@@ -825,6 +825,7 @@ void VipToolWidget::internalResetSize()
 		QRect this_rect(this->mapToGlobal(QPoint(0, 0)), w->sizeHint() + QSize(25, 25));
 		this_rect = this_rect & d_rect;
 #endif
+		printf("reset size %i %i %i %i\n", this_rect.left(), this_rect.top(), this_rect.width(), this_rect.height());
 		if (isFloating()) {
 			if (!keepFloatingUserSize()) {
 				w->resize(w->sizeHint());
@@ -1460,6 +1461,7 @@ void VipMultiProgressWidget::removeProgress(QObjectPointer ptr)
 	if (d_data->progresses.size() == 0) {
 //#ifdef _WIN32
 		this->hide();
+printf("hide\n");//TEST
 /* #else
 		// On some linux config, only this works properly to hide the progress tool widget (??)
 		QMetaObject::invokeMethod(this, "update", Qt::QueuedConnection);
