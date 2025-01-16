@@ -723,9 +723,7 @@ bool VipRecordToolWidget::updateFileFiltersAndDevice(bool build_connections, boo
 	// Finally, save the sources VipIODevice and VipDisplayObject.
 	// This way, when launching the recording, everything will be ready for the saving.
 
-	// d_data->recordWidget.blockSignals(true);
-	// d_data->recordWidget.stopRecording();
-	// d_data->recordWidget.blockSignals(false);
+	
 	if (close_device)
 		d_data->recorder->close();
 
@@ -882,6 +880,7 @@ bool VipRecordToolWidget::updateFileFiltersAndDevice(bool build_connections, boo
 
 	// we reach the end: enable the recording
 	d_data->recordWidget->record()->setEnabled(true);
+	d_data->recordWidget->suspend()->setVisible((d_data->flag == VipIODevice::Sequential) && !close_device);
 	if (toolBar())
 		toolBar()->record()->setEnabled(true);
 

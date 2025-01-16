@@ -732,6 +732,11 @@ QToolButton* VipRecordWidget::record() const
 	return const_cast<QToolButton*>(&d_data->record);
 }
 
+QToolButton* VipRecordWidget::suspend() const
+{
+	return const_cast<QToolButton*>(&d_data->suspend);
+}
+
 VipFileName* VipRecordWidget::filenameWidget() const
 {
 	return &d_data->filename;
@@ -754,16 +759,32 @@ void VipRecordWidget::startRecording()
 	d_data->record.blockSignals(true);
 	d_data->record.setChecked(true);
 	d_data->record.blockSignals(false);
-	d_data->suspend.show();
-
+	
 	if (!d_data->recorder)
 		return;
+
+	// Only display the suspend button for temporal source devices
+	QList<VipIODevice*> devices = vipListCast<VipIODevice*>( d_data->recorder->allSources());
+	bool has_sequential = false;
+	for (VipIODevice* d : devices) {
+		if (d->deviceType() == VipIODevice::Sequential) {
+			has_sequential = true;
+			break;
+		}
+
+	}
+	if (has_sequential)
+		d_data->suspend.show();
+
 
 	if (VipGenericRecorder* recorder = d_data->recorder) {
 		recorder->setHasDatePrefix(d_data->addDate.isChecked());
 		recorder->setDatePrefix(d_data->date.text());
 		recorder->setPath(d_data->filename.filename());
-		recorder->open(VipIODevice::WriteOnly);
+		if (!recorder->open(VipIODevice::WriteOnly)) {
+			stopRecording();
+			return;
+		}
 		d_data->previousBytes = 0;
 		d_data->startTime = QDateTime::currentMSecsSinceEpoch();
 	}

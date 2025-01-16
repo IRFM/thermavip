@@ -1332,7 +1332,7 @@ QMultiMap<QString, int> VipMultiProgressWidget::currentProgresses() const
 void VipMultiProgressWidget::closeEvent(QCloseEvent* evt)
 {
 	evt->ignore();
-	if (this->windowModality() != Qt::ApplicationModal)
+	if (d_data->isModal)
 		this->hide();
 }
 
@@ -1349,7 +1349,7 @@ void VipMultiProgressWidget::showEvent(QShowEvent* evt)
 	}
 
 	if (d_data->changeModality) {
-		//QDockWidget::showEvent(evt);
+		QDockWidget::showEvent(evt);
 		setFocus();
 	}
 	else
@@ -1411,14 +1411,12 @@ bool VipMultiProgressWidget::eventFilter(QObject * obj, QEvent * evt)
 void VipMultiProgressWidget::changeModality(Qt::WindowModality modality)
 {
 #ifdef WIN32
-	if(this->windowModality() != modality){ 
-		this->hide();
-		d_data->changeModality = true;
-		this->setWindowModality(modality);
-		this->show();
-		d_data->changeModality = false;
-	}
-
+	this->hide();
+	d_data->changeModality = true;
+	this->setWindowModality(modality);
+	d_data->isModal = modality == Qt::ApplicationModal;
+	this->show();
+	d_data->changeModality = false;
 #else
 
 	bool requestModal = modality == Qt::ApplicationModal;
@@ -1449,7 +1447,7 @@ void VipMultiProgressWidget::updateModality()
 		// remove modal attribute
 		changeModality(Qt::NonModal);
 	}
-	else if (this->windowModality() != Qt::ApplicationModal) {
+	else if (!d_data->isModal) {
 		// try to set modal attribute
 		if (QApplication::activeModalWidget() && QApplication::activeModalWidget() != this) {
 			// there is already a modal widget: do not set modal attribute, try later
@@ -1546,7 +1544,7 @@ void VipMultiProgressWidget::setText(QObjectPointer ptr, const QString& text)
 			if (reset_size)
 				this->resetSize();
 
-			if (this->windowModality() == Qt::ApplicationModal)
+			if (d_data->isModal)
 				setStyleProperty("hasFocus", true);
 		}
 	}
@@ -1562,12 +1560,8 @@ void VipMultiProgressWidget::setValue(QObjectPointer ptr, int value)
 			}
 			w->progressBar.setValue(value);
 
-			if (this->windowModality() == Qt::ApplicationModal) {
-			
+			if (d_data->isModal) {
 				setFocus();
-				if (isFloating()) {
-					this->showAndRaise();
-				}
 			}
 		}
 	}
@@ -1612,7 +1606,7 @@ void VipMultiProgressWidget::setModal(QObjectPointer ptr, bool modal)
 					}
 #endif
 					this->move(rect.x() + rect.width() / 2 - this->width() / 2, rect.y() + rect.height() / 2 - this->height() / 2);
-					if (this->windowModality() == Qt::ApplicationModal && isFloating()) {
+					if (d_data->isModal && isFloating()) {
 						
 						this->showAndRaise();
 					}

@@ -2,8 +2,9 @@
 #include <iostream>
 
 #include <qapplication.h>
-#include <QGraphicsGridLayout>
-#include <qthreadpool.h>
+#include <qthread.h>
+#include <qdir.h>
+#include <qsurfaceformat.h>
 
 #include "VipPlotWidget2D.h"
 #include "VipColorMap.h"
@@ -34,23 +35,21 @@ public:
 	  , stop(false)
 	{
 	}
-
-	~CurveStreaming() 
-	{ 
+	~CurveStreaming() { stopThread(); }
+	void stopThread()
+	{
 		stop = true;
 		this->wait();
 	}
-
 	virtual void run()
 	{
-		//double start = QDateTime::currentMSecsSinceEpoch();
 		while (!stop) {
-		
+			// Update all curves with a noisy signal in a dedicated thread
 			for (int i = 0; i < curves.size(); ++i) {
 				VipPointVector vec(10000);
 				double f = curves[i].factor;
 				for (int j = 0; j < vec.size(); ++j)
-					vec[j] = VipPoint(j,  f + (rand() % 16) -7);
+					vec[j] = VipPoint(j, f + (rand() % 16) - 7);
 				curves[i].curve->setRawData(vec);
 			}
 
@@ -59,8 +58,7 @@ public:
 	}
 };
 
-
-void setup_plot_area(VipPlotArea2D* area) 
+void setup_plot_area(VipPlotArea2D* area)
 {
 	// show title
 	area->titleAxis()->setVisible(true);
@@ -69,7 +67,7 @@ void setup_plot_area(VipPlotArea2D* area)
 	area->setMouseWheelZoom(true);
 	// allow mouse panning
 	area->setMousePanning(Qt::RightButton);
-	
+
 	// hide right and top axes
 	area->rightAxis()->setVisible(false);
 	area->topAxis()->setVisible(false);
@@ -77,44 +75,48 @@ void setup_plot_area(VipPlotArea2D* area)
 	// bottom axis intersect left one at 0
 	area->bottomAxis()->setAxisIntersection(area->leftAxis(), 0);
 
+	// add margins to the plotting area
 	area->setMargins(10);
 	// Use high update frame rate if possible
 	area->setMaximumFrameRate(100);
 }
 
-
-
-
 int main(int argc, char** argv)
 {
+	// Setup opengl settings
+	QCoreApplication::setAttribute(Qt::AA_UseDesktopOpenGL);
+	QSurfaceFormat format;
+	format.setSamples(10);
+	format.setSwapInterval(0);
+	QSurfaceFormat::setDefaultFormat(format);
+
 	QApplication app(argc, argv);
 	VipPlotWidget2D w;
+	// Enable threaded OpenGL rendering if necessary
 	//w.setRenderingMode(VipPlotWidget2D::OpenGLThread);
 
-	w.setMouseTracking(true);
+	// setup plotting area
 	setup_plot_area(w.area());
 
 	VipColorPalette p(VipLinearColorMap::ColorPaletteRandom);
 	QList<Curve> curves;
 
+	// Create 100 curves of 10000 points each)
 	for (int i = 0; i < 100; ++i) {
 		VipPlotCurve* c = new VipPlotCurve();
 		c->setPen(QPen(p.color(i)));
-		//double factor = (double)i / 499.;
-		//if (i % 2 == 0)
-		//	factor = -factor;
-
-		c->setAxes(w.area()->bottomAxis(), w.area()->leftAxis(),VipCoordinateSystem::Cartesian);
-		curves.push_back(Curve{ c, (double)i*16 * (i%2 ? 1 : -1) });
+		c->setAxes(w.area()->bottomAxis(), w.area()->leftAxis(), VipCoordinateSystem::Cartesian);
+		curves.push_back(Curve{ c, (double)i * 16 * (i % 2 ? 1 : -1) });
 	}
 
-	
-	
 	w.resize(1000, 500);
 	w.show();
 
+	// Start streaming curves (100 curves of
 	CurveStreaming thread(curves);
 	thread.start();
 
-	return app.exec();
+	int ret = app.exec();
+	thread.stopThread();
+	return ret;
 }

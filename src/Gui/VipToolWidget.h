@@ -255,7 +255,6 @@ public Q_SLOTS:
 	void unfloatWidget() { setFloatingTool(false); }
 	void showAndRaise()
 	{
-		printf("showAndRaise\n");//TEST
 		show();
 		raise();
 	}
