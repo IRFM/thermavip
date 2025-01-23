@@ -35,19 +35,19 @@
 #include "VipComplex.h"
 #include "VipIterator.h"
 
-bool vipIsArithmetic(uint type) noexcept
+bool vipIsArithmetic(int type) noexcept
 {
 	return type == QMetaType::Bool || type == QMetaType::Char || type == QMetaType::SChar || type == QMetaType::UChar || type == QMetaType::Short || type == QMetaType::UShort ||
 	       type == QMetaType::Int || type == QMetaType::UInt || type == QMetaType::Long || type == QMetaType::ULong || type == QMetaType::LongLong || type == QMetaType::ULongLong ||
-	       type == QMetaType::Float || type == QMetaType::Double || type == (uint)qMetaTypeId<long double>();
+	       type == QMetaType::Float || type == QMetaType::Double || type == qMetaTypeId<long double>();
 }
 
-bool vipIsComplex(uint type) noexcept
+bool vipIsComplex(int type) noexcept
 {
-	return type == (uint)qMetaTypeId<complex_d>() || type == (uint)qMetaTypeId<complex_f>();
+	return type == qMetaTypeId<complex_d>() || type == qMetaTypeId<complex_f>();
 }
 
-bool vipCanConvertStdTypes(uint from, uint to) noexcept
+bool vipCanConvertStdTypes(int from, int to) noexcept
 {
 	if (from == to)
 		return true;
@@ -59,18 +59,18 @@ bool vipCanConvertStdTypes(uint from, uint to) noexcept
 		return vipIsComplex(to) || to == QMetaType::QString || to == QMetaType::QByteArray;
 
 	if (from == QMetaType::QString)
-		return vipIsArithmetic(to) || vipIsComplex(to) || to == QMetaType::QString || to == QMetaType::QByteArray || to == (uint)qMetaTypeId<VipRGB>();
+		return vipIsArithmetic(to) || vipIsComplex(to) || to == QMetaType::QString || to == QMetaType::QByteArray || to == qMetaTypeId<VipRGB>();
 
 	if (from == QMetaType::QByteArray)
-		return vipIsArithmetic(to) || vipIsComplex(to) || to == QMetaType::QString || to == QMetaType::QByteArray || to == (uint)qMetaTypeId<VipRGB>();
+		return vipIsArithmetic(to) || vipIsComplex(to) || to == QMetaType::QString || to == QMetaType::QByteArray || to == qMetaTypeId<VipRGB>();
 
-	if (from == (uint)qMetaTypeId<VipRGB>())
+	if (from == qMetaTypeId<VipRGB>())
 		return (to == QMetaType::QString || to == QMetaType::QByteArray);
 
 	return false;
 }
 
-bool vipCanConvert(uint from, uint to)
+bool vipCanConvert(int from, int to)
 {
 	QVariant v_from = vipFromVoid(from, nullptr);
 	bool res = v_from.canConvert(VIP_META(to));

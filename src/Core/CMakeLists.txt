@@ -17,6 +17,11 @@ if(NOT WITH_VTK)
 	list(FILTER Headers EXCLUDE REGEX "^.*VTK.*$")
 endif()
 
+if(WITH_HDF5)
+	 list(APPEND Sources VipH5Archive.cpp VipH5DeviceDriver.cpp)
+	 list(APPEND Headers VipH5Archive.h VipH5DeviceDriver.h)
+endif()
+
 add_library(VipCore SHARED
      ${Sources} ${Headers}
 )
@@ -24,6 +29,11 @@ add_library(VipCore SHARED
 target_include_directories(VipCore PRIVATE
     ${PROJECT_SOURCE_DIR}/../Logging ${PROJECT_SOURCE_DIR}/../DataType
 )
+
+if(WITH_HDF5)
+	 target_include_directories(VipCore PRIVATE ${HDF5_INCLUDE_DIRS})
+	 target_link_libraries(VipCore PRIVATE ${HDF5_LIBRARIES})
+endif()
 
 target_compile_definitions(VipCore PRIVATE
     VIP_BUILD_CORE_LIB
@@ -64,6 +74,14 @@ install(TARGETS VipCore
     FRAMEWORK DESTINATION "${THERMAVIP_TEST_DIR}"
     RUNTIME DESTINATION "${THERMAVIP_TEST_DIR}"
 )
+
+if(WITH_HDF5)
+	# Plugin custom installation process
+	install(CODE "set(HDF5_BIN \"${HDF5_INCLUDE_DIRS}/../bin\")")
+	install(CODE "set(CMAKE_INSTALL_BINDIR \"${CMAKE_INSTALL_BINDIR}\")")
+	install(CODE "set(CMAKE_SOURCE_DIR \"${CMAKE_SOURCE_DIR}\")")
+	install(SCRIPT InstallHDF5.cmake)
+endif()
 
 file(GLOB HEADER_FILES ${PROJECT_SOURCE_DIR}/*.h)
 install(FILES ${HEADER_FILES} DESTINATION "${CMAKE_INSTALL_PREFIX}/include/VipCore/")

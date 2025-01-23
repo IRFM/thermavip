@@ -1265,6 +1265,17 @@ QPixmap vipPixmap(const QString& name)
 	return QPixmap();
 }
 
+QImage vipImage(const QString& name)
+{
+	for (qsizetype i = 0; i < _icon_paths.size(); ++i) {
+		QImage icon = QImage(_icon_paths[i] + name);
+		if (!icon.isNull())
+			return icon;
+	}
+
+	return QImage();
+}
+
 QIcon vipIcon(const QString& name)
 {
 	QPixmap pix = vipPixmap(name);

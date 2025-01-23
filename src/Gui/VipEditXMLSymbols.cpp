@@ -35,6 +35,9 @@
 #include "VipProgress.h"
 #include "VipStandardWidgets.h"
 #include "VipTextOutput.h"
+#ifdef VIP_WITH_HDF5
+#include "VipH5Archive.h"
+#endif
 
 #include <QCheckBox>
 #include <QGroupBox>
@@ -193,7 +196,11 @@ VipExportSessionWidget::VipExportSessionWidget(QWidget* parent, bool export_curr
 {
 	VIP_CREATE_PRIVATE_DATA(d_data);
 	d_data->filename.setMode(VipFileName::Save);
+#ifdef VIP_WITH_HDF5
+	d_data->filename.setFilters("Session file (*.session *.hsession)");
+#else
 	d_data->filename.setFilters("Session file (*.session)");
+#endif
 	d_data->filename.setTitle("Session file");
 	d_data->filename.setDefaultOpenDir(vipGetUserPerspectiveDirectory());
 	d_data->mainWindow.setText("Export the whole session");
@@ -273,20 +280,32 @@ void VipExportSessionWidget::exportSession()
 		if (!filename.contains("/")) {
 			// The user provided a simple filename, save it into the Perspectives folder
 			filename = vipGetPerspectiveDirectory() + filename;
-			if (!filename.endsWith(".session"))
+			if (!filename.endsWith(".session") && !filename.endsWith(".hsession"))
 				filename += ".session";
 		}
 
-		VipXOfArchive arch(filename);
-		int session_type = 0;
-		if (exportCurrentArea())
-			session_type = VipMainWindow::CurrentArea;
-		// else if (exportCurrentPlayer())
-		//  session_type = VipMainWindow::CurrentPlayer;
+		if (QFileInfo(filename).suffix() == "session") {
 
-		if (vipGetMainWindow()->saveSession(arch, session_type, VipMainWindow::All))
-			if (!d_data->XMLSymbols->isHidden())
-				d_data->XMLSymbols->applyToArchive(arch);
+			VipXOfArchive arch(filename);
+			int session_type = 0;
+			if (exportCurrentArea())
+				session_type = VipMainWindow::CurrentArea;
+			// else if (exportCurrentPlayer())
+			//  session_type = VipMainWindow::CurrentPlayer;
+
+			if (vipGetMainWindow()->saveSession(arch, session_type, VipMainWindow::All))
+				if (!d_data->XMLSymbols->isHidden())
+					d_data->XMLSymbols->applyToArchive(arch);
+		}
+		else {
+#ifdef VIP_WITH_HDF5
+			VipH5Archive arch(filename, QIODevice::WriteOnly);
+			int session_type = 0;
+			if (exportCurrentArea())
+				session_type = VipMainWindow::CurrentArea;
+			vipGetMainWindow()->saveSession(arch, session_type, VipMainWindow::All);
+#endif
+		}
 	}
 }
 

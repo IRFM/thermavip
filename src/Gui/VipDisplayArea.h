@@ -585,7 +585,7 @@ public:
 	/// Save a Thermavip session into a XML file.
 	///  Returns true on success, file otherwise.
 	bool saveSession(const QString& filename, int session_type = MainWindow, int session_content = All, const QByteArray& state = QByteArray());
-	bool saveSession(VipXOArchive& arch, int session_type = MainWindow, int session_content = All, const QByteArray& state = QByteArray());
+	bool saveSession(VipArchive& arch, int session_type = MainWindow, int session_content = All, const QByteArray& state = QByteArray());
 
 	QList<VipAbstractPlayer*> openPaths(const VipPathList& paths, VipAbstractPlayer* player, VipDisplayPlayerArea* area = nullptr);
 	QList<VipAbstractPlayer*> openDevices(const QList<VipIODevice*>& devices, VipAbstractPlayer* player, VipDisplayPlayerArea* area = nullptr);
@@ -679,6 +679,10 @@ public Q_SLOTS:
 	void toogleFullScreen();
 	void exitFullScreen();
 
+	void restoreOrMaximizeCurrentPlayer();
+	void restoreOrMinimizeCurrentPlayer();
+	void closeCurrentPlayer();
+	void toggleWorkspaceFlatHistogram();
 
 private Q_SLOTS:
 	void init();
@@ -704,7 +708,8 @@ protected:
 private:
 	QAction* addToolWidget(VipToolWidget* widget, const QIcon& icon, const QString& text, bool set_tool_icon = false);
 	void setCurrentTabDestroy(bool);
-	
+	bool loadSessionShowProgress(VipArchive& arch, VipProgress* progress);
+
 	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 

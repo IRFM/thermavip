@@ -269,15 +269,13 @@ bool VipXArchive::open(QDomNode n)
 	return false;
 }
 
-void VipXArchive::save()
+void VipXArchive::doSave()
 {
-	VipArchive::save();
 	d_data->saved.append(d_data->parameters);
 }
 
-void VipXArchive::restore()
+void VipXArchive::doRestore()
 {
-	VipArchive::restore();
 	if (d_data->saved.size()) {
 		d_data->parameters = d_data->saved.back();
 		d_data->saved.pop_back();

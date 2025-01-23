@@ -3023,6 +3023,7 @@ VipArchive& operator<<(VipArchive& arch, const VipPlotItemData* value)
 			v = vipToVariant(tmp);
 		}
 	}
+	
 	arch.content("data", v);
 	return arch;
 }

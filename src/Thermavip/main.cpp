@@ -249,6 +249,7 @@ int main(int argc, char** argv)
 
 	QString app_dir = QFileInfo(vipAppCanonicalPath()).canonicalPath();
 
+
 #ifdef _MSC_VER
 #ifdef NDEBUG
 	QDir::setCurrent(QFileInfo(vipAppCanonicalPath()).canonicalPath());
@@ -461,6 +462,7 @@ int main(int argc, char** argv)
 #endif
 
 #ifdef _WIN32
+
 
 	// On windows only, create register key to support url on the form 'thermavip://' in browsers
 

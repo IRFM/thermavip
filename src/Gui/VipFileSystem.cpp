@@ -28,6 +28,13 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+#ifdef WIN32
+extern "C" {
+#include "Windows.h"
+#include "shellapi.h"
+}
+#endif
+
 
 #include "VipFileSystem.h"
 #include "VipCore.h"
@@ -75,18 +82,23 @@ static int initIntList()
 }
 static int _initIntList = initIntList();
 
+
+
 class FileIconProvider : public QThread
 {
 public:
 	std::atomic<bool> finish { false };
 	std::atomic<bool> has_icon{ false };
-	QFileIconProvider provider;
+	
 	QMutex mutex;
 	QFileInfo info;
 	QPixmap res_icon;
+	QFileIconProvider* provider_ptr{ nullptr };
 
 	virtual void run()
 	{
+		QFileIconProvider provider;
+		provider_ptr = &provider;
 		while (!finish)
 		{
 			mutex.lock();
@@ -96,7 +108,20 @@ public:
 				continue;
 			}
 
-			res_icon = this->provider.icon(info).pixmap(QSize(30,30));
+			#ifdef WIN32
+				SHFILEINFOA file;
+				memset(&file, 0, sizeof(file));
+				QByteArray name = info.canonicalFilePath().toLatin1(); 
+				DWORD_PTR hr = SHGetFileInfoA(name.data(), FILE_ATTRIBUTE_NORMAL, &file, sizeof(file), SHGFI_ICON | SHGFI_USEFILEATTRIBUTES | SHGFI_SMALLICON);
+				if (SUCCEEDED(hr)) {
+					// The display name is now held in sfi.szDisplayName.
+					res_icon = QPixmap::fromImage(QImage::fromHICON(file.hIcon));
+					DestroyIcon(file.hIcon);
+				}
+			#else
+				res_icon = QIcon(provider.icon(info).pixmap(QSize(30, 30)));
+			#endif
+			//
 			has_icon = true;
 			info = QFileInfo();
 			mutex.unlock();
@@ -105,6 +130,8 @@ public:
 
 	FileIconProvider() { 
 		start();
+		while (!provider_ptr)
+			std::this_thread::yield();
 	}
 	~FileIconProvider() { 
 		finish = true;
@@ -131,6 +158,7 @@ public:
 		if (!mutex.try_lock_for(std::chrono::milliseconds(rem)))
 			return QPixmap();
 		QPixmap res = res_icon;
+		res_icon = QPixmap();
 		mutex.unlock();
 		return res;
 	}
@@ -156,7 +184,7 @@ VipIconProvider::~VipIconProvider()
 
 QFileIconProvider* VipIconProvider::provider() const
 {
-	return &d_data->provider.provider;
+	return d_data->provider.provider_ptr;
 }
 
 static bool isDrive(const VipPath& path, const QFileInfo& info)
@@ -172,42 +200,43 @@ static bool isDrive(const VipPath& path, const QFileInfo& info)
 	return false;
 }
 
+
 QIcon VipIconProvider::iconPath(const VipPath& path) const
 {
+	
 	QFileInfo info(path.canonicalPath());
 	if (info.isDir()) {
 		if (isDrive(path, info)) {
 			if (d_data->driveIcon.isNull()){
-				const_cast<QPixmap&>(d_data->driveIcon) = d_data->provider.icon(info);
+				const_cast<QPixmap&>(d_data->driveIcon) = (d_data->provider.icon(info));
 				if(d_data->driveIcon.isNull()){
 					vip_debug("Null icon for %s\n",path.canonicalPath().toLatin1().data());
 				}
 			}
 			if (d_data->driveIcon.isNull())
 				const_cast<QPixmap&>(d_data->driveIcon) = vipIcon("open_dir.png").pixmap(QSize(30, 30));
-			return d_data->driveIcon;
+			return (d_data->driveIcon);
 		}
-		//if (d_data->dirIcon.isNull())
-		//	const_cast<QIcon&>(d_data->dirIcon) = d_data->provider.icon(info).pixmap(1);
+
 		if (d_data->dirIcon.isNull()){
-			const_cast<QPixmap&>(d_data->dirIcon) = d_data->provider.icon(QFileInfo(QCoreApplication::applicationDirPath()));
+			const_cast<QPixmap&>(d_data->dirIcon) = (d_data->provider.icon(QFileInfo(QCoreApplication::applicationDirPath())));
 			vip_debug("Null icon for %s\n",path.canonicalPath().toLatin1().data());
 		}
 		if (d_data->dirIcon.isNull())
-			const_cast<QPixmap&>(d_data->dirIcon) = vipIcon("open_dir.png").pixmap(QSize(30,30));
-		return d_data->dirIcon;
+			const_cast<QPixmap&>(d_data->dirIcon) = vipIcon("open_dir.png").pixmap(QSize(30, 30));
+		return (d_data->dirIcon);
 	}
 
 	QString suffix = info.suffix();
 	auto it = d_data->fileIcons.find(suffix);
 	if (it != d_data->fileIcons.end())
-		return it.value();
+		return (it.value());
 
 	// Convert icon to pixmap to avoid "Warning: SHGetFileInfo() timed out for..."
 	vip_debug("icon: %s\n", info.canonicalFilePath().toLatin1().data());
-	QPixmap ic = d_data->provider.icon(info);
+	QPixmap ic = (d_data->provider.icon(info));
 	if (!ic.isNull())
-		return const_cast<QMap<QString, QPixmap>&>(d_data->fileIcons)[suffix] = ic;
+		return (const_cast<QMap<QString, QPixmap>&>(d_data->fileIcons)[suffix] = ic);
 
 	if (!info.exists())
 	{
@@ -217,13 +246,13 @@ QIcon VipIconProvider::iconPath(const VipPath& path) const
 			QFile file(dir.path() + "/" + info.fileName());
 			if (file.open(QFile::WriteOnly)) {
 				file.close();
-				QPixmap new_icon = d_data->provider.icon(QFileInfo(file.fileName()));
+				QPixmap new_icon = (d_data->provider.icon(QFileInfo(file.fileName())));
 				const_cast<QMap<QString, QPixmap>&>(d_data->fileIcons)[suffix] = new_icon;
-				return new_icon;
+				return (new_icon);
 			}
 		}
 	}
-	return const_cast<QMap<QString, QPixmap>&>(d_data->fileIcons)[suffix] = ic;
+	return (const_cast<QMap<QString, QPixmap>&>(d_data->fileIcons)[suffix] = ic);
 }
 
 QIcon VipFileSystem::iconPath(const VipPath& path) const
@@ -242,9 +271,9 @@ QIcon VipPSFTPFileSystem::iconPath(const VipPath& path) const
 	// Do NOT use QFileIconProvider if a network issue was detected (mounted network drive that cannot be reconnected)
 	// as it causes lots of troubles and freezes
 
-	if (path.isDir())
-		return m_provider.provider()->icon(QFileIconProvider::Folder);
-	else 
+	//if (path.isDir())
+	//	return m_provider.provider()->icon(QFileIconProvider::Folder);
+	//else 
 		return m_provider.iconPath(path);
 }
 
@@ -2582,8 +2611,9 @@ VipDirectoryBrowser::VipDirectoryBrowser(VipMainWindow* win)
 
 	this->setWidget(m_widget);
 
-	VipFileSystemWidget* local_fs = addFileSystem(new VipFileSystem());
-	local_fs->setSupportedOperations(VipMapFileSystemTree::None);
+	
+	if(VipFileSystemWidget* local_fs = addFileSystem(new VipFileSystem()))
+		local_fs->setSupportedOperations(VipMapFileSystemTree::None);
 
 	m_timer = new QTimer();
 	m_timer->setSingleShot(false);
@@ -2656,12 +2686,14 @@ void VipDirectoryBrowser::clear()
 
 VipFileSystemWidget* VipDirectoryBrowser::addFileSystem(VipMapFileSystem* m)
 {
+	
 	for (int i = 0; i < m_filesystems.size(); ++i)
 		if (m_filesystems[i]->mapFileSystem() == m)
 			return nullptr;
 
 	VipFileSystemWidget* w = new VipFileSystemWidget();
 	w->setMapFileSystem(VipMapFileSystemPtr(m), true);
+
 
 	m_filesystems.append(w);
 	// open the file system if not already done

@@ -141,10 +141,12 @@ void CloseToolBar::mouseMoveEvent(QMouseEvent* evt)
 
 void CloseToolBar::setHasToolTip(bool enable)
 {
-	if (enable == (bool)(windowFlags() & Qt::ToolTip))
+	if (enable == hasToolTip())
 		return;
-
-	setWindowFlag(Qt::ToolTip, enable);
+	if (enable) 
+		setWindowFlags(Qt::FramelessWindowHint | Qt::Tool);
+	else
+		setWindowFlags(Qt::Widget);
 	QWidget* p = this->parentWidget();
 	if (enable && p) {
 		VipAbstractPlayer* pl = qobject_cast<VipAbstractPlayer*>(p);
@@ -160,7 +162,7 @@ void CloseToolBar::setHasToolTip(bool enable)
 
 bool CloseToolBar::hasToolTip() const
 {
-	return (bool)(windowFlags() & Qt::ToolTip);
+	return (bool)(windowFlags() & Qt::Tool);
 }
 
 bool CloseToolBar::eventFilter(QObject* obj, QEvent* evt)

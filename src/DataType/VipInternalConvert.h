@@ -526,11 +526,11 @@ namespace detail
 	/// Convert input possibly strided data to possibly strided array.
 	/// Returns false if the conversion is not possible.
 	VIP_DATA_TYPE_EXPORT bool convert(const void* i_data,
-					  uint i_type,
+					  int i_type,
 					  const VipNDArrayShape& i_shape,
 					  const VipNDArrayShape& i_strides,
 					  void* o_data,
-					  uint o_type,
+					  int o_type,
 					  const VipNDArrayShape& o_shape,
 					  const VipNDArrayShape& o_strides);
 

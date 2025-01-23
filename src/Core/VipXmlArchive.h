@@ -114,8 +114,10 @@ public:
 ///		These signals could be connected to the corresponding slots of a VipProgress
 ///		to display the progress on archive reading.
 ///
-struct VIP_CORE_EXPORT VipXArchive : public VipArchive
+class VIP_CORE_EXPORT VipXArchive : public VipArchive
 {
+	Q_OBJECT
+public:
 	VipXArchive();
 
 	virtual ~VipXArchive();
@@ -126,11 +128,6 @@ struct VIP_CORE_EXPORT VipXArchive : public VipArchive
 	/// Set the list of VipEditableArchiveSymbol to use for this archive.
 	/// This will modify the content of the archive.
 	void setEditableSymbols(const QList<VipEditableArchiveSymbol>& lst);
-
-	/// Save the current archive status (read mode and position)
-	virtual void save();
-	/// Reset the archive status. Each call to \a restore must match to a call to #save().
-	virtual void restore();
 
 	/// @brief Returns the current XML node
 	QDomNode currentNode() const;
@@ -155,6 +152,11 @@ protected:
 	bool hasAttribute(const QString& name) const;
 	bool hasContent() const;
 
+	/// Save the current archive status (read mode and position)
+	virtual void doSave();
+	/// Reset the archive status. Each call to \a restore must match to a call to #save().
+	virtual void doRestore();
+
 	void check_node(const QDomNode& n, const QString& error);
 	void set_current_value(const QDomNode& n);
 
@@ -167,6 +169,7 @@ private:
 /// Basic XML output archive used to write into a QDomNode
 class VIP_CORE_EXPORT VipXOArchive : public VipXArchive
 {
+	Q_OBJECT
 public:
 	VipXOArchive();
 
@@ -184,6 +187,7 @@ protected:
 /// Basic XML input archive used to read data from a QDomNode
 class VIP_CORE_EXPORT VipXIArchive : public VipXArchive
 {
+	Q_OBJECT
 public:
 	VipXIArchive();
 
@@ -212,6 +216,8 @@ protected:
 /// XML output archive providing an easy way to write into a file
 class VIP_CORE_EXPORT VipXOfArchive : public VipXOArchive
 {
+	Q_OBJECT
+
 	QString file;
 	QDomDocument doc;
 
@@ -229,6 +235,8 @@ protected:
 /// XML input archive providing an easy way to read data from a buffer
 class VIP_CORE_EXPORT VipXIStringArchive : public VipXIArchive
 {
+	Q_OBJECT
+
 	QDomDocument doc;
 
 public:
@@ -242,6 +250,8 @@ protected:
 /// XML input archive providing an easy way to read data from an XML file
 class VIP_CORE_EXPORT VipXIfArchive : public VipXIArchive
 {
+	Q_OBJECT
+
 	QDomDocument doc;
 
 public:

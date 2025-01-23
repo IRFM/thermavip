@@ -285,7 +285,7 @@ public:
 	qsizetype dataSize() const noexcept { return handle()->dataSize(); }
 	/// Returns the data type identifier based on qt meta type system.
 	/// For instance, it will return QMetaType::Int for 32bits integer arrays.
-	qsizetype dataType() const noexcept { return handle()->dataType(); }
+	int dataType() const noexcept { return handle()->dataType(); }
 	/// Returns the data type name
 	const char* dataName() const noexcept { return handle()->dataName(); }
 	/// Returns true if the array is null (null data type)

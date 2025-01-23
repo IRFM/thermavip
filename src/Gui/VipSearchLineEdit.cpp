@@ -331,10 +331,14 @@ public:
 	  : QListWidget(e)
 	  , edit(e)
 	{
-		setWindowFlags( Qt::FramelessWindowHint | Qt::Tool);
+		setWindowFlags(Qt::FramelessWindowHint | Qt::Tool);
 		setStyleSheet("QListWidget{border: 1px solid gray; border-radius: 5px;}");
 		connect(this, &QListWidget::itemClicked, this, &PopupListWidget::setSelectionToLineEdit);
 		viewport()->installEventFilter(this);
+		
+	}
+	~PopupListWidget()
+	{ 
 	}
 
 	void clear() 
@@ -455,6 +459,7 @@ protected:
 				
 			}
 		}
+		
 		return false;
 	}
 
@@ -518,10 +523,13 @@ VipSearchLineEdit::VipSearchLineEdit(QWidget* parent)
 	//connect(d_data->open, SIGNAL(triggered(bool)), this, SLOT(returnPressed()));
 	connect(d_data->displayHistory, SIGNAL(triggered(bool)), this, SLOT(displayHistory()));
 	connect(this, SIGNAL(textChanged(const QString &)), this, SLOT(textEntered()));
+
+	qApp->installEventFilter(this);
 }
 
 VipSearchLineEdit ::~VipSearchLineEdit()
 {
+	qApp->removeEventFilter(this);
 	delete d_data->history;
 }
 
@@ -627,6 +635,18 @@ void VipSearchLineEdit::mouseMoveEvent(QMouseEvent* evt)
 		}
 	}
 	QLineEdit::mouseMoveEvent(evt);
+}
+
+bool VipSearchLineEdit::eventFilter(QObject* watched, QEvent* event)
+{
+	if (event->type() == QEvent::MouseButtonPress)
+	{
+		if (QWidget* w = qobject_cast<QWidget*>(watched)) {
+			if (!this->isAncestorOf(w) && w != d_data->history->viewport())
+				d_data->history->hide();
+		}
+	}
+	return false;
 }
 
 

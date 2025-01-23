@@ -22,6 +22,7 @@ Thermavip v5.0.0 - 10/12/2024
 (WEST) Corrected wrong ROI order when opening an IR movie
 (WEST) DWMS control summary now uses DWMS signals to assess DWMS feedbacks
 (WEST) Added support to Evenio and PPO dashboard web pages to the internal web browser
+(WEST) updated librir version
 
 
 Thermavip v4.5.1 - 06/03/2024

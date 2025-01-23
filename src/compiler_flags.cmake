@@ -89,6 +89,13 @@ if(WITH_VTK)
 	#endif()
 endif()
 
+# Add HDF5 libraries if required
+if(WITH_HDF5)
+	find_package (HDF5 COMPONENTS C REQUIRED)
+	target_include_directories(${TARGET_PROJECT} PRIVATE ${HDF5_INCLUDE_DIRS} )
+	target_link_libraries(${TARGET_PROJECT} PRIVATE ${HDF5_LIBRARIES})
+	target_compile_definitions(${TARGET_PROJECT} PUBLIC -DVIP_WITH_HDF5)
+endif()
 
 #external code added if exists
 if(EXISTS my_compiler_flags.cmake ) 

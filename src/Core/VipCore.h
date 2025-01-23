@@ -471,7 +471,8 @@ VIP_CORE_EXPORT QIcon vipIcon(const QString& filename);
 /// Returns a QPixmap loaded from given image file name.
 /// The image file is searched in the paths registered with vipAddIconPath().
 VIP_CORE_EXPORT QPixmap vipPixmap(const QString& filename);
-/// Register a new path for the icons to be found.
+VIP_CORE_EXPORT QImage vipImage(const QString& filename);
+  /// Register a new path for the icons to be found.
 /// By default, icons are searched in the 'Icons' directory of the application path.
 VIP_CORE_EXPORT void vipAddIconPath(const QString& path);
 /// Register a new path for the icons to be found.

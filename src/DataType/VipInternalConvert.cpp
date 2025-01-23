@@ -50,17 +50,17 @@ namespace detail
 	};
 
 	bool convert(const void* i_data,
-		     uint i_type,
+		     int i_type,
 		     const VipNDArrayShape& i_shape,
 		     const VipNDArrayShape& i_strides,
 		     void* o_data,
-		     uint o_type,
+		     int o_type,
 		     const VipNDArrayShape& o_shape,
 		     const VipNDArrayShape& o_strides)
 	{
 		Q_ASSERT(i_data);
 		Q_ASSERT(o_data);
-		Q_ASSERT(i_type != (uint)o_type);
+		Q_ASSERT(i_type != o_type);
 
 		switch ((o_type)) {
 
@@ -115,19 +115,19 @@ namespace detail
 						break;
 				}
 
-				if (i_type == (uint)qMetaTypeId<VipRGB>()) {
+				if (i_type == qMetaTypeId<VipRGB>()) {
 					CONVERT_TR(VipRGB, QString, ToQStringTransform());
 					return true;
 				}
-				if (i_type == (uint)qMetaTypeId<complex_d>()) {
+				if (i_type == qMetaTypeId<complex_d>()) {
 					CONVERT_TR(complex_d, QString, ToQStringTransform());
 					return true;
 				}
-				else if (i_type == (uint)qMetaTypeId<complex_f>()) {
+				else if (i_type == qMetaTypeId<complex_f>()) {
 					CONVERT_TR(complex_f, QString, ToQStringTransform());
 					return true;
 				}
-				else if (i_type == (uint)qMetaTypeId<long double>()) {
+				else if (i_type == qMetaTypeId<long double>()) {
 					CONVERT_TR(long double, QString, ToQStringTransform());
 					return true;
 				}
@@ -185,19 +185,19 @@ namespace detail
 						break;
 				}
 
-				if (i_type == (uint)qMetaTypeId<VipRGB>()) {
+				if (i_type == qMetaTypeId<VipRGB>()) {
 					CONVERT_TR(VipRGB, QByteArray, ToQByteArrayTransform());
 					return true;
 				}
-				if (i_type == (uint)qMetaTypeId<complex_d>()) {
+				if (i_type == qMetaTypeId<complex_d>()) {
 					CONVERT_TR(complex_d, QByteArray, ToQByteArrayTransform());
 					return true;
 				}
-				else if (i_type == (uint)qMetaTypeId<complex_f>()) {
+				else if (i_type == qMetaTypeId<complex_f>()) {
 					CONVERT_TR(complex_f, QByteArray, ToQByteArrayTransform());
 					return true;
 				}
-				else if (i_type == (uint)qMetaTypeId<long double>()) {
+				else if (i_type == qMetaTypeId<long double>()) {
 					CONVERT_TR(long double, QString, ToQByteArrayTransform());
 					return true;
 				}
@@ -240,7 +240,7 @@ namespace detail
 					default:
 						break;
 				}
-				if (i_type == (uint)qMetaTypeId<long double>()) {
+				if (i_type == qMetaTypeId<long double>()) {
 					CONVERT_TR(long double, char, ToNumericTransform<char>());
 					return true;
 				}
@@ -282,7 +282,7 @@ namespace detail
 					default:
 						break;
 				}
-				if (i_type == (uint)qMetaTypeId<long double>()) {
+				if (i_type == qMetaTypeId<long double>()) {
 					CONVERT_TR(long double, quint8, ToNumericTransform<quint8>());
 					return true;
 				}
@@ -324,7 +324,7 @@ namespace detail
 					default:
 						break;
 				}
-				if (i_type == (uint)qMetaTypeId<long double>()) {
+				if (i_type == qMetaTypeId<long double>()) {
 					CONVERT_TR(long double, qint16, ToNumericTransform<qint16>());
 					return true;
 				}
@@ -366,7 +366,7 @@ namespace detail
 					default:
 						break;
 				}
-				if (i_type == (uint)qMetaTypeId<long double>()) {
+				if (i_type == qMetaTypeId<long double>()) {
 					CONVERT_TR(long double, quint16, ToNumericTransform<quint16>());
 					return true;
 				}
@@ -408,7 +408,7 @@ namespace detail
 					default:
 						break;
 				}
-				if (i_type == (uint)qMetaTypeId<long double>()) {
+				if (i_type == qMetaTypeId<long double>()) {
 					CONVERT_TR(long double, qint32, ToNumericTransform<qint32>());
 					return true;
 				}
@@ -450,7 +450,7 @@ namespace detail
 					default:
 						break;
 				}
-				if (i_type == (uint)qMetaTypeId<long double>()) {
+				if (i_type == qMetaTypeId<long double>()) {
 					CONVERT_TR(long double, quint32, ToNumericTransform<quint32>());
 					return true;
 				}
@@ -492,7 +492,7 @@ namespace detail
 					default:
 						break;
 				}
-				if (i_type == (uint)qMetaTypeId<long double>()) {
+				if (i_type == qMetaTypeId<long double>()) {
 					CONVERT_TR(long double, long, ToNumericTransform<long>());
 					return true;
 				}
@@ -534,7 +534,7 @@ namespace detail
 					default:
 						break;
 				}
-				if (i_type == (uint)qMetaTypeId<long double>()) {
+				if (i_type == qMetaTypeId<long double>()) {
 					CONVERT_TR(long double, unsigned long, ToNumericTransform<unsigned long>());
 					return true;
 				}
@@ -576,7 +576,7 @@ namespace detail
 					default:
 						break;
 				}
-				if (i_type == (uint)qMetaTypeId<long double>()) {
+				if (i_type == qMetaTypeId<long double>()) {
 					CONVERT_TR(long double, qint64, ToNumericTransform<qint64>());
 					return true;
 				}
@@ -618,7 +618,7 @@ namespace detail
 					default:
 						break;
 				}
-				if (i_type == (uint)qMetaTypeId<long double>()) {
+				if (i_type == qMetaTypeId<long double>()) {
 					CONVERT_TR(long double, quint64, ToNumericTransform<quint64>());
 					return true;
 				}
@@ -660,7 +660,7 @@ namespace detail
 					default:
 						break;
 				}
-				if (i_type == (uint)qMetaTypeId<long double>()) {
+				if (i_type == qMetaTypeId<long double>()) {
 					CONVERT_TR(long double, float, ToNumericTransform<float>());
 					return true;
 				}
@@ -702,7 +702,7 @@ namespace detail
 					default:
 						break;
 				}
-				if (i_type == (uint)qMetaTypeId<long double>()) {
+				if (i_type == qMetaTypeId<long double>()) {
 					CONVERT_TR(long double, double, ToNumericTransform<double>());
 					return true;
 				}
@@ -744,7 +744,7 @@ namespace detail
 					default:
 						break;
 				}
-				if (i_type == (uint)qMetaTypeId<long double>()) {
+				if (i_type == qMetaTypeId<long double>()) {
 					CONVERT_TR(long double, bool, ToNumericTransform<bool>());
 					return true;
 				}
@@ -755,7 +755,7 @@ namespace detail
 				break;
 		}
 
-		if (o_type == (uint)qMetaTypeId<VipRGB>()) {
+		if (o_type == qMetaTypeId<VipRGB>()) {
 			switch (i_type) {
 				case QMetaType::QByteArray:
 					CONVERT_TR(QByteArray, VipRGB, ToRGB()) return true;
@@ -765,8 +765,8 @@ namespace detail
 					return false;
 			}
 		}
-		else if (o_type == (uint)qMetaTypeId<complex_f>()) {
-			if (i_type == (uint)qMetaTypeId<complex_d>()) {
+		else if (o_type == qMetaTypeId<complex_f>()) {
+			if (i_type == qMetaTypeId<complex_d>()) {
 				CONVERT_TR(complex_d, complex_f, SimpleCastTransform<complex_f>()) return true;
 			}
 			else {
@@ -806,15 +806,15 @@ namespace detail
 					default:
 						break;
 				}
-				if (i_type == (uint)qMetaTypeId<long double>()) {
+				if (i_type == qMetaTypeId<long double>()) {
 					CONVERT_TR(long double, complex_f, ToNumericTransform<complex_f>());
 					return true;
 				}
 				return false;
 			}
 		}
-		else if (o_type == (uint)qMetaTypeId<complex_d>()) {
-			if (i_type == (uint)qMetaTypeId<complex_f>()) {
+		else if (o_type == qMetaTypeId<complex_d>()) {
+			if (i_type == qMetaTypeId<complex_f>()) {
 				CONVERT_TR(complex_f, complex_d, SimpleCastTransform<complex_d>()) return true;
 			}
 			else {
@@ -854,14 +854,14 @@ namespace detail
 					default:
 						break;
 				}
-				if (i_type == (uint)qMetaTypeId<long double>()) {
+				if (i_type == qMetaTypeId<long double>()) {
 					CONVERT_TR(long double, complex_d, ToNumericTransform<complex_d>());
 					return true;
 				}
 				return false;
 			}
 		}
-		else if (o_type == (uint)qMetaTypeId<long double>()) {
+		else if (o_type == qMetaTypeId<long double>()) {
 			switch (i_type) {
 				case QMetaType::Double:
 					CONVERT_TR(double, long double, SimpleCastTransform<long double>()) return true;

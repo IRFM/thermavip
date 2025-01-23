@@ -149,6 +149,7 @@ protected:
 	virtual void focusOutEvent(QFocusEvent* evt);
 	virtual bool event(QEvent* evt);
 	virtual void mouseMoveEvent(QMouseEvent* evt);
+	virtual bool eventFilter(QObject* watched, QEvent* event);
 
 private:
 	VIP_DECLARE_PRIVATE_DATA(d_data);

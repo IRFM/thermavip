@@ -83,6 +83,7 @@ public:
 	bool hasPage(VipPageOption* page) const;
 	bool addPage(const QString& category, VipPageOption* page, const QIcon& icon = QIcon());
 	void setCurrentPage(VipPageOption* page);
+	void setCurrentPage(const QString & category);
 	QScrollArea* areaForPage(VipPageOption* page) const;
 	void setTreeWidth(int w);
 

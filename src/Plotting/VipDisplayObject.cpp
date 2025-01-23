@@ -41,6 +41,7 @@
 #include "VipXmlArchive.h"
 
 #include <QCoreApplication>
+#include <QWaitCondition>
 #include <QGraphicsView>
 #include <qtimer.h>
 
@@ -71,8 +72,10 @@ public:
 	qint64 lastTitleUpdate;
 	qint64 lastVisibleUpdate;
 
-	VipSpinlock lock;
-	std::condition_variable_any cond;
+	//VipSpinlock lock;
+	//std::condition_variable_any cond;
+	QMutex lock;
+	QWaitCondition cond;
 };
 
 VipDisplayObject::VipDisplayObject(QObject* parent)
@@ -96,6 +99,28 @@ VipDisplayObject::~VipDisplayObject()
 void VipDisplayObject::checkVisibility()
 {
 	d_data->visible = isVisible();
+}
+
+static void processEvents()
+{
+	// Wait for the event loop to process events
+	static QMutex mutex;
+
+	qint64 start = QDateTime::currentMSecsSinceEpoch();
+	bool r = mutex.tryLock(100);
+	if (!r) 
+		// Wait at most 100 ms
+		return;
+	
+	std::lock_guard<QMutex> lock(mutex, std::adopt_lock_t{});
+	qint64 el = QDateTime::currentMSecsSinceEpoch() - start;
+	if (el < 5) {
+		// Short time to acquire the lock: process events
+		vipProcessEvents(nullptr, 100);
+	}
+
+	// Long time to acquire the lock:
+	// another thread is currently waiting for the event loop
 }
 
 void VipDisplayObject::apply()
@@ -133,14 +158,16 @@ void VipDisplayObject::apply()
 
 		// wait for the display to end
 
-		VipUniqueLock<VipSpinlock> ll(d_data->lock);
+		std::lock_guard<QMutex> ll(d_data->lock);
 		while (d_data->displayInProgress.load(std::memory_order_relaxed) && !d_data->isDestruct) {
-			d_data->cond.wait_for(d_data->lock, std::chrono::milliseconds(5));
+			bool ret = d_data->cond.wait(&d_data->lock, 5);
 			qint64 current = QDateTime::currentMSecsSinceEpoch();
 			if ((current - time) > 50) {
-				vipProcessEvents(nullptr, 100);
+				processEvents();
 				break;
 			}
+			else if (!ret && buffer.size() > 1)
+				processEvents();
 		}
 	}
 	else {
@@ -151,7 +178,6 @@ void VipDisplayObject::apply()
 
 static QWidget* findWidgetWith_automaticWindowTitle(QWidget* w)
 {
-
 	while (w) {
 
 		if (w->metaObject()->indexOfProperty("automaticWindowTitle") >= 0)

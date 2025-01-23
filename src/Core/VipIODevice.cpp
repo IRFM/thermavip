@@ -982,7 +982,7 @@ public:
 		QSharedPointer<int> listLimitType;
 		QSharedPointer<ErrorCodes> logErrors;
 
-		Parameters(bool enableMissFrames = false,
+		Parameters(bool enableMissFrames = true,
 			   double speed = 1,
 			   RunMode mode = RunMode(),
 			   qint64 begin_time = VipInvalidTime,

@@ -8344,6 +8344,8 @@ static void setVideoPlayer(VipDragWidget*, VipVideoPlayer* player)
 
 	QObject::connect(scale, SIGNAL(colorPaletteChanged(int)), player, SLOT(setColorMap(int)));
 	QObject::connect(player, SIGNAL(colorMapChanged(int)), scale, SLOT(setColorPalette(int)));
+
+	
 }
 
 static void setPlotPlayer(VipDragWidget*, VipPlotPlayer* player)

@@ -674,6 +674,11 @@ static QList<QAction*> videoPlayerActions(VipPlotItem* item, VipVideoPlayer* pla
 
 static void updateVideoPlayer(VipVideoPlayer* player)
 {
+	// Find parent workspace
+	if (auto* wkp = VipDisplayPlayerArea::fromChildWidget(player)) {
+		// Set flat histogram if needed
+		player->setFlatHistogramColorScale(wkp->colorMapAxis()->useFlatHistogram());
+	}
 	if (player && !player->property("NoImageProcessing").toBool() && player->spectrogram()->property("VipDisplayObject").value<VipDisplayObject*>())
 		new VipUpdateVideoPlayer(player);
 }

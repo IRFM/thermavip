@@ -116,13 +116,13 @@ struct VipNDArrayHandle;
 /// Returns the global NullHandle pointer
 VIP_DATA_TYPE_EXPORT VipNDArrayHandle* vipNullHandlePtr() noexcept;
 /// Returns true if given metatype is arithmetic
-VIP_DATA_TYPE_EXPORT bool vipIsArithmetic(uint data_type) noexcept;
+VIP_DATA_TYPE_EXPORT bool vipIsArithmetic(int data_type) noexcept;
 /// Returns true if given metatype is a complex number (either complex_d or complex_f)
-VIP_DATA_TYPE_EXPORT bool vipIsComplex(uint data_type) noexcept;
+VIP_DATA_TYPE_EXPORT bool vipIsComplex(int data_type) noexcept;
 /// Returns true if metatype \a from can be converted to \a to using the internal cast function
-VIP_DATA_TYPE_EXPORT bool vipCanConvertStdTypes(uint from, uint to) noexcept;
+VIP_DATA_TYPE_EXPORT bool vipCanConvertStdTypes(int from, int to) noexcept;
 /// Returns true if metatype \a from can be converted to \a to based on QVariant::canConvert
-VIP_DATA_TYPE_EXPORT bool vipCanConvert(uint from, uint to);
+VIP_DATA_TYPE_EXPORT bool vipCanConvert(int from, int to);
 
 /// VipNDArrayHandle is the base structure used by #VipNDArray, and provides an abstract interface to manipulate N-dimensions arrays.
 /// Since #VipNDArray uses Copy On Write (COW), VipNDArrayHandle is a shared data structure.

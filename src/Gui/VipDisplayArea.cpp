@@ -61,6 +61,10 @@
 #include "VipXmlArchive.h"
 #include "VipSearchLineEdit.h"
 
+#ifdef VIP_WITH_HDF5
+#include "VipH5Archive.h"
+#endif
+
 #include <QApplication>
 #include <QBoxLayout>
 #include <QCloseEvent>
@@ -475,6 +479,11 @@ void VipDisplayTabBar::mousePressEvent(QMouseEvent* event)
 	}
 	else {
 		QTabBar::mousePressEvent(event);
+		if (event->button() == Qt::MiddleButton) {
+			int index = tabAt(event->VIP_EVT_POSITION());
+			if(index >= 0)
+				displayTabWidget()->closeTab(index);
+		}
 	}
 }
 
@@ -1247,7 +1256,16 @@ void VipDisplayPlayerArea::saveImage()
 		filters += ";;PS file(*.ps)";
 	if (supported_formats & VipRenderObject::EPS)
 		filters += ";;EPS file(*.eps)";
-	QString filename = VipFileDialog::getSaveFileName(nullptr, "Save image as", filters);
+
+	QString name = "workspace";
+	if (!windowTitle().contains("workspace", Qt::CaseInsensitive))
+		name += "_" + windowTitle();
+	name.replace(" ", "_");
+	name.replace(",", "_");
+	name.replace(";", "_");
+	name.replace(".", "_");
+
+	QString filename = VipFileDialog::getSaveFileName2(nullptr, name ,"Save image as", filters);
 	if (!filename.isEmpty()) {
 		QFileInfo info(filename);
 		if (info.suffix().compare("pdf", Qt::CaseInsensitive) == 0) {
@@ -3614,6 +3632,7 @@ QAction* VipMainWindow::addToolWidget(VipToolWidget* widget, const QIcon& icon, 
 
 void VipMainWindow::init()
 {
+	
 	// Add shortcuts
 	new QShortcut(QKeySequence(Qt::Key_F5), this, SLOT(autoSave()), nullptr, Qt::ApplicationShortcut);
 	new QShortcut(QKeySequence(Qt::Key_F9), this, SLOT(autoLoad()), nullptr, Qt::ApplicationShortcut);
@@ -3632,6 +3651,11 @@ void VipMainWindow::init()
 	new QShortcut(QKeySequence("Ctrl+right" /*QKeyCombination(Qt::CTRL, Qt::Key_Right)*/), this,  SLOT(nextWorkspace()), nullptr, Qt::ApplicationShortcut);
 	new QShortcut(QKeySequence("Ctrl+left" /*QKeyCombination(Qt::CTRL, Qt::Key_Left)*/), this,  SLOT(previousWorkspace()), nullptr, Qt::ApplicationShortcut);
 
+	new QShortcut(QKeySequence("Ctrl+up"), this, SLOT(restoreOrMaximizeCurrentPlayer()), nullptr, Qt::ApplicationShortcut);
+	new QShortcut(QKeySequence("Ctrl+down"), this, SLOT(restoreOrMinimizeCurrentPlayer()), nullptr, Qt::ApplicationShortcut);
+	new QShortcut(QKeySequence("Ctrl+Q"), this, SLOT(closeCurrentPlayer()), nullptr, Qt::ApplicationShortcut);
+	new QShortcut(QKeySequence("Ctrl+H"), this, SLOT(toggleWorkspaceFlatHistogram()), nullptr, Qt::ApplicationShortcut);
+
 	// Add dock widgets
 
 	addDockWidget(Qt::LeftDockWidgetArea, vipGetPlotToolWidgetPlayer(this));
@@ -3643,6 +3667,8 @@ void VipMainWindow::init()
 	addDockWidget(Qt::RightDockWidgetArea, vipGetConsoleWidget(this));
 	addDockWidget(Qt::RightDockWidgetArea, vipGetDirectoryBrowser(this));
 	addDockWidget(Qt::RightDockWidgetArea, vipGetAnnotationToolWidget(this));
+
+	
 
 	vipGetPlotToolWidgetPlayer(this)->setFloating(true);
 	vipGetPlotToolWidgetPlayer(this)->hide();
@@ -3796,7 +3822,7 @@ bool VipMainWindow::saveSession(const QString& filename, int session_type, int s
 	return saveSession(arch, session_type, session_content, tools_state);
 }
 
-bool VipMainWindow::saveSession(VipXOArchive& arch, int session_type, int session_content, const QByteArray& state)
+bool VipMainWindow::saveSession(VipArchive& arch, int session_type, int session_content, const QByteArray& state)
 {
 	if (workspacesMaximized()) {
 		maximizeWorkspaces(false);
@@ -3947,11 +3973,9 @@ struct InSessionLoading
 	~InSessionLoading() { VipGuiDisplayParamaters::instance()->setInSessionLoading(false); }
 };
 
-bool VipMainWindow::loadSessionShowProgress(const QString& filename, VipProgress* progress)
+
+bool VipMainWindow::loadSessionShowProgress(VipArchive& arch, VipProgress* progress)
 {
-	InSessionLoading inSessionLoading;
-	LockBool lock(&d_data->loadSession);
-	VipXIfArchive arch(filename);
 	if (!arch) {
 		return false;
 	}
@@ -3971,28 +3995,30 @@ bool VipMainWindow::loadSessionShowProgress(const QString& filename, VipProgress
 	arch.setVersion(ver);
 
 	// display editable content
-	if (VipImportSessionWidget::hasEditableContent(arch)) {
-		VipImportSessionWidget* edit = new VipImportSessionWidget();
-		edit->importArchive(arch);
-		QString title = (!edit->windowTitle().isEmpty()) ? " - " + edit->windowTitle() : QString();
-		VipGenericDialog dialog(edit, "Load session content" + title);
-		if (dialog.exec() == QDialog::Accepted) {
-			edit->applyToArchive(arch);
+	if (VipXArchive* a = qobject_cast<VipXArchive*>(&arch)) {
+
+		if (VipImportSessionWidget::hasEditableContent(*a)) {
+			VipImportSessionWidget* edit = new VipImportSessionWidget();
+			edit->importArchive(*a);
+			QString title = (!edit->windowTitle().isEmpty()) ? " - " + edit->windowTitle() : QString();
+			VipGenericDialog dialog(edit, "Load session content" + title);
+			if (dialog.exec() == QDialog::Accepted) {
+				edit->applyToArchive(*a);
+			}
+			else
+				return false;
 		}
-		else
-			return false;
 	}
 
-	VIP_LOG_INFO("Load session " + filename);
+	
 
 	if (progress) {
-		progress->setModal(true);
-		progress->setText("<b>Load session </b> " + QFileInfo(filename).fileName() + "...");
-
+		
 		// display the laoding progress
 		connect(&arch, SIGNAL(rangeUpdated(double, double)), progress, SLOT(setRange(double, double)), Qt::DirectConnection);
 		connect(&arch, SIGNAL(valueUpdated(double)), progress, SLOT(setValue(double)), Qt::DirectConnection);
-		arch.setAutoRangeEnabled(true);
+		if (VipXArchive* a = qobject_cast<VipXArchive*>(&arch))
+			a->setAutoRangeEnabled(true);
 	}
 
 	QVariantMap metadata;
@@ -4038,9 +4064,9 @@ bool VipMainWindow::loadSessionShowProgress(const QString& filename, VipProgress
 		arch.save();
 		if (VipDirectoryBrowser* browser = vipGetDirectoryBrowser()) {
 			// TEST
-			//QVariant v = vipToVariant(browser);
-			//VipDirectoryBrowser* tmp = v.value<VipDirectoryBrowser*>();
-			
+			// QVariant v = vipToVariant(browser);
+			// VipDirectoryBrowser* tmp = v.value<VipDirectoryBrowser*>();
+
 			if (!arch.content("DirectoryBrowser", browser))
 				arch.restore();
 		}
@@ -4162,10 +4188,45 @@ bool VipMainWindow::loadSessionShowProgress(const QString& filename, VipProgress
 
 	for (int i = 0; i < workspaces.size(); ++i)
 		Q_EMIT workspaceLoaded(workspaces[i]);
-	Q_EMIT sessionLoaded();
 
-	VIP_LOG_INFO("Done");
 	return true;
+}
+
+bool VipMainWindow::loadSessionShowProgress(const QString& filename, VipProgress* progress)
+{
+	VIP_LOG_INFO("Load session " + filename);
+	InSessionLoading inSessionLoading;
+	LockBool lock(&d_data->loadSession);
+
+	if (progress) {
+		// progress->setModal(true);
+		progress->setText("<b>Load session </b> " + QFileInfo(filename).fileName() + "...");
+	}
+
+	bool ret = false;
+
+#ifdef VIP_WITH_HDF5
+	if (QFileInfo(filename).suffix() == "hsession") {
+		VipH5Archive arch(filename,QIODevice::ReadOnly);
+		if (!arch)
+			return false;
+		ret = loadSessionShowProgress(arch, progress);
+	}
+	else
+#endif
+	{
+		VipXIfArchive arch(filename);
+		if (!arch)
+			return false;
+		ret = loadSessionShowProgress(arch, progress);
+	}
+
+	if (ret) {
+		Q_EMIT sessionLoaded();
+		VIP_LOG_INFO("Done");
+		return true;
+	}
+	return false;
 }
 
 void VipMainWindow::resetStyleSheet()
@@ -4272,6 +4333,10 @@ void VipMainWindow::keyPressEvent(QKeyEvent* evt)
 	// shortcut.
 	if (evt->key() == Qt::Key_F && (evt->modifiers() & Qt::CTRL))
 	{
+		focusToSearchLine();
+		evt->accept();
+	}
+	else if (evt->key() == Qt::Key_P && (evt->modifiers() & Qt::CTRL) && (evt->modifiers() & Qt::SHIFT)) {
 		focusToSearchLine();
 		evt->accept();
 	}
@@ -4399,6 +4464,56 @@ void VipMainWindow::exitFullScreen()
 {
 	if (isFullScreen())
 		showMaximized();
+}
+
+void VipMainWindow::restoreOrMaximizeCurrentPlayer()
+{
+	if (auto* wkp = displayArea()->currentDisplayPlayerArea()) {
+		if (auto handler = wkp->dragWidgetHandler()) {
+			if (VipDragWidget* w = handler->focusWidget()) {
+				if (w->isMinimized())
+					w->showNormal();
+				else if (!w->isMaximized())
+					w->showMaximized();
+			}
+		}
+	}
+}
+void VipMainWindow::restoreOrMinimizeCurrentPlayer()
+{
+	if (auto* wkp = displayArea()->currentDisplayPlayerArea()) {
+		if (auto handler = wkp->dragWidgetHandler()) {
+			if (VipDragWidget* w = handler->focusWidget()) {
+				if (w->isMaximized())
+					w->showNormal();
+				else if (!w->isMinimized())
+					w->showMinimized();
+			}
+		}
+	}
+}
+void VipMainWindow::closeCurrentPlayer()
+{
+	if (auto* wkp = displayArea()->currentDisplayPlayerArea()) {
+		if (auto handler = wkp->dragWidgetHandler()) {
+			if (VipDragWidget* w = handler->focusWidget()) {
+				w->close();
+			}
+		}
+	}
+}
+
+void VipMainWindow::toggleWorkspaceFlatHistogram()
+{
+	if (auto* wkp = displayArea()->currentDisplayPlayerArea()) {
+		bool has_flat = wkp->colorMapAxis()->useFlatHistogram();
+		wkp->colorMapAxis()->setUseFlatHistogram(!has_flat);
+		QList<VipVideoPlayer*> players = wkp->findChildren<VipVideoPlayer*>();
+		for (qsizetype i = 0; i < players.size(); ++i) {
+			players[i]->setFlatHistogramColorScale(!has_flat);
+			players[i]->spectrogram()->update();
+		}
+	}
 }
 
 void VipMainWindow::setCurrentTabDestroy(bool is_destroy)
@@ -4603,7 +4718,7 @@ QList<VipAbstractPlayer*> VipMainWindow::openPaths(const VipPathList& paths, Vip
 	if (!area)
 		area = displayArea()->currentDisplayPlayerArea();
 
-	if (!area && !(paths.size() == 1 && QFileInfo(paths.first().canonicalPath()).suffix() == "session")) {
+	if (!area && !(paths.size() == 1 && (QFileInfo(paths.first().canonicalPath()).suffix() == "session" || QFileInfo(paths.first().canonicalPath()).suffix() == "hsession"))) {
 		VIP_LOG_ERROR("Cannot open paths: you need to select a valid Workspace first");
 		if (_vip_openPathShowDialogOnError)
 			QMessageBox::warning(nullptr, "Error", "Cannot open paths: you need to select a valid Workspace first");
@@ -4664,6 +4779,14 @@ QList<VipAbstractPlayer*> VipMainWindow::openPaths(const VipPathList& paths, Vip
 				if (!this->loadSession(filename))
 					errors << filename;
 			}
+#ifdef VIP_WITH_HDF5
+			else if (QFileInfo(filename).suffix() == "hsession") {
+				progress.setText("<b>Open</b> " + QFileInfo(filename).fileName());
+				vipProcessEvents();
+				if (!this->loadSession(filename))
+					errors << filename;
+			}
+#endif
 			else {
 
 				QList<VipIODevice::Info> devices = VipIODevice::possibleReadDevices(paths[i], QByteArray());
@@ -4720,7 +4843,11 @@ QList<VipAbstractPlayer*> VipMainWindow::openPaths(const VipPathList& paths, Vip
 QList<VipAbstractPlayer*> VipMainWindow::openFiles()
 {
 	QStringList filters;
+#ifdef VIP_WITH_HDF5
+	filters << "Session file (*.session *.hsession)";
+#else
 	filters << "Session file (*.session)";
+#endif
 	if (d_data->displayArea->currentDisplayPlayerArea()) {
 		filters += VipIODevice::possibleReadFilters(QString(), QByteArray());
 		// create the All files filter

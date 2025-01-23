@@ -49,7 +49,7 @@
 #include "VipOptions.h"
 #include "VipStandardEditors.h"
 #include "VipStandardWidgets.h"
-
+#include "VipSearchLineEdit.h"
 
 
 QGroupBox* VipPageOption::createOptionGroup(const QString& label)
@@ -189,12 +189,25 @@ bool VipOptions::addPage(const QString& category, VipPageOption* page, const QIc
 		if (!found) {
 			// item not found, add it
 			QTreeWidgetItem* item = new QTreeWidgetItem();
-			item->setText(0, path[i]);
+			QString name = path[i];
+			item->setText(0, name);
 			current->addChild(item);
 			current = item;
 			// set its icon
 			if (i == path.size() - 1 && !icon.isNull())
 				item->setIcon(0, icon);
+
+			if (i == path.size() - 1) {
+
+				// Map this entry
+				QString shortcut = name;
+				if (!name.endsWith("options", Qt::CaseInsensitive))
+					shortcut += " options";
+				VipShortcutsHelper::registerShorcut(shortcut, [name]() { 
+					vipGetOptions()->setCurrentPage(name);
+					vipGetOptions()->exec();
+				});
+			}
 		}
 		else
 			current = found;
@@ -225,6 +238,29 @@ QScrollArea* VipOptions::areaForPage(VipPageOption* page) const
 		if (qobject_cast<VipPageOption*>(it.value()->widget()) == page)
 			return it.value();
 	return nullptr;
+}
+
+void VipOptions::setCurrentPage(const QString& category)
+{
+	QTreeWidgetItem* item = nullptr;
+	QScrollArea* area = nullptr;
+
+	for (auto it = d_data->pages.begin(); it != d_data->pages.end(); ++it)
+	{
+		QString name = it.key()->text(0);
+		bool found = name == category;
+		it.value()->setVisible(found);
+		if (found) {
+			area = it.value();
+			item = it.key();
+		}
+	}
+	if (item) {
+		d_data->page_browser->blockSignals(true);
+		d_data->page_browser->setCurrentItem(item);
+		d_data->page_browser->blockSignals(false);
+		d_data->current = static_cast<VipPageOption*>(area->widget());
+	}
 }
 
 void VipOptions::setCurrentPage(VipPageOption* page)

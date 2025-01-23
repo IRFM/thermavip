@@ -29,6 +29,7 @@ option(WITH_HDF5 "Build HDF5 plugin" OFF)
 option(WITH_PYTHON "Build Python plugin" OFF)
 option(WITH_WEBENGINE "Build components based on Qt webengine module (if webengine is available)" ON)
 option(WITH_VTK "Build VTK support" OFF)
+option(WITH_HDF5 "Build HDF5 support" OFF)
 option(WITH_LIBRIR "Build and install librir" OFF)
 option(WITH_EXAMPLES "Build examples" ON)
 option(WITH_TESTS "Build tests" ON)
@@ -195,6 +196,13 @@ else()
 	set(HAS_VTK OFF)
 endif()
 
+# HDF5
+if(WITH_HDF5)
+	find_package (HDF5 COMPONENTS C REQUIRED)
+	set(HAS_HDF5 ON)
+else()
+	set(HAS_HDF5 OFF)
+endif()
 
 # Add targets
 target_include_directories(VipLogging  PUBLIC
@@ -246,7 +254,7 @@ configure_package_config_file(cmake/thermavipConfig.cmake.in
   ${CMAKE_CURRENT_BINARY_DIR}/thermavipConfig.cmake
   INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/thermavip
   PATH_VARS 
-  PLUGINS_LIBS QT_ADDITIONAL_LIBS QT_WEBENGINE_LIBS HAS_VTK)
+  PLUGINS_LIBS QT_ADDITIONAL_LIBS QT_WEBENGINE_LIBS HAS_VTK HAS_HDF5)
   
 write_basic_package_version_file(
   ${CMAKE_CURRENT_BINARY_DIR}/thermavipConfigVersion.cmake

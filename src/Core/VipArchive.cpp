@@ -158,10 +158,16 @@ VipArchive::operator const void*() const
 
 void VipArchive::save()
 {
+	if (mode() != Read)
+		return;
+	this->doSave();
 	d_data->saved.append(d_data->parameters);
 }
 void VipArchive::restore()
 {
+	if (mode() != Read)
+		return;
+	this->doRestore();
 	if (d_data->saved.size()) {
 		d_data->parameters = d_data->saved.back();
 		d_data->saved.pop_back();
@@ -521,14 +527,13 @@ void VipBinaryArchive::close()
 	setDevice(nullptr);
 }
 
-void VipBinaryArchive::save()
+void VipBinaryArchive::doSave()
 {
 	qint64 pos = m_device ? m_device->pos() : 0;
 	m_saved_pos.append(pos);
-	VipArchive::save();
 }
 
-void VipBinaryArchive::restore()
+void VipBinaryArchive::doRestore()
 {
 	if (m_saved_pos.size()) {
 		qint64 pos = m_saved_pos.last();
@@ -536,7 +541,6 @@ void VipBinaryArchive::restore()
 		if (m_device)
 			m_device->seek(pos);
 	}
-	VipArchive::restore();
 }
 
 void VipBinaryArchive::doStart(QString& name, QVariantMap&, bool)

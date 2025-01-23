@@ -2980,13 +2980,16 @@ void VipPlayWidget::updatePlayerInternal()
 		d_data->playForward->setIcon(vipIcon("play.png"));
 	}
 
-	bool has_frame = processingPool()->deviceType() == VipIODevice::Temporal && // area()->timeRangeListItems().size() == 1 &&
+	bool has_frame = processingPool()->deviceType() == VipIODevice::Temporal &&
 			 processingPool()->size() > 0;
 	if (has_frame) {
 		d_data->frameEdit->setRange(0, processingPool()->size());
 		d_data->frameEdit->setValue(processingPool()->timeToPos(processingPool()->time()));
 	}
-	d_data->timeEdit->setText(d_data->playerArea->timeScale()->scaleDraw()->label(processingPool()->time(), VipScaleDiv::MajorTick).text());
+
+	QString time_text = d_data->playerArea->timeScale()->scaleDraw()->label(processingPool()->time(), VipScaleDiv::MajorTick).text();
+	time_text.replace(',', '.');
+	d_data->timeEdit->setText(time_text);
 
 	d_data->first->blockSignals(false);
 	d_data->previous->blockSignals(false);
@@ -3077,12 +3080,12 @@ void VipPlayWidget::timeChanged()
 	d_data->timeEdit->blockSignals(true);
 
 	bool has_frame = processingPool()->size() > 0;
-	// d_data->frameEdit->setVisible(has_frame);
 	if (has_frame) {
-		// d_data->frameEdit->setRange(0,processingPool()->size());
 		d_data->frameEdit->setValue(processingPool()->timeToPos(processingPool()->time()));
 	}
-	d_data->timeEdit->setText(d_data->playerArea->timeScale()->scaleDraw()->label(processingPool()->time(), VipScaleDiv::MajorTick).text());
+	QString time_text = d_data->playerArea->timeScale()->scaleDraw()->label(processingPool()->time(), VipScaleDiv::MajorTick).text();
+	time_text.replace(',', '.');
+	d_data->timeEdit->setText(time_text);
 
 	d_data->frameEdit->blockSignals(false);
 	d_data->timeEdit->blockSignals(false);

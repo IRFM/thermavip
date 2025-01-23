@@ -58,10 +58,19 @@ namespace detail
 		bool operator==(const Conversion& other) const { return source == other.source && dest_type == other.dest_type; }
 	};
 	// to store in QSet
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
 	inline uint qHash(const Conversion& c)
 	{
-		return (std::intptr_t)c.source.data() ^ c.dest_type;
+		return (uint)( (std::intptr_t)c.source.data() ^ c.dest_type);
 	}
+	
+#else
+	inline size_t qHash(const Conversion& c, size_t seed)
+	{
+		return (size_t)((std::intptr_t)c.source.data() ^ c.dest_type) ^ seed;
+	}
+#endif
+	
 
 	/// \internal
 	/// Store all possible conversions from VipNDArray to VipNDArrayType when casting a functor expression.
