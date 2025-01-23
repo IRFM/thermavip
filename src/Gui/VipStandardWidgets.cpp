@@ -1908,6 +1908,12 @@ void VipFileName::setDefaultOpenDir(const QString& dir)
 	m_default_open_dir = dir;
 }
 
+void VipFileName::setDialogParent(QWidget* parent)
+{
+	m_dialog_parent = parent;
+	m_has_dialog_parent = true;
+}
+
 QString VipFileName::defaultOpenDir() const
 {
 	return m_default_open_dir;
@@ -1927,13 +1933,17 @@ void VipFileName::buttonTriggered()
 	else
 		filters = m_filters;
 
+	QWidget* parent = this;
+	if (m_has_dialog_parent)
+		parent = m_dialog_parent;
+
 	VipFileDialog::setDefaultDirectory(m_default_open_dir);
 	if (m_mode == Save)
-		fileName = VipFileDialog::getSaveFileName(this, m_title, filters);
+		fileName = VipFileDialog::getSaveFileName(parent, m_title, filters);
 	else if (m_mode == Open)
-		fileName = VipFileDialog::getOpenFileName(this, m_title, filters);
+		fileName = VipFileDialog::getOpenFileName(parent, m_title, filters);
 	else if (m_mode == OpenDir)
-		fileName = VipFileDialog::getExistingDirectory(this, m_title);
+		fileName = VipFileDialog::getExistingDirectory(parent, m_title);
 	VipFileDialog::setDefaultDirectory(QString());
 
 	if (!fileName.isEmpty()) {

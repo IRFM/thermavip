@@ -55,8 +55,6 @@ public:
 	void setRecordDelay(double secs);
 	double recordDelay() const;
 
-	void setOutputSize(const QSize&);
-	QSize outputSize() const;
 	QSize videoSize() const;
 
 	bool recordOnPlay() const;
@@ -81,7 +79,6 @@ public:
 
 	bool isRecording() const;
 
-	QImage grabScreenRect();
 	QImage grabCurrentImage();
 
 public Q_SLOTS:
@@ -113,12 +110,12 @@ private Q_SLOTS:
 	void grabImage();
 
 private:
+	QRect computeRect();
+
 	QToolButton m_reset;
 	VipDoubleEdit m_rate;
 	QSpinBox m_fps;
 	QSpinBox m_movie_fps;
-	QSpinBox m_width;
-	QSpinBox m_height;
 	QDoubleSpinBox m_recordDelay;
 	VipFileName m_file;
 	QCheckBox m_recordOnPlay;
@@ -131,6 +128,7 @@ private:
 	Qt::MouseButtons m_buttons;
 	QPixmap m_cursor;
 	QRect m_rect;
+	QScreen* m_screen{ nullptr };
 	int m_timeout;
 
 	int m_grow_time;
@@ -138,8 +136,6 @@ private:
 	QBrush m_brush;
 	bool m_draw_mouse;
 
-	void* m_handler;
 	QProcess m_process;
-
 	VideoEncoder* m_encoder;
 };

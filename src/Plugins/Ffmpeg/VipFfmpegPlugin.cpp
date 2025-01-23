@@ -133,7 +133,7 @@ void FfmpegInterface::openVideoStream(QAction* action)
 
 FfmpegInterface::LoadResult FfmpegInterface::load()
 {
-	VipCommandOptions::instance().parse(QCoreApplication::instance()->arguments());
+	/* VipCommandOptions::instance().parse(QCoreApplication::instance()->arguments());
 	if (VipCommandOptions::instance().count("record")) {
 		// command line recording of the screen
 
@@ -170,7 +170,6 @@ FfmpegInterface::LoadResult FfmpegInterface::load()
 		record.setRecordingFps(fps);
 		record.setMovieFps(ffps);
 		record.setScreenRect(rect);
-		record.setOutputSize(rect.size());
 		record.setTimeout(timeout);
 
 		QEventLoop loop;
@@ -180,10 +179,10 @@ FfmpegInterface::LoadResult FfmpegInterface::load()
 
 		QMetaObject::invokeMethod(&record, "start", Qt::QueuedConnection);
 
-		loop.exec(/*QEventLoop::WaitForMoreEvents|*/ QEventLoop::AllEvents);
+		loop.exec( QEventLoop::AllEvents);
 
 		return FfmpegInterface::ExitProcess;
-	}
+	}*/
 
 	/*QImage im("C:/Users/Moncada/Desktop/complex_img3.png");
 

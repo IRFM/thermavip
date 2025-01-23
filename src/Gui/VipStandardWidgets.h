@@ -861,7 +861,7 @@ public:
 
 	Mode mode() const;
 	QString filename() const;
-	;
+	
 	QString filters() const;
 	QString prefix() const;
 	QString title() const;
@@ -869,6 +869,8 @@ public:
 	QString defaultOpenDir() const;
 	QGridLayout* gridLayout();
 	QLineEdit* edit() { return &m_edit; }
+
+	void setDialogParent(QWidget* parent);
 
 public Q_SLOTS:
 
@@ -899,6 +901,8 @@ protected:
 	QString m_default_path;
 	QString m_default_open_dir;
 	Mode m_mode;
+	QWidget* m_dialog_parent{ nullptr };
+	bool m_has_dialog_parent{ false };//TODO: use std::expected
 };
 
 class VipToolBar;

@@ -1332,8 +1332,9 @@ QMultiMap<QString, int> VipMultiProgressWidget::currentProgresses() const
 void VipMultiProgressWidget::closeEvent(QCloseEvent* evt)
 {
 	evt->ignore();
-	if (d_data->isModal)
+	if (!d_data->isModal) {
 		this->hide();
+	}
 }
 
 void VipMultiProgressWidget::showEvent(QShowEvent* evt)
@@ -1411,11 +1412,14 @@ bool VipMultiProgressWidget::eventFilter(QObject * obj, QEvent * evt)
 void VipMultiProgressWidget::changeModality(Qt::WindowModality modality)
 {
 #ifdef WIN32
-	this->hide();
+	bool hidden = this->isHidden();
+	if (!hidden)
+		this->hide();
 	d_data->changeModality = true;
 	this->setWindowModality(modality);
 	d_data->isModal = modality == Qt::ApplicationModal;
-	this->show();
+	if (!hidden)
+		this->show();
 	d_data->changeModality = false;
 #else
 

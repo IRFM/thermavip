@@ -76,6 +76,9 @@ class VIP_PLOTTING_EXPORT VipDisplayObject : public VipProcessingObject
 	Q_OBJECT
 	VIP_IO(VipInput data)
 	VIP_IO(VipProperty numThreads)
+
+	friend class VipDisplayPlotItem;
+
 public:
 	VipDisplayObject(QObject* parent = nullptr);
 	~VipDisplayObject();
@@ -188,6 +191,7 @@ public:
 private Q_SLOTS:
 	void setItemProperty();
 	void internalFormatItem();
+	void axesChanged(VipPlotItem*);
 
 private:
 	

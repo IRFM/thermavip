@@ -309,7 +309,8 @@ void VipRecordWindow::openFile()
 {
 	closeFile();
 	try {
-		m_rect = vipGetMainWindow()->geometry();
+		m_rect = computeRect();
+		m_screen = vipGetMainWindow()->screen();
 		m_encoder = new VideoEncoder();
 		QSize s = videoSize();
 		m_encoder->Open(filename().toLatin1().data(), s.width(), s.height(), movieFps(), rate() * 1000);
@@ -371,12 +372,6 @@ VipRecordWindow::VipRecordWindow(QWidget* parent)
 	lay->addWidget(new QLabel("Movie FPS"), row, 0);
 	lay->addWidget(&m_movie_fps, row++, 1);
 
-	lay->addWidget(new QLabel("Image width"), row, 0);
-	lay->addWidget(&m_width, row++, 1);
-
-	lay->addWidget(new QLabel("Image height"), row, 0);
-	lay->addWidget(&m_height, row++, 1);
-
 	lay->addWidget(new QLabel("Record delay"), row, 0);
 	lay->addWidget(&m_recordDelay, row++, 1);
 
@@ -401,17 +396,10 @@ VipRecordWindow::VipRecordWindow(QWidget* parent)
 	m_recordDelay.setValue(0);
 	m_recordDelay.setSingleStep(0.5);
 
-	m_width.setRange(320, 5000);
-	m_width.setToolTip("Movie width (pixels)");
-	m_width.setValue(vipGetMainWindow()->width());
-
-	m_height.setRange(240, 5000);
-	m_height.setToolTip("Movie height (pixels)");
-	m_height.setValue(vipGetMainWindow()->height());
-
 	m_file.setMode(VipFileName::Save);
-	m_file.setFilters("Video file (*.mpg *.mpeg *.avi *.mp4 *.wmv *.gif *.mov)");
+	m_file.setFilters("Video file (*.mp4 *.mpg *.mpeg *.avi *.wmv *.gif *.mov)");
 	m_file.edit()->setPlaceholderText("Recording file name");
+	m_file.setDialogParent(vipGetMainWindow());
 
 	m_recordOnPlay.setText("Sync. recording on play");
 	m_recordOnPlay.setToolTip("<b>Start/Stop the recording when clicking the play/stop buttons.</b><br>"
@@ -435,7 +423,7 @@ VipRecordWindow::VipRecordWindow(QWidget* parent)
 	m_buttons = Qt::MouseButtons();
 	m_cursor = vipPixmap("std_cursor.png");
 	m_timeout = -1;
-	m_handler = nullptr;
+	//m_handler = nullptr;
 	m_encoder = nullptr;
 	m_recordOnPlayEnabled = false;
 	resetParams();
@@ -457,11 +445,9 @@ void VipRecordWindow::showEvent(QShowEvent*)
 
 void VipRecordWindow::resetParams()
 {
-	m_rate.setValue(25000);
+	m_rate.setValue(2500);
 	m_fps.setValue(25);
 	m_movie_fps.setValue(25);
-	m_width.setValue(vipGetMainWindow()->width());
-	m_height.setValue(vipGetMainWindow()->height());
 	m_grow_time = 100;
 	m_draw_mouse = true;
 	m_pen = QPen(Qt::red);
@@ -519,28 +505,9 @@ double VipRecordWindow::recordDelay() const
 	return m_recordDelay.value();
 }
 
-void VipRecordWindow::setOutputSize(const QSize& size)
-{
-	m_width.setValue(size.width());
-	m_height.setValue(size.height());
-}
-QSize VipRecordWindow::outputSize() const
-{
-	return QSize(m_width.value(), m_height.value());
-}
-
 QSize VipRecordWindow::videoSize() const
 {
-	QSize s(m_width.value(), m_height.value());
-	if (VipBaseDragWidget* w = m_player.selectedWidget()) {
-		QRect r(w->mapToGlobal(QPoint(0, 0)), w->mapToGlobal(QPoint(w->width(), w->height())));
-		s = r.size();
-	}
-	if (s.width() % 2)
-		s.setWidth(s.width() - 1);
-	if (s.height() % 2)
-		s.setHeight(s.height() - 1);
-	return s;
+	return m_rect.size();
 }
 
 void VipRecordWindow::setRecordOnPlay(bool enable)
@@ -568,7 +535,7 @@ bool VipRecordWindow::recordOnPlay() const
 	return m_recordOnPlayEnabled;
 }
 
-#include <qwindow.h>
+/*#include <qwindow.h>
 #include <qscreen.h>
 QImage VipRecordWindow::grabScreenRect()
 {
@@ -591,38 +558,32 @@ QImage VipRecordWindow::grabScreenRect()
 	// QPixmap pix  = screen->grabWindow(0);
 	return pix.toImage();
 #endif
-}
+}*/
 
 QImage VipRecordWindow::grabCurrentImage()
 {
 	QImage img;
 
-	if (VipBaseDragWidget* w = m_player.selectedWidget()) {
-		m_rect = QRect(w->mapToGlobal(QPoint(0, 0)), w->mapToGlobal(QPoint(w->width(), w->height())));
-		if (m_rect.width() % 2)
-			m_rect.setRight(m_rect.right() - 1);
-		if (m_rect.height() % 2)
-			m_rect.setBottom(m_rect.bottom() - 1);
-	}
-
-	QPoint topleft = m_rect.isEmpty() ? vipGetMainWindow()->pos() : m_rect.topLeft();
+	QPoint topleft = m_rect.topLeft();
 	{
-		img = m_rect.isEmpty() ? vipGetMainWindow()->windowHandle()->screen()->grabWindow(0).toImage() : grabScreenRect();
-
+		const QPixmap pix = m_screen->grabWindow();
+		img = QImage(m_rect.size(), QImage::Format_ARGB32);
+		img.fill(Qt::transparent);
+		
 		QPainter p(&img);
+		p.drawPixmap(QRect(QPoint(0, 0), img.size()), pix, QRect(topleft, img.size()));
 
-		if (m_rect.isEmpty()) {
-			QList<QWidget*> ws = QApplication::topLevelWidgets();
-			for (int i = 0; i < ws.size(); ++i) {
-				QWidget* w = ws[i];
-				if (w != vipGetMainWindow() && w->isVisible()) {
-					if (w->parentWidget())
-						p.drawPixmap(w->geometry().translated(-topleft), w->grab());
-					else
-						p.drawPixmap(w->geometry(), w->grab());
-				}
+		QList<QWidget*> ws = QApplication::topLevelWidgets();
+		for (int i = 0; i < ws.size(); ++i) {
+			QWidget* w = ws[i];
+			if (w != vipGetMainWindow() && w->isVisible()) {
+				if (w->parentWidget())
+					p.drawPixmap(w->geometry().translated(-topleft), w->grab());
+				else
+					p.drawPixmap(w->geometry(), w->grab());
 			}
 		}
+		
 
 		if (m_draw_mouse) {
 			double expand_time = m_grow_time; // ms
@@ -640,7 +601,6 @@ QImage VipRecordWindow::grabCurrentImage()
 				p.setPen(m_pen);
 				p.setBrush(m_brush);
 				p.drawEllipse(QRectF(-radius / 2, -radius / 2, radius, radius).translated(QCursor::pos() - topleft));
-				// vip_debug("grow %i\n", (int)radius);
 			}
 			else {
 				if (m_buttons) {
@@ -656,7 +616,6 @@ QImage VipRecordWindow::grabCurrentImage()
 					p.setPen(m_pen);
 					p.setBrush(m_brush);
 					p.drawEllipse(QRectF(-radius / 2, -radius / 2, radius, radius).translated(QCursor::pos() - topleft));
-					// vip_debug("redu %i\n", (int)radius);
 				}
 			}
 			// draw cursor
@@ -779,6 +738,19 @@ void VipRecordWindow::setRecordExternalProcess(bool enable)
 	}
 }
 
+QRect VipRecordWindow::computeRect()
+{
+	QRect rect = vipGetMainWindow()->geometry();
+	if (VipBaseDragWidget* w = m_player.selectedWidget()) 
+		rect = QRect(w->mapToGlobal(QPoint(0, 0)), w->mapToGlobal(QPoint(w->width(), w->height())));
+	
+	if (rect.width() % 2)
+		rect.setRight(rect.right() - 1);
+	if (rect.height() % 2)
+		rect.setBottom(rect.bottom() - 1);
+	return rect;
+}
+
 void VipRecordWindow::start()
 {
 	stop();
@@ -787,34 +759,40 @@ void VipRecordWindow::start()
 		__should_quit = false;
 	}
 
-#ifdef _MSC_VER
+	m_rect = computeRect();
+	m_screen = vipGetMainWindow()->screen();
+
+/* #ifdef _MSC_VER
 	if (!m_handler && !m_rect.isEmpty()) {
 		m_handler = new ScreenShot(m_rect);
 	}
-#endif
+#endif*/
 
 	m_timer.setInterval(1000.0 / recordingFps());
 
 	m_thread->rec = this;
 	m_thread->start();
-	m_timer.start();
+	if (!m_recordOnPlayEnabled)
+		m_timer.start();
 	while (!m_thread->started) {
 		QThread::msleep(1);
 	}
 }
 void VipRecordWindow::stop()
 {
-#ifdef _MSC_VER
+/* #ifdef _MSC_VER
 	if (m_handler) {
 		delete static_cast<ScreenShot*>(m_handler);
 		m_handler = nullptr;
 	}
-#endif
+#endif*/
 
 	m_timer.stop();
 	m_thread->rec = nullptr;
 	m_thread->wait();
 	m_thread->images.clear();
+	m_rect = QRect();
+	m_screen = nullptr;
 }
 
 void VipRecordWindow::setState(bool start)

@@ -1,3 +1,19 @@
+Thermavip v5.1.0 - 23/01/2024
+
+(Global) Corrected potential Skype application crash (?) when starting Thermavip
+
+(Gui) Corrected graphical glitch where some button are still visible even when the main interface is hidden
+(Gui) Added shortcut Ctrl+Shift+P to reach the top search line edit (in addition to CTRL+F)
+(Gui) Added shortcut Ctrl+H to toggle on/off color scale flattening for all players in the current workspace
+(Gui) Added possibility to close a workspace by clicking the wheel
+(Gui) Setting a play speed > 1 now works as expected (but might skip frames)
+
+(WEST) Added search feature "Go to disruption" to move the time slider to the disruption time
+(WEST) Added search feature "LLM4PPO" to open the LLM4PPO tool
+(WEST) Added search feature "Wiki PPO" to open the corresponding web page
+(WEST) Added search feature "Preload all IR movies" with optional pulse number to start preloading corresponding IR videos
+
+
 Thermavip v5.0.0 - 10/12/2024
 
 (Gui) Major Gui/skins updates

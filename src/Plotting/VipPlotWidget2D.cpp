@@ -951,6 +951,9 @@ public:
 	VipColorPalette colorPalette;
 	QString colorPaletteName;
 	QString colorMapName;
+
+	QMutex notifierLock;
+	Vip::detail::ItemDirtyNotifierPtr notifier;
 };
 
 static int registerAbstractAreaKeyWords()
@@ -2475,6 +2478,19 @@ VipPlotItem* VipAbstractPlotArea::lastPressed() const
 {
 	return d_data->lastPressed;
 }
+
+void VipAbstractPlotArea::setNotifier(const Vip::detail::ItemDirtyNotifierPtr& notifier)
+{
+	QMutexLocker ll(&d_data->notifierLock);
+	d_data->notifier = notifier;
+}
+
+Vip::detail::ItemDirtyNotifierPtr VipAbstractPlotArea::notifier()
+{
+	QMutexLocker ll(&d_data->notifierLock);
+	return d_data->notifier;
+}
+
 
 bool VipAbstractPlotArea::mouseInUse() const
 {

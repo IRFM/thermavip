@@ -252,6 +252,9 @@ namespace Vip
 			LegendInnerBottomRight,
 			LegendNone
 		};
+
+		class ItemDirtyNotifier;
+		using ItemDirtyNotifierPtr = QSharedPointer<ItemDirtyNotifier>;
 	}
 }
 
@@ -325,6 +328,8 @@ class VIP_PLOTTING_EXPORT VipAbstractPlotArea : public VipBoxGraphicsWidget
 	friend class VipBaseGraphicsView;
 	friend class RenderThread;
 	friend class ComputeBorderGeometry;
+	friend class VipDisplayObject;
+	friend class VipDisplayPlotItem;
 
 public:
 	typedef QMap<const VipAbstractScale*, VipInterval> scales_state;
@@ -642,6 +647,7 @@ public:
 	/// @brief Returns the last VipPlotItem which triggered a mouseButtonPressed() signal
 	VipPlotItem* lastPressed() const;
 
+	
 public Q_SLOTS:
 
 	/// @brief Enable/disable automatic scaling for spatial scales
@@ -827,6 +833,9 @@ private:
 	bool markGeometryDirty();
 	void applyLabelOverlapping();
 	
+	void setNotifier(const Vip::detail::ItemDirtyNotifierPtr & notifier);
+	Vip::detail::ItemDirtyNotifierPtr notifier();
+
 	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
