@@ -7311,8 +7311,8 @@ bool VipPlotPlayer::plotItemClicked(VipPlotItem*, VipPlotItem::MouseButton butto
 					if (VipProcessingPool* pool = this->processingPool()) {
 						QPoint p = QCursor::pos();
 						p = this->plotWidget2D()->mapFromGlobal(p);
-						QPointF pf = this->plotWidget2D()->mapToScene(p);
-						pf = this->plotWidget2D()->area()->mapFromScene(pf);
+						QPointF spf = this->plotWidget2D()->mapToScene(p);
+						QPointF pf = this->plotWidget2D()->area()->mapFromScene(spf);
 
 						QList<VipPointVector> points;
 						VipBoxStyleList styles;
@@ -7327,7 +7327,7 @@ bool VipPlotPlayer::plotItemClicked(VipPlotItem*, VipPlotItem::MouseButton butto
 							const VipPointVector vec = points[i];
 							for (int j = 0; j < vec.size(); ++j) {
 								QPointF ip = items[i]->mapToScene(vec[j]);
-								double dist = (ip - pf).manhattanLength();
+								double dist = (ip - spf).manhattanLength();
 								if (closest_dist == -1 || dist < closest_dist) {
 									closest_dist = dist;
 									closest = ip;
@@ -7335,8 +7335,9 @@ bool VipPlotPlayer::plotItemClicked(VipPlotItem*, VipPlotItem::MouseButton butto
 							}
 						}
 						if (closest_dist == -1)
-							closest = pf;
+							closest = spf;
 
+						closest = this->plotWidget2D()->area()->mapFromScene(closest);
 						VipPoint scale = this->plotWidget2D()->area()->positionToScale(closest);
 						pool->seek(static_cast<qint64>(scale.x()));
 

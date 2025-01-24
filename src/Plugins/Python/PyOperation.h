@@ -149,11 +149,8 @@ public:
 	QVariant object; //! Object to send (SendObject)
 
 	VipPyCommand() noexcept = default;
-	VipPyCommand(const VipPyCommand&) = default;
-	VipPyCommand(VipPyCommand&&) = default;
-	VipPyCommand& operator=(const VipPyCommand&) = default;
-	VipPyCommand& operator=(VipPyCommand&&) noexcept = default;
-
+	VIP_DEFAULT_MOVE(VipPyCommand);
+	
 	/// @brief Returns the command unique identifier
 	QString buildId() const noexcept { return id.isEmpty() ? string : id; }
 };
@@ -242,6 +239,7 @@ protected Q_SLOTS:
 class VipBasePyRunnable
 {
 public:
+	virtual ~VipBasePyRunnable() noexcept {}
 	virtual bool isFinished() const = 0;
 	virtual bool wait(int milli = -1) const = 0;
 	virtual QVariant value(int milli = -1) const = 0;

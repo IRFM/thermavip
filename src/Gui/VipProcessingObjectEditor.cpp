@@ -61,6 +61,8 @@
 #include <QToolButton>
 #include <qtimer.h>
 
+#include <vector>
+
 #define __VIP_MAX_DISPLAYED_EDITORS 5
 
 class VipOtherPlayerDataEditor::PrivateData
@@ -5289,17 +5291,173 @@ VipProcessingEditorToolWidget* vipGetProcessingEditorToolWidget(VipMainWindow* w
 	return instance;
 }
 
+
+
+
+class VipRememberDeviceOptions::PrivateData
+{
+public:
+	QMap<QString, QString> suffixToDeviceType;
+	QMap<QString, VipIODevice*> deviceOptions;
+};
+
+VipRememberDeviceOptions::VipRememberDeviceOptions() 
+{
+	VIP_CREATE_PRIVATE_DATA(d_data);
+}
+VipRememberDeviceOptions::~VipRememberDeviceOptions() 
+{
+	clearAll();
+}
+
+/// Returns a map of 'file_suffix' -> 'class_name'
+const QMap<QString, QString>& VipRememberDeviceOptions::suffixToDeviceType() const
+{
+	return d_data->suffixToDeviceType;
+}
+void VipRememberDeviceOptions::setSuffixToDeviceType(const QMap<QString, QString>& m)
+{
+	d_data->suffixToDeviceType = m;
+}
+void VipRememberDeviceOptions::addSuffixAndDeviceType(const QString& suffix, const QString& device_type)
+{
+	d_data->suffixToDeviceType.insert(suffix, device_type);
+}
+void VipRememberDeviceOptions::clearSuffixAndDeviceType()
+{
+	d_data->suffixToDeviceType.clear();
+}
+QString VipRememberDeviceOptions::deviceTypeForSuffix(const QString& suffix) const
+{
+	auto it = d_data->suffixToDeviceType.find(suffix);
+	if (it == d_data->suffixToDeviceType.end())
+		return QString();
+	return it.value();
+}
+VipIODevice* VipRememberDeviceOptions::deviceForSuffix(const QString& suffix) const
+{
+	QString type = deviceTypeForSuffix(suffix);
+	if (type.isEmpty())
+		return nullptr;
+	return vipCreateVariant(((type.toLatin1()) + "*").data()).value<VipIODevice*>();
+}
+
+/// Returns a map of 'class_name' -> 'VipIODevice*'
+const QMap<QString, VipIODevice*>& VipRememberDeviceOptions::deviceOptions() const
+{
+	return d_data->deviceOptions;
+}
+void VipRememberDeviceOptions::setDeviceOptions(const QMap<QString, VipIODevice*>& m)
+{
+	d_data->deviceOptions = m;
+}
+void VipRememberDeviceOptions::addDeviceOptions(const QString& device_type, VipIODevice* device)
+{
+	d_data->deviceOptions.insert(device_type, (device));
+}
+bool VipRememberDeviceOptions::addDeviceOptionsCopy(const VipIODevice* src_device)
+{
+	VipIODevice* copy=(vipCreateVariant((QByteArray(src_device->metaObject()->className()) + "*").data()).value<VipIODevice*>());
+	if (!copy)
+		return false;
+	const_cast<VipIODevice*>(src_device)->copyParameters(copy);
+	d_data->deviceOptions.insert(src_device->metaObject()->className(), copy);
+	return true;
+}
+void VipRememberDeviceOptions::clearDeviceOptions()
+{
+	for (auto it = d_data->deviceOptions.begin(); it != d_data->deviceOptions.end(); ++it)
+		delete it.value();
+	d_data->deviceOptions.clear();
+}
+bool VipRememberDeviceOptions::applyDefaultOptions(VipIODevice* device)
+{
+	auto it = d_data->deviceOptions.find(device->metaObject()->className());
+	if (it == d_data->deviceOptions.end())
+		return false;
+	it.value()->copyParameters(device);
+	return true;
+}
+void VipRememberDeviceOptions::clearAll()
+{
+	clearSuffixAndDeviceType();
+	clearDeviceOptions();
+}
+
+VipRememberDeviceOptions& VipRememberDeviceOptions::instance()
+{
+	static VipRememberDeviceOptions inst;
+	return inst;
+}
+
+
+
+
+
 #include <QBoxLayout>
 #include <QHeaderView>
 #include <QLabel>
 #include <QPushButton>
 #include <QTreeWidget>
 
+
+class VipSelectDeviceParameters::PrivateData
+{
+public:
+	QWidget* editor;
+	VipIODevice* device;
+	QCheckBox remember;
+};
+
+VipSelectDeviceParameters::VipSelectDeviceParameters(VipIODevice* device, QWidget* editor, QWidget* parent)
+  : QDialog(parent)
+{
+	VIP_CREATE_PRIVATE_DATA(d_data);
+	setWindowTitle("Edit " + vipSplitClassname(device->metaObject()->className()));
+
+	d_data->device = device;
+	d_data->editor = editor;
+
+	QPushButton* ok = new QPushButton("Ok", this);
+	ok->setMaximumWidth(70);
+	QPushButton* cancel = new QPushButton("Cancel", this);
+	cancel->setMaximumWidth(70);
+
+	QHBoxLayout* hlay = new QHBoxLayout();
+	hlay->addStretch(1);
+	hlay->addWidget(ok);
+	hlay->addWidget(cancel);
+	hlay->addStretch(1);
+
+	QVBoxLayout* lay = new QVBoxLayout();
+	lay->addWidget(editor);
+	lay->addWidget(VipLineWidget::createHLine());
+	lay->addWidget(&d_data->remember);
+	lay->addWidget(VipLineWidget::createHLine());
+	lay->addLayout(hlay);
+	setLayout(lay);
+
+	d_data->remember.setText("Remember my choices");
+
+	connect(ok, SIGNAL(clicked(bool)), this, SLOT(accept()));
+	connect(cancel, SIGNAL(clicked(bool)), this, SLOT(reject()));
+}
+	
+VipSelectDeviceParameters::~VipSelectDeviceParameters() {}
+
+bool VipSelectDeviceParameters::remember() const
+{
+	return d_data->remember.isChecked();
+}
+
+
+
 class VipDeviceChoiceDialog::PrivateData
 {
 public:
 	QLabel text;
 	QTreeWidget tree;
+	QCheckBox remember;
 	QList<VipIODevice*> devices;
 };
 
@@ -5330,6 +5488,8 @@ VipDeviceChoiceDialog::VipDeviceChoiceDialog(QWidget* parent)
 	this->setMinimumHeight(50);
 	this->setMinimumWidth(400);
 
+	d_data->remember.setText("Remember my choice");
+
 	// this->setWindowFlags(this->windowFlags()|Qt::Tool|/*Qt::WindowStaysOnTopHint|*/Qt::CustomizeWindowHint|Qt::WindowCloseButtonHint);
 
 	QFrame* frame = new QFrame(this);
@@ -5349,6 +5509,7 @@ VipDeviceChoiceDialog::VipDeviceChoiceDialog(QWidget* parent)
 
 	QVBoxLayout* vlay = new QVBoxLayout();
 	vlay->addLayout(tree_lay);
+	vlay->addWidget(&d_data->remember);
 	vlay->addLayout(lay);
 	frame->setLayout(vlay);
 
@@ -5406,57 +5567,81 @@ VipIODevice* VipDeviceChoiceDialog::selection() const
 	return nullptr;
 }
 
+bool VipDeviceChoiceDialog::remember() const
+{
+	return d_data->remember.isChecked();
+}
+
 VipIODevice* VipCreateDevice::create(const QList<VipProcessingObject::Info>& dev, const VipPath& path, bool show_device_options)
 {
-	QList<VipIODevice*> devices;
+	using DevicePtr = std::unique_ptr<VipIODevice>;
 
-	// first , create the list of devices
-	for (int i = 0; i < dev.size(); ++i) {
-		if (VipIODevice* d = qobject_cast<VipIODevice*>(dev[i].create())) {
-			// if (d->probe(path))
-			devices << d;
-			// else
-			//	delete d;
-		}
-	}
+	DevicePtr result( VipRememberDeviceOptions::instance().deviceForSuffix(QFileInfo(path.canonicalPath()).suffix()));
+	if (!result) {
+		
+		std::vector<DevicePtr> hold_devices;
+		QList<VipIODevice*> devices;
+		VipIODevice* found = nullptr;
 
-	VipIODevice* result = nullptr;
-
-	if (devices.size() > 1) {
-		// create the dialog used to use the device
-		VipDeviceChoiceDialog* dialog = new VipDeviceChoiceDialog(vipGetMainWindow());
-		dialog->setMinimumWidth(500);
-		dialog->setChoices(devices);
-		dialog->setPath(path.canonicalPath());
-		if (dialog->exec() == QDialog::Accepted) {
-			result = dialog->selection();
+		// first , create the list of devices
+		for (int i = 0; i < dev.size(); ++i) {
+			if (VipIODevice* d = qobject_cast<VipIODevice*>(dev[i].create())) {
+				hold_devices.push_back( DevicePtr(d));
+				devices.emplaceBack( d);
+			}
 		}
 
-		delete dialog;
-		if (!result)
+		bool remember_device_type = false;
+		if (devices.size() > 1) {
+			// create the dialog used to use the device
+			VipDeviceChoiceDialog* dialog = new VipDeviceChoiceDialog(vipGetMainWindow());
+			dialog->setMinimumWidth(500);
+			dialog->setChoices(devices);
+			dialog->setPath(path.canonicalPath());
+			if (dialog->exec() == QDialog::Accepted) {
+				found = dialog->selection();
+				remember_device_type = dialog->remember();
+			}
+
+			delete dialog;
+			if (!found)
+				return nullptr;
+		}
+		else if (devices.size() == 1)
+			found = devices.first();
+		else
 			return nullptr;
-	}
-	else if (devices.size() == 1)
-		result = devices.first();
-	else
-		return nullptr;
 
-	if (!path.isEmpty()) {
-		result->setPath(path.canonicalPath());
-		result->setMapFileSystem(path.mapFileSystem());
+		for (auto & d : hold_devices) {
+			if (d.get() == found) {
+				result = std::move(d);
+				break;
+			}
+		}
+		
+		if (!path.isEmpty()) {
+
+			// Remember user choice
+			if (remember_device_type)
+				VipRememberDeviceOptions::instance().addSuffixAndDeviceType(QFileInfo(path.canonicalPath()).suffix(), result->metaObject()->className());
+		}
 	}
+
+	result->setPath(path.canonicalPath());
+	result->setMapFileSystem(path.mapFileSystem());
+
+	bool apply_options = VipRememberDeviceOptions::instance().applyDefaultOptions(result.get());
 
 	// display device option widget
-	if (show_device_options) {
+	if (!apply_options && show_device_options) {
 
-		const auto lst = vipFDObjectEditor().exactMatch(result);
+		const auto lst = vipFDObjectEditor().exactMatch(result.get());
 		if (lst.size()) {
 
-			QWidget* editor = lst.first()(result).value<QWidget*>();
+			QWidget* editor = lst.first()(result.get()).value<QWidget*>();
 			if (editor) {
-				VipGenericDialog dialog(editor, "Device options", vipGetMainWindow());
+				VipSelectDeviceParameters dialog(result.get(), editor, vipGetMainWindow());
 				if (dialog.exec() != QDialog::Accepted) {
-					delete result;
 					return nullptr;
 				}
 				else {
@@ -5464,11 +5649,14 @@ VipIODevice* VipCreateDevice::create(const QList<VipProcessingObject::Info>& dev
 					if (editor->metaObject()->indexOfMethod("apply()") >= 0)
 						QMetaObject::invokeMethod(editor, "apply");
 				}
+				if (dialog.remember()) {
+					VipRememberDeviceOptions::instance().addDeviceOptionsCopy(result.get());
+				}
 			}
 		}
 	}
 
-	return result;
+	return result.release();
 }
 
 VipIODevice* VipCreateDevice::create(const VipPath& path, bool show_device_options)

@@ -657,6 +657,7 @@ void VipLegend::addLegendItem(VipLegendItem* legendItem)
 		connect(legendItem->plotItem(), SIGNAL(itemChanged(VipPlotItem*)), this, SLOT(itemChanged(VipPlotItem*))); //,Qt::QueuedConnection);
 
 		layout()->invalidate();
+		this->update();
 	}
 }
 
@@ -672,6 +673,7 @@ void VipLegend::insertLegendItem(int index, VipLegendItem* legendItem)
 		connect(legendItem->plotItem(), SIGNAL(itemChanged(VipPlotItem*)), this, SLOT(itemChanged(VipPlotItem*))); //,Qt::QueuedConnection);
 
 		layout()->invalidate();
+		this->update();
 	}
 }
 
@@ -850,6 +852,7 @@ int VipLegend::removeLegendItem(VipLegendItem* legendItem)
 
 		d_data->items.removeOne(item);
 		layout()->invalidate();
+		this->update();
 	}
 
 	return -1;

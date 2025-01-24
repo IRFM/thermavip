@@ -898,11 +898,13 @@ public:
 	/// Returns the file type
 	Type type() const;
 
-	virtual void copyParameters(VipTextFileReader* dst)
+	virtual void copyParameters(VipProcessingObject* dst)
 	{
-		VipTimeRangeBasedGenerator::copyParameters(dst);
-		dst->setSamplingTime(samplingTime());
-		dst->setType(type());
+		if (VipTextFileReader* d = qobject_cast<VipTextFileReader*>(dst)) {
+			VipTimeRangeBasedGenerator::copyParameters(dst);
+			d->setSamplingTime(samplingTime());
+			d->setType(type());
+		}
 	}
 
 	virtual DeviceType deviceType() const;
@@ -962,11 +964,13 @@ public:
 	/// Returns the number of digits for #VipTextFileWriter::MultipleFiles.
 	int digitsNumber() const;
 
-	virtual void copyParameters(VipTextFileWriter* dst)
+	virtual void copyParameters(VipProcessingObject* dst)
 	{
-		VipIODevice::copyParameters(dst);
-		dst->setDigitsNumber(digitsNumber());
-		dst->setType(type());
+		if (VipTextFileWriter* d = qobject_cast<VipTextFileWriter*>(dst)) {
+			VipIODevice::copyParameters(dst);
+			d->setDigitsNumber(digitsNumber());
+			d->setType(type());
+		}
 	}
 
 	virtual bool probe(const QString& filename, const QByteArray&) const { return supportFilename(filename) || VipIODevice::probe(filename); }
@@ -1010,10 +1014,12 @@ public:
 	/// Returns the sampling time
 	qint64 samplingTime() const;
 
-	virtual void copyParameters(VipImageReader* dst)
+	virtual void copyParameters(VipProcessingObject* dst)
 	{
-		VipTimeRangeBasedGenerator::copyParameters(dst);
-		dst->setSamplingTime(samplingTime());
+		if (VipImageReader* d = qobject_cast<VipImageReader*>(dst)) {
+			VipTimeRangeBasedGenerator::copyParameters(dst);
+			d->setSamplingTime(samplingTime());
+		}
 	}
 
 	virtual DeviceType deviceType() const;
@@ -1073,11 +1079,13 @@ public:
 	/// Returns the digit number used with #VipImageWriter::MultipleImages
 	int digitsNumber() const;
 
-	virtual void copyParameters(VipImageWriter* dst)
+	virtual void copyParameters(VipProcessingObject* dst)
 	{
-		VipIODevice::copyParameters(dst);
-		dst->setType(type());
-		dst->setDigitsNumber(digitsNumber());
+		if (VipImageWriter* d = qobject_cast<VipImageWriter*>(dst)) {
+			VipIODevice::copyParameters(dst);
+			d->setType(type());
+			d->setDigitsNumber(digitsNumber());
+		}
 	}
 
 	virtual bool acceptInput(int, const QVariant& v) const
@@ -1225,17 +1233,19 @@ public:
 	VipIODevice* deviceAt(int index) const;
 	int deviceCount() const;
 
-	virtual void copyParameters(VipDirectoryReader* dst)
+	virtual void copyParameters(VipProcessingObject* dst)
 	{
-		VipIODevice::copyParameters(dst);
-		dst->setSupportedSuffixes(supportedSuffixes());
-		dst->setFixedSize(fixedSize());
-		dst->setFileCount(fileCount());
-		dst->setFileStart(fileStart());
-		dst->setSmoothResize(smoothResize());
-		dst->setAlphabeticalOrder(alphabeticalOrder());
-		dst->setType(type());
-		dst->setRecursive(recursive());
+		if (VipDirectoryReader* d = qobject_cast<VipDirectoryReader*>(dst)) {
+			VipIODevice::copyParameters(dst);
+			d->setSupportedSuffixes(supportedSuffixes());
+			d->setFixedSize(fixedSize());
+			d->setFileCount(fileCount());
+			d->setFileStart(fileStart());
+			d->setSmoothResize(smoothResize());
+			d->setAlphabeticalOrder(alphabeticalOrder());
+			d->setType(type());
+			d->setRecursive(recursive());
+		}
 	}
 
 	virtual void setSourceProperty(const char* name, const QVariant& value);

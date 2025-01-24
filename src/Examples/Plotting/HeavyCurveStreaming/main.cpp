@@ -113,9 +113,11 @@ void setup_plot_area(VipPlotArea2D* area)
 
 
 #include <qsurfaceformat.h>
+#include <qdir.h>
 
 int main(int argc, char** argv)
 {
+	QCoreApplication::addLibraryPath(QDir::currentPath().toLatin1());
 	QCoreApplication::setAttribute(Qt::AA_UseDesktopOpenGL);
 	QSurfaceFormat format;
 	format.setSamples(4);
@@ -141,8 +143,7 @@ int main(int argc, char** argv)
 	
 
 	VipPlotWidget2D w; 
-	w.setRenderingMode(VipPlotWidget2D::OpenGL);
-	VipText::setCacheTextWhenPossible(true);
+	w.setRenderingMode(VipPlotWidget2D::OpenGLThread);
 	
 
 	VipPlotArea2D* area = w.area();

@@ -171,6 +171,7 @@ public:
 	QPixmap driveIcon;
 	QMap<QString, QPixmap> fileIcons;
 	FileIconProvider provider;
+	QFileIconProvider stdprovider;
 };
 
 VipIconProvider::VipIconProvider()
@@ -207,6 +208,8 @@ QIcon VipIconProvider::iconPath(const VipPath& path) const
 	QFileInfo info(path.canonicalPath());
 	if (info.isDir()) {
 		if (isDrive(path, info)) {
+			if (d_data->driveIcon.isNull()) 
+				const_cast<QPixmap&>(d_data->driveIcon) = d_data->stdprovider.icon(QFileIconProvider::Drive).pixmap(QSize(30, 30));
 			if (d_data->driveIcon.isNull()){
 				const_cast<QPixmap&>(d_data->driveIcon) = (d_data->provider.icon(info));
 				if(d_data->driveIcon.isNull()){
@@ -217,7 +220,8 @@ QIcon VipIconProvider::iconPath(const VipPath& path) const
 				const_cast<QPixmap&>(d_data->driveIcon) = vipIcon("open_dir.png").pixmap(QSize(30, 30));
 			return (d_data->driveIcon);
 		}
-
+		if (d_data->dirIcon.isNull()) 
+			const_cast<QPixmap&>(d_data->dirIcon) = d_data->stdprovider.icon(QFileIconProvider::Folder).pixmap(QSize(30, 30));
 		if (d_data->dirIcon.isNull()){
 			const_cast<QPixmap&>(d_data->dirIcon) = (d_data->provider.icon(QFileInfo(QCoreApplication::applicationDirPath())));
 			vip_debug("Null icon for %s\n",path.canonicalPath().toLatin1().data());
@@ -259,8 +263,8 @@ QIcon VipFileSystem::iconPath(const VipPath& path) const
 {
 	// Do NOT use QFileIconProvider if a network issue was detected (mounted network drive that cannot be reconnected)
 	// as it causes lots of troubles and freezes
-	if (VipPhysicalFileSystem::has_network_issues())
-		return QIcon();
+	//if (VipPhysicalFileSystem::has_network_issues())
+	//	return QIcon();
 	return m_provider.iconPath(path);
 }
 

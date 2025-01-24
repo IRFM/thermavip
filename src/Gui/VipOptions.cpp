@@ -50,7 +50,7 @@
 #include "VipStandardEditors.h"
 #include "VipStandardWidgets.h"
 #include "VipSearchLineEdit.h"
-
+#include "VipProcessingObjectEditor.h"
 
 QGroupBox* VipPageOption::createOptionGroup(const QString& label)
 {
@@ -307,7 +307,7 @@ VipOptions* vipGetOptions()
 		dialog->addPage("General display", new AppearanceSettings(), vipIcon("ROI.png"));
 		dialog->addPage("Rendering modes", new RenderingSettings(), vipIcon("RENDERING.png"));
 		dialog->addPage("Environment", new EnvironmentSettings(), vipIcon("BROWSER.png"));
-		dialog->addPage("Processings", new ProcessingSettings(), vipIcon("PROCESSING.png"));
+		dialog->addPage("Processing and devices", new ProcessingSettings(), vipIcon("PROCESSING.png"));
 		dialog->setTreeWidth(150);
 	}
 	return dialog;
@@ -676,6 +676,8 @@ void AppearanceSettings::applyPage()
 class ProcessingSettings::PrivateData
 {
 public:
+	QCheckBox* resetRemember;
+
 	QGroupBox* general;
 	QComboBox* procPriority;
 	QComboBox* displayPriority;
@@ -692,6 +694,9 @@ ProcessingSettings::ProcessingSettings(QWidget* parent)
   : VipPageOption(parent)
 {
 	VIP_CREATE_PRIVATE_DATA(d_data);
+
+	d_data->resetRemember = new QCheckBox("Reset remembered choices");
+	d_data->resetRemember->setToolTip("Reset association of file suffix -> device type.\nReset default device parameters.");
 
 	d_data->general = createGroup("General processing settings");
 	d_data->procPriority = new QComboBox();
@@ -755,6 +760,7 @@ ProcessingSettings::ProcessingSettings(QWidget* parent)
 	d_data->maxMemory->setMaximumWidth(100);
 
 	QVBoxLayout* lay = new QVBoxLayout();
+	lay->addWidget(d_data->resetRemember);
 	lay->addWidget(d_data->general);
 	lay->addWidget(d_data->inputs);
 	lay->addStretch(1);
@@ -801,6 +807,9 @@ void ProcessingSettings::applyPage()
 		VipProcessingManager::setDefaultPriority((QThread::Priority)displayPriority, &VipDisplayObject::staticMetaObject);
 
 	connect(&VipProcessingManager::instance(), SIGNAL(changed()), this, SLOT(updatePage()), Qt::QueuedConnection);
+
+	if (d_data->resetRemember->isChecked())
+		VipRememberDeviceOptions::instance().clearAll();
 }
 
 void ProcessingSettings::updatePage()
