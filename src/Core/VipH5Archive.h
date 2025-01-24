@@ -83,6 +83,8 @@ public:
 	QByteArray lastRead() const noexcept;
 	/// @brief Returns the current group position. 
 	QByteArray currentGroup() const noexcept;
+	/// @brief Returns the last closed group following a call to end()
+	QByteArray lastEndGroup() const noexcept;
 	/// @brief Returns the content of the current group.
 	Content currentGroupContent() const;
 

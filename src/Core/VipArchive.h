@@ -272,9 +272,10 @@ public Q_SLOTS:
 	void setText(const QString& text) { emit textUpdated(text); }
 
 	/// Save the current archive status (read mode and position)
-	void save();
+	unsigned save();
 	/// Reset the archive status. Each call to restore() must match to a call to save().
 	void restore();
+	void restore(unsigned id);
 
 	/// Register a type (as returned by qMetaTypeId<T>()) as a fast type.
 	/// A fast type has its serialize/deserialize functions buffered in the archive, and they will be the first ones to be checked when saving/loading an object.

@@ -34,6 +34,7 @@
 #include "VipVectors.h"
 #include "VipNDArrayImage.h"
 #include "VipH5DeviceDriver.h"
+#include "VipTimestamping.h"
 #include "VipCore.h"
 #include <QBuffer>
 #include <QFile>
@@ -514,7 +515,7 @@ public:
 		H5Object group;			// group object
 		QByteArray last;		// last read/write position (dataset or group name)
 		GroupContent content;	// group content
-		std::set<QByteArray> content_names;
+		std::map<QByteArray, qint64> content_names;
 		QHash<QByteArray, GroupContent>* groups_contents{ nullptr };
 		void populate(QIODevice * device)
 		{
@@ -527,13 +528,13 @@ public:
 					groups_contents->insert(name, content);
 				}
 				for (qsizetype i = 0; i < content.size(); ++i)
-					content_names.insert(content[i].first);
+					content_names[content[i].first] = i;
 			}
 		}
 		void addContent(const QByteArray& name, H5Object::Type type) 
 		{ 
 			content.push_back({ name, type });
-			content_names.insert(name);
+			content_names[name] = content.size()-1;
 		}
 		QByteArray createUniqueName(const QByteArray & name) const
 		{ 
@@ -545,9 +546,9 @@ public:
 			++it;
 			QByteArray prefix = name + "%";
 			for (; it != content_names.end(); ++it) {
-				if (!it->startsWith(prefix))
+				if (!it->first.startsWith(prefix))
 					break;
-				id = std::max((unsigned)it->mid(prefix.size()).toLongLong(),id);
+				id = std::max((unsigned)it->first.mid(prefix.size()).toLongLong(), id);
 			}
 			QByteArray id_ar = QByteArray::number(id+1);
 			if (id_ar.size() != 9)
@@ -602,6 +603,7 @@ public:
 	H5Object file;
 	QIODevice* device{ nullptr };
 	Positions position;
+	QByteArray last_end;
 	QVector<Positions> save;
 	QHash<QByteArray, GroupContent> groups_contents; // in read only mode, store the groups contents to avoid recomputing it (as order is wrong the second time)
 	qint64 dpos{ 0 };
@@ -730,6 +732,10 @@ QByteArray VipH5Archive::currentGroup() const noexcept
 {
 	return d_data->position.back().name;
 }
+QByteArray VipH5Archive::lastEndGroup() const noexcept
+{
+	return d_data->last_end;
+}
 VipH5Archive::Content VipH5Archive::currentGroupContent() const
 {
 	const auto vec = d_data->position.back().content;
@@ -794,11 +800,15 @@ void VipH5Archive::doStart(QString& name, QVariantMap& metadata, bool read_metad
 
 		// open next group
 		PrivateData::Position& pos = d_data->position.back();
-		auto idx = pos.firstOf(H5Object::Group, name.toLatin1(), pos.indexOf(pos.last) + 1);
+		qint64 idx = -1;
+
+		QByteArray bname = name.toLatin1();
+		idx = pos.firstOf(H5Object::Group, bname, pos.indexOf(pos.last) + 1);
 		if (idx < 0) {
 			setError("Unable to open next H5 group");
 			return;
 		}
+		
 		gr_name = pos.name + "/" + pos.content[idx].first;
 		if (name.isEmpty()) {
 			const QByteArray ar = pos.content[idx].first;
@@ -845,6 +855,7 @@ void VipH5Archive::doEnd()
 		return;
 	}
 	QByteArray current_name = d_data->position.back().name.mid(idx + 1);
+	d_data->last_end = d_data->position.back().name;
 	d_data->position.pop_back();
 	d_data->position.back().last = current_name;
 	
@@ -879,6 +890,11 @@ static QVariant toNDArrayOrBytes(const QVariant& v)
 	if (v.userType() == qMetaTypeId<VipInterval>()) {
 		VipInterval c = v.value<VipInterval>();
 		return QVariant::fromValue(VipNDArray({ c.minValue(), c.maxValue() }));
+	}
+
+	if (v.userType() == qMetaTypeId<VipTimeRange>()) {
+		VipTimeRange c = v.value<VipTimeRange>();
+		return QVariant::fromValue(VipNDArray({ c.first, c.second }));
 	}
 
 	if (v.userType() == qMetaTypeId<VipNDArray>() ) {
@@ -1057,27 +1073,46 @@ void VipH5Archive::doContent(QString& name, QVariant& value, QVariantMap& metada
 
 		// open next dataset
 		PrivateData::Position& pos = d_data->position.back();
-		//auto idx = pos.firstOf(H5Object::Set, pos.indexOf(pos.last) + 1);
-		auto idx = pos.nextDataByName(d_data->file,bname, pos.indexOf(pos.last) + 1);
-		if (idx < 0) {
-			// Here we want a silent error (no string)
-			// as this is often used to read an unkown number of objects
-			setError(QString());
-			return;
+
+		qint64 idx = -1;
+		if (!bname.contains('%')) {
+
+			idx = pos.nextDataByName(d_data->file, bname, pos.indexOf(pos.last) + 1);
+			if (idx < 0) {
+				// Here we want a silent error (no string)
+				// as this is often used to read an unkown number of objects
+				setError(QString());
+				return;
+			}
+			bname = pos.content[idx].first;
+			if (name.isEmpty()) {
+				int index = bname.indexOf('%');
+				if (index < 0)
+					name = bname;
+				else
+					name = bname.mid(0, index);
+			}
 		}
-		bname = pos.content[idx].first;
-		if (name.isEmpty()) {
-			int index = bname.indexOf('%');
-			if (index < 0)
-				name = bname;
-			else
-				name = bname.mid(0, index);
+		else
+		{
+			// object name contains '%': this is a raw name, don't try to add a '%' ourselves
+			if (bname.lastIndexOf('%') == bname.size() - 1) {
+				// Ending by '%' : just remove the '%'
+				bname.chop(1);
+			}
+			auto it = pos.content_names.find(bname);
+			if (it == pos.content_names.end())
+				ERROR("Object name not found: " + bname);
+
+			idx = it->second;
 		}
 
 		if (pos.content[idx].second == H5Object::Group)
 		{
 			// Data is stored as a group with an attribute 'type_name'
 			QByteArray gr_name = pos.name + "/" + bname;
+
+			// add a trailing '%' if necessary
 			this->start(bname);
 			if (hasError())
 				return;
@@ -1171,6 +1206,7 @@ void VipH5Archive::doContent(QString& name, QVariant& value, QVariantMap& metada
 		}
 
 		if (type_id == qMetaTypeId<complex_f>() || type_id == qMetaTypeId<complex_d>() || type_id == qMetaTypeId<VipNDArray>() || type_id == qMetaTypeId<VipInterval>() ||
+		    type_id == qMetaTypeId<VipTimeRange>() ||
 		    type_id == qMetaTypeId<VipPointVector>()) {
 			
 			// Generic ND array
@@ -1203,6 +1239,14 @@ void VipH5Archive::doContent(QString& name, QVariant& value, QVariantMap& metada
 					ERROR("Invalide dataset rank for type: " + type_name);
 				const VipNDArrayType<double> far = ar;
 				value = QVariant::fromValue(VipInterval(far[0], far[1]));
+				goto finish;
+			}
+
+			if (type_id == qMetaTypeId<VipTimeRange>()) {
+				if (ar.shapeCount() > 1 || ar.shape(0) != 2)
+					ERROR("Invalide dataset rank for type: " + type_name);
+				const VipNDArrayType<qint64> far = ar;
+				value = QVariant::fromValue(VipTimeRange(far[0], far[1]));
 				goto finish;
 			}
 

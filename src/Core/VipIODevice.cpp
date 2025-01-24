@@ -4677,68 +4677,93 @@ void VipShapeWriter::apply()
 typedef VipArchiveRecorder::Trailer ArchiveRecorderTrailer;
 Q_DECLARE_METATYPE(ArchiveRecorderTrailer);
 
-typedef QMap<qint64, QString> source_types;
-Q_DECLARE_METATYPE(source_types);
-
-typedef QMap<qint64, VipTimeRange> source_limits;
-Q_DECLARE_METATYPE(source_limits);
-
-typedef QMap<qint64, qint64> source_samples;
-Q_DECLARE_METATYPE(source_samples);
-
-// currently unused
-#define __VIP_ARCHIVE_TRAILER 12349876
 
 VipArchive& operator<<(VipArchive& arch, const ArchiveRecorderTrailer& trailer)
 {
-	return arch.content("sourceTypes", trailer.sourceTypes)
-	  .content("sourceLimits", trailer.sourceLimits)
-	  .content("sourceSamples", trailer.sourceSamples)
-	  .content("startTime", trailer.startTime)
-	  .content("endTime", trailer.endTime)
-	  .content("LD_support", vip_LD_support);
+	arch.content("startTime", trailer.startTime).content("endTime", trailer.endTime);
+	arch.start("Sources");
+	for (auto it = trailer.sources.begin(); it != trailer.sources.end(); ++it) {
+		arch.start(QString::number(it.key()));
+		arch.content("name", QString(it.value().typeName));
+		arch.content("limits", it.value().limits);
+		arch.content("samples", it.value().samples);
+		arch.end();
+	}
+	arch.end();
+	return arch;
 }
 
 VipArchive& operator>>(VipArchive& arch, ArchiveRecorderTrailer& trailer)
 {
-	trailer.sourceTypes = arch.read("sourceTypes").value<source_types>();
-	trailer.sourceLimits = arch.read("sourceLimits").value<source_limits>();
-	// try to read sourceSamples which has been added recently
-	arch.save();
-	trailer.sourceSamples = arch.read("sourceSamples").value<source_samples>();
-	if (!arch)
-		arch.restore();
-
 	trailer.startTime = arch.read("startTime").value<qint64>();
 	trailer.endTime = arch.read("endTime").value<qint64>();
-
-	// read the 'LD_support' content if present, and set it to the internal device
+	arch.start("Sources");
 	arch.save();
-	unsigned LD_support = 0;
-	if (!arch.content("LD_support", LD_support))
-		arch.restore();
-	else {
-		if (VipBinaryArchive* a = qobject_cast<VipBinaryArchive*>(&arch))
-			a->device()->setProperty("_vip_LD", LD_support);
+
+	while (true) {
+		ArchiveRecorderTrailer::Source src;
+		QString source;
+		if (!arch.start(source))
+			break;
+		
+		src.typeName = arch.read("name").toString().toLatin1();
+		src.limits = arch.read("limits").value<VipTimeRange>();
+		src.samples = arch.read("samples").toLongLong();
+		arch.end();
+
+		trailer.sources.insert(source.toLongLong(), src);
 	}
+
+	arch.restore();
+	arch.end();
 
 	return arch;
 }
 
+static VipArchive& saveAnyData(VipArchive& stream, const VipAnyData& any)
+{
+	if (stream.start("data", any.attributes())) {
+		stream.content("source", any.source()).content("time", any.time());
+		if (!stream.attribute("skip_data", false))
+			stream.content("value", any.data());
+		stream.end();
+	}
+	return stream;
+}
+
+VipArchive& loadAnyData(VipArchive& stream, VipAnyData& any, const QString & name = QString())
+{
+	QVariantMap attrs;
+	if (stream.start(name.isEmpty() ? QString("data") : name, attrs)) {
+		any.setSource(stream.read("source").toLongLong());
+		any.setTime(stream.read("time").toLongLong());
+		if (!stream.attribute("skip_data", false))
+			any.setData(stream.read("value"));
+		any.setAttributes(attrs);
+		stream.end();
+	}
+	return stream;
+}
+
 static int vipRegisterArchiveStreamOperators()
 {
-	vipRegisterArchiveStreamOperators<source_types>();
-	vipRegisterArchiveStreamOperators<source_limits>();
-	vipRegisterArchiveStreamOperators<source_samples>();
 	vipRegisterArchiveStreamOperators<ArchiveRecorderTrailer>();
 	return 0;
 }
 static int _registerArchiveStreamOperators = vipAddInitializationFunction(&vipRegisterArchiveStreamOperators);
 
+#ifdef VIP_WITH_HDF5
+#include "VipH5Archive.h"
+#endif
+
 class VipArchiveRecorder::PrivateData
 {
 public:
+#ifdef VIP_WITH_HDF5
+	VipH5Archive archive;
+#else
 	VipBinaryArchive archive;
+#endif
 	Trailer trailer;
 	QMap<qint64, qint64> previousTimes;
 };
@@ -4772,9 +4797,17 @@ bool VipArchiveRecorder::open(VipIODevice::OpenModes mode)
 		if (!createDevice(removePrefix(path()), QIODevice::WriteOnly))
 			return false;
 
-		d_data->archive.setDevice(device());
+		if (!d_data->archive.open(device())) { // TEST
+			close();
+			return false;
+		}
+		if (!d_data->archive.start("Content",this->attributes())) {
+			close();
+			return false;
+		}
+		//d_data->archive.setDevice(device());
+		
 		this->setOpenMode(mode);
-		this->setSize(0);
 		return true;
 	}
 
@@ -4786,6 +4819,7 @@ void VipArchiveRecorder::close()
 	if (isOpen()) {
 		this->wait();
 		d_data->archive.content("ArchiveRecorderTrailer", d_data->trailer);
+		d_data->archive.end();
 	}
 	d_data->archive.close();
 	d_data->trailer = ArchiveRecorderTrailer();
@@ -4810,8 +4844,8 @@ void VipArchiveRecorder::apply()
 
 		for (int i = 0; i < input_count; ++i) {
 			if (inputAt(i)->hasNewData()) {
-				const VipAnyData data = inputAt(i)->data();
-
+				VipAnyData data = inputAt(i)->data();
+				data.setSource(i+1);
 				// check that we are above the previous time for this source
 				QMap<qint64, qint64>::iterator it = d_data->previousTimes.find(data.source());
 				if (it == d_data->previousTimes.end() || data.time() > it.value())
@@ -4834,37 +4868,30 @@ void VipArchiveRecorder::apply()
 				continue;
 
 			// update trailer
-			QMap<qint64, QPair<qint64, qint64>>::iterator trailer_it = d_data->trailer.sourceLimits.find(data.source());
-			if (trailer_it == d_data->trailer.sourceLimits.end()) {
-				trailer_it = d_data->trailer.sourceLimits.insert(data.source(), QPair<qint64, qint64>(data.time(), data.time()));
+			auto src = d_data->trailer.sources.find(data.source());
+			if (src == d_data->trailer.sources.end()) {
+				src = d_data->trailer.sources.insert(data.source(), { data.data().typeName(), VipTimeRange(data.time(), data.time()),1 });
 			}
 			else {
-				trailer_it.value().first = qMin(trailer_it.value().first, data.time());
-				trailer_it.value().second = qMax(trailer_it.value().second, data.time());
+				if (data.time() < src.value().limits.first)
+					src.value().limits.first = data.time();
+				else if (data.time()  > src.value().limits.second )
+					src.value().limits.second = data.time();
+				src.value().samples++;
 			}
-
-			QMap<qint64, qint64>::iterator trailer_sample_it = d_data->trailer.sourceSamples.find(data.source());
-			if (trailer_sample_it == d_data->trailer.sourceSamples.end()) {
-				trailer_sample_it = d_data->trailer.sourceSamples.insert(data.source(), 1);
-			}
-			else {
-				trailer_sample_it.value()++;
-			}
-
+			
 			if (d_data->trailer.startTime == VipInvalidTime)
-				d_data->trailer.startTime = trailer_it.value().first;
+				d_data->trailer.startTime = (qint64)src.value().limits.first;
 			else
-				d_data->trailer.startTime = qMin(d_data->trailer.startTime, trailer_it.value().first);
+				d_data->trailer.startTime = qMin(d_data->trailer.startTime, (qint64)src.value().limits.first);
 
 			if (d_data->trailer.endTime == VipInvalidTime)
-				d_data->trailer.endTime = trailer_it.value().second;
+				d_data->trailer.endTime = (qint64)src.value().limits.second;
 			else
-				d_data->trailer.endTime = qMax(d_data->trailer.endTime, trailer_it.value().second);
-
-			d_data->trailer.sourceTypes[data.source()] = data.data().typeName();
+				d_data->trailer.endTime = qMax(d_data->trailer.endTime, (qint64)src.value().limits.second);
 
 			// write data
-			d_data->archive.content(data);
+			saveAnyData(d_data->archive, data);
 
 			this->setSize(size() + 1);
 		}
@@ -4875,14 +4902,8 @@ struct ArchFrame
 {
 	qint64 stream;
 	qint64 time;
-	qint64 pos;
+	QByteArray name;
 
-	ArchFrame(qint64 stream = 0, qint64 time = VipInvalidTime, qint64 pos = 0)
-	  : stream(stream)
-	  , time(time)
-	  , pos(pos)
-	{
-	}
 };
 
 class VipArchiveReader::PrivateData
@@ -4891,15 +4912,13 @@ public:
 	PrivateData()
 	  : time(VipInvalidTime)
 	  , buffer_time(VipInvalidTime)
-	  , forward(true)
 	{
-		// timer.setSingleShot(true);
-		// timer.setInterval(0);
 	}
 
-	VipBinaryArchive archive;
+	//VipBinaryArchive archive;
+	//TEST
+	VipH5Archive archive;
 	ArchiveRecorderTrailer trailer;
-	qint64 trailerPos;
 
 	VipArchiveReader::DeviceType device_type;
 
@@ -4918,7 +4937,8 @@ public:
 	qint64 time;
 	qint64 buffer_time;
 	VipTimeRangeList ranges;
-	bool forward;
+
+	unsigned start_pos;
 };
 
 VipArchiveReader::VipArchiveReader(QObject* parent)
@@ -4936,49 +4956,6 @@ VipArchiveReader::~VipArchiveReader()
 
 void VipArchiveReader::bufferData()
 {
-	if (d_data->time != VipInvalidTime) {
-		{
-			QMutexLocker lock(&d_data->buffer_mutex);
-			d_data->buffer_time = d_data->forward ? computeNextTime(d_data->time) : computePreviousTime(d_data->time);
-			if (d_data->buffer_time == d_data->buffers[0].time())
-				return;
-		}
-
-		if (d_data->buffer_time != d_data->time && d_data->buffer_time != VipInvalidTime) {
-			typedef QMultiMap<qint64, ArchFrame>::iterator iterator;
-			QPair<iterator, iterator> range = d_data->frames.equal_range(d_data->buffer_time);
-
-			if (range.first == range.second)
-				return;
-
-			{
-				QMutexLocker lock(&d_data->buffer_mutex);
-				d_data->archive.setReadMode(VipArchive::Forward);
-				d_data->archive.setAttribute("skip_data", false);
-			}
-
-			for (iterator it = range.first; it != range.second; ++it) {
-				// look for the data in the buffer
-				QByteArray ar;
-				{
-					QMutexLocker lock(&d_data->buffer_mutex);
-					d_data->archive.device()->seek(it.value().pos);
-					ar = d_data->archive.readBinary();
-				}
-				VipAnyData any = d_data->archive.deserialize(ar).value<VipAnyData>();
-				if (!any.isEmpty()) {
-					QMutexLocker lock(&d_data->buffer_mutex);
-					any.setTime(d_data->buffer_time);
-					any.setSource(qint64(this));
-					d_data->buffers[d_data->indexes[it.value().stream]] = any;
-				}
-			}
-		}
-		else {
-			QMutexLocker lock(&d_data->buffer_mutex);
-			d_data->buffer_time = d_data->buffers.first().time();
-		}
-	}
 }
 
 bool VipArchiveReader::open(VipIODevice::OpenModes mode)
@@ -4989,160 +4966,182 @@ bool VipArchiveReader::open(VipIODevice::OpenModes mode)
 	d_data->resourceFrames.clear();
 	setOpenMode(NotOpen);
 
-	if (mode == VipIODevice::ReadOnly) {
-		if (!createDevice(removePrefix(path()), QFile::ReadOnly))
-			return false;
+	if (mode != VipIODevice::ReadOnly)
+		return false;
+	
+	if (!createDevice(removePrefix(path()), QFile::ReadOnly))
+		return false;
 
-		d_data->device_type = Temporal;
-		d_data->archive.setDevice(device());
+	d_data->device_type = Temporal;
+	d_data->archive.open(device()); //TEST
+	//d_data->archive.setDevice(device());
 
-		// read the trailer
-		d_data->archive.setReadMode(VipArchive::Backward);
-		device()->seek(device()->size());
+	// Start "Content" object and read its attributes
+	QVariantMap attrs;
+	if (!d_data->archive.start("Content", attrs)){
+		close();
+		return false;
+	}
+	mergeAttributes(attrs);
 
-		if (d_data->archive.content(d_data->trailer)) {
-			d_data->trailerPos = d_data->archive.device()->pos();
+	// Save position
+	d_data->start_pos = d_data->archive.save();
 
-			// create the outputs with a valid value
-			bool all_resource = true;
-			int i = 0;
-			topLevelOutputAt(0)->toMultiOutput()->resize(d_data->trailer.sourceTypes.size());
-			for (QMap<qint64, QString>::iterator it = d_data->trailer.sourceTypes.begin(); it != d_data->trailer.sourceTypes.end(); ++it, ++i) {
-				QVariant v = vipCreateVariant(it.value().toLatin1().data());
-				outputAt(i)->setData(VipAnyData(v, VipInvalidTime));
+	auto pos1 = d_data->archive.currentGroup();
 
-				d_data->indexes[it.key()] = i;
-
-				VipTimeRange range = d_data->trailer.sourceLimits[it.key()];
-				if (range.second - range.first != 0)
-					all_resource = false;
-			}
-
-			// if all streams only have one data, set the device type to Resource
-			if (all_resource)
-				d_data->device_type = Resource;
-
-			// now read all data without their content
-
-			d_data->archive.device()->seek(0);
-			d_data->archive.setReadMode(VipArchive::Forward);
-			d_data->archive.setAttribute("skip_data", true);
-
-			qint64 count = 0;
-			while (true) {
-				qint64 pos = d_data->archive.device()->pos();
-				VipAnyData any = d_data->archive.read().value<VipAnyData>();
-				if (any.source() != 0) {
-					d_data->frames.insert(any.time(), ArchFrame(any.source(), any.time(), pos));
-					if (d_data->trailer.sourceTypes.size() == 1)
-						++count;
-				}
-				else
-					break;
-			}
-
-			// affect a valid data to each output
-			QSet<qint64> streams;
-			for (QMultiMap<qint64, ArchFrame>::iterator it = d_data->frames.begin(); it != d_data->frames.end(); ++it) {
-				if (!streams.contains(it.value().stream)) {
-					d_data->archive.device()->seek(it.value().pos);
-					d_data->archive.setAttribute("skip_data", false);
-					VipAnyData any = d_data->archive.read().value<VipAnyData>();
-					if (!any.isEmpty()) {
-						streams.insert(it.value().stream);
-						int index = d_data->indexes[it.value().stream];
-						any.setSource((qint64)this);
-						if (!any.hasAttribute("Name"))
-							any.setAttribute("Name", this->name());
-						outputAt(index)->setData(any);
-
-						if (streams.size() == d_data->trailer.sourceTypes.size())
-							break;
-					}
-				}
-			}
-
-			// move the frames with invalid times to resourceFrames
-			typedef QMultiMap<qint64, ArchFrame>::iterator iterator;
-			QPair<iterator, iterator> range = d_data->frames.equal_range(VipInvalidTime);
-			for (iterator it = range.first; it != range.second; ++it)
-				d_data->resourceFrames.insert(it.key(), it.value());
-
-			while (d_data->frames.size()) {
-				if (d_data->frames.begin().key() == VipInvalidTime)
-					d_data->frames.erase(d_data->frames.begin());
-				else
-					break;
-			}
-
-			// if the device is temporal and we have resource frames, move them at the beginning of the frames
-			// we should avoid mixing resource and temporal outputs in the same VipIODevice, or the outputs won't be properly saved
-			if (d_data->frames.size() && d_data->resourceFrames.size() && d_data->device_type == Temporal) {
-				qint64 start = d_data->frames.begin().key();
-				for (iterator it = d_data->resourceFrames.begin(); it != d_data->resourceFrames.end(); ++it) {
-					ArchFrame frame = it.value();
-					frame.time = start;
-					d_data->frames.insert(start, frame);
-				}
-				d_data->resourceFrames.clear();
-			}
-
-			d_data->archive.setAttribute("skip_data", false);
-			d_data->buffers.resize(this->outputCount());
-
-			this->setOpenMode(mode);
-			if (count > 0) {
-				setSize(count);
-
-				// if there is only one stream, recreate the time range list
-				d_data->ranges.clear();
-
-				// find smallest sampling time
-				// int i = 0;
-				qint64 prev = 0;
-				qint64 sampling = 0;
-				for (QMultiMap<qint64, ArchFrame>::iterator it = d_data->frames.begin(); it != d_data->frames.end(); ++it /*, ++i*/) {
-					if (i > 0) {
-						qint64 samp = it.key() - prev;
-						if (samp > 0) {
-							if (sampling == 0)
-								sampling = samp;
-							else
-								sampling = qMin(sampling, samp);
-						}
-					}
-					prev = it.key();
-				}
-				if (sampling == 0) {
-					// case no valid sampling time found
-					d_data->ranges << VipTimeRange(d_data->trailer.startTime, d_data->trailer.endTime);
-				}
-				else {
-					QMultiMap<qint64, ArchFrame>::iterator it = d_data->frames.begin();
-					qint64 first = it.key();
-					qint64 last = it.key();
-					++it;
-					for (; it != d_data->frames.end(); ++it) {
-						if (it.key() - last < sampling * 4)
-							last = it.key();
-						else {
-							d_data->ranges.append(VipTimeRange(first, last));
-							first = last = it.key();
-						}
-					}
-					d_data->ranges.append(VipTimeRange(first, last));
-				}
-			}
-			else
-				d_data->ranges = VipTimeRangeList() << VipTimeRange(d_data->trailer.startTime, d_data->trailer.endTime);
-
-			return true;
-		}
-
-		d_data->archive.close();
+	// Read the trailer
+	if (!d_data->archive.content("ArchiveRecorderTrailer", d_data->trailer)) {
+		close();
+		return false;
 	}
 
-	return false;
+	auto pos2 = d_data->archive.currentGroup();
+		
+	// Create the outputs with a valid value
+	bool all_resource = true;
+	int i = 0;
+	topLevelOutputAt(0)->toMultiOutput()->resize(d_data->trailer.sources.size());
+	for (auto it = d_data->trailer.sources.begin(); it != d_data->trailer.sources.end(); ++it, ++i) {
+		QVariant v = vipCreateVariant(it.value().typeName.data());
+		outputAt(i)->setData(VipAnyData(v, VipInvalidTime));
+
+		d_data->indexes[it.key()] = i;
+
+		VipTimeRange range = it.value().limits;
+		if (range.second - range.first != 0)
+			all_resource = false;
+	}
+
+	// if all streams only have one data, set the device type to Resource
+	if (all_resource)
+		d_data->device_type = Resource;
+
+	// now read all data without their content
+
+	d_data->archive.restore(d_data->start_pos);
+	auto pos3 = d_data->archive.currentGroup();
+	d_data->start_pos = d_data->archive.save();
+	d_data->archive.setAttribute("skip_data", true);
+
+	qint64 count = 0;
+	while (true) {
+		VipAnyData any;
+		loadAnyData(d_data->archive, any);
+		if (any.source() != 0) {
+			QByteArray dname = d_data->archive.lastEndGroup();
+			int idx = dname.lastIndexOf("/");
+			dname = dname.mid(idx + 1);
+			d_data->frames.insert(any.time(), ArchFrame{ any.source(), any.time(), dname });
+			if (d_data->trailer.sources.size() == 1)
+				++count;
+		}
+		else
+			break;
+	}
+
+	d_data->archive.setAttribute("skip_data", false);
+
+	// affect a valid data to each output
+	QSet<qint64> streams;
+	for (QMultiMap<qint64, ArchFrame>::iterator it = d_data->frames.begin(); it != d_data->frames.end(); ++it) {
+		if (!streams.contains(it.value().stream)) {
+
+			d_data->archive.restore(d_data->start_pos);
+			d_data->start_pos = d_data->archive.save();
+
+			VipAnyData any;
+			loadAnyData(d_data->archive, any, it.value().name);
+
+			if (!any.isEmpty()) {
+				streams.insert(it.value().stream);
+				int index = d_data->indexes[it.value().stream];
+				any.setSource((qint64)this);
+				if (!any.hasAttribute("Name"))
+					any.setAttribute("Name", this->name());
+				outputAt(index)->setData(any);
+
+				if (streams.size() == d_data->trailer.sources.size())
+					break;
+			}
+		}
+	}
+
+	// move the frames with invalid times to resourceFrames
+	typedef QMultiMap<qint64, ArchFrame>::iterator iterator;
+	QPair<iterator, iterator> range = d_data->frames.equal_range(VipInvalidTime);
+	for (iterator it = range.first; it != range.second; ++it)
+		d_data->resourceFrames.insert(it.key(), it.value());
+
+	while (d_data->frames.size()) {
+		if (d_data->frames.begin().key() == VipInvalidTime)
+			d_data->frames.erase(d_data->frames.begin());
+		else
+			break;
+	}
+
+	// if the device is temporal and we have resource frames, move them at the beginning of the frames
+	// we should avoid mixing resource and temporal outputs in the same VipIODevice, or the outputs won't be properly saved
+	if (d_data->frames.size() && d_data->resourceFrames.size() && d_data->device_type == Temporal) {
+		qint64 start = d_data->frames.begin().key();
+		for (iterator it = d_data->resourceFrames.begin(); it != d_data->resourceFrames.end(); ++it) {
+			ArchFrame frame = it.value();
+			frame.time = start;
+			d_data->frames.insert(start, frame);
+		}
+		d_data->resourceFrames.clear();
+	}
+
+	d_data->archive.setAttribute("skip_data", false);
+	d_data->buffers.resize(this->outputCount());
+
+	
+	if (count > 0) {
+		setSize(count);
+
+		// if there is only one stream, recreate the time range list
+		d_data->ranges.clear();
+
+		// find smallest sampling time
+		// int i = 0;
+		qint64 prev = 0;
+		qint64 sampling = 0;
+		for (QMultiMap<qint64, ArchFrame>::iterator it = d_data->frames.begin(); it != d_data->frames.end(); ++it /*, ++i*/) {
+			if (i > 0) {
+				qint64 samp = it.key() - prev;
+				if (samp > 0) {
+					if (sampling == 0)
+						sampling = samp;
+					else
+						sampling = qMin(sampling, samp);
+				}
+			}
+			prev = it.key();
+		}
+		if (sampling == 0) {
+			// case no valid sampling time found
+			d_data->ranges << VipTimeRange(d_data->trailer.startTime, d_data->trailer.endTime);
+		}
+		else {
+			QMultiMap<qint64, ArchFrame>::iterator it = d_data->frames.begin();
+			qint64 first = it.key();
+			qint64 last = it.key();
+			++it;
+			for (; it != d_data->frames.end(); ++it) {
+				if (it.key() - last < sampling * 4)
+					last = it.key();
+				else {
+					d_data->ranges.append(VipTimeRange(first, last));
+					first = last = it.key();
+				}
+			}
+			d_data->ranges.append(VipTimeRange(first, last));
+		}
+	}
+	else
+		d_data->ranges = VipTimeRangeList() << VipTimeRange(d_data->trailer.startTime, d_data->trailer.endTime);
+
+	this->setOpenMode(mode);
+	return true;
 }
 
 VipArchiveReader::DeviceType VipArchiveReader::deviceType() const
@@ -5252,89 +5251,37 @@ qint64 VipArchiveReader::computeClosestTime(qint64 time) const
 
 bool VipArchiveReader::readData(qint64 time)
 {
-	// look into buffered data
-	// bool have_buffer_data = false;
-	// QVector<VipAnyData> data;
-	// {
-	// //wait the data
-	// while (d_data->buffer_time == time) {
-	// qint64 t = VipInvalidTime;
-	// {
-	//	QMutexLocker lock(&d_data->buffer_mutex);
-	//	t = d_data->buffers[0].time();
-	// }
-	// if (t == time)
-	//	break;
-	// else
-	//	QThread::msleep(1);
-	// }
-	//
-	// QMutexLocker lock(&d_data->buffer_mutex);
-	// if (d_data->buffers[0].time() == time)
-	// {
-	// have_buffer_data = true;
-	// data = d_data->buffers;
-	// }
-	// }
-	// if (have_buffer_data)
-	// {
-	// for (int i = 0; i < outputCount(); ++i)
-	// this->outputAt(i)->setData(data[i]);
-	// }
-	// else
-	{
-		typedef QMultiMap<qint64, ArchFrame>::iterator iterator;
-		QPair<iterator, iterator> range = d_data->frames.equal_range(time);
+	typedef QMultiMap<qint64, ArchFrame>::iterator iterator;
+	QPair<iterator, iterator> range = d_data->frames.equal_range(time);
 
-		if (range.first == range.second)
-			return false;
+	if (range.first == range.second)
+		return false;
 
-		{
-			QMutexLocker lock(&d_data->buffer_mutex);
-			d_data->archive.setReadMode(VipArchive::Forward);
-			d_data->archive.setAttribute("skip_data", false);
+
+	for (iterator it = range.first; it != range.second; ++it) {
+		int output_index = d_data->indexes[it.value().stream];
+
+		// for streams having just one data or (Resource stream), just reset the output
+		VipTimeRange _range = d_data->trailer.sources[it.value().stream].limits;
+		if (_range.second - _range.first == 0) {
+			outputAt(output_index)->setData(outputAt(output_index)->data());
+			continue;
 		}
 
-		for (iterator it = range.first; it != range.second; ++it) {
-			int output_index = d_data->indexes[it.value().stream];
-
-			// for streams having just one data or (Resource stream), just reset the output
-			VipTimeRange _range = d_data->trailer.sourceLimits[it.value().stream];
-			if (_range.second - _range.first == 0) {
-				outputAt(output_index)->setData(outputAt(output_index)->data());
-				continue;
-			}
-
-			// lets be smart: only load the data for the connected outputs, not the other ones
-			// if (!outputAt(output_index)->connection()->sinks().size())
-			// continue;
-
-			// look for the data in the buffer
-			VipAnyData any = d_data->buffer[it.value().stream];
-			if (any.time() != time || any.isEmpty()) {
-				QByteArray ar;
-				{
-					QMutexLocker lock(&d_data->buffer_mutex);
-					d_data->archive.device()->seek(it.value().pos);
-					ar = d_data->archive.readBinary();
-				}
-
-				any = d_data->archive.deserialize(ar).value<VipAnyData>();
-				any.setTime(time);
-				any.setSource(qint64(this));
-				if (!any.hasAttribute("Name"))
-					any.setAttribute("Name", this->name());
-				d_data->buffer[it.value().stream] = any;
-			}
-
-			outputAt(output_index)->setData(any);
+		QByteArray dname = it.value().name;
+		d_data->archive.restore(d_data->start_pos);
+		d_data->start_pos = d_data->archive.save();
+		VipAnyData any;
+		if (loadAnyData(d_data->archive, any, dname)) {
+			if (!any.hasAttribute("Name"))
+				any.setAttribute("Name", this->name());
+			any.setSource(this);
 		}
+
+		outputAt(output_index)->setData(any);
 	}
-
-	d_data->forward = (time > d_data->time || d_data->time == VipInvalidTime);
+	
 	d_data->time = time;
-	// d_data->timer.start();
-
 	return true;
 }
 
@@ -5347,13 +5294,19 @@ bool VipArchiveReader::reload()
 	QSet<qint64> sources;
 	for (iterator it = d_data->resourceFrames.begin(); it != d_data->resourceFrames.end(); ++it) {
 		if (!sources.contains(it.value().stream)) {
-			d_data->archive.device()->seek(it.value().pos);
-			VipAnyData any = d_data->archive.read().value<VipAnyData>();
-			if (!any.isEmpty()) {
-				any.setSource(qint64(this));
-				outputAt(d_data->indexes[it.value().stream])->setData(any);
-				sources.insert(it.value().stream);
+
+			VipAnyData any;
+			QByteArray dname = it.value().name;
+			d_data->archive.restore(d_data->start_pos);
+			d_data->start_pos = d_data->archive.save();
+			if (d_data->archive.content(dname, any)) {
+				if (!any.hasAttribute("Name"))
+					any.setAttribute("Name", this->name());
 			}
+			any.setSource(qint64(this));
+			outputAt(d_data->indexes[it.value().stream])->setData(any);
+			sources.insert(it.value().stream);
+			
 		}
 	}
 	return true;

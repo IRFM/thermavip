@@ -1338,9 +1338,13 @@ public:
 	/// The trailer structure saved at the end of the file
 	struct Trailer
 	{
-		QMap<qint64, QString> sourceTypes;		  // the data type name for each source
-		QMap<qint64, QPair<qint64, qint64>> sourceLimits; // the time limits for each source
-		QMap<qint64, qint64> sourceSamples;		  // number of sample for each source;
+		struct Source
+		{
+			QByteArray typeName;
+			VipTimeRange limits;
+			qint64 samples;
+		};
+		QMap<qint64, Source> sources;		  // the data type name for each source
 		qint64 startTime;				  // the global start time
 		qint64 endTime;					  // the global end time
 		Trailer()

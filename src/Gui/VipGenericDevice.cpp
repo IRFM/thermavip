@@ -144,6 +144,18 @@ bool VipGenericRecorder::setPath(const QString& path)
 			return false;
 		}
 	}
+	else {
+		// Same recorder type, just check for input count
+		int input_count = inputCount();
+		if (input_count != d_data->recorder->inputCount()) {
+			if (VipMultiInput* inputs = d_data->recorder->topLevelInputAt(0)->toMultiInput())
+				inputs->resize(input_count);
+		}
+		if (input_count != d_data->recorder->inputCount()) {
+			setError("input count mismatch", VipProcessingObject::WrongInputNumber);
+			return false;
+		}
+	}
 
 	return d_data->recorder->setPath(path);
 }

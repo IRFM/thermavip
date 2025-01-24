@@ -156,21 +156,34 @@ VipArchive::operator const void*() const
 		return nullptr;
 }
 
-void VipArchive::save()
+unsigned VipArchive::save()
 {
 	if (mode() != Read)
-		return;
+		return 0;
 	this->doSave();
 	d_data->saved.append(d_data->parameters);
+	return d_data->saved.size();
 }
 void VipArchive::restore()
 {
 	if (mode() != Read)
 		return;
-	this->doRestore();
 	if (d_data->saved.size()) {
+		this->doRestore();
 		d_data->parameters = d_data->saved.back();
 		d_data->saved.pop_back();
+	}
+}
+void VipArchive::restore(unsigned id) 
+{
+	if (mode() != Read)
+		return;
+	while (d_data->saved.size() >= id) {
+		if (d_data->saved.size()) {
+			this->doRestore();
+			d_data->parameters = d_data->saved.back();
+			d_data->saved.pop_back();
+		}
 	}
 }
 
