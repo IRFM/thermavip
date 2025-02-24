@@ -816,8 +816,6 @@ private:
 	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
-typedef QPointer<VipPlotItem> VipPlotItemPtr;
-Q_DECLARE_METATYPE(VipPlotItemPtr)
 
 class VIP_GUI_EXPORT VipProcessingEditorToolWidget : public VipToolWidgetPlayer
 {
@@ -846,9 +844,9 @@ public Q_SLOTS:
 	void setPlotItem(VipPlotItem* item);
 
 private Q_SLOTS:
-	void itemClicked(VipPlotItem*, int);
-	void itemSelectionChanged(VipPlotItemPtr, bool);
-	void itemSelectionChangedDirect(VipPlotItem* item, bool);
+	void itemClicked(const VipPlotItemPointer&, int);
+	void itemSelectionChanged(const VipPlotItemPointer&, bool);
+	void itemSelectionChangedDirect(const VipPlotItemPointer& item, bool);
 	void workspaceChanged();
 	void emitProcessingsChanged() { Q_EMIT processingsChanged(); }
 

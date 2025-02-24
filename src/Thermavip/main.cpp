@@ -90,11 +90,9 @@ static void applyAppFont(QWidget * top, const QFont& previous)
 	}
 }
 
+
 int main(int argc, char** argv)
 {
-	//QLibrary fblas("C:/src/thermavip/build/install/thermavip/miniconda/Lib/site-packages/scipy/linalg/_fblas.cp38-win_amd64.pyd");
-	//bool r = fblas.load();
-
 	// Load thermavip.env
 	QString env_file = vipGetDataDirectory() + "thermavip/thermavip.env";
 	vip_debug("env file: %s\n", env_file.toLatin1().data());

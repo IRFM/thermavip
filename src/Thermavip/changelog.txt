@@ -1,3 +1,17 @@
+Thermavip v5.1.1 - 20/02/2024
+
+(GUI) Corrected random crash when closing plot players to quickly
+(GUI) Corrected various wrong undo behaviors (CTRL+Z)
+
+(WEST) Optimization of WEST view summary over pulses
+(WEST) Optimization of parameters reading (pulse infos, IR views...) when changing pulse number
+(WEST) Avoid UI freeze when changing pulse number
+(WEST) Changed socket behavior in tslib that might corrupt the internal webview (Evenio, PPO Dashboard...)
+(WEST) Corrected issue where camera list was not properly loaded if switching to last pulse too early
+(WEST) Added SurvIR-FPGA and SurvIR-DWMS
+(WEST) Corrected progress bar issue when opening a IR video (progress bar was not visible)
+(WEST) Corrected wrong DWMS control summary behavior 
+
 Thermavip v5.1.0 - 23/01/2024
 
 (Global) Corrected potential Skype application crash (?) when starting Thermavip
@@ -12,7 +26,8 @@ Thermavip v5.1.0 - 23/01/2024
 (WEST) Added search feature "LLM4PPO" to open the LLM4PPO tool
 (WEST) Added search feature "Wiki PPO" to open the corresponding web page
 (WEST) Added search feature "Preload all IR movies" with optional pulse number to start preloading corresponding IR videos
-
+(WEST) Merge before and after disruption in discharge summary
+(WEST) Added possibility to download ARCADE files from the WEST panel
 
 Thermavip v5.0.0 - 10/12/2024
 

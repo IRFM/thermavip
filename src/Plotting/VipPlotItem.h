@@ -921,6 +921,9 @@ VIP_PLOTTING_EXPORT QByteArray vipSavePlotItemState(const VipPlotItem* item);
 /// Restore an item state previously saved with #vipSavePlotItemState.
 VIP_PLOTTING_EXPORT bool vipRestorePlotItemState(VipPlotItem* item, const QByteArray& state);
 
+using VipPlotItemPointer = QPointer<VipPlotItem>;
+Q_DECLARE_METATYPE(VipPlotItemPointer)
+
 /// @brief Singleton class used to notify whever a VipPlotItem visibility or selection changed,
 /// or when an items is clicked over.
 class VIP_PLOTTING_EXPORT VipPlotItemManager : public QObject
@@ -933,9 +936,9 @@ public:
 	static VipPlotItemManager* instance();
 
 Q_SIGNALS:
-	void itemSelectionChanged(VipPlotItem* item, bool selected);
-	void itemVisibilityChanged(VipPlotItem* item, bool visible);
-	void itemClicked(VipPlotItem* item, int button);
+	void itemSelectionChanged(const VipPlotItemPointer& item, bool selected);
+	void itemVisibilityChanged(const VipPlotItemPointer& item, bool visible);
+	void itemClicked(const VipPlotItemPointer& item, int button);
 };
 
 /// @brief Composite VipPlotItem composed of several internal VipPlotItem objects.

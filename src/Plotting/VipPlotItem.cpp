@@ -2081,7 +2081,7 @@ QVariant VipPlotItem::itemChange(GraphicsItemChange change, const QVariant& valu
 		d_data->updateScheduled = false;
 		Q_EMIT visibilityChanged(this);
 		emitItemChanged();
-		Q_EMIT VipPlotItemManager::instance()->itemVisibilityChanged(this, this->isVisible());
+		Q_EMIT VipPlotItemManager::instance() -> itemVisibilityChanged(VipPlotItemPointer(this), this->isVisible());
 	}
 
 	else if (change == QGraphicsItem::ItemSelectedHasChanged) {
@@ -2095,7 +2095,7 @@ QVariant VipPlotItem::itemChange(GraphicsItemChange change, const QVariant& valu
 		Q_EMIT selectionChanged(this);
 		emitItemChanged(false, false, false);
 
-		Q_EMIT VipPlotItemManager::instance()->itemSelectionChanged(this, this->isSelected());
+		Q_EMIT VipPlotItemManager::instance() -> itemSelectionChanged(VipPlotItemPointer(this), this->isSelected());
 	}
 	else if (change == QGraphicsItem::ItemChildAddedChange)
 		this->dispatchStyleSheetToChildren();
@@ -2119,7 +2119,7 @@ bool VipPlotItem::sceneEvent(QEvent* event)
 
 	if (event->type() == QEvent::GraphicsSceneMousePress) {
 		Q_EMIT mouseButtonPress(this, static_cast<MouseButton>(static_cast<QGraphicsSceneMouseEvent*>(event)->button()));
-		Q_EMIT VipPlotItemManager::instance()->itemClicked(this, static_cast<MouseButton>(static_cast<QGraphicsSceneMouseEvent*>(event)->button()));
+		Q_EMIT VipPlotItemManager::instance()->itemClicked(VipPlotItemPointer( this), static_cast<MouseButton>(static_cast<QGraphicsSceneMouseEvent*>(event)->button()));
 	}
 	else if (event->type() == QEvent::GraphicsSceneMouseRelease) {
 		Q_EMIT mouseButtonRelease(this, static_cast<MouseButton>(static_cast<QGraphicsSceneMouseEvent*>(event)->button()));

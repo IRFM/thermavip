@@ -33,6 +33,7 @@
 #define VIP_RECORD_TOOL_WIDGET_H
 
 #include "VipToolWidget.h"
+#include "VipPlotItem.h"
 #include <qtoolbutton.h>
 
 /// \addtogroup Gui
@@ -168,7 +169,7 @@ private Q_SLOTS:
 	void displayAvailablePlayers();
 	void displayAvailablePlayers(bool update_player_pixmap);
 	void playerSelected();
-	void itemClicked(VipPlotItem*, int);
+	void itemClicked(const VipPlotItemPointer&, int);
 	void timeout();
 	void launchRecord(bool record);
 

@@ -5060,8 +5060,6 @@ public:
 VipProcessingEditorToolWidget::VipProcessingEditorToolWidget(VipMainWindow* window)
   : VipToolWidgetPlayer(window)
 {
-	qRegisterMetaType<VipPlotItemPtr>();
-
 	VIP_CREATE_PRIVATE_DATA(d_data);
 	d_data->leafSelector = new VipProcessingLeafSelector();
 	d_data->mainWindow = window;
@@ -5083,8 +5081,9 @@ VipProcessingEditorToolWidget::VipProcessingEditorToolWidget(VipMainWindow* wind
 	this->setObjectName("Edit processing");
 	this->setAutomaticTitleManagement(false);
 
-	connect(VipPlotItemManager::instance(), SIGNAL(itemClicked(VipPlotItem*, int)), this, SLOT(itemClicked(VipPlotItem*, int)), Qt::QueuedConnection);
-	connect(VipPlotItemManager::instance(), SIGNAL(itemSelectionChanged(VipPlotItem*, bool)), this, SLOT(itemSelectionChangedDirect(VipPlotItem*, bool)), Qt::DirectConnection);
+	connect(VipPlotItemManager::instance(), SIGNAL(itemClicked(const VipPlotItemPointer&, int)), this, SLOT(itemClicked(const VipPlotItemPointer&, int)), Qt::QueuedConnection);
+	connect(
+	  VipPlotItemManager::instance(), SIGNAL(itemSelectionChanged(const VipPlotItemPointer&, bool)), this, SLOT(itemSelectionChangedDirect(const VipPlotItemPointer&, bool)), Qt::DirectConnection);
 	connect(window->displayArea(), SIGNAL(currentDisplayPlayerAreaChanged(VipDisplayPlayerArea*)), this, SLOT(workspaceChanged()));
 	connect(d_data->leafSelector, SIGNAL(processingChanged(VipProcessingObject*)), this, SLOT(setProcessingObject(VipProcessingObject*)));
 
@@ -5254,17 +5253,18 @@ void VipProcessingEditorToolWidget::setPlotItem(VipPlotItem* item)
 	}
 }
 
-void VipProcessingEditorToolWidget::itemSelectionChangedDirect(VipPlotItem* item, bool selected)
+void VipProcessingEditorToolWidget::itemSelectionChangedDirect(const VipPlotItemPointer& item, bool selected)
 {
-	QMetaObject::invokeMethod(this, "itemSelectionChanged", Qt::QueuedConnection, Q_ARG(VipPlotItemPtr, VipPlotItemPtr(item)), Q_ARG(bool, selected));
+	QMetaObject::invokeMethod(this, "itemSelectionChanged", Qt::QueuedConnection, Q_ARG(VipPlotItemPointer, VipPlotItemPointer(item)), Q_ARG(bool, selected));
 }
 
-void VipProcessingEditorToolWidget::itemSelectionChanged(VipPlotItemPtr item, bool)
+void VipProcessingEditorToolWidget::itemSelectionChanged(const VipPlotItemPointer& item, bool)
 {
-	setPlotItem(item);
+	if(item)
+		setPlotItem(item);
 }
 
-void VipProcessingEditorToolWidget::itemClicked(VipPlotItem* item, int button)
+void VipProcessingEditorToolWidget::itemClicked(const VipPlotItemPointer& item, int button)
 {
 	// bool selected = item->isSelected();
 	// bool visible =  isVisible();

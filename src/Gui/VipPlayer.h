@@ -955,6 +955,8 @@ protected:
 	/// Reimplemented from #VipRenderObject::endRender()
 	virtual void endRender(VipRenderState&);
 
+	virtual void closeEvent(QCloseEvent* evt);
+
 private:
 	
 	VIP_DECLARE_PRIVATE_DATA(d_data);

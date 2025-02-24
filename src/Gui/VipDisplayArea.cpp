@@ -5426,10 +5426,10 @@ static VipBaseDragWidget* dropPlotItem(VipPlotMimeData* mime, QWidget* drop_widg
 
 		QList<VipAbstractPlayer*> players = duplicate.players();
 		if (players.size()) {
-			res = vipCreateFromWidgets(vipListCast<QWidget*>(players));
-			res = drop_mime_data_widget(VipDisplayPlayerArea::fromChildWidget(drop_widget), res, drop_widget);
-			res->setFocusWidget();
-			return res;
+			auto *tmp = vipCreateFromWidgets(vipListCast<QWidget*>(players));
+			drop_mime_data_widget(VipDisplayPlayerArea::fromChildWidget(drop_widget), tmp, drop_widget);
+			tmp->setFocusWidget();
+			return nullptr;
 		}
 	}
 	return nullptr;

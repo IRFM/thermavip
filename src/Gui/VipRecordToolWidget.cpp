@@ -688,7 +688,7 @@ VipRecordToolWidget::VipRecordToolWidget(VipMainWindow* window)
 	d_data->maxBufferMemSize->setValue(500);
 	d_data->recorder->topLevelInputAt(0)->toMultiInput()->setListType(VipDataList::FIFO, VipDataList::MemorySize, INT_MAX, 500000000);
 
-	connect(VipPlotItemManager::instance(), SIGNAL(itemClicked(VipPlotItem*, int)), this, SLOT(itemClicked(VipPlotItem*, int)));
+	connect(VipPlotItemManager::instance(), SIGNAL(itemClicked(const VipPlotItemPointer&, int)), this, SLOT(itemClicked(const VipPlotItemPointer&, int)));
 	connect(d_data->itemSelector, SIGNAL(itemSelected(VipPlotItem*)), this, SLOT(addPlotItem(VipPlotItem*)));
 	connect(d_data->saveMovie, SIGNAL(clicked(bool)), this, SLOT(recordTypeChanged()));
 	connect(d_data->saveSignals, SIGNAL(clicked(bool)), this, SLOT(recordTypeChanged()));
@@ -1180,7 +1180,7 @@ bool VipRecordToolWidget::removePlotItem(VipPlotItem* item)
 	return false;
 }
 
-void VipRecordToolWidget::itemClicked(VipPlotItem* plot_item, int button)
+void VipRecordToolWidget::itemClicked(const VipPlotItemPointer& plot_item, int button)
 {
 	if (d_data->recordType == SignalArchive && isVisible()) {
 		// add the plot item from the list if: this is a left click, the item is selected and not already added to the list

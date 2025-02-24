@@ -390,7 +390,8 @@ VipAbstractPlayer::~VipAbstractPlayer()
 	if (d_data->pool) {
 		d_data->pool->stop();
 		d_data->pool->stopStreaming();
-		vipProcessEvents(nullptr, 500);
+		//TEST: comment
+		//vipProcessEvents(nullptr, 500);
 	}
 
 }
@@ -5228,6 +5229,7 @@ public:
 
 	bool needComputeStartDate;
 	bool timeMarkerAlwaysVisible;
+	bool aboutToClose{ false };
 
 	// widget to edit the processing list (if any)
 	QAction* processing_tree_action;
@@ -5660,6 +5662,7 @@ VipPlotPlayer::VipPlotPlayer(VipAbstractPlotWidget2D* viewer, QWidget* parent)
 
 VipPlotPlayer::~VipPlotPlayer()
 {
+	d_data->aboutToClose = true;
 	QCoreApplication::instance()->removePostedEvents(this, QEvent::MetaCall);
 	// disconnect this signal as it could be sent longer after the player is destroyed
 	disconnect(d_data->viewer->area(), SIGNAL(toolTipEnded(const QPointF&)), this, SLOT(toolTipEnded(const QPointF&)));
@@ -6379,6 +6382,11 @@ void VipPlotPlayer::endRender(VipRenderState& state)
 	VipPlayer2D::endRender(state);
 }
 
+void VipPlotPlayer::closeEvent(QCloseEvent* )
+{
+	d_data->aboutToClose = true;
+}
+
 void VipPlotPlayer::hideAllItems()
 {
 	QList<VipPlotItem*> items = viewer()->area()->findItems<VipPlotItem*>();
@@ -6965,16 +6973,28 @@ void VipPlotPlayer::toolTipMoved(const QPointF& pos)
 }
 void VipPlotPlayer::toolTipEnded(const QPointF&)
 {
+	
 	// TODO: might be received at closing: crash!
+	if (d_data->aboutToClose || inDestructor())
+		return;
+
+	if (VipDisplayPlayerArea* workspace = vipGetMainWindow()->displayArea()->currentDisplayPlayerArea()) {
+		auto lst = VipUniqueId::objects<VipPlotPlayer>();
+		for (VipPlotPlayer* pl : lst) {
+			if(VipDisplayPlayerArea::fromChildWidget(pl) == workspace)
+				if (!pl->inDestructor())
+					pl->xMarker()->setVisible(false);
+		}
+	}
 
 	// hide the time marker for all players
-	if (VipDisplayPlayerArea* workspace = vipGetMainWindow()->displayArea()->currentDisplayPlayerArea()) {
+	/* if (VipDisplayPlayerArea* workspace = vipGetMainWindow()->displayArea()->currentDisplayPlayerArea()) {
 		QList<VipPlotPlayer*> pls = workspace->findChildren<VipPlotPlayer*>();
 		for (int i = 0; i < pls.size(); ++i) {
 			VipPlotPlayer* pl = pls[i];
 			pl->xMarker()->setVisible(false);
 		}
-	}
+	}*/
 }
 
 void VipPlotPlayer::refreshToolTip(VipPlotItem* item)

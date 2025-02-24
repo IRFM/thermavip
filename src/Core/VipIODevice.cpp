@@ -4785,7 +4785,7 @@ bool VipArchiveRecorder::open(VipIODevice::OpenModes mode)
 {
 	if (isOpen()) {
 		this->wait();
-		d_data->archive.content("ArchiveRecorderTrailer", d_data->trailer);
+		d_data->archive.content("Streams", d_data->trailer);
 	}
 	d_data->archive.close();
 	d_data->trailer = ArchiveRecorderTrailer();
@@ -4818,7 +4818,7 @@ void VipArchiveRecorder::close()
 {
 	if (isOpen()) {
 		this->wait();
-		d_data->archive.content("ArchiveRecorderTrailer", d_data->trailer);
+		d_data->archive.content("Streams", d_data->trailer);
 		d_data->archive.end();
 	}
 	d_data->archive.close();
@@ -4973,7 +4973,8 @@ bool VipArchiveReader::open(VipIODevice::OpenModes mode)
 		return false;
 
 	d_data->device_type = Temporal;
-	d_data->archive.open(device()); //TEST
+	if (!d_data->archive.open(device()))
+		return false;
 	//d_data->archive.setDevice(device());
 
 	// Start "Content" object and read its attributes
@@ -4990,7 +4991,7 @@ bool VipArchiveReader::open(VipIODevice::OpenModes mode)
 	auto pos1 = d_data->archive.currentGroup();
 
 	// Read the trailer
-	if (!d_data->archive.content("ArchiveRecorderTrailer", d_data->trailer)) {
+	if (!d_data->archive.content("Streams", d_data->trailer)) {
 		close();
 		return false;
 	}

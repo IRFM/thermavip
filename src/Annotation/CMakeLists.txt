@@ -64,7 +64,9 @@ IF(WITH_LIBRIR)
 	
 	ExternalProject_Add(librir
 	  GIT_REPOSITORY https://github.com/IRFM/librir.git
-	  GIT_TAG main
+	  GIT_TAG better-build
+	  CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>
+	  INSTALL_DIR "${CMAKE_BINARY_DIR}/src/Annotation/librir-prefix/src/librir-build/install"
 	)
 
 	# trick from https://stackoverflow.com/questions/17446981/cmake-externalproject-add-and-findpackage

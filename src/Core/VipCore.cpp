@@ -42,8 +42,28 @@
 
 #include <thread>
 
-bool vipSafeVariantSave(QDataStream& s, const QVariant& v)
+static bool canSaveVariant(const QVariant& v) 
 {
+#if QT_VERSION > QT_VERSION_CHECK(6, 0, 0)
+	QMetaType meta(v.userType());
+	if (v.userType() && (v.userType() < QMetaType::User || meta.hasRegisteredDataStreamOperators())) {
+		return true;
+	}
+#endif
+	return false;
+}
+
+bool vipSafeVariantSave(QDataStream & s, const QVariant& v)
+	{
+#if QT_VERSION > QT_VERSION_CHECK(6, 0, 0)
+		if (canSaveVariant(v)) {
+			s << v;
+			return s.status() == QDataStream::Ok;
+		}
+		else
+			return false;
+#endif
+
 	qint64 pos = s.device()->pos();
 	quint32 typeId = v.userType();
 	bool fakeUserType = false;
@@ -94,6 +114,19 @@ bool vipSafeVariantSave(QDataStream& s, const QVariant& v)
 
 qsizetype vipSafeVariantMapSave(QDataStream& s, const QVariantMap& c)
 {
+#if QT_VERSION > QT_VERSION_CHECK(6, 0, 0)
+	{
+		QVariantMap tmp;
+		for (auto it = c.begin(); it != c.end(); ++it) {
+			if (canSaveVariant(it.value()))
+				tmp.insert(it.key(), it.value());
+		}
+		s << tmp;
+		return tmp.size();
+	}
+#endif
+	
+
 	QByteArray ar;
 	QDataStream str(&ar, QIODevice::WriteOnly);
 	str.setByteOrder(s.byteOrder());
