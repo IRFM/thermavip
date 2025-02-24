@@ -108,7 +108,7 @@ public:
 				continue;
 			}
 
-			#ifdef WIN32
+			#if defined(WIN32) && (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
 				SHFILEINFOA file;
 				memset(&file, 0, sizeof(file));
 				QByteArray name = info.canonicalFilePath().toLatin1(); 
