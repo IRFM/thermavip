@@ -4080,9 +4080,9 @@ bool VipMainWindow::loadSessionShowProgress(VipArchive& arch, VipProgress* progr
 		while (true) {
 			QString name;
 			if (arch.start(name)) {
-				VipPluginInterface* interface = VipLoadPlugins::instance().find(name);
-				if (interface)
-					interface->restore(arch);
+				VipPluginInterface* inter = VipLoadPlugins::instance().find(name);
+				if (inter)
+					inter->restore(arch);
 
 				arch.end();
 			}

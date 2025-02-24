@@ -5587,7 +5587,7 @@ VipIODevice* VipCreateDevice::create(const QList<VipProcessingObject::Info>& dev
 		for (int i = 0; i < dev.size(); ++i) {
 			if (VipIODevice* d = qobject_cast<VipIODevice*>(dev[i].create())) {
 				hold_devices.push_back( DevicePtr(d));
-				devices.emplaceBack( d);
+				devices.push_back(d);
 			}
 		}
 

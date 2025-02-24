@@ -249,7 +249,7 @@ void VipDisplayObject::display(const VipAnyDataList& data)
 		return;
 
 	QVector<Vip::detail::ItemAndData> items;
-	if (auto * a = d_data->area.get())
+	if (auto * a = d_data->area.data())
 		if (auto notifier = a->notifier())
 			// Get all dirty items
 			items = notifier->dirtItems();
