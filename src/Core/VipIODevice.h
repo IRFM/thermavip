@@ -1316,6 +1316,9 @@ protected:
 
 VIP_REGISTER_QOBJECT_METATYPE(VipShapeWriter*)
 
+
+#ifdef VIP_WITH_HDF5
+
 /// \a VipArchiveRecorder is a write only device designed to save any kind of input data in a binary format.
 ///
 /// \a VipArchiveRecorder internally relies on a #VipBinaryArchive which basically contains stacked raw #VipAnyData. Therefore, it can save any serializable data (see #VipArchive for more details).
@@ -1418,6 +1421,8 @@ private:
 };
 
 VIP_REGISTER_QOBJECT_METATYPE(VipArchiveReader*)
+
+#endif
 
 /// @}
 // end Core

@@ -17,9 +17,9 @@ if(NOT WITH_VTK)
 	list(FILTER Headers EXCLUDE REGEX "^.*VTK.*$")
 endif()
 
-if(WITH_HDF5)
-	 list(APPEND Sources VipH5Archive.cpp VipH5DeviceDriver.cpp)
-	 list(APPEND Headers VipH5Archive.h VipH5DeviceDriver.h)
+if(NOT WITH_HDF5)
+	list(FILTER Sources EXCLUDE REGEX "^.*H5.*$")
+	list(FILTER Headers EXCLUDE REGEX "^.*H5.*$")
 endif()
 
 add_library(VipCore SHARED

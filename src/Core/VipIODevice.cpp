@@ -4674,6 +4674,9 @@ void VipShapeWriter::apply()
 	}
 }
 
+
+#ifdef VIP_WITH_HDF5
+
 typedef VipArchiveRecorder::Trailer ArchiveRecorderTrailer;
 Q_DECLARE_METATYPE(ArchiveRecorderTrailer);
 
@@ -5312,6 +5315,10 @@ bool VipArchiveReader::reload()
 	}
 	return true;
 }
+
+
+#endif //VIP_WITH_HDF5
+
 
 VipArchive& operator<<(VipArchive& stream, const VipIODevice* d)
 {
