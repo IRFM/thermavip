@@ -130,7 +130,9 @@ public:
 	typedef int (*_close_camera)(int camera);
 	typedef int (*_get_filename)(int cam, char* filename);
 
+
 	typedef int (*_get_temp_directory)(char*);
+	typedef int (*_get_default_temp_directory)(char*);
 	typedef int (*_set_temp_directory)(char*);
 	typedef void (*_enable_delete_temp_dir)(int);
 	typedef int (*_delete_temp_dir_enabled)();

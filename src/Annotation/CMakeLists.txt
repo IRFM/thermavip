@@ -108,6 +108,8 @@ IF(WITH_LIBRIR)
 	# find_package(librir)
 	# install(DIRECTORY ${CMAKE_BINARY_DIR}/src/Annotation/librir-prefix/src/librir-build/install/python/librir DESTINATION "${CMAKE_INSTALL_PREFIX}/thermavip")
 	install(DIRECTORY ${CMAKE_INSTALL_PREFIX}/python/librir DESTINATION thermavip)
+	#install(RUNTIME_DEPENDENCY_SET ffmpeg-set DESTINATION thermavip)
+
 endif()
 
 install(TARGETS VipAnnotation

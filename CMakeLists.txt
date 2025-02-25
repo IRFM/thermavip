@@ -17,7 +17,7 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 find_package(QT NAMES Qt5 Qt6 REQUIRED )
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets OpenGL Core Gui Xml Network Sql PrintSupport Svg)
-MESSAGE(STATUS "Qt found!")
+message(STATUS "Qt found!")
 
 include(GNUInstallDirs) 
 
@@ -38,37 +38,39 @@ option(NO_WARNING "Treat warnings as errors" OFF)
 
 
 # Local installation
-IF(LOCAL_INSTALL)
-	SET(CMAKE_INSTALL_PREFIX ${CMAKE_BINARY_DIR}/install) 
-	MESSAGE(STATUS ${CMAKE_INSTALL_PREFIX})
+if(LOCAL_INSTALL)
+	set(CMAKE_INSTALL_PREFIX ${CMAKE_BINARY_DIR}/install) 
+	message(STATUS ${CMAKE_INSTALL_PREFIX})
 	set (CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin) 
 	set (CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
-	IF(NOT MSVC)
-		SET(CMAKE_INSTALL_RPATH $ORIGIN)
+	if(NOT MSVC)
+		set(CMAKE_INSTALL_RPATH $ORIGIN)
 		
-		SET(CMAKE_SKIP_BUILD_RPATH FALSE)
-		SET(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE)
-		#~ SET(CMAKE_INSTALL_RPATH_USE_ORIGIN TRUE)
-		SET(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
-	ENDIF()
-ENDIF()
+		set(CMAKE_SKIP_BUILD_RPATH FALSE)
+		set(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE)
+		#~ set(CMAKE_INSTALL_RPATH_USE_ORIGIN TRUE)
+		set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+	endif()
+endif()
 
 
 
 # Make configure_ffmpeg executable
-IF (UNIX)
+if (UNIX)
 	execute_process(COMMAND chmod 777 ${PROJECT_SOURCE_DIR}/configure_ffmpeg)
-ENDIF()
+endif()
 
-IF (NOT MSVC)
+if (NOT MSVC)
+if(NOT WITH_LIBRIR)
 # Create a dummy target to build ffmpeg as a prebuild step
 #add_custom_target(ffmpeg BYPRODUCTS "${PROJECT_SOURCE_DIR}/build_ffmpeg.h"
 #  COMMAND ${PROJECT_SOURCE_DIR}/configure_ffmpeg)
 #add_executable(dummy ${PROJECT_SOURCE_DIR}/dummy.c "${PROJECT_SOURCE_DIR}/build_ffmpeg.h")
 #target_include_directories(dummy PRIVATE "${PROJECT_SOURCE_DIR}")
 add_custom_target(ffmpeg ALL COMMAND ${PROJECT_SOURCE_DIR}/configure_ffmpeg)
-ENDIF()
+endif()
+endif()
 
 
 # Long double support

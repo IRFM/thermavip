@@ -544,7 +544,7 @@ VipLibRIR* VipLibRIR::instance()
 			return librir = nullptr;
 		}
 
-		librir->get_default_temp_directory = (_get_temp_directory)westLib()->resolve("get_default_west_data_dir");
+		librir->get_default_temp_directory = (_get_default_temp_directory)westLib()->resolve("get_default_west_data_dir");
 		if (!librir->get_default_temp_directory) {
 			VIP_LOG_ERROR("librir: missing get_default_west_data_dir");
 			delete librir;

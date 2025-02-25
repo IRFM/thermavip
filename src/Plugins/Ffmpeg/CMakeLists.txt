@@ -28,27 +28,25 @@ target_compile_definitions(Ffmpeg PRIVATE ENABLE_H264 BUILD_FFMPEG_LIB)
 # Configure ffmpeg path, use librir ffmpeg install if possible
 IF(WITH_LIBRIR)
 	if(MSVC)
-		set(FFMPEG_PATH ${CMAKE_BINARY_DIR}/src/Annotation/librir-prefix/src/librir/extra/ffmpeg)
+		set(FFMPEG_PATH ${CMAKE_BINARY_DIR}/_deps/librir-src/extra/ffmpeg)
 	else()
+		# TODO! Linux
 		set(FFMPEG_PATH ${CMAKE_BINARY_DIR}/src/Annotation/librir-prefix/src/librir-build/install)
 	endif()
 else()
+	# Compile ffmpeg from source inside 3rd_64 folder
 	set(FFMPEG_PATH ${CMAKE_SOURCE_DIR}/3rd_64)
 endif()
 
 
 
 IF (MSVC)
-
-
 	SET(FFMPEG_LIB_DIR ${FFMPEG_PATH}/ffmpeg-4.3-msvc/lib)
-	SET(FFMPEG_INCLUDE_DIR ${FFMPEG_PATH}/ffmpeg-4.3-msvc/include)
+	SET(FFMPEG_INCLUDE_DIR "${FFMPEG_PATH}/ffmpeg-4.3-msvc/include;${FFMPEG_PATH}/ffmpeg-4.3-msvc")
 	SET(FFMPEG_LIBS avdevice avformat avcodec swscale avutil swresample avfilter )
 	SET(ADDITIONAL_FFMPEG_LIBS libx264 libx265 kvazaar postproc vcruntime140_1 Vfw32 shlwapi strmbase)
 	SET(FFMPEG_PREFIX )
 	SET(FFMPEG_SUFFIX .dll)
-
-	
 ELSE()
 
 	IF (WIN32)
@@ -76,7 +74,7 @@ target_link_directories(Ffmpeg PRIVATE ${FFMPEG_LIB_DIR})
 MESSAGE(STATUS "Using ${FFMPEG_LIB_DIR} for ffmpeg library files")
 
 
-target_include_directories(Ffmpeg PRIVATE 	${FFMPEG_INCLUDE_DIR})
+target_include_directories(Ffmpeg PRIVATE ${FFMPEG_INCLUDE_DIR})
 target_link_libraries(Ffmpeg PRIVATE ${FFMPEG_LIBS})
 SET(COMPLETE_FFMPEG_LIBS ${FFMPEG_LIBS} ${ADDITIONAL_FFMPEG_LIBS})
 
