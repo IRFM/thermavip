@@ -57,14 +57,24 @@ include(${THERMAVIP_COMPILER_FLAGS_FILE})
 # endif()
 IF(WITH_LIBRIR)
 	include(FetchContent)
-	FetchContent_Declare(
-		librir
-		GIT_REPOSITORY https://github.com/IRFM/librir.git
-		GIT_TAG better-build
-		OVERRIDE_FIND_PACKAGE
-	)
-	message(STATUS "fetching librir")
-	FetchContent_MakeAvailable(librir)
+	find_package(librir QUIET GLOBAL)
+
+	if(NOT librir_FOUND)
+		message(STATUS "fetching librir")
+		FetchContent_Declare(
+			librir
+			GIT_REPOSITORY
+			https://github.com/IRFM/librir.git
+			GIT_TAG better-build
+
+			OVERRIDE_FIND_PACKAGE
+		)
+		find_package(librir REQUIRED GLOBAL)
+	endif()
+
+	if(librir_FOUND)
+		message(STATUS "librir found at : ${librir_DIR}")
+	endif()
 
 	# include(ExternalProject)
 
@@ -96,7 +106,8 @@ IF(WITH_LIBRIR)
 	add_dependencies(VipAnnotation librir)
 
 	# find_package(librir)
-	install(DIRECTORY ${CMAKE_BINARY_DIR}/src/Annotation/librir-prefix/src/librir-build/install/python/librir DESTINATION "${CMAKE_INSTALL_PREFIX}/thermavip")
+	# install(DIRECTORY ${CMAKE_BINARY_DIR}/src/Annotation/librir-prefix/src/librir-build/install/python/librir DESTINATION "${CMAKE_INSTALL_PREFIX}/thermavip")
+	install(DIRECTORY ${CMAKE_INSTALL_PREFIX}/python/librir DESTINATION thermavip)
 endif()
 
 install(TARGETS VipAnnotation
