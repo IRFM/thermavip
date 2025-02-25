@@ -119,7 +119,7 @@ public:
 					DestroyIcon(file.hIcon);
 				}
 			#else
-				res_icon = QIcon(provider.icon(info).pixmap(QSize(30, 30)));
+				res_icon = provider.icon(info).pixmap(QSize(30, 30));
 			#endif
 			//
 			has_icon = true;
