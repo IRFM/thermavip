@@ -178,7 +178,7 @@ void VipArchive::restore(unsigned id)
 {
 	if (mode() != Read)
 		return;
-	while (d_data->saved.size() >= id) {
+	while (d_data->saved.size() >= (qsizetype)id) {
 		if (d_data->saved.size()) {
 			this->doRestore();
 			d_data->parameters = d_data->saved.back();

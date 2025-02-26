@@ -42,16 +42,16 @@
 
 #include <thread>
 
+#if QT_VERSION > QT_VERSION_CHECK(6, 0, 0)
 static bool canSaveVariant(const QVariant& v) 
 {
-#if QT_VERSION > QT_VERSION_CHECK(6, 0, 0)
 	QMetaType meta(v.userType());
 	if (v.userType() && (v.userType() < QMetaType::User || meta.hasRegisteredDataStreamOperators())) {
 		return true;
 	}
-#endif
 	return false;
 }
+#endif
 
 bool vipSafeVariantSave(QDataStream & s, const QVariant& v)
 	{

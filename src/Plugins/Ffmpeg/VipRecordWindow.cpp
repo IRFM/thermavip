@@ -6,6 +6,7 @@
 #include "p_VideoEncoder.h"
 
 #include <QGridLayout>
+#include <QScreen>
 #include <qthread.h>
 #include <qdatetime.h>
 #include <qmutex.h>
@@ -566,7 +567,7 @@ QImage VipRecordWindow::grabCurrentImage()
 
 	QPoint topleft = m_rect.topLeft();
 	{
-		const QPixmap pix = m_screen->grabWindow();
+		const QPixmap pix = m_screen->grabWindow(0);
 		img = QImage(m_rect.size(), QImage::Format_ARGB32);
 		img.fill(Qt::transparent);
 		

@@ -65,8 +65,7 @@ IF(WITH_LIBRIR)
 			librir
 			GIT_REPOSITORY
 			https://github.com/IRFM/librir.git
-			GIT_TAG better-build
-
+			GIT_TAG main
 			OVERRIDE_FIND_PACKAGE
 		)
 		find_package(librir REQUIRED GLOBAL)
