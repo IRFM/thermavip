@@ -15,32 +15,10 @@ add_library(SimpleGuiPlugin SHARED
     plugin.cpp plugin.h
 )
 
-# Find Qt
-find_package(QT NAMES Qt5 Qt6 REQUIRED )
-find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets OpenGL Core Gui Xml Network Sql PrintSupport Svg)
-set(QT_LIBS Qt::Core
-    Qt::Gui
-    Qt::Network
-	Qt::Widgets
-	Qt::OpenGL
-	Qt::PrintSupport
-    Qt::Xml
-	Qt::Sql
-	Qt::Svg
-	)
-	
-# Link Qt libraries
-target_link_libraries(SimpleGuiPlugin PRIVATE ${QT_LIBS})
-
 # Find thermavip
 find_package(thermavip REQUIRED )
+target_link_libraries(SimpleGuiPlugin PRIVATE ${THERMAVIP_LIBRARIES} ${THERMAVIP_QT_LIBRARIES} )
 
-# Add thermavip include directories
-target_include_directories(SimpleGuiPlugin PRIVATE ${THERMAVIP_INCLUDE_DIRS} )
-# Add thermavip library directory
-target_link_directories(SimpleGuiPlugin PRIVATE ${THERMAVIP_LIB_DIR} )
-# Link with thermavip SDK
-target_link_libraries(SimpleGuiPlugin PRIVATE ${THERMAVIP_LIBRARIES})
 
 # Install plugin
 install(TARGETS SimpleGuiPlugin
