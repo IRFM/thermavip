@@ -1,7 +1,7 @@
 /**
  * BSD 3-Clause License
  *
- * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Leo Dubus, Erwan Grelier
+ * Copyright (c) 2025, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Leo Dubus, Erwan Grelier
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -427,9 +427,9 @@ typedef double vip_double;
 typedef VipFloatPoint<vip_long_double> VipLongPoint;
 typedef VipFloatPoint<vip_double> VipPoint;
 
-Q_DECLARE_TYPEINFO(VipLongPoint, Q_MOVABLE_TYPE);
+Q_DECLARE_TYPEINFO(VipLongPoint, Q_MOVABLE_TYPE | Q_RELOCATABLE_TYPE);
 Q_DECLARE_METATYPE(VipLongPoint)
-Q_DECLARE_TYPEINFO(VipPoint, Q_MOVABLE_TYPE);
+Q_DECLARE_TYPEINFO(VipPoint, Q_MOVABLE_TYPE | Q_RELOCATABLE_TYPE);
 Q_DECLARE_METATYPE(VipPoint)
 
 static constexpr quint32 vip_LD_support = sizeof(long double);

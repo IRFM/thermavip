@@ -5,7 +5,7 @@
 
 #include <qdatetime.h>
 #include <qapplication.h>
-
+#include <qdir.h>
 #include <iostream>
 
 
@@ -21,7 +21,6 @@ SEQ_NOINLINE(void) add(double& sum, int i, double factor)
 	sum += i * factor;
 }
 
-
 struct Senderthread : public QThread
 {
 	virtual void run() 
@@ -29,7 +28,7 @@ struct Senderthread : public QThread
 		// create tcp server and wai for a connection
 		VipTcpServer server;
 		server.listen(QHostAddress("127.0.0.1"), 10703);
-		server.waitForNewConnection();
+		server.waitForNewConnection(-1);
 		printf("server received a connected\n");
 
 		// create VipNetworkConnection from the new connection
@@ -64,10 +63,12 @@ struct Receiverthread : public QThread
 	}
 };
 
+#include <QDir>
 int main(int argc, char** argv)
 {
+	QCoreApplication::addLibraryPath(QDir::currentPath().toLatin1());
 	QApplication app(argc,argv);
-	{
+	 {
 		Senderthread th1;
 		th1.start();
 		Receiverthread th2;
@@ -112,7 +113,10 @@ int main(int argc, char** argv)
 	
 
 	mult.setScheduleStrategy(VipProcessingObject::Asynchronous);
-	mult.inputAt(0)->setListType(VipDataList::FIFO, VipDataList::Number);
+	mult.inputAt(0)->setListType(VipDataList::FIFO, VipDataList::None);
+	//FIFOList* f = new FIFOList();
+	//f->setListLimitType(FIFOList::None);
+	//mult.inputAt(0)->setListType(f);
 	mult.sum = 0;
 
 	st = QDateTime::currentMSecsSinceEpoch();

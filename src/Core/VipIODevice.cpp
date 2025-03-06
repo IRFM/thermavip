@@ -1,7 +1,7 @@
 /**
  * BSD 3-Clause License
  *
- * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Leo Dubus, Erwan Grelier
+ * Copyright (c) 2025, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Leo Dubus, Erwan Grelier
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -4797,10 +4797,10 @@ bool VipArchiveRecorder::open(VipIODevice::OpenModes mode)
 	this->setSize(0);
 
 	if (mode == VipIODevice::WriteOnly) {
-		if (!createDevice(removePrefix(path()), QIODevice::WriteOnly))
+		if (!createDevice(removePrefix(path()), QIODevice::ReadWrite|QIODevice::Truncate))
 			return false;
 
-		if (!d_data->archive.open(device())) { // TEST
+		if (!d_data->archive.open(device())) { 
 			close();
 			return false;
 		}
@@ -4808,7 +4808,6 @@ bool VipArchiveRecorder::open(VipIODevice::OpenModes mode)
 			close();
 			return false;
 		}
-		//d_data->archive.setDevice(device());
 		
 		this->setOpenMode(mode);
 		return true;

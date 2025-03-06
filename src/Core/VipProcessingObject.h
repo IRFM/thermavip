@@ -1,7 +1,7 @@
 /**
  * BSD 3-Clause License
  *
- * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Leo Dubus, Erwan Grelier
+ * Copyright (c) 2025, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Leo Dubus, Erwan Grelier
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -55,6 +55,8 @@
 #include "VipLock.h"
 #include "VipProcessingHelper.h"
 #include "VipTimestamping.h"
+
+
 
 /// \addtogroup Core
 /// @{
@@ -154,7 +156,7 @@ public:
 	int memoryFootprint() const;
 };
 
-typedef QList<VipAnyData> VipAnyDataList;
+typedef QVector<VipAnyData> VipAnyDataList;
 
 Q_DECLARE_METATYPE(VipAnyData)
 Q_DECLARE_METATYPE(VipAnyDataList)
@@ -332,7 +334,12 @@ public:
 	virtual VipAnyData probe() = 0;
 	/// Returns all next data, and remove them from the list.
 	/// This function returns the next data in the order they should be read, from list beginning to list end.
-	virtual VipAnyDataList allNext() = 0;
+	virtual bool readAll(VipAnyDataList& lst) = 0;
+	VipAnyDataList allNext() { 
+		VipAnyDataList res;
+		readAll(res);
+		return res;
+	}
 	/// Return the next data time
 	virtual qint64 time() const = 0;
 	/// Returns true if the list is empty, false otherwise.
@@ -371,8 +378,15 @@ public:
 /// @brief A FIFO, thread safe VipDataList
 class VIP_CORE_EXPORT VipFIFOList : public VipDataList
 {
-	// std::deque is more performant (even on msvc!) for fifo structure than QList
-	std::deque<VipAnyData> m_list;
+	// Use QVector as queue with Qt6 (double ended vector),
+	// std::deque otherwise (still faster than QList).
+	// A growable circular buffer would be better here...
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
+	using QueueType = std::deque<VipAnyData>;
+#else
+	using QueueType = QVector<VipAnyData>;
+#endif
+	QueueType m_list;
 	VipAnyData m_last;
 	VipSpinlock m_mutex;
 
@@ -383,7 +397,7 @@ public:
 	virtual void reset(const VipAnyData&);
 	virtual void reset(VipAnyData&&);
 	virtual VipAnyData next();
-	virtual VipAnyDataList allNext();
+	virtual bool readAll(VipAnyDataList& lst);
 	virtual VipAnyData probe();
 	virtual qint64 time() const;
 	virtual bool empty() const;
@@ -398,7 +412,15 @@ public:
 /// @brief A LIFO, thread safe VipDataList
 class VIP_CORE_EXPORT VipLIFOList : public VipDataList
 {
-	std::deque<VipAnyData> m_list;
+	// Use QVector as queue with Qt6 (double ended vector),
+	// std::deque otherwise (still faster than QList).
+	// A growable circular buffer would be better here...
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
+	using QueueType = std::deque<VipAnyData>;
+#else
+	using QueueType = QVector<VipAnyData>;
+#endif
+	QueueType m_list;
 	VipAnyData m_last;
 	VipSpinlock m_mutex;
 
@@ -409,7 +431,7 @@ public:
 	virtual void reset(const VipAnyData&);
 	virtual void reset(VipAnyData&&);
 	virtual VipAnyData next();
-	virtual VipAnyDataList allNext();
+	virtual bool readAll(VipAnyDataList& lst);
 	virtual VipAnyData probe();
 	virtual qint64 time() const;
 	virtual bool empty() const;
@@ -435,7 +457,7 @@ public:
 	virtual void reset(const VipAnyData&);
 	virtual void reset(VipAnyData&&);
 	virtual VipAnyData next();
-	virtual VipAnyDataList allNext();
+	virtual bool readAll(VipAnyDataList& lst);
 	virtual VipAnyData probe();
 	virtual qint64 time() const;
 	virtual bool empty() const;
@@ -960,35 +982,38 @@ public:
 	VipInput(const VipInput& other);
 
 	/// Call VipDataList::probe()
-	VipAnyData probe() const;
+	VIP_ALWAYS_INLINE VipAnyData probe() const { return m_input_list->probe(); }
 	/// Reimplemented from #VipProcessingIO::data(). Call #VipDataList::next()
-	virtual VipAnyData data() const;
-	VipAnyDataList allData() const;
+	VIP_ALWAYS_INLINE VipAnyData data() const { return m_input_list->next(); }
 	/// Reimplemented from #VipProcessingIO::setData(). Add a new data to the internal VipDataList.
+	VIP_ALWAYS_INLINE VipAnyDataList allData() const { return m_input_list->allNext(); }
+	VIP_ALWAYS_INLINE bool allData(VipAnyDataList & lst) const { return m_input_list->readAll(lst); }
+	
 	virtual void setData(const VipAnyData&);
 	virtual void setData(VipAnyData&&);
 	using VipProcessingIO::setData;
 
 	/// Change the internal VipDataList type
 	void setListType(VipDataList::Type, int list_limit_type = VipDataList::None, int max_list_size = INT_MAX, int max_memory_size = INT_MAX);
+	void setListType(VipDataList * lst);
 	/// Returns the internal VipDataList type
-	VipDataList::Type listType() const { return m_input_list->listType(); }
+	VIP_ALWAYS_INLINE VipDataList::Type listType() const { return m_input_list->listType(); }
 	/// Returns the internal VipDataList
-	QSharedPointer<VipDataList> buffer() const { return m_input_list; }
+	VIP_ALWAYS_INLINE QSharedPointer<VipDataList> buffer() const { return m_input_list; }
 	/// Returns the list maximum size
-	int maxListSize() const { return m_input_list->maxListSize(); }
+	VIP_ALWAYS_INLINE int maxListSize() const { return m_input_list->maxListSize(); }
 	/// Returns the list maximum memory size
-	int maxListMemory() const { return m_input_list->maxListMemory(); }
+	VIP_ALWAYS_INLINE int maxListMemory() const { return m_input_list->maxListMemory(); }
 	/// Returns the list limit type
-	int listLimitType() const { return m_input_list->listLimitType(); }
+	VIP_ALWAYS_INLINE int listLimitType() const { return m_input_list->listLimitType(); }
 	/// Retruns true if the VipInput has a new data available, false otherwise
-	bool hasNewData() const { return m_input_list->hasNewData(); }
+	VIP_ALWAYS_INLINE bool hasNewData() const { return m_input_list->hasNewData(); }
 	/// See VipDataList::status()
-	int status() const { return m_input_list->status(); }
+	VIP_ALWAYS_INLINE int status() const { return m_input_list->status(); }
 	/// Returns true if the VipDataList is empty
-	bool empty() const { return m_input_list->empty(); }
+	VIP_ALWAYS_INLINE bool empty() const { return m_input_list->empty(); }
 	/// Returns the time of the last input data
-	qint64 time() const { return m_input_list->time(); }
+	VIP_ALWAYS_INLINE qint64 time() const { return m_input_list->time(); }
 };
 
 /// \a VipMultiInput is container for multiple #VipInput.
@@ -1964,6 +1989,10 @@ protected:
 
 	void excludeFromProcessingRateComputation();
 
+	/// @brief Returns all input data and clear the internal task pool.
+	/// Only used by VipDisplayObject.
+	VipAnyDataList allInputs();
+
 public Q_SLOTS:
 	/// Emit the signal #VipProcessingPool::processingChanged. Use this function in derived classes when changing a parameter.
 	void emitProcessingChanged();
@@ -1998,6 +2027,8 @@ private:
 	QString generateUniqueInputName(const VipProcessingIO& in, const QString& name);
 
 	void run();
+	void runNoLock();
+	VipSpinlock& runLock() noexcept;
 
 	VIP_DECLARE_PRIVATE_DATA(d_data);
 };

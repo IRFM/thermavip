@@ -14,8 +14,11 @@ static VipPointVector offset(const VipPointVector& vec, const VipPoint& off) {
 	return res;
 }
 
+#include <QDir>
 int main(int argc, char** argv)
 {
+	// To debug from the thermavip folder
+	QCoreApplication::addLibraryPath(QDir::currentPath().toLatin1());
 
     QApplication app(argc, argv);
 

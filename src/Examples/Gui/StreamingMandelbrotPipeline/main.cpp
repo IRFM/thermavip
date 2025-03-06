@@ -173,9 +173,11 @@ void setup_plot_area(VipPlotArea2D* area)
 
 
 #include <qsurfaceformat.h>
-
+#include <QDir>
 int main(int argc, char** argv)
 {
+	// To debug from the thermavip folder
+	QCoreApplication::addLibraryPath(QDir::currentPath().toLatin1());
 	// Setup opengl features (in case we render using opengl)
 	QCoreApplication::setAttribute(Qt::AA_UseDesktopOpenGL);
 	QSurfaceFormat format;

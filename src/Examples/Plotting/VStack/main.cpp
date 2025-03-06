@@ -21,8 +21,11 @@ void format_legend(VipLegend* l)
 }
 
 
+#include <QDir>
 int main(int argc, char** argv)
 {
+	// To debug from the thermavip folder
+	QCoreApplication::addLibraryPath(QDir::currentPath().toLatin1());
 	QApplication app(argc, argv);
 
 	// Create the VipVMultiPlotArea2D, and set it to a VipPlotWidget2D

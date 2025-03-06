@@ -1,7 +1,7 @@
 /**
  * BSD 3-Clause License
  *
- * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Leo Dubus, Erwan Grelier
+ * Copyright (c) 2025, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Leo Dubus, Erwan Grelier
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -37,6 +37,7 @@
 #include <QMap>
 #include <QPen>
 #include <QTransform>
+#include <QObject>
 
 #include "VipScaleDiv.h"
 #include "VipText.h"
@@ -78,11 +79,12 @@ struct VipScaleText
 /// -   VipTimeToText: intepret floating point values as a time and use QDateTime to format as string
 ///
 /// VipValueToText handles other aspects of scale labels:
-/// -   The text style for each tick can be customized using VipValueToText::setTextStyle()
 /// -   Additional labels can be draw by the scale if VipValueToText::additionalText() returns a non empty list
 /// -   VipValueToText can manage exponents based on a maximum label length
 ///
-class VIP_PLOTTING_EXPORT VipValueToText
+/// Inherits QObject in order to be used through a QPointer by VipFixedScaleEngine
+/// 
+class VIP_PLOTTING_EXPORT VipValueToText : public QObject
 {
 public:
 	/// @brief Type of VipValueToText

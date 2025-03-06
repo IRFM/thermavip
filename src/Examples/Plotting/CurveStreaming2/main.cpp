@@ -81,8 +81,11 @@ void setup_plot_area(VipPlotArea2D* area)
 	area->setMaximumFrameRate(100);
 }
 
+#include <QDir>
 int main(int argc, char** argv)
 {
+	// To debug from the thermavip folder
+	QCoreApplication::addLibraryPath(QDir::currentPath().toLatin1());
 	// Setup opengl settings
 	QCoreApplication::setAttribute(Qt::AA_UseDesktopOpenGL);
 	QSurfaceFormat format;

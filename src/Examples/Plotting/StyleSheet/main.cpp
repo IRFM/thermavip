@@ -315,8 +315,11 @@ public:
 	}
 };
 
+#include <QDir>
 int main(int argc, char** argv)
 {
+	// To debug from the thermavip folder
+	QCoreApplication::addLibraryPath(QDir::currentPath().toLatin1());
 	// define opengl features if we wish to use it
 	QCoreApplication::setAttribute(Qt::AA_UseDesktopOpenGL);
 	QSurfaceFormat format;

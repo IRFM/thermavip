@@ -5,8 +5,11 @@
 #include "VipToolTip.h"
 #include <qapplication.h>
 
+#include <QDir>
 int main(int argc, char** argv)
 {
+	// To debug from the thermavip folder
+	QCoreApplication::addLibraryPath(QDir::currentPath().toLatin1());
 	QApplication app(argc, argv);
 	///
 	VipPlotPolarWidget2D w;

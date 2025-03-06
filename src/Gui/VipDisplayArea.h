@@ -1,7 +1,7 @@
 /**
  * BSD 3-Clause License
  *
- * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Leo Dubus, Erwan Grelier
+ * Copyright (c) 2025, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Leo Dubus, Erwan Grelier
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -695,6 +695,12 @@ private Q_SLOTS:
 	void setFlatHistogramStrength(); // internal use only, for AdvancedDisplay plugin
 	void tabChanged();
 	void finalizeToolsToolBar();
+	// Go to next time for the current active workspace when receiving right arrow,
+	// or move selected shapes
+	void nextTimeOnKeyRight();
+	// Go to previous time for the current active workspace when receiving left arrow,
+	// or move selected shapes
+	void previousTimeOnKeyLeft();
 Q_SIGNALS:
 	void aboutToClose();
 	void sessionLoaded();

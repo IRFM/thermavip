@@ -1,7 +1,7 @@
 /**
  * BSD 3-Clause License
  *
- * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Leo Dubus, Erwan Grelier
+ * Copyright (c) 2025, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Leo Dubus, Erwan Grelier
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -324,9 +324,12 @@ static int register_psftp()
 	// Check for psftp process
 	{
 		QProcess* pr = new QProcess();
-		// pr.start("psftp -h");
 		pr->start("psftp", QStringList() << "-h");
 		bool ok = pr->waitForStarted();
+		if (ok && pr->state() == QProcess::Running) {
+			pr->write("quit\n");
+		}
+		pr->terminate();
 		pr->kill();
 		pr->deleteLater();
 		if (!ok)

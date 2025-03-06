@@ -1,7 +1,7 @@
 /**
  * BSD 3-Clause License
  *
- * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Leo Dubus, Erwan Grelier
+ * Copyright (c) 2025, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Leo Dubus, Erwan Grelier
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -3639,8 +3639,8 @@ void VipMainWindow::init()
 	new QShortcut(QKeySequence(Qt::Key_F11), this,  SLOT(toogleFullScreen()), nullptr, Qt::ApplicationShortcut);
 	new QShortcut(QKeySequence(Qt::Key_Escape), this,  SLOT(exitFullScreen()), nullptr, Qt::ApplicationShortcut);
 	new QShortcut(QKeySequence(Qt::Key_Space), this,  SLOT(startStopPlaying()), nullptr, Qt::ApplicationShortcut);
-	new QShortcut(QKeySequence(Qt::Key_Right), this,  SLOT(nextTime()), nullptr, Qt::ApplicationShortcut);
-	new QShortcut(QKeySequence(Qt::Key_Left), this,  SLOT(previousTime()), nullptr, Qt::ApplicationShortcut);
+	new QShortcut(QKeySequence(Qt::Key_Right), this, SLOT(nextTimeOnKeyRight()), nullptr, Qt::ApplicationShortcut);
+	new QShortcut(QKeySequence(Qt::Key_Left), this, SLOT(previousTimeOnKeyLeft()), nullptr, Qt::ApplicationShortcut);
 	new QShortcut(QKeySequence("Alt+right" /* QKeyCombination(Qt::ALT, Qt::Key_Right)*/), this, SLOT(forward10Time()), nullptr, Qt::ApplicationShortcut);
 	new QShortcut(QKeySequence("Alt+left" /*QKeyCombination(Qt::ALT, Qt::Key_Left)*/), this, SLOT(backward10Time()), nullptr, Qt::ApplicationShortcut);
 	new QShortcut(QKeySequence(Qt::Key_PageUp), this,  SLOT(firstTime()), nullptr, Qt::ApplicationShortcut);
@@ -4360,6 +4360,40 @@ void VipMainWindow::startStopPlaying()
 		else
 			area->processingPool()->setStreamingEnabled(true);
 	}
+}
+
+void VipMainWindow::nextTimeOnKeyRight()
+{
+	VipDisplayPlayerArea* area = displayArea()->currentDisplayPlayerArea();
+	if (!area)
+		return;
+	if (VipDragWidget* w = area->dragWidgetHandler()->focusWidget()) {
+		if (VipPlayer2D* pl = qobject_cast<VipPlayer2D*>(w->widget())) {
+			if (pl->plotWidget2D()->area()->findItems<VipPlotShape*>(QString(), 1, 1).size()) {
+				QKeyEvent evt(QEvent::KeyPress, Qt::Key_Right, Qt::NoModifier);
+				qApp->sendEvent(pl->plotWidget2D()->scene(), &evt);
+				return;
+			}
+		}
+	}
+	nextTime();
+}
+
+void VipMainWindow::previousTimeOnKeyLeft()
+{
+	VipDisplayPlayerArea* area = displayArea()->currentDisplayPlayerArea();
+	if (!area)
+		return;
+	if (VipDragWidget* w = area->dragWidgetHandler()->focusWidget()) {
+		if (VipPlayer2D* pl = qobject_cast<VipPlayer2D*>(w->widget())) {
+			if (pl->plotWidget2D()->area()->findItems<VipPlotShape*>(QString(), 1, 1).size()) {
+				QKeyEvent evt(QEvent::KeyPress, Qt::Key_Left, Qt::NoModifier);
+				qApp->sendEvent(pl->plotWidget2D()->scene(), &evt);
+				return;
+			}
+		}
+	}
+	previousTime();
 }
 
 void VipMainWindow::nextTime()

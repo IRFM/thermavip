@@ -681,19 +681,6 @@ int main(int argc, char** argv)
 	// Apply current font
 	applyAppFont(vipGetMainWindow(), previous_font);
 
-	//TEST
-	/* QWindow* win = new QWindow();
-	win->setSurfaceType(QSurface::OpenGLSurface);
-	win->setFormat(QSurfaceFormat::defaultFormat());
-	QWidget* wid = QWidget::createWindowContainer(win);
-	//QWidget* wid2 = new QWidget();
-	//wid2->setLayout(new QVBoxLayout());
-	//wid2->layout()->addWidget(wid);
-	QGraphicsView* view = new QGraphicsView();
-	view->setViewport(wid); // new QPaintOpenGLWidget(QSurfaceFormat::defaultFormat(),QPaintRecord::BatchCommands));
-	VipBaseDragWidget* drag = (vipCreateFromWidgets(QWidgetList() << view));
-	vipGetMainWindow()->displayArea()->currentDisplayPlayerArea()->addWidget(drag);
-	*/
 	int ret = app.exec();
 
 	VipLoadPlugins::instance().unloadPlugins();

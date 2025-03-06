@@ -4,8 +4,11 @@
 #include <qapplication.h>
 #include <qgraphicslinearlayout.h>
 
- int main(int argc, char** argv)
- {
+#include <QDir>
+int main(int argc, char** argv)
+{
+	// To debug from the thermavip folder
+	QCoreApplication::addLibraryPath(QDir::currentPath().toLatin1());
  	QApplication app(argc, argv);
 
  	VipMultiGraphicsView w;

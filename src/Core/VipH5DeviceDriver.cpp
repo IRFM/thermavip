@@ -1,7 +1,7 @@
 /**
  * BSD 3-Clause License
  *
- * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Leo Dubus, Erwan Grelier
+ * Copyright (c) 2025, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Leo Dubus, Erwan Grelier
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -208,12 +208,13 @@ qint64 vipH5OpenQIODevice(QIODevice * device)
 	QByteArray filename = QByteArray::number(((qint64)(device)));
 
 	unsigned flags = 0;
-	if (device->openMode() & QIODevice::WriteOnly)
-		flags = H5F_ACC_RDWR; 
+	if (device->openMode() & QIODevice::WriteOnly) {
+		flags = H5F_ACC_RDWR;
+	}
 	else
 		flags = H5F_ACC_RDONLY;
-	if (device->openMode() & QIODevice::Truncate)
-		flags &= H5F_ACC_TRUNC;
+	//if (device->openMode() & QIODevice::Truncate)
+	//	flags |= H5F_ACC_TRUNC;
 
 	return H5Fopen(filename.data(), flags, faplist_id);
 }

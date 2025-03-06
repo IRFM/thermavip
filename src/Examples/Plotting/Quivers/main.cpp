@@ -82,11 +82,12 @@ protected:
 
 
 #include <qsurface.h>
-#include <qdir.h>
 
+#include <QDir>
 int main(int argc, char** argv)
 {
-	qputenv("QT_PLUGIN_PATH", QDir::currentPath().toLatin1());
+	// To debug from the thermavip folder
+	QCoreApplication::addLibraryPath(QDir::currentPath().toLatin1());
 
 	QCoreApplication::setAttribute(Qt::AA_UseDesktopOpenGL);
 	QSurfaceFormat format;

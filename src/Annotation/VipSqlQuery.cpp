@@ -1,7 +1,7 @@
 /**
  * BSD 3-Clause License
  *
- * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Leo Dubus, Erwan Grelier
+ * Copyright (c) 2025, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Leo Dubus, Erwan Grelier
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -354,6 +354,8 @@ QStringList vipCamerasDB()
 		return cameras;
 
 	QSqlDatabase db = createConnection();
+	if (!db.isOpen())
+		return QStringList(); 
 	QSqlQuery q = execQuery(db,("SELECT * FROM lines_of_sight;"));
 	if (q.lastError().isValid()) {
 		VIP_LOG_ERROR(q.lastError().nativeErrorCode());
@@ -370,6 +372,8 @@ QStringList vipUsersDB()
 	if (!users.isEmpty())
 		return users;
 	QSqlDatabase db = createConnection();
+	if (!db.isOpen())
+		return QStringList(); 
 	QSqlQuery q = execQuery(db,("SELECT * FROM users;"));
 	if (q.lastError().isValid()) {
 		VIP_LOG_ERROR(q.lastError().nativeErrorCode());
@@ -387,6 +391,8 @@ QStringList vipAnalysisStatusDB()
 	if (!status.isEmpty())
 		return status;
 	QSqlDatabase db = createConnection();
+	if (!db.isOpen())
+		return QStringList(); 
 	QSqlQuery q = execQuery(db,("SELECT * FROM analysis_status;"));
 	if (q.lastError().isValid()) {
 		VIP_LOG_ERROR(q.lastError().nativeErrorCode());
@@ -404,6 +410,8 @@ QStringList vipDevicesDB()
 	if (!devices.isEmpty())
 		return devices;
 	QSqlDatabase db = createConnection();
+	if (!db.isOpen())
+		return QStringList(); 
 	QSqlQuery q = execQuery(db,("SELECT * FROM devices;"));
 	if (q.lastError().isValid()) {
 		VIP_LOG_ERROR(q.lastError().nativeErrorCode());
@@ -422,6 +430,8 @@ QMap<qsizetype, VipDataset> vipDatasetsDB()
 		return res;
 
 	QSqlDatabase db = createConnection();
+	if (!db.isOpen())
+		return QMap<qsizetype, VipDataset>(); 
 	QSqlQuery q = execQuery(db,"SELECT * FROM datasets;");
 	if (q.lastError().isValid()) {
 		VIP_LOG_ERROR(q.lastError().nativeErrorCode());
@@ -444,6 +454,8 @@ QStringList vipMethodsDB()
 	if (!methods.isEmpty())
 		return methods;
 	QSqlDatabase db = createConnection();
+	if (!db.isOpen())
+		return QStringList(); 
 	QSqlQuery q = execQuery(db,"SELECT * FROM methods;");
 	if (q.lastError().isValid()) {
 		VIP_LOG_ERROR(q.lastError().nativeErrorCode());
@@ -463,6 +475,8 @@ QStringList vipEventTypesDB()
 	if (!events.isEmpty())
 		return events;
 	QSqlDatabase db = createConnection();
+	if (!db.isOpen())
+		return QStringList(); 
 	QSqlQuery q = execQuery(db,"SELECT * FROM thermal_event_categories;");
 	if (q.lastError().isValid()) {
 		VIP_LOG_ERROR(q.lastError().nativeErrorCode());
@@ -480,6 +494,8 @@ QStringList vipEventTypesDB()
 QStringList vipEventTypesDB(const QString& line_of_sight)
 {
 	QSqlDatabase db = createConnection();
+	if (!db.isOpen())
+		return QStringList(); 
 	QSqlQuery q = execQuery(db,"SELECT * FROM thermal_event_category_lines_of_sight;");
 	if (q.lastError().isValid()) {
 		VIP_LOG_ERROR(q.lastError().nativeErrorCode());

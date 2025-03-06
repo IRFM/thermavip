@@ -1,7 +1,7 @@
 /**
  * BSD 3-Clause License
  *
- * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Leo Dubus, Erwan Grelier
+ * Copyright (c) 2025, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Leo Dubus, Erwan Grelier
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -194,7 +194,11 @@ VipSpinBox::VipSpinBox(QWidget* parent)
 VipBoolEdit::VipBoolEdit(QWidget* parent)
   : QCheckBox(parent)
 {
+#if QT_VERSION >= QT_VERSION_CHECK(6, 7, 0)
+	connect(this, SIGNAL(checkStateChanged(Qt::CheckState)), this, SLOT(changed()));
+#else
 	connect(this, SIGNAL(stateChanged(int)), this, SLOT(changed()));
+#endif
 }
 
 bool VipBoolEdit::value() const

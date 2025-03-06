@@ -1,7 +1,7 @@
 /**
  * BSD 3-Clause License
  *
- * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Leo Dubus, Erwan Grelier
+ * Copyright (c) 2025, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Leo Dubus, Erwan Grelier
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -35,6 +35,9 @@
 #include "VipGlobals.h"
 #include "VipInterval.h"
 #include "VipScaleDiv.h"
+#include "VipScaleDraw.h"
+
+#include <QPointer>
 
 /// \addtogroup Plotting
 /// @{
@@ -246,7 +249,7 @@ class VipFixedValueToText;
 ///
 class VIP_PLOTTING_EXPORT VipFixedScaleEngine : public VipLinearScaleEngine
 {
-	VipFixedValueToText* d_vt;
+	QPointer <VipFixedValueToText> d_vt;
 	double d_maxIntervalWidth;
 
 public:
@@ -266,7 +269,7 @@ class VipValueToTime;
 /// Deprecated!
 class VIP_PLOTTING_EXPORT VipDateTimeScaleEngine : public VipLinearScaleEngine
 {
-	VipValueToTime* m_vt;
+	QPointer < VipValueToTime> m_vt;
 
 public:
 	VipDateTimeScaleEngine()
@@ -275,7 +278,7 @@ public:
 	}
 
 	void setValueToTime(VipValueToTime* vt) { m_vt = vt; }
-	VipValueToTime* valueToTime() const { return const_cast<VipValueToTime*>(m_vt); }
+	VipValueToTime* valueToTime() const { return const_cast<VipValueToTime*>(m_vt.get()); }
 
 	virtual void onComputeScaleDiv(VipAbstractScale* scale, const VipInterval& items_interval);
 	virtual int scaleType() const { return DateTime; }

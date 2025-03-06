@@ -1,7 +1,7 @@
 /**
  * BSD 3-Clause License
  *
- * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Leo Dubus, Erwan Grelier
+ * Copyright (c) 2025, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Leo Dubus, Erwan Grelier
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -871,21 +871,6 @@ VipInput::VipInput(const VipInput& other)
 {
 }
 
-VipAnyData VipInput::probe() const
-{
-	return m_input_list->probe();
-}
-
-VipAnyData VipInput::data() const
-{
-	return m_input_list->next();
-}
-
-VipAnyDataList VipInput::allData() const
-{
-	return m_input_list->allNext();
-}
-
 void VipInput::setData(VipAnyData&& data)
 {
 	// only accept the data if parent processing is enabled
@@ -962,6 +947,11 @@ void VipInput::setListType(VipDataList::Type t, int list_limit_type, int max_lis
 	m_input_list->setListLimitType(list_limit_type);
 	m_input_list->setMaxListSize(max_list_size);
 	m_input_list->setMaxListMemory(max_memory_size);
+}
+
+void VipInput::setListType(VipDataList* lst)
+{
+	m_input_list.reset(lst);
 }
 
 VipMultiInput::VipMultiInput(const QString& name, VipProcessingObject* parent)
@@ -1491,27 +1481,23 @@ VipAnyData VipFIFOList::next()
 {
 	_SPINLOCKER();
 	if (m_list.size() > 0) {
-		m_last = m_list.front();
+		m_last = std::move(m_list.front());
 		m_list.pop_front();
 	}
 	return m_last;
 }
 
-VipAnyDataList VipFIFOList::allNext()
+bool VipFIFOList::readAll(VipAnyDataList& lst)
 {
 	_SPINLOCKER();
-	VipAnyDataList res;
 	if (m_list.size() > 0) {
-
+		lst.resize(m_list.size());
 		m_last = m_list.back();
-		for (auto it = m_list.begin(); it != m_list.end(); ++it)
-			res.push_back(std::move(*it));
+		std::move(m_list.begin(), m_list.end(), lst.begin());
 		m_list.clear();
+		return true;
 	}
-	else if (m_last.isValid()) {
-		res.push_back(m_last);
-	}
-	return res;
+	return false;
 }
 
 VipAnyData VipFIFOList::probe()
@@ -1562,7 +1548,7 @@ int VipFIFOList::memoryFootprint() const
 {
 	_SHAREDSPINLOCKER();
 	int size = 0;
-	for (size_t i = 0; i < m_list.size(); ++i)
+	for (size_t i = 0; i < (size_t)m_list.size(); ++i)
 		size += m_list[i].memoryFootprint();
 	return size;
 }
@@ -1686,22 +1672,19 @@ VipAnyData VipLIFOList::next()
 	return m_last;
 }
 
-VipAnyDataList VipLIFOList::allNext()
+bool VipLIFOList::readAll(VipAnyDataList& lst)
 {
-	_SHAREDSPINLOCKER();
-	VipAnyDataList res;
-	if (m_list.size() > 0) {
-		m_last = m_list.front();
-		for (auto it = m_list.begin(); it != m_list.end(); ++it)
-			res.push_back(std::move(*it));
-		m_list.clear();
-		// reverse list
-		for (int i = 0; i < res.size() / 2; ++i)
-			std::swap(res[i], res[res.size() - i - 1]);
+	{
+		_SPINLOCKER();
+		if (m_list.size() > 0) {
+			lst.resize(m_list.size());
+			std::move(m_list.begin(), m_list.end(), lst.begin());
+			std::reverse(lst.begin(), lst.begin() + m_list.size());
+			m_list.clear();
+			return true;
+		}
 	}
-	else if (m_last.isValid())
-		res.push_back(m_last);
-	return res;
+	return false;
 }
 
 VipAnyData VipLIFOList::probe()
@@ -1801,13 +1784,17 @@ VipAnyData VipLastAvailableList::next()
 	return d_data;
 }
 
-VipAnyDataList VipLastAvailableList::allNext()
+bool VipLastAvailableList::readAll(VipAnyDataList& lst)
 {
-	_SHAREDSPINLOCKER();
-	VipAnyDataList res;
-	if (m_has_new_data)
-		res.push_back(d_data);
-	return res;
+	{
+		_SPINLOCKER();
+		if (m_has_new_data) {
+			lst.resize(1);
+			lst[0] = d_data;
+			return true;
+		}
+	}
+	return false;
 }
 
 VipAnyData VipLastAvailableList::probe()
@@ -1840,10 +1827,78 @@ void VipLastAvailableList::clear()
 	m_has_new_data = false;
 }
 
+
+class MyLock
+{
+	std::atomic<bool> d_lock{ false };
+	bool d_has_mutex{ false };
+	std::mutex d_mutex;
+
+public:
+	MyLock() noexcept = default;
+	MyLock(MyLock const&) = delete;
+	MyLock& operator=(MyLock const&) = delete;
+
+	void lock() noexcept
+	{
+		if (!d_lock.exchange(true, std::memory_order_acquire))
+			return;
+		d_mutex.lock();
+		d_has_mutex = true;
+		d_lock.store(true, std::memory_order_relaxed);
+	}
+
+	bool is_locked() const noexcept { return d_lock.load(std::memory_order_relaxed); }
+	bool try_lock() noexcept
+	{
+		// First do a relaxed load to check if lock is free in order to prevent
+		// unnecessary cache misses if someone does while(!try_lock())
+		return !d_lock.load(std::memory_order_relaxed) && !d_lock.exchange(true, std::memory_order_acquire);
+	}
+
+	void unlock() noexcept 
+	{ 
+		if (d_has_mutex) {
+			d_has_mutex = false;
+			d_mutex.unlock();
+		}
+		d_lock.store(false, std::memory_order_release); 
+	}
+
+	template<class Rep, class Period>
+	bool try_lock_for(const std::chrono::duration<Rep, Period>& duration) noexcept
+	{
+		return try_lock_until(std::chrono::system_clock::now() + duration);
+	}
+
+	template<class Clock, class Duration>
+	bool try_lock_until(const std::chrono::time_point<Clock, Duration>& timePoint) noexcept
+	{
+		unsigned count = 0;
+		for (;;) {
+			if (!d_lock.exchange(true, std::memory_order_acquire))
+				return true;
+
+			while (d_lock.load(std::memory_order_relaxed)) {
+				if (std::chrono::system_clock::now() > timePoint)
+					return false;
+				std::this_thread::yield();
+
+				if (++count > 64) {
+					if (d_mutex.try_lock()) {
+						d_has_mutex = true;
+						d_lock.store(true, std::memory_order_relaxed);
+						return true;
+					}
+				}
+			}
+		}
+	}
+};
 struct SpinLocker
 {
-	using UniqueLock = std::unique_lock<VipSpinlock>;
-	VipSpinlock d_lock;
+	using UniqueLock = std::unique_lock<MyLock>;
+	MyLock d_lock;
 	std::condition_variable_any d_cond;
 
 	UniqueLock lock() { return UniqueLock{ d_lock }; }
@@ -1898,7 +1953,7 @@ struct MutexLocker
 ///
 class TaskPool : public QThread
 {
-	using LockType = StdMutexLocker;//SpinLocker; // StdMutexLocker; // MutexLocker;
+	using LockType = StdMutexLocker; // StdMutexLocker; // MutexLocker;
 	using UniqueLock = typename LockType::UniqueLock;
 	LockType lock;
 
@@ -1906,7 +1961,7 @@ class TaskPool : public QThread
 	VipProcessingObject* m_parent;
 	bool m_stop;
 	bool m_running;
-	bool m_runMainEventLoop;
+	bool m_cleared{ false };
 	void atomWait(UniqueLock& ll, int milli);
 
 protected:
@@ -1927,7 +1982,11 @@ public:
 	bool runMainEventLoop() const;
 
 	/// @brief Schedule a VipProcessingObject launch
-	void push();
+	VIP_ALWAYS_INLINE void push()
+	{
+		++m_run;
+		lock.notify_all();
+	}
 
 	/// @brief Wait until the task list is empty or until timeout
 	bool waitForDone(int milli = -1);
@@ -1937,6 +1996,7 @@ public:
 
 	/// @brief remove all pending tasks
 	void clear();
+	void clearNoLock();
 };
 
 void TaskPool::run()
@@ -1953,37 +2013,42 @@ void TaskPool::run()
 
 		// wait for incoming runnable objects.
 		// takes at most 15 ms to stop if required.
-		while (m_run == 0 && !m_stop) {
+		while (m_run.load(std::memory_order_relaxed) == 0 && !m_stop) {
 			lock.wait_for(ll, 15);
 			lock.notify_all();
 		}
 
 		int count = m_run;
 		int saved = count;
-		while (!m_stop && count--) {
+		{
+			SPIN_LOCK(m_parent->runLock());
+			while (!m_stop && count-- && !m_cleared) {
 
-			m_running = true;
+				m_running = true;
 
-			try {
-				// Avoid exiting task pool thread on unhandled exception
-				m_parent->run();
-			}
-			catch (const std::exception& e) {
-				if (VipProcessingObject* o = qobject_cast<VipProcessingObject*>(parent()))
-					o->setError("Unhandled exception: " + QString(e.what()));
-				else
-					qWarning() << "Unhandled exception: " << e.what() << "\n";
-			}
-			catch (...) {
-				if (VipProcessingObject* o = qobject_cast<VipProcessingObject*>(parent()))
-					o->setError("Unhandled unknown exception");
-				else
-					qWarning() << "Unhandled unknown exception\n";
-			}
+				try {
+					// Avoid exiting task pool thread on unhandled exception
+					m_parent->runNoLock();
+				}
+				catch (const std::exception& e) {
+					if (VipProcessingObject* o = qobject_cast<VipProcessingObject*>(parent()))
+						o->setError("Unhandled exception: " + QString(e.what()));
+					else
+						qWarning() << "Unhandled exception: " << e.what() << "\n";
+				}
+				catch (...) {
+					if (VipProcessingObject* o = qobject_cast<VipProcessingObject*>(parent()))
+						o->setError("Unhandled unknown exception");
+					else
+						qWarning() << "Unhandled unknown exception\n";
+				}
 
-			m_running = false;
+				m_running = false;
+			}
 		}
-		m_run.fetch_sub(saved);
+		if (!m_cleared)
+			m_run.fetch_sub(saved);
+		m_cleared = false;
 
 		lock.notify_all();
 	}
@@ -1997,7 +2062,6 @@ TaskPool::TaskPool(VipProcessingObject* parent, QThread::Priority p)
   , m_parent(parent)
   , m_stop(false)
   , m_running(false)
-  , m_runMainEventLoop(false)
 {
 	auto ll = lock.lock();
 	this->start(p);
@@ -2011,38 +2075,10 @@ TaskPool::~TaskPool()
 	wait();
 }
 
-void TaskPool::setRunMainEventLoop(bool enable)
-{
-	auto ll = lock.lock();
-	m_runMainEventLoop = enable;
-}
-bool TaskPool::runMainEventLoop() const
-{
-	return m_runMainEventLoop;
-}
-
-void TaskPool::push()
-{
-	++m_run;
-	lock.notify_all();
-}
-
 void TaskPool::atomWait(UniqueLock& ll, int milli)
 {
 	// Wait one time at most milli ms.
-	// If m_runMainEventLoop is true and we are in the main thread, process pending events.
-
-	/*if (m_runMainEventLoop && QCoreApplication::instance() && QCoreApplication::instance()->thread() == this) {
-		m_mutex.unlock();
-		// process event loop
-		vipProcessEvents(nullptr, milli);
-		m_mutex.lock();
-	}
-	else*/
-	{
-		// cond.wait_for(lock, std::chrono::milliseconds(milli));
-		lock.wait_for(ll, milli);
-	}
+	lock.wait_for(ll, milli);
 }
 
 bool TaskPool::waitForDone(int milli_time)
@@ -2086,7 +2122,13 @@ int TaskPool::remaining() const
 void TaskPool::clear()
 {
 	auto ll = lock.lock();
-	m_run = 0;
+	m_run.store(0);
+	m_cleared = true;
+}
+void TaskPool::clearNoLock()
+{
+	m_run.store(0);
+	m_cleared = true;
 }
 
 class VipProcessingObject::PrivateData
@@ -2127,7 +2169,6 @@ public:
 	  , thread_priority(0)
 	  , destruct(false)
 	  , initializeIO(0)
-	  , updateCalled(false)
 	  , dirtyIO(true)
 	  , parentList(nullptr)
 	  , processingRate(0)
@@ -2157,7 +2198,6 @@ public:
 
 	// inputs, outputs and properties
 	int initializeIO;
-	bool updateCalled;
 	std::vector<std::unique_ptr<VipProcessingIO>> inputs;
 	std::vector<std::unique_ptr<VipProcessingIO>> outputs;
 	std::vector<std::unique_ptr<VipProcessingIO>> properties;
@@ -2403,7 +2443,6 @@ const std::function<void()>& VipProcessingObject::IOInitializeFunction() const
 
 void VipProcessingObject::initialize(bool force) const
 {
-	// if (!d_data->updateCalled) // Once update has been called, we must not change IO
 	if (force || !d_data->initializeIO || d_data->dirtyIO || d_data->initializeIO != metaObject()->propertyCount())
 		internalInitIO(force);
 }
@@ -3226,7 +3265,7 @@ bool VipProcessingObject::isEnabled() const
 
 bool VipProcessingObject::update(bool force_run)
 {
-
+	
 	// Exit if disabled
 	if (VIP_UNLIKELY(!isEnabled()))
 		return false;
@@ -3236,7 +3275,6 @@ bool VipProcessingObject::update(bool force_run)
 
 	// Make sure update() cannot be called simultaneously from different threads
 	SPIN_LOCK(d_data->update_mutex);
-	d_data->updateCalled = true;
 
 	// First step: if the schedule strategy is not Asynchronous, update first the source processings.
 	if (!(d_data->parameters.schedule_strategies & Asynchronous)) {
@@ -3272,7 +3310,7 @@ bool VipProcessingObject::update(bool force_run)
 		if (TaskPool* p = d_data->getPool())
 			if (p->remaining() > 0)
 				return false;
-
+	
 	if (!(d_data->parameters.schedule_strategies & Asynchronous)) {
 		// Synchronous processing
 		if (d_data->parameters.schedule_strategies & NoThread)
@@ -3471,11 +3509,31 @@ void VipProcessingObject::excludeFromProcessingRateComputation()
 	--d_data->processingCount;
 }
 
-void VipProcessingObject::run()
+VipAnyDataList VipProcessingObject::allInputs()
+{
+	initialize();
+	if (d_data->flatInputs.size() == 0)
+		return VipAnyDataList();
+	if (auto* p = d_data->getPool())
+		p->clearNoLock();
+	VipAnyDataList res = d_data->flatInputs[0]->allData();
+	for (size_t i = 1; i < d_data->flatInputs.size(); ++i)
+		res.append(d_data->flatInputs[i]->allData());
+	return res;
+}
+
+void VipProcessingObject::run() 
 {
 	// lock to avoid concurrent calls
 	SPIN_LOCK(d_data->run_mutex);
-
+	runNoLock();
+}
+VipSpinlock& VipProcessingObject::runLock() noexcept
+{
+	return d_data->run_mutex;
+}
+void VipProcessingObject::runNoLock()
+{
 	if (testScheduleStrategy(SkipIfNoInput)) {
 		// if the processing has no new input, skip it
 		bool has_input = false;
@@ -3487,7 +3545,7 @@ void VipProcessingObject::run()
 		if (!has_input) {
 			// no new input: just remove all scheduled tasks
 			if (TaskPool* p = d_data->getPool())
-				p->clear();
+				p->clearNoLock();
 			return;
 		}
 	}

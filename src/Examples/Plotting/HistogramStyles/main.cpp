@@ -17,8 +17,11 @@ VipIntervalSampleVector offset(const VipIntervalSampleVector& hist, double y)
 	return res;
 }
 
+#include <QDir>
 int main(int argc, char** argv)
 {
+	// To debug from the thermavip folder
+	QCoreApplication::addLibraryPath(QDir::currentPath().toLatin1());
 	QApplication app(argc, argv);
 ///	
 	VipPlotWidget2D w;

@@ -1,7 +1,7 @@
 /**
  * BSD 3-Clause License
  *
- * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Leo Dubus, Erwan Grelier
+ * Copyright (c) 2025, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Leo Dubus, Erwan Grelier
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -271,7 +271,7 @@ void VipNetworkConnection::run()
 	connect(d_data->socket, SIGNAL(readyRead()), this, SLOT(_emit_readyRead()), Qt::DirectConnection);
 	connect(d_data->socket, SIGNAL(connected()), this, SLOT(_emit_connected()), Qt::DirectConnection);
 	connect(d_data->socket, SIGNAL(disconnected()), this, SLOT(_emit_disconnected()), Qt::DirectConnection);
-	connect(d_data->socket, SIGNAL(error(QAbstractSocket::SocketError)), this, SLOT(_emit_error(QAbstractSocket::SocketError)), Qt::DirectConnection);
+	connect(d_data->socket, SIGNAL(errorOccurred(QAbstractSocket::SocketError)), this, SLOT(_emit_error(QAbstractSocket::SocketError)), Qt::DirectConnection);
 	connect(d_data->socket, SIGNAL(hostFound()), this, SLOT(_emit_hostFound()), Qt::DirectConnection);
 	connect(d_data->socket,
 		SIGNAL(proxyAuthenticationRequired(const QNetworkProxy&, QAuthenticator*)),

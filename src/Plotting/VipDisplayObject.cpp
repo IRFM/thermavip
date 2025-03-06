@@ -1,7 +1,7 @@
 /**
  * BSD 3-Clause License
  *
- * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Leo Dubus, Erwan Grelier
+ * Copyright (c) 2025, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Leo Dubus, Erwan Grelier
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -133,7 +133,7 @@ VipDisplayObject::VipDisplayObject(QObject* parent)
 	VIP_CREATE_PRIVATE_DATA(d_data);
 
 	this->setScheduleStrategies(Asynchronous);
-	inputAt(0)->setListType(VipDataList::FIFO, VipDataList::Number, 10);
+	inputAt(0)->setListType(VipDataList::FIFO, VipDataList::None);
 	propertyAt(0)->setData(1);
 }
 

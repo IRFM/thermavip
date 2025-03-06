@@ -495,7 +495,12 @@ public:
 	  : QGraphicsWidget(parent, wFlags)
 	  , QOpenGLItem(this)
 	{
+		connect(this, &QOpenGLGraphicsWidget::layoutChanged, this, &QOpenGLGraphicsWidget::slotMarkDirty);
+		connect(this, &QOpenGLGraphicsWidget::geometryChanged, this, &QOpenGLGraphicsWidget::slotMarkDirty);
 	}
+
+private Q_SLOTS:
+	void slotMarkDirty() noexcept { this->markItemDirty(); }
 };
 
 #endif

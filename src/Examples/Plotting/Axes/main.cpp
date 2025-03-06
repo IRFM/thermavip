@@ -12,8 +12,10 @@
 #include <iostream>
 #include <cmath>
 
+#include <QDir>
 int main(int argc, char** argv)
 {
+	QCoreApplication::addLibraryPath(QDir::currentPath().toLatin1());
 	
 	QCoreApplication::setAttribute(Qt::AA_UseDesktopOpenGL);
 	QSurfaceFormat format;

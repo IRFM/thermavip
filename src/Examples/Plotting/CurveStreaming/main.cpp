@@ -154,6 +154,7 @@ void setup_plot_area(VipPlotArea2D* area, int setup_x_scale)
 		area->bottomAxis()->scaleDraw()->setValueToText(vt);
 		area->bottomAxis()->setScaleEngine(new VipFixedScaleEngine(vt));
 
+
 		// Align additional text to the right, and translate it by 10 pixels horizontally
 		VipTextStyle st = area->bottomAxis()->scaleDraw()->textStyle();
 		st.setAlignment(Qt::AlignRight);
@@ -168,8 +169,11 @@ void setup_plot_area(VipPlotArea2D* area, int setup_x_scale)
 
 #include <qsurfaceformat.h>
 
+#include <QDir>
 int main(int argc, char** argv)
 {
+	// To debug from the thermavip folder
+	QCoreApplication::addLibraryPath(QDir::currentPath().toLatin1());
 	QCoreApplication::setAttribute(Qt::AA_UseDesktopOpenGL);
 	QSurfaceFormat format;
 	format.setSamples(4);
@@ -210,7 +214,7 @@ int main(int argc, char** argv)
 
 	for (int y=0; y < height; ++y)
 		for (int x = 0; x < width; ++x, ++i) {
-
+			
 			VipPlotArea2D* area = new VipPlotArea2D();
 			
 			//area->setMaximumFrameRate(2);
