@@ -46,7 +46,7 @@
 
 namespace detail
 {
-	/// @brief Convenient random access iterator on a constant value
+	// Convenient random access iterator on a constant value
 	template<class T>
 	class cvalue_iterator
 	{
@@ -149,20 +149,21 @@ namespace detail
 		return it1.pos >= it2.pos;
 	}
 
-	/// @brief Simply call p->~T(), used as a replacement to std::allocator::destroy() which was removed in C++20
+	// Simply call p->~T(), used as a replacement to std::allocator::destroy() which was removed in C++20
 	template<class T>
 	VIP_ALWAYS_INLINE void destroy_ptr(T* p) noexcept
 	{
 		p->~T();
 	}
 
-	/// @brief Simply call new (p) T(...), used as a replacement to std::allocator::construct() which was removed in C++20
+	// Simply call new (p) T(...), used as a replacement to std::allocator::construct() which was removed in C++20
 	template<class T, class... Args>
 	VIP_ALWAYS_INLINE void construct_ptr(T* p, Args&&... args) noexcept(noexcept(T(std::forward<Args>(args)...)))
 	{
 		new (p) T(std::forward<Args>(args)...);
 	}
 
+	// Destroy range
 	template<class T>
 	void destroy_range_ptr(T* p, qsizetype size) noexcept
 	{
@@ -171,6 +172,7 @@ namespace detail
 				destroy_ptr(p + i);
 	}
 
+	
 	template<class T, bool NoExcept = std::is_nothrow_move_constructible<T>::value>
 	struct Mover
 	{
@@ -197,12 +199,14 @@ namespace detail
 		}
 	};
 
+	// Move construct range, taking care of potential exceptions throw in constructor
 	template<class T>
 	void move_construct_range(T* dst, T* src, qsizetype size) noexcept(std::is_nothrow_move_constructible<T>::value)
 	{
 		Mover<T>::move_construct(dst, src, size);
 	}
 
+	// Similar to QSharedDataPointer but lighter and INLINED!!
 	template<typename T>
 	class COWPointer
 	{
@@ -282,22 +286,21 @@ namespace detail
 		T* d{ nullptr };
 	};
 
-	// Circular buffer class used internally by tiered_vector
-	// Actuall data are located in the same memory block and starts at start_data_T
+	// Circular buffer class used internally by VipCircularVector
 	template<class T>
 	struct CircularBuffer
 	{
 		static constexpr bool relocatable = QTypeInfo<T>::isRelocatable;
 		using value_type = T;
 
-		std::atomic<qsizetype> cnt{ 0 };
-		qsizetype begin;	  // begin index of data
-		qsizetype size;		  // number of elements
-		const qsizetype capacity; // buffer capacity
+		std::atomic<qsizetype> cnt{ 0 };	// reference count
+		qsizetype begin;					// begin index of data
+		qsizetype size;						// number of elements
+		const qsizetype capacity;			// buffer capacity
 
-		T* buffer;
+		T* buffer;							// actual values
 
-		// Initialize from a maximum size
+		// Initialize from a maximum capacity
 		CircularBuffer(qsizetype max_size = 0)
 		  : begin(0)
 		  , size(0)
@@ -311,8 +314,7 @@ namespace detail
 					throw std::bad_alloc();
 			}
 		}
-		// Initialize from a maximum size and a default value.
-		// This will set the buffer size to its maximum.
+		// Initialize from a maximum capacity, a size and a default value.
 		template<class... Args>
 		CircularBuffer(qsizetype max_size, qsizetype current_size, Args&&... args)
 		  : CircularBuffer(max_size)
@@ -331,6 +333,7 @@ namespace detail
 			}
 		}
 
+		// Copy ctor
 		CircularBuffer(const CircularBuffer& other)
 		  : CircularBuffer(other.capacity)
 		{
@@ -360,6 +363,8 @@ namespace detail
 		VIP_ALWAYS_INLINE qsizetype load() const noexcept { return cnt.load(std::memory_order_relaxed); }
 		VIP_ALWAYS_INLINE qsizetype mask() const noexcept { return capacity - 1; }
 
+		// Relocate to dst.
+		// Called just before destroying this.
 		void relocate(CircularBuffer* dst) noexcept(std::is_nothrow_move_constructible<T>::value || relocatable)
 		{
 			qsizetype stop = (begin + size) > capacity ? (capacity) : (begin + size);
@@ -376,6 +381,8 @@ namespace detail
 					move_construct_range(dst->buffer + first_range, buffer, remaining);
 			}
 			dst->size = this->size;
+			if VIP_CONSTEXPR (relocatable)
+				this->size = 0;
 		}
 
 		template<class Fun>
@@ -466,7 +473,6 @@ namespace detail
 			}
 			size = s;
 		}
-
 		void resize_front(qsizetype s)
 		{
 			if (s < size) {
@@ -888,7 +894,7 @@ namespace detail
 		}
 	};
 
-	// Deque iterator class
+	// Iterator for VipCircularVector
 	template<class Data>
 	struct VipCircularVectorIterator : public VipCircularVectorConstIterator<Data>
 	{
@@ -1077,6 +1083,23 @@ namespace detail
 	using IfIsInputIterator = typename std::enable_if<std::is_convertible<typename std::iterator_traits<Iterator>::iterator_category, std::input_iterator_tag>::value, bool>::type;
 }
 
+
+/// @brief Circular buffer (or ring buffer) class.
+///
+/// VipCircularVector is a circular buffer-like class with an interface
+/// similar to QList, QVector or std::deque, and using Copy On Write
+/// like all Qt containers.
+/// 
+/// Unlike traditional circular buffer implementations, VipCircularVector
+/// is not limited to a predifined capacity and will grow on insertion
+/// using a power of 2 growing strategy.
+/// 
+/// Its is the container of choice for queues as it will almost always
+/// outperform std::deque or QVector (Qt6 version) for back and front operations.
+/// 
+/// Like QVector, VipCircularVector never reduces its memory footprint except
+/// when calling shrink_to_fit() or on copy assignment.
+/// 
 template<class T>
 class VipCircularVector
 {
