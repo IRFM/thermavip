@@ -360,7 +360,7 @@ void VipSplitAndMerge::applyInternal(bool update)
 	}
 
 	// build the input array
-	QList<VipAnyData> inputs;
+	VipAnyDataList inputs;
 	QVariantList lst = extract_components(in.data(), m_extract);
 	for (int i = 0; i < lst.size(); ++i) {
 		VipAnyData any(lst[i], in.time());

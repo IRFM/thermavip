@@ -1076,7 +1076,7 @@ private:
 class VIP_CORE_EXPORT VipOutput : public UniqueProcessingIO
 {
 	QSharedPointer<VipAnyData> d_data;
-	QList<VipAnyData> m_buffer;
+	VipAnyDataList m_buffer;
 	VipSpinlock m_buffer_lock;
 	bool m_bufferize_outputs;
 
@@ -1104,7 +1104,7 @@ public:
 
 	/// Returns buffered data and clear the internal list of buffered data.
 	/// This function is thread safe.
-	QList<VipAnyData> clearBufferedData();
+	VipAnyDataList clearBufferedData();
 
 	// shortcut functions
 	qint64 time() const { return data().time(); }

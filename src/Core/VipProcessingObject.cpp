@@ -1027,9 +1027,9 @@ bool VipOutput::bufferDataEnabled() const
 {
 	return m_bufferize_outputs;
 }
-QList<VipAnyData> VipOutput::clearBufferedData()
+VipAnyDataList VipOutput::clearBufferedData()
 {
-	QList<VipAnyData> res;
+	VipAnyDataList res;
 	VipUniqueLock<VipSpinlock> lock(m_buffer_lock);
 	res = m_buffer;
 	m_buffer.clear();

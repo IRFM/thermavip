@@ -407,7 +407,7 @@ class VIP_CORE_EXPORT VipRunningAverage : public VipProcessingObject
 	Q_CLASSINFO("category", "Filters")
 
 	VipSamplesFeature m_extract;
-	QList<VipAnyData> m_lst;
+	VipAnyDataList m_lst;
 	QMutex m_mutex;
 
 public:

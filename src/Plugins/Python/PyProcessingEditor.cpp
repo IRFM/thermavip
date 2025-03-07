@@ -1327,7 +1327,7 @@ bool PySignalFusionProcessingEditor::apply()
 			return false;
 		}
 
-		QList<VipAnyData> inputs; // save input data, since setScheduleStrategy will clear them
+		VipAnyDataList inputs; // save input data, since setScheduleStrategy will clear them
 		for (int i = 0; i < d_data->proc->inputCount(); ++i)
 			inputs << d_data->proc->inputAt(i)->probe();
 

@@ -1140,7 +1140,7 @@ protected:
 	virtual bool readData(qint64 time);
 
 private:
-	QList<VipAnyData> m_signals;
+	VipAnyDataList m_signals;
 };
 
 VIP_REGISTER_QOBJECT_METATYPE(VipCSVReader*)

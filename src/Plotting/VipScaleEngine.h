@@ -278,7 +278,7 @@ public:
 	}
 
 	void setValueToTime(VipValueToTime* vt) { m_vt = vt; }
-	VipValueToTime* valueToTime() const { return const_cast<VipValueToTime*>(m_vt.get()); }
+	VipValueToTime* valueToTime() const { return const_cast<VipValueToTime*>(m_vt.data()); }
 
 	virtual void onComputeScaleDiv(VipAbstractScale* scale, const VipInterval& items_interval);
 	virtual int scaleType() const { return DateTime; }

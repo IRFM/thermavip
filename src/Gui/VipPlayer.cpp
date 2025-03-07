@@ -1870,7 +1870,7 @@ bool VipPlayer2D::saveItemContent(VipPlotItemData* item, const QString& path)
 		// save all items
 		QList<VipPlotItem*> items = savableItems();
 		QVariantList lst_data;
-		QList<VipAnyData> any_data;
+		VipAnyDataList any_data;
 
 		for (int i = 0; i < items.size(); ++i) {
 			if (VipDisplayObject* display = items[i]->property("VipDisplayObject").value<VipDisplayObject*>()) {
