@@ -43,8 +43,8 @@ endif()
 
 
 if (MSVC)
-	set(FFMPEG_LIB_DIR ${FFMPEG_PATH}/ffmpeg-4.3-msvc/lib)
-	set(FFMPEG_INCLUDE_DIR "${FFMPEG_PATH}/ffmpeg-4.3-msvc/include;${FFMPEG_PATH}/ffmpeg-4.3-msvc")
+	set(FFMPEG_LIB_DIR ${FFMPEG_PATH}/ffmpeg-7.1-msvc/lib)
+	set(FFMPEG_INCLUDE_DIR "${FFMPEG_PATH}/ffmpeg-7.1-msvc/include;${FFMPEG_PATH}/ffmpeg-7.1-msvc")
 	set(FFMPEG_LIBS avdevice avformat avcodec swscale avutil swresample avfilter )
 	set(ADDITIONAL_FFMPEG_LIBS libx264 libx265 kvazaar postproc vcruntime140_1 Vfw32 shlwapi strmbase)
 	set(FFMPEG_PREFIX )

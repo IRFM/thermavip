@@ -68,13 +68,13 @@ int main(int argc, char** argv)
 {
 	QCoreApplication::addLibraryPath(QDir::currentPath().toLatin1());
 	QApplication app(argc,argv);
-	 {
+	/* {
 		Senderthread th1;
 		th1.start();
 		Receiverthread th2;
 		th2.start();
 		th1.wait();
-	}
+	}*/
 	
 	int count = 1000000;
 	double factor = QDateTime::currentMSecsSinceEpoch();

@@ -1493,7 +1493,9 @@ bool VipFIFOList::readAll(VipAnyDataList& lst)
 	if (m_list.size() > 0) {
 		lst.resize(m_list.size());
 		m_last = m_list.back();
-		std::move(m_list.begin(), m_list.end(), lst.begin());
+		auto it = lst.begin();
+		m_list.for_each(0, m_list.size(), [&it](auto& v) { *it++ = std::move(v); });
+		//std::move(m_list.begin(), m_list.end(), lst.begin());
 		m_list.clear();
 		return true;
 	}

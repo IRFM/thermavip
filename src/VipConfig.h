@@ -345,6 +345,8 @@ inline QRegExp vipFromWildcard(const QString& pattern, Qt::CaseSensitivity s)
 // For QMouseEvent::position(), QDropEvent::position()...
 #define VIP_EVT_POSITION() pos()
 
+// Declare a type as relocatable
+#define VIP_IS_RELOCATABLE(type) Q_DECLARE_TYPEINFO(type, Q_MOVABLE_TYPE)
 
 inline QVariant vipFromVoid(int meta, const void* p)
 {
@@ -367,6 +369,7 @@ using qsizetype = int;
 
 #else
 
+#include <QTypeInfo>
 #include <QRegExp>
 #include <QRecursiveMutex>
 
@@ -383,6 +386,9 @@ inline QRegExp vipFromWildcard(const QString& pattern, Qt::CaseSensitivity s)
 
 // For QMouseEvent::position(), QDropEvent::position()...
 #define VIP_EVT_POSITION() position().toPoint()
+
+// Declare a type as relocatable
+#define VIP_IS_RELOCATABLE(type) Q_DECLARE_TYPEINFO(type, Q_RELOCATABLE_TYPE)
 
 
 inline QVariant vipFromVoid(int meta, const void* p) {

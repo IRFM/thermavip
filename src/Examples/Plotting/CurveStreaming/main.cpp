@@ -16,6 +16,8 @@
 #include "VipSliderGrip.h"
 #include "VipAxisColorMap.h"
 
+#include "VipCircularVector.h"
+
 /// @brief Generate a cosinus curve of at most 500 points with X values being in seconds
 class CurveStreaming : public QThread
 {
@@ -172,6 +174,9 @@ void setup_plot_area(VipPlotArea2D* area, int setup_x_scale)
 #include <QDir>
 int main(int argc, char** argv)
 {
+	//TOREMOVE
+	//detail::testVipCircularVector<size_t,10000000>();
+
 	// To debug from the thermavip folder
 	QCoreApplication::addLibraryPath(QDir::currentPath().toLatin1());
 	QCoreApplication::setAttribute(Qt::AA_UseDesktopOpenGL);

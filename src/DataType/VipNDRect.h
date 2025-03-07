@@ -501,6 +501,10 @@ private:
 	QRect m_rect;
 };
 
+VIP_IS_RELOCATABLE(VipNDRect<1>);
+VIP_IS_RELOCATABLE(VipNDRect<2>);
+VIP_IS_RELOCATABLE(VipNDRect<3>);
+
 /// @brief Build a VipNDRect from a start and end position
 template<qsizetype N1, qsizetype N2>
 VipNDRect<(N1 < 0 ? N2 : N1)> vipRectStartEnd(const VipCoordinate<N1>& start, const VipCoordinate<N2>& end) noexcept

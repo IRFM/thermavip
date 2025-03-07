@@ -34,6 +34,7 @@
 
 #include <complex>
 #include <qmetatype.h>
+#include "VipConfig.h"
 
 /// \addtogroup DataType
 /// @{
@@ -43,6 +44,8 @@ typedef std::complex<double> complex_d;
 
 Q_DECLARE_METATYPE(complex_f)
 Q_DECLARE_METATYPE(complex_d)
+VIP_IS_RELOCATABLE(complex_f);
+VIP_IS_RELOCATABLE(complex_d);
 
 /// @}
 // end DataType

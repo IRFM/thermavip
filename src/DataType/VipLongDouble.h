@@ -416,7 +416,7 @@ typedef vip_long_double vip_double;
 typedef VipFloatPoint<vip_long_double> VipLongPoint;
 typedef VipFloatPoint<vip_long_double> VipPoint;
 
-Q_DECLARE_TYPEINFO(VipPoint, Q_MOVABLE_TYPE);
+VIP_IS_RELOCATABLE(VipPoint);
 Q_DECLARE_METATYPE(VipPoint)
 
 static constexpr quint32 vip_LD_support = ((1U << 31U) | sizeof(long double));
@@ -427,9 +427,9 @@ typedef double vip_double;
 typedef VipFloatPoint<vip_long_double> VipLongPoint;
 typedef VipFloatPoint<vip_double> VipPoint;
 
-Q_DECLARE_TYPEINFO(VipLongPoint, Q_MOVABLE_TYPE | Q_RELOCATABLE_TYPE);
+VIP_IS_RELOCATABLE(VipLongPoint);
 Q_DECLARE_METATYPE(VipLongPoint)
-Q_DECLARE_TYPEINFO(VipPoint, Q_MOVABLE_TYPE | Q_RELOCATABLE_TYPE);
+VIP_IS_RELOCATABLE(VipPoint);
 Q_DECLARE_METATYPE(VipPoint)
 
 static constexpr quint32 vip_LD_support = sizeof(long double);

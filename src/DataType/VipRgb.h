@@ -39,6 +39,7 @@
 #include <QtGlobal>
 
 #include "VipMath.h"
+#include "VipConfig.h"
 
 /// @brief RGB color structure with alpha channel
 /// @tparam T
@@ -245,6 +246,7 @@ struct alignas(alignof(QRgb)) VipRgb<quint8>
 
 typedef VipRgb<quint8> VipRGB;
 Q_DECLARE_METATYPE(VipRGB)
+VIP_IS_RELOCATABLE(VipRGB);
 
 template<class T>
 struct is_rgb : std::false_type

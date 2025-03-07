@@ -450,7 +450,7 @@ using VipCoordinate = VipHybridVector<qsizetype, NDims>;
 
 /// @brief VipNDArrayShape is a dynamic VipHybridVector. It is used to represent the shape of a #ipNDArray.
 using VipNDArrayShape = VipCoordinate<Vip::None>;
-
+VIP_IS_RELOCATABLE(VipNDArrayShape);
 
 template<qsizetype N1, qsizetype N2>
 VipCoordinate< Vip::None> operator+(const VipCoordinate< N1>& v1, const VipCoordinate< N2>& v2) noexcept

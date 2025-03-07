@@ -55,6 +55,7 @@
 #include "VipLock.h"
 #include "VipProcessingHelper.h"
 #include "VipTimestamping.h"
+#include "VipCircularVector.h"
 
 
 
@@ -386,7 +387,7 @@ class VIP_CORE_EXPORT VipFIFOList : public VipDataList
 #else
 	using QueueType = QVector<VipAnyData>;
 #endif
-	QueueType m_list;
+	VipCircularVector<VipAnyData> m_list;
 	VipAnyData m_last;
 	VipSpinlock m_mutex;
 

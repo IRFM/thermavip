@@ -37,6 +37,7 @@
 #include <qmetatype.h>
 
 #include "VipLongDouble.h"
+#include "VipConfig.h"
 
 /// \addtogroup DataType
 /// @{
@@ -122,7 +123,7 @@ private:
 };
 
 typedef QList<VipInterval> IntervalList;
-Q_DECLARE_TYPEINFO(VipInterval, Q_MOVABLE_TYPE);
+VIP_IS_RELOCATABLE(VipInterval);
 
 /// \brief Default Constructor
 ///
@@ -338,6 +339,7 @@ public:
 
 
 Q_DECLARE_METATYPE(VipIntervalSample)
+VIP_IS_RELOCATABLE(VipIntervalSample);
 
 /// @}
 // end DataType

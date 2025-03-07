@@ -33,6 +33,7 @@
 #define VIP_MATRIX_22_H
 
 #include <cmath>
+#include "VipConfig.h"
 
 /// \addtogroup DataType
 /// @{
@@ -66,6 +67,7 @@ struct VipMatrix22
 		}
 	}
 };
+VIP_IS_RELOCATABLE(VipMatrix22);
 
 /// @}
 // end DataType
