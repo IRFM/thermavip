@@ -372,10 +372,11 @@ QTextStream& operator<<(QTextStream& stream, const VipPointVector& p)
 	// first write the x in a line, then the y
 
 	if (sizeof(vip_double) != sizeof(double)) {
+
 		// this is faster than writting each value through QTextStream
-		vipWriteNLongDouble(stream, (vip_long_double*)p.data(), p.size() * 2, 2, "\t");
+		vipWriteNLongDouble(stream, p, "\t", [](const auto& v) { return v.x(); });
 		stream << "\n";
-		vipWriteNLongDouble(stream, ((vip_long_double*)p.data()) + 1, p.size() * 2, 2, "\t");
+		vipWriteNLongDouble(stream, p, "\t", [](const auto& v) { return v.y(); });
 		stream << "\n";
 	}
 	else {
@@ -403,8 +404,8 @@ QTextStream& operator>>(QTextStream& stream, VipPointVector& p)
 
 	if (sizeof(vip_double) != sizeof(double)) {
 		QVector<vip_long_double> values1, values2;
-		vipReadNLongDouble(sline1, values1, INT_MAX);
-		vipReadNLongDouble(sline2, values2, INT_MAX);
+		vipReadNLongDoubleAppend(sline1, values1, INT_MAX);
+		vipReadNLongDoubleAppend(sline2, values2, INT_MAX);
 		if (values1.size() != values2.size()) {
 			stream.setStatus(QTextStream::ReadCorruptData);
 			return stream;
@@ -1354,51 +1355,60 @@ bool __vipResampleVectors(QVector<T>& a, QVector<U>& b, ResampleStrategies s, co
 /// Iter over the times of a VipPointVector or VipComplexPointVector
 struct TimeIterator
 {
-	const uchar* data;
-	uint incr;
-	TimeIterator() {}
-	TimeIterator(const VipPointVector& v, bool begin)
-	  : data((uchar*)(v.data() + (begin ? 0 : v.size())))
-	  , incr(sizeof(VipPoint))
+	const bool is_point_vector{ true };
+	const void* data{ nullptr };
+	qsizetype pos{ 0 };
+
+	TimeIterator() noexcept = default;
+	TimeIterator(const VipPointVector& v, bool begin) noexcept
+	  : is_point_vector(true)
+	  , data(&v)
+	  , pos(begin ? 0 : v.size())
 	{
 	}
-	TimeIterator(const VipComplexPointVector& v, bool begin)
-	  : data((uchar*)(v.data() + (begin ? 0 : v.size())))
-	  , incr(sizeof(VipComplexPoint))
+	TimeIterator(const VipComplexPointVector& v, bool begin) noexcept
+	  : is_point_vector(false)
+	  , data(&v)
+	  , pos(begin ? 0 : v.size())
 	{
 	}
 
-	vip_double prevTime() { return *((vip_double*)(data - incr)); }
-	vip_double operator*() const { return *((vip_double*)data); }
-	TimeIterator& operator++()
+	vip_double prevTime() const noexcept { return is_point_vector ? (*static_cast<const VipPointVector*>(data))[pos - 1].x() : (*static_cast<const VipComplexPointVector*>(data))[pos - 1].x(); }
+	vip_double operator*() const noexcept { return is_point_vector ? (*static_cast<const VipPointVector*>(data))[pos].x() : (*static_cast<const VipComplexPointVector*>(data))[pos].x(); }
+	TimeIterator& operator++() noexcept
 	{
-		data += incr;
+		++pos;
 		return *this;
 	}
-	TimeIterator operator++(int)
+	TimeIterator operator++(int) noexcept
 	{
 		TimeIterator retval = *this;
 		++(*this);
 		return retval;
 	}
-	TimeIterator& operator+=(std::ptrdiff_t offset)
+	TimeIterator& operator+=(qsizetype offset) noexcept
 	{
-		data += offset * incr;
+		pos += offset;
 		return *this;
 	}
-	TimeIterator& operator--()
+	TimeIterator& operator-=(qsizetype offset) noexcept
 	{
-		data -= incr;
+		pos -= offset;
 		return *this;
 	}
-	TimeIterator operator--(int)
+	TimeIterator& operator--() noexcept
+	{
+		--pos;
+		return *this;
+	}
+	TimeIterator operator--(int) noexcept
 	{
 		TimeIterator retval = *this;
 		--(*this);
 		return retval;
 	}
-	bool operator==(const TimeIterator& other) { return data == other.data; }
-	bool operator!=(const TimeIterator& other) { return data != other.data; }
+	bool operator==(const TimeIterator& other) const noexcept { return data == other.data && pos == other.pos; }
+	bool operator!=(const TimeIterator& other) const noexcept { return !(*this == other); }
 };
 
 /// \internal
@@ -1544,8 +1554,8 @@ template<class Point, class Vector, class U>
 Vector vipResampleInternal(const Vector& sample, const QVector<vip_double>& times, ResampleStrategies s, const U& padds)
 {
 	Vector res(times.size());
-	typename Vector::const_iterator iters = sample.constBegin();
-	typename Vector::const_iterator ends = sample.constEnd();
+	typename Vector::const_iterator iters = sample.begin();
+	typename Vector::const_iterator ends = sample.end();
 
 	for (qsizetype t = 0; t < times.size(); ++t) {
 		const vip_double time = times[t];
@@ -1569,7 +1579,7 @@ Vector vipResampleInternal(const Vector& sample, const QVector<vip_double>& time
 		// we are before the sample
 		else if (time < samp.x()) {
 			// sample starts after
-			if (iters == sample.constBegin()) {
+			if (iters == sample.begin()) {
 				if (s & ResamplePadd0)
 					res[t] = (Point(time, padds));
 				else

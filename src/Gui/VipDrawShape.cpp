@@ -368,7 +368,7 @@ void VipDrawShapePolygon::paint(QPainter* painter, const QStyleOptionGraphicsIte
 
 	QPolygonF poly(m_polygon);
 	poly.append(m_pos);
-	poly = area()->scaleToPosition(poly, sceneModelScales());
+	poly = area()->scaleToPosition(vipToPointVector( poly), sceneModelScales());
 
 	poly = this->mapFromItem(area(), poly);
 	// TEST: remove Qt::WindingFill
@@ -485,7 +485,7 @@ void VipDrawShapePolyline::paint(QPainter* painter, const QStyleOptionGraphicsIt
 
 	QPolygonF poly(m_polygon);
 	poly.append(m_pos);
-	poly = area()->scaleToPosition(poly, sceneModelScales());
+	poly = area()->scaleToPosition(vipToPointVector( poly), sceneModelScales());
 	painter->drawPolyline(poly);
 
 	// stop polyline
@@ -569,7 +569,7 @@ QPainterPath VipDrawShapeMask::shape() const
 	if (!area())
 		return QPainterPath();
 	QPainterPath path;
-	QPolygonF poly = area()->scaleToPosition(m_polygon, sceneModelScales());
+	QPolygonF poly = area()->scaleToPosition(vipToPointVector( m_polygon), sceneModelScales());
 	QRectF r = poly.boundingRect().adjusted(-5, -5, 5, 5);
 	path.addRect(r);
 	return path;
@@ -581,7 +581,7 @@ void VipDrawShapeMask::paint(QPainter* painter, const QStyleOptionGraphicsItem*,
 	painter->setBrush(QColor(255, 0, 0, 50));
 	painter->setRenderHints(QPainter::Antialiasing);
 
-	QPolygonF poly = area()->scaleToPosition(m_polygon, sceneModelScales());
+	QPolygonF poly = area()->scaleToPosition(vipToPointVector(m_polygon), sceneModelScales());
 	// TEST: remove Qt::WindingFill
 	painter->drawPolygon(poly /*,Qt::WindingFill*/);
 }

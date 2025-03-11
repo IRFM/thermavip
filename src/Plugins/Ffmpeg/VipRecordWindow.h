@@ -10,7 +10,7 @@
 #include <qprocess.h>
 
 struct RecordThread;
-class VideoEncoder;
+class VipMPEGSaver;
 
 /// @brief Select a player within current workspace
 class PlayerSelection : public VipComboBox
@@ -137,5 +137,5 @@ private:
 	bool m_draw_mouse;
 
 	QProcess m_process;
-	VideoEncoder* m_encoder;
+	VipMPEGSaver* m_encoder;
 };

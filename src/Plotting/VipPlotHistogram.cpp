@@ -495,7 +495,8 @@ void VipPlotHistogram::drawOutline(QPainter* painter, const VipCoordinateSystemP
 	VipPointVector polygon;
 
 	VipIntervalSample previous = data[0];
-	polygon << VipPoint(previous.interval.minValue(), baseline()) << VipPoint(previous.interval.minValue(), previous.value);
+	polygon.push_back(VipPoint(previous.interval.minValue(), baseline()));
+	polygon.push_back(VipPoint(previous.interval.minValue(), previous.value));
 
 	for (int i = 1; i < data.size(); ++i) {
 		const VipIntervalSample sample = data[i];

@@ -444,7 +444,7 @@ void VipExtractHistogram::apply()
 		}
 
 		if (ar.canConvert<double>()) {
-			QVector<VipIntervalSample> histogram = shape.histogram(bins, ar, QPoint(0, 0), &buffer());
+			VipIntervalSampleVector histogram = shape.histogram(bins, ar, QPoint(0, 0), &buffer());
 			VipAnyData any = create(QVariant::fromValue(histogram));
 			any.setTime(data.time());
 			any.setXUnit(data.zUnit());
@@ -473,7 +473,7 @@ void VipExtractHistogram::apply()
 			}
 
 			for (int i = 0; i < ars.size(); ++i) {
-				QVector<VipIntervalSample> histogram = shape.histogram(bins, ars[i], QPoint(0, 0), &buffer());
+				VipIntervalSampleVector histogram = shape.histogram(bins, ars[i], QPoint(0, 0), &buffer());
 				VipAnyData any = create(QVariant::fromValue(histogram));
 				any.setTime(data.time());
 				any.setXUnit(data.zUnit());
@@ -483,7 +483,7 @@ void VipExtractHistogram::apply()
 		}
 	}
 	else {
-		QVector<VipIntervalSample> histogram;
+		VipIntervalSampleVector histogram;
 		for (int i = 0; i < outputCount(); ++i) {
 			VipAnyData any = create(QVariant::fromValue(histogram));
 			any.setTime(data.time());

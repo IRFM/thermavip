@@ -1747,20 +1747,20 @@ void VipPlayerDBAccess::saveToJsonInternal(bool show_messages)
 				VipAnyResource* mean = static_cast<VipAnyResource*>(stats[c++]);
 				vip_debug("%s\n", mean->path().toLatin1().data());
 
-				VipPointVector max_vals = max->outputAt(0)->value<VipPointVector>();
-				VipPointVector max_vals_pos = max->outputAt(0)->data().attribute("_vip_Pos").value<VipPointVector>();
+				QPolygonF max_vals = vipToPointF(max->outputAt(0)->value<VipPointVector>());
+				QPolygonF max_vals_pos = vipToPointF(max->outputAt(0)->data().attribute("_vip_Pos").value<VipPointVector>());
 
-				VipPointVector min_vals = min->outputAt(0)->value<VipPointVector>();
-				VipPointVector min_vals_pos = min->outputAt(0)->data().attribute("_vip_Pos").value<VipPointVector>();
+				QPolygonF min_vals = vipToPointF(min->outputAt(0)->value<VipPointVector>());
+				QPolygonF min_vals_pos = vipToPointF(min->outputAt(0)->data().attribute("_vip_Pos").value<VipPointVector>());
 
-				VipPointVector mean_vals = mean->outputAt(0)->value<VipPointVector>();
+				QPolygonF mean_vals = vipToPointF(mean->outputAt(0)->value<VipPointVector>());
 
 				VipShapeList& shs = m_events[to_recomputeIds[i]];
 
 				// transform max and min positions based on player transform
 				QTransform tr = m_player->imageTransform().inverted();
-				max_vals_pos = tr.map(max_vals_pos.toPointF());
-				min_vals_pos = tr.map(min_vals_pos.toPointF());
+				max_vals_pos = tr.map(max_vals_pos);
+				min_vals_pos = tr.map(min_vals_pos);
 
 				if (max_vals.size() == max_vals_pos.size() && max_vals.size() == min_vals.size() && max_vals.size() == min_vals_pos.size() && max_vals.size() == mean_vals.size() &&
 				    max_vals.size() == shs.size()) {
@@ -1925,20 +1925,20 @@ void VipPlayerDBAccess::uploadInternal(bool show_messages)
 					VipAnyResource* mean = static_cast<VipAnyResource*>(stats[c++]);
 					vip_debug("%s\n", mean->path().toLatin1().data());
 
-					VipPointVector max_vals = max->outputAt(0)->value<VipPointVector>();
-					VipPointVector max_vals_pos = max->outputAt(0)->data().attribute("_vip_Pos").value<VipPointVector>();
+					QPolygonF max_vals = vipToPointF(max->outputAt(0)->value<VipPointVector>());
+					QPolygonF max_vals_pos = vipToPointF(max->outputAt(0)->data().attribute("_vip_Pos").value<VipPointVector>());
 
-					VipPointVector min_vals = min->outputAt(0)->value<VipPointVector>();
-					VipPointVector min_vals_pos = min->outputAt(0)->data().attribute("_vip_Pos").value<VipPointVector>();
+					QPolygonF min_vals =vipToPointF( min->outputAt(0)->value<VipPointVector>());
+					QPolygonF min_vals_pos = vipToPointF(min->outputAt(0)->data().attribute("_vip_Pos").value<VipPointVector>());
 
-					VipPointVector mean_vals = mean->outputAt(0)->value<VipPointVector>();
+					QPolygonF mean_vals = vipToPointF(mean->outputAt(0)->value<VipPointVector>());
 
 					VipShapeList& shs = to_send[to_recomputeIds[i]];
 
 					// transform max and min positions based on player transform
 					QTransform tr = m_player->imageTransform().inverted();
-					max_vals_pos = tr.map(max_vals_pos.toPointF());
-					min_vals_pos = tr.map(min_vals_pos.toPointF());
+					max_vals_pos = tr.map( max_vals_pos);
+					min_vals_pos = tr.map(min_vals_pos);
 
 					if (max_vals.size() == max_vals_pos.size() && max_vals.size() == min_vals.size() && max_vals.size() == min_vals_pos.size() &&
 					    max_vals.size() == mean_vals.size() && max_vals.size() == shs.size()) {

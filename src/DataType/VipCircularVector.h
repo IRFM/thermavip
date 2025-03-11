@@ -34,16 +34,26 @@
 
 #include "VipConfig.h"
 #include "VipMath.h"
+#include "VipSpan.h"
 #include <QTypeInfo>
 #include <qlist.h>
 #include <qvector.h>
 #include <qshareddata.h>
+#include <qdatastream.h>
 
 #include <utility>
 #include <type_traits>
 #include <iterator>
 #include <algorithm>
 
+namespace Vip
+{
+	enum Ownership
+	{
+		SharedOwnership,
+		StrongOwnership
+	};
+}
 namespace detail
 {
 	// Convenient random access iterator on a constant value
@@ -172,7 +182,6 @@ namespace detail
 				destroy_ptr(p + i);
 	}
 
-	
 	template<class T, bool NoExcept = std::is_nothrow_move_constructible<T>::value>
 	struct Mover
 	{
@@ -207,7 +216,7 @@ namespace detail
 	}
 
 	// Similar to QSharedDataPointer but lighter and INLINED!!
-	template<typename T>
+	template<typename T, Vip::Ownership>
 	class COWPointer
 	{
 	public:
@@ -286,19 +295,86 @@ namespace detail
 		T* d{ nullptr };
 	};
 
-	// Circular buffer class used internally by VipCircularVector
+	template<typename T>
+	class COWPointer<T, Vip::StrongOwnership>
+	{
+	public:
+		COWPointer() noexcept {}
+		~COWPointer()
+		{
+			if (d)
+				delete d;
+		}
+		explicit COWPointer(T* data) noexcept
+		  : d(data)
+		{
+		}
+		COWPointer(const COWPointer& o) noexcept
+		  : d(o.d ? new T(*o.d) : nullptr)
+		{
+		}
+		COWPointer(COWPointer&& o) noexcept
+		  : d(std::exchange(o.d, nullptr))
+		{
+		}
+		COWPointer& operator=(const COWPointer& o) noexcept
+		{
+			if (d)
+				delete d;
+			d = nullptr;
+			d = (o.d ? new T(*o.d) : nullptr);
+			return *this;
+		}
+		COWPointer& operator=(COWPointer&& o) noexcept
+		{
+			std::swap(d, o.d);
+			return *this;
+		}
+		void reset(T* od)
+		{
+			if (d)
+				delete d;
+			d = od;
+		}
+		VIP_ALWAYS_INLINE void detach() {}
+		VIP_ALWAYS_INLINE T* operator->() { return d; }
+		VIP_ALWAYS_INLINE const T* operator->() const noexcept { return d; }
+		VIP_ALWAYS_INLINE T* data() { return d; }
+		VIP_ALWAYS_INLINE const T* data() const noexcept { return d; }
+		VIP_ALWAYS_INLINE const T* constData() const noexcept { return d; }
+		VIP_ALWAYS_INLINE operator bool() const noexcept { return d != nullptr; }
+		VIP_ALWAYS_INLINE bool operator!() const noexcept { return d == nullptr; }
+		VIP_ALWAYS_INLINE void swap(COWPointer& o) noexcept { std::swap(d, o.d); }
+
+	private:
+		T* d{ nullptr };
+	};
+
+	template<class T, Vip::Ownership>
+	struct BaseCircularBuffer
+	{
+		std::atomic<qsizetype> cnt{ 0 }; // reference count
+		VIP_ALWAYS_INLINE void ref() noexcept { cnt.fetch_add(1); }
+		VIP_ALWAYS_INLINE bool deref() noexcept { return cnt.fetch_sub(1, std::memory_order_acq_rel) != (qsizetype)1; }
+		VIP_ALWAYS_INLINE qsizetype load() const noexcept { return cnt.load(std::memory_order_relaxed); }
+	};
 	template<class T>
-	struct CircularBuffer
+	struct BaseCircularBuffer<T, Vip::StrongOwnership>
+	{
+	};
+
+	// Circular buffer class used internally by VipCircularVector
+	template<class T, Vip::Ownership O>
+	struct CircularBuffer : public BaseCircularBuffer<T, O>
 	{
 		static constexpr bool relocatable = QTypeInfo<T>::isRelocatable;
 		using value_type = T;
 
-		std::atomic<qsizetype> cnt{ 0 };	// reference count
-		qsizetype begin;					// begin index of data
-		qsizetype size;						// number of elements
-		const qsizetype capacity;			// buffer capacity
+		qsizetype begin;	  // begin index of data
+		qsizetype size;		  // number of elements
+		const qsizetype capacity; // buffer capacity
 
-		T* buffer;							// actual values
+		T* buffer; // actual values
 
 		// Initialize from a maximum capacity
 		CircularBuffer(qsizetype max_size = 0)
@@ -358,9 +434,6 @@ namespace detail
 				free(buffer);
 		}
 
-		VIP_ALWAYS_INLINE void ref() noexcept { cnt.fetch_add(1); }
-		VIP_ALWAYS_INLINE bool deref() noexcept { return cnt.fetch_sub(1, std::memory_order_acq_rel) != (qsizetype)1; }
-		VIP_ALWAYS_INLINE qsizetype load() const noexcept { return cnt.load(std::memory_order_relaxed); }
 		VIP_ALWAYS_INLINE qsizetype mask() const noexcept { return capacity - 1; }
 
 		// Relocate to dst.
@@ -385,41 +458,30 @@ namespace detail
 				this->size = 0;
 		}
 
-		template<class Fun>
-		void for_each(qsizetype first, qsizetype last, Fun&& f) noexcept(noexcept(f(std::declval<T&>())))
+		std::pair<VipSpan<T>, VipSpan<T>> spans(qsizetype first, qsizetype last) noexcept
 		{
 			if (first == last)
-				return;
+				return std::pair<VipSpan<T>, VipSpan<T>>();
+			std::pair<VipSpan<T>, VipSpan<T>> res;
 			qsizetype idx_first = (begin + first) & mask();
 			qsizetype idx_last = (begin + last) & mask();
 			qsizetype first_stop = idx_first < idx_last ? idx_last : capacity;
-			for (qsizetype i = idx_first; i != first_stop; ++i)
-				f(buffer[i]);
-			if (idx_first >= idx_last) {
-				for (qsizetype i = 0; i != idx_last; ++i)
-					f(buffer[i]);
-			}
+			res.first = VipSpan<T>(buffer + idx_first, first_stop - idx_first);
+			if (idx_first >= idx_last)
+				res.second = VipSpan<T>(buffer, idx_last);
+			return res;
 		}
-		template<class Fun>
-		void for_each(qsizetype first, qsizetype last, Fun&& f) const noexcept(noexcept(f(std::declval<const T&>())))
-		{
-			if (first == last)
-				return;
-			qsizetype idx_first = (begin + first) & mask();
-			qsizetype idx_last = (begin + last) & mask();
-			qsizetype first_stop = idx_first < idx_last ? idx_last : capacity;
-			for (qsizetype i = idx_first; i != first_stop; ++i)
-				f(buffer[i]);
-			if (idx_first >= idx_last) {
-				for (qsizetype i = 0; i != idx_last; ++i)
-					f(buffer[i]);
-			}
-		}
+		std::pair<VipSpan<const T>, VipSpan<const T>> cspans(qsizetype first, qsizetype last) const noexcept { return const_cast<CircularBuffer*>(this)->spans(first, last); }
 
 		void destroy_range(qsizetype first, qsizetype last) noexcept
 		{
-			if VIP_CONSTEXPR (!std::is_trivially_destructible<T>::value)
-				for_each(first, last, [](T& v) { destroy_ptr(&v); });
+			if VIP_CONSTEXPR (!std::is_trivially_destructible<T>::value) {
+				auto s = spans(first, last);
+				for (T& v : s.first)
+					destroy_ptr(&v);
+				for (T& v : s.second)
+					destroy_ptr(&v);
+			}
 		}
 
 		// Element access.
@@ -921,10 +983,7 @@ namespace detail
 		  : base_type(it)
 		{
 		}
-		VIP_ALWAYS_INLINE VipCircularVectorIterator& operator=(const VipCircularVectorIterator& it) noexcept
-		{ 
-			return static_cast<VipCircularVectorIterator&>(base_type::operator=(it));
-		}
+		VIP_ALWAYS_INLINE VipCircularVectorIterator& operator=(const VipCircularVectorIterator& it) noexcept { return static_cast<VipCircularVectorIterator&>(base_type::operator=(it)); }
 		VIP_ALWAYS_INLINE auto operator*() noexcept -> reference { return const_cast<reference>(base_type::operator*()); }
 		VIP_ALWAYS_INLINE auto operator->() noexcept -> pointer { return std::pointer_traits<pointer>::pointer_to(**this); }
 		VIP_ALWAYS_INLINE auto operator*() const noexcept -> reference { return const_cast<reference>(base_type::operator*()); }
@@ -1083,28 +1142,27 @@ namespace detail
 	using IfIsInputIterator = typename std::enable_if<std::is_convertible<typename std::iterator_traits<Iterator>::iterator_category, std::input_iterator_tag>::value, bool>::type;
 }
 
-
 /// @brief Circular buffer (or ring buffer) class.
 ///
 /// VipCircularVector is a circular buffer-like class with an interface
 /// similar to QList, QVector or std::deque, and using Copy On Write
 /// like all Qt containers.
-/// 
+///
 /// Unlike traditional circular buffer implementations, VipCircularVector
 /// is not limited to a predifined capacity and will grow on insertion
 /// using a power of 2 growing strategy.
-/// 
+///
 /// Its is the container of choice for queues as it will almost always
 /// outperform std::deque or QVector (Qt6 version) for back and front operations.
-/// 
+///
 /// Like QVector, VipCircularVector never reduces its memory footprint except
 /// when calling shrink_to_fit() or on copy assignment.
-/// 
-template<class T>
+///
+template<class T, Vip::Ownership O = Vip::SharedOwnership>
 class VipCircularVector
 {
-	using Data = detail::CircularBuffer<T>;
-	using DataPtr = detail::COWPointer<Data>;
+	using Data = detail::CircularBuffer<T, O>;
+	using DataPtr = detail::COWPointer<Data, O>;
 	DataPtr d_data;
 
 	VIP_ALWAYS_INLINE bool hasData() const noexcept { return d_data.constData() != nullptr; }
@@ -1132,11 +1190,11 @@ class VipCircularVector
 		if (!constData() || dataNoDetach()->capacity != new_capacity) {
 			if (constData() && dataNoDetach()->capacity > new_capacity && !allow_shrink)
 				return dataNoDetach();
-			Data* res;
-			DataPtr d(res = new Data(new_capacity));
+			Data* res = nullptr;
+			std::unique_ptr<Data> tmp(res = new Data(new_capacity));
 			if (d_data)
-				d_data->relocate(const_cast<Data*>(d.constData()));
-			d_data = d;
+				d_data->relocate(res);
+			d_data.reset(tmp.release());
 			return res;
 		}
 		return dataNoDetach();
@@ -1212,11 +1270,11 @@ class VipCircularVector
 			resize_front(size() + to_insert);
 			iterator beg = begin();
 			// Might throw, fine
-			d_data->for_each(to_insert, to_insert + pos, [&](T& v) {
+			for_each(to_insert, to_insert + pos, [&](T& v) {
 				*beg = std::move(v);
 				++beg;
 			});
-			d_data->for_each(pos, pos + to_insert, [&](T& v) { v = *first++; });
+			for_each(pos, pos + to_insert, [&](T& v) { v = *first++; });
 		}
 		else {
 			// Might throw, fine
@@ -1245,6 +1303,11 @@ public:
 	using const_iterator = detail::VipCircularVectorConstIterator<Data>;
 	using reverse_iterator = std::reverse_iterator<iterator>;
 	using const_reverse_iterator = std::reverse_iterator<const_iterator>;
+
+	using span_type = VipSpan<T>;
+	using const_span_type = VipSpan<const T>;
+	using spans_type = std::pair<span_type, span_type>;
+	using const_spans_type = std::pair<const_span_type, const_span_type>;
 
 	VipCircularVector() noexcept {}
 	VipCircularVector(const VipCircularVector&) noexcept = default;
@@ -1278,6 +1341,11 @@ public:
 	  : VipCircularVector(init.begin(), init.end())
 	{
 	}
+	/* template<class U>
+	VipCircularVector(const QVector<U>& v)
+	  : VipCircularVector(v.begin(), v.end())
+	{
+	}*/
 	~VipCircularVector() noexcept { clear(); }
 
 	template<class Container>
@@ -1309,6 +1377,7 @@ public:
 
 	VIP_ALWAYS_INLINE qsizetype max_size() const noexcept { return std::numeric_limits<difference_type>::max(); }
 	VIP_ALWAYS_INLINE bool empty() const noexcept { return !d_data || d_data->size == 0; }
+	VIP_ALWAYS_INLINE bool isEmpty() const noexcept { return !d_data || d_data->size == 0; }
 	VIP_ALWAYS_INLINE qsizetype size() const noexcept { return d_data ? d_data->size : 0; }
 
 	VIP_ALWAYS_INLINE T& operator[](qsizetype i) noexcept { return d_data->at(i); }
@@ -1329,9 +1398,13 @@ public:
 
 	VIP_ALWAYS_INLINE T& front() noexcept { return d_data->front(); }
 	VIP_ALWAYS_INLINE const T& front() const noexcept { return d_data->front(); }
+	VIP_ALWAYS_INLINE T& first() noexcept { return d_data->front(); }
+	VIP_ALWAYS_INLINE const T& first() const noexcept { return d_data->front(); }
 
 	VIP_ALWAYS_INLINE T& back() noexcept { return d_data->front(); }
 	VIP_ALWAYS_INLINE const T& back() const noexcept { return d_data->front(); }
+	VIP_ALWAYS_INLINE T& last() noexcept { return d_data->front(); }
+	VIP_ALWAYS_INLINE const T& last() const noexcept { return d_data->front(); }
 
 	VIP_ALWAYS_INLINE iterator begin() noexcept { return iterator(data(), 0); }
 	VIP_ALWAYS_INLINE const_iterator begin() const noexcept { return const_iterator(data(), 0); }
@@ -1349,17 +1422,28 @@ public:
 	VIP_ALWAYS_INLINE const_reverse_iterator rend() const noexcept { return const_reverse_iterator(begin()); }
 	VIP_ALWAYS_INLINE const_reverse_iterator crend() const noexcept { return const_reverse_iterator(begin()); }
 
+	VIP_ALWAYS_INLINE spans_type spans(qsizetype first, qsizetype last) noexcept { return d_data->spans(first, last); }
+	VIP_ALWAYS_INLINE spans_type spans() noexcept { return d_data->spans(0, size()); }
+	VIP_ALWAYS_INLINE const_spans_type spans(qsizetype first, qsizetype last) const noexcept { return d_data->cspans(first, last); }
+	VIP_ALWAYS_INLINE const_spans_type spans() const noexcept { return d_data->cspans(0, size()); }
+
 	template<class Fun>
-	void for_each(qsizetype first, qsizetype last, Fun&& fun)
+	void for_each(qsizetype first, qsizetype last, Fun&& f) noexcept(noexcept(f(std::declval<T&>())))
 	{
-		if (hasData())
-			d_data->for_each(first, last, std::forward<Fun>(fun));
+		auto s = spans(first, last);
+		for (T& v : s.first)
+			f(v);
+		for (T& v : s.second)
+			f(v);
 	}
 	template<class Fun>
-	void for_each(qsizetype first, qsizetype last, Fun&& fun) const
+	void for_each(qsizetype first, qsizetype last, Fun&& f) const noexcept(noexcept(f(std::declval<const T&>())))
 	{
-		if (hasData())
-			d_data->for_each(first, last, std::forward<Fun>(fun));
+		auto s = spans(first, last);
+		for (const T& v : s.first)
+			f(v);
+		for (const T& v : s.second)
+			f(v);
 	}
 
 	void resize(qsizetype new_size) { adjust_capacity_for_size(new_size)->resize(new_size); }
@@ -1369,6 +1453,19 @@ public:
 	void resize_front(qsizetype new_size, const T& v) { adjust_capacity_for_size(new_size)->resize_front(new_size, v); }
 
 	void swap(VipCircularVector& other) noexcept { d_data.swap(other.d_data); }
+
+	VipCircularVector mid(qsizetype start, qsizetype len = -1) const
+	{
+		VIP_ASSERT_DEBUG(start >= 0 && start <= size(), "");
+		len = len == -1 ? size() - start : len;
+		VIP_ASSERT_DEBUG(start + len <= size(), "");
+		if (start == 0 && len == size())
+			return *this;
+		VipCircularVector res(len);
+		auto data = res.d_data->buffer;
+		for_each(start, start + len, [&data](const auto& v) { *data++ = v; });
+		return res;
+	}
 
 	template<class... Args>
 	VIP_ALWAYS_INLINE T& emplace_back(Args&&... args)
@@ -1485,7 +1582,7 @@ public:
 		else {
 			// std::move(begin() + last, end(), begin() + first);
 			iterator it = begin() + static_cast<difference_type>(first);
-			d_data->for_each(last, size(), [&](T& v) {
+			for_each(last, size(), [&](T& v) {
 				*it = std::move(v);
 				++it;
 			});
@@ -1515,9 +1612,83 @@ public:
 	}
 	VipCircularVector& assign(size_type count, const T& value) { return assign(detail::cvalue_iterator<T>(0, value), detail::cvalue_iterator<T>(count, value)); }
 	VipCircularVector& assign(std::initializer_list<T> ilist) { return assign(ilist.begin(), ilist.end()); }
+
+	template<class U>
+	VipCircularVector& operator<<(U&& value)
+	{
+		emplace_back(std::forward<U>(value));
+		return *this;
+	}
+	VipCircularVector& operator+=(const VipCircularVector& other)
+	{
+		append(other);
+		return *this;
+	}
+	VipCircularVector& operator+=(VipCircularVector&& other)
+	{
+		append(std::move(other));
+		return *this;
+	}
 };
 
+template<class T, Vip::Ownership O>
+QDataStream& operator<<(QDataStream& s, const VipCircularVector<T, O>& c)
+{
+	if (!QDataStream::writeQSizeType(s, c.size()))
+		return s;
+	for (const T& t : c)
+		s << t;
 
+	return s;
+}
+
+template<class T, Vip::Ownership O>
+QDataStream& operator>>(QDataStream& s, VipCircularVector<T, O>& c)
+{
+	class StreamStateSaver
+	{
+	public:
+		inline StreamStateSaver(QDataStream* s)
+		  : stream(s)
+		  , oldStatus(s->status())
+		{
+			if (!stream->isDeviceTransactionStarted())
+				stream->resetStatus();
+		}
+		inline ~StreamStateSaver()
+		{
+			if (oldStatus != QDataStream::Ok) {
+				stream->resetStatus();
+				stream->setStatus(oldStatus);
+			}
+		}
+
+	private:
+		QDataStream* stream;
+		QDataStream::Status oldStatus;
+	};
+	StreamStateSaver stateSaver(&s);
+
+	c.clear();
+	qint64 size = QDataStream::readQSizeType(s);
+	qsizetype n = size;
+	if (size != n || size < 0) {
+		s.setStatus(QDataStream::SizeLimitExceeded);
+		return s;
+	}
+	c.reserve(n);
+	for (qsizetype i = 0; i < n; ++i) {
+		T t;
+		s >> t;
+		if (s.status() != QDataStream::Ok) {
+			c.clear();
+			break;
+		}
+		c.append(t);
+	}
+
+	return s;
+}
 
 #ifdef VIP_GENERATE_TEST_FUNCTIONS
 
@@ -1580,25 +1751,26 @@ namespace detail
 	template<class T, qsizetype loop_count = 1000000>
 	static inline void testVipCircularVector()
 	{
+		using CircularVector = VipCircularVector<T>;
 		qint64 el = 0;
 		{
-			VipCircularVector<T> v3 = { makeT<T>(0), makeT<T>(1), makeT<T>(2), makeT<T>(3) };
+			CircularVector v3 = { makeT<T>(0), makeT<T>(1), makeT<T>(2), makeT<T>(3) };
 			v3.pop_front();
 			v3.push_back(makeT<T>(0));
 			v3.for_each(0, v3.size(), [](T& v) { std::cout << v << std::endl; });
 		}
 		{
 			// test constructors
-			VipCircularVector<T> v;
-			VipCircularVector<T> v2 = v;
-			VipCircularVector<T> v3 = { makeT<T>(0), makeT<T>(1), makeT<T>(2) };
+			CircularVector v;
+			CircularVector v2 = v;
+			CircularVector v3 = { makeT<T>(0), makeT<T>(1), makeT<T>(2) };
 			QVector<T> _v3 = { makeT<T>(0), makeT<T>(1), makeT<T>(2) };
 			test(equals(v3, _v3));
 
-			VipCircularVector<T> v4(10);
+			CircularVector v4(10);
 			QVector<T> _v4(10);
 
-			VipCircularVector<T> v5(10ull, makeT<T>(1));
+			CircularVector v5(10ull, makeT<T>(1));
 			QVector<T> _v5(10ull, makeT<T>(1));
 			test(equals(v5, _v5));
 			// test convert/move
@@ -1608,7 +1780,7 @@ namespace detail
 
 		{
 			// test push_back/front
-			VipCircularVector<T> v;
+			CircularVector v;
 			QVector<T> _v;
 
 			tick();
@@ -1780,7 +1952,7 @@ namespace detail
 			test(equals(v, _v));
 
 			_v = make<QVector<T>>(loop_count);
-			v = make<VipCircularVector<T>>(loop_count);
+			v = make<CircularVector>(loop_count);
 			test(equals(v, _v));
 
 			// test erase from back/front
@@ -1798,7 +1970,7 @@ namespace detail
 			std::cout << "Circular<T> erase begin " << el << std::endl;
 
 			_v = QVector<T>(loop_count, makeT<T>(1));
-			v = VipCircularVector<T>(loop_count, makeT<T>(1));
+			v = CircularVector(loop_count, makeT<T>(1));
 			test(equals(v, _v));
 
 			// test erase from back/front
@@ -1815,7 +1987,7 @@ namespace detail
 			std::cout << "Circular<T> erase end " << el << std::endl;
 
 			_v = QVector<T>(loop_count / 100, makeT<T>(1));
-			v = VipCircularVector<T>(loop_count / 100, makeT<T>(1));
+			v = CircularVector(loop_count / 100, makeT<T>(1));
 			test(equals(v, _v));
 
 			// test erase middle
@@ -1846,7 +2018,7 @@ namespace detail
 
 			// test shuffle
 			_v = make<QVector<T>>(loop_count);
-			v = make<VipCircularVector<T>>(loop_count);
+			v = make<CircularVector>(loop_count);
 			test(equals(v, _v));
 
 			tick();

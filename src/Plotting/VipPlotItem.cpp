@@ -2776,11 +2776,8 @@ void VipPlotItemData::setInternalData(const QVariant& value)
 
 void VipPlotItemData::setData(const QVariant& d)
 {
-	if (d_data->inDestroy)
-		return;
 	setInternalData(d);
-
-	if (d_data->autoMarkDirty) {
+	if (d_data->autoMarkDirty && !d_data->inDestroy) {
 		if (QThread::currentThread() == qApp->thread())
 			markDirty();
 		else
@@ -2792,9 +2789,7 @@ QVariant VipPlotItemData::takeData()
 {
 	if (d_data->inDestroy)
 		return QVariant();
-	QVariant ret = d_data->data;
-	d_data->data = QVariant();
-	return ret;
+	return std::exchange(d_data->data, QVariant());
 }
 
 VipPlotItemData::Mutex* VipPlotItemData::dataLock() const

@@ -22,13 +22,9 @@ public:
 
 	void setSaver(VipMPEGSaver* saver);
 
-	QLabel videoCodec;
-	QLabel rate;
-	QLabel fps;
-	QLineEdit videoCodecText;
 	QSpinBox rateText;
 	QSpinBox fpsText;
-
+	QSpinBox threads;
 	VipMPEGSaver* saver;
 
 private Q_SLOTS:

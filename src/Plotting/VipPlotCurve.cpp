@@ -657,7 +657,7 @@ bool VipPlotCurve::areaOfInterest(const QPointF& pos, int axis, double maxDistan
 			int index = findClosestPos(d_data->vectors[i], pos, axis, maxDistance, d_data->continuous[i]);
 			if (index >= 0) {
 				VipPoint found = sceneMap()->transform(d_data->vectors[i][index]);
-				out_pos << found;
+				out_pos.push_back( found);
 				if (symbol() && symbolVisible() && symbol()->style() != VipSymbol::None) {
 					path |= symbol()->shape((QPointF)found);
 				}
@@ -678,7 +678,7 @@ bool VipPlotCurve::areaOfInterest(const QPointF& pos, int axis, double maxDistan
 	int index = findClosestPos(raw, pos, axis, maxDistance, d_data->full_continuous);
 	if (index >= 0) {
 		VipPoint found = sceneMap()->transform(raw[index]);
-		out_pos << found;
+		out_pos.push_back( found);
 		if (symbol() && symbolVisible() && symbol()->style() != VipSymbol::None) {
 			style.computePath(symbol()->shape((QPointF)found));
 		}

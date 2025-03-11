@@ -171,9 +171,9 @@ VipArchive& operator<<(VipArchive& arch, const VipShape& value)
 	if (value.type() == VipShape::Path)
 		arch.content("path", value.shape());
 	else if (value.type() == VipShape::Polygon)
-		arch.content("polygon", VipPointVector(value.polygon()));
+		arch.content("polygon", vipToPointVector(value.polygon()));
 	else if (value.type() == VipShape::Polyline)
-		arch.content("polyline", VipPointVector(value.polyline()));
+		arch.content("polyline", vipToPointVector(value.polyline()));
 	else if (value.type() == VipShape::Point)
 		arch.content("point", VipPoint(value.point()));
 	arch.content("isPolygonBased", value.isPolygonBased());
@@ -194,9 +194,9 @@ VipArchive& operator>>(VipArchive& arch, VipShape& value)
 	if (type == VipShape::Path)
 		value.setShape(arch.read("path").value<QPainterPath>(), VipShape::Path, isPolygonBased);
 	else if (type == VipShape::Polygon)
-		value.setPolygon((arch.read("polygon").value<VipPointVector>().toPointF()));
+		value.setPolygon(vipToPointF(arch.read("polygon").value<VipPointVector>()));
 	else if (type == VipShape::Polyline)
-		value.setPolyline((arch.read("polyline").value<VipPointVector>().toPointF()));
+		value.setPolyline(vipToPointF(arch.read("polyline").value<VipPointVector>()));
 	else if (type == VipShape::Point)
 		value.setPoint(arch.read("point").value<VipPoint>());
 	return arch;

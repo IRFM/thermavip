@@ -12,7 +12,7 @@ class VideoDecoder;
 ///
 /// VipMPEGLoader is either a Temporal or Sequential VipIODevice based on provided path.
 /// If the path refers to a local file, VipMPEGLoader will be Temporal.
-/// If the path refers to a network stream, VipMPEGLoader will be Sequential.
+/// If the path refers to a network stream or a webcam, VipMPEGLoader will be Sequential.
 ///
 class FFMPEG_EXPORT VipMPEGLoader : public VipTimeRangeBasedGenerator
 {

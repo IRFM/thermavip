@@ -284,7 +284,7 @@ public:
 	virtual void setData(const QVariant&);
 
 	void addSample(const VipPoint& pt) { addSamples(&pt, 1); }
-	void addSamples(const VipPointVector& pts) { addSamples(pts.data(), pts.size()); }
+	//void addSamples(const VipPointVector& pts) { addSamples(pts.data(), pts.size()); }
 	void addSamples(const VipPoint* pts, int numPoints);
 
 	template<class F>

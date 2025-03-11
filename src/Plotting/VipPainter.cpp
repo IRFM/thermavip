@@ -1488,7 +1488,7 @@ void VipPainter::drawText(QPainter* painter,
 	QPolygonF textPolygon = text_tr.map(t.textRect());
 	QRectF textRect = textPolygon.boundingRect();
 	QPointF textOffset = textRect.topLeft() - textPolygon[0];
-	textRect = m->invTransform(textRect).boundingRect();
+	textRect = vipBoundingRect(m->invTransform(textRect));
 
 	// compute text x and y vipDistance in scale coordinates
 	VipPoint dist = m->invTransform(QPointF(10, 10)) - m->invTransform(QPointF(0, 0));

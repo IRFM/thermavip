@@ -38,6 +38,7 @@
 #include <qstring.h>
 #include <qtextstream.h>
 #include <qvector.h>
+#include <qlocale.h>
 
 #include <cstdint>
 #include <iomanip>
@@ -85,13 +86,73 @@ VIP_DATA_TYPE_EXPORT QTextStream& operator<<(QTextStream& s, vip_long_double v);
 /// Read long double from QTextStream
 VIP_DATA_TYPE_EXPORT QTextStream& operator>>(QTextStream& s, vip_long_double& v);
 
+/// @brief Convert QLocale to std::locale
+VIP_DATA_TYPE_EXPORT std::locale vipToStdLocale(const QLocale& l);
+
+struct NullExtract
+{
+	template<class T>
+	const T& operator()(const T& v) const
+	{
+		return v;
+	}
+};
+
 /// Write several long double values iterating over \a values by \a step until \a size is reached.
 /// Each value is separated by \a sep.
-VIP_DATA_TYPE_EXPORT void vipWriteNLongDouble(QTextStream& s, const vip_long_double* values, int size, int step, const char* sep);
-/// Read up to \a max_count long double from QTextStream
-VIP_DATA_TYPE_EXPORT int vipReadNLongDouble(QTextStream& s, vip_long_double* values, int max_count);
-/// Read up to \a max_count long double from QTextStream
-VIP_DATA_TYPE_EXPORT int vipReadNLongDouble(QTextStream& s, QVector<vip_long_double>& values, int max_count);
+template<class Container, class Extract = NullExtract>
+void vipWriteNLongDouble(QTextStream& s, const Container& values, const char* sep, Extract extr = Extract{})
+{
+	std::ostringstream ss;
+	if (s.locale().language() != QLocale::C)
+		ss.imbue(vipToStdLocale(s.locale()));
+	ss << std::setprecision(std::numeric_limits<vip_long_double>::digits10 + 1);
+	for (const auto& v : values)
+		ss << extr(v) << sep;
+	s << ss.str().c_str();
+}
+
+/// Read up to values.size() long double from a QTextStream
+template<class Container>
+int vipReadNLongDouble(QTextStream& s, Container& values)
+{
+	// qint64 pos = s.pos();
+	std::string str = s.readAll().toLatin1().data();
+	std::istringstream ss(str);
+	if (s.locale().language() != //_locale.language()
+	    QLocale::C)
+		ss.imbue(vipToStdLocale(s.locale()));
+	int i = 0;
+	for (; i < values.size(); ++i)
+		if (!(ss >> values[i]))
+			break;
+
+	s.seek(ss.tellg());
+	return i;
+}
+
+/// Read up to max_count long double from a QTextStream and append them to values
+template<class Container>
+int vipReadNLongDoubleAppend(QTextStream& s, Container& values, int max_count)
+{
+	// qint64 pos = s.pos();
+	std::string str = s.readAll().toLatin1().data();
+	std::istringstream ss(str);
+	if (s.locale().language() != //_locale.language()
+	    QLocale::C)
+		ss.imbue(vipToStdLocale(s.locale()));
+	int i = 0;
+	for (; i < max_count; ++i) {
+		vip_long_double v;
+		if (!(ss >> v))
+			break;
+		values.append(v);
+	}
+
+	s.seek(ss.tellg());
+	return i;
+}
+
 
 inline double vipLELongDoubleToDouble(const unsigned char x[10]) noexcept
 {

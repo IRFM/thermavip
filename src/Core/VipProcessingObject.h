@@ -71,15 +71,23 @@
 ///
 class VIP_CORE_EXPORT VipAnyData
 {
-	qint64 m_source;
-	qint64 m_time;
+	qint64 m_source{ 0 };
+	qint64 m_time{ VipInvalidTime };
 	QVariantMap m_attributes;
 	QVariant d_data;
 
 public:
-	VipAnyData();
-	VipAnyData(const QVariant& data, qint64 time = 0);
-	VipAnyData(QVariant&& data, qint64 time = 0);
+	VipAnyData() = default;
+	VIP_ALWAYS_INLINE VipAnyData(const QVariant& data, qint64 time = VipInvalidTime)
+	  : m_time(time)
+	  , d_data(data)
+	{
+	}
+	VIP_ALWAYS_INLINE VipAnyData(QVariant&& data, qint64 time = VipInvalidTime)
+	  : m_time(time)
+	  , d_data(std::move(data))
+	{
+	}
 	VipAnyData(const VipAnyData&) = default;
 	VipAnyData& operator=(const VipAnyData&) = default;
 
@@ -102,25 +110,26 @@ public:
 	/// - "ZUnit": a QString object containing the data z unit (if any). For image data, the ZUnit will be used for the color scale title.
 	/// - "stylesheet": a VipPlotItem stylesheet applied through the leaf VipDisplayObject
 	///
-	void setAttributes(const QVariantMap& attrs) { m_attributes = attrs; }
-	void setAttribute(const QString& name, const QVariant& value) { m_attributes[name] = value; }
-	const QVariantMap& attributes() const { return m_attributes; }
-	QVariant attribute(const QString& attr) const { return m_attributes[attr]; }
-	bool hasAttribute(const QString& attr) const { return m_attributes.find(attr) != m_attributes.end(); }
+	VIP_ALWAYS_INLINE void setAttributes(const QVariantMap& attrs) { m_attributes = attrs; }
+	VIP_ALWAYS_INLINE void setAttribute(const QString& name, const QVariant& value) { m_attributes[name] = value; }
+	VIP_ALWAYS_INLINE const QVariantMap& attributes() const { return m_attributes; }
+	VIP_ALWAYS_INLINE QVariant attribute(const QString& attr) const { return m_attributes[attr]; }
+	VIP_ALWAYS_INLINE bool hasAttribute(const QString& attr) const { return m_attributes.find(attr) != m_attributes.end(); }
 	QStringList mergeAttributes(const QVariantMap& attrs);
 
-	void setName(const QString& name) { setAttribute("Name", name); }
-	void setXUnit(const QString& unit) { setAttribute("XUnit", unit); }
-	void setYUnit(const QString& unit) { setAttribute("YUnit", unit); }
-	void setZUnit(const QString& unit) { setAttribute("ZUnit", unit); }
+	VIP_ALWAYS_INLINE void setName(const QString& name) { setAttribute("Name", name); }
+	VIP_ALWAYS_INLINE void setXUnit(const QString& unit) { setAttribute("XUnit", unit); }
+	VIP_ALWAYS_INLINE void setYUnit(const QString& unit) { setAttribute("YUnit", unit); }
+	VIP_ALWAYS_INLINE void setZUnit(const QString& unit) { setAttribute("ZUnit", unit); }
 
-	QString name() const { return m_attributes["Name"].toString(); }
-	QString xUnit() const { return m_attributes["XUnit"].toString(); }
-	QString yUnit() const { return m_attributes["YUnit"].toString(); }
-	QString zUnit() const { return m_attributes["ZUnit"].toString(); }
+	VIP_ALWAYS_INLINE QString name() const { return m_attributes["Name"].toString(); }
+	VIP_ALWAYS_INLINE QString xUnit() const { return m_attributes["XUnit"].toString(); }
+	VIP_ALWAYS_INLINE QString yUnit() const { return m_attributes["YUnit"].toString(); }
+	VIP_ALWAYS_INLINE QString zUnit() const { return m_attributes["ZUnit"].toString(); }
 
-	void setData(const QVariant& data) { d_data = data; }
-	void setData(QVariant&& data) { 
+	VIP_ALWAYS_INLINE void setData(const QVariant& data) { d_data = data; }
+	VIP_ALWAYS_INLINE void setData(QVariant&& data)
+	{
 #ifdef __GNUC__
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wstringop-overflow="
@@ -130,25 +139,25 @@ public:
 #pragma GCC diagnostic pop
 #endif
 	}
-	const QVariant& data() const { return d_data; }
+	VIP_ALWAYS_INLINE const QVariant& data() const { return d_data; }
 
-	void setTime(qint64 time) { m_time = time; }
-	qint64 time() const { return m_time; }
+	VIP_ALWAYS_INLINE void setTime(qint64 time) { m_time = time; }
+	VIP_ALWAYS_INLINE qint64 time() const { return m_time; }
 
 	/// Set the source, that is the #VipProcessingObject that creates this VipAnyData.
 	/// By default the source is zero. It is usually set to the VipProcessingObject address.
-	void setSource(qint64 source) { m_source = source; }
+	VIP_ALWAYS_INLINE void setSource(qint64 source) { m_source = source; }
 	template<class T>
-	void setSource(const T* source)
+	VIP_ALWAYS_INLINE void setSource(const T* source)
 	{
 		m_source = reinterpret_cast<std::uintptr_t>(source);
 	}
-	qint64 source() const { return m_source; }
+	VIP_ALWAYS_INLINE qint64 source() const { return m_source; }
 
-	bool isEmpty() const { return d_data.userType() == 0; }
-	bool isValid() const { return !isEmpty(); }
+	VIP_ALWAYS_INLINE bool isEmpty() const { return d_data.userType() == 0; }
+	VIP_ALWAYS_INLINE bool isValid() const { return !isEmpty(); }
 	template<class T>
-	T value() const
+	VIP_ALWAYS_INLINE T value() const
 	{
 		return d_data.value<T>();
 	}
@@ -181,35 +190,69 @@ class VIP_CORE_EXPORT VipErrorHandler : public QObject
 	Q_OBJECT
 
 public:
-	VipErrorHandler(QObject* parent = nullptr);
-	~VipErrorHandler();
+	VipErrorHandler(QObject* parent = nullptr)
+	  : QObject(parent)
+	  , d_data(_null_error())
+	{
+	}
+	~VipErrorHandler()
+	{
+		VipErrorData* prev = d_data.exchange(_null_error());
+		if (prev != _null_error())
+			delete prev;
+	}
 	/// @brief Set the current error status.
 	/// The error will be redirected to the parent VipProcessingObject.
-	void setError(const QString& error, int code = -1);
-	void setError(const VipErrorData&);
-	void setError(VipErrorData&& err);
+	void setError(const QString& err, int code = -1) { setError(VipErrorData(err, code)); }
+	void setError(VipErrorData&& err)
+	{
+		VipErrorData* error = new VipErrorData(std::move(err));
+		VipErrorData* prev = d_data.exchange(error);
+		if (prev != _null_error())
+			delete prev;
+		newError(err);
+		emitError(this, err);
+	}
+	void setError(const VipErrorData& err)
+	{
+		VipErrorData* error = new VipErrorData(err);
+		VipErrorData* prev = d_data.exchange(error);
+		if (prev != _null_error())
+			delete prev;
+		newError(err);
+		emitError(this, err);
+	}
 	/// @brief Resets the current error status.
-	void resetError();
+	VIP_ALWAYS_INLINE void resetError()
+	{
+		VipErrorData* prev = d_data.exchange(_null_error());
+		if (prev != _null_error())
+			delete prev;
+	}
 	/// @brief Return the last error.
-	VipErrorData error() const;
+	VIP_ALWAYS_INLINE const VipErrorData& error() const { return *d_data; }
 	/// @brief Returns the last error string
-	QString errorString() const;
+	VIP_ALWAYS_INLINE QString errorString() const { return error().errorString(); }
 	/// @brief Returns the last error code, ot 0 if no error occured.
-	int errorCode() const;
+	VIP_ALWAYS_INLINE int errorCode() const { return error().errorCode(); }
 	/// @brief Returns true if an error occurred during the last operation.
-	bool hasError() const;
+	VIP_ALWAYS_INLINE bool hasError() const { return d_data != _null_error(); }
+
+	
+	
 
 protected:
 	virtual void newError(const VipErrorData&) {}
 
 public Q_SLOTS:
-	virtual void emitError(QObject*, const VipErrorData&);
+	virtual void emitError(QObject* obj, const VipErrorData& err) { Q_EMIT error(obj, err); }
 
 Q_SIGNALS:
 	/// This signal is emitted by the function setError()
 	void error(QObject*, const VipErrorData&);
 
 private:
+	static VipErrorData* _null_error();
 	std::atomic<VipErrorData*> d_data;
 };
 
@@ -387,7 +430,7 @@ class VIP_CORE_EXPORT VipFIFOList : public VipDataList
 #else
 	using QueueType = QVector<VipAnyData>;
 #endif
-	VipCircularVector<VipAnyData> m_list;
+	VipCircularVector<VipAnyData,Vip::StrongOwnership> m_list;
 	VipAnyData m_last;
 	VipSpinlock m_mutex;
 

@@ -484,7 +484,7 @@ static VipShapeStatistics extractStats(const T* input,
 }
 
 template<qsizetype InnerStride, class T>
-static QVector<VipIntervalSample> extractHist(const T* input, qsizetype OuterStride, const QVector<QRect>& rects, qsizetype bins, const QPoint& img_offset)
+static VipIntervalSampleVector extractHist(const T* input, qsizetype OuterStride, const QVector<QRect>& rects, qsizetype bins, const QPoint& img_offset)
 {
 	std::vector<double> values;
 	for (qsizetype i = 0; i < rects.size(); ++i) {
@@ -500,14 +500,14 @@ static QVector<VipIntervalSample> extractHist(const T* input, qsizetype OuterStr
 			}
 	}
 
-	QVector<VipIntervalSample> res;
+	VipIntervalSampleVector res;
 	VipNDArrayTypeView<double> tmp(values.data(), vipVector((qsizetype)values.size()));
 	vipExtractHistogram(tmp, res, bins);
 	return res;
 }
 
 template<qsizetype InnerStride, class T>
-static QVector<VipIntervalSample> extractHist2(const T* input, qsizetype OuterStride, const QVector<QRect>& rects, qsizetype bins, const QPoint& img_offset)
+  static VipIntervalSampleVector extractHist2(const T* input, qsizetype OuterStride, const QVector<QRect>& rects, qsizetype bins, const QPoint& img_offset)
 {
 	double min = std::numeric_limits<double>::max();
 	double max = -std::numeric_limits<double>::max();
@@ -544,7 +544,7 @@ static QVector<VipIntervalSample> extractHist2(const T* input, qsizetype OuterSt
 			}
 	}
 	if (values.size() == 0)
-		return QVector<VipIntervalSample>();
+		return VipIntervalSampleVector();
 
 	// compute the different steps between each values
 
@@ -561,7 +561,7 @@ static QVector<VipIntervalSample> extractHist2(const T* input, qsizetype OuterSt
 		}
 
 		// now fill in the result vector
-		QVector<VipIntervalSample> res;
+		VipIntervalSampleVector res;
 		for (typename QMap<T, Int>::iterator it = values.begin(); it != values.end(); ++it) {
 			qsizetype count = it.value().value;
 			VipIntervalSample sample(count, VipInterval(it.key() - width / 2, it.key() + width / 2));
@@ -573,7 +573,7 @@ static QVector<VipIntervalSample> extractHist2(const T* input, qsizetype OuterSt
 		// initialize histogram
 		double width = (max - min) / bins;
 		double start = min;
-		QVector<VipIntervalSample> res(bins);
+		VipIntervalSampleVector res(bins);
 		for (qsizetype i = 0; i < res.size(); ++i, start += width)
 			res[i] = VipIntervalSample(0, VipInterval(start, start + width, VipInterval::ExcludeMaximum));
 
@@ -589,10 +589,9 @@ static QVector<VipIntervalSample> extractHist2(const T* input, qsizetype OuterSt
 }
 
 template<qsizetype InnerStride, class T>
-static QVector<QPointF> extractPolyline(const T* input, qsizetype OuterStride, const QVector<QPoint>& pixels, const QPoint& img_offset)
+static VipPointVector extractPolyline(const T* input, qsizetype OuterStride, const QVector<QPoint>& pixels, const QPoint& img_offset)
 {
-	QVector<QPointF> res(pixels.size());
-
+	VipPointVector res(pixels.size());
 	for (qsizetype i = 0; i < pixels.size(); ++i) {
 		const QPoint pt = pixels[i] - img_offset;
 		const T value = input[pt.y() * OuterStride + pt.x() * InnerStride];
@@ -1350,10 +1349,10 @@ VipShapeStatistics VipShape::statistics(const VipNDArray& img, const QPoint& img
 	return statistics(rects, img, img_offset, bounding, buffer, stats, bbox_quantiles);
 }
 
-QVector<VipIntervalSample> VipShape::histogram(qsizetype bins, const QVector<QRect>& rects, const VipNDArray& img, const QPoint& img_offset, const QRect& bounding_rect, VipNDArray* tmp)
+VipIntervalSampleVector VipShape::histogram(qsizetype bins, const QVector<QRect>& rects, const VipNDArray& img, const QPoint& img_offset, const QRect& bounding_rect, VipNDArray* tmp)
 {
 	if (!img.canConvert<double>())
-		return QVector<VipIntervalSample>();
+		return VipIntervalSampleVector();
 
 	QRect bounding = bounding_rect;
 	if (bounding.isEmpty()) {
@@ -1361,7 +1360,7 @@ QVector<VipIntervalSample> VipShape::histogram(qsizetype bins, const QVector<QRe
 			bounding |= rects[i];
 	}
 	if (bounding.isEmpty())
-		return QVector<VipIntervalSample>();
+		return VipIntervalSampleVector();
 
 	QRect image_rect(img_offset, QSize(img.shape(1), img.shape(0)));
 	bounding = bounding.united(image_rect);
@@ -1374,15 +1373,15 @@ QVector<VipIntervalSample> VipShape::histogram(qsizetype bins, const QVector<QRe
 		*tmp = VipNDArray(QMetaType::Double, vipVector(bounding.height(), bounding.width()));
 
 	if (img.mid(vipVector(bounding.top() - img_offset.y(), bounding.left() - img_offset.x()), vipVector(bounding.height(), bounding.width())).convert(*tmp)) {
-		// QVector<VipIntervalSample> res;
+		// VipIntervalSampleVector res;
 		// vipExtractHistogram(*tmp, res, bins);
 		return extractHist<1>((const double*)tmp->data(), tmp->shape(1), rects, bins, bounding.topLeft());
 	}
 
-	return QVector<VipIntervalSample>();
+	return VipIntervalSampleVector();
 }
 
-QVector<VipIntervalSample> VipShape::histogram(qsizetype bins, const VipNDArray& img, const QPoint& img_offset, VipNDArray* buffer) const
+VipIntervalSampleVector VipShape::histogram(qsizetype bins, const VipNDArray& img, const QPoint& img_offset, VipNDArray* buffer) const
 {
 	QRect bounding;
 	const QVector<QRect> tmp = fillRects();
@@ -1390,16 +1389,16 @@ QVector<VipIntervalSample> VipShape::histogram(qsizetype bins, const VipNDArray&
 	return histogram(bins, rects, img, img_offset, bounding, buffer);
 }
 
-QVector<QPointF> VipShape::polyline(const QVector<QPoint>& points, const VipNDArray& img, const QPoint& img_offset, const QRect& bounding_rect, VipNDArray* tmp)
+VipPointVector VipShape::polyline(const QVector<QPoint>& points, const VipNDArray& img, const QPoint& img_offset, const QRect& bounding_rect, VipNDArray* tmp)
 {
 	if (!img.canConvert<double>())
-		return QVector<QPointF>();
+		return VipPointVector();
 
 	QRect bounding = bounding_rect;
 	if (bounding.isEmpty())
 		bounding = QPolygon(points).boundingRect();
 	if (bounding.isEmpty())
-		return QVector<QPointF>();
+		return VipPointVector();
 
 	QRect image_rect(img_offset, QSize(img.shape(1), img.shape(0)));
 	bounding = bounding.united(image_rect);
@@ -1420,13 +1419,13 @@ QVector<QPointF> VipShape::polyline(const QVector<QPoint>& points, const VipNDAr
 	//  img.mid(vipVector(bounding.top() - img_offset.y(), bounding.left() - img_offset.x()), vipVector(bounding.height(), bounding.width())).convert(*tmp);
 	//  }
 
-	return QVector<QPointF>();
+	return VipPointVector();
 }
 
-QVector<QPointF> VipShape::polyline(const VipNDArray& img, const QPoint& img_offset, VipNDArray* buffer) const
+VipPointVector VipShape::polyline(const VipNDArray& img, const QPoint& img_offset, VipNDArray* buffer) const
 {
 	if (type() != Polyline)
-		return QVector<QPointF>();
+		return VipPointVector();
 
 	QRect bounding;
 	const QVector<QPoint> tmp = fillPixels();

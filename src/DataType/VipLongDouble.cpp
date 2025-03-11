@@ -30,10 +30,10 @@
  */
 
 #include "VipLongDouble.h"
-#include <QLocale>
+
 #include <complex>
 
-static std::locale toStdLocale(const QLocale& l)
+std::locale vipToStdLocale(const QLocale& l)
 {
 	QByteArray name = l.name().toLatin1();
 	try {
@@ -95,7 +95,7 @@ QString vipLongDoubleToStringLocale(const vip_long_double v, const QLocale& l)
 	std::ostringstream ss;
 	if (l.language() != //_locale.language()
 	    QLocale::C)
-		ss.imbue(toStdLocale(l));
+		ss.imbue(vipToStdLocale(l));
 	ss << std::setprecision(std::numeric_limits<vip_long_double>::digits10 + 1) << v;
 	return QString(ss.str().c_str());
 }
@@ -104,7 +104,7 @@ QByteArray vipLongDoubleToByteArrayLocale(const vip_long_double v, const QLocale
 	std::ostringstream ss;
 	if (l.language() != //_locale.language()
 	    QLocale::C)
-		ss.imbue(toStdLocale(l));
+		ss.imbue(vipToStdLocale(l));
 	ss << std::setprecision(std::numeric_limits<vip_long_double>::digits10 + 1) << v;
 	return QByteArray(ss.str().c_str());
 }
@@ -147,7 +147,7 @@ vip_long_double vipLongDoubleFromStringLocale(const QString& str, const QLocale&
 	std::istringstream ss(str.toLatin1().data());
 	if (l.language() != //_locale.language()
 	    QLocale::C)
-		ss.imbue(toStdLocale(l)); // std::locale(l.name().toLatin1().data()));
+		ss.imbue(vipToStdLocale(l)); // std::locale(l.name().toLatin1().data()));
 	vip_long_double res;
 	ss >> res;
 	if (ok)
@@ -158,7 +158,7 @@ vip_long_double vipLongDoubleFromByteArrayLocale(const QByteArray& str, const QL
 {
 	std::istringstream ss(str.data());
 	if (l.language() != QLocale::C) //_locale.language())
-		ss.imbue(toStdLocale(l));
+		ss.imbue(vipToStdLocale(l));
 	vip_long_double res;
 	ss >> res;
 	if (ok)
@@ -169,7 +169,7 @@ QTextStream& operator<<(QTextStream& s, vip_long_double v)
 {
 	std::ostringstream ss;
 	if (s.locale().language() != QLocale::C)
-		ss.imbue(toStdLocale(s.locale()));
+		ss.imbue(vipToStdLocale(s.locale()));
 	ss << std::setprecision(std::numeric_limits<vip_long_double>::digits10 + 1) << v;
 	return s << ss.str().c_str();
 }
@@ -179,53 +179,6 @@ QTextStream& operator>>(QTextStream& s, vip_long_double& v)
 	s >> word;
 	v = vipLongDoubleFromStringLocale(word, s.locale());
 	return s;
-}
-
-void vipWriteNLongDouble(QTextStream& s, const vip_long_double* values, int count, int step, const char* sep)
-{
-	std::ostringstream ss;
-	if (s.locale().language() != QLocale::C)
-		ss.imbue(toStdLocale(s.locale()));
-	ss << std::setprecision(std::numeric_limits<vip_long_double>::digits10 + 1);
-	for (int i = 0; i < count; i += step) {
-		ss << values[i] << sep;
-	}
-	s << ss.str().c_str();
-}
-int vipReadNLongDouble(QTextStream& s, vip_long_double* values, int max_count)
-{
-	// qint64 pos = s.pos();
-	std::string str = s.readAll().toLatin1().data();
-	std::istringstream ss(str);
-	if (s.locale().language() != //_locale.language()
-	    QLocale::C)
-		ss.imbue(toStdLocale(s.locale()));
-	int i = 0;
-	for (; i < max_count; ++i)
-		if (!(ss >> values[i]))
-			break;
-
-	s.seek(ss.tellg());
-	return i;
-}
-int vipReadNLongDouble(QTextStream& s, QVector<vip_long_double>& values, int max_count)
-{
-	// qint64 pos = s.pos();
-	std::string str = s.readAll().toLatin1().data();
-	std::istringstream ss(str);
-	if (s.locale().language() != //_locale.language()
-	    QLocale::C)
-		ss.imbue(toStdLocale(s.locale()));
-	int i = 0;
-	for (; i < max_count; ++i) {
-		vip_long_double v;
-		if (!(ss >> v))
-			break;
-		values.append(v);
-	}
-
-	s.seek(ss.tellg());
-	return i;
 }
 
 template<class T>

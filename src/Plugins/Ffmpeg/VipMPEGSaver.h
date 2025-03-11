@@ -7,20 +7,12 @@
 /// @brief Additional parameters for VipMPEGSaver
 struct FFMPEG_EXPORT VipMPEGIODeviceHandler
 {
-	int width;
-	int height;
-	double fps;
-	double rate; // bits/s
-	int codec_id;
-
-	VipMPEGIODeviceHandler(int w = 0, int h = 0, double f = 25, double r = 20000000, int c = -1) // 20000Kb/s
-	  : width(w)
-	  , height(h)
-	  , fps(f)
-	  , rate(r)
-	  , codec_id(c)
-	{
-	}
+	int width{ 0 };
+	int height{ 0 };
+	int fps{ 25 };
+	double rate{ 20000000. }; // bits/s
+	int codec_id{ -1 };
+	int threads{ 1 };
 };
 
 class VideoEncoder;
@@ -47,9 +39,6 @@ public:
 	// set the info directly as a VipMPEGIODeviceHandler object
 	void setAdditionalInfo(const VipMPEGIODeviceHandler& info);
 	VipMPEGIODeviceHandler additionalInfo() const;
-
-	void setThreads(int);
-	int threads() const;
 
 	VideoEncoder* encoder() { return m_encoder; }
 

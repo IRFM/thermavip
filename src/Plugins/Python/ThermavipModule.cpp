@@ -1168,11 +1168,11 @@ static ResultType addROI(int player, const QVariant & v, const QString & yaxis)
 		model->sceneModel().add("Points", sh);
 	}
 	else if (points.last() == points.first()) {
-		sh.setPolygon(points.toPointF());
+		sh.setPolygon(vipToPointF( points));
 		model->sceneModel().add("ROI", sh);
 	}
 	else {
-		sh.setPolyline(points.toPointF());
+		sh.setPolyline(vipToPointF(points));
 		model->sceneModel().add("Polylines", sh);
 	}
 

@@ -6,35 +6,31 @@
 
 VipMPEGOptionPanel::VipMPEGOptionPanel(QWidget* parent)
   : QGroupBox("Encoding options", parent)
-  , videoCodec("Video codec", this)
-  , rate("Rate(Kb/s)", this)
-  , fps("Frames per second", this)
-  , videoCodecText(this)
   , rateText(this)
   , fpsText(this)
   , saver(nullptr)
 {
-	videoCodec.hide();
-	videoCodecText.hide();
 	QGridLayout* grid = new QGridLayout();
 
 	rateText.setRange(0, 30000);
 	rateText.setValue(20000);
 	fpsText.setRange(0, 100);
 	fpsText.setValue(25);
+	threads.setRange(1, 12);
+	threads.setValue(2);
 
-	grid->addWidget(&videoCodec, 0, 0);
-	grid->addWidget(&videoCodecText, 0, 1);
+	grid->addWidget(new QLabel("Rate(Kb/s)"), 0, 0);
+	grid->addWidget(&rateText, 0, 1);
 
-	grid->addWidget(&rate, 3, 0);
-	grid->addWidget(&rateText, 3, 1);
+	grid->addWidget(new QLabel("Frames per second"), 1, 0);
+	grid->addWidget(&fpsText, 1, 1);
 
-	grid->addWidget(&fps, 4, 0);
-	grid->addWidget(&fpsText, 4, 1);
+	grid->addWidget(new QLabel("Encoding threads"), 2, 0);
+	grid->addWidget(&threads, 2, 1);
 
 	connect(&rateText, SIGNAL(valueChanged(int)), this, SLOT(updateSaver()));
 	connect(&fpsText, SIGNAL(valueChanged(int)), this, SLOT(updateSaver()));
-
+	connect(&threads, SIGNAL(valueChanged(int)), this, SLOT(updateSaver()));
 	setLayout(grid);
 }
 
@@ -49,13 +45,15 @@ void VipMPEGOptionPanel::setSaver(VipMPEGSaver* s)
 	rateText.setValue(s->additionalInfo().rate / 1000.0);
 	fpsText.setValue(s->additionalInfo().fps);
 
+	threads.setValue(s->additionalInfo().threads);
+
 	rateText.blockSignals(false);
 	fpsText.blockSignals(false);
 }
 
 void VipMPEGOptionPanel::updateSaver()
 {
-	VipMPEGIODeviceHandler info(320, 240, fpsText.value(), rateText.value() * 1000);
+	VipMPEGIODeviceHandler info{ 320, 240, fpsText.value(), rateText.value() * 1000., -1, threads.value() };
 	saver->setAdditionalInfo(info);
 }
 

@@ -60,25 +60,6 @@ inline QDataStream& operator>>(QDataStream& str, PriorityMap& map)
 	return str >> reinterpret_cast<QMap<QString, int>&>(map);
 }
 
-VipAnyData::VipAnyData()
-  : m_source(0)
-  , m_time(VipInvalidTime)
-{
-}
-
-VipAnyData::VipAnyData(const QVariant& data, qint64 time)
-  : m_source(0)
-  , m_time(time)
-  , d_data(data)
-{
-}
-
-VipAnyData::VipAnyData(QVariant&& data, qint64 time)
-  : m_source(0)
-  , m_time(time)
-  , d_data(std::move(data))
-{
-}
 
 QStringList VipAnyData::mergeAttributes(const QVariantMap& attrs)
 {
@@ -154,79 +135,12 @@ static int registerStreamOperators()
 }
 static int _regiterStreamOperators = vipAddInitializationFunction(registerStreamOperators);
 
-static VipErrorData* _null_error()
+VipErrorData* VipErrorHandler::_null_error()
 {
 	static VipErrorData inst;
 	return &inst;
 }
 
-VipErrorHandler::VipErrorHandler(QObject* parent)
-  : QObject(parent)
-  , d_data(_null_error())
-{
-}
-
-VipErrorHandler ::~VipErrorHandler()
-{
-	VipErrorData* prev = d_data.exchange(_null_error());
-	if (prev != _null_error())
-		delete prev;
-}
-
-void VipErrorHandler::setError(const QString& err, int code)
-{
-	setError(VipErrorData(err, code));
-}
-void VipErrorHandler::setError(VipErrorData&& err)
-{
-	VipErrorData* error = new VipErrorData(std::move(err));
-	VipErrorData* prev = d_data.exchange(error);
-	if (prev != _null_error())
-		delete prev;
-	newError(err);
-	emitError(this, err);
-}
-void VipErrorHandler::setError(const VipErrorData& err)
-{
-	VipErrorData* error = new VipErrorData(err);
-	VipErrorData* prev = d_data.exchange(error);
-	if (prev != _null_error())
-		delete prev;
-	newError(err);
-	emitError(this, err);
-}
-
-void VipErrorHandler::resetError()
-{
-	VipErrorData* prev = d_data.exchange(_null_error());
-	if (prev != _null_error())
-		delete prev;
-}
-
-VipErrorData VipErrorHandler::error() const
-{
-	return *d_data;
-}
-
-QString VipErrorHandler::errorString() const
-{
-	return error().errorString();
-}
-
-int VipErrorHandler::errorCode() const
-{
-	return error().errorCode();
-}
-
-bool VipErrorHandler::hasError() const
-{
-	return d_data != _null_error();
-}
-
-void VipErrorHandler::emitError(QObject* obj, const VipErrorData& err)
-{
-	Q_EMIT error(obj, err);
-}
 
 class VipConnection::PrivateData
 {
@@ -1404,22 +1318,21 @@ int VipFIFOList::push(const VipAnyData& data, int* previous)
 		*previous = (int)m_list.size();
 	m_list.push_back(data);
 
-	if (listLimitType() & Number) {
-		while (static_cast<int>(m_list.size()) > this->maxListSize())
-			m_list.pop_front();
-	}
-	if (listLimitType() & MemorySize) {
-
-		int i = 0;
-		int size = 0;
-		for (i = (int)m_list.size() - 1; i >= 0; --i) {
-			size += m_list[i].memoryFootprint();
-			if (size >= maxListMemory())
-				break;
+	if (const int limits = listLimitType()) {
+		if (limits & Number) {
+			while (static_cast<int>(m_list.size()) > this->maxListSize())
+				m_list.pop_front();
 		}
-		if (i >= 0) {
-			m_list.erase(m_list.begin(), m_list.begin() + i);
-			// m_list = m_list.mid(i);
+		if (limits & MemorySize) {
+			int i = 0;
+			int size = 0;
+			for (i = (int)m_list.size() - 1; i >= 0; --i) {
+				size += m_list[i].memoryFootprint();
+				if (size >= maxListMemory())
+					break;
+			}
+			if (i >= 0)
+				m_list.erase(m_list.begin(), m_list.begin() + i);
 		}
 	}
 	return (int)m_list.size();
@@ -1433,22 +1346,23 @@ int VipFIFOList::push(VipAnyData&& data, int* previous)
 		*previous = (int)m_list.size();
 	m_list.push_back(std::move(data));
 
-	if (listLimitType() & Number) {
-		while (static_cast<int>(m_list.size()) > this->maxListSize())
-			m_list.pop_front();
-	}
-	if (listLimitType() & MemorySize) {
-
-		int i = 0;
-		int size = 0;
-		for (i = (int)m_list.size() - 1; i >= 0; --i) {
-			size += m_list[i].memoryFootprint();
-			if (size >= maxListMemory())
-				break;
+	if (const int limits = listLimitType()) {
+		if (limits & Number) {
+			while (static_cast<int>(m_list.size()) > this->maxListSize())
+				m_list.pop_front();
 		}
-		if (i >= 0) {
-			m_list.erase(m_list.begin(), m_list.begin() + i);
-			// m_list = m_list.mid(i);
+		if (limits & MemorySize) {
+
+			int i = 0;
+			int size = 0;
+			for (i = (int)m_list.size() - 1; i >= 0; --i) {
+				size += m_list[i].memoryFootprint();
+				if (size >= maxListMemory())
+					break;
+			}
+			if (i >= 0) {
+				m_list.erase(m_list.begin(), m_list.begin() + i);
+			}
 		}
 	}
 	return (int)m_list.size();
@@ -1960,10 +1874,9 @@ class TaskPool : public QThread
 	LockType lock;
 
 	std::atomic<int> m_run;
+	std::atomic<bool> m_clear{ false };
 	VipProcessingObject* m_parent;
 	bool m_stop;
-	bool m_running;
-	bool m_cleared{ false };
 	void atomWait(UniqueLock& ll, int milli);
 
 protected:
@@ -1986,8 +1899,8 @@ public:
 	/// @brief Schedule a VipProcessingObject launch
 	VIP_ALWAYS_INLINE void push()
 	{
-		++m_run;
-		lock.notify_all();
+		if(m_run.fetch_add(1) == 0)
+			lock.notify_all();
 	}
 
 	/// @brief Wait until the task list is empty or until timeout
@@ -1998,7 +1911,7 @@ public:
 
 	/// @brief remove all pending tasks
 	void clear();
-	void clearNoLock();
+	void clearNoLock() { clear(); }
 };
 
 void TaskPool::run()
@@ -2020,14 +1933,12 @@ void TaskPool::run()
 			lock.notify_all();
 		}
 
-		int count = m_run;
+		int count = m_run.load(std::memory_order_relaxed);
 		int saved = count;
+		if (!m_stop)
 		{
 			SPIN_LOCK(m_parent->runLock());
-			while (!m_stop && count-- && !m_cleared) {
-
-				m_running = true;
-
+			while (!m_stop && count-- && !m_clear.load(std::memory_order_relaxed)) {
 				try {
 					// Avoid exiting task pool thread on unhandled exception
 					m_parent->runNoLock();
@@ -2044,13 +1955,14 @@ void TaskPool::run()
 					else
 						qWarning() << "Unhandled unknown exception\n";
 				}
-
-				m_running = false;
 			}
 		}
-		if (!m_cleared)
+		if (VIP_UNLIKELY(m_clear.load(std::memory_order_relaxed))) {
+			m_run.store(0);
+			m_clear.store(false);
+		}
+		else
 			m_run.fetch_sub(saved);
-		m_cleared = false;
 
 		lock.notify_all();
 	}
@@ -2063,7 +1975,6 @@ TaskPool::TaskPool(VipProcessingObject* parent, QThread::Priority p)
   , m_run(0)
   , m_parent(parent)
   , m_stop(false)
-  , m_running(false)
 {
 	auto ll = lock.lock();
 	this->start(p);
@@ -2118,20 +2029,15 @@ bool TaskPool::waitForDone(int milli_time)
 
 int TaskPool::remaining() const
 {
-	return m_run.load() + m_running;
+	return m_run.load(std::memory_order_relaxed) ;
 }
 
 void TaskPool::clear()
 {
-	auto ll = lock.lock();
-	m_run.store(0);
-	m_cleared = true;
+	if (m_run.load(std::memory_order_relaxed))
+		m_clear.store(true);
 }
-void TaskPool::clearNoLock()
-{
-	m_run.store(0);
-	m_cleared = true;
-}
+
 
 class VipProcessingObject::PrivateData
 {
@@ -3308,7 +3214,7 @@ bool VipProcessingObject::update(bool force_run)
 	}
 
 	// If SkipIfBusy is set, returns if a processing is scheduled
-	if ((d_data->parameters.schedule_strategies & SkipIfBusy)) //&& d_data->pool && d_data->pool->remaining() > 0)
+	if ((d_data->parameters.schedule_strategies & SkipIfBusy)) 
 		if (TaskPool* p = d_data->getPool())
 			if (p->remaining() > 0)
 				return false;
@@ -3513,15 +3419,7 @@ void VipProcessingObject::excludeFromProcessingRateComputation()
 
 VipAnyDataList VipProcessingObject::allInputs()
 {
-	initialize();
-	if (d_data->flatInputs.size() == 0)
-		return VipAnyDataList();
-	if (auto* p = d_data->getPool())
-		p->clearNoLock();
-	VipAnyDataList res = d_data->flatInputs[0]->allData();
-	for (size_t i = 1; i < d_data->flatInputs.size(); ++i)
-		res.append(d_data->flatInputs[i]->allData());
-	return res;
+	return VipAnyDataList();
 }
 
 void VipProcessingObject::run() 
@@ -3555,7 +3453,8 @@ void VipProcessingObject::runNoLock()
 	resetError();
 
 	qint64 time = 0;
-	if (computeTimeStatistics()) {
+	const bool time_stats = computeTimeStatistics();
+	if (time_stats) {
 
 		time = QDateTime::currentMSecsSinceEpoch();
 		d_data->lastProcessingDate = time;
@@ -3573,7 +3472,7 @@ void VipProcessingObject::runNoLock()
 		}
 	}
 	this->apply();
-	if (computeTimeStatistics())
+	if (time_stats)
 		d_data->processingTime = (QDateTime::currentMSecsSinceEpoch() - time) * 1000000;
 	else
 		d_data->processingTime = 0;

@@ -1,3 +1,7 @@
+//TOREMOVE
+#define VIP_GENERATE_TEST_FUNCTIONS
+#include "VipCircularVector.h"
+
 #include <cmath>
 #include <iostream>
 
@@ -48,20 +52,16 @@ public:
 		
 			double x = (QDateTime::currentMSecsSinceEpoch() - start) * 1e-3; 
 			double y = std::cos(x*2);
+			 
+			for (int i = 0; i < curves.size(); ++i) {
 
-			for (int i = 0; i < curves.size(); ++i)
 				curves[i]->updateSamples([x, y](VipPointVector& vec) {
 					vec.push_back(VipPoint(x, y));
 					if (vec.size() > 500)
 						vec.erase(vec.begin());
-					});
+				});
+			}
 
-			/* vec.push_back(VipPoint(x, y));
-			if (vec.size() > 500)
-				vec.erase(vec.begin());
-			for (int i = 0; i < curves.size(); ++i)
-				curves[i]->setRawData(vec);
-			*/
 			qint64 current = QDateTime::currentMSecsSinceEpoch(); 
 			if (current - start_print > 1000) {
 				printf("Rate: %i\n", curves.first()->fps());
@@ -172,14 +172,27 @@ void setup_plot_area(VipPlotArea2D* area, int setup_x_scale)
 #include <qsurfaceformat.h>
 #include <QDir>
 
-//TOREMOVE
-#define VIP_GENERATE_TEST_FUNCTIONS
-#include "VipCircularVector.h"
+
 
 int main(int argc, char** argv)
 {
 	//TOREMOVE
-	detail::testVipCircularVector<size_t,10000000>();
+	detail::testVipCircularVector<std::string, 1000000>();
+	const VipCircularVector<int> vv(1);
+	auto s = vv.spans().first;
+	s.size();
+	s.front();
+	s.back();
+	s.empty();
+	s.at(0);
+	s[0];
+	s.begin();
+	s.end();
+	s.data();
+	s.first(1)[0] ;
+	s.first<1>()[0] ;
+	s.last(1)[0] ;
+	s.last<1>()[0] ;
 	return 0;
 
 	// To debug from the thermavip folder

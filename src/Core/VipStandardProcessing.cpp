@@ -603,10 +603,10 @@ bool VipStartAtZero::acceptInput(int, const QVariant& v) const
 	return v.userType() == qMetaTypeId<VipPointVector>() || v.userType() == qMetaTypeId<VipComplexPointVector>();
 }
 
-template<class T>
-QVector<T> startAtZero(const QVector<T>& t)
+template<class Container>
+Container startAtZero(const Container& t)
 {
-	QVector<T> v = t;
+	Container v = t;
 	if (v.size()) {
 		// if (!v.hasNanosecondPrecision())
 		{
@@ -2621,8 +2621,8 @@ VipTimeDifference::VipTimeDifference(QObject* parent)
 	propertyAt(0)->setData(QString("ns"));
 }
 
-template<class T>
-VipPointVector TimeDifference(const QVector<T>& v, double factor)
+template<class Container>
+VipPointVector TimeDifference(const Container& v, double factor)
 {
 	VipPointVector res(v.size());
 	for (int i = 1; i < v.size(); ++i)

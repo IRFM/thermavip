@@ -423,7 +423,7 @@ VipGuiDisplayParamaters::VipGuiDisplayParamaters(VipMainWindow* win)
 	d_data->defaultCurve = new VipPlotCurve();
 	d_data->defaultCurve->setPen(QPen(Qt::blue, 1.5));
 	d_data->defaultCurve->setBrush(QBrush(QColor(0, 0, 255, 200), Qt::NoBrush));
-	d_data->defaultCurve->setRawData(VipPointVector() << QPointF(3, 3) << QPointF(6, 6) << QPointF(9, 4) << QPointF(12, 7));
+	d_data->defaultCurve->setRawData(VipPointVector() << VipPoint(3, 3) << VipPoint(6, 6) << VipPoint(9, 4) << VipPoint(12, 7));
 	VipSymbol* s = new VipSymbol();
 	s->setSize(QSizeF(9, 9));
 	s->setStyle(VipSymbol::Ellipse);

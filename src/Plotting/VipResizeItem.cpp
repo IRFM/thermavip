@@ -272,7 +272,7 @@ public:
 		double angle = l1.angle() - l2.angle();
 
 		// bounding rect in axis coordinate
-		QRectF bounding = parentItem()->sceneMap()->invTransform(parentItem()->boundingRect()).boundingRect();
+		QRectF bounding = vipBoundingRect( parentItem()->sceneMap()->invTransform(parentItem()->boundingRect()));
 		// rotation center in axis coordinates
 		QPointF center = bounding.center();
 
@@ -297,7 +297,7 @@ public:
 			VipResizeItem* item = shapes[i];
 			if (item->isSelected() && item != _this && item != top && children.indexOf(item) < 0 && !hasSelectedResizeItem(item)) {
 				// compute new transform
-				QRectF b = shapes[i]->sceneMap()->invTransform(shapes[i]->boundingRect()).boundingRect();
+				QRectF b = vipBoundingRect(shapes[i]->sceneMap()->invTransform(shapes[i]->boundingRect()));
 				QPointF c = b.center();
 				QTransform t;
 				t.translate(c.x(), c.y());

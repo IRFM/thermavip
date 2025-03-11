@@ -1,5 +1,4 @@
 #include "VipFfmpegPlugin.h"
-#include "p_VideoDecoder.h"
 
 #include "VipMPEGLoader.h"
 #include "VipRecordWindow.h"
@@ -195,7 +194,7 @@ FfmpegInterface::LoadResult FfmpegInterface::load()
 	}*/
 
 	// retrieve the list of available video devices
-	QStringList lst = VideoDecoder::list_devices();
+	QStringList lst = VipMPEGLoader::listDevices();
 
 	if (true) // lst.size())
 	{

@@ -3,7 +3,6 @@
 #include "VipToolWidget.h"
 #include "VipCorrectedTip.h"
 #include "VipLogging.h"
-#include "p_VideoEncoder.h"
 
 #include <QGridLayout>
 #include <QScreen>
@@ -312,9 +311,15 @@ void VipRecordWindow::openFile()
 	try {
 		m_rect = computeRect();
 		m_screen = vipGetMainWindow()->screen();
-		m_encoder = new VideoEncoder();
+		m_encoder = new VipMPEGSaver();
 		QSize s = videoSize();
-		m_encoder->Open(filename().toLatin1().data(), s.width(), s.height(), movieFps(), rate() * 1000);
+		m_encoder->setAdditionalInfo(VipMPEGIODeviceHandler{ s.width(), s.height(), movieFps(), rate() * 1000, -1, 2 });
+		m_encoder->setPath(filename());
+		if (!m_encoder->open(VipIODevice::WriteOnly)) {
+			delete m_encoder;
+			m_encoder = nullptr;
+		}
+		//m_encoder->Open(filename().toLatin1().data(), s.width(), s.height(), movieFps(), rate() * 1000);
 	}
 	catch (const std::exception& e) {
 		VIP_LOG_ERROR("Could not create video encoder: " + QString(e.what()));
@@ -329,7 +334,8 @@ void VipRecordWindow::closeFile()
 	try {
 		m_rect = QRect();
 		if (m_encoder) {
-			m_encoder->Close();
+			//m_encoder->Close();
+			m_encoder->close();
 			delete m_encoder;
 			m_encoder = nullptr;
 		}
@@ -346,8 +352,10 @@ void VipRecordWindow::recordCurrentImage()
 {
 	try {
 		if (m_encoder) {
-			const QImage img = grabCurrentImage();
-			m_encoder->AddFrame(img);
+			//const QImage img = grabCurrentImage();
+			//m_encoder->AddFrame(img);
+			m_encoder->inputAt(0)->setData(vipToArray(grabCurrentImage()));
+			m_encoder->update();
 		}
 	}
 	catch (const std::exception& e) {

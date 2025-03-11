@@ -319,7 +319,7 @@ public:
 	///  \param buffer a buffer image that will speed up the computing. This only necessary if you intent to compute the statistics with the same shape for several images.
 	///  \return a list of #VipIntervalSample (one per image component). If input image is a color image, output will contain the histogram for components Alpha, Red, Green, Blue.
 	///  If input image is complex, output will contain the histogram for components Real and Imag. Otherwise, only one component histogam is returned.
-	static QVector<VipIntervalSample> histogram(qsizetype bins,
+	static VipIntervalSampleVector histogram(qsizetype bins,
 						    const QVector<QRect>& rects,
 						    const VipNDArray& img,
 						    const QPoint& img_offset = QPoint(0, 0),
@@ -332,7 +332,7 @@ public:
 	///  \param buffer a buffer image that will speed up the computing. This only necessary if you intent to compute the statistics with the same shape for several images.
 	///  \return a list of #VipIntervalSample (one per image component). If input image is a color image, output will contain the histogram for components Alpha, Red, Green, Blue.
 	///  If input image is complex, output will contain the histogram for components Real and Imag. Otherwise, only one component histogam is returned.
-	QVector<VipIntervalSample> histogram(qsizetype bins, const VipNDArray& img, const QPoint& img_offset = QPoint(0, 0), VipNDArray* buffer = nullptr) const;
+	VipIntervalSampleVector histogram(qsizetype bins, const VipNDArray& img, const QPoint& img_offset = QPoint(0, 0), VipNDArray* buffer = nullptr) const;
 
 	/// Extract the pixel values inside an image for a list of pixels.
 	///  \param points The input pixels to consider
@@ -342,7 +342,7 @@ public:
 	///  \param buffer a buffer image that will speed up the computing. This only necessary if you intent to compute the statistics with the same shape for several images.
 	///  \return a list of point vector (one per image component), where each point contains (pixel index, pixel value). If input image is a color image, output will contain the pixel values for
 	///  components Alpha, Red, Green, Blue. If input image is complex, output will contain the pixel values for components Real and Imag. Otherwise, only one component pixel values is returned.
-	static QVector<QPointF> polyline(const QVector<QPoint>& points,
+	static VipPointVector polyline(const QVector<QPoint>& points,
 					 const VipNDArray& img,
 					 const QPoint& img_offset = QPoint(0, 0),
 					 const QRect& bounding_rect = QRect(),
@@ -353,7 +353,7 @@ public:
 	///  \param buffer a buffer image that will speed up the computing. This only necessary if you intent to compute the statistics with the same shape for several images.
 	///  \return a list of point vector (one per image component), where each point contains (pixel index, pixel value). If input image is a color image, output will contain the pixel values for
 	///  components Alpha, Red, Green, Blue. If input image is complex, output will contain the pixel values for components Real and Imag. Otherwise, only one component pixel values is returned.
-	QVector<QPointF> polyline(const VipNDArray& img, const QPoint& img_offset = QPoint(0, 0), VipNDArray* buffer = nullptr) const;
+	VipPointVector polyline(const VipNDArray& img, const QPoint& img_offset = QPoint(0, 0), VipNDArray* buffer = nullptr) const;
 
 	/// Write a value for all given pixels in an output image
 	///  \param value pixel value to write

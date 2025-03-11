@@ -3459,7 +3459,7 @@ void VipWarpingEditor::SaveTransform()
 		if (!filename.isEmpty()) {
 			QFile out(filename);
 			if (out.open(QFile::WriteOnly)) {
-				const VipPointVector warp = d_data->warping->warping();
+				const auto warp = vipToPointF( d_data->warping->warping());
 				out.write((const char*)warp.data(), warp.size() * sizeof(QPointF));
 				out.close();
 			}
@@ -3480,9 +3480,9 @@ void VipWarpingEditor::LoadTransform()
 		QFile in(filename);
 		if (in.open(QFile::ReadOnly)) {
 			int size = (int)in.size() / sizeof(QPointF);
-			VipPointVector warp(size);
+			QVector<QPointF> warp(size);
 			in.read((char*)warp.data(), in.size());
-			d_data->warping->setWarping(warp);
+			d_data->warping->setWarping(vipToPointVector( warp));
 			d_data->warping->reload();
 		}
 		else {

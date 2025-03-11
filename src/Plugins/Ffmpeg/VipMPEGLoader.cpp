@@ -1,8 +1,699 @@
 #include "VipMPEGLoader.h"
-#include "p_VideoDecoder.h"
 
+
+#ifdef _MSC_VER
+#pragma warning(disable : 4996)
+#endif
+
+#ifndef INT64_C
+#define INT64_C(c) (c##LL)
+#define UINT64_C(c) (c##ULL)
+#endif
+
+extern "C" {
+#include "libavfilter/avfilter.h"
+#include "libavdevice/avdevice.h"
+#include "libavcodec/avcodec.h"
+#include <libavformat/avformat.h>
+#include <libswscale/swscale.h>
+}
+
+#include <sstream>
+#include <stdexcept>
+#include <cmath>
+#include <fstream>
+
+#include <QImage>
+#include <QColor>
+#include <QString>
+#include <qmap.h>
 #include <QFileInfo>
 #include <QDateTime>
+#include <qfile.h>
+
+
+
+
+
+/// @brief Helper class for video decoding
+class VideoDecoder
+{
+public:
+	static QStringList list_devices();
+
+	VideoDecoder();
+	VideoDecoder(const std::string& name);
+	~VideoDecoder();
+	void Open(const std::string& name, AVInputFormat* format = nullptr, AVDictionary** options = nullptr);
+	void Open(const QString& name, const QString& format, const QMap<QString, QString>& options);
+	void Close();
+
+	bool IsSequential() const;
+
+	AVFormatContext* GetContext() const { return pFormatCtx; }
+
+	const QImage& GetCurrentFrame();
+	const QImage& GetFrameByTime(double time);
+	const QImage& GetFrameByNumber(size_t num);
+
+	bool MoveNextFrame();
+
+	double GetTimePos() const;
+	long int GetCurrentFramePos() const;
+
+	double GetTotalTime() const;
+
+	int GetWidth() const;
+	int GetHeight() const;
+	double GetFps() const;
+	double GetRate() const;
+	double GetOffset() const { return m_offset; }
+
+	std::string GetFileName() const;
+
+	// pixel type as ffmpeg enum AVPixelFormat
+	int pixelType() const;
+
+	uint64_t LastReadDTS() const { return m_last_dts; }
+
+	// se deplace au temps donne (en s), peut etre approximatif
+	void SeekTime(double time);
+	void SeekTime2(double time);
+	void SeekFrame(size_t pos);
+
+protected:
+	double getTime();
+	void toRGB(AVFrame* frame);
+
+	uint64_t m_last_dts;
+	QImage m_image;
+	double m_current_time;
+	std::string m_filename;
+	int m_width;
+	int m_height;
+	int m_skip_packet;
+	double m_fps;
+	bool m_use_dts{ true };
+	double m_tech;
+	long int m_frame_pos;
+	double m_time_pos;
+	double m_offset;
+	double m_total_time;
+	bool m_file_open;
+	bool m_is_packet;
+
+	// variables ffmpeg
+	AVFormatContext* pFormatCtx;
+	int videoStream;
+	AVCodecContext* pCodecCtx;
+	AVCodec* pCodec;
+	AVFrame* pFrame;
+	AVFrame* pFrameRGB;
+	SwsContext* pSWSCtx;
+};
+
+
+int init_libavcodec()
+{
+	avdevice_register_all();
+	avformat_network_init();
+	return 0;
+}
+static int init = init_libavcodec();
+
+static void init_packet(AVPacket* pkt)
+{
+	pkt->pts = 0;
+	pkt->dts = 0;
+	pkt->pos = -1;
+	pkt->duration = 0;
+	pkt->flags = 0;
+	pkt->stream_index = 0;
+}
+
+#include <qfile.h>
+
+static QString _stderr;
+
+void log_to_array(void*, int, const char* fmt, va_list vl)
+{
+	_stderr += QString::vasprintf(fmt, vl);
+	vip_debug(fmt, vl);
+}
+
+QStringList VideoDecoder::list_devices()
+{
+	// freopen("tmp.txt", "w", stderr);
+	_stderr.clear();
+	av_log_set_callback(log_to_array);
+
+	AVFormatContext* formatC = avformat_alloc_context();
+	AVDictionary* options = nullptr;
+	av_dict_set(&options, "list_devices", "true", 0);
+	AVInputFormat* iformat = (AVInputFormat*)av_find_input_format("dshow");
+	int ret = avformat_open_input(&formatC, "video=dummy", iformat, &options);
+	av_log_set_callback(av_log_default_callback);
+	// if (ret < 0)
+	//	return QStringList();
+
+	// freopen("CON", "w", stderr);
+
+	// QFile file("tmp.txt");
+	// file.open(QFile::ReadOnly | QFile::Text);
+	QString ar = _stderr; // file.readAll();
+
+	QStringList res;
+	QStringList lines = ar.split("\n", VIP_SKIP_BEHAVIOR::SkipEmptyParts);
+
+	for (int i = 0; i < lines.size(); ++i) {
+		QString line = lines[i];
+		if (lines[i].contains("audio", Qt::CaseInsensitive))
+			continue;
+
+		if (lines[i].contains("Alternative name"))
+			continue;
+
+		int index1 = lines[i].indexOf('"');
+		int index2 = lines[i].indexOf('"', index1 + 1);
+		if (index1 >= 0) {
+			index1++;
+			QString name = lines[i].mid(index1, index2 - index1);
+			res << name;
+		}
+	}
+
+	return res;
+}
+
+VideoDecoder::VideoDecoder()
+{
+	m_last_dts = 0;
+	m_file_open = false;
+	m_is_packet = false;
+	pFormatCtx = nullptr;
+	pCodecCtx = nullptr;
+	pCodec = nullptr;
+	pFrame = nullptr;
+	pFrameRGB = nullptr;
+	pSWSCtx = nullptr;
+}
+
+VideoDecoder::VideoDecoder(const std::string& name)
+{
+	m_last_dts = 0;
+	pFormatCtx = nullptr;
+	pCodecCtx = nullptr;
+	pCodec = nullptr;
+	pFrame = nullptr;
+	pFrameRGB = nullptr;
+	pSWSCtx = nullptr;
+	m_is_packet = false;
+
+	Open(name);
+}
+
+VideoDecoder::~VideoDecoder()
+{
+	Close();
+}
+
+void VideoDecoder::Open(const QString& name, const QString& format, const QMap<QString, QString>& options)
+{
+	AVDictionary* opt = nullptr;
+	for (QMap<QString, QString>::const_iterator it = options.begin(); it != options.end(); ++it) {
+		av_dict_set(&opt, it.key().toLatin1().data(), it.value().toLatin1().data(), 0);
+	}
+	// av_dict_set(&options, "video_size", "640x480", 0);
+	// av_dict_set(&options, "r", "25", 0);
+
+	AVInputFormat* iformat = (AVInputFormat*)av_find_input_format(format.toLatin1().data());
+	AVDictionary** iopt = opt ? &opt : nullptr;
+
+	Open(name.toLatin1().data(), iformat, iopt);
+}
+
+void VideoDecoder::Open(const std::string& name, AVInputFormat* iformat, AVDictionary** options)
+{
+	m_file_open = true;
+	AVDictionary* opts = nullptr;
+	if (options)
+		opts = *options;
+	if (name.find(".sdp") != std::string::npos || name.find(".SDP") != std::string::npos || name.find("udp://") != std::string::npos || name.find("rtp://") != std::string::npos ||
+	    name.find("rtps://") != std::string::npos || name.find("http://") != std::string::npos || name.find("https://") != std::string::npos) {
+		// iformat = av_find_input_format("sdp");
+		av_dict_set(&opts, "protocol_whitelist", "file,udp,rtp,http,https,tcp,tls,crypto,httpproxy", 0);
+	}
+
+	// Open video file
+#if LIBAVFORMAT_VERSION_MAJOR > 52
+	int err = avformat_open_input(&pFormatCtx, name.c_str(), iformat, &opts);
+
+#else
+	int err = av_open_input_file(&pFormatCtx, name.c_str(), nullptr, 0, nullptr);
+#endif
+	if (err != 0) {
+		char error[1000];
+		memset(error, 0, sizeof(error));
+		av_strerror(err, error, sizeof(error));
+		vip_debug("ffmpeg error: %s\n", error);
+		throw std::runtime_error((std::string("Couldn't open file '") + name + "'").c_str());
+	}
+
+	// Retrieve stream information
+	// TEST
+	if (avformat_find_stream_info(pFormatCtx, nullptr) < 0)
+		throw std::runtime_error("Couldn't find stream information");
+
+	std::vector<AVStream*> streams;
+	for (unsigned int i = 0; i < pFormatCtx->nb_streams; i++)
+		streams.push_back(pFormatCtx->streams[i]);
+
+	// Find the first video stream
+	videoStream = -1;
+
+#if LIBAVFORMAT_VERSION_MAJOR > 58
+	for (unsigned int i = 0; i < pFormatCtx->nb_streams; i++) {
+		if (pFormatCtx->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
+			videoStream = i;
+			break;
+		}
+	}
+#else
+
+	for (unsigned int i = 0; i < pFormatCtx->nb_streams; i++)
+#if LIBAVFORMAT_VERSION_MAJOR > 52
+		if (pFormatCtx->streams[i]->codec->codec_type == AVMEDIA_TYPE_VIDEO)
+#else
+		if (pFormatCtx->streams[i]->codec->codec_type == CODEC_TYPE_VIDEO)
+#endif
+		{
+			videoStream = i;
+			break;
+		}
+#endif
+
+	if (videoStream == -1)
+		throw std::runtime_error("Didn't find a video stream");
+
+	pCodec = (AVCodec*)avcodec_find_decoder(pFormatCtx->streams[videoStream]->codecpar->codec_id);
+	if (!pCodec)
+		throw std::runtime_error("Codec not found");
+	pCodecCtx = avcodec_alloc_context3(pCodec);
+	avcodec_parameters_to_context(pCodecCtx, pFormatCtx->streams[videoStream]->codecpar);
+
+	// Open codec
+	int res = avcodec_open2(pCodecCtx, pCodec, nullptr);
+	if (res < 0)
+		throw std::runtime_error("Could not open codec");
+
+	// Allocate an AVFrame structure
+	pFrameRGB = av_frame_alloc();
+	if (!pFrameRGB)
+		throw std::runtime_error("Error in avcodec_alloc_frame()");
+	pFrameRGB->format = AV_PIX_FMT_RGB24;
+	pFrameRGB->width = pCodecCtx->width;
+	pFrameRGB->height = pCodecCtx->height;
+	if ((err = av_frame_get_buffer(pFrameRGB, 32)) < 0) {
+		av_frame_free(&pFrameRGB);
+		throw std::runtime_error("Failed to allocate picture");
+	}
+
+	// Initialize Context
+	if (pCodecCtx->pix_fmt == AV_PIX_FMT_NONE)
+		pCodecCtx->pix_fmt = AV_PIX_FMT_YUV420P;
+	pSWSCtx = sws_getContext(pCodecCtx->width, pCodecCtx->height, pCodecCtx->pix_fmt, pCodecCtx->width, pCodecCtx->height, AV_PIX_FMT_RGB24, SWS_FAST_BILINEAR, nullptr, nullptr, nullptr);
+
+	// Allocate video frame
+	pFrame = av_frame_alloc();
+	if (!pFrame)
+		throw std::runtime_error("Error in avcodec_alloc_frame()");
+	pFrame->format = pCodecCtx->pix_fmt;
+	pFrame->width = pCodecCtx->width;
+	pFrame->height = pCodecCtx->height;
+	if ((err = av_frame_get_buffer(pFrame, 32)) < 0) {
+		av_frame_free(&pFrame);
+		throw std::runtime_error("Failed to allocate picture");
+	}
+
+	m_width = pCodecCtx->width;
+	m_height = pCodecCtx->height;
+	m_image = QImage(m_width, m_height, QImage::Format_ARGB32);
+
+	double fps1 = pFormatCtx->streams[videoStream]->r_frame_rate.num * 1.0 / pFormatCtx->streams[videoStream]->r_frame_rate.den * 1.0;
+	m_fps = pFormatCtx->streams[videoStream]->avg_frame_rate.num * 1.0 / pFormatCtx->streams[videoStream]->avg_frame_rate.den * 1.0;
+	m_use_dts = fabs(m_fps - fps1) < 1;
+	m_tech = 1 / fps1;
+	m_fps = fps1;
+
+	m_frame_pos = 0;
+	m_time_pos = 0;
+
+	m_total_time = pFormatCtx->duration / AV_TIME_BASE;
+	if (m_total_time < 0.01 && !IsSequential())
+		m_total_time = getTime();
+
+	m_offset = 0;
+
+	MoveNextFrame();
+
+	if (!IsSequential())
+		SeekTime(0);
+
+	m_filename = name;
+}
+
+double VideoDecoder::getTime()
+{
+	AVPacket p;
+	av_init_packet(&p);
+	av_seek_frame(pFormatCtx, videoStream, 0, AVSEEK_FLAG_BACKWARD);
+	int count = 0;
+	while (av_read_frame(pFormatCtx, &p) == 0) {
+		if (p.stream_index == videoStream)
+			count++;
+	}
+
+	av_seek_frame(pFormatCtx, videoStream, 0, AVSEEK_FLAG_BACKWARD);
+	if (p.buf)
+		av_packet_unref(&p);
+	return count / m_fps;
+}
+
+bool VideoDecoder::IsSequential() const
+{
+	if (pFormatCtx && videoStream >= 0)
+		return pFormatCtx->streams[videoStream]->duration < 0 && pFormatCtx->duration < 0;
+	return false;
+}
+
+void VideoDecoder::Close()
+{
+	if (m_file_open) {
+		// Free the DRGBPixel image
+		if (pFrameRGB) {
+			av_frame_free(&pFrameRGB);
+		}
+
+		// Free the YUV frame
+		if (pFrame) {
+			av_frame_free(&pFrame);
+		}
+
+		// Close the codec
+		if (pCodecCtx != nullptr && pCodec != nullptr)
+			avcodec_close(pCodecCtx);
+
+		// Close the video file
+		if (pFormatCtx != nullptr)
+			avformat_close_input(&pFormatCtx);
+
+		if (pSWSCtx != nullptr)
+			sws_freeContext(pSWSCtx);
+	}
+
+	pFormatCtx = nullptr;
+	pCodecCtx = nullptr;
+	pCodec = nullptr;
+	pFrame = nullptr;
+	pFrameRGB = nullptr;
+	pSWSCtx = nullptr;
+	m_file_open = false;
+}
+
+const QImage& VideoDecoder::GetCurrentFrame()
+{
+	return m_image;
+}
+
+int VideoDecoder::pixelType() const
+{
+	if (pCodecCtx)
+		return pCodecCtx->pix_fmt;
+	return 0;
+}
+
+void VideoDecoder::toRGB(AVFrame* frame)
+{
+	// m_last_dts = frame->pkt_dts;
+	// int pix1 = frame->data[0][0] | (frame->data[0][1] << 8);
+	// int pix2 = frame->data[0][0] | (frame->data[0][1] << 8);
+	if (pCodecCtx->pix_fmt == AV_PIX_FMT_GRAY16LE || pCodecCtx->pix_fmt == AV_PIX_FMT_GRAY16BE) {
+		// encode 16 bits in R and G
+		unsigned char r, g, b = 0;
+		uint* data = (uint*)m_image.bits();
+		for (int y = 0; y < m_height; y++)
+			for (int x = 0; x < m_width; x++, ++data) {
+				r = (frame->data[0] + y * frame->linesize[0])[x * 2];
+				g = (frame->data[0] + y * frame->linesize[0])[x * 2 + 1];
+				*data = qRgb(r, g, b);
+			}
+	}
+	else {
+		unsigned char r, g, b;
+		uint* data = (uint*)m_image.bits();
+		for (int y = 0; y < m_height; y++)
+			for (int x = 0; x < m_width; x++, ++data) {
+				r = (frame->data[0] + y * frame->linesize[0])[x * 3];
+				g = (frame->data[0] + y * frame->linesize[0])[x * 3 + 1];
+				b = (frame->data[0] + y * frame->linesize[0])[x * 3 + 2];
+				// m_image.setPixel( x,y, qRgb(r,g,b) );
+				*data = qRgb(r, g, b);
+			}
+	}
+}
+
+static int decode(AVCodecContext* dec_ctx, AVFrame* frame, int* got_frame, AVPacket* pkt)
+{
+	int used = 0;
+	if (dec_ctx->codec_type == AVMEDIA_TYPE_VIDEO || dec_ctx->codec_type == AVMEDIA_TYPE_AUDIO) {
+		used = avcodec_send_packet(dec_ctx, pkt);
+		if (used < 0 && used != AVERROR(EAGAIN) && used != AVERROR_EOF) {
+		}
+		else {
+			// if (used >= 0)
+			//	pkt->size = 0;
+			used = avcodec_receive_frame(dec_ctx, frame);
+			if (used >= 0)
+				*got_frame = 1;
+			//             if (used == AVERROR(EAGAIN) || used == AVERROR_EOF)
+			//                 used = 0;
+		}
+	}
+	return used;
+}
+
+bool VideoDecoder::MoveNextFrame()
+{
+	AVPacket p;
+	av_init_packet(&p);
+
+	int finish = 0;
+	while (finish == 0) {
+		if (p.buf) {
+			av_packet_unref(&p);
+		}
+		if (av_read_frame(pFormatCtx, &p) < 0) {
+			av_init_packet(&p);
+		}
+
+		int ret = decode(pCodecCtx, pFrame, &finish, &p);
+		if (ret == AVERROR(EAGAIN))
+			continue;
+		if (ret <= 0 && pFrame->data[0] == NULL) {
+			if (p.buf) {
+				av_packet_unref(&p);
+			}
+			m_frame_pos = -1; // in case of error, invalidate m_frame_pos to be sure to call av_seek_frame next time
+			return false;
+		}
+	}
+
+	/* if (p.buf)
+		av_packet_unref(&p);
+	if (av_read_frame(pFormatCtx, &p) < 0)
+		av_init_packet(&p);
+	int finish = 0;
+	int ret = decode(pCodecCtx, pFrame, &finish, &p);
+	if (finish == 0 || (ret <= 0 && pFrame->data[0] == NULL)) {
+		if (p.buf)
+			av_packet_unref(&p);
+		m_frame_pos = -1; // in case of error, invalidate m_frame_pos to be sure to call av_seek_frame next time
+		return false;
+	}*/
+
+	// Convert YUV->DRGBPixel
+	if (pFrame->data) {
+		if (pCodecCtx->pix_fmt != AV_PIX_FMT_GRAY16LE && pCodecCtx->pix_fmt != AV_PIX_FMT_GRAY16BE) {
+			sws_scale(pSWSCtx, pFrame->data, pFrame->linesize, 0, pCodecCtx->height, pFrameRGB->data, pFrameRGB->linesize);
+			toRGB(pFrameRGB);
+		}
+		else {
+			toRGB(pFrame);
+		}
+	}
+	m_last_dts = pFrame->pkt_dts;
+	m_frame_pos++;
+	m_time_pos = m_frame_pos * 1.0 * m_tech;
+	if (p.buf)
+		av_packet_unref(&p);
+	return true;
+}
+
+double VideoDecoder::GetRate() const
+{
+	if (m_file_open)
+		return pFormatCtx->bit_rate;
+	else
+		return 0;
+}
+
+void VideoDecoder::SeekTime2(double time)
+{
+	SeekTime(time);
+}
+
+void VideoDecoder::SeekTime(double time)
+{
+	SeekFrame(static_cast<size_t>(floor(time * m_fps + 0.5)));
+}
+
+const QImage& VideoDecoder::GetFrameByTime(double time)
+{
+	size_t number = static_cast<size_t>(floor(time * m_fps + 0.5));
+	return GetFrameByNumber(number);
+}
+
+const QImage& VideoDecoder::GetFrameByNumber(size_t number)
+{
+	if (number + 1 == m_frame_pos)
+		return m_image;
+
+	if (number != m_frame_pos)
+		SeekTime(number / m_fps);
+
+	MoveNextFrame();
+
+	return m_image;
+}
+
+static int64_t FrameToPts(AVStream* pavStream, int64_t frame)
+{
+	return ((frame)*pavStream->r_frame_rate.den * pavStream->time_base.den) / (int64_t(pavStream->r_frame_rate.num) * pavStream->time_base.num);
+}
+
+void VideoDecoder::SeekFrame(size_t pos)
+{
+	if (pos == 0) {
+		av_seek_frame(pFormatCtx, videoStream, (int64_t)(pos) * 12800ull, AVSEEK_FLAG_BACKWARD);
+		avcodec_flush_buffers(pCodecCtx);
+		m_frame_pos = 0;
+		m_time_pos = 0;
+		return;
+	}
+	if (pos + 1 == m_frame_pos)
+		return;
+
+	int64_t target_dts = 0;
+	if (!m_use_dts) {
+		// Incoherent fps (like WEST operational camera),
+		// this method gives the best result
+		target_dts = (int64_t)(((int64_t)pos - 1) * AV_TIME_BASE * m_tech);
+		if (av_seek_frame(pFormatCtx, -1, target_dts, AVSEEK_FLAG_BACKWARD) < 0)
+			return;
+	}
+	else {
+		// Generic (and usually valid) way to seek
+		target_dts = FrameToPts(pFormatCtx->streams[videoStream], (int64_t)pos - 1);
+		if (av_seek_frame(pFormatCtx, videoStream, target_dts, AVSEEK_FLAG_BACKWARD) < 0)
+			return;
+	}
+
+	avcodec_flush_buffers(pCodecCtx);
+
+	if (pos == 0)
+		return;
+
+	AVPacket p;
+	av_init_packet(&p);
+
+	while (true) {
+		int finish = 0;
+		while (finish == 0) {
+			if (p.buf) {
+				av_packet_unref(&p);
+			}
+			if (av_read_frame(pFormatCtx, &p) < 0) {
+				av_init_packet(&p);
+			}
+
+			int ret = decode(pCodecCtx, pFrame, &finish, &p);
+			if (ret == AVERROR(EAGAIN))
+				continue;
+			if (ret <= 0 && pFrame->data[0] == NULL) {
+				if (p.buf) {
+					av_packet_unref(&p);
+				}
+				m_frame_pos = -1; // in case of error, invalidate m_frame_pos to be sure to call av_seek_frame next time
+				return;
+			}
+		}
+
+		if (pFrame->pkt_dts >= target_dts) {
+			break;
+		}
+	}
+	// Convert YUV -> RGB
+	if (pFrame->data) {
+		if (pCodecCtx->pix_fmt != AV_PIX_FMT_GRAY16LE && pCodecCtx->pix_fmt != AV_PIX_FMT_GRAY16BE) {
+			sws_scale(pSWSCtx, pFrame->data, pFrame->linesize, 0, pCodecCtx->height, pFrameRGB->data, pFrameRGB->linesize);
+			toRGB(pFrameRGB);
+		}
+		else {
+			toRGB(pFrame);
+		}
+	}
+	m_frame_pos = pos;
+	m_time_pos = pos / m_fps;
+	if (p.buf)
+		av_packet_unref(&p);
+}
+
+double VideoDecoder::GetTotalTime() const
+{
+	return m_total_time;
+}
+
+int VideoDecoder::GetWidth() const
+{
+	return m_width;
+}
+
+int VideoDecoder::GetHeight() const
+{
+	return m_height;
+}
+
+std::string VideoDecoder::GetFileName() const
+{
+	return m_filename;
+}
+
+double VideoDecoder::GetTimePos() const
+{
+	return m_time_pos;
+}
+
+long int VideoDecoder::GetCurrentFramePos() const
+{
+	return m_frame_pos;
+}
+
+double VideoDecoder::GetFps() const
+{
+	return m_fps;
+}
+
+
 
 VipMPEGLoader::VipMPEGLoader(QObject* parent)
   : VipTimeRangeBasedGenerator(parent)
@@ -261,520 +952,4 @@ bool VipMPEGLoader::enableStreaming(bool enable)
 		m_thread.start();
 	}
 	return true;
-}
-
-class VideoGrabber
-{
-public:
-	VideoGrabber();
-	VideoGrabber(const std::string& name);
-	~VideoGrabber();
-	void Open(const std::string& name, AVInputFormat* format = nullptr, AVDictionary** options = nullptr);
-	void Open(const QString& name, const QString& format, const QMap<QString, QString>& options);
-	void Close();
-
-	// Ffmpeg main struct
-	AVFormatContext* GetContext() const { return pFormatCtx; }
-	// renvoie l'image actuelle
-	const VipNDArray& GetCurrentFrame();
-	const VipNDArray& GetFrameByTime(double time);
-	const VipNDArray& GetFrameByNumber(int num);
-	/**
-	Go to next frame and returns the packet dts or -1 on error.
-	If target_dts is -1, the image is uncompressed and read.
-	If target_dts is not -1, the image is only read and uncompressed only if read dts is < target_dts
-	*/
-	size_t MoveNextFrame(size_t target_dts = -1);
-	// position actuelle (en s), peut etre approximatif
-	double GetTimePos() const;
-	// position actuelle (en frame), peut etre approximatif
-	long int GetCurrentFramePos() const;
-	int GetFrameCount() const { return m_frame_count; }
-	// duree totale (en s)
-	double GetTotalTime() const;
-	// largeur
-	int GetWidth() const;
-	// hauteur
-	int GetHeight() const;
-	// frame per second
-	double GetFps() const;
-	// echantillonage (octets/s)
-	double GetRate() const;
-	// eventuel offset si le film a ete enregistre avec wolff
-	double GetOffset() const { return m_offset; }
-	// nom du fichier ouvert
-	std::string GetFileName() const;
-	// se deplace au temps donne (en s), peut etre approximatif
-	void SeekTime(double time);
-	void SeekFrame(int pos);
-
-protected:
-	bool computeNextFrame();
-	double getTime();
-	VipNDArray toArray(AVFrame* frame);
-	void free_packet();
-
-	VipNDArray m_image;
-	double m_current_time;
-	std::string m_filename;
-	int m_width;
-	int m_height;
-	double m_fps;
-	double m_tech;
-	int m_frame_pos;
-	int m_frame_count;
-	double m_time_pos;
-	double m_offset;
-	double m_total_time;
-	bool m_file_open;
-	bool m_is_packet;
-
-	// variables ffmpeg
-	AVFormatContext* pFormatCtx;
-	int videoStream;
-	AVCodecContext* pCodecCtx;
-	AVCodec* pCodec;
-	AVFrame* pFrame;
-	AVFrame* pFrameRGB;
-	SwsContext* pSWSCtx;
-	uint8_t* buffer;
-	int numBytes;
-	AVPacket packet;
-	int frameFinished;
-};
-
-#include <stdexcept>
-#include <fstream>
-#include <qfile.h>
-
-static int __ReadFunc(void* ptr, uint8_t* buf, int buf_size)
-{
-	QIODevice* pStream = reinterpret_cast<QIODevice*>(ptr);
-	return pStream->read((char*)buf, buf_size);
-}
-
-// whence: SEEK_SET, SEEK_CUR, SEEK_END (like fseek) and AVSEEK_SIZE
-int64_t __SeekFunc(void* ptr, int64_t pos, int whence)
-{
-
-	QIODevice* pStream = reinterpret_cast<QIODevice*>(ptr);
-
-	long long res;
-	if (whence == AVSEEK_SIZE) {
-		res = pStream->size();
-	}
-	else if (whence == SEEK_SET) {
-		pStream->seek(pos);
-		res = pStream->pos();
-	}
-	else if (whence == SEEK_CUR) {
-		pStream->seek(pos + pStream->pos());
-		res = pStream->pos();
-	}
-	else {
-		pStream->seek(pStream->size() - pos);
-		res = pStream->pos();
-	}
-	return res;
-}
-
-static void __destruct(AVPacket* pkt)
-{
-	pkt->data = nullptr;
-	pkt->size = 0;
-}
-static void __init_packet(AVPacket* pkt)
-{
-	pkt->pts = 0;
-	pkt->dts = 0;
-	pkt->pos = -1;
-	pkt->duration = 0;
-	pkt->flags = 0;
-	pkt->stream_index = 0;
-}
-/*static QString _stderr;
-
-void log_to_array(void * 	avcl,
-	int 	level,
-	const char * 	fmt,
-	va_list 	vl
-)
-{
-	_stderr += QString::vasprintf(fmt, vl);
-}*/
-void VideoGrabber::free_packet()
-{
-	if (packet.data != nullptr && packet.size > 0)
-		// if(strcmp((const char*)packet.data,"")!=0)
-		av_free(packet.data);
-
-	packet.size = 0;
-	packet.data = 0;
-	__init_packet(&packet);
-}
-
-VideoGrabber::VideoGrabber()
-{
-	m_file_open = false;
-	m_is_packet = false;
-	pFormatCtx = nullptr;
-	pCodecCtx = nullptr;
-	pCodec = nullptr;
-	pFrame = nullptr;
-	pSWSCtx = nullptr;
-	buffer = nullptr;
-	pFrameRGB = nullptr;
-}
-VideoGrabber::VideoGrabber(const std::string& name)
-{
-	pFormatCtx = nullptr;
-	pCodecCtx = nullptr;
-	pCodec = nullptr;
-	pFrame = nullptr;
-	pSWSCtx = nullptr;
-	pFrameRGB = nullptr;
-	buffer = nullptr;
-	m_is_packet = false;
-	Open(name);
-}
-VideoGrabber::~VideoGrabber()
-{
-	Close();
-}
-
-void VideoGrabber::Open(const QString& name, const QString& format, const QMap<QString, QString>& options)
-{
-	AVDictionary* opt = nullptr;
-	for (QMap<QString, QString>::const_iterator it = options.begin(); it != options.end(); ++it) {
-		av_dict_set(&opt, it.key().toLatin1().data(), it.value().toLatin1().data(), 0);
-	}
-
-	AVInputFormat* iformat = av_find_input_format(format.toLatin1().data());
-	AVDictionary** iopt = opt ? &opt : nullptr;
-
-	Open(name.toLatin1().data(), iformat, iopt);
-}
-
-void VideoGrabber::Open(const std::string& name, AVInputFormat* iformat, AVDictionary** options)
-{
-	/*AVFormatContext *formatC = nullptr;// avformat_alloc_context();
-	AVDictionary* options = nullptr;
-	// set input resolution
-	av_dict_set(&options, "video_size", "640x480", 0);
-	av_dict_set(&options, "r", "25", 0);
-	AVInputFormat *iformat = av_find_input_format("dshow");
-	int ret = avformat_open_input(&formatC, "video=Lenovo EasyCamera", iformat, &options);
-	char msg[1000]; memset(msg, 0, 1000);
-	av_strerror(ret,msg,1000);*/
-
-	/*unsigned char * buffer = (unsigned char *)av_malloc(6000000);
-	QFile * fin = new QFile(name.c_str());
-	fin->open(QFile::ReadOnly);
-	AVIOContext* pIOCtx = avio_alloc_context(buffer, 6000000,  // internal Buffer and its size
-	0,                  // bWriteable (1=true,0=false)
-	fin,          // user data ; will be passed to our callback functions
-	ReadFunc,
-	0,                  // Write callback function (not used in this example)
-	SeekFunc);
-	pFormatCtx = (AVFormatContext*)avformat_alloc_context();//av_malloc(sizeof(AVFormatContext));
-	pFormatCtx->pb = pIOCtx;*/
-
-	m_file_open = true;
-
-	__init_packet(&packet);
-	packet.data = nullptr;
-	// Open video file
-#if LIBAVFORMAT_VERSION_MAJOR > 52
-	if (avformat_open_input(&pFormatCtx, name.c_str(), iformat, options) != 0)
-		throw std::runtime_error((std::string("Couldn't open file '") + name + "'").c_str());
-#else
-	if (av_open_input_file(&pFormatCtx, name.c_str(), nullptr, 0, nullptr) != 0)
-		throw std::runtime_error((std::string("Couldn't open file '") + name + "'").c_str());
-#endif
-
-	// Retrieve stream information
-	// TEST
-	if (avformat_find_stream_info(pFormatCtx, nullptr) < 0)
-		throw std::runtime_error("Couldn't find stream information");
-
-	// Find the first video stream
-	videoStream = -1;
-	for (unsigned int i = 0; i < pFormatCtx->nb_streams; i++)
-#if LIBAVFORMAT_VERSION_MAJOR > 52
-		if (pFormatCtx->streams[i]->codec->codec_type == AVMEDIA_TYPE_VIDEO)
-#else
-		if (pFormatCtx->streams[i]->codec->codec_type == CODEC_TYPE_VIDEO)
-#endif
-		{
-			videoStream = i;
-			break;
-		}
-	if (videoStream == -1)
-		throw std::runtime_error("Didn't find a video stream");
-
-	// pFormatCtx->cur_st = pFormatCtx->streams[0];
-
-	// Get a pointer to the codec context for the video stream
-	pCodecCtx = pFormatCtx->streams[videoStream]->codec;
-
-	// Find the decoder for the video stream
-	pCodec = avcodec_find_decoder(pCodecCtx->codec_id);
-	if (pCodec == nullptr)
-		throw std::runtime_error("Codec not found");
-
-	// Open codec
-	int res = avcodec_open2(pCodecCtx, pCodec, nullptr);
-	if (res < 0)
-		throw std::runtime_error("Could not open codec");
-
-	// Allocate video frame
-	pFrame = av_frame_alloc();
-	// Allocate an AVFrame structure
-	pFrameRGB = av_frame_alloc();
-	if (pFrameRGB == nullptr)
-		throw std::runtime_error("Error in avcodec_alloc_frame()");
-	// Allocate an AVFrame structure
-	pFrameRGB = av_frame_alloc();
-	if (pFrameRGB == nullptr)
-		throw std::runtime_error("Error in avcodec_alloc_frame()");
-
-	// Determine required buffer size and allocate buffer
-	numBytes = avpicture_get_size(AV_PIX_FMT_RGB24, pCodecCtx->width, pCodecCtx->height);
-
-	buffer = (uint8_t*)av_malloc(numBytes);
-
-	// Assign appropriate parts of buffer to image planes in pFrameRGB
-	avpicture_fill((AVPicture*)pFrameRGB, buffer, AV_PIX_FMT_RGB24, pCodecCtx->width, pCodecCtx->height);
-
-	// Initialize Context
-	if (pCodecCtx->pix_fmt == AV_PIX_FMT_NONE)
-		pCodecCtx->pix_fmt = AV_PIX_FMT_YUV420P;
-	pSWSCtx = sws_getContext(pCodecCtx->width, pCodecCtx->height, pCodecCtx->pix_fmt, pCodecCtx->width, pCodecCtx->height, AV_PIX_FMT_RGB24, SWS_FAST_BILINEAR, nullptr, nullptr, nullptr);
-
-	m_width = pCodecCtx->width;
-	m_height = pCodecCtx->height;
-	m_image = VipNDArray(QMetaType::UShort, vipVector(m_height, m_width));
-
-	m_fps = pFormatCtx->streams[videoStream]->r_frame_rate.num * 1.0 / pFormatCtx->streams[videoStream]->r_frame_rate.den * 1.0;
-	m_frame_count = pFormatCtx->streams[videoStream]->nb_frames;
-	m_tech = 1 / m_fps;
-
-	m_frame_pos = 0;
-	m_time_pos = 0;
-
-	m_total_time = (double)pFormatCtx->duration / AV_TIME_BASE;
-	// if (m_total_time < 0.01 )
-	//	m_total_time = getTime();
-
-	m_offset = 0;
-	// SeekTime(0);
-	// MoveNextFrame();
-	m_filename = name;
-}
-
-double VideoGrabber::getTime()
-{
-	av_seek_frame(pFormatCtx, videoStream, 0, AVSEEK_FLAG_BACKWARD);
-	int count = 0;
-	while (av_read_frame(pFormatCtx, &packet) == 0) {
-		if (packet.stream_index == videoStream)
-			count++;
-	}
-
-	av_seek_frame(pFormatCtx, videoStream, 0, AVSEEK_FLAG_BACKWARD);
-	return count / m_fps;
-}
-void VideoGrabber::Close()
-{
-	if (m_file_open) {
-		// Free the DRGBPixel image
-		if (pFrameRGB != nullptr) {
-			av_free((AVPicture*)pFrameRGB);
-		}
-
-		// Free the YUV frame
-		if (pFrame != nullptr) {
-			av_free((AVPicture*)pFrame);
-		}
-
-		// Close the codec
-		if (pCodecCtx != nullptr && pCodec != nullptr)
-			avcodec_close(pCodecCtx);
-
-		// Close the video file
-		if (pFormatCtx != nullptr)
-			avformat_close_input(&pFormatCtx);
-
-		if (pSWSCtx != nullptr)
-			sws_freeContext(pSWSCtx);
-
-		if (packet.data)
-			av_free_packet(&packet);
-	}
-
-	pFormatCtx = nullptr;
-	pCodecCtx = nullptr;
-	pCodec = nullptr;
-	pFrame = nullptr;
-	pFrameRGB = nullptr;
-	// buffer = nullptr;
-	pSWSCtx = nullptr;
-	m_file_open = false;
-}
-
-const VipNDArray& VideoGrabber::GetCurrentFrame()
-{
-	return m_image;
-}
-
-VipNDArray VideoGrabber::toArray(AVFrame* frame)
-{
-	// convert to rgb
-	// int r = sws_scale(pSWSCtx, frame->data, frame->linesize, 0, pCodecCtx->height, pFrameRGB->data, pFrameRGB->linesize);
-
-	VipNDArray res(QMetaType::UShort, vipVector(frame->height, frame->width));
-	unsigned short* data = (unsigned short*)res.data();
-
-	for (int y = 0; y < frame->height; ++y) {
-		uchar* d1 = frame->data[1] + y * frame->linesize[1];
-		uchar* d2 = frame->data[2] + y * frame->linesize[2];
-		for (int i = 0; i < frame->width; ++i) {
-			data[i + y * frame->width] = d1[i] | (d2[i] << 8);
-		}
-	}
-	/*for (int y = 0; y<pCodecCtx->height; y++)
-		for (int x = 0; x<pCodecCtx->width; x++, ++data)
-		{
-			*data = (pFrameRGB->data[0] + y*pFrameRGB->linesize[0])[x * 3] | ((pFrameRGB->data[0] + y*pFrameRGB->linesize[0])[x * 3 +1] << 8);
-		}*/
-
-	return res;
-}
-
-size_t VideoGrabber::MoveNextFrame(size_t target_dts)
-{
-	size_t res = static_cast<size_t>(-1);
-
-	if (!m_is_packet) {
-		if (packet.data && packet.size > 0)
-			av_free_packet(&packet);
-		// pFormatCtx->cur_pkt.destruct=nullptr;
-		if (av_read_frame(pFormatCtx, &packet) < 0)
-			return static_cast<size_t>(-1);
-		res = packet.dts;
-	}
-
-	m_is_packet = false;
-
-	while (packet.stream_index != videoStream) {
-		av_free_packet(&packet);
-		// pFormatCtx->cur_pkt.destruct=nullptr;
-		if (av_read_frame(pFormatCtx, &packet) < 0)
-			return static_cast<size_t>(-1);
-		res = packet.dts;
-	}
-
-	if (target_dts != -1) {
-		if (res >= target_dts) {
-			m_is_packet = true;
-			return res;
-		}
-	}
-
-	int ffinish = 1;
-
-	while (ffinish != 0) {
-
-#if LIBAVFORMAT_VERSION_MAJOR > 52
-		/* int ret =*/avcodec_decode_video2(pCodecCtx, pFrame, &ffinish, &packet);
-#else
-		int ret = avcodec_decode_video(pCodecCtx, pFrame, &ffinish, packet.data, packet.size);
-#endif
-
-		// Did we get a video frame?
-		if (ffinish != 0) {
-			if (target_dts == -1) {
-				// convert image
-				if (pFrame->data) {
-					m_image = toArray(pFrame);
-				}
-			}
-
-			break;
-		}
-		else {
-			packet.stream_index = -1;
-			while (packet.stream_index != videoStream) {
-				av_free_packet(&packet);
-				// pFormatCtx->cur_pkt.destruct=nullptr;
-				if (av_read_frame(pFormatCtx, &packet) < 0)
-					return static_cast<size_t>(-1);
-				res = packet.dts;
-
-				if (target_dts != -1) {
-					if (res >= target_dts) {
-						m_is_packet = true;
-						return res;
-					}
-				}
-			}
-		}
-	}
-
-	av_free_packet(&packet);
-	m_is_packet = false;
-	m_frame_pos++;
-
-	return res;
-}
-
-void VideoGrabber::SeekFrame(int frame)
-{
-	if (m_frame_pos == frame)
-		return;
-	int seek_frame = frame * 12800;
-	int ret = av_seek_frame(pFormatCtx, videoStream, seek_frame, AVSEEK_FLAG_BACKWARD);
-	// avcodec_flush_buffers(pFormatCtx->streams[videoStream]->codec);
-	if (ret < 0)
-		return;
-
-	while (true) {
-		size_t dts = MoveNextFrame(seek_frame);
-		if (dts == -1)
-			return;
-		if (dts >= seek_frame)
-			break;
-	}
-	m_frame_pos = frame;
-}
-
-const VipNDArray& VideoGrabber::GetFrameByNumber(int number)
-{
-	if (number + 1 == m_frame_pos)
-		return m_image;
-	if (number != m_frame_pos)
-		SeekFrame(number);
-	MoveNextFrame();
-	return m_image;
-}
-
-int VideoGrabber::GetWidth() const
-{
-	return m_width;
-}
-int VideoGrabber::GetHeight() const
-{
-	return m_height;
-}
-std::string VideoGrabber::GetFileName() const
-{
-	return m_filename;
-}
-long int VideoGrabber::GetCurrentFramePos() const
-{
-	return m_frame_pos;
-}
-double VideoGrabber::GetFps() const
-{
-	return m_fps;
 }

@@ -97,7 +97,7 @@ int main(int argc, char** argv)
 	    c->setSubBrush(0, QBrush(c->majorColor().lighter()));
 	    c->setCurveAttribute(VipPlotCurve::FillMultiCurves);
 	    VipPointVector v = offset(vec, yoffset);
-	    v += Vip::InvalidPoint;
+	    v << Vip::InvalidPoint;
 	    yoffset += VipPoint(0, 1);
 	    v += offset(vec, yoffset);
 	    c->setRawData(v);

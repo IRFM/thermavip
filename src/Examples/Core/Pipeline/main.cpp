@@ -99,7 +99,7 @@ int main(int argc, char** argv)
 	mult.inputAt(0)->setListType(VipDataList::LastAvailable);
 	mult.setComputeTimeStatistics(false);
 
-	st = QDateTime::currentMSecsSinceEpoch();
+	/* st = QDateTime::currentMSecsSinceEpoch();
 
 	for (int i = 0; i < count; ++i) {
 		mult.inputAt(0)->setData(i);
@@ -110,7 +110,7 @@ int main(int argc, char** argv)
 	el = QDateTime::currentMSecsSinceEpoch() - st;
 
 	std::cout << "Synchronous multiply/add: " << el << " ms (result: " << mult.sum << ")" << std::endl;
-	
+	*/
 
 	mult.setScheduleStrategy(VipProcessingObject::Asynchronous);
 	mult.inputAt(0)->setListType(VipDataList::FIFO, VipDataList::None);
@@ -123,7 +123,7 @@ int main(int argc, char** argv)
 
 	VipInput* in = mult.inputAt(0);
 	for (int i = 0; i < count; ++i) {
-		in->setData(i);
+		in->setData((double)i);
 	}
 	qint64 el1 = QDateTime::currentMSecsSinceEpoch() - st;
 	mult.wait();
