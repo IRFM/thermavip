@@ -1341,12 +1341,12 @@ public:
 	  : VipCircularVector(init.begin(), init.end())
 	{
 	}
-	/* template<class U>
+	template<class U>
 	VipCircularVector(const QVector<U>& v)
 	  : VipCircularVector(v.begin(), v.end())
 	{
-	}*/
-	~VipCircularVector() noexcept { clear(); }
+	}
+	~VipCircularVector() noexcept = default;
 
 	template<class Container>
 	Container convertTo() const
@@ -1365,8 +1365,8 @@ public:
 
 	void clear() noexcept
 	{
-		if (hasData())
-			d_data->resize(0);
+		if (hasData()) 
+			d_data = DataPtr();
 	}
 	void shrink_to_fit()
 	{

@@ -1,6 +1,4 @@
-//TOREMOVE
-#define VIP_GENERATE_TEST_FUNCTIONS
-#include "VipCircularVector.h"
+
 
 #include <cmath>
 #include <iostream>
@@ -176,25 +174,7 @@ void setup_plot_area(VipPlotArea2D* area, int setup_x_scale)
 
 int main(int argc, char** argv)
 {
-	//TOREMOVE
-	detail::testVipCircularVector<std::string, 1000000>();
-	const VipCircularVector<int> vv(1);
-	auto s = vv.spans().first;
-	s.size();
-	s.front();
-	s.back();
-	s.empty();
-	s.at(0);
-	s[0];
-	s.begin();
-	s.end();
-	s.data();
-	s.first(1)[0] ;
-	s.first<1>()[0] ;
-	s.last(1)[0] ;
-	s.last<1>()[0] ;
-	return 0;
-
+	
 	// To debug from the thermavip folder
 	QCoreApplication::addLibraryPath(QDir::currentPath().toLatin1());
 	QCoreApplication::setAttribute(Qt::AA_UseDesktopOpenGL);
