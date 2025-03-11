@@ -1,7 +1,7 @@
 /**
  * BSD 3-Clause License
  *
- * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ * Copyright (c) 2025, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Leo Dubus, Erwan Grelier
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -161,8 +161,8 @@ public:
 		Minimize = 0x0010,	    //! The widget can be minimized
 		Closable = 0x0020,	    //! The widget can be closed
 		DragWidgetExtract = 0x0080, //! A drag widget can be extracted from its parent to make it free
-		NoHideOnMaximize = 0x0100, //! cannot hide widget when another is maximized
-		AllOperations = Move | Drop | ReceiveDrop | Maximize | Minimize | Closable | DragWidgetExtract 
+		NoHideOnMaximize = 0x0100,  //! cannot hide widget when another is maximized
+		AllOperations = Move | Drop | ReceiveDrop | Maximize | Minimize | Closable | DragWidgetExtract
 	};
 	//! Supported operations attributes
 	typedef QFlags<Operation> Operations;
@@ -205,7 +205,7 @@ public:
 
 	/// Equivalent to
 	/// \code
-	/// visibility() == Maximized
+	/// visibility() == Minimized
 	/// \endcode
 	bool isMinimized() const;
 
@@ -274,12 +274,13 @@ public Q_SLOTS:
 protected:
 	/// Set the inner visibility state flag and send the #visibilityChanged() signal if needed.
 	virtual void setInternalVisibility(VisibilityState);
-
 	virtual bool event(QEvent* event);
 	virtual void dragEnterEvent(QDragEnterEvent* evt);
 	virtual void dropEvent(QDropEvent* evt);
 	virtual void changeEvent(QEvent* evt);
 	virtual void closeEvent(QCloseEvent* evt);
+
+	void setTitleWithId(const QString& text);
 
 Q_SIGNALS:
 
@@ -291,7 +292,7 @@ private Q_SLOTS:
 
 private:
 	struct PrivateData;
-	PrivateData* d_data;
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 VIP_REGISTER_QOBJECT_METATYPE(VipBaseDragWidget*)
@@ -347,8 +348,8 @@ private Q_SLOTS:
 
 private:
 	void relayout();
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 VIP_REGISTER_QOBJECT_METATYPE(VipDragWidget*)
@@ -404,7 +405,11 @@ public:
 	virtual void mousePressEvent(QMouseEvent* evt);
 	virtual void mouseMoveEvent(QMouseEvent* evt);
 	virtual void paintEvent(QPaintEvent*);
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
 	virtual void enterEvent(QEvent*);
+#else
+	virtual void enterEvent(QEnterEvent*);
+#endif
 	virtual void leaveEvent(QEvent*);
 	virtual bool event(QEvent*);
 
@@ -413,8 +418,8 @@ protected:
 	virtual void endRender(VipRenderState&);
 
 private:
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 /// Custom QSplitterHandle class. In addition to its normal role, it provides several functionalities:
@@ -442,9 +447,9 @@ protected:
 
 private:
 	QPoint mouse;
-	QRect rect;
-	int maxWidth;
+	QRect rect;	
 	VipMultiDragWidget* multiDragWidget;
+	int maxWidth;
 };
 
 /// Custom QSplitter, which only goal is to use the VipDragWidgetSplitter class
@@ -584,8 +589,12 @@ public:
 
 	/// @brief Returns the first VipDragWidget this widget contains, or nullptr
 	VipDragWidget* firstDragWidget() const;
+	/// @brief Returns the first non minimized VipDragWidget this widget contains, or nullptr
+	VipDragWidget* firstVisibleDragWidget() const;
 	/// @brief Returns the last VipDragWidget this widget contains, or nullptr
 	VipDragWidget* lastDragWidget() const;
+	/// @brief Returns the last non minimized VipDragWidget this widget contains, or nullptr
+	VipDragWidget* lastVisibleDragWidget() const;
 
 	/// Returns the number of horizontal splitters in the main vertical one.
 	int mainCount() const;
@@ -725,7 +734,7 @@ private:
 	QSplitter* createHSplitter();
 
 	struct PrivateData;
-	PrivateData* d_data;
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 VIP_REGISTER_QOBJECT_METATYPE(VipMultiDragWidget*)
@@ -758,10 +767,11 @@ protected:
 
 /// VipMultiDragWidget instances can have any kind of parent widget, but we provide the VipDragWidgetArea class in order to have an equivalent to QMdiArea.
 /// In this case the parent widget of the VipMultiDragWidget should be the one returned by VipDragWidgetArea::widget() function.
-class VIP_GUI_EXPORT VipDragWidgetArea : public QScrollArea
+class VIP_GUI_EXPORT VipDragWidgetArea : public QWidget//QScrollArea
 {
 	Q_OBJECT
 	friend class VipViewportArea;
+	VipViewportArea* d_area;
 
 public:
 	VipDragWidgetArea(QWidget* parent = nullptr);
@@ -769,8 +779,8 @@ public:
 
 	virtual VipMultiDragWidget* createMultiDragWidget() const { return new VipMultiDragWidget(); }
 
-	VipViewportArea* widget() const { return qobject_cast<VipViewportArea*>(QScrollArea::widget()); }
-
+	VipViewportArea* widget() const { return d_area; }
+	
 	void dropMimeData(const QMimeData* mime, const QPoint& pos);
 
 	static VipDragWidgetArea* fromChildWidget(QWidget* widget);

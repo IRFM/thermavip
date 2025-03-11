@@ -1,7 +1,7 @@
 /**
  * BSD 3-Clause License
  *
- * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ * Copyright (c) 2025, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Leo Dubus, Erwan Grelier
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -164,7 +164,7 @@ QPainterPath VipCoordinateSystem::transform(const QPainterPath& path, const QRec
 		QRectF p_rect = bounding_rect;
 		if (bounding_rect.isEmpty())
 			p_rect = path.boundingRect();
-		VipPointVector target = transform(p_rect);
+		const auto target = transform(p_rect);
 
 		QVector2D vx(target[1].x() - target[0].x(), target[1].y() - target[0].y());
 		QVector2D vy(target[3].x() - target[0].x(), target[3].y() - target[0].y());
@@ -228,7 +228,7 @@ VipPointVector VipCoordinateSystem::invTransform(const QVector<QPointF>& polygon
 
 QRectF VipCoordinateSystem::invTransformRect(const QRectF& r) const
 {
-	return invTransform(r).boundingRect();
+	return vipBoundingRect(invTransform(r));
 }
 
 QPainterPath VipNullCoordinateSystem::clipPath(const VipPlotItem* item) const

@@ -1,7 +1,7 @@
 /**
  * BSD 3-Clause License
  *
- * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ * Copyright (c) 2025, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Leo Dubus, Erwan Grelier
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -132,40 +132,28 @@ class VipPlotBarChart::PrivateData
 {
 public:
 	PrivateData()
-	  : spacing(0)
-	  , spacingUnit(ItemUnit)
-	  , width(20)
-	  , widthUnit(ItemUnit)
-	  , style(SideBySide)
-	  , textValue(EachValue)
-	  , textAlignment(Qt::AlignTop | Qt::AlignHCenter)
-	  , textPosition(Vip::Outside)
-	  , textDistance(5)
-	  , baseline(0)
-	  , palette(VipLinearColorMap::ColorPaletteRandom)
-	  , valueType(ScaleValue)
 	{
 	}
 
-	double spacing;
-	WidthUnit spacingUnit;
-	double width;
-	WidthUnit widthUnit;
-	Style style;
-	TextValue textValue;
-	Qt::Alignment textAlignment;
-	Vip::RegionPositions textPosition;
-	double textDistance;
+	double spacing{ 0 };
+	WidthUnit spacingUnit{ ItemUnit };
+	double width{ 20 };
+	WidthUnit widthUnit{ ItemUnit };
+	Style style{ SideBySide };
+	TextValue textValue{ EachValue };
+	Qt::Alignment textAlignment{ Qt::AlignTop | Qt::AlignHCenter };
+	Vip::RegionPositions textPosition{ Vip::Outside };
+	double textDistance{ 5 };
 	QTransform textTransform;
 	QPointF textTransformReference;
 	VipText text;
 	QSharedPointer<VipTextStyle> textStyle;
 
-	double baseline;
-	VipPlotBarChart::ValueType valueType;
+	double baseline{ 0 };
+	VipPlotBarChart::ValueType valueType{ ScaleValue };
 	QVector<VipBoxStyle> boxStyles;
 	VipBoxStyle boxStyle;
-	VipColorPalette palette;
+	VipColorPalette palette{ VipLinearColorMap::ColorPaletteRandom };
 	QList<VipText> names;
 
 	QRectF plotRect;
@@ -185,13 +173,12 @@ public:
 VipPlotBarChart::VipPlotBarChart(const VipText& title)
   : VipPlotItemDataType(title)
 {
-	d_data = new PrivateData();
+	VIP_CREATE_PRIVATE_DATA(d_data);
 	d_data->boxStyle.setBorderPen(QPen(Qt::NoPen));
 }
 
 VipPlotBarChart::~VipPlotBarChart()
 {
-	delete d_data;
 }
 
 void VipPlotBarChart::setData(const QVariant& v)
@@ -826,7 +813,7 @@ QDataStream& operator>>(QDataStream& str, VipBar& b)
 {
 	QVector<double> values;
 	double position;
-	str >> position, values;
+	str >> position>> values;
 	b.setValues(values);
 	b.setPosition(position);
 	return str;

@@ -1,7 +1,7 @@
 /**
  * BSD 3-Clause License
  *
- * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ * Copyright (c) 2025, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Leo Dubus, Erwan Grelier
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -89,8 +89,8 @@ Q_SIGNALS:
 	void valueChanged(const QVariant&);
 
 private:
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 /// Tool button that displays a menu to select a VipDisplayObject input (final processing data)
@@ -117,8 +117,8 @@ private Q_SLOTS:
 	void elideText();
 
 private:
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 /// Edit a VipBaseDataFusion processing.
@@ -142,8 +142,8 @@ private Q_SLOTS:
 
 private:
 	int indexOfInput(QObject*);
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 /// Widget to edit a VipProcessingObjectEditor
@@ -160,8 +160,8 @@ private Q_SLOTS:
 	void updateProcessingObject();
 
 private:
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 /// Widget to edit a VipIODeviceEditor
@@ -178,8 +178,8 @@ private Q_SLOTS:
 	void updateIODevice();
 
 private:
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 class QListWidgetItem;
@@ -229,8 +229,8 @@ private Q_SLOTS:
 	void resetProcessingList();
 
 private:
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 class VipSplitAndMergeEditor : public QWidget
@@ -252,8 +252,8 @@ Q_SIGNALS:
 	void selectionChanged(VipUniqueProcessingObjectEditor* ed);
 
 private:
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 class QComboBox;
@@ -282,8 +282,8 @@ Q_SIGNALS:
 	void componentChanged(const QString&);
 
 private:
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 /// Widget to edit a VipConvert
@@ -308,8 +308,8 @@ Q_SIGNALS:
 	void conversionChanged(int);
 
 private:
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 /// Widget to edit a VipDisplayImage.
@@ -332,8 +332,8 @@ private Q_SLOTS:
 	void updateExtractorVisibility();
 
 private:
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 /// Widget to edit a VipDisplayCurve.
@@ -354,8 +354,8 @@ private Q_SLOTS:
 	void updateExtractorVisibility();
 
 private:
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 /// Widget to edit a VipSwitch
@@ -374,8 +374,8 @@ public Q_SLOTS:
 	void resetSwitch();
 
 private:
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 /// Widget to edit a VipClamp
@@ -394,8 +394,8 @@ public Q_SLOTS:
 	void updateClamp();
 
 private:
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 /// Widget to edit a VipTextFileReader
@@ -411,8 +411,8 @@ private Q_SLOTS:
 	void updateTextFileReader();
 
 private:
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 /// Widget to edit a VipTextFileWriter
@@ -428,8 +428,8 @@ private Q_SLOTS:
 	void updateTextFileWriter();
 
 private:
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 /// Widget to edit a VipImageWriter
@@ -445,8 +445,8 @@ private Q_SLOTS:
 	void updateImageWriter();
 
 private:
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 class VIP_GUI_EXPORT VipCSVWriterEditor : public QWidget
@@ -462,8 +462,8 @@ private Q_SLOTS:
 	void updateWidgets();
 
 private:
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 /// Widget to edit a VipDirectoryReader
@@ -479,8 +479,8 @@ public Q_SLOTS:
 	void apply();
 
 private:
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 /// Widget to edit a VipOperationBetweenPlayers
@@ -496,8 +496,8 @@ public Q_SLOTS:
 	void apply();
 
 private:
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 class VIP_GUI_EXPORT VipCropEditor : public QWidget
@@ -563,8 +563,8 @@ protected:
 	// virtual void mousePressEvent(QMouseEvent * evt);
 
 private:
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 class VIP_GUI_EXPORT VipComponentLabellingEditor : public QCheckBox
@@ -648,8 +648,8 @@ private:
 	void LoadParametersFromWarpingObject();
 
 private:
-	class PrivateData;
-	PrivateData* d_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 class PropertyWidget;
@@ -705,8 +705,8 @@ Q_SIGNALS:
 
 private:
 	void removeEndStretch();
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 class VIP_GUI_EXPORT VipProcessingLeafSelector : public QToolButton
@@ -734,8 +734,8 @@ private Q_SLOTS:
 
 private:
 	QString title(VipProcessingObject* obj, QString& tool_tip) const;
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 /// Widget used to hide/show a VipProcessingObject editor in a VipMultiProcessingObjectEditor.
@@ -763,8 +763,8 @@ Q_SIGNALS:
 	void clicked(bool);
 
 private:
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 /// Displays all the editors for a chain of VipProcessingObject.
 /// Use VipMultiProcessingObjectEditor::setProcessingObjects to set the widget's content and display all the editors for a list of VipProcessingObject.
@@ -812,12 +812,10 @@ Q_SIGNALS:
 	void processingsChanged();
 
 private:
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
-typedef QPointer<VipPlotItem> VipPlotItemPtr;
-Q_DECLARE_METATYPE(VipPlotItemPtr)
 
 class VIP_GUI_EXPORT VipProcessingEditorToolWidget : public VipToolWidgetPlayer
 {
@@ -846,9 +844,9 @@ public Q_SLOTS:
 	void setPlotItem(VipPlotItem* item);
 
 private Q_SLOTS:
-	void itemClicked(VipPlotItem*, int);
-	void itemSelectionChanged(VipPlotItemPtr, bool);
-	void itemSelectionChangedDirect(VipPlotItem* item, bool);
+	void itemClicked(const VipPlotItemPointer&, int);
+	void itemSelectionChanged(const VipPlotItemPointer&, bool);
+	void itemSelectionChangedDirect(const VipPlotItemPointer& item, bool);
 	void workspaceChanged();
 	void emitProcessingsChanged() { Q_EMIT processingsChanged(); }
 
@@ -856,15 +854,65 @@ Q_SIGNALS:
 	void processingsChanged();
 
 private:
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 VIP_GUI_EXPORT VipProcessingEditorToolWidget* vipGetProcessingEditorToolWidget(VipMainWindow* window = nullptr);
 
 #include <QDialog>
 
-// Select a device among all possible ones
+
+/// @brief Singleton class used to remember user choices on 
+/// device type to open specific file formats,
+/// and to remember device options when opening a file.
+class VipRememberDeviceOptions
+{
+	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VipRememberDeviceOptions();
+
+public:
+	~VipRememberDeviceOptions();
+
+	/// Returns a map of 'file_suffix' -> 'class_name'
+	const QMap<QString, QString>& suffixToDeviceType() const;
+	QString deviceTypeForSuffix(const QString & suffix) const;
+	VipIODevice* deviceForSuffix(const QString& suffix) const;
+	void setSuffixToDeviceType(const QMap<QString, QString>&);
+	void addSuffixAndDeviceType(const QString& suffix, const QString& device_type);
+	void clearSuffixAndDeviceType();
+
+	/// Returns a map of 'class_name' -> 'VipIODevice*'
+	const QMap<QString, VipIODevice*>& deviceOptions() const;
+	void setDeviceOptions(const QMap<QString, VipIODevice*>&);
+	void addDeviceOptions(const QString& device_type, VipIODevice* device);
+	bool addDeviceOptionsCopy(const VipIODevice* src_device);
+	bool applyDefaultOptions(VipIODevice* device);
+	void clearDeviceOptions();
+
+	void clearAll();
+
+	static VipRememberDeviceOptions &instance();
+};
+
+
+
+/// @brief Edit device parameters with the possibility to
+/// remember the user choices.
+class VipSelectDeviceParameters : public QDialog
+{
+	Q_OBJECT
+public:
+	VipSelectDeviceParameters(VipIODevice* device, QWidget* editor, QWidget* parent = nullptr);
+	~VipSelectDeviceParameters();
+
+	bool remember() const;
+
+private:
+	VIP_DECLARE_PRIVATE_DATA(d_data);
+};
+
+/// Select a device among all possible ones
 class VipDeviceChoiceDialog : public QDialog
 {
 	Q_OBJECT
@@ -874,31 +922,34 @@ public:
 	void setChoices(const QList<VipIODevice*>& devices);
 	void setPath(const QString& path);
 	VipIODevice* selection() const;
+	bool remember() const;
 
 private:
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
+
+
+
+/// @brief Create a VipIODevice from a path.
+/// 
 class VIP_GUI_EXPORT VipCreateDevice
 {
 
 public:
-	enum CreateDeviceFlag
-	{
-		ShowEditor = 0x01,
-		ShowSelectionDialog = 0x02,
-		All = ShowEditor | ShowSelectionDialog
-	};
-
+	
 	/// Create a VipIODevice based on a list of possible devices.
-	/// If the device define an editor widget through #vipFDObjectEditor dispatcher and \a show_device_options is true,
+	/// If the device define an editor widget through vipFDObjectEditor() dispatcher and show_device_options is true,
 	/// A dialog box containing the device editor is displayed.
 	/// If the device editor widget defines the "apply" slot, it will be called.
 	///
-	/// If \a path is not empty, it is set to the device before displaying the editor.
+	/// If path is not empty, it is set to the device before displaying the editor.
 	static VipIODevice* create(const QList<VipProcessingObject::Info>& dev, const VipPath& path = VipPath(), bool show_device_options = true);
 
+	/// @brief Create device from a path.
+	/// Show device selection dialog if necessary,
+	/// as well as device editor widget.
 	static VipIODevice* create(const VipPath& path, bool show_device_options = true);
 };
 

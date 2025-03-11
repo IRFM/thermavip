@@ -1,7 +1,7 @@
 /**
  * BSD 3-Clause License
  *
- * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ * Copyright (c) 2025, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Leo Dubus, Erwan Grelier
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -124,46 +124,46 @@ namespace Vip
 }
 
 /// @brief Returns true if given value is valid, i.e. not NaN
-Q_DECL_CONSTEXPR static inline bool vipIsValid(float value)
+Q_DECL_CONSTEXPR static inline bool vipIsValid(float value) noexcept
 {
 	return !vipIsNan(value);
 }
-Q_DECL_CONSTEXPR static inline bool vipIsValid(double value)
+Q_DECL_CONSTEXPR static inline bool vipIsValid(double value) noexcept
 {
 	return !vipIsNan(value);
 }
-Q_DECL_CONSTEXPR static inline bool vipIsValid(long double value)
+Q_DECL_CONSTEXPR static inline bool vipIsValid(long double value) noexcept
 {
 	return !vipIsNan(value);
 }
 
-Q_DECL_CONSTEXPR static inline bool vipIsValid(const QPointF& pt)
+Q_DECL_CONSTEXPR static inline bool vipIsValid(const QPointF& pt) noexcept
 {
 	return !(vipIsNan(pt.x()) || vipIsNan(pt.y()));
 }
-Q_DECL_CONSTEXPR static inline bool vipIsValid(const VipLongPoint& pt)
+Q_DECL_CONSTEXPR static inline bool vipIsValid(const VipLongPoint& pt) noexcept
 {
 	return !(vipIsNan(pt.x()) || vipIsNan(pt.y()));
 }
 
 /// @brief Round point after transformation
-inline QPointF vipRound(const QPointF& pt, const QTransform& tr = QTransform())
+inline QPointF vipRound(const QPointF& pt, const QTransform& tr = QTransform()) noexcept
 {
 	const QPointF p = tr.map(pt);
 	return QPointF(qRound(p.x()), qRound(p.y()));
 }
 /// @brief Round line after transformation
-inline QLineF vipRound(const QLineF& line, const QTransform& tr = QTransform())
+inline QLineF vipRound(const QLineF& line, const QTransform& tr = QTransform()) noexcept
 {
 	return QLineF(vipRound(line.p1(), tr), vipRound(line.p2(), tr));
 }
 /// @brief Round rect after transforming top left and bottom right points
-inline QRectF vipRound(const QRectF& rect, const QTransform& tr = QTransform())
+inline QRectF vipRound(const QRectF& rect, const QTransform& tr = QTransform()) noexcept
 {
 	return QRectF(vipRound(rect.topLeft(), tr), vipRound(rect.bottomRight(), tr));
 }
 /// @brief Round polygon after transformation
-inline QPolygonF vipRound(const QPolygonF& poly, const QTransform& tr = QTransform())
+inline QPolygonF vipRound(const QPolygonF& poly, const QTransform& tr = QTransform()) 
 {
 	const int size = poly.size();
 	QPolygonF polygon(size);
@@ -180,7 +180,7 @@ inline QPolygonF vipRound(const QPointF* points, int pointCount, const QTransfor
 	return polygon;
 }
 /// @brief Extract centered inner square of a rectangle
-inline QRectF vipInnerSquare(const QRectF& r)
+inline QRectF vipInnerSquare(const QRectF& r) noexcept
 {
 	QRectF square = r;
 	if (square.width() > square.height()) {
@@ -197,29 +197,29 @@ inline QRectF vipInnerSquare(const QRectF& r)
 
 // Fuzzy comparisons
 
-inline bool vipFuzzyCompare(double d1, double d2)
+inline bool vipFuzzyCompare(double d1, double d2) noexcept
 {
 	if (d1 == 0 || d2 == 0)
 		return qFuzzyCompare(1.0 + d1, 1.0 + d2);
 	else
 		return qFuzzyCompare(d1, d2);
 }
-inline bool vipFuzzyCompare(const QPointF& p1, const QPointF& p2)
+inline bool vipFuzzyCompare(const QPointF& p1, const QPointF& p2) noexcept
 {
 	return vipFuzzyCompare(p1.x(), p2.x()) && vipFuzzyCompare(p1.y(), p2.y());
 }
-inline bool vipFuzzyCompare(const QSizeF& s1, const QSizeF& s2)
+inline bool vipFuzzyCompare(const QSizeF& s1, const QSizeF& s2) noexcept
 {
 	return vipFuzzyCompare(s1.width(), s2.width()) && vipFuzzyCompare(s1.height(), s2.height());
 }
-inline bool vipFuzzyCompare(const QRectF& r1, const QRectF& r2)
+inline bool vipFuzzyCompare(const QRectF& r1, const QRectF& r2) noexcept
 {
 	return vipFuzzyCompare(r1.topLeft(), r2.topLeft()) && vipFuzzyCompare(r1.size(), r2.size());
 }
 
 /// @brief Compute intersection between a line and a rectangle.
 /// Returns at most 2 valid points.
-inline QPair<QPointF, QPointF> vipIntersect(const QLineF& line, const QRectF& rect)
+inline QPair<QPointF, QPointF> vipIntersect(const QLineF& line, const QRectF& rect) noexcept
 {
 	QPair<QPointF, QPointF> res(Vip::InvalidPoint, Vip::InvalidPoint);
 
@@ -284,7 +284,7 @@ inline QPair<QPointF, QPointF> vipIntersect(const QLineF& line, const QRectF& re
 /// \param end End angle ([-360,360]). must be > start.
 /// \param angle Angle to compare to given range ([-360,360]).
 /// \return 0 if \a angle is inside the range [start,end], 1 if angle > end, -1 if angle < start.
-inline int vipCompareAngle(double start, double end, double angle)
+inline int vipCompareAngle(double start, double end, double angle) noexcept
 {
 	// full circle: always inside
 	if (end - start == 360)
@@ -316,7 +316,7 @@ struct VipMargins
 	double right;
 	double bottom;
 
-	VipMargins()
+	VipMargins() noexcept
 	  : left(0)
 	  , top(0)
 	  , right(0)
@@ -324,7 +324,7 @@ struct VipMargins
 	{
 	}
 
-	VipMargins(double l, double t, double r, double b)
+	VipMargins(double l, double t, double r, double b) noexcept
 	  : left(l)
 	  , top(t)
 	  , right(r)
@@ -332,17 +332,17 @@ struct VipMargins
 	{
 	}
 
-	double totalWidth() const { return left + right; }
-	double totalHeight() const { return top + bottom; }
+	double totalWidth() const noexcept { return left + right; }
+	double totalHeight() const noexcept { return top + bottom; }
 
-	bool operator!=(const VipMargins& other) const
+	bool operator!=(const VipMargins& other) const noexcept
 	{
 		return !vipFuzzyCompare(left, other.left) || !vipFuzzyCompare(top, other.top) || !vipFuzzyCompare(right, other.right) || !vipFuzzyCompare(bottom, other.bottom);
 	}
 
-	bool operator==(const VipMargins& other) const { return !((*this) != other); }
+	bool operator==(const VipMargins& other) const noexcept { return !((*this) != other); }
 
-	VipMargins& operator+=(const VipMargins& other)
+	VipMargins& operator+=(const VipMargins& other) noexcept
 	{
 		left += other.left;
 		right += other.right;
@@ -350,7 +350,7 @@ struct VipMargins
 		bottom += other.bottom;
 		return *this;
 	}
-	VipMargins& operator+=(double val)
+	VipMargins& operator+=(double val) noexcept
 	{
 		left += val;
 		right += val;
@@ -358,7 +358,7 @@ struct VipMargins
 		bottom += val;
 		return *this;
 	}
-	VipMargins& operator-=(const VipMargins& other)
+	VipMargins& operator-=(const VipMargins& other) noexcept
 	{
 		left -= other.left;
 		right -= other.right;
@@ -366,7 +366,7 @@ struct VipMargins
 		bottom -= other.bottom;
 		return *this;
 	}
-	VipMargins& operator-=(double val)
+	VipMargins& operator-=(double val) noexcept
 	{
 		left -= val;
 		right -= val;
@@ -376,22 +376,22 @@ struct VipMargins
 	}
 };
 
-inline VipMargins operator+(const VipMargins& left, const VipMargins& right)
+inline VipMargins operator+(const VipMargins& left, const VipMargins& right) noexcept
 {
 	VipMargins res = left;
 	return res += right;
 }
-inline VipMargins operator+(const VipMargins& left, double val)
+inline VipMargins operator+(const VipMargins& left, double val) noexcept
 {
 	VipMargins res = left;
 	return res += val;
 }
-inline VipMargins operator-(const VipMargins& left, const VipMargins& right)
+inline VipMargins operator-(const VipMargins& left, const VipMargins& right) noexcept
 {
 	VipMargins res = left;
 	return res -= right;
 }
-inline VipMargins operator-(const VipMargins& left, double val)
+inline VipMargins operator-(const VipMargins& left, double val) noexcept
 {
 	VipMargins res = left;
 	return res -= val;

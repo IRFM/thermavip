@@ -1,25 +1,25 @@
 #include "PyGenerator.h"
-#include "PyEditor.h"
+#include "VipTabEditor.h"
 #include "PyProcessing.h"
 
 #include "VipLogging.h"
 #include "VipPlayer.h"
+#include "VipSleep.h"
 
 void PySignalGenerator::ReadThread::run()
 {
-	qint64 start = vipGetMilliSecondsSinceEpoch();
+	if (PySignalGenerator* gen = generator)
+		gen->m_startTime = QDateTime::currentMSecsSinceEpoch();
+	while (PySignalGenerator* gen = generator) {
+		qint64 time = QDateTime::currentMSecsSinceEpoch();
 
-	while (PySignalGenerator * gen = generator)
-	{
-		qint64 time = vipGetMilliSecondsSinceEpoch() - start;
-
-		qint64 st = QDateTime::currentMSecsSinceEpoch();
+		qint64 st = time;
 		if (!gen->readData(time * 1000000))
 			break;
 		qint64 el = QDateTime::currentMSecsSinceEpoch() - st;
-		int sleep = gen->propertyAt(0)->value<int>()/1000000 - el;
+		int sleep = gen->propertyAt(0)->value<int>() / 1000000 - el;
 		if (sleep > 0)
-			msleep(sleep); 
+			vipSleep(sleep);
 	}
 
 	generator = nullptr;
@@ -29,12 +29,12 @@ void PySignalGenerator::close()
 {
 	VipIODevice::close();
 	setStreamingEnabled(false);
-	m_data = QVariant();
+	d_data = QVariant();
 }
 
 PySignalGenerator::DeviceType PySignalGenerator::deviceType() const
 {
-	if (m_data.userType() != 0)
+	if (d_data.userType() != 0)
 		return Resource;
 
 	qint64 start = propertyAt(1)->value<qint64>();
@@ -45,32 +45,26 @@ PySignalGenerator::DeviceType PySignalGenerator::deviceType() const
 		return VipTimeRangeBasedGenerator::deviceType();
 }
 
-QVariant PySignalGenerator::computeValue(qint64 time, bool & ok)
+QVariant PySignalGenerator::computeValue(qint64 time, bool& ok)
 {
-	
-	GetPyOptions()->setObject("t", QVariant(time / 1000000000.0));
-
-	QVariant value;
-	if (!propertyAt(4)->value<bool>())
-		value = GetPyOptions()->evalCode(m_code);
+	VipPyCommandList cmds;
+	cmds << vipCSendObject("t", time * 1e-9);
+	if (deviceType() == Sequential)
+		cmds << vipCSendObject("st", m_startTime * 1e-3);
 	else
-		value = GetPyOptions()->wait(GetPyOptions()->execCode(m_code.pycode),4000);
+		cmds << vipCSendObject("st", propertyAt(1)->value<qint64>() * 1e-9);
+	cmds << vipCExecCode(m_code, "code");
+	cmds << vipCRetrieveObject("value");
 
-	if (propertyAt(4)->value<bool>() && value.userType() != qMetaTypeId<PyError>())
-	{
-		//complex expression
-		value = GetPyOptions()->getObject("value");
-	}
-
-	if (value.userType() == qMetaTypeId<PyError>())
-	{
-		setError(value.value<PyError>().traceback);
+	QVariant value = VipPyInterpreter::instance()->sendCommands(cmds).value(4000);
+	if (value.userType() == qMetaTypeId<VipPyError>()) {
+		setError(value.value<VipPyError>().traceback);
 		ok = false;
 		return QVariant();
 	}
 
 	ok = true;
-	return value;
+	return value.value<QVariantMap>()["value"];
 }
 
 bool PySignalGenerator::open(VipIODevice::OpenModes mode)
@@ -92,29 +86,13 @@ bool PySignalGenerator::open(VipIODevice::OpenModes mode)
 	if (sampling <= 0)
 		return false;
 
-	if(propertyAt(4)->value<bool>())
-		m_code = CodeObject(code, CodeObject::File);
-	else
-		m_code = CodeObject(code, CodeObject::Eval);
+	m_code = code;
 
-	if (m_code.isNull())
-	{
-		PyError err;
-		if (err.isNull())
-			err.traceback = "Unable to exec code object";
-		setError(err.traceback);
-		return false;
-	}
+	// temporal device, generate the timestamps
+	if (deviceType() == Temporal) {
+		this->setTimeWindows(start, (end - start) / sampling + 1, sampling);
 
-	PyProcessingLocker locker;
-
-	//temporal device, generate the timestamps
-	if (deviceType() == Temporal)
-	{
-		this->setTimeWindows(start, (end-start) / sampling + 1, sampling);
-
-		//evaluate the first value. If it is a double, generate the full curve, and reset the time window with a size of 1
-		GetPyOptions()->setObject("st", QVariant(start / 1000000000.0));
+		// evaluate the first value. If it is a double, generate the full curve, and reset the time window with a size of 1
 
 		bool ok = false;
 		QVariant value = computeValue(start, ok);
@@ -123,63 +101,57 @@ bool PySignalGenerator::open(VipIODevice::OpenModes mode)
 
 		ok = false;
 		value.toDouble(&ok);
-		if (ok)
-		{
-			//generate the curve
+		if (ok) {
+			// generate the curve
 			VipPointVector vector;
-			for (qint64 time = start; time <= end; time += sampling)
-			{
+			for (qint64 time = start; time <= end; time += sampling) {
 				bool ok = false;
 				QVariant value = computeValue(time, ok);
-				if(!ok)
+				if (!ok)
 					return false;
-				
+
 				vector.append(QPointF(time, value.toDouble()));
 			}
-			m_data = QVariant::fromValue(vector);
+			d_data = QVariant::fromValue(vector);
 			if (!readData(0))
 				return false;
 		}
 		else {
-			//generate a video device
-			//this->setTimeWindows(start, end, sampling);
+			// generate a video device
+			// this->setTimeWindows(start, end, sampling);
 			if (!readData(start))
 				return false;
 		}
 	}
-	else
-	{
-		GetPyOptions()->setObject("st", QVariant(0.0));
+	else {
+		m_startTime = QDateTime::currentMSecsSinceEpoch();
 		if (!readData(0))
 			return false;
 	}
 
-	QStringList lst = code.split("\n", QString::SkipEmptyParts);
+	QStringList lst = code.split("\n", VIP_SKIP_BEHAVIOR::SkipEmptyParts);
 	if (lst.size() == 1)
 		setAttribute("Name", lst[0]);
 	else
-		setAttribute("Name","Python expression");
-	
+		setAttribute("Name", "Python expression");
+
 	setOpenMode(mode);
 	return true;
 }
 
 bool PySignalGenerator::enableStreaming(bool enable)
 {
-	if (deviceType() != Sequential)
-	{
+	if (deviceType() != Sequential) {
 		m_thread->generator = nullptr;
 		m_thread->wait();
 		return false;
 	}
 
-	if (enable)
-	{
+	if (enable) {
 		m_thread->generator = this;
 		m_thread->start();
 	}
-	else
-	{
+	else {
 		m_thread->generator = nullptr;
 		m_thread->wait();
 	}
@@ -189,41 +161,32 @@ bool PySignalGenerator::enableStreaming(bool enable)
 
 bool PySignalGenerator::readData(qint64 time)
 {
-	PyProcessingLocker locker;
-
-	//Resource
-	if (m_data.userType() != 0)
-	{
-		VipAnyData any = create(m_data);
+	// Resource
+	if (d_data.userType() != 0) {
+		VipAnyData any = create(d_data);
 		any.setAttribute("Name", propertyAt(3)->value<QString>());
 		any.setXUnit("Time");
-		any.setYUnit(propertyAt(5)->value<QString>());
-		any.setZUnit(propertyAt(5)->value<QString>());
+		any.setYUnit(propertyAt(4)->value<QString>());
+		any.setZUnit(propertyAt(4)->value<QString>());
 		outputAt(0)->setData(any);
 	}
-	//temporal or sequential
-	else 
-	{
+	// temporal or sequential
+	else {
 		bool ok = false;
-		QVariant value = computeValue(time,ok);
-		if (value.userType() == qMetaTypeId<PyError>() || !ok)
+		QVariant value = computeValue(time, ok);
+		if (value.userType() == qMetaTypeId<VipPyError>() || !ok)
 			return false;
-		
 
 		VipAnyData any = create(value);
 		any.setTime(time);
 		any.setAttribute("Name", propertyAt(3)->value<QString>());
 		any.setXUnit("Time");
-		any.setYUnit(propertyAt(5)->value<QString>());
-		any.setZUnit(propertyAt(5)->value<QString>());
+		any.setYUnit(propertyAt(4)->value<QString>());
+		any.setZUnit(propertyAt(4)->value<QString>());
 		outputAt(0)->setData(any);
 	}
 	return true;
 }
-
-
-
-
 
 #include "VipStandardWidgets.h"
 #include "VipProcessingObjectEditor.h"
@@ -231,11 +194,10 @@ bool PySignalGenerator::readData(qint64 time)
 #include <qradiobutton.h>
 #include <qboxlayout.h>
 
-class PySignalGeneratorEditor::PrivateData 
+class PySignalGeneratorEditor::PrivateData
 {
 public:
-	QLineEdit code;
-	PyEditor editor;
+	VipTabEditor editor;
 	QComboBox unit;
 	VipDoubleEdit sampling;
 
@@ -244,173 +206,146 @@ public:
 	QCheckBox usePoolTimeRange;
 	VipDoubleEdit start, end;
 
-	//gather in widgets
-	QWidget * samplingWidget;
-	QWidget * rangeWidget;
+	// gather in widgets
+	QWidget* samplingWidget;
+	QWidget* rangeWidget;
 
 	QPointer<PySignalGenerator> generator;
 };
 
-PySignalGeneratorEditor::PySignalGeneratorEditor(QWidget * parent)
-	:QWidget(parent)
+PySignalGeneratorEditor::PySignalGeneratorEditor(QWidget* parent)
+  : QWidget(parent)
 {
-	m_data = new PrivateData();
+	VIP_CREATE_PRIVATE_DATA(d_data);
 
-	QHBoxLayout * slay = new QHBoxLayout();
+	QHBoxLayout* slay = new QHBoxLayout();
 	slay->setContentsMargins(0, 0, 0, 0);
 	slay->addWidget(new QLabel("Sampling"));
-	slay->addWidget(&m_data->sampling);
-	m_data->samplingWidget = new QWidget();
-	m_data->samplingWidget->setLayout(slay);
+	slay->addWidget(&d_data->sampling);
+	d_data->samplingWidget = new QWidget();
+	d_data->samplingWidget->setLayout(slay);
 
-	QHBoxLayout * rlay = new QHBoxLayout();
+	QHBoxLayout* rlay = new QHBoxLayout();
 	rlay->setContentsMargins(0, 0, 0, 0);
 	rlay->addWidget(new QLabel("Start"));
-	rlay->addWidget(&m_data->start);
+	rlay->addWidget(&d_data->start);
 	rlay->addWidget(new QLabel("End"));
-	rlay->addWidget(&m_data->end);
-	m_data->rangeWidget = new QWidget();
-	m_data->rangeWidget->setLayout(rlay);
+	rlay->addWidget(&d_data->end);
+	d_data->rangeWidget = new QWidget();
+	d_data->rangeWidget->setLayout(rlay);
 
-	QVBoxLayout * lay = new QVBoxLayout();
-	lay->addWidget(&m_data->code);
-	lay->addWidget(&m_data->editor,10);
-	lay->addWidget(&m_data->unit);
-	lay->addWidget(m_data->samplingWidget);
+	QVBoxLayout* lay = new QVBoxLayout();
+	lay->addWidget(&d_data->editor, 10);
+	lay->addWidget(&d_data->unit);
+	lay->addWidget(d_data->samplingWidget);
 	lay->addWidget(VipLineWidget::createHLine());
-	lay->addWidget(&m_data->sequential);
-	lay->addWidget(&m_data->temporal);
-	lay->addWidget(&m_data->usePoolTimeRange);
-	lay->addWidget(m_data->rangeWidget);
+	lay->addWidget(&d_data->sequential);
+	lay->addWidget(&d_data->temporal);
+	lay->addWidget(&d_data->usePoolTimeRange);
+	lay->addWidget(d_data->rangeWidget);
 	lay->addStretch(1);
 	lay->addWidget(VipLineWidget::createHLine());
 	lay->setContentsMargins(0, 0, 0, 0);
 	setLayout(lay);
 
-	m_data->code.setPlaceholderText("Python expression");
-	m_data->editor.SetDefaultCode("value = (t - st) * 10");
-	if (!m_data->editor.CurrentEditor())
-		m_data->editor.NewFile();
+	d_data->editor.setDefaultText("value = (t - st) * 10");
+	d_data->editor.setDefaultColorSchemeType("Python");
+	if (!d_data->editor.currentEditor())
+		d_data->editor.newFile();
 
-	m_data->code.setToolTip(tr(
-			"Python expression that can be evaluated to numerical value or a numpy array.<br><br>"
-			"Example:<br>"
-			"    <b>2*cos((t-st)/10)</b><br>"
-			"<i>t</i> represents the device time in seconds.<br>"
-			"<i>st</i> represents the device starting time in seconds."
-		));
-	m_data->editor.setToolTip(tr(
-			"Python script with a <i>value</i> variable that can be evaluated to numerical value or a numpy array.<br><br>"
-			"Example:<br>"
-			"    <b>value = 2*cos((t-st)/10)</b><br>"
-			"<i>t</i> represents the device time in seconds.<br>"
-			"<i>st</i> represents the device starting time in seconds.<br>"
-			"<i>value</i> represents the output value (numerical value or numpy array).<br>"
-		));
-	
-	m_data->sampling.setToolTip(tr(
-		"Device sampling time in seconds"));
-		/*"For sequential device, the sampling time (in seconds) is used to determine the elapsed time between 2 generated values.<br>"
-		"For temporal device, this is the inverse of the device frequency."
-	));*/
+	d_data->editor.setToolTip(tr("Python script with a <i>value</i> variable that can be evaluated to numerical value or a numpy array.<br><br>"
+				     "Example:<br>"
+				     "    <b>value = 2*cos((t-st)/10)</b><br>"
+				     "<i>t</i> represents the device time in seconds.<br>"
+				     "<i>st</i> represents the device starting time in seconds.<br>"
+				     "<i>value</i> represents the output value (numerical value or numpy array).<br>"));
 
-	m_data->sequential.setText("Sequential device");
-	m_data->temporal.setText("Temporal device");
+	d_data->sampling.setToolTip(tr("Device sampling time in seconds"));
+	/*"For sequential device, the sampling time (in seconds) is used to determine the elapsed time between 2 generated values.<br>"
+	"For temporal device, this is the inverse of the device frequency."
+));*/
 
-	m_data->sequential.setToolTip(tr("Create a sequential (streaming) video or plot device"));
-	m_data->temporal.setToolTip(tr("Create a temporal video or plot device"));
+	d_data->sequential.setText("Sequential device");
+	d_data->temporal.setText("Temporal device");
 
-	m_data->usePoolTimeRange.setText("Find best time limits");
-	m_data->usePoolTimeRange.setToolTip(tr("Use the current workspace to find the best time range"));
-	m_data->start.setToolTip(tr("Device start time in seconds"));
-	m_data->end.setToolTip(tr("Device end time in seconds"));
+	d_data->sequential.setToolTip(tr("Create a sequential (streaming) video or plot device"));
+	d_data->temporal.setToolTip(tr("Create a temporal video or plot device"));
 
-	m_data->unit.setEditable(true);
-	m_data->unit.lineEdit()->setPlaceholderText("Signal unit (optional)");
-	m_data->unit.setToolTip("<b>Signal unit (optional)</b><br>Enter the signal y unit or the image z unit (if the output signal is an image)");
+	d_data->usePoolTimeRange.setText("Find best time limits");
+	d_data->usePoolTimeRange.setToolTip(tr("Use the current workspace to find the best time range"));
+	d_data->start.setToolTip(tr("Device start time in seconds"));
+	d_data->end.setToolTip(tr("Device end time in seconds"));
 
-	m_data->sequential.setChecked(true);
-	m_data->usePoolTimeRange.setVisible(false);
-	m_data->rangeWidget->setVisible(false);
-	m_data->editor.setVisible(false);
+	d_data->unit.setEditable(true);
+	d_data->unit.lineEdit()->setPlaceholderText("Signal unit (optional)");
+	d_data->unit.setToolTip("<b>Signal unit (optional)</b><br>Enter the signal y unit or the image z unit (if the output signal is an image)");
 
-	connect(&m_data->sequential, SIGNAL(clicked(bool)), this, SLOT(updateVisibility()));
-	connect(&m_data->temporal, SIGNAL(clicked(bool)), this, SLOT(updateVisibility()));
-	connect(&m_data->usePoolTimeRange, SIGNAL(clicked(bool)), this, SLOT(updateVisibility()));
+	d_data->sequential.setChecked(true);
+	d_data->usePoolTimeRange.setVisible(false);
+	d_data->rangeWidget->setVisible(false);
+	d_data->editor.setVisible(false);
 
-	connect(&m_data->code, SIGNAL(returnPressed()), this, SLOT(updateGenerator()));
-	connect(&m_data->editor, SIGNAL(Applied()), this, SLOT(updateGenerator()));
-	connect(&m_data->sampling, SIGNAL(valueChanged(double)), this, SLOT(updateGenerator()));
-	connect(&m_data->start, SIGNAL(valueChanged(double)), this, SLOT(updateGenerator()));
-	connect(&m_data->end, SIGNAL(valueChanged(double)), this, SLOT(updateGenerator()));
-	connect(&m_data->sequential, SIGNAL(clicked(bool)), this, SLOT(updateGenerator()));
-	connect(&m_data->temporal, SIGNAL(clicked(bool)), this, SLOT(updateGenerator()));
-	connect(&m_data->usePoolTimeRange, SIGNAL(clicked(bool)), this, SLOT(updateGenerator()));
+	connect(&d_data->sequential, SIGNAL(clicked(bool)), this, SLOT(updateVisibility()));
+	connect(&d_data->temporal, SIGNAL(clicked(bool)), this, SLOT(updateVisibility()));
+	connect(&d_data->usePoolTimeRange, SIGNAL(clicked(bool)), this, SLOT(updateVisibility()));
 
+	// connect(&d_data->editor, SIGNAL(Applied()), this, SLOT(updateGenerator()));
+	connect(&d_data->sampling, SIGNAL(valueChanged(double)), this, SLOT(updateGenerator()));
+	connect(&d_data->start, SIGNAL(valueChanged(double)), this, SLOT(updateGenerator()));
+	connect(&d_data->end, SIGNAL(valueChanged(double)), this, SLOT(updateGenerator()));
+	connect(&d_data->sequential, SIGNAL(clicked(bool)), this, SLOT(updateGenerator()));
+	connect(&d_data->temporal, SIGNAL(clicked(bool)), this, SLOT(updateGenerator()));
+	connect(&d_data->usePoolTimeRange, SIGNAL(clicked(bool)), this, SLOT(updateGenerator()));
 }
-PySignalGeneratorEditor::~PySignalGeneratorEditor()
-{
-	delete m_data;
-}
+PySignalGeneratorEditor::~PySignalGeneratorEditor() {}
 
-void PySignalGeneratorEditor::setGenerator(PySignalGenerator * gen)
+void PySignalGeneratorEditor::setGenerator(PySignalGenerator* gen)
 {
-	if (gen != m_data->generator)
-	{
-		m_data->generator = gen;
+	if (gen != d_data->generator) {
+		d_data->generator = gen;
 		updateWidget();
 	}
 }
 
-PySignalGenerator * PySignalGeneratorEditor::generator() const
+PySignalGenerator* PySignalGeneratorEditor::generator() const
 {
-	return m_data->generator;
+	return d_data->generator;
 }
 
 void PySignalGeneratorEditor::updateGenerator()
 {
-	if (PySignalGenerator * gen = m_data->generator)
-	{
-		gen->propertyAt(0)->setData((qint64)(m_data->sampling.value() * 1000000000));
-
-		if (!gen->propertyAt(4)->value<bool>())
-			gen->propertyAt(3)->setData(m_data->code.text());
-		else if (CodeEditor * ed = m_data->editor.CurrentEditor())
+	if (PySignalGenerator* gen = d_data->generator) {
+		gen->propertyAt(0)->setData((qint64)(d_data->sampling.value() * 1000000000ull));
+		if (VipTextEditor* ed = d_data->editor.currentEditor())
 			gen->propertyAt(3)->setData(ed->toPlainText());
 
 		VipTimeRange range = VipInvalidTimeRange;
 
-		if (m_data->temporal.isChecked())
-		{
-			if (m_data->usePoolTimeRange.isChecked())
-			{
-				if (vipGetMainWindow()->displayArea()->currentDisplayPlayerArea())
-				{
+		if (d_data->temporal.isChecked()) {
+			if (d_data->usePoolTimeRange.isChecked()) {
+				if (vipGetMainWindow()->displayArea()->currentDisplayPlayerArea()) {
 					range = vipGetMainWindow()->displayArea()->currentDisplayPlayerArea()->processingPool()->timeLimits();
 					if (range.first == VipInvalidTime)
-						range = VipTimeRange(0, 10000000000);
+						range = VipTimeRange(0ull, 10000000000ull);
 				}
-				else
-				{
-					range = VipTimeRange(0, 10000000000);
+				else {
+					range = VipTimeRange(0ull, 10000000000ull);
 				}
 			}
-			else
-			{
-				range.first = ((qint64)(m_data->start.value() * 1000000000));
-				range.second = ((qint64)(m_data->end.value() * 1000000000));
+			else {
+				range.first = ((qint64)(d_data->start.value() * 1000000000ull));
+				range.second = ((qint64)(d_data->end.value() * 1000000000ull));
 			}
 		}
 
 		gen->propertyAt(1)->setData(range.first);
 		gen->propertyAt(2)->setData(range.second);
-		gen->propertyAt(5)->setData(m_data->unit.currentText());
+		gen->propertyAt(4)->setData(d_data->unit.currentText());
 
 		updateWidget();
 
-		if ( (gen->isOpen() || gen->property("shouldOpen").toBool()) && gen->deviceType() != VipIODevice::Sequential)
-		{
-			//new sampling time or time range for temporal device: recompute it
+		if ((gen->isOpen() || gen->property("shouldOpen").toBool()) && gen->deviceType() != VipIODevice::Sequential) {
+			// new sampling time or time range for temporal device: recompute it
 			gen->close();
 			if (gen->open(VipIODevice::ReadOnly))
 				gen->setProperty("shouldOpen", false);
@@ -423,110 +358,86 @@ void PySignalGeneratorEditor::updateGenerator()
 
 void PySignalGeneratorEditor::updateVisibility()
 {
-	m_data->start.setEnabled(!m_data->usePoolTimeRange.isChecked());
-	m_data->end.setEnabled(!m_data->usePoolTimeRange.isChecked());
+	d_data->start.setEnabled(!d_data->usePoolTimeRange.isChecked());
+	d_data->end.setEnabled(!d_data->usePoolTimeRange.isChecked());
 
-	m_data->usePoolTimeRange.setVisible(m_data->temporal.isChecked());
-	m_data->rangeWidget->setVisible(m_data->temporal.isChecked());
+	d_data->usePoolTimeRange.setVisible(d_data->temporal.isChecked());
+	d_data->rangeWidget->setVisible(d_data->temporal.isChecked());
 }
 
 void PySignalGeneratorEditor::updateWidget()
 {
-	if (PySignalGenerator * gen = m_data->generator)
-	{
-		if (!gen->propertyAt(4)->value<bool>())
-		{
-			//simple line
-			m_data->editor.setVisible(false);
-			m_data->code.setVisible(true);
-			m_data->code.blockSignals(true);
-			m_data->code.setText(gen->propertyAt(3)->value<QString>());
-			m_data->code.blockSignals(false);
-		}
-		else
-		{
-			//complex Python code
-			m_data->editor.setVisible(true);
-			m_data->code.setVisible(false);
-			if (!m_data->editor.CurrentEditor())
-				m_data->editor.NewFile();
-			
-			m_data->editor.blockSignals(true);
-			m_data->editor.CurrentEditor()->setPlainText(gen->propertyAt(3)->value<QString>());
-			m_data->editor.blockSignals(false);
-		}
+	if (PySignalGenerator* gen = d_data->generator) {
+		// complex Python code
+		d_data->editor.setVisible(true);
+		if (!d_data->editor.currentEditor())
+			d_data->editor.newFile();
 
-		
+		d_data->editor.blockSignals(true);
+		d_data->editor.currentEditor()->setPlainText(gen->propertyAt(3)->value<QString>());
+		d_data->editor.blockSignals(false);
 
-		m_data->sequential.blockSignals(true);
-		if (gen->isOpen())
-		{
-			m_data->sequential.setChecked(gen->deviceType() == VipIODevice::Sequential);
-			m_data->temporal.setChecked(gen->deviceType() != VipIODevice::Sequential);
+		d_data->sequential.blockSignals(true);
+		if (gen->isOpen()) {
+			d_data->sequential.setChecked(gen->deviceType() == VipIODevice::Sequential);
+			d_data->temporal.setChecked(gen->deviceType() != VipIODevice::Sequential);
 			updateVisibility();
 		}
-		m_data->sequential.blockSignals(false);
+		d_data->sequential.blockSignals(false);
 
-		m_data->sampling.blockSignals(true);
-		m_data->sampling.setValue(gen->propertyAt(0)->value<qint64>()/1000000000.0);
-		m_data->sampling.blockSignals(false);
+		d_data->sampling.blockSignals(true);
+		d_data->sampling.setValue(gen->propertyAt(0)->value<qint64>() / 1000000000.0);
+		d_data->sampling.blockSignals(false);
 
-		m_data->start.blockSignals(true);
-		m_data->end.blockSignals(true);
+		d_data->start.blockSignals(true);
+		d_data->end.blockSignals(true);
 
-		VipPlotPlayer * pl = qobject_cast<VipPlotPlayer*>(VipPlayer2D::dropTarget());
+		VipPlotPlayer* pl = qobject_cast<VipPlotPlayer*>(VipPlayer2D::dropTarget());
 
 		if (pl) {
-			//set the list of possible units
+			// set the list of possible units
 			QList<VipAbstractScale*> scales = pl->leftScales();
 			QStringList units;
 			for (int i = 0; i < scales.size(); ++i)
 				units.append(scales[i]->title().text());
 
-			m_data->unit.clear();
-			m_data->unit.addItems(units);
-			m_data->unit.setCurrentText(gen->propertyAt(5)->value<QString>());
+			d_data->unit.clear();
+			d_data->unit.addItems(units);
+			d_data->unit.setCurrentText(gen->propertyAt(5)->value<QString>());
 		}
 
-		if (gen->propertyAt(1)->value<qint64>() == VipInvalidTime && gen->propertyAt(2)->value<qint64>() == VipInvalidTime)
-		{
-			m_data->start.setValue(0);
-			m_data->end.setValue(10);
+		if (gen->propertyAt(1)->value<qint64>() == VipInvalidTime && gen->propertyAt(2)->value<qint64>() == VipInvalidTime) {
+			d_data->start.setValue(0);
+			d_data->end.setValue(10);
 
-			//use the drop target (if this is a VipPlotPlayer) to find a better time range
-			if (pl)
-			{
+			// use the drop target (if this is a VipPlotPlayer) to find a better time range
+			if (pl) {
 				if (pl->haveTimeUnit()) {
 					VipInterval inter = pl->xScale()->scaleDiv().bounds().normalized();
-					m_data->start.setValue(inter.minValue()*1e-9);
-					m_data->end.setValue(inter.maxValue()*1e-9);
+					d_data->start.setValue(inter.minValue() * 1e-9);
+					d_data->end.setValue(inter.maxValue() * 1e-9);
 				}
 			}
 		}
-		else
-		{
-			m_data->start.setValue(gen->propertyAt(1)->value<qint64>() / 1000000000.0);
-			m_data->end.setValue(gen->propertyAt(2)->value<qint64>() / 1000000000.0);
+		else {
+			d_data->start.setValue(gen->propertyAt(1)->value<qint64>() / 1000000000.0);
+			d_data->end.setValue(gen->propertyAt(2)->value<qint64>() / 1000000000.0);
 		}
 
-		m_data->start.blockSignals(false);
-		m_data->end.blockSignals(false);
-
-		
+		d_data->start.blockSignals(false);
+		d_data->end.blockSignals(false);
 	}
 }
 
-PySignalGenerator * PySignalGeneratorEditor::createGenerator(bool complex_script)
+PySignalGenerator* PySignalGeneratorEditor::createGenerator()
 {
-	PySignalGenerator * gen = new PySignalGenerator();
-	gen->propertyAt(4)->setData(complex_script);
-	PySignalGeneratorEditor * editor = new PySignalGeneratorEditor();
+	PySignalGenerator* gen = new PySignalGenerator();
+	PySignalGeneratorEditor* editor = new PySignalGeneratorEditor();
 	editor->setGenerator(gen);
 
-	VipGenericDialog dialog(editor, "Edit Python Device");
+	VipGenericDialog dialog(editor, "Edit Python generator");
 	dialog.setMinimumWidth(300);
-	if (dialog.exec() == QDialog::Accepted)
-	{
+	if (dialog.exec() == QDialog::Accepted) {
 		editor->updateGenerator();
 		if (gen->open(VipIODevice::ReadOnly))
 			return gen;
@@ -536,11 +447,9 @@ PySignalGenerator * PySignalGeneratorEditor::createGenerator(bool complex_script
 	return nullptr;
 }
 
-
-
-static QWidget * editPySignalGenerator(PySignalGenerator * gen)
+static QWidget* editPySignalGenerator(PySignalGenerator* gen)
 {
-	PySignalGeneratorEditor * editor = new PySignalGeneratorEditor();
+	PySignalGeneratorEditor* editor = new PySignalGeneratorEditor();
 	editor->setGenerator(gen);
 	return editor;
 }

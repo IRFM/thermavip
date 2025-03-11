@@ -1,7 +1,7 @@
 /**
  * BSD 3-Clause License
  *
- * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ * Copyright (c) 2025, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Leo Dubus, Erwan Grelier
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -322,7 +322,7 @@ static bool registerVipPolarAxis = vipSetKeyWordsForClass(&VipPolarAxis::staticM
 VipPolarAxis::VipPolarAxis(QGraphicsItem* parent)
   : VipAbstractPolarScale(parent)
 {
-	d_data = new PrivateData();
+	VIP_CREATE_PRIVATE_DATA(d_data);
 
 	this->setScaleDraw(new VipPolarScaleDraw());
 	this->setMargin(2);
@@ -334,7 +334,6 @@ VipPolarAxis::VipPolarAxis(QGraphicsItem* parent)
 
 VipPolarAxis::~VipPolarAxis()
 {
-	delete d_data;
 }
 
 QPainterPath VipPolarAxis::shape() const
@@ -434,10 +433,12 @@ void VipPolarAxis::computeScaleDrawRadiusAndCenter()
 	scaleDraw()->setRadius(radius);
 }
 
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
 static bool qFuzzyCompare(const QPointF& p1, const QPointF& p2)
 {
 	return qFuzzyCompare(p1.x(), p2.x()) && qFuzzyCompare(p1.y(), p2.y());
 }
+#endif
 
 void VipPolarAxis::setCenter(const QPointF& c)
 {
@@ -633,7 +634,7 @@ static bool registerVipRadialAxis = vipSetKeyWordsForClass(&VipRadialAxis::stati
 VipRadialAxis::VipRadialAxis(QGraphicsItem* parent)
   : VipAbstractPolarScale(parent)
 {
-	d_data = new PrivateData();
+	VIP_CREATE_PRIVATE_DATA(d_data);
 
 	this->setScaleDraw(new VipRadialScaleDraw());
 	this->setMargin(2);
@@ -642,7 +643,6 @@ VipRadialAxis::VipRadialAxis(QGraphicsItem* parent)
 
 VipRadialAxis::~VipRadialAxis()
 {
-	delete d_data;
 }
 
 bool VipRadialAxis::hasState(const QByteArray& state, bool enable) const

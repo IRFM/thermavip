@@ -1,7 +1,7 @@
 /**
  * BSD 3-Clause License
  *
- * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ * Copyright (c) 2025, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Leo Dubus, Erwan Grelier
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -226,14 +226,16 @@ public:
 
 Q_DECLARE_METATYPE(VipTimeRange)
 Q_DECLARE_METATYPE(VipTimeRangeList)
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
 Q_DECLARE_METATYPE(VipTimeRangeVector)
+#endif
 Q_DECLARE_METATYPE(VipTimestamps)
 Q_DECLARE_METATYPE(VipTimeRangeTransforms)
 Q_DECLARE_METATYPE(VipTimestampingFilter)
 
 class QDataStream;
-QDataStream& operator<<(QDataStream&, const VipTimestampingFilter& filter);
-QDataStream& operator>>(QDataStream&, VipTimestampingFilter& filter);
+VIP_CORE_EXPORT QDataStream& operator<<(QDataStream&, const VipTimestampingFilter& filter);
+VIP_CORE_EXPORT QDataStream& operator>>(QDataStream&, VipTimestampingFilter& filter);
 
 /// @}
 // end Core

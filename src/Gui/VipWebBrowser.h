@@ -1,7 +1,7 @@
 /**
  * BSD 3-Clause License
  *
- * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ * Copyright (c) 2025, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Leo Dubus, Erwan Grelier
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -43,14 +43,12 @@
 #include "VipPlayer.h"
 #include "VipStandardWidgets.h"
 
-static QRegExp& regExpForIp()
-{
-	static QRegExp inst("(\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3})");
-	return inst;
-}
 
-/// Manage HTML files as well as http addresses when opening a file from Thermavip tool bar
-class VipHTTPFileHandler : public VipFileHandler
+/// @brief Manage HTML files as well as http addresses when opening a file from Thermavip tool bar.
+/// 
+/// HTTP/IP addresses and HTML files are opened in a VipWebBrowser player.
+/// 
+class VIP_GUI_EXPORT VipHTTPFileHandler : public VipFileHandler
 {
 	Q_OBJECT
 public:
@@ -61,10 +59,17 @@ public:
 		QString file(removePrefix(filename));
 		return (QFileInfo(file).suffix().compare("html", Qt::CaseInsensitive) == 0 || file.startsWith("http://") || file.startsWith("https://") || regExpForIp().indexIn(file) == 0);
 	}
+
+	static inline QRegExp& regExpForIp()
+	{
+		static QRegExp inst("(\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3})");
+		return inst;
+	}
 };
 VIP_REGISTER_QOBJECT_METATYPE(VipHTTPFileHandler*)
 
-class VipWebBrowserToolBar : public QToolBar
+/// @brief Tool bar of a VipWebBrowser
+class VIP_GUI_EXPORT VipWebBrowserToolBar : public QToolBar
 {
 	Q_OBJECT
 public:
@@ -84,16 +89,23 @@ public Q_SLOTS:
 	void setIcon(const QIcon& icon);
 };
 
-class VipWebBrowser : public VipWidgetPlayer
+/// @brief A player used to display a lightweight web browser
+///
+class VIP_GUI_EXPORT VipWebBrowser : public VipWidgetPlayer
 {
 	Q_OBJECT
 
 public:
 	VipWebBrowser(QWidget* parent = nullptr);
+	~VipWebBrowser();
 
 	QWebEngineView* webEngine() const;
 	virtual QWidget* widgetForMouseEvents() const;
 	virtual QToolBar* playerToolBar() const;
+
+	/// @brief Helper function, open a web browser in a new workspace
+	static void openWebBrowser(const QString& url);
+
 public Q_SLOTS:
 	void setUrl(const QString& url);
 
@@ -104,10 +116,13 @@ private Q_SLOTS:
 	void loadProgress(int progress);
 	void loadFinished(bool ok);
 	void featurePermissionRequested(const QUrl& securityOrigin, QWebEnginePage::Feature feature);
+#if QT_VERSION >= QT_VERSION_CHECK(6, 8, 0)
+	void handlePermissionRequested(QWebEnginePermission perm);
+#endif
 
 private:
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 VIP_REGISTER_QOBJECT_METATYPE(VipWebBrowser*)
 

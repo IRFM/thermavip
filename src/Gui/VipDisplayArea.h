@@ -1,7 +1,7 @@
 /**
  * BSD 3-Clause License
  *
- * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ * Copyright (c) 2025, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Leo Dubus, Erwan Grelier
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -41,6 +41,7 @@
 
 #include "VipDragWidget.h"
 #include "VipMapFileSystem.h"
+#include "VipFunctional.h"
 
 /// Minimal accepted version of a session file in order to be properly loaded
 #define VIP_MINIMAL_SESSION_VERSION "2.2.5"
@@ -122,8 +123,8 @@ private Q_SLOTS:
 	void enableStreaming();
 
 private:
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 /// A QTabWidget holding a VipDisplayTabBar.
@@ -190,8 +191,8 @@ protected:
 	virtual void mouseMoveEvent(QMouseEvent* evt);
 
 private:
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 class VipScaleWidget;
@@ -331,8 +332,8 @@ private:
 	void setId(int id);
 	void setInternalOperations();
 
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 Q_DECLARE_OPERATORS_FOR_FLAGS(VipDisplayPlayerArea::Operations)
@@ -370,8 +371,7 @@ public:
 	VipDisplayPlayerArea* widget(int index) const;
 	/// Add a tab to the VipDisplayTabWidget
 	void addWidget(VipDisplayPlayerArea* widget);
-	/// Remove all tabs
-	void clear();
+	
 
 	/// A lot of widgets rely on the item selection in players.
 	/// This function unselect and reselect ALL VipPlotItem within players in order to trigger again
@@ -380,8 +380,17 @@ public:
 
 	void setCurrentDisplayPlayerArea(VipDisplayPlayerArea*);
 
-	void setStreamingEnabled(bool);
 	bool streamingButtonEnabled() const;
+
+public Q_SLOTS:
+	/// Remove all workspaces
+	void clear();
+	/// @brief Go to next workspace
+	void nextWorkspace();
+	/// @brief Go to previous workspace
+	void previousWorkspace();
+	/// @brief Enable/disable streaming button for all workspaces
+	void setStreamingEnabled(bool);
 
 Q_SIGNALS:
 	/// This signal is emitted whenever the VipDragWidget having the focus changed
@@ -407,8 +416,8 @@ private:
 	void removeWidget(VipDisplayPlayerArea* widget);
 	QString generateWorkspaceName() const;
 
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 VIP_REGISTER_QOBJECT_METATYPE(VipDisplayArea*)
@@ -487,6 +496,7 @@ public:
 	~VipCloseBar();
 
 	void startDetectState();
+	void computeToolsMenu(QToolButton* button);
 
 private Q_SLOTS:
 	void maximizeOrShowNormal();
@@ -575,7 +585,7 @@ public:
 	/// Save a Thermavip session into a XML file.
 	///  Returns true on success, file otherwise.
 	bool saveSession(const QString& filename, int session_type = MainWindow, int session_content = All, const QByteArray& state = QByteArray());
-	bool saveSession(VipXOArchive& arch, int session_type = MainWindow, int session_content = All, const QByteArray& state = QByteArray());
+	bool saveSession(VipArchive& arch, int session_type = MainWindow, int session_content = All, const QByteArray& state = QByteArray());
 
 	QList<VipAbstractPlayer*> openPaths(const VipPathList& paths, VipAbstractPlayer* player, VipDisplayPlayerArea* area = nullptr);
 	QList<VipAbstractPlayer*> openDevices(const QList<VipIODevice*>& devices, VipAbstractPlayer* player, VipDisplayPlayerArea* area = nullptr);
@@ -647,6 +657,33 @@ public Q_SLOTS:
 
 	void resetStyleSheet();
 
+	// Start of stop playing/streaming for the current active workspace
+	void startStopPlaying();
+	// Go to next time for the current active workspace
+	void nextTime();
+	// Go to previous time for the current active workspace
+	void previousTime();
+	// Go to first time for the current active workspace
+	void firstTime();
+	// Go to last time for the current active workspace
+	void lastTime();
+	// Advance time by 10% of the time range for the current active workspace
+	void forward10Time();
+	// Go backward in time by 10% of the time range for the current active workspace
+	void backward10Time();
+	void nextWorkspace();
+	void previousWorkspace();
+	void newWorkspace();
+	void closeWorkspace();
+	void focusToSearchLine();
+	void toogleFullScreen();
+	void exitFullScreen();
+
+	void restoreOrMaximizeCurrentPlayer();
+	void restoreOrMinimizeCurrentPlayer();
+	void closeCurrentPlayer();
+	void toggleWorkspaceFlatHistogram();
+
 private Q_SLOTS:
 	void init();
 	void openSharedMemoryFiles();
@@ -657,27 +694,35 @@ private Q_SLOTS:
 	void applicationStateChanged(Qt::ApplicationState state);
 	void setFlatHistogramStrength(); // internal use only, for AdvancedDisplay plugin
 	void tabChanged();
+	void finalizeToolsToolBar();
+	// Go to next time for the current active workspace when receiving right arrow,
+	// or move selected shapes
+	void nextTimeOnKeyRight();
+	// Go to previous time for the current active workspace when receiving left arrow,
+	// or move selected shapes
+	void previousTimeOnKeyLeft();
 Q_SIGNALS:
 	void aboutToClose();
 	void sessionLoaded();
 	void workspaceLoaded(VipDisplayPlayerArea*);
 
 protected:
-	virtual void closeEvent(QCloseEvent* evt);
+	virtual void closeEvent(QCloseEvent* );
 	virtual void showEvent(QShowEvent*);
-	virtual void keyPressEvent(QKeyEvent* evt);
-	// virtual void paintEvent(QPaintEvent *);
+	virtual void keyPressEvent(QKeyEvent*);
+
 private:
 	QAction* addToolWidget(VipToolWidget* widget, const QIcon& icon, const QString& text, bool set_tool_icon = false);
 	void setCurrentTabDestroy(bool);
-	class PrivateData;
-	PrivateData* m_data;
+	bool loadSessionShowProgress(VipArchive& arch, VipProgress* progress);
+
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 /// Returns the main unique VipMainWindow
 VIP_GUI_EXPORT VipMainWindow* vipGetMainWindow();
 
-#include "VipFunctional.h"
+
 
 /// Function dispatcher which create a VipBaseDragWidget object from an input VipIODevice object
 /// The default behavior would normally use the dispatcher vipCreatePlayersFromProcessing() to create a VipDragWidget instance.

@@ -1,7 +1,7 @@
 /**
  * BSD 3-Clause License
  *
- * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ * Copyright (c) 2025, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Leo Dubus, Erwan Grelier
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -104,7 +104,7 @@ VipSliderGrip::VipSliderGrip(VipAbstractScale* parent)
   : QGraphicsObject(parent)
   , VipPaintItem(this)
 {
-	d_data = new PrivateData();
+	VIP_CREATE_PRIVATE_DATA(d_data);
 	d_data->singleStepEnabled = false;
 	d_data->singleStep = 1;
 	d_data->singleStepReference = Vip::InvalidValue;
@@ -120,7 +120,6 @@ VipSliderGrip::VipSliderGrip(VipAbstractScale* parent)
 
 VipSliderGrip::~VipSliderGrip()
 {
-	delete d_data;
 }
 
 void VipSliderGrip::setScale(VipAbstractScale* s)
@@ -407,8 +406,6 @@ double VipSliderGrip::toolTipDistance() const
 	return d_data->toolTipDistance;
 }
 
-
-
 void VipSliderGrip::setTextAlignment(Qt::Alignment align)
 {
 	d_data->textAlignment = align;
@@ -476,8 +473,6 @@ VipText& VipSliderGrip::text()
 	return d_data->text;
 }
 
-
-
 void VipSliderGrip::paint(QPainter* painter,
 			  const QStyleOptionGraphicsItem* // option
 			  ,
@@ -491,9 +486,9 @@ void VipSliderGrip::paint(QPainter* painter,
 		return;
 
 	this->applyStyleSheetIfDirty();
-	auto r = this->renderHints();
-	//TEST: comment setRenderHints that crash sometimes (?)
-	//painter->setRenderHints(r);
+	//auto r = this->renderHints();
+	// TEST: comment setRenderHints that crash sometimes (?)
+	// painter->setRenderHints(r);
 	auto c = this->compositionMode();
 	painter->setCompositionMode(c);
 
@@ -603,12 +598,12 @@ bool VipSliderGrip::hasState(const QByteArray& state, bool enable) const
 		return false;
 	}
 	if (state == "radial") {
-		if (const VipRadialAxis* it = qobject_cast<const VipRadialAxis*>(scale()))
+		if (/* const VipRadialAxis* it =*/ qobject_cast<const VipRadialAxis*>(scale()))
 			return enable;
 		return false;
 	}
 	if (state == "polar") {
-		if (const VipPolarAxis* it = qobject_cast<const VipPolarAxis*>(scale()))
+		if (/* const VipPolarAxis* it = */qobject_cast<const VipPolarAxis*>(scale()))
 			return enable;
 		return false;
 	}
@@ -757,9 +752,6 @@ void VipSliderGrip::keyPressEvent(QKeyEvent* event)
 		}
 	}
 }
-
-
-
 
 VipColorMapGrip::VipColorMapGrip(VipAxisColorMap* parent)
   : VipSliderGrip(parent)

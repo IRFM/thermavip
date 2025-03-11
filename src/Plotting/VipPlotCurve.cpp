@@ -1,7 +1,7 @@
 /**
  * BSD 3-Clause License
  *
- * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ * Copyright (c) 2025, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Leo Dubus, Erwan Grelier
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -431,13 +431,12 @@ VipPlotCurve::VipPlotCurve(const VipText& title)
 //! Destructor
 VipPlotCurve::~VipPlotCurve()
 {
-	delete d_data;
 }
 
 //! Initialize internal members
 void VipPlotCurve::init()
 {
-	d_data = new PrivateData;
+	VIP_CREATE_PRIVATE_DATA(d_data);
 	setRawData(VipPointVector());
 }
 
@@ -608,18 +607,19 @@ int VipPlotCurve::findClosestPos(const VipPointVector& data, const VipPoint& pos
 
 	// try to find a point at a vipDistance < maxDistance (in item's coordinates)
 	for (int i = 0; i < data.size(); ++i) {
-		if (vipIsNan(data[i].x()) || vipIsNan(data[i].y()))
+		VipPoint pt = data[i];
+		if (vipIsNan(pt.x()) || vipIsNan(pt.y()))
 			continue;
 
 		if (can_query_sub_part) {
 			// optimize search if can_query_sub_part is true
-			if (data[i].x() < min_x)
+			if (pt.x() < min_x)
 				continue;
-			else if (data[i].x() > max_x)
+			else if (pt.x() > max_x)
 				break;
 		}
 
-		const VipPoint p = map->transform(data[i]);
+		const VipPoint p = map->transform(pt);
 
 		if (axis == 0) {
 			item_pos.setY(p.y()); // y should always be valid
@@ -657,7 +657,7 @@ bool VipPlotCurve::areaOfInterest(const QPointF& pos, int axis, double maxDistan
 			int index = findClosestPos(d_data->vectors[i], pos, axis, maxDistance, d_data->continuous[i]);
 			if (index >= 0) {
 				VipPoint found = sceneMap()->transform(d_data->vectors[i][index]);
-				out_pos << found;
+				out_pos.push_back( found);
 				if (symbol() && symbolVisible() && symbol()->style() != VipSymbol::None) {
 					path |= symbol()->shape((QPointF)found);
 				}
@@ -678,7 +678,7 @@ bool VipPlotCurve::areaOfInterest(const QPointF& pos, int axis, double maxDistan
 	int index = findClosestPos(raw, pos, axis, maxDistance, d_data->full_continuous);
 	if (index >= 0) {
 		VipPoint found = sceneMap()->transform(raw[index]);
-		out_pos << found;
+		out_pos.push_back( found);
 		if (symbol() && symbolVisible() && symbol()->style() != VipSymbol::None) {
 			style.computePath(symbol()->shape((QPointF)found));
 		}
@@ -2048,9 +2048,10 @@ QPainterPath VipPlotCurve::shapeFromCoordinateSystem(const VipCoordinateSystemPt
 {
 	// qint64 st = QDateTime::currentMSecsSinceEpoch() ;
 	VipShapeDevice device;
-	QPainter painter(&device);
-	this->draw(&painter, m);
-
+	{
+		QPainter painter(&device);
+		this->draw(&painter, m);
+	}
 	QPainterPath res;
 
 	if (view()) {
@@ -2272,6 +2273,10 @@ QList<VipInterval> VipPlotCurve::dataBoundingRect(const VipPointVector& samples,
 	// qint64 el = QDateTime::currentMSecsSinceEpoch() - st;
 	// vip_debug("dataBoundingRect: %i ms\n", (int)el);
 	out_vectors = vectors;
+
+	if (vipIsNan(topleft.x()) || vipIsNan(topleft.y()) || vipIsNan(bottomright.x()) || vipIsNan(bottomright.y())) {
+		return QList<VipInterval>() << VipInterval(0,1) << VipInterval(0,1);
+	}
 
 	return QList<VipInterval>() << VipInterval(topleft.x(), bottomright.x()) << VipInterval(topleft.y(), bottomright.y());
 }

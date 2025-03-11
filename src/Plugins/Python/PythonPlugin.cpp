@@ -7,12 +7,13 @@
 
 
 #include "PythonPlugin.h"
-#include "PyHighlighter.h"
+#include "VipTextHighlighter.h"
 #include "PyProcessing.h"
 #include "PySignalFusionProcessing.h"
 #include "PyRegisterProcessing.h"
-#include "CodeEditorWidget.h"
-#include "CodeEditor.h"
+#include "PyEditor.h"
+#include "PyProcessingEditor.h"
+#include "VipTextEditor.h"
 #include "CurveFit.h"
 #include "CustomizePlayer.h"
 #include "VipToolWidget.h"
@@ -28,7 +29,8 @@
 #include "VipPlayer.h"
 #include "VipProcessingObjectEditor.h"
 #include "VipGui.h"
-
+#include "IPython.h"
+#include <functional>
 #include <QToolBar>
 #include <qlineedit.h>
 #include <qtoolbutton.h>
@@ -78,17 +80,18 @@ PythonParameters::PythonParameters()
 	openPythonDataScripts->setIcon(vipIcon("open.png"));
 	openPythonDataScripts->setAutoRaise(true);
 
+	startupCode = new VipTabEditor(Qt::Horizontal,this);
+	startupCode->setDefaultColorSchemeType("Python");
+	startupCode->newFile();
 
-	startupCode = new PyEditor(Qt::Horizontal,this);
-	startupCode->NewFile();
-
-	style = new PyEditor(Qt::Horizontal, this);
-	style->NewFile();
-	style->TabBar()->hide();
+	style = new VipTabEditor(Qt::Horizontal, this);
+	style->setDefaultColorSchemeType("Python");
+	style->newFile();
+	style->tabBar()->hide();
 	styleBox = new QComboBox();
-	styleBox->addItems( CodeEditor::colorSchemesNames("Python"));
+	styleBox->addItems( VipTextEditor::colorSchemesNames("Python"));
 	QString quote = QChar('"'); quote = quote.repeated(3);
-	style->CurrentEditor()->setPlainText(quote + "A string" + quote + "\n"
+	style->currentEditor()->setPlainText(quote + "A string" + quote + "\n"
 		"# A comment\n"
 		"class Foo(object) :\n"
 		"    def __init__(self) :\n"
@@ -192,7 +195,7 @@ PythonParameters::PythonParameters()
 	actStartupCode = new QAction(nullptr);
 	actStartupCode->setIcon(vipIcon("apply.png"));
 	actStartupCode->setText("Apply startup code");
-	startupCode->TabBar()->insertAction(startupCode->TabBar()->actions().first(), actStartupCode);
+	startupCode->tabBar()->insertAction(startupCode->tabBar()->actions().first(), actStartupCode);
 
 	QHBoxLayout * slay = new QHBoxLayout();
 	slay->setContentsMargins(0, 0, 0, 0);
@@ -200,7 +203,7 @@ PythonParameters::PythonParameters()
 	slay->addWidget(styleBox);
 	vlay->addLayout(slay);
 	vlay->addWidget(style, 3);
-	style->CurrentEditor()->setReadOnly(true);
+	style->currentEditor()->setReadOnly(true);
 	
 	setLayout(vlay);
 
@@ -216,69 +219,66 @@ PythonParameters::PythonParameters()
 
 void PythonParameters::applyPage()
 {
-#ifdef VIP_ENABLE_PYTHON_LINK
 	/*if (local->isChecked())
-		GetPyOptions()->setPyType(PyOptions::Local);
+		VipPyInterpreter::instance()->setPyType(VipPyInterpreter::Local);
 	else
-		GetPyOptions()->setPyType(PyOptions::Distant);*/
+		VipPyInterpreter::instance()->setPyType(VipPyInterpreter::Distant);*/
 	//NEW: for now always use Local
-	GetPyOptions()->setPyType(PyOptions::Local);
-#else
-	GetPyOptions()->setPyType(PyOptions::Distant);
-#endif
+	//VipPyInterpreter::instance()->setPyType(VipPyInterpreter::Local);
+
 
 	if (launchInLocal->isChecked())
-		GetPyOptions()->setLaunchCode(PyOptions::InLocalInterp);
+		VipPyInterpreter::instance()->setLaunchCode(VipPyInterpreter::InLocalInterp);
 	else
-		GetPyOptions()->setLaunchCode(PyOptions::InIPythonInterp);
+		VipPyInterpreter::instance()->setLaunchCode(VipPyInterpreter::InIPythonInterp);
 
-	GetPyOptions()->setPython(pythonPath->filename());
-	GetPyOptions()->setWorkingDirectory(wdPath->filename());
-	if(startupCode->CurrentEditor())
-	GetPyOptions()->setStartupCode(startupCode->CurrentEditor()->toPlainText());
+	VipPyInterpreter::instance()->setPython(pythonPath->filename());
+	VipPyInterpreter::instance()->setWorkingDirectory(wdPath->filename());
+	if(startupCode->currentEditor())
+	VipPyInterpreter::instance()->setStartupCode(startupCode->currentEditor()->toPlainText());
 
 	//make sure to recreate the interpreter
-	GetPyOptions()->isRunning();
+	VipPyInterpreter::instance()->isRunning();
 
-	/*if (GetPyOptions()->isRunning())
+	/*if (VipPyInterpreter::instance()->isRunning())
 		return ParametersPage::Success;
 	else
 		return ParametersPage::Fail;*/
 
-	CodeEditor::setStdColorSchemeForType("Python", styleBox->currentText());
+	VipTextEditor::setStdColorSchemeForType("Python", styleBox->currentText());
 }
 
 void PythonParameters::updatePage()
 {
-	if (GetPyOptions()->pyType() == PyOptions::Local)
+	/* if (VipPyInterpreter::instance()->pyType() == VipPyInterpreter::Local)
 		local->setChecked(true);
 	else
-		distant->setChecked(true);
+		distant->setChecked(true);*/
 
-	if (GetPyOptions()->launchCode() == PyOptions::InLocalInterp)
+	if (VipPyInterpreter::instance()->launchCode() == VipPyInterpreter::InLocalInterp)
 		launchInLocal->setChecked(true);
 	else
 		launchInIPython->setChecked(true);
 
-	pythonPath->setFilename(GetPyOptions()->python());
-	wdPath->setFilename(GetPyOptions()->workingDirectory());
-	startupCode->CurrentEditor()->setPlainText(GetPyOptions()->startupCode());
+	pythonPath->setFilename(VipPyInterpreter::instance()->python());
+	wdPath->setFilename(VipPyInterpreter::instance()->workingDirectory());
+	startupCode->currentEditor()->setPlainText(VipPyInterpreter::instance()->startupCode());
 	
-	if (BaseHighlighter * h = CodeEditor::stdColorSchemeForType("Python"))
+	if (const VipTextHighlighter * h = VipTextEditor::stdColorSchemeForType("Python"))
 		styleBox->setCurrentText(h->name);
 }
 
 void PythonParameters::changeStyle()
 {
-	if (BaseHighlighter * h = CodeEditor::colorScheme("Python", styleBox->currentText()))
+	if (const VipTextHighlighter * h = VipTextEditor::colorScheme("Python", styleBox->currentText()))
 	{
-		style->CurrentEditor()->setColorScheme(h);
+		style->currentEditor()->setColorScheme(h);
 	}
 }
 
 void PythonParameters::restartInterpreter()
 {
-	PyIOOperation * py = GetPyOptions()->pyIOOperation(true);
+	VipPyIOOperation * py = VipPyInterpreter::instance()->pyIOOperation(true);
 	if (!py || !py->isRunning())
 	{
 		VIP_LOG_ERROR("Failed to restart Python interpreter");
@@ -295,15 +295,15 @@ void PythonParameters::openWorkingDirectory()
 
 void PythonParameters::openManager()
 {
-	PyRegisterProcessing::openProcessingManager();
+	openProcessingManager();
 }
 
 void PythonParameters::applyStartupCode()
 {
-	if (GetPyOptions()->isRunning())
+	if (VipPyInterpreter::instance()->isRunning())
 	{
-		QVariant v = GetPyOptions()->wait(GetPyOptions()->execCode(startupCode->CurrentEditor()->toPlainText()));
-		PyError err = v.value<PyError>();
+		QVariant v =VipPyInterpreter::instance()->execCode(startupCode->currentEditor()->toPlainText()).value();
+		VipPyError err = v.value<VipPyError>();
 		if (!err.isNull()) {
 			VIP_LOG_ERROR(err.traceback);
 		}
@@ -332,17 +332,9 @@ PythonParameters * GetPythonParameters()
 
  
 
-static void createPyGenerator()
-{
-	if (VipIODevice * dev = PySignalGeneratorEditor::createGenerator(false))
-	{
-		vipGetMainWindow()->openDevices(QList<VipIODevice*>() << dev, nullptr, nullptr);
-	}
-}
-
 static void createComplexPyGenerator()
 {
-	if (VipIODevice * dev = PySignalGeneratorEditor::createGenerator(true))
+	if (VipIODevice * dev = PySignalGeneratorEditor::createGenerator())
 	{
 		vipGetMainWindow()->openDevices(QList<VipIODevice*>() << dev, nullptr, nullptr);
 	}
@@ -356,7 +348,6 @@ static void createComplexPyGenerator()
 
 //static VipToolWidget * python = nullptr;
 
-#include "PyProcess.h"
 
 /*void test_pyprocess()
 {
@@ -364,9 +355,9 @@ static void createComplexPyGenerator()
 	p.start();
 
 	QVariant v1 = p.evalCode("import numpy as np");
-	vip_debug("%s\n", v1.value<PyError>().traceback.toLatin1().data());
+	vip_debug("%s\n", v1.value<VipPyError>().traceback.toLatin1().data());
 	QVariant v2 = p.evalCode("np.sin(2)");
-	vip_debug("%s\n", v2.value<PyError>().traceback.toLatin1().data());
+	vip_debug("%s\n", v2.value<VipPyError>().traceback.toLatin1().data());
 	double yy = v2.toDouble();
 	
 
@@ -396,7 +387,7 @@ static void createComplexPyGenerator()
 		vip_debug("shape: (%i, %i)\n", ar.shape(0), ar.shape(1));
 		qint64 st = QDateTime::currentMSecsSinceEpoch();
 		QVariant v = p.wait(p.sendObject("i", QVariant::fromValue(array)));
-		PyError err = v.value<PyError>();
+		VipPyError err = v.value<VipPyError>();
 		qint64 el = QDateTime::currentMSecsSinceEpoch() - st;
 		vip_debug("elapsed: %i\n", (int)el);
 		if (!err.isNull()) 
@@ -405,7 +396,7 @@ static void createComplexPyGenerator()
 		{
 			st = QDateTime::currentMSecsSinceEpoch();
 			v = p.wait(p.retrieveObject("i"));
-			PyError err = v.value<PyError>();
+			VipPyError err = v.value<VipPyError>();
 			qint64 el = QDateTime::currentMSecsSinceEpoch() - st;
 			vip_debug("elapsed: %i\n", (int)el);
 			if (!err.isNull())
@@ -422,7 +413,7 @@ static void createComplexPyGenerator()
 	p.sendObject("i", 3);
 	p.execCode("i=i*3");
 	QVariant v = p.wait(p.retrieveObject("i"));
-	PyError err = v.value<PyError>();
+	VipPyError err = v.value<VipPyError>();
 	vip_debug("%s\n", err.traceback.toLatin1().data());
 	int hh = v.toInt();
 
@@ -447,154 +438,16 @@ bool PyFileHandler::open(const QString & path, QString * error)
 		return false;
 	}
 
-	GetCodeEditorToolWidget()->editor()->editor()->OpenFile(path);
-	GetCodeEditorToolWidget()->show();
-	GetCodeEditorToolWidget()->raise();
+	vipGetPyEditorToolWidget()->editor()->openFile(path);
+	vipGetPyEditorToolWidget()->show();
+	vipGetPyEditorToolWidget()->raise();
 	return true;
 }
 
-//#include "SharedMemory.h"
 
 
 
 
-
-
-
-
-
-
-
-
-
-
-/**
-Class used to handle external python requests
-*/
-/*class ExternalPython : public QThread
-{
-	bool d_stop;
-	SharedMemory d_mem;
-	PyLocal d_loc;
-	ExternalPython()
-		:QThread(), d_stop(false), d_mem("Thermavip", 50000000, true)
-	{
-		if (d_mem.isValid()) {
-			d_loc.start();
-			start();
-		}
-	}
-
-public:
-	~ExternalPython() {
-		d_stop = true;
-		d_loc.stop();
-		wait();
-	}
-
-	static ExternalPython& instance() {
-		static ExternalPython inst;
-		return inst;
-	}
-
-protected:
-
-	bool sendObject(const QString& name, qint64 timeout = -1, QString* error = nullptr)
-	{
-		if (error)
-			error->clear();
-		QString code =
-			"import pickle\n"
-			"import struct\n"
-			"__res = b'" SH_OBJECT "' +struct.pack('i',len('" + name + "')) + b'" + name + "' + pickle.dumps(" + name + ")";
-
-		PyError err = d_loc.wait(d_loc.execCode(code)).value<PyError>();
-		if (!err.isNull()) {
-			if (error)
-				*error = err.traceback;
-			vip_debug("%s\n", err.traceback.toLatin1().data());
-			return false;
-		}
-
-		//send result
-		QVariant v = d_loc.wait(d_loc.retrieveObject("__res"));
-		QByteArray tmp = v.toByteArray();
-		d_mem.write(tmp.data(), tmp.size(), timeout);
-		return true;
-	}
-
-	void sendError(const QString& err, qint64 timeout = -1)
-	{
-		d_loc.wait(d_loc.sendObject("__err", err));
-		QString code =
-			"import struct\n"
-			"__res = b'" SH_ERROR_TRACE "' +struct.pack('i',len(__err)) + __err.encode()";
-
-		PyError pyerr = d_loc.wait(d_loc.execCode(code)).value<PyError>();
-		if (!pyerr.isNull()) {
-			vip_debug("%s\n", pyerr.traceback.toLatin1().data());
-			return;
-		}
-		//send result
-		QVariant v = d_loc.wait(d_loc.retrieveObject("__res"));
-		QByteArray tmp = v.toByteArray();
-		d_mem.write(tmp.data(), tmp.size(), timeout);
-	}
-
-	virtual void run()
-	{
-		qint64 timeout = 1000;
-
-		while (!d_stop) {
-
-			QByteArray ar;
-			bool r = d_mem.read(ar, timeout);
-			if (r && ar.size()) {
-
-				//interpret read value
-
-				if (ar.startsWith(SH_EXEC_FUN)) {
-					//execute internal python function
-					ar = ar.mid(strlen(SH_EXEC_FUN));
-					QDataStream str(ar);
-					str.setByteOrder(QDataStream::LittleEndian);
-					int s1 = 0, s2 = 0, s3 = 0;
-					str >> s1 >> s2 >> s3; //read function name len, tuple args len, dict args len
-					if (!s1 || !s2 || !s3) {
-						continue;
-					}
-					//send pickle versions of variables. name is already the ascii function name.
-					QByteArray name(s1, 0), targs(s2, 0), dargs(s3, 0);
-					str.readRawData(name.data(), name.size());
-					str.readRawData(targs.data(), targs.size());
-					str.readRawData(dargs.data(), dargs.size());
-					d_loc.sendObject("__targs", targs);
-					d_loc.sendObject("__dargs", dargs);
-
-					QString code =
-						"import pickle\n"
-						"import struct\n"
-						"__targs = pickle.loads(__targs)\n"
-						"__dargs = pickle.loads(__dargs)\n"
-						"__res = " + name + "(*__targs, **__dargs)\n";
-					PyError err = d_loc.wait(d_loc.execCode(code)).value<PyError>();
-					if (!err.isNull()) {
-						vip_debug("%s\n", err.traceback.toLatin1().data());
-						sendError(err.traceback, timeout);
-						continue;
-					}
-					QString error;
-					if (!sendObject("__res", timeout, &error)) {
-						sendError(error, timeout);
-					}
-				}
-			}
-		}
-	}
-};*/
-
-#include "IPython.h"
-#include <functional>
 PythonInterface::LoadResult PythonInterface::load()
 {
 	//Start the ExternalPython instance to handle external Python requests
@@ -618,25 +471,27 @@ PythonInterface::LoadResult PythonInterface::load()
 	pyGetPythonInterpreter()->setFloating(true);
 	pyGetPythonInterpreter()->hide();
 
-	QAction * pyaction = vipGetMainWindow()->toolsToolBar()->addAction(vipIcon("python.png"),"Show/hide Python console");
+	QAction * pyaction = vipGetMainWindow()->toolsToolBar()->addAction(vipIcon("PYTHON.png"),"Show/hide Python console");
 	pyGetPythonInterpreter()->setAction(pyaction);
 
-	vipGetMainWindow()->addDockWidget(Qt::LeftDockWidgetArea, GetCodeEditorToolWidget());
-	GetCodeEditorToolWidget()->setFloating(true);
-	GetCodeEditorToolWidget()->hide();
+	vipGetMainWindow()->addDockWidget(Qt::LeftDockWidgetArea, vipGetPyEditorToolWidget());
+	vipGetPyEditorToolWidget()->setFloating(true);
+	vipGetPyEditorToolWidget()->hide();
 
 	 
 	showEditor = new QToolButton();
-	showEditor->setIcon(vipIcon("start_streaming.png"));
+	showEditor->setIcon(vipIcon("CODE.png"));
 	showEditor->setToolTip("Show/hide Python code editor");
 	showEditor->setAutoRaise(true); 
-	showEditor->setMenu(new QMenu(showEditor));
+	vipGetMainWindow()->toolsToolBar()->addWidget(showEditor);
+	vipGetPyEditorToolWidget()->setButton(showEditor);
+
+	// Disable to shortcut menu for now
+	/* showEditor->setMenu(new QMenu(showEditor));
 	showEditor->setPopupMode(QToolButton::MenuButtonPopup);
-	/*QAction * pyactionEditor =*/ vipGetMainWindow()->toolsToolBar()->addWidget(showEditor);
-	GetCodeEditorToolWidget()->setButton(showEditor);
 	connect(showEditor->menu(), SIGNAL(aboutToShow()), this, SLOT(aboutToShowScripts()));
 	connect(showEditor->menu(), SIGNAL(triggered(QAction*)), this, SLOT(scriptTriggered(QAction*)));
-	
+	*/
 	initPython(); 
 	 
 	//TEST
@@ -675,33 +530,23 @@ PythonInterface::LoadResult PythonInterface::load()
 	
 	
 	
-	vipGetOptions()->addPage("Python", GetPythonParameters());
+	vipGetOptions()->addPage("Python", GetPythonParameters(),vipIcon("PYTHON.png"));
 	  
 	//add the generators 
-	
-	QAction * generator = vipGetMainWindow()->generateMenu()->addAction("Generate signal from Python expression...");
-	generator->setToolTip("Create a streaming/temporal video or plot from a single line Python expression");
-	connect(generator, &QAction::triggered, this, createPyGenerator);
-	//make the menu action droppable
-	generator->setProperty("QMimeData", QVariant::fromValue((QMimeData*)new VipMimeDataLazyEvaluation<VipIODevice*>(
-		PySignalGeneratorEditor::createSimpleGenerator,
-		VipCoordinateSystem::Cartesian,
-		generator
-		)));
 
 	QAction * complex_generator = vipGetMainWindow()->generateMenu()->addAction("Generate signal from Python script...");
 	complex_generator->setToolTip("Create a streaming/temporal video or plot from a Python script");
 	connect(complex_generator, &QAction::triggered, this, createComplexPyGenerator);
 	//make the menu action droppable
 	complex_generator->setProperty("QMimeData", QVariant::fromValue((QMimeData*)new VipMimeDataLazyEvaluation<VipIODevice*>(
-		PySignalGeneratorEditor::createComplexGenerator,
+		PySignalGeneratorEditor::createGenerator,
 		VipCoordinateSystem::Cartesian,
 		complex_generator
 		)));
 
 	//register all files found in the Python directory
-	PyAddProcessingDirectory(vipGetPythonDirectory(), QString());
-	PyAddProcessingDirectory("./Python", QString());
+	VipPyInterpreter::instance()->addProcessingDirectory(vipGetPythonDirectory());
+	VipPyInterpreter::instance()->addProcessingDirectory("./Python");
 
 	//register PyPlotPlayer
 	vipFDPlayerCreated().append<void(VipPlotPlayer*)>(updatePlotPlayer);
@@ -710,15 +555,15 @@ PythonInterface::LoadResult PythonInterface::load()
 	vipAddUninitializationFunction(uninitPython);
 
 
-	BaseHighlighter * h = CodeEditor::stdColorSchemeForType("Python");
+	const VipTextHighlighter * h = VipTextEditor::stdColorSchemeForType("Python");
 	if (isDarkSkin() ) {
 		setIPythonStyle("monokai");
 		if(!isDarkColor(h->backgroundColor()))
-			CodeEditor::setStdColorSchemeForType("Python", "Spyder Dark");
+			VipTextEditor::setStdColorSchemeForType("Python", "Spyder Dark");
 	}
 	else {
 		if(isDarkColor(h->backgroundColor()))
-			CodeEditor::setStdColorSchemeForType("Python", "Pydev");
+			VipTextEditor::setStdColorSchemeForType("Python", "Pydev");
 	}
 	setIPythonFontSize(VipGuiDisplayParamaters::instance()->defaultEditorFont().pointSize());
 
@@ -752,23 +597,23 @@ void PythonInterface::unload()
 
 void PythonInterface::save(VipArchive & stream)
 {
-	PyOptions & opt = *GetPyOptions();
+	VipPyInterpreter & opt = *VipPyInterpreter::instance();
 	stream.content("python", opt.python());
 	stream.content("workingDirectory", opt.workingDirectory());
-	stream.content("type", (int)opt.pyType());
+	stream.content("type", opt.pyType());
 	stream.content("launchCode", (int)opt.launchCode());
 	stream.content("startup", opt.startupCode());
-	stream.content("schemes", CodeEditor::stdColorSchemes());
+	stream.content("schemes", VipTextEditor::stdColorSchemes());
 
-	stream.content("editor", GetCodeEditorToolWidget());
+	stream.content("editor", vipGetPyEditorToolWidget());
 }
 
 void PythonInterface::restore(VipArchive & stream)
 {
-	PyOptions & opt = *GetPyOptions();
+	VipPyInterpreter & opt = *VipPyInterpreter::instance();
 
-	int type = 0;
-	int launchCode = PyOptions::InIPythonInterp;
+	QString type ;
+	int launchCode = VipPyInterpreter::InIPythonInterp;
 	QString python = "python";
 	//int  protocol = 3;
 	QString workingDirectory;
@@ -789,26 +634,26 @@ void PythonInterface::restore(VipArchive & stream)
 	opt.setPython(python);
 	opt.setWorkingDirectory(workingDirectory);
 	//NEW: for now always use Local
-	//opt.setPyType((PyOptions::PyType)type);
-	opt.setPyType(PyOptions::Local);
+	//opt.setPyType((VipPyInterpreter::PyType)type);
+	//opt.setPyType(VipPyInterpreter::Local);
 	opt.setStartupCode(startup);
-	opt.setLaunchCode((PyOptions::PyLaunchCode)launchCode);
+	opt.setLaunchCode((VipPyInterpreter::PyLaunchCode)launchCode);
 	
-	CodeEditor::setStdColorSchemes(schemes);
-	BaseHighlighter* h = CodeEditor::stdColorSchemeForType("Python");
+	VipTextEditor::setStdColorSchemes(schemes);
+	const VipTextHighlighter* h = VipTextEditor::stdColorSchemeForType("Python");
 	//Make sure the Python scheme fits with the current skin
 	if (isDarkSkin()) {
 		if(!h || !isDarkColor(h->backgroundColor()))
-			CodeEditor::setStdColorSchemeForType("Python", "Spyder Dark");
+			VipTextEditor::setStdColorSchemeForType("Python", "Spyder Dark");
 	}
 	else {
 		if(!h || isDarkColor(h->backgroundColor()))
-			CodeEditor::setStdColorSchemeForType("Python", "Pydev");
+			VipTextEditor::setStdColorSchemeForType("Python", "Pydev");
 	}
 
-	GetPyOptions()->pyIOOperation();
+	VipPyInterpreter::instance()->pyIOOperation();
 	GetPythonParameters()->updatePage();
-	stream.content("editor", GetCodeEditorToolWidget());
+	stream.content("editor", vipGetPyEditorToolWidget());
 
 	//Restart IPython is python process is different
 	if (python != "python") {
@@ -944,8 +789,8 @@ void PythonInterface::scriptTriggered(QAction* act)
 {
 	QString path = act->property("path").toString();
 
-	GetCodeEditorToolWidget()->editor()->editor()->OpenFile(path);
-	GetCodeEditorToolWidget()->editor()->execFile(true);
+	vipGetPyEditorToolWidget()->editor()->openFile(path);
+	vipGetPyEditorToolWidget()->editor()->execFile();
 }
 
 
@@ -956,7 +801,7 @@ PyPlotPlayer::PyPlotPlayer(VipPlotPlayer * pl)
 	:QObject(pl)
 {
 	pl->setProperty("PyPlotPlayer", true);
-	QAction * act = pl->advancedTools()->menu()->addAction(vipIcon("python.png"), "Create a Python data fusion processing");
+	QAction * act = pl->advancedTools()->menu()->addAction(vipIcon("PYTHON.png"), "Create a Python data fusion processing");
 	act->setProperty("_vip_player", QVariant::fromValue(pl));
 	connect(act, SIGNAL(triggered(bool)), _interface, SLOT(applyPySignalFusion()));
 

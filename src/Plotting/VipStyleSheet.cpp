@@ -1,7 +1,7 @@
 /**
  * BSD 3-Clause License
  *
- * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ * Copyright (c) 2025, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Leo Dubus, Erwan Grelier
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -1343,7 +1343,7 @@ bool vipApplyStyleSheet(const VipStyleSheet& p, VipPaintItem* item, QString* err
 	}
 
 	// apply from the lower class to the higher one
-	for (int i = 0; i < to_use.size(); ++i) {
+	for (size_t i = 0; i < to_use.size(); ++i) {
 		// get the VipParseResult
 		const VipParseResult parse = to_use[i];
 		for (VipParseResult::const_iterator it = parse.begin(); it != parse.end(); ++it) {

@@ -1,7 +1,7 @@
 /**
  * BSD 3-Clause License
  *
- * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ * Copyright (c) 2025, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Leo Dubus, Erwan Grelier
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -184,51 +184,10 @@ VipBoxStyle::VipBoxStyle(const QPen& b_pen, const QBrush& b_brush, double radius
 	d_data->roundedCorners = Vip::AllCorners;
 }
 
-VipBoxStyle::VipBoxStyle(const VipBoxStyle& other)
-  : d_data(other.d_data)
-{
-}
-
-VipBoxStyle& VipBoxStyle::operator=(const VipBoxStyle& other)
-{
-	d_data = other.d_data;
-	return *this;
-}
-// bool VipBoxStyle::operator==(const VipBoxStyle & other) const
-// {
-// return d_data->pen==other.d_data->pen &&
-//	d_data->brush==other.d_data->brush &&
-//	d_data->radius==other.d_data->radius &&
-//	d_data->drawLines==other.d_data->drawLines &&
-//	d_data->roundedCorners==other.d_data->roundedCorners;
-//	d_data->drawLines==other.d_data->drawLines &&
-//		d_data->roundedCorners==other.d_data->roundedCorners;
-// }
-//
-// bool VipBoxStyle::operator!=(const VipBoxStyle & other) const
-// {
-// return ! operator==(other);
-// }
-
-bool VipBoxStyle::isNull() const
-{
-	return !d_data;
-}
-
-bool VipBoxStyle::isValid() const
-{
-	return d_data;
-}
-
-bool VipBoxStyle::isEmpty() const
-{
-	return isNull() || (d_data->paths.first.isEmpty() && d_data->paths.second.isEmpty());
-}
-
 void VipBoxStyle::update()
 {
 	if (!d_data)
-		d_data = new PrivateData;
+		d_data = new PrivateData();
 }
 
 void VipBoxStyle::setBorderPen(const QPen& p)
@@ -254,12 +213,13 @@ void VipBoxStyle::setBorderPen(const QColor& c, double width)
 	d_data->pen.setWidth(width);
 }
 
-QPen VipBoxStyle::borderPen() const
+const QPen& VipBoxStyle::borderPen() const noexcept
 {
+	static const QPen default_pen = QPen(Qt::NoPen);
 	if (d_data)
 		return d_data->pen;
 	else
-		return QPen(Qt::NoPen);
+		return default_pen;
 }
 
 QPen& VipBoxStyle::borderPen()
@@ -274,12 +234,13 @@ void VipBoxStyle::setBackgroundBrush(const QBrush& b)
 	d_data->brushGradient.setBrush(b);
 }
 
-QBrush VipBoxStyle::backgroundBrush() const
+const QBrush &VipBoxStyle::backgroundBrush() const noexcept
 {
+	static const QBrush default_brush = QBrush();
 	if (d_data)
 		return d_data->brushGradient.brush();
 	else
-		return QBrush();
+		return default_brush;
 }
 
 QBrush& VipBoxStyle::backgroundBrush()
@@ -306,12 +267,13 @@ void VipBoxStyle::setAdaptativeGradientBrush(const VipAdaptativeGradient& grad)
 	d_data->brushGradient = grad;
 }
 
-VipAdaptativeGradient VipBoxStyle::adaptativeGradientBrush() const
+const VipAdaptativeGradient &VipBoxStyle::adaptativeGradientBrush() const noexcept
 {
+	static const VipAdaptativeGradient default_grad;
 	if (d_data)
 		return d_data->brushGradient;
 	else
-		return VipAdaptativeGradient();
+		return default_grad;
 }
 
 void VipBoxStyle::unsetBrushGradient()
@@ -326,12 +288,13 @@ void VipBoxStyle::setAdaptativeGradientPen(const VipAdaptativeGradient& grad)
 	d_data->penGradient = grad;
 }
 
-VipAdaptativeGradient VipBoxStyle::adaptativeGradientPen() const
+const VipAdaptativeGradient& VipBoxStyle::adaptativeGradientPen() const noexcept
 {
+	static const VipAdaptativeGradient default_grad;
 	if (d_data)
 		return d_data->penGradient;
 	else
-		return VipAdaptativeGradient();
+		return default_grad;
 }
 
 void VipBoxStyle::unsetPenGradient()
@@ -346,7 +309,7 @@ void VipBoxStyle::setBorderRadius(double r)
 	d_data->radius = r;
 }
 
-double VipBoxStyle::borderRadius() const
+double VipBoxStyle::borderRadius() const noexcept
 {
 	if (d_data)
 		return d_data->radius;
@@ -381,7 +344,7 @@ bool VipBoxStyle::testDrawLines(Vip::Side draw_line) const
 		return true;
 }
 
-Vip::Sides VipBoxStyle::drawLines() const
+Vip::Sides VipBoxStyle::drawLines() const noexcept
 {
 	if (d_data)
 		return d_data->drawLines;
@@ -416,7 +379,7 @@ bool VipBoxStyle::testRoundedCorner(Vip::Corner rounded_corner) const
 		return false;
 }
 
-Vip::Corners VipBoxStyle::roundedCorners() const
+Vip::Corners VipBoxStyle::roundedCorners() const noexcept
 {
 	if (d_data)
 		return d_data->roundedCorners;
@@ -424,7 +387,7 @@ Vip::Corners VipBoxStyle::roundedCorners() const
 		return Vip::Corners();
 }
 
-bool VipBoxStyle::isTransparentBrush() const
+bool VipBoxStyle::isTransparentBrush() const noexcept
 {
 	if (d_data)
 		return d_data->brushGradient.isTransparent();
@@ -432,7 +395,7 @@ bool VipBoxStyle::isTransparentBrush() const
 		return true;
 }
 
-bool VipBoxStyle::isTransparentPen() const
+bool VipBoxStyle::isTransparentPen() const noexcept
 {
 	if (d_data)
 		return (d_data->pen.style() == Qt::NoPen || d_data->pen.color().alpha() == 0);
@@ -440,33 +403,36 @@ bool VipBoxStyle::isTransparentPen() const
 		return true;
 }
 
-bool VipBoxStyle::isTransparent() const
+bool VipBoxStyle::isTransparent() const noexcept
 {
 	return !d_data || (isTransparentPen() && isTransparentBrush());
 }
 
-QPainterPath VipBoxStyle::background() const
+const QPainterPath & VipBoxStyle::background() const noexcept
 {
+	static const QPainterPath default_path;
 	if (d_data)
 		return d_data->paths.first;
 	else
-		return QPainterPath();
+		return default_path;
 }
 
-QPainterPath VipBoxStyle::border() const
+const QPainterPath& VipBoxStyle::border() const noexcept
 {
+	static const QPainterPath default_path;
 	if (d_data)
 		return d_data->paths.second;
 	else
-		return QPainterPath();
+		return default_path;
 }
 
-PainterPaths VipBoxStyle::paths() const
+const PainterPaths& VipBoxStyle::paths() const noexcept
 {
+	static const PainterPaths default_path;
 	if (d_data)
 		return d_data->paths;
 	else
-		return PainterPaths();
+		return default_path;
 }
 
 QRectF VipBoxStyle::boundingRect() const
@@ -974,11 +940,11 @@ QPen VipBoxStyle::createBorderPen(const QPen& _pen) const
 	return pen;
 }
 
-bool VipBoxStyle::hasBrushGradient() const
+bool VipBoxStyle::hasBrushGradient() const noexcept
 {
 	return d_data->brushGradient.type() != VipAdaptativeGradient::NoGradient;
 }
-bool VipBoxStyle::hasPenGradient() const
+bool VipBoxStyle::hasPenGradient() const noexcept
 {
 	return d_data->penGradient.type() != VipAdaptativeGradient::NoGradient;
 }
@@ -1093,14 +1059,14 @@ void VipBoxStyle::draw(QPainter* painter, const QBrush& brush, const QPen& pen) 
 	}
 }
 
-bool VipBoxStyle::operator==(const VipBoxStyle& other) const
+bool VipBoxStyle::operator==(const VipBoxStyle& other) const noexcept
 {
 	return other.d_data->brushGradient == d_data->brushGradient && other.d_data->drawLines == d_data->drawLines && other.d_data->pen == d_data->pen &&
 	       other.d_data->penGradient == d_data->penGradient && other.d_data->brushGradient == d_data->brushGradient && other.d_data->radius == d_data->radius &&
 	       other.d_data->roundedCorners == d_data->roundedCorners;
 }
 
-bool VipBoxStyle::operator!=(const VipBoxStyle& other) const
+bool VipBoxStyle::operator!=(const VipBoxStyle& other) const noexcept
 {
 	return !((*this) == other);
 }

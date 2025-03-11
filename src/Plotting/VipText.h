@@ -1,7 +1,7 @@
 /**
  * BSD 3-Clause License
  *
- * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ * Copyright (c) 2025, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Leo Dubus, Erwan Grelier
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -36,7 +36,6 @@
 #include <QFont>
 #include <QPainter>
 #include <QPen>
-#include <QRegExp>
 #include <QSharedDataPointer>
 #include <QString>
 
@@ -55,9 +54,6 @@
 /// specific text format. They are used by VipText to render a text.
 ///
 /// VipPlainTextEngine and VipRichTextEngine are part of the  library.
-/// The implementation of MathMLTextEngine uses code from the
-/// Qt solution package. Because of license implications it is built into
-/// a separate library.
 ///
 /// \sa VipText::setTextEngine()
 
@@ -114,6 +110,8 @@ public:
 	/// \param text VipText to be rendered
 	virtual void draw(QPainter* painter, const QRectF& rect, int flags, const QString& text) const = 0;
 
+	virtual Qt::TextFormat format() const noexcept { return Qt::AutoText; }
+
 protected:
 	VipTextEngine();
 };
@@ -138,9 +136,10 @@ public:
 
 	virtual void textMargins(const QFont&, const QString&, double& left, double& right, double& top, double& bottom) const;
 
+	virtual Qt::TextFormat format() const noexcept { return Qt::PlainText; }
+
 private:
-	class PrivateData;
-	PrivateData* d_data;
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 #ifndef QT_NO_RICHTEXT
@@ -164,58 +163,76 @@ public:
 
 	virtual void textMargins(const QFont&, const QString&, double& left, double& right, double& top, double& bottom) const;
 
+	virtual Qt::TextFormat format() const noexcept { return Qt::RichText; }
+
 private:
 	QString taggedText(const QString&, int flags) const;
 };
 
 #endif
 
+/// @brief class representing the drawing style of a text
+///
+/// VipTextStyle defines the way a text is draw: color, font, background, caching, alignment, margins, box style...
+/// Uses COW internally.
+///
 class VIP_PLOTTING_EXPORT VipTextStyle //: public QSharedData
 {
 public:
 	VipTextStyle();
-	VipTextStyle(const VipTextStyle& other);
+	VIP_DEFAULT_MOVE(VipTextStyle);
 
-	VipTextStyle& operator=(const VipTextStyle& other);
-
+	/// @brief Set/get the font
 	void setFont(const QFont&);
-	const QFont& font() const;
-	QFont& font();
+	VIP_ALWAYS_INLINE const QFont& font() const noexcept { return d_data->font; }
+	VIP_ALWAYS_INLINE QFont& font() { return d_data->font; }
 
+	/// @brief Enable/disable pixmap caching
 	void setCached(bool);
-	bool cached() const;
+	VIP_ALWAYS_INLINE bool cached() const noexcept { return d_data->cached; }
 
+	/// @brief Set/get the text pen
 	void setTextPen(const QPen&);
-	const QPen& textPen() const;
-	QPen& textPen();
+	VIP_ALWAYS_INLINE const QPen& textPen() const noexcept { return d_data->textPen; }
+	VIP_ALWAYS_INLINE QPen& textPen() { return d_data->textPen; }
 
+	/// @brief Set/get the border pen of the box style
 	void setBorderPen(const QPen&);
-	QPen borderPen() const;
+	VIP_ALWAYS_INLINE const QPen& borderPen() const noexcept { return d_data->boxStyle.borderPen(); }
 
+	/// @brief Set/get the background brush of the box style
 	void setBackgroundBrush(const QBrush&);
-	QBrush backgroundBrush() const;
+	VIP_ALWAYS_INLINE const QBrush& backgroundBrush() const noexcept { return d_data->boxStyle.backgroundBrush(); }
 
-	double borderRadius() const;
+	/// @brief Set/get the border radius of the box style
+	VIP_ALWAYS_INLINE double borderRadius() const noexcept { return d_data->boxStyle.borderRadius(); }
 	void setBorderRadius(double);
 
+	/// @brief Set/get the text alignment inside its box
 	void setAlignment(Qt::Alignment align);
-	Qt::Alignment alignment() const;
+	VIP_ALWAYS_INLINE Qt::Alignment alignment() const noexcept { return d_data->alignment; }
 
+	/// @brief Set/get the render hints
 	void setRenderHints(QPainter::RenderHints);
-	QPainter::RenderHints renderHints() const;
+	VIP_ALWAYS_INLINE QPainter::RenderHints renderHints() const noexcept { return d_data->renderHints; }
 
+	/// @brief Set/get the margin to the text box
 	void setMargin(double);
-	double margin() const;
+	VIP_ALWAYS_INLINE double margin() const noexcept { return d_data->margin; }
 
+	/// @brief Set/get the box style
 	void setBoxStyle(const VipBoxStyle&);
-	const VipBoxStyle& boxStyle() const;
-	VipBoxStyle& boxStyle();
+	VIP_ALWAYS_INLINE const VipBoxStyle& boxStyle() const noexcept { return d_data->boxStyle; }
+	VIP_ALWAYS_INLINE VipBoxStyle& boxStyle() { return d_data->boxStyle; }
 
+	/// @brief Set/get the text box style.
+	/// If defined, the text box style is used to draw the text based on independant glyphes rendered as QPainterPath objects.
 	void setTextBoxStyle(const VipBoxStyle&);
 	const VipBoxStyle& textBoxStyle() const;
 	VipBoxStyle& textBoxStyle();
-	bool hasTextBoxStyle() const;
+	VIP_ALWAYS_INLINE bool hasTextBoxStyle() const noexcept { return d_data->textBoxStyle != nullptr; }
 
+	/// @brief Comparison operator, check if all parameters are equals.
 	bool operator==(const VipTextStyle& other) const;
 	bool operator!=(const VipTextStyle& other) const;
 
@@ -232,7 +249,7 @@ private:
 		QFont font;
 		QPen textPen;
 		VipBoxStyle boxStyle;
-		VipBoxStyle* textBoxStyle;
+		std::unique_ptr<VipBoxStyle> textBoxStyle;
 		Qt::Alignment alignment;
 		QPainter::RenderHints renderHints;
 	};
@@ -242,7 +259,7 @@ private:
 
 /// \brief A class representing a text
 ///
-/// A VipText is a text including a set of attributes how to render it.
+/// A VipText is a text including a set of attributes to render it.
 ///
 /// - Format\n
 /// A text might include control sequences (f.e tags) describing
@@ -328,76 +345,75 @@ public:
 	  : VipText(QString(str))
 	{
 	}
-	VipText(const VipText&);
-
-	VipText& operator=(const VipText&);
-
+	VIP_DEFAULT_MOVE(VipText);
+	
 	bool operator==(const VipText&) const;
 	bool operator!=(const VipText&) const;
 
 	void setText(const QString&, VipText::TextFormat textFormat = AutoText);
-	const QString& text() const;
-	QString& text();
+	VIP_ALWAYS_INLINE const QString& text() const noexcept { return d_data->text; }
+	VIP_ALWAYS_INLINE QString& text() { return d_data->text; }
 
-	bool isNull() const;
-	bool isEmpty() const;
+	VIP_ALWAYS_INLINE bool isNull() const noexcept { return text().isNull(); }
+	VIP_ALWAYS_INLINE bool isEmpty() const noexcept { return text().isEmpty(); }
 
 	VipText& setCached(bool);
-	bool cached() const;
+	VIP_ALWAYS_INLINE bool cached() const noexcept { return d_data->parameters.cached(); }
+
 
 	/// @brief Activate potential text caching application wide.
 	///
 	/// By default, VipText draws its text using a cache pixmap only if cached() is true.
 	/// If cacheTextWhenPossible() is true, caching will be activated on some scenarios
-	/// (opengl backend or text rotation) even if  cached() is false.
+	/// (opengl backend or text rotation) even if cached() is false.
 	///
 	static void setCacheTextWhenPossible(bool);
 	static bool cacheTextWhenPossible();
 
 	VipText& setFont(const QFont&);
-	const QFont& font() const;
-	QFont& font();
+	VIP_ALWAYS_INLINE const QFont& font() const noexcept { return d_data->parameters.font(); }
+	VIP_ALWAYS_INLINE QFont& font() { return d_data->parameters.font(); }
 
 	VipText& setTextPen(const QPen&);
-	const QPen& textPen() const;
-	QPen& textPen();
+	VIP_ALWAYS_INLINE const QPen& textPen() const noexcept { return d_data->parameters.textPen(); }
+	VIP_ALWAYS_INLINE QPen& textPen() { return d_data->parameters.textPen(); }
 
 	VipText& setBorderPen(const QPen&);
-	QPen borderPen() const;
+	VIP_ALWAYS_INLINE const QPen& borderPen() const noexcept { return d_data->parameters.borderPen(); }
 
 	VipText& setBackgroundBrush(const QBrush&);
-	QBrush backgroundBrush() const;
+	VIP_ALWAYS_INLINE const QBrush& backgroundBrush() const noexcept { return d_data->parameters.backgroundBrush(); }
 
-	double borderRadius() const;
 	VipText& setBorderRadius(double);
+	VIP_ALWAYS_INLINE double borderRadius() const noexcept { return d_data->parameters.borderRadius(); }
 
 	VipText& setAlignment(Qt::Alignment flags);
-	Qt::Alignment alignment() const;
+	VIP_ALWAYS_INLINE Qt::Alignment alignment() const noexcept { return d_data->parameters.alignment(); }
 
 	VipText& setRenderHints(QPainter::RenderHints);
-	QPainter::RenderHints renderHints() const;
+	VIP_ALWAYS_INLINE QPainter::RenderHints renderHints() const noexcept { return d_data->parameters.renderHints(); }
 
 	VipText& setBoxStyle(const VipBoxStyle& p);
-	const VipBoxStyle& boxStyle() const;
-	VipBoxStyle& boxStyle();
+	VIP_ALWAYS_INLINE const VipBoxStyle& boxStyle() const noexcept { return d_data->parameters.boxStyle(); }
+	VIP_ALWAYS_INLINE VipBoxStyle& boxStyle() { return d_data->parameters.boxStyle(); }
 
 	VipText& setTextBoxStyle(const VipBoxStyle& p);
-	const VipBoxStyle& textBoxStyle() const;
-	VipBoxStyle& textBoxStyle();
-	bool hasTextBoxStyle() const;
+	VIP_ALWAYS_INLINE const VipBoxStyle& textBoxStyle() const { return d_data->parameters.textBoxStyle(); }
+	VIP_ALWAYS_INLINE VipBoxStyle& textBoxStyle() { return d_data->parameters.textBoxStyle(); }
+	VIP_ALWAYS_INLINE bool hasTextBoxStyle() const noexcept { return d_data->parameters.hasTextBoxStyle(); }
 
 	VipText& setTextStyle(const VipTextStyle& p);
-	const VipTextStyle& textStyle() const;
-	VipTextStyle& textStyle();
+	VIP_ALWAYS_INLINE const VipTextStyle& textStyle() const noexcept { return d_data->parameters; }
+	VIP_ALWAYS_INLINE VipTextStyle& textStyle() { return d_data->parameters; }
 
 	VipText& setLayoutAttribute(LayoutAttribute, bool on = true);
 	VipText& setLayoutAttributes(LayoutAttributes attrs);
-	bool testLayoutAttribute(LayoutAttribute) const;
-	LayoutAttributes layoutAttributes() const;
+	VIP_ALWAYS_INLINE bool testLayoutAttribute(LayoutAttribute attribute) const noexcept { return d_data->layoutAttributes | attribute; }
+	VIP_ALWAYS_INLINE VipText::LayoutAttributes layoutAttributes() const noexcept { return d_data->layoutAttributes; }
 
 	double heightForWidth(double width) const;
 	QSizeF textSize() const;
-	QRectF textRect() const { return QRectF(QPointF(0, 0), textSize()); }
+	VIP_ALWAYS_INLINE QRectF textRect() const { return QRectF(QPointF(0, 0), textSize()); }
 
 	template<class... Args>
 	VipText& sprintf(Args... parameters)
@@ -433,7 +449,6 @@ public:
 	void draw(QPainter* painter, const QPointF& center, const VipPie& pie, TextDirection dir = AutoDirection) const;
 
 	static const VipTextEngine* textEngine(const QString& text, VipText::TextFormat = AutoText);
-
 	static const VipTextEngine* textEngine(VipText::TextFormat);
 	static void setTextEngine(VipText::TextFormat, VipTextEngine*);
 
@@ -442,7 +457,7 @@ public:
 private:
 	VipText(const QString&, const VipTextEngine* engine);
 
-	class PrivateData : public QSharedData
+	class VIP_PLOTTING_EXPORT PrivateData : public QSharedData
 	{
 	public:
 		PrivateData();
@@ -461,62 +476,24 @@ private:
 	QPixmap d_cash;
 };
 
-//! \return text().isNull()
-inline bool VipText::isNull() const
-{
-	return text().isNull();
-}
 
-//! \return text().isEmpty()
-inline bool VipText::isEmpty() const
+namespace detail
 {
-	return text().isEmpty();
-}
+	static inline QString formattingSequence(const QString& str, int start)
+	{
+		static const QRegExp exp(QString("[diuoxXfFeEgGaAcspn%]"));
+		if (start >= str.size())
+			return QString();
 
-static QString formattingSequence(const QString& str, int start)
-{
-	static const QRegExp exp(QString("[diuoxXfFeEgGaAcspn%]"));
-	if (start >= str.size())
+		if (str[start] == QChar('%')) {
+			int end = exp.indexIn(str, start + 1);
+			if (end >= 0)
+				return str.mid(start, end - start + 1);
+		}
+
 		return QString();
-
-	if (str[start] == QChar('%')) {
-		int end = exp.indexIn(str, start + 1);
-		if (end >= 0)
-			return str.mid(start, end - start + 1);
 	}
-
-	return QString();
 }
-// template<class T>
-// void vipReplaceFormattedText(QString & text, const QString & to_replace, const T & value)
-// {
-// int index = text.indexOf(to_replace);
-// while (index >= 0)
-// {
-// QString format = formattingSequence(text, index + to_replace.size());
-// QString replace;
-//
-// if (format.isEmpty())
-// {
-//	replace = QString("%1").arg(value);
-// }
-// else if (format == "%%")
-// {
-//	replace = QString("%1%").arg(value);
-// }
-// else
-// {
-//	char data[50];
-//	memset(data, 0, sizeof(data));
-//	snprintf(data, 50, format.toLatin1().data(), value);
-//	replace = QString(data);
-// }
-//
-// text.replace(index, to_replace.size() + format.size(), replace);
-// index = index + replace.size();
-// index = text.indexOf(to_replace, index);
-// }
-// }
 
 template<class T>
 VipText& VipText::replace(const QString& str, const T& value)
@@ -532,7 +509,7 @@ QString VipText::replace(const QString& input, const QString& str, const T& valu
 	QString new_str = input;
 	int index = new_str.indexOf(str);
 	while (index >= 0) {
-		QString format = formattingSequence(new_str, index + str.size());
+		QString format = detail::formattingSequence(new_str, index + str.size());
 		QString replace;
 
 		if (format.isEmpty()) {
@@ -573,7 +550,7 @@ inline QString VipText::replace(const QString& input, const QString& str, const 
 	QString new_str = input;
 	int index = new_str.indexOf(str);
 	while (index >= 0) {
-		QString format = formattingSequence(new_str, index + str.size());
+		QString format = detail::formattingSequence(new_str, index + str.size());
 		QString replace;
 
 		if (format.isEmpty()) {
@@ -607,18 +584,29 @@ inline QString VipText::replace(const QString& input, const QString& str, const 
 }
 
 class QPicture;
+
+/// @brief Convert QImage/QPixmap/QPicture object to its html representation.
+/// @param pixmap input image
+/// @param additional_attributes additional html attributes to controll image position/alignment
+/// @param ok set to true on success, false on error (if not null)
+/// @return The HTML representation of the input image.
 VIP_PLOTTING_EXPORT QByteArray vipToHtml(const QPixmap& pixmap, const QByteArray& additional_attributes = QByteArray(), bool* ok = nullptr);
 VIP_PLOTTING_EXPORT QByteArray vipToHtml(const QImage& image, const QByteArray& additional_attributes = QByteArray(), bool* ok = nullptr);
 VIP_PLOTTING_EXPORT QByteArray vipToHtml(const QPicture& picture, const QByteArray& additional_attributes = QByteArray(), bool* ok = nullptr);
 
+/// @brief Class providing all information to draw a text in a specific geometry.
+///
 class VIP_PLOTTING_EXPORT VipTextObject
 {
 public:
 	VipTextObject(const VipText& text = VipText(), const QRectF& rect = QRectF(), const QTransform& tr = QTransform());
 	VipTextObject(const VipText& text, const VipPie& pie, const QPointF& center, VipText::TextDirection dir = VipText::AutoDirection, const QTransform& tr = QTransform());
 	VipTextObject(const VipTextObject&);
+	VipTextObject(VipTextObject&&) noexcept;
+	~VipTextObject();
 
 	VipTextObject& operator=(const VipTextObject&);
+	VipTextObject& operator=(VipTextObject&&) noexcept;
 
 	//
 	// generic functions
@@ -657,8 +645,7 @@ public:
 	VipText::TextDirection textDirection() const;
 
 private:
-	class PrivateData;
-	PrivateData* d_data;
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 Q_DECLARE_OPERATORS_FOR_FLAGS(VipText::LayoutAttributes);

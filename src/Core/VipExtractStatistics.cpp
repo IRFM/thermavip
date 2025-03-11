@@ -1,7 +1,7 @@
 /**
  * BSD 3-Clause License
  *
- * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ * Copyright (c) 2025, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Leo Dubus, Erwan Grelier
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -360,7 +360,7 @@ void VipSplitAndMerge::applyInternal(bool update)
 	}
 
 	// build the input array
-	QList<VipAnyData> inputs;
+	VipAnyDataList inputs;
 	QVariantList lst = extract_components(in.data(), m_extract);
 	for (int i = 0; i < lst.size(); ++i) {
 		VipAnyData any(lst[i], in.time());
@@ -444,7 +444,7 @@ void VipExtractHistogram::apply()
 		}
 
 		if (ar.canConvert<double>()) {
-			QVector<VipIntervalSample> histogram = shape.histogram(bins, ar, QPoint(0, 0), &buffer());
+			VipIntervalSampleVector histogram = shape.histogram(bins, ar, QPoint(0, 0), &buffer());
 			VipAnyData any = create(QVariant::fromValue(histogram));
 			any.setTime(data.time());
 			any.setXUnit(data.zUnit());
@@ -473,7 +473,7 @@ void VipExtractHistogram::apply()
 			}
 
 			for (int i = 0; i < ars.size(); ++i) {
-				QVector<VipIntervalSample> histogram = shape.histogram(bins, ars[i], QPoint(0, 0), &buffer());
+				VipIntervalSampleVector histogram = shape.histogram(bins, ars[i], QPoint(0, 0), &buffer());
 				VipAnyData any = create(QVariant::fromValue(histogram));
 				any.setTime(data.time());
 				any.setXUnit(data.zUnit());
@@ -483,7 +483,7 @@ void VipExtractHistogram::apply()
 		}
 	}
 	else {
-		QVector<VipIntervalSample> histogram;
+		VipIntervalSampleVector histogram;
 		for (int i = 0; i < outputCount(); ++i) {
 			VipAnyData any = create(QVariant::fromValue(histogram));
 			any.setTime(data.time());

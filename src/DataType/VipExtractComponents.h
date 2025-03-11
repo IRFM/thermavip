@@ -1,7 +1,7 @@
 /**
  * BSD 3-Clause License
  *
- * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ * Copyright (c) 2025, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Leo Dubus, Erwan Grelier
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -176,7 +176,7 @@ public:
 	virtual QList<QByteArray> InputDataTypes() const { return QList<QByteArray>() << "QImage"; }
 	virtual QList<QByteArray> PixelComponentTypes() const
 	{
-		QByteArray name = QMetaType::typeName(qMetaTypeId<quint8>());
+		QByteArray name = QMetaType(qMetaTypeId<quint8>()).name();
 		return QList<QByteArray>() << name << name << name << name;
 	}
 	virtual QStringList PixelComponentNames() const
@@ -190,7 +190,7 @@ public:
 	virtual void SetComponents(const QList<VipNDArray>& components)
 	{
 		QList<VipNDArray> tmp;
-		for (int i = 0; i < components.size(); ++i)
+		for (qsizetype i = 0; i < components.size(); ++i)
 			tmp.append(components[i].toUInt8());
 		VipExtractComponents::SetComponents(tmp);
 	}
@@ -212,8 +212,8 @@ public:
 	virtual QList<QByteArray> InputDataTypes() const { return QList<QByteArray>() << "QImage"; }
 	virtual QList<QByteArray> PixelComponentTypes() const
 	{
-		QByteArray name = QMetaType::typeName(qMetaTypeId<int>());
-		QByteArray name_uchar = QMetaType::typeName(qMetaTypeId<quint8>());
+		QByteArray name = QMetaType(qMetaTypeId<int>()).name();
+		QByteArray name_uchar = QMetaType(qMetaTypeId<quint8>()).name();
 		return QList<QByteArray>() << name << name << name << name_uchar;
 	}
 	virtual QStringList PixelComponentNames() const
@@ -227,7 +227,7 @@ public:
 	virtual void SetComponents(const QList<VipNDArray>& components)
 	{
 		QList<VipNDArray> tmp;
-		for (int i = 0; i < components.size(); ++i) {
+		for (qsizetype i = 0; i < components.size(); ++i) {
 			if (i == 0)
 				tmp.append(components[i].toInt32());
 			else
@@ -253,8 +253,8 @@ public:
 	virtual QList<QByteArray> InputDataTypes() const { return QList<QByteArray>() << "QImage"; }
 	virtual QList<QByteArray> PixelComponentTypes() const
 	{
-		QByteArray name = QMetaType::typeName(qMetaTypeId<int>());
-		QByteArray name_uchar = QMetaType::typeName(qMetaTypeId<quint8>());
+		QByteArray name = QMetaType(qMetaTypeId<int>()).name();
+		QByteArray name_uchar = QMetaType(qMetaTypeId<quint8>()).name();
 		return QList<QByteArray>() << name << name << name << name_uchar;
 	}
 	virtual QStringList PixelComponentNames() const
@@ -267,7 +267,7 @@ public:
 	virtual void SetComponents(const QList<VipNDArray>& components)
 	{
 		QList<VipNDArray> tmp;
-		for (int i = 0; i < components.size(); ++i) {
+		for (qsizetype i = 0; i < components.size(); ++i) {
 			if (i == 0)
 				tmp.append(components[i].toInt32());
 			else
@@ -293,7 +293,7 @@ public:
 	virtual QList<QByteArray> InputDataTypes() const { return QList<QByteArray>() << "QImage"; }
 	virtual QList<QByteArray> PixelComponentTypes() const
 	{
-		QByteArray name = QMetaType::typeName(qMetaTypeId<quint8>());
+		QByteArray name = QMetaType(qMetaTypeId<quint8>()).name();
 		return QList<QByteArray>() << name << name << name << name << name;
 	}
 	QStringList PixelComponentNames() const
@@ -307,7 +307,7 @@ public:
 	virtual void SetComponents(const QList<VipNDArray>& components)
 	{
 		QList<VipNDArray> tmp;
-		for (int i = 0; i < components.size(); ++i) {
+		for (qsizetype i = 0; i < components.size(); ++i) {
 			tmp.append(components[i].toUInt8());
 		}
 		VipExtractComponents::SetComponents(tmp);
@@ -332,14 +332,14 @@ public:
 	QList<QByteArray> InputDataTypes() const { return QList<QByteArray>() << "QImage"; }
 	virtual QList<QByteArray> PixelComponentTypes() const
 	{
-		QByteArray name = QMetaType::typeName(qMetaTypeId<quint8>());
+		QByteArray name = QMetaType(qMetaTypeId<quint8>()).name();
 		return QList<QByteArray>() << name;
 	}
 	QStringList PixelComponentNames() const { return QStringList() << "Grayscale"; }
 	virtual void SetComponents(const QList<VipNDArray>& components)
 	{
 		QList<VipNDArray> tmp;
-		for (int i = 0; i < components.size(); ++i) {
+		for (qsizetype i = 0; i < components.size(); ++i) {
 			tmp.append(components[i].toUInt8());
 		}
 		VipExtractComponents::SetComponents(tmp);
@@ -366,7 +366,7 @@ public:
 	}
 	virtual QList<QByteArray> PixelComponentTypes() const
 	{
-		QByteArray name = QMetaType::typeName(qMetaTypeId<double>());
+		QByteArray name = QMetaType(qMetaTypeId<double>()).name();
 		return QList<QByteArray>() << name << name;
 	}
 	virtual QStringList PixelComponentNames() const
@@ -377,7 +377,7 @@ public:
 	virtual void SetComponents(const QList<VipNDArray>& components)
 	{
 		QList<VipNDArray> tmp;
-		for (int i = 0; i < components.size(); ++i) {
+		for (qsizetype i = 0; i < components.size(); ++i) {
 			tmp.append(components[i].toDouble());
 		}
 		VipExtractComponents::SetComponents(tmp);
@@ -404,7 +404,7 @@ public:
 	}
 	virtual QList<QByteArray> PixelComponentTypes() const
 	{
-		QByteArray name = QMetaType::typeName(qMetaTypeId<double>());
+		QByteArray name = QMetaType(qMetaTypeId<double>()).name();
 		return QList<QByteArray>() << name << name;
 	}
 	virtual QStringList PixelComponentNames() const
@@ -415,7 +415,7 @@ public:
 	virtual void SetComponents(const QList<VipNDArray>& components)
 	{
 		QList<VipNDArray> tmp;
-		for (int i = 0; i < components.size(); ++i) {
+		for (qsizetype i = 0; i < components.size(); ++i) {
 			tmp.append(components[i].toDouble());
 		}
 		VipExtractComponents::SetComponents(tmp);
@@ -600,7 +600,7 @@ inline QString vipMethodDescription(const QString& method)
 		return QString();
 }
 
-inline int vipComponentsCount(const QString& method)
+inline qsizetype vipComponentsCount(const QString& method)
 {
 	if (method == "Complex Real/Imag")
 		return 2;

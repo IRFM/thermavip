@@ -1,7 +1,7 @@
 /**
  * BSD 3-Clause License
  *
- * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ * Copyright (c) 2025, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Leo Dubus, Erwan Grelier
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -201,8 +201,11 @@ inline VipScaleDiv::TickList& VipScaleDiv::ticks(int tickType)
 Q_DECLARE_METATYPE(VipScaleDiv);
 typedef QList<vip_double> DoubleList;
 Q_DECLARE_METATYPE(DoubleList)
+
 typedef QVector<vip_double> DoubleVector;
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
 Q_DECLARE_METATYPE(DoubleVector)
+#endif
 
 class QDataStream;
 VIP_PLOTTING_EXPORT QDataStream& operator<<(QDataStream& stream, const VipScaleDiv& div);

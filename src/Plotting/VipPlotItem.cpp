@@ -1,7 +1,7 @@
 /**
  * BSD 3-Clause License
  *
- * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ * Copyright (c) 2025, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Leo Dubus, Erwan Grelier
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -65,12 +65,11 @@ public:
 
 VipPlotItemDynamicProperty::VipPlotItemDynamicProperty(const QString& name)
 {
-	d_data = new PrivateData();
+	VIP_CREATE_PRIVATE_DATA(d_data);
 	d_data->name = name;
 }
 VipPlotItemDynamicProperty::~VipPlotItemDynamicProperty()
 {
-	delete d_data;
 }
 
 VipPlotItem* VipPlotItemDynamicProperty::parentItem() const
@@ -102,6 +101,7 @@ QList<QPointer<VipAbstractScale>> convert(const QList<VipAbstractScale*>& lst)
 static int staticRegister()
 {
 	qRegisterMetaType<VipPlotItem::MouseButton>("VipPlotItem::MouseButton");
+	qRegisterMetaType<VipPlotItemPointer>();
 	return 0;
 }
 static int _staticRegister = staticRegister();
@@ -160,13 +160,12 @@ public:
 
 VipPaintItem::VipPaintItem(QGraphicsObject* obj)
 {
-	d_data = new PrivateData();
+	VIP_CREATE_PRIVATE_DATA(d_data);
 	d_data->graphicsObject = obj;
 	d_data->graphicsObject->setProperty("VipPaintItem", QVariant::fromValue(this));
 }
 VipPaintItem::~VipPaintItem()
 {
-	delete d_data;
 }
 
 void VipPaintItem::updateInternal()
@@ -298,7 +297,7 @@ void VipPaintItem::dispatchStyleSheetToChildren()
 
 void VipPaintItem::markStyleSheetDirty()
 {
-	if (!d_data->insideApply) //TEST: avoid potential infinit loop
+	if (!d_data->insideApply) // TEST: avoid potential infinit loop
 		d_data->dirtyStyleSheet = true;
 }
 void VipPaintItem::applyStyleSheetIfDirty() const
@@ -654,7 +653,6 @@ public:
 	  , startTime(0)
 	  , fpsCounter(0)
 	  , fpsStart(0)
-	  , sceneMap()
 	  , dirtyCoordinateSystem(1)
 	  , computeShape(false)
 	  , updateScheduled(false)
@@ -662,8 +660,6 @@ public:
 	  , destroy_emitted(false)
 	  , numThreads(1)
 	  , selectionOrder(0)
-	  , cashedDirtyCoordinateSystem()
-	  , externCoordinateSystem()
 	  , drawText(true)
 	{
 		hover = nullEffect;
@@ -739,7 +735,7 @@ void VipPlotItem::setEventAccepted(bool accepted)
 }
 
 VipPlotItem::VipPlotItem(const VipText& title)
-  : QGraphicsObject()
+  : QOpenGLGraphicsObject()
   , VipPaintItem(this)
   , VipRenderObject(this)
   , d_data(new PrivateData())
@@ -783,7 +779,6 @@ VipPlotItem::~VipPlotItem()
 	}
 
 	this->blockSignals(false);
-	delete d_data;
 }
 
 VipAbstractPlotArea* VipPlotItem::parentPlotArea() const
@@ -816,7 +811,7 @@ VipCoordinateSystemPtr VipPlotItem::sceneMap() const
 		return SHARED_PTR_NAMESPACE::atomic_load(&d_data->externCoordinateSystem);
 	if ((int)d_data->dirtyCoordinateSystem) {
 
-		PrivateData* _data = const_cast<PrivateData*>(d_data);
+		PrivateData* _data = const_cast<PrivateData*>(d_data.get());
 
 		VipCoordinateSystemPtr tmp(vipBuildCoordinateSystem(axes(), d_data->type));
 		SHARED_PTR_NAMESPACE::atomic_store(&_data->sceneMap, tmp ? tmp : VipCoordinateSystemPtr(new VipNullCoordinateSystem(axes())));
@@ -1280,6 +1275,7 @@ void VipPlotItem::emitItemChanged(bool update_color_map, bool update_axes, bool 
 		this->markCoordinateSystemDirty();
 	if (update_style_sheet)
 		this->markStyleSheetDirty();
+	this->markItemDirty();
 	Q_EMIT itemChanged(this);
 }
 
@@ -1301,7 +1297,8 @@ void VipPlotItem::markAxesDirty()
 	if (this->testItemAttribute(VipPlotItem::AutoScale)) {
 		for (int i = 0; i < d_data->axes.size(); ++i) {
 			if (VipAbstractScale* axis = d_data->axes[i]) {
-				axis->emitScaleDivNeedUpdate();
+				if (axis->isAutoScale()) //TEST
+					axis->emitScaleDivNeedUpdate();
 			}
 		}
 	}
@@ -1336,9 +1333,9 @@ bool VipPlotItem::isDirtyShape() const
 void VipPlotItem::markDirtyShape(bool dirty) const
 {
 	if (dirty)
-		const_cast<PrivateData*>(d_data)->cashedDirtyCoordinateSystem = VipCoordinateSystemPtr();
+		const_cast<PrivateData*>(d_data.get())->cashedDirtyCoordinateSystem = VipCoordinateSystemPtr();
 	else
-		const_cast<PrivateData*>(d_data)->cashedDirtyCoordinateSystem = sceneMap();
+		const_cast<PrivateData*>(d_data.get())->cashedDirtyCoordinateSystem = sceneMap();
 }
 
 void VipPlotItem::updateOnStyleSheet()
@@ -1379,7 +1376,7 @@ void VipPlotItem::drawSelected(QPainter* painter, const VipCoordinateSystemPtr& 
 #include <qopenglpaintdevice.h>
 #include <qwindow.h>
 
-static QWindow* window()
+/* static QWindow* window()
 {
 	static QWindow* win = nullptr;
 	if (!win) {
@@ -1495,7 +1492,7 @@ static QImage createImageWithFBO(VipPlotItem* item)
 	// qint64 el = QDateTime::currentMSecsSinceEpoch() - st;
 	// vip_debug("opengl: %i , %i ms\n", (int)el, (int)el2);
 	return img;
-}
+}*/
 
 void VipPlotItem::resetFpsCounter()
 {
@@ -1533,8 +1530,15 @@ void VipPlotItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* optio
 		painter->setClipPath(d_data->clipTo->shape(), Qt::IntersectClip);
 
 	d_data->fpsCounter++;
+	
+	if (!computingShape()) {
+		if (drawThroughCache(painter, option, widget))
+			return;
+	}
+
 	painter->setRenderHints(renderHints());
 	painter->setCompositionMode(compositionMode());
+
 	if (isSelected() && !computingShape())
 		this->drawSelected(painter, sceneMap());
 	else
@@ -1543,12 +1547,10 @@ void VipPlotItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* optio
 	// draw the additional texts
 	if (d_data->drawText) {
 		QRectF rect = boundingRect();
-		// sceneMap()->invTransformRect(boundingRect());
 		for (QMap<int, ItemText>::const_iterator it = d_data->texts.begin(); it != d_data->texts.end(); ++it) {
 			if (!it.value().text.isEmpty()) {
 				VipText t = it.value().text;
 				t.setText(this->formatText(t.text(), QPointF(0, 0)));
-				// VipPainter::drawText(painter, sceneMap(), t, 0, it.value().position, it.value().alignment, rect.left(), rect.right(), rect.top(), rect.bottom());
 				VipPainter::drawText(painter, t, QTransform(), QPointF(), 0, it.value().position, it.value().alignment, rect);
 			}
 		}
@@ -1573,7 +1575,10 @@ QRectF VipPlotItem::boundingRect() const
 		const QPointF p2 = sceneMap()->transform(inters[0].maxValue(), inters[1].maxValue());
 		const_cast<QRectF&>(d_data->boundingRect) = (QRectF(p1, p2).normalized() & clip).adjusted(0, 0, 1, 1);
 
-		if (d_data->boundingRect == QRectF(0, 0, 1, 1)) {
+		if (vipIsNan(p1.x()) || vipIsNan(p1.y()) || vipIsNan(p2.x()) || vipIsNan(p2.y())) {
+			d_data->boundingRect = QRectF();
+		}
+		else if (d_data->boundingRect == QRectF(0, 0, 1, 1)) {
 			// The installed QGraphicsEffect create an internal pixmap of the size of the item's bounding rect.
 			// So clip the bounding rect with the axes clip path (or the parent bounding rect) to avoid creating a gigantic pixmap.
 
@@ -1671,10 +1676,10 @@ QList<VipPlotItem*> VipPlotItem::linkedItems() const
 {
 	QSet<VipPlotItem*> res;
 
-	bool valid_axes = false;
+	//bool valid_axes = false;
 	for (int i = 0; i < d_data->axes.size(); ++i) {
 		if (VipAbstractScale* axis = d_data->axes[i]) {
-			valid_axes = true;
+			//valid_axes = true;
 			res += vipToSet(axis->plotItems());
 		}
 	}
@@ -2077,7 +2082,7 @@ QVariant VipPlotItem::itemChange(GraphicsItemChange change, const QVariant& valu
 		d_data->updateScheduled = false;
 		Q_EMIT visibilityChanged(this);
 		emitItemChanged();
-		Q_EMIT VipPlotItemManager::instance()->itemVisibilityChanged(this, this->isVisible());
+		Q_EMIT VipPlotItemManager::instance() -> itemVisibilityChanged(VipPlotItemPointer(this), this->isVisible());
 	}
 
 	else if (change == QGraphicsItem::ItemSelectedHasChanged) {
@@ -2091,7 +2096,7 @@ QVariant VipPlotItem::itemChange(GraphicsItemChange change, const QVariant& valu
 		Q_EMIT selectionChanged(this);
 		emitItemChanged(false, false, false);
 
-		Q_EMIT VipPlotItemManager::instance()->itemSelectionChanged(this, this->isSelected());
+		Q_EMIT VipPlotItemManager::instance() -> itemSelectionChanged(VipPlotItemPointer(this), this->isSelected());
 	}
 	else if (change == QGraphicsItem::ItemChildAddedChange)
 		this->dispatchStyleSheetToChildren();
@@ -2115,7 +2120,7 @@ bool VipPlotItem::sceneEvent(QEvent* event)
 
 	if (event->type() == QEvent::GraphicsSceneMousePress) {
 		Q_EMIT mouseButtonPress(this, static_cast<MouseButton>(static_cast<QGraphicsSceneMouseEvent*>(event)->button()));
-		Q_EMIT VipPlotItemManager::instance()->itemClicked(this, static_cast<MouseButton>(static_cast<QGraphicsSceneMouseEvent*>(event)->button()));
+		Q_EMIT VipPlotItemManager::instance()->itemClicked(VipPlotItemPointer( this), static_cast<MouseButton>(static_cast<QGraphicsSceneMouseEvent*>(event)->button()));
 	}
 	else if (event->type() == QEvent::GraphicsSceneMouseRelease) {
 		Q_EMIT mouseButtonRelease(this, static_cast<MouseButton>(static_cast<QGraphicsSceneMouseEvent*>(event)->button()));
@@ -2302,6 +2307,7 @@ void VipPlotItem::update()
 {
 	if (!d_data->updateScheduled) {
 		d_data->updateScheduled = 1;
+		this->markItemDirty();
 		if (VipAbstractPlotArea* a = area()) {
 			a->markNeedUpdate();
 			if (cacheMode() != NoCache)
@@ -2717,7 +2723,6 @@ class VipPlotItemData::PrivateData
 public:
 	PrivateData()
 	  : inDestroy(false)
-	  , dataLock(QMutex::Recursive)
 	  , max_sample(std::numeric_limits<int>::max())
 	  , lastDataTime(0)
 	  , lastPaintTime(0)
@@ -2736,7 +2741,7 @@ public:
 VipPlotItemData::VipPlotItemData(const VipText& title)
   : VipPlotItem(title)
 {
-	d_data = new PrivateData();
+	VIP_CREATE_PRIVATE_DATA(d_data);
 	connect(this, SIGNAL(colorMapChanged(VipPlotItem*)), this, SLOT(resetData()), Qt::DirectConnection);
 }
 
@@ -2746,7 +2751,6 @@ VipPlotItemData::~VipPlotItemData()
 	{
 		Locker acq(&d_data->dataLock);
 	}
-	delete d_data;
 }
 
 void VipPlotItemData::setAutoMarkDirty(bool enable)
@@ -2772,11 +2776,8 @@ void VipPlotItemData::setInternalData(const QVariant& value)
 
 void VipPlotItemData::setData(const QVariant& d)
 {
-	if (d_data->inDestroy)
-		return;
 	setInternalData(d);
-
-	if (d_data->autoMarkDirty) {
+	if (d_data->autoMarkDirty && !d_data->inDestroy) {
 		if (QThread::currentThread() == qApp->thread())
 			markDirty();
 		else
@@ -2788,9 +2789,7 @@ QVariant VipPlotItemData::takeData()
 {
 	if (d_data->inDestroy)
 		return QVariant();
-	QVariant ret = d_data->data;
-	d_data->data = QVariant();
-	return ret;
+	return std::exchange(d_data->data, QVariant());
 }
 
 VipPlotItemData::Mutex* VipPlotItemData::dataLock() const
@@ -3020,6 +3019,7 @@ VipArchive& operator<<(VipArchive& arch, const VipPlotItemData* value)
 			v = vipToVariant(tmp);
 		}
 	}
+	
 	arch.content("data", v);
 	return arch;
 }

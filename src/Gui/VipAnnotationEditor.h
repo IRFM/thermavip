@@ -1,7 +1,7 @@
 /**
  * BSD 3-Clause License
  *
- * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ * Copyright (c) 2025, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Leo Dubus, Erwan Grelier
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -72,8 +72,8 @@ private Q_SLOTS:
 	void changeFont();
 
 private:
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 /// Edit the pen and brush of an annotation
@@ -95,8 +95,8 @@ Q_SIGNALS:
 	void changed() const;
 
 private:
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 /// Edit the symbol of an annotation
@@ -120,8 +120,8 @@ Q_SIGNALS:
 	void changed() const;
 
 private:
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 /// Edit on or more annotations
@@ -148,8 +148,8 @@ Q_SIGNALS:
 	void changed();
 
 private:
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 class VIP_GUI_EXPORT VipAnnotationToolWidget : public VipToolWidgetPlayer
@@ -203,6 +203,5 @@ VIP_GUI_EXPORT VipSimpleAnnotation* vipAnnotation(VipPlayer2D* player,
 						  const QVariantMap& attributes = QVariantMap(),
 						  const QString& yaxis = QString(),
 						  QString* error = nullptr);
-
 
 #endif

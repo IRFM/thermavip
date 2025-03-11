@@ -1,7 +1,7 @@
 /**
  * BSD 3-Clause License
  *
- * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ * Copyright (c) 2025, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Leo Dubus, Erwan Grelier
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -195,7 +195,7 @@ public:
 		if (m_shape->testItemAttribute(VipResizeItem::ClipToScaleRect))
 			painter->setClipPath(m_shape->sceneMap()->clipPath(m_shape), Qt::IntersectClip);
 
-		painter->setPen(QPen());
+		painter->setPen(Qt::black);
 		painter->setBrush(Qt::yellow);
 		painter->drawPath(shape());
 
@@ -406,8 +406,8 @@ public:
 	Qt::Alignment textAlignment;
 	bool adjustTextColor;
 
-	PolygonPointsMover* polygonMovers;
-	VipAnnotation* annotation;
+	std::unique_ptr<PolygonPointsMover> polygonMovers;
+	std::unique_ptr < VipAnnotation> annotation;
 	QByteArray annotationData;
 
 	VipText text;
@@ -431,25 +431,16 @@ VipPlotShape::VipPlotShape(const VipText& title)
 
 VipPlotShape::~VipPlotShape()
 {
-	if (d_data->polygonMovers) {
-		delete d_data->polygonMovers;
-		d_data->polygonMovers = nullptr;
-	}
-	if (d_data->annotation) {
-		delete d_data->annotation;
-		d_data->annotation = nullptr;
-	}
+	d_data->polygonMovers.reset();
+	d_data->annotation.reset();
 
 	Q_EMIT plotShapeDestroyed(this);
-	delete d_data;
 }
 
 void VipPlotShape::setAnnotation(VipAnnotation* annot)
 {
-	if (d_data->annotation != annot) {
-		if (d_data->annotation)
-			delete d_data->annotation;
-		d_data->annotation = annot;
+	if (d_data->annotation.get() != annot) {
+		d_data->annotation.reset( annot);
 		if (annot)
 			annot->setParentShape(this);
 
@@ -466,23 +457,20 @@ VipAnnotation* VipPlotShape::annotation() const
 {
 	QVariant an = rawData().attribute("_vip_annotation");
 	if (an.userType() == 0)
-		return d_data->annotation;
+		return d_data->annotation.get();
 	else {
 		QByteArray ar = an.toByteArray();
 		if (ar != d_data->annotationData) {
 			VipPlotShape* _this = const_cast<VipPlotShape*>(this);
-			if (d_data->annotation) {
-				delete _this->d_data->annotation;
-				_this->d_data->annotation = nullptr;
-			}
+			_this->d_data->annotation.reset(); 
 			if (VipAnnotation* annot = vipLoadAnnotation(ar)) {
-				_this->d_data->annotation = annot;
+				_this->d_data->annotation.reset(annot);
 				_this->d_data->annotationData = ar;
 				annot->setParentShape(_this);
 			}
 		}
 	}
-	return d_data->annotation;
+	return d_data->annotation.get();
 }
 
 void VipPlotShape::setDrawComponents(DrawComponents components)
@@ -714,7 +702,7 @@ void VipPlotShape::setPolygonEditable(bool editable)
 {
 	if (editable && !polygonEditable() && (rawData().isPolygonBased())) {
 		if (!d_data->polygonMovers)
-			d_data->polygonMovers = new PolygonPointsMover(this);
+			d_data->polygonMovers.reset(new PolygonPointsMover(this));
 		else
 			d_data->polygonMovers->setVisible(true);
 		emitItemChanged();
@@ -802,16 +790,11 @@ void VipPlotShape::internalUpdateOnSetData()
 	QByteArray annot = rawData().attribute("_vip_annotation").toByteArray();
 	if (annot != d_data->annotationData) {
 		if (annot.isEmpty()) {
-			if (d_data->annotation) {
-				delete d_data->annotation;
-				d_data->annotation = nullptr;
-			}
+			d_data->annotation.reset();
 			d_data->annotationData.clear();
 		}
 		if (VipAnnotation* a = vipLoadAnnotation(annot)) {
-			if (d_data->annotation)
-				delete d_data->annotation;
-			d_data->annotation = a;
+			d_data->annotation.reset(a);
 			d_data->annotationData = annot;
 			a->setParentShape(this);
 		}
@@ -1226,7 +1209,7 @@ public:
 VipPlotSceneModel::VipPlotSceneModel(const VipText& title)
   : VipPlotItemComposite(VipPlotItemComposite::Aggregate, title)
 {
-	d_data = new PrivateData();
+	VIP_CREATE_PRIVATE_DATA(d_data);
 	connect(d_data->sceneModel.shapeSignals(), SIGNAL(sceneModelChanged(const VipSceneModel&)), this, SLOT(resetSceneModelInternal()), Qt::DirectConnection);
 	connect(d_data->sceneModel.shapeSignals(), SIGNAL(sceneModelChanged(const VipSceneModel&)), this, SLOT(emitSceneModelChanged(const VipSceneModel&)), Qt::DirectConnection);
 	connect(d_data->sceneModel.shapeSignals(), SIGNAL(groupAdded(const QString&)), this, SLOT(emitGroupsChanged()), Qt::DirectConnection);
@@ -1234,6 +1217,8 @@ VipPlotSceneModel::VipPlotSceneModel(const VipText& title)
 	setItemAttribute(HasLegendIcon, false);
 	setItemAttribute(VisibleLegend, false);
 }
+
+VipPlotSceneModel::~VipPlotSceneModel() = default;
 
 void VipPlotSceneModel::setCompositeMode(VipPlotItemComposite::Mode mode)
 {
@@ -1768,7 +1753,7 @@ void VipPlotSceneModel::resetSceneModel()
 
 	for (int i = 0; i < groups.size(); ++i) {
 		const QString group = groups[i];
-		const QList<VipShape> gr_shapes = d_data->sceneModel.shapes(group);
+		const VipShapeList gr_shapes = d_data->sceneModel.shapes(group);
 		bool visible = groupVisible(group);
 		for (int s = 0; s < gr_shapes.size(); ++s) {
 			VipShape sh = gr_shapes[s];

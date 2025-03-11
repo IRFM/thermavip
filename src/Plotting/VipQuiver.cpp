@@ -1,7 +1,7 @@
 /**
  * BSD 3-Clause License
  *
- * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ * Copyright (c) 2025, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Leo Dubus, Erwan Grelier
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -462,4 +462,6 @@ static bool register_types()
 	qRegisterMetaType<VipQuiver>();
 	qRegisterMetaType<VipQuiverPath>();
 	qRegisterMetaTypeStreamOperators<VipQuiverPath>();
+	return true;
 }
+static bool _register_types = register_types();

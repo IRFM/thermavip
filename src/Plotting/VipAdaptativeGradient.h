@@ -1,7 +1,7 @@
 /**
  * BSD 3-Clause License
  *
- * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ * Copyright (c) 2025, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Leo Dubus, Erwan Grelier
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -148,6 +148,7 @@ private:
 	QSharedDataPointer<PrivateData> d_data;
 };
 
+Q_DECLARE_METATYPE(QGradientStop)
 Q_DECLARE_METATYPE(QGradientStops)
 Q_DECLARE_METATYPE(VipAdaptativeGradient)
 
@@ -155,41 +156,6 @@ class QDataStream;
 
 VIP_PLOTTING_EXPORT QDataStream& operator<<(QDataStream& stream, const VipAdaptativeGradient& grad);
 VIP_PLOTTING_EXPORT QDataStream& operator>>(QDataStream& stream, VipAdaptativeGradient& grad);
-
-// class Brush
-// {
-// public:
-//
-// Brush();
-// Brush(const QBrush& , const VipAdaptativeGradient & = VipAdaptativeGradient());
-//
-// void setBrush(const QBrush &);
-// const QBrush & brush() const;
-//
-// void setAdaptativeGradient(const VipAdaptativeGradient&);
-// const VipAdaptativeGradient& adaptativeGradient() const;
-//
-// QBrush createBrush() const;
-// operator QBrush() const;
-// };
-//
-//
-// class Pen
-// {
-// public:
-//
-// Pen();
-// Pen(const Pen& , const VipAdaptativeGradient & = VipAdaptativeGradient());
-//
-// void setBrush(const Pen &);
-// const Pen & brush() const;
-//
-// void setAdaptativeGradient(const VipAdaptativeGradient&);
-// const VipAdaptativeGradient& adaptativeGradient() const;
-//
-// Pen createBrush() const;
-// operator QBrush() const;
-// };
 
 /// @}
 // end Plotting

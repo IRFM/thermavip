@@ -11,9 +11,3 @@ message(STATUS "Python plugin not built")
 endif()
 
 add_subdirectory(IRCameras)
-
-if(WITH_HDF5)
-add_subdirectory(H5StillImage)
-else()
-message(STATUS "HDF5 plugin not built")
-endif()

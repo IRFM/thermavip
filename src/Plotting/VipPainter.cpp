@@ -1,7 +1,7 @@
 /**
  * BSD 3-Clause License
  *
- * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ * Copyright (c) 2025, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Leo Dubus, Erwan Grelier
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -38,7 +38,9 @@
 #include <QVector2D>
 #include <qabstracttextdocumentlayout.h>
 #include <qapplication.h>
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
 #include <qdesktopwidget.h>
+#endif
 #include <qdrawutil.h>
 #include <qframe.h>
 #include <qmath.h>
@@ -115,11 +117,17 @@ QSize VipPainter::screenResolution()
 {
 	static QSize screenResolution;
 	if (!screenResolution.isValid()) {
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
 		QDesktopWidget* desktop = QApplication::desktop();
 		if (desktop) {
 			screenResolution.setWidth(desktop->logicalDpiX());
 			screenResolution.setHeight(desktop->logicalDpiY());
 		}
+#else
+		QScreen* s = QGuiApplication::primaryScreen();
+		screenResolution.setWidth((int)qRound(s->logicalDotsPerInchX()));
+		screenResolution.setHeight((int)qRound(s->logicalDotsPerInchY()));
+#endif
 	}
 
 	return screenResolution;
@@ -139,9 +147,11 @@ static bool vipNeedUnscaledFont(QPainter* painter)
 }
 static void vipForceUnscaleFont(QPainter* painter)
 {
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
 	QFont pixelFont(painter->font(), QApplication::desktop());
 	pixelFont.setPixelSize(QFontInfo(pixelFont).pixelSize());
 	painter->setFont(pixelFont);
+#endif
 }
 
 static inline void vipUnscaleFont(QPainter* painter)
@@ -155,10 +165,7 @@ static inline void vipUnscaleFont(QPainter* painter)
 	if (!pd)
 		return;
 	if (pd->logicalDpiX() != screenResolution.width() || pd->logicalDpiY() != screenResolution.height()) {
-		QFont pixelFont(painter->font(), QApplication::desktop());
-		pixelFont.setPixelSize(QFontInfo(pixelFont).pixelSize());
-
-		painter->setFont(pixelFont);
+		vipForceUnscaleFont(painter);
 	}
 }
 
@@ -206,8 +213,10 @@ bool VipPainter::isVectoriel(QPainter* painter)
 {
 	return painter->paintEngine() &&
 	       (painter->paintEngine()->type() == QPaintEngine::SVG || painter->paintEngine()->type() == QPaintEngine::MacPrinter || painter->paintEngine()->type() == QPaintEngine::Picture ||
-		painter->paintEngine()->type() == QPaintEngine::Pdf || painter->paintEngine()->type() == QPaintEngine::PostScript //||
-																  // painter->paintEngine()->type() == QPaintEngine::User
+		painter->paintEngine()->type() == QPaintEngine::Pdf 
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0) 
+			   || painter->paintEngine()->type() == QPaintEngine::PostScript 
+#endif
 	       );
 }
 
@@ -409,10 +418,6 @@ void VipPainter::drawText(QPainter* painter, const QPointF& pos, const QString& 
 	painter->drawText(pos, text);
 	if (unscaled_font)
 		painter->restore();
-	/* painter->save();
-	vipUnscaleFont( painter );
-	painter->drawText( pos, text );
-	painter->restore();*/
 }
 
 //! Wrapper for QPainter::drawText()
@@ -429,16 +434,9 @@ void VipPainter::drawText(QPainter* painter, const QRectF& rect, int flags, cons
 		painter->save();
 		vipForceUnscaleFont(painter);
 	}
-	// painter->setRenderHints(QPainter::Antialiasing | QPainter::SmoothPixmapTransform | QPainter::HighQualityAntialiasing | QPainter::TextAntialiasing);
 	painter->drawText(rect, flags, text);
 	if (unscaled_font)
 		painter->restore();
-
-	/* if (vipNeedUnscaledFont())
-    painter->save();
-    vipUnscaleFont( painter );
-    painter->drawText( rect, flags, text );
-    painter->restore();*/
 }
 
 #ifndef QT_NO_RICHTEXT
@@ -840,7 +838,10 @@ void VipPainter::drawPixmap(QPainter* painter, const QRectF& rect, const QPixmap
 		painter->restore();
 	}
 	else {
-		painter->drawPixmap(alignedRect, pixmap);
+		if (pixmap.size() == alignedRect.size())
+			painter->drawPixmap(alignedRect.topLeft(), pixmap);
+		else
+			painter->drawPixmap(alignedRect, pixmap);
 	}
 }
 
@@ -931,7 +932,11 @@ void VipPainter::drawFocusRect(QPainter* painter, const QWidget* widget)
 void VipPainter::drawFocusRect(QPainter* painter, const QWidget* widget, const QRect& rect)
 {
 	QStyleOptionFocusRect opt;
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
 	opt.init(widget);
+#else
+	opt.initFrom(widget);
+#endif
 	opt.rect = rect;
 	opt.state |= QStyle::State_HasFocus;
 
@@ -1483,7 +1488,7 @@ void VipPainter::drawText(QPainter* painter,
 	QPolygonF textPolygon = text_tr.map(t.textRect());
 	QRectF textRect = textPolygon.boundingRect();
 	QPointF textOffset = textRect.topLeft() - textPolygon[0];
-	textRect = m->invTransform(textRect).boundingRect();
+	textRect = vipBoundingRect(m->invTransform(textRect));
 
 	// compute text x and y vipDistance in scale coordinates
 	VipPoint dist = m->invTransform(QPointF(10, 10)) - m->invTransform(QPointF(0, 0));

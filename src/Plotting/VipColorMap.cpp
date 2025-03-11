@@ -1,7 +1,7 @@
 /**
  * BSD 3-Clause License
  *
- * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ * Copyright (c) 2025, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Leo Dubus, Erwan Grelier
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -347,7 +347,6 @@ inline T clamp(T val, T lo, T hi)
 	return (val > hi) ? hi : (val < lo) ? lo : val;
 }
 
-
 struct CastToFloat
 {
 	template<class T>
@@ -441,7 +440,7 @@ void applyColorMapLinear(const VipLinearColorMap* map, const VipInterval& interv
 		for (int i = 0; i < size; ++i) {
 			const T value = values[i];
 			unsigned index = isNan(value) ? 0 : (unsigned)clamp((value - min_value) * factor + 2, 1., (double)max_index);
-			if (index >= num_colors + 3)
+			if (index >= num_colors + 3u)
 				index = 0;
 			out[i] = palette[index];
 		}
@@ -452,7 +451,7 @@ void applyColorMapLinear(const VipLinearColorMap* map, const VipInterval& interv
 
 		// compute hash value
 		size_t hash = vipHashBytes(values, w * h * sizeof(T));
-		
+
 		if (hash != map->d_data->arrayHash || map->d_data->histogram.size() == 0 || map->d_data->interval != interval) {
 			map->d_data->arrayHash = hash;
 			map->d_data->interval = interval;
@@ -472,9 +471,8 @@ void applyColorMapLinear(const VipLinearColorMap* map, const VipInterval& interv
 			else {
 				vipExtractHistogram(tmp, map->d_data->histogram, num_colors, Vip::SameBinHeight, interval, map->d_data->indexes.data(), 2, 1, max_index, 0);
 			}
-
 		}
-		
+
 		// qint64 el1 = QDateTime::currentMSecsSinceEpoch() - start;
 		// apply color map
 		if (map->d_data->histogram.size() == 0) {
@@ -512,7 +510,7 @@ void applyColorMapLinear(const VipLinearColorMap* map, const VipInterval& interv
 VipLinearColorMap::VipLinearColorMap(VipColorMap::Format format)
   : VipColorMap(format)
 {
-	d_data = new PrivateData;
+	VIP_CREATE_PRIVATE_DATA(d_data);
 	d_data->mode = ScaledColors;
 	d_data->type = Unknown;
 	d_data->renderColors = nullptr;
@@ -531,7 +529,7 @@ VipLinearColorMap::VipLinearColorMap(VipColorMap::Format format)
 VipLinearColorMap::VipLinearColorMap(const QColor& color1, const QColor& color2, VipColorMap::Format format)
   : VipColorMap(format)
 {
-	d_data = new PrivateData;
+	VIP_CREATE_PRIVATE_DATA(d_data);
 	d_data->mode = ScaledColors;
 	setColorInterval(color1, color2);
 }
@@ -543,8 +541,6 @@ VipLinearColorMap::~VipLinearColorMap()
 		QWriteLocker lock(&d_data->histLock);
 		dirtyColorMap();
 	}
-
-	delete d_data;
 }
 
 const VipLinearColorMap::ColorStops& VipLinearColorMap::internalColorStops() const
@@ -1187,68 +1183,82 @@ QGradientStops VipLinearColorMap::createGradientStops(StandardColorMap color_map
 		case VipLinearColorMap::ColorPalettePastel1: {
 			const int count = 9;
 			double step = 1. / (count - 1), start = 0;
-			colorStops_ << QGradientStop(start, QColor(0xFBB4AE)) << QGradientStop(start += step, QColor(0xB3CDE3)) << QGradientStop(start += step, QColor(0xCCEBC5))
-				    << QGradientStop(start += step, QColor(0xDECBE4)) << QGradientStop(start += step, QColor(0xFED9A6)) << QGradientStop(start += step, QColor(0xFFFFCC))
-				    << QGradientStop(start += step, QColor(0xE5D8BD)) << QGradientStop(start += step, QColor(0xFDDAEC)) << QGradientStop(start += step, QColor(0xF2F2F2));
+			colorStops_ << QGradientStop(start, QColor(0xFBB4AE));
+			start += step;
+			colorStops_ << QGradientStop(start, QColor(0xB3CDE3));
+			start += step;
+			colorStops_ << QGradientStop(start, QColor(0xCCEBC5));
+			start += step;
+			colorStops_ << QGradientStop(start, QColor(0xDECBE4));
+			start += step;
+			colorStops_ << QGradientStop(start, QColor(0xFED9A6));
+			start += step;
+			colorStops_ << QGradientStop(start, QColor(0xFFFFCC));
+			start += step;
+			colorStops_ << QGradientStop(start, QColor(0xE5D8BD));
+			start += step;
+			colorStops_ << QGradientStop(start, QColor(0xFDDAEC));
+			start += step;
+			colorStops_ << QGradientStop(start, QColor(0xF2F2F2));
 		} break;
 		case VipLinearColorMap::ColorPalettePastel2: {
 			const int count = 8;
-			double step = 1. / (count - 1), start = 0;
-			colorStops_ << QGradientStop(start, QColor(0xB3E2CD)) << QGradientStop(start += step, QColor(0xFDCDAC)) << QGradientStop(start += step, QColor(0xCBD5E8))
-				    << QGradientStop(start += step, QColor(0xF4CAE4)) << QGradientStop(start += step, QColor(0xE6F5C9)) << QGradientStop(start += step, QColor(0xFFF2AE))
-				    << QGradientStop(start += step, QColor(0xF1E2CC)) << QGradientStop(start += step, QColor(0xCCCCCC));
+			double step = 1. / (count - 1);
+			colorStops_ << QGradientStop(0, QColor(0xB3E2CD)) << QGradientStop(step, QColor(0xFDCDAC)) << QGradientStop(step * 2, QColor(0xCBD5E8))
+				    << QGradientStop(step * 3, QColor(0xF4CAE4)) << QGradientStop(step * 4, QColor(0xE6F5C9)) << QGradientStop(step * 5, QColor(0xFFF2AE))
+				    << QGradientStop(step * 6, QColor(0xF1E2CC)) << QGradientStop(step * 7, QColor(0xCCCCCC));
 		} break;
 		case VipLinearColorMap::ColorPalettePaired: {
 			const int count = 12;
-			double step = 1. / (count - 1), start = 0;
-			colorStops_ << QGradientStop(start, QColor(0xA6CEE3)) << QGradientStop(start += step, QColor(0x1F78B4)) << QGradientStop(start += step, QColor(0xB2DF8A))
-				    << QGradientStop(start += step, QColor(0x33A02C)) << QGradientStop(start += step, QColor(0xFB9A99)) << QGradientStop(start += step, QColor(0xE31A1C))
-				    << QGradientStop(start += step, QColor(0xFDBF6F)) << QGradientStop(start += step, QColor(0xFF7F00)) << QGradientStop(start += step, QColor(0xCAB2D6))
-				    << QGradientStop(start += step, QColor(0x6A3D9A)) << QGradientStop(start += step, QColor(0xFFFF99)) << QGradientStop(start += step, QColor(0xB15928));
+			double step = 1. / (count - 1);
+			colorStops_ << QGradientStop(0, QColor(0xA6CEE3)) << QGradientStop(step, QColor(0x1F78B4)) << QGradientStop(step * 2, QColor(0xB2DF8A))
+				    << QGradientStop(step * 3, QColor(0x33A02C)) << QGradientStop(step * 4, QColor(0xFB9A99)) << QGradientStop(step * 5, QColor(0xE31A1C))
+				    << QGradientStop(step * 6, QColor(0xFDBF6F)) << QGradientStop(step * 7, QColor(0xFF7F00)) << QGradientStop(step * 8, QColor(0xCAB2D6))
+				    << QGradientStop(step * 9, QColor(0x6A3D9A)) << QGradientStop(step * 10, QColor(0xFFFF99)) << QGradientStop(step * 11, QColor(0xB15928));
 		} break;
 		case VipLinearColorMap::ColorPaletteAccent: {
 			const int count = 8;
-			double step = 1. / (count - 1), start = 0;
-			colorStops_ << QGradientStop(start, QColor(0x7FC97F)) << QGradientStop(start += step, QColor(0xBEAED4)) << QGradientStop(start += step, QColor(0xFDC086))
-				    << QGradientStop(start += step, QColor(0xFFFF99)) << QGradientStop(start += step, QColor(0x386CB0)) << QGradientStop(start += step, QColor(0xF0027F))
-				    << QGradientStop(start += step, QColor(0xFDBF6F)) << QGradientStop(start += step, QColor(0x666666));
+			double step = 1. / (count - 1);
+			colorStops_ << QGradientStop(0, QColor(0x7FC97F)) << QGradientStop(step, QColor(0xBEAED4)) << QGradientStop(step * 2, QColor(0xFDC086))
+				    << QGradientStop(step * 3, QColor(0xFFFF99)) << QGradientStop(step * 4, QColor(0x386CB0)) << QGradientStop(step * 5, QColor(0xF0027F))
+				    << QGradientStop(step * 6, QColor(0xFDBF6F)) << QGradientStop(step * 7, QColor(0x666666));
 		} break;
 		case VipLinearColorMap::ColorPaletteDark2: {
 			const int count = 8;
-			double step = 1. / (count - 1), start = 0;
-			colorStops_ << QGradientStop(start, QColor(0x1B9E77)) << QGradientStop(start += step, QColor(0xD95F02)) << QGradientStop(start += step, QColor(0x7570B3))
-				    << QGradientStop(start += step, QColor(0xE7298A)) << QGradientStop(start += step, QColor(0x66A61E)) << QGradientStop(start += step, QColor(0xE6AB02))
-				    << QGradientStop(start += step, QColor(0xA6761D)) << QGradientStop(start += step, QColor(0x666666));
+			double step = 1. / (count - 1);
+			colorStops_ << QGradientStop(0, QColor(0x1B9E77)) << QGradientStop(step, QColor(0xD95F02)) << QGradientStop(step * 2, QColor(0x7570B3))
+				    << QGradientStop(step * 3, QColor(0xE7298A)) << QGradientStop(step * 4, QColor(0x66A61E)) << QGradientStop(step * 5, QColor(0xE6AB02))
+				    << QGradientStop(step * 6, QColor(0xA6761D)) << QGradientStop(step * 7, QColor(0x666666));
 		} break;
 		case VipLinearColorMap::ColorPaletteSet1: {
 			const int count = 9;
-			double step = 1. / (count - 1), start = 0;
-			colorStops_ << QGradientStop(start, QColor(0xE41A1C)) << QGradientStop(start += step, QColor(0x377EB8)) << QGradientStop(start += step, QColor(0x4DAF4A))
-				    << QGradientStop(start += step, QColor(0x984EA3)) << QGradientStop(start += step, QColor(0xFF7F00)) << QGradientStop(start += step, QColor(0xFFFF33))
-				    << QGradientStop(start += step, QColor(0xA65628)) << QGradientStop(start += step, QColor(0xF781BF)) << QGradientStop(start += step, QColor(0x999999));
+			double step = 1. / (count - 1);
+			colorStops_ << QGradientStop(0, QColor(0xE41A1C)) << QGradientStop(step, QColor(0x377EB8)) << QGradientStop(step * 2, QColor(0x4DAF4A))
+				    << QGradientStop(step * 3, QColor(0x984EA3)) << QGradientStop(step * 4, QColor(0xFF7F00)) << QGradientStop(step * 5, QColor(0xFFFF33))
+				    << QGradientStop(step * 6, QColor(0xA65628)) << QGradientStop(step * 7, QColor(0xF781BF)) << QGradientStop(step * 8, QColor(0x999999));
 		} break;
 		case VipLinearColorMap::ColorPaletteSet2: {
 			const int count = 8;
-			double step = 1. / (count - 1), start = 0;
-			colorStops_ << QGradientStop(start, QColor(0x66C2A5)) << QGradientStop(start += step, QColor(0xFC8D62)) << QGradientStop(start += step, QColor(0x8D9DCB))
-				    << QGradientStop(start += step, QColor(0xE78AC3)) << QGradientStop(start += step, QColor(0xA6D854)) << QGradientStop(start += step, QColor(0xFFD92F))
-				    << QGradientStop(start += step, QColor(0xE5C494)) << QGradientStop(start += step, QColor(0xB3B3B3));
+			double step = 1. / (count - 1);
+			colorStops_ << QGradientStop(0, QColor(0x66C2A5)) << QGradientStop(step, QColor(0xFC8D62)) << QGradientStop(step * 2, QColor(0x8D9DCB))
+				    << QGradientStop(step * 3, QColor(0xE78AC3)) << QGradientStop(step * 4, QColor(0xA6D854)) << QGradientStop(step * 5, QColor(0xFFD92F))
+				    << QGradientStop(step * 6, QColor(0xE5C494)) << QGradientStop(step * 7, QColor(0xB3B3B3));
 		} break;
 		case VipLinearColorMap::ColorPaletteSet3: {
 			const int count = 12;
-			double step = 1. / (count - 1), start = 0;
-			colorStops_ << QGradientStop(start, QColor(0x8DD3C7)) << QGradientStop(start += step, QColor(0xFFFFB3)) << QGradientStop(start += step, QColor(0xBEBADA))
-				    << QGradientStop(start += step, QColor(0xFB8072)) << QGradientStop(start += step, QColor(0x80B1D3)) << QGradientStop(start += step, QColor(0xFDB462))
-				    << QGradientStop(start += step, QColor(0xB3DE69)) << QGradientStop(start += step, QColor(0xFCCDE5)) << QGradientStop(start += step, QColor(0xD9D9D9))
-				    << QGradientStop(start += step, QColor(0xBC80BD)) << QGradientStop(start += step, QColor(0xCCEBC5)) << QGradientStop(start += step, QColor(0xFFED6F));
+			double step = 1. / (count - 1);
+			colorStops_ << QGradientStop(0, QColor(0x8DD3C7)) << QGradientStop(step, QColor(0xFFFFB3)) << QGradientStop(step * 2, QColor(0xBEBADA))
+				    << QGradientStop(step * 3, QColor(0xFB8072)) << QGradientStop(step * 4, QColor(0x80B1D3)) << QGradientStop(step * 5, QColor(0xFDB462))
+				    << QGradientStop(step * 6, QColor(0xB3DE69)) << QGradientStop(step * 7, QColor(0xFCCDE5)) << QGradientStop(step * 8, QColor(0xD9D9D9))
+				    << QGradientStop(step * 9, QColor(0xBC80BD)) << QGradientStop(step * 10, QColor(0xCCEBC5)) << QGradientStop(step * 11, QColor(0xFFED6F));
 		} break;
 		case VipLinearColorMap::ColorPaletteTab10: {
 			const int count = 10;
-			double step = 1. / (count - 1), start = 0;
-			colorStops_ << QGradientStop(start, QColor(0x1F77B4)) << QGradientStop(start += step, QColor(0xFF7F0E)) << QGradientStop(start += step, QColor(0x2CA02C))
-				    << QGradientStop(start += step, QColor(0xD62728)) << QGradientStop(start += step, QColor(0x9467BD)) << QGradientStop(start += step, QColor(0x8C564B))
-				    << QGradientStop(start += step, QColor(0xE377C2)) << QGradientStop(start += step, QColor(0x7F7F7F)) << QGradientStop(start += step, QColor(0xBCBD22))
-				    << QGradientStop(start += step, QColor(0x17BECF));
+			double step = 1. / (count - 1);
+			colorStops_ << QGradientStop(0, QColor(0x1F77B4)) << QGradientStop(step, QColor(0xFF7F0E)) << QGradientStop(step * 2, QColor(0x2CA02C))
+				    << QGradientStop(step * 3, QColor(0xD62728)) << QGradientStop(step * 4, QColor(0x9467BD)) << QGradientStop(step * 5, QColor(0x8C564B))
+				    << QGradientStop(step * 6, QColor(0xE377C2)) << QGradientStop(step * 7, QColor(0x7F7F7F)) << QGradientStop(step * 8, QColor(0xBCBD22))
+				    << QGradientStop(step * 9, QColor(0x17BECF));
 		} break;
 		default:
 			break;
@@ -1275,16 +1285,13 @@ public:
 VipAlphaColorMap::VipAlphaColorMap(const QColor& color)
   : VipColorMap(VipColorMap::RGB)
 {
-	d_data = new PrivateData;
+	VIP_CREATE_PRIVATE_DATA(d_data);
 	d_data->color = color;
 	d_data->rgb = color.rgb() & qRgba(255, 255, 255, 0);
 }
 
 //! Destructor
-VipAlphaColorMap::~VipAlphaColorMap()
-{
-	delete d_data;
-}
+VipAlphaColorMap::~VipAlphaColorMap() {}
 
 /// Set the color
 ///

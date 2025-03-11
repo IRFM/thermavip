@@ -1,7 +1,7 @@
 /**
  * BSD 3-Clause License
  *
- * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ * Copyright (c) 2025, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Leo Dubus, Erwan Grelier
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -40,7 +40,9 @@
 #include <QPicture>
 #include <QToolTip>
 #include <qapplication.h>
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
 #include <qdesktopwidget.h>
+#endif
 #include <qmath.h>
 #include <qscreen.h>
 #include <qstyle.h>
@@ -60,6 +62,7 @@ struct VipToolTip::PrivateData
 	qint64 lastRefresh;
 	QPointF pos;
 
+	int maxItems{ INT_MAX };
 	int maxLines;
 	QString maxLineMessage;
 
@@ -96,12 +99,11 @@ struct VipToolTip::PrivateData
 VipToolTip::VipToolTip(QObject* parent)
   : QObject(parent)
 {
-	d_data = new PrivateData();
+	VIP_CREATE_PRIVATE_DATA(d_data);
 }
 
 VipToolTip::~VipToolTip()
 {
-	delete d_data;
 }
 
 void VipToolTip::setMargins(const QMargins& m)
@@ -117,6 +119,15 @@ void VipToolTip::setMargins(double m)
 const QMargins& VipToolTip::margins() const
 {
 	return d_data->margins;
+}
+
+void VipToolTip::setMaxItems(int m)
+{
+	d_data->maxItems = m;
+}
+int VipToolTip::maxItems() const
+{
+	return d_data->maxItems;
 }
 
 QString VipToolTip::attributeMargins() const
@@ -233,7 +244,7 @@ void VipToolTip::removeToolTipOffset()
 }
 bool VipToolTip::hasToolTipOffset() const
 {
-	return d_data->offset;
+	return d_data->offset.data();
 }
 
 void VipToolTip::setDisplayInsideScales(bool enable)
@@ -334,7 +345,8 @@ void VipToolTip::refresh()
 	if (auto* v = plotArea()->view()) {
 		if (!v->isVisible() || v->isHidden())
 			return;
-		if (!v->underMouse())
+
+		if (!v->underMouse() && !v->viewport()->underMouse())
 			return;
 	}
 	else
@@ -407,127 +419,137 @@ void VipToolTip::setPlotAreaPos(const QPointF& pos)
 
 	items = plotArea()->plotItems(pos, axis, stickDistance(), points, styles, legends);
 
+
 	QPicture additional;
 	QPainter* pa = nullptr;
 
-	for (int i = 0; i < items.size(); ++i) {
-		VipPlotItem* item = items[i];
-		if (!item->isVisible() || item->property("_vip_ignoreToolTip").toBool())
-			continue;
+	qsizetype populated_items = 0;
 
-		QString custom_tooltip;
+	if (this->maxItems()) {
 
-		if (line >= d_data->maxLines)
-			break;
+		for (qsizetype i = 0; i < items.size(); ++i) {
+			VipPlotItem* item = items[i];
+			if (!item->isVisible() || item->property("_vip_ignoreToolTip").toBool())
+				continue;
 
-		if (!item->testItemAttribute(VipPlotItem::HasToolTip))
-			continue;
+			QString custom_tooltip;
 
-		if (!styles[i].isEmpty()) {
-			if (!pa) {
-				pa = new QPainter();
-				pa->begin(&additional);
-			}
-			if (d_data->overlayBrush.style() != Qt::NoBrush || d_data->overlayPen.style() != Qt::NoPen) {
-				VipBoxStyle st = styles[i];
-				if (d_data->overlayBrush.style() != Qt::NoBrush)
-					st.setBackgroundBrush(d_data->overlayBrush);
-				if (d_data->overlayPen.style() != Qt::NoPen)
-					st.setBorderPen(d_data->overlayPen);
-
-				st.draw(pa);
-			}
-			else
-				styles[i].draw(pa);
-		}
-
-		const VipPointVector points_of_intereset = points[i].isEmpty() ? (VipPointVector() << plotArea()->mapToItem(item, pos)) : points[i];
-
-		// compute custom tool tip
-		if (testDisplayFlag(ItemsToolTips)) {
-			for (int p = 0; p < points_of_intereset.size(); ++p) {
-				QString tooltip = item->formatToolTip((QPointF)points_of_intereset[p]);
-				if (!tooltip.isEmpty()) {
-					//TEST
-					custom_tooltip += "<div>" + tooltip + "</div>";
-					//custom_tooltip += "<p style=\"padding-top:2px;\"> " + tooltip + "</p>";
-					if (++line >= d_data->maxLines)
-						break;
-				}
-			}
-		}
-
-		QStringList item_title;
-		QStringList item_text;
-
-		// compute title
-		if (legends[i] >= 0) {
-			int legend = legends[i];
-			VipText name = item->legendNames()[legend];
-			if (testDisplayFlag(ItemsLegends))
-				item_title << QString(vipToHtml(item->legendPixmap(QSize(20, 16), legend), "vertical-align:\"middle\"")) +
-						(testDisplayFlag(ItemsTitles) ? "<b>" + name.text() + "</b>" : QString());
-			else if (testDisplayFlag(ItemsTitles))
-				item_title << "<b>" + name.text() + "</b>";
-
-			if (++line >= d_data->maxLines)
+			if (line >= d_data->maxLines)
 				break;
-		}
 
-		if (!item->testItemAttribute(VipPlotItem::CustomToolTipOnly)) {
-			// compute item position
-			if (testDisplayFlag(ItemsPos) && !points[i].isEmpty()) {
-				QStringList axis_text;
-				const QList<VipAbstractScale*> scales = item->axes();
+			if (!item->testItemAttribute(VipPlotItem::HasToolTip))
+				continue;
+
+			if (!styles[i].isEmpty()) {
+				if (!pa) {
+					pa = new QPainter();
+					pa->begin(&additional);
+				}
+				if (d_data->overlayBrush.style() != Qt::NoBrush || d_data->overlayPen.style() != Qt::NoPen) {
+					VipBoxStyle st = styles[i];
+					if (d_data->overlayBrush.style() != Qt::NoBrush)
+						st.setBackgroundBrush(d_data->overlayBrush);
+					if (d_data->overlayPen.style() != Qt::NoPen)
+						st.setBorderPen(d_data->overlayPen);
+
+					st.draw(pa);
+				}
+				else
+					styles[i].draw(pa);
+			}
+
+			const VipPointVector points_of_intereset = points[i].isEmpty() ? (VipPointVector() << plotArea()->mapToItem(item, pos)) : points[i];
+
+			// compute custom tool tip
+			if (testDisplayFlag(ItemsToolTips)) {
 				for (int p = 0; p < points_of_intereset.size(); ++p) {
-					for (int s = 0; s < scales.size(); ++s) {
-						if (!scales[s])
-							continue;
-
-						VipText title = scales[s]->title();
-						QPointF axis_pos = scales[s]->mapFromItem(item, (QPointF)points_of_intereset[p]);
-
-						vip_double value = scales[s]->constScaleDraw()->value(axis_pos);
-						if (title.isEmpty())
-							axis_text << scales[s]->constScaleDraw()->label(value, VipScaleDiv::MajorTick).text() + " " +
-								       scales[s]->constScaleDraw()->valueToText()->exponentText();
-						else
-							axis_text << "<b>" + title.text() + "</b> = " + scales[s]->constScaleDraw()->label(value, VipScaleDiv::MajorTick).text() + " " +
-								       scales[s]->constScaleDraw()->valueToText()->exponentText();
-
+					QString tooltip = item->formatToolTip((QPointF)points_of_intereset[p]);
+					if (!tooltip.isEmpty()) {
+						custom_tooltip += "<div>" + tooltip + "</div>";
+						// custom_tooltip += "<p style=\"padding-top:2px;\"> " + tooltip + "</p>";
 						if (++line >= d_data->maxLines)
 							break;
 					}
 				}
-
-				if (axis_text.size())
-					item_text << axis_text.join("<br>");
 			}
 
-			// compute item properties
-			if (testDisplayFlag(ItemsProperties)) {
-				QList<QByteArray> props = item->dynamicPropertyNames();
-				for (int p = 0; p < props.size(); ++p) {
-					if (!isPropertyIgnored(props[p])) {
-						QString t_value = item->property(props[p].data()).toString();
-						if (!t_value.isEmpty()) {
-							item_text << "<b>" + QString(props[p]) + "</b> = " + t_value;
+			QStringList item_title;
+			QStringList item_text;
+
+			// compute title
+			if (legends[i] >= 0) {
+				int legend = legends[i];
+				VipText name = item->legendNames()[legend];
+				if (testDisplayFlag(ItemsLegends))
+					item_title << QString(vipToHtml(item->legendPixmap(QSize(20, 16), legend), "vertical-align:\"middle\"")) +
+							(testDisplayFlag(ItemsTitles) ? "<b>" + name.text() + "</b>" : QString());
+				else if (testDisplayFlag(ItemsTitles))
+					item_title << "<b>" + name.text() + "</b>";
+
+				if (++line >= d_data->maxLines)
+					break;
+			}
+
+			if (!item->testItemAttribute(VipPlotItem::CustomToolTipOnly)) {
+				// compute item position
+				if (testDisplayFlag(ItemsPos) && !points[i].isEmpty()) {
+					QStringList axis_text;
+					const QList<VipAbstractScale*> scales = item->axes();
+					for (int p = 0; p < points_of_intereset.size(); ++p) {
+						for (int s = 0; s < scales.size(); ++s) {
+							if (!scales[s])
+								continue;
+
+							VipText title = scales[s]->title();
+							QPointF axis_pos = scales[s]->mapFromItem(item, (QPointF)points_of_intereset[p]);
+
+							vip_double value = scales[s]->constScaleDraw()->value(axis_pos);
+							if (title.isEmpty())
+								axis_text << scales[s]->constScaleDraw()->label(value, VipScaleDiv::MajorTick).text() + " " +
+									       scales[s]->constScaleDraw()->valueToText()->exponentText();
+							else
+								axis_text << "<b>" + title.text() + "</b> = " + scales[s]->constScaleDraw()->label(value, VipScaleDiv::MajorTick).text() + " " +
+									       scales[s]->constScaleDraw()->valueToText()->exponentText();
+
 							if (++line >= d_data->maxLines)
 								break;
 						}
 					}
+
+					if (axis_text.size())
+						item_text << axis_text.join("<br>");
+				}
+
+				// compute item properties
+				if (testDisplayFlag(ItemsProperties)) {
+					QList<QByteArray> props = item->dynamicPropertyNames();
+					for (int p = 0; p < props.size(); ++p) {
+						if (!isPropertyIgnored(props[p])) {
+							QString t_value = item->property(props[p].data()).toString();
+							if (!t_value.isEmpty()) {
+								item_text << "<b>" + QString(props[p]) + "</b> = " + t_value;
+								if (++line >= d_data->maxLines)
+									break;
+							}
+						}
+					}
 				}
 			}
-		}
 
-		if (item_title.size() && item_text.size())
-			text << "<p>" + item_title.join("<br>") + "<br><span margin-left:\"10px\">" + custom_tooltip + item_text.join("<br>") + "</span></p>";
-		else if (item_title.size())
-			text << "<p>" + item_title.join("<br>") + custom_tooltip;
-		else if (item_text.size())
-			text << "<p>" + custom_tooltip + item_text.join("<br>");
-		else if (custom_tooltip.size())
-			text << "<p>" + custom_tooltip;
+			if (item_title.size() && item_text.size())
+				text << "<p>" + item_title.join("<br>") + "<br><span margin-left:\"10px\">" + custom_tooltip + item_text.join("<br>") + "</span></p>";
+			else if (item_title.size())
+				text << "<p>" + item_title.join("<br>") + custom_tooltip;
+			else if (item_text.size())
+				text << "<p>" + custom_tooltip + item_text.join("<br>");
+			else if (custom_tooltip.size())
+				text << "<p>" + custom_tooltip;
+			else
+				continue;
+
+			if (++populated_items >= this->maxItems())
+				break;
+		}
 	}
 
 	if (line >= d_data->maxLines) {
@@ -568,7 +590,7 @@ void VipToolTip::setPlotAreaPos(const QPointF& pos)
 		}
 
 		tool_tip = ("<div style = \"white-space:nowrap;\"><p align='left' style = \"white-space:nowrap; width: 1200px;\">" + tool_tip + "</p></div>");
-		//vip_debug("%s\n", tool_tip.toLatin1().data());
+		// vip_debug("%s\n", tool_tip.toLatin1().data());
 		VipText tip_text = tool_tip;
 		QPoint this_pos = toolTipPosition(tip_text, pos, d_data->position, d_data->alignment);
 		VipCorrectedTip::showText(this_pos, tip_text.text(), parent, QRect(), d_data->delayTime);

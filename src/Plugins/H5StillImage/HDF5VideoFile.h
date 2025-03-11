@@ -39,8 +39,8 @@ private:
 	bool AutoFindAttributesName();
 	QVariantMap ReadAttributes(const QString & name) const;
 
-	class PrivateData;
-	PrivateData * m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 //VIP_REGISTER_QOBJECT_METATYPE(HDF5VideoReader*)
@@ -72,8 +72,8 @@ protected:
 	virtual bool readData(qint64 time);
 
 private:
-	class PrivateData;
-	PrivateData * m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 
@@ -122,8 +122,8 @@ protected:
 	virtual void apply();
 
 private:
-	class PrivateData;
-	PrivateData * m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 VIP_REGISTER_QOBJECT_METATYPE(HDF5VideoWriter*)

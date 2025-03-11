@@ -1,7 +1,7 @@
 /**
  * BSD 3-Clause License
  *
- * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ * Copyright (c) 2025, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Leo Dubus, Erwan Grelier
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -63,7 +63,7 @@ class VipAbstractPlotArea;
 /// -	'background': background color, like 'white' or 'rgb(120,120,30)'
 ///
 class VIP_PLOTTING_EXPORT VipBoxGraphicsWidget
-  : public QGraphicsWidget
+  : public QOpenGLGraphicsWidget
   , public VipPaintItem
   , public VipRenderObject
 {
@@ -102,8 +102,8 @@ protected:
 	virtual QVariant itemChange(GraphicsItemChange change, const QVariant& value);
 
 private:
-	class PrivateData;
-	PrivateData* d_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 /// @brief VipAbstractScale is the base abstract class for all scales.
@@ -373,8 +373,8 @@ private:
 	void addItem(VipPlotItem*);
 	void removeItem(VipPlotItem*);
 
-	class PrivateData;
-	PrivateData* d_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 template<class T>
@@ -466,8 +466,8 @@ protected:
 	virtual void paintEvent(QPaintEvent*);
 
 private:
-	class PrivateData;
-	PrivateData* d_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 VIP_REGISTER_QOBJECT_METATYPE(VipScaleWidget*)

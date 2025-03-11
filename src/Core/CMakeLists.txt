@@ -11,6 +11,17 @@ include(GNUInstallDirs)
 
 FILE(GLOB Sources *.cpp)
 FILE(GLOB Headers *.h)
+
+if(NOT WITH_VTK)
+	list(FILTER Sources EXCLUDE REGEX "^.*VTK.*$")
+	list(FILTER Headers EXCLUDE REGEX "^.*VTK.*$")
+endif()
+
+if(NOT WITH_HDF5)
+	list(FILTER Sources EXCLUDE REGEX "^.*H5.*$")
+	list(FILTER Headers EXCLUDE REGEX "^.*H5.*$")
+endif()
+
 add_library(VipCore SHARED
      ${Sources} ${Headers}
 )
@@ -18,6 +29,11 @@ add_library(VipCore SHARED
 target_include_directories(VipCore PRIVATE
     ${PROJECT_SOURCE_DIR}/../Logging ${PROJECT_SOURCE_DIR}/../DataType
 )
+
+if(WITH_HDF5)
+	 target_include_directories(VipCore PRIVATE ${HDF5_INCLUDE_DIRS})
+	 target_link_libraries(VipCore PRIVATE ${HDF5_LIBRARIES})
+endif()
 
 target_compile_definitions(VipCore PRIVATE
     VIP_BUILD_CORE_LIB
@@ -29,7 +45,7 @@ target_link_libraries(VipCore PRIVATE
 )
 
 set(TARGET_PROJECT VipCore)
-include(${PROJECT_SOURCE_DIR}/../compiler_flags.cmake)
+include(${THERMAVIP_COMPILER_FLAGS_FILE})
 
 if(WIN32)
 set_property(TARGET VipCore PROPERTY AUTOMOC_MOC_OPTIONS "-nw -D_WIN32")
@@ -44,15 +60,28 @@ install(TARGETS VipCore
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 )
 install(TARGETS VipCore
-    LIBRARY DESTINATION "${CMAKE_INSTALL_PREFIX}/thermavip"
-    FRAMEWORK DESTINATION "${CMAKE_INSTALL_PREFIX}/thermavip"
-    RUNTIME DESTINATION "${CMAKE_INSTALL_PREFIX}/thermavip"
+    LIBRARY DESTINATION "${THERMAVIP_APPLICATION_DIR}"
+    FRAMEWORK DESTINATION "${THERMAVIP_APPLICATION_DIR}"
+    RUNTIME DESTINATION "${THERMAVIP_APPLICATION_DIR}"
 )
 install(TARGETS VipCore
-	LIBRARY DESTINATION "${CMAKE_INSTALL_PREFIX}/tests"
-    FRAMEWORK DESTINATION "${CMAKE_INSTALL_PREFIX}/tests"
-    RUNTIME DESTINATION "${CMAKE_INSTALL_PREFIX}/tests"
+	LIBRARY DESTINATION "${THERMAVIP_EXAMPLE_DIR}"
+    FRAMEWORK DESTINATION "${THERMAVIP_EXAMPLE_DIR}"
+    RUNTIME DESTINATION "${THERMAVIP_EXAMPLE_DIR}"
 )
+install(TARGETS VipCore
+	LIBRARY DESTINATION "${THERMAVIP_TEST_DIR}"
+    FRAMEWORK DESTINATION "${THERMAVIP_TEST_DIR}"
+    RUNTIME DESTINATION "${THERMAVIP_TEST_DIR}"
+)
+
+if(WITH_HDF5)
+	# Plugin custom installation process
+	install(CODE "set(HDF5_BIN \"${HDF5_INCLUDE_DIRS}/../bin\")")
+	install(CODE "set(CMAKE_INSTALL_BINDIR \"${CMAKE_INSTALL_BINDIR}\")")
+	install(CODE "set(CMAKE_SOURCE_DIR \"${CMAKE_SOURCE_DIR}\")")
+	install(SCRIPT InstallHDF5.cmake)
+endif()
 
 file(GLOB HEADER_FILES ${PROJECT_SOURCE_DIR}/*.h)
 install(FILES ${HEADER_FILES} DESTINATION "${CMAKE_INSTALL_PREFIX}/include/VipCore/")

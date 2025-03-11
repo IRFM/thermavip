@@ -1,7 +1,7 @@
 /**
  * BSD 3-Clause License
  *
- * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ * Copyright (c) 2025, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Leo Dubus, Erwan Grelier
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -34,6 +34,7 @@
 
 #include <complex>
 #include <qmetatype.h>
+#include "VipConfig.h"
 
 /// \addtogroup DataType
 /// @{
@@ -43,6 +44,8 @@ typedef std::complex<double> complex_d;
 
 Q_DECLARE_METATYPE(complex_f)
 Q_DECLARE_METATYPE(complex_d)
+VIP_IS_RELOCATABLE(complex_f);
+VIP_IS_RELOCATABLE(complex_d);
 
 /// @}
 // end DataType

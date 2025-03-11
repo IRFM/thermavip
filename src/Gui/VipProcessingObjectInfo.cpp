@@ -1,7 +1,7 @@
 /**
  * BSD 3-Clause License
  *
- * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ * Copyright (c) 2025, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Leo Dubus, Erwan Grelier
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -82,80 +82,81 @@ static double ToDouble(const QVariant& var, bool* ok = nullptr)
 	return 0;
 }
 
-VipExtractAttributeFromInfo::VipExtractAttributeFromInfo(QObject* parent)
-  : VipProcessingObject(parent)
-  , m_info(nullptr)
+namespace detail
 {
-}
 
-VipExtractAttributeFromInfo::~VipExtractAttributeFromInfo()
-{
-	if (m_info)
-		delete m_info;
-}
-
-void VipExtractAttributeFromInfo::setVipAdditionalInfo(VipAdditionalInfo* info)
-{
-	if (m_info) {
-		delete m_info;
-		m_info = nullptr;
-	}
-	if (info) {
-		m_info = info->clone();
-	}
-}
-
-void VipExtractAttributeFromInfo::setAttributeName(const QString& name)
-{
-	m_name = name;
-	m_exactName.clear();
-}
-QString VipExtractAttributeFromInfo::attributeName() const
-{
-	return m_name;
-}
-
-void VipExtractAttributeFromInfo::apply()
-{
-	if (!m_info) {
-		setError("no valid info object given");
-		return;
+	VipExtractAttributeFromInfo::VipExtractAttributeFromInfo(QObject* parent)
+	  : VipProcessingObject(parent)
+	  , m_info(nullptr)
+	{
 	}
 
-	VipAnyData tmp = inputAt(0)->data();
-	m_info->inputAt(0)->setData(tmp);
-	m_info->update();
-	if (m_info->hasError()) {
-		setError(m_info->error());
-		return;
+	VipExtractAttributeFromInfo::~VipExtractAttributeFromInfo()
+	{
+		if (m_info)
+			delete m_info;
 	}
-	VipAnyData any = m_info->outputAt(0)->data();
 
-	const VipProcInfo map = (any.data().userType() == qMetaTypeId<VipProcInfo>()) ? any.value<VipProcInfo>() : VipProcInfo().import(any.value<QVariantMap>());
-
-	if (m_exactName.isEmpty()) {
-		for (int i = 0; i < map.size(); ++i) {
-			if (map[i].first.contains(m_name, Qt::CaseSensitive)) {
-				m_exactName = map[i].first;
-				break;
-			}
+	void VipExtractAttributeFromInfo::setVipAdditionalInfo(VipAdditionalInfo* info)
+	{
+		if (m_info) {
+			delete m_info;
+			m_info = nullptr;
+		}
+		if (info) {
+			m_info = info->clone();
 		}
 	}
-	if (m_exactName.isEmpty()) {
-		setError("wrong attribute name");
-		return;
-	}
 
-	bool ok = false;
-	double v = ToDouble(map[m_exactName], &ok);
-	if (ok) {
-		VipAnyData out = create(v);
-		out.setTime(tmp.time());
-		outputAt(0)->setData(out);
+	void VipExtractAttributeFromInfo::setAttributeName(const QString& name)
+	{
+		m_name = name;
+		m_exactName.clear();
 	}
-	else {
-		setError("cannot convert attribute value to double");
-		return;
+	QString VipExtractAttributeFromInfo::attributeName() const { return m_name; }
+
+	void VipExtractAttributeFromInfo::apply()
+	{
+		if (!m_info) {
+			setError("no valid info object given");
+			return;
+		}
+
+		VipAnyData tmp = inputAt(0)->data();
+		m_info->inputAt(0)->setData(tmp);
+		m_info->update();
+		if (m_info->hasError()) {
+			setError(m_info->error());
+			return;
+		}
+		VipAnyData any = m_info->outputAt(0)->data();
+
+		const VipProcInfo map = (any.data().userType() == qMetaTypeId<VipProcInfo>()) ? any.value<VipProcInfo>() : VipProcInfo().import(any.value<QVariantMap>());
+
+		if (m_exactName.isEmpty()) {
+			for (int i = 0; i < map.size(); ++i) {
+				if (map[i].first.contains(m_name, Qt::CaseSensitive)) {
+					m_exactName = map[i].first;
+					break;
+				}
+			}
+		}
+		if (m_exactName.isEmpty()) {
+			setError("wrong attribute name");
+			return;
+		}
+
+		bool ok = false;
+		double v = ToDouble(map[m_exactName], &ok);
+		if (ok) {
+			VipAnyData out = create(v);
+			out.setTime(tmp.time());
+			outputAt(0)->setData(out);
+		}
+		else {
+			setError("cannot convert attribute value to double");
+			return;
+		}
 	}
 }
 
@@ -220,7 +221,7 @@ void VipExtractShapesInfos::apply()
 	VipProcInfo map;
 
 	// retrieve the shapes
-	QList<VipShape> shapes;
+	VipShapeList shapes;
 	VipAbstractPlayer* pl = player();
 	if (!pl || !player()->plotWidget2D())
 		return;
@@ -247,7 +248,7 @@ void VipExtractShapesInfos::apply()
 		return;
 	}
 
-	if (VipVideoPlayer* video = qobject_cast<VipVideoPlayer*>(player())) {
+	if (/*VipVideoPlayer* video =*/ qobject_cast<VipVideoPlayer*>(player())) {
 		// const VipSceneModel sm = video->plotSceneModel()->sceneModel();
 		// QList<VipPlotShape*> shapes = video->plotSceneModel()->shapes();
 		for (int i = 0; i < shapes.size(); ++i) {
@@ -812,43 +813,43 @@ VipProcessingObjectInfo::VipProcessingObjectInfo(VipMainWindow* window)
 {
 	setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
 
-	m_data = new PrivateData();
+	VIP_CREATE_PRIVATE_DATA(d_data);
 
 	setWindowTitle("Player properties");
 	setObjectName("Processing infos");
 
-	m_data->timer.setSingleShot(true);
-	m_data->timer.setInterval(200);
+	d_data->timer.setSingleShot(true);
+	d_data->timer.setInterval(200);
 
-	m_data->searchTimer.setSingleShot(true);
-	m_data->searchTimer.setInterval(300);
+	d_data->searchTimer.setSingleShot(true);
+	d_data->searchTimer.setInterval(300);
 
-	m_data->attributes.setAcceptDrops(true);
-	m_data->attributes.header()->show();
-	m_data->attributes.setColumnCount(2);
-	m_data->attributes.setColumnWidth(0, 100);
-	m_data->attributes.setColumnWidth(1, 100);
-	m_data->attributes.setHeaderLabels(QStringList() << "Name"
+	d_data->attributes.setAcceptDrops(true);
+	d_data->attributes.header()->show();
+	d_data->attributes.setColumnCount(2);
+	d_data->attributes.setColumnWidth(0, 100);
+	d_data->attributes.setColumnWidth(1, 100);
+	d_data->attributes.setHeaderLabels(QStringList() << "Name"
 							 << "Value");
-	m_data->attributes.setSelectionMode(QAbstractItemView::ExtendedSelection);
-	m_data->attributes.setFrameShape(QFrame::NoFrame);
-	m_data->attributes.setIndentation(10);
-	// m_data->attributes.setStyleSheet("QTreeWidget {background: transparent;}");
+	d_data->attributes.setSelectionMode(QAbstractItemView::ExtendedSelection);
+	d_data->attributes.setFrameShape(QFrame::NoFrame);
+	d_data->attributes.setIndentation(10);
+	// d_data->attributes.setStyleSheet("QTreeWidget {background: transparent;}");
 
-	m_data->search.setPlaceholderText("Search property");
+	d_data->search.setPlaceholderText("Search property");
 
-	connect(m_data->tools.addAction(vipIcon("copy.png"), "Copy content to clipboard"), SIGNAL(triggered(bool)), this, SLOT(copyToClipboard()));
-	connect(m_data->tools.addAction(vipIcon("save.png"), "Save content to file..."), SIGNAL(triggered(bool)), this, SLOT(saveToFile()));
-	m_data->tools.addSeparator();
-	connect(m_data->tools.addAction(vipIcon("plot.png"), "Plot time trace of selected parameters"), SIGNAL(triggered(bool)), this, SLOT(plotSelection()));
-	m_data->tools.setIconSize(QSize(18, 18));
+	connect(d_data->tools.addAction(vipIcon("copy.png"), "Copy content to clipboard"), SIGNAL(triggered(bool)), this, SLOT(copyToClipboard()));
+	connect(d_data->tools.addAction(vipIcon("save.png"), "Save content to file..."), SIGNAL(triggered(bool)), this, SLOT(saveToFile()));
+	d_data->tools.addSeparator();
+	connect(d_data->tools.addAction(vipIcon("plot.png"), "Plot time trace of selected parameters"), SIGNAL(triggered(bool)), this, SLOT(plotSelection()));
+	d_data->tools.setIconSize(QSize(18, 18));
 
-	m_data->tools.addWidget(&m_data->search);
+	d_data->tools.addWidget(&d_data->search);
 
 	QVBoxLayout* lay = new QVBoxLayout();
 
-	lay->addWidget(&m_data->tools);
-	lay->addWidget(&m_data->attributes);
+	lay->addWidget(&d_data->tools);
+	lay->addWidget(&d_data->attributes);
 	// lay->setContentsMargins(0,0,0,0);
 
 	QWidget* w = new QWidget();
@@ -857,11 +858,11 @@ VipProcessingObjectInfo::VipProcessingObjectInfo(VipMainWindow* window)
 	this->setMinimumWidth(250);
 	this->setAutomaticTitleManagement(false);
 
-	connect(&m_data->timer, SIGNAL(timeout()), this, SLOT(updateInfos()), Qt::QueuedConnection);
-	connect(&m_data->attributes, SIGNAL(itemExpanded(QTreeWidgetItem*)), this, SLOT(resetSize()));
-	connect(&m_data->attributes, SIGNAL(itemCollapsed(QTreeWidgetItem*)), this, SLOT(resetSize()));
-	connect(&m_data->search, SIGNAL(textChanged(const QString&)), &m_data->searchTimer, SLOT(start()));
-	connect(&m_data->searchTimer, SIGNAL(timeout()), this, SLOT(search()), Qt::QueuedConnection);
+	connect(&d_data->timer, SIGNAL(timeout()), this, SLOT(updateInfos()), Qt::QueuedConnection);
+	connect(&d_data->attributes, SIGNAL(itemExpanded(QTreeWidgetItem*)), this, SLOT(resetSize()));
+	connect(&d_data->attributes, SIGNAL(itemCollapsed(QTreeWidgetItem*)), this, SLOT(resetSize()));
+	connect(&d_data->search, SIGNAL(textChanged(const QString&)), &d_data->searchTimer, SLOT(start()));
+	connect(&d_data->searchTimer, SIGNAL(timeout()), this, SLOT(search()), Qt::QueuedConnection);
 
 	connect(vipGetMainWindow()->displayArea(), SIGNAL(currentDisplayPlayerAreaChanged(VipDisplayPlayerArea*)), this, SLOT(currentDisplayPlayerAreaChanged(VipDisplayPlayerArea*)));
 	connect(
@@ -870,17 +871,15 @@ VipProcessingObjectInfo::VipProcessingObjectInfo(VipMainWindow* window)
 
 VipProcessingObjectInfo::~VipProcessingObjectInfo()
 {
-	m_data->timer.stop();
-	if (m_data->processing)
-		disconnect(m_data->processing.data(), SIGNAL(dataSent(VipProcessingIO*, const VipAnyData&)), this, SLOT(updateInfos(VipProcessingIO*, const VipAnyData&)));
-
-	delete m_data;
+	d_data->timer.stop();
+	if (d_data->processing)
+		disconnect(d_data->processing.data(), SIGNAL(dataSent(VipProcessingIO*, const VipAnyData&)), this, SLOT(updateInfos(VipProcessingIO*, const VipAnyData&)));
 }
 
 bool VipProcessingObjectInfo::setPlayer(VipAbstractPlayer* player)
 {
-	if (m_data->player)
-		if (VipPlayer2D* pl = qobject_cast<VipPlayer2D*>(m_data->player))
+	if (d_data->player)
+		if (VipPlayer2D* pl = qobject_cast<VipPlayer2D*>(d_data->player))
 			disconnect(pl->plotWidget2D()->area(), SIGNAL(childSelectionChanged(VipPlotItem*)), this, SLOT(itemSelected(VipPlotItem*)));
 
 	if (!player)
@@ -891,7 +890,7 @@ bool VipProcessingObjectInfo::setPlayer(VipAbstractPlayer* player)
 			connect(pl->plotWidget2D()->area(), SIGNAL(childSelectionChanged(VipPlotItem*)), this, SLOT(itemSelected(VipPlotItem*)));
 
 	if (VipVideoPlayer* pl = qobject_cast<VipVideoPlayer*>(player)) {
-		m_data->player = player;
+		d_data->player = player;
 		// set the spectrogram as the information source
 		this->setPlotItem(pl->spectrogram());
 	}
@@ -907,7 +906,7 @@ bool VipProcessingObjectInfo::setPlayer(VipAbstractPlayer* player)
 
 		if (displays.isEmpty()) {
 			// if we are on the same player with already a valid processing object displayed and no item selected, do nothing
-			if (m_data->player == player && m_data->processing)
+			if (d_data->player == player && d_data->processing)
 				return true;
 			// try to take the main display object (if any)
 			if (VipDisplayObject* disp = player->mainDisplayObject())
@@ -915,7 +914,7 @@ bool VipProcessingObjectInfo::setPlayer(VipAbstractPlayer* player)
 			else
 				displays = player->displayObjects();
 		}
-		m_data->player = player;
+		d_data->player = player;
 		for (int i = 0; i < displays.size(); ++i) {
 			if (VipOutput* src = displays[i]->inputAt(0)->connection()->source()) {
 				if (displays[i]->isVisible()) {
@@ -947,34 +946,34 @@ void VipProcessingObjectInfo::setProcessingObject(VipProcessingObject* obj, VipO
 		else if (obj->inputCount() == 1)
 			title = obj->inputAt(0)->probe().name();
 		if (title.isEmpty()) {
-			if (m_data->player)
-				title = QString::number(m_data->player->parentId()) + " " + m_data->player->QWidget::windowTitle();
+			if (d_data->player)
+				title = QString::number(d_data->player->parentId()) + " " + d_data->player->QWidget::windowTitle();
 		}
 		if (title.isEmpty())
 			title = vipSplitClassname(obj->objectName());
 		this->setWindowTitle("Player properties - " + title);
 
 		// update the list of VipAdditionalInfo
-		for (int i = 0; i < m_data->infos.size(); ++i)
-			if (m_data->infos[i])
-				delete m_data->infos[i].data();
-		m_data->infos.clear();
-		const auto funs = VipFDProcessingOutputInfo().match(m_data->player.data(), output, output->data().data());
+		for (int i = 0; i < d_data->infos.size(); ++i)
+			if (d_data->infos[i])
+				delete d_data->infos[i].data();
+		d_data->infos.clear();
+		const auto funs = VipFDProcessingOutputInfo().match(d_data->player.data(), output, output->data().data());
 		for (int i = 0; i < funs.size(); ++i)
-			if (VipAdditionalInfo* info = funs[i](m_data->player.data(), output, output->data().data()).value<VipAdditionalInfo*>()) {
+			if (VipAdditionalInfo* info = funs[i](d_data->player.data(), output, output->data().data()).value<VipAdditionalInfo*>()) {
 				info->setProperty("_vip_no_serialize", true);
-				m_data->infos.append(info);
-				connect(info, SIGNAL(needUpdate()), &m_data->timer, SLOT(start()));
+				d_data->infos.append(info);
+				connect(info, SIGNAL(needUpdate()), &d_data->timer, SLOT(start()));
 			}
 
-		if (m_data->processing) {
-			disconnect(m_data->processing.data(), SIGNAL(dataSent(VipProcessingIO*, const VipAnyData&)), this, SLOT(updateInfos(VipProcessingIO*, const VipAnyData&)));
+		if (d_data->processing) {
+			disconnect(d_data->processing.data(), SIGNAL(dataSent(VipProcessingIO*, const VipAnyData&)), this, SLOT(updateInfos(VipProcessingIO*, const VipAnyData&)));
 		}
 
-		m_data->processing = obj;
-		m_data->output = output;
+		d_data->processing = obj;
+		d_data->output = output;
 
-		connect(m_data->processing.data(), SIGNAL(dataSent(VipProcessingIO*, const VipAnyData&)), this, SLOT(updateInfos(VipProcessingIO*, const VipAnyData&)), Qt::DirectConnection);
+		connect(d_data->processing.data(), SIGNAL(dataSent(VipProcessingIO*, const VipAnyData&)), this, SLOT(updateInfos(VipProcessingIO*, const VipAnyData&)), Qt::DirectConnection);
 		updateInfos();
 	}
 }
@@ -990,19 +989,18 @@ void VipProcessingObjectInfo::setPlotItem(VipPlotItem* item)
 		}
 }
 
-void VipProcessingObjectInfo::itemSelected(VipPlotItem* plot_item) 
+void VipProcessingObjectInfo::itemSelected(VipPlotItem* plot_item)
 {
-	bool is_null = m_data->delayedItem.data() == nullptr;
-	m_data->delayedItem = plot_item;
+	bool is_null = d_data->delayedItem.data() == nullptr;
+	d_data->delayedItem = plot_item;
 	if (is_null)
 		QMetaObject::invokeMethod(this, "delayedItemSelected", Qt::QueuedConnection);
 }
 
-
 void VipProcessingObjectInfo::delayedItemSelected()
 {
-	VipPlotItem* plot_item = m_data->delayedItem.data();
-	m_data->delayedItem = nullptr;
+	VipPlotItem* plot_item = d_data->delayedItem.data();
+	d_data->delayedItem = nullptr;
 
 	// add the plot item from the list if: this is a left click, the item is selected and not already added to the list
 	if (plot_item && plot_item->isSelected()) {
@@ -1011,7 +1009,7 @@ void VipProcessingObjectInfo::delayedItemSelected()
 	else if (plot_item) {
 		// the plot item has been unselected
 		// find another valid selected plot_item
-		if (VipPlayer2D* pl = qobject_cast<VipPlayer2D*>(m_data->player)) {
+		if (VipPlayer2D* pl = qobject_cast<VipPlayer2D*>(d_data->player)) {
 			QList<VipPlotItem*> items = pl->plotWidget2D()->area()->findItems<VipPlotItem*>(QString(), 1, 1);
 			if (items.size()) {
 				for (int i = 0; i < items.size(); ++i) {
@@ -1021,9 +1019,9 @@ void VipProcessingObjectInfo::delayedItemSelected()
 						}
 				}
 			}
-			else if (m_data->player) {
+			else if (d_data->player) {
 				// check if the current processing is within this player
-				QList<VipDisplayObject*> displays = m_data->player->displayObjects();
+				QList<VipDisplayObject*> displays = d_data->player->displayObjects();
 				VipProcessingObject* first = nullptr;
 				VipOutput* src = nullptr;
 				for (int i = 0; i < displays.size(); ++i) {
@@ -1032,7 +1030,7 @@ void VipProcessingObjectInfo::delayedItemSelected()
 							src = s;
 							first = s->parentProcessing();
 						}
-						if (s->parentProcessing() == m_data->processing)
+						if (s->parentProcessing() == d_data->processing)
 							return; // the current displayed processing is within this player, nothing to do
 					}
 				}
@@ -1049,8 +1047,8 @@ QString VipProcessingObjectInfo::content() const
 {
 	// create the string with the INI format
 	QString res;
-	for (int i = 0; i < m_data->attributes.topLevelItemCount(); ++i) {
-		QTreeWidgetItem* top = m_data->attributes.topLevelItem(i);
+	for (int i = 0; i < d_data->attributes.topLevelItemCount(); ++i) {
+		QTreeWidgetItem* top = d_data->attributes.topLevelItem(i);
 		if (!res.isEmpty())
 			res += "\n";
 
@@ -1068,7 +1066,7 @@ QString VipProcessingObjectInfo::content() const
 void VipProcessingObjectInfo::copyToClipboard()
 {
 	QApplication::clipboard()->setText(content());
-	QPoint pos = m_data->tools.mapToGlobal(QPoint(0, 0));
+	QPoint pos = d_data->tools.mapToGlobal(QPoint(0, 0));
 	QToolTip::showText(pos, "Processing information copied to clipboard");
 }
 
@@ -1081,39 +1079,39 @@ void VipProcessingObjectInfo::saveToFile()
 			out.write(content().toLatin1());
 		}
 	}
-	QPoint pos = m_data->tools.mapToGlobal(QPoint(0, 0));
+	QPoint pos = d_data->tools.mapToGlobal(QPoint(0, 0));
 	QToolTip::showText(pos, "Processing information saved to file");
 }
 
 QPen VipProcessingObjectInfo::itemBorderPen() const
 {
-	return m_data->attributes.delegate->pen;
+	return d_data->attributes.delegate->pen;
 }
 void VipProcessingObjectInfo::setItemBorderPen(const QPen& pen)
 {
-	m_data->attributes.delegate->pen = pen;
+	d_data->attributes.delegate->pen = pen;
 	update();
 }
 QColor VipProcessingObjectInfo::itemBorderColor() const
 {
-	return m_data->attributes.delegate->pen.color();
+	return d_data->attributes.delegate->pen.color();
 }
 void VipProcessingObjectInfo::setItemBorderColor(const QColor& c)
 {
-	m_data->attributes.delegate->pen.setColor(c);
+	d_data->attributes.delegate->pen.setColor(c);
 	update();
 }
 
 QList<VipProcessingObject*> VipProcessingObjectInfo::plotSelectedAttributes()
 {
-	m_data->plotting = 1;
-	if (!m_data->processing || !m_data->player) {
-		m_data->plotting = 0;
+	d_data->plotting = 1;
+	if (!d_data->processing || !d_data->player) {
+		d_data->plotting = 0;
 		return QList<VipProcessingObject*>();
 	}
 
 	// first retrieve all VipOutput to plot with their attribute name
-	QList<QTreeWidgetItem*> items = m_data->attributes.selectedItems();
+	QList<QTreeWidgetItem*> items = d_data->attributes.selectedItems();
 	QList<VipOutput*> outputs;
 	QStringList attributes;
 
@@ -1139,7 +1137,7 @@ QList<VipProcessingObject*> VipProcessingObjectInfo::plotSelectedAttributes()
 			pool = vipGetMainWindow()->displayArea()->currentDisplayPlayerArea()->processingPool();
 
 	QList<VipProcessingObject*> res = plotAttributes(outputs, attributes, pool);
-	m_data->plotting = 0;
+	d_data->plotting = 0;
 
 	// reload time
 	if (pool)
@@ -1170,19 +1168,19 @@ void VipProcessingObjectInfo::updateInfos(VipProcessingIO* out, const VipAnyData
 	if (this->isHidden())
 		return;
 
-	if (m_data->output && m_data->output != out)
+	if (d_data->output && d_data->output != out)
 		return;
 
 	// schedule an update in 200ms
-	m_data->timer.start();
+	d_data->timer.start();
 
 	// if last update is older than 200ms and and update in not in progress, update
-	if (m_data->lastUpdate < 0)
+	if (d_data->lastUpdate < 0)
 		return;
 
-	if (QDateTime::currentMSecsSinceEpoch() - m_data->lastUpdate > 200) {
-		m_data->lastUpdate = -1;
-		m_data->timer.stop();
+	if (QDateTime::currentMSecsSinceEpoch() - d_data->lastUpdate > 200) {
+		d_data->lastUpdate = -1;
+		d_data->timer.stop();
 		QMetaObject::invokeMethod(this, "updateInfos", Qt::QueuedConnection);
 	}
 }
@@ -1199,25 +1197,25 @@ static bool Filter(const QString& name, const QVector<QString>& filters)
 
 void VipProcessingObjectInfo::updateInfos()
 {
-	if (m_data->plotting)
+	if (d_data->plotting)
 		return;
-	if (!m_data->output)
+	if (!d_data->output)
 		return;
-	if (!m_data->processing)
+	if (!d_data->processing)
 		return;
-	if (m_data->processing->indexOf(m_data->output) < 0)
+	if (d_data->processing->indexOf(d_data->output) < 0)
 		return;
 
-	QSize previous_size = m_data->attributes.sizeHint();
+	QSize previous_size = d_data->attributes.sizeHint();
 
-	m_data->attributes.blockSignals(true);
+	d_data->attributes.blockSignals(true);
 
 	// get the VipOutput
 	QList<VipOutput*> outs;
-	if (VipProcessingObject* obj = m_data->processing) {
+	if (VipProcessingObject* obj = d_data->processing) {
 		// retrieve VipOutput objects
-		if (m_data->output)
-			outs << m_data->output;
+		if (d_data->output)
+			outs << d_data->output;
 		else {
 			for (int i = 0; i < obj->outputCount(); ++i)
 				outs << obj->outputAt(i);
@@ -1237,8 +1235,8 @@ void VipProcessingObjectInfo::updateInfos()
 		for (QVariantMap::const_iterator it = attrs.begin(); it != attrs.end(); ++it) {
 			const QString key = it.key();
 			// vip_debug("%s\n", key.toLatin1().data());
-			for (int i = 0; i < m_data->filters.size(); ++i) {
-				if (Filter(key, m_data->filters[i].second)) {
+			for (int i = 0; i < d_data->filters.size(); ++i) {
+				if (Filter(key, d_data->filters[i].second)) {
 					// check value size when converted to string
 					int size = 0;
 					const QVariant v = it.value();
@@ -1250,8 +1248,8 @@ void VipProcessingObjectInfo::updateInfos()
 					else
 						size = v.toString().size();
 					if (size) {
-						attributes[m_data->filters[i].first].append(it.key(), it.value());
-						outputs[m_data->filters[i].first].append(QPair<QString, VipOutput*>(it.key(), outs[o]));
+						attributes[d_data->filters[i].first].append(it.key(), it.value());
+						outputs[d_data->filters[i].first].append(QPair<QString, VipOutput*>(it.key(), outs[o]));
 						break;
 					}
 				}
@@ -1259,21 +1257,21 @@ void VipProcessingObjectInfo::updateInfos()
 		}
 	}
 
-	QVector<QPair<QString, QVector<QString>>> filters = m_data->filters;
+	QVector<QPair<QString, QVector<QString>>> filters = d_data->filters;
 
 	// compute additional attributes
-	for (int i = 0; i < m_data->infos.size(); ++i) {
-		if (!m_data->infos[i])
+	for (int i = 0; i < d_data->infos.size(); ++i) {
+		if (!d_data->infos[i])
 			continue;
 		// set the VipAdditinalInfo processing pool, we need it to plot the time evolution
-		// if (m_data->processing)
-		//  m_data->infos[i]->setParent(m_data->processing->parentObjectPool());
-		//  else if (m_data->player)
-		//  m_data->infos[i]->setParent(m_data->player->processingPool());
+		// if (d_data->processing)
+		//  d_data->infos[i]->setParent(d_data->processing->parentObjectPool());
+		//  else if (d_data->player)
+		//  d_data->infos[i]->setParent(d_data->player->processingPool());
 
-		m_data->infos[i]->inputAt(0)->setData(m_data->output->data());
-		m_data->infos[i]->update();
-		const VipAnyData any = m_data->infos[i]->outputAt(0)->data();
+		d_data->infos[i]->inputAt(0)->setData(d_data->output->data());
+		d_data->infos[i]->update();
+		const VipAnyData any = d_data->infos[i]->outputAt(0)->data();
 		const VipProcInfo map = any.data().userType() == qMetaTypeId<VipProcInfo>() ? any.value<VipProcInfo>() : VipProcInfo().import(any.value<QVariantMap>());
 		for (int m = 0; m < map.size(); ++m) {
 			const VipProcInfo::info info = map[m];
@@ -1296,7 +1294,7 @@ void VipProcessingObjectInfo::updateInfos()
 			filters_tooltips.addToolTip(lst[0], map.toolTip(lst[0]));
 			attributes[lst[0]].append(lst[1], info.second);
 			attributes[lst[0]].addToolTip(lst[1], map.toolTip(info.first));
-			outputs[lst[0]].append(QPair<QString, VipOutput*>(lst[1], m_data->infos[i]->outputAt(0)));
+			outputs[lst[0]].append(QPair<QString, VipOutput*>(lst[1], d_data->infos[i]->outputAt(0)));
 		}
 	}
 
@@ -1304,8 +1302,8 @@ void VipProcessingObjectInfo::updateInfos()
 
 	// get the list of expanded items
 	QMap<QString, bool> expanded;
-	for (int i = 0; i < m_data->attributes.topLevelItemCount(); ++i)
-		expanded[m_data->attributes.topLevelItem(i)->text(0)] = m_data->attributes.topLevelItem(i)->isExpanded();
+	for (int i = 0; i < d_data->attributes.topLevelItemCount(); ++i)
+		expanded[d_data->attributes.topLevelItem(i)->text(0)] = d_data->attributes.topLevelItem(i)->isExpanded();
 
 	// update nodes
 	int index = 0;
@@ -1313,9 +1311,9 @@ void VipProcessingObjectInfo::updateInfos()
 		const QString category = filters[i].first;
 
 		// find or create top level item with the right name
-		QTreeWidgetItem* item = m_data->attributes.findTopLevel(category);
+		QTreeWidgetItem* item = d_data->attributes.findTopLevel(category);
 		if (!item) {
-			m_data->attributes.insertTopLevelItem(index, item = new QTreeWidgetItem(QStringList() << category));
+			d_data->attributes.insertTopLevelItem(index, item = new QTreeWidgetItem(QStringList() << category));
 			item->setToolTip(0, category);
 			modified = true;
 		}
@@ -1323,7 +1321,7 @@ void VipProcessingObjectInfo::updateInfos()
 		item->setToolTip(0, filters_tooltips.toolTip(category));
 		item->setToolTip(1, item->toolTip(0));
 
-		index = m_data->attributes.invisibleRootItem()->indexOfChild(item) + 1;
+		index = d_data->attributes.invisibleRootItem()->indexOfChild(item) + 1;
 
 		// add attributes in existing nodes if possible
 		const VipProcInfo map = attributes[category];
@@ -1371,10 +1369,10 @@ void VipProcessingObjectInfo::updateInfos()
 
 	const QStringList categories = attributes.keys();
 	// remove top level items that do not belong to a category
-	for (int i = 0; i < m_data->attributes.topLevelItemCount(); ++i) {
-		QTreeWidgetItem* item = m_data->attributes.topLevelItem(i);
+	for (int i = 0; i < d_data->attributes.topLevelItemCount(); ++i) {
+		QTreeWidgetItem* item = d_data->attributes.topLevelItem(i);
 		if (!categories.contains(item->text(0))) {
-			delete m_data->attributes.takeTopLevelItem(i);
+			delete d_data->attributes.takeTopLevelItem(i);
 			modified = true;
 			--i;
 		}
@@ -1388,22 +1386,22 @@ void VipProcessingObjectInfo::updateInfos()
 	}
 
 	if (modified) {
-		m_data->attributes.blockSignals(false);
+		d_data->attributes.blockSignals(false);
 
-		if (m_data->attributes.sizeHint() != previous_size)
+		if (d_data->attributes.sizeHint() != previous_size)
 			resetSize();
 	}
 
-	m_data->attributes.blockSignals(false);
-	m_data->lastUpdate = QDateTime::currentMSecsSinceEpoch();
+	d_data->attributes.blockSignals(false);
+	d_data->lastUpdate = QDateTime::currentMSecsSinceEpoch();
 }
 
 void VipProcessingObjectInfo::showEvent(QShowEvent* evt)
 {
 	VipToolWidgetPlayer::showEvent(evt);
 
-	if (m_data->output && m_data->processing) {
-		setProcessingObject(m_data->processing, m_data->output);
+	if (d_data->output && d_data->processing) {
+		setProcessingObject(d_data->processing, d_data->output);
 	}
 
 	updateInfos();
@@ -1411,14 +1409,12 @@ void VipProcessingObjectInfo::showEvent(QShowEvent* evt)
 
 void VipProcessingObjectInfo::search()
 {
-	QRegExp exp(m_data->search.text());
-	exp.setCaseSensitivity(Qt::CaseInsensitive);
-	exp.setPatternSyntax(QRegExp::Wildcard);
+	QRegExp exp = vipFromWildcard(d_data->search.text(),Qt::CaseInsensitive);
 
-	bool restore = m_data->search.text().isEmpty();
+	bool restore = d_data->search.text().isEmpty();
 
-	for (int i = 0; i < m_data->attributes.topLevelItemCount(); ++i) {
-		QTreeWidgetItem* item = m_data->attributes.topLevelItem(i);
+	for (int i = 0; i < d_data->attributes.topLevelItemCount(); ++i) {
+		QTreeWidgetItem* item = d_data->attributes.topLevelItem(i);
 		if (restore)
 			item->setHidden(item->childCount() == 0);
 
@@ -1482,7 +1478,7 @@ QList<VipProcessingObject*> VipProcessingObjectInfo::plotAttributes(QList<VipOut
 	pool->stop(); // stop playing
 
 	// find all processings within the player
-	QList<VipDisplayObject*> displays = m_data->player->displayObjects();
+	QList<VipDisplayObject*> displays = d_data->player->displayObjects();
 	QList<VipProcessingObject*> sources, leafs;
 	for (int i = 0; i < displays.size(); ++i) {
 		if (VipOutput* src = displays[i]->inputAt(0)->connection()->source()) {
@@ -1494,13 +1490,13 @@ QList<VipProcessingObject*> VipProcessingObjectInfo::plotAttributes(QList<VipOut
 	sources = vipToSet(sources).values();
 	leafs = vipToSet(leafs).values();
 
-	// create one VipExtractAttribute for each output
+	// create one VipExtractAttributeFromInfo for each output
 	QVector<VipProcessingObject*> extract(outputs.size());
 	for (int i = 0; i < outputs.size(); ++i) {
 		VipProcessingObject* parent = outputs[i]->parentProcessing();
 		if (VipAdditionalInfo* info = qobject_cast<VipAdditionalInfo*>(parent)) {
 			// additional attributes
-			VipExtractAttributeFromInfo* extr = new VipExtractAttributeFromInfo();
+			detail::VipExtractAttributeFromInfo* extr = new detail::VipExtractAttributeFromInfo();
 			// disable error logging
 			extr->setLogErrors(QSet<int>());
 			extr->setVipAdditionalInfo(info);
@@ -1518,7 +1514,7 @@ QList<VipProcessingObject*> VipProcessingObjectInfo::plotAttributes(QList<VipOut
 			extract[i]->setAttribute("XUnit", "Time");
 		}
 		// replace output by the right one
-		outputs[i] = m_data->output;
+		outputs[i] = d_data->output;
 	}
 
 	// look into the display object sources for VipIODevice, find if the source is Temporal, Sequential or a Resource

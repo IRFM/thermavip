@@ -1,7 +1,7 @@
 /**
  * BSD 3-Clause License
  *
- * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ * Copyright (c) 2025, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Leo Dubus, Erwan Grelier
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -35,6 +35,7 @@
 #include "VipTransform.h"
 
 #include <qdatastream.h>
+#include <qtextstream.h>
 
 template<class IN_, class OUT_>
 void rotate90Right(const IN_& in, OUT_ out)
@@ -291,7 +292,7 @@ void VipImageCrop::setEndPosition(const VipNDArrayShape& sh)
 	propertyName("Bottom_right")->setData(lst.join(","));
 }
 
-#include <qtextstream.h>
+
 
 QTransform VipImageCrop::imageTransform(bool* from_center) const
 {
@@ -425,7 +426,10 @@ static QDataStream& operator<<(QDataStream& str, const Transform& tr)
 }
 static QDataStream& operator>>(QDataStream& str, Transform& tr)
 {
-	return str >> (int&)tr.type >> tr.x >> tr.y;
+	int type = 0;
+	str >> type >> tr.x >> tr.y;
+	tr.type = static_cast<Transform::TrType>(type);
+	return str;
 }
 static QDataStream& operator<<(QDataStream& str, const TransformList& trs)
 {
@@ -476,10 +480,6 @@ static int registerTypes()
 }
 static int _registerTypes = registerTypes();
 
-static complex_f operator*(const complex_f& c, double v)
-{
-	return complex_f(c.real() * v, c.imag() * v);
-}
 
 VipNDArray VipGenericImageTransform::applyProcessing(const VipNDArray& ar)
 {
@@ -563,7 +563,7 @@ VipNDArray VipComponentLabelling::applyProcessing(const VipNDArray& ar)
 	}
 	else if (ar.canConvert<complex_d>()) {
 		VipNDArrayType<complex_d> in = ar.toComplexDouble();
-		vipLabelImage(in, out, complex_d(0., 0.));
+		vipLabelImage(in, out, complex_d(0., 0.), m_connectivity_8, m_buffer.data());
 	}
 	else {
 		setError("invalid image type (" + QString(ar.dataName()) + ")");

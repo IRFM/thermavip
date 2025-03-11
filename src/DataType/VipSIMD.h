@@ -1,7 +1,7 @@
 /**
  * BSD 3-Clause License
  *
- * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ * Copyright (c) 2025, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Leo Dubus, Erwan Grelier
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -39,10 +39,11 @@
 #pragma clang diagnostic ignored "-Wreserved-id-macro"
 #endif
 
-
 #if defined(_MSC_VER) && !defined(__clang__)
 // Silence msvc warning message about alignment
+#ifndef _ENABLE_EXTENDED_ALIGNED_STORAGE
 #define _ENABLE_EXTENDED_ALIGNED_STORAGE
+#endif
 #endif
 
 #if defined(__MINGW64_VERSION_MAJOR) || defined(_MSC_VER)
@@ -180,7 +181,6 @@
 #include <iostream>
 #include <type_traits>
 
-
 struct VipCPUFeatures
 {
 	//  Misc.
@@ -223,15 +223,10 @@ struct VipCPUFeatures
 	bool HAS_AVX512VBMI; //  AVX512 Vector Byte Manipulation Instructions
 };
 
-
-
 namespace detail
 {
 	VIP_DATA_TYPE_EXPORT void compute_cpu_feature(VipCPUFeatures&, bool&);
 }
-
-
-
 
 VIP_ALWAYS_INLINE const VipCPUFeatures& vipCPUFeatures()
 {
@@ -242,11 +237,8 @@ VIP_ALWAYS_INLINE const VipCPUFeatures& vipCPUFeatures()
 	return features;
 }
 
-
-
 #ifdef __clang__
 #pragma clang diagnostic pop
 #endif
-
 
 #endif

@@ -1,7 +1,7 @@
 /**
  * BSD 3-Clause License
  *
- * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ * Copyright (c) 2025, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Leo Dubus, Erwan Grelier
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -63,7 +63,7 @@ public:
 VipGenericRecorder::VipGenericRecorder(QObject* parent)
   : VipIODevice(parent)
 {
-	m_data = new PrivateData();
+	VIP_CREATE_PRIVATE_DATA(d_data);
 	this->setEnabled(false);
 	this->setScheduleStrategy(AcceptEmptyInput);
 	this->topLevelInputAt(0)->toMultiInput()->setListType(VipDataList::FIFO, VipDataList::None);
@@ -72,14 +72,13 @@ VipGenericRecorder::VipGenericRecorder(QObject* parent)
 VipGenericRecorder::~VipGenericRecorder()
 {
 	close();
-	if (m_data->recorder)
-		delete m_data->recorder;
-	delete m_data;
+	if (d_data->recorder)
+		delete d_data->recorder;
 }
 
 qint64 VipGenericRecorder::estimateFileSize() const
 {
-	return m_data->recorder ? m_data->recorder->estimateFileSize() : -1;
+	return d_data->recorder ? d_data->recorder->estimateFileSize() : -1;
 }
 
 bool VipGenericRecorder::probe(const QString& filename, const QByteArray&) const
@@ -89,16 +88,16 @@ bool VipGenericRecorder::probe(const QString& filename, const QByteArray&) const
 
 void VipGenericRecorder::setProbeInputs(const QVariantList& lst)
 {
-	m_data->probeInputs = lst;
+	d_data->probeInputs = lst;
 }
 
 bool VipGenericRecorder::setPath(const QString& path)
 {
 	VipIODevice::setPath(path);
-	if (!m_data->recorder || !m_data->recorder->probe(path)) {
-		if (m_data->recorder) {
-			delete m_data->recorder;
-			m_data->recorder = nullptr;
+	if (!d_data->recorder || !d_data->recorder->probe(path)) {
+		if (d_data->recorder) {
+			delete d_data->recorder;
+			d_data->recorder = nullptr;
 		}
 
 		// fill the list of input data
@@ -109,8 +108,8 @@ bool VipGenericRecorder::setPath(const QString& path)
 				lst.append(any.data());
 		}
 
-		if (lst.size() != inputCount() && m_data->probeInputs.size() == inputCount())
-			lst = m_data->probeInputs;
+		if (lst.size() != inputCount() && d_data->probeInputs.size() == inputCount())
+			lst = d_data->probeInputs;
 
 		// no input data, keep searching!
 		// for (int i = 0; i < inputCount(); ++i)
@@ -125,12 +124,12 @@ bool VipGenericRecorder::setPath(const QString& path)
 		if (lst.size() != inputCount())
 			lst.clear();
 
-		m_data->recorder = VipCreateDevice::create(VipIODevice::possibleWriteDevices(path, lst));
-		if (!m_data->recorder)
+		d_data->recorder = VipCreateDevice::create(VipIODevice::possibleWriteDevices(path, lst));
+		if (!d_data->recorder)
 			return false;
 
-		//		 m_data->recorder->setMultiSave(this->multiSave());
-		m_data->recorder->setScheduleStrategy(AcceptEmptyInput);
+		//		 d_data->recorder->setMultiSave(this->multiSave());
+		d_data->recorder->setScheduleStrategy(AcceptEmptyInput);
 
 		int input_count = inputCount();
 		if (input_count == 0) {
@@ -138,49 +137,61 @@ bool VipGenericRecorder::setPath(const QString& path)
 			return false;
 		}
 
-		if (VipMultiInput* inputs = m_data->recorder->topLevelInputAt(0)->toMultiInput())
+		if (VipMultiInput* inputs = d_data->recorder->topLevelInputAt(0)->toMultiInput())
 			inputs->resize(input_count);
-		else if (input_count != m_data->recorder->inputCount()) {
+		else if (input_count != d_data->recorder->inputCount()) {
+			setError("input count mismatch", VipProcessingObject::WrongInputNumber);
+			return false;
+		}
+	}
+	else {
+		// Same recorder type, just check for input count
+		int input_count = inputCount();
+		if (input_count != d_data->recorder->inputCount()) {
+			if (VipMultiInput* inputs = d_data->recorder->topLevelInputAt(0)->toMultiInput())
+				inputs->resize(input_count);
+		}
+		if (input_count != d_data->recorder->inputCount()) {
 			setError("input count mismatch", VipProcessingObject::WrongInputNumber);
 			return false;
 		}
 	}
 
-	return m_data->recorder->setPath(path);
+	return d_data->recorder->setPath(path);
 }
 
 void VipGenericRecorder::setRecorderAvailableDataOnOpen(bool enable)
 {
-	m_data->recorderAvailableDataOnOpen = enable;
+	d_data->recorderAvailableDataOnOpen = enable;
 }
 
 bool VipGenericRecorder::open(VipIODevice::OpenModes mode)
 {
-	if (!m_data->recorder)
+	if (!d_data->recorder)
 		return false;
 
 	close();
 	this->setRecordedSize(0);
 
-	if (inputCount() != m_data->recorder->inputCount())
+	if (inputCount() != d_data->recorder->inputCount())
 		return false;
 
-	m_data->recorder->setPath(generateFilename());
+	d_data->recorder->setPath(generateFilename());
 
 	if (mode != WriteOnly)
 		return false;
 
-	if (m_data->recorder->open(mode)) {
-		if (m_data->recorderAvailableDataOnOpen) {
+	if (d_data->recorder->open(mode)) {
+		if (d_data->recorderAvailableDataOnOpen) {
 			// add already available data and apply
 			for (int i = 0; i < inputCount(); ++i) {
 				if (VipOutput* out = this->inputAt(i)->connection()->source()) {
 					VipAnyData any = out->data();
 					if (!any.isEmpty())
-						m_data->recorder->inputAt(i)->setData(any);
+						d_data->recorder->inputAt(i)->setData(any);
 				}
 			}
-			m_data->recorder->update();
+			d_data->recorder->update();
 		}
 
 		// remove all buffered input data
@@ -205,12 +216,12 @@ void VipGenericRecorder::openDeviceIfNotOpened()
 
 void VipGenericRecorder::setRecordedSize(qint64 bytes)
 {
-	m_data->recordedSize = bytes;
+	d_data->recordedSize = bytes;
 }
 
 qint64 VipGenericRecorder::recordedSize() const
 {
-	return m_data->recordedSize;
+	return d_data->recordedSize;
 }
 
 void VipGenericRecorder::setOpened(bool open)
@@ -253,10 +264,10 @@ void VipGenericRecorder::setRecorder(VipIODevice* device)
 {
 	// close the previous recorder
 	close();
-	if (m_data->recorder)
-		delete m_data->recorder;
+	if (d_data->recorder)
+		delete d_data->recorder;
 
-	m_data->recorder = device;
+	d_data->recorder = device;
 	if (device) {
 		if (device->inputCount())
 			this->topLevelInputAt(0)->toMultiInput()->resize(device->inputCount());
@@ -270,15 +281,16 @@ void VipGenericRecorder::setRecorder(VipIODevice* device)
 
 VipIODevice* VipGenericRecorder::recorder() const
 {
-	return m_data->recorder;
+	return d_data->recorder;
 }
 
 void VipGenericRecorder::setStopStreamingOnClose(bool enable)
 {
-	m_data->stopStreamingOnClose = enable;
+	d_data->stopStreamingOnClose = enable;
 }
-bool VipGenericRecorder::stopStreamingOnClose() const {
-	return m_data->stopStreamingOnClose;
+bool VipGenericRecorder::stopStreamingOnClose() const
+{
+	return d_data->stopStreamingOnClose;
 }
 
 void VipGenericRecorder::close()
@@ -291,7 +303,7 @@ void VipGenericRecorder::close()
 
 	if (stop_streaming) {
 		// detect if we are streaming
-		if (pool = parentObjectPool()) {
+		if ((pool = parentObjectPool())) {
 			is_streaming = pool->isStreamingEnabled();
 		}
 		else {
@@ -299,7 +311,7 @@ void VipGenericRecorder::close()
 			QList<VipIODevice*> dev = vipListCast<VipIODevice*>(this->allSources());
 			// find the pool
 			for (VipIODevice* d : dev) {
-				if (pool = d->parentObjectPool())
+				if ((pool = d->parentObjectPool()))
 					break;
 			}
 			if (pool)
@@ -317,8 +329,8 @@ void VipGenericRecorder::close()
 		if (stop_streaming && is_streaming)
 			pool->setStreamingEnabled(true);
 
-		if (m_data->recorder)
-			m_data->recorder->close();
+		if (d_data->recorder)
+			d_data->recorder->close();
 		setOpenMode(VipIODevice::NotOpen);
 		setSize(0);
 	}
@@ -326,24 +338,24 @@ void VipGenericRecorder::close()
 
 void VipGenericRecorder::setDatePrefix(const QString& date_prefix)
 {
-	m_data->datePrefix = date_prefix;
+	d_data->datePrefix = date_prefix;
 	emitProcessingChanged();
 }
 
 void VipGenericRecorder::setHasDatePrefix(bool enable)
 {
-	m_data->hasDatePrefix = enable;
+	d_data->hasDatePrefix = enable;
 	emitProcessingChanged();
 }
 
 QString VipGenericRecorder::datePrefix() const
 {
-	return m_data->datePrefix;
+	return d_data->datePrefix;
 }
 
 bool VipGenericRecorder::hasDatePrefix() const
 {
-	return m_data->hasDatePrefix;
+	return d_data->hasDatePrefix;
 }
 
 QString VipGenericRecorder::generateFilename() const
@@ -376,10 +388,10 @@ QString VipGenericRecorder::generateFilename() const
 
 void VipGenericRecorder::resetRecorderParameters()
 {
-	if (m_data->recorder && !isOpen()) {
-		VipFunctionDispatcher<1>::function_list_type lst = vipFDObjectEditor().exactMatch(m_data->recorder);
+	if (d_data->recorder && !isOpen()) {
+		VipFunctionDispatcher<1>::function_list_type lst = vipFDObjectEditor().exactMatch(d_data->recorder);
 		if (lst.size()) {
-			QWidget* editor = lst.first()(m_data->recorder).value<QWidget*>();
+			QWidget* editor = lst.first()(d_data->recorder).value<QWidget*>();
 			if (editor) {
 				VipGenericDialog dialog(editor, "Device options", vipGetMainWindow());
 				if (dialog.exec() != QDialog::Accepted) {
@@ -396,7 +408,7 @@ void VipGenericRecorder::resetRecorderParameters()
 
 void VipGenericRecorder::apply()
 {
-	if (!isOpen() || !m_data->recorder)
+	if (!isOpen() || !d_data->recorder)
 		return;
 
 	bool has_new_data = true;
@@ -407,16 +419,16 @@ void VipGenericRecorder::apply()
 		for (int i = 0; i < inputCount(); ++i) {
 			if (inputAt(i)->hasNewData()) {
 				VipAnyData any = inputAt(i)->data();
-				m_data->recorder->inputAt(i)->setData(any);
+				d_data->recorder->inputAt(i)->setData(any);
 				bytes += any.memoryFootprint();
 				has_new_data = true;
 			}
 		}
 
 		if (has_new_data)
-			m_data->recorder->update();
+			d_data->recorder->update();
 
-		this->setSize(m_data->recorder->size());
+		this->setSize(d_data->recorder->size());
 		this->setRecordedSize(recordedSize() + bytes);
 	}
 }
@@ -448,20 +460,20 @@ public:
 VipRecordWidget::VipRecordWidget(InfosLocation loc, QWidget* parent)
   : QWidget(parent)
 {
-	m_data = new PrivateData();
-	m_data->previousBytes = 0;
-	m_data->recordInfos = FramesAndInputSize;
-	m_data->startTime = 0;
+	VIP_CREATE_PRIVATE_DATA(d_data);
+	d_data->previousBytes = 0;
+	d_data->recordInfos = FramesAndInputSize;
+	d_data->startTime = 0;
 
 	QHBoxLayout* hlay = new QHBoxLayout();
-	hlay->addWidget(&m_data->addDate);
-	hlay->addWidget(&m_data->date);
+	hlay->addWidget(&d_data->addDate);
+	hlay->addWidget(&d_data->date);
 
 	QHBoxLayout* hlay2 = new QHBoxLayout();
-	hlay2->addWidget(&m_data->filename);
-	hlay2->addWidget(&m_data->record);
-	hlay2->addWidget(&m_data->suspend);
-	hlay2->addWidget(&m_data->resetParameters);
+	hlay2->addWidget(&d_data->filename);
+	hlay2->addWidget(&d_data->record);
+	hlay2->addWidget(&d_data->suspend);
+	hlay2->addWidget(&d_data->resetParameters);
 	hlay2->setSpacing(2);
 
 	QVBoxLayout* vlay = new QVBoxLayout();
@@ -472,118 +484,117 @@ VipRecordWidget::VipRecordWidget(InfosLocation loc, QWidget* parent)
 	vlay->setContentsMargins(0, 0, 0, 0);
 
 	if (loc == Bottom) {
-		vlay->addWidget(&m_data->info);
+		vlay->addWidget(&d_data->info);
 		setLayout(vlay);
 	}
 	else {
 		QHBoxLayout* l = new QHBoxLayout();
 		l->setContentsMargins(0, 0, 0, 0);
 		l->addLayout(vlay);
-		l->addWidget(&m_data->info);
+		l->addWidget(&d_data->info);
 		setLayout(l);
 	}
 
-	m_data->addDate.setText("Add date prefix");
-	m_data->addDate.setToolTip("If checked, add the recording date to the output file name");
-	m_data->addDate.setChecked(false);
-	m_data->date.setToolTip("Date format");
-	m_data->date.setText("yyyy.MM.dd_hh.mm.ss.zzz_");
-	m_data->date.hide();
-	m_data->record.setToolTip("Start/Stop recording");
-	m_data->record.setIcon(vipIcon("record.png"));
-	m_data->record.setCheckable(true);
-	m_data->record.setAutoRaise(true);
-	m_data->suspend.setToolTip("Suspend/resume recording");
-	m_data->suspend.setIcon(vipIcon("pause.png"));
-	m_data->suspend.setAutoRaise(true);
-	m_data->suspend.setCheckable(true);
-	m_data->suspend.hide();
-	m_data->resetParameters.setToolTip("Reset/Modify the recording parameters");
-	m_data->resetParameters.setIcon(vipIcon("reset.png"));
-	m_data->resetParameters.setAutoRaise(true);
-	m_data->resetParameters.setVisible(false);
-	m_data->filename.setMode(VipFileName::Save);
-	m_data->filename.setFilters(VipGenericRecorder().fileFilters());
-	m_data->filename.setTitle("Record in file...");
-	m_data->filename.edit()->setPlaceholderText("Output file");
+	d_data->addDate.setText("Add date prefix");
+	d_data->addDate.setToolTip("If checked, add the recording date to the output file name");
+	d_data->addDate.setChecked(false);
+	d_data->date.setToolTip("Date format");
+	d_data->date.setText("yyyy.MM.dd_hh.mm.ss.zzz_");
+	d_data->date.hide();
+	d_data->record.setToolTip("Start/Stop recording");
+	d_data->record.setIcon(vipIcon("RECORD.png"));
+	d_data->record.setCheckable(true);
+	d_data->record.setAutoRaise(true);
+	d_data->suspend.setToolTip("Suspend/resume recording");
+	d_data->suspend.setIcon(vipIcon("pause.png"));
+	d_data->suspend.setAutoRaise(true);
+	d_data->suspend.setCheckable(true);
+	d_data->suspend.hide();
+	d_data->resetParameters.setToolTip("Reset/Modify the recording parameters");
+	d_data->resetParameters.setIcon(vipIcon("reset.png"));
+	d_data->resetParameters.setAutoRaise(true);
+	d_data->resetParameters.setVisible(false);
+	d_data->filename.setMode(VipFileName::Save);
+	d_data->filename.setFilters(VipGenericRecorder().fileFilters());
+	d_data->filename.setTitle("Record in file...");
+	d_data->filename.edit()->setPlaceholderText("Output file");
 
-	m_data->timer.setSingleShot(false);
-	m_data->timer.setInterval(200);
+	d_data->timer.setSingleShot(false);
+	d_data->timer.setInterval(200);
 
-	connect(&m_data->addDate, SIGNAL(clicked(bool)), this, SLOT(updateDeviceFromWidget()));
-	connect(&m_data->addDate, SIGNAL(clicked(bool)), &m_data->date, SLOT(setVisible(bool)));
-	connect(&m_data->record, SIGNAL(clicked(bool)), this, SLOT(setRecording(bool)));
-	connect(&m_data->suspend, SIGNAL(clicked(bool)), this, SLOT(suspend(bool)));
-	connect(&m_data->resetParameters, SIGNAL(clicked(bool)), this, SLOT(resetParameters()));
-	connect(&m_data->filename, SIGNAL(changed(const QString&)), this, SLOT(updateDeviceFromWidget()));
-	connect(&m_data->timer, SIGNAL(timeout()), this, SLOT(updateRecordInfo()), Qt::QueuedConnection);
+	connect(&d_data->addDate, SIGNAL(clicked(bool)), this, SLOT(updateDeviceFromWidget()));
+	connect(&d_data->addDate, SIGNAL(clicked(bool)), &d_data->date, SLOT(setVisible(bool)));
+	connect(&d_data->record, SIGNAL(clicked(bool)), this, SLOT(setRecording(bool)));
+	connect(&d_data->suspend, SIGNAL(clicked(bool)), this, SLOT(suspend(bool)));
+	connect(&d_data->resetParameters, SIGNAL(clicked(bool)), this, SLOT(resetParameters()));
+	connect(&d_data->filename, SIGNAL(changed(const QString&)), this, SLOT(updateDeviceFromWidget()));
+	connect(&d_data->timer, SIGNAL(timeout()), this, SLOT(updateRecordInfo()), Qt::QueuedConnection);
 }
 
 VipRecordWidget::~VipRecordWidget()
 {
-	m_data->timer.stop();
-	delete m_data;
+	d_data->timer.stop();
 }
 
 void VipRecordWidget::setRecordInfos(RecordInfos infos)
 {
-	m_data->recordInfos = infos;
+	d_data->recordInfos = infos;
 }
 VipRecordWidget::RecordInfos VipRecordWidget::recordInfos() const
 {
-	return m_data->recordInfos;
+	return d_data->recordInfos;
 }
 
 void VipRecordWidget::setDateOptionsVisible(bool vis)
 {
 	if (vis)
-		m_data->date.setVisible(m_data->addDate.isChecked());
+		d_data->date.setVisible(d_data->addDate.isChecked());
 	else
-		m_data->date.setVisible(false);
-	m_data->addDate.setVisible(vis);
+		d_data->date.setVisible(false);
+	d_data->addDate.setVisible(vis);
 }
 bool VipRecordWidget::dateOptionsVisible() const
 {
-	return !m_data->addDate.isHidden();
+	return !d_data->addDate.isHidden();
 }
 
 void VipRecordWidget::setDatePrefixEnabled(bool enable)
 {
-	m_data->addDate.blockSignals(true);
-	m_data->addDate.setChecked(enable);
-	m_data->addDate.blockSignals(false);
+	d_data->addDate.blockSignals(true);
+	d_data->addDate.setChecked(enable);
+	d_data->addDate.blockSignals(false);
 	if (dateOptionsVisible())
-		m_data->date.setVisible(enable);
+		d_data->date.setVisible(enable);
 }
 bool VipRecordWidget::datePrefixEnabled() const
 {
-	return m_data->addDate.isChecked();
+	return d_data->addDate.isChecked();
 }
 void VipRecordWidget::setDatePrefix(const QString& prefix)
 {
-	m_data->date.setText(prefix);
+	d_data->date.setText(prefix);
 }
 QString VipRecordWidget::datePrefix() const
 {
-	return m_data->date.text();
+	return d_data->date.text();
 }
 
 void VipRecordWidget::resetParameters()
 {
-	if (m_data->recorder)
-		m_data->recorder->resetRecorderParameters();
+	if (d_data->recorder)
+		d_data->recorder->resetRecorderParameters();
 }
 
 void VipRecordWidget::updateRecordInfo()
 {
-	if (VipGenericRecorder* recorder = m_data->recorder) {
+	if (VipGenericRecorder* recorder = d_data->recorder) {
 		qint64 count = recorder->size();
 		if (count != VipInvalidPosition) {
-			if (m_data->recordInfos == FramesAndInputSize) {
+			if (d_data->recordInfos == FramesAndInputSize) {
 				double bytes = recorder->recordedSize() / 1000;
-				double bytes_since_timeout = bytes - m_data->previousBytes;
-				m_data->previousBytes = bytes;
-				double rate = (bytes_since_timeout / m_data->timer.interval()) * 1000.;
+				double bytes_since_timeout = bytes - d_data->previousBytes;
+				d_data->previousBytes = bytes;
+				double rate = (bytes_since_timeout / d_data->timer.interval()) * 1000.;
 				QString rate_unit = " KB/s";
 				QString bytes_unit = " KB";
 				if (rate > 1000) {
@@ -612,11 +623,11 @@ void VipRecordWidget::updateRecordInfo()
 				if (out_bytes != 0)
 					text += "<br>File size = <b>" + QString::number(out_bytes) + "</b>" + out_bytes_unit;
 
-				m_data->info.setText(text);
+				d_data->info.setText(text);
 			}
 			else {
-				qint64 size = m_data->recorder->estimateFileSize();
-				qint64 duration_milli = QDateTime::currentMSecsSinceEpoch() - m_data->startTime;
+				qint64 size = d_data->recorder->estimateFileSize();
+				qint64 duration_milli = QDateTime::currentMSecsSinceEpoch() - d_data->startTime;
 				QTime time(0, 0);
 				time = time.addSecs(duration_milli / 1000);
 				QString res = time.toString("hh:mm:ss");
@@ -625,17 +636,17 @@ void VipRecordWidget::updateRecordInfo()
 					res += ", " + QString::number(size / 1000000) + "MB";
 				else
 					res += ", " + QString::number(size / 1000000000.0) + "GB";
-				m_data->info.setText(res);
+				d_data->info.setText(res);
 			}
 		}
 		else
-			m_data->info.setText(QString());
+			d_data->info.setText(QString());
 	}
 }
 
 void VipRecordWidget::updateFileFilters(const QString& filters)
 {
-	m_data->filename.setFilters(filters);
+	d_data->filename.setFilters(filters);
 }
 void VipRecordWidget::updateFileFilters()
 {
@@ -644,7 +655,7 @@ void VipRecordWidget::updateFileFilters()
 
 void VipRecordWidget::setFilename(const QString& filename)
 {
-	m_data->filename.edit()->setText(filename);
+	d_data->filename.edit()->setText(filename);
 }
 
 void VipRecordWidget::enableRecording(bool record)
@@ -683,10 +694,10 @@ QString VipRecordWidget::updateFileFilters(const QVariantList& data, VipFileName
 QString VipRecordWidget::updateFileFilters(const QVariantList& lst)
 {
 	if (lst.size())
-		return updateFileFilters(lst, &m_data->filename);
-	else if (m_data->recorder) {
-		QString filters = m_data->recorder->fileFilters();
-		m_data->filename.setFilters(filters);
+		return updateFileFilters(lst, &d_data->filename);
+	else if (d_data->recorder) {
+		QString filters = d_data->recorder->fileFilters();
+		d_data->filename.setFilters(filters);
 		return filters;
 	}
 	return QString();
@@ -694,9 +705,9 @@ QString VipRecordWidget::updateFileFilters(const QVariantList& lst)
 
 bool VipRecordWidget::canDisplayRecorderParametersEditor() const
 {
-	if (m_data->recorder && m_data->recorder->recorder()) {
-		if (!m_data->recorder->isOpen()) {
-			VipFunctionDispatcher<1>::function_list_type lst = vipFDObjectEditor().exactMatch(m_data->recorder->recorder());
+	if (d_data->recorder && d_data->recorder->recorder()) {
+		if (!d_data->recorder->isOpen()) {
+			VipFunctionDispatcher<1>::function_list_type lst = vipFDObjectEditor().exactMatch(d_data->recorder->recorder());
 			return lst.size() > 0;
 		}
 	}
@@ -705,153 +716,174 @@ bool VipRecordWidget::canDisplayRecorderParametersEditor() const
 
 void VipRecordWidget::setGenericRecorder(VipGenericRecorder* recorder)
 {
-	if (m_data->recorder) {
-		disconnect(m_data->recorder, SIGNAL(opened()), this, SLOT(updateWidgetFromDevice()));
-		disconnect(m_data->recorder, SIGNAL(closed()), this, SLOT(updateWidgetFromDevice()));
-		disconnect(m_data->recorder, SIGNAL(processingChanged(VipProcessingObject*)), this, SLOT(updateWidgetFromDevice()));
-		m_data->recorder->close();
+	if (d_data->recorder) {
+		disconnect(d_data->recorder, SIGNAL(opened()), this, SLOT(updateWidgetFromDevice()));
+		disconnect(d_data->recorder, SIGNAL(closed()), this, SLOT(updateWidgetFromDevice()));
+		disconnect(d_data->recorder, SIGNAL(processingChanged(VipProcessingObject*)), this, SLOT(updateWidgetFromDevice()));
+		d_data->recorder->close();
 	}
 
-	m_data->recorder = recorder;
+	d_data->recorder = recorder;
 	if (recorder) {
-		connect(m_data->recorder, SIGNAL(opened()), this, SLOT(updateWidgetFromDevice()), Qt::QueuedConnection);
-		connect(m_data->recorder, SIGNAL(closed()), this, SLOT(updateWidgetFromDevice()), Qt::QueuedConnection);
-		connect(m_data->recorder, SIGNAL(processingChanged(VipProcessingObject*)), this, SLOT(updateWidgetFromDevice()), Qt::QueuedConnection);
+		connect(d_data->recorder, SIGNAL(opened()), this, SLOT(updateWidgetFromDevice()), Qt::QueuedConnection);
+		connect(d_data->recorder, SIGNAL(closed()), this, SLOT(updateWidgetFromDevice()), Qt::QueuedConnection);
+		connect(d_data->recorder, SIGNAL(processingChanged(VipProcessingObject*)), this, SLOT(updateWidgetFromDevice()), Qt::QueuedConnection);
 		updateWidgetFromDevice();
 	}
 
-	m_data->resetParameters.setVisible(canDisplayRecorderParametersEditor());
+	d_data->resetParameters.setVisible(canDisplayRecorderParametersEditor());
 }
 
 VipGenericRecorder* VipRecordWidget::genericRecorder() const
 {
-	return m_data->recorder;
+	return d_data->recorder;
 }
 
 QToolButton* VipRecordWidget::record() const
 {
-	return const_cast<QToolButton*>(&m_data->record);
+	return const_cast<QToolButton*>(&d_data->record);
+}
+
+QToolButton* VipRecordWidget::suspend() const
+{
+	return const_cast<QToolButton*>(&d_data->suspend);
 }
 
 VipFileName* VipRecordWidget::filenameWidget() const
 {
-	return &m_data->filename;
+	return &d_data->filename;
 }
 
 QString VipRecordWidget::path() const
 {
-	if (VipGenericRecorder* recorder = m_data->recorder)
+	if (VipGenericRecorder* recorder = d_data->recorder)
 		return recorder->path();
 	return QString();
 }
 
 QString VipRecordWidget::filename() const
 {
-	return m_data->filename.filename();
+	return d_data->filename.filename();
 }
 
 void VipRecordWidget::startRecording()
 {
-	m_data->record.blockSignals(true);
-	m_data->record.setChecked(true);
-	m_data->record.blockSignals(false);
-	m_data->suspend.show();
-
-	if (!m_data->recorder)
+	d_data->record.blockSignals(true);
+	d_data->record.setChecked(true);
+	d_data->record.blockSignals(false);
+	
+	if (!d_data->recorder)
 		return;
 
-	if (VipGenericRecorder* recorder = m_data->recorder) {
-		recorder->setHasDatePrefix(m_data->addDate.isChecked());
-		recorder->setDatePrefix(m_data->date.text());
-		recorder->setPath(m_data->filename.filename());
-		recorder->open(VipIODevice::WriteOnly);
-		m_data->previousBytes = 0;
-		m_data->startTime = QDateTime::currentMSecsSinceEpoch();
+	// Only display the suspend button for temporal source devices
+	QList<VipIODevice*> devices = vipListCast<VipIODevice*>( d_data->recorder->allSources());
+	bool has_sequential = false;
+	for (VipIODevice* d : devices) {
+		if (d->deviceType() == VipIODevice::Sequential) {
+			has_sequential = true;
+			break;
+		}
+
+	}
+	if (has_sequential)
+		d_data->suspend.show();
+
+
+	if (VipGenericRecorder* recorder = d_data->recorder) {
+		recorder->setHasDatePrefix(d_data->addDate.isChecked());
+		recorder->setDatePrefix(d_data->date.text());
+		recorder->setPath(d_data->filename.filename());
+		if (!recorder->open(VipIODevice::WriteOnly)) {
+			stopRecording();
+			return;
+		}
+		d_data->previousBytes = 0;
+		d_data->startTime = QDateTime::currentMSecsSinceEpoch();
 	}
 }
 
 void VipRecordWidget::stopRecording()
 {
-	m_data->timer.stop();
-	m_data->record.blockSignals(true);
-	m_data->record.setChecked(false);
-	m_data->record.blockSignals(false);
-	m_data->suspend.hide();
+	d_data->timer.stop();
+	d_data->record.blockSignals(true);
+	d_data->record.setChecked(false);
+	d_data->record.blockSignals(false);
+	d_data->suspend.hide();
 
-	if (VipGenericRecorder* recorder = m_data->recorder)
+	if (VipGenericRecorder* recorder = d_data->recorder)
 		recorder->close();
 
-	m_data->resetParameters.setVisible(canDisplayRecorderParametersEditor());
+	d_data->resetParameters.setVisible(canDisplayRecorderParametersEditor());
 }
 
 void VipRecordWidget::setRecording(bool record)
 {
-	if (record && m_data->record.isChecked()) {
+	if (record && d_data->record.isChecked()) {
 		if (filename().isEmpty()) {
-			m_data->record.blockSignals(true);
-			m_data->record.setChecked(false);
-			m_data->record.blockSignals(false);
+			d_data->record.blockSignals(true);
+			d_data->record.setChecked(false);
+			d_data->record.blockSignals(false);
 			return;
 		}
 		startRecording();
 	}
-	else if (!record && !m_data->record.isChecked())
+	else if (!record && !d_data->record.isChecked())
 		stopRecording();
 }
 
 void VipRecordWidget::suspend(bool enable)
 {
-	m_data->suspend.blockSignals(true);
+	d_data->suspend.blockSignals(true);
 	if (enable)
-		m_data->suspend.setIcon(vipIcon("play.png"));
+		d_data->suspend.setIcon(vipIcon("play.png"));
 	else
-		m_data->suspend.setIcon(vipIcon("pause.png"));
-	m_data->suspend.blockSignals(false);
+		d_data->suspend.setIcon(vipIcon("pause.png"));
+	d_data->suspend.blockSignals(false);
 
-	if (m_data->recorder)
-		m_data->recorder->setEnabled(!enable);
+	if (d_data->recorder)
+		d_data->recorder->setEnabled(!enable);
 }
 
 void VipRecordWidget::updateDeviceFromWidget()
 {
-	m_data->resetParameters.setVisible(canDisplayRecorderParametersEditor());
+	d_data->resetParameters.setVisible(canDisplayRecorderParametersEditor());
 }
 
 void VipRecordWidget::updateWidgetFromDevice()
 {
-	if (!m_data->recorder)
+	if (!d_data->recorder)
 		return;
 
-	m_data->date.blockSignals(true);
-	m_data->addDate.blockSignals(true);
-	m_data->record.blockSignals(true);
-	m_data->filename.edit()->blockSignals(true);
+	d_data->date.blockSignals(true);
+	d_data->addDate.blockSignals(true);
+	d_data->record.blockSignals(true);
+	d_data->filename.edit()->blockSignals(true);
 
-	m_data->date.setText(m_data->recorder->datePrefix());
+	d_data->date.setText(d_data->recorder->datePrefix());
 	if (dateOptionsVisible())
-		m_data->date.setVisible(m_data->recorder->hasDatePrefix());
-	m_data->addDate.setChecked(m_data->recorder->hasDatePrefix());
-	m_data->record.setChecked(m_data->recorder->isOpen());
-	if (m_data->recorder->recorder())
-		m_data->filename.edit()->setText(m_data->recorder->recorder()->path());
+		d_data->date.setVisible(d_data->recorder->hasDatePrefix());
+	d_data->addDate.setChecked(d_data->recorder->hasDatePrefix());
+	d_data->record.setChecked(d_data->recorder->isOpen());
+	if (d_data->recorder->recorder())
+		d_data->filename.edit()->setText(d_data->recorder->recorder()->path());
 	else
-		m_data->filename.edit()->setText(m_data->recorder->path());
-	m_data->filename.edit()->setEnabled(!m_data->recorder->isOpen());
+		d_data->filename.edit()->setText(d_data->recorder->path());
+	d_data->filename.edit()->setEnabled(!d_data->recorder->isOpen());
 
-	m_data->filename.edit()->blockSignals(false);
-	m_data->record.blockSignals(false);
-	m_data->date.blockSignals(false);
-	m_data->addDate.blockSignals(false);
+	d_data->filename.edit()->blockSignals(false);
+	d_data->record.blockSignals(false);
+	d_data->date.blockSignals(false);
+	d_data->addDate.blockSignals(false);
 
-	if (m_data->recorder->isOpen()) {
-		if (!m_data->timer.isActive())
-			m_data->timer.start();
+	if (d_data->recorder->isOpen()) {
+		if (!d_data->timer.isActive())
+			d_data->timer.start();
 	}
 	else {
-		m_data->timer.stop();
+		d_data->timer.stop();
 	}
 
-	m_data->resetParameters.setVisible(canDisplayRecorderParametersEditor());
+	d_data->resetParameters.setVisible(canDisplayRecorderParametersEditor());
 
-	Q_EMIT recordingChanged(m_data->recorder->isOpen());
+	Q_EMIT recordingChanged(d_data->recorder->isOpen());
 }

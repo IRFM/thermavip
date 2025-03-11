@@ -1,7 +1,7 @@
 /**
  * BSD 3-Clause License
  *
- * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ * Copyright (c) 2025, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Leo Dubus, Erwan Grelier
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -37,6 +37,7 @@
 #include <QMap>
 #include <QPen>
 #include <QTransform>
+#include <QObject>
 
 #include "VipScaleDiv.h"
 #include "VipText.h"
@@ -78,11 +79,12 @@ struct VipScaleText
 /// -   VipTimeToText: intepret floating point values as a time and use QDateTime to format as string
 ///
 /// VipValueToText handles other aspects of scale labels:
-/// -   The text style for each tick can be customized using VipValueToText::setTextStyle()
 /// -   Additional labels can be draw by the scale if VipValueToText::additionalText() returns a non empty list
 /// -   VipValueToText can manage exponents based on a maximum label length
 ///
-class VIP_PLOTTING_EXPORT VipValueToText
+/// Inherits QObject in order to be used through a QPointer by VipFixedScaleEngine
+/// 
+class VIP_PLOTTING_EXPORT VipValueToText : public QObject
 {
 public:
 	/// @brief Type of VipValueToText
@@ -113,7 +115,7 @@ public:
 	virtual void setExponent(int);
 	int exponent() const;
 
-	/// @brief If exponent is not null, returns a HTML string like '*10²' (for exponent==2).
+	/// @brief If exponent is not null, returns a HTML string like '*10^2' (for exponent==2).
 	QString exponentText() const;
 
 	/// @brief Let the VipValueToText automatically select the best exponent.
@@ -685,8 +687,8 @@ private:
 	VipAbstractScaleDraw(const VipAbstractScaleDraw&);
 	VipAbstractScaleDraw& operator=(const VipAbstractScaleDraw&);
 
-	class PrivateData;
-	PrivateData* d_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 Q_DECLARE_OPERATORS_FOR_FLAGS(VipAbstractScaleDraw::ScaleComponents)
@@ -786,8 +788,8 @@ private:
 	Qt::Orientation computeOrientation() const;
 	void updateMap();
 
-	class PrivateData;
-	PrivateData* d_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 /*!
@@ -865,8 +867,8 @@ private:
 	void getDLengthHint(double& d_s_angle, double& d_e_angle, VipScaleDiv::TickType) const;
 	void updateMap();
 
-	class PrivateData;
-	PrivateData* d_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 /*!
@@ -929,8 +931,8 @@ private:
 	void computeScaleLine();
 	void updateMap();
 
-	class PrivateData;
-	PrivateData* d_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 /** @}*/

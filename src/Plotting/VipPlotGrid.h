@@ -1,7 +1,7 @@
 /**
  * BSD 3-Clause License
  *
- * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ * Copyright (c) 2025, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Leo Dubus, Erwan Grelier
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -119,8 +119,8 @@ private:
 	void drawRadius(QPainter* painter, const VipScaleDiv::TickList& angles, const QPen& pen, const VipPolarSystem&) const;
 	void drawArc(QPainter* painter, const VipScaleDiv::TickList& radiuses, const QPen& pen, const VipPolarSystem&) const;
 
-	class PrivateData;
-	PrivateData* d_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 /// @brief A VipPlotItem that fills the space defined by 2 axes.
@@ -168,8 +168,8 @@ protected:
 	bool setItemProperty(const char* name, const QVariant& value, const QByteArray& index);
 
 private:
-	class PrivateData;
-	PrivateData* d_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 VIP_REGISTER_QOBJECT_METATYPE(VipPlotGrid*)

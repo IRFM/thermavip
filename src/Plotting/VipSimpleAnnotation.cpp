@@ -1,7 +1,7 @@
 /**
  * BSD 3-Clause License
  *
- * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ * Copyright (c) 2025, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Leo Dubus, Erwan Grelier
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -135,101 +135,100 @@ public:
 
 VipSimpleAnnotation::VipSimpleAnnotation()
 {
-	m_data = new PrivateData();
+	VIP_CREATE_PRIVATE_DATA(d_data);
 }
 VipSimpleAnnotation::~VipSimpleAnnotation()
 {
-	delete m_data;
 }
 
 void VipSimpleAnnotation::setPen(const QPen& p)
 {
-	m_data->symbol.setPen(p);
-	m_data->quiver.setPen(p);
-	m_data->quiver.setExtremityPen(VipQuiverPath::End, p);
+	d_data->symbol.setPen(p);
+	d_data->quiver.setPen(p);
+	d_data->quiver.setExtremityPen(VipQuiverPath::End, p);
 }
 const QPen& VipSimpleAnnotation::pen() const
 {
-	return m_data->symbol.pen();
+	return d_data->symbol.pen();
 }
 
 void VipSimpleAnnotation::setBrush(const QBrush& b)
 {
-	m_data->symbol.setBrush(b);
-	m_data->quiver.setExtremityBrush(VipQuiverPath::End, b);
+	d_data->symbol.setBrush(b);
+	d_data->quiver.setExtremityBrush(VipQuiverPath::End, b);
 }
 const QBrush& VipSimpleAnnotation::brush() const
 {
-	return m_data->symbol.brush();
+	return d_data->symbol.brush();
 }
 
 void VipSimpleAnnotation::setEndStyle(int style)
 {
-	m_data->end_style = style;
+	d_data->end_style = style;
 }
 int VipSimpleAnnotation::endStyle() const
 {
-	return m_data->end_style;
+	return d_data->end_style;
 }
 
 void VipSimpleAnnotation::setEndSize(double s)
 {
-	m_data->endSize = s;
-	m_data->symbol.setSize(QSizeF(s, s));
-	m_data->quiver.setLength(VipQuiverPath::End, s);
+	d_data->endSize = s;
+	d_data->symbol.setSize(QSizeF(s, s));
+	d_data->quiver.setLength(VipQuiverPath::End, s);
 }
 double VipSimpleAnnotation::endSize() const
 {
-	return m_data->endSize;
+	return d_data->endSize;
 }
 
 void VipSimpleAnnotation::setText(const QString& t)
 {
-	m_data->text.setText(t);
+	d_data->text.setText(t);
 }
 const VipText& VipSimpleAnnotation::text() const
 {
-	return m_data->text;
+	return d_data->text;
 }
 VipText& VipSimpleAnnotation::text()
 {
-	return m_data->text;
+	return d_data->text;
 }
 
 void VipSimpleAnnotation::setTextDistance(double d)
 {
-	m_data->text_distance = d;
+	d_data->text_distance = d;
 }
 double VipSimpleAnnotation::textDistance() const
 {
-	return m_data->text_distance;
+	return d_data->text_distance;
 }
 
 void VipSimpleAnnotation::setArrowAngle(double angle)
 {
-	m_data->quiver.setAngle(VipQuiverPath::End, angle);
+	d_data->quiver.setAngle(VipQuiverPath::End, angle);
 }
 double VipSimpleAnnotation::arrowAngle() const
 {
-	return m_data->quiver.angle(VipQuiverPath::End);
+	return d_data->quiver.angle(VipQuiverPath::End);
 }
 
 void VipSimpleAnnotation::setTextAlignment(Qt::Alignment a)
 {
-	m_data->text_alignment = a;
+	d_data->text_alignment = a;
 }
 Qt::Alignment VipSimpleAnnotation::textAlignment() const
 {
-	return m_data->text_alignment;
+	return d_data->text_alignment;
 }
 
 void VipSimpleAnnotation::setTextPosition(Vip::RegionPositions p)
 {
-	m_data->text_position = p;
+	d_data->text_position = p;
 }
 Vip::RegionPositions VipSimpleAnnotation::textPosition() const
 {
-	return m_data->text_position;
+	return d_data->text_position;
 }
 
 QPainterPath VipSimpleAnnotation::shape(const VipShape& sh, const VipCoordinateSystemPtr& m) const
@@ -344,9 +343,9 @@ void VipSimpleAnnotation::drawArrow(const VipShape& sh, QPainter* painter, const
 
 	if (polyline.size()) {
 		// draw the polyline
-		if (m_data->end_style == Arrow) {
-			m_data->quiver.setStyle(VipQuiverPath::EndArrow);
-			m_data->quiver.draw(painter, polyline);
+		if (d_data->end_style == Arrow) {
+			d_data->quiver.setStyle(VipQuiverPath::EndArrow);
+			d_data->quiver.draw(painter, polyline);
 		}
 		else {
 			painter->setPen(pen());
@@ -358,8 +357,8 @@ void VipSimpleAnnotation::drawArrow(const VipShape& sh, QPainter* painter, const
 				QPainterPath p;
 				const QPolygonF saved = polyline;
 				p.addPolygon(polyline << (polyline.first() + QPointF(1, 1)));
-				m_data->symbol.setStyle(VipSymbol::Style(endStyle()));
-				QPainterPath s = m_data->symbol.shape(last);
+				d_data->symbol.setStyle(VipSymbol::Style(endStyle()));
+				QPainterPath s = d_data->symbol.shape(last);
 				p = p.subtracted(s);
 				polyline = p.toFillPolygon();
 				if (polyline.size() < saved.size())
@@ -372,8 +371,8 @@ void VipSimpleAnnotation::drawArrow(const VipShape& sh, QPainter* painter, const
 
 			// draw the symbol
 			if (endStyle() >= 0 && endStyle() < Arrow) {
-				m_data->symbol.setStyle(VipSymbol::Style(endStyle()));
-				m_data->symbol.drawSymbol(painter, last);
+				d_data->symbol.setStyle(VipSymbol::Style(endStyle()));
+				d_data->symbol.drawSymbol(painter, last);
 			}
 		}
 
@@ -404,8 +403,8 @@ void VipSimpleAnnotation::drawPoint(const VipShape& sh, QPainter* painter, const
 	QPointF pos = m->transform(sh.point());
 	// draw the symbol
 	if (endStyle() >= 0 && endStyle() < Arrow) {
-		m_data->symbol.setStyle(VipSymbol::Style(endStyle()));
-		m_data->symbol.drawSymbol(painter, pos);
+		d_data->symbol.setStyle(VipSymbol::Style(endStyle()));
+		d_data->symbol.drawSymbol(painter, pos);
 	}
 	// draw the text
 	QRectF trect = text().textRect();

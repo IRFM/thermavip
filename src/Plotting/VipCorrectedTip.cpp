@@ -1,7 +1,7 @@
 /**
  * BSD 3-Clause License
  *
- * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ * Copyright (c) 2025, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Leo Dubus, Erwan Grelier
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -37,7 +37,9 @@
 
 #include "qapplication.h"
 #include "qdebug.h"
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
 #include "qdesktopwidget.h"
+#endif
 #include "qelapsedtimer.h"
 #include "qevent.h"
 #include "qimage.h"
@@ -47,7 +49,6 @@
 #include "qscreen.h"
 #include "qtimer.h"
 #include <qapplication.h>
-#include <qdesktopwidget.h>
 #include <qevent.h>
 #include <qlabel.h>
 #include <qpointer.h>
@@ -669,7 +670,11 @@ void VipTipContainer::reuseTip(const QString& text, int msecDisplayTime)
 void VipTipContainer::paintEvent(QPaintEvent* ev)
 {
 	QStyleOption opt;
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
 	opt.init(this);
+#else
+	opt.initFrom(this);
+#endif
 	QPainter p(this);
 	style()->drawPrimitive(QStyle::PE_Widget, &opt, &p, this);
 	QWidget::paintEvent(ev);
@@ -679,7 +684,11 @@ void VipTipContainer::resizeEvent(QResizeEvent* e)
 {
 	QStyleHintReturnMask frameMask;
 	QStyleOption option;
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
 	option.init(this);
+#else
+	option.initFrom(this);
+#endif
 	if (style()->styleHint(QStyle::SH_ToolTip_Mask, &option, this, &frameMask))
 		setMask(frameMask.region);
 
@@ -692,8 +701,13 @@ void VipTipContainer::mouseMoveEvent(QMouseEvent* e)
 		return;
 	// forward to parent
 	if (parentWidget()) {
-		QPoint pos = parentWidget()->mapFromGlobal(e->screenPos().toPoint());
-		QMouseEvent evt(e->type(), pos, e->screenPos(), e->button(), e->buttons(), e->modifiers());
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
+		QPoint global = e->screenPos().toPoint();
+#else
+		QPoint global = e->globalPosition().toPoint();
+#endif
+		QPoint pos = parentWidget()->mapFromGlobal(global);
+		QMouseEvent evt(e->type(), pos, global, e->button(), e->buttons(), e->modifiers());
 		QCoreApplication::sendEvent(parent(), &evt);
 	}
 
@@ -702,7 +716,11 @@ void VipTipContainer::mouseMoveEvent(QMouseEvent* e)
 
 	if (rect.isNull())
 		return;
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
 	QPoint pos = e->globalPos();
+#else
+	QPoint pos = e->globalPosition().toPoint();
+#endif
 	if (widget)
 		pos = widget->mapFromGlobal(pos);
 	if (!rect.contains(pos))

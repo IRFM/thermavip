@@ -1,7 +1,7 @@
 /**
  * BSD 3-Clause License
  *
- * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ * Copyright (c) 2025, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Leo Dubus, Erwan Grelier
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -211,8 +211,8 @@ private Q_SLOTS:
 	void checked();
 
 private:
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 class VipPlayer2D;
@@ -227,7 +227,7 @@ public:
 	void setPlayer(VipPlayer2D*);
 	void updateSceneModels();
 	VipMultiNDArray createH5ShapeAttributes(const QVariant& background);
-	QList<VipShape> openShapes(const QString& filename, VipPlayer2D* pl, bool remove_old = true);
+	VipShapeList openShapes(const QString& filename, VipPlayer2D* pl, bool remove_old = true);
 	VipPlotSceneModel* lastSelected() const;
 	QGraphicsScene* scene() const;
 	VipPlayer2D* player() const;
@@ -259,10 +259,10 @@ private Q_SLOTS:
 	void recomputeAttributes();
 
 private:
-	// void populateStatistics(VipPlayer2D *, const QList<VipShape> & shapes);
+	// void populateStatistics(VipPlayer2D *, const VipShapeList & shapes);
 
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 class VIP_GUI_EXPORT VipShapeButton : public QToolButton
@@ -385,8 +385,8 @@ private Q_SLOTS:
 
 private:
 	void cleanStates();
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 /// @}

@@ -1,7 +1,7 @@
 /**
  * BSD 3-Clause License
  *
- * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ * Copyright (c) 2025, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Leo Dubus, Erwan Grelier
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -42,8 +42,12 @@
 #include "VipStandardProcessing.h"
 #include "VipUniqueId.h"
 #include "VipXmlArchive.h"
+#include "VipSearchLineEdit.h"
 
-#include <qapplication.h>
+#include <QApplication>
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
+#include <QDesktopWidget>
+#endif
 
 QBrush vipWidgetTextBrush(QWidget* w)
 {
@@ -77,8 +81,7 @@ QStringList vipAvailableSkins()
 	return QStringList();
 }
 
-#include <QApplication>
-#include <QDesktopWidget>
+
 
 bool vipLoadSkin(const QString& skin_name)
 {
@@ -234,13 +237,10 @@ public:
 
 VipFileSharedMemory::VipFileSharedMemory()
 {
-	m_data = new PrivateData();
+	VIP_CREATE_PRIVATE_DATA(d_data);
 }
 
-VipFileSharedMemory::~VipFileSharedMemory()
-{
-	delete m_data;
-}
+VipFileSharedMemory::~VipFileSharedMemory() {}
 
 VipFileSharedMemory& VipFileSharedMemory::instance()
 {
@@ -250,14 +250,14 @@ VipFileSharedMemory& VipFileSharedMemory::instance()
 
 bool VipFileSharedMemory::addFilesToOpen(const QStringList& lst, bool new_workspace)
 {
-	if (!m_data->file_memory.isAttached()) {
-		m_data->file_memory.setKey("Thermavip_Files");
-		if (!m_data->file_memory.attach()) {
-			if (!m_data->file_memory.create(200000))
+	if (!d_data->file_memory.isAttached()) {
+		d_data->file_memory.setKey("Thermavip_Files");
+		if (!d_data->file_memory.attach()) {
+			if (!d_data->file_memory.create(200000))
 				return false;
-			m_data->file_memory.lock();
-			memset(m_data->file_memory.data(), 0, m_data->file_memory.size());
-			m_data->file_memory.unlock();
+			d_data->file_memory.lock();
+			memset(d_data->file_memory.data(), 0, d_data->file_memory.size());
+			d_data->file_memory.unlock();
 		}
 	}
 
@@ -266,48 +266,48 @@ bool VipFileSharedMemory::addFilesToOpen(const QStringList& lst, bool new_worksp
 	stream << new_workspace;
 	stream << lst;
 
-	if (!m_data->file_memory.lock())
+	if (!d_data->file_memory.lock())
 		return false;
 
 	int size = ar.size();
-	memcpy(m_data->file_memory.data(), &size, sizeof(int));
-	memcpy((char*)m_data->file_memory.data() + sizeof(int), ar.data(), ar.size());
-	m_data->file_memory.unlock();
+	memcpy(d_data->file_memory.data(), &size, sizeof(int));
+	memcpy((char*)d_data->file_memory.data() + sizeof(int), ar.data(), ar.size());
+	d_data->file_memory.unlock();
 	return true;
 }
 
 QStringList VipFileSharedMemory::retrieveFilesToOpen(bool* new_workspace)
 {
-	if (!m_data->file_memory.isAttached()) {
-		m_data->file_memory.setKey("Thermavip_Files");
-		if (!m_data->file_memory.attach()) {
-			if (!m_data->file_memory.create(200000))
+	if (!d_data->file_memory.isAttached()) {
+		d_data->file_memory.setKey("Thermavip_Files");
+		if (!d_data->file_memory.attach()) {
+			if (!d_data->file_memory.create(200000))
 				return QStringList();
-			m_data->file_memory.lock();
-			memset(m_data->file_memory.data(), 0, m_data->file_memory.size());
-			m_data->file_memory.unlock();
+			d_data->file_memory.lock();
+			memset(d_data->file_memory.data(), 0, d_data->file_memory.size());
+			d_data->file_memory.unlock();
 		}
 	}
 
-	if (!m_data->file_memory.lock())
+	if (!d_data->file_memory.lock())
 		return QStringList();
 
 	int size = 0;
-	memcpy(&size, m_data->file_memory.data(), sizeof(int));
+	memcpy(&size, d_data->file_memory.data(), sizeof(int));
 	if (!size) {
-		m_data->file_memory.unlock();
+		d_data->file_memory.unlock();
 		return QStringList();
 	}
 
-	QByteArray ar = QByteArray::fromRawData((char*)m_data->file_memory.data() + sizeof(int), m_data->file_memory.size() - sizeof(int));
+	QByteArray ar = QByteArray::fromRawData((char*)d_data->file_memory.data() + sizeof(int), d_data->file_memory.size() - sizeof(int));
 	QDataStream stream(ar);
 	QStringList res;
 	bool nw = false;
 	stream >> nw;
 	stream >> res;
-	memset(m_data->file_memory.data(), 0, m_data->file_memory.size());
+	memset(d_data->file_memory.data(), 0, d_data->file_memory.size());
 
-	m_data->file_memory.unlock();
+	d_data->file_memory.unlock();
 
 	if (new_workspace)
 		*new_workspace = nw;
@@ -316,9 +316,9 @@ QStringList VipFileSharedMemory::retrieveFilesToOpen(bool* new_workspace)
 
 bool VipFileSharedMemory::hasThermavipInstance()
 {
-	if (!m_data->file_memory.isAttached()) {
-		m_data->file_memory.setKey("Thermavip_Files");
-		return m_data->file_memory.attach();
+	if (!d_data->file_memory.isAttached()) {
+		d_data->file_memory.setKey("Thermavip_Files");
+		return d_data->file_memory.attach();
 	}
 	return true;
 }
@@ -369,6 +369,7 @@ public:
 	bool displayExactPixels;
 	bool dirty;
 	bool setAndApply;
+	bool inSessionLoading{ false };
 	VipLinearColorMap::StandardColorMap playerColorScale;
 	Vip::PlayerLegendPosition legendPosition;
 	VipValueToTime::DisplayType displayType;
@@ -387,69 +388,69 @@ public:
 
 VipGuiDisplayParamaters::VipGuiDisplayParamaters(VipMainWindow* win)
 {
-	m_data = new PrivateData();
-	m_data->setAndApply = true;
+	VIP_CREATE_PRIVATE_DATA(d_data);
+	d_data->setAndApply = true;
 
-	m_data->shapePen = QPen(QColor(Qt::black), 1);
-	m_data->shapeBrush = QBrush(QColor(255, 0, 0, 70));
-	m_data->shapeComponents = VipPlotShape::Background | VipPlotShape::Border | VipPlotShape::Id;
+	d_data->shapePen = QPen(QColor(Qt::black), 1);
+	d_data->shapeBrush = QBrush(QColor(255, 0, 0, 70));
+	d_data->shapeComponents = VipPlotShape::Background | VipPlotShape::Border | VipPlotShape::Id;
 
-	m_data->itemPaletteFactor = 0;
-	m_data->playerColorScale = VipLinearColorMap::Jet;
-	m_data->videoPlayerShowAxis = true;
-	m_data->displayTimeOffset = false;
-	m_data->legendPosition = Vip::LegendBottom;
-	m_data->showPlayerToolBar = true;
-	m_data->showTimeMarkerAlways = false;
-	m_data->globalColorScale = false;
-	m_data->flatHistogramStrength = 1;
-	m_data->dirty = false;
-	m_data->displayType = VipValueToTime::Double;
+	d_data->itemPaletteFactor = 0;
+	d_data->playerColorScale = VipLinearColorMap::Jet;
+	d_data->videoPlayerShowAxis = true;
+	d_data->displayTimeOffset = false;
+	d_data->legendPosition = Vip::LegendBottom;
+	d_data->showPlayerToolBar = true;
+	d_data->showTimeMarkerAlways = false;
+	d_data->globalColorScale = false;
+	d_data->flatHistogramStrength = 1;
+	d_data->dirty = false;
+	d_data->displayType = VipValueToTime::Double;
 
-	m_data->videoRenderingStrategy = VipBaseGraphicsView::Raster;
-	m_data->plotRenderingStrategy = VipBaseGraphicsView::Raster;
+	d_data->videoRenderingStrategy = VipBaseGraphicsView::Raster;
+	d_data->plotRenderingStrategy = VipBaseGraphicsView::Raster;
 
-	m_data->displayExactPixels = false;
+	d_data->displayExactPixels = false;
 
-	m_data->defaultPlotWidget = new VipPlotWidget2D(win);
-	m_data->defaultPlotWidget->hide();
-	m_data->resetPlotWidget = new VipPlotWidget2D(win);
-	m_data->resetPlotWidget->hide();
-	m_data->defaultArea = m_data->defaultPlotWidget->area(); // new VipPlotArea2D();
-	m_data->defaultArea->setVisible(true);
-	m_data->defaultArea->grid()->setVisible(false);
-	// m_data->defaultArea->titleAxis()->setVisible(true);
-	m_data->defaultCurve = new VipPlotCurve();
-	m_data->defaultCurve->setPen(QPen(Qt::blue, 1.5));
-	m_data->defaultCurve->setBrush(QBrush(QColor(0, 0, 255, 200), Qt::NoBrush));
-	m_data->defaultCurve->setRawData(VipPointVector() << QPointF(3, 3) << QPointF(6, 6) << QPointF(9, 4) << QPointF(12, 7));
+	d_data->defaultPlotWidget = new VipPlotWidget2D(win);
+	d_data->defaultPlotWidget->hide();
+	d_data->resetPlotWidget = new VipPlotWidget2D(win);
+	d_data->resetPlotWidget->hide();
+	d_data->defaultArea = d_data->defaultPlotWidget->area(); // new VipPlotArea2D();
+	d_data->defaultArea->setVisible(true);
+	//d_data->defaultArea->grid()->setVisible(false);
+	// d_data->defaultArea->titleAxis()->setVisible(true);
+	d_data->defaultCurve = new VipPlotCurve();
+	d_data->defaultCurve->setPen(QPen(Qt::blue, 1.5));
+	d_data->defaultCurve->setBrush(QBrush(QColor(0, 0, 255, 200), Qt::NoBrush));
+	d_data->defaultCurve->setRawData(VipPointVector() << VipPoint(3, 3) << VipPoint(6, 6) << VipPoint(9, 4) << VipPoint(12, 7));
 	VipSymbol* s = new VipSymbol();
 	s->setSize(QSizeF(9, 9));
 	s->setStyle(VipSymbol::Ellipse);
 	s->setBrush(QBrush(Qt::blue));
 	s->setPen(QPen(QColor(Qt::blue).darker(120)));
-	m_data->defaultCurve->setSymbol(s);
+	d_data->defaultCurve->setSymbol(s);
 
 #ifdef Q_OS_WIN
-	m_data->editorFont.setFixedPitch(true);
-	m_data->editorFont.setFamily("Consolas");
-	m_data->editorFont.setPointSize(10);
+	d_data->editorFont.setFixedPitch(true);
+	d_data->editorFont.setFamily("Consolas");
+	d_data->editorFont.setPointSize(10);
 #else
 	// Use a font embeded within Thermavip
-	m_data->editorFont.setFixedPitch(true);
-	m_data->editorFont.setFamily("Inconsolata");
-	m_data->editorFont.setPointSize(13);
+	d_data->editorFont.setFixedPitch(true);
+	d_data->editorFont.setFamily("Inconsolata");
+	d_data->editorFont.setPointSize(13);
 #endif
 
 	connect(this, SIGNAL(changed()), this, SLOT(delaySaveToFile()), Qt::QueuedConnection);
 
 	// use the one in Thermavip installation if more recent
-	QFileInfo current = vipGetDataDirectory() + "gui_settings.xml";
+	QFileInfo current( vipGetDataDirectory() + "gui_settings.xml");
 	QString apppath = QFileInfo(vipAppCanonicalPath()).canonicalPath();
 	apppath.replace("\\", "/");
 	if (!apppath.endsWith("/"))
 		apppath += "/";
-	QFileInfo thermavip = apppath + "gui_settings.xml";
+	QFileInfo thermavip( apppath + "gui_settings.xml");
 	// vip_debug("current: %s\n", current.canonicalFilePath().toLatin1().data());
 	// vip_debug("thermavip: %s, %s\n", thermavip.canonicalFilePath().toLatin1().data(), (apppath + "gui_settings.xml").toLatin1().data());
 	if (thermavip.exists() && (!current.exists() || current.lastModified() < thermavip.lastModified())) {
@@ -460,18 +461,17 @@ VipGuiDisplayParamaters::VipGuiDisplayParamaters(VipMainWindow* win)
 		QFile::copy(thermavip.canonicalFilePath(), current.canonicalFilePath());
 	}
 
-	m_data->setAndApply = false;
+	d_data->setAndApply = false;
 	restore();
-	m_data->setAndApply = true;
+	d_data->setAndApply = true;
 }
 
 VipGuiDisplayParamaters::~VipGuiDisplayParamaters()
 {
-	if (m_data->defaultArea)
-		delete m_data->defaultArea.data();
-	if (m_data->defaultCurve)
-		delete m_data->defaultCurve.data();
-	delete m_data;
+	if (d_data->defaultArea)
+		delete d_data->defaultArea.data();
+	if (d_data->defaultCurve)
+		delete d_data->defaultCurve.data();
 }
 
 VipGuiDisplayParamaters* VipGuiDisplayParamaters::instance(VipMainWindow* win)
@@ -482,21 +482,21 @@ VipGuiDisplayParamaters* VipGuiDisplayParamaters::instance(VipMainWindow* win)
 
 QPen VipGuiDisplayParamaters::shapeBorderPen()
 {
-	return m_data->shapePen;
+	return d_data->shapePen;
 }
 QBrush VipGuiDisplayParamaters::shapeBackgroundBrush()
 {
-	return m_data->shapeBrush;
+	return d_data->shapeBrush;
 }
 VipPlotShape::DrawComponents VipGuiDisplayParamaters::shapeDrawComponents()
 {
-	return m_data->shapeComponents;
+	return d_data->shapeComponents;
 }
 
 void VipGuiDisplayParamaters::setShapeBorderPen(const QPen& pen)
 {
-	m_data->shapePen = pen;
-	if (m_data->setAndApply) {
+	d_data->shapePen = pen;
+	if (d_data->setAndApply) {
 
 		QList<VipPlayer2D*> players = VipUniqueId::objects<VipPlayer2D>();
 		for (int i = 0; i < players.size(); ++i) {
@@ -510,8 +510,8 @@ void VipGuiDisplayParamaters::setShapeBorderPen(const QPen& pen)
 }
 void VipGuiDisplayParamaters::setShapeBackgroundBrush(const QBrush& brush)
 {
-	m_data->shapeBrush = brush;
-	if (m_data->setAndApply) {
+	d_data->shapeBrush = brush;
+	if (d_data->setAndApply) {
 		QList<VipPlayer2D*> players = VipUniqueId::objects<VipPlayer2D>();
 		for (int i = 0; i < players.size(); ++i) {
 			QList<VipPlotSceneModel*> models = players[i]->plotSceneModels();
@@ -524,8 +524,8 @@ void VipGuiDisplayParamaters::setShapeBackgroundBrush(const QBrush& brush)
 }
 void VipGuiDisplayParamaters::setShapeDrawComponents(const VipPlotShape::DrawComponents& c)
 {
-	m_data->shapeComponents = c;
-	if (m_data->setAndApply) {
+	d_data->shapeComponents = c;
+	if (d_data->setAndApply) {
 		QList<VipPlayer2D*> players = VipUniqueId::objects<VipPlayer2D>();
 		for (int i = 0; i < players.size(); ++i) {
 			QList<VipPlotSceneModel*> models = players[i]->plotSceneModels();
@@ -539,11 +539,11 @@ void VipGuiDisplayParamaters::setShapeDrawComponents(const VipPlotShape::DrawCom
 
 int VipGuiDisplayParamaters::itemPaletteFactor() const
 {
-	return m_data->itemPaletteFactor;
+	return d_data->itemPaletteFactor;
 }
 void VipGuiDisplayParamaters::setItemPaletteFactor(int factor)
 {
-	m_data->itemPaletteFactor = factor;
+	d_data->itemPaletteFactor = factor;
 
 	// retrieve the color palette from the global style sheet
 	QVariant palette = VipGlobalStyleSheet::cstyleSheet().findProperty("VipAbstractPlotArea", "colorpalette");
@@ -568,7 +568,7 @@ void VipGuiDisplayParamaters::setItemPaletteFactor(int factor)
 		VipGlobalStyleSheet::styleSheet().setProperty("VipAbstractPlotArea", "colorpalette", QVariant::fromValue(name));
 	}
 
-	if (m_data->setAndApply) {
+	if (d_data->setAndApply) {
 		// apply palette
 		QList<VipAbstractPlayer*> players = VipUniqueId::objects<VipAbstractPlayer>();
 		for (int i = 0; i < players.size(); ++i)
@@ -579,13 +579,13 @@ void VipGuiDisplayParamaters::setItemPaletteFactor(int factor)
 
 bool VipGuiDisplayParamaters::videoPlayerShowAxes() const
 {
-	return m_data->videoPlayerShowAxis;
+	return d_data->videoPlayerShowAxis;
 }
 void VipGuiDisplayParamaters::setVideoPlayerShowAxes(bool enable)
 {
-	if (enable != m_data->videoPlayerShowAxis) {
-		m_data->videoPlayerShowAxis = enable;
-		if (m_data->setAndApply) {
+	if (enable != d_data->videoPlayerShowAxis) {
+		d_data->videoPlayerShowAxis = enable;
+		if (d_data->setAndApply) {
 			QList<VipVideoPlayer*> players = VipUniqueId::objects<VipVideoPlayer>();
 			for (int i = 0; i < players.size(); ++i) {
 				players[i]->showAxes(enable);
@@ -597,14 +597,14 @@ void VipGuiDisplayParamaters::setVideoPlayerShowAxes(bool enable)
 
 Vip::PlayerLegendPosition VipGuiDisplayParamaters::legendPosition() const
 {
-	return m_data->legendPosition;
+	return d_data->legendPosition;
 }
 
 void VipGuiDisplayParamaters::setLegendPosition(Vip::PlayerLegendPosition pos)
 {
-	if (pos != m_data->legendPosition) {
-		m_data->legendPosition = pos;
-		if (m_data->setAndApply) {
+	if (pos != d_data->legendPosition) {
+		d_data->legendPosition = pos;
+		if (d_data->setAndApply) {
 			QList<VipPlotPlayer*> players = VipUniqueId::objects<VipPlotPlayer>();
 			for (int i = 0; i < players.size(); ++i)
 				players[i]->setLegendPosition(pos);
@@ -615,9 +615,9 @@ void VipGuiDisplayParamaters::setLegendPosition(Vip::PlayerLegendPosition pos)
 
 void VipGuiDisplayParamaters::setAlwaysShowTimeMarker(bool enable)
 {
-	if (enable != m_data->showTimeMarkerAlways) {
-		m_data->showTimeMarkerAlways = enable;
-		if (m_data->setAndApply) {
+	if (enable != d_data->showTimeMarkerAlways) {
+		d_data->showTimeMarkerAlways = enable;
+		if (d_data->setAndApply) {
 			QList<VipPlotPlayer*> players = VipUniqueId::objects<VipPlotPlayer>();
 			for (int i = 0; i < players.size(); ++i)
 				players[i]->setTimeMarkerAlwaysVisible(enable);
@@ -628,9 +628,9 @@ void VipGuiDisplayParamaters::setAlwaysShowTimeMarker(bool enable)
 
 void VipGuiDisplayParamaters::setPlotTitleInside(bool enable)
 {
-	if (m_data->defaultArea->titleAxis()->titleInside() != enable) {
-		m_data->defaultArea->titleAxis()->setTitleInside(enable);
-		if (m_data->setAndApply) {
+	if (d_data->defaultArea->titleAxis()->titleInside() != enable) {
+		d_data->defaultArea->titleAxis()->setTitleInside(enable);
+		if (d_data->setAndApply) {
 			QList<VipPlotPlayer*> players = VipUniqueId::objects<VipPlotPlayer>();
 			for (int i = 0; i < players.size(); ++i)
 				players[i]->plotWidget2D()->area()->titleAxis()->setTitleInside(enable);
@@ -641,9 +641,9 @@ void VipGuiDisplayParamaters::setPlotTitleInside(bool enable)
 }
 void VipGuiDisplayParamaters::setPlotGridVisible(bool visible)
 {
-	if (m_data->defaultArea->grid()->isVisible() != visible) {
-		m_data->defaultArea->grid()->setVisible(visible);
-		if (m_data->setAndApply) {
+	if (d_data->defaultArea->grid()->isVisible() != visible) {
+		d_data->defaultArea->grid()->setVisible(visible);
+		if (d_data->setAndApply) {
 			QList<VipPlotPlayer*> players = VipUniqueId::objects<VipPlotPlayer>();
 			for (int i = 0; i < players.size(); ++i)
 				players[i]->showGrid(visible);
@@ -655,9 +655,9 @@ void VipGuiDisplayParamaters::setPlotGridVisible(bool visible)
 
 void VipGuiDisplayParamaters::setGlobalColorScale(bool enable)
 {
-	if (m_data->globalColorScale != enable) {
-		m_data->globalColorScale = enable;
-		if (m_data->setAndApply) {
+	if (d_data->globalColorScale != enable) {
+		d_data->globalColorScale = enable;
+		if (d_data->setAndApply) {
 			VipDisplayArea* a = vipGetMainWindow()->displayArea();
 			for (int i = 0; i < a->count(); ++i)
 				a->widget(i)->setUseGlobalColorMap(enable);
@@ -669,10 +669,10 @@ void VipGuiDisplayParamaters::setGlobalColorScale(bool enable)
 
 void VipGuiDisplayParamaters::setFlatHistogramStrength(int strength)
 {
-	if (m_data->flatHistogramStrength != strength) {
-		m_data->flatHistogramStrength = strength;
+	if (d_data->flatHistogramStrength != strength) {
+		d_data->flatHistogramStrength = strength;
 		QList<VipVideoPlayer*> players = VipUniqueId::objects<VipVideoPlayer>();
-		if (m_data->setAndApply) {
+		if (d_data->setAndApply) {
 			for (int i = 0; i < players.size(); ++i)
 				players[i]->setFlatHistogramStrength(strength);
 
@@ -687,7 +687,7 @@ void VipGuiDisplayParamaters::setFlatHistogramStrength(int strength)
 
 void VipGuiDisplayParamaters::autoScaleAll()
 {
-	if (m_data->setAndApply) {
+	if (d_data->setAndApply) {
 		QList<VipPlotPlayer*> lst = vipListCast<VipPlotPlayer*>(VipPlayerLifeTime::instance()->players());
 		for (int i = 0; i < lst.size(); ++i) {
 			lst[i]->setAutoScale(true);
@@ -697,15 +697,15 @@ void VipGuiDisplayParamaters::autoScaleAll()
 
 VipPlotArea2D* VipGuiDisplayParamaters::defaultPlotArea() const
 {
-	if (!m_data->defaultArea->isVisible())
-		m_data->defaultArea->setVisible(true);
-	return m_data->defaultArea;
+	if (!d_data->defaultArea->isVisible())
+		d_data->defaultArea->setVisible(true);
+	return d_data->defaultArea;
 }
 VipPlotCurve* VipGuiDisplayParamaters::defaultCurve() const
 {
-	if (!m_data->defaultCurve->isVisible())
-		m_data->defaultCurve->setVisible(true);
-	return m_data->defaultCurve;
+	if (!d_data->defaultCurve->isVisible())
+		d_data->defaultCurve->setVisible(true);
+	return d_data->defaultCurve;
 }
 
 #include "VipMultiPlotWidget2D.h"
@@ -778,52 +778,52 @@ void VipGuiDisplayParamaters::applyDefaultCurve(VipPlotCurve* c)
 
 bool VipGuiDisplayParamaters::displayTimeOffset() const
 {
-	return m_data->displayTimeOffset;
+	return d_data->displayTimeOffset;
 }
 void VipGuiDisplayParamaters::setDisplayTimeOffset(bool enable)
 {
-	m_data->displayTimeOffset = enable;
+	d_data->displayTimeOffset = enable;
 	emitChanged();
 }
 
 VipValueToTime::DisplayType VipGuiDisplayParamaters::displayType() const
 {
-	return m_data->displayType;
+	return d_data->displayType;
 }
 void VipGuiDisplayParamaters::setDisplayType(VipValueToTime::DisplayType type)
 {
-	m_data->displayType = type;
+	d_data->displayType = type;
 	emitChanged();
 }
 
 QFont VipGuiDisplayParamaters::defaultEditorFont() const
 {
-	return m_data->editorFont;
+	return d_data->editorFont;
 }
 bool VipGuiDisplayParamaters::alwaysShowTimeMarker() const
 {
-	return m_data->showTimeMarkerAlways;
+	return d_data->showTimeMarkerAlways;
 }
 bool VipGuiDisplayParamaters::globalColorScale() const
 {
-	return m_data->globalColorScale;
+	return d_data->globalColorScale;
 }
 
 void VipGuiDisplayParamaters::setDefaultEditorFont(const QFont& font)
 {
-	m_data->editorFont = font;
+	d_data->editorFont = font;
 	emitChanged();
 }
 
 bool VipGuiDisplayParamaters::titleVisible() const
 {
-	return m_data->defaultArea->titleAxis()->isVisible();
+	return d_data->defaultArea->titleAxis()->isVisible();
 }
 
 void VipGuiDisplayParamaters::setTitleVisible(bool vis)
 {
-	m_data->defaultArea->titleAxis()->setVisible(vis);
-	if (m_data->setAndApply) {
+	d_data->defaultArea->titleAxis()->setVisible(vis);
+	if (d_data->setAndApply) {
 		QList<VipPlayer2D*> pls = vipListCast<VipPlayer2D*>(VipPlayerLifeTime::instance()->players());
 		for (int i = 0; i < pls.size(); ++i) {
 			pls[i]->plotWidget2D()->area()->titleAxis()->setVisible(vis);
@@ -834,23 +834,23 @@ void VipGuiDisplayParamaters::setTitleVisible(bool vis)
 
 VipTextStyle VipGuiDisplayParamaters::titleTextStyle() const
 {
-	if (!m_data->titleTextStyle) {
+	if (!d_data->titleTextStyle) {
 
-		m_data->titleTextStyle.reset(new VipTextStyle(m_data->resetPlotWidget->area()->titleAxis()->title().textStyle()));
+		d_data->titleTextStyle.reset(new VipTextStyle(d_data->resetPlotWidget->area()->titleAxis()->title().textStyle()));
 		// use global style sheet
 		QVariant color = VipGlobalStyleSheet::cstyleSheet().findProperty("VipAbstractPlotArea", "title-color");
 		if (!color.isNull())
-			m_data->titleTextStyle->setTextPen(QPen(color.value<QColor>()));
+			d_data->titleTextStyle->setTextPen(QPen(color.value<QColor>()));
 		QVariant font = VipGlobalStyleSheet::cstyleSheet().findProperty("VipAbstractPlotArea", "title-font");
 		if (!font.isNull())
-			m_data->titleTextStyle->setFont((font.value<QFont>()));
+			d_data->titleTextStyle->setFont((font.value<QFont>()));
 	}
-	return *m_data->titleTextStyle;
+	return *d_data->titleTextStyle;
 }
 
 void VipGuiDisplayParamaters::setTitleTextStyle(const VipTextStyle& style)
 {
-	m_data->titleTextStyle.reset(new VipTextStyle(style));
+	d_data->titleTextStyle.reset(new VipTextStyle(style));
 
 	VipGlobalStyleSheet::styleSheet().setProperty("VipAbstractPlotArea", "title-color", QVariant::fromValue(style.textPen().color()));
 	VipGlobalStyleSheet::styleSheet().setProperty("VipAbstractPlotArea", "title-font", QVariant::fromValue(style.font()));
@@ -861,7 +861,7 @@ void VipGuiDisplayParamaters::setTitleTextStyle(const VipTextStyle& style)
 	VipGlobalStyleSheet::styleSheet().setProperty("VipPlotItem", "title-color", QVariant::fromValue(style.textPen().color()));
 	VipGlobalStyleSheet::styleSheet().setProperty("VipPlotItem", "title-font", QVariant::fromValue(style.font()));
 
-	if (m_data->setAndApply)
+	if (d_data->setAndApply)
 		vipGetMainWindow()->update();
 
 	emitChanged();
@@ -874,7 +874,7 @@ void VipGuiDisplayParamaters::setTitleTextStyle2(const VipText& text)
 
 void VipGuiDisplayParamaters::setDefaultTextStyle(const VipTextStyle& style)
 {
-	m_data->defaultTextStyle.reset(new VipTextStyle(style));
+	d_data->defaultTextStyle.reset(new VipTextStyle(style));
 
 	VipGlobalStyleSheet::styleSheet().setProperty("VipLegend", "color", QVariant::fromValue(style.textPen().color()));
 	VipGlobalStyleSheet::styleSheet().setProperty("VipLegend", "font", QVariant::fromValue(style.font()));
@@ -885,7 +885,7 @@ void VipGuiDisplayParamaters::setDefaultTextStyle(const VipTextStyle& style)
 	VipGlobalStyleSheet::styleSheet().setProperty("VipPlotItem", "color", QVariant::fromValue(style.textPen().color()));
 	VipGlobalStyleSheet::styleSheet().setProperty("VipPlotItem", "font", QVariant::fromValue(style.font()));
 
-	if (m_data->setAndApply)
+	if (d_data->setAndApply)
 		vipGetMainWindow()->update();
 
 	emitChanged();
@@ -896,18 +896,18 @@ void VipGuiDisplayParamaters::setDefaultTextStyle2(const VipText& t)
 }
 VipTextStyle VipGuiDisplayParamaters::defaultTextStyle() const
 {
-	if (!m_data->defaultTextStyle) {
+	if (!d_data->defaultTextStyle) {
 
-		m_data->defaultTextStyle.reset(new VipTextStyle(m_data->resetPlotWidget->area()->titleAxis()->title().textStyle()));
+		d_data->defaultTextStyle.reset(new VipTextStyle(d_data->resetPlotWidget->area()->titleAxis()->title().textStyle()));
 		// use global style sheet
 		QVariant color = VipGlobalStyleSheet::cstyleSheet().findProperty("VipAbstractScale", "label-color");
 		if (!color.isNull())
-			m_data->defaultTextStyle->setTextPen(QPen(color.value<QColor>()));
+			d_data->defaultTextStyle->setTextPen(QPen(color.value<QColor>()));
 		QVariant font = VipGlobalStyleSheet::cstyleSheet().findProperty("VipAbstractPlotArea", "label-font");
 		if (!font.isNull())
-			m_data->defaultTextStyle->setFont((font.value<QFont>()));
+			d_data->defaultTextStyle->setFont((font.value<QFont>()));
 	}
-	return *m_data->defaultTextStyle;
+	return *d_data->defaultTextStyle;
 }
 
 QColor VipGuiDisplayParamaters::defaultPlayerTextColor() const
@@ -916,40 +916,49 @@ QColor VipGuiDisplayParamaters::defaultPlayerTextColor() const
 	if (v.isNull())
 		return Qt::black;
 	return v.value<QColor>();
-	// return m_data->resetPlotWidget->titlePen().color();
+	// return d_data->resetPlotWidget->titlePen().color();
 }
 
 QColor VipGuiDisplayParamaters::defaultPlayerBackgroundColor() const
 {
-	return m_data->resetPlotWidget->backgroundColor();
+	return d_data->resetPlotWidget->backgroundColor();
+}
+
+void VipGuiDisplayParamaters::setInSessionLoading(bool enable)
+{
+	d_data->inSessionLoading = enable;
+}
+bool VipGuiDisplayParamaters::inSessionLoading() const
+{
+	return d_data->inSessionLoading;
 }
 
 bool VipGuiDisplayParamaters::hasTitleTextStyle() const
 {
-	return m_data->titleTextStyle;
+	return d_data->titleTextStyle.data();
 }
 bool VipGuiDisplayParamaters::hasDefaultTextStyle() const
 {
-	return m_data->defaultTextStyle;
+	return d_data->defaultTextStyle.data();
 }
 
 int VipGuiDisplayParamaters::flatHistogramStrength() const
 {
-	return m_data->flatHistogramStrength;
+	return d_data->flatHistogramStrength;
 }
 
 VipLinearColorMap::StandardColorMap VipGuiDisplayParamaters::playerColorScale() const
 {
-	return m_data->playerColorScale;
+	return d_data->playerColorScale;
 }
 void VipGuiDisplayParamaters::setPlayerColorScale(VipLinearColorMap::StandardColorMap map)
 {
-	if (m_data->setAndApply) {
+	if (d_data->setAndApply) {
 		// apply color scale to video players
 		QList<VipVideoPlayer*> vplayers = VipUniqueId::objects<VipVideoPlayer>();
 		for (int i = 0; i < vplayers.size(); ++i) {
 			if (vplayers[i]->spectrogram()->colorMap() && qobject_cast<VipLinearColorMap*>(vplayers[i]->spectrogram()->colorMap()->colorMap()) &&
-			    static_cast<VipLinearColorMap*>(vplayers[i]->spectrogram()->colorMap()->colorMap())->type() == m_data->playerColorScale) {
+			    static_cast<VipLinearColorMap*>(vplayers[i]->spectrogram()->colorMap()->colorMap())->type() == d_data->playerColorScale) {
 				bool flat_hist = vplayers[i]->spectrogram()->colorMap()->useFlatHistogram();
 				int str = vplayers[i]->spectrogram()->colorMap()->flatHistogramStrength();
 				vplayers[i]->spectrogram()->colorMap()->setColorMap(vplayers[i]->spectrogram()->colorMap()->gripInterval(), VipLinearColorMap::createColorMap(map));
@@ -965,24 +974,24 @@ void VipGuiDisplayParamaters::setPlayerColorScale(VipLinearColorMap::StandardCol
 			d->widget(i)->colorMapAxis()->setFlatHistogramStrength(flatHistogramStrength());
 		}
 	}
-	m_data->playerColorScale = map;
+	d_data->playerColorScale = map;
 	emitChanged();
 }
 
 int VipGuiDisplayParamaters::videoRenderingStrategy() const
 {
-	return m_data->videoRenderingStrategy;
+	return d_data->videoRenderingStrategy;
 }
 int VipGuiDisplayParamaters::plotRenderingStrategy() const
 {
-	return m_data->plotRenderingStrategy;
+	return d_data->plotRenderingStrategy;
 }
 
 void VipGuiDisplayParamaters::setVideoRenderingStrategy(int st)
 {
-	if (st != m_data->videoRenderingStrategy) {
-		m_data->videoRenderingStrategy = st;
-		if (m_data->setAndApply) {
+	if (st != d_data->videoRenderingStrategy) {
+		d_data->videoRenderingStrategy = st;
+		if (d_data->setAndApply) {
 			QList<VipVideoPlayer*> pls = vipListCast<VipVideoPlayer*>(VipPlayerLifeTime::instance()->players());
 			for (int i = 0; i < pls.size(); ++i) {
 				if (st >= 0 && st <= VipBaseGraphicsView::OpenGLThread)
@@ -994,9 +1003,9 @@ void VipGuiDisplayParamaters::setVideoRenderingStrategy(int st)
 }
 void VipGuiDisplayParamaters::setPlotRenderingStrategy(int st)
 {
-	if (st != m_data->plotRenderingStrategy) {
-		m_data->plotRenderingStrategy = st;
-		if (m_data->setAndApply) {
+	if (st != d_data->plotRenderingStrategy) {
+		d_data->plotRenderingStrategy = st;
+		if (d_data->setAndApply) {
 			QList<VipPlotPlayer*> pls = vipListCast<VipPlotPlayer*>(VipPlayerLifeTime::instance()->players());
 			for (int i = 0; i < pls.size(); ++i) {
 				if (st >= 0 && st <= VipBaseGraphicsView::OpenGLThread)
@@ -1009,23 +1018,24 @@ void VipGuiDisplayParamaters::setPlotRenderingStrategy(int st)
 
 void VipGuiDisplayParamaters::setDisplayExactPixels(bool enable)
 {
-	if (enable != m_data->displayExactPixels) {
-		m_data->displayExactPixels = enable;
+	if (enable != d_data->displayExactPixels) {
+		d_data->displayExactPixels = enable;
 		emitChanged();
 	}
 }
 bool VipGuiDisplayParamaters::displayExactPixels() const
 {
-	return m_data->displayExactPixels;
+	return d_data->displayExactPixels;
 }
 
 void VipGuiDisplayParamaters::apply(QWidget* w)
 {
+	
 	if (VipAbstractPlayer* pl = qobject_cast<VipAbstractPlayer*>(w)) {
 
 		if (VipVideoPlayer* v = qobject_cast<VipVideoPlayer*>(pl)) {
 			if (v->spectrogram()->colorMap() && qobject_cast<VipLinearColorMap*>(v->spectrogram()->colorMap()->colorMap()) &&
-			    static_cast<VipLinearColorMap*>(v->spectrogram()->colorMap()->colorMap())->type() == m_data->playerColorScale) {
+			    static_cast<VipLinearColorMap*>(v->spectrogram()->colorMap()->colorMap())->type() == d_data->playerColorScale) {
 				bool flat_hist = v->spectrogram()->colorMap()->useFlatHistogram();
 				v->spectrogram()->colorMap()->setColorMap(v->spectrogram()->colorMap()->gripInterval(), VipLinearColorMap::createColorMap(playerColorScale()));
 				v->spectrogram()->colorMap()->setUseFlatHistogram(flat_hist);
@@ -1035,16 +1045,16 @@ void VipGuiDisplayParamaters::apply(QWidget* w)
 			v->plotWidget2D()->area()->titleAxis()->setVisible(defaultPlotArea()->titleAxis()->isVisible());
 			v->setFlatHistogramStrength(flatHistogramStrength());
 
-			if (m_data->videoRenderingStrategy >= 0 && m_data->videoRenderingStrategy <= VipBaseGraphicsView::OpenGLThread)
-				v->plotWidget2D()->setRenderingMode((VipBaseGraphicsView::RenderingMode)m_data->videoRenderingStrategy);
+			if (d_data->videoRenderingStrategy >= 0 && d_data->videoRenderingStrategy <= VipBaseGraphicsView::OpenGLThread)
+				v->plotWidget2D()->setRenderingMode((VipBaseGraphicsView::RenderingMode)d_data->videoRenderingStrategy);
 		}
 
 		if (VipPlotPlayer* p = qobject_cast<VipPlotPlayer*>(pl)) {
 			p->setLegendPosition(this->legendPosition());
-			// p->valueToTimeButton()->setDisplayTimeOffset(m_data->displayTimeOffset);
+			// p->valueToTimeButton()->setDisplayTimeOffset(d_data->displayTimeOffset);
 			p->setTimeMarkerAlwaysVisible(alwaysShowTimeMarker());
-			if (m_data->plotRenderingStrategy >= 0 && m_data->plotRenderingStrategy <= VipBaseGraphicsView::OpenGLThread)
-				p->plotWidget2D()->setRenderingMode((VipBaseGraphicsView::RenderingMode)m_data->plotRenderingStrategy);
+			if (d_data->plotRenderingStrategy >= 0 && d_data->plotRenderingStrategy <= VipBaseGraphicsView::OpenGLThread)
+				p->plotWidget2D()->setRenderingMode((VipBaseGraphicsView::RenderingMode)d_data->plotRenderingStrategy);
 			applyDefaultPlotArea(qobject_cast<VipPlotArea2D*>(p->plotWidget2D()->area()));
 		}
 	}
@@ -1068,9 +1078,9 @@ void VipGuiDisplayParamaters::reset()
 	setPlotRenderingStrategy(VipBaseGraphicsView::Raster);
 	// setTitleTextStyle(VipTextStyle());
 	// setDefaultTextStyle(VipTextStyle());
-	m_data->titleTextStyle.reset();
-	m_data->defaultTextStyle.reset();
-	m_data->defaultPlotWidget->setStyleSheet(QString());
+	d_data->titleTextStyle.reset();
+	d_data->defaultTextStyle.reset();
+	d_data->defaultPlotWidget->setStyleSheet(QString());
 	QList<VipPlayer2D*> pls = vipListCast<VipPlayer2D*>(VipPlayerLifeTime::instance()->players());
 	for (int i = 0; i < pls.size(); ++i)
 		pls[i]->setStyleSheet(QString());
@@ -1107,13 +1117,13 @@ bool VipGuiDisplayParamaters::restore(const QString& file)
 
 void VipGuiDisplayParamaters::emitChanged()
 {
-	m_data->dirty = true;
+	d_data->dirty = true;
 	Q_EMIT changed();
 }
 void VipGuiDisplayParamaters::delaySaveToFile()
 {
-	if (m_data->dirty) {
-		m_data->dirty = false;
+	if (d_data->dirty) {
+		d_data->dirty = false;
 		save();
 	}
 }
@@ -1127,6 +1137,7 @@ static void serialize_VipGuiDisplayParamaters(VipGuiDisplayParamaters* inst, Vip
 		if (arch.start("VipGuiDisplayParamaters")) {
 			arch.save();
 			QString version = arch.read("version").toString();
+			
 			if (version.isEmpty())
 				arch.restore();
 
@@ -1135,6 +1146,10 @@ static void serialize_VipGuiDisplayParamaters(VipGuiDisplayParamaters* inst, Vip
 			QList<int> ivers;
 			for (int i = 0; i < vers.size(); ++i)
 				ivers.append(vers[i].toInt());
+
+			int major = ivers.size() ? ivers.front() : 0;
+			if (major < 5)
+				return;
 
 			arch.save();
 			QString skin;
@@ -1885,6 +1900,10 @@ QList<VipAbstractPlayer*> vipCreatePlayersFromStringList(const QStringList& lst,
 		for (int i = 0; i < devices.size(); ++i)
 			delete devices[i];
 	}
+	else {
+		// Add to history
+		VipDeviceOpenHelper::addToHistory(lst);
+	}
 	return res;
 }
 
@@ -1922,6 +1941,10 @@ QList<VipAbstractPlayer*> vipCreatePlayersFromPaths(const VipPathList& paths, Vi
 		// delete devices
 		for (int i = 0; i < devices.size(); ++i)
 			delete devices[i];
+	}
+	else {
+		// Add to history
+		VipDeviceOpenHelper::addToHistory(paths.paths());
 	}
 	return res;
 }

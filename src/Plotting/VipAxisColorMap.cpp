@@ -1,7 +1,7 @@
 /**
  * BSD 3-Clause License
  *
- * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ * Copyright (c) 2025, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Leo Dubus, Erwan Grelier
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -79,7 +79,7 @@ public:
 VipAxisColorMap::VipAxisColorMap(Alignment pos, QGraphicsItem* parent)
   : VipAxisBase(pos, parent)
 {
-	d_data = new PrivateData();
+	VIP_CREATE_PRIVATE_DATA(d_data);
 	d_data->colorBar.colorMap = nullptr;
 	d_data->colorBar.width = 15;
 	d_data->colorBar.isEnabled = true;
@@ -172,8 +172,6 @@ VipAxisColorMap::~VipAxisColorMap()
 {
 	if (d_data->colorBar.colorMap)
 		delete d_data->colorBar.colorMap;
-
-	delete d_data;
 }
 
 void VipAxisColorMap::reset(Alignment align)
@@ -471,6 +469,7 @@ void VipAxisColorMap::setUseFlatHistogram(bool enable)
 		VipLinearColorMap* map = static_cast<VipLinearColorMap*>(d_data->colorBar.colorMap);
 		if (map->useFlatHistogram() != enable) {
 			map->setUseFlatHistogram(enable);
+			this->update();
 			Q_EMIT useFlatHistogramChanged(enable);
 		}
 	}
@@ -488,6 +487,7 @@ void VipAxisColorMap::setFlatHistogramStrength(int strength)
 		VipLinearColorMap* map = static_cast<VipLinearColorMap*>(d_data->colorBar.colorMap);
 		if (map->flatHistogramStrength() != strength) {
 			map->setFlatHistogramStrength(strength);
+			this->update();
 			Q_EMIT useFlatHistogramChanged(useFlatHistogram());
 		}
 	}

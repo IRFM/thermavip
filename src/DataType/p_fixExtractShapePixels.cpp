@@ -1,7 +1,7 @@
 /**
  * BSD 3-Clause License
  *
- * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ * Copyright (c) 2025, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Leo Dubus, Erwan Grelier
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -42,8 +42,8 @@
 
 struct _QRegionPrivate
 {
-	int numRects;
-	int innerArea;
+	qsizetype numRects;
+	qsizetype innerArea;
 	QVector<QRect> rects;
 	QRect extents;
 	QRect innerRect;
@@ -82,7 +82,7 @@ struct _QRegionPrivate
 
 	inline void updateInnerRect(const QRect& rect)
 	{
-		const int area = rect.width() * rect.height();
+		const qsizetype area = rect.width() * rect.height();
 		if (area > innerArea) {
 			innerArea = area;
 			innerRect = rect;
@@ -208,7 +208,7 @@ void _QRegionPrivate::intersect(const QRect& rect)
 
 	QRect* dest = rects.data();
 	const QRect* src = dest;
-	int n = numRects;
+	qsizetype n = numRects;
 	numRects = 0;
 	while (n--) {
 		*dest = qt_rect_intersect_normalized(*src++, r);
@@ -289,7 +289,7 @@ void _QRegionPrivate::append(const _QRegionPrivate* r)
 
 	QRect* destRect = rects.data() + numRects;
 	const QRect* srcRect = r->rects.constData();
-	int numAppend = r->numRects;
+	qsizetype numAppend = r->numRects;
 
 	// try merging
 	{
@@ -321,7 +321,7 @@ void _QRegionPrivate::append(const _QRegionPrivate* r)
 
 	// append rectangles
 	if (numAppend > 0) {
-		const int newNumRects = numRects + numAppend;
+		const qsizetype newNumRects = numRects + numAppend;
 		if (newNumRects > rects.size()) {
 			rects.resize(newNumRects);
 			destRect = rects.data() + numRects;
@@ -358,8 +358,8 @@ void _QRegionPrivate::prepend(const _QRegionPrivate* r)
 
 	vectorize();
 
-	int numPrepend = r->numRects;
-	int numSkip = 0;
+	qsizetype numPrepend = r->numRects;
+	qsizetype numSkip = 0;
 
 	// try merging
 	{
@@ -390,7 +390,7 @@ void _QRegionPrivate::prepend(const _QRegionPrivate* r)
 	}
 
 	if (numPrepend > 0) {
-		const int newNumRects = numRects + numPrepend;
+		const qsizetype newNumRects = numRects + numPrepend;
 		if (newNumRects > rects.size())
 			rects.resize(newNumRects);
 
@@ -502,14 +502,14 @@ void _QRegionPrivate::selfTest() const
 		return;
 	}
 
-	for (int i = 0; i < numRects; ++i) {
+	for (qsizetype i = 0; i < numRects; ++i) {
 		const QRect r = rects.at(i);
 		if ((r.width() * r.height()) > innerArea)
 			qDebug() << "selfTest(): innerRect" << innerRect << '<' << r;
 	}
 
 	QRect r = rects.first();
-	for (int i = 1; i < numRects; ++i) {
+	for (qsizetype i = 1; i < numRects; ++i) {
 		const QRect r2 = rects.at(i);
 		Q_ASSERT(!r2.isEmpty());
 		if (r2.y() == r.y()) {
@@ -524,8 +524,8 @@ void _QRegionPrivate::selfTest() const
 }
 #endif // QT_REGION_DEBUG
 
-typedef void (*OverlapFunc)(_QRegionPrivate& dest, const QRect* r1, const QRect* r1End, const QRect* r2, const QRect* r2End, int y1, int y2);
-typedef void (*NonOverlapFunc)(_QRegionPrivate& dest, const QRect* r, const QRect* rEnd, int y1, int y2);
+typedef void (*OverlapFunc)(_QRegionPrivate& dest, const QRect* r1, const QRect* r1End, const QRect* r2, const QRect* r2End, qsizetype y1, qsizetype y2);
+typedef void (*NonOverlapFunc)(_QRegionPrivate& dest, const QRect* r, const QRect* rEnd, qsizetype y1, qsizetype y2);
 
 static bool EqualRegion(const _QRegionPrivate* r1, const _QRegionPrivate* r2);
 static void UnionRegion(const _QRegionPrivate* reg1, const _QRegionPrivate* reg2, _QRegionPrivate& dest);
@@ -754,14 +754,14 @@ static void UnionRectWithRegion(const QRect* rect, const _QRegionPrivate* source
 //         - dest.numRects will be decreased.
 //
 // -----------------------------------------------------------------------
-static int miCoalesce(_QRegionPrivate& dest, int prevStart, int curStart)
+static qsizetype miCoalesce(_QRegionPrivate& dest, qsizetype prevStart, qsizetype curStart)
 {
 	QRect* pPrevBox;  // Current box in previous band
 	QRect* pCurBox;	  // Current box in current band
 	QRect* pRegEnd;	  // End of region
-	int curNumRects;  // Number of rectangles in current band
-	int prevNumRects; // Number of rectangles in previous band
-	int bandY1;	  // Y1 coordinate for current band
+	qsizetype curNumRects;  // Number of rectangles in current band
+	qsizetype prevNumRects; // Number of rectangles in previous band
+	qsizetype bandY1;	  // Y1 coordinate for current band
 	QRect* rData = dest.rects.data();
 
 	pRegEnd = rData + dest.numRects;
@@ -879,8 +879,8 @@ static void miRegionOp(_QRegionPrivate& dest, const _QRegionPrivate* reg1, const
 	const QRect* r2End;	// End of 2d region
 	int ybot;		// Bottom of intersection
 	int ytop;		// Top of intersection
-	int prevBand;		// Index of start of previous band in dest
-	int curBand;		// Index of start of current band in dest
+	qsizetype prevBand;		// Index of start of previous band in dest
+	qsizetype curBand;		// Index of start of current band in dest
 	const QRect* r1BandEnd; // End of current band in r1
 	const QRect* r2BandEnd; // End of current band in r2
 	int top;		// Top of non-overlapping band
@@ -1040,7 +1040,7 @@ static void miRegionOp(_QRegionPrivate& dest, const _QRegionPrivate* reg1, const
 	//
 	// Only do this stuff if the number of rectangles allocated is more than
 	// twice the number of rectangles in the region (a simple optimization).
-	if (qMax(4, dest.numRects) < (dest.rects.size() >> 1))
+	if (qMax((qsizetype)4, dest.numRects) < (dest.rects.size() >> 1))
 		dest.rects.resize(dest.numRects);
 }
 
@@ -1064,7 +1064,7 @@ static void miRegionOp(_QRegionPrivate& dest, const _QRegionPrivate* reg1, const
 //
 // -----------------------------------------------------------------------
 
-static void miUnionNonO(_QRegionPrivate& dest, const QRect* r, const QRect* rEnd, int y1, int y2)
+static void miUnionNonO(_QRegionPrivate& dest, const QRect* r, const QRect* rEnd, qsizetype y1, qsizetype y2)
 {
 	QRect* pNextRect;
 
@@ -1097,7 +1097,7 @@ static void miUnionNonO(_QRegionPrivate& dest, const QRect* r, const QRect* rEnd
 //
 // -----------------------------------------------------------------------
 
-static void miUnionO(_QRegionPrivate& dest, const QRect* r1, const QRect* r1End, const QRect* r2, const QRect* r2End, int y1, int y2)
+static void miUnionO(_QRegionPrivate& dest, const QRect* r1, const QRect* r1End, const QRect* r2, const QRect* r2End, qsizetype y1, qsizetype y2)
 {
 	QRect* pNextRect;
 
@@ -1200,7 +1200,7 @@ static bool EqualRegion(const _QRegionPrivate* r1, const _QRegionPrivate* r2)
 	else {
 		const QRect* rr1 = (r1->numRects == 1) ? &r1->extents : r1->rects.constData();
 		const QRect* rr2 = (r2->numRects == 1) ? &r2->extents : r2->rects.constData();
-		for (int i = 0; i < r1->numRects; ++i, ++rr1, ++rr2) {
+		for (qsizetype i = 0; i < r1->numRects; ++i, ++rr1, ++rr2) {
 			if (*rr1 != *rr2)
 				return false;
 		}
@@ -1292,7 +1292,7 @@ static bool EqualRegion(const _QRegionPrivate* r1, const _QRegionPrivate* r2)
 // we traverse an entire pixel.
 #define BRESINITPGON(dy, x1, x2, xStart, d, m, m1, incr1, incr2)                                                                                                                                       \
 	{                                                                                                                                                                                              \
-		int dx; /* local storage*/                                                                                                                                                             \
+		qsizetype dx; /* local storage*/                                                                                                                                                             \
                                                                                                                                                                                                        \
 		/*if the edge is horizontal, then it is ignored  and assumed not to be processed.  Otherwise, do this stuff. */                                                                        \
 		if ((dy) != 0) {                                                                                                                                                                       \
@@ -1346,10 +1346,10 @@ static bool EqualRegion(const _QRegionPrivate* r1, const _QRegionPrivate* r2)
 //    register declarations.
 typedef struct
 {
-	int minor_axis;	  // minor axis
-	int d;		  // decision variable
-	int m, m1;	  // slope and slope+1
-	int incr1, incr2; // error increments
+	qsizetype minor_axis;	  // minor axis
+	qsizetype d;		  // decision variable
+	qsizetype m, m1;	  // slope and slope+1
+	qsizetype incr1, incr2; // error increments
 } BRESINFO;
 
 #define BRESINITPGONSTRUCT(dmaj, min1, min2, bres) BRESINITPGON(dmaj, min1, min2, bres.minor_axis, bres.d, bres.m, bres.m1, bres.incr1, bres.incr2)
@@ -1406,8 +1406,8 @@ typedef struct
 
 typedef struct _EdgeTableEntry
 {
-	int ymax;			  // ycoord at which we exit this edge.
-	int ClockWise;			  // flag for winding number rule
+	qsizetype ymax;			  // ycoord at which we exit this edge.
+	qsizetype ClockWise;			  // flag for winding number rule
 	BRESINFO bres;			  // Bresenham info to run the edge
 	struct _EdgeTableEntry* next;	  // next in the list
 	struct _EdgeTableEntry* back;	  // for insertion sort
@@ -1416,15 +1416,15 @@ typedef struct _EdgeTableEntry
 
 typedef struct _ScanLineList
 {
-	int scanline;		    // the scanline represented
+	qsizetype scanline;		    // the scanline represented
 	EdgeTableEntry* edgelist;   // header node
 	struct _ScanLineList* next; // next in the list
 } ScanLineList;
 
 typedef struct
 {
-	int ymax;		// ymax for the polygon
-	int ymin;		// ymin for the polygon
+	qsizetype ymax;		// ymax for the polygon
+	qsizetype ymin;		// ymin for the polygon
 	ScanLineList scanlines; // header node
 } EdgeTable;
 
@@ -1543,25 +1543,25 @@ typedef struct _ScanLineListBlock
 struct QRegionSpan
 {
 	QRegionSpan() {}
-	QRegionSpan(int x1_, int x2_)
+	QRegionSpan(qsizetype x1_, qsizetype x2_)
 	  : x1(x1_)
 	  , x2(x2_)
 	{
 	}
 
-	int x1;
-	int x2;
-	int width() const { return x2 - x1; }
+	qsizetype x1;
+	qsizetype x2;
+	qsizetype width() const { return x2 - x1; }
 };
 
 Q_DECLARE_TYPEINFO(QRegionSpan, Q_PRIMITIVE_TYPE);
 
-static inline void flushRow(const QRegionSpan* spans, int y, int numSpans, _QRegionPrivate* reg, int* lastRow, int* extendTo, bool* needsExtend)
+static inline void flushRow(const QRegionSpan* spans, qsizetype y, qsizetype numSpans, _QRegionPrivate* reg, qsizetype* lastRow, qsizetype* extendTo, bool* needsExtend)
 {
 	QRect* regRects = reg->rects.data() + *lastRow;
 	bool canExtend = reg->rects.size() - *lastRow == numSpans && !(*needsExtend && *extendTo + 1 != y) && (*needsExtend || regRects[0].y() + regRects[0].height() == y);
 
-	for (int i = 0; i < numSpans && canExtend; ++i) {
+	for (qsizetype i = 0; i < numSpans && canExtend; ++i) {
 		if (regRects[i].x() != spans[i].x1 || regRects[i].right() != spans[i].x2 - 1)
 			canExtend = false;
 	}
@@ -1572,13 +1572,13 @@ static inline void flushRow(const QRegionSpan* spans, int y, int numSpans, _QReg
 	}
 	else {
 		if (*needsExtend) {
-			for (int i = 0; i < reg->rects.size() - *lastRow; ++i)
+			for (qsizetype i = 0; i < reg->rects.size() - *lastRow; ++i)
 				regRects[i].setBottom(*extendTo);
 		}
 
 		*lastRow = reg->rects.size();
 		reg->rects.reserve(*lastRow + numSpans);
-		for (int i = 0; i < numSpans; ++i)
+		for (qsizetype i = 0; i < numSpans; ++i)
 			reg->rects << QRect(spans[i].x1, y, spans[i].width(), 1);
 
 		if (spans[0].x1 < reg->extents.left())
@@ -1606,17 +1606,17 @@ _QRegionPrivate* qt_imageToRegion(const QImage& image)
 	const uchar zero = 0;
 	bool little = image.format() == QImage::Format_MonoLSB;
 
-	int x, y;
+	qsizetype x, y;
 	for (y = 0; y < image.height(); ++y) {
 		const uchar* line = image.constScanLine(y);
-		int w = image.width();
+		qsizetype w = image.width();
 		uchar all = zero;
-		int prev1 = -1;
+		qsizetype prev1 = -1;
 		for (x = 0; x < w;) {
 			uchar byte = line[x / 8];
 			if (x > w - 8 || byte != all) {
 				if (little) {
-					for (int b = 8; b > 0 && x < w; --b) {
+					for (qsizetype b = 8; b > 0 && x < w; --b) {
 						if (!(byte & 0x01) == !all) {
 							// More of the same
 						}
@@ -1635,7 +1635,7 @@ _QRegionPrivate* qt_imageToRegion(const QImage& image)
 					}
 				}
 				else {
-					for (int b = 8; b > 0 && x < w; --b) {
+					for (qsizetype b = 8; b > 0 && x < w; --b) {
 						if (!(byte & 0x80) == !all) {
 							// More of the same
 						}
@@ -1668,7 +1668,7 @@ _QRegionPrivate* qt_imageToRegion(const QImage& image)
 }
 
 /// Returns a QImage::Format_Mono image with the given size, and set the palette to Qt::white and Qt::black
-static QImage createEmptyMask(int width, int height)
+static QImage createEmptyMask(qsizetype width, qsizetype height)
 {
 	QImage bit(width, height, QImage::Format_MonoLSB);
 	bit.fill(Qt::color0);

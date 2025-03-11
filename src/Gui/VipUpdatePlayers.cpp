@@ -1,7 +1,7 @@
 /**
  * BSD 3-Clause License
  *
- * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ * Copyright (c) 2025, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Leo Dubus, Erwan Grelier
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -347,8 +347,8 @@ void VipUpdateVideoPlayer::cropAdded(const QPointF& start, const QPointF& end)
 			QPointF en(qMax(start.x(), end.x()), qMax(start.y(), end.y()));
 
 			VipImageCrop* crop = new VipImageCrop();
-			crop->setStartPosition(vipVector(st.y(), st.x()));
-			crop->setEndPosition(vipVector(en.y(), en.x()));
+			crop->setStartPosition(vipVector((qsizetype)st.y(), (qsizetype)st.x()));
+			crop->setEndPosition(vipVector((qsizetype)en.y(), (qsizetype)en.x()));
 			lst->append(crop);
 			lst->reload();
 		}
@@ -455,7 +455,7 @@ void VipUpdateVideoPlayer::updateMarkers()
 			VipSceneModel model = plot_scene->sceneModel();
 
 			QList<VipPlotShape*> plot_shapes = p->viewer()->area()->findItems<VipPlotShape*>(QString(), 2, 1);
-			QList<VipShape> shapes;
+			VipShapeList shapes;
 			double level = -1;
 			for (int i = 0; i < plot_shapes.size(); ++i) {
 				// if (plot_shapes[i]->rawData().type() != VipShape::Point)
@@ -674,6 +674,11 @@ static QList<QAction*> videoPlayerActions(VipPlotItem* item, VipVideoPlayer* pla
 
 static void updateVideoPlayer(VipVideoPlayer* player)
 {
+	// Find parent workspace
+	if (auto* wkp = VipDisplayPlayerArea::fromChildWidget(player)) {
+		// Set flat histogram if needed
+		player->setFlatHistogramColorScale(wkp->colorMapAxis()->useFlatHistogram());
+	}
 	if (player && !player->property("NoImageProcessing").toBool() && player->spectrogram()->property("VipDisplayObject").value<VipDisplayObject*>())
 		new VipUpdateVideoPlayer(player);
 }

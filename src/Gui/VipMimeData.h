@@ -1,7 +1,7 @@
 /**
  * BSD 3-Clause License
  *
- * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ * Copyright (c) 2025, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Leo Dubus, Erwan Grelier
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -39,6 +39,17 @@
 /// \addtogroup Gui
 /// @{
 
+
+
+/// @brief Base class for mime data in the Gui library.
+///
+/// VipMimeDataCoordinateSystem inherits VipPlotMimeData, therefore
+/// all the drop logic should be performed in the reimplementation of VipPlotMimeData::plotData().
+/// 
+/// The reimplementation of VipPlotMimeData::plotData() might return an empty list of VipPlotItem,
+/// which means that no items need to be dropped. However it might create new players using
+/// setPlayers() function.
+/// 
 class VIP_GUI_EXPORT VipMimeDataCoordinateSystem : public VipPlotMimeData
 {
 	Q_OBJECT
@@ -51,14 +62,19 @@ public:
 		setParent(parent);
 	}
 
+	/// @brief Returns the items to drop coordinate system
 	virtual VipCoordinateSystem::Type coordinateSystemType() const { return m_type; }
 	void setCoordinateSystem(VipCoordinateSystem::Type type) { m_type = type; }
+
+	/// @brief Returns the potential players that might have been created in VipPlotMimeData::plotData()
 	QList<VipAbstractPlayer*> players() const { return m_players; }
 
-	// help function, get the processing pool from a widget
+	/// @brief Helper function, get the processing pool from a widget.
+	/// Internally scans for a parent VipDisplayPlayerArea.
 	static VipProcessingPool* fromWidget(QWidget* drop_widget);
 
 protected:
+	/// @brief Set the players (if any) created by the reimplementation of VipPlotMimeData::plotData().
 	void setPlayers(const QList<VipAbstractPlayer*>& players) const { const_cast<QList<VipAbstractPlayer*>&>(m_players) = players; }
 
 private:
@@ -79,6 +95,8 @@ private:
 	VipProcessingObjectList m_procs;
 };
 
+
+/// @brief Mime data used to create new players based on a list of paths
 class VipMimeDataPaths : public VipMimeDataCoordinateSystem
 {
 public:
@@ -98,6 +116,7 @@ private:
 	QStringList m_paths;
 };
 
+/// @brief Mime data used to create new players based on a list of paths
 class VipMimeDataMapFile : public VipMimeDataCoordinateSystem
 {
 public:
@@ -120,7 +139,12 @@ private:
 
 #include <functional>
 
-template<class Return> // Return must inherit VipProcessingObject or be a QList<VipProcessingObject*>
+/// @brief Mime data used to create new players based on function object
+/// that returns a list of processings.
+/// 
+/// The return type must inherit VipProcessingObject or be a QList<VipProcessingObject*>.
+/// 
+template<class Return> 
 class VipMimeDataLazyEvaluation : public VipMimeDataCoordinateSystem
 {
 	template<class T>

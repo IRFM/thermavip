@@ -1,7 +1,7 @@
 /**
  * BSD 3-Clause License
  *
- * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ * Copyright (c) 2025, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Leo Dubus, Erwan Grelier
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -36,6 +36,8 @@
 
 #include <QSharedDataPointer>
 #include <QTextStream>
+#include <QVariant>
+#include <QIODevice>
 
 #include "VipConfig.h"
 #include "VipHybridVector.h"
@@ -58,7 +60,7 @@ namespace Vip
 	/// Data access type for VipNDArray inheriting classes and functors
 	enum AccessType
 	{
-		Flat = 0x01,	 //! access by flat position with operator[](int index)
+		Flat = 0x01,	 //! access by flat position with operator[](qsizetype index)
 		Position = 0x02, //! access by N-D position with operator()(const VectorType & pos)
 		Cwise = 0x04	 //! coefficient wise access supporting multi-threading
 	};
@@ -74,7 +76,7 @@ namespace detail
 	struct NullOperand
 	{
 		typedef NullType value_type;
-		static constexpr int access_type = 0;
+		static constexpr qsizetype access_type = 0;
 		static constexpr bool valid = true;
 		int dataType() const;
 		const VipNDArrayShape& shape() const;
@@ -112,15 +114,15 @@ struct VipIsReductor
 
 struct VipNDArrayHandle;
 /// Returns the global NullHandle pointer
-VIP_DATA_TYPE_EXPORT VipNDArrayHandle* vipNullHandlePtr();
+VIP_DATA_TYPE_EXPORT VipNDArrayHandle* vipNullHandlePtr() noexcept;
 /// Returns true if given metatype is arithmetic
-VIP_DATA_TYPE_EXPORT bool vipIsArithmetic(uint data_type);
+VIP_DATA_TYPE_EXPORT bool vipIsArithmetic(int data_type) noexcept;
 /// Returns true if given metatype is a complex number (either complex_d or complex_f)
-VIP_DATA_TYPE_EXPORT bool vipIsComplex(uint data_type);
+VIP_DATA_TYPE_EXPORT bool vipIsComplex(int data_type) noexcept;
 /// Returns true if metatype \a from can be converted to \a to using the internal cast function
-VIP_DATA_TYPE_EXPORT bool vipCanConvertStdTypes(uint from, uint to);
+VIP_DATA_TYPE_EXPORT bool vipCanConvertStdTypes(int from, int to) noexcept;
 /// Returns true if metatype \a from can be converted to \a to based on QVariant::canConvert
-VIP_DATA_TYPE_EXPORT bool vipCanConvert(uint from, uint to);
+VIP_DATA_TYPE_EXPORT bool vipCanConvert(int from, int to);
 
 /// VipNDArrayHandle is the base structure used by #VipNDArray, and provides an abstract interface to manipulate N-dimensions arrays.
 /// Since #VipNDArray uses Copy On Write (COW), VipNDArrayHandle is a shared data structure.
@@ -143,16 +145,16 @@ struct VIP_DATA_TYPE_EXPORT VipNDArrayHandle : public QSharedData
 	// the array strides
 	VipNDArrayShape strides;
 	// the array flat size
-	int size;
+	qsizetype size;
 	// the array data
 	void* opaque;
 	// custom deleter function, only used with StdHandle
 	vip_deleter_type deleter;
 
-	VipNDArrayHandle();
+	VipNDArrayHandle() noexcept;
 	/// Destructor.
 	///  Should destroy the underlying opaque data (if any)
-	virtual ~VipNDArrayHandle();
+	virtual ~VipNDArrayHandle() noexcept;
 
 	/// Returns the handle type (one of HandleType enum)
 	virtual int handleType() const = 0;
@@ -183,7 +185,7 @@ struct VIP_DATA_TYPE_EXPORT VipNDArrayHandle : public QSharedData
 	/// Returns the data type name (like "int" or "double")
 	virtual const char* dataName() const = 0;
 	/// Returns the pixel data size (returns 4 for integer 32bits, 8 for double type, etc.)
-	virtual int dataSize() const = 0;
+	virtual qsizetype dataSize() const = 0;
 	/// Returns the pixel data type (like QMetaType::Int or qMetaTypeId<complex_f>())
 	virtual int dataType() const = 0;
 
@@ -254,7 +256,7 @@ namespace detail
 		virtual bool realloc(const VipNDArrayShape&) { return false; }
 		virtual bool resize(const VipNDArrayShape&, const VipNDArrayShape&, VipNDArrayHandle*, Vip::InterpolationType, const VipNDArrayShape&, const VipNDArrayShape&) const { return false; }
 		virtual const char* dataName() const { return nullptr; }
-		virtual int dataSize() const { return 1; }
+		virtual qsizetype dataSize() const { return 1; }
 		virtual int dataType() const { return 0; }
 		virtual bool canExport(int) const { return false; }
 		virtual bool canImport(int) const { return false; }
@@ -294,60 +296,36 @@ namespace detail
 			detach();
 			return *d;
 		}
-		VIP_ALWAYS_INLINE const U& operator*() const noexcept
-		{
-			return *d;
-		}
+		VIP_ALWAYS_INLINE const U& operator*() const noexcept { return *d; }
 		VIP_ALWAYS_INLINE U* operator->()
 		{
 			detach();
 			return d;
 		}
-		VIP_ALWAYS_INLINE const U* operator->() const noexcept
-		{
-			return d;
-		}
+		VIP_ALWAYS_INLINE const U* operator->() const noexcept { return d; }
 		VIP_ALWAYS_INLINE operator U*()
 		{
 			detach();
 			return d;
 		}
-		VIP_ALWAYS_INLINE operator const U*() const noexcept
-		{
-			return d;
-		}
+		VIP_ALWAYS_INLINE operator const U*() const noexcept { return d; }
 		VIP_ALWAYS_INLINE U* data()
 		{
 			detach();
 			return d;
 		}
-		VIP_ALWAYS_INLINE const U* data() const noexcept
-		{
-			return d;
-		}
-		VIP_ALWAYS_INLINE const U* constData() const noexcept
-		{
-			return d;
-		}
-		VIP_ALWAYS_INLINE bool unique() const noexcept
-		{
-			return static_cast<int>(d->ref) == 1;
-		}
+		VIP_ALWAYS_INLINE const U* data() const noexcept { return d; }
+		VIP_ALWAYS_INLINE const U* constData() const noexcept { return d; }
+		VIP_ALWAYS_INLINE bool unique() const noexcept { return static_cast<int>(d->ref) == 1; }
 
-		VIP_ALWAYS_INLINE bool operator==(const SharedDataPointer& other) const noexcept
-		{
-			return d == other.d;
-		}
-		VIP_ALWAYS_INLINE bool operator!=(const SharedDataPointer& other) const noexcept
-		{
-			return d != other.d;
-		}
+		VIP_ALWAYS_INLINE bool operator==(const SharedDataPointer& other) const noexcept { return d == other.d; }
+		VIP_ALWAYS_INLINE bool operator!=(const SharedDataPointer& other) const noexcept { return d != other.d; }
 
-		inline SharedDataPointer()
+		inline SharedDataPointer() noexcept
 		  : d(nullptr)
 		{
 		}
-		inline ~SharedDataPointer()
+		inline ~SharedDataPointer() noexcept
 		{
 			if (d && d->handleType() != VipNDArrayHandle::Null) {
 				if (!d->ref.deref())
@@ -391,15 +369,9 @@ namespace detail
 			return *this;
 		}
 
-		inline bool operator!() const noexcept
-		{
-			return !d;
-		}
+		inline bool operator!() const noexcept { return !d; }
 
-		inline void swap(SharedDataPointer& other) noexcept
-		{
-			std::swap(d, other.d);
-		}
+		inline void swap(SharedDataPointer& other) noexcept { std::swap(d, other.d); }
 
 	private:
 		void detach_helper()
@@ -523,7 +495,7 @@ namespace detail
 	{
 		bool own; // tells if the data pointer should be deleted
 
-		void deleteInternal()
+		void deleteInternal() noexcept
 		{
 			if (opaque && own) {
 				if (deleter)
@@ -534,7 +506,7 @@ namespace detail
 			opaque = nullptr;
 		}
 
-		StdHandle()
+		StdHandle() noexcept
 		  : own(true)
 		{
 		}
@@ -587,8 +559,11 @@ namespace detail
 				    Vip::InterpolationType type,
 				    const VipNDArrayShape& out_start,
 				    const VipNDArrayShape& out_shape) const;
-		virtual const char* dataName() const { return QMetaType::typeName(qMetaTypeId<T>()); }
-		virtual int dataSize() const { return sizeof(T); }
+		virtual const char* dataName() const
+		{
+			return vipTypeName(qMetaTypeId<T>());
+		}
+		virtual qsizetype dataSize() const { return sizeof(T); }
 		virtual int dataType() const { return qMetaTypeId<T>(); }
 		virtual bool canExport(int data_type) const { return vipCanConvertStdTypes(qMetaTypeId<T>(), data_type) || vipCanConvert(qMetaTypeId<T>(), data_type); }
 		virtual bool canImport(int data_type) const { return vipCanConvertStdTypes(data_type, qMetaTypeId<T>()) || vipCanConvert(data_type, qMetaTypeId<T>()); }
@@ -681,7 +656,7 @@ namespace detail
 
 		virtual bool fill(const VipNDArrayShape& _start, const VipNDArrayShape& _shape, const QVariant& value)
 		{
-			if (!value.canConvert<T>())
+			if (!value.canConvert(VIP_META(qMetaTypeId<T>())))
 				return false;
 
 			vipInplaceArrayTransform(static_cast<T*>(opaque) + vipFlatOffset<false>(strides, _start), _shape, strides, VipFillTransform<T>(value.value<T>()));
@@ -768,7 +743,7 @@ namespace detail
 }
 
 /// Returns a NullHandle
-VIP_DATA_TYPE_EXPORT SharedHandle vipNullHandle();
+VIP_DATA_TYPE_EXPORT SharedHandle vipNullHandle() noexcept;
 /// Register a new #SharedHandle class for given type, or a NullHandle if the type was not registered.
 VIP_DATA_TYPE_EXPORT int vipRegisterArrayType(int handleType, int metaType, const SharedHandle& handle);
 /// Returns a SharedHandle object already allocated for given type, or a NullHandle if the type was not registered.
@@ -893,7 +868,7 @@ namespace detail
 			return handle->resize(_start + this->start, _shape, dst, type, out_start, out_shape);
 		}
 		virtual const char* dataName() const { return handle->dataName(); }
-		virtual int dataSize() const { return handle->dataSize(); }
+		virtual qsizetype dataSize() const { return handle->dataSize(); }
 		virtual int dataType() const { return handle->dataType(); }
 		virtual bool canExport(int type) const { return handle->canExport(type); }
 		virtual bool canImport(int type) const { return handle->canImport(type); }
@@ -966,7 +941,7 @@ namespace detail
 		void* saveOpaque = dst->opaque;
 		VipNDArrayShape saveShape = dst->shape;
 		VipNDArrayShape saveStrides = dst->strides;
-		int saveSize = dst->size;
+		qsizetype saveSize = dst->size;
 
 		dst->opaque = ((uchar*)dst->opaque) + vipFlatOffset<false>(dst->strides, out_start) * dst->dataSize();
 		dst->shape = out_shape;

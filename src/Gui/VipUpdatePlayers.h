@@ -1,7 +1,7 @@
 /**
  * BSD 3-Clause License
  *
- * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ * Copyright (c) 2025, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Leo Dubus, Erwan Grelier
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -38,7 +38,7 @@
 VipUpdateVideoPlayer is used to modify a VipVideoPlayer's content by adding new button for basic image processing.
 The buttons are automatically shown if the player displays a valid image.
 
-VipUpdateVideoPlayer add the following controls:
+VipUpdateVideoPlayer adds the following controls:
 - Vertical reflection
 - Horizontal reflection
 - Rotate 90 left
@@ -54,7 +54,7 @@ Local minimum/maximum are displayed for the whole image or for selected shapes u
 
 VipUpdateVideoPlayer is a good example on how to modify a VipVideoPlayer through a foreign class.
 */
-class VipUpdateVideoPlayer : public QObject
+class VIP_GUI_EXPORT VipUpdateVideoPlayer : public QObject
 {
 	Q_OBJECT
 
@@ -98,7 +98,7 @@ private:
 /**
 A VipPlotAreaFilter used to draw a cropping region
 */
-class VipDrawCropArea : public VipPlotAreaFilter
+class VIP_GUI_EXPORT VipDrawCropArea : public VipPlotAreaFilter
 {
 	Q_OBJECT
 public:
@@ -136,7 +136,7 @@ Q_SIGNALS:
 /// -	Display minimum/maximum marker over 2d curves
 /// -	Possibility to compute the distance between 2 points of a curve
 ///
-class VipUpdatePlotPlayer : public QObject
+class VIP_GUI_EXPORT VipUpdatePlotPlayer : public QObject
 {
 	Q_OBJECT
 
@@ -169,7 +169,7 @@ private:
 /**
 A VipPlotAreaFilter used to draw a line between 2 points
 */
-class VipDrawDistance2Points : public VipPlotAreaFilter
+class VIP_GUI_EXPORT VipDrawDistance2Points : public VipPlotAreaFilter
 {
 	Q_OBJECT
 public:
@@ -203,6 +203,5 @@ Q_SIGNALS:
 	*/
 	void distanceCreated(const VipPoint& start, const VipPoint& end);
 };
-
 
 #endif

@@ -1,7 +1,7 @@
 /**
  * BSD 3-Clause License
  *
- * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ * Copyright (c) 2025, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Leo Dubus, Erwan Grelier
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -272,7 +272,7 @@ public:
 		double angle = l1.angle() - l2.angle();
 
 		// bounding rect in axis coordinate
-		QRectF bounding = parentItem()->sceneMap()->invTransform(parentItem()->boundingRect()).boundingRect();
+		QRectF bounding = vipBoundingRect( parentItem()->sceneMap()->invTransform(parentItem()->boundingRect()));
 		// rotation center in axis coordinates
 		QPointF center = bounding.center();
 
@@ -297,7 +297,7 @@ public:
 			VipResizeItem* item = shapes[i];
 			if (item->isSelected() && item != _this && item != top && children.indexOf(item) < 0 && !hasSelectedResizeItem(item)) {
 				// compute new transform
-				QRectF b = shapes[i]->sceneMap()->invTransform(shapes[i]->boundingRect()).boundingRect();
+				QRectF b = vipBoundingRect(shapes[i]->sceneMap()->invTransform(shapes[i]->boundingRect()));
 				QPointF c = b.center();
 				QTransform t;
 				t.translate(c.x(), c.y());
@@ -336,10 +336,10 @@ public:
 	  , spacing(12)
 	  , minimumSize(std::numeric_limits<double>::epsilon() * 10, std::numeric_limits<double>::epsilon() * 10)
 	  , unitMoveAndResize(false)
+	  , autodelete(true)
 	  , aboutTo(false)
 	  , hasChanged(false)
 	  , expandToFullArea(false)
-	  , autodelete(true)
 	  , plotSelection(nullptr)
 	  , parent(nullptr)
 	  , rotate(nullptr)
@@ -422,7 +422,6 @@ VipResizeItem::~VipResizeItem()
 			d_data->managed[i]->deleteLater();
 		}
 	}
-	delete d_data;
 }
 
 void VipResizeItem::setCustomLeftResizer(const QPainterPath& p)

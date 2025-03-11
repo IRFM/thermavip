@@ -1,7 +1,7 @@
 /**
  * BSD 3-Clause License
  *
- * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ * Copyright (c) 2025, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Leo Dubus, Erwan Grelier
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -35,6 +35,9 @@
 #include "VipProgress.h"
 #include "VipStandardWidgets.h"
 #include "VipTextOutput.h"
+#ifdef VIP_WITH_HDF5
+#include "VipH5Archive.h"
+#endif
 
 #include <QCheckBox>
 #include <QGroupBox>
@@ -93,11 +96,11 @@ public:
 VipEditXMLSymbols::VipEditXMLSymbols(QWidget* parent)
   : VipBaseEditXMLSymbols(parent)
 {
-	m_data = new PrivateData();
-	m_data->list.setSelectionMode(QListWidget::ExtendedSelection);
+	VIP_CREATE_PRIVATE_DATA(d_data);
+	d_data->list.setSelectionMode(QListWidget::ExtendedSelection);
 
 	QVBoxLayout* lay = new QVBoxLayout();
-	lay->addWidget(&m_data->list);
+	lay->addWidget(&d_data->list);
 	lay->setContentsMargins(0, 0, 0, 0);
 
 	setLayout(lay);
@@ -105,13 +108,12 @@ VipEditXMLSymbols::VipEditXMLSymbols(QWidget* parent)
 
 VipEditXMLSymbols::~VipEditXMLSymbols()
 {
-	delete m_data;
 }
 
 void VipEditXMLSymbols::setEditableSymbols(const QList<VipEditableArchiveSymbol>& symbols)
 {
-	m_data->symbols = symbols;
-	m_data->list.clear();
+	d_data->symbols = symbols;
+	d_data->list.clear();
 
 	for (int i = 0; i < symbols.size(); ++i) {
 		SymbolWidget* w = new SymbolWidget();
@@ -125,23 +127,23 @@ void VipEditXMLSymbols::setEditableSymbols(const QList<VipEditableArchiveSymbol>
 		connect(&w->group, SIGNAL(valueChanged(int)), this, SLOT(valueChanged(int)));
 		// QLabel * w = new QLabel("ceci est un test");
 
-		QListWidgetItem* item = new QListWidgetItem(&m_data->list);
+		QListWidgetItem* item = new QListWidgetItem(&d_data->list);
 		item->setSizeHint(w->sizeHint());
-		m_data->list.addItem(item);
-		m_data->list.setItemWidget(item, w);
+		d_data->list.addItem(item);
+		d_data->list.setItemWidget(item, w);
 	}
 }
 
 const QList<VipEditableArchiveSymbol>& VipEditXMLSymbols::editableSymbols() const
 {
-	return m_data->symbols;
+	return d_data->symbols;
 }
 
 void VipEditXMLSymbols::applyToArchive(VipXArchive& arch)
 {
 	QList<VipEditableArchiveSymbol> symbols;
-	for (int i = 0; i < m_data->list.count(); ++i) {
-		SymbolWidget* w = static_cast<SymbolWidget*>(m_data->list.itemWidget(m_data->list.item(i)));
+	for (int i = 0; i < d_data->list.count(); ++i) {
+		SymbolWidget* w = static_cast<SymbolWidget*>(d_data->list.itemWidget(d_data->list.item(i)));
 		if (w->select.isChecked()) {
 			VipEditableArchiveSymbol symbol = w->symbol;
 			symbol.id = w->group.value();
@@ -154,9 +156,9 @@ void VipEditXMLSymbols::applyToArchive(VipXArchive& arch)
 
 void VipEditXMLSymbols::selectionChanged(bool checked)
 {
-	QList<QListWidgetItem*> items = m_data->list.selectedItems();
+	QList<QListWidgetItem*> items = d_data->list.selectedItems();
 	for (int i = 0; i < items.size(); ++i) {
-		SymbolWidget* w = static_cast<SymbolWidget*>(m_data->list.itemWidget(items[i]));
+		SymbolWidget* w = static_cast<SymbolWidget*>(d_data->list.itemWidget(items[i]));
 		if (w->select.isChecked() != checked) {
 			w->select.blockSignals(true);
 			w->select.setChecked(checked);
@@ -167,9 +169,9 @@ void VipEditXMLSymbols::selectionChanged(bool checked)
 
 void VipEditXMLSymbols::valueChanged(int value)
 {
-	QList<QListWidgetItem*> items = m_data->list.selectedItems();
+	QList<QListWidgetItem*> items = d_data->list.selectedItems();
 	for (int i = 0; i < items.size(); ++i) {
-		SymbolWidget* w = static_cast<SymbolWidget*>(m_data->list.itemWidget(items[i]));
+		SymbolWidget* w = static_cast<SymbolWidget*>(d_data->list.itemWidget(items[i]));
 		if (w->group.value() != value) {
 			w->group.blockSignals(true);
 			w->group.setValue(value);
@@ -192,80 +194,83 @@ public:
 VipExportSessionWidget::VipExportSessionWidget(QWidget* parent, bool export_current_area)
   : QWidget(parent)
 {
-	m_data = new PrivateData();
-	m_data->filename.setMode(VipFileName::Save);
-	m_data->filename.setFilters("Session file (*.session)");
-	m_data->filename.setTitle("Session file");
-	m_data->filename.setDefaultOpenDir(vipGetUserPerspectiveDirectory());
-	m_data->mainWindow.setText("Export the whole session");
-	m_data->currentArea.setText("Export the current workspace");
-	// m_data->currentPlayer.setText("Export the selected top level player");
-	m_data->showXMLSymbols.setTitle("Create an editable session file");
-	m_data->showXMLSymbols.setCheckable(true);
-	m_data->showXMLSymbols.setChecked(false);
-	m_data->showXMLSymbols.setFlat(true);
+	VIP_CREATE_PRIVATE_DATA(d_data);
+	d_data->filename.setMode(VipFileName::Save);
+#ifdef VIP_WITH_HDF5
+	d_data->filename.setFilters("Session file (*.session *.hsession)");
+#else
+	d_data->filename.setFilters("Session file (*.session)");
+#endif
+	d_data->filename.setTitle("Session file");
+	d_data->filename.setDefaultOpenDir(vipGetUserPerspectiveDirectory());
+	d_data->mainWindow.setText("Export the whole session");
+	d_data->currentArea.setText("Export the current workspace");
+	// d_data->currentPlayer.setText("Export the selected top level player");
+	d_data->showXMLSymbols.setTitle("Create an editable session file");
+	d_data->showXMLSymbols.setCheckable(true);
+	d_data->showXMLSymbols.setChecked(false);
+	d_data->showXMLSymbols.setFlat(true);
 
-	m_data->XMLSymbols = _edit_xml();
-	m_data->XMLSymbols->hide();
+	d_data->XMLSymbols = _edit_xml();
+	d_data->XMLSymbols->hide();
 
 	QVBoxLayout* lay = new QVBoxLayout();
-	lay->addWidget(&m_data->filename);
+	lay->addWidget(&d_data->filename);
 	lay->addWidget(VipLineWidget::createSunkenHLine());
-	lay->addWidget(&m_data->mainWindow);
-	lay->addWidget(&m_data->currentArea);
-	// lay->addWidget(&m_data->currentPlayer);
-	lay->addWidget(&m_data->showXMLSymbols);
-	lay->addWidget(m_data->XMLSymbols);
+	lay->addWidget(&d_data->mainWindow);
+	lay->addWidget(&d_data->currentArea);
+	// lay->addWidget(&d_data->currentPlayer);
+	lay->addWidget(&d_data->showXMLSymbols);
+	lay->addWidget(d_data->XMLSymbols);
 
 	setLayout(lay);
 
 	if (export_current_area)
-		m_data->currentArea.setChecked(true);
+		d_data->currentArea.setChecked(true);
 	else
-		m_data->mainWindow.setChecked(true);
+		d_data->mainWindow.setChecked(true);
 	exportTypeChanged();
 
-	connect(&m_data->showXMLSymbols, SIGNAL(clicked(bool)), m_data->XMLSymbols, SLOT(setVisible(bool)));
-	connect(&m_data->mainWindow, SIGNAL(clicked(bool)), this, SLOT(exportTypeChanged()));
-	connect(&m_data->currentArea, SIGNAL(clicked(bool)), this, SLOT(exportTypeChanged()));
+	connect(&d_data->showXMLSymbols, SIGNAL(clicked(bool)), d_data->XMLSymbols, SLOT(setVisible(bool)));
+	connect(&d_data->mainWindow, SIGNAL(clicked(bool)), this, SLOT(exportTypeChanged()));
+	connect(&d_data->currentArea, SIGNAL(clicked(bool)), this, SLOT(exportTypeChanged()));
 
 	this->setMinimumWidth(300);
 }
 
 VipExportSessionWidget::~VipExportSessionWidget()
 {
-	delete m_data;
 }
 
 bool VipExportSessionWidget::exportMainWindow() const
 {
-	return m_data->mainWindow.isChecked();
+	return d_data->mainWindow.isChecked();
 }
 bool VipExportSessionWidget::exportCurrentArea() const
 {
-	return m_data->currentArea.isChecked();
+	return d_data->currentArea.isChecked();
 }
-// bool VipExportSessionWidget::exportCurrentPlayer() const { return m_data->currentPlayer.isChecked(); }
+// bool VipExportSessionWidget::exportCurrentPlayer() const { return d_data->currentPlayer.isChecked(); }
 
 void VipExportSessionWidget::setExportCurrentArea(bool enable)
 {
-	m_data->currentArea.setChecked(enable);
+	d_data->currentArea.setChecked(enable);
 	exportTypeChanged();
 }
 
 QString VipExportSessionWidget::filename() const
 {
-	return m_data->filename.filename();
+	return d_data->filename.filename();
 }
 
 void VipExportSessionWidget::setFilename(const QString& filename)
 {
-	m_data->filename.setFilename(filename);
+	d_data->filename.setFilename(filename);
 }
 
 void VipExportSessionWidget::exportSession()
 {
-	QString filename = m_data->filename.filename();
+	QString filename = d_data->filename.filename();
 	if (!filename.isEmpty()) {
 		VipProgress progress;
 		progress.setModal(true);
@@ -275,20 +280,32 @@ void VipExportSessionWidget::exportSession()
 		if (!filename.contains("/")) {
 			// The user provided a simple filename, save it into the Perspectives folder
 			filename = vipGetPerspectiveDirectory() + filename;
-			if (!filename.endsWith(".session"))
+			if (!filename.endsWith(".session") && !filename.endsWith(".hsession"))
 				filename += ".session";
 		}
 
-		VipXOfArchive arch(filename);
-		int session_type = 0;
-		if (exportCurrentArea())
-			session_type = VipMainWindow::CurrentArea;
-		// else if (exportCurrentPlayer())
-		//  session_type = VipMainWindow::CurrentPlayer;
+		if (QFileInfo(filename).suffix() == "session") {
 
-		if (vipGetMainWindow()->saveSession(arch, session_type, VipMainWindow::All))
-			if (!m_data->XMLSymbols->isHidden())
-				m_data->XMLSymbols->applyToArchive(arch);
+			VipXOfArchive arch(filename);
+			int session_type = 0;
+			if (exportCurrentArea())
+				session_type = VipMainWindow::CurrentArea;
+			// else if (exportCurrentPlayer())
+			//  session_type = VipMainWindow::CurrentPlayer;
+
+			if (vipGetMainWindow()->saveSession(arch, session_type, VipMainWindow::All))
+				if (!d_data->XMLSymbols->isHidden())
+					d_data->XMLSymbols->applyToArchive(arch);
+		}
+		else {
+#ifdef VIP_WITH_HDF5
+			VipH5Archive arch(filename, QIODevice::WriteOnly);
+			int session_type = 0;
+			if (exportCurrentArea())
+				session_type = VipMainWindow::CurrentArea;
+			vipGetMainWindow()->saveSession(arch, session_type, VipMainWindow::All);
+#endif
+		}
 	}
 }
 
@@ -318,7 +335,7 @@ void VipExportSessionWidget::exportTypeChanged()
 		}
 	}
 
-	m_data->XMLSymbols->setEditableSymbols(lst);
+	d_data->XMLSymbols->setEditableSymbols(lst);
 }
 
 class VipImportSessionWidget::PrivateData
@@ -331,17 +348,16 @@ public:
 VipImportSessionWidget::VipImportSessionWidget(QWidget* parent)
   : QWidget(parent)
 {
-	m_data = new PrivateData();
-	m_data->layout = new QVBoxLayout();
-	m_data->layout->setSpacing(0);
-	this->setLayout(m_data->layout);
+	VIP_CREATE_PRIVATE_DATA(d_data);
+	d_data->layout = new QVBoxLayout();
+	d_data->layout->setSpacing(0);
+	this->setLayout(d_data->layout);
 
 	this->setMinimumWidth(300);
 }
 
 VipImportSessionWidget::~VipImportSessionWidget()
 {
-	delete m_data;
 }
 
 bool VipImportSessionWidget::hasEditableContent(VipXArchive& arch)
@@ -356,9 +372,9 @@ bool VipImportSessionWidget::hasEditableContent(VipXArchive& arch)
 void VipImportSessionWidget::importArchive(VipXArchive& arch)
 {
 	// frist, remove previous widgets
-	while (m_data->layout->count())
-		delete m_data->layout->takeAt(0);
-	m_data->widgets.clear();
+	while (d_data->layout->count())
+		delete d_data->layout->takeAt(0);
+	d_data->widgets.clear();
 
 	// add the new widgets
 	QList<VipEditableArchiveSymbol> s = arch.editableSymbols();
@@ -381,13 +397,13 @@ void VipImportSessionWidget::importArchive(VipXArchive& arch)
 		editor->setProperty("value", lst.first().default_value);
 		editor->setToolTip(lst.first().info);
 
-		m_data->widgets[editor] = lst;
+		d_data->widgets[editor] = lst;
 
 		// add to the grid
 		if (it != symbols.begin())
-			m_data->layout->addSpacing(5);
-		m_data->layout->addWidget(new QLabel("<b>&#9660; " + lst.first().info + "</b>"));
-		m_data->layout->addWidget(editor);
+			d_data->layout->addSpacing(5);
+		d_data->layout->addWidget(new QLabel("<b>&#9660; " + lst.first().info + "</b>"));
+		d_data->layout->addWidget(editor);
 	}
 
 	if (symbols.size() == 1) {
@@ -399,7 +415,7 @@ void VipImportSessionWidget::applyToArchive(VipXArchive& arch)
 {
 	QDomNode topnode = arch.topNode();
 
-	for (QMap<QWidget*, QList<VipEditableArchiveSymbol>>::iterator it = m_data->widgets.begin(); it != m_data->widgets.end(); ++it) {
+	for (QMap<QWidget*, QList<VipEditableArchiveSymbol>>::iterator it = d_data->widgets.begin(); it != d_data->widgets.end(); ++it) {
 		QVariant value = it.key()->property("value");
 		QList<VipEditableArchiveSymbol> lst = it.value();
 		for (int i = 0; i < lst.size(); ++i) {

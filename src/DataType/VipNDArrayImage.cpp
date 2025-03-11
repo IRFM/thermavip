@@ -1,7 +1,7 @@
 /**
  * BSD 3-Clause License
  *
- * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ * Copyright (c) 2025, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Leo Dubus, Erwan Grelier
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -110,51 +110,48 @@ namespace detail
 
 	struct QImageNDFxTable : public ImageHandle
 	{
-		QImage* image() const { return const_cast<QImage*>(static_cast<const QImage*>(opaque)); }
+		QImage image;
 		QImageNDFxTable() { opaque = nullptr; }
 		QImageNDFxTable(const QImageNDFxTable& other)
 		  : ImageHandle()
+		  , image(other.image)
 		{
-			if (other.image())
-				opaque = new QImage(*other.image());
-
+			opaque = image.isNull() ? nullptr : &image;
 			shape = other.shape;
 			strides = other.strides;
 			size = other.size;
+		}
+		QImageNDFxTable(const QImage& img)
+		  : ImageHandle()
+		  , image(img)
+		{
+			opaque = image.isNull() ? nullptr : &image;
+			shape = vipVector(image.height(), image.width());
+			size = vipComputeDefaultStrides<Vip::FirstMajor>(shape, strides);
 		}
 
 		virtual QImageNDFxTable* copy() const { return new QImageNDFxTable(*this); }
 		virtual void* dataPointer(const VipNDArrayShape&) const { return nullptr; }
 		virtual int handleType() const { return Image; }
-		virtual QPaintDevice* painteDevice() { return image(); }
-		virtual const QPaintDevice* painteDevice() const { return image(); }
-
-		// should destroy the underlying data only if size != 0
-		virtual ~QImageNDFxTable()
-		{
-			if (image()) {
-				delete image();
-				opaque = nullptr;
-			}
-		}
+		virtual QPaintDevice* painteDevice() { return &image; }
+		virtual const QPaintDevice* painteDevice() const { return &image; }
 
 		virtual bool realloc(const VipNDArrayShape& sh)
 		{
-			if (image())
-				delete image();
-			opaque = new QImage(sh[1], sh[0], QImage::Format_ARGB32);
-			shape = vipVector(image()->height(), image()->width());
+			image = QImage(sh[1], sh[0], QImage::Format_ARGB32);
+			opaque = image.isNull() ? nullptr : &image;
+			shape = vipVector(image.height(), image.width());
 			size = vipComputeDefaultStrides<Vip::FirstMajor>(shape, strides);
 			return true;
 		}
 
 		virtual bool reshape(const VipNDArrayShape& new_shape)
 		{
-			if (!image())
-				opaque = new QImage(new_shape[1], new_shape[0], QImage::Format_ARGB32);
+			if (image.isNull())
+				image = QImage(new_shape[1], new_shape[0], QImage::Format_ARGB32);
 			else
-				*image() = image()->scaled(new_shape[1], new_shape[0]);
-
+				image = image.scaled(new_shape[1], new_shape[0]);
+			opaque = image.isNull() ? nullptr : &image;
 			shape = new_shape;
 			size = vipComputeDefaultStrides<Vip::FirstMajor>(shape, strides);
 			return true;
@@ -167,7 +164,7 @@ namespace detail
 				    const VipNDArrayShape& out_start,
 				    const VipNDArrayShape& out_shape) const
 		{
-			if (!image())
+			if (image.isNull())
 				return false;
 
 			if (dst->dataType() == qMetaTypeId<QImage>()) {
@@ -175,12 +172,12 @@ namespace detail
 				QRect dest = QRect(out_start[1], out_start[0], out_shape[1], out_shape[0]);
 				QPainter painter(static_cast<ImageHandle*>(dst)->painteDevice());
 				painter.setRenderHint(QPainter::SmoothPixmapTransform, type != Vip::NoInterpolation);
-				painter.drawImage(dest, *image(), source);
+				painter.drawImage(dest, image, source);
 				return true;
 			}
 			else if (dst->dataType() == qMetaTypeId<VipRGB>()) {
 				QImage temp;
-				QImage src = image()->copy(_start[1], _start[0], _shape[1], _shape[0]);
+				QImage src = image.copy(_start[1], _start[0], _shape[1], _shape[0]);
 				QRect out = QRect(out_start[1], out_start[0], out_shape[1], out_shape[0]);
 				if (type == Vip::NoInterpolation)
 					temp = src.scaled(out.width(), out.height(), Qt::IgnoreAspectRatio, Qt::FastTransformation).convertToFormat(QImage::Format_ARGB32);
@@ -196,7 +193,7 @@ namespace detail
 		}
 
 		virtual const char* dataName() const { return "QImage"; }
-		virtual int dataSize() const { return sizeof(QRgb); }
+		virtual qsizetype dataSize() const { return sizeof(QRgb); }
 		virtual int dataType() const { return qMetaTypeId<QImage>(); }
 
 		virtual bool canExport(int data_type) const
@@ -217,10 +214,10 @@ namespace detail
 
 			int out_type = dst->dataType();
 			if (qMetaTypeId<QImage>() == out_type) {
-				return export_image_data(image(), qMetaTypeId<QImage>(), this_shape, this_start, static_cast<QImageNDFxTable*>(dst)->image(), dst->dataType(), dst_shape, dst_start);
+				return export_image_data(&image, qMetaTypeId<QImage>(), this_shape, this_start, &static_cast<QImageNDFxTable*>(dst)->image, dst->dataType(), dst_shape, dst_start);
 			}
 			else if (out_type == qMetaTypeId<VipRGB>()) {
-				return vipArrayTransform(reinterpret_cast<const QRgb*>(image()->bits()) + vipFlatOffset<false>(strides, this_start),
+				return vipArrayTransform(reinterpret_cast<const QRgb*>(image.bits()) + vipFlatOffset<false>(strides, this_start),
 							 this_shape,
 							 strides,
 							 static_cast<VipRGB*>(dst->opaque) + vipFlatOffset<false>(dst->strides, dst_start),
@@ -229,7 +226,7 @@ namespace detail
 							 ToRGB());
 			}
 			else if (out_type == qMetaTypeId<QRgb>()) {
-				return vipArrayTransform(reinterpret_cast<const QRgb*>(image()->bits()) + vipFlatOffset<false>(strides, this_start),
+				return vipArrayTransform(reinterpret_cast<const QRgb*>(image.bits()) + vipFlatOffset<false>(strides, this_start),
 							 this_shape,
 							 strides,
 							 static_cast<QRgb*>(dst->opaque) + vipFlatOffset<false>(dst->strides, dst_start),
@@ -238,7 +235,7 @@ namespace detail
 							 VipNullTransform());
 			}
 			else if (out_type == qMetaTypeId<QString>()) {
-				return vipArrayTransform(reinterpret_cast<const QRgb*>(image()->bits()) + vipFlatOffset<false>(strides, this_start),
+				return vipArrayTransform(reinterpret_cast<const QRgb*>(image.bits()) + vipFlatOffset<false>(strides, this_start),
 							 this_shape,
 							 strides,
 							 static_cast<QString*>(dst->opaque) + vipFlatOffset<false>(dst->strides, dst_start),
@@ -247,7 +244,7 @@ namespace detail
 							 QRgbToString());
 			}
 			else if (out_type == qMetaTypeId<QByteArray>()) {
-				return vipArrayTransform(reinterpret_cast<const QRgb*>(image()->bits()) + vipFlatOffset<false>(strides, this_start),
+				return vipArrayTransform(reinterpret_cast<const QRgb*>(image.bits()) + vipFlatOffset<false>(strides, this_start),
 							 this_shape,
 							 strides,
 							 static_cast<QByteArray*>(dst->opaque) + vipFlatOffset<false>(dst->strides, dst_start),
@@ -269,7 +266,7 @@ namespace detail
 			return vipArrayTransform(reinterpret_cast<const QRgb*>(src->opaque) + vipFlatOffset<false>(src->strides, src_start),
 						 src_shape,
 						 src->strides,
-						 reinterpret_cast<QRgb*>(image()->bits()) + vipFlatOffset<false>(strides, this_start),
+						 reinterpret_cast<QRgb*>(image.bits()) + vipFlatOffset<false>(strides, this_start),
 						 this_shape,
 						 strides,
 						 VipNullTransform());
@@ -280,7 +277,7 @@ namespace detail
 			if (!value.canConvert<QColor>())
 				return false;
 
-			QPainter p(image());
+			QPainter p(&image);
 			p.setPen(Qt::NoPen);
 			p.setBrush(value.value<QColor>());
 			p.setCompositionMode(QPainter::CompositionMode_Source);
@@ -289,28 +286,28 @@ namespace detail
 		}
 		virtual QVariant toVariant(const VipNDArrayShape& sh) const
 		{
-			int pos = 0;
+			qsizetype pos = 0;
 			if (sh.size() == 1)
-				pos = sh[0] * image()->width();
+				pos = sh[0] * image.width();
 			else if (sh.size() > 1)
-				pos = sh[0] * image()->width() + sh[1];
-			QRgb rgb = ((QRgb*)image()->bits())[pos];
+				pos = sh[0] * image.width() + sh[1];
+			QRgb rgb = ((QRgb*)image.bits())[pos];
 			return QVariant::fromValue(VipRGB(qRed(rgb), qGreen(rgb), qBlue(rgb), qAlpha(rgb)));
 		}
 
 		virtual void fromVariant(const VipNDArrayShape& sh, const QVariant& val)
 		{
-			int pos = 0;
+			qsizetype pos = 0;
 			if (sh.size() == 1)
-				pos = sh[0] * image()->width();
+				pos = sh[0] * image.width();
 			else if (sh.size() > 1)
-				pos = sh[0] * image()->width() + sh[1];
-			((QRgb*)image()->bits())[pos] = val.value<VipRGB>();
+				pos = sh[0] * image.width() + sh[1];
+			((QRgb*)image.bits())[pos] = val.value<VipRGB>();
 		}
 
 		virtual QDataStream& ostream(const VipNDArrayShape& _start, const VipNDArrayShape& _shape, QDataStream& o) const
 		{
-			o << image()->copy(_start[1], _start[0], _shape[1], _shape[0]);
+			o << image.copy(_start[1], _start[0], _shape[1], _shape[0]);
 			return o;
 		}
 
@@ -319,7 +316,7 @@ namespace detail
 			QImage tmp;
 			i >> tmp;
 
-			QPainter p(image());
+			QPainter p(&image);
 			p.drawImage(QPoint(_start[1], _start[0]), tmp.scaled(_shape[1], _shape[0]));
 
 			return i;
@@ -327,10 +324,10 @@ namespace detail
 
 		virtual QTextStream& oTextStream(const VipNDArrayShape& _start, const VipNDArrayShape& _shape, QTextStream& stream, const QString& separator) const
 		{
-			const VipRGB* rgb = reinterpret_cast<const VipRGB*>(image()->bits()); // +shape[1] + shape[0] * image()->width();
-			for (int y = _start[0]; y < _start[0] + _shape[0]; ++y)
-				for (int x = _start[1]; x < _start[1] + _shape[1]; ++x) {
-					const VipRGB value = rgb[x + y * image()->width()];
+			const VipRGB* rgb = reinterpret_cast<const VipRGB*>(image.bits()); // +shape[1] + shape[0] * image()->width();
+			for (qsizetype y = _start[0]; y < _start[0] + _shape[0]; ++y)
+				for (qsizetype x = _start[1]; x < _start[1] + _shape[1]; ++x) {
+					const VipRGB value = rgb[x + y * image.width()];
 					stream << value << separator;
 				}
 
@@ -354,13 +351,10 @@ static bool registerImageTypes()
 
 VipNDArray vipToArray(const QImage& image)
 {
-	// if (image.isNull())
-	//	return VipNDArray();
-
 #if !(QT_VERSION < QT_VERSION_CHECK(5, 13, 0))
 	if (image.format() == QImage::Format_Grayscale16) {
 		VipNDArrayType<unsigned short> res(vip_vector(image.height(), image.width()));
-		for (int y = 0; y < image.height(); ++y) {
+		for (qsizetype y = 0; y < image.height(); ++y) {
 			memcpy(res.ptr(vip_vector(y, 0)), image.scanLine(y), image.width() * sizeof(unsigned short));
 		}
 		return res;
@@ -368,10 +362,7 @@ VipNDArray vipToArray(const QImage& image)
 #endif
 
 	registerImageTypes();
-	detail::QImageNDFxTable* h = (new detail::QImageNDFxTable());
-	h->opaque = new QImage(image.convertToFormat(QImage::Format_ARGB32));
-	h->shape = vipVector(image.height(), image.width());
-	h->size = vipComputeDefaultStrides<Vip::FirstMajor>(h->shape, h->strides);
+	detail::QImageNDFxTable* h = new detail::QImageNDFxTable(image);
 	return VipNDArray(SharedHandle(h));
 }
 
@@ -380,18 +371,15 @@ QImage vipToImage(const VipNDArray& array)
 	registerImageTypes();
 	if (array.dataType() == qMetaTypeId<QImage>()) {
 		const detail::QImageNDFxTable* h = static_cast<const detail::QImageNDFxTable*>(array.handle());
-		if (h->image())
-			return *h->image();
+		return h->image;
 	}
 	else {
 		const VipNDArray temp = array.convert(qMetaTypeId<QImage>());
 		if (!temp.isNull()) {
 			const detail::QImageNDFxTable* h = static_cast<const detail::QImageNDFxTable*>(temp.handle());
-			if (h->image())
-				return *h->image();
+			return h->image;
 		}
 	}
-
 	return QImage();
 }
 

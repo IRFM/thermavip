@@ -1,7 +1,7 @@
 /**
  * BSD 3-Clause License
  *
- * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ * Copyright (c) 2025, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Leo Dubus, Erwan Grelier
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -48,6 +48,7 @@ class QPainter;
 class VipScaleMap;
 class VipNDArray;
 
+/// Number of threads used by default to render an object based on a color map
 #ifndef VIP_COLOR_MAP_THREADS
 #define VIP_COLOR_MAP_THREADS 1
 #endif
@@ -281,8 +282,8 @@ private:
 	VipLinearColorMap(const VipLinearColorMap&);
 	VipLinearColorMap& operator=(const VipLinearColorMap&);
 
-	class PrivateData;
-	PrivateData* d_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 /// \brief VipAlphaColorMap varies the alpha value of a color
@@ -307,8 +308,8 @@ private:
 
 	virtual unsigned char colorIndex(const VipInterval&, double value) const;
 
-	class PrivateData;
-	PrivateData* d_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 /// Map a value into a color

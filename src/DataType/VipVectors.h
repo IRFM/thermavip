@@ -1,7 +1,7 @@
 /**
  * BSD 3-Clause License
  *
- * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ * Copyright (c) 2025, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Leo Dubus, Erwan Grelier
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -37,88 +37,59 @@
 
 #include "VipComplex.h"
 #include "VipInterval.h"
+#include "VipCircularVector.h"
 
-typedef QVector<VipIntervalSample> VipIntervalSampleVector;
+template<class T>
+using VipSampleVector = VipCircularVector<T>;
+
+using VipIntervalSampleVector = VipSampleVector<VipIntervalSample>;
 Q_DECLARE_METATYPE(VipIntervalSampleVector)
 
-/// @brief 2D serie of points
-class VIP_DATA_TYPE_EXPORT VipPointVector : public QVector<VipPoint>
-{
-public:
-	VipPointVector()
-	  : QVector<VipPoint>()
-	{
-	}
-	VipPointVector(int size)
-	  : QVector<VipPoint>(size)
-	{
-	}
-	VipPointVector(const QVector<VipPoint>& other)
-	  : QVector<VipPoint>(other)
-	{
-	}
-	VipPointVector(const QVector<QPointF>& other)
-	  : QVector<VipPoint>(other.size())
-	{
-		std::copy(other.begin(), other.end(), begin());
-	}
-	VipPointVector(const VipPointVector& other)
-	  : QVector<VipPoint>(other)
-	{
-	}
-	VipPointVector(VipPointVector&& other) noexcept
-	  : QVector<VipPoint>(std::move(other))
-	{
-	}
-
-	VipPointVector& operator=(const VipPointVector& other)
-	{
-		static_cast<QVector<VipPoint>&>(*this) = static_cast<const QVector<VipPoint>&>(other);
-		return *this;
-	}
-	VipPointVector& operator=(VipPointVector&& other) noexcept
-	{
-		static_cast<QVector<VipPoint>&>(*this) = std::move(static_cast<const QVector<VipPoint>&>(other));
-		return *this;
-	}
-	VipPointVector& operator=(const QVector<VipPoint>& other)
-	{
-		static_cast<QVector<VipPoint>&>(*this) = other;
-		return *this;
-	}
-
-	QRectF boundingRect() const
-	{
-		if (size() == 0)
-			return QRectF();
-		else if (size() == 1)
-			return QRectF(first(), first());
-		else {
-			QRectF r = QRectF(at(0), at(1)).normalized();
-			for (int i = 2; i < size(); ++i) {
-				const VipPoint p = (*this)[i];
-				if (p.x() > r.right())
-					r.setRight(p.x());
-				else if (p.x() < r.left())
-					r.setLeft(p.x());
-				if (p.y() > r.bottom())
-					r.setBottom(p.y());
-				else if (p.y() < r.top())
-					r.setTop(p.y());
-			}
-			return r;
-		}
-	}
-
-	QVector<QPointF> toPointF() const
-	{
-		QVector<QPointF> res(size());
-		for (int i = 0; i < size(); ++i)
-			res[i] = (*this)[i].toPointF();
-		return res;
-	}
-};
+using VipPointVector = VipSampleVector<VipPoint>;
 Q_DECLARE_METATYPE(VipPointVector)
+
+/// @brief Convert a VipPointVector to QVector<QPointF>
+inline QVector<QPointF> vipToPointF(const VipPointVector& v)
+{
+	QVector<QPointF> res(v.size());
+	std::copy(v.begin(), v.end(), res.begin());
+	return res;
+}
+
+/// @brief Convert a QVector<QPointF> to VipPointVector
+inline VipPointVector vipToPointVector(const QVector<QPointF>& v)
+{
+	VipPointVector res(v.size());
+	auto it = v.begin();
+	res.for_each(0, v.size(), [&it](VipPoint& p) { p = *it++; });
+	return res;
+}
+
+/// @brief Extract VipPointVector bounding rectangle
+inline QRectF vipBoundingRect(const VipPointVector& v) 
+{
+	if (v.size() == 0)
+		return QRectF();
+	else if (v.size() == 1)
+		return QRectF(v.first(), v.first());
+	else {
+		QRectF r = QRectF(v[0], v[1]).normalized();
+		for (qsizetype i = 2; i < v.size(); ++i) {
+			const VipPoint p =v[i];
+			if (p.x() > r.right())
+				r.setRight(p.x());
+			else if (p.x() < r.left())
+				r.setLeft(p.x());
+			if (p.y() > r.bottom())
+				r.setBottom(p.y());
+			else if (p.y() < r.top())
+				r.setTop(p.y());
+		}
+		return r;
+	}
+
+}
+
 
 /// @brief Combination of floating point x value and complex y value
 class VipComplexPoint
@@ -127,28 +98,28 @@ class VipComplexPoint
 	complex_d yp;
 
 public:
-	VipComplexPoint()
+	VipComplexPoint() noexcept
 	  : xp(0)
 	  , yp(0)
 	{
 	}
-	VipComplexPoint(vip_double x, const complex_d& y)
+	VipComplexPoint(vip_double x, const complex_d& y) noexcept
 	  : xp(x)
 	  , yp(y)
 	{
 	}
 
-	vip_double x() const { return xp; }
-	complex_d y() const { return yp; }
+	vip_double x() const noexcept { return xp; }
+	complex_d y() const noexcept { return yp; }
 
-	vip_double& rx() { return xp; }
-	complex_d& ry() { return yp; }
+	vip_double& rx() noexcept { return xp; }
+	complex_d& ry() noexcept { return yp; }
 
-	void setX(vip_double x) { xp = x; }
-	void setY(const complex_d& y) { yp = y; }
+	void setX(vip_double x) noexcept { xp = x; }
+	void setY(const complex_d& y) noexcept { yp = y; }
 };
 
-typedef QVector<VipComplexPoint> VipComplexPointVector;
+using VipComplexPointVector = VipSampleVector<VipComplexPoint>;
 Q_DECLARE_METATYPE(VipComplexPoint)
 Q_DECLARE_METATYPE(VipComplexPointVector)
 

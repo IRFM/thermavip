@@ -1,7 +1,7 @@
 /**
  * BSD 3-Clause License
  *
- * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ * Copyright (c) 2025, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Leo Dubus, Erwan Grelier
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -69,7 +69,7 @@ public:
 
 VipProgress::VipProgress(double min, double max, const QString& text)
 {
-	m_data = new PrivateData();
+	VIP_CREATE_PRIVATE_DATA(d_data);
 
 	if (progressManager()) {
 		if (QThread::currentThread() == QCoreApplication::instance()->thread())
@@ -92,15 +92,15 @@ VipProgress::~VipProgress()
 void VipProgress::setRange(double min, double max)
 {
 	if (min != max) {
-		m_data->min = min;
-		m_data->max = max;
-		m_data->invRange = 1.0 / (max - min);
+		d_data->min = min;
+		d_data->max = max;
+		d_data->invRange = 1.0 / (max - min);
 	}
 }
 
 void VipProgress::setText(const QString& text)
 {
-	m_data->text = text;
+	d_data->text = text;
 	if (progressManager())
 		QMetaObject::invokeMethod(progressManager(), "setText", Qt::QueuedConnection, Q_ARG(QObjectPointer, this), Q_ARG(QString, text));
 
@@ -109,22 +109,22 @@ void VipProgress::setText(const QString& text)
 
 void VipProgress::setValue(double value)
 {
-	m_data->value = value;
-	int v = qRound((value - m_data->min) * m_data->invRange * 100);
+	d_data->value = value;
+	int v = qRound((value - d_data->min) * d_data->invRange * 100);
 	bool new_value = false;
-	if (v != m_data->intValue) {
+	if (v != d_data->intValue) {
 		new_value = true;
-		m_data->intValue = v;
+		d_data->intValue = v;
 		if (progressManager())
 			QMetaObject::invokeMethod(progressManager(), "setValue", Qt::QueuedConnection, Q_ARG(QObjectPointer, this), Q_ARG(int, v));
 	}
 
 	qint64 time = QDateTime::currentMSecsSinceEpoch();
 
-	if (time - m_data->lastTime > 200) {
+	if (time - d_data->lastTime > 200) {
 		// process gui events every 200ms
 		int r = vipProcessEvents(nullptr, 1);
-		m_data->lastTime = QDateTime::currentMSecsSinceEpoch();
+		d_data->lastTime = QDateTime::currentMSecsSinceEpoch();
 		if (r == -3 && QCoreApplication::instance()->thread() == QThread::currentThread() && new_value) // recursice call and we are in the main thread
 		{
 			// reset value to show the progress
@@ -136,56 +136,56 @@ void VipProgress::setValue(double value)
 
 void VipProgress::setCancelable(bool cancelable)
 {
-	m_data->cancelable = cancelable;
+	d_data->cancelable = cancelable;
 	if (progressManager())
 		QMetaObject::invokeMethod(progressManager(), "setCancelable", Qt::QueuedConnection, Q_ARG(QObjectPointer, this), Q_ARG(bool, cancelable));
 }
 
 void VipProgress::setModal(bool modal)
 {
-	m_data->modal = modal;
+	d_data->modal = modal;
 	if (progressManager())
 		QMetaObject::invokeMethod(progressManager(), "setModal", Qt::QueuedConnection, Q_ARG(QObjectPointer, this), Q_ARG(bool, modal));
 }
 
 void VipProgress::cancelRequested()
 {
-	m_data->cancel = true;
+	d_data->cancel = true;
 }
 
 bool VipProgress::canceled() const
 {
-	return m_data->cancel;
+	return d_data->cancel;
 }
 
 double VipProgress::min() const
 {
-	return m_data->min;
+	return d_data->min;
 }
 
 double VipProgress::max() const
 {
-	return m_data->max;
+	return d_data->max;
 }
 
 QString VipProgress::text() const
 {
-	return m_data->text;
+	return d_data->text;
 }
 
 double VipProgress::value() const
 {
-	return m_data->value;
+	return d_data->value;
 }
 
 bool VipProgress::isCancelable() const
 {
-	return m_data->cancelable;
+	return d_data->cancelable;
 }
 
 bool VipProgress::isModal() const
 {
-	return m_data->modal;
+	return d_data->modal;
 }
 
 static QObject* defaultManager()

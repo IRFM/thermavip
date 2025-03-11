@@ -67,7 +67,7 @@ public:
 
 	/**
 	* Retrieve a Python object from the distant console.
-	* Returns the object on success, a PyError object on error.
+	* Returns the object on success, a VipPyError object on error.
 	*/
 	QVariant retrieveObject(const QString& name);
 
@@ -107,8 +107,8 @@ public:
 	void setStyleSheet(const QString& st);
 
 private:
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 
@@ -139,8 +139,8 @@ public Q_SLOTS:
 
 	void focusChanged(QWidget* old, QWidget* now);
 private:
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 
@@ -191,8 +191,8 @@ private Q_SLOTS:
 	void restartTabProcess();
 	void updateIcons();
 private:
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 }; 
 
 
@@ -215,8 +215,8 @@ private Q_SLOTS:
 protected:
 	virtual void closeEvent(QCloseEvent*);
 private:
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 

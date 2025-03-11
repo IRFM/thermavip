@@ -15,66 +15,56 @@ add_library(Ffmpeg SHARED
     ${Sources} ${Headers}
 )
 
-target_include_directories(Ffmpeg PRIVATE
-    ${PROJECT_SOURCE_DIR}/../../Logging 
-	${PROJECT_SOURCE_DIR}/../../DataType 
-	${PROJECT_SOURCE_DIR}/../../Core 
-	${PROJECT_SOURCE_DIR}/../../Plotting 
-	${PROJECT_SOURCE_DIR}/../../Gui
-)
+target_include_directories(Ffmpeg PRIVATE ${THERMAVIP_INCLUDE_DIRS})
+target_link_libraries(Ffmpeg PRIVATE ${THERMAVIP_LIBRARIES})
 
-target_link_libraries(Ffmpeg PRIVATE
-	VipDataType
-	VipLogging
-	VipCore
-	VipPlotting
-	VipGui
-)
-
+# Add default compiler flags
 set(TARGET_PROJECT Ffmpeg)
-include(${PROJECT_SOURCE_DIR}/../../compiler_flags.cmake)
+include(${THERMAVIP_COMPILER_FLAGS_FILE})
 
 target_compile_definitions(Ffmpeg PRIVATE ENABLE_H264 BUILD_FFMPEG_LIB)
 
 
-
 # Configure ffmpeg path, use librir ffmpeg install if possible
-IF(WITH_LIBRIR)
-	set(FFMPEG_PATH ${CMAKE_BINARY_DIR}/src/Annotation/librir-prefix/src/librir/3rd_64)
+if(WITH_LIBRIR)
+	if(MSVC)
+		set(FFMPEG_PATH ${CMAKE_BINARY_DIR}/_deps/librir-src/extra/ffmpeg)
+	else()
+		# TODO! Linux
+		# set(FFMPEG_PATH ${CMAKE_BINARY_DIR}/src/Annotation/librir-prefix/src/librir-build/install)
+		# Compile ffmpeg from source inside 3rd_64 folder
+		set(FFMPEG_PATH ${CMAKE_SOURCE_DIR}/3rd_64)
+	endif()
 else()
+	# Compile ffmpeg from source inside 3rd_64 folder
 	set(FFMPEG_PATH ${CMAKE_SOURCE_DIR}/3rd_64)
 endif()
 
 
 
-IF (MSVC)
-
-
-	SET(FFMPEG_LIB_DIR ${FFMPEG_PATH}/ffmpeg-4.3-msvc/lib)
-	SET(FFMPEG_INCLUDE_DIR ${FFMPEG_PATH}/ffmpeg-4.3-msvc)
-	SET(FFMPEG_LIBS avdevice avformat avcodec swscale avutil swresample avfilter )
-	SET(ADDITIONAL_FFMPEG_LIBS libx264 libx265 kvazaar postproc vcruntime140_1 Vfw32 shlwapi strmbase)
-	SET(FFMPEG_PREFIX )
-	SET(FFMPEG_SUFFIX .dll)
-
-	
-ELSE()
-
-	IF (WIN32)
+if (MSVC)
+	set(FFMPEG_LIB_DIR ${FFMPEG_PATH}/ffmpeg-7.1-msvc/lib)
+	set(FFMPEG_INCLUDE_DIR "${FFMPEG_PATH}/ffmpeg-7.1-msvc/include;${FFMPEG_PATH}/ffmpeg-7.1-msvc")
+	set(FFMPEG_LIBS avdevice avformat avcodec swscale avutil swresample avfilter )
+	set(ADDITIONAL_FFMPEG_LIBS libx264 libx265 kvazaar postproc vcruntime140_1 Vfw32 shlwapi strmbase)
+	set(FFMPEG_PREFIX )
+	set(FFMPEG_SUFFIX .dll)
+else()
+	if (WIN32)
 		# mingw
-		SET(FFMPEG_LIB_DIR ${FFMPEG_PATH}/ffmpeg/install/lib)
-		SET(FFMPEG_INCLUDE_DIR ${FFMPEG_PATH}/ffmpeg/install/include)
-		SET(FFMPEG_LIBS avdevice avformat avcodec swscale avutil swresample avfilter)
-		SET(ADDITIONAL_FFMPEG_LIBS postproc)
-		SET(FFMPEG_PREFIX )
-		SET(FFMPEG_SUFFIX .dll)
-	ELSE()
-		SET(FFMPEG_LIB_DIR ${FFMPEG_PATH}/ffmpeg/install/lib)
-		SET(FFMPEG_INCLUDE_DIR ${FFMPEG_PATH}/ffmpeg/install/include)
-		SET(FFMPEG_LIBS avdevice avformat avcodec swscale avutil swresample avfilter)
-		SET(ADDITIONAL_FFMPEG_LIBS postproc)
-		SET(FFMPEG_PREFIX lib)
-		SET(FFMPEG_SUFFIX .so)
+		set(FFMPEG_LIB_DIR ${FFMPEG_PATH}/ffmpeg/install/lib)
+		set(FFMPEG_INCLUDE_DIR ${FFMPEG_PATH}/ffmpeg/install/include)
+		set(FFMPEG_LIBS avdevice avformat avcodec swscale avutil swresample avfilter)
+		set(ADDITIONAL_FFMPEG_LIBS postproc)
+		set(FFMPEG_PREFIX )
+		set(FFMPEG_SUFFIX .dll)
+	else()
+		set(FFMPEG_LIB_DIR ${FFMPEG_PATH}/ffmpeg/install/lib)
+		set(FFMPEG_INCLUDE_DIR ${FFMPEG_PATH}/ffmpeg/install/include)
+		set(FFMPEG_LIBS avdevice avformat avcodec swscale avutil swresample avfilter)
+		set(ADDITIONAL_FFMPEG_LIBS postproc)
+		set(FFMPEG_PREFIX lib)
+		set(FFMPEG_SUFFIX .so)
 	ENDIF()
 ENDIF()
 
@@ -82,9 +72,9 @@ target_link_directories(Ffmpeg PRIVATE ${FFMPEG_LIB_DIR})
 MESSAGE(STATUS "Using ${FFMPEG_LIB_DIR} for ffmpeg library files")
 
 
-target_include_directories(Ffmpeg PRIVATE 	${FFMPEG_INCLUDE_DIR})
+target_include_directories(Ffmpeg PRIVATE ${FFMPEG_INCLUDE_DIR})
 target_link_libraries(Ffmpeg PRIVATE ${FFMPEG_LIBS})
-SET(COMPLETE_FFMPEG_LIBS ${FFMPEG_LIBS} ${ADDITIONAL_FFMPEG_LIBS})
+set(COMPLETE_FFMPEG_LIBS ${FFMPEG_LIBS} ${ADDITIONAL_FFMPEG_LIBS})
 
 
 # Add any variables you need during post install.
@@ -100,7 +90,14 @@ install(CODE "set(CMAKE_SOURCE_DIR \"${CMAKE_SOURCE_DIR}\")")
 install(SCRIPT InstallFfmpeg.cmake)
 
 install(TARGETS Ffmpeg
-	LIBRARY DESTINATION "${CMAKE_INSTALL_PREFIX}/thermavip/VipPlugins"
-    FRAMEWORK DESTINATION "${CMAKE_INSTALL_PREFIX}/thermavip/VipPlugins"
-    RUNTIME DESTINATION "${CMAKE_INSTALL_PREFIX}/thermavip/VipPlugins"
+	LIBRARY DESTINATION "${THERMAVIP_PLUGIN_DIR}"
+    FRAMEWORK DESTINATION "${THERMAVIP_PLUGIN_DIR}"
+    RUNTIME DESTINATION "${THERMAVIP_PLUGIN_DIR}"
 )
+
+# Make Ffmpeg plugin usable as a library
+install(TARGETS Ffmpeg
+    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}/Plugins
+)
+file(GLOB HEADER_FILES ${PROJECT_SOURCE_DIR}/*.h)
+install(FILES ${HEADER_FILES} DESTINATION "${CMAKE_INSTALL_PREFIX}/include/Plugins/Ffmpeg/")

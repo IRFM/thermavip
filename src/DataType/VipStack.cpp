@@ -1,7 +1,7 @@
 /**
  * BSD 3-Clause License
  *
- * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ * Copyright (c) 2025, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Leo Dubus, Erwan Grelier
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -31,13 +31,13 @@
 
 #include "VipStack.h"
 
-bool vipStack(VipNDArray& dst, const VipNDArray& v1, const VipNDArray& v2, int axis)
+bool vipStack(VipNDArray& dst, const VipNDArray& v1, const VipNDArray& v2, qsizetype axis)
 {
 	// test same dim count
 	if (v1.shapeCount() != v2.shapeCount())
 		return false;
 	// test same shape except for given axis
-	for (int i = 0; i < v1.shapeCount(); ++i) {
+	for (qsizetype i = 0; i < v1.shapeCount(); ++i) {
 		if (i != axis && (v1.shape(i) != v2.shape(i) || v1.shape(i) != v2.shape(i)))
 			return false;
 	}
@@ -60,7 +60,7 @@ bool vipStack(VipNDArray& dst, const VipNDArray& v1, const VipNDArray& v2, int a
 }
 
 #include <qimage.h>
-VipNDArray vipStack(const VipNDArray& v1, const VipNDArray& v2, int axis)
+VipNDArray vipStack(const VipNDArray& v1, const VipNDArray& v2, qsizetype axis)
 {
 	VipNDArrayShape sh = v1.shape();
 	sh[axis] = v1.shape()[axis] + v2.shape()[axis];

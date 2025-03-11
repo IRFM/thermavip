@@ -1,7 +1,7 @@
 /**
  * BSD 3-Clause License
  *
- * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ * Copyright (c) 2025, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Leo Dubus, Erwan Grelier
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -47,34 +47,32 @@ class QPainter;
 typedef QPair<QPainterPath, QPainterPath> PainterPaths;
 
 /// VipBoxStyle represents drawing parameters used to represent boxes, polygons or any kind of shape within the Plotting library.
-/// Uses Copy On Write.
+/// Uses Copy On Write internally.
 class VIP_PLOTTING_EXPORT VipBoxStyle
 {
 public:
 	VipBoxStyle();
 	/// @brief Construct from a border pen, a background brush and a border radius
 	VipBoxStyle(const QPen& b_pen, const QBrush& b_brush = QBrush(), double radius = 0);
-	VipBoxStyle(const VipBoxStyle&);
-
-	VipBoxStyle& operator=(const VipBoxStyle&);
+	VIP_DEFAULT_MOVE(VipBoxStyle);
 
 	/// @brief Returns whether the box style is null (uninitialized) or not
-	bool isNull() const;
+	VIP_ALWAYS_INLINE bool isNull() const noexcept { return !d_data; }
 	/// @brief Returns !isNull()
-	bool isValid() const;
+	VIP_ALWAYS_INLINE bool isValid() const noexcept { return d_data; }
 	/// @brief Returns whether the box style is null or has nothing to draw
-	bool isEmpty() const;
+	VIP_ALWAYS_INLINE bool isEmpty() const noexcept { return isNull() || (d_data->paths.first.isEmpty() && d_data->paths.second.isEmpty()); }
 
 	/// @brief Set the border pen
 	void setBorderPen(const QPen&);
 	void setBorderPen(const QColor& c);
 	void setBorderPen(const QColor& c, double width);
-	QPen borderPen() const;
+	const QPen& borderPen() const noexcept;
 	QPen& borderPen();
 
 	/// @brief Set the background brush
 	void setBackgroundBrush(const QBrush&);
-	QBrush backgroundBrush() const;
+	const QBrush &backgroundBrush() const noexcept;
 	QBrush& backgroundBrush();
 
 	/// @brief Set the border and background color
@@ -82,45 +80,45 @@ public:
 
 	/// @brief Set the adaptative gradient brush
 	void setAdaptativeGradientBrush(const VipAdaptativeGradient&);
-	VipAdaptativeGradient adaptativeGradientBrush() const;
+	const VipAdaptativeGradient &adaptativeGradientBrush() const noexcept;
 	/// @brief Remove the QGradient from the background brush, but keep the brush itself
 	void unsetBrushGradient();
 
 	/// @brief Set the adaptative gradient pen
 	void setAdaptativeGradientPen(const VipAdaptativeGradient&);
-	VipAdaptativeGradient adaptativeGradientPen() const;
+	const VipAdaptativeGradient &adaptativeGradientPen() const noexcept;
 	/// @brief Remove the QGradient from the border pen, but keep the pen itself
 	void unsetPenGradient();
 
 	/// @brief Set the border radius, valid for all kind of shapes except QPainterPath
 	void setBorderRadius(double);
-	double borderRadius() const;
+	double borderRadius() const noexcept;
 
 	/// @brief Set the borders to be drawn. Valid for quadrilateral shapes and pies
 	void setDrawLines(Vip::Sides draw_lines);
 	void setDrawLine(Vip::Side draw_line, bool on);
 	bool testDrawLines(Vip::Side draw_line) const;
-	Vip::Sides drawLines() const;
+	Vip::Sides drawLines() const noexcept;
 
 	/// @brief Set the corners to be rounded. Valid for quadrilateral shapes and pies
 	void setRoundedCorners(Vip::Corners rounded_corners);
 	void setRoundedCorner(Vip::Corner rounded_corner, bool on);
 	bool testRoundedCorner(Vip::Corner rounded_corner) const;
-	Vip::Corners roundedCorners() const;
+	Vip::Corners roundedCorners() const noexcept;
 
 	/// @brief Returns true is the brush is transparent
-	bool isTransparentBrush() const;
+	bool isTransparentBrush() const noexcept;
 	/// @brief Returns true if the border pen is transparent
-	bool isTransparentPen() const;
+	bool isTransparentPen() const noexcept;
 	/// @brief Returns true if the full shape is transparent
-	bool isTransparent() const;
+	bool isTransparent() const noexcept;
 
 	/// @brief Returns the background shape
-	QPainterPath background() const;
+	const QPainterPath& background() const noexcept;
 	/// @brief Returns the border shape
-	QPainterPath border() const;
+	const QPainterPath& border() const noexcept;
 	/// @brief Returns the background and border shape
-	PainterPaths paths() const;
+	const PainterPaths& paths() const noexcept;
 	/// @brief Returns the shape bounding rect
 	QRectF boundingRect() const;
 
@@ -137,15 +135,11 @@ public:
 	/// @brief Build the shape based on given pie
 	void computePie(const QPointF& center, const VipPie& pie, double spacing = 0);
 
-	/// @brief Create the background brush based on the shape and the given brush or gradient.
-	/// Only rectangles and pies can use adaptative gradients.
-	QBrush createBackgroundBrush() const;
-	QPen createBorderPen(const QPen& pen) const;
-
+	
 	/// @brief Returns true if the brush uses an adaptative gradient
-	bool hasBrushGradient() const;
+	bool hasBrushGradient() const noexcept;
 	/// @brief Returns true if the border pen uses an adaptative gradient
-	bool hasPenGradient() const;
+	bool hasPenGradient() const noexcept;
 
 	/// @brief Draw the background
 	void drawBackground(QPainter*) const;
@@ -158,12 +152,17 @@ public:
 	void draw(QPainter* painter, const QBrush& brush) const;
 	void draw(QPainter* painter, const QBrush& brush, const QPen& pen) const;
 
-	/// @brief Compare 2 VipBoxStyle for equality. Only test drawinf style (pen, brush, adaptative gradients, draw lines, draw corners, radius...),
+	/// @brief Compare 2 VipBoxStyle for equality. Only test drawing style (pen, brush, adaptative gradients, draw lines, draw corners, radius...),
 	/// but not the shape itself.
-	bool operator==(const VipBoxStyle& other) const;
-	bool operator!=(const VipBoxStyle& other) const;
+	bool operator==(const VipBoxStyle& other) const noexcept;
+	bool operator!=(const VipBoxStyle& other) const noexcept;
 
 private:
+	/// @brief Create the background brush based on the shape and the given brush or gradient.
+	/// Only rectangles and pies can use adaptative gradients.
+	QBrush createBackgroundBrush() const;
+	QPen createBorderPen(const QPen& pen) const;
+
 	void update();
 
 	struct PrivateData : QSharedData

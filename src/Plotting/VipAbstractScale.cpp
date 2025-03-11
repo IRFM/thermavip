@@ -1,7 +1,7 @@
 /**
  * BSD 3-Clause License
  *
- * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ * Copyright (c) 2025, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Leo Dubus, Erwan Grelier
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -119,17 +119,16 @@ public:
 };
 
 VipBoxGraphicsWidget::VipBoxGraphicsWidget(QGraphicsItem* parent)
-  : QGraphicsWidget(parent)
+  : QOpenGLGraphicsWidget(parent)
   , VipPaintItem(this)
   , VipRenderObject(this)
 {
-	d_data = new PrivateData();
+	VIP_CREATE_PRIVATE_DATA(d_data);
 	this->setAcceptHoverEvents(true);
 }
 
 VipBoxGraphicsWidget::~VipBoxGraphicsWidget()
 {
-	delete d_data;
 }
 
 VipBoxStyle& VipBoxGraphicsWidget::boxStyle()
@@ -170,6 +169,7 @@ void VipBoxGraphicsWidget::update()
 {
 	if (!d_data->updateScheduled) {
 		d_data->updateScheduled = 1;
+		this->markItemDirty();
 		if (VipAbstractPlotArea* a = area()) {
 			a->markNeedUpdate();
 			d_data->dirtyPixmap = true;
@@ -211,8 +211,10 @@ void VipBoxGraphicsWidget::hoverLeaveEvent(QGraphicsSceneHoverEvent* event)
 
 QVariant VipBoxGraphicsWidget::itemChange(GraphicsItemChange change, const QVariant& value)
 {
-	if (change == QGraphicsItem::ItemSelectedHasChanged)
+	if (change == QGraphicsItem::ItemSelectedHasChanged) {
+		this->markItemDirty();
 		this->markStyleSheetDirty();
+	}
 	else if (change == QGraphicsItem::ItemChildAddedChange)
 		this->dispatchStyleSheetToChildren();
 
@@ -267,32 +269,18 @@ bool VipBoxGraphicsWidget::setItemProperty(const char* name, const QVariant& val
 	return VipPaintItem::setItemProperty(name, value, index);
 }
 
-void VipBoxGraphicsWidget::paint(QPainter* painter, const QStyleOptionGraphicsItem*, QWidget*)
+void VipBoxGraphicsWidget::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget)
 {
 	if (!paintingEnabled())
 		return;
 
 	this->applyStyleSheetIfDirty();
-	painter->setRenderHints(this->renderHints());
-	painter->setCompositionMode(this->compositionMode());
-	/* #ifndef VIP_OPENGL_ITEM_CACHING
-	if (VipPainter::isOpenGL(painter) && w) { //check if drawing on an opengl widget
-		const double margin =  0;
-		QRectF r = boundingRect().adjusted(-margin, -margin, margin, margin);
-		if (d_data->dirtyPixmap) {
-			if (d_data->pixmap.width() < r.size().width() || d_data->pixmap.height() < r.size().height())
-				d_data->pixmap = QImage(r.size().toSize(), QImage::Format_ARGB32_Premultiplied);
-			d_data->pixmap.fill(Qt::transparent);
-			QPainter p(&d_data->pixmap);
-			p.setTransform(QTransform().translate(-r.left() - 0.5, -r.top() ));
-			draw(&p);
-			d_data->dirtyPixmap = false;
-		}
-		painter->drawImage(r.topLeft(), d_data->pixmap);
+
+	if (!drawThroughCache(painter, option, widget)) {
+		painter->setRenderHints(this->renderHints());
+		painter->setCompositionMode(this->compositionMode());
+		draw(painter);
 	}
-	else
-#endif*/
-	draw(painter);
 
 	d_data->updateScheduled = 0;
 }
@@ -373,7 +361,7 @@ public:
 VipAbstractScale::VipAbstractScale(QGraphicsItem* parent)
   : VipBoxGraphicsWidget(parent)
 {
-	d_data = new PrivateData();
+	VIP_CREATE_PRIVATE_DATA(d_data);
 
 	this->setFlag(QGraphicsItem::ItemIsSelectable);
 
@@ -393,7 +381,6 @@ VipAbstractScale::~VipAbstractScale()
 {
 	// remove synchronized items
 	desynchronize();
-	delete d_data;
 }
 
 VipInterval VipAbstractScale::itemsInterval() const
@@ -1334,6 +1321,9 @@ bool VipAbstractScale::setItemProperty(const char* name, const QVariant& value, 
 					// set text style to ALL
 					setTextStyle(st, VipScaleDiv::MediumTick);
 					setTextStyle(st, VipScaleDiv::MinorTick);
+
+					// the additional text style should keep its alignment
+					st.setAlignment(scaleDraw()->additionalTextStyle().alignment());
 					scaleDraw()->setAdditionalTextStyle(st);
 				}
 				return true;
@@ -1459,7 +1449,7 @@ public:
 VipScaleWidget::VipScaleWidget(VipAbstractScale* scale, QWidget* parent)
   : QGraphicsView(parent)
 {
-	d_data = new PrivateData();
+	VIP_CREATE_PRIVATE_DATA(d_data);
 	d_data->scale = nullptr;
 	d_data->enableRecomputeGeometry = true;
 
@@ -1479,7 +1469,6 @@ VipScaleWidget::VipScaleWidget(VipAbstractScale* scale, QWidget* parent)
 
 VipScaleWidget::~VipScaleWidget()
 {
-	delete d_data;
 }
 
 QColor VipScaleWidget::backgroundColor() const
@@ -1489,7 +1478,7 @@ QColor VipScaleWidget::backgroundColor() const
 
 bool VipScaleWidget::hasBackgroundColor() const
 {
-	return d_data->params.backgroundColor;
+	return d_data->params.backgroundColor.data();
 }
 
 void VipScaleWidget::removeBackgroundColor()

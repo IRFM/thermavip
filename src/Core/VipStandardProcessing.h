@@ -1,7 +1,7 @@
 /**
  * BSD 3-Clause License
  *
- * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ * Copyright (c) 2025, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Leo Dubus, Erwan Grelier
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -38,8 +38,8 @@
 /// Represents a data comming from another processing object.
 class VIP_CORE_EXPORT VipOtherPlayerData
 {
-	friend QDataStream& operator<<(QDataStream& arch, const VipOtherPlayerData& o);
-	friend QDataStream& operator>>(QDataStream& arch, VipOtherPlayerData& o);
+	friend VIP_CORE_EXPORT QDataStream& operator<<(QDataStream& arch, const VipOtherPlayerData& o);
+	friend VIP_CORE_EXPORT QDataStream& operator>>(QDataStream& arch, VipOtherPlayerData& o);
 
 public:
 	VipOtherPlayerData();
@@ -67,7 +67,7 @@ public:
 
 private:
 	class PrivateData;
-	QSharedPointer<PrivateData> m_data;
+	QSharedPointer<PrivateData> d_data;
 };
 
 Q_DECLARE_METATYPE(VipOtherPlayerData)
@@ -362,13 +362,13 @@ protected:
 
 	/// Same as #VipProcessingObject::create, but also set the output time (max time of all inputs)
 	/// and merge all inputs attributes.
-	virtual VipAnyData create(const QVariant& data) const;
+	virtual VipAnyData create(const QVariant& data, const QVariantMap & attr = QVariantMap()) const;
 
 	const QVector<VipAnyData>& inputs() const;
 
 private:
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 /// Extract a feature (min, max, mean,...) from a set of samples (images, curves,...)
 class VIP_CORE_EXPORT VipSamplesFeature : public VipBaseDataFusion
@@ -391,8 +391,8 @@ protected:
 
 private:
 	void setOutput(const QVariant& v);
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 VIP_REGISTER_QOBJECT_METATYPE(VipSamplesFeature*)
@@ -407,7 +407,7 @@ class VIP_CORE_EXPORT VipRunningAverage : public VipProcessingObject
 	Q_CLASSINFO("category", "Filters")
 
 	VipSamplesFeature m_extract;
-	QList<VipAnyData> m_lst;
+	VipAnyDataList m_lst;
 	QMutex m_mutex;
 
 public:
@@ -682,7 +682,7 @@ protected:
 
 private:
 	VipNumericOperation m_op;
-	VipAnyData m_data;
+	VipAnyData d_data;
 };
 
 VIP_REGISTER_QOBJECT_METATYPE(VipOperationBetweenPlayers*)

@@ -1,7 +1,7 @@
 /**
  * BSD 3-Clause License
  *
- * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ * Copyright (c) 2025, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Leo Dubus, Erwan Grelier
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -159,13 +159,12 @@ public:
 //! Constructor
 VipScaleEngine::VipScaleEngine()
 {
-	d_data = new PrivateData;
+	VIP_CREATE_PRIVATE_DATA(d_data);
 }
 
 //! Destructor
 VipScaleEngine::~VipScaleEngine()
 {
-	delete d_data;
 }
 
 /// \return the margin at the lower end of the scale
@@ -921,8 +920,8 @@ double VipFixedScaleEngine::maxIntervalWidth() const noexcept
 
 void VipFixedScaleEngine::onComputeScaleDiv(VipAbstractScale* scale, const VipInterval& items_interval)
 {
-	if (d_vt) {
-		if (d_vt->startValue() == items_interval.minValue())
+	if (VipFixedValueToText * vt = d_vt) {
+		if (vt->startValue() == items_interval.minValue())
 			scale->setOptimizeFromStreaming(false);
 		else
 			scale->setOptimizeFromStreaming(true, 0.1);
@@ -930,7 +929,7 @@ void VipFixedScaleEngine::onComputeScaleDiv(VipAbstractScale* scale, const VipIn
 		double start = items_interval.minValue();
 		if (!vipIsNan(d_maxIntervalWidth) && items_interval.width() > d_maxIntervalWidth)
 			start = items_interval.maxValue() - d_maxIntervalWidth;
-		d_vt->setStartValue(start);
+		vt->setStartValue(start);
 	}
 }
 
@@ -952,11 +951,12 @@ void VipFixedScaleEngine::autoScale(int maxSteps, vip_double& x1, vip_double& x2
 }
 VipScaleDiv VipFixedScaleEngine::divideScale(vip_double x1, vip_double x2, int maxMajSteps, int maxMinSteps, vip_double stepSize) const
 {
-	if (!d_vt)
+	VipFixedValueToText* vt = d_vt;
+	if (!vt)
 		return VipLinearScaleEngine::divideScale(x1, x2, maxMajSteps, maxMinSteps, stepSize);
 
-	double _x1 = x1 - d_vt->startValue();
-	double _x2 = x2 - d_vt->startValue();
+	double _x1 = x1 - vt->startValue();
+	double _x2 = x2 - vt->startValue();
 	if (!vipIsNan(d_maxIntervalWidth) && (x2 - x1) > d_maxIntervalWidth)
 		_x1 = _x2 - d_maxIntervalWidth;
 
@@ -969,13 +969,13 @@ VipScaleDiv VipFixedScaleEngine::divideScale(vip_double x1, vip_double x2, int m
 	VipInterval interval = div.bounds();
 
 	for (int i = 0; i < ticks[0].size(); ++i)
-		ticks[0][i] += d_vt->startValue();
+		ticks[0][i] += vt->startValue();
 	for (int i = 0; i < ticks[1].size(); ++i)
-		ticks[1][i] += d_vt->startValue();
+		ticks[1][i] += vt->startValue();
 	for (int i = 0; i < ticks[2].size(); ++i)
-		ticks[2][i] += d_vt->startValue();
-	interval.setMaxValue(interval.maxValue() + d_vt->startValue());
-	interval.setMinValue(interval.minValue() + d_vt->startValue());
+		ticks[2][i] += vt->startValue();
+	interval.setMaxValue(interval.maxValue() + vt->startValue());
+	interval.setMinValue(interval.minValue() + vt->startValue());
 
 	return VipScaleDiv(interval, ticks);
 }

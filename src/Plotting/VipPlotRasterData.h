@@ -1,7 +1,7 @@
 /**
  * BSD 3-Clause License
  *
- * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ * Copyright (c) 2025, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Leo Dubus, Erwan Grelier
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -65,6 +65,8 @@ public:
 ///
 class VIP_PLOTTING_EXPORT VipRasterData
 {
+	template<class Conv>
+	friend class VipRasterDataEmbedConverter;
 public:
 	VipRasterData();
 	/// @brief Construct from a VipNDArray and an origin position
@@ -75,10 +77,9 @@ public:
 	VipRasterData(const QPixmap& pixmap, const QPointF& p = QPointF());
 	/// @brief Construct from a VipRasterConverter object
 	VipRasterData(VipRasterConverter* converter);
-	VipRasterData(const VipRasterData& raster);
-	~VipRasterData();
-	VipRasterData& operator=(const VipRasterData& raster);
 
+	VIP_DEFAULT_MOVE(VipRasterData);
+	
 	/// @brief Returns true if the VipRasterData is null (default constructed)
 	bool isNull() const { return !d_data; }
 	/// @brief Returns true if the VipRasterData is empty (null or empty bounding rect)
@@ -218,8 +219,7 @@ private:
 	QRectF computeArrayRect(const VipRasterData& raster) const;
 	void drawBackground(QPainter* painter, const VipCoordinateSystemPtr& m, const QRectF& rect, const QPolygonF& dst) const;
 
-	class PrivateData;
-	PrivateData* d_data;
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 VIP_REGISTER_QOBJECT_METATYPE(VipPlotRasterData*)

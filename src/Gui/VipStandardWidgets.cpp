@@ -1,7 +1,7 @@
 /**
  * BSD 3-Clause License
  *
- * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ * Copyright (c) 2025, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Leo Dubus, Erwan Grelier
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -194,7 +194,11 @@ VipSpinBox::VipSpinBox(QWidget* parent)
 VipBoolEdit::VipBoolEdit(QWidget* parent)
   : QCheckBox(parent)
 {
+#if QT_VERSION >= QT_VERSION_CHECK(6, 7, 0)
+	connect(this, SIGNAL(checkStateChanged(Qt::CheckState)), this, SLOT(changed()));
+#else
 	connect(this, SIGNAL(stateChanged(int)), this, SLOT(changed()));
+#endif
 }
 
 bool VipBoolEdit::value() const
@@ -520,47 +524,46 @@ public:
 VipMultiComponentDoubleEdit::VipMultiComponentDoubleEdit(QWidget* parent)
   : QWidget(parent)
 {
-	m_data = new PrivateData();
-	m_data->rightStyle = "QLineEdit { border: 1px solid lightGray; }";
-	m_data->wrongStyle = "QLineEdit { border: 1px solid red; }";
+	VIP_CREATE_PRIVATE_DATA(d_data);
+	d_data->rightStyle = "QLineEdit { border: 1px solid lightGray; }";
+	d_data->wrongStyle = "QLineEdit { border: 1px solid red; }";
 
 	QHBoxLayout* lay = new QHBoxLayout();
 	lay->setContentsMargins(0, 0, 0, 0);
-	lay->addWidget(&m_data->edit);
+	lay->addWidget(&d_data->edit);
 	setLayout(lay);
 
-	m_data->edit.setStyleSheet(m_data->rightStyle);
-	connect(&m_data->edit, SIGNAL(textEdited(const QString&)), this, SLOT(edited()));
-	connect(&m_data->edit, SIGNAL(returnPressed()), this, SLOT(enterPressed()));
+	d_data->edit.setStyleSheet(d_data->rightStyle);
+	connect(&d_data->edit, SIGNAL(textEdited(const QString&)), this, SLOT(edited()));
+	connect(&d_data->edit, SIGNAL(returnPressed()), this, SLOT(enterPressed()));
 }
 
 VipMultiComponentDoubleEdit::~VipMultiComponentDoubleEdit()
 {
-	delete m_data;
 }
 int VipMultiComponentDoubleEdit::fixedNumberOfComponents() const
 {
-	return m_data->fixedNumberOfComponents;
+	return d_data->fixedNumberOfComponents;
 }
 int VipMultiComponentDoubleEdit::maxNumberOfComponents() const
 {
-	return m_data->maxNumberOfComponents;
+	return d_data->maxNumberOfComponents;
 }
 QString VipMultiComponentDoubleEdit::separator() const
 {
-	return m_data->separator;
+	return d_data->separator;
 }
 const QString& VipMultiComponentDoubleEdit::rightStyle() const
 {
-	return m_data->rightStyle;
+	return d_data->rightStyle;
 }
 const QString& VipMultiComponentDoubleEdit::wrongStyle() const
 {
-	return m_data->wrongStyle;
+	return d_data->wrongStyle;
 }
 const QString& VipMultiComponentDoubleEdit::format() const
 {
-	return m_data->format;
+	return d_data->format;
 }
 bool VipMultiComponentDoubleEdit::isValid() const
 {
@@ -570,55 +573,55 @@ bool VipMultiComponentDoubleEdit::isValid() const
 }
 bool VipMultiComponentDoubleEdit::integerFormat() const
 {
-	return m_data->integer;
+	return d_data->integer;
 }
 VipNDDoubleCoordinate VipMultiComponentDoubleEdit::value() const
 {
-	return m_data->value;
+	return d_data->value;
 }
 void VipMultiComponentDoubleEdit::setRightStyle(const QString& st)
 {
-	m_data->rightStyle = st;
+	d_data->rightStyle = st;
 	this->applyStyle();
 }
 void VipMultiComponentDoubleEdit::setWrongStyle(const QString& st)
 {
-	m_data->wrongStyle = st;
+	d_data->wrongStyle = st;
 	this->applyStyle();
 }
 void VipMultiComponentDoubleEdit::setIntegerFormat(bool integer)
 {
-	m_data->integer = integer;
+	d_data->integer = integer;
 	this->applyStyle();
 	this->applyFormat();
 }
 void VipMultiComponentDoubleEdit::setFixedNumberOfComponents(int comp)
 {
-	m_data->fixedNumberOfComponents = comp;
-	m_data->maxNumberOfComponents = -1;
+	d_data->fixedNumberOfComponents = comp;
+	d_data->maxNumberOfComponents = -1;
 	this->applyStyle();
 }
 void VipMultiComponentDoubleEdit::setMaxNumberOfComponents(int comp)
 {
-	m_data->maxNumberOfComponents = comp;
-	m_data->fixedNumberOfComponents = -1;
+	d_data->maxNumberOfComponents = comp;
+	d_data->fixedNumberOfComponents = -1;
 	this->applyStyle();
 }
 void VipMultiComponentDoubleEdit::setSeparator(const QString& sep)
 {
-	m_data->separator = sep;
+	d_data->separator = sep;
 	this->applyFormat();
 	this->applyStyle();
 }
 void VipMultiComponentDoubleEdit::setFormat(const QString& format)
 {
-	m_data->format = format;
+	d_data->format = format;
 	this->applyFormat();
 }
 void VipMultiComponentDoubleEdit::setValue(const VipNDDoubleCoordinate& value)
 {
-	if (value != m_data->value) {
-		m_data->value = value;
+	if (value != d_data->value) {
+		d_data->value = value;
 		Q_EMIT valueChanged(value);
 		Q_EMIT genericValueChanged(QVariant::fromValue(value));
 	}
@@ -628,14 +631,14 @@ void VipMultiComponentDoubleEdit::setValue(const VipNDDoubleCoordinate& value)
 
 VipNDDoubleCoordinate VipMultiComponentDoubleEdit::readValue(bool* ok) const
 {
-	QString str = m_data->edit.text();
+	QString str = d_data->edit.text();
 	str.replace(separator(), " ");
 
 	VipNDDoubleCoordinate value;
 	QStringList lst = str.split(" ", VIP_SKIP_BEHAVIOR::SkipEmptyParts);
 	for (int i = 0; i < lst.size(); ++i) {
 		bool is_ok = false;
-		VipDoubleEdit::readValue(lst[i], m_data->integer, &is_ok);
+		VipDoubleEdit::readValue(lst[i], d_data->integer, &is_ok);
 		if (!is_ok) {
 			if (ok)
 				*ok = false;
@@ -645,11 +648,11 @@ VipNDDoubleCoordinate VipMultiComponentDoubleEdit::readValue(bool* ok) const
 
 	if (ok)
 		*ok = true;
-	if (m_data->fixedNumberOfComponents >= 0 && value.size() != m_data->fixedNumberOfComponents) {
+	if (d_data->fixedNumberOfComponents >= 0 && value.size() != d_data->fixedNumberOfComponents) {
 		if (ok)
 			*ok = false;
 	}
-	if (m_data->maxNumberOfComponents >= 0 && value.size() > m_data->maxNumberOfComponents) {
+	if (d_data->maxNumberOfComponents >= 0 && value.size() > d_data->maxNumberOfComponents) {
 		if (ok)
 			*ok = false;
 	}
@@ -661,11 +664,11 @@ void VipMultiComponentDoubleEdit::applyStyle()
 	bool ok = false;
 	VipNDDoubleCoordinate value = readValue(&ok);
 	if (ok) {
-		m_data->edit.setStyleSheet(m_data->rightStyle);
-		m_data->value = value;
+		d_data->edit.setStyleSheet(d_data->rightStyle);
+		d_data->value = value;
 	}
 	else {
-		m_data->edit.setStyleSheet(m_data->wrongStyle);
+		d_data->edit.setStyleSheet(d_data->wrongStyle);
 	}
 }
 
@@ -673,10 +676,10 @@ void VipMultiComponentDoubleEdit::applyFormat()
 {
 	bool ok = false;
 	VipNDDoubleCoordinate value = readValue(&ok);
-	if (ok && !m_data->integer) {
+	if (ok && !d_data->integer) {
 		QString res;
 		for (int i = 0; i < value.size(); ++i) {
-			QString f = m_data->format;
+			QString f = d_data->format;
 			if (f.isEmpty())
 				f = "%g";
 
@@ -687,9 +690,9 @@ void VipMultiComponentDoubleEdit::applyFormat()
 			if (i < value.size() - 1)
 				res += " " + separator() + " ";
 		}
-		m_data->edit.blockSignals(true);
-		m_data->edit.setText(res);
-		m_data->edit.blockSignals(false);
+		d_data->edit.blockSignals(true);
+		d_data->edit.setText(res);
+		d_data->edit.blockSignals(false);
 	}
 }
 
@@ -700,7 +703,7 @@ void VipMultiComponentDoubleEdit::edited()
 
 void VipMultiComponentDoubleEdit::enterPressed()
 {
-	VipNDDoubleCoordinate value = m_data->value;
+	VipNDDoubleCoordinate value = d_data->value;
 	this->applyFormat();
 	Q_EMIT valueChanged(value);
 	Q_EMIT genericValueChanged(QVariant::fromValue(value));
@@ -1342,7 +1345,7 @@ VipPenButton::VipPenButton(const QPen& pen, QWidget* parent)
 	m_menu = new QMenu();
 	QWidgetAction* action = new QWidgetAction(m_menu);
 	action->setDefaultWidget(m_pen);
-	
+
 	m_menu->addAction(action);
 	this->setMenu(m_menu);
 
@@ -1909,6 +1912,12 @@ void VipFileName::setDefaultOpenDir(const QString& dir)
 	m_default_open_dir = dir;
 }
 
+void VipFileName::setDialogParent(QWidget* parent)
+{
+	m_dialog_parent = parent;
+	m_has_dialog_parent = true;
+}
+
 QString VipFileName::defaultOpenDir() const
 {
 	return m_default_open_dir;
@@ -1928,13 +1937,17 @@ void VipFileName::buttonTriggered()
 	else
 		filters = m_filters;
 
+	QWidget* parent = this;
+	if (m_has_dialog_parent)
+		parent = m_dialog_parent;
+
 	VipFileDialog::setDefaultDirectory(m_default_open_dir);
 	if (m_mode == Save)
-		fileName = VipFileDialog::getSaveFileName(this, m_title, filters);
+		fileName = VipFileDialog::getSaveFileName(parent, m_title, filters);
 	else if (m_mode == Open)
-		fileName = VipFileDialog::getOpenFileName(this, m_title, filters);
+		fileName = VipFileDialog::getOpenFileName(parent, m_title, filters);
 	else if (m_mode == OpenDir)
-		fileName = VipFileDialog::getExistingDirectory(this, m_title);
+		fileName = VipFileDialog::getExistingDirectory(parent, m_title);
 	VipFileDialog::setDefaultDirectory(QString());
 
 	if (!fileName.isEmpty()) {
@@ -1970,11 +1983,19 @@ static QList<Action> findActions(QWidget* bar, QAction* exclude = nullptr)
 				// if (QToolBar* b = qobject_cast<QToolBar*>(w))
 				//  res += findActions(b);
 				//  else
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
 				res.append(Action(a, w, a->associatedWidgets()[0]));
+#else
+				res.append(Action(a, w, qobject_cast<QWidget*>(a->associatedObjects()[0])));
+#endif
 			}
 		}
 		else {
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
 			QList<QWidget*> ws = acts[i]->associatedWidgets();
+#else
+			QList<QWidget*> ws = vipListCast<QWidget*>(acts[i]->associatedObjects());
+#endif
 			if (ws.size() > 1)
 				res.append(Action(acts[i], ws[1], ws[0]));
 			else
@@ -2071,7 +2092,7 @@ class VipToolBar::PrivateData
 {
 public:
 	QMenu* additional;
-	VipAdditionalToolBar* additionalToolBar;
+	std::unique_ptr < VipAdditionalToolBar> additionalToolBar;
 	QToolButton showAdditional;
 	QAction* showAdditionalAction;
 
@@ -2098,47 +2119,44 @@ public:
 VipToolBar::VipToolBar(QWidget* parent)
   : QToolBar(parent)
 {
-	m_data = new PrivateData();
-	m_data->additionalToolBar = new VipAdditionalToolBar(this);
-	m_data->additionalToolBar->setWindowFlags(this->windowFlags() | Qt::Popup);
-	m_data->additionalToolBar->hide();
-	m_data->additionalToolBar->setPalette(palette());
+	VIP_CREATE_PRIVATE_DATA(d_data);
+	d_data->additionalToolBar.reset( new VipAdditionalToolBar(this));
+	d_data->additionalToolBar->setWindowFlags(this->windowFlags() | Qt::Popup);
+	d_data->additionalToolBar->hide();
+	d_data->additionalToolBar->setPalette(palette());
 
-	m_data->additional = new QMenu(&m_data->showAdditional);
-	m_data->additional->setToolTipsVisible(true);
+	d_data->additional = new QMenu(&d_data->showAdditional);
+	d_data->additional->setToolTipsVisible(true);
 
-	m_data->showAdditional.setMenu(m_data->additional);
-	m_data->showAdditional.setPopupMode(QToolButton::InstantPopup);
-	m_data->showAdditional.setParent(this);
-	m_data->showAdditional.setMaximumWidth(13);
-	m_data->showAdditional.resize(13, height());
-	m_data->showAdditional.hide();
-	m_data->showAdditional.setAutoFillBackground(true);
-	m_data->showAdditional.setPalette(palette());
-	m_data->showAdditional.setToolTip("Show additional actions");
+	d_data->showAdditional.setMenu(d_data->additional);
+	d_data->showAdditional.setPopupMode(QToolButton::InstantPopup);
+	d_data->showAdditional.setParent(this);
+	d_data->showAdditional.setMaximumWidth(13);
+	d_data->showAdditional.resize(13, height());
+	d_data->showAdditional.hide();
+	d_data->showAdditional.setAutoFillBackground(true);
+	d_data->showAdditional.setPalette(palette());
+	d_data->showAdditional.setToolTip("Show additional actions");
 	// to hide the tool button menu indicator:
 	// QToolButton::menu-indicator{ image: none; }
 
-	m_data->timer.setSingleShot(true);
-	m_data->timer.setInterval(200);
+	d_data->timer.setSingleShot(true);
+	d_data->timer.setInterval(200);
 
-	connect(m_data->additional, &QMenu::aboutToShow, this, &VipToolBar::aboutToShow);
-	connect(m_data->additional, &QMenu::aboutToHide, this, &VipToolBar::aboutToHide);
-	connect(&m_data->timer, SIGNAL(timeout()), this, SLOT(compute()));
+	connect(d_data->additional, &QMenu::aboutToShow, this, &VipToolBar::aboutToShow);
+	connect(d_data->additional, &QMenu::aboutToHide, this, &VipToolBar::aboutToHide);
+	connect(&d_data->timer, SIGNAL(timeout()), this, SLOT(compute()));
 }
 
 VipToolBar::~VipToolBar()
 {
-	delete m_data->additionalToolBar;
-	delete m_data->additional;
-	delete m_data;
 }
 
 QSize VipToolBar::sizeHint() const
 {
 	QSize s = QToolBar::sizeHint();
-	s.rwidth() += m_data->additional->sizeHint().width() + 13; // add 13 for the showAdditional button
-	s.rwidth() += m_data->additionalToolBar->sizeHint().width();
+	s.rwidth() += d_data->additional->sizeHint().width() + 13; // add 13 for the showAdditional button
+	s.rwidth() += d_data->additionalToolBar->sizeHint().width();
 	return s;
 }
 
@@ -2146,139 +2164,139 @@ void VipToolBar::aboutToShow()
 {
 	// body.remove( QRegExp( "<(?:div|span|tr|td|br|body|html|tt|a|strong|p)[^>]*>", Qt::CaseInsensitive ) );
 
-	m_data->aboutToShow = true;
+	d_data->aboutToShow = true;
 
-	if (m_data->_ShowAdditionals == ShowInMenu) {
+	if (d_data->_ShowAdditionals == ShowInMenu) {
 		// add hidden actions in menu
-		for (int i = 0; i < m_data->hidden.size(); ++i) {
-			// m_data->hidden[i].parent
-			this->removeAction(m_data->hidden[i].action);
-			m_data->additional->addAction(m_data->hidden[i].action);
+		for (int i = 0; i < d_data->hidden.size(); ++i) {
+			// d_data->hidden[i].parent
+			this->removeAction(d_data->hidden[i].action);
+			d_data->additional->addAction(d_data->hidden[i].action);
 		}
 	}
 	else {
 		// copy parameters
-		m_data->additionalToolBar->setIconSize(iconSize());
-		m_data->additionalToolBar->setToolButtonStyle(toolButtonStyle());
+		d_data->additionalToolBar->setIconSize(iconSize());
+		d_data->additionalToolBar->setToolButtonStyle(toolButtonStyle());
 
 		// add hidden actions in tool bar
-		for (int i = 0; i < m_data->hidden.size(); ++i) {
-			// m_data->hidden[i].parent
-			this->removeAction(m_data->hidden[i].action);
-			m_data->additionalToolBar->addAction(m_data->hidden[i].action);
+		for (int i = 0; i < d_data->hidden.size(); ++i) {
+			// d_data->hidden[i].parent
+			this->removeAction(d_data->hidden[i].action);
+			d_data->additionalToolBar->addAction(d_data->hidden[i].action);
 		}
 
 		// resize to avoid showing the bottom-arrow span button
-		// m_data->additionalToolBar->resize(m_data->additionalToolBar->size() + QSize(10, 0));
+		// d_data->additionalToolBar->resize(d_data->additionalToolBar->size() + QSize(10, 0));
 
-		int w = m_data->additionalToolBar->sizeHint().width();
+		int w = d_data->additionalToolBar->sizeHint().width();
 		if (w > this->width()) {
 			// align to the left
-			m_data->additionalToolBar->move(this->mapToGlobal(QPoint(0, height())));
+			d_data->additionalToolBar->move(this->mapToGlobal(QPoint(0, height())));
 		}
 		else {
 			// align to the right
-			m_data->additionalToolBar->move(this->mapToGlobal(QPoint(width() - w, height())));
+			d_data->additionalToolBar->move(this->mapToGlobal(QPoint(width() - w, height())));
 		}
 		// show in event loop
-		QMetaObject::invokeMethod(m_data->additionalToolBar, "show", Qt::QueuedConnection);
+		QMetaObject::invokeMethod(d_data->additionalToolBar.get(), "show", Qt::QueuedConnection);
 	}
 
-	m_data->aboutToShow = false;
+	d_data->aboutToShow = false;
 }
 
 void VipToolBar::aboutToHide()
 {
 
-	if (m_data->_ShowAdditionals == ShowInMenu) {
+	if (d_data->_ShowAdditionals == ShowInMenu) {
 		// transfer back
-		transferActions(m_data->additional, this, m_data->hidden);
+		transferActions(d_data->additional, this, d_data->hidden);
 	}
-	else if (sender() != m_data->additional) {
+	else if (sender() != d_data->additional) {
 		// transfer back
-		transferActions(m_data->additionalToolBar, this, m_data->hidden);
+		transferActions(d_data->additionalToolBar.get(), this, d_data->hidden);
 	}
 }
 
 QToolButton* VipToolBar::showButton() const
 {
-	return &m_data->showAdditional;
+	return &d_data->showAdditional;
 }
 
 QMenu* VipToolBar::showAdditionalMenu() const
 {
-	return m_data->additional;
+	return d_data->additional;
 }
 QToolBar* VipToolBar::showAdditionalToolBar() const
 {
-	return m_data->additionalToolBar;
+	return d_data->additionalToolBar.get();
 }
 
 VipToolBar::ShowAdditionals VipToolBar::showAdditionals() const
 {
-	return m_data->_ShowAdditionals;
+	return d_data->_ShowAdditionals;
 }
 
 void VipToolBar::setShowAdditionals(ShowAdditionals sh)
 {
 	sizeHint();
-	if (sh != m_data->_ShowAdditionals) {
-		m_data->_ShowAdditionals = sh;
+	if (sh != d_data->_ShowAdditionals) {
+		d_data->_ShowAdditionals = sh;
 		if (sh == ShowInMenu) {
-			m_data->additional->setStyleSheet("");
+			d_data->additional->setStyleSheet("");
 		}
 		else {
-			// transferActions(m_data->additional, m_data->additionalToolBar);
-			m_data->additional->setStyleSheet("background: transparent; border: 0px;");
+			// transferActions(d_data->additional, d_data->additionalToolBar);
+			d_data->additional->setStyleSheet("background: transparent; border: 0px;");
 		}
 	}
 }
 
 void VipToolBar::delayCompute()
 {
-	if (!m_data->customBehaviorEnabled)
+	if (!d_data->customBehaviorEnabled)
 		return;
-	if (m_data->dirtyCompute) {
-		m_data->dirtyCompute = false;
+	if (d_data->dirtyCompute) {
+		d_data->dirtyCompute = false;
 		QMetaObject::invokeMethod(this, "compute", Qt::QueuedConnection);
 	}
 }
 
 void VipToolBar::setCustomBehaviorEnabled(bool enable)
 {
-	if (enable != m_data->customBehaviorEnabled) {
-		m_data->customBehaviorEnabled = enable;
+	if (enable != d_data->customBehaviorEnabled) {
+		d_data->customBehaviorEnabled = enable;
 		if (enable) {
 			compute();
 		}
 		else {
-			m_data->showAdditional.hide();
+			d_data->showAdditional.hide();
 		}
 	}
 }
 bool VipToolBar::customBehaviorEnabled() const
 {
-	return m_data->customBehaviorEnabled;
+	return d_data->customBehaviorEnabled;
 }
 
 void VipToolBar::compute()
 {
-	if (!m_data->customBehaviorEnabled)
+	if (!d_data->customBehaviorEnabled)
 		return;
 
-	m_data->width = 0;
-	m_data->acts = findActions(this) + findActions(m_data->additionalToolBar) + findActions(m_data->additional);
-	m_data->hidden = hiddenActions(this, m_data->acts, &m_data->width);
-	if (m_data->hidden.size()) {
-		m_data->showAdditional.show();
-		m_data->showAdditional.move(this->width() - m_data->showAdditional.width(), 0);
-		m_data->showAdditional.resize(m_data->showAdditional.width(), this->height());
-		// m_data->showAdditional.raise();
+	d_data->width = 0;
+	d_data->acts = findActions(this) + findActions(d_data->additionalToolBar.get()) + findActions(d_data->additional);
+	d_data->hidden = hiddenActions(this, d_data->acts, &d_data->width);
+	if (d_data->hidden.size()) {
+		d_data->showAdditional.show();
+		d_data->showAdditional.move(this->width() - d_data->showAdditional.width(), 0);
+		d_data->showAdditional.resize(d_data->showAdditional.width(), this->height());
+		// d_data->showAdditional.raise();
 	}
 	else
-		m_data->showAdditional.hide();
+		d_data->showAdditional.hide();
 
-	m_data->dirtyCompute = true;
+	d_data->dirtyCompute = true;
 }
 
 void VipToolBar::showEvent(QShowEvent* evt)
@@ -2299,7 +2317,7 @@ void VipToolBar::actionEvent(QActionEvent* evt)
 	// We need to trigger a compute() each time the user add/remove an action to/from the toolbar.
 	// However we DON'T want to trigger while it is creating the additional menu/toolbar in aboutToShow().
 
-	if (!m_data->aboutToShow) {
+	if (!d_data->aboutToShow) {
 		delayCompute();
 	}
 }
@@ -2509,45 +2527,44 @@ public:
 VipCloseToolBar::VipCloseToolBar(QWidget* widget, QWidget* parent)
   : QToolBar(parent)
 {
-	m_data = new PrivateData();
+	VIP_CREATE_PRIVATE_DATA(d_data);
 
 	setIconSize(QSize(18, 18));
 	QWidget* empty = new QWidget();
 	empty->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
 	addWidget(empty);
-	m_data->minimize = addAction(vipIcon("minimize.png"), "Minimize window");
-	m_data->maximize = addAction(vipIcon("maximize.png"), "Maximize window");
-	m_data->close = addAction(vipIcon("close.png"), "Close window");
+	d_data->minimize = addAction(vipIcon("minimize.png"), "Minimize window");
+	d_data->maximize = addAction(vipIcon("maximize.png"), "Maximize window");
+	d_data->close = addAction(vipIcon("close.png"), "Close window");
 
-	connect(m_data->maximize, SIGNAL(triggered(bool)), this, SLOT(maximizeOrShowNormal()));
+	connect(d_data->maximize, SIGNAL(triggered(bool)), this, SLOT(maximizeOrShowNormal()));
 
 	setWidget(widget);
 }
 
 VipCloseToolBar::~VipCloseToolBar()
 {
-	delete m_data;
 }
 
 void VipCloseToolBar::setWidget(QWidget* widget)
 {
-	if (QWidget* w = m_data->widget) {
+	if (QWidget* w = d_data->widget) {
 		w->removeEventFilter(this);
-		disconnect(m_data->minimize, SIGNAL(triggered(bool)), w, SLOT(showMinimized()));
-		disconnect(m_data->close, SIGNAL(triggered(bool)), w, SLOT(close()));
+		disconnect(d_data->minimize, SIGNAL(triggered(bool)), w, SLOT(showMinimized()));
+		disconnect(d_data->close, SIGNAL(triggered(bool)), w, SLOT(close()));
 	}
 
-	m_data->widget = widget;
+	d_data->widget = widget;
 	if (widget) {
 		widget->installEventFilter(this);
-		connect(m_data->minimize, SIGNAL(triggered(bool)), widget, SLOT(showMinimized()));
-		connect(m_data->close, SIGNAL(triggered(bool)), widget, SLOT(close()));
+		connect(d_data->minimize, SIGNAL(triggered(bool)), widget, SLOT(showMinimized()));
+		connect(d_data->close, SIGNAL(triggered(bool)), widget, SLOT(close()));
 	}
 }
 
 QWidget* VipCloseToolBar::widget() const
 {
-	return m_data->widget;
+	return d_data->widget;
 }
 
 void VipCloseToolBar::maximizeOrShowNormal()
@@ -2568,12 +2585,12 @@ bool VipCloseToolBar::eventFilter(QObject*, QEvent* evt)
 			return false;
 
 		if (widget()->isMaximized()) {
-			m_data->maximize->setText("Restore");
-			m_data->maximize->setIcon(vipIcon("restore.png"));
+			d_data->maximize->setText("Restore");
+			d_data->maximize->setIcon(vipIcon("restore.png"));
 		}
 		else {
-			m_data->maximize->setText("Maximize");
-			m_data->maximize->setIcon(vipIcon("maximize.png"));
+			d_data->maximize->setText("Maximize");
+			d_data->maximize->setIcon(vipIcon("maximize.png"));
 		}
 	}
 	return false;
@@ -2591,13 +2608,13 @@ void VipCloseToolBar::mousePressEvent(QMouseEvent* evt)
 	if (!widget())
 		return;
 
-	m_data->pt = widget()->mapToParent(evt->pos());
-	m_data->previous_pos = widget()->pos();
+	d_data->pt = widget()->mapToParent(evt->VIP_EVT_POSITION());
+	d_data->previous_pos = widget()->pos();
 }
 
 void VipCloseToolBar::mouseReleaseEvent(QMouseEvent*)
 {
-	m_data->pt = QPoint();
+	d_data->pt = QPoint();
 }
 
 void VipCloseToolBar::mouseMoveEvent(QMouseEvent* evt)
@@ -2605,9 +2622,9 @@ void VipCloseToolBar::mouseMoveEvent(QMouseEvent* evt)
 	if (!widget())
 		return;
 
-	if (m_data->pt != QPoint()) {
-		QPoint diff = widget()->mapToParent(evt->pos()) - m_data->pt;
-		widget()->move(m_data->previous_pos + diff);
+	if (d_data->pt != QPoint()) {
+		QPoint diff = widget()->mapToParent(evt->VIP_EVT_POSITION()) - d_data->pt;
+		widget()->move(d_data->previous_pos + diff);
 	}
 }
 
@@ -2629,22 +2646,22 @@ VipGenericDialog::VipGenericDialog(QWidget* panel, const QString& title, QWidget
   : QDialog( // parent ? parent : vipGetMainWindow()
       parent)
 {
-	m_data = new PrivateData();
+	VIP_CREATE_PRIVATE_DATA(d_data);
 	hide();
 	// centerWidget(this);
 	setWindowTitle(title);
 
-	m_data->apply.hide();
-	connect(&m_data->ok, SIGNAL(clicked(bool)), this, SLOT(accept()));
-	connect(&m_data->cancel, SIGNAL(clicked(bool)), this, SLOT(reject()));
+	d_data->apply.hide();
+	connect(&d_data->ok, SIGNAL(clicked(bool)), this, SLOT(accept()));
+	connect(&d_data->cancel, SIGNAL(clicked(bool)), this, SLOT(reject()));
 
 	QHBoxLayout* buttonLayout = new QHBoxLayout();
 	buttonLayout->setSpacing(0);
 	buttonLayout->addStretch(1);
-	buttonLayout->addWidget(&m_data->ok);
-	buttonLayout->addWidget(&m_data->apply);
+	buttonLayout->addWidget(&d_data->ok);
+	buttonLayout->addWidget(&d_data->apply);
 	buttonLayout->addSpacing(5);
-	buttonLayout->addWidget(&m_data->cancel);
+	buttonLayout->addWidget(&d_data->cancel);
 	buttonLayout->addStretch(1);
 
 	QVBoxLayout* globalLayout = new QVBoxLayout();
@@ -2658,12 +2675,11 @@ VipGenericDialog::VipGenericDialog(QWidget* panel, const QString& title, QWidget
 
 VipGenericDialog::~VipGenericDialog()
 {
-	delete m_data;
 }
 
 QPushButton* VipGenericDialog::applyButton()
 {
-	return &m_data->apply;
+	return &d_data->apply;
 }
 
 #include <QDrag>
@@ -2687,31 +2703,29 @@ public:
 VipDragMenu::VipDragMenu(QWidget* parent)
   : QMenu(parent)
 {
-	m_data = new PrivateData();
-	m_data->grip = new QSizeGrip(this);
-	m_data->grip->setVisible(false);
+	VIP_CREATE_PRIVATE_DATA(d_data);
+	d_data->grip = new QSizeGrip(this);
+	d_data->grip->setVisible(false);
 }
 
 VipDragMenu::VipDragMenu(const QString& title, QWidget* parent)
   : QMenu(title, parent)
 {
-	m_data = new PrivateData();
-	m_data->grip = new QSizeGrip(this);
+	VIP_CREATE_PRIVATE_DATA(d_data);
+	d_data->grip = new QSizeGrip(this);
 }
 
 VipDragMenu::~VipDragMenu()
 {
-	for (QMap<QMimeData*, QPointer<QDrag>>::iterator it = m_data->drag.begin(); it != m_data->drag.end(); ++it)
+	for (QMap<QMimeData*, QPointer<QDrag>>::iterator it = d_data->drag.begin(); it != d_data->drag.end(); ++it)
 		if (it.value())
 			delete it.value();
-
-	delete m_data;
 }
 
 void VipDragMenu::setWidget(QWidget* w)
 {
-	if (m_data->widget)
-		m_data->widget->removeEventFilter(this);
+	if (d_data->widget)
+		d_data->widget->removeEventFilter(this);
 
 	clear();
 	if (w) {
@@ -2721,40 +2735,40 @@ void VipDragMenu::setWidget(QWidget* w)
 
 		w->installEventFilter(this);
 	}
-	m_data->widget = w;
-	m_data->grip->raise();
-
-	resize(w->size() + QSize(6, 6));
+	d_data->widget = w;
+	d_data->grip->raise();
+	if (w)
+		resize(w->size() + QSize(6, 6));
 }
 
 QWidget* VipDragMenu::widget() const
 {
-	return m_data->widget;
+	return d_data->widget;
 }
 
 void VipDragMenu::setResizable(bool enable)
 {
-	m_data->grip->setVisible(enable);
+	d_data->grip->setVisible(enable);
 }
 
 bool VipDragMenu::isResizable() const
 {
-	return m_data->grip->isVisible();
+	return d_data->grip->isVisible();
 }
 
 void VipDragMenu::mousePressEvent(QMouseEvent* evt)
 {
-	m_data->pos = evt->pos();
+	d_data->pos = evt->VIP_EVT_POSITION();
 	QMenu::mousePressEvent(evt);
 }
 
 void VipDragMenu::mouseReleaseEvent(QMouseEvent* evt)
 {
-	m_data->pos = QPoint(0, 0);
+	d_data->pos = QPoint(0, 0);
 	QMenu::mouseReleaseEvent(evt);
 }
 
-static void execDrag(QMimeData* m)
+/*static void execDrag(QMimeData* m)
 {
 	QDrag d(vipGetMainWindow());
 	d.setMimeData(m);
@@ -2762,36 +2776,36 @@ static void execDrag(QMimeData* m)
 	d.exec();
 	// QObject* w = d.target();
 	QCoreApplication::removePostedEvents(&d, QEvent::DeferredDelete);
-}
+}*/
 
 void VipDragMenu::mouseMoveEvent(QMouseEvent* evt)
 {
-	QPoint pt = evt->pos();
-	if ((pt - m_data->pos).manhattanLength() > 5 && m_data->pos != QPoint(0, 0)) {
+	QPoint pt = evt->VIP_EVT_POSITION();
+	if ((pt - d_data->pos).manhattanLength() > 5 && d_data->pos != QPoint(0, 0)) {
 		// start dragging
 		QAction* action = this->actionAt(pt);
 		if (!action) {
-			m_data->pos = QPoint(0, 0);
+			d_data->pos = QPoint(0, 0);
 			return;
 		}
 
 		QMimeData* mime = action->property("QMimeData").value<QMimeData*>();
 		if (!mime) {
-			m_data->pos = QPoint(0, 0);
+			d_data->pos = QPoint(0, 0);
 			return;
 		}
 
-		if (m_data->drag.find(mime) == m_data->drag.end())
-			m_data->drag[mime] = new QDrag(this);
+		if (d_data->drag.find(mime) == d_data->drag.end())
+			d_data->drag[mime] = new QDrag(this);
 
 		// this->close();
-		QDrag* drag = m_data->drag[mime];
+		QDrag* drag = d_data->drag[mime];
 		drag->setMimeData(mime);
 		drag->exec();
 		QCoreApplication::removePostedEvents(drag, QEvent::DeferredDelete);
 		// QCoreApplication::processEvents();
 		// QMetaObject::invokeMethod(QCoreApplication::instance(), std::bind(execDrag, mime), Qt::QueuedConnection);
-		m_data->pos = QPoint(0, 0);
+		d_data->pos = QPoint(0, 0);
 	}
 	else {
 		QMenu::mouseMoveEvent(evt);
@@ -2800,22 +2814,22 @@ void VipDragMenu::mouseMoveEvent(QMouseEvent* evt)
 
 void VipDragMenu::resizeEvent(QResizeEvent*)
 {
-	if (m_data->widget) {
-		m_data->widget->removeEventFilter(this);
-		m_data->widget->resize(this->size() - QSize(6, 6));
-		m_data->widget->installEventFilter(this);
-		this->resize(m_data->widget->size() + QSize(6, 6));
+	if (d_data->widget) {
+		d_data->widget->removeEventFilter(this);
+		d_data->widget->resize(this->size() - QSize(6, 6));
+		d_data->widget->installEventFilter(this);
+		this->resize(d_data->widget->size() + QSize(6, 6));
 	}
 
-	m_data->grip->move(width() - m_data->grip->width(), height() - m_data->grip->height());
-	m_data->grip->raise();
+	d_data->grip->move(width() - d_data->grip->width(), height() - d_data->grip->height());
+	d_data->grip->raise();
 }
 
 bool VipDragMenu::eventFilter(QObject*, QEvent* evt)
 {
 	if (evt->type() == QEvent::Resize) {
-		if (m_data->widget)
-			this->resize(m_data->widget->size() + QSize(6, 6));
+		if (d_data->widget)
+			this->resize(d_data->widget->size() + QSize(6, 6));
 	}
 	return false;
 }
@@ -2838,58 +2852,57 @@ public:
 VipShowWidgetOnHover::VipShowWidgetOnHover(QObject* parent)
   : QObject(parent)
 {
-	m_data = new PrivateData();
-	m_data->timer.setSingleShot(true);
-	m_data->showDelay = 500;
-	m_data->hideDelay = 500;
-	m_data->hideAfter = 500;
-	m_data->currentSize = 0;
-	m_data->start = 0;
-	m_data->enable = true;
-	m_data->timer.setInterval(10);
-	m_data->timer.setSingleShot(true);
+	VIP_CREATE_PRIVATE_DATA(d_data);
+	d_data->timer.setSingleShot(true);
+	d_data->showDelay = 500;
+	d_data->hideDelay = 500;
+	d_data->hideAfter = 500;
+	d_data->currentSize = 0;
+	d_data->start = 0;
+	d_data->enable = true;
+	d_data->timer.setInterval(10);
+	d_data->timer.setSingleShot(true);
 }
 VipShowWidgetOnHover::~VipShowWidgetOnHover()
 {
-	if (m_data->hover)
-		m_data->hover->removeEventFilter(this);
-	if (m_data->show)
-		m_data->show->removeEventFilter(this);
-	delete m_data;
+	if (d_data->hover)
+		d_data->hover->removeEventFilter(this);
+	if (d_data->show)
+		d_data->show->removeEventFilter(this);
 }
 
 void VipShowWidgetOnHover::setHoverWidget(QWidget* hover)
 {
-	if (m_data->hover)
-		m_data->hover->removeEventFilter(this);
-	m_data->hover = nullptr;
-	for (int i = 0; i < m_data->hovers.size(); ++i)
-		if (m_data->hovers[i])
-			m_data->hovers[i]->removeEventFilter(this);
-	m_data->hovers.clear();
+	if (d_data->hover)
+		d_data->hover->removeEventFilter(this);
+	d_data->hover = nullptr;
+	for (int i = 0; i < d_data->hovers.size(); ++i)
+		if (d_data->hovers[i])
+			d_data->hovers[i]->removeEventFilter(this);
+	d_data->hovers.clear();
 
-	m_data->hover = hover;
-	if (m_data->hover)
-		m_data->hover->installEventFilter(this);
+	d_data->hover = hover;
+	if (d_data->hover)
+		d_data->hover->installEventFilter(this);
 }
 QWidget* VipShowWidgetOnHover::hoverWidget() const
 {
-	return m_data->hover;
+	return d_data->hover;
 }
 
 void VipShowWidgetOnHover::setHoverWidgets(const QList<QWidget*>& hovers)
 {
-	if (m_data->hover)
-		m_data->hover->removeEventFilter(this);
-	m_data->hover = nullptr;
-	for (int i = 0; i < m_data->hovers.size(); ++i)
-		if (m_data->hovers[i])
-			m_data->hovers[i]->removeEventFilter(this);
-	m_data->hovers.clear();
+	if (d_data->hover)
+		d_data->hover->removeEventFilter(this);
+	d_data->hover = nullptr;
+	for (int i = 0; i < d_data->hovers.size(); ++i)
+		if (d_data->hovers[i])
+			d_data->hovers[i]->removeEventFilter(this);
+	d_data->hovers.clear();
 
 	for (int i = 0; i < hovers.size(); ++i) {
 		if (hovers[i]) {
-			m_data->hovers.append(hovers[i]);
+			d_data->hovers.append(hovers[i]);
 			hovers[i]->installEventFilter(this);
 		}
 	}
@@ -2897,148 +2910,148 @@ void VipShowWidgetOnHover::setHoverWidgets(const QList<QWidget*>& hovers)
 QList<QWidget*> VipShowWidgetOnHover::hoverWidgets() const
 {
 	QList<QWidget*> res;
-	for (int i = 0; i < m_data->hovers.size(); ++i)
-		if (m_data->hovers[i])
-			res.append(m_data->hovers[i]);
+	for (int i = 0; i < d_data->hovers.size(); ++i)
+		if (d_data->hovers[i])
+			res.append(d_data->hovers[i]);
 	return res;
 }
 
 void VipShowWidgetOnHover::setShowWidget(QWidget* show)
 {
-	if (m_data->show)
-		m_data->show->removeEventFilter(this);
-	m_data->show = show;
-	if (m_data->show)
-		m_data->show->installEventFilter(this);
+	if (d_data->show)
+		d_data->show->removeEventFilter(this);
+	d_data->show = show;
+	if (d_data->show)
+		d_data->show->installEventFilter(this);
 }
 QWidget* VipShowWidgetOnHover::showWidget() const
 {
-	return m_data->show;
+	return d_data->show;
 }
 
 void VipShowWidgetOnHover::setShowDelay(int msecs)
 {
-	m_data->showDelay = msecs;
+	d_data->showDelay = msecs;
 }
 int VipShowWidgetOnHover::showDelay() const
 {
-	return m_data->showDelay;
+	return d_data->showDelay;
 }
 
 void VipShowWidgetOnHover::setHideDelay(int msecs)
 {
-	m_data->hideDelay = msecs;
+	d_data->hideDelay = msecs;
 }
 int VipShowWidgetOnHover::hideDelay() const
 {
-	return m_data->hideDelay;
+	return d_data->hideDelay;
 }
 
 void VipShowWidgetOnHover::setHideAfter(int msecs)
 {
-	m_data->hideAfter = msecs;
+	d_data->hideAfter = msecs;
 }
 int VipShowWidgetOnHover::hideAfter() const
 {
-	return m_data->hideAfter;
+	return d_data->hideAfter;
 }
 
 void VipShowWidgetOnHover::setEnabled(bool enable)
 {
-	m_data->enable = enable;
-	if (!enable && m_data->show)
-		m_data->show->setMaximumHeight(10000);
+	d_data->enable = enable;
+	if (!enable && d_data->show)
+		d_data->show->setMaximumHeight(10000);
 }
 bool VipShowWidgetOnHover::isEnabled() const
 {
-	return m_data->enable;
+	return d_data->enable;
 }
 
 void VipShowWidgetOnHover::startShow()
 {
-	if (!m_data->enable)
+	if (!d_data->enable)
 		return;
-	QSize hint = m_data->show->sizeHint();
-	// QSize cur = m_data->show->size();
+	QSize hint = d_data->show->sizeHint();
+	// QSize cur = d_data->show->size();
 	// disconnect any possible startHide()
-	m_data->timer.stop();
-	m_data->timer.disconnect();
-	m_data->timer.setInterval(10);
-	double speed = hint.height() / (double)m_data->showDelay;
-	m_data->currentSize += (QDateTime::currentMSecsSinceEpoch() - m_data->start) * speed;
-	int h = m_data->currentSize;
-	m_data->show->setMaximumHeight(h);
-	m_data->show->show();
-	if (m_data->show->height() < hint.height()) {
-		connect(&m_data->timer, SIGNAL(timeout()), this, SLOT(startShow()));
-		m_data->timer.start();
+	d_data->timer.stop();
+	d_data->timer.disconnect();
+	d_data->timer.setInterval(10);
+	double speed = hint.height() / (double)d_data->showDelay;
+	d_data->currentSize += (QDateTime::currentMSecsSinceEpoch() - d_data->start) * speed;
+	int h = d_data->currentSize;
+	d_data->show->setMaximumHeight(h);
+	d_data->show->show();
+	if (d_data->show->height() < hint.height()) {
+		connect(&d_data->timer, SIGNAL(timeout()), this, SLOT(startShow()));
+		d_data->timer.start();
 	}
 	else {
-		m_data->show->setMaximumHeight(10000);
+		d_data->show->setMaximumHeight(10000);
 	}
 }
 
 void VipShowWidgetOnHover::startHide()
 {
-	if (!m_data->enable)
+	if (!d_data->enable)
 		return;
-	QSize hint = m_data->show->sizeHint();
-	// QSize cur = m_data->show->size();
+	QSize hint = d_data->show->sizeHint();
+	// QSize cur = d_data->show->size();
 	// disconnect any possible startShow()
-	m_data->timer.stop();
-	m_data->timer.disconnect();
-	m_data->timer.setInterval(10);
-	double speed = hint.height() / (double)m_data->showDelay;
-	m_data->currentSize -= (QDateTime::currentMSecsSinceEpoch() - m_data->start) * speed;
-	if (m_data->currentSize < 0)
-		m_data->currentSize = 0;
-	int h = m_data->currentSize;
-	m_data->show->setMaximumHeight(h);
-	if (m_data->show->height() > 0) {
-		connect(&m_data->timer, SIGNAL(timeout()), this, SLOT(startHide()));
-		m_data->timer.start();
+	d_data->timer.stop();
+	d_data->timer.disconnect();
+	d_data->timer.setInterval(10);
+	double speed = hint.height() / (double)d_data->showDelay;
+	d_data->currentSize -= (QDateTime::currentMSecsSinceEpoch() - d_data->start) * speed;
+	if (d_data->currentSize < 0)
+		d_data->currentSize = 0;
+	int h = d_data->currentSize;
+	d_data->show->setMaximumHeight(h);
+	if (d_data->show->height() > 0) {
+		connect(&d_data->timer, SIGNAL(timeout()), this, SLOT(startHide()));
+		d_data->timer.start();
 	}
 	else {
-		m_data->show->hide();
-		m_data->show->setMaximumHeight(10000);
+		d_data->show->hide();
+		d_data->show->setMaximumHeight(10000);
 	}
 }
 
 void VipShowWidgetOnHover::resetStart()
 {
-	if (!m_data->enable)
+	if (!d_data->enable)
 		return;
-	m_data->start = QDateTime::currentMSecsSinceEpoch();
+	d_data->start = QDateTime::currentMSecsSinceEpoch();
 }
 
 bool VipShowWidgetOnHover::eventFilter(QObject* // watched
 				       ,
 				       QEvent* evt)
 {
-	if (!m_data->enable)
+	if (!d_data->enable)
 		return false;
-	if ((!m_data->hover && m_data->hovers.isEmpty()) || !m_data->show)
+	if ((!d_data->hover && d_data->hovers.isEmpty()) || !d_data->show)
 		return false;
 	if (evt->type() == QEvent::Enter) {
-		m_data->start = QDateTime::currentMSecsSinceEpoch();
-		m_data->currentSize = m_data->show->isVisible() ? m_data->show->height() : 0;
+		d_data->start = QDateTime::currentMSecsSinceEpoch();
+		d_data->currentSize = d_data->show->isVisible() ? d_data->show->height() : 0;
 		startShow();
 	}
 	else if (evt->type() == QEvent::Leave) {
-		QSize hint = m_data->show->sizeHint();
-		QSize cur = m_data->show->size();
+		QSize hint = d_data->show->sizeHint();
+		QSize cur = d_data->show->size();
 		if (cur.height() < hint.height()) {
 			// if we leave before fully shown, hide completely
-			m_data->timer.stop();
-			m_data->timer.disconnect();
-			m_data->show->hide();
+			d_data->timer.stop();
+			d_data->timer.disconnect();
+			d_data->show->hide();
 		}
 		else {
-			m_data->timer.setInterval(m_data->hideAfter);
-			connect(&m_data->timer, SIGNAL(timeout()), this, SLOT(resetStart()));
-			connect(&m_data->timer, SIGNAL(timeout()), this, SLOT(startHide()));
-			m_data->currentSize = m_data->show->isVisible() ? m_data->show->height() : 0;
-			m_data->timer.start();
+			d_data->timer.setInterval(d_data->hideAfter);
+			connect(&d_data->timer, SIGNAL(timeout()), this, SLOT(resetStart()));
+			connect(&d_data->timer, SIGNAL(timeout()), this, SLOT(startHide()));
+			d_data->currentSize = d_data->show->isVisible() ? d_data->show->height() : 0;
+			d_data->timer.start();
 		}
 	}
 	return false;

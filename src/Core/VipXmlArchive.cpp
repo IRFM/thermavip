@@ -1,7 +1,7 @@
 /**
  * BSD 3-Clause License
  *
- * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ * Copyright (c) 2025, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Leo Dubus, Erwan Grelier
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -58,7 +58,11 @@ static bool toByteArray(const QVariant& v, QByteArray& array)
 	else {
 		QByteArray res;
 		QDataStream stream(&res, QIODevice::WriteOnly);
-		if (!QMetaType::save(stream, v.userType(), v.data())) // stream << v;
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
+		if (!QMetaType::save(stream, v.userType(), v.data()))
+#else
+		if (!QMetaType(v.userType()).save(stream, v.data())) // stream << v;
+#endif
 			return false;
 		array = res.toBase64();
 		return array.size() > 0;
@@ -74,12 +78,15 @@ static bool fromByteArray(const QByteArray& array, QVariant& v)
 	else if (v.canConvert<QString>() && v.userType() != QMetaType::QStringList) {
 		int type = v.userType();
 		v = QVariant(QString(array));
-		return v.convert(type);
+		return v.convert(VIP_META(type));
 	}
 	else {
 		QDataStream stream(QByteArray::fromBase64(array));
-		// v.clear();
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
 		QMetaType::load(stream, v.userType(), v.data());
+#else
+		QMetaType(v.userType()).load(stream, v.data());
+#endif
 		return v.isValid();
 	}
 }
@@ -213,19 +220,18 @@ public:
 VipXArchive::VipXArchive()
   : VipArchive(Text, MetaDataOnContent | MetaDataOnNodeStart | Comment)
 {
-	m_data = new PrivateData();
-	m_data->parameters.auto_range = false;
-	m_data->parameters.max_lines = 0;
+	VIP_CREATE_PRIVATE_DATA(d_data);
+	d_data->parameters.auto_range = false;
+	d_data->parameters.max_lines = 0;
 }
 
 VipXArchive::~VipXArchive()
 {
-	delete m_data;
 }
 
 void VipXArchive::setAutoRangeEnabled(bool enable)
 {
-	m_data->parameters.auto_range = enable;
+	d_data->parameters.auto_range = enable;
 	if (enable && isOpen()) {
 		computeNodeList();
 	}
@@ -233,27 +239,27 @@ void VipXArchive::setAutoRangeEnabled(bool enable)
 
 bool VipXArchive::autoRangeEnabled() const
 {
-	return m_data->parameters.auto_range;
+	return d_data->parameters.auto_range;
 }
 
 void VipXArchive::computeNodeList()
 {
 	// create the full node list, and set the range and current value for this archive progress
-	m_data->parameters.max_lines = 0;
+	d_data->parameters.max_lines = 0;
 
-	maxLineNumber(m_data->parameters.node.ownerDocument().firstChildElement(), m_data->parameters.max_lines);
-	setRange(0, m_data->parameters.max_lines);
+	maxLineNumber(d_data->parameters.node.ownerDocument().firstChildElement(), d_data->parameters.max_lines);
+	setRange(0, d_data->parameters.max_lines);
 
-	if (!m_data->parameters.node.toElement().isNull()) {
-		setValue(m_data->parameters.node.lineNumber());
+	if (!d_data->parameters.node.toElement().isNull()) {
+		setValue(d_data->parameters.node.lineNumber());
 	}
 }
 
 bool VipXArchive::open(QDomNode n)
 {
-	m_data->parameters.node = n;
-	m_data->parameters.last_node = n;
-	m_data->parameters.top_node = n.toElement();
+	d_data->parameters.node = n;
+	d_data->parameters.last_node = n;
+	d_data->parameters.top_node = n.toElement();
 	if (!n.isNull()) {
 		if (autoRangeEnabled()) {
 			computeNodeList();
@@ -263,24 +269,22 @@ bool VipXArchive::open(QDomNode n)
 	return false;
 }
 
-void VipXArchive::save()
+void VipXArchive::doSave()
 {
-	VipArchive::save();
-	m_data->saved.append(m_data->parameters);
+	d_data->saved.append(d_data->parameters);
 }
 
-void VipXArchive::restore()
+void VipXArchive::doRestore()
 {
-	VipArchive::restore();
-	if (m_data->saved.size()) {
-		m_data->parameters = m_data->saved.back();
-		m_data->saved.pop_back();
+	if (d_data->saved.size()) {
+		d_data->parameters = d_data->saved.back();
+		d_data->saved.pop_back();
 	}
 }
 
 QDomNode VipXArchive::topNode() const
 {
-	QDomNode node = m_data->parameters.node;
+	QDomNode node = d_data->parameters.node;
 	if (node.isDocument())
 		return node.toDocument().documentElement();
 
@@ -294,37 +298,37 @@ QDomNode VipXArchive::topNode() const
 
 QDomNode VipXArchive::currentNode() const
 {
-	return m_data->parameters.node;
+	return d_data->parameters.node;
 }
 
 QDomNode VipXArchive::lastNode() const
 {
-	return m_data->parameters.last_node;
+	return d_data->parameters.last_node;
 }
 
 void VipXArchive::setCurrentNode(const QDomNode& current)
 {
-	m_data->parameters.node = current;
+	d_data->parameters.node = current;
 }
 
 void VipXArchive::setLastNode(const QDomNode& last)
 {
-	m_data->parameters.last_node = last;
+	d_data->parameters.last_node = last;
 }
 
 bool VipXArchive::hasChild(const QString& name) const
 {
-	return !m_data->parameters.node.firstChildElement(name).isNull();
+	return !d_data->parameters.node.firstChildElement(name).isNull();
 }
 
 bool VipXArchive::hasAttribute(const QString& name) const
 {
-	return m_data->parameters.node.toElement().hasAttribute(name);
+	return d_data->parameters.node.toElement().hasAttribute(name);
 }
 
 bool VipXArchive::hasContent() const
 {
-	return (m_data->parameters.node.toElement().text().length() > 0);
+	return (d_data->parameters.node.toElement().text().length() > 0);
 }
 
 QList<VipEditableArchiveSymbol> VipXArchive::editableSymbols(QDomNode node) const
@@ -378,7 +382,7 @@ void VipXArchive::check_node(const QDomNode& n, const QString& error)
 
 void VipXArchive::set_current_value(const QDomNode& n)
 {
-	if (autoRangeEnabled() && !n.isNull() && m_data->parameters.max_lines) {
+	if (autoRangeEnabled() && !n.isNull() && d_data->parameters.max_lines) {
 		setValue(n.lineNumber());
 	}
 }
@@ -906,14 +910,30 @@ bool VipXIfArchive::open(const QString& filename)
 		setError("Unable to open file: " + filename);
 		return false;
 	}
+
 	QString error;
 	int errorLine, errorCol;
+
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+	QDomDocument::ParseResult r = doc.setContent(&file);
+	if (!r) {
+		error = r.errorMessage;
+		errorLine = r.errorLine;
+		errorCol = r.errorColumn;
+		setError(QString::asprintf("error at line %d, col %d:\n%s\n", errorLine, errorCol, error.toLatin1().data()));
+		vip_debug("error at line %d, col %d:\n%s\n", errorLine, errorCol, error.toLatin1().data());
+		file.close();
+		return false;
+	}
+#else
+
 	if (!doc.setContent(&file, &error, &errorLine, &errorCol)) {
 		setError(QString::asprintf("error at line %d, col %d:\n%s\n", errorLine, errorCol, error.toLatin1().data()));
 		vip_debug("error at line %d, col %d:\n%s\n", errorLine, errorCol, error.toLatin1().data());
 		file.close();
 		return false;
 	}
+#endif
 	file.close();
 	if (!doc.isNull()) {
 		setMode(Read);

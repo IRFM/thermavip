@@ -1,7 +1,7 @@
 /**
  * BSD 3-Clause License
  *
- * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ * Copyright (c) 2025, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Leo Dubus, Erwan Grelier
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -120,9 +120,9 @@ namespace detail
 	{
 		QString c;
 		arrays.clear();
-		int _size = 0;
+		qsizetype _size = 0;
 		i >> c >> _size;
-		for (int s = 0; s < _size; ++s) {
+		for (qsizetype s = 0; s < _size; ++s) {
 			QString name;
 			VipNDArray ar;
 			i >> name >> ar;
@@ -198,7 +198,7 @@ void VipMultiNDArray::removeArray(const QString& name)
 	handle()->removeArray(name);
 }
 
-int VipMultiNDArray::arrayCount() const
+qsizetype VipMultiNDArray::arrayCount() const
 {
 	return handle()->arrays.size();
 }

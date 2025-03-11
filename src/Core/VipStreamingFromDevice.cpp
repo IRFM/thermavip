@@ -1,7 +1,7 @@
 /**
  * BSD 3-Clause License
  *
- * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ * Copyright (c) 2025, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Leo Dubus, Erwan Grelier
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -129,7 +129,8 @@ bool VipGeneratorSequential::open(VipIODevice::OpenModes mode)
 	return false;
 }
 
-QTransform VipGeneratorSequential::imageTransform() const {
+QTransform VipGeneratorSequential::imageTransform() const
+{
 	if (m_device)
 		return m_device->imageTransform();
 	return VipIODevice::imageTransform();

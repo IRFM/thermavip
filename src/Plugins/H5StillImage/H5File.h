@@ -69,7 +69,7 @@ protected:
 	virtual void apply();
 
 private:
-	QMap<QString,VipNDArray> m_data;
+	QMap<QString,VipNDArray> d_data;
 };
 
 VIP_REGISTER_QOBJECT_METATYPE(H5StillImageWriter*)

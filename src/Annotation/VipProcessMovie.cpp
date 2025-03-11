@@ -1,7 +1,7 @@
 /**
  * BSD 3-Clause License
  *
- * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ * Copyright (c) 2025, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Leo Dubus, Erwan Grelier
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -54,7 +54,7 @@ static QColor eventColor(const QString& evt_name)
 	if (colors.isEmpty()) {
 		VipColorPalette palette(VipLinearColorMap::ColorPaletteRandom);
 		QStringList evts = vipEventTypesDB();
-		for (int i = 0; i < evts.size(); ++i)
+		for (qsizetype i = 0; i < evts.size(); ++i)
 			colors.insert(evts[i], palette.color(i));
 	}
 	QMap<QString, QColor>::const_iterator it = colors.find(evt_name);
@@ -69,11 +69,11 @@ static void drawEventTimeLine(const Vip_event_list& evts, const QList<QPointer<V
 		return;
 
 	QMap<qint64, qint64> times;
-	for (int i = 0; i < shapes.size(); ++i) {
+	for (qsizetype i = 0; i < shapes.size(); ++i) {
 		if (VipPlotShape* sh = shapes[i]) {
 			qint64 id = sh->rawData().id();
-			const QList<VipShape> evt_shapes = evts[id];
-			for (int s = 0; s < evt_shapes.size(); ++s)
+			const VipShapeList & evt_shapes = evts[id];
+			for (qsizetype s = 0; s < evt_shapes.size(); ++s)
 				times.insert(evt_shapes[s].attribute("timestamp_ns").toLongLong(), 0);
 		}
 	}
@@ -88,7 +88,7 @@ static void drawEventTimeLine(const Vip_event_list& evts, const QList<QPointer<V
 		painter->setOpacity(0.5);
 		double bottom = item->heights().first;
 		double top = item->heights().second;
-		for (int i = 0; i < ranges.size(); ++i) {
+		for (qsizetype i = 0; i < ranges.size(); ++i) {
 			double left = ranges[i].first;
 			double right = ranges[i].second;
 			QRectF r(left, top, right - left, bottom - top);
@@ -136,8 +136,8 @@ void VipEventDevice::setEvents(const Vip_event_list& events, const QString& grou
 	m_group = group;
 	// build the scene models for each frame
 	for (Vip_event_list::const_iterator it = events.begin(); it != events.end(); ++it) {
-		const QList<VipShape>& sh = it.value();
-		for (int i = 0; i < sh.size(); ++i) {
+		const VipShapeList& sh = it.value();
+		for (qsizetype i = 0; i < sh.size(); ++i) {
 			VipShape s = sh[i];
 			// set the shape name
 			// s.setAttribute("Name", s.attribute("ID").toString() + " " + s.group());
@@ -153,7 +153,7 @@ void VipEventDevice::setEvents(const Vip_event_list& events, const QString& grou
 		QList<qint64> times = m_scenes.keys();
 		QVector<qint64> timestamps(times.size());
 		std::copy(times.begin(), times.end(), timestamps.begin());
-		//setTimestamps(timestamps);
+		// setTimestamps(timestamps);
 		setTimestampsWithSampling(timestamps, m_video_sampling);
 
 		setProperty("_vip_showTimeLine", 1);
@@ -185,12 +185,37 @@ void VipEventDevice::setVideoSamplingTime(qint64 s)
 bool VipEventDevice::readData(qint64 time)
 {
 	// QList<qint64> times = m_scenes.keys();
-	// for (int i = 0; i < times.size(); ++i) vip_debug("%s\n", QString::number(times[i]).toLatin1().data());
+	// for (qsizetype i = 0; i < times.size(); ++i) vip_debug("%s\n", QString::number(times[i]).toLatin1().data());
 
 	QMap<qint64, VipSceneModel>::const_iterator it = m_scenes.find(time);
 	VipSceneModel sm = it != m_scenes.end() ? it.value() : VipSceneModel();
+	
+	// Set the minimal size
+	QSize s = vipGetThermalEventDBOptions().minimumSize;
+	if (s.width() == 0 && s.height() == 0) {
+		VipAnyData data = create(QVariant::fromValue(sm));
+		outputAt(0)->setData(data);
+		return true;
+	}
 
-	VipAnyData data = create(QVariant::fromValue(sm));
+	VipSceneModel out = sm.copy();
+	if (s.width() || s.height()) {
+		auto lst = out.shapes();
+		for (VipShape& sh : lst) {
+			QRectF r = sh.boundingRect();
+			if (r.width() < s.width() || r.height() < s.height()) {
+				VipShape outsh = sh.copy();
+				double x_scale = r.width() < s.width() ? ((double)s.width() / r.width() - 1.) : 0;
+				double y_scale = r.height() < s.height() ? ((double)s.height() / r.height() - 1.) : 0;
+				QTransform tr;
+				QPointF center = r.center();
+				tr.translate(center.x(), center.y()).scale(1 + x_scale, 1 + y_scale).translate(-center.x(), -center.y());
+				sh.transform(tr);
+			}
+		}
+	}
+
+	VipAnyData data = create(QVariant::fromValue(out));
 	outputAt(0)->setData(data);
 	return true;
 }
@@ -253,24 +278,19 @@ bool VipEventDevice::readInvalidTime(qint64 time)
 	return true;
 }
 
-
-
-
-
-class MyConnection
-  : public VipNetworkConnection
+class MyConnection : public VipNetworkConnection
 {
 public:
-	MyConnection(QObject * parent = nullptr)
+	MyConnection(QObject* parent = nullptr)
 	  : VipNetworkConnection(parent)
 	{
 	}
 
-
 protected:
-	virtual void onReadyRead() { 
+	virtual void onReadyRead()
+	{
 		QByteArray ar = this->readAll();
-		vip_debug("%i\n", ar.size());
+		vip_debug("%i\n", (int)ar.size());
 	}
 };
 
@@ -280,7 +300,7 @@ public:
 	std::atomic<VipClientEventDevice*> parent{ nullptr };
 	std::atomic<int> status{ 0 }; // 0: connecting, 1: connected, -1: failed to connect
 	virtual void run()
-	{ 
+	{
 		QTcpSocket connection;
 		VipClientEventDevice* dev = parent.load();
 		if (!dev)
@@ -304,11 +324,11 @@ public:
 			return;
 		}
 		status = 1;
-		
+
 		qint64 last = QDateTime::currentMSecsSinceEpoch();
 
 		while (VipClientEventDevice* dev = parent.load()) {
-		
+
 			if (connection.state() != QTcpSocket::ConnectedState)
 				break;
 
@@ -329,10 +349,10 @@ public:
 			for (;;) {
 				if (!parent.load())
 					break;
-				if (connection.waitForReadyRead(100)) 
+				if (connection.waitForReadyRead(100))
 					res += connection.readAll();
-					
-				if (res.endsWith("eof")) 
+
+				if (res.endsWith("eof"))
 					break;
 
 				qint64 el = QDateTime::currentMSecsSinceEpoch() - time;
@@ -341,25 +361,25 @@ public:
 			}
 
 			vip_debug("%s\n", res.data());
-			if (res.endsWith("eof")) 
+			if (res.endsWith("eof"))
 				res.remove(res.size() - 3, 3);
 
 			// interpret as JSON
 			Vip_event_list evts = vipEventsFromJson(res);
-			vip_debug("%i events\n", evts.size());
-			
+			vip_debug("%i events\n", (int)evts.size());
+
 			time = QDateTime::currentMSecsSinceEpoch();
-			qint64 el = time-last;
+			qint64 el = time - last;
 			last = time;
 			vip_debug("elapsed: %i ms\n", (int)el);
 
-			//send as output
-			
+			// send as output
+
 			VipSceneModel sm;
 			// build the scene models for each frame
 			for (Vip_event_list::const_iterator it = evts.begin(); it != evts.end(); ++it) {
-				const QList<VipShape>& sh = it.value();
-				for (int i = 0; i < sh.size(); ++i) {
+				const VipShapeList& sh = it.value();
+				for (qsizetype i = 0; i < sh.size(); ++i) {
 					VipShape s = sh[i];
 					sm.add(s);
 				}
@@ -375,7 +395,6 @@ public:
 			qint64 full_time = QDateTime::currentMSecsSinceEpoch() - start;
 			if (full_time < 20)
 				vipSleep(20 - full_time);
-			
 		}
 	}
 };
@@ -398,10 +417,9 @@ bool VipClientEventDevice::open(VipIODevice::OpenModes mode)
 	QString path = this->removePrefix(this->path());
 	QStringList lst = path.split(";", VIP_SKIP_BEHAVIOR::SkipEmptyParts);
 	if (lst.size() != 3) {
-		setError("Wrong path format: "+ path);
+		setError("Wrong path format: " + path);
 		return false;
 	}
-
 
 	setOpenMode(mode);
 	return true;
@@ -412,25 +430,23 @@ void VipClientEventDevice::close()
 	if (d_data) {
 		d_data->parent = nullptr;
 		d_data->wait();
-		delete d_data;
-		d_data = nullptr;
+		d_data.reset();
 	}
 	VipIODevice::close();
 }
 
-bool VipClientEventDevice::enableStreaming(bool enable) 
+bool VipClientEventDevice::enableStreaming(bool enable)
 {
-	//stop
+	// stop
 	if (d_data) {
 		d_data->parent = nullptr;
 		d_data->wait();
-		delete d_data;
-		d_data = nullptr;
+		d_data.reset();
 	}
 
 	if (enable) {
 		// start
-		d_data = new PrivateData();
+		VIP_CREATE_PRIVATE_DATA(d_data);
 		d_data->parent = this;
 		d_data->start();
 
@@ -440,23 +456,12 @@ bool VipClientEventDevice::enableStreaming(bool enable)
 		if (d_data->status.load() < 0) {
 			d_data->parent = nullptr;
 			d_data->wait();
-			delete d_data;
-			d_data = nullptr;
+			d_data.reset();
 		}
 	}
-	
+
 	return true;
 }
-
-
-
-
-
-
-
-
-
-
 
 class UploadToDB::PrivateData
 {
@@ -470,76 +475,75 @@ public:
 UploadToDB::UploadToDB(const QString& device, QWidget* parent)
   : QWidget(parent)
 {
-	m_data = new PrivateData();
+	VIP_CREATE_PRIVATE_DATA(d_data);
 
-	m_data->pulse = vipFindDeviceParameters(device)->pulseEditor();
+	d_data->pulse = vipFindDeviceParameters(device)->pulseEditor();
 
 	QGridLayout* lay = new QGridLayout();
 	lay->addWidget(new QLabel("User name"), 0, 0);
-	lay->addWidget(&m_data->userName, 0, 1);
+	lay->addWidget(&d_data->userName, 0, 1);
 	lay->addWidget(new QLabel("Camera name"), 1, 0);
-	lay->addWidget(&m_data->camera, 1, 1);
+	lay->addWidget(&d_data->camera, 1, 1);
 	lay->addWidget(new QLabel("Device name"), 2, 0);
-	lay->addWidget(&m_data->device, 2, 1);
+	lay->addWidget(&d_data->device, 2, 1);
 	lay->addWidget(new QLabel("Experiment id"), 3, 0);
-	lay->addWidget(m_data->pulse, 3, 1);
+	lay->addWidget(d_data->pulse, 3, 1);
 	setLayout(lay);
 
-	m_data->userName.addItems(vipUsersDB());
-	m_data->camera.addItems(vipCamerasDB());
-	m_data->device.addItems(vipDevicesDB());
-	m_data->pulse->setProperty("value", 0);
+	d_data->userName.addItems(vipUsersDB());
+	d_data->camera.addItems(vipCamerasDB());
+	d_data->device.addItems(vipDevicesDB());
+	d_data->pulse->setProperty("value", 0);
 
-	connect(&m_data->device, SIGNAL(currentIndexChanged(int)), this, SLOT(deviceChanged()));
+	connect(&d_data->device, SIGNAL(currentIndexChanged(int)), this, SLOT(deviceChanged()));
 }
 UploadToDB::~UploadToDB()
 {
-	delete m_data;
 }
 
 void UploadToDB::setUserName(const QString& user)
 {
-	m_data->userName.setCurrentText(user);
+	d_data->userName.setCurrentText(user);
 }
 QString UploadToDB::userName() const
 {
-	return m_data->userName.currentText();
+	return d_data->userName.currentText();
 }
 
 void UploadToDB::setCamera(const QString& cam)
 {
-	m_data->camera.setCurrentText(cam);
+	d_data->camera.setCurrentText(cam);
 }
 QString UploadToDB::camera() const
 {
-	return m_data->camera.currentText();
+	return d_data->camera.currentText();
 }
 
 void UploadToDB::setDevice(const QString& dev)
 {
-	m_data->device.setCurrentText(dev);
+	d_data->device.setCurrentText(dev);
 }
 QString UploadToDB::device() const
 {
-	return m_data->device.currentText();
+	return d_data->device.currentText();
 }
 
 void UploadToDB::deviceChanged()
 {
 	double pulse = this->pulse();
 	QWidget* p = vipFindDeviceParameters(device())->pulseEditor();
-	delete m_data->pulse;
-	static_cast<QGridLayout*>(layout())->addWidget(m_data->pulse = p, 3, 1);
+	delete d_data->pulse;
+	static_cast<QGridLayout*>(layout())->addWidget(d_data->pulse = p, 3, 1);
 	setPulse(pulse);
 }
 
 void UploadToDB::setPulse(Vip_experiment_id pulse)
 {
-	m_data->pulse->setProperty("value", pulse);
+	d_data->pulse->setProperty("value", pulse);
 }
 Vip_experiment_id UploadToDB::pulse() const
 {
-	return m_data->pulse->property("value").value<Vip_experiment_id>();
+	return d_data->pulse->property("value").value<Vip_experiment_id>();
 }
 
 class EventInfo::PrivateData
@@ -565,186 +569,184 @@ public:
 EventInfo::EventInfo(VipPlayerDBAccess* pdb)
   : QToolBar()
 {
-	m_data = new PrivateData();
-	m_data->pdb = pdb;
+	VIP_CREATE_PRIVATE_DATA(d_data);
+	d_data->pdb = pdb;
 	this->setIconSize(QSize(18, 18));
-	m_data->close = this->addAction(vipIcon("close.png"), "Close panel");
+	d_data->close = this->addAction(vipIcon("close.png"), "Close panel");
 	this->addSeparator();
 
-	m_data->undo = addAction(vipIcon("undo.png"), "Undo last action");
-	m_data->interp_frames = addAction(vipIcon("interp_frames.png"), "Interpolate polygons inside selected time range for selected events");
-	m_data->rm_frames = addAction(vipIcon("rm_frames.png"), "Remove selected time range from selected events");
-	m_data->split = addAction(vipIcon("split.png"), "Split selected events based on current time");
-	connect(m_data->undo, SIGNAL(triggered(bool)), this, SLOT(emitUndo()));
-	connect(m_data->interp_frames, SIGNAL(triggered(bool)), this, SLOT(emitInterpFrames()));
-	connect(m_data->rm_frames, SIGNAL(triggered(bool)), this, SLOT(emitRemoveFrames()));
-	connect(m_data->split, SIGNAL(triggered(bool)), this, SLOT(emitSplit()));
-
-	this->addSeparator();
-
-	m_data->apply = this->addAction(vipIcon("apply.png"), "Apply changes");
+	d_data->undo = addAction(vipIcon("undo.png"), "Undo last action");
+	d_data->interp_frames = addAction(vipIcon("interp_frames.png"), "Interpolate polygons inside selected time range for selected events");
+	d_data->rm_frames = addAction(vipIcon("rm_frames.png"), "Remove selected time range from selected events");
+	d_data->split = addAction(vipIcon("split.png"), "Split selected events based on current time");
+	connect(d_data->undo, SIGNAL(triggered(bool)), this, SLOT(emitUndo()));
+	connect(d_data->interp_frames, SIGNAL(triggered(bool)), this, SLOT(emitInterpFrames()));
+	connect(d_data->rm_frames, SIGNAL(triggered(bool)), this, SLOT(emitRemoveFrames()));
+	connect(d_data->split, SIGNAL(triggered(bool)), this, SLOT(emitSplit()));
 
 	this->addSeparator();
 
-	this->addWidget(new QLabel());
-	this->addWidget(&m_data->userName);
+	d_data->apply = this->addAction(vipIcon("apply.png"), "Apply changes");
+
+	this->addSeparator();
 
 	this->addWidget(new QLabel());
-	this->addWidget(&m_data->duration);
-	this->addWidget(new QLabel());
-	this->addWidget(&m_data->category);
-	this->addWidget(new QLabel());
-	this->addWidget(&m_data->dataset);
-	this->addWidget(new QLabel());
-	this->addWidget(&m_data->confidence);
-	this->addWidget(new QLabel());
-	this->addWidget(&m_data->analysisStatus);
+	this->addWidget(&d_data->userName);
 
 	this->addWidget(new QLabel());
-	this->addWidget(&m_data->method);
+	this->addWidget(&d_data->duration);
 	this->addWidget(new QLabel());
-	this->addWidget(&m_data->automatic);
+	this->addWidget(&d_data->category);
+	this->addWidget(new QLabel());
+	this->addWidget(&d_data->dataset);
+	this->addWidget(new QLabel());
+	this->addWidget(&d_data->confidence);
+	this->addWidget(new QLabel());
+	this->addWidget(&d_data->analysisStatus);
 
 	this->addWidget(new QLabel());
-	this->addWidget(&m_data->comment);
+	this->addWidget(&d_data->method);
 	this->addWidget(new QLabel());
-	this->addWidget(&m_data->name);
+	this->addWidget(&d_data->automatic);
+
 	this->addWidget(new QLabel());
-	this->addWidget(&m_data->mergeIds);
+	this->addWidget(&d_data->comment);
+	this->addWidget(new QLabel());
+	this->addWidget(&d_data->name);
+	this->addWidget(new QLabel());
+	this->addWidget(&d_data->mergeIds);
 
-	m_data->automatic.setText("Auto");
-	m_data->automatic.setToolTip("Automatic detection or not");
-	m_data->automatic.setTristate(true);
+	d_data->automatic.setText("Auto");
+	d_data->automatic.setToolTip("Automatic detection or not");
+	d_data->automatic.setTristate(true);
 
-	m_data->method.addItems(QStringList() << "" << vipMethodsDB());
-	m_data->method.setToolTip("Detection method");
+	d_data->method.addItems(QStringList() << "" << vipMethodsDB());
+	d_data->method.setToolTip("Detection method");
 
-	m_data->userName.setToolTip("Author name");
-	m_data->duration.setToolTip("Event duration");
+	d_data->userName.setToolTip("Author name");
+	d_data->duration.setToolTip("Event duration");
 
-	m_data->category.setToolTip("Event type");
-	m_data->dataset.setToolTip("Dataset names");
-	m_data->confidence.setToolTip("Detection confidence value (0 -> 1)");
-	m_data->analysisStatus.setToolTip("Analysis status");
-	m_data->comment.setToolTip("Additional comments");
-	m_data->comment.setPlaceholderText("User comment");
-	m_data->name.setToolTip("Event name");
-	m_data->name.setPlaceholderText("Event name");
+	d_data->category.setToolTip("Event type");
+	d_data->dataset.setToolTip("Dataset names");
+	d_data->confidence.setToolTip("Detection confidence value (0 -> 1)");
+	d_data->analysisStatus.setToolTip("Analysis status");
+	d_data->comment.setToolTip("Additional comments");
+	d_data->comment.setPlaceholderText("User comment");
+	d_data->name.setToolTip("Event name");
+	d_data->name.setPlaceholderText("Event name");
 
-	m_data->mergeIds.setPlaceholderText("Merge events...");
-	m_data->mergeIds.setToolTip("<b>Merge events</b><br>Enter a list of event ids to merge (like '1,45,67...')");
+	d_data->mergeIds.setPlaceholderText("Merge events...");
+	d_data->mergeIds.setToolTip("<b>Merge events</b><br>Enter a list of event ids to merge (like '1,45,67...')");
 
-	m_data->category.addItems(QStringList() << "" << vipEventTypesDB());
-	// m_data->category.addItems(QStringList() << "" << vipDatasetsDB());
+	d_data->category.addItems(QStringList() << "" << vipEventTypesDB());
+	// d_data->category.addItems(QStringList() << "" << vipDatasetsDB());
+	d_data->analysisStatus.addItems(QStringList() << QString() << vipAnalysisStatusDB());
 
-	m_data->analysisStatus.addItems(QStringList() << QString() << vipAnalysisStatusDB());
+	d_data->confidence.setRange(-0.25, 1);
+	d_data->confidence.setSingleStep(0.25);
+	d_data->confidence.setSpecialValueText(" ");
 
-	m_data->confidence.setRange(-0.25, 1);
-	m_data->confidence.setSingleStep(0.25);
-	m_data->confidence.setSpecialValueText(" ");
-
-	connect(m_data->close, SIGNAL(triggered(bool)), this, SLOT(hide()));
-	connect(m_data->apply, SIGNAL(triggered(bool)), this, SLOT(apply()));
+	connect(d_data->close, SIGNAL(triggered(bool)), this, SLOT(hide()));
+	connect(d_data->apply, SIGNAL(triggered(bool)), this, SLOT(apply()));
 }
 EventInfo::~EventInfo()
 {
-	delete m_data;
 }
 
 void EventInfo::setCategory(const QString& cat)
 {
-	m_data->category.setCurrentText(cat);
+	d_data->category.setCurrentText(cat);
 }
 QString EventInfo::category() const
 {
-	return m_data->category.currentText();
+	return d_data->category.currentText();
 }
 
 void EventInfo::setDataset(const QString& dataset)
 {
-	m_data->dataset.setDataset(dataset);
+	d_data->dataset.setDataset(dataset);
 }
 QString EventInfo::dataset() const
 {
-	return m_data->dataset.dataset();
+	return d_data->dataset.dataset();
 }
 
 void EventInfo::setAnalysisStatus(const QString& status)
 {
-	m_data->analysisStatus.setCurrentText(status);
+	d_data->analysisStatus.setCurrentText(status);
 }
 QString EventInfo::analysisStatus() const
 {
-	return m_data->analysisStatus.currentText();
+	return d_data->analysisStatus.currentText();
 }
 
 void EventInfo::setComment(const QString& comment)
 {
-	m_data->comment.setText(comment);
+	d_data->comment.setText(comment);
 }
 QString EventInfo::comment() const
 {
-	return m_data->comment.text();
+	return d_data->comment.text();
 }
 
 void EventInfo::setName(const QString& name)
 {
-	m_data->name.setText(name);
+	d_data->name.setText(name);
 }
 QString EventInfo::name() const
 {
-	return m_data->name.text();
+	return d_data->name.text();
 }
 
 void EventInfo::setConfidence(double value)
 {
-	m_data->confidence.setValue(value);
+	d_data->confidence.setValue(value);
 }
 double EventInfo::confidence() const
 {
-	return m_data->confidence.value();
+	return d_data->confidence.value();
 }
 
 void EventInfo::setAutomaticState(Qt::CheckState st)
 {
-	m_data->automatic.setCheckState(st);
+	d_data->automatic.setCheckState(st);
 }
 Qt::CheckState EventInfo::automaticState() const
 {
-	return m_data->automatic.checkState();
+	return d_data->automatic.checkState();
 }
 
 void EventInfo::setMethod(const QString& method)
 {
-	m_data->method.setCurrentText(method);
+	d_data->method.setCurrentText(method);
 }
 QString EventInfo::method() const
 {
-	return m_data->method.currentText();
+	return d_data->method.currentText();
 }
 
 void EventInfo::setUserName(const QString& user)
 {
-	m_data->userName.setText(user);
+	d_data->userName.setText(user);
 }
 
 void EventInfo::setDuration(double duration_s)
 {
 	if (vipIsNan(duration_s))
-		m_data->duration.setText(QString());
+		d_data->duration.setText(QString());
 	else
-		m_data->duration.setText(QString::number(duration_s) + "s");
+		d_data->duration.setText(QString::number(duration_s) + "s");
 }
 
 QList<qint64> EventInfo::mergeIds() const
 {
-	QString ids = m_data->mergeIds.text();
+	QString ids = d_data->mergeIds.text();
 	ids.replace(",", " ");
 	ids.replace(":", " ");
 	ids.replace(";", " ");
 	QStringList lst = ids.split(" ", VIP_SKIP_BEHAVIOR::SkipEmptyParts);
 	QList<qint64> res;
-	for (int i = 0; i < lst.size(); ++i) {
+	for (qsizetype i = 0; i < lst.size(); ++i) {
 		qint64 id;
 		bool ok = false;
 		id = lst[i].toLongLong(&ok);
@@ -757,12 +759,12 @@ QList<qint64> EventInfo::mergeIds() const
 
 void EventInfo::clearMergeIds()
 {
-	m_data->mergeIds.setText(QString());
+	d_data->mergeIds.setText(QString());
 }
 
 void EventInfo::setUndoToolTip(const QString& str)
 {
-	m_data->undo->setToolTip(str);
+	d_data->undo->setToolTip(str);
 }
 
 void EventInfo::apply()
@@ -787,6 +789,7 @@ VipPlayerDBAccess::VipPlayerDBAccess(VipVideoPlayer* player)
 	m_db->setPopupMode(QToolButton::InstantPopup);
 
 	m_infos = new EventInfo(this);
+	
 	m_player->gridLayout()->addWidget(m_infos, 18, 10);
 	m_infos->hide();
 
@@ -953,12 +956,12 @@ void VipPlayerDBAccess::changeSelectedPolygons()
 	// get player transform (if any)
 	QTransform tr = m_player->imageTransform().inverted();
 
-	for (int i = 0; i < m_selection.size(); ++i) {
+	for (qsizetype i = 0; i < m_selection.size(); ++i) {
 		if (VipPlotShape* shape = m_selection[i]) {
 			VipShape sh = shape->rawData();
 			// get group, id, polygon and timestamp
 			QString group = sh.group();
-			int id = sh.id();
+			qsizetype id = sh.id();
 			QPolygonF p = sh.polygon();
 			if (time == VipInvalidTime)
 				time = sh.attribute("timestamp_ns").toLongLong();
@@ -970,8 +973,8 @@ void VipPlayerDBAccess::changeSelectedPolygons()
 
 			// find shape with right timestamp
 			const VipShape* found = nullptr;
-			const QList<VipShape>& shs = it.value();
-			for (int s = 0; s < shs.size(); ++s) {
+			const VipShapeList& shs = it.value();
+			for (qsizetype s = 0; s < shs.size(); ++s) {
 				if (shs[s].attribute("timestamp_ns").toLongLong() == time) {
 					found = &shs[s];
 					break;
@@ -999,7 +1002,7 @@ void VipPlayerDBAccess::changeSelectedPolygons()
 		act.polygons = polygons;
 		m_actions.append(act);
 
-		for (int i = 0; i < ids.size(); ++i) {
+		for (qsizetype i = 0; i < ids.size(); ++i) {
 			qint64 id = ids[i];
 			QMap<qint64, qint64>::iterator it = m_modifications.find(id);
 			if (it != m_modifications.end())
@@ -1021,7 +1024,7 @@ void VipPlayerDBAccess::changeCategory(const QString& new_type, const QList<qint
 	act.value = new_type;
 	m_actions.append(act);
 
-	for (int i = 0; i < ids.size(); ++i) {
+	for (qsizetype i = 0; i < ids.size(); ++i) {
 		qint64 id = ids[i];
 		QMap<qint64, qint64>::iterator it = m_modifications.find(id);
 		if (it != m_modifications.end())
@@ -1042,7 +1045,7 @@ void VipPlayerDBAccess::changeValue(const QString& name, const QString& value, c
 	act.value = value;
 	m_actions.append(act);
 
-	for (int i = 0; i < ids.size(); ++i) {
+	for (qsizetype i = 0; i < ids.size(); ++i) {
 		qint64 id = ids[i];
 		QMap<qint64, qint64>::iterator it = m_modifications.find(id);
 		if (it != m_modifications.end())
@@ -1063,10 +1066,10 @@ void VipPlayerDBAccess::mergeIds(const QList<qint64>& ids)
 	// check merge validity
 	QString category = m_events[ids.first()].first().group();
 	QVector<VipTimeRange> ranges;
-	int count = 0;
-	for (int k = 0; k < ids.size(); ++k) {
+	qsizetype count = 0;
+	for (qsizetype k = 0; k < ids.size(); ++k) {
 		qint64 id = ids[k];
-		const QList<VipShape> shs = m_events[id];
+		const VipShapeList shs = m_events[id];
 		count += shs.size();
 		if (shs.size()) {
 			QString cat = shs.first().group();
@@ -1077,7 +1080,7 @@ void VipPlayerDBAccess::mergeIds(const QList<qint64>& ids)
 			/*ranges.append(VipTimeRange(shs.first().attribute("timestamp").toLongLong(), shs.last().attribute("timestamp").toLongLong()));
 			//check potential overlap
 			bool valid = true;
-			for (int l = ranges.size() - 2; l >= 0; --l) {
+			for (qsizetype l = ranges.size() - 2; l >= 0; --l) {
 				if (vipIntersectRange(ranges.last(), ranges[l]) != VipInvalidTimeRange) {
 					VIP_LOG_ERROR("Cannot merge ids: ROIs overlap!");
 					return;
@@ -1095,7 +1098,7 @@ void VipPlayerDBAccess::mergeIds(const QList<qint64>& ids)
 	act.type = Action::MergeEvents;
 	m_actions.append(act);
 
-	for (int i = 0; i < ids.size(); ++i) {
+	for (qsizetype i = 0; i < ids.size(); ++i) {
 		qint64 id = ids[i];
 		QMap<qint64, qint64>::iterator it = m_modifications.find(id);
 		if (it != m_modifications.end())
@@ -1114,13 +1117,13 @@ void VipPlayerDBAccess::splitEvents()
 	QList<qint64> ids;
 	qint64 time = vipGetMainWindow()->displayArea()->currentDisplayPlayerArea()->processingPool()->time();
 
-	for (int i = 0; i < m_selection.size(); ++i) {
+	for (qsizetype i = 0; i < m_selection.size(); ++i) {
 		if (VipPlotShape* shape = m_selection[i]) {
-			int id = shape->rawData().id();
+			qsizetype id = shape->rawData().id();
 			Vip_event_list::iterator it = m_events.find(id);
 			if (it == m_events.end())
 				continue;
-			const QList<VipShape>& shs = it.value();
+			const VipShapeList& shs = it.value();
 			if (shs.size()) {
 				if (shs.first().attribute("timestamp_ns").toLongLong() < time && shs.last().attribute("timestamp_ns").toLongLong() > time) {
 					ids.append(id);
@@ -1136,7 +1139,7 @@ void VipPlayerDBAccess::splitEvents()
 		act.type = Action::SplitEvents;
 		m_actions.append(act);
 
-		for (int i = 0; i < ids.size(); ++i) {
+		for (qsizetype i = 0; i < ids.size(); ++i) {
 			qint64 id = ids[i];
 			QMap<qint64, qint64>::iterator it = m_modifications.find(id);
 			if (it != m_modifications.end())
@@ -1169,9 +1172,9 @@ void VipPlayerDBAccess::interpolateFrames()
 	QList<qint64> ids;
 	VipTimeRangeList ranges;
 
-	for (int i = 0; i < m_selection.size(); ++i) {
+	for (qsizetype i = 0; i < m_selection.size(); ++i) {
 		if (VipPlotShape* shape = m_selection[i]) {
-			int id = shape->rawData().id();
+			qsizetype id = shape->rawData().id();
 			Vip_event_list::iterator it = m_events.find(id);
 			if (it == m_events.end())
 				continue;
@@ -1179,9 +1182,9 @@ void VipPlayerDBAccess::interpolateFrames()
 			// find the first and last frames inside which we are going to interpolate the polygons
 			/*qint64 firstValid = VipInvalidTime;
 			qint64 lastValid = VipInvalidTime;
-			const QList<VipShape>& shs = it.value();
-			int frame_count = 0;
-			for (int j = 0; j < shs.size(); ++j) {
+			const VipShapeList& shs = it.value();
+			qsizetype frame_count = 0;
+			for (qsizetype j = 0; j < shs.size(); ++j) {
 				qint64 time = shs[j].attribute("timestamp").toLongLong();
 				if (firstValid == VipInvalidTime && vipIsInside(range, time) && j > 0) {
 					firstValid = shs[j - 1].attribute("timestamp").toLongLong();
@@ -1212,7 +1215,7 @@ void VipPlayerDBAccess::interpolateFrames()
 		act.type = Action::InterpolateFrames;
 		m_actions.append(act);
 
-		for (int i = 0; i < ids.size(); ++i) {
+		for (qsizetype i = 0; i < ids.size(); ++i) {
 			qint64 id = ids[i];
 			QMap<qint64, qint64>::iterator it = m_modifications.find(id);
 			if (it != m_modifications.end())
@@ -1243,13 +1246,13 @@ void VipPlayerDBAccess::removeFramesToEvents()
 		return;
 	}
 
-	for (int i = 0; i < m_selection.size(); ++i) {
+	for (qsizetype i = 0; i < m_selection.size(); ++i) {
 		if (VipPlotShape* shape = m_selection[i]) {
-			int id = shape->rawData().id();
+			qsizetype id = shape->rawData().id();
 			Vip_event_list::iterator it = m_events.find(id);
 			if (it == m_events.end())
 				continue;
-			const QList<VipShape>& shs = it.value();
+			const VipShapeList& shs = it.value();
 			if (shs.size()) {
 				VipTimeRange r(shs.first().attribute("timestamp_ns").toLongLong(), shs.last().attribute("timestamp_ns").toLongLong());
 				if (vipIsValid(vipIntersectRange(r, range))) {
@@ -1266,7 +1269,7 @@ void VipPlayerDBAccess::removeFramesToEvents()
 		act.type = Action::RemoveFrames;
 		m_actions.append(act);
 
-		for (int i = 0; i < ids.size(); ++i) {
+		for (qsizetype i = 0; i < ids.size(); ++i) {
 			qint64 id = ids[i];
 			QMap<qint64, qint64>::iterator it = m_modifications.find(id);
 			if (it != m_modifications.end())
@@ -1323,10 +1326,10 @@ static void mergeEvents(Vip_event_list& evts, const QList<qint64>& ids)
 	 */
 
 	QMap<qint64, VipShape> shapes; // map of time -> shape
-	for (int k = 0; k < ids.size(); ++k) {
+	for (qsizetype k = 0; k < ids.size(); ++k) {
 		qint64 id = ids[k];
-		QList<VipShape> shs = evts[id];
-		for (int i = 0; i < shs.size(); ++i) {
+		VipShapeList shs = evts[id];
+		for (qsizetype i = 0; i < shs.size(); ++i) {
 			qint64 time = shs[i].attribute("timestamp_ns").toLongLong();
 			if (shapes.find(time) == shapes.end()) {
 				shapes.insert(time, shs[i]);
@@ -1335,8 +1338,8 @@ static void mergeEvents(Vip_event_list& evts, const QList<qint64>& ids)
 		}
 	}
 
-	evts[ids.first()] = shapes.values();
-	for (int i = 1; i < ids.size(); ++i)
+	evts[ids.first()] = VipShapeList(shapes.values().toVector());
+	for (qsizetype i = 1; i < ids.size(); ++i)
 		evts.remove(ids[i]);
 }
 
@@ -1344,31 +1347,31 @@ Vip_event_list VipPlayerDBAccess::applyActions(const Vip_event_list& events)
 {
 
 	Vip_event_list res = vipCopyEvents(events);
-	for (int i = 0; i < m_actions.size(); ++i) {
+	for (qsizetype i = 0; i < m_actions.size(); ++i) {
 		Action act = m_actions[i];
 		if (act.type == Action::Remove) {
 			// remove id from events
-			for (int k = 0; k < act.ids.size(); ++k)
+			for (qsizetype k = 0; k < act.ids.size(); ++k)
 				res.remove(act.ids[k]);
 		}
 		else if (act.type == Action::ChangeType) {
-			for (int k = 0; k < act.ids.size(); ++k) {
+			for (qsizetype k = 0; k < act.ids.size(); ++k) {
 				qint64 id = act.ids[k];
-				QList<VipShape> shs = res[id];
-				for (int j = 0; j < shs.size(); ++j)
+				VipShapeList shs = res[id];
+				for (qsizetype j = 0; j < shs.size(); ++j)
 					shs[j].setGroup(act.value);
 				res[id] = shs;
 			}
 		}
 		else if (act.type == Action::ChangeValue) {
-			for (int k = 0; k < act.ids.size(); ++k) {
+			for (qsizetype k = 0; k < act.ids.size(); ++k) {
 				qint64 id = act.ids[k];
-				QList<VipShape> shs = res[id];
-				for (int j = 0; j < shs.size(); ++j) {
+				VipShapeList shs = res[id];
+				for (qsizetype j = 0; j < shs.size(); ++j) {
 					QVariant v = shs[j].attribute(act.name);
 					QVariant val(act.value);
 					if (v.userType())
-						val.convert(v.userType());
+						val.convert(VIP_META(v.userType()));
 					shs[j].setAttribute(act.name, val);
 				}
 			}
@@ -1378,11 +1381,11 @@ Vip_event_list VipPlayerDBAccess::applyActions(const Vip_event_list& events)
 			mergeEvents(res, act.ids);
 		}
 		else if (act.type == Action::ChangePolygon) {
-			for (int k = 0; k < act.ids.size(); ++k) {
+			for (qsizetype k = 0; k < act.ids.size(); ++k) {
 				qint64 id = act.ids[k];
-				QList<VipShape>& shs = res[id];
+				VipShapeList& shs = res[id];
 				// find time
-				for (int s = 0; s < shs.size(); ++s) {
+				for (qsizetype s = 0; s < shs.size(); ++s) {
 					if (shs[s].attribute("timestamp_ns").toLongLong() == act.time) {
 						shs[s].setPolygon(act.polygons[k]);
 						break;
@@ -1391,17 +1394,17 @@ Vip_event_list VipPlayerDBAccess::applyActions(const Vip_event_list& events)
 			}
 		}
 		else if (act.type == Action::SplitEvents) {
-			for (int k = 0; k < act.ids.size(); ++k) {
+			for (qsizetype k = 0; k < act.ids.size(); ++k) {
 				qint64 id = act.ids[k];
-				QList<VipShape>& shs = res[id];
+				VipShapeList& shs = res[id];
 				// find time
-				for (int s = 0; s < shs.size(); ++s) {
+				for (qsizetype s = 0; s < shs.size(); ++s) {
 					if (shs[s].attribute("timestamp_ns").toLongLong() > act.time) {
-						QList<VipShape> news = shs.mid(s);
+						VipShapeList news = shs.mid(s);
 						res[id] = shs.mid(0, s);
-						int new_id = res.lastKey() + 1;
+						qsizetype new_id = res.lastKey() + 1;
 						// set new id
-						for (int n = 0; n < news.size(); ++n)
+						for (qsizetype n = 0; n < news.size(); ++n)
 							news[n].setId(new_id);
 						res[new_id] = news;
 						break;
@@ -1410,10 +1413,10 @@ Vip_event_list VipPlayerDBAccess::applyActions(const Vip_event_list& events)
 			}
 		}
 		else if (act.type == Action::RemoveFrames) {
-			for (int k = 0; k < act.ids.size(); ++k) {
+			for (qsizetype k = 0; k < act.ids.size(); ++k) {
 				qint64 id = act.ids[k];
-				QList<VipShape>& shs = res[id];
-				for (int s = 0; s < shs.size(); ++s) {
+				VipShapeList& shs = res[id];
+				for (qsizetype s = 0; s < shs.size(); ++s) {
 					qint64 time = shs[s].attribute("timestamp_ns").toLongLong();
 					if (time >= act.range.first && time <= act.range.second) {
 						shs.removeAt(s);
@@ -1423,14 +1426,14 @@ Vip_event_list VipPlayerDBAccess::applyActions(const Vip_event_list& events)
 			}
 		}
 		else if (act.type == Action::InterpolateFrames) {
-			for (int k = 0; k < act.ids.size(); ++k) {
+			for (qsizetype k = 0; k < act.ids.size(); ++k) {
 				qint64 id = act.ids[k];
 				VipTimeRange range = act.ranges[k];
-				QList<VipShape>& shs = res[id];
+				VipShapeList& shs = res[id];
 
 				// get a map of time -> polygon
 				QMap<qint64, VipShape> polygons;
-				for (int s = 0; s < shs.size(); ++s) {
+				for (qsizetype s = 0; s < shs.size(); ++s) {
 					polygons[shs[s].attribute("timestamp_ns").toLongLong()] = shs[s];
 				}
 
@@ -1493,13 +1496,12 @@ Vip_event_list VipPlayerDBAccess::applyActions(const Vip_event_list& events)
 					time = dev->nextTime(time);
 				} while (time != VipInvalidTime && time < end_t);
 
-				shs = polygons.values();
+				shs = polygons.values().toVector();
 			}
 		}
 	}
 	return res;
 }
-
 
 bool VipPlayerDBAccess::connectToEventServer(const QString& host)
 {
@@ -1536,7 +1538,7 @@ void VipPlayerDBAccess::connectToEventServerEdit()
 	edit->setPlaceholderText("Format: 'host:ip:optional_camera'");
 	VipGenericDialog dial(edit, "Connect to event server", m_player);
 	if (dial.exec() == QDialog::Accepted) {
-	
+
 		QStringList lst = edit->text().split(":", VIP_SKIP_BEHAVIOR::SkipEmptyParts);
 		QString path;
 		if (lst.size() == 2) {
@@ -1594,7 +1596,7 @@ void VipPlayerDBAccess::undo()
 {
 	if (m_actions.size()) {
 		const QList<qint64> ids = m_actions.last().ids;
-		for (int i = 0; i < ids.size(); ++i) {
+		for (qsizetype i = 0; i < ids.size(); ++i) {
 			qint64 id = ids[i];
 			QMap<qint64, qint64>::iterator it = m_modifications.find(id);
 			if (it != m_modifications.end())
@@ -1634,7 +1636,7 @@ void VipPlayerDBAccess::applyActions()
 	// remove devices and displays with a group that does not exists anymore
 	QList<VipDisplayObject*> disps = this->displayEvents();
 	QList<VipEventDevice*> devs = this->devices();
-	for (int i = 0; i < devs.size(); ++i) {
+	for (qsizetype i = 0; i < devs.size(); ++i) {
 		if (groups.find(devs[i]->group()) == groups.end()) {
 			disps[i]->deleteLater();
 			devs[i]->deleteLater();
@@ -1659,10 +1661,10 @@ void VipPlayerDBAccess::saveToJson()
 	saveToJsonInternal(true);
 }
 
-static QByteArray rectToByteArray(const QRect& r)
+/*static QByteArray rectToByteArray(const QRect& r)
 {
 	return QString::asprintf("%i %i %i %i", r.left(), r.top(), r.width(), r.height()).toLatin1();
-}
+}*/
 
 void VipPlayerDBAccess::saveToJsonInternal(bool show_messages)
 {
@@ -1700,7 +1702,7 @@ void VipPlayerDBAccess::saveToJsonInternal(bool show_messages)
 		// This is true if polygons has been modified or interpolated.
 		// Therefore, fins event ids with this kind of modifications
 		QSet<qint64> ids;
-		for (int i = 0; i < m_actions.size(); ++i) {
+		for (qsizetype i = 0; i < m_actions.size(); ++i) {
 			if (m_actions[i].type == Action::ChangePolygon || m_actions[i].type == Action::InterpolateFrames) {
 				ids.unite(vipToSet(m_actions[i].ids));
 			}
@@ -1716,7 +1718,7 @@ void VipPlayerDBAccess::saveToJsonInternal(bool show_messages)
 			QString group = m_events[id].first().group();
 			// find the corresponding VipEventDevice
 			VipDisplaySceneModel* disp = nullptr;
-			for (int i = 0; i < events.size(); ++i) {
+			for (qsizetype i = 0; i < events.size(); ++i) {
 				if (events[i]->group() == group) {
 					disp = qobject_cast<VipDisplaySceneModel*>(displays[i]);
 					break;
@@ -1736,8 +1738,8 @@ void VipPlayerDBAccess::saveToJsonInternal(bool show_messages)
 
 			// recompute stats
 			QList<VipProcessingObject*> stats = m_player->extractTimeEvolution(to_recompute, VipShapeStatistics::Minimum | VipShapeStatistics::Maximum | VipShapeStatistics::Mean, 1, 2);
-			int c = 0;
-			for (int i = 0; i < to_recomputeIds.size(); ++i) {
+			qsizetype c = 0;
+			for (qsizetype i = 0; i < to_recomputeIds.size(); ++i) {
 				VipAnyResource* max = static_cast<VipAnyResource*>(stats[c++]);
 				vip_debug("%s\n", max->path().toLatin1().data());
 				VipAnyResource* min = static_cast<VipAnyResource*>(stats[c++]);
@@ -1745,25 +1747,25 @@ void VipPlayerDBAccess::saveToJsonInternal(bool show_messages)
 				VipAnyResource* mean = static_cast<VipAnyResource*>(stats[c++]);
 				vip_debug("%s\n", mean->path().toLatin1().data());
 
-				VipPointVector max_vals = max->outputAt(0)->value<VipPointVector>();
-				VipPointVector max_vals_pos = max->outputAt(0)->data().attribute("_vip_Pos").value<VipPointVector>();
+				QPolygonF max_vals = vipToPointF(max->outputAt(0)->value<VipPointVector>());
+				QPolygonF max_vals_pos = vipToPointF(max->outputAt(0)->data().attribute("_vip_Pos").value<VipPointVector>());
 
-				VipPointVector min_vals = min->outputAt(0)->value<VipPointVector>();
-				VipPointVector min_vals_pos = min->outputAt(0)->data().attribute("_vip_Pos").value<VipPointVector>();
+				QPolygonF min_vals = vipToPointF(min->outputAt(0)->value<VipPointVector>());
+				QPolygonF min_vals_pos = vipToPointF(min->outputAt(0)->data().attribute("_vip_Pos").value<VipPointVector>());
 
-				VipPointVector mean_vals = mean->outputAt(0)->value<VipPointVector>();
+				QPolygonF mean_vals = vipToPointF(mean->outputAt(0)->value<VipPointVector>());
 
-				QList<VipShape>& shs = m_events[to_recomputeIds[i]];
+				VipShapeList& shs = m_events[to_recomputeIds[i]];
 
 				// transform max and min positions based on player transform
 				QTransform tr = m_player->imageTransform().inverted();
-				max_vals_pos = tr.map(max_vals_pos.toPointF());
-				min_vals_pos = tr.map(min_vals_pos.toPointF());
+				max_vals_pos = tr.map(max_vals_pos);
+				min_vals_pos = tr.map(min_vals_pos);
 
 				if (max_vals.size() == max_vals_pos.size() && max_vals.size() == min_vals.size() && max_vals.size() == min_vals_pos.size() && max_vals.size() == mean_vals.size() &&
 				    max_vals.size() == shs.size()) {
 
-					for (int j = 0; j < max_vals.size(); ++j) {
+					for (qsizetype j = 0; j < max_vals.size(); ++j) {
 						VipShape& sh = shs[j];
 						sh.setAttribute("max_temperature_C", max_vals[j].y()); // TODO
 						sh.setAttribute("max_T_image_position_x", qRound(max_vals_pos[j].x()));
@@ -1875,7 +1877,7 @@ void VipPlayerDBAccess::uploadInternal(bool show_messages)
 			// This is true if polygons has been modified or interpolated.
 			// Therefore, find event ids with this kind of modifications
 			QSet<qint64> ids;
-			for (int i = 0; i < m_actions.size(); ++i) {
+			for (qsizetype i = 0; i < m_actions.size(); ++i) {
 				if (m_actions[i].type == Action::ChangePolygon || m_actions[i].type == Action::InterpolateFrames) {
 					ids.unite(vipToSet(m_actions[i].ids));
 				}
@@ -1893,7 +1895,7 @@ void VipPlayerDBAccess::uploadInternal(bool show_messages)
 				QString group = to_send[id].first().group();
 				// find the corresponding VipEventDevice
 				VipDisplaySceneModel* disp = nullptr;
-				for (int i = 0; i < events.size(); ++i) {
+				for (qsizetype i = 0; i < events.size(); ++i) {
 					if (events[i]->group() == group) {
 						disp = qobject_cast<VipDisplaySceneModel*>(displays[i]);
 						break;
@@ -1914,8 +1916,8 @@ void VipPlayerDBAccess::uploadInternal(bool show_messages)
 				// recompute stats
 				QList<VipProcessingObject*> stats =
 				  m_player->extractTimeEvolution(to_recompute, VipShapeStatistics::Minimum | VipShapeStatistics::Maximum | VipShapeStatistics::Mean, 1, 2);
-				int c = 0;
-				for (int i = 0; i < to_recomputeIds.size(); ++i) {
+				qsizetype c = 0;
+				for (qsizetype i = 0; i < to_recomputeIds.size(); ++i) {
 					VipAnyResource* max = static_cast<VipAnyResource*>(stats[c++]);
 					vip_debug("%s\n", max->path().toLatin1().data());
 					VipAnyResource* min = static_cast<VipAnyResource*>(stats[c++]);
@@ -1923,25 +1925,25 @@ void VipPlayerDBAccess::uploadInternal(bool show_messages)
 					VipAnyResource* mean = static_cast<VipAnyResource*>(stats[c++]);
 					vip_debug("%s\n", mean->path().toLatin1().data());
 
-					VipPointVector max_vals = max->outputAt(0)->value<VipPointVector>();
-					VipPointVector max_vals_pos = max->outputAt(0)->data().attribute("_vip_Pos").value<VipPointVector>();
+					QPolygonF max_vals = vipToPointF(max->outputAt(0)->value<VipPointVector>());
+					QPolygonF max_vals_pos = vipToPointF(max->outputAt(0)->data().attribute("_vip_Pos").value<VipPointVector>());
 
-					VipPointVector min_vals = min->outputAt(0)->value<VipPointVector>();
-					VipPointVector min_vals_pos = min->outputAt(0)->data().attribute("_vip_Pos").value<VipPointVector>();
+					QPolygonF min_vals =vipToPointF( min->outputAt(0)->value<VipPointVector>());
+					QPolygonF min_vals_pos = vipToPointF(min->outputAt(0)->data().attribute("_vip_Pos").value<VipPointVector>());
 
-					VipPointVector mean_vals = mean->outputAt(0)->value<VipPointVector>();
+					QPolygonF mean_vals = vipToPointF(mean->outputAt(0)->value<VipPointVector>());
 
-					QList<VipShape>& shs = to_send[to_recomputeIds[i]];
+					VipShapeList& shs = to_send[to_recomputeIds[i]];
 
 					// transform max and min positions based on player transform
 					QTransform tr = m_player->imageTransform().inverted();
-					max_vals_pos = tr.map(max_vals_pos.toPointF());
-					min_vals_pos = tr.map(min_vals_pos.toPointF());
+					max_vals_pos = tr.map( max_vals_pos);
+					min_vals_pos = tr.map(min_vals_pos);
 
 					if (max_vals.size() == max_vals_pos.size() && max_vals.size() == min_vals.size() && max_vals.size() == min_vals_pos.size() &&
 					    max_vals.size() == mean_vals.size() && max_vals.size() == shs.size()) {
 
-						for (int j = 0; j < max_vals.size(); ++j) {
+						for (qsizetype j = 0; j < max_vals.size(); ++j) {
 							VipShape& sh = shs[j];
 							sh.setAttribute("max_temperature_C", max_vals[j].y()); // TODO
 							sh.setAttribute("max_T_image_position_x", qRound(max_vals_pos[j].x()));
@@ -2182,7 +2184,7 @@ void VipPlayerDBAccess::addEvents(const Vip_event_list& events, bool fromDB)
 		m_initial_events[start_id] = it.value();
 		// set the id to all shapes
 		VipShapeList& lst = m_initial_events[start_id];
-		for (int i = 0; i < lst.size(); ++i)
+		for (qsizetype i = 0; i < lst.size(); ++i)
 			lst[i].setId(start_id);
 		++start_id;
 	}
@@ -2274,7 +2276,7 @@ void VipPlayerDBAccess::showEvents()
 	QSet<QString> groups;
 	// extract groups
 	for (Vip_event_list::const_iterator it = m_initial_events.begin(); it != m_initial_events.end(); ++it) {
-		const QList<VipShape> lst = it.value();
+		const VipShapeList &lst = it.value();
 		if (lst.size())
 			groups.insert(lst.first().group());
 	}
@@ -2292,15 +2294,15 @@ void VipPlayerDBAccess::shapeDestroyed(VipPlotShape* sh)
 	VipShape shape = sh->rawData();
 	if (VipPlotSceneModel* plot = sh->property("VipPlotSceneModel").value<VipPlotSceneModel*>()) {
 		if (VipDisplayObject* obj = plot->property("VipDisplayObject").value<VipDisplayObject*>())
-			if (VipEventDevice* dev = vipListCast<VipEventDevice*>(obj->allSources()).first())
+			if (/*VipEventDevice* dev = */vipListCast<VipEventDevice*>(obj->allSources()).first())
 				this->remove(/*shape.attribute("ID").toInt()*/ shape.id());
 	}
 
 	// remove ALL drawn time line
 	if (VipDisplayPlayerArea* a = VipDisplayPlayerArea::fromChildWidget(m_player)) {
 		QList<VipTimeRangeListItem*> items = a->playWidget()->area()->findItems<VipTimeRangeListItem*>(QString(), 2, 1);
-		for (int i = 0; i < items.size(); ++i) {
-			if (VipEventDevice* dev = qobject_cast<VipEventDevice*>(items[i]->device())) {
+		for (qsizetype i = 0; i < items.size(); ++i) {
+			if (/*VipEventDevice* dev =*/ qobject_cast<VipEventDevice*>(items[i]->device())) {
 				items[i]->setAdditionalDrawFunction(VipTimeRangeListItem::draw_function());
 			}
 		}
@@ -2313,12 +2315,12 @@ void VipPlayerDBAccess::resetDrawEventTimeLine()
 
 	// set the draw function to draw time ranges for selected events
 	QMap<QString, QList<QPointer<VipPlotShape>>> pshapes;
-	for (int i = 0; i < shapes.size(); ++i) {
+	for (qsizetype i = 0; i < shapes.size(); ++i) {
 		pshapes[shapes[i]->rawData().group()].append(shapes[i]);
 	}
 	if (VipDisplayPlayerArea* a = VipDisplayPlayerArea::fromChildWidget(m_player)) {
 		QList<VipTimeRangeListItem*> items = a->playWidget()->area()->findItems<VipTimeRangeListItem*>(QString(), 2, 1);
-		for (int i = 0; i < items.size(); ++i) {
+		for (qsizetype i = 0; i < items.size(); ++i) {
 			if (VipEventDevice* dev = qobject_cast<VipEventDevice*>(items[i]->device())) {
 				if (pshapes.find(dev->group()) != pshapes.end())
 					items[i]->setAdditionalDrawFunction(
@@ -2336,12 +2338,12 @@ void VipPlayerDBAccess::itemSelected(VipPlotItem*)
 
 	// set the draw function to draw time ranges for selected events
 	QMap<QString, QList<QPointer<VipPlotShape>>> pshapes;
-	for (int i = 0; i < shapes.size(); ++i) {
+	for (qsizetype i = 0; i < shapes.size(); ++i) {
 		pshapes[shapes[i]->rawData().group()].append(shapes[i]);
 	}
 	if (VipDisplayPlayerArea* a = VipDisplayPlayerArea::fromChildWidget(m_player)) {
 		QList<VipTimeRangeListItem*> items = a->playWidget()->area()->findItems<VipTimeRangeListItem*>(QString(), 2, 1);
-		for (int i = 0; i < items.size(); ++i) {
+		for (qsizetype i = 0; i < items.size(); ++i) {
 			if (VipEventDevice* dev = qobject_cast<VipEventDevice*>(items[i]->device())) {
 				if (pshapes.find(dev->group()) != pshapes.end())
 					items[i]->setAdditionalDrawFunction(
@@ -2355,7 +2357,7 @@ void VipPlayerDBAccess::itemSelected(VipPlotItem*)
 	if (!vipHasReadRightsDB())
 		return;
 
-	for (int i = 0; i < shapes.size(); ++i) {
+	for (qsizetype i = 0; i < shapes.size(); ++i) {
 		if (!shapes[i]->rawData().hasAttribute("max_temperature_C")) {
 			shapes.removeAt(i);
 			--i;
@@ -2380,7 +2382,7 @@ void VipPlayerDBAccess::itemSelected(VipPlotItem*)
 		duration = shapes.first()->rawData().attribute("duration_ns").toDouble() / 1000000000.0;
 		automatic = shapes.first()->rawData().attribute("is_automatic_detection").toBool() ? Qt::Checked : Qt::Unchecked;
 		confidence = shapes.first()->rawData().attribute("confidence").toDouble();
-		for (int i = 1; i < shapes.size(); ++i) {
+		for (qsizetype i = 1; i < shapes.size(); ++i) {
 			VipPlotShape* shape = shapes[i];
 			m_selection.append(shape);
 			QString _category = shape->rawData().group();
@@ -2437,7 +2439,7 @@ void VipPlayerDBAccess::applyChangesToSelection()
 	QList<qint64> group_ids;
 	VipPlotShape* first = nullptr;
 	QSet<QString> groups;
-	for (int i = 0; i < m_selection.size(); ++i) {
+	for (qsizetype i = 0; i < m_selection.size(); ++i) {
 		if (VipPlotShape* sh = m_selection[i]) {
 			if (!first)
 				first = sh;
@@ -2484,7 +2486,7 @@ void VipPlayerDBAccess::clear()
 	// remove all display objects (and their sources)
 	QObject* s = sender();
 	QList<VipDisplayObject*> lst = displayEvents();
-	for (int i = 0; i < lst.size(); ++i) {
+	for (qsizetype i = 0; i < lst.size(); ++i) {
 		if (lst[i] != s) {
 			// disconnect(lst[i], SIGNAL(destroyed(QObject*)), this, SLOT(clear()));
 			lst[i]->deleteLater();
@@ -2502,7 +2504,7 @@ void VipPlayerDBAccess::clear()
 QList<VipDisplayObject*> VipPlayerDBAccess::displayEvents()
 {
 	QList<VipDisplayObject*> res;
-	for (int i = 0; i < m_displays.size(); ++i) {
+	for (qsizetype i = 0; i < m_displays.size(); ++i) {
 		if (m_displays[i])
 			res.append(m_displays[i]);
 		else {
@@ -2516,7 +2518,7 @@ QList<VipDisplayObject*> VipPlayerDBAccess::displayEvents()
 QList<VipEventDevice*> VipPlayerDBAccess::devices()
 {
 	QList<VipEventDevice*> res;
-	for (int i = 0; i < m_displays.size(); ++i) {
+	for (qsizetype i = 0; i < m_displays.size(); ++i) {
 		if (m_displays[i])
 			res.append(m_devices[i]);
 		else {
@@ -2536,7 +2538,7 @@ const QList<VipPlayerDBAccess::Action>& VipPlayerDBAccess::actionsStack() const
 VipEventDevice* VipPlayerDBAccess::device(const QString& group)
 {
 	QList<VipEventDevice*> devs = devices();
-	for (int i = 0; i < devs.size(); ++i)
+	for (qsizetype i = 0; i < devs.size(); ++i)
 		if (devs[i]->group() == group)
 			return devs[i];
 	return nullptr;
@@ -2612,9 +2614,9 @@ void VipPlayerDBAccess::sendManualAnnotation()
 	// remove the selected shapes
 	QList<VipPlotShape*> shapes = m_player->plotSceneModel()->shapes(1);
 	VipShapeList lst;
-	for (int i = 0; i < shapes.size(); ++i)
+	for (qsizetype i = 0; i < shapes.size(); ++i)
 		lst.push_back(shapes[i]->rawData());
-	for (int i = 0; i < lst.size(); ++i) {
+	for (qsizetype i = 0; i < lst.size(); ++i) {
 		MarkersType m = lst[i].attribute("_vip_markers").value<MarkersType>();
 		if (m.size()) {
 			m_player->plotSceneModel()->sceneModel().remove(lst[i]);
@@ -2669,7 +2671,7 @@ void VipPlayerDBAccess::saveCSV()
 		info.deltaT = lst.last().attribute("max_temperature_C").toDouble() - lst.first().attribute("max_temperature_C").toDouble();
 		info.camera = cams.indexOf(lst.first().attribute("line_of_sight").toString());
 
-		for (int i = 1; i < lst.size(); ++i) {
+		for (qsizetype i = 1; i < lst.size(); ++i) {
 			info.min = qMin(info.min, lst[i].attribute("max_temperature_C").toDouble());
 			info.max = qMax(info.max, lst[i].attribute("max_temperature_C").toDouble());
 			info.X += lst[i].attribute("max_T_image_position_x").toDouble();
@@ -2706,7 +2708,7 @@ void VipPlayerDBAccess::saveCSV()
 	str << names.join("\t") << "\n";
 
 	// write values
-	for (int i = 0; i < infos.size(); ++i) {
+	for (qsizetype i = 0; i < infos.size(); ++i) {
 		str << infos[i].min << "\t" << infos[i].max << "\t" << infos[i].mean << "\t" << infos[i].deltaT << "\t" << infos[i].X << "\t" << infos[i].Y << "\t" << infos[i].duration << "\t"
 		    << infos[i].pixel_area << "\t" << infos[i].elongation << "\t";
 

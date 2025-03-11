@@ -1,7 +1,7 @@
 /**
  * BSD 3-Clause License
  *
- * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ * Copyright (c) 2025, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Leo Dubus, Erwan Grelier
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -65,7 +65,7 @@ class QAlphaWidget
 {
 	Q_OBJECT
 public:
-	QAlphaWidget(QWidget* w, Qt::WindowFlags f = 0);
+	QAlphaWidget(QWidget* w, Qt::WindowFlags f = Qt::WindowFlags());
 	~QAlphaWidget();
 
 	void run(int time);

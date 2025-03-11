@@ -1,7 +1,7 @@
 /**
  * BSD 3-Clause License
  *
- * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ * Copyright (c) 2025, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Leo Dubus, Erwan Grelier
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -55,6 +55,9 @@
 #include "VipLock.h"
 #include "VipProcessingHelper.h"
 #include "VipTimestamping.h"
+#include "VipCircularVector.h"
+
+
 
 /// \addtogroup Core
 /// @{
@@ -68,19 +71,35 @@
 ///
 class VIP_CORE_EXPORT VipAnyData
 {
-	qint64 m_source;
-	qint64 m_time;
+	qint64 m_source{ 0 };
+	qint64 m_time{ VipInvalidTime };
 	QVariantMap m_attributes;
-	QVariant m_data;
+	QVariant d_data;
 
 public:
-	VipAnyData();
-	VipAnyData(const QVariant& data, qint64 time = 0);
-	VipAnyData(QVariant&& data, qint64 time = 0);
+	VipAnyData() = default;
+	VIP_ALWAYS_INLINE VipAnyData(const QVariant& data, qint64 time = VipInvalidTime)
+	  : m_time(time)
+	  , d_data(data)
+	{
+	}
+	VIP_ALWAYS_INLINE VipAnyData(QVariant&& data, qint64 time = VipInvalidTime)
+	  : m_time(time)
+	  , d_data(std::move(data))
+	{
+	}
 	VipAnyData(const VipAnyData&) = default;
-	VipAnyData(VipAnyData&&) = default;
 	VipAnyData& operator=(const VipAnyData&) = default;
+
+#ifdef __GNUC__
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wstringop-overflow="
+#endif
+	VipAnyData(VipAnyData&&) = default;
 	VipAnyData& operator=(VipAnyData&&) = default;
+#ifdef __GNUC__
+#pragma GCC diagnostic pop
+#endif
 
 	/// @brief Set the data attributes.
 	/// You can set any kind of attribute that can be used for display purpose, for processing or as simple annotations.
@@ -91,53 +110,63 @@ public:
 	/// - "ZUnit": a QString object containing the data z unit (if any). For image data, the ZUnit will be used for the color scale title.
 	/// - "stylesheet": a VipPlotItem stylesheet applied through the leaf VipDisplayObject
 	///
-	void setAttributes(const QVariantMap& attrs) { m_attributes = attrs; }
-	void setAttribute(const QString& name, const QVariant& value) { m_attributes[name] = value; }
-	const QVariantMap& attributes() const { return m_attributes; }
-	QVariant attribute(const QString& attr) const { return m_attributes[attr]; }
-	bool hasAttribute(const QString& attr) const { return m_attributes.find(attr) != m_attributes.end(); }
+	VIP_ALWAYS_INLINE void setAttributes(const QVariantMap& attrs) { m_attributes = attrs; }
+	VIP_ALWAYS_INLINE void setAttribute(const QString& name, const QVariant& value) { m_attributes[name] = value; }
+	VIP_ALWAYS_INLINE const QVariantMap& attributes() const { return m_attributes; }
+	VIP_ALWAYS_INLINE QVariant attribute(const QString& attr) const { return m_attributes[attr]; }
+	VIP_ALWAYS_INLINE bool hasAttribute(const QString& attr) const { return m_attributes.find(attr) != m_attributes.end(); }
 	QStringList mergeAttributes(const QVariantMap& attrs);
 
-	void setName(const QString& name) { setAttribute("Name", name); }
-	void setXUnit(const QString& unit) { setAttribute("XUnit", unit); }
-	void setYUnit(const QString& unit) { setAttribute("YUnit", unit); }
-	void setZUnit(const QString& unit) { setAttribute("ZUnit", unit); }
+	VIP_ALWAYS_INLINE void setName(const QString& name) { setAttribute("Name", name); }
+	VIP_ALWAYS_INLINE void setXUnit(const QString& unit) { setAttribute("XUnit", unit); }
+	VIP_ALWAYS_INLINE void setYUnit(const QString& unit) { setAttribute("YUnit", unit); }
+	VIP_ALWAYS_INLINE void setZUnit(const QString& unit) { setAttribute("ZUnit", unit); }
 
-	QString name() const { return m_attributes["Name"].toString(); }
-	QString xUnit() const { return m_attributes["XUnit"].toString(); }
-	QString yUnit() const { return m_attributes["YUnit"].toString(); }
-	QString zUnit() const { return m_attributes["ZUnit"].toString(); }
+	VIP_ALWAYS_INLINE QString name() const { return m_attributes["Name"].toString(); }
+	VIP_ALWAYS_INLINE QString xUnit() const { return m_attributes["XUnit"].toString(); }
+	VIP_ALWAYS_INLINE QString yUnit() const { return m_attributes["YUnit"].toString(); }
+	VIP_ALWAYS_INLINE QString zUnit() const { return m_attributes["ZUnit"].toString(); }
 
-	void setData(const QVariant& data) { m_data = data; }
-	void setData(QVariant&& data) { m_data = std::move(data); }
-	const QVariant& data() const { return m_data; }
+	VIP_ALWAYS_INLINE void setData(const QVariant& data) { d_data = data; }
+	VIP_ALWAYS_INLINE void setData(QVariant&& data)
+	{
+#ifdef __GNUC__
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wstringop-overflow="
+#endif
+		d_data = std::move(data); 
+#ifdef __GNUC__
+#pragma GCC diagnostic pop
+#endif
+	}
+	VIP_ALWAYS_INLINE const QVariant& data() const { return d_data; }
 
-	void setTime(qint64 time) { m_time = time; }
-	qint64 time() const { return m_time; }
+	VIP_ALWAYS_INLINE void setTime(qint64 time) { m_time = time; }
+	VIP_ALWAYS_INLINE qint64 time() const { return m_time; }
 
 	/// Set the source, that is the #VipProcessingObject that creates this VipAnyData.
 	/// By default the source is zero. It is usually set to the VipProcessingObject address.
-	void setSource(qint64 source) { m_source = source; }
+	VIP_ALWAYS_INLINE void setSource(qint64 source) { m_source = source; }
 	template<class T>
-	void setSource(const T* source)
+	VIP_ALWAYS_INLINE void setSource(const T* source)
 	{
 		m_source = reinterpret_cast<std::uintptr_t>(source);
 	}
-	qint64 source() const { return m_source; }
+	VIP_ALWAYS_INLINE qint64 source() const { return m_source; }
 
-	bool isEmpty() const { return m_data.userType() == 0; }
-	bool isValid() const { return !isEmpty(); }
+	VIP_ALWAYS_INLINE bool isEmpty() const { return d_data.userType() == 0; }
+	VIP_ALWAYS_INLINE bool isValid() const { return !isEmpty(); }
 	template<class T>
-	T value() const
+	VIP_ALWAYS_INLINE T value() const
 	{
-		return m_data.value<T>();
+		return d_data.value<T>();
 	}
 
 	/// Returns an approximation of the memory footprint for this object.
 	int memoryFootprint() const;
 };
 
-typedef QList<VipAnyData> VipAnyDataList;
+typedef QVector<VipAnyData> VipAnyDataList;
 
 Q_DECLARE_METATYPE(VipAnyData)
 Q_DECLARE_METATYPE(VipAnyDataList)
@@ -161,35 +190,69 @@ class VIP_CORE_EXPORT VipErrorHandler : public QObject
 	Q_OBJECT
 
 public:
-	VipErrorHandler(QObject* parent = nullptr);
-	~VipErrorHandler();
-	/// Set the current error status.
+	VipErrorHandler(QObject* parent = nullptr)
+	  : QObject(parent)
+	  , d_data(_null_error())
+	{
+	}
+	~VipErrorHandler()
+	{
+		VipErrorData* prev = d_data.exchange(_null_error());
+		if (prev != _null_error())
+			delete prev;
+	}
+	/// @brief Set the current error status.
 	/// The error will be redirected to the parent VipProcessingObject.
-	void setError(const QString& error, int code = -1);
-	void setError(const VipErrorData&);
-	void setError(VipErrorData&& err);
-	/// Resets the current error status.
-	void resetError();
-	/// Return the last error.
-	VipErrorData error() const;
-	/// Returns the last error string
-	QString errorString() const;
-	/// Returns the last error code, ot 0 if no error occured.
-	int errorCode() const;
-	/// Returns true if an error occurred during the last operation.
-	bool hasError() const;
+	void setError(const QString& err, int code = -1) { setError(VipErrorData(err, code)); }
+	void setError(VipErrorData&& err)
+	{
+		VipErrorData* error = new VipErrorData(std::move(err));
+		VipErrorData* prev = d_data.exchange(error);
+		if (prev != _null_error())
+			delete prev;
+		newError(err);
+		emitError(this, err);
+	}
+	void setError(const VipErrorData& err)
+	{
+		VipErrorData* error = new VipErrorData(err);
+		VipErrorData* prev = d_data.exchange(error);
+		if (prev != _null_error())
+			delete prev;
+		newError(err);
+		emitError(this, err);
+	}
+	/// @brief Resets the current error status.
+	VIP_ALWAYS_INLINE void resetError()
+	{
+		VipErrorData* prev = d_data.exchange(_null_error());
+		if (prev != _null_error())
+			delete prev;
+	}
+	/// @brief Return the last error.
+	VIP_ALWAYS_INLINE const VipErrorData& error() const { return *d_data; }
+	/// @brief Returns the last error string
+	VIP_ALWAYS_INLINE QString errorString() const { return error().errorString(); }
+	/// @brief Returns the last error code, ot 0 if no error occured.
+	VIP_ALWAYS_INLINE int errorCode() const { return error().errorCode(); }
+	/// @brief Returns true if an error occurred during the last operation.
+	VIP_ALWAYS_INLINE bool hasError() const { return d_data != _null_error(); }
+
+	
+	
 
 protected:
 	virtual void newError(const VipErrorData&) {}
 
 public Q_SLOTS:
-	virtual void emitError(QObject*, const VipErrorData&);
+	virtual void emitError(QObject* obj, const VipErrorData& err) { Q_EMIT error(obj, err); }
 
 Q_SIGNALS:
 	/// This signal is emitted by the function setError()
 	void error(QObject*, const VipErrorData&);
 
 private:
+	static VipErrorData* _null_error();
 	std::atomic<VipErrorData*> d_data;
 };
 
@@ -267,8 +330,7 @@ private:
 	void add(VipProcessingObject*);
 	void remove(VipProcessingObject*);
 
-	class PrivateData;
-	PrivateData* m_data;
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 /// @brief VipDataList is an abstract class representing a list of VipAnyData going to the input of a VipProcessingObject.
@@ -316,7 +378,12 @@ public:
 	virtual VipAnyData probe() = 0;
 	/// Returns all next data, and remove them from the list.
 	/// This function returns the next data in the order they should be read, from list beginning to list end.
-	virtual VipAnyDataList allNext() = 0;
+	virtual bool readAll(VipAnyDataList& lst) = 0;
+	VipAnyDataList allNext() { 
+		VipAnyDataList res;
+		readAll(res);
+		return res;
+	}
 	/// Return the next data time
 	virtual qint64 time() const = 0;
 	/// Returns true if the list is empty, false otherwise.
@@ -355,8 +422,15 @@ public:
 /// @brief A FIFO, thread safe VipDataList
 class VIP_CORE_EXPORT VipFIFOList : public VipDataList
 {
-	// std::deque is more performant (even on msvc!) for fifo structure than QList
-	std::deque<VipAnyData> m_list;
+	// Use QVector as queue with Qt6 (double ended vector),
+	// std::deque otherwise (still faster than QList).
+	// A growable circular buffer would be better here...
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
+	using QueueType = std::deque<VipAnyData>;
+#else
+	using QueueType = QVector<VipAnyData>;
+#endif
+	VipCircularVector<VipAnyData,Vip::StrongOwnership> m_list;
 	VipAnyData m_last;
 	VipSpinlock m_mutex;
 
@@ -367,7 +441,7 @@ public:
 	virtual void reset(const VipAnyData&);
 	virtual void reset(VipAnyData&&);
 	virtual VipAnyData next();
-	virtual VipAnyDataList allNext();
+	virtual bool readAll(VipAnyDataList& lst);
 	virtual VipAnyData probe();
 	virtual qint64 time() const;
 	virtual bool empty() const;
@@ -382,7 +456,15 @@ public:
 /// @brief A LIFO, thread safe VipDataList
 class VIP_CORE_EXPORT VipLIFOList : public VipDataList
 {
-	std::deque<VipAnyData> m_list;
+	// Use QVector as queue with Qt6 (double ended vector),
+	// std::deque otherwise (still faster than QList).
+	// A growable circular buffer would be better here...
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
+	using QueueType = std::deque<VipAnyData>;
+#else
+	using QueueType = QVector<VipAnyData>;
+#endif
+	QueueType m_list;
 	VipAnyData m_last;
 	VipSpinlock m_mutex;
 
@@ -393,7 +475,7 @@ public:
 	virtual void reset(const VipAnyData&);
 	virtual void reset(VipAnyData&&);
 	virtual VipAnyData next();
-	virtual VipAnyDataList allNext();
+	virtual bool readAll(VipAnyDataList& lst);
 	virtual VipAnyData probe();
 	virtual qint64 time() const;
 	virtual bool empty() const;
@@ -408,7 +490,7 @@ public:
 /// @brief A thread safe VipDataList that only stores and returns the last incoming data
 class VIP_CORE_EXPORT VipLastAvailableList : public VipDataList
 {
-	VipAnyData m_data;
+	VipAnyData d_data;
 	bool m_has_new_data;
 	VipSpinlock m_mutex;
 
@@ -419,7 +501,7 @@ public:
 	virtual void reset(const VipAnyData&);
 	virtual void reset(VipAnyData&&);
 	virtual VipAnyData next();
-	virtual VipAnyDataList allNext();
+	virtual bool readAll(VipAnyDataList& lst);
 	virtual VipAnyData probe();
 	virtual qint64 time() const;
 	virtual bool empty() const;
@@ -591,8 +673,7 @@ Q_SIGNALS:
 	void dataSent(VipProcessingIO* io, const VipAnyData& data);
 
 private:
-	class PrivateData;
-	PrivateData* m_data;
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 VIP_REGISTER_QOBJECT_METATYPE(VipConnection*)
@@ -688,15 +769,15 @@ public:
 	/// @brief Set the parent VipProcessingObject. You should not call this function yourself.
 	virtual void setParentProcessing(VipProcessingObject* parent);
 
-	bool operator==(const VipProcessingIO& other) { return m_data == other.m_data; }
-	bool operator!=(const VipProcessingIO& other) { return m_data != other.m_data; }
+	bool operator==(const VipProcessingIO& other) { return d_data == other.d_data; }
+	bool operator!=(const VipProcessingIO& other) { return d_data != other.d_data; }
 
 protected:
 	void dirtyParentProcessingIO(VipProcessingIO* io);
 
 private:
 	class PrivateData;
-	QSharedPointer<PrivateData> m_data;
+	QSharedPointer<PrivateData> d_data;
 };
 
 /// @brief A VipProcessingIO with a VipConnectionPtr.
@@ -725,7 +806,7 @@ public:
 
 private:
 	class PrivateData;
-	QSharedPointer<PrivateData> m_data;
+	QSharedPointer<PrivateData> d_data;
 };
 
 /// @brief A VipProcessingIO that is a container for any number of VipProcessingIO pointers.
@@ -738,42 +819,42 @@ public:
 
 	VipMultipleProcessingIO(Type t, const QString& name)
 	  : VipProcessingIO(t, name)
-	  , m_data(new PrivateData())
+	  , d_data(new PrivateData())
 	{
 	}
 	VipMultipleProcessingIO(const VipMultipleProcessingIO& other)
 	  : VipProcessingIO(other)
-	  , m_data(other.m_data)
+	  , d_data(other.d_data)
 	{
 	}
 	~VipMultipleProcessingIO() {}
 
 	/// @brief Returns the vector of VipProcessingIO pointers
-	const VectorType& vector() const { return m_data->vector; }
+	const VectorType& vector() const { return d_data->vector; }
 	/// @brief Returns the number of VipProcessingIO this VipMultipleProcessingIO conatins
-	int count() const { return m_data->vector.size(); }
+	int count() const { return d_data->vector.size(); }
 
 	/// @brief Set the maximum number of VipProcessingIO this object can contain
 	void setMaxSize(int size)
 	{
-		m_data->max_size = size;
+		d_data->max_size = size;
 		if (count() > size)
 			resize(size);
 	}
 	/// @brief Returns the maximum number of VipProcessingIO this object can contain
-	int maxSize() const { return m_data->max_size; }
+	int maxSize() const { return d_data->max_size; }
 
 	/// @brief Set the minimum number of VipProcessingIO this object can contain
 	void setMinSize(int size)
 	{
 		if (size < 0)
 			size = 0;
-		m_data->min_size = size;
+		d_data->min_size = size;
 		if (count() < size)
 			resize(size);
 	}
 	/// @brief Returns the minimum number of VipProcessingIO this object can contain
-	int minSize() const { return m_data->min_size; }
+	int minSize() const { return d_data->min_size; }
 
 	/// @brief Insert a VipProcessingIO at given position
 	/// @param pos insert position
@@ -781,12 +862,12 @@ public:
 	/// @return true on success, false otherwise
 	bool insert(int pos, const TYPE& val)
 	{
-		if (count() >= m_data->max_size)
+		if (count() >= d_data->max_size)
 			return false;
 		TYPE* t = new TYPE(val);
 		t->setParentProcessing(parentProcessing());
-		m_data->vector.insert(pos, t);
-		added(m_data->vector.back());
+		d_data->vector.insert(pos, t);
+		added(d_data->vector.back());
 		dirtyParentProcessingIO(this);
 		return true;
 	}
@@ -800,18 +881,18 @@ public:
 	/// Return true on success, false otherwise.
 	bool setAt(int pos, const TYPE& val)
 	{
-		if (pos >= m_data->max_size || pos < 0)
+		if (pos >= d_data->max_size || pos < 0)
 			return false;
 		if (pos >= count())
 			resize(pos + 1);
-		*m_data->vector[pos] = val;
-		added(m_data->vector[pos]);
+		*d_data->vector[pos] = val;
+		added(d_data->vector[pos]);
 		dirtyParentProcessingIO(this);
 		return true;
 	}
 
 	/// @brief Add a VipProcessingIO
-	bool add(const TYPE& val) { return insert(m_data->vector.size(), val); }
+	bool add(const TYPE& val) { return insert(d_data->vector.size(), val); }
 	/// @brief Add a new VipProcessingIO with given name
 	bool add(const QString& name) { return add(TYPE(name)); }
 	/// Add a new VipProcessingIO that inherits this VipMultipleProcessingIO name
@@ -819,14 +900,14 @@ public:
 	/// Resize this VipMultipleProcessingIO
 	bool resize(int size)
 	{
-		if (size < m_data->min_size || size > m_data->max_size)
+		if (size < d_data->min_size || size > d_data->max_size)
 			return false;
 		if (size < 0)
 			size = 0;
 		if (size < count()) {
 			for (int i = size; i < count(); ++i)
-				delete m_data->vector[i];
-			m_data->vector.resize(size);
+				delete d_data->vector[i];
+			d_data->vector.resize(size);
 			dirtyParentProcessingIO(this);
 		}
 		else if (size > count()) {
@@ -839,22 +920,22 @@ public:
 	/// Remove the VipProcessingIO at given index
 	bool removeAt(int index)
 	{
-		if (count() <= m_data->min_size)
+		if (count() <= d_data->min_size)
 			return false;
-		delete m_data->vector[index];
-		m_data->vector.removeAt(index);
+		delete d_data->vector[index];
+		d_data->vector.removeAt(index);
 		dirtyParentProcessingIO(this);
 		return true;
 	}
 	/// Clear the VipMultipleProcessingIO
 	bool clear()
 	{
-		if (m_data->min_size > 0)
+		if (d_data->min_size > 0)
 			return false;
-		while (m_data->vector.size()) {
-			m_data->vector[0]->clearConnection();
-			delete m_data->vector[0];
-			m_data->vector.removeAt(0);
+		while (d_data->vector.size()) {
+			d_data->vector[0]->clearConnection();
+			delete d_data->vector[0];
+			d_data->vector.removeAt(0);
 		}
 		dirtyParentProcessingIO(this);
 		return true;
@@ -862,33 +943,33 @@ public:
 	/// Returns the index of the VipProcessingIO with given name
 	int indexOf(const QString& name) const
 	{
-		for (int i = 0; i < m_data->vector.size(); ++i)
-			if (m_data->vector[i]->name() == name)
+		for (int i = 0; i < d_data->vector.size(); ++i)
+			if (d_data->vector[i]->name() == name)
 				return i;
 		return -1;
 	}
 	/// Returns the VipProcessingIO at given index
-	TYPE* at(int index) { return m_data->vector[index]; }
+	TYPE* at(int index) { return d_data->vector[index]; }
 	/// Returns the VipProcessingIO at given index
-	const TYPE* at(int index) const { return m_data->vector[index]; }
+	const TYPE* at(int index) const { return d_data->vector[index]; }
 	/// Reimplemented from #VipProcessingIO::data().
 	/// Returns the the data of the last VipProcessingIO.
-	virtual VipAnyData data() const { return m_data->vector.back()->data(); }
+	virtual VipAnyData data() const { return d_data->vector.back()->data(); }
 	/// Reimplemented from #VipProcessingIO::setData().
 	/// Set the data of the last VipProcessingIO.
-	virtual void setData(const VipAnyData& d) { m_data->vector.back()->setData(d); }
+	virtual void setData(const VipAnyData& d) { d_data->vector.back()->setData(d); }
 	/// Clear all VipProcessingIO connections
 	virtual void clearConnection()
 	{
-		for (int i = 0; i < m_data->vector.size(); ++i)
-			m_data->vector[i]->clearConnection();
+		for (int i = 0; i < d_data->vector.size(); ++i)
+			d_data->vector[i]->clearConnection();
 	}
 	/// Set the parent VipProcessingObject. You should not call this function yourself.
 	virtual void setParentProcessing(VipProcessingObject* parent)
 	{
 		VipProcessingIO::setParentProcessing(parent);
-		for (int i = 0; i < m_data->vector.size(); ++i)
-			m_data->vector[i]->setParentProcessing(parent);
+		for (int i = 0; i < d_data->vector.size(); ++i)
+			d_data->vector[i]->setParentProcessing(parent);
 		dirtyParentProcessingIO(this);
 	}
 
@@ -915,7 +996,7 @@ private:
 		int min_size;
 		int max_size;
 	};
-	QSharedPointer<PrivateData> m_data;
+	QSharedPointer<PrivateData> d_data;
 };
 
 /// A #VipProcessingObject input.
@@ -945,35 +1026,38 @@ public:
 	VipInput(const VipInput& other);
 
 	/// Call VipDataList::probe()
-	VipAnyData probe() const;
+	VIP_ALWAYS_INLINE VipAnyData probe() const { return m_input_list->probe(); }
 	/// Reimplemented from #VipProcessingIO::data(). Call #VipDataList::next()
-	virtual VipAnyData data() const;
-	VipAnyDataList allData() const;
+	VIP_ALWAYS_INLINE VipAnyData data() const { return m_input_list->next(); }
 	/// Reimplemented from #VipProcessingIO::setData(). Add a new data to the internal VipDataList.
+	VIP_ALWAYS_INLINE VipAnyDataList allData() const { return m_input_list->allNext(); }
+	VIP_ALWAYS_INLINE bool allData(VipAnyDataList & lst) const { return m_input_list->readAll(lst); }
+	
 	virtual void setData(const VipAnyData&);
 	virtual void setData(VipAnyData&&);
 	using VipProcessingIO::setData;
 
 	/// Change the internal VipDataList type
 	void setListType(VipDataList::Type, int list_limit_type = VipDataList::None, int max_list_size = INT_MAX, int max_memory_size = INT_MAX);
+	void setListType(VipDataList * lst);
 	/// Returns the internal VipDataList type
-	VipDataList::Type listType() const { return m_input_list->listType(); }
+	VIP_ALWAYS_INLINE VipDataList::Type listType() const { return m_input_list->listType(); }
 	/// Returns the internal VipDataList
-	QSharedPointer<VipDataList> buffer() const { return m_input_list; }
+	VIP_ALWAYS_INLINE QSharedPointer<VipDataList> buffer() const { return m_input_list; }
 	/// Returns the list maximum size
-	int maxListSize() const { return m_input_list->maxListSize(); }
+	VIP_ALWAYS_INLINE int maxListSize() const { return m_input_list->maxListSize(); }
 	/// Returns the list maximum memory size
-	int maxListMemory() const { return m_input_list->maxListMemory(); }
+	VIP_ALWAYS_INLINE int maxListMemory() const { return m_input_list->maxListMemory(); }
 	/// Returns the list limit type
-	int listLimitType() const { return m_input_list->listLimitType(); }
+	VIP_ALWAYS_INLINE int listLimitType() const { return m_input_list->listLimitType(); }
 	/// Retruns true if the VipInput has a new data available, false otherwise
-	bool hasNewData() const { return m_input_list->hasNewData(); }
+	VIP_ALWAYS_INLINE bool hasNewData() const { return m_input_list->hasNewData(); }
 	/// See VipDataList::status()
-	int status() const { return m_input_list->status(); }
+	VIP_ALWAYS_INLINE int status() const { return m_input_list->status(); }
 	/// Returns true if the VipDataList is empty
-	bool empty() const { return m_input_list->empty(); }
+	VIP_ALWAYS_INLINE bool empty() const { return m_input_list->empty(); }
 	/// Returns the time of the last input data
-	qint64 time() const { return m_input_list->time(); }
+	VIP_ALWAYS_INLINE qint64 time() const { return m_input_list->time(); }
 };
 
 /// \a VipMultiInput is container for multiple #VipInput.
@@ -1035,8 +1119,8 @@ private:
 ///
 class VIP_CORE_EXPORT VipOutput : public UniqueProcessingIO
 {
-	QSharedPointer<VipAnyData> m_data;
-	QList<VipAnyData> m_buffer;
+	QSharedPointer<VipAnyData> d_data;
+	VipAnyDataList m_buffer;
 	VipSpinlock m_buffer_lock;
 	bool m_bufferize_outputs;
 
@@ -1064,7 +1148,7 @@ public:
 
 	/// Returns buffered data and clear the internal list of buffered data.
 	/// This function is thread safe.
-	QList<VipAnyData> clearBufferedData();
+	VipAnyDataList clearBufferedData();
 
 	// shortcut functions
 	qint64 time() const { return data().time(); }
@@ -1123,7 +1207,7 @@ public:
 /// It can be connected to a #VipOutput like a #VipInput.
 class VIP_CORE_EXPORT VipProperty : public UniqueProcessingIO
 {
-	QSharedPointer<VipAnyData> m_data;
+	QSharedPointer<VipAnyData> d_data;
 	VipSpinlock m_lock;
 
 public:
@@ -1481,8 +1565,8 @@ public:
 
 		VipProcessingObject* create() const;
 
-		bool operator==(const Info& other) { return metatype == other.metatype && init == other.init; }
-		bool operator!=(const Info& other) { return metatype != other.metatype || init != other.init; }
+		bool operator==(const Info& other) const { return metatype == other.metatype && init == other.init; }
+		bool operator!=(const Info& other) const { return metatype != other.metatype || init != other.init; }
 	};
 
 	/// @brief Constructor. Usually, the parent is a VipProcessingPool object.
@@ -1562,7 +1646,7 @@ public:
 	/// @brief Tells if the processing is using internally the GUI event loop.
 	/// This has an impact in the way the wait() function behaves.
 	/// Most processing objects do not use the event loop, that's why this function returns false by default.
-	/// Within Thermavip SDK, only #VipDisplayObject use it.
+	/// Within Thermavip SDK, only VipDisplayObject uses it.
 	virtual bool useEventLoop() const { return false; }
 
 	/// @brief Returns all inputs names, including the VipInput inside the VipMultiInput
@@ -1646,6 +1730,10 @@ public:
 	bool acceptInput(int index, const char* typeName) const { return acceptInput(index, vipCreateVariant(typeName)); }
 	/// @brief Returns true if given class name is a valid type for given property index
 	bool acceptProperty(int index, const char* typeName) const { return acceptProperty(index, vipCreateVariant(typeName)); }
+
+	/// @brief Set a function called each time inputs/outputs/properties are initialized
+	void setIOInitializeFunction(const std::function<void()>&);
+	const std::function<void()>& IOInitializeFunction() const;
 
 	/// @brief Set the priority of the internal task pool
 	void setPriority(QThread::Priority);
@@ -1945,6 +2033,10 @@ protected:
 
 	void excludeFromProcessingRateComputation();
 
+	/// @brief Returns all input data and clear the internal task pool.
+	/// Only used by VipDisplayObject.
+	VipAnyDataList allInputs();
+
 public Q_SLOTS:
 	/// Emit the signal #VipProcessingPool::processingChanged. Use this function in derived classes when changing a parameter.
 	void emitProcessingChanged();
@@ -1979,9 +2071,10 @@ private:
 	QString generateUniqueInputName(const VipProcessingIO& in, const QString& name);
 
 	void run();
+	void runNoLock();
+	VipSpinlock& runLock() noexcept;
 
-	class PrivateData;
-	PrivateData* m_data;
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 template<class ProcessingType>
@@ -2084,10 +2177,17 @@ using VipProcessingObjectInfoList = QList<VipProcessingObject::Info>;
 Q_DECLARE_METATYPE(VipProcessingObjectInfoList);
 VIP_REGISTER_QOBJECT_METATYPE(VipProcessingObject*)
 
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
 inline uint qHash(const QPointer<VipProcessingObject>& key, uint seed = 0)
 {
 	return qHash(key.data(), seed);
 }
+#else
+inline size_t qHash(const QPointer<VipProcessingObject>& key, size_t seed = 0)
+{
+	return qHash(key.data(), seed);
+}
+#endif
 
 /// @brief List of VipProcessingObject with additional convenient functions
 class VIP_CORE_EXPORT VipProcessingObjectList : public QList<QPointer<VipProcessingObject>>
@@ -2374,8 +2474,8 @@ protected:
 
 private:
 	void computeParams();
-	class PrivateData;
-	PrivateData* m_data;
+
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 VIP_REGISTER_QOBJECT_METATYPE(VipProcessingList*)
@@ -2416,7 +2516,7 @@ public:
 	/// Set the scene model by setting the 'scene_model' property, and optionally set a shape identifier
 	void setSceneModel(const VipSceneModel& scene, const QString& identifier = QString());
 	/// Set the scene model by setting the 'scene_model' property, and set a shape identifiers (property 'shape_ids')
-	void setSceneModel(const VipSceneModel& scene, const QList<VipShape>& shapes);
+	void setSceneModel(const VipSceneModel& scene, const VipShapeList& shapes);
 	/// Set the scene model by setting the 'scene_model' property, and set a shape identifiers (property 'shape_ids')
 	void setSceneModel(const VipSceneModel& scene, const QStringList& identifiers);
 	/// Set the shape by setting the 'scene_model' property and the 'shape_ids' property
@@ -2437,7 +2537,7 @@ public:
 	/// Returns all shapes set as properties without applying the merge strategy.
 	/// The shape transform (if any) is applied.
 	/// Note that this will alwayse return a copy of the set shape that can be freely modified.
-	QList<VipShape> shapes();
+	VipShapeList shapes();
 
 	/// Enable/disable a call to VipProcessingObject::reload() whenever the a shape changes within the scene model.
 	/// True by default.
@@ -2451,8 +2551,7 @@ private Q_SLOTS:
 	void dirtyShape();
 
 private:
-	class PrivateData;
-	PrivateData* m_data;
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 /// @brief Processing taking any kind and number of inputs, and send them one by one to the unique output.

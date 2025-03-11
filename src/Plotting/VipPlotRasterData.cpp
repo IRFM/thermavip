@@ -1,7 +1,7 @@
 /**
  * BSD 3-Clause License
  *
- * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ * Copyright (c) 2025, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Leo Dubus, Erwan Grelier
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -39,7 +39,6 @@
 
 #include <limits>
 
-#include <QGLWidget>
 #include <qapplication.h>
 #include <qthread.h>
 
@@ -412,13 +411,14 @@ public:
 	PrivateData()
 	  : converter(nullptr)
 	  , mTime(QDateTime::currentMSecsSinceEpoch())
-	  , isArray(0)
+	  , isArray(false)
+	  , deleteConverter(true)
 	{
 	}
 
-	~PrivateData()
+	virtual ~PrivateData() noexcept
 	{
-		if (converter)
+		if (converter && deleteConverter)
 			delete converter;
 	}
 
@@ -428,32 +428,45 @@ public:
 	QRectF outRect;
 	qint64 mTime;
 	bool isArray;
+	bool deleteConverter;
 };
+
+template<class Converter>
+class VipRasterDataEmbedConverter
+	: public VipRasterData::PrivateData
+{
+public:
+	Converter c;
+	VipRasterDataEmbedConverter()
+	  : VipRasterData::PrivateData()
+	{
+		this->converter = &c;
+		this->deleteConverter = false;
+	}
+};
+
 
 VipRasterData::VipRasterData() {}
 
 VipRasterData::VipRasterData(const VipNDArray& ar, const QPointF& p)
-  : d_data(new PrivateData())
+  : d_data(new VipRasterDataEmbedConverter<ArrayConverter>())
 {
-	d_data->converter = new ArrayConverter();
 	static_cast<ArrayConverter*>(d_data->converter)->setArray(ar);
 	static_cast<ArrayConverter*>(d_data->converter)->setPosition(p);
 	d_data->isArray = true;
 }
 
 VipRasterData::VipRasterData(const QImage& image, const QPointF& p)
-  : d_data(new PrivateData())
+  : d_data(new VipRasterDataEmbedConverter<ArrayConverter>())
 {
-	d_data->converter = new ArrayConverter();
 	static_cast<ArrayConverter*>(d_data->converter)->setArray(vipToArray(image));
 	static_cast<ArrayConverter*>(d_data->converter)->setPosition(p);
 	d_data->isArray = true;
 }
 
 VipRasterData::VipRasterData(const QPixmap& pixmap, const QPointF& p)
-  : d_data(new PrivateData())
+  : d_data(new VipRasterDataEmbedConverter<ArrayConverter>())
 {
-	d_data->converter = new ArrayConverter();
 	static_cast<ArrayConverter*>(d_data->converter)->setArray(vipToArray(pixmap.toImage()));
 	static_cast<ArrayConverter*>(d_data->converter)->setPosition(p);
 	d_data->isArray = true;
@@ -463,19 +476,6 @@ VipRasterData::VipRasterData(VipRasterConverter* converter)
   : d_data(new PrivateData())
 {
 	d_data->converter = converter;
-}
-
-VipRasterData::VipRasterData(const VipRasterData& raster)
-  : d_data(raster.d_data)
-{
-}
-
-VipRasterData::~VipRasterData() {}
-
-VipRasterData& VipRasterData::operator=(const VipRasterData& raster)
-{
-	d_data = raster.d_data;
-	return *this;
 }
 
 qint64 VipRasterData::modifiedTime() const
@@ -703,7 +703,6 @@ VipPlotRasterData::VipPlotRasterData(const VipText& title)
 
 VipPlotRasterData::~VipPlotRasterData()
 {
-	delete d_data;
 }
 
 bool VipPlotRasterData::setItemProperty(const char* name, const QVariant& value, const QByteArray& index)
@@ -789,7 +788,7 @@ void VipPlotRasterData::drawSelected(QPainter* painter, const VipCoordinateSyste
 	VipPainter::drawPolygon(painter, poly);
 }
 
-static void convertToOpenGL(const QImage& src, QImage& dst)
+/* static void convertToOpenGL(const QImage& src, QImage& dst)
 {
 
 	if (dst.size() != src.size()) {
@@ -826,7 +825,7 @@ static void convertToOpenGL(const QImage& src, QImage& dst)
 			p -= 2 * width;
 		}
 	}
-}
+}*/
 
 #include <qopenglcontext.h>
 #include <qopenglfunctions.h>
@@ -1063,11 +1062,14 @@ void VipPlotRasterData::setData(const QVariant& v)
 		carray = true;
 	}
 
-	VipRasterData _new = v.value<VipRasterData>();
+	VipRasterData _new;
 	if (v.userType() == qMetaTypeId<VipNDArray>())
 		_new = VipRasterData(v.value<VipNDArray>());
 	else if (v.userType() == qMetaTypeId<QImage>())
 		_new = VipRasterData(vipToArray(v.value<QImage>()));
+	else
+		_new = v.value<VipRasterData>();
+
 	QRectF nrect = _new.boundingRect();
 
 	d_data->empty_data = _new.isEmpty();

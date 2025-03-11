@@ -1,7 +1,7 @@
 /**
  * BSD 3-Clause License
  *
- * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ * Copyright (c) 2025, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Leo Dubus, Erwan Grelier
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -79,7 +79,7 @@ VipVMultiPlotArea2D::VipVMultiPlotArea2D(QGraphicsItem* parent)
   : VipPlotArea2D(parent)
 {
 
-	d_data = new PrivateData();
+	VIP_CREATE_PRIVATE_DATA(d_data);
 
 	// remove the preivous left and right axes
 	removeScale(VipPlotArea2D::leftAxis());
@@ -118,7 +118,6 @@ VipVMultiPlotArea2D::VipVMultiPlotArea2D(QGraphicsItem* parent)
 
 VipVMultiPlotArea2D::~VipVMultiPlotArea2D()
 {
-	delete d_data;
 }
 
 VipAxisBase* VipVMultiPlotArea2D::leftAxis() const

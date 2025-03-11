@@ -1367,7 +1367,7 @@ def current_player():
     """
     Returns the current player's id or 0 if no player available
     """
-    return builtins.internal.current_player()
+    return call_thermavip_fun('builtins.internal.current_player',())
     
 def reorganize():
     """

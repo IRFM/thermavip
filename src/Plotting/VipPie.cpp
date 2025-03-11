@@ -1,7 +1,7 @@
 /**
  * BSD 3-Clause License
  *
- * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ * Copyright (c) 2025, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Leo Dubus, Erwan Grelier
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -31,7 +31,7 @@
 
 #include "VipPie.h"
 
-VipPie::VipPie(vip_double start_angle, vip_double end_angle, vip_double min_radius, vip_double max_radius, vip_double offset_to_center)
+VipPie::VipPie(vip_double start_angle, vip_double end_angle, vip_double min_radius, vip_double max_radius, vip_double offset_to_center) noexcept
   : d_start_angle(start_angle)
   , d_end_angle(end_angle)
   , d_min_radius(min_radius)
@@ -40,7 +40,7 @@ VipPie::VipPie(vip_double start_angle, vip_double end_angle, vip_double min_radi
 {
 }
 
-VipPie::VipPie(const VipPolarCoordinate& top_left, const VipPolarCoordinate& bottom_right, vip_double offset_to_center)
+VipPie::VipPie(const VipPolarCoordinate& top_left, const VipPolarCoordinate& bottom_right, vip_double offset_to_center) noexcept
   : d_start_angle(bottom_right.angle())
   , d_end_angle(top_left.angle())
   , d_min_radius(bottom_right.radius())
@@ -49,7 +49,7 @@ VipPie::VipPie(const VipPolarCoordinate& top_left, const VipPolarCoordinate& bot
 {
 }
 
-VipPie::VipPie(const QRectF& r, vip_double offset_to_center)
+VipPie::VipPie(const QRectF& r, vip_double offset_to_center) noexcept
   : d_start_angle(r.left())
   , d_end_angle(r.right())
   , d_min_radius(r.top())
@@ -58,114 +58,114 @@ VipPie::VipPie(const QRectF& r, vip_double offset_to_center)
 {
 }
 
-bool VipPie::isEmpty() const
+bool VipPie::isEmpty() const noexcept
 {
 	return d_start_angle == 0 && d_end_angle == 0 && d_min_radius == 0 && d_max_radius == 0;
 }
 
-VipPie& VipPie::setAngleRange(vip_double start, vip_double end)
+VipPie& VipPie::setAngleRange(vip_double start, vip_double end) noexcept
 {
 	d_start_angle = start;
 	d_end_angle = end;
 	return *this;
 }
 
-VipPie& VipPie::setStartAngle(vip_double start_angle)
+VipPie& VipPie::setStartAngle(vip_double start_angle) noexcept
 {
 	d_start_angle = start_angle;
 	return *this;
 }
 
-vip_double VipPie::startAngle() const
+vip_double VipPie::startAngle() const noexcept
 {
 	return d_start_angle;
 }
 
-VipPie& VipPie::setEndAngle(vip_double end_angle)
+VipPie& VipPie::setEndAngle(vip_double end_angle) noexcept
 {
 	d_end_angle = end_angle;
 	return *this;
 }
 
-vip_double VipPie::endAngle() const
+vip_double VipPie::endAngle() const noexcept
 {
 	return d_end_angle;
 }
-
-vip_double VipPie::sweepLength() const
+ 
+vip_double VipPie::sweepLength() const noexcept
 {
 	return d_end_angle - d_start_angle;
 }
 
-vip_double VipPie::meanAngle() const
+vip_double VipPie::meanAngle() const noexcept
 {
 	return (d_end_angle + d_start_angle) / 2.0;
 }
 
-void VipPie::setRadiusRange(vip_double start, vip_double end)
+void VipPie::setRadiusRange(vip_double start, vip_double end) noexcept
 {
 	d_min_radius = start;
 	d_max_radius = end;
 }
 
-VipPie& VipPie::setMinRadius(vip_double min_radius)
+VipPie& VipPie::setMinRadius(vip_double min_radius) noexcept
 {
 	d_min_radius = min_radius;
 	return *this;
 }
 
-vip_double VipPie::minRadius() const
+vip_double VipPie::minRadius() const noexcept
 {
 	return d_min_radius;
 }
 
-VipPie& VipPie::setMaxRadius(vip_double max_radius)
+VipPie& VipPie::setMaxRadius(vip_double max_radius) noexcept
 {
 	d_max_radius = max_radius;
 	return *this;
 }
 
-vip_double VipPie::maxRadius() const
+vip_double VipPie::maxRadius() const noexcept
 {
 	return d_max_radius;
 }
 
-vip_double VipPie::radiusExtent() const
+vip_double VipPie::radiusExtent() const noexcept
 {
 	return d_max_radius - d_min_radius;
 }
 
-vip_double VipPie::meanRadius() const
+vip_double VipPie::meanRadius() const noexcept
 {
 	return (d_max_radius + d_min_radius) / 2.0;
 }
 
-VipPie& VipPie::setOffsetToCenter(vip_double offset_to_center)
+VipPie& VipPie::setOffsetToCenter(vip_double offset_to_center) noexcept
 {
 	d_offset_to_center = offset_to_center;
 	return *this;
 }
 
-vip_double VipPie::offsetToCenter() const
+vip_double VipPie::offsetToCenter() const noexcept
 {
 	return d_offset_to_center;
 }
 
-VipPolarCoordinate VipPie::topLeft() const
+VipPolarCoordinate VipPie::topLeft() const noexcept
 {
 	return VipPolarCoordinate(d_max_radius, d_end_angle);
 }
-VipPolarCoordinate VipPie::bottomRight() const
-{
+VipPolarCoordinate VipPie::bottomRight() const noexcept
+{ 
 	return VipPolarCoordinate(d_min_radius, d_start_angle);
 }
 
-QRectF VipPie::rect() const
+QRectF VipPie::rect() const noexcept
 {
 	return QRectF(QPointF(d_end_angle, d_max_radius), QPointF(d_start_angle, d_min_radius)).normalized();
 }
 
-VipPie VipPie::normalized() const
+VipPie VipPie::normalized() const noexcept
 {
 	VipPie res(*this);
 	if (res.d_start_angle > res.d_end_angle)
@@ -175,7 +175,7 @@ VipPie VipPie::normalized() const
 	return res;
 }
 
-VipPie& VipPie::setMeanAngle(vip_double mean_angle)
+VipPie& VipPie::setMeanAngle(vip_double mean_angle) noexcept
 {
 	vip_double offset = mean_angle - meanAngle();
 	d_start_angle += offset;
@@ -183,7 +183,7 @@ VipPie& VipPie::setMeanAngle(vip_double mean_angle)
 	return *this;
 }
 
-VipPie& VipPie::setMeanRadius(vip_double mean_radius)
+VipPie& VipPie::setMeanRadius(vip_double mean_radius) noexcept
 {
 	vip_double offset = mean_radius - meanRadius();
 	d_min_radius += offset;

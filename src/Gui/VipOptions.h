@@ -1,7 +1,7 @@
 /**
  * BSD 3-Clause License
  *
- * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ * Copyright (c) 2025, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Leo Dubus, Erwan Grelier
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -66,10 +66,7 @@ class VipPageItems : public QTreeWidget
 {
 	Q_OBJECT
 public:
-	VipPageItems(QWidget* parent = nullptr)
-	  : QTreeWidget(parent)
-	{
-	}
+	VipPageItems(QWidget* parent = nullptr);
 };
 
 /// A dialog widget that displays general settings of Thermavip.
@@ -86,6 +83,7 @@ public:
 	bool hasPage(VipPageOption* page) const;
 	bool addPage(const QString& category, VipPageOption* page, const QIcon& icon = QIcon());
 	void setCurrentPage(VipPageOption* page);
+	void setCurrentPage(const QString & category);
 	QScrollArea* areaForPage(VipPageOption* page) const;
 	void setTreeWidth(int w);
 
@@ -94,8 +92,8 @@ private Q_SLOTS:
 	void itemClicked(QTreeWidgetItem* item, int column);
 
 private:
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 VIP_GUI_EXPORT VipOptions* vipGetOptions();
@@ -121,8 +119,8 @@ private Q_SLOTS:
 private:
 	QPixmap colorMapPixmap(int color_map, const QSize& size);
 	QPixmap applyFactor(const QImage& img, int factor);
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 class ProcessingSettings : public VipPageOption
@@ -138,8 +136,8 @@ public Q_SLOTS:
 	void updatePage();
 
 private:
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 class EnvironmentSettings : public VipPageOption
@@ -160,8 +158,8 @@ private Q_SLOTS:
 	void openLogFile();
 
 private:
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 class RenderingSettings : public VipPageOption
@@ -177,8 +175,8 @@ public Q_SLOTS:
 	void updatePage();
 
 private:
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 #endif

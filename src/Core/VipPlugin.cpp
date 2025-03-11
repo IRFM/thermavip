@@ -1,7 +1,7 @@
 /**
  * BSD 3-Clause License
  *
- * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ * Copyright (c) 2025, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Leo Dubus, Erwan Grelier
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -55,7 +55,7 @@ public:
 
 VipLoadPlugins::VipLoadPlugins()
 {
-	m_data = new PrivateData();
+	VIP_CREATE_PRIVATE_DATA(d_data);
 
 	QSettings settings(vipGetPluginsDirectory() + "Plugins.ini", QSettings::IniFormat);
 	QStringList groups = settings.childGroups();
@@ -67,7 +67,7 @@ VipLoadPlugins::VipLoadPlugins()
 			settings.setArrayIndex(i);
 			QString name = settings.value("name").toString();
 			if (!name.isEmpty())
-				m_data->availablePlugins[groups[g]].append(name);
+				d_data->availablePlugins[groups[g]].append(name);
 			else
 				break;
 			++i;
@@ -80,11 +80,10 @@ VipLoadPlugins::VipLoadPlugins()
 
 VipLoadPlugins::~VipLoadPlugins()
 {
-	for (int i = 0; i < m_data->plugins.size(); ++i) {
-		m_data->plugins[i]->unload();
-		delete m_data->plugins[i];
+	for (int i = 0; i < d_data->plugins.size(); ++i) {
+		d_data->plugins[i]->unload();
+		delete d_data->plugins[i];
 	}
-	delete m_data;
 }
 
 VipLoadPlugins& VipLoadPlugins::instance()
@@ -95,7 +94,7 @@ VipLoadPlugins& VipLoadPlugins::instance()
 
 QStringList VipLoadPlugins::pluginCategories() const
 {
-	return m_data->availablePlugins.keys();
+	return d_data->availablePlugins.keys();
 }
 
 QStringList VipLoadPlugins::plugins(const QString& category) const
@@ -103,7 +102,7 @@ QStringList VipLoadPlugins::plugins(const QString& category) const
 	if (category == "Folder")
 		return pluginsInDir(vipGetPluginsDirectory());
 	else
-		return m_data->availablePlugins[category];
+		return d_data->availablePlugins[category];
 }
 
 QStringList VipLoadPlugins::pluginsInDir(const QString directory)
@@ -122,14 +121,14 @@ QStringList VipLoadPlugins::pluginsInDir(const QString directory)
 
 QList<VipPluginInterface*> VipLoadPlugins::loadedPlugins() const
 {
-	return m_data->interfaces;
+	return d_data->interfaces;
 }
 
 QStringList VipLoadPlugins::loadedPluginNames() const
 {
 	QStringList res;
-	for (int i = 0; i < m_data->plugins.size(); ++i)
-		res << QFileInfo(m_data->plugins[i]->fileName()).baseName();
+	for (int i = 0; i < d_data->plugins.size(); ++i)
+		res << QFileInfo(d_data->plugins[i]->fileName()).baseName();
 	return res;
 }
 
@@ -147,36 +146,36 @@ VipPluginInterface* VipLoadPlugins::find(const QString& name) const
 {
 	QString search = formatPluginName(name);
 
-	for (int i = 0; i < m_data->plugins.size(); ++i) {
-		QString pname = formatPluginName(m_data->plugins[i]->fileName());
+	for (int i = 0; i < d_data->plugins.size(); ++i) {
+		QString pname = formatPluginName(d_data->plugins[i]->fileName());
 		if (pname == search)
-			return m_data->interfaces[i];
+			return d_data->interfaces[i];
 	}
 	return nullptr;
 }
 
 void VipLoadPlugins::unloadPlugins()
 {
-	for (int i = 0; i < m_data->interfaces.size(); ++i) {
-		m_data->interfaces[i]->unloadPlugin();
+	for (int i = 0; i < d_data->interfaces.size(); ++i) {
+		d_data->interfaces[i]->unloadPlugin();
 	}
 }
 
 void VipLoadPlugins::unloadAndDeletePlugins()
 {
-	for (int i = 0; i < m_data->interfaces.size(); ++i) {
-		m_data->interfaces[i]->unloadPlugin();
+	for (int i = 0; i < d_data->interfaces.size(); ++i) {
+		d_data->interfaces[i]->unloadPlugin();
 	}
 
-	for (int i = 0; i < m_data->interfaces.size(); ++i) {
-		// delete m_data->interfaces[i];
-		m_data->plugins[i]->unload();
-		delete m_data->plugins[i];
+	for (int i = 0; i < d_data->interfaces.size(); ++i) {
+		// delete d_data->interfaces[i];
+		d_data->plugins[i]->unload();
+		delete d_data->plugins[i];
 	}
 
-	m_data->interfaces.clear();
-	m_data->plugins.clear();
-	m_data->availablePlugins.clear();
+	d_data->interfaces.clear();
+	d_data->plugins.clear();
+	d_data->availablePlugins.clear();
 }
 
 VipPluginInterface::LoadResult VipLoadPlugins::loadPlugin(const QString& name, QString* error)
@@ -218,16 +217,16 @@ VipPluginInterface::LoadResult VipLoadPlugins::loadPlugin(const QString& name, Q
 			// if the user requested the command line help, only load the plugin if it defines extra commands
 			if (VipCommandOptions::instance().count("help")) {
 				if (!_interface->hasExtraCommands()) {
-					m_data->plugins.append(loader);
-					m_data->interfaces.append(_interface);
+					d_data->plugins.append(loader);
+					d_data->interfaces.append(_interface);
 					return VipPluginInterface::Success;
 				}
 			}
 
 			VipPluginInterface::LoadResult result = _interface->loadPlugin();
 			if (result != VipPluginInterface::Failure && result != VipPluginInterface::Unauthorized) {
-				m_data->plugins.append(loader);
-				m_data->interfaces.append(_interface);
+				d_data->plugins.append(loader);
+				d_data->interfaces.append(_interface);
 			}
 			return result;
 		}

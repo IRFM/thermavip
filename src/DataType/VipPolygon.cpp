@@ -1,7 +1,7 @@
 /**
  * BSD 3-Clause License
  *
- * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ * Copyright (c) 2025, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Leo Dubus, Erwan Grelier
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -41,7 +41,7 @@ QPolygon vipSimplifyPolygon(const QPolygon& polygon)
 	res.push_back(polygon.front());
 
 	double angle = 0;
-	for (int i = 1; i < polygon.size() - 1; ++i) {
+	for (qsizetype i = 1; i < polygon.size() - 1; ++i) {
 		if (polygon[i] == polygon[i - 1])
 			continue;
 		angle = QLineF(polygon[i - 1], polygon[i]).angle();
@@ -78,7 +78,7 @@ QPolygonF vipSimplifyPolygon(const QPolygonF& polygon)
 	res.push_back(polygon.front());
 
 	double angle = 0;
-	for (int i = 1; i < polygon.size() - 1; ++i) {
+	for (qsizetype i = 1; i < polygon.size() - 1; ++i) {
 		if (polygon[i] == polygon[i - 1])
 			continue;
 		angle = QLineF(polygon[i - 1], polygon[i]).angle();
@@ -119,10 +119,10 @@ bool vipIsRect(const QPolygon& _p, QRect* rect)
 
 	int posx[2] = { p.front().x(), 0 };
 	int posy[2] = { p.front().y(), 0 };
-	int posxcount = 1;
-	int posycount = 1;
+	qsizetype posxcount = 1;
+	qsizetype posycount = 1;
 
-	for (int i = 1; i < p.size(); ++i) {
+	for (qsizetype i = 1; i < p.size(); ++i) {
 		const QPoint& pt = p[i];
 
 		if (posxcount == 1) {
@@ -183,10 +183,10 @@ bool vipIsRect(const QPolygonF& _p, QRectF* rect)
 
 	double posx[2] = { p.front().x(), 0 };
 	double posy[2] = { p.front().y(), 0 };
-	int posxcount = 1;
-	int posycount = 1;
+	qsizetype posxcount = 1;
+	qsizetype posycount = 1;
 
-	for (int i = 1; i < p.size(); ++i) {
+	for (qsizetype i = 1; i < p.size(); ++i) {
 		const QPointF& pt = p[i];
 
 		if (posxcount == 1) {
@@ -236,12 +236,12 @@ bool vipIsRect(const QPolygonF& _p, QRectF* rect)
 	return true;
 }
 
-static inline QVector<double> line_dists(const QPointF* points, int size, const QPointF& start, const QPointF& end)
+static inline QVector<double> line_dists(const QPointF* points, qsizetype size, const QPointF& start, const QPointF& end)
 {
 	// Returns the signed distances of each point to start and end
 	if (start == end) {
 		QVector<double> res;
-		for (int i = 0; i < size; ++i) {
+		for (qsizetype i = 0; i < size; ++i) {
 			QPointF diff = points[i] - start;
 			res.push_back(std::sqrt(diff.x() * diff.x() + diff.y() * diff.y()));
 		}
@@ -252,7 +252,7 @@ static inline QVector<double> line_dists(const QPointF* points, int size, const 
 	double vec_norm = std::sqrt(vec.x() * vec.x() + vec.y() * vec.y());
 
 	QVector<double> res;
-	for (int i = 0; i < size; ++i) {
+	for (qsizetype i = 0; i < size; ++i) {
 		QPointF diff = start - points[i];
 		// cross product
 		double cross = vec.x() * diff.y() - vec.y() * diff.x();
@@ -304,11 +304,11 @@ static inline QLineF glue(const QLineF& seg1, const QLineF& seg2)
 	}
 }
 
-static inline int max_index_abs(const QVector<double>& v)
+static inline qsizetype max_index_abs(const QVector<double>& v)
 {
 	double max = std::abs(v.front());
-	int index = 0;
-	for (int i = 1; i < v.size(); ++i) {
+	qsizetype index = 0;
+	for (qsizetype i = 1; i < v.size(); ++i) {
 		double tmp = std::abs(v[i]);
 		if (tmp > max) {
 			max = tmp;
@@ -317,11 +317,11 @@ static inline int max_index_abs(const QVector<double>& v)
 	}
 	return index;
 }
-static inline int argmin(const QVector<double>& v)
+static inline qsizetype argmin(const QVector<double>& v)
 {
 	double min = (v.front());
-	int index = 0;
-	for (int i = 1; i < v.size(); ++i) {
+	qsizetype index = 0;
+	for (qsizetype i = 1; i < v.size(); ++i) {
 		double tmp = (v[i]);
 		if (tmp < min) {
 			min = tmp;
@@ -349,7 +349,7 @@ static inline QPolygonF mid(const QPolygonF& v, size_t start, size_t n = 0)
 		return QPolygonF();
 	if (start + n > (size_t)v.size() || n == 0)
 		n = v.size() - start;
-	QPolygonF res((int)n);
+	QPolygonF res((qsizetype)n);
 	std::copy(v.begin() + start, v.begin() + (start + n), res.begin());
 	return res;
 	// return v.mid(start, n);
@@ -360,10 +360,10 @@ static inline QPolygonF __rdp(const QVector<QPointF>& points, double epsilon)
 	// Computes expansion only rdp assuming a clockwise orientation
 	QPointF start = points.front();
 	QPointF end = points.back();
-	QVector<double> dists = line_dists(points.data(), (int)points.size(), start, end);
+	QVector<double> dists = line_dists(points.data(), (qsizetype)points.size(), start, end);
 
 	// First compute the largest point away from the line just like the ordinary RDP
-	int index = max_index_abs(dists);
+	qsizetype index = max_index_abs(dists);
 	double dmax = std::abs(dists[index]);
 	QPolygonF result;
 
@@ -389,7 +389,7 @@ static inline QPolygonF __rdp(const QVector<QPointF>& points, double epsilon)
 		if (norm != 0) {
 			QPointF vec_rot90(-vec_y / norm, vec_x / norm);
 			// TODO -- verify that this works: can optimize so that if dists[index] < 0, no need to search again, we have index_min = index and dmin = -dmax
-			int index_min = argmin(dists);
+			qsizetype index_min = argmin(dists);
 			double dmin = -dists[index_min];
 			if (dmin > 0) {
 				vec_rot90 *= dmin;
@@ -443,7 +443,7 @@ static inline QPoint rotateClockwise45(const QPoint& pt)
 }
 
 template<class T>
-static bool checkPoint(int x, int y, const VipNDArrayType<T>& ar, T mask_value)
+static bool checkPoint(qsizetype x, qsizetype y, const VipNDArrayType<T>& ar, T mask_value)
 {
 	// check bounds
 	if (x < 0 || y < 0 || x >= ar.shape(1) || y >= ar.shape(0))
@@ -463,7 +463,7 @@ static inline QPoint nextPoint(const QPoint& prev, const QPoint& center, const V
 	QPoint diff = prev - center;
 
 	// start from prev +1
-	for (int i = 0; i < 8; ++i) {
+	for (qsizetype i = 0; i < 8; ++i) {
 		diff = rotateClockwise45(diff);
 		const QPoint pt = diff + center;
 		if (checkPoint(pt.x(), pt.y(), ar, mask_value))
@@ -477,7 +477,7 @@ static inline QPoint nextPoint(const QPoint& prev, const QPoint& center, const V
 //  {
 //  QPolygon res(p.size());
 //  for (size_t i = 0; i < p.size(); ++i) {
-//  res[i] = QPoint((int)std::round(p[i].x()), (int)std::round(p[i].y()));
+//  res[i] = QPoint((qsizetype)std::round(p[i].x()), (qsizetype)std::round(p[i].y()));
 //  }
 //  return res;
 //  }
@@ -528,7 +528,7 @@ static void startPoint(QPoint pt, QPolygonF& out, const VipNDArrayType<T>& ar, T
 	if (out.size() > 3) {
 		QPolygonF res;
 		res.push_back(out.front());
-		for (int i = 1; i < out.size() - 1; ++i) {
+		for (qsizetype i = 1; i < out.size() - 1; ++i) {
 			QPointF p = out[i];
 			if ((p.x() == out[i - 1].x() && p.x() == out[i + 1].x()) || (p.y() == out[i - 1].y() && p.y() == out[i + 1].y()))
 				; // skip point
@@ -546,7 +546,7 @@ static void startPoint(QPoint pt, QPolygonF& out, const VipNDArrayType<T>& ar, T
 		out = rdp_closed(out, epsilon);
 
 	// qint64 el2 = QDateTime::currentMSecsSinceEpoch() - st;
-	// vip_debug("p: %i, el1: %i, el2: %i\n", out.size(), (int)el1, (int)el2);
+	// vip_debug("p: %i, el1: %i, el2: %i\n", out.size(), (qsizetype)el1, (qsizetype)el2);
 	// return;
 }
 
@@ -554,7 +554,7 @@ template<class T>
 static QPolygonF filterPolygon(const QPolygonF& poly, const VipNDArrayType<T>& ar, T foreground)
 {
 	QPolygonF res(poly.size());
-	for (int i = 0; i < poly.size(); ++i)
+	for (qsizetype i = 0; i < poly.size(); ++i)
 		res[i] = toPointF(poly[i].toPoint(), ar, foreground);
 	return res;
 }
@@ -565,8 +565,8 @@ QPolygonF extractMaskPolygon(const VipNDArrayType<T>& ar, double foreground, dou
 	T _foreground = (T)foreground;
 	if (pt == QPoint(-1, -1) || ar(pt.y(), pt.x()) != _foreground) {
 		// search from top left
-		for (int y = 0; y < ar.shape(0); ++y)
-			for (int x = 0; x < ar.shape(1); ++x) {
+		for (qsizetype y = 0; y < ar.shape(0); ++y)
+			for (qsizetype x = 0; x < ar.shape(1); ++x) {
 				T pix = ar(y, x);
 				if (pix == _foreground) {
 					// found pixel value!
@@ -579,7 +579,7 @@ QPolygonF extractMaskPolygon(const VipNDArrayType<T>& ar, double foreground, dou
 	}
 	else {
 		// find top border
-		for (int y = pt.y() - 1; y >= 0; --y) {
+		for (qsizetype y = pt.y() - 1; y >= 0; --y) {
 			T pix = ar(y, pt.x());
 			if (pix != _foreground) {
 				// found pixel value!
@@ -715,7 +715,7 @@ inline QVector<double> extractTimes(const QVector<double>& v1, const QVector<dou
 	return res;
 }
 
-static QPolygonF resampleSignal(const double* sample_x, const QPointF* sample_y, int size, const double* times, int times_size)
+static QPolygonF resampleSignal(const double* sample_x, const QPointF* sample_y, qsizetype size, const double* times, qsizetype times_size)
 {
 	QPolygonF res(times_size);
 
@@ -724,7 +724,7 @@ static QPolygonF resampleSignal(const double* sample_x, const QPointF* sample_y,
 	const QPointF* iters_y = sample_y;
 	// const double* ends_y = sample_y + size;
 
-	for (int t = 0; t < times_size; ++t) {
+	for (qsizetype t = 0; t < times_size; ++t) {
 		const double time = times[t];
 
 		// we already reached the last sample value
@@ -785,11 +785,11 @@ static QPolygonF resampleSignal(const double* sample_x, const QPointF* sample_y,
 	return res;
 }
 
-QPolygonF vipReorderPolygon(const QPolygonF& p, int new_start)
+QPolygonF vipReorderPolygon(const QPolygonF& p, qsizetype new_start)
 {
 	QPolygonF res(p.size());
-	int pos = new_start;
-	for (int i = 0; i < p.size(); ++i, ++pos) {
+	qsizetype pos = new_start;
+	for (qsizetype i = 0; i < p.size(); ++i, ++pos) {
 		if (pos >= p.size())
 			pos = 0;
 		res[i] = p[pos];
@@ -800,7 +800,7 @@ QPolygonF vipReorderPolygon(const QPolygonF& p, int new_start)
 bool vipIsClockwise(const QPolygonF& poly)
 {
 	double signedArea = 0.0;
-	for (int i = 0; i < poly.size(); ++i) {
+	for (qsizetype i = 0; i < poly.size(); ++i) {
 		QPointF point = poly[i];
 		QPointF next = i == poly.size() - 1 ? poly[0] : poly[i + 1];
 		signedArea += (point.x() * next.y() - next.x() * point.y());
@@ -843,11 +843,11 @@ static QPolygonF InterpolatePolygons(const QPolygonF& p1, const QPolygonF& p2, d
 	poly2.push_back(p2.first());
 
 	// remove duplicates
-	for (int i = 1; i < p1.size(); ++i) {
+	for (qsizetype i = 1; i < p1.size(); ++i) {
 		if (p1[i] != p1[i - 1])
 			poly1.push_back(p1[i]);
 	}
-	for (int i = 1; i < p2.size(); ++i) {
+	for (qsizetype i = 1; i < p2.size(); ++i) {
 		if (p2[i] != p2[i - 1])
 			poly2.push_back(p2[i]);
 	}
@@ -855,7 +855,7 @@ static QPolygonF InterpolatePolygons(const QPolygonF& p1, const QPolygonF& p2, d
 	if (poly1.size() == 1) {
 		QPointF pt1 = p1.first();
 		// interpolate
-		for (int i = 0; i < poly2.size(); ++i) {
+		for (qsizetype i = 0; i < poly2.size(); ++i) {
 			poly2[i] = pt1 * (1 - advance) + poly2[i] * advance;
 		}
 		return poly2;
@@ -863,7 +863,7 @@ static QPolygonF InterpolatePolygons(const QPolygonF& p1, const QPolygonF& p2, d
 	else if (poly2.size() == 1) {
 		QPointF pt2 = p2.first();
 		// interpolate
-		for (int i = 0; i < poly1.size(); ++i) {
+		for (qsizetype i = 0; i < poly1.size(); ++i) {
 			poly1[i] = poly1[i] * (1 - advance) + pt2 * advance;
 		}
 		return poly1;
@@ -871,7 +871,7 @@ static QPolygonF InterpolatePolygons(const QPolygonF& p1, const QPolygonF& p2, d
 
 	if (vipIsClockwise(poly1) != vipIsClockwise(poly2)) {
 		// revsere one of the 2
-		for (int i = 0; i < poly1.size() / 2; ++i) {
+		for (qsizetype i = 0; i < poly1.size() / 2; ++i) {
 			std::swap(poly1[i], poly1[poly1.size() - 1 - i]);
 		}
 	}
@@ -880,14 +880,14 @@ static QPolygonF InterpolatePolygons(const QPolygonF& p1, const QPolygonF& p2, d
 	QPointF c1 = p1.boundingRect().center();
 	QPointF c2 = p2.boundingRect().center();
 	QPointF diff = c2 - c1;
-	for (int i = 0; i < p2.size(); ++i)
+	for (qsizetype i = 0; i < p2.size(); ++i)
 		poly2[i] -= diff;
 
 	// find 2 closest points, which will become the new start point of each polygon
-	int id1 = 0, id2 = 0;
+	qsizetype id1 = 0, id2 = 0;
 	double len = std::numeric_limits<double>::max();
-	for (int i = 0; i < poly1.size(); ++i)
-		for (int j = 0; j < poly2.size(); ++j) {
+	for (qsizetype i = 0; i < poly1.size(); ++i)
+		for (qsizetype j = 0; j < poly2.size(); ++j) {
 			double _d = QLineF(poly1[i], poly2[j]).length();
 			if (_d < len) {
 				len = _d;
@@ -903,9 +903,9 @@ static QPolygonF InterpolatePolygons(const QPolygonF& p1, const QPolygonF& p2, d
 	// compute total length
 	double tot_len1 = 0;
 	double tot_len2 = 0;
-	for (int i = 1; i < poly1.size(); ++i)
+	for (qsizetype i = 1; i < poly1.size(); ++i)
 		tot_len1 += QLineF(poly1[i], poly1[i - 1]).length();
-	for (int i = 1; i < poly2.size(); ++i)
+	for (qsizetype i = 1; i < poly2.size(); ++i)
 		tot_len2 += QLineF(poly2[i], poly2[i - 1]).length();
 
 	QVector<double> len1, len2;
@@ -914,12 +914,12 @@ static QPolygonF InterpolatePolygons(const QPolygonF& p1, const QPolygonF& p2, d
 
 	// compute cumulated relative length
 	double cum1 = 0;
-	for (int i = 1; i < poly1.size(); ++i) {
+	for (qsizetype i = 1; i < poly1.size(); ++i) {
 		cum1 += QLineF(poly1[i], poly1[i - 1]).length();
 		len1.push_back(cum1 / tot_len1);
 	}
 	double cum2 = 0;
-	for (int i = 1; i < poly2.size(); ++i) {
+	for (qsizetype i = 1; i < poly2.size(); ++i) {
 		cum2 += QLineF(poly2[i], poly2[i - 1]).length();
 		len2.push_back(cum2 / tot_len2);
 	}
@@ -929,11 +929,11 @@ static QPolygonF InterpolatePolygons(const QPolygonF& p1, const QPolygonF& p2, d
 	poly2 = resampleSignal(len2.constData(), poly2.constData(), poly2.size(), new_length.constData(), new_length.size());
 
 	// move back p2 to its original center
-	for (int i = 0; i < poly2.size(); ++i)
+	for (qsizetype i = 0; i < poly2.size(); ++i)
 		poly2[i] += diff;
 
 	// interpolate
-	for (int i = 0; i < poly1.size(); ++i) {
+	for (qsizetype i = 0; i < poly1.size(); ++i) {
 		poly1[i] = poly1[i] * (1 - advance) + poly2[i] * advance;
 	}
 	return poly1;
@@ -944,7 +944,7 @@ QPolygonF vipInterpolatePolygons(const QPolygonF& p1, const QPolygonF& p2, doubl
 	// qint64 st = QDateTime::currentMSecsSinceEpoch();
 	QPolygonF res = InterpolatePolygons(p1, p2, advance);
 	// qint64 el = QDateTime::currentMSecsSinceEpoch() - st;
-	// vip_debug("vipInterpolatePolygons: %i ms\n", (int)el);
+	// vip_debug("vipInterpolatePolygons: %i ms\n", (qsizetype)el);
 	return res;
 }
 
@@ -994,7 +994,7 @@ double vipPolygonArea(const QPolygonF& poly)
 	double sum1 = 0;
 	double sum2 = 0;
 
-	for (int i = 0; i < poly.size() - 1; ++i) {
+	for (qsizetype i = 0; i < poly.size() - 1; ++i) {
 		sum1 += poly[i].x() * poly[i + 1].y();
 		sum2 += poly[i].y() * poly[i + 1].x();
 	}
@@ -1010,7 +1010,7 @@ double vipPolygonArea(const QPolygonF& poly)
 
 #include "VipSceneModel.h"
 
-int vipPolygonAreaRasterize(const QPolygonF& poly)
+qsizetype vipPolygonAreaRasterize(const QPolygonF& poly)
 {
 	try {
 		VipShape sh(poly);
@@ -1028,7 +1028,7 @@ QPointF vipPolygonCentroid(const QPolygonF& poly)
 	double A = vipPolygonArea(poly);
 	double gx = 0;
 	double gy = 0;
-	for (int i = 0; i < poly.size() - 1; ++i) {
+	for (qsizetype i = 0; i < poly.size() - 1; ++i) {
 
 		gx += (poly[i].x() + poly[i + 1].x()) * (poly[i].x() * poly[i + 1].y() - poly[i + 1].x() * poly[i].y());
 		gy += (poly[i].y() + poly[i + 1].y()) * (poly[i].x() * poly[i + 1].y() - poly[i + 1].x() * poly[i].y());
@@ -1092,7 +1092,7 @@ QPolygonF vipRemoveConsecutiveDuplicates(const QPolygonF& poly)
 	QPolygonF res;
 	res.reserve(poly.size());
 	res.push_back(poly.first());
-	for (int i = 1; i < poly.size(); ++i) {
+	for (qsizetype i = 1; i < poly.size(); ++i) {
 		if (poly[i] != poly[i - 1]) {
 			res.push_back(poly[i]);
 		}
@@ -1114,10 +1114,10 @@ QPolygonF vipConvexHull(const QPolygonF& poly)
 	QPolygonF p;
 
 	// find bottom most point, remove duplicated points and unclose polygon
-	int bottom_i = 0;
+	qsizetype bottom_i = 0;
 	double bottom = poly.first().y();
 	p.push_back(poly.first());
-	for (int i = 1; i < poly.size() - 1; ++i) {
+	for (qsizetype i = 1; i < poly.size() - 1; ++i) {
 		if (poly[i] != poly[i - 1]) {
 			p.push_back(poly[i]);
 			if (p.last().y() > bottom) {
@@ -1137,7 +1137,7 @@ QPolygonF vipConvexHull(const QPolygonF& poly)
 	// build list of points to inspect
 	QPolygonF to_inspect = p;
 	// std::list<QPointF> to_inspect;
-	// for (int i = 0; i < p.size(); ++i) to_inspect.push_back(p[i]);
+	// for (qsizetype i = 0; i < p.size(); ++i) to_inspect.push_back(p[i]);
 
 	// add first point (bottom most)
 	QPolygonF res;
@@ -1145,13 +1145,13 @@ QPolygonF vipConvexHull(const QPolygonF& poly)
 
 	QLineF line(p[bottom_i] - QPointF(1, 0), p[bottom_i]);
 	// start from bottom most
-	// int count = 0;
+	// qsizetype count = 0;
 	while (to_inspect.size()) {
 
 		double angle = 361;
-		int index = 0;
+		qsizetype index = 0;
 		// look for the point with smallest angle
-		for (int i = 0; i < to_inspect.size(); ++i) {
+		for (qsizetype i = 0; i < to_inspect.size(); ++i) {
 			if (to_inspect[i] != res.last()) {
 				double a = line.angleTo(QLineF(line.p2(), to_inspect[i]));
 				if (a < angle) {
@@ -1195,7 +1195,7 @@ bool vipIsNonConcave(const QPolygonF& poly)
 	double angle_sum = 0.0;
 	double orientation = 0;
 	// Check each point (the side ending there, its angle) and accum. angles
-	for (int i = 0; i < poly.size(); ++i) {
+	for (qsizetype i = 0; i < poly.size(); ++i) {
 		const QPointF newpoint = poly[i];
 		if (newpoint == new_)
 			continue;
@@ -1260,7 +1260,7 @@ VipOrientedRect vipMinimumAreaBBox(const QPolygonF& poly, bool check_convex)
 	QRectF minBox;
 	double minAngle = 0;
 
-	for (int i = 0; i < hullPoints.size(); ++i) {
+	for (qsizetype i = 0; i < hullPoints.size(); ++i) {
 		auto nextIndex = i + 1;
 
 		auto current = hullPoints[i];
@@ -1369,7 +1369,7 @@ VipPolygonDescriptors vipPolygonDescriptors(const QPolygonF& poly)
 	double gx = 0;
 	double gy = 0;
 
-	for (int i = 0; i < p.size() - 1; ++i) {
+	for (qsizetype i = 0; i < p.size() - 1; ++i) {
 
 		double xy1 = p[i].x() * p[i + 1].y();
 		double yx1 = p[i].y() * p[i + 1].x();
@@ -1393,7 +1393,7 @@ VipPolygonDescriptors vipPolygonDescriptors(const QPolygonF& poly)
 
 	double Ix = 0, Iy = 0, Ixy = 0;
 
-	for (int i = 0; i < p.size() - 1; ++i) {
+	for (qsizetype i = 0; i < p.size() - 1; ++i) {
 		double xy1 = p[i].x() * p[i + 1].y();
 		double x1y = p[i + 1].x() * p[i].y();
 		double factor = xy1 - x1y;
@@ -1423,7 +1423,7 @@ VipPolygonDescriptors vipPolygonDescriptors(const QPolygonF& poly)
 	//
 	//
 	// double cxx = 0, cyy = 0, cxy = 0, cyx = 0;
-	// for (int i = 0; i < p.size() ; ++i) {
+	// for (qsizetype i = 0; i < p.size() ; ++i) {
 	// cxx += (p[i].x() - res.centroid.x()) * (p[i].x() - res.centroid.x());
 	// cyy += (p[i].y() - res.centroid.y()) * (p[i].y() - res.centroid.y());
 	// cxy += (p[i].x() - res.centroid.x()) * (p[i].y() - res.centroid.y());
@@ -1473,14 +1473,14 @@ static double distanceToSquared(const QLineF& self, const QPointF& point)
 //  return std::sqrt(distanceToSquared(self, point));
 //  }
 
-static void douglasPeucker(int start, int end, const QPolygonF& points, QVector<double>& weights)
+static void douglasPeucker(qsizetype start, qsizetype end, const QPolygonF& points, QVector<double>& weights)
 {
 	if (end > start + 1) {
 		QLineF line(points[start], points[end]);
 		double maxDist = -1;
-		int maxDistIndex = 0;
+		qsizetype maxDistIndex = 0;
 
-		for (int i = start + 1; i < end; ++i) {
+		for (qsizetype i = start + 1; i < end; ++i) {
 			double dist = distanceToSquared(line, points[i]);
 			if (dist > maxDist) {
 				maxDist = dist;
@@ -1494,7 +1494,7 @@ static void douglasPeucker(int start, int end, const QPolygonF& points, QVector<
 	}
 }
 
-QPolygonF vipRDPSimplifyPolygon2(const QPolygonF& _points, int max_points)
+QPolygonF vipRDPSimplifyPolygon2(const QPolygonF& _points, qsizetype max_points)
 {
 	// see https://gist.github.com/msbarry/9152218
 
@@ -1507,13 +1507,13 @@ QPolygonF vipRDPSimplifyPolygon2(const QPolygonF& _points, int max_points)
 	QVector<double> weightsDescending = weights;
 	std::sort(weightsDescending.begin(), weightsDescending.end());
 	// reverse
-	// for (int i = 0; i < weightsDescending.size() / 2; ++i)
+	// for (qsizetype i = 0; i < weightsDescending.size() / 2; ++i)
 	//	std::swap(weightsDescending[i], weightsDescending[weightsDescending.size() - i - 1]);
 
 	double maxTolerance = weightsDescending[weightsDescending.size() - max_points]; // max_points - 1];
 
 	QPolygonF res;
-	for (int i = 0; i < points.size(); ++i) {
+	for (qsizetype i = 0; i < points.size(); ++i) {
 		if (weights[i] >= maxTolerance)
 			res.push_back(points[i]);
 	}

@@ -1,7 +1,7 @@
 /**
  * BSD 3-Clause License
  *
- * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ * Copyright (c) 2025, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Leo Dubus, Erwan Grelier
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -37,6 +37,8 @@
 #include "VipProgress.h"
 #include "VipSceneModel.h"
 
+#include <QSqlDatabase>
+
 /// @brief Maximum number of points to describe a polygon in the database
 #define VIP_DB_MAX_FRAME_POLYGON_POINTS 32
 
@@ -66,6 +68,17 @@ struct VipRequestCondition
 	QStringList enums;
 	Separator sep;
 };
+
+struct VipThermalEventDBOptions
+{
+	QSize minimumSize{ QSize(0, 0) };
+};
+
+VIP_ANNOTATION_EXPORT QSqlDatabase vipGetGlobalSQLConnection();
+VIP_ANNOTATION_EXPORT bool vipCreateSQLConnection(const QString& hostname, int port, const QString& db_name, const QString& user_name, const QString& password);
+
+VIP_ANNOTATION_EXPORT void vipSetThermalEventDBOptions(const VipThermalEventDBOptions&);
+VIP_ANNOTATION_EXPORT const VipThermalEventDBOptions& vipGetThermalEventDBOptions() noexcept;
 
 /// @brief Build a SQL query condition based on a column name, a min and max value and a separator
 ///
@@ -115,13 +128,13 @@ VIP_ANNOTATION_EXPORT QStringList vipAnalysisStatusDB();
 /// @brief Returns the list of possible devices from the DB based on the 'devices' table
 VIP_ANNOTATION_EXPORT QStringList vipDevicesDB();
 /// @brief Returns the possible datasets from the DB based on the 'datasets' table
-VIP_ANNOTATION_EXPORT QMap<int, VipDataset> vipDatasetsDB();
+VIP_ANNOTATION_EXPORT QMap<qsizetype, VipDataset> vipDatasetsDB();
 /// @brief Returns the possible annotation methods from the DB based on the 'methods' table
 VIP_ANNOTATION_EXPORT QStringList vipMethodsDB();
 /// @brief Returns the list of event types from the DB based on the 'thermal_event_categories' table
 VIP_ANNOTATION_EXPORT QStringList vipEventTypesDB();
 /// @brief Returns the list of event types from the DB based on the 'thermal_event_categories' table and valid for given line of sight
-VIP_ANNOTATION_EXPORT QStringList vipEventTypesDB(const QString & line_of_sight);
+VIP_ANNOTATION_EXPORT QStringList vipEventTypesDB(const QString& line_of_sight);
 /// @brief Returns the local folder containing movies as defined in the .env file (field LOCAL_MOVIE_FOLDER)
 VIP_ANNOTATION_EXPORT QString vipLocalMovieFolderDB();
 /// @brief Returns the movie files suffix from the local folder containing movies as defined in the .env file (field LOCAL_MOVIE_SUFFIX)
@@ -132,7 +145,7 @@ VIP_ANNOTATION_EXPORT bool vipHasWriteRightsDB();
 
 /// @brief Default list of events type.
 /// Stores a map of event_ID -> list of timestamped shapes
-typedef QMap<qint64, QList<VipShape>> Vip_event_list;
+typedef QMap<qint64, VipShapeList> Vip_event_list;
 
 /// @brief Returns a copy of input events
 VIP_ANNOTATION_EXPORT Vip_event_list vipCopyEvents(const Vip_event_list& events);
@@ -225,7 +238,7 @@ struct VipEventQueryResult
 	QString method;
 	QString dataset;
 	QString error;
-	QList<VipShape> shapes;
+	VipShapeList shapes;
 
 	bool isValid() const { return error.isEmpty(); }
 };
@@ -288,7 +301,7 @@ VIP_ANNOTATION_EXPORT Vip_event_list vipExtractEvents(const VipFullQueryResult& 
 
 /// @brief Simplify input polygon in order to have at most max_points.
 /// Internally uses vipRDPSimplifyPolygon().
-VIP_ANNOTATION_EXPORT QPolygonF vipSimplifyPolygonDB(const QPolygonF& poly, int max_points);
+VIP_ANNOTATION_EXPORT QPolygonF vipSimplifyPolygonDB(const QPolygonF& poly, qsizetype max_points);
 
 /// @brief Convert input events to JSON format
 VIP_ANNOTATION_EXPORT QByteArray vipEventsToJson(const Vip_event_list& evts, VipProgress* progress = nullptr);
@@ -479,9 +492,12 @@ private Q_SLOTS:
 Q_SIGNALS:
 	void changed();
 
+protected:
+	virtual void showEvent(QShowEvent* evt);
+
 private:
-	class PrivateData;
-	PrivateData* m_data;
+	void init();
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 /// @brief Vertical widget used to query DB for events
@@ -559,8 +575,8 @@ private Q_SLOTS:
 	void deviceChanged();
 
 public:
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 #endif

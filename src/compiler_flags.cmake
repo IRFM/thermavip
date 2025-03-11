@@ -1,7 +1,7 @@
 
 
 find_package(QT NAMES Qt5 Qt6 REQUIRED )
-find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets OpenGL Core Gui Xml Network Sql PrintSupport Svg)
+find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets OpenGL Core Gui Xml Network Sql PrintSupport Svg Concurrent)
 
 set(QT_PREFIX Qt${QT_VERSION_MAJOR})
 set(CMAKE_AUTOMOC ON)
@@ -33,6 +33,69 @@ target_link_libraries(${TARGET_PROJECT} PRIVATE ${QT_LIBS})
 
 
 
+if(${QT_VERSION_MAJOR} LESS 6)
+else()
+find_package(Qt6 REQUIRED COMPONENTS Core5Compat)
+find_package(Qt6 REQUIRED COMPONENTS OpenGLWidgets)
+target_link_libraries(${TARGET_PROJECT} PRIVATE Qt6::Core5Compat)
+target_link_libraries(${TARGET_PROJECT} PRIVATE Qt6::OpenGLWidgets)
+endif()
+
+if(WITH_WEBENGINE)
+	if((NOT ${TARGET_PROJECT} STREQUAL "VipLogging") AND (NOT ${TARGET_PROJECT} STREQUAL "VipDataType") AND (NOT ${TARGET_PROJECT} STREQUAL "VipCore") AND (NOT ${TARGET_PROJECT} STREQUAL "VipPlotting"))
+		# Add WebEnging if possible
+		if(${QT_VERSION_MAJOR} LESS 6)
+		set(WEB_ENGINE Qt${QT_VERSION_MAJOR}WebEngine)
+		else()
+		set(WEB_ENGINE Qt${QT_VERSION_MAJOR}WebEngineCore)
+		endif()
+
+		find_package(${WEB_ENGINE} )
+		find_package(Qt${QT_VERSION_MAJOR}WebEngineWidgets )
+		if (${WEB_ENGINE}_FOUND)
+			if (${WEB_ENGINE}_VERSION VERSION_LESS 5.15.0)
+				message(STATUS "Too old web engine version!")
+			else()
+				message(STATUS "Using web engine for ${TARGET_PROJECT}")
+				find_package(Qt${QT_VERSION_MAJOR}WebEngineWidgets REQUIRED)
+				if(${QT_VERSION_MAJOR} LESS 6)
+				target_link_libraries(${TARGET_PROJECT} PRIVATE
+				Qt5::WebEngine
+				Qt5::WebEngineWidgets
+				)
+				else()
+				target_link_libraries(${TARGET_PROJECT} PRIVATE
+				Qt::WebEngineCore
+				Qt::WebEngineWidgets
+				)
+				endif()
+				target_compile_definitions(${TARGET_PROJECT} PRIVATE __VIP_USE_WEB_ENGINE)
+			endif()
+		endif()
+	endif()
+endif()
+
+
+# Add VTK libraries if required
+if(WITH_VTK)
+	find_package(VTK REQUIRED)
+	target_include_directories(${TARGET_PROJECT} PRIVATE ${VTK_INCLUDE_DIRS})
+	target_link_libraries(${TARGET_PROJECT} PRIVATE ${VTK_LIBRARIES})
+	target_compile_definitions(${TARGET_PROJECT} PUBLIC -DVIP_WITH_VTK)
+	
+	#if(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
+		# for msvc, avoid using release VTK with debug STL
+		#target_compile_definitions(${TARGET_PROJECT} PUBLIC -D_ITERATOR_DEBUG_LEVEL=0)
+	#endif()
+endif()
+
+# Add HDF5 libraries if required
+if(WITH_HDF5)
+	find_package (HDF5 COMPONENTS C REQUIRED)
+	target_include_directories(${TARGET_PROJECT} PRIVATE ${HDF5_INCLUDE_DIRS} )
+	target_link_libraries(${TARGET_PROJECT} PRIVATE ${HDF5_LIBRARIES})
+	target_compile_definitions(${TARGET_PROJECT} PUBLIC -DVIP_WITH_HDF5)
+endif()
 
 #external code added if exists
 if(EXISTS my_compiler_flags.cmake ) 
@@ -41,8 +104,8 @@ else()
 
 	if (CMAKE_BUILD_TYPE STREQUAL "Release" )
 		# Release build, all compilers
-		add_definitions(-DNDEBUG)
-		add_definitions(-DQT_NO_DEBUG)
+		target_compile_definitions(${TARGET_PROJECT} PUBLIC -DNDEBUG)
+		target_compile_definitions(${TARGET_PROJECT} PUBLIC -DQT_NO_DEBUG)
 	endif()
 
 	if (WIN32 AND CMAKE_CXX_COMPILER_ID MATCHES "GNU")
@@ -52,23 +115,54 @@ else()
 	
 	if (CMAKE_CXX_COMPILER_ID MATCHES "GNU")
 		# for gcc
-		target_compile_options(${TARGET_PROJECT} PRIVATE -march=native -fopenmp -fPIC -mno-bmi2 -mno-fma -mno-avx -std=gnu++14 -Wno-maybe-uninitialized)
+		target_compile_options(${TARGET_PROJECT} PRIVATE -march=native -fopenmp -fPIC -mno-bmi2 -mno-fma -mno-avx -Wno-maybe-uninitialized)
+		if(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 6.0)
+			target_compile_options(${TARGET_PROJECT} PRIVATE -std=gnu++14)
+		else()
+			target_compile_options(${TARGET_PROJECT} PRIVATE -std=c++11)
+			target_compile_definitions(${TARGET_PROJECT} PRIVATE -DQ_COMPILER_ATOMICS -DQ_COMPILER_CONSTEXPR)
+		endif()
 		target_link_options(${TARGET_PROJECT} PRIVATE -lgomp )
 		
 		if (CMAKE_BUILD_TYPE STREQUAL "Release" )
 			# gcc release
-			target_compile_options(${TARGET_PROJECT} PRIVATE -O3 -ftree-vectorize -march=native -fopenmp -fPIC -mno-bmi2 -mno-fma -mno-avx -std=gnu++14 -Wno-maybe-uninitialized)
+			target_compile_options(${TARGET_PROJECT} PRIVATE -O3 -ftree-vectorize -march=native -fopenmp -fPIC -mno-bmi2 -mno-fma -mno-avx -Wno-maybe-uninitialized)
+			if(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 6.0)
+				target_compile_options(${TARGET_PROJECT} PRIVATE -std=gnu++14)
+			else()
+				target_compile_options(${TARGET_PROJECT} PRIVATE -std=c++11)
+			endif()
+		else()
+			target_compile_options(${TARGET_PROJECT} PRIVATE -g)
 		endif()
+
 	endif()
 	
 	if(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
 		# for msvc
-		add_definitions(-DNOMINMAX)
+		target_compile_definitions(${TARGET_PROJECT} PUBLIC -DNOMINMAX)
 		#if (CMAKE_BUILD_TYPE STREQUAL "Release" )
 			#target_compile_options(${TARGET_PROJECT} PRIVATE /O2 /MP)
 		#else()
 			target_compile_options(${TARGET_PROJECT} PRIVATE /MP)
 		#endif()
+		
+		# For macro VIP_FOR_EACH_GENERIC, we need a compliant preprocessor
+		target_compile_options(${TARGET_PROJECT} PUBLIC /Zc:preprocessor)
+		
+		# Weird bug with msvc 2022...
+		target_compile_options(${TARGET_PROJECT} PUBLIC /wd"4828")
+		
+		# For BIG source files
+		target_compile_options(${TARGET_PROJECT} PUBLIC /bigobj)
+		
+		#string(REPLACE "/utf-8" "" CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE}")
+		#string(REPLACE "-utf-8" "" CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE}")
+		#string(REPLACE "/utf-8" "" CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_DEBUG}")
+		#string(REPLACE "-utf-8" "" CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_DEBUG}")
+		#set_target_properties(${TARGET_PROJECT} PROPERTIES COMPILE_FLAGS "${_compile_flags}")
+		#target_compile_options(${TARGET_PROJECT} PUBLIC /execution-charset:utf-8 /source-charset:utf-8)
+		
 		target_link_libraries(${TARGET_PROJECT} PRIVATE opengl32)
 	endif()
 	
@@ -81,14 +175,28 @@ else()
 	endif()
 	
 	
+	if(NO_WARNINGS)
+		string(FIND "${THERMAVIP_LIBRARIES}" "${TARGET_PROJECT}" IS_SDK)
+		if(IS_SDK MATCHES "-1")
+		else()
+			if(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
+				target_compile_options(${TARGET_PROJECT} PRIVATE  /WX /W3 )
+			elseif(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+				target_compile_options(${TARGET_PROJECT} PRIVATE -Werror -Wall -Wno-c++98-compat -Wno-c++98-compat-pedantic)
+			else()
+				target_compile_options(${TARGET_PROJECT} PRIVATE -Werror -Wall)
+			endif()
+		endif()
+	endif()
+	
 	if (WIN32)
-		add_definitions("-DNOMINMAX")
-		add_definitions("-DWIN64")
-		add_definitions("-DDISABLE_WINRT_DEPRECATION")
-		add_definitions("-D_WINDOWS")
-		add_definitions("-DUNICODE")
-		add_definitions("-D_USE_MATH_DEFINES")
-		add_definitions("-D_WIN32")
+		target_compile_definitions(${TARGET_PROJECT} PUBLIC -DNOMINMAX)
+		#target_compile_definitions(${TARGET_PROJECT} PUBLIC -DWIN64)
+		target_compile_definitions(${TARGET_PROJECT} PUBLIC -DDISABLE_WINRT_DEPRECATION)
+		target_compile_definitions(${TARGET_PROJECT} PUBLIC -D_WINDOWS)
+		target_compile_definitions(${TARGET_PROJECT} PUBLIC -DUNICODE)
+		target_compile_definitions(${TARGET_PROJECT} PUBLIC -D_USE_MATH_DEFINES)
+		target_compile_definitions(${TARGET_PROJECT} PUBLIC -D_WIN32)
 	endif()
 	
 	

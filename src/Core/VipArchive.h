@@ -1,7 +1,7 @@
 /**
  * BSD 3-Clause License
  *
- * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ * Copyright (c) 2025, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Leo Dubus, Erwan Grelier
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -272,9 +272,10 @@ public Q_SLOTS:
 	void setText(const QString& text) { emit textUpdated(text); }
 
 	/// Save the current archive status (read mode and position)
-	virtual void save();
-	/// Reset the archive status. Each call to \a restore must match to a call to #save().
-	virtual void restore();
+	unsigned save();
+	/// Reset the archive status. Each call to restore() must match to a call to save().
+	void restore();
+	void restore(unsigned id);
 
 	/// Register a type (as returned by qMetaTypeId<T>()) as a fast type.
 	/// A fast type has its serialize/deserialize functions buffered in the archive, and they will be the first ones to be checked when saving/loading an object.
@@ -304,6 +305,11 @@ protected:
 	/// Create a comment section with the given text
 	virtual void doComment(QString& text) { Q_UNUSED(text); }
 
+	/// Save current position. Only called for read-only archives.
+	virtual void doSave() {}
+	/// Restore saved position. Only called for read-only archives.
+	virtual void doRestore() {}
+
 	VipFunctionDispatcher<2>::function_list_type serializeFunctions(const QVariant& value);
 	VipFunctionDispatcher<2>::function_list_type deserializeFunctions(const QVariant& value);
 	void copyFastTypes(VipArchive& other);
@@ -312,8 +318,8 @@ private:
 	static VipFunctionDispatcher<2>& serializeDispatcher();
 	static VipFunctionDispatcher<2>& deserializeDispatcher();
 
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 Q_DECLARE_METATYPE(VipArchive*);
@@ -416,9 +422,6 @@ public:
 	QIODevice* device() const;
 	void close();
 
-	virtual void save();
-	virtual void restore();
-
 	/// Reads the next data and returns it unserialized.
 	/// Returns an empty QByteArray on error.
 	QByteArray readBinary(const QString& name = QString());
@@ -428,6 +431,8 @@ protected:
 	virtual void doStart(QString& name, QVariantMap& metadata, bool read_metadata);
 	virtual void doEnd();
 	virtual void doContent(QString& name, QVariant& value, QVariantMap& metadata, bool read_metadata);
+	virtual void doSave();
+	virtual void doRestore();
 
 private:
 	QIODevice* m_device;

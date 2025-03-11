@@ -42,7 +42,7 @@ public:
 
 
 
-class IOOperation;
+class VipBaseIOOperation;
 class  PYTHON_EXPORT IOOperationWidget : public QTextEdit
 {
 	Q_OBJECT
@@ -50,8 +50,8 @@ public:
 	IOOperationWidget(QWidget * parent = nullptr);
 	~IOOperationWidget();
 
-	void SetProcess(IOOperation * proc);
-	IOOperation * Process();
+	void SetProcess(VipBaseIOOperation * proc);
+	VipBaseIOOperation * Process();
 
 	QIcon RunningIcon() const {return m_running_icon;}
 	QIcon FinishedIcon() const {return m_finished_icon;}
@@ -85,7 +85,7 @@ private:
 	qint64 LastAppendPosition() const;
 	QTextCursor GetValidCursor();
 
-	IOOperation * m_process;
+	VipBaseIOOperation * m_process;
 	qint64 m_last_append_pos;
 	CommandList m_commands;
 
@@ -103,7 +103,7 @@ private:
 //PYTHON_EXPORT IOOperationWidget * GetPythonCommandInterpreter();
 
 
-class CodeEditor;
+class VipTextEditor;
 class QSplitter;
 
 class  PYTHON_EXPORT PyInterpreterToolWidget : public VipToolWidget
@@ -114,7 +114,7 @@ public:
 	~PyInterpreterToolWidget();
 
 	IOOperationWidget * Interpreter() const;
-	CodeEditor * HistoryFile() const;
+	VipTextEditor * HistoryFile() const;
 	QSplitter * Splitter() const;
 	bool HistoryVisible() const;
 
@@ -126,8 +126,8 @@ public Q_SLOTS:
 	void RestartInterpreter();
 
 private:
-	class PrivateData;
-	PrivateData * m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 PYTHON_EXPORT PyInterpreterToolWidget * pyGetPythonInterpreter();

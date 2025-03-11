@@ -1,7 +1,7 @@
 /**
  * BSD 3-Clause License
  *
- * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ * Copyright (c) 2025, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Leo Dubus, Erwan Grelier
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -452,8 +452,8 @@ private:
 	VipNDDoubleCoordinate readValue(bool* ok = nullptr) const;
 	void applyStyle();
 	void applyFormat();
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 class QSlider;
@@ -777,7 +777,7 @@ protected:
 
 	Mode m_mode;
 	VipPenWidget* m_pen;
-	QMenu *m_menu;
+	QMenu* m_menu;
 };
 
 /// Widget used to edit a VipText object.
@@ -861,7 +861,7 @@ public:
 
 	Mode mode() const;
 	QString filename() const;
-	;
+	
 	QString filters() const;
 	QString prefix() const;
 	QString title() const;
@@ -869,6 +869,8 @@ public:
 	QString defaultOpenDir() const;
 	QGridLayout* gridLayout();
 	QLineEdit* edit() { return &m_edit; }
+
+	void setDialogParent(QWidget* parent);
 
 public Q_SLOTS:
 
@@ -899,6 +901,8 @@ protected:
 	QString m_default_path;
 	QString m_default_open_dir;
 	Mode m_mode;
+	QWidget* m_dialog_parent{ nullptr };
+	bool m_has_dialog_parent{ false };//TODO: use std::expected
 };
 
 class VipToolBar;
@@ -961,8 +965,8 @@ private Q_SLOTS:
 	void delayCompute();
 
 private:
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 /// A \a QToolButton used to modify a time scale unit, based on a \a VipValueToTime object.
@@ -1022,8 +1026,8 @@ protected:
 	virtual void mouseMoveEvent(QMouseEvent* evt);
 
 private:
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 /// \class VipGenericDialog
@@ -1038,8 +1042,8 @@ public:
 	QPushButton* applyButton();
 
 private:
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 /// A QMenu whose actions might be dragable.
@@ -1074,8 +1078,8 @@ protected:
 	virtual void resizeEvent(QResizeEvent* evt);
 
 private:
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 Q_DECLARE_METATYPE(QMimeData*)
@@ -1118,8 +1122,8 @@ private Q_SLOTS:
 	void resetStart();
 
 private:
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 #include "VipFunctional.h"

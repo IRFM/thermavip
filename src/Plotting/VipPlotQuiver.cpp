@@ -1,7 +1,7 @@
 /**
  * BSD 3-Clause License
  *
- * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ * Copyright (c) 2025, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Leo Dubus, Erwan Grelier
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -92,7 +92,7 @@ public:
 VipPlotQuiver::VipPlotQuiver(const VipText& title)
   : VipPlotItemDataType(title)
 {
-	d_data = new PrivateData();
+	VIP_CREATE_PRIVATE_DATA(d_data);
 
 	setMajorColor(Qt::blue);
 	QPen p(Qt::blue);
@@ -102,7 +102,6 @@ VipPlotQuiver::VipPlotQuiver(const VipText& title)
 
 VipPlotQuiver::~VipPlotQuiver()
 {
-	delete d_data;
 }
 
 void VipPlotQuiver::setData(const QVariant& data)
@@ -220,7 +219,7 @@ QList<VipInterval> VipPlotQuiver::plotBoundingIntervals() const
 	Locker locker(dataLock());
 	QList<VipInterval> res = d_data->bounding;
 	if (res.isEmpty()) {
-		res = const_cast<PrivateData*>(d_data)->bounding = dataBoundingIntervals(rawData());
+		res = const_cast<PrivateData*>(d_data.get())->bounding = dataBoundingIntervals(rawData());
 	}
 	res.detach();
 	return res;

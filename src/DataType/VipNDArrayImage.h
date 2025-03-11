@@ -1,7 +1,7 @@
 /**
  * BSD 3-Clause License
  *
- * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ * Copyright (c) 2025, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Leo Dubus, Erwan Grelier
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -50,7 +50,7 @@ VIP_DATA_TYPE_EXPORT QImage vipToImage(const VipNDArray& array);
 VIP_DATA_TYPE_EXPORT bool vipIsImageArray(const VipNDArray& ar);
 
 /// @brief Specialization of VipNDArrayTypeView for VipRGB
-template<int NDims>
+template<qsizetype NDims>
 class VipNDArrayTypeView<VipRGB, NDims> : public VipNDArray
 {
 	VIP_ALWAYS_INLINE const void* _p() const noexcept { return static_cast<const detail::ViewHandle*>(constHandle())->ptr; }
@@ -60,13 +60,13 @@ public:
 	typedef VipRGB value_type;
 	typedef VipRGB& reference;
 	typedef const VipRGB& const_reference;
-	typedef int size_type;
+	typedef qsizetype size_type;
 	typedef VipNDSubArrayIterator<VipRGB, NDims> iterator;
 	typedef VipNDSubArrayConstIterator<VipRGB, NDims> const_iterator;
 	typedef std::reverse_iterator<iterator> reverse_iterator;
 	typedef std::reverse_iterator<const_iterator> const_reverse_iterator;
-	static const int access_type = Vip::Flat | Vip::Position | Vip::Cwise;
-	static const int ndims = NDims;
+	static const qsizetype access_type = Vip::Flat | Vip::Position | Vip::Cwise;
+	static const qsizetype ndims = NDims;
 
 	VipNDArrayTypeView()
 	  : VipNDArray()
@@ -109,8 +109,8 @@ public:
 	}
 
 	// Reimplement shape() and strides()
-	const VipHybridVector<int, NDims>& shape() const { return reinterpret_cast<const VipHybridVector<int, NDims>&>(VipNDArray::shape()); }
-	const VipHybridVector<int, NDims>& strides() const { return reinterpret_cast<const VipHybridVector<int, NDims>&>(VipNDArray::strides()); }
+	const VipCoordinate<NDims>& shape() const { return reinterpret_cast<const VipCoordinate<NDims>&>(VipNDArray::shape()); }
+	const VipCoordinate<NDims>& strides() const { return reinterpret_cast<const VipCoordinate<NDims>&>(VipNDArray::strides()); }
 
 	bool reset(const VipNDArray& ar) { return importArray(ar); }
 	bool reset(VipRGB* ptr, const VipNDArrayShape& shape)
@@ -157,22 +157,22 @@ public:
 	}
 
 	// Convenient access operators for 1D -> 3D
-	VIP_ALWAYS_INLINE const VipRGB& operator()(int x) const noexcept { return *(ptr() + x * stride(0)); }
+	VIP_ALWAYS_INLINE const VipRGB& operator()(qsizetype x) const noexcept { return *(ptr() + x * stride(0)); }
 
-	VIP_ALWAYS_INLINE VipRGB& operator()(int x) noexcept { return *(ptr() + x * stride(0)); }
+	VIP_ALWAYS_INLINE VipRGB& operator()(qsizetype x) noexcept { return *(ptr() + x * stride(0)); }
 
-	VIP_ALWAYS_INLINE const VipRGB& operator()(int y, int x) const noexcept { return *(ptr() + y * stride(0) + x * stride(1)); }
+	VIP_ALWAYS_INLINE const VipRGB& operator()(qsizetype y, qsizetype x) const noexcept { return *(ptr() + y * stride(0) + x * stride(1)); }
 
-	VIP_ALWAYS_INLINE VipRGB& operator()(int y, int x) noexcept { return *(ptr() + y * stride(0) + x * stride(1)); }
+	VIP_ALWAYS_INLINE VipRGB& operator()(qsizetype y, qsizetype x) noexcept { return *(ptr() + y * stride(0) + x * stride(1)); }
 
-	VIP_ALWAYS_INLINE const VipRGB& operator()(int z, int y, int x) const noexcept { return *(ptr() + z * stride(0) + y * stride(1) + x * stride(2)); }
+	VIP_ALWAYS_INLINE const VipRGB& operator()(qsizetype z, qsizetype y, qsizetype x) const noexcept { return *(ptr() + z * stride(0) + y * stride(1) + x * stride(2)); }
 
-	VIP_ALWAYS_INLINE VipRGB& operator()(int z, int y, int x) noexcept { return *(ptr() + z * stride(0) + y * stride(1) + x * stride(2)); }
+	VIP_ALWAYS_INLINE VipRGB& operator()(qsizetype z, qsizetype y, qsizetype x) noexcept { return *(ptr() + z * stride(0) + y * stride(1) + x * stride(2)); }
 
 	/// Flat access operator.
 	/// Be aware of unwanted consequences when used on strided vies!
-	VIP_ALWAYS_INLINE VipRGB& operator[](int index) noexcept { return ptr()[index]; }
-	VIP_ALWAYS_INLINE const VipRGB& operator[](int index) const noexcept { return ptr()[index]; }
+	VIP_ALWAYS_INLINE VipRGB& operator[](qsizetype index) noexcept { return ptr()[index]; }
+	VIP_ALWAYS_INLINE const VipRGB& operator[](qsizetype index) const noexcept { return ptr()[index]; }
 
 	VIP_ALWAYS_INLINE iterator begin() noexcept { return iterator(shape(), strides(), ptr(), size()); }
 	VIP_ALWAYS_INLINE const_iterator begin() const noexcept { return const_iterator(shape(), strides(), ptr(), size()); }
@@ -222,7 +222,7 @@ protected:
 	}
 };
 
-template<int NDims>
+template<qsizetype NDims>
 template<class T>
 typename std::enable_if<VipIsExpression<T>::value, VipNDArrayTypeView<VipRGB, NDims>&>::type VipNDArrayTypeView<VipRGB, NDims>::operator=(const T& other)
 {

@@ -1,7 +1,7 @@
 /**
  * BSD 3-Clause License
  *
- * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ * Copyright (c) 2025, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Leo Dubus, Erwan Grelier
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -83,7 +83,7 @@ public:
 	{
 	}
 
-	int pixelCount; //! Number of pixels
+	qsizetype pixelCount; //! Number of pixels
 	double average; //! Average value
 	double std;	//! Standard deviation
 	double min;	//! Minimum value
@@ -97,6 +97,8 @@ public:
 };
 
 Q_DECLARE_OPERATORS_FOR_FLAGS(VipShapeStatistics::Statistics);
+
+typedef QVector<VipShape> VipShapeList;
 
 /// \a VipShape represents a 2D shape.
 /// A 2D shape can be of several types:
@@ -147,9 +149,9 @@ public:
 	bool operator==(const VipShape& other) const;
 
 	/// Returns true if the shape is valid
-	bool isValid() const { return type() != Unknown; }
+	VIP_ALWAYS_INLINE bool isValid() const { return type() != Unknown; }
 	/// Returns true if the shape is null
-	bool isNull() const { return type() == Unknown; }
+	VIP_ALWAYS_INLINE bool isNull() const { return type() == Unknown; }
 	/// Returns a copy of this shape
 	VipShape copy() const;
 
@@ -238,11 +240,11 @@ public:
 	/// Returns the shape identifier.
 	///  Within a #VipSceneModel group, each shape has a unique non null identifier.
 	///  If the shape does not belong to a #VipSceneModel, its identifier is 0 by default.
-	int id() const;
+	qsizetype id() const;
 
 	/// Set the shape identifier.
 	///  You should not need to call this function yourself.
-	bool setId(int id);
+	bool setId(qsizetype id);
 
 	/// Returns the shape group. The group is used to sort shapes of different nature.
 	QString group() const;
@@ -261,10 +263,10 @@ public:
 	VipShapeSignals* shapeSignals() const;
 
 	/// Returns all pixels filled by a list of shapes
-	static QVector<QPoint> fillPixels(const QList<VipShape>& shapes);
+	static QVector<QPoint> fillPixels(const VipShapeList& shapes);
 
 	/// Returns all rectangle filled by a list of shapes
-	static QVector<QRect> fillRects(const QList<VipShape>& shapes);
+	static QVector<QRect> fillRects(const VipShapeList& shapes);
 
 	/// Given the list of pixels \a points, remove the pixels outside the bounding rectangle \a rect.
 	///  If \a bounding is non nullptr, set it to the new pixels bounding rect.
@@ -317,7 +319,7 @@ public:
 	///  \param buffer a buffer image that will speed up the computing. This only necessary if you intent to compute the statistics with the same shape for several images.
 	///  \return a list of #VipIntervalSample (one per image component). If input image is a color image, output will contain the histogram for components Alpha, Red, Green, Blue.
 	///  If input image is complex, output will contain the histogram for components Real and Imag. Otherwise, only one component histogam is returned.
-	static QVector<VipIntervalSample> histogram(int bins,
+	static VipIntervalSampleVector histogram(qsizetype bins,
 						    const QVector<QRect>& rects,
 						    const VipNDArray& img,
 						    const QPoint& img_offset = QPoint(0, 0),
@@ -330,7 +332,7 @@ public:
 	///  \param buffer a buffer image that will speed up the computing. This only necessary if you intent to compute the statistics with the same shape for several images.
 	///  \return a list of #VipIntervalSample (one per image component). If input image is a color image, output will contain the histogram for components Alpha, Red, Green, Blue.
 	///  If input image is complex, output will contain the histogram for components Real and Imag. Otherwise, only one component histogam is returned.
-	QVector<VipIntervalSample> histogram(int bins, const VipNDArray& img, const QPoint& img_offset = QPoint(0, 0), VipNDArray* buffer = nullptr) const;
+	VipIntervalSampleVector histogram(qsizetype bins, const VipNDArray& img, const QPoint& img_offset = QPoint(0, 0), VipNDArray* buffer = nullptr) const;
 
 	/// Extract the pixel values inside an image for a list of pixels.
 	///  \param points The input pixels to consider
@@ -340,7 +342,7 @@ public:
 	///  \param buffer a buffer image that will speed up the computing. This only necessary if you intent to compute the statistics with the same shape for several images.
 	///  \return a list of point vector (one per image component), where each point contains (pixel index, pixel value). If input image is a color image, output will contain the pixel values for
 	///  components Alpha, Red, Green, Blue. If input image is complex, output will contain the pixel values for components Real and Imag. Otherwise, only one component pixel values is returned.
-	static QVector<QPointF> polyline(const QVector<QPoint>& points,
+	static VipPointVector polyline(const QVector<QPoint>& points,
 					 const VipNDArray& img,
 					 const QPoint& img_offset = QPoint(0, 0),
 					 const QRect& bounding_rect = QRect(),
@@ -351,7 +353,7 @@ public:
 	///  \param buffer a buffer image that will speed up the computing. This only necessary if you intent to compute the statistics with the same shape for several images.
 	///  \return a list of point vector (one per image component), where each point contains (pixel index, pixel value). If input image is a color image, output will contain the pixel values for
 	///  components Alpha, Red, Green, Blue. If input image is complex, output will contain the pixel values for components Real and Imag. Otherwise, only one component pixel values is returned.
-	QVector<QPointF> polyline(const VipNDArray& img, const QPoint& img_offset = QPoint(0, 0), VipNDArray* buffer = nullptr) const;
+	VipPointVector polyline(const VipNDArray& img, const QPoint& img_offset = QPoint(0, 0), VipNDArray* buffer = nullptr) const;
 
 	/// Write a value for all given pixels in an output image
 	///  \param value pixel value to write
@@ -375,16 +377,14 @@ private:
 	void emitShapeChanged();
 
 	class PrivateData;
-	QSharedPointer<VipShape::PrivateData> d_data;
+	QSharedPointer<PrivateData> d_data;
 };
 
 Q_DECLARE_METATYPE(VipShape)
 Q_DECLARE_METATYPE(QPainterPath)
-
-typedef QList<VipShape> VipShapeList;
 Q_DECLARE_METATYPE(VipShapeList);
 
-VIP_DATA_TYPE_EXPORT int vipShapeCount();
+VIP_DATA_TYPE_EXPORT qsizetype vipShapeCount();
 
 /// \a VipSceneModel is a collection of #VipShape sorted by groups.
 /// A group is a string identifier that categorize a list of shapes. For instance, in Thermavip, all closed shapes (path or polygon) drawn with drawing tool widget are in the group 'ROI' (for Regions
@@ -431,10 +431,10 @@ public:
 	/// Add a shape to given \a group
 	VipSceneModel& add(const QString& group, const VipShape& shape);
 	/// Add a list of shapes to given \a group
-	VipSceneModel& add(const QString& group, const QList<VipShape>& shapes);
+	VipSceneModel& add(const QString& group, const VipShapeList& shapes);
 	/// Add a list of shapes.
 	///  Each shape will be inserted in the group returned by #vipShape::group with, if possible, the id returned by #VipShape::id.
-	VipSceneModel& add(const QList<VipShape>& shapes);
+	VipSceneModel& add(const VipShapeList& shapes);
 	/// Add a shape. The shape will be inserted in the group returned by #vipShape::group with, if possible, the id returned by #VipShape::id.
 	VipSceneModel& add(const VipShape& shape);
 	/// Add the content of a scene model in this scene model. This will clear the content of \a other.
@@ -446,7 +446,7 @@ public:
 	VipSceneModel& removeGroup(const QString& group);
 	/// Add a new shape and try to force its id.
 	///  if the id cannot be set, the shape is not added and this function returns false.
-	bool add(const VipShape& shape, int id);
+	bool add(const VipShape& shape, qsizetype id);
 
 	/// Reset the content of this scene model with the content of \a other.
 	/// This will clear \a other.
@@ -459,31 +459,31 @@ public:
 	/// Returns true if the group \a groups exists
 	bool hasGroup(const QString& group);
 	/// Returns the number of shapes inside \a group
-	int shapeCount(const QString& group) const;
+	qsizetype shapeCount(const QString& group) const;
 	/// Returns the total number of shapes in this scene model
-	int shapeCount() const;
+	qsizetype shapeCount() const;
 	/// Returns the total number of group in this scene model
-	int groupCount() const;
+	qsizetype groupCount() const;
 	/// Returns all group names of this scene model
 	QStringList groups() const;
-	int indexOf(const QString& group, const VipShape&) const;
+	qsizetype indexOf(const QString& group, const VipShape&) const;
 
 	/// Returns the shape within the group \a group at index \a index
-	VipShape at(const QString& group, int index) const;
+	VipShape at(const QString& group, qsizetype index) const;
 	/// Returns the shape within the group \a group with id \a id
-	VipShape find(const QString& group, int id) const;
+	VipShape find(const QString& group, qsizetype id) const;
 
 	/// Returns the shape at given path.
 	///  The path is a concatenation of the group name and the shape id, separated by a colon character.
 	///  \sa VipShape::identifier()
 	VipShape find(const QString& path) const;
 	/// Returns all shapes that belong to \a group
-	QList<VipShape> shapes(const QString& group) const;
+	VipShapeList shapes(const QString& group) const;
 	/// Returns scene model shapes
-	QList<VipShape> shapes() const;
+	VipShapeList shapes() const;
 	/// Returns scene model shapes sorted by groups
-	QMap<QString, QList<VipShape>> groupShapes() const;
-	// QList<VipShape> selectedShapes() const;
+	QMap<QString, VipShapeList> groupShapes() const;
+	// VipShapeList selectedShapes() const;
 
 	/// Returns the full scene model path
 	QPainterPath shape() const;
@@ -516,9 +516,9 @@ public:
 
 private:
 	class PrivateData;
-	QSharedPointer<VipSceneModel::PrivateData> d_data;
+	QSharedPointer<PrivateData> d_data;
 
-	VipSceneModel(QSharedPointer<VipSceneModel::PrivateData> data);
+	VipSceneModel(const QSharedPointer<PrivateData> &data);
 };
 
 Q_DECLARE_METATYPE(VipSceneModel)
@@ -526,7 +526,7 @@ Q_DECLARE_METATYPE(VipSceneModel)
 typedef QList<VipSceneModel> VipSceneModelList;
 Q_DECLARE_METATYPE(VipSceneModelList)
 
-VIP_DATA_TYPE_EXPORT int vipSceneModelCount();
+VIP_DATA_TYPE_EXPORT qsizetype vipSceneModelCount();
 
 /// \a VipShapeSignals is used by #VipSceneModel to emit signals whenever the scene model or one of the shapes changes.
 class VIP_DATA_TYPE_EXPORT VipShapeSignals : public QObject

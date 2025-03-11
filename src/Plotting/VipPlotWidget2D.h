@@ -1,7 +1,7 @@
 /**
  * BSD 3-Clause License
  *
- * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ * Copyright (c) 2025, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Leo Dubus, Erwan Grelier
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -184,8 +184,8 @@ private:
 	void installFilter(VipPlotAreaFilter* filter);
 	void removeFilter();
 
-	class PrivateData;
-	PrivateData* d_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 /// @brief QGraphicsObject used to draw plot items selection order over a VipAbstractPlotArea
@@ -252,6 +252,9 @@ namespace Vip
 			LegendInnerBottomRight,
 			LegendNone
 		};
+
+		class ItemDirtyNotifier;
+		using ItemDirtyNotifierPtr = QSharedPointer<ItemDirtyNotifier>;
 	}
 }
 
@@ -311,7 +314,7 @@ namespace Vip
 ///	-	'track-scales-state': boolean value equivalent to VipAbstractPlotArea::setTrackScalesStateEnabled()
 /// -	'maximum-scales-states' : equivalent to VipAbstractPlotArea::setMaximumScalesStates()
 /// -	'legend-position': main legend position, one of 'none', 'left', 'right', 'top', 'bottom', 'innerLeft', 'innerRight', 'innerTop', 'innerBottom', 'innerTopLeft', 'innerTopRight',
-/// 'innerBottomLeft', 'innerBottomRight' 
+/// 'innerBottomLeft', 'innerBottomRight'
 /// -	'legend-border-distance': for inner legends, set distance to borders. For outer legend, set its margin.
 ///
 class VIP_PLOTTING_EXPORT VipAbstractPlotArea : public VipBoxGraphicsWidget
@@ -325,6 +328,8 @@ class VIP_PLOTTING_EXPORT VipAbstractPlotArea : public VipBoxGraphicsWidget
 	friend class VipBaseGraphicsView;
 	friend class RenderThread;
 	friend class ComputeBorderGeometry;
+	friend class VipDisplayObject;
+	friend class VipDisplayPlotItem;
 
 public:
 	typedef QMap<const VipAbstractScale*, VipInterval> scales_state;
@@ -642,6 +647,7 @@ public:
 	/// @brief Returns the last VipPlotItem which triggered a mouseButtonPressed() signal
 	VipPlotItem* lastPressed() const;
 
+	
 public Q_SLOTS:
 
 	/// @brief Enable/disable automatic scaling for spatial scales
@@ -817,11 +823,6 @@ protected:
 	/// This distance is used to compute the position of the inner legends.
 	virtual double titleOffset() const { return 0; }
 
-	/// Render items using raster engine based on the current rendering strategy.
-	QImage renderRaster(const QList<VipPaintItem*>& items) const;
-	/// Render the VipAbstractPlotArea using opengl engine based on the current rendering strategy.
-	QImage renderOpengl(const QList<VipPaintItem*>& items) const;
-
 	/// @brief Apply the current color palette to all items
 	void applyColorPalette();
 
@@ -831,8 +832,11 @@ private:
 	void markScaleDivDirty(VipAbstractScale*);
 	bool markGeometryDirty();
 	void applyLabelOverlapping();
-	class PrivateData;
-	PrivateData* d_data;
+	
+	void setNotifier(const Vip::detail::ItemDirtyNotifierPtr & notifier);
+	Vip::detail::ItemDirtyNotifierPtr notifier();
+
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 /// @brief A plotting area displaying 4 cartesian axes and suitable for most plot items
@@ -885,8 +889,8 @@ protected:
 	virtual double titleOffset() const;
 
 private:
-	class PrivateData;
-	PrivateData* d_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 /// @brief A plotting area displaying a polar and radial axis
@@ -935,8 +939,8 @@ protected:
 	virtual bool setItemProperty(const char* name, const QVariant& value, const QByteArray& index);
 
 private:
-	class PrivateData;
-	PrivateData* d_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 /// @brief Cartesian plotting area displaying an image
@@ -1025,8 +1029,8 @@ private Q_SLOTS:
 private:
 	void recomputeGeometry(const QRectF& visualized_image_rect, bool recompute_aligned_areas = true);
 
-	class PrivateData;
-	PrivateData* d_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 /// @brief Base class for Thermavip QGraphicsView widgets
@@ -1056,7 +1060,7 @@ public:
 	{
 		Raster,	     // Use a QWidget viewport
 		OpenGL,	     // Use a QOpenGLWidget viewport
-		OpenGLThread // Use a VipOpenGLWidget
+		OpenGLThread // Use a QThreadOpenGLWidget
 	};
 	VipBaseGraphicsView(QWidget* parent = nullptr);
 	VipBaseGraphicsView(QGraphicsScene* scene, QWidget* parent = nullptr);
@@ -1070,7 +1074,7 @@ public:
 	/// The mode could be one of:
 	/// -	Raster: use a QWidget viewport,
 	/// -	OpenGL: use a QOpenGLWidget viewport,
-	/// -	OpenGLThread: use a VipOpenGLWidget viewport (fastest rendering)
+	/// -	OpenGLThread: use a QThreadOpenGLWidget viewport (fastest rendering)
 	///
 	/// Note that for opengl rendering, the scales cache mode is set to QGraphicsItem::DeviceCoordinateCache,
 	/// if VIP_CUSTOM_ITEM_CACHING is defined. Otherwise (default), the user is responsible of the items caching strategy.
@@ -1104,11 +1108,10 @@ protected:
 	virtual void paintEvent(QPaintEvent* evt);
 	virtual void keyPressEvent(QKeyEvent* event);
 	virtual void setupViewport(QWidget* viewport);
-	void updateCacheMode(bool enable_cache);
 
 private:
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 /// @brief Base class for QGraphicsView that only contain one VipAbstractPlotArea

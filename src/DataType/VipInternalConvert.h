@@ -1,7 +1,7 @@
 /**
  * BSD 3-Clause License
  *
- * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ * Copyright (c) 2025, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Leo Dubus, Erwan Grelier
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -38,6 +38,7 @@
 
 #include <qstring.h>
 #include <qtextstream.h>
+#include <QIODevice>
 
 #include "VipComplex.h"
 #include "VipHybridVector.h"
@@ -456,21 +457,21 @@ namespace detail
 
 	///\internal
 	template<class From, class To>
-	void convertVoid(const void* ptr, void* dst, int, int size)
+	void convertVoid(const void* ptr, void* dst, int, qsizetype size)
 	{
 		const From* in = (const From*)ptr;
 		To* out = (To*)(dst);
-		for (int i = 0; i < size; ++i)
+		for (qsizetype i = 0; i < size; ++i)
 			out[i] = Converter<From, To>::apply(in[i]);
 	}
 
 	///\internal
 	template<class To>
-	void genericConverterVoid(const void* ptr, void* dst, int data_type, int size)
+	void genericConverterVoid(const void* ptr, void* dst, int data_type, qsizetype size)
 	{
 		int out_type = qMetaTypeId<To>();
-		int in_size = QMetaType(data_type).sizeOf();
-		for (int i = 0; i < size; ++i) {
+		qsizetype in_size = QMetaType(data_type).sizeOf();
+		for (qsizetype i = 0; i < size; ++i) {
 			QMetaType::convert(ptr, data_type, dst, out_type);
 			ptr = (uchar*)(ptr) + in_size;
 			dst = (uchar*)(dst) + sizeof(To);
@@ -481,7 +482,7 @@ namespace detail
 	template<class To>
 	struct GetConverterFunction
 	{
-		typedef void (*cast)(const void*, void*, int, int);
+		typedef void (*cast)(const void*, void*, int, qsizetype);
 		static cast get(int data_type)
 		{
 			if (data_type == QMetaType::Char)
@@ -525,11 +526,11 @@ namespace detail
 	/// Convert input possibly strided data to possibly strided array.
 	/// Returns false if the conversion is not possible.
 	VIP_DATA_TYPE_EXPORT bool convert(const void* i_data,
-					  uint i_type,
+					  int i_type,
 					  const VipNDArrayShape& i_shape,
 					  const VipNDArrayShape& i_strides,
 					  void* o_data,
-					  uint o_type,
+					  int o_type,
 					  const VipNDArrayShape& o_shape,
 					  const VipNDArrayShape& o_strides);
 

@@ -1,7 +1,7 @@
 /**
  * BSD 3-Clause License
  *
- * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ * Copyright (c) 2025, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Leo Dubus, Erwan Grelier
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -112,48 +112,48 @@ VipRecordToolBar::VipRecordToolBar(VipRecordToolWidget* tool)
 	setObjectName("Record tool bar");
 	setWindowTitle("Record tool bar");
 
-	m_data = new PrivateData();
+	VIP_CREATE_PRIVATE_DATA(d_data);
 
-	m_data->selectItems = new QToolButton(this);
-	m_data->selectItemsMenu = new QMenu(m_data->selectItems);
-	m_data->filename = new VipFileName();
-	m_data->record = new QToolButton();
+	d_data->selectItems = new QToolButton(this);
+	d_data->selectItemsMenu = new QMenu(d_data->selectItems);
+	d_data->filename = new VipFileName();
+	d_data->record = new QToolButton();
 
-	m_data->selectItems->setAutoRaise(true);
-	m_data->selectItems->setText("Record...");
-	m_data->selectItems->setMenu(m_data->selectItemsMenu);
-	m_data->selectItems->setPopupMode(QToolButton::InstantPopup);
-	m_data->selectItems->setToolTip("Select signals to record or video to create");
-	m_data->selectItems->setToolTip("<b>Shortcut:</b> select signals to record or video to create.<br><br>To see all recording features, click on the left icon.");
+	d_data->selectItems->setAutoRaise(true);
+	d_data->selectItems->setText("Record...");
+	d_data->selectItems->setMenu(d_data->selectItemsMenu);
+	d_data->selectItems->setPopupMode(QToolButton::InstantPopup);
+	d_data->selectItems->setToolTip("Select signals to record or video to create");
+	d_data->selectItems->setToolTip("<b>Shortcut:</b> select signals to record or video to create.<br><br>To see all recording features, click on the left icon.");
 
-	m_data->selectItemsMenu->setToolTipsVisible(true);
-	m_data->selectItemsMenu->setStyleSheet("QMenu::item{ margin-left : 10px; padding-left: 20px; padding-top :2px ; padding-right: 20px; padding-bottom: 2px; }"
+	d_data->selectItemsMenu->setToolTipsVisible(true);
+	d_data->selectItemsMenu->setStyleSheet("QMenu::item{ margin-left : 10px; padding-left: 20px; padding-top :2px ; padding-right: 20px; padding-bottom: 2px; }"
 					       "QMenu::item:enabled {margin-left: 20px;}"
 					       "QMenu::item:disabled {margin-left: 10px; padding-top: 5px; padding-bottom: 5px; font: italic;}"
 					       "QMenu::item:disabled:checked {background: #007ACC; color: white;}");
 
-	m_data->filename->setMaximumWidth(200);
-	m_data->filename->setFilename(tool->recordWidget()->filename());
-	m_data->filename->setFilters(tool->recordWidget()->filenameWidget()->filters());
-	m_data->filename->setMode(tool->recordWidget()->filenameWidget()->mode());
-	m_data->filename->setDefaultPath(tool->recordWidget()->filenameWidget()->defaultPath());
-	m_data->filename->setDefaultOpenDir(tool->recordWidget()->filenameWidget()->defaultOpenDir());
-	m_data->filename->edit()->setPlaceholderText("Output filename");
+	d_data->filename->setMaximumWidth(200);
+	d_data->filename->setFilename(tool->recordWidget()->filename());
+	d_data->filename->setFilters(tool->recordWidget()->filenameWidget()->filters());
+	d_data->filename->setMode(tool->recordWidget()->filenameWidget()->mode());
+	d_data->filename->setDefaultPath(tool->recordWidget()->filenameWidget()->defaultPath());
+	d_data->filename->setDefaultOpenDir(tool->recordWidget()->filenameWidget()->defaultOpenDir());
+	d_data->filename->edit()->setPlaceholderText("Output filename");
 
-	m_data->record->setAutoRaise(true);
-	m_data->record->setCheckable(true);
-	m_data->record->setIcon(vipIcon("record.png"));
-	m_data->record->setToolTip("Launch recording");
+	d_data->record->setAutoRaise(true);
+	d_data->record->setCheckable(true);
+	d_data->record->setIcon(vipIcon("RECORD.png"));
+	d_data->record->setToolTip("Launch recording");
 
-	addWidget(m_data->selectItems);
-	addWidget(m_data->filename);
-	addWidget(m_data->record);
+	addWidget(d_data->selectItems);
+	addWidget(d_data->filename);
+	addWidget(d_data->record);
 	setIconSize(QSize(18, 18));
 
-	connect(m_data->selectItemsMenu, SIGNAL(aboutToShow()), this, SLOT(updateMenu()));
-	connect(m_data->selectItemsMenu, SIGNAL(triggered(QAction*)), this, SLOT(itemSelected(QAction*)));
-	connect(m_data->filename, SIGNAL(changed(const QString&)), this, SLOT(updateRecorder()));
-	connect(m_data->record, SIGNAL(clicked(bool)), this, SLOT(updateRecorder()));
+	connect(d_data->selectItemsMenu, SIGNAL(aboutToShow()), this, SLOT(updateMenu()));
+	connect(d_data->selectItemsMenu, SIGNAL(triggered(QAction*)), this, SLOT(itemSelected(QAction*)));
+	connect(d_data->filename, SIGNAL(changed(const QString&)), this, SLOT(updateRecorder()));
+	connect(d_data->record, SIGNAL(clicked(bool)), this, SLOT(updateRecorder()));
 	connect(tool->recordWidget()->filenameWidget(), SIGNAL(changed(const QString&)), this, SLOT(updateWidget()));
 	connect(tool->recordWidget()->record(), SIGNAL(clicked(bool)), this, SLOT(updateWidget()));
 	connect(tool->recordWidget(), SIGNAL(recordingChanged(bool)), this, SLOT(updateWidget()));
@@ -161,7 +161,6 @@ VipRecordToolBar::VipRecordToolBar(VipRecordToolWidget* tool)
 
 VipRecordToolBar::~VipRecordToolBar()
 {
-	delete m_data;
 }
 
 VipRecordToolWidget* VipRecordToolBar::toolWidget() const
@@ -171,41 +170,41 @@ VipRecordToolWidget* VipRecordToolBar::toolWidget() const
 
 VipFileName* VipRecordToolBar::filename() const
 {
-	return m_data->filename;
+	return d_data->filename;
 }
 
 QToolButton* VipRecordToolBar::record() const
 {
-	return m_data->record;
+	return d_data->record;
 }
 
 void VipRecordToolBar::updateRecorder()
 {
 	if (toolWidget() && toolWidget()->recordWidget()->filename() != this->filename()->filename())
 		toolWidget()->setFilename(this->filename()->filename());
-	if (toolWidget() && toolWidget()->recordWidget()->record()->isChecked() != m_data->record->isChecked())
-		toolWidget()->recordWidget()->enableRecording(m_data->record->isChecked());
+	if (toolWidget() && toolWidget()->recordWidget()->record()->isChecked() != d_data->record->isChecked())
+		toolWidget()->recordWidget()->enableRecording(d_data->record->isChecked());
 }
 
 void VipRecordToolBar::execMenu()
 {
-	m_data->selectItemsMenu->exec();
+	d_data->selectItemsMenu->exec();
 }
 
 void VipRecordToolBar::updateWidget()
 {
-	m_data->record->blockSignals(true);
-	m_data->filename->blockSignals(true);
+	d_data->record->blockSignals(true);
+	d_data->filename->blockSignals(true);
 
-	m_data->filename->setFilename(toolWidget()->recordWidget()->filename());
-	m_data->filename->setFilters(toolWidget()->recordWidget()->filenameWidget()->filters());
-	m_data->filename->setMode(toolWidget()->recordWidget()->filenameWidget()->mode());
-	m_data->filename->setDefaultPath(toolWidget()->recordWidget()->filenameWidget()->defaultPath());
-	m_data->filename->setDefaultOpenDir(toolWidget()->recordWidget()->filenameWidget()->defaultOpenDir());
-	m_data->record->setChecked(toolWidget()->recordWidget()->record()->isChecked());
+	d_data->filename->setFilename(toolWidget()->recordWidget()->filename());
+	d_data->filename->setFilters(toolWidget()->recordWidget()->filenameWidget()->filters());
+	d_data->filename->setMode(toolWidget()->recordWidget()->filenameWidget()->mode());
+	d_data->filename->setDefaultPath(toolWidget()->recordWidget()->filenameWidget()->defaultPath());
+	d_data->filename->setDefaultOpenDir(toolWidget()->recordWidget()->filenameWidget()->defaultOpenDir());
+	d_data->record->setChecked(toolWidget()->recordWidget()->record()->isChecked());
 
-	m_data->record->blockSignals(false);
-	m_data->filename->blockSignals(false);
+	d_data->record->blockSignals(false);
+	d_data->filename->blockSignals(false);
 }
 
 void VipRecordToolBar::setDisplayPlayerArea(VipDisplayPlayerArea*) {}
@@ -215,14 +214,14 @@ void VipRecordToolBar::updateMenu()
 	QString current_player = toolWidget()->currentPlayer();
 	QList<VipPlotItem*> current_items = toolWidget()->selectedItems();
 
-	m_data->selectItemsMenu->blockSignals(true);
-	m_data->selectItemsMenu->clear();
+	d_data->selectItemsMenu->blockSignals(true);
+	d_data->selectItemsMenu->clear();
 
 	if (VipDisplayPlayerArea* area = vipGetMainWindow()->displayArea()->currentDisplayPlayerArea()) {
-		m_data->record_movie = m_data->selectItemsMenu->addAction("Create a video from player...");
-		m_data->record_movie->setCheckable(true);
-		m_data->record_movie->setChecked(toolWidget()->recordType() == VipRecordToolWidget::Movie);
-		m_data->record_movie->setEnabled(false);
+		d_data->record_movie = d_data->selectItemsMenu->addAction("Create a video from player...");
+		d_data->record_movie->setCheckable(true);
+		d_data->record_movie->setChecked(toolWidget()->recordType() == VipRecordToolWidget::Movie);
+		d_data->record_movie->setEnabled(false);
 
 		// add all VipBaseDragWidget titles
 		QList<VipBaseDragWidget*> players;
@@ -232,7 +231,7 @@ void VipRecordToolBar::updateMenu()
 			// only add the VipBaseDragWidget with a visible header
 			// if (pls[i]->Header() && pls[i]->Header()->isVisible())
 			{
-				QAction* act = m_data->selectItemsMenu->addAction(pls[i]->windowTitle());
+				QAction* act = d_data->selectItemsMenu->addAction(pls[i]->windowTitle());
 				act->setProperty("is_player", true);
 				act->setCheckable(true);
 				bool check = toolWidget()->recordType() != VipRecordToolWidget::Movie ? false : pls[i]->windowTitle() == current_player;
@@ -241,23 +240,23 @@ void VipRecordToolBar::updateMenu()
 			}
 		}
 
-		m_data->selectItemsMenu->addSeparator();
-		m_data->record_signals = m_data->selectItemsMenu->addAction("...Or record one or more signals:");
-		m_data->record_signals->setCheckable(true);
-		m_data->record_signals->setChecked(toolWidget()->recordType() != VipRecordToolWidget::Movie);
-		m_data->record_signals->setEnabled(false);
+		d_data->selectItemsMenu->addSeparator();
+		d_data->record_signals = d_data->selectItemsMenu->addAction("...Or record one or more signals:");
+		d_data->record_signals->setCheckable(true);
+		d_data->record_signals->setChecked(toolWidget()->recordType() != VipRecordToolWidget::Movie);
+		d_data->record_signals->setEnabled(false);
 
 		// add all possible plot items
-		QList<QAction*> items = VipPlotItemSelector::createActions(VipPlotItemSelector::possibleItems(area), m_data->selectItemsMenu);
+		QList<QAction*> items = VipPlotItemSelector::createActions(VipPlotItemSelector::possibleItems(area), d_data->selectItemsMenu);
 		for (int i = 0; i < items.size(); ++i) {
-			m_data->selectItemsMenu->addAction(items[i]);
+			d_data->selectItemsMenu->addAction(items[i]);
 			items[i]->setCheckable(true);
 			items[i]->setChecked(current_items.indexOf(items[i]->property("VipPlotItem").value<VipPlotItem*>()) >= 0);
 			items[i]->setProperty("is_player", false);
 		}
 	}
 
-	m_data->selectItemsMenu->blockSignals(false);
+	d_data->selectItemsMenu->blockSignals(false);
 }
 
 void VipRecordToolBar::itemSelected(QAction* act)
@@ -271,13 +270,13 @@ void VipRecordToolBar::itemSelected(QAction* act)
 			toolWidget()->setCurrentPlayer(act->text());
 
 			// uncheck all other players
-			QList<QAction*> acts = m_data->selectItemsMenu->actions();
-			m_data->selectItemsMenu->blockSignals(true);
+			QList<QAction*> acts = d_data->selectItemsMenu->actions();
+			d_data->selectItemsMenu->blockSignals(true);
 			for (int i = 0; i < acts.size(); ++i)
 				if (acts[i]->property("is_player").toBool())
 					if (acts[i] != act)
 						acts[i]->setChecked(false);
-			m_data->selectItemsMenu->blockSignals(false);
+			d_data->selectItemsMenu->blockSignals(false);
 		}
 	}
 	else {
@@ -304,29 +303,28 @@ public:
 VipPlotItemSelector::VipPlotItemSelector(VipRecordToolWidget* parent)
   : QToolButton(parent)
 {
-	m_data = new PrivateData();
-	m_data->parent = parent;
+	VIP_CREATE_PRIVATE_DATA(d_data);
+	d_data->parent = parent;
 
 	this->setText("Select a signal to record");
 	this->setToolTip("<b> Select one or more signals (video, curve,...) you want to record</b><br>"
 			 "If you select several signals, only the ARCH format (*.arch files) will be able to record them in a single archive.");
-	m_data->menu = new QMenu(this);
-	m_data->menu->setToolTipsVisible(true);
-	this->setMenu(m_data->menu);
+	d_data->menu = new QMenu(this);
+	d_data->menu->setToolTipsVisible(true);
+	this->setMenu(d_data->menu);
 	this->setPopupMode(QToolButton::InstantPopup);
 
-	connect(m_data->menu, SIGNAL(triggered(QAction*)), this, SLOT(processingSelected(QAction*)));
-	connect(m_data->menu, SIGNAL(aboutToShow()), this, SLOT(aboutToShow()));
+	connect(d_data->menu, SIGNAL(triggered(QAction*)), this, SLOT(processingSelected(QAction*)));
+	connect(d_data->menu, SIGNAL(aboutToShow()), this, SLOT(aboutToShow()));
 }
 
 VipPlotItemSelector::~VipPlotItemSelector()
 {
-	delete m_data;
 }
 
 VipProcessingPool* VipPlotItemSelector::processingPool() const
 {
-	return m_data->parent->processingPool();
+	return d_data->parent->processingPool();
 }
 
 QList<VipPlotItem*> VipPlotItemSelector::possibleItems(VipDisplayPlayerArea* area, const QList<VipPlotItem*>& current_items)
@@ -352,7 +350,7 @@ QList<VipPlotItem*> VipPlotItemSelector::possibleItems(VipDisplayPlayerArea* are
 
 QList<VipPlotItem*> VipPlotItemSelector::possibleItems() const
 {
-	return possibleItems(m_data->parent->area(), m_data->parent->selectedItems());
+	return possibleItems(d_data->parent->area(), d_data->parent->selectedItems());
 }
 
 QList<QAction*> VipPlotItemSelector::createActions(const QList<VipPlotItem*>& items, QObject* parent)
@@ -373,24 +371,24 @@ QList<QAction*> VipPlotItemSelector::createActions(const QList<VipPlotItem*>& it
 
 void VipPlotItemSelector::aboutToShow()
 {
-	m_data->menu->blockSignals(true);
+	d_data->menu->blockSignals(true);
 
-	m_data->menu->clear();
+	d_data->menu->clear();
 	QList<VipPlotItem*> _leafs = this->possibleItems();
-	QList<QAction*> actions = createActions(this->possibleItems(), m_data->menu);
+	QList<QAction*> actions = createActions(this->possibleItems(), d_data->menu);
 
 	for (int i = 0; i < actions.size(); ++i) {
-		m_data->menu->addAction(actions[i]);
+		d_data->menu->addAction(actions[i]);
 		// QString text, tool_tip;
 		//  VipAbstractPlayer * pl = VipAbstractPlayer::findAbstractPlayer(_leafs[i]);
 		//  VipBaseDragWidget * w = pl ? VipBaseDragWidget::fromChild(pl) : nullptr;
 		//  getNames(w, _leafs[i], text, tool_tip);
-		//  QAction * act = m_data->menu->addAction(text);
+		//  QAction * act = d_data->menu->addAction(text);
 		//  act->setToolTip(tool_tip);
 		//  act->setProperty("VipPlotItem", QVariant::fromValue(_leafs[i]));
 	}
 
-	m_data->menu->blockSignals(false);
+	d_data->menu->blockSignals(false);
 }
 
 void VipPlotItemSelector::processingSelected(QAction* act)
@@ -487,30 +485,29 @@ public:
 SkipFrame::SkipFrame(QWidget* parent)
   : QWidget(parent)
 {
-	m_data = new PrivateData();
-	m_data->text.setText("Take one frame out of");
-	m_data->frames.setRange(1, INT_MAX);
-	m_data->frames.setValue(1);
+	VIP_CREATE_PRIVATE_DATA(d_data);
+	d_data->text.setText("Take one frame out of");
+	d_data->frames.setRange(1, INT_MAX);
+	d_data->frames.setValue(1);
 
 	QHBoxLayout* lay = new QHBoxLayout();
-	lay->addWidget(&m_data->text);
-	lay->addWidget(&m_data->frames);
+	lay->addWidget(&d_data->text);
+	lay->addWidget(&d_data->frames);
 	setLayout(lay);
 }
 SkipFrame::~SkipFrame()
 {
-	delete m_data;
 }
 
 int SkipFrame::value()
 {
-	return m_data->frames.value();
+	return d_data->frames.value();
 }
 
 void SkipFrame::setValue(int v)
 {
 	if (v != value())
-		m_data->frames.setValue(v);
+		d_data->frames.setValue(v);
 }
 void SkipFrame::reset()
 {
@@ -577,73 +574,73 @@ VipRecordToolWidget::VipRecordToolWidget(VipMainWindow* window)
 	// setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
 	this->setAllowedAreas(Qt::NoDockWidgetArea);
 
-	m_data = new PrivateData();
-	m_data->recorder = new VipGenericRecorder(this);
-	// m_data->recorder->setMultiSave(true);
-	m_data->itemSelector = new VipPlotItemSelector(this);
-	m_data->itemList = new RecordListWidget(this);
+	VIP_CREATE_PRIVATE_DATA(d_data);
+	d_data->recorder = new VipGenericRecorder(this);
+	// d_data->recorder->setMultiSave(true);
+	d_data->itemSelector = new VipPlotItemSelector(this);
+	d_data->itemList = new RecordListWidget(this);
 
-	m_data->samplingTime = new VipDoubleEdit();
-	m_data->saveMovie = new QRadioButton();
-	m_data->transparentBackground = new QCheckBox();
-	m_data->recordSceneOnly = new QCheckBox();
-	m_data->backgroundColorButton = new VipPenButton();
-	m_data->players = new VipComboBox();
-	m_data->samplingWidget = new QWidget();
-	m_data->playerPreview = new QLabel();
-	m_data->saveSignals = new QRadioButton();
-	m_data->skipFrames = new SkipFrame();
-	m_data->recordWidget = new VipRecordWidget();
-	m_data->recordWidget->filenameWidget()->edit()->setPlaceholderText("Output filename");
+	d_data->samplingTime = new VipDoubleEdit();
+	d_data->saveMovie = new QRadioButton();
+	d_data->transparentBackground = new QCheckBox();
+	d_data->recordSceneOnly = new QCheckBox();
+	d_data->backgroundColorButton = new VipPenButton();
+	d_data->players = new VipComboBox();
+	d_data->samplingWidget = new QWidget();
+	d_data->playerPreview = new QLabel();
+	d_data->saveSignals = new QRadioButton();
+	d_data->skipFrames = new SkipFrame();
+	d_data->recordWidget = new VipRecordWidget();
+	d_data->recordWidget->filenameWidget()->edit()->setPlaceholderText("Output filename");
 
-	m_data->maxBufferSize = new QSpinBox();
-	m_data->maxBufferSize->setRange(1, 100000);
-	m_data->maxBufferSize->setSuffix(" inputs");
-	m_data->maxBufferSize->setToolTip("Maximum pending input data (data waiting to be saved)");
-	m_data->maxBufferMemSize = new QSpinBox();
-	m_data->maxBufferMemSize->setRange(1, 10000);
-	m_data->maxBufferMemSize->setToolTip("Maximum pending input data size in MB (data waiting to be saved)");
-	m_data->maxBufferMemSize->setSuffix(" MB");
-	m_data->bufferOptions = new QWidget();
+	d_data->maxBufferSize = new QSpinBox();
+	d_data->maxBufferSize->setRange(1, 100000);
+	d_data->maxBufferSize->setSuffix(" inputs");
+	d_data->maxBufferSize->setToolTip("Maximum pending input data (data waiting to be saved)");
+	d_data->maxBufferMemSize = new QSpinBox();
+	d_data->maxBufferMemSize->setRange(1, 10000);
+	d_data->maxBufferMemSize->setToolTip("Maximum pending input data size in MB (data waiting to be saved)");
+	d_data->maxBufferMemSize->setSuffix(" MB");
+	d_data->bufferOptions = new QWidget();
 	QGridLayout* glay = new QGridLayout();
 	glay->setSpacing(1);
 	glay->setContentsMargins(0, 0, 0, 0);
 	glay->addWidget(new QLabel("Max input count"), 0, 0);
-	glay->addWidget(m_data->maxBufferSize, 0, 1);
+	glay->addWidget(d_data->maxBufferSize, 0, 1);
 	glay->addWidget(new QLabel("Max input size (MB)"), 1, 0);
-	glay->addWidget(m_data->maxBufferMemSize, 1, 1);
-	m_data->bufferOptions->setLayout(glay);
-	m_data->bufferOptions->setVisible(false); // for streaming only
+	glay->addWidget(d_data->maxBufferMemSize, 1, 1);
+	d_data->bufferOptions->setLayout(glay);
+	d_data->bufferOptions->setVisible(false); // for streaming only
 
 	QHBoxLayout* sampling_lay = new QHBoxLayout();
-	sampling_lay->addWidget(m_data->samplingTime);
+	sampling_lay->addWidget(d_data->samplingTime);
 	sampling_lay->addWidget(new QLabel(" ms"));
 	sampling_lay->setContentsMargins(0, 0, 0, 0);
-	m_data->samplingWidget->setLayout(sampling_lay);
-	m_data->samplingWidget->setVisible(false); // for streaming only
+	d_data->samplingWidget->setLayout(sampling_lay);
+	d_data->samplingWidget->setVisible(false); // for streaming only
 
 	QVBoxLayout* lay = new QVBoxLayout();
-	lay->addWidget(m_data->saveMovie);
+	lay->addWidget(d_data->saveMovie);
 
 	QHBoxLayout* back = new QHBoxLayout();
 	back->setContentsMargins(0, 0, 0, 0);
-	back->addWidget(m_data->transparentBackground);
-	back->addWidget(m_data->backgroundColorButton);
+	back->addWidget(d_data->transparentBackground);
+	back->addWidget(d_data->backgroundColorButton);
 	back->addStretch(1);
 
 	lay->addLayout(back);
-	lay->addWidget(m_data->recordSceneOnly);
-	lay->addWidget(m_data->players);
-	lay->addWidget(m_data->samplingWidget);
-	lay->addWidget(m_data->skipFrames);
-	lay->addWidget(m_data->playerPreview);
+	lay->addWidget(d_data->recordSceneOnly);
+	lay->addWidget(d_data->players);
+	lay->addWidget(d_data->samplingWidget);
+	lay->addWidget(d_data->skipFrames);
+	lay->addWidget(d_data->playerPreview);
 	lay->addWidget(VipLineWidget::createHLine());
-	lay->addWidget(m_data->saveSignals);
-	lay->addWidget(m_data->itemSelector);
-	lay->addWidget(m_data->itemList);
+	lay->addWidget(d_data->saveSignals);
+	lay->addWidget(d_data->itemSelector);
+	lay->addWidget(d_data->itemList);
 	lay->addWidget(VipLineWidget::createHLine());
-	lay->addWidget(m_data->bufferOptions);
-	lay->addWidget(m_data->recordWidget);
+	lay->addWidget(d_data->bufferOptions);
+	lay->addWidget(d_data->recordWidget);
 
 	lay->addStretch(1);
 
@@ -651,57 +648,57 @@ VipRecordToolWidget::VipRecordToolWidget(VipMainWindow* window)
 	w->setLayout(lay);
 	this->setWidget(w);
 
-	m_data->saveMovie->setText("Create a movie");
-	m_data->saveMovie->setToolTip("Record a movie of type MPG, AVI, MP4,...\n"
+	d_data->saveMovie->setText("Create a movie");
+	d_data->saveMovie->setToolTip("Record a movie of type MPG, AVI, MP4,...\n"
 				      "Select the player you wish to record from the list");
-	m_data->saveSignals->setText("Record one or more raw signals");
-	m_data->saveSignals->setToolTip("Record an archive of type ARCH, TXT,...\n"
+	d_data->saveSignals->setText("Record one or more raw signals");
+	d_data->saveSignals->setToolTip("Record an archive of type ARCH, TXT,...\n"
 					"Select the different plot items you wish\nto record from the available players.");
-	m_data->players->setToolTip("Select a player to save");
-	m_data->itemList->setSelectionMode(QAbstractItemView::ExtendedSelection);
-	m_data->itemList->setToolTip("List of signals to record");
-	// m_data->playerPreview.setScaledContents(true);
-	m_data->playerPreview->setToolTip("Player preview");
-	m_data->samplingTime->setValue(20);
-	m_data->samplingTime->setToolTip("Movie sampling time (save an image every sampling time ms)");
-	m_data->backgroundColorButton->setMode(VipPenButton::Color);
-	m_data->backgroundColorButton->setPen(QPen(QColor(255, 255, 255)));
-	m_data->backgroundColorButton->setText("Select images background color");
-	m_data->transparentBackground->setText("Background color ");
-	m_data->transparentBackground->setChecked(true);
+	d_data->players->setToolTip("Select a player to save");
+	d_data->itemList->setSelectionMode(QAbstractItemView::ExtendedSelection);
+	d_data->itemList->setToolTip("List of signals to record");
+	// d_data->playerPreview.setScaledContents(true);
+	d_data->playerPreview->setToolTip("Player preview");
+	d_data->samplingTime->setValue(20);
+	d_data->samplingTime->setToolTip("Movie sampling time (save an image every sampling time ms)");
+	d_data->backgroundColorButton->setMode(VipPenButton::Color);
+	d_data->backgroundColorButton->setPen(QPen(QColor(255, 255, 255)));
+	d_data->backgroundColorButton->setText("Select images background color");
+	d_data->transparentBackground->setText("Background color ");
+	d_data->transparentBackground->setChecked(true);
 
-	m_data->recordSceneOnly->setText("Save player spectrogram only");
-	m_data->recordSceneOnly->setToolTip("Selecting this option will ony save the spectrogram<br> with its exact geometry, without the color scale");
-	m_data->recordSceneOnly->setChecked(false);
+	d_data->recordSceneOnly->setText("Save player spectrogram only");
+	d_data->recordSceneOnly->setToolTip("Selecting this option will ony save the spectrogram<br> with its exact geometry, without the color scale");
+	d_data->recordSceneOnly->setChecked(false);
 
-	m_data->recordWidget->setGenericRecorder(m_data->recorder);
-	m_data->recorder->setRecorderAvailableDataOnOpen(false);
+	d_data->recordWidget->setGenericRecorder(d_data->recorder);
+	d_data->recorder->setRecorderAvailableDataOnOpen(false);
 
-	m_data->saveSignals->setChecked(true);
-	m_data->players->hide();
-	m_data->playerPreview->hide();
-	m_data->transparentBackground->hide();
-	m_data->recordSceneOnly->hide();
-	m_data->backgroundColorButton->hide();
-	m_data->samplingWidget->hide();
-	m_data->skipFrames->hide();
-	m_data->itemList->hide();
+	d_data->saveSignals->setChecked(true);
+	d_data->players->hide();
+	d_data->playerPreview->hide();
+	d_data->transparentBackground->hide();
+	d_data->recordSceneOnly->hide();
+	d_data->backgroundColorButton->hide();
+	d_data->samplingWidget->hide();
+	d_data->skipFrames->hide();
+	d_data->itemList->hide();
 
-	m_data->maxBufferSize->setValue(INT_MAX);
-	m_data->maxBufferMemSize->setValue(500);
-	m_data->recorder->topLevelInputAt(0)->toMultiInput()->setListType(VipDataList::FIFO, VipDataList::MemorySize, INT_MAX, 500000000);
+	d_data->maxBufferSize->setValue(INT_MAX);
+	d_data->maxBufferMemSize->setValue(500);
+	d_data->recorder->topLevelInputAt(0)->toMultiInput()->setListType(VipDataList::FIFO, VipDataList::MemorySize, INT_MAX, 500000000);
 
-	connect(VipPlotItemManager::instance(), SIGNAL(itemClicked(VipPlotItem*, int)), this, SLOT(itemClicked(VipPlotItem*, int)));
-	connect(m_data->itemSelector, SIGNAL(itemSelected(VipPlotItem*)), this, SLOT(addPlotItem(VipPlotItem*)));
-	connect(m_data->saveMovie, SIGNAL(clicked(bool)), this, SLOT(recordTypeChanged()));
-	connect(m_data->saveSignals, SIGNAL(clicked(bool)), this, SLOT(recordTypeChanged()));
-	connect(m_data->players, SIGNAL(openPopup()), this, SLOT(displayAvailablePlayers()));
-	connect(m_data->players, SIGNAL(currentTextChanged(const QString&)), this, SLOT(playerSelected()));
-	connect(m_data->maxBufferMemSize, SIGNAL(valueChanged(int)), this, SLOT(updateBuffer()));
-	connect(m_data->maxBufferSize, SIGNAL(valueChanged(int)), this, SLOT(updateBuffer()));
-	connect(m_data->recorder, SIGNAL(openModeChanged(bool)), this, SLOT(launchRecord(bool)), Qt::QueuedConnection);
-	connect(&m_data->timer, SIGNAL(timeout()), this, SLOT(timeout()), Qt::QueuedConnection);
-	// connect(&m_data->itemList,SIGNAL(currentItemChanged(QListWidgetItem *,QListWidgetItem *)),this,SLOT(updateFileFiltersAndDevice()));
+	connect(VipPlotItemManager::instance(), SIGNAL(itemClicked(const VipPlotItemPointer&, int)), this, SLOT(itemClicked(const VipPlotItemPointer&, int)));
+	connect(d_data->itemSelector, SIGNAL(itemSelected(VipPlotItem*)), this, SLOT(addPlotItem(VipPlotItem*)));
+	connect(d_data->saveMovie, SIGNAL(clicked(bool)), this, SLOT(recordTypeChanged()));
+	connect(d_data->saveSignals, SIGNAL(clicked(bool)), this, SLOT(recordTypeChanged()));
+	connect(d_data->players, SIGNAL(openPopup()), this, SLOT(displayAvailablePlayers()));
+	connect(d_data->players, SIGNAL(currentTextChanged(const QString&)), this, SLOT(playerSelected()));
+	connect(d_data->maxBufferMemSize, SIGNAL(valueChanged(int)), this, SLOT(updateBuffer()));
+	connect(d_data->maxBufferSize, SIGNAL(valueChanged(int)), this, SLOT(updateBuffer()));
+	connect(d_data->recorder, SIGNAL(openModeChanged(bool)), this, SLOT(launchRecord(bool)), Qt::QueuedConnection);
+	connect(&d_data->timer, SIGNAL(timeout()), this, SLOT(timeout()), Qt::QueuedConnection);
+	// connect(&d_data->itemList,SIGNAL(currentItemChanged(QListWidgetItem *,QListWidgetItem *)),this,SLOT(updateFileFiltersAndDevice()));
 
 	setObjectName("Record tools");
 	setWindowTitle("Recording tools");
@@ -710,13 +707,12 @@ VipRecordToolWidget::VipRecordToolWidget(VipMainWindow* window)
 
 VipRecordToolWidget::~VipRecordToolWidget()
 {
-	delete m_data;
 }
 
 VipVideoPlayer* VipRecordToolWidget::selectedVideoPlayer() const
 {
-	if (qobject_cast<VipDragWidget*>(m_data->sourceWidget))
-		return m_data->sourceWidget->findChild<VipVideoPlayer*>();
+	if (qobject_cast<VipDragWidget*>(d_data->sourceWidget))
+		return d_data->sourceWidget->findChild<VipVideoPlayer*>();
 	return nullptr;
 }
 
@@ -727,56 +723,54 @@ bool VipRecordToolWidget::updateFileFiltersAndDevice(bool build_connections, boo
 	// Finally, save the sources VipIODevice and VipDisplayObject.
 	// This way, when launching the recording, everything will be ready for the saving.
 
-	// m_data->recordWidget.blockSignals(true);
-	// m_data->recordWidget.stopRecording();
-	// m_data->recordWidget.blockSignals(false);
+	
 	if (close_device)
-		m_data->recorder->close();
+		d_data->recorder->close();
 
 	// disconnect all inputs
-	for (int i = 0; i < m_data->recorder->inputCount(); ++i)
-		m_data->recorder->inputAt(i)->clearConnection();
+	for (int i = 0; i < d_data->recorder->inputCount(); ++i)
+		d_data->recorder->inputAt(i)->clearConnection();
 
-	m_data->recordWidget->record()->setEnabled(false);
+	d_data->recordWidget->record()->setEnabled(false);
 	if (toolBar())
 		toolBar()->record()->setEnabled(false);
 
-	m_data->sourceDisplayObjects.clear();
-	m_data->sourceDevices.clear();
-	m_data->independantResourceProcessings.clear();
-	m_data->sources.clear();
-	m_data->sourceWidget = nullptr;
+	d_data->sourceDisplayObjects.clear();
+	d_data->sourceDevices.clear();
+	d_data->independantResourceProcessings.clear();
+	d_data->sources.clear();
+	d_data->sourceWidget = nullptr;
 
 	// first, retrieve the sources VipDisplayObject
 
 	if (recordType() == Movie) {
-		if (m_data->players->currentIndex() < 0)
+		if (d_data->players->currentIndex() < 0)
 			return false;
 
-		m_data->sourceWidget = m_data->playerlist[m_data->players->currentIndex()];
-		if (m_data->sourceWidget) {
-			QList<VipAbstractPlayer*> players = m_data->sourceWidget->findChildren<VipAbstractPlayer*>();
+		d_data->sourceWidget = d_data->playerlist[d_data->players->currentIndex()];
+		if (d_data->sourceWidget) {
+			QList<VipAbstractPlayer*> players = d_data->sourceWidget->findChildren<VipAbstractPlayer*>();
 			for (int i = 0; i < players.size(); ++i) {
 				QList<VipDisplayObject*> displays = players[i]->displayObjects();
 				for (int j = 0; j < displays.size(); ++j)
-					m_data->sourceDisplayObjects << displays[j];
+					d_data->sourceDisplayObjects << displays[j];
 			}
 		}
 		else
 			return false;
 	}
 	else {
-		for (int i = 0; i < m_data->itemList->count(); ++i) {
-			VipPlotItem* item = static_cast<PlotListWidgetItem*>(m_data->itemList->item(i))->item;
+		for (int i = 0; i < d_data->itemList->count(); ++i) {
+			VipPlotItem* item = static_cast<PlotListWidgetItem*>(d_data->itemList->item(i))->item;
 			if (item) {
 				if (VipDisplayObject* disp = item->property("VipDisplayObject").value<VipDisplayObject*>())
 					if (disp->inputAt(0)->connection()->source())
-						m_data->sourceDisplayObjects << disp;
+						d_data->sourceDisplayObjects << disp;
 			}
 		}
 	}
 
-	if (!m_data->sourceDisplayObjects.size())
+	if (!d_data->sourceDisplayObjects.size())
 		return false;
 
 	// get the sources.
@@ -784,9 +778,9 @@ bool VipRecordToolWidget::updateFileFiltersAndDevice(bool build_connections, boo
 	// few processings work in-place (they just modify their input data, for instance in the Tokida plugin).
 	// This also means that we need the sources of these additional processings (arf...)
 	// To sumurize, we need ALL processings involved somehow in the selected processings pipelines.
-	m_data->sourceDevices.clear();
-	for (int i = 0; i < m_data->sourceDisplayObjects.size(); ++i) {
-		VipProcessingObjectList pipeline = m_data->sourceDisplayObjects[i]->fullPipeline();
+	d_data->sourceDevices.clear();
+	for (int i = 0; i < d_data->sourceDisplayObjects.size(); ++i) {
+		VipProcessingObjectList pipeline = d_data->sourceDisplayObjects[i]->fullPipeline();
 		QList<VipIODevice*> devices;
 		// bool have_no_resource = false;
 		for (int p = 0; p < pipeline.size(); ++p) {
@@ -794,76 +788,76 @@ bool VipRecordToolWidget::updateFileFiltersAndDevice(bool build_connections, boo
 				// only consider read only devices
 				if ((dev->openMode() & VipIODevice::ReadOnly)) {
 					devices.append(dev);
-					m_data->sources.append(dev);
+					d_data->sources.append(dev);
 					// if (dev->deviceType() != VipIODevice::Resource)
 					//	have_no_resource = true;
 				}
 			}
 			else if (!qobject_cast<VipDisplayObject*>(pipeline[p])) {
-				m_data->sources.append(pipeline[p]);
+				d_data->sources.append(pipeline[p]);
 			}
 		}
 
-		m_data->sourceDevices += devices;
+		d_data->sourceDevices += devices;
 		// if (!have_no_resource)
-		//  m_data->independantResourceProcessings += devices;
+		//  d_data->independantResourceProcessings += devices;
 	}
 
-	if (!m_data->sourceDevices.size())
+	if (!d_data->sourceDevices.size())
 		return false;
 
 	// reset inputs
-	m_data->recorder->topLevelInputAt(0)->toMultiInput()->clear();
+	d_data->recorder->topLevelInputAt(0)->toMultiInput()->clear();
 	if (recordType() == SignalArchive)
-		m_data->recorder->topLevelInputAt(0)->toMultiInput()->resize(m_data->sourceDisplayObjects.size());
+		d_data->recorder->topLevelInputAt(0)->toMultiInput()->resize(d_data->sourceDisplayObjects.size());
 	else
-		m_data->recorder->topLevelInputAt(0)->toMultiInput()->resize(1);
+		d_data->recorder->topLevelInputAt(0)->toMultiInput()->resize(1);
 
 	// now, update the VipRecordWidget file filters
 	QVariantList lst;
-	if (m_data->recordType == Movie) {
+	if (d_data->recordType == Movie) {
 		// set a QImage input data to the VipGenericRecorder and update the file filters
-		m_data->recorder->topLevelInputAt(0)->toMultiInput()->resize(1);
+		d_data->recorder->topLevelInputAt(0)->toMultiInput()->resize(1);
 		lst.append(QVariant::fromValue(vipToArray(QImage())));
-		m_data->recorder->setProbeInputs(lst);
+		d_data->recorder->setProbeInputs(lst);
 	}
 	else {
 		// use the selected VipPlotItem
-		for (int i = 0; i < m_data->itemList->count(); ++i) {
-			if (VipPlotItem* item = static_cast<PlotListWidgetItem*>(m_data->itemList->item(i))->item)
+		for (int i = 0; i < d_data->itemList->count(); ++i) {
+			if (VipPlotItem* item = static_cast<PlotListWidgetItem*>(d_data->itemList->item(i))->item)
 				if (VipDisplayObject* display = item->property("VipDisplayObject").value<VipDisplayObject*>())
 					if (VipOutput* output = display->inputAt(0)->connection()->source())
 						lst.append(output->data().data());
 		}
 
-		m_data->recorder->topLevelInputAt(0)->toMultiInput()->resize(lst.size());
-		m_data->recorder->setProbeInputs(lst);
+		d_data->recorder->topLevelInputAt(0)->toMultiInput()->resize(lst.size());
+		d_data->recorder->setProbeInputs(lst);
 	}
 
 	// update the file filters of the VipRecordWidget. This will also clear the previously added input data
-	QString filters = m_data->recordWidget->updateFileFilters(lst);
+	QString filters = d_data->recordWidget->updateFileFilters(lst);
 	if (toolBar())
 		toolBar()->filename()->setFilters(filters);
 
 	// find the source VipIODevice type.
 	// we cannot mix Sequential and Temporal devices
 
-	m_data->flag = VipIODevice::Resource;
-	for (int i = 0; i < m_data->sourceDevices.size(); ++i) {
-		VipIODevice::DeviceType tmp = m_data->sourceDevices[i]->deviceType();
+	d_data->flag = VipIODevice::Resource;
+	for (int i = 0; i < d_data->sourceDevices.size(); ++i) {
+		VipIODevice::DeviceType tmp = d_data->sourceDevices[i]->deviceType();
 		if (tmp == VipIODevice::Temporal) {
-			if (m_data->flag == VipIODevice::Sequential) {
+			if (d_data->flag == VipIODevice::Sequential) {
 				VIP_LOG_ERROR("cannot mix sequential and temporal devices");
 				return false;
 			}
-			m_data->flag = VipIODevice::Temporal;
+			d_data->flag = VipIODevice::Temporal;
 		}
 		else if (tmp == VipIODevice::Sequential) {
-			if (m_data->flag == VipIODevice::Temporal) {
+			if (d_data->flag == VipIODevice::Temporal) {
 				VIP_LOG_ERROR("cannot mix sequential and temporal devices");
 				return false;
 			}
-			m_data->flag = VipIODevice::Sequential;
+			d_data->flag = VipIODevice::Sequential;
 		}
 	}
 
@@ -872,54 +866,55 @@ bool VipRecordToolWidget::updateFileFiltersAndDevice(bool build_connections, boo
 
 	if (build_connections) {
 		if (recordType() == SignalArchive) {
-			for (int i = 0; i < m_data->sourceDisplayObjects.size(); ++i)
-				if (VipDisplayObject* disp = m_data->sourceDisplayObjects[i])
+			for (int i = 0; i < d_data->sourceDisplayObjects.size(); ++i)
+				if (VipDisplayObject* disp = d_data->sourceDisplayObjects[i])
 					if (VipOutput* out = disp->inputAt(0)->connection()->source())
-						out->setConnection(m_data->recorder->inputAt(i));
+						out->setConnection(d_data->recorder->inputAt(i));
 		}
 
-		if (m_data->flag == VipIODevice::Sequential)
-			m_data->recorder->setScheduleStrategy(VipProcessingObject::Asynchronous, true);
+		if (d_data->flag == VipIODevice::Sequential)
+			d_data->recorder->setScheduleStrategy(VipProcessingObject::Asynchronous, true);
 		else
-			m_data->recorder->setScheduleStrategy(VipProcessingObject::Asynchronous, false);
+			d_data->recorder->setScheduleStrategy(VipProcessingObject::Asynchronous, false);
 	}
 
 	// we reach the end: enable the recording
-	m_data->recordWidget->record()->setEnabled(true);
+	d_data->recordWidget->record()->setEnabled(true);
+	d_data->recordWidget->suspend()->setVisible((d_data->flag == VipIODevice::Sequential) && !close_device);
 	if (toolBar())
 		toolBar()->record()->setEnabled(true);
 
-	m_data->recordSceneOnly->setVisible(m_data->recordType == Movie && selectedVideoPlayer());
+	d_data->recordSceneOnly->setVisible(d_data->recordType == Movie && selectedVideoPlayer());
 
 	// show streaming options
-	m_data->samplingWidget->setVisible(m_data->recordType == Movie && m_data->flag == VipIODevice::Sequential);
-	m_data->skipFrames->setVisible(m_data->recordType == Movie && m_data->flag != VipIODevice::Sequential);
-	m_data->bufferOptions->setVisible(m_data->recordType == SignalArchive && m_data->flag == VipIODevice::Sequential);
+	d_data->samplingWidget->setVisible(d_data->recordType == Movie && d_data->flag == VipIODevice::Sequential);
+	d_data->skipFrames->setVisible(d_data->recordType == Movie && d_data->flag != VipIODevice::Sequential);
+	d_data->bufferOptions->setVisible(d_data->recordType == SignalArchive && d_data->flag == VipIODevice::Sequential);
 
 	return true;
 }
 
 void VipRecordToolWidget::setRecordType(RecordType type)
 {
-	if (type != m_data->recordType) {
-		m_data->itemList->setVisible(m_data->itemList->count() && type == SignalArchive);
-		m_data->itemSelector->setVisible(type == SignalArchive);
-		m_data->players->setVisible(type == Movie);
-		m_data->playerPreview->setVisible(type == Movie);
-		m_data->backgroundColorButton->setVisible(type == Movie);
-		m_data->transparentBackground->setVisible(type == Movie);
-		m_data->recordSceneOnly->setVisible(type == Movie && selectedVideoPlayer());
-		m_data->saveMovie->blockSignals(true);
-		m_data->saveSignals->blockSignals(true);
-		m_data->saveMovie->setChecked(type == Movie);
-		m_data->saveSignals->setChecked(type != Movie);
-		m_data->saveMovie->blockSignals(false);
-		m_data->saveSignals->blockSignals(false);
+	if (type != d_data->recordType) {
+		d_data->itemList->setVisible(d_data->itemList->count() && type == SignalArchive);
+		d_data->itemSelector->setVisible(type == SignalArchive);
+		d_data->players->setVisible(type == Movie);
+		d_data->playerPreview->setVisible(type == Movie);
+		d_data->backgroundColorButton->setVisible(type == Movie);
+		d_data->transparentBackground->setVisible(type == Movie);
+		d_data->recordSceneOnly->setVisible(type == Movie && selectedVideoPlayer());
+		d_data->saveMovie->blockSignals(true);
+		d_data->saveSignals->blockSignals(true);
+		d_data->saveMovie->setChecked(type == Movie);
+		d_data->saveSignals->setChecked(type != Movie);
+		d_data->saveMovie->blockSignals(false);
+		d_data->saveSignals->blockSignals(false);
 
-		m_data->recordType = type;
+		d_data->recordType = type;
 
-		// m_data->samplingWidget->setVisible(type == Movie);
-		// m_data->bufferOptions->setVisible(type == SignalArchive);
+		// d_data->samplingWidget->setVisible(type == Movie);
+		// d_data->bufferOptions->setVisible(type == SignalArchive);
 
 		resetSize();
 	}
@@ -929,19 +924,19 @@ void VipRecordToolWidget::setRecordType(RecordType type)
 
 void VipRecordToolWidget::updateBuffer()
 {
-	if (!m_data->recorder->isOpen())
-		m_data->recorder->topLevelInputAt(0)->toMultiInput()->setListType(
-		  VipDataList::FIFO, VipDataList::MemorySize | VipDataList::Number, m_data->maxBufferSize->value(), m_data->maxBufferMemSize->value() * 1000000);
+	if (!d_data->recorder->isOpen())
+		d_data->recorder->topLevelInputAt(0)->toMultiInput()->setListType(
+		  VipDataList::FIFO, VipDataList::MemorySize | VipDataList::Number, d_data->maxBufferSize->value(), d_data->maxBufferMemSize->value() * 1000000);
 }
 
 VipRecordToolWidget::RecordType VipRecordToolWidget::recordType() const
 {
-	return m_data->recordType;
+	return d_data->recordType;
 }
 
 void VipRecordToolWidget::recordTypeChanged()
 {
-	if (m_data->saveSignals->isChecked()) {
+	if (d_data->saveSignals->isChecked()) {
 		setRecordType(SignalArchive);
 	}
 	else {
@@ -955,61 +950,61 @@ void VipRecordToolWidget::setDisplayPlayerArea(VipDisplayPlayerArea* area)
 {
 	static QMap<VipDisplayPlayerArea*, QList<QPointer<VipPlotItem>>> area_items;
 
-	if (area == m_data->area)
+	if (area == d_data->area)
 		return;
 
 	// save the content of the item list for the previous area
-	if (m_data->area) {
-		area_items[m_data->area].clear();
-		for (int i = 0; i < m_data->itemList->count(); ++i) {
-			PlotListWidgetItem* it = static_cast<PlotListWidgetItem*>(m_data->itemList->item(i));
+	if (d_data->area) {
+		area_items[d_data->area].clear();
+		for (int i = 0; i < d_data->itemList->count(); ++i) {
+			PlotListWidgetItem* it = static_cast<PlotListWidgetItem*>(d_data->itemList->item(i));
 			if (it->item)
-				area_items[m_data->area].append(it->item.data());
+				area_items[d_data->area].append(it->item.data());
 		}
 	}
 	// set the items that were saved for the new area
 	QList<QPointer<VipPlotItem>> items = area_items[area];
-	while (m_data->itemList->count())
-		delete m_data->itemList->takeItem(0);
+	while (d_data->itemList->count())
+		delete d_data->itemList->takeItem(0);
 	for (int i = 0; i < items.size(); ++i) {
 		VipAbstractPlayer* pl = VipAbstractPlayer::findAbstractPlayer(items[i]);
 		VipBaseDragWidget* w = pl ? VipBaseDragWidget::fromChild(pl) : nullptr;
-		m_data->itemList->addItem(new PlotListWidgetItem(w, items[i]));
+		d_data->itemList->addItem(new PlotListWidgetItem(w, items[i]));
 	}
 
-	m_data->area = area;
+	d_data->area = area;
 	if (area)
-		m_data->pool = area->processingPool();
+		d_data->pool = area->processingPool();
 	else
-		m_data->pool = nullptr;
+		d_data->pool = nullptr;
 }
 
 VipRecordToolBar* VipRecordToolWidget::toolBar()
 {
 	// Disable for now
 	return nullptr;
-	/* if (!m_data->toolBar)
+	/* if (!d_data->toolBar)
 	{
-		m_data->toolBar = new VipRecordToolBar(this);
+		d_data->toolBar = new VipRecordToolBar(this);
 	}
-	return m_data->toolBar;*/
+	return d_data->toolBar;*/
 }
 
 VipDisplayPlayerArea* VipRecordToolWidget::area() const
 {
-	return m_data->area;
+	return d_data->area;
 }
 
 VipProcessingPool* VipRecordToolWidget::processingPool() const
 {
-	return m_data->pool;
+	return d_data->pool;
 }
 
 QList<VipPlotItem*> VipRecordToolWidget::selectedItems() const
 {
 	QList<VipPlotItem*> items;
-	for (int i = 0; i < m_data->itemList->count(); ++i) {
-		PlotListWidgetItem* it = static_cast<PlotListWidgetItem*>(m_data->itemList->item(i));
+	for (int i = 0; i < d_data->itemList->count(); ++i) {
+		PlotListWidgetItem* it = static_cast<PlotListWidgetItem*>(d_data->itemList->item(i));
 		if (it->item)
 			items << it->item.data();
 	}
@@ -1018,17 +1013,17 @@ QList<VipPlotItem*> VipRecordToolWidget::selectedItems() const
 
 VipPlotItemSelector* VipRecordToolWidget::leafSelector() const
 {
-	return m_data->itemSelector;
+	return d_data->itemSelector;
 }
 
 void VipRecordToolWidget::setBackgroundColor(const QColor& c)
 {
-	m_data->backgroundColorButton->setPen(QPen(c));
+	d_data->backgroundColorButton->setPen(QPen(c));
 }
 
 QColor VipRecordToolWidget::backgroundColor() const
 {
-	QColor c = m_data->transparentBackground->isChecked() ? m_data->backgroundColorButton->pen().color() : QColor(255, 255, 255, 1);
+	QColor c = d_data->transparentBackground->isChecked() ? d_data->backgroundColorButton->pen().color() : QColor(255, 255, 255, 1);
 	if (c.alpha() == 0)
 		c.setAlpha(1);
 	return c;
@@ -1041,50 +1036,50 @@ void VipRecordToolWidget::displayAvailablePlayers()
 
 QString VipRecordToolWidget::currentPlayer() const
 {
-	return m_data->players->currentText();
+	return d_data->players->currentText();
 }
 
 void VipRecordToolWidget::setCurrentPlayer(const QString& player)
 {
-	if (m_data->players->count() == 0)
+	if (d_data->players->count() == 0)
 		this->displayAvailablePlayers();
-	m_data->players->setCurrentText(player);
+	d_data->players->setCurrentText(player);
 }
 
 void VipRecordToolWidget::setFilename(const QString& filename)
 {
-	m_data->recordWidget->setFilename(filename);
+	d_data->recordWidget->setFilename(filename);
 	if (toolBar())
 		toolBar()->filename()->setFilename(filename);
 }
 
 QString VipRecordToolWidget::filename() const
 {
-	return m_data->recordWidget->filename();
+	return d_data->recordWidget->filename();
 }
 
 void VipRecordToolWidget::setRecordSceneOnly(bool enable)
 {
-	m_data->recordSceneOnly->setChecked(enable);
+	d_data->recordSceneOnly->setChecked(enable);
 }
 bool VipRecordToolWidget::recordSceneOnly() const
 {
-	return m_data->recordSceneOnly->isChecked();
+	return d_data->recordSceneOnly->isChecked();
 }
 
 VipRecordWidget* VipRecordToolWidget::recordWidget() const
 {
-	return m_data->recordWidget;
+	return d_data->recordWidget;
 }
 
 void VipRecordToolWidget::displayAvailablePlayers(bool update_player_pixmap)
 {
 	// update the combo box which displays the list of available players
-	QString current_text = m_data->players->currentText();
+	QString current_text = d_data->players->currentText();
 
-	m_data->players->blockSignals(true);
-	m_data->players->clear();
-	m_data->playerlist.clear();
+	d_data->players->blockSignals(true);
+	d_data->players->clear();
+	d_data->playerlist.clear();
 	VipDisplayPlayerArea* area = vipGetMainWindow()->displayArea()->currentDisplayPlayerArea();
 	QList<VipBaseDragWidget*> players;
 
@@ -1095,13 +1090,13 @@ void VipRecordToolWidget::displayAvailablePlayers(bool update_player_pixmap)
 		// only add the VipBaseDragWidget with a visible header
 		// if(players[i]->Header() && players[i]->Header()->isVisible())
 		{
-			m_data->players->addItem(players[i]->windowTitle());
-			m_data->playerlist.append(players[i]);
+			d_data->players->addItem(players[i]->windowTitle());
+			d_data->playerlist.append(players[i]);
 		}
 	}
 
-	m_data->players->setCurrentText(current_text);
-	m_data->players->blockSignals(false);
+	d_data->players->setCurrentText(current_text);
+	d_data->players->blockSignals(false);
 
 	if (update_player_pixmap)
 		playerSelected();
@@ -1112,10 +1107,10 @@ void VipRecordToolWidget::displayAvailablePlayers(bool update_player_pixmap)
 void VipRecordToolWidget::playerSelected()
 {
 	// a player is selected through the combo box: display its content in a QLabel
-	if (m_data->players->currentIndex() < 0 || m_data->players->currentIndex() >= m_data->playerlist.size())
+	if (d_data->players->currentIndex() < 0 || d_data->players->currentIndex() >= d_data->playerlist.size())
 		return;
 
-	VipBaseDragWidget* player = m_data->playerlist[m_data->players->currentIndex()];
+	VipBaseDragWidget* player = d_data->playerlist[d_data->players->currentIndex()];
 	if (player) {
 		QPixmap pixmap(player->size());
 		if (pixmap.width() == 0 || pixmap.height() == 0)
@@ -1128,7 +1123,7 @@ void VipRecordToolWidget::playerSelected()
 		// p.fillRect(0, 0, pixmap.width(), pixmap.height(), QColor(0, 0, 0, 0));
 		// }
 
-		VipRenderObject::startRender(player, m_data->state);
+		VipRenderObject::startRender(player, d_data->state);
 		vipProcessEvents();
 
 		{
@@ -1137,13 +1132,13 @@ void VipRecordToolWidget::playerSelected()
 			VipRenderObject::renderObject(player, &p, QPoint(0, 0), true, false);
 		}
 
-		VipRenderObject::endRender(player, m_data->state);
+		VipRenderObject::endRender(player, d_data->state);
 
 		int max_dim = qMax(pixmap.width(), pixmap.height());
 		double factor = 300.0 / max_dim;
 		pixmap = pixmap.scaled(pixmap.width() * factor, pixmap.height() * factor, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
 
-		m_data->playerPreview->setPixmap(pixmap);
+		d_data->playerPreview->setPixmap(pixmap);
 		this->resetSize();
 	}
 
@@ -1152,17 +1147,17 @@ void VipRecordToolWidget::playerSelected()
 
 bool VipRecordToolWidget::addPlotItem(VipPlotItem* item)
 {
-	if (m_data->itemList->find(item) >= 0)
+	if (d_data->itemList->find(item) >= 0)
 		return false;
 
 	VipAbstractPlayer* pl = VipAbstractPlayer::findAbstractPlayer(item);
 	VipBaseDragWidget* w = pl ? VipBaseDragWidget::fromChild(pl) : nullptr;
 	// only add if the VipPlotItem * is related to a VipDisplayObject
 	if (item->property("VipDisplayObject").value<VipDisplayObject*>()) {
-		m_data->itemList->addItem(new PlotListWidgetItem(w, item));
+		d_data->itemList->addItem(new PlotListWidgetItem(w, item));
 
-		m_data->itemList->setMinimumHeight(30 * m_data->itemList->count());
-		m_data->itemList->setVisible(m_data->itemList->count());
+		d_data->itemList->setMinimumHeight(30 * d_data->itemList->count());
+		d_data->itemList->setVisible(d_data->itemList->count());
 
 		// update the file filters
 		updateFileFiltersAndDevice();
@@ -1175,9 +1170,9 @@ bool VipRecordToolWidget::addPlotItem(VipPlotItem* item)
 
 bool VipRecordToolWidget::removePlotItem(VipPlotItem* item)
 {
-	int row = m_data->itemList->find(item);
+	int row = d_data->itemList->find(item);
 	if (row >= 0) {
-		delete m_data->itemList->takeItem(row);
+		delete d_data->itemList->takeItem(row);
 		// update the file filters
 		updateFileFiltersAndDevice();
 		return true;
@@ -1185,11 +1180,11 @@ bool VipRecordToolWidget::removePlotItem(VipPlotItem* item)
 	return false;
 }
 
-void VipRecordToolWidget::itemClicked(VipPlotItem* plot_item, int button)
+void VipRecordToolWidget::itemClicked(const VipPlotItemPointer& plot_item, int button)
 {
-	if (m_data->recordType == SignalArchive && isVisible()) {
+	if (d_data->recordType == SignalArchive && isVisible()) {
 		// add the plot item from the list if: this is a left click, the item is selected and not already added to the list
-		if (plot_item && button == VipPlotItem::LeftButton && plot_item->isSelected() && m_data->itemList->find(plot_item) < 0) {
+		if (plot_item && button == VipPlotItem::LeftButton && plot_item->isSelected() && d_data->itemList->find(plot_item) < 0) {
 			addPlotItem(plot_item);
 		}
 	}
@@ -1197,12 +1192,12 @@ void VipRecordToolWidget::itemClicked(VipPlotItem* plot_item, int button)
 
 void VipRecordToolWidget::timeout()
 {
-	if (recordType() == Movie && m_data->sourceWidget && m_data->recorder->isOpen()) {
+	if (recordType() == Movie && d_data->sourceWidget && d_data->recorder->isOpen()) {
 		// qint64 time = QDateTime::currentMSecsSinceEpoch();
 		// check that at least one source VipIODevice have streaming enabled
 		bool has_streaming = false;
-		for (int i = 0; i < m_data->sourceDevices.size(); ++i)
-			if (m_data->sourceDevices[i]->isStreamingEnabled()) {
+		for (int i = 0; i < d_data->sourceDevices.size(); ++i)
+			if (d_data->sourceDevices[i]->isStreamingEnabled()) {
 				has_streaming = true;
 				break;
 			}
@@ -1211,35 +1206,35 @@ void VipRecordToolWidget::timeout()
 			return;
 
 		// vipProcessEvents();
-		if (!m_data->sourceWidget)
+		if (!d_data->sourceWidget)
 			return;
 
-		QSize size = m_data->sourceWidget->size();
-		if (size != m_data->pixmap.size())
-			m_data->pixmap = QPixmap(size);
+		QSize size = d_data->sourceWidget->size();
+		if (size != d_data->pixmap.size())
+			d_data->pixmap = QPixmap(size);
 
 		QColor c = backgroundColor();
-		m_data->pixmap.fill(c);
+		d_data->pixmap.fill(c);
 
 		{
-			QPainter p(&m_data->pixmap);
+			QPainter p(&d_data->pixmap);
 			p.setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing);
-			VipRenderObject::renderObject(m_data->sourceWidget, &p, QPoint(0, 0), true, false);
+			VipRenderObject::renderObject(d_data->sourceWidget, &p, QPoint(0, 0), true, false);
 		}
 
-		VipAnyData any(QVariant::fromValue(vipToArray(m_data->pixmap.toImage())), QDateTime::currentMSecsSinceEpoch() * 1000000);
-		m_data->recorder->inputAt(0)->setData(any);
-		// m_data->output->update();
+		VipAnyData any(QVariant::fromValue(vipToArray(d_data->pixmap.toImage())), QDateTime::currentMSecsSinceEpoch() * 1000000);
+		d_data->recorder->inputAt(0)->setData(any);
+		// d_data->output->update();
 	}
 }
 // void VipRecordToolWidget::setPlayerToDevice()
 // {
 // //set the output device player
-// if (qobject_cast<VipDragWidget*>(m_data->sourceWidget))
-// if (VipAbstractPlayer * player = m_data->sourceWidget->findChild<VipAbstractPlayer*>())
+// if (qobject_cast<VipDragWidget*>(d_data->sourceWidget))
+// if (VipAbstractPlayer * player = d_data->sourceWidget->findChild<VipAbstractPlayer*>())
 // {
-//	if(m_data->recorder && m_data->recorder->recorder())
-//	m_data->recorder->recorder()->setProperty("player", QVariant::fromValue(player));
+//	if(d_data->recorder && d_data->recorder->recorder())
+//	d_data->recorder->recorder()->setProperty("player", QVariant::fromValue(player));
 // }
 // }
 
@@ -1247,108 +1242,108 @@ void VipRecordToolWidget::launchRecord(bool launch)
 {
 	if (!launch) {
 		// stop the timer
-		m_data->timer.stop();
+		d_data->timer.stop();
 		vipProcessEvents();
 
-		// m_data->recordWidget.stopRecording();
-		m_data->recorder->close();
+		// d_data->recordWidget.stopRecording();
+		d_data->recorder->close();
 		updateFileFiltersAndDevice();
-		m_data->recorder->setEnabled(false);
+		d_data->recorder->setEnabled(false);
 
 		// end saving: cleanup
 		if (this->recordType() == Movie)
-			VipRenderObject::endRender(m_data->sourceWidget, m_data->state);
+			VipRenderObject::endRender(d_data->sourceWidget, d_data->state);
 
 		// TOCHECK:
 		// We comment this as it disable the possibility to reuse the saver parameters
-		// m_data->recorder->setRecorder(nullptr);
+		// d_data->recorder->setRecorder(nullptr);
 
-		// m_data->sourceWidget = nullptr;
+		// d_data->sourceWidget = nullptr;
 		return;
 	}
 
-	if (m_data->recordWidget->path().isEmpty())
+	if (d_data->recordWidget->path().isEmpty())
 		return launchRecord(false);
 
 	// actually build the connections
 	updateFileFiltersAndDevice(true, false);
 
 	// check that the selected display objects are still valid
-	for (int i = 0; i < m_data->sourceDisplayObjects.size(); ++i) {
-		if (!m_data->sourceDisplayObjects[i]) {
+	for (int i = 0; i < d_data->sourceDisplayObjects.size(); ++i) {
+		if (!d_data->sourceDisplayObjects[i]) {
 			VIP_LOG_ERROR("Unable to record: one or more selected items have been closed");
 			return launchRecord(false);
 		}
 	}
 
-	if (!m_data->sourceDevices.size())
+	if (!d_data->sourceDevices.size())
 		return launchRecord(false);
 
-	VipProcessingPool* pool = m_data->sourceDevices.first()->parentObjectPool();
+	VipProcessingPool* pool = d_data->sourceDevices.first()->parentObjectPool();
 	if (!pool)
 		return launchRecord(false);
 
 	if (recordType() == Movie) {
-		if (!m_data->sourceWidget) {
+		if (!d_data->sourceWidget) {
 			VIP_LOG_ERROR("No valid selected player for video saving");
 			return launchRecord(false);
 		}
 		// for a movie, prepare the source widget for rendering
-		VipRenderObject::startRender(m_data->sourceWidget, m_data->state);
+		VipRenderObject::startRender(d_data->sourceWidget, d_data->state);
 		vipProcessEvents();
 	}
 
 	// set the output device player
-	if (qobject_cast<VipDragWidget*>(m_data->sourceWidget)) {
-		if (VipAbstractPlayer* player = m_data->sourceWidget->findChild<VipAbstractPlayer*>()) {
-			m_data->recorder->recorder()->setProperty("player", QVariant::fromValue(player));
+	if (qobject_cast<VipDragWidget*>(d_data->sourceWidget)) {
+		if (VipAbstractPlayer* player = d_data->sourceWidget->findChild<VipAbstractPlayer*>()) {
+			d_data->recorder->recorder()->setProperty("player", QVariant::fromValue(player));
 		}
 	}
 	else {
-		if (m_data->itemList->count() == 1) {
-			PlotListWidgetItem* item = static_cast<PlotListWidgetItem*>(m_data->itemList->item(0));
-			if (VipAbstractPlayer* player = m_data->sourceWidget->findChild<VipAbstractPlayer*>()) {
-				m_data->recorder->recorder()->setProperty("player", QVariant::fromValue(player));
-			}
-			else if (VipAbstractPlayer* player2 = VipAbstractPlayer::findAbstractPlayer(item->item)) {
-				m_data->recorder->recorder()->setProperty("player", QVariant::fromValue(player2));
-			}
+		if (d_data->itemList->count() == 1) {
+			PlotListWidgetItem* item = static_cast<PlotListWidgetItem*>(d_data->itemList->item(0));
+			VipAbstractPlayer* player = nullptr;
+			if (d_data->sourceWidget)
+				player = d_data->sourceWidget->findChild<VipAbstractPlayer*>();
+			if (!player)
+				player = VipAbstractPlayer::findAbstractPlayer(item->item);
+			d_data->recorder->recorder()->setProperty("player", QVariant::fromValue(player));
 		}
 	}
 
 	// for temporal devices, save the archive right now
-	if (m_data->flag == VipIODevice::Temporal || m_data->flag == VipIODevice::Resource) {
+	if (d_data->flag == VipIODevice::Temporal || d_data->flag == VipIODevice::Resource) {
 
 		// now, save the current VipProcessingPool state, because we are going to modify it heavily
 		pool->save();
-		m_data->sources.save();
-		VipProcessingObjectList(m_data->sourceDisplayObjects).save();
+		d_data->sources.save();
+		VipProcessingObjectList(d_data->sourceDisplayObjects).save();
 
 		// disable all processing except the sources, remove the Automatic flag from the sources
 		if (recordType() == SignalArchive) {
 			pool->blockSignals(true);
-			pool->disableExcept(m_data->sources);
-			foreach (VipProcessingObject* obj, m_data->sources) {
+			pool->disableExcept(d_data->sources);
+			foreach (VipProcessingObject* obj, d_data->sources) {
 				obj->setScheduleStrategy(VipProcessingObject::Asynchronous, false);
 			}
 		}
 		// if saving a movie, we must enable the VipDisplayObject and set everything to Automatic
 		else {
-			pool->disableExcept(m_data->sources);
-			foreach (VipProcessingObject* obj, m_data->sources) {
+			pool->disableExcept(d_data->sources);
+			foreach (VipProcessingObject* obj, d_data->sources) {
 				obj->setScheduleStrategy(VipProcessingObject::Asynchronous, false);
 			}
 
-			for (int i = 0; i < m_data->sourceDisplayObjects.size(); ++i) {
-				m_data->sourceDisplayObjects[i]->setEnabled(true);
-				m_data->sourceDisplayObjects[i]->setScheduleStrategy(VipProcessingObject::Asynchronous, true);
+			for (int i = 0; i < d_data->sourceDisplayObjects.size(); ++i) {
+				d_data->sourceDisplayObjects[i]->setEnabled(true);
+				d_data->sourceDisplayObjects[i]->setScheduleStrategy(VipProcessingObject::Asynchronous, true);
 			}
 		}
 
 		VipProgress progress;
 		progress.setModal(true);
 		progress.setCancelable(true);
-		progress.setText("<b>Saving</b> " + QFileInfo(m_data->recorder->path()).fileName() + "...");
+		progress.setText("<b>Saving</b> " + QFileInfo(d_data->recorder->path()).fileName() + "...");
 
 		qint64 time = pool->firstTime();
 		qint64 end_time = pool->lastTime();
@@ -1356,10 +1351,10 @@ void VipRecordToolWidget::launchRecord(bool launch)
 		progress.setRange(time / 1000000.0, end_time / 1000000.0);
 
 		// movie sampling time (default: 20ms)
-		qint64 movie_sampling_time = m_data->samplingTime->value() * 1000000;
+		qint64 movie_sampling_time = d_data->samplingTime->value() * 1000000;
 		qint64 previous_time = VipInvalidTime;
 
-		m_data->recorder->setEnabled(true);
+		d_data->recorder->setEnabled(true);
 
 		VipProcessingObjectList leafs = pool->leafs(false);
 		leafs.save();
@@ -1372,26 +1367,26 @@ void VipRecordToolWidget::launchRecord(bool launch)
 		// We must distinguish 2 specific cases:
 		//  - if the pool is a Resource, we just call pool->reload() once
 		//  - if the pool is Temporal, but with the same (or invalid) start and end time. In this case, just like Resource, we call pool->reload() once.
-		bool save_resource = (m_data->flag == VipIODevice::Resource) || (time == VipInvalidTime || time == end_time);
+		bool save_resource = (d_data->flag == VipIODevice::Resource) || (time == VipInvalidTime || time == end_time);
 
 		if (!save_resource && recordType() == SignalArchive) {
 			// When recording a temporal signal archive, we might have Resource input devices that is NOT, IN ANY WAY, linked to a temporal device.
 			// In this case, the data from these devices won't be recorder.
 			// So first, we reload these devices to record their data.
 
-			for (int i = 0; i < m_data->sourceDisplayObjects.size(); ++i) {
-				if (VipOutput* out = ressourceSourceObject(m_data->sourceDisplayObjects[i])) {
-					m_data->recorder->inputAt(i)->setData(out->data());
-					m_data->recorder->update();
+			for (int i = 0; i < d_data->sourceDisplayObjects.size(); ++i) {
+				if (VipOutput* out = ressourceSourceObject(d_data->sourceDisplayObjects[i])) {
+					d_data->recorder->inputAt(i)->setData(out->data());
+					d_data->recorder->update();
 				}
 			}
 
-			// for (int i = 0; i < m_data->independantResourceProcessings.size(); ++i)
+			// for (int i = 0; i < d_data->independantResourceProcessings.size(); ++i)
 			//  {
-			//  m_data->independantResourceProcessings[i]->reload();
-			//  leafs.update(m_data->recorder);
+			//  d_data->independantResourceProcessings[i]->reload();
+			//  leafs.update(d_data->recorder);
 			//  //update the recorder last
-			//  m_data->recorder->update();
+			//  d_data->recorder->update();
 			//  }
 		}
 
@@ -1404,7 +1399,7 @@ void VipRecordToolWidget::launchRecord(bool launch)
 			selectedVideoPlayer()->showAxes(false);
 		}
 
-		int skip = m_data->skipFrames->value();
+		int skip = d_data->skipFrames->value();
 		int skip_count = 0;
 
 		while ((time != VipInvalidTime && time <= end_time) || save_resource) {
@@ -1417,60 +1412,60 @@ void VipRecordToolWidget::launchRecord(bool launch)
 				pool->read(time, true);
 
 			if (recordType() == SignalArchive) {
-				leafs.update(m_data->recorder);
+				leafs.update(d_data->recorder);
 				// update the recorder last
-				m_data->recorder->update();
+				d_data->recorder->update();
 			}
 			else if (previous_time == VipInvalidTime || (time - previous_time) >= movie_sampling_time) {
-				leafs.update(m_data->recorder);
+				leafs.update(d_data->recorder);
 				// wait for displays
-				for (int i = 0; i < m_data->sourceDisplayObjects.size(); ++i)
-					m_data->sourceDisplayObjects[i]->update();
+				for (int i = 0; i < d_data->sourceDisplayObjects.size(); ++i)
+					d_data->sourceDisplayObjects[i]->update();
 				vipProcessEvents();
 
 				if (++skip_count == skip) {
 					skip_count = 0;
 					if (recordSceneOnly() && selectedVideoPlayer()) {
-						VipAbstractPlotWidget2D* plot = m_data->sourceWidget->findChild<VipAbstractPlotWidget2D*>();
+						VipAbstractPlotWidget2D* plot = d_data->sourceWidget->findChild<VipAbstractPlotWidget2D*>();
 						VipPlotSpectrogram* spec = selectedVideoPlayer()->spectrogram();
 						spec->setBorderPen(Qt::NoPen);
 						QRectF scene_rect = spec->mapToScene(spec->sceneMap()->clipPath(spec)).boundingRect();
 						QRect view_rect = plot->mapFromScene(scene_rect).boundingRect();
 
 						QSize size = view_rect.size();
-						if (size != m_data->pixmap.size())
-							m_data->pixmap = QPixmap(size);
+						if (size != d_data->pixmap.size())
+							d_data->pixmap = QPixmap(size);
 
 						QColor c = backgroundColor();
-						m_data->pixmap.fill(c);
+						d_data->pixmap.fill(c);
 
 						{
-							QPainter p(&m_data->pixmap);
+							QPainter p(&d_data->pixmap);
 							p.setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing);
 							VipRenderObject::renderObject(plot, &p, -view_rect.topLeft(), true, false);
 						}
 
-						VipAnyData any(QVariant::fromValue(vipToArray(m_data->pixmap.toImage())), time);
-						m_data->recorder->inputAt(0)->setData(any);
-						m_data->recorder->update();
+						VipAnyData any(QVariant::fromValue(vipToArray(d_data->pixmap.toImage())), time);
+						d_data->recorder->inputAt(0)->setData(any);
+						d_data->recorder->update();
 					}
 					else {
-						QSize size = m_data->sourceWidget->size();
-						if (size != m_data->pixmap.size())
-							m_data->pixmap = QPixmap(size);
+						QSize size = d_data->sourceWidget->size();
+						if (size != d_data->pixmap.size())
+							d_data->pixmap = QPixmap(size);
 
 						QColor c = backgroundColor();
-						m_data->pixmap.fill(c);
+						d_data->pixmap.fill(c);
 
 						{
-							QPainter p(&m_data->pixmap);
+							QPainter p(&d_data->pixmap);
 							p.setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing);
-							VipRenderObject::renderObject(m_data->sourceWidget, &p, QPoint(), true, false);
+							VipRenderObject::renderObject(d_data->sourceWidget, &p, QPoint(), true, false);
 						}
 
-						VipAnyData any(QVariant::fromValue(vipToArray(m_data->pixmap.toImage())), time);
-						m_data->recorder->inputAt(0)->setData(any);
-						m_data->recorder->update();
+						VipAnyData any(QVariant::fromValue(vipToArray(d_data->pixmap.toImage())), time);
+						d_data->recorder->inputAt(0)->setData(any);
+						d_data->recorder->update();
 					}
 				}
 			}
@@ -1490,8 +1485,8 @@ void VipRecordToolWidget::launchRecord(bool launch)
 
 		leafs.restore();
 
-		VipProcessingObjectList(m_data->sourceDisplayObjects).restore();
-		m_data->sources.restore();
+		VipProcessingObjectList(d_data->sourceDisplayObjects).restore();
+		d_data->sources.restore();
 		pool->restore();
 
 		pool->blockSignals(false);
@@ -1499,15 +1494,15 @@ void VipRecordToolWidget::launchRecord(bool launch)
 		launchRecord(false);
 
 		// TEST: restart indefinitly the saving
-		// QMetaObject::invokeMethod(m_data->recordWidget.record(), "setChecked", Qt::QueuedConnection, Q_ARG(bool, true));
-		// QMetaObject::invokeMethod(&m_data->recordWidget, "setRecording", Qt::QueuedConnection, Q_ARG(bool, true));
+		// QMetaObject::invokeMethod(d_data->recordWidget.record(), "setChecked", Qt::QueuedConnection, Q_ARG(bool, true));
+		// QMetaObject::invokeMethod(&d_data->recordWidget, "setRecording", Qt::QueuedConnection, Q_ARG(bool, true));
 	}
 	else {
 		// Sequential device
 		if (recordType() == Movie) {
-			m_data->timer.setInterval(m_data->samplingTime->value());
-			m_data->timer.setSingleShot(false);
-			m_data->timer.start();
+			d_data->timer.setInterval(d_data->samplingTime->value());
+			d_data->timer.setSingleShot(false);
+			d_data->timer.start();
 		}
 	}
 }
@@ -1538,26 +1533,26 @@ public:
 VipRecordWidgetButton::VipRecordWidgetButton(VipBaseDragWidget* widget, QWidget* parent)
   : QToolButton(parent)
 {
-	m_data = new PrivateData();
-	m_data->ready = false;
-	m_data->widget = widget;
+	VIP_CREATE_PRIVATE_DATA(d_data);
+	d_data->ready = false;
+	d_data->widget = widget;
 
 	QWidget* w = new QWidget();
 	QVBoxLayout* vlay = new QVBoxLayout();
 
 	QHBoxLayout* hlay = new QHBoxLayout();
-	hlay->addWidget(&m_data->backgroundColorButton);
-	hlay->addWidget(&m_data->transparentBackground);
+	hlay->addWidget(&d_data->backgroundColorButton);
+	hlay->addWidget(&d_data->transparentBackground);
 	hlay->setContentsMargins(0, 0, 0, 0);
 
 	QHBoxLayout* hlay2 = new QHBoxLayout();
 	hlay2->addWidget(new QLabel("Record frequency"));
-	hlay2->addWidget(&m_data->frequency);
+	hlay2->addWidget(&d_data->frequency);
 	hlay2->setContentsMargins(0, 0, 0, 0);
 
 	vlay->addLayout(hlay);
 	vlay->addLayout(hlay2);
-	vlay->addWidget(&m_data->filename);
+	vlay->addWidget(&d_data->filename);
 	w->setLayout(vlay);
 
 	VipDragMenu* menu = new VipDragMenu();
@@ -1569,7 +1564,7 @@ VipRecordWidgetButton::VipRecordWidgetButton(VipBaseDragWidget* widget, QWidget*
 	this->setCheckable(true);
 	this->setIcon(vipIcon("record_icon.png"));
 
-	m_data->filename.setMode(VipFileName::Save);
+	d_data->filename.setMode(VipFileName::Save);
 	QVariantList data_list;
 	data_list.append(QVariant::fromValue(vipToArray(QImage(10, 10, QImage::Format_ARGB32))));
 	QString filters;
@@ -1587,25 +1582,25 @@ VipRecordWidgetButton::VipRecordWidgetButton(VipBaseDragWidget* widget, QWidget*
 	// make unique, sort and return
 	res = vipToSet(res).values();
 	filters = res.join(";;");
-	m_data->filename.setFilters(filters);
+	d_data->filename.setFilters(filters);
 
-	m_data->backgroundColorButton.setMode(VipPenButton::Color);
-	m_data->backgroundColorButton.setPen(QPen(QColor(230, 231, 232)));
-	m_data->backgroundColorButton.setText("Select images background color");
-	m_data->transparentBackground.setText("Background color ");
-	m_data->transparentBackground.setChecked(true);
-	m_data->recorder = new VipGenericRecorder(this);
-	m_data->recorder->setRecorderAvailableDataOnOpen(false);
-	m_data->recorder->topLevelInputAt(0)->toMultiInput()->resize(1);
-	m_data->recorder->topLevelInputAt(0)->toMultiInput()->setListType(VipDataList::FIFO, VipDataList::MemorySize, INT_MAX, 500000000);
-	m_data->recorder->setScheduleStrategies(VipProcessingObject::Asynchronous);
+	d_data->backgroundColorButton.setMode(VipPenButton::Color);
+	d_data->backgroundColorButton.setPen(QPen(QColor(230, 231, 232)));
+	d_data->backgroundColorButton.setText("Select images background color");
+	d_data->transparentBackground.setText("Background color ");
+	d_data->transparentBackground.setChecked(true);
+	d_data->recorder = new VipGenericRecorder(this);
+	d_data->recorder->setRecorderAvailableDataOnOpen(false);
+	d_data->recorder->topLevelInputAt(0)->toMultiInput()->resize(1);
+	d_data->recorder->topLevelInputAt(0)->toMultiInput()->setListType(VipDataList::FIFO, VipDataList::MemorySize, INT_MAX, 500000000);
+	d_data->recorder->setScheduleStrategies(VipProcessingObject::Asynchronous);
 
-	m_data->frequency.setRange(0, 100);
-	m_data->frequency.setValue(15);
-	m_data->frequency.setToolTip("Record frequence in Frame Per Second");
+	d_data->frequency.setRange(0, 100);
+	d_data->frequency.setValue(15);
+	d_data->frequency.setToolTip("Record frequence in Frame Per Second");
 
-	connect(&m_data->timer, SIGNAL(timeout()), this, SLOT(newImage()));
-	connect(&m_data->filename, SIGNAL(changed(const QString&)), this, SLOT(filenameChanged()));
+	connect(&d_data->timer, SIGNAL(timeout()), this, SLOT(newImage()));
+	connect(&d_data->filename, SIGNAL(changed(const QString&)), this, SLOT(filenameChanged()));
 	connect(this, SIGNAL(clicked(bool)), this, SLOT(setStarted(bool)));
 
 	this->setToolTip("<b>Start/stop recording this widget content in a file</b><br>Use the right arrow to set the output filename and other options.<br>"
@@ -1618,9 +1613,8 @@ VipRecordWidgetButton::~VipRecordWidgetButton()
 {
 	if (qApp)
 		qApp->removeEventFilter(this);
-	disconnect(&m_data->timer, SIGNAL(timeout()), this, SLOT(newImage()));
+	disconnect(&d_data->timer, SIGNAL(timeout()), this, SLOT(newImage()));
 	setStarted(false);
-	delete m_data;
 }
 
 bool VipRecordWidgetButton::eventFilter(QObject*, QEvent* evt)
@@ -1636,31 +1630,31 @@ bool VipRecordWidgetButton::eventFilter(QObject*, QEvent* evt)
 
 QString VipRecordWidgetButton::filename() const
 {
-	return m_data->filename.filename();
+	return d_data->filename.filename();
 }
 QColor VipRecordWidgetButton::backgroundColor() const
 {
-	QColor c = m_data->transparentBackground.isChecked() ? m_data->backgroundColorButton.pen().color() : QColor(255, 255, 255, 1);
+	QColor c = d_data->transparentBackground.isChecked() ? d_data->backgroundColorButton.pen().color() : QColor(255, 255, 255, 1);
 	if (c.alpha() == 0)
 		c.setAlpha(1);
 	return c;
 }
 int VipRecordWidgetButton::frequency() const
 {
-	return m_data->frequency.value();
+	return d_data->frequency.value();
 }
 
 void VipRecordWidgetButton::filenameChanged()
 {
-	m_data->ready = m_data->recorder->setPath(filename());
+	d_data->ready = d_data->recorder->setPath(filename());
 }
 
 void VipRecordWidgetButton::setStarted(bool enable)
 {
 	if (enable) {
-		m_data->timer.setInterval(1000 / frequency());
-		m_data->timer.setSingleShot(false);
-		if (!m_data->widget || !m_data->ready || !m_data->recorder->open(VipIODevice::WriteOnly)) {
+		d_data->timer.setInterval(1000 / frequency());
+		d_data->timer.setSingleShot(false);
+		if (!d_data->widget || !d_data->ready || !d_data->recorder->open(VipIODevice::WriteOnly)) {
 			VIP_LOG_ERROR("unable to start recording: wrong output format");
 			this->blockSignals(true);
 			this->setChecked(false);
@@ -1668,17 +1662,17 @@ void VipRecordWidgetButton::setStarted(bool enable)
 			return;
 		}
 
-		m_data->state = VipRenderState();
-		VipRenderObject::startRender(m_data->widget, m_data->state);
-		m_data->timer.start();
+		d_data->state = VipRenderState();
+		VipRenderObject::startRender(d_data->widget, d_data->state);
+		d_data->timer.start();
 		Q_EMIT started();
 	}
 	else {
-		if (m_data->recorder->isOpen() || m_data->timer.isActive()) {
-			m_data->timer.stop();
-			VipRenderObject::endRender(m_data->widget, m_data->state);
-			m_data->recorder->wait();
-			m_data->recorder->close();
+		if (d_data->recorder->isOpen() || d_data->timer.isActive()) {
+			d_data->timer.stop();
+			VipRenderObject::endRender(d_data->widget, d_data->state);
+			d_data->recorder->wait();
+			d_data->recorder->close();
 		}
 		this->blockSignals(true);
 		this->setChecked(false);
@@ -1689,22 +1683,22 @@ void VipRecordWidgetButton::setStarted(bool enable)
 
 void VipRecordWidgetButton::newImage()
 {
-	if (m_data->widget && m_data->recorder->isOpen()) {
+	if (d_data->widget && d_data->recorder->isOpen()) {
 
-		QSize size = m_data->widget->size();
-		if (size != m_data->pixmap.size())
-			m_data->pixmap = QPixmap(size);
+		QSize size = d_data->widget->size();
+		if (size != d_data->pixmap.size())
+			d_data->pixmap = QPixmap(size);
 
 		QColor c = backgroundColor();
-		m_data->pixmap.fill(c);
+		d_data->pixmap.fill(c);
 
 		{
-			QPainter p(&m_data->pixmap);
+			QPainter p(&d_data->pixmap);
 			p.setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing);
-			VipRenderObject::renderObject(m_data->widget, &p, QPoint(0, 0), true, false);
+			VipRenderObject::renderObject(d_data->widget, &p, QPoint(0, 0), true, false);
 		}
 
-		VipAnyData any(QVariant::fromValue(vipToArray(m_data->pixmap.toImage())), QDateTime::currentMSecsSinceEpoch() * 1000000);
-		m_data->recorder->inputAt(0)->setData(any);
+		VipAnyData any(QVariant::fromValue(vipToArray(d_data->pixmap.toImage())), QDateTime::currentMSecsSinceEpoch() * 1000000);
+		d_data->recorder->inputAt(0)->setData(any);
 	}
 }

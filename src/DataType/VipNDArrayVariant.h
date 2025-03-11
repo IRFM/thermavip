@@ -1,7 +1,7 @@
 /**
  * BSD 3-Clause License
  *
- * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ * Copyright (c) 2025, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Leo Dubus, Erwan Grelier
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -34,6 +34,11 @@
 
 #include "VipNDArrayImage.h"
 
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+#include <QMultiMapIterator>
+#else
+#include <QMapIterator>
+#endif
 namespace detail
 {
 	///\internal Function used to return a default value
@@ -237,16 +242,24 @@ namespace detail
 			// find the first convertible type that has a bigger size
 			int type_size = QMetaType(type).sizeOf();
 			for (QMultiMap<int, int>::const_iterator it = sizeTypes.begin(); it != sizeTypes.end(); ++it) {
-				if (it.key() > type_size && QVariant(type, nullptr).canConvert(it.value())) {
+				if (it.key() > type_size && vipFromVoid(type, nullptr).canConvert(VIP_META(it.value()))) {
 					return it.value();
 				}
 			}
 			// no match, then find the biggest convertible type
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+			QMultiMapIterator<int, int> i(sizeTypes);
+#else
 			QMapIterator<int, int> i(sizeTypes);
+#endif
 			i.toBack();
 			while (i.hasPrevious()) {
 				i.previous();
-				if (QVariant(type, nullptr).canConvert(i.value()))
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+				if (vipFromVoid(type, nullptr).canConvert(QMetaType(i.value())))
+#else
+				if (vipFromVoid(type, nullptr).canConvert(i.value()))
+#endif
 					return i.value();
 			}
 			return 0;

@@ -1,7 +1,7 @@
 /**
  * BSD 3-Clause License
  *
- * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ * Copyright (c) 2025, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Leo Dubus, Erwan Grelier
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -70,7 +70,7 @@ public:
 VipLegendItem::VipLegendItem(VipPlotItem* item, int index, QGraphicsItem* parent)
   : VipBoxGraphicsWidget(parent)
 {
-	d_data = new PrivateData();
+	VIP_CREATE_PRIVATE_DATA(d_data);
 
 	setPlotItem(item, index);
 	this->setGeometry(QRectF(QPointF(0, 0), this->minimumSize()));
@@ -80,7 +80,6 @@ VipLegendItem::~VipLegendItem()
 {
 	if (d_data->box)
 		delete d_data->box;
-	delete d_data;
 }
 
 VipLegend* VipLegendItem::legend() const
@@ -448,7 +447,7 @@ public:
 VipLegend::VipLegend(QGraphicsItem* parent)
   : VipBoxGraphicsWidget(parent)
 {
-	d_data = new PrivateData();
+	VIP_CREATE_PRIVATE_DATA(d_data);
 
 	d_data->legendItemTextStyle.setAlignment(Qt::AlignLeft);
 
@@ -460,7 +459,6 @@ VipLegend::VipLegend(QGraphicsItem* parent)
 
 VipLegend::~VipLegend()
 {
-	delete d_data;
 }
 
 void VipLegend::setCheckState(CheckState st)
@@ -659,6 +657,7 @@ void VipLegend::addLegendItem(VipLegendItem* legendItem)
 		connect(legendItem->plotItem(), SIGNAL(itemChanged(VipPlotItem*)), this, SLOT(itemChanged(VipPlotItem*))); //,Qt::QueuedConnection);
 
 		layout()->invalidate();
+		this->update();
 	}
 }
 
@@ -674,11 +673,13 @@ void VipLegend::insertLegendItem(int index, VipLegendItem* legendItem)
 		connect(legendItem->plotItem(), SIGNAL(itemChanged(VipPlotItem*)), this, SLOT(itemChanged(VipPlotItem*))); //,Qt::QueuedConnection);
 
 		layout()->invalidate();
+		this->update();
 	}
 }
 
 void VipLegend::legendItemAdded(VipLegendItem* legendItem)
 {
+	this->markItemDirty();
 	connect(legendItem, SIGNAL(clicked(bool)), this, SLOT(receiveClicked(bool)));
 	if (d_data->checkState != ItemBased) {
 		legendItem->setCheckable(d_data->checkState != NonCheckable);
@@ -852,6 +853,7 @@ int VipLegend::removeLegendItem(VipLegendItem* legendItem)
 
 		d_data->items.removeOne(item);
 		layout()->invalidate();
+		this->update();
 	}
 
 	return -1;

@@ -1,7 +1,7 @@
 /**
  * BSD 3-Clause License
  *
- * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ * Copyright (c) 2025, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Leo Dubus, Erwan Grelier
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -53,7 +53,7 @@ namespace detail
 		Q_OBJECT
 
 	public:
-		QMutex mutex;
+		QRecursiveMutex mutex;
 		QAbstractSocket* socket;
 		VipNetworkConnection* connection;
 		QString host;
@@ -92,9 +92,7 @@ namespace detail
 
 }
 
-
 VIP_CORE_EXPORT bool vipPing(const QByteArray& host);
-
 
 /// VipNetworkConnection represents a thread safe socket connection that does not use the main event loop.
 ///
@@ -205,7 +203,7 @@ private Q_SLOTS:
 	void _emit_stateChanged(QAbstractSocket::SocketState socketState) { Q_EMIT stateChanged(socketState); }
 
 private:
-	detail::VipNetworkConnectionPrivate* m_data;
+	detail::VipNetworkConnectionPrivate* d_data;
 	qintptr m_pending;
 };
 
@@ -306,8 +304,8 @@ protected:
 	virtual void incomingConnection(qintptr socketDescriptor);
 
 private:
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 Q_DECLARE_METATYPE(QAbstractSocket::PauseModes)
@@ -316,6 +314,5 @@ Q_DECLARE_METATYPE(QAbstractSocket::OpenMode)
 Q_DECLARE_METATYPE(QAbstractSocket::NetworkLayerProtocol)
 Q_DECLARE_METATYPE(QAbstractSocket::BindMode)
 Q_DECLARE_METATYPE(qintptr)
-
 
 #endif

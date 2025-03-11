@@ -1,7 +1,7 @@
 /**
  * BSD 3-Clause License
  *
- * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ * Copyright (c) 2025, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Leo Dubus, Erwan Grelier
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -90,7 +90,7 @@ bool VipExtractComponents::HasComponentsSameShapes() const
 		return false;
 
 	VipNDArrayShape sh = components[0].shape();
-	for (int i = 1; i < components.size(); ++i) {
+	for (qsizetype i = 1; i < components.size(); ++i) {
 		VipNDArrayShape temp = components[i].shape();
 		if (temp.size() != sh.size())
 			return false;
@@ -105,7 +105,7 @@ void VipExtractComponents::SeparateComponents(const VipNDArray& array)
 {
 	QStringList components = this->PixelComponentNames();
 	QList<VipNDArray> temp;
-	for (int i = 0; i < components.size(); ++i) {
+	for (qsizetype i = 0; i < components.size(); ++i) {
 		temp << ExtractOneComponent(array, components[i]);
 	}
 
@@ -114,7 +114,7 @@ void VipExtractComponents::SeparateComponents(const VipNDArray& array)
 
 VipNDArray VipExtractComponents::GetComponent(const QString& component) const
 {
-	int index = this->PixelComponentNames().indexOf(component);
+	qsizetype index = this->PixelComponentNames().indexOf(component);
 	if (index >= 0)
 		return GetComponents()[index];
 	else
@@ -132,7 +132,7 @@ bool VipExtractComponents::SetComponent(const QString& component, const VipNDArr
 	else {
 		VipNDArray temp = array;
 		QByteArray pixel_type = this->PixelComponentTypes()[index];
-		int type = QMetaType::type(pixel_type.data());
+		int type = vipIdFromName(pixel_type.data());
 
 		if (pixel_type.isEmpty())
 			m_components[index] = array;
@@ -229,7 +229,7 @@ VipNDArray VipExtractARGBComponents::MergeComponents() const
 	}
 
 	VipNDArrayShape shape = components[0].shape();
-	int size = components[0].size();
+	qsizetype size = components[0].size();
 
 	const quint8* r = (const quint8*)components[0].constData();
 	const quint8* g = (const quint8*)components[1].constData();
@@ -240,7 +240,7 @@ VipNDArray VipExtractARGBComponents::MergeComponents() const
 	uint* data = (uint*)res.bits();
 
 #pragma omp parallel for
-	for (int i = 0; i < size; ++i)
+	for (qsizetype i = 0; i < size; ++i)
 		data[i] = qRgba(r[i], g[i], b[i], a[i]);
 
 	return vipToArray(res);
@@ -272,18 +272,18 @@ VipNDArray VipExtractHSLComponents::MergeComponents() const
 	}
 
 	VipNDArrayShape shape = components[0].shape();
-	int size = components[0].size();
+	qsizetype size = components[0].size();
 
-	int* h = (int*)components[0].data();
-	int* s = (int*)components[1].data();
-	int* l = (int*)components[2].data();
+	qsizetype* h = (qsizetype*)components[0].data();
+	qsizetype* s = (qsizetype*)components[1].data();
+	qsizetype* l = (qsizetype*)components[2].data();
 	quint8* a = (quint8*)components[3].data();
 
 	QImage res(shape[1], shape[0], QImage::Format_ARGB32);
 	uint* data = (uint*)res.bits();
 
 #pragma omp parallel for
-	for (int i = 0; i < size; ++i)
+	for (int i = 0; i < (int)size; ++i)
 		data[i] = QColor::fromHsl(h[i], s[i], l[i], a[i]).rgba();
 
 	return vipToArray(res);
@@ -315,23 +315,23 @@ VipNDArray VipExtractHSVComponents::MergeComponents() const
 	}
 
 	VipNDArrayShape shape = components[0].shape();
-	int size = components[0].size();
+	qsizetype size = components[0].size();
 
 	const VipNDArray a0 = components[0];
 	const VipNDArray a1 = components[1];
 	const VipNDArray a2 = components[2];
 	const VipNDArray a3 = components[3];
 
-	const int* h = (const int*)components[0].data();
-	const int* s = (const int*)components[1].data();
-	const int* v = (const int*)components[2].data();
+	const qsizetype* h = (const qsizetype*)components[0].data();
+	const qsizetype* s = (const qsizetype*)components[1].data();
+	const qsizetype* v = (const qsizetype*)components[2].data();
 	const quint8* a = (const quint8*)components[3].data();
 
 	QImage res(shape[1], shape[0], QImage::Format_ARGB32);
 	uint* data = (uint*)res.bits();
 
 #pragma omp parallel for
-	for (int i = 0; i < size; ++i) {
+	for (int i = 0; i < (int)size; ++i) {
 		data[i] = QColor::fromHsv(h[i], s[i], v[i], a[i]).rgba();
 	}
 
@@ -366,7 +366,7 @@ VipNDArray VipExtractCMYKComponents::MergeComponents() const
 	}
 
 	VipNDArrayShape shape = components[0].shape();
-	int size = components[0].size();
+	qsizetype size = components[0].size();
 
 	const int* c = (const int*)components[0].data();
 	const int* y = (const int*)components[1].data();
@@ -425,16 +425,16 @@ VipNDArray VipExtractComplexRealImag::MergeComponents() const
 	}
 
 	VipNDArrayShape shape = components[0].shape();
-	int size = components[0].size();
+	qsizetype size = components[0].size();
 
-	VipNDArray res(QMetaType::type("complex_d"), shape);
+	VipNDArray res(vipIdFromName("complex_d"), shape);
 	std::complex<double>* data = (std::complex<double>*)res.data();
 
 	double* r = (double*)components[0].data();
 	double* i = (double*)components[1].data();
 
 #pragma omp parallel for
-	for (int p = 0; p < size; ++p)
+	for (int p = 0; p < (int)size; ++p)
 		data[p] = std::complex<double>(r[p], i[p]);
 
 	return res;
@@ -462,16 +462,16 @@ VipNDArray VipExtractComplexAmplitudeArgument::MergeComponents() const
 	}
 
 	VipNDArrayShape shape = components[0].shape();
-	int size = components[0].size();
+	qsizetype size = components[0].size();
 
-	VipNDArray res(QMetaType::type("complex_d"), shape);
+	VipNDArray res(vipIdFromName("complex_d"), shape);
 	std::complex<double>* data = (std::complex<double>*)res.data();
 
 	double* am = (double*)components[0].data();
 	double* ar = (double*)components[1].data();
 
 #pragma omp parallel for
-	for (int i = 0; i < size; ++i)
+	for (int i = 0; i < (int)size; ++i)
 		data[i] = std::polar<double>(am[i], ar[i]);
 
 	return res;
@@ -556,7 +556,7 @@ VipNDArray ToReal(const VipNDArray& dat)
 		return VipNDArray();
 
 	VipNDArrayShape shape = dat.shape();
-	int size = dat.size();
+	qsizetype size = dat.size();
 	VipNDArray res(qMetaTypeId<double>(), shape);
 
 	double* data = (double*)res.data();
@@ -564,13 +564,13 @@ VipNDArray ToReal(const VipNDArray& dat)
 	if (dat.dataName() == QByteArray("complex_f")) {
 		std::complex<float>* c = (std::complex<float>*)dat.data();
 #pragma omp parallel for
-		for (int i = 0; i < size; ++i)
+		for (int i = 0; i < (int)size; ++i)
 			data[i] = c[i].real();
 	}
 	else {
 		std::complex<double>* c = (std::complex<double>*)dat.data();
 #pragma omp parallel for
-		for (int i = 0; i < size; ++i)
+		for (int i = 0; i < (int)size; ++i)
 			data[i] = c[i].real();
 	}
 
@@ -586,7 +586,7 @@ VipNDArray ToImag(const VipNDArray& dat)
 		return VipNDArray();
 
 	VipNDArrayShape shape = dat.shape();
-	int size = dat.size();
+	qsizetype size = dat.size();
 	VipNDArray res(qMetaTypeId<double>(), shape);
 
 	double* data = (double*)res.data();
@@ -594,13 +594,13 @@ VipNDArray ToImag(const VipNDArray& dat)
 	if (dat.dataName() == QByteArray("complex_f")) {
 		std::complex<float>* c = (std::complex<float>*)dat.data();
 #pragma omp parallel for
-		for (int i = 0; i < size; ++i)
+		for (int i = 0; i < (int)size; ++i)
 			data[i] = c[i].imag();
 	}
 	else {
 		std::complex<double>* c = (std::complex<double>*)dat.data();
 #pragma omp parallel for
-		for (int i = 0; i < size; ++i)
+		for (int i = 0; i < (int)size; ++i)
 			data[i] = c[i].imag();
 	}
 
@@ -616,7 +616,7 @@ VipNDArray ToAmplitude(const VipNDArray& dat)
 		return VipNDArray();
 
 	VipNDArrayShape shape = dat.shape();
-	int size = dat.size();
+	qsizetype size = dat.size();
 	VipNDArray res(qMetaTypeId<double>(), shape);
 
 	double* data = (double*)res.data();
@@ -624,13 +624,13 @@ VipNDArray ToAmplitude(const VipNDArray& dat)
 	if (dat.dataName() == QByteArray("complex_f")) {
 		std::complex<float>* c = (std::complex<float>*)dat.data();
 #pragma omp parallel for
-		for (int i = 0; i < size; ++i)
+		for (int i = 0; i < (int)size; ++i)
 			data[i] = std::abs(c[i]);
 	}
 	else {
 		std::complex<double>* c = (std::complex<double>*)dat.data();
 #pragma omp parallel for
-		for (int i = 0; i < size; ++i)
+		for (int i = 0; i < (int)size; ++i)
 			data[i] = std::abs(c[i]);
 	}
 
@@ -646,7 +646,7 @@ VipNDArray ToArgument(const VipNDArray& dat)
 		return VipNDArray();
 
 	VipNDArrayShape shape = dat.shape();
-	int size = dat.size();
+	qsizetype size = dat.size();
 	VipNDArray res(qMetaTypeId<double>(), shape);
 
 	double* data = (double*)res.data();
@@ -654,13 +654,13 @@ VipNDArray ToArgument(const VipNDArray& dat)
 	if (dat.dataName() == QByteArray("complex_f")) {
 		std::complex<float>* c = (std::complex<float>*)dat.data();
 #pragma omp parallel for
-		for (int i = 0; i < size; ++i)
+		for (int i = 0; i < (int)size; ++i)
 			data[i] = std::arg(c[i]);
 	}
 	else {
 		std::complex<double>* c = (std::complex<double>*)dat.data();
 #pragma omp parallel for
-		for (int i = 0; i < size; ++i)
+		for (int i = 0; i < (int)size; ++i)
 			data[i] = std::arg(c[i]);
 	}
 
@@ -725,13 +725,13 @@ VipNDArray ToGrayScale(const VipNDArray& dat)
 		return VipNDArray();
 
 	const uint* pix = (uint*)im.bits();
-	int size = im.width() * im.height();
+	qsizetype size = im.width() * im.height();
 	VipNDArray ar(qMetaTypeId<quint8>(), vipVector(im.height(), im.width()));
 
 	quint8* res = (quint8*)ar.data();
 
 #pragma omp parallel for
-	for (int i = 0; i < size; ++i)
+	for (int i = 0; i < (int)size; ++i)
 		res[i] = qRound(0.299 * qRed(pix[i]) + 0.587 * qGreen(pix[i]) + 0.114 * qBlue(pix[i]));
 
 	return (ar);
@@ -745,11 +745,11 @@ VipNDArray ToRed(const VipNDArray& dat)
 
 	const uint* pix = (uint*)im.bits();
 	VipNDArray ar(qMetaTypeId<quint8>(), vipVector(im.height(), im.width()));
-	int size = ar.size();
+	qsizetype size = ar.size();
 	quint8* res = (quint8*)ar.data();
 
 	//#pragma omp parallel for
-	for (int i = 0; i < size; ++i)
+	for (qsizetype i = 0; i < size; ++i)
 		res[i] = qRed(pix[i]);
 
 	return VipNDArray(ar);
@@ -763,11 +763,11 @@ VipNDArray ToGreen(const VipNDArray& dat)
 
 	const uint* pix = (uint*)im.bits();
 	VipNDArray ar(qMetaTypeId<quint8>(), vipVector(im.height(), im.width()));
-	int size = ar.size();
+	qsizetype size = ar.size();
 	quint8* res = (quint8*)ar.data();
 
 	//#pragma omp parallel for
-	for (int i = 0; i < size; ++i)
+	for (qsizetype i = 0; i < size; ++i)
 		res[i] = qGreen(pix[i]);
 
 	return VipNDArray(ar);
@@ -781,11 +781,11 @@ VipNDArray ToBlue(const VipNDArray& dat)
 
 	const uint* pix = (uint*)im.bits();
 	VipNDArray ar(qMetaTypeId<quint8>(), vipVector(im.height(), im.width()));
-	int size = ar.size();
+	qsizetype size = ar.size();
 	quint8* res = (quint8*)ar.data();
 
 	//#pragma omp parallel for
-	for (int i = 0; i < size; ++i)
+	for (qsizetype i = 0; i < size; ++i)
 		res[i] = qBlue(pix[i]);
 
 	return VipNDArray(ar);
@@ -799,11 +799,11 @@ VipNDArray ToAlpha(const VipNDArray& dat)
 
 	const uint* pix = (uint*)im.bits();
 	VipNDArray ar(qMetaTypeId<quint8>(), vipVector(im.height(), im.width()));
-	int size = ar.size();
+	qsizetype size = ar.size();
 	quint8* res = (quint8*)ar.data();
 
 	//#pragma omp parallel for
-	for (int i = 0; i < size; ++i)
+	for (qsizetype i = 0; i < size; ++i)
 		res[i] = qAlpha(pix[i]);
 
 	return VipNDArray(ar);
@@ -817,11 +817,11 @@ VipNDArray ToHslHue(const VipNDArray& dat)
 
 	const uint* pix = (uint*)im.bits();
 	VipNDArray ar(qMetaTypeId<int>(), vipVector(im.height(), im.width()));
-	int size = ar.size();
+	qsizetype size = ar.size();
 	int* res = (int*)ar.data();
 
 #pragma omp parallel for
-	for (int i = 0; i < size; ++i)
+	for (qsizetype i = 0; i < size; ++i)
 		res[i] = QColor(pix[i]).hslHue();
 
 	return VipNDArray(ar);
@@ -835,11 +835,11 @@ VipNDArray ToHslSaturation(const VipNDArray& dat)
 
 	const uint* pix = (uint*)im.bits();
 	VipNDArray ar(qMetaTypeId<int>(), vipVector(im.height(), im.width()));
-	int size = ar.size();
+	qsizetype size = ar.size();
 	int* res = (int*)ar.data();
 
 #pragma omp parallel for
-	for (int i = 0; i < size; ++i)
+	for (int i = 0; i < (int)size; ++i)
 		res[i] = QColor(pix[i]).saturation();
 
 	return VipNDArray(ar);
@@ -853,11 +853,11 @@ VipNDArray ToHslLightness(const VipNDArray& dat)
 
 	const uint* pix = (uint*)im.bits();
 	VipNDArray ar(qMetaTypeId<int>(), vipVector(im.height(), im.width()));
-	int size = ar.size();
+	qsizetype size = ar.size();
 	int* res = (int*)ar.data();
 
 #pragma omp parallel for
-	for (int i = 0; i < size; ++i)
+	for (int i = 0; i < (int)size; ++i)
 		res[i] = QColor(pix[i]).lightness();
 
 	return VipNDArray(ar);
@@ -871,11 +871,11 @@ VipNDArray ToHsvHue(const VipNDArray& dat)
 
 	const uint* pix = (uint*)im.bits();
 	VipNDArray ar(qMetaTypeId<int>(), vipVector(im.height(), im.width()));
-	int size = ar.size();
+	qsizetype size = ar.size();
 	int* res = (int*)ar.data();
 
 #pragma omp parallel for
-	for (int i = 0; i < size; ++i)
+	for (int i = 0; i < (int)size; ++i)
 		res[i] = QColor(pix[i]).hsvHue();
 
 	return VipNDArray(ar);
@@ -889,11 +889,11 @@ VipNDArray ToHsvSaturation(const VipNDArray& dat)
 
 	const uint* pix = (uint*)im.bits();
 	VipNDArray ar(qMetaTypeId<int>(), vipVector(im.height(), im.width()));
-	int size = ar.size();
+	qsizetype size = ar.size();
 	int* res = (int*)ar.data();
 
 #pragma omp parallel for
-	for (int i = 0; i < size; ++i)
+	for (int i = 0; i < (int)size; ++i)
 		res[i] = QColor(pix[i]).saturation();
 
 	return VipNDArray(ar);
@@ -907,11 +907,11 @@ VipNDArray ToHsvValue(const VipNDArray& dat)
 
 	const uint* pix = (uint*)im.bits();
 	VipNDArray ar(qMetaTypeId<int>(), vipVector(im.height(), im.width()));
-	int size = ar.size();
+	qsizetype size = ar.size();
 	int* res = (int*)ar.data();
 
 #pragma omp parallel for
-	for (int i = 0; i < size; ++i)
+	for (int i = 0; i <(int) size; ++i)
 		res[i] = QColor(pix[i]).value();
 
 	return VipNDArray(ar);
@@ -925,11 +925,11 @@ VipNDArray ToCMYKCyan(const VipNDArray& dat)
 
 	const uint* pix = (uint*)im.bits();
 	VipNDArray ar(qMetaTypeId<int>(), vipVector(im.height(), im.width()));
-	int size = ar.size();
+	qsizetype size = ar.size();
 	int* res = (int*)ar.data();
 
 #pragma omp parallel for
-	for (int i = 0; i < size; ++i)
+	for (int i = 0; i < (int)size; ++i)
 		res[i] = QColor(pix[i]).cyan();
 
 	return VipNDArray(ar);
@@ -943,11 +943,11 @@ VipNDArray ToCMYKMagenta(const VipNDArray& dat)
 
 	const uint* pix = (uint*)im.bits();
 	VipNDArray ar(qMetaTypeId<int>(), vipVector(im.height(), im.width()));
-	int size = ar.size();
+	qsizetype size = ar.size();
 	int* res = (int*)ar.data();
 
 #pragma omp parallel for
-	for (int i = 0; i < size; ++i)
+	for (int i = 0; i < (int)size; ++i)
 		res[i] = QColor(pix[i]).magenta();
 
 	return VipNDArray(ar);
@@ -961,11 +961,11 @@ VipNDArray ToCMYKYellow(const VipNDArray& dat)
 
 	const uint* pix = (uint*)im.bits();
 	VipNDArray ar(qMetaTypeId<int>(), vipVector(im.height(), im.width()));
-	int size = ar.size();
+	qsizetype size = ar.size();
 	int* res = (int*)ar.data();
 
 #pragma omp parallel for
-	for (int i = 0; i < size; ++i)
+	for (int i = 0; i < (int)size; ++i)
 		res[i] = QColor(pix[i]).yellow();
 
 	return VipNDArray(ar);
@@ -979,11 +979,11 @@ VipNDArray ToCMYKBlack(const VipNDArray& dat)
 
 	const uint* pix = (uint*)im.bits();
 	VipNDArray ar(qMetaTypeId<int>(), vipVector(im.height(), im.width()));
-	int size = ar.size();
+	qsizetype size = ar.size();
 	int* res = (int*)ar.data();
 
 #pragma omp parallel for
-	for (int i = 0; i < size; ++i)
+	for (int i = 0; i < (int)size; ++i)
 		res[i] = QColor(pix[i]).black();
 
 	return VipNDArray(ar);

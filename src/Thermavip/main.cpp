@@ -1,6 +1,5 @@
 #define VIP_ENABLE_LOG_DEBUG
 
-
 #include <fstream>
 #include <iostream>
 
@@ -8,7 +7,6 @@
 #include <QBitmap>
 #include <QBoxLayout>
 #include <QDateTime>
-#include <QDesktopWidget>
 #include <QDir>
 #include <QFile>
 #include <QFileInfo>
@@ -21,6 +19,7 @@
 #include <qopenglfunctions.h>
 #include <qprocess.h>
 #include <qscreen.h>
+#include <qwindow.h>
 
 #include "VipCommandOptions.h"
 #include "VipCore.h"
@@ -37,7 +36,6 @@
 
 #include <qsurfaceformat.h>
 
-
 #if !defined(_WIN32) && (defined(__unix__) || defined(__unix) || (defined(__APPLE__) && defined(__MACH__)))
 #include <unistd.h>
 #endif
@@ -45,6 +43,14 @@
 #ifdef _MSC_VER
 #define VIP_ALLOW_AUTO_UPDATE
 #endif
+
+#ifdef __VIP_USE_WEB_ENGINE
+
+#include <QWebEngineUrlScheme>
+
+
+#endif
+
 
 static void myMessageOutput(QtMsgType type, const QMessageLogContext& context, const QString& msg)
 {
@@ -65,14 +71,31 @@ static void myMessageOutput(QtMsgType type, const QMessageLogContext& context, c
 	}
 	return;
 }
-
+ 
+static void applyAppFont(QWidget * top, const QFont& previous)
+{
+	QFont font = qApp->font();
+	QString family = font.family();
+	QString pfamily = previous.family();
+	top->setFont(font);
+	QList<QWidget*> lst = top->findChildren<QWidget*>();
+	for (QWidget* w : lst) {
+		const QFont f = w->font();
+		QString wfamily = f.family();
+		if (wfamily == pfamily) {
+			// Same as original font family and different from current one: update font
+			if (wfamily != family)
+				w->setFont(font);
+		}
+	}
+}
 
 
 int main(int argc, char** argv)
 {
 	// Load thermavip.env
 	QString env_file = vipGetDataDirectory() + "thermavip/thermavip.env";
-	printf("%s\n", env_file.toLatin1().data());
+	vip_debug("env file: %s\n", env_file.toLatin1().data());
 	if (!QFileInfo(env_file).exists()) {
 		env_file = QFileInfo(QString(argv[0])).canonicalPath();
 		env_file.replace("\\", "/");
@@ -96,13 +119,11 @@ int main(int argc, char** argv)
 		}
 	}
 
-
 #ifdef WITH_MICRO
 	// Load micro_proxy library
 	QLibrary micro_proxy("micro_proxy");
 	bool loaded = micro_proxy.load();
 #endif
-	
 
 	qInstallMessageHandler(myMessageOutput);
 
@@ -122,7 +143,7 @@ int main(int argc, char** argv)
 	for (int i = 0; i < argc; ++i) {
 		args << QString(argv[i]);
 	}
-	VipCommandOptions::instance().parse(args);
+	VipCommandOptions::instance().parse(args); 
 
 	if (VipCommandOptions::instance().count("debug")) {
 		vip_log_detail::_vip_set_enable_debug(true);
@@ -137,7 +158,7 @@ int main(int argc, char** argv)
 	QCoreApplication::addLibraryPath(QFileInfo(QString(argv[0])).canonicalPath());
 
 	QDir::setCurrent(QFileInfo(QString(argv[0])).canonicalPath());
-
+ 
 	// qputenv("QSG_INFO", "1");
 	// qputenv("QT_OPENGL", "desktop");
 	// qputenv("QT_OPENGL", "angle");
@@ -153,15 +174,21 @@ int main(int argc, char** argv)
 	QSurfaceFormat::setDefaultFormat(format);
 	VipText::setCacheTextWhenPossible(false);
 
-	/*QSurfaceFormat fmt;
-	fmt.setSamples(4);
-	QSurfaceFormat::setDefaultFormat(fmt);*/
-
 	// Disallow GUI initialization functions for now
 	vipEnableGuiInitializationFunction(false);
 
+	// register 'thermavip' url scheme
+#ifdef __VIP_USE_WEB_ENGINE
+	QWebEngineUrlScheme sc;
+	sc.setSyntax(QWebEngineUrlScheme::Syntax::Path);
+	sc.setName("thermavip");
+	sc.setDefaultPort(QWebEngineUrlScheme::PortUnspecified);
+	sc.setFlags(QWebEngineUrlScheme::SecureScheme);
+	QWebEngineUrlScheme::registerScheme(sc);
+#endif
+	 
 	QApplication app(argc, argv);
-
+	app.setAttribute(Qt::AA_DontCreateNativeWidgetSiblings);//TEST
 
 	bool force_font = false;
 #if !defined(_WIN32) && (defined(__unix__) || defined(__unix) || (defined(__APPLE__) && defined(__MACH__)))
@@ -220,6 +247,7 @@ int main(int argc, char** argv)
 
 	QString app_dir = QFileInfo(vipAppCanonicalPath()).canonicalPath();
 
+
 #ifdef _MSC_VER
 #ifdef NDEBUG
 	QDir::setCurrent(QFileInfo(vipAppCanonicalPath()).canonicalPath());
@@ -233,8 +261,8 @@ int main(int argc, char** argv)
 	// load fonts embedded within Thermavip
 	QFontDatabase base;
 	QStringList families = base.families(QFontDatabase::Any);
-	/*for (int i = 0; i < families.size(); ++i)
-	vip_debug("familiy: %s\n", families[i].toLatin1().data());*/
+	QFont previous_font = app.font();
+
 	if (QFileInfo("fonts").exists() && QFileInfo("fonts").isDir()) {
 		QFileInfoList files = QDir("fonts").entryInfoList(QStringList() << "*.ttf", QDir::Files);
 		for (int i = 0; i < files.size(); ++i)
@@ -250,6 +278,26 @@ int main(int argc, char** argv)
 			vip_debug("Set font to %s\n", font.family().toLatin1().data());
 		}
 	}
+
+	QFontDatabase db;
+	if (db.hasFamily("Segoe UI")) {
+		QFont font("Segoe UI");
+		font.setPointSize(9);
+		QApplication::setFont(font);
+	}
+	else if (db.hasFamily("Noto Sans")) {
+		QFont font("Noto Sans");
+		font.setPointSize(9);
+		QApplication::setFont(font);
+	}
+	else if (db.hasFamily("DejaVu Sans")) {
+		QFont font("DejaVu Sans");
+		font.setPointSize(8);
+		QApplication::setFont(font);
+	}
+
+	vip_debug("Application font: %s\n", app.font().family().toLatin1().data());
+
 
 	QString plugin_path = QApplication::applicationDirPath();
 	plugin_path.replace("\\", "/");
@@ -413,8 +461,8 @@ int main(int argc, char** argv)
 
 #ifdef _WIN32
 
-	// On windows only, create register key to support url on the form 'thermavip://' in browsers
 
+	// On windows only, create register key to support url on the form 'thermavip://' in browsers
 
 	QTemporaryDir dir;
 	QString p = dir.path();
@@ -473,6 +521,34 @@ int main(int argc, char** argv)
 
 	// Before loading plugins, initialize annotation lib
 	vipInitializeVisualizeDBWidget();
+
+	// Before loading plugins, configure QtWebEngine
+
+	// Detect dark skin
+	QColor c = vipWidgetTextBrush(vipGetMainWindow()).color();
+	bool is_dark = c.red() > 200 && c.green() > 200 && c.blue() > 200;
+	vip_debug("Dark skin detected: %i\n",(int)is_dark);
+#ifdef WIN32
+	// On windows, we might need to specify the QtWebEngineProcess path
+#ifdef NDEBUG
+	QString qtwebengine = QFileInfo(QString(argv[0])).canonicalPath() + "/QtWebEngineProcess.exe";
+#else
+	QString qtwebengine = QFileInfo(QString(argv[0])).canonicalPath() + "/QtWebEngineProcessd.exe";
+#endif
+	if (QFileInfo(qtwebengine).exists())
+		qputenv("QTWEBENGINEPROCESS_PATH", qtwebengine.toLatin1().data());
+#endif
+	// Chromium flags
+	QByteArray chromium_flags;
+	vip_debug("Platform name: %s\n",app.platformName().toLatin1().data());
+	if(app.platformName() == "xcb" || app.platformName() == "wayland")
+		// disable gpu, or possible crash
+		chromium_flags += "--disable-gpu ";
+	if(is_dark)
+		chromium_flags += "--blink-settings=forceDarkModeEnabled=true,forceDarkModeImagePolicy=2,forceDarkModePagePolicy=1,forceDarkModeInversionAlgorithm=4";
+	qputenv("QTWEBENGINE_CHROMIUM_FLAGS", chromium_flags);
+
+	
 
 	// Load plugins
 
@@ -564,24 +640,13 @@ int main(int argc, char** argv)
 				vipGetMainWindow()->showMaximized();
 				QCoreApplication::processEvents();
 				if (!last_session) {
-					QMessageBox box(QMessageBox::Question, "Load previous session", "Do you want to load the last session?", QMessageBox::Yes | QMessageBox::No);
-					// center on same screen as vipGetMainWindow()
-#if QT_VERSION < QT_VERSION_CHECK(5, 15, 0)
-					int thisScreen = QApplication::desktop()->screenNumber(vipGetMainWindow());
-					QRect r = QApplication::desktop()->screenGeometry(thisScreen);
-#else
-					QRect r;
-					if (vipGetMainWindow()->screen())
-						r = vipGetMainWindow()->screen()->geometry();
-					else
-						r = QGuiApplication::primaryScreen()->geometry();
-#endif
-					box.move(r.x() + r.width() / 2 - box.width() / 2, r.y() + r.height() / 2 - box.height() / 2);
+					QMessageBox box(
+					  QMessageBox::Question, "Load previous session", "Do you want to load the last session?", QMessageBox::Yes | QMessageBox::No, vipGetMainWindow());
+					
 					if (box.exec() == QMessageBox::Yes)
 						last_session = true;
 				}
-				if (last_session) //|| QMessageBox::question(vipGetMainWindow(), "Load previous session", "Do you want to load the last session?", QMessageBox::Yes | QMessageBox::No)
-						  //== QMessageBox::Yes)
+				if (last_session)
 				{
 					load_session = filename;
 				}
@@ -613,17 +678,22 @@ int main(int argc, char** argv)
 	// Allow GUI initialization functions
 	vipEnableGuiInitializationFunction(true);
 
+	// Apply current font
+	applyAppFont(vipGetMainWindow(), previous_font);
+
 	int ret = app.exec();
 
 	VipLoadPlugins::instance().unloadPlugins();
 	VipLogging::instance().close();
+
 	if (vipIsRestartEnabled()) {
-		QProcess::startDetached(VipUpdate::getUpdateProgram() + " --hide --command Thermavip -l " + QString::number(vipRestartMSecs()));
-		/* QProcess::startDetached(VipUpdate::getUpdateProgram(),
+		//QProcess::startDetached(VipUpdate::getUpdateProgram() + " --hide --command Thermavip -l " + QString::number(vipRestartMSecs()));
+		QProcess::startDetached(VipUpdate::getUpdateProgram(),
 					QStringList() << "--hide"
 						      << "--command"
 						      << "Thermavip"
-						      << "-l" << QString::number(vipRestartMSecs()));*/
+						      << "-l" << QString::number(vipRestartMSecs()));
 	}
+
 	return ret;
 }

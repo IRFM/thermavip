@@ -1,7 +1,7 @@
 /**
  * BSD 3-Clause License
  *
- * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ * Copyright (c) 2025, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Leo Dubus, Erwan Grelier
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -40,6 +40,12 @@
 #include <iostream>
 #include <qcoreapplication.h>
 
+/* #ifdef _MSC_VER
+// Remove deprecated warning
+#pragma warning(push)
+#pragma warning(disable : 4996)
+#endif*/
+
 class DetachableProcess : public QProcess
 {
 public:
@@ -70,16 +76,15 @@ public:
 VipUpdate::VipUpdate(QObject* parent)
   : QObject(parent)
 {
-	m_data = new PrivateData();
+	VIP_CREATE_PRIVATE_DATA(d_data);
 }
 
 VipUpdate::~VipUpdate()
 {
-	if (!m_data->detachedOnQuit)
+	if (!d_data->detachedOnQuit)
 		stop();
 	else
-		m_data->process.detach();
-	delete m_data;
+		d_data->process.detach();
 }
 
 QString VipUpdate::getUpdateProgram()
@@ -104,23 +109,23 @@ QString VipUpdate::getUpdateProgram()
 
 void VipUpdate::setDetachedOnQuit(bool enable)
 {
-	m_data->detachedOnQuit = enable;
+	d_data->detachedOnQuit = enable;
 }
 
 bool VipUpdate::detachedOnQuit() const
 {
-	return m_data->detachedOnQuit;
+	return d_data->detachedOnQuit;
 }
 
 bool VipUpdate::stop()
 {
-	disconnect(&m_data->process, SIGNAL(readyReadStandardOutput()), this, SLOT(newOutput()));
-	disconnect(&m_data->process, SIGNAL(finished(int, QProcess::ExitStatus)), this, SLOT(emitFinished()));
+	disconnect(&d_data->process, SIGNAL(readyReadStandardOutput()), this, SLOT(newOutput()));
+	disconnect(&d_data->process, SIGNAL(finished(int, QProcess::ExitStatus)), this, SLOT(emitFinished()));
 
-	m_data->process.terminate();
-	if (!m_data->process.waitForFinished(10000))
-		m_data->process.kill();
-	return m_data->process.state() == QProcess::NotRunning;
+	d_data->process.terminate();
+	if (!d_data->process.waitForFinished(1000))
+		d_data->process.kill();
+	return d_data->process.state() == QProcess::NotRunning;
 }
 
 int VipUpdate::hasUpdate(const QString& out_dir, bool* already_downloaded, void** _stop)
@@ -132,19 +137,21 @@ int VipUpdate::hasUpdate(const QString& out_dir, bool* already_downloaded, void*
 	if (!stop())
 		return -1;
 
+
 	// vip_debug("start '%s'\n", (getUpdateProgram() + " -c --hide -o " + out_dir).toLatin1().data());
-	// m_data->process.start(getUpdateProgram(), QStringList()<<"-c"<<"--hide"<<"-o"<<out_dir);
-	m_data->process.start(getUpdateProgram() + " -c --hide -o " + out_dir);
-	m_data->process.waitForStarted(3000);
+	d_data->process.start(getUpdateProgram(), QStringList()<<"-c"<<"--hide"<<"-o"<<out_dir);
+	//d_data->process.start(getUpdateProgram() + " -c --hide -o " + out_dir);
+
+	d_data->process.waitForStarted(3000);
 
 	if (!_stop) {
-		if (!m_data->process.waitForFinished(30000))
+		if (!d_data->process.waitForFinished(30000))
 			return -1;
 	}
 	else {
 		qint64 st = QDateTime::currentMSecsSinceEpoch();
 		while (*_stop) {
-			if (m_data->process.waitForFinished(500))
+			if (d_data->process.waitForFinished(500))
 				break;
 			else {
 				if (QDateTime::currentMSecsSinceEpoch() - st > 30000)
@@ -153,8 +160,8 @@ int VipUpdate::hasUpdate(const QString& out_dir, bool* already_downloaded, void*
 		}
 	}
 
-	QByteArray ar = m_data->process.readAllStandardOutput();
-	QByteArray err = m_data->process.readAllStandardError();
+	QByteArray ar = d_data->process.readAllStandardOutput();
+	QByteArray err = d_data->process.readAllStandardError();
 	// if(err.size())
 	//  VIP_LOG_ERROR(err);
 	//  if (ar.size())
@@ -178,12 +185,14 @@ bool VipUpdate::isDownloadFinished()
 	if (!stop())
 		return false;
 
-	// m_data->process.start(getUpdateProgram(), QStringList()<< "-w"<< "--hide");
-	m_data->process.start(getUpdateProgram() + " -w --hide");
-	if (!m_data->process.waitForFinished(30000))
+
+	d_data->process.start(getUpdateProgram(), QStringList()<< "-w"<< "--hide");
+	//d_data->process.start(getUpdateProgram() + " -w --hide");
+
+	if (!d_data->process.waitForFinished(30000))
 		return false;
 
-	QByteArray ar = m_data->process.readAllStandardOutput();
+	QByteArray ar = d_data->process.readAllStandardOutput();
 	if (ar.isEmpty())
 		return false;
 	QTextStream stream(ar);
@@ -199,13 +208,15 @@ bool VipUpdate::startDownload(const QString& out_dir)
 	if (!stop())
 		return false;
 
-	m_data->progressed = -1;
-	connect(&m_data->process, SIGNAL(readyReadStandardOutput()), this, SLOT(newOutput()), Qt::DirectConnection);
-	connect(&m_data->process, SIGNAL(finished(int, QProcess::ExitStatus)), this, SLOT(emitFinished()), Qt::DirectConnection);
+	d_data->progressed = -1;
+	connect(&d_data->process, SIGNAL(readyReadStandardOutput()), this, SLOT(newOutput()), Qt::DirectConnection);
+	connect(&d_data->process, SIGNAL(finished(int, QProcess::ExitStatus)), this, SLOT(emitFinished()), Qt::DirectConnection);
 
-	// m_data->process.start(getUpdateProgram() ,QStringList()<< "-u"<< "-d" << "--hide" << "-o" << out_dir);
-	m_data->process.start(getUpdateProgram() + " -u -d --hide -o " + out_dir);
-	return m_data->process.waitForStarted(10000);
+
+	d_data->process.start(getUpdateProgram() ,QStringList()<< "-u"<< "-d" << "--hide" << "-o" << out_dir);
+	//d_data->process.start(getUpdateProgram() + " -u -d --hide -o " + out_dir);
+
+	return d_data->process.waitForStarted(10000);
 }
 
 bool VipUpdate::startUpdate(const QString& out_dir)
@@ -213,18 +224,19 @@ bool VipUpdate::startUpdate(const QString& out_dir)
 	if (!stop())
 		return false;
 
-	m_data->progressed = -1;
-	connect(&m_data->process, SIGNAL(readyReadStandardOutput()), this, SLOT(newOutput()), Qt::DirectConnection);
-	connect(&m_data->process, SIGNAL(finished(int, QProcess::ExitStatus)), this, SLOT(emitFinished()), Qt::DirectConnection);
+	d_data->progressed = -1;
+	connect(&d_data->process, SIGNAL(readyReadStandardOutput()), this, SLOT(newOutput()), Qt::DirectConnection);
+	connect(&d_data->process, SIGNAL(finished(int, QProcess::ExitStatus)), this, SLOT(emitFinished()), Qt::DirectConnection);
 
-	// m_data->process.start(getUpdateProgram() ,QStringList()<< "-u" <<"--hide"<< "-o" << out_dir);
-	m_data->process.start(getUpdateProgram() + " -u --hide -o " + out_dir);
-	return m_data->process.waitForStarted(30000);
+	d_data->process.start(getUpdateProgram() ,QStringList()<< "-u" <<"--hide"<< "-o" << out_dir);
+	//d_data->process.start(getUpdateProgram() + " -u --hide -o " + out_dir);
+
+	return d_data->process.waitForStarted(30000);
 }
 
 QProcess* VipUpdate::process()
 {
-	return &m_data->process;
+	return &d_data->process;
 }
 
 void VipUpdate::emitFinished()
@@ -234,15 +246,15 @@ void VipUpdate::emitFinished()
 
 void VipUpdate::newOutput()
 {
-	QByteArray ar = m_data->process.readAllStandardOutput();
+	QByteArray ar = d_data->process.readAllStandardOutput();
 	QList<QByteArray> lines = ar.split(' ');
 	if (lines.size() > 1) {
 		QByteArray value = lines[lines.size() - 2];
 		value.replace(' ', "");
 		bool ok;
 		int count = qRound(value.toDouble(&ok));
-		if (ok && count != m_data->progressed) {
-			m_data->progressed = count;
+		if (ok && count != d_data->progressed) {
+			d_data->progressed = count;
 			Q_EMIT updateProgressed(count);
 		}
 	}
@@ -314,3 +326,8 @@ bool VipUpdate::renameNewFiles(const QString& dir_name)
 
 	return !has_opened_files;
 }
+
+/* #ifdef _MSC_VER
+// Remove deprecated warning
+#pragma warning(pop)
+#endif*/

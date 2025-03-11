@@ -1,7 +1,7 @@
 /**
  * BSD 3-Clause License
  *
- * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ * Copyright (c) 2025, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Leo Dubus, Erwan Grelier
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -33,6 +33,7 @@
 #define VIP_RECORD_TOOL_WIDGET_H
 
 #include "VipToolWidget.h"
+#include "VipPlotItem.h"
 #include <qtoolbutton.h>
 
 /// \addtogroup Gui
@@ -68,8 +69,8 @@ private Q_SLOTS:
 	void execMenu();
 
 private:
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 class VIP_GUI_EXPORT VipPlotItemSelector : public QToolButton
@@ -93,8 +94,8 @@ private Q_SLOTS:
 	void processingSelected(QAction*);
 
 private:
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 class VIP_GUI_EXPORT SkipFrame : public QWidget
@@ -111,8 +112,8 @@ public Q_SLOTS:
 	void reset();
 
 private:
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 class VipPlotItem;
@@ -168,15 +169,15 @@ private Q_SLOTS:
 	void displayAvailablePlayers();
 	void displayAvailablePlayers(bool update_player_pixmap);
 	void playerSelected();
-	void itemClicked(VipPlotItem*, int);
+	void itemClicked(const VipPlotItemPointer&, int);
 	void timeout();
 	void launchRecord(bool record);
 
 	void updateBuffer();
 
 private:
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 VipRecordToolWidget* vipGetRecordToolWidget(VipMainWindow* window = nullptr);
@@ -205,13 +206,13 @@ private Q_SLOTS:
 	void start() { setStarted(true); }
 	void stop() { setStarted(false); }
 
- Q_SIGNALS :
+Q_SIGNALS:
 	void started();
 	void stopped();
 
 private:
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 /// @}

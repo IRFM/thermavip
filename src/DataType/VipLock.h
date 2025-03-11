@@ -1,7 +1,7 @@
 /**
  * BSD 3-Clause License
  *
- * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ * Copyright (c) 2025, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Leo Dubus, Erwan Grelier
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -49,7 +49,7 @@ class VipSpinlock
 	std::atomic<bool> d_lock;
 
 public:
-	constexpr VipSpinlock()
+	constexpr VipSpinlock() noexcept
 	  : d_lock(0)
 	{
 	}
@@ -115,7 +115,7 @@ class VipSharedSpinner
 	static constexpr lock_type need_lock = 2;
 	static constexpr lock_type read = 4;
 
-	bool try_lock(lock_type& expect)
+	bool try_lock(lock_type& expect) noexcept
 	{
 		if (!d_lock.compare_exchange_strong(expect, write, std::memory_order_acq_rel)) {
 			d_lock.fetch_or(expect = need_lock, std::memory_order_release);
@@ -123,40 +123,40 @@ class VipSharedSpinner
 		}
 		return true;
 	}
-	void yield() { std::this_thread::yield(); }
+	void yield() noexcept { std::this_thread::yield(); }
 
 	std::atomic<lock_type> d_lock;
 
 public:
-	constexpr VipSharedSpinner()
+	constexpr VipSharedSpinner() noexcept
 	  : d_lock(0)
 	{
 	}
 	VipSharedSpinner(VipSharedSpinner const&) = delete;
 	VipSharedSpinner& operator=(VipSharedSpinner const&) = delete;
 
-	void lock()
+	void lock() noexcept
 	{
 		lock_type expect = 0;
 		while ((!try_lock(expect)))
 			yield();
 	}
-	void unlock() { d_lock.fetch_and(~(write | need_lock), std::memory_order_release); }
-	void lock_shared()
+	void unlock() noexcept { d_lock.fetch_and(~(write | need_lock), std::memory_order_release); }
+	void lock_shared() noexcept
 	{
 		while ((!try_lock_shared()))
 			yield();
 	}
-	void unlock_shared() { d_lock.fetch_add(-read, std::memory_order_release); }
+	void unlock_shared() noexcept { d_lock.fetch_add(-read, std::memory_order_release); }
 	// Attempt to acquire writer permission. Return false if we didn't get it.
-	bool try_lock()
+	bool try_lock() noexcept
 	{
 		if (d_lock.load(std::memory_order_relaxed) & (need_lock | write))
 			return false;
 		lock_type expect = 0;
 		return d_lock.compare_exchange_strong(expect, write, std::memory_order_acq_rel);
 	}
-	bool try_lock_shared()
+	bool try_lock_shared() noexcept
 	{
 		if (!(d_lock.load(std::memory_order_relaxed) & (need_lock | write))) {
 			if ((!(d_lock.fetch_add(read, std::memory_order_acquire) & (need_lock | write))))

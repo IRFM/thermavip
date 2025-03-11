@@ -1,7 +1,7 @@
 /**
  * BSD 3-Clause License
  *
- * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ * Copyright (c) 2025, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Leo Dubus, Erwan Grelier
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -74,8 +74,6 @@ public:
 	qint64 m_video_sampling;
 };
 
-
-
 /// @brief VipIODevice that outputs events on the form of a VipSceneModel.
 /// Events are retrieved from an event server.
 class VIP_ANNOTATION_EXPORT VipClientEventDevice : public VipIODevice
@@ -87,9 +85,7 @@ public:
 	VipClientEventDevice(QObject* parent = nullptr);
 	~VipClientEventDevice();
 
-	void setConnectionInfo(const QString& ip, int port, const QString& camera) { 
-		this->setPath(ip + ";" + QString::number(port) + ";" + camera);
-	}
+	void setConnectionInfo(const QString& ip, int port, const QString& camera) { this->setPath(ip + ";" + QString::number(port) + ";" + camera); }
 
 	virtual bool open(VipIODevice::OpenModes mode);
 	/// Return the device supported modes (read/write operations).
@@ -101,12 +97,9 @@ protected:
 	virtual bool enableStreaming(bool);
 
 public:
-	class PrivateData;
-	PrivateData* d_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
-
-
-
 
 /// @brief Defines several widget used to modify events parameters before upload to DB
 class VIP_ANNOTATION_EXPORT UploadToDB : public QWidget
@@ -133,8 +126,8 @@ private Q_SLOTS:
 	void deviceChanged();
 
 private:
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 class VipPlayerDBAccess;
@@ -194,8 +187,8 @@ Q_SIGNALS:
 	void interpFrames();
 
 private:
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 /// @brief Class allowing interaction between a VipVideoPlayer and a connection to an event database
@@ -209,7 +202,7 @@ public:
 	{
 		New, // New computed event
 		DB   // event retrieved from DB
-		// Modified //event retrieved from DB and modified
+		     // Modified //event retrieved from DB and modified
 	};
 
 	struct Action
@@ -271,7 +264,7 @@ public Q_SLOTS:
 	void interpolateFrames();
 	void updateUndoToolTip();
 	/// @brief Connect to an event server using format 'host;ip;camera'
-	bool connectToEventServer(const QString & host);
+	bool connectToEventServer(const QString& host);
 	void connectToEventServerEdit();
 
 private Q_SLOTS:
@@ -313,6 +306,5 @@ private:
 	VipSceneModel m_sceneModel;
 	QPointer<VipPlotSceneModel> m_plotSM;
 };
-
 
 #endif

@@ -1,7 +1,7 @@
 /**
  * BSD 3-Clause License
  *
- * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ * Copyright (c) 2025, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Leo Dubus, Erwan Grelier
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -121,27 +121,26 @@ void VipLogging::run()
 VipLogging::VipLogging()
   : QThread()
 {
-	d_data = new PrivateData();
+	VIP_CREATE_PRIVATE_DATA(d_data);
 }
 
 VipLogging::VipLogging(Outputs outputs, VipFileLogger* logger)
   : QThread()
 {
-	d_data = new PrivateData();
+	VIP_CREATE_PRIVATE_DATA(d_data);
 	open(outputs, logger);
 }
 
 VipLogging::VipLogging(Outputs outputs, const QString& identifier)
   : QThread()
 {
-	d_data = new PrivateData();
+	VIP_CREATE_PRIVATE_DATA(d_data);
 	open(outputs, identifier);
 }
 
 VipLogging::~VipLogging()
 {
 	close();
-	delete d_data;
 }
 
 VipLogging& VipLogging::instance()
@@ -394,11 +393,7 @@ QStringList VipLogging::lastLogEntries()
 		}
 
 		QString str(QByteArray(static_cast<char*>(d_data->memory.data()) + sizeof(qint32), size));
-#if QT_VERSION < QT_VERSION_CHECK(5, 14, 0)
 		lst = str.split("\n", VIP_SKIP_BEHAVIOR::SkipEmptyParts);
-#else
-		lst = str.split("\n", Qt::SkipEmptyParts);
-#endif
 
 		memset(d_data->memory.data(), 0, d_data->memory.size());
 

@@ -1,7 +1,7 @@
 /**
  * BSD 3-Clause License
  *
- * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ * Copyright (c) 2025, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Leo Dubus, Erwan Grelier
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -37,7 +37,7 @@
 #include "VipSleep.h"
 
 #include <QMutex>
-#include <QRegExp>
+
 
 VipPath::VipPath()
   : m_dir(false)
@@ -882,12 +882,12 @@ VipPathList VipPhysicalFileSystem::rootPaths()
 bool VipPhysicalFileSystem::pathExists(const VipPath& path)
 {
 	QString p = path.canonicalPath();
-	
+
 #ifdef WIN32
 	vip_debug("Check path '%s'\n", p.toLatin1().data());
 	// Attempt to correct Qt bug when checking network drives
-	//if (p.endsWith(":")) {
-		vipSleep(50);
+	// if (p.endsWith(":")) {
+	vipSleep(50);
 	//}
 #endif
 	bool ret = QFileInfo(p).exists();
@@ -1091,6 +1091,7 @@ public:
 		if (proc.state() != QProcess::Running)
 			_OPEN_ERROR("Unable to connect to " + address + ", please check address and password");
 
+		QThread::msleep(100);
 		proc.write("y\n");
 		if (!proc.waitForBytesWritten(4000))
 			_OPEN_ERROR("Unable to write to psftp process, please check address and password");
@@ -1212,12 +1213,11 @@ public:
 VipSFTPFileSystem::VipSFTPFileSystem()
   : VipMapFileSystem(OpenRead | OpenText)
 {
-	d_data = new PrivateData();
+	VIP_CREATE_PRIVATE_DATA(d_data);
 }
 
 VipSFTPFileSystem::~VipSFTPFileSystem()
 {
-	delete d_data;
 }
 
 bool VipSFTPFileSystem::open(const QByteArray& addr)
@@ -1306,7 +1306,7 @@ VipPathList VipSFTPFileSystem::listPathContent(const VipPath& path)
 
 	d_data->listPath = path;
 	d_data->finished = false;
-	while (!d_data->finished) {
+	while (!d_data->finished && d_data->isRunning()) {
 		vipSleep(5);
 	}
 	return d_data->result;
@@ -1317,12 +1317,18 @@ QIODevice* VipSFTPFileSystem::openPath(const VipPath& path, QIODevice::OpenMode 
 	if (!(modes & QIODevice::ReadOnly))
 		return nullptr;
 
+	if (!isOpen()) {
+		// TODO: check for password and ask if necessary
+		return nullptr;
+	}
+
 	// build temporary filename
 	QString tmp = vipGetTempDirectory();
 	if (!tmp.endsWith("/"))
 		tmp += "/";
 
 	QString fname = tmp + QFileInfo(path.canonicalPath()).fileName();
+	vip_debug("%s\n", fname.toLatin1().data());
 
 	QMutexLocker lock(&d_data->mutex);
 
@@ -1337,11 +1343,16 @@ QIODevice* VipSFTPFileSystem::openPath(const VipPath& path, QIODevice::OpenMode 
 
 		VipProgress p;
 		p.setRange(0, outsize);
+		p.setCancelable(true);
 		p.setText("<b>Load file </b>" + QFileInfo(path.canonicalPath()).fileName());
-		while (!d_data->finished) {
+		while (!d_data->finished && d_data->isRunning()) {
 
 			p.setValue(QFileInfo(fname).size());
 			vipSleep(5);
+
+			if (p.canceled()) {
+				return nullptr;
+			}
 		}
 	}
 

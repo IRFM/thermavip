@@ -1,7 +1,7 @@
 /**
  * BSD 3-Clause License
  *
- * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ * Copyright (c) 2025, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Leo Dubus, Erwan Grelier
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -60,7 +60,7 @@ VipStreambufToQTextStream::int_type VipStreambufToQTextStream::overflow(int_type
 {
 	if (m_enable) {
 		QMutexLocker loxk(&m_mutex);
-		(*m_stream) << QString(1, c);
+		(*m_stream) << QString(1, QChar(c));
 		m_stream->flush();
 		return c;
 	}

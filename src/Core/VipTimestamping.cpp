@@ -1,7 +1,7 @@
 /**
  * BSD 3-Clause License
  *
- * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ * Copyright (c) 2025, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Leo Dubus, Erwan Grelier
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -482,7 +482,7 @@ bool VipTimestampingFilter::setTransform(const QTransform& tr, int index)
 		return false;
 
 	VipTimeRangeTransforms::iterator it = m_transforms.begin();
-	it += index;
+	std::advance(it , index);
 
 	VipTimeRange r = it.key();
 	VipTimeRange out(tr.map(QPointF(r.first, 0)).x(), tr.map(QPointF(r.second, 0)).x());

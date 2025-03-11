@@ -1,7 +1,7 @@
 /**
  * BSD 3-Clause License
  *
- * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ * Copyright (c) 2025, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Leo Dubus, Erwan Grelier
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -32,7 +32,9 @@
 #include "VipWidgetResizer.h"
 
 #include <qapplication.h>
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
 #include <qdesktopwidget.h>
+#endif
 #include <qevent.h>
 #include <qtimer.h>
 
@@ -113,33 +115,33 @@ public:
 
 void VipWidgetResizer::addCursor()
 {
-	m_data->cursor_count++;
+	d_data->cursor_count++;
 }
 
 bool VipWidgetResizer::hasCustomCursor() const
 {
-	return m_data->custom_cursor;
+	return d_data->custom_cursor;
 }
 
 void VipWidgetResizer::removeCursors()
 {
-	while (m_data->cursor_count) {
+	while (d_data->cursor_count) {
 		QGuiApplication::restoreOverrideCursor();
-		--m_data->cursor_count;
+		--d_data->cursor_count;
 		// vipProcessEvents();
 	}
-	m_data->custom_cursor = false;
+	d_data->custom_cursor = false;
 }
 
 VipWidgetResizer::VipWidgetResizer(QWidget* parent)
   : QObject(parent)
 {
-	m_data = new PrivateData();
+	VIP_CREATE_PRIVATE_DATA(d_data);
 
 	// QApplication::instance()->installEventFilter(this);
-	m_data->timer.setSingleShot(true);
-	m_data->timer.setInterval(300);
-	connect(&m_data->timer, SIGNAL(timeout()), this, SLOT(updateCursor()));
+	d_data->timer.setSingleShot(true);
+	d_data->timer.setInterval(300);
+	connect(&d_data->timer, SIGNAL(timeout()), this, SLOT(updateCursor()));
 
 	handler()->addResizer(this);
 }
@@ -148,9 +150,8 @@ VipWidgetResizer::~VipWidgetResizer()
 {
 	handler()->removeResizer(this);
 	// QApplication::instance()->removeEventFilter(this);
-	m_data->timer.stop();
-	disconnect(&m_data->timer, SIGNAL(timeout()), this, SLOT(updateCursor()));
-	delete m_data;
+	d_data->timer.stop();
+	disconnect(&d_data->timer, SIGNAL(timeout()), this, SLOT(updateCursor()));
 }
 
 void VipWidgetResizer::updateCursor()
@@ -173,40 +174,40 @@ QWidget* VipWidgetResizer::parent() const
 
 void VipWidgetResizer::setBounds(int inner_detect, int outer_detect)
 {
-	m_data->inner_detect = inner_detect;
-	m_data->outer_detect = outer_detect;
+	d_data->inner_detect = inner_detect;
+	d_data->outer_detect = outer_detect;
 }
 
 int VipWidgetResizer::innerDetect() const
 {
-	return m_data->inner_detect;
+	return d_data->inner_detect;
 }
 int VipWidgetResizer::outerDetect() const
 {
-	return m_data->outer_detect;
+	return d_data->outer_detect;
 }
 
 void VipWidgetResizer::setEnabled(bool enable)
 {
-	if (enable != m_data->enable) {
-		m_data->enable = enable;
+	if (enable != d_data->enable) {
+		d_data->enable = enable;
 		removeCursors();
 	}
 }
 bool VipWidgetResizer::isEnabled() const
 {
-	return m_data->enable;
+	return d_data->enable;
 }
 
 void VipWidgetResizer::enableOutsideParent(bool enable)
 {
-	if (enable != m_data->enableOutsideParent) {
-		m_data->enableOutsideParent = enable;
+	if (enable != d_data->enableOutsideParent) {
+		d_data->enableOutsideParent = enable;
 	}
 }
 bool VipWidgetResizer::outsideParentEnabled() const
 {
-	return m_data->enableOutsideParent;
+	return d_data->enableOutsideParent;
 }
 
 bool VipWidgetResizer::isTopLevelWidget(const QPoint& screen_pos) const
@@ -257,15 +258,19 @@ static QSize parentSize(QWidget* w)
 	else if (w->parentWidget())
 		return w->parentWidget()->size();
 	else {
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
 		QDesktopWidget* d = qApp->desktop();
 		return d->screenGeometry(w).size();
+#else
+		return qApp->primaryScreen()->geometry().size();
+#endif
 	}
 }
 
 QPoint VipWidgetResizer::validPosition(const QPoint& pt, bool* ok) const
 {
 	(void)ok;
-	if (m_data->enableOutsideParent)
+	if (d_data->enableOutsideParent)
 		return pt;
 	else {
 		QPoint p = pt;
@@ -292,7 +297,7 @@ QSize VipWidgetResizer::validSize(const QSize& s, bool* ok) const
 bool VipWidgetResizer::filter(QObject* watched, QEvent* event)
 {
 	if (event->type() == QEvent::Hide && watched == parent())
-		m_data->custom_cursor = false;
+		d_data->custom_cursor = false;
 	if (!event->spontaneous())
 		return false;
 	if (!watched || !watched->isWidgetType())
@@ -310,9 +315,12 @@ bool VipWidgetResizer::filter(QObject* watched, QEvent* event)
 		return false;
 	}
 	if (event->type() == QEvent::MouseMove) {
-		m_data->custom_cursor = false;
-
+		d_data->custom_cursor = false;
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
 		QPoint screen = static_cast<QMouseEvent*>(event)->screenPos().toPoint();
+#else
+		QPoint screen = static_cast<QMouseEvent*>(event)->globalPosition().toPoint();
+#endif
 		QPoint p = parent()->mapFromGlobal(screen);
 		// if a widget is above this widget, ignore
 		if (handler()->grabber != parent()) {
@@ -322,100 +330,100 @@ bool VipWidgetResizer::filter(QObject* watched, QEvent* event)
 			}
 		}
 
-		if (QRect(0, 0, parent()->width(), parent()->height()).adjusted(-m_data->outer_detect, -m_data->outer_detect, m_data->outer_detect, m_data->outer_detect).contains(p)) {
-			if (m_data->mousePressGlobal == QPoint()) {
+		if (QRect(0, 0, parent()->width(), parent()->height()).adjusted(-d_data->outer_detect, -d_data->outer_detect, d_data->outer_detect, d_data->outer_detect).contains(p)) {
+			if (d_data->mousePressGlobal == QPoint()) {
 				// set the cursor
-				if (p.y() > parent()->height() - m_data->inner_detect && p.x() > parent()->width() - m_data->inner_detect) {
+				if (p.y() > parent()->height() - d_data->inner_detect && p.x() > parent()->width() - d_data->inner_detect) {
 					// bottom right
 					QGuiApplication::setOverrideCursor(QCursor(Qt::SizeFDiagCursor));
-					m_data->custom_cursor = true;
+					d_data->custom_cursor = true;
 					this->setProperty("area", 5);
 					addCursor();
-					m_data->timer.start();
+					d_data->timer.start();
 				}
-				else if (p.y() < m_data->inner_detect && p.x() < m_data->inner_detect) {
+				else if (p.y() < d_data->inner_detect && p.x() < d_data->inner_detect) {
 					// top left
 					QGuiApplication::setOverrideCursor(QCursor(Qt::SizeFDiagCursor));
-					m_data->custom_cursor = true;
+					d_data->custom_cursor = true;
 					this->setProperty("area", 6);
 					addCursor();
-					m_data->timer.start();
+					d_data->timer.start();
 				}
-				else if (p.y() < m_data->inner_detect && p.x() > parent()->width() - m_data->inner_detect) {
+				else if (p.y() < d_data->inner_detect && p.x() > parent()->width() - d_data->inner_detect) {
 					// top  right
 					QGuiApplication::setOverrideCursor(QCursor(Qt::SizeBDiagCursor));
-					m_data->custom_cursor = true;
+					d_data->custom_cursor = true;
 					this->setProperty("area", 7);
 					addCursor();
-					m_data->timer.start();
+					d_data->timer.start();
 				}
-				else if (p.y() > parent()->height() - m_data->inner_detect && p.x() <= m_data->inner_detect) {
+				else if (p.y() > parent()->height() - d_data->inner_detect && p.x() <= d_data->inner_detect) {
 					// bottom left
 					QGuiApplication::setOverrideCursor(QCursor(Qt::SizeBDiagCursor));
-					m_data->custom_cursor = true;
+					d_data->custom_cursor = true;
 					this->setProperty("area", 8);
 					addCursor();
-					m_data->timer.start();
+					d_data->timer.start();
 				}
-				else if (p.x() <= m_data->inner_detect) {
+				else if (p.x() <= d_data->inner_detect) {
 					// left area
 					QGuiApplication::setOverrideCursor(QCursor(Qt::SizeHorCursor));
-					m_data->custom_cursor = true;
+					d_data->custom_cursor = true;
 					this->setProperty("area", 1);
 					addCursor();
-					m_data->timer.start();
+					d_data->timer.start();
 				}
-				else if (p.x() > parent()->width() - m_data->inner_detect) {
+				else if (p.x() > parent()->width() - d_data->inner_detect) {
 					// right
 					QGuiApplication::setOverrideCursor(QCursor(Qt::SizeHorCursor));
-					m_data->custom_cursor = true;
+					d_data->custom_cursor = true;
 					this->setProperty("area", 2);
 					addCursor();
-					m_data->timer.start();
+					d_data->timer.start();
 				}
-				else if (p.y() < m_data->inner_detect) {
+				else if (p.y() < d_data->inner_detect) {
 					// top
 					QGuiApplication::setOverrideCursor(QCursor(Qt::SizeVerCursor));
-					m_data->custom_cursor = true;
+					d_data->custom_cursor = true;
 					this->setProperty("area", 3);
 					addCursor();
-					m_data->timer.start();
+					d_data->timer.start();
 				}
-				else if (p.y() > parent()->height() - m_data->inner_detect) {
+				else if (p.y() > parent()->height() - d_data->inner_detect) {
 					// bottom
 					QGuiApplication::setOverrideCursor(QCursor(Qt::SizeVerCursor));
-					m_data->custom_cursor = true;
+					d_data->custom_cursor = true;
 					this->setProperty("area", 4);
 					addCursor();
-					m_data->timer.start();
+					d_data->timer.start();
 				}
-				else if (m_data->mousePressGlobal == QPoint()) {
+				else if (d_data->mousePressGlobal == QPoint()) {
 					removeCursors();
 					this->setProperty("area", 0);
 					return false;
 				}
 			}
-			else if (QRect(m_data->inner_detect, m_data->inner_detect, parent()->width() - m_data->inner_detect * 2, parent()->height() - m_data->inner_detect * 2).contains(p) &&
-				 m_data->mousePressGlobal == QPoint()) {
+			else if (QRect(d_data->inner_detect, d_data->inner_detect, parent()->width() - d_data->inner_detect * 2, parent()->height() - d_data->inner_detect * 2).contains(p) &&
+				 d_data->mousePressGlobal == QPoint()) {
 				removeCursors();
 				this->setProperty("area", 0);
 			}
 		}
-		else if (m_data->mousePressGlobal == QPoint()) {
+		else if (d_data->mousePressGlobal == QPoint()) {
 			removeCursors();
 			this->setProperty("area", 0);
 		}
 
-		if (m_data->mousePressGlobal != QPoint()) {
+		if (d_data->mousePressGlobal != QPoint()) {
 			int area = property("area").toInt();
-			QPoint diff = p - m_data->mousePress;
+			QPoint diff = p - d_data->mousePress;
 
 			switch (area) {
 				case 0:
 					return false;
 				case 1:
 					// left
-					// if (m_data->enableOutsideParent || parent()->pos().x() + diff.x() >= 0) {
+					// if (d_data->enableOutsideParent || parent()->pos().x() + diff.x() >= 0) {
 					// parent()->resize(parent()->width() - diff.x(), parent()->height());
 					// parent()->move(parent()->pos().x() + diff.x(), parent()->pos().y());
 					// }
@@ -424,16 +432,16 @@ bool VipWidgetResizer::filter(QObject* watched, QEvent* event)
 					break;
 				case 2:
 					// right
-					// if (m_data->enableOutsideParent || parent()->width() + diff.x() + parent()->pos().x()  <= parentSize(parent()).width()) {
+					// if (d_data->enableOutsideParent || parent()->width() + diff.x() + parent()->pos().x()  <= parentSize(parent()).width()) {
 					// parent()->resize(parent()->width() + diff.x(), parent()->height());
-					// m_data->mousePress = p;
+					// d_data->mousePress = p;
 					// }
 					parent()->resize(validSize(QSize(parent()->width() + diff.x(), parent()->height())));
-					m_data->mousePress = p;
+					d_data->mousePress = p;
 					break;
 				case 3:
 					// top
-					// if (m_data->enableOutsideParent || parent()->pos().y() + diff.y() >= 0) {
+					// if (d_data->enableOutsideParent || parent()->pos().y() + diff.y() >= 0) {
 					// parent()->resize(parent()->width(), parent()->height() - diff.y());
 					// parent()->move(parent()->pos().x(), parent()->pos().y() + diff.y());
 					// }
@@ -442,18 +450,18 @@ bool VipWidgetResizer::filter(QObject* watched, QEvent* event)
 					break;
 				case 4:
 					// bottom
-					// if (m_data->enableOutsideParent || parent()->height() + diff.y() + parent()->pos().y() <= parentSize(parent()).height()) {
+					// if (d_data->enableOutsideParent || parent()->height() + diff.y() + parent()->pos().y() <= parentSize(parent()).height()) {
 					// parent()->resize(parent()->width(), parent()->height() + diff.y());
-					// m_data->mousePress = p;
+					// d_data->mousePress = p;
 					// }
 					parent()->resize(validSize(QSize(parent()->width(), parent()->height() + diff.y())));
-					m_data->mousePress = p;
+					d_data->mousePress = p;
 					break;
 				case 5:
 					// bottom right
 					// parent()->resize(parent()->width() + diff.x(), parent()->height() + diff.y());
 					parent()->resize(validSize(QSize(parent()->width() + diff.x(), parent()->height() + diff.y())));
-					m_data->mousePress = p;
+					d_data->mousePress = p;
 					break;
 				case 6:
 					// top left
@@ -461,19 +469,19 @@ bool VipWidgetResizer::filter(QObject* watched, QEvent* event)
 					// parent()->move(parent()->pos() + diff);
 					parent()->move(validPosition(QPoint(parent()->pos() + diff)));
 					parent()->resize(validSize(QSize(parent()->width() - diff.x(), parent()->height() - diff.y())));
-					m_data->mousePress = p - diff;
+					d_data->mousePress = p - diff;
 					break;
 				case 7:
 					// top right
 					parent()->move(validPosition(QPoint(parent()->pos().x(), (parent()->pos() + diff).y())));
 					parent()->resize(validSize(QSize(parent()->width() + diff.x(), parent()->height() - diff.y())));
-					m_data->mousePress = QPoint(p.x(), (p - diff).y());
+					d_data->mousePress = QPoint(p.x(), (p - diff).y());
 					break;
 				case 8:
 					// bottom left
 					parent()->move(validPosition(QPoint((parent()->pos() + diff).x(), parent()->pos().y())));
 					parent()->resize(validSize(QSize(parent()->width() - diff.x(), parent()->height() + diff.y())));
-					m_data->mousePress = QPoint((p - diff).x(), p.y());
+					d_data->mousePress = QPoint((p - diff).x(), p.y());
 					break;
 			}
 			return true;
@@ -484,21 +492,25 @@ bool VipWidgetResizer::filter(QObject* watched, QEvent* event)
 	else if (event->type() == QEvent::MouseButtonPress) {
 		if (static_cast<QMouseEvent*>(event)->buttons() & Qt::LeftButton)
 			if (property("area").toInt()) {
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
 				QPoint screen = static_cast<QMouseEvent*>(event)->screenPos().toPoint();
+#else
+				QPoint screen = static_cast<QMouseEvent*>(event)->globalPosition().toPoint();
+#endif
 				if (!isTopLevelWidget(screen))
 					return false;
 
-				m_data->mousePressGlobal = screen;
-				m_data->mousePress = parent()->mapFromGlobal(m_data->mousePressGlobal);
+				d_data->mousePressGlobal = screen;
+				d_data->mousePress = parent()->mapFromGlobal(d_data->mousePressGlobal);
 				parent()->raise();
 				handler()->grabber = parent();
 				return true;
 			}
 	}
 	else if (event->type() == QEvent::MouseButtonRelease) {
-		bool res = m_data->mousePressGlobal != QPoint();
-		m_data->mousePressGlobal = QPoint();
-		m_data->mousePress = QPoint();
+		bool res = d_data->mousePressGlobal != QPoint();
+		d_data->mousePressGlobal = QPoint();
+		d_data->mousePress = QPoint();
 		handler()->grabber = nullptr;
 		setProperty("area", 0);
 		return res;

@@ -1,7 +1,7 @@
 /**
  * BSD 3-Clause License
  *
- * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ * Copyright (c) 2025, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Leo Dubus, Erwan Grelier
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -76,6 +76,9 @@ class VIP_PLOTTING_EXPORT VipDisplayObject : public VipProcessingObject
 	Q_OBJECT
 	VIP_IO(VipInput data)
 	VIP_IO(VipProperty numThreads)
+
+	friend class VipDisplayPlotItem;
+
 public:
 	VipDisplayObject(QObject* parent = nullptr);
 	~VipDisplayObject();
@@ -102,6 +105,9 @@ public:
 	void setFormattingEnabled(bool);
 	bool formattingEnabled() const;
 
+	/// @brief Tells if the functions displayData() and prepareForDisplay()
+	/// should be called if the widget that displays this object is hidden.
+	/// False by default. 
 	void setUpdateOnHidden(bool);
 	bool updateOnHidden() const;
 
@@ -109,7 +115,7 @@ public:
 	virtual bool useEventLoop() const { return true; }
 
 protected:
-	/// Reimplement this function to perform the drawing based on \a data.
+	/// Reimplement this function to perform the drawing based on input list in the GUI thread.
 	virtual void displayData(const VipAnyDataList&) {}
 	/// This function is called in the processing thread just before launching the display.
 	/// It can be used to performs some time consuming operations in the processing thread insteed of the GUI one (like
@@ -121,7 +127,7 @@ protected:
 	virtual void apply();
 
 Q_SIGNALS:
-	/// Emitted by the display(VipAnyDataList&) function
+	/// Emitted when a display operation has finished.
 	void displayed(const VipAnyDataList&);
 
 private Q_SLOTS:
@@ -129,8 +135,8 @@ private Q_SLOTS:
 	void checkVisibility();
 
 private:
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 VIP_REGISTER_QOBJECT_METATYPE(VipDisplayObject*)
@@ -185,10 +191,11 @@ public:
 private Q_SLOTS:
 	void setItemProperty();
 	void internalFormatItem();
+	void axesChanged(VipPlotItem*);
 
 private:
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 VIP_REGISTER_QOBJECT_METATYPE(VipDisplayPlotItem*)
@@ -219,8 +226,8 @@ protected:
 	virtual void displayData(const VipAnyDataList& data);
 
 private:
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 VIP_REGISTER_QOBJECT_METATYPE(VipDisplayCurve*)
@@ -251,8 +258,8 @@ protected:
 	virtual bool prepareForDisplay(const VipAnyDataList& data);
 
 private:
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 VIP_REGISTER_QOBJECT_METATYPE(VipDisplayImage*)
@@ -300,12 +307,13 @@ namespace detail
 
 		virtual bool acceptInput(int top_level_index, const QVariant& v) const { return v.canConvert<Data>() || (!std::is_same<Data, Sample>::value && v.canConvert<Sample>()); }
 		virtual PlotItemType* item() const { return static_cast<PlotItemType*>(VipDisplayPlotItem::item()); }
-		virtual void setItem(PlotItemType* it)
+		virtual void setItem(VipPlotItem* it)
 		{
-			if (it && it != item()) {
-				it->setAutoMarkDirty(false);
-				VipDisplayPlotItem::setItem(it);
-			}
+			if (PlotItemType* pit = qobject_cast<PlotItemType*>(it))
+				if (pit != item()) {
+					pit->setAutoMarkDirty(false);
+					VipDisplayPlotItem::setItem(pit);
+				}
 		}
 
 	protected:

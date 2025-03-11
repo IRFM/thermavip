@@ -1,7 +1,7 @@
 /**
  * BSD 3-Clause License
  *
- * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ * Copyright (c) 2025, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Leo Dubus, Erwan Grelier
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -34,9 +34,9 @@
 
 namespace details
 {
-	static QMutex& registerMutex()
+	static QRecursiveMutex& registerMutex()
 	{
-		static QMutex inst(QMutex::Recursive);
+		static QRecursiveMutex inst;
 		return inst;
 	}
 	static QMap<int, create_fun>& variantCreator()
@@ -57,8 +57,44 @@ QVariant vipCreateVariant(int id)
 	QMap<int, details::create_fun>::const_iterator it = details::variantCreator().find(id);
 	if (it != details::variantCreator().end())
 		return it.value()();
-	return QVariant(id, nullptr);
+	return vipFromVoid(id, nullptr);
 }
+
+bool vipIsConvertible(const VipType& type_from, const VipType& type_to)
+{
+	if (type_from == type_to || type_to.id == 0)
+		return true;
+
+	// bug with QVariantMap: any map seems to be convertible to a QVariantMap. So disable this behavior.
+	if (type_to == QMetaType::QVariantMap)
+		return false;
+
+	if (const QMetaObject* meta_from = type_from.metaObject) {
+		if (const QMetaObject* meta_to = type_to.metaObject) {
+			// check id conversion id possible
+			const QMetaObject* meta = meta_from;
+			while (meta) {
+				if (meta == meta_to)
+					return true;
+				meta = meta->superClass();
+			}
+			return false;
+		}
+
+		return false;
+	}
+
+#if QT_VERSION >= QT_VERSION_CHECK(6, 5, 0)
+	if (!QMetaType(type_from.id).isDefaultConstructible())
+		return false;
+#endif
+
+	QVariant variant = vipFromVoid(type_from.id, nullptr);
+	bool res = variant.canConvert(VIP_META(type_to.id));
+	vipReleaseVariant(variant);
+	return res;
+}
+
 
 void vipReleaseVariant(const QVariant& v)
 {
@@ -67,16 +103,37 @@ void vipReleaseVariant(const QVariant& v)
 		delete obj;
 }
 
+QList<int> vipUserTypes()
+{
+	QList<int> types;
+	int id = QMetaType::User;
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+	++id;
+#endif
+	while (id) {
+		if (QMetaType::isRegistered(id)) {
+			types << id;
+			++id;
+		}
+		else {
+			id = 0;
+		}
+	}
+
+	return types;
+}
+
 QList<int> vipUserTypes(int type)
 {
 	QList<int> types;
 	int id = QMetaType::User;
-	// int type = qMetaTypeId<T>();
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+	++id;
+#endif
 	if (!type)
 		return types;
 
 	while (id) {
-		// const char *name = QMetaType::typeName(id);
 		if (QMetaType::isRegistered(id)) {
 			if (vipIsConvertible(VipType(id), VipType(type)))
 				types << id;

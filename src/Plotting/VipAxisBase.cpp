@@ -1,7 +1,7 @@
 /**
  * BSD 3-Clause License
  *
- * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ * Copyright (c) 2025, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Leo Dubus, Erwan Grelier
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -73,7 +73,7 @@ public:
 VipAxisBase::VipAxisBase(Alignment pos, QGraphicsItem* parent)
   : VipBorderItem(pos, parent)
 {
-	d_data = new PrivateData();
+	VIP_CREATE_PRIVATE_DATA(d_data);
 	// this->setLength(0);
 
 	d_data->layoutFlags = LayoutFlags();
@@ -88,7 +88,6 @@ VipAxisBase::VipAxisBase(Alignment pos, QGraphicsItem* parent)
 
 VipAxisBase::~VipAxisBase()
 {
-	delete d_data;
 }
 
 /// Toggle an layout flag
@@ -456,11 +455,11 @@ void VipAxisBase::drawTitle(QPainter* painter, Alignment align, const QRectF& re
 	double angle;
 	int flags = title().alignment() & ~(Qt::AlignTop | Qt::AlignBottom | Qt::AlignVCenter);
 
-	int sign = 1;
+	/* int sign = 1;
 	QSizeF tsize(0, 0);
 	if (titleInside()) {
 		sign = -1;
-	}
+	}*/
 
 	VipText exponent;
 	if (constScaleDraw()->valueToText()->supportExponent())
@@ -799,7 +798,7 @@ public:
 VipMultiAxisBase::VipMultiAxisBase(Alignment pos, QGraphicsItem* parent)
   : VipBorderItem(pos, parent)
 {
-	d_data = new PrivateData();
+	VIP_CREATE_PRIVATE_DATA(d_data);
 	d_data->scaleSpacing = 0;
 	d_data->layoutFlags = LayoutFlags();
 	if (pos == Right)
@@ -814,7 +813,6 @@ VipMultiAxisBase::~VipMultiAxisBase()
 	for (int i = 0; i < count(); ++i)
 		if (at(i))
 			delete at(i);
-	delete d_data;
 }
 
 void VipMultiAxisBase::setAlignment(Alignment align)

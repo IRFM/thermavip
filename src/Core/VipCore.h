@@ -1,7 +1,7 @@
 /**
  * BSD 3-Clause License
  *
- * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ * Copyright (c) 2025, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Leo Dubus, Erwan Grelier
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -43,17 +43,19 @@
 #include "VipFunctional.h"
 #include "VipSceneModel.h"
 
-#if QT_VERSION < QT_VERSION_CHECK(5,14,0)
+#if QT_VERSION < QT_VERSION_CHECK(5, 14, 0)
 
 namespace Qt
 {
 	namespace detail
 	{
-		struct Endl {};
+		struct Endl
+		{
+		};
 	}
 	static const detail::Endl endl;
 }
-inline QTextStream & operator<<(QTextStream & str, const Qt::detail::Endl &)
+inline QTextStream& operator<<(QTextStream& str, const Qt::detail::Endl&)
 {
 	str << '\n';
 	str.flush();
@@ -61,8 +63,6 @@ inline QTextStream & operator<<(QTextStream & str, const Qt::detail::Endl &)
 }
 
 #endif
-
-
 
 ///\defgroup Core Core
 ///
@@ -194,6 +194,7 @@ QList<T> vipListCast(const QVariantList& lst)
 	return res;
 }
 
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
 /// @brief Cast a QVector of QObject pointer to a QList of QObject pointer.
 /// All nullptr pointers or pointers that cannot be cast to the output type are removed.
 template<class T, class U>
@@ -205,6 +206,7 @@ QList<T> vipListCast(const QVector<U>& lst)
 			res.append(tmp);
 	return res;
 }
+#endif
 
 /// @brief Make a QList unique (remove all duplicates)
 template<class T>
@@ -281,7 +283,6 @@ VIP_CORE_EXPORT VipArchive& operator>>(VipArchive& arch, VipSceneModel& value);
 VIP_CORE_EXPORT VipArchive& operator<<(VipArchive& arch, const VipSceneModelList& value);
 VIP_CORE_EXPORT VipArchive& operator>>(VipArchive& arch, VipSceneModelList& value);
 
-
 VIP_CORE_EXPORT void vipShapeToJSON(QTextStream& str, const VipShape& value, const QByteArray& indent = QByteArray());
 VIP_CORE_EXPORT void vipSceneModelToJSON(QTextStream& str, const VipSceneModel& value, const QByteArray& indent = QByteArray());
 VIP_CORE_EXPORT void vipSceneModelListToJSON(QTextStream& str, const VipSceneModelList& value, const QByteArray& indent = QByteArray());
@@ -297,7 +298,7 @@ VIP_CORE_EXPORT bool vipSafeVariantSave(QDataStream& s, const QVariant& v);
 /// except that it only save the valid entries (and silently drop the unvalid ones with #vipSafeVariantSave).
 /// Returns the number of entry saved.
 /// The QVariantMap can be read back with the standard version of QDataStream & operator>>(QDataStream &, QVariantMap&);
-VIP_CORE_EXPORT int vipSafeVariantMapSave(QDataStream& s, const QVariantMap& c);
+VIP_CORE_EXPORT qsizetype vipSafeVariantMapSave(QDataStream& s, const QVariantMap& c);
 
 /// \internal add a function that will be called in QCoreApplication constructor. Should only be used by Thermavip SDK libraries.
 VIP_CORE_EXPORT bool vipAddInitializationFunction(const VipFunction<0>& fun);
@@ -312,6 +313,7 @@ VIP_CORE_EXPORT bool vipPrependInitializationFunction(int (*fun)());
 /// \internal add a function that will be called in QCoreApplication event loop. Should only be used by Thermavip SDK libraries.
 VIP_CORE_EXPORT bool vipAddGuiInitializationFunction(int (*fun)());
 VIP_CORE_EXPORT bool vipAddGuiInitializationFunction(void (*fun)());
+VIP_CORE_EXPORT bool vipAddGuiInitializationFunction(const VipFunction<0>& fun);
 
 VIP_CORE_EXPORT void vipEnableGuiInitializationFunction(bool);
 
@@ -393,7 +395,7 @@ VIP_CORE_EXPORT QList<VipFunctionObject> vipAllFunctions();
 
 /// \internal Add a serialize and deserialize function that will be used to save/load specific settings from the session file.
 /// This is only used in Thermavip SDK, plugins have their own way to manage serialization.
-VIP_CORE_EXPORT void vipRegisterSettingsArchiveFunctions(void (*save)(VipArchive&), void (*restore)(VipArchive&));
+VIP_CORE_EXPORT bool vipRegisterSettingsArchiveFunctions(void (*save)(VipArchive&), void (*restore)(VipArchive&));
 VIP_CORE_EXPORT void vipSaveSettings(VipArchive& arch);
 VIP_CORE_EXPORT void vipRestoreSettings(VipArchive& arch);
 
@@ -469,7 +471,8 @@ VIP_CORE_EXPORT QIcon vipIcon(const QString& filename);
 /// Returns a QPixmap loaded from given image file name.
 /// The image file is searched in the paths registered with vipAddIconPath().
 VIP_CORE_EXPORT QPixmap vipPixmap(const QString& filename);
-/// Register a new path for the icons to be found.
+VIP_CORE_EXPORT QImage vipImage(const QString& filename);
+  /// Register a new path for the icons to be found.
 /// By default, icons are searched in the 'Icons' directory of the application path.
 VIP_CORE_EXPORT void vipAddIconPath(const QString& path);
 /// Register a new path for the icons to be found.
@@ -489,6 +492,9 @@ VIP_CORE_EXPORT QString vipAppCanonicalPath();
 
 /// @brief Returns the current user name
 VIP_CORE_EXPORT QString vipUserName();
+
+
+
 
 /// @}
 // end Core

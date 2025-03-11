@@ -1,7 +1,7 @@
 /**
  * BSD 3-Clause License
  *
- * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ * Copyright (c) 2025, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Leo Dubus, Erwan Grelier
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -33,7 +33,7 @@
 #define VIP_MATRIX_22_H
 
 #include <cmath>
-
+#include "VipConfig.h"
 
 /// \addtogroup DataType
 /// @{
@@ -42,16 +42,16 @@
 struct VipMatrix22
 {
 	double m11, m12, m21, m22;
-	VipMatrix22(double _m11 = 1, double _m12 = 0, double _m21 = 0, double _m22 = 1)
+	VipMatrix22(double _m11 = 1, double _m12 = 0, double _m21 = 0, double _m22 = 1) noexcept
 	  : m11(_m11)
 	  , m12(_m12)
 	  , m21(_m21)
 	  , m22(_m22)
 	{
 	}
-	bool isInvertible() const { return !(std::abs(m11 * m22 - m12 * m21) <= 0.000000000001); }
-	double determinant() const { return m11 * m22 - m12 * m21; }
-	VipMatrix22 inverted(bool* invertible) const
+	bool isInvertible() const noexcept { return !(std::abs(m11 * m22 - m12 * m21) <= 0.000000000001); }
+	double determinant() const noexcept { return m11 * m22 - m12 * m21; }
+	VipMatrix22 inverted(bool* invertible) const noexcept
 	{
 		double dtr = determinant();
 		if (dtr == 0.0) {
@@ -67,6 +67,7 @@ struct VipMatrix22
 		}
 	}
 };
+VIP_IS_RELOCATABLE(VipMatrix22);
 
 /// @}
 // end DataType

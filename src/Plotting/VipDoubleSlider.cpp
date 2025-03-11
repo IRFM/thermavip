@@ -1,7 +1,7 @@
 /**
  * BSD 3-Clause License
  *
- * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ * Copyright (c) 2025, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Leo Dubus, Erwan Grelier
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -93,7 +93,7 @@ public:
 VipDoubleSlider::VipDoubleSlider(Alignment pos, QGraphicsItem* parent)
   : VipAxisBase(pos, parent)
 {
-	d_data = new PrivateData();
+	VIP_CREATE_PRIVATE_DATA(d_data);
 	d_data->grip = new DoubleSliderGrip(this);
 
 	VipInterval interval = this->scaleDiv().bounds();
@@ -110,7 +110,6 @@ VipDoubleSlider::VipDoubleSlider(Alignment pos, QGraphicsItem* parent)
 
 VipDoubleSlider::~VipDoubleSlider()
 {
-	delete d_data;
 }
 
 void VipDoubleSlider::setAlignment(Alignment align)
@@ -361,9 +360,6 @@ void VipDoubleSlider::gripValueChanged(double value)
 	Q_UNUSED(value)
 	Q_EMIT valueChanged(d_data->grip->value());
 }
-
-
-
 
 VipDoubleSliderWidget::VipDoubleSliderWidget(VipBorderItem::Alignment align, QWidget* parent)
   : VipScaleWidget(new VipDoubleSlider(align), parent)

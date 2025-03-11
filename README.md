@@ -1,40 +1,34 @@
 
+
 <img src="docs/images/logo.png" width="615">
 
 # Thermavip
 
-[CEA-IRFM](http://irfm.cea.fr/en/index.php) has gained in-depth expertise at using imaging diagnostics to understand quick-ageing and damaging of materials under high thermal stresses. This knowledge has been used to developp the ThermaVIP (*Viewing Imaging Platform*) software platform, initially designed for the exploitation of infrared thermography diagnostics in fusion tokamaks. This software platform, which required 8 years of development, is made up of a set of modules allowing the exploitation of imaging diagnoses in a complex measuring environments.
+*Thermavip* is an open source framework for multi-sensor data acquisition, processing and visualization.
 
-Thermavip is mainly dedicated to operational safety, quality control and comprehension of high-temperature processes in several fields. It is currently used for offline and real-time analaysis of multi-sensor data in tokamaks.
+This software aims to gather within the same framework libraries for:
+-	Firm real-time sensor acquisition and multi-screen display. Thermavip is optimized to display in parallel several video streams or curves/histograms/..., as well as applying complex firm real-time processing pipelines.
+-	Offline visualization and post processing of multi-sensor data with a strong emphasis on video ones.
+-	Video annotation and thermal event database management to train deep-learning models, like Region Based Convolutional Neural Network, for automatic detection and classification of thermal events based on IR movies. 
 
-For offline diagnostic data analysis, Thermavip provides tools for:
+This software platform is widely used on the  [WEST](https://irfm.cea.fr/en/west/) tokamak for offline study of all WEST diagnostics data using the Librir open-source library, but also for online display of IR videos and temperature time traces for critical Plasma Facing Components (PFC). 
+Thermavip platform is also used on the EAST tokamak (ASIPP/China) for IR video post-processing, and on the W7-X Stellarator (IPP/Germany) for the IR diagnostic acquisition (during OP1.0), PFC monitoring, online display and offline video analysis.
 
-* Data browsing/searching based on a database of signals,
-* Synchronization and visualization of heterogeneous sensor data (images, videos, 1D + time signals,...),
-* Extracting statistics within videos/signals,
-* Applying predefined/custom processings to videos/signals,
-* Performing signal fusion processings,
-* Recording any kind of sensor/processed data to share with partners.
+The Thermavip framework is composed of a C++ **S**oftware **D**evelopment **K**it (SDK) based on the [Qt](https://www.qt.io/) library and providing high-level classes for offline/real-time analysis and visualization of multi-sensor data. Its strength comes from its unique component block architecture, allowing to build multicore and distributed processing pipelines for both offline and real-time applications.
 
-For real-time exploitation of sensor data, Thermavip provide tools for:
-
-* Defining asynchronous processing pipelines on distributed architectures,
-* Recording any kind of sensor data within a single or multiple archives,
-* Online/multiscreen displaying of several videos and temporal signals,
+The framework can be used as a foreign library for external application, or as an independent software relying on third party plugins.
 
 Below screenshot shows an example of software built based on Thermavip SDK for the post analysis of [WEST](https://irfm.cea.fr/en/west/) sensor data:
 
 ![Thermavip](docs/images/thermavip.png)
 
-Thermavip is based on a [versatile software architecture](docs/architecture.md) composed of a C++  **S**oftware **D**evelopment  **K**it (SDK) and a plugin mechanism based on [Qt](https://www.qt.io/) only. Currently, the SDK is composed of 6 libraries:
-
+Thermavip is based on a [versatile software architecture](docs/architecture.md) composed of a C++  SDK and a plugin mechanism based on [Qt](https://www.qt.io/) only. Currently, the SDK is composed of 6 libraries:
 -	Generic libraries that can be used outside *Thermavip* application, like any third party library:
-
 	-	[Logging](docs/logging.md): logging to file/console/GUI tools
 	-	[DataType](docs/datatype.md): base data types manipulated by Thermavip (N-D arrays, vector of points, scene models...)
 	-	[Core](docs/core.md): asynchronous agents library based on dataflow, archiving, plugin mechanism
 	-	[Plotting](docs/plotting.md): high performance plotting library for offline/firm real-time display of multi-sensor data
--	Libraries strongly connected to *Thermavip* application:
+-	Libraries strongly connected to the *Thermavip* application:
 	-	[Gui](docs/gui.md): base graphical components (main window, players...)
 	-	[Annotation](docs/annotation.md): graphical components used to annotate IR videos, upload annotations to JSON files or to a MySQL/SQLite DB, query and display annotations from a DB.
 
@@ -42,6 +36,7 @@ Thermavip is based on a [versatile software architecture](docs/architecture.md) 
 The basic *Thermavip* application, without plugins, provides at least the necessary features dedicated to video annotation.
 Note that this requires to build *Thermavip* with the [librir](https://github.com/IRFM/librir) library (see [build](docs/compilation.md) notes).
 
+Thermavip framework is meant to build desktop applications at it relies on [Qt Widgets](https://doc.qt.io/qt-6/qtwidgets-index.html) and do not use Qt Quick.
 
 ## Prerequisites
 
@@ -57,6 +52,150 @@ Default plugins shipped within the git reprository rely on the [HDF5](https://ww
 ## Compilation
 
 *Thermavip* compilation relies on cmake. See this [page](docs/compilation.md) for more details.
+
+## Get started
+
+Check one of the numerous [examples](src/Examples) to get started.
+You can also check the [gallery](docs/gallery.md) to see the plotting capabilities.
+
+If you just wish to use the plotting capabilities of Thermavip, the following example shows how to stream 100 curves of 10000 points each in the same window:
+
+```cpp
+#include <cmath>
+#include <iostream>
+
+#include <qapplication.h>
+#include <qthread.h>
+#include <qdir.h>
+#include <qsurfaceformat.h>
+
+#include "VipPlotWidget2D.h"
+#include "VipColorMap.h"
+#include "VipPlotShape.h"
+#include "VipPlotHistogram.h"
+#include "VipPlotSpectrogram.h"
+#include "VipToolTip.h"
+#include "VipPlotCurve.h"
+#include "VipColorMap.h"
+#include "VipSliderGrip.h"
+#include "VipAxisColorMap.h"
+
+struct Curve
+{
+	VipPlotCurve* curve;
+	double factor;
+};
+
+/// @brief Generate a cosinus curve of at most 500 points with X values being in seconds
+class CurveStreaming : public QThread
+{
+	QList<Curve> curves;
+	bool stop;
+
+public:
+	CurveStreaming(const QList<Curve>& cs)
+	  : curves(cs)
+	  , stop(false)
+	{
+	}
+	~CurveStreaming() { stopThread(); }
+	void stopThread()
+	{
+		stop = true;
+		this->wait();
+	}
+	virtual void run()
+	{
+		while (!stop) {
+			// Update all curves with a noisy signal in a dedicated thread
+			for (int i = 0; i < curves.size(); ++i) {
+				VipPointVector vec(10000);
+				double f = curves[i].factor;
+				for (int j = 0; j < vec.size(); ++j)
+					vec[j] = VipPoint(j, f + (rand() % 16) - 7);
+				curves[i].curve->setRawData(vec);
+			}
+
+			QThread::msleep(1);
+		}
+	}
+};
+
+void setup_plot_area(VipPlotArea2D* area)
+{
+	// show title
+	area->titleAxis()->setVisible(true);
+	area->titleAxis()->setTitle("<b>Stream 100 curves of 10 000 points each");
+	// allow wheel zoom
+	area->setMouseWheelZoom(true);
+	// allow mouse panning
+	area->setMousePanning(Qt::RightButton);
+
+	// hide right and top axes
+	area->rightAxis()->setVisible(false);
+	area->topAxis()->setVisible(false);
+
+	// bottom axis intersect left one at 0
+	area->bottomAxis()->setAxisIntersection(area->leftAxis(), 0);
+
+	// add margins to the plotting area
+	area->setMargins(10);
+	// Use high update frame rate if possible
+	area->setMaximumFrameRate(100);
+}
+
+int main(int argc, char** argv)
+{
+	// Setup opengl settings
+	QCoreApplication::setAttribute(Qt::AA_UseDesktopOpenGL);
+	QSurfaceFormat format;
+	format.setSamples(10);
+	format.setSwapInterval(0);
+	QSurfaceFormat::setDefaultFormat(format);
+
+	QApplication app(argc, argv);
+	VipPlotWidget2D w;
+	// Enable threaded OpenGL rendering if necessary
+	//w.setRenderingMode(VipPlotWidget2D::OpenGLThread);
+
+	// setup plotting area
+	setup_plot_area(w.area());
+
+	VipColorPalette p(VipLinearColorMap::ColorPaletteRandom);
+	QList<Curve> curves;
+
+	// Create 100 curves of 10000 points each)
+	for (int i = 0; i < 100; ++i) {
+		VipPlotCurve* c = new VipPlotCurve();
+		c->setPen(QPen(p.color(i)));
+		c->setAxes(w.area()->bottomAxis(), w.area()->leftAxis(), VipCoordinateSystem::Cartesian);
+		curves.push_back(Curve{ c, (double)i * 16 * (i % 2 ? 1 : -1) });
+	}
+
+	w.resize(1000, 500);
+	w.show();
+
+	// Start streaming curves (100 curves of
+	CurveStreaming thread(curves);
+	thread.start();
+
+	int ret = app.exec();
+	thread.stopThread();
+	return ret;
+}
+```
+
+And the corresponding cmake file:
+
+```cmake
+cmake_minimum_required(VERSION 3.16)
+project(CurveStreaming2 VERSION 1.0 LANGUAGES C CXX)
+
+find_package(thermavip)
+
+add_executable(CurveStreaming2 main.cpp)
+target_link_libraries(CurveStreaming2 PRIVATE VipLogging VipDataType VipCore VipPlotting ${THERMAVIP_QT_LIBRARIES_NO_GUI} )
+```
 
 ## Authors
 
@@ -90,4 +229,4 @@ Thermavip SDK and plugins are shipped with raw/modified versions of a few librar
 * The *Image Warping* processing uses a modified version of this [Delaunay](https://github.com/paulzfm/MSTSolver/tree/master/delaunay) library written by Ken Clarkson.
 
 
-Thermavip framework and this page Copyright (c) 2023, CEA/IRFM
+Thermavip framework and this page Copyright (c) 2025, CEA/IRFM

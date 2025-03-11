@@ -1,7 +1,7 @@
 /**
  * BSD 3-Clause License
  *
- * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ * Copyright (c) 2025, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Leo Dubus, Erwan Grelier
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -104,7 +104,7 @@ static bool loadLibraries()
 				VIP_LOG_WARNING("West plugin of librir not found!");
 			}
 			else {
-				VIP_LOG_INFO("Loaded west librir at ",west);
+				VIP_LOG_INFO("Loaded west librir at ", west);
 			}
 			return res = true;
 		}
@@ -149,22 +149,22 @@ static QLibrary* toolsLib()
 		return &_tools;
 	return nullptr;
 }
-static QLibrary* geometrLib()
+/*static QLibrary* geometrLib()
 {
 	if (_old_librir.isLoaded())
 		return &_old_librir;
 	else if (_geometry.isLoaded())
 		return &_geometry;
 	return nullptr;
-}
-static QLibrary* signalProcessingLib()
+}*/
+/*static QLibrary* signalProcessingLib()
 {
 	if (_old_librir.isLoaded())
 		return &_old_librir;
 	else if (_signal_processing.isLoaded())
 		return &_signal_processing;
 	return nullptr;
-}
+}*/
 static QLibrary* videoIOLib()
 {
 	if (_old_librir.isLoaded())
@@ -544,7 +544,7 @@ VipLibRIR* VipLibRIR::instance()
 			return librir = nullptr;
 		}
 
-		librir->get_default_temp_directory = (_get_temp_directory)westLib()->resolve("get_default_west_data_dir");
+		librir->get_default_temp_directory = (_get_default_temp_directory)westLib()->resolve("get_default_west_data_dir");
 		if (!librir->get_default_temp_directory) {
 			VIP_LOG_ERROR("librir: missing get_default_west_data_dir");
 			delete librir;
@@ -819,6 +819,12 @@ VipLibRIR* VipLibRIR::instance()
 			delete librir;
 			return librir = nullptr;
 		}
+		librir->ts_read_numeric_param = (_ts_read_numeric_param)westLib()->resolve("ts_read_numeric_param");
+		if (!librir->ts_read_numeric_param) {
+			VIP_LOG_ERROR("librir: missing ts_read_numeric_param");
+			delete librir;
+			return librir = nullptr;
+		}
 		librir->ts_pulse_infos = (_ts_pulse_infos)westLib()->resolve("ts_pulse_infos");
 		if (!librir->ts_pulse_infos) {
 			VIP_LOG_ERROR("librir: missing ts_pulse_infos");
@@ -888,7 +894,7 @@ VipLibRIR* VipLibRIR::instance()
 			delete librir;
 			return librir = nullptr;
 		}
-		
+
 		librir->set_hcc_lopt_file = (_set_hcc_lopt_file)westLib()->resolve("set_hcc_lopt_file");
 		if (!librir->set_hcc_lopt_file) {
 			VIP_LOG_ERROR("librir: missing set_hcc_lopt_file");

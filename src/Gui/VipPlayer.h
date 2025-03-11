@@ -1,7 +1,7 @@
 /**
  * BSD 3-Clause License
  *
- * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ * Copyright (c) 2025, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Leo Dubus, Erwan Grelier
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -109,8 +109,8 @@ private:
 	VipPlotItemClipboard();
 	static VipPlotItemClipboard& instance();
 
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 class VipAbstractPlayer;
@@ -142,10 +142,11 @@ Q_SIGNALS:
 	void destroyed(VipAbstractPlayer*);
 
 private:
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
+/// @brief Base class for VipAbstractPlayer
 class VIP_GUI_EXPORT VipPlotWidget
   : public QWidget
   , public VipRenderObject
@@ -236,8 +237,8 @@ Q_SIGNALS:
 	void renderEnded(const VipRenderState&);
 
 private:
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 // expose VipAbstractPlayer* and QList<VipAbstractPlayer*> to the meta type system for the function dispatchers
@@ -245,7 +246,15 @@ typedef QList<VipAbstractPlayer*> AbstractPlayerList;
 Q_DECLARE_METATYPE(VipAbstractPlayer*)
 Q_DECLARE_METATYPE(AbstractPlayerList)
 
-/// A player that simply contains a widget
+/// @brief A player that simply contains a widget
+///
+/// VipWidgetPlayer is a VipAbstractPlayer which goal is just
+/// to contain any kind of widget, not necessarily related 
+/// to signal plotting.
+/// 
+/// For instance, thermavip provides a lightweight web browser 
+/// (VipWebBrowser) that inherits this class.
+///  
 class VIP_GUI_EXPORT VipWidgetPlayer : public VipAbstractPlayer
 {
 	Q_OBJECT
@@ -267,8 +276,8 @@ protected:
 	virtual bool renderObject(QPainter* p, const QPointF& pos, bool draw_background);
 
 private:
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 VIP_REGISTER_QOBJECT_METATYPE(VipWidgetPlayer*)
 
@@ -303,11 +312,12 @@ private:
 Q_DECLARE_METATYPE(VipPlayerToolTip*)
 
 /// Base class for all \a VipAbstractPlayer representing 2D + time data based on #VipPlotItem objects.
-/// It provides additional widgets like a tool bar (#VipPlayerToolBar) and a status bar.
-/// It also provides functions to save its content as a \a QPixmap.
+/// It provides additional widgets like a tool bar (VipPlayerToolBar) and a status bar.
+/// It also provides functions to save its content as a QPixmap.
 ///
 /// VipPlayer2D handles mouse click, item selection changes and item addtion/removal and forward them to the function dispatchers
 /// #VipFDItemRightClick, #VipFDItemSelected, #VipFDItemAddedOnPlayer and #VipFDItemRemovedFromPlayer.
+/// 
 class VIP_GUI_EXPORT VipPlayer2D : public VipAbstractPlayer
 {
 	Q_OBJECT
@@ -366,7 +376,7 @@ public:
 	/// Returns all selected/unselected and/or visible/hidden  VipPlotShape objects within this player
 	QList<VipPlotShape*> findSelectedPlotShapes(int selected = 2, int visible = 2) const;
 	/// Returns all selected/unselected and/or visible/hidden  VipShape objects within this player
-	QList<VipShape> findSelectedShapes(int selected = 2, int visible = 2) const;
+	VipShapeList findSelectedShapes(int selected = 2, int visible = 2) const;
 
 	/// Helper function.
 	/// Returns the VipDisplaySceneModel corresponding to a given scene model or shape, or nullptr if no VipDisplaySceneModel was found.
@@ -497,8 +507,8 @@ Q_SIGNALS:
 	void mouseSelectionChanged(bool);
 
 private:
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 VIP_REGISTER_QOBJECT_METATYPE(VipPlayer2D*)
@@ -612,7 +622,7 @@ public:
 	/// Time statistics can be extract from a list of VipShape (that could be merged with union or intersection) or a list of shape identifier
 	/// and VipDisplaySceneModel (in which case they cannot be merged, and multi_shape is forced to 2).
 	QList<VipProcessingObject*> extractTimeEvolution(const ShapeInfo& infos,
-							 VipShapeStatistics::Statistics stats = 0,
+							 VipShapeStatistics::Statistics stats = VipShapeStatistics::Statistics(),
 							 int one_frame_out_of = 1,
 							 int multi_shape = -1,
 							 const QVector<double>& quantiles = QVector<double>());
@@ -662,7 +672,7 @@ public Q_SLOTS:
 	virtual void setFrozen(bool);
 	virtual void setSharedZoom(bool);
 	void setZoomFeaturesVisible(bool vis);
-	
+
 	// add processings to the processing list (if any)
 	virtual void addSelectedProcessing(const VipProcessingObject::Info&);
 	virtual void setColorMapOptionsVisible(bool);
@@ -740,8 +750,8 @@ protected:
 	bool zoomFeaturesEnabled() const;
 
 private:
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 VIP_REGISTER_QOBJECT_METATYPE(VipVideoPlayer*)
@@ -768,7 +778,7 @@ class VipPlotPlayer;
 /// Extract the time trace of a shape from a video player, and display it in a new plot player inside the current display area.
 VIP_GUI_EXPORT VipPlotPlayer* vipExtractTimeTrace(const VipShapeList& shapes,
 						  VipVideoPlayer* pl,
-						  VipShapeStatistics::Statistics stats = 0,
+						  VipShapeStatistics::Statistics stats = VipShapeStatistics::Statistics(),
 						  int one_frame_out_of = 1,
 						  int multi_shapes = -1,
 						  VipPlotPlayer* out = nullptr);
@@ -945,9 +955,11 @@ protected:
 	/// Reimplemented from #VipRenderObject::endRender()
 	virtual void endRender(VipRenderState&);
 
+	virtual void closeEvent(QCloseEvent* evt);
+
 private:
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 VIP_REGISTER_QOBJECT_METATYPE(VipPlotPlayer*)
@@ -988,7 +1000,6 @@ VIP_GUI_EXPORT VipFunctionDispatcher<2>& VipFDAddProcessingAction();
 /// If a valid action is performed, the function must return true.
 /// Its signature is bool(VipPlayer2D*, VipPlotItem*,QMimeData*);
 VIP_GUI_EXPORT VipFunctionDispatcher<3>& VipFDDropOnPlotItem();
-
 
 /// This function dispatcher is called whenever the user press a key on a VipPlayer2D.
 /// If a valid action is performed (i.e. the key is handled), the function must return true.

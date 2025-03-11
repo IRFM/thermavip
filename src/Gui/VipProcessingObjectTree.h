@@ -1,7 +1,7 @@
 /**
  * BSD 3-Clause License
  *
- * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ * Copyright (c) 2025, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Leo Dubus, Erwan Grelier
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -64,11 +64,11 @@ public Q_SLOTS:
 
 private:
 	QSize itemSizeHint(QTreeWidgetItem* item);
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
-/// Display a VipProcessingObjectTree nto a QMenu
+/// Display a VipProcessingObjectTree into a QMenu
 class VipProcessingObjectTreeMenu : public VipDragMenu
 {
 public:
@@ -103,8 +103,8 @@ Q_SIGNALS:
 	void selected(const VipProcessingObject::Info& info);
 
 private:
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 /// @}

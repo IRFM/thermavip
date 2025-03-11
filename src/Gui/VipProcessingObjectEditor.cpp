@@ -1,7 +1,7 @@
 /**
  * BSD 3-Clause License
  *
- * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ * Copyright (c) 2025, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Leo Dubus, Erwan Grelier
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -61,6 +61,8 @@
 #include <QToolButton>
 #include <qtimer.h>
 
+#include <vector>
+
 #define __VIP_MAX_DISPLAYED_EDITORS 5
 
 class VipOtherPlayerDataEditor::PrivateData
@@ -80,52 +82,51 @@ public:
 VipOtherPlayerDataEditor::VipOtherPlayerDataEditor()
   : QWidget()
 {
-	m_data = new PrivateData();
-	m_data->tdisplays.setText("Operation on data:");
+	VIP_CREATE_PRIVATE_DATA(d_data);
+	d_data->tdisplays.setText("Operation on data:");
 
-	m_data->lineBefore = VipLineWidget::createHLine();
-	m_data->lineAfter = VipLineWidget::createHLine();
+	d_data->lineBefore = VipLineWidget::createHLine();
+	d_data->lineAfter = VipLineWidget::createHLine();
 
-	m_data->players.setSizeAdjustPolicy(QComboBox::AdjustToContentsOnFirstShow);
-	m_data->players.setMaximumWidth(200);
-	m_data->displays.setSizeAdjustPolicy(QComboBox::AdjustToContentsOnFirstShow);
-	m_data->displays.setMaximumWidth(200);
+	d_data->players.setSizeAdjustPolicy(QComboBox::AdjustToContentsOnFirstShow);
+	d_data->players.setMaximumWidth(200);
+	d_data->displays.setSizeAdjustPolicy(QComboBox::AdjustToContentsOnFirstShow);
+	d_data->displays.setMaximumWidth(200);
 
 	QGridLayout* lay = new QGridLayout();
 	lay->setContentsMargins(0, 0, 0, 0);
-	lay->addWidget(m_data->lineBefore, 0, 0, 1, 2);
+	lay->addWidget(d_data->lineBefore, 0, 0, 1, 2);
 	lay->addWidget(new QLabel("Dynamic operation:"), 1, 0);
-	lay->addWidget(&m_data->dynamic, 1, 1);
+	lay->addWidget(&d_data->dynamic, 1, 1);
 	lay->addWidget(new QLabel("Operation on player:"), 2, 0);
-	lay->addWidget(&m_data->players, 2, 1);
-	lay->addWidget(&m_data->tdisplays, 3, 0);
-	lay->addWidget(&m_data->displays, 3, 1);
-	lay->addWidget(m_data->lineAfter, 4, 0, 1, 2);
+	lay->addWidget(&d_data->players, 2, 1);
+	lay->addWidget(&d_data->tdisplays, 3, 0);
+	lay->addWidget(&d_data->displays, 3, 1);
+	lay->addWidget(d_data->lineAfter, 4, 0, 1, 2);
 
-	m_data->tdisplays.hide();
-	m_data->displays.hide();
+	d_data->tdisplays.hide();
+	d_data->displays.hide();
 
-	m_data->dynamic.setToolTip("If checked, the operation will be performed on the current image from the selected player.<br>"
+	d_data->dynamic.setToolTip("If checked, the operation will be performed on the current image from the selected player.<br>"
 				   "Otherwise the operation will always be performed on the same data (image or curve). You can reset this processing to change the data.");
-	m_data->players.setToolTip("Apply the operation on selected player: add, subtract, multiply or divide this data (image or curve) with the selected player's data.");
-	m_data->displays.setToolTip("<b>There are several items in this player</b><br>Select the item to apply the operation on");
+	d_data->players.setToolTip("Apply the operation on selected player: add, subtract, multiply or divide this data (image or curve) with the selected player's data.");
+	d_data->displays.setToolTip("<b>There are several items in this player</b><br>Select the item to apply the operation on");
 	setLayout(lay);
 
-	connect(&m_data->players, SIGNAL(openPopup()), this, SLOT(showPlayers()));
-	connect(&m_data->dynamic, SIGNAL(clicked(bool)), this, SLOT(apply()));
-	connect(&m_data->players, SIGNAL(activated(int)), this, SLOT(apply()));
-	connect(&m_data->displays, SIGNAL(openPopup()), this, SLOT(showDisplays()));
-	connect(&m_data->displays, SIGNAL(activated(int)), this, SLOT(apply()));
+	connect(&d_data->players, SIGNAL(openPopup()), this, SLOT(showPlayers()));
+	connect(&d_data->dynamic, SIGNAL(clicked(bool)), this, SLOT(apply()));
+	connect(&d_data->players, SIGNAL(activated(int)), this, SLOT(apply()));
+	connect(&d_data->displays, SIGNAL(openPopup()), this, SLOT(showDisplays()));
+	connect(&d_data->displays, SIGNAL(activated(int)), this, SLOT(apply()));
 }
 
 VipOtherPlayerDataEditor::~VipOtherPlayerDataEditor()
 {
-	delete m_data;
 }
 // void VipOtherPlayerDataEditor::displayVLines(bool before, bool after)
 // {
-// m_data->lineBefore->setVisible(before);
-// m_data->lineAfter->setVisible(after);
+// d_data->lineBefore->setVisible(before);
+// d_data->lineAfter->setVisible(after);
 // }
 
 struct player_id
@@ -142,13 +143,13 @@ struct player_id
 void VipOtherPlayerDataEditor::showPlayers()
 {
 
-	m_data->players.blockSignals(true);
-	m_data->players.clear();
+	d_data->players.blockSignals(true);
+	d_data->players.clear();
 	QWidget* w = vipGetMainWindow()->displayArea()->currentDisplayPlayerArea();
 	if (w) {
 
 		int current_index = -1;
-		int current_id = m_data->data.otherPlayerId();
+		int current_id = d_data->data.otherPlayerId();
 
 		// compute the list of all VipVideoPlayer in the current workspace
 		QList<VipPlayer2D*> instances = w->findChildren<VipPlayer2D*>();
@@ -159,65 +160,65 @@ void VipOtherPlayerDataEditor::showPlayers()
 		for (int i = 0; i < instances.size(); ++i) {
 			VipBaseDragWidget* parent = VipBaseDragWidget::fromChild(instances[i]);
 			QString title = parent ? parent->windowTitle() : instances[i]->windowTitle();
-			// m_data->players.addItem(title, VipUniqueId::id(instances[i]));
+			// d_data->players.addItem(title, VipUniqueId::id(instances[i]));
 			players.push_back(player_id(VipUniqueId::id(instances[i]), title));
 			if (current_id == VipUniqueId::id(instances[i]))
-				current_index = m_data->players.count() - 1;
+				current_index = d_data->players.count() - 1;
 		}
 		std::sort(players.begin(), players.end());
 		for (size_t i = 0; i < players.size(); ++i) {
-			m_data->players.addItem(players[i].title, players[i].id);
+			d_data->players.addItem(players[i].title, players[i].id);
 			if (current_id == players[i].id)
-				current_index = m_data->players.count() - 1;
+				current_index = d_data->players.count() - 1;
 		}
 		if (current_index >= 0)
-			m_data->players.setCurrentIndex(current_index);
+			d_data->players.setCurrentIndex(current_index);
 	}
-	m_data->players.blockSignals(false);
+	d_data->players.blockSignals(false);
 }
 
 void VipOtherPlayerDataEditor::showDisplays()
 {
-	m_data->displays.clear();
-	QVariant player = m_data->players.currentData();
+	d_data->displays.clear();
+	QVariant player = d_data->players.currentData();
 	if (player.userType() != QMetaType::Int)
 		return;
 
-	int current_id = m_data->data.otherDisplayIndex();
+	int current_id = d_data->data.otherDisplayIndex();
 	int current_index = -1;
 
-	m_data->displays.blockSignals(true);
+	d_data->displays.blockSignals(true);
 	VipPlayer2D* pl = VipUniqueId::find<VipPlayer2D>(player.toInt());
 	if (pl) {
 		QList<VipDisplayObject*> displays = pl->displayObjects();
 		for (int i = 0; i < displays.size(); ++i) {
 			QString text = displays[i]->title();
-			m_data->displays.addItem(text, VipUniqueId::id(displays[i]));
+			d_data->displays.addItem(text, VipUniqueId::id(displays[i]));
 			if (VipUniqueId::id(displays[i]) == current_id)
-				current_index = m_data->displays.count() - 1;
+				current_index = d_data->displays.count() - 1;
 		}
 
-		m_data->displays.setVisible(displays.size() > 1);
-		m_data->tdisplays.setVisible(displays.size() > 1);
+		d_data->displays.setVisible(displays.size() > 1);
+		d_data->tdisplays.setVisible(displays.size() > 1);
 	}
 	if (current_index >= 0)
-		m_data->displays.setCurrentIndex(current_index);
+		d_data->displays.setCurrentIndex(current_index);
 
-	m_data->displays.blockSignals(false);
+	d_data->displays.blockSignals(false);
 }
 
 VipOtherPlayerData VipOtherPlayerDataEditor::value() const
 {
-	return m_data->data;
+	return d_data->data;
 }
 
 void VipOtherPlayerDataEditor::setValue(const VipOtherPlayerData& _data)
 {
-	m_data->data = _data;
+	d_data->data = _data;
 
-	m_data->dynamic.blockSignals(true);
-	m_data->dynamic.setChecked(_data.isDynamic());
-	m_data->dynamic.blockSignals(false);
+	d_data->dynamic.blockSignals(true);
+	d_data->dynamic.setChecked(_data.isDynamic());
+	d_data->dynamic.blockSignals(false);
 	showPlayers();
 	showDisplays();
 
@@ -227,7 +228,7 @@ void VipOtherPlayerDataEditor::setValue(const VipOtherPlayerData& _data)
 void VipOtherPlayerDataEditor::apply()
 {
 
-	QVariant player = m_data->players.currentData();
+	QVariant player = d_data->players.currentData();
 	if (player.userType() != QMetaType::Int)
 		return;
 
@@ -236,27 +237,27 @@ void VipOtherPlayerDataEditor::apply()
 		VipDisplayObject* display = nullptr;
 		QList<VipDisplayObject*> displays = pl->displayObjects();
 		if (displays.size() > 1) {
-			display = VipUniqueId::find<VipDisplayObject>(m_data->displays.currentData().toInt());
+			display = VipUniqueId::find<VipDisplayObject>(d_data->displays.currentData().toInt());
 			if (!display)
 				showDisplays();
 		}
 		else if (displays.size() == 1)
 			display = displays.front();
 
-		m_data->displays.setVisible(displays.size() > 1);
-		m_data->tdisplays.setVisible(displays.size() > 1);
+		d_data->displays.setVisible(displays.size() > 1);
+		d_data->tdisplays.setVisible(displays.size() > 1);
 
 		if (display) {
 			// set all properties
 			VipOutput* out = display->inputAt(0)->connection()->source();
 			VipProcessingObject* proc = out->parentProcessing();
-			bool isDynamic = m_data->dynamic.isChecked();
-			// bool isSame = (isDynamic == m_data->data.isDynamic() && proc == m_data->data.processing() && proc->indexOf(out) == m_data->data.outputIndex() &&
-			// m_data->data.otherPlayerId() == player.toInt() && m_data->data.otherDisplayIndex() == VipUniqueId::id(display));
-			m_data->data = VipOtherPlayerData(isDynamic, proc, m_data->data.parentProcessingObject(), proc->indexOf(out), player.toInt(), VipUniqueId::id(display));
+			bool isDynamic = d_data->dynamic.isChecked();
+			// bool isSame = (isDynamic == d_data->data.isDynamic() && proc == d_data->data.processing() && proc->indexOf(out) == d_data->data.outputIndex() &&
+			// d_data->data.otherPlayerId() == player.toInt() && d_data->data.otherDisplayIndex() == VipUniqueId::id(display));
+			d_data->data = VipOtherPlayerData(isDynamic, proc, d_data->data.parentProcessingObject(), proc->indexOf(out), player.toInt(), VipUniqueId::id(display));
 
 			// if (!isSame)
-			Q_EMIT valueChanged(QVariant::fromValue(m_data->data));
+			Q_EMIT valueChanged(QVariant::fromValue(d_data->data));
 		}
 	}
 }
@@ -276,7 +277,7 @@ public:
 VipFindDataButton::VipFindDataButton(QWidget* parent)
   : QToolButton(parent)
 {
-	m_data = new PrivateData();
+	VIP_CREATE_PRIVATE_DATA(d_data);
 
 	this->setPopupMode(QToolButton::InstantPopup);
 	this->setText("No data selected");
@@ -294,27 +295,26 @@ VipFindDataButton::VipFindDataButton(QWidget* parent)
 
 VipFindDataButton::~VipFindDataButton()
 {
-	delete m_data;
 }
 
 VipOutput* VipFindDataButton::selectedData() const
 {
-	if (m_data->processing && m_data->index < m_data->processing->outputCount())
-		return m_data->processing->outputAt(m_data->index);
+	if (d_data->processing && d_data->index < d_data->processing->outputCount())
+		return d_data->processing->outputAt(d_data->index);
 	return nullptr;
 }
 
 void VipFindDataButton::setSelectedData(VipOutput* output)
 {
-	m_data->processing = output ? output->parentProcessing() : nullptr;
-	m_data->index = m_data->processing ? m_data->processing->indexOf(output) : 0;
+	d_data->processing = output ? output->parentProcessing() : nullptr;
+	d_data->index = d_data->processing ? d_data->processing->indexOf(output) : 0;
 	if (!output) {
 		this->setText("No data selected");
 		this->setToolTip("Select a processing output");
 		return;
 	}
 
-	QList<VipDisplayObject*> disp = vipListCast<VipDisplayObject*>(m_data->processing->allSinks());
+	QList<VipDisplayObject*> disp = vipListCast<VipDisplayObject*>(d_data->processing->allSinks());
 	if (disp.size()) {
 		if (VipPlayer2D* pl = qobject_cast<VipPlayer2D*>(VipAbstractPlayer::findAbstractPlayer(disp.first()))) {
 			if (VipBaseDragWidget* parent = VipBaseDragWidget::fromChild(pl)) {
@@ -327,7 +327,7 @@ void VipFindDataButton::setSelectedData(VipOutput* output)
 			}
 		}
 	}
-	Q_EMIT selectionChanged(m_data->processing, m_data->index);
+	Q_EMIT selectionChanged(d_data->processing, d_data->index);
 }
 
 void VipFindDataButton::resizeEvent(QResizeEvent* evt)
@@ -395,13 +395,13 @@ void VipFindDataButton::menuShow()
 
 void VipFindDataButton::menuSelected(QAction* act)
 {
-	m_data->processing = act->property("processing").value<VipProcessingObject*>();
-	m_data->index = act->property("output").value<int>();
-	if (m_data->processing && m_data->index < m_data->processing->outputCount()) {
+	d_data->processing = act->property("processing").value<VipProcessingObject*>();
+	d_data->index = act->property("output").value<int>();
+	if (d_data->processing && d_data->index < d_data->processing->outputCount()) {
 		setToolTip(act->property("tool_tip").toString());
 		setText(act->property("text").toString());
 
-		Q_EMIT selectionChanged(m_data->processing, m_data->index);
+		Q_EMIT selectionChanged(d_data->processing, d_data->index);
 	}
 	else {
 		setToolTip("Select a processing output");
@@ -453,35 +453,34 @@ public:
 VipEditDataFusionProcessing::VipEditDataFusionProcessing(QWidget* parent)
   : QWidget(parent)
 {
-	m_data = new PrivateData();
+	VIP_CREATE_PRIVATE_DATA(d_data);
 
 	QGroupBox* box = new QGroupBox("Processing inputs");
 	// box->setFlat(true);
 
 	QVBoxLayout* blay = new QVBoxLayout();
-	blay->addWidget(&m_data->inputList);
+	blay->addWidget(&d_data->inputList);
 	box->setLayout(blay);
 
 	QVBoxLayout* vlay = new QVBoxLayout();
-	vlay->addWidget(&m_data->editor);
+	vlay->addWidget(&d_data->editor);
 	vlay->addWidget(box);
-	// vlay->addWidget(&m_data->inputList);
+	// vlay->addWidget(&d_data->inputList);
 	setLayout(vlay);
 
-	m_data->inputList.setToolTip("Setup processing inputs");
+	d_data->inputList.setToolTip("Setup processing inputs");
 }
 
 VipEditDataFusionProcessing::~VipEditDataFusionProcessing()
 {
-	delete m_data;
 }
 
 void VipEditDataFusionProcessing::setDataFusionProcessing(VipBaseDataFusion* p)
 {
 	// set the processing and update the input list accordingly
 
-	m_data->editor.setProcessingObject(p);
-	m_data->processing = p;
+	d_data->editor.setProcessingObject(p);
+	d_data->processing = p;
 
 	QList<InputWidget*> inputs;
 
@@ -508,25 +507,25 @@ void VipEditDataFusionProcessing::setDataFusionProcessing(VipBaseDataFusion* p)
 		}
 	}
 
-	m_data->inputList.clear();
+	d_data->inputList.clear();
 	for (int i = 0; i < inputs.size(); ++i) {
-		QListWidgetItem* item = new QListWidgetItem(&m_data->inputList);
+		QListWidgetItem* item = new QListWidgetItem(&d_data->inputList);
 		item->setSizeHint(inputs[i]->sizeHint());
-		m_data->inputList.addItem(item);
-		m_data->inputList.setItemWidget(item, inputs[i]);
+		d_data->inputList.addItem(item);
+		d_data->inputList.setItemWidget(item, inputs[i]);
 	}
 }
 
 VipBaseDataFusion* VipEditDataFusionProcessing::dataFusionProcessing() const
 {
-	return m_data->processing;
+	return d_data->processing;
 }
 
 int VipEditDataFusionProcessing::indexOfInput(QObject* obj)
 {
-	for (int i = 0; i < m_data->inputList.count(); ++i) {
-		if (&static_cast<InputWidget*>(m_data->inputList.itemWidget(m_data->inputList.item(i)))->add == obj ||
-		    &static_cast<InputWidget*>(m_data->inputList.itemWidget(m_data->inputList.item(i)))->remove == obj)
+	for (int i = 0; i < d_data->inputList.count(); ++i) {
+		if (&static_cast<InputWidget*>(d_data->inputList.itemWidget(d_data->inputList.item(i)))->add == obj ||
+		    &static_cast<InputWidget*>(d_data->inputList.itemWidget(d_data->inputList.item(i)))->remove == obj)
 			return i;
 	}
 	return 0;
@@ -535,24 +534,24 @@ int VipEditDataFusionProcessing::indexOfInput(QObject* obj)
 void VipEditDataFusionProcessing::addInput()
 {
 	// add input and reset processing
-	if (m_data->processing)
-		m_data->processing->topLevelInputAt(0)->toMultiInput()->insert(indexOfInput(sender()) + 1);
-	setDataFusionProcessing(m_data->processing);
+	if (d_data->processing)
+		d_data->processing->topLevelInputAt(0)->toMultiInput()->insert(indexOfInput(sender()) + 1);
+	setDataFusionProcessing(d_data->processing);
 }
 void VipEditDataFusionProcessing::removeInput()
 {
 	// remove input and reset processing
-	if (m_data->processing)
-		m_data->processing->topLevelInputAt(0)->toMultiInput()->removeAt(indexOfInput(sender()));
-	setDataFusionProcessing(m_data->processing);
+	if (d_data->processing)
+		d_data->processing->topLevelInputAt(0)->toMultiInput()->removeAt(indexOfInput(sender()));
+	setDataFusionProcessing(d_data->processing);
 }
 
 void VipEditDataFusionProcessing::updateProcessing()
 {
 	// get the list of VipOutput
 	QList<VipOutput*> outputs;
-	for (int i = 0; i < m_data->inputList.count(); ++i) {
-		InputWidget* input = static_cast<InputWidget*>(m_data->inputList.itemWidget(m_data->inputList.item(i)));
+	for (int i = 0; i < d_data->inputList.count(); ++i) {
+		InputWidget* input = static_cast<InputWidget*>(d_data->inputList.itemWidget(d_data->inputList.item(i)));
 		if (VipOutput* out = input->data.selectedData()) {
 			outputs.append(out);
 		}
@@ -560,15 +559,15 @@ void VipEditDataFusionProcessing::updateProcessing()
 			return;
 	}
 	// set the outputs to the processing inputs
-	if (m_data->processing) {
-		m_data->processing->topLevelInputAt(0)->toMultiInput()->resize(outputs.size());
+	if (d_data->processing) {
+		d_data->processing->topLevelInputAt(0)->toMultiInput()->resize(outputs.size());
 		for (int i = 0; i < outputs.size(); ++i) {
-			m_data->processing->inputAt(i)->setConnection(outputs[i]);
-			m_data->processing->inputAt(i)->buffer()->clear();
-			m_data->processing->inputAt(i)->setData(outputs[i]->data());
+			d_data->processing->inputAt(i)->setConnection(outputs[i]);
+			d_data->processing->inputAt(i)->buffer()->clear();
+			d_data->processing->inputAt(i)->setData(outputs[i]->data());
 		}
 	}
-	m_data->processing->reload();
+	d_data->processing->reload();
 }
 
 class VipProcessingObjectEditor::PrivateData
@@ -583,52 +582,51 @@ public:
 VipProcessingObjectEditor::VipProcessingObjectEditor()
   : QWidget()
 {
-	m_data = new PrivateData();
+	VIP_CREATE_PRIVATE_DATA(d_data);
 	QVBoxLayout* lay = new QVBoxLayout();
-	lay->addWidget(&m_data->oneInput);
-	lay->addWidget(&m_data->multiInput);
-	lay->addWidget(&m_data->enable);
+	lay->addWidget(&d_data->oneInput);
+	lay->addWidget(&d_data->multiInput);
+	lay->addWidget(&d_data->enable);
 	lay->setSpacing(0);
 	setLayout(lay);
 
-	m_data->oneInput.setText("Run when at least one input is new");
-	m_data->oneInput.setToolTip("The processing will be triggered at each new input data");
-	m_data->multiInput.setText("Run when all inputs are new");
-	m_data->multiInput.setToolTip("The processing will be triggered when all input data are new");
-	m_data->enable.setText("Enable the processing");
+	d_data->oneInput.setText("Run when at least one input is new");
+	d_data->oneInput.setToolTip("The processing will be triggered at each new input data");
+	d_data->multiInput.setText("Run when all inputs are new");
+	d_data->multiInput.setToolTip("The processing will be triggered when all input data are new");
+	d_data->enable.setText("Enable the processing");
 
-	connect(&m_data->oneInput, SIGNAL(clicked(bool)), this, SLOT(updateProcessingObject()));
-	connect(&m_data->multiInput, SIGNAL(clicked(bool)), this, SLOT(updateProcessingObject()));
-	connect(&m_data->enable, SIGNAL(clicked(bool)), this, SLOT(updateProcessingObject()));
+	connect(&d_data->oneInput, SIGNAL(clicked(bool)), this, SLOT(updateProcessingObject()));
+	connect(&d_data->multiInput, SIGNAL(clicked(bool)), this, SLOT(updateProcessingObject()));
+	connect(&d_data->enable, SIGNAL(clicked(bool)), this, SLOT(updateProcessingObject()));
 }
 
 VipProcessingObjectEditor::~VipProcessingObjectEditor()
 {
-	delete m_data;
 }
 
 void VipProcessingObjectEditor::setProcessingObject(VipProcessingObject* obj)
 {
-	m_data->proc = obj;
+	d_data->proc = obj;
 	if (obj) {
-		m_data->oneInput.blockSignals(true);
-		m_data->multiInput.blockSignals(true);
-		m_data->enable.blockSignals(true);
+		d_data->oneInput.blockSignals(true);
+		d_data->multiInput.blockSignals(true);
+		d_data->enable.blockSignals(true);
 
-		m_data->multiInput.setChecked(obj->testScheduleStrategy(VipProcessingObject::AllInputs));
-		m_data->enable.setChecked(obj->isEnabled());
+		d_data->multiInput.setChecked(obj->testScheduleStrategy(VipProcessingObject::AllInputs));
+		d_data->enable.setChecked(obj->isEnabled());
 
-		m_data->oneInput.blockSignals(false);
-		m_data->multiInput.blockSignals(false);
-		m_data->enable.blockSignals(false);
+		d_data->oneInput.blockSignals(false);
+		d_data->multiInput.blockSignals(false);
+		d_data->enable.blockSignals(false);
 	}
 }
 
 void VipProcessingObjectEditor::updateProcessingObject()
 {
-	if (m_data->proc) {
-		m_data->proc->setEnabled(m_data->enable.isChecked());
-		m_data->proc->setScheduleStrategy(VipProcessingObject::AllInputs, m_data->multiInput.isChecked());
+	if (d_data->proc) {
+		d_data->proc->setEnabled(d_data->enable.isChecked());
+		d_data->proc->setScheduleStrategy(VipProcessingObject::AllInputs, d_data->multiInput.isChecked());
 	}
 }
 
@@ -644,39 +642,38 @@ public:
 VipIODeviceEditor::VipIODeviceEditor()
   : QWidget()
 {
-	m_data = new PrivateData();
+	VIP_CREATE_PRIVATE_DATA(d_data);
 	QVBoxLayout* lay = new QVBoxLayout();
-	lay->addWidget(&m_data->openRead);
-	lay->addWidget(&m_data->openWrite);
-	lay->addWidget(&m_data->info);
+	lay->addWidget(&d_data->openRead);
+	lay->addWidget(&d_data->openWrite);
+	lay->addWidget(&d_data->info);
 	lay->setSpacing(0);
 	setLayout(lay);
 
-	m_data->openRead.setText("Open the device in Read mode");
-	m_data->openRead.setToolTip("Open/close the device in Read mode");
-	m_data->openWrite.setText("Open the device in Write mode");
-	m_data->openWrite.setToolTip("Open/close the device in Write mode");
+	d_data->openRead.setText("Open the device in Read mode");
+	d_data->openRead.setToolTip("Open/close the device in Read mode");
+	d_data->openWrite.setText("Open the device in Write mode");
+	d_data->openWrite.setToolTip("Open/close the device in Write mode");
 
-	connect(&m_data->openRead, SIGNAL(clicked(bool)), this, SLOT(updateIODevice()));
-	connect(&m_data->openWrite, SIGNAL(clicked(bool)), this, SLOT(updateIODevice()));
+	connect(&d_data->openRead, SIGNAL(clicked(bool)), this, SLOT(updateIODevice()));
+	connect(&d_data->openWrite, SIGNAL(clicked(bool)), this, SLOT(updateIODevice()));
 }
 
 VipIODeviceEditor::~VipIODeviceEditor()
 {
-	delete m_data;
 }
 
 void VipIODeviceEditor::setIODevice(VipIODevice* obj)
 {
-	m_data->device = obj;
+	d_data->device = obj;
 	if (obj) {
-		m_data->openRead.blockSignals(true);
-		m_data->openWrite.blockSignals(true);
+		d_data->openRead.blockSignals(true);
+		d_data->openWrite.blockSignals(true);
 
-		m_data->openRead.setChecked(obj->openMode() & VipIODevice::ReadOnly);
-		m_data->openWrite.setChecked(obj->openMode() & VipIODevice::WriteOnly);
-		m_data->openRead.setVisible(obj->supportedModes() & VipIODevice::ReadOnly);
-		m_data->openWrite.setVisible(obj->supportedModes() & VipIODevice::WriteOnly);
+		d_data->openRead.setChecked(obj->openMode() & VipIODevice::ReadOnly);
+		d_data->openWrite.setChecked(obj->openMode() & VipIODevice::WriteOnly);
+		d_data->openRead.setVisible(obj->supportedModes() & VipIODevice::ReadOnly);
+		d_data->openWrite.setVisible(obj->supportedModes() & VipIODevice::WriteOnly);
 
 		QFontMetrics m(font());
 		QString name = m.elidedText(obj->attribute("Name").toString(), Qt::ElideRight, 200);
@@ -691,29 +688,29 @@ void VipIODeviceEditor::setIODevice(VipIODevice* obj)
 		if (obj->hasAttribute("Comment"))
 			text += "<b>Comment</b>: " + obj->attribute("Author").toString();
 
-		m_data->info.setText(text.join("<br>"));
-		m_data->info.setToolTip(text.join("<br>"));
-		m_data->openRead.blockSignals(false);
-		m_data->openWrite.blockSignals(false);
+		d_data->info.setText(text.join("<br>"));
+		d_data->info.setToolTip(text.join("<br>"));
+		d_data->openRead.blockSignals(false);
+		d_data->openWrite.blockSignals(false);
 	}
 }
 
 void VipIODeviceEditor::updateIODevice()
 {
-	if (m_data->device) {
-		if (m_data->openRead.isChecked() && !(m_data->device->openMode() & VipIODevice::ReadOnly)) {
-			m_data->device->close();
-			m_data->device->open(VipIODevice::ReadOnly);
+	if (d_data->device) {
+		if (d_data->openRead.isChecked() && !(d_data->device->openMode() & VipIODevice::ReadOnly)) {
+			d_data->device->close();
+			d_data->device->open(VipIODevice::ReadOnly);
 		}
-		else if (!m_data->openRead.isChecked() && (m_data->device->openMode() & VipIODevice::ReadOnly))
-			m_data->device->close();
+		else if (!d_data->openRead.isChecked() && (d_data->device->openMode() & VipIODevice::ReadOnly))
+			d_data->device->close();
 
-		if (m_data->openWrite.isChecked() && !(m_data->device->openMode() & VipIODevice::WriteOnly)) {
-			m_data->device->close();
-			m_data->device->open(VipIODevice::WriteOnly);
+		if (d_data->openWrite.isChecked() && !(d_data->device->openMode() & VipIODevice::WriteOnly)) {
+			d_data->device->close();
+			d_data->device->open(VipIODevice::WriteOnly);
 		}
-		else if (!m_data->openWrite.isChecked() && (m_data->device->openMode() & VipIODevice::WriteOnly))
-			m_data->device->close();
+		else if (!d_data->openWrite.isChecked() && (d_data->device->openMode() & VipIODevice::WriteOnly))
+			d_data->device->close();
 	}
 }
 
@@ -797,12 +794,12 @@ protected:
 		// {
 		// //find the right insertion position
 		// int insertPos = this->count();
-		// QListWidgetItem * item = itemAt(evt->pos());
+		// QListWidgetItem * item = itemAt(evt->VIP_EVT_POSITION());
 		// if(item)
 		// {
 		// QRect rect = this->visualItemRect(item);
 		// insertPos = this->indexFromItem(item).row();
-		// if(evt->pos().y() > rect.center().y())
+		// if(evt->VIP_EVT_POSITION().y() > rect.center().y())
 		//	insertPos++;
 		// }
 		//
@@ -825,11 +822,11 @@ protected:
 		// find the right insertion position
 
 		int insertPos = this->count();
-		QListWidgetItem* item = itemAt(evt->pos());
+		QListWidgetItem* item = itemAt(evt->VIP_EVT_POSITION());
 		if (item) {
 			QRect rect = this->visualItemRect(item);
 			insertPos = this->indexFromItem(item).row();
-			if (evt->pos().y() > rect.center().y())
+			if (evt->VIP_EVT_POSITION().y() > rect.center().y())
 				insertPos++;
 		}
 
@@ -880,8 +877,11 @@ protected:
 			connect(copy, SIGNAL(triggered(bool)), editor, SLOT(copySelection()));
 			connect(cut, SIGNAL(triggered(bool)), editor, SLOT(cutSelection()));
 			connect(paste, SIGNAL(triggered(bool)), editor, SLOT(pasteCopiedItems()));
-
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
 			menu.exec(evt->screenPos().toPoint());
+#else
+			menu.exec(evt->globalPosition().toPoint());
+#endif
 		}
 	}
 };
@@ -906,47 +906,47 @@ public:
 
 VipProcessingListEditor::VipProcessingListEditor()
 {
-	m_data = new PrivateData();
-	m_data->editor = new VipUniqueProcessingObjectEditor();
-	m_data->editor->setShowExactProcessingOnly(true);
+	VIP_CREATE_PRIVATE_DATA(d_data);
+	d_data->editor = new VipUniqueProcessingObjectEditor();
+	d_data->editor->setShowExactProcessingOnly(true);
 
-	m_data->user_types = vipUserTypes();
-	m_data->list = new ListWidget(this);
-	m_data->tree = new VipProcessingObjectMenu();
-	connect(m_data->tree, SIGNAL(selected(const VipProcessingObject::Info&)), this, SLOT(addSelectedProcessing()));
+	d_data->user_types = vipUserTypes();
+	d_data->list = new ListWidget(this);
+	d_data->tree = new VipProcessingObjectMenu();
+	connect(d_data->tree, SIGNAL(selected(const VipProcessingObject::Info&)), this, SLOT(addSelectedProcessing()));
 
-	m_data->list->setDragDropMode(QAbstractItemView::InternalMove);
-	m_data->list->setSelectionMode(QAbstractItemView::ExtendedSelection);
-	m_data->list->setDragDropOverwriteMode(false);
-	m_data->list->setDefaultDropAction(Qt::TargetMoveAction);
-	m_data->list->setToolTip("Stack of processing");
+	d_data->list->setDragDropMode(QAbstractItemView::InternalMove);
+	d_data->list->setSelectionMode(QAbstractItemView::ExtendedSelection);
+	d_data->list->setDragDropOverwriteMode(false);
+	d_data->list->setDefaultDropAction(Qt::TargetMoveAction);
+	d_data->list->setToolTip("Stack of processing");
 
-	m_data->toolBar = new QToolBar();
-	m_data->toolBar->setIconSize(QSize(18, 18));
+	d_data->toolBar = new QToolBar();
+	d_data->toolBar->setIconSize(QSize(18, 18));
 
-	m_data->addProcessing = new QToolButton();
-	m_data->addProcessing->setAutoRaise(true);
-	m_data->addProcessing->setMenu(m_data->tree);
-	m_data->addProcessing->setPopupMode(QToolButton::InstantPopup);
-	m_data->addProcessing->setIcon(vipIcon("processing.png"));
-	m_data->addProcessing->setText("Add a processing");
-	m_data->addProcessing->setToolTip("<b>Add a new processing into the processing list</b><br>The processing will be added at the end of the list. Use the mouse to change the processing order.");
-	m_data->addProcessing->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
-	m_data->addProcessing->setIconSize(QSize(18, 18));
-	m_data->toolBar->addWidget(m_data->addProcessing);
-	connect(m_data->addProcessing, SIGNAL(clicked(bool)), this, SLOT(updateProcessingTree()));
-	connect(m_data->tree, SIGNAL(aboutToShow()), this, SLOT(updateProcessingTree()), Qt::DirectConnection);
+	d_data->addProcessing = new QToolButton();
+	d_data->addProcessing->setAutoRaise(true);
+	d_data->addProcessing->setMenu(d_data->tree);
+	d_data->addProcessing->setPopupMode(QToolButton::InstantPopup);
+	d_data->addProcessing->setIcon(vipIcon("PROCESSING.png"));
+	d_data->addProcessing->setText("Add a processing");
+	d_data->addProcessing->setToolTip("<b>Add a new processing into the processing list</b><br>The processing will be added at the end of the list. Use the mouse to change the processing order.");
+	d_data->addProcessing->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
+	d_data->addProcessing->setIconSize(QSize(18, 18));
+	d_data->toolBar->addWidget(d_data->addProcessing);
+	connect(d_data->addProcessing, SIGNAL(clicked(bool)), this, SLOT(updateProcessingTree()));
+	connect(d_data->tree, SIGNAL(aboutToShow()), this, SLOT(updateProcessingTree()), Qt::DirectConnection);
 
-	QAction* showList = m_data->toolBar->addAction(vipIcon("down.png"), "Show/Hide processing list");
+	QAction* showList = d_data->toolBar->addAction(vipIcon("down.png"), "Show/Hide processing list");
 	showList->setCheckable(true);
 	showList->setChecked(true);
-	connect(showList, SIGNAL(triggered(bool)), m_data->list, SLOT(setVisible(bool)));
+	connect(showList, SIGNAL(triggered(bool)), d_data->list, SLOT(setVisible(bool)));
 
-	m_data->toolBar->addSeparator();
-	QAction* copy = m_data->toolBar->addAction(vipIcon("copy.png"), "Copy selected processing");
-	QAction* cut = m_data->toolBar->addAction(vipIcon("cut.png"), "Cut selected processing");
-	m_data->toolBar->addSeparator();
-	QAction* paste = m_data->toolBar->addAction(vipIcon("paste.png"), "Paste copied processing.\nNew processing will be inserted before the selected one");
+	d_data->toolBar->addSeparator();
+	QAction* copy = d_data->toolBar->addAction(vipIcon("copy.png"), "Copy selected processing");
+	QAction* cut = d_data->toolBar->addAction(vipIcon("cut.png"), "Cut selected processing");
+	d_data->toolBar->addSeparator();
+	QAction* paste = d_data->toolBar->addAction(vipIcon("paste.png"), "Paste copied processing.\nNew processing will be inserted before the selected one");
 
 	connect(copy, SIGNAL(triggered(bool)), this, SLOT(copySelection()));
 	connect(cut, SIGNAL(triggered(bool)), this, SLOT(cutSelection()));
@@ -954,45 +954,44 @@ VipProcessingListEditor::VipProcessingListEditor()
 
 	QVBoxLayout* vlay = new QVBoxLayout();
 	vlay->setContentsMargins(0, 0, 0, 0);
-	vlay->addWidget(m_data->toolBar);
-	vlay->addWidget(m_data->list);
+	vlay->addWidget(d_data->toolBar);
+	vlay->addWidget(d_data->list);
 	// TEST: add stretch factor
-	vlay->addWidget(m_data->editor, 1);
+	vlay->addWidget(d_data->editor, 1);
 
 	setLayout(vlay);
 
-	connect(m_data->list, SIGNAL(itemSelectionChanged()), this, SLOT(selectedItemChanged()));
-	connect(m_data->list, SIGNAL(itemChanged(QListWidgetItem*)), this, SLOT(itemChanged(QListWidgetItem*)));
+	connect(d_data->list, SIGNAL(itemSelectionChanged()), this, SLOT(selectedItemChanged()));
+	connect(d_data->list, SIGNAL(itemChanged(QListWidgetItem*)), this, SLOT(itemChanged(QListWidgetItem*)));
 
-	m_data->timer.setSingleShot(true);
-	m_data->timer.setInterval(500);
-	connect(&m_data->timer, SIGNAL(timeout()), this, SLOT(resetProcessingList()));
+	d_data->timer.setSingleShot(true);
+	d_data->timer.setInterval(500);
+	connect(&d_data->timer, SIGNAL(timeout()), this, SLOT(resetProcessingList()));
 }
 
 VipProcessingListEditor::~VipProcessingListEditor()
 {
-	disconnect(&m_data->timer, SIGNAL(timeout()), this, SLOT(resetProcessingList()));
-	m_data->timer.stop();
-	delete m_data;
+	disconnect(&d_data->timer, SIGNAL(timeout()), this, SLOT(resetProcessingList()));
+	d_data->timer.stop();
 }
 
 void VipProcessingListEditor::selectedItemChanged()
 {
-	QList<QListWidgetItem*> items = m_data->list->selectedItems();
+	QList<QListWidgetItem*> items = d_data->list->selectedItems();
 	if (items.size()) {
 		VipProcessingObject* obj = static_cast<ProcessingListWidgetItem*>(items.back())->processing;
 		if (obj) {
-			m_data->editor->setProcessingObject(obj);
-			Q_EMIT selectionChanged(m_data->editor);
-			m_data->editor->show();
-			VipUniqueProcessingObjectEditor::geometryChanged(m_data->editor->parentWidget());
+			d_data->editor->setProcessingObject(obj);
+			Q_EMIT selectionChanged(d_data->editor);
+			d_data->editor->show();
+			VipUniqueProcessingObjectEditor::geometryChanged(d_data->editor->parentWidget());
 		}
 	}
 }
 
 void VipProcessingListEditor::clearEditor()
 {
-	m_data->editor->setProcessingObject(nullptr);
+	d_data->editor->setProcessingObject(nullptr);
 }
 
 void VipProcessingListEditor::resetProcessingList()
@@ -1003,59 +1002,59 @@ void VipProcessingListEditor::resetProcessingList()
 
 void VipProcessingListEditor::updateProcessingTree()
 {
-	if (m_data->processingList) {
+	if (d_data->processingList) {
 		// create a list of all VipProcessingObject that can be inserted into a VipProcessingList
 		QVariantList lst;
-		lst.append(m_data->processingList->inputAt(0)->probe().data());
+		lst.append(d_data->processingList->inputAt(0)->probe().data());
 
 		QList<int> current_types = vipUserTypes();
-		if (m_data->infos.isEmpty() || current_types != m_data->user_types) {
-			m_data->user_types = current_types;
-			m_data->infos = VipProcessingObject::validProcessingObjects(lst, 1, VipProcessingObject::InputTransform).values();
+		if (d_data->infos.isEmpty() || current_types != d_data->user_types) {
+			d_data->user_types = current_types;
+			d_data->infos = VipProcessingObject::validProcessingObjects(lst, 1, VipProcessingObject::InputTransform).values();
 
 			// only keep the Info with inputTransformation to true
-			for (int i = 0; i < m_data->infos.size(); ++i) {
-				if (m_data->infos[i].displayHint != VipProcessingObject::InputTransform) {
-					m_data->infos.removeAt(i);
+			for (int i = 0; i < d_data->infos.size(); ++i) {
+				if (d_data->infos[i].displayHint != VipProcessingObject::InputTransform) {
+					d_data->infos.removeAt(i);
 					--i;
 				}
 			}
 		}
 
-		m_data->tree->setProcessingInfos(m_data->infos);
+		d_data->tree->setProcessingInfos(d_data->infos);
 	}
 }
 
 void VipProcessingListEditor::setProcessingList(VipProcessingList* lst)
 {
-	if (m_data->processingList)
-		disconnect(m_data->processingList, SIGNAL(processingChanged(VipProcessingObject*)), &m_data->timer, SLOT(start()));
+	if (d_data->processingList)
+		disconnect(d_data->processingList, SIGNAL(processingChanged(VipProcessingObject*)), &d_data->timer, SLOT(start()));
 
-	m_data->list->clear();
-	m_data->processingList = lst;
+	d_data->list->clear();
+	d_data->processingList = lst;
 
 	// clean the hidden processing list
-	for (int i = 0; i < m_data->hidden.size(); ++i) {
-		if (!m_data->hidden[i]) {
-			m_data->hidden.removeAt(i);
+	for (int i = 0; i < d_data->hidden.size(); ++i) {
+		if (!d_data->hidden[i]) {
+			d_data->hidden.removeAt(i);
 			--i;
 		}
 	}
 
 	if (lst) {
 		this->setObjectName(lst->objectName());
-		connect(m_data->processingList, SIGNAL(processingChanged(VipProcessingObject*)), &m_data->timer, SLOT(start()));
+		connect(d_data->processingList, SIGNAL(processingChanged(VipProcessingObject*)), &d_data->timer, SLOT(start()));
 
 		QList<VipProcessingObject*> objects = lst->processings();
 		for (int i = 0; i < objects.size(); ++i) {
-			m_data->list->addItem(new ProcessingListWidgetItem(objects[i]));
-			if (m_data->hidden.indexOf(objects[i]) >= 0 || !objects[i]->isVisible())
-				m_data->list->item(m_data->list->count() - 1)->setHidden(true);
+			d_data->list->addItem(new ProcessingListWidgetItem(objects[i]));
+			if (d_data->hidden.indexOf(objects[i]) >= 0 || !objects[i]->isVisible())
+				d_data->list->item(d_data->list->count() - 1)->setHidden(true);
 		}
 	}
 
 	// reset the ListWidget size
-	m_data->list->setMaximumHeight(m_data->list->count() * 30 + 30);
+	d_data->list->setMaximumHeight(d_data->list->count() * 30 + 30);
 	VipUniqueProcessingObjectEditor::geometryChanged(this);
 
 	// update the possible VipProcessingObject
@@ -1064,69 +1063,69 @@ void VipProcessingListEditor::setProcessingList(VipProcessingList* lst)
 
 VipProcessingList* VipProcessingListEditor::processingList() const
 {
-	return m_data->processingList;
+	return d_data->processingList;
 }
 
 VipUniqueProcessingObjectEditor* VipProcessingListEditor::editor() const
 {
-	return m_data->editor;
+	return d_data->editor;
 }
 
 QToolButton* VipProcessingListEditor::addProcessingButton() const
 {
-	return m_data->addProcessing;
+	return d_data->addProcessing;
 }
 
 QListWidget* VipProcessingListEditor::list() const
 {
-	return m_data->list;
+	return d_data->list;
 }
 
 void VipProcessingListEditor::addProcessings(const QList<VipProcessingObject::Info>& infos)
 {
-	if (!m_data->processingList) {
+	if (!d_data->processingList) {
 		VIP_LOG_ERROR("No processing list available");
 		return;
 	}
-	m_data->processingList->blockSignals(true);
+	d_data->processingList->blockSignals(true);
 
 	QList<VipProcessingObject*> added;
 	for (int i = 0; i < infos.size(); ++i) {
 		VipProcessingObject* obj = infos[i].create();
 		if (obj) {
 			added.append(obj);
-			m_data->processingList->append(obj);
+			d_data->processingList->append(obj);
 		}
 	}
 
-	m_data->processingList->blockSignals(false);
+	d_data->processingList->blockSignals(false);
 
 	if (added.size()) {
-		setProcessingList(m_data->processingList);
-		m_data->processingList->reload();
+		setProcessingList(d_data->processingList);
+		d_data->processingList->reload();
 
 		// select the added VipProcessingObject
 		for (int i = 0; i < added.size(); ++i) {
-			m_data->list->item(m_data->list->find(added[i]))->setSelected(true);
+			d_data->list->item(d_data->list->find(added[i]))->setSelected(true);
 		}
 	}
 
-	// m_data->processingList->blockSignals(false);
-	m_data->addProcessing->menu()->hide();
+	// d_data->processingList->blockSignals(false);
+	d_data->addProcessing->menu()->hide();
 
 	// TODO: reemit signal for other editors
-	disconnect(m_data->processingList, SIGNAL(processingChanged(VipProcessingObject*)), &m_data->timer, SLOT(start()));
-	m_data->processingList->emitProcessingChanged();
-	connect(m_data->processingList, SIGNAL(processingChanged(VipProcessingObject*)), &m_data->timer, SLOT(start()));
+	disconnect(d_data->processingList, SIGNAL(processingChanged(VipProcessingObject*)), &d_data->timer, SLOT(start()));
+	d_data->processingList->emitProcessingChanged();
+	connect(d_data->processingList, SIGNAL(processingChanged(VipProcessingObject*)), &d_data->timer, SLOT(start()));
 }
 
 void VipProcessingListEditor::selectObject(VipProcessingObject* obj)
 {
-	m_data->list->clearSelection();
-	for (int i = 0; i < m_data->list->count(); ++i) {
-		ProcessingListWidgetItem* item = static_cast<ProcessingListWidgetItem*>(m_data->list->item(i));
+	d_data->list->clearSelection();
+	for (int i = 0; i < d_data->list->count(); ++i) {
+		ProcessingListWidgetItem* item = static_cast<ProcessingListWidgetItem*>(d_data->list->item(i));
 		if (item->processing == obj) {
-			// m_data->list->setItemSelected(item, true);
+			// d_data->list->setItemSelected(item, true);
 			item->setSelected(true);
 			break;
 		}
@@ -1135,8 +1134,8 @@ void VipProcessingListEditor::selectObject(VipProcessingObject* obj)
 
 QListWidgetItem* VipProcessingListEditor::item(VipProcessingObject* obj) const
 {
-	for (int i = 0; i < m_data->list->count(); ++i) {
-		ProcessingListWidgetItem* item = static_cast<ProcessingListWidgetItem*>(m_data->list->item(i));
+	for (int i = 0; i < d_data->list->count(); ++i) {
+		ProcessingListWidgetItem* item = static_cast<ProcessingListWidgetItem*>(d_data->list->item(i));
 		if (item->processing == obj)
 			return item;
 	}
@@ -1170,7 +1169,7 @@ QList<VipProcessingObject*> VipProcessingListEditor::copiedProcessing()
 
 void VipProcessingListEditor::copySelection()
 {
-	QList<QListWidgetItem*> items = m_data->list->selectedItems();
+	QList<QListWidgetItem*> items = d_data->list->selectedItems();
 	if (items.size()) {
 		VipXOStringArchive arch;
 		arch.start("processing");
@@ -1183,41 +1182,41 @@ void VipProcessingListEditor::copySelection()
 }
 void VipProcessingListEditor::cutSelection()
 {
-	QList<QListWidgetItem*> items = m_data->list->selectedItems();
+	QList<QListWidgetItem*> items = d_data->list->selectedItems();
 	copySelection();
-	if (m_data->processingList)
+	if (d_data->processingList)
 		for (int i = 0; i < items.size(); ++i) {
-			m_data->processingList->remove(static_cast<ProcessingListWidgetItem*>(items[i])->processing.data());
+			d_data->processingList->remove(static_cast<ProcessingListWidgetItem*>(items[i])->processing.data());
 		}
 }
 
 void VipProcessingListEditor::pasteCopiedItems()
 {
-	if (m_data->processingList) {
-		QList<QListWidgetItem*> items = m_data->list->selectedItems();
-		int index = items.size() ? m_data->list->row(items.last()) : -1;
+	if (d_data->processingList) {
+		QList<QListWidgetItem*> items = d_data->list->selectedItems();
+		int index = items.size() ? d_data->list->row(items.last()) : -1;
 
 		QList<VipProcessingObject*> procs = copiedProcessing();
 		if (index < 0) {
 			for (int i = 0; i < procs.size(); ++i)
-				m_data->processingList->append(procs[i]);
+				d_data->processingList->append(procs[i]);
 		}
 		else {
 			for (int i = 0; i < procs.size(); ++i, ++index)
-				m_data->processingList->insert(index, procs[i]);
+				d_data->processingList->insert(index, procs[i]);
 		}
 	}
 }
 
 void VipProcessingListEditor::setProcessingVisible(VipProcessingObject* obj, bool visible)
 {
-	if (!visible && m_data->hidden.indexOf(obj) < 0)
-		m_data->hidden.append(obj);
+	if (!visible && d_data->hidden.indexOf(obj) < 0)
+		d_data->hidden.append(obj);
 	else if (visible)
-		m_data->hidden.removeOne(obj);
+		d_data->hidden.removeOne(obj);
 
-	for (int i = 0; i < m_data->list->count(); ++i) {
-		ProcessingListWidgetItem* item = static_cast<ProcessingListWidgetItem*>(m_data->list->item(i));
+	for (int i = 0; i < d_data->list->count(); ++i) {
+		ProcessingListWidgetItem* item = static_cast<ProcessingListWidgetItem*>(d_data->list->item(i));
 		if (item->processing == obj) {
 			if (visible)
 				item->setHidden(false);
@@ -1230,10 +1229,10 @@ void VipProcessingListEditor::setProcessingVisible(VipProcessingObject* obj, boo
 
 void VipProcessingListEditor::addSelectedProcessing()
 {
-	if (!m_data->processingList)
+	if (!d_data->processingList)
 		return;
 
-	QList<VipProcessingObject::Info> infos = QList<VipProcessingObject::Info>() << m_data->tree->selectedProcessingInfo();
+	QList<VipProcessingObject::Info> infos = QList<VipProcessingObject::Info>() << d_data->tree->selectedProcessingInfo();
 	addProcessings(infos);
 }
 
@@ -1242,47 +1241,47 @@ void VipProcessingListEditor::itemChanged(QListWidgetItem* item)
 	ProcessingListWidgetItem* it = static_cast<ProcessingListWidgetItem*>(item);
 	if (it->processing)
 		it->processing->setEnabled(item->checkState() == Qt::Checked);
-	if (m_data->processingList)
-		m_data->processingList->reload();
+	if (d_data->processingList)
+		d_data->processingList->reload();
 }
 
 void VipProcessingListEditor::updateProcessingList()
 {
-	if (!m_data->processingList)
+	if (!d_data->processingList)
 		return;
 
-	m_data->processingList->blockSignals(true);
+	d_data->processingList->blockSignals(true);
 
 	// update the VipProcessingList after a change in the ListWidget (deletetion or drag/drop)
 
 	// first, remove all VipProcessingObject for the VipProcessingList without deleting them
 	QList<VipProcessingObject*> removed;
-	while (m_data->processingList->size() > 0)
-		removed.append(m_data->processingList->take(0));
+	while (d_data->processingList->size() > 0)
+		removed.append(d_data->processingList->take(0));
 
 	// now add all items from the ListWidget
-	for (int i = 0; i < m_data->list->count(); ++i) {
-		m_data->processingList->append(static_cast<ProcessingListWidgetItem*>(m_data->list->item(i))->processing);
+	for (int i = 0; i < d_data->list->count(); ++i) {
+		d_data->processingList->append(static_cast<ProcessingListWidgetItem*>(d_data->list->item(i))->processing);
 	}
 
 	// delete orphan objects
 	for (int i = 0; i < removed.size(); ++i)
-		if (m_data->processingList->indexOf(removed[i]) < 0)
+		if (d_data->processingList->indexOf(removed[i]) < 0)
 			delete removed[i];
 
 	// for the update of the VipProcessingList
-	m_data->processingList->update(true);
+	d_data->processingList->update(true);
 
 	// reset the ListWidget size
-	m_data->list->setMaximumHeight(m_data->list->count() * 30 + 30);
+	d_data->list->setMaximumHeight(d_data->list->count() * 30 + 30);
 	VipUniqueProcessingObjectEditor::geometryChanged(this);
 
-	m_data->processingList->blockSignals(false);
+	d_data->processingList->blockSignals(false);
 
 	// TODO: reemit signal for other editors, but not this one
-	disconnect(m_data->processingList, SIGNAL(processingChanged(VipProcessingObject*)), &m_data->timer, SLOT(start()));
-	m_data->processingList->emitProcessingChanged();
-	connect(m_data->processingList, SIGNAL(processingChanged(VipProcessingObject*)), &m_data->timer, SLOT(start()));
+	disconnect(d_data->processingList, SIGNAL(processingChanged(VipProcessingObject*)), &d_data->timer, SLOT(start()));
+	d_data->processingList->emitProcessingChanged();
+	connect(d_data->processingList, SIGNAL(processingChanged(VipProcessingObject*)), &d_data->timer, SLOT(start()));
 }
 
 class VipSplitAndMergeEditor::PrivateData
@@ -1300,28 +1299,27 @@ public:
 VipSplitAndMergeEditor::VipSplitAndMergeEditor(QWidget* parent)
   : QWidget(parent)
 {
-	m_data = new PrivateData();
+	VIP_CREATE_PRIVATE_DATA(d_data);
 
 	QVBoxLayout* lay = new QVBoxLayout();
 	lay->setContentsMargins(0, 0, 0, 0);
-	lay->addWidget(&m_data->method);
-	lay->addLayout(m_data->procsLayout = new QHBoxLayout());
-	m_data->procsLayout->setContentsMargins(0, 0, 0, 0);
+	lay->addWidget(&d_data->method);
+	lay->addLayout(d_data->procsLayout = new QHBoxLayout());
+	d_data->procsLayout->setContentsMargins(0, 0, 0, 0);
 	setLayout(lay);
 
-	m_data->methods = new QMenu(&m_data->method);
-	m_data->method.setMenu(m_data->methods);
-	m_data->method.setPopupMode(QToolButton::InstantPopup);
-	m_data->method.setToolTip("<b>Select the split method</b><br>The input data will be splitted in several components according to given method."
+	d_data->methods = new QMenu(&d_data->method);
+	d_data->method.setMenu(d_data->methods);
+	d_data->method.setPopupMode(QToolButton::InstantPopup);
+	d_data->method.setToolTip("<b>Select the split method</b><br>The input data will be splitted in several components according to given method."
 				  "You can then add different processings for each component. Each component will be merged back to construct the output data.");
 
-	connect(m_data->methods, SIGNAL(aboutToShow()), this, SLOT(computeMethods()));
-	connect(m_data->methods, SIGNAL(triggered(QAction*)), this, SLOT(newMethod(QAction*)));
+	connect(d_data->methods, SIGNAL(aboutToShow()), this, SLOT(computeMethods()));
+	connect(d_data->methods, SIGNAL(triggered(QAction*)), this, SLOT(newMethod(QAction*)));
 }
 
 VipSplitAndMergeEditor::~VipSplitAndMergeEditor()
 {
-	delete m_data;
 }
 
 void VipSplitAndMergeEditor::computeMethods()
@@ -1331,7 +1329,7 @@ void VipSplitAndMergeEditor::computeMethods()
 
 void VipSplitAndMergeEditor::setProcessing(VipSplitAndMerge* proc)
 {
-	m_data->proc = proc;
+	d_data->proc = proc;
 	if (proc) {
 		// Create the methods menu
 		// Find the possible split methods
@@ -1343,20 +1341,20 @@ void VipSplitAndMergeEditor::setProcessing(VipSplitAndMerge* proc)
 				methods = VipSplitAndMerge::possibleMethods(proc->inputAt(0)->probe().data());
 			}
 		}
-		m_data->methods->blockSignals(true);
-		m_data->methods->clear();
+		d_data->methods->blockSignals(true);
+		d_data->methods->clear();
 		for (int i = 0; i < methods.size(); ++i) {
-			QAction* act = m_data->methods->addAction(methods[i]);
+			QAction* act = d_data->methods->addAction(methods[i]);
 			act->setCheckable(true);
 			if (methods[i] == proc->method())
 				act->setChecked(true);
 		}
 		if (proc->method().isEmpty()) {
-			m_data->method.setText("No splitting/merging applied");
+			d_data->method.setText("No splitting/merging applied");
 		}
 		else
-			m_data->method.setText(proc->method());
-		m_data->methods->blockSignals(false);
+			d_data->method.setText(proc->method());
+		d_data->methods->blockSignals(false);
 
 		// if (methods.size() && methods.indexOf(proc->method()) < 0)
 		// {
@@ -1365,63 +1363,63 @@ void VipSplitAndMergeEditor::setProcessing(VipSplitAndMerge* proc)
 		// }
 
 		// create the editors
-		if (m_data->editors.size() != proc->componentCount()) {
+		if (d_data->editors.size() != proc->componentCount()) {
 			// delete all editors
-			for (int i = 0; i < m_data->editors.size(); ++i)
-				delete m_data->editors[i];
-			m_data->editors.clear();
+			for (int i = 0; i < d_data->editors.size(); ++i)
+				delete d_data->editors[i];
+			d_data->editors.clear();
 
 			// delete all proc editors
-			for (int i = 0; i < m_data->procEditors.size(); ++i)
-				delete m_data->procEditors[i];
-			m_data->procEditors.clear();
+			for (int i = 0; i < d_data->procEditors.size(); ++i)
+				delete d_data->procEditors[i];
+			d_data->procEditors.clear();
 
 			for (int i = 0; i < proc->componentCount(); ++i) {
-				m_data->editors.append(new VipProcessingListEditor());
-				m_data->procsLayout->addWidget(m_data->editors.back());
+				d_data->editors.append(new VipProcessingListEditor());
+				d_data->procsLayout->addWidget(d_data->editors.back());
 
-				m_data->procEditors.append(m_data->editors.back()->editor());
-				this->layout()->addWidget(m_data->procEditors.back());
-				m_data->procEditors.back()->hide();
+				d_data->procEditors.append(d_data->editors.back()->editor());
+				this->layout()->addWidget(d_data->procEditors.back());
+				d_data->procEditors.back()->hide();
 
-				connect(m_data->editors.back(), SIGNAL(selectionChanged(VipUniqueProcessingObjectEditor*)), this, SLOT(receiveSelectionChanged(VipUniqueProcessingObjectEditor*)));
+				connect(d_data->editors.back(), SIGNAL(selectionChanged(VipUniqueProcessingObjectEditor*)), this, SLOT(receiveSelectionChanged(VipUniqueProcessingObjectEditor*)));
 			}
 		}
 
 		// customize editors
 		QStringList components = proc->components();
 		if (components.size() == proc->componentCount()) {
-			for (int i = 0; i < m_data->editors.size(); ++i) {
-				m_data->editors[i]->addProcessingButton()->setText(components[i]);
-				m_data->editors[i]->addProcessingButton()->setToolTip("Add processing for '" + components[i] + "' component'");
+			for (int i = 0; i < d_data->editors.size(); ++i) {
+				d_data->editors[i]->addProcessingButton()->setText(components[i]);
+				d_data->editors[i]->addProcessingButton()->setToolTip("Add processing for '" + components[i] + "' component'");
 			}
 
 			// set the processing list
-			for (int i = 0; i < m_data->editors.size(); ++i)
-				m_data->editors[i]->setProcessingList(proc->componentProcessings(i));
+			for (int i = 0; i < d_data->editors.size(); ++i)
+				d_data->editors[i]->setProcessingList(proc->componentProcessings(i));
 		}
 	}
 }
 
 VipSplitAndMerge* VipSplitAndMergeEditor::processing() const
 {
-	return m_data->proc;
+	return d_data->proc;
 }
 
 void VipSplitAndMergeEditor::newMethod(QAction* act)
 {
-	QList<QAction*> actions = m_data->methods->actions();
+	QList<QAction*> actions = d_data->methods->actions();
 	// uncheck other actions
-	m_data->methods->blockSignals(true);
+	d_data->methods->blockSignals(true);
 	for (int i = 0; i < actions.size(); ++i)
 		actions[i]->setChecked(act == actions[i]);
-	m_data->methods->blockSignals(false);
-	m_data->method.setText(act->text());
+	d_data->methods->blockSignals(false);
+	d_data->method.setText(act->text());
 
 	// set the processing method, and reset the processing to update the display
-	if (m_data->proc) {
-		m_data->proc->setMethod(act->text());
-		setProcessing(m_data->proc);
+	if (d_data->proc) {
+		d_data->proc->setMethod(act->text());
+		setProcessing(d_data->proc);
 	}
 }
 
@@ -1429,16 +1427,16 @@ void VipSplitAndMergeEditor::receiveSelectionChanged(VipUniqueProcessingObjectEd
 {
 	// a processing has been selected in on of the editors
 
-	for (int i = 0; i < m_data->procEditors.size(); ++i) {
+	for (int i = 0; i < d_data->procEditors.size(); ++i) {
 		// hide all processing editors except the one that is shown
-		m_data->procEditors[i]->setVisible(m_data->procEditors[i] == ed);
+		d_data->procEditors[i]->setVisible(d_data->procEditors[i] == ed);
 	}
 
 	if (VipProcessingListEditor* editor = qobject_cast<VipProcessingListEditor*>(sender())) {
 		// unselect all rpocessing for all other VipProcessingListEditor
-		for (int i = 0; i < m_data->editors.size(); ++i) {
-			if (m_data->editors[i] != editor) {
-				QListWidget* list = m_data->editors[i]->list();
+		for (int i = 0; i < d_data->editors.size(); ++i) {
+			if (d_data->editors[i] != editor) {
+				QListWidget* list = d_data->editors[i]->list();
 				for (int j = 0; j < list->count(); ++j)
 					list->item(j)->setSelected(false);
 			}
@@ -1457,114 +1455,113 @@ public:
 
 VipExtractComponentEditor::VipExtractComponentEditor()
 {
-	m_data = new PrivateData();
-	m_data->components.setToolTip("Select the component to extract");
-	m_data->components.setEditable(false);
-	// m_data->components.QComboBox::setEditText("Invariant");
-	m_data->components.setSizeAdjustPolicy(QComboBox::AdjustToContents);
-	m_data->components.setMinimumWidth(100);
+	VIP_CREATE_PRIVATE_DATA(d_data);
+	d_data->components.setToolTip("Select the component to extract");
+	d_data->components.setEditable(false);
+	// d_data->components.QComboBox::setEditText("Invariant");
+	d_data->components.setSizeAdjustPolicy(QComboBox::AdjustToContents);
+	d_data->components.setMinimumWidth(100);
 	QHBoxLayout* hlay = new QHBoxLayout();
-	hlay->addWidget(&m_data->components);
+	hlay->addWidget(&d_data->components);
 	hlay->setContentsMargins(0, 0, 0, 0);
 	setLayout(hlay);
 
-	connect(&m_data->components, SIGNAL(currentTextChanged(const QString&)), this, SLOT(updateExtractComponent()));
-	connect(&m_data->components, SIGNAL(openPopup()), this, SLOT(updateComponentChoice()));
+	connect(&d_data->components, SIGNAL(currentTextChanged(const QString&)), this, SLOT(updateExtractComponent()));
+	connect(&d_data->components, SIGNAL(openPopup()), this, SLOT(updateComponentChoice()));
 }
 
 VipExtractComponentEditor::~VipExtractComponentEditor()
 {
-	delete m_data;
 }
 
 void VipExtractComponentEditor::setExtractComponent(VipExtractComponent* extract)
 {
-	if (m_data->extractComponent) {
-		disconnect(m_data->extractComponent, SIGNAL(processingChanged(VipProcessingObject*)), this, SLOT(extractComponentChanged()));
+	if (d_data->extractComponent) {
+		disconnect(d_data->extractComponent, SIGNAL(processingChanged(VipProcessingObject*)), this, SLOT(extractComponentChanged()));
 	}
 
-	m_data->extractComponent = extract;
+	d_data->extractComponent = extract;
 	if (extract) {
-		QString comp = m_data->extractComponent->propertyAt(0)->data().value<QString>();
+		QString comp = d_data->extractComponent->propertyAt(0)->data().value<QString>();
 
 		// TEST: remove Invariant
 		// if (comp.isEmpty())
 		//	comp = "Invariant";
 		updateComponentChoice();
-		m_data->components.blockSignals(true);
-		if (m_data->components.findText(comp) < 0) {
-			m_data->components.addItem(comp);
+		d_data->components.blockSignals(true);
+		if (d_data->components.findText(comp) < 0) {
+			d_data->components.addItem(comp);
 		}
-		m_data->components.setCurrentText(comp);
-		m_data->components.blockSignals(false);
+		d_data->components.setCurrentText(comp);
+		d_data->components.blockSignals(false);
 		connect(extract, SIGNAL(processingChanged(VipProcessingObject*)), this, SLOT(extractComponentChanged()));
 	}
 }
 
 int VipExtractComponentEditor::componentCount() const
 {
-	return m_data->components.count();
+	return d_data->components.count();
 }
 
 QComboBox* VipExtractComponentEditor::choices() const
 {
-	return &m_data->components;
+	return &d_data->components;
 }
 
 void VipExtractComponentEditor::updateComponentChoice()
 {
-	if (m_data->extractComponent) {
-		m_data->components.blockSignals(true);
+	if (d_data->extractComponent) {
+		d_data->components.blockSignals(true);
 
-		QStringList components = m_data->extractComponent->supportedComponents();
-		if (components != m_data->components.items()) {
+		QStringList components = d_data->extractComponent->supportedComponents();
+		if (components != d_data->components.items()) {
 			// update the components
 
-			m_data->components.clear();
-			m_data->components.addItems(components);
+			d_data->components.clear();
+			d_data->components.addItems(components);
 			// set the default component
-			QString default_component = m_data->extractComponent->defaultComponent();
+			QString default_component = d_data->extractComponent->defaultComponent();
 			if (default_component.isEmpty()) {
-				m_data->components.setCurrentIndex(0);
+				d_data->components.setCurrentIndex(0);
 			}
 			else
-				m_data->components.setCurrentText(m_data->extractComponent->defaultComponent());
+				d_data->components.setCurrentText(d_data->extractComponent->defaultComponent());
 		}
 
-		QString comp = m_data->extractComponent->propertyAt(0)->data().value<QString>();
+		QString comp = d_data->extractComponent->propertyAt(0)->data().value<QString>();
 		// TEST: remove Invariant
 		if (!components.size() && (comp.isEmpty() //|| comp == "Invariant"
 					   )) {
-			if (m_data->components.isVisible())
-				m_data->components.hide();
+			if (d_data->components.isVisible())
+				d_data->components.hide();
 		}
-		else if (m_data->components.isHidden()) {
-			m_data->components.show();
+		else if (d_data->components.isHidden()) {
+			d_data->components.show();
 		}
 
 		if (!comp.isEmpty()) {
-			if (comp != m_data->components.currentText()) {
-				m_data->components.setCurrentText(comp);
+			if (comp != d_data->components.currentText()) {
+				d_data->components.setCurrentText(comp);
 			}
 		}
 		else {
-			comp = m_data->components.currentText();
-			m_data->extractComponent->propertyAt(0)->setData(comp);
+			comp = d_data->components.currentText();
+			d_data->extractComponent->propertyAt(0)->setData(comp);
 		}
 
-		m_data->components.blockSignals(false);
+		d_data->components.blockSignals(false);
 	}
 }
 
 void VipExtractComponentEditor::updateExtractComponent()
 {
-	if (m_data->extractComponent) {
-		int index = m_data->components.currentIndex();
-		QStringList choices = m_data->extractComponent->supportedComponents();
+	if (d_data->extractComponent) {
+		int index = d_data->components.currentIndex();
+		QStringList choices = d_data->extractComponent->supportedComponents();
 		if (index < choices.size()) {
 			// set the new component
-			m_data->extractComponent->propertyAt(0)->setData(choices[index]);
-			m_data->extractComponent->reload();
+			d_data->extractComponent->propertyAt(0)->setData(choices[index]);
+			d_data->extractComponent->reload();
 			Q_EMIT componentChanged(choices[index]);
 		}
 	}
@@ -1572,10 +1569,10 @@ void VipExtractComponentEditor::updateExtractComponent()
 
 void VipExtractComponentEditor::extractComponentChanged()
 {
-	QString comp = m_data->extractComponent->propertyAt(0)->data().value<QString>();
-	m_data->components.blockSignals(true);
-	m_data->components.setCurrentText(comp);
-	m_data->components.blockSignals(false);
+	QString comp = d_data->extractComponent->propertyAt(0)->data().value<QString>();
+	d_data->components.blockSignals(true);
+	d_data->components.setCurrentText(comp);
+	d_data->components.blockSignals(false);
 }
 
 class VipConvertEditor::PrivateData
@@ -1618,45 +1615,44 @@ static int __indexForType(int type)
 
 VipConvertEditor::VipConvertEditor()
 {
-	m_data = new PrivateData();
-	m_data->types.setToolTip("Select the output type");
-	m_data->types.setEditable(false);
+	VIP_CREATE_PRIVATE_DATA(d_data);
+	d_data->types.setToolTip("Select the output type");
+	d_data->types.setEditable(false);
 
 	for (QMap<int, QPair<int, QString>>::const_iterator it = __conversions().begin(); it != __conversions().end(); ++it)
-		m_data->types.addItem(it.value().second);
+		d_data->types.addItem(it.value().second);
 
-	m_data->types.QComboBox::setCurrentIndex(0);
-	m_data->types.setSizeAdjustPolicy(QComboBox::AdjustToContents);
+	d_data->types.QComboBox::setCurrentIndex(0);
+	d_data->types.setSizeAdjustPolicy(QComboBox::AdjustToContents);
 	QHBoxLayout* hlay = new QHBoxLayout();
-	hlay->addWidget(&m_data->types);
+	hlay->addWidget(&d_data->types);
 	hlay->setContentsMargins(0, 0, 0, 0);
 	setLayout(hlay);
 
-	connect(&m_data->types, SIGNAL(currentTextChanged(const QString&)), this, SLOT(updateConversion()));
+	connect(&d_data->types, SIGNAL(currentTextChanged(const QString&)), this, SLOT(updateConversion()));
 }
 
 VipConvertEditor::~VipConvertEditor()
 {
-	delete m_data;
 }
 
 VipConvert* VipConvertEditor::convert() const
 {
-	return m_data->convert;
+	return d_data->convert;
 }
 
 void VipConvertEditor::setConvert(VipConvert* tr)
 {
-	if (m_data->convert) {
-		disconnect(m_data->convert, SIGNAL(processingChanged(VipProcessingObject*)), this, SLOT(convertChanged()));
+	if (d_data->convert) {
+		disconnect(d_data->convert, SIGNAL(processingChanged(VipProcessingObject*)), this, SLOT(convertChanged()));
 	}
 
-	m_data->convert = tr;
+	d_data->convert = tr;
 	if (tr) {
-		int type = m_data->convert->propertyAt(0)->data().value<int>();
-		m_data->types.blockSignals(true);
-		m_data->types.setCurrentIndex(__indexForType(type));
-		m_data->types.blockSignals(false);
+		int type = d_data->convert->propertyAt(0)->data().value<int>();
+		d_data->types.blockSignals(true);
+		d_data->types.setCurrentIndex(__indexForType(type));
+		d_data->types.blockSignals(false);
 
 		connect(tr, SIGNAL(processingChanged(VipProcessingObject*)), this, SLOT(conversionChanged()));
 	}
@@ -1664,28 +1660,28 @@ void VipConvertEditor::setConvert(VipConvert* tr)
 
 QComboBox* VipConvertEditor::types() const
 {
-	return &m_data->types;
+	return &d_data->types;
 }
 
 void VipConvertEditor::conversionChanged()
 {
-	if (m_data->convert) {
-		int type = m_data->convert->propertyAt(0)->data().value<int>();
-		m_data->types.blockSignals(true);
-		m_data->types.setCurrentIndex(__indexForType(type));
-		m_data->types.blockSignals(false);
+	if (d_data->convert) {
+		int type = d_data->convert->propertyAt(0)->data().value<int>();
+		d_data->types.blockSignals(true);
+		d_data->types.setCurrentIndex(__indexForType(type));
+		d_data->types.blockSignals(false);
 	}
 }
 
 void VipConvertEditor::updateConversion()
 {
-	if (m_data->convert) {
-		int index = m_data->types.currentIndex();
+	if (d_data->convert) {
+		int index = d_data->types.currentIndex();
 		int type = __conversions()[index].first;
 
 		// set the new type
-		m_data->convert->propertyAt(0)->setData(type);
-		m_data->convert->reload();
+		d_data->convert->propertyAt(0)->setData(type);
+		d_data->convert->reload();
 		Q_EMIT conversionChanged(type);
 	}
 }
@@ -1701,11 +1697,11 @@ public:
 VipDisplayImageEditor::VipDisplayImageEditor()
   : QWidget()
 {
-	m_data = new PrivateData();
+	VIP_CREATE_PRIVATE_DATA(d_data);
 
 	QVBoxLayout* lay = new QVBoxLayout();
 	lay->setContentsMargins(0, 0, 0, 0);
-	lay->addWidget(&m_data->editor);
+	lay->addWidget(&d_data->editor);
 
 	QHBoxLayout* th_lay = new QHBoxLayout();
 	th_lay->setContentsMargins(0, 0, 0, 0);
@@ -1713,54 +1709,53 @@ VipDisplayImageEditor::VipDisplayImageEditor()
 	lay->addLayout(th_lay);
 	setLayout(lay);
 
-	m_data->editor.setToolTip("Select a component to display");
-	m_data->editor.hide();
+	d_data->editor.setToolTip("Select a component to display");
+	d_data->editor.hide();
 	this->setToolTip("Select a component to display");
-	connect(&m_data->editor, SIGNAL(componentChanged(const QString&)), this, SLOT(updateDisplayImage()));
-	connect(&m_data->updateTimer, SIGNAL(timeout()), this, SLOT(updateExtractorVisibility()));
+	connect(&d_data->editor, SIGNAL(componentChanged(const QString&)), this, SLOT(updateDisplayImage()));
+	connect(&d_data->updateTimer, SIGNAL(timeout()), this, SLOT(updateExtractorVisibility()));
 
-	m_data->updateTimer.setSingleShot(false);
-	m_data->updateTimer.setInterval(500);
-	m_data->updateTimer.start();
+	d_data->updateTimer.setSingleShot(false);
+	d_data->updateTimer.setInterval(500);
+	d_data->updateTimer.start();
 }
 
 VipExtractComponentEditor* VipDisplayImageEditor::editor() const
 {
-	return &m_data->editor;
+	return &d_data->editor;
 }
 
 VipDisplayImageEditor::~VipDisplayImageEditor()
 {
-	m_data->updateTimer.stop();
-	disconnect(&m_data->updateTimer, SIGNAL(timeout()), this, SLOT(updateExtractorVisibility()));
-	delete m_data;
+	d_data->updateTimer.stop();
+	disconnect(&d_data->updateTimer, SIGNAL(timeout()), this, SLOT(updateExtractorVisibility()));
 }
 
 void VipDisplayImageEditor::setDisplayImage(VipDisplayImage* d)
 {
-	m_data->display = d;
+	d_data->display = d;
 	if (d) {
-		m_data->editor.setExtractComponent(d->extractComponent());
+		d_data->editor.setExtractComponent(d->extractComponent());
 	}
 }
 
 VipDisplayImage* VipDisplayImageEditor::displayImage() const
 {
-	return m_data->display;
+	return d_data->display;
 }
 
 void VipDisplayImageEditor::updateDisplayImage()
 {
-	if (m_data->display) {
-		VipAnyData any = m_data->display->inputAt(0)->data();
-		m_data->display->inputAt(0)->setData(any);
+	if (d_data->display) {
+		VipAnyData any = d_data->display->inputAt(0)->data();
+		d_data->display->inputAt(0)->setData(any);
 	}
 }
 
 void VipDisplayImageEditor::updateExtractorVisibility()
 {
-	if (m_data->display)
-		m_data->editor.setVisible(VipGenericExtractComponent::HasComponents(m_data->display->inputAt(0)->probe().value<VipNDArray>()));
+	if (d_data->display)
+		d_data->editor.setVisible(VipGenericExtractComponent::HasComponents(d_data->display->inputAt(0)->probe().value<VipNDArray>()));
 }
 
 class VipDisplayCurveEditor::PrivateData
@@ -1774,60 +1769,59 @@ public:
 VipDisplayCurveEditor::VipDisplayCurveEditor()
   : QWidget()
 {
-	m_data = new PrivateData();
+	VIP_CREATE_PRIVATE_DATA(d_data);
 
 	QVBoxLayout* lay = new QVBoxLayout();
 	lay->setContentsMargins(0, 0, 0, 0);
-	lay->addWidget(&m_data->editor);
+	lay->addWidget(&d_data->editor);
 	setLayout(lay);
 
-	m_data->editor.setToolTip("Select a component to display");
-	m_data->editor.hide();
+	d_data->editor.setToolTip("Select a component to display");
+	d_data->editor.hide();
 	this->setToolTip("Select a component to display");
-	connect(&m_data->editor, SIGNAL(componentChanged(const QString&)), this, SLOT(updateDisplayCurve()));
-	connect(&m_data->updateTimer, SIGNAL(timeout()), this, SLOT(updateExtractorVisibility()));
+	connect(&d_data->editor, SIGNAL(componentChanged(const QString&)), this, SLOT(updateDisplayCurve()));
+	connect(&d_data->updateTimer, SIGNAL(timeout()), this, SLOT(updateExtractorVisibility()));
 
-	m_data->updateTimer.setSingleShot(false);
-	m_data->updateTimer.setInterval(500);
-	m_data->updateTimer.start();
+	d_data->updateTimer.setSingleShot(false);
+	d_data->updateTimer.setInterval(500);
+	d_data->updateTimer.start();
 }
 
 VipDisplayCurveEditor::~VipDisplayCurveEditor()
 {
-	m_data->updateTimer.stop();
-	disconnect(&m_data->updateTimer, SIGNAL(timeout()), this, SLOT(updateExtractorVisibility()));
-	delete m_data;
+	d_data->updateTimer.stop();
+	disconnect(&d_data->updateTimer, SIGNAL(timeout()), this, SLOT(updateExtractorVisibility()));
 }
 
 void VipDisplayCurveEditor::setDisplay(VipDisplayCurve* d)
 {
-	m_data->display = d;
+	d_data->display = d;
 	if (d) {
-		m_data->editor.setExtractComponent(d->extractComponent());
+		d_data->editor.setExtractComponent(d->extractComponent());
 	}
 }
 
 VipDisplayCurve* VipDisplayCurveEditor::display() const
 {
-	return m_data->display;
+	return d_data->display;
 }
 
 void VipDisplayCurveEditor::updateDisplayCurve()
 {
-	if (m_data->display) {
-		VipAnyData any = m_data->display->inputAt(0)->data();
-		m_data->display->inputAt(0)->setData(any);
+	if (d_data->display) {
+		VipAnyData any = d_data->display->inputAt(0)->data();
+		d_data->display->inputAt(0)->setData(any);
 	}
 }
 
 void VipDisplayCurveEditor::updateExtractorVisibility()
 {
-	if (m_data->display) {
-		VipAnyData any = m_data->display->inputAt(0)->probe();
+	if (d_data->display) {
+		VipAnyData any = d_data->display->inputAt(0)->probe();
 		if (any.data().userType() == qMetaTypeId<VipComplexPoint>() || any.data().userType() == qMetaTypeId<VipComplexPointVector>())
-			m_data->editor.setVisible(true);
+			d_data->editor.setVisible(true);
 		else
-			m_data->editor.setVisible(false);
+			d_data->editor.setVisible(false);
 	}
 }
 
@@ -1840,55 +1834,54 @@ public:
 
 VipSwitchEditor::VipSwitchEditor()
 {
-	m_data = new PrivateData();
+	VIP_CREATE_PRIVATE_DATA(d_data);
 
 	QHBoxLayout* lay = new QHBoxLayout();
-	lay->addWidget(&m_data->box);
+	lay->addWidget(&d_data->box);
 	lay->setContentsMargins(0, 0, 0, 0);
 	setLayout(lay);
 
-	m_data->box.setToolTip("Select the input number");
+	d_data->box.setToolTip("Select the input number");
 
-	connect(&m_data->box, SIGNAL(currentIndexChanged(int)), this, SLOT(updateSwitch()));
-	connect(&m_data->box, SIGNAL(openPopup()), this, SLOT(resetSwitch()));
+	connect(&d_data->box, SIGNAL(currentIndexChanged(int)), this, SLOT(updateSwitch()));
+	connect(&d_data->box, SIGNAL(openPopup()), this, SLOT(resetSwitch()));
 }
 
 VipSwitchEditor::~VipSwitchEditor()
 {
-	delete m_data;
 }
 
 void VipSwitchEditor::resetSwitch()
 {
-	setSwitch(m_data->sw);
+	setSwitch(d_data->sw);
 }
 
 void VipSwitchEditor::setSwitch(VipSwitch* sw)
 {
-	m_data->sw = sw;
+	d_data->sw = sw;
 
 	if (sw) {
-		m_data->box.blockSignals(true);
+		d_data->box.blockSignals(true);
 
-		m_data->box.clear();
+		d_data->box.clear();
 		for (int i = 0; i < sw->inputCount(); ++i) {
 			VipAnyData any = sw->inputAt(i)->probe();
 			if (any.name().isEmpty())
-				m_data->box.addItem(QString::number(i));
+				d_data->box.addItem(QString::number(i));
 			else
-				m_data->box.addItem(any.name());
+				d_data->box.addItem(any.name());
 		}
 
-		m_data->box.setCurrentIndex(sw->propertyAt(0)->data().value<int>());
-		m_data->box.blockSignals(false);
+		d_data->box.setCurrentIndex(sw->propertyAt(0)->data().value<int>());
+		d_data->box.blockSignals(false);
 	}
 }
 
 void VipSwitchEditor::updateSwitch()
 {
-	if (m_data->sw) {
-		m_data->sw->propertyAt(0)->setData(m_data->box.currentIndex());
-		m_data->sw->update(true);
+	if (d_data->sw) {
+		d_data->sw->propertyAt(0)->setData(d_data->box.currentIndex());
+		d_data->sw->update(true);
 	}
 }
 
@@ -1904,73 +1897,72 @@ public:
 
 VipClampEditor::VipClampEditor()
 {
-	m_data = new PrivateData();
+	VIP_CREATE_PRIVATE_DATA(d_data);
 
 	QGridLayout* lay = new QGridLayout();
-	lay->addWidget(&m_data->clampMax, 0, 0);
-	lay->addWidget(&m_data->max, 0, 1);
-	lay->addWidget(&m_data->clampMin, 1, 0);
-	lay->addWidget(&m_data->min, 1, 1);
+	lay->addWidget(&d_data->clampMax, 0, 0);
+	lay->addWidget(&d_data->max, 0, 1);
+	lay->addWidget(&d_data->clampMin, 1, 0);
+	lay->addWidget(&d_data->min, 1, 1);
 	lay->setContentsMargins(0, 0, 0, 0);
 	setLayout(lay);
 
-	m_data->clampMax.setText("Clamp max value");
-	m_data->max.setToolTip("Max value");
-	m_data->clampMin.setText("Clamp min value");
-	m_data->max.setToolTip("Min value");
+	d_data->clampMax.setText("Clamp max value");
+	d_data->max.setToolTip("Max value");
+	d_data->clampMin.setText("Clamp min value");
+	d_data->max.setToolTip("Min value");
 
-	connect(&m_data->clampMax, SIGNAL(clicked(bool)), this, SLOT(updateClamp()));
-	connect(&m_data->clampMin, SIGNAL(clicked(bool)), this, SLOT(updateClamp()));
-	connect(&m_data->max, SIGNAL(valueChanged(double)), this, SLOT(updateClamp()));
-	connect(&m_data->min, SIGNAL(valueChanged(double)), this, SLOT(updateClamp()));
+	connect(&d_data->clampMax, SIGNAL(clicked(bool)), this, SLOT(updateClamp()));
+	connect(&d_data->clampMin, SIGNAL(clicked(bool)), this, SLOT(updateClamp()));
+	connect(&d_data->max, SIGNAL(valueChanged(double)), this, SLOT(updateClamp()));
+	connect(&d_data->min, SIGNAL(valueChanged(double)), this, SLOT(updateClamp()));
 }
 
 VipClampEditor::~VipClampEditor()
 {
-	delete m_data;
 }
 
 void VipClampEditor::setClamp(VipClamp* c)
 {
-	m_data->clamp = c;
+	d_data->clamp = c;
 	if (c) {
 		double min = c->propertyAt(0)->data().value<double>();
 		double max = c->propertyAt(1)->data().value<double>();
-		m_data->clampMax.blockSignals(true);
-		m_data->clampMax.setChecked(max == max);
-		m_data->clampMax.blockSignals(false);
-		m_data->clampMin.blockSignals(true);
-		m_data->clampMin.setChecked(min == min);
-		m_data->clampMin.blockSignals(false);
+		d_data->clampMax.blockSignals(true);
+		d_data->clampMax.setChecked(max == max);
+		d_data->clampMax.blockSignals(false);
+		d_data->clampMin.blockSignals(true);
+		d_data->clampMin.setChecked(min == min);
+		d_data->clampMin.blockSignals(false);
 
-		m_data->max.blockSignals(true);
-		m_data->max.setValue(max);
-		m_data->max.blockSignals(false);
-		m_data->min.blockSignals(true);
-		m_data->min.setValue(min);
-		m_data->min.blockSignals(false);
+		d_data->max.blockSignals(true);
+		d_data->max.setValue(max);
+		d_data->max.blockSignals(false);
+		d_data->min.blockSignals(true);
+		d_data->min.setValue(min);
+		d_data->min.blockSignals(false);
 	}
 }
 
 VipClamp* VipClampEditor::clamp() const
 {
-	return m_data->clamp;
+	return d_data->clamp;
 }
 
 void VipClampEditor::updateClamp()
 {
-	if (m_data->clamp) {
-		if (m_data->clampMax.isChecked())
-			m_data->clamp->propertyAt(1)->setData(m_data->max.value());
+	if (d_data->clamp) {
+		if (d_data->clampMax.isChecked())
+			d_data->clamp->propertyAt(1)->setData(d_data->max.value());
 		else
-			m_data->clamp->propertyAt(1)->setData(vipNan());
+			d_data->clamp->propertyAt(1)->setData(vipNan());
 
-		if (m_data->clampMin.isChecked())
-			m_data->clamp->propertyAt(0)->setData(m_data->min.value());
+		if (d_data->clampMin.isChecked())
+			d_data->clamp->propertyAt(0)->setData(d_data->min.value());
 		else
-			m_data->clamp->propertyAt(0)->setData(vipNan());
+			d_data->clamp->propertyAt(0)->setData(vipNan());
 
-		m_data->clamp->reload();
+		d_data->clamp->reload();
 	}
 }
 
@@ -1988,68 +1980,67 @@ public:
 
 VipTextFileReaderEditor::VipTextFileReaderEditor()
 {
-	m_data = new PrivateData();
+	VIP_CREATE_PRIVATE_DATA(d_data);
 	QVBoxLayout* lay = new QVBoxLayout();
-	lay->addWidget(&m_data->label);
-	lay->addWidget(&m_data->image);
-	lay->addWidget(&m_data->xyxy_column);
-	lay->addWidget(&m_data->xyyy_column);
-	lay->addWidget(&m_data->xyxy_row);
-	lay->addWidget(&m_data->xyyy_row);
+	lay->addWidget(&d_data->label);
+	lay->addWidget(&d_data->image);
+	lay->addWidget(&d_data->xyxy_column);
+	lay->addWidget(&d_data->xyyy_column);
+	lay->addWidget(&d_data->xyxy_row);
+	lay->addWidget(&d_data->xyyy_row);
 	setLayout(lay);
 
-	m_data->label.setText("<b>Interpret text file as:</b>");
-	m_data->image.setText("An image sequence");
-	m_data->xyxy_column.setText("Columns of X1 Y1...Xn Yn");
-	m_data->xyyy_column.setText("Columns of X Y1...Yn");
-	m_data->xyxy_row.setText("Rows of X1 Y1...Xn Yn");
-	m_data->xyyy_row.setText("Rows of X Y1...Yn");
-	m_data->image.setChecked(true);
+	d_data->label.setText("<b>Interpret text file as:</b>");
+	d_data->image.setText("An image sequence");
+	d_data->xyxy_column.setText("Columns of X1 Y1...Xn Yn");
+	d_data->xyyy_column.setText("Columns of X Y1...Yn");
+	d_data->xyxy_row.setText("Rows of X1 Y1...Xn Yn");
+	d_data->xyyy_row.setText("Rows of X Y1...Yn");
+	d_data->image.setChecked(true);
 
-	connect(&m_data->image, SIGNAL(clicked(bool)), this, SLOT(updateTextFileReader()));
-	connect(&m_data->xyxy_column, SIGNAL(clicked(bool)), this, SLOT(updateTextFileReader()));
-	connect(&m_data->xyyy_column, SIGNAL(clicked(bool)), this, SLOT(updateTextFileReader()));
-	connect(&m_data->xyxy_row, SIGNAL(clicked(bool)), this, SLOT(updateTextFileReader()));
-	connect(&m_data->xyyy_row, SIGNAL(clicked(bool)), this, SLOT(updateTextFileReader()));
+	connect(&d_data->image, SIGNAL(clicked(bool)), this, SLOT(updateTextFileReader()));
+	connect(&d_data->xyxy_column, SIGNAL(clicked(bool)), this, SLOT(updateTextFileReader()));
+	connect(&d_data->xyyy_column, SIGNAL(clicked(bool)), this, SLOT(updateTextFileReader()));
+	connect(&d_data->xyxy_row, SIGNAL(clicked(bool)), this, SLOT(updateTextFileReader()));
+	connect(&d_data->xyyy_row, SIGNAL(clicked(bool)), this, SLOT(updateTextFileReader()));
 }
 
 VipTextFileReaderEditor::~VipTextFileReaderEditor()
 {
-	delete m_data;
 }
 
 void VipTextFileReaderEditor::setTextFileReader(VipTextFileReader* reader)
 {
-	m_data->reader = reader;
+	d_data->reader = reader;
 	if (reader) {
 		if (reader->type() == VipTextFileReader::Image)
-			m_data->image.setChecked(true);
+			d_data->image.setChecked(true);
 		else if (reader->type() == VipTextFileReader::XYXYColumn)
-			m_data->xyxy_column.setChecked(true);
+			d_data->xyxy_column.setChecked(true);
 		else if (reader->type() == VipTextFileReader::XYYYColumn)
-			m_data->xyyy_column.setChecked(true);
+			d_data->xyyy_column.setChecked(true);
 		else if (reader->type() == VipTextFileReader::XYXYRow)
-			m_data->xyxy_row.setChecked(true);
+			d_data->xyxy_row.setChecked(true);
 		else if (reader->type() == VipTextFileReader::XYYYRow)
-			m_data->xyyy_row.setChecked(true);
+			d_data->xyyy_row.setChecked(true);
 		else
-			m_data->image.setChecked(true);
+			d_data->image.setChecked(true);
 	}
 }
 
 void VipTextFileReaderEditor::updateTextFileReader()
 {
-	if (m_data->reader) {
-		if (m_data->image.isChecked())
-			m_data->reader->setType(VipTextFileReader::Image);
-		if (m_data->xyxy_column.isChecked())
-			m_data->reader->setType(VipTextFileReader::XYXYColumn);
-		if (m_data->xyyy_column.isChecked())
-			m_data->reader->setType(VipTextFileReader::XYYYColumn);
-		if (m_data->xyxy_row.isChecked())
-			m_data->reader->setType(VipTextFileReader::XYXYRow);
-		if (m_data->xyyy_row.isChecked())
-			m_data->reader->setType(VipTextFileReader::XYYYRow);
+	if (d_data->reader) {
+		if (d_data->image.isChecked())
+			d_data->reader->setType(VipTextFileReader::Image);
+		if (d_data->xyxy_column.isChecked())
+			d_data->reader->setType(VipTextFileReader::XYXYColumn);
+		if (d_data->xyyy_column.isChecked())
+			d_data->reader->setType(VipTextFileReader::XYYYColumn);
+		if (d_data->xyxy_row.isChecked())
+			d_data->reader->setType(VipTextFileReader::XYXYRow);
+		if (d_data->xyyy_row.isChecked())
+			d_data->reader->setType(VipTextFileReader::XYYYRow);
 	}
 }
 
@@ -2066,66 +2057,65 @@ public:
 
 VipTextFileWriterEditor::VipTextFileWriterEditor()
 {
-	m_data = new PrivateData();
+	VIP_CREATE_PRIVATE_DATA(d_data);
 
 	QHBoxLayout* hlay = new QHBoxLayout();
-	hlay->addWidget(&m_data->digits_label);
-	hlay->addWidget(&m_data->digits);
+	hlay->addWidget(&d_data->digits_label);
+	hlay->addWidget(&d_data->digits);
 
 	QVBoxLayout* lay = new QVBoxLayout();
-	lay->addWidget(&m_data->label);
+	lay->addWidget(&d_data->label);
 	lay->addWidget(VipLineWidget::createHLine());
-	lay->addWidget(&m_data->stack);
-	lay->addWidget(&m_data->multi_file);
+	lay->addWidget(&d_data->stack);
+	lay->addWidget(&d_data->multi_file);
 	lay->addLayout(hlay);
 	setLayout(lay);
 
-	m_data->label.setText("<b>File saving options</b><br><b>Warning:</b>These options are only useful for temporal sequences.");
-	m_data->stack.setText("Stack the data in the same file");
-	m_data->stack.setToolTip("For temporal sequences, all data (images, curves,...) will be saved in the same file with a blank line separator.");
-	m_data->multi_file.setText("Create one file per data");
-	m_data->multi_file.setToolTip("For temporal sequences, all data (images, curves,...) will be saved in separate files. All files will end with a unique number starting to 0.");
-	m_data->digits.setValue(4);
-	m_data->digits.setToolTip("Each file name will end by a number\nincremented for each new data.\nSet the number digits.");
-	m_data->digits.hide();
-	m_data->digits_label.hide();
-	m_data->digits.setRange(1, 8);
-	m_data->stack.setChecked(true);
-	m_data->digits_label.setText("Digit number");
+	d_data->label.setText("<b>File saving options</b><br><b>Warning:</b>These options are only useful for temporal sequences.");
+	d_data->stack.setText("Stack the data in the same file");
+	d_data->stack.setToolTip("For temporal sequences, all data (images, curves,...) will be saved in the same file with a blank line separator.");
+	d_data->multi_file.setText("Create one file per data");
+	d_data->multi_file.setToolTip("For temporal sequences, all data (images, curves,...) will be saved in separate files. All files will end with a unique number starting to 0.");
+	d_data->digits.setValue(4);
+	d_data->digits.setToolTip("Each file name will end by a number\nincremented for each new data.\nSet the number digits.");
+	d_data->digits.hide();
+	d_data->digits_label.hide();
+	d_data->digits.setRange(1, 8);
+	d_data->stack.setChecked(true);
+	d_data->digits_label.setText("Digit number");
 
-	connect(&m_data->stack, SIGNAL(clicked(bool)), this, SLOT(updateTextFileWriter()));
-	connect(&m_data->multi_file, SIGNAL(clicked(bool)), this, SLOT(updateTextFileWriter()));
-	connect(&m_data->digits, SIGNAL(valueChanged(int)), this, SLOT(updateTextFileWriter()));
+	connect(&d_data->stack, SIGNAL(clicked(bool)), this, SLOT(updateTextFileWriter()));
+	connect(&d_data->multi_file, SIGNAL(clicked(bool)), this, SLOT(updateTextFileWriter()));
+	connect(&d_data->digits, SIGNAL(valueChanged(int)), this, SLOT(updateTextFileWriter()));
 }
 
 VipTextFileWriterEditor::~VipTextFileWriterEditor()
 {
-	delete m_data;
 }
 
 void VipTextFileWriterEditor::setTextFileWriter(VipTextFileWriter* writer)
 {
-	m_data->writer = writer;
+	d_data->writer = writer;
 	if (writer) {
 		if (writer->type() == VipTextFileWriter::MultipleFiles)
-			m_data->multi_file.setChecked(true);
+			d_data->multi_file.setChecked(true);
 		else
-			m_data->stack.setChecked(true);
-		m_data->digits.setVisible(m_data->multi_file.isChecked());
-		m_data->digits_label.setVisible(m_data->multi_file.isChecked());
+			d_data->stack.setChecked(true);
+		d_data->digits.setVisible(d_data->multi_file.isChecked());
+		d_data->digits_label.setVisible(d_data->multi_file.isChecked());
 	}
 }
 
 void VipTextFileWriterEditor::updateTextFileWriter()
 {
-	if (m_data->writer) {
-		if (m_data->multi_file.isChecked())
-			m_data->writer->setType(VipTextFileWriter::MultipleFiles);
+	if (d_data->writer) {
+		if (d_data->multi_file.isChecked())
+			d_data->writer->setType(VipTextFileWriter::MultipleFiles);
 		else
-			m_data->writer->setType(VipTextFileWriter::StackData);
-		m_data->digits.setVisible(m_data->multi_file.isChecked());
-		m_data->digits_label.setVisible(m_data->multi_file.isChecked());
-		m_data->writer->setDigitsNumber(m_data->digits.value());
+			d_data->writer->setType(VipTextFileWriter::StackData);
+		d_data->digits.setVisible(d_data->multi_file.isChecked());
+		d_data->digits_label.setVisible(d_data->multi_file.isChecked());
+		d_data->writer->setDigitsNumber(d_data->digits.value());
 	}
 }
 
@@ -2141,54 +2131,53 @@ public:
 
 VipImageWriterEditor::VipImageWriterEditor()
 {
-	m_data = new PrivateData();
+	VIP_CREATE_PRIVATE_DATA(d_data);
 	QVBoxLayout* lay = new QVBoxLayout();
-	lay->addWidget(&m_data->label);
-	lay->addWidget(&m_data->stack);
-	lay->addWidget(&m_data->multi_file);
-	lay->addWidget(&m_data->digits);
+	lay->addWidget(&d_data->label);
+	lay->addWidget(&d_data->stack);
+	lay->addWidget(&d_data->multi_file);
+	lay->addWidget(&d_data->digits);
 	setLayout(lay);
 
-	m_data->label.setText("<b>File saving options</b>");
-	m_data->stack.setText("Stack the images in the same file");
-	m_data->multi_file.setText("Create one file per image");
-	m_data->digits.setValue(4);
-	m_data->digits.setToolTip("Each file name will end by a number\nincremented for each new image.\nSet the number digits.");
-	m_data->digits.hide();
-	m_data->digits.setRange(1, 8);
-	m_data->stack.setChecked(true);
+	d_data->label.setText("<b>File saving options</b>");
+	d_data->stack.setText("Stack the images in the same file");
+	d_data->multi_file.setText("Create one file per image");
+	d_data->digits.setValue(4);
+	d_data->digits.setToolTip("Each file name will end by a number\nincremented for each new image.\nSet the number digits.");
+	d_data->digits.hide();
+	d_data->digits.setRange(1, 8);
+	d_data->stack.setChecked(true);
 
-	connect(&m_data->stack, SIGNAL(clicked(bool)), this, SLOT(updateImageWriter()));
-	connect(&m_data->multi_file, SIGNAL(clicked(bool)), this, SLOT(updateImageWriter()));
-	connect(&m_data->digits, SIGNAL(valueChanged(int)), this, SLOT(updateImageWriter()));
+	connect(&d_data->stack, SIGNAL(clicked(bool)), this, SLOT(updateImageWriter()));
+	connect(&d_data->multi_file, SIGNAL(clicked(bool)), this, SLOT(updateImageWriter()));
+	connect(&d_data->digits, SIGNAL(valueChanged(int)), this, SLOT(updateImageWriter()));
 }
 
 VipImageWriterEditor::~VipImageWriterEditor()
 {
-	delete m_data;
 }
 
 void VipImageWriterEditor::setImageWriter(VipImageWriter* writer)
 {
-	m_data->writer = writer;
+	d_data->writer = writer;
 	if (writer) {
 		if (writer->type() == VipImageWriter::MultipleImages)
-			m_data->multi_file.setChecked(true);
+			d_data->multi_file.setChecked(true);
 		else
-			m_data->stack.setChecked(true);
-		m_data->digits.setVisible(m_data->multi_file.isChecked());
+			d_data->stack.setChecked(true);
+		d_data->digits.setVisible(d_data->multi_file.isChecked());
 	}
 }
 
 void VipImageWriterEditor::updateImageWriter()
 {
-	if (m_data->writer) {
-		if (m_data->multi_file.isChecked())
-			m_data->writer->setType(VipImageWriter::MultipleImages);
+	if (d_data->writer) {
+		if (d_data->multi_file.isChecked())
+			d_data->writer->setType(VipImageWriter::MultipleImages);
 		else
-			m_data->writer->setType(VipImageWriter::StackImages);
-		m_data->digits.setVisible(m_data->multi_file.isChecked());
-		m_data->writer->setDigitsNumber(m_data->digits.value());
+			d_data->writer->setType(VipImageWriter::StackImages);
+		d_data->digits.setVisible(d_data->multi_file.isChecked());
+		d_data->writer->setDigitsNumber(d_data->digits.value());
 	}
 }
 
@@ -2209,26 +2198,26 @@ public:
 };
 VipCSVWriterEditor::VipCSVWriterEditor()
 {
-	m_data = new PrivateData();
+	VIP_CREATE_PRIVATE_DATA(d_data);
 
 	QHBoxLayout* hlay = new QHBoxLayout();
-	hlay->addWidget(&m_data->resampleText);
-	hlay->addWidget(&m_data->resample);
+	hlay->addWidget(&d_data->resampleText);
+	hlay->addWidget(&d_data->resample);
 	hlay->setContentsMargins(0, 0, 0, 0);
 
 	QHBoxLayout* hlay2 = new QHBoxLayout();
-	hlay2->addWidget(&m_data->useFixValue);
-	hlay2->addWidget(&m_data->fixValue);
+	hlay2->addWidget(&d_data->useFixValue);
+	hlay2->addWidget(&d_data->fixValue);
 	hlay2->setContentsMargins(0, 0, 0, 0);
 
 	QVBoxLayout* vlay = new QVBoxLayout();
 	vlay->setContentsMargins(10, 0, 0, 0);
-	vlay->addWidget(&m_data->useBounds);
+	vlay->addWidget(&d_data->useBounds);
 	vlay->addLayout(hlay2);
 
 	QHBoxLayout* hlay3 = new QHBoxLayout();
-	hlay3->addWidget(&m_data->saveAsCSVText);
-	hlay3->addWidget(&m_data->saveAsCSV);
+	hlay3->addWidget(&d_data->saveAsCSVText);
+	hlay3->addWidget(&d_data->saveAsCSV);
 	hlay3->setContentsMargins(0, 0, 0, 0);
 
 	QVBoxLayout* layout = new QVBoxLayout();
@@ -2238,91 +2227,90 @@ VipCSVWriterEditor::VipCSVWriterEditor()
 	layout->addLayout(hlay3);
 	setLayout(layout);
 
-	m_data->resampleText.setText("Resample using input signals");
-	m_data->resampleText.setToolTip("When saving multiple signals, they will be resampled to contain the same number of points with the same X values.\n"
+	d_data->resampleText.setText("Resample using input signals");
+	d_data->resampleText.setToolTip("When saving multiple signals, they will be resampled to contain the same number of points with the same X values.\n"
 					"The time interval used for resampling can be computed either with the union or intersection of input signals.");
-	m_data->resample.addItem("union");
-	m_data->resample.addItem("intersection");
-	m_data->resample.setCurrentText("intersection");
-	m_data->resample.setToolTip(m_data->resampleText.toolTip());
+	d_data->resample.addItem("union");
+	d_data->resample.addItem("intersection");
+	d_data->resample.setCurrentText("intersection");
+	d_data->resample.setToolTip(d_data->resampleText.toolTip());
 
-	m_data->useBounds.setChecked(true);
-	m_data->useBounds.setText("Use closest value");
-	m_data->useBounds.setToolTip("For 'union' only, the resampling algorithm might need to create new values outside the signal bounds.\n"
+	d_data->useBounds.setChecked(true);
+	d_data->useBounds.setText("Use closest value");
+	d_data->useBounds.setToolTip("For 'union' only, the resampling algorithm might need to create new values outside the signal bounds.\n"
 				     "Select this option to always pick the closest  available value.");
-	m_data->useFixValue.setText("Use fixed value");
-	m_data->useFixValue.setToolTip("For 'union' only, the resampling algorithm might need to create new values outside the signal bounds.\n"
+	d_data->useFixValue.setText("Use fixed value");
+	d_data->useFixValue.setToolTip("For 'union' only, the resampling algorithm might need to create new values outside the signal bounds.\n"
 				       "Select this option to set the new points to a fixed value.");
-	m_data->fixValue.setValue(0);
+	d_data->fixValue.setValue(0);
 
-	m_data->saveAsCSVText.setText("Select file format");
-	m_data->saveAsCSVText.setToolTip("Select 'CSV' to create a real CSV file with the signals units.\n"
+	d_data->saveAsCSVText.setText("Select file format");
+	d_data->saveAsCSVText.setToolTip("Select 'CSV' to create a real CSV file with the signals units.\n"
 					 "Select 'TEXT' to save the raw signals in ascii format, without additional metadata.");
-	m_data->saveAsCSV.addItem("CSV");
-	m_data->saveAsCSV.addItem("TEXT");
-	m_data->saveAsCSV.setToolTip(m_data->saveAsCSVText.toolTip());
+	d_data->saveAsCSV.addItem("CSV");
+	d_data->saveAsCSV.addItem("TEXT");
+	d_data->saveAsCSV.setToolTip(d_data->saveAsCSVText.toolTip());
 
-	connect(&m_data->resample, SIGNAL(currentIndexChanged(int)), this, SLOT(updateWidgets()));
-	connect(&m_data->resample, SIGNAL(currentIndexChanged(int)), this, SLOT(updateCSVWriter()));
-	connect(&m_data->useBounds, SIGNAL(clicked(bool)), this, SLOT(updateCSVWriter()));
-	connect(&m_data->useFixValue, SIGNAL(clicked(bool)), this, SLOT(updateCSVWriter()));
-	connect(&m_data->fixValue, SIGNAL(valueChanged(double)), this, SLOT(updateCSVWriter()));
-	connect(&m_data->saveAsCSV, SIGNAL(currentIndexChanged(int)), this, SLOT(updateCSVWriter()));
+	connect(&d_data->resample, SIGNAL(currentIndexChanged(int)), this, SLOT(updateWidgets()));
+	connect(&d_data->resample, SIGNAL(currentIndexChanged(int)), this, SLOT(updateCSVWriter()));
+	connect(&d_data->useBounds, SIGNAL(clicked(bool)), this, SLOT(updateCSVWriter()));
+	connect(&d_data->useFixValue, SIGNAL(clicked(bool)), this, SLOT(updateCSVWriter()));
+	connect(&d_data->fixValue, SIGNAL(valueChanged(double)), this, SLOT(updateCSVWriter()));
+	connect(&d_data->saveAsCSV, SIGNAL(currentIndexChanged(int)), this, SLOT(updateCSVWriter()));
 
 	updateWidgets();
 }
 
 VipCSVWriterEditor::~VipCSVWriterEditor()
 {
-	delete m_data;
 }
 
 void VipCSVWriterEditor::updateWidgets()
 {
-	if (m_data->resample.currentText() == "union") {
-		m_data->useBounds.setEnabled(true);
-		m_data->useFixValue.setEnabled(true);
-		m_data->fixValue.setEnabled(true);
+	if (d_data->resample.currentText() == "union") {
+		d_data->useBounds.setEnabled(true);
+		d_data->useFixValue.setEnabled(true);
+		d_data->fixValue.setEnabled(true);
 	}
 	else {
-		m_data->useBounds.setEnabled(false);
-		m_data->useFixValue.setEnabled(false);
-		m_data->fixValue.setEnabled(false);
+		d_data->useBounds.setEnabled(false);
+		d_data->useFixValue.setEnabled(false);
+		d_data->fixValue.setEnabled(false);
 	}
 }
 
 void VipCSVWriterEditor::setCSVWriter(VipCSVWriter* w)
 {
-	m_data->processing = w;
+	d_data->processing = w;
 	if (w) {
 		if (w->resampleMode() & ResampleIntersection)
-			m_data->resample.setCurrentText("intersection");
+			d_data->resample.setCurrentText("intersection");
 		else
-			m_data->resample.setCurrentText("union");
+			d_data->resample.setCurrentText("union");
 
-		m_data->fixValue.setValue(w->paddValue());
-		m_data->useFixValue.setChecked(w->resampleMode() & ResamplePadd0);
+		d_data->fixValue.setValue(w->paddValue());
+		d_data->useFixValue.setChecked(w->resampleMode() & ResamplePadd0);
 		if (w->writeTextFile())
-			m_data->saveAsCSV.setCurrentText("TEXT");
+			d_data->saveAsCSV.setCurrentText("TEXT");
 		else
-			m_data->saveAsCSV.setCurrentText("CSV");
+			d_data->saveAsCSV.setCurrentText("CSV");
 	}
 }
 
 void VipCSVWriterEditor::updateCSVWriter()
 {
-	if (m_data->processing) {
+	if (d_data->processing) {
 		int r = ResampleInterpolation;
-		if (m_data->resample.currentText() == "intersection")
+		if (d_data->resample.currentText() == "intersection")
 			r |= ResampleIntersection;
 		else
 			r |= ResampleUnion;
-		if (m_data->useFixValue.isChecked()) {
+		if (d_data->useFixValue.isChecked()) {
 			r |= ResamplePadd0;
-			m_data->processing->setPaddValue(m_data->fixValue.value());
+			d_data->processing->setPaddValue(d_data->fixValue.value());
 		}
-		m_data->processing->setResampleMode(r);
-		m_data->processing->setWriteTextFile(m_data->saveAsCSV.currentText() == "TEXT");
+		d_data->processing->setResampleMode(r);
+		d_data->processing->setWriteTextFile(d_data->saveAsCSV.currentText() == "TEXT");
 	}
 }
 
@@ -2357,18 +2345,18 @@ public:
 
 VipDirectoryReaderEditor::VipDirectoryReaderEditor()
 {
-	m_data = new PrivateData();
+	VIP_CREATE_PRIVATE_DATA(d_data);
 
 	// create the options for when the device is closed
 
 	QVBoxLayout* lay = new QVBoxLayout();
-	lay->addWidget(&m_data->file_suffixes);
-	lay->addWidget(&m_data->recursive);
+	lay->addWidget(&d_data->file_suffixes);
+	lay->addWidget(&d_data->recursive);
 
 	{
 		QHBoxLayout* hlay = new QHBoxLayout();
 		hlay->addWidget(new QLabel("File count"));
-		hlay->addWidget(&m_data->file_count);
+		hlay->addWidget(&d_data->file_count);
 		hlay->setContentsMargins(0, 0, 0, 0);
 		lay->addLayout(hlay);
 	}
@@ -2376,149 +2364,148 @@ VipDirectoryReaderEditor::VipDirectoryReaderEditor()
 	{
 		QHBoxLayout* hlay = new QHBoxLayout();
 		hlay->addWidget(new QLabel("File start"));
-		hlay->addWidget(&m_data->file_start);
+		hlay->addWidget(&d_data->file_start);
 		hlay->setContentsMargins(0, 0, 0, 0);
 		lay->addLayout(hlay);
 	}
 
-	lay->addWidget(&m_data->alphabetical_order);
-	lay->addWidget(&m_data->independent_data);
-	lay->addWidget(&m_data->sequence_of_data);
+	lay->addWidget(&d_data->alphabetical_order);
+	lay->addWidget(&d_data->independent_data);
+	lay->addWidget(&d_data->sequence_of_data);
 
 	QGroupBox* images = new QGroupBox("Video file options");
 	images->setFlat(true);
 	lay->addWidget(images);
 
-	lay->addWidget(&m_data->fixed_size);
+	lay->addWidget(&d_data->fixed_size);
 	{
 		QHBoxLayout* hlay = new QHBoxLayout();
 		hlay->addWidget(new QLabel("Width"));
-		hlay->addWidget(&m_data->width);
+		hlay->addWidget(&d_data->width);
 		hlay->setContentsMargins(0, 0, 0, 0);
 		lay->addLayout(hlay);
 	}
 	{
 		QHBoxLayout* hlay = new QHBoxLayout();
 		hlay->addWidget(new QLabel("Height"));
-		hlay->addWidget(&m_data->height);
+		hlay->addWidget(&d_data->height);
 		hlay->setContentsMargins(0, 0, 0, 0);
 		lay->addLayout(hlay);
 	}
-	lay->addWidget(&m_data->smooth);
-	m_data->closedOptions = new QWidget();
-	m_data->closedOptions->setLayout(lay);
+	lay->addWidget(&d_data->smooth);
+	d_data->closedOptions = new QWidget();
+	d_data->closedOptions->setLayout(lay);
 
-	m_data->file_suffixes.setToolTip("Supported extensions with comma separators");
-	m_data->file_suffixes.setPlaceholderText("Supported extensions");
+	d_data->file_suffixes.setToolTip("Supported extensions with comma separators");
+	d_data->file_suffixes.setPlaceholderText("Supported extensions");
 
-	m_data->recursive.setText("Read subdirectories");
+	d_data->recursive.setText("Read subdirectories");
 
-	m_data->file_count.setRange(-1, 1000000);
-	m_data->file_count.setValue(-1);
-	m_data->file_count.setToolTip("Set the maximum file number\n(-1 means all files in the directory)");
+	d_data->file_count.setRange(-1, 1000000);
+	d_data->file_count.setValue(-1);
+	d_data->file_count.setToolTip("Set the maximum file number\n(-1 means all files in the directory)");
 
-	m_data->file_start.setRange(0, 1000000);
-	m_data->file_start.setValue(0);
-	m_data->file_start.setToolTip("Set start file index\n(all files before the index are skipped)");
+	d_data->file_start.setRange(0, 1000000);
+	d_data->file_start.setValue(0);
+	d_data->file_start.setToolTip("Set start file index\n(all files before the index are skipped)");
 
-	m_data->alphabetical_order.setText("Sort files alphabetically");
-	m_data->alphabetical_order.setChecked(true);
+	d_data->alphabetical_order.setText("Sort files alphabetically");
+	d_data->alphabetical_order.setChecked(true);
 
-	m_data->independent_data.setText("Read as independent data files");
-	m_data->sequence_of_data.setText("Read as a sequence of data files");
-	m_data->independent_data.setChecked(true);
+	d_data->independent_data.setText("Read as independent data files");
+	d_data->sequence_of_data.setText("Read as a sequence of data files");
+	d_data->independent_data.setChecked(true);
 
-	m_data->fixed_size.setText("Use a fixed size");
-	m_data->fixed_size.setChecked(false);
-	m_data->fixed_size.setToolTip("All images are resized with given size");
+	d_data->fixed_size.setText("Use a fixed size");
+	d_data->fixed_size.setChecked(false);
+	d_data->fixed_size.setToolTip("All images are resized with given size");
 
-	m_data->width.setRange(2, 5000);
-	m_data->width.setValue(320);
-	m_data->width.setToolTip("Image width");
-	m_data->width.setEnabled(false);
+	d_data->width.setRange(2, 5000);
+	d_data->width.setValue(320);
+	d_data->width.setToolTip("Image width");
+	d_data->width.setEnabled(false);
 
-	m_data->height.setRange(2, 5000);
-	m_data->height.setValue(320);
-	m_data->height.setToolTip("Image width");
-	m_data->height.setEnabled(false);
+	d_data->height.setRange(2, 5000);
+	d_data->height.setValue(320);
+	d_data->height.setToolTip("Image width");
+	d_data->height.setEnabled(false);
 
-	m_data->smooth.setText("Smooth resize");
-	m_data->smooth.setChecked(false);
-	m_data->smooth.setEnabled(false);
+	d_data->smooth.setText("Smooth resize");
+	d_data->smooth.setChecked(false);
+	d_data->smooth.setEnabled(false);
 
-	connect(&m_data->fixed_size, SIGNAL(clicked(bool)), &m_data->width, SLOT(setEnabled(bool)));
-	connect(&m_data->fixed_size, SIGNAL(clicked(bool)), &m_data->height, SLOT(setEnabled(bool)));
-	connect(&m_data->fixed_size, SIGNAL(clicked(bool)), &m_data->smooth, SLOT(setEnabled(bool)));
+	connect(&d_data->fixed_size, SIGNAL(clicked(bool)), &d_data->width, SLOT(setEnabled(bool)));
+	connect(&d_data->fixed_size, SIGNAL(clicked(bool)), &d_data->height, SLOT(setEnabled(bool)));
+	connect(&d_data->fixed_size, SIGNAL(clicked(bool)), &d_data->smooth, SLOT(setEnabled(bool)));
 
-	m_data->file_suffixes.setFocus();
+	d_data->file_suffixes.setFocus();
 
 	// create the options for when the device is opened
-	m_data->openedOptions = new QWidget();
+	d_data->openedOptions = new QWidget();
 	QVBoxLayout* vlay = new QVBoxLayout();
-	vlay->addWidget(&m_data->applyToAllDevices);
-	m_data->openedOptions->setLayout(vlay);
+	vlay->addWidget(&d_data->applyToAllDevices);
+	d_data->openedOptions->setLayout(vlay);
 
-	m_data->applyToAllDevices.setText("Apply to all devices");
-	connect(&m_data->applyToAllDevices, SIGNAL(clicked(bool)), this, SLOT(apply()));
+	d_data->applyToAllDevices.setText("Apply to all devices");
+	connect(&d_data->applyToAllDevices, SIGNAL(clicked(bool)), this, SLOT(apply()));
 
 	// create the final layout
 	QVBoxLayout* final_lay = new QVBoxLayout();
-	final_lay->addWidget(m_data->closedOptions);
-	final_lay->addWidget(m_data->openedOptions);
+	final_lay->addWidget(d_data->closedOptions);
+	final_lay->addWidget(d_data->openedOptions);
 	setLayout(final_lay);
 }
 
 VipDirectoryReaderEditor::~VipDirectoryReaderEditor()
 {
-	delete m_data;
 }
 
 void VipDirectoryReaderEditor::setDirectoryReader(VipDirectoryReader* reader)
 {
-	m_data->reader = reader;
+	d_data->reader = reader;
 	if (reader) {
-		m_data->closedOptions->setVisible(!reader->isOpen());
-		m_data->openedOptions->setVisible(reader->isOpen());
+		d_data->closedOptions->setVisible(!reader->isOpen());
+		d_data->openedOptions->setVisible(reader->isOpen());
 
 		// options when the device is closed
 		if (!reader->isOpen()) {
-			m_data->file_suffixes.setText(reader->supportedSuffixes().join(","));
-			m_data->recursive.setChecked(reader->recursive());
-			m_data->file_count.setValue(reader->fileCount());
-			m_data->file_start.setValue(reader->fileStart());
-			m_data->alphabetical_order.setChecked(reader->alphabeticalOrder());
-			m_data->sequence_of_data.setChecked(reader->type() == VipDirectoryReader::SequenceOfData);
-			m_data->fixed_size.setChecked(reader->fixedSize() != QSize());
-			if (m_data->fixed_size.isChecked()) {
-				m_data->width.setValue(reader->fixedSize().width());
-				m_data->height.setValue(reader->fixedSize().height());
+			d_data->file_suffixes.setText(reader->supportedSuffixes().join(","));
+			d_data->recursive.setChecked(reader->recursive());
+			d_data->file_count.setValue(reader->fileCount());
+			d_data->file_start.setValue(reader->fileStart());
+			d_data->alphabetical_order.setChecked(reader->alphabeticalOrder());
+			d_data->sequence_of_data.setChecked(reader->type() == VipDirectoryReader::SequenceOfData);
+			d_data->fixed_size.setChecked(reader->fixedSize() != QSize());
+			if (d_data->fixed_size.isChecked()) {
+				d_data->width.setValue(reader->fixedSize().width());
+				d_data->height.setValue(reader->fixedSize().height());
 			}
-			m_data->smooth.setChecked(reader->smoothResize());
+			d_data->smooth.setChecked(reader->smoothResize());
 		}
 		// options when the device is already opened
 		else {
 			// remove the previous editors
-			while (m_data->editors.size())
-				if (m_data->editors.begin().value())
-					delete m_data->editors.begin().value();
-			m_data->editors.clear();
+			while (d_data->editors.size())
+				if (d_data->editors.begin().value())
+					delete d_data->editors.begin().value();
+			d_data->editors.clear();
 
 			// compute all device types and add the editors
 			for (int i = 0; i < reader->deviceCount(); ++i) {
 				VipIODevice* dev = reader->deviceAt(i);
 				const QMetaObject* meta = dev->metaObject();
-				if (m_data->editors.find(meta) == m_data->editors.end()) {
+				if (d_data->editors.find(meta) == d_data->editors.end()) {
 					// create the editor
 					VipUniqueProcessingObjectEditor* editor = new VipUniqueProcessingObjectEditor();
 					if (editor->setProcessingObject(dev)) {
 						// add the editor to the layout if setProcessingObject is successfull
-						m_data->editors[meta] = editor;
-						static_cast<QVBoxLayout*>(m_data->openedOptions->layout())->insertWidget(0, editor);
+						d_data->editors[meta] = editor;
+						static_cast<QVBoxLayout*>(d_data->openedOptions->layout())->insertWidget(0, editor);
 					}
 					else {
 						// do not add the editor to the layout, but add the meta object to editors to avoid this meta object for next devices
 						delete editor;
-						m_data->editors[meta] = nullptr;
+						d_data->editors[meta] = nullptr;
 					}
 				}
 			}
@@ -2529,22 +2516,22 @@ void VipDirectoryReaderEditor::setDirectoryReader(VipDirectoryReader* reader)
 #include <qmessagebox.h>
 void VipDirectoryReaderEditor::apply()
 {
-	if (!m_data->reader)
+	if (!d_data->reader)
 		return;
 
-	VipDirectoryReader* r = m_data->reader;
+	VipDirectoryReader* r = d_data->reader;
 
 	if (!r->isOpen()) {
 		// set the options for closed VipDirectoryReader
-		r->setSupportedSuffixes(m_data->file_suffixes.text());
-		r->setRecursive(m_data->recursive.isChecked());
-		r->setFileCount(m_data->file_count.value());
-		r->setFileStart(m_data->file_start.value());
-		r->setAlphabeticalOrder(m_data->alphabetical_order.isChecked());
-		r->setType(m_data->sequence_of_data.isChecked() ? VipDirectoryReader::SequenceOfData : VipDirectoryReader::IndependentData);
-		if (m_data->fixed_size.isChecked())
-			r->setFixedSize(QSize(m_data->width.value(), m_data->height.value()));
-		r->setSmoothResize(m_data->smooth.isChecked());
+		r->setSupportedSuffixes(d_data->file_suffixes.text());
+		r->setRecursive(d_data->recursive.isChecked());
+		r->setFileCount(d_data->file_count.value());
+		r->setFileStart(d_data->file_start.value());
+		r->setAlphabeticalOrder(d_data->alphabetical_order.isChecked());
+		r->setType(d_data->sequence_of_data.isChecked() ? VipDirectoryReader::SequenceOfData : VipDirectoryReader::IndependentData);
+		if (d_data->fixed_size.isChecked())
+			r->setFixedSize(QSize(d_data->width.value(), d_data->height.value()));
+		r->setSmoothResize(d_data->smooth.isChecked());
 
 		// now, for each found extension, set the template
 		QStringList suffixes = r->suffixes();
@@ -2569,8 +2556,8 @@ void VipDirectoryReaderEditor::apply()
 
 			VipIODevice* dev = r->deviceAt(i);
 			const QMetaObject* meta = dev->metaObject();
-			if (m_data->editors.find(meta) != m_data->editors.end()) {
-				if (VipUniqueProcessingObjectEditor* editor = m_data->editors[meta]) {
+			if (d_data->editors.find(meta) != d_data->editors.end()) {
+				if (VipUniqueProcessingObjectEditor* editor = d_data->editors[meta]) {
 					editor->processingObject()->copyParameters(dev);
 				}
 			}
@@ -2592,57 +2579,56 @@ public:
 VipOperationBetweenPlayersEditor::VipOperationBetweenPlayersEditor()
   : QWidget()
 {
-	m_data = new PrivateData();
+	VIP_CREATE_PRIVATE_DATA(d_data);
 
 	QGridLayout* lay = new QGridLayout();
 
 	lay->addWidget(new QLabel("Operator:"), 0, 0);
-	lay->addWidget(&m_data->operation, 0, 1);
-	lay->addWidget(&m_data->editor, 1, 0, 1, 2);
+	lay->addWidget(&d_data->operation, 0, 1);
+	lay->addWidget(&d_data->editor, 1, 0, 1, 2);
 
-	m_data->operation.setToolTip("Select the operation to perform (addition, subtraction, multiplication, division, or binary operation)");
-	m_data->operation.addItems(QStringList() << "+"
+	d_data->operation.setToolTip("Select the operation to perform (addition, subtraction, multiplication, division, or binary operation)");
+	d_data->operation.addItems(QStringList() << "+"
 						 << "-"
 						 << "*"
 						 << "/"
 						 << "&"
 						 << "|"
 						 << "^");
-	m_data->operation.setCurrentIndex(1);
+	d_data->operation.setCurrentIndex(1);
 
 	setLayout(lay);
 
-	connect(&m_data->editor, SIGNAL(valueChanged(const QVariant&)), this, SLOT(apply()));
-	connect(&m_data->operation, SIGNAL(currentIndexChanged(int)), this, SLOT(apply()));
+	connect(&d_data->editor, SIGNAL(valueChanged(const QVariant&)), this, SLOT(apply()));
+	connect(&d_data->operation, SIGNAL(currentIndexChanged(int)), this, SLOT(apply()));
 }
 
 VipOperationBetweenPlayersEditor::~VipOperationBetweenPlayersEditor()
 {
-	delete m_data;
 }
 
 void VipOperationBetweenPlayersEditor::setProcessing(VipOperationBetweenPlayers* proc)
 {
-	if (proc != m_data->processing) {
-		m_data->processing = proc;
+	if (proc != d_data->processing) {
+		d_data->processing = proc;
 
 		if (proc) {
-			m_data->editor.blockSignals(true);
-			m_data->editor.setValue(proc->propertyAt(1)->value<VipOtherPlayerData>());
-			m_data->editor.blockSignals(false);
+			d_data->editor.blockSignals(true);
+			d_data->editor.setValue(proc->propertyAt(1)->value<VipOtherPlayerData>());
+			d_data->editor.blockSignals(false);
 
-			m_data->operation.blockSignals(true);
-			m_data->operation.setCurrentText(proc->propertyName("Operator")->value<QString>());
-			m_data->operation.blockSignals(false);
+			d_data->operation.blockSignals(true);
+			d_data->operation.setCurrentText(proc->propertyName("Operator")->value<QString>());
+			d_data->operation.blockSignals(false);
 		}
 	}
 }
 
 void VipOperationBetweenPlayersEditor::apply()
 {
-	if (VipOperationBetweenPlayers* proc = m_data->processing) {
-		proc->propertyAt(0)->setData(m_data->operation.currentText());
-		proc->propertyAt(1)->setData(m_data->editor.value());
+	if (VipOperationBetweenPlayers* proc = d_data->processing) {
+		proc->propertyAt(0)->setData(d_data->operation.currentText());
+		proc->propertyAt(1)->setData(d_data->editor.value());
 		proc->wait();
 		proc->reload();
 	}
@@ -2873,7 +2859,11 @@ protected:
 			connect(menu.addAction("Add shear"), SIGNAL(triggered(bool)), editor, SLOT(addShear()));
 			menu.addSeparator();
 			connect(menu.addAction("Remove selection"), SIGNAL(triggered(bool)), editor, SLOT(removeSelectedTransform()));
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
 			menu.exec(evt->globalPos());
+#else
+			menu.exec(evt->globalPosition().toPoint());
+#endif
 		}
 	}
 	virtual void keyPressEvent(QKeyEvent* evt)
@@ -2905,12 +2895,12 @@ protected:
 		{
 			//find the right insertion position
 			int insertPos = this->count();
-			QListWidgetItem * item = itemAt(evt->pos());
+			QListWidgetItem * item = itemAt(evt->VIP_EVT_POSITION());
 			if (item)
 			{
 				QRect rect = this->visualItemRect(item);
 				insertPos = this->indexFromItem(item).row();
-				if (evt->pos().y() > rect.center().y())
+				if (evt->VIP_EVT_POSITION().y() > rect.center().y())
 					insertPos++;
 			}
 
@@ -2949,74 +2939,72 @@ public:
 VipGenericImageTransformEditor::VipGenericImageTransformEditor()
   : QWidget()
 {
-	m_data = new PrivateData();
-	m_data->trs = new TrListWidget(this);
+	VIP_CREATE_PRIVATE_DATA(d_data);
+	d_data->trs = new TrListWidget(this);
 	QVBoxLayout* l = new QVBoxLayout();
 	l->setContentsMargins(0, 0, 0, 0);
-	l->addWidget(&m_data->interp);
-	l->addWidget(&m_data->size);
-	l->addWidget(&m_data->back);
-	l->addWidget(m_data->trs);
+	l->addWidget(&d_data->interp);
+	l->addWidget(&d_data->size);
+	l->addWidget(&d_data->back);
+	l->addWidget(d_data->trs);
 	setLayout(l);
 
-	m_data->interp.setText("Linear interpolation");
-	m_data->interp.setToolTip("Apply a linear interpolation to the output image");
-	m_data->size.setText("Output size fit the transform size");
-	m_data->size.setToolTip("If checked, the output image size will be computed based on the transformation in order to contain the whole image.\n"
+	d_data->interp.setText("Linear interpolation");
+	d_data->interp.setToolTip("Apply a linear interpolation to the output image");
+	d_data->size.setText("Output size fit the transform size");
+	d_data->size.setToolTip("If checked, the output image size will be computed based on the transformation in order to contain the whole image.\n"
 				"Otherwise, the output image size is the same as the input one.");
-	m_data->back.setToolTip("Background value.\nFor numerical image, just enter an integer or floating point value.\n"
+	d_data->back.setToolTip("Background value.\nFor numerical image, just enter an integer or floating point value.\n"
 				"For complex image, enter a complex value on the form '(x+yj)'.\n"
 				"For color image, enter a ARGB value on the form '[A,R,G,B]'.\n"
 				"Press ENTER to validate.");
-	m_data->back.setText("0");
-	m_data->trs->setToolTip("Consecutive image transforms.\n"
+	d_data->back.setText("0");
+	d_data->trs->setToolTip("Consecutive image transforms.\n"
 				"Right click to add or remove a tranform.");
-	// m_data->trs.installEventFilter(this);
-	m_data->trs->setDragDropMode(QAbstractItemView::InternalMove);
-	m_data->trs->setSelectionMode(QAbstractItemView::ExtendedSelection);
-	m_data->trs->setDragDropOverwriteMode(false);
-	m_data->trs->setDefaultDropAction(Qt::TargetMoveAction);
-	m_data->trs->setViewMode(QListView::ListMode);
+	// d_data->trs.installEventFilter(this);
+	d_data->trs->setDragDropMode(QAbstractItemView::InternalMove);
+	d_data->trs->setSelectionMode(QAbstractItemView::ExtendedSelection);
+	d_data->trs->setDragDropOverwriteMode(false);
+	d_data->trs->setDefaultDropAction(Qt::TargetMoveAction);
+	d_data->trs->setViewMode(QListView::ListMode);
 
-	connect(&m_data->interp, SIGNAL(clicked(bool)), this, SLOT(updateProcessing()));
-	connect(&m_data->size, SIGNAL(clicked(bool)), this, SLOT(updateProcessing()));
-	connect(&m_data->back, SIGNAL(returnPressed()), this, SLOT(updateProcessing()));
+	connect(&d_data->interp, SIGNAL(clicked(bool)), this, SLOT(updateProcessing()));
+	connect(&d_data->size, SIGNAL(clicked(bool)), this, SLOT(updateProcessing()));
+	connect(&d_data->back, SIGNAL(returnPressed()), this, SLOT(updateProcessing()));
 }
 VipGenericImageTransformEditor::~VipGenericImageTransformEditor()
 {
-	// m_data->trs.removeEventFilter(this);
-	delete m_data;
 }
 
 void VipGenericImageTransformEditor::setProcessing(VipGenericImageTransform* p)
 {
-	if (p != m_data->proc) {
-		m_data->proc = p;
+	if (p != d_data->proc) {
+		d_data->proc = p;
 		updateWidget();
 	}
 }
 VipGenericImageTransform* VipGenericImageTransformEditor::processing() const
 {
-	return m_data->proc;
+	return d_data->proc;
 }
 
 void VipGenericImageTransformEditor::updateProcessing()
 {
-	if (!m_data->proc)
+	if (!d_data->proc)
 		return;
 
 	// build transform
 	TransformList trs;
-	for (int i = 0; i < m_data->trs->count(); ++i) {
-		TrListWidgetItem* it = static_cast<TrListWidgetItem*>(m_data->trs->item(i));
+	for (int i = 0; i < d_data->trs->count(); ++i) {
+		TrListWidgetItem* it = static_cast<TrListWidgetItem*>(d_data->trs->item(i));
 		trs << Transform(it->type, it->x->value(), it->y ? it->y->value() : 0);
 	}
 
-	m_data->proc->propertyAt(0)->setData(QVariant::fromValue(trs));
-	m_data->proc->propertyAt(1)->setData(m_data->interp.isChecked() ? (int)Vip::LinearInterpolation : (int)Vip::NoInterpolation);
-	m_data->proc->propertyAt(2)->setData(m_data->size.isChecked() ? (int)Vip::TransformBoundingRect : (int)Vip::SrcSize);
+	d_data->proc->propertyAt(0)->setData(QVariant::fromValue(trs));
+	d_data->proc->propertyAt(1)->setData(d_data->interp.isChecked() ? (int)Vip::LinearInterpolation : (int)Vip::NoInterpolation);
+	d_data->proc->propertyAt(2)->setData(d_data->size.isChecked() ? (int)Vip::TransformBoundingRect : (int)Vip::SrcSize);
 
-	QString back = m_data->back.text();
+	QString back = d_data->back.text();
 	QVariant value;
 	QTextStream str(back.toLatin1());
 	double d;
@@ -3033,29 +3021,29 @@ void VipGenericImageTransformEditor::updateProcessing()
 	if (value.userType() == 0 && (str >> d).status() == QTextStream::Ok)
 		value = QVariant::fromValue(d);
 	if (value.userType() == 0)
-		m_data->back.setStyleSheet("QLineEdit {border:1px solid red;}");
+		d_data->back.setStyleSheet("QLineEdit {border:1px solid red;}");
 	else {
-		m_data->back.setStyleSheet("");
-		m_data->proc->propertyAt(3)->setData(value);
+		d_data->back.setStyleSheet("");
+		d_data->proc->propertyAt(3)->setData(value);
 	}
 
-	m_data->proc->reload();
+	d_data->proc->reload();
 }
 
 void VipGenericImageTransformEditor::updateWidget()
 {
-	const TransformList trs = m_data->proc->propertyAt(0)->value<TransformList>();
-	int interp = m_data->proc->propertyAt(1)->value<int>();
-	int size = m_data->proc->propertyAt(2)->value<int>();
-	QVariant back = m_data->proc->propertyAt(3)->value<QVariant>();
+	const TransformList trs = d_data->proc->propertyAt(0)->value<TransformList>();
+	int interp = d_data->proc->propertyAt(1)->value<int>();
+	int size = d_data->proc->propertyAt(2)->value<int>();
+	QVariant back = d_data->proc->propertyAt(3)->value<QVariant>();
 
-	m_data->interp.setChecked(interp != Vip::NoInterpolation);
-	m_data->size.setChecked(size == Vip::TransformBoundingRect);
-	m_data->back.setText(back.toString());
-	m_data->trs->clear();
+	d_data->interp.setChecked(interp != Vip::NoInterpolation);
+	d_data->size.setChecked(size == Vip::TransformBoundingRect);
+	d_data->back.setText(back.toString());
+	d_data->trs->clear();
 
 	for (int i = 0; i < trs.size(); ++i) {
-		TrListWidgetItem* it = new TrListWidgetItem(m_data->trs, trs[i].type);
+		TrListWidgetItem* it = new TrListWidgetItem(d_data->trs, trs[i].type);
 		it->x->setValue(trs[i].x);
 		if (it->y)
 			it->y->setValue(trs[i].y);
@@ -3066,7 +3054,7 @@ void VipGenericImageTransformEditor::updateWidget()
 
 void VipGenericImageTransformEditor::recomputeSize()
 {
-	m_data->trs->setMaximumHeight(m_data->trs->count() * 30 + 30);
+	d_data->trs->setMaximumHeight(d_data->trs->count() * 30 + 30);
 	VipUniqueProcessingObjectEditor::geometryChanged(this);
 }
 
@@ -3088,12 +3076,12 @@ void VipGenericImageTransformEditor::addShear()
 }
 void VipGenericImageTransformEditor::addTransform(Transform::TrType type)
 {
-	/*TrListWidgetItem * it =*/new TrListWidgetItem(m_data->trs, type);
+	/*TrListWidgetItem * it =*/new TrListWidgetItem(d_data->trs, type);
 	recomputeSize();
 }
 void VipGenericImageTransformEditor::removeSelectedTransform()
 {
-	QList<QListWidgetItem*> items = m_data->trs->selectedItems();
+	QList<QListWidgetItem*> items = d_data->trs->selectedItems();
 	for (int i = 0; i < items.size(); ++i) {
 		delete items[i];
 	}
@@ -3159,8 +3147,8 @@ public:
 	VipSymbol& symbol() const;
 
 private:
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 DrawWarpingPoints::DrawWarpingPoints(VipAbstractPlotArea* area, VipWarpingEditor* p)
@@ -3280,25 +3268,24 @@ public:
 PlotWarpingPoints::PlotWarpingPoints(const VipText& title)
   : VipPlotItemDataType(title)
 {
-	m_data = new PrivateData();
+	VIP_CREATE_PRIVATE_DATA(d_data);
 	this->setItemAttribute(VipPlotItem::HasLegendIcon, false);
 	this->setItemAttribute(VipPlotItem::AutoScale, false);
 	this->setItemAttribute(VipPlotItem::IsSuppressable, false);
 	this->setRenderHints(QPainter::Antialiasing);
 
-	m_data->quiver.setPen(QColor(Qt::red));
-	m_data->quiver.setStyle(VipQuiverPath::EndArrow);
-	m_data->quiver.setLength(VipQuiverPath::End, 8);
-	m_data->quiver.setExtremityBrush(VipQuiverPath::End, QBrush(Qt::red));
-	m_data->quiver.setExtremityPen(VipQuiverPath::End, QColor(Qt::red));
-	m_data->symbol.setStyle(VipSymbol::Cross);
-	m_data->symbol.setPen(QColor(Qt::black));
-	m_data->symbol.setSize(QSizeF(7, 7));
+	d_data->quiver.setPen(QColor(Qt::red));
+	d_data->quiver.setStyle(VipQuiverPath::EndArrow);
+	d_data->quiver.setLength(VipQuiverPath::End, 8);
+	d_data->quiver.setExtremityBrush(VipQuiverPath::End, QBrush(Qt::red));
+	d_data->quiver.setExtremityPen(VipQuiverPath::End, QColor(Qt::red));
+	d_data->symbol.setStyle(VipSymbol::Cross);
+	d_data->symbol.setPen(QColor(Qt::black));
+	d_data->symbol.setSize(QSizeF(7, 7));
 }
 
 PlotWarpingPoints::~PlotWarpingPoints()
 {
-	delete m_data;
 }
 
 void PlotWarpingPoints::draw(QPainter* painter, const VipCoordinateSystemPtr& m) const
@@ -3307,11 +3294,11 @@ void PlotWarpingPoints::draw(QPainter* painter, const VipCoordinateSystemPtr& m)
 	for (int i = 0; i < field.size(); ++i) {
 		if (field[i].first == field[i].second) {
 			painter->setRenderHint(QPainter::Antialiasing, false);
-			m_data->symbol.drawSymbol(painter, m->transform(field[i].first));
+			d_data->symbol.drawSymbol(painter, m->transform(field[i].first));
 		}
 		else {
 			painter->setRenderHint(QPainter::Antialiasing, true);
-			m_data->quiver.draw(painter, QLineF(m->transform(field[i].first), m->transform(field[i].second)));
+			d_data->quiver.draw(painter, QLineF(m->transform(field[i].first), m->transform(field[i].second)));
 		}
 	}
 }
@@ -3328,12 +3315,12 @@ QRectF PlotWarpingPoints::drawLegend(QPainter*, const QRectF&, int /* index*/) c
 
 VipQuiverPath& PlotWarpingPoints::quiverPath() const
 {
-	return const_cast<VipQuiverPath&>(m_data->quiver);
+	return const_cast<VipQuiverPath&>(d_data->quiver);
 }
 
 VipSymbol& PlotWarpingPoints::symbol() const
 {
-	return const_cast<VipSymbol&>(m_data->symbol);
+	return const_cast<VipSymbol&>(d_data->symbol);
 }
 
 class VipWarpingEditor::PrivateData
@@ -3362,7 +3349,7 @@ public:
 VipWarpingEditor::VipWarpingEditor(QWidget* parent)
   : QWidget(parent)
 {
-	d_data = new PrivateData();
+	VIP_CREATE_PRIVATE_DATA(d_data);
 
 	QHBoxLayout* hlay1 = new QHBoxLayout();
 	hlay1->addWidget(&d_data->save);
@@ -3444,8 +3431,6 @@ VipWarpingEditor::~VipWarpingEditor()
 		d_data->draw_points->deleteLater();
 	if (d_data->plot_points)
 		d_data->plot_points->deleteLater();
-
-	delete d_data;
 }
 
 void VipWarpingEditor::ComputePlayerList()
@@ -3474,7 +3459,7 @@ void VipWarpingEditor::SaveTransform()
 		if (!filename.isEmpty()) {
 			QFile out(filename);
 			if (out.open(QFile::WriteOnly)) {
-				const VipPointVector warp = d_data->warping->warping();
+				const auto warp = vipToPointF( d_data->warping->warping());
 				out.write((const char*)warp.data(), warp.size() * sizeof(QPointF));
 				out.close();
 			}
@@ -3495,9 +3480,9 @@ void VipWarpingEditor::LoadTransform()
 		QFile in(filename);
 		if (in.open(QFile::ReadOnly)) {
 			int size = (int)in.size() / sizeof(QPointF);
-			VipPointVector warp(size);
+			QVector<QPointF> warp(size);
 			in.read((char*)warp.data(), in.size());
-			d_data->warping->setWarping(warp);
+			d_data->warping->setWarping(vipToPointVector( warp));
 			d_data->warping->reload();
 		}
 		else {
@@ -3556,8 +3541,8 @@ void VipWarpingEditor::ChangeWarping()
 		return;
 	}
 
-	QList<VipShape> to = player->plotSceneModel()->sceneModel().shapes("Points");
-	QList<VipShape> from = d_data->warping->sceneModel().shapes("Points");
+	VipShapeList to = player->plotSceneModel()->sceneModel().shapes("Points");
+	VipShapeList from = d_data->warping->sceneModel().shapes("Points");
 
 	/*QPointF to_p[10];
 	QPointF from_p[10];
@@ -4172,7 +4157,7 @@ public:
 VipUniqueProcessingObjectEditor::VipUniqueProcessingObjectEditor(QWidget* parent)
   : QWidget(parent)
 {
-	m_data = new PrivateData();
+	VIP_CREATE_PRIVATE_DATA(d_data);
 
 	QVBoxLayout* lay = new QVBoxLayout();
 	lay->setSpacing(1);
@@ -4182,7 +4167,6 @@ VipUniqueProcessingObjectEditor::VipUniqueProcessingObjectEditor(QWidget* parent
 
 VipUniqueProcessingObjectEditor::~VipUniqueProcessingObjectEditor()
 {
-	delete m_data;
 }
 
 void VipUniqueProcessingObjectEditor::emitEditorVisibilityChanged()
@@ -4192,7 +4176,7 @@ void VipUniqueProcessingObjectEditor::emitEditorVisibilityChanged()
 
 VipProcessingObject* VipUniqueProcessingObjectEditor::processingObject() const
 {
-	return const_cast<VipProcessingObject*>(m_data->processingObject);
+	return const_cast<VipProcessingObject*>(d_data->processingObject);
 }
 
 void VipUniqueProcessingObjectEditor::geometryChanged(QWidget* widget)
@@ -4209,7 +4193,7 @@ void VipUniqueProcessingObjectEditor::geometryChanged(QWidget* widget)
 
 void VipUniqueProcessingObjectEditor::setShowExactProcessingOnly(bool exact_proc)
 {
-	m_data->isShowExactProcessingOnly = exact_proc;
+	d_data->isShowExactProcessingOnly = exact_proc;
 	QList<QWidget*> lines = findChildren<QWidget*>("VLine");
 	QList<QWidget*> boxes = findChildren<QWidget*>("Box");
 	QList<QWidget*> editors = findChildren<QWidget*>("Editor");
@@ -4223,12 +4207,12 @@ void VipUniqueProcessingObjectEditor::setShowExactProcessingOnly(bool exact_proc
 
 bool VipUniqueProcessingObjectEditor::isShowExactProcessingOnly() const
 {
-	return m_data->isShowExactProcessingOnly;
+	return d_data->isShowExactProcessingOnly;
 }
 
 void VipUniqueProcessingObjectEditor::tryUpdateProcessing()
 {
-	if (!m_data->processingObject)
+	if (!d_data->processingObject)
 		return;
 
 	QList<QWidget*> widgets = this->findChildren<QWidget*>("_vip_PropertyEditor");
@@ -4280,10 +4264,10 @@ void VipUniqueProcessingObjectEditor::removeEndStretch()
 
 bool VipUniqueProcessingObjectEditor::setProcessingObject(VipProcessingObject* obj)
 {
-	if (obj == m_data->processingObject)
+	if (obj == d_data->processingObject)
 		return false;
 
-	m_data->processingObject = obj;
+	d_data->processingObject = obj;
 
 	// clear the previous editors
 	QVBoxLayout* lay = static_cast<QVBoxLayout*>(layout());
@@ -4391,7 +4375,7 @@ bool VipUniqueProcessingObjectEditor::setProcessingObject(VipProcessingObject* o
 		removeEndStretch();
 	}
 
-	setShowExactProcessingOnly(m_data->isShowExactProcessingOnly);
+	setShowExactProcessingOnly(d_data->isShowExactProcessingOnly);
 
 	return res;
 }
@@ -4407,40 +4391,39 @@ public:
 VipProcessingLeafSelector::VipProcessingLeafSelector(QWidget* parent)
   : QToolButton(parent)
 {
-	m_data = new PrivateData();
+	VIP_CREATE_PRIVATE_DATA(d_data);
 
 	this->setText("Select a leaf processing");
 	this->setToolTip("<p><b>Select an item (video, image, curve...) in the current workspace.</b></p>"
 			 "\nThis will display the processings related to this item.");
 
-	m_data->menu = new QMenu(this);
-	this->setMenu(m_data->menu);
+	d_data->menu = new QMenu(this);
+	this->setMenu(d_data->menu);
 	this->setPopupMode(QToolButton::InstantPopup);
 	this->setMaximumWidth(300);
 
-	connect(m_data->menu, SIGNAL(triggered(QAction*)), this, SLOT(processingSelected(QAction*)));
-	connect(m_data->menu, SIGNAL(aboutToShow()), this, SLOT(aboutToShow()));
+	connect(d_data->menu, SIGNAL(triggered(QAction*)), this, SLOT(processingSelected(QAction*)));
+	connect(d_data->menu, SIGNAL(aboutToShow()), this, SLOT(aboutToShow()));
 }
 
 VipProcessingLeafSelector::~VipProcessingLeafSelector()
 {
-	delete m_data;
 }
 
 void VipProcessingLeafSelector::setProcessingPool(VipProcessingPool* pool)
 {
-	m_data->pool = pool;
-	m_data->processing = nullptr;
+	d_data->pool = pool;
+	d_data->processing = nullptr;
 }
 
 VipProcessingPool* VipProcessingLeafSelector::processingPool() const
 {
-	return m_data->pool;
+	return d_data->pool;
 }
 
 QList<VipProcessingObject*> VipProcessingLeafSelector::leafs() const
 {
-	if (VipProcessingPool* pool = m_data->pool) {
+	if (VipProcessingPool* pool = d_data->pool) {
 		QList<VipProcessingObject*> res;
 		QList<VipProcessingObject*> children = pool->findChildren<VipProcessingObject*>();
 
@@ -4454,12 +4437,12 @@ QList<VipProcessingObject*> VipProcessingLeafSelector::leafs() const
 }
 VipProcessingObject* VipProcessingLeafSelector::processing() const
 {
-	return m_data->processing;
+	return d_data->processing;
 }
 
 void VipProcessingLeafSelector::setProcessing(VipProcessingObject* proc)
 {
-	m_data->processing = proc;
+	d_data->processing = proc;
 	if (proc) {
 		QString tool_tip;
 		QFontMetrics m(font());
@@ -4472,28 +4455,28 @@ void VipProcessingLeafSelector::setProcessing(VipProcessingObject* proc)
 
 void VipProcessingLeafSelector::aboutToShow()
 {
-	m_data->menu->blockSignals(true);
+	d_data->menu->blockSignals(true);
 
-	m_data->menu->clear();
-	m_data->menu->setToolTipsVisible(true);
+	d_data->menu->clear();
+	d_data->menu->setToolTipsVisible(true);
 	QList<VipProcessingObject*> _leafs = this->leafs();
 	for (int i = 0; i < _leafs.size(); ++i) {
 		QString tool_tip;
-		QAction* act = m_data->menu->addAction(title(_leafs[i], tool_tip));
+		QAction* act = d_data->menu->addAction(title(_leafs[i], tool_tip));
 		act->setCheckable(true);
 		act->setToolTip(tool_tip);
-		if (_leafs[i] == m_data->processing)
+		if (_leafs[i] == d_data->processing)
 			act->setChecked(true);
 		act->setProperty("processing", QVariant::fromValue(_leafs[i]));
 	}
 
-	m_data->menu->blockSignals(false);
+	d_data->menu->blockSignals(false);
 }
 
 void VipProcessingLeafSelector::processingSelected(QAction* act)
 {
 	if (VipProcessingObject* proc = act->property("processing").value<VipProcessingObject*>()) {
-		if (proc != m_data->processing) {
+		if (proc != d_data->processing) {
 			setProcessing(proc);
 			Q_EMIT processingChanged(proc);
 		}
@@ -4566,48 +4549,48 @@ public:
 VipProcessingTooButton::VipProcessingTooButton(VipProcessingObject* object)
   : QWidget()
 {
-	m_data = new PrivateData();
-	m_data->processing = object;
-	m_data->lastErrorDate = 0;
+	VIP_CREATE_PRIVATE_DATA(d_data);
+	d_data->processing = object;
+	d_data->lastErrorDate = 0;
 
 	QHBoxLayout* hlay = new QHBoxLayout();
 	hlay->setContentsMargins(0, 0, 0, 0);
-	hlay->addWidget(&m_data->reset);
-	hlay->addWidget(&m_data->text);
-	hlay->addWidget(&m_data->showError);
+	hlay->addWidget(&d_data->reset);
+	hlay->addWidget(&d_data->text);
+	hlay->addWidget(&d_data->showError);
 	hlay->addStretch(1);
 
 	QVBoxLayout* vlay = new QVBoxLayout();
 	vlay->addLayout(hlay);
-	vlay->addWidget(&m_data->errors);
+	vlay->addWidget(&d_data->errors);
 	vlay->setContentsMargins(0, 0, 0, 0);
 
 	setLayout(vlay);
 
-	m_data->reset.setIcon(vipIcon("reset.png"));
-	m_data->reset.setToolTip("Reset the processing");
+	d_data->reset.setIcon(vipIcon("reset.png"));
+	d_data->reset.setToolTip("Reset the processing");
 
-	m_data->showError.setIcon(vipIcon("error.png"));
-	m_data->showError.setToolTip("Show the last processing errors");
-	m_data->showError.setCheckable(true);
+	d_data->showError.setIcon(vipIcon("error.png"));
+	d_data->showError.setToolTip("Show the last processing errors");
+	d_data->showError.setCheckable(true);
 
 	setMaximumHeight(30);
 	if (!object->objectName().isEmpty())
-		m_data->text.setText(vipSplitClassname(object->objectName()));
+		d_data->text.setText(vipSplitClassname(object->objectName()));
 	else
-		m_data->text.setText(vipSplitClassname(object->className()));
-	// m_data->text.setStyleSheet("font-weight: bold; text-align: left;");
-	m_data->text.setStyleSheet("text-align: left;");
-	QFont font = m_data->text.font();
+		d_data->text.setText(vipSplitClassname(object->className()));
+	// d_data->text.setStyleSheet("font-weight: bold; text-align: left;");
+	d_data->text.setStyleSheet("text-align: left;");
+	QFont font = d_data->text.font();
 	font.setBold(true);
-	m_data->text.setFont(font);
+	d_data->text.setFont(font);
 
-	m_data->text.setAutoRaise(true);
-	m_data->text.setCheckable(true);
-	m_data->text.setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
-	m_data->text.setIcon(vipIcon("hidden.png"));
+	d_data->text.setAutoRaise(true);
+	d_data->text.setCheckable(true);
+	d_data->text.setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
+	d_data->text.setIcon(vipIcon("hidden.png"));
 
-	QString tooltip = m_data->text.text() + " properties";
+	QString tooltip = d_data->text.text() + " properties";
 	QString data_name;
 
 	if (object->outputCount() == 1)
@@ -4623,37 +4606,36 @@ VipProcessingTooButton::VipProcessingTooButton(VipProcessingObject* object)
 
 	tooltip += "<br><b>Processing output: </b>" + data_name;
 
-	m_data->text.setToolTip(tooltip);
+	d_data->text.setToolTip(tooltip);
 
-	m_data->errors.setStyleSheet("QPlainTextEdit { color: red; font:  14px; background-color:transparent;}");
-	m_data->errors.hide();
-	m_data->errors.setMinimumHeight(60);
-	m_data->errors.setReadOnly(true);
-	m_data->errors.setLineWrapMode(QPlainTextEdit::NoWrap);
+	d_data->errors.setStyleSheet("QPlainTextEdit { color: red; font:  14px; background-color:transparent;}");
+	d_data->errors.hide();
+	d_data->errors.setMinimumHeight(60);
+	d_data->errors.setReadOnly(true);
+	d_data->errors.setLineWrapMode(QPlainTextEdit::NoWrap);
 
-	m_data->timer.setSingleShot(false);
-	m_data->timer.setInterval(100);
-	connect(&m_data->timer, &QTimer::timeout, this, &VipProcessingTooButton::updateText);
-	m_data->timer.start();
+	d_data->timer.setSingleShot(false);
+	d_data->timer.setInterval(100);
+	connect(&d_data->timer, &QTimer::timeout, this, &VipProcessingTooButton::updateText);
+	d_data->timer.start();
 
-	connect(&m_data->text, SIGNAL(clicked(bool)), this, SLOT(emitClicked(bool)), Qt::DirectConnection);
-	connect(&m_data->reset, SIGNAL(clicked(bool)), this, SLOT(resetProcessing()));
-	connect(&m_data->showError, SIGNAL(clicked(bool)), this, SLOT(showError(bool)));
+	connect(&d_data->text, SIGNAL(clicked(bool)), this, SLOT(emitClicked(bool)), Qt::DirectConnection);
+	connect(&d_data->reset, SIGNAL(clicked(bool)), this, SLOT(resetProcessing()));
+	connect(&d_data->showError, SIGNAL(clicked(bool)), this, SLOT(showError(bool)));
 }
 
 VipProcessingTooButton::~VipProcessingTooButton()
 {
-	m_data->timer.stop();
-	m_data->timer.disconnect();
-	delete m_data;
+	d_data->timer.stop();
+	d_data->timer.disconnect();
 }
 void VipProcessingTooButton::updateText()
 {
-	if (VipProcessingObject* obj = m_data->processing) {
+	if (VipProcessingObject* obj = d_data->processing) {
 		qint64 time = obj->processingTime() / 1000000;
 		QString text = vipSplitClassname(obj->objectName().isEmpty() ? obj->className() : obj->objectName());
 		text += " : " + QString::number(time) + " ms";
-		m_data->text.setText(text);
+		d_data->text.setText(text);
 
 		bool has_error = false;
 		const QList<VipErrorData> errors = obj->lastErrors();
@@ -4668,15 +4650,15 @@ void VipProcessingTooButton::updateText()
 		else if (isProcessing(obj))
 			icon = "visible.png";
 
-		if (icon != m_data->icon) {
-			m_data->icon = icon;
-			m_data->text.setIcon(vipIcon(icon));
+		if (icon != d_data->icon) {
+			d_data->icon = icon;
+			d_data->text.setIcon(vipIcon(icon));
 		}
 
 		// format errors
-		if (errors.size() && errors.last().msecsSinceEpoch() > m_data->lastErrorDate) {
-			m_data->lastErrorDate = errors.last().msecsSinceEpoch();
-			m_data->errors.clear();
+		if (errors.size() && errors.last().msecsSinceEpoch() > d_data->lastErrorDate) {
+			d_data->lastErrorDate = errors.last().msecsSinceEpoch();
+			d_data->errors.clear();
 			QString error_text;
 			for (int i = 0; i < errors.size(); ++i) {
 				VipErrorData err = errors[i];
@@ -4685,17 +4667,17 @@ void VipProcessingTooButton::updateText()
 				QString code = QString::number(err.errorCode());
 				error_text += date + err_str + " (" + code + ")\n";
 			}
-			m_data->errors.setPlainText(error_text);
+			d_data->errors.setPlainText(error_text);
 		}
 	}
 
-	if (m_data->editor) {
-		m_data->text.setChecked(m_data->editor->isVisible());
+	if (d_data->editor) {
+		d_data->text.setChecked(d_data->editor->isVisible());
 	}
 }
 void VipProcessingTooButton::showError(bool show_)
 {
-	m_data->errors.setVisible(show_);
+	d_data->errors.setVisible(show_);
 
 	// change the height of the top level widget
 	QWidget* w = this->parentWidget();
@@ -4714,25 +4696,25 @@ void VipProcessingTooButton::showError(bool show_)
 }
 QToolButton* VipProcessingTooButton::showButton() const
 {
-	return &m_data->text;
+	return &d_data->text;
 }
 QToolButton* VipProcessingTooButton::resetButton() const
 {
-	return &m_data->reset;
+	return &d_data->reset;
 }
 
 void VipProcessingTooButton::setEditor(VipUniqueProcessingObjectEditor* ed)
 {
-	m_data->editor = ed;
+	d_data->editor = ed;
 }
 VipUniqueProcessingObjectEditor* VipProcessingTooButton::editor() const
 {
-	return m_data->editor;
+	return d_data->editor;
 }
 
 void VipProcessingTooButton::resetProcessing()
 {
-	if (VipProcessingObject* obj = m_data->processing) {
+	if (VipProcessingObject* obj = d_data->processing) {
 		obj->reset();
 		obj->reload();
 	}
@@ -4804,7 +4786,7 @@ public:
 VipMultiProcessingObjectEditor::VipMultiProcessingObjectEditor(QWidget* parent)
   : QWidget(parent)
 {
-	m_data = new PrivateData();
+	VIP_CREATE_PRIVATE_DATA(d_data);
 
 	QVBoxLayout* lay = new QVBoxLayout();
 	lay->setContentsMargins(0, 0, 0, 0);
@@ -4814,7 +4796,6 @@ VipMultiProcessingObjectEditor::VipMultiProcessingObjectEditor(QWidget* parent)
 
 VipMultiProcessingObjectEditor::~VipMultiProcessingObjectEditor()
 {
-	delete m_data;
 }
 
 void VipMultiProcessingObjectEditor::emitEditorVisibilityChanged()
@@ -4828,11 +4809,11 @@ bool VipMultiProcessingObjectEditor::setProcessingObjects(const QList<VipProcess
 	if (objs.size() > __VIP_MAX_DISPLAYED_EDITORS)
 		objs = objs.mid(0, __VIP_MAX_DISPLAYED_EDITORS);
 
-	if (objs == m_data->processingObjects)
+	if (objs == d_data->processingObjects)
 		return false;
 
-	m_data->processingObjects = objs;
-	m_data->editors.clear();
+	d_data->processingObjects = objs;
+	d_data->editors.clear();
 
 	// clear the previous editors
 	QVBoxLayout* lay = static_cast<QVBoxLayout*>(layout());
@@ -4849,7 +4830,7 @@ bool VipMultiProcessingObjectEditor::setProcessingObjects(const QList<VipProcess
 	bool first = true;
 	for (int i = 0; i < objs.size(); ++i) {
 		VipUniqueProcessingObjectEditor* editor = new VipUniqueProcessingObjectEditor();
-		editor->setShowExactProcessingOnly(m_data->isShowExactProcessingOnly);
+		editor->setShowExactProcessingOnly(d_data->isShowExactProcessingOnly);
 
 		if (editor->setProcessingObject(objs[i])) {
 			VipProcessingTooButton* button = new VipProcessingTooButton(objs[i]);
@@ -4878,7 +4859,7 @@ bool VipMultiProcessingObjectEditor::setProcessingObjects(const QList<VipProcess
 			lay->addWidget(button);
 			lay->addWidget(w);
 
-			m_data->editors[objs[i]] = (QPair<VipProcessingTooButton*, QWidget*>(button, editor));
+			d_data->editors[objs[i]] = (QPair<VipProcessingTooButton*, QWidget*>(button, editor));
 
 			connect(editor, SIGNAL(editorVisibilityChanged()), this, SLOT(emitEditorVisibilityChanged()));
 		}
@@ -4889,8 +4870,8 @@ bool VipMultiProcessingObjectEditor::setProcessingObjects(const QList<VipProcess
 	// TEST: comment
 	// lay->addStretch(2);
 
-	setVisibleProcessings(m_data->visibleProcessings);
-	setHiddenProcessings(m_data->hiddenProcessings);
+	setVisibleProcessings(d_data->visibleProcessings);
+	setHiddenProcessings(d_data->hiddenProcessings);
 
 	Q_EMIT processingsChanged();
 
@@ -4899,13 +4880,13 @@ bool VipMultiProcessingObjectEditor::setProcessingObjects(const QList<VipProcess
 
 QList<VipProcessingObject*> VipMultiProcessingObjectEditor::processingObjects() const
 {
-	return m_data->processingObjects;
+	return d_data->processingObjects;
 }
 
 VipUniqueProcessingObjectEditor* VipMultiProcessingObjectEditor::processingEditor(VipProcessingObject* obj) const
 {
-	QMap<VipProcessingObject*, QPair<VipProcessingTooButton*, QWidget*>>::iterator it = m_data->editors.find(obj);
-	if (it != m_data->editors.end()) {
+	QMap<VipProcessingObject*, QPair<VipProcessingTooButton*, QWidget*>>::iterator it = d_data->editors.find(obj);
+	if (it != d_data->editors.end()) {
 		if (VipUniqueProcessingObjectEditor* ed = qobject_cast<VipUniqueProcessingObjectEditor*>(it.value().second)) //->findChild<VipUniqueProcessingObjectEditor*>())
 			return ed;
 	}
@@ -4914,8 +4895,8 @@ VipUniqueProcessingObjectEditor* VipMultiProcessingObjectEditor::processingEdito
 
 void VipMultiProcessingObjectEditor::setProcessingObjectVisible(VipProcessingObject* object, bool visible)
 {
-	QMap<VipProcessingObject*, QPair<VipProcessingTooButton*, QWidget*>>::iterator it = m_data->editors.find(object);
-	if (it != m_data->editors.end()) {
+	QMap<VipProcessingObject*, QPair<VipProcessingTooButton*, QWidget*>>::iterator it = d_data->editors.find(object);
+	if (it != d_data->editors.end()) {
 		it->first->showButton()->setChecked(visible);
 		it->second->setVisible(visible);
 		emitEditorVisibilityChanged();
@@ -4924,8 +4905,8 @@ void VipMultiProcessingObjectEditor::setProcessingObjectVisible(VipProcessingObj
 
 void VipMultiProcessingObjectEditor::setFullEditorVisible(VipProcessingObject* object, bool visible)
 {
-	QMap<VipProcessingObject*, QPair<VipProcessingTooButton*, QWidget*>>::iterator it = m_data->editors.find(object);
-	if (it != m_data->editors.end()) {
+	QMap<VipProcessingObject*, QPair<VipProcessingTooButton*, QWidget*>>::iterator it = d_data->editors.find(object);
+	if (it != d_data->editors.end()) {
 		it->first->setVisible(visible);
 		it->second->setVisible(visible);
 		emitEditorVisibilityChanged();
@@ -4934,8 +4915,8 @@ void VipMultiProcessingObjectEditor::setFullEditorVisible(VipProcessingObject* o
 
 void VipMultiProcessingObjectEditor::setShowExactProcessingOnly(bool exact_proc)
 {
-	m_data->isShowExactProcessingOnly = exact_proc;
-	for (QMap<VipProcessingObject*, QPair<VipProcessingTooButton*, QWidget*>>::iterator it = m_data->editors.begin(); it != m_data->editors.end(); ++it) {
+	d_data->isShowExactProcessingOnly = exact_proc;
+	for (QMap<VipProcessingObject*, QPair<VipProcessingTooButton*, QWidget*>>::iterator it = d_data->editors.begin(); it != d_data->editors.end(); ++it) {
 		if (VipUniqueProcessingObjectEditor* ed = qobject_cast<VipUniqueProcessingObjectEditor*>(it.value().second)) //->findChild<VipUniqueProcessingObjectEditor*>())
 			return ed->setShowExactProcessingOnly(exact_proc);
 	}
@@ -4943,7 +4924,7 @@ void VipMultiProcessingObjectEditor::setShowExactProcessingOnly(bool exact_proc)
 
 bool VipMultiProcessingObjectEditor::isShowExactProcessingOnly() const
 {
-	return m_data->isShowExactProcessingOnly;
+	return d_data->isShowExactProcessingOnly;
 }
 
 static bool isSuperClass(const QMetaObject* meta, const QMetaObject* super_class)
@@ -4966,15 +4947,15 @@ static bool isSuperClass(const QMetaObject* meta, QList<const QMetaObject*>& sup
 
 void VipMultiProcessingObjectEditor::updateEditorsVisibility()
 {
-	bool no_rules = m_data->visibleProcessings.isEmpty() && m_data->hiddenProcessings.isEmpty();
+	bool no_rules = d_data->visibleProcessings.isEmpty() && d_data->hiddenProcessings.isEmpty();
 	bool changed = false;
-	for (QMap<VipProcessingObject*, QPair<VipProcessingTooButton*, QWidget*>>::iterator it = m_data->editors.begin(); it != m_data->editors.end(); ++it) {
+	for (QMap<VipProcessingObject*, QPair<VipProcessingTooButton*, QWidget*>>::iterator it = d_data->editors.begin(); it != d_data->editors.end(); ++it) {
 		bool visible = true;
 		if (!no_rules) {
-			if (!m_data->visibleProcessings.isEmpty())
-				visible = isSuperClass(it.key()->metaObject(), m_data->visibleProcessings);
-			if (visible && !m_data->hiddenProcessings.isEmpty())
-				visible = !isSuperClass(it.key()->metaObject(), m_data->hiddenProcessings);
+			if (!d_data->visibleProcessings.isEmpty())
+				visible = isSuperClass(it.key()->metaObject(), d_data->visibleProcessings);
+			if (visible && !d_data->hiddenProcessings.isEmpty())
+				visible = !isSuperClass(it.key()->metaObject(), d_data->hiddenProcessings);
 		}
 		changed = (visible != it->first->isVisible());
 		it->first->setVisible(visible);
@@ -4986,23 +4967,23 @@ void VipMultiProcessingObjectEditor::updateEditorsVisibility()
 
 void VipMultiProcessingObjectEditor::setVisibleProcessings(const QList<const QMetaObject*>& proc_classes)
 {
-	m_data->visibleProcessings = proc_classes;
+	d_data->visibleProcessings = proc_classes;
 	updateEditorsVisibility();
 }
 
 void VipMultiProcessingObjectEditor::setHiddenProcessings(const QList<const QMetaObject*>& proc_classes)
 {
-	m_data->hiddenProcessings = proc_classes;
+	d_data->hiddenProcessings = proc_classes;
 	updateEditorsVisibility();
 }
 
 QList<const QMetaObject*> VipMultiProcessingObjectEditor::visibleProcessings() const
 {
-	return m_data->visibleProcessings;
+	return d_data->visibleProcessings;
 }
 QList<const QMetaObject*> VipMultiProcessingObjectEditor::hiddenProcessings() const
 {
-	return m_data->hiddenProcessings;
+	return d_data->hiddenProcessings;
 }
 
 #include <QPair>
@@ -5079,20 +5060,18 @@ public:
 VipProcessingEditorToolWidget::VipProcessingEditorToolWidget(VipMainWindow* window)
   : VipToolWidgetPlayer(window)
 {
-	qRegisterMetaType<VipPlotItemPtr>();
-
-	m_data = new PrivateData();
-	m_data->leafSelector = new VipProcessingLeafSelector();
-	m_data->mainWindow = window;
+	VIP_CREATE_PRIVATE_DATA(d_data);
+	d_data->leafSelector = new VipProcessingLeafSelector();
+	d_data->mainWindow = window;
 
 	QWidget* w = new QWidget();
-	m_data->layout = new QVBoxLayout();
-	m_data->layout->setContentsMargins(0, 0, 0, 0);
-	w->setLayout(m_data->layout);
+	d_data->layout = new QVBoxLayout();
+	d_data->layout->setContentsMargins(0, 0, 0, 0);
+	w->setLayout(d_data->layout);
 
 	QWidget* editor = new QWidget();
 	QVBoxLayout* vlay = new QVBoxLayout();
-	vlay->addWidget(m_data->leafSelector);
+	vlay->addWidget(d_data->leafSelector);
 	vlay->addWidget(VipLineWidget::createHLine());
 	vlay->addWidget(w);
 	editor->setLayout(vlay);
@@ -5102,30 +5081,30 @@ VipProcessingEditorToolWidget::VipProcessingEditorToolWidget(VipMainWindow* wind
 	this->setObjectName("Edit processing");
 	this->setAutomaticTitleManagement(false);
 
-	connect(VipPlotItemManager::instance(), SIGNAL(itemClicked(VipPlotItem*, int)), this, SLOT(itemClicked(VipPlotItem*, int)), Qt::QueuedConnection);
-	connect(VipPlotItemManager::instance(), SIGNAL(itemSelectionChanged(VipPlotItem*, bool)), this, SLOT(itemSelectionChangedDirect(VipPlotItem*, bool)), Qt::DirectConnection);
+	connect(VipPlotItemManager::instance(), SIGNAL(itemClicked(const VipPlotItemPointer&, int)), this, SLOT(itemClicked(const VipPlotItemPointer&, int)), Qt::QueuedConnection);
+	connect(
+	  VipPlotItemManager::instance(), SIGNAL(itemSelectionChanged(const VipPlotItemPointer&, bool)), this, SLOT(itemSelectionChangedDirect(const VipPlotItemPointer&, bool)), Qt::DirectConnection);
 	connect(window->displayArea(), SIGNAL(currentDisplayPlayerAreaChanged(VipDisplayPlayerArea*)), this, SLOT(workspaceChanged()));
-	connect(m_data->leafSelector, SIGNAL(processingChanged(VipProcessingObject*)), this, SLOT(setProcessingObject(VipProcessingObject*)));
+	connect(d_data->leafSelector, SIGNAL(processingChanged(VipProcessingObject*)), this, SLOT(setProcessingObject(VipProcessingObject*)));
 
 	if (VipDisplayPlayerArea* area = window->displayArea()->currentDisplayPlayerArea())
-		m_data->leafSelector->setProcessingPool(area->processingPool());
+		d_data->leafSelector->setProcessingPool(area->processingPool());
 
 	setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
 }
 
 VipProcessingEditorToolWidget::~VipProcessingEditorToolWidget()
 {
-	delete m_data;
 }
 
 bool VipProcessingEditorToolWidget::setPlayer(VipAbstractPlayer* player)
 {
 	// just for ease of use: if no processing has been selected yet, assign a processing from this player
 	if (!player) {
-		m_data->leafSelector->setProcessing(nullptr);
+		d_data->leafSelector->setProcessing(nullptr);
 		return false;
 	}
-	// if (player == m_data->player)
+	// if (player == d_data->player)
 	//	return false;
 
 	QList<VipDisplayObject*> displays;
@@ -5140,7 +5119,7 @@ bool VipProcessingEditorToolWidget::setPlayer(VipAbstractPlayer* player)
 
 	if (displays.isEmpty()) {
 		// if we are on the same player with already a valid processing object displayed and no item selected, do nothing
-		if (m_data->player == player && processingObject())
+		if (d_data->player == player && processingObject())
 			return true;
 		// try to take the main display object (if any)
 		if (VipDisplayObject* disp = player->mainDisplayObject())
@@ -5149,7 +5128,7 @@ bool VipProcessingEditorToolWidget::setPlayer(VipAbstractPlayer* player)
 			displays = player->displayObjects();
 	}
 	if (displays.size()) {
-		m_data->player = player;
+		d_data->player = player;
 		setProcessingObject(displays.last());
 		return true;
 	}
@@ -5178,27 +5157,27 @@ void VipProcessingEditorToolWidget::setProcessingObject(VipProcessingObject* obj
 
 	this->setWindowTitle("Edit processing - " + title);
 
-	VipMultiProcessingObjectEditor* editor = m_data->findEditor(object);
+	VipMultiProcessingObjectEditor* editor = d_data->findEditor(object);
 	if (editor)
-		m_data->setEditor(object);
+		d_data->setEditor(object);
 	else {
 		QList<VipProcessingObject*> lst;
 		lst << object;
 		lst += object->allSources();
 
 		editor = new VipMultiProcessingObjectEditor();
-		editor->setShowExactProcessingOnly(m_data->isShowExactProcessingOnly);
-		editor->setVisibleProcessings(m_data->visibleProcessings);
-		editor->setHiddenProcessings(m_data->hiddenProcessings);
+		editor->setShowExactProcessingOnly(d_data->isShowExactProcessingOnly);
+		editor->setVisibleProcessings(d_data->visibleProcessings);
+		editor->setHiddenProcessings(d_data->hiddenProcessings);
 		editor->setProcessingObjects(lst);
 
 		connect(editor, SIGNAL(editorVisibilityChanged()), this, SLOT(resetSize()));
 		connect(editor, SIGNAL(processingsChanged()), this, SLOT(emitProcessingsChanged()), Qt::DirectConnection);
-		m_data->setEditor(object, editor);
+		d_data->setEditor(object, editor);
 	}
 
-	m_data->leafSelector->setProcessingPool(object->parentObjectPool());
-	m_data->leafSelector->setProcessing(object);
+	d_data->leafSelector->setProcessingPool(object->parentObjectPool());
+	d_data->leafSelector->setProcessing(object);
 
 	emitProcessingsChanged();
 	resetSize();
@@ -5206,57 +5185,57 @@ void VipProcessingEditorToolWidget::setProcessingObject(VipProcessingObject* obj
 
 VipProcessingObject* VipProcessingEditorToolWidget::processingObject() const
 {
-	return m_data->current_editor.second;
+	return d_data->current_editor.second;
 }
 
 VipMultiProcessingObjectEditor* VipProcessingEditorToolWidget::editor() const
 {
-	return m_data->current_editor.first;
+	return d_data->current_editor.first;
 }
 
 VipProcessingLeafSelector* VipProcessingEditorToolWidget::leafSelector() const
 {
-	return m_data->leafSelector;
+	return d_data->leafSelector;
 }
 
 void VipProcessingEditorToolWidget::setShowExactProcessingOnly(bool exact_proc)
 {
-	m_data->isShowExactProcessingOnly = exact_proc;
+	d_data->isShowExactProcessingOnly = exact_proc;
 
-	for (QMap<VipProcessingObject*, editor_type>::iterator it = m_data->editors.begin(); it != m_data->editors.end(); ++it) {
+	for (QMap<VipProcessingObject*, editor_type>::iterator it = d_data->editors.begin(); it != d_data->editors.end(); ++it) {
 		it.value().first->setShowExactProcessingOnly(exact_proc);
 	}
 }
 
 bool VipProcessingEditorToolWidget::isShowExactProcessingOnly() const
 {
-	return m_data->isShowExactProcessingOnly;
+	return d_data->isShowExactProcessingOnly;
 }
 
 void VipProcessingEditorToolWidget::setVisibleProcessings(const QList<const QMetaObject*>& proc_class_names)
 {
-	m_data->visibleProcessings = proc_class_names;
+	d_data->visibleProcessings = proc_class_names;
 
-	for (QMap<VipProcessingObject*, editor_type>::iterator it = m_data->editors.begin(); it != m_data->editors.end(); ++it) {
+	for (QMap<VipProcessingObject*, editor_type>::iterator it = d_data->editors.begin(); it != d_data->editors.end(); ++it) {
 		it.value().first->setVisibleProcessings(proc_class_names);
 	}
 }
 void VipProcessingEditorToolWidget::setHiddenProcessings(const QList<const QMetaObject*>& proc_class_names)
 {
-	m_data->hiddenProcessings = proc_class_names;
+	d_data->hiddenProcessings = proc_class_names;
 
-	for (QMap<VipProcessingObject*, editor_type>::iterator it = m_data->editors.begin(); it != m_data->editors.end(); ++it) {
+	for (QMap<VipProcessingObject*, editor_type>::iterator it = d_data->editors.begin(); it != d_data->editors.end(); ++it) {
 		it.value().first->setHiddenProcessings(proc_class_names);
 	}
 }
 
 QList<const QMetaObject*> VipProcessingEditorToolWidget::visibleProcessings() const
 {
-	return m_data->visibleProcessings;
+	return d_data->visibleProcessings;
 }
 QList<const QMetaObject*> VipProcessingEditorToolWidget::hiddenProcessings() const
 {
-	return m_data->hiddenProcessings;
+	return d_data->hiddenProcessings;
 }
 
 void VipProcessingEditorToolWidget::setPlotItem(VipPlotItem* item)
@@ -5274,17 +5253,18 @@ void VipProcessingEditorToolWidget::setPlotItem(VipPlotItem* item)
 	}
 }
 
-void VipProcessingEditorToolWidget::itemSelectionChangedDirect(VipPlotItem* item, bool selected)
+void VipProcessingEditorToolWidget::itemSelectionChangedDirect(const VipPlotItemPointer& item, bool selected)
 {
-	QMetaObject::invokeMethod(this, "itemSelectionChanged", Qt::QueuedConnection, Q_ARG(VipPlotItemPtr, VipPlotItemPtr(item)), Q_ARG(bool, selected));
+	QMetaObject::invokeMethod(this, "itemSelectionChanged", Qt::QueuedConnection, Q_ARG(VipPlotItemPointer, VipPlotItemPointer(item)), Q_ARG(bool, selected));
 }
 
-void VipProcessingEditorToolWidget::itemSelectionChanged(VipPlotItemPtr item, bool)
+void VipProcessingEditorToolWidget::itemSelectionChanged(const VipPlotItemPointer& item, bool)
 {
-	setPlotItem(item);
+	if(item)
+		setPlotItem(item);
 }
 
-void VipProcessingEditorToolWidget::itemClicked(VipPlotItem* item, int button)
+void VipProcessingEditorToolWidget::itemClicked(const VipPlotItemPointer& item, int button)
 {
 	// bool selected = item->isSelected();
 	// bool visible =  isVisible();
@@ -5298,11 +5278,11 @@ void VipProcessingEditorToolWidget::itemClicked(VipPlotItem* item, int button)
 
 void VipProcessingEditorToolWidget::workspaceChanged()
 {
-	if (!m_data->mainWindow)
-		m_data->mainWindow = vipGetMainWindow();
+	if (!d_data->mainWindow)
+		d_data->mainWindow = vipGetMainWindow();
 
-	if (VipDisplayPlayerArea* area = m_data->mainWindow->displayArea()->currentDisplayPlayerArea())
-		m_data->leafSelector->setProcessingPool(area->processingPool());
+	if (VipDisplayPlayerArea* area = d_data->mainWindow->displayArea()->currentDisplayPlayerArea())
+		d_data->leafSelector->setProcessingPool(area->processingPool());
 }
 
 VipProcessingEditorToolWidget* vipGetProcessingEditorToolWidget(VipMainWindow* window)
@@ -5311,46 +5291,204 @@ VipProcessingEditorToolWidget* vipGetProcessingEditorToolWidget(VipMainWindow* w
 	return instance;
 }
 
+
+
+
+class VipRememberDeviceOptions::PrivateData
+{
+public:
+	QMap<QString, QString> suffixToDeviceType;
+	QMap<QString, VipIODevice*> deviceOptions;
+};
+
+VipRememberDeviceOptions::VipRememberDeviceOptions() 
+{
+	VIP_CREATE_PRIVATE_DATA(d_data);
+}
+VipRememberDeviceOptions::~VipRememberDeviceOptions() 
+{
+	clearAll();
+}
+
+/// Returns a map of 'file_suffix' -> 'class_name'
+const QMap<QString, QString>& VipRememberDeviceOptions::suffixToDeviceType() const
+{
+	return d_data->suffixToDeviceType;
+}
+void VipRememberDeviceOptions::setSuffixToDeviceType(const QMap<QString, QString>& m)
+{
+	d_data->suffixToDeviceType = m;
+}
+void VipRememberDeviceOptions::addSuffixAndDeviceType(const QString& suffix, const QString& device_type)
+{
+	d_data->suffixToDeviceType.insert(suffix, device_type);
+}
+void VipRememberDeviceOptions::clearSuffixAndDeviceType()
+{
+	d_data->suffixToDeviceType.clear();
+}
+QString VipRememberDeviceOptions::deviceTypeForSuffix(const QString& suffix) const
+{
+	auto it = d_data->suffixToDeviceType.find(suffix);
+	if (it == d_data->suffixToDeviceType.end())
+		return QString();
+	return it.value();
+}
+VipIODevice* VipRememberDeviceOptions::deviceForSuffix(const QString& suffix) const
+{
+	QString type = deviceTypeForSuffix(suffix);
+	if (type.isEmpty())
+		return nullptr;
+	return vipCreateVariant(((type.toLatin1()) + "*").data()).value<VipIODevice*>();
+}
+
+/// Returns a map of 'class_name' -> 'VipIODevice*'
+const QMap<QString, VipIODevice*>& VipRememberDeviceOptions::deviceOptions() const
+{
+	return d_data->deviceOptions;
+}
+void VipRememberDeviceOptions::setDeviceOptions(const QMap<QString, VipIODevice*>& m)
+{
+	d_data->deviceOptions = m;
+}
+void VipRememberDeviceOptions::addDeviceOptions(const QString& device_type, VipIODevice* device)
+{
+	d_data->deviceOptions.insert(device_type, (device));
+}
+bool VipRememberDeviceOptions::addDeviceOptionsCopy(const VipIODevice* src_device)
+{
+	VipIODevice* copy=(vipCreateVariant((QByteArray(src_device->metaObject()->className()) + "*").data()).value<VipIODevice*>());
+	if (!copy)
+		return false;
+	const_cast<VipIODevice*>(src_device)->copyParameters(copy);
+	d_data->deviceOptions.insert(src_device->metaObject()->className(), copy);
+	return true;
+}
+void VipRememberDeviceOptions::clearDeviceOptions()
+{
+	for (auto it = d_data->deviceOptions.begin(); it != d_data->deviceOptions.end(); ++it)
+		delete it.value();
+	d_data->deviceOptions.clear();
+}
+bool VipRememberDeviceOptions::applyDefaultOptions(VipIODevice* device)
+{
+	auto it = d_data->deviceOptions.find(device->metaObject()->className());
+	if (it == d_data->deviceOptions.end())
+		return false;
+	it.value()->copyParameters(device);
+	return true;
+}
+void VipRememberDeviceOptions::clearAll()
+{
+	clearSuffixAndDeviceType();
+	clearDeviceOptions();
+}
+
+VipRememberDeviceOptions& VipRememberDeviceOptions::instance()
+{
+	static VipRememberDeviceOptions inst;
+	return inst;
+}
+
+
+
+
+
 #include <QBoxLayout>
 #include <QHeaderView>
 #include <QLabel>
 #include <QPushButton>
 #include <QTreeWidget>
 
+
+class VipSelectDeviceParameters::PrivateData
+{
+public:
+	QWidget* editor;
+	VipIODevice* device;
+	QCheckBox remember;
+};
+
+VipSelectDeviceParameters::VipSelectDeviceParameters(VipIODevice* device, QWidget* editor, QWidget* parent)
+  : QDialog(parent)
+{
+	VIP_CREATE_PRIVATE_DATA(d_data);
+	setWindowTitle("Edit " + vipSplitClassname(device->metaObject()->className()));
+
+	d_data->device = device;
+	d_data->editor = editor;
+
+	QPushButton* ok = new QPushButton("Ok", this);
+	ok->setMaximumWidth(70);
+	QPushButton* cancel = new QPushButton("Cancel", this);
+	cancel->setMaximumWidth(70);
+
+	QHBoxLayout* hlay = new QHBoxLayout();
+	hlay->addStretch(1);
+	hlay->addWidget(ok);
+	hlay->addWidget(cancel);
+	hlay->addStretch(1);
+
+	QVBoxLayout* lay = new QVBoxLayout();
+	lay->addWidget(editor);
+	lay->addWidget(VipLineWidget::createHLine());
+	lay->addWidget(&d_data->remember);
+	lay->addWidget(VipLineWidget::createHLine());
+	lay->addLayout(hlay);
+	setLayout(lay);
+
+	d_data->remember.setText("Remember my choices");
+
+	connect(ok, SIGNAL(clicked(bool)), this, SLOT(accept()));
+	connect(cancel, SIGNAL(clicked(bool)), this, SLOT(reject()));
+}
+	
+VipSelectDeviceParameters::~VipSelectDeviceParameters() {}
+
+bool VipSelectDeviceParameters::remember() const
+{
+	return d_data->remember.isChecked();
+}
+
+
+
 class VipDeviceChoiceDialog::PrivateData
 {
 public:
 	QLabel text;
 	QTreeWidget tree;
+	QCheckBox remember;
 	QList<VipIODevice*> devices;
 };
 
 VipDeviceChoiceDialog::VipDeviceChoiceDialog(QWidget* parent)
   : QDialog(parent)
 {
-	m_data = new PrivateData();
+	VIP_CREATE_PRIVATE_DATA(d_data);
 
 	QVBoxLayout* tree_lay = new QVBoxLayout();
-	tree_lay->addWidget(&m_data->text);
-	tree_lay->addWidget(&m_data->tree);
+	tree_lay->addWidget(&d_data->text);
+	tree_lay->addWidget(&d_data->tree);
 
-	m_data->tree.setItemsExpandable(false);
-	m_data->tree.setRootIsDecorated(false);
-	m_data->tree.setSelectionMode(QAbstractItemView::ExtendedSelection);
-	m_data->tree.setHeaderLabels(QStringList() << "Name"
+	d_data->tree.setItemsExpandable(false);
+	d_data->tree.setRootIsDecorated(false);
+	d_data->tree.setSelectionMode(QAbstractItemView::ExtendedSelection);
+	d_data->tree.setHeaderLabels(QStringList() << "Name"
 						   << "Description"
 						   << "Extensions");
-	m_data->text.setText("Several devices can handle this format. Select one type of device to handle it.");
-	m_data->text.setWordWrap(true);
+	d_data->text.setText("Several devices can handle this format. Select one type of device to handle it.");
+	d_data->text.setWordWrap(true);
 
-	m_data->tree.header()->resizeSection(0, 200);
-	m_data->tree.header()->resizeSection(1, 200);
-	m_data->tree.header()->resizeSection(2, 120);
+	d_data->tree.header()->resizeSection(0, 200);
+	d_data->tree.header()->resizeSection(1, 200);
+	d_data->tree.header()->resizeSection(2, 120);
 
-	m_data->tree.setMinimumHeight(50);
-	m_data->tree.setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
+	d_data->tree.setMinimumHeight(50);
+	d_data->tree.setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
 	this->setMinimumHeight(50);
 	this->setMinimumWidth(400);
+
+	d_data->remember.setText("Remember my choice");
 
 	// this->setWindowFlags(this->windowFlags()|Qt::Tool|/*Qt::WindowStaysOnTopHint|*/Qt::CustomizeWindowHint|Qt::WindowCloseButtonHint);
 
@@ -5371,6 +5509,7 @@ VipDeviceChoiceDialog::VipDeviceChoiceDialog(QWidget* parent)
 
 	QVBoxLayout* vlay = new QVBoxLayout();
 	vlay->addLayout(tree_lay);
+	vlay->addWidget(&d_data->remember);
 	vlay->addLayout(lay);
 	frame->setLayout(vlay);
 
@@ -5379,7 +5518,7 @@ VipDeviceChoiceDialog::VipDeviceChoiceDialog(QWidget* parent)
 	final_lay->addWidget(frame);
 	setLayout(final_lay);
 
-	connect(&m_data->tree, SIGNAL(itemDoubleClicked(QTreeWidgetItem*, int)), this, SLOT(accept()));
+	connect(&d_data->tree, SIGNAL(itemDoubleClicked(QTreeWidgetItem*, int)), this, SLOT(accept()));
 	connect(ok, SIGNAL(clicked(bool)), this, SLOT(accept()));
 	connect(cancel, SIGNAL(clicked(bool)), this, SLOT(reject()));
 	setWindowTitle("Select device");
@@ -5390,13 +5529,12 @@ VipDeviceChoiceDialog::VipDeviceChoiceDialog(QWidget* parent)
 
 VipDeviceChoiceDialog::~VipDeviceChoiceDialog()
 {
-	delete m_data;
 }
 
 void VipDeviceChoiceDialog::setChoices(const QList<VipIODevice*>& devices)
 {
-	m_data->devices = devices;
-	m_data->tree.clear();
+	d_data->devices = devices;
+	d_data->tree.clear();
 	for (int i = 0; i < devices.size(); ++i) {
 		QString name = vipSplitClassname(devices[i]->className());
 
@@ -5406,15 +5544,15 @@ void VipDeviceChoiceDialog::setChoices(const QList<VipIODevice*>& devices)
 		item->setToolTip(1, devices[i]->description());
 		item->setText(2, devices[i]->fileFilters());
 		item->setToolTip(2, devices[i]->fileFilters());
-		m_data->tree.addTopLevelItem(item);
+		d_data->tree.addTopLevelItem(item);
 	}
 
-	m_data->tree.setCurrentItem(m_data->tree.topLevelItem(0));
+	d_data->tree.setCurrentItem(d_data->tree.topLevelItem(0));
 }
 
 void VipDeviceChoiceDialog::setPath(const QString& path)
 {
-	m_data->text.setText("Several devices can handle this format. Select one type of device to handle it.<br>"
+	d_data->text.setText("Several devices can handle this format. Select one type of device to handle it.<br>"
 			     "<b>Path:</b>" +
 			     path);
 }
@@ -5422,64 +5560,88 @@ void VipDeviceChoiceDialog::setPath(const QString& path)
 VipIODevice* VipDeviceChoiceDialog::selection() const
 {
 	QList<int> indexes;
-	for (int i = 0; i < m_data->tree.topLevelItemCount(); ++i)
-		if (m_data->tree.topLevelItem(i)->isSelected())
-			return m_data->devices[i];
+	for (int i = 0; i < d_data->tree.topLevelItemCount(); ++i)
+		if (d_data->tree.topLevelItem(i)->isSelected())
+			return d_data->devices[i];
 
 	return nullptr;
 }
 
+bool VipDeviceChoiceDialog::remember() const
+{
+	return d_data->remember.isChecked();
+}
+
 VipIODevice* VipCreateDevice::create(const QList<VipProcessingObject::Info>& dev, const VipPath& path, bool show_device_options)
 {
-	QList<VipIODevice*> devices;
+	using DevicePtr = std::unique_ptr<VipIODevice>;
 
-	// first , create the list of devices
-	for (int i = 0; i < dev.size(); ++i) {
-		if (VipIODevice* d = qobject_cast<VipIODevice*>(dev[i].create())) {
-			// if (d->probe(path))
-			devices << d;
-			// else
-			//	delete d;
-		}
-	}
+	DevicePtr result( VipRememberDeviceOptions::instance().deviceForSuffix(QFileInfo(path.canonicalPath()).suffix()));
+	if (!result) {
+		
+		std::vector<DevicePtr> hold_devices;
+		QList<VipIODevice*> devices;
+		VipIODevice* found = nullptr;
 
-	VipIODevice* result = nullptr;
-
-	if (devices.size() > 1) {
-		// create the dialog used to use the device
-		VipDeviceChoiceDialog* dialog = new VipDeviceChoiceDialog(vipGetMainWindow());
-		dialog->setMinimumWidth(500);
-		dialog->setChoices(devices);
-		dialog->setPath(path.canonicalPath());
-		if (dialog->exec() == QDialog::Accepted) {
-			result = dialog->selection();
+		// first , create the list of devices
+		for (int i = 0; i < dev.size(); ++i) {
+			if (VipIODevice* d = qobject_cast<VipIODevice*>(dev[i].create())) {
+				hold_devices.push_back( DevicePtr(d));
+				devices.push_back(d);
+			}
 		}
 
-		delete dialog;
-		if (!result)
+		bool remember_device_type = false;
+		if (devices.size() > 1) {
+			// create the dialog used to use the device
+			VipDeviceChoiceDialog* dialog = new VipDeviceChoiceDialog(vipGetMainWindow());
+			dialog->setMinimumWidth(500);
+			dialog->setChoices(devices);
+			dialog->setPath(path.canonicalPath());
+			if (dialog->exec() == QDialog::Accepted) {
+				found = dialog->selection();
+				remember_device_type = dialog->remember();
+			}
+
+			delete dialog;
+			if (!found)
+				return nullptr;
+		}
+		else if (devices.size() == 1)
+			found = devices.first();
+		else
 			return nullptr;
-	}
-	else if (devices.size() == 1)
-		result = devices.first();
-	else
-		return nullptr;
 
-	if (!path.isEmpty()) {
-		result->setPath(path.canonicalPath());
-		result->setMapFileSystem(path.mapFileSystem());
+		for (auto & d : hold_devices) {
+			if (d.get() == found) {
+				result = std::move(d);
+				break;
+			}
+		}
+		
+		if (!path.isEmpty()) {
+
+			// Remember user choice
+			if (remember_device_type)
+				VipRememberDeviceOptions::instance().addSuffixAndDeviceType(QFileInfo(path.canonicalPath()).suffix(), result->metaObject()->className());
+		}
 	}
+
+	result->setPath(path.canonicalPath());
+	result->setMapFileSystem(path.mapFileSystem());
+
+	bool apply_options = VipRememberDeviceOptions::instance().applyDefaultOptions(result.get());
 
 	// display device option widget
-	if (show_device_options) {
+	if (!apply_options && show_device_options) {
 
-		const auto lst = vipFDObjectEditor().exactMatch(result);
+		const auto lst = vipFDObjectEditor().exactMatch(result.get());
 		if (lst.size()) {
 
-			QWidget* editor = lst.first()(result).value<QWidget*>();
+			QWidget* editor = lst.first()(result.get()).value<QWidget*>();
 			if (editor) {
-				VipGenericDialog dialog(editor, "Device options", vipGetMainWindow());
+				VipSelectDeviceParameters dialog(result.get(), editor, vipGetMainWindow());
 				if (dialog.exec() != QDialog::Accepted) {
-					delete result;
 					return nullptr;
 				}
 				else {
@@ -5487,11 +5649,14 @@ VipIODevice* VipCreateDevice::create(const QList<VipProcessingObject::Info>& dev
 					if (editor->metaObject()->indexOfMethod("apply()") >= 0)
 						QMetaObject::invokeMethod(editor, "apply");
 				}
+				if (dialog.remember()) {
+					VipRememberDeviceOptions::instance().addDeviceOptionsCopy(result.get());
+				}
 			}
 		}
 	}
 
-	return result;
+	return result.release();
 }
 
 VipIODevice* VipCreateDevice::create(const VipPath& path, bool show_device_options)

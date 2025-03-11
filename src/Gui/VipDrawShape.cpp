@@ -1,7 +1,7 @@
 /**
  * BSD 3-Clause License
  *
- * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ * Copyright (c) 2025, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Leo Dubus, Erwan Grelier
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -368,7 +368,7 @@ void VipDrawShapePolygon::paint(QPainter* painter, const QStyleOptionGraphicsIte
 
 	QPolygonF poly(m_polygon);
 	poly.append(m_pos);
-	poly = area()->scaleToPosition(poly, sceneModelScales());
+	poly = area()->scaleToPosition(vipToPointVector( poly), sceneModelScales());
 
 	poly = this->mapFromItem(area(), poly);
 	// TEST: remove Qt::WindingFill
@@ -485,7 +485,7 @@ void VipDrawShapePolyline::paint(QPainter* painter, const QStyleOptionGraphicsIt
 
 	QPolygonF poly(m_polygon);
 	poly.append(m_pos);
-	poly = area()->scaleToPosition(poly, sceneModelScales());
+	poly = area()->scaleToPosition(vipToPointVector( poly), sceneModelScales());
 	painter->drawPolyline(poly);
 
 	// stop polyline
@@ -569,7 +569,7 @@ QPainterPath VipDrawShapeMask::shape() const
 	if (!area())
 		return QPainterPath();
 	QPainterPath path;
-	QPolygonF poly = area()->scaleToPosition(m_polygon, sceneModelScales());
+	QPolygonF poly = area()->scaleToPosition(vipToPointVector( m_polygon), sceneModelScales());
 	QRectF r = poly.boundingRect().adjusted(-5, -5, 5, 5);
 	path.addRect(r);
 	return path;
@@ -581,7 +581,7 @@ void VipDrawShapeMask::paint(QPainter* painter, const QStyleOptionGraphicsItem*,
 	painter->setBrush(QColor(255, 0, 0, 50));
 	painter->setRenderHints(QPainter::Antialiasing);
 
-	QPolygonF poly = area()->scaleToPosition(m_polygon, sceneModelScales());
+	QPolygonF poly = area()->scaleToPosition(vipToPointVector(m_polygon), sceneModelScales());
 	// TEST: remove Qt::WindingFill
 	painter->drawPolygon(poly /*,Qt::WindingFill*/);
 }
@@ -637,7 +637,7 @@ VipShapeButton::VipShapeButton(QWidget* draw_area, QWidget* parent)
 
 	this->setPopupMode(QToolButton::MenuButtonPopup);
 	this->setMenu(addMenu);
-	this->setIcon(vipIcon("roi.png"));
+	this->setIcon(vipIcon("ROI.png"));
 	addMenu->hide();
 	// connect(this, SIGNAL(clicked(bool)), vipGetSceneModelWidgetPlayer(), SLOT(addRect()));
 	connect(this, SIGNAL(clicked(bool)), this, SLOT(buttonClicked(bool)));
@@ -725,7 +725,7 @@ public:
 	{
 		QString val = m_value.text();
 		QVariant v = val;
-		if (v.convert(QMetaType::Double))
+		if (v.convert(VIP_META(QMetaType::Double)))
 			return v;
 		else if (!m_value.text().isEmpty())
 			return QVariant(m_value.text());
@@ -775,11 +775,11 @@ public:
 			return QVariant::fromValue(c);
 
 		QVariant v = val;
-		if (v.convert(QMetaType::Double))
+		if (v.convert(VIP_META(QMetaType::Double)))
 			return v;
-		else if (v.convert(qMetaTypeId<complex_d>()))
+		else if (v.convert(VIP_META(qMetaTypeId<complex_d>())))
 			return v;
-		else if (v.convert(qMetaTypeId<complex_f>()))
+		else if (v.convert(VIP_META(qMetaTypeId<complex_f>())))
 			return v;
 		else if (!m_value.text().isEmpty())
 			return QVariant(m_value.text());
@@ -807,28 +807,27 @@ public:
 ShowHideGroups::ShowHideGroups(QWidget* parent)
   : QWidget(parent)
 {
-	m_data = new PrivateData();
-	m_data->lastGroup = new QLabel();
-	m_data->lastGroup->setText("Change groups visibility");
-	m_data->lastGroup->setToolTip("Change groups visibility");
-	m_data->showAll = m_data->bar.addAction(vipIcon("show.png"), "Show all groups");
-	m_data->hideAll = m_data->bar.addAction(vipIcon("hide.png"), "Hide all groups");
-	m_data->bar.addWidget(m_data->lastGroup);
-	m_data->bar.setIconSize(QSize(18, 18));
+	VIP_CREATE_PRIVATE_DATA(d_data);
+	d_data->lastGroup = new QLabel();
+	d_data->lastGroup->setText("Change groups visibility");
+	d_data->lastGroup->setToolTip("Change groups visibility");
+	d_data->showAll = d_data->bar.addAction(vipIcon("show.png"), "Show all groups");
+	d_data->hideAll = d_data->bar.addAction(vipIcon("hide.png"), "Hide all groups");
+	d_data->bar.addWidget(d_data->lastGroup);
+	d_data->bar.setIconSize(QSize(18, 18));
 
 	QVBoxLayout* lay = new QVBoxLayout();
 	lay->setSpacing(0);
 	lay->setContentsMargins(0, 0, 0, 0);
-	lay->addWidget(&m_data->bar);
+	lay->addWidget(&d_data->bar);
 	setLayout(lay);
 
-	connect(m_data->showAll, SIGNAL(triggered(bool)), this, SLOT(showAll()));
-	connect(m_data->hideAll, SIGNAL(triggered(bool)), this, SLOT(hideAll()));
+	connect(d_data->showAll, SIGNAL(triggered(bool)), this, SLOT(showAll()));
+	connect(d_data->hideAll, SIGNAL(triggered(bool)), this, SLOT(hideAll()));
 }
 
 ShowHideGroups::~ShowHideGroups()
 {
-	delete m_data;
 }
 
 void ShowHideGroups::computeGroups(const QList<VipPlotSceneModel*>& models)
@@ -853,9 +852,9 @@ void ShowHideGroups::computeGroups(const QList<VipPlotSceneModel*>& models)
 	}
 
 	// remove previous checkboxes
-	for (int i = 0; i < m_data->groups.size(); ++i)
-		delete m_data->groups[i];
-	m_data->groups.clear();
+	for (int i = 0; i < d_data->groups.size(); ++i)
+		delete d_data->groups[i];
+	d_data->groups.clear();
 
 	// add new checkboxes
 	for (QMap<QString, bool>::const_iterator it = groups.begin(); it != groups.end(); ++it) {
@@ -863,7 +862,7 @@ void ShowHideGroups::computeGroups(const QList<VipPlotSceneModel*>& models)
 		if (it.key().size()) {
 			QCheckBox* check = new QCheckBox(it.key());
 			check->setChecked(it.value());
-			m_data->groups.append(check);
+			d_data->groups.append(check);
 			connect(check, SIGNAL(clicked(bool)), this, SLOT(checked()));
 			layout()->addWidget(check);
 		}
@@ -873,48 +872,48 @@ void ShowHideGroups::computeGroups(const QList<VipPlotSceneModel*>& models)
 QStringList ShowHideGroups::availableGroups() const
 {
 	QStringList res;
-	for (int i = 0; i < m_data->groups.size(); ++i)
-		res << m_data->groups[i]->text();
+	for (int i = 0; i < d_data->groups.size(); ++i)
+		res << d_data->groups[i]->text();
 	return res;
 }
 QStringList ShowHideGroups::visibleGroups() const
 {
 	QStringList res;
-	for (int i = 0; i < m_data->groups.size(); ++i)
-		if (m_data->groups[i]->isChecked())
-			res << m_data->groups[i]->text();
+	for (int i = 0; i < d_data->groups.size(); ++i)
+		if (d_data->groups[i]->isChecked())
+			res << d_data->groups[i]->text();
 	return res;
 }
 QStringList ShowHideGroups::hiddenGroups() const
 {
 	QStringList res;
-	for (int i = 0; i < m_data->groups.size(); ++i)
-		if (!m_data->groups[i]->isChecked())
-			res << m_data->groups[i]->text();
+	for (int i = 0; i < d_data->groups.size(); ++i)
+		if (!d_data->groups[i]->isChecked())
+			res << d_data->groups[i]->text();
 	return res;
 }
 /*QString ShowHideGroups::currentGroup() const {
-	return m_data->lastGroup->text();
+	return d_data->lastGroup->text();
 }*/
 /*void ShowHideGroups::setCurrentGroup(const QString & group) {
-	return m_data->lastGroup->setText(group);
+	return d_data->lastGroup->setText(group);
 }*/
 
 void ShowHideGroups::showAll()
 {
-	for (int i = 0; i < m_data->groups.size(); ++i) {
-		m_data->groups[i]->blockSignals(true);
-		m_data->groups[i]->setChecked(true);
-		m_data->groups[i]->blockSignals(false);
+	for (int i = 0; i < d_data->groups.size(); ++i) {
+		d_data->groups[i]->blockSignals(true);
+		d_data->groups[i]->setChecked(true);
+		d_data->groups[i]->blockSignals(false);
 	}
 	Q_EMIT changed();
 }
 void ShowHideGroups::hideAll()
 {
-	for (int i = 0; i < m_data->groups.size(); ++i) {
-		m_data->groups[i]->blockSignals(true);
-		m_data->groups[i]->setChecked(false);
-		m_data->groups[i]->blockSignals(false);
+	for (int i = 0; i < d_data->groups.size(); ++i) {
+		d_data->groups[i]->blockSignals(true);
+		d_data->groups[i]->setChecked(false);
+		d_data->groups[i]->blockSignals(false);
 	}
 	Q_EMIT changed();
 }
@@ -931,7 +930,7 @@ class AttributesEditor : public QWidget
 	QGridLayout* lay;
 	QList<QLabel*> names;
 	QList<QLineEdit*> values;
-	QList<VipShape> shapes;
+	VipShapeList shapes;
 	QPointer<VipSceneModelEditor> editor;
 
 public:
@@ -942,7 +941,7 @@ public:
 		setLayout(lay = new QGridLayout());
 	}
 
-	void setShapes(const QList<VipShape>& sh)
+	void setShapes(const VipShapeList& sh)
 	{
 		shapes = sh;
 		for (int i = 0; i < values.size(); ++i)
@@ -1038,76 +1037,76 @@ public:
 VipSceneModelEditor::VipSceneModelEditor(QWidget* parent)
   : QWidget(parent)
 {
-	m_data = new PrivateData();
-	m_data->editor = new AttributesEditor(this);
+	VIP_CREATE_PRIVATE_DATA(d_data);
+	d_data->editor = new AttributesEditor(this);
 
 	QGridLayout* lay = new QGridLayout();
 	int row = -1;
 
 	// lay->addWidget(VipLineWidget::createHLine(),++row,0,1,2);
 
-	lay->addWidget(&m_data->io, ++row, 0, 1, 2);
+	lay->addWidget(&d_data->io, ++row, 0, 1, 2);
 
 	lay->addWidget(VipLineWidget::createHLine(), ++row, 0, 1, 2);
 
 	lay->addWidget(new QLabel("Shape text style"), ++row, 0);
-	lay->addWidget(&m_data->title, row, 1);
+	lay->addWidget(&d_data->title, row, 1);
 	lay->addWidget(VipLineWidget::createHLine(), ++row, 0, 1, 2);
 
 	lay->addWidget(new QLabel("Border pen"), ++row, 0);
-	lay->addWidget(&m_data->pen, row, 1);
+	lay->addWidget(&d_data->pen, row, 1);
 
 	lay->addWidget(new QLabel("Background brush"), ++row, 0);
-	lay->addWidget(&m_data->brush, row, 1);
+	lay->addWidget(&d_data->brush, row, 1);
 
 	lay->addWidget(VipLineWidget::createHLine(), ++row, 0, 1, 2);
 
-	lay->addWidget(&m_data->edition, ++row, 0, 1, 2);
-	lay->addWidget(m_data->editor, ++row, 0, 1, 2);
+	lay->addWidget(&d_data->edition, ++row, 0, 1, 2);
+	lay->addWidget(d_data->editor, ++row, 0, 1, 2);
 
 	lay->addWidget(VipLineWidget::createHLine(), ++row, 0, 1, 2);
 
-	lay->addWidget(&m_data->titleVisible, ++row, 0, 1, 2);
-	lay->addWidget(&m_data->groupVisible, ++row, 0, 1, 2);
-	lay->addWidget(&m_data->idVisible, ++row, 0, 1, 2);
-	lay->addWidget(&m_data->attrsVisible, ++row, 0, 1, 2);
-	lay->addWidget(&m_data->invertTextColor, ++row, 0, 1, 2);
-	lay->addWidget(&m_data->applyAll, ++row, 0, 1, 2);
+	lay->addWidget(&d_data->titleVisible, ++row, 0, 1, 2);
+	lay->addWidget(&d_data->groupVisible, ++row, 0, 1, 2);
+	lay->addWidget(&d_data->idVisible, ++row, 0, 1, 2);
+	lay->addWidget(&d_data->attrsVisible, ++row, 0, 1, 2);
+	lay->addWidget(&d_data->invertTextColor, ++row, 0, 1, 2);
+	lay->addWidget(&d_data->applyAll, ++row, 0, 1, 2);
 
 	lay->addWidget(VipLineWidget::createHLine(), ++row, 0, 1, 2);
 
-	lay->addWidget(&m_data->innerPixels, ++row, 0, 1, 2);
+	lay->addWidget(&d_data->innerPixels, ++row, 0, 1, 2);
 
-	lay->addWidget(&m_data->showHide, ++row, 0, 1, 2);
+	lay->addWidget(&d_data->showHide, ++row, 0, 1, 2);
 
 	// lay->addWidget(VipLineWidget::createHLine(),++row,0,1,2);
 
-	lay->addWidget(&m_data->statArea, ++row, 0, 1, 2);
+	lay->addWidget(&d_data->statArea, ++row, 0, 1, 2);
 
 	lay->setContentsMargins(0, 0, 0, 0);
 	setLayout(lay);
 
-	m_data->title.edit()->hide();
-	m_data->pen.setMode(VipPenButton::Pen);
-	m_data->brush.setMode(VipPenButton::Brush);
+	d_data->title.edit()->hide();
+	d_data->pen.setMode(VipPenButton::Pen);
+	d_data->brush.setMode(VipPenButton::Brush);
 
-	m_data->titleVisible.setText("Display shapes title");
-	m_data->groupVisible.setText("Display shapes group");
-	m_data->idVisible.setText("Display shapes identifier");
-	m_data->attrsVisible.setText("Display shapes attributes");
-	m_data->invertTextColor.setText("Adjust text color");
-	m_data->invertTextColor.setToolTip("Adjust the shape text color to the background in order to be always visible");
-	m_data->innerPixels.setText("Display exact pixels");
-	m_data->applyAll.setText("Apply to all shapes");
+	d_data->titleVisible.setText("Display shapes title");
+	d_data->groupVisible.setText("Display shapes group");
+	d_data->idVisible.setText("Display shapes identifier");
+	d_data->attrsVisible.setText("Display shapes attributes");
+	d_data->invertTextColor.setText("Adjust text color");
+	d_data->invertTextColor.setToolTip("Adjust the shape text color to the background in order to be always visible");
+	d_data->innerPixels.setText("Display exact pixels");
+	d_data->applyAll.setText("Apply to all shapes");
 
-	m_data->statLabel = new QLabel();
-	m_data->statArea.setWidget(m_data->statLabel);
-	m_data->statArea.setWidgetResizable(true);
-	m_data->statLabel->show();
-	m_data->statLabel->setTextInteractionFlags(Qt::TextSelectableByMouse);
-	m_data->statLabel->setAlignment(Qt::AlignTop | Qt::AlignLeft);
-	// TODO: completely remove m_data->statArea
-	m_data->statArea.hide();
+	d_data->statLabel = new QLabel();
+	d_data->statArea.setWidget(d_data->statLabel);
+	d_data->statArea.setWidgetResizable(true);
+	d_data->statLabel->show();
+	d_data->statLabel->setTextInteractionFlags(Qt::TextSelectableByMouse);
+	d_data->statLabel->setAlignment(Qt::AlignTop | Qt::AlignLeft);
+	// TODO: completely remove d_data->statArea
+	d_data->statArea.hide();
 
 	QMenu* save_menu = new QMenu();
 	connect(save_menu->addAction("Save shapes..."), SIGNAL(triggered(bool)), this, SLOT(saveShapes()));
@@ -1116,80 +1115,79 @@ VipSceneModelEditor::VipSceneModelEditor(QWidget* parent)
 	save_menu->addSeparator();
 	connect(save_menu->addAction("Create HDF5 scene model..."), SIGNAL(triggered(bool)), this, SLOT(saveH5ShapesAttribute()));
 
-	m_data->save.setIcon(vipIcon("save_as.png"));
-	m_data->save.setText("Save shape...");
-	m_data->save.setMenu(save_menu);
-	m_data->save.setAutoRaise(true);
-	m_data->save.setPopupMode(QToolButton::InstantPopup);
-	m_data->save.setMinimumWidth(25);
-	m_data->io.addWidget(&m_data->save);
-	QAction* open = m_data->io.addAction(vipIcon("open.png"), "Open a shape file...");
+	d_data->save.setIcon(vipIcon("save_as.png"));
+	d_data->save.setText("Save shape...");
+	d_data->save.setMenu(save_menu);
+	d_data->save.setAutoRaise(true);
+	d_data->save.setPopupMode(QToolButton::InstantPopup);
+	d_data->save.setMinimumWidth(25);
+	d_data->io.addWidget(&d_data->save);
+	QAction* open = d_data->io.addAction(vipIcon("open.png"), "Open a shape file...");
 	connect(open, SIGNAL(triggered(bool)), this, SLOT(openShapes()));
-	m_data->io.setIconSize(QSize(18, 18));
+	d_data->io.setIconSize(QSize(18, 18));
 
-	m_data->io.addSeparator();
-	QAction* select_all = m_data->io.addAction(vipIcon("select.png"), "Select/deselect all visible shapes");
-	QAction* del_all = m_data->io.addAction(vipIcon("del.png"), "Remove all visible selected shapes");
+	d_data->io.addSeparator();
+	QAction* select_all = d_data->io.addAction(vipIcon("select.png"), "Select/deselect all visible shapes");
+	QAction* del_all = d_data->io.addAction(vipIcon("del.png"), "Remove all visible selected shapes");
 
-	m_data->edition.setIconSize(QSize(18, 18));
-	connect(m_data->edition.addAction(vipIcon("or.png"), "Compute the union of selected shapes"), SIGNAL(triggered(bool)), this, SLOT(uniteShapes()));
-	connect(m_data->edition.addAction(vipIcon("and.png"), "Compute the intersection of selected shapes"), SIGNAL(triggered(bool)), this, SLOT(intersectShapes()));
-	connect(m_data->edition.addAction(vipIcon("substract_roi.png"), "Subtract a shape to another (use the order of selection)"), SIGNAL(triggered(bool)), this, SLOT(subtractShapes()));
+	d_data->edition.setIconSize(QSize(18, 18));
+	connect(d_data->edition.addAction(vipIcon("or.png"), "Compute the union of selected shapes"), SIGNAL(triggered(bool)), this, SLOT(uniteShapes()));
+	connect(d_data->edition.addAction(vipIcon("and.png"), "Compute the intersection of selected shapes"), SIGNAL(triggered(bool)), this, SLOT(intersectShapes()));
+	connect(d_data->edition.addAction(vipIcon("substract_roi.png"), "Subtract a shape to another (use the order of selection)"), SIGNAL(triggered(bool)), this, SLOT(subtractShapes()));
 
-	m_data->edition.addSeparator();
-	connect(m_data->edition.addAction(vipIcon("add_attribute.png"), "Set a property to selected shapes"), SIGNAL(triggered(bool)), this, SLOT(addProperty()));
-	connect(m_data->edition.addAction(vipIcon("remove_attribute.png"), "Remove a property to selected shapes"), SIGNAL(triggered(bool)), this, SLOT(removeProperty()));
+	d_data->edition.addSeparator();
+	connect(d_data->edition.addAction(vipIcon("add_attribute.png"), "Set a property to selected shapes"), SIGNAL(triggered(bool)), this, SLOT(addProperty()));
+	connect(d_data->edition.addAction(vipIcon("remove_attribute.png"), "Remove a property to selected shapes"), SIGNAL(triggered(bool)), this, SLOT(removeProperty()));
 
 	connect(select_all, SIGNAL(triggered(bool)), this, SLOT(selectUnselectAll()));
 	connect(del_all, SIGNAL(triggered(bool)), this, SLOT(deleteSelected()));
 
-	connect(&m_data->title, SIGNAL(changed(const VipText&)), this, SLOT(emitSceneModelChanged()));
-	connect(&m_data->pen, SIGNAL(penChanged(const QPen&)), this, SLOT(emitSceneModelChanged()));
-	connect(&m_data->brush, SIGNAL(penChanged(const QPen&)), this, SLOT(emitSceneModelChanged()));
-	connect(&m_data->titleVisible, SIGNAL(clicked(bool)), this, SLOT(emitSceneModelChanged()));
-	connect(&m_data->groupVisible, SIGNAL(clicked(bool)), this, SLOT(emitSceneModelChanged()));
-	connect(&m_data->idVisible, SIGNAL(clicked(bool)), this, SLOT(emitSceneModelChanged()));
-	connect(&m_data->attrsVisible, SIGNAL(clicked(bool)), this, SLOT(emitSceneModelChanged()));
-	connect(&m_data->invertTextColor, SIGNAL(clicked(bool)), this, SLOT(emitSceneModelChanged()));
-	connect(&m_data->innerPixels, SIGNAL(clicked(bool)), this, SLOT(emitSceneModelChanged()));
-	connect(&m_data->applyAll, SIGNAL(clicked(bool)), this, SLOT(emitSceneModelChanged()));
+	connect(&d_data->title, SIGNAL(changed(const VipText&)), this, SLOT(emitSceneModelChanged()));
+	connect(&d_data->pen, SIGNAL(penChanged(const QPen&)), this, SLOT(emitSceneModelChanged()));
+	connect(&d_data->brush, SIGNAL(penChanged(const QPen&)), this, SLOT(emitSceneModelChanged()));
+	connect(&d_data->titleVisible, SIGNAL(clicked(bool)), this, SLOT(emitSceneModelChanged()));
+	connect(&d_data->groupVisible, SIGNAL(clicked(bool)), this, SLOT(emitSceneModelChanged()));
+	connect(&d_data->idVisible, SIGNAL(clicked(bool)), this, SLOT(emitSceneModelChanged()));
+	connect(&d_data->attrsVisible, SIGNAL(clicked(bool)), this, SLOT(emitSceneModelChanged()));
+	connect(&d_data->invertTextColor, SIGNAL(clicked(bool)), this, SLOT(emitSceneModelChanged()));
+	connect(&d_data->innerPixels, SIGNAL(clicked(bool)), this, SLOT(emitSceneModelChanged()));
+	connect(&d_data->applyAll, SIGNAL(clicked(bool)), this, SLOT(emitSceneModelChanged()));
 
 	// update the scene model when visibility changed through user input...
-	connect(&m_data->showHide, SIGNAL(changed()), this, SLOT(emitSceneModelChanged()));
+	connect(&d_data->showHide, SIGNAL(changed()), this, SLOT(emitSceneModelChanged()));
 	//...then reset scene model to update other parameters based on visible groups
-	connect(&m_data->showHide, SIGNAL(changed()), this, SLOT(resetPlayer()));
+	connect(&d_data->showHide, SIGNAL(changed()), this, SLOT(resetPlayer()));
 }
 
 VipSceneModelEditor::~VipSceneModelEditor()
 {
 	// vipProcessEvents(nullptr, 20);
-	delete m_data;
 }
 
 void VipSceneModelEditor::resetPlayer()
 {
-	setPlayer(m_data->player2D);
+	setPlayer(d_data->player2D);
 }
 
 void VipSceneModelEditor::recomputeAttributes()
 {
-	if (!m_data->scene) {
-		m_data->editor->setShapes(QList<VipShape>());
+	if (!d_data->scene) {
+		d_data->editor->setShapes(VipShapeList());
 		return;
 	}
 
 	// set the new plot scene models
 	QList<VipPlotSceneModel*> models;
-	if (m_data->scene)
-		models = vipCastItemList<VipPlotSceneModel*>(m_data->scene->items());
+	if (d_data->scene)
+		models = vipCastItemList<VipPlotSceneModel*>(d_data->scene->items());
 	// set attributes
-	QList<VipShape> shapes;
+	VipShapeList shapes;
 	for (int i = 0; i < models.size(); ++i) {
 		QList<VipPlotShape*> sh = models[i]->shapes(1);
 		for (int j = 0; j < sh.size(); ++j)
 			shapes << sh[j]->rawData();
 	}
-	m_data->editor->setShapes(shapes);
+	d_data->editor->setShapes(shapes);
 }
 
 /*void VipSceneModelEditor::findSelectedSceneModel()
@@ -1197,9 +1195,9 @@ void VipSceneModelEditor::recomputeAttributes()
 	//when the scene selection state change, this might meen that a different scene model has been selected.
 	//so find the current selected scene model and call setSceneModel if it changed.
 
-	if (m_data->scene)
+	if (d_data->scene)
 	{
-		QList<VipPlotSceneModel*> models = vipCastItemList<VipPlotSceneModel*>(m_data->scene->items());
+		QList<VipPlotSceneModel*> models = vipCastItemList<VipPlotSceneModel*>(d_data->scene->items());
 
 		//find the first VipPlotSceneModel with selected shapes (or the first one if there are no selected shapes) and set it to the scene model editor.
 		VipPlotSceneModel * model = nullptr;
@@ -1215,28 +1213,28 @@ void VipSceneModelEditor::recomputeAttributes()
 			}
 		}
 
-		if (model && model != m_data->sceneModel)
+		if (model && model != d_data->sceneModel)
 			setSceneModel(model);
 	}
 }*/
 
 VipPlotSceneModel* VipSceneModelEditor::lastSelected() const
 {
-	if (!m_data->player2D)
+	if (!d_data->player2D)
 		return nullptr;
-	if (!m_data->lastSelected)
-		return m_data->player2D->plotSceneModel();
-	return m_data->lastSelected;
+	if (!d_data->lastSelected)
+		return d_data->player2D->plotSceneModel();
+	return d_data->lastSelected;
 }
 
 QGraphicsScene* VipSceneModelEditor::scene() const
 {
-	return m_data->scene;
+	return d_data->scene;
 }
 
 VipPlayer2D* VipSceneModelEditor::player() const
 {
-	return m_data->player2D;
+	return d_data->player2D;
 }
 
 void VipSceneModelEditor::selectionChanged(VipPlotItem* item)
@@ -1244,8 +1242,8 @@ void VipSceneModelEditor::selectionChanged(VipPlotItem* item)
 	if (VipPlotShape* sh = qobject_cast<VipPlotShape*>(item)) {
 		if (sh->isSelected()) {
 			if (VipPlotSceneModel* sm = sh->property("VipPlotSceneModel").value<VipPlotSceneModel*>())
-				if (sm != m_data->lastSelected) {
-					m_data->lastSelected = sm;
+				if (sm != d_data->lastSelected) {
+					d_data->lastSelected = sm;
 					resetPlayer();
 				}
 		}
@@ -1255,102 +1253,102 @@ void VipSceneModelEditor::selectionChanged(VipPlotItem* item)
 
 void VipSceneModelEditor::setPlayer(VipPlayer2D* pl)
 {
-	if (m_data->player2D != pl)
-		m_data->lastSelected = nullptr;
-	if (m_data->player2D) {
-		disconnect(m_data->player2D->plotWidget2D()->area(), SIGNAL(childSelectionChanged(VipPlotItem*)), this, SLOT(selectionChanged(VipPlotItem*)));
+	if (d_data->player2D != pl)
+		d_data->lastSelected = nullptr;
+	if (d_data->player2D) {
+		disconnect(d_data->player2D->plotWidget2D()->area(), SIGNAL(childSelectionChanged(VipPlotItem*)), this, SLOT(selectionChanged(VipPlotItem*)));
 	}
 
-	m_data->player2D = pl;
-	m_data->scene = pl ? pl->plotWidget2D()->scene() : nullptr;
+	d_data->player2D = pl;
+	d_data->scene = pl ? pl->plotWidget2D()->scene() : nullptr;
 	if (!pl)
 		return;
 
-	if (m_data->player2D) {
-		connect(m_data->player2D->plotWidget2D()->area(), SIGNAL(childSelectionChanged(VipPlotItem*)), this, SLOT(selectionChanged(VipPlotItem*)));
+	if (d_data->player2D) {
+		connect(d_data->player2D->plotWidget2D()->area(), SIGNAL(childSelectionChanged(VipPlotItem*)), this, SLOT(selectionChanged(VipPlotItem*)));
 	}
 
-	m_data->title.blockSignals(true);
-	m_data->brush.blockSignals(true);
-	m_data->pen.blockSignals(true);
-	m_data->groupVisible.blockSignals(true);
-	m_data->idVisible.blockSignals(true);
-	m_data->attrsVisible.blockSignals(true);
-	m_data->invertTextColor.blockSignals(true);
-	m_data->innerPixels.blockSignals(true);
-	m_data->statArea.blockSignals(true);
-	m_data->statLabel->blockSignals(true);
-	m_data->titleVisible.blockSignals(true);
+	d_data->title.blockSignals(true);
+	d_data->brush.blockSignals(true);
+	d_data->pen.blockSignals(true);
+	d_data->groupVisible.blockSignals(true);
+	d_data->idVisible.blockSignals(true);
+	d_data->attrsVisible.blockSignals(true);
+	d_data->invertTextColor.blockSignals(true);
+	d_data->innerPixels.blockSignals(true);
+	d_data->statArea.blockSignals(true);
+	d_data->statLabel->blockSignals(true);
+	d_data->titleVisible.blockSignals(true);
 
 	// set the new plot scene models
 	QList<VipPlotSceneModel*> models;
-	if (m_data->scene)
-		models = vipCastItemList<VipPlotSceneModel*>(m_data->scene->items());
-	m_data->showHide.computeGroups(models);
+	if (d_data->scene)
+		models = vipCastItemList<VipPlotSceneModel*>(d_data->scene->items());
+	d_data->showHide.computeGroups(models);
 
 	// set attributes
 	recomputeAttributes();
 
 	QString visible;
-	QStringList tmp = m_data->showHide.visibleGroups();
+	QStringList tmp = d_data->showHide.visibleGroups();
 	if (!tmp.isEmpty())
 		visible = tmp.last();
 	if (!visible.isEmpty() && lastSelected()) {
 		VipPlotSceneModel* sm = lastSelected();
-		m_data->title.setText(VipText(QString(), sm->textStyle(visible)));
+		d_data->title.setText(VipText(QString(), sm->textStyle(visible)));
 
 		// update brush and pen
-		m_data->pen.setPen(sm->pen(visible));
-		m_data->brush.setPen(QPen(sm->brush(visible), 1));
+		d_data->pen.setPen(sm->pen(visible));
+		d_data->brush.setPen(QPen(sm->brush(visible), 1));
 
 		/*QString key = QString::number((quint64)sm) + visible;
-		if (m_data->inspected.find(key) == m_data->inspected.end()) {
-			if (sm == m_data->player2D->plotSceneModel())
+		if (d_data->inspected.find(key) == d_data->inspected.end()) {
+			if (sm == d_data->player2D->plotSceneModel())
 			{
 				// for the main VipPlotSceneModel of the player, use the global option displayExactPixels
 				if (VipGuiDisplayParamaters::instance()->displayExactPixels())
 					sm->setDrawComponent(QString(), VipPlotShape::FillPixels);
-				m_data->inspected.insert(key);
+				d_data->inspected.insert(key);
 			}
 		}*/
 
 		// update visibility
-		m_data->titleVisible.setChecked(sm->testDrawComponent(visible, VipPlotShape::Title));
-		m_data->groupVisible.setChecked(sm->testDrawComponent(visible, VipPlotShape::Group));
-		m_data->idVisible.setChecked(sm->testDrawComponent(visible, VipPlotShape::Id));
-		m_data->attrsVisible.setChecked(sm->testDrawComponent(visible, VipPlotShape::Attributes));
-		m_data->innerPixels.setChecked(sm->testDrawComponent(visible, VipPlotShape::FillPixels));
-		m_data->invertTextColor.setChecked(sm->adjustTextColor(visible));
+		d_data->titleVisible.setChecked(sm->testDrawComponent(visible, VipPlotShape::Title));
+		d_data->groupVisible.setChecked(sm->testDrawComponent(visible, VipPlotShape::Group));
+		d_data->idVisible.setChecked(sm->testDrawComponent(visible, VipPlotShape::Id));
+		d_data->attrsVisible.setChecked(sm->testDrawComponent(visible, VipPlotShape::Attributes));
+		d_data->innerPixels.setChecked(sm->testDrawComponent(visible, VipPlotShape::FillPixels));
+		d_data->invertTextColor.setChecked(sm->adjustTextColor(visible));
 	}
 
 	// updateStatistics();
 
-	m_data->title.blockSignals(false);
-	m_data->brush.blockSignals(false);
-	m_data->pen.blockSignals(false);
-	m_data->groupVisible.blockSignals(false);
-	m_data->idVisible.blockSignals(false);
-	m_data->attrsVisible.blockSignals(false);
-	m_data->invertTextColor.blockSignals(false);
-	m_data->innerPixels.blockSignals(false);
-	m_data->statArea.blockSignals(false);
-	m_data->statLabel->blockSignals(false);
-	m_data->titleVisible.blockSignals(false);
+	d_data->title.blockSignals(false);
+	d_data->brush.blockSignals(false);
+	d_data->pen.blockSignals(false);
+	d_data->groupVisible.blockSignals(false);
+	d_data->idVisible.blockSignals(false);
+	d_data->attrsVisible.blockSignals(false);
+	d_data->invertTextColor.blockSignals(false);
+	d_data->innerPixels.blockSignals(false);
+	d_data->statArea.blockSignals(false);
+	d_data->statLabel->blockSignals(false);
+	d_data->titleVisible.blockSignals(false);
 }
 
 void VipSceneModelEditor::updateSceneModels()
 {
-	if (!m_data->player2D)
+	if (!d_data->player2D)
 		return;
 
 	// get visible groups
-	QStringList visible = m_data->showHide.visibleGroups();
+	QStringList visible = d_data->showHide.visibleGroups();
 
 	// compute all the VipPlotSceneModel to apply the parameters to
 	QList<VipPlotSceneModel*> models;
-	if (!m_data->applyAll.isChecked()) {
+	if (!d_data->applyAll.isChecked()) {
 		// use all visible models
-		models = m_data->player2D->plotWidget2D()->area()->findItems<VipPlotSceneModel*>();
+		models = d_data->player2D->plotWidget2D()->area()->findItems<VipPlotSceneModel*>();
 	}
 	else {
 		QList<VipAbstractPlayer*> players = VipFindChidren::findChildren<VipAbstractPlayer*>();
@@ -1374,7 +1372,7 @@ void VipSceneModelEditor::updateSceneModels()
 	}
 
 	// the other parameters only to the last selected plot scene model, except if 'apply to all' is checked
-	if (!m_data->applyAll.isChecked()) {
+	if (!d_data->applyAll.isChecked()) {
 		models.clear();
 		if (VipPlotSceneModel* sm = lastSelected())
 			models << sm;
@@ -1385,64 +1383,64 @@ void VipSceneModelEditor::updateSceneModels()
 		for (int i = 0; i < visible.size(); ++i) {
 			// update text visibility, brush and pen
 
-			if (!sender() || (sender() == &m_data->title)) // check sender to avoid updating all properties when 'All' is selected
-				sm->setTextStyle(visible[i], m_data->title.getText().textStyle());
-			if (!sender() || (sender() == &m_data->titleVisible))
-				sm->setDrawComponent(visible[i], VipPlotShape::Title, m_data->titleVisible.isChecked());
-			if (!sender() || (sender() == &m_data->idVisible))
-				sm->setDrawComponent(visible[i], VipPlotShape::Id, m_data->idVisible.isChecked());
-			if (!sender() || (sender() == &m_data->attrsVisible))
-				sm->setDrawComponent(visible[i], VipPlotShape::Attributes, m_data->attrsVisible.isChecked());
-			if (!sender() || (sender() == &m_data->invertTextColor))
-				sm->setAdjustTextColor(visible[i], m_data->invertTextColor.isChecked());
-			if (!sender() || (sender() == &m_data->groupVisible))
-				sm->setDrawComponent(visible[i], VipPlotShape::Group, m_data->groupVisible.isChecked());
-			if (!sender() || (sender() == &m_data->innerPixels))
-				sm->setDrawComponent(visible[i], VipPlotShape::FillPixels, m_data->innerPixels.isChecked());
-			if (!sender() || (sender() == &m_data->pen))
-				sm->setPen(visible[i], m_data->pen.pen());
-			if (!sender() || (sender() == &m_data->brush))
-				sm->setBrush(visible[i], m_data->brush.pen().brush());
+			if (!sender() || (sender() == &d_data->title)) // check sender to avoid updating all properties when 'All' is selected
+				sm->setTextStyle(visible[i], d_data->title.getText().textStyle());
+			if (!sender() || (sender() == &d_data->titleVisible))
+				sm->setDrawComponent(visible[i], VipPlotShape::Title, d_data->titleVisible.isChecked());
+			if (!sender() || (sender() == &d_data->idVisible))
+				sm->setDrawComponent(visible[i], VipPlotShape::Id, d_data->idVisible.isChecked());
+			if (!sender() || (sender() == &d_data->attrsVisible))
+				sm->setDrawComponent(visible[i], VipPlotShape::Attributes, d_data->attrsVisible.isChecked());
+			if (!sender() || (sender() == &d_data->invertTextColor))
+				sm->setAdjustTextColor(visible[i], d_data->invertTextColor.isChecked());
+			if (!sender() || (sender() == &d_data->groupVisible))
+				sm->setDrawComponent(visible[i], VipPlotShape::Group, d_data->groupVisible.isChecked());
+			if (!sender() || (sender() == &d_data->innerPixels))
+				sm->setDrawComponent(visible[i], VipPlotShape::FillPixels, d_data->innerPixels.isChecked());
+			if (!sender() || (sender() == &d_data->pen))
+				sm->setPen(visible[i], d_data->pen.pen());
+			if (!sender() || (sender() == &d_data->brush))
+				sm->setBrush(visible[i], d_data->brush.pen().brush());
 		}
 	}
 
-	if (m_data->applyAll.isChecked()) {
+	if (d_data->applyAll.isChecked()) {
 		// if apply to all, update the default settings
-		if (sender() == &m_data->innerPixels) {
-			if (m_data->innerPixels.isChecked())
+		if (sender() == &d_data->innerPixels) {
+			if (d_data->innerPixels.isChecked())
 				VipGuiDisplayParamaters::instance()->setShapeDrawComponents(VipGuiDisplayParamaters::instance()->shapeDrawComponents() | VipPlotShape::FillPixels);
 			else
 				VipGuiDisplayParamaters::instance()->setShapeDrawComponents(VipGuiDisplayParamaters::instance()->shapeDrawComponents() & (~VipPlotShape::FillPixels));
 		}
-		else if (sender() == &m_data->titleVisible) {
-			if (m_data->titleVisible.isChecked())
+		else if (sender() == &d_data->titleVisible) {
+			if (d_data->titleVisible.isChecked())
 				VipGuiDisplayParamaters::instance()->setShapeDrawComponents(VipGuiDisplayParamaters::instance()->shapeDrawComponents() | VipPlotShape::Title);
 			else
 				VipGuiDisplayParamaters::instance()->setShapeDrawComponents(VipGuiDisplayParamaters::instance()->shapeDrawComponents() & (~VipPlotShape::Title));
 		}
-		else if (sender() == &m_data->idVisible) {
-			if (m_data->idVisible.isChecked())
+		else if (sender() == &d_data->idVisible) {
+			if (d_data->idVisible.isChecked())
 				VipGuiDisplayParamaters::instance()->setShapeDrawComponents(VipGuiDisplayParamaters::instance()->shapeDrawComponents() | VipPlotShape::Id);
 			else
 				VipGuiDisplayParamaters::instance()->setShapeDrawComponents(VipGuiDisplayParamaters::instance()->shapeDrawComponents() & (~VipPlotShape::Id));
 		}
-		else if (sender() == &m_data->attrsVisible) {
-			if (m_data->attrsVisible.isChecked())
+		else if (sender() == &d_data->attrsVisible) {
+			if (d_data->attrsVisible.isChecked())
 				VipGuiDisplayParamaters::instance()->setShapeDrawComponents(VipGuiDisplayParamaters::instance()->shapeDrawComponents() | VipPlotShape::Attributes);
 			else
 				VipGuiDisplayParamaters::instance()->setShapeDrawComponents(VipGuiDisplayParamaters::instance()->shapeDrawComponents() & (~VipPlotShape::Attributes));
 		}
-		else if (sender() == &m_data->groupVisible) {
-			if (m_data->groupVisible.isChecked())
+		else if (sender() == &d_data->groupVisible) {
+			if (d_data->groupVisible.isChecked())
 				VipGuiDisplayParamaters::instance()->setShapeDrawComponents(VipGuiDisplayParamaters::instance()->shapeDrawComponents() | VipPlotShape::Group);
 			else
 				VipGuiDisplayParamaters::instance()->setShapeDrawComponents(VipGuiDisplayParamaters::instance()->shapeDrawComponents() & (~VipPlotShape::Group));
 		}
-		else if (sender() == &m_data->brush) {
-			VipGuiDisplayParamaters::instance()->setShapeBackgroundBrush(m_data->brush.pen().brush());
+		else if (sender() == &d_data->brush) {
+			VipGuiDisplayParamaters::instance()->setShapeBackgroundBrush(d_data->brush.pen().brush());
 		}
-		else if (sender() == &m_data->pen) {
-			VipGuiDisplayParamaters::instance()->setShapeBorderPen(m_data->pen.pen());
+		else if (sender() == &d_data->pen) {
+			VipGuiDisplayParamaters::instance()->setShapeBorderPen(d_data->pen.pen());
 		}
 	}
 }
@@ -1455,19 +1453,19 @@ void VipSceneModelEditor::emitSceneModelChanged()
 
 void VipSceneModelEditor::uniteShapes()
 {
-	if (!m_data->player2D)
+	if (!d_data->player2D)
 		return;
 	// Find selected shapes and make sure they belong to the same VipPlotSceneModel
 	QSet<VipPlotSceneModel*> sms;
 	VipPlotSceneModel* insert_into = nullptr; // result is add to this VipPlotSceneModel
-	QList<VipPlotShape*> shapes = m_data->player2D->plotWidget2D()->area()->findItems<VipPlotShape*>(QString(), 1, 1);
+	QList<VipPlotShape*> shapes = d_data->player2D->plotWidget2D()->area()->findItems<VipPlotShape*>(QString(), 1, 1);
 	for (int i = 0; i < shapes.size(); ++i) {
 		if (VipPlotSceneModel* sm = shapes[i]->property("VipPlotSceneModel").value<VipPlotSceneModel*>())
 			sms.insert(sm);
 	}
 	if (sms.size() != 1)
 		shapes.clear();
-	else if (!(insert_into = m_data->player2D->findPlotSceneModel((*sms.begin())->axes())))
+	else if (!(insert_into = d_data->player2D->findPlotSceneModel((*sms.begin())->axes())))
 		shapes.clear();
 
 	if (shapes.size() > 1) {
@@ -1491,18 +1489,18 @@ void VipSceneModelEditor::uniteShapes()
 
 void VipSceneModelEditor::intersectShapes()
 {
-	if (!m_data->player2D)
+	if (!d_data->player2D)
 		return;
 	// Find selected shapes and make sure they belong to the same VipPlotSceneModel
 	QSet<VipPlotSceneModel*> sms;
 	VipPlotSceneModel* insert_into = nullptr; // result is add to this VipPlotSceneModel
-	QList<VipPlotShape*> shapes = m_data->player2D->plotWidget2D()->area()->findItems<VipPlotShape*>(QString(), 1, 1);
+	QList<VipPlotShape*> shapes = d_data->player2D->plotWidget2D()->area()->findItems<VipPlotShape*>(QString(), 1, 1);
 	for (int i = 0; i < shapes.size(); ++i)
 		if (VipPlotSceneModel* sm = shapes[i]->property("VipPlotSceneModel").value<VipPlotSceneModel*>())
 			sms.insert(sm);
 	if (sms.size() != 1)
 		shapes.clear();
-	else if (!(insert_into = m_data->player2D->findPlotSceneModel((*sms.begin())->axes())))
+	else if (!(insert_into = d_data->player2D->findPlotSceneModel((*sms.begin())->axes())))
 		shapes.clear();
 
 	if (shapes.size() > 1) {
@@ -1530,18 +1528,18 @@ void VipSceneModelEditor::intersectShapes()
 
 void VipSceneModelEditor::subtractShapes()
 {
-	if (!m_data->player2D)
+	if (!d_data->player2D)
 		return;
 	// Find selected shapes and make sure they belong to the same VipPlotSceneModel
 	QSet<VipPlotSceneModel*> sms;
 	VipPlotSceneModel* insert_into = nullptr; // result is add to this VipPlotSceneModel
-	QList<VipPlotShape*> shapes = m_data->player2D->plotWidget2D()->area()->findItems<VipPlotShape*>(QString(), 1, 1);
+	QList<VipPlotShape*> shapes = d_data->player2D->plotWidget2D()->area()->findItems<VipPlotShape*>(QString(), 1, 1);
 	for (int i = 0; i < shapes.size(); ++i)
 		if (VipPlotSceneModel* sm = shapes[i]->property("VipPlotSceneModel").value<VipPlotSceneModel*>())
 			sms.insert(sm);
 	if (sms.size() != 1)
 		shapes.clear();
-	else if (!(insert_into = m_data->player2D->findPlotSceneModel((*sms.begin())->axes())))
+	else if (!(insert_into = d_data->player2D->findPlotSceneModel((*sms.begin())->axes())))
 		shapes.clear();
 
 	if (shapes.size() == 2) {
@@ -1563,9 +1561,9 @@ void VipSceneModelEditor::subtractShapes()
 
 void VipSceneModelEditor::addProperty()
 {
-	if (!m_data->player2D)
+	if (!d_data->player2D)
 		return;
-	QList<VipPlotShape*> shapes = m_data->player2D->plotWidget2D()->area()->findItems<VipPlotShape*>(QString(), 1, 1);
+	QList<VipPlotShape*> shapes = d_data->player2D->plotWidget2D()->area()->findItems<VipPlotShape*>(QString(), 1, 1);
 
 	if (shapes.size()) {
 		EditProperty* edit = new EditProperty();
@@ -1582,7 +1580,7 @@ void VipSceneModelEditor::addProperty()
 						models.insert(sm);
 				}
 				for (QSet<VipPlotSceneModel*>::const_iterator it = models.begin(); it != models.end(); ++it)
-					VipSceneModelState::instance()->pushState(m_data->player2D, *it);
+					VipSceneModelState::instance()->pushState(d_data->player2D, *it);
 
 				for (int i = 0; i < shapes.size(); ++i)
 					shapes[i]->rawData().setAttribute(name, value);
@@ -1594,9 +1592,9 @@ void VipSceneModelEditor::addProperty()
 
 void VipSceneModelEditor::removeProperty()
 {
-	if (!m_data->player2D)
+	if (!d_data->player2D)
 		return;
-	QList<VipPlotShape*> shapes = m_data->player2D->plotWidget2D()->area()->findItems<VipPlotShape*>(QString(), 1, 1);
+	QList<VipPlotShape*> shapes = d_data->player2D->plotWidget2D()->area()->findItems<VipPlotShape*>(QString(), 1, 1);
 
 	if (shapes.size()) {
 		QSet<QString> properties;
@@ -1621,7 +1619,7 @@ void VipSceneModelEditor::removeProperty()
 						models.insert(sm);
 				}
 				for (QSet<VipPlotSceneModel*>::const_iterator it = models.begin(); it != models.end(); ++it)
-					VipSceneModelState::instance()->pushState(m_data->player2D, *it);
+					VipSceneModelState::instance()->pushState(d_data->player2D, *it);
 
 				// remove the selected property
 				QString selected = box->currentText();
@@ -1640,14 +1638,14 @@ void VipSceneModelEditor::saveShapes()
 {
 	// Save all editable scene models
 
-	if (!m_data->player2D)
+	if (!d_data->player2D)
 		return;
 
 	QStringList filters = VipIODevice::possibleWriteFilters(QString(), QVariantList() << QVariant::fromValue(VipSceneModelList()));
-	QList<VipPlotSceneModel*> pmodels = m_data->player2D->plotSceneModels();
+	QList<VipPlotSceneModel*> pmodels = d_data->player2D->plotSceneModels();
 	VipSceneModelList models;
 	for (int i = 0; i < pmodels.size(); ++i) {
-		models << vipCopyVideoSceneModel(pmodels[i]->sceneModel(), qobject_cast<VipVideoPlayer*>(m_data->player2D), nullptr);
+		models << vipCopyVideoSceneModel(pmodels[i]->sceneModel(), qobject_cast<VipVideoPlayer*>(d_data->player2D), nullptr);
 	}
 
 	if (models.size()) {
@@ -1667,14 +1665,14 @@ VipMultiNDArray VipSceneModelEditor::createH5ShapeAttributes(const QVariant& bac
 {
 	// Create a multi component image based on all shape attributes
 
-	if (!m_data->player2D)
+	if (!d_data->player2D)
 		return VipMultiNDArray();
 
 	// only available for VipVideoPlayer
-	if (!qobject_cast<VipVideoPlayer*>(m_data->player2D))
+	if (!qobject_cast<VipVideoPlayer*>(d_data->player2D))
 		return VipMultiNDArray();
 
-	VipVideoPlayer* pl = static_cast<VipVideoPlayer*>(m_data->player2D.data());
+	VipVideoPlayer* pl = static_cast<VipVideoPlayer*>(d_data->player2D.data());
 
 	// get the current image
 	VipRasterData rdata = pl->spectrogram()->rawData();
@@ -1684,10 +1682,10 @@ VipMultiNDArray VipSceneModelEditor::createH5ShapeAttributes(const QVariant& bac
 
 	QList<VipPlotShape*> shapes;
 	// Try to save only selected shapes
-	shapes = m_data->player2D->plotWidget2D()->area()->findItems<VipPlotShape*>(QString(), 1, 1);
+	shapes = d_data->player2D->plotWidget2D()->area()->findItems<VipPlotShape*>(QString(), 1, 1);
 	// If no selection, save all
 	if (shapes.isEmpty())
-		shapes = m_data->player2D->plotWidget2D()->area()->findItems<VipPlotShape*>(QString(), 2, 1);
+		shapes = d_data->player2D->plotWidget2D()->area()->findItems<VipPlotShape*>(QString(), 2, 1);
 	if (!shapes.size())
 		return VipMultiNDArray();
 
@@ -1789,14 +1787,14 @@ void VipSceneModelEditor::saveH5ShapesAttribute()
 
 void VipSceneModelEditor::saveShapesAttribute()
 {
-	if (!m_data->player2D)
+	if (!d_data->player2D)
 		return;
 
 	// only available for VipVideoPlayer
-	if (!qobject_cast<VipVideoPlayer*>(m_data->player2D))
+	if (!qobject_cast<VipVideoPlayer*>(d_data->player2D))
 		return;
 
-	VipVideoPlayer* pl = static_cast<VipVideoPlayer*>(m_data->player2D.data());
+	VipVideoPlayer* pl = static_cast<VipVideoPlayer*>(d_data->player2D.data());
 
 	// get the current image
 	VipRasterData rdata = pl->spectrogram()->rawData();
@@ -1804,7 +1802,7 @@ void VipSceneModelEditor::saveShapesAttribute()
 	if (image.isEmpty())
 		return;
 
-	QList<VipPlotShape*> shapes = m_data->player2D->plotWidget2D()->area()->findItems<VipPlotShape*>(QString(), 1, 1);
+	QList<VipPlotShape*> shapes = d_data->player2D->plotWidget2D()->area()->findItems<VipPlotShape*>(QString(), 1, 1);
 	if (shapes.size()) {
 		QMap<QString, QVariant> properties;
 #if QT_VERSION < QT_VERSION_CHECK(5, 15, 0)
@@ -1854,17 +1852,17 @@ void VipSceneModelEditor::saveShapesAttribute()
 
 void VipSceneModelEditor::saveShapesImage()
 {
-	if (!m_data->player2D)
+	if (!d_data->player2D)
 		return;
 
 	// get the current image
-	if (!qobject_cast<VipVideoPlayer*>(m_data->player2D))
+	if (!qobject_cast<VipVideoPlayer*>(d_data->player2D))
 		return;
 
-	VipVideoPlayer* pl = static_cast<VipVideoPlayer*>(m_data->player2D.data());
+	VipVideoPlayer* pl = static_cast<VipVideoPlayer*>(d_data->player2D.data());
 	VipRasterData rdata = pl->spectrogram()->rawData();
 
-	QList<VipPlotShape*> shapes = m_data->player2D->plotWidget2D()->area()->findItems<VipPlotShape*>(QString(), 1, 1);
+	QList<VipPlotShape*> shapes = d_data->player2D->plotWidget2D()->area()->findItems<VipPlotShape*>(QString(), 1, 1);
 	if (shapes.size()) {
 
 		QString filename = VipFileDialog::getSaveFileName(nullptr, "Save image", "TEXT file (*.txt)");
@@ -1885,15 +1883,15 @@ void VipSceneModelEditor::saveShapesImage()
 	}
 }
 
-QList<VipShape> VipSceneModelEditor::openShapes(const QString& filename, VipPlayer2D* pl, bool remove_old)
+VipShapeList VipSceneModelEditor::openShapes(const QString& filename, VipPlayer2D* pl, bool remove_old)
 {
 	if (!pl)
-		return QList<VipShape>();
+		return VipShapeList();
 
 	if (filename.isEmpty())
-		return QList<VipShape>();
+		return VipShapeList();
 
-	QList<VipShape> res;
+	VipShapeList res;
 	QList<VipIODevice::Info> devices = VipIODevice::possibleReadDevices(filename, QByteArray(), QVariant::fromValue(VipSceneModel()));
 	VipIODevice* dev = VipCreateDevice::create(devices, filename);
 	if (dev && dev->open(VipIODevice::ReadOnly)) {
@@ -1924,20 +1922,20 @@ QList<VipShape> VipSceneModelEditor::openShapes(const QString& filename, VipPlay
 
 void VipSceneModelEditor::openShapes()
 {
-	if (!m_data->player2D)
+	if (!d_data->player2D)
 		return;
 
 	QStringList filters = VipIODevice::possibleReadFilters(QString(), QByteArray(), QVariant::fromValue(VipSceneModel()));
 	QString filename = VipFileDialog::getOpenFileName(nullptr, "Load shapes", filters.join(";;"));
-	openShapes(filename, m_data->player2D);
+	openShapes(filename, d_data->player2D);
 }
 
 void VipSceneModelEditor::selectUnselectAll()
 {
-	if (!m_data->player2D)
+	if (!d_data->player2D)
 		return;
 
-	QList<VipPlotShape*> shapes = m_data->player2D->plotWidget2D()->area()->findItems<VipPlotShape*>(QString(), 2, 1);
+	QList<VipPlotShape*> shapes = d_data->player2D->plotWidget2D()->area()->findItems<VipPlotShape*>(QString(), 2, 1);
 	bool all_selected = true;
 	for (int i = 0; i < shapes.size(); ++i) {
 		if (!shapes[i]->isSelected()) {
@@ -1954,11 +1952,11 @@ void VipSceneModelEditor::selectUnselectAll()
 
 void VipSceneModelEditor::deleteSelected()
 {
-	if (!m_data->player2D)
+	if (!d_data->player2D)
 		return;
 
-	QList<VipPlotShape*> shapes = m_data->player2D->plotWidget2D()->area()->findItems<VipPlotShape*>(QString(), 1, 1);
-	QList<VipPlotSceneModel*> models = m_data->player2D->plotSceneModels();
+	QList<VipPlotShape*> shapes = d_data->player2D->plotWidget2D()->area()->findItems<VipPlotShape*>(QString(), 1, 1);
+	QList<VipPlotSceneModel*> models = d_data->player2D->plotSceneModels();
 	for (int i = 0; i < shapes.size(); ++i) {
 		if (VipPlotSceneModel* sm = shapes[i]->property("VipPlotSceneModel").value<VipPlotSceneModel*>()) {
 			if (models.indexOf(sm) >= 0 || shapes[i]->testItemAttribute(VipPlotItem::IsSuppressable))
@@ -2546,11 +2544,10 @@ public:
 
 VipSceneModelState::VipSceneModelState()
 {
-	m_data = new PrivateData();
+	VIP_CREATE_PRIVATE_DATA(d_data);
 }
 VipSceneModelState::~VipSceneModelState()
 {
-	delete m_data;
 }
 
 VipSceneModelState* VipSceneModelState::instance()
@@ -2685,18 +2682,18 @@ void VipSceneModelState::cleanStates()
 	// Remove deleted players/scene models
 
 	QList<QMap<SMStateKey, QList<SMState>>::iterator> to_remove;
-	for (QMap<SMStateKey, QList<SMState>>::iterator it = m_data->_undoStates.begin(); it != m_data->_undoStates.end(); ++it)
+	for (QMap<SMStateKey, QList<SMState>>::iterator it = d_data->_undoStates.begin(); it != d_data->_undoStates.end(); ++it)
 		if (!it.value().size() || ((!it.value().first().player || !it.value().first().sm)))
 			to_remove.append(it);
 	for (int i = 0; i < to_remove.size(); ++i)
-		m_data->_undoStates.erase(to_remove[i]);
+		d_data->_undoStates.erase(to_remove[i]);
 
 	to_remove.clear();
-	for (QMap<SMStateKey, QList<SMState>>::iterator it = m_data->_redoStates.begin(); it != m_data->_redoStates.end(); ++it)
+	for (QMap<SMStateKey, QList<SMState>>::iterator it = d_data->_redoStates.begin(); it != d_data->_redoStates.end(); ++it)
 		if (!it.value().size() || ((!it.value().first().player || !it.value().first().sm)))
 			to_remove.append(it);
 	for (int i = 0; i < to_remove.size(); ++i)
-		m_data->_redoStates.erase(to_remove[i]);
+		d_data->_redoStates.erase(to_remove[i]);
 }
 
 void VipSceneModelState::pushState(VipPlayer2D* player, VipPlotSceneModel* sm, const QByteArray& ar)
@@ -2709,13 +2706,13 @@ void VipSceneModelState::pushState(VipPlayer2D* player, VipPlotSceneModel* sm, c
 	QByteArray state = ar;
 	if (state.isEmpty())
 		state = saveState(sm);
-	QList<SMState>& states = m_data->_undoStates[SMStateKey(player, sm)];
+	QList<SMState>& states = d_data->_undoStates[SMStateKey(player, sm)];
 	states.append(SMState(player, sm, state));
 	if (states.size() > 50)
 		states.pop_front();
 
 	// clear redo stack
-	m_data->_redoStates[SMStateKey(player, sm)].clear();
+	d_data->_redoStates[SMStateKey(player, sm)].clear();
 }
 
 void VipSceneModelState::undo(VipPlayer2D* player, VipPlotSceneModel* sm)
@@ -2723,13 +2720,13 @@ void VipSceneModelState::undo(VipPlayer2D* player, VipPlotSceneModel* sm)
 	cleanStates();
 
 	// push current state to the redo stack
-	QList<SMState>& redo_states = m_data->_redoStates[SMStateKey(player, sm)];
+	QList<SMState>& redo_states = d_data->_redoStates[SMStateKey(player, sm)];
 	redo_states.append(SMState(player, sm, saveState(sm)));
 	if (redo_states.size() > 50)
 		redo_states.pop_front();
 
 	// undo
-	QList<SMState>& undo_states = m_data->_undoStates[SMStateKey(player, sm)];
+	QList<SMState>& undo_states = d_data->_undoStates[SMStateKey(player, sm)];
 	if (undo_states.size() > 0) {
 		SMState last = undo_states.last();
 		// restoreState(ar);
@@ -2744,11 +2741,11 @@ void VipSceneModelState::redo(VipPlayer2D* player, VipPlotSceneModel* sm)
 	cleanStates();
 
 	// redo
-	QList<SMState>& redo_states = m_data->_redoStates[SMStateKey(player, sm)];
+	QList<SMState>& redo_states = d_data->_redoStates[SMStateKey(player, sm)];
 	if (redo_states.size() > 0) {
 
 		// push current state to undo stack
-		QList<SMState>& undo_states = m_data->_undoStates[SMStateKey(player, sm)];
+		QList<SMState>& undo_states = d_data->_undoStates[SMStateKey(player, sm)];
 		undo_states.append(SMState(player, sm, saveState(sm)));
 		if (undo_states.size() > 50)
 			undo_states.pop_front();

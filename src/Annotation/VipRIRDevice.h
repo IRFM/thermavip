@@ -1,7 +1,7 @@
 /**
  * BSD 3-Clause License
  *
- * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ * Copyright (c) 2025, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Leo Dubus, Erwan Grelier
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -78,16 +78,13 @@ private:
 
 VIP_REGISTER_QOBJECT_METATYPE(VipRIRDevice*)
 
-
-
-
 class VIP_ANNOTATION_EXPORT VipRIRRecorder : public VipIODevice
 {
 	Q_OBJECT
 	VIP_IO(VipInput input)
 	VIP_IO(VipProperty compression) // compression level, default to 8
-	VIP_IO(VipProperty low_loss)  // low temperature loss (0)
-	VIP_IO(VipProperty high_loss) // high temperature loss (0)
+	VIP_IO(VipProperty low_loss)	// low temperature loss (0)
+	VIP_IO(VipProperty high_loss)	// high temperature loss (0)
 
 public:
 	VipRIRRecorder(QObject* parent = nullptr);
@@ -99,11 +96,11 @@ public:
 	virtual QString fileFilters() const { return "H264 video file (*.h264)"; }
 	virtual bool open(VipIODevice::OpenModes);
 	virtual bool probe(const QString& filename, const QByteArray&) const { return QFileInfo(filename).suffix().compare("h264", Qt::CaseInsensitive) == 0 || VipIODevice::probe(filename); }
-	virtual bool acceptInput(int, const QVariant& v) const {
+	virtual bool acceptInput(int, const QVariant& v) const
+	{
 		const VipNDArray ar = v.value<VipNDArray>();
 		return ar.shapeCount() == 2 && ar.canConvert(QMetaType::UShort) && v.userType() == qMetaTypeId<VipNDArray>();
 	}
-
 
 protected:
 	virtual void apply();
@@ -114,7 +111,6 @@ private:
 	int m_video;
 };
 VIP_REGISTER_QOBJECT_METATYPE(VipRIRRecorder*)
-
 
 /**
 Widget to edit a VipRIRDevice instance (either WEST_IR_Device or WEST_BIN_PCR_Device)
@@ -138,10 +134,9 @@ Q_SIGNALS:
 	void deviceUpdated();
 
 private:
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
-
 
 class VipRIRRecorderEditor : public QWidget
 {
@@ -161,8 +156,8 @@ Q_SIGNALS:
 	void deviceUpdated();
 
 private:
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 /**

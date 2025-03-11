@@ -1,7 +1,7 @@
 /**
  * BSD 3-Clause License
  *
- * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ * Copyright (c) 2025, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Leo Dubus, Erwan Grelier
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -234,7 +234,7 @@ public:
 VipPieItem::VipPieItem(const VipText& title)
   : VipAbstractPieItem(title)
 {
-	d_data = new PrivateData;
+	VIP_CREATE_PRIVATE_DATA(d_data);
 	d_data->quiverPath.setColor(Qt::black);
 	d_data->quiverPath.setStyle(VipQuiverPath::QuiverStyles());
 	// d_data->quiverPath.setExtremityBrush(VipQuiverPath::End,QBrush(Qt::red));
@@ -245,7 +245,6 @@ VipPieItem::VipPieItem(const VipText& title)
 
 VipPieItem::~VipPieItem()
 {
-	delete d_data;
 }
 
 VipInterval VipPieItem::plotInterval(const VipInterval& interval) const
@@ -512,7 +511,7 @@ void VipPieItem::recomputeItem(const VipCoordinateSystemPtr& cm, VipAbstractScal
 	if (!m)
 		m = sceneMap();
 	if (m->axes().isEmpty()) {
-		if (parent = property("VipPlotItemComposite").value<VipPlotItemComposite*>())
+		if ((parent = property("VipPlotItemComposite").value<VipPlotItemComposite*>()))
 			m = parent->sceneMap();
 	}
 	const QList<VipAbstractScale*> scales = m->axes(); // this->axes();
@@ -862,7 +861,7 @@ public:
 	  : pie(0, 100, 0, 100, 0)
 	  , sumValue(0)
 	{
-		defaultItem = new VipPieItem();
+		defaultItem .reset( new VipPieItem());
 		defaultItem->setText(VipText("#value%.1f"));
 		defaultItem->boxStyle().setBackgroundBrush(QBrush(Qt::blue));
 		defaultItem->boxStyle().setBorderPen(QPen(Qt::NoPen));
@@ -880,7 +879,7 @@ public:
 	QVector<VipText> titles;
 	double sumValue;
 
-	VipPieItem* defaultItem;
+	std::unique_ptr<VipPieItem> defaultItem;
 
 	// shape handling
 	QPainterPath shape;
@@ -890,7 +889,7 @@ public:
 VipPieChart::VipPieChart(const VipText& title)
   : VipPlotItemComposite(UniqueItem, title)
 {
-	d_data = new PrivateData();
+	VIP_CREATE_PRIVATE_DATA(d_data);
 	// this->setFlag(ItemIsSelectable,false);
 	// this->setAcceptHoverEvents(false);
 	// this->setItemAttribute(VisibleLegend,false);
@@ -901,8 +900,6 @@ VipPieChart::VipPieChart(const VipText& title)
 
 VipPieChart::~VipPieChart()
 {
-	delete d_data->defaultItem;
-	delete d_data;
 }
 
 QRectF VipPieChart::boundingRect() const

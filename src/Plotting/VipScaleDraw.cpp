@@ -1,7 +1,7 @@
 /**
  * BSD 3-Clause License
  *
- * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ * Copyright (c) 2025, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Leo Dubus, Erwan Grelier
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -850,13 +850,12 @@ public:
 /// set to 4, the tick lengths are set to 4,6 and 8 pixels
 VipAbstractScaleDraw::VipAbstractScaleDraw()
 {
-	d_data = new VipAbstractScaleDraw::PrivateData;
+	VIP_CREATE_PRIVATE_DATA(d_data);
 }
 
 //! Destructor
 VipAbstractScaleDraw::~VipAbstractScaleDraw()
 {
-	delete d_data;
 }
 
 /// Change the transformation of the scale
@@ -909,7 +908,6 @@ void VipAbstractScaleDraw::setComponents(int components)
 /// \param scaleDiv New scale division
 void VipAbstractScaleDraw::setScaleDiv(const VipScaleDiv& scaleDiv)
 {
-	// qint64 st = QDateTime::currentMSecsSinceEpoch();
 
 	// check if we need to invalidate the overlapping (only necessary if labels overlapping is not allowed)
 	if (!d_data->labelOverlap) {
@@ -928,37 +926,14 @@ void VipAbstractScaleDraw::setScaleDiv(const VipScaleDiv& scaleDiv)
 	}
 	d_data->scaleDiv = scaleDiv;
 	d_data->map.setScaleInterval(scaleDiv.lowerBound(), scaleDiv.upperBound());
-	// qint64 el1 = QDateTime::currentMSecsSinceEpoch() - st;
-	// if (el1)
-	// vip_debug("el1 %i\n", (int)el1);
-	// st = QDateTime::currentMSecsSinceEpoch();
-
+	
 	if (d_data->valueToText->supportExponent() && d_data->valueToText->automaticExponent()) {
 		int exp = d_data->valueToText->findBestExponent(this);
 		d_data->valueToText->setExponent(exp);
 	}
 
-	// qint64 el2 = QDateTime::currentMSecsSinceEpoch() - st;
-	// if (el2)
-	// vip_debug("el2 %i\n", (int)el2);
-	// st = QDateTime::currentMSecsSinceEpoch();
-
 	invalidateCache();
 
-	// qint64 el3 = QDateTime::currentMSecsSinceEpoch() - st;
-	// if (el3)
-	// vip_debug("el3 %i\n", (int)el3);
-	// st = QDateTime::currentMSecsSinceEpoch();
-
-	// //reset additional text
-	// if(d_data->valueToText)
-	// {
-	// 	d_data->additionalText.clear();
-	// 	const QList<VipScaleText> texts = d_data->valueToText->additionalText(this);
-	//
-	// 	for(int i=0; i < texts.size(); ++i)
-	// 		d_data->additionalText[texts[i].value] = texts[i];
-	//	}
 }
 
 const QMap<vip_double, VipScaleText>& VipAbstractScaleDraw::additionalText() const
@@ -1015,11 +990,11 @@ bool VipAbstractScaleDraw::drawLabelOverlap(QPainter* painter, vip_double v, con
 		if (!d_data->otherLabelArea.isEmpty())
 			text_shape = d_data->painterTransform.map(device.shape());
 
-		QRectF bounding = text_shape.boundingRect();
+		//QRectF bounding = text_shape.boundingRect();
 		if (!d_data->labelArea->intersects(text_shape)) {
 			// check additional label overlapp
 			for (int i = 0; i < d_data->otherLabelArea.size(); ++i) {
-				QRectF b = d_data->otherLabelArea[i]->boundingRect();
+				//QRectF b = d_data->otherLabelArea[i]->boundingRect();
 				if (d_data->otherLabelArea[i]->intersects(text_shape))
 					return false;
 			}
@@ -1547,14 +1522,6 @@ bool VipAbstractScaleDraw::hasCustomLabels() const
 {
 	return d_data->customLabels.size() != 0;
 }
-// double VipAbstractScaleDraw::value(const QString & text, double default_value ) const
-// {
-// QList<double> t = d_data->customLabels.keys(VipText(text));
-// if(t.size())
-// return t.front();
-// else
-// return default_value;
-// }
 
 void VipAbstractScaleDraw::setValueToText(VipValueToText* v)
 {
@@ -1748,14 +1715,13 @@ public:
 /// The orientation is VipAbstractScaleDraw::Bottom.
 VipScaleDraw::VipScaleDraw()
 {
-	d_data = new VipScaleDraw::PrivateData;
+	VIP_CREATE_PRIVATE_DATA(d_data);
 	setLength(100);
 }
 
 //! Destructor
 VipScaleDraw::~VipScaleDraw()
 {
-	delete d_data;
 }
 
 /// Return alignment of the scale
@@ -2554,9 +2520,7 @@ void VipScaleDraw::drawLabel(QPainter* painter, vip_double value, const VipText&
 		return;
 
 	QPointF pos = labelPosition(value, tick);
-
 	QSizeF labelSize = lbl.textSize();
-
 	const QTransform transform = labelTransformation(value, pos, labelSize, tick, lbl.alignment());
 
 	const QTransform tr = painter->worldTransform();
@@ -2868,14 +2832,13 @@ public:
 /// The orientation is VipAbstractScaleDraw::Bottom.
 VipPolarScaleDraw::VipPolarScaleDraw()
 {
-	d_data = new VipPolarScaleDraw::PrivateData;
+	VIP_CREATE_PRIVATE_DATA(d_data);
 	this->setTicksPosition(TicksOutside);
 }
 
 //! Destructor
 VipPolarScaleDraw::~VipPolarScaleDraw()
 {
-	delete d_data;
 }
 
 void VipPolarScaleDraw::setScaleDiv(const VipScaleDiv& s)
@@ -3482,14 +3445,13 @@ public:
 /// The orientation is VipAbstractScaleDraw::Bottom.
 VipRadialScaleDraw::VipRadialScaleDraw()
 {
-	d_data = new PrivateData;
+	VIP_CREATE_PRIVATE_DATA(d_data);
 	setTicksPosition(TicksOutside);
 }
 
 //! Destructor
 VipRadialScaleDraw::~VipRadialScaleDraw()
 {
-	delete d_data;
 }
 
 void VipRadialScaleDraw::setCenter(const QPointF& center)

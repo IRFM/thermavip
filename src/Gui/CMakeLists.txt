@@ -11,6 +11,14 @@ include(GNUInstallDirs)
 
 FILE(GLOB Sources *.cpp)
 FILE(GLOB Headers *.h)
+
+if(NOT WITH_VTK)
+	list(FILTER Sources EXCLUDE REGEX "^.*VTK.*$")
+	list(FILTER Headers EXCLUDE REGEX "^.*VTK.*$")
+	list(FILTER Sources EXCLUDE REGEX "^.*FieldOfView.*$")
+	list(FILTER Headers EXCLUDE REGEX "^.*FieldOfView.*$")
+endif()
+
 add_library(VipGui SHARED
     ${Sources} ${Headers}
 )
@@ -23,30 +31,6 @@ target_compile_definitions(VipGui PRIVATE
     VIP_BUILD_GUI_LIB
 )
 
-# Add WebEnging if possible
-find_package(Qt${QT_VERSION_MAJOR}WebEngine REQUIRED)
-find_package(Qt${QT_VERSION_MAJOR}WebEngineWidgets REQUIRED)
-if (Qt${QT_VERSION_MAJOR}WebEngine_FOUND)
-	if (Qt${QT_VERSION_MAJOR}WebEngine_VERSION VERSION_LESS 5.15.0)
-		message(STATUS "Too old web engine version!")
-	else()
-		message(STATUS "Using web engine")
-		find_package(Qt${QT_VERSION_MAJOR}WebEngineWidgets REQUIRED)
-		if(${QT_VERSION_MAJOR} LESS 6)
-		target_link_libraries(VipGui PRIVATE
-		Qt5::WebEngine
-		Qt5::WebEngineWidgets
-		)
-		else()
-		target_link_libraries(VipGui PRIVATE
-		Qt::WebEngine
-		Qt::WebEngineWidgets
-		)
-		endif()
-		target_compile_definitions(VipGui PRIVATE __VIP_USE_WEB_ENGINE)
-	endif()
-endif()
-
 
 target_link_libraries(VipGui PRIVATE
 	VipDataType
@@ -56,7 +40,7 @@ target_link_libraries(VipGui PRIVATE
 )
 
 set(TARGET_PROJECT VipGui)
-include(${PROJECT_SOURCE_DIR}/../compiler_flags.cmake)
+include(${THERMAVIP_COMPILER_FLAGS_FILE})
 
 install(TARGETS VipGui
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR} 
@@ -65,14 +49,19 @@ install(TARGETS VipGui
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 )
 install(TARGETS VipGui
-    LIBRARY DESTINATION "${CMAKE_INSTALL_PREFIX}/thermavip"
-    FRAMEWORK DESTINATION "${CMAKE_INSTALL_PREFIX}/thermavip"
-    RUNTIME DESTINATION "${CMAKE_INSTALL_PREFIX}/thermavip"
+    LIBRARY DESTINATION "${THERMAVIP_APPLICATION_DIR}"
+    FRAMEWORK DESTINATION "${THERMAVIP_APPLICATION_DIR}"
+    RUNTIME DESTINATION "${THERMAVIP_APPLICATION_DIR}"
 )
 install(TARGETS VipGui
-	LIBRARY DESTINATION "${CMAKE_INSTALL_PREFIX}/tests"
-    FRAMEWORK DESTINATION "${CMAKE_INSTALL_PREFIX}/tests"
-    RUNTIME DESTINATION "${CMAKE_INSTALL_PREFIX}/tests"
+	LIBRARY DESTINATION "${THERMAVIP_EXAMPLE_DIR}"
+    FRAMEWORK DESTINATION "${THERMAVIP_EXAMPLE_DIR}"
+    RUNTIME DESTINATION "${THERMAVIP_EXAMPLE_DIR}"
+)
+install(TARGETS VipGui
+	LIBRARY DESTINATION "${THERMAVIP_TEST_DIR}"
+    FRAMEWORK DESTINATION "${THERMAVIP_TEST_DIR}"
+    RUNTIME DESTINATION "${THERMAVIP_TEST_DIR}"
 )
 
 

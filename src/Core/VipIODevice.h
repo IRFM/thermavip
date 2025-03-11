@@ -1,7 +1,7 @@
 /**
  * BSD 3-Clause License
  *
- * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ * Copyright (c) 2025, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Leo Dubus, Erwan Grelier
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -427,8 +427,8 @@ protected:
 private:
 	void setTime(qint64 time);
 
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 Q_DECLARE_OPERATORS_FOR_FLAGS(VipIODevice::OpenModes)
@@ -544,7 +544,7 @@ public:
 
 	/// @brief Enable/disable missing frames when using a play speed
 	bool missFramesEnabled() const;
-	
+
 	/// Returns true if the VipProcessingPool has a Sequential child
 	bool hasSequentialDevice() const;
 	/// Returns true if the VipProcessingPool has a Temporal child
@@ -749,8 +749,8 @@ private:
 	void computeDeviceType();
 	void applyLimitsToChildren();
 
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 Q_DECLARE_OPERATORS_FOR_FLAGS(VipProcessingPool::RunMode)
@@ -776,22 +776,22 @@ public:
 
 	void setData(const QVariant& data)
 	{
-		m_data = data;
-		VipAnyData out = create(m_data);
+		d_data = data;
+		VipAnyData out = create(d_data);
 		outputAt(0)->setData(out);
 	}
-	const QVariant& data() const { return m_data; }
+	const QVariant& data() const { return d_data; }
 
 protected:
 	virtual bool readData(qint64)
 	{
-		VipAnyData out = create(m_data);
+		VipAnyData out = create(d_data);
 		outputAt(0)->setData(out);
 		return true;
 	}
 
 private:
-	QVariant m_data;
+	QVariant d_data;
 };
 
 VIP_REGISTER_QOBJECT_METATYPE(VipAnyResource*)
@@ -851,8 +851,8 @@ protected:
 	virtual VipTimeRangeList computeTimeWindow() const;
 
 private:
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 VIP_REGISTER_QOBJECT_METATYPE(VipTimeRangeBasedGenerator*)
@@ -898,11 +898,13 @@ public:
 	/// Returns the file type
 	Type type() const;
 
-	virtual void copyParameters(VipTextFileReader* dst)
+	virtual void copyParameters(VipProcessingObject* dst)
 	{
-		VipTimeRangeBasedGenerator::copyParameters(dst);
-		dst->setSamplingTime(samplingTime());
-		dst->setType(type());
+		if (VipTextFileReader* d = qobject_cast<VipTextFileReader*>(dst)) {
+			VipTimeRangeBasedGenerator::copyParameters(dst);
+			d->setSamplingTime(samplingTime());
+			d->setType(type());
+		}
 	}
 
 	virtual DeviceType deviceType() const;
@@ -962,11 +964,13 @@ public:
 	/// Returns the number of digits for #VipTextFileWriter::MultipleFiles.
 	int digitsNumber() const;
 
-	virtual void copyParameters(VipTextFileWriter* dst)
+	virtual void copyParameters(VipProcessingObject* dst)
 	{
-		VipIODevice::copyParameters(dst);
-		dst->setDigitsNumber(digitsNumber());
-		dst->setType(type());
+		if (VipTextFileWriter* d = qobject_cast<VipTextFileWriter*>(dst)) {
+			VipIODevice::copyParameters(dst);
+			d->setDigitsNumber(digitsNumber());
+			d->setType(type());
+		}
 	}
 
 	virtual bool probe(const QString& filename, const QByteArray&) const { return supportFilename(filename) || VipIODevice::probe(filename); }
@@ -1010,10 +1014,12 @@ public:
 	/// Returns the sampling time
 	qint64 samplingTime() const;
 
-	virtual void copyParameters(VipImageReader* dst)
+	virtual void copyParameters(VipProcessingObject* dst)
 	{
-		VipTimeRangeBasedGenerator::copyParameters(dst);
-		dst->setSamplingTime(samplingTime());
+		if (VipImageReader* d = qobject_cast<VipImageReader*>(dst)) {
+			VipTimeRangeBasedGenerator::copyParameters(dst);
+			d->setSamplingTime(samplingTime());
+		}
 	}
 
 	virtual DeviceType deviceType() const;
@@ -1073,11 +1079,13 @@ public:
 	/// Returns the digit number used with #VipImageWriter::MultipleImages
 	int digitsNumber() const;
 
-	virtual void copyParameters(VipImageWriter* dst)
+	virtual void copyParameters(VipProcessingObject* dst)
 	{
-		VipIODevice::copyParameters(dst);
-		dst->setType(type());
-		dst->setDigitsNumber(digitsNumber());
+		if (VipImageWriter* d = qobject_cast<VipImageWriter*>(dst)) {
+			VipIODevice::copyParameters(dst);
+			d->setType(type());
+			d->setDigitsNumber(digitsNumber());
+		}
 	}
 
 	virtual bool acceptInput(int, const QVariant& v) const
@@ -1132,7 +1140,7 @@ protected:
 	virtual bool readData(qint64 time);
 
 private:
-	QList<VipAnyData> m_signals;
+	VipAnyDataList m_signals;
 };
 
 VIP_REGISTER_QOBJECT_METATYPE(VipCSVReader*)
@@ -1225,17 +1233,19 @@ public:
 	VipIODevice* deviceAt(int index) const;
 	int deviceCount() const;
 
-	virtual void copyParameters(VipDirectoryReader* dst)
+	virtual void copyParameters(VipProcessingObject* dst)
 	{
-		VipIODevice::copyParameters(dst);
-		dst->setSupportedSuffixes(supportedSuffixes());
-		dst->setFixedSize(fixedSize());
-		dst->setFileCount(fileCount());
-		dst->setFileStart(fileStart());
-		dst->setSmoothResize(smoothResize());
-		dst->setAlphabeticalOrder(alphabeticalOrder());
-		dst->setType(type());
-		dst->setRecursive(recursive());
+		if (VipDirectoryReader* d = qobject_cast<VipDirectoryReader*>(dst)) {
+			VipIODevice::copyParameters(dst);
+			d->setSupportedSuffixes(supportedSuffixes());
+			d->setFixedSize(fixedSize());
+			d->setFileCount(fileCount());
+			d->setFileStart(fileStart());
+			d->setSmoothResize(smoothResize());
+			d->setAlphabeticalOrder(alphabeticalOrder());
+			d->setType(type());
+			d->setRecursive(recursive());
+		}
 	}
 
 	virtual void setSourceProperty(const char* name, const QVariant& value);
@@ -1261,8 +1271,8 @@ protected:
 private:
 	void computeFiles();
 	int closestDeviceIndex(qint64 time, qint64* closest = nullptr) const;
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 	// directory options
 };
 
@@ -1306,6 +1316,9 @@ protected:
 
 VIP_REGISTER_QOBJECT_METATYPE(VipShapeWriter*)
 
+
+#ifdef VIP_WITH_HDF5
+
 /// \a VipArchiveRecorder is a write only device designed to save any kind of input data in a binary format.
 ///
 /// \a VipArchiveRecorder internally relies on a #VipBinaryArchive which basically contains stacked raw #VipAnyData. Therefore, it can save any serializable data (see #VipArchive for more details).
@@ -1328,9 +1341,13 @@ public:
 	/// The trailer structure saved at the end of the file
 	struct Trailer
 	{
-		QMap<qint64, QString> sourceTypes;		  // the data type name for each source
-		QMap<qint64, QPair<qint64, qint64>> sourceLimits; // the time limits for each source
-		QMap<qint64, qint64> sourceSamples;		  // number of sample for each source;
+		struct Source
+		{
+			QByteArray typeName;
+			VipTimeRange limits;
+			qint64 samples;
+		};
+		QMap<qint64, Source> sources;		  // the data type name for each source
 		qint64 startTime;				  // the global start time
 		qint64 endTime;					  // the global end time
 		Trailer()
@@ -1357,8 +1374,8 @@ protected:
 	virtual void apply();
 
 private:
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 VIP_REGISTER_QOBJECT_METATYPE(VipArchiveRecorder*)
@@ -1399,11 +1416,13 @@ private Q_SLOTS:
 	void bufferData();
 
 private:
-	class PrivateData;
-	PrivateData* m_data;
+	
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 VIP_REGISTER_QOBJECT_METATYPE(VipArchiveReader*)
+
+#endif
 
 /// @}
 // end Core

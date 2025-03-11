@@ -1,7 +1,7 @@
 /**
  * BSD 3-Clause License
  *
- * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ * Copyright (c) 2025, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Leo Dubus, Erwan Grelier
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -45,14 +45,14 @@
 /// using this ROI  will result in effectively eval or reduce a functor expression on its whole shape.
 struct VipInfinitRoi
 {
-	static const int access_type = Vip::Flat | Vip::Position;
+	static const qsizetype access_type = Vip::Flat | Vip::Position;
 	typedef bool value_type;
 	template<class ShapeType>
 	bool operator()(const ShapeType&) const
 	{
 		return true;
 	}
-	bool operator[](int) const { return true; }
+	bool operator[](qsizetype) const { return true; }
 	bool isUnstrided() const { return true; }
 };
 
@@ -60,16 +60,16 @@ struct VipInfinitRoi
 /// Using this structure within #vipEval or #vipReduce functions will result in
 /// evaluating the functor expression on the rectangles only, and only if given ROI
 /// is true.
-template<int Dim = Vip::None, class OverRoi = VipInfinitRoi>
+template<qsizetype Dim = Vip::None, class OverRoi = VipInfinitRoi>
 class VipOverNDRects
 {
 	const QVector<VipNDRect<Dim>> m_rects;
 	const VipNDRect<Dim>* m_ptr;
-	const int m_size;
+	const qsizetype m_size;
 	const OverRoi m_roi;
 
 public:
-	static const int access_type = OverRoi::access_type;
+	static const qsizetype access_type = OverRoi::access_type;
 	typedef bool value_type;
 
 	VipOverNDRects(const QVector<VipNDRect<Dim>>& rects, const OverRoi& roi = OverRoi())
@@ -79,7 +79,7 @@ public:
 	  , m_roi(roi)
 	{
 	}
-	VipOverNDRects(const VipNDRect<Dim>* ptr, int size, const OverRoi& roi = OverRoi())
+	VipOverNDRects(const VipNDRect<Dim>* ptr, qsizetype size, const OverRoi& roi = OverRoi())
 	  : m_ptr(ptr)
 	  , m_size(size)
 	  , m_roi(roi)
@@ -87,19 +87,19 @@ public:
 	}
 
 	const VipNDRect<Dim>* rects() const { return m_ptr; }
-	int size() const { return m_size; }
+	qsizetype size() const { return m_size; }
 
 	template<class ShapeType>
 	bool operator()(const ShapeType& p) const
 	{
 		return m_roi(p);
 	}
-	bool operator[](int i) const { return m_roi[i]; }
+	bool operator[](qsizetype i) const { return m_roi[i]; }
 	bool isUnstrided() const { return false; }
 };
 
 /// Create a #VipOverNDRects object based on a vector of rectangles and a ROI (default to #VipInfinitRoi)
-template<int NDim, class OverRoi = VipInfinitRoi>
+template<qsizetype NDim, class OverRoi = VipInfinitRoi>
 VipOverNDRects<NDim, OverRoi> vipOverRects(const QVector<VipNDRect<NDim>>& rects, const OverRoi& roi = OverRoi())
 {
 	return VipOverNDRects<NDim, OverRoi>(rects, roi);
@@ -107,14 +107,14 @@ VipOverNDRects<NDim, OverRoi> vipOverRects(const QVector<VipNDRect<NDim>>& rects
 
 /// Create a #VipOverNDRects object based on a vector of rectangles and a ROI (default to #VipInfinitRoi).
 /// Note that the rectangles are NOT copied must not be freed before the VipOverNDRects usage.
-template<int NDim, class OverRoi = VipInfinitRoi>
-VipOverNDRects<NDim, OverRoi> vipOverRects(const VipNDRect<NDim>* rects, int size, const OverRoi& roi = OverRoi())
+template<qsizetype NDim, class OverRoi = VipInfinitRoi>
+VipOverNDRects<NDim, OverRoi> vipOverRects(const VipNDRect<NDim>* rects, qsizetype size, const OverRoi& roi = OverRoi())
 {
 	return VipOverNDRects<NDim, OverRoi>(rects, size, roi);
 }
 
 /// Create a #VipOverNDRects object on a rectangle and a ROI (default to #VipInfinitRoi).
-template<int NDim, class OverRoi = VipInfinitRoi>
+template<qsizetype NDim, class OverRoi = VipInfinitRoi>
 VipOverNDRects<NDim, OverRoi> vipOverRects(const VipNDRect<NDim>& rect, const OverRoi& roi = OverRoi())
 {
 	return VipOverNDRects<NDim, OverRoi>(&rect, 1, roi);
@@ -130,7 +130,7 @@ VipOverNDRects<2, OverRoi> vipOverRects(const QVector<QRect>& rects, const OverR
 /// Create a #VipOverNDRects object on a vector of QRect and a ROI (default to #VipInfinitRoi).
 /// Note that the rectangles are NOT copied must not be freed before the VipOverNDRects usage.
 template<class OverRoi = VipInfinitRoi>
-VipOverNDRects<2, OverRoi> vipOverRects(const QRect* rects, int size, const OverRoi& roi = OverRoi())
+VipOverNDRects<2, OverRoi> vipOverRects(const QRect* rects, qsizetype size, const OverRoi& roi = OverRoi())
 {
 	return VipOverNDRects<2, OverRoi>((const VipNDRect<2>*)rects, size, roi);
 }

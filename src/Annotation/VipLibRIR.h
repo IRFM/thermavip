@@ -1,7 +1,7 @@
 /**
  * BSD 3-Clause License
  *
- * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ * Copyright (c) 2025, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Leo Dubus, Erwan Grelier
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -73,6 +73,7 @@ public:
 	typedef int (*_ts_read_group_count)(int pulse, const char* group_name, int* signal_count, int* sample_count);
 	typedef int (*_ts_read_signal_group)(int pulse, const char* group_name, double* x, double* y, int* total_sample_count, int* sample_count, int* signal_count, char* y_unit, char* date);
 	typedef int (*_ts_signal_description)(const char* signal_name, char* description, int* description_length);
+	typedef int (*_ts_read_numeric_param)(int pulse, const char* NmProd, const char* NmObj, const char* NmPar, double* out_value);
 	typedef int (*_ts_pulse_infos)(int pulse,
 				       double* duration,
 				       double* IP,
@@ -129,7 +130,9 @@ public:
 	typedef int (*_close_camera)(int camera);
 	typedef int (*_get_filename)(int cam, char* filename);
 
+
 	typedef int (*_get_temp_directory)(char*);
+	typedef int (*_get_default_temp_directory)(char*);
 	typedef int (*_set_temp_directory)(char*);
 	typedef void (*_enable_delete_temp_dir)(int);
 	typedef int (*_delete_temp_dir_enabled)();
@@ -207,7 +210,7 @@ public:
 					 int64_t start_timestamp_ns,
 					 const char* view,
 					 const char* out_file);
-	typedef int (*_hcc_extract_times_and_fw_pos)(int cam, int64_t* times, int* pos);
+	typedef int (*_hcc_extract_times_and_fw_pos)(int cam, qint64* times, int* pos);
 	typedef int (*_hcc_extract_all_fw_pos)(int cam, int* pos, int* pos_count);
 
 	typedef void (*_set_hcc_lut_file)(const char* filename);
@@ -258,6 +261,7 @@ public:
 	_ts_read_group_count ts_read_group_count;
 	_ts_read_signal_group ts_read_signal_group;
 	_ts_signal_description ts_signal_description;
+	_ts_read_numeric_param ts_read_numeric_param;
 	_ts_pulse_infos ts_pulse_infos;
 	_get_camera_rroi_info get_camera_rroi_info;
 	_get_camera_count get_camera_count;

@@ -1,7 +1,7 @@
 /**
  * BSD 3-Clause License
  *
- * Copyright (c) 2023, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Léo Dubus, Erwan Grelier
+ * Copyright (c) 2025, Institute for Magnetic Fusion Research - CEA/IRFM/GP3 Victor Moncada, Leo Dubus, Erwan Grelier
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -61,7 +61,7 @@ public:
 	void add(double x)
 	{
 		double delta, delta_n, delta_n2, term1;
-		int n1 = n;
+		qsizetype n1 = n;
 		n++;
 		delta = x - M1;
 		delta_n = delta / n;
@@ -84,12 +84,12 @@ public:
 	double kurtosis() const { return double(n) * M4 / (M2 * M2) - 3.0; }
 
 private:
-	int n;
+	qsizetype n;
 	double M1, M2, M3, M4;
 };
 
 /// Returns the pixel value of a QImage::Format_Mono image
-// static bool monoValue(const uchar * scanline, int x)
+// static bool monoValue(const uchar * scanline, qsizetype x)
 //  {
 //  return bool((*(scanline + (x >> 3)) >> (7- (x & 7))) & 1);
 //  }
@@ -97,7 +97,7 @@ private:
 #define monoValue(scanline, x) ((*(scanline + (x >> 3)) >> (7 - (x & 7))) & 1)
 
 /// Returns a QImage::Format_Mono image with the given size, and set the palette to Qt::white and Qt::black
-static QImage createEmptyMask(int width, int height)
+static QImage createEmptyMask(qsizetype width, qsizetype height)
 {
 	QImage bit(width, height, QImage::Format_Mono);
 	bit.setColor(0, QColor(Qt::white).rgb());
@@ -115,8 +115,8 @@ void extractMask(const QPainterPath& p, QImage& mask)
 	QRectF rect = (temp.boundingRect());
 	temp.translate(rect.topLeft() * -1.0);
 	rect = temp.boundingRect();
-	int w = qRound(rect.width()) + 1;
-	int h = qRound(rect.height()) + 1;
+	qsizetype w = qRound(rect.width()) + 1;
+	qsizetype h = qRound(rect.height()) + 1;
 	if (mask.width() != w || mask.height() != h)
 		mask = createEmptyMask(w, h);
 	else
@@ -152,7 +152,7 @@ QRegion extractRegion(const QPainterPath& p)
 // QVector<QRect> extractRects(const QRegion & region, const QPoint & offset)
 // {
 // QVector<QRect> rects = region.rects();
-// for (int i = 0; i < rects.size(); ++i)
+// for (qsizetype i = 0; i < rects.size(); ++i)
 // rects[i].translate(offset);
 // return rects;
 // }
@@ -161,17 +161,17 @@ QVector<QPoint> extractPixels(const QVector<QRect>& rects, const QPoint& offset)
 	QVector<QPoint> res;
 
 	// first, compute the total point number
-	int size = 0;
-	for (int i = 0; i < rects.size(); ++i)
+	qsizetype size = 0;
+	for (qsizetype i = 0; i < rects.size(); ++i)
 		size += rects[i].width() * rects[i].height();
 	res.resize(size);
 
-	int count = 0;
-	for (int i = 0; i < rects.size(); ++i) {
+	qsizetype count = 0;
+	for (qsizetype i = 0; i < rects.size(); ++i) {
 		const QRect r = rects[i].translated(offset);
-		const int top = r.top(), bottom = r.bottom() + 1, left = r.left(), right = r.right() + 1;
-		for (int y = top; y < bottom; ++y)
-			for (int x = left; x < right; ++x)
+		const qsizetype top = r.top(), bottom = r.bottom() + 1, left = r.left(), right = r.right() + 1;
+		for (qsizetype y = top; y < bottom; ++y)
+			for (qsizetype x = left; x < right; ++x)
 				res[count++] = QPoint(x, y);
 	}
 
@@ -182,9 +182,9 @@ QVector<QPoint> extractPixels(const QImage& mask, const QPoint& offset)
 {
 	QVector<QPoint> res;
 	res.reserve(1000);
-	for (int y = 0; y < mask.height(); ++y) {
+	for (qsizetype y = 0; y < mask.height(); ++y) {
 		const uchar* s = mask.scanLine(y);
-		for (int x = 0; x < mask.width(); ++x) {
+		for (qsizetype x = 0; x < mask.width(); ++x) {
 			if (monoValue(s, x))
 				res.push_back(QPoint(x, y) + offset);
 		}
@@ -202,14 +202,14 @@ static QPolygon extractPixels(const QLineF& l, bool all_pixels)
 	// special cases: vertical and horizontal lines
 	if (all_pixels) {
 		if (line.dx() == 0) {
-			int stepy = (line.dy() > 0 ? 1 : -1);
-			for (int y = line.y1(); y != line.y2(); y += stepy)
+			qsizetype stepy = (line.dy() > 0 ? 1 : -1);
+			for (qsizetype y = line.y1(); y != line.y2(); y += stepy)
 				res.push_back(QPoint(line.x1(), y));
 			return res;
 		}
 		else if (line.dy() == 0) {
-			int stepx = (line.dx() > 0 ? 1 : -1);
-			for (int x = line.x1(); x != line.x2(); x += stepx)
+			qsizetype stepx = (line.dx() > 0 ? 1 : -1);
+			for (qsizetype x = line.x1(); x != line.x2(); x += stepx)
 				res.push_back(QPoint(x, line.y1()));
 			return res;
 		}
@@ -226,14 +226,14 @@ static QPolygon extractPixels(const QLineF& l, bool all_pixels)
 	// loop on dx or dy
 	if (qAbs(line.dx()) > qAbs(line.dy())) {
 		// loop on dx
-		int stepx = (line.dx() > 0 ? 1 : -1);
-		for (int x = line.x1(); x != line.x2(); x += stepx)
+		qsizetype stepx = (line.dx() > 0 ? 1 : -1);
+		for (qsizetype x = line.x1(); x != line.x2(); x += stepx)
 			res.push_back(QPoint(x, qRound(x * a + b)));
 	}
 	else {
 		// loop on dy
-		int stepy = (line.dy() > 0 ? 1 : -1);
-		for (int y = line.y1(); y != line.y2(); y += stepy)
+		qsizetype stepy = (line.dy() > 0 ? 1 : -1);
+		for (qsizetype y = line.y1(); y != line.y2(); y += stepy)
 			res.push_back(QPoint(qRound((y - b) / a), y));
 	}
 
@@ -248,7 +248,7 @@ static QPolygon extractPixels(const QPolygonF& polygon)
 	if (polygon.size() == 1)
 		return res;
 
-	for (int i = 1; i < polygon.size(); ++i)
+	for (qsizetype i = 1; i < polygon.size(); ++i)
 		res += extractPixels(QLineF(polygon[i - 1], polygon[i]), true);
 
 	return res;
@@ -264,10 +264,10 @@ static QPolygon extractPixels(const QPolygonF& polygon)
 //  return res;
 //  }
 //
-//  for (int i = 1; i < polygon.size(); ++i)
+//  for (qsizetype i = 1; i < polygon.size(); ++i)
 //  {
 //  const QPolygon poly = extractPixels(QLineF(polygon[i - 1], polygon[i]), true);
-//  for (int p = 0; p < poly.size(); ++p)
+//  for (qsizetype p = 0; p < poly.size(); ++p)
 //  res.append(QRect(poly[p], QSize(1, 1)));
 //  }
 //
@@ -282,7 +282,7 @@ static QPolygon extractPixels(const QPolygonF& polygon)
 //  if(polygon.size() ==1)
 //  return res;
 //
-//  for(int i=1; i < polygon.size(); ++i)
+//  for(qsizetype i=1; i < polygon.size(); ++i)
 //  res +=  extractPixels(QLineF(polygon[i-1],polygon[i]),false);
 //
 //  return res;
@@ -302,7 +302,7 @@ static QPolygon extractPixels(const QPolygonF& polygon)
 //  if(bounding)
 //  bounding = QRect();
 //
-//  for(int i=0; i < tmp.size(); ++i)
+//  for(qsizetype i=0; i < tmp.size(); ++i)
 //  {
 //  res << extractContour(tmp[i]);
 //  if(bounding)
@@ -313,11 +313,11 @@ static QPolygon extractPixels(const QPolygonF& polygon)
 //  }
 #include <limits>
 
-// Same as int, but initialized to zero by default
+// Same as qsizetype, but initialized to zero by default
 struct Int
 {
-	int value;
-	Int(int value = 0)
+	qsizetype value;
+	Int(qsizetype value = 0)
 	  : value(value)
 	{
 	}
@@ -336,9 +336,9 @@ struct PixelPoint
 	bool operator<(const PixelPoint& other) const { return value < other.value; }
 };
 
-template<int InnerStride, class T>
+template<qsizetype InnerStride, class T>
 static VipShapeStatistics extractStats(const T* input,
-				       int OuterStride,
+				       qsizetype OuterStride,
 				       const QVector<QRect>& rects,
 				       const QPoint& img_offset,
 				       VipShapeStatistics::Statistics stats,
@@ -353,13 +353,13 @@ static VipShapeStatistics extractStats(const T* input,
 	std::vector<PixelPoint<T>> pixel_points;
 
 	// extract min, max, pixel count
-	for (int i = 0; i < rects.size(); ++i) {
+	for (qsizetype i = 0; i < rects.size(); ++i) {
 		const QRect r = rects[i];
-		const int top = r.top(), bottom = r.bottom(), left = r.left(), right = r.right();
+		const qsizetype top = r.top(), bottom = r.bottom(), left = r.left(), right = r.right();
 
-		for (int y = top; y <= bottom; ++y) {
+		for (qsizetype y = top; y <= bottom; ++y) {
 
-			for (int x = left; x <= right; ++x) {
+			for (qsizetype x = left; x <= right; ++x) {
 				const QPoint pt(x - img_offset.x(), y - img_offset.y());
 				const T value = input[pt.y() * OuterStride + pt.x() * InnerStride];
 				if (!vipIsNan(value)) {
@@ -389,7 +389,7 @@ static VipShapeStatistics extractStats(const T* input,
 	// compute quantiles bbox
 	if (bbox_quantiles.size()) {
 		std::sort(pixel_points.begin(), pixel_points.end());
-		for (int i = 0; i < bbox_quantiles.size(); ++i) {
+		for (qsizetype i = 0; i < bbox_quantiles.size(); ++i) {
 			double quantile = bbox_quantiles[i]; // value between 0 and 1
 			size_t pixels = (size_t)std::ceil(res.pixelCount * quantile);
 			if (!pixels) {
@@ -420,11 +420,11 @@ static VipShapeStatistics extractStats(const T* input,
 
 	// extract standard deviation
 	if (res.pixelCount && (stats & VipShapeStatistics::Std)) {
-		for (int i = 0; i < rects.size(); ++i) {
+		for (qsizetype i = 0; i < rects.size(); ++i) {
 			const QRect r = rects[i];
-			const int top = r.top(), bottom = r.bottom(), left = r.left(), right = r.right();
-			for (int y = top; y <= bottom; ++y)
-				for (int x = left; x <= right; ++x) {
+			const qsizetype top = r.top(), bottom = r.bottom(), left = r.left(), right = r.right();
+			for (qsizetype y = top; y <= bottom; ++y)
+				for (qsizetype x = left; x <= right; ++x) {
 					const QPoint pt(x - img_offset.x(), y - img_offset.y());
 					const T value = input[pt.y() * OuterStride + pt.x() * InnerStride];
 					if (!vipIsNan(value)) {
@@ -440,11 +440,11 @@ static VipShapeStatistics extractStats(const T* input,
 	// extract entropy
 	if (stats & VipShapeStatistics::Entropy && res.pixelCount) {
 		QMap<T, Int> values;
-		for (int i = 0; i < rects.size(); ++i) {
+		for (qsizetype i = 0; i < rects.size(); ++i) {
 			const QRect r = rects[i];
-			const int top = r.top(), bottom = r.bottom(), left = r.left(), right = r.right();
-			for (int y = top; y <= bottom; ++y)
-				for (int x = left; x <= right; ++x) {
+			const qsizetype top = r.top(), bottom = r.bottom(), left = r.left(), right = r.right();
+			for (qsizetype y = top; y <= bottom; ++y)
+				for (qsizetype x = left; x <= right; ++x) {
 					const QPoint pt(x - img_offset.x(), y - img_offset.y());
 					const T value = input[pt.y() * OuterStride + pt.x() * InnerStride];
 					if (!vipIsNan(value)) {
@@ -464,11 +464,11 @@ static VipShapeStatistics extractStats(const T* input,
 	// extract Kurtosis and Skewness
 	if (((stats & VipShapeStatistics::Kurtosis) || (stats & VipShapeStatistics::Skewness)) && res.pixelCount) {
 		ComputeStats c;
-		for (int i = 0; i < rects.size(); ++i) {
+		for (qsizetype i = 0; i < rects.size(); ++i) {
 			const QRect r = rects[i];
-			const int top = r.top(), bottom = r.bottom(), left = r.left(), right = r.right();
-			for (int y = top; y <= bottom; ++y)
-				for (int x = left; x <= right; ++x) {
+			const qsizetype top = r.top(), bottom = r.bottom(), left = r.left(), right = r.right();
+			for (qsizetype y = top; y <= bottom; ++y)
+				for (qsizetype x = left; x <= right; ++x) {
 					const QPoint pt(x - img_offset.x(), y - img_offset.y());
 					const T value = input[pt.y() * OuterStride + pt.x() * InnerStride];
 					if (!vipIsNan(value)) {
@@ -483,15 +483,15 @@ static VipShapeStatistics extractStats(const T* input,
 	return res;
 }
 
-template<int InnerStride, class T>
-static QVector<VipIntervalSample> extractHist(const T* input, int OuterStride, const QVector<QRect>& rects, int bins, const QPoint& img_offset)
+template<qsizetype InnerStride, class T>
+static VipIntervalSampleVector extractHist(const T* input, qsizetype OuterStride, const QVector<QRect>& rects, qsizetype bins, const QPoint& img_offset)
 {
 	std::vector<double> values;
-	for (int i = 0; i < rects.size(); ++i) {
+	for (qsizetype i = 0; i < rects.size(); ++i) {
 		const QRect r = rects[i];
-		const int top = r.top(), bottom = r.bottom(), left = r.left(), right = r.right();
-		for (int y = top; y <= bottom; ++y)
-			for (int x = left; x <= right; ++x) {
+		const qsizetype top = r.top(), bottom = r.bottom(), left = r.left(), right = r.right();
+		for (qsizetype y = top; y <= bottom; ++y)
+			for (qsizetype x = left; x <= right; ++x) {
 				const QPoint pt(x - img_offset.x(), y - img_offset.y());
 				const T value = input[pt.y() * OuterStride + pt.x() * InnerStride];
 				if (!vipIsNan(value)) {
@@ -500,24 +500,24 @@ static QVector<VipIntervalSample> extractHist(const T* input, int OuterStride, c
 			}
 	}
 
-	QVector<VipIntervalSample> res;
-	VipNDArrayTypeView<double> tmp(values.data(), vipVector((int)values.size()));
+	VipIntervalSampleVector res;
+	VipNDArrayTypeView<double> tmp(values.data(), vipVector((qsizetype)values.size()));
 	vipExtractHistogram(tmp, res, bins);
 	return res;
 }
 
-template<int InnerStride, class T>
-static QVector<VipIntervalSample> extractHist2(const T* input, int OuterStride, const QVector<QRect>& rects, int bins, const QPoint& img_offset)
+template<qsizetype InnerStride, class T>
+  static VipIntervalSampleVector extractHist2(const T* input, qsizetype OuterStride, const QVector<QRect>& rects, qsizetype bins, const QPoint& img_offset)
 {
 	double min = std::numeric_limits<double>::max();
 	double max = -std::numeric_limits<double>::max();
 
 	// find min and max
-	for (int i = 0; i < rects.size(); ++i) {
+	for (qsizetype i = 0; i < rects.size(); ++i) {
 		const QRect r = rects[i];
-		const int top = r.top(), bottom = r.bottom(), left = r.left(), right = r.right();
-		for (int y = top; y <= bottom; ++y)
-			for (int x = left; x <= right; ++x) {
+		const qsizetype top = r.top(), bottom = r.bottom(), left = r.left(), right = r.right();
+		for (qsizetype y = top; y <= bottom; ++y)
+			for (qsizetype x = left; x <= right; ++x) {
 				const QPoint pt(x - img_offset.x(), y - img_offset.y());
 				const T value = input[pt.y() * OuterStride + pt.x() * InnerStride];
 				if (!vipIsNan(value)) {
@@ -531,11 +531,11 @@ static QVector<VipIntervalSample> extractHist2(const T* input, int OuterStride, 
 
 	// add the pixels in a QMap
 	QMap<T, Int> values;
-	for (int i = 0; i < rects.size(); ++i) {
+	for (qsizetype i = 0; i < rects.size(); ++i) {
 		const QRect r = rects[i];
-		const int top = r.top(), bottom = r.bottom(), left = r.left(), right = r.right();
-		for (int y = top; y <= bottom; ++y)
-			for (int x = left; x <= right; ++x) {
+		const qsizetype top = r.top(), bottom = r.bottom(), left = r.left(), right = r.right();
+		for (qsizetype y = top; y <= bottom; ++y)
+			for (qsizetype x = left; x <= right; ++x) {
 				const QPoint pt(x - img_offset.x(), y - img_offset.y());
 				const T value = input[pt.y() * OuterStride + pt.x() * InnerStride];
 				if (!vipIsNan(value)) {
@@ -544,7 +544,7 @@ static QVector<VipIntervalSample> extractHist2(const T* input, int OuterStride, 
 			}
 	}
 	if (values.size() == 0)
-		return QVector<VipIntervalSample>();
+		return VipIntervalSampleVector();
 
 	// compute the different steps between each values
 
@@ -561,9 +561,9 @@ static QVector<VipIntervalSample> extractHist2(const T* input, int OuterStride, 
 		}
 
 		// now fill in the result vector
-		QVector<VipIntervalSample> res;
+		VipIntervalSampleVector res;
 		for (typename QMap<T, Int>::iterator it = values.begin(); it != values.end(); ++it) {
-			int count = it.value().value;
+			qsizetype count = it.value().value;
 			VipIntervalSample sample(count, VipInterval(it.key() - width / 2, it.key() + width / 2));
 			res.append(sample);
 		}
@@ -573,12 +573,12 @@ static QVector<VipIntervalSample> extractHist2(const T* input, int OuterStride, 
 		// initialize histogram
 		double width = (max - min) / bins;
 		double start = min;
-		QVector<VipIntervalSample> res(bins);
-		for (int i = 0; i < res.size(); ++i, start += width)
+		VipIntervalSampleVector res(bins);
+		for (qsizetype i = 0; i < res.size(); ++i, start += width)
 			res[i] = VipIntervalSample(0, VipInterval(start, start + width, VipInterval::ExcludeMaximum));
 
 		for (typename QMap<T, Int>::iterator it = values.begin(); it != values.end(); ++it) {
-			int index = std::floor((it.key() - min) / width);
+			qsizetype index = std::floor((it.key() - min) / width);
 			if (index == res.size())
 				--index;
 			res[index].value++;
@@ -588,12 +588,11 @@ static QVector<VipIntervalSample> extractHist2(const T* input, int OuterStride, 
 	}
 }
 
-template<int InnerStride, class T>
-static QVector<QPointF> extractPolyline(const T* input, int OuterStride, const QVector<QPoint>& pixels, const QPoint& img_offset)
+template<qsizetype InnerStride, class T>
+static VipPointVector extractPolyline(const T* input, qsizetype OuterStride, const QVector<QPoint>& pixels, const QPoint& img_offset)
 {
-	QVector<QPointF> res(pixels.size());
-
-	for (int i = 0; i < pixels.size(); ++i) {
+	VipPointVector res(pixels.size());
+	for (qsizetype i = 0; i < pixels.size(); ++i) {
 		const QPoint pt = pixels[i] - img_offset;
 		const T value = input[pt.y() * OuterStride + pt.x() * InnerStride];
 		if (!vipIsNan(value)) {
@@ -607,12 +606,12 @@ static QVector<QPointF> extractPolyline(const T* input, int OuterStride, const Q
 	return res;
 }
 
-static int findId(const QList<VipShape>& shapes, int id, int& insert_index)
+static qsizetype findId(const VipShapeList& shapes, qsizetype id, qsizetype& insert_index)
 {
 	if (id > 0) {
 		insert_index = shapes.size();
 
-		for (int i = 0; i < shapes.size(); ++i)
+		for (qsizetype i = 0; i < shapes.size(); ++i)
 			if (shapes[i].id() > id) {
 				insert_index = i;
 				return id;
@@ -626,10 +625,10 @@ static int findId(const QList<VipShape>& shapes, int id, int& insert_index)
 			return id;
 	}
 
-	int start_id = shapes.size() + 1;
+	qsizetype start_id = shapes.size() + 1;
 	insert_index = shapes.size();
 
-	for (int i = 0; i < shapes.size(); ++i)
+	for (qsizetype i = 0; i < shapes.size(); ++i)
 		if (shapes[i].id() != i + 1) {
 			start_id = i + 1;
 			insert_index = i;
@@ -657,7 +656,7 @@ public:
 	QPainterPath path;
 	Type type;
 	bool polygonBased;
-	int id;
+	qsizetype id;
 	QString group;
 	QRegion region;
 	QVector<QRect> rects;
@@ -745,7 +744,7 @@ VipShape VipShape::copy() const
 	shape.d_data->type = d_data->type;
 	shape.d_data->attributes = d_data->attributes;
 	// TEST: detach
-	shape.d_data->attributes.detach();
+	//shape.d_data->attributes.detach();
 	shape.d_data->region = d_data->region;
 	shape.d_data->rects = d_data->rects;
 	shape.d_data->polygonBased = d_data->polygonBased;
@@ -1115,10 +1114,10 @@ QVector<QRect> VipShape::fillRects() const
 	return res;
 }
 
-QVector<QPoint> VipShape::fillPixels(const QList<VipShape>& shapes)
+QVector<QPoint> VipShape::fillPixels(const VipShapeList& shapes)
 {
 	QRegion full_region;
-	for (int i = 0; i < shapes.size(); ++i) {
+	for (qsizetype i = 0; i < shapes.size(); ++i) {
 		full_region |= shapes[i].region();
 	}
 	QVector<QRect> rects(full_region.rectCount());
@@ -1126,10 +1125,10 @@ QVector<QPoint> VipShape::fillPixels(const QList<VipShape>& shapes)
 	return extractPixels(rects, QPoint(0, 0));
 }
 
-QVector<QRect> VipShape::fillRects(const QList<VipShape>& shapes)
+QVector<QRect> VipShape::fillRects(const VipShapeList& shapes)
 {
 	QRegion full_region;
-	for (int i = 0; i < shapes.size(); ++i) {
+	for (qsizetype i = 0; i < shapes.size(); ++i) {
 		full_region |= shapes[i].region();
 	}
 	QVector<QRect> rects(full_region.rectCount());
@@ -1165,7 +1164,7 @@ QRegion VipShape::region(QVector<QRect>* out_rects) const
 		else if (t == Polyline) {
 			QVector<QPoint> points = extractPixels(polyline());
 			rects = QVector<QRect>(points.size());
-			for (int i = 0; i < points.size(); ++i)
+			for (qsizetype i = 0; i < points.size(); ++i)
 				rects[i] = QRect(points[i].x(), points[i].y(), 1, 1);
 			region.setRects(rects.data(), rects.size());
 			rects.resize(region.rectCount());
@@ -1195,25 +1194,25 @@ QList<QPolygon> VipShape::outlines() const
 		p.addRegion(region());
 		p = p.simplified();
 		QList<QPolygonF> polygons = p.toFillPolygons();
-		for (int i = 0; i < polygons.size(); ++i)
+		for (qsizetype i = 0; i < polygons.size(); ++i)
 			res << polygons[i].toPolygon();
 	}
 
 	return res;
 }
 
-int VipShape::id() const
+qsizetype VipShape::id() const
 {
 	d_data->mutex.lockForRead();
-	int res = d_data->id;
+	qsizetype res = d_data->id;
 	d_data->mutex.unlock();
 	return res;
 }
 
-bool VipShape::setId(int id)
+bool VipShape::setId(qsizetype id)
 {
 	d_data->mutex.lockForRead();
-	int current_id = d_data->id;
+	qsizetype current_id = d_data->id;
 	const QString group = d_data->group;
 	d_data->mutex.unlock();
 
@@ -1300,7 +1299,7 @@ VipShapeStatistics VipShape::statistics(const QVector<QRect>& rects,
 
 	QRect bounding = bounding_rect;
 	if (bounding.isEmpty()) {
-		for (int i = 0; i < rects.size(); ++i)
+		for (qsizetype i = 0; i < rects.size(); ++i)
 			bounding |= rects[i];
 	}
 	if (bounding.isEmpty())
@@ -1350,18 +1349,18 @@ VipShapeStatistics VipShape::statistics(const VipNDArray& img, const QPoint& img
 	return statistics(rects, img, img_offset, bounding, buffer, stats, bbox_quantiles);
 }
 
-QVector<VipIntervalSample> VipShape::histogram(int bins, const QVector<QRect>& rects, const VipNDArray& img, const QPoint& img_offset, const QRect& bounding_rect, VipNDArray* tmp)
+VipIntervalSampleVector VipShape::histogram(qsizetype bins, const QVector<QRect>& rects, const VipNDArray& img, const QPoint& img_offset, const QRect& bounding_rect, VipNDArray* tmp)
 {
 	if (!img.canConvert<double>())
-		return QVector<VipIntervalSample>();
+		return VipIntervalSampleVector();
 
 	QRect bounding = bounding_rect;
 	if (bounding.isEmpty()) {
-		for (int i = 0; i < rects.size(); ++i)
+		for (qsizetype i = 0; i < rects.size(); ++i)
 			bounding |= rects[i];
 	}
 	if (bounding.isEmpty())
-		return QVector<VipIntervalSample>();
+		return VipIntervalSampleVector();
 
 	QRect image_rect(img_offset, QSize(img.shape(1), img.shape(0)));
 	bounding = bounding.united(image_rect);
@@ -1374,15 +1373,15 @@ QVector<VipIntervalSample> VipShape::histogram(int bins, const QVector<QRect>& r
 		*tmp = VipNDArray(QMetaType::Double, vipVector(bounding.height(), bounding.width()));
 
 	if (img.mid(vipVector(bounding.top() - img_offset.y(), bounding.left() - img_offset.x()), vipVector(bounding.height(), bounding.width())).convert(*tmp)) {
-		// QVector<VipIntervalSample> res;
+		// VipIntervalSampleVector res;
 		// vipExtractHistogram(*tmp, res, bins);
 		return extractHist<1>((const double*)tmp->data(), tmp->shape(1), rects, bins, bounding.topLeft());
 	}
 
-	return QVector<VipIntervalSample>();
+	return VipIntervalSampleVector();
 }
 
-QVector<VipIntervalSample> VipShape::histogram(int bins, const VipNDArray& img, const QPoint& img_offset, VipNDArray* buffer) const
+VipIntervalSampleVector VipShape::histogram(qsizetype bins, const VipNDArray& img, const QPoint& img_offset, VipNDArray* buffer) const
 {
 	QRect bounding;
 	const QVector<QRect> tmp = fillRects();
@@ -1390,16 +1389,16 @@ QVector<VipIntervalSample> VipShape::histogram(int bins, const VipNDArray& img, 
 	return histogram(bins, rects, img, img_offset, bounding, buffer);
 }
 
-QVector<QPointF> VipShape::polyline(const QVector<QPoint>& points, const VipNDArray& img, const QPoint& img_offset, const QRect& bounding_rect, VipNDArray* tmp)
+VipPointVector VipShape::polyline(const QVector<QPoint>& points, const VipNDArray& img, const QPoint& img_offset, const QRect& bounding_rect, VipNDArray* tmp)
 {
 	if (!img.canConvert<double>())
-		return QVector<QPointF>();
+		return VipPointVector();
 
 	QRect bounding = bounding_rect;
 	if (bounding.isEmpty())
 		bounding = QPolygon(points).boundingRect();
 	if (bounding.isEmpty())
-		return QVector<QPointF>();
+		return VipPointVector();
 
 	QRect image_rect(img_offset, QSize(img.shape(1), img.shape(0)));
 	bounding = bounding.united(image_rect);
@@ -1420,13 +1419,13 @@ QVector<QPointF> VipShape::polyline(const QVector<QPoint>& points, const VipNDAr
 	//  img.mid(vipVector(bounding.top() - img_offset.y(), bounding.left() - img_offset.x()), vipVector(bounding.height(), bounding.width())).convert(*tmp);
 	//  }
 
-	return QVector<QPointF>();
+	return VipPointVector();
 }
 
-QVector<QPointF> VipShape::polyline(const VipNDArray& img, const QPoint& img_offset, VipNDArray* buffer) const
+VipPointVector VipShape::polyline(const VipNDArray& img, const QPoint& img_offset, VipNDArray* buffer) const
 {
 	if (type() != Polyline)
-		return QVector<QPointF>();
+		return VipPointVector();
 
 	QRect bounding;
 	const QVector<QPoint> tmp = fillPixels();
@@ -1443,9 +1442,9 @@ bool VipShape::writeAttribute(const QVariant& value, const QVector<QPoint>& poin
 		return false;
 
 	QVariant v = value;
-	if (!v.convert(img.dataType()))
+	if (!v.convert(VIP_META(img.dataType())))
 		return false;
-	for (int i = 0; i < points.size(); ++i) {
+	for (qsizetype i = 0; i < points.size(); ++i) {
 		const QPoint pt = points[i] - img_offset;
 		img.setValue(vipVector(pt.y(), pt.x()), value);
 	}
@@ -1468,7 +1467,7 @@ bool VipShape::writeAttribute(const QString& attribute, VipNDArray& img, const Q
 	else
 		return false;
 
-	if (!value.canConvert(img.dataType()))
+	if (!value.canConvert(VIP_META(img.dataType())))
 		return false;
 
 	return writeAttribute(value, pixels, img, img_offset, bounding);
@@ -1481,7 +1480,7 @@ QVector<QPoint> VipShape::clip(const QVector<QPoint>& points, const QRect& rect,
 
 	QPoint img_offset = rect.topLeft();
 
-	for (int i = 0; i < points.size(); ++i) {
+	for (qsizetype i = 0; i < points.size(); ++i) {
 		const QPoint pt = points[i] - img_offset;
 		if (pt.x() >= 0 && pt.y() >= 0 && pt.x() < rect.width() && pt.y() < rect.height()) {
 			pixels.append(points[i]);
@@ -1516,7 +1515,7 @@ QVector<QRect> VipShape::clip(const QVector<QRect>& rects, const QRect& rect, QR
 	if (bounding)
 		*bounding = QRect();
 
-	for (int i = 0; i < rects.size(); ++i) {
+	for (qsizetype i = 0; i < rects.size(); ++i) {
 		const QRect r = rects[i] & rect;
 
 		if (!r.isEmpty()) {
@@ -1532,7 +1531,7 @@ QVector<QRect> VipShape::clip(const QVector<QRect>& rects, const QRect& rect, QR
 class VipSceneModel::PrivateData
 {
 public:
-	QMap<QString, QList<VipShape>> shapes;
+	QMap<QString, VipShapeList> shapes;
 	VipSceneModel* sceneModel;
 	VipShapeSignals* shapeSignals;
 	QVariantMap attributes;
@@ -1546,9 +1545,9 @@ public:
 
 	~PrivateData()
 	{
-		for (QMap<QString, QList<VipShape>>::iterator it = shapes.begin(); it != shapes.end(); ++it) {
-			QList<VipShape>& in = it.value();
-			for (int i = 0; i < in.size(); ++i)
+		for (QMap<QString, VipShapeList>::iterator it = shapes.begin(); it != shapes.end(); ++it) {
+			VipShapeList& in = it.value();
+			for (qsizetype i = 0; i < in.size(); ++i)
 				in[i].d_data->parent = QWeakPointer<PrivateData>();
 		}
 		shapeSignals->d_data = QSharedPointer<VipSceneModel::PrivateData>();
@@ -1562,11 +1561,11 @@ public:
 
 VipSceneModel VipSceneModel::null()
 {
-	return VipSceneModel(QSharedPointer<VipSceneModel::PrivateData>());
+	return VipSceneModel(QSharedPointer<PrivateData>());
 }
 
 VipSceneModel::VipSceneModel()
-  : d_data(new VipSceneModel::PrivateData())
+  : d_data(new PrivateData())
 {
 	d_data->sceneModel = this;
 	d_data->shapeSignals->d_data = d_data;
@@ -1577,7 +1576,7 @@ VipSceneModel::VipSceneModel(const VipSceneModel& other)
 {
 }
 
-VipSceneModel::VipSceneModel(QSharedPointer<VipSceneModel::PrivateData> data)
+VipSceneModel::VipSceneModel(const QSharedPointer<PrivateData> &data)
   : d_data(data)
 {
 }
@@ -1602,7 +1601,7 @@ bool VipSceneModel::operator==(const VipSceneModel& other) const
 
 void VipSceneModel::clear()
 {
-	for (QMap<QString, QList<VipShape>>::const_iterator it = d_data->shapes.begin(); it != d_data->shapes.end(); ++it)
+	for (QMap<QString, VipShapeList>::const_iterator it = d_data->shapes.begin(); it != d_data->shapes.end(); ++it)
 		Q_EMIT shapeSignals()->groupRemoved(it.key());
 
 	d_data->shapes.clear();
@@ -1612,11 +1611,11 @@ void VipSceneModel::clear()
 VipSceneModel VipSceneModel::copy() const
 {
 	VipSceneModel model;
-	for (QMap<QString, QList<VipShape>>::const_iterator it = d_data->shapes.begin(); it != d_data->shapes.end(); ++it) {
-		QList<VipShape>& out = model.d_data->shapes[it.key()];
-		const QList<VipShape>& in = it.value();
+	for (QMap<QString, VipShapeList>::const_iterator it = d_data->shapes.begin(); it != d_data->shapes.end(); ++it) {
+		VipShapeList& out = model.d_data->shapes[it.key()];
+		const VipShapeList& in = it.value();
 
-		for (int i = 0; i < in.size(); ++i) {
+		for (qsizetype i = 0; i < in.size(); ++i) {
 			out.append(in[i].copy());
 			out.back().d_data->parent = model.d_data;
 		}
@@ -1628,9 +1627,9 @@ VipSceneModel VipSceneModel::copy() const
 void VipSceneModel::transform(const QTransform& tr)
 {
 	shapeSignals()->blockSignals(true);
-	for (QMap<QString, QList<VipShape>>::iterator it = d_data->shapes.begin(); it != d_data->shapes.end(); ++it) {
-		QList<VipShape>& in = it.value();
-		for (int i = 0; i < in.size(); ++i) {
+	for (QMap<QString, VipShapeList>::iterator it = d_data->shapes.begin(); it != d_data->shapes.end(); ++it) {
+		VipShapeList& in = it.value();
+		for (qsizetype i = 0; i < in.size(); ++i) {
 			in[i].transform(tr);
 		}
 	}
@@ -1646,12 +1645,12 @@ VipSceneModel& VipSceneModel::add(const QString& group, const VipShape& shape)
 	if (sh.parent())
 		sh.parent().remove(sh);
 
-	QList<VipShape>& shapes = d_data->shapes[group];
+	VipShapeList& shapes = d_data->shapes[group];
 	if (shapes.isEmpty())
 		Q_EMIT shapeSignals()->groupAdded(group);
 
 	if (shapes.indexOf(sh) < 0) {
-		int index;
+		qsizetype index;
 		sh.d_data->id = findId(shapes, sh.id(), index);
 		sh.d_data->parent = d_data;
 		sh.d_data->group = group;
@@ -1662,11 +1661,11 @@ VipSceneModel& VipSceneModel::add(const QString& group, const VipShape& shape)
 	return *this;
 }
 
-VipSceneModel& VipSceneModel::add(const QString& group, const QList<VipShape>& shapes)
+VipSceneModel& VipSceneModel::add(const QString& group, const VipShapeList& shapes)
 {
 	bool empty_group = d_data->shapes.find(group) == d_data->shapes.end();
 	shapeSignals()->blockSignals(true);
-	for (int i = 0; i < shapes.size(); ++i)
+	for (qsizetype i = 0; i < shapes.size(); ++i)
 		this->add(group, shapes[i]);
 	shapeSignals()->blockSignals(false);
 
@@ -1676,12 +1675,12 @@ VipSceneModel& VipSceneModel::add(const QString& group, const QList<VipShape>& s
 	return *this;
 }
 
-VipSceneModel& VipSceneModel::add(const QList<VipShape>& shapes)
+VipSceneModel& VipSceneModel::add(const VipShapeList& shapes)
 {
 	QSet<QString> new_groups;
 
 	shapeSignals()->blockSignals(true);
-	for (int i = 0; i < shapes.size(); ++i) {
+	for (qsizetype i = 0; i < shapes.size(); ++i) {
 		if (d_data->shapes.find(shapes[i].group()) == d_data->shapes.end())
 			new_groups.insert(shapes[i].group());
 		this->add(shapes[i]);
@@ -1695,9 +1694,9 @@ VipSceneModel& VipSceneModel::add(const QList<VipShape>& shapes)
 	return *this;
 }
 
-bool VipSceneModel::add(const VipShape& shape, int id)
+bool VipSceneModel::add(const VipShape& shape, qsizetype id)
 {
-	QMap<QString, QList<VipShape>>::iterator it = d_data->shapes.find(shape.group());
+	QMap<QString, VipShapeList>::iterator it = d_data->shapes.find(shape.group());
 	if (it != d_data->shapes.end()) {
 		if (it.value().indexOf(shape) >= 0)
 			// already there
@@ -1738,9 +1737,9 @@ VipSceneModel& VipSceneModel::reset(const VipSceneModel& other)
 	model.d_data->shapes.clear();
 
 	// set the shape parent
-	for (QMap<QString, QList<VipShape>>::const_iterator it = d_data->shapes.begin(); it != d_data->shapes.end(); ++it) {
-		const QList<VipShape> shs = it.value();
-		for (int i = 0; i < shs.size(); ++i) {
+	for (QMap<QString, VipShapeList>::const_iterator it = d_data->shapes.begin(); it != d_data->shapes.end(); ++it) {
+		const VipShapeList shs = it.value();
+		for (qsizetype i = 0; i < shs.size(); ++i) {
 			VipShape tmp(shs[i]);
 			tmp.d_data->parent = d_data;
 		}
@@ -1782,18 +1781,18 @@ VipSceneModel& VipSceneModel::add(const VipSceneModel& other)
 
 	QSet<QString> new_groups;
 	QStringList groups = other.groups();
-	for (int i = 0; i < groups.size(); ++i) {
+	for (qsizetype i = 0; i < groups.size(); ++i) {
 		const QString group = groups[i];
 
 		if (d_data->shapes.find(group) == d_data->shapes.end())
 			new_groups.insert(group);
 
-		QList<VipShape>& this_shapes = d_data->shapes[group];
-		const QList<VipShape> other_shapes = other.shapes(group);
+		VipShapeList& this_shapes = d_data->shapes[group];
+		const VipShapeList other_shapes = other.shapes(group);
 
-		for (int s = 0; s < other_shapes.size(); ++s) {
+		for (qsizetype s = 0; s < other_shapes.size(); ++s) {
 			VipShape sh = other_shapes[s];
-			int index;
+			qsizetype index;
 			sh.d_data->id = findId(this_shapes, sh.id(), index);
 			sh.d_data->parent = d_data;
 			sh.d_data->group = group;
@@ -1808,7 +1807,7 @@ VipSceneModel& VipSceneModel::add(const VipSceneModel& other)
 
 	VipSceneModel model(other);
 	model.d_data->shapes.clear();
-	for (int i = 0; i < groups.size(); ++i)
+	for (qsizetype i = 0; i < groups.size(); ++i)
 		Q_EMIT model.shapeSignals()->groupRemoved(groups[i]);
 
 	Q_EMIT model.shapeSignals()->sceneModelChanged(model);
@@ -1818,7 +1817,7 @@ VipSceneModel& VipSceneModel::add(const VipSceneModel& other)
 
 VipSceneModel& VipSceneModel::remove(const VipShape& shape)
 {
-	QMap<QString, QList<VipShape>>::iterator it = d_data->shapes.find(shape.group());
+	QMap<QString, VipShapeList>::iterator it = d_data->shapes.find(shape.group());
 	if (it != d_data->shapes.end()) {
 		if (it.value().removeOne(shape)) {
 			shape.d_data->parent = QWeakPointer<PrivateData>();
@@ -1838,8 +1837,8 @@ VipSceneModel& VipSceneModel::remove(const VipShapeList& shapes)
 	if (shapes.isEmpty())
 		return *this;
 	QSet<QString> groups;
-	for (int i = 0; i < shapes.size(); ++i) {
-		QMap<QString, QList<VipShape>>::iterator it = d_data->shapes.find(shapes[i].group());
+	for (qsizetype i = 0; i < shapes.size(); ++i) {
+		QMap<QString, VipShapeList>::iterator it = d_data->shapes.find(shapes[i].group());
 		if (it.value().removeOne(shapes[i])) {
 			shapes[i].d_data->parent = QWeakPointer<PrivateData>();
 			if (it.value().isEmpty()) {
@@ -1857,7 +1856,7 @@ VipSceneModel& VipSceneModel::remove(const VipShapeList& shapes)
 
 VipSceneModel& VipSceneModel::removeGroup(const QString& group)
 {
-	QMap<QString, QList<VipShape>>::iterator it = d_data->shapes.find(group);
+	QMap<QString, VipShapeList>::iterator it = d_data->shapes.find(group);
 	if (it != d_data->shapes.end()) {
 		d_data->shapes.erase(it);
 
@@ -1869,28 +1868,28 @@ VipSceneModel& VipSceneModel::removeGroup(const QString& group)
 
 bool VipSceneModel::hasGroup(const QString& group)
 {
-	QMap<QString, QList<VipShape>>::iterator it = d_data->shapes.find(group);
+	QMap<QString, VipShapeList>::iterator it = d_data->shapes.find(group);
 	return (it != d_data->shapes.end());
 }
 
-int VipSceneModel::shapeCount(const QString& group) const
+qsizetype VipSceneModel::shapeCount(const QString& group) const
 {
-	QMap<QString, QList<VipShape>>::iterator it = d_data->shapes.find(group);
+	QMap<QString, VipShapeList>::iterator it = d_data->shapes.find(group);
 	if (it != d_data->shapes.end())
 		return it.value().size();
 	return 0;
 }
 
-int VipSceneModel::shapeCount() const
+qsizetype VipSceneModel::shapeCount() const
 {
-	int count = 0;
-	for (QMap<QString, QList<VipShape>>::iterator it = d_data->shapes.begin(); it != d_data->shapes.end(); ++it) {
+	qsizetype count = 0;
+	for (QMap<QString, VipShapeList>::iterator it = d_data->shapes.begin(); it != d_data->shapes.end(); ++it) {
 		count += it.value().size();
 	}
 	return count;
 }
 
-int VipSceneModel::groupCount() const
+qsizetype VipSceneModel::groupCount() const
 {
 	return d_data->shapes.size();
 }
@@ -1900,28 +1899,28 @@ QStringList VipSceneModel::groups() const
 	return d_data->shapes.keys();
 }
 
-int VipSceneModel::indexOf(const QString& group, const VipShape& sh) const
+qsizetype VipSceneModel::indexOf(const QString& group, const VipShape& sh) const
 {
-	QMap<QString, QList<VipShape>>::iterator it = d_data->shapes.find(group);
+	QMap<QString, VipShapeList>::iterator it = d_data->shapes.find(group);
 	if (it != d_data->shapes.end())
 		return it.value().indexOf(sh);
 	return -1;
 }
 
-VipShape VipSceneModel::at(const QString& group, int index) const
+VipShape VipSceneModel::at(const QString& group, qsizetype index) const
 {
-	QMap<QString, QList<VipShape>>::iterator it = d_data->shapes.find(group);
+	QMap<QString, VipShapeList>::iterator it = d_data->shapes.find(group);
 	if (it != d_data->shapes.end())
 		return it.value()[index];
 	return VipShape();
 }
 
-VipShape VipSceneModel::find(const QString& group, int id) const
+VipShape VipSceneModel::find(const QString& group, qsizetype id) const
 {
-	QMap<QString, QList<VipShape>>::iterator it = d_data->shapes.find(group);
+	QMap<QString, VipShapeList>::iterator it = d_data->shapes.find(group);
 	if (it != d_data->shapes.end()) {
-		const QList<VipShape> shapes = it.value();
-		for (int i = 0; i < shapes.size(); ++i)
+		const VipShapeList shapes = it.value();
+		for (qsizetype i = 0; i < shapes.size(); ++i)
 			if (shapes[i].id() == id)
 				return shapes[i];
 	}
@@ -1937,35 +1936,35 @@ VipShape VipSceneModel::find(const QString& path) const
 	return find(lst[0], lst[1].toInt());
 }
 
-QList<VipShape> VipSceneModel::shapes(const QString& group) const
+VipShapeList VipSceneModel::shapes(const QString& group) const
 {
-	QMap<QString, QList<VipShape>>::iterator it = d_data->shapes.find(group);
+	QMap<QString, VipShapeList>::iterator it = d_data->shapes.find(group);
 	if (it != d_data->shapes.end())
 		return it.value();
-	return QList<VipShape>();
+	return VipShapeList();
 }
 
-QList<VipShape> VipSceneModel::shapes() const
+VipShapeList VipSceneModel::shapes() const
 {
-	QList<VipShape> res;
-	for (QMap<QString, QList<VipShape>>::iterator it = d_data->shapes.begin(); it != d_data->shapes.end(); ++it) {
+	VipShapeList res;
+	for (QMap<QString, VipShapeList>::iterator it = d_data->shapes.begin(); it != d_data->shapes.end(); ++it) {
 		res << it.value();
 	}
 	return res;
 }
 
-QMap<QString, QList<VipShape>> VipSceneModel::groupShapes() const
+QMap<QString, VipShapeList> VipSceneModel::groupShapes() const
 {
 	return d_data->shapes;
 }
 
-// QList<VipShape> VipSceneModel::selectedShapes() const
+// VipShapeList VipSceneModel::selectedShapes() const
 //  {
-//  QList<VipShape> res;
-//  for(QMap<QString, QList<VipShape> >::const_iterator it = d_data->shapes.begin(); it != d_data->shapes.end(); ++it)
+//  VipShapeList res;
+//  for(QMap<QString, VipShapeList >::const_iterator it = d_data->shapes.begin(); it != d_data->shapes.end(); ++it)
 //  {
-//  const QList<VipShape> & in = it.value();
-//  for(int i=0; i < in.size(); ++i)
+//  const VipShapeList & in = it.value();
+//  for(qsizetype i=0; i < in.size(); ++i)
 //  if(in[i].isSelected())
 //  res.append(in[i]);
 //  }
@@ -1975,9 +1974,9 @@ QMap<QString, QList<VipShape>> VipSceneModel::groupShapes() const
 QPainterPath VipSceneModel::shape() const
 {
 	QPainterPath res;
-	for (QMap<QString, QList<VipShape>>::const_iterator it = d_data->shapes.begin(); it != d_data->shapes.end(); ++it) {
-		const QList<VipShape>& in = it.value();
-		for (int i = 0; i < in.size(); ++i) {
+	for (QMap<QString, VipShapeList>::const_iterator it = d_data->shapes.begin(); it != d_data->shapes.end(); ++it) {
+		const VipShapeList& in = it.value();
+		for (qsizetype i = 0; i < in.size(); ++i) {
 			res |= in[i].shape();
 		}
 	}
@@ -1987,9 +1986,9 @@ QPainterPath VipSceneModel::shape() const
 QRectF VipSceneModel::boundingRect() const
 {
 	QRectF res;
-	for (QMap<QString, QList<VipShape>>::const_iterator it = d_data->shapes.begin(); it != d_data->shapes.end(); ++it) {
-		const QList<VipShape>& in = it.value();
-		for (int i = 0; i < in.size(); ++i) {
+	for (QMap<QString, VipShapeList>::const_iterator it = d_data->shapes.begin(); it != d_data->shapes.end(); ++it) {
+		const VipShapeList& in = it.value();
+		for (qsizetype i = 0; i < in.size(); ++i) {
 			res |= in[i].boundingRect();
 		}
 	}
@@ -2053,20 +2052,20 @@ VipSceneModel VipShapeSignals::sceneModel() const
 	return VipSceneModel(QSharedPointer<VipSceneModel::PrivateData>());
 }
 
-int vipShapeCount()
+qsizetype vipShapeCount()
 {
 	return -1; // shape_count;
 }
 
-int vipSceneModelCount()
+qsizetype vipSceneModelCount()
 {
 	return -1; // sm_count;
 }
 
-static int reg_QPainterPath()
+static qsizetype reg_QPainterPath()
 {
 	qRegisterMetaTypeStreamOperators<QPainterPath>("QPainterPath");
 	return 0;
 }
 
-static int _reg_QPainterPath = reg_QPainterPath();
+static qsizetype _reg_QPainterPath = reg_QPainterPath();
