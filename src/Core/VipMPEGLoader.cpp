@@ -516,7 +516,7 @@ bool VideoDecoder::MoveNextFrame()
 	}*/
 
 	// Convert YUV->DRGBPixel
-	if (pFrame->data) {
+	if (pFrame->data[0]) {
 		if (pCodecCtx->pix_fmt != AV_PIX_FMT_GRAY16LE && pCodecCtx->pix_fmt != AV_PIX_FMT_GRAY16BE) {
 			sws_scale(pSWSCtx, pFrame->data, pFrame->linesize, 0, pCodecCtx->height, pFrameRGB->data, pFrameRGB->linesize);
 			toRGB(pFrameRGB);
@@ -637,7 +637,7 @@ void VideoDecoder::SeekFrame(qint64 pos)
 		}
 	}
 	// Convert YUV -> RGB
-	if (pFrame->data) {
+	if (pFrame->data[0]) {
 		if (pCodecCtx->pix_fmt != AV_PIX_FMT_GRAY16LE && pCodecCtx->pix_fmt != AV_PIX_FMT_GRAY16BE) {
 			sws_scale(pSWSCtx, pFrame->data, pFrame->linesize, 0, pCodecCtx->height, pFrameRGB->data, pFrameRGB->linesize);
 			toRGB(pFrameRGB);
