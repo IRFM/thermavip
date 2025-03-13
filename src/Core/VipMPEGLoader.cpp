@@ -261,9 +261,9 @@ void VideoDecoder::Open(const std::string& name, AVInputFormat* iformat, AVDicti
 	// Find the first video stream
 	videoStream = -1;
 
-#define XSTR(x) STR(x)
-#define STR(x) #x
-#pragma message "LIBAVFORMAT_VERSION_MAJOR: " XSTR(LIBAVFORMAT_VERSION_MAJOR)
+//#define XSTR(x) STR(x)
+//#define STR(x) #x
+//#pragma message "LIBAVFORMAT_VERSION_MAJOR: " XSTR(LIBAVFORMAT_VERSION_MAJOR)
 
 #if LIBAVFORMAT_VERSION_MAJOR > 58
 	for (unsigned int i = 0; i < pFormatCtx->nb_streams; i++) {
