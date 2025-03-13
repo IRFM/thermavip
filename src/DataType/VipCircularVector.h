@@ -1654,11 +1654,7 @@ QDataStream& operator>>(QDataStream& s, VipCircularVector<T, O>& c)
 	s >> size;
 	if (s.status() != QDataStream::Ok)
 		return s;
-	qsizetype n = size;
-	if (size != n || size < 0) {
-		s.setStatus(QDataStream::SizeLimitExceeded);
-		return s;
-	}
+	qsizetype n = (qsizetype)size;
 	c.reserve(n);
 	for (qsizetype i = 0; i < n; ++i) {
 		T t;
