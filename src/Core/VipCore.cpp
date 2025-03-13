@@ -34,12 +34,14 @@
 #include "VipDataType.h"
 #include "VipSceneModel.h"
 #include "VipUniqueId.h"
+#include "VipHash.h"
 
 #include <QMetaType>
 #include <QSet>
 #include <QStandardPaths>
 #include <QTextStream>
 
+#include <unordered_map>
 #include <thread>
 
 #if QT_VERSION > QT_VERSION_CHECK(6, 0, 0)
@@ -958,7 +960,11 @@ static int add_post_routine()
 }
 static int _add_post_routine = add_post_routine();
 
-static QMap<QString, VipFunctionObject> _functions;
+struct QStringHasher
+{
+	size_t operator()(const QString& str) const noexcept { return vipHashBytesKomihash(str.data(), str.size() * sizeof(QChar)); }
+};
+static std::unordered_map<QString, VipFunctionObject, QStringHasher> _functions;
 
 bool VipFunctionObject::isValid() const
 {
@@ -987,17 +993,21 @@ bool vipRegisterFunction(const VipFunctionObject::function_type& fun, const QStr
 	return false;
 }
 
-VipFunctionObject vipFindFunction(const QString& name)
+const VipFunctionObject &vipFindFunction(const QString& name)
 {
-	QMap<QString, VipFunctionObject>::const_iterator it = _functions.find(name);
+	static const VipFunctionObject null_fun;
+	auto it = _functions.find(name);
 	if (it != _functions.end())
-		return it.value();
-	return VipFunctionObject();
+		return it->second;
+	return null_fun;
 }
 
 QList<VipFunctionObject> vipAllFunctions()
 {
-	return _functions.values();
+	QList<VipFunctionObject> res;
+	for (const std::pair<QString, VipFunctionObject>& p : _functions)
+		res.push_back(p.second);
+	return res;
 }
 
 typedef void (*archive_fun)(VipArchive&);

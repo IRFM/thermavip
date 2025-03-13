@@ -5,7 +5,7 @@ if (WIN32)
 	file(GLOB SHARED_LIBS LIST_DIRECTORIES true  "${HDF5_BIN}/*.dll" )
 
 	foreach(dll ${SHARED_LIBS} )
-		MESSAGE("Found file ${dll}, copy to ${CMAKE_INSTALL_PREFIX}/thermavip")
+		#MESSAGE("Found file ${dll}, copy to ${CMAKE_INSTALL_PREFIX}/thermavip")
 		file(COPY ${dll} DESTINATION ${CMAKE_INSTALL_PREFIX}/thermavip)
 	endforeach()
 endif()

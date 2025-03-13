@@ -352,10 +352,16 @@ Q_DECLARE_METATYPE(VipErrorData)
 VIP_CORE_EXPORT QDataStream& operator<<(QDataStream& stream, const VipErrorData& data);
 VIP_CORE_EXPORT QDataStream& operator>>(QDataStream& stream, VipErrorData& data);
 
-/// Function object that can be registered with #vipRegisterFunction.
+/// @brief Function object that can be registered with vipRegisterFunction().
+/// A VipFunctionObject is registered with vipRegisterFunction() and can
+/// be retrieved with vipFindFunction().
+/// 
+/// Registered VipFunctionObject can be called from Python using :
+/// 'builtins.internal.call_internal_func(name, args, kwargs)'
+/// 
 struct VIP_CORE_EXPORT VipFunctionObject
 {
-	typedef std::function<QVariant(const QVariantList&)> function_type;
+	using function_type = std::function<QVariant(const QVariantList&, const QVariantMap & )>;
 
 	QString name;
 	QString description;
@@ -363,11 +369,11 @@ struct VIP_CORE_EXPORT VipFunctionObject
 	bool mainThread; // function should be executed in main thread
 
 	VipFunctionObject() {}
-	VipFunctionObject(const function_type& _fun, const QString& _name, const QString& _descr = QString())
+	VipFunctionObject(const function_type& _fun, const QString& _name, const QString& _descr = QString(), bool _main_thread = true)
 	  : name(_name)
 	  , description(_descr)
 	  , function(_fun)
-	  , mainThread(true)
+	  , mainThread(_main_thread)
 	{
 	}
 
@@ -388,10 +394,76 @@ Q_DECLARE_METATYPE(VipFunctionObject)
 VIP_CORE_EXPORT bool vipRegisterFunction(const VipFunctionObject& fun);
 VIP_CORE_EXPORT bool vipRegisterFunction(const VipFunctionObject::function_type& fun, const QString& name, const QString& description = QString(), bool mainThread = true);
 
-/// Find a function registered with #vipRegisterFunction using its name.
-VIP_CORE_EXPORT VipFunctionObject vipFindFunction(const QString& name);
+/// Find a function registered with vipRegisterFunction() using its name.
+/// Returns an invalid function object on error.
+VIP_CORE_EXPORT const VipFunctionObject &vipFindFunction(const QString& name);
 /// Returns all function objects registered with #vipRegisterFunction.
 VIP_CORE_EXPORT QList<VipFunctionObject> vipAllFunctions();
+
+namespace detail
+{
+	template<class Traits>
+	struct Getter
+	{
+		const QVariantList& args;
+		template<size_t Pos>
+		auto get()
+		{
+			using elem = typename Traits::template element<Pos>;
+			using ret = typename elem::type;
+			using type = typename std::decay<ret>::type;
+			return args[Pos].value<type>();
+		}
+	};
+
+	template<class Ret>
+	struct CallFunction
+	{
+		template<class Fun>
+		static QVariant call(Fun f, const QVariantList& args, const QVariantMap& kwargs)
+		{
+			using traits = VipFunctionTraits<Fun>;
+			auto _args = args;
+			if (args.size() != traits::nargs)
+				_args.push_back( QVariant::fromValue(kwargs));
+			return QVariant::fromValue(vipApply(f, Getter<traits>{ _args }));
+		}
+	};
+	template<>
+	struct CallFunction<void>
+	{
+		template<class Fun>
+		static QVariant call(Fun f, const QVariantList& args, const QVariantMap& kwargs)
+		{
+			using traits = VipFunctionTraits<Fun>;
+			auto _args = args;
+			if (args.size() != traits::nargs)
+				_args.push_back(QVariant::fromValue(kwargs));
+			vipApply(f, Getter<traits>{ _args });
+			return QVariant();
+		}
+	};
+}
+
+/// @brief Convert callable object to a VipFunctionObject
+/// All fun arguments are passed through the first QVariantList parameter,
+/// except if the last function argument is of type QVariantMap. In this case,
+/// the last argument is passed to the QVariantMap argument of VipFunctionObject.
+/// 
+template<class Fun>
+VipFunctionObject vipMakeFunctionObject(Fun fun, const QString name, const QString& descr = QString(), bool mainThread = true)
+{
+	using traits = VipFunctionTraits<Fun>;
+	using ret = typename traits::return_type;
+
+	VipFunctionObject res;
+	res.function = [fun](const QVariantList& args, const QVariantMap& kwargs) { return detail::CallFunction<ret>::call(fun, args, kwargs); };
+	res.name = name;
+	res.description = descr;
+	res.mainThread = mainThread;
+	return res;
+}
+
 
 /// \internal Add a serialize and deserialize function that will be used to save/load specific settings from the session file.
 /// This is only used in Thermavip SDK, plugins have their own way to manage serialization.

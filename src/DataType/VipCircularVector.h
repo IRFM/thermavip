@@ -221,7 +221,7 @@ namespace detail
 	{
 	public:
 		COWPointer() noexcept {}
-		~COWPointer()
+		~COWPointer() noexcept
 		{
 			if (d && !d->deref())
 				delete d;
@@ -300,7 +300,7 @@ namespace detail
 	{
 	public:
 		COWPointer() noexcept {}
-		~COWPointer()
+		~COWPointer() noexcept
 		{
 			if (d)
 				delete d;
@@ -330,16 +330,16 @@ namespace detail
 			std::swap(d, o.d);
 			return *this;
 		}
-		void reset(T* od)
+		void reset(T* od) noexcept
 		{
 			if (d)
 				delete d;
 			d = od;
 		}
-		VIP_ALWAYS_INLINE void detach() {}
-		VIP_ALWAYS_INLINE T* operator->() { return d; }
+		VIP_ALWAYS_INLINE void detach() noexcept {}
+		VIP_ALWAYS_INLINE T* operator->() noexcept { return d; }
 		VIP_ALWAYS_INLINE const T* operator->() const noexcept { return d; }
-		VIP_ALWAYS_INLINE T* data() { return d; }
+		VIP_ALWAYS_INLINE T* data() noexcept { return d; }
 		VIP_ALWAYS_INLINE const T* data() const noexcept { return d; }
 		VIP_ALWAYS_INLINE const T* constData() const noexcept { return d; }
 		VIP_ALWAYS_INLINE operator bool() const noexcept { return d != nullptr; }
@@ -1180,7 +1180,7 @@ class VipCircularVector
 	VIP_ALWAYS_INLINE const Data* constData() const noexcept { return d_data.constData(); }
 	VIP_ALWAYS_INLINE const Data* data() const noexcept { return d_data.data(); }
 	VIP_ALWAYS_INLINE Data* dataNoDetach() noexcept { return const_cast<Data*>(constData()); }
-	VIP_ALWAYS_INLINE Data* data() noexcept { return d_data.data(); }
+	VIP_ALWAYS_INLINE Data* data() { return d_data.data(); }
 	VIP_ALWAYS_INLINE bool full() const noexcept { return !d_data || d_data->size == d_data->capacity; }
 
 	Data* adjust_capacity_for_size(qsizetype size, bool allow_shrink = false)
@@ -1401,10 +1401,10 @@ public:
 	VIP_ALWAYS_INLINE T& first() noexcept { return d_data->front(); }
 	VIP_ALWAYS_INLINE const T& first() const noexcept { return d_data->front(); }
 
-	VIP_ALWAYS_INLINE T& back() noexcept { return d_data->front(); }
-	VIP_ALWAYS_INLINE const T& back() const noexcept { return d_data->front(); }
-	VIP_ALWAYS_INLINE T& last() noexcept { return d_data->front(); }
-	VIP_ALWAYS_INLINE const T& last() const noexcept { return d_data->front(); }
+	VIP_ALWAYS_INLINE T& back() noexcept { return d_data->back(); }
+	VIP_ALWAYS_INLINE const T& back() const noexcept { return d_data->back(); }
+	VIP_ALWAYS_INLINE T& last() noexcept { return d_data->back(); }
+	VIP_ALWAYS_INLINE const T& last() const noexcept { return d_data->back(); }
 
 	VIP_ALWAYS_INLINE iterator begin() noexcept { return iterator(data(), 0); }
 	VIP_ALWAYS_INLINE const_iterator begin() const noexcept { return const_iterator(data(), 0); }

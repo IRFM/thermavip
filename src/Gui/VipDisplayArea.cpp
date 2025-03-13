@@ -65,6 +65,10 @@
 #include "VipH5Archive.h"
 #endif
 
+#ifdef VIP_WITH_PYTHON
+#include "VipPythonManager.h"
+#endif
+
 #include <QApplication>
 #include <QBoxLayout>
 #include <QCloseEvent>
@@ -3736,7 +3740,10 @@ void VipMainWindow::init()
 	this->addDockWidget(Qt::LeftDockWidgetArea, vipGetVTKPlayerToolWidget(this));
 #endif
 
-	
+#ifdef VIP_WITH_PYTHON
+	VipPythonManager::instance();
+#endif
+
 	// Add shortcuts
 	VipShortcutsHelper::registerShorcut("Open files...", [this]() { this->openFiles(); });
 	VipShortcutsHelper::registerShorcut("Open directory...", [this]() { this->openDir(); });
@@ -3855,7 +3862,15 @@ bool VipMainWindow::saveSession(VipArchive& arch, int session_type, int session_
 		arch.content("screen", screen);
 		arch.content("DirectoryBrowser", vipGetDirectoryBrowser());
 		arch.content("LogConsole", vipGetConsoleWidget());
+
+#ifdef VIP_WITH_PYTHON
+		arch.start("Python");
+		VipPythonManager::instance()->save(arch);
+		arch.end();
+#endif
+
 	}
+
 
 	if ((session_content & Plugins) && session_type == MainWindow) {
 		// save the plugins
@@ -4072,6 +4087,17 @@ bool VipMainWindow::loadSessionShowProgress(VipArchive& arch, VipProgress* progr
 		}
 
 		arch.content("LogConsole", vipGetConsoleWidget());
+
+#ifdef VIP_WITH_PYTHON
+		arch.save();
+		if (arch.start("Python")) {
+			VipPythonManager::instance()->restore(arch);
+			arch.end();
+		}
+		else
+			arch.restore();
+#endif
+
 	}
 
 	// load plugins

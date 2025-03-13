@@ -93,6 +93,30 @@ private:
 	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
+
+/// @brief Edit a data which either a 2D array manually edited (through VipPyArrayEditor),
+/// or a data comming from another player (through VipOtherPlayerDataEditor)
+class VIP_GUI_EXPORT Vip2DDataEditor : public QWidget
+{
+	Q_OBJECT
+public:
+	Vip2DDataEditor();
+	~Vip2DDataEditor();
+
+	VipOtherPlayerData value() const;
+	void setValue(const VipOtherPlayerData& data);
+	void displayVLines(bool before, bool after);
+
+private Q_SLOTS:
+	void emitChanged() { Q_EMIT changed(); }
+Q_SIGNALS:
+	void changed();
+
+private:
+	VIP_DECLARE_PRIVATE_DATA(d_data);
+};
+
+
 /// Tool button that displays a menu to select a VipDisplayObject input (final processing data)
 class VIP_GUI_EXPORT VipFindDataButton : public QToolButton
 {

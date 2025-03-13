@@ -969,6 +969,31 @@ private:
 	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
+
+/// @brief Edit a small 2D array
+class VIP_GUI_EXPORT Vip2DArrayEditor : public QWidget
+{
+	Q_OBJECT
+public:
+	Vip2DArrayEditor();
+	~Vip2DArrayEditor();
+
+	VipNDArray array() const;
+	void setText(const QString& text);
+	void setArray(const VipNDArray& ar);
+
+private Q_SLOTS:
+	void textEntered();
+	void finished();
+Q_SIGNALS:
+	void changed();
+
+private:
+	VIP_DECLARE_PRIVATE_DATA(d_data);
+};
+
+
+
 /// A \a QToolButton used to modify a time scale unit, based on a \a VipValueToTime object.
 /// The \a VipValueToTime object returned by #currentValueToTime() should always be copied.
 class VIP_GUI_EXPORT VipValueToTimeButton : public QToolButton
