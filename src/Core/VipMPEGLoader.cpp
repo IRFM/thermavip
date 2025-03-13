@@ -121,17 +121,7 @@ int init_libavcodec()
 }
 static int init = init_libavcodec();
 
-static void init_packet(AVPacket* pkt)
-{
-	pkt->pts = 0;
-	pkt->dts = 0;
-	pkt->pos = -1;
-	pkt->duration = 0;
-	pkt->flags = 0;
-	pkt->stream_index = 0;
-}
 
-#include <qfile.h>
 
 static QString _stderr;
 
@@ -151,7 +141,7 @@ QStringList VideoDecoder::list_devices()
 	AVDictionary* options = nullptr;
 	av_dict_set(&options, "list_devices", "true", 0);
 	AVInputFormat* iformat = (AVInputFormat*)av_find_input_format("dshow");
-	int ret = avformat_open_input(&formatC, "video=dummy", iformat, &options);
+	avformat_open_input(&formatC, "video=dummy", iformat, &options);
 	av_log_set_callback(av_log_default_callback);
 	// if (ret < 0)
 	//	return QStringList();
