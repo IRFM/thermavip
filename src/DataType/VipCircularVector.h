@@ -1634,10 +1634,14 @@ public:
 template<class T, Vip::Ownership O>
 QDataStream& operator<<(QDataStream& s, const VipCircularVector<T, O>& c)
 {
-	if (!QDataStream::writeQSizeType(s, c.size()))
+	s << (qint64)c.size();
+	if (s.status() != QDataStream::Ok)
 		return s;
-	for (const T& t : c)
+	for (const T& t : c) {
 		s << t;
+		if (s.status() != QDataStream::Ok)
+			break;
+	}
 
 	return s;
 }
@@ -1645,32 +1649,11 @@ QDataStream& operator<<(QDataStream& s, const VipCircularVector<T, O>& c)
 template<class T, Vip::Ownership O>
 QDataStream& operator>>(QDataStream& s, VipCircularVector<T, O>& c)
 {
-	class StreamStateSaver
-	{
-	public:
-		inline StreamStateSaver(QDataStream* s)
-		  : stream(s)
-		  , oldStatus(s->status())
-		{
-			if (!stream->isDeviceTransactionStarted())
-				stream->resetStatus();
-		}
-		inline ~StreamStateSaver()
-		{
-			if (oldStatus != QDataStream::Ok) {
-				stream->resetStatus();
-				stream->setStatus(oldStatus);
-			}
-		}
-
-	private:
-		QDataStream* stream;
-		QDataStream::Status oldStatus;
-	};
-	StreamStateSaver stateSaver(&s);
-
 	c.clear();
-	qint64 size = QDataStream::readQSizeType(s);
+	qint64 size = 0;
+	s >> size;
+	if (s.status() != QDataStream::Ok)
+		return s;
 	qsizetype n = size;
 	if (size != n || size < 0) {
 		s.setStatus(QDataStream::SizeLimitExceeded);

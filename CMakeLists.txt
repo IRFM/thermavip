@@ -22,7 +22,7 @@ message(STATUS "Qt found!")
 include(GNUInstallDirs) 
 
 # Global options
-option(LOCAL_INSTALL "Install locally" ON)
+option(LOCAL_INSTALL "Install locally" OFF)
 option(WITH_LONG_DOUBLE "Use long double as the default type for 2D point representation" OFF)
 option(WITH_FFMEG "Build ffmpeg plugin" OFF)
 option(WITH_HDF5 "Build HDF5 plugin" OFF)
