@@ -1005,7 +1005,7 @@ const VipFunctionObject &vipFindFunction(const QString& name)
 QList<VipFunctionObject> vipAllFunctions()
 {
 	QList<VipFunctionObject> res;
-	for (const std::pair<QString, VipFunctionObject>& p : _functions)
+	for (const std::pair<const QString, VipFunctionObject>& p : _functions)
 		res.push_back(p.second);
 	return res;
 }
