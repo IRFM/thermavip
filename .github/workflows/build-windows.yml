@@ -30,10 +30,11 @@ jobs:
           uses: jurplel/install-qt-action@v4
 
         - name: Build on Windows
-          run: mkdir build
-              cd build
-              cmake .. -DCMAKE_BUILD_TYPE=Release -DNO_WARNINGS=ON -DLOCAL_INSTALL=ON
-              cmake --build ./
+          run: >
+              mkdir build &&
+              cd build &&
+              cmake .. -DCMAKE_BUILD_TYPE=Release -DNO_WARNINGS=ON -DLOCAL_INSTALL=ON &&
+              cmake --build ./ &&
               cmake --build . --target install
 
         
