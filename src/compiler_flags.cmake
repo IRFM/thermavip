@@ -44,20 +44,29 @@ endif()
 if(WITH_WEBENGINE)
 	if((NOT ${TARGET_PROJECT} STREQUAL "VipLogging") AND (NOT ${TARGET_PROJECT} STREQUAL "VipDataType") AND (NOT ${TARGET_PROJECT} STREQUAL "VipCore") AND (NOT ${TARGET_PROJECT} STREQUAL "VipPlotting"))
 		# Add WebEnging if possible
+		#if(${QT_VERSION_MAJOR} LESS 6)
+		#set(WEB_ENGINE Qt${QT_VERSION_MAJOR}WebEngine)
+		#else()
+		#set(WEB_ENGINE Qt${QT_VERSION_MAJOR}WebEngineCore)
+		#endif()
+		#find_package(Qt${QT_VERSION_MAJOR} QUIET COMPONENTS ${WEB_ENGINE} )
+		#find_package(Qt${QT_VERSION_MAJOR} QUIET COMPONENTS Qt${QT_VERSION_MAJOR}WebEngineWidgets )
+		
 		if(${QT_VERSION_MAJOR} LESS 6)
-		set(WEB_ENGINE Qt${QT_VERSION_MAJOR}WebEngine)
+			set(WEB_ENGINE WebEngine)
 		else()
-		set(WEB_ENGINE Qt${QT_VERSION_MAJOR}WebEngineCore)
+			set(WEB_ENGINE WebEngineCore)
 		endif()
-
-		find_package(${WEB_ENGINE} )
-		find_package(Qt${QT_VERSION_MAJOR}WebEngineWidgets )
+		find_package(Qt${QT_VERSION_MAJOR} COMPONENTS ${WEB_ENGINE})
+		find_package(Qt${QT_VERSION_MAJOR} COMPONENTS WebEngineWidgets )
+		
+		
 		if (${WEB_ENGINE}_FOUND)
 			if (${WEB_ENGINE}_VERSION VERSION_LESS 5.15.0)
 				#message(STATUS "Too old web engine version!")
 			else()
 				#message(STATUS "Using web engine for ${TARGET_PROJECT}")
-				find_package(Qt${QT_VERSION_MAJOR}WebEngineWidgets REQUIRED)
+				find_package(Qt${QT_VERSION_MAJOR} COMPONENTS WebEngineWidgets REQUIRED)
 				if(${QT_VERSION_MAJOR} LESS 6)
 				target_link_libraries(${TARGET_PROJECT} PRIVATE
 				Qt5::WebEngine
