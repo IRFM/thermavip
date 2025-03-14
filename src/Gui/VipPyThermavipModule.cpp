@@ -556,7 +556,7 @@ static VipDisplayPlotItem * findDisplay(VipPlayer2D * pl, const QString & partia
 			//take the last one
 			QList<VipDisplayObject*> disps = pl->displayObjects();
 			for (int i = disps.size() - 1; i >= 0; --i)
-				if (item = qobject_cast<VipDisplayPlotItem*>(disps[i]))
+				if ((item = qobject_cast<VipDisplayPlotItem*>(disps[i])))
 					break;
 		}
 		return item;

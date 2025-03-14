@@ -1094,7 +1094,7 @@ VipRegisterRecordWindow::VipRegisterRecordWindow(VipMainWindow * win)
 
 void VipRegisterRecordWindow::installRecordWindow(VipMainWindow* win)
 {
-	static VipRegisterRecordWindow* inst = new VipRegisterRecordWindow(win);
+	/* static VipRegisterRecordWindow* inst = */new VipRegisterRecordWindow(win);
 }
 
 void VipRegisterRecordWindow::setRecording(bool enable)
