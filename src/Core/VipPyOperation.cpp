@@ -36,6 +36,16 @@
 
 #define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
 
+// Except with msvc, unused-function warning on _import_array() (?)
+#if defined(__GNUC__)
+#pragma GCC diagnostic ignored "-Wunused-function"
+// #pragma GCC diagnostic pop
+#elif defined __clang__
+#pragma clang diagnostic ignored "-Wunused-function"
+// #pragma clang diagnostic pop
+#endif
+
+
 // undef _DEBUG or pyconfig.h will automatically try to link to python34_d.lib
 #undef _DEBUG
 extern "C" {
@@ -1178,7 +1188,9 @@ public:
 		Py_Initialize();
 
 		// init threading and acquire lock
+#if PY_VERSION_HEX < PY_BUILD_VERSION(3, 9, 0)
 		PyEval_InitThreads();
+#endif
 		threadState = PyThreadState_Get();
 		interpreterState = threadState->interp;
 		// init path
@@ -1651,7 +1663,7 @@ bool PyRunThread::waitForRunnable(const PyRunnable* r, unsigned long time)
 
 	// wait for it
 	while (!r->finished.load()) {
-		if (QDateTime::currentMSecsSinceEpoch() - start >= time) {
+		if (QDateTime::currentMSecsSinceEpoch() - start >= (qint64)time) {
 			mutex.unlock();
 			return false;
 		}
@@ -2595,7 +2607,7 @@ static EvalResultType evalPythonCode(const QString& code)
 	static bool init = false;
 	VipGILLocker lock;
 	if (!init) {
-		int r = PyRun_SimpleString(eval_code.toLatin1().data());
+		PyRun_SimpleString(eval_code.toLatin1().data());
 		init = true;
 	}
 
@@ -2608,7 +2620,7 @@ static EvalResultType evalPythonCode(const QString& code)
 	QString to_exec = QString("tmp=eval_code(") + str + code + str + QString(")");
 	vip_debug("%s\n", to_exec.toLatin1().data());
 
-	int r = PyRun_SimpleString(to_exec.toLatin1().data());
+	PyRun_SimpleString(to_exec.toLatin1().data());
 
 	PyObject* __main__ = PyImport_ImportModule("__main__");
 	PyObject* globals = PyModule_GetDict(__main__);

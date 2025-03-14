@@ -444,9 +444,9 @@ namespace detail
 			qsizetype first_range = (stop - begin);
 			qsizetype remaining = size - first_range;
 			if VIP_CONSTEXPR (relocatable) {
-				memmove(dst->buffer, buffer + begin, (size_t)first_range * sizeof(T));
+				memmove(static_cast<void*>(dst->buffer), buffer + begin, (size_t)first_range * sizeof(T));
 				if (remaining)
-					memmove(dst->buffer + first_range, buffer, (size_t)remaining * sizeof(T));
+					memmove(static_cast<void*>(dst->buffer + first_range), buffer, (size_t)remaining * sizeof(T));
 			}
 			else {
 				move_construct_range(dst->buffer, buffer + begin, first_range);

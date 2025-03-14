@@ -399,7 +399,7 @@ void VideoDecoder::Close()
 
 		// Close the codec
 		if (pCodecCtx != nullptr && pCodec != nullptr)
-			avcodec_close(pCodecCtx);
+			avcodec_free_context(&pCodecCtx);
 
 		// Close the video file
 		if (pFormatCtx != nullptr)

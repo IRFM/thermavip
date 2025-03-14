@@ -311,7 +311,7 @@ void VideoEncoder::Open(const std::string& name, int width, int height, double f
 		AVOutputFormat* temp = nullptr;
 #if LIBAVFORMAT_VERSION_MAJOR > 58
 		void* opaque = NULL;
-		while (temp = (AVOutputFormat*)av_muxer_iterate(&opaque)) {
+		while ((temp = (AVOutputFormat*)av_muxer_iterate(&opaque))) {
 			if (temp->video_codec == codec_id /*&& temp->audio_codec == CODEC_ID_NONE*/ &&
 			    (std::string(temp->extensions).find(ext.c_str()) != std::string::npos || codec_id == AV_CODEC_ID_RAWVIDEO)) {
 				fmt = (AVOutputFormat*)temp;
@@ -511,7 +511,7 @@ void VideoEncoder::Close(bool debug)
 
 	if (context) {
 		// if (!debug)
-		avcodec_close(context);
+		avcodec_free_context(&context);
 		context = nullptr;
 		video_str = nullptr;
 	}
