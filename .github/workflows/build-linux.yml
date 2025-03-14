@@ -29,8 +29,8 @@ jobs:
         - name: Install Qt
           uses: jurplel/install-qt-action@v4
           
-        - name: install gcc 13
-          run: sudo apt update && sudo apt install gcc-13
+        - name: install gcc 10
+          run: sudo apt update && sudo apt install gcc-10
 
         - name: Build on Linux
           run: |
@@ -41,8 +41,8 @@ jobs:
               cmake --build . --target install
           shell: bash
           env:
-           CC:   gcc-13
-           CXX:  g++-13
+           CC:   gcc-10
+           CXX:  g++-10
 
         
 
