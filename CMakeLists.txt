@@ -22,11 +22,11 @@ message(STATUS "Qt found!")
 include(GNUInstallDirs) 
 
 # Global options
-option(LOCAL_INSTALL "Install locally" ON)
+option(LOCAL_INSTALL "Install locally" OFF)
 option(WITH_LONG_DOUBLE "Use long double as the default type for 2D point representation" OFF)
 option(WITH_FFMEG "Build ffmpeg plugin" OFF)
 option(WITH_HDF5 "Build HDF5 plugin" OFF)
-option(WITH_PYTHON "Build Python plugin" OFF)
+option(WITH_PYTHON "Build Python support" OFF)
 option(WITH_WEBENGINE "Build components based on Qt webengine module (if webengine is available)" ON)
 option(WITH_VTK "Build VTK support" OFF)
 option(WITH_HDF5 "Build HDF5 support" OFF)
@@ -62,14 +62,14 @@ if (UNIX)
 endif()
 
 if (NOT MSVC)
-if(NOT WITH_LIBRIR)
+#if(NOT WITH_LIBRIR)
 # Create a dummy target to build ffmpeg as a prebuild step
 #add_custom_target(ffmpeg BYPRODUCTS "${PROJECT_SOURCE_DIR}/build_ffmpeg.h"
 #  COMMAND ${PROJECT_SOURCE_DIR}/configure_ffmpeg)
 #add_executable(dummy ${PROJECT_SOURCE_DIR}/dummy.c "${PROJECT_SOURCE_DIR}/build_ffmpeg.h")
 #target_include_directories(dummy PRIVATE "${PROJECT_SOURCE_DIR}")
-add_custom_target(ffmpeg ALL COMMAND ${PROJECT_SOURCE_DIR}/configure_ffmpeg)
-endif()
+add_custom_target(ffmpeg_build ALL COMMAND ${PROJECT_SOURCE_DIR}/configure_ffmpeg)
+#endif()
 endif()
 
 
@@ -139,13 +139,9 @@ add_subdirectory(src)
 #install(FILES ${CMAKE_BINARY_DIR}/requirements.txt DESTINATION ${CMAKE_INSTALL_PREFIX})
 
 # Install directories
-install(DIRECTORY skins DESTINATION "${CMAKE_INSTALL_PREFIX}")
 install(DIRECTORY skins DESTINATION "${THERMAVIP_APPLICATION_DIR}")
-install(DIRECTORY help DESTINATION "${CMAKE_INSTALL_PREFIX}")
 install(DIRECTORY help DESTINATION "${THERMAVIP_APPLICATION_DIR}")
-install(DIRECTORY icons DESTINATION "${CMAKE_INSTALL_PREFIX}")
 install(DIRECTORY icons DESTINATION "${THERMAVIP_APPLICATION_DIR}")
-install(DIRECTORY fonts DESTINATION "${CMAKE_INSTALL_PREFIX}")
 install(DIRECTORY fonts DESTINATION "${THERMAVIP_APPLICATION_DIR}")
 
 if(WIN32)

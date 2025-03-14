@@ -19,6 +19,17 @@ if(NOT WITH_VTK)
 	list(FILTER Headers EXCLUDE REGEX "^.*FieldOfView.*$")
 endif()
 
+
+if(NOT WITH_FFMPEG)
+	list(FILTER Sources EXCLUDE REGEX "^.*VipRecordWindow.*$")
+	list(FILTER Headers EXCLUDE REGEX "^.*VipRecordWindow.*$")
+endif()
+
+if(NOT WITH_PYTHON)
+	list(FILTER Sources EXCLUDE REGEX "^.*VipPy.*$")
+	list(FILTER Headers EXCLUDE REGEX "^.*VipPy.*$")
+endif()
+
 add_library(VipGui SHARED
     ${Sources} ${Headers}
 )
@@ -30,6 +41,14 @@ target_include_directories(VipGui PRIVATE
 target_compile_definitions(VipGui PRIVATE
     VIP_BUILD_GUI_LIB
 )
+
+if(WITH_PYTHON)
+	target_compile_definitions(VipGui PUBLIC VIP_WITH_PYTHON)
+endif()
+
+if(WITH_FFMPEG)
+	target_compile_definitions(VipGui PUBLIC VIP_WITH_FFMPEG)
+endif()
 
 
 target_link_libraries(VipGui PRIVATE
@@ -46,7 +65,7 @@ install(TARGETS VipGui
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR} 
 	ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
     FRAMEWORK DESTINATION ${CMAKE_INSTALL_LIBDIR}
-    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+    #RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 )
 install(TARGETS VipGui
     LIBRARY DESTINATION "${THERMAVIP_APPLICATION_DIR}"
@@ -63,7 +82,6 @@ install(TARGETS VipGui
     FRAMEWORK DESTINATION "${THERMAVIP_TEST_DIR}"
     RUNTIME DESTINATION "${THERMAVIP_TEST_DIR}"
 )
-
 
 
 file(GLOB HEADER_FILES ${PROJECT_SOURCE_DIR}/*.h)

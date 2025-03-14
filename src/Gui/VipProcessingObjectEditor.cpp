@@ -262,6 +262,111 @@ void VipOtherPlayerDataEditor::apply()
 	}
 }
 
+
+
+class Vip2DDataEditor::PrivateData
+{
+public:
+	VipOtherPlayerData data;
+	QRadioButton* editArray;
+	QRadioButton* editPlayer;
+
+	QCheckBox* shouldResizeArray;
+
+	Vip2DArrayEditor* editor;
+	VipOtherPlayerDataEditor* player;
+
+	QWidget* lineBefore;
+	QWidget* lineAfter;
+};
+
+Vip2DDataEditor::Vip2DDataEditor()
+{
+	VIP_CREATE_PRIVATE_DATA(d_data);
+	d_data->editArray = new QRadioButton("Create a 1D/2D array");
+	d_data->editArray->setToolTip("<b>Manually create a 1D/2D array</b><br>This is especially usefull for convolution functions.");
+	d_data->editPlayer = new QRadioButton("Take the data from another player");
+	d_data->editPlayer->setToolTip("<b>Selecte a data (image, curve,...) from another player</b>");
+	d_data->shouldResizeArray = new QCheckBox("Resize array to the current data shape");
+	d_data->shouldResizeArray->setToolTip("This usefull if you apply a processing/filter that only works on 2 arrays having the same shape.\n"
+					      "Selecting this option ensures you that given image/curve will be resized to the right dimension.");
+	d_data->editor = new Vip2DArrayEditor();
+	d_data->player = new VipOtherPlayerDataEditor();
+	d_data->lineBefore = VipLineWidget::createHLine();
+	d_data->lineAfter = VipLineWidget::createHLine();
+
+	QVBoxLayout* lay = new QVBoxLayout();
+	lay->setContentsMargins(0, 0, 0, 0);
+	lay->addWidget(d_data->lineBefore);
+	lay->addWidget(d_data->editArray);
+	lay->addWidget(d_data->editPlayer);
+	lay->addWidget(VipLineWidget::createHLine());
+	lay->addWidget(d_data->shouldResizeArray);
+	lay->addWidget(d_data->editor);
+	lay->addWidget(d_data->player);
+	lay->addWidget(d_data->lineAfter);
+	// lay->setSizeConstraint(QLayout::SetFixedSize);
+	setLayout(lay);
+
+	d_data->editArray->setChecked(true);
+	d_data->player->setVisible(false);
+
+	connect(d_data->editArray, SIGNAL(clicked(bool)), d_data->editor, SLOT(setVisible(bool)));
+	connect(d_data->editArray, SIGNAL(clicked(bool)), d_data->player, SLOT(setHidden(bool)));
+	connect(d_data->editPlayer, SIGNAL(clicked(bool)), d_data->player, SLOT(setVisible(bool)));
+	connect(d_data->editPlayer, SIGNAL(clicked(bool)), d_data->editor, SLOT(setHidden(bool)));
+
+	connect(d_data->shouldResizeArray, SIGNAL(clicked(bool)), this, SLOT(emitChanged()));
+	connect(d_data->editor, SIGNAL(changed()), this, SLOT(emitChanged()));
+	connect(d_data->player, SIGNAL(valueChanged(const QVariant&)), this, SLOT(emitChanged()));
+}
+
+Vip2DDataEditor::~Vip2DDataEditor() {}
+
+VipOtherPlayerData Vip2DDataEditor::value() const
+{
+	VipOtherPlayerData res;
+	if (d_data->editArray->isChecked())
+		res = VipOtherPlayerData(VipAnyData(QVariant::fromValue(d_data->editor->array()), 0));
+	else
+		res = d_data->player->value();
+	res.setShouldResizeArray(d_data->shouldResizeArray->isChecked());
+	return res;
+}
+
+void Vip2DDataEditor::setValue(const VipOtherPlayerData& data)
+{
+	VipNDArray ar = data.staticData().value<VipNDArray>();
+
+	d_data->editor->blockSignals(true);
+	d_data->player->blockSignals(true);
+	d_data->shouldResizeArray->blockSignals(true);
+
+	if (!ar.isEmpty() && data.otherPlayerId() < 1) {
+		d_data->editArray->setChecked(true);
+		d_data->editor->setArray(ar);
+	}
+	else {
+		d_data->editPlayer->setChecked(true);
+		d_data->player->setValue(data);
+	}
+	d_data->player->setVisible(d_data->editPlayer->isChecked());
+	d_data->editor->setVisible(!d_data->editPlayer->isChecked());
+
+	d_data->shouldResizeArray->setChecked(data.shouldResizeArray());
+
+	d_data->editor->blockSignals(false);
+	d_data->player->blockSignals(false);
+	d_data->shouldResizeArray->blockSignals(false);
+}
+
+void Vip2DDataEditor::displayVLines(bool before, bool after)
+{
+	d_data->lineBefore->setVisible(before);
+	d_data->lineAfter->setVisible(after);
+}
+
+
 class VipFindDataButton::PrivateData
 {
 public:

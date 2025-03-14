@@ -221,7 +221,7 @@ namespace detail
 	{
 	public:
 		COWPointer() noexcept {}
-		~COWPointer()
+		~COWPointer() noexcept
 		{
 			if (d && !d->deref())
 				delete d;
@@ -300,7 +300,7 @@ namespace detail
 	{
 	public:
 		COWPointer() noexcept {}
-		~COWPointer()
+		~COWPointer() noexcept
 		{
 			if (d)
 				delete d;
@@ -330,16 +330,16 @@ namespace detail
 			std::swap(d, o.d);
 			return *this;
 		}
-		void reset(T* od)
+		void reset(T* od) noexcept
 		{
 			if (d)
 				delete d;
 			d = od;
 		}
-		VIP_ALWAYS_INLINE void detach() {}
-		VIP_ALWAYS_INLINE T* operator->() { return d; }
+		VIP_ALWAYS_INLINE void detach() noexcept {}
+		VIP_ALWAYS_INLINE T* operator->() noexcept { return d; }
 		VIP_ALWAYS_INLINE const T* operator->() const noexcept { return d; }
-		VIP_ALWAYS_INLINE T* data() { return d; }
+		VIP_ALWAYS_INLINE T* data() noexcept { return d; }
 		VIP_ALWAYS_INLINE const T* data() const noexcept { return d; }
 		VIP_ALWAYS_INLINE const T* constData() const noexcept { return d; }
 		VIP_ALWAYS_INLINE operator bool() const noexcept { return d != nullptr; }
@@ -444,9 +444,9 @@ namespace detail
 			qsizetype first_range = (stop - begin);
 			qsizetype remaining = size - first_range;
 			if VIP_CONSTEXPR (relocatable) {
-				memmove(dst->buffer, buffer + begin, (size_t)first_range * sizeof(T));
+				memmove(static_cast<void*>(dst->buffer), buffer + begin, (size_t)first_range * sizeof(T));
 				if (remaining)
-					memmove(dst->buffer + first_range, buffer, (size_t)remaining * sizeof(T));
+					memmove(static_cast<void*>(dst->buffer + first_range), buffer, (size_t)remaining * sizeof(T));
 			}
 			else {
 				move_construct_range(dst->buffer, buffer + begin, first_range);
@@ -1180,7 +1180,7 @@ class VipCircularVector
 	VIP_ALWAYS_INLINE const Data* constData() const noexcept { return d_data.constData(); }
 	VIP_ALWAYS_INLINE const Data* data() const noexcept { return d_data.data(); }
 	VIP_ALWAYS_INLINE Data* dataNoDetach() noexcept { return const_cast<Data*>(constData()); }
-	VIP_ALWAYS_INLINE Data* data() noexcept { return d_data.data(); }
+	VIP_ALWAYS_INLINE Data* data() { return d_data.data(); }
 	VIP_ALWAYS_INLINE bool full() const noexcept { return !d_data || d_data->size == d_data->capacity; }
 
 	Data* adjust_capacity_for_size(qsizetype size, bool allow_shrink = false)
@@ -1401,10 +1401,10 @@ public:
 	VIP_ALWAYS_INLINE T& first() noexcept { return d_data->front(); }
 	VIP_ALWAYS_INLINE const T& first() const noexcept { return d_data->front(); }
 
-	VIP_ALWAYS_INLINE T& back() noexcept { return d_data->front(); }
-	VIP_ALWAYS_INLINE const T& back() const noexcept { return d_data->front(); }
-	VIP_ALWAYS_INLINE T& last() noexcept { return d_data->front(); }
-	VIP_ALWAYS_INLINE const T& last() const noexcept { return d_data->front(); }
+	VIP_ALWAYS_INLINE T& back() noexcept { return d_data->back(); }
+	VIP_ALWAYS_INLINE const T& back() const noexcept { return d_data->back(); }
+	VIP_ALWAYS_INLINE T& last() noexcept { return d_data->back(); }
+	VIP_ALWAYS_INLINE const T& last() const noexcept { return d_data->back(); }
 
 	VIP_ALWAYS_INLINE iterator begin() noexcept { return iterator(data(), 0); }
 	VIP_ALWAYS_INLINE const_iterator begin() const noexcept { return const_iterator(data(), 0); }
@@ -1634,10 +1634,14 @@ public:
 template<class T, Vip::Ownership O>
 QDataStream& operator<<(QDataStream& s, const VipCircularVector<T, O>& c)
 {
-	if (!QDataStream::writeQSizeType(s, c.size()))
+	s << (qint64)c.size();
+	if (s.status() != QDataStream::Ok)
 		return s;
-	for (const T& t : c)
+	for (const T& t : c) {
 		s << t;
+		if (s.status() != QDataStream::Ok)
+			break;
+	}
 
 	return s;
 }
@@ -1645,37 +1649,12 @@ QDataStream& operator<<(QDataStream& s, const VipCircularVector<T, O>& c)
 template<class T, Vip::Ownership O>
 QDataStream& operator>>(QDataStream& s, VipCircularVector<T, O>& c)
 {
-	class StreamStateSaver
-	{
-	public:
-		inline StreamStateSaver(QDataStream* s)
-		  : stream(s)
-		  , oldStatus(s->status())
-		{
-			if (!stream->isDeviceTransactionStarted())
-				stream->resetStatus();
-		}
-		inline ~StreamStateSaver()
-		{
-			if (oldStatus != QDataStream::Ok) {
-				stream->resetStatus();
-				stream->setStatus(oldStatus);
-			}
-		}
-
-	private:
-		QDataStream* stream;
-		QDataStream::Status oldStatus;
-	};
-	StreamStateSaver stateSaver(&s);
-
 	c.clear();
-	qint64 size = QDataStream::readQSizeType(s);
-	qsizetype n = size;
-	if (size != n || size < 0) {
-		s.setStatus(QDataStream::SizeLimitExceeded);
+	qint64 size = 0;
+	s >> size;
+	if (s.status() != QDataStream::Ok)
 		return s;
-	}
+	qsizetype n = (qsizetype)size;
 	c.reserve(n);
 	for (qsizetype i = 0; i < n; ++i) {
 		T t;

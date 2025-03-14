@@ -69,6 +69,9 @@ VIP_GUI_EXPORT QStringList vipAvailableSkins();
 /// It contains at least a file \a stylesheet.css and an optional \a icons folder containing additional icons.
 VIP_GUI_EXPORT bool vipLoadSkin(const QString& skin_name);
 
+VIP_GUI_EXPORT bool vipIsDarkSkin();
+VIP_GUI_EXPORT bool vipIsDarkColor(const QColor&);
+
 /// Restart Thermavip after \a delay_ms milliseconds after exiting thermavip.
 /// This function only works if viptools is present.
 VIP_GUI_EXPORT void vipSetRestartEnabled(int delay_ms);

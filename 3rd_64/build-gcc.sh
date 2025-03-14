@@ -29,7 +29,7 @@ else
   echo "Compiling on non Linux os"
 fi
 
-export FFMPEG_VERSION="7.1"
+export FFMPEG_VERSION="7.1.1"
 export FFMPEG_PREFIX="$PWD/ffmpeg-$FFMPEG_VERSION"
 
 export PKG_CONFIG_PATH="$PWD/install/lib/pkgconfig"

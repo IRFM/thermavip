@@ -45,6 +45,7 @@
 #include <QStyleOption>
 #include <QWidgetAction>
 #include <qpointer.h>
+#include <QPlainTextEdit>
 
 #include "VipCore.h"
 #include "VipDisplayArea.h"
@@ -2321,6 +2322,109 @@ void VipToolBar::actionEvent(QActionEvent* evt)
 		delayCompute();
 	}
 }
+
+
+
+
+class Vip2DArrayEditor::PrivateData
+{
+public:
+	VipNDArray array;
+	QLabel info;
+	QToolButton send;
+	QPlainTextEdit editor;
+};
+
+Vip2DArrayEditor::Vip2DArrayEditor()
+{
+	VIP_CREATE_PRIVATE_DATA(d_data);
+	d_data->info.setText("Enter your 2D array. Each column is separated by spaces or tabulations, each row is separated by a new line.");
+	d_data->info.setWordWrap(true);
+	d_data->send.setAutoRaise(true);
+	d_data->send.setToolTip("Click to finish your 2D array");
+	d_data->send.setIcon(vipIcon("apply.png"));
+	d_data->editor.setMinimumHeight(200);
+
+	QGridLayout* lay = new QGridLayout();
+	lay->setContentsMargins(0, 0, 0, 0);
+	lay->addWidget(&d_data->info, 0, 0);
+	lay->addWidget(&d_data->send, 0, 1);
+	lay->addWidget(&d_data->editor, 1, 0, 1, 2);
+	setLayout(lay);
+
+	connect(&d_data->send, SIGNAL(clicked(bool)), this, SLOT(finished()));
+	connect(&d_data->editor, SIGNAL(textChanged()), this, SLOT(textEntered()));
+}
+
+Vip2DArrayEditor::~Vip2DArrayEditor() {}
+
+VipNDArray Vip2DArrayEditor::array() const
+{
+	return d_data->array;
+}
+
+void Vip2DArrayEditor::setText(const QString& text)
+{
+	// remove any numpy formatting
+	QString out = text;
+	out.remove("(");
+	out.remove(")");
+	out.remove("[");
+	out.remove("]");
+	out.remove(",");
+	out.remove("array");
+	d_data->editor.setPlainText(out);
+	QTextStream str(out.toLatin1());
+	str >> d_data->array;
+}
+void Vip2DArrayEditor::setArray(const VipNDArray& ar)
+{
+	QString out;
+	QTextStream str(&out, QIODevice::WriteOnly);
+	str << ar;
+	str.flush();
+	d_data->editor.setPlainText(out);
+	d_data->array = ar;
+}
+
+void Vip2DArrayEditor::textEntered()
+{
+	d_data->array = VipNDArray();
+
+	QString text = d_data->editor.toPlainText();
+	text.replace("\t", " ");
+	QStringList lines = text.split("\n");
+	if (lines.size()) {
+		int columns = lines.first().split(" ", VIP_SKIP_BEHAVIOR::SkipEmptyParts).size();
+		bool ok = true;
+		for (int i = 1; i < lines.size(); ++i) {
+			if (lines[i].split(" ", VIP_SKIP_BEHAVIOR::SkipEmptyParts).size() != columns) {
+				if (lines[i].count('\n') + lines[i].count('\t') + lines[i].count(' ') != lines[i].size()) {
+					ok = false;
+					break;
+				}
+			}
+		}
+
+		if (ok) {
+			QTextStream str(text.toLatin1());
+			str >> d_data->array;
+			if (!d_data->array.isEmpty()) {
+				d_data->send.setIcon(vipIcon("apply_green.png"));
+				return;
+			}
+		}
+	}
+
+	d_data->send.setIcon(vipIcon("apply_red.png"));
+}
+
+void Vip2DArrayEditor::finished()
+{
+	if (!d_data->array.isEmpty())
+		Q_EMIT changed();
+}
+
 
 VipValueToTimeButton::VipValueToTimeButton(QWidget* parent)
   : QToolButton(parent)

@@ -6,7 +6,6 @@ add_subdirectory(Core)
 add_subdirectory(Gui)
 add_subdirectory(Annotation)
 add_subdirectory(Thermavip)
-add_subdirectory(Plugins)
 
 if(WITH_EXAMPLES)
 add_subdirectory(Examples)

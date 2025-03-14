@@ -2174,7 +2174,7 @@ static void customizeMultiDragWidget(VipMultiDragWidget* w)
 // Registered functions for python wrapper
 //
 
-static QVariant setCurrentWorkspaceMaxColumns(const QVariantList& lst)
+static QVariant setCurrentWorkspaceMaxColumns(const QVariantList& lst, const QVariantMap&)
 {
 	if (lst.size() != 1 || !lst.first().canConvert<int>()) {
 		return QVariant::fromValue(VipErrorData("setCurrentWorkspaceMaxColumns: wrong input argument (should be an integer value)"));
@@ -2195,7 +2195,7 @@ static QVariant setCurrentWorkspaceMaxColumns(const QVariantList& lst)
 	return QVariant();
 }
 
-static QVariant currentWorkspaceMaxColumns(const QVariantList&)
+static QVariant currentWorkspaceMaxColumns(const QVariantList&, const QVariantMap&)
 {
 	if (VipDisplayPlayerArea* area = vipGetMainWindow()->displayArea()->currentDisplayPlayerArea()) {
 		return QVariant::fromValue(area->property("_vip_customNumCols").toInt());
@@ -2204,7 +2204,7 @@ static QVariant currentWorkspaceMaxColumns(const QVariantList&)
 		return QVariant::fromValue(VipErrorData("currentWorkspaceMaxColumns: no valid workspace available"));
 }
 
-static QVariant reorganizeCurrentWorkspace(const QVariantList&)
+static QVariant reorganizeCurrentWorkspace(const QVariantList&, const QVariantMap&)
 {
 	VipDisplayPlayerArea* area = vipGetMainWindow()->displayArea()->currentDisplayPlayerArea();
 	if (!area)
