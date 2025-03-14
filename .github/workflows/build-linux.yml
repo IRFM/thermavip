@@ -31,6 +31,9 @@ jobs:
           
         - name: install gcc 10 
           run: sudo apt update && sudo apt install gcc-10
+          
+        - name: install numpy
+          run: pip install numpy
 
         - name: Build on Linux
           run: |
