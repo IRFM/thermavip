@@ -343,13 +343,13 @@ static inline qsizetype argmin(const QVector<double>& v)
 //  res.push_back(v2);
 //  return res;
 //  }
-static inline QPolygonF mid(const QPolygonF& v, size_t start, size_t n = 0)
+static inline QPolygonF mid(const QPolygonF& v, qsizetype start, qsizetype n = 0)
 {
-	if (start >= (size_t)v.size())
+	if (start >= v.size())
 		return QPolygonF();
-	if (start + n > (size_t)v.size() || n == 0)
+	if (start + n > v.size() || n == 0)
 		n = v.size() - start;
-	QPolygonF res(static_cast<qsizetype>(n));
+	QPolygonF res(n);
 	std::copy(v.begin() + start, v.begin() + (start + n), res.begin());
 	return res;
 	// return v.mid(start, n);
