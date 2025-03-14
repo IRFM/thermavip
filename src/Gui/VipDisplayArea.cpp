@@ -69,6 +69,10 @@
 #include "VipPythonManager.h"
 #endif
 
+#ifdef VIP_WITH_FFMPEG
+#include "VipRecordWindow.h"
+#endif
+
 #include <QApplication>
 #include <QBoxLayout>
 #include <QCloseEvent>
@@ -3744,6 +3748,9 @@ void VipMainWindow::init()
 	VipPythonManager::instance();
 #endif
 
+#ifdef VIP_WITH_FFMPEG
+	VipRegisterRecordWindow::installRecordWindow(this);
+#endif
 	// Add shortcuts
 	VipShortcutsHelper::registerShorcut("Open files...", [this]() { this->openFiles(); });
 	VipShortcutsHelper::registerShorcut("Open directory...", [this]() { this->openDir(); });

@@ -358,18 +358,22 @@ void VideoDecoder::Open(const std::string& name, AVInputFormat* iformat, AVDicti
 
 double VideoDecoder::getTime()
 {
-	AVPacket p;
-	av_init_packet(&p);
+	//AVPacket p;
+	//av_init_packet(&p);
+	AVPacket* p = av_packet_alloc();
 	av_seek_frame(pFormatCtx, videoStream, 0, AVSEEK_FLAG_BACKWARD);
 	int count = 0;
-	while (av_read_frame(pFormatCtx, &p) == 0) {
-		if (p.stream_index == videoStream)
+	while (av_read_frame(pFormatCtx, p) == 0) {
+		if (p->stream_index == videoStream)
 			count++;
+		av_packet_unref(p);
 	}
 
 	av_seek_frame(pFormatCtx, videoStream, 0, AVSEEK_FLAG_BACKWARD);
-	if (p.buf)
-		av_packet_unref(&p);
+	//if (p.buf)
+	//	av_packet_unref(&p);
+	av_packet_unref(p);
+	av_packet_free(&p);
 	return count / m_fps;
 }
 
@@ -478,42 +482,30 @@ static int decode(AVCodecContext* dec_ctx, AVFrame* frame, int* got_frame, AVPac
 
 bool VideoDecoder::MoveNextFrame()
 {
-	AVPacket p;
-	av_init_packet(&p);
+	//AVPacket p;
+	//av_init_packet(&p);
+	AVPacket* p = av_packet_alloc();
 
 	int finish = 0;
 	while (finish == 0) {
-		if (p.buf) {
-			av_packet_unref(&p);
-		}
-		if (av_read_frame(pFormatCtx, &p) < 0) {
-			av_init_packet(&p);
+		av_packet_unref(p);
+		
+		if (av_read_frame(pFormatCtx, p) < 0) {
+			//av_init_packet(&p);
 		}
 
-		int ret = decode(pCodecCtx, pFrame, &finish, &p);
+		int ret = decode(pCodecCtx, pFrame, &finish, p);
 		if (ret == AVERROR(EAGAIN))
 			continue;
 		if (ret <= 0 && pFrame->data[0] == NULL) {
-			if (p.buf) {
-				av_packet_unref(&p);
-			}
+			//if (p.buf) {
+				av_packet_unref(p);
+			av_packet_free(&p);
+			//}
 			m_frame_pos = -1; // in case of error, invalidate m_frame_pos to be sure to call av_seek_frame next time
 			return false;
 		}
 	}
-
-	/* if (p.buf)
-		av_packet_unref(&p);
-	if (av_read_frame(pFormatCtx, &p) < 0)
-		av_init_packet(&p);
-	int finish = 0;
-	int ret = decode(pCodecCtx, pFrame, &finish, &p);
-	if (finish == 0 || (ret <= 0 && pFrame->data[0] == NULL)) {
-		if (p.buf)
-			av_packet_unref(&p);
-		m_frame_pos = -1; // in case of error, invalidate m_frame_pos to be sure to call av_seek_frame next time
-		return false;
-	}*/
 
 	// Convert YUV->DRGBPixel
 	if (pFrame->data[0]) {
@@ -528,8 +520,9 @@ bool VideoDecoder::MoveNextFrame()
 	m_last_dts = pFrame->pkt_dts;
 	m_frame_pos++;
 	m_time_pos = m_frame_pos * 1.0 * m_tech;
-	if (p.buf)
-		av_packet_unref(&p);
+	//if (p.buf)
+		av_packet_unref(p);
+	av_packet_free(&p);
 	return true;
 }
 
@@ -607,26 +600,27 @@ void VideoDecoder::SeekFrame(qint64 pos)
 	if (pos == 0)
 		return;
 
-	AVPacket p;
-	av_init_packet(&p);
+	AVPacket* p = av_packet_alloc();
+	//av_init_packet(&p);
 
 	while (true) {
 		int finish = 0;
 		while (finish == 0) {
-			if (p.buf) {
-				av_packet_unref(&p);
-			}
-			if (av_read_frame(pFormatCtx, &p) < 0) {
-				av_init_packet(&p);
+			av_packet_unref(p);
+			
+			if (av_read_frame(pFormatCtx, p) < 0) {
+				//av_init_packet(&p);
 			}
 
-			int ret = decode(pCodecCtx, pFrame, &finish, &p);
+			int ret = decode(pCodecCtx, pFrame, &finish, p);
 			if (ret == AVERROR(EAGAIN))
 				continue;
 			if (ret <= 0 && pFrame->data[0] == NULL) {
-				if (p.buf) {
-					av_packet_unref(&p);
-				}
+				//if (p.buf) 
+				//	av_packet_unref(&p);
+				av_packet_unref(p);
+				av_packet_free(&p);
+				
 				m_frame_pos = -1; // in case of error, invalidate m_frame_pos to be sure to call av_seek_frame next time
 				return;
 			}
@@ -648,8 +642,10 @@ void VideoDecoder::SeekFrame(qint64 pos)
 	}
 	m_frame_pos = (qint64)pos;
 	m_time_pos = pos / m_fps;
-	if (p.buf)
-		av_packet_unref(&p);
+	//if (p.buf)
+	//	av_packet_unref(&p);
+	av_packet_unref(p);
+	av_packet_free(&p);
 }
 
 double VideoDecoder::GetTotalTime() const

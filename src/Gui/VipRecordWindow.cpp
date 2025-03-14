@@ -1111,3 +1111,26 @@ void VipRegisterRecordWindow::setRecording(bool enable)
 	d_data->rec->setChecked(enable);
 	d_data->rec->blockSignals(false);
 }
+
+
+// open webcams
+void VipRegisterRecordWindow::openVideoStream(QAction* action)
+{
+	VipDisplayArea& area = *vipGetMainWindow()->displayArea();
+	VipDisplayPlayerArea* plarea = area.currentDisplayPlayerArea();
+	if (plarea) {
+		VipProcessingPool* pool = plarea->processingPool();
+
+		VipMPEGLoader* loader = new VipMPEGLoader(pool);
+		if (!loader->open("video=" + action->text(), "dshow")) {
+			delete loader;
+			VIP_LOG_ERROR("Cannot open video stream: " + action->text());
+			return;
+		}
+
+		// loader->setPath(action->text());
+
+		VipMultiDragWidget* bdw2 = vipCreateFromBaseDragWidget(vipCreateWidgetFromProcessingObject(loader));
+		plarea->addWidget(bdw2);
+	}
+}

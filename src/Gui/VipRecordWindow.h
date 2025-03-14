@@ -148,6 +148,7 @@ public:
 
 public Q_SLOTS:
 	void setRecording(bool);
+	void openVideoStream(QAction* action);
 
 private:
 	VIP_DECLARE_PRIVATE_DATA(d_data);

@@ -594,17 +594,15 @@ bool VideoEncoder::AddFrame(const QImage& im)
 		return false;
 	}
 
-	AVPacket pkt;
-	av_init_packet(&pkt);
-	pkt.data = NULL;
-	pkt.size = 0;
+	AVPacket* pkt = av_packet_alloc();
 
-	if (avcodec_receive_packet(context, &pkt) == 0) {
+	if (avcodec_receive_packet(context, pkt) == 0) {
 		// pkt.flags |= AV_PKT_FLAG_KEY;
-		pkt.duration = 1;
-		av_interleaved_write_frame(oc, &pkt);
-		av_packet_unref(&pkt);
+		pkt->duration = 1;
+		av_interleaved_write_frame(oc, pkt);
 	}
+	av_packet_unref(pkt);
+	av_packet_free(&pkt);
 	m_total_frame++;
 	m_frame_pos++;
 	m_time_pos += 1 / m_fps;
@@ -831,32 +829,27 @@ bool VideoCapture::AddFrame(uint8_t* data)
 		return false;
 	}
 
-	AVPacket pkt;
-	av_init_packet(&pkt);
-	pkt.data = nullptr;
-	pkt.size = 0;
+	AVPacket* pkt = av_packet_alloc();
 
-	if (avcodec_receive_packet(cctx, &pkt) == 0) {
-		av_interleaved_write_frame(ofctx, &pkt);
-		av_packet_unref(&pkt);
+	if (avcodec_receive_packet(cctx, pkt) == 0) {
+		av_interleaved_write_frame(ofctx, pkt);
+		
 	}
-
+	av_packet_unref(pkt);
+	av_packet_free(&pkt);
 	return true;
 }
 
 bool VideoCapture::Finish()
 {
 	// DELAYED FRAMES
-	AVPacket pkt;
-	av_init_packet(&pkt);
-	pkt.data = nullptr;
-	pkt.size = 0;
-
+	AVPacket* pkt = av_packet_alloc();
+	
 	for (;;) {
 		avcodec_send_frame(cctx, nullptr);
-		if (avcodec_receive_packet(cctx, &pkt) == 0) {
-			av_interleaved_write_frame(ofctx, &pkt);
-			av_packet_unref(&pkt);
+		if (avcodec_receive_packet(cctx, pkt) == 0) {
+			av_interleaved_write_frame(ofctx, pkt);
+			av_packet_unref(pkt);
 		}
 		else {
 			break;
@@ -871,6 +864,8 @@ bool VideoCapture::Finish()
 		}
 	}
 
+	av_packet_unref(pkt);
+	av_packet_free(&pkt);
 	Free();
 
 	return Remux();

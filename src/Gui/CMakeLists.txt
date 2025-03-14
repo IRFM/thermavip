@@ -43,7 +43,11 @@ target_compile_definitions(VipGui PRIVATE
 )
 
 if(WITH_PYTHON)
-	target_compile_definitions(VipGui PRIVATE VIP_WITH_PYTHON)
+	target_compile_definitions(VipGui PUBLIC VIP_WITH_PYTHON)
+endif()
+
+if(WITH_FFMPEG)
+	target_compile_definitions(VipGui PUBLIC VIP_WITH_FFMPEG)
 endif()
 
 
