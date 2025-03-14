@@ -53,8 +53,8 @@ if(NOT ${QT_VERSION_MAJOR} LESS 6)
 			#find_package(Qt${QT_VERSION_MAJOR} QUIET COMPONENTS ${WEB_ENGINE} )
 			#find_package(Qt${QT_VERSION_MAJOR} QUIET COMPONENTS Qt${QT_VERSION_MAJOR}WebEngineWidgets )
 
-			find_package(Qt6 REQUIRED COMPONENTS WebEngineCore)
-			find_package(Qt6 REQUIRED COMPONENTS WebEngineWidgets )
+			find_package(Qt6 QUIET COMPONENTS WebEngineCore)
+			find_package(Qt6 QUIET COMPONENTS WebEngineWidgets )
 			set(WEB_ENGINE Qt6WebEngineCore)
 			
 			if (${WEB_ENGINE}_FOUND)
