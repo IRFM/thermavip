@@ -1,0 +1,39 @@
+name: Build on Windows
+on: 
+
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main", "releases/**"  ]
+  workflow_dispatch:
+    inputs:
+      compiler:
+        required: false
+        type: string
+        default: msvc
+          
+  workflow_call:
+    inputs:
+      compiler:
+        required: true
+        type: string
+        default: msvc
+
+jobs:
+    build-windows:
+        runs-on: windows-latest
+        
+        steps:
+        - uses: actions/checkout@v4
+
+        - name: Install Qt
+          uses: jurplel/install-qt-action@v4
+
+        - name: Build on Windows
+          run: mkdir build
+              cd build
+              cmake .. -DCMAKE_BUILD_TYPE=Release -DNO_WARNINGS=ON -DLOCAL_INSTALL=ON
+              cmake --build ./
+              cmake --build . --target install
+
+        
