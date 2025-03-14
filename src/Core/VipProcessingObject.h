@@ -456,14 +456,8 @@ public:
 /// @brief A LIFO, thread safe VipDataList
 class VIP_CORE_EXPORT VipLIFOList : public VipDataList
 {
-	// Use QVector as queue with Qt6 (double ended vector),
-	// std::deque otherwise (still faster than QList).
-	// A growable circular buffer would be better here...
-#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
-	using QueueType = std::deque<VipAnyData>;
-#else
 	using QueueType = QVector<VipAnyData>;
-#endif
+
 	QueueType m_list;
 	VipAnyData m_last;
 	VipSpinlock m_mutex;
