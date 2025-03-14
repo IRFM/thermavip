@@ -46,7 +46,8 @@
 /// \addtogroup DataType
 /// @{
 
-#if defined(__GNUC__) && (__GNUC__ < 5)
+#ifndef VIP_HAS_CPP_17
+#if defined(__GNUC__) && (__GNUC__ < 5) && !defined(__clang__)
 
 namespace std
 {
@@ -65,6 +66,7 @@ namespace std
 	using void_t = typename void_details::make_void<T...>::type;
 }
 
+#endif
 #endif
  
 typedef VipHybridVector<double, -1> VipNDDoubleCoordinate;

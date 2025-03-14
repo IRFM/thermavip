@@ -106,11 +106,7 @@ struct VipRgb
 	}
 
 	/// @brief Convert to QRgb
-	QRgb toQRgb() const noexcept
-	{
-		VipRgb<quint8> tmp = clamp<quint8>(0, 255);
-		return reinterpret_cast<QRgb&>(tmp);
-	}
+	QRgb toQRgb() const noexcept;
 	/// @brief Convert to QColor
 	QColor toQColor() const noexcept { return QColor::fromRgba(toQRgb()); }
 
@@ -243,6 +239,15 @@ struct alignas(alignof(QRgb)) VipRgb<quint8>
 		return toQColor();
 	}
 };
+
+
+/// @brief Convert to QRgb
+template<class T>
+inline QRgb VipRgb<T>::toQRgb() const noexcept
+{
+	VipRgb<quint8> tmp = clamp<quint8>(0, 255);
+	return reinterpret_cast<QRgb&>(tmp);
+}
 
 typedef VipRgb<quint8> VipRGB;
 Q_DECLARE_METATYPE(VipRGB)

@@ -260,6 +260,7 @@ public:
 	} // return elems.end(); }
 
 #ifdef __GNUC__
+#pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Warray-bounds"
 #endif
 	  //  operator[]
@@ -271,9 +272,7 @@ public:
 	{
 		return m_elems[i];
 	}
-#ifdef __GNUC__
-#pragma GCC diagnostic pop
-#endif
+
 
 	reference at(size_type i) noexcept
 	{
@@ -441,6 +440,10 @@ public:
 		push_back(elem);
 		return *this;
 	}
+
+#ifdef __GNUC__
+#pragma GCC diagnostic pop
+#endif
 };
 
 

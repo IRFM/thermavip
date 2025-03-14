@@ -472,9 +472,14 @@ namespace detail
 		int out_type = qMetaTypeId<To>();
 		qsizetype in_size = QMetaType(data_type).sizeOf();
 		for (qsizetype i = 0; i < size; ++i) {
+
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
 			QMetaType::convert(ptr, data_type, dst, out_type);
 			ptr = (uchar*)(ptr) + in_size;
 			dst = (uchar*)(dst) + sizeof(To);
+#else
+			QMetaType::convert(QMetaType(data_type), ptr, QMetaType(out_type), dst);
+#endif
 		}
 	}
 
