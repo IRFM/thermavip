@@ -627,7 +627,7 @@ static QVariant currentPlayer()
 {
 	if (VipDisplayPlayerArea* area = vipGetMainWindow()->displayArea()->currentDisplayPlayerArea())
 		if (VipDragWidget* drag = area->dragWidgetHandler()->focusWidget())
-			if (VipAbstractPlayer* pl = qobject_cast<VipAbstractPlayer*>(drag->widget()))
+			if (/* VipAbstractPlayer* pl =*/ qobject_cast<VipAbstractPlayer*>(drag->widget()))
 				return QVariant::fromValue(VipUniqueId::id(static_cast<VipBaseDragWidget*>(drag)));
 	return QVariant(0);
 }

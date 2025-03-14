@@ -3,7 +3,6 @@
 #include <WinUser.h>
 #endif
 
-
 #include "VipPyIPython.h"
 #include "VipPyOperation.h"
 
@@ -22,27 +21,27 @@
 #include <qapplication.h>
 #include <qevent.h>
 
-
 // Codes to communicate through the shared memory
-#define SH_EXEC_FUN		"SH_EXEC_FUN     "
-#define SH_OBJECT		"SH_OBJECT       "
-#define SH_ERROR_TRACE	"SH_ERROR_TRACE  "
-#define SH_SEND_OBJECT	"SH_SEND_OBJECT  "
-#define SH_EXEC_CODE	"SH_EXEC_CODE    "
-#define SH_EXEC_LINE	"SH_EXEC_LINE    "
+#define SH_EXEC_FUN "SH_EXEC_FUN     "
+#define SH_OBJECT "SH_OBJECT       "
+#define SH_ERROR_TRACE "SH_ERROR_TRACE  "
+#define SH_SEND_OBJECT "SH_SEND_OBJECT  "
+#define SH_EXEC_CODE "SH_EXEC_CODE    "
+#define SH_EXEC_LINE "SH_EXEC_LINE    "
 #define SH_EXEC_LINE_NO_WAIT "SH_EXEC_LINE_NW "
-#define SH_RESTART		"SH_RESTART      "
-#define SH_RUNNING		"SH_RUNNING      "
+#define SH_RESTART "SH_RESTART      "
+#define SH_RUNNING "SH_RUNNING      "
 
 // Shared memory header
 typedef union MemHeader
 {
-	struct {
-		int connected; //number of connected user (max 2)
-		int size; //full memory size
-		int max_msg_size; //max size of a message
-		int offset_read; //read offset
-		int offset_write; //write offset
+	struct
+	{
+		int connected;	  // number of connected user (max 2)
+		int size;	  // full memory size
+		int max_msg_size; // max size of a message
+		int offset_read;  // read offset
+		int offset_write; // write offset
 	};
 	char reserved[64];
 } MemHeader;
@@ -74,25 +73,27 @@ Shared memory object used to communicate between processes through a very simple
 */
 class SharedMemory : public QThread
 {
-	QSharedMemory d_mem; 
+	QSharedMemory d_mem;
 	MemHeader d_header;
 	bool d_main;
 	bool d_stop;
 	VipPyLocal d_loc;
 	QMutex d_mutex;
-public: 
-	 
+
+public:
 	SharedMemory(const QString& name, int size, bool is_main = false)
-		:d_mem(name), d_main(false), d_stop(false)
+	  : d_mem(name)
+	  , d_main(false)
+	  , d_stop(false)
 	{
-		if (!d_mem.attach()) { 
+		if (!d_mem.attach()) {
 			if (!d_mem.create(size)) {
 				vip_debug("error: %s\n", d_mem.errorString().toLatin1().data());
 				VIP_LOG_ERROR("error: %s\n", d_mem.errorString().toLatin1().data());
 				return;
 			}
 			d_mem.lock();
-			//create header
+			// create header
 			d_header.connected = 1;
 			d_header.size = size;
 			d_header.max_msg_size = (size - sizeof(d_header) - 16) / 2;
@@ -104,10 +105,10 @@ public:
 		}
 		else {
 
-			//read an existing shared memory
+			// read an existing shared memory
 			d_mem.lock();
 			memcpy(&d_header, d_mem.data(), sizeof(d_header));
-			if (false) {//++d_header.connected > 2) {
+			if (false) { //++d_header.connected > 2) {
 				d_mem.unlock();
 				d_mem.detach();
 				vip_debug("error: shared memory already in use");
@@ -115,21 +116,22 @@ public:
 				return;
 			}
 			memcpy(d_mem.data(), &d_header, sizeof(d_header));
-			//invert read and write offset if not main
+			// invert read and write offset if not main
 			if (!is_main)
 				std::swap(d_header.offset_read, d_header.offset_write);
 			d_mem.unlock();
 			d_main = is_main;
 		}
 
-		//start thread
+		// start thread
 		d_loc.start();
 		this->start();
 	}
 
-	~SharedMemory() {
+	~SharedMemory()
+	{
 		if (d_mem.isAttached()) {
-			//write new connected number
+			// write new connected number
 			--d_header.connected;
 			if (!d_main)
 				std::swap(d_header.offset_read, d_header.offset_write);
@@ -146,7 +148,8 @@ public:
 	void acquire() { d_mutex.lock(); }
 	void release() { d_mutex.unlock(); }
 
-	QByteArray flags() {
+	QByteArray flags()
+	{
 		d_mem.lock();
 		QByteArray res(44, 0);
 		memcpy(res.data(), (char*)d_mem.data() + 20, 44);
@@ -160,7 +163,7 @@ public:
 
 	bool waitForEmptyWrite(qint64 until = -1)
 	{
-		//wait for the write area to be empty
+		// wait for the write area to be empty
 		while (true) {
 			d_mem.lock();
 			int s = 0;
@@ -177,30 +180,27 @@ public:
 		return true;
 	}
 
-	bool writeAscii(const char* data, int milli_timmeout = -1)
-	{
-		return write(data, (int)strlen(data), milli_timmeout);
-	}
+	bool writeAscii(const char* data, int milli_timmeout = -1) { return write(data, (int)strlen(data), milli_timmeout); }
 	bool write(const char* data, int size, int milli_timeout = -1)
 	{
 		if (!d_mem.isAttached())
 			return false;
 
-		//write a message
-		//first 4 bytes is the message size
-		//next 4 bytes is a flag telling if the message is finished (for message length longer than the write buffer)
+		// write a message
+		// first 4 bytes is the message size
+		// next 4 bytes is a flag telling if the message is finished (for message length longer than the write buffer)
 
 		qint64 start = QDateTime::currentMSecsSinceEpoch();
 		qint64 until = milli_timeout == -1 ? -1 : start + milli_timeout;
 
 		do {
-			//write for write area to be available
+			// write for write area to be available
 			if (!waitForEmptyWrite(until))
 				return false;
 
 			int flag = size > d_header.max_msg_size;
 			int s = flag ? d_header.max_msg_size : size;
-			//write size and flag
+			// write size and flag
 			d_mem.lock();
 			memcpy((char*)d_mem.data() + d_header.offset_write, &s, sizeof(s));
 			memcpy((char*)d_mem.data() + d_header.offset_write + 4, &flag, sizeof(flag));
@@ -210,7 +210,7 @@ public:
 			data += s;
 
 			if (size > 0 && until != -1 && QDateTime::currentMSecsSinceEpoch() >= until) {
-				//reset write area
+				// reset write area
 				flag = s = 0;
 				d_mem.lock();
 				memcpy((char*)d_mem.data() + d_header.offset_write, &s, sizeof(s));
@@ -221,7 +221,6 @@ public:
 
 		} while (size > 0);
 
-
 		return true;
 	}
 
@@ -230,13 +229,12 @@ public:
 		if (!d_mem.isAttached())
 			return false;
 
-		//read message
+		// read message
 		qint64 start = QDateTime::currentMSecsSinceEpoch();
 		qint64 until = milli_timeout == -1 ? -1 : start + milli_timeout;
 
 		data.clear();
-		while (true)
-		{
+		while (true) {
 			int flag = 0, s = 0;
 			d_mem.lock();
 			memcpy(&s, (char*)d_mem.data() + d_header.offset_read, 4);
@@ -253,7 +251,7 @@ public:
 			data.resize(data.size() + s);
 			d_mem.lock();
 			memcpy(data.data() + prev, (char*)d_mem.data() + d_header.offset_read + 8, s);
-			//set read area to 0
+			// set read area to 0
 			int unused = 0;
 			memcpy((char*)d_mem.data() + d_header.offset_read, &unused, 4);
 			memcpy((char*)d_mem.data() + d_header.offset_read + 4, &unused, 4);
@@ -264,19 +262,17 @@ public:
 		return true;
 	}
 
-
-
 	/**
-	* Send python object called 'name' through the shared memory
-	*/
+	 * Send python object called 'name' through the shared memory
+	 */
 	bool writeObject(const QString& name, qint64 timeout = -1, QString* error = nullptr)
 	{
 		if (error)
 			error->clear();
-		QString code =
-			"import pickle\n"
-			"import struct\n"
-			"__res = b'" SH_OBJECT "' +struct.pack('i',len('" + name + "')) + b'" + name + "' + pickle.dumps(" + name + ")";
+		QString code = "import pickle\n"
+			       "import struct\n"
+			       "__res = b'" SH_OBJECT "' +struct.pack('i',len('" +
+			       name + "')) + b'" + name + "' + pickle.dumps(" + name + ")";
 
 		VipPyError err = d_loc.execCode(code).value().value<VipPyError>();
 		if (!err.isNull()) {
@@ -287,34 +283,35 @@ public:
 			return false;
 		}
 
-		//send result
+		// send result
 		QVariant v = d_loc.retrieveObject("__res").value();
 		QByteArray tmp = v.toByteArray();
 		if (!this->write(tmp.data(), tmp.size(), timeout)) {
-			if (error) *error = "Error writing to shared memory";
+			if (error)
+				*error = "Error writing to shared memory";
 			return false;
 		}
 		return true;
 	}
 	/**
-	* Send python object called 'name' through the shared memory
-	*/
-	bool writeObject(const QString& name, const QVariant & v, qint64 timeout = -1, QString* error = nullptr)
+	 * Send python object called 'name' through the shared memory
+	 */
+	bool writeObject(const QString& name, const QVariant& v, qint64 timeout = -1, QString* error = nullptr)
 	{
 		if (error)
 			error->clear();
 
-		VipPyError err =d_loc.sendObject(name, v).value().value<VipPyError>();
+		VipPyError err = d_loc.sendObject(name, v).value().value<VipPyError>();
 		if (!err.isNull()) {
 			if (error)
 				*error = err.traceback;
 			return false;
 		}
 
-		QString code =
-			"import pickle\n"
-			"import struct\n"
-			"__res = b'" SH_OBJECT "' +struct.pack('i',len('" + name + "')) + b'" + name + "' + pickle.dumps(" + name + ")";
+		QString code = "import pickle\n"
+			       "import struct\n"
+			       "__res = b'" SH_OBJECT "' +struct.pack('i',len('" +
+			       name + "')) + b'" + name + "' + pickle.dumps(" + name + ")";
 
 		err = d_loc.execCode(code).value().value<VipPyError>();
 		if (!err.isNull()) {
@@ -325,11 +322,12 @@ public:
 			return false;
 		}
 
-		//send result 
-		QVariant _v = d_loc.retrieveObject("__res").value(); 
-		QByteArray tmp = _v.toByteArray(); 
-		if (!this->write(tmp.data(), tmp.size(), timeout)) { 
-			if (error) *error = "Error writing to shared memory";
+		// send result
+		QVariant _v = d_loc.retrieveObject("__res").value();
+		QByteArray tmp = _v.toByteArray();
+		if (!this->write(tmp.data(), tmp.size(), timeout)) {
+			if (error)
+				*error = "Error writing to shared memory";
 			return false;
 		}
 		return true;
@@ -339,27 +337,28 @@ public:
 		QByteArray _name = name.toLatin1();
 		QByteArray ar = SH_SEND_OBJECT + toBinary(_name.size()) + _name;
 		if (!this->write(ar.data(), ar.size(), timeout)) {
-			if (error) *error = "Error writing to shared memory";
+			if (error)
+				*error = "Error writing to shared memory";
 			return false;
 		}
 		return true;
 	}
 	/**
-	* Send error message through the shared memory
-	*/
+	 * Send error message through the shared memory
+	 */
 	bool writeError(const QString& err, qint64 timeout = -1)
 	{
 		QByteArray _err = err.toLatin1();
 		QByteArray ar = SH_ERROR_TRACE + toBinary(_err.size()) + _err;
 		return this->write(ar.data(), ar.size(), timeout);
 	}
-	bool  writeExecCode(const QString& code, qint64 timeout = -1)
+	bool writeExecCode(const QString& code, qint64 timeout = -1)
 	{
 		QByteArray _code = code.toLatin1();
 		QByteArray ar = SH_EXEC_CODE + toBinary(_code.size()) + _code;
 		return this->write(ar.data(), ar.size(), timeout);
 	}
-		
+
 	bool writeExecLine(const QString& code, qint64 timeout = -1)
 	{
 		QByteArray _code = code.toLatin1();
@@ -374,7 +373,7 @@ public:
 		return this->write(ar.data(), ar.size(), timeout);
 	}
 
-	bool writeRestart( qint64 timeout = -1)
+	bool writeRestart(qint64 timeout = -1)
 	{
 		QByteArray ar = SH_RESTART;
 		return this->write(ar.data(), ar.size(), timeout);
@@ -386,7 +385,7 @@ public:
 		return this->write(ar.data(), ar.size(), timeout);
 	}
 
-	bool readObject( QByteArray ar, QVariant& v, QString* error = nullptr)
+	bool readObject(QByteArray ar, QVariant& v, QString* error = nullptr)
 	{
 		if (error)
 			error->clear();
@@ -402,25 +401,27 @@ public:
 		QByteArray name = ar.mid(0, len);
 		ar = ar.mid(len);
 
-		//load object with pickle
+		// load object with pickle
 		VipPyError err = d_loc.sendObject("__ar", QVariant::fromValue(ar)).value().value<VipPyError>();
 		if (!err.isNull()) {
-			if (error) *error = err.traceback;
+			if (error)
+				*error = err.traceback;
 			return false;
 		}
 
-		QString code =
-			"import pickle\n"
-			"__res =  pickle.loads(__ar)";
+		QString code = "import pickle\n"
+			       "__res =  pickle.loads(__ar)";
 		err = d_loc.execCode(code).value().value<VipPyError>();
 		if (!err.isNull()) {
-			if (error) *error = err.traceback;
+			if (error)
+				*error = err.traceback;
 			return false;
 		}
 
 		v = d_loc.retrieveObject("__res").value();
 		if (!v.value<VipPyError>().isNull()) {
-			if (error) *error = v.value<VipPyError>().traceback;
+			if (error)
+				*error = v.value<VipPyError>().traceback;
 			return false;
 		}
 		return true;
@@ -431,7 +432,7 @@ public:
 		if (!ar.startsWith(SH_ERROR_TRACE))
 			return false;
 		ar = ar.mid(strlen(SH_ERROR_TRACE));
-		int len = readBinary(ar);
+		/* int len =*/readBinary(ar);
 		ar = ar.mid(4);
 		error = ar;
 		return true;
@@ -445,30 +446,30 @@ protected:
 		while (!d_stop) {
 
 			QByteArray ar;
-			//lock the reading part to avoid collision with other commands
+			// lock the reading part to avoid collision with other commands
 			acquire();
-			bool r = this->read(ar,5);
+			bool r = this->read(ar, 5);
 			release();
-			if (ar.isEmpty())  {
+			if (ar.isEmpty()) {
 				QThread::msleep(5);
 				continue;
 			}
 
 			if (r && ar.size()) {
 
-				//interpret read value
- 
+				// interpret read value
+
 				if (ar.startsWith(SH_EXEC_FUN)) {
-					//execute internal python function
+					// execute internal python function
 					ar = ar.mid(strlen(SH_EXEC_FUN));
 					QDataStream str(ar);
 					str.setByteOrder(QDataStream::LittleEndian);
 					int s1 = 0, s2 = 0, s3 = 0;
-					str >> s1 >> s2 >> s3; //read function name len, tuple args len, dict args len
+					str >> s1 >> s2 >> s3; // read function name len, tuple args len, dict args len
 					if (!s1 || !s2 || !s3) {
 						continue;
 					}
-					//send pickle versions of variables. name is already the ascii function name.
+					// send pickle versions of variables. name is already the ascii function name.
 					QByteArray name(s1, 0), targs(s2, 0), dargs(s3, 0);
 					str.readRawData(name.data(), name.size());
 					str.readRawData(targs.data(), targs.size());
@@ -483,7 +484,7 @@ protected:
 						       //"__res = " + name + "(*__targs, **__dargs)\n";
 						       "__res = builtins.internal.call_internal_func('" +
 						       name + "', *__targs, **__dargs)";
-					VipPyError err =d_loc.execCode(code).value().value<VipPyError>();
+					VipPyError err = d_loc.execCode(code).value().value<VipPyError>();
 					if (!err.isNull()) {
 						vip_debug("%s\n", err.traceback.toLatin1().data());
 						VIP_LOG_ERROR("%s\n", err.traceback.toLatin1().data());
@@ -496,16 +497,12 @@ protected:
 					}
 				}
 				else {
-					//vip_debug("%s\n", ar.data());
+					// vip_debug("%s\n", ar.data());
 				}
 			}
 		}
-		bool stop = true;
 	}
 };
-
-
-
 
 QString vipPyGlobalSharedMemoryName()
 {
@@ -514,7 +511,6 @@ QString vipPyGlobalSharedMemoryName()
 	static SharedMemory _global_mem(str, 50000000, true);
 	return str;
 }
-
 
 static int _fontSize{ 10 };
 static QString _style;
@@ -537,24 +533,22 @@ QString vipIPythonStyle()
 	return _style;
 }
 
-
-
 class VipIPythonShellProcess::PrivateData
 {
 public:
 	QString sharedMemoryName;
-	SharedMemory * mem;
+	SharedMemory* mem;
 	QString lastError;
 	qint64 pid;
 	int timeout;
 	bool embedded;
-}; 
+};
 
 VipIPythonShellProcess::VipIPythonShellProcess(QObject* parent)
-	:QProcess(parent)
+  : QProcess(parent)
 {
 	VIP_CREATE_PRIVATE_DATA(d_data);
-	d_data->mem = nullptr; 
+	d_data->mem = nullptr;
 	d_data->timeout = 3000;
 	d_data->embedded = false;
 	d_data->pid = 0;
@@ -591,10 +585,10 @@ bool VipIPythonShellProcess::embedded() const
 	return d_data->embedded;
 }
 
-qint64 VipIPythonShellProcess::start(int font_size, const QString& _style , const QString& _shared_memory_name)
+qint64 VipIPythonShellProcess::start(int font_size, const QString& _style, const QString& _shared_memory_name)
 {
 	d_data->lastError.clear();
-	
+
 	QString style = _style;
 	if (style.isEmpty())
 		style = vipIPythonStyle();
@@ -603,16 +597,16 @@ qint64 VipIPythonShellProcess::start(int font_size, const QString& _style , cons
 	if (font_size < 0)
 		font_size = vipIPythonFontSize();
 
-	//kill running process
+	// kill running process
 	if (state() == Running) {
 		terminate();
 		if (!waitForFinished(1000))
 			kill();
 		waitForFinished();
-	} 
+	}
 
-	//initialize shared memory
-	if (d_data->mem ) {
+	// initialize shared memory
+	if (d_data->mem) {
 		delete d_data->mem;
 		d_data->mem = nullptr;
 	}
@@ -620,10 +614,9 @@ qint64 VipIPythonShellProcess::start(int font_size, const QString& _style , cons
 	QString shared_memory_name = _shared_memory_name;
 	if (shared_memory_name.isEmpty()) {
 		shared_memory_name = d_data->sharedMemoryName;
-		if(shared_memory_name.isEmpty() || !isFreeName(shared_memory_name))
+		if (shared_memory_name.isEmpty() || !isFreeName(shared_memory_name))
 			shared_memory_name = findNextMemoryName();
 	}
-		
 
 	if (!d_data->mem) {
 		d_data->mem = new SharedMemory(shared_memory_name, 50000000, true);
@@ -646,14 +639,16 @@ qint64 VipIPythonShellProcess::start(int font_size, const QString& _style , cons
 	QString python = VipPyInterpreter::instance()->python();
 	vip_debug("Start IPython with %s\n", python.toLatin1().data());
 	python.replace("\\", "/");
-	QString cmd = python + " " + path + " " + QString::number(font_size) + " " + style +
-		" \"import sys; sys.path.append('" + sys_path + "');import Thermavip; Thermavip.setSharedMemoryName('" + shared_memory_name + "'); Thermavip._ipython_interp = __interp \""
-		" \"" + current + "\" " + QString::number(qApp->applicationPid());
-	
+	QString cmd = python + " " + path + " " + QString::number(font_size) + " " + style + " \"import sys; sys.path.append('" + sys_path + "');import Thermavip; Thermavip.setSharedMemoryName('" +
+		      shared_memory_name +
+		      "'); Thermavip._ipython_interp = __interp \""
+		      " \"" +
+		      current + "\" " + QString::number(qApp->applicationPid());
+
 	QStringList args;
 	args << path << QString::number(font_size) << style
-	     << "import sys; sys.path.append('" + sys_path + "');import Thermavip; Thermavip.setSharedMemoryName('" + shared_memory_name + "'); Thermavip._ipython_interp = __interp"
-	     << current << QString::number(qApp->applicationPid());
+	     << "import sys; sys.path.append('" + sys_path + "');import Thermavip; Thermavip.setSharedMemoryName('" + shared_memory_name + "'); Thermavip._ipython_interp = __interp" << current
+	     << QString::number(qApp->applicationPid());
 
 	if (d_data->embedded) {
 
@@ -664,7 +659,6 @@ qint64 VipIPythonShellProcess::start(int font_size, const QString& _style , cons
 
 	QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
 
-
 #ifdef _WIN32
 	// For windows, we must add some paths to PATH in case of anaconda install
 	// First, we need the python path
@@ -674,18 +668,15 @@ qint64 VipIPythonShellProcess::start(int font_size, const QString& _style , cons
 	p.start(python, _args);
 	p.waitForStarted();
 	p.waitForFinished();
-	
-	QByteArray ar = p.readAllStandardOutput() ;
+
+	QByteArray ar = p.readAllStandardOutput();
 	QString err = p.errorString();
 	if (!ar.isEmpty()) {
 		vip_debug("found Python at %s\n", ar.data());
 		VIP_LOG_INFO("Found Python at %s\n", ar.data());
 		QString pdir = QFileInfo(QString(ar)).absolutePath();
 		QStringList lst;
-		lst << pdir + "/Library/bin" <<
-			pdir + "/bin" <<
-			pdir + "/condabin" <<
-			pdir + "/Scripts";
+		lst << pdir + "/Library/bin" << pdir + "/bin" << pdir + "/condabin" << pdir + "/Scripts";
 
 		QString path = env.value("PATH");
 		if (!path.endsWith(";"))
@@ -694,13 +685,13 @@ qint64 VipIPythonShellProcess::start(int font_size, const QString& _style , cons
 		env.insert("PATH", path);
 		vip_debug("path: %s\n", path.toLatin1().data());
 	}
-	
+
 #else
-	#ifndef VIP_PYTHONHOME
-		//remove PYTHONHOME and PYTHONPATH set by thermavip
-		env.remove("PYTHONHOME");
-		env.remove("PYTHONPATH");
-	#endif
+#ifndef VIP_PYTHONHOME
+	// remove PYTHONHOME and PYTHONPATH set by thermavip
+	env.remove("PYTHONHOME");
+	env.remove("PYTHONPATH");
+#endif
 #endif
 	this->setProcessEnvironment(env);
 
@@ -710,12 +701,12 @@ qint64 VipIPythonShellProcess::start(int font_size, const QString& _style , cons
 	QDir::setCurrent(env.value("HOME"));
 #endif
 
-	this->QProcess::start(python,args);
+	this->QProcess::start(python, args);
 	this->waitForStarted(5000);
 
 	QDir::setCurrent(current);
 
-	//read pid
+	// read pid
 	qint64 pid = 0;
 	while (state() == Running) {
 		if (waitForReadyRead(timeout())) {
@@ -723,12 +714,12 @@ qint64 VipIPythonShellProcess::start(int font_size, const QString& _style , cons
 			vip_debug("%s\n", tmp.data());
 			pid = tmp.split('\n').first().toLongLong();
 			break;
-		} 
-	} 
+		}
+	}
 
 	if (pid == 0 && state() == Running) {
-		//kill
-		terminate(); 
+		// kill
+		terminate();
 		if (!waitForFinished(1000))
 			kill();
 		d_data->lastError = this->errorString() + "\n" + readAllStandardError();
@@ -741,21 +732,18 @@ qint64 VipIPythonShellProcess::start(int font_size, const QString& _style , cons
 		vip_debug("%s\n", d_data->lastError.toLatin1().data());
 	}
 
-	
-	return d_data->pid = pid; 
-} 
+	return d_data->pid = pid;
+}
 
 qint64 VipIPythonShellProcess::windowId() const
 {
 	return d_data->pid;
 }
 
-
 QString VipIPythonShellProcess::sharedMemoryName() const
 {
-	return d_data->sharedMemoryName; 
+	return d_data->sharedMemoryName;
 }
-
 
 bool VipIPythonShellProcess::sendObject(const QString& name, const QVariant& obj)
 {
@@ -769,16 +757,16 @@ bool VipIPythonShellProcess::sendObject(const QString& name, const QVariant& obj
 	QString error;
 	d_data->mem->acquire();
 
-	//write object
+	// write object
 	bool r = d_data->mem->writeObject(name, obj, timeout(), &error);
 	if (!r) {
-		d_data->lastError = error; 
+		d_data->lastError = error;
 		d_data->mem->release();
 		vip_debug("%s\n", d_data->lastError.toLatin1().data());
 		return false;
 	}
-	 
-	//read reply
+
+	// read reply
 	QByteArray res;
 	if (!d_data->mem->read(res, timeout())) {
 		QByteArray r = readAllStandardError();
@@ -815,7 +803,7 @@ QVariant VipIPythonShellProcess::retrieveObject(const QString& name)
 	QString error;
 	d_data->mem->acquire();
 
-	//write object
+	// write object
 	bool r = d_data->mem->writeSendObject(name, timeout(), &error);
 	if (!r) {
 		d_data->lastError = error;
@@ -824,7 +812,7 @@ QVariant VipIPythonShellProcess::retrieveObject(const QString& name)
 		return QVariant::fromValue(VipPyError(error + " "));
 	}
 
-	//read reply
+	// read reply
 	QByteArray ar;
 	r = d_data->mem->read(ar, timeout());
 	d_data->mem->release();
@@ -835,7 +823,7 @@ QVariant VipIPythonShellProcess::retrieveObject(const QString& name)
 			d_data->lastError += "\n" + r;
 		d_data->mem->release();
 		vip_debug("%s\n", d_data->lastError.toLatin1().data());
-		return QVariant::fromValue(VipPyError(d_data->lastError ));
+		return QVariant::fromValue(VipPyError(d_data->lastError));
 	}
 
 	QVariant v;
@@ -845,14 +833,13 @@ QVariant VipIPythonShellProcess::retrieveObject(const QString& name)
 			d_data->lastError = error;
 			vip_debug("%s\n", d_data->lastError.toLatin1().data());
 			return QVariant::fromValue(VipPyError(error + " "));
-		} 
+		}
 		d_data->lastError = saved;
 		return QVariant::fromValue(VipPyError(saved + " "));
 	}
 
 	return v;
 }
-
 
 bool VipIPythonShellProcess::execCode(const QString& code)
 {
@@ -865,14 +852,14 @@ bool VipIPythonShellProcess::execCode(const QString& code)
 
 	d_data->mem->acquire();
 
-	//write object
+	// write object
 	bool r = d_data->mem->writeExecCode(code, timeout());
 	if (!r) {
 		d_data->lastError = "error while sending code to execute";
-		d_data->mem->release(); 
+		d_data->mem->release();
 		vip_debug("%s\n", d_data->lastError.toLatin1().data());
-		return false; 
-	} 
+		return false;
+	}
 
 	QByteArray res;
 	if (!d_data->mem->read(res, timeout())) {
@@ -886,12 +873,12 @@ bool VipIPythonShellProcess::execCode(const QString& code)
 	}
 	d_data->mem->release();
 
-	QString error;  
-	
+	QString error;
+
 	if (!d_data->mem->readError(res, error)) {
 		d_data->lastError = "error while interpreting reply";
 		vip_debug("%s\n", d_data->lastError.toLatin1().data());
-		return false; 
+		return false;
 	}
 
 	if (error.isEmpty())
@@ -900,7 +887,6 @@ bool VipIPythonShellProcess::execCode(const QString& code)
 	d_data->lastError = error;
 	return false;
 }
-
 
 bool VipIPythonShellProcess::execLine(const QString& code)
 {
@@ -913,7 +899,7 @@ bool VipIPythonShellProcess::execLine(const QString& code)
 
 	d_data->mem->acquire();
 
-	//write object
+	// write object
 	bool r = d_data->mem->writeExecLine(code, timeout());
 	if (!r) {
 		d_data->lastError = "error while sending code to execute";
@@ -950,7 +936,6 @@ bool VipIPythonShellProcess::execLine(const QString& code)
 	return false;
 }
 
-
 bool VipIPythonShellProcess::execLineNoWait(const QString& code)
 {
 	d_data->lastError.clear();
@@ -960,7 +945,7 @@ bool VipIPythonShellProcess::execLineNoWait(const QString& code)
 		return false;
 	}
 
-	//write line
+	// write line
 	d_data->mem->acquire();
 	bool r = d_data->mem->writeExecLineNoWait(code, timeout());
 	d_data->mem->release();
@@ -984,9 +969,9 @@ bool VipIPythonShellProcess::restart()
 
 	d_data->mem->acquire();
 
-	//write object
+	// write object
 	bool r = d_data->mem->writeRestart(timeout());
-	if (!r) { 
+	if (!r) {
 		d_data->lastError = "error while sending 'restart' command";
 		d_data->mem->release();
 		vip_debug("%s\n", d_data->lastError.toLatin1().data());
@@ -1030,16 +1015,16 @@ bool VipIPythonShellProcess::isRunningCode()
 		return false;
 	}
 
-	//read flag
+	// read flag
 	char c = d_data->mem->flags()[0];
 	if (c)
 		return true;
-	else 
-		return false; 
+	else
+		return false;
 
-	d_data->mem->acquire(); 
+	d_data->mem->acquire();
 
-	//write object
+	// write object
 	bool r = d_data->mem->writeIsRunningCode(timeout());
 	if (!r) {
 		d_data->lastError = "error while sending 'running' command";
@@ -1048,25 +1033,22 @@ bool VipIPythonShellProcess::isRunningCode()
 		return false;
 	}
 
-	//read reply
+	// read reply
 	QByteArray res;
 	if (!d_data->mem->read(res, timeout())) {
-		
+
 		waitForReadyRead(100);
 		QByteArray r = readAllStandardError();
 		vip_debug("'%s' '%s'\n", readAllStandardOutput().data(), r.data());
 		d_data->lastError = "Timeout";
 		if (!r.isEmpty())
 			d_data->lastError += "\n" + r;
-		d_data->mem->release(); 
+		d_data->mem->release();
 		vip_debug("%s\n", d_data->lastError.toLatin1().data());
 		return true;
 	}
 	d_data->mem->release();
-	if (res.size() > 1)
-		bool stop = true;
 	return (bool)res.toInt();
-
 }
 
 QString VipIPythonShellProcess::lastError() const
@@ -1077,7 +1059,7 @@ QString VipIPythonShellProcess::lastError() const
 void VipIPythonShellProcess::setStyleSheet(const QString& st)
 {
 
-	//send style sheet
+	// send style sheet
 	QByteArray stylesheet = "SH_STYLE_SHEET  " + qApp->styleSheet().toLatin1();
 	d_data->mem->write(stylesheet.data(), stylesheet.size());
 }
@@ -1102,10 +1084,6 @@ bool VipIPythonShellProcess::isFreeName(const QString& name)
 	return true;
 }
 
-	
-
-
-
 #include <qwindow.h>
 #include <qlayout.h>
 
@@ -1121,9 +1099,8 @@ public:
 	qint64 wid;
 };
 
-
 VipIPythonShellWidget::VipIPythonShellWidget(int font_size, const QString& style, QWidget* parent)
-	:QWidget(parent) 
+  : QWidget(parent)
 {
 	VIP_CREATE_PRIVATE_DATA(d_data);
 	d_data->font_size = font_size;
@@ -1132,28 +1109,27 @@ VipIPythonShellWidget::VipIPythonShellWidget(int font_size, const QString& style
 	d_data->process.setEmbedded(true);
 	qint64 pid = d_data->wid = d_data->process.start(font_size, style);
 
-	if (pid) { 
+	if (pid) {
 		WId handle = (WId)pid;
 
-		//TEST
-/* #ifdef _WIN32
-		SetParent((HWND)handle, (HWND)this->window()->winId());
-		SetWindowLongPtrW((HWND)handle, GWL_STYLE, WS_POPUP);
-#endif*/
+		// TEST
+		/* #ifdef _WIN32
+				SetParent((HWND)handle, (HWND)this->window()->winId());
+				SetWindowLongPtrW((HWND)handle, GWL_STYLE, WS_POPUP);
+		#endif*/
 
 		d_data->window = QWindow::fromWinId((WId)handle);
-		d_data->widget = QWidget::createWindowContainer(d_data->window,this);
+		d_data->widget = QWidget::createWindowContainer(d_data->window, this);
 		d_data->widget->setObjectName("VipIPythonShellWidget");
 		d_data->layout = new QVBoxLayout();
-		//d_data->layout->setContentsMargins(0, 0, 0, 0);
+		// d_data->layout->setContentsMargins(0, 0, 0, 0);
 		d_data->layout->setContentsMargins(5, 5, 5, 5);
 		d_data->layout->addWidget(d_data->widget);
 		setLayout(d_data->layout);
 
-		d_data->process.setStyleSheet(qApp->styleSheet() );
-		//launch startup code
+		d_data->process.setStyleSheet(qApp->styleSheet());
+		// launch startup code
 		d_data->process.execCode(VipPyInterpreter::instance()->startupCode());
-
 
 #ifdef _WIN32
 		SetFocus((HWND)handle);
@@ -1194,7 +1170,7 @@ bool VipIPythonShellWidget::restartProcess()
 		d_data->widget = QWidget::createWindowContainer(d_data->window);
 		d_data->layout->addWidget(d_data->widget);
 		d_data->process.setStyleSheet(qApp->styleSheet());
-		//launch startup code
+		// launch startup code
 		d_data->process.execCode(VipPyInterpreter::instance()->startupCode());
 		return true;
 	}
@@ -1204,7 +1180,6 @@ bool VipIPythonShellWidget::restartProcess()
 	}
 }
 
-
 void VipIPythonShellWidget::focusChanged(QWidget* old, QWidget* now)
 {
 #ifdef _WIN32
@@ -1213,21 +1188,23 @@ void VipIPythonShellWidget::focusChanged(QWidget* old, QWidget* now)
 #endif
 }
 
-
-
-
-
-
 #include <qtimer.h>
 
 class VipIPythonTabBar::PrivateData
 {
 public:
-	PrivateData() : tabWidget(nullptr), dragIndex(-1),
-		closeIcon(vipIcon("close.png")), restartIcon(vipIcon("restart.png")),
-		hoverCloseIcon(vipIcon("close.png")), hoverRestartIcon(vipIcon("restart.png")),
-		selectedCloseIcon(vipIcon("close.png")), selectedRestartIcon(vipIcon("restart.png")) ,
-		hoverIndex(-1){}
+	PrivateData()
+	  : tabWidget(nullptr)
+	  , dragIndex(-1)
+	  , hoverIndex(-1)
+	  , closeIcon(vipIcon("close.png"))
+	  , restartIcon(vipIcon("restart.png"))
+	  , hoverCloseIcon(vipIcon("close.png"))
+	  , hoverRestartIcon(vipIcon("restart.png"))
+	  , selectedCloseIcon(vipIcon("close.png"))
+	  , selectedRestartIcon(vipIcon("restart.png"))
+	{
+	}
 	VipIPythonTabWidget* tabWidget;
 	int dragIndex;
 	int hoverIndex;
@@ -1241,21 +1218,19 @@ public:
 };
 
 VipIPythonTabBar::VipIPythonTabBar(VipIPythonTabWidget* parent)
-	:QTabBar(parent)
+  : QTabBar(parent)
 {
 	setIconSize(QSize(18, 18));
 	setMouseTracking(true);
 
 	VIP_CREATE_PRIVATE_DATA(d_data);
 	d_data->tabWidget = parent;
-	
+
 	connect(this, SIGNAL(currentChanged(int)), this, SLOT(updateIcons()));
-	addTab("+");//vipIcon("add_page.png"),QString());
+	addTab("+"); // vipIcon("add_page.png"),QString());
 }
 
-VipIPythonTabBar::~VipIPythonTabBar()
-{
-}
+VipIPythonTabBar::~VipIPythonTabBar() {}
 
 QIcon VipIPythonTabBar::closeIcon() const
 {
@@ -1322,18 +1297,16 @@ VipIPythonTabWidget* VipIPythonTabBar::ipythonTabWidget() const
 	return const_cast<VipIPythonTabWidget*>(d_data->tabWidget);
 }
 
-void	VipIPythonTabBar::tabInserted(int index)
+void VipIPythonTabBar::tabInserted(int index)
 {
-	if (index < count() - 1)
-	{
+	if (index < count() - 1) {
 		VipIPythonShellWidget* area = qobject_cast<VipIPythonShellWidget*>(ipythonTabWidget()->widget(index));
 		if (area) {
 
 			QToolBar* bar = new QToolBar();
 			bar->setIconSize(QSize(18, 18));
-			bar->setParent(this); 
-			//bar->setMinimumSize(bar->sizeHint());
-			
+			bar->setParent(this);
+			// bar->setMinimumSize(bar->sizeHint());
 
 			QToolButton* restart = new QToolButton();
 			restart->setProperty("widget", QVariant::fromValue(ipythonTabWidget()->widget(index)));
@@ -1341,7 +1314,7 @@ void	VipIPythonTabBar::tabInserted(int index)
 			restart->setAutoRaise(true);
 			restart->setToolTip("Restart interpreter");
 			restart->setStyleSheet("QToolButton {background-color : transparent;} QToolButton:hover{background-color: #3399FF;}");
-			//restart->setMaximumSize(16, 16);
+			// restart->setMaximumSize(16, 16);
 			restart->setMaximumWidth(18);
 			restart->setObjectName("restart");
 
@@ -1351,18 +1324,18 @@ void	VipIPythonTabBar::tabInserted(int index)
 			restartP->setAutoRaise(true);
 			restartP->setToolTip("Restart process");
 			restartP->setStyleSheet("QToolButton {background-color : transparent;} QToolButton:hover{background-color: #3399FF;}");
-			//restart->setMaximumSize(16, 16);
+			// restart->setMaximumSize(16, 16);
 			restartP->setMaximumWidth(18);
 			restartP->setObjectName("restartP");
 
-			//set the close button
+			// set the close button
 			QToolButton* close = new QToolButton();
 			close->setProperty("widget", QVariant::fromValue(ipythonTabWidget()->widget(index)));
 			close->setIcon(closeIcon());
 			close->setAutoRaise(true);
 			close->setToolTip("Close interpreter");
 			close->setStyleSheet("QToolButton {background-color : transparent;} QToolButton:hover{background-color: #3399FF;}");
-			//close->setMaximumSize(16, 16);
+			// close->setMaximumSize(16, 16);
 			close->setMaximumWidth(18);
 			close->setObjectName("close");
 
@@ -1370,7 +1343,6 @@ void	VipIPythonTabBar::tabInserted(int index)
 			bar->addWidget(restartP);
 			bar->addWidget(close);
 
-			
 			setTabButton(index, QTabBar::RightSide, bar);
 			bar->show();
 
@@ -1392,12 +1364,11 @@ void VipIPythonTabBar::leaveEvent(QEvent*)
 	updateIcons();
 }
 
-void	VipIPythonTabBar::mouseMoveEvent(QMouseEvent* event)
+void VipIPythonTabBar::mouseMoveEvent(QMouseEvent* event)
 {
-	//if(event->buttons())
+	// if(event->buttons())
 	QTabBar::mouseMoveEvent(event);
-	if (tabAt(event->pos()) != d_data->hoverIndex)
-	{
+	if (tabAt(event->pos()) != d_data->hoverIndex) {
 		d_data->hoverIndex = tabAt(event->pos());
 		updateIcons();
 	}
@@ -1405,8 +1376,7 @@ void	VipIPythonTabBar::mouseMoveEvent(QMouseEvent* event)
 
 void VipIPythonTabBar::mouseDoubleClickEvent(QMouseEvent* evt)
 {
-	if ((evt->buttons() & Qt::RightButton))
-	{
+	if ((evt->buttons() & Qt::RightButton)) {
 		QTabBar::mouseDoubleClickEvent(evt);
 		return;
 	}
@@ -1421,15 +1391,13 @@ void VipIPythonTabBar::mouseDoubleClickEvent(QMouseEvent* evt)
 	displayTabWidget()->renameWorkspace();*/
 }
 
-void	VipIPythonTabBar::mousePressEvent(QMouseEvent* event)
+void VipIPythonTabBar::mousePressEvent(QMouseEvent* event)
 {
-	//id we press on the last tab, insert a new one
-	if (tabAt(event->pos()) == count() - 1)
-	{
+	// id we press on the last tab, insert a new one
+	if (tabAt(event->pos()) == count() - 1) {
 		ipythonTabWidget()->addInterpreter();
 	}
-	else
-	{
+	else {
 		QTabBar::mousePressEvent(event);
 	}
 }
@@ -1441,7 +1409,7 @@ void VipIPythonTabBar::closeTab()
 	if (index >= 0)
 		ipythonTabWidget()->closeTab(index);
 	else if (w) {
-		//close the current workspace
+		// close the current workspace
 		delete w;
 	}
 }
@@ -1460,34 +1428,33 @@ void VipIPythonTabBar::restartTabProcess()
 
 void VipIPythonTabBar::updateIcons()
 {
-	int	current = currentIndex();
+	int current = currentIndex();
 	int hover = d_data->hoverIndex;
-	for (int i = 0; i < count(); ++i)
-	{
-		if (QWidget* buttons = tabButton(i, QTabBar::RightSide))
-		{
+	for (int i = 0; i < count(); ++i) {
+		if (QWidget* buttons = tabButton(i, QTabBar::RightSide)) {
 			QToolButton* _close = buttons->findChild<QToolButton*>("close");
 			QToolButton* _restart = buttons->findChild<QToolButton*>("restart");
-			if (i == current)
-			{
-				if (_close) _close->setIcon(selectedCloseIcon());
-				if (_restart) _restart->setIcon(selectedRestartIcon());
+			if (i == current) {
+				if (_close)
+					_close->setIcon(selectedCloseIcon());
+				if (_restart)
+					_restart->setIcon(selectedRestartIcon());
 			}
-			else if (i == hover)
-			{
-				if (_close) _close->setIcon(hoverCloseIcon());
-				if (_restart) _restart->setIcon(hoverRestartIcon());
+			else if (i == hover) {
+				if (_close)
+					_close->setIcon(hoverCloseIcon());
+				if (_restart)
+					_restart->setIcon(hoverRestartIcon());
 			}
-			else
-			{
-				if (_close) _close->setIcon(closeIcon());
-				if (_restart) _restart->setIcon(restartIcon());
+			else {
+				if (_close)
+					_close->setIcon(closeIcon());
+				if (_restart)
+					_restart->setIcon(restartIcon());
 			}
 		}
 	}
 }
-
-
 
 #include <qcoreapplication.h>
 
@@ -1498,7 +1465,7 @@ public:
 };
 
 VipIPythonTabWidget::VipIPythonTabWidget(QWidget* parent)
-	:QTabWidget(parent)
+  : QTabWidget(parent)
 {
 	VIP_CREATE_PRIVATE_DATA(d_data);
 	d_data->timer.setSingleShot(true);
@@ -1508,9 +1475,7 @@ VipIPythonTabWidget::VipIPythonTabWidget(QWidget* parent)
 	setTabBar(new VipIPythonTabBar(this));
 	tabBar()->setIconSize(QSize(16, 16));
 }
-VipIPythonTabWidget::~VipIPythonTabWidget()
-{
-}
+VipIPythonTabWidget::~VipIPythonTabWidget() {}
 
 VipIPythonShellWidget* VipIPythonTabWidget::widget(int index) const
 {
@@ -1530,46 +1495,38 @@ void VipIPythonTabWidget::addInterpreter()
 	d_data->timer.start();
 }
 
-void	VipIPythonTabWidget::updateTab()
+void VipIPythonTabWidget::updateTab()
 {
 	QSize s = size();
 	resize(s + QSize(10, 10));
 	resize(s);
 }
 
-void VipIPythonTabWidget::closeEvent(QCloseEvent*)
-{
-}
-
-
+void VipIPythonTabWidget::closeEvent(QCloseEvent*) {}
 
 VipIPythonToolWidget::VipIPythonToolWidget(VipMainWindow* win)
-	:VipToolWidget(win)
+  : VipToolWidget(win)
 {
 	m_tabs = new VipIPythonTabWidget();
-	//this->setWidget(m_tabs, Qt::Horizontal);
+	// this->setWidget(m_tabs, Qt::Horizontal);
 	this->QDockWidget::setWidget(m_tabs); // With Qt6, embedding an external window inside a QScrollArea causes display bugs
 	this->setWindowTitle("IPython external consoles");
 	this->setObjectName("IPython external consoles");
 	m_tabs->setStyleSheet("VipIPythonTabWidget{padding: 3px;}");
-	this->setFeatures(QDockWidget::DockWidgetClosable | QDockWidget::DockWidgetMovable );
+	this->setFeatures(QDockWidget::DockWidgetClosable | QDockWidget::DockWidgetMovable);
 }
 
-VipIPythonToolWidget::~VipIPythonToolWidget()
-{
-
-}
+VipIPythonToolWidget::~VipIPythonToolWidget() {}
 
 VipIPythonTabWidget* VipIPythonToolWidget::widget() const
 {
 	return m_tabs;
 }
 
-
 VipIPythonToolWidget* vipGetIPythonToolWidget(VipMainWindow* win)
 {
 	static bool initialised = 0;
-	static QPointer<VipIPythonToolWidget> inst ;
+	static QPointer<VipIPythonToolWidget> inst;
 	if (!initialised) {
 		initialised = 1;
 		if (!win)
