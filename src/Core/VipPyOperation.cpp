@@ -1096,17 +1096,19 @@ public:
 #elif defined(__GNUC__)
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated"
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 		// #pragma GCC diagnostic pop
 #elif defined __clang__
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdeprecated"
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
 		// #pragma clang diagnostic pop
 #endif
 
 		QString python;
 		QByteArray python_path;
 
-#ifdef VIP_PYTHON_SHARED_LIBS
+/* #ifdef VIP_PYTHON_SHARED_LIBS
 		python_path = VIP_PYTHON_STDLIB;
 		vip_debug("stdlib: %s\n", python_path.data());
 
@@ -1128,7 +1130,7 @@ public:
 		Py_SetPythonHome((wchar_t*)ws.c_str());
 		vip_debug("Py_SetPythonHome %s\n", str.c_str());
 
-#endif
+#endif*/
 
 		vip_debug("python path: %s\n", python_path.data());
 		fflush(stdout);

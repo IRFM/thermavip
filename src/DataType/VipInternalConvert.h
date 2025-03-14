@@ -479,6 +479,8 @@ namespace detail
 			dst = (uchar*)(dst) + sizeof(To);
 #else
 			QMetaType::convert(QMetaType(data_type), ptr, QMetaType(out_type), dst);
+			ptr = (uchar*)(ptr) + in_size;
+			dst = (uchar*)(dst) + sizeof(To);
 #endif
 		}
 	}
