@@ -349,7 +349,7 @@ static inline QPolygonF mid(const QPolygonF& v, size_t start, size_t n = 0)
 		return QPolygonF();
 	if (start + n > (size_t)v.size() || n == 0)
 		n = v.size() - start;
-	QPolygonF res((qsizetype)n);
+	QPolygonF res(static_cast<qsizetype>(n));
 	std::copy(v.begin() + start, v.begin() + (start + n), res.begin());
 	return res;
 	// return v.mid(start, n);
