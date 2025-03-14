@@ -1,4 +1,4 @@
-name: Build on Linux
+name: Build on MacOS
 on: 
 
   push:
@@ -10,39 +10,31 @@ on:
       compiler:
         required: false
         type: string
-        default: gcc-13.2.0
+        default: clang
           
   workflow_call:
     inputs:
       compiler:
         required: true
         type: string
-        default: gcc-13.2.0
+        default: clang
 
 jobs:
-    build-linux:
-        runs-on: ubuntu-22.04
+    build-macos:
+        runs-on: macos-latest
         
         steps:
         - uses: actions/checkout@v4
 
         - name: Install Qt
           uses: jurplel/install-qt-action@v4
-          
-        - name: install gcc 10 
-          run: sudo apt update && sudo apt install gcc-10
 
-        - name: Build on Linux
+        - name: Build on MacOS
           run: |
               mkdir build 
               cd build 
-              cmake .. -DCMAKE_BUILD_TYPE=Debug -DNO_WARNINGS=ON -DWITH_FFMPEG=OFF -DLOCAL_INSTALL=ON 
+              cmake .. -DCMAKE_BUILD_TYPE=Debug -DNO_WARNINGS=ON -DLOCAL_INSTALL=ON 
               cmake --build ./ 
               cmake --build . --target install
-          shell: bash
-          env:
-           CC:   gcc-10
-           CXX:  g++-10
 
         
-
