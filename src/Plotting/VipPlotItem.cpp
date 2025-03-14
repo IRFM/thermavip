@@ -316,7 +316,7 @@ bool VipPaintItem::internalApplyStyleSheet(const VipStyleSheet& sheet, const Vip
 	if (!VipGlobalStyleSheet::cstyleSheet().isEmpty()) {
 		QString error;
 		if (!vipApplyStyleSheet(VipGlobalStyleSheet::cstyleSheet(), this, &error)) {
-			qWarning(("Apply style sheet error: " + error).toLatin1().data());
+			qWarning("Apply style sheet error: %s" ,error.toLatin1().data());
 			d_data->insideApply = false;
 			return false;
 		}
@@ -327,7 +327,7 @@ bool VipPaintItem::internalApplyStyleSheet(const VipStyleSheet& sheet, const Vip
 		QString error;
 		QSet<QByteArray> res;
 		if (!vipApplyStyleSheet(inherited, this, &error)) {
-			qWarning(("Apply style sheet error: " + error).toLatin1().data());
+			qWarning("Apply style sheet error: %s", error.toLatin1().data());
 			d_data->insideApply = false;
 			return false;
 		}
@@ -337,7 +337,7 @@ bool VipPaintItem::internalApplyStyleSheet(const VipStyleSheet& sheet, const Vip
 		QString error;
 		QSet<QByteArray> res;
 		if (!vipApplyStyleSheet(sheet, this, &error)) {
-			qWarning(("Apply style sheet error: " + error).toLatin1().data());
+			qWarning("Apply style sheet error: %s", error.toLatin1().data());
 			d_data->insideApply = false;
 			return false;
 		}
@@ -355,7 +355,7 @@ bool VipPaintItem::internalSetStyleSheet(const QByteArray& ar)
 	QString error;
 	VipStyleSheet sheet = vipParseStyleSheet(ar, this, &error);
 	if (!error.isEmpty()) {
-		qWarning(("Parse style sheet error: " + error).toLatin1().data());
+		qWarning("Parse style sheet error: %s", error.toLatin1().data());
 		return false;
 	}
 

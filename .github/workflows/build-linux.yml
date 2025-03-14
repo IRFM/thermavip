@@ -10,14 +10,14 @@ on:
       compiler:
         required: false
         type: string
-        default: gcc-13.2.0
+        default: gcc
           
   workflow_call:
     inputs:
       compiler:
         required: true
         type: string
-        default: gcc-13.2.0
+        default: gcc
 
 jobs:
     build-linux:
@@ -37,7 +37,7 @@ jobs:
               mkdir build 
               cd build 
               cmake .. -DCMAKE_BUILD_TYPE=Debug -DNO_WARNINGS=ON -DWITH_FFMPEG=OFF -DLOCAL_INSTALL=ON 
-              cmake --build ./ 
+              make -j8 
               cmake --build . --target install
           shell: bash
           env:
