@@ -26,13 +26,13 @@ jobs:
         steps:
         - uses: actions/checkout@v4
         
-        -   name: Install Qt
-            uses: WillBrennan/yaqti
-            with:
-                version: '6.2.0'
-                host: 'mac'
-                target: 'desktop'
-                modules: 'qtwebengine'
+        - name: Install Qt
+          uses: WillBrennan/yaqti
+          with:
+            version: '6.2.0'
+            host: 'mac'
+            target: 'desktop'
+            modules: 'qtwebengine'
         #- name: Install Qt
         #  uses: jurplel/install-qt-action@v4
 
