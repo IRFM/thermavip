@@ -395,7 +395,7 @@ public:
 				*error = "wrong start code";
 			return false;
 		}
-		ar = ar.mid(strlen(SH_OBJECT));
+		ar = ar.mid(static_cast<qsizetype>(strlen(SH_OBJECT)));
 		int len = readBinary(ar);
 		ar = ar.mid(4);
 		QByteArray name = ar.mid(0, len);
@@ -431,7 +431,7 @@ public:
 	{
 		if (!ar.startsWith(SH_ERROR_TRACE))
 			return false;
-		ar = ar.mid(strlen(SH_ERROR_TRACE));
+		ar = ar.mid(static_cast<qsizetype>(strlen(SH_ERROR_TRACE)));
 		/* int len =*/readBinary(ar);
 		ar = ar.mid(4);
 		error = ar;
@@ -461,7 +461,7 @@ protected:
 
 				if (ar.startsWith(SH_EXEC_FUN)) {
 					// execute internal python function
-					ar = ar.mid(strlen(SH_EXEC_FUN));
+					ar = ar.mid(static_cast<qsizetype>(strlen(SH_EXEC_FUN)));
 					QDataStream str(ar);
 					str.setByteOrder(QDataStream::LittleEndian);
 					int s1 = 0, s2 = 0, s3 = 0;

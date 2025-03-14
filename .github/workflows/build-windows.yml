@@ -31,12 +31,15 @@ jobs:
           
         - name: install numpy
           run: pip install numpy
+          
+        - name: install hdf5
+          run: pip install h5py
 
         - name: Build on Windows
           run: |
               mkdir build 
               cd build 
-              cmake .. -DCMAKE_BUILD_TYPE=Debug -DNO_WARNINGS=ON -DWITH_FFMPEG=ON -DWITH_PYTHON=ON -DLOCAL_INSTALL=ON 
+              cmake .. -DCMAKE_BUILD_TYPE=Debug -DNO_WARNINGS=ON -DWITH_HDF5=ON -DWITH_FFMPEG=ON -DWITH_PYTHON=ON -DLOCAL_INSTALL=ON 
               cmake --build ./ 
               cmake --build . --target install
 
