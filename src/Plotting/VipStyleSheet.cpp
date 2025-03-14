@@ -1466,7 +1466,7 @@ bool VipGlobalStyleSheet::setStyleSheet(const QString& str)
 	QString error;
 	VipStyleSheet st = vipParseStyleSheet(str.toLatin1(), nullptr, &error);
 	if (!error.isEmpty()) {
-		qWarning(error.toLatin1().data());
+		qWarning("%s", error.toLatin1().data());
 		return false;
 	}
 
