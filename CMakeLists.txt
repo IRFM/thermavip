@@ -62,14 +62,14 @@ if (UNIX)
 endif()
 
 if (NOT MSVC)
-if(NOT WITH_LIBRIR)
+#if(NOT WITH_LIBRIR)
 # Create a dummy target to build ffmpeg as a prebuild step
 #add_custom_target(ffmpeg BYPRODUCTS "${PROJECT_SOURCE_DIR}/build_ffmpeg.h"
 #  COMMAND ${PROJECT_SOURCE_DIR}/configure_ffmpeg)
 #add_executable(dummy ${PROJECT_SOURCE_DIR}/dummy.c "${PROJECT_SOURCE_DIR}/build_ffmpeg.h")
 #target_include_directories(dummy PRIVATE "${PROJECT_SOURCE_DIR}")
-add_custom_target(ffmpeg ALL COMMAND ${PROJECT_SOURCE_DIR}/configure_ffmpeg)
-endif()
+add_custom_target(ffmpeg_build ALL COMMAND ${PROJECT_SOURCE_DIR}/configure_ffmpeg)
+#endif()
 endif()
 
 
