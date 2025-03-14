@@ -10,14 +10,14 @@ on:
       compiler:
         required: false
         type: string
-        default: latest
+        default: gcc-13.2.0
           
   workflow_call:
     inputs:
       compiler:
         required: true
         type: string
-        default: latest
+        default: gcc-13.2.0
 
 jobs:
     build-linux:
