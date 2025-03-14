@@ -21,6 +21,10 @@
 #include <qapplication.h>
 #include <qevent.h>
 
+#ifdef _MSC_VER
+#pragma warning(disable : 4267)
+#endif
+
 // Codes to communicate through the shared memory
 #define SH_EXEC_FUN "SH_EXEC_FUN     "
 #define SH_OBJECT "SH_OBJECT       "

@@ -10,10 +10,10 @@
 
 #else
 
-#ifdef __arm__
+#if defined(_M_ARM64) || defined(__arm__) || defined(__ARM_NEON__)
 inline void cpuid(int info[4], int InfoType)
 {
-	(void)info;
+	memset(info, 0, sizeof(info));
 	(void)InfoType;
 }
 #else

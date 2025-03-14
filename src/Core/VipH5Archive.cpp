@@ -234,7 +234,6 @@ struct ArraySpace
 };
 static ArraySpace arraySpaceAndData(const VipNDArray& ar)
 {
-	auto type = qtToHDF5(ar.dataType());
 	ArraySpace res;
 	
 	if (vipIsImageArray(ar)) {
@@ -348,7 +347,7 @@ QVariant readAttribute(hid_t id, const char* attr_name)
 		QByteArray data(_size, 0);
 		herr_t _ret = H5Aread(attr, atype_mem, data.data());
 		if (_ret == 0) {
-			if (data.size() && data[data.size() - 1] == 0)
+			if (data.size() && data[data.size() - 1] == (char)0)
 				data.chop(1);
 			return QVariant(QString::fromUtf8(data));
 		}
@@ -408,7 +407,7 @@ static herr_t iterate(hid_t group, const char* name, const H5L_info_t* info, voi
 	auto h5type = H5Object::File;
 	if (stat.type == H5G_DATASET)
 		h5type = H5Object::Set;
-	else if (stat.type == H5G_GROUP || info->type == H5G_LINK)
+	else if ((int)stat.type == H5G_GROUP || (int)info->type == H5G_LINK)
 		h5type = H5Object::Group;
 	else if (stat.type == H5G_TYPE)
 		h5type = H5Object::H5Type;
@@ -774,9 +773,9 @@ void VipH5Archive::doStart(QString& name, QVariantMap& metadata, bool read_metad
 
 		hid_t group_creation_plist;
 		group_creation_plist = H5Pcreate(H5P_GROUP_CREATE);
-		herr_t status = H5Pset_link_creation_order(group_creation_plist, H5P_CRT_ORDER_TRACKED | H5P_CRT_ORDER_INDEXED);
+		/* herr_t status =*/ H5Pset_link_creation_order(group_creation_plist, H5P_CRT_ORDER_TRACKED | H5P_CRT_ORDER_INDEXED);
 		// Favor compact group
-		status = H5Pset_link_phase_change(group_creation_plist, 100, 100);
+		/* status =*/ H5Pset_link_phase_change(group_creation_plist, 100, 100);
 
 		// Create group
 		H5Object gr(H5Gcreate(d_data->file.id(), gr_name.data(), H5P_DEFAULT, group_creation_plist, H5P_DEFAULT), H5Object::Group);
@@ -1161,7 +1160,7 @@ void VipH5Archive::doContent(QString& name, QVariant& value, QVariantMap& metada
 			QByteArray data(_size, 0);
 			if (H5Dread(set, type, space, space, H5P_DEFAULT, (void*)data.data()) != 0)
 				ERROR("Unable to read dataset");
-			if (data.size() && data[data.size() - 1] == 0)
+			if (data.size() && data[data.size() - 1] == (char)0)
 				data.chop(1);
 			value = QVariant::fromValue(QString::fromUtf8(data));
 			goto finish;
