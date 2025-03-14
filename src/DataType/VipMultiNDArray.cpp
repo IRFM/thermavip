@@ -35,7 +35,7 @@
 
 static bool isVipMultiNDArrayHandle(const SharedHandle& h)
 {
-	return h->handleType() == VipNDArrayHandle::MultiArray;
+	return h && h->handleType() == VipNDArrayHandle::MultiArray;
 }
 
 bool vipIsMultiNDArray(const VipNDArray& ar)
