@@ -1,1 +1,47 @@
+name: Build on Linux
+on: 
+
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main", "releases/**"  ]
+  workflow_dispatch:
+    inputs:
+      compiler:
+        required: false
+        type: string
+        default: latest
+          
+  workflow_call:
+    inputs:
+      compiler:
+        required: true
+        type: string
+        default: latest
+
+jobs:
+    build-linux:
+        runs-on: ubuntu-22.04
+        
+        steps:
+        - uses: actions/checkout@v4
+
+        - name: Install compiler ${{ inputs.compiler || 'latest' }}
+          id: install_cc
+          uses: rlalik/setup-cpp-compiler@master
+          with:
+            compiler: ${{ inputs.compiler || 'latest' }}
+            
+        - name: Install Qt
+          uses: jurplel/install-qt-action@v4
+
+        - name: Build on Linux
+          run: |
+              mkdir build 
+              cd build 
+              cmake .. -DCMAKE_BUILD_TYPE=Debug -DNO_WARNINGS=ON -DLOCAL_INSTALL=ON 
+              cmake --build ./ 
+              cmake --build . --target install
+
+        
 
