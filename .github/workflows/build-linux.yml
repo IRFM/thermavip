@@ -26,22 +26,23 @@ jobs:
         steps:
         - uses: actions/checkout@v4
 
-        - name: Install compiler ${{ inputs.compiler || 'latest' }}
-          id: install_cc
-          uses: rlalik/setup-cpp-compiler@master
-          with:
-            compiler: ${{ inputs.compiler || 'latest' }}
-            
         - name: Install Qt
           uses: jurplel/install-qt-action@v4
+          
+        - name: install gcc 13
+          run: sudo apt update && sudo apt install gcc-13
 
         - name: Build on Linux
           run: |
               mkdir build 
               cd build 
-              cmake .. -DCMAKE_BUILD_TYPE=Debug -DNO_WARNINGS=ON -DLOCAL_INSTALL=ON 
+              cmake .. -DCMAKE_BUILD_TYPE=Debug -DNO_WARNINGS=ON -DWITH_FFMPEG=OFF -DLOCAL_INSTALL=ON 
               cmake --build ./ 
               cmake --build . --target install
+          shell: bash
+          env:
+           CC:   gcc-13
+           CXX:  g++-13
 
         
 
