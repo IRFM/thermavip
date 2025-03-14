@@ -10,19 +10,19 @@ on:
 
 
 jobs: 
-    build-linux:
-        strategy:
-          matrix:
-            compiler: [ latest, gcc-latest, clang, gcc-6.4.0, gcc-13.2.0]
-        uses: ./.github/workflows/build-linux.yml
-        with:
-          compiler: ${{ matrix.compiler }}
+    #build-linux:
+    #    strategy:
+    #      matrix:
+    #        compiler: [ latest, gcc-latest, clang, gcc-6.4.0, gcc-13.2.0]
+    #    uses: ./.github/workflows/build-linux.yml
+    #    with:
+    #      compiler: ${{ matrix.compiler }}
 
         
     build-windows:
         strategy:
           matrix:
-            compiler: [ latest, gcc-latest, gcc-6.4.0, gcc-13.2.0, clang]
+            compiler: [ msvc, clang]
         uses: ./.github/workflows/build-windows.yml
         with:
           compiler: ${{ matrix.compiler }}
