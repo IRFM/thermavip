@@ -29,8 +29,8 @@ jobs:
         - name: install qt6 
           run: brew install qt6
           
-        - name: install ffmpeg 
-          run: brew install ffmpeg
+        #- name: install ffmpeg 
+        #  run: brew install ffmpeg
 
         - name: Build on MacOS
           run: |

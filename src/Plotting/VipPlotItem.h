@@ -1121,6 +1121,7 @@ public:
 	/// @brief Set the item's data.
 	/// Internally calls VipPlotItemData::setData().
 	void setRawData(const Data& raw_data) { this->setData(QVariant::fromValue(raw_data)); }
+	void setRawData( Data&& raw_data) { this->setData(QVariant::fromValue(std::move(raw_data))); }
 	/// @brief Returns the item's data.
 	Data rawData() const { return this->data().template value<Data>(); }
 
