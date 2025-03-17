@@ -87,12 +87,12 @@ public:
 	{
 	}
 
-	VipNDArrayTypeView(QImage& img)
+	VipNDArrayTypeView(const QImage& img)
 	  : VipNDArray()
 	{
 		if (!img.isNull()) {
-			img = img.convertToFormat(QImage::Format_ARGB32);
-			setSharedHandle(VipNDArray::makeView((VipRGB*)img.bits(), vipVector(img.height(), img.width())).sharedHandle());
+			img = const_cast<QImage&>(img.convertToFormat(QImage::Format_ARGB32));
+			setSharedHandle(VipNDArray::makeView((VipRGB*)(const_cast<QImage&>(img).bits()), vipVector(img.height(), img.width())).sharedHandle());
 		}
 	}
 
