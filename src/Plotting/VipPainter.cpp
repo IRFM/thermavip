@@ -154,7 +154,7 @@ static void vipForceUnscaleFont(QPainter* painter)
 #endif
 }
 
-static inline void vipUnscaleFont(QPainter* painter)
+/*static inline void vipUnscaleFont(QPainter* painter)
 {
 	if (painter->font().pixelSize() >= 0)
 		return;
@@ -167,7 +167,7 @@ static inline void vipUnscaleFont(QPainter* painter)
 	if (pd->logicalDpiX() != screenResolution.width() || pd->logicalDpiY() != screenResolution.height()) {
 		vipForceUnscaleFont(painter);
 	}
-}
+}*/
 
 bool VipPainter::isX11GraphicsSystem()
 {
