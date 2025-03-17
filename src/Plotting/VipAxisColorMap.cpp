@@ -698,8 +698,8 @@ VipArchive& operator>>(VipArchive& arch, VipAxisColorMap* value)
 	value->setColorMapInterval(arch.read("colorMapInterval").value<VipInterval>());
 
 	// since 2.2.18
-	bool hasAutoScaleMax, hasAutoScaleMin;
-	vip_double autoScaleMax, autoScaleMin;
+	bool hasAutoScaleMax = false, hasAutoScaleMin = false;
+	vip_double autoScaleMax = 0, autoScaleMin = 0;
 	arch.save();
 	if (arch.content("hasAutoScaleMax", hasAutoScaleMax)) {
 		arch.content("autoScaleMax", autoScaleMax);
