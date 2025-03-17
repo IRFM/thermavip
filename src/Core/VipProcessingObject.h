@@ -91,13 +91,13 @@ public:
 	VipAnyData(const VipAnyData&) = default;
 	VipAnyData& operator=(const VipAnyData&) = default;
 
-#ifdef __GNUC__
+#if defined(__GNUC__) && !defined(__clang__)
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wstringop-overflow="
 #endif
 	VipAnyData(VipAnyData&&) = default;
 	VipAnyData& operator=(VipAnyData&&) = default;
-#ifdef __GNUC__
+#if defined(__GNUC__) && !defined(__clang__)
 #pragma GCC diagnostic pop
 #endif
 

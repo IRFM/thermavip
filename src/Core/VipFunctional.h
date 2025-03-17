@@ -468,17 +468,6 @@ QVariant vipToVariant(const T& value)
 {
 	return details::ToVariant<T>::apply(value);
 }
-template<>
-VIP_ALWAYS_INLINE QVariant QVariant::fromValue<QObject*>(QObject* const& value)
-{
-	return vipToVariant(value);
-}
-class QWidget;
-template<>
-VIP_ALWAYS_INLINE QVariant QVariant::fromValue<QWidget*>(QWidget* const& value)
-{
-	return vipToVariant(value);
-}
 
 /// @brief Returns a QVariant constructed with given type name.
 /// \sa vipCreateVariant(int id)

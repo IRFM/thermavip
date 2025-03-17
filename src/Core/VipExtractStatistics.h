@@ -133,7 +133,7 @@ public:
 	VipProcessingList* componentProcessings(int index) const { return m_procList[index]; }
 
 	virtual DisplayHint displayHint() const { return InputTransform; }
-	virtual bool acceptInput(int, const QVariant& v);
+	virtual bool acceptInput(int, const QVariant& v) const;
 
 protected:
 	virtual void apply();

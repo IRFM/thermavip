@@ -315,7 +315,7 @@ QStringList VipSplitAndMerge::possibleMethods(const QVariant& data)
 	return QStringList();
 }
 
-bool VipSplitAndMerge::acceptInput(int, const QVariant& v)
+bool VipSplitAndMerge::acceptInput(int, const QVariant& v) const
 {
 	return v.userType() == qMetaTypeId<VipNDArray>() || v.userType() == qMetaTypeId<complex_f>() || v.userType() == qMetaTypeId<complex_d>() || v.userType() == qMetaTypeId<VipComplexPoint>() ||
 	       v.userType() == qMetaTypeId<VipComplexPointVector>();

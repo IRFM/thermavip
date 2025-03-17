@@ -412,7 +412,7 @@ namespace detail
 			using elem = typename Traits::template element<Pos>;
 			using ret = typename elem::type;
 			using type = typename std::decay<ret>::type;
-			return args[Pos].value<type>();
+			return args[Pos].template value<type>();
 		}
 	};
 
