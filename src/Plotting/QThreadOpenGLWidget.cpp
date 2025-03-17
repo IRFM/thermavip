@@ -1303,7 +1303,6 @@ public:
 	{
 		if (!d_enable || discard(rectangle))
 			return;
-		ImageItem{ rectangle, image, sr, flags };
 		d_device->emplaceBack(CommandBatch::DrawImage, ImageItem{ rectangle, image, sr, flags });
 	}
 
