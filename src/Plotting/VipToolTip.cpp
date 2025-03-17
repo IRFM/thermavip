@@ -48,8 +48,9 @@
 #include <qstyle.h>
 #include <qtimer.h>
 
-struct VipToolTip::PrivateData
+class VipToolTip::PrivateData
 {
+public:
 	VipAbstractPlotArea* area;
 	DisplayFlags displayFlags;
 	double stickDistance;

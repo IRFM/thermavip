@@ -226,7 +226,6 @@ protected:
 	virtual void displayData(const VipAnyDataList& data);
 
 private:
-	
 	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
