@@ -551,7 +551,7 @@ VipArchive& operator>>(VipArchive& arch, VipPlotGrid* value)
 	value->setMinorPen(arch.read("minorPen").value<QPen>());
 	value->setMajorPen(arch.read("majorPen").value<QPen>());
 	// new in 2.2.18
-	int _vip_customDisplay;
+	int _vip_customDisplay = false;
 	if (arch.content("_vip_customDisplay", _vip_customDisplay))
 		value->setProperty("_vip_customDisplay", _vip_customDisplay);
 	else
@@ -571,7 +571,7 @@ VipArchive& operator>>(VipArchive& arch, VipPlotCanvas* value)
 {
 	value->setBoxStyle(arch.read("boxStyle").value<VipBoxStyle>());
 	// new in 2.2.18
-	int _vip_customDisplay;
+	int _vip_customDisplay = 0;
 	if (arch.content("_vip_customDisplay", _vip_customDisplay))
 		value->setProperty("_vip_customDisplay", _vip_customDisplay);
 	else
