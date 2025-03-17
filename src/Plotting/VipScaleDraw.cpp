@@ -3663,8 +3663,6 @@ QPointF VipRadialScaleDraw::position(vip_double val, double len, Vip::ValueType 
 
 vip_double VipRadialScaleDraw::convert(vip_double value, Vip::ValueType type) const
 {
-
-	QPointF pt;
 	if (type == Vip::Absolute) {
 		vip_double tval = scaleMap().transform(value) - startRadius();
 		return (tval / length());
