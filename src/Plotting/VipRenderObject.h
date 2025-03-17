@@ -38,7 +38,7 @@
 #include <QRectF>
 #include <qpointer.h>
 
-#include "VipGlobals.h"
+#include "VipPlotUtils.h"
 
 /// \addtogroup Plotting
 /// @{

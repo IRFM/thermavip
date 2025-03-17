@@ -4335,8 +4335,9 @@ VipPlotArea2D* VipPlotWidget2D::area() const
 	return const_cast<VipPlotArea2D*>(d_area);
 }
 
-void VipPlotWidget2D::setArea(VipPlotArea2D* area)
+void VipPlotWidget2D::setArea(VipAbstractPlotArea* _area)
 {
+	VipPlotArea2D* area = qobject_cast<VipPlotArea2D*>(_area);
 	if (area != d_area && area) {
 		if (d_area)
 			delete d_area;
@@ -4370,8 +4371,9 @@ VipPlotPolarWidget2D::VipPlotPolarWidget2D(QWidget* parent, QGraphicsScene* sc)
 
 VipPlotPolarWidget2D::~VipPlotPolarWidget2D() {}
 
-void VipPlotPolarWidget2D::setArea(VipPlotPolarArea2D* area)
+void VipPlotPolarWidget2D::setArea(VipAbstractPlotArea* _area)
 {
+	VipPlotPolarArea2D* area = qobject_cast<VipPlotPolarArea2D*>(_area);
 	if (area != d_area && area) {
 		if (d_area)
 			delete d_area;

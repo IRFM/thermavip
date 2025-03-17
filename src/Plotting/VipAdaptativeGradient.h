@@ -32,7 +32,7 @@
 #ifndef VIP_ADAPTATIVE_GRADIENT_H
 #define VIP_ADAPTATIVE_GRADIENT_H
 
-#include "VipGlobals.h"
+#include "VipPlotUtils.h"
 #include <QGradient>
 #include <QSharedDataPointer>
 #include <QVector>

@@ -37,7 +37,7 @@
 #include <QVector>
 #include <QtGlobal>
 
-#include "VipGlobals.h"
+#include "VipPlotUtils.h"
 
 /// \addtogroup Plotting
 /// @{

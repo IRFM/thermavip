@@ -33,7 +33,7 @@
 #define VIP_PAINTER_H
 
 #include "VipCoordinateSystem.h"
-#include "VipGlobals.h"
+#include "VipPlotUtils.h"
 #include <qline.h>
 #include <qpalette.h>
 #include <qpen.h>

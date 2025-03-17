@@ -39,7 +39,7 @@
 #include <QPolygonF>
 #include <QVector2D>
 
-#include "VipGlobals.h"
+#include "VipPlotUtils.h"
 
 /// \addtogroup Plotting
 /// @{

@@ -42,7 +42,7 @@
 #include "VipArchive.h"
 #include "VipCoordinateSystem.h"
 #include "VipDataType.h"
-#include "VipGlobals.h"
+#include "VipPlotUtils.h"
 #include "VipInterval.h"
 #include "VipRenderObject.h"
 #include "VipStyleSheet.h"

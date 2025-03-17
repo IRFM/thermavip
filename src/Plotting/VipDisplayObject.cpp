@@ -677,8 +677,9 @@ bool VipDisplayCurve::acceptInput(int, const QVariant& v) const
 	return v.canConvert<VipPointVector>() || v.canConvert<VipComplexPointVector>() || v.canConvert<VipComplexPoint>() || v.canConvert<double>() || v.canConvert<VipPoint>();
 }
 
-void VipDisplayCurve::setItem(VipPlotCurve* it)
+void VipDisplayCurve::setItem(VipPlotItem* _it)
 {
+	VipPlotCurve* it = qobject_cast<VipPlotCurve*>(_it);
 	if (it && it != item()) {
 		//disconnect(item(), SIGNAL(axesChanged(VipPlotItem*)), this, SLOT(axesChanged(VipPlotItem*)));
 		it->setAutoMarkDirty(false);

@@ -32,7 +32,7 @@
 #ifndef VIP_SCALE_ENGINE_H
 #define VIP_SCALE_ENGINE_H
 
-#include "VipGlobals.h"
+#include "VipPlotUtils.h"
 #include "VipInterval.h"
 #include "VipScaleDiv.h"
 #include "VipScaleDraw.h"

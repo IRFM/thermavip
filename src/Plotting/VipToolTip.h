@@ -183,7 +183,6 @@ private:
 	QString attributeMargins() const;
 	QPoint toolTipPosition(VipText& text, const QPointF& pos, Vip::RegionPositions position, Qt::Alignment align);
 
-	struct PrivateData;
 	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 

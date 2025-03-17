@@ -1165,7 +1165,7 @@ public:
 	virtual ~VipPlotWidget2D();
 
 	virtual VipPlotArea2D* area() const;
-	virtual void setArea(VipPlotArea2D*);
+	virtual void setArea(VipAbstractPlotArea*);
 
 	virtual void recomputeGeometry();
 
@@ -1184,7 +1184,7 @@ public:
 	virtual ~VipPlotPolarWidget2D();
 
 	virtual VipPlotPolarArea2D* area() const;
-	void setArea(VipPlotPolarArea2D* area);
+	void setArea(VipAbstractPlotArea* area);
 	virtual void recomputeGeometry();
 
 private:

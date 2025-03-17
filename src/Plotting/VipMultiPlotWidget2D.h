@@ -168,7 +168,7 @@ public:
 	/// @brief Returns the 2 axes defining the plotting area that contains pos
 	virtual QList<VipAbstractScale*> scalesForPos(const QPointF& pos) const;
 
-	virtual void recomputeGeometry();
+	virtual void recomputeGeometry(bool recompute_aligned_areas = true);
 	virtual void zoomOnSelection(const QPointF& start, const QPointF& end);
 	virtual void zoomOnPosition(const QPointF& pos, double factor);
 	virtual void translate(const QPointF& fromPt, const QPointF& dp);

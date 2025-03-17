@@ -219,7 +219,7 @@ public:
 
 	virtual bool acceptInput(int top_level_index, const QVariant& v) const;
 	virtual VipPlotCurve* item() const { return static_cast<VipPlotCurve*>(VipDisplayPlotItem::item()); }
-	virtual void setItem(VipPlotCurve* item);
+	virtual void setItem(VipPlotItem* item);
 
 protected:
 	virtual bool prepareForDisplay(const VipAnyDataList& data);

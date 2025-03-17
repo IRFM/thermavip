@@ -34,7 +34,7 @@
 
 #include "VipAdaptativeGradient.h"
 #include "VipArchive.h"
-#include "VipGlobals.h"
+#include "VipPlotUtils.h"
 #include "VipInterval.h"
 #include <QColor>
 #include <QGradient>

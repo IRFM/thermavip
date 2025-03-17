@@ -35,7 +35,7 @@
 #include <qlist.h>
 #include <qvector.h>
 
-#include "VipGlobals.h"
+#include "VipPlotUtils.h"
 #include "VipInterval.h"
 
 /// \addtogroup Plotting

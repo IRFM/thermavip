@@ -35,7 +35,7 @@
 #include <QPaintDevice>
 #include <QPainterPath>
 
-#include "VipGlobals.h"
+#include "VipPlotUtils.h"
 
 /// \addtogroup Plotting
 /// @{

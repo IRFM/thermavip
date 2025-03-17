@@ -65,11 +65,7 @@ private:
 class VIP_PLOTTING_EXPORT VipPolarAxis : public VipAbstractPolarScale
 {
 	Q_OBJECT
-
-protected:
-	virtual void setScaleDraw(VipPolarScaleDraw*);
-	virtual bool hasState(const QByteArray& state, bool enable) const;
-
+	
 public:
 	VipPolarAxis(QGraphicsItem* parent = nullptr);
 	~VipPolarAxis();
@@ -113,6 +109,7 @@ public:
 	double sweepLength() const;
 
 	virtual void layoutScale();
+	virtual bool hasState(const QByteArray& state, bool enable) const;
 
 private:
 	void getBorderRadius(double& min_radius, double& max_radius) const;
@@ -124,12 +121,7 @@ private:
 
 class VIP_PLOTTING_EXPORT VipRadialAxis : public VipAbstractPolarScale
 {
-	Q_OBJECT
-
-protected:
-	virtual void setScaleDraw(VipRadialScaleDraw*);
-	bool hasState(const QByteArray& state, bool enable) const;
-
+	Q_OBJECT	
 public:
 	VipRadialAxis(QGraphicsItem* parent = nullptr);
 	~VipRadialAxis();
@@ -159,6 +151,7 @@ public:
 
 	virtual void layoutScale();
 	virtual QRectF axisRect() const;
+	bool hasState(const QByteArray& state, bool enable) const;
 
 private:
 	

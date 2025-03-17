@@ -638,7 +638,7 @@ void VipVMultiPlotArea2D::resetInnerLegendsPosition()
 	}
 }
 
-void VipVMultiPlotArea2D::recomputeGeometry()
+void VipVMultiPlotArea2D::recomputeGeometry(bool recompute_aligned_areas)
 {
 	// recompute axes geometry, but avoid the ones inside the left and right VipMultiAxisBase objects
 	// if (titleAxis()->titleInside()) {
@@ -668,7 +668,7 @@ void VipVMultiPlotArea2D::recomputeGeometry()
 	// this->update();
 
 	// TOCKECK
-	VipPlotArea2D::recomputeGeometry();
+	VipPlotArea2D::recomputeGeometry(recompute_aligned_areas);
 }
 
 void VipVMultiPlotArea2D::zoomOnSelection(const QPointF& start, const QPointF& end)

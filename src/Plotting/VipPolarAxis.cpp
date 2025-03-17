@@ -341,11 +341,6 @@ QPainterPath VipPolarAxis::shape() const
 	return axisBoxStyle().background();
 }
 
-void VipPolarAxis::setScaleDraw(VipPolarScaleDraw* sc)
-{
-	VipAbstractScale::setScaleDraw(sc);
-}
-
 bool VipPolarAxis::hasState(const QByteArray& state, bool enable) const
 {
 	if (state == "polar")
@@ -655,11 +650,6 @@ bool VipRadialAxis::hasState(const QByteArray& state, bool enable) const
 QPainterPath VipRadialAxis::shape() const
 {
 	return axisBoxStyle().background();
-}
-
-void VipRadialAxis::setScaleDraw(VipRadialScaleDraw* sc)
-{
-	VipAbstractScale::setScaleDraw(sc);
 }
 
 const VipRadialScaleDraw* VipRadialAxis::constScaleDraw() const

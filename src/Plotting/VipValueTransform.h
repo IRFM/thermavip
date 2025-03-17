@@ -33,7 +33,7 @@
 #define VIP_VALUE_TRANSFORM_H
 
 #include "VipDataType.h"
-#include "VipGlobals.h"
+#include "VipPlotUtils.h"
 
 /// \addtogroup Plotting
 /// @{

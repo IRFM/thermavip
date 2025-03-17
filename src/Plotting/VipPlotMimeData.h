@@ -36,7 +36,7 @@
 #include <QMimeData>
 
 #include "VipCoordinateSystem.h"
-#include "VipGlobals.h"
+#include "VipPlotUtils.h"
 
 /// \addtogroup Plotting
 /// @{
