@@ -291,7 +291,6 @@ private Q_SLOTS:
 	void addIdToTitle();
 
 private:
-	struct PrivateData;
 	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
@@ -733,7 +732,6 @@ private:
 	// create a new horizontal splitter
 	QSplitter* createHSplitter();
 
-	struct PrivateData;
 	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 

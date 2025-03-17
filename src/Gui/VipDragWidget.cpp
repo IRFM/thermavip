@@ -193,8 +193,9 @@ static void minimizeDragWidget(VipBaseDragWidget* w, bool minimize)
 	}
 }
 
-struct VipBaseDragWidget::PrivateData
+class VipBaseDragWidget::PrivateData
 {
+public:
 	int id;
 	VisibilityState visibility;
 	Operations operations;
@@ -1802,8 +1803,9 @@ void VipDragRubberBand::paintEvent(QPaintEvent*)
 	}
 }
 
-struct VipMultiDragWidget::PrivateData
+class VipMultiDragWidget::PrivateData
 {
+public:
 
 	QWidget* header;
 	QSplitter* v_splitter;
