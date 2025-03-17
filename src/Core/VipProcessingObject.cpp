@@ -4628,7 +4628,7 @@ VipArchive& operator<<(VipArchive& stream, const VipMultiInput& minput)
 VipArchive& operator>>(VipArchive& stream, VipMultiInput& minput)
 {
 	QString name;
-	int count;
+	int count = 0;
 	stream.content("count", count);
 	stream.content("multi_input_name", name);
 	minput.setName(name);
@@ -4653,7 +4653,7 @@ VipArchive& operator<<(VipArchive& stream, const VipMultiOutput& moutput)
 VipArchive& operator>>(VipArchive& stream, VipMultiOutput& moutput)
 {
 	QString name;
-	int count;
+	int count = 0;
 	stream.content("count", count);
 	stream.content("multi_output_name", name);
 	moutput.setName(name);
@@ -4678,7 +4678,7 @@ VipArchive& operator<<(VipArchive& stream, const VipMultiProperty& mproperty)
 VipArchive& operator>>(VipArchive& stream, VipMultiProperty& mproperty)
 {
 	QString name;
-	int count;
+	int count = 0;
 	stream.content("count", count);
 	stream.content("multi_property_name", name);
 	mproperty.setName(name);
