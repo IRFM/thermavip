@@ -1139,6 +1139,14 @@ void VipPlotRasterData::setData(const QVariant& v)
 			d_data->imageRect = nrect;
 			Q_EMIT imageRectChanged(nrect);
 		}
+
+		//TEST
+		bool update_colorscale = (_new.dataType() != qMetaTypeId<QImage>());
+		// update and mark color scale as dirty if needed
+		if (QThread::currentThread() == qApp->thread())
+			updateInternal(update_colorscale);
+		else
+			QMetaObject::invokeMethod(this, "updateInternal", Qt::QueuedConnection, Q_ARG(bool, update_colorscale));
 	}
 }
 
