@@ -150,10 +150,12 @@ void QAlphaWidget::run(int time)
 	resize(widget->size().width(), widget->size().height());
 
 	frontImage = widget->grab().toImage();
-	backImage = QGuiApplication::primaryScreen()
+	if (this->screen())
+		backImage = this->screen()->grabWindow(0, widget->geometry().x(), widget->geometry().y(), widget->geometry().width(), widget->geometry().height()).toImage();
+	/* backImage = QGuiApplication::primaryScreen()
 		      ->grabWindow(QApplication::desktop()->winId(), widget->geometry().x(), widget->geometry().y(), widget->geometry().width(), widget->geometry().height())
 		      .toImage();
-
+	*/
 	if (!backImage.isNull() && checkTime.elapsed() < duration / 2) {
 		mixedImage = backImage.copy();
 		pm = QPixmap::fromImage(mixedImage);
