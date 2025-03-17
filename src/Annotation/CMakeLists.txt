@@ -78,7 +78,7 @@ IF(WITH_LIBRIR)
 	add_dependencies(VipAnnotation librir::video_io)
 
 
-	if(UNIX)
+	if(UNIX AND NOT APPLE)
 		# missing shared libs on unix systems
 		install(DIRECTORY "${CMAKE_INSTALL_PREFIX}/lib64/"
 		DESTINATION "${CMAKE_INSTALL_PREFIX}/python/librir/libs"

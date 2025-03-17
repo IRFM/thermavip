@@ -820,10 +820,10 @@ void VipBinaryArchive::doContent(QString& name, QVariant& value, QVariantMap& me
 
 				// write the device content by chunks of 10k
 				QByteArray tmp(10000, 0);
-				qsizetype tot_size = 0;
+				//qsizetype tot_size = 0;
 				while (true) {
 					qsizetype read = device->read(tmp.data(), tmp.size());
-					tot_size += read;
+					//tot_size += read;
 					WRITE_DEVICE(tmp.data(), read);
 					if (read != (uint)tmp.size())
 						break;

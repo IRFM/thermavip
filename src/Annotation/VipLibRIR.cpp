@@ -67,6 +67,12 @@ static bool loadLibraries()
 		QString signal_processing = path + "signal_processing.dll";
 		QString video_io = path + "video_io.dll";
 		QString west = path_west + "west.dll";
+#elif defined(__APPLE__)
+		QString tools = path + "tools.dylib";
+		QString geometry = path + "geometry.dylib";
+		QString signal_processing = path + "signal_processing.dylib";
+		QString video_io = path + "video_io.dylib";
+		QString west = path_west + "west.dylib";
 #else
 		QString tools = path + "tools.so";
 		QString geometry = path + "geometry.so";
