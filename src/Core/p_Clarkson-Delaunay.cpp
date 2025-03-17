@@ -235,7 +235,7 @@ const double B_ERR_MIN_SQ = B_ERR_MIN * B_ERR_MIN;
 
 static Coord hull_infinity[10] = { 57.2, 0, 0, 0, 0 }; /* point at infinity for Delaunay triangulation; value not used */
 
-static basis_s tt_basis = { 0, 1, -1, 0, 0, 0 }, *tt_basisp = &tt_basis, *infinity_basis;
+static basis_s tt_basis = { 0, 1, -1, 0, 0, { 0 } }, *tt_basisp = &tt_basis, *infinity_basis;
 
 static int pdim; /* point dimension */
 static simplex* ch_root;
