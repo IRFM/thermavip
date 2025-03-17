@@ -2437,7 +2437,8 @@ void VipAffineTransform::apply()
 
 			// Work on RGB image
 			QImage qimg = vipToImage(ar);
-			VipNDArrayTypeView<VipRGB> img = qimg;
+			VipNDArrayTypeView<VipRGB> img;
+			img.importImage(qimg);
 			VipRGB* ptr = img.ptr();
 			int size = img.size();
 			for (int i = 0; i < size; ++i) {

@@ -108,6 +108,13 @@ public:
 		setSharedHandle(VipNDArray::makeView(ptr, shape, strides).sharedHandle());
 	}
 
+	VipNDArrayTypeView & importImage(QImage& img)
+	{
+		img = img.convertToFormat(QImage::Format_ARGB32);
+		setSharedHandle(VipNDArray::makeView((VipRGB*)(img.bits()), vipVector(img.height(), img.width())).sharedHandle());
+		return *this;
+	}
+
 	// Reimplement shape() and strides()
 	const VipCoordinate<NDims>& shape() const { return reinterpret_cast<const VipCoordinate<NDims>&>(VipNDArray::shape()); }
 	const VipCoordinate<NDims>& strides() const { return reinterpret_cast<const VipCoordinate<NDims>&>(VipNDArray::strides()); }
