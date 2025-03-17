@@ -35,6 +35,7 @@
 #include "VipMath.h"
 #include "VipStandardProcessing.h"
 #include "VipUniqueId.h"
+#include "VipNDArrayImage.h"
 
 class VipOtherPlayerData::PrivateData
 {
