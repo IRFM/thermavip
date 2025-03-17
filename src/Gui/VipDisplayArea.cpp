@@ -2308,7 +2308,7 @@ VipArchive& operator>>(VipArchive& ar, VipDisplayPlayerArea* area)
 
 	ar.start("players");
 	// load the players
-	int count = 0;
+	//int count = 0;
 	while (true) {
 		VipMultiDragWidget* widget = ar.read().value<VipMultiDragWidget*>();
 		if (widget) {
@@ -2316,7 +2316,7 @@ VipArchive& operator>>(VipArchive& ar, VipDisplayPlayerArea* area)
 			// widget->setParent(area->dragWidgetArea()->widget());
 			area->addWidget(widget);
 			widget->setGeometry(geometry);
-			++count;
+			//++count;
 		}
 		else
 			break;

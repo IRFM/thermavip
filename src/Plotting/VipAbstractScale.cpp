@@ -109,11 +109,8 @@ class VipBoxGraphicsWidget::PrivateData
 public:
 	VipBoxStyle style;
 	bool updateScheduled;
-	QImage pixmap;
-	bool dirtyPixmap;
 	PrivateData()
 	  : updateScheduled(0)
-	  , dirtyPixmap(1)
 	{
 	}
 };
@@ -127,9 +124,7 @@ VipBoxGraphicsWidget::VipBoxGraphicsWidget(QGraphicsItem* parent)
 	this->setAcceptHoverEvents(true);
 }
 
-VipBoxGraphicsWidget::~VipBoxGraphicsWidget()
-{
-}
+VipBoxGraphicsWidget::~VipBoxGraphicsWidget() {}
 
 VipBoxStyle& VipBoxGraphicsWidget::boxStyle()
 {
@@ -151,13 +146,20 @@ void VipBoxGraphicsWidget::setBoxStyle(const VipBoxStyle& style)
 
 VipAbstractPlotArea* VipBoxGraphicsWidget::area() const
 {
+	/* QGraphicsItem* p = const_cast<VipBoxGraphicsWidget*>(this);
+	do {
+		if (VipAbstractPlotArea* a = qobject_cast<VipAbstractPlotArea*>(p->toGraphicsObject()))
+			return a;
+		p = p->parentItem();
+	} while (p);
+	return nullptr;*/
 	QGraphicsItem* p = parentItem();
 	while (p) {
 		if (VipAbstractPlotArea* a = qobject_cast<VipAbstractPlotArea*>(p->toGraphicsObject()))
 			return a;
 		p = p->parentItem();
 	}
-	return nullptr;
+	return const_cast<VipAbstractPlotArea*>(qobject_cast<const VipAbstractPlotArea*>(this));
 }
 
 void VipBoxGraphicsWidget::setGeometry(const QRectF& rect)
@@ -172,14 +174,15 @@ void VipBoxGraphicsWidget::update()
 		this->markItemDirty();
 		if (VipAbstractPlotArea* a = area()) {
 			a->markNeedUpdate();
-			d_data->dirtyPixmap = true;
 			// only call update() if caching is enabled
 			if (cacheMode() != NoCache) {
 				QGraphicsWidget::update();
 				return;
 			}
-
-			return;
+			// If we are calling update() on a VipAbstractPlotArea,
+			// we need to call QGraphicsWidget::update()
+			if (a != this)
+				return;
 		}
 		QGraphicsWidget::update();
 	}
@@ -1467,9 +1470,7 @@ VipScaleWidget::VipScaleWidget(VipAbstractScale* scale, QWidget* parent)
 	setScale(scale);
 }
 
-VipScaleWidget::~VipScaleWidget()
-{
-}
+VipScaleWidget::~VipScaleWidget() {}
 
 QColor VipScaleWidget::backgroundColor() const
 {
