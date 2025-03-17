@@ -3921,7 +3921,8 @@ void VipVideoPlayer::updateShapeFromIsoLine(const QPoint& img_pos)
 	if (sh.isNull())
 		sh = shapes.last()->rawData();
 
-	VipNDArray img = img >= contours.first();
+	
+	VipNDArray img = this->array() >= contours.first();
 	img = label(img);
 	UpdateShapeFromIsoLine(sh, img, img_pos);
 }
@@ -4888,7 +4889,7 @@ static QList<VipProcessingObject*> applyProcessingOnDrop(VipPlotPlayer* pl, cons
 		else
 			meta = meta->superClass();
 	}
-	if (meta && !proc.displayHint == VipProcessingObject::InputTransform) {
+	if (meta && proc.displayHint != VipProcessingObject::InputTransform) {
 		// apply data fusion processing if NOT an input transform one
 		if (VipProcessingObject* obj = vipCreateDataFusionProcessing(vipCastItemListOrdered<VipPlotItem*>(data), proc))
 			res.append(obj);
@@ -8434,7 +8435,7 @@ static VipArchive& operator>>(VipArchive& arch, VipAbstractPlayer* value)
 	vipLoadCustomProperties(arch, value);
 
 	arch.save();
-	bool automaticWindowTitle;
+	bool automaticWindowTitle = true;
 	QString windowTitle;
 	if (arch.content("automaticWindowTitle", automaticWindowTitle)) {
 		arch.content("windowTitle", windowTitle);
@@ -8683,8 +8684,8 @@ static VipArchive& operator>>(VipArchive& arch, VipVideoPlayer* value)
 
 	// Since 3.8.0
 	arch.save();
-	bool isFlatHistogramColorScale;
-	int flatHistogramStrength;
+	bool isFlatHistogramColorScale = false;
+	int flatHistogramStrength = 0;
 	if (arch.content("isFlatHistogramColorScale", isFlatHistogramColorScale)) {
 		arch.content("flatHistogramStrength", flatHistogramStrength);
 		value->setFlatHistogramColorScale(isFlatHistogramColorScale);
@@ -8859,7 +8860,7 @@ static VipArchive& operator>>(VipArchive& arch, VipPlotPlayer* value)
 	arch.content("timeMarker", value->timeMarker());
 
 	arch.save();
-	int legend_pos;
+	int legend_pos = 0;
 	;
 	if (!arch.content("legendPosition", legend_pos))
 		arch.restore();
@@ -8888,8 +8889,8 @@ static VipArchive& operator>>(VipArchive& arch, VipPlotPlayer* value)
 
 	// New in 3.8.0
 	arch.save();
-	bool auto_unit; // = d_data->timeUnit->automaticUnit();
-	bool displayVerticalWindow;
+	bool auto_unit = true; // = d_data->timeUnit->automaticUnit();
+	bool displayVerticalWindow = false;
 	QRectF verticalWindowVisibleRect;
 	if (arch.content("verticalWindowVisible", displayVerticalWindow)) {
 		arch.content("verticalWindowVisibleRect", verticalWindowVisibleRect);
@@ -8910,7 +8911,7 @@ static VipArchive& operator>>(VipArchive& arch, VipPlotPlayer* value)
 
 	// new in 2.2.14
 	arch.save();
-	bool gridVisible, timeMarkerVisible;
+	bool gridVisible = true, timeMarkerVisible = false;
 	if (!arch.content("gridVisible", gridVisible))
 		arch.restore();
 	else if (!arch.content("timeMarkerVisible", timeMarkerVisible))
