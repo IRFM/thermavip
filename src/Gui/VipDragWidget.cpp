@@ -3294,7 +3294,7 @@ VipArchive& operator>>(VipArchive& ar, VipMultiDragWidget* w)
 	int height = ar.read("height").toInt();
 	VipMultiDragWidget::VisibilityState visibility = (VipMultiDragWidget::VisibilityState)ar.read("visibility").toInt();
 
-	int orientation;
+	int orientation = 0;
 	ar.save();
 	if (ar.content("orientation", orientation))
 		w->setOrientation((Qt::Orientation)orientation);
