@@ -47,7 +47,6 @@
 ///
 class VIP_ANNOTATION_EXPORT VipLibRIR
 {
-	bool initialized;
 	VipLibRIR();
 
 public:

@@ -1190,8 +1190,14 @@ void VipH5Archive::doContent(QString& name, QVariant& value, QVariantMap& metada
 		// read the 'type_name' attribute
 		QByteArray type_name = readAttribute(set, "type_name").toByteArray();
 		int type_id = vipIdFromName(type_name.data());
-		if (type_name.isEmpty() || type_id == 0)
-			ERROR("Invalide dataset type name: " + type_name);
+		if (type_name.isEmpty() || type_id == 0) {
+			//ERROR("Invalide dataset type name: " + type_name);
+
+			// No type id: use plain VipNDArray
+			type_id = qMetaTypeId<VipNDArray>();
+			type_name = "VipNDArray";
+		}
+			
 
 		// string type
 		if (type_id == QMetaType::QString || type_id == QMetaType::QByteArray) {
