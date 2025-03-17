@@ -50,7 +50,7 @@ VIP_DATA_TYPE_EXPORT QImage vipToImage(const VipNDArray& array);
 VIP_DATA_TYPE_EXPORT bool vipIsImageArray(const VipNDArray& ar);
 
 /// @brief Specialization of VipNDArrayTypeView for VipRGB
-template<qsizetype NDims>
+template<qsizetype NDims >
 class VipNDArrayTypeView<VipRGB, NDims> : public VipNDArray
 {
 	VIP_ALWAYS_INLINE const void* _p() const noexcept { return static_cast<const detail::ViewHandle*>(constHandle())->ptr; }
@@ -242,6 +242,12 @@ typename std::enable_if<VipIsExpression<T>::value, VipNDArrayTypeView<VipRGB, ND
 		clear();
 	}
 	return *this;
+}
+
+inline VipNDArrayTypeView<VipRGB> vipQImageView(QImage& img)
+{
+	img = img.convertToFormat(QImage::Format_ARGB32);
+	return VipNDArrayTypeView<VipRGB>((VipRGB*)(img.bits()), vipVector(img.height(), img.width()));
 }
 
 /// @}

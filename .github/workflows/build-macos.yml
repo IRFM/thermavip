@@ -28,8 +28,9 @@ jobs:
         
         - name: install qt6 
           run: brew install qt6
-        #- name: Install Qt
-        #  uses: jurplel/install-qt-action@v4
+          
+        - name: install ffmpeg 
+          run: brew install ffmpeg
 
         - name: Build on MacOS
           run: |
