@@ -466,4 +466,11 @@ inline size_t vipOmpThreadId()
 #endif
 
 
+#if defined(__clang__)
+// With clang, remove warning inconsistent-missing-override
+// until we add override specifier everywhere
+#pragma clang diagnostic ignored "-Winconsistent-missing-override"
+#endif
+
+
 #endif

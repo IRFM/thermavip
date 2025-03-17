@@ -409,8 +409,9 @@ private:
 ///  After a scale division has been specified as a VipScaleDiv object
 ///  using setScaleDiv(), the scale can be drawn with the draw() member.
 ///
-class VIP_PLOTTING_EXPORT VipAbstractScaleDraw
+class VIP_PLOTTING_EXPORT VipAbstractScaleDraw : public QObject
 {
+	Q_OBJECT
 public:
 	/// @brief Components of a scale
 	enum ScaleComponent
@@ -710,6 +711,7 @@ textTransformation(VipAbstractScaleDraw::TextTransform textTransform, VipAbstrac
 */
 class VIP_PLOTTING_EXPORT VipScaleDraw : public VipAbstractScaleDraw
 {
+	Q_OBJECT
 public:
 	/*!
 	    Alignment of the scale draw
@@ -819,6 +821,7 @@ inline void VipScaleDraw::move(double x, double y)
 */
 class VIP_PLOTTING_EXPORT VipPolarScaleDraw : public VipAbstractScaleDraw
 {
+	Q_OBJECT
 public:
 	VipPolarScaleDraw();
 	virtual ~VipPolarScaleDraw();
@@ -885,6 +888,7 @@ private:
 */
 class VIP_PLOTTING_EXPORT VipRadialScaleDraw : public VipAbstractScaleDraw
 {
+	Q_OBJECT
 public:
 	VipRadialScaleDraw();
 	virtual ~VipRadialScaleDraw();

@@ -93,13 +93,13 @@ private Q_SLOTS:
 	void updateInternal() { QGraphicsWidget::update(); }
 
 protected:
-	virtual void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget = 0);
-	virtual bool setItemProperty(const char* name, const QVariant& value, const QByteArray& index = QByteArray());
+	virtual void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget = 0) override;
+	virtual bool setItemProperty(const char* name, const QVariant& value, const QByteArray& index = QByteArray()) override;
 
 	// Reimplement to detect hover events and selection status changes in order to reapply style sheet
-	virtual void hoverEnterEvent(QGraphicsSceneHoverEvent* event);
-	virtual void hoverLeaveEvent(QGraphicsSceneHoverEvent* event);
-	virtual QVariant itemChange(GraphicsItemChange change, const QVariant& value);
+	virtual void hoverEnterEvent(QGraphicsSceneHoverEvent* event) override;
+	virtual void hoverLeaveEvent(QGraphicsSceneHoverEvent* event) override;
+	virtual QVariant itemChange(GraphicsItemChange change, const QVariant& value) override;
 
 private:
 	

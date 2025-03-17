@@ -79,14 +79,14 @@ public:
 	void setTitleInside(bool);
 	bool titleInside() const;
 
-	virtual void setScaleDraw(VipScaleDraw*);
-	virtual const VipScaleDraw* constScaleDraw() const;
-	virtual VipScaleDraw* scaleDraw();
+	virtual void setScaleDraw(VipAbstractScaleDraw*) override;
+	virtual const VipScaleDraw* constScaleDraw() const override;
+	virtual VipScaleDraw* scaleDraw() override;
 
 	QSizeF minimumSizeHint() const;
 	double minimumLengthHint() const;
 
-	virtual void getBorderDistHint(double& start, double& end) const;
+	virtual void getBorderDistHint(double& start, double& end) const override;
 
 	/// Tells if the border dist hint (function #getBorderDistHint()) are used to layout the scale.
 	/// If yes, it is likely that the backbone will be drawn inside the bounding rect, with a margin to the borders.
@@ -101,9 +101,9 @@ public:
 	void drawTitle(QPainter* painter, Alignment, const QRectF& rect) const;
 
 	virtual void setAlignment(Alignment);
-	virtual void layoutScale();
-	virtual void draw(QPainter* painter, QWidget* widget = 0);
-	virtual void computeScaleDiv();
+	virtual void layoutScale() override;
+	virtual void draw(QPainter* painter, QWidget* widget = 0) override;
+	virtual void computeScaleDiv() override;
 
 	virtual QRectF boundingRect() const;
 
@@ -118,9 +118,9 @@ protected:
 	virtual double additionalSpace() const { return 0.; }
 
 	/// @brief Set property based on stylesheet
-	virtual bool setItemProperty(const char* name, const QVariant& value, const QByteArray& index = QByteArray());
+	virtual bool setItemProperty(const char* name, const QVariant& value, const QByteArray& index = QByteArray()) override;
 	/// @brief Implement selectors 'title' and 'legend'
-	virtual bool hasState(const QByteArray& state, bool enable) const;
+	virtual bool hasState(const QByteArray& state, bool enable) const override;
 	
 	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
@@ -146,10 +146,10 @@ public:
 
 	static VipMultiAxisBase* fromScale(VipBorderItem* item);
 
-	virtual void setAlignment(Alignment);
-	virtual void layoutScale();
-	virtual void getBorderDistHint(double& start, double& end) const;
-	virtual void setItemIntervalFactor(double f);
+	virtual void setAlignment(Alignment) override;
+	virtual void layoutScale() override;
+	virtual void getBorderDistHint(double& start, double& end) const override;
+	virtual void setItemIntervalFactor(double f) override;
 
 	void setLayoutFlag(LayoutFlag, bool on);
 	bool testLayoutFlag(LayoutFlag) const;
@@ -171,13 +171,13 @@ public:
 	void setScaleSpacing(double space);
 	double scaleSpacing() const;
 
-	virtual void draw(QPainter* painter, QWidget* widget = 0);
+	virtual void draw(QPainter* painter, QWidget* widget = 0) override;
 	void drawTitle(QPainter* painter, Alignment, const QRectF& rect) const;
 
 protected:
-	virtual double extentForLength(double length) const;
-	virtual void itemGeometryChanged(const QRectF&);
-	virtual QVariant itemChange(GraphicsItemChange change, const QVariant& value);
+	virtual double extentForLength(double length) const override;
+	virtual void itemGeometryChanged(const QRectF&) override;
+	virtual QVariant itemChange(GraphicsItemChange change, const QVariant& value) override;
 	void updateParents();
 
 private:

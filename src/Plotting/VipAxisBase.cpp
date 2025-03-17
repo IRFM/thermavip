@@ -193,24 +193,25 @@ void VipAxisBase::itemGeometryChanged(const QRectF&)
 		computeScaleDiv();
 }
 
-void VipAxisBase::setScaleDraw(VipScaleDraw* _scaleDraw)
+void VipAxisBase::setScaleDraw(VipAbstractScaleDraw* _scaleDraw)
 {
-	if ((_scaleDraw == nullptr) || (_scaleDraw == scaleDraw()))
+	VipScaleDraw* scale = qobject_cast<VipScaleDraw*>(_scaleDraw);
+	if ((scale == nullptr) || (scale == scaleDraw()))
 		return;
 
 	const VipScaleDraw* sd = scaleDraw();
 	if (sd) {
-		_scaleDraw->setAlignment(sd->alignment());
-		_scaleDraw->setScaleDiv(sd->scaleDiv());
+		scale->setAlignment(sd->alignment());
+		scale->setScaleDiv(sd->scaleDiv());
 
 		VipValueTransform* transform = nullptr;
 		if (sd->scaleMap().transformation())
 			transform = sd->scaleMap().transformation()->copy();
 
-		_scaleDraw->setTransformation(transform);
+		scale->setTransformation(transform);
 	}
 
-	VipAbstractScale::setScaleDraw(_scaleDraw);
+	VipAbstractScale::setScaleDraw(scale);
 }
 
 const VipScaleDraw* VipAxisBase::constScaleDraw() const

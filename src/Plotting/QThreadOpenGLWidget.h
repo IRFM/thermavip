@@ -154,7 +154,7 @@ public:
 	bool isEnabled() const noexcept;
 
 	virtual QPaintEngine* paintEngine() const override;
-	virtual int metric(QPaintDevice::PaintDeviceMetric metric) const;
+	virtual int metric(QPaintDevice::PaintDeviceMetric metric) const override;
 };
 
 Q_DECLARE_OPERATORS_FOR_FLAGS(QPaintRecord::Optimizations)
@@ -383,7 +383,7 @@ protected:
 protected:
 	virtual bool event(QEvent* evt) override;
 	virtual bool eventFilter(QObject* watched, QEvent* evt) override;
-	virtual QPaintEngine* paintEngine() const;
+	virtual QPaintEngine* paintEngine() const override;
 
 private Q_SLOTS:
 	void updateParent();
