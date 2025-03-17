@@ -130,12 +130,12 @@ public:
 	VIP_ALWAYS_INLINE void setData(const QVariant& data) { d_data = data; }
 	VIP_ALWAYS_INLINE void setData(QVariant&& data)
 	{
-#ifdef __GNUC__
+#if defined(__GNUC__) && !defined(__clang__)
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wstringop-overflow="
 #endif
 		d_data = std::move(data); 
-#ifdef __GNUC__
+#if defined(__GNUC__) && !defined(__clang__)
 #pragma GCC diagnostic pop
 #endif
 	}
