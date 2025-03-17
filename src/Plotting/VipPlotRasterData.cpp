@@ -96,7 +96,7 @@ inline T cast(vip_double value)
 	return CastValue<T>::cast(value);
 }
 
-#include "immintrin.h"
+/*#include "immintrin.h"
 
 // Add missing defines with msvc
 #ifdef _MSC_VER
@@ -119,6 +119,7 @@ inline T cast(vip_double value)
 #endif
 
 #endif
+*/
 
 template<class T>
 VipInterval computeBounds(const T* ptr, int size, const VipInterval& interval)

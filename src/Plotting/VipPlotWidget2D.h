@@ -647,6 +647,8 @@ public:
 	/// @brief Returns the last VipPlotItem which triggered a mouseButtonPressed() signal
 	VipPlotItem* lastPressed() const;
 
+	/// @brief Internal use only
+	void setCustomUpdateFunction(const std::function<void()>& f);
 	
 public Q_SLOTS:
 

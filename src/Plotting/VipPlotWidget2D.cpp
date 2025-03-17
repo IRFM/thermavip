@@ -940,6 +940,7 @@ public:
 	bool insideComputeScaleDiv;
 	QSet<VipAbstractScale*> dirtyScaleDiv;
 	bool dirty;
+	std::function<void()> customUpdate;
 
 	int dcount;
 
@@ -1100,7 +1101,10 @@ void VipAbstractPlotArea::markNeedUpdate()
 void VipAbstractPlotArea::updateInternal()
 {
 	d_data->lastUpdate = QDateTime::currentMSecsSinceEpoch();
-	update();
+	if (d_data->customUpdate)
+		d_data->customUpdate();
+	else
+		update();
 }
 
 void VipAbstractPlotArea::markScaleDivDirty(VipAbstractScale* sc)
@@ -2477,6 +2481,11 @@ QGraphicsView* VipAbstractPlotArea::view() const
 VipPlotItem* VipAbstractPlotArea::lastPressed() const
 {
 	return d_data->lastPressed;
+}
+
+void VipAbstractPlotArea::setCustomUpdateFunction(const std::function<void()>& f)
+{
+	d_data->customUpdate = f;
 }
 
 void VipAbstractPlotArea::setNotifier(const Vip::detail::ItemDirtyNotifierPtr& notifier)
