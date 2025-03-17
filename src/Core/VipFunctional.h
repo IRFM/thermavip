@@ -364,17 +364,6 @@ namespace details
 #define _VIP_CONCAT_IMPL(x, y) x##y
 #define _VIP_MACRO_CONCAT(x, y) _VIP_CONCAT_IMPL(x, y)
 
-#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
-#define _VIP_SPECIALIZE_FROM_VALUE(Type) \
-template<>                                                                                                                                                                                     \
-	inline QVariant qVariantFromValue(Type const& value)                                                                                                                                           \
-	{                                                                                                                                                                                              \
-		return QVariant::fromValue(value);                                                                                                                                                     \
-	}
-
-#else
-#define _VIP_SPECIALIZE_FROM_VALUE(Type)
-#endif
 
 /// Register a QObject inheriting class to the Thermavip type system. The class must be registered first with Q_DECLARE_METATYPE.
 /// Use #VIP_REGISTER_QOBJECT_METATYPE if it is not the case.
@@ -406,18 +395,6 @@ template<>                                                                      
 		};                                                                                                                                                                                     \
 		static const MetaType<Type> _VIP_MACRO_CONCAT(meta_type_, __COUNTER__);                                                                                                                \
 	}                                                                                                                                                                                              \
-	template<>                                                                                                                                                                                     \
-	inline QVariant QVariant::fromValue<Type>(Type const& value)                                                                                                                                   \
-	{                                                                                                                                                                                              \
-		/* make sure to take the highest metatype*/                                                                                                                                            \
-		int id = 0;                                                                                                                                                                            \
-		if (value)                                                                                                                                                                             \
-			id = vipIdFromName(QByteArray(value->metaObject()->className()) + "*");                                                                                                      \
-		if (id)                                                                                                                                                                                \
-			return vipFromVoid(id, &value);                                                                                                                                                   \
-		return vipFromVoid(qMetaTypeId<Type>(), &value);                                                                                                                                          \
-	}                                                                                                                                                                                              \
-	_VIP_SPECIALIZE_FROM_VALUE(Type)
 
 
 /// @brief Same as VIP_REGISTER_QOBJECT_METATYPE_NO_DECLARE, but also add the Q_DECLARE_METATYPE declaration
