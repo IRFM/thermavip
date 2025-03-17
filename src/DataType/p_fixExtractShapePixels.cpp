@@ -1556,7 +1556,7 @@ struct QRegionSpan
 
 Q_DECLARE_TYPEINFO(QRegionSpan, Q_PRIMITIVE_TYPE);
 
-static inline void flushRow(const QRegionSpan* spans, qsizetype y, qsizetype numSpans, _QRegionPrivate* reg, qsizetype* lastRow, qsizetype* extendTo, bool* needsExtend)
+/* static inline void flushRow(const QRegionSpan* spans, qsizetype y, qsizetype numSpans, _QRegionPrivate* reg, qsizetype* lastRow, qsizetype* extendTo, bool* needsExtend)
 {
 	QRect* regRects = reg->rects.data() + *lastRow;
 	bool canExtend = reg->rects.size() - *lastRow == numSpans && !(*needsExtend && *extendTo + 1 != y) && (*needsExtend || regRects[0].y() + regRects[0].height() == y);
@@ -1589,7 +1589,7 @@ static inline void flushRow(const QRegionSpan* spans, qsizetype y, qsizetype num
 
 		*needsExtend = false;
 	}
-}
+}*/
 
 _QRegionPrivate* qt_imageToRegion(const QImage& image)
 {
