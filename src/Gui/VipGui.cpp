@@ -339,7 +339,7 @@ bool VipFileSharedMemory::hasThermavipInstance()
 #include "VipColorMap.h"
 #include "VipPlayer.h"
 
-static bool copyPath(QString src, QString dst)
+/* static bool copyPath(QString src, QString dst)
 {
 	QDir dir(src);
 	if (!dir.exists())
@@ -363,7 +363,7 @@ static bool copyPath(QString src, QString dst)
 			return false;
 	}
 	return true;
-}
+}*/
 
 class VipGuiDisplayParamaters::PrivateData
 {
