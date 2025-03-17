@@ -1274,7 +1274,7 @@ VipArchive& operator>>(VipArchive& arch, VipAxisBase* value)
 	value->setTitleInverted(arch.read("isTitleInverted").value<bool>());
 	arch.save();
 	// since 2.2.18
-	bool titleInside;
+	bool titleInside = false;
 	if (arch.content("titleInside", titleInside))
 		value->setTitleInside(titleInside);
 	else
