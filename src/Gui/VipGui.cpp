@@ -1214,7 +1214,7 @@ static void serialize_VipGuiDisplayParamaters(VipGuiDisplayParamaters* inst, Vip
 
 			// new in 2.2.18
 			arch.save();
-			bool showTimeMarkerAlways;
+			bool showTimeMarkerAlways = false;
 			if (arch.content("showTimeMarkerAlways", showTimeMarkerAlways))
 				inst->setAlwaysShowTimeMarker(showTimeMarkerAlways);
 			else {
@@ -1224,7 +1224,7 @@ static void serialize_VipGuiDisplayParamaters(VipGuiDisplayParamaters* inst, Vip
 			}
 			// vip_debug("read showTimeMarkerAlways: %i\n", (int)showTimeMarkerAlways);
 			arch.save();
-			bool globalColorScale;
+			bool globalColorScale=false;
 			if (arch.content("globalColorScale", globalColorScale))
 				inst->setGlobalColorScale(globalColorScale);
 			else {
@@ -1236,7 +1236,7 @@ static void serialize_VipGuiDisplayParamaters(VipGuiDisplayParamaters* inst, Vip
 
 			// new in 3.3.3
 			arch.save();
-			int flatHistogramStrength;
+			int flatHistogramStrength=0;
 			if (arch.content("flatHistogramStrength", flatHistogramStrength))
 				inst->setFlatHistogramStrength(flatHistogramStrength);
 			else {
@@ -1246,7 +1246,7 @@ static void serialize_VipGuiDisplayParamaters(VipGuiDisplayParamaters* inst, Vip
 
 			// new in 3.4.7
 			arch.save();
-			int videoRenderingMode, plotRenderingMode;
+			int videoRenderingMode=0, plotRenderingMode=0;
 			arch.content("videoRenderingMode", videoRenderingMode);
 			arch.content("plotRenderingMode", plotRenderingMode);
 			if (arch) {
@@ -1277,7 +1277,7 @@ static void serialize_VipGuiDisplayParamaters(VipGuiDisplayParamaters* inst, Vip
 			arch.save();
 			QBrush b;
 			QPen p;
-			int c;
+			int c=0;
 			if (arch.content("backgroundBrush", b)) {
 				arch.content("borderPen", p);
 				arch.content("drawComponents", c);
