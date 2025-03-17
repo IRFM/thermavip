@@ -116,7 +116,7 @@ public:
 	}
 
 	// Reimplement shape() and strides()
-	const VipCoordinate<NDims>& shape() const { return reinterpret_cast<const VipCoordinate<NDims>&>(VipNDArray::shape()); }
+	const VipCoordinate<NDims>& shapes() const { return reinterpret_cast<const VipCoordinate<NDims>&>(VipNDArray::shapes()); }
 	const VipCoordinate<NDims>& strides() const { return reinterpret_cast<const VipCoordinate<NDims>&>(VipNDArray::strides()); }
 
 	bool reset(const VipNDArray& ar) { return importArray(ar); }
