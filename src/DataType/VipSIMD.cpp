@@ -13,7 +13,7 @@
 #if defined(_M_ARM64) || defined(__arm__) || defined(__ARM_NEON__)
 inline void cpuid(int info[4], int InfoType)
 {
-	memset(info, 0, sizeof(info));
+	info[0] = info[1] = info[2] = info[3] = 0;
 	(void)InfoType;
 }
 #else
