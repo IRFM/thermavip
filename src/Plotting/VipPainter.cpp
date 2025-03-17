@@ -578,7 +578,7 @@ void VipPainter::drawLine(QPainter* painter, const QPointF& p1, const QPointF& p
 //! Wrapper for QPainter::drawPolygon()
 void VipPainter::drawPolygon(QPainter* painter, const QPolygonF& polygon)
 {
-	QRectF clipRect;
+	//QRectF clipRect;
 	// const bool deviceClipping = vipIsClippingNeeded( painter, clipRect );
 
 	QPolygonF cpa = polygon;
@@ -599,7 +599,7 @@ void VipPainter::drawPolygon(QPainter* painter, const QPolygonF& polygon)
 //! Wrapper for QPainter::drawPolyline()
 void VipPainter::drawPolyline(QPainter* painter, const QPolygonF& polygon)
 {
-	QRectF clipRect;
+	//QRectF clipRect;
 	// const bool deviceClipping = vipIsClippingNeeded( painter, clipRect );
 
 	QPolygonF cpa = polygon;
@@ -656,14 +656,14 @@ void VipPainter::drawPolyline(QPainter* painter, const QPointF* points, int poin
 //! Wrapper for QPainter::drawPolygon()
 void VipPainter::drawPolygon(QPainter* painter, const QPolygon& polygon)
 {
-	QRectF clipRect;
+	//QRectF clipRect;
 	// const bool deviceClipping = vipIsClippingNeeded( painter, clipRect );
 
-	QPolygon cpa = polygon;
+	//QPolygon cpa = polygon;
 	// if ( deviceClipping )
 	//   cpa = QwtClipper::clipPolygon( clipRect, polygon );
 
-	painter->drawPolygon(cpa);
+	painter->drawPolygon(polygon);
 }
 
 //! Wrapper for QPainter::drawPolyline()
