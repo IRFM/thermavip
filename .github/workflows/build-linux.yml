@@ -37,12 +37,15 @@ jobs:
           
         - name: install HDF5
           run: sudo apt install libhdf5-serial-dev
+          
+        - name: install VTK
+          run: sudo apt install python3-vtk9
 
         - name: Build on Linux
           run: |
               mkdir build 
               cd build 
-              cmake .. -DCMAKE_BUILD_TYPE=Debug -DNO_WARNINGS=ON -DWITH_PYTHON=ON -DWITH_HDF5=ON -DWITH_FFMPEG=OFF -DLOCAL_INSTALL=ON 
+              cmake .. -DCMAKE_BUILD_TYPE=Debug -DNO_WARNINGS=ON -DWITH_PYTHON=ON -DWITH_VTK=ON -DWITH_HDF5=ON -DWITH_FFMPEG=OFF -DLOCAL_INSTALL=ON 
               make -j8 
               cmake --build . --target install
           shell: bash
