@@ -62,7 +62,7 @@ static int registerHistogramKeyWords()
 
 static int _registerHistogramKeyWords = registerHistogramKeyWords();
 
-static inline bool isCombinable(const VipInterval& d1, const VipInterval& d2)
+/* static inline bool isCombinable(const VipInterval& d1, const VipInterval& d2)
 {
 	if (d1.isValid() && d2.isValid()) {
 		if (d1.maxValue() == d2.minValue()) {
@@ -73,7 +73,7 @@ static inline bool isCombinable(const VipInterval& d1, const VipInterval& d2)
 	}
 
 	return false;
-}
+}*/
 
 class VipPlotHistogram::PrivateData
 {
