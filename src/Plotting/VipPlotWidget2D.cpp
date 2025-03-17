@@ -882,7 +882,7 @@ public:
 		insideComputeScaleDiv = false;
 
 		maxFPS = 60;
-		maxMS = 16.67;
+		maxMS = 17;
 		lastUpdate = 0;
 		updateTimer.setSingleShot(true);
 		dcount = 0;
