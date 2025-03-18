@@ -97,8 +97,9 @@ private:
 
 
 /// @brief Mime data used to create new players based on a list of paths
-class VipMimeDataPaths : public VipMimeDataCoordinateSystem
+class VIP_GUI_EXPORT VipMimeDataPaths : public VipMimeDataCoordinateSystem
 {
+	Q_OBJECT
 public:
 	virtual QList<VipPlotItem*> plotData(VipPlotItem* drop_target, QWidget* drop_widget) const
 	{
@@ -111,14 +112,16 @@ public:
 	}
 
 	void setPaths(const QStringList& lst) { m_paths = lst; }
+	const QStringList &paths() const noexcept { return m_paths; }
 
 private:
 	QStringList m_paths;
 };
 
 /// @brief Mime data used to create new players based on a list of paths
-class VipMimeDataMapFile : public VipMimeDataCoordinateSystem
+class VIP_GUI_EXPORT VipMimeDataMapFile : public VipMimeDataCoordinateSystem
 {
+	Q_OBJECT
 public:
 	virtual QList<VipPlotItem*> plotData(VipPlotItem* drop_target, QWidget* drop_widget) const
 	{
