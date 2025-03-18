@@ -1,6 +1,6 @@
-![Linux/gcc](https://github.com/OWNER/REPOSITORY/actions/workflows/build-linux.yml/badge.svg)
-![Windows/msvc](https://github.com/OWNER/REPOSITORY/actions/workflows/build-windows.yml/badge.svg)
-![MacOS/clang](https://github.com/OWNER/REPOSITORY/actions/workflows/build-macos.yml/badge.svg)
+![Linux/gcc](https://github.com/IRFM/thermavip/actions/workflows/build-linux.yml/badge.svg?branch=main)
+![Windows/msvc](https://github.com/IRFM/thermavip/actions/workflows/build-windows.yml/badge.svg?branch=main)
+![MacOS/clang](https://github.com/IRFM/thermavip/actions/workflows/build-macos.yml/badge.svg?branch=main)
 
 <img src="docs/images/logo.png" width="615">
 
