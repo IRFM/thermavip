@@ -95,73 +95,88 @@ endif()
 
 
 if(WITH_FFMPEG)
+
 	# Setup ffmpeg support
 	target_compile_definitions(VipCore PRIVATE ENABLE_H264)
-
-	# Configure ffmpeg path, use librir ffmpeg install if possible
-	if(WITH_LIBRIR)
-		if(MSVC)
-			set(FFMPEG_PATH ${CMAKE_BINARY_DIR}/_deps/librir-src/extra/ffmpeg)
+		
+	if(WITH_LOCAL_FFMEG)
+		find_package(FFMPEG COMPONENTS AVCODEC AVDEVICE AVFILTER AVFORMAT AVRESAMPLE AVUTIL SWRESAMPLE SWSCALE)
+		if(FFMPEG_AVCODEC_FOUND)
+			message(STATUS "Found ffmpeg headers at  ${FFMPEG_INCLUDE_DIRS}")
+			target_include_directories(VipCore PRIVATE  ${FFMPEG_INCLUDE_DIRS})
+			#target_link_directories(VipCore PRIVATE ${FFMPEG_LIB_DIR})
+			target_link_libraries(VipCore PRIVATE ${FFMPEG_LIBRARIES})
 		else()
-			# TODO! Linux
-			# set(FFMPEG_PATH ${CMAKE_BINARY_DIR}/src/Annotation/librir-prefix/src/librir-build/install)
+			message(ERROR "Unable to find ffmpeg installation!")
+		endif()
+		
+	else()
+
+		# Configure ffmpeg path, use librir ffmpeg install if possible
+		if(WITH_LIBRIR)
+			if(MSVC)
+				set(FFMPEG_PATH ${CMAKE_BINARY_DIR}/_deps/librir-src/extra/ffmpeg)
+			else()
+				# TODO! Linux
+				# set(FFMPEG_PATH ${CMAKE_BINARY_DIR}/src/Annotation/librir-prefix/src/librir-build/install)
+				# Compile ffmpeg from source inside 3rd_64 folder
+				set(FFMPEG_PATH ${CMAKE_SOURCE_DIR}/3rd_64)
+			endif()
+		else()
 			# Compile ffmpeg from source inside 3rd_64 folder
 			set(FFMPEG_PATH ${CMAKE_SOURCE_DIR}/3rd_64)
 		endif()
-	else()
-		# Compile ffmpeg from source inside 3rd_64 folder
-		set(FFMPEG_PATH ${CMAKE_SOURCE_DIR}/3rd_64)
-	endif()
 
 
 
-	if (MSVC)
-		set(FFMPEG_LIB_DIR ${FFMPEG_PATH}/ffmpeg-7.1-msvc/lib)
-		set(FFMPEG_INCLUDE_DIR "${FFMPEG_PATH}/ffmpeg-7.1-msvc/include;${FFMPEG_PATH}/ffmpeg-7.1-msvc")
-		set(FFMPEG_LIBS avdevice avformat avcodec swscale avutil swresample avfilter )
-		set(ADDITIONAL_FFMPEG_LIBS libx264 libx265 kvazaar postproc vcruntime140_1 Vfw32 shlwapi strmbase)
-		set(FFMPEG_PREFIX )
-		set(FFMPEG_SUFFIX .dll)
-	else()
-		set(FFMPEG_LIB_DIR ${FFMPEG_PATH}/ffmpeg/install/lib)
-		set(FFMPEG_INCLUDE_DIR ${FFMPEG_PATH}/ffmpeg/install/include)
-		set(FFMPEG_LIBS avdevice avformat avcodec swscale avutil swresample avfilter)
-		set(ADDITIONAL_FFMPEG_LIBS postproc)
-		if (WIN32)
-			# mingw
+		if (MSVC)
+			set(FFMPEG_LIB_DIR ${FFMPEG_PATH}/ffmpeg-7.1-msvc/lib)
+			set(FFMPEG_INCLUDE_DIR "${FFMPEG_PATH}/ffmpeg-7.1-msvc/include;${FFMPEG_PATH}/ffmpeg-7.1-msvc")
+			set(FFMPEG_LIBS avdevice avformat avcodec swscale avutil swresample avfilter )
+			set(ADDITIONAL_FFMPEG_LIBS libx264 libx265 kvazaar postproc vcruntime140_1 Vfw32 shlwapi strmbase)
 			set(FFMPEG_PREFIX )
 			set(FFMPEG_SUFFIX .dll)
-		elseif(APPLE)
-			set(FFMPEG_PREFIX lib)
-			set(FFMPEG_SUFFIX .dylib)
-		elseif()
-			# UNIX
-			set(FFMPEG_PREFIX lib)
-			set(FFMPEG_SUFFIX .so)
+		else()
+			set(FFMPEG_LIB_DIR ${FFMPEG_PATH}/ffmpeg/install/lib)
+			set(FFMPEG_INCLUDE_DIR ${FFMPEG_PATH}/ffmpeg/install/include)
+			set(FFMPEG_LIBS avdevice avformat avcodec swscale avutil swresample avfilter)
+			set(ADDITIONAL_FFMPEG_LIBS postproc)
+			if (WIN32)
+				# mingw
+				set(FFMPEG_PREFIX )
+				set(FFMPEG_SUFFIX .dll)
+			elseif(APPLE)
+				set(FFMPEG_PREFIX lib)
+				set(FFMPEG_SUFFIX .dylib)
+			elseif()
+				# UNIX
+				set(FFMPEG_PREFIX lib)
+				set(FFMPEG_SUFFIX .so)
+			endif()
 		endif()
+
+		target_link_directories(VipCore PRIVATE ${FFMPEG_LIB_DIR})
+		MESSAGE(STATUS "Using ${FFMPEG_LIB_DIR} for ffmpeg library files")
+
+
+		target_include_directories(VipCore PRIVATE ${FFMPEG_INCLUDE_DIR})
+		target_link_libraries(VipCore PRIVATE ${FFMPEG_LIBS})
+		set(COMPLETE_FFMPEG_LIBS ${FFMPEG_LIBS} ${ADDITIONAL_FFMPEG_LIBS})
+
+
+		# Add any variables you need during post install.
+		install(CODE "set(FFMPEG_LIB_DIR \"${FFMPEG_LIB_DIR}\")")
+		install(CODE "set(FFMPEG_INCLUDE_DIR \"${FFMPEG_INCLUDE_DIR}\")")
+		install(CODE "set(FFMPEG_LIBS \"${FFMPEG_LIBS}\")")
+		install(CODE "set(ADDITIONAL_FFMPEG_LIBS \"${ADDITIONAL_FFMPEG_LIBS}\")")
+		install(CODE "set(FFMPEG_PREFIX \"${FFMPEG_PREFIX}\")")
+		install(CODE "set(FFMPEG_SUFFIX \"${FFMPEG_SUFFIX}\")")
+		install(CODE "set(COMPLETE_FFMPEG_LIBS \"${COMPLETE_FFMPEG_LIBS}\")")
+		install(CODE "set(CMAKE_INSTALL_BINDIR \"${CMAKE_INSTALL_BINDIR}\")")
+		install(CODE "set(CMAKE_SOURCE_DIR \"${CMAKE_SOURCE_DIR}\")")
+		install(SCRIPT InstallFfmpeg.cmake)
+
 	endif()
-
-	target_link_directories(VipCore PRIVATE ${FFMPEG_LIB_DIR})
-	MESSAGE(STATUS "Using ${FFMPEG_LIB_DIR} for ffmpeg library files")
-
-
-	target_include_directories(VipCore PRIVATE ${FFMPEG_INCLUDE_DIR})
-	target_link_libraries(VipCore PRIVATE ${FFMPEG_LIBS})
-	set(COMPLETE_FFMPEG_LIBS ${FFMPEG_LIBS} ${ADDITIONAL_FFMPEG_LIBS})
-
-
-	# Add any variables you need during post install.
-	install(CODE "set(FFMPEG_LIB_DIR \"${FFMPEG_LIB_DIR}\")")
-	install(CODE "set(FFMPEG_INCLUDE_DIR \"${FFMPEG_INCLUDE_DIR}\")")
-	install(CODE "set(FFMPEG_LIBS \"${FFMPEG_LIBS}\")")
-	install(CODE "set(ADDITIONAL_FFMPEG_LIBS \"${ADDITIONAL_FFMPEG_LIBS}\")")
-	install(CODE "set(FFMPEG_PREFIX \"${FFMPEG_PREFIX}\")")
-	install(CODE "set(FFMPEG_SUFFIX \"${FFMPEG_SUFFIX}\")")
-	install(CODE "set(COMPLETE_FFMPEG_LIBS \"${COMPLETE_FFMPEG_LIBS}\")")
-	install(CODE "set(CMAKE_INSTALL_BINDIR \"${CMAKE_INSTALL_BINDIR}\")")
-	install(CODE "set(CMAKE_SOURCE_DIR \"${CMAKE_SOURCE_DIR}\")")
-	install(SCRIPT InstallFfmpeg.cmake)
-
 endif()
 
 if(WITH_PYTHON)
