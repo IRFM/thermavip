@@ -1,4 +1,6 @@
-
+![Linux/gcc](https://github.com/OWNER/REPOSITORY/actions/workflows/build-linux.yml/badge.svg)
+![Windows/msvc](https://github.com/OWNER/REPOSITORY/actions/workflows/build-windows.yml/badge.svg)
+![MacOS/clang](https://github.com/OWNER/REPOSITORY/actions/workflows/build-macos.yml/badge.svg)
 
 <img src="docs/images/logo.png" width="615">
 
