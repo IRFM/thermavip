@@ -31,6 +31,9 @@ jobs:
           
         - name: install ffmpeg 
           run: brew install ffmpeg
+          
+        - name: install numpy
+          run: pip install numpy
 
         - name: Build on MacOS
           run: |
