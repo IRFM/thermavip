@@ -36,7 +36,7 @@ jobs:
           run: |
               mkdir build 
               cd build 
-              cmake .. -DCMAKE_BUILD_TYPE=Debug -DWITH_FFMPEG=ON -DWITH_LOCAL_FFMPEG=ON -DNO_WARNINGS=ON -DLOCAL_INSTALL=ON 
+              cmake .. -DCMAKE_BUILD_TYPE=Debug -DWITH_FFMPEG=ON -DWITH_LOCAL_FFMEG=ON -DWITH_PYTHON=ON -DNO_WARNINGS=ON -DLOCAL_INSTALL=ON 
               cmake --build ./ 
               cmake --build . --target install
 

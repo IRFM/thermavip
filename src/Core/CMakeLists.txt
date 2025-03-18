@@ -100,6 +100,7 @@ if(WITH_FFMPEG)
 	target_compile_definitions(VipCore PRIVATE ENABLE_H264)
 		
 	if(WITH_LOCAL_FFMEG)
+		message(STATUS "Trying to find a local ffmpeg installation")
 		find_package(FFMPEG COMPONENTS AVCODEC AVDEVICE AVFILTER AVFORMAT AVRESAMPLE AVUTIL SWRESAMPLE SWSCALE)
 		if(FFMPEG_AVCODEC_FOUND)
 			message(STATUS "Found ffmpeg headers at  ${FFMPEG_INCLUDE_DIRS}")
