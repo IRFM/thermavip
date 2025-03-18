@@ -32,14 +32,14 @@ jobs:
         - name: install ffmpeg 
           run: brew install ffmpeg
           
-        - name: install numpy
-          run: pip install numpy
+        #- name: install numpy
+        #  run: pip install numpy
 
         - name: Build on MacOS
           run: |
               mkdir build 
               cd build 
-              cmake .. -DCMAKE_BUILD_TYPE=Debug -DWITH_FFMPEG=ON -DWITH_LOCAL_FFMEG=ON -DWITH_PYTHON=ON -DNO_WARNINGS=ON -DLOCAL_INSTALL=ON 
+              cmake .. -DCMAKE_BUILD_TYPE=Debug -DWITH_FFMPEG=ON -DWITH_LOCAL_FFMEG=ON -DNO_WARNINGS=ON -DLOCAL_INSTALL=ON 
               cmake --build ./ 
               cmake --build . --target install
 
