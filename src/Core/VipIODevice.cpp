@@ -1187,6 +1187,18 @@ static void setPoolObjectName(VipProcessingPool* pool, const QString& name)
 	}
 }
 
+template<class T>
+static QList<T> findDirectChildren(const QObject* obj)
+{
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+	return obj->findChildren<T>(QAnyStringView(), Qt::FindDirectChildrenOnly);
+#else
+	return obj->findChildren<T>(QString(), Qt::FindDirectChildrenOnly);
+#endif
+}
+ 
+
+
 VipProcessingPool::VipProcessingPool(QObject* parent)
   : VipIODevice(parent)
 {
@@ -1256,7 +1268,7 @@ void VipProcessingPool::save()
 							       d_data->parameters.maxListMemory,
 							       d_data->parameters.listLimitType,
 							       d_data->parameters.logErrors));
-	d_data->savedParameters.back().objects = this->findChildren<VipProcessingObject*>(QString(), Qt::FindDirectChildrenOnly);
+	d_data->savedParameters.back().objects = findDirectChildren<VipProcessingObject*> (this);
 	d_data->savedParameters.back().objects.save();
 }
 
@@ -1281,7 +1293,7 @@ void VipProcessingPool::setEnabled(bool enabled)
 	QMutexLocker lock(&d_data->device_mutex);
 
 	VipIODevice::setEnabled(enabled);
-	VipProcessingObjectList lst = this->findChildren<VipProcessingObject*>(QString(), Qt::FindDirectChildrenOnly);
+	VipProcessingObjectList lst = findDirectChildren<VipProcessingObject*>(this);
 	for (int i = 0; i < lst.size(); ++i)
 		lst[i]->setEnabled(enabled);
 }
@@ -1411,7 +1423,7 @@ bool VipProcessingPool::hasListLimitType() const
 void VipProcessingPool::clearInputBuffers()
 {
 	QMutexLocker lock(&d_data->device_mutex);
-	QList<VipProcessingObject*> objects = this->findChildren<VipProcessingObject*>(QString(), Qt::FindDirectChildrenOnly);
+	QList<VipProcessingObject*> objects = findDirectChildren<VipProcessingObject*>(this);
 	for (int i = 0; i < objects.size(); ++i) {
 		objects[i]->clearInputBuffers();
 	}
@@ -1421,7 +1433,7 @@ void VipProcessingPool::resetProcessing()
 {
 	QMutexLocker lock(&d_data->device_mutex);
 
-	QList<VipProcessingObject*> objects = this->findChildren<VipProcessingObject*>(QString(), Qt::FindDirectChildrenOnly);
+	QList<VipProcessingObject*> objects = findDirectChildren<VipProcessingObject*>(this);
 	for (int i = 0; i < objects.size(); ++i)
 		objects[i]->reset();
 }
@@ -1484,7 +1496,7 @@ void VipProcessingPool::setLogErrorEnabled(int error_code, bool enable)
 	QMutexLocker lock(&d_data->device_mutex);
 	VipProcessingObject::setLogErrorEnabled(error_code, enable);
 	d_data->parameters.logErrors.reset(new ErrorCodes(this->logErrors()));
-	QList<VipProcessingObject*> objects = this->findChildren<VipProcessingObject*>(QString(), Qt::FindDirectChildrenOnly);
+	QList<VipProcessingObject*> objects = findDirectChildren<VipProcessingObject*>(this);
 	for (int i = 0; i < objects.size(); ++i)
 		objects[i]->setLogErrorEnabled(error_code, enable);
 }
@@ -1495,7 +1507,7 @@ void VipProcessingPool::setLogErrors(const QSet<int>& errors)
 	QMutexLocker lock(&d_data->device_mutex);
 	VipProcessingObject::setLogErrors(errors);
 	d_data->parameters.logErrors.reset(new ErrorCodes(errors));
-	QList<VipProcessingObject*> objects = this->findChildren<VipProcessingObject*>(QString(), Qt::FindDirectChildrenOnly);
+	QList<VipProcessingObject*> objects = findDirectChildren<VipProcessingObject*>(this);
 	for (int i = 0; i < objects.size(); ++i)
 		objects[i]->setLogErrors(errors);
 }
@@ -1849,7 +1861,7 @@ void VipProcessingPool::clear()
 
 	QMutexLocker lock(&d_data->device_mutex);
 
-	QList<VipProcessingObject*> lst = this->findChildren<VipProcessingObject*>(QString(), Qt::FindDirectChildrenOnly);
+	QList<VipProcessingObject*> lst = findDirectChildren<VipProcessingObject*>(this);
 	for (int i = 0; i < lst.size(); ++i)
 		delete lst[i];
 
@@ -1872,7 +1884,7 @@ VipProcessingObjectList VipProcessingPool::processing(const QString& inherit_cla
 	const_cast<VipProcessingPool*>(this)->computeChildren();
 	QMutexLocker lock(&d_data->device_mutex);
 
-	VipProcessingObjectList lst = findChildren<VipProcessingObject*>(QString(), Qt::FindDirectChildrenOnly);
+	VipProcessingObjectList lst = findDirectChildren<VipProcessingObject*>(this);
 	if (inherit_class_name.isEmpty())
 		return lst;
 
@@ -1901,7 +1913,7 @@ bool VipProcessingPool::open(VipIODevice::OpenModes mode)
 
 	bool res = true;
 
-	QList<VipIODevice*> devices = this->findChildren<VipIODevice*>(QString(), Qt::FindDirectChildrenOnly);
+	QList<VipIODevice*> devices = findDirectChildren<VipIODevice*>(this);
 
 	for (int i = 0; i < devices.size(); ++i)
 		if (devices[i]->supportedModes() & mode) {
@@ -2008,7 +2020,7 @@ void VipProcessingPool::applyLimitsToChildren()
 	if (!hasLogErrors() && !hasMaxListSize() && !hasMaxListMemory() && !hasListLimitType())
 		return;
 
-	QList<VipProcessingObject*> objects = findChildren<VipProcessingObject*>(QString(), Qt::FindDirectChildrenOnly);
+	QList<VipProcessingObject*> objects = findDirectChildren<VipProcessingObject*>(this);
 
 	int max_list_size = maxListSize();
 	int max_list_memory = maxListMemory();
@@ -2044,7 +2056,7 @@ void VipProcessingPool::computeChildren()
 	QMutexLocker lock(&d_data->device_mutex);
 
 	// retrieve read only devices
-	d_data->read_devices = this->findChildren<VipIODevice*>(QString(), Qt::FindDirectChildrenOnly).toVector();
+	d_data->read_devices = findDirectChildren<VipIODevice*>(this).toVector();
 	for (int i = 0; i < d_data->read_devices.size(); ++i) {
 		VipIODevice* dev = d_data->read_devices[i];
 		if (!(dev->openMode() & VipIODevice::ReadOnly) && !(dev->supportedModes() & VipIODevice::ReadOnly)) {
@@ -2069,7 +2081,7 @@ void VipProcessingPool::computeChildren()
 			if (new_child->objectName().isEmpty())
 				new_child->setObjectName(QString(new_child->info().classname));
 
-			VipProcessingObjectList lst = this->findChildren<VipProcessingObject*>(QString(), Qt::FindDirectChildrenOnly);
+			VipProcessingObjectList lst = findDirectChildren<VipProcessingObject*>(this);
 			lst.removeOne(new_child);
 			if (lst.size() == 0) {
 				if (new_child->objectName().isEmpty())
@@ -2243,7 +2255,7 @@ bool VipProcessingPool::previous()
 void VipProcessingPool::openReadDeviceAndConnections()
 {
 	this->computeChildren();
-	QList<VipProcessingObject*> objects = this->findChildren<VipProcessingObject*>(QString(), Qt::FindDirectChildrenOnly);
+	QList<VipProcessingObject*> objects = findDirectChildren<VipProcessingObject*>(this);
 
 	for (int i = 0; i < objects.size(); ++i) {
 		if (VipIODevice* dev = qobject_cast<VipIODevice*>(objects[i]))
@@ -2256,7 +2268,7 @@ void VipProcessingPool::openReadDeviceAndConnections()
 
 void VipProcessingPool::enableExcept(const VipProcessingObjectList& lst)
 {
-	VipProcessingObjectList children = findChildren<VipProcessingObject*>(QString(), Qt::FindDirectChildrenOnly);
+	VipProcessingObjectList children = findDirectChildren<VipProcessingObject*>(this);
 	for (int i = 0; i < children.size(); ++i)
 		children[i]->setEnabled(true);
 	for (int i = 0; i < lst.size(); ++i)
@@ -2265,7 +2277,7 @@ void VipProcessingPool::enableExcept(const VipProcessingObjectList& lst)
 
 void VipProcessingPool::disableExcept(const VipProcessingObjectList& lst)
 {
-	VipProcessingObjectList children = findChildren<VipProcessingObject*>(QString(), Qt::FindDirectChildrenOnly);
+	VipProcessingObjectList children = findDirectChildren<VipProcessingObject*>(this);
 	for (int i = 0; i < children.size(); ++i)
 		children[i]->setEnabled(false);
 	for (int i = 0; i < lst.size(); ++i)
@@ -2277,7 +2289,7 @@ void VipProcessingPool::wait()
 	// stop the playing and for all processing to be done
 	stop();
 	setStreamingEnabled(false);
-	VipProcessingObjectList lst = findChildren<VipProcessingObject*>(QString(), Qt::FindDirectChildrenOnly);
+	VipProcessingObjectList lst = findDirectChildren<VipProcessingObject*>(this);
 	for (int i = 0; i < lst.size(); ++i)
 		lst[i]->wait();
 }
@@ -2295,7 +2307,7 @@ bool VipProcessingPool::wait(uint msecs)
 		return false;
 
 	qint64 remaining = msecs - elapsed;
-	VipProcessingObjectList lst = findChildren<VipProcessingObject*>(QString(), Qt::FindDirectChildrenOnly);
+	VipProcessingObjectList lst = findDirectChildren<VipProcessingObject*>(this);
 	for (int i = 0; i < lst.size(); ++i) {
 		lst[i]->wait(true, remaining);
 		elapsed = QDateTime::currentMSecsSinceEpoch() - start;
@@ -5383,7 +5395,7 @@ VipArchive& operator<<(VipArchive& stream, const VipProcessingPool* r)
 	QVariantMap attributes;
 	attributes["time"] = r->time();
 	stream.start("processings", attributes);
-	QList<VipProcessingObject*> lst = r->findChildren<VipProcessingObject*>(QString(), Qt::FindDirectChildrenOnly);
+	QList<VipProcessingObject*> lst = findDirectChildren<VipProcessingObject*>(r);
 	for (int i = 0; i < lst.size(); ++i) {
 		if (!lst[i]->property("_vip_no_serialize").toBool())
 			stream.content(lst[i]);
@@ -5421,7 +5433,7 @@ VipArchive& operator>>(VipArchive& stream, VipProcessingPool* r)
 	bool removeProcessingPoolFromAddresses = stream.property("_vip_removeProcessingPoolFromAddresses").toBool();
 
 	// open all connections
-	QList<VipProcessingObject*> children = r->findChildren<VipProcessingObject*>(QString(),Qt::FindDirectChildrenOnly);
+	QList<VipProcessingObject*> children = findDirectChildren<VipProcessingObject*>(r);
 
 	if (removeProcessingPoolFromAddresses) {
 		for (int i = 0; i < children.size(); ++i)
