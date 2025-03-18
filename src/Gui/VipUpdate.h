@@ -37,8 +37,8 @@
 
 class QProcess;
 
-/// VipUpdate is used to update a Thermavip copy based on the viptools process.
-/// For VipUpdate to work properly, you need the viptools process in the same directory as your Thermavip installation.
+/// VipUpdate is used to update a Thermavip copy based on the vipupdate process.
+/// For VipUpdate to work properly, you need the vipupdate process in the same directory as your Thermavip installation.
 class VIP_CORE_EXPORT VipUpdate : public QObject
 {
 	Q_OBJECT
