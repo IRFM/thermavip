@@ -255,7 +255,7 @@ if [ -d $FILE ]; then
 else
     echo 'Building ffmpeg...'
     #make clean
-    make VERBOSE=1
+    make -j
     make install
 fi
 cd ..
