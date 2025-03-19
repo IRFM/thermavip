@@ -62,7 +62,7 @@ endif()
 
 if (NOT MSVC)
 	if(WITH_FFMPEG AND NOT WITH_LOCAL_FFMEG)
-		if(UNIX AND NOT APPLE)
+		if(NOT WIN32)
 			add_custom_target(ffmpeg_build ALL COMMAND ${PROJECT_SOURCE_DIR}/configure_ffmpeg)
 		endif()
 	endif()
