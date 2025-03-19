@@ -117,6 +117,11 @@ if(WITH_FFMPEG)
 		
 	else()
 
+		if(NOT MSVC)
+			# Make sure to wait for ffmpeg build to finish
+			add_dependencies(VipCore ffmpeg_build)
+		endif()
+		
 		# Configure ffmpeg path, use librir ffmpeg install if possible
 		if(WITH_LIBRIR)
 			if(MSVC)
