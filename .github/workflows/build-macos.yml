@@ -32,6 +32,9 @@ jobs:
         - name: install ffmpeg 
           run: brew install ffmpeg
           
+        - name: install coreutils
+          run: brew install coreutils
+          
         #- name: install numpy
         #  run: pip install numpy
 
