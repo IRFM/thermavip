@@ -14,6 +14,9 @@ export FFMPEG_FOLDER="3rd_64"
 
 SCRIPT=$(realpath -s "$0")
 SCRIPTPATH=$(dirname "$SCRIPT")
+echo "Paths:"
+echo $SCRIPT
+echo $SCRIPTPATH
 cd $SCRIPTPATH
 echo $(pwd)
 cd $FFMPEG_FOLDER || exit
