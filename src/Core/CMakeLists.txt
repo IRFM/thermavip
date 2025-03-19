@@ -99,7 +99,7 @@ if(WITH_FFMPEG)
 	# Setup ffmpeg support
 	target_compile_definitions(VipCore PRIVATE ENABLE_H264)
 		
-	if(WITH_LOCAL_FFMEG)
+	if(WITH_LOCAL_FFMPEG)
 		message(STATUS "Trying to find a local ffmpeg installation")
 		#list(APPEND CMAKE_MODULE_PATH  "${CMAKE_CURRENT_SOURCE_DIR}")
 		list(INSERT CMAKE_MODULE_PATH 0 ${CMAKE_CURRENT_SOURCE_DIR})

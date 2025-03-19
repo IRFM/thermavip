@@ -25,7 +25,7 @@ include(GNUInstallDirs)
 option(LOCAL_INSTALL "Install locally" OFF)
 option(WITH_LONG_DOUBLE "Use long double as the default type for 2D point representation" OFF)
 option(WITH_FFMEG "Build ffmpeg support" OFF)
-option(WITH_LOCAL_FFMEG "Use local ffmpeg installation instead of thermavip one" OFF)
+option(WITH_LOCAL_FFMPEG "Use local ffmpeg installation instead of thermavip one" OFF)
 option(WITH_HDF5 "Build HDF5 support" OFF)
 option(WITH_PYTHON "Build Python support" OFF)
 option(WITH_WEBENGINE "Build components based on Qt webengine module (if webengine is available)" ON)
@@ -55,14 +55,15 @@ endif()
 
 
 
-# Make configure_ffmpeg executable
-if (UNIX)
-	execute_process(COMMAND chmod 777 ${PROJECT_SOURCE_DIR}/configure_ffmpeg)
-endif()
+
+
 
 if (NOT MSVC)
-	if(WITH_FFMPEG AND NOT WITH_LOCAL_FFMEG)
+	if(WITH_FFMPEG AND NOT WITH_LOCAL_FFMPEG)
 		if(NOT WIN32)
+			# Make configure_ffmpeg executable
+			message(STATUS "Setup configure_ffmpeg")
+			execute_process(COMMAND chmod 777 ${PROJECT_SOURCE_DIR}/configure_ffmpeg)
 			add_custom_target(ffmpeg_build ALL COMMAND ${PROJECT_SOURCE_DIR}/configure_ffmpeg)
 		endif()
 	endif()
