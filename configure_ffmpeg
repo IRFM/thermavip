@@ -12,14 +12,20 @@ CURRENT=`pwd`
 export CURRENT
 export FFMPEG_FOLDER="3rd_64"
 
-SCRIPT=$(realpath -s "$0")
-SCRIPTPATH=$(dirname "$SCRIPT")
-echo "Paths:"
-echo $SCRIPT
-echo $SCRIPTPATH
-cd $SCRIPTPATH
-echo $(pwd)
-cd $FFMPEG_FOLDER || exit
+# macos is seen as 'darwin'
+if [[ "$OSTYPE" == "darwin"* ]]; then
+        cd ../$FFMPEG_FOLDER
+else
+        SCRIPT=$(realpath -s "$0")
+		SCRIPTPATH=$(dirname "$SCRIPT")
+		echo "Paths:"
+		echo $SCRIPT
+		echo $SCRIPTPATH
+		cd $SCRIPTPATH
+		echo $(pwd)
+		cd $FFMPEG_FOLDER || exit
+fi
+
 echo "entering $FFMPEG_FOLDER"
 chmod u+x build-gcc.sh
 . ./build-gcc.sh
