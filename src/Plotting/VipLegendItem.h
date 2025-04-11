@@ -188,6 +188,7 @@ public:
 
 	/// @brief Set margins around the legend
 	void setContentsMargins(double left, double top, double right, double bottom);
+	void setContentsMargins(const VipMargins& m) { setContentsMargins(m.left, m.top, m.right, m.bottom); }
 	void setMargins(double);
 	void getContentsMargins(double* left, double* top, double* right, double* bottom) const;
 

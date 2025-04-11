@@ -604,8 +604,8 @@ void VipPythonManager::applyPySignalFusion()
 
 bool VipPythonManager::dispatchCurveFit(QAction * act, VipPlotPlayer * pl)
 {
-	if(act->text().startsWith("Fit")) {
-		QString fit = act->text().mid(4);
+	if(act->text().startsWith("Py Fit")) {
+		QString fit = act->text().mid(7);
 		if(fit == "Linear" || fit == "Exponential"|| fit == "Polynomial"|| fit == "Gaussian") {
 			act->setProperty("_vip_player",QVariant::fromValue(pl));
 			act->setProperty("_vip_fit",fit);

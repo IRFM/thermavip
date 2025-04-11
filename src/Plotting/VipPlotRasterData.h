@@ -197,6 +197,7 @@ public:
 Q_SIGNALS:
 	/// Emitted when setting a new data changes the image bounding rect
 	void imageRectChanged(const QRectF&);
+	void imageDrawn();
 
 protected:
 	virtual bool setItemProperty(const char* name, const QVariant& value, const QByteArray& index = QByteArray());

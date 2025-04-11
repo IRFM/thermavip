@@ -251,6 +251,7 @@ public:
 	_ts_exists ts_exists;
 	_ts_date ts_date;
 	_ts_read_file ts_read_file;
+	_ts_read_file ts_write_file;
 	_ts_file_size ts_file_size;
 	_ts_read_diagnostics ts_read_diagnostics;
 	_ts_read_signal_names ts_read_signal_names;

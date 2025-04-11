@@ -280,7 +280,7 @@ public:
 	virtual QRectF boundingRect() const
 	{
 		if (array.isEmpty() || array.shapeCount() != 2)
-			return QRectF();
+			return QRectF(position, QSizeF(0,0));
 		else
 			return QRectF(position, QSizeF(array.shape(1), array.shape(0)));
 	}
@@ -326,7 +326,7 @@ public:
 			im_rect.setBottom(array.shape(0));
 
 		if (out_rect)
-			*out_rect = im_rect;
+			*out_rect = im_rect.translated(position);
 
 		if (!im_rect.isValid())
 			return;
@@ -916,7 +916,7 @@ void VipPlotRasterData::draw(QPainter* painter, const VipCoordinateSystemPtr& m)
 		painter->drawPolygon(poly);
 	}
 
-	// painter->restore();
+	Q_EMIT const_cast<VipPlotRasterData*>(this)->imageDrawn();
 }
 
 bool VipPlotRasterData::computeImage(const VipRasterData& ar, const VipInterval& interval, const VipCoordinateSystemPtr& m, VipNDArray& tmp_array, VipImageData& img) const
@@ -1101,14 +1101,15 @@ void VipPlotRasterData::setData(const QVariant& v)
 		}
 		else {
 			dataLock()->lock();
-			VipNDArray _cur = current.extract(current.boundingRect());
+			const QRectF bounding = current.boundingRect();
+			VipNDArray _cur = current.extract(bounding);
 			// copy ND array content
 			if (_cur.isUnstrided() && _ne.isUnstrided() && vipIsArithmetic(_cur.dataType()) && _cur.handle()->ref <= 3)
 				memcpy((void*)_cur.data(), _ne.constData(), _ne.size() * _ne.dataSize());
 			else
 				_ne.convert((_cur));
 			dataLock()->unlock();
-			setInternalData(QVariant::fromValue(current = VipRasterData(_cur)));
+			setInternalData(QVariant::fromValue(current = VipRasterData(_cur, bounding.topLeft())));
 
 			// Optmize color map computation if the color scale only has this item
 			Locker locker(dataLock());
@@ -1210,8 +1211,28 @@ const QImage& VipPlotRasterData::backgroundimage() const
 	return d_data->backgroundImage;
 }
 
+static bool compareImage(const QImage &img1, const QImage &img2)
+{
+	if (img1.size() != img2.size())
+		return false;
+	if (img1.format() != img2.format())
+		return false;
+
+	auto s1 = img1.sizeInBytes();
+	auto s2 = img2.sizeInBytes();
+	if (s1 != s2)
+		return false;
+	if (s1 == 0)
+		return true;
+	const auto* p1 = img1.bits();
+	const auto* p2 = img2.bits();
+	return memcmp(p1, p2, (size_t)s1) == 0;
+}
+
 void VipPlotRasterData::setSuperimposeImage(const QImage& img)
 {
+	if (compareImage(img, d_data->superimposeImage))
+		return;
 	d_data->superimposeImage = img;
 	bool empty_raw_data = this->rawData().isEmpty();
 	if (empty_raw_data) {

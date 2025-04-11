@@ -2357,9 +2357,9 @@ QOpenGLItem::~QOpenGLItem()
 	delete d_data;
 }
 
-void QOpenGLItem::markItemDirty() noexcept
+void QOpenGLItem::markItemDirty(bool dirty) noexcept
 {
-	d_data->dirty.store(true);
+	d_data->dirty.store(dirty);
 }
 
 struct BoolLocker
@@ -2373,6 +2373,16 @@ struct BoolLocker
 	~BoolLocker() { _val = false; }
 };
 
+
+static void resetColors(QPainter* p)
+{
+	//p->setEnabled(false);
+	const QColor no_color = QColor(121, 155, 7, 1);
+	p->setPen(QPen(no_color));
+	p->setBrush(QBrush(no_color));
+	//p->setEnabled(true);
+}
+
 bool QOpenGLItem::drawThroughCache(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget) const
 {
 	// Avoid recursive calls
@@ -2383,6 +2393,47 @@ bool QOpenGLItem::drawThroughCache(QPainter* painter, const QStyleOptionGraphics
 		// We are drawing using a shared painter, don't go through the rendering thread
 		return false;
 	}
+
+	if ((int)painter->paintEngine()->type() == (int)QPaintRecord::CustomEngineType) {
+	
+		// Tells that we are inside drawThroughCache()
+		BoolLocker lock(d_data->inDrawThroughCache);
+
+		//painter->save();
+		QPaintRecord* rec = static_cast<QPaintRecord*>(painter->device());
+		PrivateData::PainterState state(painter, option);
+		const bool same_state = state == d_data->state;
+		if (!same_state || d_data->dirty.load(std::memory_order_relaxed)) {
+			// Regenerate picture if dirty flag is set
+			// or if we changed the painter state (selection, hovering...)
+			d_data->picture.clear();
+			d_data->picture.setOptimizations(rec->optimizations());
+			{
+				QPainter p(&d_data->picture);
+				state.toPainter(&p);
+
+				// Set (almost) impossible values to make sure that
+				// state changes (like setting the pen) are always
+				// recorded.
+				d_data->picture.setEnabled(false);
+				resetColors(&p);
+				d_data->picture.setEnabled(true);
+				d_data->item->paint(&p, option, widget);
+			}
+			d_data->dirty.store(false);
+			d_data->state = state;
+		}
+
+		// Send the picture to the rendering pipeline
+		if (!rec->d_ptr->engine.discard(d_data->picture)) {
+			rec->d_ptr->emplaceBack(CommandBatch::DrawRecord, d_data->picture);
+		}
+
+		// Restore painter state
+		//painter->restore();
+		return true;
+	}
+
 
 	// Get the QThreadOpenGLWidget widget
 	QThreadOpenGLWidget* ogl = qobject_cast<QThreadOpenGLWidget*>(widget);
@@ -2424,9 +2475,7 @@ bool QOpenGLItem::drawThroughCache(QPainter* painter, const QStyleOptionGraphics
 			// state changes (like setting the pen) are always
 			// recorded.
 			d_data->picture.setEnabled(false);
-			const QColor no_color = QColor(121, 155, 7, 1);
-			p.setPen(QPen(no_color));
-			p.setBrush(QBrush(no_color));
+			resetColors(&p);
 			d_data->picture.setEnabled(true);
 
 			d_data->item->paint(&p, option, widget);

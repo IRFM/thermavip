@@ -83,10 +83,16 @@
 class EXPORT_DECL QPaintRecord : public QPaintDevice
 {
 private:
+	friend class QOpenGLItem;
 	class PrivateData;
 	QSharedPointer<PrivateData> d_ptr;
 
 public:
+	enum
+	{
+		CustomEngineType = QPaintEngine::User +1
+	};
+
 	/// @brief Optimization flags
 	enum Optimization
 	{
@@ -446,7 +452,7 @@ public:
 	/// Note that this just set an internal boolean value,
 	/// and does not trigger and update.
 	/// This function is thread safe.
-	void markItemDirty() noexcept;
+	void markItemDirty(bool dirty = true) noexcept; 
 
 	/// @brief Draw the item through the cache mechanism.
 	/// Returns true if the item was drawn.

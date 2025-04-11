@@ -960,14 +960,14 @@ static int registerConversionFunctions()
 {
 	qRegisterMetaType<VipShape>();
 	qRegisterMetaType<VipSceneModel>();
-	qRegisterMetaType<VipSceneModelList>();
+	qRegisterMetaType<VipSceneModelList>("VipSceneModelList");
 
-	qRegisterMetaType<VipRectList>();
-	qRegisterMetaType<VipRectFList>();
-	qRegisterMetaType<VipTimestampedRectList>();
-	qRegisterMetaType<VipTimestampedRectFList>();
-	qRegisterMetaType<VipTimestampedRectListVector>();
-	qRegisterMetaType<VipTimestampedRectFListVector>();
+	qRegisterMetaType<VipRectList>("VipRectList");
+	qRegisterMetaType<VipRectFList>("VipRectFList");
+	qRegisterMetaType<VipTimestampedRectList>("VipTimestampedRectList");
+	qRegisterMetaType<VipTimestampedRectFList>("VipTimestampedRectFList");
+	qRegisterMetaType<VipTimestampedRectListVector>("VipTimestampedRectListVector");
+	qRegisterMetaType<VipTimestampedRectFListVector>("VipTimestampedRectFListVector");
 
 	qRegisterMetaType<VipNDArray>();
 	qRegisterMetaType<complex_f>();
@@ -978,15 +978,15 @@ static int registerConversionFunctions()
 	qRegisterMetaType<VipLongPoint>();
 	qRegisterMetaTypeStreamOperators<VipLongPoint>("VipLongPoint");
 #endif
-	qRegisterMetaType<VipNDArrayShape>();
-	qRegisterMetaType<VipNDDoubleCoordinate>();
+	qRegisterMetaType<VipNDArrayShape>("VipNDArrayShape");
+	qRegisterMetaType<VipNDDoubleCoordinate>("VipNDDoubleCoordinate");
 	qRegisterMetaType<VipInterval>();
-	qRegisterMetaType<VipIntervalSample>();
-	qRegisterMetaType<VipPointVector>();
-	qRegisterMetaType<VipIntervalSampleVector>();
+	qRegisterMetaType<VipIntervalSample>("VipIntervalSample");
+	qRegisterMetaType<VipPointVector>("VipPointVector");
+	qRegisterMetaType<VipIntervalSampleVector>("VipIntervalSampleVector");
 
 	qRegisterMetaType<VipComplexPoint>();
-	qRegisterMetaType<VipComplexPointVector>();
+	qRegisterMetaType<VipComplexPointVector>("VipComplexPointVector");
 
 	qRegisterMetaTypeStreamOperators<VipRectList>("VipRectList");
 	qRegisterMetaTypeStreamOperators<VipRectFList>("VipRectFList");

@@ -197,7 +197,12 @@ public:
 		boxStyle().setBackgroundBrush(b);
 	}
 	/// @brief Reimplemented from VipPlotItem, set the border pen
-	virtual void setPen(const QPen& p) { boxStyle().setBorderPen(p); }
+	virtual void setPen(const QPen& p) { 
+		//TEST
+		auto st = p.style();
+		auto c = p.color();
+		boxStyle().setBorderPen(p); 
+	}
 	virtual QPen pen() const { return boxStyle().borderPen(); }
 	/// @brief Reimplemented from VipPlotItem, set the background brush
 	virtual void setBrush(const QBrush& b) { boxStyle().setBackgroundBrush(b); }

@@ -122,6 +122,10 @@ bool VipDrawCropArea::eventFilter(QObject* /*watched*/, QEvent* event)
 	return false;
 }
 
+
+
+static bool _globalHideMins = false;
+
 VipUpdateVideoPlayer::VipUpdateVideoPlayer(VipVideoPlayer* player)
   : QObject(player)
   , m_player(player)
@@ -170,6 +174,10 @@ VipUpdateVideoPlayer::VipUpdateVideoPlayer(VipVideoPlayer* player)
 	QMenu* display_pos = new QMenu(m_local_minmax);
 	m_minmaxPos = display_pos->addAction("Display minimum/maximum positions");
 	m_minmaxPos->setCheckable(true);
+	m_hideMins = display_pos->addAction("Hide minimums");
+	m_hideMins->setCheckable(true);
+	m_hideMins->setChecked(_globalHideMins);
+	connect(m_hideMins, SIGNAL(triggered(bool)), this, SLOT(setHideMinimums(bool)));
 	display_pos->addSeparator();
 	QAction* save_infos = display_pos->addAction("Save selected ROI infos (Tmax, PosX, PosY)");
 	connect(save_infos, SIGNAL(triggered(bool)), this, SLOT(saveROIInfos()));
@@ -186,6 +194,31 @@ VipUpdateVideoPlayer::VipUpdateVideoPlayer(VipVideoPlayer* player)
 	// read properties and restore state
 	setMarkersEnabled(player->property("_vip_customMarkersEnabled").toBool());
 	setDisplayMarkerPos(player->property("_vip_customDisplayMarkerPos").toBool());
+}
+
+
+void VipUpdateVideoPlayer::setHideAllMinimums(bool enable)
+{
+	_globalHideMins = enable;
+	QList<VipVideoPlayer*> players = vipListCast<VipVideoPlayer*>(VipPlayerLifeTime::players());
+	for (VipVideoPlayer* pl : players) {
+		if (VipUpdateVideoPlayer* up = pl->findChild<VipUpdateVideoPlayer*>()) {
+			up->m_hideMins->blockSignals(true);
+			up->m_hideMins->setChecked(enable);
+			up->m_hideMins->blockSignals(false);
+			if (up->m_local_minmax->isChecked())
+				up->updateMarkers();
+		}
+	}
+}
+bool VipUpdateVideoPlayer::hideAllMinimums()
+{
+	return _globalHideMins;
+}
+
+void VipUpdateVideoPlayer::setHideMinimums(bool enable)
+{
+	setHideAllMinimums(enable);
 }
 
 void VipUpdateVideoPlayer::rotate90Left()
@@ -586,10 +619,15 @@ void VipUpdateVideoPlayer::updateMarkers()
 				m_minMarkers[i]->setTransform(min_tr);
 				m_maxMarkers[i]->setTransform(min_tr);
 
-				if (shapes[i].type() == VipShape::Point)
+				if (_globalHideMins) {
 					m_minMarkers[i]->setVisible(false);
-				else if (!m_minMarkers[i]->isVisible())
-					m_minMarkers[i]->setVisible(true);
+				}
+				else {
+					if (shapes[i].type() == VipShape::Point)
+						m_minMarkers[i]->setVisible(false);
+					else if (!m_minMarkers[i]->isVisible())
+						m_minMarkers[i]->setVisible(true);
+				}
 
 				if (!m_maxMarkers[i]->isVisible())
 					m_maxMarkers[i]->setVisible(true);

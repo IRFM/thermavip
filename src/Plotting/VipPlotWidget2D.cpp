@@ -831,7 +831,7 @@ public:
 
 		legend = new VipLegend();
 		legend->layout()->setMaxColumns(5);
-		legend->setLegendItemRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing);
+		legend->setLegendItemRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing | QPainter::SmoothPixmapTransform);
 		blegend->setLegend(legend);
 
 		grid = new VipPlotGrid();
@@ -2221,6 +2221,10 @@ void VipAbstractPlotArea::resetInnerLegendsPosition()
 					p2 = this->mapFromScene(p2);
 					x_margin = qAbs(p2.x() - p1.x());
 					y_margin = qAbs(p2.y() - p1.y());
+				}
+				else {
+					x_margin = d_data->legends[i].border_margin;
+					y_margin = d_data->legends[i].border_margin;
 				}
 			}
 

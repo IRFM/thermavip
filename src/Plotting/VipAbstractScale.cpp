@@ -310,7 +310,7 @@ public:
 		borderDist[0] = borderDist[1] = 0;
 		minBorderDist[0] = minBorderDist[1] = 0;
 		maxBorderDist[0] = maxBorderDist[1] = 10000;
-		scaleEngine = new VipLinearScaleEngine();
+		scaleEngine = new VipFixedScaleEngine();
 		scaleDraw = new VipScaleDraw();
 		lastScaleIntervalUpdate = 0;
 		lastScaleIntervalWidth = 0;
@@ -833,6 +833,7 @@ void VipAbstractScale::setScaleEngine(VipScaleEngine* engine)
 {
 	delete d_data->scaleEngine;
 	d_data->scaleEngine = engine;
+	engine->setScale(this);
 	setTransformation(d_data->scaleEngine->transformation());
 }
 
@@ -889,11 +890,27 @@ void VipAbstractScale::setScaleDiv(const VipScaleDiv& div, bool force_check_geom
 			emitGeometryNeedUpdate();
 		setCachedFullExtent(fe);
 	}
+	//TEST
+	//else
+	//	this->markItemDirty(false);
 }
 
 const VipScaleDiv& VipAbstractScale::scaleDiv() const
 {
 	return d_data->scaleDraw->scaleDiv();
+}
+
+int VipAbstractScale::addScaleText(int id, const VipScaleText& text)
+{
+	return scaleDraw()->addScaleText(id, text);
+}
+void VipAbstractScale::removeScaleText(int id)
+{
+	scaleDraw()->removeScaleText(id);
+}
+void VipAbstractScale::removeAllScaleText()
+{
+	scaleDraw()->removeAllScaleText();
 }
 
 void VipAbstractScale::setScaleDraw(VipAbstractScaleDraw* scaleDraw)

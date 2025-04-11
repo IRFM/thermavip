@@ -71,6 +71,8 @@ public:
 
 class VIP_PLOTTING_EXPORT VipScaleEngine
 {
+	friend class VipAbstractScale;
+
 public:
 	/// Layout attributes
 	/// \sa setAttribute(), testAttribute(), reference(),
@@ -112,6 +114,9 @@ public:
 
 	explicit VipScaleEngine();
 	virtual ~VipScaleEngine();
+
+	/// @brief Returns the scale this engine belongs to or nullptr
+	VipAbstractScale* scale() const noexcept;
 
 	virtual int scaleType() const = 0;
 
@@ -168,7 +173,7 @@ protected:
 	VipInterval buildInterval(vip_double v) const;
 
 private:
-	
+	void setScale(VipAbstractScale*);
 	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
@@ -240,7 +245,7 @@ class VipFixedValueToText;
 /// @brief Linear scale engine similar to VipLinearScaleEngine
 ///
 /// VipFixedScaleEngine provides, by default; the same behavior as VipLinearScaleEngine.
-/// If a valid VipFixedValueToText is passed to the constructor, it will compute
+/// If the parent scale uses a VipFixedValueToText, it will compute
 /// the scale div always considering the start value as 0, and will update VipFixedValueToText::startValue().
 ///
 /// This allows fixed scale ticks positions with evolving tick texts.
@@ -249,11 +254,12 @@ class VipFixedValueToText;
 ///
 class VIP_PLOTTING_EXPORT VipFixedScaleEngine : public VipLinearScaleEngine
 {
-	QPointer <VipFixedValueToText> d_vt;
 	double d_maxIntervalWidth;
 
 public:
-	VipFixedScaleEngine(VipFixedValueToText* vt = nullptr);
+	VipFixedScaleEngine();
+
+	VipFixedValueToText* valueToText() const noexcept;
 
 	void setMaxIntervalWidth(double);
 	double maxIntervalWidth() const noexcept;

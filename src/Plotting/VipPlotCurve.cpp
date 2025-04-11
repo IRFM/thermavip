@@ -1271,23 +1271,6 @@ static void drawPolygonHelper(const QPolygonF& poly, QPainter* painter, const QP
 	// the rendering is not as good, but could be more than 10 times faster,
 	// which is HUGE for streaming purposes
 
-	// draw by steps of 0.5
-	/* QPen p = pen;
-	double step_size = 0.5;
-	//0.5;
-	int steps = std::round(p.widthF() / step_size);
-	QTransform tr;
-	tr.translate((-steps / 2.) * step_size, (-steps / 2.) * step_size);
-	painter->save();
-	painter->setTransform(tr, true);
-	p.setWidth(0);
-	painter->setPen(p);
-	for (int i = 0; i < steps; ++i) {
-		painter->drawPolyline(poly);
-		painter->setTransform(QTransform().translate(step_size, step_size), true);
-	}
-	painter->restore();
-	*/
 	painter->save();
 	QPen p = pen;
 	p.setJoinStyle(Qt::RoundJoin);
@@ -1327,7 +1310,7 @@ QPolygonF VipPlotCurve::drawLines(QPainter* painter,
 			// closePolyline( painter, m, points, polyline);
 			closePolyline(painter, m, polyline);
 			bstyle.computePolyline(polyline);
-			bstyle.draw(painter);
+			bstyle.draw(painter, d_data->optimizeLargePenDrawing);
 		}
 		else {
 			QPolygonF border = polyline;
@@ -1336,7 +1319,7 @@ QPolygonF VipPlotCurve::drawLines(QPainter* painter,
 			bstyle.computePolyline(polyline);
 			bstyle.drawBackground(painter);
 			bstyle.computePolyline(border);
-			bstyle.drawBorder(painter);
+			bstyle.drawBorder(painter, d_data->optimizeLargePenDrawing);
 		}
 	}
 	else {
@@ -1372,7 +1355,7 @@ QPolygonF VipPlotCurve::drawLines(QPainter* painter,
 			}
 			else {
 				bstyle.computePolyline(polyline);
-				bstyle.drawBorder(painter);
+				bstyle.drawBorder(painter, d_data->optimizeLargePenDrawing);
 			}
 		}
 	}
@@ -1846,6 +1829,7 @@ void VipPlotCurve::drawSymbols(QPainter* painter, const VipSymbol& symbol, const
 
 	d_data->hasSymbol = points.size() > 0;
 
+	painter->save();
 	if (this->computingShape()) {
 		// this is WAY faster than drawing the symbols into a VipShapeDevice
 		QPainterPath r = symbol.extractShape(&d_data->shapeBitmap, m->clipPath(this).boundingRect().toRect(), points.data(), points.size());
@@ -1867,6 +1851,7 @@ void VipPlotCurve::drawSymbols(QPainter* painter, const VipSymbol& symbol, const
 
 		symbol.drawSymbols(painter, points);
 	}
+	painter->restore();
 }
 
 /// \brief Set the value of the baseline

@@ -236,7 +236,7 @@ int main(int argc, char** argv)
 	VipTextStyle st;
 	st.setAlignment(Qt::AlignRight | Qt::AlignBottom);
 	trace->bottomAxis()->scaleDraw()->setAdditionalTextStyle(st);
-	VipFixedScaleEngine* engine = new VipFixedScaleEngine(vt);
+	VipFixedScaleEngine* engine = new VipFixedScaleEngine();
 	engine->setMaxIntervalWidth(1e10);//10s
 	trace->bottomAxis()->scaleDraw()->setValueToText(vt);
 	trace->bottomAxis()->setScaleEngine(engine);

@@ -770,6 +770,12 @@ VipLibRIR* VipLibRIR::instance()
 			delete librir;
 			return librir = nullptr;
 		}
+		librir->ts_write_file = (_ts_read_file)westLib()->resolve("ts_write_file");
+		if (!librir->ts_write_file) {
+			VIP_LOG_ERROR("librir: missing ts_write_file");
+			delete librir;
+			return librir = nullptr;
+		}
 		librir->ts_file_size = (_ts_file_size)westLib()->resolve("ts_file_size");
 		if (!librir->ts_file_size) {
 			VIP_LOG_ERROR("librir: missing ts_file_size");

@@ -1445,14 +1445,14 @@ CustomizePlotPlayer::CustomizePlotPlayer(VipPlotPlayer* player)
 	// legend management
 	d_data->player->plotWidget2D()->area()->legend()->layout()->setContentsMargins(20, 0, 20, 0);
 	d_data->player->plotWidget2D()->area()->legend()->layout()->setMargins(0);
-	d_data->player->plotWidget2D()->area()->legend()->layout()->setSpacing(0);
+	d_data->player->plotWidget2D()->area()->legend()->layout()->setSpacing(2);
 	d_data->player->plotWidget2D()->area()->legend()->setDrawCheckbox(false);
 
 	for (int i = 0; i < d_data->player->plotWidget2D()->area()->innerLegendCount(); ++i) {
 		if (VipLegend* l = d_data->player->plotWidget2D()->area()->innerLegend(i)) {
 			l->layout()->setContentsMargins(5, 5, 5, 5);
 			l->layout()->setMargins(0);
-			l->layout()->setSpacing(0);
+			l->layout()->setSpacing(2);
 			l->setDrawCheckbox(false);
 		}
 	}

@@ -116,7 +116,7 @@ void setup_plot_area(VipPlotArea2D* area, int setup_x_scale)
 		// Use fixed tick positions through VipFixedValueToText and VipFixedScaleEngine
 		VipFixedValueToText* vt = new VipFixedValueToText();
 		area->bottomAxis()->scaleDraw()->setValueToText(vt);
-		area->bottomAxis()->setScaleEngine(new VipFixedScaleEngine(vt));
+		area->bottomAxis()->setScaleEngine(new VipFixedScaleEngine());
 	}
 	else if (setup_x_scale == 3) {
 		area->setTitle("<b>X scale tick positions are fixed, display values as time");
@@ -124,7 +124,7 @@ void setup_plot_area(VipPlotArea2D* area, int setup_x_scale)
 		VipTimeToText* vt = new VipTimeToText("hh:mm:ss");
 		vt->setMultiplyFactor(1000); // convert s to ms
 		area->bottomAxis()->scaleDraw()->setValueToText(vt);
-		area->bottomAxis()->setScaleEngine(new VipFixedScaleEngine(vt));
+		area->bottomAxis()->setScaleEngine(new VipFixedScaleEngine());
 	}
 
 	else if (setup_x_scale == 4) {
@@ -134,13 +134,13 @@ void setup_plot_area(VipPlotArea2D* area, int setup_x_scale)
 		// Only the left-most tick text is updated
 		VipFixedValueToText* vt = new VipFixedValueToText(QString(),VipFixedValueToText::DifferenceValue);
 		area->bottomAxis()->scaleDraw()->setValueToText(vt);
-		area->bottomAxis()->setScaleEngine(new VipFixedScaleEngine(vt));
+		area->bottomAxis()->setScaleEngine(new VipFixedScaleEngine());
 		
 		// Align additional text to the right, and translate it by 10 pixels horizontally
 		VipTextStyle st = area->bottomAxis()->scaleDraw()->textStyle();
 		st.setAlignment(Qt::AlignRight);
 		area->bottomAxis()->scaleDraw()->setAdditionalTextStyle(st);
-		vt->additionalTextTransform().translate(10, 0);
+		area->bottomAxis()->scaleDraw()->setAdditionalTextTransform(QTransform().translate(10, 0));
 	}
 
 	else if (setup_x_scale == 5) {
@@ -152,14 +152,14 @@ void setup_plot_area(VipPlotArea2D* area, int setup_x_scale)
 		vt->setMultiplyFactor(1000); // convert s to ms
 		vt->setAdditionalFormat("hh:mm:ss");
 		area->bottomAxis()->scaleDraw()->setValueToText(vt);
-		area->bottomAxis()->setScaleEngine(new VipFixedScaleEngine(vt));
+		area->bottomAxis()->setScaleEngine(new VipFixedScaleEngine());
 
 
 		// Align additional text to the right, and translate it by 10 pixels horizontally
 		VipTextStyle st = area->bottomAxis()->scaleDraw()->textStyle();
 		st.setAlignment(Qt::AlignRight);
 		area->bottomAxis()->scaleDraw()->setAdditionalTextStyle(st);
-		vt->additionalTextTransform().translate(10, 0);
+		area->bottomAxis()->scaleDraw()->setAdditionalTextTransform(QTransform().translate(10, 0));
 	}
 
 	area->setMargins(5);

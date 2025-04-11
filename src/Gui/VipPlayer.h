@@ -643,7 +643,7 @@ public:
 	bool isFrozen() const;
 	bool isSharedZoom() const;
 	bool zoomFeaturesVisible() const;
-
+	bool dynamicSuperimposition() const;
 	void addContourLevel(double);
 	void removeContourLevel(double);
 	void setContourLevels(const QList<vip_double>& levels);
@@ -671,6 +671,7 @@ public Q_SLOTS:
 	virtual void setColorMap(int);
 	virtual void setFrozen(bool);
 	virtual void setSharedZoom(bool);
+	virtual void setDynamicSuperimposition(bool);
 	void setZoomFeaturesVisible(bool vis);
 
 	// add processings to the processing list (if any)
@@ -706,6 +707,7 @@ private Q_SLOTS:
 	void computeSuperimposeMenu();
 	void setSuperimposeOpacity(int);
 	void superimposeTriggered(QAction*);
+	void superimposePlayerUpdated();
 
 	// recompute extract compoent widget, processing list widget,...
 	void updateContent();

@@ -63,6 +63,9 @@ public:
 
 	static int registerClass();
 
+	static void setHideAllMinimums(bool);
+	static bool hideAllMinimums();
+
 public Q_SLOTS:
 	void rotate90Left();
 	void rotate90Right();
@@ -80,6 +83,7 @@ private Q_SLOTS:
 	void cropEnded();
 	void cropAdded(const QPointF& start, const QPointF& end);
 	void updateMarkers();
+	void setHideMinimums(bool);
 
 private:
 	QPointer<VipVideoPlayer> m_player;
@@ -88,6 +92,7 @@ private:
 	QToolButton* m_local_minmax;
 	QAction* m_toolBarAction;
 	QAction* m_minmaxPos;
+	QAction* m_hideMins;
 
 	QList<VipPlotMarker*> m_minMarkers;
 	QList<VipPlotMarker*> m_maxMarkers;

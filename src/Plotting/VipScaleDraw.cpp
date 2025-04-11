@@ -225,6 +225,15 @@ QString VipValueToDate::format() const
 	return d_format;
 }
 
+VipValueToDate::ValueType VipValueToDate::inputType() const
+{
+	return d_type;
+}
+void VipValueToDate::setInputType(ValueType type)
+{
+	d_type = type;
+}
+
 QString VipValueToDate::convert(vip_double value, VipScaleDiv::TickType tick) const
 {
 	if (d_format.isEmpty())
@@ -610,7 +619,6 @@ QList<VipScaleText> VipTimeToText::additionalText(const VipAbstractScaleDraw*) c
 	else
 		res.text = QDateTime::fromMSecsSinceEpoch(static_cast<qint64>(startValue() * multiplyFactor())).toString(d_additionalFormat);
 
-	res.tr = this->additionalTextTransform();
 	res.value = startValue();
 	return QList<VipScaleText>() << res;
 }
@@ -839,8 +847,11 @@ public:
 	VipText labelText[3];
 	QSharedPointer<VipValueToText> valueToText;
 	QMap<vip_double, VipScaleText> additionalText;
+	QTransform additionalTransform;
 
 	VipInterval labelInterval;
+
+	QMap<int, VipScaleText> scaleTexts;
 };
 
 /// \brief Constructor
@@ -945,6 +956,7 @@ const QMap<vip_double, VipScaleText>& VipAbstractScaleDraw::additionalText() con
 			const VipTextStyle& style = additionalTextStyle();
 			for (int i = 0; i < texts.size(); ++i) {
 				VipScaleText st = texts[i];
+				st.tr *= d_data->additionalTransform;
 				st.text.setTextStyle(style);
 				const_cast<QMap<vip_double, VipScaleText>&>(d_data->additionalText)[texts[i].value] = st;
 			}
@@ -1058,6 +1070,18 @@ void VipAbstractScaleDraw::drawTicks(QPainter* painter) const
 	}
 }
 
+struct TrSaver
+{
+	QPainter *p;
+	QTransform tr;
+	TrSaver(QPainter* _p)
+	  : p(_p)
+	  , tr(_p->worldTransform())
+	{
+	}
+	~TrSaver() { p->setWorldTransform(tr, false);}
+};
+
 void VipAbstractScaleDraw::drawLabels(QPainter* painter) const
 {
 	// d_data->lineCount = 0;
@@ -1068,7 +1092,8 @@ void VipAbstractScaleDraw::drawLabels(QPainter* painter) const
 			d_data->painterTransform = painter->worldTransform(); // .inverted();
 		}
 
-		painter->save();
+		//TEST
+		//painter->save();
 		painter->setPen(this->componentPen(VipAbstractScaleDraw::Labels)); // ignore pen style
 
 		if (!this->hasCustomLabels()) {
@@ -1079,10 +1104,9 @@ void VipAbstractScaleDraw::drawLabels(QPainter* painter) const
 					if (text.tr.isIdentity())
 						no_overlap = no_overlap && this->drawLabelOverlap(painter, text.value, text.text, text.tick);
 					else {
-						painter->save();
+						TrSaver tr(painter);
 						painter->setWorldTransform(text.tr, true);
 						no_overlap = no_overlap && this->drawLabelOverlap(painter, text.value, text.text, text.tick);
-						painter->restore();
 					}
 				}
 			}
@@ -1133,16 +1157,28 @@ void VipAbstractScaleDraw::drawLabels(QPainter* painter) const
 					if (text.tr.isIdentity())
 						no_overlap = no_overlap && this->drawLabelOverlap(painter, text.value, text.text, text.tick);
 					else {
-						painter->save();
+						TrSaver tr(painter);
 						painter->setWorldTransform(text.tr, true);
 						no_overlap = no_overlap && drawLabelOverlap(painter, text.value, text.text, text.tick);
-						painter->restore();
 					}
 				}
 			}
 		}
 
-		painter->restore();
+		// Draw additional scale text
+		for (auto it = d_data->scaleTexts.cbegin(); it != d_data->scaleTexts.cend(); ++it) {
+			const VipScaleText& text = it.value();
+			if (text.tr.isIdentity())
+				no_overlap = no_overlap && this->drawLabelOverlap(painter, text.value, text.text, text.tick);
+			else {
+				TrSaver tr(painter);
+				painter->setWorldTransform(text.tr, true);
+				no_overlap = no_overlap && drawLabelOverlap(painter, text.value, text.text, text.tick);
+			}
+		}
+
+		//TEST
+		//painter->restore();
 
 		d_data->dirtyOverlap = !no_overlap;
 	}
@@ -1290,7 +1326,7 @@ VipAbstractScaleDraw::TextTransform VipAbstractScaleDraw::textTransform(VipScale
 	return d_data->textTransform[tick];
 }
 
-void VipAbstractScaleDraw::setlabelRotation(double rotation, VipScaleDiv::TickType tick)
+void VipAbstractScaleDraw::setLabelRotation(double rotation, VipScaleDiv::TickType tick)
 {
 	invalidateOverlap();
 	d_data->rotation[tick] = rotation;
@@ -1398,6 +1434,15 @@ void VipAbstractScaleDraw::resetAdditionalTextStyle()
 	d_data->additionalStyle.reset();
 }
 
+void VipAbstractScaleDraw::setAdditionalTextTransform(const QTransform& tr)
+{
+	d_data->additionalTransform = tr;
+}
+const QTransform& VipAbstractScaleDraw::additionalTextTransform() const
+{
+	return d_data->additionalTransform;
+}
+
 void VipAbstractScaleDraw::setComponentPen(int component, const QPen& pen)
 {
 	if (component & Backbone)
@@ -1497,8 +1542,10 @@ VipAbstractScaleDraw::CustomTextStyle VipAbstractScaleDraw::customTextStyle() co
 void VipAbstractScaleDraw::setCustomLabels(const QList<VipScaleText>& custom_labels)
 {
 	d_data->customLabels.clear();
-	for (int i = 0; i < custom_labels.size(); ++i)
-		d_data->customLabels[custom_labels[i].value] = custom_labels[i];
+	for (int i = 0; i < custom_labels.size(); ++i) {
+		VipScaleText & t = d_data->customLabels[custom_labels[i].value] = custom_labels[i];
+		t.text.setLayoutAttribute(VipText::MinimumLayout);//TEST
+	}
 	invalidateCache();
 }
 
@@ -1565,7 +1612,7 @@ VipScaleDiv::TickList VipAbstractScaleDraw::labelTicks(VipScaleDiv::TickType tic
 
 	if (d_data->customLabels.size()) {
 		// return the custom labels
-		for (QMap<vip_double, VipScaleText>::const_iterator it = d_data->customLabels.begin(); it != d_data->customLabels.end(); ++it)
+		for (auto it = d_data->customLabels.begin(); it != d_data->customLabels.end(); ++it)
 			if (it->tick == tick)
 				values.append(it.key());
 	}
@@ -1688,6 +1735,34 @@ void VipAbstractScaleDraw::invalidateOverlap()
 {
 	d_data->dirtyOverlap = true;
 }
+
+int VipAbstractScaleDraw::addScaleText(int id, const VipScaleText& text)
+{
+	auto it = d_data->scaleTexts.find(id);
+	if (it != d_data->scaleTexts.end()) {
+		it.value() = text;
+	}
+	else {
+		id = 1;
+		// find valid id
+		for (it = d_data->scaleTexts.begin(); it != d_data->scaleTexts.end(); ++it, ++id)
+			if (id != it.key()) {
+				break;
+			}
+		d_data->scaleTexts.insert(id, text);
+	}
+	return id;
+}
+void VipAbstractScaleDraw::removeScaleText(int id)
+{
+	d_data->scaleTexts.remove(id);
+}
+void VipAbstractScaleDraw::removeAllScaleText()
+{
+	d_data->scaleTexts.clear();
+}
+
+
 
 class VipScaleDraw::PrivateData
 {

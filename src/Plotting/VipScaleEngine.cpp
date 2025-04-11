@@ -154,6 +154,8 @@ public:
 	vip_double upperMargin;
 
 	vip_double referenceValue; // reference value
+
+	QPointer<VipAbstractScale> scale;
 };
 
 //! Constructor
@@ -280,6 +282,15 @@ VipInterval VipScaleEngine::buildInterval(vip_double v) const
 		return VipInterval(-DBL_MAX, -DBL_MAX + delta);
 
 	return VipInterval(v - delta, v + delta);
+}
+
+VipAbstractScale* VipScaleEngine::scale() const noexcept 
+{
+	return d_data->scale;
+}
+void VipScaleEngine::setScale(VipAbstractScale* sc)
+{
+	d_data->scale = sc;
 }
 
 /// Change a scale attribute
@@ -903,10 +914,16 @@ VipInterval VipLog10ScaleEngine::pow10(const VipInterval& interval) const
 	return VipInterval((vip_double)::pow((vip_double)10.0, interval.minValue()), (vip_double)::pow((vip_double)10.0, interval.maxValue()));
 }
 
-VipFixedScaleEngine::VipFixedScaleEngine(VipFixedValueToText* vt)
-  : d_vt(vt)
-  , d_maxIntervalWidth(vipNan())
+VipFixedScaleEngine::VipFixedScaleEngine()
+ : d_maxIntervalWidth(vipNan())
 {
+}
+
+VipFixedValueToText* VipFixedScaleEngine::valueToText() const noexcept
+{
+	if (auto* sc = this->scale())
+		return qobject_cast<VipFixedValueToText*>(sc->scaleDraw()->valueToText());
+	return nullptr;
 }
 
 void VipFixedScaleEngine::setMaxIntervalWidth(double v)
@@ -920,7 +937,7 @@ double VipFixedScaleEngine::maxIntervalWidth() const noexcept
 
 void VipFixedScaleEngine::onComputeScaleDiv(VipAbstractScale* scale, const VipInterval& items_interval)
 {
-	if (VipFixedValueToText * vt = d_vt) {
+	if (VipFixedValueToText* vt = valueToText()) {
 		if (vt->startValue() == items_interval.minValue())
 			scale->setOptimizeFromStreaming(false);
 		else
@@ -935,7 +952,7 @@ void VipFixedScaleEngine::onComputeScaleDiv(VipAbstractScale* scale, const VipIn
 
 void VipFixedScaleEngine::autoScale(int maxSteps, vip_double& x1, vip_double& x2, vip_double& stepSize) const
 {
-	if (!d_vt)
+	if (!valueToText())
 		VipLinearScaleEngine::autoScale(maxSteps, x1, x2, stepSize);
 	else {
 
@@ -951,7 +968,7 @@ void VipFixedScaleEngine::autoScale(int maxSteps, vip_double& x1, vip_double& x2
 }
 VipScaleDiv VipFixedScaleEngine::divideScale(vip_double x1, vip_double x2, int maxMajSteps, int maxMinSteps, vip_double stepSize) const
 {
-	VipFixedValueToText* vt = d_vt;
+	VipFixedValueToText* vt = valueToText();
 	if (!vt)
 		return VipLinearScaleEngine::divideScale(x1, x2, maxMajSteps, maxMinSteps, stepSize);
 

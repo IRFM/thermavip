@@ -2,7 +2,7 @@
 # For Windows only, copy Python dlls to thermavip folder
 if (WIN32)
 	MESSAGE("Python lib path:  ${PYTHON_RUNTIME}")
-	file(GLOB SHARED_LIBS LIST_DIRECTORIES true  "${PYTHON_RUNTIME}/*.dll")
+	file(GLOB SHARED_LIBS LIST_DIRECTORIES true  "${PYTHON_RUNTIME}/python*.dll")
 
 	foreach(dll ${SHARED_LIBS} )
 		#MESSAGE("Found file ${dll}, copy to ${CMAKE_INSTALL_PREFIX}/thermavip")

@@ -975,14 +975,33 @@ void VipBoxStyle::drawBackground(QPainter* painter, const QBrush& brush) const
 		painter->drawPath(background());
 }
 
-void VipBoxStyle::drawBorder(QPainter* painter) const
+void VipBoxStyle::drawBorder(QPainter* painter, bool optimizeForLargePen ) const
 {
 	if (!d_data || d_data->pen.style() == Qt::NoPen)
 		return;
-	drawBorder(painter, createBorderPen(d_data->pen));
+	drawBorder(painter, createBorderPen(d_data->pen), optimizeForLargePen);
 }
 
-void VipBoxStyle::drawBorder(QPainter* painter, const QPen& pen) const
+
+static void drawPolygonLargePen(const QPolygonF& poly, QPainter* painter, const QPen& pen, bool close)
+{
+	// polyline drawing optimization for pen width > 1
+	// the rendering is not as good, but could be more than 10 times faster,
+	// which is HUGE for streaming purposes
+
+	painter->save();
+	QPen p = pen;
+	p.setJoinStyle(Qt::RoundJoin);
+	painter->setPen(p);
+	for (int i = 1; i < poly.size(); ++i) {
+		painter->drawLine(poly[i - 1], poly[i]);
+	}
+	if (close && poly.size() > 1)
+		painter->drawLine(poly.last(), poly.first());
+	painter->restore();
+}
+
+void VipBoxStyle::drawBorder(QPainter* painter, const QPen& pen, bool optimizeForLargePen) const
 {
 	if (!d_data || d_data->pen.style() == Qt::NoPen)
 		return;
@@ -997,6 +1016,21 @@ void VipBoxStyle::drawBorder(QPainter* painter, const QPen& pen) const
 	painter->setPen(pen);
 	painter->setBrush(QBrush());
 
+	if (optimizeForLargePen && pen.widthF() > 1 && !VipPainter::isOpenGL(painter) && !VipPainter::isVectoriel(painter)) {
+		if (d_data->polygon.size()) {
+			if (d_data->polygon.first() == d_data->polygon.last())
+				drawPolygonLargePen(d_data->polygon, painter, pen, true);
+			else
+				drawPolygonLargePen(d_data->polygon, painter, pen, false);
+		}
+		else {
+			const QList<QPolygonF> polys = border().toFillPolygons();
+			for (const QPolygonF & p : polys)
+				drawPolygonLargePen(p, painter, pen, true);
+		}
+		return;
+	}
+
 	if (d_data->polygon.size()) {
 		if (d_data->polygon.first() == d_data->polygon.last())
 			VipPainter::drawPolygon(painter, d_data->polygon);
@@ -1007,23 +1041,23 @@ void VipBoxStyle::drawBorder(QPainter* painter, const QPen& pen) const
 		painter->drawPath(border());
 }
 
-void VipBoxStyle::draw(QPainter* painter) const
+void VipBoxStyle::draw(QPainter* painter, bool optimizeForLargePen) const
 {
 	if (!d_data || isTransparent())
 		return;
 
-	draw(painter, createBackgroundBrush(), createBorderPen(d_data->pen));
+	draw(painter, createBackgroundBrush(), createBorderPen(d_data->pen), optimizeForLargePen);
 }
 
-void VipBoxStyle::draw(QPainter* painter, const QBrush& brush) const
+void VipBoxStyle::draw(QPainter* painter, const QBrush& brush, bool optimizeForLargePen) const
 {
 	if (!d_data || isTransparent())
 		return;
 
-	draw(painter, brush, createBorderPen(d_data->pen));
+	draw(painter, brush, createBorderPen(d_data->pen), optimizeForLargePen);
 }
 
-void VipBoxStyle::draw(QPainter* painter, const QBrush& brush, const QPen& pen) const
+void VipBoxStyle::draw(QPainter* painter, const QBrush& brush, const QPen& pen, bool optimizeForLargePen) const
 {
 	if (!d_data || isTransparent())
 		return;

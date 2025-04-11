@@ -1,3 +1,24 @@
+Thermavip v5.1.3 - 11/04/2024
+
+(GUI) corrected ROI file loading
+(GUI) Added possibility to hide minimums in ROIs
+(GUI) Added dynamic image superimposition
+
+(Python) Corrected python curve fitting processing
+(Python) Added back support for Python Thermavip module
+
+(WEST) Added first support for WEST VTM files
+(WEST) Removed DWMS feedbacks from Discharge Summary
+(WEST) Added possibility to upload a file to ARCADE
+
+(librir) Corrected librir issue with some C4 videos (causing a crash)
+
+
+Thermavip v5.1.2 - 07/04/2024
+
+(NVF) Added support for additional filter wheel positions
+
+
 Thermavip v5.1.1 - 20/02/2024
 
 (GUI) Corrected random crash when closing plot players to quickly
@@ -11,6 +32,7 @@ Thermavip v5.1.1 - 20/02/2024
 (WEST) Added SurvIR-FPGA and SurvIR-DWMS
 (WEST) Corrected progress bar issue when opening a IR video (progress bar was not visible)
 (WEST) Corrected wrong DWMS control summary behavior 
+
 
 Thermavip v5.1.0 - 23/01/2024
 
@@ -28,6 +50,7 @@ Thermavip v5.1.0 - 23/01/2024
 (WEST) Added search feature "Preload all IR movies" with optional pulse number to start preloading corresponding IR videos
 (WEST) Merge before and after disruption in discharge summary
 (WEST) Added possibility to download ARCADE files from the WEST panel
+
 
 Thermavip v5.0.0 - 10/12/2024
 
@@ -67,6 +90,7 @@ Thermavip v4.5.1 - 06/03/2024
 (WEST) Corrected Pulse Explorer internal cashing
 (WEST) Added support for disruptions in Pulse Explorer
 
+
 Thermavip v4.5.0 - 26/02/2024
 
 (WEST) Added pulse explorer: retrieve pulses based on discharge criteria
@@ -99,6 +123,7 @@ Thermavip v4.4.0 - 13/02/2024
 (AIA) Huge update, added new functions (contrast, brightness and gamma correction, display centered cross, draw date time in image...)
 (AIA) Several bug corrections
 
+
 Thermavip v4.3.0 - 19/01/2024
 
 (GUI) Updated skins
@@ -127,10 +152,10 @@ Major display optimizations
 New OpenGL rendering mode (optional)
 
 
-
 Thermavip v3.10.0 v4.0.0 v4.1.0
 
 Internal refactoring
+
 
 Thermavip v3.10.0 - 31/01/2023
 

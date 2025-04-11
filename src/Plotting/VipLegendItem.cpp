@@ -35,6 +35,7 @@
 
 #include "VipDynGridLayout.h"
 #include "VipLegendItem.h"
+#include "QThreadOpenGLWidget.h"
 
 class VipLegendItem::PrivateData
 {
@@ -65,6 +66,7 @@ public:
 	QCheckBox* box;
 	QPixmap boxPixmap;
 	bool checked;
+	QImage legendImage;
 };
 
 VipLegendItem::VipLegendItem(VipPlotItem* item, int index, QGraphicsItem* parent)
@@ -112,6 +114,11 @@ void VipLegendItem::updateVisibility()
 		}
 		else {
 			bool vis = d_data->item->isVisible();
+			if (parentItem())
+			if (VipLegend* l = qobject_cast<VipLegend*>(parentItem()->toGraphicsObject())) {
+				if (l->checkState() == VipLegend::CheckableVisibility)
+					vis = true; // Keep legend item visible if there is a checkbox to control the plot item visibility
+			}
 			this->setVisible(vis);
 		}
 	}
@@ -158,6 +165,8 @@ void VipLegendItem::updateLegendItem()
 		text.setTextStyle(st);
 		QSizeF min_size = text.textSize();
 		double icon_width = min_size.height(); // by default, icon width = text height
+		if (icon_width < minimumSymbolSize().width())
+			icon_width = minimumSymbolSize().width();
 		if (icon_width > maximumSymbolSize().width())
 			icon_width = maximumSymbolSize().width();
 		min_size += QSizeF(icon_width + left() + spacing(), 0);
@@ -288,6 +297,8 @@ void VipLegendItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* opt
 	text.setTextStyle(style);
 	QRectF rect = boundingRect();
 
+	painter->setRenderHints(d_data->renderHints);
+
 	// render check box
 	if (d_data->box && d_data->drawCheckbox) {
 		painter->drawPixmap(QPoint(0, (rect.height() - d_data->boxPixmap.height()) / 2), d_data->boxPixmap);
@@ -307,13 +318,28 @@ void VipLegendItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* opt
 	symbol_rect.moveTopLeft(QPointF(left() + rect.left(), (rect.height() - symbol_size.height()) / 2));
 	text_rect.moveTopLeft(QPointF(symbol_rect.right() + spacing(), (rect.height() - text_rect.height()) / 2));
 
-	painter->setRenderHints(d_data->renderHints);
-
 	// draw the legend symbol
 	if (d_data->item->testItemAttribute(VipPlotItem::HasLegendIcon)) {
-		painter->setClipRect(symbol_rect.adjusted(-1, -1, 1, 1));
-		symbol_rect = d_data->item->drawLegend(painter, symbol_rect, d_data->legendIndex);
-		painter->setClipping(false);
+		
+		//painter->setClipRect(symbol_rect.adjusted(-1, -1, 1, 1), Qt::IntersectClip);
+		// Disable clipping for now as it causes weird behavior (clipping is not restored correctly,
+		// even after calls to QPainter::restore()).
+
+		if (d_data->item->pen().widthF() > 1 ) {
+			const QSize size = symbol_rect.size().toSize();
+			if (d_data->legendImage.size() != size)
+				d_data->legendImage = QImage(size.width(), size.height(), QImage::Format_ARGB32);
+			d_data->legendImage.fill(Qt::transparent);
+			{
+				QPainter p(&d_data->legendImage);
+				symbol_rect = d_data->item->drawLegend(&p, QRectF(QPointF(), size), d_data->legendIndex).translated(symbol_rect.topLeft());
+			}
+			painter->drawImage(symbol_rect, d_data->legendImage, QRectF(QPointF(), size) );
+		}
+		else {
+			//painter->setClipRect(symbol_rect.adjusted(-1, -1, 1, 1), Qt::IntersectClip);
+			symbol_rect = d_data->item->drawLegend(painter, symbol_rect, d_data->legendIndex);
+		}
 	}
 	else {
 		symbol_rect = QRectF(left(), 0, 1, 1);
@@ -433,7 +459,7 @@ public:
 	QList<VipPlotItem*> items;
 	double legendItemSpacing;
 	double legendItemLeft;
-	QPainter::RenderHints legendItemRenderHints;
+	QPainter::RenderHints legendItemRenderHints{QPainter::Antialiasing|QPainter::TextAntialiasing|QPainter::SmoothPixmapTransform};
 	VipBoxStyle legendItemBoxStyle;
 	VipTextStyle legendItemTextStyle;
 	VipLegendItem::DisplayMode displayMode;
@@ -452,7 +478,7 @@ VipLegend::VipLegend(QGraphicsItem* parent)
 	d_data->legendItemTextStyle.setAlignment(Qt::AlignLeft);
 
 	this->setLayout(new VipDynGridLayout());
-	layout()->setSpacing(0);
+	layout()->setSpacing(5);
 	layout()->setMargins(5);
 	layout()->setExpandingDirections(Qt::Horizontal | Qt::Vertical);
 }
@@ -571,7 +597,7 @@ void VipLegend::addItem(VipPlotItem* item)
 				legend->setDisplayMode(displayMode());
 				legend->setSpacing(d_data->legendItemSpacing);
 				legend->setLeft(d_data->legendItemLeft);
-				legend->setRenderHints(item->renderHints());
+				legend->setRenderHints(d_data->legendItemRenderHints);
 				legend->setBoxStyle(d_data->legendItemBoxStyle);
 				legend->setTextStyle(d_data->legendItemTextStyle);
 				legend->setDrawCheckbox(d_data->drawCheckbox);
@@ -587,7 +613,7 @@ void VipLegend::addItem(VipPlotItem* item)
 			legend->setDisplayMode(displayMode());
 			legend->setSpacing(d_data->legendItemSpacing);
 			legend->setLeft(d_data->legendItemLeft);
-			legend->setRenderHints(item->renderHints());
+			legend->setRenderHints(d_data->legendItemRenderHints);
 			legend->setBoxStyle(d_data->legendItemBoxStyle);
 			legend->setTextStyle(d_data->legendItemTextStyle);
 			legend->setDrawCheckbox(d_data->drawCheckbox);
@@ -614,7 +640,7 @@ void VipLegend::insertItem(int index, VipPlotItem* item)
 				legend->setDisplayMode(displayMode());
 				legend->setSpacing(d_data->legendItemSpacing);
 				legend->setLeft(d_data->legendItemLeft);
-				legend->setRenderHints(item->renderHints());
+				legend->setRenderHints(d_data->legendItemRenderHints);
 				legend->setBoxStyle(d_data->legendItemBoxStyle);
 				legend->setTextStyle(d_data->legendItemTextStyle);
 				legend->setDrawCheckbox(d_data->drawCheckbox);
@@ -630,7 +656,7 @@ void VipLegend::insertItem(int index, VipPlotItem* item)
 			legend->setDisplayMode(displayMode());
 			legend->setSpacing(d_data->legendItemSpacing);
 			legend->setLeft(d_data->legendItemLeft);
-			legend->setRenderHints(item->renderHints());
+			legend->setRenderHints(d_data->legendItemRenderHints);
 			legend->setBoxStyle(d_data->legendItemBoxStyle);
 			legend->setTextStyle(d_data->legendItemTextStyle);
 			legend->setDrawCheckbox(d_data->drawCheckbox);
@@ -1087,7 +1113,7 @@ void VipLegend::itemChanged(VipPlotItem* item)
 	// pass the renderHints attribute of the VipPlotItem to the VipLegendItem, update VipLegendItem visibility
 	QList<VipLegendItem*> legends = legendItems(item);
 	for (int i = 0; i < legends.size(); ++i) {
-		legends[i]->setRenderHints(item->renderHints());
+		legends[i]->setRenderHints(d_data->legendItemRenderHints);
 		legends[i]->updateLegendItem();
 	}
 

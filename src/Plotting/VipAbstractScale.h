@@ -47,6 +47,7 @@
 /// @{
 
 class VipScaleEngine;
+class VipScaleText;
 class VipAbstractScaleDraw;
 class VipValueTransform;
 class VipBoxStyle;
@@ -240,6 +241,16 @@ public:
 	virtual void setScaleDiv(const VipScaleDiv& sd, bool force_check_geometry = false, bool disable_scale_signal = false);
 	void setScaleDiv(const VipInterval& bounds, const VipScaleDiv::TickList& majorTicks);
 	const VipScaleDiv& scaleDiv() const;
+
+	/// @brief Add a text to be drawn on the scale
+	/// If id is 0 (or is invalid), this creates a new scale text and returns its id.
+	/// If provided id is valid, this updates the corresponding scale text.
+	/// This function can be used by any object to add text to an existing scale.
+	int addScaleText(int id, const VipScaleText& text);
+	/// @brief Remove a scale text based on its id.
+	void removeScaleText(int id);
+	/// @brief Remove all scale text
+	void removeAllScaleText();
 
 	/// @brief Set a scale draw
 	/// scaleDraw has to be created with new and will be deleted in

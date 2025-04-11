@@ -327,7 +327,7 @@ public:
 	{
 	}
 
-	QList<VipColorMapGrip*> contourGrip;
+	QList<VipSliderGrip*> contourGrip;
 	QList<vip_double> contourLevels;
 	ContourLines lines;
 	QPen defaultContourPen;
@@ -383,13 +383,13 @@ bool VipPlotSpectrogram::ignoreAllVerticesOnLevel() const
 
 void VipPlotSpectrogram::levelGripChanged(double value)
 {
-	int index = d_data->contourGrip.indexOf(static_cast<VipColorMapGrip*>(sender()));
+	int index = d_data->contourGrip.indexOf(static_cast<VipSliderGrip*>(sender()));
 	d_data->contourLevels[index] = value;
 	d_data->dirtyContourLines = 1;
 	emitItemChanged();
 }
 
-void VipPlotSpectrogram::setContourLevels(const QList<vip_double>& levels, bool add_grip, const QPixmap& grip_pixmap)
+void VipPlotSpectrogram::setContourLevels(const QList<vip_double>& levels, bool add_grip, const QImage& grip_pixmap)
 {
 	d_data->contourLevels = levels;
 	d_data->dirtyContourLines = 1;
@@ -407,7 +407,7 @@ void VipPlotSpectrogram::setContourLevels(const QList<vip_double>& levels, bool 
 		for (int i = 0; i < levels.size(); ++i) {
 			d_data->contourGrip.push_back(colorMap()->addGrip());
 			d_data->contourGrip.back()->setValue(levels[i]);
-			d_data->contourGrip.back()->setImage(grip_pixmap.toImage());
+			d_data->contourGrip.back()->setImage(grip_pixmap);
 
 			connect(d_data->contourGrip.back(), SIGNAL(valueChanged(double)), this, SLOT(levelGripChanged(double)));
 		}
@@ -424,7 +424,7 @@ void VipPlotSpectrogram::setContourLevels(const QList<vip_double>& levels, bool 
 	emitItemChanged();
 }
 
-QList<VipColorMapGrip*> VipPlotSpectrogram::contourGrips() const
+QList<VipSliderGrip*> VipPlotSpectrogram::contourGrips() const
 {
 	return d_data->contourGrip;
 }

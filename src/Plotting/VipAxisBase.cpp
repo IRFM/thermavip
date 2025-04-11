@@ -694,19 +694,13 @@ double VipAxisBase::dimForLength(double length, const QFont& // scaleFont
 
 void VipAxisBase::draw(QPainter* painter, QWidget* widget)
 {
-	painter->save();
+	//painter->save();
 
 	VipBorderItem::draw(painter, widget);
 	painter->setRenderHints(this->renderHints());
 
-	// if (this->alignment() == Left) {
-	// const QTransform &tr = painter->transform();
-	// const QPointF pt = this->pos();
-	// bool stop = true;
-	// }
-
 	QRectF brect = this->boundingRectNoCorners();
-	// TEST
+
 	if (brect == QRectF())
 		brect = this->geometry().translated(-pos());
 
@@ -726,30 +720,8 @@ void VipAxisBase::draw(QPainter* painter, QWidget* widget)
 		drawTitle(painter, this->alignment(), brect);
 	}
 
-	// draw the exponent
-	// if (int exp = constScaleDraw()->valueToText()->exponent()) {
-	// double len = constScaleDraw()->length();
-	// QRectF r = this->boundingRectNoCorners();
-	// VipText t;
-	// t.setText("1e" + QString::number(exp));
-	// t.setTextStyle(constScaleDraw()->textStyle());
-	// t.setAlignment(constScaleDraw()->textStyle().alignment());
-	// QPointF pos;
-	// switch (this->alignment()) {
-	// case Left:
-	// pos = r.topRight() - QPointF(len + t.textSize().width(), t.textSize().height());
-	// break;
-	// case Right:
-	// //pos = r.topRight() - QPointF(len + t.textSize().width(), t.textSize().height());
-	// break;
-	// case Top:
-	// break;
-	// case Bottom:
-	// break;
-	// }
-	// }
-
-	painter->restore();
+	//TEST
+	//painter->restore();
 }
 
 // QRectF VipAxisBase::plottingRect (const VipAxisBase * x, const VipAxisBase * y)

@@ -498,7 +498,7 @@ bool VipPlotShape::testDrawComponent(DrawComponent c) const
 	return d_data->components.testFlag(c);
 }
 
-VipPlotShape::DrawComponents VipPlotShape::dawComponents() const
+VipPlotShape::DrawComponents VipPlotShape::drawComponents() const
 {
 	return d_data->components;
 }
@@ -2066,7 +2066,7 @@ QList<VipPlotShape*> VipPlotSceneModel::shapes(const QString& group, int selecti
 
 VipArchive& operator<<(VipArchive& arch, const VipPlotShape* value)
 {
-	arch.content("dawComponents", (int)value->dawComponents());
+	arch.content("dawComponents", (int)value->drawComponents());
 	arch.content("textStyle", value->textStyle());
 	arch.content("textPosition", (int)value->textPosition());
 	arch.content("textAlignment", (int)value->textAlignment());

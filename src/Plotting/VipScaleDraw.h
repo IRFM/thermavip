@@ -51,8 +51,9 @@ class VipScaleMap;
 class VipAbstractScaleDraw;
 
 /// @brief Defines additional text that needs to be drawn by a VipValueToText object.
-struct VipScaleText
+class VipScaleText
 {
+public:
 	VipText text;		    //! text to draw
 	vip_double value;	    //! associated value in the scale
 	QTransform tr;		    //! potential text transform
@@ -83,9 +84,10 @@ struct VipScaleText
 /// -   VipValueToText can manage exponents based on a maximum label length
 ///
 /// Inherits QObject in order to be used through a QPointer by VipFixedScaleEngine
-/// 
+///
 class VIP_PLOTTING_EXPORT VipValueToText : public QObject
 {
+	Q_OBJECT
 public:
 	/// @brief Type of VipValueToText
 	enum ValueToTextType
@@ -169,6 +171,7 @@ protected:
 ///
 class VIP_PLOTTING_EXPORT VipValueToFormattedText : public VipValueToText
 {
+	Q_OBJECT
 	QString d_text;
 
 public:
@@ -193,6 +196,7 @@ public:
 ///
 class VIP_PLOTTING_EXPORT VipValueToDate : public VipValueToText
 {
+	Q_OBJECT
 public:
 	/// @brief Input value type
 	enum ValueType
@@ -219,6 +223,9 @@ public:
 	QString format() const;
 	void setFormat(const QString& format);
 
+	ValueType inputType() const;
+	void setInputType(ValueType);
+
 private:
 	QString d_format;
 	ValueType d_type;
@@ -235,6 +242,7 @@ private:
 ///
 class VIP_PLOTTING_EXPORT VipValueToTime : public VipValueToText
 {
+	Q_OBJECT
 public:
 	/**
 	Defines how the scale values should be interpreted
@@ -296,9 +304,9 @@ public:
 ///
 /// See CurveStreaming test example for more details.
 ///
-class VipFixedValueToText : public VipValueToFormattedText
+class VIP_PLOTTING_EXPORT VipFixedValueToText : public VipValueToFormattedText
 {
-
+	Q_OBJECT
 public:
 	/// @brief Define how text values are computed
 	enum TextType
@@ -329,11 +337,6 @@ public:
 	void setTextType(TextType type) { d_type = type; }
 	TextType textType() const { return d_type; }
 
-	/// @brief Set a transformation for the additional text if DifferenceValue is used.
-	void setAdditionalTextTransform(const QTransform& tr) { d_additionalTransform = tr; }
-	const QTransform& additionalTextTransform() const { return d_additionalTransform; }
-	QTransform& additionalTextTransform() { return d_additionalTransform; }
-
 	virtual QString convert(vip_double value, VipScaleDiv::TickType tick = VipScaleDiv::MajorTick) const
 	{
 		return VipValueToFormattedText::convert(d_type == AbsoluteValue ? value : value - d_start, tick);
@@ -354,7 +357,6 @@ public:
 
 		VipScaleText res;
 		res.text = (this->VipValueToFormattedText::convert(d_start));
-		res.tr = d_additionalTransform;
 		res.value = d_start;
 		return QList<VipScaleText>() << res;
 	}
@@ -362,17 +364,17 @@ public:
 private:
 	vip_double d_start;
 	TextType d_type;
-	QTransform d_additionalTransform;
 };
 
 /// @brief A VipValueToFormattedText class that displays date and/or time labels.
-/// Depending on the provided TimeType, and once applied the multiplication factor, times are considered to be in milliseconds (0 based) or milliseconds since epoch.
+/// Depending on the provided TimeType, and once applied the multiplication factor,
+/// times are considered to be in milliseconds (0 based) or milliseconds since epoch.
 /// Time are formatted to text using the provided labelFormat().
 /// If the TextType is set to DifferenceValue, the additional displayed text is formatted using additionalFormat().
 ///
 class VIP_PLOTTING_EXPORT VipTimeToText : public VipFixedValueToText
 {
-
+	Q_OBJECT
 public:
 	enum TimeType
 	{
@@ -383,9 +385,12 @@ public:
 
 	virtual ValueToTextType valueToTextType() const { return TimeToText; }
 
+	/// @brief Format string used to convert QTime (Milliseconds) or QDateTime (MillisecondsSE) to string
 	void setLabelFormat(const QString&);
 	QString labelFormat() const;
 
+	/// @brief Format string used to convert QTime (Milliseconds) or QDateTime (MillisecondsSE) to string
+	/// For any additional text as returned by additionalText()
 	void setAdditionalFormat(const QString&);
 	QString additionalFormat() const;
 
@@ -507,7 +512,7 @@ public:
 	Add an additional rotation to the label text, starting to the label top left corner.
 	Note that this rotation is just added to the global label transformation.
 	*/
-	void setlabelRotation(double rotation, VipScaleDiv::TickType tick);
+	void setLabelRotation(double rotation, VipScaleDiv::TickType tick);
 	double labelRotation(VipScaleDiv::TickType tick) const;
 	/**
 	Retrieves the label rotation for a given value and text size.
@@ -534,6 +539,9 @@ public:
 	const VipTextStyle& additionalTextStyle() const;
 	/// @brief Reset the addditional text style and use this->textStyle(VipScaleDiv::MajorTick) instead.
 	void resetAdditionalTextStyle();
+
+	void setAdditionalTextTransform(const QTransform&);
+	const QTransform& additionalTextTransform() const;
 
 	virtual void setComponentPen(int component, const QPen& pen);
 	QPen componentPen(ScaleComponent component) const;
@@ -584,6 +592,15 @@ public:
 	VipValueToText* valueToText() const;
 	VipText label(vip_double, VipScaleDiv::TickType tick) const;
 
+	/// @brief Add a text to be drawn on the scale
+	/// If id is 0 (or is invalid), this creates a new scale text and returns its id.
+	/// If provided id is valid, this updates the corresponding scale text.
+	/// This function can be used by any object to add text to an existing scale.
+	int addScaleText(int id, const VipScaleText& text);
+	/// @brief Remove a scale text based on its id.
+	void removeScaleText(int id);
+	/// @brief Remove all scale text
+	void removeAllScaleText();
 	/*!
 	  Calculate the extent
 
@@ -688,7 +705,6 @@ private:
 	VipAbstractScaleDraw(const VipAbstractScaleDraw&);
 	VipAbstractScaleDraw& operator=(const VipAbstractScaleDraw&);
 
-	
 	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
@@ -790,7 +806,6 @@ private:
 	Qt::Orientation computeOrientation() const;
 	void updateMap();
 
-	
 	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
@@ -870,7 +885,6 @@ private:
 	void getDLengthHint(double& d_s_angle, double& d_e_angle, VipScaleDiv::TickType) const;
 	void updateMap();
 
-	
 	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
@@ -935,7 +949,6 @@ private:
 	void computeScaleLine();
 	void updateMap();
 
-	
 	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 

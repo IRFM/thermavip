@@ -34,7 +34,7 @@
 #include "VipBorderItem.h"
 #include "VipPainter.h"
 #include "VipPolarAxis.h"
-#include "slider.png.h"
+#include "slider_handle.png.h"
 
 #include <QGraphicsSceneMouseEvent>
 #include <QPainter>
@@ -88,8 +88,9 @@ public:
 	double toolTipDistance;
 	Qt::Alignment toolTipSide;
 	QImage image;
-	QImage rotatedImage;
+	QImage reduced;
 	QString toolTipText;
+	QSizeF maxImageSize;
 
 	Qt::Alignment textAlignment;
 	Vip::RegionPositions textPosition;
@@ -153,7 +154,12 @@ void VipSliderGrip::setHandleDistance(double vipDistance)
 
 double VipSliderGrip::handleDistance() const
 {
-	return d_data->handleDistance;
+	const VipAxisColorMap* axis = qobject_cast<const VipAxisColorMap*>(this->scale());
+	if (!axis)
+		return d_data->handleDistance;
+	if (axis->orientation() == Qt::Vertical) 
+		return qAbs(axis->colorBarRect().center().x() - axis->constScaleDraw()->pos().x()) + d_data->handleDistance;
+	return qAbs(axis->colorBarRect().center().y() - axis->constScaleDraw()->pos().y()) + d_data->handleDistance;
 }
 
 void VipSliderGrip::setSingleStepEnabled(bool enable)
@@ -275,6 +281,12 @@ QRectF VipSliderGrip::boundingRect() const
 	}
 	else {
 		QRectF rect(0, 0, d_data->image.width(), d_data->image.height());
+		if (d_data->maxImageSize.isValid()) {
+			if (rect.width() > d_data->maxImageSize.width())
+				rect.setWidth(d_data->maxImageSize.width());
+			if (rect.height() > d_data->maxImageSize.height())
+				rect.setHeight(d_data->maxImageSize.height());
+		}
 		QTransform tr;
 		tr.rotate(-d_data->axis->constScaleDraw()->angle(value()) - 90);
 		rect = tr.map(rect).boundingRect();
@@ -284,14 +296,27 @@ QRectF VipSliderGrip::boundingRect() const
 	}
 }
 
-void VipSliderGrip::updatePosition()
+void VipSliderGrip::moveTo(const QPointF& p)
 {
-	QPointF pt = d_data->axis->constScaleDraw()->position(d_data->value, handleDistance(), Vip::Absolute);
-	if (pt != pos() && qAbs(pt.x()) < 10000 && qAbs(pt.y()) < 10000)
-		this->setPos(pt);
+	setPos(p);
 }
 
-void VipSliderGrip::setValue(double val)
+void VipSliderGrip::updatePositionInternal(bool InPaint)
+{
+	QPointF pt = d_data->axis->constScaleDraw()->position(d_data->value, handleDistance(), Vip::Absolute);
+	if (pt != pos() && qAbs(pt.x()) < 10000 && qAbs(pt.y()) < 10000) {
+		if (!InPaint)
+			this->setPos(pt); 
+		else
+			QMetaObject::invokeMethod(this, "moveTo", Qt::QueuedConnection, Q_ARG(QPointF, pt));
+	}
+}
+void VipSliderGrip::updatePosition()
+{
+	updatePositionInternal(false);
+}
+
+void VipSliderGrip::setValueInternal(double val, bool InPaint)
 {
 	double previous = d_data->value;
 
@@ -307,12 +332,31 @@ void VipSliderGrip::setValue(double val)
 		d_data->value = qMin((double)interval.maxValue(), d_data->value);
 	}
 
-	updatePosition();
+	updatePositionInternal(InPaint);
 
 	if (previous != d_data->value) {
 		Q_EMIT valueChanged(d_data->value);
 	}
 }
+void VipSliderGrip::setValue(double val)
+{
+	setValueInternal(val, false);
+}
+
+void VipSliderGrip::setMaxImageSize(const QSizeF& s)
+{
+	d_data->maxImageSize = s;
+	d_data->reduced = d_data->image;
+	if (d_data->maxImageSize.isValid())
+		if (d_data->image.width() > d_data->maxImageSize.width() || d_data->image.height() > d_data->maxImageSize.height())
+			d_data->reduced = d_data->image.scaled(d_data->maxImageSize.toSize(), Qt::KeepAspectRatio, Qt::SmoothTransformation);
+	update();
+}
+QSizeF VipSliderGrip::maxImageSize() const
+{
+	return d_data->maxImageSize;
+}
+
 
 void VipSliderGrip::setGripAlwaysInsideScale(bool inside)
 {
@@ -327,6 +371,10 @@ bool VipSliderGrip::gripAlwaysInsideScale() const
 void VipSliderGrip::setImage(const QImage& handle_image)
 {
 	d_data->image = handle_image;
+	d_data->reduced = handle_image;
+	if (d_data->maxImageSize.isValid())
+		if (d_data->image.width() > d_data->maxImageSize.width() || d_data->image.height() > d_data->maxImageSize.height())
+			d_data->reduced = d_data->image.scaled(d_data->maxImageSize.toSize(), Qt::KeepAspectRatio, Qt::SmoothTransformation);
 	this->update();
 }
 
@@ -350,33 +398,39 @@ const VipAbstractScale* VipSliderGrip::scale() const
 	return d_data->axis;
 }
 
+
 void VipSliderGrip::drawHandle(QPainter* painter) const
-{
+{ 
 	if (d_data->image.isNull()) {
 		VipSliderGrip* _this = const_cast<VipSliderGrip*>(this);
-		_this->d_data->image.loadFromData(reinterpret_cast<const uchar*>(slider_png), 477, "PNG");
+		_this->d_data->image.loadFromData(reinterpret_cast<const uchar*>(slider_handle_png), 477, "PNG");
+		_this->d_data->reduced = _this->d_data->image;
+		if (d_data->maxImageSize.isValid())
+			if (d_data->image.width() > d_data->maxImageSize.width() || d_data->image.height() > d_data->maxImageSize.height())
+				_this->d_data->reduced = d_data->image.scaled(d_data->maxImageSize.toSize(), Qt::KeepAspectRatio, Qt::SmoothTransformation);
 	}
 
 	QTransform tr;
 	tr.rotate(-d_data->axis->constScaleDraw()->angle(value()) - 90);
-	d_data->rotatedImage = d_data->image.transformed(tr, Qt::SmoothTransformation);
+	const QImage rotatedImage = d_data->reduced.transformed(tr, Qt::SmoothTransformation);
 
-	if (!d_data->rotatedImage.isNull()) {
+	if (!rotatedImage.isNull()) {
 		QPointF p = pos();
 		// do not draw when the position does not have any sense
 		if (qAbs(p.x()) < 10000 && qAbs(p.y()) < 10000) {
 
-			QRectF rect(0, 0, d_data->rotatedImage.width(), d_data->rotatedImage.height());
-			rect.translate(-d_data->rotatedImage.width() / 2.0, -d_data->rotatedImage.height() / 2.0);
-			VipPainter::drawImage(painter, rect, d_data->rotatedImage, QRectF(QPointF(0, 0), rect.size()));
+			QRectF rect(0, 0, rotatedImage.width(), rotatedImage.height());
+			rect.translate(-rotatedImage.width() / 2.0, -rotatedImage.height() / 2.0);
+			painter->setRenderHints(QPainter::SmoothPixmapTransform | QPainter::Antialiasing);
+			VipPainter::drawImage(painter, rect, rotatedImage, QRectF(QPointF(0, 0), rect.size()));
 		}
 		//
 	}
 
 	if (!d_data->text.isEmpty()) {
 
-		QRectF geom(0, 0, d_data->rotatedImage.width(), d_data->rotatedImage.height());
-		geom.translate(-d_data->rotatedImage.width() / 2.0, -d_data->rotatedImage.height() / 2.0);
+		QRectF geom(0, 0, rotatedImage.width(), rotatedImage.height());
+		geom.translate(-rotatedImage.width() / 2.0, -rotatedImage.height() / 2.0);
 
 		VipText t = d_data->text;
 		t.setText(VipText::replace(t.text(), "#value", value()));
@@ -480,7 +534,7 @@ void VipSliderGrip::paint(QPainter* painter,
 )
 {
 	if (d_data->selection == QPointF())
-		setValue(value());
+		setValueInternal(value(),true);
 
 	if (!paintingEnabled())
 		return;
@@ -675,7 +729,7 @@ void VipSliderGrip::mousePressEvent(QGraphicsSceneMouseEvent* event)
 	d_data->selection = this->mapToItem(d_data->axis, event->pos());
 	Q_EMIT mouseButtonPress(this, static_cast<VipPlotItem::MouseButton>(event->button()));
 }
-
+ 
 void VipSliderGrip::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
 {
 	d_data->selection = QPointF();
@@ -750,34 +804,5 @@ void VipSliderGrip::keyPressEvent(QKeyEvent* event)
 				}
 			}
 		}
-	}
-}
-
-VipColorMapGrip::VipColorMapGrip(VipAxisColorMap* parent)
-  : VipSliderGrip(parent)
-{
-	this->setValue(0);
-	vipRegisterMetaObject(&VipColorMapGrip::staticMetaObject);
-}
-
-VipColorMapGrip::~VipColorMapGrip() {}
-
-VipAxisColorMap* VipColorMapGrip::colorMapAxis()
-{
-	return static_cast<VipAxisColorMap*>(this->scale());
-}
-
-const VipAxisColorMap* VipColorMapGrip::colorMapAxis() const
-{
-	return static_cast<const VipAxisColorMap*>(this->scale());
-}
-
-double VipColorMapGrip::handleDistance() const
-{
-	if (colorMapAxis()->orientation() == Qt::Vertical) {
-		return qAbs(colorMapAxis()->colorBarRect().center().x() - colorMapAxis()->constScaleDraw()->pos().x()) + VipSliderGrip::handleDistance();
-	}
-	else {
-		return qAbs(colorMapAxis()->colorBarRect().center().y() - colorMapAxis()->constScaleDraw()->pos().y()) + VipSliderGrip::handleDistance();
 	}
 }

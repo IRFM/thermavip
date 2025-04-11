@@ -65,11 +65,11 @@ public:
 
 	QList<VipPlotItem*> plotItems;
 
-	VipColorMapGrip* grip_1;
-	VipColorMapGrip* grip_2;
+	VipSliderGrip* grip_1;
+	VipSliderGrip* grip_2;
 	VipInterval computedInterval;
 
-	QList<VipColorMapGrip*> grips;
+	QList<VipSliderGrip*> grips;
 	QImage pixmap;
 
 	vip_double autoScaleMin, autoScaleMax;
@@ -83,8 +83,8 @@ VipAxisColorMap::VipAxisColorMap(Alignment pos, QGraphicsItem* parent)
 	d_data->colorBar.colorMap = nullptr;
 	d_data->colorBar.width = 15;
 	d_data->colorBar.isEnabled = true;
-	d_data->grip_1 = new VipColorMapGrip(this);
-	d_data->grip_2 = new VipColorMapGrip(this);
+	d_data->grip_1 = new VipSliderGrip(this);
+	d_data->grip_2 = new VipSliderGrip(this);
 	d_data->autoScaleMin = d_data->autoScaleMax = vipNan();
 	d_data->hasAutoScaleMin = d_data->hasAutoScaleMax = false;
 
@@ -561,35 +561,35 @@ VipInterval VipAxisColorMap::gripInterval() const
 	return VipInterval(grip1()->value(), grip2()->value()).normalized();
 }
 
-VipColorMapGrip* VipAxisColorMap::grip1()
+VipSliderGrip* VipAxisColorMap::grip1()
 {
 	return d_data->grip_1;
 }
 
-const VipColorMapGrip* VipAxisColorMap::grip1() const
+const VipSliderGrip* VipAxisColorMap::grip1() const
 {
 	return d_data->grip_1;
 }
 
-VipColorMapGrip* VipAxisColorMap::grip2()
+VipSliderGrip* VipAxisColorMap::grip2()
 {
 	return d_data->grip_2;
 }
 
-const VipColorMapGrip* VipAxisColorMap::grip2() const
+const VipSliderGrip* VipAxisColorMap::grip2() const
 {
 	return d_data->grip_2;
 }
 
-VipColorMapGrip* VipAxisColorMap::addGrip(const QImage& img)
+VipSliderGrip* VipAxisColorMap::addGrip(const QImage& img)
 {
-	VipColorMapGrip* grip = new VipColorMapGrip(this);
+	VipSliderGrip* grip = new VipSliderGrip(this);
 	if (!img.isNull())
 		grip->setImage(img);
 	return addGrip(grip);
 }
 
-VipColorMapGrip* VipAxisColorMap::addGrip(VipColorMapGrip* grip)
+VipSliderGrip* VipAxisColorMap::addGrip(VipSliderGrip* grip)
 {
 	removeGrip(grip);
 	connect(grip, SIGNAL(valueChanged(double)), this, SLOT(gripValueChanged(double)));
@@ -597,13 +597,13 @@ VipColorMapGrip* VipAxisColorMap::addGrip(VipColorMapGrip* grip)
 	return grip;
 }
 
-void VipAxisColorMap::removeGrip(VipColorMapGrip* grip)
+void VipAxisColorMap::removeGrip(VipSliderGrip* grip)
 {
 	if (d_data->grips.removeAll(grip))
 		disconnect(grip, SIGNAL(valueChanged(double)), this, SLOT(gripValueChanged(double)));
 }
 
-QList<VipColorMapGrip*> VipAxisColorMap::grips() const
+QList<VipSliderGrip*> VipAxisColorMap::grips() const
 {
 	return d_data->grips;
 }

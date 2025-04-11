@@ -32,6 +32,7 @@
 #include "VipSymbol.h"
 #include "VipPainter.h"
 #include "VipShapeDevice.h"
+#include "QThreadOpenGLWidget.h"
 
 #include <QApplication>
 #include <QPaintEngine>
@@ -153,6 +154,35 @@ static inline void qwtDrawSvgSymbols(QPainter* painter, const QPointF* points, i
 
 #endif
 
+
+struct CheckDrawSymbol
+{
+	const QTransform d_tr;
+	const bool d_vectoriel;
+	const QPointF d_tolerance;
+	QPointF d_prev;
+
+	CheckDrawSymbol(QPainter* p, const VipSymbol & s)
+	  : d_tr(p->transform())
+	  , d_vectoriel(VipPainter::isVectoriel(p))
+	  , d_tolerance(s.size().width() / 2, s.size().height() / 2)
+	  , d_prev(std::numeric_limits<double>::infinity(), std::numeric_limits<double>::infinity())
+	{
+	}
+
+	VIP_ALWAYS_INLINE bool check(const QPointF& pt) noexcept
+	{
+		if (d_vectoriel)
+			return true;
+		QPointF dev_point = d_tr.map(pt);
+		bool res = !(qAbs(dev_point.x() - d_prev.x()) < d_tolerance.x() && qAbs(dev_point.y() - d_prev.y()) < d_tolerance.y());
+		if (res)
+			d_prev = dev_point;
+		return res;
+	}
+};
+
+
 static inline void qwtDrawEllipseSymbols(QPainter* painter, const QPointF* points, int numPoints, const VipSymbol& symbol)
 {
 	painter->setBrush(symbol.brush());
@@ -160,27 +190,14 @@ static inline void qwtDrawEllipseSymbols(QPainter* painter, const QPointF* point
 
 	const QSizeF size = symbol.size();
 
-	if (VipPainter::roundingAlignment(painter)) {
-		const int sw = size.width();
-		const int sh = size.height();
-		const int sw2 = size.width() / 2;
-		const int sh2 = size.height() / 2;
+	const double sw = size.width();
+	const double sh = size.height();
+	const double sw2 = 0.5 * size.width();
+	const double sh2 = 0.5 * size.height();
+	CheckDrawSymbol check(painter, symbol);
 
-		for (int i = 0; i < numPoints; i++) {
-			const int x = qRound(points[i].x());
-			const int y = qRound(points[i].y());
-
-			const QRectF r(x - sw2, y - sh2, sw, sh);
-			VipPainter::drawEllipse(painter, r);
-		}
-	}
-	else {
-		const double sw = size.width();
-		const double sh = size.height();
-		const double sw2 = 0.5 * size.width();
-		const double sh2 = 0.5 * size.height();
-
-		for (int i = 0; i < numPoints; i++) {
+	for (int i = 0; i < numPoints; i++) {
+		if (check.check(points[i])) {
 			const double x = points[i].x();
 			const double y = points[i].y();
 
@@ -188,6 +205,7 @@ static inline void qwtDrawEllipseSymbols(QPainter* painter, const QPointF* point
 			painter->drawEllipse(r);
 		}
 	}
+	
 }
 
 static inline void qwtDrawRectSymbols(QPainter* painter, const QPointF* points, int numPoints, const VipSymbol& symbol)
@@ -206,13 +224,16 @@ static inline void qwtDrawRectSymbols(QPainter* painter, const QPointF* points, 
 		const int sh = size.height();
 		const int sw2 = size.width() / 2;
 		const int sh2 = size.height() / 2;
+		CheckDrawSymbol check(painter, symbol);
 
 		for (int i = 0; i < numPoints; i++) {
-			const int x = qRound(points[i].x());
-			const int y = qRound(points[i].y());
+			if (check.check(points[i])) {
+				const int x = qRound(points[i].x());
+				const int y = qRound(points[i].y());
 
-			const QRect r(x - sw2, y - sh2, sw, sh);
-			VipPainter::drawRect(painter, r);
+				const QRect r(x - sw2, y - sh2, sw, sh);
+				VipPainter::drawRect(painter, r);
+			}
 		}
 		painter->setRenderHints(hints);
 	}
@@ -221,13 +242,16 @@ static inline void qwtDrawRectSymbols(QPainter* painter, const QPointF* points, 
 		const double sh = size.height();
 		const double sw2 = 0.5 * size.width();
 		const double sh2 = 0.5 * size.height();
+		CheckDrawSymbol check(painter, symbol);
 
 		for (int i = 0; i < numPoints; i++) {
-			const double x = points[i].x();
-			const double y = points[i].y();
+			if (check.check(points[i])) {
+				const double x = points[i].x();
+				const double y = points[i].y();
 
-			const QRectF r(x - sw2, y - sh2, sw, sh);
-			painter->drawRect(r);
+				const QRectF r(x - sw2, y - sh2, sw, sh);
+				painter->drawRect(r);
+			}
 		}
 	}
 }
@@ -240,29 +264,11 @@ static inline void qwtDrawDiamondSymbols(QPainter* painter, const QPointF* point
 	pen.setJoinStyle(Qt::MiterJoin);
 	painter->setPen(pen);
 	painter->setBrush(symbol.brush());
+	CheckDrawSymbol check(painter, symbol);
 
-	if (VipPainter::roundingAlignment(painter)) {
-		for (int i = 0; i < numPoints; i++) {
-			const int x = qRound(points[i].x());
-			const int y = qRound(points[i].y());
-
-			const int x1 = x - size.width() / 2;
-			const int y1 = y - size.height() / 2;
-			const int x2 = x1 + size.width();
-			const int y2 = y1 + size.height();
-
-			QPolygonF polygon;
-			polygon += QPointF(x, y1);
-			polygon += QPointF(x1, y);
-			polygon += QPointF(x, y2);
-			polygon += QPointF(x2, y);
-
-			VipPainter::drawPolygon(painter, polygon);
-		}
-	}
-	else {
-		QPolygonF polygon(4);
-		for (int i = 0; i < numPoints; i++) {
+	QPolygonF polygon(4);
+	for (int i = 0; i < numPoints; i++) {
+		if (check.check(points[i])) {
 			const QPointF& pos = points[i];
 
 			const double x1 = pos.x() - 0.5 * size.width();
@@ -290,87 +296,78 @@ static inline void qwtDrawTriangleSymbols(QPainter* painter, Triangle::Type type
 
 	painter->setBrush(symbol.brush());
 
-	const bool doAlign = VipPainter::roundingAlignment(painter);
-
 	double sw2 = 0.5 * size.width();
 	double sh2 = 0.5 * size.height();
 
-	if (doAlign) {
-		sw2 = std::floor(sw2);
-		sh2 = std::floor(sh2);
-	}
-
 	QVector<QPointF> triangle(3);
 	QPointF* trianglePoints = triangle.data();
+	CheckDrawSymbol check(painter, symbol);
 
 	for (int i = 0; i < numPoints; i++) {
-		const QPointF& pos = points[i];
+		if (check.check(points[i])) {
+			const QPointF& pos = points[i];
 
-		double x = pos.x();
-		double y = pos.y();
+			double x = pos.x();
+			double y = pos.y();
 
-		if (doAlign) {
-			x = qRound(x);
-			y = qRound(y);
+			const double x1 = x - sw2;
+			const double x2 = x1 + size.width();
+			const double y1 = y - sh2;
+			const double y2 = y1 + size.height();
+
+			switch (type) {
+				case Triangle::Left: {
+					trianglePoints[0].rx() = x2;
+					trianglePoints[0].ry() = y1;
+
+					trianglePoints[1].rx() = x1;
+					trianglePoints[1].ry() = y;
+
+					trianglePoints[2].rx() = x2;
+					trianglePoints[2].ry() = y2;
+
+					break;
+				}
+				case Triangle::Right: {
+					trianglePoints[0].rx() = x1;
+					trianglePoints[0].ry() = y1;
+
+					trianglePoints[1].rx() = x2;
+					trianglePoints[1].ry() = y;
+
+					trianglePoints[2].rx() = x1;
+					trianglePoints[2].ry() = y2;
+
+					break;
+				}
+				case Triangle::Up: {
+					trianglePoints[0].rx() = x1;
+					trianglePoints[0].ry() = y2;
+
+					trianglePoints[1].rx() = x;
+					trianglePoints[1].ry() = y1;
+
+					trianglePoints[2].rx() = x2;
+					trianglePoints[2].ry() = y2;
+
+					break;
+				}
+				case Triangle::Down: {
+					trianglePoints[0].rx() = x1;
+					trianglePoints[0].ry() = y1;
+
+					trianglePoints[1].rx() = x;
+					trianglePoints[1].ry() = y2;
+
+					trianglePoints[2].rx() = x2;
+					trianglePoints[2].ry() = y1;
+
+					break;
+				}
+			}
+
+			VipPainter::drawPolygon(painter, triangle);
 		}
-
-		const double x1 = x - sw2;
-		const double x2 = x1 + size.width();
-		const double y1 = y - sh2;
-		const double y2 = y1 + size.height();
-
-		switch (type) {
-			case Triangle::Left: {
-				trianglePoints[0].rx() = x2;
-				trianglePoints[0].ry() = y1;
-
-				trianglePoints[1].rx() = x1;
-				trianglePoints[1].ry() = y;
-
-				trianglePoints[2].rx() = x2;
-				trianglePoints[2].ry() = y2;
-
-				break;
-			}
-			case Triangle::Right: {
-				trianglePoints[0].rx() = x1;
-				trianglePoints[0].ry() = y1;
-
-				trianglePoints[1].rx() = x2;
-				trianglePoints[1].ry() = y;
-
-				trianglePoints[2].rx() = x1;
-				trianglePoints[2].ry() = y2;
-
-				break;
-			}
-			case Triangle::Up: {
-				trianglePoints[0].rx() = x1;
-				trianglePoints[0].ry() = y2;
-
-				trianglePoints[1].rx() = x;
-				trianglePoints[1].ry() = y1;
-
-				trianglePoints[2].rx() = x2;
-				trianglePoints[2].ry() = y2;
-
-				break;
-			}
-			case Triangle::Down: {
-				trianglePoints[0].rx() = x1;
-				trianglePoints[0].ry() = y1;
-
-				trianglePoints[1].rx() = x;
-				trianglePoints[1].ry() = y2;
-
-				trianglePoints[2].rx() = x2;
-				trianglePoints[2].ry() = y1;
-
-				break;
-			}
-		}
-
-		VipPainter::drawPolygon(painter, triangle);
 	}
 }
 
@@ -390,6 +387,8 @@ static inline void qwtDrawLineSymbols(QPainter* painter, int orientations, const
 	if (!painter->transform().isRotating())
 		painter->setRenderHint(QPainter::Antialiasing, false);
 
+	CheckDrawSymbol check(painter, symbol);
+
 	if (VipPainter::roundingAlignment(painter)) {
 		const int sw = qFloor(size.width());
 		const int sh = qFloor(size.height());
@@ -397,17 +396,19 @@ static inline void qwtDrawLineSymbols(QPainter* painter, int orientations, const
 		const int sh2 = size.height() / 2;
 
 		for (int i = 0; i < numPoints; i++) {
-			if (orientations & Qt::Horizontal) {
-				const int x = qRound(points[i].x()) - sw2;
-				const int y = qRound(points[i].y());
+			if (check.check(points[i])) {
+				if (orientations & Qt::Horizontal) {
+					const int x = qRound(points[i].x()) - sw2;
+					const int y = qRound(points[i].y());
 
-				painter->drawLine(x, y, x + sw + off, y);
-			}
-			if (orientations & Qt::Vertical) {
-				const int x = qRound(points[i].x());
-				const int y = qRound(points[i].y()) - sh2;
+					painter->drawLine(x, y, x + sw + off, y);
+				}
+				if (orientations & Qt::Vertical) {
+					const int x = qRound(points[i].x());
+					const int y = qRound(points[i].y()) - sh2;
 
-				painter->drawLine(x, y, x, y + sh + off);
+					painter->drawLine(x, y, x, y + sh + off);
+				}
 			}
 		}
 	}
@@ -418,17 +419,19 @@ static inline void qwtDrawLineSymbols(QPainter* painter, int orientations, const
 		const double sh2 = 0.5 * size.height();
 
 		for (int i = 0; i < numPoints; i++) {
-			if (orientations & Qt::Horizontal) {
-				const double x = points[i].x() - sw2;
-				const double y = points[i].y();
+			if (check.check(points[i])) {
+				if (orientations & Qt::Horizontal) {
+					const double x = points[i].x() - sw2;
+					const double y = points[i].y();
 
-				painter->drawLine(x, y, x + sw, y);
-			}
-			if (orientations & Qt::Vertical) {
-				const double y = points[i].y() - sh2;
-				const double x = points[i].x();
+					painter->drawLine(x, y, x + sw, y);
+				}
+				if (orientations & Qt::Vertical) {
+					const double y = points[i].y() - sh2;
+					const double x = points[i].x();
 
-				painter->drawLine(x, y, x, y + sh);
+					painter->drawLine(x, y, x, y + sh);
+				}
 			}
 		}
 	}
@@ -450,34 +453,15 @@ static inline void qwtDrawXCrossSymbols(QPainter* painter, const QPointF* points
 	if (!painter->testRenderHint(QPainter::Antialiasing) && pen.widthF() <= 2)
 		off = 0;
 
-	if (VipPainter::roundingAlignment(painter)) {
-		const int sw = size.width();
-		const int sh = size.height();
-		const int sw2 = size.width() / 2;
-		const int sh2 = size.height() / 2;
+	CheckDrawSymbol check(painter, symbol);
 
-		for (int i = 0; i < numPoints; i++) {
-			const QPointF& pos = points[i];
+	const double sw = size.width();
+	const double sh = size.height();
+	const double sw2 = 0.5 * size.width();
+	const double sh2 = 0.5 * size.height();
 
-			const int x = qRound(pos.x());
-			const int y = qRound(pos.y());
-
-			const int x1 = x - sw2;
-			const int x2 = x1 + sw; // +off;
-			const int y1 = y - sh2;
-			const int y2 = y1 + sh; // +off;
-
-			painter->drawLine(x1, y1, x2 + off, y2 + off);
-			painter->drawLine(x2 + off, y1 - off, x1, y2);
-		}
-	}
-	else {
-		const double sw = size.width();
-		const double sh = size.height();
-		const double sw2 = 0.5 * size.width();
-		const double sh2 = 0.5 * size.height();
-
-		for (int i = 0; i < numPoints; i++) {
+	for (int i = 0; i < numPoints; i++) {
+		if (check.check(points[i])) {
 			const QPointF& pos = points[i];
 
 			const double x1 = pos.x() - sw2;
@@ -495,43 +479,12 @@ static inline void qwtDrawStar1Symbols(QPainter* painter, const QPointF* points,
 {
 	const QSizeF size = symbol.size();
 	painter->setPen(symbol.pen());
+	CheckDrawSymbol check(painter, symbol);
 
-	// painter->setRenderHint(QPainter::Antialiasing, false);
-	if (VipPainter::roundingAlignment(painter)) {
-		QRect r(0, 0, size.width(), size.height());
+	QRectF r(0, 0, size.width(), size.height());
 
-		QTransform tr = VipPainter::resetTransform(painter);
-
-		for (int i = 0; i < numPoints; i++) {
-			r.moveCenter(points[i].toPoint());
-
-			const double sqrt1_2 = 0.70710678118654752440; // 1/sqrt(2)
-
-			const double d1 = r.width() / 2.0 * (1.0 - sqrt1_2);
-
-			QPointF p1 = vipRound(QPoint(qRound(r.left() + d1), qRound(r.top() + d1)), tr);
-			QPointF p2 = vipRound(QPoint(qRound(r.right() - d1), qRound(r.bottom() - d1)), tr);
-			painter->drawLine(p1, p2);
-			p1 = vipRound(QPoint(qRound(r.left() + d1), qRound(r.bottom() - d1)), tr);
-			p2 = vipRound(QPoint(qRound(r.right() - d1), qRound(r.top() + d1)), tr);
-			painter->drawLine(p1, p2);
-
-			const QPoint c = r.center();
-
-			p1 = vipRound(QPointF(c.x(), r.top()), tr);
-			p2 = vipRound(QPointF(c.x(), r.bottom()), tr);
-			painter->drawLine(p1, p2);
-			p1 = vipRound(QPointF(r.left(), c.y()), tr);
-			p2 = vipRound(QPointF(r.right(), c.y()), tr);
-			painter->drawLine(p1, p2);
-		}
-
-		painter->setTransform(tr);
-	}
-	else {
-		QRectF r(0, 0, size.width(), size.height());
-
-		for (int i = 0; i < numPoints; i++) {
+	for (int i = 0; i < numPoints; i++) {
+		if (check.check(points[i])) {
 			r.moveCenter(points[i]);
 
 			const double sqrt1_2 = 0.70710678118654752440; // 1/sqrt(2)
@@ -545,6 +498,7 @@ static inline void qwtDrawStar1Symbols(QPainter* painter, const QPointF* points,
 			painter->drawLine(r.left(), c.y(), r.right(), c.y());
 		}
 	}
+	
 }
 
 static inline void qwtDrawStar2Symbols(QPainter* painter, const QPointF* points, int numPoints, const VipSymbol& symbol)
@@ -556,6 +510,7 @@ static inline void qwtDrawStar2Symbols(QPainter* painter, const QPointF* points,
 	painter->setPen(pen);
 
 	painter->setBrush(symbol.brush());
+	CheckDrawSymbol check(painter, symbol);
 
 	const double cos30 = 0.866025; // cos(30�)
 
@@ -565,73 +520,65 @@ static inline void qwtDrawStar2Symbols(QPainter* painter, const QPointF* points,
 	QVector<QPointF> star(12);
 	QPointF* starPoints = star.data();
 
-	const bool doAlign = VipPainter::roundingAlignment(painter);
-
 	for (int i = 0; i < numPoints; i++) {
-		double x = points[i].x();
-		double y = points[i].y();
-		if (doAlign) {
-			x = qRound(x);
-			y = qRound(y);
+		if (check.check(points[i])) {
+			double x = points[i].x();
+			double y = points[i].y();
+			
+			double x1 = x - 3 * dx;
+			double y1 = y - 2 * dy;
+			
+			const double x2 = x1 + 1 * dx;
+			const double x3 = x1 + 2 * dx;
+			const double x4 = x1 + 3 * dx;
+			const double x5 = x1 + 4 * dx;
+			const double x6 = x1 + 5 * dx;
+			const double x7 = x1 + 6 * dx;
+
+			const double y2 = y1 + 1 * dy;
+			const double y3 = y1 + 2 * dy;
+			const double y4 = y1 + 3 * dy;
+			const double y5 = y1 + 4 * dy;
+
+			starPoints[0].rx() = x4;
+			starPoints[0].ry() = y1;
+
+			starPoints[1].rx() = x5;
+			starPoints[1].ry() = y2;
+
+			starPoints[2].rx() = x7;
+			starPoints[2].ry() = y2;
+
+			starPoints[3].rx() = x6;
+			starPoints[3].ry() = y3;
+
+			starPoints[4].rx() = x7;
+			starPoints[4].ry() = y4;
+
+			starPoints[5].rx() = x5;
+			starPoints[5].ry() = y4;
+
+			starPoints[6].rx() = x4;
+			starPoints[6].ry() = y5;
+
+			starPoints[7].rx() = x3;
+			starPoints[7].ry() = y4;
+
+			starPoints[8].rx() = x1;
+			starPoints[8].ry() = y4;
+
+			starPoints[9].rx() = x2;
+			starPoints[9].ry() = y3;
+
+			starPoints[10].rx() = x1;
+			starPoints[10].ry() = y2;
+
+			starPoints[11].rx() = x3;
+			starPoints[11].ry() = y2;
+
+			// painter->drawPolygon(star);
+			VipPainter::drawPolygon(painter, star);
 		}
-
-		double x1 = x - 3 * dx;
-		double y1 = y - 2 * dy;
-		if (doAlign) {
-			x1 = qRound(x - 3 * dx);
-			y1 = qRound(y - 2 * dy);
-		}
-
-		const double x2 = x1 + 1 * dx;
-		const double x3 = x1 + 2 * dx;
-		const double x4 = x1 + 3 * dx;
-		const double x5 = x1 + 4 * dx;
-		const double x6 = x1 + 5 * dx;
-		const double x7 = x1 + 6 * dx;
-
-		const double y2 = y1 + 1 * dy;
-		const double y3 = y1 + 2 * dy;
-		const double y4 = y1 + 3 * dy;
-		const double y5 = y1 + 4 * dy;
-
-		starPoints[0].rx() = x4;
-		starPoints[0].ry() = y1;
-
-		starPoints[1].rx() = x5;
-		starPoints[1].ry() = y2;
-
-		starPoints[2].rx() = x7;
-		starPoints[2].ry() = y2;
-
-		starPoints[3].rx() = x6;
-		starPoints[3].ry() = y3;
-
-		starPoints[4].rx() = x7;
-		starPoints[4].ry() = y4;
-
-		starPoints[5].rx() = x5;
-		starPoints[5].ry() = y4;
-
-		starPoints[6].rx() = x4;
-		starPoints[6].ry() = y5;
-
-		starPoints[7].rx() = x3;
-		starPoints[7].ry() = y4;
-
-		starPoints[8].rx() = x1;
-		starPoints[8].ry() = y4;
-
-		starPoints[9].rx() = x2;
-		starPoints[9].ry() = y3;
-
-		starPoints[10].rx() = x1;
-		starPoints[10].ry() = y2;
-
-		starPoints[11].rx() = x3;
-		starPoints[11].ry() = y2;
-
-		// painter->drawPolygon(star);
-		VipPainter::drawPolygon(painter, star);
 	}
 }
 
@@ -647,51 +594,43 @@ static inline void qwtDrawHexagonSymbols(QPainter* painter, const QPointF* point
 
 	QVector<QPointF> hexaPolygon(6);
 	QPointF* hexaPoints = hexaPolygon.data();
-
-	const bool doAlign = VipPainter::roundingAlignment(painter);
+	CheckDrawSymbol check(painter, symbol);
 
 	for (int i = 0; i < numPoints; i++) {
-		double x = points[i].x();
-		double y = points[i].y();
-		if (doAlign) {
-			x = qRound(x);
-			y = qRound(y);
+		if (check.check(points[i])) {
+			double x = points[i].x();
+			double y = points[i].y();
+			
+			double x1 = x - dx;
+			double y1 = y - 2 * dy;
+			
+			const double x2 = x1 + 1 * dx;
+			const double x3 = x1 + 2 * dx;
+
+			const double y2 = y1 + 1 * dy;
+			const double y3 = y1 + 3 * dy;
+			const double y4 = y1 + 4 * dy;
+
+			hexaPoints[0].rx() = x2;
+			hexaPoints[0].ry() = y1;
+
+			hexaPoints[1].rx() = x3;
+			hexaPoints[1].ry() = y2;
+
+			hexaPoints[2].rx() = x3;
+			hexaPoints[2].ry() = y3;
+
+			hexaPoints[3].rx() = x2;
+			hexaPoints[3].ry() = y4;
+
+			hexaPoints[4].rx() = x1;
+			hexaPoints[4].ry() = y3;
+
+			hexaPoints[5].rx() = x1;
+			hexaPoints[5].ry() = y2;
+
+			painter->drawPolygon(hexaPolygon);
 		}
-
-		double x1 = x - dx;
-		double y1 = y - 2 * dy;
-		if (doAlign) {
-			x1 = std::ceil(x1);
-			y1 = std::ceil(y1);
-		}
-
-		const double x2 = x1 + 1 * dx;
-		const double x3 = x1 + 2 * dx;
-
-		const double y2 = y1 + 1 * dy;
-		const double y3 = y1 + 3 * dy;
-		const double y4 = y1 + 4 * dy;
-
-		hexaPoints[0].rx() = x2;
-		hexaPoints[0].ry() = y1;
-
-		hexaPoints[1].rx() = x3;
-		hexaPoints[1].ry() = y2;
-
-		hexaPoints[2].rx() = x3;
-		hexaPoints[2].ry() = y3;
-
-		hexaPoints[3].rx() = x2;
-		hexaPoints[3].ry() = y4;
-
-		hexaPoints[4].rx() = x1;
-		hexaPoints[4].ry() = y3;
-
-		hexaPoints[5].rx() = x1;
-		hexaPoints[5].ry() = y2;
-
-		// painter->drawPolygon(hexaPolygon);
-		VipPainter::drawPolygon(painter, hexaPolygon);
 	}
 }
 
@@ -1103,33 +1042,6 @@ void VipSymbol::drawSymbols(QPainter* painter, const QPointF* points, int numPoi
 		}
 		else if (d_data->cache.policy == VipSymbol::AutoCache) {
 			useCache = !VipPainter::isVectoriel(painter);
-			// if ( painter->paintEngine()->type() == QPaintEngine::Raster )
-			//       {
-			//           useCache = true;
-			//       }
-			//       else
-			//       {
-			//           switch( d_data->style )
-			//           {
-			//               case VipSymbol::XCross:
-			//               case VipSymbol::HLine:
-			//               case VipSymbol::VLine:
-			//               case VipSymbol::Cross:
-			//                   break;
-			//
-			//               case VipSymbol::Pixmap:
-			//               {
-			//                   if ( !d_data->size.isEmpty() &&
-			//                       d_data->size != d_data->pixmap.pixmap.size() )
-			//                   {
-			//                       useCache = true;
-			//                   }
-			//                   break;
-			//               }
-			//               default:
-			//	useCache =  true;
-			//           }
-			//       }
 		}
 	}
 
@@ -1156,31 +1068,22 @@ void VipSymbol::drawSymbols(QPainter* painter, const QPointF* points, int numPoi
 		const double dx = br.left();
 		const double dy = br.top();
 		const double pen_w2 = pen_w / 2;
+		CheckDrawSymbol check(painter, *this);
 
 		QPainter::RenderHints hints = painter->renderHints();
 		painter->setRenderHint(QPainter::SmoothPixmapTransform);
 		for (int i = 0; i < numPoints; i++) {
-			const int left = qRound(points[i].x() + dx - pen_w2);
-			const int top = qRound(points[i].y() + dy - pen_w2);
-			painter->drawPixmap(left, top, d_data->cache.pixmap);
+			if (check.check(points[i])) {
+
+				const int left = qRound(points[i].x() + dx - pen_w2);
+				const int top = qRound(points[i].y() + dy - pen_w2);
+				painter->drawPixmap(left, top, d_data->cache.pixmap);
+			}
 		}
 		painter->setRenderHints(hints);
 	}
 	else {
-		if (is_opengl && d_data->style != VipSymbol::Pixmap && d_data->style != VipSymbol::SvgDocument && d_data->style != VipSymbol::UserStyle) {
-
-			// faster to draw one single shape with opengl
-			VipShapeDevice dev;
-			QPainter p(&dev);
-			renderSymbols(&p, points, numPoints);
-			QPainterPath path = dev.shape();
-			path.setFillRule(Qt::WindingFill);
-			painter->setPen(pen());
-			painter->setBrush(brush());
-			painter->drawPath(path);
-		}
-		else
-			renderSymbols(painter, points, numPoints);
+		renderSymbols(painter, points, numPoints);
 	}
 }
 

@@ -39,7 +39,6 @@
 /// @{
 
 typedef QMap<double, QPolygonF> ContourLines;
-class VipColorMapGrip;
 
 /// @brief A VipPlotRasterData that additionally manages iso contour lines
 ///
@@ -94,7 +93,7 @@ public:
 	/// @param add_grip is true, add slider grip(s) to the color map in order to modify the coutour levels values
 	/// @param grip_pixmap if add_grip is true, set the grip(s) pixmap
 	///
-	void setContourLevels(const QList<vip_double>& levels, bool add_grip = false, const QPixmap& grip_pixmap = QPixmap());
+	void setContourLevels(const QList<vip_double>& levels, bool add_grip = false, const QImage& grip_pixmap = QImage());
 
 	/// @brief Returns the current contour levels
 	QList<vip_double> contourLevels() const;
@@ -102,7 +101,7 @@ public:
 	ContourLines contourLines() const;
 
 	/// @brief Returns the contour grips (if any)
-	QList<VipColorMapGrip*> contourGrips() const;
+	QList<VipSliderGrip*> contourGrips() const;
 
 	/// @brief Set/get flag for the contour line extraction algorithm
 	void setIgnoreAllVerticesOnLevel(bool ignore);

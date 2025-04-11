@@ -73,6 +73,8 @@
 
 namespace Vip
 {
+	Q_NAMESPACE_EXPORT(VIP_PLOTTING_EXPORT)
+
 	/// @brief Constant representing an invalid value
 	const double InvalidValue = std::numeric_limits<double>::quiet_NaN();
 	/// @brief Constant representing an invalid position
@@ -86,6 +88,7 @@ namespace Vip
 		Absolute,
 		Relative
 	};
+	Q_ENUM_NS(ValueType)
 
 	/// @brief Region position, mainly used to find the position of text around a shape
 	enum RegionPosition
@@ -99,6 +102,7 @@ namespace Vip
 		Automatic = XAutomatic | YAutomatic
 	};
 	typedef QFlags<RegionPosition> RegionPositions;
+	Q_FLAG_NS(RegionPositions)
 
 	enum Side
 	{
@@ -110,6 +114,7 @@ namespace Vip
 		AllSides = (Top | Right | Bottom | Left)
 	};
 	typedef QFlags<Side> Sides;
+	Q_FLAG_NS(Sides)
 
 	enum Corner
 	{
@@ -121,6 +126,7 @@ namespace Vip
 		AllCorners = (TopLeft | TopRight | BottomRight | BottomLeft)
 	};
 	typedef QFlags<Corner> Corners;
+	Q_FLAG_NS(Corners)
 }
 
 /// @brief Returns true if given value is valid, i.e. not NaN
@@ -334,6 +340,7 @@ struct VipMargins
 
 	double totalWidth() const noexcept { return left + right; }
 	double totalHeight() const noexcept { return top + bottom; }
+	QMarginsF toMarginsF() const noexcept { return QMarginsF(left, top, right, bottom); }
 
 	bool operator!=(const VipMargins& other) const noexcept
 	{

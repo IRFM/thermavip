@@ -126,7 +126,7 @@ void setup_plot_area(VipPlotArea2D* area)
 	VipTextStyle st;
 	st.setAlignment(Qt::AlignRight | Qt::AlignBottom);
 	area->bottomAxis()->scaleDraw()->setAdditionalTextStyle(st);
-	VipFixedScaleEngine* engine = new VipFixedScaleEngine(vt);
+	VipFixedScaleEngine* engine = new VipFixedScaleEngine();
 	engine->setMaxIntervalWidth(10000000000.);//10s
 	area->bottomAxis()->scaleDraw()->setValueToText(vt);
 	area->bottomAxis()->setScaleEngine(engine);

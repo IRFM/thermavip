@@ -34,11 +34,11 @@
 
 #include "VipAxisBase.h"
 #include "VipColorMap.h"
+#include "VipSliderGrip.h"
 
 /// \addtogroup Plotting
 /// @{
 
-class VipColorMapGrip;
 
 /// A vertical or horizontal axis displaying an additional color map and 2 slider grips (that can be hidden).
 /// It is mostly used to display a color map for spectrograms (see VipPlotSpectrogram)
@@ -97,18 +97,18 @@ public:
 	VipInterval gripInterval() const;
 
 	/// @brief Returns the first slider grip
-	VipColorMapGrip* grip1();
-	const VipColorMapGrip* grip1() const;
+	VipSliderGrip* grip1();
+	const VipSliderGrip* grip1() const;
 	/// @brief Returns the second slider grip
-	VipColorMapGrip* grip2();
-	const VipColorMapGrip* grip2() const;
+	VipSliderGrip* grip2();
+	const VipSliderGrip* grip2() const;
 
 	/// @brief Add a new slider grip
-	VipColorMapGrip* addGrip(VipColorMapGrip*);
-	VipColorMapGrip* addGrip(const QImage& img = QImage());
+	VipSliderGrip* addGrip(VipSliderGrip*);
+	VipSliderGrip* addGrip(const QImage& img = QImage());
 	/// @brief Remove grip but do NOT delete it
-	void removeGrip(VipColorMapGrip*);
-	QList<VipColorMapGrip*> grips() const;
+	void removeGrip(VipSliderGrip*);
+	QList<VipSliderGrip*> grips() const;
 
 	/// @brief Set a maximum value above which values are discarded when computing the scale div in case of autoscaling.
 	/// Set a NaN value to disable this feature.

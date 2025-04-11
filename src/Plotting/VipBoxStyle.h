@@ -145,12 +145,12 @@ public:
 	void drawBackground(QPainter*) const;
 	void drawBackground(QPainter* painter, const QBrush&) const;
 	/// @brief Draw the borders
-	void drawBorder(QPainter*) const;
-	void drawBorder(QPainter*, const QPen&) const;
+	void drawBorder(QPainter*, bool optimizeForLargePen = false) const;
+	void drawBorder(QPainter*, const QPen&, bool optimizeForLargePen = false) const;
 	/// @brief Draw background and borders
-	void draw(QPainter*) const;
-	void draw(QPainter* painter, const QBrush& brush) const;
-	void draw(QPainter* painter, const QBrush& brush, const QPen& pen) const;
+	void draw(QPainter*, bool optimizeForLargePen = false) const;
+	void draw(QPainter* painter, const QBrush& brush, bool optimizeForLargePen = false) const;
+	void draw(QPainter* painter, const QBrush& brush, const QPen& pen, bool optimizeForLargePen = false) const;
 
 	/// @brief Compare 2 VipBoxStyle for equality. Only test drawing style (pen, brush, adaptative gradients, draw lines, draw corners, radius...),
 	/// but not the shape itself.

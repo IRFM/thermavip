@@ -465,7 +465,7 @@ private:
 
 		QString text;
 		VipTextStyle parameters;
-		LayoutAttributes layoutAttributes;
+		LayoutAttributes layoutAttributes{ MinimumLayout };
 		const VipTextEngine* textEngine;
 	};
 

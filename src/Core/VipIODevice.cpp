@@ -779,6 +779,7 @@ QList<VipProcessingObject::Info> VipIODevice::possibleReadDevices(const VipPath&
 		if (isUnregistered(it.value().metatype))
 			continue;
 		VipIODevice* device = qobject_cast<VipIODevice*>(it.value().create());
+
 		if (device) {
 			if ((device->supportedModes() & VipIODevice::ReadOnly)) {
 				// check the output
@@ -4603,7 +4604,7 @@ bool VipShapeReader::open(VipIODevice::OpenModes mode)
 					QMutexLocker lock(&_shape_buffer_mutex);
 					_shape_buffer.fname = p;
 					_shape_buffer.hash = hash;
-					_shape_buffer.sceneModel = QVariant::fromValue(model);
+					_shape_buffer.sceneModel = QVariant::fromValue(lst);
 
 					return true;
 				}
@@ -4668,7 +4669,7 @@ void VipShapeWriter::apply()
 					setError("unable to write scene model", VipProcessingObject::IOError);
 				}
 			}
-		}
+		} 
 		else if (QFileInfo(p).suffix() == "json") {
 
 			QFile out(p);

@@ -143,7 +143,7 @@ if(WITH_FFMPEG)
 			set(FFMPEG_LIB_DIR ${FFMPEG_PATH}/ffmpeg-7.1-msvc/lib)
 			set(FFMPEG_INCLUDE_DIR "${FFMPEG_PATH}/ffmpeg-7.1-msvc/include;${FFMPEG_PATH}/ffmpeg-7.1-msvc")
 			set(FFMPEG_LIBS avdevice avformat avcodec swscale avutil swresample avfilter )
-			set(ADDITIONAL_FFMPEG_LIBS libx264 libx265 kvazaar postproc vcruntime140_1 Vfw32 shlwapi strmbase)
+			set(ADDITIONAL_FFMPEG_LIBS libx264 libx265 kvazaar postproc Vfw32 shlwapi strmbase)
 			set(FFMPEG_PREFIX )
 			set(FFMPEG_SUFFIX .dll)
 		else()
@@ -172,6 +172,11 @@ if(WITH_FFMPEG)
 		target_include_directories(VipCore PRIVATE ${FFMPEG_INCLUDE_DIR})
 		target_link_libraries(VipCore PRIVATE ${FFMPEG_LIBS})
 		set(COMPLETE_FFMPEG_LIBS ${FFMPEG_LIBS} ${ADDITIONAL_FFMPEG_LIBS})
+
+		# Expose ffmpeg variables to all libraries
+		set(VIP_FFMPEG_INCLUDE_DIR "${FFMPEG_INCLUDE_DIR}" CACHE INTERNAL "")
+		set(VIP_FFMPEG_LIBS "${FFMPEG_LIBS}" CACHE INTERNAL "")
+		set(VIP_FFMPEG_LIB_DIR "${FFMPEG_LIB_DIR}" CACHE INTERNAL "")
 
 
 		# Add any variables you need during post install.

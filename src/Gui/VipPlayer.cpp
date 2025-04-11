@@ -2024,6 +2024,7 @@ public:
 
 	QMenu* superimposeMenu;
 	QSlider* superimposeSlider;
+	QAction* temporalSuperimpose;
 	QToolButton* superimposeButton;
 	QAction* superimposeAction;
 	QAction* sharedZoomAction;
@@ -2285,9 +2286,12 @@ VipVideoPlayer::VipVideoPlayer(VipImageWidget2D* img, QWidget* parent)
 	d_data->superimposeSlider->setValue(50);
 	slider->setDefaultWidget(d_data->superimposeSlider);
 	d_data->superimposeMenu->addAction(slider);
+	d_data->temporalSuperimpose = d_data->superimposeMenu->addAction("Dynamic superimposition");
+	d_data->temporalSuperimpose->setCheckable(true);
 	connect(d_data->superimposeSlider, SIGNAL(valueChanged(int)), this, SLOT(setSuperimposeOpacity(int)));
 	connect(d_data->superimposeMenu, SIGNAL(triggered(QAction*)), this, SLOT(superimposeTriggered(QAction*)));
 	connect(d_data->superimposeMenu, SIGNAL(aboutToShow()), this, SLOT(computeSuperimposeMenu()));
+	connect(d_data->temporalSuperimpose, SIGNAL(triggered(bool)), this, SLOT(setDynamicSuperimposition(bool)));
 
 	d_data->superimposeButton = new QToolButton();
 	d_data->superimposeButton->setAutoRaise(true);
@@ -2479,7 +2483,7 @@ void VipVideoPlayer::setProcessingPool(VipProcessingPool* pool)
 void VipVideoPlayer::computeSuperimposeMenu()
 {
 	QList<QAction*> acts = d_data->superimposeMenu->actions();
-	for (int i = 1; i < acts.size(); ++i)
+	for (int i = 2; i < acts.size(); ++i)
 		delete acts[i];
 
 	// get all other VipVideoPlayer in this tab
@@ -2513,6 +2517,33 @@ void VipVideoPlayer::setSuperimposeOpacity(int value)
 	this->spectrogram()->setSuperimposeOpacity(opacity);
 }
 
+
+bool VipVideoPlayer::dynamicSuperimposition() const
+{
+	return d_data->temporalSuperimpose->isChecked();
+}
+void VipVideoPlayer::setDynamicSuperimposition(bool enable) 
+{
+	d_data->temporalSuperimpose->blockSignals(true);
+	d_data->temporalSuperimpose->setChecked(enable);
+	d_data->temporalSuperimpose->blockSignals(false);
+
+	if (d_data->superimposePlayer) 
+		disconnect(d_data->superimposePlayer->spectrogram(), SIGNAL(imageDrawn()), this, SLOT(superimposePlayerUpdated()));
+	
+	if (enable && d_data->superimposePlayer) {
+		connect(d_data->superimposePlayer->spectrogram(), SIGNAL(imageDrawn()), this, SLOT(superimposePlayerUpdated()));
+		superimposePlayerUpdated();
+	}
+}
+
+void VipVideoPlayer::superimposePlayerUpdated() 
+{
+	if (d_data->superimposePlayer) {
+		this->spectrogram()->setSuperimposeImage(d_data->superimposePlayer->spectrogram()->image());
+	}
+}
+
 void VipVideoPlayer::superimposeTriggered(QAction* act)
 {
 	if (!act->isChecked()) {
@@ -2520,8 +2551,15 @@ void VipVideoPlayer::superimposeTriggered(QAction* act)
 		d_data->superimposePlayer = nullptr;
 	}
 	else if (VipVideoPlayer* player = qobject_cast<VipVideoPlayer*>(act->property("player").value<QObjectPointer>())) {
+
+		if (d_data->superimposePlayer)
+			disconnect(d_data->superimposePlayer->spectrogram(), SIGNAL(imageDrawn()), this, SLOT(superimposePlayerUpdated()));
+
 		this->spectrogram()->setSuperimposeImage(player->spectrogram()->image());
 		d_data->superimposePlayer = player;
+
+		if(dynamicSuperimposition())
+			connect(d_data->superimposePlayer->spectrogram(), SIGNAL(imageDrawn()), this, SLOT(superimposePlayerUpdated()));
 	}
 }
 
@@ -2932,7 +2970,7 @@ void VipVideoPlayer::setSpectrogram(VipPlotSpectrogram* spectrogram)
 				   this,
 				   SLOT(colorMapClicked(VipAbstractScale*, VipPlotItem::MouseButton, double)));
 
-		QList<VipColorMapGrip*> grips = this->spectrogram()->contourGrips();
+		QList<VipSliderGrip*> grips = this->spectrogram()->contourGrips();
 		for (int i = 0; i < grips.size(); ++i)
 			disconnect(grips[i], SIGNAL(mouseButtonPress(VipSliderGrip*, VipPlotItem::MouseButton)), this, SLOT(contourClicked(VipSliderGrip*, VipPlotItem::MouseButton)));
 	}
@@ -2973,7 +3011,7 @@ void VipVideoPlayer::setSpectrogram(VipPlotSpectrogram* spectrogram)
 			this,
 			SLOT(colorMapClicked(VipAbstractScale*, VipPlotItem::MouseButton, double)));
 
-		QList<VipColorMapGrip*> grips = this->spectrogram()->contourGrips();
+		QList<VipSliderGrip*> grips = this->spectrogram()->contourGrips();
 		for (int i = 0; i < grips.size(); ++i) {
 			disconnect(grips[i], SIGNAL(mouseButtonPress(VipSliderGrip*, VipPlotItem::MouseButton)), this, SLOT(contourClicked(VipSliderGrip*, VipPlotItem::MouseButton)));
 			connect(grips[i], SIGNAL(mouseButtonPress(VipSliderGrip*, VipPlotItem::MouseButton)), this, SLOT(contourClicked(VipSliderGrip*, VipPlotItem::MouseButton)));
@@ -3383,7 +3421,7 @@ void VipVideoPlayer::setColorMapOptionsVisible(bool visible)
 void VipVideoPlayer::updateContourLevels()
 {
 	// update grips
-	QList<VipColorMapGrip*> grips = this->spectrogram()->contourGrips();
+	QList<VipSliderGrip*> grips = this->spectrogram()->contourGrips();
 	for (int i = 0; i < grips.size(); ++i) {
 		grips[i]->setHandleDistance(3);
 		grips[i]->setToolTipText("#value");
@@ -3397,7 +3435,7 @@ void VipVideoPlayer::addContourLevel(double value)
 {
 	QList<vip_double> lines = this->spectrogram()->contourLevels();
 	lines.append(value);
-	this->spectrogram()->setContourLevels(lines, true, vipPixmap("slider_here.png"));
+	this->spectrogram()->setContourLevels(lines, true, vipImage("slider_here.png"));
 
 	// update grips
 	updateContourLevels();
@@ -3407,7 +3445,7 @@ void VipVideoPlayer::removeContourLevel(double value)
 {
 	QList<vip_double> lines = this->spectrogram()->contourLevels();
 	lines.removeOne(value);
-	this->spectrogram()->setContourLevels(lines, true, vipPixmap("slider_here.png"));
+	this->spectrogram()->setContourLevels(lines, true, vipImage("slider_here.png"));
 
 	// update grips
 	updateContourLevels();
@@ -3415,7 +3453,7 @@ void VipVideoPlayer::removeContourLevel(double value)
 
 void VipVideoPlayer::setContourLevels(const DoubleList& levels)
 {
-	this->spectrogram()->setContourLevels(levels, true, vipPixmap("slider_here.png"));
+	this->spectrogram()->setContourLevels(levels, true, vipImage("slider_here.png"));
 
 	// update grips
 	updateContourLevels();
@@ -5699,13 +5737,13 @@ void VipPlotPlayer::timeUnitChanged()
 		VipTextStyle st = pl->area()->bottomAxis()->scaleDraw()->textStyle();
 		st.setAlignment(Qt::AlignRight | Qt::AlignVCenter);
 		pl->area()->bottomAxis()->scaleDraw()->setTextStyle(st);
-		pl->area()->bottomAxis()->scaleDraw()->setlabelRotation(45, VipScaleDiv::MajorTick);
+		pl->area()->bottomAxis()->scaleDraw()->setLabelRotation(45, VipScaleDiv::MajorTick);
 	}
 	else {
 		VipTextStyle st = pl->area()->bottomAxis()->scaleDraw()->textStyle();
 		st.setAlignment(Qt::AlignHCenter | Qt::AlignVCenter);
 		pl->area()->bottomAxis()->scaleDraw()->setTextStyle(st);
-		pl->area()->bottomAxis()->scaleDraw()->setlabelRotation(0, VipScaleDiv::MajorTick);
+		pl->area()->bottomAxis()->scaleDraw()->setLabelRotation(0, VipScaleDiv::MajorTick);
 	}
 
 	// import current text styles

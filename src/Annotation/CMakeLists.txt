@@ -57,6 +57,7 @@ include(${THERMAVIP_COMPILER_FLAGS_FILE})
 # endif()
 IF(WITH_LIBRIR)
 	include(FetchContent)
+	set (USE_ZFILE ON CACHE INTERNAL "Enable zstd video compression support")
 	find_package(librir QUIET GLOBAL)
 
 	if(NOT librir_FOUND)

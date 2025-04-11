@@ -84,6 +84,9 @@ public:
 	/// @brief Returns the current grip value
 	double value() const;
 
+	void setMaxImageSize(const QSizeF&);
+	QSizeF maxImageSize() const;
+
 	/// Make sure that the grip is always visible and inside the current scale div (default to true)
 	void setGripAlwaysInsideScale(bool);
 	bool gripAlwaysInsideScale() const;
@@ -166,6 +169,11 @@ Q_SIGNALS:
 	void mouseButtonMove(VipSliderGrip*, VipPlotItem::MouseButton);
 	void mouseButtonRelease(VipSliderGrip*, VipPlotItem::MouseButton);
 
+private Q_SLOTS:
+	void updatePositionInternal(bool InPaint);
+	void setValueInternal(double value, bool InPaint);
+	void moveTo(const QPointF&);
+
 protected:
 	virtual void drawHandle(QPainter* painter) const;
 	virtual double closestValue(double v);
@@ -193,21 +201,6 @@ private:
 
 Q_DECLARE_METATYPE(VipSliderGrip*)
 
-/// @brief Slider grip working on a VipAxisColorMap
-class VIP_PLOTTING_EXPORT VipColorMapGrip : public VipSliderGrip
-{
-	Q_OBJECT
-
-public:
-	VipColorMapGrip(VipAxisColorMap* parent);
-	virtual ~VipColorMapGrip();
-
-	VipAxisColorMap* colorMapAxis();
-	const VipAxisColorMap* colorMapAxis() const;
-
-protected:
-	virtual double handleDistance() const;
-};
 
 /// @}
 // end Plotting

@@ -92,7 +92,7 @@ public:
 	void setDrawComponents(DrawComponents);
 	void setDrawComponent(DrawComponent, bool on = true);
 	bool testDrawComponent(DrawComponent) const;
-	DrawComponents dawComponents() const;
+	DrawComponents drawComponents() const;
 
 	/// Set the annotation object.
 	/// A VipAnnotation object is used to draw any kind of annotations arround the item VipShape.
