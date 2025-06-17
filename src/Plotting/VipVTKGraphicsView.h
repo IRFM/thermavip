@@ -64,6 +64,7 @@
 class VipPlotVTKObject;
 class VipVTKImage;
 class VTK3DPlayer;
+class VipVTKGraphicsView;
 class OffscreenExtractShapeStatistics;
 
 /// @brief Semi transparent information widget displayed on top of a VipVTKGraphicsView

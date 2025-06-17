@@ -9,15 +9,17 @@ project(thermavip
     LANGUAGES CXX C
 )
 
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # add Qt
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 find_package(QT NAMES Qt5 Qt6 REQUIRED )
-find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets OpenGL Core Gui Xml Network Sql PrintSupport Svg)
-message(STATUS "Qt found!")
+
+# Remove this line as it causes issues on Linux (?)
+#find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets OpenGL Core Gui Xml Network Sql PrintSupport Svg)
+message(STATUS "Qt found! Version ${QT_VERSION_MAJOR}.${QT_VERSION_MINOR}")
 
 include(GNUInstallDirs) 
 

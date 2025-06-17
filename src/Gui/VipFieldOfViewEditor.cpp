@@ -6,7 +6,7 @@
 #include "VipDisplayArea.h"
 
 #include <QLabel>
-#include <QGroupBox >
+#include <QGroupBox>
 #include <QGridLayout>
 #include <QBoxLayout>
 #include <qlistwidget.h>

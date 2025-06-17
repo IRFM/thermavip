@@ -2,6 +2,7 @@
 
 find_package(QT NAMES Qt5 Qt6 REQUIRED )
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets OpenGL Core Gui Xml Network Sql PrintSupport Svg Concurrent)
+message(STATUS "Qt found for ${TARGET_PROJECT}, version ${QT_VERSION_MAJOR}.${QT_VERSION_MINOR}")
 
 set(QT_PREFIX Qt${QT_VERSION_MAJOR})
 set(CMAKE_AUTOMOC ON)
@@ -29,6 +30,9 @@ set(QT_LIBS Qt::Core
 	Qt::Svg
 	)
 endif()
+
+
+
 target_link_libraries(${TARGET_PROJECT} PRIVATE ${QT_LIBS})
 
 
@@ -84,9 +88,20 @@ if(NOT ${QT_VERSION_MAJOR} LESS 6)
 endif()
 
 
+# Add HDF5 libraries if required
+if(WITH_HDF5)
+	find_package (HDF5 COMPONENTS C REQUIRED)
+	target_include_directories(${TARGET_PROJECT} PRIVATE ${HDF5_INCLUDE_DIRS} )
+	target_link_libraries(${TARGET_PROJECT} PRIVATE ${HDF5_LIBRARIES})
+	target_compile_definitions(${TARGET_PROJECT} PUBLIC -DVIP_WITH_HDF5)
+endif()
+
 # Add VTK libraries if required
 if(WITH_VTK)
 	find_package(VTK REQUIRED)
+	#TEST: remove Qt based modules from VTK (possible conflict between different Qt versions)
+	list(FILTER VTK_LIBRARIES EXCLUDE REGEX "^.*Qt.*$")
+
 	target_include_directories(${TARGET_PROJECT} PRIVATE ${VTK_INCLUDE_DIRS})
 	target_link_libraries(${TARGET_PROJECT} PRIVATE ${VTK_LIBRARIES})
 	target_compile_definitions(${TARGET_PROJECT} PUBLIC -DVIP_WITH_VTK)
@@ -97,13 +112,6 @@ if(WITH_VTK)
 	#endif()
 endif()
 
-# Add HDF5 libraries if required
-if(WITH_HDF5)
-	find_package (HDF5 COMPONENTS C REQUIRED)
-	target_include_directories(${TARGET_PROJECT} PRIVATE ${HDF5_INCLUDE_DIRS} )
-	target_link_libraries(${TARGET_PROJECT} PRIVATE ${HDF5_LIBRARIES})
-	target_compile_definitions(${TARGET_PROJECT} PUBLIC -DVIP_WITH_HDF5)
-endif()
 
 #external code added if exists
 if(EXISTS my_compiler_flags.cmake ) 
@@ -125,7 +133,7 @@ else()
 		# for gcc
 		target_compile_options(${TARGET_PROJECT} PRIVATE -march=native -fopenmp -fPIC -mno-bmi2 -mno-fma -mno-avx -Wno-maybe-uninitialized)
 		if(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 6.0)
-			target_compile_options(${TARGET_PROJECT} PRIVATE -std=gnu++14)
+			target_compile_options(${TARGET_PROJECT} PRIVATE -std=gnu++17)
 		else()
 			target_compile_options(${TARGET_PROJECT} PRIVATE -std=c++11)
 			target_compile_definitions(${TARGET_PROJECT} PRIVATE -DQ_COMPILER_ATOMICS -DQ_COMPILER_CONSTEXPR)
@@ -136,7 +144,7 @@ else()
 			# gcc release
 			target_compile_options(${TARGET_PROJECT} PRIVATE -O3 -ftree-vectorize -march=native -fopenmp -fPIC -mno-bmi2 -mno-fma -mno-avx -Wno-maybe-uninitialized)
 			if(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 6.0)
-				target_compile_options(${TARGET_PROJECT} PRIVATE -std=gnu++14)
+				target_compile_options(${TARGET_PROJECT} PRIVATE -std=gnu++17)
 			else()
 				target_compile_options(${TARGET_PROJECT} PRIVATE -std=c++11)
 			endif()

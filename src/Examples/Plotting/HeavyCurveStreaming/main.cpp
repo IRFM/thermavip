@@ -143,7 +143,7 @@ int main(int argc, char** argv)
 	
 
 	VipPlotWidget2D w; 
-	w.setRenderingMode(VipPlotWidget2D::OpenGLThread);
+	w.setRenderingMode(VipPlotWidget2D::OpenGL);
 	
 
 	VipPlotArea2D* area = w.area();

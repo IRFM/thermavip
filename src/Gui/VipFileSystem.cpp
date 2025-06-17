@@ -1485,6 +1485,10 @@ void VipMapFileSystemTree::addToShortcuts(const VipPathList& lst)
 	for (int i = 0; i < lst.size(); ++i) {
 		vip_debug("lst: '%s'\n", lst[i].canonicalPath().toLatin1().data());
 
+		// New in 5.1.3: check that the path exists
+		if(d_data->map && !d_data->map->exists(lst[i]) )
+			continue;
+
 		if (already_there.indexOf(lst[i]) >= 0)
 			continue;
 
@@ -2026,6 +2030,30 @@ static void applyPendingFileSystemSession(VipFileSystemWidget* w, const PendingF
 
 	// make unique
 	VipPathList shortcuts = vipToSet(session.shortcuts).values();
+	//New in 5.1.3: always add the Home folder
+	if(qobject_cast<VipFileSystem*>(w->tree()->mapFileSystem().get() )) {
+		// Check if home is already there
+		QString home = QFileInfo(QStandardPaths::standardLocations(QStandardPaths::HomeLocation).first()).canonicalFilePath();
+		for(int i=0; i < shortcuts.size(); ++i) {
+			QString path = shortcuts[i].canonicalPath();
+			if(path == home) {
+				home.clear();
+				break;
+			}
+		}
+		if(!home.isEmpty())
+			shortcuts.append(VipPath(home,true));
+	}
+
+	// Remove non existing paths
+	for(int i=0; i < shortcuts.size(); ++i) {
+		QString path = shortcuts[i].canonicalPath();
+		if(!QFileInfo(path).exists()) {
+			// Remove non existing paths
+			shortcuts.removeAt(i);
+			--i;
+		}
+	}
 
 	// clear previous shorcuts
 	QTreeWidgetItem* top = w->tree()->property("_vip_shortcuts").value<VipMapFileSystemTreeDirItem*>();
@@ -2060,8 +2088,8 @@ static void applyPendingFileSystemSession(VipFileSystemWidget* w, const PendingF
 
 	VipPathList shortcutsSelection = session.shortcutsSelection;
 	VipPathList normalSelection = session.normalSelection;
-	// w->tree()->setSelectedPaths(shortcutsSelection, VipMapFileSystemTree::CustomItemsOnly);
-	// w->tree()->setSelectedPaths(normalSelection, VipMapFileSystemTree::NoCustomItems);
+	w->tree()->setSelectedPaths(shortcutsSelection, VipMapFileSystemTree::CustomItemsOnly);
+	w->tree()->setSelectedPaths(normalSelection, VipMapFileSystemTree::NoCustomItems);
 	w->tree()->setColumnWidths(session.header_sizes);
 }
 
@@ -2619,8 +2647,13 @@ VipDirectoryBrowser::VipDirectoryBrowser(VipMainWindow* win)
 	this->setWidget(m_widget);
 
 	
-	if(VipFileSystemWidget* local_fs = addFileSystem(new VipFileSystem()))
+	if(VipFileSystemWidget* local_fs = addFileSystem(new VipFileSystem())) {
 		local_fs->setSupportedOperations(VipMapFileSystemTree::None);
+
+		// New in 5.1.3: always add HOME to shortcuts
+		QString home = QStandardPaths::writableLocation(QStandardPaths::HomeLocation);
+		local_fs->tree()->addToShortcuts(VipPathList() << home);
+	}
 
 	m_timer = new QTimer();
 	m_timer->setSingleShot(false);

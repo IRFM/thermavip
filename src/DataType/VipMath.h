@@ -43,6 +43,7 @@
 #include <cstdio>
 #include <type_traits>
 #include <qmath.h>
+#include <QPointF>
 
 #include "VipConfig.h"
 #include "VipComplex.h"
@@ -389,6 +390,13 @@ static inline int qFuzzyCompare(long double value1, long double value2) noexcept
 
 	return 0;
 }
+
+#if QT_VERSION < QT_VERSION_CHECK(6, 8, 0)
+static inline bool qFuzzyCompare(const QPointF& value1, const QPointF& value2) noexcept
+{
+	return qFuzzyCompare(value1.x(),value2.x()) && qFuzzyCompare(value1.y(),value2.y());
+}
+#endif
 
 static inline bool vipFuzzyGreaterOrEqual(double d1, double d2) noexcept
 {

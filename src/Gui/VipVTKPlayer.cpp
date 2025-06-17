@@ -5211,9 +5211,14 @@ void VipCubeAxesActorWidget::updateWidget()
 
 	d_data->tickLocation->setCurrentIndex(d_data->actor->GetTickLocation());
 	d_data->labelOffset->setValue(d_data->actor->GetLabelOffset());
+
+#if VTK_VERSION_MAJOR >= 9
 	double x, y;
 	d_data->actor->GetTitleOffset(x, y);
 	d_data->titleOffset->setValue(x);
+#else
+	d_data->titleOffset->setValue(d_data->actor->GetTitleOffset());
+#endif
 
 	d_data->xVisible->setChecked(d_data->actor->GetXAxisVisibility());
 	d_data->yVisible->setChecked(d_data->actor->GetYAxisVisibility());
@@ -5284,8 +5289,13 @@ void VipCubeAxesActorWidget::updateActor()
 
 	a->SetTickLocation(d->tickLocation->currentIndex());
 	a->SetLabelOffset(d->labelOffset->value());
+
+#if VTK_VERSION_MAJOR >= 9
 	double off[2] = { d->titleOffset->value(), d->titleOffset->value() };
 	a->SetTitleOffset(off);
+#else
+	a->SetTitleOffset(d->titleOffset->value());
+#endif
 
 	a->SetXAxisVisibility(d->xVisible->isChecked());
 	a->SetYAxisVisibility(d->yVisible->isChecked());
@@ -5446,7 +5456,7 @@ VipVTKPlayer::VipVTKPlayer(QWidget* parent)
 	toolBar()->insertAction(first, d_data->open_dir);
 	toolBar()->insertAction(d_data->open_dir, d_data->open_file);
 	
-	d_data->show_legend = toolBar()->addAction(vipIcon("show_Legend.png"), "Show/hide the legend");
+	d_data->show_legend = toolBar()->addAction(vipIcon("show_legend.png"), "Show/hide the legend");
 	d_data->show_legend->setCheckable(true);
 	
 	QToolButton* camera = new QToolButton();

@@ -182,7 +182,7 @@ VipVTKGraphicsView::VipVTKGraphicsView()
 	// Lookup table
 	mLut = vtkSmartPointer<vtkLookupTable>::New();
 	mLut->SetRange(0, 100);
-	mLut->SetNanColor(VipVTKObject::stdColor());
+	mLut->SetNanColor((double*)VipVTKObject::stdColor());
 	VIP_VTK_OBSERVER(mLut);
 
 	// Thread pool used to extract point data range
@@ -603,12 +603,142 @@ void VipVTKGraphicsView::resetActiveCameraToIsometricView()
 	resetCamera();
 }
 
+static void ExpandBounds(vtkRenderer * ren, double bounds[6], vtkMatrix4x4* matrix)
+{
+  if (!matrix)
+  {
+    return;
+  }
+
+  // Expand the bounding box by model view transform matrix.
+  double pt[8][4] = { { bounds[0], bounds[2], bounds[5], 1.0 },
+    { bounds[1], bounds[2], bounds[5], 1.0 }, { bounds[1], bounds[2], bounds[4], 1.0 },
+    { bounds[0], bounds[2], bounds[4], 1.0 }, { bounds[0], bounds[3], bounds[5], 1.0 },
+    { bounds[1], bounds[3], bounds[5], 1.0 }, { bounds[1], bounds[3], bounds[4], 1.0 },
+    { bounds[0], bounds[3], bounds[4], 1.0 } };
+
+  // \note: Assuming that matrix doesn not have projective component. Hence not
+  // dividing by the homogeneous coordinate after multiplication
+  for (int i = 0; i < 8; ++i)
+  {
+    matrix->MultiplyPoint(pt[i], pt[i]);
+  }
+
+  // min = mpx = pt[0]
+  double min[4], max[4];
+  for (int i = 0; i < 4; ++i)
+  {
+    min[i] = pt[0][i];
+    max[i] = pt[0][i];
+  }
+
+  for (int i = 1; i < 8; ++i)
+  {
+    for (int j = 0; j < 3; ++j)
+    {
+      if (min[j] > pt[i][j])
+        min[j] = pt[i][j];
+      if (max[j] < pt[i][j])
+        max[j] = pt[i][j];
+    }
+  }
+
+  // Copy values back to bounds.
+  bounds[0] = min[0];
+  bounds[2] = min[1];
+  bounds[4] = min[2];
+
+  bounds[1] = max[0];
+  bounds[3] = max[1];
+  bounds[5] = max[2];
+}
+
+static void ZoomToBoxUsingViewAngle(vtkRenderer * ren, const vtkRecti& box, double offsetRatio)
+{
+  const int* size = ren->GetSize();
+  double zf1 = size[0] / static_cast<double>(box.GetWidth());
+  double zf2 = size[1] / static_cast<double>(box.GetHeight());
+  double zoomFactor = std::min(zf1, zf2);
+
+  // OffsetRatio will let a free space between the zoomed data
+  // And the edges of the window
+  ren->GetActiveCamera()->Zoom(zoomFactor * offsetRatio);
+}
 
 void VipVTKGraphicsView::resetCamera(bool closest , double offsetRatio) {
 	if (closest) {
 		double bounds[6];
 		computeBounds(bounds);
+#if VTK_VERSION_MAJOR >= 9
 		mRenderer->ResetCameraScreenSpace(bounds, offsetRatio);
+#else
+		// Make sure all bounds are visible to project into screen space
+		mRenderer->ResetCamera(bounds);
+
+		double expandedBounds[6] = { bounds[0], bounds[1], bounds[2], bounds[3], bounds[4], bounds[5] };
+		ExpandBounds(mRenderer,expandedBounds, mRenderer->GetActiveCamera()->GetModelTransformMatrix());
+
+		// 1) Compute the screen space bounding box
+		double xmin = VTK_DOUBLE_MAX;
+		double ymin = VTK_DOUBLE_MAX;
+		double xmax = VTK_DOUBLE_MIN;
+		double ymax = VTK_DOUBLE_MIN;
+		double currentPointDisplay[3];
+		for (int i = 0; i < 2; ++i)
+		{
+		for (int j = 0; j < 2; ++j)
+		{
+			for (int k = 0; k < 2; ++k)
+			{
+			double currentPoint[4] = { expandedBounds[i], expandedBounds[j + 2], expandedBounds[k + 4],
+				1.0 };
+
+			mRenderer->SetWorldPoint(currentPoint);
+			mRenderer->WorldToDisplay();
+			mRenderer->GetDisplayPoint(currentPointDisplay);
+
+			xmin = std::min(currentPointDisplay[0], xmin);
+			xmax = std::max(currentPointDisplay[0], xmax);
+			ymin = std::min(currentPointDisplay[1], ymin);
+			ymax = std::max(currentPointDisplay[1], ymax);
+			}
+		}
+		}
+
+		// Project the focal point in screen space
+		double fp[4];
+		mRenderer->GetActiveCamera()->GetFocalPoint(fp);
+		fp[3] = 1.0;
+		double fpDisplay[3];
+		mRenderer->SetWorldPoint(fp);
+		mRenderer->WorldToDisplay();
+		mRenderer->GetDisplayPoint(fpDisplay);
+
+		// The focal point must be at the center of the box
+		// So construct a box with fpDisplay at the center
+		int xCenterFocalPoint = static_cast<int>(fpDisplay[0]);
+		int yCenterFocalPoint = static_cast<int>(fpDisplay[1]);
+
+		int xCenterBox = static_cast<int>((xmin + xmax) / 2);
+		int yCenterBox = static_cast<int>((ymin + ymax) / 2);
+
+		int xDiff = 2 * (xCenterFocalPoint - xCenterBox);
+		int yDiff = 2 * (yCenterFocalPoint - yCenterBox);
+
+		int xMaxOffset = std::max(xDiff, 0);
+		int xMinOffset = std::min(xDiff, 0);
+		int yMaxOffset = std::max(yDiff, 0);
+		int yMinOffset = std::min(yDiff, 0);
+
+		xmin += xMinOffset;
+		xmax += xMaxOffset;
+		ymin += yMinOffset;
+		ymax += yMaxOffset;
+		// Now the focal point is at the center of the box
+
+		const vtkRecti box(xmin, ymin, xmax - xmin, ymax - ymin);
+		ZoomToBoxUsingViewAngle(mRenderer, box, offsetRatio);
+#endif
 		mWidget->applyCameraToAllLayers();
 	}
 	else

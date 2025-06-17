@@ -31,6 +31,7 @@
  
 extern "C" {
 #include <H5Ipublic.h>
+#include <H5FDpublic.h>
 #include <hdf5.h>
 }
 #include <qiodevice.h>
@@ -136,6 +137,9 @@ static const H5FD_class_t H5FD_device_g = {
 #else
 
 static const H5FD_class_t H5FD_device_g = {
+	#if (H5_VERS_MAJOR*100 + H5_VERS_MINOR) >= 113 
+	123456,
+	#endif
 	"QIODevice",					/*name			*/
 	MAXADDR,					/*maxaddr		*/
 	H5F_CLOSE_WEAK,				/* fc_degree		*/
@@ -167,6 +171,10 @@ static const H5FD_class_t H5FD_device_g = {
 	nullptr,				/*truncate		*/
 	nullptr,                                       /*lock                  */
 	nullptr,                                       /*unlock                */
+#if (H5_VERS_MAJOR*100 + H5_VERS_MINOR) >= 113 
+	nullptr, /* del */
+	nullptr, /* ctl */
+#endif
 	H5FD_FLMAP_SINGLE 				/*fl_map		*/
 };
 

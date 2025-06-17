@@ -43,6 +43,7 @@
 
 #include <vtkVariant.h>
 #include <vtkDataObject.h>
+#include <vtkSmartPointer.h>
 
 #include <vector>
 #include <mutex> //for std::adopt_lock_t
@@ -71,7 +72,7 @@ class vtkPolyData;
 class vtkPointSet;
 class vtkDataSet;
 
-
+class VipVTKObjectLocker;
 
 namespace detail
 {
@@ -143,6 +144,9 @@ public:
 		Cell   // Cell attributes
 	};
 
+	static void SetObjectName(vtkDataObject*, const char*);
+	static const char * GetObjectName(const vtkDataObject*);
+
 	/// @brief Default Ctor
 	VipVTKObject();
 
@@ -157,7 +161,7 @@ public:
 	~VipVTKObject();
 
 	/// @brief Standard default color for most 3D objects within thermavip
-	static inline const double* stdColor()
+	static inline double* stdColor()
 	{
 		static double value[4] = { 0.90, 0.90, 0.90, 1 };
 		return value;
