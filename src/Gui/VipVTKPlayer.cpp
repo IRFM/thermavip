@@ -2857,6 +2857,11 @@ void VipVTKObjectItem::opacityChanged(VipVTKObjectItem* item, double opacity)
 	if (item->plotObject() ) {
 		item->plotObject()->setOpacity(opacity);
 	}
+	else {
+		item->opacitySlider()->blockSignals(true);
+		item->opacitySlider()->setValue((int)(opacity * 100));
+		item->opacitySlider()->blockSignals(false);
+	}
 
 	item->updateItem();
 
@@ -3200,7 +3205,7 @@ bool VipVTKObjectTreeWidget::isSync()
 
 		for (int i = 0; i < tmp.size(); ++i) {
 			VipVTKObjectItem* item = tmp[i];
-			if (!item->isSync())
+			if (item->plotObject() && !item->isSync())
 				return false;
 
 			for (int c = 0; c < item->childCount(); ++c)

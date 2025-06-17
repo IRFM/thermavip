@@ -899,26 +899,28 @@ VisualizeDBToolWidget* vipGetVisualizeDBToolWidget(VipMainWindow* win)
 
 bool vipInitializeVisualizeDBWidget()
 {
+	if (QFileInfo("./.env").exists()) {
 
-	if (vipHasReadRightsDB()) {
+		if (vipHasReadRightsDB()) {
 
-		/*QToolButton* button = new QToolButton();
-		button->setAutoRaise(true);
-		button->setText("Thermal events DB");
-		button->setObjectName("Thermal events DB");
-		button->setIcon(vipIcon("database.png"));
-		button->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
-		button->setCheckable(true);
-		QAction* act = vipGetMainWindow()->toolsToolBar()->addWidget(button);
-		act->setObjectName("Thermal events DB");
-		vipGetVisualizeDBToolWidget(vipGetMainWindow())->setButton(button);*/
+			/*QToolButton* button = new QToolButton();
+			button->setAutoRaise(true);
+			button->setText("Thermal events DB");
+			button->setObjectName("Thermal events DB");
+			button->setIcon(vipIcon("database.png"));
+			button->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
+			button->setCheckable(true);
+			QAction* act = vipGetMainWindow()->toolsToolBar()->addWidget(button);
+			act->setObjectName("Thermal events DB");
+			vipGetVisualizeDBToolWidget(vipGetMainWindow())->setButton(button);*/
 
-		//TEST
-		QAction* db = vipGetMainWindow()->toolsToolBar()->addAction(vipIcon("DB.png"), "<b>Thermal events DB");
-		db->setObjectName("Thermal events DB");
-		vipGetVisualizeDBToolWidget(vipGetMainWindow())->setAction(db);
+			// TEST
+			QAction* db = vipGetMainWindow()->toolsToolBar()->addAction(vipIcon("DB.png"), "<b>Thermal events DB");
+			db->setObjectName("Thermal events DB");
+			vipGetVisualizeDBToolWidget(vipGetMainWindow())->setAction(db);
 
-		return true;
+			return true;
+		}
 	}
 	return false;
 }

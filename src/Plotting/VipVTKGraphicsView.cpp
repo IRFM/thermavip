@@ -1467,7 +1467,16 @@ void VipVTKGraphicsView::paintEvent(QPaintEvent* evt)
 
 void VipVTKGraphicsView::drawBackground(QPainter* p, const QRectF&)
 {
+	// TEST
+#if QT_VERSION >= 0x040600
+	p->beginNativePainting();
+#endif
+	mWidget->paintGL(); 
+#if QT_VERSION >= 0x040600
+	p->endNativePainting();
+#endif
 
+	/*
 	auto lst = objects();
 	auto lockers = vipLockVTKObjects(fromPlotVipVTKObject(lst));
 
@@ -1477,10 +1486,12 @@ void VipVTKGraphicsView::drawBackground(QPainter* p, const QRectF&)
 #if QT_VERSION >= 0x040600
 	p->beginNativePainting();
 #endif
-	mWidget->renderWindow()->GetInteractor()->Render();
+	mWidget->paintGL();//TEST
+	//mWidget->renderWindow()->GetInteractor()->Render();
 #if QT_VERSION >= 0x040600
 	p->endNativePainting();
 #endif
+*/
 }
 
 void VipVTKGraphicsView::touchCamera()

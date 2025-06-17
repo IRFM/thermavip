@@ -4484,6 +4484,13 @@ bool VipDirectoryReader::readData(qint64 time)
 					}
 				}
 			}
+			else {
+				if (dev->read(time, true)) {
+					for (int o = 0; o < dev->outputCount(); ++o) {
+						outputAt(out_index + o)->setData(dev->outputAt(o)->data());
+					}
+				}
+			}
 
 			out_index += dev->outputCount();
 		}

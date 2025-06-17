@@ -688,7 +688,7 @@ QVTKInteractorInternal::QVTKInteractorInternal(QVTKInteractor* p)
   : Parent(p)
 {
 	this->SignalMapper = new QSignalMapper(this);
-	QObject::connect(this->SignalMapper, SIGNAL(mapped(int)), this, SLOT(TimerEvent(int)));
+	QObject::connect(this->SignalMapper, SIGNAL(mappedInt(int)), this, SLOT(TimerEvent(int)));
 }
 
 QVTKInteractorInternal::~QVTKInteractorInternal() {}
