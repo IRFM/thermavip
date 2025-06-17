@@ -32,6 +32,7 @@
 #include "VipVTKObject.h"
 #include "VipVTKImage.h"
 
+
 #include <vtkAbstractArray.h>
 #include <vtkCellArray.h>
 #include <vtkCellData.h>
@@ -207,6 +208,48 @@ static vtkUnstructuredGrid* mergeCompositeInput(vtkCompositeDataSet* composite)
 
 
 
+void VipVTKObject::SetObjectName(vtkDataObject * obj, const char * name)
+{
+#if (VTK_VERSION_MAJOR > 9 || (VTK_VERSION_MAJOR == 9 && VTK_VERSION_MINOR >=2))
+	obj->SetObjectName(name);
+#else
+	vtkFieldData * data = obj->GetFieldData();
+	if(!data)
+		obj->SetFieldData(data = vtkFieldData::New());
+	vtkAbstractArray * ar = data->GetAbstractArray("ObjectName");
+	if(!ar) {
+		ar = vtkStringArray::New();
+		ar->SetName("ObjectName");
+		data->AddArray(ar);
+	}
+	vtkStringArray * strings = static_cast<vtkStringArray*>(ar);
+	if(strings->GetSize() == 0)
+		strings->InsertNextValue(name); 
+	else
+		strings->SetValue(0,name);
+
+#endif
+}
+
+const char* VipVTKObject::GetObjectName(const vtkDataObject * _obj)
+{
+	vtkDataObject * obj = const_cast<vtkDataObject*>(_obj);
+	if(!obj)
+		return "";
+	vtkFieldData * data = obj->GetFieldData();
+	if(!data)
+		return "";
+	vtkAbstractArray * ar = data->GetAbstractArray("ObjectName");
+	if(!ar)	
+		return "";
+	vtkStringArray * strings = static_cast<vtkStringArray*>(ar);
+	if(strings->GetSize() == 0)
+		return "";
+	else
+		return strings->GetValue(0).c_str();
+}
+
+
 
 class VipVTKObject::PrivateData
 {
@@ -281,7 +324,7 @@ VipVTKObject::VipVTKObject(vtkDataObject* object, const QString& name)
 
 	setObject(object);
 	if (object && !name.isEmpty())
-		object->SetObjectName(name.toLatin1().data());
+		SetObjectName(object,name.toLatin1().data());
 	/*d_data->simplifiedData->SetTargetReduction(0.99);
 	d_data->simplifiedData->SetPreserveTopology(0);
 	//d_data->simplifiedData->SetSplitting (1);
@@ -414,7 +457,7 @@ QVariantMap VipVTKObject::buildAllAttributes() const
 	QVariantMap attrs;
 	
 	if (d_data->data) {
-		attrs["Name"] = QFileInfo(d_data->data->GetObjectName().c_str()).fileName();
+		attrs["Name"] = QFileInfo(GetObjectName(d_data->data)).fileName();
 	}
 
 	vtkDataObject* data = d_data->data.GetPointer();
@@ -513,7 +556,7 @@ QString VipVTKObject::description(int pointId, int cellId) const
 	QStringList text;
 
 	if (d_data->data)
-		text << QString("<b>Name: </b>") + QFileInfo(d_data->data->GetObjectName().c_str()).fileName();
+		text << QString("<b>Name: </b>") + QFileInfo(GetObjectName(d_data->data)).fileName();
 
 	if (d_data->data && d_data->data->IsA("vtkDataSet")) {
 		text << "<b>Point count: </b>" + QString::number(static_cast<vtkDataSet*>(d_data->data.GetPointer())->GetNumberOfPoints());
@@ -574,14 +617,14 @@ QString VipVTKObject::description(int pointId, int cellId) const
 QString VipVTKObject::dataName() const
 {
 	QMutexLocker lock(const_cast<QRecursiveMutex*>(&d_data->mutex));
-	return d_data->data ? QString(d_data->data->GetObjectName().c_str()) : QString();
+	return d_data->data ? QString(GetObjectName(d_data->data)) : QString();
 }
 
 void VipVTKObject::setDataName(const QString& name)
 {
 	QMutexLocker lock(const_cast<QRecursiveMutex*>(&d_data->mutex));
 	if (d_data->data)
-		d_data->data->SetObjectName(name.toLatin1().data());
+		SetObjectName(d_data->data,name.toLatin1().data());
 }
 
 bool VipVTKObject::isA(const char* class_name) const

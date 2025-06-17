@@ -5,6 +5,7 @@
 #include "VipPainter.h"
 #include "VipPlotGrid.h"
 
+//#include <vtkRenderingOpenGL2.h>
 #include <vtkDataSet.h>
 #include <vtkPointData.h>
 #include <vtkCellData.h>
@@ -25,10 +26,17 @@
 #include <vtkStructuredPoints.h>
 #include <vtkUnstructuredGrid.h>
 #include <vtkGraph.h>
+#include <vtkPolyDataMapper.h>
 
 
 #include <QGraphicsSceneMouseEvent>
 #include <QLinearGradient>
+
+#include "vtkAutoInit.h"
+#include "vtkRenderingOpenGLConfigure.h"
+VTK_MODULE_INIT(vtkInteractionStyle)
+VTK_MODULE_INIT(vtkRenderingFreeType)
+VTK_MODULE_INIT(vtkRenderingOpenGL2)
 
 class VipPlotVTKObject::PrivateData
 {

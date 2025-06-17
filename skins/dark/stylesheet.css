@@ -21,6 +21,9 @@ QMainWindow::separator:hover {
 	  
 }   
 
+/*QSlider::handle:horizontal {
+	background: grey;
+}*/
 
 VipTitleBar {  
 	margin: 5px;

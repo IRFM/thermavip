@@ -72,13 +72,15 @@ public:
 	static const qsizetype access_type = OverRoi::access_type;
 	typedef bool value_type;
 
-	VipOverNDRects(const QVector<VipNDRect<Dim>>& rects, const OverRoi& roi = OverRoi())
-	  : m_rects(rects)
+	template<class Iter>
+	VipOverNDRects(Iter rect_first, Iter rect_last, const OverRoi& roi = OverRoi())
+	  : m_rects(rect_first,rect_last)
 	  , m_ptr(m_rects.data())
 	  , m_size(m_rects.size())
 	  , m_roi(roi)
 	{
 	}
+
 	VipOverNDRects(const VipNDRect<Dim>* ptr, qsizetype size, const OverRoi& roi = OverRoi())
 	  : m_ptr(ptr)
 	  , m_size(size)
@@ -146,7 +148,7 @@ VipOverNDRects<2, OverRoi> vipOverRects(const QRect& rect, const OverRoi& roi = 
 template<class OverRoi = VipInfinitRoi>
 VipOverNDRects<2, OverRoi> vipOverRects(const QRegion& reg, const OverRoi& roi = OverRoi())
 {
-	return vipOverRects(reg.rects(), roi);
+	return vipOverRects(reg.cbegin(), reg.cend(), roi);
 }
 
 /// @}

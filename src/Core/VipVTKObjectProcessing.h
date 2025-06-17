@@ -253,7 +253,10 @@ VTK_DECLARE_ALGORITHM(TriangleFilter, VIP_CORE_EXPORT)
 	//VTK_DECLARE_PROPERTY(PreservePolys);
 	VTK_DECLARE_PROPERTY(PassVerts);
 	VTK_DECLARE_PROPERTY(PassLines);
+
+#if VTK_VERSION_MAJOR >= 9
 	VTK_DECLARE_PROPERTY(Tolerance);
+#endif
 
 public:
 	VTK_CREATE_ALGORITHM(TriangleFilter, vtkPolyData) {}

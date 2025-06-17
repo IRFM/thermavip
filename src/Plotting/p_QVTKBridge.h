@@ -75,7 +75,8 @@
 #include "vtkTDxConfigure.h" // defines VTK_USE_TDX
 #include <vtkRenderWindowInteractor.h>
 
-#include "qobject.h"
+#include <QObject>
+#include <QTimer>
 
 #include <map>
 

@@ -122,7 +122,7 @@ VipArchive& operator>>(VipArchive& arch, VipVTKObject& obj)
 
 	obj = res;
 	if (obj)
-		obj.data()->SetObjectName(name.toLatin1().data());
+		VipVTKObject::SetObjectName( obj.data() ,name.toLatin1().data());
 
 	arch.resetError();
 	return arch;
@@ -1142,7 +1142,7 @@ void VipXYZAttributesWriter::apply()
 				if (p >= ar->GetNumberOfTuples())
 					index = 0;
 
-				const char* name = ar->GetClassNameA();
+				const char* name = ar->GetClassName();
 				int cc = ar->GetNumberOfComponents();
 				int tt = ar->GetNumberOfTuples();
 

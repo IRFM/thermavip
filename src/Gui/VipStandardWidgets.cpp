@@ -1751,6 +1751,9 @@ QString VipFileDialog::getSaveFileName(QWidget* parent, const QString& caption, 
 	if (suffix.isEmpty() && !last_filter.isEmpty()) {
 		int index1 = last_filter.indexOf("*.");
 		int index2 = last_filter.indexOf(")", index1);
+		int index3 = last_filter.indexOf(" ", index1);
+		if(index3 > 0 && index3 < index2)
+			index2 = index3;
 		if (index1 > 0 && index2 > 0) {
 			QString s = last_filter.mid(index1 + 2, index2 - index1 - 2);
 			s.remove(" ");

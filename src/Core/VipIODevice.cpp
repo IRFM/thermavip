@@ -1191,7 +1191,7 @@ static void setPoolObjectName(VipProcessingPool* pool, const QString& name)
 template<class T>
 static QList<T> findDirectChildren(const QObject* obj)
 {
-#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+#if QT_VERSION >= QT_VERSION_CHECK(6, 7, 0)
 	return obj->findChildren<T>(QAnyStringView(), Qt::FindDirectChildrenOnly);
 #else
 	return obj->findChildren<T>(QString(), Qt::FindDirectChildrenOnly);

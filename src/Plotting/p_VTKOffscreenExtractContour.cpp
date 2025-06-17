@@ -1056,7 +1056,7 @@ void OffscreenExtractContour::Execute()
 
 	el7 = QDateTime::currentMSecsSinceEpoch() - start;
 
-	printf("Extract controur: %i %i %i %i %i %i %i ms\n", (int)el1, (int)el2, (int)el3, (int)el4, (int)el5, (int)el6, (int)el7);
+	vip_debug("Extract controur: %i %i %i %i %i %i %i ms\n", (int)el1, (int)el2, (int)el3, (int)el4, (int)el5, (int)el6, (int)el7);
 	// qint64 cam_time2 = d_data->renderers[0]->GetActiveCamera()->GetMTime();
 	// qint64 cam_time1 = cam_time;
 }

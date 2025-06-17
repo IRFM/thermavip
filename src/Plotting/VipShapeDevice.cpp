@@ -467,7 +467,7 @@ int VipShapeDevice::metric(PaintDeviceMetric metric) const
 
 		case PdmDevicePixelRatioScaled:
 			return 1;
-#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+#if QT_VERSION >= QT_VERSION_CHECK(6, 8, 0)
 		case PdmDevicePixelRatioF_EncodedA:
 			Q_FALLTHROUGH();
 		case PdmDevicePixelRatioF_EncodedB:
