@@ -464,14 +464,14 @@ const QColor& VipPlotVTKObject::color() const
 
 void VipPlotVTKObject::setHighlightColor(const QColor& c)
 {
-	fromQColor(c,d_data->highlightColor);
+	vipFromQColor(c,d_data->highlightColor);
 	applyPropertiesInternal();
 	emitItemChanged();
 }
 QColor VipPlotVTKObject::highlightColor() const 
 {
 	if (hasHighlightColor())
-		return toQColor(d_data->highlightColor);
+		return vipToQColor(d_data->highlightColor);
 	return QColor(Qt::transparent);
 }
 bool VipPlotVTKObject::hasHighlightColor() const
@@ -578,7 +578,7 @@ void VipPlotVTKObject::applyPropertiesInternal()
 {
 	QColor c = d_data->color;
 	if (!isSelected() && hasHighlightColor()) {
-		c = toQColor(d_data->highlightColor);
+		c = vipToQColor(d_data->highlightColor);
 	}
 	else if (isSelected())
 		c = d_data->selectedColor;
@@ -586,13 +586,13 @@ void VipPlotVTKObject::applyPropertiesInternal()
 	
 	if (d_data->actor) {
 		double color[3];
-		fromQColor(c, color);
+		vipFromQColor(c, color);
 
 		d_data->actor->GetProperty()->SetOpacity(d_data->opacity);
 		d_data->actor->GetProperty()->SetColor(color);
 		d_data->actor->GetProperty()->SetEdgeVisibility(d_data->edgeVisible);
 		if (d_data->edgeVisible) {
-			fromQColor(d_data->edgeColor, color);
+			vipFromQColor(d_data->edgeColor, color);
 			d_data->actor->GetProperty()->SetEdgeColor(color);
 		}
 	}

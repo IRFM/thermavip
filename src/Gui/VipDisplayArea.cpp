@@ -3739,7 +3739,7 @@ void VipMainWindow::init()
 	vipGetFOVSequenceEditorTool(this)->setAllowedAreas(Qt::NoDockWidgetArea);
 	this->addDockWidget(Qt::LeftDockWidgetArea, vipGetFOVSequenceEditorTool(this));
 
-	QAction* vtk_browser = d_data->toolsToolBar.addAction(vipIcon("RENDERING.png"), "<b>Show/Hide 3D object browser</b>");
+	QAction* vtk_browser = d_data->toolsToolBar.addAction(vipIcon("CAD.png"), "<b>Show/Hide 3D object browser</b>");
 	vipGetVTKPlayerToolWidget(this)->setAction(vtk_browser);
 	this->addDockWidget(Qt::LeftDockWidgetArea, vipGetVTKPlayerToolWidget(this));
 #endif
@@ -3873,6 +3873,12 @@ bool VipMainWindow::saveSession(VipArchive& arch, int session_type, int session_
 #ifdef VIP_WITH_PYTHON
 		arch.start("Python");
 		VipPythonManager::instance()->save(arch);
+		arch.end();
+#endif
+
+#ifdef VIP_WITH_VTK
+		arch.start("VTKOptions");
+		VipVTKPlayerOptions::get().save(arch);
 		arch.end();
 #endif
 
@@ -4099,6 +4105,19 @@ bool VipMainWindow::loadSessionShowProgress(VipArchive& arch, VipProgress* progr
 		arch.save();
 		if (arch.start("Python")) {
 			VipPythonManager::instance()->restore(arch);
+			arch.end();
+		}
+		else
+			arch.restore();
+#endif
+
+#ifdef VIP_WITH_VTK
+		arch.save();
+		if (arch.start("VTKOptions")) {
+			VipVTKPlayerOptions opts;
+			opts.restore(arch);
+			if (arch)
+				VipVTKPlayerOptions::set(opts);
 			arch.end();
 		}
 		else

@@ -1502,60 +1502,71 @@ void VipPenButton::resizeEvent(QResizeEvent* evt)
 	redraw();
 }
 
+
+
+class VipTextWidget::PrivateData
+{
+public:
+	VipPenButton textColor;
+	QLineEdit text;
+	QToolButton textChoice;
+	QWidget* options;
+	int editable;
+};
+
 VipTextWidget::VipTextWidget(QWidget* parent)
   : QWidget(parent)
 {
-	// QGridLayout * grid = new QGridLayout();
-	//
-	// grid->addWidget(&textChoice, 0, 0);
-	// grid->addWidget(&textColor, 1, 0);
-	// textColor.setMaximumHeight(10);
-	// textChoice.setMaximumHeight(20);
-	//
-	// grid->addWidget(&backgroundPen, 0, 1, 2, 1);
-	// backgroundPen.setMaximumWidth(30);
-	// grid->addWidget(&backgroundBrush, 0, 2, 2, 1);
-	// backgroundBrush.setMaximumWidth(30);
-	// grid->setContentsMargins(0, 0, 0, 0);
-	// grid->setSpacing(0);
+	VIP_CREATE_PRIVATE_DATA(d_data);
+
+	d_data->editable = String | Font | Color;
+
 	QHBoxLayout* tlay = new QHBoxLayout();
 	tlay->setContentsMargins(0, 0, 0, 0);
 	tlay->setSpacing(0);
-	tlay->addWidget(&textChoice);
-	tlay->addWidget(&textColor);
-	textColor.setMaximumWidth(15);
-	textChoice.setMaximumHeight(20);
+	tlay->addWidget(&d_data->textChoice);
+	tlay->addWidget(&d_data->textColor);
+	d_data->textColor.setMaximumWidth(15);
+	d_data->textChoice.setMaximumHeight(20);
 
-	// backgroundPen.setText("Border");
-	backgroundPen.setToolTip("Text's border pen");
-	// backgroundBrush.setText("Background");
-	backgroundBrush.setToolTip("Text's background brush");
-	textColor.setToolTip("Text color");
-	textColor.setMode(VipPenButton::Color);
-	backgroundBrush.setMode(VipPenButton::Brush);
-	textChoice.setIcon(vipIcon("font.png"));
-	textChoice.setToolTip("Select text font");
-	textChoice.setAutoRaise(true);
-	text.setToolTip("Enter your text");
+	d_data->textColor.setToolTip("Text color");
+	d_data->textColor.setMode(VipPenButton::Color);
+	d_data->textChoice.setIcon(vipIcon("font.png"));
+	d_data->textChoice.setToolTip("Select text font");
+	d_data->textChoice.setAutoRaise(true);
+	d_data->text.setToolTip("Enter your text");
 
-	m_options = new QWidget();
-	m_options->setLayout(tlay);
-	m_options->setMaximumWidth(80);
+	d_data->options = new QWidget();
+	d_data->options->setLayout(tlay);
+	d_data->options->setMaximumWidth(80);
 
 	QHBoxLayout* hlay = new QHBoxLayout();
 	hlay->setContentsMargins(0, 0, 0, 0);
-	hlay->addWidget(&text, 2);
-	hlay->addWidget(m_options);
+	hlay->addWidget(&d_data->text, 2);
+	hlay->addWidget(d_data->options);
 	hlay->addStretch(1);
 	setLayout(hlay);
 
-	connect(&textChoice, SIGNAL(clicked(bool)), this, SLOT(fontChoice()));
-	connect(&text, SIGNAL(returnPressed()), this, SLOT(textEdited()));
-	connect(&textColor, SIGNAL(penChanged(const QPen&)), this, SLOT(textEdited()));
-	connect(&backgroundPen, SIGNAL(penChanged(const QPen&)), this, SLOT(textEdited()));
-	connect(&backgroundBrush, SIGNAL(penChanged(const QPen&)), this, SLOT(textEdited()));
-
+	connect(&d_data->textChoice, SIGNAL(clicked(bool)), this, SLOT(fontChoice()));
+	connect(&d_data->text, SIGNAL(returnPressed()), this, SLOT(textEdited()));
+	connect(&d_data->textColor, SIGNAL(penChanged(const QPen&)), this, SLOT(textEdited()));
+	
 	this->setMaximumHeight(30);
+}
+
+VipTextWidget::~VipTextWidget() {}
+
+int VipTextWidget::editableContent() const
+{
+	return d_data->editable;
+}
+
+void VipTextWidget::setEditableContent(int editable)
+{
+	d_data->editable = editable;
+	d_data->text.setVisible(editable & String);
+	d_data->textColor.setVisible(editable & Color);
+	d_data->textChoice.setVisible(editable & Font);
 }
 
 void VipTextWidget::textEdited()
@@ -1565,20 +1576,18 @@ void VipTextWidget::textEdited()
 
 QLineEdit* VipTextWidget::edit() const
 {
-	return const_cast<QLineEdit*>(&text);
+	return const_cast<QLineEdit*>(&d_data->text);
 }
 
 void VipTextWidget::setText(const VipText& t)
 {
-	text.setText(t.text());
-	text.setFont(t.font());
-	backgroundPen.setPen(t.borderPen());
-	backgroundBrush.setBrush(t.backgroundBrush());
-	textColor.setPen(t.textPen());
+	d_data->text.setText(t.text());
+	d_data->text.setFont(t.font());
+	d_data->textColor.setPen(t.textPen());
 
 	QPalette palette;
 	palette.setColor(QPalette::Text, t.textPen().color());
-	text.setPalette(palette);
+	d_data->text.setPalette(palette);
 
 	Q_EMIT changed(getText());
 }
@@ -1586,20 +1595,18 @@ void VipTextWidget::setText(const VipText& t)
 VipText VipTextWidget::getText() const
 {
 	VipText t;
-	t.setBorderPen(backgroundPen.pen());
-	t.setBackgroundBrush(backgroundBrush.pen().brush());
-	t.setTextPen(textColor.pen());
-	t.setFont(text.font());
-	t.setText(text.text());
+	t.setTextPen(d_data->textColor.pen());
+	t.setFont(d_data->text.font());
+	t.setText(d_data->text.text());
 	return t;
 }
 
 void VipTextWidget::fontChoice()
 {
-	QFontDialog dial(text.font());
+	QFontDialog dial(d_data->text.font());
 	if (dial.exec() == QDialog::Accepted) {
 		QFont textfont = dial.currentFont();
-		text.setFont(textfont);
+		d_data->text.setFont(textfont);
 		textEdited();
 	}
 }

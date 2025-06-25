@@ -143,6 +143,12 @@ VIP_REGISTER_QOBJECT_METATYPE(VipDisplayObject*)
 VIP_PLOTTING_EXPORT VipArchive& operator<<(VipArchive& stream, const VipDisplayObject* r);
 VIP_PLOTTING_EXPORT VipArchive& operator>>(VipArchive& stream, VipDisplayObject* r);
 
+
+/// This function dispatcher is called every time a VipDisplayPlotItem's item changes.
+/// Its signature is void(VipDisplayObject*, VipPlotItem*);
+VIP_PLOTTING_EXPORT VipFunctionDispatcher<2>& VipFDDisplayObjectSetItem();
+
+
 /// VipDisplayPlotItem is a VipDisplayObject that displays its data through a VipPlotItem object.
 /// If the VipDisplayPlotItem is destroyed, the VipPlotItem itself won't be destroyed.
 /// However, destroying the VipPlotItem will destroy the VipDisplayPlotItem.

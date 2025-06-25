@@ -108,7 +108,7 @@ struct VipRgb
 	/// @brief Convert to QRgb
 	QRgb toQRgb() const noexcept;
 	/// @brief Convert to QColor
-	QColor toQColor() const noexcept { return QColor::fromRgba(toQRgb()); }
+	QColor vipToQColor() const noexcept { return QColor::fromRgba(toQRgb()); }
 
 	operator QRgb() const noexcept { return toQRgb(); }
 	operator QColor() const noexcept { return toQRgb(); }
@@ -207,7 +207,7 @@ struct alignas(alignof(QRgb)) VipRgb<quint8>
 	{
 		return reinterpret_cast<const QRgb&>(*this);
 	}
-	QColor toQColor() const noexcept
+	QColor vipToQColor() const noexcept
 	{
 		return QColor::fromRgba(toQRgb());
 	}
@@ -236,7 +236,7 @@ struct alignas(alignof(QRgb)) VipRgb<quint8>
 	}
 	operator QColor() const noexcept
 	{
-		return toQColor();
+		return vipToQColor();
 	}
 };
 

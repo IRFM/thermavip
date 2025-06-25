@@ -115,12 +115,21 @@ public:
 	void removeConsole();
 	void resetConsole();
 
+	//QFont consoleFont() const;
+	//bool customFont() const;
+
+
 public Q_SLOTS:
 	void clear();
 	void save();
 	void copy();
 	void disable(bool);
+
+	//void setConsoleFont(const QFont& font, bool use_custom_font);
+
+private Q_SLOTS:
 	void setVisibleLogLevel();
+	//void updateFont();
 
 private:
 	void updateVisibleMenu();

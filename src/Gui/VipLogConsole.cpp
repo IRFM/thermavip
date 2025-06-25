@@ -341,6 +341,10 @@ public:
 	QLabel* text;
 	QToolBar* toolBar;
 	QToolButton* levelVisibility;
+
+	//QCheckBox* customFont;
+	//VipTextWidget* font;
+	//std::unique_ptr<QFont> initFont;
 };
 
 VipConsoleWidget::VipConsoleWidget(VipMainWindow* window)
@@ -384,6 +388,16 @@ VipConsoleWidget::VipConsoleWidget(VipMainWindow* window)
 				    "border: none;");
 
 	d_data->toolBar->setIconSize(QSize(18, 18));
+
+	/* d_data->font = new VipTextWidget();
+	d_data->font->setEditableContent(VipTextWidget::Font);
+	VipText tmp;
+	tmp.setFont(d_data->console->font());
+	d_data->font->setText(tmp);
+	d_data->toolBar->addWidget(d_data->customFont = new QCheckBox("Custom font"));
+	d_data->toolBar->addWidget(d_data->font);
+	*/
+
 	QAction* copy = d_data->toolBar->addAction(vipIcon("copy.png"), "Copy content to clipboard");
 	QAction* save = d_data->toolBar->addAction(vipIcon("save.png"), "Save content to file...");
 	QAction* disable = d_data->toolBar->addAction(vipIcon("cancel.png"), "Stop/Resume the console");
@@ -431,7 +445,8 @@ VipConsoleWidget::VipConsoleWidget(VipMainWindow* window)
 	connect(disable, SIGNAL(triggered(bool)), this, SLOT(disable(bool)));
 	connect(copy, SIGNAL(triggered(bool)), this, SLOT(copy()));
 	connect(save, SIGNAL(triggered(bool)), this, SLOT(save()));
-
+	//connect(d_data->customFont, SIGNAL(clicked(bool)), this, SLOT(updateFont()));
+	//connect(d_data->font, SIGNAL(changed(const VipText&)), this, SLOT(updateFont()));
 	this->setMinimumWidth(250);
 }
 
@@ -481,6 +496,39 @@ void VipConsoleWidget::disable(bool dis)
 		setVisibleLogLevel();
 }
 
+/* void VipConsoleWidget::updateFont()
+{
+	if (!d_data->initFont)
+		d_data->initFont.reset(new QFont(d_data->console->font()));
+
+	if (sender() == d_data->font) {
+		d_data->customFont->blockSignals(true);
+		d_data->customFont->setChecked(true);
+		d_data->customFont->blockSignals(false);
+	}
+	if (d_data->customFont->isChecked())
+		d_data->console->setFont(d_data->font->getText().font());
+	else
+		d_data->console->setFont(*d_data->initFont);
+}
+
+QFont VipConsoleWidget::consoleFont() const
+{
+	return d_data->console->font();
+}
+bool VipConsoleWidget::customFont() const
+{
+	return d_data->customFont->isChecked();
+}
+
+void VipConsoleWidget::setConsoleFont(const QFont& font, bool use_custom_font)
+{
+	VipText t = d_data->font->getText();
+	t.setFont(font);
+	d_data->font->setText(t);
+	d_data->customFont->setChecked(use_custom_font);
+}*/
+
 void VipConsoleWidget::setVisibleLogLevel()
 {
 	QList<QAction*> actions = d_data->levelVisibility->menu()->actions();
@@ -516,7 +564,7 @@ void VipConsoleWidget::setVisibleLogLevel()
 		sections |= VipLogConsole::Type;
 	}
 
-	if (consoles.size() == 3)
+	if (consoles.size() == 4)
 		d_data->text->setText("Console [All]");
 	else if (consoles.size() == 0)
 		d_data->text->setText("Console [None]");
@@ -580,6 +628,9 @@ VipArchive& operator<<(VipArchive& arch, VipConsoleWidget* console)
 {
 	arch.content("levels", (int)console->visibleLogLevels());
 	arch.content("sections", (int)console->visibleSections());
+
+	//arch.content("customFont", (int)console->customFont());
+	//arch.content("consoleFont", console->consoleFont());
 	return arch;
 }
 VipArchive& operator>>(VipArchive& arch, VipConsoleWidget* console)
@@ -590,6 +641,15 @@ VipArchive& operator>>(VipArchive& arch, VipConsoleWidget* console)
 		console->setVisibleLogLevels(VipLogging::Levels(levels));
 		console->setVisibleSections(VipLogConsole::LogSections(sections));
 	}
+
+	/* arch.save();
+	int customFont = arch.read("customFont").toInt();
+	QFont f = arch.read("consoleFont").value<QFont>();
+	if (arch) {
+		console->setConsoleFont(f, customFont);
+	}
+	else
+		arch.restore();*/
 	return arch;
 }
 

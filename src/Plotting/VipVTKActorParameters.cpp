@@ -46,7 +46,7 @@ VipVTKActorParameters::VipVTKActorParameters()
 	vtkActor * actor = vtkActor::New();
 	this->ambiantLighting = actor->GetProperty()->GetAmbient();
 	this->diffuseLighting = actor->GetProperty()->GetDiffuse();
-	this->edgeColor = toQColor(actor->GetProperty()->GetEdgeColor());
+	this->edgeColor = vipToQColor(actor->GetProperty()->GetEdgeColor());
 	this->lighting = actor->GetProperty()->GetLighting();
 	this->lineWidth = actor->GetProperty()->GetLineWidth();
 	this->pointSize = actor->GetProperty()->GetPointSize();
@@ -54,8 +54,8 @@ VipVTKActorParameters::VipVTKActorParameters()
 	this->specularLighting = actor->GetProperty()->GetSpecular();
 	actor->Delete();
 
-	this->color = toQColor(VipVTKObject::stdColor());
-	this->selectionColor = toQColor(VipVTKObject::stdColor());
+	this->color = vipToQColor(VipVTKObject::defaultObjectColor());
+	this->selectionColor = vipToQColor(VipVTKObject::defaultObjectColor());
 	this->layer = 0;
 }
 

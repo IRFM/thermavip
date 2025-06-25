@@ -323,6 +323,14 @@ bool VipDisplayObject::updateOnHidden() const
 	return d_data->updateOnHidden;
 }
 
+
+VipFunctionDispatcher<2>& VipFDDisplayObjectSetItem()
+{
+	static VipFunctionDispatcher<2> inst;
+	return inst;
+}
+
+
 class VipDisplayPlotItem::PrivateData
 {
 public:
@@ -371,6 +379,23 @@ VipPlotItem* VipDisplayPlotItem::item() const
 		connect(item, SIGNAL(axesChanged(VipPlotItem*)), this, SLOT(axesChanged(VipPlotItem*)));
 		const_cast < VipDisplayPlotItem*>(this)->axesChanged(item);
 		item->setItemAttribute(VipPlotItem::IsSuppressable, d_data->itemSuppressable);
+
+		// This function ight not be called from the main thread, so use delayed call
+		if (QThread::currentThread() != qApp->thread()) {
+
+			VipDisplayPlotItem* _this = const_cast<VipDisplayPlotItem*>(this);
+			QMetaObject::invokeMethod(
+			  _this,
+			  [](QObjectPointer display, QObjectPointer plot) {
+				  if (display && plot)
+					  VipFDDisplayObjectSetItem().callAllMatch(display.get(), plot.get());
+			  },
+			  Qt::QueuedConnection,
+			  QObjectPointer(_this),
+			  QObjectPointer(item));
+		}
+		else
+			VipFDDisplayObjectSetItem().callAllMatch(this, item);
 	}
 	return item;
 }
@@ -435,6 +460,8 @@ void VipDisplayPlotItem::setItem(VipPlotItem* item)
 
 		item->setItemAttribute(VipPlotItem::IsSuppressable, d_data->itemSuppressable);
 		axesChanged(item);
+
+		VipFDDisplayObjectSetItem().callAllMatch(this, item);
 	}
 }
 

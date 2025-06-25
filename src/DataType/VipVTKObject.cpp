@@ -336,6 +336,16 @@ VipVTKObject::~VipVTKObject()
 {
 }
 
+static double _defaultObjectColor[4] = {0.9,0.9,0.9,1};
+const double* VipVTKObject::defaultObjectColor()
+{
+	return _defaultObjectColor;
+}
+void VipVTKObject::setDefaultObjectColor(const double* c)
+{
+	memcpy(_defaultObjectColor, c, 3 * sizeof(double));
+}
+
 QStringList VipVTKObject::supportedFileSuffix() const
 {
 	QMutexLocker lock(const_cast<QRecursiveMutex*>(&d_data->mutex));

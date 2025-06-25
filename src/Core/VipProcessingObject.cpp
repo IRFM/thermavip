@@ -3642,6 +3642,9 @@ QList<const VipProcessingObject*> VipProcessingObject::allObjects()
 			type = types[i];
 		else
 			type = additionals[i - types.size()].metatype;
+
+		if (type == 0)
+			continue;
 		// remove the VipProcessingPool from the result
 		if (strcmp(vipTypeName(type), "VipProcessingPool*") == 0)
 			continue;

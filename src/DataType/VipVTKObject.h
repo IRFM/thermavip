@@ -161,11 +161,8 @@ public:
 	~VipVTKObject();
 
 	/// @brief Standard default color for most 3D objects within thermavip
-	static inline double* stdColor()
-	{
-		static double value[4] = { 0.90, 0.90, 0.90, 1 };
-		return value;
-	}
+	static const double* defaultObjectColor();
+	static void setDefaultObjectColor(const double * c);
 
 	/// @brief Clear the object
 	void clear();

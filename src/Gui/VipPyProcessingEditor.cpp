@@ -594,7 +594,7 @@ void VipPyProcessingEditor::registerProcessing()
 	m->setCategory("Python/");
 	VipGenericDialog dialog(m, "Register new processing");
 	if (dialog.exec() == QDialog::Accepted) {
-		bool ret = d_data->proc->registerThisProcessing(m->category(), m->name(), m->description(), false);
+		bool ret = d_data->proc->registerThisProcessing(m->category(), m->name(), m->description(), m->overwrite());
 		if (!ret)
 			QMessageBox::warning(nullptr, "Operation failure", "Failed to register this processing.\nPlease make sure you entered a valid name and category.");
 		else {
@@ -673,27 +673,41 @@ QToolButton* VipPyApplyToolBar::manageButton() const
 class VipPySignalFusionProcessingManager::PrivateData
 {
 public:
-	QGroupBox* createWidget;
+	QWidget* createWidget;
 	QLineEdit* name;
 	QLineEdit* category;
+	QCheckBox* overwrite;
 	QPlainTextEdit* description;
 
-	QGroupBox* editWidget;
+	QWidget* editWidget;
 	QTreeWidget* procList;
 	QPlainTextEdit* procDescription;
 	VipPySignalFusionProcessingEditor* procEditor;
 	VipPyProcessingEditor* pyEditor;
 };
 
+
+static QGroupBox* flatGroupBox(const QString& title)
+{
+	QGroupBox* g = new QGroupBox(title);
+	g->setFlat(true);
+	QFont f = g->font();
+	f.setBold(true);
+	g->setFont(f);
+	return g;
+}
+
 VipPySignalFusionProcessingManager::VipPySignalFusionProcessingManager(QWidget* parent)
   : QWidget(parent)
 {
 	VIP_CREATE_PRIVATE_DATA(d_data);
 
-	d_data->createWidget = new QGroupBox("Register new processing");
+	d_data->createWidget = new QWidget();
 	d_data->name = new QLineEdit();
 	d_data->name->setToolTip("Enter the processing name (mandatory)");
 	d_data->name->setPlaceholderText("Processing name");
+	d_data->overwrite = new QCheckBox("Overwrite existing processing");
+	d_data->overwrite->setChecked(true);
 	d_data->category = new QLineEdit();
 	d_data->category->setToolTip("<b>Enter the processing category (mandatory)</b><br>You can define as many sub-categories as you need using a '/' separator.");
 	d_data->category->setPlaceholderText("Processing category");
@@ -704,14 +718,17 @@ VipPySignalFusionProcessingManager::VipPySignalFusionProcessingManager(QWidget* 
 	d_data->description->setMinimumHeight(100);
 
 	QGridLayout* glay = new QGridLayout();
-	glay->addWidget(new QLabel("Processing name: "), 0, 0);
-	glay->addWidget(d_data->name, 0, 1);
-	glay->addWidget(new QLabel("Processing category: "), 1, 0);
-	glay->addWidget(d_data->category, 1, 1);
-	glay->addWidget(d_data->description, 2, 0, 1, 2);
+	int row = 0;
+	glay->addWidget(flatGroupBox("Register new processing"), row++, 0, 1, 2);
+	glay->addWidget(new QLabel("Processing name: "), row, 0);
+	glay->addWidget(d_data->name, row++, 1);
+	glay->addWidget(new QLabel("Processing category: "), row, 0);
+	glay->addWidget(d_data->category, row++, 1);
+	glay->addWidget(d_data->overwrite, row++, 0, 1, 2);
+	glay->addWidget(d_data->description, row++, 0, 1, 2);
 	d_data->createWidget->setLayout(glay);
 
-	d_data->editWidget = new QGroupBox("Edit registered processing");
+	d_data->editWidget = new QWidget();
 	d_data->procList = new QTreeWidget();
 	d_data->procList->header()->show();
 	d_data->procList->setColumnCount(2);
@@ -740,6 +757,7 @@ VipPySignalFusionProcessingManager::VipPySignalFusionProcessingManager(QWidget* 
 	d_data->pyEditor->setMaximumHeight(400);
 	d_data->pyEditor->setMinimumHeight(200);
 	QVBoxLayout* vlay = new QVBoxLayout();
+	vlay->addWidget(flatGroupBox("Edit registered processing"));
 	vlay->addWidget(d_data->procList);
 	vlay->addWidget(d_data->procDescription);
 	vlay->addWidget(d_data->procEditor);
@@ -777,6 +795,11 @@ QString VipPySignalFusionProcessingManager::description() const
 	return d_data->description->toPlainText();
 }
 
+bool VipPySignalFusionProcessingManager::overwrite() const
+{
+	return d_data->overwrite->isChecked();
+}
+
 void VipPySignalFusionProcessingManager::setName(const QString& name)
 {
 	d_data->name->setText(name);
@@ -788,6 +811,11 @@ void VipPySignalFusionProcessingManager::setCategory(const QString& cat)
 void VipPySignalFusionProcessingManager::setDescription(const QString& desc)
 {
 	d_data->description->setPlainText(desc);
+}
+
+void VipPySignalFusionProcessingManager::setOverwrite(bool enable)
+{
+	d_data->overwrite->setChecked( enable);
 }
 
 void VipPySignalFusionProcessingManager::setManagerVisible(bool vis)
@@ -1127,7 +1155,7 @@ void VipPySignalFusionProcessingEditor::registerProcessing()
 	m->setCreateNewVisible(true);
 	VipGenericDialog dialog(m, "Register new processing");
 	if (dialog.exec() == QDialog::Accepted) {
-		bool ret = d_data->proc->registerThisProcessing(m->category(), m->name(), m->description(), false);
+		bool ret = d_data->proc->registerThisProcessing(m->category(), m->name(), m->description(), m->overwrite());
 		if (!ret)
 			QMessageBox::warning(nullptr, "Operation failure", "Failed to register this processing.\nPlease make sure you entered a valid name and category.");
 		else {
@@ -1667,4 +1695,25 @@ namespace detail
 		if (VipPlotPlayer * pl = player())
 			parent()->setTimeUnit(pl->timeUnit());
 	}
+
+	static void attachFitToPlayer(VipDisplayCurve* d, VipPlotCurve* c)
+	{
+		if (VipPlotPlayer* pl = qobject_cast<VipPlotPlayer*>(VipPlotPlayer::findAbstractPlayer(d))) {
+
+			QList<VipPyFitProcessing*> fits = vipListCast<VipPyFitProcessing*>(d->allSources());
+			for (VipPyFitProcessing* f : fits) {
+				new AttachFitToPlayer(f, pl);
+			}
+		}
+	}
+
+	static int registerAttachFit()
+	{
+		// Make sure attachFitToPlayer is called every time a VipPlotCurve is added to a VipPlotPlayer.
+		// This is the only way to ensure that a VipPyFitProcessing has an associated AttachFitToPlayer
+		// on session loading.
+		VipFDDisplayObjectSetItem().append<void(VipDisplayCurve*, VipPlotCurve*)>(attachFitToPlayer);
+		return 0;
+	}
+	static int _registerAttachFit = registerAttachFit();
 }

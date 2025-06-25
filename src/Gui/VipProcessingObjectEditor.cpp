@@ -1113,7 +1113,8 @@ void VipProcessingListEditor::updateProcessingTree()
 		lst.append(d_data->processingList->inputAt(0)->probe().data());
 
 		QList<int> current_types = vipUserTypes();
-		if (d_data->infos.isEmpty() || current_types != d_data->user_types) {
+		//if (d_data->infos.isEmpty() || current_types != d_data->user_types) 
+		{
 			d_data->user_types = current_types;
 			d_data->infos = VipProcessingObject::validProcessingObjects(lst, 1, VipProcessingObject::InputTransform).values();
 
