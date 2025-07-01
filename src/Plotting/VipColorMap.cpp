@@ -324,7 +324,8 @@ public:
 	std::vector<int> indexes;
 	VipNDArrayType<float> tmpArray;
 	QReadWriteLock histLock;
-	size_t arrayHash{ 0 };
+	size_t arrayHash = 0;
+	int lastHistStrength = -1;
 	VipInterval interval;
 };
 
@@ -452,9 +453,10 @@ void applyColorMapLinear(const VipLinearColorMap* map, const VipInterval& interv
 		// compute hash value
 		size_t hash = vipHashBytes(values, w * h * sizeof(T));
 
-		if (hash != map->d_data->arrayHash || map->d_data->histogram.size() == 0 || map->d_data->interval != interval) {
+		if (hash != map->d_data->arrayHash || map->d_data->histogram.size() == 0 || map->d_data->interval != interval || map->d_data->lastHistStrength != map->d_data->flatHistogramStrength) {
 			map->d_data->arrayHash = hash;
 			map->d_data->interval = interval;
+			map->d_data->lastHistStrength = map->d_data->flatHistogramStrength;
 			// input array
 			VipNDArrayTypeView<const T> tmp(values, vipVector(h, w));
 			// prepare array of indexes in the histogram
@@ -463,7 +465,7 @@ void applyColorMapLinear(const VipLinearColorMap* map, const VipInterval& interv
 			// prepare histogram
 			map->d_data->histogram.clear();
 			// compute array histogram
-			if (std::is_integral<T>::value) {
+			if (true /* std::is_integral<T>::value*/) { //TEST
 				if (map->d_data->tmpArray.shape() != tmp.shape())
 					map->d_data->tmpArray.reset(tmp.shape());
 				histogram(tmp, map->d_data->tmpArray, map->d_data->flatHistogramStrength, interval, map->d_data->histogram, map->d_data->indexes.data(), max_index, num_threads);

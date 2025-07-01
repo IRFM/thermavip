@@ -1778,7 +1778,7 @@ QString VipFileDialog::getSaveFileName2(QWidget* parent, const QString& filename
 	if (!last_filter.isEmpty() && last_filter != filters)
 		filters = last_filter + ";;" + filters;
 
-	QString dir = QFileInfo(filename).canonicalPath();
+	QString dir = QFileInfo(filename).absoluteDir().canonicalPath();
 	if (dir.isEmpty() || dir == ".")
 		dir = m_default_dir.isEmpty() ? m_last_dirs[caption] : m_default_dir;
 	QString fname = QFileInfo(filename).fileName();

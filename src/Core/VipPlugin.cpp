@@ -45,11 +45,13 @@
 #include <qsettings.h>
 #include <qstringlist.h>
 
+#include <vector>
+
 class VipLoadPlugins::PrivateData
 {
 public:
 	QList<VipPluginInterface*> interfaces;
-	QList<QPluginLoader*> plugins;
+	std::vector<std::unique_ptr<QPluginLoader>> plugins;
 	QMap<QString, QStringList> availablePlugins;
 };
 
@@ -82,7 +84,7 @@ VipLoadPlugins::~VipLoadPlugins()
 {
 	for (int i = 0; i < d_data->plugins.size(); ++i) {
 		d_data->plugins[i]->unload();
-		delete d_data->plugins[i];
+		d_data->plugins[i].reset();
 	}
 }
 
@@ -170,7 +172,7 @@ void VipLoadPlugins::unloadAndDeletePlugins()
 	for (int i = 0; i < d_data->interfaces.size(); ++i) {
 		// delete d_data->interfaces[i];
 		d_data->plugins[i]->unload();
-		delete d_data->plugins[i];
+		d_data->plugins[i].reset();
 	}
 
 	d_data->interfaces.clear();
@@ -197,7 +199,7 @@ VipPluginInterface::LoadResult VipLoadPlugins::loadPlugin(const QString& name, Q
 	else
 		return VipPluginInterface::Unauthorized;
 
-	QPluginLoader* loader = new QPluginLoader(vipGetPluginsDirectory() + name);
+	std::unique_ptr<QPluginLoader> loader ( new QPluginLoader(vipGetPluginsDirectory() + name));
 	loader->load();
 	if (loader->isLoaded()) {
 		QObject* plugin = loader->instance();
@@ -217,7 +219,7 @@ VipPluginInterface::LoadResult VipLoadPlugins::loadPlugin(const QString& name, Q
 			// if the user requested the command line help, only load the plugin if it defines extra commands
 			if (VipCommandOptions::instance().count("help")) {
 				if (!_interface->hasExtraCommands()) {
-					d_data->plugins.append(loader);
+					d_data->plugins.push_back(std::move(loader));
 					d_data->interfaces.append(_interface);
 					return VipPluginInterface::Success;
 				}
@@ -225,7 +227,7 @@ VipPluginInterface::LoadResult VipLoadPlugins::loadPlugin(const QString& name, Q
 
 			VipPluginInterface::LoadResult result = _interface->loadPlugin();
 			if (result != VipPluginInterface::Failure && result != VipPluginInterface::Unauthorized) {
-				d_data->plugins.append(loader);
+				d_data->plugins.push_back(std::move(loader));
 				d_data->interfaces.append(_interface);
 			}
 			return result;
@@ -235,6 +237,5 @@ VipPluginInterface::LoadResult VipLoadPlugins::loadPlugin(const QString& name, Q
 	if (error)
 		*error = loader->errorString();
 
-	delete loader;
 	return VipPluginInterface::Failure;
 }

@@ -387,14 +387,14 @@ VipPlotItem* VipDisplayPlotItem::item() const
 			QMetaObject::invokeMethod(
 			  _this,
 			  [](QObjectPointer display, QObjectPointer plot) {
-				  if (display && plot)
+				  if (display && plot && static_cast<VipDisplayObject*>(display.get())->widget())
 					  VipFDDisplayObjectSetItem().callAllMatch(display.get(), plot.get());
 			  },
 			  Qt::QueuedConnection,
 			  QObjectPointer(_this),
 			  QObjectPointer(item));
 		}
-		else
+		else if (this->widget())
 			VipFDDisplayObjectSetItem().callAllMatch(this, item);
 	}
 	return item;
@@ -461,7 +461,8 @@ void VipDisplayPlotItem::setItem(VipPlotItem* item)
 		item->setItemAttribute(VipPlotItem::IsSuppressable, d_data->itemSuppressable);
 		axesChanged(item);
 
-		VipFDDisplayObjectSetItem().callAllMatch(this, item);
+		if (widget())
+			VipFDDisplayObjectSetItem().callAllMatch(this, item);
 	}
 }
 
