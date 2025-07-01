@@ -41,6 +41,7 @@
 #include <qicon.h>
 #include <qscrollarea.h>
 #include <qplaintextedit.h>
+#include <qtextedit.h>
 
 #include "VipCore.h"
 #include "VipDisplayArea.h"
@@ -51,6 +52,10 @@
 #include "VipStandardWidgets.h"
 #include "VipSearchLineEdit.h"
 #include "VipProcessingObjectEditor.h"
+
+#ifdef VIP_WITH_VTK
+#include "VipVTKPlayer.h"
+#endif
 
 QGroupBox* VipPageOption::createOptionGroup(const QString& label)
 {
@@ -308,6 +313,9 @@ VipOptions* vipGetOptions()
 		dialog->addPage("Rendering modes", new RenderingSettings(), vipIcon("RENDERING.png"));
 		dialog->addPage("Environment", new EnvironmentSettings(), vipIcon("BROWSER.png"));
 		dialog->addPage("Processing and devices", new ProcessingSettings(), vipIcon("PROCESSING.png"));
+#ifdef VIP_WITH_VTK
+		dialog->addPage("3D Objects", new VipVTKPlayerOptionPage(), vipIcon("CAD.png"));
+#endif
 		dialog->setTreeWidth(150);
 	}
 	return dialog;
@@ -335,6 +343,7 @@ public:
 	QGroupBox* general;
 	QComboBox* skins;
 	QComboBox* colorPalette;
+	VipTextWidget *editorFont;
 
 	QGroupBox* players;
 	QComboBox* colorMaps;
@@ -377,9 +386,12 @@ AppearanceSettings::AppearanceSettings(QWidget* parent)
 		d_data->colorPalette->addItem(applyFactor(palette, 120), "Light", 120);
 		d_data->colorPalette->addItem(applyFactor(palette, 140), "Very light", 140);
 	}
-
 	d_data->skins->setToolTip("Global Thermavip color theme");
 	d_data->colorPalette->setToolTip("Color palette used for curves and histograms");
+
+	d_data->editorFont = new VipTextWidget();
+	d_data->editorFont->setEditableContent(VipTextWidget::Font);
+	d_data->editorFont->setToolTip("Select font used by consoles, shells, editors...");
 
 	QGridLayout* glay = new QGridLayout();
 	glay->addWidget(new QLabel("Color theme"), 0, 0, Qt::AlignLeft);
@@ -387,6 +399,12 @@ AppearanceSettings::AppearanceSettings(QWidget* parent)
 
 	glay->addWidget(new QLabel("Item color palette"), 1, 0, Qt::AlignLeft);
 	glay->addWidget(d_data->colorPalette, 1, 1, Qt::AlignLeft);
+
+	glay->addWidget(new QLabel("Consoles/Editors font"), 2, 0, Qt::AlignLeft);
+	glay->addWidget(d_data->editorFont, 2, 1, Qt::AlignLeft);
+	VipText t;
+	t.setFont(VipGuiDisplayParamaters::instance()->defaultEditorFont());
+	d_data->editorFont->setText(t);
 
 	d_data->general->setLayout(glay);
 
@@ -539,6 +557,10 @@ void AppearanceSettings::updatePage()
 	else if (current == 140)
 		d_data->colorPalette->setCurrentIndex(5);
 
+	VipText t;
+	t.setFont(VipGuiDisplayParamaters::instance()->defaultEditorFont());
+	d_data->editorFont->setText(t);
+
 	// Video player settings
 	d_data->colorMaps->setCurrentIndex(VipGuiDisplayParamaters::instance()->playerColorScale());
 	d_data->showScale->setChecked(VipGuiDisplayParamaters::instance()->videoPlayerShowAxes());
@@ -601,6 +623,16 @@ void AppearanceSettings::applyPage()
 		VipCoreSettings::instance()->setSkin("gray");
 
 	VipGuiDisplayParamaters::instance()->setItemPaletteFactor(d_data->colorPalette->currentData().toInt());
+
+	// Apply editor font to all QTextEdit and QPlainTextEdit
+	QFont f = d_data->editorFont->getText().font();
+	VipGuiDisplayParamaters::instance()->setDefaultEditorFont(f);
+	QList<QTextEdit*> edits = vipGetMainWindow()->findChildren<QTextEdit*>();
+	for (QTextEdit* e : edits)
+		e->setFont(f);
+	QList<QPlainTextEdit*> plain_edits = vipGetMainWindow()->findChildren<QPlainTextEdit*>();
+	for (QPlainTextEdit* e : plain_edits)
+		e->setFont(f);
 
 	// Video player settings
 	VipGuiDisplayParamaters::instance()->setPlayerColorScale(VipLinearColorMap::StandardColorMap(d_data->colorMaps->currentIndex()));

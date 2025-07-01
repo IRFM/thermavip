@@ -182,7 +182,7 @@ VipVTKGraphicsView::VipVTKGraphicsView()
 	// Lookup table
 	mLut = vtkSmartPointer<vtkLookupTable>::New();
 	mLut->SetRange(0, 100);
-	mLut->SetNanColor((double*)VipVTKObject::stdColor());
+	mLut->SetNanColor((double*)VipVTKObject::defaultObjectColor());
 	VIP_VTK_OBSERVER(mLut);
 
 	// Thread pool used to extract point data range
@@ -340,7 +340,7 @@ VipVTKGraphicsView::VipVTKGraphicsView()
 	//TODO
 	double textColorf[3];
 	QColor tcolor = WidgetTextBrush(qApp->topLevelWidgets().first()).color();
-	fromQColor(tcolor, textColorf);
+	vipFromQColor(tcolor, textColorf);
 
 	mCubeAxesActor = vtkSmartPointer<vtkCubeAxesActor>::New();
 	mCubeAxesActor->SetUseTextActor3D(1);
@@ -451,7 +451,7 @@ VipVTKGraphicsView::VipVTKGraphicsView()
 	connect(area()->colorMapAxis(), SIGNAL(scaleNeedUpdate()), this, SLOT(colorMapModified()));
 	connect(area()->colorMapAxis()->grip1(), SIGNAL(valueChanged(double)), this, SLOT(colorMapDivModified()));
 	connect(area()->colorMapAxis()->grip2(), SIGNAL(valueChanged(double)), this, SLOT(colorMapDivModified()));
-	table()->SetNanColor(VipVTKObject::stdColor());
+	table()->SetNanColor(VipVTKObject::defaultObjectColor());
 	mDirtyColorMapDiv = false;
 
 	this->area()->legend()->setVisible(true);
@@ -749,13 +749,13 @@ void VipVTKGraphicsView::resetCamera(bool closest , double offsetRatio) {
 void VipVTKGraphicsView::setBackgroundColor(const QColor& color)
 {
 	double dback[3];
-	fromQColor(color, dback);
+	vipFromQColor(color, dback);
 	mRenderer->SetBackground(dback); // stdBackgroundColor());
 }
 
 QColor VipVTKGraphicsView::backgroundColor() const
 {
-	return toQColor(mRenderer->GetBackground());
+	return vipToQColor(mRenderer->GetBackground());
 }
 
 void VipVTKGraphicsView::startRender(VipRenderState& state)
@@ -792,7 +792,7 @@ bool VipVTKGraphicsView::renderObject(QPainter* p, const QPointF& pos, bool draw
 					scene()->render(&p, target, visible);
 				}
 
-				/*uint back = toQColor(renderer()->GetBackground()).rgba();
+				/*uint back = vipToQColor(renderer()->GetBackground()).rgba();
 				uint new_back = qRgba(255, 255, 255, 0);
 				int size = img.width()*img.height();
 				uint * pix = (uint*)img.bits();

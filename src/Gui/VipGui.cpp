@@ -1182,6 +1182,13 @@ static void serialize_VipGuiDisplayParamaters(VipGuiDisplayParamaters* inst, Vip
 			else
 				inst->setPlayerColorScale(VipLinearColorMap::StandardColorMap(arch.read("playerColorScale").value<int>()));
 
+			arch.save();
+			QFont f;
+			if (arch.content("defaultEditorFont", f))
+				inst->setDefaultEditorFont(f);
+			else
+				arch.restore();
+
 			bool show_axes = arch.read("video_player_axes").toBool();
 			if (arch)
 				inst->setVideoPlayerShowAxes(show_axes);
@@ -1332,6 +1339,7 @@ static void serialize_VipGuiDisplayParamaters(VipGuiDisplayParamaters* inst, Vip
 
 			arch.content("itemPaletteFactor", inst->itemPaletteFactor());
 			arch.content("playerColorScale", (int)inst->playerColorScale());
+			arch.content("defaultEditorFont", inst->defaultEditorFont());
 			arch.content("video_player_axes", inst->videoPlayerShowAxes());
 			arch.content("legendPosition", (int)inst->legendPosition());
 			arch.content("defaultPlotArea", inst->defaultPlotArea());

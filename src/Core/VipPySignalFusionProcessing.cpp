@@ -58,11 +58,32 @@ static int registerPySignalFusionProcessingPtr()
 }
 static int _registerPySignalFusionProcessingPtr = registerPySignalFusionProcessingPtr();
 
-static QRegExp xreg[50];
-static QRegExp yreg[50];
-static QRegExp ureg[50];
-static QRegExp uxreg[50];
-static QRegExp treg[50];
+
+static std::array<QRegExp, 50>& xreg()
+{
+	thread_local std::array<QRegExp, 50> r;
+	return r;
+}
+static std::array<QRegExp, 50>& yreg()
+{
+	thread_local std::array<QRegExp, 50> r;
+	return r;
+}
+static std::array<QRegExp, 50>& ureg()
+{
+	thread_local std::array<QRegExp, 50> r;
+	return r;
+}
+static std::array<QRegExp, 50>& uxreg()
+{
+	thread_local std::array<QRegExp, 50> r;
+	return r;
+}
+static std::array<QRegExp, 50>& treg()
+{
+	thread_local std::array<QRegExp, 50> r;
+	return r;
+}
 
 static void findXYmatch(const QString& algo,
 			const QString& title,
@@ -76,28 +97,28 @@ static void findXYmatch(const QString& algo,
 			std::set<int>& ux,
 			std::set<int>& merged)
 {
-	if (xreg[0].isEmpty()) {
+	if (xreg()[0].isEmpty()) {
 		// initialize regular expressions
 		for (int i = 0; i < 50; ++i) {
-			xreg[i].setPattern("\\bx" + QString::number(i) + "\\b");
-			xreg[i].setPatternSyntax(QRegExp::RegExp);
-			yreg[i].setPattern("\\by" + QString::number(i) + "\\b");
-			yreg[i].setPatternSyntax(QRegExp::RegExp);
-			ureg[i].setPattern("\\bu" + QString::number(i) + "\\b");
-			ureg[i].setPatternSyntax(QRegExp::RegExp);
-			uxreg[i].setPattern("\\bu" + QString::number(i) + "\\b");
-			uxreg[i].setPatternSyntax(QRegExp::RegExp);
-			treg[i].setPattern("\\bt" + QString::number(i) + "\\b");
-			treg[i].setPatternSyntax(QRegExp::RegExp);
+			xreg()[i].setPattern("\\bx" + QString::number(i) + "\\b");
+			xreg()[i].setPatternSyntax(QRegExp::RegExp);
+			yreg()[i].setPattern("\\by" + QString::number(i) + "\\b");
+			yreg()[i].setPatternSyntax(QRegExp::RegExp);
+			ureg()[i].setPattern("\\bu" + QString::number(i) + "\\b");
+			ureg()[i].setPatternSyntax(QRegExp::RegExp);
+			uxreg()[i].setPattern("\\bu" + QString::number(i) + "\\b");
+			uxreg()[i].setPatternSyntax(QRegExp::RegExp);
+			treg()[i].setPattern("\\bt" + QString::number(i) + "\\b");
+			treg()[i].setPatternSyntax(QRegExp::RegExp);
 		}
 	}
 
 	for (int i = 0; i < count; ++i) {
-		int xi = xreg[i].indexIn(algo);
-		int yi = yreg[i].indexIn(algo);
-		int ti = treg[i].indexIn(title);
-		int ui = ureg[i].indexIn(unit);
-		int uxi = uxreg[i].indexIn(xunit);
+		int xi = xreg()[i].indexIn(algo);
+		int yi = yreg()[i].indexIn(algo);
+		int ti = treg()[i].indexIn(title);
+		int ui = ureg()[i].indexIn(unit);
+		int uxi = uxreg()[i].indexIn(xunit);
 		if (xi >= 0)
 			x.insert(i);
 		if (yi >= 0)
@@ -184,6 +205,8 @@ bool VipPySignalFusionProcessing::registerThisProcessing(const QString& category
 				return false;
 		}
 	}
+	else
+		VipProcessingObject::removeInfoObject(info);
 	// register processing info
 	registerAdditionalInfoObject(info);
 
@@ -334,17 +357,17 @@ void VipPySignalFusionProcessing::mergeData(int, int)
 
 	// replace title and unit
 	for (int i = 0; i < input.size(); ++i) {
-		int ti = treg[i].indexIn(output_title);
+		int ti = treg()[i].indexIn(output_title);
 		if (ti >= 0) {
 			int len = 1 + (i > 9 ? 2 : 1);
 			output_title.replace(ti, len, titles[i]);
 		}
-		int ui = ureg[i].indexIn(output_unit);
+		int ui = ureg()[i].indexIn(output_unit);
 		if (ui >= 0) {
 			int len = 1 + (i > 9 ? 2 : 1);
 			output_unit.replace(ui, len, units[i]);
 		}
-		int uxi = uxreg[i].indexIn(output_x_unit);
+		int uxi = uxreg()[i].indexIn(output_x_unit);
 		if (uxi >= 0) {
 			int len = 1 + (i > 9 ? 2 : 1);
 			output_x_unit.replace(uxi, len, units[i]);

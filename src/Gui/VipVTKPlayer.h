@@ -51,6 +51,7 @@
 #include "VipStandardWidgets.h"
 #include "VipPlayer.h"
 #include "VipDisplayVTKObject.h"
+#include "VipOptions.h"
 
 class QTreeWidget;
 class QListWidget;
@@ -545,6 +546,21 @@ private:
 
 
 
+/// @brief Global display options for all VipVTKPlayer
+class VIP_GUI_EXPORT VipVTKPlayerOptions
+{
+public:
+	bool lighting = true;	// Add lighting by default to all VipVTKPlayer
+	bool orientationWidget = true; // Show orientation widget by default to all VipVTKPlayer
+	bool showHideFOVItems = false; // Show cameras in 3D object browser by default
+
+	void save(VipArchive&) const;
+	void restore(VipArchive&);
+
+	static void set(const VipVTKPlayerOptions&);
+	static const VipVTKPlayerOptions& get();
+};
+
 
 /// @brief Player class for representing VTK 3D objects.
 ///
@@ -625,5 +641,22 @@ private:
 };
 
 VIP_REGISTER_QOBJECT_METATYPE(VipVTKPlayer*)
+
+
+/// @brief Options for VTK players and 3D objects display
+class VIP_GUI_EXPORT VipVTKPlayerOptionPage : public VipPageOption
+{
+	Q_OBJECT
+
+public:
+	VipVTKPlayerOptionPage(QWidget* parent = nullptr);
+	~VipVTKPlayerOptionPage();
+
+	virtual void applyPage();
+	virtual void updatePage();
+
+private:
+	VIP_DECLARE_PRIVATE_DATA(d_data);
+};
 
 #endif

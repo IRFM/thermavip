@@ -125,6 +125,7 @@ public:
 	typedef int (*_supported_calibrations)(int camera, int* count);
 	typedef int (*_calibration_name)(int camera, int calibration, char* name);
 	typedef int (*_load_image)(int camera, int pos, int calibration, unsigned short* pixels);
+	typedef int (*_load_imageF)(int camera, int pos, int calibration, float* pixels);
 	typedef int (*_get_last_image_raw_value)(int camera, int x, int y, unsigned short* value);
 	typedef int (*_close_camera)(int camera);
 	typedef int (*_get_filename)(int cam, char* filename);
@@ -200,12 +201,8 @@ public:
 	typedef int (*_apply_calibration_nuc)(int cam, int enable);
 	typedef int (*_is_calibration_nuc)(int cam);
 	typedef int (*_convert_hcc_file)(const char* hcc_file,
-					 const char* lut_file,
-					 const char* tr_fut,
-					 const char* tr_hub,
-					 const char* tr_mir,
-					 const char* lopt,
-					 const char* nuc,
+					 const char* ,
+					 const char* ,
 					 int64_t start_timestamp_ns,
 					 const char* view,
 					 const char* out_file);
@@ -229,6 +226,9 @@ public:
 
 	typedef void (*_set_hcc_trfut_file)(const char* filename);
 	typedef void (*_get_hcc_trfut_file)(char* filename);
+
+	typedef int (*_set_firca_folder)(const char* filename);
+	typedef int (*_get_firca_folder)(char* filename);
 
 	typedef int (*_attrs_open_file)(const char* filename);
 	typedef void (*_attrs_close)(int handle);
@@ -294,6 +294,7 @@ public:
 	_supported_calibrations supported_calibrations;
 	_calibration_name calibration_name;
 	_load_image load_image;
+	_load_imageF load_imageF;
 	_get_last_image_raw_value get_last_image_raw_value;
 	_close_camera close_camera;
 	_get_filename get_filename;
@@ -393,6 +394,10 @@ public:
 
 	_set_hcc_trfut_file set_hcc_trfut_file;
 	_get_hcc_trfut_file get_hcc_trfut_file;
+
+	_set_firca_folder firca_set_calibration_folder;
+	_get_firca_folder firca_get_calibration_folder;
+
 
 	_attrs_open_file attrs_open_file;
 	_attrs_close attrs_close;

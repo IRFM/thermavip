@@ -321,6 +321,12 @@ VipLibRIR* VipLibRIR::instance()
 		delete librir;
 		return librir = nullptr;
 	}
+	librir->load_imageF = (_load_imageF)videoIOLib()->resolve("load_imageF");
+	if (!librir->load_imageF) {
+		VIP_LOG_ERROR("librir: missing load_imageF");
+		delete librir;
+		return librir = nullptr;
+	}
 
 	librir->get_last_image_raw_value = (_get_last_image_raw_value)videoIOLib()->resolve("get_last_image_raw_value");
 	if (!librir->get_last_image_raw_value) {
@@ -972,6 +978,19 @@ VipLibRIR* VipLibRIR::instance()
 			return librir = nullptr;
 		}
 
+		librir->firca_set_calibration_folder = (_set_firca_folder)westLib()->resolve("firca_set_calibration_folder");
+		/*if (!librir->firca_set_calibration_folder) {
+			VIP_LOG_ERROR("librir: missing firca_set_calibration_folder");
+			delete librir;
+			return librir = nullptr;
+		}*/
+		librir->firca_get_calibration_folder = (_get_firca_folder)westLib()->resolve("firca_get_calibration_folder");
+		/*if (!librir->firca_get_calibration_folder) {
+			VIP_LOG_ERROR("librir: missing firca_get_calibration_folder");
+			delete librir;
+			return librir = nullptr;
+		}*/
+		
 		librir->hcc_extract_times_and_fw_pos = (_hcc_extract_times_and_fw_pos)westLib()->resolve("hcc_extract_times_and_fw_pos");
 		if (!librir->hcc_extract_times_and_fw_pos) {
 			VIP_LOG_ERROR("librir: missing hcc_extract_times_and_fw_pos");

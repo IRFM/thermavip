@@ -335,7 +335,14 @@ void VipSliderGrip::setValueInternal(double val, bool InPaint)
 	updatePositionInternal(InPaint);
 
 	if (previous != d_data->value) {
-		Q_EMIT valueChanged(d_data->value);
+		if (!InPaint)
+			Q_EMIT valueChanged(d_data->value);
+		else{
+			// Direct connections to valueChanged() might trigger another update and 
+			// issue warning " QBackingStore::endPaint() called with active painter; did you forget to destroy it or call QPainter::end() on it?"
+			// which eventually causes a crash.
+			QMetaObject::invokeMethod(this, [this]() { Q_EMIT valueChanged(d_data->value); }, Qt::QueuedConnection);
+		}
 	}
 }
 void VipSliderGrip::setValue(double val)

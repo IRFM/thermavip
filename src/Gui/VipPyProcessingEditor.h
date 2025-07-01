@@ -95,10 +95,12 @@ public:
 	QString name() const;
 	QString category() const;
 	QString description() const;
+	bool overwrite() const;
 
 	void setName(const QString&);
 	void setCategory(const QString&);
 	void setDescription(const QString&);
+	void setOverwrite(bool);
 
 	void setManagerVisible(bool);
 	bool managerVisible() const;

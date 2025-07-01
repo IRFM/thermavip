@@ -671,8 +671,8 @@ void VipFOVItem::setPlotFov(VipPlotFieldOfView* p)
 				d_data->cam_path->setRawData(obj);
 
 				d_data->cam_path->setVisible(true);
-				//d_data->cam_path->setColor(toQColor(d_data->color));
-				//d_data->cam_path->setSelectedColor(toQColor(d_data->color));
+				//d_data->cam_path->setColor(vipToQColor(d_data->color));
+				//d_data->cam_path->setSelectedColor(vipToQColor(d_data->color));
 				d_data->cam_path->actor()->GetProperty()->SetLineWidth(2);
 				polyData->Delete();
 			}
@@ -819,8 +819,8 @@ void VipFOVItem::buildPyramid()
 	fov.pyramid(obj, depth); // = d_data->fov.pyramid(depth);
 	obj.setDataName(fov.name + "/FOV");
 	d_data->fov_pyramid.setRawData(obj);
-	//d_data->fov_pyramid.setColor(toQColor(d_data->color));
-	//d_data->fov_pyramid.setSelectedColor(toQColor(d_data->color));
+	//d_data->fov_pyramid.setColor(vipToQColor(d_data->color));
+	//d_data->fov_pyramid.setSelectedColor(vipToQColor(d_data->color));
 	d_data->fov_pyramid.setOpacity(0.4);
 	d_data->fov_pyramid.setVisible(false);
 	d_data->fov_pyramid.actor()->SetVisibility(false);
@@ -830,8 +830,8 @@ void VipFOVItem::buildPyramid()
 	fov.opticalAxis(axis, depth);
 	axis.setDataName(fov.name + "/Optical axis");
 	d_data->optical_axis.setRawData(axis);
-	//d_data->optical_axis.setColor(toQColor(d_data->color));
-	//d_data->optical_axis.setSelectedColor(toQColor(d_data->color));
+	//d_data->optical_axis.setColor(vipToQColor(d_data->color));
+	//d_data->optical_axis.setSelectedColor(vipToQColor(d_data->color));
 	d_data->optical_axis.setVisible(false);
 	d_data->optical_axis.actor()->SetVisibility(false);
 
@@ -4628,11 +4628,11 @@ void VipSelectDisplayedAttributeWidget::DisplaySelectedAnnotatedAttribue(bool di
 
 			PlotVipVTKObjectList lst = it.value();
 			for (int l = 0; l < lst.size(); ++l) {
-				lst[l]->setHighlightColor(toQColor(color));
+				lst[l]->setHighlightColor(vipToQColor(color));
 
 				// create a new fake VipPlotVTKObject for each VipVTKObject and add them into the VipLegend
 				VipPlotVTKObject* plot = new VipPlotVTKObject();
-				plot->setColor(toQColor(color));
+				plot->setColor(vipToQColor(color));
 				plot->setTitle(it.key());
 				d_data->view->annotationLegend()->legend()->addItem(plot);
 			}
@@ -5212,7 +5212,7 @@ void VipCubeAxesActorWidget::updateWidget()
 	d_data->tickLocation->setCurrentIndex(d_data->actor->GetTickLocation());
 	d_data->labelOffset->setValue(d_data->actor->GetLabelOffset());
 
-#if VTK_VERSION_MAJOR >= 9
+#if VTK_VERSION_NUMBER >= 90020210809ULL
 	double x, y;
 	d_data->actor->GetTitleOffset(x, y);
 	d_data->titleOffset->setValue(x);
@@ -5290,7 +5290,7 @@ void VipCubeAxesActorWidget::updateActor()
 	a->SetTickLocation(d->tickLocation->currentIndex());
 	a->SetLabelOffset(d->labelOffset->value());
 
-#if VTK_VERSION_MAJOR >= 9
+#if VTK_VERSION_NUMBER >= 90020210809ULL
 	double off[2] = { d->titleOffset->value(), d->titleOffset->value() };
 	a->SetTitleOffset(off);
 #else
@@ -5348,8 +5348,37 @@ void VipCubeAxesActorWidget::updateActor()
 
 
 
+static VipVTKPlayerOptions _vtk_player_options;
+
+const VipVTKPlayerOptions& VipVTKPlayerOptions::get()
+{
+	return _vtk_player_options;
+}
+
+void VipVTKPlayerOptions::set(const VipVTKPlayerOptions& opts)
+{
+	_vtk_player_options = opts;
 
 
+}
+
+void VipVTKPlayerOptions::save(VipArchive& arch) const
+{
+	arch.content("lighting", lighting);
+	arch.content("orientationWidget", orientationWidget);
+	arch.content("showHideFOVItems", showHideFOVItems);
+	arch.content("defaultObjectColor", vipToQColor( VipVTKObject::defaultObjectColor()));
+}
+void VipVTKPlayerOptions::restore(VipArchive& arch)
+{
+	arch.content("lighting", lighting);
+	arch.content("orientationWidget", orientationWidget);
+	arch.content("showHideFOVItems", showHideFOVItems);
+
+	QColor defaultObjectColor;
+	arch.content("defaultObjectColor", defaultObjectColor);
+	VipVTKObject::setDefaultObjectColor(vipFromQColor(defaultObjectColor));
+}
 
 
 
@@ -5553,6 +5582,11 @@ VipVTKPlayer::VipVTKPlayer(QWidget* parent)
 
 	// Hide tool tip
 	this->setToolTipFlags(VipToolTip::Hidden);
+
+	// Apply global options;
+	fov()->setVisible(VipVTKPlayerOptions::get().showHideFOVItems);
+	setLighting(VipVTKPlayerOptions::get().lighting);
+	setOrientationMarkerWidgetVisible(VipVTKPlayerOptions::get().orientationWidget);
 }
 
 VipVTKPlayer::~VipVTKPlayer()
@@ -6061,6 +6095,87 @@ static VipArchive& operator>>(VipArchive& arch, VipVTKPlayer* w)
 
 
 
+class VipVTKPlayerOptionPage::PrivateData
+{
+public:
+	QToolButton lighting;
+	QToolButton orientationWidget;
+	QToolButton showHideFOVItems;
+	VipColorWidget defaultObjectColor;
+};
+
+
+VipVTKPlayerOptionPage::VipVTKPlayerOptionPage(QWidget* parent)
+  : VipPageOption(parent)
+{
+	VIP_CREATE_PRIVATE_DATA(d_data);
+
+	this->setWindowIcon(vipIcon("CAD.png"));
+
+	d_data->lighting.setIcon(vipIcon("light_orange.png"));
+	d_data->lighting.setCheckable(true);
+
+	d_data->orientationWidget.setIcon(vipIcon("display_axes.png"));
+	d_data->orientationWidget.setCheckable(true);
+
+	d_data->showHideFOVItems.setIcon(vipIcon("fov_displayed.png"));
+	d_data->showHideFOVItems.setCheckable(true);
+
+	d_data->defaultObjectColor.setColor(vipToQColor(VipVTKObject::defaultObjectColor()));
+
+	QGridLayout* lay = new QGridLayout();
+	int row = 0;
+
+	lay->addWidget(new QLabel("Enable lighting"), row, 0, Qt::AlignLeft);
+	lay->addWidget(&d_data->lighting, row++, 1, Qt::AlignLeft);
+
+	lay->addWidget(new QLabel("Display orientation widget"), row, 0, Qt::AlignLeft);
+	lay->addWidget(&d_data->orientationWidget, row++, 1, Qt::AlignLeft);
+
+	lay->addWidget(new QLabel("Display Field Of View list"), row, 0, Qt::AlignLeft);
+	lay->addWidget(&d_data->showHideFOVItems, row++, 1, Qt::AlignLeft);
+
+	lay->addWidget(new QLabel("Default 3D object color"), row, 0, Qt::AlignLeft);
+	lay->addWidget(&d_data->defaultObjectColor, row++, 1, Qt::AlignLeft);
+
+	QVBoxLayout* vlay = new QVBoxLayout();
+	vlay->setContentsMargins(0,0,0,0);
+	vlay->addLayout(lay);
+	vlay->addStretch(1);
+
+	setLayout(vlay);
+}
+VipVTKPlayerOptionPage::~VipVTKPlayerOptionPage() {}
+
+void VipVTKPlayerOptionPage::applyPage() 
+{
+	VipVTKPlayerOptions opts;
+	opts.lighting = d_data->lighting.isChecked();
+	opts.orientationWidget = d_data->orientationWidget.isChecked();
+	opts.showHideFOVItems = d_data->showHideFOVItems.isChecked();
+	QColor defaultObjectColor = d_data->defaultObjectColor.color();
+	VipVTKObject::setDefaultObjectColor(vipFromQColor( defaultObjectColor));
+
+	VipVTKPlayerOptions::set(opts);
+
+	QList<VipVTKPlayer*> players = VipUniqueId::objects<VipVTKPlayer>();
+	for (VipVTKPlayer* p : players) {
+		p->setLighting(opts.lighting);
+		p->setOrientationMarkerWidgetVisible(opts.orientationWidget);
+		p->fov()->setVisible(opts.showHideFOVItems);
+	}
+}
+void VipVTKPlayerOptionPage::updatePage() 
+{
+	VipVTKPlayerOptions opts = VipVTKPlayerOptions::get();
+
+	d_data->lighting.setChecked(opts.lighting);
+	d_data->orientationWidget.setChecked(opts.orientationWidget);
+	d_data->showHideFOVItems.setChecked(opts.showHideFOVItems);
+	d_data->defaultObjectColor.setColor(vipToQColor(VipVTKObject::defaultObjectColor()));
+}
+
+
 
 
 
@@ -6162,6 +6277,7 @@ static int registerOperators()
 	vipSetDragWidget().append<void(VipDragWidget*, VipVTKPlayer*)>(setMainWidget);
 
 	vipFDPlayerCreated().append<void(VipVTKPlayer*)>(onMainWidgetCreated);
+
 	return 0;
 }
 

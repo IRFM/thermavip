@@ -786,12 +786,23 @@ class VIP_GUI_EXPORT VipTextWidget : public QWidget
 	Q_OBJECT
 	Q_PROPERTY(VipText value READ getText WRITE setText)
 public:
+	enum EditableContent
+	{
+		String = 1,
+		Font = 2,
+		Color = 4
+	};
+
 	VipTextWidget(QWidget* parent = nullptr);
+	~VipTextWidget(); 
 
 	void setText(const VipText& t);
 	VipText getText() const;
 
 	QLineEdit* edit() const;
+
+	int editableContent() const;
+	void setEditableContent(int);
 
 Q_SIGNALS:
 	void changed(const VipText&);
@@ -802,12 +813,7 @@ private Q_SLOTS:
 	void textEdited();
 
 private:
-	VipPenButton backgroundPen;
-	VipPenButton backgroundBrush;
-	VipPenButton textColor;
-	QLineEdit text;
-	QToolButton textChoice;
-	QWidget* m_options;
+	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
 class VIP_GUI_EXPORT VipBoxStyleWidget : public QWidget

@@ -496,6 +496,9 @@ bool VipPyProcessing::registerThisProcessing(const QString& category, const QStr
 				return false;
 		}
 	}
+	else {
+		VipProcessingObject::removeInfoObject(info);
+	}
 	// register processing info
 	registerAdditionalInfoObject(info);
 
