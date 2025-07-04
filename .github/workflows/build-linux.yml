@@ -28,6 +28,8 @@ jobs:
 
         - name: Install Qt
           uses: jurplel/install-qt-action@v4
+          with:
+            modules: 'qt5compat'
           
         - name: install gcc 10 
           run: sudo apt update && sudo apt install gcc-10
