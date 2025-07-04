@@ -32,7 +32,7 @@ jobs:
             version: '6.8.3'
             host: 'windows'
             target: 'desktop'
-            modules: 'core5compat'
+            modules: 'qtcore5compat'
           
         - name: install numpy
           run: pip install numpy
