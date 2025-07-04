@@ -1535,13 +1535,13 @@ QList<VipAbstractPlayer*> vipCreatePlayersFromData(const VipAnyData& any, VipAbs
 			// for numerical values, insert a VipNumericValueToPointVector before the processing list
 			bool is_numeric = false;
 			src->data().data().toDouble(&is_numeric);
-			if (is_numeric) {
+			/* if (is_numeric) {
 				VipNumericValueToPointVector* ConvertToPointVector = new VipNumericValueToPointVector(device->parent());
 				ConvertToPointVector->setScheduleStrategies(VipProcessingObject::Asynchronous);
 				ConvertToPointVector->setDeleteOnOutputConnectionsClosed(true);
 				ConvertToPointVector->inputAt(0)->setConnection(src);
 				src = ConvertToPointVector->outputAt(0);
-			}
+			}*/
 
 			// insert a VipProcessingList in between the device output and the VipDisplayObject
 			VipProcessingList* _lst = new VipProcessingList();

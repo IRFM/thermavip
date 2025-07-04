@@ -227,6 +227,9 @@ public:
 	virtual VipPlotCurve* item() const { return static_cast<VipPlotCurve*>(VipDisplayPlotItem::item()); }
 	virtual void setItem(VipPlotItem* item);
 
+	/// @brief Tells if this VipDisplayCurve last received streaming data (single point)
+	bool receiveStreamingData() const;
+
 protected:
 	virtual bool prepareForDisplay(const VipAnyDataList& data);
 	virtual void displayData(const VipAnyDataList& data);

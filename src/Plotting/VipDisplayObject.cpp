@@ -716,6 +716,11 @@ void VipDisplayCurve::setItem(VipPlotItem* _it)
 	}
 }
 
+bool VipDisplayCurve::receiveStreamingData() const
+{
+	return !d_data->is_full_vector;
+}
+
 bool VipDisplayCurve::prepareForDisplay(const VipAnyDataList& lst)
 {
 	if (VipPlotCurve* curve = item()) {
@@ -768,8 +773,18 @@ bool VipDisplayCurve::prepareForDisplay(const VipAnyDataList& lst)
 		curve->updateSamples([&](VipPointVector& vec) {
 			if (d_data->is_full_vector)
 				vec = vector;
-			else
+			else {
+				//remove all data with a time greater than sample
+				qsizetype erase_from = vec.size();
+				for (qsizetype i = vec.size() - 1; i >= 0; --i) {
+					if (vec[i].x() >= vector.first().x())
+						erase_from = i;
+					else
+						break;
+				}
+				vec.erase(vec.begin() + erase_from, vec.end());
 				vec.append(vector);
+			}
 
 			if (window > 0 && vec.size() && !d_data->is_full_vector) {
 				// convert to nanoseconds

@@ -536,6 +536,17 @@ bool vipHasWriteRightsDB()
 	return _users.contains(vipUserName(), Qt::CaseInsensitive);
 }
 
+static bool _has_video_annotation_features = true;
+bool vipHasVideoAnnotationFeatures()
+{
+	return _has_video_annotation_features;
+}
+void vipSetHasVideoAnnotationFeatures(bool enable)
+{
+	_has_video_annotation_features = enable;
+}
+
+
 Vip_event_list vipCopyEvents(const Vip_event_list& events)
 {
 	Vip_event_list res;

@@ -87,7 +87,7 @@ static VipIODevice* generateDeviceFromFile()
 
 		if (dev->open(VipIODevice::ReadOnly)) {
 			VIP_LOG_INFO("Create sequential device for path: " + QFileInfo(name).fileName());
-			VipGeneratorSequential* gen = new VipGeneratorSequential();
+			VipStreamingFromDevice* gen = new VipStreamingFromDevice();
 			gen->setIODevice(dev);
 			gen->setPath(name);
 			gen->setAttributes(dev->attributes());

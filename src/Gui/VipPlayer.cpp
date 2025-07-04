@@ -386,13 +386,12 @@ VipAbstractPlayer::~VipAbstractPlayer()
 {
 	VipPlayerLifeTime::emitDestroyed(this);
 
-	d_data->inDestructor = true;
+	//TEST: do not stop playing/streaming
+	/* d_data->inDestructor = true;
 	if (d_data->pool) {
 		d_data->pool->stop();
 		d_data->pool->stopStreaming();
-		//TEST: comment
-		//vipProcessEvents(nullptr, 500);
-	}
+	}*/
 
 }
 
@@ -4351,15 +4350,15 @@ QList<VipProcessingObject*> VipVideoPlayer::extractTimeEvolution(const ShapeInfo
 				if (!extract->outputAt(j)->isEnabled())
 					continue;
 
-				VipNumericValueToPointVector* ConvertToPointVector = new VipNumericValueToPointVector(pool);
+				/* VipNumericValueToPointVector* ConvertToPointVector = new VipNumericValueToPointVector(pool);
 				ConvertToPointVector->setScheduleStrategies(VipProcessingObject::Asynchronous);
 				ConvertToPointVector->setDeleteOnOutputConnectionsClosed(true);
-				ConvertToPointVector->inputAt(0)->setConnection(extract->outputAt(j));
+				ConvertToPointVector->inputAt(0)->setConnection(extract->outputAt(j));*/
 
 				VipProcessingList* ProcessingList = new VipProcessingList(pool);
 				ProcessingList->setScheduleStrategies(VipProcessingObject::Asynchronous);
 				ProcessingList->setDeleteOnOutputConnectionsClosed(true);
-				ProcessingList->inputAt(0)->setConnection(ConvertToPointVector->outputAt(0));
+				ProcessingList->inputAt(0)->setConnection(/* ConvertToPointVector->outputAt(0)*/ extract->outputAt(j));
 
 				if (src_output->data().isValid())
 					extract->inputAt(0)->setData(src_output->data());
@@ -7271,12 +7270,18 @@ void VipPlotPlayer::updateSlidingTimeWindow()
 			QList<VipProcessingObject*> sources = disp->allSources();
 			QList<VipIODevice*> devices = vipListCast<VipIODevice*>(sources);
 			bool has_sequential_device = false;
-			for (int d = 0; d < devices.size(); ++d) {
-				if (devices[d]->deviceType() == VipIODevice::Sequential) {
-					has_sequential_device = true;
-					break;
+			if (VipDisplayCurve* c = qobject_cast<VipDisplayCurve*>(disp))
+				has_sequential_device = c->receiveStreamingData();
+			if (!has_sequential_device) {
+
+				for (int d = 0; d < devices.size(); ++d) {
+					if (devices[d]->deviceType() == VipIODevice::Sequential) {
+						has_sequential_device = true;
+						break;
+					}
 				}
 			}
+
 			if (has_sequential_device) {
 				visible = true;
 				QList<VipNumericValueToPointVector*> converts = vipListCast<VipNumericValueToPointVector*>(sources);
@@ -7302,6 +7307,8 @@ void VipPlotPlayer::updateSlidingTimeWindow()
 				if (converts.size()) {
 					converts.last()->propertyAt(0)->setData(*values.begin());
 				}
+				else if (VipDisplayCurve* c = qobject_cast<VipDisplayCurve*>(disp))
+					c->propertyName("Sliding_time_window")->setData(*values.begin());
 			}
 		}
 	}
@@ -7332,10 +7339,16 @@ void VipPlotPlayer::setSlidingTimeWindow()
 			QList<VipProcessingObject*> sources = disp->allSources();
 			QList<VipIODevice*> devices = vipListCast<VipIODevice*>(sources);
 			bool has_sequential_device = false;
-			for (int d = 0; d < devices.size(); ++d) {
-				if (devices[d]->deviceType() == VipIODevice::Sequential) {
-					has_sequential_device = true;
-					break;
+			if (VipDisplayCurve* c = qobject_cast<VipDisplayCurve*>(disp))
+				has_sequential_device = c->receiveStreamingData();
+
+			if (!has_sequential_device) {
+
+				for (int d = 0; d < devices.size(); ++d) {
+					if (devices[d]->deviceType() == VipIODevice::Sequential) {
+						has_sequential_device = true;
+						break;
+					}
 				}
 			}
 			if (has_sequential_device) {

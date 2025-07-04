@@ -253,8 +253,10 @@ void VipIODevice::close()
 		this->setOpenMode(VipIODevice::NotOpen);
 		setEnabled(is_enabled);
 	}
-	else
+	else {
+		setStreamingEnabled(false);
 		this->setOpenMode(VipIODevice::NotOpen);
+	}
 
 	if (device()) {
 		device()->close();
@@ -1968,12 +1970,14 @@ void VipProcessingPool::checkForStreaming()
 void VipProcessingPool::childEvent(QChildEvent* event)
 {
 	if (event->removed()) {
-		this->stop();
-		this->setStreamingEnabled(false);
+		//TEST: do not stop streaming when removing a child
+		//this->stop();
+		//this->setStreamingEnabled(false);
 	}
 
 	// we might need to process the previously added child before processing this new one
-	this->computeChildren();
+	if(d_data->dirty_children)
+		this->computeChildren();
 
 	d_data->dirty_children = event->child();
 	d_data->dirty_time_window = true;
@@ -1985,34 +1989,24 @@ void VipProcessingPool::childEvent(QChildEvent* event)
 			connect(event->child(), SIGNAL(connectionOpened(VipProcessingIO*, int, const QString&)), this, SLOT(receiveConnectionOpened(VipProcessingIO*, int, const QString&)));
 			connect(event->child(), SIGNAL(connectionClosed(VipProcessingIO*)), this, SLOT(receiveConnectionClosed(VipProcessingIO*)));
 		}
+
+		if (VipIODevice* d = qobject_cast<VipIODevice*>(d_data->dirty_children)) {
+			// Start device streaming if necessary
+			if (this->isStreamingEnabled() && d->deviceType() == VipIODevice::Sequential)
+				d->setStreamingEnabled(true);
+		}
+
 	}
 	else if (event->removed()) {
 		if (event->child()->metaObject()->indexOfSignal("connectionOpened(VipProcessingIO*,int,QString)") >= 0) {
 			disconnect(event->child(), SIGNAL(connectionOpened(VipProcessingIO*, int, const QString&)), this, SLOT(receiveConnectionOpened(VipProcessingIO*, int, const QString&)));
 			disconnect(event->child(), SIGNAL(connectionClosed(VipProcessingIO*)), this, SLOT(receiveConnectionClosed(VipProcessingIO*)));
 		}
+
 		Q_EMIT objectRemoved(event->child());
 	}
-	// emitProcessingChanged();
 }
-// void VipProcessingPool::setDeviceIgnored(VipIODevice * device, bool ignored)
-// {
-// if (d_data->full_read_devices.indexOf(device) >= 0)
-// {
-// if (ignored)
-//	d_data->read_devices.removeOne(device);
-// else if (d_data->read_devices.indexOf(device) < 0)
-//	d_data->read_devices.append(device);
-//
-// d_data->dirty_time_window = true;
-// }
-// }
-//
-// void VipProcessingPool::clearIgnoredDevices()
-// {
-// d_data->read_devices = d_data->full_read_devices;
-// d_data->dirty_time_window = true;
-// }
+
 
 void VipProcessingPool::applyLimitsToChildren()
 {

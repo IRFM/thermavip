@@ -530,7 +530,7 @@ void BaseCustomPlayer::closePlayer()
 	if (QWidget* w = qobject_cast<QWidget*>(sender()))
 		w->setEnabled(false);
 	if (sender()) {
-		disconnect(sender(), SIGNAL(clicked(bool)), this, SLOT(closePlayer()));
+		disconnect(sender(), SIGNAL(triggered(bool)), this, SLOT(closePlayer()));
 		QCoreApplication::instance()->removePostedEvents(sender(), QEvent::MetaCall);
 	}
 	QCoreApplication::instance()->removePostedEvents(this, QEvent::MetaCall);

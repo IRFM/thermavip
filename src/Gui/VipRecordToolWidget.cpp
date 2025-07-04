@@ -377,6 +377,9 @@ void VipPlotItemSelector::aboutToShow()
 	QList<VipPlotItem*> _leafs = this->possibleItems();
 	QList<QAction*> actions = createActions(this->possibleItems(), d_data->menu);
 
+	d_data->menu->addAction("Select All");
+	d_data->menu->addSeparator();
+
 	for (int i = 0; i < actions.size(); ++i) {
 		d_data->menu->addAction(actions[i]);
 		// QString text, tool_tip;
@@ -395,6 +398,15 @@ void VipPlotItemSelector::processingSelected(QAction* act)
 {
 	if (VipPlotItem* item = act->property("VipPlotItem").value<VipPlotItem*>()) {
 		Q_EMIT itemSelected(item);
+		return;
+	}
+
+	if (act->text() == "Select All") {
+		auto acts = d_data->menu->actions();
+		for (QAction* a : acts) {
+			if (VipPlotItem* item = a->property("VipPlotItem").value<VipPlotItem*>()) 
+				Q_EMIT itemSelected(item);
+		}
 	}
 }
 
@@ -977,6 +989,8 @@ void VipRecordToolWidget::setDisplayPlayerArea(VipDisplayPlayerArea* area)
 		d_data->pool = area->processingPool();
 	else
 		d_data->pool = nullptr;
+
+	updateFileFiltersAndDevice();
 }
 
 VipRecordToolBar* VipRecordToolWidget::toolBar()

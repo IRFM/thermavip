@@ -731,7 +731,7 @@ static QList<QAction*> manualAnnotationHelperMenu(VipPlotShape* shape, VipVideoP
 
 	QList<QAction*> actions;
 
-	if (!ManualAnnotationHelper::supportBBox())
+	if (!ManualAnnotationHelper::supportBBox() || !vipHasVideoAnnotationFeatures())
 		return actions;
 
 	// VipShape sh = shape->rawData();
