@@ -29,7 +29,9 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#ifdef _MSC_VER
 #include <corecrt.h>
+#endif
 
 #ifdef _DEBUG
 #define VIP_HAS_DEBUG

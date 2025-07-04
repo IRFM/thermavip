@@ -443,15 +443,15 @@ static inline void qwtDrawXCrossSymbols(QPainter* painter, const QPointF* points
 {
 	const QSizeF size = symbol.size();
 	double end_w = 0;
-	int off = -1;
+	//int off = -1;
 	QPen pen = symbol.pen();
 	if (pen.width() > 1) {
 		pen.setCapStyle(Qt::FlatCap);
-		off = 0;
+		//off = 0;
 	}
 	painter->setPen(pen);
-	if (!painter->testRenderHint(QPainter::Antialiasing) && pen.widthF() <= 2)
-		off = 0;
+	//if (!painter->testRenderHint(QPainter::Antialiasing) && pen.widthF() <= 2)
+	//	off = 0;
 
 	CheckDrawSymbol check(painter, symbol);
 
@@ -1031,7 +1031,7 @@ void VipSymbol::drawSymbols(QPainter* painter, const QPointF* points, int numPoi
 		return;
 
 	bool useCache = false;
-	bool is_opengl = VipPainter::isOpenGL(painter);
+	//bool is_opengl = VipPainter::isOpenGL(painter);
 	bool is_raster = painter->paintEngine() && (painter->paintEngine()->type() == QPaintEngine::Raster);
 	// Don't use the pixmap, when the paint device
 	// could generate scalable vectors
