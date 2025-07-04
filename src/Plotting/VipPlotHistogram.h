@@ -198,9 +198,6 @@ public:
 	}
 	/// @brief Reimplemented from VipPlotItem, set the border pen
 	virtual void setPen(const QPen& p) { 
-		//TEST
-		auto st = p.style();
-		auto c = p.color();
 		boxStyle().setBorderPen(p); 
 	}
 	virtual QPen pen() const { return boxStyle().borderPen(); }
