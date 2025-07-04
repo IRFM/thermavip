@@ -215,7 +215,11 @@ VipNDArray VipMirrorH::applyProcessing(const VipNDArray& ar)
 		mirrorH(VipNDArrayTypeView<complex_d>(in), VipNDArrayTypeView<complex_d>(out));
 	}
 	else if (vipIsImageArray(ar)) {
+#if QT_VERSION < QT_VERSION_CHECK(6, 9, 0)
 		QImage imout = vipToImage(ar).mirrored(true, false);
+#else
+		QImage imout = vipToImage(ar).flipped(Qt::Horizontal);
+#endif
 		out = vipToArray(imout);
 	}
 	else {
@@ -242,7 +246,12 @@ VipNDArray VipMirrorV::applyProcessing(const VipNDArray& ar)
 		mirrorV(VipNDArrayTypeView<complex_d>(in), VipNDArrayTypeView<complex_d>(out));
 	}
 	else if (vipIsImageArray(ar)) {
+#if QT_VERSION < QT_VERSION_CHECK(6, 9, 0)
 		QImage imout = vipToImage(ar).mirrored(false, true);
+#else
+		QImage imout = vipToImage(ar).flipped(Qt::Vertical);
+#endif
+
 		out = vipToArray(imout);
 	}
 	else {

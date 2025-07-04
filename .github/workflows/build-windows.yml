@@ -28,6 +28,11 @@ jobs:
 
         - name: Install Qt
           uses: jurplel/install-qt-action@v4
+          with:
+            version: '6.8.3'
+            host: 'windows'
+            target: 'desktop'
+            modules: 'core5compat'
           
         - name: install numpy
           run: pip install numpy

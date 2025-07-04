@@ -1323,7 +1323,11 @@ VipVTKImage VipVTKGraphicsView::imageContent(int magnifier, double* bounds, int 
 	windowToImageFilter->Update();
 	VipVTKImage data(windowToImageFilter->GetOutput());
 
+#if QT_VERSION < QT_VERSION_CHECK(6, 9, 0)
 	data = data.mirrored(false, true);
+#else
+	data = data.flipped(Qt::Vertical);
+#endif
 	return data;
 }
 
