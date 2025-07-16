@@ -1089,7 +1089,7 @@ VipRegisterRecordWindow::VipRegisterRecordWindow(VipMainWindow * win)
 	connect(d_data->rec, SIGNAL(clicked(bool)), this, SLOT(setRecording(bool)));
 	connect(d_data->rec_win, SIGNAL(stateChanged(bool)), this, SLOT(setRecording(bool)), Qt::QueuedConnection);
 
-	win->closeBar()->insertWidget(win->closeBar()->minimizeButton, d_data->rec);
+	win->closeBar()->insertWidget(win->closeBar()->minimizeAction(), d_data->rec);
 }
 
 void VipRegisterRecordWindow::installRecordWindow(VipMainWindow* win)

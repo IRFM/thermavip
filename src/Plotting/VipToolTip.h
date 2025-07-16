@@ -78,6 +78,10 @@ public:
 	void setPlotArea(VipAbstractPlotArea*);
 	VipAbstractPlotArea* plotArea() const;
 
+	/// @brief Show/hide the VipToolTip
+	void setVisible(bool);
+	bool visible() const;
+
 	/// @brief Set the minimum time between calls to VipToolTip::refresh().
 	/// This is usefull for streaming curves/images/..., when the tool tip
 	/// should be updated even if the mouse is not moving.
@@ -173,6 +177,8 @@ public:
 	/// This will recompute the tool tip content and display it.
 	/// This function is automatically called by the parent VipAbstractPlotArea.
 	virtual void setPlotAreaPos(const QPointF& pos);
+
+	void refresh(const QPointF& scene_pos);
 
 public Q_SLOTS:
 	/// @brief Refresh the tool tip content.

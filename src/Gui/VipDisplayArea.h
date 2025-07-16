@@ -44,7 +44,7 @@
 #include "VipFunctional.h"
 
 /// Minimal accepted version of a session file in order to be properly loaded
-#define VIP_MINIMAL_SESSION_VERSION "2.2.5"
+#define VIP_MINIMAL_SESSION_VERSION "5.0.0"
 
 /// \addtogroup Gui
 /// @{
@@ -57,8 +57,13 @@ class VipArchive;
 class VipAbstractPlayer;
 class VipDisplayArea;
 class VipGraphicsProcessingView;
+class VipMainWindow;
+class VipShowWidgetOnHover;
+class VipMainWindow;
+class VipXOArchive;
+class QProgressBar;
 
-// For compatibility with previous versions of Thermavip
+  // For compatibility with previous versions of Thermavip
 using VipCustomDragWidget = VipDragWidget;
 using VipCustomMultiDragWidget = VipMultiDragWidget;
 
@@ -79,6 +84,8 @@ public:
 	~VipDisplayTabBar();
 	VipDisplayTabWidget* displayTabWidget() const;
 
+	// Getter/setter for tab icons, mainly used for stylesheets
+
 	QIcon closeIcon() const;
 	void setCloseIcon(const QIcon&);
 	QIcon floatIcon() const;
@@ -92,17 +99,7 @@ public:
 	QIcon selectedFloatIcon() const;
 	void setSelectedFloatIcon(const QIcon&);
 
-	// QToolBar * tabButtons(int index = -1) const;
-	//  QToolButton * floatButton(int index = -1) const;
-	//  QToolButton * closeButton(int index = -1) const;
-	//  QToolButton * streamingButton(int index = -1) const;
-
-	void setStreamingEnabled(bool);
 	bool streamingButtonEnabled() const;
-
-public Q_SLOTS:
-	void updateStreamingButton();
-	void updateStreamingButtonDelayed();
 
 protected:
 	virtual void dragEnterEvent(QDragEnterEvent* evt);
@@ -121,6 +118,9 @@ private Q_SLOTS:
 	void floatTab();
 	void updateIcons();
 	void enableStreaming();
+	void setStreamingEnabled(bool);
+	void updateStreamingButton();
+	void updateStreamingButtonDelayed();
 
 private:
 	
@@ -128,7 +128,6 @@ private:
 };
 
 /// A QTabWidget holding a VipDisplayTabBar.
-
 class VIP_GUI_EXPORT VipDisplayTabWidget : public QTabWidget
 {
 	Q_OBJECT
@@ -159,6 +158,8 @@ class VipProcessingPool;
 class VipDragWidgetArea;
 class VipDisplayPlayerArea;
 
+/// @brief Title bar of a workspace (VipDisplayPlayerArea),
+/// only visible when the workspace is floating.
 class VIP_GUI_EXPORT VipPlayerAreaTitleBar : public QToolBar
 {
 	Q_OBJECT
@@ -199,23 +200,26 @@ class VipScaleWidget;
 class VipAxisColorMap;
 class VipVideoPlayer;
 
-/// VipDisplayPlayerArea is the tab widget inside a VipDisplayTabWidget.
-///  It contains a VipDragWidgetArea which is a QScrollBar displaying the different players (inheriting VipAbstractPlayer) through VipMultiDragWidget instances.
-///  It also displays a time scale slider (VipPlayWidget) to walk through temporal players.
-///  The VipPlayWidget interact with the VipProcessingPool as returned by VipDisplayPlayerArea::processingPool. If a player displays the data of a VipIODevice
-///  inheriting class, the device must be a child of the processing pool.
+/// VipDisplayPlayerArea is the tab widget inside a VipDisplayTabWidget (also called a workspace).
+/// 
+/// It contains a VipDragWidgetArea which is a QScrollBar displaying the different players (inheriting VipAbstractPlayer) through VipMultiDragWidget instances.
+/// It also displays a time scale slider (VipPlayWidget) to walk through temporal players.
+/// The VipPlayWidget interact with the VipProcessingPool as returned by VipDisplayPlayerArea::processingPool. If a player displays the data of a VipIODevice
+/// inheriting class, the device must be a child of the processing pool.
 class VIP_GUI_EXPORT VipDisplayPlayerArea : public QWidget
 {
 	Q_OBJECT
 	Q_PROPERTY(bool focus READ hasFocus WRITE setFocus);
 	friend class VipDisplayArea;
+	friend class VipVideoPlayer;// for setColorMapToPlayer
 
 public:
+	/// @brief Operations supported by a VipDisplayPlayerArea
 	enum Operation
 	{
 		NoOperation = 0x00,
-		Closable = 0x01,
-		Floatable = 0x02,
+		Closable = 0x01,	// The workspace is closable through a dedicated button
+		Floatable = 0x02,	// The workspace is floatable through a dedicated button
 		AllOperations = Closable | Floatable
 	};
 	typedef QFlags<Operation> Operations;
@@ -223,14 +227,28 @@ public:
 	VipDisplayPlayerArea(QWidget* parent = nullptr);
 	~VipDisplayPlayerArea();
 
-	VipMultiDragWidget* mainDragWidget(const QWidgetList& widgets = QWidgetList(), bool create_if_null = true);
+	/// Returns the workspace main VipMultiDragWidget.
+	/// If the workspace does not contain a main VipMultiDragWidget yet,
+	/// it will use take_this if not null. Otherwise, it will create
+	/// a new one if create_if_null is true.
+	/// 
+	/// Returns null if no main VipMultiDragWidget can be found (or created).
+	VipMultiDragWidget* mainDragWidget(VipMultiDragWidget * take_this = nullptr, bool create_if_null = true);
 
+	/// @brief Get/Set supported operations
 	void setSupportedOperation(Operation, bool on = true);
+	/// @brief Get/Set supported operations
 	bool testSupportedOperation(Operation) const;
+	/// @brief Get/Set supported operations
 	void setSupportedOperations(Operations);
+	/// @brief Get/Set supported operations
 	Operations supportedOperations() const;
 
+	/// @brief Enable/disable the use of a global color map
+	/// for all video players within this workspace.
 	void setUseGlobalColorMap(bool enable);
+	/// @brief Enable/disable the use of a global color map
+	/// for all video players within this workspace.
 	bool useGlobalColorMap() const;
 
 	/// Returns the child VipPlayWidget used to walk through the temporal players
@@ -240,43 +258,66 @@ public:
 	/// Returns the VipDragWidgetHandler associated to the VipDragWidgetArea::widget instance
 	VipDragWidgetHandler* dragWidgetHandler() const;
 
+	/// @brief Get/set/take the left tool bar displayed in the tab bar of this workspace (left to the workspace title)
 	QToolBar* leftTabWidget() const;
 	QToolBar* takeLeftTabWidget();
 	void setLeftTabWidget(QToolBar* w);
+
+	/// @brief Get/set/take the right tool bar displayed in the tab bar of this workspace (right to the workspace title)
 	QToolBar* rightTabWidget() const;
 	QToolBar* takeRightTabWidget();
 	void setRightTabWidget(QToolBar* w);
 
+	/// @brief Returns the VipScaleWidget used to display the global color map
 	VipScaleWidget* colorMapScaleWidget() const;
+	/// @brief Returns the global color map axis
 	VipAxisColorMap* colorMapAxis() const;
+	/// @brief Returns the global color map widget
 	QWidget* colorMapWidget() const;
+	/// @brief Returns the global color map tool bar
 	QToolBar* colorMapToolBar() const;
-	void layoutColorMap(const QList<VipVideoPlayer*>& players = QList<VipVideoPlayer*>());
-	void setColorMapToPlayer(VipVideoPlayer* pl, bool enable);
 
+	/// @brief Retruns the workspace title bar which is visible only when floating.
 	VipPlayerAreaTitleBar* titleBar() const;
 
+	/// @brief Returns the parent VipDisplayTabWidget
 	VipDisplayTabWidget* parentTabWidget() const;
 
-	QWidget* topWidget() const;
+	/// @brief Returns the parent VipMainWindow if any.
+	VipMainWindow* parentMainWindow() const;
 
-	/// Set the processing pool
+	/// @brief Set the processing pool
 	void setProcessingPool(VipProcessingPool* pool);
-	/// Returns the processing pool
+	/// @brief Returns the processing pool
 	VipProcessingPool* processingPool() const;
 
-	/// Add a VipBaseDragWidget to the VipDragWidgetArea.
-	///  If the widget is a VipDragWidget, it is first inserted in a VipMultiDragWidget.
+	/// @brief Add a VipBaseDragWidget to the VipDragWidgetArea.
+	/// If the widget is a VipDragWidget, it is first inserted in a VipMultiDragWidget.
 	void addWidget(VipBaseDragWidget* w);
 
+	/// @brief Returns true if this workspace is floating.
 	bool isFloating() const;
+
+	/// @brief Returns true if this workspace is the one displayed by its parent VipDisplayTabWidget
 	bool hasFocus() const;
+
+	/// @brief Get/set this workspace id.
+	/// The id is mainly used to generate a unique workspace title.
 	int id() const;
 
+	/// @brief Returns true is the global colormap is automatic
 	bool automaticColorScale() const;
+	/// @brief Returns true if histogram flattening is enabled on the main colormap
 	bool isFlatHistogramColorScale() const;
+	/// @brief Returns the global colormap type (VipLinearColorMap::StandardColorMap)
 	int colorMap() const;
 
+	/// @brief Returns the maximum number of columns for this workspace.
+	/// When adding new widget with addWidget(), the added widgets will
+	/// always be placed on the bottom right part of the workspace, inside
+	/// the main VipMultiDragWidget.
+	/// A new column is added every time to add the new widget, until maxColumns()
+	/// is reach, at which point a new row is created.
 	int maxColumns() const;
 
 	/// Return the VipDisplayPlayerArea (if any) ancestor of \a child.
@@ -284,22 +325,52 @@ public:
 
 	static void setWorkspaceTitleEditable(const std::function<QVariantMap(const QString&)>& generate_editable_symbol);
 
+	// Internal use only, returns the widget on top of the workspace used to display player's tool bars
+	QWidget* topWidget() const;
+
 public Q_SLOTS:
+	/// @brief Enable/disable floating workspace, ignoring set supported operations.
 	void setFloating(bool pin);
+
+	/// @brief Set/unset the focus to this workspace.
+	/// If enabled and if the parent VipDisplayTabWidget has multiple workspaces,
+	/// this makes this workspace as the current one.
+	/// If disable, it passes the focus to another workspace in the parent VipDisplayTabWidget.  
 	void setFocus(bool);
+	/// @brief Enable/disable automatic global colormap
 	void setAutomaticColorScale(bool);
+	/// @brief Adjust grips of the global colormap
 	void fitColorScaleToGrips();
+	/// @brief Enable/disable histogram flattening for the global colormap
 	void setFlatHistogramColorScale(bool);
+	/// @brief Set the global colormap type (VipLinearColorMap::StandardColorMap)
 	void setColorMap(int);
+	/// @brief Display the editor for the global colormap
 	void editColorMap();
 	void relayoutColorMap();
+	/// @brief Set the maximum number of columns for this workspace.
+	/// @sa maxColumns()
 	void setMaxColumns(int);
+	/// @brief Save the workspace as image
 	void saveImage();
+	/// @brief Save the workspace content in a file
 	void saveSession();
 	void copyImage();
+	/// @brief Copy the workspace content in a temporary session file that is copied to the clipboard.
+	/// This is usesfull to directly past it into PowerPoint for instance.
 	void copySession();
+	/// @brief Change the main drag widget orientation (vertical to horizontal or conversely)
 	void changeOrientation();
+	/// @brief Print the workspace content
 	void print();
+
+Q_SIGNALS:
+	/// @brief Emitted when playing started from the processing pool
+	void playingStarted();
+	/// @brief Emitted when playing advanced one frame from the processing pool
+	void playingAdvancedOneFrame();
+	/// @brief Emitted when playing stopped from the processing pool
+	void playingStopped();
 
 private Q_SLOTS:
 	void added(VipMultiDragWidget*);
@@ -316,11 +387,7 @@ private Q_SLOTS:
 	void emitPlayingStarted() { Q_EMIT playingStarted(); }
 	void emitPlayingAdvancedOneFrame() { Q_EMIT playingAdvancedOneFrame(); }
 	void emitPlayingStopped() { Q_EMIT playingStopped(); }
-
-Q_SIGNALS:
-	void playingStarted();
-	void playingAdvancedOneFrame();
-	void playingStopped();
+	void emitWorkspaceContentChanged();
 
 protected:
 	virtual void changeEvent(QEvent* event);
@@ -331,6 +398,8 @@ private:
 	void setPoolToPlayers();
 	void setId(int id);
 	void setInternalOperations();
+	void layoutColorMap(const QList<VipVideoPlayer*>& players = QList<VipVideoPlayer*>());
+	void setColorMapToPlayer(VipVideoPlayer* pl, bool enable);
 
 	
 	VIP_DECLARE_PRIVATE_DATA(d_data);
@@ -341,7 +410,7 @@ VIP_REGISTER_QOBJECT_METATYPE(VipDisplayPlayerArea*)
 VIP_GUI_EXPORT VipArchive& operator<<(VipArchive&, const VipDisplayPlayerArea*);
 VIP_GUI_EXPORT VipArchive& operator>>(VipArchive&, VipDisplayPlayerArea*);
 
-/// VipDisplayArea is the central widget of the main Thermavip interface (VipMainWidget).
+/// VipDisplayArea is the central widget of the main Thermavip interface (VipMainWindow).
 /// It basically only contains a VipDisplayTabWidget instance.
 class VIP_GUI_EXPORT VipDisplayArea : public QWidget
 {
@@ -363,7 +432,11 @@ public:
 	/// Returns the child VipPlayWidget at given index
 	VipPlayWidget* playWidget(int index) const;
 
+	/// @brief Returns the current focus VipDragWidget, if any.
 	VipDragWidget* focusWidget() const;
+
+	/// @brief Returns the parent VipMainWindow, if any.
+	VipMainWindow* parentMainWindow() const;
 
 	/// Returns the number of tabs inside the VipDisplayTabWidget
 	int count() const;
@@ -378,8 +451,12 @@ public:
 	/// the behaviors based on item selection.
 	void resetItemSelection();
 
+	/// @brief Set the current focus/visible workspace
 	void setCurrentDisplayPlayerArea(VipDisplayPlayerArea*);
 
+	/// @brief Returns true if the streaming button is enabled.
+	/// The streaming button is enabled only if the current workspace processing pool
+	/// contains at least on Sequential device (VipIODevice::Sequential).
 	bool streamingButtonEnabled() const;
 
 public Q_SLOTS:
@@ -389,18 +466,23 @@ public Q_SLOTS:
 	void nextWorkspace();
 	/// @brief Go to previous workspace
 	void previousWorkspace();
-	/// @brief Enable/disable streaming button for all workspaces
-	void setStreamingEnabled(bool);
-
+	
 Q_SIGNALS:
-	/// This signal is emitted whenever the VipDragWidget having the focus changed
+	/// @brief Emitted whenever the VipDragWidget having the focus changed
 	void focusWidgetChanged(VipDragWidget*);
+	/// @brief Emitted when the current focus/visible VipDisplayPlayerArea changed
 	void currentDisplayPlayerAreaChanged(VipDisplayPlayerArea*);
+	/// @brief Emitted when a workspace is added
 	void displayPlayerAreaAdded(VipDisplayPlayerArea*);
+	/// @brief Emitted when a workspace is removed
 	void displayPlayerAreaRemoved(VipDisplayPlayerArea*);
+	/// @brief Emitted when a main (top level) VipMultiDragWidget is closed within a workspace
 	void topLevelWidgetClosed(VipDisplayPlayerArea*, VipMultiDragWidget*);
+	/// @brief Emitted when playing started from the processing pool
 	void playingStarted();
+	/// @brief Emitted when playing advanced one frame from the processing pool
 	void playingAdvancedOneFrame();
+	/// @brief Emitted when playing stopped from the processing pool
 	void playingStopped();
 
 private Q_SLOTS:
@@ -411,6 +493,8 @@ private Q_SLOTS:
 	void emitPlayingAdvancedOneFrame() { Q_EMIT playingAdvancedOneFrame(); }
 	void emitPlayingStopped() { Q_EMIT playingStopped(); }
 	void tabMoved(int from, int to);
+	/// @brief Enable/disable streaming button for all workspaces
+	void setStreamingEnabled(bool);
 
 private:
 	void removeWidget(VipDisplayPlayerArea* widget);
@@ -424,35 +508,33 @@ VIP_REGISTER_QOBJECT_METATYPE(VipDisplayArea*)
 VIP_GUI_EXPORT VipArchive& operator<<(VipArchive&, const VipDisplayArea*);
 VIP_GUI_EXPORT VipArchive& operator>>(VipArchive&, VipDisplayArea*);
 
-class VipShowWidgetOnHover;
-class VipMainWindow;
-class VipXOArchive;
-class QProgressBar;
 
+
+/// @brief Icon bar displayed on the evry topleft of Thermavip main window.
+///
+/// VipIconBar displays Thermavip's title and main icon on the top left
+/// of the main VipMainWindow.
+/// 
+/// It also display the current status of Thermavip updates (if available).
+/// This tool bar can be used to move the software on the desktop and
+/// to maximize/restore it.
+/// 
 class VIP_GUI_EXPORT VipIconBar : public QToolBar
 {
 	Q_OBJECT
 
-public:
-	QAction* icon;
-	QAction* title;
-	QLabel* labelIcon;
-	QLabel* titleLabel;
-	QAction* update;
-	QProgressBar* updateProgress;
-	QAction* updateIconAction;
-	VipMainWindow* mainWindow;
-	QString customTitle;
+	friend class UpdateThread;
 
+public:
+	
 	VipIconBar(VipMainWindow* win);
 	~VipIconBar();
 
-	void updateTitle();
-
+	/// @brief Set the main top-left icon
 	void setTitleIcon(const QPixmap& pix);
 	QPixmap titleIcon() const;
 
-	/// Set the main Thermavip title
+	/// @brief Set the main Thermavip title
 	void setMainTitle(const QString& title);
 	QString mainTitle() const;
 
@@ -464,19 +546,69 @@ protected:
 
 private Q_SLOTS:
 	void setUpdateProgress(int value);
+	void updateTitle();
 
 private:
+	QAction* icon;		      // Main icon action
+	QAction* title;		      // Main title action
+	QLabel* labelIcon;	      // Main icon widget
+	QLabel* titleLabel;	      // Main title widget
+	QAction* update;	      // Update action
+	QProgressBar* updateProgress; // Progress bar used to display update progress
+	QAction* updateIconAction;    // Progress bar action
+	VipMainWindow* mainWindow;    // Parent VipMainWindow
+	QString customTitle;	      // Custom title
 	QPoint pt, previous_pos;
 };
 
-/// Customize the global Help menu
+/// @brief Customize the global Help menu.
+/// 
+/// Register a function that will customize and add actions to the main
+/// Thermavip 'help' menu.
+/// 
 VIP_GUI_EXPORT void vipExtendHelpMenu(const std::function<void(QMenu*)>& fun);
 
+
+/// @brief Close tool bar, display on the top right of Thermavip.
+///
+/// 
 class VIP_GUI_EXPORT VipCloseBar : public QToolBar
 {
 	Q_OBJECT
+	friend class VipMainWindow;
 
 public:
+	
+	VipCloseBar(VipMainWindow* win);
+	~VipCloseBar();
+
+	/// @brief Helper function, compute the global tools menu that will be added 
+	/// to a QToolButton.
+	void computeToolsMenu(QToolButton* button);
+
+	// Get the widgets/actions available within this tool bar.
+	// This is mostly usefull to insert new actions within plugins.
+
+	QSpinBox* maxColumsWidget() { return maxCols; }
+	QAction* maxColumsAction() { return maxColsAction; }
+	QAction* maximizeOrShowNormalAction() { return maximize; }
+	QAction* gloablHelpAction() { return help; }
+	QToolButton* gloablHelpButton() { return helpButton; }
+	QAction* minimizeAction() { return minimizeButton; }
+	QAction* maximizeAction() { return maximizeButton; }
+	QAction* closeAction() {return closeButton;}
+
+private Q_SLOTS:
+	void maximizeOrShowNormal();
+	void onMaximized();
+	void onRestored();
+	void onMinimized();
+	void computeWindowState();
+	void computeHelpMenu();
+	void computeToolsMenu();
+	void startDetectState();
+
+private:
 	QAction* spacer;
 	QSpinBox* maxCols;
 	QAction* maxColsAction;
@@ -491,185 +623,213 @@ public:
 	VipMainWindow* mainWindow;
 	QTimer stateTimer;
 	bool hasFrame;
-
-	VipCloseBar(VipMainWindow* win);
-	~VipCloseBar();
-
-	void startDetectState();
-	void computeToolsMenu(QToolButton* button);
-
-private Q_SLOTS:
-	void maximizeOrShowNormal();
-	void onMaximized();
-	void onRestored();
-	void onMinimized();
-	void computeWindowState();
-	void computeHelpMenu();
-	void computeToolsMenu();
 };
 
 class VipToolWidget;
 
-/// The top level Thermavip widget.
-/// It is a QMainWindow which central widget is a VipDisplayArea.
-/// It defines 3 different tool bars that can be extended through plugins:
-/// <ul>
-/// <li>VipMainWindow::fileToolBar provides a few actions to open files/directories.
-/// <li>VipMainWindow::toolsToolBar displays actions to show/hide the different VipToolWidget instances.
-/// <li>VipMainWindow::closeToolBar. VipMainWindow is a framless widget to gain some space, and this tool bar displays the actions to minimize/maximize/normalize the window.
-/// </ul>
-///
-/// You can save a Thermavip session using VipMainWindow::saveSession and restore it with VipMainWindow::loadSession.
+/// @brief The top level Thermavip widget.
+/// 
+/// VipMainWindow is a QMainWindow which central widget is a VipDisplayArea
+/// that displays one or more workspaces.
+/// 
+/// It also displays several tool bars accessible through member functions;
+/// 
+/// Only one VipMainWindow is allowed to exist at a given time.
+/// 
+/// The global VipMainWindow must ALWAYS be access/created using vipGetMainWindow() function.
+/// 
 class VIP_GUI_EXPORT VipMainWindow : public QMainWindow
 {
 	Q_OBJECT
-	friend class VipDisplayTabWidget;
-
 	Q_PROPERTY(int margin READ margin WRITE setMargin)
 	Q_PROPERTY(int adjustColorPalette READ adjustColorPalette WRITE setAdjustColorPalette)
 
+	friend class VipDisplayTabWidget;
+	friend VIP_GUI_EXPORT VipMainWindow* vipGetMainWindow();
+	VipMainWindow();
+
 public:
-	/// Select the different elements to save when saving a Thermavip session.
+	/// @brief Select the different elements to save when saving a Thermavip session.
 	enum SessionContent
 	{
-		MainWindowState = 0x001,				  //! Save the VipMainWindow state (size, disposition of the tool widgets, etc.)
-		Plugins = 0x002,					  //! Save the plugins states (see VipPluginInterface::save)
-		Settings = 0x004,					  //! Global settings
-		DisplayAreas = 0x008,					  //! Save the central VipDisplayArea state (processing pool and players)
+		MainWindowState = 0x001,			// Save the VipMainWindow state (size, disposition of the tool widgets, etc.)
+		Plugins = 0x002,					// Save the plugins states (see VipPluginInterface::save)
+		Settings = 0x004,					// Global settings
+		DisplayAreas = 0x008,				// Save the central VipDisplayArea state (processing pool and players)
 		All = MainWindowState | Plugins | Settings | DisplayAreas //! Save all
 	};
 
+	/// @brief Type of session to save
 	enum SessionType
 	{
-		MainWindow,
-		CurrentArea,
-		DragWidget
+		MainWindow,		// The main Thermavip window
+		CurrentArea,	// The current workspace
+		DragWidget		// A unique player
 	};
 
-	VipMainWindow();
 	~VipMainWindow();
 
+	/// @brief Get/Set the main Thermavip title (see VipIconBar)
 	void setMainTitle(const QString& title);
 	QString mainTitle() const;
 
-	/// Returns the central VipDisplayArea
+	/// @brief Returns the central VipDisplayArea
 	VipDisplayArea* displayArea() const;
 
-	/// Returns the file tool bar
+	/// @brief Returns the file tool bar,
+	/// used to open files/folders, generate signals or save sessions.
 	QToolBar* fileToolBar() const;
+	/// @brief Returns the generate menu used within the file tool bar.
+	/// The generate menu can be extended by plugins to provide a quick
+	/// way to generate new signals.
+	/// 
 	QMenu* generateMenu() const;
-	QMenu* fileMenu() const;
+	/// @brief Returns the generate button associated with the generate menu.
 	QToolButton* generateButton() const;
-	QToolButton* openFileButton() const;
-	QToolButton* openDirButton() const;
-	QToolButton* saveFileButton() const;
-	VipShowWidgetOnHover* showTabBar() const;
 
-	/// Returns the tool bar displaying the actions to show/hide the VipToolWidget instances
+	/// @brief Returns button used to open files within the file tool bar.
+	QToolButton* openFileButton() const;
+	/// @brief Returns button used to open a directory within the file tool bar.
+	QToolButton* openDirButton() const;
+	/// @brief Returns button used to save session files within the file tool bar.
+	QToolButton* saveFileButton() const;
+
+	/// @brief Returns the tool bar displaying the actions to show/hide the VipToolWidget instances
 	QToolBar* toolsToolBar() const;
 
-	/// Returns the tool bar used to maximize/minimize/restore the main window
-	// VipTitleBar * titleBar() const;
-
+	/// @brief Returns the icon bar used to display Thermavip title and icon,
+	/// as well as maximize/minimize/move Thermavip main widget.
 	VipIconBar* iconBar() const;
+	/// @brief Returns the close bar.
 	VipCloseBar* closeBar() const;
 
+	/// @brief Returns true if workspaces are currently maximized, false otherwise.
 	bool workspacesMaximized() const;
 
+	/// @brief Returns the margin (in pixels) around this widget
+	/// @sa setMargin 
 	int margin() const;
-	void setMargin(int m);
+	
 
-	QString customTitle() const;
-	void setCustomTitle(const QString& title);
+	/// @brief Save a Thermavip session into a XML file.
+	/// Returns true on success, file otherwise.
+	/// Only MainWindow and CurrentArea types are supported.
+	bool saveSession(const QString& filename, SessionType session_type = MainWindow, int session_content = All);
+	/// @brief Save a Thermavip session into a VipArchive object.
+	/// Returns true on success, file otherwise.
+	/// Only MainWindow and CurrentArea types are supported.
+	bool saveSession(VipArchive& arch, SessionType session_type = MainWindow, int session_content = All);
 
-	/// Save a Thermavip session into a XML file.
-	///  Returns true on success, file otherwise.
-	bool saveSession(const QString& filename, int session_type = MainWindow, int session_content = All, const QByteArray& state = QByteArray());
-	bool saveSession(VipArchive& arch, int session_type = MainWindow, int session_content = All, const QByteArray& state = QByteArray());
-
+	/// @brief Open given data/signals files in Thermavip
+	/// @param paths List of paths
+	/// @param player Player to open signals/data in, or nullptr to open in a new player
+	/// @param area Workspace to open the player in, or nullptr to use the current workspace.
+	/// @return The list of created players
 	QList<VipAbstractPlayer*> openPaths(const VipPathList& paths, VipAbstractPlayer* player, VipDisplayPlayerArea* area = nullptr);
+
+	/// @brief Open devices in Thermavip
+	/// @param devices List of devices. The devices must already be open in read mode.
+	/// @param player Player to open signals/data in, or nullptr to open in a new player
+	/// @param area Workspace to open the player in, or nullptr to use the current workspace.
+	/// @return The list of created players
 	QList<VipAbstractPlayer*> openDevices(const QList<VipIODevice*>& devices, VipAbstractPlayer* player, VipDisplayPlayerArea* area = nullptr);
+
+	/// @brief Open (display) players in the current workspace.
 	void openPlayers(const QList<VipAbstractPlayer*> players);
-	/// There is a Qt bug that causes a crash when trying to render a widget while it's parent is being destroyed.
+
+	/// @brief There is a Qt bug that causes a crash when trying to render a widget while it's parent is being destroyed.
 	/// This causes the VipMultiWidgetIcons to crash when closing a VipDisplayPlayerArea.
 	/// Therefore, currentTabDestroying tells if a tab is being closed.
 	bool currentTabDestroying() const;
 
-	/// Returns true if we are currently loading a session file through #VipMainWindow::loadSessionShowProgress
+	/// @brief Returns true if we are currently loading a session file through #VipMainWindow::loadSessionShowProgress.
+	/// 
 	bool isLoadingSession();
+
+	/// @brief Enable/disable the saving session feature
 	bool sessionSavingEnabled() const;
 
-	/// Equivalent to VipGuiDisplayParamaters::instance()->itemPaletteFactor().
+	/// @brief Equivalent to VipGuiDisplayParamaters::instance()->itemPaletteFactor().
 	/// Only usefull for skins that wish to modify the default item color palette.
 	int adjustColorPalette() const;
 
+	/// @brief Reimplemented from QMainWindow
 	virtual QMenu* createPopupMenu();
 
 public Q_SLOTS:
-	/// Restart Thermavip
+	/// @brief Restart Thermavip
 	void restart();
 
-	/// Raise the main window on top of the other
+	/// @brief Raise the main window on top of the other
 	void raiseOnTop();
-	/// Equivalent to VipGuiDisplayParamaters::instance()->setItemPaletteFactor(factor).
+
+	/// @brief Equivalent to VipGuiDisplayParamaters::instance()->setItemPaletteFactor(factor).
 	/// Only usefull for skins that wish to modify the default item color palette.
 	void setAdjustColorPalette(int factor);
 
-	/// Restore a Thermavip session from a XML file.
-	///  Returns true on success, file otherwise.
+	/// @brief Restore a Thermavip session from a XML file.
+	/// Returns true on success, file otherwise.
 	bool loadSessionShowProgress(const QString& filename, VipProgress*);
 	bool loadSession(const QString& filename);
-	/// Restore a Thermavip session from a XML file.
-	///  Returns true on success, file otherwise.
-	///  If \a filename session cannot be loaded, this function tries then to open \a fallback session file
-	bool loadSessionFallback(const QString& filename, const QString& fallback, VipProgress*);
-
+	
+	/// @brief Open given data/signals files within the current workspace in new players.
 	QList<VipAbstractPlayer*> openPaths(const QStringList& filenames);
-	/// Displays a dialog box to open one or multiple files
+	/// @brief Displays a dialog box to open one or multiple files
 	QList<VipAbstractPlayer*> openFiles();
-	/// Displays a dialog box to open a directory
+	/// @brief Displays a dialog box to open a directory
 	QList<VipAbstractPlayer*> openDir();
 
-	/// Display the options dialog box
+	/// @brief Display the options dialog box
+	/// @sa vipGetOptions
 	void showOptions();
-	/// Save the current session
+
+	/// @brief Save the current session
 	void saveSession();
 
+	/// @brief Open Thermavip help in a web browser if available
 	void showHelp();
 
+	/// @brief Set the margin (in pixels) around the main interface
+	void setMargin(int m);
+
+	/// @brief Enable/disable workspace maximization.
+	/// Maximizing workspace is usefull to hide all non mandatory widgets
+	/// in order to have the widest possible area to display signals.
 	void maximizeWorkspaces(bool enable);
 
+	/// @brief Set the maximum number of columns for the current workspace.
 	void setMaxColumnsForWorkspace(int);
 
-	void displayGraphicsProcessingPlayer();
-
+	/// @brief Enable/disable the saving session feature
 	void setSessionSavingEnabled(bool enable);
 
+	/// @brief Display the about dialog.
 	void aboutDialog();
 
+	// Internal use only, start/stop the update thread
 	void startUpdateThread();
 	void stopUpdateThread();
 
-	void autoSave();
-	void autoLoad();
-	/// Tells whether next call to openPaths should display a dialog box on error or not.
+	/// @brief Quick session saving (F5 key)
+	void quickSave();
+	/// @brief Quick session loading (f9 key)
+	void quickLoad();
+	/// @brief Quick session saving (F5 key)Tells whether next call to openPaths should display a dialog box on error or not.
 	void setOpenPathShowDialogOnError(bool);
 
-	void resetStyleSheet();
-
-	// Start of stop playing/streaming for the current active workspace
+	/// @brief Start of stop playing/streaming for the current active workspace (Space key)
 	void startStopPlaying();
-	// Go to next time for the current active workspace
+	/// @brief Go to next time for the current active workspace
 	void nextTime();
-	// Go to previous time for the current active workspace
+	/// @brief Go to previous time for the current active workspace
 	void previousTime();
-	// Go to first time for the current active workspace
+	/// @brief Go to first time for the current active workspace
 	void firstTime();
-	// Go to last time for the current active workspace
+	/// @brief Go to last time for the current active workspace
 	void lastTime();
-	// Advance time by 10% of the time range for the current active workspace
+	/// @brief Advance time by 10% of the time range for the current active workspace
 	void forward10Time();
-	// Go backward in time by 10% of the time range for the current active workspace
+	/// @brief Go backward in time by 10% of the time range for the current active workspace
 	void backward10Time();
 	void nextWorkspace();
 	void previousWorkspace();
@@ -706,6 +866,10 @@ Q_SIGNALS:
 	void sessionLoaded();
 	void workspaceLoaded(VipDisplayPlayerArea*);
 
+	void workspaceCreated(VipDisplayPlayerArea*);
+	void workspaceDestroyed(VipDisplayPlayerArea*);
+	void workspaceContentChanged(VipDisplayPlayerArea*);
+
 protected:
 	virtual void closeEvent(QCloseEvent* );
 	virtual void showEvent(QShowEvent*);
@@ -719,7 +883,7 @@ private:
 	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
-/// Returns the main unique VipMainWindow
+/// @brief Returns (and create if necessary) the main unique VipMainWindow
 VIP_GUI_EXPORT VipMainWindow* vipGetMainWindow();
 
 

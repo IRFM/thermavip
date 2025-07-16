@@ -2389,7 +2389,7 @@ bool QOpenGLItem::drawThroughCache(QPainter* painter, const QStyleOptionGraphics
 	if (d_data->inDrawThroughCache)
 		return false;
 
-	if (painter->device() != painter->paintEngine()->paintDevice()) {
+	if (!painter->paintEngine() || painter->device() != painter->paintEngine()->paintDevice()) {
 		// We are drawing using a shared painter, don't go through the rendering thread
 		return false;
 	}

@@ -1655,6 +1655,28 @@ VipBoxStyle& VipPlotCurve::boxStyle()
 	return d_data->boxStyle;
 }
 
+QColor VipPlotCurve::majorColor() const
+{
+	QColor c = boxStyle().borderPen().color();
+	if (c.alpha() == 0) {
+		if (symbol()) {
+			c = symbol()->pen().color();
+			if (c.alpha() == 0)
+				c = symbol()->brush().color();
+		}
+	}
+	return c;
+}
+
+void VipPlotCurve::setMajorColor(const QColor& c)
+{
+	VipPlotItem::setMajorColor(c);
+	if (symbol()) {
+		symbol()->setBrush(QBrush(c));
+		symbol()->setPen(QPen(c));
+	}
+}
+
 void VipPlotCurve::setPen(const QPen& p)
 {
 	d_data->boxStyle.setBorderPen(p);

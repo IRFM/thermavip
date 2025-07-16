@@ -90,9 +90,51 @@ static void applyAppFont(QWidget * top, const QFont& previous)
 	}
 }
 
+#include "VipMemoryPool.h"
 
 int main(int argc, char** argv)
 {
+	/*using type = std::string;
+	VipMemoryPool<type> pool;
+
+	std::vector<type*> vv(10000000);
+
+	getchar();
+	auto st = QDateTime::currentMSecsSinceEpoch();
+	
+	for (size_t i = 0; i < vv.size(); ++i) {
+
+		vv[i] = pool.allocate();
+		memset(vv[i], 0, sizeof(type));
+	}
+	for (size_t i = 0; i < vv.size(); ++i)
+		pool.deallocate(vv[i]);
+
+	pool.clear();
+
+	auto el = QDateTime::currentMSecsSinceEpoch() - st;
+	printf("pool: %i ms\n", (int)el);
+
+	getchar();
+
+	st = QDateTime::currentMSecsSinceEpoch();
+
+	for (size_t i = 0; i < vv.size(); ++i) {
+
+		vv[i] = (type*)malloc(sizeof(type));
+		memset(vv[i], 0, sizeof(type));
+	}
+	for (size_t i = 0; i < vv.size(); ++i)
+		free(vv[i]);
+	
+
+	el = QDateTime::currentMSecsSinceEpoch() - st;
+	printf("malloc: %i ms\n", (int)el);
+
+	getchar();
+	return 0;
+	*/
+
 	// Load thermavip.env
 	QString env_file = vipGetDataDirectory() + "thermavip/thermavip.env";
 	vip_debug("env file: %s\n", env_file.toLatin1().data());

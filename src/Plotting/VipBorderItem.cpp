@@ -63,6 +63,8 @@ QPoint sceneToScreenCoordinates(const QGraphicsScene* scene, const QPointF& pos)
 	return QPoint();
 }
 
+#include <QWindow>
+
 QPointF screenToSceneCoordinates(const QGraphicsScene* scene, const QPoint& pos)
 {
 	if (scene == nullptr)

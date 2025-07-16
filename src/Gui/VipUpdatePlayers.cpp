@@ -1081,6 +1081,26 @@ void VipUpdatePlotPlayer::updateMarkers()
 
 		QRectF canvas = p->viewer()->area()->canvas()->boundingRect();
 
+		// delete markers for non present curves
+		auto it_min = m_minMarkers.begin();
+		for (auto it_max = m_maxMarkers.begin(); it_max != m_maxMarkers.end(); ) {
+			int id = curves.indexOf(it_max.key());
+			if (id < 0) {
+				auto& mins = it_min.value();
+				auto& maxs = it_max.value();
+				for (auto* m : mins)
+					m->deleteLater();
+				for (auto* m : maxs)
+					m->deleteLater();
+				it_min = m_minMarkers.erase(it_min);
+				it_max = m_maxMarkers.erase(it_max);
+			}
+			else {
+				++it_max;
+				++it_min;
+			}
+		}
+
 		for (int i = 0; i < curves.size(); ++i) {
 			VipPlotCurve* curve = curves[i];
 
@@ -1188,8 +1208,10 @@ void VipUpdatePlotPlayer::updateMarkers()
 					mins[j]->setVisible(true);
 					mins[j]->setZValue(level);
 					mins[j]->setRawData(vec[min]);
-					maxs[j]->symbol()->setBrush(curve->pen().color());
-					mins[j]->symbol()->setBrush(curve->pen().color());
+					QColor c = curve->majorColor();
+					maxs[j]->symbol()->setBrush(c);
+					mins[j]->symbol()->setBrush(c);
+					c = c.darker();
 
 					// set the texts
 					VipText min_t;
@@ -1198,7 +1220,7 @@ void VipUpdatePlotPlayer::updateMarkers()
 							      "</b><br>(x:" + curve->axes()[0]->scaleDraw()->label(vec[min].x(), VipScaleDiv::MajorTick).text() + ")");
 					else
 						min_t.setText("<b>Min: " + QString::number(vec[min].y()) + "</b>");
-					min_t.setTextPen(curve->pen().color());
+					min_t.setTextPen(c);
 					min_t.setBackgroundBrush(QBrush(QColor(255, 255, 255, 160)));
 
 					VipText max_t;
@@ -1207,7 +1229,7 @@ void VipUpdatePlotPlayer::updateMarkers()
 							      "</b><br>(x:" + curve->axes()[0]->scaleDraw()->label(vec[max].x(), VipScaleDiv::MajorTick).text() + ")");
 					else
 						max_t.setText("<b>Max: " + QString::number(vec[max].y()) + "</b>");
-					max_t.setTextPen(curve->pen().color());
+					max_t.setTextPen(c);
 					max_t.setBackgroundBrush(QBrush(QColor(255, 255, 255, 160)));
 
 					QPointF min_pos = mins[j]->sceneMap()->transform(mins[j]->rawData());
