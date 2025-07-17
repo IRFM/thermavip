@@ -1158,6 +1158,8 @@ public:
 					env = VIP_PYTHONHOME;
 			}
 #endif
+			if(env.isEmpty())
+				env = qgetenv("PYTHONPATH");
 			vip_debug("python env: %s\n", env.data());
 			fflush(stdout);
 			if (!env.isEmpty()) {

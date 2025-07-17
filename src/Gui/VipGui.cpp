@@ -452,7 +452,7 @@ VipGuiDisplayParamaters::VipGuiDisplayParamaters(VipMainWindow* win)
 	// Use a font embeded within Thermavip
 	d_data->editorFont.setFixedPitch(true);
 	d_data->editorFont.setFamily("Inconsolata");
-	d_data->editorFont.setPointSize(13);
+	d_data->editorFont.setPointSize(11);
 #endif
 
 	connect(this, SIGNAL(changed()), this, SLOT(delaySaveToFile()), Qt::QueuedConnection);
