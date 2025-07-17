@@ -95,20 +95,21 @@ static void applyAppFont(QWidget * top, const QFont& previous)
 int main(int argc, char** argv)
 {
 	/*using type = std::string;
-	VipMemoryPool<type> pool;
+	VipMemoryPool<type,VipNullLock> pool;
 
-	std::vector<type*> vv(10000000);
+	std::vector<type*> vv(1000000);
 
 	getchar();
 	auto st = QDateTime::currentMSecsSinceEpoch();
 	
 	for (size_t i = 0; i < vv.size(); ++i) {
 
-		vv[i] = pool.allocate();
-		memset(vv[i], 0, sizeof(type));
+		vv[0] = pool.allocate();
+		memset(vv[0], 0, sizeof(type));
+		pool.deallocate(vv[0]);
 	}
-	for (size_t i = 0; i < vv.size(); ++i)
-		pool.deallocate(vv[i]);
+	//for (size_t i = 0; i < vv.size(); ++i)
+	//	pool.deallocate(vv[i]);
 
 	pool.clear();
 
@@ -121,19 +122,20 @@ int main(int argc, char** argv)
 
 	for (size_t i = 0; i < vv.size(); ++i) {
 
-		vv[i] = (type*)malloc(sizeof(type));
-		memset(vv[i], 0, sizeof(type));
+		vv[0] = (type*)malloc(sizeof(type));
+		memset(vv[0], 0, sizeof(type));
+		free(vv[0]);
 	}
-	for (size_t i = 0; i < vv.size(); ++i)
-		free(vv[i]);
+	//for (size_t i = 0; i < vv.size(); ++i)
+	//	free(vv[i]);
 	
 
 	el = QDateTime::currentMSecsSinceEpoch() - st;
 	printf("malloc: %i ms\n", (int)el);
 
 	getchar();
-	return 0;
-	*/
+	return 0;*/
+	
 
 	// Load thermavip.env
 	QString env_file = vipGetDataDirectory() + "thermavip/thermavip.env";

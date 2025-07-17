@@ -199,37 +199,37 @@ namespace detail
 }
 
 /// @brief A parallel memory pool class for small objects
-/// 
+///
 /// VipMemoryPool is a thread safe memory pool that directly calls
 /// OS functions to allocate/deallocate memory pages in order to
 /// satisfy allocation requests.
-/// 
+///
 /// Pages are always allocated by power of 2 for fast header retrieval,
 /// which allows to store object in a contiguous manner without a per-object
 /// header. This considerably reduces the memory footprint of allocated objects.
-/// 
+///
 /// VipMemoryPool uses a standard free list mechanism for individual objects
 /// as well as allocated pages, ensuring solid performances in both space
 /// and time. On Windows, VipMemoryPool is typically several times faster
 /// than the default memory allocator for uncontended scenarios.
-/// 
+///
 /// Another advantage of VipMemoryPool is the possibility to wipe out previously
 /// allocated memory in a single call (VipMemoryPool::clear()), without deallocating
 /// individual objects. Note that VipMemoryPool destructor will always free all
 /// previously allocated memory this way.
-/// 
-/// VipMemoryPool allocation and deallocation processes have a O(1) complexity, 
+///
+/// VipMemoryPool allocation and deallocation processes have a O(1) complexity,
 /// modulo lock contentions.
-/// 
+///
 /// Alignment of allocated objects is guaranteed to be at least alignof(T).
 /// Note that VipMemoryPool::allocate() does NOT call the object constructor,
 /// and VipMemoryPool::deallocate() does NOT call the object destructor.
-/// 
+///
 /// Deallocating an object of type T does NOT require access to the initial
 /// VipMemoryPool that performs the allocation. VipMemoryPool::deallocate()
 /// is indeed a static function.
 ///
-/// Using VipNullLock instead of VipSpinlock removes allocation/deallocation thread safety 
+/// Using VipNullLock instead of VipSpinlock removes allocation/deallocation thread safety
 /// but is usually faster.
 ///
 template<class T, class Lock = VipSpinlock>
@@ -251,17 +251,17 @@ class VipMemoryPool
 		d_data.lock.unlock();
 
 		// Create the block
-
-		void* pages = vipOSAllocatePages(allocation_granularity() / vipOSPageSize());
+		void* pages = d_cache;
+		d_cache = nullptr;
 		if (!pages) {
-			d_data.lock.lock();
-			return nullptr;
+			pages = vipOSAllocatePages(allocation_granularity() / vipOSPageSize());
+			if (!pages) {
+				d_data.lock.lock();
+				return nullptr;
+			}
 		}
 
 		block* _bl = new (pages) block(this, (allocation_granularity() - sizeof(block)) / sizeof_T);
-
-		if (d_cached_blocks)
-			d_pool_count.fetch_add(1, std::memory_order_relaxed);
 
 		// Lock again, link block
 		d_data.lock.lock();
@@ -277,18 +277,21 @@ class VipMemoryPool
 	/// @brief Handle complex deallocation
 	static VIP_NOINLINE(void) handle_deallocate(this_type* parent, block* p) noexcept
 	{
-		if (p->empty() && (parent->d_cached_blocks == 0 || parent->d_pool_count.load(std::memory_order_relaxed) > parent->d_cached_blocks)) {
+		if (p->empty()) {
 
-			// Empty block: remove it from the linked list and deallocate from the radix tree
+			// Empty block: remove it from the linked list and deallocate
 			p->remove();
 			p->remove_all();
 
+			if (!parent->d_cache) {
+				// Update cache
+				parent->d_cache = p;
+				parent->d_data.lock.unlock();
+				return;
+			}
+
 			// MICRO_ASSERT_DEBUG(parent->d_data.it.right != nullptr, "");
 			parent->d_data.lock.unlock();
-
-			if (parent->d_cached_blocks)
-				parent->d_pool_count.fetch_sub(1, std::memory_order_relaxed);
-
 			vipOSFreePages(p, allocation_granularity() / vipOSPageSize());
 			return;
 		}
@@ -329,32 +332,19 @@ class VipMemoryPool
 		Lock lock;
 	};
 	It d_data;
-	size_t d_cached_blocks = 0;
-	std::atomic<size_t> d_pool_count{ 0 };
+	block* d_cache = nullptr;
 
-	static size_t compute_allocation_granularity() noexcept
-	{
-		size_t allocation_granularity = vipOSAllocationGranularity();
-		// Compute allocation granularity
-		while (sizeof(T) * 16u > allocation_granularity) {
-			allocation_granularity *= 2;
-		}
-		return allocation_granularity;
-	}
 	static VIP_ALWAYS_INLINE size_t allocation_granularity() noexcept
 	{
-		static size_t res = compute_allocation_granularity();
+		static size_t res = vipOSAllocationGranularity();
 		return res;
 	}
 
 public:
-	using block_type = block;
+	static_assert(sizeof(T) < 2000, "unsupported sizeof(T)");
 
 	/// @brief Default constructor
-	VipMemoryPool(size_t cached_blocks = 1) noexcept
-	  : d_cached_blocks(cached_blocks)
-	{
-	}
+	VipMemoryPool() noexcept {}
 	~VipMemoryPool() noexcept { clear(); }
 
 	VipMemoryPool(const VipMemoryPool&) = delete;
@@ -404,7 +394,11 @@ public:
 
 		d_data.it.right = d_data.it.left = &d_data.it;
 		d_data.it.right_all = d_data.it.left_all = &d_data.it;
-		d_pool_count.store(0);
+
+		if (d_cache) {
+			vipOSFreePages(d_cache, allocation_granularity() / vipOSPageSize());
+			d_cache = nullptr;
+		}
 	}
 };
 
