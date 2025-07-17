@@ -71,7 +71,7 @@ namespace detail
 		std::uint16_t tail = 0;
 		std::uint16_t first_free = 0;
 		std::uint16_t objects = 0;
-		std::uint16_t max_objects = 0;
+		std::uint16_t tail_end = 0;
 	};
 
 	/// Contiguous block of memory used to allocate chunks for a specific size class.
@@ -115,7 +115,7 @@ namespace detail
 		{
 			this->header.tail = sizeof(TinyBlockPool);
 			this->header.first_free = (this->header.tail);
-			this->header.max_objects = (uint16_t)max_objects;
+			this->header.tail_end = this->header.tail + (uint16_t)(max_objects * sizeof_T);
 		}
 
 		// Support for linked list of TinyBlockPool
@@ -164,7 +164,7 @@ namespace detail
 			if (this->header.first_free == this->header.tail) {
 				unsigned new_tail = static_cast<unsigned>(this->header.tail + sizeof_T);
 				// Set next address to 0 if full, new tail if not
-				new_tail *= (new_tail <= ((this->header.max_objects - 1) * sizeof_T));
+				new_tail *= (new_tail < this->header.tail_end);
 				// MICRO_ASSERT_DEBUG(new_tail <= max_objects, "");
 				this->header.tail = (uint16_t)(*res = (new_tail));
 			}
