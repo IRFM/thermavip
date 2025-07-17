@@ -384,15 +384,15 @@ VipPlotItem* VipDisplayPlotItem::item() const
 		if (QThread::currentThread() != qApp->thread()) {
 
 			VipDisplayPlotItem* _this = const_cast<VipDisplayPlotItem*>(this);
+			QObjectPointer display(_this);
+			QObjectPointer plot(item);
 			QMetaObject::invokeMethod(
 			  _this,
-			  [](QObjectPointer display, QObjectPointer plot) {
+			  [display,plot]() {
 				  if (display && plot && static_cast<VipDisplayObject*>(display.get())->widget())
 					  VipFDDisplayObjectSetItem().callAllMatch(display.get(), plot.get());
 			  },
-			  Qt::QueuedConnection,
-			  QObjectPointer(_this),
-			  QObjectPointer(item));
+			  Qt::QueuedConnection);
 		}
 		else if (this->widget())
 			VipFDDisplayObjectSetItem().callAllMatch(this, item);
