@@ -60,7 +60,6 @@ inline QDataStream& operator>>(QDataStream& str, PriorityMap& map)
 	return str >> reinterpret_cast<QMap<QString, int>&>(map);
 }
 
-
 QStringList VipAnyData::mergeAttributes(const QVariantMap& attrs)
 {
 	QStringList res;
@@ -141,7 +140,6 @@ VipErrorData* VipErrorHandler::_null_error()
 	return &inst;
 }
 
-
 class VipConnection::PrivateData
 {
 public:
@@ -155,6 +153,7 @@ public:
 	// generic parameters
 	VipProcessingObject* parent;
 	VipProcessingIO* io;
+	QByteArray parentClassName; // for debug purpose only
 
 	// input/output parameters
 	QString io_name;
@@ -182,6 +181,7 @@ void VipConnection::setParentProcessingObject(VipProcessingObject* proc, VipProc
 {
 	d_data->parent = proc;
 	d_data->io = io;
+	d_data->parentClassName = proc ? QByteArray(proc->metaObject()->className()) : QByteArray();
 }
 
 VipProcessingObject* VipConnection::parentProcessingObject() const
@@ -197,15 +197,26 @@ VipOutput* VipConnection::source() const
 		return nullptr;
 }
 
+
+template<class T>
+static qsizetype indexOfSharedVector(const QVector<QSharedPointer<T>>& vec, const T* val) noexcept
+{
+	for (qsizetype i = 0; i < vec.size(); ++i)
+		if (vec[i].get() == val)
+			return i;
+	return -1;
+}
+
+
 void VipConnection::setupConnection(const QString& addr, const VipConnectionPtr& con)
 {
 	resetError();
 	d_data->address = addr;
 
 	// remove previous connections
-	VipConnectionPtr this_con = sharedFromThis();
+	//VipConnectionPtr this_con = sharedFromThis();
 	for (int i = 0; i < d_data->connections.size(); ++i) {
-		int index = d_data->connections[i]->d_data->connections.indexOf(this_con);
+		qsizetype index = indexOfSharedVector( d_data->connections[i]->d_data->connections, this);
 		if (index >= 0)
 			d_data->connections[i]->d_data->connections.remove(index);
 	}
@@ -410,11 +421,17 @@ void VipConnection::doSendData(const VipAnyData& data)
 
 void VipConnection::doClearConnection()
 {
-	VipConnectionPtr con = sharedFromThis();
+	//VipConnectionPtr con = sharedFromThis();
 	for (int i = 0; i < d_data->connections.size(); ++i) {
-		int index = d_data->connections[i]->d_data->connections.indexOf(con);
+		qsizetype index = indexOfSharedVector(d_data->connections[i]->d_data->connections, this);
 		if (index >= 0) {
+
+			auto* p = d_data->connections[i]->d_data->parent;
+
 			d_data->connections[i]->d_data->connections.remove(index);
+			if (d_data->connections[i]->d_data->connections.isEmpty())
+				p->receiveConnectionClosed(d_data->connections[i]->d_data->io);
+
 			d_data->connections[i]->checkClosedConnections();
 		}
 	}
@@ -631,7 +648,7 @@ UniqueProcessingIO::UniqueProcessingIO(const UniqueProcessingIO& other)
 
 UniqueProcessingIO::~UniqueProcessingIO()
 {
-	// clearConnection();
+	//clearConnection();
 }
 
 void UniqueProcessingIO::setParentProcessing(VipProcessingObject* parent)
@@ -769,7 +786,8 @@ VipOutput* UniqueProcessingIO::source() const
 
 void UniqueProcessingIO::clearConnection()
 {
-	d_data->connection->clearConnection();
+	if (d_data->connection)
+		d_data->connection->clearConnection();
 }
 
 VipInput::VipInput(const QString& name, VipProcessingObject* parent)
@@ -1083,9 +1101,7 @@ public:
 	QList<const VipProcessingObject*> _allObjects;
 };
 
-VipProcessingManager::~VipProcessingManager()
-{
-}
+VipProcessingManager::~VipProcessingManager() {}
 
 void VipProcessingManager::setDefaultPriority(QThread::Priority priority, const QMetaObject* meta)
 {
@@ -1409,7 +1425,7 @@ bool VipFIFOList::readAll(VipAnyDataList& lst)
 		m_last = m_list.back();
 		auto it = lst.begin();
 		m_list.for_each(0, m_list.size(), [&it](auto& v) { *it++ = std::move(v); });
-		//std::move(m_list.begin(), m_list.end(), lst.begin());
+		// std::move(m_list.begin(), m_list.end(), lst.begin());
 		m_list.clear();
 		return true;
 	}
@@ -1627,7 +1643,7 @@ int VipLIFOList::memoryFootprint() const
 {
 	_SHAREDSPINLOCKER();
 	int size = 0;
-	for (int i = 0; i <static_cast<int>( m_list.size()); ++i)
+	for (int i = 0; i < static_cast<int>(m_list.size()); ++i)
 		size += m_list[i].memoryFootprint();
 	return size;
 }
@@ -1743,7 +1759,6 @@ void VipLastAvailableList::clear()
 	m_has_new_data = false;
 }
 
-
 class MyLock
 {
 	std::atomic<bool> d_lock{ false };
@@ -1772,13 +1787,13 @@ public:
 		return !d_lock.load(std::memory_order_relaxed) && !d_lock.exchange(true, std::memory_order_acquire);
 	}
 
-	void unlock() noexcept 
-	{ 
+	void unlock() noexcept
+	{
 		if (d_has_mutex) {
 			d_has_mutex = false;
 			d_mutex.unlock();
 		}
-		d_lock.store(false, std::memory_order_release); 
+		d_lock.store(false, std::memory_order_release);
 	}
 
 	template<class Rep, class Period>
@@ -1867,8 +1882,20 @@ struct MutexLocker
 /// When a VipProcessingObject is Asynchronous, it uses internally a TaskPool to schedule its processing.
 /// QThreadPool is not used due to observed dead locks in certain situations.
 ///
-class TaskPool : public QThread
+class TaskPool
 {
+	struct Thread : QThread
+	{
+		TaskPool* parent;
+		Thread(TaskPool* p)
+		  : parent(p)
+		{
+		}
+
+	protected:
+		virtual void run() { parent->run(); }
+	};
+
 	using LockType = StdMutexLocker; // StdMutexLocker; // MutexLocker;
 	using UniqueLock = typename LockType::UniqueLock;
 	LockType lock;
@@ -1876,32 +1903,27 @@ class TaskPool : public QThread
 	std::atomic<int> m_run;
 	std::atomic<bool> m_clear{ false };
 	VipProcessingObject* m_parent;
+	Thread m_thread;
 	bool m_stop;
 	void atomWait(UniqueLock& ll, int milli);
 
 protected:
-	virtual void run();
+	void run();
 
 public:
 	/// @brief Construct from a parent object and a thread priority
 	TaskPool(VipProcessingObject* parent = nullptr, QThread::Priority p = QThread::InheritPriority);
 	~TaskPool();
 
-	/// @brief Enable/disable running the main event loop
-	///
-	/// When the waitForDone() or waitForCurrentPendingTasks() is called from the main thread,
-	/// tells the TaskPool to process pending events while waiting.
-	/// This allows to execute GUI operations in the task pool and avoid a deadlock while waiting.
-	/// Default is false.
-	void setRunMainEventLoop(bool enable);
-	bool runMainEventLoop() const;
-
 	/// @brief Schedule a VipProcessingObject launch
 	VIP_ALWAYS_INLINE void push()
 	{
-		if(m_run.fetch_add(1) == 0)
+		if (m_run.fetch_add(1) == 0)
 			lock.notify_all();
 	}
+
+	void setPriority(QThread::Priority p) { m_thread.setPriority(p); }
+	QThread::Priority priority() const { return m_thread.priority(); }
 
 	/// @brief Wait until the task list is empty or until timeout
 	bool waitForDone(int milli = -1);
@@ -1935,8 +1957,7 @@ void TaskPool::run()
 
 		int count = m_run.load(std::memory_order_relaxed);
 		int saved = count;
-		if (!m_stop)
-		{
+		if (!m_stop) {
 			SPIN_LOCK(m_parent->runLock());
 			while (!m_stop && count-- && !m_clear.load(std::memory_order_relaxed)) {
 				try {
@@ -1944,13 +1965,13 @@ void TaskPool::run()
 					m_parent->runNoLock();
 				}
 				catch (const std::exception& e) {
-					if (VipProcessingObject* o = qobject_cast<VipProcessingObject*>(parent()))
+					if (VipProcessingObject* o = qobject_cast<VipProcessingObject*>(m_parent))
 						o->setError("Unhandled exception: " + QString(e.what()));
 					else
 						qWarning() << "Unhandled exception: " << e.what() << "\n";
 				}
 				catch (...) {
-					if (VipProcessingObject* o = qobject_cast<VipProcessingObject*>(parent()))
+					if (VipProcessingObject* o = qobject_cast<VipProcessingObject*>(m_parent))
 						o->setError("Unhandled unknown exception");
 					else
 						qWarning() << "Unhandled unknown exception\n";
@@ -1971,13 +1992,13 @@ void TaskPool::run()
 }
 
 TaskPool::TaskPool(VipProcessingObject* parent, QThread::Priority p)
-  : QThread()
-  , m_run(0)
+  : m_run(0)
   , m_parent(parent)
+  , m_thread(this)
   , m_stop(false)
 {
 	auto ll = lock.lock();
-	this->start(p);
+	m_thread.start(p);
 	lock.wait(ll);
 }
 
@@ -1985,7 +2006,7 @@ TaskPool::~TaskPool()
 {
 	m_stop = true;
 	lock.notify_all();
-	wait();
+	m_thread.wait();
 }
 
 void TaskPool::atomWait(UniqueLock& ll, int milli)
@@ -2029,7 +2050,7 @@ bool TaskPool::waitForDone(int milli_time)
 
 int TaskPool::remaining() const
 {
-	return m_run.load(std::memory_order_relaxed) ;
+	return m_run.load(std::memory_order_relaxed);
 }
 
 void TaskPool::clear()
@@ -2037,7 +2058,6 @@ void TaskPool::clear()
 	if (m_run.load(std::memory_order_relaxed))
 		m_clear.store(true);
 }
-
 
 class VipProcessingObject::PrivateData
 {
@@ -2193,11 +2213,14 @@ VipProcessingObject::~VipProcessingObject()
 	if (TaskPool* p = d_data->getPool()) {
 		p->waitForDone();
 		p->clear();
-		if (p->thread() == this->thread())
+		/* if (p->thread() == this->thread())
 			delete p;
 		else
-			p->deleteLater();
+			p->deleteLater();*/
+		delete p;
 	}
+
+	d_data->inputs.clear();
 }
 
 void VipProcessingObject::save()
@@ -2307,7 +2330,7 @@ void VipProcessingObject::internalInitIO(bool force) const
 			const int type = meta->property(i).userType();
 
 			if (type == qMetaTypeId<VipInput>())
-				_this->d_data->inputs.push_back(std::unique_ptr<VipProcessingIO> (new VipInput(meta->property(i).name(), _this)));
+				_this->d_data->inputs.push_back(std::unique_ptr<VipProcessingIO>(new VipInput(meta->property(i).name(), _this)));
 			else if (type == qMetaTypeId<VipMultiInput>())
 				_this->d_data->inputs.push_back(std::unique_ptr<VipProcessingIO>(new VipMultiInput(meta->property(i).name(), _this)));
 			else if (type == qMetaTypeId<VipProperty>())
@@ -2493,8 +2516,7 @@ VipProcessingObject::Info VipProcessingObject::info() const
 		return d_data->info;
 
 	Info res;
-	res.metatype =  vipMetaTypeFromQObject(this);//TEST
-	  //QVariant::fromValue(const_cast<VipProcessingObject*>(this)).userType();
+	res.metatype = vipMetaTypeFromQObject(this); 
 	res.classname = className();
 	res.displayHint = this->displayHint();
 
@@ -3173,7 +3195,7 @@ bool VipProcessingObject::isEnabled() const
 
 bool VipProcessingObject::update(bool force_run)
 {
-	
+
 	// Exit if disabled
 	if (VIP_UNLIKELY(!isEnabled()))
 		return false;
@@ -3214,11 +3236,11 @@ bool VipProcessingObject::update(bool force_run)
 	}
 
 	// If SkipIfBusy is set, returns if a processing is scheduled
-	if ((d_data->parameters.schedule_strategies & SkipIfBusy)) 
+	if ((d_data->parameters.schedule_strategies & SkipIfBusy))
 		if (TaskPool* p = d_data->getPool())
 			if (p->remaining() > 0)
 				return false;
-	
+
 	if (!(d_data->parameters.schedule_strategies & Asynchronous)) {
 		// Synchronous processing
 		if (d_data->parameters.schedule_strategies & NoThread)
@@ -3422,7 +3444,7 @@ VipAnyDataList VipProcessingObject::allInputs()
 	return VipAnyDataList();
 }
 
-void VipProcessingObject::run() 
+void VipProcessingObject::run()
 {
 	// lock to avoid concurrent calls
 	SPIN_LOCK(d_data->run_mutex);
@@ -3504,13 +3526,13 @@ void VipProcessingObject::receiveConnectionClosed(VipProcessingIO* io)
 
 			for (size_t o = 0; o < d_data->outputs.size(); ++o) {
 				if (VipOutput* out = d_data->outputs[o]->toOutput()) {
-					if (out->connection()->openMode() != VipConnection::UnknownConnection)
+					if (out->connection()->openMode() != VipConnection::UnknownConnection && !out->connection()->sinks().isEmpty())
 						all_closed = false;
 				}
 				else if (VipMultiOutput* mout = d_data->outputs[o]->toMultiOutput()) {
 					for (int m = 0; m < mout->count(); ++m) {
-						VipOutput* ot = mout->at(m);
-						if (ot->connection()->openMode() != VipConnection::UnknownConnection) {
+						VipOutput* out = mout->at(m);
+						if (out->connection()->openMode() != VipConnection::UnknownConnection && !out->connection()->sinks().isEmpty()) {
 							all_closed = false;
 							break;
 						}

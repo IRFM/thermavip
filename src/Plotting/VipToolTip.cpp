@@ -79,6 +79,8 @@ public:
 	QPen overlayPen;
 	QBrush overlayBrush;
 
+	bool visible = true;
+
 	PrivateData()
 	  : area(nullptr)
 	  , displayFlags(VipToolTip::All)
@@ -145,6 +147,15 @@ void VipToolTip::setPlotArea(VipAbstractPlotArea* area)
 VipAbstractPlotArea* VipToolTip::plotArea() const
 {
 	return d_data->area;
+}
+
+void VipToolTip::setVisible(bool enable)
+{
+	d_data->visible = enable;
+}
+bool VipToolTip::visible() const
+{
+	return d_data->visible;
 }
 
 void VipToolTip::setIgnoreProperties(const QStringList& names)
@@ -332,6 +343,24 @@ const QList<VipAbstractScale*>& VipToolTip::scales() const
 	return d_data->scales;
 }
 
+
+void VipToolTip::refresh(const QPointF& item_pos)
+{
+	qint64 current = QDateTime::currentMSecsSinceEpoch();
+	if (current - d_data->lastRefresh < d_data->minRefreshTime)
+		return;
+
+	d_data->lastRefresh = current;
+	if (item_pos == QPointF())
+		return;
+
+	// check that the mouse is inside the canvas
+	QPainterPath p = plotArea()->canvas()->shape();
+	if (!p.contains(item_pos))
+		return;
+	setPlotAreaPos(QPointF(d_data->pos = item_pos));
+}
+
 void VipToolTip::refresh()
 {
 	// check refresh time
@@ -350,8 +379,10 @@ void VipToolTip::refresh()
 		if (!v->underMouse() && !v->viewport()->underMouse())
 			return;
 	}
-	else
+	else {
+
 		return;
+	}
 
 	// check that the mouse is inside the canvas
 	QPainterPath p = plotArea()->canvas()->shape();
@@ -652,28 +683,47 @@ static QPoint findPosition(Vip::RegionPositions position,
 
 QPoint VipToolTip::toolTipPosition(VipText& text, const QPointF& pos, Vip::RegionPositions position, Qt::Alignment alignment)
 {
+	QGraphicsView* view = this->plotArea() ? this->plotArea()->view() : nullptr;
 #if QT_VERSION < QT_VERSION_CHECK(5, 15, 0)
 	QDesktopWidget* w = qApp->desktop();
 	int screen_number = -1;
-	if (this->plotArea() && this->plotArea()->view())
-		screen_number = w->screenNumber(this->plotArea()->view());
+	if (this->plotArea() && view)
+		screen_number = w->screenNumber(view);
 	QRect screen = w->screenGeometry(screen_number);
 #else
 	QScreen* sc = nullptr;
 	if (this->plotArea())
-		if (QGraphicsView* view = this->plotArea()->view())
+		if (view)
 			sc = view->screen();
 	if (!sc)
 		sc = QGuiApplication::primaryScreen();
 	QRect screen = sc->geometry();
 #endif
 
+	if (!view) {
+		// Find screen and mouse position within screen
+		QList<QScreen*> screens = qApp->screens();
+		QPoint pt = QCursor::pos();
+		for (QScreen* s : screens) {
+			if (s->geometry().contains(pt)) {
+				sc = s;
+				screen = sc->geometry();
+				break;
+			}
+		}
+
+	}
+
 	QRect tip_rect = VipCorrectedTip::textGeometry(QPoint(0, 0), text.text(), plotArea()->view(), QRect());
 	QSize tip_size = tip_rect.size();
 	QPoint tip_offset = tip_rect.topLeft();
 
 	if (d_data->offset) {
-		QPoint this_pos = sceneToScreenCoordinates(plotArea()->scene(), plotArea()->mapToScene(pos));
+		QPoint this_pos;
+		if (view)
+			this_pos = sceneToScreenCoordinates(plotArea()->scene(), plotArea()->mapToScene(pos));
+		else
+			this_pos = QCursor::pos();
 
 		int factor = 1;
 		QRect rect = QRect(QPoint(0, 0), tip_size).translated(this_pos);
@@ -694,7 +744,11 @@ QPoint VipToolTip::toolTipPosition(VipText& text, const QPointF& pos, Vip::Regio
 				geometry = ptr->clipPath(c).boundingRect();
 
 	if (position == Vip::Automatic) {
-		QPoint this_pos = sceneToScreenCoordinates(plotArea()->scene(), plotArea()->mapToScene(pos));
+		QPoint this_pos;
+		if (view)
+			this_pos = sceneToScreenCoordinates(plotArea()->scene(), plotArea()->mapToScene(pos));
+		else
+			this_pos = QCursor::pos();
 		QPoint mouse_pos = this_pos;
 		this_pos.setY(this_pos.y() + d_data->distanceToPointer);
 		this_pos.setX(this_pos.x() - tip_size.width() * (pos.x() - geometry.left()) / geometry.width());
@@ -719,7 +773,11 @@ QPoint VipToolTip::toolTipPosition(VipText& text, const QPointF& pos, Vip::Regio
 	else {
 		QRectF tmp = plotArea()->mapToScene(geometry).boundingRect();
 		QRect area_screen = QRect(sceneToScreenCoordinates(plotArea()->scene(), tmp.topLeft()), sceneToScreenCoordinates(plotArea()->scene(), tmp.bottomRight())).normalized();
-		QPoint this_pos = findPosition(position, alignment, tip_size, screen, area_screen, d_data->distanceToPointer);
+		QPoint this_pos;
+		if (view)
+			this_pos = findPosition(position, alignment, tip_size, screen, area_screen, d_data->distanceToPointer);
+		else
+			this_pos = QCursor::pos();
 		QRect this_rect(this_pos, tip_size);
 
 		// be sure the tool tip is not above the mouse

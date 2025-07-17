@@ -2328,7 +2328,7 @@ VipToolTip* VipAbstractPlotArea::plotToolTip() const
 
 void VipAbstractPlotArea::refreshToolTip()
 {
-	if (d_data->plotToolTip && VipCorrectedTip::isVisible())
+	if (d_data->plotToolTip && d_data->plotToolTip->visible() && VipCorrectedTip::isVisible())
 		d_data->plotToolTip->refresh();
 }
 
@@ -2414,7 +2414,7 @@ void VipAbstractPlotArea::hoverMoveEvent(QGraphicsSceneHoverEvent* event)
 		Qt::MouseButtons buttons = QApplication::mouseButtons();
 
 		// display tool tip
-		if (d_data->plotToolTip && buttons == 0) {
+		if (d_data->plotToolTip && d_data->plotToolTip->visible() &&  buttons == 0) {
 			if (d_data->plotToolTip->plotArea() != this)
 				d_data->plotToolTip->setPlotArea(this);
 			d_data->plotToolTip->setScales(tool_tip_scales);

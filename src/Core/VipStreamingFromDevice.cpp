@@ -37,8 +37,8 @@ namespace detail
 
 	struct ReadThread : public QThread
 	{
-		VipGeneratorSequential* generator;
-		ReadThread(VipGeneratorSequential* gen)
+		VipStreamingFromDevice* generator;
+		ReadThread(VipStreamingFromDevice* gen)
 		  : generator(gen)
 		{
 		}
@@ -49,7 +49,7 @@ namespace detail
 			qint64 start_device = generator->m_device->firstTime();
 			qint64 prev_read = VipInvalidTime;
 
-			while (VipGeneratorSequential* gen = generator) {
+			while (VipStreamingFromDevice* gen = generator) {
 				qint64 time = vipGetMilliSecondsSinceEpoch() * 1000000;
 				qint64 current = (time - start_absolute);
 				qint64 closest = generator->m_device->closestTime(current + start_device);
@@ -78,36 +78,36 @@ namespace detail
 
 }
 
-VipGeneratorSequential::VipGeneratorSequential(QObject* parent)
+VipStreamingFromDevice::VipStreamingFromDevice(QObject* parent)
   : VipIODevice(parent)
 {
 	m_thread.reset(new detail::ReadThread(this));
 }
 
-VipGeneratorSequential ::~VipGeneratorSequential()
+VipStreamingFromDevice ::~VipStreamingFromDevice()
 {
 	close();
 }
 
-void VipGeneratorSequential::close()
+void VipStreamingFromDevice::close()
 {
 	VipIODevice::close();
-	setStreamingEnabled(false);
+	
 	m_device.reset();
 }
 
-void VipGeneratorSequential::setIODevice(VipIODevice* device)
+void VipStreamingFromDevice::setIODevice(VipIODevice* device)
 {
 	if (!isOpen())
 		m_device = QSharedPointer<VipIODevice>(device);
 }
 
-VipIODevice* VipGeneratorSequential::IODevice() const
+VipIODevice* VipStreamingFromDevice::IODevice() const
 {
 	return m_device.data();
 }
 
-bool VipGeneratorSequential::open(VipIODevice::OpenModes mode)
+bool VipStreamingFromDevice::open(VipIODevice::OpenModes mode)
 {
 	VipIODevice::close();
 
@@ -129,14 +129,14 @@ bool VipGeneratorSequential::open(VipIODevice::OpenModes mode)
 	return false;
 }
 
-QTransform VipGeneratorSequential::imageTransform() const
+QTransform VipStreamingFromDevice::imageTransform() const
 {
 	if (m_device)
 		return m_device->imageTransform();
 	return VipIODevice::imageTransform();
 }
 
-void VipGeneratorSequential::readDeviceTime(qint64 time, qint64 new_time)
+void VipStreamingFromDevice::readDeviceTime(qint64 time, qint64 new_time)
 {
 	if (m_device->read(time)) {
 		VipAnyData any = this->m_device->outputAt(0)->data();
@@ -147,7 +147,7 @@ void VipGeneratorSequential::readDeviceTime(qint64 time, qint64 new_time)
 	}
 }
 
-bool VipGeneratorSequential::enableStreaming(bool enable)
+bool VipStreamingFromDevice::enableStreaming(bool enable)
 {
 
 	if (enable) {
@@ -162,13 +162,13 @@ bool VipGeneratorSequential::enableStreaming(bool enable)
 	return true;
 }
 
-static VipArchive& operator<<(VipArchive& arch, const VipGeneratorSequential* gen)
+static VipArchive& operator<<(VipArchive& arch, const VipStreamingFromDevice* gen)
 {
 	if (gen)
 		arch.content("device", gen->IODevice());
 	return arch;
 }
-static VipArchive& operator>>(VipArchive& arch, VipGeneratorSequential* gen)
+static VipArchive& operator>>(VipArchive& arch, VipStreamingFromDevice* gen)
 {
 	if (VipIODevice* dev = arch.read("device").value<VipIODevice*>())
 		gen->setIODevice(dev);
@@ -176,4 +176,4 @@ static VipArchive& operator>>(VipArchive& arch, VipGeneratorSequential* gen)
 		arch.resetError();
 	return arch;
 }
-static int _register = vipAddInitializationFunction(vipRegisterArchiveStreamOperators<VipGeneratorSequential*>);
+static int _register = vipAddInitializationFunction(vipRegisterArchiveStreamOperators<VipStreamingFromDevice*>);

@@ -29,6 +29,10 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#ifdef _MSC_VER
+#include <corecrt.h>
+#endif
+
 #ifdef _DEBUG
 #define VIP_HAS_DEBUG
 #undef _DEBUG
@@ -43,10 +47,10 @@ extern "C" {
 
 #ifdef VIP_HAS_DEBUG
 #define _DEBUG
-#ifdef _MSC_VER
+//#ifdef _MSC_VER
 // Bug https://github.com/microsoft/onnxruntime/issues/9735
-#define _STL_CRT_SECURE_INVALID_PARAMETER(expr) _CRT_SECURE_INVALID_PARAMETER(expr)
-#endif
+//#define _STL_CRT_SECURE_INVALID_PARAMETER(expr) _CRT_SECURE_INVALID_PARAMETER(expr)
+//#endif
 #endif
 
 #include "VipPyProcessing.h"

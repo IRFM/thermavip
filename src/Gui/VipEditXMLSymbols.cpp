@@ -293,7 +293,7 @@ void VipExportSessionWidget::exportSession()
 			// else if (exportCurrentPlayer())
 			//  session_type = VipMainWindow::CurrentPlayer;
 
-			if (vipGetMainWindow()->saveSession(arch, session_type, VipMainWindow::All))
+			if (vipGetMainWindow()->saveSession(arch,(VipMainWindow::SessionType) session_type, VipMainWindow::All))
 				if (!d_data->XMLSymbols->isHidden())
 					d_data->XMLSymbols->applyToArchive(arch);
 		}
@@ -303,7 +303,7 @@ void VipExportSessionWidget::exportSession()
 			int session_type = 0;
 			if (exportCurrentArea())
 				session_type = VipMainWindow::CurrentArea;
-			vipGetMainWindow()->saveSession(arch, session_type, VipMainWindow::All);
+			vipGetMainWindow()->saveSession(arch, (VipMainWindow::SessionType)session_type, VipMainWindow::All);
 #endif
 		}
 	}
@@ -316,7 +316,7 @@ void VipExportSessionWidget::exportTypeChanged()
 		session_type = VipMainWindow::CurrentArea;
 
 	VipXOStringArchive arch;
-	vipGetMainWindow()->saveSession(arch, session_type, VipMainWindow::All);
+	vipGetMainWindow()->saveSession(arch, (VipMainWindow::SessionType)session_type, VipMainWindow::All);
 
 	QList<VipEditableArchiveSymbol> lst = arch.editableSymbols();
 	// remove duplicates (editable symbols with the same name at the same location)

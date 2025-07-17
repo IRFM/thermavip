@@ -333,7 +333,8 @@ public:
 	VipBoxStyle& boxStyle();
 
 	/// @brief Reimplemented from VipPlotItem, return the curve pen
-	virtual QColor majorColor() const { return boxStyle().borderPen().color(); }
+	virtual QColor majorColor() const;
+	virtual void setMajorColor(const QColor& c);
 
 	/// @brief Reimplemented from VipPlotItem, set the curve pen
 	virtual void setPen(const QPen&);

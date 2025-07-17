@@ -42,7 +42,7 @@ jobs:
           run: |
               mkdir build 
               cd build 
-              cmake .. -DCMAKE_BUILD_TYPE=Debug -DWITH_FFMPEG=ON -DWITH_LOCAL_FFMPEG=OFF -DNO_WARNINGS=ON -DLOCAL_INSTALL=ON 
+              cmake .. -DCMAKE_BUILD_TYPE=Debug -DWITH_FFMPEG=OFF -DNO_WARNINGS=ON -DLOCAL_INSTALL=ON 
               cmake --build ./ 
               cmake --build . --target install
 

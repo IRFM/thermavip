@@ -143,6 +143,10 @@ VIP_ANNOTATION_EXPORT QString vipLocalMovieSuffix();
 VIP_ANNOTATION_EXPORT bool vipHasReadRightsDB();
 VIP_ANNOTATION_EXPORT bool vipHasWriteRightsDB();
 
+/// @brief Enable/disable video annotation features
+VIP_ANNOTATION_EXPORT bool vipHasVideoAnnotationFeatures();
+VIP_ANNOTATION_EXPORT void vipSetHasVideoAnnotationFeatures(bool);
+
 /// @brief Default list of events type.
 /// Stores a map of event_ID -> list of timestamped shapes
 typedef QMap<qint64, VipShapeList> Vip_event_list;

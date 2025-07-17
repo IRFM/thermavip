@@ -52,7 +52,7 @@ class VIP_CORE_EXPORT VipSequentialGenerator : public VipIODevice
 	VIP_IO(VipProperty sampling_s) // sampling time in seconds, default to 0.01 (10ms)
 
 public:
-	/// @brief Generator function type, takes the previous data and previous time (ns) as parameters
+	/// @brief Generator function type, takes the previous data as parameters
 	using generator_function = std::function<VipAnyData(const VipAnyData&)>;
 
 	VipSequentialGenerator(QObject* parent = nullptr);

@@ -1290,10 +1290,12 @@ void VipProcessingListEditor::cutSelection()
 {
 	QList<QListWidgetItem*> items = d_data->list->selectedItems();
 	copySelection();
-	if (d_data->processingList)
+	if (d_data->processingList) {
 		for (int i = 0; i < items.size(); ++i) {
 			d_data->processingList->remove(static_cast<ProcessingListWidgetItem*>(items[i])->processing.data());
 		}
+		d_data->processingList->reload();
+	}
 }
 
 void VipProcessingListEditor::pasteCopiedItems()

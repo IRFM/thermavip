@@ -1465,6 +1465,7 @@ class VIP_CORE_EXPORT VipProcessingObject : public VipErrorHandler
 	friend class VipProperty;
 	friend class VipProcessingList;
 	friend class TaskPool;
+	friend class VipConnection;
 	friend VIP_CORE_EXPORT VipArchive& operator<<(VipArchive& arch, const VipProcessingObject* proc);
 	friend VIP_CORE_EXPORT VipArchive& operator>>(VipArchive& arch, VipProcessingObject* proc);
 

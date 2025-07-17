@@ -501,8 +501,10 @@ void VipAbstractScale::computeScaleDiv()
 		}
 
 		// having x1 == x2 causes strange bugs
-		if (x1 == x2)
-			x2 = x1 + 1.;
+		if (x1 == x2) {
+			x2 = x1 + 1000.; // TEST: 100 instead of 1 to make sure it works with double nanoseconds since epoch
+			stepSize = (x2 - x1) / 10;
+		}
 
 		scaleEngine()->onComputeScaleDiv(this, VipInterval(x1, x2));
 		VipScaleDiv div = scaleEngine()->divideScale(x1, x2, maxMajor(), maxMinor(), stepSize);

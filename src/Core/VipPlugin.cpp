@@ -82,7 +82,7 @@ VipLoadPlugins::VipLoadPlugins()
 
 VipLoadPlugins::~VipLoadPlugins()
 {
-	for (int i = 0; i < d_data->plugins.size(); ++i) {
+	for (size_t i = 0; i < d_data->plugins.size(); ++i) {
 		d_data->plugins[i]->unload();
 		d_data->plugins[i].reset();
 	}
@@ -129,7 +129,7 @@ QList<VipPluginInterface*> VipLoadPlugins::loadedPlugins() const
 QStringList VipLoadPlugins::loadedPluginNames() const
 {
 	QStringList res;
-	for (int i = 0; i < d_data->plugins.size(); ++i)
+	for (size_t i = 0; i < d_data->plugins.size(); ++i)
 		res << QFileInfo(d_data->plugins[i]->fileName()).baseName();
 	return res;
 }
@@ -148,7 +148,7 @@ VipPluginInterface* VipLoadPlugins::find(const QString& name) const
 {
 	QString search = formatPluginName(name);
 
-	for (int i = 0; i < d_data->plugins.size(); ++i) {
+	for (size_t i = 0; i < d_data->plugins.size(); ++i) {
 		QString pname = formatPluginName(d_data->plugins[i]->fileName());
 		if (pname == search)
 			return d_data->interfaces[i];
@@ -158,18 +158,18 @@ VipPluginInterface* VipLoadPlugins::find(const QString& name) const
 
 void VipLoadPlugins::unloadPlugins()
 {
-	for (int i = 0; i < d_data->interfaces.size(); ++i) {
+	for (qsizetype i = 0; i < d_data->interfaces.size(); ++i) {
 		d_data->interfaces[i]->unloadPlugin();
 	}
 }
 
 void VipLoadPlugins::unloadAndDeletePlugins()
 {
-	for (int i = 0; i < d_data->interfaces.size(); ++i) {
+	for (qsizetype i = 0; i < d_data->interfaces.size(); ++i) {
 		d_data->interfaces[i]->unloadPlugin();
 	}
 
-	for (int i = 0; i < d_data->interfaces.size(); ++i) {
+	for (qsizetype i = 0; i < d_data->interfaces.size(); ++i) {
 		// delete d_data->interfaces[i];
 		d_data->plugins[i]->unload();
 		d_data->plugins[i].reset();

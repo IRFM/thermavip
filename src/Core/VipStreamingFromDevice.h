@@ -40,7 +40,7 @@ namespace detail
 }
 
 /// @brief Sequential device that simulates streaming based on a temporal VipIODevice that is played repeatedly.
-class VIP_CORE_EXPORT VipGeneratorSequential : public VipIODevice
+class VIP_CORE_EXPORT VipStreamingFromDevice : public VipIODevice
 {
 	Q_OBJECT
 	VIP_IO(VipOutput output)
@@ -50,11 +50,12 @@ class VIP_CORE_EXPORT VipGeneratorSequential : public VipIODevice
 	QSharedPointer<detail::ReadThread> m_thread;
 
 public:
-	VipGeneratorSequential(QObject* parent = nullptr);
-	~VipGeneratorSequential();
+	VipStreamingFromDevice(QObject* parent = nullptr);
+	~VipStreamingFromDevice();
 
 	/// @brief Set the device that will be played repeatedly.
-	/// This must be called before VipIODevice::open()
+	/// This must be called before VipIODevice::open().
+	/// VipStreamingFromDevice takes ownership of the device.
 	void setIODevice(VipIODevice* device);
 	VipIODevice* IODevice() const;
 
@@ -70,6 +71,6 @@ protected:
 	virtual bool enableStreaming(bool enable);
 };
 
-VIP_REGISTER_QOBJECT_METATYPE(VipGeneratorSequential*)
+VIP_REGISTER_QOBJECT_METATYPE(VipStreamingFromDevice*)
 
 #endif

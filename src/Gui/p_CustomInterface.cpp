@@ -200,7 +200,7 @@ static void anchorToArea(const Anchor& a, DragRubberBand& area, QWidget* widget)
 	if (!a.canvas) {
 
 		if (VipDisplayPlayerArea* workspace = vipGetMainWindow()->displayArea()->currentDisplayPlayerArea()) {
-			VipMultiDragWidget* main = workspace->mainDragWidget(QWidgetList());
+			VipMultiDragWidget* main = workspace->mainDragWidget();
 			if (main->orientation() == Qt::Vertical) {
 				if (a.side == Vip::Top || a.side == Vip::Bottom) {
 
@@ -530,7 +530,7 @@ void BaseCustomPlayer::closePlayer()
 	if (QWidget* w = qobject_cast<QWidget*>(sender()))
 		w->setEnabled(false);
 	if (sender()) {
-		disconnect(sender(), SIGNAL(clicked(bool)), this, SLOT(closePlayer()));
+		disconnect(sender(), SIGNAL(triggered(bool)), this, SLOT(closePlayer()));
 		QCoreApplication::instance()->removePostedEvents(sender(), QEvent::MetaCall);
 	}
 	QCoreApplication::instance()->removePostedEvents(this, QEvent::MetaCall);
@@ -2216,7 +2216,7 @@ static QVariant reorganizeCurrentWorkspace(const QVariantList&, const QVariantMa
 
 	// build the list of all available players
 	QList<VipDragWidget*> players;
-	VipMultiDragWidget* main = area->mainDragWidget(QList<QWidget*>(), false);
+	VipMultiDragWidget* main = area->mainDragWidget(nullptr, false);
 	if (!main)
 		return QVariant::fromValue(VipErrorData("reorganizeCurrentWorkspace: no valid workspace available"));
 
