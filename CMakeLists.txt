@@ -189,13 +189,6 @@ else()
 	set(HAS_VTK OFF)
 endif()
 
-# HDF5
-if(WITH_HDF5)
-	find_package (HDF5 COMPONENTS C REQUIRED)
-	set(HAS_HDF5 ON)
-else()
-	set(HAS_HDF5 OFF)
-endif()
 
 # Add targets
 target_include_directories(VipLogging  PUBLIC

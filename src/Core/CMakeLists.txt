@@ -40,10 +40,6 @@ target_include_directories(VipCore PRIVATE
     ${PROJECT_SOURCE_DIR}/../Logging ${PROJECT_SOURCE_DIR}/../DataType
 )
 
-if(WITH_HDF5)
-	 target_include_directories(VipCore PRIVATE ${HDF5_INCLUDE_DIRS})
-	 target_link_libraries(VipCore PRIVATE ${HDF5_LIBRARIES})
-endif()
 
 target_compile_definitions(VipCore PRIVATE
     VIP_BUILD_CORE_LIB
