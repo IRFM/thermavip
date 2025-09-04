@@ -224,6 +224,7 @@ public:
 	qint64 elapsed_time;
 	bool is_reading;
 	bool lastTimeValid;
+	bool hasStreamingMode = false;
 
 	Parameters parameters;
 	QList<Parameters> savedParameters;
@@ -723,6 +724,15 @@ bool VipIODevice::startStreaming()
 bool VipIODevice::stopStreaming()
 {
 	return setStreamingEnabled(false);
+}
+
+void VipIODevice::setHasStreamingMode(bool enable)
+{
+	d_data->hasStreamingMode = enable;
+}
+bool VipIODevice::hasStreamingMode() const
+{
+	return d_data->hasStreamingMode;
 }
 
 bool VipIODevice::supportFilename(const QString& fname) const
@@ -1667,15 +1677,17 @@ bool VipProcessingPool::enableStreaming(bool enable)
 
 	QMutexLocker lock(&d_data->device_mutex);
 
-	bool res = true;
+	/*bool res = true;
 	for (int i = 0; i < d_data->read_devices.size(); ++i) {
-		if ((d_data->read_devices[i]->deviceType() == VipIODevice::Sequential))
+		bool has_streaming = d_data->read_devices[i]->deviceType() == VipIODevice::Sequential || d_data->read_devices[i]->hasStreamingMode();
+		if (has_streaming)
 			if (!d_data->read_devices[i]->setStreamingEnabled(enable)) {
 				res = false;
 				if (enable) {
 					// make sure to stop streaming on all devices
 					for (int j = i - 1; j >= 0; --j) {
-						if ((d_data->read_devices[j]->deviceType() == VipIODevice::Sequential))
+						bool has_streaming = d_data->read_devices[j]->deviceType() == VipIODevice::Sequential || d_data->read_devices[j]->hasStreamingMode();
+						if (has_streaming)
 							d_data->read_devices[j]->setStreamingEnabled(false);
 					}
 				}
@@ -1684,6 +1696,22 @@ bool VipProcessingPool::enableStreaming(bool enable)
 	}
 
 	if (enable)
+		d_data->streamingTimer.start();
+	else
+		d_data->streamingTimer.stop();
+
+	emitProcessingChanged();
+	return res;*/
+
+	// TEST
+	bool res = false;
+	for (int i = 0; i < d_data->read_devices.size(); ++i) {
+		bool has_streaming = d_data->read_devices[i]->deviceType() == VipIODevice::Sequential || d_data->read_devices[i]->hasStreamingMode();
+		if (has_streaming)
+			res = res || (d_data->read_devices[i]->setStreamingEnabled(enable));
+	}
+
+	if (enable && res)
 		d_data->streamingTimer.start();
 	else
 		d_data->streamingTimer.stop();
@@ -1961,7 +1989,7 @@ void VipProcessingPool::checkForStreaming()
 	{
 		QMutexLocker lock(&d_data->device_mutex);
 		for (int i = 0; i < d_data->read_devices.size(); ++i) {
-			if (d_data->read_devices[i]->deviceType() == Sequential && d_data->read_devices[i]->isOpen() && d_data->read_devices[i]->isStreamingEnabled()) {
+			if (/* d_data->read_devices[i]->deviceType() == Sequential &&*/ d_data->read_devices[i]->isOpen() && d_data->read_devices[i]->isStreamingEnabled()) {
 				no_streaming = false;
 				break;
 			}
@@ -1996,7 +2024,7 @@ void VipProcessingPool::childEvent(QChildEvent* event)
 
 		if (VipIODevice* d = qobject_cast<VipIODevice*>(d_data->dirty_children)) {
 			// Start device streaming if necessary
-			if (this->isStreamingEnabled() && d->deviceType() == VipIODevice::Sequential)
+			if (this->isStreamingEnabled() && (d->deviceType() == VipIODevice::Sequential || d->hasStreamingMode()))
 				d->setStreamingEnabled(true);
 		}
 
@@ -2129,6 +2157,9 @@ void VipProcessingPool::computeDeviceType()
 		if (d_data->read_devices[i]->deviceType() == Temporal)
 			d_data->has_temporal = true;
 		else if (d_data->read_devices[i]->deviceType() == Sequential)
+			d_data->has_sequential = true;
+
+		if (!d_data->has_sequential && d_data->read_devices[i]->hasStreamingMode())
 			d_data->has_sequential = true;
 	}
 
