@@ -402,4 +402,8 @@ public:
 	}
 };
 
+
+//VIP_CORE_EXPORT void * vipAllocate(size_t size);
+//VIP_CORE_EXPORT void vipDeallocate(void*, size_t) noexcept;
+
 #endif

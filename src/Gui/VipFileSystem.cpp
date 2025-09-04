@@ -2037,6 +2037,7 @@ static void applyPendingFileSystemSession(VipFileSystemWidget* w, const PendingF
 		for(int i=0; i < shortcuts.size(); ++i) {
 			QString path = shortcuts[i].canonicalPath();
 			if(path == home) {
+				shortcuts[i] = VipPath(home,true);
 				home.clear();
 				break;
 			}
