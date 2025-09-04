@@ -70,10 +70,7 @@ VipPlotVTKObject::VipPlotVTKObject(const VipText & title)
 	VIP_CREATE_PRIVATE_DATA(d_data);
 
 	this->setItemAttribute(VipPlotItem::ColorMapAutoScale);
-	//NEWPLOT
-	//this->setItemAttribute(VipPlotItem::InstantColorMapUpdate);
 	this->setItemAttribute(VipPlotItem::HasLegendIcon);
-	//this->setItemAttribute(VipPlotItem::RenderInPixmap);
 	this->setItemAttribute(VipPlotItem::HasToolTip, false);
 	this->setRenderHints(QPainter::Antialiasing);
 	this->setAcceptHoverEvents(true);
@@ -273,9 +270,6 @@ void VipPlotVTKObject::draw(QPainter * p, const VipCoordinateSystemPtr & ) const
 					//draw the object outlines
 					p->setPen(QPen(selectedColor(), 1.5, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
 
-					//QPolygonF pl = v->contours()->Outline(dat);
-					//p->drawLines(pl);
-					//TEST
 					const QList<QPolygonF> pl = v->contours()->Outlines(this);
 					for (int i = 0; i < pl.size(); ++i)
 						p->drawPolygon(pl[i]);

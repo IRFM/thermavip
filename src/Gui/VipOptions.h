@@ -73,7 +73,7 @@ public:
 /// VipOptions should gather all settings editor widgets. It displays on the left side the different setting categories as a tree widget.
 /// The settings editor is displayed on the right. Use VipOptions::addPage to ass a new settings editor with a specific category.
 /// The settings widget might provide a apply() slot, which will be called inside VipOptions::ok().
-class VIP_GUI_EXPORT VipOptions : public QDialog
+class VIP_GUI_EXPORT VipOptions : public QWidget
 {
 	Q_OBJECT
 public:
@@ -88,7 +88,7 @@ public:
 	void setTreeWidth(int w);
 
 private Q_SLOTS:
-	void ok();
+	void apply();
 	void itemClicked(QTreeWidgetItem* item, int column);
 
 private:
@@ -97,6 +97,8 @@ private:
 };
 
 VIP_GUI_EXPORT VipOptions* vipGetOptions();
+VIP_GUI_EXPORT void vipDisplayOptions();
+
 
 //
 // A few standard settings pages

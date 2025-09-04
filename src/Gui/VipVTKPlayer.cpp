@@ -5657,13 +5657,16 @@ void VipVTKPlayer::applyThisCameraToAll()
 		QList<VipVTKPlayer*> pls = area->findChildren<VipVTKPlayer*>();
 
 		for (VipVTKPlayer* pl : pls) {
-			if (pl->property("_vip_watched").toBool())
+			if (pl->property("_vip_watched").toBool() || cam == pl->view()->renderer()->GetActiveCamera())
 				continue;
 
 			pl->view()->renderer()->GetActiveCamera()->DeepCopy(cam);
 			pl->setProperty("_vip_watched", true);
-			pl->view()->refresh();
 			pl->view()->widget()->applyCameraToAllLayers();
+			pl->view()->immediateRefresh(); 
+			// This seems to be the only way to properly update another renderer window 
+			// without glitches
+			pl->view()->widget()->simulateMouseClick(QPoint(), QPoint());
 		}
 
 		for (VipVTKPlayer* pl : pls) 

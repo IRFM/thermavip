@@ -87,13 +87,12 @@ public:
 	VipPageOption* current;
 	QTreeWidget* page_browser;
 	QSplitter* splitter;
-	QPushButton* ok;
-	QPushButton* cancel;
+	QPushButton* apply;
 	QVBoxLayout* page_lay;
 };
 
 VipOptions::VipOptions(QWidget* parent)
-  : QDialog(parent)
+  : QWidget(parent)
 {
 	VIP_CREATE_PRIVATE_DATA(d_data);
 
@@ -103,14 +102,36 @@ VipOptions::VipOptions(QWidget* parent)
 
 	d_data->page_browser = new VipPageItems();
 	d_data->splitter = new QSplitter();
-	d_data->ok = new QPushButton();
-	d_data->cancel = new QPushButton();
+	d_data->apply = new QPushButton();
+	d_data->apply->setText("Apply changes");
+
 
 	d_data->page_browser->header()->hide();
 	d_data->page_browser->setAcceptDrops(true);
-	d_data->page_browser->setFrameShape(QFrame::Box);
+	d_data->page_browser->setFrameShape(QFrame::NoFrame);
 	d_data->page_browser->setIndentation(10);
 	d_data->page_browser->setMinimumWidth(200);
+	d_data->page_browser->setIconSize(QSize(22, 22));
+	d_data->page_browser->setStyleSheet("QTreeWidget{background: transparent;}");
+
+
+	// create button layout
+	QVBoxLayout* button_lay = new QVBoxLayout();
+	button_lay->setSpacing(8);
+	QLabel* cat = new QLabel("Categories");
+	QFont f = cat->font();
+	f.setBold(true);
+	d_data->apply->setFont(f);
+	f.setPointSize(f.pointSize() + 4);
+	cat->setFont(f);
+
+	button_lay->addWidget(cat);
+	button_lay->addWidget(d_data->page_browser,1);
+	button_lay->addWidget(d_data->apply);
+	QWidget* categories = new QWidget();
+	categories->setLayout(button_lay);
+
+
 
 	// create page widget
 	QWidget* page = new QWidget();
@@ -118,32 +139,18 @@ VipOptions::VipOptions(QWidget* parent)
 	page->setLayout(d_data->page_lay);
 
 	// create splitter
-	d_data->splitter->addWidget(d_data->page_browser);
+	d_data->splitter->addWidget(categories);
 	d_data->splitter->addWidget(page);
 	d_data->splitter->setStretchFactor(1, 1);
 
-	// create button layout
-	QHBoxLayout* button_lay = new QHBoxLayout();
-	button_lay->addStretch(1);
-	button_lay->addWidget(d_data->ok);
-	button_lay->addWidget(d_data->cancel);
-	button_lay->setContentsMargins(0, 2, 2, 2);
-
+	
 	// create final layout
 	QVBoxLayout* final_lay = new QVBoxLayout();
 	final_lay->addWidget(d_data->splitter);
-	final_lay->addWidget(VipLineWidget::createSunkenHLine());
-	final_lay->addLayout(button_lay);
-	// final_lay->setContentsMargins(0, 0, 0, 0);
-
+	
 	setLayout(final_lay);
 
-	d_data->ok->setText("Ok");
-	d_data->cancel->setText("Cancel");
-
-	connect(d_data->ok, SIGNAL(clicked(bool)), this, SLOT(ok()));
-	connect(d_data->ok, SIGNAL(clicked(bool)), this, SLOT(accept()));
-	connect(d_data->cancel, SIGNAL(clicked(bool)), this, SLOT(reject()));
+	connect(d_data->apply, SIGNAL(clicked(bool)), this, SLOT(apply()));
 	connect(d_data->page_browser, SIGNAL(itemClicked(QTreeWidgetItem*, int)), this, SLOT(itemClicked(QTreeWidgetItem*, int)));
 }
 
@@ -151,7 +158,7 @@ VipOptions::~VipOptions()
 {
 }
 
-void VipOptions::ok()
+void VipOptions::apply()
 {
 	for (QMap<QTreeWidgetItem*, QScrollArea*>::iterator it = d_data->pages.begin(); it != d_data->pages.end(); ++it) {
 		VipPageOption* page = qobject_cast<VipPageOption*>(it.value()->widget());
@@ -210,7 +217,8 @@ bool VipOptions::addPage(const QString& category, VipPageOption* page, const QIc
 					shortcut += " options";
 				VipShortcutsHelper::registerShorcut(shortcut, [name]() { 
 					vipGetOptions()->setCurrentPage(name);
-					vipGetOptions()->exec();
+					//vipGetOptions()->exec();
+					vipDisplayOptions();
 				});
 			}
 		}
@@ -219,15 +227,18 @@ bool VipOptions::addPage(const QString& category, VipPageOption* page, const QIc
 	}
 
 	QScrollArea* area = new QScrollArea();
+	area->setMaximumWidth(700);
+	area->setMinimumWidth(700);
 	area->setWidgetResizable(true);
 	area->setWidget(page);
 	d_data->pages[current] = area;
-	d_data->page_lay->addWidget(area);
+	d_data->page_lay->addWidget(area,0,Qt::AlignHCenter);
 	area->hide();
 
 	// set the focus to the first page
 	if (d_data->pages.size() > 0 && !d_data->current)
 		setCurrentPage(qobject_cast<VipPageOption*>(d_data->pages.begin().value()->widget()));
+
 
 	return true;
 }
@@ -320,6 +331,55 @@ VipOptions* vipGetOptions()
 	}
 	return dialog;
 }
+
+
+class OptionWidget : public QWidget
+{
+public:
+	OptionWidget()
+		: QWidget()
+	{
+		QHBoxLayout* lay = new QHBoxLayout();
+		lay->addWidget(vipGetOptions());
+		setLayout(lay);
+		vipGetOptions()->show();
+	}
+	~OptionWidget() 
+	{
+		vipGetOptions()->hide();
+		vipGetOptions()->setParent(nullptr);
+	}
+};
+
+void vipDisplayOptions()
+{
+	auto tab = vipGetMainWindow()->displayArea()->displayTabWidget();
+	for (int i = 0; i < tab->count(); ++i) {
+		if (VipDisplayPlayerArea* a = qobject_cast<VipDisplayPlayerArea*>(tab->widget(i))) {
+			if (VipOptions* opts = a->findChild<VipOptions*>()) {
+				tab->setCurrentIndex(i);
+				return;
+			}
+		}
+	}
+
+	OptionWidget* opt = new OptionWidget();
+	VipWidgetPlayer* pl = new VipWidgetPlayer();
+	pl->setWidget(opt);
+	VipDisplayPlayerArea* a = new VipDisplayPlayerArea();
+	a->setWindowTitle("Preferences");
+	
+	VipDragWidget* w = new VipDragWidget();
+	w->setWidget(pl);
+
+	a->mainDragWidget()->mainResize(1);
+	a->mainDragWidget()->subResize(0, 1);
+	a->mainDragWidget()->setWidget(0, 0, w);
+
+	vipGetMainWindow()->displayArea()->addWidget(a);
+}
+
+
 
 #include "VipGui.h"
 #include "VipPainter.h"

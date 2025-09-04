@@ -1593,6 +1593,10 @@ void VipVTKGraphicsView::wheelEvent(QWheelEvent* event)
 
 void VipVTKGraphicsView::paintEvent(QPaintEvent* evt)
 {
+	//glEnable(GL_MULTISAMPLE);
+	//glEnable(GL_LINE_SMOOTH);
+	//glEnable(GL_POLYGON_SMOOTH);
+
 	// qint64 st = QDateTime::currentMSecsSinceEpoch();
 	VipImageWidget2D::paintEvent(evt);
 	// qint64 el = QDateTime::currentMSecsSinceEpoch() - st;

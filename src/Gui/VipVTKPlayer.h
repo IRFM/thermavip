@@ -626,11 +626,12 @@ public Q_SLOTS:
 	void setOrientationMarkerWidgetVisible(bool);
 	void setAxesVisible(bool);
 	void setLighting(bool);
-	void applyPendingActions();
+	
 private Q_SLOTS:
 	void timeChanged(qint64);
 	void applyDelayedPendingActions(const VipFieldOfView& fov);
 	void cameraChanged();
+	void applyPendingActions();
 
 protected:
 	virtual void startRender(VipRenderState& state);

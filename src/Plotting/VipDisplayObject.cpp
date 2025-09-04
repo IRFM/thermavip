@@ -57,7 +57,7 @@ namespace Vip
 
 		// Small class used to speedup plot items display
 		// by gathering calls to VipDisplayObject::display()
-		// and unloading main the event loop.
+		// and unloading the main event loop.
 		class ItemDirtyNotifier
 		{
 			bool pendingDirty{ false };
@@ -474,7 +474,9 @@ void VipDisplayPlotItem::axesChanged(VipPlotItem* it)
 		auto notifier = a->notifier();
 		if (!notifier)
 			a->setNotifier(Vip::detail::ItemDirtyNotifierPtr::create());
+		
 	}
+	this->checkVisibility();
 }
 
 

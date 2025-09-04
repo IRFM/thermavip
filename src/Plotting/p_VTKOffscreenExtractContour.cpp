@@ -29,6 +29,9 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <vtkObject.h>
+#include <vtkOpenGLError.h>
+
 #include "p_VTKOffscreenExtractContour.h"
 #include "VipVTKWidget.h"
 #include "VipDisplayVTKObject.h"
@@ -58,6 +61,8 @@
 #include <vtkTextProperty.h>
 #include <vtkTransform.h>
 #include <vtkWindowToImageFilter.h>
+#include <vtkPolyDataMapper.h>
+
 
 #include <QApplication>
 #include <qdatetime.h>
@@ -227,20 +232,20 @@ OffscreenExtractContour::OffscreenExtractContour()
 
 	d_data->highlightedRenderWin = vtkSmartPointer<vtkRenderWindow>::New();
 	d_data->highlightedRenderWin->SetOffScreenRendering(1);
+	d_data->highlightedRenderWin->SetMultiSamples(1);// disable antialiasing
+	//d_data->highlightedRender->UseFXAAOff();
 	d_data->highlightedRenderWin->AddRenderer(d_data->highlightedRender);
 	d_data->highlightedRenderWin->Render();
 	VIP_VTK_OBSERVER(d_data->highlightedRenderWin);
 
 	d_data->filter = vtkSmartPointer<vtkWindowToImageFilter>::New();
 	d_data->filter->SetInput(d_data->renderWin);
-	// d_data->filter->SetMagnification(1); //image quality
 	d_data->filter->SetInputBufferType(VTK_RGBA);
 	d_data->filter->ReadFrontBufferOff();
 	VIP_VTK_OBSERVER(d_data->filter);
 
 	d_data->highlightedFilter = vtkSmartPointer<vtkWindowToImageFilter>::New();
 	d_data->highlightedFilter->SetInput(d_data->highlightedRenderWin);
-	// d_data->highlightedFilter->SetMagnification(1); //image quality
 	d_data->highlightedFilter->SetInputBufferType(VTK_RGBA);
 	d_data->highlightedFilter->ReadFrontBufferOff();
 	VIP_VTK_OBSERVER(d_data->highlightedFilter);
@@ -452,6 +457,25 @@ int OffscreenExtractContour::ClosestPointId(int object_id, const QPoint& pos, QP
 		double t[3][2];
 		// 3D cell points
 		double c[3][3];
+
+		//Debug
+		/* {
+			QString out = QString::number(object_id) + " ";
+			double tmp[3] = { 0, 0, 0 };
+			for (int i = 0; i < lst->GetNumberOfIds(); ++i) {
+				double pt[3];
+				set->GetPoint(lst->GetId(i), pt);
+				tmp[0] += pt[0];
+				tmp[1] += pt[1];
+				tmp[2] += pt[2];
+			}
+			tmp[0] /= lst->GetNumberOfIds();
+			tmp[1] /= lst->GetNumberOfIds();
+			tmp[2] /= lst->GetNumberOfIds();
+			out += QString::number(tmp[0]) + " " + QString::number(tmp[1]) + " " + QString::number(tmp[2]);
+			vip_debug(out.toLatin1().data());
+		}*/
+
 
 		for (int i = 0; i < lst->GetNumberOfIds(); ++i) {
 			double pt[3];
@@ -723,6 +747,17 @@ qint64 OffscreenExtractContour::currentTime()
 	return d_data->filter->GetMTime();
 }
 
+static int vipVTKOpenGLCheckErrors()
+{
+	const int maxErrors = 16;
+	unsigned int errCode[maxErrors] = { 0 };
+	const char* errDesc[maxErrors] = { NULL };
+
+	int numErrors = vtkGetOpenGLErrors(maxErrors, errCode, errDesc);
+
+	return (numErrors);
+}
+
 void OffscreenExtractContour::Execute()
 {
 	qint64 start = QDateTime::currentMSecsSinceEpoch();
@@ -876,6 +911,11 @@ void OffscreenExtractContour::Execute()
 
 				d_data->highlightedDataRender.mapper()->Modified();
 
+				//TEST
+				if (vipVTKOpenGLCheckErrors())
+					bool stop = true;
+				
+
 				// by default, we extract the cells.
 				// if the object has no cells but only point, just extract the points
 				vtkDataSetAttributes* cdata = nullptr;
@@ -936,9 +976,39 @@ void OffscreenExtractContour::Execute()
 				// update the modification time
 				d_data->mTime = currentTime();
 
+				//TEST
+				if (vipVTKOpenGLCheckErrors())
+					bool stop = true;
+				
+
 				if (d_data->highlightedFilter->GetOutput()) {
+
+
+					/* static qint64 last_date = 0;
+					qint64 date = d_data->highlightedFilter->GetOutput()->GetMTime();
+					if (date != last_date) {
+						last_date = date;
+					}
+					else
+						bool stop = true;*/
+
 					d_data->highlightedCells = VipVTKImage(d_data->highlightedFilter->GetOutput());
-					// d_data->highlightedCells.toQImage().save("cells.png");
+
+					// TEST debug
+					/* {
+						int width = d_data->highlightedCells.width(), height = d_data->highlightedCells.height();
+						QRgb* ptr = (QRgb*)(d_data->highlightedCells.image()->GetScalarPointer());
+						std::ofstream out("C:/Users/VM213788/Desktop/img.txt");
+						for (int y = 0; y < height; ++y)
+						{
+							for (int x = 0; x < width; ++x)
+								out << ptr[y * width + x] << "\t";
+							out << std::endl;
+						}
+						out.close();
+					}*/
+
+					// d_data->highlightedCells.toQImage().save("C:/Users/VM213788/Desktop/cells.png");
 					int width = d_data->highlightedCells.width(), height = d_data->highlightedCells.height();
 					if (width * height > 0) {
 						// convert back colors to cell id+1 and flip vertically
@@ -951,7 +1021,11 @@ void OffscreenExtractContour::Execute()
 							}
 						}
 					}
+
+					
 				}
+
+				
 
 				el3 = QDateTime::currentMSecsSinceEpoch() - start;
 			}

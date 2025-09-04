@@ -166,24 +166,26 @@ VipToolWidgetScrollArea[status="3"] {
 	border-right: 1px solid #777777;
 }
 
+/** replace 008BE8 with 0078D4 */
+
 /* hover*/
 VipToolWidgetTitleBar[status="2"] {
-	border-top: 1px solid #008BE8;
-	border-left: 1px solid #008BE8;
-	border-right: 1px solid #008BE8;
+	border-top: 1px solid #0078D4;
+	border-left: 1px solid #0078D4;
+	border-right: 1px solid #0078D4;
 }
 VipToolWidgetScrollArea[status="2"] {
-    border-bottom: 1px solid #008BE8;
-	border-left: 1px solid #008BE8;
-	border-right: 1px solid #008BE8;
+    border-bottom: 1px solid #0078D4;
+	border-left: 1px solid #0078D4;
+	border-right: 1px solid #0078D4;
 }
 
 /* focus*/
 VipToolWidgetTitleBar[status="1"] {
-	border-top: 1px solid #008BE8;
-	border-left: 1px solid #008BE8;
-	border-right: 1px solid #008BE8;
-	background-color: #008BE8;
+	border-top: 1px solid #0078D4;
+	border-left: 1px solid #0078D4;
+	border-right: 1px solid #0078D4;
+	background-color: #0078D4;
 	qproperty-closeButton: url(skins/dark/icons/close_white.png);
 	qproperty-floatButton: url(skins/dark/icons/pin_white.png);
 	qproperty-maximizeButton: url(skins/dark/icons/maximize_white.png);
@@ -191,9 +193,9 @@ VipToolWidgetTitleBar[status="1"] {
 	qproperty-textColor: white;
 }
 VipToolWidgetScrollArea[status="1"] {
-    border-bottom: 1px solid #008BE8;
-	border-left: 1px solid #008BE8;
-	border-right: 1px solid #008BE8;
+    border-bottom: 1px solid #0078D4;
+	border-left: 1px solid #0078D4;
+	border-right: 1px solid #0078D4;
 }
 
 
@@ -301,7 +303,7 @@ QTabBar::tab:hover {
 }
 
 QTabWidget::pane {
-	border-top: 3px solid #008BE8;
+	border-top: 3px solid #0078D4;
 	background: #303030;
 }
 QTabWidget::tab-bar {
@@ -454,7 +456,7 @@ QPushButton:hover {
     background-color: #3991EF;
 }
 QPushButton:pressed{
-	background-color: #008BE8;
+	background-color: #0078D4;
 	color: white;
 }
 
@@ -468,11 +470,11 @@ QToolButton:hover{
 	background-color: #3991EF;
 }
 QToolButton:pressed{
-	background-color: #008BE8;
+	background-color: #0078D4;
 	color: white;
 }
 QToolButton:checked{
-	border: 1px solid #008BE8;
+	border: 1px solid #0078D4;
 }
 QToolButton[popupMode="1"]{
     padding-right: 12px;
@@ -626,10 +628,12 @@ VipDisplayTabBar::tab {
 	padding-left:10px;
 	padding-right:10px;
     background: #303030;
+	border-top-left-radius: 4px;
+    border-top-right-radius: 4px;
 	color: white;
 }
 VipDisplayTabBar::tab:selected {
-    background: #008BE8; /* lighter than standard widget*/
+    background: #0078D4; /* lighter than standard widget*/
 	border: none;
 	color: white;
 }
@@ -641,7 +645,7 @@ VipDisplayTabBar::tab:hover {
 
 
 VipDisplayTabWidget::pane {
-	border-top: 3px solid #008BE8;
+	border-top: 3px solid #0078D4;
 	background: #303030;
 }
 VipDisplayTabWidget::tab-bar {
@@ -743,9 +747,9 @@ VipHorizontalLine {
 }
 
 
-VipPageItems {
+/*VipPageItems {
 	border: 1px solid gray;
-}
+}*/
 
 
 VipPlayerAreaTitleBar[focus="true"] {
@@ -802,7 +806,7 @@ IPythonTabBar::tab {
 	color: white;
 }
 IPythonTabBar::tab:selected {
-    background: #008BE8; /* lighter than standard widget*/
+    background: #0078D4; /* lighter than standard widget*/
 	border: none;
 	color: white;
 }
@@ -813,7 +817,7 @@ IPythonTabBar::tab:hover {
 }
 
 IPythonTabWidget::pane {
-	border-top: 3px solid #008BE8;
+	border-top: 3px solid #0078D4;
 	background: #303030;
 }
 IPythonTabWidget::tab-bar {

@@ -45,6 +45,7 @@
 #include "VipPlotItem.h"
 #include "VipProcessingObject.h"
 #include "VipStandardProcessing.h"
+#include "VipStandardWidgets.h"
 #include "VipToolWidget.h"
 #include "VipWarping.h"
 
@@ -65,6 +66,34 @@ class VipDisplayCurve;
 class VipOperationBetweenPlayers;
 class VipConvert;
 class VipCSVWriter;
+class VipPlayer2D;
+
+/// @brief Combobox used to select a player among all available players
+/// within the current workspace
+class VIP_GUI_EXPORT VipPlayerSelector : public VipComboBox
+{
+	Q_OBJECT
+
+public:
+	VipPlayerSelector(QWidget * parent = nullptr);
+	~VipPlayerSelector();
+
+	// Filter player list based on metaobject
+	void setPlayerMetaObject(const QMetaObject*);
+	const QMetaObject* playerMetaObject() const;
+
+	// set/get the player
+	void setPlayer(VipPlayer2D* pl);
+	VipPlayer2D* player() const;
+
+
+private Q_SLOTS:
+	// populate all players within the current workspace
+	void populatePlayers();
+
+private:
+	const QMetaObject* d_meta = nullptr;
+};
 
 /// Widget to edit a VipOtherPlayerData
 class VIP_GUI_EXPORT VipOtherPlayerDataEditor : public QWidget

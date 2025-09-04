@@ -437,24 +437,19 @@ void VipVTKWidget::applyCameraToAllLayers()
 	
 	if (parent) {
 		auto lst = parent->renderers();
-		for (int i = 1; i < lst.size(); ++i)
-			lst[i]->SetActiveCamera(lst.first()->GetActiveCamera());
+		//for (int i = 1; i < lst.size(); ++i)
+		//	lst[i]->SetActiveCamera(lst.first()->GetActiveCamera());
 
-		parent->emitCameraUpdated();
-
-		// find parent VTK3DPlayer
-		//TODO
-		/* VTK3DPlayer* player = nullptr;
-		QWidget* p = parent->parentWidget();
-		while (p) {
-			if ((player = qobject_cast<VTK3DPlayer*>(p)))
-				break;
-			p = p->parentWidget();
+		//TEST
+		for (int i = 0; i < lst.size(); ++i) {
+			if (i != 0) 
+				lst[i]->GetActiveCamera()->DeepCopy(lst.first()->GetActiveCamera());
+			lst[i]->GetActiveCamera()->Modified();
+			lst[i]->Modified();
 		}
-		if (player && player->isSharedCamera()) {
-			// apply shared camera
-			player->applyThisCameraToAll();
-		}*/
+		
+		parent->emitCameraUpdated();
+		
 		return;
 	}
 
@@ -485,19 +480,20 @@ void VipVTKWidget::simulateMouseClick(const QPoint& from, const QPoint& to)
 	QPoint glob_from = this->mapToGlobal(from);
 	QPoint glob_to = this->mapToGlobal(to);
 	QMouseEvent press(QEvent::MouseButtonPress, from, glob_from, Qt::LeftButton, Qt::LeftButton, Qt::NoModifier);
-	QMouseEvent move(QEvent::MouseMove, to, glob_to, Qt::LeftButton, Qt::LeftButton, Qt::NoModifier);
 	QMouseEvent release(QEvent::MouseButtonRelease, to, glob_to, Qt::LeftButton, Qt::LeftButton, Qt::NoModifier);
 
 	d_data->IgnoreMouse = true;
 	this->mousePressEvent(&press);
 	d_data->IgnoreMouse = false;
-	this->mouseMoveEvent(&move);
+	//if (from != to) 
+	{
+		QMouseEvent move(QEvent::MouseMove, to, glob_to, Qt::LeftButton, Qt::LeftButton, Qt::NoModifier);
+		this->mouseMoveEvent(&move);
+	}
 	d_data->IgnoreMouse = true;
 	this->mouseReleaseEvent(&release);
 	vipProcessEvents(nullptr, 10);
 	d_data->IgnoreMouse = false;
-
-	// applyCameraToAllLayers();
 }
 
 /*void VipVTKWidget::forceInteractorRefresh()

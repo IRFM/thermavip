@@ -831,12 +831,12 @@ bool VipPhysicalFileSystem::exists_timeout(const QString& path, int milli_timeou
 		return QFileInfo(path).exists();
 	}
 
-	std::atomic<bool> finished = false;
-	std::atomic<bool> exists = false;
-	std::thread* th = new std::thread([&]() {
+	std::shared_ptr<std::atomic<bool>> finished = std::make_shared < std::atomic<bool>>( false);
+	std::shared_ptr<std::atomic<bool>> exists = std::make_shared<std::atomic<bool>>(false);
+	std::thread* th = new std::thread([path,finished,exists]() {
 		QFileInfo info(path);
-		exists = info.exists();
-		finished = true;
+		*exists = info.exists();
+		*finished = true;
 	});
 
 	qint64 st = QDateTime::currentMSecsSinceEpoch();
@@ -852,7 +852,7 @@ bool VipPhysicalFileSystem::exists_timeout(const QString& path, int milli_timeou
 	th->detach();
 	delete th;
 
-	return exists;
+	return *exists;
 #else
 	return QFileInfo(path).exists();
 #endif

@@ -281,21 +281,25 @@ static QWidget* create_player_top_toolbar(VipAbstractPlayer* player, QObject* /*
 	//	player->toolBar()->setShowAdditionals(VipToolBar::ShowInMenu);
 	if (QWidget* w = player->playerToolBar())
 		hlay->addWidget(w);
-	QToolBar* title = new QToolBar();
-	title->setIconSize(QSize(20, 20));
-	hlay->addStretch(1);
-	hlay->addWidget(title);
 
-	// add status text
-	if (pl2D)
-		title->addWidget(pl2D->statusText());
+	if (pl2D) {//TEST
 
-	QLabel* titleWidget = new QLabel(w->windowTitle());
-	QObject::connect(w, SIGNAL(windowTitleChanged(const QString&)), titleWidget, SLOT(setText(const QString&)));
-	title->addWidget(new QLabel("<b>&nbsp;&nbsp;Title</b>: "));
-	title->addWidget(titleWidget);
-	if (pl2D)
-		title->addWidget(pl2D->afterTitleToolBar());
+		QToolBar* title = new QToolBar();
+		title->setIconSize(QSize(20, 20));
+		hlay->addStretch(1);
+		hlay->addWidget(title);
+
+		// add status text
+		if (pl2D)
+			title->addWidget(pl2D->statusText());
+
+		QLabel* titleWidget = new QLabel(w->windowTitle());
+		QObject::connect(w, SIGNAL(windowTitleChanged(const QString&)), titleWidget, SLOT(setText(const QString&)));
+		title->addWidget(new QLabel("<b>&nbsp;&nbsp;Title</b>: "));
+		title->addWidget(titleWidget);
+		if (pl2D)
+			title->addWidget(pl2D->afterTitleToolBar());
+	}
 
 	QWidget* res = new QWidget();
 	QVBoxLayout* lay = new QVBoxLayout();

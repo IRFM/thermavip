@@ -130,9 +130,12 @@ Q_SIGNALS:
 	/// Emitted when a display operation has finished.
 	void displayed(const VipAnyDataList&);
 
+protected Q_SLOTS:
+	void checkVisibility();
+
 private Q_SLOTS:
 	void display(const VipAnyDataList&);
-	void checkVisibility();
+	
 
 private:
 	

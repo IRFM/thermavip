@@ -571,6 +571,13 @@ bool VipIODevice::reload()
 	if (!isOpen() || !isEnabled())
 		return false;
 
+	if (VipProcessingPool* pool = qobject_cast<VipProcessingPool*>(parent())) {
+		if (deviceType() == Sequential && pool->isStreamingEnabled())
+			return false;
+		if (deviceType() == Temporal && pool->isPlaying())
+			return false;
+	}
+
 	QMutexLocker locker(&d_data->readMutex);
 	LockBool lock(&d_data->is_reading);
 
@@ -581,8 +588,6 @@ bool VipIODevice::reload()
 		return res;
 	}
 	else if (deviceType() == Sequential) {
-		if (this->parentObjectPool() && this->parentObjectPool()->isStreamingEnabled())
-			return false;
 		// for sequential device, just reset its outputs
 		for (int i = 0; i < outputCount(); ++i)
 			outputAt(i)->setData(outputAt(i)->data());
@@ -1970,9 +1975,8 @@ void VipProcessingPool::checkForStreaming()
 void VipProcessingPool::childEvent(QChildEvent* event)
 {
 	if (event->removed()) {
-		//TEST: do not stop streaming when removing a child
-		//this->stop();
-		//this->setStreamingEnabled(false);
+		this->stop();
+		this->setStreamingEnabled(false);
 	}
 
 	// we might need to process the previously added child before processing this new one
@@ -2230,7 +2234,7 @@ void VipProcessingPool::stop()
 				vipProcessEvents(nullptr, 10);
 		}
 
-		// d_data->thread.wait();
+		d_data->thread.wait();
 		emitProcessingChanged();
 	}
 }

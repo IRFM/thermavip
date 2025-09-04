@@ -34,6 +34,10 @@
 #include "VipUpdate.h"
 #include "VipVisualizeDB.h"
 
+#ifdef VIP_WITH_VTK
+#include "vtkObject.h"
+#endif
+
 #include <qsurfaceformat.h>
 
 #if !defined(_WIN32) && (defined(__unix__) || defined(__unix) || (defined(__APPLE__) && defined(__MACH__)))
@@ -136,29 +140,30 @@ int main(int argc, char** argv)
 	getchar();
 	return 0;*/
 	
-
-	// Load thermavip.env
-	QString env_file = vipGetDataDirectory() + "thermavip/thermavip.env";
-	vip_debug("env file: %s\n", env_file.toLatin1().data());
-	if (!QFileInfo(env_file).exists()) {
-		env_file = QFileInfo(QString(argv[0])).canonicalPath();
-		env_file.replace("\\", "/");
-		if (!env_file.endsWith("/"))
-			env_file += "/";
-		env_file += "thermavip.env";
-	}
-	if (QFileInfo(env_file).exists()) {
-		// Set env variables
-		QFile fin(env_file);
-		if (fin.open(QFile::ReadOnly | QFile::Text)) {
-			QTextStream str(&fin);
-			while (true) {
-				QString line = str.readLine();
-				if (line.isEmpty())
-					break;
-				QStringList lst = line.split(" ", VIP_SKIP_BEHAVIOR::SkipEmptyParts);
-				if (lst.size() == 2)
-					qputenv(lst[0].toLatin1().data(), lst[1].toLatin1());
+	{
+		// Load thermavip.env
+		QString env_file = vipGetDataDirectory() + "thermavip/thermavip.env";
+		vip_debug("env file: %s\n", env_file.toLatin1().data());
+		if (!QFileInfo(env_file).exists()) {
+			env_file = QFileInfo(QString(argv[0])).canonicalPath();
+			env_file.replace("\\", "/");
+			if (!env_file.endsWith("/"))
+				env_file += "/";
+			env_file += "thermavip.env";
+		}
+		if (QFileInfo(env_file).exists()) {
+			// Set env variables
+			QFile fin(env_file);
+			if (fin.open(QFile::ReadOnly | QFile::Text)) {
+				QTextStream str(&fin);
+				while (true) {
+					QString line = str.readLine();
+					if (line.isEmpty())
+						break;
+					QStringList lst = line.split(" ", VIP_SKIP_BEHAVIOR::SkipEmptyParts);
+					if (lst.size() == 2)
+						qputenv(lst[0].toLatin1().data(), lst[1].toLatin1());
+				}
 			}
 		}
 	}
@@ -191,7 +196,17 @@ int main(int argc, char** argv)
 
 	if (VipCommandOptions::instance().count("debug")) {
 		vip_log_detail::_vip_set_enable_debug(true);
+
+#ifdef VIP_WITH_VTK
+		vtkObject::GlobalWarningDisplayOn();
+#endif
 	}
+	else {
+#ifdef VIP_WITH_VTK
+		vtkObject::GlobalWarningDisplayOff();
+#endif
+	}
+
 
 	if (VipCommandOptions::instance().count("scale")) {
 		double scale = VipCommandOptions::instance().value("scale").toDouble();

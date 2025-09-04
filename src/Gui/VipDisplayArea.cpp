@@ -3409,7 +3409,7 @@ VipMainWindow::VipMainWindow()
 
 	d_data->toolsToolBar.setObjectName("Tool widgets bar");
 	d_data->toolsToolBar.setWindowTitle(tr("Tool widgets bar"));
-	d_data->toolsToolBar.setIconSize(QSize(20, 20));
+	d_data->toolsToolBar.setIconSize(QSize(22, 22));
 	d_data->toolsToolBar.setStyleSheet("QToolBar{spacing: 10px;}");
 	d_data->toolsToolBar.setMovable(false);
 	// Add space
@@ -4691,7 +4691,8 @@ void VipMainWindow::closeEvent(QCloseEvent* evt)
 
 void VipMainWindow::showOptions()
 {
-	vipGetOptions()->exec();
+	//vipGetOptions()->exec();
+	vipDisplayOptions();
 }
 
 bool VipMainWindow::currentTabDestroying() const

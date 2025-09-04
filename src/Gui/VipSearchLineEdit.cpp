@@ -44,6 +44,7 @@
 #include <QApplication>
 #include <QKeyEvent>
 #include <QDrag>
+#include <QScrollBar>
 
 #include <memory>
 #include <vector>
@@ -436,6 +437,11 @@ protected:
 			return true;
 		}
 		else if (event->type() == QEvent::MouseMove) {
+
+			// Dont filter scrollbars events
+			if (qobject_cast<QScrollBar*>(watched))
+				return false;
+
 			QMouseEvent* evt = static_cast<QMouseEvent*>(event);
 			QStringList paths;
 			if (evt->buttons() == Qt::LeftButton) {
@@ -642,7 +648,7 @@ bool VipSearchLineEdit::eventFilter(QObject* watched, QEvent* event)
 	if (event->type() == QEvent::MouseButtonPress)
 	{
 		if (QWidget* w = qobject_cast<QWidget*>(watched)) {
-			if (!this->isAncestorOf(w) && w != d_data->history->viewport())
+			if (!this->isAncestorOf(w) && w != d_data->history->viewport() && !qobject_cast<QScrollBar*>(w))
 				d_data->history->hide();
 		}
 	}

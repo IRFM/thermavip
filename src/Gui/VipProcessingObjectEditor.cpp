@@ -65,6 +65,103 @@
 
 #define __VIP_MAX_DISPLAYED_EDITORS 5
 
+
+struct player_id
+{
+	int id;
+	QString title;
+	QPointer<VipPlayer2D> player;
+	
+	bool operator<(const player_id& other) const { return title < other.title; }
+};
+
+VipPlayerSelector::VipPlayerSelector(QWidget* parent )
+  : VipComboBox(parent)
+{
+	connect(this, SIGNAL(openPopup()), this, SLOT(populatePlayers()));
+
+	populatePlayers();
+	if (count())
+		setCurrentIndex(0);
+}
+VipPlayerSelector::~VipPlayerSelector() {
+}
+
+// Filter player list based on metaobject
+void VipPlayerSelector::setPlayerMetaObject(const QMetaObject* meta)
+{
+	d_meta = meta;
+	populatePlayers();
+}
+const QMetaObject* VipPlayerSelector::playerMetaObject() const
+{
+	return d_meta;
+}
+
+// set/get the player
+void VipPlayerSelector::setPlayer(VipPlayer2D* pl)
+{
+	int id = VipUniqueId::id(pl);
+	for (int i = 0; i < this->count(); ++i) {
+		int _id = this->itemData(i).toInt();
+		if (id == _id) {
+			this->setCurrentIndex(i);
+			break;
+		}
+	}
+}
+VipPlayer2D* VipPlayerSelector::player() const
+{
+	int id = this->currentData().toInt();
+	if (id == 0)
+		return nullptr;
+	return VipUniqueId::find<VipPlayer2D>(id);
+}
+
+void VipPlayerSelector::populatePlayers()
+{
+	auto* pl = player();
+
+	this->blockSignals(true);
+	this->clear();
+	QWidget* w = vipGetMainWindow()->displayArea()->currentDisplayPlayerArea();
+	if (w) {
+
+		int current_index = -1;
+
+		// compute the list of all VipVideoPlayer in the current workspace
+		QList<VipPlayer2D*> instances = w->findChildren<VipPlayer2D*>();
+
+		std::vector<player_id> players;
+		for (int i = 0; i < instances.size(); ++i) {
+			if (d_meta) {
+				const QMetaObject* m = instances[i]->metaObject();
+				while (m) {
+					if (m == d_meta)
+						break;
+					m = m->superClass();
+				}
+				if (!m)
+					continue;
+			}
+
+			VipBaseDragWidget* parent = VipBaseDragWidget::fromChild(instances[i]);
+			QString title = parent ? parent->windowTitle() : instances[i]->windowTitle();
+			players.push_back(player_id{ VipUniqueId::id(instances[i]), title, instances[i] });
+		}
+		std::sort(players.begin(), players.end());
+		for (size_t i = 0; i < players.size(); ++i) {
+			this->addItem(players[i].title, players[i].id);
+			if (pl == players[i].player)
+				current_index = this->count() - 1;
+		}
+		if (current_index >= 0)
+			this->setCurrentIndex(current_index);
+	}
+	this->blockSignals(false);
+}
+
+
 class VipOtherPlayerDataEditor::PrivateData
 {
 public:
@@ -129,17 +226,7 @@ VipOtherPlayerDataEditor::~VipOtherPlayerDataEditor()
 // d_data->lineAfter->setVisible(after);
 // }
 
-struct player_id
-{
-	int id;
-	QString title;
-	player_id(int id = 0, const QString& title = QString())
-	  : id(id)
-	  , title(title)
-	{
-	}
-	bool operator<(const player_id& other) const { return title < other.title; }
-};
+
 void VipOtherPlayerDataEditor::showPlayers()
 {
 
@@ -161,7 +248,7 @@ void VipOtherPlayerDataEditor::showPlayers()
 			VipBaseDragWidget* parent = VipBaseDragWidget::fromChild(instances[i]);
 			QString title = parent ? parent->windowTitle() : instances[i]->windowTitle();
 			// d_data->players.addItem(title, VipUniqueId::id(instances[i]));
-			players.push_back(player_id(VipUniqueId::id(instances[i]), title));
+			players.push_back(player_id{ VipUniqueId::id(instances[i]), title, instances[i] });
 			if (current_id == VipUniqueId::id(instances[i]))
 				current_index = d_data->players.count() - 1;
 		}
