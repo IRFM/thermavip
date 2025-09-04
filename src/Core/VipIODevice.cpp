@@ -728,7 +728,11 @@ bool VipIODevice::stopStreaming()
 
 void VipIODevice::setHasStreamingMode(bool enable)
 {
-	d_data->hasStreamingMode = enable;
+	if (d_data->hasStreamingMode != enable) {
+		d_data->hasStreamingMode = enable;
+		if (auto* pool = this->parentObjectPool())
+			Q_EMIT pool->deviceTypeChanged();
+	}
 }
 bool VipIODevice::hasStreamingMode() const
 {
