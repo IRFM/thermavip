@@ -1000,6 +1000,8 @@ void VipVTKGraphicsView::setTrackingEnable(bool enable)
 {
 	if (contours()->IsEnabled() != enable) {
 		mTrackingEnable = enable;
+		if (enable)
+			contours()->Reset();
 		contours()->SetEnabled(enable);
 		if (enable) {
 			contours()->ForceUpdate();

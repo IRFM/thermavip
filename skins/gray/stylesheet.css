@@ -170,6 +170,9 @@ VipToolWidgetScrollArea[status="1"] {
 }
 
 
+VipPageItems::item {
+  padding: 10px 0;
+}
 
 
 QTabBar {

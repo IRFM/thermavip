@@ -57,6 +57,8 @@
 #include "VipVTKPlayer.h"
 #endif
 
+
+
 QGroupBox* VipPageOption::createOptionGroup(const QString& label)
 {
 	QGroupBox* res = new QGroupBox(label);

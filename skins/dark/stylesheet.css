@@ -572,6 +572,10 @@ QScrollBar:down-arrow:vertical{
 	image: url(skins/dark/icons/down.png);
 }
 
+QSlider::handle {
+    background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #FFFFFF, stop:1 #DEE0E3);
+    border: 1px solid #ADB2B8;
+}
 
 
 QToolTip {
@@ -747,9 +751,10 @@ VipHorizontalLine {
 }
 
 
-/*VipPageItems {
-	border: 1px solid gray;
-}*/
+
+VipPageItems::item {
+  padding: 10px 0;
+}
 
 
 VipPlayerAreaTitleBar[focus="true"] {

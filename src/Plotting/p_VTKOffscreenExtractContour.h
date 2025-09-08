@@ -99,6 +99,7 @@ public Q_SLOTS:
 	*/
 	void Update();
 	void ForceUpdate();
+	void Reset();
 
 private:
 	void Execute();
