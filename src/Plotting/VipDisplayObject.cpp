@@ -775,7 +775,7 @@ bool VipDisplayCurve::prepareForDisplay(const VipAnyDataList& lst)
 		curve->updateSamples([&](VipPointVector& vec) {
 			if (d_data->is_full_vector)
 				vec = vector;
-			else {
+			else if(vector.size()){
 				//remove all data with a time greater than sample
 				qsizetype erase_from = vec.size();
 				for (qsizetype i = vec.size() - 1; i >= 0; --i) {

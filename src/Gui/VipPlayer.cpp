@@ -4350,15 +4350,15 @@ QList<VipProcessingObject*> VipVideoPlayer::extractTimeEvolution(const ShapeInfo
 				if (!extract->outputAt(j)->isEnabled())
 					continue;
 
-				/* VipNumericValueToPointVector* ConvertToPointVector = new VipNumericValueToPointVector(pool);
+				VipNumericValueToPointVector* ConvertToPointVector = new VipNumericValueToPointVector(pool);
 				ConvertToPointVector->setScheduleStrategies(VipProcessingObject::Asynchronous);
 				ConvertToPointVector->setDeleteOnOutputConnectionsClosed(true);
-				ConvertToPointVector->inputAt(0)->setConnection(extract->outputAt(j));*/
+				ConvertToPointVector->inputAt(0)->setConnection(extract->outputAt(j));
 
 				VipProcessingList* ProcessingList = new VipProcessingList(pool);
 				ProcessingList->setScheduleStrategies(VipProcessingObject::Asynchronous);
 				ProcessingList->setDeleteOnOutputConnectionsClosed(true);
-				ProcessingList->inputAt(0)->setConnection(/* ConvertToPointVector->outputAt(0)*/ extract->outputAt(j));
+				ProcessingList->inputAt(0)->setConnection(ConvertToPointVector->outputAt(0));
 
 				if (src_output->data().isValid())
 					extract->inputAt(0)->setData(src_output->data());
