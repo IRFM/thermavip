@@ -2047,6 +2047,7 @@ void VipDisplayPlayerArea::setProcessingPool(VipProcessingPool* pool)
 	if (d_data->pool && this->parentTabWidget()) {
 		disconnect(processingPool(), SIGNAL(objectRemoved(QObject*)), this, SLOT(updateStreamingButton()));
 		disconnect(processingPool(), SIGNAL(streamingChanged(bool)), this, SLOT(updateStreamingButton()));
+		disconnect(processingPool(), SIGNAL(deviceTypeChanged()), this, SLOT(updateStreamingButton()));
 	}
 
 	if (d_data->pool) {
@@ -2061,6 +2062,7 @@ void VipDisplayPlayerArea::setProcessingPool(VipProcessingPool* pool)
 		setPoolToPlayers();
 		connect(processingPool(), SIGNAL(objectRemoved(QObject*)), this, SLOT(updateStreamingButton()), Qt::QueuedConnection);
 		connect(processingPool(), SIGNAL(streamingChanged(bool)), this, SLOT(updateStreamingButton()), Qt::QueuedConnection);
+		connect(processingPool(), SIGNAL(deviceTypeChanged()), this, SLOT(updateStreamingButton()), Qt::QueuedConnection);
 
 		connect(processingPool(), SIGNAL(playingStarted()), this, SLOT(emitPlayingStarted()), Qt::DirectConnection);
 		connect(processingPool(), SIGNAL(playingStopped()), this, SLOT(emitPlayingStopped()), Qt::DirectConnection);

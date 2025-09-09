@@ -7275,7 +7275,7 @@ void VipPlotPlayer::updateSlidingTimeWindow()
 			if (!has_sequential_device) {
 
 				for (int d = 0; d < devices.size(); ++d) {
-					if (devices[d]->deviceType() == VipIODevice::Sequential) {
+					if (devices[d]->deviceType() == VipIODevice::Sequential || devices[d]->hasStreamingMode() ){
 						has_sequential_device = true;
 						break;
 					}
@@ -7345,7 +7345,7 @@ void VipPlotPlayer::setSlidingTimeWindow()
 			if (!has_sequential_device) {
 
 				for (int d = 0; d < devices.size(); ++d) {
-					if (devices[d]->deviceType() == VipIODevice::Sequential) {
+					if (devices[d]->deviceType() == VipIODevice::Sequential || devices[d]->hasStreamingMode()) {
 						has_sequential_device = true;
 						break;
 					}

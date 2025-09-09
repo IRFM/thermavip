@@ -864,7 +864,7 @@ bool VipRecordToolWidget::updateFileFiltersAndDevice(bool build_connections, boo
 			}
 			d_data->flag = VipIODevice::Temporal;
 		}
-		else if (tmp == VipIODevice::Sequential) {
+		else if (tmp == VipIODevice::Sequential || d_data->sourceDevices[i]->hasStreamingMode()) {
 			if (d_data->flag == VipIODevice::Temporal) {
 				VIP_LOG_ERROR("cannot mix sequential and temporal devices");
 				return false;

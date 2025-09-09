@@ -787,8 +787,8 @@ bool VipDisplayCurve::prepareForDisplay(const VipAnyDataList& lst)
 				vec.erase(vec.begin() + erase_from, vec.end());
 				vec.append(vector);
 			}
-
-			if (window > 0 && vec.size() && !d_data->is_full_vector) {
+			//TEST: apply windowing to ALL signal
+			if (window > 0 && vec.size() /*&& !d_data->is_full_vector*/) {
 				// convert to nanoseconds
 				window *= 1000000000;
 				for (int i = 0; i < vec.size(); ++i) {

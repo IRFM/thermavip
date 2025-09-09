@@ -1712,7 +1712,7 @@ bool VipProcessingPool::enableStreaming(bool enable)
 	for (int i = 0; i < d_data->read_devices.size(); ++i) {
 		bool has_streaming = d_data->read_devices[i]->deviceType() == VipIODevice::Sequential || d_data->read_devices[i]->hasStreamingMode();
 		if (has_streaming)
-			res = res || (d_data->read_devices[i]->setStreamingEnabled(enable));
+			res = (d_data->read_devices[i]->setStreamingEnabled(enable)) || res;
 	}
 
 	if (enable && res)
@@ -2007,8 +2007,12 @@ void VipProcessingPool::checkForStreaming()
 void VipProcessingPool::childEvent(QChildEvent* event)
 {
 	if (event->removed()) {
-		this->stop();
-		this->setStreamingEnabled(false);
+		// Stop playing/streaming, unless we are removing a processing object without output (no generated data)
+		VipProcessingObject * obj = qobject_cast<VipProcessingObject*>(event->child());
+		if(!obj || obj->outputCount()) {
+			this->stop();
+			this->setStreamingEnabled(false);
+		}
 	}
 
 	// we might need to process the previously added child before processing this new one
@@ -5395,6 +5399,7 @@ VipArchive& operator<<(VipArchive& stream, const VipIODevice* d)
 		stream.content("path", d->path());
 
 	stream.content("filter", d->timestampingFilter());
+	stream.content("hasStreamingMode",d->hasStreamingMode());
 
 	// serialize the VipMapFileSystem as a lazy pointer
 	if (d->mapFileSystem())
@@ -5408,6 +5413,14 @@ VipArchive& operator>>(VipArchive& stream, VipIODevice* d)
 {
 	d->setPath(stream.read("path").value<QString>());
 	d->setTimestampingFilter(stream.read("filter").value<VipTimestampingFilter>());
+
+	bool hasStreamingMode = false;
+	stream.save();
+	if(stream.content("hasStreamingMode",hasStreamingMode))
+		d->setHasStreamingMode(hasStreamingMode);
+	else
+		stream.restore();
+
 	// load the VipMapFileSystem
 	int id = stream.read("mapFileSystem").toInt();
 	VipMapFileSystem* map = VipUniqueId::find<VipMapFileSystem>(id);

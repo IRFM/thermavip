@@ -1911,7 +1911,7 @@ QRectF VipPlotCurve::drawLegend(QPainter* painter, const QRectF& rect, int) cons
 	painter->setRenderHints(this->renderHints());
 
 	if (d_data->legendAttributes == 0 || (d_data->legendAttributes & VipPlotCurve::LegendShowBrush)) {
-		const bool doFill = ((d_data->boxStyle.backgroundBrush().style() != Qt::NoBrush) && style() != NoCurve) || testCurveAttribute(FillMultiCurves);
+		const bool doFill = !d_data->full_continuous && (((d_data->boxStyle.backgroundBrush().style() != Qt::NoBrush) && style() != NoCurve) || testCurveAttribute(FillMultiCurves));
 		if (doFill) {
 			VipBoxStyle bs = d_data->boxStyle;
 			QBrush b = brush();

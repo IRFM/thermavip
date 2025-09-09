@@ -334,9 +334,16 @@ class VipMemoryPool
 	It d_data;
 	block* d_cache = nullptr;
 
+	static size_t compute_allocation_granularity() noexcept
+	{
+		size_t res = vipOSAllocationGranularity();
+		//while( res < 65536)
+		//	res *=2;
+		return res;
+	}
 	static VIP_ALWAYS_INLINE size_t allocation_granularity() noexcept
 	{
-		static size_t res = vipOSAllocationGranularity();
+		static size_t res = compute_allocation_granularity();
 		return res;
 	}
 
