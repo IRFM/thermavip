@@ -2867,81 +2867,6 @@ QString VipIconBar::mainTitle() const
 	return this->titleLabel->text();
 }
 
-#include <QMouseEvent>
-
-static void showNormalOrMaximize(VipMainWindow* win)
-{
-	if (!win)
-		return;
-
-#if QT_VERSION < QT_VERSION_CHECK(5, 15, 0)
-	int screen = qApp->desktop()->screenNumber(win);
-	QRect screen_rect = qApp->desktop()->screenGeometry(screen);
-#else
-	QRect screen_rect;
-	if (QScreen* screen = win->screen())
-		screen_rect = screen->availableGeometry();
-	else
-		screen_rect = QGuiApplication::primaryScreen()->availableGeometry();
-	int screen = qApp->screens().indexOf(win->screen());
-#endif
-
-	if (win->isMaximized()) {
-		// if maximized but not centered, re-maximize again
-		if (win->pos() != screen_rect.topLeft()) {
-			win->showNormal();
-			win->showMaximized();
-			win->setProperty("screen", screen);
-		}
-		else {
-			win->setProperty("was_maximized", false);
-			win->showNormal();
-
-			// check if we need to change the screen
-			// int new_screen = qApp->desktop()->screenNumber(win);
-			//  if (new_screen != win->property("screen").toInt() && win->property("screen").userType() != 0) {
-			//  //change screen
-			//  QPoint topleft = win->pos() - qApp->desktop()->screenGeometry(new_screen).topLeft();
-			//  win->move(screen_rect.left() + topleft.x(), screen_rect.top() + topleft.y());
-			//  }
-		}
-	}
-	else {
-		// win->showNormal();
-		win->move(screen_rect.left(), screen_rect.top());
-		win->showMaximized();
-		win->setProperty("screen", screen);
-	}
-}
-
-void VipIconBar::mouseDoubleClickEvent(QMouseEvent*)
-{
-	showNormalOrMaximize(mainWindow);
-}
-
-void VipIconBar::mousePressEvent(QMouseEvent* evt)
-{
-	this->pt = mainWindow->mapToParent(evt->VIP_EVT_POSITION());
-	this->previous_pos = mainWindow->pos();
-}
-
-void VipIconBar::mouseReleaseEvent(QMouseEvent*)
-{
-	this->pt = QPoint();
-}
-
-void VipIconBar::mouseMoveEvent(QMouseEvent* evt)
-{
-	if (this->pt != QPoint() //&& !mainWindow->isMaximized()
-	) {
-		// if (mainWindow->isMaximized()) {
-		//  mainWindow->setProperty("was_maximized", false);
-		//  mainWindow->showNormal();
-		//  }
-		QPoint diff = mainWindow->mapToParent(evt->VIP_EVT_POSITION()) - this->pt;
-		mainWindow->move(this->previous_pos + diff);
-	}
-}
 
 void VipIconBar::setUpdateProgress(int value)
 {
@@ -3025,6 +2950,14 @@ VipCloseBar::~VipCloseBar()
 {
 	stateTimer.stop();
 	disconnect(&stateTimer, SIGNAL(timeout()), this, SLOT(computeWindowState()));
+}
+
+void VipCloseBar::maximizeOrShowNormal()
+{
+	if (mainWindow->isMaximized())
+		mainWindow->showNormal();
+	else
+		mainWindow->showMaximized();
 }
 
 void VipCloseBar::computeHelpMenu()
@@ -3238,70 +3171,22 @@ void VipCloseBar::startDetectState()
 	// QGuiApplication::restoreOverrideCursor();
 }
 
-static qint64 __last_change = 0;
-void VipCloseBar::onMaximized()
-{
-	if (QDateTime::currentMSecsSinceEpoch() - __last_change < 1000)
-		return;
-
-	{
-		if (!hasFrame)
-			mainWindow->setWindowFlags(Qt::FramelessWindowHint | Qt::Window);
-		this->maximizeButton->setText(tr("Restore"));
-		this->maximizeButton->setIcon(vipIcon("restore.png"));
-		if (!mainWindow->isVisible())
-			mainWindow->showMaximized();
-		__last_change = QDateTime::currentMSecsSinceEpoch();
-	}
-}
-
-void VipCloseBar::onRestored()
-{
-	if (QDateTime::currentMSecsSinceEpoch() - __last_change < 1000)
-		return;
-
-	if (!hasFrame)
-		mainWindow->setWindowFlags(mainWindow->windowFlags() & (~Qt::FramelessWindowHint));
-	this->maximizeButton->setText(tr("Maximize"));
-	this->maximizeButton->setIcon(vipIcon("maximize.png"));
-	mainWindow->show();
-	__last_change = QDateTime::currentMSecsSinceEpoch();
-}
-
-void VipCloseBar::onMinimized() {}
-
 void VipCloseBar::computeWindowState()
 {
 	// Recompute window state based on its visibility state
 	if (!mainWindow)
 		return;
 
-	static bool was_maximized_once = false;
 	// Windows only, do nothing but reset the icons
 	if (mainWindow->isMaximized() || mainWindow->isFullScreen()) {
 		this->maximizeButton->setText(tr("Restore"));
 		this->maximizeButton->setIcon(vipIcon("restore.png"));
-		was_maximized_once = true;
-		if (!(mainWindow->windowFlags() & Qt::FramelessWindowHint)) {
-			if (!hasFrame)
-				mainWindow->setWindowFlags(mainWindow->windowFlags() | Qt::FramelessWindowHint);
-			mainWindow->show();
-		}
+		
 	}
 	else {
 		this->maximizeButton->setText(tr("Maximize"));
 		this->maximizeButton->setIcon(vipIcon("maximize.png"));
-		if ((mainWindow->windowFlags() & Qt::FramelessWindowHint) && was_maximized_once) {
-			if (!hasFrame)
-				mainWindow->setWindowFlags(mainWindow->windowFlags() & (~Qt::FramelessWindowHint));
-			mainWindow->show();
-		}
 	}
-}
-
-void VipCloseBar::maximizeOrShowNormal()
-{
-	showNormalOrMaximize(mainWindow);
 }
 
 class UpdateThread : public QThread
@@ -3383,9 +3268,14 @@ public:
 	QWidget* searchWidget;
 
 	QToolBar *left, *right, *bottom, *top;
+	int margin = 0;
 	VipShowWidgetOnHover* showTabBar;
 
 	UpdateThread* updateThread;
+
+	QPoint pt;
+	int pressed_side = 0;
+	QRect geom;
 
 	QTimer fileTimer;
 	bool currentTabDestroy;
@@ -3536,15 +3426,17 @@ VipMainWindow::VipMainWindow()
 
 	d_data->updateThread = nullptr;
 
-	if (!d_data->hasFrame)
-		setWindowFlags(windowFlags() | Qt::FramelessWindowHint);
-
+	//if (!d_data->hasFrame) 
+	//	setWindowFlags((windowFlags() | Qt::FramelessWindowHint) );
+	//TEST
+	setWindowFlags(Qt::FramelessWindowHint | Qt::WindowSystemMenuHint | Qt::WindowMinimizeButtonHint);
+	
 	connect(qApp, SIGNAL(applicationStateChanged(Qt::ApplicationState)), this, SLOT(applicationStateChanged(Qt::ApplicationState)));
 	connect(displayArea(), SIGNAL(currentDisplayPlayerAreaChanged(VipDisplayPlayerArea*)), this, SLOT(tabChanged()));
 
-#ifdef _MSC_VER
-	new VipWidgetResizer(this);
-#endif
+//#ifdef _MSC_VER
+//	new VipWidgetResizer(this);
+//#endif
 
 	// For compatibility with previous versions, regiter aliases for VipCustomDragWidget and VipCustomMultiDragWidget,
 	// otherwise old session files won't load anymore
@@ -3558,18 +3450,22 @@ VipMainWindow::VipMainWindow()
 	vipAddGuiInitializationFunction([this]() { this->finalizeToolsToolBar(); });
 }
 
+static bool _has_quit = false;
 VipMainWindow::~VipMainWindow()
 {
+	_has_quit = true;
+
 	Q_EMIT aboutToClose();
+
+	d_data->fileTimer.stop();
+	disconnect(&d_data->fileTimer, SIGNAL(timeout()), this, SLOT(openSharedMemoryFiles()));
 
 	if (d_data->updateThread) {
 		d_data->updateThread->mainWindow = nullptr;
 		d_data->updateThread->wait();
 		delete d_data->updateThread;
 	}
-	d_data->fileTimer.stop();
-	disconnect(&d_data->fileTimer, SIGNAL(timeout()), this, SLOT(openSharedMemoryFiles()));
-
+	
 	d_data.reset();
 
 	QCoreApplication::quit();
@@ -3580,6 +3476,8 @@ static QList<QPointer<QDockWidget>> _toolState;
 static QWidget* _lastModalWidget = nullptr;
 void VipMainWindow::openSharedMemoryFiles()
 {
+	if (_has_quit)
+		return;
 	// open possibles files
 	bool new_workspace = false;
 	QStringList files = VipFileSharedMemory::instance().retrieveFilesToOpen(&new_workspace);
@@ -4427,6 +4325,136 @@ void VipMainWindow::keyPressEvent(QKeyEvent* evt)
 	evt->ignore();
 }
 
+
+
+static int getMousePosition(VipMainWindow * win, const QPoint& global_pos)
+{
+	QPoint pt = global_pos - win->geometry().topLeft();
+	QRect geom = win->geometry();
+	int m = win->margin();
+
+	if (pt.x() < m) {
+		if (pt.y() < m)
+			return Vip::Left | Vip::Top;
+		if (pt.y() > geom.height() - m)
+			return Vip::Left | Vip::Bottom;
+		return Vip::Left;
+	}
+	else if (pt.x() > geom.width() - m) {
+		if (pt.y() < m)
+			return Vip::Right | Vip::Top;
+		if (pt.y() > geom.height() - m)
+			return Vip::Right | Vip::Bottom;
+		return Vip::Right;
+	}
+	else if (pt.y() < m) {
+		if (pt.x() < m)
+			return Vip::Left | Vip::Top;
+		if (pt.x() > geom.width() - m)
+			return Vip::Right | Vip::Top;
+		return Vip::Top;
+	}
+	else if (pt.y() > geom.height() - m) {
+		if (pt.x() < m)
+			return Vip::Left | Vip::Bottom;
+		if (pt.x() > geom.width() - m)
+			return Vip::Right | Vip::Bottom;
+		return Vip::Bottom;
+	}
+
+	QRect inner = geom.adjusted(30, 30, -30, -30);
+	if (!inner.contains(global_pos))
+		return Vip::AllSides; // can move the window
+	return Vip::NoSide; // nothin to move/resize
+}
+
+void VipMainWindow::mouseDoubleClickEvent(QMouseEvent*)
+{
+	if (isMaximized())
+		showNormal();
+	else
+		showMaximized();
+}
+
+void VipMainWindow::mousePressEvent(QMouseEvent* evt)
+{
+	d_data->pt = QCursor::pos();
+	d_data->pressed_side = getMousePosition(this, d_data->pt);
+	d_data->geom = this->geometry();
+	if (isMaximized() && d_data->pressed_side != Vip::AllSides)
+		d_data->pressed_side = Vip::NoSide; // disable resize if maximized
+}
+
+void VipMainWindow::mouseReleaseEvent(QMouseEvent*)
+{
+	d_data->pt = QPoint();
+	d_data->pressed_side = Vip::NoSide;
+}
+
+void VipMainWindow::mouseMoveEvent(QMouseEvent* evt)
+{
+	int side = d_data->pressed_side;
+	if (side == Vip::NoSide)
+		side = getMousePosition(this, QCursor::pos());
+
+	QWidget* under_mouse = qApp->widgetAt(QCursor::pos());
+
+	if (!isMaximized() && (under_mouse == d_data->left || under_mouse == d_data->right || under_mouse == d_data->top || under_mouse == d_data->bottom)) {
+
+		switch (side) {
+			case Vip::Left:
+			case Vip::Right:
+				this->setCursor(QCursor(Qt::SizeHorCursor));
+				break;
+			case Vip::Top:
+			case Vip::Bottom:
+				this->setCursor(QCursor(Qt::SizeVerCursor));
+				break;
+			case Vip::Top | Vip::Left:
+			case Vip::Bottom | Vip::Right:
+				this->setCursor(QCursor(Qt::SizeFDiagCursor));
+				break;
+			case Vip::Top | Vip::Right:
+			case Vip::Bottom | Vip::Left:
+				this->setCursor(QCursor(Qt::SizeBDiagCursor));
+				break;
+			default:
+				this->setCursor(QCursor(Qt::ArrowCursor));
+				break;
+		}
+	}
+	else
+		this->setCursor(QCursor(Qt::ArrowCursor));
+	
+
+	if (d_data->pt != QPoint())
+	{
+		QPoint diff = QCursor::pos() - d_data->pt;
+
+		if (d_data->pressed_side == Vip::AllSides) {
+			if (isMaximized())
+				showNormal();
+			this->move(d_data->geom.topLeft() + diff);
+			return;
+		}
+
+		if (isMaximized())
+			return;
+
+		QRect geom = d_data->geom;
+		if (d_data->pressed_side & Vip::Left) 
+			geom.adjust(diff.x(), 0, 0, 0);
+		if (d_data->pressed_side & Vip::Right)
+			geom.adjust(0, 0, diff.x(), 0);
+		if (d_data->pressed_side & Vip::Top)
+			geom.adjust(0, diff.y(), 0, 0);
+		if (d_data->pressed_side & Vip::Bottom)
+			geom.adjust(0, 0, 0, diff.y());
+		setGeometry(geom);
+	}
+	
+}
+
 void VipMainWindow::startStopPlaying()
 {
 	VipDisplayPlayerArea* area = displayArea()->currentDisplayPlayerArea();
@@ -4650,6 +4678,9 @@ void VipMainWindow::quickLoad()
 
 void VipMainWindow::closeEvent(QCloseEvent* evt)
 {
+	if (_has_quit)
+		return;
+
 	bool no_close = false;
 
 	QList<VipAbstractPlayer*> lst = this->findChildren<VipAbstractPlayer*>();
@@ -5115,6 +5146,10 @@ QMenu* VipMainWindow::createPopupMenu()
 				// delete acts[i];
 			}
 		}
+
+		menu->addSeparator();
+		connect(menu->addAction("Quit"), SIGNAL(triggered(bool)), this, SLOT(close()));
+
 		return menu;
 	}
 	return nullptr;
@@ -5122,39 +5157,83 @@ QMenu* VipMainWindow::createPopupMenu()
 
 int VipMainWindow::margin() const
 {
-	return d_data->left->maximumWidth();
+	return d_data->margin;
 }
+
+
+class MarginToolBar : public QToolBar
+{
+	VipMainWindow* d_window;
+	QRect d_geom;
+	QPoint d_pt;
+
+public:
+	MarginToolBar(VipMainWindow * w, Qt::Orientation o)
+	  : QToolBar()
+	  , d_window(w)
+	{
+		setOrientation(o);
+		setMovable(false);
+		setMouseTracking(true);
+		setSizePolicy(QSizePolicy::Maximum, QSizePolicy::Maximum);
+	}
+	void leaveEvent(QEvent* event)
+	{ 
+		// Make sure to restore the cursor when leaving the margin
+		d_window->setCursor(QCursor(Qt::ArrowCursor));
+	}
+	void mouseMoveEvent(QMouseEvent* evt)
+	{
+		// Forward to parent
+		evt->ignore();
+	}
+	void mousePressEvent(QMouseEvent* evt)
+	{
+		// Forward to parent
+		evt->ignore();
+	}
+	void mouseReleaseEvent(QMouseEvent* evt)
+	{
+		// Forward to parent
+		evt->ignore();
+	}
+};
 
 void VipMainWindow::setMargin(int m)
 {
+	// Set margins around the main window.
+	// Since the 'margin' property of stylesheet 
+	// does nothing (?), we use 4 tool bars around
+	// the VipMainWindow.
+	// These tool bars forward mouse events to the
+	// VipMainWindow in order to handle resize events.
+
+
 	if (!d_data->left) {
-		d_data->left = new QToolBar();
+		d_data->left = new MarginToolBar(this,Qt::Vertical);
 		d_data->left->setObjectName("left area");
 		d_data->left->setWindowTitle("left area");
-		d_data->left->setMovable(false);
 		d_data->left->setAllowedAreas(Qt::LeftToolBarArea);
 		this->addToolBar(Qt::LeftToolBarArea, d_data->left);
+		this->addToolBarBreak(Qt::LeftToolBarArea);
 
-		d_data->right = new QToolBar();
+		d_data->right = new MarginToolBar(this, Qt::Vertical);
 		d_data->right->setObjectName("right area");
 		d_data->right->setWindowTitle("right area");
-		d_data->right->setMovable(false);
 		d_data->right->setAllowedAreas(Qt::RightToolBarArea);
 		this->addToolBar(Qt::RightToolBarArea, d_data->right);
+		this->addToolBarBreak(Qt::RightToolBarArea);
 
-		d_data->bottom = new QToolBar();
+		d_data->bottom = new MarginToolBar(this, Qt::Horizontal);
 		d_data->bottom->setObjectName("bottom area");
 		d_data->bottom->setWindowTitle("bottom area");
-		d_data->bottom->setMovable(false);
 		d_data->bottom->setAllowedAreas(Qt::BottomToolBarArea);
 		this->addToolBar(Qt::BottomToolBarArea, d_data->bottom);
 
-		d_data->top = new QToolBar();
+		d_data->top = new MarginToolBar(this, Qt::Horizontal);
 		d_data->top->setObjectName("top area");
 		d_data->top->setWindowTitle("top area");
 		d_data->top->setMovable(false);
-		d_data->top->setAllowedAreas(Qt::TopToolBarArea);
-		d_data->top->setSizePolicy(QSizePolicy::Maximum, QSizePolicy::Maximum);
 		this->addToolBar(Qt::TopToolBarArea, d_data->top);
 		this->addToolBarBreak();
 	}
@@ -5170,6 +5249,12 @@ void VipMainWindow::setMargin(int m)
 
 	d_data->top->setMinimumHeight(m);
 	d_data->top->setMaximumHeight(m);
+
+	d_data->margin = m;
+
+	// Enable mouse tracking if margin > 0
+	// in order to display the right cursor for resizing
+	this->setMouseTracking(m > 0);
 }
 
 void VipMainWindow::setMaxColumnsForWorkspace(int maxc)

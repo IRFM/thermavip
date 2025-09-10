@@ -538,12 +538,6 @@ public:
 	void setMainTitle(const QString& title);
 	QString mainTitle() const;
 
-protected:
-	virtual void mouseDoubleClickEvent(QMouseEvent* evt);
-	virtual void mousePressEvent(QMouseEvent* evt);
-	virtual void mouseReleaseEvent(QMouseEvent* evt);
-	virtual void mouseMoveEvent(QMouseEvent* evt);
-
 private Q_SLOTS:
 	void setUpdateProgress(int value);
 	void updateTitle();
@@ -600,9 +594,6 @@ public:
 
 private Q_SLOTS:
 	void maximizeOrShowNormal();
-	void onMaximized();
-	void onRestored();
-	void onMinimized();
 	void computeWindowState();
 	void computeHelpMenu();
 	void computeToolsMenu();
@@ -668,6 +659,7 @@ public:
 	};
 
 	~VipMainWindow();
+
 
 	/// @brief Get/Set the main Thermavip title (see VipIconBar)
 	void setMainTitle(const QString& title);
@@ -874,6 +866,10 @@ protected:
 	virtual void closeEvent(QCloseEvent* );
 	virtual void showEvent(QShowEvent*);
 	virtual void keyPressEvent(QKeyEvent*);
+	virtual void mousePressEvent(QMouseEvent* evt);
+	virtual void mouseReleaseEvent(QMouseEvent* evt);
+	virtual void mouseMoveEvent(QMouseEvent* evt);
+	virtual void mouseDoubleClickEvent(QMouseEvent* evt);
 
 private:
 	QAction* addToolWidget(VipToolWidget* widget, const QIcon& icon, const QString& text, bool set_tool_icon = false);

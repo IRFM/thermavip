@@ -7316,22 +7316,15 @@ void VipPlotPlayer::updateSlidingTimeWindow()
 		d_data->plotDuration->setText(QString());
 }
 
-void VipPlotPlayer::setSlidingTimeWindow()
+void VipPlotPlayer::setSlidingTimeWindow(double value)
 {
-	// retrieve sliding time value
-	double value;
-	if (d_data->plotDuration->text().isEmpty())
-		value = -1;
-	else
-		value = d_data->plotDuration->value();
 	if (vipIsNan(value))
 		value = -1;
-
-	if (!vipIsNan(value)) {
-		d_data->plotDuration->blockSignals(true);
-		d_data->plotDuration->setValue(value);
-		d_data->plotDuration->blockSignals(false);
-	}
+	
+	d_data->plotDuration->blockSignals(true);
+	d_data->plotDuration->setValue(value);
+	d_data->plotDuration->blockSignals(false);
+	
 
 	QList<VipPlotCurve*> curves = plotWidget2D()->area()->findItems<VipPlotCurve*>(QString(), 2, 1);
 	for (int i = 0; i < curves.size(); ++i) {
@@ -7359,9 +7352,21 @@ void VipPlotPlayer::setSlidingTimeWindow()
 				else {
 					disp->propertyName("Sliding_time_window")->setData(value);
 				}
+
 			}
 		}
 	}
+}
+
+void VipPlotPlayer::setSlidingTimeWindow()
+{
+	// retrieve sliding time value
+	double value;
+	if (d_data->plotDuration->text().isEmpty())
+		value = -1;
+	else
+		value = d_data->plotDuration->value();
+	setSlidingTimeWindow(value);
 }
 
 void VipPlotPlayer::onPlayerCreated()

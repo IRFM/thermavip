@@ -714,9 +714,9 @@ QPoint VipToolTip::toolTipPosition(VipText& text, const QPointF& pos, Vip::Regio
 
 	}
 
-	QRect tip_rect = VipCorrectedTip::textGeometry(QPoint(0, 0), text.text(), plotArea()->view(), QRect());
+	QRect tip_rect = VipCorrectedTip::textGeometry(/*QPoint(0, 0)*/ screen.topLeft(), text.text(), plotArea()->view(), QRect());
 	QSize tip_size = tip_rect.size();
-	QPoint tip_offset = tip_rect.topLeft();
+	QPoint tip_offset = tip_rect.topLeft() - screen.topLeft();
 
 	if (d_data->offset) {
 		QPoint this_pos;

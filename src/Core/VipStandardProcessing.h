@@ -275,6 +275,14 @@ class VIP_CORE_EXPORT VipNumericValueToPointVector : public VipProcessingObject
 	Q_CLASSINFO("category", "Miscellaneous")
 
 public:
+
+	/// @brief Retrieve the sliding time window used by default by all VipNumericValueToPointVector
+	/// instances as well as all VipDisplayCurve. Default value is -1 (no time window).
+	static double defaultSlidingTimeWindow();
+	/// @brief Set the default sliding time window that will be used by all future VipNumericValueToPointVector
+	/// instances as well as all VipDisplayCurve.
+	static void setDefaultSlidingTimeWindow(double seconds);
+
 	VipNumericValueToPointVector(QObject* parent = nullptr);
 	virtual bool acceptInput(int // index
 				 ,

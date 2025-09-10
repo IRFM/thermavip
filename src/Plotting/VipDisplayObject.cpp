@@ -39,6 +39,7 @@
 #include "VipSleep.h"
 #include "VipUniqueId.h"
 #include "VipXmlArchive.h"
+#include "VipStandardProcessing.h"
 
 #include <QCoreApplication>
 #include <QWaitCondition>
@@ -690,7 +691,7 @@ VipDisplayCurve::VipDisplayCurve(QObject* parent)
 	VIP_CREATE_PRIVATE_DATA(d_data);
 	setItem(new VipPlotCurve());
 	item()->setAutoMarkDirty(false);
-	this->propertyName("Sliding_time_window")->setData(-1.);
+	this->propertyName("Sliding_time_window")->setData(VipNumericValueToPointVector::defaultSlidingTimeWindow());
 }
 
 VipDisplayCurve::~VipDisplayCurve()

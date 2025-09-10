@@ -914,6 +914,7 @@ public Q_SLOTS:
 	void setTimeMarkerAlwaysVisible(bool enable);
 	void removeStyleSheet();
 	void poolTypeChanged();
+	void setSlidingTimeWindow(double value);
 
 private Q_SLOTS:
 	void timeUnitChanged(); // update the bottom axis scale draw

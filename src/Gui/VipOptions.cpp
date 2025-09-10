@@ -772,16 +772,17 @@ class ProcessingSettings::PrivateData
 public:
 	QCheckBox* resetRemember;
 
-	QGroupBox* general;
 	QComboBox* procPriority;
 	QComboBox* displayPriority;
 	QCheckBox* printDebug;
 
-	QGroupBox* inputs;
 	QCheckBox* maxSizeEnable;
 	QSpinBox* maxSize;
 	QCheckBox* maxMemoryEnable;
 	QSpinBox* maxMemory;
+
+	QDoubleSpinBox* timeWindow;
+	QCheckBox* applyToAll;
 };
 
 ProcessingSettings::ProcessingSettings(QWidget* parent)
@@ -792,11 +793,9 @@ ProcessingSettings::ProcessingSettings(QWidget* parent)
 	d_data->resetRemember = new QCheckBox("Reset remembered choices");
 	d_data->resetRemember->setToolTip("Reset association of file suffix -> device type.\nReset default device parameters.");
 
-	d_data->general = createGroup("General processing settings");
 	d_data->procPriority = new QComboBox();
 	d_data->displayPriority = new QComboBox();
 	d_data->printDebug = new QCheckBox();
-
 	d_data->printDebug->setText("Print debug informations");
 
 	d_data->procPriority->setToolTip("Set the default processing thread priority used within Thermavip");
@@ -825,9 +824,7 @@ ProcessingSettings::ProcessingSettings(QWidget* parent)
 	glay->addWidget(new QLabel("Display processing thread priority"), 1, 0);
 	glay->addWidget(d_data->displayPriority, 1, 1);
 	glay->addWidget(d_data->printDebug, 2, 0, 1, 2);
-	d_data->general->setLayout(glay);
 
-	d_data->inputs = createGroup("Input buffer settings");
 	d_data->maxSizeEnable = new QCheckBox();
 	d_data->maxSize = new QSpinBox();
 	d_data->maxMemoryEnable = new QCheckBox();
@@ -839,7 +836,6 @@ ProcessingSettings::ProcessingSettings(QWidget* parent)
 	vlay->addWidget(d_data->maxMemoryEnable);
 	vlay->addWidget(d_data->maxMemory);
 	vlay->addWidget(d_data->printDebug);
-	d_data->inputs->setLayout(vlay);
 
 	d_data->maxSizeEnable->setText("Set maximum input buffer size");
 	d_data->maxMemoryEnable->setText("Set maximum input buffer memory");
@@ -853,10 +849,25 @@ ProcessingSettings::ProcessingSettings(QWidget* parent)
 	d_data->maxMemory->setToolTip("Maximum amount of data for each processing input");
 	d_data->maxMemory->setMaximumWidth(100);
 
+
+	d_data->timeWindow = new QDoubleSpinBox();
+	d_data->timeWindow->setRange(-1, 100000);
+	d_data->timeWindow->setSingleStep(1.);
+	d_data->timeWindow->setValue(VipNumericValueToPointVector::defaultSlidingTimeWindow());
+	d_data->applyToAll = new QCheckBox("Apply to all");
+	QGridLayout* tlay = new QGridLayout();
+	tlay->addWidget(new QLabel("Streaming curves time window"), 0, 0);
+	tlay->addWidget(d_data->timeWindow, 0, 1);
+	tlay->addWidget(d_data->applyToAll, 2, 0, 1, 2);
+
 	QVBoxLayout* lay = new QVBoxLayout();
 	lay->addWidget(d_data->resetRemember);
-	lay->addWidget(d_data->general);
-	lay->addWidget(d_data->inputs);
+	lay->addWidget(createGroup("General processing settings"));
+	lay->addLayout(glay);
+	lay->addWidget(createGroup("Input buffer settings"));
+	lay->addLayout(vlay);
+	lay->addWidget(createGroup("Streaming curves"));
+	lay->addLayout(tlay);
 	lay->addStretch(1);
 	setLayout(lay);
 
@@ -904,6 +915,14 @@ void ProcessingSettings::applyPage()
 
 	if (d_data->resetRemember->isChecked())
 		VipRememberDeviceOptions::instance().clearAll();
+
+	// Apply sliding time window
+	VipNumericValueToPointVector::setDefaultSlidingTimeWindow(d_data->timeWindow->value());
+	if (d_data->applyToAll->isChecked()) {
+		auto lst = VipUniqueId::objects<VipPlotPlayer>();
+		for (auto* p : lst)
+			p->setSlidingTimeWindow(d_data->timeWindow->value());
+	}
 }
 
 void ProcessingSettings::updatePage()
@@ -919,6 +938,8 @@ void ProcessingSettings::updatePage()
 
 	d_data->procPriority->setCurrentIndex(VipProcessingManager::defaultPriority(&VipProcessingObject::staticMetaObject));
 	d_data->displayPriority->setCurrentIndex(VipProcessingManager::defaultPriority(&VipDisplayObject::staticMetaObject));
+
+	d_data->timeWindow->setValue(VipNumericValueToPointVector::defaultSlidingTimeWindow());
 }
 
 class EnvironmentSettings::PrivateData

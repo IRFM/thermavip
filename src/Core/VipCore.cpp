@@ -35,6 +35,7 @@
 #include "VipSceneModel.h"
 #include "VipUniqueId.h"
 #include "VipHash.h"
+#include "VipStandardProcessing.h"
 
 #include <QMetaType>
 #include <QSet>
