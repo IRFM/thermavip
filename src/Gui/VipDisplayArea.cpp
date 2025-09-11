@@ -4429,11 +4429,16 @@ void VipMainWindow::mouseMoveEvent(QMouseEvent* evt)
 
 	if (d_data->pt != QPoint())
 	{
-		QPoint diff = QCursor::pos() - d_data->pt;
+		QPoint global_pos = QCursor::pos();
+		QPoint diff = global_pos - d_data->pt;
 
 		if (d_data->pressed_side == Vip::AllSides) {
-			if (isMaximized())
+			if (isMaximized()) {
+				QPoint offset = global_pos - d_data->geom.topLeft();
 				showNormal();
+				this->move(global_pos - offset);
+				d_data->geom = geometry();
+			}
 			this->move(d_data->geom.topLeft() + diff);
 			return;
 		}
