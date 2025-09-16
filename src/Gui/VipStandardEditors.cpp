@@ -1142,7 +1142,7 @@ public:
 
 	VipTextWidget title;
 	VipTextWidget labels;
-	QComboBox colorMaps;
+	VipColorScaleButton colorMaps;
 	QCheckBox externalColor;
 	VipColorWidget externalColorChoice;
 	VipDoubleEdit maximum;
@@ -1282,31 +1282,14 @@ VipColorScaleWidget::VipColorScaleWidget(QWidget* parent)
 	d_data->exponent.setToolTip("Set the common exponent factor to all scale labels");
 	d_data->exponent.setEnabled(false);
 
-	d_data->colorMaps.addItem(colorMapPixmap(VipLinearColorMap::Autumn, QSize(20, 20)), "Autumn");
-	d_data->colorMaps.addItem(colorMapPixmap(VipLinearColorMap::Bone, QSize(20, 20)), "Bone");
-	d_data->colorMaps.addItem(colorMapPixmap(VipLinearColorMap::BuRd, QSize(20, 20)), "BuRd");
-	d_data->colorMaps.addItem(colorMapPixmap(VipLinearColorMap::Cool, QSize(20, 20)), "Cool");
-	d_data->colorMaps.addItem(colorMapPixmap(VipLinearColorMap::Copper, QSize(20, 20)), "Copper");
-	d_data->colorMaps.addItem(colorMapPixmap(VipLinearColorMap::Gray, QSize(20, 20)), "Gray");
-	d_data->colorMaps.addItem(colorMapPixmap(VipLinearColorMap::Hot, QSize(20, 20)), "Hot");
-	d_data->colorMaps.addItem(colorMapPixmap(VipLinearColorMap::Hsv, QSize(20, 20)), "Hsv");
-	d_data->colorMaps.addItem(colorMapPixmap(VipLinearColorMap::Jet, QSize(20, 20)), "Jet");
-	d_data->colorMaps.addItem(colorMapPixmap(VipLinearColorMap::Fusion, QSize(20, 20)), "Fusion");
-	d_data->colorMaps.addItem(colorMapPixmap(VipLinearColorMap::Pink, QSize(20, 20)), "Pink");
-	d_data->colorMaps.addItem(colorMapPixmap(VipLinearColorMap::Rainbow, QSize(20, 20)), "Rainbow");
-	d_data->colorMaps.addItem(colorMapPixmap(VipLinearColorMap::Spring, QSize(20, 20)), "Spring");
-	d_data->colorMaps.addItem(colorMapPixmap(VipLinearColorMap::Summer, QSize(20, 20)), "Summer");
-	d_data->colorMaps.addItem(colorMapPixmap(VipLinearColorMap::Sunset, QSize(20, 20)), "Sunset");
-	d_data->colorMaps.addItem(colorMapPixmap(VipLinearColorMap::Viridis, QSize(20, 20)), "Viridis");
-	d_data->colorMaps.addItem(colorMapPixmap(VipLinearColorMap::White, QSize(20, 20)), "White");
-	d_data->colorMaps.addItem(colorMapPixmap(VipLinearColorMap::Winter, QSize(20, 20)), "Winter");
-	d_data->colorMaps.setCurrentIndex(VipLinearColorMap::Jet);
+	d_data->colorMaps.setToolTip("Select color map");
+	d_data->colorMaps.setColorPalette(VipLinearColorMap::Sunset);
 
 	connect(&d_data->externalColor, SIGNAL(clicked(bool)), this, SLOT(emitColorScaleChanged()));
 	connect(&d_data->externalColorChoice, SIGNAL(colorChanged(const QColor&)), this, SLOT(emitColorScaleChanged()));
 	connect(&d_data->title, SIGNAL(changed(const VipText&)), this, SLOT(emitColorScaleChanged()));
 	connect(&d_data->labels, SIGNAL(changed(const VipText&)), this, SLOT(emitColorScaleChanged()));
-	connect(&d_data->colorMaps, SIGNAL(currentIndexChanged(int)), this, SLOT(emitColorScaleChanged()));
+	connect(&d_data->colorMaps, SIGNAL(colorPaletteChanged(int)), this, SLOT(emitColorScaleChanged()));
 	connect(&d_data->maximum, SIGNAL(valueChanged(double)), this, SLOT(emitColorScaleChanged()));
 	connect(&d_data->minimum, SIGNAL(valueChanged(double)), this, SLOT(emitColorScaleChanged()));
 	connect(&d_data->gripMaximum, SIGNAL(valueChanged(double)), this, SLOT(emitColorScaleChanged()));
@@ -1335,6 +1318,7 @@ VipColorScaleWidget::~VipColorScaleWidget()
 {
 }
 
+
 QPixmap VipColorScaleWidget::colorMapPixmap(int color_map, const QSize& size, const QPen& pen)
 {
 	VipLinearColorMap* map = VipLinearColorMap::createColorMap(VipLinearColorMap::StandardColorMap(color_map));
@@ -1353,6 +1337,7 @@ QPixmap VipColorScaleWidget::colorMapPixmap(int color_map, const QSize& size, co
 	}
 	return QPixmap();
 }
+
 
 VipAxisColorMap* VipColorScaleWidget::colorScale() const
 {
@@ -1408,7 +1393,7 @@ void VipColorScaleWidget::setColorScale(VipAxisColorMap* scale)
 	d_data->labels.setText(VipText("", scale->scaleDraw()->textStyle()));
 	int index = static_cast<VipLinearColorMap*>(scale->colorMap())->type();
 	if (index >= 0) {
-		d_data->colorMaps.setCurrentIndex(index);
+		d_data->colorMaps.setColorPalette(index);
 		d_data->thisColorScale->setColorMap(scale->gripInterval(), VipLinearColorMap::createColorMap(VipLinearColorMap::StandardColorMap(index)));
 	}
 	d_data->externalColor.setChecked(scale->colorMap()->externalValue() == VipLinearColorMap::ColorFixed);
@@ -1498,8 +1483,8 @@ void VipColorScaleWidget::emitColorScaleChanged()
 	d_data->thisColorScale->setTitle(d_data->title.getText());
 	d_data->thisColorScale->colorMap()->setExternalValue(d_data->externalColor.isChecked() ? VipColorMap::ColorFixed : VipColorMap::ColorBounds, d_data->externalColorChoice.color().rgba());
 
-	if (static_cast<VipLinearColorMap*>(d_data->thisColorScale->colorMap())->type() != d_data->colorMaps.currentIndex())
-		d_data->thisColorScale->setColorMap(d_data->thisColorScale->gripInterval(), VipLinearColorMap::createColorMap(VipLinearColorMap::StandardColorMap(d_data->colorMaps.currentIndex())));
+	if (static_cast<VipLinearColorMap*>(d_data->thisColorScale->colorMap())->type() != d_data->colorMaps.colorPalette())
+		d_data->thisColorScale->setColorMap(d_data->thisColorScale->gripInterval(), VipLinearColorMap::createColorMap(VipLinearColorMap::StandardColorMap(d_data->colorMaps.colorPalette())));
 
 	d_data->thisColorScale->setMaxMajor(d_data->maxMajor.value());
 	d_data->thisColorScale->setMaxMinor(d_data->maxMinor.value());
@@ -1599,8 +1584,8 @@ void VipColorScaleWidget::emitColorScaleChanged()
 			connect(scale, SIGNAL(scaleDivChanged(bool)), this, SLOT(updateColorScale()));
 
 		// update color map
-		if (static_cast<VipLinearColorMap*>(scale->colorMap())->type() != d_data->colorMaps.currentIndex())
-			scale->setColorMap(d_data->thisColorScale->gripInterval(), VipLinearColorMap::createColorMap(VipLinearColorMap::StandardColorMap(d_data->colorMaps.currentIndex())));
+		if (static_cast<VipLinearColorMap*>(scale->colorMap())->type() != d_data->colorMaps.colorPalette())
+			scale->setColorMap(d_data->thisColorScale->gripInterval(), VipLinearColorMap::createColorMap(VipLinearColorMap::StandardColorMap(d_data->colorMaps.colorPalette())));
 
 		// update external color
 		scale->colorMap()->setExternalValue(d_data->externalColor.isChecked() ? VipColorMap::ColorFixed : VipColorMap::ColorBounds, d_data->externalColorChoice.color().rgba());
@@ -1650,10 +1635,12 @@ QMenu* VipColorScaleButton::generateColorScaleMenu()
 	menu->addAction(VipColorScaleWidget::colorMapPixmap(VipLinearColorMap::Fusion, QSize(20, 16), QPen()), "Fusion");
 	menu->addAction(VipColorScaleWidget::colorMapPixmap(VipLinearColorMap::Pink, QSize(20, 16), QPen()), "Pink");
 	menu->addAction(VipColorScaleWidget::colorMapPixmap(VipLinearColorMap::Rainbow, QSize(20, 16), QPen()), "Rainbow");
+	menu->addAction(VipColorScaleWidget::colorMapPixmap(VipLinearColorMap::RevealIR, QSize(20, 16), QPen()), "RevealIR");
 	menu->addAction(VipColorScaleWidget::colorMapPixmap(VipLinearColorMap::Spring, QSize(20, 16), QPen()), "Spring");
 	menu->addAction(VipColorScaleWidget::colorMapPixmap(VipLinearColorMap::Summer, QSize(20, 16), QPen()), "Summer");
 	menu->addAction(VipColorScaleWidget::colorMapPixmap(VipLinearColorMap::Sunset, QSize(20, 16), QPen()), "Sunset");
 	menu->addAction(VipColorScaleWidget::colorMapPixmap(VipLinearColorMap::Viridis, QSize(20, 16), QPen()), "Viridis");
+	menu->addAction(VipColorScaleWidget::colorMapPixmap(VipLinearColorMap::Visible, QSize(20, 16), QPen()), "Visible");
 	menu->addAction(VipColorScaleWidget::colorMapPixmap(VipLinearColorMap::White, QSize(20, 16), QPen()), "White");
 	menu->addAction(VipColorScaleWidget::colorMapPixmap(VipLinearColorMap::Winter, QSize(20, 16), QPen()), "Winter");
 
@@ -1665,14 +1652,22 @@ VipColorScaleButton::VipColorScaleButton(QWidget* parent)
   : QToolButton(parent)
   , m_colorPalette(-1)
 {
-	setToolTip("Change color palette");
+	setToolTip("Select color palette");
+	setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
 	QMenu* menu = generateColorScaleMenu();
 	setMenu(menu);
 	setPopupMode(QToolButton::InstantPopup);
 	connect(menu, SIGNAL(triggered(QAction*)), this, SLOT(menuTriggered(QAction*)));
-	setColorPalette(VipLinearColorMap::Jet);
+	setColorPalette(VipLinearColorMap::Sunset);
 }
 
+void VipColorScaleButton::setColorPaletteName(const QString& name) 
+{
+	VipLinearColorMap::StandardColorMap map = VipLinearColorMap::colorMapFromName(name);
+	if (map != VipLinearColorMap::Unknown)
+		setColorPalette(map);
+}
+	
 void VipColorScaleButton::setColorPalette(int color_palette)
 {
 	if (m_colorPalette != color_palette && color_palette >= 0 && color_palette < menu()->actions().size()) {
@@ -1680,14 +1675,24 @@ void VipColorScaleButton::setColorPalette(int color_palette)
 
 		QPixmap pix = VipColorScaleWidget::colorMapPixmap(color_palette, QSize(20, 16), QPen());
 		this->setIcon(pix);
+		QString name = VipLinearColorMap::colorMapToName((VipLinearColorMap::StandardColorMap)color_palette);
+		name[0] = name[0].toUpper();
+		this->setText(name);
+		name[0] = name[0].toLower();
 		this->setToolTip("Change color palette (current: " + menu()->actions()[color_palette]->text() + ")");
 
 		Q_EMIT colorPaletteChanged(color_palette);
+		Q_EMIT colorPaletteNameChanged(name);
 	}
 }
 int VipColorScaleButton::colorPalette() const
 {
 	return m_colorPalette;
+}
+
+QString VipColorScaleButton::colorPaletteName() const
+{
+	return VipLinearColorMap::colorMapToName((VipLinearColorMap::StandardColorMap) m_colorPalette);
 }
 
 void VipColorScaleButton::menuTriggered(QAction* act)

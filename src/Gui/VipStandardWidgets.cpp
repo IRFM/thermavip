@@ -1504,12 +1504,130 @@ void VipPenButton::resizeEvent(QResizeEvent* evt)
 
 
 
+
+
+VipFontAndColor::VipFontAndColor(QWidget* parent )
+	: QLabel(parent)
+{
+	d_font_button = new QLabel(this);
+	const QPixmap font = vipPixmap("font.png");
+	d_font_button->setPixmap(font);
+	d_font_button->setMinimumSize(font.size());
+	d_font_button->setMaximumSize(font.size());
+	
+	this->setToolTip("Select text color");
+	d_font_button->setToolTip("Select text font");
+	d_font_button->installEventFilter(this);
+	this->installEventFilter(this);
+
+	this->setStyleSheet("QLabel{border: transparent;} QLabel:hover{border : 1px solid #0078D4;}");
+	d_font_button->setStyleSheet("QLabel{border: transparent;} QLabel:hover{border : 1px solid #0078D4;}");
+
+	setEditableContent(Font | Color);
+}
+
+bool VipFontAndColor::eventFilter(QObject* watched, QEvent* event)
+{
+	if (event->type() == QEvent::MouseButtonRelease) {
+		QMouseEvent* e = static_cast<QMouseEvent*>(event);
+		if (e->button() != Qt::LeftButton)
+			return false;
+
+		QWidget* w = static_cast<QWidget*>(watched);
+		if(!QRect(QPoint(),w->size()).contains(e->pos()))
+			return false;
+
+		if (watched == this) 
+			editColor();
+		else
+			editFont();
+		return true;
+	}
+	return false;
+}
+
+void VipFontAndColor::setEditableContent(int c)
+{
+	d_content = c;
+	d_font_button->setVisible((bool)(c & Font));
+	const QPixmap pix = d_font_button->pixmap();
+	QSize s = pix.size();
+
+	if ((c & Color) && (c & Font)) {
+		//Both
+		s += QSize(8, 3);
+		this->setMinimumSize(s);
+		this->setMaximumSize(s);
+	}
+	else {
+		// Color or Font only
+		this->setMinimumSize(s);
+		this->setMaximumSize(s);
+	}
+}
+
+void VipFontAndColor::setColor(const QColor& c)
+{ 
+	d_color = c;
+	// set icon
+	QPixmap pix(this->size());
+	pix.fill(Qt::transparent);
+	QSize fs = d_font_button->pixmap().size();
+	{
+		QPainter p(&pix);
+		p.setPen(Qt::NoPen);
+		p.setBrush(QBrush(c));
+		//draw right part
+		p.drawRect(QRect(fs.width(), 0, 8, height()));
+		//draw bottom part
+		p.drawRect(QRect(0, fs.height(), width(), 3));
+
+		p.setCompositionMode(QPainter::CompositionMode_Clear);
+		p.setBrush(Qt::NoBrush);
+		p.setPen(QPen());
+		p.drawRect(QRect(0, 0, width() - 1, height() - 1));
+	}
+	this->setPixmap(pix);
+	Q_EMIT changed();
+}
+QColor VipFontAndColor::color() const
+{
+	return d_color;
+}
+
+void VipFontAndColor::setFont(const QFont& f)
+{
+	d_font = f;
+	Q_EMIT changed();
+}
+QFont VipFontAndColor::font() const
+{
+	return d_font;
+}
+
+void VipFontAndColor::editFont()
+{
+	QFontDialog dial(d_font);
+	if (dial.exec() == QDialog::Accepted)
+		setFont(dial.currentFont());
+}
+void VipFontAndColor::editColor()
+{
+	QColorDialog dial(d_color);
+	if (dial.exec() == QDialog::Accepted)
+		setColor(dial.currentColor());
+}
+
+void VipFontAndColor::resizeEvent(QResizeEvent* evt) 
+{
+}
+
+
 class VipTextWidget::PrivateData
 {
 public:
-	VipPenButton textColor;
 	QLineEdit text;
-	QToolButton textChoice;
+	VipFontAndColor fontColor;
 	QWidget* options;
 	int editable;
 };
@@ -1524,16 +1642,9 @@ VipTextWidget::VipTextWidget(QWidget* parent)
 	QHBoxLayout* tlay = new QHBoxLayout();
 	tlay->setContentsMargins(0, 0, 0, 0);
 	tlay->setSpacing(0);
-	tlay->addWidget(&d_data->textChoice);
-	tlay->addWidget(&d_data->textColor);
-	d_data->textColor.setMaximumWidth(15);
-	d_data->textChoice.setMaximumHeight(20);
-
-	d_data->textColor.setToolTip("Text color");
-	d_data->textColor.setMode(VipPenButton::Color);
-	d_data->textChoice.setIcon(vipIcon("font.png"));
-	d_data->textChoice.setToolTip("Select text font");
-	d_data->textChoice.setAutoRaise(true);
+	tlay->addWidget(&d_data->fontColor);
+	
+	
 	d_data->text.setToolTip("Enter your text");
 
 	d_data->options = new QWidget();
@@ -1547,9 +1658,8 @@ VipTextWidget::VipTextWidget(QWidget* parent)
 	hlay->addStretch(1);
 	setLayout(hlay);
 
-	connect(&d_data->textChoice, SIGNAL(clicked(bool)), this, SLOT(fontChoice()));
 	connect(&d_data->text, SIGNAL(returnPressed()), this, SLOT(textEdited()));
-	connect(&d_data->textColor, SIGNAL(penChanged(const QPen&)), this, SLOT(textEdited()));
+	connect(&d_data->fontColor, SIGNAL(changed()), this, SLOT(textEdited()));
 	
 	this->setMaximumHeight(30);
 }
@@ -1565,8 +1675,7 @@ void VipTextWidget::setEditableContent(int editable)
 {
 	d_data->editable = editable;
 	d_data->text.setVisible(editable & String);
-	d_data->textColor.setVisible(editable & Color);
-	d_data->textChoice.setVisible(editable & Font);
+	d_data->fontColor.setEditableContent(editable);
 }
 
 void VipTextWidget::textEdited()
@@ -1583,7 +1692,8 @@ void VipTextWidget::setText(const VipText& t)
 {
 	d_data->text.setText(t.text());
 	d_data->text.setFont(t.font());
-	d_data->textColor.setPen(t.textPen());
+	d_data->fontColor.setFont(t.font());
+	d_data->fontColor.setColor(t.textPen().color());
 
 	QPalette palette;
 	palette.setColor(QPalette::Text, t.textPen().color());
@@ -1595,7 +1705,7 @@ void VipTextWidget::setText(const VipText& t)
 VipText VipTextWidget::getText() const
 {
 	VipText t;
-	t.setTextPen(d_data->textColor.pen());
+	t.setTextPen(QPen(d_data->fontColor.color()));
 	t.setFont(d_data->text.font());
 	t.setText(d_data->text.text());
 	return t;
@@ -1607,6 +1717,7 @@ void VipTextWidget::fontChoice()
 	if (dial.exec() == QDialog::Accepted) {
 		QFont textfont = dial.currentFont();
 		d_data->text.setFont(textfont);
+		d_data->fontColor.setFont(textfont);
 		textEdited();
 	}
 }
@@ -2779,7 +2890,7 @@ VipGenericDialog::VipGenericDialog(QWidget* panel, const QString& title, QWidget
 	buttonLayout->addStretch(1);
 
 	QVBoxLayout* globalLayout = new QVBoxLayout();
-	globalLayout->setSpacing(0);
+	globalLayout->setSpacing(5);
 	globalLayout->addWidget(panel);
 	globalLayout->addLayout(buttonLayout);
 	setLayout(globalLayout);

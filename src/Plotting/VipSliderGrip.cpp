@@ -305,8 +305,9 @@ void VipSliderGrip::updatePositionInternal(bool InPaint)
 {
 	QPointF pt = d_data->axis->constScaleDraw()->position(d_data->value, handleDistance(), Vip::Absolute);
 	if (pt != pos() && qAbs(pt.x()) < 10000 && qAbs(pt.y()) < 10000) {
-		if (!InPaint)
-			this->setPos(pt); 
+		if (!InPaint) {
+			this->setPos(pt);
+		}
 		else
 			QMetaObject::invokeMethod(this, "moveTo", Qt::QueuedConnection, Q_ARG(QPointF, pt));
 	}

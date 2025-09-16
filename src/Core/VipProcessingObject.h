@@ -1449,7 +1449,7 @@ Q_DECLARE_METATYPE(VipMultiOutput)
 /// -	All introspection functions: className(), description(), inputDescription(), inputNames()...
 /// -	All I/O access members: topLevelInputAt(), inputAt(), outputAt() ...
 /// -	Adding/retrieving data from VipInput/VipOutput/VipProperty objects, like inputAt(0)->setData(my_data), clearInputBuffers()...
-/// -	Calls to setEnabled(), isEnabled(), setVisible(), isVisible()
+/// -	Calls to setEnabled(), isEnabled(), setProcessingVisible(), isProcessingVisible()
 /// -	Calls to update() and reset()
 ///
 ///
@@ -1831,8 +1831,8 @@ public:
 	/// @brief Returns the deleteOnOutputConnectionsClosed flag
 	bool deleteOnOutputConnectionsClosed() const;
 
-	/// @brief See #VipProcessingObject::setVisible(bool)
-	bool isVisible() const;
+	/// @brief See #VipProcessingObject::setProcessingVisible(bool)
+	bool isProcessingVisible() const;
 	/// @brief Returns true if the processing is enabled
 	bool isEnabled() const;
 	/// @brief Returns true if the processing is currently updating (a call to #VipProcessingObject::update() is being performed)
@@ -1943,7 +1943,7 @@ public Q_SLOTS:
 
 	/// @brief Set the processing visibility.
 	/// This property is used for display only, when the processing is inside a VipProcessingList that is edited.
-	virtual void setVisible(bool);
+	virtual void setProcessingVisible(bool);
 
 	/// @brief Update the processing object.
 	///
@@ -2068,7 +2068,7 @@ private:
 	void run();
 	void runNoLock();
 	VipSpinlock& runLock() noexcept;
-
+	
 	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 

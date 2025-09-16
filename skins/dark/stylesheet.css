@@ -103,6 +103,14 @@ VipToolWidgetTitleBar > QToolButton{
 }
 
 
+VipProgressWidget {
+	background-color: rgba(31,31,31,50);
+}
+VipProgressWidgetInternal {
+	background-color: rgba(31,31,31,150);
+	margin: 10px;
+}
+
 
 VipViewport {
 	background-color: #303030;

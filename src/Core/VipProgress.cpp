@@ -61,7 +61,7 @@ public:
 	QString text;
 	bool cancelable;
 	bool modal;
-	bool cancel;
+	std::atomic<bool> cancel;
 
 	// for processing gui events
 	qint64 lastTime;
@@ -150,12 +150,12 @@ void VipProgress::setModal(bool modal)
 
 void VipProgress::cancelRequested()
 {
-	d_data->cancel = true;
+	d_data->cancel.store( true);
 }
 
 bool VipProgress::canceled() const
 {
-	return d_data->cancel;
+	return d_data->cancel.load();
 }
 
 double VipProgress::min() const

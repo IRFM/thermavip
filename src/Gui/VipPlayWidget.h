@@ -301,6 +301,7 @@ public Q_SLOTS:
 
 	void updateArea(bool check_item_visibility);
 	void updateAreaDevices();
+	void defferedUpdateAreaDevices();
 	void updateProcessingPool();
 	void defferedUpdateProcessingPool();
 	void addMissingDevices();

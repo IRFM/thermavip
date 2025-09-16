@@ -840,7 +840,7 @@ bool VipPhysicalFileSystem::exists_timeout(const QString& path, int milli_timeou
 	});
 
 	qint64 st = QDateTime::currentMSecsSinceEpoch();
-	while (QDateTime::currentMSecsSinceEpoch() - st < milli_timeout && !finished)
+	while (QDateTime::currentMSecsSinceEpoch() - st < milli_timeout && !*finished)
 		QThread::msleep(5);
 	if (QDateTime::currentMSecsSinceEpoch() - st >= milli_timeout && timed_out) {
 		_has_network_issue = true;

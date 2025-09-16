@@ -119,7 +119,6 @@ private Q_SLOTS:
 	void skinChanged();
 
 private:
-	QPixmap colorMapPixmap(int color_map, const QSize& size);
 	QPixmap applyFactor(const QImage& img, int factor);
 	
 	VIP_DECLARE_PRIVATE_DATA(d_data);

@@ -294,8 +294,7 @@ public:
 	VipColorScaleWidget(QWidget* parent = nullptr);
 	~VipColorScaleWidget();
 	VipAxisColorMap* colorScale() const;
-
-	static QPixmap colorMapPixmap(int color_map, const QSize& size, const QPen& pen = Qt::NoPen);
+	static QPixmap colorMapPixmap(int color_map, const QSize& size, const QPen& pen);
 
 public Q_SLOTS:
 	void setColorScale(VipAxisColorMap*);
@@ -316,16 +315,18 @@ class VIP_GUI_EXPORT VipColorScaleButton : public QToolButton
 public:
 	VipColorScaleButton(QWidget* parent = nullptr);
 	int colorPalette() const;
+	QString colorPaletteName() const;
 
 	static QMenu* generateColorScaleMenu();
 public Q_SLOTS:
 	void setColorPalette(int color_palette);
-
+	void setColorPaletteName(const QString& name);
 private Q_SLOTS:
 	void menuTriggered(QAction* act);
 
 Q_SIGNALS:
 	void colorPaletteChanged(int);
+	void colorPaletteNameChanged(const QString&);
 
 private:
 	int m_colorPalette;

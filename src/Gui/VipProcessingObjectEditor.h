@@ -536,6 +536,24 @@ private:
 	VIP_DECLARE_PRIVATE_DATA(d_data);
 };
 
+class VipConcatenateVideos;
+
+  /// Widget to edit a VipConcatenateVideos
+class VIP_GUI_EXPORT VipConcatenateVideosEditor : public QWidget
+{
+	Q_OBJECT
+public:
+	VipConcatenateVideosEditor();
+	~VipConcatenateVideosEditor();
+	void setDevice(VipConcatenateVideos*);
+
+public Q_SLOTS:
+	void apply();
+
+private:
+	VIP_DECLARE_PRIVATE_DATA(d_data);
+};
+
 /// Widget to edit a VipOperationBetweenPlayers
 class VIP_GUI_EXPORT VipOperationBetweenPlayersEditor : public QWidget
 {

@@ -33,6 +33,7 @@
 #include "VipDisplayArea.h"
 #include "VipPlayer.h"
 #include "VipProgress.h"
+#include "VipProgressWidget.h"
 
 #include <QApplication>
 #include <QBoxLayout>
@@ -1256,6 +1257,8 @@ public:
 	bool changeModality;
 	bool isModal{false}; 
 
+	QMap<QThread*, QPointer<VipProgressWidget>> threadProgress;
+
 	ProgressWidget* find(VipProgress* p) const
 	{
 		for (int i = 0; i < progresses.size(); ++i)
@@ -1270,6 +1273,7 @@ VipMultiProgressWidget::VipMultiProgressWidget(VipMainWindow* window)
 {
 	setWindowTitle("Operations");
 	setObjectName("Operations");
+	setAllowedAreas(Qt::NoDockWidgetArea);
 
 	VIP_CREATE_PRIVATE_DATA(d_data);
 	d_data->status.setText("No operation to display at this time");
@@ -1408,6 +1412,20 @@ bool VipMultiProgressWidget::eventFilter(QObject * obj, QEvent * evt)
 	return false;
 }
 
+void VipMultiProgressWidget::addProgressWidget(VipProgressWidget* w, QThread* th)
+{
+	d_data->threadProgress[th] = w;
+}
+void VipMultiProgressWidget::removeProgressWidget(VipProgressWidget* w)
+{
+	for (auto it = d_data->threadProgress.begin(); it != d_data->threadProgress.end();) {
+		if (it.value() == w || !it.value())
+			it = d_data->threadProgress.erase(it);
+		else
+			++it;
+	}
+}
+
 
 void VipMultiProgressWidget::changeModality(Qt::WindowModality modality)
 {
@@ -1466,21 +1484,30 @@ void VipMultiProgressWidget::updateModality()
 void VipMultiProgressWidget::cancelRequested()
 {
 	// make sure to cancel all sub operations
-	bool start_cancel = false;
+	//bool start_cancel = false;
 	for (int i = 0; i < d_data->progresses.size(); ++i) {
-		if (start_cancel) {
+		//TEST: comment
+		//if (start_cancel) {
 			if (d_data->progresses[i]->progress)
 				d_data->progresses[i]->progress->cancelRequested();
-		}
-		else if (sender() == &d_data->progresses[i]->cancel) {
-			start_cancel = true;
-		}
+		//}
+		//else if (sender() == &d_data->progresses[i]->cancel) {
+		//	start_cancel = true;
+		//}
 	}
 }
 
 void VipMultiProgressWidget::addProgress(QObjectPointer ptr)
 {
 	if (VipProgress* p = qobject_cast<VipProgress*>(ptr.data())) {
+
+		// Check bypass VipProgressWidget
+		auto it = d_data->threadProgress.find(ptr->thread());
+		if (it != d_data->threadProgress.end() && it.value()) {
+			it.value()->addProgress(ptr);
+			return;
+		}
+
 		ProgressWidget* w = d_data->reuse.size() ? d_data->reuse.first() : new ProgressWidget(p, this);
 		w->setProgress(p);
 
@@ -1491,7 +1518,7 @@ void VipMultiProgressWidget::addProgress(QObjectPointer ptr)
 
 		d_data->status.hide();
 		d_data->progresses.append(w);
-		d_data->progresses.back()->progressBar.setRange(p->min(), p->max());
+		d_data->progresses.back()->progressBar.setRange(0, 100); //TEST// p->min(), p->max());
 		d_data->progresses.back()->text.setText(p->text());
 
 		d_data->progresses.back()->show();
@@ -1504,6 +1531,15 @@ void VipMultiProgressWidget::addProgress(QObjectPointer ptr)
 void VipMultiProgressWidget::removeProgress(QObjectPointer ptr)
 {
 	VipProgress* p = qobject_cast<VipProgress*>(ptr.data());
+
+	// Check bypass VipProgressWidget
+	if (p) {
+		auto it = d_data->threadProgress.find(p->thread());
+		if (it != d_data->threadProgress.end() && it.value()) {
+			it.value()->removeProgress(p);
+			return;
+		}
+	}
 
 	// remove all invalid progress bar
 	for (int i = 0; i < d_data->progresses.size(); ++i) {
@@ -1537,6 +1573,15 @@ void VipMultiProgressWidget::removeProgress(QObjectPointer ptr)
 void VipMultiProgressWidget::setText(QObjectPointer ptr, const QString& text)
 {
 	if (VipProgress* p = qobject_cast<VipProgress*>(ptr.data())) {
+
+		// Check bypass VipProgressWidget
+		auto it = d_data->threadProgress.find(p->thread());
+		if (it != d_data->threadProgress.end() && it.value()) {
+			it.value()->setText(p,text);
+			return;
+		}
+		
+
 		if (ProgressWidget* w = d_data->find(p)) {
 			bool reset_size = p->isModal();
 			if (text.size() && w->text.isHidden()) {
@@ -1557,6 +1602,14 @@ void VipMultiProgressWidget::setText(QObjectPointer ptr, const QString& text)
 void VipMultiProgressWidget::setValue(QObjectPointer ptr, int value)
 {
 	if (VipProgress* p = qobject_cast<VipProgress*>(ptr.data())) {
+
+		// Check bypass VipProgressWidget
+		auto it = d_data->threadProgress.find(p->thread());
+		if (it != d_data->threadProgress.end() && it.value()) {
+			it.value()->setValue(p, value);
+			return;
+		}
+
 		if (ProgressWidget* w = d_data->find(p)) {
 			if (w->progressBar.isHidden()) {
 				w->setProgressBarVisible(true);
@@ -1574,6 +1627,14 @@ void VipMultiProgressWidget::setValue(QObjectPointer ptr, int value)
 void VipMultiProgressWidget::setCancelable(QObjectPointer ptr, bool cancelable)
 {
 	if (VipProgress* p = qobject_cast<VipProgress*>(ptr.data())) {
+
+		// Check bypass VipProgressWidget
+		auto it = d_data->threadProgress.find(p->thread());
+		if (it != d_data->threadProgress.end() && it.value()) {
+			it.value()->setCancelable(p, cancelable);
+			return;
+		}
+
 		if (ProgressWidget* w = d_data->find(p))
 			w->cancel.setVisible(cancelable);
 	}
@@ -1582,6 +1643,13 @@ void VipMultiProgressWidget::setCancelable(QObjectPointer ptr, bool cancelable)
 void VipMultiProgressWidget::setModal(QObjectPointer ptr, bool modal)
 {
 	if (VipProgress* p = qobject_cast<VipProgress*>(ptr.data())) {
+
+		// Check bypass VipProgressWidget
+		auto it = d_data->threadProgress.find(p->thread());
+		if (it != d_data->threadProgress.end() && it.value()) {
+			return;
+		}
+
 		if (ProgressWidget* w = d_data->find(p)) {
 			// set modal
 			if (modal && !d_data->modalWidgets.contains(w)) {

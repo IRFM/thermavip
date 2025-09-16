@@ -358,7 +358,20 @@ public:
 				setCurrentItem(item(0));
 
 			int height = sizeHintForRow(0) * count() + 2 * frameWidth() + 10;
-			setFixedSize(edit->width(),qMin(height,800));
+			int w = sizeHintForColumn(0) + 10;
+			if (w < edit->width())
+				w = edit->width();
+			if (w > 600)
+				w = 600;
+			
+			QPoint global_pos;
+			if (edit->parentWidget())
+				global_pos = edit->parentWidget()->mapToGlobal(edit->pos());
+			else
+				global_pos = edit->pos();
+			this->move(global_pos + QPoint(0, 5 + edit->height()) - QPoint((w - edit->width())/2, 0));
+
+			setFixedSize(w,qMin(height,800));
 		}
 	}
 	bool setSelectionToLineEdit(bool try_open)
@@ -501,7 +514,6 @@ class VipSearchLineEdit::PrivateData
 {
 public:
 	PopupListWidget* history;
-	//QAction* open;
 	QAction* displayHistory;
 };
 
@@ -517,16 +529,13 @@ VipSearchLineEdit::VipSearchLineEdit(QWidget* parent)
 
 	this->setStyleSheet("QLineEdit{border-radius:5px;}");
 	this->setClearButtonEnabled(true);
-	
+	this->setMinimumWidth(600);
 
-	//d_data->open = this->addAction(vipIcon("open.png"), QLineEdit::LeadingPosition);
-	//d_data->open->setToolTip("Open path");
 	d_data->displayHistory = this->addAction(vipIcon("search.png"), QLineEdit::TrailingPosition);
 	d_data->displayHistory->setToolTip("Display history");
 	
 	d_data->history = new PopupListWidget(this);
 	
-	//connect(d_data->open, SIGNAL(triggered(bool)), this, SLOT(returnPressed()));
 	connect(d_data->displayHistory, SIGNAL(triggered(bool)), this, SLOT(displayHistory()));
 	connect(this, SIGNAL(textChanged(const QString &)), this, SLOT(textEntered()));
 
@@ -621,6 +630,7 @@ bool VipSearchLineEdit::event(QEvent* event)
 			return true;
 		}
 	}
+
 	return QLineEdit::event( event);
 }
 
@@ -652,6 +662,15 @@ bool VipSearchLineEdit::eventFilter(QObject* watched, QEvent* event)
 				d_data->history->hide();
 		}
 	}
+
+	if (event->type() == QEvent::Resize ) {
+		int w = vipGetMainWindow()->width() / 3;
+		if (w > 600)
+			w = 600;
+		this->setMinimumWidth(w);
+		this->setMaximumWidth(w);
+	}
+
 	return false;
 }
 

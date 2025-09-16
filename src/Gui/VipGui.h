@@ -159,7 +159,7 @@ public:
 	int itemPaletteFactor() const;
 	bool videoPlayerShowAxes() const;
 	Vip::PlayerLegendPosition legendPosition() const;
-	VipLinearColorMap::StandardColorMap playerColorScale() const;
+	QString playerColorScale() const;
 	VipPlotArea2D* defaultPlotArea() const;
 	VipPlotCurve* defaultCurve() const;
 	void applyDefaultPlotArea(VipPlotArea2D* area);
@@ -198,7 +198,7 @@ public Q_SLOTS:
 	void setItemPaletteFactor(int);
 	void setVideoPlayerShowAxes(bool);
 	void setLegendPosition(Vip::PlayerLegendPosition pos);
-	void setPlayerColorScale(VipLinearColorMap::StandardColorMap);
+	void setPlayerColorScale(const QString &);
 	void setDisplayTimeOffset(bool);
 	void setDisplayType(VipValueToTime::DisplayType);
 	void setDefaultEditorFont(const QFont& font);

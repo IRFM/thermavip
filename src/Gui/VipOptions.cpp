@@ -408,7 +408,7 @@ public:
 	VipTextWidget *editorFont;
 
 	QGroupBox* players;
-	QComboBox* colorMaps;
+	VipColorScaleButton* colorMaps;
 	QToolButton* showScale;
 
 	QGroupBox* roi;
@@ -471,26 +471,8 @@ AppearanceSettings::AppearanceSettings(QWidget* parent)
 	d_data->general->setLayout(glay);
 
 	d_data->players = createGroup("Video player display");
-	d_data->colorMaps = new QComboBox();
+	d_data->colorMaps = new VipColorScaleButton();
 	d_data->showScale = new QToolButton();
-
-	d_data->colorMaps->addItem(colorMapPixmap(VipLinearColorMap::Autumn, QSize(20, 20)), "Autumn");
-	d_data->colorMaps->addItem(colorMapPixmap(VipLinearColorMap::Bone, QSize(20, 20)), "Bone");
-	d_data->colorMaps->addItem(colorMapPixmap(VipLinearColorMap::BuRd, QSize(20, 20)), "BuRd");
-	d_data->colorMaps->addItem(colorMapPixmap(VipLinearColorMap::Cool, QSize(20, 20)), "Cool");
-	d_data->colorMaps->addItem(colorMapPixmap(VipLinearColorMap::Copper, QSize(20, 20)), "Copper");
-	d_data->colorMaps->addItem(colorMapPixmap(VipLinearColorMap::Gray, QSize(20, 20)), "Gray");
-	d_data->colorMaps->addItem(colorMapPixmap(VipLinearColorMap::Hot, QSize(20, 20)), "Hot");
-	d_data->colorMaps->addItem(colorMapPixmap(VipLinearColorMap::Hsv, QSize(20, 20)), "Hsv");
-	d_data->colorMaps->addItem(colorMapPixmap(VipLinearColorMap::Jet, QSize(20, 20)), "Jet");
-	d_data->colorMaps->addItem(colorMapPixmap(VipLinearColorMap::Fusion, QSize(20, 20)), "Fusion");
-	d_data->colorMaps->addItem(colorMapPixmap(VipLinearColorMap::Pink, QSize(20, 20)), "Pink");
-	d_data->colorMaps->addItem(colorMapPixmap(VipLinearColorMap::Rainbow, QSize(20, 20)), "Rainbow");
-	d_data->colorMaps->addItem(colorMapPixmap(VipLinearColorMap::Spring, QSize(20, 20)), "Spring");
-	d_data->colorMaps->addItem(colorMapPixmap(VipLinearColorMap::Summer, QSize(20, 20)), "Summer");
-	d_data->colorMaps->addItem(colorMapPixmap(VipLinearColorMap::Sunset, QSize(20, 20)), "Sunset");
-	d_data->colorMaps->addItem(colorMapPixmap(VipLinearColorMap::White, QSize(20, 20)), "White");
-	d_data->colorMaps->addItem(colorMapPixmap(VipLinearColorMap::Winter, QSize(20, 20)), "Winter");
 	d_data->colorMaps->setToolTip("Color scale used for videos (like infrared ones)");
 	d_data->showScale->setToolTip("Show/hide axes for video players");
 	d_data->showScale->setIcon(vipIcon("show_axes.png"));
@@ -624,7 +606,7 @@ void AppearanceSettings::updatePage()
 	d_data->editorFont->setText(t);
 
 	// Video player settings
-	d_data->colorMaps->setCurrentIndex(VipGuiDisplayParamaters::instance()->playerColorScale());
+	d_data->colorMaps->setColorPaletteName(VipGuiDisplayParamaters::instance()->playerColorScale());
 	d_data->showScale->setChecked(VipGuiDisplayParamaters::instance()->videoPlayerShowAxes());
 
 	// ROI settings
@@ -661,21 +643,6 @@ QPixmap AppearanceSettings::applyFactor(const QImage& img, int factor)
 	return QPixmap::fromImage(res);
 }
 
-QPixmap AppearanceSettings::colorMapPixmap(int color_map, const QSize& size)
-{
-	VipLinearColorMap* map = VipLinearColorMap::createColorMap(VipLinearColorMap::StandardColorMap(color_map));
-	if (map) {
-		QPixmap pix(size);
-		QPainter p(&pix);
-		VipScaleMap sc;
-		sc.setScaleInterval(0, size.height());
-		VipPainter::drawColorBar(&p, *map, VipInterval(0, size.height()), sc, Qt::Vertical, QRectF(0, 0, size.width(), size.height()));
-		delete map;
-		return pix;
-	}
-	return QPixmap();
-}
-
 void AppearanceSettings::applyPage()
 {
 	// General settings
@@ -697,7 +664,7 @@ void AppearanceSettings::applyPage()
 		e->setFont(f);
 
 	// Video player settings
-	VipGuiDisplayParamaters::instance()->setPlayerColorScale(VipLinearColorMap::StandardColorMap(d_data->colorMaps->currentIndex()));
+	VipGuiDisplayParamaters::instance()->setPlayerColorScale(d_data->colorMaps->colorPaletteName());
 	VipGuiDisplayParamaters::instance()->setVideoPlayerShowAxes(d_data->showScale->isChecked());
 
 	// ROI settings

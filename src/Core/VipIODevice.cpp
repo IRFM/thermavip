@@ -2272,9 +2272,8 @@ void VipProcessingPool::stop()
 			else
 				vipProcessEvents(nullptr, 10);
 		}
-
-		d_data->thread.wait();
-		emitProcessingChanged();
+		d_data->thread.wait();		
+		//emitProcessingChanged();
 	}
 }
 

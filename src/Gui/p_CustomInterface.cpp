@@ -39,6 +39,7 @@
 #include "VipMimeData.h"
 #include "VipMultiPlotWidget2D.h"
 #include "VipPlotMimeData.h"
+#include "VipProgressWidget.h"
 
 #include <qapplication.h>
 #include <qboxlayout.h>
@@ -255,8 +256,10 @@ static void restoreAndClose(QWidget* widget)
 {
 	VipDragWidget* drag = qobject_cast<VipDragWidget*>(VipDragWidget::fromChild(widget));
 	if (drag) {
-		if (drag->isMaximized())
+		if (drag->isMaximized()) {
+			drag->hide(); // Hide before to avoid a hugly appearance before closing
 			drag->showNormal();
+		}
 		drag->close();
 	}
 }

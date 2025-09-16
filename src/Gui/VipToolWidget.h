@@ -348,6 +348,7 @@ private:
 VipPlotToolWidgetPlayer* vipGetPlotToolWidgetPlayer(VipMainWindow* window = nullptr);
 
 class VipProgress;
+class VipProgressWidget;
 
 /// @brief A VipToolWidget that displays one or more progress bars.
 ///
@@ -358,6 +359,7 @@ class VIP_GUI_EXPORT VipMultiProgressWidget : public VipToolWidget
 {
 	Q_OBJECT
 	friend class VipProgress;
+	friend class VipProgressWidget;
 
 public:
 	VipMultiProgressWidget(VipMainWindow* window);
@@ -385,6 +387,9 @@ private Q_SLOTS:
 
 private:
 	void changeModality(Qt::WindowModality);
+
+	void addProgressWidget(VipProgressWidget*, QThread* th);
+	void removeProgressWidget(VipProgressWidget*);
 
 	VIP_DECLARE_PRIVATE_DATA(d_data);
 };

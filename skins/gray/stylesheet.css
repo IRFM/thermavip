@@ -170,6 +170,15 @@ VipToolWidgetScrollArea[status="1"] {
 }
 
 
+VipProgressWidget {
+	background-color: rgba(210,210,210,100);
+}
+VipProgressWidgetInternal {
+	background-color: rgba(210,210,210,200);
+	margin: 10px;
+}
+
+
 VipPageItems::item {
   padding: 10px 0;
 }

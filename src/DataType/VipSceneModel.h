@@ -57,6 +57,7 @@ class VipShapeStatistics
 public:
 	enum Statistic
 	{
+		None = 0,
 		Minimum = 0x0001,
 		Maximum = 0x0002,
 		Mean = 0X0004,

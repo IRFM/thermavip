@@ -2299,7 +2299,7 @@ void VipPlayerDBAccess::shapeDestroyed(VipPlotShape* sh)
 	}
 
 	// remove ALL drawn time line
-	if (VipDisplayPlayerArea* a = VipDisplayPlayerArea::fromChildWidget(m_player)) {
+	if (VipDisplayPlayerArea* a = VipDisplayPlayerArea::fromChild(m_player)) {
 		QList<VipTimeRangeListItem*> items = a->playWidget()->area()->findItems<VipTimeRangeListItem*>(QString(), 2, 1);
 		for (qsizetype i = 0; i < items.size(); ++i) {
 			if (/*VipEventDevice* dev =*/ qobject_cast<VipEventDevice*>(items[i]->device())) {
@@ -2318,7 +2318,7 @@ void VipPlayerDBAccess::resetDrawEventTimeLine()
 	for (qsizetype i = 0; i < shapes.size(); ++i) {
 		pshapes[shapes[i]->rawData().group()].append(shapes[i]);
 	}
-	if (VipDisplayPlayerArea* a = VipDisplayPlayerArea::fromChildWidget(m_player)) {
+	if (VipDisplayPlayerArea* a = VipDisplayPlayerArea::fromChild(m_player)) {
 		QList<VipTimeRangeListItem*> items = a->playWidget()->area()->findItems<VipTimeRangeListItem*>(QString(), 2, 1);
 		for (qsizetype i = 0; i < items.size(); ++i) {
 			if (VipEventDevice* dev = qobject_cast<VipEventDevice*>(items[i]->device())) {
@@ -2341,7 +2341,7 @@ void VipPlayerDBAccess::itemSelected(VipPlotItem*)
 	for (qsizetype i = 0; i < shapes.size(); ++i) {
 		pshapes[shapes[i]->rawData().group()].append(shapes[i]);
 	}
-	if (VipDisplayPlayerArea* a = VipDisplayPlayerArea::fromChildWidget(m_player)) {
+	if (VipDisplayPlayerArea* a = VipDisplayPlayerArea::fromChild(m_player)) {
 		QList<VipTimeRangeListItem*> items = a->playWidget()->area()->findItems<VipTimeRangeListItem*>(QString(), 2, 1);
 		for (qsizetype i = 0; i < items.size(); ++i) {
 			if (VipEventDevice* dev = qobject_cast<VipEventDevice*>(items[i]->device())) {

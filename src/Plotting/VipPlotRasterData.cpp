@@ -41,6 +41,7 @@
 
 #include <qapplication.h>
 #include <qthread.h>
+#include <qthreadpool.h>
 
 template<class T>
 inline bool is_valid(T)
@@ -96,30 +97,6 @@ inline T cast(vip_double value)
 	return CastValue<T>::cast(value);
 }
 
-/*#include "immintrin.h"
-
-// Add missing defines with msvc
-#ifdef _MSC_VER
-
-#ifdef __AVX2__
-// AVX2
-#elif defined(__AVX__)
-// AVX
-#elif (defined(_M_AMD64) || defined(_M_X64))
-// SSE2 x64
-#define __SSE2__
-#elif _M_IX86_FP == 2
-// SSE2 x32
-#define __SSE2__
-#elif _M_IX86_FP == 1
-// SSE x32
-#define __SSE__
-#else
-// nothing
-#endif
-
-#endif
-*/
 
 template<class T>
 VipInterval computeBounds(const T* ptr, int size, const VipInterval& interval)
@@ -366,44 +343,6 @@ public:
 		const void* ptr = array.constData();
 		return vipArrayMinMax(ptr, array.dataType(), size, interval);
 	}
-
-	// virtual bool applyColorMap(const VipColorMap * map, const VipInterval & interval, const QRect & src, QImage & out, int num_threads) const
-	// {
-	// if (out.format() != QImage::Format_ARGB32 && out.format() != QImage::Format_ARGB32_Premultiplied)
-	// return false;
-	// if (out.isNull())
-	// return false;
-	// if (array.isEmpty())
-	// return false;
-	//
-	// QRect src_rect = src & QRect(0, 0, array.shape(1), array.shape(0));
-	// if (src_rect.isEmpty())
-	// return false;
-	//
-	// switch (array.dataType())
-	// {
-	// case QMetaType::UChar: return ::applyColorMap(map, interval, src_rect, array.shape(1), (quint8*)array.constData(), (QRgb*)out.bits(), out.width(), out.height(), num_threads); break;
-	// case QMetaType::Char: return ::applyColorMap(map, interval, src_rect, array.shape(1), (qint8*)array.constData(), (QRgb*)out.bits(), out.width(), out.height(), num_threads); break;
-	// case QMetaType::SChar: return ::applyColorMap(map, interval, src_rect, array.shape(1), (qint8*)array.constData(), (QRgb*)out.bits(), out.width(), out.height(), num_threads); break;
-	// case QMetaType::UShort: return ::applyColorMap(map, interval, src_rect, array.shape(1), (quint16*)array.constData(), (QRgb*)out.bits(), out.width(), out.height(), num_threads); break;
-	// case QMetaType::Short: return ::applyColorMap(map, interval, src_rect, array.shape(1), (qint16*)array.constData(), (QRgb*)out.bits(), out.width(), out.height(), num_threads); break;
-	// case QMetaType::UInt: return ::applyColorMap(map, interval, src_rect, array.shape(1), (quint32*)array.constData(), (QRgb*)out.bits(), out.width(), out.height(), num_threads); break;
-	// case QMetaType::Int: return ::applyColorMap(map, interval, src_rect, array.shape(1), (qint32*)array.constData(), (QRgb*)out.bits(), out.width(), out.height(), num_threads); break;
-	// case QMetaType::ULong: return ::applyColorMap(map, interval, src_rect, array.shape(1), (unsigned long*)array.constData(), (QRgb*)out.bits(), out.width(), out.height(), num_threads); break;
-	// case QMetaType::Long: return ::applyColorMap(map, interval, src_rect, array.shape(1), (long*)array.constData(), (QRgb*)out.bits(), out.width(), out.height(), num_threads); break;
-	// case QMetaType::ULongLong: return ::applyColorMap(map, interval, src_rect, array.shape(1), (quint64*)array.constData(), (QRgb*)out.bits(), out.width(), out.height(), num_threads); break;
-	// case QMetaType::LongLong: return ::applyColorMap(map, interval, src_rect, array.shape(1), (qint64*)array.constData(), (QRgb*)out.bits(), out.width(), out.height(), num_threads); break;
-	// case QMetaType::Double: return ::applyColorMap(map, interval, src_rect, array.shape(1), (double*)array.constData(), (QRgb*)out.bits(), out.width(), out.height(), num_threads); break;
-	// case QMetaType::Float: return ::applyColorMap(map, interval, src_rect, array.shape(1), (float*)array.constData(), (QRgb*)out.bits(), out.width(), out.height(), num_threads); break;
-	// default:
-	// {
-	// if(array.canConvert<double>())
-	//	return ::applyColorMap(map, interval, src_rect, array.shape(1), (double*)array.toDouble().constData(), (QRgb*)out.bits(), out.width(), out.height(), num_threads);
-	// break;
-	// }
-	// }
-	// return false;
-	// }
 };
 
 class VipRasterData::PrivateData

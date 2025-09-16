@@ -897,14 +897,16 @@ void VipTimeRangeListItem::drawSelected(QPainter* p, const VipCoordinateSystemPt
 
 		static bool is_dark_skin = isDarkSkin(this->view());
 
-		// TEST: draw items
+		// draw items
 		for (const VipTimeRangeItem* it : d_data->items) {
 			it->draw(p, m);
 		}
 
-		// draw the device name
+		// set Z value
 		if (zValue() <= d_data->items.first()->zValue())
 			const_cast<VipTimeRangeListItem*>(this)->setZValue(d_data->items.first()->zValue() + 1);
+
+		VipIODevice* d = device();
 
 		QRectF bounding = itemsBoundingRect();
 		QPointF left = bounding.bottomLeft() + QPointF(20, -1); // m->transform(QPointF(d_data->items.first()->left(), this->heights().first));
@@ -927,16 +929,19 @@ void VipTimeRangeListItem::drawSelected(QPainter* p, const VipCoordinateSystemPt
 			f.setBold(true);
 			f.setPointSizeF(bounding.height() / 1.4);
 			p->setFont(f);
-			p->drawText(left, device()->name());
+			if (d)
+				p->drawText(left, d->name());
 			p->restore();
 		}
 
 		// set the items color if necessary
-		QVariant v = device()->property("_vip_color");
-		if (v.userType() == qMetaTypeId<QColor>()) {
-			QColor c = v.value<QColor>();
-			if (c != Qt::transparent) {
-				const_cast<VipTimeRangeListItem*>(this)->setColor(c);
+		if (d) {
+			QVariant v = d->property("_vip_color");
+			if (v.userType() == qMetaTypeId<QColor>()) {
+				QColor c = v.value<QColor>();
+				if (c != Qt::transparent) {
+					const_cast<VipTimeRangeListItem*>(this)->setColor(c);
+				}
 			}
 		}
 	}
@@ -1303,24 +1308,26 @@ public:
 
 		for (; i < items.size(); ++i) {
 			if (VipTimeRangeListItem* it = qobject_cast<VipTimeRangeListItem*>(items[i]))
-				if (!(it->states() & VipTimeRangeListItem::HiddenForPlayer)) {
-					bounds = VipInterval(it->device()->firstTime(), it->device()->lastTime());
-					if (bounds.isValid()) {
-						++i;
-						break;
+				if (VipIODevice* d = it->device())
+					if (!(it->states() & VipTimeRangeListItem::HiddenForPlayer)) {
+						bounds = VipInterval(d->firstTime(), d->lastTime());
+						if (bounds.isValid()) {
+							++i;
+							break;
+						}
 					}
-				}
 		}
 
 		// compute the union boundaries
 
 		for (; i < items.size(); ++i) {
 			if (VipTimeRangeListItem* it = qobject_cast<VipTimeRangeListItem*>(items[i]))
-				if (!(it->states() & VipTimeRangeListItem::HiddenForPlayer)) {
-					VipInterval tmp(it->device()->firstTime(), it->device()->lastTime());
-					if (tmp.isValid())
-						bounds = bounds.unite(tmp);
-				}
+				if (VipIODevice* d = it->device())
+					if (!(it->states() & VipTimeRangeListItem::HiddenForPlayer)) {
+						VipInterval tmp(d->firstTime(), d->lastTime());
+						if (tmp.isValid())
+							bounds = bounds.unite(tmp);
+					}
 		}
 		vip_double stepSize = 0.;
 		vip_double x1 = bounds.minValue();
@@ -1386,6 +1393,7 @@ public:
 	int adjustFactor;
 
 	bool dirtyProcessingPool;
+	QTimer updateDeviceTimer;
 };
 
 VipPlayerArea::VipPlayerArea()
@@ -1487,6 +1495,10 @@ VipPlayerArea::VipPlayerArea()
 	tip->setAlignment(Qt::AlignTop | Qt::AlignRight);
 	tip->setMaxItems(1);
 	this->setPlotToolTip(tip);
+
+	d_data->updateDeviceTimer.setSingleShot(true);
+	d_data->updateDeviceTimer.setInterval(100);
+	connect(&d_data->updateDeviceTimer, SIGNAL(timeout()), this, SLOT(updateAreaDevices()));
 }
 
 VipPlayerArea::~VipPlayerArea()
@@ -1666,7 +1678,16 @@ VipTimeRangeListItem* VipPlayerArea::findItem(VipIODevice* device) const
 
 void VipPlayerArea::updateAreaDevices()
 {
+	d_data->dirtyProcessingPool = false;
 	updateArea(false);
+}
+void VipPlayerArea::defferedUpdateAreaDevices()
+{
+	//d_data->updateDeviceTimer.start();
+	if (!d_data->dirtyProcessingPool) {
+		d_data->dirtyProcessingPool = true;
+		QMetaObject::invokeMethod(this, "updateAreaDevices", Qt::QueuedConnection);
+	}
 }
 
 void VipPlayerArea::updateArea(bool check_item_visibility)
@@ -1742,7 +1763,8 @@ void VipPlayerArea::updateArea(bool check_item_visibility)
 		// remove items with invalid devices
 		for (int i = 0; i < d_data->items.size(); ++i)
 			if (devices.indexOf(d_data->items[i]->device()) < 0) {
-				delete d_data->items[i];
+				d_data->items[i]->setVisible(false);
+				d_data->items[i]->deleteLater();
 				d_data->items.removeAt(i);
 				--i;
 			}
@@ -1772,8 +1794,8 @@ void VipPlayerArea::setProcessingPool(VipProcessingPool* pool)
 {
 	if (pool != d_data->pool) {
 		if (d_data->pool) {
-			disconnect(d_data->pool, SIGNAL(objectAdded(QObject*)), this, SLOT(updateAreaDevices()));
-			disconnect(d_data->pool, SIGNAL(objectRemoved(QObject*)), this, SLOT(updateAreaDevices()));
+			disconnect(d_data->pool, SIGNAL(objectAdded(QObject*)), this, SLOT(defferedUpdateAreaDevices()));
+			disconnect(d_data->pool, SIGNAL(objectRemoved(QObject*)), this, SLOT(defferedUpdateAreaDevices()));
 			disconnect(d_data->pool, SIGNAL(timestampingChanged()), this, SLOT(addMissingDevices()));
 			disconnect(d_data->pool, SIGNAL(timeChanged(qint64)), this, SLOT(setTime(qint64)));
 
@@ -1791,77 +1813,10 @@ void VipPlayerArea::setProcessingPool(VipProcessingPool* pool)
 			d_data->limit1Grip->setProcessingPool(pool);
 			d_data->limit2Grip->setProcessingPool(pool);
 
-			connect(d_data->pool, SIGNAL(objectAdded(QObject*)), this, SLOT(updateAreaDevices()));	 //,Qt::QueuedConnection);
-			connect(d_data->pool, SIGNAL(objectRemoved(QObject*)), this, SLOT(updateAreaDevices())); //,Qt::DirectConnection);
+			connect(d_data->pool, SIGNAL(objectAdded(QObject*)), this, SLOT(defferedUpdateAreaDevices())); //,Qt::QueuedConnection);
+			connect(d_data->pool, SIGNAL(objectRemoved(QObject*)), this, SLOT(defferedUpdateAreaDevices())); //,Qt::DirectConnection);
 			connect(d_data->pool, SIGNAL(timeChanged(qint64)), this, SLOT(setTime64(qint64)), Qt::QueuedConnection);
 			connect(d_data->pool, SIGNAL(timestampingChanged()), this, SLOT(addMissingDevices()), Qt::QueuedConnection);
-
-			// VipProcessingObjectList lst = pool->processing("VipIODevice");
-			//
-			// //update time slider
-			// qint64 time = d_data->pool->time();
-			// if (time < d_data->pool->firstTime())
-			// time = d_data->pool->firstTime();
-			// else if (time > d_data->pool->lastTime())
-			// time = d_data->pool->lastTime();
-			//
-			// d_data->timeMarker->setRawData(QPointF(time, 0));
-			// d_data->timeSliderGrip->blockSignals(true);
-			// d_data->timeSliderGrip->setValue(time);
-			// d_data->timeSliderGrip->blockSignals(false);
-			//
-			// int count = 0;
-			//
-			//
-			// for(int i=0; i < lst.size(); ++i)
-			// {
-			// VipIODevice * device = qobject_cast<VipIODevice*>(lst[i]);
-			//
-			// if( (device->openMode() & VipIODevice::ReadOnly) && device->deviceType() == VipIODevice::Temporal && device->size() != 1)
-			// {
-			// //retrieve all display object linked to this device
-			// QList<VipDisplayObject*> displays = vipListCast<VipDisplayObject*>(device->allSinks());
-			// //do not show this device time range if the display widgets are hidden
-			// bool hidden = displays.size() > 0;
-			// for(int d=0; d < displays.size(); ++d)
-			//	if(displays[d]->isVisible())
-			//	{
-			//		hidden = false;
-			//		break;
-			//	}
-			//
-			//
-			// //if the display is hidden, remove it from time computations (time window, next, previous and closest time) from the processing pool
-			// if (hidden)
-			// {
-			//	//only disable temporal devics that contribute to the processing pool time limits
-			//	if(device->deviceType() == VipIODevice::Temporal)
-			//		device->setEnabled(false);
-			//	continue;
-			// }
-			// else
-			// {
-			//	//enable the device, read the data at processing pool time if needed
-			//	bool need_reload = !device->isEnabled();
-			//	device->setEnabled( true);
-			//	if (need_reload)
-			//		device->read(pool->time());
-			// }
-			//
-			// VipTimeRangeListItem * item = new VipTimeRangeListItem();
-			// item->setAxes(d_data->timeScale,this->leftAxis(),VipCoordinateSystem::Cartesian);
-			// item->setDevice(device);
-			// item->setHeights(count + ITEM_START_HEIGHT, count+ITEM_END_HEIGHT);
-			// item->setColor(d_data->palette.color(d_data->items.size()));
-			// ++count;
-			//
-			// d_data->items << item;
-			//
-			// }
-			// }
-			//
-			// //update items visibility
-			// setTimeRangeVisible(d_data->visible);
 		}
 
 		updateArea(true);

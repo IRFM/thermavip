@@ -780,6 +780,49 @@ protected:
 	QMenu* m_menu;
 };
 
+
+
+/// @brief Edit text font and color in a unique small tool button
+class VipFontAndColor : public QLabel
+{
+	Q_OBJECT
+
+	QLabel* d_font_button;
+	QColor d_color;
+	QFont d_font;
+	int d_content = Font | Color;
+
+public:
+	enum EditableContent
+	{
+		Font = 2,
+		Color = 4
+	};
+
+	VipFontAndColor(QWidget* parent = nullptr);
+
+	QColor color() const;
+	QFont font() const;
+
+public Q_SLOTS:
+	void setColor(const QColor& c);
+	void setFont(const QFont& f);
+	void setEditableContent(int);
+
+Q_SIGNALS:
+	void changed();
+
+private Q_SLOTS:
+	void editFont();
+	void editColor();
+
+	
+protected:
+	virtual void resizeEvent(QResizeEvent* evt);
+	virtual bool eventFilter(QObject* watched, QEvent* event);
+};
+
+
 /// Widget used to edit a VipText object.
 class VIP_GUI_EXPORT VipTextWidget : public QWidget
 {

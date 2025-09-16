@@ -115,6 +115,7 @@ public:
 	bool visible;
 	bool first;
 	bool updateOnHidden;
+	bool empty = true;
 	QString playerTitle; // update parent VipAbstractPlayer title
 	qint64 previousDisplayTime;
 	qint64 lastTitleUpdate;
@@ -189,8 +190,12 @@ void VipDisplayObject::apply()
 	}
 	if (!d_data->visible && !d_data->updateOnHidden) {
 		// clear input buffer
-		inputAt(0)->allData();
-		return;
+		if (d_data->empty)
+			d_data->empty = false;
+		else {
+			inputAt(0)->allData();
+			return;
+		}
 	}
 	if (!isEnabled() || !inputAt(0)->hasNewData())
 		return;
@@ -639,21 +644,6 @@ bool VipDisplayPlotItem::isVisible() const
 			return false;
 		else if (!player->isEnabled())
 			return false;
-
-		// if the top level VipMultiDragWidget is minimized or another top level VipMultiDragWidget is maximized, return false
-		/* if (VipBaseDragWidget* bd = VipBaseDragWidget::fromChild(player))
-		{
-			if (bd->isHidden())
-				return false;
-			if(VipMultiDragWidget * mw = bd->validTopLevelMultiDragWidget())
-			{
-				if(mw->isMinimized())
-					return false;
-				else if(VipMultiDragWidget * maximized = VipDragWidgetHandler::find(mw->parentWidget())->maximizedMultiDragWidgets())
-					if(maximized != mw)
-						return false;
-			}
-		}*/
 
 		return true;
 	}

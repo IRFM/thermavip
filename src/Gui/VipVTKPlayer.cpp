@@ -5617,7 +5617,7 @@ bool VipVTKPlayer::isAutoCamera() const
 bool VipVTKPlayer::isSharedCamera() const
 {
 	bool res = false;
-	if (VipDisplayPlayerArea* area = VipDisplayPlayerArea::fromChildWidget(const_cast<VipVTKPlayer*>(this))) {
+	if (VipDisplayPlayerArea* area = VipDisplayPlayerArea::fromChild(const_cast<VipVTKPlayer*>(this))) {
 		res = area->property("_vip_sharedCamera").toBool();
 	}
 	else
@@ -5635,7 +5635,7 @@ void VipVTKPlayer::setSharedCamera(bool enable)
 	d_data->sharedCamera->blockSignals(true);
 	d_data->sharedCamera->setChecked(enable);
 	d_data->sharedCamera->blockSignals(false);
-	if (VipDisplayPlayerArea* area = VipDisplayPlayerArea::fromChildWidget((this))) {
+	if (VipDisplayPlayerArea* area = VipDisplayPlayerArea::fromChild((this))) {
 		area->setProperty("_vip_sharedCamera", enable);
 		if (enable)
 			applyThisCameraToAll();
@@ -5652,7 +5652,7 @@ void VipVTKPlayer::applyThisCameraToAll()
 
 	this->setProperty("_vip_watched", true);
 	vtkCamera* cam = view()->renderer()->GetActiveCamera();
-	if (VipDisplayPlayerArea* area = VipDisplayPlayerArea::fromChildWidget(this)) {
+	if (VipDisplayPlayerArea* area = VipDisplayPlayerArea::fromChild(this)) {
 		// Get all workspace VipVTKPlayer
 		QList<VipVTKPlayer*> pls = area->findChildren<VipVTKPlayer*>();
 

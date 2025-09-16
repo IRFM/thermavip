@@ -236,6 +236,9 @@ Q_SIGNALS:
 	void renderStarted(const VipRenderState&);
 	void renderEnded(const VipRenderState&);
 
+private Q_SLOTS:
+	void reloadPoolOnShow();
+
 private:
 	
 	VIP_DECLARE_PRIVATE_DATA(d_data);

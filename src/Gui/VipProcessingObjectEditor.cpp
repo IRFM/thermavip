@@ -47,6 +47,7 @@
 #include "VipTimer.h"
 #include "VipXmlArchive.h"
 #include "VipSet.h"
+#include "VipConcatenateVideos.h"
 
 #include <QApplication>
 #include <QBoxLayout>
@@ -930,7 +931,7 @@ public:
 		setFlags(flags() | Qt::ItemIsUserCheckable); // set checkable flag
 		setCheckState(obj->isEnabled() ? Qt::Checked : Qt::Unchecked);
 
-		if (!obj->isVisible())
+		if (!obj->isProcessingVisible())
 			setHidden(true);
 	}
 
@@ -1241,7 +1242,7 @@ void VipProcessingListEditor::setProcessingList(VipProcessingList* lst)
 		QList<VipProcessingObject*> objects = lst->processings();
 		for (int i = 0; i < objects.size(); ++i) {
 			d_data->list->addItem(new ProcessingListWidgetItem(objects[i]));
-			if (d_data->hidden.indexOf(objects[i]) >= 0 || !objects[i]->isVisible())
+			if (d_data->hidden.indexOf(objects[i]) >= 0 || !objects[i]->isProcessingVisible())
 				d_data->list->item(d_data->list->count() - 1)->setHidden(true);
 		}
 	}
@@ -1417,7 +1418,7 @@ void VipProcessingListEditor::setProcessingVisible(VipProcessingObject* obj, boo
 				item->setHidden(false);
 			else
 				item->setHidden(true);
-			item->processing->setVisible(visible);
+			item->processing->setProcessingVisible(visible);
 		}
 	}
 }
@@ -2762,6 +2763,167 @@ void VipDirectoryReaderEditor::apply()
 		r->reload();
 	}
 }
+
+
+
+class VipConcatenateVideosEditor::PrivateData
+{
+public:
+	QPointer<VipConcatenateVideos> reader;
+
+	VipFileName directory;
+	QLineEdit file_suffixes;
+	QCheckBox recursive;
+
+	QRadioButton alphabetical_order;
+	QRadioButton reversed_order;
+	QRadioButton use_trailing_number;
+
+	VipDoubleEdit start_time;
+	VipDoubleEdit end_time;
+	QSpinBox one_out_of;
+
+	QMap<const QMetaObject*, VipUniqueProcessingObjectEditor*> editors;
+	QPushButton applyToAllDevices;
+};
+
+static QGroupBox* createBox(const QString& name)
+{
+	QGroupBox* b = new QGroupBox(name);
+	b->setFlat(true);
+	QFont f = b->font();
+	f.setBold(true);
+	b->setFont(f);
+	return b;
+}
+
+VipConcatenateVideosEditor::VipConcatenateVideosEditor()
+  : QWidget()
+{
+	VIP_CREATE_PRIVATE_DATA(d_data);
+	d_data->file_suffixes.setToolTip("Supported extensions with comma separators");
+	d_data->file_suffixes.setPlaceholderText("Supported extensions");
+	d_data->recursive.setText("Read subdirectories");
+	d_data->directory.edit()->setPlaceholderText("Directory path");
+	d_data->directory.edit()->setToolTip("Select input directory");
+	d_data->directory.setMode(VipFileName::OpenDir);
+	d_data->alphabetical_order.setText("Ascending order");
+	d_data->reversed_order.setText("Descending order");
+	d_data->use_trailing_number.setText("Use trailing digits");
+	d_data->start_time.setToolTip("Start time for each sub-video, relative to video start");
+	d_data->end_time.setToolTip("End time for each sub-video, relative to video start");
+	d_data->one_out_of.setToolTip("Take one frame out of");
+	d_data->one_out_of.setRange(1, 1000000);
+
+	QGridLayout* grid = new QGridLayout();
+	int row = 0;
+
+	grid->addWidget(createBox("Input"), row++, 0, 1, 2);
+
+	grid->addWidget(&d_data->directory, row++, 0, 1, 2);
+	grid->addWidget(&d_data->file_suffixes, row++, 0, 1, 2);
+	grid->addWidget(&d_data->recursive, row++, 0, 1, 2);
+
+	grid->addWidget(createBox("Sorting order"), row++, 0, 1, 2);
+
+	grid->addWidget(&d_data->alphabetical_order, row++, 0, 1, 2);
+	grid->addWidget(&d_data->reversed_order, row++, 0, 1, 2);
+	grid->addWidget(&d_data->use_trailing_number, row++, 0, 1, 2);
+
+	grid->addWidget(createBox("Sub videos"), row++, 0, 1, 2);
+
+	grid->addWidget(new QLabel("Start time (s)"), row, 0);
+	grid->addWidget(&d_data->start_time, row++, 1);
+
+	grid->addWidget(new QLabel("End time (s)"), row, 0);
+	grid->addWidget(&d_data->end_time, row++, 1);
+
+	grid->addWidget(new QLabel("Skip frames"), row, 0);
+	grid->addWidget(&d_data->one_out_of, row++, 1);
+
+	QVBoxLayout *vlay = new QVBoxLayout();
+	vlay->setContentsMargins(0, 0, 0, 0);
+	vlay->addLayout(grid);
+	vlay->addStretch(1);
+
+	setLayout(vlay);
+
+	d_data->alphabetical_order.setChecked(true);
+}
+
+VipConcatenateVideosEditor::~VipConcatenateVideosEditor()
+{
+
+}
+	
+void VipConcatenateVideosEditor::setDevice(VipConcatenateVideos* d)
+{
+	if (d == d_data->reader)
+		return;
+
+	d_data->reader = d;
+	if(!d)
+		return;
+
+	d_data->start_time.setValue(d->propertyAt(0)->value<double>());
+	d_data->end_time.setValue(d->propertyAt(1)->value<double>());
+	d_data->one_out_of.setValue(d->propertyAt(2)->value<int>());
+}
+
+	
+void VipConcatenateVideosEditor::apply()
+{
+	if (!d_data->reader)
+		return;
+
+	d_data->reader->propertyAt(0)->setData(d_data->start_time.value());
+	d_data->reader->propertyAt(1)->setData(d_data->end_time.value());
+	d_data->reader->propertyAt(2)->setData(d_data->one_out_of.value());
+
+	VipConcatenateVideos::SortOption opt = VipConcatenateVideos::Sorted;
+	if (d_data->reversed_order.isChecked())
+		opt = VipConcatenateVideos::Reversed;
+	else if (d_data->use_trailing_number.isChecked())
+		opt = VipConcatenateVideos::UseTrailingNumber;
+
+	QString dirname = d_data->directory.filename();
+	bool recursive = d_data->recursive.isChecked();
+
+	QFileInfo info(dirname);
+	if (dirname.isEmpty() || !info.isDir()) {
+		VIP_LOG_ERROR("Invalid input directory: ", dirname);
+		return;
+	}
+
+	QString suffixes = d_data->file_suffixes.text();
+	suffixes.replace(" ", ""); // remove spaces
+	QStringList suffix_list = suffixes.split(",", VIP_SKIP_BEHAVIOR::SkipEmptyParts);
+
+	auto files = VipConcatenateVideos::listFiles(d_data->reader->mapFileSystem().data(), dirname, suffix_list, opt, recursive);
+
+	for (const QString & f : files)
+		vip_debug("%s ", QFileInfo(f).fileName().toLatin1().data());
+	vip_debug("\n");
+
+	// Extract all found suffixes
+	QSet<QString> found_suffixes;
+	for (const QString& f : files) {
+		QString s = QFileInfo(f).suffix();
+		if (!s.isEmpty())
+			found_suffixes.insert(s);
+	}
+
+	// Now, for each found extension, set the template
+	for (const QString &suffix : found_suffixes) {
+		VipPath name = "test." + suffix;
+		name.setMapFileSystem(d_data->reader->mapFileSystem());
+		if(VipIODevice* dev = VipCreateDevice::create(name))
+			d_data->reader->setSuffixTemplate(suffix, dev);
+	}
+
+	d_data->reader->setPath(files.join(";"));
+}
+
 
 class VipOperationBetweenPlayersEditor::PrivateData
 {

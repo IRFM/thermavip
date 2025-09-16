@@ -34,6 +34,7 @@
 #include "VipGui.h"
 #include "VipLogging.h"
 #include "VipUniqueId.h"
+#include "VipProgressWidget.h"
 
 #include <QAction>
 #include <QApplication>
@@ -1627,11 +1628,16 @@ static QList<int> addNewSplitterSize(QSplitter* s, int index, int* new_widget_si
 	return res;
 }
 
+
+
 bool VipDragWidgetHandle::dropMimeData(const QMimeData* mime)
 {
 	// check that this widget accept drop
 	if (!multiDragWidget->supportReceiveDrop())
 		return false;
+
+	if (vipHandleAsyncDrop(this, mime))
+		return true;
 
 	bool maximized = false;
 	VipBaseDragWidget* widget = nullptr;

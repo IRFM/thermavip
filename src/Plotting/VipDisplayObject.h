@@ -114,6 +114,11 @@ public:
 	/// @brief Reimplemented from VipProcessingObject
 	virtual bool useEventLoop() const { return true; }
 
+public Q_SLOTS:
+	/// @brief Recompute the visibility status of this item.
+	/// You should no need to call this yourself.
+	void checkVisibility();
+
 protected:
 	/// Reimplement this function to perform the drawing based on input list in the GUI thread.
 	virtual void displayData(const VipAnyDataList&) {}
@@ -129,9 +134,6 @@ protected:
 Q_SIGNALS:
 	/// Emitted when a display operation has finished.
 	void displayed(const VipAnyDataList&);
-
-protected Q_SLOTS:
-	void checkVisibility();
 
 private Q_SLOTS:
 	void display(const VipAnyDataList&);
