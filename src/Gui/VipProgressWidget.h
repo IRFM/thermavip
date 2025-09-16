@@ -193,7 +193,7 @@ bool vipHandleAsyncDrop(T* target_handler, F handle_drop, const QMimeData* mime)
 			QPointer<VipDisplayPlayerArea> pwks = wks;
 
 			auto fun1 = m->function();
-			auto fun2 = [handle_drop, handler, pwks, m, coord](const VipProcessingObjectList& proc) {
+			auto fun2 = [handle_drop, handler, pwks, coord](const VipProcessingObjectList& proc) {
 				if (!handler || !pwks) {
 					qDeleteAll(proc);
 					return;

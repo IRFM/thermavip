@@ -52,6 +52,7 @@
 #include "VipStandardWidgets.h"
 #include "VipSearchLineEdit.h"
 #include "VipProcessingObjectEditor.h"
+#include "VipPlayer.h"
 
 #ifdef VIP_WITH_VTK
 #include "VipVTKPlayer.h"
@@ -358,7 +359,7 @@ void vipDisplayOptions()
 	auto tab = vipGetMainWindow()->displayArea()->displayTabWidget();
 	for (int i = 0; i < tab->count(); ++i) {
 		if (VipDisplayPlayerArea* a = qobject_cast<VipDisplayPlayerArea*>(tab->widget(i))) {
-			if (VipOptions* opts = a->findChild<VipOptions*>()) {
+			if ( a->findChild<VipOptions*>()) {
 				tab->setCurrentIndex(i);
 				return;
 			}
