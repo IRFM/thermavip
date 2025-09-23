@@ -58,7 +58,7 @@ private:
 	void setProgressBarVisible(bool visible);
 	bool progressBarVisible() const;
 
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 /// @brief A progress bar displayed on top of a VipDisplayPlayerArea (workspace)
@@ -171,7 +171,7 @@ private:
 	void recomputeCentralWidgetSize();
 	void setThread(QThread*);
 
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 

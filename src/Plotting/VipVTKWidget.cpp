@@ -97,7 +97,7 @@ public:
 VipVTKWidget::VipVTKWidget(QWidget* p)
   : QOpenGLWidget(p)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 
 	d_data->IrenAdapter.reset(new QVTKInteractorAdapter(this));
 	d_data->Connect = vtkSmartPointer<vtkEventQtSlotConnect>::New();

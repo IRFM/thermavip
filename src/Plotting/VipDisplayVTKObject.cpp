@@ -67,7 +67,7 @@ public:
 VipPlotVTKObject::VipPlotVTKObject(const VipText & title)
 	:VipPlotItemDataType(title)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 
 	this->setItemAttribute(VipPlotItem::ColorMapAutoScale);
 	this->setItemAttribute(VipPlotItem::HasLegendIcon);
@@ -795,7 +795,7 @@ public:
 VipPlotFieldOfView::VipPlotFieldOfView(const VipText & title)
 	:VipPlotItemDataType(title)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 	this->setRenderHints(QPainter::Antialiasing);
 	this->setItemAttribute(VipPlotItem::HasToolTip, true);
 	this->setItemAttribute(VipPlotItem::HasLegendIcon,false);
@@ -1000,7 +1000,7 @@ public:
 VipDisplayFieldOfView::VipDisplayFieldOfView(QObject * parent)
 	:VipDisplayPlotItem(parent)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 	setItem(new VipPlotFieldOfView());
 }
 

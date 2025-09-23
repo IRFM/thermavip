@@ -330,7 +330,7 @@ private:
 	void add(VipProcessingObject*);
 	void remove(VipProcessingObject*);
 
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 /// @brief VipDataList is an abstract class representing a list of VipAnyData going to the input of a VipProcessingObject.
@@ -667,7 +667,7 @@ Q_SIGNALS:
 	void dataSent(VipProcessingIO* io, const VipAnyData& data);
 
 private:
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 VIP_REGISTER_QOBJECT_METATYPE(VipConnection*)
@@ -2069,7 +2069,7 @@ private:
 	void runNoLock();
 	VipSpinlock& runLock() noexcept;
 	
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 template<class ProcessingType>
@@ -2470,7 +2470,7 @@ protected:
 private:
 	void computeParams();
 
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 VIP_REGISTER_QOBJECT_METATYPE(VipProcessingList*)
@@ -2546,7 +2546,7 @@ private Q_SLOTS:
 	void dirtyShape();
 
 private:
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 /// @brief Processing taking any kind and number of inputs, and send them one by one to the unique output.

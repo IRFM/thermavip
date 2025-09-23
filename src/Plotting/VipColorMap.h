@@ -287,7 +287,7 @@ private:
 	VipLinearColorMap& operator=(const VipLinearColorMap&);
 
 	
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 /// \brief VipAlphaColorMap varies the alpha value of a color
@@ -313,7 +313,7 @@ private:
 	virtual unsigned char colorIndex(const VipInterval&, double value) const;
 
 	
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 /// Map a value into a color

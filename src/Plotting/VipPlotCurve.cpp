@@ -436,7 +436,7 @@ VipPlotCurve::~VipPlotCurve()
 //! Initialize internal members
 void VipPlotCurve::init()
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 	setRawData(VipPointVector());
 }
 

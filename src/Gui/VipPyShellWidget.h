@@ -88,7 +88,7 @@ private:
 	qint64 lastAppendPosition() const;
 	QTextCursor getValidCursor();
 
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 
@@ -117,7 +117,7 @@ public Q_SLOTS:
 	void restartInterpreter();
 
 private:
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 VIP_GUI_EXPORT VipPyInterpreterToolWidget * vipPyGetPythonInterpreter();

@@ -41,7 +41,7 @@ public:
 VipPyNPZDevice::VipPyNPZDevice(QObject* parent)
   : VipIODevice(parent)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 }
 
 VipPyNPZDevice::~VipPyNPZDevice()
@@ -176,7 +176,7 @@ public:
 VipPyMATDevice::VipPyMATDevice(QObject* parent)
   : VipIODevice(parent)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 }
 
 VipPyMATDevice::~VipPyMATDevice()

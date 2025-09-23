@@ -101,7 +101,7 @@ public:
 VipTimeRangeItem::VipTimeRangeItem(VipTimeRangeListItem* item)
   : VipPlotItem(VipText())
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 	d_data->parentItem = item;
 
 	this->setItemAttribute(HasLegendIcon, false);
@@ -518,7 +518,7 @@ public:
 VipTimeRangeListItem::VipTimeRangeListItem(VipPlayerArea* area)
   : VipPlotItem(VipText())
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 	d_data->area = area;
 	this->setItemAttribute(AutoScale);
 	this->setItemAttribute(HasLegendIcon, false);
@@ -1399,7 +1399,7 @@ public:
 VipPlayerArea::VipPlayerArea()
   : VipPlotArea2D()
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 	d_data->timeRangeSelectionBrush = QBrush(QColor(0x8290FC));
 	d_data->selectionTimeRange = VipInvalidTimeRange;
 	// d_data->palette = VipColorPalette(VipLinearColorMap::ColorPaletteRandom);//VipColorPalette(VipLinearColorMap::ColorPaletteStandard);
@@ -2384,7 +2384,7 @@ VipPlayWidget::VipPlayWidget(QWidget* parent)
   : QFrame(parent)
 {
 
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 	d_data->dirtyTimeLines = false;
 	d_data->playWidgetHidden = false;
 	d_data->alignedToZero = false;

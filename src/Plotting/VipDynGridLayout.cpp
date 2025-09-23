@@ -88,7 +88,7 @@ VipDynGridLayout::VipDynGridLayout(double spacing, QGraphicsLayoutItem* parent)
 
 void VipDynGridLayout::init()
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 	d_data->maxColumns = d_data->numRows = d_data->numColumns = 0;
 }
 

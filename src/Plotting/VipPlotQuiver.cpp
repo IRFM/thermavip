@@ -92,7 +92,7 @@ public:
 VipPlotQuiver::VipPlotQuiver(const VipText& title)
   : VipPlotItemDataType(title)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 
 	setMajorColor(Qt::blue);
 	QPen p(Qt::blue);

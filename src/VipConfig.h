@@ -293,15 +293,6 @@ namespace vip_log_detail {
 /// @brief String representation of input
 #define VIP_STRINGIZE( val ) #val
 
-/// @brief Declare private data for Pimpl idiom, use in class definition, inside the private section
-#define VIP_DECLARE_PRIVATE_DATA(name)                                                                                                                                                                               \
-	class PrivateData;                                                                                                                                                                             \
-	std::unique_ptr<PrivateData> name
-
-/// @brief Declare private data for Pimpl idiom, use in class constructor
-#define VIP_CREATE_PRIVATE_DATA(name, ...) \
-	name.reset(new PrivateData(__VA_ARGS__))
-
 
 #include <QMetaType>
 #include <QVariant>

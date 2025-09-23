@@ -63,7 +63,7 @@ public Q_SLOTS:
 	void reconnect();
 
 private:
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 /// @brief Small widget used to edit thermal event DB options
@@ -78,7 +78,7 @@ public:
 	QSize minimalEventSize() const;
 
 private:
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 
 };
 
@@ -101,7 +101,7 @@ public:
 	virtual void updatePage();
 
 private:
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 #endif

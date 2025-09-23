@@ -195,7 +195,7 @@ private:
 	QRectF ellipseAroundPixel(const QPointF& center, const QSizeF& min_size, const VipCoordinateSystemPtr& m) const;
 
 	
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 Q_DECLARE_OPERATORS_FOR_FLAGS(VipPlotShape::DrawComponents)
@@ -423,7 +423,7 @@ private Q_SLOTS:
 private:
 	QList<VipPlotShape*> shapeItems() const;
 	
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 VIP_REGISTER_QOBJECT_METATYPE(VipPlotShape*)

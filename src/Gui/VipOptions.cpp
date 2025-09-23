@@ -97,7 +97,7 @@ public:
 VipOptions::VipOptions(QWidget* parent)
   : QWidget(parent)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 
 	this->setObjectName("Preferences");
 	this->setWindowTitle("Preferences");
@@ -433,7 +433,7 @@ AppearanceSettings::AppearanceSettings(QWidget* parent)
   : VipPageOption(parent)
 {
 	this->setWindowTitle("General appearance");
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 
 	d_data->general = createGroup("General appearance");
 	d_data->skins = new QComboBox();
@@ -756,7 +756,7 @@ public:
 ProcessingSettings::ProcessingSettings(QWidget* parent)
   : VipPageOption(parent)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 
 	d_data->resetRemember = new QCheckBox("Reset remembered choices");
 	d_data->resetRemember->setToolTip("Reset association of file suffix -> device type.\nReset default device parameters.");
@@ -930,7 +930,7 @@ public:
 EnvironmentSettings::EnvironmentSettings(QWidget* parent)
   : VipPageOption(parent)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 
 	d_data->data = createGroup("Thermavip data folder");
 	d_data->dataDir = new QLabel(vipGetDataDirectory());
@@ -1061,7 +1061,7 @@ public:
 RenderingSettings::RenderingSettings(QWidget* parent)
   : VipPageOption(parent)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 
 	d_data->vdirect = new QRadioButton("Direct rendering");
 	d_data->vdirect->setToolTip("Direct CPU based rendering (default), usually the fastest");

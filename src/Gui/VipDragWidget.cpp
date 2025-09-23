@@ -215,7 +215,7 @@ VipBaseDragWidget::VipBaseDragWidget(QWidget* parent)
   : QFrame(parent)
   , VipRenderObject(this)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 	d_data->visibility = Normal;
 	d_data->operations = AllOperations;
 
@@ -920,7 +920,7 @@ public:
 VipDragWidget::VipDragWidget(QWidget* parent)
   : VipBaseDragWidget(parent)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 
 	setProperty("has_focus", false);
 	style()->unpolish(this);
@@ -1252,7 +1252,7 @@ VipMinimizeWidget::VipMinimizeWidget(VipBaseDragWidget* widget)
 {
 
 	// QWidget* p = this->parentWidget();
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 	d_data->dragWidget = widget;
 	widget->setProperty("_vip_minimizeWidget", QVariant::fromValue((QWidget*)this));
 
@@ -1834,7 +1834,7 @@ static std::function<void(VipMultiDragWidget*)> _on_multi_drag_widget_created;
 VipMultiDragWidget::VipMultiDragWidget(QWidget* parent)
   : VipBaseDragWidget(parent)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 	d_data->header = nullptr;
 	d_data->v_splitter = nullptr;
 	d_data->extra = true;

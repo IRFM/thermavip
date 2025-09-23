@@ -220,7 +220,7 @@ public:
 VipXArchive::VipXArchive()
   : VipArchive(Text, MetaDataOnContent | MetaDataOnNodeStart | Comment)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 	d_data->parameters.auto_range = false;
 	d_data->parameters.max_lines = 0;
 }

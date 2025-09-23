@@ -49,7 +49,7 @@ public:
 	QIcon iconPath(const VipPath& path) const;
 
 private:
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 /// @brief VipAbstractFileSystem that represents the physical hard drive
@@ -300,7 +300,7 @@ private:
 	void addItem(QTreeWidgetItem*);
 	void removeItem(QTreeWidgetItem*);
 
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 Q_DECLARE_OPERATORS_FOR_FLAGS(VipMapFileSystemTree::Operations)
@@ -375,7 +375,7 @@ private Q_SLOTS:
 	void createFileSystemRequeted(QAction*);
 
 private:
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 #include "VipToolWidget.h"

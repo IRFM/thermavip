@@ -93,7 +93,7 @@ private:
 	/**Find a free shared memory name of the form 'Thermavip-X', where X is a numbed incremented at each trial*/
 	static QString findNextMemoryName();
 	static bool isFreeName(const QString& name);
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 
@@ -120,7 +120,7 @@ private Q_SLOTS:
 	void focusChanged(QWidget* old, QWidget* now);
 
 private:
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 
@@ -172,7 +172,7 @@ private Q_SLOTS:
 	void updateIcons();
 private:
 	
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 }; 
 
 
@@ -196,7 +196,7 @@ protected:
 	virtual void closeEvent(QCloseEvent*);
 private:
 	
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 

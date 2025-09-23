@@ -268,7 +268,7 @@ public:
 VipRubberBand::VipRubberBand(VipAbstractPlotArea* parent)
   : VipBoxGraphicsWidget(parent)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 	setArea(parent);
 	setAcceptHoverEvents(true);
 	this->setFlag(ItemIsFocusable, true);
@@ -1013,7 +1013,7 @@ VipAbstractPlotArea::VipAbstractPlotArea(QGraphicsItem* parent)
   : VipBoxGraphicsWidget()
 {
 
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 	d_data->rubberBand = new VipRubberBand(this);
 	d_data->drawSelection = new VipDrawSelectionOrder(this);
 
@@ -3586,7 +3586,7 @@ VipPlotArea2D::VipPlotArea2D(QGraphicsItem* parent)
   : VipAbstractPlotArea(parent)
 {
 
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 	addScale(d_data->xTop);
 	addScale(d_data->xBottom);
 	addScale(d_data->yLeft);
@@ -3828,7 +3828,7 @@ public:
 VipPlotPolarArea2D::VipPlotPolarArea2D(QGraphicsItem* parent)
   : VipAbstractPlotArea(parent)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 
 	addScale(d_data->raxis);
 	addScale(d_data->paxis);
@@ -4027,7 +4027,7 @@ VipBaseGraphicsView::VipBaseGraphicsView(QGraphicsScene* sc, QWidget* parent)
   : QGraphicsView(parent)
   , VipRenderObject(this)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 	d_data->useInternalViewport = false;
 
 #if !defined(_WIN32) && (defined(__unix__) || defined(__unix) || (defined(__APPLE__) && defined(__MACH__)))
@@ -4439,7 +4439,7 @@ public:
 VipImageArea2D::VipImageArea2D(QGraphicsItem* parent)
   : VipPlotArea2D(parent)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 	d_data->colorMap = this->createColorMap(VipAxisBase::Right, VipInterval(0, 100), VipLinearColorMap::createColorMap(VipLinearColorMap::Jet));
 	setSpectrogram(new VipPlotSpectrogram());
 

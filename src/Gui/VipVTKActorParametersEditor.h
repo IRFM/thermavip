@@ -59,7 +59,7 @@ private Q_SLOTS:
 private:
 	void setActorParameters(const QList<VipVTKActorParameters>&);
 	const QList<VipVTKActorParameters>& actorParameters() const;
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 Q_DECLARE_METATYPE(VipVTKActorParametersEditor*)

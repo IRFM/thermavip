@@ -72,7 +72,7 @@ private Q_SLOTS:
 
 private:
 	
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 class BaseCustomPlayer : public QObject
@@ -127,7 +127,7 @@ private:
 	Anchor anchor(const QPoint& viewport_pos, const QMimeData* mime);
 
 	
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 class BaseCustomPlayer2D : public BaseCustomPlayer
@@ -170,7 +170,7 @@ private Q_SLOTS:
 private:
 	Anchor anchor(const QPoint& viewport_pos, const QMimeData* mime);
 	
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 class CustomizePlotPlayer : public BaseCustomPlayer2D
@@ -193,7 +193,7 @@ private:
 	Anchor anchor(const QPoint& viewport_pos, const QMimeData* mime);
 
 	
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 #endif

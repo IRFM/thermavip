@@ -42,6 +42,7 @@
 #include <qthread.h>
 
 #include "VipConfig.h"
+#include "VipPimpl.h"
 
 ///\module Logging
 ///
@@ -189,7 +190,7 @@ private:
 	int logCount();
 
 	
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 Q_DECLARE_OPERATORS_FOR_FLAGS(VipLogging::Outputs)

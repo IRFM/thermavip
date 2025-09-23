@@ -100,7 +100,7 @@ public:
 ApplyMappingDialog::ApplyMappingDialog(QWidget* parent)
   : QDialog(parent)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 
 	QHBoxLayout* boxlay = new QHBoxLayout();
 	boxlay->addWidget(&d_data->box);
@@ -211,7 +211,7 @@ public:
 VipFOVItem::VipFOVItem(VipVTKGraphicsView* v, QTreeWidgetItem* parent)
   : QTreeWidgetItem(parent)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 	d_data->view = v;
 	d_data->once = false;
 	
@@ -1363,7 +1363,7 @@ public:
 VipFOVTreeWidget::VipFOVTreeWidget(VipVTKGraphicsView* view, QWidget* parent)
   : QWidget(parent)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 	d_data->view = view;
 	d_data->tree.parentTree = this;
 	QVBoxLayout* lay = new QVBoxLayout();
@@ -3056,7 +3056,7 @@ public:
 VipVTKObjectTreeWidget::VipVTKObjectTreeWidget(VipVTKGraphicsView* v, QWidget* parent)
   : QWidget(parent)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 	d_data->tree = new QTreeWidget();
 	d_data->view = v;
 
@@ -4096,7 +4096,7 @@ public:
 VipSelectDisplayedAttributeWidget::VipSelectDisplayedAttributeWidget(VipVTKGraphicsView* view, QWidget* parent)
   : QToolBar(parent)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 
 	d_data->view = view;
 	d_data->types = new VipComboBox();
@@ -4792,7 +4792,7 @@ protected:
 	virtual void mouseReleaseEvent(QMouseEvent* evt);
 
 private:
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 class ResizableWidget::PrivateData
@@ -4807,7 +4807,7 @@ public:
 ResizableWidget::ResizableWidget(Qt::Orientation orientation, QWidget* parent)
   : QWidget(parent)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 	d_data->orientation = orientation;
 	setExtent(8);
 
@@ -5096,7 +5096,7 @@ public:
 VipCubeAxesActorWidget::VipCubeAxesActorWidget(QWidget* parent)
   : QWidget(parent)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 
 	QGridLayout* grid = new QGridLayout();
 
@@ -5414,7 +5414,7 @@ public:
 VipVTKPlayer::VipVTKPlayer(QWidget* parent)
   : VipVideoPlayer(new VipVTKGraphicsView(), parent)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 
 	
 
@@ -6111,7 +6111,7 @@ public:
 VipVTKPlayerOptionPage::VipVTKPlayerOptionPage(QWidget* parent)
   : VipPageOption(parent)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 
 	this->setWindowIcon(vipIcon("CAD.png"));
 

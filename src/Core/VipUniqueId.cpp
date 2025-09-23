@@ -51,7 +51,7 @@ public:
 
 VipTypeId::VipTypeId()
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 }
 
 VipTypeId::~VipTypeId()
@@ -240,7 +240,7 @@ VipUniqueId& VipUniqueId::instance()
 
 VipUniqueId::VipUniqueId()
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 }
 
 VipUniqueId::~VipUniqueId()

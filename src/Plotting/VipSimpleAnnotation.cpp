@@ -135,7 +135,7 @@ public:
 
 VipSimpleAnnotation::VipSimpleAnnotation()
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 }
 VipSimpleAnnotation::~VipSimpleAnnotation()
 {

@@ -116,7 +116,7 @@ public:
 VipPlotMarker::VipPlotMarker(const VipText& title)
   : VipPlotItemDataType(title)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 	this->setItemAttribute(VisibleLegend, false);
 }
 

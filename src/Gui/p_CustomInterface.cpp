@@ -367,7 +367,7 @@ public:
 NavigatePlayers::NavigatePlayers(VipDragWidget* p)
   : QToolBar(p->widget())
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 	d_data->parent = p;
 	p->installEventFilter(this);
 	updatePos();
@@ -649,7 +649,7 @@ public:
 CustomizeVideoPlayer::CustomizeVideoPlayer(VipVideoPlayer* player)
   : BaseCustomPlayer2D(player)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 	d_data->player = player;
 	d_data->dragWidget = nullptr;
 
@@ -1066,7 +1066,7 @@ public:
 CustomWidgetPlayer::CustomWidgetPlayer(VipWidgetPlayer* player)
   : BaseCustomPlayer(player)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 	d_data->player = player;
 	d_data->dragWidget = nullptr;
 
@@ -1404,7 +1404,7 @@ public:
 CustomizePlotPlayer::CustomizePlotPlayer(VipPlotPlayer* player)
   : BaseCustomPlayer2D(player)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 	d_data->player = player;
 	d_data->dragWidget = nullptr;
 

@@ -458,7 +458,7 @@ private:
 	int findClosestPos(const VipPointVector& data, const VipPoint& pos, int axis, double maxDistance, bool continuous) const;
 
 	
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 template<class F>

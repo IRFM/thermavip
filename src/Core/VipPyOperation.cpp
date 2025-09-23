@@ -1737,7 +1737,7 @@ VipPyLocal::VipPyLocal(QObject* parent)
 {
 	// init python
 	PythonInit::instance();
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 
 	VipGILLocker lock;
 	PyObject* __main__ = PyImport_ImportModule("__main__");
@@ -2252,7 +2252,7 @@ public:
 VipPyInterpreter::VipPyInterpreter(QObject* parent)
   : VipPyIOOperation(parent)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 }
 
 VipPyInterpreter::~VipPyInterpreter()

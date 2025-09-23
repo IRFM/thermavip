@@ -122,7 +122,7 @@ private Q_SLOTS:
 
 private:
 	
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 VIP_REGISTER_QOBJECT_METATYPE(VipWebBrowser*)
 

@@ -1174,7 +1174,7 @@ public:
 VipColorScaleWidget::VipColorScaleWidget(QWidget* parent)
   : QWidget(parent)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 	QGridLayout* grid = new QGridLayout();
 
 	int row = -1;
@@ -1716,7 +1716,7 @@ public:
 VipAbstractPlayerWidget::VipAbstractPlayerWidget(QWidget* parent)
   : QWidget(parent)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 
 	d_data->grid = new QGridLayout();
 	d_data->grid->addWidget(new QLabel("Available items"), 0, 0);
@@ -1946,7 +1946,7 @@ public:
 VipDefaultPlotAreaSettings::VipDefaultPlotAreaSettings(QWidget* parent)
   : QWidget(parent)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 
 	d_data->m_curveEditor.baseItemEditor()->setVisible(false);
 	d_data->m_curveEditor.styleEditor()->backgroundEditor()->setColorOptionVisible(false);

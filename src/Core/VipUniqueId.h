@@ -33,6 +33,8 @@
 #define VIP_UNIQUE_ID_H
 
 #include "VipConfig.h"
+#include "VipPimpl.h"
+
 #include <QObject>
 #include <QPointer>
 
@@ -67,7 +69,7 @@ private Q_SLOTS:
 private:
 	int findNextId();
 	
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 /// \a VipUniqueId provides a way to attribute a unique identifier (through the program) to QObject inheriting instances.
@@ -144,7 +146,7 @@ private:
 	static int registerMetaType(const QMetaObject* metaobject, const QObject* obj, int id = 0);
 
 	
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 /// VipLazyPointer is a kind of pointer to QObject.

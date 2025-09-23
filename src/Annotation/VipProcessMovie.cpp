@@ -446,7 +446,7 @@ bool VipClientEventDevice::enableStreaming(bool enable)
 
 	if (enable) {
 		// start
-		VIP_CREATE_PRIVATE_DATA(d_data);
+		VIP_CREATE_PRIVATE_DATA();
 		d_data->parent = this;
 		d_data->start();
 
@@ -475,7 +475,7 @@ public:
 UploadToDB::UploadToDB(const QString& device, QWidget* parent)
   : QWidget(parent)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 
 	d_data->pulse = vipFindDeviceParameters(device)->pulseEditor();
 
@@ -569,7 +569,7 @@ public:
 EventInfo::EventInfo(VipPlayerDBAccess* pdb)
   : QToolBar()
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 	d_data->pdb = pdb;
 	this->setIconSize(QSize(18, 18));
 	d_data->close = this->addAction(vipIcon("close.png"), "Close panel");

@@ -705,7 +705,7 @@ private:
 	VipAbstractScaleDraw(const VipAbstractScaleDraw&);
 	VipAbstractScaleDraw& operator=(const VipAbstractScaleDraw&);
 
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 Q_DECLARE_OPERATORS_FOR_FLAGS(VipAbstractScaleDraw::ScaleComponents)
@@ -806,7 +806,7 @@ private:
 	Qt::Orientation computeOrientation() const;
 	void updateMap();
 
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 /*!
@@ -885,7 +885,7 @@ private:
 	void getDLengthHint(double& d_s_angle, double& d_e_angle, VipScaleDiv::TickType) const;
 	void updateMap();
 
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 /*!
@@ -949,7 +949,7 @@ private:
 	void computeScaleLine();
 	void updateMap();
 
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 /** @}*/

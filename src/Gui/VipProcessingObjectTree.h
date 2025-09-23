@@ -65,7 +65,7 @@ public Q_SLOTS:
 private:
 	QSize itemSizeHint(QTreeWidgetItem* item);
 	
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 /// Display a VipProcessingObjectTree into a QMenu
@@ -104,7 +104,7 @@ Q_SIGNALS:
 
 private:
 	
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 /// @}

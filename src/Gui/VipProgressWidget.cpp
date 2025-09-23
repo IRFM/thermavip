@@ -52,7 +52,7 @@ public:
 VipProgressWidgetInternal::VipProgressWidgetInternal(VipProgress* p, VipProgressWidget* widget, QWidget* parent )
 	: QFrame(parent)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 	d_data->progress = p;
 	d_data->widget = widget;
 
@@ -146,7 +146,7 @@ VipProgressWidget::VipProgressWidget(VipDisplayPlayerArea* lock_parent, QThread*
 	
 	lock_parent->setProgressWidget(this);
 
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 	d_data->parent = lock_parent;
 
 	d_data->central = new QWidget(this);

@@ -807,7 +807,7 @@ public:
 ShowHideGroups::ShowHideGroups(QWidget* parent)
   : QWidget(parent)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 	d_data->lastGroup = new QLabel();
 	d_data->lastGroup->setText("Change groups visibility");
 	d_data->lastGroup->setToolTip("Change groups visibility");
@@ -1037,7 +1037,7 @@ public:
 VipSceneModelEditor::VipSceneModelEditor(QWidget* parent)
   : QWidget(parent)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 	d_data->editor = new AttributesEditor(this);
 
 	QGridLayout* lay = new QGridLayout();
@@ -2544,7 +2544,7 @@ public:
 
 VipSceneModelState::VipSceneModelState()
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 }
 VipSceneModelState::~VipSceneModelState()
 {

@@ -124,7 +124,7 @@ private Q_SLOTS:
 
 private:
 	
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 /// A QTabWidget holding a VipDisplayTabBar.
@@ -193,7 +193,7 @@ protected:
 
 private:
 	
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 class VipScaleWidget;
@@ -407,7 +407,7 @@ private:
 	VipProgressWidget* progressWidget() const;
 	QMutex *closeMutex() const;
 	
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 Q_DECLARE_OPERATORS_FOR_FLAGS(VipDisplayPlayerArea::Operations)
@@ -506,7 +506,7 @@ private:
 	QString generateWorkspaceName() const;
 
 	
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 VIP_REGISTER_QOBJECT_METATYPE(VipDisplayArea*)
@@ -883,7 +883,7 @@ private:
 	void setCurrentTabDestroy(bool);
 	bool loadSessionShowProgress(VipArchive& arch, VipProgress* progress);
 
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 /// @brief Returns (and create if necessary) the main unique VipMainWindow

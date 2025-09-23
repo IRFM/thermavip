@@ -1209,7 +1209,7 @@ public:
 VipPlotSceneModel::VipPlotSceneModel(const VipText& title)
   : VipPlotItemComposite(VipPlotItemComposite::Aggregate, title)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 	connect(d_data->sceneModel.shapeSignals(), SIGNAL(sceneModelChanged(const VipSceneModel&)), this, SLOT(resetSceneModelInternal()), Qt::DirectConnection);
 	connect(d_data->sceneModel.shapeSignals(), SIGNAL(sceneModelChanged(const VipSceneModel&)), this, SLOT(emitSceneModelChanged(const VipSceneModel&)), Qt::DirectConnection);
 	connect(d_data->sceneModel.shapeSignals(), SIGNAL(groupAdded(const QString&)), this, SLOT(emitGroupsChanged()), Qt::DirectConnection);

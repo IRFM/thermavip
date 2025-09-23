@@ -111,7 +111,7 @@ protected:
 	virtual void resizeEvent(QResizeEvent*);
 
 private:
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 /// @brief Tool bar related to a VipToolWidget that provides a few shortcuts.
@@ -288,7 +288,7 @@ protected:
 	virtual void moveEvent(QMoveEvent* evt);
 
 private:
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 /// @brief A VipToolWidget which is linked to a VipDisplayPlayerArea or to a VipAbstractPlayer
@@ -342,7 +342,7 @@ public:
 	virtual bool eventFilter(QObject* watched, QEvent* evt);
 
 private:
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 /// @brief Returns the VipPlotToolWidgetPlayer tool widget
 VipPlotToolWidgetPlayer* vipGetPlotToolWidgetPlayer(VipMainWindow* window = nullptr);
@@ -391,7 +391,7 @@ private:
 	void addProgressWidget(VipProgressWidget*, QThread* th);
 	void removeProgressWidget(VipProgressWidget*);
 
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 /// @brief Returns the VipMultiProgressWidget tool widget
 VIP_GUI_EXPORT VipMultiProgressWidget* vipGetMultiProgressWidget(VipMainWindow* window = nullptr);

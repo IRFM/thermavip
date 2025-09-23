@@ -121,7 +121,7 @@ public:
 TextEditor::TextEditor()
   : QWidget()
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 
 	d_data->bar.setIconSize(QSize(20, 20));
 
@@ -482,7 +482,7 @@ public:
 };
 ShapeEditor::ShapeEditor()
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 
 	d_data->pen->setMode(VipPenButton::Pen);
 	d_data->pen->setText("Annotation border pen");
@@ -572,7 +572,7 @@ public:
 };
 SymbolEditor::SymbolEditor()
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 
 	d_data->type.setIconSize(QSize(30, 20));
 	d_data->type.setToolTip("Symbol type");
@@ -708,7 +708,7 @@ public:
 };
 VipAnnotationWidget::VipAnnotationWidget()
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 
 	QVBoxLayout* lay = new QVBoxLayout();
 	lay->setContentsMargins(0, 0, 0, 0);

@@ -162,7 +162,7 @@ public:
 VipPyShellWidget::VipPyShellWidget(QWidget * parent)
 	:QTextEdit(parent)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 	
 	d_data->error_color = vipDefaultTextErrorColor(this);
 	d_data->process = nullptr;
@@ -584,7 +584,7 @@ public:
 VipPyInterpreterToolWidget::VipPyInterpreterToolWidget(VipMainWindow * win)
 	:VipToolWidget(win)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 	d_data->interpreter = new VipPyShellWidget();
 	d_data->interpreter->setProcess(VipPyInterpreter::instance());
 	//VipPyInterpreter::instance()->setParent(d_data->interpreter);

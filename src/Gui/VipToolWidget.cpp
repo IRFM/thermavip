@@ -122,7 +122,7 @@ public:
 VipToolWidgetTitleBar::VipToolWidgetTitleBar(VipToolWidget* parent)
   : QWidget(parent)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 	d_data->icon = new QLabel(this);
 	d_data->label = new NoSizeLable(this);
 	d_data->bar = new QToolBar();
@@ -208,9 +208,7 @@ VipToolWidgetTitleBar::VipToolWidgetTitleBar(VipToolWidget* parent)
 	// this->setMinimumHeight(30);
 }
 
-VipToolWidgetTitleBar::~VipToolWidgetTitleBar()
-{
-}
+VipToolWidgetTitleBar::~VipToolWidgetTitleBar() {}
 
 VipToolWidget* VipToolWidgetTitleBar::parent() const
 {
@@ -323,7 +321,7 @@ void VipToolWidgetTitleBar::updateTitleAndPosition()
 		if (d_data->displayWindowIcon) {
 			QSize s = tool->windowIcon().actualSize(QSize(100, 100));
 			if (!s.isEmpty())
-				d_data->icon->setPixmap(tool->windowIcon().pixmap(s).scaled(22, 22,Qt::KeepAspectRatio,Qt::SmoothTransformation));
+				d_data->icon->setPixmap(tool->windowIcon().pixmap(s).scaled(22, 22, Qt::KeepAspectRatio, Qt::SmoothTransformation));
 			d_data->icon->setVisible(!tool->windowIcon().isNull());
 		}
 
@@ -442,7 +440,7 @@ public:
 	bool resetSizeRequest;
 	bool keepFloatingUserSize;
 	bool firstShow;
-	QPointer <QScrollArea> scroll;
+	QPointer<QScrollArea> scroll;
 	VipToolWidgetResizer* resizer;
 	QPointer<QAction> action;
 	QPointer<QAbstractButton> button;
@@ -462,9 +460,9 @@ public:
 VipToolWidget::VipToolWidget(VipMainWindow* window)
   : QDockWidget(window)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 
-	this->setWindowFlags(this->windowFlags() | Qt::Tool | Qt::WindowStaysOnTopHint | Qt::CustomizeWindowHint );
+	this->setWindowFlags(this->windowFlags() | Qt::Tool | Qt::WindowStaysOnTopHint | Qt::CustomizeWindowHint);
 	this->setAttribute(Qt::WA_TranslucentBackground);
 	this->setSizePolicy(QSizePolicy::Maximum, QSizePolicy::Maximum);
 	this->resize(20, 20);
@@ -583,7 +581,7 @@ QAction* VipToolWidget::action() const
 	return d_data->action;
 }
 
-void VipToolWidget::setButton(QAbstractButton* button, bool take_icon )
+void VipToolWidget::setButton(QAbstractButton* button, bool take_icon)
 {
 	if (d_data->button) {
 		disconnect(d_data->button, SIGNAL(clicked(bool)), this, SLOT(setVisible(bool)));
@@ -766,7 +764,7 @@ void VipToolWidget::showEvent(QShowEvent*)
 	}
 	d_data->firstShow = false;
 
-	if(isFloating())
+	if (isFloating())
 		raise();
 }
 
@@ -901,7 +899,7 @@ void VipToolWidget::polish()
 	}
 	this->setProperty("status", status);
 	if (d_data->scroll)
-	d_data->scroll->setProperty("status", status);
+		d_data->scroll->setProperty("status", status);
 	titleBarWidget()->setProperty("status", status);
 	// vip_debug("set %s: %i\n", this->windowTitle().toLatin1().data(), status);
 
@@ -985,32 +983,26 @@ void VipToolWidgetPlayer::showEvent(QShowEvent* evt)
 
 void VipToolWidgetPlayer::focusWidgetChanged(VipDragWidget* w)
 {
-	if (!w)
+	if (!w )
 		m_player = nullptr;
 	else {
-		QList<VipAbstractPlayer*> players = w->findChildren<VipAbstractPlayer*>();
-		if (!players.size())
+		if (!vipIsObjectValid(w))
 			m_player = nullptr;
-		else
-			m_player = players.back();
+		else {
+			QList<VipAbstractPlayer*> players = w->findChildren<VipAbstractPlayer*>();
+			if (!players.size())
+				m_player = nullptr;
+			else
+				m_player = players.back();
+		}
 	}
 
-	// if (isHidden()) {
-	//  //explicitly hidden
-	//  setPlayer(nullptr);
-	//  if (widget())
-	//  widget()->setEnabled(false);
-	//  if (VipToolWidgetToolBar* bar = toolBar()) {
-	//  bar->setEnabled(false);
-	//  bar->setPlayer(nullptr);
-	//  }
-	//  }
-	//  else
 	{
 		if (widget())
 			widget()->setEnabled(m_player);
 
 		bool ok = m_player;
+
 		if ((ok = this->setPlayer(m_player)) && m_player && m_automaticTitleManagement) {
 			QString title = this->windowTitle();
 			if (!title.isEmpty()) {
@@ -1055,7 +1047,7 @@ public:
 VipPlotToolWidgetPlayer::VipPlotToolWidgetPlayer(VipMainWindow* window)
   : VipToolWidgetPlayer(window)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 	this->setEnableOpacityChange(true);
 	this->setFeatures(QDockWidget::DockWidgetClosable | QDockWidget::DockWidgetMovable | QDockWidget::DockWidgetFloatable);
 	this->setAllowedAreas(Qt::NoDockWidgetArea);
@@ -1255,7 +1247,7 @@ public:
 	QTimer modalTimer;
 	QBoxLayout* layout;
 	bool changeModality;
-	bool isModal{false}; 
+	bool isModal{ false };
 
 	QMap<QThread*, QPointer<VipProgressWidget>> threadProgress;
 
@@ -1275,7 +1267,7 @@ VipMultiProgressWidget::VipMultiProgressWidget(VipMainWindow* window)
 	setObjectName("Operations");
 	setAllowedAreas(Qt::NoDockWidgetArea);
 
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 	d_data->status.setText("No operation to display at this time");
 
 	d_data->modalTimer.setSingleShot(true);
@@ -1361,23 +1353,22 @@ void VipMultiProgressWidget::showEvent(QShowEvent* evt)
 		VipToolWidget::showEvent(evt);
 }
 
-static bool isModalWidget(QWidget * w)
+static bool isModalWidget(QWidget* w)
 {
-	while(w){
-		if(w->windowModality() == Qt::ApplicationModal)
+	while (w) {
+		if (w->windowModality() == Qt::ApplicationModal)
 			return true;
 		w = w->parentWidget();
-	} 
+	}
 	return false;
 }
 
-
-bool VipMultiProgressWidget::eventFilter(QObject * obj, QEvent * evt)
+bool VipMultiProgressWidget::eventFilter(QObject* obj, QEvent* evt)
 {
 	// Simulate a (kinf of) modal widget by filtering events at application level.
-	// On used on non Windows plateform that do not necessarly support changing 
+	// On used on non Windows plateform that do not necessarly support changing
 	// widget modality several times.
-	switch(evt->type()){
+	switch (evt->type()) {
 		case QEvent::MouseButtonPress:
 		case QEvent::MouseButtonRelease:
 		case QEvent::MouseButtonDblClick:
@@ -1393,21 +1384,20 @@ bool VipMultiProgressWidget::eventFilter(QObject * obj, QEvent * evt)
 		case QEvent::TouchUpdate:
 		case QEvent::Wheel:
 		case QEvent::FocusIn:
-		case QEvent::Enter:
-		{
-			if(QWidget * w = qobject_cast<QWidget*>(obj)){
-				if(this->isAncestorOf(w) || isModalWidget(w) )
+		case QEvent::Enter: {
+			if (QWidget* w = qobject_cast<QWidget*>(obj)) {
+				if (this->isAncestorOf(w) || isModalWidget(w))
 					return false;
 				else
 					return true;
 			}
 			break;
-		}	
+		}
 		case QEvent::Shortcut:
 		case QEvent::ShortcutOverride:
 			return true;
 		default:
-		break;
+			break;
 	}
 	return false;
 }
@@ -1426,7 +1416,6 @@ void VipMultiProgressWidget::removeProgressWidget(VipProgressWidget* w)
 	}
 }
 
-
 void VipMultiProgressWidget::changeModality(Qt::WindowModality modality)
 {
 #ifdef WIN32
@@ -1442,19 +1431,18 @@ void VipMultiProgressWidget::changeModality(Qt::WindowModality modality)
 #else
 
 	bool requestModal = modality == Qt::ApplicationModal;
-	if(requestModal != d_data->isModal)
-	{
-		if(requestModal){
+	if (requestModal != d_data->isModal) {
+		if (requestModal) {
 			qApp->installEventFilter(this);
 			vipGetMainWindow()->installEventFilter(this);
-		} 
-		else{
+		}
+		else {
 			qApp->removeEventFilter(this);
 			vipGetMainWindow()->removeEventFilter(this);
-		} 
+		}
 		d_data->isModal = requestModal;
-	}	
-#endif	
+	}
+#endif
 }
 
 void VipMultiProgressWidget::updateScrollBars()
@@ -1484,14 +1472,14 @@ void VipMultiProgressWidget::updateModality()
 void VipMultiProgressWidget::cancelRequested()
 {
 	// make sure to cancel all sub operations
-	//bool start_cancel = false;
+	// bool start_cancel = false;
 	for (int i = 0; i < d_data->progresses.size(); ++i) {
-		//TEST: comment
-		//if (start_cancel) {
-			if (d_data->progresses[i]->progress)
-				d_data->progresses[i]->progress->cancelRequested();
+		// TEST: comment
+		// if (start_cancel) {
+		if (d_data->progresses[i]->progress)
+			d_data->progresses[i]->progress->cancelRequested();
 		//}
-		//else if (sender() == &d_data->progresses[i]->cancel) {
+		// else if (sender() == &d_data->progresses[i]->cancel) {
 		//	start_cancel = true;
 		//}
 	}
@@ -1518,7 +1506,7 @@ void VipMultiProgressWidget::addProgress(QObjectPointer ptr)
 
 		d_data->status.hide();
 		d_data->progresses.append(w);
-		d_data->progresses.back()->progressBar.setRange(0, 100); //TEST// p->min(), p->max());
+		d_data->progresses.back()->progressBar.setRange(0, 100); // TEST// p->min(), p->max());
 		d_data->progresses.back()->text.setText(p->text());
 
 		d_data->progresses.back()->show();
@@ -1577,10 +1565,9 @@ void VipMultiProgressWidget::setText(QObjectPointer ptr, const QString& text)
 		// Check bypass VipProgressWidget
 		auto it = d_data->threadProgress.find(p->thread());
 		if (it != d_data->threadProgress.end() && it.value()) {
-			it.value()->setText(p,text);
+			it.value()->setText(p, text);
 			return;
 		}
-		
 
 		if (ProgressWidget* w = d_data->find(p)) {
 			bool reset_size = p->isModal();
@@ -1679,7 +1666,7 @@ void VipMultiProgressWidget::setModal(QObjectPointer ptr, bool modal)
 #endif
 					this->move(rect.x() + rect.width() / 2 - this->width() / 2, rect.y() + rect.height() / 2 - this->height() / 2);
 					if (d_data->isModal && isFloating()) {
-						
+
 						this->showAndRaise();
 					}
 				}
@@ -1704,7 +1691,6 @@ void VipMultiProgressWidget::setModal(QObjectPointer ptr, bool modal)
 				updateModality();
 			}
 		}
-
 	}
 }
 

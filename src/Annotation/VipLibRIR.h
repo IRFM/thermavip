@@ -230,6 +230,10 @@ public:
 	typedef int (*_set_firca_folder)(const char* filename);
 	typedef int (*_get_firca_folder)(char* filename);
 
+	typedef int (*_read_file_from_dcamir)(const char* in_file, const char* out_file);
+	typedef int (*_write_file_to_dcamir)(const char* in_file, const char* out_file);
+
+
 	typedef int (*_attrs_open_file)(const char* filename);
 	typedef void (*_attrs_close)(int handle);
 	typedef int (*_attrs_image_count)(int handle);
@@ -397,6 +401,10 @@ public:
 
 	_set_firca_folder firca_set_calibration_folder;
 	_get_firca_folder firca_get_calibration_folder;
+
+	_read_file_from_dcamir read_file_from_dcamir;
+	_write_file_to_dcamir write_file_to_dcamir;
+
 
 
 	_attrs_open_file attrs_open_file;

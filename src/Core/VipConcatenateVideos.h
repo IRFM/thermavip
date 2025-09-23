@@ -42,6 +42,7 @@ class VIP_CORE_EXPORT VipConcatenateVideos : public VipTimeRangeBasedGenerator
 	VIP_IO(VipProperty StartTimeS) // Start time for each sub video (relative to video start). This can lead to ignored files.
 	VIP_IO(VipProperty EndTimeS) // End time for each sub video (relative to video start). This can lead to ignored files.
 	VIP_IO(VipProperty FrameOutOf) // Take one frame out of N for each sub-video (always keep one frame)
+	VIP_IO(VipProperty Bufferize) // Bufferize output data on opening (might take a lot of memory), true by default
 	VIP_IO(VipOutput Image)
 public:
 	// Tells how to sort files with listFiles().
@@ -53,6 +54,19 @@ public:
 							// The trailing number is after a '.', ';', '-' or '_'.
 							// Only works if all found files ends with a number.
 	};
+
+	using VipIODeviceSPtr = QSharedPointer<VipIODevice>;
+
+	struct Frame
+	{
+		VipIODeviceSPtr device;	// frame device (might be null if bufferized)
+		QString path; // frame device path
+		qint64 pos; // frame position within device
+		VipAnyData any; // output data (if bufferized)
+		qint64 time; // absolute frame time
+	};
+	using FrameVector = QVector<Frame>;
+
 	VipConcatenateVideos(QObject* parent = nullptr);
 	~VipConcatenateVideos();
 
@@ -62,13 +76,52 @@ public:
 	virtual bool probe(const QString& filename, const QByteArray&) const;
 	virtual bool open(VipIODevice::OpenModes mode);
 
+
+	FrameVector frames() const;
+	void setFrames(const FrameVector& frs);
+	int deviceCount() const;
+
 	static QStringList listFiles(VipMapFileSystem* map, const QString& dirname, const QStringList& suffixes, SortOption sort, bool recursive = false);
+
+
 
 protected:
 	virtual bool readData(qint64 time);
 
 private:
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
+};
+
+
+/// @brief Small class managing a VipConcatenateVideos in order to filter input devices
+class VIP_CORE_EXPORT VipConcatenateVideosManager : public QObject
+{
+	Q_OBJECT
+
+public:
+	VipConcatenateVideosManager(VipConcatenateVideos* device = nullptr);
+	~VipConcatenateVideosManager();
+
+	void setDevice(VipConcatenateVideos* device);
+	VipConcatenateVideos* device() const;
+
+	int undoCount() const;
+	int redoCount() const;
+
+public Q_SLOTS:
+	bool removeDeviceAtTime(qint64 time);
+	bool removeDeviceAtPos(qint64 pos);
+	void undo();
+	void redo();
+	void resetState();
+
+Q_SIGNALS:
+	void undoDone();
+	void redoDone();
+
+private:
+	VipConcatenateVideos::FrameVector saveState();
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 

@@ -1057,7 +1057,7 @@ public:
 VipBaseDataFusion::VipBaseDataFusion(QObject* parent)
   : VipProcessingObject(parent)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 	propertyAt(0)->setData(QString("intersection"));
 }
 
@@ -1522,7 +1522,7 @@ public:
 VipSamplesFeature::VipSamplesFeature(QObject* parent)
   : VipBaseDataFusion(parent)
 {
-	// VIP_CREATE_PRIVATE_DATA(d_data);
+	// VIP_CREATE_PRIVATE_DATA();
 	setWorkOnSameObjectType(true);
 	setSameDataType(true, QList<int>() << QMetaType::Int << QMetaType::Double << qMetaTypeId<complex_d>());
 	setResampleEnabled(true);

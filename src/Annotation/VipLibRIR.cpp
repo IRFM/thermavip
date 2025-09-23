@@ -990,7 +990,20 @@ VipLibRIR* VipLibRIR::instance()
 			delete librir;
 			return librir = nullptr;
 		}*/
-		
+
+		librir->read_file_from_dcamir = (_read_file_from_dcamir)westLib()->resolve("read_file_from_dcamir");
+		if (!librir->read_file_from_dcamir) {
+			VIP_LOG_ERROR("librir: missing read_file_from_dcamir");
+			delete librir;
+			return librir = nullptr;
+		}
+		librir->write_file_to_dcamir = (_write_file_to_dcamir)westLib()->resolve("write_file_to_dcamir");
+		if (!librir->write_file_to_dcamir) {
+			VIP_LOG_ERROR("librir: missing write_file_to_dcamir");
+			delete librir;
+			return librir = nullptr;
+		}
+
 		librir->hcc_extract_times_and_fw_pos = (_hcc_extract_times_and_fw_pos)westLib()->resolve("hcc_extract_times_and_fw_pos");
 		if (!librir->hcc_extract_times_and_fw_pos) {
 			VIP_LOG_ERROR("librir: missing hcc_extract_times_and_fw_pos");

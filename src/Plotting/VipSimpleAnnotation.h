@@ -200,7 +200,7 @@ private:
 	void drawPoint(const VipShape&, QPainter*, const VipCoordinateSystemPtr&) const;
 
 	
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 /// Helper function.

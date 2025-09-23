@@ -525,7 +525,7 @@ public:
 VipMultiComponentDoubleEdit::VipMultiComponentDoubleEdit(QWidget* parent)
   : QWidget(parent)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 	d_data->rightStyle = "QLineEdit { border: 1px solid lightGray; }";
 	d_data->wrongStyle = "QLineEdit { border: 1px solid red; }";
 
@@ -1635,7 +1635,7 @@ public:
 VipTextWidget::VipTextWidget(QWidget* parent)
   : QWidget(parent)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 
 	d_data->editable = String | Font | Color;
 
@@ -2241,7 +2241,7 @@ public:
 VipToolBar::VipToolBar(QWidget* parent)
   : QToolBar(parent)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 	d_data->additionalToolBar.reset( new VipAdditionalToolBar(this));
 	d_data->additionalToolBar->setWindowFlags(this->windowFlags() | Qt::Popup);
 	d_data->additionalToolBar->hide();
@@ -2458,7 +2458,7 @@ public:
 
 Vip2DArrayEditor::Vip2DArrayEditor()
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 	d_data->info.setText("Enter your 2D array. Each column is separated by spaces or tabulations, each row is separated by a new line.");
 	d_data->info.setWordWrap(true);
 	d_data->send.setAutoRaise(true);
@@ -2752,7 +2752,7 @@ public:
 VipCloseToolBar::VipCloseToolBar(QWidget* widget, QWidget* parent)
   : QToolBar(parent)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 
 	setIconSize(QSize(18, 18));
 	QWidget* empty = new QWidget();
@@ -2871,7 +2871,7 @@ VipGenericDialog::VipGenericDialog(QWidget* panel, const QString& title, QWidget
   : QDialog( // parent ? parent : vipGetMainWindow()
       parent)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 	hide();
 	// centerWidget(this);
 	setWindowTitle(title);
@@ -2928,7 +2928,7 @@ public:
 VipDragMenu::VipDragMenu(QWidget* parent)
   : QMenu(parent)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 	d_data->grip = new QSizeGrip(this);
 	d_data->grip->setVisible(false);
 }
@@ -2936,7 +2936,7 @@ VipDragMenu::VipDragMenu(QWidget* parent)
 VipDragMenu::VipDragMenu(const QString& title, QWidget* parent)
   : QMenu(title, parent)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 	d_data->grip = new QSizeGrip(this);
 }
 
@@ -3077,7 +3077,7 @@ public:
 VipShowWidgetOnHover::VipShowWidgetOnHover(QObject* parent)
   : QObject(parent)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 	d_data->timer.setSingleShot(true);
 	d_data->showDelay = 500;
 	d_data->hideDelay = 500;

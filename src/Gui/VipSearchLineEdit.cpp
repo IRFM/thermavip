@@ -520,7 +520,7 @@ public:
 VipSearchLineEdit::VipSearchLineEdit(QWidget* parent)
   : QLineEdit(parent)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 
 	this->setPlaceholderText("Search or open path");
 	this->setToolTip("<b>Open file/signal or browse history</b><br>"

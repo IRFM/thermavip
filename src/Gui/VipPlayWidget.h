@@ -110,7 +110,7 @@ protected:
 private:
 	int selection(const QPointF& pos) const;
 	
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 Q_DECLARE_METATYPE(VipTimeRangeItem*)
@@ -232,7 +232,7 @@ private:
 	void addItem(VipTimeRangeItem*);
 	void removeItem(VipTimeRangeItem*);
 	
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 Q_DECLARE_OPERATORS_FOR_FLAGS(VipTimeRangeListItem::DrawComponents)
 
@@ -321,7 +321,7 @@ private:
 	// int findBestColor(VipTimeRangeListItem *);
 
 	
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 class VipValueToTime;
@@ -407,7 +407,7 @@ private:
 	void toolTipFlagsChanged(VipToolTip::DisplayFlags flags);
 
 	
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 VIP_REGISTER_QOBJECT_METATYPE(VipPlayWidget*)

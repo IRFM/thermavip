@@ -33,7 +33,9 @@
 #define VIP_UPDATE_H
 
 #include "VipConfig.h"
-#include <qobject.h>
+#include "VipPimpl.h"
+
+#include <QObject>
 
 class QProcess;
 
@@ -88,7 +90,7 @@ Q_SIGNALS:
 
 private:
 	
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 #endif

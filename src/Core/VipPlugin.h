@@ -33,6 +33,8 @@
 #define VIP_PLUGIN_H
 
 #include "VipConfig.h"
+#include "VipPimpl.h"
+
 #include <QObject>
 
 class VipArchive;
@@ -174,7 +176,7 @@ private:
 	static QStringList pluginsInDir(const QString directory);
 
 	
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 /// @}

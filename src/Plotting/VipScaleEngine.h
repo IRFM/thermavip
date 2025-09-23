@@ -174,7 +174,7 @@ protected:
 
 private:
 	void setScale(VipAbstractScale*);
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 /// \brief A scale engine for linear scales

@@ -120,7 +120,7 @@ private:
 	void drawArc(QPainter* painter, const VipScaleDiv::TickList& radiuses, const QPen& pen, const VipPolarSystem&) const;
 
 	
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 /// @brief A VipPlotItem that fills the space defined by 2 axes.
@@ -169,7 +169,7 @@ protected:
 
 private:
 	
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 VIP_REGISTER_QOBJECT_METATYPE(VipPlotGrid*)

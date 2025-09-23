@@ -251,7 +251,7 @@ protected:
 
 private:
 	
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 
 	void emitNewTransform(const QTransform& tr);
 	void setGeometry(const QRectF& r);

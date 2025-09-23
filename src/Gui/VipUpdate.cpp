@@ -76,7 +76,7 @@ public:
 VipUpdate::VipUpdate(QObject* parent)
   : QObject(parent)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 }
 
 VipUpdate::~VipUpdate()

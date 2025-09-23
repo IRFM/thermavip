@@ -37,6 +37,7 @@
 #include <qtreewidget.h>
 
 #include "VipConfig.h"
+#include "VipPimpl.h"
 
 class QTreeWidgetItem;
 class QScrollArea;
@@ -93,7 +94,7 @@ private Q_SLOTS:
 
 private:
 	
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 VIP_GUI_EXPORT VipOptions* vipGetOptions();
@@ -121,7 +122,7 @@ private Q_SLOTS:
 private:
 	QPixmap applyFactor(const QImage& img, int factor);
 	
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 class ProcessingSettings : public VipPageOption
@@ -138,7 +139,7 @@ public Q_SLOTS:
 
 private:
 	
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 class EnvironmentSettings : public VipPageOption
@@ -160,7 +161,7 @@ private Q_SLOTS:
 
 private:
 	
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 class RenderingSettings : public VipPageOption
@@ -177,7 +178,7 @@ public Q_SLOTS:
 
 private:
 	
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 #endif

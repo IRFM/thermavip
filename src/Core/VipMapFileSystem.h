@@ -35,6 +35,7 @@
 #include "VipConfig.h"
 #include "VipCore.h"
 #include "VipUniqueId.h"
+#include "VipPimpl.h"
 
 #include <QDir>
 #include <QEnableSharedFromThis>
@@ -240,6 +241,9 @@ public:
 	/// Opens a file and returns the related QIOdevice
 	QIODevice* open(const VipPath& path, QIODevice::OpenMode mode);
 
+	/// @brief Download file.
+	bool download(const VipPath& src, const VipPath& dst);
+
 	/// Starts a search in given directory based on a regular expression and a filter.
 	///  This function will launch the searching in a separate thread and return immediately.
 	///  Search results are retrieved with the signal #VipMapFileSystem::found() or the function #VipMapFileSystem::searchResults().
@@ -263,6 +267,7 @@ public:
 	QString errorString() const;
 	/// Returns the error code for the last operation (or 0 if no error occured)
 	int errorCode() const;
+
 
 protected:
 	/// Returns the standard attributes for file or directory
@@ -288,6 +293,8 @@ protected:
 	/// Open a file in given \a mode and returns a QIODevice to manipulate this file.
 	/// Returns a nullptr QIODevice on failure.
 	virtual QIODevice* openPath(const VipPath& path, QIODevice::OpenMode modes);
+
+	virtual bool downloadFile(const VipPath& path, const VipPath& out_path) { return false; }
 
 	void setError(const QString& error_str, int error_code = -2);
 	void resetError();
@@ -324,7 +331,7 @@ public:
 
 	static bool exists_timeout(const QString& path, int milli_timeout = -1, bool* timed_out = nullptr);
 	static bool has_network_issues();
-
+	using VipMapFileSystem::open;
 protected:
 	virtual QStringList standardFileSystemAttributes();
 	virtual VipPathList rootPaths();
@@ -335,6 +342,7 @@ protected:
 	virtual bool copyPath(const VipPath& src, const VipPath& dst);
 	virtual VipPathList listPathContent(const VipPath& path);
 	virtual QIODevice* openPath(const VipPath& path, QIODevice::OpenMode modes);
+	virtual bool downloadFile(const VipPath& path, const VipPath& out_path) { return copyPath(path,out_path); }
 };
 
 VIP_REGISTER_QOBJECT_METATYPE(VipPhysicalFileSystem*)
@@ -353,7 +361,7 @@ public:
 	virtual bool isOpen() const;
 	virtual void setPassword(const QByteArray& pwd);
 	virtual bool requirePassword() const { return true; }
-
+	using VipMapFileSystem::open;
 protected:
 	virtual QStringList standardFileSystemAttributes();
 	virtual VipPathList rootPaths();
@@ -364,9 +372,9 @@ protected:
 	virtual bool copyPath(const VipPath& src, const VipPath& dst);
 	virtual VipPathList listPathContent(const VipPath& path);
 	virtual QIODevice* openPath(const VipPath& path, QIODevice::OpenMode modes);
-
+	virtual bool downloadFile(const VipPath& path, const VipPath& out_path);
 	
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 VIP_REGISTER_QOBJECT_METATYPE(VipSFTPFileSystem*)

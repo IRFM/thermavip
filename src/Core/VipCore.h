@@ -42,6 +42,7 @@
 
 #include "VipFunctional.h"
 #include "VipSceneModel.h"
+#include "VipPimpl.h"
 
 #if QT_VERSION < QT_VERSION_CHECK(5, 14, 0)
 

@@ -813,7 +813,7 @@ VipProcessingObjectInfo::VipProcessingObjectInfo(VipMainWindow* window)
 {
 	setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
 
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 
 	setWindowTitle("Player properties");
 	setObjectName("Processing infos");

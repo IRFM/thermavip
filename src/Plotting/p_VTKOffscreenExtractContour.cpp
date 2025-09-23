@@ -211,7 +211,7 @@ public:
 
 OffscreenExtractContour::OffscreenExtractContour()
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 	d_data->realRenderWin = nullptr;
 	d_data->state = ExtractAll;
 	d_data->mTime = 0;

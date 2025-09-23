@@ -164,7 +164,7 @@ public:
 
 VipConnection::VipConnection()
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 }
 
 VipConnection::~VipConnection()
@@ -1279,7 +1279,7 @@ VipProcessingManager& VipProcessingManager::instance()
 
 VipProcessingManager::VipProcessingManager()
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 }
 
 void VipProcessingManager::add(VipDataList* lst)
@@ -2191,7 +2191,7 @@ VipProcessingObject* VipProcessingObject::Info::create() const
 VipProcessingObject::VipProcessingObject(QObject* parent)
   : VipErrorHandler()
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 		
 	this->setParent(parent);
 
@@ -3830,7 +3830,7 @@ public:
 VipProcessingList::VipProcessingList(QObject* parent)
   : VipProcessingObject(parent)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 }
 
 VipProcessingList::~VipProcessingList()
@@ -4219,7 +4219,7 @@ public:
 VipSceneModelBasedProcessing::VipSceneModelBasedProcessing(QObject* parent)
   : VipProcessingObject(parent)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 	this->topLevelPropertyAt(1)->toMultiProperty()->resize(1);
 }
 

@@ -112,7 +112,7 @@ VipRecordToolBar::VipRecordToolBar(VipRecordToolWidget* tool)
 	setObjectName("Record tool bar");
 	setWindowTitle("Record tool bar");
 
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 
 	d_data->selectItems = new QToolButton(this);
 	d_data->selectItemsMenu = new QMenu(d_data->selectItems);
@@ -303,7 +303,7 @@ public:
 VipPlotItemSelector::VipPlotItemSelector(VipRecordToolWidget* parent)
   : QToolButton(parent)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 	d_data->parent = parent;
 
 	this->setText("Select a signal to record");
@@ -497,7 +497,7 @@ public:
 SkipFrame::SkipFrame(QWidget* parent)
   : QWidget(parent)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 	d_data->text.setText("Take one frame out of");
 	d_data->frames.setRange(1, INT_MAX);
 	d_data->frames.setValue(1);
@@ -586,7 +586,7 @@ VipRecordToolWidget::VipRecordToolWidget(VipMainWindow* window)
 	// setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
 	this->setAllowedAreas(Qt::NoDockWidgetArea);
 
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 	d_data->recorder = new VipGenericRecorder(this);
 	// d_data->recorder->setMultiSave(true);
 	d_data->itemSelector = new VipPlotItemSelector(this);
@@ -1547,7 +1547,7 @@ public:
 VipRecordWidgetButton::VipRecordWidgetButton(VipBaseDragWidget* widget, QWidget* parent)
   : QToolButton(parent)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 	d_data->ready = false;
 	d_data->widget = widget;
 

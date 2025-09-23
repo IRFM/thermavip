@@ -376,7 +376,7 @@ protected:
 
 private:
 	
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 /// Extract a feature (min, max, mean,...) from a set of samples (images, curves,...)
 class VIP_CORE_EXPORT VipSamplesFeature : public VipBaseDataFusion
@@ -400,7 +400,7 @@ protected:
 private:
 	void setOutput(const QVariant& v);
 	
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 VIP_REGISTER_QOBJECT_METATYPE(VipSamplesFeature*)

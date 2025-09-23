@@ -526,7 +526,7 @@ public:
 VipTcpServer::VipTcpServer(QObject* parent)
   : QTcpServer(parent)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 }
 
 VipTcpServer::~VipTcpServer()

@@ -119,7 +119,7 @@ private:
 	static int mapToView(QGraphicsView* view, double length);
 
 	
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 

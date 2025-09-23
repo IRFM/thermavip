@@ -66,7 +66,7 @@ public:
 VipPlotGrid::VipPlotGrid()
   : VipPlotItem()
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 	this->setZValue(10);
 	this->setItemAttribute(VisibleLegend, false);
 	this->setItemAttribute(HasLegendIcon, false);
@@ -441,7 +441,7 @@ static bool registerVipPlotCanvas = vipSetKeyWordsForClass(&VipPlotCanvas::stati
 VipPlotCanvas::VipPlotCanvas()
   : VipPlotItem()
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 
 	this->setFlag(ItemIsSelectable, false);
 	this->setItemAttribute(VisibleLegend, false);

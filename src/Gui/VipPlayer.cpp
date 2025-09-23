@@ -130,7 +130,7 @@ VipPlayerToolBar::VipPlayerToolBar(QWidget* parent)
 //
 // VipDefaultSceneModelDisplayOptions::VipDefaultSceneModelDisplayOptions()
 // {
-// VIP_CREATE_PRIVATE_DATA(d_data);
+// VIP_CREATE_PRIVATE_DATA();
 // d_data->pen = QPen();
 // d_data->brush = QBrush(QColor(255, 0, 0, 70));
 // d_data->components = VipPlotShape::Background | VipPlotShape::Border | VipPlotShape::Id;
@@ -212,7 +212,7 @@ public:
 
 VipPlotItemClipboard::VipPlotItemClipboard()
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 }
 VipPlotItemClipboard::~VipPlotItemClipboard() {}
 
@@ -279,7 +279,7 @@ public:
 
 VipPlayerLifeTime::VipPlayerLifeTime()
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 }
 
 VipPlayerLifeTime::~VipPlayerLifeTime() {}
@@ -371,7 +371,7 @@ public:
 VipAbstractPlayer::VipAbstractPlayer(QWidget* parent)
   : VipPlotWidget(parent)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 	VipUniqueId::id(this);
 
 	VipPlayerLifeTime::emitCreated(this);
@@ -794,7 +794,7 @@ public:
 VipPlayer2D::VipPlayer2D(QWidget* parent)
   : VipAbstractPlayer(parent)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 	d_data->keyEventId = 0;
 	d_data->toolBar = new VipPlayerToolBar(this);
 	d_data->toolBar->setIconSize(QSize(20, 20));
@@ -2197,7 +2197,7 @@ ImageAndText::ImageAndText()
 VipVideoPlayer::VipVideoPlayer(VipImageWidget2D* img, QWidget* parent)
   : VipPlayer2D(parent)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 	// d_data->recorder = new VipGenericRecorder(this);
 	d_data->viewer = img ? img : new VipImageWidget2D(this);
 	d_data->viewer->setMinimumSize(100, 100);
@@ -5319,7 +5319,7 @@ public:
 VipPlotPlayer::VipPlotPlayer(VipAbstractPlotWidget2D* viewer, QWidget* parent)
   : VipPlayer2D(parent)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 	d_data->needComputeStartDate = true;
 	d_data->timeMarkerAlwaysVisible = VipGuiDisplayParamaters::instance()->alwaysShowTimeMarker();
 	// vip_debug("VipPlotPlayer::setTimeMarkerAlwaysVisible :%i\n", (int)d_data->timeMarkerAlwaysVisible);

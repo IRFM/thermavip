@@ -235,7 +235,7 @@ public:
 VipIODevice::VipIODevice(QObject* parent)
   : VipProcessingObject(parent)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 }
 
 VipIODevice::~VipIODevice()
@@ -1224,7 +1224,7 @@ static QList<T> findDirectChildren(const QObject* obj)
 VipProcessingPool::VipProcessingPool(QObject* parent)
   : VipIODevice(parent)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data,this);
+	VIP_CREATE_PRIVATE_DATA(this);
 	this->setOpenMode(ReadOnly);
 
 	d_data->streamingTimer.setSingleShot(false);
@@ -2645,7 +2645,7 @@ public:
 VipTimeRangeBasedGenerator::VipTimeRangeBasedGenerator(QObject* parent)
   : VipIODevice(parent)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 }
 
 VipTimeRangeBasedGenerator::~VipTimeRangeBasedGenerator()
@@ -3821,7 +3821,7 @@ public:
 VipDirectoryReader::VipDirectoryReader(QObject* parent)
   : VipIODevice(parent)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 	// set one output
 	this->topLevelOutputAt(0)->toMultiOutput()->add();
 }
@@ -4830,7 +4830,7 @@ public:
 VipArchiveRecorder::VipArchiveRecorder(QObject* parent)
   : VipIODevice(parent)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 	d_data->archive.registerFastType(qMetaTypeId<VipAnyData>());
 	d_data->archive.registerFastType(qMetaTypeId<QVariantMap>());
 }
@@ -5002,7 +5002,7 @@ public:
 VipArchiveReader::VipArchiveReader(QObject* parent)
   : VipIODevice(parent)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 	d_data->device_type = Temporal;
 	// connect(&d_data->timer, SIGNAL(timeout()), this, SLOT(bufferData()), Qt::DirectConnection);
 }

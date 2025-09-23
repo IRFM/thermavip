@@ -113,7 +113,7 @@ public:
 VipPolarValueGauge::VipPolarValueGauge(QWidget* parent)
   : VipPlotPolarWidget2D(parent)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 	this->setArea(new VipCustomPolarArea(this));
 	this->area()->polarAxis()->setStartAngle(-15);
 	this->area()->polarAxis()->setEndAngle(180 + 15);

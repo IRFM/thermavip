@@ -69,7 +69,7 @@ public:
 
 VipProgress::VipProgress(double min, double max, const QString& text)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 
 	if (progressManager()) {
 		if (QThread::currentThread() == QCoreApplication::instance()->thread())
@@ -129,7 +129,6 @@ void VipProgress::setValue(double value)
 		{
 			// reset value to show the progress
 			QCoreApplication::processEvents();
-			// QMetaObject::invokeMethod(progressManager(), "setValue", Qt::DirectConnection, Q_ARG(QObjectPointer, this), Q_ARG(int, v));
 		}
 	}
 }

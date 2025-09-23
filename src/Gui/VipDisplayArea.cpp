@@ -151,7 +151,7 @@ VipDisplayTabBar::VipDisplayTabBar(VipDisplayTabWidget* parent)
 	setIconSize(QSize(18, 18));
 	setMouseTracking(true);
 
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 	d_data->tabWidget = parent;
 	d_data->timer = new QTimer(this);
 	d_data->timer->setSingleShot(true);
@@ -799,7 +799,7 @@ public:
 VipPlayerAreaTitleBar::VipPlayerAreaTitleBar(VipDisplayPlayerArea* win)
   : QToolBar(win)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 
 	setIconSize(QSize(18, 18));
 
@@ -1079,12 +1079,14 @@ public:
 	QPointer<VipMultiDragWidget> mainDragWidget;
 };
 
+static QSet<VipDisplayPlayerArea*> _valid_workspaces;
+
 VipDisplayPlayerArea::VipDisplayPlayerArea(QWidget* parent)
   : QWidget(parent)
 {
 	this->setAttribute(Qt::WA_DeleteOnClose);
 
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 	d_data->playWidget = new VipPlayWidget();
 	d_data->playWidget->hide();
 	d_data->pool = nullptr;
@@ -1189,10 +1191,13 @@ VipDisplayPlayerArea::VipDisplayPlayerArea(QWidget* parent)
 	connect(d_data->dragWidgetArea, SIGNAL(mouseReleased(int)), this, SLOT(receiveMouseReleased(int)));
 
 	setUseGlobalColorMap(VipGuiDisplayParamaters::instance()->globalColorScale());
+
+	_valid_workspaces.insert(this);
 }
 
 VipDisplayPlayerArea::~VipDisplayPlayerArea()
 {
+	_valid_workspaces.erase(_valid_workspaces.find(this));
 	d_data->in_destroy = true;
 	// Notify a potential VipProgressWidget to stop its computation
 	if (VipProgressWidget* w = d_data->progressWidget)
@@ -2429,7 +2434,7 @@ public:
 VipDisplayArea::VipDisplayArea(QWidget* parent)
   : QWidget(parent)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 	d_data->tabWidget = new VipDisplayTabWidget();
 
 	QVBoxLayout* lay = new QVBoxLayout();
@@ -2472,7 +2477,7 @@ void VipDisplayArea::computeFocusWidget()
 	// VipDisplayPlayerArea * area = currentDisplayPlayerArea();//qobject_cast<VipDisplayPlayerArea*>()//d_data->tabWidget->widget(d_data->tabWidget->currentIndex()));
 	if (VipDisplayPlayerArea* area = currentDisplayPlayerArea()) {
 		VipDragWidget* focus = area->dragWidgetHandler()->focusWidget();
-		if (focus != d_data->focus) {
+		if (focus != d_data->focus && _valid_workspaces.find(area) != _valid_workspaces.end()) {
 			d_data->focus = focus;
 			Q_EMIT focusWidgetChanged(focus);
 		}
@@ -2537,7 +2542,10 @@ VipDisplayPlayerArea* VipDisplayArea::displayPlayerArea(int index) const
 
 VipDisplayPlayerArea* VipDisplayArea::currentDisplayPlayerArea() const
 {
-	return d_data->current;
+	VipDisplayPlayerArea * res = d_data->current;
+	if (res && _valid_workspaces.contains(res))
+		return res;
+	return nullptr;
 }
 
 VipDragWidgetArea* VipDisplayArea::dragWidgetArea(int index) const
@@ -3316,7 +3324,7 @@ VipMainWindow::VipMainWindow()
 	// VipGuiDisplayParamaters::instance(this);
 
 	this->setAttribute(Qt::WA_DeleteOnClose);
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 
 	d_data->hasFrame = VipCommandOptions::instance().count("frame") > 0;
 
@@ -4681,7 +4689,7 @@ void VipMainWindow::toggleWorkspaceFlatHistogram()
 
 void VipMainWindow::concatenateVideos()
 {
-	VipConcatenateVideosEditor* ed = new VipConcatenateVideosEditor();
+	VipConcatenateVideosOpenEditor* ed = new VipConcatenateVideosOpenEditor();
 	std::unique_ptr<VipConcatenateVideos> device(new VipConcatenateVideos());
 	ed->setDevice(device.get());
 

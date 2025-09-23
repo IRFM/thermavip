@@ -105,7 +105,7 @@ VipSliderGrip::VipSliderGrip(VipAbstractScale* parent)
   : QGraphicsObject(parent)
   , VipPaintItem(this)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 	d_data->singleStepEnabled = false;
 	d_data->singleStep = 1;
 	d_data->singleStepReference = Vip::InvalidValue;

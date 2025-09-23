@@ -161,7 +161,7 @@ public:
 //! Constructor
 VipScaleEngine::VipScaleEngine()
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 }
 
 //! Destructor

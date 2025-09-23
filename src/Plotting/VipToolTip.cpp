@@ -102,7 +102,7 @@ public:
 VipToolTip::VipToolTip(QObject* parent)
   : QObject(parent)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 }
 
 VipToolTip::~VipToolTip()

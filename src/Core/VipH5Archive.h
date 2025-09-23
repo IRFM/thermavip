@@ -100,5 +100,5 @@ protected:
 	virtual void doRestore();
 
 private:
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };

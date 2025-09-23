@@ -68,7 +68,7 @@ public:
 VipVTKActorParametersEditor::VipVTKActorParametersEditor(QWidget * parent)
 	:QWidget(parent)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 
 	QGridLayout * lay = new QGridLayout();
 	int row = -1;

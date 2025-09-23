@@ -65,7 +65,7 @@ public:
 
 VipPlotItemDynamicProperty::VipPlotItemDynamicProperty(const QString& name)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 	d_data->name = name;
 }
 VipPlotItemDynamicProperty::~VipPlotItemDynamicProperty()
@@ -160,7 +160,7 @@ public:
 
 VipPaintItem::VipPaintItem(QGraphicsObject* obj)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 	d_data->graphicsObject = obj;
 	d_data->graphicsObject->setProperty("VipPaintItem", QVariant::fromValue(this));
 }
@@ -2741,7 +2741,7 @@ public:
 VipPlotItemData::VipPlotItemData(const VipText& title)
   : VipPlotItem(title)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 	connect(this, SIGNAL(colorMapChanged(VipPlotItem*)), this, SLOT(resetData()), Qt::DirectConnection);
 }
 

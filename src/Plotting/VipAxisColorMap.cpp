@@ -79,7 +79,7 @@ public:
 VipAxisColorMap::VipAxisColorMap(Alignment pos, QGraphicsItem* parent)
   : VipAxisBase(pos, parent)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 	d_data->colorBar.colorMap = nullptr;
 	d_data->colorBar.width = 15;
 	d_data->colorBar.isEnabled = true;

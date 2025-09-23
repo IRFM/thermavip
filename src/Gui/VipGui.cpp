@@ -246,7 +246,7 @@ public:
 
 VipFileSharedMemory::VipFileSharedMemory()
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 }
 
 VipFileSharedMemory::~VipFileSharedMemory() {}
@@ -397,7 +397,7 @@ public:
 
 VipGuiDisplayParamaters::VipGuiDisplayParamaters(VipMainWindow* win)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 	d_data->setAndApply = true;
 
 	d_data->shapePen = QPen(QColor(Qt::black), 1);

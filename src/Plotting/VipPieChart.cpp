@@ -234,7 +234,7 @@ public:
 VipPieItem::VipPieItem(const VipText& title)
   : VipAbstractPieItem(title)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 	d_data->quiverPath.setColor(Qt::black);
 	d_data->quiverPath.setStyle(VipQuiverPath::QuiverStyles());
 	// d_data->quiverPath.setExtremityBrush(VipQuiverPath::End,QBrush(Qt::red));
@@ -889,7 +889,7 @@ public:
 VipPieChart::VipPieChart(const VipText& title)
   : VipPlotItemComposite(UniqueItem, title)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 	// this->setFlag(ItemIsSelectable,false);
 	// this->setAcceptHoverEvents(false);
 	// this->setItemAttribute(VisibleLegend,false);

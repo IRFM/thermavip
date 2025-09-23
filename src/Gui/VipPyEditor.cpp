@@ -29,7 +29,7 @@ public:
 VipPyEditor::VipPyEditor(QWidget* parent)
   : VipTabEditor(Qt::Horizontal, parent)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 
 	d_data->runFileCode = "_vip_stop = 1\n"
 			      "def runFile(file):\n"

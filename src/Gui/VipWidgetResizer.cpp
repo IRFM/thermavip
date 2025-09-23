@@ -136,7 +136,7 @@ void VipWidgetResizer::removeCursors()
 VipWidgetResizer::VipWidgetResizer(QWidget* parent)
   : QObject(parent)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 
 	// QApplication::instance()->installEventFilter(this);
 	d_data->timer.setSingleShot(true);

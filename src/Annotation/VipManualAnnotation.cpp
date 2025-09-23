@@ -441,7 +441,7 @@ VipAnnotationParameters::VipAnnotationParameters(const QString& device)
   : QWidget()
 {
 	// setStyleSheet("QToolBar > QToolButton{ margin: 0px 10px; }");
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 	d_data->commentChanged = false;
 	d_data->nameChanged = false;
 
@@ -686,7 +686,7 @@ public:
 
 VipManualAnnotation::VipManualAnnotation(VipPlayerDBAccess* access)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 	d_data->dbAccess = access;
 	d_data->player = access->player();
 	d_data->timer.setSingleShot(true);

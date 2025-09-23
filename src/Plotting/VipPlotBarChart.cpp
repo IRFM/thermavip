@@ -173,7 +173,7 @@ public:
 VipPlotBarChart::VipPlotBarChart(const VipText& title)
   : VipPlotItemDataType(title)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 	d_data->boxStyle.setBorderPen(QPen(Qt::NoPen));
 }
 

@@ -180,7 +180,7 @@ public:
 VipOtherPlayerDataEditor::VipOtherPlayerDataEditor()
   : QWidget()
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 	d_data->tdisplays.setText("Operation on data:");
 
 	d_data->lineBefore = VipLineWidget::createHLine();
@@ -370,7 +370,7 @@ public:
 
 Vip2DDataEditor::Vip2DDataEditor()
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 	d_data->editArray = new QRadioButton("Create a 1D/2D array");
 	d_data->editArray->setToolTip("<b>Manually create a 1D/2D array</b><br>This is especially usefull for convolution functions.");
 	d_data->editPlayer = new QRadioButton("Take the data from another player");
@@ -470,7 +470,7 @@ public:
 VipFindDataButton::VipFindDataButton(QWidget* parent)
   : QToolButton(parent)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 
 	this->setPopupMode(QToolButton::InstantPopup);
 	this->setText("No data selected");
@@ -646,7 +646,7 @@ public:
 VipEditDataFusionProcessing::VipEditDataFusionProcessing(QWidget* parent)
   : QWidget(parent)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 
 	QGroupBox* box = new QGroupBox("Processing inputs");
 	// box->setFlat(true);
@@ -775,7 +775,7 @@ public:
 VipProcessingObjectEditor::VipProcessingObjectEditor()
   : QWidget()
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 	QVBoxLayout* lay = new QVBoxLayout();
 	lay->addWidget(&d_data->oneInput);
 	lay->addWidget(&d_data->multiInput);
@@ -835,7 +835,7 @@ public:
 VipIODeviceEditor::VipIODeviceEditor()
   : QWidget()
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 	QVBoxLayout* lay = new QVBoxLayout();
 	lay->addWidget(&d_data->openRead);
 	lay->addWidget(&d_data->openWrite);
@@ -1099,7 +1099,7 @@ public:
 
 VipProcessingListEditor::VipProcessingListEditor()
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 	d_data->editor = new VipUniqueProcessingObjectEditor();
 	d_data->editor->setShowExactProcessingOnly(true);
 
@@ -1495,7 +1495,7 @@ public:
 VipSplitAndMergeEditor::VipSplitAndMergeEditor(QWidget* parent)
   : QWidget(parent)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 
 	QVBoxLayout* lay = new QVBoxLayout();
 	lay->setContentsMargins(0, 0, 0, 0);
@@ -1651,7 +1651,7 @@ public:
 
 VipExtractComponentEditor::VipExtractComponentEditor()
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 	d_data->components.setToolTip("Select the component to extract");
 	d_data->components.setEditable(false);
 	// d_data->components.QComboBox::setEditText("Invariant");
@@ -1811,7 +1811,7 @@ static int __indexForType(int type)
 
 VipConvertEditor::VipConvertEditor()
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 	d_data->types.setToolTip("Select the output type");
 	d_data->types.setEditable(false);
 
@@ -1893,7 +1893,7 @@ public:
 VipDisplayImageEditor::VipDisplayImageEditor()
   : QWidget()
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 
 	QVBoxLayout* lay = new QVBoxLayout();
 	lay->setContentsMargins(0, 0, 0, 0);
@@ -1965,7 +1965,7 @@ public:
 VipDisplayCurveEditor::VipDisplayCurveEditor()
   : QWidget()
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 
 	QVBoxLayout* lay = new QVBoxLayout();
 	lay->setContentsMargins(0, 0, 0, 0);
@@ -2030,7 +2030,7 @@ public:
 
 VipSwitchEditor::VipSwitchEditor()
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 
 	QHBoxLayout* lay = new QHBoxLayout();
 	lay->addWidget(&d_data->box);
@@ -2093,7 +2093,7 @@ public:
 
 VipClampEditor::VipClampEditor()
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 
 	QGridLayout* lay = new QGridLayout();
 	lay->addWidget(&d_data->clampMax, 0, 0);
@@ -2176,7 +2176,7 @@ public:
 
 VipTextFileReaderEditor::VipTextFileReaderEditor()
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 	QVBoxLayout* lay = new QVBoxLayout();
 	lay->addWidget(&d_data->label);
 	lay->addWidget(&d_data->image);
@@ -2253,7 +2253,7 @@ public:
 
 VipTextFileWriterEditor::VipTextFileWriterEditor()
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 
 	QHBoxLayout* hlay = new QHBoxLayout();
 	hlay->addWidget(&d_data->digits_label);
@@ -2327,7 +2327,7 @@ public:
 
 VipImageWriterEditor::VipImageWriterEditor()
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 	QVBoxLayout* lay = new QVBoxLayout();
 	lay->addWidget(&d_data->label);
 	lay->addWidget(&d_data->stack);
@@ -2394,7 +2394,7 @@ public:
 };
 VipCSVWriterEditor::VipCSVWriterEditor()
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 
 	QHBoxLayout* hlay = new QHBoxLayout();
 	hlay->addWidget(&d_data->resampleText);
@@ -2541,7 +2541,7 @@ public:
 
 VipDirectoryReaderEditor::VipDirectoryReaderEditor()
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 
 	// create the options for when the device is closed
 
@@ -2766,7 +2766,7 @@ void VipDirectoryReaderEditor::apply()
 
 
 
-class VipConcatenateVideosEditor::PrivateData
+class VipConcatenateVideosOpenEditor::PrivateData
 {
 public:
 	QPointer<VipConcatenateVideos> reader;
@@ -2782,6 +2782,7 @@ public:
 	VipDoubleEdit start_time;
 	VipDoubleEdit end_time;
 	QSpinBox one_out_of;
+	QCheckBox bufferize;
 
 	QMap<const QMetaObject*, VipUniqueProcessingObjectEditor*> editors;
 	QPushButton applyToAllDevices;
@@ -2797,10 +2798,10 @@ static QGroupBox* createBox(const QString& name)
 	return b;
 }
 
-VipConcatenateVideosEditor::VipConcatenateVideosEditor()
+VipConcatenateVideosOpenEditor::VipConcatenateVideosOpenEditor()
   : QWidget()
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 	d_data->file_suffixes.setToolTip("Supported extensions with comma separators");
 	d_data->file_suffixes.setPlaceholderText("Supported extensions");
 	d_data->recursive.setText("Read subdirectories");
@@ -2814,6 +2815,8 @@ VipConcatenateVideosEditor::VipConcatenateVideosEditor()
 	d_data->end_time.setToolTip("End time for each sub-video, relative to video start");
 	d_data->one_out_of.setToolTip("Take one frame out of");
 	d_data->one_out_of.setRange(1, 1000000);
+	d_data->bufferize.setText("Bufferize images");
+	d_data->bufferize.setToolTip("Store all images in memory");
 
 	QGridLayout* grid = new QGridLayout();
 	int row = 0;
@@ -2841,6 +2844,8 @@ VipConcatenateVideosEditor::VipConcatenateVideosEditor()
 	grid->addWidget(new QLabel("Skip frames"), row, 0);
 	grid->addWidget(&d_data->one_out_of, row++, 1);
 
+	grid->addWidget(&d_data->bufferize, row++, 0, 1, 2);
+
 	QVBoxLayout *vlay = new QVBoxLayout();
 	vlay->setContentsMargins(0, 0, 0, 0);
 	vlay->addLayout(grid);
@@ -2851,12 +2856,12 @@ VipConcatenateVideosEditor::VipConcatenateVideosEditor()
 	d_data->alphabetical_order.setChecked(true);
 }
 
-VipConcatenateVideosEditor::~VipConcatenateVideosEditor()
+VipConcatenateVideosOpenEditor::~VipConcatenateVideosOpenEditor()
 {
 
 }
 	
-void VipConcatenateVideosEditor::setDevice(VipConcatenateVideos* d)
+void VipConcatenateVideosOpenEditor::setDevice(VipConcatenateVideos* d)
 {
 	if (d == d_data->reader)
 		return;
@@ -2868,10 +2873,11 @@ void VipConcatenateVideosEditor::setDevice(VipConcatenateVideos* d)
 	d_data->start_time.setValue(d->propertyAt(0)->value<double>());
 	d_data->end_time.setValue(d->propertyAt(1)->value<double>());
 	d_data->one_out_of.setValue(d->propertyAt(2)->value<int>());
+	d_data->bufferize.setChecked(d->propertyAt(3)->value<bool>());
 }
 
 	
-void VipConcatenateVideosEditor::apply()
+void VipConcatenateVideosOpenEditor::apply()
 {
 	if (!d_data->reader)
 		return;
@@ -2879,6 +2885,7 @@ void VipConcatenateVideosEditor::apply()
 	d_data->reader->propertyAt(0)->setData(d_data->start_time.value());
 	d_data->reader->propertyAt(1)->setData(d_data->end_time.value());
 	d_data->reader->propertyAt(2)->setData(d_data->one_out_of.value());
+	d_data->reader->propertyAt(3)->setData(d_data->bufferize.isChecked());
 
 	VipConcatenateVideos::SortOption opt = VipConcatenateVideos::Sorted;
 	if (d_data->reversed_order.isChecked())
@@ -2900,9 +2907,8 @@ void VipConcatenateVideosEditor::apply()
 	QStringList suffix_list = suffixes.split(",", VIP_SKIP_BEHAVIOR::SkipEmptyParts);
 
 	auto files = VipConcatenateVideos::listFiles(d_data->reader->mapFileSystem().data(), dirname, suffix_list, opt, recursive);
-
-	for (const QString & f : files)
-		vip_debug("%s ", QFileInfo(f).fileName().toLatin1().data());
+	for (const auto& f : files)
+		vip_debug("%s ", f.toLatin1().data());
 	vip_debug("\n");
 
 	// Extract all found suffixes
@@ -2925,6 +2931,102 @@ void VipConcatenateVideosEditor::apply()
 }
 
 
+class VipConcatenateVideosEditor::PrivateData
+{
+public:
+	QAction* remove;
+	QAction* undo;
+	QAction* redo;
+	VipConcatenateVideosManager manager;
+};
+
+VipConcatenateVideosEditor::VipConcatenateVideosEditor()
+  : QToolBar()
+{
+	VIP_CREATE_PRIVATE_DATA();
+
+	d_data->remove = this->addAction(vipIcon("del.png"), "Remove current sub-video from the full video");
+	d_data->undo = this->addAction(vipIcon("undo.png"), "Undo last action");
+	d_data->redo = this->addAction(vipIcon("redo.png"), "Redo last undone action");
+
+	connect(d_data->remove, SIGNAL(triggered(bool)), this, SLOT(removeCurrentDevice()));
+	connect(d_data->undo, SIGNAL(triggered(bool)), this, SLOT(undo()));
+	connect(d_data->redo, SIGNAL(triggered(bool)), this, SLOT(redo()));
+}
+VipConcatenateVideosEditor::~VipConcatenateVideosEditor(){}
+
+void VipConcatenateVideosEditor::setDevice(VipConcatenateVideos* d)
+{
+	d_data->manager.setDevice(d);
+	updateIcons();
+}
+VipConcatenateVideos* VipConcatenateVideosEditor::device() const
+{
+	return d_data->manager.device();
+}
+
+void VipConcatenateVideosEditor::removeCurrentDevice()
+{
+	if (auto* d = device()) {
+		d_data->manager.removeDeviceAtTime(d->time());
+	}
+	updateIcons();
+}
+	
+void VipConcatenateVideosEditor::undo()
+{
+	d_data->manager.undo();
+	updateIcons();
+}
+void VipConcatenateVideosEditor::redo()
+{
+	d_data->manager.redo();
+	updateIcons();
+}
+
+void VipConcatenateVideosEditor::updateIcons()
+{
+	if (auto * d = device()){
+		d_data->undo->setEnabled(d_data->manager.undoCount() > 0);
+		d_data->redo->setEnabled(d_data->manager.redoCount() > 0);
+		d_data->remove->setEnabled(d->deviceCount() > 1);
+	}
+	else {
+		d_data->remove->setEnabled(false);
+		d_data->undo->setEnabled(false);
+		d_data->redo->setEnabled(false);
+	}
+}
+
+static void apply_VipConcatenateVideosEditor(VipVideoPlayer* pl)
+{
+	if (!pl)
+		return;
+	if (!pl->mainDisplayObject())
+		return;
+
+	auto src = vipListCast<VipConcatenateVideos*>(pl->mainDisplayObject()->allSources());
+	if (src.size() != 1)
+		return;
+
+	VipConcatenateVideosEditor* editor = pl->property("_vip_VipConcatenateVideosEditor").value<VipConcatenateVideosEditor*>();
+	if (!editor) {
+		editor = new VipConcatenateVideosEditor();
+		editor->setDevice(src.first());
+		pl->toolBar()->addSeparator();
+		pl->toolBar()->addWidget(editor);
+		pl->setProperty("_vip_VipConcatenateVideosEditor",QVariant::fromValue((QWidget*)editor));
+	}
+}
+static int register_VipConcatenateVideosEditor()
+{
+
+	vipFDPlayerCreated().append<void(VipVideoPlayer*)>(apply_VipConcatenateVideosEditor);
+	return 0;
+}
+static int _register_VipConcatenateVideosEditor = register_VipConcatenateVideosEditor();
+
+
 class VipOperationBetweenPlayersEditor::PrivateData
 {
 public:
@@ -2936,7 +3038,7 @@ public:
 VipOperationBetweenPlayersEditor::VipOperationBetweenPlayersEditor()
   : QWidget()
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 
 	QGridLayout* lay = new QGridLayout();
 
@@ -3296,7 +3398,7 @@ public:
 VipGenericImageTransformEditor::VipGenericImageTransformEditor()
   : QWidget()
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 	d_data->trs = new TrListWidget(this);
 	QVBoxLayout* l = new QVBoxLayout();
 	l->setContentsMargins(0, 0, 0, 0);
@@ -3505,7 +3607,7 @@ public:
 
 private:
 	
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 DrawWarpingPoints::DrawWarpingPoints(VipAbstractPlotArea* area, VipWarpingEditor* p)
@@ -3625,7 +3727,7 @@ public:
 PlotWarpingPoints::PlotWarpingPoints(const VipText& title)
   : VipPlotItemDataType(title)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 	this->setItemAttribute(VipPlotItem::HasLegendIcon, false);
 	this->setItemAttribute(VipPlotItem::AutoScale, false);
 	this->setItemAttribute(VipPlotItem::IsSuppressable, false);
@@ -3706,7 +3808,7 @@ public:
 VipWarpingEditor::VipWarpingEditor(QWidget* parent)
   : QWidget(parent)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 
 	QHBoxLayout* hlay1 = new QHBoxLayout();
 	hlay1->addWidget(&d_data->save);
@@ -4514,7 +4616,7 @@ public:
 VipUniqueProcessingObjectEditor::VipUniqueProcessingObjectEditor(QWidget* parent)
   : QWidget(parent)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 
 	QVBoxLayout* lay = new QVBoxLayout();
 	lay->setSpacing(1);
@@ -4644,6 +4746,8 @@ bool VipUniqueProcessingObjectEditor::setProcessingObject(VipProcessingObject* o
 
 	if (!obj)
 		return true;
+	if (VipProcessingManager::instance().processingObjectInstances().indexOf(obj) < 0)
+		return false;
 
 	// create the editors from the top level class type to VipProcessingObject, and add them
 	QVector<const QMetaObject*> metas;
@@ -4734,6 +4838,11 @@ bool VipUniqueProcessingObjectEditor::setProcessingObject(VipProcessingObject* o
 
 	setShowExactProcessingOnly(d_data->isShowExactProcessingOnly);
 
+	if (res) {
+		int id = VipProcessingManager::instance().processingObjectInstances().indexOf(obj);
+		if (id < 0)
+			return false;
+	}
 	return res;
 }
 
@@ -4748,7 +4857,7 @@ public:
 VipProcessingLeafSelector::VipProcessingLeafSelector(QWidget* parent)
   : QToolButton(parent)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 
 	this->setText("Select a leaf processing");
 	this->setToolTip("<p><b>Select an item (video, image, curve...) in the current workspace.</b></p>"
@@ -4906,7 +5015,7 @@ public:
 VipProcessingTooButton::VipProcessingTooButton(VipProcessingObject* object)
   : QWidget()
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 	d_data->processing = object;
 	d_data->lastErrorDate = 0;
 
@@ -5143,7 +5252,7 @@ public:
 VipMultiProcessingObjectEditor::VipMultiProcessingObjectEditor(QWidget* parent)
   : QWidget(parent)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 
 	QVBoxLayout* lay = new QVBoxLayout();
 	lay->setContentsMargins(0, 0, 0, 0);
@@ -5220,8 +5329,22 @@ bool VipMultiProcessingObjectEditor::setProcessingObjects(const QList<VipProcess
 
 			connect(editor, SIGNAL(editorVisibilityChanged()), this, SLOT(emitEditorVisibilityChanged()));
 		}
-		else
+		else {
 			delete editor;
+			d_data->processingObjects.clear();
+			d_data->editors.clear();
+			// clear the previous editors
+			QVBoxLayout* lay = static_cast<QVBoxLayout*>(layout());
+			while (lay->count()) {
+				QLayoutItem* item = lay->takeAt(0);
+				if (item->widget()) {
+					item->widget()->disconnect();
+					item->widget()->close();
+				}
+				delete item;
+			}
+			return false;
+		}
 	}
 
 	// TEST: comment
@@ -5417,7 +5540,7 @@ public:
 VipProcessingEditorToolWidget::VipProcessingEditorToolWidget(VipMainWindow* window)
   : VipToolWidgetPlayer(window)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 	d_data->leafSelector = new VipProcessingLeafSelector();
 	d_data->mainWindow = window;
 
@@ -5454,8 +5577,11 @@ VipProcessingEditorToolWidget::~VipProcessingEditorToolWidget()
 {
 }
 
+
 bool VipProcessingEditorToolWidget::setPlayer(VipAbstractPlayer* player)
 {
+	
+
 	// just for ease of use: if no processing has been selected yet, assign a processing from this player
 	if (!player) {
 		d_data->leafSelector->setProcessing(nullptr);
@@ -5514,6 +5640,7 @@ void VipProcessingEditorToolWidget::setProcessingObject(VipProcessingObject* obj
 
 	this->setWindowTitle("Edit processing - " + title);
 
+
 	VipMultiProcessingObjectEditor* editor = d_data->findEditor(object);
 	if (editor)
 		d_data->setEditor(object);
@@ -5526,11 +5653,19 @@ void VipProcessingEditorToolWidget::setProcessingObject(VipProcessingObject* obj
 		editor->setShowExactProcessingOnly(d_data->isShowExactProcessingOnly);
 		editor->setVisibleProcessings(d_data->visibleProcessings);
 		editor->setHiddenProcessings(d_data->hiddenProcessings);
-		editor->setProcessingObjects(lst);
 
-		connect(editor, SIGNAL(editorVisibilityChanged()), this, SLOT(resetSize()));
-		connect(editor, SIGNAL(processingsChanged()), this, SLOT(emitProcessingsChanged()), Qt::DirectConnection);
-		d_data->setEditor(object, editor);
+		
+
+		if (editor->setProcessingObjects(lst)) {
+
+			connect(editor, SIGNAL(editorVisibilityChanged()), this, SLOT(resetSize()));
+			connect(editor, SIGNAL(processingsChanged()), this, SLOT(emitProcessingsChanged()), Qt::DirectConnection);
+			d_data->setEditor(object, editor);
+		}
+		else {
+			delete editor;
+			return;
+		}
 	}
 
 	d_data->leafSelector->setProcessingPool(object->parentObjectPool());
@@ -5660,7 +5795,7 @@ public:
 
 VipRememberDeviceOptions::VipRememberDeviceOptions() 
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 }
 VipRememberDeviceOptions::~VipRememberDeviceOptions() 
 {
@@ -5769,7 +5904,7 @@ public:
 VipSelectDeviceParameters::VipSelectDeviceParameters(VipIODevice* device, QWidget* editor, QWidget* parent)
   : QDialog(parent)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 	setWindowTitle("Edit " + vipSplitClassname(device->metaObject()->className()));
 
 	d_data->device = device;
@@ -5821,7 +5956,7 @@ public:
 VipDeviceChoiceDialog::VipDeviceChoiceDialog(QWidget* parent)
   : QDialog(parent)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 
 	QVBoxLayout* tree_lay = new QVBoxLayout();
 	tree_lay->addWidget(&d_data->text);

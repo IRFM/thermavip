@@ -39,6 +39,7 @@
 #include <QVariant>
 
 #include "VipConfig.h"
+#include "VipPimpl.h"
 
 /// \addtogroup Core
 /// @{

@@ -132,7 +132,7 @@ public:
 VipDisplayObject::VipDisplayObject(QObject* parent)
   : VipProcessingObject(parent)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 
 	this->setScheduleStrategies(Asynchronous);
 	inputAt(0)->setListType(VipDataList::FIFO, VipDataList::None);
@@ -363,7 +363,7 @@ public:
 VipDisplayPlotItem::VipDisplayPlotItem(QObject* parent)
   : VipDisplayObject(parent)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 	connect(&d_data->format_timer, SIGNAL(timeout()), this, SLOT(internalFormatItem()));
 }
 
@@ -678,7 +678,7 @@ public:
 VipDisplayCurve::VipDisplayCurve(QObject* parent)
   : VipDisplayPlotItem(parent)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 	setItem(new VipPlotCurve());
 	item()->setAutoMarkDirty(false);
 	this->propertyName("Sliding_time_window")->setData(VipNumericValueToPointVector::defaultSlidingTimeWindow());
@@ -939,7 +939,7 @@ public:
 VipDisplayImage::VipDisplayImage(QObject* parent)
   : VipDisplayPlotItem(parent)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 	setItem(new VipPlotSpectrogram());
 	item()->setSelectedPen(Qt::NoPen);
 	item()->setAutoMarkDirty(false);

@@ -59,7 +59,7 @@ public:
 VipTimer::VipTimer(QObject* parent)
   : QThread(parent)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 	this->QThread::start();
 }
 

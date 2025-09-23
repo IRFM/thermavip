@@ -173,7 +173,7 @@ public:
 VisualizeDB::VisualizeDB(QWidget* parent)
   : QWidget(parent)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 	d_data->query = new VipQueryDBWidget(QString());
 	d_data->launch = new QPushButton();
 	d_data->reset = new QPushButton();

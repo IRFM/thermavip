@@ -322,7 +322,7 @@ static bool registerVipPolarAxis = vipSetKeyWordsForClass(&VipPolarAxis::staticM
 VipPolarAxis::VipPolarAxis(QGraphicsItem* parent)
   : VipAbstractPolarScale(parent)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 
 	this->setScaleDraw(new VipPolarScaleDraw());
 	this->setMargin(2);
@@ -629,7 +629,7 @@ static bool registerVipRadialAxis = vipSetKeyWordsForClass(&VipRadialAxis::stati
 VipRadialAxis::VipRadialAxis(QGraphicsItem* parent)
   : VipAbstractPolarScale(parent)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 
 	this->setScaleDraw(new VipRadialScaleDraw());
 	this->setMargin(2);

@@ -2274,7 +2274,7 @@ public:
 VipDatasetButton::VipDatasetButton(QWidget* parent)
   : QToolButton(parent)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 	d_data->menu = new VipDragMenu();
 
 	d_data->widget = new QWidget();
@@ -2429,7 +2429,7 @@ public:
 VipQueryDBWidget::VipQueryDBWidget(const QString& device, QWidget* parent)
   : QWidget(parent)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 
 	// Populate everything
 	/* vipEventTypesDB();

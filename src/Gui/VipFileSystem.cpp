@@ -176,7 +176,7 @@ public:
 
 VipIconProvider::VipIconProvider()
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 }
 
 VipIconProvider::~VipIconProvider()
@@ -206,7 +206,7 @@ QIcon VipIconProvider::iconPath(const VipPath& path) const
 {
 	
 	QFileInfo info(path.canonicalPath());
-	if (info.isDir()) {
+	if (info.isDir() || path.isDir()) {
 		if (isDrive(path, info)) {
 			if (d_data->driveIcon.isNull()) 
 				const_cast<QPixmap&>(d_data->driveIcon) = d_data->stdprovider.icon(QFileIconProvider::Drive).pixmap(QSize(30, 30));
@@ -756,7 +756,7 @@ public:
 VipMapFileSystemTree::VipMapFileSystemTree(QWidget* parent)
   : QTreeWidget(parent)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 	d_data->update = new VipMapFileSystemTreeUpdate(this);
 
 	this->setSortingEnabled(true);
@@ -2122,7 +2122,7 @@ public:
 
 VipFileSystemWidget::VipFileSystemWidget(QWidget*)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 
 	d_data->tree = new VipMapFileSystemTree();
 	d_data->searchResults = new VipMapFileSystemTree();

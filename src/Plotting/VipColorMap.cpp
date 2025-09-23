@@ -512,7 +512,7 @@ void applyColorMapLinear(const VipLinearColorMap* map, const VipInterval& interv
 VipLinearColorMap::VipLinearColorMap(VipColorMap::Format format)
   : VipColorMap(format)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 	d_data->mode = ScaledColors;
 	d_data->type = Unknown;
 	d_data->renderColors = nullptr;
@@ -531,7 +531,7 @@ VipLinearColorMap::VipLinearColorMap(VipColorMap::Format format)
 VipLinearColorMap::VipLinearColorMap(const QColor& color1, const QColor& color2, VipColorMap::Format format)
   : VipColorMap(format)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 	d_data->mode = ScaledColors;
 	setColorInterval(color1, color2);
 }
@@ -1305,7 +1305,7 @@ public:
 VipAlphaColorMap::VipAlphaColorMap(const QColor& color)
   : VipColorMap(VipColorMap::RGB)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 	d_data->color = color;
 	d_data->rgb = color.rgb() & qRgba(255, 255, 255, 0);
 }
