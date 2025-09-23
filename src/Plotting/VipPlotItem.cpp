@@ -813,7 +813,8 @@ VipCoordinateSystemPtr VipPlotItem::sceneMap() const
 
 		PrivateData* _data = const_cast<PrivateData*>(d_data.get());
 
-		VipCoordinateSystemPtr tmp(vipBuildCoordinateSystem(axes(), d_data->type));
+		const auto ax = axes();
+		VipCoordinateSystemPtr tmp(ax.isEmpty() ? nullptr : vipBuildCoordinateSystem(ax, d_data->type));
 		SHARED_PTR_NAMESPACE::atomic_store(&_data->sceneMap, tmp ? tmp : VipCoordinateSystemPtr(new VipNullCoordinateSystem(axes())));
 		//_data->sceneMap =  tmp ? tmp : VipCoordinateSystemPtr(new VipNullCoordinateSystem(axes()));
 		_data->dirtyCoordinateSystem = 0;
