@@ -7877,16 +7877,7 @@ static void extractHistogram(VipPlotShape* shape, VipVideoPlayer* pl)
 	if (players.size()) {
 		vipGetMainWindow()->openPlayers(players);
 	}
-	// VipBaseDragWidget * drag = vipCreateFromWidgets(vipListCast<QWidget*>(players));
-	//
-	//
-	// if (VipMultiDragWidget * w = vipCreateFromBaseDragWidget(drag))
-	// {
-	// if (VipDisplayPlayerArea * disp = VipDisplayPlayerArea::fromChildWidget(pl))
-	// {
-	// disp->addWidget(w);
-	// }
-	// }
+	
 }
 
 static void extractPolyline(QList<VipPlotShape*> shapes, VipVideoPlayer* pl)
