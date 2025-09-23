@@ -39,6 +39,7 @@
 #include "VipIODevice.h"
 
 #include <QThread>
+#include <QApplication>
 
 class VipProgressWidget;
 
