@@ -2761,6 +2761,17 @@ VipFileSystemWidget* VipDirectoryBrowser::addFileSystem(VipMapFileSystem* m)
 	w->tree()->insertTopLevelItem(0, shortcuts);
 	w->tree()->setProperty("_vip_shortcuts", QVariant::fromValue(shortcuts));
 
+	// Add home folder to shorcuts
+	QString homeDir = m->homeDirectory();
+	if (!homeDir.isEmpty()) {
+		w->tree()->addToShortcuts(VipPathList() << VipPath(homeDir, true));
+		/* VipMapFileSystemTreeDirItem* home = new VipMapFileSystemTreeDirItem(VipPath(homeDir, true), w->tree());
+		home->setFlags(home->flags() & (~Qt::ItemIsDragEnabled));
+		shortcuts->addChild(home);
+		home->updateContent();*/
+	}
+	
+
 	connect(w, SIGNAL(createFileSystem(const QString&)), this, SLOT(createFileSystem(const QString&)));
 
 	return w;

@@ -800,6 +800,7 @@ QIODevice* VipMapFileSystem::openPath(const VipPath&, QIODevice::OpenMode)
 #include <QStorageInfo>
 #include <qdatetime.h>
 #include <qdir.h>
+#include <QStandardPaths>
 
 // On Windows, having network mounted drive in unconnected state causes a LOT of problems.
 // It freezes calls to QFileInfo::exists and also cripple the icon provider.
@@ -810,6 +811,12 @@ VipPhysicalFileSystem::VipPhysicalFileSystem()
   : VipMapFileSystem(VipMapFileSystem::All)
 {
 	setObjectName("Local file system");
+}
+
+QString VipPhysicalFileSystem::homeDirectory() const
+{
+	const auto lst = QStandardPaths::standardLocations(QStandardPaths::HomeLocation);
+	return lst.isEmpty() ? QString() : lst.first();
 }
 
 QStringList VipPhysicalFileSystem::standardFileSystemAttributes()
@@ -1013,6 +1020,7 @@ public:
 	VipPath listPath;
 	VipPath getPath;
 	QString outFile;
+	QString home;
 	VipPathList result;
 	QByteArray address;
 	QByteArray password;
@@ -1141,6 +1149,9 @@ public:
 			current_pwd = ar;
 			break;
 		}
+
+		current_pwd.replace("\r", "");
+		home = current_pwd;
 
 		QList<QByteArray> lst = current_pwd.split('/');
 		if (lst.size() && lst.first().isEmpty())
@@ -1294,6 +1305,11 @@ bool VipSFTPFileSystem::isOpen() const
 void VipSFTPFileSystem::setPassword(const QByteArray& pwd)
 {
 	d_data->password = pwd;
+}
+
+QString VipSFTPFileSystem::homeDirectory() const
+{
+	return d_data->home;
 }
 
 QStringList VipSFTPFileSystem::standardFileSystemAttributes()

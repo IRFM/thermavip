@@ -204,6 +204,8 @@ public:
 	virtual QByteArray address() const = 0;
 	virtual bool isOpen() const = 0;
 
+	virtual QString homeDirectory() const = 0;
+
 	/// Open the the filesystem if not already done
 	void openIfNecessary();
 
@@ -328,6 +330,7 @@ public:
 	virtual bool open(const QByteArray&) { return true; }
 	virtual QByteArray address() const { return QByteArray(); }
 	virtual bool isOpen() const { return true; }
+	virtual QString homeDirectory() const;
 
 	static bool exists_timeout(const QString& path, int milli_timeout = -1, bool* timed_out = nullptr);
 	static bool has_network_issues();
@@ -361,6 +364,7 @@ public:
 	virtual bool isOpen() const;
 	virtual void setPassword(const QByteArray& pwd);
 	virtual bool requirePassword() const { return true; }
+	virtual QString homeDirectory() const;
 	using VipMapFileSystem::open;
 protected:
 	virtual QStringList standardFileSystemAttributes();
