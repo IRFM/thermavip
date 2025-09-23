@@ -263,7 +263,6 @@ void VipConcatenateVideos::setFrames(const QVector<Frame>& frs)
 
 	d_data->frames = frs;
 	VipTimestamps timestamps;
-	qint64 time = 0;
 
 	for (const auto& f : frs) {
 		timestamps.push_back(f.time);

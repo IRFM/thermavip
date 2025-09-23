@@ -2068,8 +2068,8 @@ struct CustomizePlayer : public QObject
 	{
 		static QPointer<VipDragWidget> prev_focus;
 
-		if (!vipIsObjectValid(w))
-			return;
+		if (w && !vipIsObjectValid(w))
+			w = nullptr;
 
 		if (prev_focus) {
 			prev_focus->setStyleSheet("VipDragWidget{ border: none;}");
