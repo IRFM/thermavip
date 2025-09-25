@@ -128,9 +128,6 @@ set(PLUGINS_LIBS "" CACHE INTERNAL "")
 
 set(PLUGINS_PYTHON_REQUIRE "" CACHE INTERNAL "")
 
-add_subdirectory(src)
-
-
 # Generate requirements.txt
 #configure_file(requirements.txt.in requirements.txt @ONLY)
 #install(FILES ${CMAKE_BINARY_DIR}/requirements.txt DESTINATION ${CMAKE_INSTALL_PREFIX})
@@ -140,6 +137,8 @@ install(DIRECTORY skins DESTINATION "${THERMAVIP_APPLICATION_DIR}")
 install(DIRECTORY help DESTINATION "${THERMAVIP_APPLICATION_DIR}")
 install(DIRECTORY icons DESTINATION "${THERMAVIP_APPLICATION_DIR}")
 install(DIRECTORY fonts DESTINATION "${THERMAVIP_APPLICATION_DIR}")
+
+add_subdirectory(src)
 
 if(WIN32)
 	file(GLOB win32_tools "tools/win32/*.exe")
