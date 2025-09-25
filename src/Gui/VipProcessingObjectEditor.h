@@ -48,6 +48,7 @@
 #include "VipStandardWidgets.h"
 #include "VipToolWidget.h"
 #include "VipWarping.h"
+#include "VipPimpl.h"
 
 /// \addtogroup Gui
 /// @{
@@ -965,7 +966,7 @@ VIP_GUI_EXPORT VipProcessingEditorToolWidget* vipGetProcessingEditorToolWidget(V
 /// and to remember device options when opening a file.
 class VipRememberDeviceOptions
 {
-	VIP_DECLARE_PRIVATE_DATA();
+	VIP_DECLARE_PRIVATE_DATA_NO_QOBJECT();
 	VipRememberDeviceOptions();
 
 public:

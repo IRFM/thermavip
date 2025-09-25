@@ -190,6 +190,8 @@ VipUpdateVideoPlayer::VipUpdateVideoPlayer(VipVideoPlayer* player)
 
 	// show the tool bar when the player displays a valid image.
 	connect(player, SIGNAL(displayImageChanged()), this, SLOT(newPlayerImage()), Qt::DirectConnection);
+	//connect(VipPlayerLifeTime::instance(), SIGNAL(destroyed(VipAbstractPlayer*)), this, SLOT(handleDestroy(VipAbstractPlayer*)));
+	connect(player, SIGNAL(destroy()), this, SLOT(handleDestroy()));
 
 	// read properties and restore state
 	setMarkersEnabled(player->property("_vip_customMarkersEnabled").toBool());
@@ -412,6 +414,17 @@ void VipUpdateVideoPlayer::setDisplayMarkerPos(bool enable)
 	}
 }
 
+void VipUpdateVideoPlayer::handleDestroy()
+{
+	if (sender() == m_player) {
+		VipPlotSpectrogram* spectro = m_player->spectrogram();
+		disconnect(spectro, SIGNAL(dataChanged()), this, SLOT(updateMarkers()));
+		disconnect(m_player->spectrogram()->scene(), SIGNAL(selectionChanged()), this, SLOT(updateMarkers()));
+		disconnect(m_player->plotSceneModel()->sceneModel().shapeSignals(), SIGNAL(sceneModelChanged(const VipSceneModel&)), this, SLOT(updateMarkers()));
+
+	}
+}
+
 void VipUpdateVideoPlayer::setMarkersEnabled(bool enable)
 {
 	m_local_minmax->blockSignals(true);
@@ -527,6 +540,7 @@ void VipUpdateVideoPlayer::updateMarkers()
 					m->setItemAttribute(VipPlotMarker::ClipToScaleRect, false);
 					m->setItemAttribute(VipPlotMarker::HasToolTip, false);
 					m->setItemAttribute(VipPlotMarker::IgnoreMouseEvents, true);
+					m->setFlag(QGraphicsItem::ItemIsSelectable, false);
 					VipSymbol* s = new VipSymbol();
 					s->setSize(10, 10);
 					s->setStyle(VipSymbol::Triangle);
@@ -547,6 +561,7 @@ void VipUpdateVideoPlayer::updateMarkers()
 					m->setItemAttribute(VipPlotMarker::HasToolTip, false);
 					m->setItemAttribute(VipPlotMarker::ClipToScaleRect, false);
 					m->setItemAttribute(VipPlotMarker::IgnoreMouseEvents, true);
+					m->setFlag(QGraphicsItem::ItemIsSelectable, false);
 					VipSymbol* s = new VipSymbol();
 					s->setSize(10, 10);
 					s->setStyle(VipSymbol::Triangle);
@@ -934,7 +949,7 @@ VipUpdatePlotPlayer::VipUpdatePlotPlayer(VipPlotPlayer* player)
 	m_updateTimer.setInterval(1000);
 	connect(&m_updateTimer, SIGNAL(timeout()), this, SLOT(updateMarkers()));
 
-	connect(VipPlayerLifeTime::instance(), SIGNAL(destroyed(VipAbstractPlayer*)), this, SLOT(stopMarkers(VipAbstractPlayer*)));
+	connect(player, SIGNAL(destroy()), this, SLOT(stopMarkers()));
 
 	// read properties and restore state
 	setMarkersEnabled(player->property("_vip_customMarkersEnabled").toBool());
@@ -1040,21 +1055,35 @@ void VipUpdatePlotPlayer::setMarkersEnabled(bool enable)
 	}
 }
 
-void VipUpdatePlotPlayer::stopMarkers(VipAbstractPlayer* pl)
+void VipUpdatePlotPlayer::stopMarkers()
 {
-	if (pl == m_player) {
-		disconnect(&m_updateTimer, SIGNAL(timeout()), this, SLOT(updateMarkers()));
+	if (sender() == m_player) {
 		m_updateTimer.stop();
+		disconnect(&m_updateTimer, SIGNAL(timeout()), this, SLOT(updateMarkers()));
+		disconnect(m_player->defaultXAxis(), SIGNAL(scaleDivChanged(bool)), this, SLOT(updateMarkers()));
+		disconnect(m_player->verticalWindow()->rawData().shapeSignals(), SIGNAL(sceneModelChanged(const VipSceneModel&)), this, SLOT(updateMarkers()));
+		disconnect(m_player->verticalWindow(), SIGNAL(visibilityChanged(VipPlotItem*)), this, SLOT(updateMarkers()));
+		VipAbstractPlotArea* area = m_player->viewer()->area();
+		disconnect(area, SIGNAL(itemDataChanged(VipPlotItem*)), this, SLOT(updateMarkers()));
+		disconnect(area, SIGNAL(itemAdded(VipPlotItem*)), this, SLOT(updateMarkers()));
+		disconnect(area, SIGNAL(itemRemoved(VipPlotItem*)), this, SLOT(updateMarkers()));
 	}
 }
+
 
 void VipUpdatePlotPlayer::updateMarkers()
 {
 
 	if (VipPlotPlayer* p = m_player) {
+		if (!vipIsObjectValid(p))
+			return;
 		// TODO: crash when closing player
 		// Set markers color to curve color, add to Text 'Max:' and 'Min:'
 		VipAbstractPlotArea* area = p->viewer()->area();
+
+		if (area && !vipIsObjectValid(area))
+			return;
+
 		disconnect(area, SIGNAL(itemDataChanged(VipPlotItem*)), this, SLOT(updateMarkers()));
 		disconnect(area, SIGNAL(itemAdded(VipPlotItem*)), this, SLOT(updateMarkers()));
 		disconnect(area, SIGNAL(itemRemoved(VipPlotItem*)), this, SLOT(updateMarkers()));
@@ -1118,6 +1147,7 @@ void VipUpdatePlotPlayer::updateMarkers()
 					max->setItemAttribute(VipPlotMarker::HasToolTip, false);
 					max->setItemAttribute(VipPlotMarker::AutoScale, false);
 					max->setItemAttribute(VipPlotMarker::IgnoreMouseEvents, true);
+					max->setFlag(QGraphicsItem::ItemIsSelectable, false);
 					{
 						VipSymbol* s = new VipSymbol();
 						s->setSize(10, 10);
@@ -1140,6 +1170,7 @@ void VipUpdatePlotPlayer::updateMarkers()
 					min->setItemAttribute(VipPlotMarker::ClipToScaleRect, false);
 					min->setItemAttribute(VipPlotMarker::AutoScale, false);
 					min->setItemAttribute(VipPlotMarker::IgnoreMouseEvents, true);
+					min->setFlag(QGraphicsItem::ItemIsSelectable, false);
 					VipSymbol* s = new VipSymbol();
 					s->setSize(10, 10);
 					s->setStyle(VipSymbol::Triangle);

@@ -337,8 +337,8 @@ public:
 
 VipPlotSpectrogram::VipPlotSpectrogram(const VipText& title)
   : VipPlotRasterData(title)
-  , d_data(new PrivateData())
 {
+	VIP_CREATE_PRIVATE_DATA();
 	// disable antialiazing by default
 	setRenderHints(QPainter::RenderHints());
 }

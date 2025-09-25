@@ -401,8 +401,8 @@ public:
 
 VipClientEventDevice::VipClientEventDevice(QObject* parent)
   : VipIODevice(parent)
-  , d_data(nullptr)
 {
+	VIP_CREATE_PRIVATE_DATA();
 	outputAt(0)->setData(QVariant::fromValue(VipSceneModel()));
 }
 
@@ -427,26 +427,23 @@ bool VipClientEventDevice::open(VipIODevice::OpenModes mode)
 
 void VipClientEventDevice::close()
 {
-	if (d_data) {
-		d_data->parent = nullptr;
-		d_data->wait();
-		d_data.reset();
-	}
+	d_data->parent = nullptr;
+	d_data->wait();
+	VIP_CREATE_PRIVATE_DATA();
+	
 	VipIODevice::close();
 }
 
 bool VipClientEventDevice::enableStreaming(bool enable)
 {
 	// stop
-	if (d_data) {
-		d_data->parent = nullptr;
-		d_data->wait();
-		d_data.reset();
-	}
+	
+	d_data->parent = nullptr;
+	d_data->wait();
+	VIP_CREATE_PRIVATE_DATA();
 
 	if (enable) {
 		// start
-		VIP_CREATE_PRIVATE_DATA();
 		d_data->parent = this;
 		d_data->start();
 
@@ -456,7 +453,7 @@ bool VipClientEventDevice::enableStreaming(bool enable)
 		if (d_data->status.load() < 0) {
 			d_data->parent = nullptr;
 			d_data->wait();
-			d_data.reset();
+			VIP_CREATE_PRIVATE_DATA();
 		}
 	}
 

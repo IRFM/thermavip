@@ -372,8 +372,6 @@ H5FD_device_write(H5FD_t *_file, H5FD_mem_t  /*type*/, hid_t  /*dxpl_id*/, haddr
 		return -1;
 	}
 
-	auto s = file->device->size();
-
 	/* Seek to the correct location */
 	if (!file->device->seek(addr))
 	{

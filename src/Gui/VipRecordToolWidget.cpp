@@ -1235,6 +1235,7 @@ void VipRecordToolWidget::timeout()
 			p.setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing);
 			VipRenderObject::renderObject(d_data->sourceWidget, &p, QPoint(0, 0), true, false);
 		}
+		VipGuiDisplayParamaters::instance()->watermark().addToPixmap(d_data->pixmap);
 
 		VipAnyData any(QVariant::fromValue(vipToArray(d_data->pixmap.toImage())), QDateTime::currentMSecsSinceEpoch() * 1000000);
 		d_data->recorder->inputAt(0)->setData(any);
@@ -1458,6 +1459,7 @@ void VipRecordToolWidget::launchRecord(bool launch)
 							p.setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing);
 							VipRenderObject::renderObject(plot, &p, -view_rect.topLeft(), true, false);
 						}
+						VipGuiDisplayParamaters::instance()->watermark().addToPixmap(d_data->pixmap);
 
 						VipAnyData any(QVariant::fromValue(vipToArray(d_data->pixmap.toImage())), time);
 						d_data->recorder->inputAt(0)->setData(any);
@@ -1476,6 +1478,7 @@ void VipRecordToolWidget::launchRecord(bool launch)
 							p.setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing);
 							VipRenderObject::renderObject(d_data->sourceWidget, &p, QPoint(), true, false);
 						}
+						VipGuiDisplayParamaters::instance()->watermark().addToPixmap(d_data->pixmap);
 
 						VipAnyData any(QVariant::fromValue(vipToArray(d_data->pixmap.toImage())), time);
 						d_data->recorder->inputAt(0)->setData(any);
@@ -1711,6 +1714,7 @@ void VipRecordWidgetButton::newImage()
 			p.setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing);
 			VipRenderObject::renderObject(d_data->widget, &p, QPoint(0, 0), true, false);
 		}
+		VipGuiDisplayParamaters::instance()->watermark().addToPixmap(d_data->pixmap);
 
 		VipAnyData any(QVariant::fromValue(vipToArray(d_data->pixmap.toImage())), QDateTime::currentMSecsSinceEpoch() * 1000000);
 		d_data->recorder->inputAt(0)->setData(any);

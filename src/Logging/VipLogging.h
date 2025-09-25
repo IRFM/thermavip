@@ -99,6 +99,7 @@ class VipFileLogger;
 /// To log new entries, please consider using #VIP_LOG_INFO, #VIP_LOG_WARNING and #VIP_LOG_ERROR instead of #VipLogging::Log()
 class VIP_LOGGING_EXPORT VipLogging : public QThread
 {
+	Q_OBJECT
 public:
 	/// Possible outputs for each log entry
 	enum VipOutput

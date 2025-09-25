@@ -648,8 +648,12 @@ void VipDisplayTabWidget::closeTab(int index)
 
 void VipDisplayTabWidget::tabChanged(int index)
 {
-	if (VipDisplayPlayerArea* area = qobject_cast<VipDisplayPlayerArea*>(this->widget(index)))
-		area->setFocus(true);
+	if (VipDisplayPlayerArea* area = qobject_cast<VipDisplayPlayerArea*>(this->widget(index))) {
+		if (vipIsObjectValid(area))
+			area->setFocus(true);
+		else
+			bool stop = true;//TEST
+	}
 }
 
 void VipDisplayTabWidget::closeAllTab()
@@ -1326,14 +1330,17 @@ void VipDisplayPlayerArea::saveImage()
 			else
 				pixmap.fill(QColor(255, 255, 255));
 
-			QPainter p(&pixmap);
-			p.setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing);
+			{
+				QPainter p(&pixmap);
+				p.setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing);
 
-			// vipFDAboutToRender().callAllMatch(this->widget());
+				// vipFDAboutToRender().callAllMatch(this->widget());
 
-			VipRenderObject::renderObject(/*area->dragWidgetArea()->widget()*/ mdrag, &p, QPoint(), true, false);
+				VipRenderObject::renderObject(/*area->dragWidgetArea()->widget()*/ mdrag, &p, QPoint(), true, false);
 
-			VipRenderObject::endRender(/*area->dragWidgetArea()->widget()*/ mdrag, state);
+				VipRenderObject::endRender(/*area->dragWidgetArea()->widget()*/ mdrag, state);
+			}
+			VipGuiDisplayParamaters::instance()->watermark().addToPixmap(pixmap);
 
 			if (!pixmap.save(filename)) {
 				VIP_LOG_ERROR("Failed to save image " + filename);
@@ -1387,12 +1394,15 @@ void VipDisplayPlayerArea::print()
 
 		vipProcessEvents();
 
-		QPainter p(&printer);
-		p.setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing);
-		// this->draw(&p);
-		VipRenderObject::renderObject(/*area->dragWidgetArea()->widget()*/ mdrag, &p, QPoint(), true, false);
+		{
+			QPainter p(&printer);
+			p.setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing);
+			// this->draw(&p);
+			VipRenderObject::renderObject(/*area->dragWidgetArea()->widget()*/ mdrag, &p, QPoint(), true, false);
 
-		VipRenderObject::endRender(/*area->dragWidgetArea()->widget()*/ mdrag, state);
+			VipRenderObject::endRender(/*area->dragWidgetArea()->widget()*/ mdrag, state);
+		}
+		VipGuiDisplayParamaters::instance()->watermark().addToDevice(&printer);
 	}
 }
 void VipDisplayPlayerArea::saveSession()
@@ -1429,6 +1439,8 @@ void VipDisplayPlayerArea::copyImage()
 	}
 
 	pixmap = vipRemoveColoredBorder(pixmap, QColor(255, 255, 255));
+	VipGuiDisplayParamaters::instance()->watermark().addToPixmap(pixmap);
+
 	qApp->clipboard()->setPixmap(pixmap);
 }
 void VipDisplayPlayerArea::copySession()
@@ -1932,8 +1944,14 @@ bool VipDisplayPlayerArea::hasFocus() const
 
 void VipDisplayPlayerArea::setFocus(bool f)
 {
+	if (!vipIsObjectValid(this))
+		return;
+
 	if (f)
 		d_data->parentArea->setCurrentDisplayPlayerArea(this);
+
+	if (!vipIsObjectValid(this))
+		return;
 
 	if (d_data->parentArea && f != hasFocus()) {
 		if (!f) {
@@ -2609,6 +2627,7 @@ VipMainWindow* VipDisplayArea::parentMainWindow() const
 
 void VipDisplayArea::addWidget(VipDisplayPlayerArea* widget)
 {
+	
 	QString title = widget->windowTitle().isEmpty() ? generateWorkspaceName() : widget->windowTitle();
 	widget->setWindowTitle(title);
 	widget->d_data->parentArea = this;
@@ -2625,6 +2644,8 @@ void VipDisplayArea::addWidget(VipDisplayPlayerArea* widget)
 
 	if (displayTabWidget()->indexOf(widget) < 0) {
 		displayTabWidget()->insertTab(displayTabWidget()->count() - 1, widget, title);
+		if (!vipIsObjectValid(widget))
+			return;
 		displayTabWidget()->setCurrentIndex(displayTabWidget()->count() - 2);
 	}
 
@@ -2693,6 +2714,10 @@ void VipDisplayArea::resetItemSelection()
 void VipDisplayArea::setCurrentDisplayPlayerArea(VipDisplayPlayerArea* area)
 {
 	if (d_data->current != area) {
+
+		if (area && !vipIsObjectValid(area))
+			return;
+
 		d_data->current = area;
 
 		// remove the focus to all other area
@@ -2703,7 +2728,10 @@ void VipDisplayArea::setCurrentDisplayPlayerArea(VipDisplayPlayerArea* area)
 		int index = d_data->tabWidget->indexOf(area);
 		if (index >= 0 && index != d_data->tabWidget->currentIndex())
 			d_data->tabWidget->setCurrentIndex(index);
-		// TEST: inside if
+		
+		if (area && !vipIsObjectValid(area))
+			return;
+
 		Q_EMIT currentDisplayPlayerAreaChanged(area);
 	}
 }
@@ -3503,7 +3531,7 @@ VipMainWindow::~VipMainWindow()
 		delete d_data->updateThread;
 	}
 
-	d_data.reset();
+	d_data.clear();
 
 	QCoreApplication::quit();
 }
@@ -5976,11 +6004,14 @@ bool vipSaveImage(VipBaseDragWidget* w)
 		else
 			pixmap.fill(QColor(255, 255, 255));
 
-		QPainter p(&pixmap);
-		p.setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing);
-		VipRenderObject::renderObject(w, &p, QPoint(), true, false);
+		{
+			QPainter p(&pixmap);
+			p.setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing);
+			VipRenderObject::renderObject(w, &p, QPoint(), true, false);
 
-		VipRenderObject::endRender(w, state);
+			VipRenderObject::endRender(w, state);
+		}
+		VipGuiDisplayParamaters::instance()->watermark().addToPixmap(pixmap);
 
 		if (!pixmap.save(filename)) {
 			VIP_LOG_ERROR("Failed to save image " + filename);
@@ -6049,12 +6080,15 @@ bool vipPrint(VipBaseDragWidget* w)
 
 		vipProcessEvents();
 
-		QPainter p(&printer);
-		p.setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing);
-		// this->draw(&p);
-		VipRenderObject::renderObject(w, &p, QPoint(), true, false);
+		{
+			QPainter p(&printer);
+			p.setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing);
+			// this->draw(&p);
+			VipRenderObject::renderObject(w, &p, QPoint(), true, false);
 
-		VipRenderObject::endRender(w, state);
+			VipRenderObject::endRender(w, state);
+		}
+		VipGuiDisplayParamaters::instance()->watermark().addToDevice(&printer);
 		return true;
 	}
 	return false;

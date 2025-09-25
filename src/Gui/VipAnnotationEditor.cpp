@@ -775,6 +775,7 @@ VipAnnotationToolWidget::VipAnnotationToolWidget(VipMainWindow* w)
 	setFloating(true);
 	setMaximumHeight(300);
 	connect(m_widget, SIGNAL(changed()), this, SLOT(updateShapes()));
+	connect(VipPlayerLifeTime::instance(), SIGNAL(destroyed(VipAbstractPlayer*)), this, SLOT(unsetPlayer(VipAbstractPlayer*)));
 }
 
 bool VipAnnotationToolWidget::setPlayer(VipAbstractPlayer* pl)
@@ -788,8 +789,15 @@ bool VipAnnotationToolWidget::setPlayer(VipAbstractPlayer* pl)
 		return false;
 
 	connect(m_player->plotWidget2D()->area(), SIGNAL(childSelectionChanged(VipPlotItem*)), this, SLOT(importShapes()));
+	
 	importShapes();
 	return true;
+}
+
+void VipAnnotationToolWidget::unsetPlayer(VipAbstractPlayer * pl)
+{
+	if (pl == m_player)
+		setPlayer(nullptr);
 }
 
 VipAnnotationWidget* VipAnnotationToolWidget::annotationWidget() const

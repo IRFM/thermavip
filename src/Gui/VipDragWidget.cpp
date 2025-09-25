@@ -834,7 +834,7 @@ bool VipBaseDragWidget::isDestroying() const
 {
 	const VipBaseDragWidget* w = this;
 	while (w) {
-		if(!w->d_data)
+		if(!w->d_data.get())
 			return true;
 		if (w->d_data->destroy)
 			return true;

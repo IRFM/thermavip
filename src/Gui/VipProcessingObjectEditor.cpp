@@ -3607,7 +3607,7 @@ public:
 
 private:
 	
-	VIP_DECLARE_PRIVATE_DATA();
+	VIP_DECLARE_PRIVATE_DATA_NO_QOBJECT();
 };
 
 DrawWarpingPoints::DrawWarpingPoints(VipAbstractPlotArea* area, VipWarpingEditor* p)

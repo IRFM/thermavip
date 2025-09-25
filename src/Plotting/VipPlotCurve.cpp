@@ -126,6 +126,8 @@ struct PointMerge
 
 static bool isPerfectRightCartesiant(QPainter* painter, const VipCoordinateSystemPtr& m)
 {
+	if (!m)
+		return false;
 	QTransform tr = painter->worldTransform();
 	if (tr.isRotating() || m->type() != VipCoordinateSystem::Cartesian)
 		return false;

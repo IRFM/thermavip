@@ -37,48 +37,131 @@
 namespace detail
 {
 	
-	VIP_LOGGING_EXPORT void* addPimpl(void* p);
+	VIP_LOGGING_EXPORT void addPimpl(const void* p);
 	VIP_LOGGING_EXPORT void removePimpl(const void* p);
-	VIP_LOGGING_EXPORT bool isPimplValid(const void* p);
+	VIP_LOGGING_EXPORT bool existPimpl(const void* p);
 
-	template<class T, class D>
-	bool isPimplValid(const std::unique_ptr<T, D>& p)
+	// Detect QObject inheriting class
+	template<class T>
+	struct isQObject : public std::is_base_of<QObject, T>
 	{
-		return isPimplValid(p.get());
-	}
-
-	struct PimplDeleter
-	{
-		template<class T>
-		void operator()(T* p) const
-		{
-			removePimpl(p);
-			delete p;
-		}
 	};
+
+	// Internal data for Pimpl idiom
+	template<class PrivateData>
+	struct InternalData
+	{
+		void* object ;
+		PrivateData data;
+		std::function<void()> emitDestroy;
+		
+		template<class T, class... Args>
+		InternalData(T* obj, Args&&... args)
+		  : object(obj)
+		  , data(std::forward<Args>(args)...)
+		{
+			if constexpr (isQObject<T>::value)
+				emitDestroy = [obj]() { Q_EMIT obj->destroy(); };
+			addPimpl(obj);
+		}
+
+		~InternalData() noexcept 
+		{
+			// Remove object from internal list
+			removePimpl(object);
+			// emit signal destroy() for QObject types
+			if (emitDestroy)
+				emitDestroy();
+		}
+
+		
+	};
+
+	/// @brief Internal data of types classes using  VIP_DECLARE_PRIVATE_DATA or VIP_DECLARE_PRIVATE_DATA_NO_QOBJECT
+	/// @tparam PrivateData 
+	template<class PrivateData>
+	class InternalDataPtr
+	{
+		using Internal = InternalData<PrivateData>;
+		std::unique_ptr<Internal> d_ptr;
+
+	public:
+		InternalDataPtr() = default;
+		~InternalDataPtr() = default;
+		InternalDataPtr(const InternalDataPtr&) = delete;
+		InternalDataPtr(InternalDataPtr&& other) noexcept = default;
+
+		InternalDataPtr& operator=(InternalDataPtr&&) noexcept = default;
+		InternalDataPtr& operator=(const InternalDataPtr&) = delete;
+
+		template<class T, class... Args>
+		void reset(T* obj, Args&&... args)
+		{
+			d_ptr.reset(new Internal(obj,std::forward<Args>(args)...));
+		}
+		void clear() { d_ptr.reset();}
+
+		PrivateData* get() const noexcept { return const_cast<PrivateData*>(&d_ptr->data); }
+		PrivateData* operator->() const noexcept { return get(); }
+		PrivateData& operator*() const noexcept { return *get(); }
+		operator const void*() const noexcept { return get(); }
+	};
+
+	template<class T>
+	struct isPimpl : std::false_type
+	{
+	};
+	template<class T>
+	struct isPimpl<InternalDataPtr<T> > : std::true_type
+	{
+	};
+	
+	template<class T, class = int>
+	struct hasPimplData : std::false_type
+	{
+	};
+
+	template<class T>
+	struct hasPimplData<T, decltype((void)T::d_data, 0)> 
+	{
+		static constexpr bool value = isPimpl<decltype(T::d_data)>::value;
+	};
+
 
 }
 
-/// @brief Declare private data for Pimpl idiom, use in class definition, inside the private section
-#define VIP_DECLARE_PRIVATE_DATA()                                                                                                                                                                     \
-	template<class PrivData>                                                                                                                                                                              \
-	friend bool vipIsObjectValid(const PrivData*);                                                                                                                                                         \
+
+/// @brief Declare private data for Pimpl idiom, use in class definition, inside the private section.
+/// This version is for any kind of (non copyable) classes
+#define VIP_DECLARE_PRIVATE_DATA_NO_QOBJECT()                                                                                                                                                          \
+	template<class T, class U>                                                                                                                                                                              \
+	friend struct detail::hasPimplData;                                                                                                                                                    \
 	class PrivateData;                                                                                                                                                                             \
-	std::unique_ptr<PrivateData, detail::PimplDeleter> d_data
+	detail::InternalDataPtr<PrivateData> d_data
+
+/// @brief Declare private data for Pimpl idiom, use in class definition, inside the private section.
+/// This version is for QObject inheriting classes using the Q_OBJECT macro.
+/// It adds the signal destroy() which is called at the end of object destructor while the private data is STILL valid
+#define VIP_DECLARE_PRIVATE_DATA() \
+	Q_SIGNALS:\
+	void destroy();\
+	private:\
+	VIP_DECLARE_PRIVATE_DATA_NO_QOBJECT()
 
 /// @brief Declare private data for Pimpl idiom, use in class constructor
-#define VIP_CREATE_PRIVATE_DATA(...) d_data.reset(static_cast<PrivateData*>(detail::addPimpl(new PrivateData(__VA_ARGS__))))
+#define VIP_CREATE_PRIVATE_DATA(...) d_data.reset(this, ##__VA_ARGS__)
 
 /// @brief Access object private data as declared with VIP_DECLARE_PRIVATE_DATA()
 #define VIP_D d_data
 
 
 /// @brief Returns true if given object is still valid (not yet destroyed).
-/// Passed object must use the pimpl idiom based on VIP_DECLARE_PRIVATE_DATA() macro.
+/// Passed object must use the pimpl idiom based on VIP_DECLARE_PRIVATE_DATA and VIP_DECLARE_PRIVATE_DATA_NO_QOBJECT macros.
 template<class T>
 bool vipIsObjectValid(const T* obj)
 {
-	return detail::isPimplValid(obj->VIP_D);
+	static_assert(detail::hasPimplData<T>::value, "vipIsObjectValid called on invalid data type");
+	return detail::existPimpl(obj);
 }
 
 #endif

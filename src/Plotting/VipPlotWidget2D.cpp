@@ -1065,6 +1065,17 @@ VipAbstractPlotArea::VipAbstractPlotArea(QGraphicsItem* parent)
 VipAbstractPlotArea::~VipAbstractPlotArea()
 {
 	removeSharedAlignedArea(this);
+
+	auto* sc = this->scene();
+	if (sc)
+		sc->blockSignals(true);
+	auto lst = this->childItems();
+	for (auto* it : lst) {
+		it->setSelected(false);
+		//delete it;
+	}
+	if (sc)
+		sc->blockSignals(false);
 }
 
 QRectF VipAbstractPlotArea::visualizedSceneRect() const

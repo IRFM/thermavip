@@ -49,7 +49,7 @@ public:
 	QIcon iconPath(const VipPath& path) const;
 
 private:
-	VIP_DECLARE_PRIVATE_DATA();
+	VIP_DECLARE_PRIVATE_DATA_NO_QOBJECT();
 };
 
 /// @brief VipAbstractFileSystem that represents the physical hard drive

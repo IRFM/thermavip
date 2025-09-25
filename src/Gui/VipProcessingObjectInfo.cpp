@@ -1448,6 +1448,8 @@ void VipProcessingObjectInfo::search()
 void VipProcessingObjectInfo::currentDisplayPlayerAreaChanged(VipDisplayPlayerArea* area)
 {
 	if (area) {
+		if (!vipIsObjectValid(area))
+			return;
 		// hide this tool widget if their are no valid top level widget anymore in the current workspace
 		QList<VipMultiDragWidget*> ws = area->dragWidgetHandler()->topLevelMultiDragWidgets();
 		if (ws.isEmpty())

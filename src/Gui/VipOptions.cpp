@@ -1056,6 +1056,13 @@ public:
 	QRadioButton* pdirect;
 	QRadioButton* ppureGPU;
 	QRadioButton* pGPUThreaded;
+
+	// Image watermark options
+	VipLineEdit* wText;
+	VipFontAndColor* wFont;
+	QSpinBox* wDistance;
+	QComboBox * wAlignment;
+	QCheckBox* wVisible;
 };
 
 RenderingSettings::RenderingSettings(QWidget* parent)
@@ -1081,6 +1088,22 @@ RenderingSettings::RenderingSettings(QWidget* parent)
 	d_data->pGPUThreaded = new QRadioButton("Threaded opengl rendering");
 	d_data->pGPUThreaded->setToolTip("Threaded opengl based rendering");
 
+	d_data->wText = new VipLineEdit();
+	d_data->wText->setPlaceholderText("Image watermark text");
+	d_data->wText->setToolTip("Image watermark text");
+
+	d_data->wFont = new VipFontAndColor();
+	d_data->wFont->setToolTip("Image watermark text color and font");
+	
+	d_data->wDistance = new QSpinBox();
+	d_data->wDistance->setRange(0, 100);
+	d_data->wDistance->setToolTip("Watermark text distance to border (pixels)");
+
+	d_data->wAlignment = new QComboBox();
+	d_data->wAlignment->addItems(QStringList() << "Top left" << "Top right" << "Bottom left" << "Bottom right" << "Center");
+
+	d_data->wVisible = new QCheckBox("Image watermark visible");
+
 	QGroupBox* video = createGroup("Video rendering mode");
 	QVBoxLayout* vlay = new QVBoxLayout();
 	vlay->addWidget(d_data->vdirect);
@@ -1095,9 +1118,22 @@ RenderingSettings::RenderingSettings(QWidget* parent)
 	play->addWidget(d_data->pGPUThreaded);
 	plot->setLayout(play);
 
+	QGroupBox* watermark = createGroup("Image watermark");
+	QVBoxLayout* wlay = new QVBoxLayout();
+	QHBoxLayout* hlay = new QHBoxLayout();
+	hlay->setContentsMargins(0, 0, 0, 0);
+	hlay->addWidget(d_data->wText);
+	hlay->addWidget(d_data->wFont);
+	wlay->addLayout(hlay);
+	wlay->addWidget(d_data->wDistance);
+	wlay->addWidget(d_data->wAlignment);
+	wlay->addWidget(d_data->wVisible);
+	watermark->setLayout(wlay);
+
 	QVBoxLayout* lay = new QVBoxLayout();
 	lay->addWidget(video);
 	lay->addWidget(plot);
+	lay->addWidget(watermark);
 	lay->addStretch(1);
 	setLayout(lay);
 }
@@ -1120,6 +1156,25 @@ void RenderingSettings::applyPage()
 		VipGuiDisplayParamaters::instance()->setPlotRenderingStrategy(VipBaseGraphicsView::OpenGLThread);
 	else if (d_data->ppureGPU->isChecked())
 		VipGuiDisplayParamaters::instance()->setPlotRenderingStrategy(VipBaseGraphicsView::OpenGL);
+
+	VipWatermark w;
+	w.text = d_data->wText->text();
+	w.font = d_data->wFont->font();
+	w.color = d_data->wFont->color();
+	w.distanceToBorder = d_data->wDistance->value();
+	w.visible = d_data->wVisible->isChecked();
+	QString al = d_data->wAlignment->currentText();
+	if (al == "Top left")
+		w.alignment = Qt::AlignTop | Qt::AlignLeft;
+	else if (al == "Top right")
+		w.alignment = Qt::AlignTop | Qt::AlignRight;
+	else if (al == "Bottom left")
+		w.alignment = Qt::AlignBottom | Qt::AlignLeft;
+	else if (al == "Bottom right")
+		w.alignment = Qt::AlignBottom | Qt::AlignRight;
+	else
+		w.alignment = Qt::AlignCenter;
+	VipGuiDisplayParamaters::instance()->setWatermark(w);
 }
 void RenderingSettings::updatePage()
 {
@@ -1138,4 +1193,21 @@ void RenderingSettings::updatePage()
 		d_data->pGPUThreaded->setChecked(true);
 	else if (st == VipBaseGraphicsView::OpenGL)
 		d_data->ppureGPU->setChecked(true);
+
+	auto& w = VipGuiDisplayParamaters::instance()->watermark();
+	d_data->wDistance->setValue(w.distanceToBorder);
+	d_data->wText->setText(w.text);
+	d_data->wFont->setFont(w.font);
+	d_data->wFont->setColor(w.color);
+	if (w.alignment == (Qt::AlignLeft | Qt::AlignTop))
+		d_data->wAlignment->setCurrentText("Top left");
+	else if (w.alignment == (Qt::AlignLeft | Qt::AlignBottom))
+		d_data->wAlignment->setCurrentText("Bottom left");
+	else if(w.alignment == (Qt::AlignRight | Qt::AlignTop))
+		d_data->wAlignment->setCurrentText("Top right");
+	else if(w.alignment == (Qt::AlignRight | Qt::AlignBottom))
+		d_data->wAlignment->setCurrentText("Bottom right");
+	else
+		d_data->wAlignment->setCurrentText("Center");
+	d_data->wVisible->setChecked(w.visible);
 }

@@ -153,7 +153,7 @@ public:
 
 private:
 	
-	VIP_DECLARE_PRIVATE_DATA();
+	VIP_DECLARE_PRIVATE_DATA_NO_QOBJECT();
 };
 
 /// @brief Base class for drawing items (VipPlotItem, VipAbstractScale...)
@@ -286,7 +286,7 @@ private:
 	bool internalApplyStyleSheet(const VipStyleSheet& sheet, const VipStyleSheet& inherited);
 
 	
-	VIP_DECLARE_PRIVATE_DATA();
+	VIP_DECLARE_PRIVATE_DATA_NO_QOBJECT();
 };
 
 Q_DECLARE_METATYPE(VipPaintItem*)

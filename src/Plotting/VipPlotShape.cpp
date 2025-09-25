@@ -416,8 +416,8 @@ public:
 
 VipPlotShape::VipPlotShape(const VipText& title)
   : VipPlotItemDataType(title)
-  , d_data(new PrivateData())
 {
+	VIP_CREATE_PRIVATE_DATA();
 	this->setFlag(QGraphicsItem::ItemIsFocusable, true);
 	this->setItemAttribute(AutoScale, false);
 	this->setItemAttribute(SupportTransform, true);

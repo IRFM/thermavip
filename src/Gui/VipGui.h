@@ -105,7 +105,7 @@ class VIP_GUI_EXPORT VipFileSharedMemory
 	~VipFileSharedMemory();
 
 	
-	VIP_DECLARE_PRIVATE_DATA();
+	VIP_DECLARE_PRIVATE_DATA_NO_QOBJECT();
 
 public:
 	static VipFileSharedMemory& instance();
@@ -116,6 +116,27 @@ public:
 	QStringList retrieveFilesToOpen(bool* new_workspace);
 	/// This function tells if there is at least one Thermavip display instance opened
 	bool hasThermavipInstance();
+};
+
+/// @brief Handle image watermark for generated images/movies
+class VIP_GUI_EXPORT VipWatermark
+{
+public:
+	VipWatermark();
+
+	QString text;
+	QFont font;
+	QColor color;
+	bool visible = false;
+	int distanceToBorder = 10;
+	Qt::Alignment alignment = Qt::AlignBottom | Qt::AlignLeft;
+
+	void addToImage(QImage& ) const;
+	void addToPixmap(QPixmap&) const;
+	void addToDevice(QPaintDevice*) const;
+	void save(VipArchive&) const;
+	bool restore(VipArchive&);
+	operator bool() const noexcept { return visible; }
 };
 
 namespace Vip
@@ -190,6 +211,8 @@ public:
 	QColor defaultPlayerTextColor() const;
 	QColor defaultPlayerBackgroundColor() const;
 
+	const VipWatermark& watermark() const;
+
 	void setInSessionLoading(bool);
 	bool inSessionLoading() const;
 
@@ -216,6 +239,7 @@ public Q_SLOTS:
 	void setPlotRenderingStrategy(int);
 	void autoScaleAll();
 	void setDisplayExactPixels(bool);
+	void setWatermark(const VipWatermark&);
 
 	/// Set the default border pen for all existing and future ROI
 	void setShapeBorderPen(const QPen& pen);

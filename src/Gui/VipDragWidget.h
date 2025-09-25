@@ -51,6 +51,7 @@
 #include "VipFunctional.h"
 #include "VipRenderObject.h"
 #include "VipText.h"
+#include "VipPimpl.h"
 
 /// \addtogroup Gui
 /// @{

@@ -52,6 +52,7 @@
 #include "VipDataType.h"
 #include "VipScaleDraw.h"
 #include "VipText.h"
+#include "VipPimpl.h"
 
 /// \addtogroup Gui
 /// @{
@@ -969,6 +970,7 @@ protected:
 private:
 	VipToolBar* parent;
 };
+
 /// A QToolBar like class.
 ///
 /// VipToolBar handle in a different way QAction that are not visible because the tool bar is not wide enough.

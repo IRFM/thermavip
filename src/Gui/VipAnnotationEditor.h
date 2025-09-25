@@ -166,6 +166,7 @@ public:
 public Q_SLOTS:
 	void updateShapes();
 	void importShapes();
+	void unsetPlayer(VipAbstractPlayer*);
 
 private:
 	VipAnnotationWidget* m_widget;

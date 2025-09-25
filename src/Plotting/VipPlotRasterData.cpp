@@ -634,8 +634,8 @@ static int _registerRasterDataKeyWords = registerRasterDataKeyWords();
 
 VipPlotRasterData::VipPlotRasterData(const VipText& title)
   : VipPlotItemDataType(title)
-  , d_data(new PrivateData())
 {
+	VIP_CREATE_PRIVATE_DATA();
 	this->setItemAttribute(VisibleLegend, false);
 	this->setItemAttribute(ClipToScaleRect, false);
 	this->setSelectedPen(Qt::NoPen);

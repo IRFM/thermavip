@@ -664,8 +664,8 @@ public:
 
 VipWidgetPlayer::VipWidgetPlayer(QWidget* w, QWidget* parent)
   : VipAbstractPlayer(parent)
-  , d_data(new PrivateData())
 {
+	VIP_CREATE_PRIVATE_DATA();
 	setWidget(w);
 }
 
@@ -1769,14 +1769,17 @@ void VipPlayer2D::saveMenuClicked(QAction* act)
 				else
 					pixmap.fill(QColor(255, 255, 255));
 
-				QPainter p(&pixmap);
-				p.setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing);
+				{
+					QPainter p(&pixmap);
+					p.setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing);
 
-				vipFDAboutToRender().callAllMatch(this);
+					vipFDAboutToRender().callAllMatch(this);
 
-				VipRenderObject::renderObject(this, &p, QPoint(), true, false);
+					VipRenderObject::renderObject(this, &p, QPoint(), true, false);
 
-				VipRenderObject::endRender(this, state);
+					VipRenderObject::endRender(this, state);
+				}
+				VipGuiDisplayParamaters::instance()->watermark().addToPixmap(pixmap);
 
 				if (!pixmap.save(filename)) {
 					VIP_LOG_ERROR("Failed to save image " + filename);
@@ -1817,6 +1820,7 @@ void VipPlayer2D::saveMenuClicked(QAction* act)
 			VipRenderObject::endRender(this, state);
 		}
 		pixmap = vipRemoveColoredBorder(pixmap, QColor(255, 255, 255), 10);
+		VipGuiDisplayParamaters::instance()->watermark().addToPixmap(pixmap);
 		QGuiApplication::clipboard()->setPixmap(pixmap);
 	}
 	else {
@@ -5474,6 +5478,7 @@ VipPlotPlayer::VipPlotPlayer(VipAbstractPlotWidget2D* viewer, QWidget* parent)
 	d_data->timeMarker->setLineStyle(VipPlotMarker::VLine);
 	d_data->timeMarker->setLinePen(Qt::red, 1);
 	d_data->timeMarker->setIgnoreStyleSheet(true);
+	d_data->timeMarker->setFlag(QGraphicsItem::ItemIsSelectable, false);
 	if (dark_skin) {
 		QColor light_red = VipColorPalette(VipLinearColorMap::ColorPaletteRandom).lighter(VipGuiDisplayParamaters::instance()->itemPaletteFactor()).color(1);
 		d_data->timeMarker->setLinePen(light_red, 1);

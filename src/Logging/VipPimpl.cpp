@@ -35,6 +35,8 @@
 
 #include <mutex>
 
+
+
 namespace detail
 {
 
@@ -49,12 +51,11 @@ namespace detail
 		return inst;
 	}
 
-	void* addPimpl( void* p)
+	void addPimpl(const void* p)
 	{
 		auto& pimpl = pimplInstances();
 		std::lock_guard<std::mutex> lock(pimpl.lock);
 		pimpl.set.insert(p);
-		return p;
 	}
 	void removePimpl(const void* p)
 	{
@@ -63,7 +64,7 @@ namespace detail
 		pimpl.set.remove(p);
 	}
 
-	bool isPimplValid(const void* p)
+	bool existPimpl(const void* p)
 	{
 		auto& pimpl = pimplInstances();
 		std::lock_guard<std::mutex> lock(pimpl.lock);

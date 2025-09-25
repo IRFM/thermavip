@@ -332,6 +332,78 @@ bool VipFileSharedMemory::hasThermavipInstance()
 	return true;
 }
 
+
+
+VipWatermark::VipWatermark()
+{
+	text = QChar(0x24D2);
+	text += " 2025 CEA/IRFM";
+	font = qApp->font();
+	font.setPixelSize(17);
+	font.setBold(true);
+	color = QColor(0, 0, 0, 120);
+}
+
+static void addWatermarkToDevice(QPaintDevice* device, const VipWatermark& w)
+{
+	VipText t = w.text;
+	t.setTextPen(QPen(w.color));
+	t.setFont(w.font);
+	t.setAlignment(w.alignment);
+
+	QRect r(0, 0, device->width(), device->height());
+	r.adjust(w.distanceToBorder, w.distanceToBorder, -w.distanceToBorder, -w.distanceToBorder);
+
+	QPainter p(device);
+	t.draw(&p, r);
+}
+
+void VipWatermark::addToImage(QImage& img) const
+{
+	if (!visible)
+		return;
+	addWatermarkToDevice(&img, *this);
+}
+void VipWatermark::addToPixmap(QPixmap& pix) const
+{
+	if (!visible)
+		return;
+	addWatermarkToDevice(&pix, *this);
+}
+void VipWatermark::addToDevice(QPaintDevice* d) const
+{
+	if (!visible)
+		return;
+	addWatermarkToDevice(d, *this);
+}
+
+void VipWatermark::save(VipArchive& arch) const
+{
+	arch.start("Watermark");
+	arch.content("text", text);
+	arch.content("font", font);
+	arch.content("color", color);
+	arch.content("visible", visible);
+	arch.content("distanceToBorder", distanceToBorder);
+	arch.content("alignment", (int)alignment);
+	arch.end();
+}
+bool VipWatermark::restore(VipArchive& arch)
+{
+	if (arch.start("Watermark")) {
+		text = arch.read("test").toString();
+		font = arch.read("font").value<QFont>();
+		color = arch.read("color").value<QColor>();
+		visible = arch.read("visible").toBool();
+		distanceToBorder = arch.read("distanceToBorder").toInt();
+		alignment = (Qt::Alignment)arch.read("alignment").toInt();
+		arch.end();
+		return true;
+	}
+	return false;
+}
+
+
 #include "VipColorMap.h"
 #include "VipPlayer.h"
 
@@ -393,6 +465,8 @@ public:
 	QPen shapePen;
 	QBrush shapeBrush;
 	VipPlotShape::DrawComponents shapeComponents;
+
+	VipWatermark watermark;
 };
 
 VipGuiDisplayParamaters::VipGuiDisplayParamaters(VipMainWindow* win)
@@ -933,6 +1007,16 @@ QColor VipGuiDisplayParamaters::defaultPlayerBackgroundColor() const
 	return d_data->resetPlotWidget->backgroundColor();
 }
 
+const VipWatermark& VipGuiDisplayParamaters::watermark() const
+{
+	return d_data->watermark;
+}
+void VipGuiDisplayParamaters::setWatermark(const VipWatermark& w)
+{
+	d_data->watermark = w;
+	emitChanged();
+}
+
 void VipGuiDisplayParamaters::setInSessionLoading(bool enable)
 {
 	d_data->inSessionLoading = enable;
@@ -1306,9 +1390,18 @@ static void serialize_VipGuiDisplayParamaters(VipGuiDisplayParamaters* inst, Vip
 				arch.restore();
 
 			arch.end();
+
+			arch.save();
+			VipWatermark w;
+			if (w.restore(arch)) {
+				inst->setWatermark(w);
+			}
+			else
+				arch.restore();
 		}
 		else
 			arch.restore();
+
 	}
 	else if (arch.mode() == VipArchive::Write) {
 		if (arch.start("VipGuiDisplayParamaters")) {
@@ -1352,6 +1445,8 @@ static void serialize_VipGuiDisplayParamaters(VipGuiDisplayParamaters* inst, Vip
 
 			// New in 3.11.0
 			arch.content("displayExactPixels", (int)inst->displayExactPixels());
+
+			inst->watermark().save(arch);
 
 			arch.end();
 		}
