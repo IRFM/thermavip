@@ -289,11 +289,6 @@ VIP_CORE_EXPORT void vipSceneModelToJSON(QTextStream& str, const VipSceneModel& 
 VIP_CORE_EXPORT void vipSceneModelListToJSON(QTextStream& str, const VipSceneModelList& value, const QByteArray& indent = QByteArray());
 VIP_CORE_EXPORT VipSceneModelList vipSceneModelListFromJSON(const QByteArray& content, QString* error = nullptr);
 
-/// Save a QVariant to a QDataStream.
-/// This function is equivalent to QDataStream & operator<<(QDataStream &, const QVariant&),
-/// except that it returns false on error instead of crashing on an assertion.
-/// On failure, the input stream position is left unchanged.
-VIP_CORE_EXPORT bool vipSafeVariantSave(QDataStream& s, const QVariant& v);
 /// Save a QVariantMap to a QDataStream.
 /// This function is equivalent to QDataStream & operator<<(QDataStream &, const QVariantMap&),
 /// except that it only save the valid entries (and silently drop the unvalid ones with #vipSafeVariantSave).
