@@ -830,7 +830,7 @@ void VipH5Archive::doStart(QString& name, QVariantMap& metadata, bool read_metad
 		if (read_metadata) {
 			QByteArray gr_bname = gr_name;
 			auto lst = listAttributes(gr, gr_bname.data());
-			for (const QByteArray attrname : lst) {
+			for (const QByteArray &attrname : lst) {
 				QVariant v = readAttribute(gr.id(), attrname.data());
 				if (v.userType() != 0)
 					metadata.insert(attrname, v);

@@ -651,8 +651,7 @@ void VipDisplayTabWidget::tabChanged(int index)
 	if (VipDisplayPlayerArea* area = qobject_cast<VipDisplayPlayerArea*>(this->widget(index))) {
 		if (vipIsObjectValid(area))
 			area->setFocus(true);
-		else
-			bool stop = true;//TEST
+		
 	}
 }
 

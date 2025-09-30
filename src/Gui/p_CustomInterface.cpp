@@ -49,6 +49,7 @@
 #include <qtoolbutton.h>
 #include <qtooltip.h>
 #include <qwidgetaction.h>
+#include <qrubberband.h>
 
 #define HIGHLIGHT_MARGIN 5
 #define MIN_BORDER_DIST 20
@@ -695,6 +696,7 @@ CustomizeVideoPlayer::CustomizeVideoPlayer(VipVideoPlayer* player)
 	create_player_top_toolbar(player, this);
 
 	connect(player, SIGNAL(renderEnded(const VipRenderState&)), this, SLOT(endRender()));
+	
 }
 CustomizeVideoPlayer::~CustomizeVideoPlayer()
 {
@@ -843,7 +845,7 @@ void CustomizeVideoPlayer::addToolBarWidget(QWidget* w)
 
 bool CustomizeVideoPlayer::eventFilter(QObject*, QEvent* evt)
 {
-	if (!d_data->player || !d_data->dragWidget || d_data->dragWidget->isDestroying())
+	if (!isValid() || !d_data->player || !d_data->dragWidget || d_data->dragWidget->isDestroying())
 		return false;
 	if (evt->type() == QEvent::Destroy)
 		return false;
@@ -1205,7 +1207,7 @@ Anchor CustomWidgetPlayer::anchor(const QPoint& viewport_pos, const QMimeData* m
 
 bool CustomWidgetPlayer::eventFilter(QObject*, QEvent* evt)
 {
-	if (!d_data->player || !d_data->dragWidget || d_data->dragWidget->isDestroying())
+	if (!isValid()||  !d_data->player || !d_data->dragWidget || d_data->dragWidget->isDestroying())
 		return false;
 	if (evt->type() == QEvent::Destroy)
 		return false;
@@ -1619,10 +1621,10 @@ Anchor CustomizePlotPlayer::anchor(const QPoint& viewport_pos, const QMimeData* 
 	return Anchor();
 }
 
-#include <qrubberband.h>
+
 bool CustomizePlotPlayer::eventFilter(QObject* w, QEvent* evt)
 {
-	if (!d_data->player || !d_data->dragWidget || d_data->dragWidget->isDestroying())
+	if (!isValid() ||  !d_data->player || !d_data->dragWidget || d_data->dragWidget->isDestroying())
 		return false;
 
 	if (evt->type() == QEvent::Destroy)

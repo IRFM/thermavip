@@ -84,14 +84,21 @@ public:
 	{
 		if (pl->plotWidget2D())
 			connect(pl->plotWidget2D(), SIGNAL(viewportChanged(QWidget*)), this, SLOT(updateViewport(QWidget*)));
+		connect(pl, SIGNAL(destroy()), this , SLOT(handleDestroy()));
 	}
 	virtual VipDragWidget* dragWidget() const = 0;
-
+	bool isValid() const noexcept {return !d_destroyed;}
 public Q_SLOTS:
 	virtual void closePlayer();
 	virtual void maximizePlayer();
 	virtual void minimizePlayer();
 	virtual void updateViewport(QWidget* viewport) {}
+
+protected Q_SLOTS:
+	virtual void handleDestroy(){d_destroyed = true;} 
+
+private:
+	bool d_destroyed = false;
 };
 
 class CloseToolBar : public QToolBar

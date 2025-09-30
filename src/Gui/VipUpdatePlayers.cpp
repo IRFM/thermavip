@@ -1113,7 +1113,7 @@ void VipUpdatePlotPlayer::updateMarkers()
 		// delete markers for non present curves
 		auto it_min = m_minMarkers.begin();
 		for (auto it_max = m_maxMarkers.begin(); it_max != m_maxMarkers.end(); ) {
-			int id = curves.indexOf(it_max.key());
+			int id = curves.indexOf(static_cast<VipPlotCurve*>(it_max.key()));
 			if (id < 0) {
 				auto& mins = it_min.value();
 				auto& maxs = it_max.value();

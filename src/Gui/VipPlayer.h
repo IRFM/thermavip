@@ -48,6 +48,8 @@
 #include "VipPlotWidget2D.h"
 #include "VipStandardWidgets.h"
 #include "VipToolTip.h"
+#include "VipPimpl.h"
+
 
 /// \addtogroup Gui
 /// @{

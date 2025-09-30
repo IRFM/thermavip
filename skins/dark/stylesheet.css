@@ -46,7 +46,7 @@ QFrame[frameShape="5"] {
 }
 
 /*QCheckBox::indicator{ 
-background-color : cyan; 
+border : 1px solid white; 
 }
 QRadioButton::indicator{ 
 background-color : cyan; 

@@ -12,11 +12,10 @@ Over compilers or platforms have not been tested yet, but porting Thermavip shou
 Thermavip must be built using provided cmake configuration files. The following options are available (OFF by default):
 
 -	*WITH_LONG_DOUBLE*: build with long double support for temporal signals. Only usefull if you expect timestamps with nanosecond precision.
--	*WITH_FFMEG*: build the Ffmpeg plugin in order to read/record mpeg videos. The plugin is built with a precompiled ffmpeg version for MSVC. For GCC, a specific ffmpeg version will be downloaded and built.
+-	*WITH_FFMPEG*: build the Ffmpeg plugin in order to read/record mpeg videos. The plugin is built with a precompiled ffmpeg version for MSVC. For GCC, a specific ffmpeg version will be downloaded and built.
 -	*WITH_HDF5*: build the H5StillImage plugin (require HDF5 library). Usually not required.
 -	*WITH_PYTHON*: build the Python plugin. This requires a valid Python installation. It is possible to use a specific Python installation through the env. variables VIP_PYTHON_HOME (similar to PYHTONHOME) and VIP_PYTHON_VERSION (like "38").
 -	*WITH_LIBRIR*: download, build and install the [librir](https://github.com/IRFM/librir) library. Having the library folder next to Thermavip application allows to read-back/record IR videos using H264/HEVC codecs.
--	*WITH_WEST*: download, build and install WEST related plugins/tools. Only works from within IRFM network.
 -	*LOCAL_INSTALL* (ON by default): performs a local installation inside the build directory
  
 Usage on Windows (build Visual Studio solution):

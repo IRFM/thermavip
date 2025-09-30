@@ -26,7 +26,7 @@ include(GNUInstallDirs)
 # Global options
 option(LOCAL_INSTALL "Install locally" OFF)
 option(WITH_LONG_DOUBLE "Use long double as the default type for 2D point representation" OFF)
-option(WITH_FFMEG "Build ffmpeg support" OFF)
+option(WITH_FFMPEG "Build ffmpeg support" OFF)
 option(WITH_LOCAL_FFMPEG "Use local ffmpeg installation instead of thermavip one" OFF)
 option(WITH_HDF5 "Build HDF5 support" OFF)
 option(WITH_PYTHON "Build Python support" OFF)
@@ -58,7 +58,7 @@ endif()
 
 
 
-
+ 
 
 if (NOT MSVC)
 	if(WITH_FFMPEG AND NOT WITH_LOCAL_FFMPEG)
@@ -68,7 +68,7 @@ if (NOT MSVC)
 		add_custom_target(ffmpeg_build ALL COMMAND ${PROJECT_SOURCE_DIR}/configure_ffmpeg)
 	endif()
 endif()
-
+ 
 
 # Long double support
 if(WITH_LONG_DOUBLE)

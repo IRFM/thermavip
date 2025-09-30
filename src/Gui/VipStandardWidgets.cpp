@@ -1550,7 +1550,12 @@ void VipFontAndColor::setEditableContent(int c)
 {
 	d_content = c;
 	d_font_button->setVisible((bool)(c & Font));
+
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
+	const QPixmap pix = d_font_button->pixmap(Qt::ReturnByValue);
+#else
 	const QPixmap pix = d_font_button->pixmap();
+#endif
 	QSize s = pix.size();
 
 	if ((c & Color) && (c & Font)) {
@@ -1572,7 +1577,11 @@ void VipFontAndColor::setColor(const QColor& c)
 	// set icon
 	QPixmap pix(this->size());
 	pix.fill(Qt::transparent);
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
+	QSize fs = d_font_button->pixmap(Qt::ReturnByValue).size();
+#else
 	QSize fs = d_font_button->pixmap().size();
+#endif
 	{
 		QPainter p(&pix);
 		p.setPen(Qt::NoPen);

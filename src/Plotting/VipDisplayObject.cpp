@@ -395,13 +395,13 @@ VipPlotItem* VipDisplayPlotItem::item() const
 			QMetaObject::invokeMethod(
 			  _this,
 			  [display,plot]() {
-				  if (display && plot && static_cast<VipDisplayObject*>(display.get())->widget())
-					  VipFDDisplayObjectSetItem().callAllMatch(display.get(), plot.get());
+				  if (display && plot && static_cast<VipDisplayObject*>(display.data())->widget())
+					  VipFDDisplayObjectSetItem().callAllMatch(display.data(), plot.data());
 			  },
 			  Qt::QueuedConnection);
 		}
 		else if (this->widget())
-			VipFDDisplayObjectSetItem().callAllMatch(this, item);
+			VipFDDisplayObjectSetItem().callAllMatch(const_cast<VipDisplayPlotItem*>(this), (item));
 	}
 	return item;
 }
