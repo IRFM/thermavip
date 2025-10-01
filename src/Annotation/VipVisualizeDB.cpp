@@ -431,7 +431,7 @@ void VisualizeDB::plotTimeTrace()
 void VisualizeDB::suppressSelectedLines()
 {
 	if (!vipHasWriteRightsDB()) {
-		QMessageBox::warning(nullptr, "Error", "You do not have the rights to perform this action!");
+		vipWarning("Error", "You do not have the rights to perform this action!");
 		return;
 	}
 
@@ -444,7 +444,7 @@ void VisualizeDB::suppressSelectedLines()
 	// ask confirmation
 	if (ids.size()) {
 		QMessageBox::StandardButton b =
-		  QMessageBox::question(nullptr, "Confirmation", "Are you sure to delete selected items (" + QString::number(ids.size()) + ") ?", QMessageBox::Yes | QMessageBox::Cancel);
+		  vipQuestion("Confirmation", "Are you sure to delete selected items (" + QString::number(ids.size()) + ") ?", QMessageBox::Yes | QMessageBox::Cancel);
 		if (b != QMessageBox::Yes)
 			return;
 	}
@@ -524,7 +524,7 @@ void VisualizeDB::saveToCSV()
 
 	QFile fout(filename);
 	if (!fout.open(QFile::WriteOnly)) {
-		QMessageBox::warning(nullptr, "Error while saving CSV file", "Unable to save to file " + QFileInfo(filename).fileName(), QMessageBox::Ok);
+		vipWarning("Error while saving CSV file", "Unable to save to file " + QFileInfo(filename).fileName(), QMessageBox::Ok);
 		return;
 	}
 	fout.write(ar);
@@ -538,7 +538,7 @@ void VisualizeDB::copyToClipBoard()
 void VisualizeDB::editSelectedColumn()
 {
 	if (!vipHasWriteRightsDB()) {
-		QMessageBox::warning(nullptr, "Error", "You do not have the rights to perform this action!");
+		vipWarning("Error", "You do not have the rights to perform this action!");
 		return;
 	}
 
@@ -620,7 +620,7 @@ void VisualizeDB::editSelectedColumn()
 			value = QString("'" + value.toString() + "'");
 	}
 	else {
-		QMessageBox::warning(nullptr, "Warning", "This column is not editable");
+		vipWarning("Warning", "This column is not editable");
 		return;
 	}
 
@@ -629,7 +629,7 @@ void VisualizeDB::editSelectedColumn()
 
 	VipProgress p;
 	if (!vipChangeColumnInfoDB(ids, name, value.toString(), &p))
-		QMessageBox::warning(nullptr, "Error", "Unable to change values!");
+		vipWarning("Error", "Unable to change values!");
 	else
 		launchQuery();
 }
@@ -721,7 +721,7 @@ void VisualizeDB::launchQuery()
 	VipProgress p;
 	VipEventQueryResults res = vipQueryDB(query, &p);
 	if (!res.isValid()) {
-		QMessageBox::warning(nullptr, "Warning", "Failed to retrieve events!");
+		vipWarning("Warning", "Failed to retrieve events!");
 		return;
 	}
 
@@ -839,7 +839,7 @@ void VisualizeDB::findRelatedEvents()
 	q.min_region_overlap = 0.5;
 	VipEventQueryResults r = vipQueryDB(q,&p);
 	if (r.events.size() < 2) {
-		QMessageBox::warning(nullptr,"Warning","No related events found!");
+		vipWarning("Warning","No related events found!");
 		return;
 	}
 	displayEventResult(r, &p);*/

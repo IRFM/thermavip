@@ -66,7 +66,7 @@ IF(WITH_LIBRIR)
 			librir
 			GIT_REPOSITORY
 			https://github.com/IRFM/librir.git
-			GIT_TAG FIRCA #TEST: put back main
+			GIT_TAG main #TEST: put back main
 			OVERRIDE_FIND_PACKAGE
 		)
 		find_package(librir REQUIRED GLOBAL)

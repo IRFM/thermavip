@@ -820,7 +820,7 @@ void VipTabEditor::aboutToClose(int index)
 	}
 
 	if (ask_for_save) {
-		if (QMessageBox::question(this, "Save before closing", "Do you want to save editor's content before closing it?", QMessageBox::Yes | QMessageBox::No) == QMessageBox::Yes) {
+		if (vipQuestion( "Save before closing", "Do you want to save editor's content before closing it?", QMessageBox::Yes | QMessageBox::No) == QMessageBox::Yes) {
 			save(editor(index));
 		}
 	}

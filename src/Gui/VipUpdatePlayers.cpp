@@ -1001,6 +1001,7 @@ void VipUpdatePlotPlayer::distanceCreated(const VipPoint& start, const VipPoint&
 	text += "<b>Euclidean distance: " + (xunit.isEmpty() ? QString() : ("(time in " + xunit + ")")) + ": </b>" + QString::number(qSqrt((double)(x2 + y2)));
 
 	QMessageBox mb(QMessageBox::Information, "Distance between points", text, QMessageBox::Ok, m_player);
+	mb.setIconPixmap(vipPixmap("information.png"));
 	mb.setTextInteractionFlags(Qt::TextSelectableByMouse);
 	/*int dialogResult =*/mb.exec();
 }

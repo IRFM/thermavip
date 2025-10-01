@@ -2882,7 +2882,7 @@ VipGenericDialog::VipGenericDialog(QWidget* panel, const QString& title, QWidget
 {
 	VIP_CREATE_PRIVATE_DATA();
 	hide();
-	// centerWidget(this);
+
 	setWindowTitle(title);
 
 	d_data->apply.hide();
@@ -2903,8 +2903,6 @@ VipGenericDialog::VipGenericDialog(QWidget* panel, const QString& title, QWidget
 	globalLayout->addWidget(panel);
 	globalLayout->addLayout(buttonLayout);
 	setLayout(globalLayout);
-
-	// this->setWindowFlags(Qt::Tool|Qt::WindowStaysOnTopHint|Qt::CustomizeWindowHint|Qt::WindowCloseButtonHint);
 };
 
 VipGenericDialog::~VipGenericDialog()
@@ -2915,6 +2913,46 @@ QPushButton* VipGenericDialog::applyButton()
 {
 	return &d_data->apply;
 }
+
+
+static void centerOnParent(QWidget *w, QWidget * parent)
+{
+	QSize size = w->sizeHint();
+	QSize psize = parent->size();
+	psize = ((psize - size)/2);
+	QPoint pt(psize.width(),psize.height());
+	w->move(pt);
+}
+
+QMessageBox::StandardButton vipInformation(const QString & title, const QString & text, QMessageBox::StandardButtons buttons , QMessageBox::StandardButton defaultButton )
+{
+	QMessageBox dial(QMessageBox::Information, title,text, buttons, vipGetMainWindow());
+	dial.setDefaultButton(defaultButton);
+	dial.setIconPixmap(vipPixmap("INFOS.png"));
+	centerOnParent(&dial, vipGetMainWindow());
+	return (QMessageBox::StandardButton)dial.exec();
+}
+
+QMessageBox::StandardButton vipQuestion(const QString & title, const QString & text, QMessageBox::StandardButtons buttons , QMessageBox::StandardButton defaultButton )
+{
+	QMessageBox dial(QMessageBox::Question, title,text, buttons, vipGetMainWindow());
+	dial.setDefaultButton(defaultButton);
+	dial.setIconPixmap(vipPixmap("question.png"));
+	centerOnParent(&dial, vipGetMainWindow());
+	return (QMessageBox::StandardButton)dial.exec();
+}
+
+QMessageBox::StandardButton vipWarning(const QString & title, const QString & text, QMessageBox::StandardButtons buttons , QMessageBox::StandardButton defaultButton )
+{
+	QMessageBox dial(QMessageBox::Warning, title,text, buttons, vipGetMainWindow());
+	dial.setDefaultButton(defaultButton);
+	dial.setIconPixmap(vipPixmap("error.png"));
+	centerOnParent(&dial, vipGetMainWindow());
+	return (QMessageBox::StandardButton)dial.exec();
+} 
+
+
+
 
 #include <QDrag>
 #include <QMouseEvent>

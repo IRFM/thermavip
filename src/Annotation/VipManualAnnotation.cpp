@@ -1024,7 +1024,7 @@ void VipManualAnnotation::emitSendToDB()
 	}
 
 	if (has_one_marker) {
-		if (QMessageBox::question(vipGetMainWindow(),
+		if (vipQuestion(
 					  "Send to DB?",
 					  "A shape only has one time marker\n(start time is equal to end time).\n"
 					  "Do you wish to send it anyway?",
@@ -1094,7 +1094,7 @@ void VipManualAnnotation::emitSendToJson()
 	}
 
 	if (has_one_marker) {
-		if (QMessageBox::question(vipGetMainWindow(),
+		if (vipQuestion(
 					  "Send to JSON?",
 					  "A shape only has one time marker\n(start time is equal to end time).\n"
 					  "Do you wish to send it anyway?",

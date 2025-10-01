@@ -4732,7 +4732,7 @@ void VipMainWindow::concatenateVideos()
 
 	ed->apply();
 	if (!device->open(VipIODevice::ReadOnly)) {
-		QMessageBox::warning(this, "Error", "Unable to create a concatenate video device");
+		vipWarning("Error", "Unable to create a concatenate video device");
 		return;
 	}
 
@@ -4764,7 +4764,7 @@ void VipMainWindow::closeEvent(QCloseEvent* evt)
 
 	// only ask for saving session if there is at least one SubWindow left
 	if (lst.size() > 0 && d_data->sessionSavingEnabled) {
-		int res = QMessageBox::question(this, "Save session", "Do you want to save your session?", QMessageBox::Yes | QMessageBox::No | QMessageBox::Cancel);
+		int res = vipQuestion( "Save session", "Do you want to save your session?", QMessageBox::Yes | QMessageBox::No | QMessageBox::Cancel);
 		if (res == QMessageBox::Yes) {
 			saveSession(vipGetDataDirectory() + "last_session.session");
 		}
@@ -4903,8 +4903,7 @@ QList<VipAbstractPlayer*> VipMainWindow::openDevices(const QList<VipIODevice*>& 
 
 		// check the player count
 		if (players.size() > 5) {
-			if (QMessageBox::warning(
-			      nullptr, "Opening many players", QString("You are about to open %1 players.\nDo you wish to continue?").arg(players.size()), QMessageBox::Ok | QMessageBox::Cancel) !=
+			if (vipWarning("Opening many players", QString("You are about to open %1 players.\nDo you wish to continue?").arg(players.size()), QMessageBox::Ok | QMessageBox::Cancel) !=
 			    QMessageBox::Ok) {
 				// delete the devices and players
 				for (int i = 0; i < all_devices.size(); ++i)
@@ -4959,7 +4958,7 @@ QList<VipAbstractPlayer*> VipMainWindow::openPaths(const VipPathList& paths, Vip
 	if (!area && !(paths.size() == 1 && (QFileInfo(paths.first().canonicalPath()).suffix() == "session" || QFileInfo(paths.first().canonicalPath()).suffix() == "hsession"))) {
 		VIP_LOG_ERROR("Cannot open paths: you need to select a valid Workspace first");
 		if (_vip_openPathShowDialogOnError)
-			QMessageBox::warning(nullptr, "Error", "Cannot open paths: you need to select a valid Workspace first");
+			vipWarning( "Error", "Cannot open paths: you need to select a valid Workspace first");
 		return QList<VipAbstractPlayer*>();
 	}
 
@@ -5070,7 +5069,7 @@ QList<VipAbstractPlayer*> VipMainWindow::openPaths(const VipPathList& paths, Vip
 		QString file_error;
 		for (int i = 0; i < errors.size(); ++i)
 			file_error += "\t" + errors[i] + "\n";
-		QMessageBox::warning(nullptr, "Warning", "The following paths could not be opened:\n" + file_error);
+		vipWarning("Warning", "The following paths could not be opened:\n" + file_error);
 	}
 
 	this->setWindowState(this->windowState() | Qt::WindowActive);

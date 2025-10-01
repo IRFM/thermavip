@@ -1483,7 +1483,7 @@ void VipSceneModelEditor::uniteShapes()
 		}
 	}
 	else {
-		QMessageBox::warning(nullptr, "Unauthorized operation", "At least 2 shapes from the same scene model must be selected for this operation");
+		vipWarning("Unauthorized operation", "At least 2 shapes from the same scene model must be selected for this operation");
 	}
 }
 
@@ -1522,7 +1522,7 @@ void VipSceneModelEditor::intersectShapes()
 		}
 	}
 	else {
-		QMessageBox::warning(nullptr, "Unauthorized operation", "At least 2 shapes from the same scene model must be selected for this operation");
+		vipWarning("Unauthorized operation", "At least 2 shapes from the same scene model must be selected for this operation");
 	}
 }
 
@@ -1555,7 +1555,7 @@ void VipSceneModelEditor::subtractShapes()
 		}
 	}
 	else {
-		QMessageBox::warning(nullptr, "Unauthorized operation", "2 shapes from the same scene model must be selected for this operation");
+		vipWarning("Unauthorized operation", "2 shapes from the same scene model must be selected for this operation");
 	}
 }
 
@@ -1759,7 +1759,7 @@ void VipSceneModelEditor::saveH5ShapesAttribute()
 		return;
 	}
 
-	// Use the H5StillImageWriter from the H5StillImùage plugin
+	// Use the H5StillImageWriter from the H5StillImï¿½age plugin
 
 	VipIODevice* dev = vipCreateVariant("H5StillImageWriter*").value<VipIODevice*>();
 	if (!dev) {

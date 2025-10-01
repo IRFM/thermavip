@@ -46,7 +46,9 @@
 #include <QPushButton>
 #include <QSpinBox>
 #include <QToolButton>
-#include <qtoolbar.h>
+#include <QToolBar>
+#include <QMessageBox>
+
 
 #include "VipConfig.h"
 #include "VipDataType.h"
@@ -1121,6 +1123,10 @@ private:
 	
 	VIP_DECLARE_PRIVATE_DATA();
 };
+
+VIP_GUI_EXPORT QMessageBox::StandardButton vipInformation(const QString & title, const QString & text, QMessageBox::StandardButtons buttons = QMessageBox::Ok, QMessageBox::StandardButton defaultButton = QMessageBox::NoButton);
+VIP_GUI_EXPORT QMessageBox::StandardButton vipQuestion(const QString & title, const QString & text, QMessageBox::StandardButtons buttons = QMessageBox::Yes|QMessageBox::No , QMessageBox::StandardButton defaultButton = QMessageBox::NoButton);
+VIP_GUI_EXPORT QMessageBox::StandardButton vipWarning(const QString & title, const QString & text, QMessageBox::StandardButtons buttons = QMessageBox::Ok, QMessageBox::StandardButton defaultButton = QMessageBox::NoButton);
 
 /// A QMenu whose actions might be dragable.
 ///

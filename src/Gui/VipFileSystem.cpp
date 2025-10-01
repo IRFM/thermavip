@@ -1059,7 +1059,7 @@ bool VipMapFileSystemTree::move(const VipPathList& paths, const VipPath& dst_fol
 	vip_debug("dst: %s\n", dst_folder.canonicalPath().toLatin1().data());
 	for (int i = 0; i < paths.size(); ++i)
 		if (paths[i].isDir() && dst_folder.canonicalPath().startsWith(paths[i].canonicalPath())) {
-			QMessageBox::warning(nullptr, "Unsupported operation", "Cannot move selected paths");
+			vipWarning("Unsupported operation", "Cannot move selected paths");
 			return false;
 		}
 		else {
@@ -1128,7 +1128,7 @@ bool VipMapFileSystemTree::copy(const VipPathList& paths, const VipPath& dst_fol
 	vip_debug("dst: %s\n", dst_folder.canonicalPath().toLatin1().data());
 	for (int i = 0; i < paths.size(); ++i)
 		if (paths[i].isDir() && dst_folder.canonicalPath().startsWith(paths[i].canonicalPath())) {
-			QMessageBox::warning(nullptr, "Unsupported operation", "Cannot copy selected paths");
+			vipWarning("Unsupported operation", "Cannot copy selected paths");
 			return false;
 		}
 		else {
@@ -1631,11 +1631,11 @@ void VipMapFileSystemTree::keyPressEvent(QKeyEvent* evt)
 	else if (evt->key() == Qt::Key_V && (evt->modifiers() & Qt::CTRL)) {
 		VipPathList lst = selectedPaths();
 		if (lst.size() == 0) {
-			QMessageBox::warning(nullptr, "Paste files", "No destination folder selected");
+			vipWarning("Paste files", "No destination folder selected");
 			return;
 		}
 		if (lst.size() > 1) {
-			QMessageBox::warning(nullptr, "Paste files", "Unauthorized operation");
+			vipWarning("Paste files", "Unauthorized operation");
 			return;
 		}
 
@@ -1669,12 +1669,12 @@ bool VipMapFileSystemTree::aboutToCopy(const VipPathList&, const VipPath&)
 
 bool VipMapFileSystemTree::aboutToMove(const VipPathList&, const VipPath&)
 {
-	return QMessageBox::question(nullptr, "Move selection", "Do you want to move selection ?", QMessageBox::Ok, QMessageBox::Cancel) == QMessageBox::Ok;
+	return vipQuestion( "Move selection", "Do you want to move selection ?", QMessageBox::Ok, QMessageBox::Cancel) == QMessageBox::Ok;
 }
 
 bool VipMapFileSystemTree::aboutToRemove(const VipPathList&)
 {
-	return QMessageBox::question(nullptr, "Delete selection", "Do you want to remove selection ?", QMessageBox::Ok, QMessageBox::Cancel) == QMessageBox::Ok;
+	return vipQuestion("Delete selection", "Do you want to remove selection ?", QMessageBox::Ok, QMessageBox::Cancel) == QMessageBox::Ok;
 }
 
 bool VipMapFileSystemTree::rightClick()

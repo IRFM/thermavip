@@ -596,7 +596,7 @@ void VipPyProcessingEditor::registerProcessing()
 	if (dialog.exec() == QDialog::Accepted) {
 		bool ret = d_data->proc->registerThisProcessing(m->category(), m->name(), m->description(), m->overwrite());
 		if (!ret)
-			QMessageBox::warning(nullptr, "Operation failure", "Failed to register this processing.\nPlease make sure you entered a valid name and category.");
+			vipWarning("Operation failure", "Failed to register this processing.\nPlease make sure you entered a valid name and category.");
 		else {
 			// make sure to update all processing menu
 			vipGetMainWindow()->displayArea()->resetItemSelection();
@@ -1157,7 +1157,7 @@ void VipPySignalFusionProcessingEditor::registerProcessing()
 	if (dialog.exec() == QDialog::Accepted) {
 		bool ret = d_data->proc->registerThisProcessing(m->category(), m->name(), m->description(), m->overwrite());
 		if (!ret)
-			QMessageBox::warning(nullptr, "Operation failure", "Failed to register this processing.\nPlease make sure you entered a valid name and category.");
+			vipWarning("Operation failure", "Failed to register this processing.\nPlease make sure you entered a valid name and category.");
 		else {
 			// make sure to update all processing menu
 			vipGetMainWindow()->displayArea()->resetItemSelection();
@@ -1477,7 +1477,7 @@ void vipOpenProcessingManager()
 	if (dialog.exec() == QDialog::Accepted) {
 		bool ret = m->applyChanges();
 		if (!ret)
-			QMessageBox::warning(nullptr, "Operation failure", "Failed to modify registered processing.");
+			vipWarning("Operation failure", "Failed to modify registered processing.");
 	}
 }
 

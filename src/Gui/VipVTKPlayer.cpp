@@ -895,7 +895,7 @@ void VipFOVItem::saveSpatialCalibrationFile()
 			mapping = d_data->mapping;
 
 		if (!mapping->outputAt(0)->value<VipVTKObject>()) {
-			QMessageBox::warning(nullptr, "Error", "Unable to save scene model for this camera!");
+			vipWarning("Error", "Unable to save scene model for this camera!");
 			if (delete_mapping)
 				delete mapping;
 			return;
@@ -950,7 +950,7 @@ void VipFOVItem::displaySpatialCalibration()
 			OffscreenMappingToInputData* map = buildMapping(this, nullptr);
 			mapping = map->outputAt(0)->value<VipVTKObject>();
 			if (!mapping) {
-				QMessageBox::warning(nullptr, "Error", "Unable to display scene model for this camera!");
+				vipWarning("Error", "Unable to display scene model for this camera!");
 				return;
 			}
 			VipAnyResource* dev = new VipAnyResource(VipVTKPlayer::fromChild(this->view())->processingPool());
@@ -4653,7 +4653,7 @@ void VipSelectDisplayedAttributeWidget::DeleteSelectedAttribue()
 	QString name = this->currentAttribute();
 
 	if (lst.size() > 0 && type != VipVTKObject::Unknown && name != "None") {
-		QMessageBox::StandardButton b = QMessageBox::question(nullptr, "remove attribute", "Do you want to remove selected attribute?");
+		QMessageBox::StandardButton b = vipQuestion( "remove attribute", "Do you want to remove selected attribute?");
 		if (b == QMessageBox::Yes) {
 			setDisplayedAttribute(VipVTKObject::Unknown, "None", 0);
 

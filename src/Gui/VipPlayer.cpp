@@ -9069,7 +9069,7 @@ static bool handleDropROIFileOnVideo(VipVideoPlayer* pl, VipPlotItem* sp, QMimeD
 
 	bool remove_old = true;
 	if (pl->plotSceneModel()->shapes().size()) {
-		if (QMessageBox::question(pl, "Keep old shapes?", "Do you want to keep the previous shapes?", QMessageBox::Yes, QMessageBox::No) == QMessageBox::Yes)
+		if (vipQuestion( "Keep old shapes?", "Do you want to keep the previous shapes?", QMessageBox::Yes, QMessageBox::No) == QMessageBox::Yes)
 			remove_old = false;
 	}
 

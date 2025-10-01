@@ -628,7 +628,7 @@ bool PointAttributeInterpolate::apply()
 		vtkDataArray * ar = ptr->rawData().setPointsAttribute(name(), components1(), pt1, components2(), pt2, interpolationAxes());
 		if (!ar)
 		{
-			QMessageBox::warning(nullptr, "Error", "Unable to create point attribute.\nPlease check that you correcly fill all parameters.");
+			vipWarning("Error", "Unable to create point attribute.\nPlease check that you correcly fill all parameters.");
 			Q_EMIT failed();
 			return false;
 		}

@@ -453,7 +453,7 @@ int main(int argc, char** argv)
 				if (update.isDownloadFinished()) {
 					if (!no_splashscreen)
 						splash->hide();
-					QMessageBox::StandardButton button = QMessageBox::question(nullptr, "Update Thermavip", "A Thermavip update is ready to be installed.\nInstall now?");
+					QMessageBox::StandardButton button = vipQuestion( "Update Thermavip", "A Thermavip update is ready to be installed.\nInstall now?");
 					if (button == QMessageBox::Yes) {
 						QString procname = QFileInfo(app.arguments()[0]).fileName();
 						// QProcess::startDetached(VipUpdate::getUpdateProgram() + " -u --command " + procname + " -o ./");
@@ -647,11 +647,14 @@ int main(int argc, char** argv)
 				vipGetMainWindow()->showMaximized();
 				QCoreApplication::processEvents();
 				if (!last_session) {
-					QMessageBox box(
+					if(QMessageBox::Yes == vipQuestion("Load previous session", "Do you want to load the last session?"))
+						last_session = true;
+
+					/*QMessageBox box(
 					  QMessageBox::Question, "Load previous session", "Do you want to load the last session?", QMessageBox::Yes | QMessageBox::No, vipGetMainWindow());
 
 					if (box.exec() == QMessageBox::Yes)
-						last_session = true;
+						last_session = true;*/
 				}
 				if (last_session) {
 					load_session = filename;
