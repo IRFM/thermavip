@@ -2863,34 +2863,13 @@ qint64 VipTimeRangeBasedGenerator::computeTimeToPos(qint64 time) const
 		else if (time >= d_data->timestamps.last())
 			return d_data->timestamps.size() - 1;
 
-		qint64 avg_sampling = 1;
-		if (d_data->timestamps.size() > 1)
-			avg_sampling = (d_data->timestamps.last() - d_data->timestamps.first()) / (d_data->timestamps.size() - 1);
-
-		qint64 start_index = (time - d_data->timestamps.first()) / avg_sampling;
-
-		if (start_index < 0)
-			return 0;
-		else if (start_index >= d_data->timestamps.size())
-			return d_data->timestamps.size() - 1;
-
-		if (d_data->timestamps[start_index] > time) {
-			// go before
-			for (int i = start_index - 1; i >= 0; --i) {
-				if (d_data->timestamps[i] < time) {
-					return (time - d_data->timestamps[i] < d_data->timestamps[i + 1] - time) ? i : i + 1;
-				}
-			}
-		}
-		else {
-			// go after
-			for (int i = start_index + 1; i < d_data->timestamps.size(); ++i) {
-				if (d_data->timestamps[i] > time) {
-					return (time - d_data->timestamps[i - 1] < d_data->timestamps[i] - time) ? i - 1 : i;
-				}
-			}
-		}
-		return VipInvalidPosition;
+		auto it = std::lower_bound(d_data->timestamps.cbegin(),d_data->timestamps.cend(),time);
+		auto prev = it;
+		--prev;
+		if((time - *prev) < (*it - time))
+			return prev - d_data->timestamps.cbegin();
+		else
+			return it - d_data->timestamps.cbegin();
 	}
 
 	qint64 cum_pos = 0;

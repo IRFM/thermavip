@@ -66,6 +66,7 @@ public:
 		SearchXAxis = 0x0100,
 		SearchYAxis = 0x0200,
 		Hidden = 0x0400,
+		RegularItems = 0x0800, // Use regular QGraphicsItem tool tip stored as property '_vip_toolTip'
 		All = PlotArea | Axes | ItemsTitles | ItemsLegends | ItemsPos | ItemsProperties | ItemsToolTips | SearchXAxis | SearchYAxis
 	};
 	Q_DECLARE_FLAGS(DisplayFlags, DisplayFlag);

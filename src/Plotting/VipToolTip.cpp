@@ -584,6 +584,21 @@ void VipToolTip::setPlotAreaPos(const QPointF& pos)
 		}
 	}
 
+	if(testDisplayFlag(RegularItems) && populated_items < maxItems() && plotArea()->scene()){
+		QPointF pt = plotArea()->mapToScene(pos);
+		const auto lst = plotArea()->scene()->items(pt);
+		for(const QGraphicsItem * it : lst){ 
+			if(auto * o = it->toGraphicsObject()){ 
+				QString tip = o->property("_vip_toolTip").toString();
+				if(!tip.isEmpty()){
+					text << "<p>" + tip + "</p>";
+					++populated_items;
+					break;
+				} 
+			}	
+		} 
+	} 
+
 	if (line >= d_data->maxLines) {
 		text.append("<br>...");
 		if (!d_data->maxLineMessage.isEmpty())

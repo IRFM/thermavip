@@ -4414,11 +4414,15 @@ static int getMousePosition(VipMainWindow* win, const QPoint& global_pos)
 	QRect inner = geom.adjusted(30, 30, -30, -30);
 	if (!inner.contains(global_pos))
 		return Vip::AllSides; // can move the window
-	return Vip::NoSide;	      // nothin to move/resize
+	return Vip::NoSide;	      // nothing to move/resize
 }
 
 void VipMainWindow::mouseDoubleClickEvent(QMouseEvent*)
 {
+	QRectF inner = geometry().adjusted(30, 30, -30, -30);
+	if (inner.contains(QCursor::pos()))
+		return; // nothing to do
+	
 	if (isMaximized())
 		showNormal();
 	else
