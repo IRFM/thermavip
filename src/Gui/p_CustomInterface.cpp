@@ -98,9 +98,7 @@ private:
 		//setWindowFlags(Qt::Popup |  Qt::WindowDoesNotAcceptFocus | Qt::WindowTransparentForInput);
 		setAttribute(Qt::WA_AlwaysStackOnTop, true);
 		setAttribute(Qt::WA_TransparentForMouseEvents);
-			//TEST
-			//setMinimumSize(QSize(1,1));
-
+		
 		QColor c = vipGetMainWindow()->palette().color(QPalette::Window);
 		bool is_light = c.red() > 200 && c.green() > 200 && c.blue() > 200;
 		if (!is_light)
@@ -127,9 +125,10 @@ public:
 		text = t;
 	}	
 
-	void show(QObject * obj)
+	void show(QObject * )
 	{
 		QWidget::show();
+		raise();
 	}		
 
 	virtual void paintEvent(QPaintEvent*)
