@@ -309,6 +309,20 @@ public Q_SLOTS:
 	bool startStreaming();
 	bool stopStreaming();
 
+	/// @brief For non sequential types (Temporal or Resource),
+	/// tells if a streaming mode is supported.
+	/// 
+	/// This does not change the device type, but add the possibiliy
+	/// to update/upsample the data based on a pseudo streaming mode.
+	/// 
+	/// Basically, this option will trigger the display of the streaming button
+	/// on the workspace tab.
+	/// 
+	/// If true, the enableStreaming() should be reimplemented.
+	/// 
+	void setHasStreamingMode(bool);
+	bool hasStreamingMode() const;
+
 	/// Read the data at the current time, expressed in nanoseconds since Epoch. Only meaningful for Sequential devices.
 	/// This function could be usefull for Sequential devices that just call readCurrentData() periodically and reimplement readData().
 	bool readCurrentData();
@@ -428,7 +442,7 @@ private:
 	void setTime(qint64 time);
 
 	
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 Q_DECLARE_OPERATORS_FOR_FLAGS(VipIODevice::OpenModes)
@@ -545,7 +559,8 @@ public:
 	/// @brief Enable/disable missing frames when using a play speed
 	bool missFramesEnabled() const;
 
-	/// Returns true if the VipProcessingPool has a Sequential child
+	/// Returns true if the VipProcessingPool has a Sequential child,
+	/// or child(ren) with hasStreamingMode() returning true.
 	bool hasSequentialDevice() const;
 	/// Returns true if the VipProcessingPool has a Temporal child
 	bool hasTemporalDevice() const;
@@ -750,7 +765,7 @@ private:
 	void applyLimitsToChildren();
 
 	
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 Q_DECLARE_OPERATORS_FOR_FLAGS(VipProcessingPool::RunMode)
@@ -852,7 +867,7 @@ protected:
 
 private:
 	
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 VIP_REGISTER_QOBJECT_METATYPE(VipTimeRangeBasedGenerator*)
@@ -1272,7 +1287,7 @@ private:
 	void computeFiles();
 	int closestDeviceIndex(qint64 time, qint64* closest = nullptr) const;
 	
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 	// directory options
 };
 
@@ -1375,7 +1390,7 @@ protected:
 
 private:
 	
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 VIP_REGISTER_QOBJECT_METATYPE(VipArchiveRecorder*)
@@ -1417,7 +1432,7 @@ private Q_SLOTS:
 
 private:
 	
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 VIP_REGISTER_QOBJECT_METATYPE(VipArchiveReader*)

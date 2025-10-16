@@ -241,7 +241,7 @@ VipTextEngine::~VipTextEngine() {}
 //! Constructor
 VipPlainTextEngine::VipPlainTextEngine()
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 }
 
 //! Destructor
@@ -1601,7 +1601,7 @@ public:
 
 VipTextObject::VipTextObject(const VipText& text, const QRectF& rect, const QTransform& tr)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 	d_data->text = text;
 	d_data->rect = rect;
 	d_data->transform = tr;
@@ -1609,7 +1609,7 @@ VipTextObject::VipTextObject(const VipText& text, const QRectF& rect, const QTra
 
 VipTextObject::VipTextObject(const VipText& text, const VipPie& pie, const QPointF& center, VipText::TextDirection dir, const QTransform& tr)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 	d_data->text = text;
 	d_data->pie = pie;
 	d_data->dir = dir;
@@ -1619,7 +1619,7 @@ VipTextObject::VipTextObject(const VipText& text, const VipPie& pie, const QPoin
 
 VipTextObject::VipTextObject(const VipTextObject& other)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data, *other.d_data);
+	VIP_CREATE_PRIVATE_DATA(*other.d_data);
 }
 
 VipTextObject::VipTextObject(VipTextObject&& other) noexcept

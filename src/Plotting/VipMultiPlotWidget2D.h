@@ -188,7 +188,7 @@ Q_SIGNALS:
 private:
 	void applyLabelOverlapping();
 	
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 #endif

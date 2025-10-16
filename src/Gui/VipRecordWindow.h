@@ -111,7 +111,7 @@ private Q_SLOTS:
 private:
 	QRect computeRect();
 
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 class VipMainWindow;
@@ -151,7 +151,7 @@ public Q_SLOTS:
 	void openVideoStream(QAction* action);
 
 private:
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 #endif

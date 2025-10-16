@@ -102,7 +102,7 @@ public:
 VipToolTip::VipToolTip(QObject* parent)
   : QObject(parent)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 }
 
 VipToolTip::~VipToolTip()
@@ -584,6 +584,21 @@ void VipToolTip::setPlotAreaPos(const QPointF& pos)
 		}
 	}
 
+	if(testDisplayFlag(RegularItems) && populated_items < maxItems() && plotArea()->scene()){
+		QPointF pt = plotArea()->mapToScene(pos);
+		const auto lst = plotArea()->scene()->items(pt);
+		for(const QGraphicsItem * it : lst){ 
+			if(auto * o = it->toGraphicsObject()){ 
+				QString tip = o->property("_vip_toolTip").toString();
+				if(!tip.isEmpty()){
+					text << "<p>" + tip + "</p>";
+					++populated_items;
+					break;
+				} 
+			}	
+		} 
+	} 
+
 	if (line >= d_data->maxLines) {
 		text.append("<br>...");
 		if (!d_data->maxLineMessage.isEmpty())
@@ -714,9 +729,9 @@ QPoint VipToolTip::toolTipPosition(VipText& text, const QPointF& pos, Vip::Regio
 
 	}
 
-	QRect tip_rect = VipCorrectedTip::textGeometry(QPoint(0, 0), text.text(), plotArea()->view(), QRect());
+	QRect tip_rect = VipCorrectedTip::textGeometry(/*QPoint(0, 0)*/ screen.topLeft(), text.text(), plotArea()->view(), QRect());
 	QSize tip_size = tip_rect.size();
-	QPoint tip_offset = tip_rect.topLeft();
+	QPoint tip_offset = tip_rect.topLeft() - screen.topLeft();
 
 	if (d_data->offset) {
 		QPoint this_pos;

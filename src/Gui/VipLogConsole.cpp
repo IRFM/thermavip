@@ -121,7 +121,7 @@ public:
 VipLogConsole::VipLogConsole(QWidget* parent)
   : QTextEdit(parent)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 	d_data->errorColor = vipDefaultTextErrorColor(this);
 	d_data->levels = VipLogging::Info | VipLogging::Warning | VipLogging::Debug | VipLogging::Error;
 	d_data->device = new OutLogDevice(this);
@@ -353,7 +353,7 @@ VipConsoleWidget::VipConsoleWidget(VipMainWindow* window)
 	this->setKeepFloatingUserSize(true);
 	this->setObjectName("Console");
 	this->setWindowTitle("Console");
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 	d_data->console = new VipLogConsole();
 	d_data->text = new QLabel();
 	d_data->toolBar = new QToolBar();

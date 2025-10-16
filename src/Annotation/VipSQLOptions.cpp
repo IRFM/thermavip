@@ -48,7 +48,7 @@ public:
 VipSQLDataBaseOptionsWidget::VipSQLDataBaseOptionsWidget(QWidget* parent)
   : QWidget(parent)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 
 	QGridLayout* lay = new QGridLayout();
 	int row = 0;
@@ -162,7 +162,7 @@ public:
 VipThermalEventDBOptionsWidget::VipThermalEventDBOptionsWidget(QWidget* parent)
   : QWidget(parent)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 	QGridLayout* lay = new QGridLayout();
 
 	d_data->minWidth.setRange(0, 100);
@@ -205,7 +205,7 @@ public:
 VipSQLThermalEventOptions::VipSQLThermalEventOptions(QWidget* parent)
   : VipPageOption(parent)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 
 	QVBoxLayout* lay = new QVBoxLayout();
 

@@ -124,7 +124,7 @@ private Q_SLOTS:
 
 private:
 	
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 /// A QTabWidget holding a VipDisplayTabBar.
@@ -193,12 +193,13 @@ protected:
 
 private:
 	
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 class VipScaleWidget;
 class VipAxisColorMap;
 class VipVideoPlayer;
+class VipProgressWidget;
 
 /// VipDisplayPlayerArea is the tab widget inside a VipDisplayTabWidget (also called a workspace).
 /// 
@@ -212,6 +213,7 @@ class VIP_GUI_EXPORT VipDisplayPlayerArea : public QWidget
 	Q_PROPERTY(bool focus READ hasFocus WRITE setFocus);
 	friend class VipDisplayArea;
 	friend class VipVideoPlayer;// for setColorMapToPlayer
+	friend class VipProgressWidget;
 
 public:
 	/// @brief Operations supported by a VipDisplayPlayerArea
@@ -321,7 +323,7 @@ public:
 	int maxColumns() const;
 
 	/// Return the VipDisplayPlayerArea (if any) ancestor of \a child.
-	static VipDisplayPlayerArea* fromChildWidget(QWidget* child);
+	static VipDisplayPlayerArea* fromChild(const QObject* child);
 
 	static void setWorkspaceTitleEditable(const std::function<QVariantMap(const QString&)>& generate_editable_symbol);
 
@@ -344,7 +346,7 @@ public Q_SLOTS:
 	/// @brief Enable/disable histogram flattening for the global colormap
 	void setFlatHistogramColorScale(bool);
 	/// @brief Set the global colormap type (VipLinearColorMap::StandardColorMap)
-	void setColorMap(int);
+	void setColorMap(const QString &);
 	/// @brief Display the editor for the global colormap
 	void editColorMap();
 	void relayoutColorMap();
@@ -401,8 +403,11 @@ private:
 	void layoutColorMap(const QList<VipVideoPlayer*>& players = QList<VipVideoPlayer*>());
 	void setColorMapToPlayer(VipVideoPlayer* pl, bool enable);
 
+	void setProgressWidget(VipProgressWidget*);
+	VipProgressWidget* progressWidget() const;
+	QMutex *closeMutex() const;
 	
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 Q_DECLARE_OPERATORS_FOR_FLAGS(VipDisplayPlayerArea::Operations)
@@ -501,7 +506,7 @@ private:
 	QString generateWorkspaceName() const;
 
 	
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 VIP_REGISTER_QOBJECT_METATYPE(VipDisplayArea*)
@@ -537,12 +542,6 @@ public:
 	/// @brief Set the main Thermavip title
 	void setMainTitle(const QString& title);
 	QString mainTitle() const;
-
-protected:
-	virtual void mouseDoubleClickEvent(QMouseEvent* evt);
-	virtual void mousePressEvent(QMouseEvent* evt);
-	virtual void mouseReleaseEvent(QMouseEvent* evt);
-	virtual void mouseMoveEvent(QMouseEvent* evt);
 
 private Q_SLOTS:
 	void setUpdateProgress(int value);
@@ -600,9 +599,6 @@ public:
 
 private Q_SLOTS:
 	void maximizeOrShowNormal();
-	void onMaximized();
-	void onRestored();
-	void onMinimized();
 	void computeWindowState();
 	void computeHelpMenu();
 	void computeToolsMenu();
@@ -669,6 +665,7 @@ public:
 
 	~VipMainWindow();
 
+
 	/// @brief Get/Set the main Thermavip title (see VipIconBar)
 	void setMainTitle(const QString& title);
 	QString mainTitle() const;
@@ -734,8 +731,8 @@ public:
 	/// @return The list of created players
 	QList<VipAbstractPlayer*> openDevices(const QList<VipIODevice*>& devices, VipAbstractPlayer* player, VipDisplayPlayerArea* area = nullptr);
 
-	/// @brief Open (display) players in the current workspace.
-	void openPlayers(const QList<VipAbstractPlayer*> players);
+	/// @brief Open (display) players in the provided workspace, or current one if null.
+	bool openPlayers(const QList<VipAbstractPlayer*> players, VipDisplayPlayerArea * wks = nullptr);
 
 	/// @brief There is a Qt bug that causes a crash when trying to render a widget while it's parent is being destroyed.
 	/// This causes the VipMultiWidgetIcons to crash when closing a VipDisplayPlayerArea.
@@ -844,6 +841,8 @@ public Q_SLOTS:
 	void closeCurrentPlayer();
 	void toggleWorkspaceFlatHistogram();
 
+	void concatenateVideos();
+
 private Q_SLOTS:
 	void init();
 	void openSharedMemoryFiles();
@@ -874,13 +873,17 @@ protected:
 	virtual void closeEvent(QCloseEvent* );
 	virtual void showEvent(QShowEvent*);
 	virtual void keyPressEvent(QKeyEvent*);
+	virtual void mousePressEvent(QMouseEvent* evt);
+	virtual void mouseReleaseEvent(QMouseEvent* evt);
+	virtual void mouseMoveEvent(QMouseEvent* evt);
+	virtual void mouseDoubleClickEvent(QMouseEvent* evt);
 
 private:
 	QAction* addToolWidget(VipToolWidget* widget, const QIcon& icon, const QString& text, bool set_tool_icon = false);
 	void setCurrentTabDestroy(bool);
 	bool loadSessionShowProgress(VipArchive& arch, VipProgress* progress);
 
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 /// @brief Returns (and create if necessary) the main unique VipMainWindow

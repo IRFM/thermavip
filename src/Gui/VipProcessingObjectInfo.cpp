@@ -813,7 +813,7 @@ VipProcessingObjectInfo::VipProcessingObjectInfo(VipMainWindow* window)
 {
 	setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
 
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 
 	setWindowTitle("Player properties");
 	setObjectName("Processing infos");
@@ -1448,6 +1448,8 @@ void VipProcessingObjectInfo::search()
 void VipProcessingObjectInfo::currentDisplayPlayerAreaChanged(VipDisplayPlayerArea* area)
 {
 	if (area) {
+		if (!vipIsObjectValid(area))
+			return;
 		// hide this tool widget if their are no valid top level widget anymore in the current workspace
 		QList<VipMultiDragWidget*> ws = area->dragWidgetHandler()->topLevelMultiDragWidgets();
 		if (ws.isEmpty())

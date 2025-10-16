@@ -410,7 +410,7 @@ static void uploadROIsFromPlayer(VipVideoPlayer* pl, const VipShapeList& shs)
 {
 	VipPlayerDBAccess* db = VipPlayerDBAccess::fromPlayer(pl);
 	if (!pl) {
-		QMessageBox::warning(nullptr, "Error", "Unable to send ROI to DB");
+		vipWarning( "Error", "Unable to send ROI to DB");
 		return;
 	}
 
@@ -442,7 +442,7 @@ static void uploadROIsFromPlayer(VipVideoPlayer* pl, const VipShapeList& shs)
 
 	//VipManualAnnotation* annot = db->manualAnnotationPanel();
 	if (!pl) {
-		QMessageBox::warning(nullptr, "Error", "Unable to send ROI to DB");
+		vipWarning( "Error", "Unable to send ROI to DB");
 		return;
 	}
 
@@ -456,7 +456,7 @@ static void uploadROIsFromPlayer(VipVideoPlayer* pl, const VipShapeList& shs)
 	QList<VipPlotShape*> selected = pl->plotSceneModel()->shapes(1);
 	VipDisplayObject* display = pl->spectrogram()->property("VipDisplayObject").value<VipDisplayObject*>();
 	if (!display) {
-		QMessageBox::warning(nullptr, "Error", "Unable to send ROI to DB");
+		vipWarning( "Error", "Unable to send ROI to DB");
 		return;
 	}
 
@@ -468,7 +468,7 @@ static void uploadROIsFromPlayer(VipVideoPlayer* pl, const VipShapeList& shs)
 				src_output = source;
 
 	if (!src_output) {
-		QMessageBox::warning(nullptr, "Error", "Unable to send ROI to DB");
+		vipWarning("Error", "Unable to send ROI to DB");
 		return;
 	}
 	const VipAnyData any = src_output->data();
@@ -547,7 +547,7 @@ static void uploadROIsFromPlayer(VipVideoPlayer* pl, const VipShapeList& shs)
 	VipProgress p;
 	QList<qint64> ids = vipSendToDB(user_name, camera, device, pulse, res, &p);
 	if (ids.size() == 0) {
-		QMessageBox::warning(nullptr, "Error", "Unable to upload ROI to DB");
+		vipWarning( "Error", "Unable to upload ROI to DB");
 		return;
 	}
 
@@ -583,7 +583,7 @@ static void uploadImageEventFromPlayer(VipVideoPlayer* pl, bool remember = true)
 
 	VipPlayerDBAccess* db = VipPlayerDBAccess::fromPlayer(pl);
 	if (!pl) {
-		QMessageBox::warning(nullptr, "Error", "Unable to send ROI to DB");
+		vipWarning( "Error", "Unable to send ROI to DB");
 		return;
 	}
 
@@ -623,7 +623,7 @@ static void uploadImageEventFromPlayer(VipVideoPlayer* pl, bool remember = true)
 
 	//VipManualAnnotation* annot = db->manualAnnotationPanel();
 	if (!pl) {
-		QMessageBox::warning(nullptr, "Error", "Unable to send ROI to DB");
+		vipWarning( "Error", "Unable to send ROI to DB");
 		return;
 	}
 
@@ -633,7 +633,7 @@ static void uploadImageEventFromPlayer(VipVideoPlayer* pl, bool remember = true)
 
 	VipDisplayObject* display = pl->spectrogram()->property("VipDisplayObject").value<VipDisplayObject*>();
 	if (!display) {
-		QMessageBox::warning(nullptr, "Error", "Unable to send ROI to DB");
+		vipWarning( "Error", "Unable to send ROI to DB");
 		return;
 	}
 
@@ -645,7 +645,7 @@ static void uploadImageEventFromPlayer(VipVideoPlayer* pl, bool remember = true)
 				src_output = source;
 
 	if (!src_output) {
-		QMessageBox::warning(nullptr, "Error", "Unable to send ROI to DB");
+		vipWarning("Error", "Unable to send ROI to DB");
 		return;
 	}
 	const VipAnyData any = src_output->data();
@@ -712,7 +712,7 @@ static void uploadImageEventFromPlayer(VipVideoPlayer* pl, bool remember = true)
 	VipProgress p;
 	QList<qint64> ids = vipSendToDB(user_name, camera, device, pulse, res, &p);
 	if (ids.size() == 0) {
-		QMessageBox::warning(nullptr, "Error", "Unable to upload ROI to DB");
+		vipWarning("Error", "Unable to upload ROI to DB");
 		return;
 	}
 

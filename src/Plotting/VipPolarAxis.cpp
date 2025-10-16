@@ -322,7 +322,7 @@ static bool registerVipPolarAxis = vipSetKeyWordsForClass(&VipPolarAxis::staticM
 VipPolarAxis::VipPolarAxis(QGraphicsItem* parent)
   : VipAbstractPolarScale(parent)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 
 	this->setScaleDraw(new VipPolarScaleDraw());
 	this->setMargin(2);
@@ -428,12 +428,6 @@ void VipPolarAxis::computeScaleDrawRadiusAndCenter()
 	scaleDraw()->setRadius(radius);
 }
 
-#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
-static bool qFuzzyCompare(const QPointF& p1, const QPointF& p2)
-{
-	return qFuzzyCompare(p1.x(), p2.x()) && qFuzzyCompare(p1.y(), p2.y());
-}
-#endif
 
 void VipPolarAxis::setCenter(const QPointF& c)
 {
@@ -629,7 +623,7 @@ static bool registerVipRadialAxis = vipSetKeyWordsForClass(&VipRadialAxis::stati
 VipRadialAxis::VipRadialAxis(QGraphicsItem* parent)
   : VipAbstractPolarScale(parent)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 
 	this->setScaleDraw(new VipRadialScaleDraw());
 	this->setMargin(2);

@@ -51,6 +51,7 @@
 #include "VipFunctional.h"
 #include "VipRenderObject.h"
 #include "VipText.h"
+#include "VipPimpl.h"
 
 /// \addtogroup Gui
 /// @{
@@ -291,7 +292,7 @@ private Q_SLOTS:
 	void addIdToTitle();
 
 private:
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 VIP_REGISTER_QOBJECT_METATYPE(VipBaseDragWidget*)
@@ -348,7 +349,7 @@ private Q_SLOTS:
 private:
 	void relayout();
 	
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 VIP_REGISTER_QOBJECT_METATYPE(VipDragWidget*)
@@ -418,7 +419,7 @@ protected:
 
 private:
 	
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 /// Custom QSplitterHandle class. In addition to its normal role, it provides several functionalities:
@@ -732,7 +733,7 @@ private:
 	// create a new horizontal splitter
 	QSplitter* createHSplitter();
 
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 VIP_REGISTER_QOBJECT_METATYPE(VipMultiDragWidget*)

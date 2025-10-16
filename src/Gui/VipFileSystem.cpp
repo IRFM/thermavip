@@ -176,7 +176,7 @@ public:
 
 VipIconProvider::VipIconProvider()
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 }
 
 VipIconProvider::~VipIconProvider()
@@ -206,7 +206,7 @@ QIcon VipIconProvider::iconPath(const VipPath& path) const
 {
 	
 	QFileInfo info(path.canonicalPath());
-	if (info.isDir()) {
+	if (info.isDir() || path.isDir()) {
 		if (isDrive(path, info)) {
 			if (d_data->driveIcon.isNull()) 
 				const_cast<QPixmap&>(d_data->driveIcon) = d_data->stdprovider.icon(QFileIconProvider::Drive).pixmap(QSize(30, 30));
@@ -756,7 +756,7 @@ public:
 VipMapFileSystemTree::VipMapFileSystemTree(QWidget* parent)
   : QTreeWidget(parent)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 	d_data->update = new VipMapFileSystemTreeUpdate(this);
 
 	this->setSortingEnabled(true);
@@ -1059,7 +1059,7 @@ bool VipMapFileSystemTree::move(const VipPathList& paths, const VipPath& dst_fol
 	vip_debug("dst: %s\n", dst_folder.canonicalPath().toLatin1().data());
 	for (int i = 0; i < paths.size(); ++i)
 		if (paths[i].isDir() && dst_folder.canonicalPath().startsWith(paths[i].canonicalPath())) {
-			QMessageBox::warning(nullptr, "Unsupported operation", "Cannot move selected paths");
+			vipWarning("Unsupported operation", "Cannot move selected paths");
 			return false;
 		}
 		else {
@@ -1128,7 +1128,7 @@ bool VipMapFileSystemTree::copy(const VipPathList& paths, const VipPath& dst_fol
 	vip_debug("dst: %s\n", dst_folder.canonicalPath().toLatin1().data());
 	for (int i = 0; i < paths.size(); ++i)
 		if (paths[i].isDir() && dst_folder.canonicalPath().startsWith(paths[i].canonicalPath())) {
-			QMessageBox::warning(nullptr, "Unsupported operation", "Cannot copy selected paths");
+			vipWarning("Unsupported operation", "Cannot copy selected paths");
 			return false;
 		}
 		else {
@@ -1631,11 +1631,11 @@ void VipMapFileSystemTree::keyPressEvent(QKeyEvent* evt)
 	else if (evt->key() == Qt::Key_V && (evt->modifiers() & Qt::CTRL)) {
 		VipPathList lst = selectedPaths();
 		if (lst.size() == 0) {
-			QMessageBox::warning(nullptr, "Paste files", "No destination folder selected");
+			vipWarning("Paste files", "No destination folder selected");
 			return;
 		}
 		if (lst.size() > 1) {
-			QMessageBox::warning(nullptr, "Paste files", "Unauthorized operation");
+			vipWarning("Paste files", "Unauthorized operation");
 			return;
 		}
 
@@ -1669,12 +1669,12 @@ bool VipMapFileSystemTree::aboutToCopy(const VipPathList&, const VipPath&)
 
 bool VipMapFileSystemTree::aboutToMove(const VipPathList&, const VipPath&)
 {
-	return QMessageBox::question(nullptr, "Move selection", "Do you want to move selection ?", QMessageBox::Ok, QMessageBox::Cancel) == QMessageBox::Ok;
+	return vipQuestion( "Move selection", "Do you want to move selection ?", QMessageBox::Ok, QMessageBox::Cancel) == QMessageBox::Ok;
 }
 
 bool VipMapFileSystemTree::aboutToRemove(const VipPathList&)
 {
-	return QMessageBox::question(nullptr, "Delete selection", "Do you want to remove selection ?", QMessageBox::Ok, QMessageBox::Cancel) == QMessageBox::Ok;
+	return vipQuestion("Delete selection", "Do you want to remove selection ?", QMessageBox::Ok, QMessageBox::Cancel) == QMessageBox::Ok;
 }
 
 bool VipMapFileSystemTree::rightClick()
@@ -2037,6 +2037,7 @@ static void applyPendingFileSystemSession(VipFileSystemWidget* w, const PendingF
 		for(int i=0; i < shortcuts.size(); ++i) {
 			QString path = shortcuts[i].canonicalPath();
 			if(path == home) {
+				shortcuts[i] = VipPath(home,true);
 				home.clear();
 				break;
 			}
@@ -2121,7 +2122,7 @@ public:
 
 VipFileSystemWidget::VipFileSystemWidget(QWidget*)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 
 	d_data->tree = new VipMapFileSystemTree();
 	d_data->searchResults = new VipMapFileSystemTree();
@@ -2759,6 +2760,17 @@ VipFileSystemWidget* VipDirectoryBrowser::addFileSystem(VipMapFileSystem* m)
 	shortcuts->setIcon(0, vipIcon("shortcuts.png"));
 	w->tree()->insertTopLevelItem(0, shortcuts);
 	w->tree()->setProperty("_vip_shortcuts", QVariant::fromValue(shortcuts));
+
+	// Add home folder to shorcuts
+	QString homeDir = m->homeDirectory();
+	if (!homeDir.isEmpty()) {
+		w->tree()->addToShortcuts(VipPathList() << VipPath(homeDir, true));
+		/* VipMapFileSystemTreeDirItem* home = new VipMapFileSystemTreeDirItem(VipPath(homeDir, true), w->tree());
+		home->setFlags(home->flags() & (~Qt::ItemIsDragEnabled));
+		shortcuts->addChild(home);
+		home->updateContent();*/
+	}
+	
 
 	connect(w, SIGNAL(createFileSystem(const QString&)), this, SLOT(createFileSystem(const QString&)));
 

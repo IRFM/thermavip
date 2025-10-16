@@ -31,7 +31,7 @@ class ThermavipMedianFilter(th.ThermavipPyProcessing):
         if len(data.shape) != 2:
             return sig.medfilt(data,self.kernel_size)
         else:
-            return sig.medfilt2d(np.array(data,dtype=np.float),self.kernel_size)
+            return sig.medfilt2d(np.array(data,dtype=np.float64),self.kernel_size)
         
     def parameters(self):
         return {"KernelSize":("int",self.kernel_size,1,101,2) }

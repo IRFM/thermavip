@@ -116,7 +116,7 @@ private:
 	void computeScaleDrawRadiusAndCenter();
 
 	
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 class VIP_PLOTTING_EXPORT VipRadialAxis : public VipAbstractPolarScale
@@ -155,7 +155,7 @@ public:
 
 private:
 	
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 /// @}

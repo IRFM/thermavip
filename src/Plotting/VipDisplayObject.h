@@ -114,6 +114,11 @@ public:
 	/// @brief Reimplemented from VipProcessingObject
 	virtual bool useEventLoop() const { return true; }
 
+public Q_SLOTS:
+	/// @brief Recompute the visibility status of this item.
+	/// You should no need to call this yourself.
+	void checkVisibility();
+
 protected:
 	/// Reimplement this function to perform the drawing based on input list in the GUI thread.
 	virtual void displayData(const VipAnyDataList&) {}
@@ -132,11 +137,11 @@ Q_SIGNALS:
 
 private Q_SLOTS:
 	void display(const VipAnyDataList&);
-	void checkVisibility();
+	
 
 private:
 	
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 VIP_REGISTER_QOBJECT_METATYPE(VipDisplayObject*)
@@ -201,7 +206,7 @@ private Q_SLOTS:
 
 private:
 	
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 VIP_REGISTER_QOBJECT_METATYPE(VipDisplayPlotItem*)
@@ -235,7 +240,7 @@ protected:
 	virtual void displayData(const VipAnyDataList& data);
 
 private:
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 VIP_REGISTER_QOBJECT_METATYPE(VipDisplayCurve*)
@@ -267,7 +272,7 @@ protected:
 
 private:
 	
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 VIP_REGISTER_QOBJECT_METATYPE(VipDisplayImage*)

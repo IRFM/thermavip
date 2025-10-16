@@ -77,7 +77,7 @@ private Q_SLOTS:
 
 private:
 	
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 /// Options to save a Thermavip session
@@ -102,7 +102,7 @@ private Q_SLOTS:
 
 private:
 	
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 /// Load a Thermavip session.
@@ -122,7 +122,7 @@ public:
 
 private:
 	
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 #endif

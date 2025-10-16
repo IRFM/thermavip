@@ -55,7 +55,7 @@ class ThermavipPyProcessing:
         try:
             #try to convert float 128 that make most processings from scipy crash
             if type(data) == np.ndarray and data.dtype == np.float128:
-                data = np.array(data,dtype=np.float64)
+                data = np.array(data,dtype=float)
         except:
             pass
             

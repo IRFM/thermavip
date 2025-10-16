@@ -37,6 +37,7 @@
 
 #include "VipCoordinateSystem.h"
 #include "VipPlotUtils.h"
+#include "VipPimpl.h"
 
 /// \addtogroup Plotting
 /// @{
@@ -69,7 +70,7 @@ public:
 
 private:
 	
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 /// @}

@@ -52,10 +52,13 @@
 #include "VipStandardWidgets.h"
 #include "VipSearchLineEdit.h"
 #include "VipProcessingObjectEditor.h"
+#include "VipPlayer.h"
 
 #ifdef VIP_WITH_VTK
 #include "VipVTKPlayer.h"
 #endif
+
+
 
 QGroupBox* VipPageOption::createOptionGroup(const QString& label)
 {
@@ -87,15 +90,14 @@ public:
 	VipPageOption* current;
 	QTreeWidget* page_browser;
 	QSplitter* splitter;
-	QPushButton* ok;
-	QPushButton* cancel;
+	QPushButton* apply;
 	QVBoxLayout* page_lay;
 };
 
 VipOptions::VipOptions(QWidget* parent)
-  : QDialog(parent)
+  : QWidget(parent)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 
 	this->setObjectName("Preferences");
 	this->setWindowTitle("Preferences");
@@ -103,14 +105,36 @@ VipOptions::VipOptions(QWidget* parent)
 
 	d_data->page_browser = new VipPageItems();
 	d_data->splitter = new QSplitter();
-	d_data->ok = new QPushButton();
-	d_data->cancel = new QPushButton();
+	d_data->apply = new QPushButton();
+	d_data->apply->setText("Apply changes");
+
 
 	d_data->page_browser->header()->hide();
 	d_data->page_browser->setAcceptDrops(true);
-	d_data->page_browser->setFrameShape(QFrame::Box);
+	d_data->page_browser->setFrameShape(QFrame::NoFrame);
 	d_data->page_browser->setIndentation(10);
 	d_data->page_browser->setMinimumWidth(200);
+	d_data->page_browser->setIconSize(QSize(22, 22));
+	d_data->page_browser->setStyleSheet("QTreeWidget{background: transparent;}");
+
+
+	// create button layout
+	QVBoxLayout* button_lay = new QVBoxLayout();
+	button_lay->setSpacing(8);
+	QLabel* cat = new QLabel("Categories");
+	QFont f = cat->font();
+	f.setBold(true);
+	d_data->apply->setFont(f);
+	f.setPointSize(f.pointSize() + 4);
+	cat->setFont(f);
+
+	button_lay->addWidget(cat);
+	button_lay->addWidget(d_data->page_browser,1);
+	button_lay->addWidget(d_data->apply);
+	QWidget* categories = new QWidget();
+	categories->setLayout(button_lay);
+
+
 
 	// create page widget
 	QWidget* page = new QWidget();
@@ -118,32 +142,18 @@ VipOptions::VipOptions(QWidget* parent)
 	page->setLayout(d_data->page_lay);
 
 	// create splitter
-	d_data->splitter->addWidget(d_data->page_browser);
+	d_data->splitter->addWidget(categories);
 	d_data->splitter->addWidget(page);
 	d_data->splitter->setStretchFactor(1, 1);
 
-	// create button layout
-	QHBoxLayout* button_lay = new QHBoxLayout();
-	button_lay->addStretch(1);
-	button_lay->addWidget(d_data->ok);
-	button_lay->addWidget(d_data->cancel);
-	button_lay->setContentsMargins(0, 2, 2, 2);
-
+	
 	// create final layout
 	QVBoxLayout* final_lay = new QVBoxLayout();
 	final_lay->addWidget(d_data->splitter);
-	final_lay->addWidget(VipLineWidget::createSunkenHLine());
-	final_lay->addLayout(button_lay);
-	// final_lay->setContentsMargins(0, 0, 0, 0);
-
+	
 	setLayout(final_lay);
 
-	d_data->ok->setText("Ok");
-	d_data->cancel->setText("Cancel");
-
-	connect(d_data->ok, SIGNAL(clicked(bool)), this, SLOT(ok()));
-	connect(d_data->ok, SIGNAL(clicked(bool)), this, SLOT(accept()));
-	connect(d_data->cancel, SIGNAL(clicked(bool)), this, SLOT(reject()));
+	connect(d_data->apply, SIGNAL(clicked(bool)), this, SLOT(apply()));
 	connect(d_data->page_browser, SIGNAL(itemClicked(QTreeWidgetItem*, int)), this, SLOT(itemClicked(QTreeWidgetItem*, int)));
 }
 
@@ -151,7 +161,7 @@ VipOptions::~VipOptions()
 {
 }
 
-void VipOptions::ok()
+void VipOptions::apply()
 {
 	for (QMap<QTreeWidgetItem*, QScrollArea*>::iterator it = d_data->pages.begin(); it != d_data->pages.end(); ++it) {
 		VipPageOption* page = qobject_cast<VipPageOption*>(it.value()->widget());
@@ -210,7 +220,8 @@ bool VipOptions::addPage(const QString& category, VipPageOption* page, const QIc
 					shortcut += " options";
 				VipShortcutsHelper::registerShorcut(shortcut, [name]() { 
 					vipGetOptions()->setCurrentPage(name);
-					vipGetOptions()->exec();
+					//vipGetOptions()->exec();
+					vipDisplayOptions();
 				});
 			}
 		}
@@ -219,15 +230,18 @@ bool VipOptions::addPage(const QString& category, VipPageOption* page, const QIc
 	}
 
 	QScrollArea* area = new QScrollArea();
+	area->setMaximumWidth(700);
+	area->setMinimumWidth(700);
 	area->setWidgetResizable(true);
 	area->setWidget(page);
 	d_data->pages[current] = area;
-	d_data->page_lay->addWidget(area);
+	d_data->page_lay->addWidget(area,0,Qt::AlignHCenter);
 	area->hide();
 
 	// set the focus to the first page
 	if (d_data->pages.size() > 0 && !d_data->current)
 		setCurrentPage(qobject_cast<VipPageOption*>(d_data->pages.begin().value()->widget()));
+
 
 	return true;
 }
@@ -321,6 +335,55 @@ VipOptions* vipGetOptions()
 	return dialog;
 }
 
+
+class OptionWidget : public QWidget
+{
+public:
+	OptionWidget()
+		: QWidget()
+	{
+		QHBoxLayout* lay = new QHBoxLayout();
+		lay->addWidget(vipGetOptions());
+		setLayout(lay);
+		vipGetOptions()->show();
+	}
+	~OptionWidget() 
+	{
+		vipGetOptions()->hide();
+		vipGetOptions()->setParent(nullptr);
+	}
+};
+
+void vipDisplayOptions()
+{
+	auto tab = vipGetMainWindow()->displayArea()->displayTabWidget();
+	for (int i = 0; i < tab->count(); ++i) {
+		if (VipDisplayPlayerArea* a = qobject_cast<VipDisplayPlayerArea*>(tab->widget(i))) {
+			if ( a->findChild<VipOptions*>()) {
+				tab->setCurrentIndex(i);
+				return;
+			}
+		}
+	}
+
+	OptionWidget* opt = new OptionWidget();
+	VipWidgetPlayer* pl = new VipWidgetPlayer();
+	pl->setWidget(opt);
+	VipDisplayPlayerArea* a = new VipDisplayPlayerArea();
+	a->setWindowTitle("Preferences");
+	
+	VipDragWidget* w = new VipDragWidget();
+	w->setWidget(pl);
+
+	a->mainDragWidget()->mainResize(1);
+	a->mainDragWidget()->subResize(0, 1);
+	a->mainDragWidget()->setWidget(0, 0, w);
+
+	vipGetMainWindow()->displayArea()->addWidget(a);
+}
+
+
+
 #include "VipGui.h"
 #include "VipPainter.h"
 #include "VipPlayer.h"
@@ -346,7 +409,7 @@ public:
 	VipTextWidget *editorFont;
 
 	QGroupBox* players;
-	QComboBox* colorMaps;
+	VipColorScaleButton* colorMaps;
 	QToolButton* showScale;
 
 	QGroupBox* roi;
@@ -370,7 +433,7 @@ AppearanceSettings::AppearanceSettings(QWidget* parent)
   : VipPageOption(parent)
 {
 	this->setWindowTitle("General appearance");
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 
 	d_data->general = createGroup("General appearance");
 	d_data->skins = new QComboBox();
@@ -409,26 +472,8 @@ AppearanceSettings::AppearanceSettings(QWidget* parent)
 	d_data->general->setLayout(glay);
 
 	d_data->players = createGroup("Video player display");
-	d_data->colorMaps = new QComboBox();
+	d_data->colorMaps = new VipColorScaleButton();
 	d_data->showScale = new QToolButton();
-
-	d_data->colorMaps->addItem(colorMapPixmap(VipLinearColorMap::Autumn, QSize(20, 20)), "Autumn");
-	d_data->colorMaps->addItem(colorMapPixmap(VipLinearColorMap::Bone, QSize(20, 20)), "Bone");
-	d_data->colorMaps->addItem(colorMapPixmap(VipLinearColorMap::BuRd, QSize(20, 20)), "BuRd");
-	d_data->colorMaps->addItem(colorMapPixmap(VipLinearColorMap::Cool, QSize(20, 20)), "Cool");
-	d_data->colorMaps->addItem(colorMapPixmap(VipLinearColorMap::Copper, QSize(20, 20)), "Copper");
-	d_data->colorMaps->addItem(colorMapPixmap(VipLinearColorMap::Gray, QSize(20, 20)), "Gray");
-	d_data->colorMaps->addItem(colorMapPixmap(VipLinearColorMap::Hot, QSize(20, 20)), "Hot");
-	d_data->colorMaps->addItem(colorMapPixmap(VipLinearColorMap::Hsv, QSize(20, 20)), "Hsv");
-	d_data->colorMaps->addItem(colorMapPixmap(VipLinearColorMap::Jet, QSize(20, 20)), "Jet");
-	d_data->colorMaps->addItem(colorMapPixmap(VipLinearColorMap::Fusion, QSize(20, 20)), "Fusion");
-	d_data->colorMaps->addItem(colorMapPixmap(VipLinearColorMap::Pink, QSize(20, 20)), "Pink");
-	d_data->colorMaps->addItem(colorMapPixmap(VipLinearColorMap::Rainbow, QSize(20, 20)), "Rainbow");
-	d_data->colorMaps->addItem(colorMapPixmap(VipLinearColorMap::Spring, QSize(20, 20)), "Spring");
-	d_data->colorMaps->addItem(colorMapPixmap(VipLinearColorMap::Summer, QSize(20, 20)), "Summer");
-	d_data->colorMaps->addItem(colorMapPixmap(VipLinearColorMap::Sunset, QSize(20, 20)), "Sunset");
-	d_data->colorMaps->addItem(colorMapPixmap(VipLinearColorMap::White, QSize(20, 20)), "White");
-	d_data->colorMaps->addItem(colorMapPixmap(VipLinearColorMap::Winter, QSize(20, 20)), "Winter");
 	d_data->colorMaps->setToolTip("Color scale used for videos (like infrared ones)");
 	d_data->showScale->setToolTip("Show/hide axes for video players");
 	d_data->showScale->setIcon(vipIcon("show_axes.png"));
@@ -562,7 +607,7 @@ void AppearanceSettings::updatePage()
 	d_data->editorFont->setText(t);
 
 	// Video player settings
-	d_data->colorMaps->setCurrentIndex(VipGuiDisplayParamaters::instance()->playerColorScale());
+	d_data->colorMaps->setColorPaletteName(VipGuiDisplayParamaters::instance()->playerColorScale());
 	d_data->showScale->setChecked(VipGuiDisplayParamaters::instance()->videoPlayerShowAxes());
 
 	// ROI settings
@@ -599,21 +644,6 @@ QPixmap AppearanceSettings::applyFactor(const QImage& img, int factor)
 	return QPixmap::fromImage(res);
 }
 
-QPixmap AppearanceSettings::colorMapPixmap(int color_map, const QSize& size)
-{
-	VipLinearColorMap* map = VipLinearColorMap::createColorMap(VipLinearColorMap::StandardColorMap(color_map));
-	if (map) {
-		QPixmap pix(size);
-		QPainter p(&pix);
-		VipScaleMap sc;
-		sc.setScaleInterval(0, size.height());
-		VipPainter::drawColorBar(&p, *map, VipInterval(0, size.height()), sc, Qt::Vertical, QRectF(0, 0, size.width(), size.height()));
-		delete map;
-		return pix;
-	}
-	return QPixmap();
-}
-
 void AppearanceSettings::applyPage()
 {
 	// General settings
@@ -635,7 +665,7 @@ void AppearanceSettings::applyPage()
 		e->setFont(f);
 
 	// Video player settings
-	VipGuiDisplayParamaters::instance()->setPlayerColorScale(VipLinearColorMap::StandardColorMap(d_data->colorMaps->currentIndex()));
+	VipGuiDisplayParamaters::instance()->setPlayerColorScale(d_data->colorMaps->colorPaletteName());
 	VipGuiDisplayParamaters::instance()->setVideoPlayerShowAxes(d_data->showScale->isChecked());
 
 	// ROI settings
@@ -710,31 +740,30 @@ class ProcessingSettings::PrivateData
 public:
 	QCheckBox* resetRemember;
 
-	QGroupBox* general;
 	QComboBox* procPriority;
 	QComboBox* displayPriority;
 	QCheckBox* printDebug;
 
-	QGroupBox* inputs;
 	QCheckBox* maxSizeEnable;
 	QSpinBox* maxSize;
 	QCheckBox* maxMemoryEnable;
 	QSpinBox* maxMemory;
+
+	QDoubleSpinBox* timeWindow;
+	QCheckBox* applyToAll;
 };
 
 ProcessingSettings::ProcessingSettings(QWidget* parent)
   : VipPageOption(parent)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 
 	d_data->resetRemember = new QCheckBox("Reset remembered choices");
 	d_data->resetRemember->setToolTip("Reset association of file suffix -> device type.\nReset default device parameters.");
 
-	d_data->general = createGroup("General processing settings");
 	d_data->procPriority = new QComboBox();
 	d_data->displayPriority = new QComboBox();
 	d_data->printDebug = new QCheckBox();
-
 	d_data->printDebug->setText("Print debug informations");
 
 	d_data->procPriority->setToolTip("Set the default processing thread priority used within Thermavip");
@@ -763,9 +792,7 @@ ProcessingSettings::ProcessingSettings(QWidget* parent)
 	glay->addWidget(new QLabel("Display processing thread priority"), 1, 0);
 	glay->addWidget(d_data->displayPriority, 1, 1);
 	glay->addWidget(d_data->printDebug, 2, 0, 1, 2);
-	d_data->general->setLayout(glay);
 
-	d_data->inputs = createGroup("Input buffer settings");
 	d_data->maxSizeEnable = new QCheckBox();
 	d_data->maxSize = new QSpinBox();
 	d_data->maxMemoryEnable = new QCheckBox();
@@ -777,7 +804,6 @@ ProcessingSettings::ProcessingSettings(QWidget* parent)
 	vlay->addWidget(d_data->maxMemoryEnable);
 	vlay->addWidget(d_data->maxMemory);
 	vlay->addWidget(d_data->printDebug);
-	d_data->inputs->setLayout(vlay);
 
 	d_data->maxSizeEnable->setText("Set maximum input buffer size");
 	d_data->maxMemoryEnable->setText("Set maximum input buffer memory");
@@ -791,10 +817,25 @@ ProcessingSettings::ProcessingSettings(QWidget* parent)
 	d_data->maxMemory->setToolTip("Maximum amount of data for each processing input");
 	d_data->maxMemory->setMaximumWidth(100);
 
+
+	d_data->timeWindow = new QDoubleSpinBox();
+	d_data->timeWindow->setRange(-1, 100000);
+	d_data->timeWindow->setSingleStep(1.);
+	d_data->timeWindow->setValue(VipNumericValueToPointVector::defaultSlidingTimeWindow());
+	d_data->applyToAll = new QCheckBox("Apply to all");
+	QGridLayout* tlay = new QGridLayout();
+	tlay->addWidget(new QLabel("Streaming curves time window"), 0, 0);
+	tlay->addWidget(d_data->timeWindow, 0, 1);
+	tlay->addWidget(d_data->applyToAll, 2, 0, 1, 2);
+
 	QVBoxLayout* lay = new QVBoxLayout();
 	lay->addWidget(d_data->resetRemember);
-	lay->addWidget(d_data->general);
-	lay->addWidget(d_data->inputs);
+	lay->addWidget(createGroup("General processing settings"));
+	lay->addLayout(glay);
+	lay->addWidget(createGroup("Input buffer settings"));
+	lay->addLayout(vlay);
+	lay->addWidget(createGroup("Streaming curves"));
+	lay->addLayout(tlay);
 	lay->addStretch(1);
 	setLayout(lay);
 
@@ -842,6 +883,14 @@ void ProcessingSettings::applyPage()
 
 	if (d_data->resetRemember->isChecked())
 		VipRememberDeviceOptions::instance().clearAll();
+
+	// Apply sliding time window
+	VipNumericValueToPointVector::setDefaultSlidingTimeWindow(d_data->timeWindow->value());
+	if (d_data->applyToAll->isChecked()) {
+		auto lst = VipUniqueId::objects<VipPlotPlayer>();
+		for (auto* p : lst)
+			p->setSlidingTimeWindow(d_data->timeWindow->value());
+	}
 }
 
 void ProcessingSettings::updatePage()
@@ -857,6 +906,8 @@ void ProcessingSettings::updatePage()
 
 	d_data->procPriority->setCurrentIndex(VipProcessingManager::defaultPriority(&VipProcessingObject::staticMetaObject));
 	d_data->displayPriority->setCurrentIndex(VipProcessingManager::defaultPriority(&VipDisplayObject::staticMetaObject));
+
+	d_data->timeWindow->setValue(VipNumericValueToPointVector::defaultSlidingTimeWindow());
 }
 
 class EnvironmentSettings::PrivateData
@@ -879,7 +930,7 @@ public:
 EnvironmentSettings::EnvironmentSettings(QWidget* parent)
   : VipPageOption(parent)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 
 	d_data->data = createGroup("Thermavip data folder");
 	d_data->dataDir = new QLabel(vipGetDataDirectory());
@@ -1005,12 +1056,19 @@ public:
 	QRadioButton* pdirect;
 	QRadioButton* ppureGPU;
 	QRadioButton* pGPUThreaded;
+
+	// Image watermark options
+	VipLineEdit* wText;
+	VipFontAndColor* wFont;
+	QSpinBox* wDistance;
+	QComboBox * wAlignment;
+	QCheckBox* wVisible;
 };
 
 RenderingSettings::RenderingSettings(QWidget* parent)
   : VipPageOption(parent)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 
 	d_data->vdirect = new QRadioButton("Direct rendering");
 	d_data->vdirect->setToolTip("Direct CPU based rendering (default), usually the fastest");
@@ -1030,6 +1088,22 @@ RenderingSettings::RenderingSettings(QWidget* parent)
 	d_data->pGPUThreaded = new QRadioButton("Threaded opengl rendering");
 	d_data->pGPUThreaded->setToolTip("Threaded opengl based rendering");
 
+	d_data->wText = new VipLineEdit();
+	d_data->wText->setPlaceholderText("Image watermark text");
+	d_data->wText->setToolTip("Image watermark text");
+
+	d_data->wFont = new VipFontAndColor();
+	d_data->wFont->setToolTip("Image watermark text color and font");
+	
+	d_data->wDistance = new QSpinBox();
+	d_data->wDistance->setRange(0, 100);
+	d_data->wDistance->setToolTip("Watermark text distance to border (pixels)");
+
+	d_data->wAlignment = new QComboBox();
+	d_data->wAlignment->addItems(QStringList() << "Top left" << "Top right" << "Bottom left" << "Bottom right" << "Center");
+
+	d_data->wVisible = new QCheckBox("Image watermark visible");
+
 	QGroupBox* video = createGroup("Video rendering mode");
 	QVBoxLayout* vlay = new QVBoxLayout();
 	vlay->addWidget(d_data->vdirect);
@@ -1044,9 +1118,22 @@ RenderingSettings::RenderingSettings(QWidget* parent)
 	play->addWidget(d_data->pGPUThreaded);
 	plot->setLayout(play);
 
+	QGroupBox* watermark = createGroup("Image watermark");
+	QVBoxLayout* wlay = new QVBoxLayout();
+	QHBoxLayout* hlay = new QHBoxLayout();
+	hlay->setContentsMargins(0, 0, 0, 0);
+	hlay->addWidget(d_data->wText);
+	hlay->addWidget(d_data->wFont);
+	wlay->addLayout(hlay);
+	wlay->addWidget(d_data->wDistance);
+	wlay->addWidget(d_data->wAlignment);
+	wlay->addWidget(d_data->wVisible);
+	watermark->setLayout(wlay);
+
 	QVBoxLayout* lay = new QVBoxLayout();
 	lay->addWidget(video);
 	lay->addWidget(plot);
+	lay->addWidget(watermark);
 	lay->addStretch(1);
 	setLayout(lay);
 }
@@ -1069,6 +1156,25 @@ void RenderingSettings::applyPage()
 		VipGuiDisplayParamaters::instance()->setPlotRenderingStrategy(VipBaseGraphicsView::OpenGLThread);
 	else if (d_data->ppureGPU->isChecked())
 		VipGuiDisplayParamaters::instance()->setPlotRenderingStrategy(VipBaseGraphicsView::OpenGL);
+
+	VipWatermark w;
+	w.text = d_data->wText->text();
+	w.font = d_data->wFont->font();
+	w.color = d_data->wFont->color();
+	w.distanceToBorder = d_data->wDistance->value();
+	w.visible = d_data->wVisible->isChecked();
+	QString al = d_data->wAlignment->currentText();
+	if (al == "Top left")
+		w.alignment = Qt::AlignTop | Qt::AlignLeft;
+	else if (al == "Top right")
+		w.alignment = Qt::AlignTop | Qt::AlignRight;
+	else if (al == "Bottom left")
+		w.alignment = Qt::AlignBottom | Qt::AlignLeft;
+	else if (al == "Bottom right")
+		w.alignment = Qt::AlignBottom | Qt::AlignRight;
+	else
+		w.alignment = Qt::AlignCenter;
+	VipGuiDisplayParamaters::instance()->setWatermark(w);
 }
 void RenderingSettings::updatePage()
 {
@@ -1087,4 +1193,21 @@ void RenderingSettings::updatePage()
 		d_data->pGPUThreaded->setChecked(true);
 	else if (st == VipBaseGraphicsView::OpenGL)
 		d_data->ppureGPU->setChecked(true);
+
+	auto& w = VipGuiDisplayParamaters::instance()->watermark();
+	d_data->wDistance->setValue(w.distanceToBorder);
+	d_data->wText->setText(w.text);
+	d_data->wFont->setFont(w.font);
+	d_data->wFont->setColor(w.color);
+	if (w.alignment == (Qt::AlignLeft | Qt::AlignTop))
+		d_data->wAlignment->setCurrentText("Top left");
+	else if (w.alignment == (Qt::AlignLeft | Qt::AlignBottom))
+		d_data->wAlignment->setCurrentText("Bottom left");
+	else if(w.alignment == (Qt::AlignRight | Qt::AlignTop))
+		d_data->wAlignment->setCurrentText("Top right");
+	else if(w.alignment == (Qt::AlignRight | Qt::AlignBottom))
+		d_data->wAlignment->setCurrentText("Bottom right");
+	else
+		d_data->wAlignment->setCurrentText("Center");
+	d_data->wVisible->setChecked(w.visible);
 }

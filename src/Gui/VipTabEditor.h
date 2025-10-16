@@ -51,7 +51,7 @@ private:
 	void removePreviousFormat();
 	void format(const QTextBlock& b, int start, int end);
 
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 /// @brief Default tool bar for all text editors
@@ -192,7 +192,7 @@ private:
 	bool save(VipTextEditor* editor);
 	int createEditor(const QString& filename = QString());
 
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 #endif

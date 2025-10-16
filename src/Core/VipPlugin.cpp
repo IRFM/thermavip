@@ -57,7 +57,7 @@ public:
 
 VipLoadPlugins::VipLoadPlugins()
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 
 	QSettings settings(vipGetPluginsDirectory() + "Plugins.ini", QSettings::IniFormat);
 	QStringList groups = settings.childGroups();

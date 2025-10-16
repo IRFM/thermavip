@@ -46,12 +46,15 @@
 #include <QPushButton>
 #include <QSpinBox>
 #include <QToolButton>
-#include <qtoolbar.h>
+#include <QToolBar>
+#include <QMessageBox>
+
 
 #include "VipConfig.h"
 #include "VipDataType.h"
 #include "VipScaleDraw.h"
 #include "VipText.h"
+#include "VipPimpl.h"
 
 /// \addtogroup Gui
 /// @{
@@ -453,7 +456,7 @@ private:
 	void applyStyle();
 	void applyFormat();
 	
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 class QSlider;
@@ -780,6 +783,49 @@ protected:
 	QMenu* m_menu;
 };
 
+
+
+/// @brief Edit text font and color in a unique small tool button
+class VipFontAndColor : public QLabel
+{
+	Q_OBJECT
+
+	QLabel* d_font_button;
+	QColor d_color;
+	QFont d_font;
+	int d_content = Font | Color;
+
+public:
+	enum EditableContent
+	{
+		Font = 2,
+		Color = 4
+	};
+
+	VipFontAndColor(QWidget* parent = nullptr);
+
+	QColor color() const;
+	QFont font() const;
+
+public Q_SLOTS:
+	void setColor(const QColor& c);
+	void setFont(const QFont& f);
+	void setEditableContent(int);
+
+Q_SIGNALS:
+	void changed();
+
+private Q_SLOTS:
+	void editFont();
+	void editColor();
+
+	
+protected:
+	virtual void resizeEvent(QResizeEvent* evt);
+	virtual bool eventFilter(QObject* watched, QEvent* event);
+};
+
+
 /// Widget used to edit a VipText object.
 class VIP_GUI_EXPORT VipTextWidget : public QWidget
 {
@@ -813,7 +859,7 @@ private Q_SLOTS:
 	void textEdited();
 
 private:
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 class VIP_GUI_EXPORT VipBoxStyleWidget : public QWidget
@@ -926,6 +972,7 @@ protected:
 private:
 	VipToolBar* parent;
 };
+
 /// A QToolBar like class.
 ///
 /// VipToolBar handle in a different way QAction that are not visible because the tool bar is not wide enough.
@@ -972,7 +1019,7 @@ private Q_SLOTS:
 
 private:
 	
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 
@@ -995,7 +1042,7 @@ Q_SIGNALS:
 	void changed();
 
 private:
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 
@@ -1058,7 +1105,7 @@ protected:
 
 private:
 	
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 /// \class VipGenericDialog
@@ -1074,8 +1121,12 @@ public:
 
 private:
 	
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
+
+VIP_GUI_EXPORT QMessageBox::StandardButton vipInformation(const QString & title, const QString & text, QMessageBox::StandardButtons buttons = QMessageBox::Ok, QMessageBox::StandardButton defaultButton = QMessageBox::NoButton);
+VIP_GUI_EXPORT QMessageBox::StandardButton vipQuestion(const QString & title, const QString & text, QMessageBox::StandardButtons buttons = QMessageBox::Yes|QMessageBox::No , QMessageBox::StandardButton defaultButton = QMessageBox::NoButton);
+VIP_GUI_EXPORT QMessageBox::StandardButton vipWarning(const QString & title, const QString & text, QMessageBox::StandardButtons buttons = QMessageBox::Ok, QMessageBox::StandardButton defaultButton = QMessageBox::NoButton);
 
 /// A QMenu whose actions might be dragable.
 ///
@@ -1110,7 +1161,7 @@ protected:
 
 private:
 	
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 Q_DECLARE_METATYPE(QMimeData*)
@@ -1154,7 +1205,7 @@ private Q_SLOTS:
 
 private:
 	
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 #include "VipFunctional.h"

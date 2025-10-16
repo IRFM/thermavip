@@ -187,12 +187,15 @@ public:
 		Fusion,
 		Pink,
 		Rainbow,
+		RevealIR,
 		Spring,
 		Summer,
 		Sunset,
 		Viridis,
+		Visible,
 		White,
 		Winter,
+		
 
 		// color palette
 		ColorPaletteStandard,
@@ -214,6 +217,7 @@ public:
 
 	/// @brief Returns the StandardColorMap enum corresponding to given name ('autumn', 'bone', ..., 'standard', 'random', 'pastel', pastel1'...)
 	static StandardColorMap colorMapFromName(const char* name);
+	static StandardColorMap colorMapFromName(const QString& name) { return colorMapFromName(name.toLower().toLatin1().data()); }
 	static const char* colorMapToName(StandardColorMap);
 	/// @brief Returns the QGradientStops for given color map name ('autumn', 'bone', ..., 'standard', 'random', 'pastel', pastel1'...)
 	/// The color map name can have an additional light factor that will be used to lighten/darken the QGradientStops using QColor::lighter. (example: 'jet-150')
@@ -283,7 +287,7 @@ private:
 	VipLinearColorMap& operator=(const VipLinearColorMap&);
 
 	
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 /// \brief VipAlphaColorMap varies the alpha value of a color
@@ -309,7 +313,7 @@ private:
 	virtual unsigned char colorIndex(const VipInterval&, double value) const;
 
 	
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 /// Map a value into a color

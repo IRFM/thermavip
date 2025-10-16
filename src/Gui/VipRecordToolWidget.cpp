@@ -112,7 +112,7 @@ VipRecordToolBar::VipRecordToolBar(VipRecordToolWidget* tool)
 	setObjectName("Record tool bar");
 	setWindowTitle("Record tool bar");
 
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 
 	d_data->selectItems = new QToolButton(this);
 	d_data->selectItemsMenu = new QMenu(d_data->selectItems);
@@ -303,7 +303,7 @@ public:
 VipPlotItemSelector::VipPlotItemSelector(VipRecordToolWidget* parent)
   : QToolButton(parent)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 	d_data->parent = parent;
 
 	this->setText("Select a signal to record");
@@ -497,7 +497,7 @@ public:
 SkipFrame::SkipFrame(QWidget* parent)
   : QWidget(parent)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 	d_data->text.setText("Take one frame out of");
 	d_data->frames.setRange(1, INT_MAX);
 	d_data->frames.setValue(1);
@@ -586,7 +586,7 @@ VipRecordToolWidget::VipRecordToolWidget(VipMainWindow* window)
 	// setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
 	this->setAllowedAreas(Qt::NoDockWidgetArea);
 
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 	d_data->recorder = new VipGenericRecorder(this);
 	// d_data->recorder->setMultiSave(true);
 	d_data->itemSelector = new VipPlotItemSelector(this);
@@ -864,7 +864,7 @@ bool VipRecordToolWidget::updateFileFiltersAndDevice(bool build_connections, boo
 			}
 			d_data->flag = VipIODevice::Temporal;
 		}
-		else if (tmp == VipIODevice::Sequential) {
+		else if (tmp == VipIODevice::Sequential || d_data->sourceDevices[i]->hasStreamingMode()) {
 			if (d_data->flag == VipIODevice::Temporal) {
 				VIP_LOG_ERROR("cannot mix sequential and temporal devices");
 				return false;
@@ -1235,6 +1235,7 @@ void VipRecordToolWidget::timeout()
 			p.setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing);
 			VipRenderObject::renderObject(d_data->sourceWidget, &p, QPoint(0, 0), true, false);
 		}
+		VipGuiDisplayParamaters::instance()->watermark().addToPixmap(d_data->pixmap);
 
 		VipAnyData any(QVariant::fromValue(vipToArray(d_data->pixmap.toImage())), QDateTime::currentMSecsSinceEpoch() * 1000000);
 		d_data->recorder->inputAt(0)->setData(any);
@@ -1458,6 +1459,7 @@ void VipRecordToolWidget::launchRecord(bool launch)
 							p.setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing);
 							VipRenderObject::renderObject(plot, &p, -view_rect.topLeft(), true, false);
 						}
+						VipGuiDisplayParamaters::instance()->watermark().addToPixmap(d_data->pixmap);
 
 						VipAnyData any(QVariant::fromValue(vipToArray(d_data->pixmap.toImage())), time);
 						d_data->recorder->inputAt(0)->setData(any);
@@ -1476,6 +1478,7 @@ void VipRecordToolWidget::launchRecord(bool launch)
 							p.setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing);
 							VipRenderObject::renderObject(d_data->sourceWidget, &p, QPoint(), true, false);
 						}
+						VipGuiDisplayParamaters::instance()->watermark().addToPixmap(d_data->pixmap);
 
 						VipAnyData any(QVariant::fromValue(vipToArray(d_data->pixmap.toImage())), time);
 						d_data->recorder->inputAt(0)->setData(any);
@@ -1547,7 +1550,7 @@ public:
 VipRecordWidgetButton::VipRecordWidgetButton(VipBaseDragWidget* widget, QWidget* parent)
   : QToolButton(parent)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 	d_data->ready = false;
 	d_data->widget = widget;
 
@@ -1711,6 +1714,7 @@ void VipRecordWidgetButton::newImage()
 			p.setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing);
 			VipRenderObject::renderObject(d_data->widget, &p, QPoint(0, 0), true, false);
 		}
+		VipGuiDisplayParamaters::instance()->watermark().addToPixmap(d_data->pixmap);
 
 		VipAnyData any(QVariant::fromValue(vipToArray(d_data->pixmap.toImage())), QDateTime::currentMSecsSinceEpoch() * 1000000);
 		d_data->recorder->inputAt(0)->setData(any);

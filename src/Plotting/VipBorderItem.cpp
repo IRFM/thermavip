@@ -128,7 +128,7 @@ static bool registerVipBorderItem = vipSetKeyWordsForClass(&VipBorderItem::stati
 VipBorderItem::VipBorderItem(Alignment pos, QGraphicsItem* parent)
   : VipAbstractScale(parent)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data,pos);
+	VIP_CREATE_PRIVATE_DATA(pos);
 	this->setFlag(QGraphicsItem::ItemSendsGeometryChanges, true);
 	this->setAlignment(pos);
 }

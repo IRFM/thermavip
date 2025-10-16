@@ -296,7 +296,7 @@ Q_SIGNALS:
 private:
 	bool point(VipLineEdit* edit, double* coords) const;
 
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };*/
 
 /**
@@ -320,7 +320,7 @@ public Q_SLOTS:
 
 private:
 
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 */
 
@@ -405,7 +405,7 @@ public:
 
 PointAttributeInterpolate::PointAttributeInterpolate()
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 
 	QHBoxLayout * hlay1 = new QHBoxLayout();
 	hlay1->addWidget(new QLabel("Attribute name: "));
@@ -628,7 +628,7 @@ bool PointAttributeInterpolate::apply()
 		vtkDataArray * ar = ptr->rawData().setPointsAttribute(name(), components1(), pt1, components2(), pt2, interpolationAxes());
 		if (!ar)
 		{
-			QMessageBox::warning(nullptr, "Error", "Unable to create point attribute.\nPlease check that you correcly fill all parameters.");
+			vipWarning("Error", "Unable to create point attribute.\nPlease check that you correcly fill all parameters.");
 			Q_EMIT failed();
 			return false;
 		}

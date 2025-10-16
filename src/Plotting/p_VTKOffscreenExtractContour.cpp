@@ -29,6 +29,9 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <vtkObject.h>
+#include <vtkOpenGLError.h>
+
 #include "p_VTKOffscreenExtractContour.h"
 #include "VipVTKWidget.h"
 #include "VipDisplayVTKObject.h"
@@ -58,6 +61,7 @@
 #include <vtkTextProperty.h>
 #include <vtkTransform.h>
 #include <vtkWindowToImageFilter.h>
+#include <vtkPolyDataMapper.h>
 
 #include <QApplication>
 #include <qdatetime.h>
@@ -85,7 +89,6 @@ static void Barycentric2D(double a[2], double b[2], double c[2], double p[2], do
 	w = (d00 * d21 - d01 * d20) * invDenom;
 	u = 1.0f - v - w;
 }
-
 
 /**
 Convert a value to VTK RGB normalized color
@@ -150,7 +153,7 @@ struct ExtractContour
 		labels.fill(0);
 
 		VipNDArrayTypeView<unsigned, 2> out(labels);
-		vipLabelImage(img, out , background);
+		vipLabelImage(img, out, background);
 
 		ContourLevels res;
 
@@ -178,7 +181,6 @@ struct ExtractContour
 class OffscreenExtractContour::PrivateData
 {
 public:
-	
 	QRecursiveMutex mutex;
 	std::map<const VipPlotVTKObject*, VipPlotVTKObject> data;
 	std::map<const VipPlotVTKObject*, QPainterPath> shapes;
@@ -209,7 +211,7 @@ public:
 
 OffscreenExtractContour::OffscreenExtractContour()
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 	d_data->realRenderWin = nullptr;
 	d_data->state = ExtractAll;
 	d_data->mTime = 0;
@@ -227,20 +229,20 @@ OffscreenExtractContour::OffscreenExtractContour()
 
 	d_data->highlightedRenderWin = vtkSmartPointer<vtkRenderWindow>::New();
 	d_data->highlightedRenderWin->SetOffScreenRendering(1);
+	d_data->highlightedRenderWin->SetMultiSamples(1); // disable antialiasing
+	// d_data->highlightedRender->UseFXAAOff();
 	d_data->highlightedRenderWin->AddRenderer(d_data->highlightedRender);
 	d_data->highlightedRenderWin->Render();
 	VIP_VTK_OBSERVER(d_data->highlightedRenderWin);
 
 	d_data->filter = vtkSmartPointer<vtkWindowToImageFilter>::New();
 	d_data->filter->SetInput(d_data->renderWin);
-	// d_data->filter->SetMagnification(1); //image quality
 	d_data->filter->SetInputBufferType(VTK_RGBA);
 	d_data->filter->ReadFrontBufferOff();
 	VIP_VTK_OBSERVER(d_data->filter);
 
 	d_data->highlightedFilter = vtkSmartPointer<vtkWindowToImageFilter>::New();
 	d_data->highlightedFilter->SetInput(d_data->highlightedRenderWin);
-	// d_data->highlightedFilter->SetMagnification(1); //image quality
 	d_data->highlightedFilter->SetInputBufferType(VTK_RGBA);
 	d_data->highlightedFilter->ReadFrontBufferOff();
 	VIP_VTK_OBSERVER(d_data->highlightedFilter);
@@ -274,6 +276,99 @@ OffscreenExtractContour::~OffscreenExtractContour()
 		d_data->filter = vtkSmartPointer<vtkWindowToImageFilter>();
 		d_data->renderWin = vtkSmartPointer<vtkRenderWindow>();
 	}
+}
+
+void OffscreenExtractContour::Reset()
+{
+	QMutexLocker lock(&d_data->mutex);
+
+	const VipPlotVTKObject * highlight = HighlightedData();
+	SetHighlightedData(nullptr);
+
+	d_data->highlightedRender = vtkSmartPointer<vtkRenderer>::New();
+	d_data->highlightedRender->SetBackground(0, 0, 0);
+	d_data->highlightedRender->UseShadowsOff();
+	VIP_VTK_OBSERVER(d_data->highlightedRender);
+
+	d_data->renderWin = vtkSmartPointer<vtkRenderWindow>::New();
+	d_data->renderWin->SetOffScreenRendering(1);
+	// d_data->renderWin->AddRenderer(d_data->render);
+	d_data->renderWin->Render();
+	VIP_VTK_OBSERVER(d_data->renderWin);
+
+	d_data->highlightedRenderWin = vtkSmartPointer<vtkRenderWindow>::New();
+	d_data->highlightedRenderWin->SetOffScreenRendering(1);
+	d_data->highlightedRenderWin->SetMultiSamples(1); // disable antialiasing
+	// d_data->highlightedRender->UseFXAAOff();
+	d_data->highlightedRenderWin->AddRenderer(d_data->highlightedRender);
+	d_data->highlightedRenderWin->Render();
+	VIP_VTK_OBSERVER(d_data->highlightedRenderWin);
+
+	d_data->filter = vtkSmartPointer<vtkWindowToImageFilter>::New();
+	d_data->filter->SetInput(d_data->renderWin);
+	d_data->filter->SetInputBufferType(VTK_RGBA);
+	d_data->filter->ReadFrontBufferOff();
+	VIP_VTK_OBSERVER(d_data->filter);
+
+	d_data->highlightedFilter = vtkSmartPointer<vtkWindowToImageFilter>::New();
+	d_data->highlightedFilter->SetInput(d_data->highlightedRenderWin);
+	d_data->highlightedFilter->SetInputBufferType(VTK_RGBA);
+	d_data->highlightedFilter->ReadFrontBufferOff();
+	VIP_VTK_OBSERVER(d_data->highlightedFilter);
+
+	d_data->highlightedCellData = vtkSmartPointer<vtkUnsignedCharArray>::New();
+	d_data->highlightedCellData->SetName("extract");
+	d_data->highlightedCellData->SetNumberOfComponents(3);
+	VIP_VTK_OBSERVER(d_data->highlightedCellData);
+
+
+
+
+	vtkRenderWindow  *w = d_data->realRenderWin;
+	vtkRendererCollection* col = w->GetRenderers();
+	vtkRendererCollection* this_col = d_data->renderWin->GetRenderers();
+	this_col->RemoveAllItems();
+
+	col->InitTraversal();
+	while (vtkRenderer* tmp = col->GetNextItem()) {
+		vtkRenderer* ren = vtkRenderer::New();
+		VIP_VTK_OBSERVER(ren);
+		ren->SetLayer(tmp->GetLayer());
+		ren->SetBackground(0, 0, 0);
+		ren->UseShadowsOff();
+		d_data->renderWin->AddRenderer(ren);
+		ren->Delete();
+	}
+
+	d_data->renderers.clear();
+	this_col->InitTraversal();
+	while (vtkRenderer* tmp = this_col->GetNextItem()) {
+		// NEW for vtk9.1
+		tmp->GetActiveCamera();
+		tmp->Render();
+		d_data->renderers.append(tmp);
+	}
+
+	d_data->renderWin->SetNumberOfLayers(d_data->renderers.size());
+
+
+	for (auto it = d_data->data.begin(); it != d_data->data.end(); ++it) {
+		const VipPlotVTKObject* data = it->first;
+		VipPlotVTKObject* dst= &it->second;
+
+		VipVTKObjectLocker locker = vipLockVTKObjects(data->rawData());
+		VipVTKObject ptr(data->rawData().data());
+		dst->setRawData(ptr);
+		dst->setLayer(data->layer());
+		if (vtkActor* act = dst->actor()) {
+			act->GetProperty()->LightingOff();
+			d_data->renderers[data->layer()]->AddActor(act);
+		}
+		if (vtkMapper* m = dst->mapper())
+			m->SetScalarVisibility(0);
+	}
+
+	SetHighlightedData(highlight);
 }
 
 void OffscreenExtractContour::ForceUpdate()
@@ -422,82 +517,100 @@ int OffscreenExtractContour::ClosestPointId(int object_id, const QPoint& pos, QP
 
 	QMutexLocker lock(&d_data->mutex);
 	if (d_data->highlightedData)
-	if (vtkDataSet* set = d_data->highlightedData->rawData().dataSet()) {
-		// lock the display and the highlighted data
-		VipVTKObjectLocker data_locker = vipLockVTKObjects(d_data->highlightedData->rawData());
+		if (vtkDataSet* set = d_data->highlightedData->rawData().dataSet()) {
+			// lock the display and the highlighted data
+			VipVTKObjectLocker data_locker = vipLockVTKObjects(d_data->highlightedData->rawData());
 
-		// get the cell points, find the closest one
+			// get the cell points, find the closest one
 
-		int num_cells = set->GetNumberOfCells();
-		if (object_id >= num_cells)
-			return -1;
+			int num_cells = set->GetNumberOfCells();
+			if (object_id >= num_cells)
+				return -1;
 
-		vtkIdList* lst = vtkIdList::New();
-		VIP_VTK_OBSERVER(lst);
-		set->GetCellPoints(object_id, lst);
+			vtkIdList* lst = vtkIdList::New();
+			VIP_VTK_OBSERVER(lst);
+			set->GetCellPoints(object_id, lst);
 
-		int height = d_data->realRenderWin->GetSize()[1];
-		d_data->realRenderWin->GetRenderers()->InitTraversal();
-		vtkRenderer* renderer = d_data->realRenderWin->GetRenderers()->GetNextItem();
+			int height = d_data->realRenderWin->GetSize()[1];
+			d_data->realRenderWin->GetRenderers()->InitTraversal();
+			vtkRenderer* renderer = d_data->realRenderWin->GetRenderers()->GetNextItem();
 
-		vtkCoordinate* coord = vtkCoordinate::New();
-		VIP_VTK_OBSERVER(coord);
-		coord->SetCoordinateSystemToWorld();
-		coord->SetViewport(renderer);
+			vtkCoordinate* coord = vtkCoordinate::New();
+			VIP_VTK_OBSERVER(coord);
+			coord->SetCoordinateSystemToWorld();
+			coord->SetViewport(renderer);
 
-		int dist = INT_MAX;
-		int id = -1;
+			int dist = INT_MAX;
+			int id = -1;
 
-		// 2D triangle points
-		double t[3][2];
-		// 3D cell points
-		double c[3][3];
+			// 2D triangle points
+			double t[3][2];
+			// 3D cell points
+			double c[3][3];
 
-		for (int i = 0; i < lst->GetNumberOfIds(); ++i) {
-			double pt[3];
-			set->GetPoint(lst->GetId(i), pt);
-			coord->SetValue(pt);
-			int* world = coord->GetComputedDisplayValue(renderer);
-			double* normalize = coord->GetComputedDoubleDisplayValue(renderer);
-			QPoint point(world[0], height - world[1] - 1);
-			int p_dist = (pos - point).manhattanLength();
-			if (p_dist < dist) {
-				dist = p_dist;
-				id = lst->GetId(i);
+			// Debug
+			/* {
+				QString out = QString::number(object_id) + " ";
+				double tmp[3] = { 0, 0, 0 };
+				for (int i = 0; i < lst->GetNumberOfIds(); ++i) {
+					double pt[3];
+					set->GetPoint(lst->GetId(i), pt);
+					tmp[0] += pt[0];
+					tmp[1] += pt[1];
+					tmp[2] += pt[2];
+				}
+				tmp[0] /= lst->GetNumberOfIds();
+				tmp[1] /= lst->GetNumberOfIds();
+				tmp[2] /= lst->GetNumberOfIds();
+				out += QString::number(tmp[0]) + " " + QString::number(tmp[1]) + " " + QString::number(tmp[2]);
+				vip_debug(out.toLatin1().data());
+			}*/
 
-				if (point_pos)
-					*point_pos = QPointF(normalize[0], height - normalize[1] - 1);
+			for (int i = 0; i < lst->GetNumberOfIds(); ++i) {
+				double pt[3];
+				set->GetPoint(lst->GetId(i), pt);
+				coord->SetValue(pt);
+				int* world = coord->GetComputedDisplayValue(renderer);
+				double* normalize = coord->GetComputedDoubleDisplayValue(renderer);
+				QPoint point(world[0], height - world[1] - 1);
+				int p_dist = (pos - point).manhattanLength();
+				if (p_dist < dist) {
+					dist = p_dist;
+					id = lst->GetId(i);
+
+					if (point_pos)
+						*point_pos = QPointF(normalize[0], height - normalize[1] - 1);
+				}
+
+				if (i < 3) {
+					t[i][0] = normalize[0];
+					t[i][1] = height - normalize[1] - 1;
+					memcpy(c[i], pt, sizeof(pt));
+				}
+
+				if (cell)
+					cell->append(QPointF(normalize[0], height - normalize[1] - 1));
 			}
 
-			if (i < 3) {
-				t[i][0] = normalize[0];
-				t[i][1] = height - normalize[1] - 1;
-				memcpy(c[i], pt, sizeof(pt));
+			// compute weights and cell point for triangle only
+			if ((cell_point || weights) && lst->GetNumberOfIds() == 3) {
+				double ws[3];
+				double pt[2] = { (double)pos.x(), (double)pos.y() };
+				Barycentric2D(t[0], t[1], t[2], pt, ws[0], ws[1], ws[2]);
+				if (weights)
+					memcpy(weights, ws, sizeof(ws));
+				if (cell_point) {
+					cell_point[0] = c[0][0] * ws[0] + c[1][0] * ws[1] + c[2][0] * ws[2];
+					cell_point[1] = c[0][1] * ws[0] + c[1][1] * ws[1] + c[2][1] * ws[2];
+					cell_point[2] = c[0][2] * ws[0] + c[1][2] * ws[1] + c[2][2] * ws[2];
+				}
 			}
 
-			if (cell)
-				cell->append(QPointF(normalize[0], height - normalize[1] - 1));
+			lst->Delete();
+			coord->Delete();
+
+			return id;
 		}
-
-		// compute weights and cell point for triangle only
-		if ((cell_point || weights) && lst->GetNumberOfIds() == 3) {
-			double ws[3];
-			double pt[2] = { (double)pos.x(), (double)pos.y() };
-			Barycentric2D(t[0], t[1], t[2], pt, ws[0], ws[1], ws[2]);
-			if (weights)
-				memcpy(weights, ws, sizeof(ws));
-			if (cell_point) {
-				cell_point[0] = c[0][0] * ws[0] + c[1][0] * ws[1] + c[2][0] * ws[2];
-				cell_point[1] = c[0][1] * ws[0] + c[1][1] * ws[1] + c[2][1] * ws[2];
-				cell_point[2] = c[0][2] * ws[0] + c[1][2] * ws[1] + c[2][2] * ws[2];
-			}
-		}
-
-		lst->Delete();
-		coord->Delete();
-
-		return id;
-	}
 
 	return -1;
 }
@@ -627,7 +740,7 @@ void OffscreenExtractContour::resetLayers()
 			dst.setLayer(src->layer());
 			d_data->renderers[dst.layer()]->AddActor(dst.actor());
 
-			if (vtkMapper * m = dst.mapper())
+			if (vtkMapper* m = dst.mapper())
 				m->SetScalarVisibility(0);
 		}
 	}
@@ -640,17 +753,17 @@ void OffscreenExtractContour::add(const VipPlotVTKObject* data)
 	auto it = d_data->data.find(data);
 	if (it == d_data->data.end())
 		it = d_data->data.try_emplace(data).first;
-		dst = &it->second;
-	
+	dst = &it->second;
+
 	VipVTKObjectLocker locker = vipLockVTKObjects(data->rawData());
 	VipVTKObject ptr(data->rawData().data());
 	dst->setRawData(ptr);
 	dst->setLayer(data->layer());
-	if (vtkActor * act = dst->actor()) {
+	if (vtkActor* act = dst->actor()) {
 		act->GetProperty()->LightingOff();
 		d_data->renderers[data->layer()]->AddActor(act);
 	}
-	if (vtkMapper * m = dst->mapper())
+	if (vtkMapper* m = dst->mapper())
 		m->SetScalarVisibility(0);
 
 	d_data->mTime = 0;
@@ -721,6 +834,17 @@ qint64 OffscreenExtractContour::currentTime()
 {
 	d_data->filter->Modified();
 	return d_data->filter->GetMTime();
+}
+
+static int vipVTKOpenGLCheckErrors()
+{
+	const int maxErrors = 16;
+	unsigned int errCode[maxErrors] = { 0 };
+	const char* errDesc[maxErrors] = { NULL };
+
+	int numErrors = vtkGetOpenGLErrors(maxErrors, errCode, errDesc);
+
+	return (numErrors);
 }
 
 void OffscreenExtractContour::Execute()
@@ -936,9 +1060,37 @@ void OffscreenExtractContour::Execute()
 				// update the modification time
 				d_data->mTime = currentTime();
 
+				// TEST
+				if (vipVTKOpenGLCheckErrors())
+					bool stop = true;
+
 				if (d_data->highlightedFilter->GetOutput()) {
+
+					/* static qint64 last_date = 0;
+					qint64 date = d_data->highlightedFilter->GetOutput()->GetMTime();
+					if (date != last_date) {
+						last_date = date;
+					}
+					else
+						bool stop = true;*/
+
 					d_data->highlightedCells = VipVTKImage(d_data->highlightedFilter->GetOutput());
-					// d_data->highlightedCells.toQImage().save("cells.png");
+
+					// TEST debug
+					/* {
+						int width = d_data->highlightedCells.width(), height = d_data->highlightedCells.height();
+						QRgb* ptr = (QRgb*)(d_data->highlightedCells.image()->GetScalarPointer());
+						std::ofstream out("C:/Users/VM213788/Desktop/img.txt");
+						for (int y = 0; y < height; ++y)
+						{
+							for (int x = 0; x < width; ++x)
+								out << ptr[y * width + x] << "\t";
+							out << std::endl;
+						}
+						out.close();
+					}*/
+
+					// d_data->highlightedCells.toQImage().save("C:/Users/VM213788/Desktop/cells.png");
 					int width = d_data->highlightedCells.width(), height = d_data->highlightedCells.height();
 					if (width * height > 0) {
 						// convert back colors to cell id+1 and flip vertically

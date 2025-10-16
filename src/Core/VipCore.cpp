@@ -35,6 +35,7 @@
 #include "VipSceneModel.h"
 #include "VipUniqueId.h"
 #include "VipHash.h"
+#include "VipStandardProcessing.h"
 
 #include <QMetaType>
 #include <QSet>
@@ -44,124 +45,65 @@
 #include <unordered_map>
 #include <thread>
 
-#if QT_VERSION > QT_VERSION_CHECK(6, 0, 0)
+// Fake QIODevice class
+class FakeIODevice : public QIODevice
+{
+public:
+	FakeIODevice(): QIODevice(){}
+	
+	virtual bool 	open(QIODevice::OpenMode mode)
+	{
+		setOpenMode(mode);
+		return true;
+	}	
+	virtual qint64 	readData(char *data, qint64 maxSize){return maxSize;} 
+	virtual qint64 	writeData(const char *data, qint64 maxSize){return maxSize;} 
+};
+
+
 static bool canSaveVariant(const QVariant& v) 
 {
+	// Check if variant can be serialized
+
+#if QT_VERSION > QT_VERSION_CHECK(6, 0, 0)
+	// For Qt >= 6.1, we can use QMetaType::hasRegisteredDataStreamOperators()
 	QMetaType meta(v.userType());
 	if (v.userType() && (v.userType() < QMetaType::User || meta.hasRegisteredDataStreamOperators())) {
 		return true;
 	}
 	return false;
-}
-#endif
-
-bool vipSafeVariantSave(QDataStream & s, const QVariant& v)
-	{
-#if QT_VERSION > QT_VERSION_CHECK(6, 0, 0)
-		if (canSaveVariant(v)) {
-			s << v;
-			return s.status() == QDataStream::Ok;
-		}
-		else
-			return false;
-#endif
-
-	qint64 pos = s.device()->pos();
-	quint32 typeId = v.userType();
-	bool fakeUserType = false;
-	if (s.version() < QDataStream::Qt_5_0) {
-		if (typeId == QMetaType::User) {
-			typeId = 127; // QMetaType::User had this value in Qt4
-		}
-		else if (typeId >= 128 - 97 && typeId <= QMetaType::LastCoreType) {
-			// In Qt4 id == 128 was FirstExtCoreType. In Qt5 ExtCoreTypes set was merged to CoreTypes
-			// by moving all ids down by 97.
-			typeId += 97;
-		}
-		else if (typeId == QMetaType::QSizePolicy) {
-			typeId = 75;
-		}
-		else if (typeId >= QMetaType::QKeySequence && typeId <= QMetaType::QQuaternion) {
-			// and as a result these types received lower ids too
-			typeId += 1;
-		}
-		else if (typeId == QMetaType::QPolygonF) {
-			// This existed in Qt 4 only as a custom type
-			typeId = 127;
-			fakeUserType = true;
-		}
-	}
-	s << typeId;
-	if (s.version() >= QDataStream::Qt_4_2)
-		s << qint8(v.userType() > 0);
-	if ((uint)v.userType() >= QMetaType::User || fakeUserType) {
-		s << QMetaType(v.userType()).name();
-	}
-
-	if (!v.userType()) {
-		if (s.version() < QDataStream::Qt_5_0)
-			s << QString();
-		return true;
-	}
-#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
-	if (!QMetaType::save(s, v.userType(), v.constData())) {
 #else
-	if (!QMetaType(v.userType()).save(s, v.constData())) {
-#endif
-		s.device()->seek(pos);
+
+	// For older Qt, no choice but to serialize the variant
+	// into a QDataStream writing into a fake QIODevice.
+	if(v.userType() == 0)
 		return false;
-	}
-	return true;
+
+	if (v.userType() < QMetaType::User)
+		return true;
+	
+	FakeIODevice d;
+	d.open(QIODevice::WriteOnly);
+	QDataStream s(&d);
+
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
+	bool res = QMetaType::save(s, v.userType(), v.constData()); 
+#else
+	bool res = QMetaType(v.userType()).save(s, v.constData());
+#endif
+	return res;
+#endif
 }
 
 qsizetype vipSafeVariantMapSave(QDataStream& s, const QVariantMap& c)
 {
-#if QT_VERSION > QT_VERSION_CHECK(6, 0, 0)
-	{
-		QVariantMap tmp;
-		for (auto it = c.begin(); it != c.end(); ++it) {
-			if (canSaveVariant(it.value()))
-				tmp.insert(it.key(), it.value());
-		}
-		s << tmp;
-		return tmp.size();
+	QVariantMap tmp;
+	for (auto it = c.begin(); it != c.end(); ++it) {
+		if (canSaveVariant(it.value()))
+			tmp.insert(it.key(), it.value());
 	}
-#endif
-	
-
-	QByteArray ar;
-	QDataStream str(&ar, QIODevice::WriteOnly);
-	str.setByteOrder(s.byteOrder());
-	str.setFloatingPointPrecision(s.floatingPointPrecision());
-	// Deserialization should occur in the reverse order.
-	// Otherwise, value() will return the least recently inserted
-	// value instead of the most recently inserted one.
-	qsizetype count = 0;
-	auto it = c.constEnd();
-	auto begin = c.constBegin();
-	while (it != begin) {
-		--it;
-		if (it.value().userType() < static_cast<int>(QMetaType::User)) {
-			str << it.key() << it.value();
-			++count;
-		}
-		else {
-			// try to the save the value before
-			QByteArray tmp;
-			QDataStream tmp_str(&tmp, QIODevice::WriteOnly);
-			tmp_str.setByteOrder(s.byteOrder());
-			tmp_str.setFloatingPointPrecision(s.floatingPointPrecision());
-			if (vipSafeVariantSave(tmp_str, it.value())) {
-				str << it.key();
-				str.writeRawData(tmp.data(), tmp.size());
-				++count;
-			}
-		}
-	}
-
-	s << qsizetype(count);
-	s.writeRawData(ar.data(), ar.size());
-	return count;
+	s << tmp;
+	return tmp.size();
 }
 
 VipArchive& operator<<(VipArchive& arch, const VipShape& value)

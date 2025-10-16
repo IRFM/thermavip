@@ -70,7 +70,7 @@ private Q_SLOTS:
 
 private:
 	
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 class VIP_GUI_EXPORT VipPlotItemSelector : public QToolButton
@@ -95,7 +95,7 @@ private Q_SLOTS:
 
 private:
 	
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 class VIP_GUI_EXPORT SkipFrame : public QWidget
@@ -113,7 +113,7 @@ public Q_SLOTS:
 
 private:
 	
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 class VipPlotItem;
@@ -177,7 +177,7 @@ private Q_SLOTS:
 
 private:
 	
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 VipRecordToolWidget* vipGetRecordToolWidget(VipMainWindow* window = nullptr);
@@ -212,7 +212,7 @@ Q_SIGNALS:
 
 private:
 	
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 /// @}

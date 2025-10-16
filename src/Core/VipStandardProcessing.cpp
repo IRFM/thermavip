@@ -892,17 +892,29 @@ void FastMedian3x3::apply()
 	outputAt(0)->setData(any);
 }
 
+
+static double _defaultSlidingTimeWindow = -1.;
+
+double VipNumericValueToPointVector::defaultSlidingTimeWindow() {
+	return _defaultSlidingTimeWindow;
+}
+
+void VipNumericValueToPointVector::setDefaultSlidingTimeWindow(double seconds)
+{
+	_defaultSlidingTimeWindow = seconds;
+}
+
 VipNumericValueToPointVector::VipNumericValueToPointVector(QObject* parent)
   : VipProcessingObject(parent)
 {
-	this->propertyName("Sliding_time_window")->setData(-1.);
+	this->propertyName("Sliding_time_window")->setData(_defaultSlidingTimeWindow);
 	this->propertyName("Restart_after")->setData(-1);
 	this->outputAt(0)->setData(VipPointVector());
 }
 
 bool VipNumericValueToPointVector::acceptInput(int, const QVariant& v) const
 {
-	return v.canConvert(VIP_META(QMetaType::Double)) || v.userType() == qMetaTypeId<VipPoint>();
+	return v.canConvert(VIP_META(QMetaType::Double)) || v.userType() == qMetaTypeId<VipPoint>() || v.userType() == qMetaTypeId<VipPointVector>();
 }
 
 void VipNumericValueToPointVector::resetProcessing()
@@ -917,7 +929,9 @@ void VipNumericValueToPointVector::apply()
 	while (inputAt(0)->hasNewData()) {
 		any = inputAt(0)->data();
 
-		if (any.data().userType() == qMetaTypeId<VipPoint>())
+		if (any.data().userType() == qMetaTypeId<VipPointVector>())
+			m_vector = any.value<VipPointVector>();
+		else if (any.data().userType() == qMetaTypeId<VipPoint>())
 			m_vector.append(any.value<VipPoint>());
 		else if (any.time() != VipInvalidTime) {
 			bool ok = false;
@@ -941,7 +955,6 @@ void VipNumericValueToPointVector::apply()
 			if (range < window) {
 				if (i != 0)
 					m_vector.erase(m_vector.begin(), m_vector.begin() + i);
-				// m_vector = m_vector.mid(i);
 				break;
 			}
 		}
@@ -959,6 +972,47 @@ void VipNumericValueToPointVector::apply()
 	out.mergeAttributes(any.attributes());
 	outputAt(0)->setData(out);
 }
+
+
+static void serialize_VipNumericValueToPointVector(VipArchive& ar)
+{
+	if (ar.mode() == VipArchive::Write) {
+
+		if (ar.start("VipNumericValueToPointVector")) {
+			
+			// save the default sliding time window as well
+			ar.content("slidingTimeWindow", VipNumericValueToPointVector::defaultSlidingTimeWindow());
+
+			ar.end();
+		}
+	}
+	else {
+		ar.save();
+		if (ar.start("VipNumericValueToPointVector")) {
+			double slidingTimeWindow = -1;
+			ar.content("slidingTimeWindow", slidingTimeWindow);
+			VipNumericValueToPointVector::setDefaultSlidingTimeWindow(slidingTimeWindow);
+			
+			ar.end();
+		}
+		else
+			ar.restore();
+	}
+}
+
+
+
+static int registerVipNumericValueToPointVector()
+{
+	vipRegisterSettingsArchiveFunctions(serialize_VipNumericValueToPointVector, serialize_VipNumericValueToPointVector);
+	return 0;
+}
+static int _registerVipNumericValueToPointVector = vipAddInitializationFunction(registerVipNumericValueToPointVector);
+
+
+
+
+
 
 static int __data_type(const QVariant& v)
 {
@@ -1003,7 +1057,7 @@ public:
 VipBaseDataFusion::VipBaseDataFusion(QObject* parent)
   : VipProcessingObject(parent)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 	propertyAt(0)->setData(QString("intersection"));
 }
 
@@ -1468,7 +1522,7 @@ public:
 VipSamplesFeature::VipSamplesFeature(QObject* parent)
   : VipBaseDataFusion(parent)
 {
-	// VIP_CREATE_PRIVATE_DATA(d_data);
+	// VIP_CREATE_PRIVATE_DATA();
 	setWorkOnSameObjectType(true);
 	setSameDataType(true, QList<int>() << QMetaType::Int << QMetaType::Double << qMetaTypeId<complex_d>());
 	setResampleEnabled(true);

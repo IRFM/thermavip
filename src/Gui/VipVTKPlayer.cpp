@@ -100,7 +100,7 @@ public:
 ApplyMappingDialog::ApplyMappingDialog(QWidget* parent)
   : QDialog(parent)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 
 	QHBoxLayout* boxlay = new QHBoxLayout();
 	boxlay->addWidget(&d_data->box);
@@ -211,7 +211,7 @@ public:
 VipFOVItem::VipFOVItem(VipVTKGraphicsView* v, QTreeWidgetItem* parent)
   : QTreeWidgetItem(parent)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 	d_data->view = v;
 	d_data->once = false;
 	
@@ -895,7 +895,7 @@ void VipFOVItem::saveSpatialCalibrationFile()
 			mapping = d_data->mapping;
 
 		if (!mapping->outputAt(0)->value<VipVTKObject>()) {
-			QMessageBox::warning(nullptr, "Error", "Unable to save scene model for this camera!");
+			vipWarning("Error", "Unable to save scene model for this camera!");
 			if (delete_mapping)
 				delete mapping;
 			return;
@@ -950,7 +950,7 @@ void VipFOVItem::displaySpatialCalibration()
 			OffscreenMappingToInputData* map = buildMapping(this, nullptr);
 			mapping = map->outputAt(0)->value<VipVTKObject>();
 			if (!mapping) {
-				QMessageBox::warning(nullptr, "Error", "Unable to display scene model for this camera!");
+				vipWarning("Error", "Unable to display scene model for this camera!");
 				return;
 			}
 			VipAnyResource* dev = new VipAnyResource(VipVTKPlayer::fromChild(this->view())->processingPool());
@@ -1363,7 +1363,7 @@ public:
 VipFOVTreeWidget::VipFOVTreeWidget(VipVTKGraphicsView* view, QWidget* parent)
   : QWidget(parent)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 	d_data->view = view;
 	d_data->tree.parentTree = this;
 	QVBoxLayout* lay = new QVBoxLayout();
@@ -3056,7 +3056,7 @@ public:
 VipVTKObjectTreeWidget::VipVTKObjectTreeWidget(VipVTKGraphicsView* v, QWidget* parent)
   : QWidget(parent)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 	d_data->tree = new QTreeWidget();
 	d_data->view = v;
 
@@ -4096,7 +4096,7 @@ public:
 VipSelectDisplayedAttributeWidget::VipSelectDisplayedAttributeWidget(VipVTKGraphicsView* view, QWidget* parent)
   : QToolBar(parent)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 
 	d_data->view = view;
 	d_data->types = new VipComboBox();
@@ -4653,7 +4653,7 @@ void VipSelectDisplayedAttributeWidget::DeleteSelectedAttribue()
 	QString name = this->currentAttribute();
 
 	if (lst.size() > 0 && type != VipVTKObject::Unknown && name != "None") {
-		QMessageBox::StandardButton b = QMessageBox::question(nullptr, "remove attribute", "Do you want to remove selected attribute?");
+		QMessageBox::StandardButton b = vipQuestion( "remove attribute", "Do you want to remove selected attribute?");
 		if (b == QMessageBox::Yes) {
 			setDisplayedAttribute(VipVTKObject::Unknown, "None", 0);
 
@@ -4792,7 +4792,7 @@ protected:
 	virtual void mouseReleaseEvent(QMouseEvent* evt);
 
 private:
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 class ResizableWidget::PrivateData
@@ -4807,7 +4807,7 @@ public:
 ResizableWidget::ResizableWidget(Qt::Orientation orientation, QWidget* parent)
   : QWidget(parent)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 	d_data->orientation = orientation;
 	setExtent(8);
 
@@ -5096,7 +5096,7 @@ public:
 VipCubeAxesActorWidget::VipCubeAxesActorWidget(QWidget* parent)
   : QWidget(parent)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 
 	QGridLayout* grid = new QGridLayout();
 
@@ -5414,7 +5414,7 @@ public:
 VipVTKPlayer::VipVTKPlayer(QWidget* parent)
   : VipVideoPlayer(new VipVTKGraphicsView(), parent)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 
 	
 
@@ -5617,7 +5617,7 @@ bool VipVTKPlayer::isAutoCamera() const
 bool VipVTKPlayer::isSharedCamera() const
 {
 	bool res = false;
-	if (VipDisplayPlayerArea* area = VipDisplayPlayerArea::fromChildWidget(const_cast<VipVTKPlayer*>(this))) {
+	if (VipDisplayPlayerArea* area = VipDisplayPlayerArea::fromChild(const_cast<VipVTKPlayer*>(this))) {
 		res = area->property("_vip_sharedCamera").toBool();
 	}
 	else
@@ -5635,7 +5635,7 @@ void VipVTKPlayer::setSharedCamera(bool enable)
 	d_data->sharedCamera->blockSignals(true);
 	d_data->sharedCamera->setChecked(enable);
 	d_data->sharedCamera->blockSignals(false);
-	if (VipDisplayPlayerArea* area = VipDisplayPlayerArea::fromChildWidget((this))) {
+	if (VipDisplayPlayerArea* area = VipDisplayPlayerArea::fromChild((this))) {
 		area->setProperty("_vip_sharedCamera", enable);
 		if (enable)
 			applyThisCameraToAll();
@@ -5652,18 +5652,21 @@ void VipVTKPlayer::applyThisCameraToAll()
 
 	this->setProperty("_vip_watched", true);
 	vtkCamera* cam = view()->renderer()->GetActiveCamera();
-	if (VipDisplayPlayerArea* area = VipDisplayPlayerArea::fromChildWidget(this)) {
+	if (VipDisplayPlayerArea* area = VipDisplayPlayerArea::fromChild(this)) {
 		// Get all workspace VipVTKPlayer
 		QList<VipVTKPlayer*> pls = area->findChildren<VipVTKPlayer*>();
 
 		for (VipVTKPlayer* pl : pls) {
-			if (pl->property("_vip_watched").toBool())
+			if (pl->property("_vip_watched").toBool() || cam == pl->view()->renderer()->GetActiveCamera())
 				continue;
 
 			pl->view()->renderer()->GetActiveCamera()->DeepCopy(cam);
 			pl->setProperty("_vip_watched", true);
-			pl->view()->refresh();
 			pl->view()->widget()->applyCameraToAllLayers();
+			pl->view()->immediateRefresh(); 
+			// This seems to be the only way to properly update another renderer window 
+			// without glitches
+			pl->view()->widget()->simulateMouseClick(QPoint(), QPoint());
 		}
 
 		for (VipVTKPlayer* pl : pls) 
@@ -6108,7 +6111,7 @@ public:
 VipVTKPlayerOptionPage::VipVTKPlayerOptionPage(QWidget* parent)
   : VipPageOption(parent)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 
 	this->setWindowIcon(vipIcon("CAD.png"));
 

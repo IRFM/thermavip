@@ -120,7 +120,7 @@ VipBoxGraphicsWidget::VipBoxGraphicsWidget(QGraphicsItem* parent)
   , VipPaintItem(this)
   , VipRenderObject(this)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 	this->setAcceptHoverEvents(true);
 }
 
@@ -364,7 +364,7 @@ public:
 VipAbstractScale::VipAbstractScale(QGraphicsItem* parent)
   : VipBoxGraphicsWidget(parent)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 
 	this->setFlag(QGraphicsItem::ItemIsSelectable);
 
@@ -1471,7 +1471,7 @@ public:
 VipScaleWidget::VipScaleWidget(VipAbstractScale* scale, QWidget* parent)
   : QGraphicsView(parent)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 	d_data->scale = nullptr;
 	d_data->enableRecomputeGeometry = true;
 

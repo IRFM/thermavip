@@ -34,6 +34,7 @@
 #include "VipGui.h"
 #include "VipLogging.h"
 #include "VipUniqueId.h"
+#include "VipProgressWidget.h"
 
 #include <QAction>
 #include <QApplication>
@@ -214,7 +215,7 @@ VipBaseDragWidget::VipBaseDragWidget(QWidget* parent)
   : QFrame(parent)
   , VipRenderObject(this)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 	d_data->visibility = Normal;
 	d_data->operations = AllOperations;
 
@@ -833,7 +834,7 @@ bool VipBaseDragWidget::isDestroying() const
 {
 	const VipBaseDragWidget* w = this;
 	while (w) {
-		if(!w->d_data)
+		if(!w->d_data.get())
 			return true;
 		if (w->d_data->destroy)
 			return true;
@@ -919,7 +920,7 @@ public:
 VipDragWidget::VipDragWidget(QWidget* parent)
   : VipBaseDragWidget(parent)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 
 	setProperty("has_focus", false);
 	style()->unpolish(this);
@@ -1251,7 +1252,7 @@ VipMinimizeWidget::VipMinimizeWidget(VipBaseDragWidget* widget)
 {
 
 	// QWidget* p = this->parentWidget();
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 	d_data->dragWidget = widget;
 	widget->setProperty("_vip_minimizeWidget", QVariant::fromValue((QWidget*)this));
 
@@ -1627,11 +1628,16 @@ static QList<int> addNewSplitterSize(QSplitter* s, int index, int* new_widget_si
 	return res;
 }
 
+
+
 bool VipDragWidgetHandle::dropMimeData(const QMimeData* mime)
 {
 	// check that this widget accept drop
 	if (!multiDragWidget->supportReceiveDrop())
 		return false;
+
+	if (vipHandleAsyncDrop(this, mime))
+		return true;
 
 	bool maximized = false;
 	VipBaseDragWidget* widget = nullptr;
@@ -1828,7 +1834,7 @@ static std::function<void(VipMultiDragWidget*)> _on_multi_drag_widget_created;
 VipMultiDragWidget::VipMultiDragWidget(QWidget* parent)
   : VipBaseDragWidget(parent)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 	d_data->header = nullptr;
 	d_data->v_splitter = nullptr;
 	d_data->extra = true;

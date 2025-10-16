@@ -81,8 +81,6 @@ QStringList vipAvailableSkins()
 	return QStringList();
 }
 
-
-
 bool vipLoadSkin(const QString& skin_name)
 {
 	vip_debug("skin: %s\n", skin_name.toLatin1().data());
@@ -147,7 +145,6 @@ bool vipLoadSkin(const QString& skin_name)
 	return false;
 }
 
-
 bool vipIsDarkSkin()
 {
 	QColor c = vipGetMainWindow()->palette().color(QPalette::Window);
@@ -158,7 +155,6 @@ bool vipIsDarkColor(const QColor& c)
 {
 	return c.lightness() < 128;
 }
-
 
 static int _restart_delay = -1;
 
@@ -250,7 +246,7 @@ public:
 
 VipFileSharedMemory::VipFileSharedMemory()
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 }
 
 VipFileSharedMemory::~VipFileSharedMemory() {}
@@ -336,6 +332,78 @@ bool VipFileSharedMemory::hasThermavipInstance()
 	return true;
 }
 
+
+
+VipWatermark::VipWatermark()
+{
+	text = QChar(0x24D2);
+	text += " 2025 CEA/IRFM";
+	font = qApp->font();
+	font.setPixelSize(17);
+	font.setBold(true);
+	color = QColor(0, 0, 0, 120);
+}
+
+static void addWatermarkToDevice(QPaintDevice* device, const VipWatermark& w)
+{
+	VipText t = w.text;
+	t.setTextPen(QPen(w.color));
+	t.setFont(w.font);
+	t.setAlignment(w.alignment);
+
+	QRect r(0, 0, device->width(), device->height());
+	r.adjust(w.distanceToBorder, w.distanceToBorder, -w.distanceToBorder, -w.distanceToBorder);
+
+	QPainter p(device);
+	t.draw(&p, r);
+}
+
+void VipWatermark::addToImage(QImage& img) const
+{
+	if (!visible)
+		return;
+	addWatermarkToDevice(&img, *this);
+}
+void VipWatermark::addToPixmap(QPixmap& pix) const
+{
+	if (!visible)
+		return;
+	addWatermarkToDevice(&pix, *this);
+}
+void VipWatermark::addToDevice(QPaintDevice* d) const
+{
+	if (!visible)
+		return;
+	addWatermarkToDevice(d, *this);
+}
+
+void VipWatermark::save(VipArchive& arch) const
+{
+	arch.start("Watermark");
+	arch.content("text", text);
+	arch.content("font", font);
+	arch.content("color", color);
+	arch.content("visible", visible);
+	arch.content("distanceToBorder", distanceToBorder);
+	arch.content("alignment", (int)alignment);
+	arch.end();
+}
+bool VipWatermark::restore(VipArchive& arch)
+{
+	if (arch.start("Watermark")) {
+		text = arch.read("test").toString();
+		font = arch.read("font").value<QFont>();
+		color = arch.read("color").value<QColor>();
+		visible = arch.read("visible").toBool();
+		distanceToBorder = arch.read("distanceToBorder").toInt();
+		alignment = (Qt::Alignment)arch.read("alignment").toInt();
+		arch.end();
+		return true;
+	}
+	return false;
+}
+
+
 #include "VipColorMap.h"
 #include "VipPlayer.h"
 
@@ -383,7 +451,7 @@ public:
 	bool dirty;
 	bool setAndApply;
 	bool inSessionLoading{ false };
-	VipLinearColorMap::StandardColorMap playerColorScale;
+	QString playerColorScale;
 	Vip::PlayerLegendPosition legendPosition;
 	VipValueToTime::DisplayType displayType;
 	QPointer<VipPlotWidget2D> resetPlotWidget;
@@ -397,11 +465,13 @@ public:
 	QPen shapePen;
 	QBrush shapeBrush;
 	VipPlotShape::DrawComponents shapeComponents;
+
+	VipWatermark watermark;
 };
 
 VipGuiDisplayParamaters::VipGuiDisplayParamaters(VipMainWindow* win)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 	d_data->setAndApply = true;
 
 	d_data->shapePen = QPen(QColor(Qt::black), 1);
@@ -409,7 +479,7 @@ VipGuiDisplayParamaters::VipGuiDisplayParamaters(VipMainWindow* win)
 	d_data->shapeComponents = VipPlotShape::Background | VipPlotShape::Border | VipPlotShape::Id;
 
 	d_data->itemPaletteFactor = 0;
-	d_data->playerColorScale = VipLinearColorMap::Jet;
+	d_data->playerColorScale = "sunset";
 	d_data->videoPlayerShowAxis = true;
 	d_data->displayTimeOffset = false;
 	d_data->legendPosition = Vip::LegendBottom;
@@ -431,8 +501,8 @@ VipGuiDisplayParamaters::VipGuiDisplayParamaters(VipMainWindow* win)
 	d_data->resetPlotWidget->hide();
 	d_data->defaultArea = d_data->defaultPlotWidget->area(); // new VipPlotArea2D();
 	d_data->defaultArea->setVisible(true);
-	//d_data->defaultArea->grid()->setVisible(false);
-	// d_data->defaultArea->titleAxis()->setVisible(true);
+	// d_data->defaultArea->grid()->setVisible(false);
+	//  d_data->defaultArea->titleAxis()->setVisible(true);
 	d_data->defaultCurve = new VipPlotCurve();
 	d_data->defaultCurve->setPen(QPen(Qt::blue, 1.5));
 	d_data->defaultCurve->setBrush(QBrush(QColor(0, 0, 255, 200), Qt::NoBrush));
@@ -458,12 +528,12 @@ VipGuiDisplayParamaters::VipGuiDisplayParamaters(VipMainWindow* win)
 	connect(this, SIGNAL(changed()), this, SLOT(delaySaveToFile()), Qt::QueuedConnection);
 
 	// use the one in Thermavip installation if more recent
-	QFileInfo current( vipGetDataDirectory() + "gui_settings.xml");
+	QFileInfo current(vipGetDataDirectory() + "gui_settings.xml");
 	QString apppath = QFileInfo(vipAppCanonicalPath()).canonicalPath();
 	apppath.replace("\\", "/");
 	if (!apppath.endsWith("/"))
 		apppath += "/";
-	QFileInfo thermavip( apppath + "gui_settings.xml");
+	QFileInfo thermavip(apppath + "gui_settings.xml");
 	// vip_debug("current: %s\n", current.canonicalFilePath().toLatin1().data());
 	// vip_debug("thermavip: %s, %s\n", thermavip.canonicalFilePath().toLatin1().data(), (apppath + "gui_settings.xml").toLatin1().data());
 	if (thermavip.exists() && (!current.exists() || current.lastModified() < thermavip.lastModified())) {
@@ -937,6 +1007,16 @@ QColor VipGuiDisplayParamaters::defaultPlayerBackgroundColor() const
 	return d_data->resetPlotWidget->backgroundColor();
 }
 
+const VipWatermark& VipGuiDisplayParamaters::watermark() const
+{
+	return d_data->watermark;
+}
+void VipGuiDisplayParamaters::setWatermark(const VipWatermark& w)
+{
+	d_data->watermark = w;
+	emitChanged();
+}
+
 void VipGuiDisplayParamaters::setInSessionLoading(bool enable)
 {
 	d_data->inSessionLoading = enable;
@@ -960,18 +1040,25 @@ int VipGuiDisplayParamaters::flatHistogramStrength() const
 	return d_data->flatHistogramStrength;
 }
 
-VipLinearColorMap::StandardColorMap VipGuiDisplayParamaters::playerColorScale() const
+QString VipGuiDisplayParamaters::playerColorScale() const
 {
 	return d_data->playerColorScale;
 }
-void VipGuiDisplayParamaters::setPlayerColorScale(VipLinearColorMap::StandardColorMap map)
+void VipGuiDisplayParamaters::setPlayerColorScale(const QString& name)
 {
+	auto current = VipLinearColorMap::colorMapFromName(d_data->playerColorScale.toLower().toLatin1().data());
+
+	QByteArray n = name.toLower().toLatin1();
+	auto map = VipLinearColorMap::colorMapFromName(n.data());
+	if (map == VipLinearColorMap::Unknown)
+		map = VipLinearColorMap::Sunset;
+
 	if (d_data->setAndApply) {
 		// apply color scale to video players
 		QList<VipVideoPlayer*> vplayers = VipUniqueId::objects<VipVideoPlayer>();
 		for (int i = 0; i < vplayers.size(); ++i) {
 			if (vplayers[i]->spectrogram()->colorMap() && qobject_cast<VipLinearColorMap*>(vplayers[i]->spectrogram()->colorMap()->colorMap()) &&
-			    static_cast<VipLinearColorMap*>(vplayers[i]->spectrogram()->colorMap()->colorMap())->type() == d_data->playerColorScale) {
+			    static_cast<VipLinearColorMap*>(vplayers[i]->spectrogram()->colorMap()->colorMap())->type() == current) {
 				bool flat_hist = vplayers[i]->spectrogram()->colorMap()->useFlatHistogram();
 				int str = vplayers[i]->spectrogram()->colorMap()->flatHistogramStrength();
 				vplayers[i]->spectrogram()->colorMap()->setColorMap(vplayers[i]->spectrogram()->colorMap()->gripInterval(), VipLinearColorMap::createColorMap(map));
@@ -983,11 +1070,11 @@ void VipGuiDisplayParamaters::setPlayerColorScale(VipLinearColorMap::StandardCol
 		// apply to workspace
 		VipDisplayArea* d = vipGetMainWindow()->displayArea();
 		for (int i = 0; i < d->count(); ++i) {
-			d->widget(i)->setColorMap(map);
+			d->widget(i)->setColorMap(VipLinearColorMap::colorMapToName(map));
 			d->widget(i)->colorMapAxis()->setFlatHistogramStrength(flatHistogramStrength());
 		}
 	}
-	d_data->playerColorScale = map;
+	d_data->playerColorScale = VipLinearColorMap::colorMapToName(map);
 	emitChanged();
 }
 
@@ -1043,14 +1130,16 @@ bool VipGuiDisplayParamaters::displayExactPixels() const
 
 void VipGuiDisplayParamaters::apply(QWidget* w)
 {
-	
+	auto current = VipLinearColorMap::colorMapFromName(d_data->playerColorScale.toLower().toLatin1().data());
+
 	if (VipAbstractPlayer* pl = qobject_cast<VipAbstractPlayer*>(w)) {
 
 		if (VipVideoPlayer* v = qobject_cast<VipVideoPlayer*>(pl)) {
 			if (v->spectrogram()->colorMap() && qobject_cast<VipLinearColorMap*>(v->spectrogram()->colorMap()->colorMap()) &&
-			    static_cast<VipLinearColorMap*>(v->spectrogram()->colorMap()->colorMap())->type() == d_data->playerColorScale) {
+			    static_cast<VipLinearColorMap*>(v->spectrogram()->colorMap()->colorMap())->type() == current) {
 				bool flat_hist = v->spectrogram()->colorMap()->useFlatHistogram();
-				v->spectrogram()->colorMap()->setColorMap(v->spectrogram()->colorMap()->gripInterval(), VipLinearColorMap::createColorMap(playerColorScale()));
+				v->spectrogram()->colorMap()->setColorMap(v->spectrogram()->colorMap()->gripInterval(),
+									  VipLinearColorMap::createColorMap(VipLinearColorMap::colorMapFromName(playerColorScale())));
 				v->spectrogram()->colorMap()->setUseFlatHistogram(flat_hist);
 			}
 
@@ -1077,7 +1166,7 @@ void VipGuiDisplayParamaters::reset()
 {
 	blockSignals(true);
 	setItemPaletteFactor(0);
-	setPlayerColorScale(VipLinearColorMap::Jet);
+	setPlayerColorScale("sunset");
 	setLegendPosition(Vip::LegendBottom);
 	setVideoPlayerShowAxes(true);
 	setDisplayTimeOffset(false);
@@ -1150,7 +1239,7 @@ static void serialize_VipGuiDisplayParamaters(VipGuiDisplayParamaters* inst, Vip
 		if (arch.start("VipGuiDisplayParamaters")) {
 			arch.save();
 			QString version = arch.read("version").toString();
-			
+
 			if (version.isEmpty())
 				arch.restore();
 
@@ -1176,11 +1265,7 @@ static void serialize_VipGuiDisplayParamaters(VipGuiDisplayParamaters* inst, Vip
 				arch.restore();
 
 			inst->setItemPaletteFactor(arch.read("itemPaletteFactor").value<int>());
-			if (ivers < (QList<int>() << 3 << 3 << 4)) {
-				inst->setPlayerColorScale(VipLinearColorMap::Jet);
-			}
-			else
-				inst->setPlayerColorScale(VipLinearColorMap::StandardColorMap(arch.read("playerColorScale").value<int>()));
+			inst->setPlayerColorScale(arch.read("playerColorScale").toString());
 
 			arch.save();
 			QFont f;
@@ -1231,7 +1316,7 @@ static void serialize_VipGuiDisplayParamaters(VipGuiDisplayParamaters* inst, Vip
 			}
 			// vip_debug("read showTimeMarkerAlways: %i\n", (int)showTimeMarkerAlways);
 			arch.save();
-			bool globalColorScale=false;
+			bool globalColorScale = false;
 			if (arch.content("globalColorScale", globalColorScale))
 				inst->setGlobalColorScale(globalColorScale);
 			else {
@@ -1243,7 +1328,7 @@ static void serialize_VipGuiDisplayParamaters(VipGuiDisplayParamaters* inst, Vip
 
 			// new in 3.3.3
 			arch.save();
-			int flatHistogramStrength=0;
+			int flatHistogramStrength = 0;
 			if (arch.content("flatHistogramStrength", flatHistogramStrength))
 				inst->setFlatHistogramStrength(flatHistogramStrength);
 			else {
@@ -1253,7 +1338,7 @@ static void serialize_VipGuiDisplayParamaters(VipGuiDisplayParamaters* inst, Vip
 
 			// new in 3.4.7
 			arch.save();
-			int videoRenderingMode=0, plotRenderingMode=0;
+			int videoRenderingMode = 0, plotRenderingMode = 0;
 			arch.content("videoRenderingMode", videoRenderingMode);
 			arch.content("plotRenderingMode", plotRenderingMode);
 			if (arch) {
@@ -1284,7 +1369,7 @@ static void serialize_VipGuiDisplayParamaters(VipGuiDisplayParamaters* inst, Vip
 			arch.save();
 			QBrush b;
 			QPen p;
-			int c=0;
+			int c = 0;
 			if (arch.content("backgroundBrush", b)) {
 				arch.content("borderPen", p);
 				arch.content("drawComponents", c);
@@ -1306,30 +1391,17 @@ static void serialize_VipGuiDisplayParamaters(VipGuiDisplayParamaters* inst, Vip
 
 			arch.end();
 
-			// Force some parameters for old version
-
-			// check version
-			if (ivers < (QList<int>() << 3 << 0 << 2)) {
-				// make ROI more transparent
-				// QBrush b = VipDefaultSceneModelDisplayOptions::backgroundBrush();
-				//  QColor c = b.color();
-				//  c.setAlpha(70);
-				//  b.setColor(c);
-				//  VipDefaultSceneModelDisplayOptions::setBackgroundBrush(b);
-
-				// force font
-				// QBrush b = vipWidgetTextBrush(vipGetMainWindow());
-				//  VipTextStyle st;
-				//  st.setTextPen(QPen(b.color()));
-				//  QFont f;
-				//  f.fromString("DejaVu Sans Display,8,-1,5,50,0,0,0,0,0,Display");
-				//  st.setFont(f);
-				//  inst->setDefaultTextStyle(st);
-				//  inst->setTitleTextStyle(st);
+			arch.save();
+			VipWatermark w;
+			if (w.restore(arch)) {
+				inst->setWatermark(w);
 			}
+			else
+				arch.restore();
 		}
 		else
 			arch.restore();
+
 	}
 	else if (arch.mode() == VipArchive::Write) {
 		if (arch.start("VipGuiDisplayParamaters")) {
@@ -1338,7 +1410,7 @@ static void serialize_VipGuiDisplayParamaters(VipGuiDisplayParamaters* inst, Vip
 			// vip_debug("save: %s\n", _skin.toLatin1().data());
 
 			arch.content("itemPaletteFactor", inst->itemPaletteFactor());
-			arch.content("playerColorScale", (int)inst->playerColorScale());
+			arch.content("playerColorScale", inst->playerColorScale());
 			arch.content("defaultEditorFont", inst->defaultEditorFont());
 			arch.content("video_player_axes", inst->videoPlayerShowAxes());
 			arch.content("legendPosition", (int)inst->legendPosition());
@@ -1373,6 +1445,8 @@ static void serialize_VipGuiDisplayParamaters(VipGuiDisplayParamaters* inst, Vip
 
 			// New in 3.11.0
 			arch.content("displayExactPixels", (int)inst->displayExactPixels());
+
+			inst->watermark().save(arch);
 
 			arch.end();
 		}
@@ -1535,13 +1609,13 @@ QList<VipAbstractPlayer*> vipCreatePlayersFromData(const VipAnyData& any, VipAbs
 			// for numerical values, insert a VipNumericValueToPointVector before the processing list
 			bool is_numeric = false;
 			src->data().data().toDouble(&is_numeric);
-			/* if (is_numeric) {
+			if (is_numeric) {
 				VipNumericValueToPointVector* ConvertToPointVector = new VipNumericValueToPointVector(device->parent());
 				ConvertToPointVector->setScheduleStrategies(VipProcessingObject::Asynchronous);
 				ConvertToPointVector->setDeleteOnOutputConnectionsClosed(true);
 				ConvertToPointVector->inputAt(0)->setConnection(src);
 				src = ConvertToPointVector->outputAt(0);
-			}*/
+			}
 
 			// insert a VipProcessingList in between the device output and the VipDisplayObject
 			VipProcessingList* _lst = new VipProcessingList();
@@ -1555,7 +1629,7 @@ QList<VipAbstractPlayer*> vipCreatePlayersFromData(const VipAnyData& any, VipAbs
 			if (any.data().userType() == qMetaTypeId<VipNDArray>()) {
 				VipExtractComponent* extract = new VipExtractComponent();
 				// extract->setProperty("_vip_hidden",true)
-				extract->setVisible(false);
+				extract->setProcessingVisible(false);
 				_lst->append(extract);
 				// vipGetProcessingEditorToolWidget()->setProcessingObject(display);
 				// if (VipProcessingListEditor * editor = vipGetProcessingEditorToolWidget()->editor()->processingEditor<VipProcessingListEditor*>(_lst))

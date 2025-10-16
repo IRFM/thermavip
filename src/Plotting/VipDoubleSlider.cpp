@@ -93,7 +93,7 @@ public:
 VipDoubleSlider::VipDoubleSlider(Alignment pos, QGraphicsItem* parent)
   : VipAxisBase(pos, parent)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 	d_data->grip = new DoubleSliderGrip(this);
 
 	VipInterval interval = this->scaleDiv().bounds();

@@ -72,7 +72,7 @@ public:
 VipArchive::VipArchive(Flag flag, SupportedOperations op)
   : QObject()
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 	d_data->flag = flag;
 	d_data->operations = op;
 	d_data->io_mode = NotOpen;

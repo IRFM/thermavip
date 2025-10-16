@@ -163,7 +163,7 @@ protected:
 	void applyPropertiesInternal();
 
 private:
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 VIP_REGISTER_QOBJECT_METATYPE(VipPlotVTKObject*)
@@ -230,7 +230,7 @@ Q_SIGNALS:
 	void colorChanged();
 
 private:
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 VIP_REGISTER_QOBJECT_METATYPE(VipPlotFieldOfView*)
@@ -257,7 +257,7 @@ protected:
 	virtual void displayData(const VipAnyDataList& data);
 
 private:
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 VIP_REGISTER_QOBJECT_METATYPE(VipDisplayFieldOfView*)

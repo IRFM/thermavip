@@ -512,7 +512,7 @@ void applyColorMapLinear(const VipLinearColorMap* map, const VipInterval& interv
 VipLinearColorMap::VipLinearColorMap(VipColorMap::Format format)
   : VipColorMap(format)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 	d_data->mode = ScaledColors;
 	d_data->type = Unknown;
 	d_data->renderColors = nullptr;
@@ -531,7 +531,7 @@ VipLinearColorMap::VipLinearColorMap(VipColorMap::Format format)
 VipLinearColorMap::VipLinearColorMap(const QColor& color1, const QColor& color2, VipColorMap::Format format)
   : VipColorMap(format)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 	d_data->mode = ScaledColors;
 	setColorInterval(color1, color2);
 }
@@ -914,6 +914,8 @@ const char* VipLinearColorMap::colorMapToName(StandardColorMap map)
 			return "pink";
 		case Rainbow:
 			return "rainbow";
+		case RevealIR:
+			return "revealir";
 		case Spring:
 			return "spring";
 		case Summer:
@@ -922,6 +924,8 @@ const char* VipLinearColorMap::colorMapToName(StandardColorMap map)
 			return "sunset";
 		case Viridis:
 			return "viridis";
+		case Visible:
+			return "visible";
 		case White:
 			return "white";
 		case Winter:
@@ -981,6 +985,8 @@ VipLinearColorMap::StandardColorMap VipLinearColorMap::colorMapFromName(const ch
 		return Pink;
 	if (strcmp(name, "rainbow") == 0)
 		return Rainbow;
+	if (strcmp(name, "revealir") == 0)
+		return RevealIR;
 	if (strcmp(name, "spring") == 0)
 		return Spring;
 	if (strcmp(name, "summer") == 0)
@@ -989,6 +995,8 @@ VipLinearColorMap::StandardColorMap VipLinearColorMap::colorMapFromName(const ch
 		return Sunset;
 	if (strcmp(name, "viridis") == 0)
 		return Viridis;
+	if (strcmp(name, "visible") == 0)
+		return Visible;
 	if (strcmp(name, "white") == 0)
 		return White;
 	if (strcmp(name, "winter") == 0)
@@ -1079,12 +1087,12 @@ QGradientStops VipLinearColorMap::createGradientStops(StandardColorMap color_map
 			colorStops_ << QGradientStop(0, QColor(255, 0, 0)) << QGradientStop(0.4, QColor(0, 255, 99)) << QGradientStop(0.8, QColor(199, 0, 255)) << QGradientStop(1, QColor(255, 0, 6));
 			break;
 
-		case VipLinearColorMap::Pink: // This is a linear interpolation of a non-linear calculation.
+		case VipLinearColorMap::Pink: 
 			colorStops_ << QGradientStop(0, QColor(15, 0, 0)) << QGradientStop(0.372549, QColor(195, 128, 128)) << QGradientStop(0.749020, QColor(234, 234, 181))
 				    << QGradientStop(1, QColor(255, 255, 255));
 			break;
 
-		case VipLinearColorMap::Rainbow: // This is a linear interpolation of a non-linear calculation.
+		case VipLinearColorMap::Rainbow:
 			colorStops_ << QGradientStop(0, QColor(0xE8ECFB)) << QGradientStop(0.045454, QColor(0xD9CCE3)) << QGradientStop(0.0909, QColor(0xCAACCB))
 				    << QGradientStop(0.136, QColor(0xBA8DB4)) << QGradientStop(0.181, QColor(0xAA6F9E)) << QGradientStop(0.227, QColor(0x994F88))
 				    << QGradientStop(0.272, QColor(0x882E72)) << QGradientStop(0.318, QColor(0x1965B0)) << QGradientStop(0.363, QColor(0x437DBF))
@@ -1093,6 +1101,11 @@ QGradientStops VipLinearColorMap::createGradientStops(StandardColorMap color_map
 				    << QGradientStop(0.682, QColor(0xF7CB45)) << QGradientStop(0.727, QColor(0xF4A736)) << QGradientStop(0.773, QColor(0xEE8026))
 				    << QGradientStop(0.819, QColor(0xE65518)) << QGradientStop(0.863, QColor(0xDC050C)) << QGradientStop(0.909, QColor(0xA5170E))
 				    << QGradientStop(0.954, QColor(0x72190E)) << QGradientStop(1, QColor(0x42150A));
+			break;
+
+		case VipLinearColorMap::RevealIR: 
+			colorStops_ << QGradientStop(0, QColor(Qt::black)) << QGradientStop(0.142, QColor(0x0616CC)) << QGradientStop(0.286, QColor(0x721381)) << QGradientStop(0.428, QColor(0xC6118B))
+				    << QGradientStop(0.571, QColor(0xCC321E)) << QGradientStop(0.714, QColor(0xCF6308)) << QGradientStop(0.857, QColor(0xCCC248)) << QGradientStop(1., QColor(0xFFFFFF));
 			break;
 
 		case VipLinearColorMap::Spring:
@@ -1106,6 +1119,11 @@ QGradientStops VipLinearColorMap::createGradientStops(StandardColorMap color_map
 		case VipLinearColorMap::Viridis:
 			colorStops_ << QGradientStop(0, QColor(0x440154)) << QGradientStop(0.25, QColor(0x3B528B)) << QGradientStop(0.5, QColor(0x21918C)) << QGradientStop(0.75, QColor(0x5EC962))
 				    << QGradientStop(1, QColor(0xFDE725));
+			break;
+
+		case VipLinearColorMap::Visible: 
+			colorStops_ << QGradientStop(0, QColor(0x7E3F9A)) << QGradientStop(0.2, QColor(0x1E409A)) << QGradientStop(0.4, QColor(0x53A34C)) << QGradientStop(0.6, QColor(0xFCDB34))
+				    << QGradientStop(0.8, QColor(0xED6533)) << QGradientStop(1., QColor(0xD20502));
 			break;
 
 		case VipLinearColorMap::White:
@@ -1287,7 +1305,7 @@ public:
 VipAlphaColorMap::VipAlphaColorMap(const QColor& color)
   : VipColorMap(VipColorMap::RGB)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 	d_data->color = color;
 	d_data->rgb = color.rgb() & qRgba(255, 255, 255, 0);
 }

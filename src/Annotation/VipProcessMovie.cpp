@@ -401,8 +401,8 @@ public:
 
 VipClientEventDevice::VipClientEventDevice(QObject* parent)
   : VipIODevice(parent)
-  , d_data(nullptr)
 {
+	VIP_CREATE_PRIVATE_DATA();
 	outputAt(0)->setData(QVariant::fromValue(VipSceneModel()));
 }
 
@@ -427,26 +427,23 @@ bool VipClientEventDevice::open(VipIODevice::OpenModes mode)
 
 void VipClientEventDevice::close()
 {
-	if (d_data) {
-		d_data->parent = nullptr;
-		d_data->wait();
-		d_data.reset();
-	}
+	d_data->parent = nullptr;
+	d_data->wait();
+	VIP_CREATE_PRIVATE_DATA();
+	
 	VipIODevice::close();
 }
 
 bool VipClientEventDevice::enableStreaming(bool enable)
 {
 	// stop
-	if (d_data) {
-		d_data->parent = nullptr;
-		d_data->wait();
-		d_data.reset();
-	}
+	
+	d_data->parent = nullptr;
+	d_data->wait();
+	VIP_CREATE_PRIVATE_DATA();
 
 	if (enable) {
 		// start
-		VIP_CREATE_PRIVATE_DATA(d_data);
 		d_data->parent = this;
 		d_data->start();
 
@@ -456,7 +453,7 @@ bool VipClientEventDevice::enableStreaming(bool enable)
 		if (d_data->status.load() < 0) {
 			d_data->parent = nullptr;
 			d_data->wait();
-			d_data.reset();
+			VIP_CREATE_PRIVATE_DATA();
 		}
 	}
 
@@ -475,7 +472,7 @@ public:
 UploadToDB::UploadToDB(const QString& device, QWidget* parent)
   : QWidget(parent)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 
 	d_data->pulse = vipFindDeviceParameters(device)->pulseEditor();
 
@@ -569,7 +566,7 @@ public:
 EventInfo::EventInfo(VipPlayerDBAccess* pdb)
   : QToolBar()
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 	d_data->pdb = pdb;
 	this->setIconSize(QSize(18, 18));
 	d_data->close = this->addAction(vipIcon("close.png"), "Close panel");
@@ -1681,19 +1678,19 @@ void VipPlayerDBAccess::saveToJsonInternal(bool show_messages)
 
 		if (PPO.isEmpty()) {
 			if (show_messages)
-				QMessageBox::warning(nullptr, "Warning", "Invalid user name");
+				vipWarning("Warning", "Invalid user name");
 			VIP_LOG_WARNING("Invalid user name");
 			return;
 		}
 		if (camera.isEmpty()) {
 			if (show_messages)
-				QMessageBox::warning(nullptr, "Warning", "Invalid camera name");
+				vipWarning( "Warning", "Invalid camera name");
 			VIP_LOG_WARNING("Invalid camera name");
 			return;
 		}
 		if (device.isEmpty()) {
 			if (show_messages)
-				QMessageBox::warning(nullptr, "Warning", "Invalid device name");
+				vipWarning("Warning", "Invalid device name");
 			VIP_LOG_WARNING("Invalid device name");
 			return;
 		}
@@ -1782,7 +1779,7 @@ void VipPlayerDBAccess::saveToJsonInternal(bool show_messages)
 		if (m_events.size() &&
 		    !vipEventsToJsonFile(filename, m_events, &p)) { //! sendToJSON(filename,PPO, camera,device, pulse, m_events, before_send_list_type() << computeEventPolygons, &p)) {
 			if (show_messages)
-				QMessageBox::warning(nullptr, "Warning", "Failed to create JSON file!");
+				vipWarning( "Warning", "Failed to create JSON file!");
 			VIP_LOG_WARNING("Failed to create JSON file!");
 			return;
 		}
@@ -1834,7 +1831,7 @@ void VipPlayerDBAccess::uploadInternal(bool show_messages)
 	{
 		if (to_remove_from_DB.isEmpty() && to_send.isEmpty()) {
 			if (show_messages)
-				QMessageBox::information(nullptr, "Uploading", "No modifications to upload!");
+				vipInformation( "Uploading", "No modifications to upload!");
 			VIP_LOG_INFO("No modifications to upload!");
 			return;
 		}
@@ -1850,25 +1847,25 @@ void VipPlayerDBAccess::uploadInternal(bool show_messages)
 
 			if (PPO.isEmpty()) {
 				if (show_messages)
-					QMessageBox::warning(nullptr, "Warning", "Invalid user name");
+					vipWarning("Warning", "Invalid user name");
 				VIP_LOG_WARNING("Invalid user name");
 				return;
 			}
 			if (camera.isEmpty()) {
 				if (show_messages)
-					QMessageBox::warning(nullptr, "Warning", "Invalid camera name");
+					vipWarning("Warning", "Invalid camera name");
 				VIP_LOG_WARNING("Invalid camera name");
 				return;
 			}
 			if (device.isEmpty()) {
 				if (show_messages)
-					QMessageBox::warning(nullptr, "Warning", "Invalid device name");
+					vipWarning("Warning", "Invalid device name");
 				VIP_LOG_WARNING("Invalid device name");
 				return;
 			}
 			if (pulse <= 0) {
 				if (show_messages)
-					QMessageBox::warning(nullptr, "Warning", "Invalid experiment id value");
+					vipWarning("Warning", "Invalid experiment id value");
 				VIP_LOG_WARNING("Invalid experiment id value");
 				return;
 			}
@@ -1962,7 +1959,7 @@ void VipPlayerDBAccess::uploadInternal(bool show_messages)
 			// remove from db
 			if (to_remove_from_DB.size() && !vipRemoveFromDB(to_remove_from_DB)) {
 				if (show_messages)
-					QMessageBox::warning(nullptr, "Warning", "Unable to remove events from DB");
+					vipWarning("Warning", "Unable to remove events from DB");
 				VIP_LOG_WARNING("Unable to remove events from DB");
 				return;
 			}
@@ -1974,7 +1971,7 @@ void VipPlayerDBAccess::uploadInternal(bool show_messages)
 			p.setText("Send events to DB...");
 			if (to_send.size() && vipSendToDB(PPO, camera, device, pulse, to_send).size() == 0) {
 				if (show_messages)
-					QMessageBox::warning(nullptr, "Warning", "Failed to upload events!");
+					vipWarning("Warning", "Failed to upload events!");
 				VIP_LOG_WARNING("Failed to upload events!");
 				return;
 			}
@@ -1988,7 +1985,7 @@ void VipPlayerDBAccess::uploadInternal(bool show_messages)
 			// remove from db
 			if (to_remove_from_DB.size() && !vipRemoveFromDB(to_remove_from_DB)) {
 				if (show_messages)
-					QMessageBox::warning(nullptr, "Warning", "Unable to remove events from DB");
+					vipWarning("Warning", "Unable to remove events from DB");
 				VIP_LOG_WARNING("Unable to remove events from DB");
 				return;
 			}
@@ -2016,14 +2013,14 @@ void VipPlayerDBAccess::displayFromJsonFile()
 
 	QFile fin(filename);
 	if (!fin.open(QFile::ReadOnly)) {
-		QMessageBox::warning(nullptr, "Warning", "Failed to open JSON file!");
+		vipWarning("Warning", "Failed to open JSON file!");
 		return;
 	}
 
 	QByteArray ar = fin.readAll();
 	Vip_event_list evts = vipEventsFromJson(ar);
 	if (!evts.size()) {
-		QMessageBox::warning(nullptr, "Warning", "Unable to load events from JSON file!");
+		vipWarning("Warning", "Unable to load events from JSON file!");
 		return;
 	}
 
@@ -2038,13 +2035,13 @@ void VipPlayerDBAccess::displayFromDataBaseQuery(const VipEventQuery& query, boo
 
 	VipEventQueryResults res = vipQueryDB(query, &progress);
 	if (!res.isValid()) {
-		QMessageBox::warning(nullptr, "Warning", "Failed to retrieve events!");
+		vipWarning("Warning", "Failed to retrieve events!");
 		return;
 	}
 
 	VipFullQueryResult fres = vipFullQueryDB(res, &progress);
 	if (!fres.isValid()) {
-		QMessageBox::warning(nullptr, "Warning", "Failed to retrieve events!");
+		vipWarning("Warning", "Failed to retrieve events!");
 		return;
 	}
 
@@ -2125,14 +2122,14 @@ void VipPlayerDBAccess::displayFromDataBase()
 
 	VipEventQueryResults res = vipQueryDB(query, &progress);
 	if (!res.isValid()) {
-		QMessageBox::warning(nullptr, "Warning", "Failed to retrieve events!");
+		vipWarning("Warning", "Failed to retrieve events!");
 		return;
 	}
 
 	FullQuery fquery;
 	VipFullQueryResult fres = vipQueryDB(fquery, res, &progress);
 	if (!fres.isValid()) {
-		QMessageBox::warning(nullptr, "Warning", "Failed to retrieve events!");
+		vipWarning("Warning", "Failed to retrieve events!");
 		return;
 	}
 
@@ -2299,7 +2296,7 @@ void VipPlayerDBAccess::shapeDestroyed(VipPlotShape* sh)
 	}
 
 	// remove ALL drawn time line
-	if (VipDisplayPlayerArea* a = VipDisplayPlayerArea::fromChildWidget(m_player)) {
+	if (VipDisplayPlayerArea* a = VipDisplayPlayerArea::fromChild(m_player)) {
 		QList<VipTimeRangeListItem*> items = a->playWidget()->area()->findItems<VipTimeRangeListItem*>(QString(), 2, 1);
 		for (qsizetype i = 0; i < items.size(); ++i) {
 			if (/*VipEventDevice* dev =*/ qobject_cast<VipEventDevice*>(items[i]->device())) {
@@ -2318,7 +2315,7 @@ void VipPlayerDBAccess::resetDrawEventTimeLine()
 	for (qsizetype i = 0; i < shapes.size(); ++i) {
 		pshapes[shapes[i]->rawData().group()].append(shapes[i]);
 	}
-	if (VipDisplayPlayerArea* a = VipDisplayPlayerArea::fromChildWidget(m_player)) {
+	if (VipDisplayPlayerArea* a = VipDisplayPlayerArea::fromChild(m_player)) {
 		QList<VipTimeRangeListItem*> items = a->playWidget()->area()->findItems<VipTimeRangeListItem*>(QString(), 2, 1);
 		for (qsizetype i = 0; i < items.size(); ++i) {
 			if (VipEventDevice* dev = qobject_cast<VipEventDevice*>(items[i]->device())) {
@@ -2341,7 +2338,7 @@ void VipPlayerDBAccess::itemSelected(VipPlotItem*)
 	for (qsizetype i = 0; i < shapes.size(); ++i) {
 		pshapes[shapes[i]->rawData().group()].append(shapes[i]);
 	}
-	if (VipDisplayPlayerArea* a = VipDisplayPlayerArea::fromChildWidget(m_player)) {
+	if (VipDisplayPlayerArea* a = VipDisplayPlayerArea::fromChild(m_player)) {
 		QList<VipTimeRangeListItem*> items = a->playWidget()->area()->findItems<VipTimeRangeListItem*>(QString(), 2, 1);
 		for (qsizetype i = 0; i < items.size(); ++i) {
 			if (VipEventDevice* dev = qobject_cast<VipEventDevice*>(items[i]->device())) {
@@ -2562,7 +2559,7 @@ void VipPlayerDBAccess::sendManualAnnotationToJson()
 	Vip_event_list to_send = m_annotation->generateShapes(&p, &error);
 	if (to_send.isEmpty()) {
 		if (error.size())
-			QMessageBox::warning(nullptr, "Warning", error);
+			vipWarning("Warning", error);
 		return;
 	}
 
@@ -2578,7 +2575,7 @@ void VipPlayerDBAccess::sendManualAnnotationToJson()
 	to_send.first().first().attribute("experiment_id").value< Vip_experiment_id>(),
 	to_send, before_send_list_type() << computeEventPolygons, &p))*/
 	{
-		QMessageBox::warning(nullptr, "Error", "An error occured while saving manual annotation");
+		vipWarning("Error", "An error occured while saving manual annotation");
 		return;
 	}
 }
@@ -2596,7 +2593,7 @@ void VipPlayerDBAccess::sendManualAnnotation()
 	Vip_event_list to_send = m_annotation->generateShapes(&p, &error);
 	if (to_send.isEmpty()) {
 		if (error.size())
-			QMessageBox::warning(nullptr, "Warning", error);
+			vipWarning("Warning", error);
 		return;
 	}
 
@@ -2607,7 +2604,7 @@ void VipPlayerDBAccess::sendManualAnnotation()
 					to_send,
 					&p);
 	if (ids.size() == 0) {
-		QMessageBox::warning(nullptr, "Error", "An error occured while sending manual annotation");
+		vipWarning("Error", "An error occured while sending manual annotation");
 		return;
 	}
 

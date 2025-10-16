@@ -377,8 +377,8 @@ public:
 
 VipResizeItem::VipResizeItem(const VipText& title)
   : VipPlotItem(title)
-  , d_data(new PrivateData())
 {
+	VIP_CREATE_PRIVATE_DATA();
 	this->setRenderHints(QPainter::RenderHints());
 	this->setAcceptHoverEvents(true);
 	this->setFlag(QGraphicsItem::ItemIsFocusable, true);

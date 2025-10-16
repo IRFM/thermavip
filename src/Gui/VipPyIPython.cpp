@@ -551,7 +551,7 @@ public:
 VipIPythonShellProcess::VipIPythonShellProcess(QObject* parent)
   : QProcess(parent)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 	d_data->mem = nullptr;
 	d_data->timeout = 3000;
 	d_data->embedded = false;
@@ -1106,7 +1106,7 @@ public:
 VipIPythonShellWidget::VipIPythonShellWidget(int font_size, const QString& style, QWidget* parent)
   : QWidget(parent)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 	d_data->font_size = font_size;
 	d_data->style = style;
 	d_data->widget = nullptr;
@@ -1227,7 +1227,7 @@ VipIPythonTabBar::VipIPythonTabBar(VipIPythonTabWidget* parent)
 	setIconSize(QSize(18, 18));
 	setMouseTracking(true);
 
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 	d_data->tabWidget = parent;
 
 	connect(this, SIGNAL(currentChanged(int)), this, SLOT(updateIcons()));
@@ -1471,7 +1471,7 @@ public:
 VipIPythonTabWidget::VipIPythonTabWidget(QWidget* parent)
   : QTabWidget(parent)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 	d_data->timer.setSingleShot(true);
 	d_data->timer.setInterval(500);
 	connect(&d_data->timer, SIGNAL(timeout()), this, SLOT(updateTab()));

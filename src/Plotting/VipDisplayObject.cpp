@@ -39,6 +39,7 @@
 #include "VipSleep.h"
 #include "VipUniqueId.h"
 #include "VipXmlArchive.h"
+#include "VipStandardProcessing.h"
 
 #include <QCoreApplication>
 #include <QWaitCondition>
@@ -57,7 +58,7 @@ namespace Vip
 
 		// Small class used to speedup plot items display
 		// by gathering calls to VipDisplayObject::display()
-		// and unloading main the event loop.
+		// and unloading the main event loop.
 		class ItemDirtyNotifier
 		{
 			bool pendingDirty{ false };
@@ -114,6 +115,7 @@ public:
 	bool visible;
 	bool first;
 	bool updateOnHidden;
+	bool empty = true;
 	QString playerTitle; // update parent VipAbstractPlayer title
 	qint64 previousDisplayTime;
 	qint64 lastTitleUpdate;
@@ -130,7 +132,7 @@ public:
 VipDisplayObject::VipDisplayObject(QObject* parent)
   : VipProcessingObject(parent)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 
 	this->setScheduleStrategies(Asynchronous);
 	inputAt(0)->setListType(VipDataList::FIFO, VipDataList::None);
@@ -188,8 +190,12 @@ void VipDisplayObject::apply()
 	}
 	if (!d_data->visible && !d_data->updateOnHidden) {
 		// clear input buffer
-		inputAt(0)->allData();
-		return;
+		if (d_data->empty)
+			d_data->empty = false;
+		else {
+			inputAt(0)->allData();
+			return;
+		}
 	}
 	if (!isEnabled() || !inputAt(0)->hasNewData())
 		return;
@@ -357,7 +363,7 @@ public:
 VipDisplayPlotItem::VipDisplayPlotItem(QObject* parent)
   : VipDisplayObject(parent)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 	connect(&d_data->format_timer, SIGNAL(timeout()), this, SLOT(internalFormatItem()));
 }
 
@@ -389,13 +395,13 @@ VipPlotItem* VipDisplayPlotItem::item() const
 			QMetaObject::invokeMethod(
 			  _this,
 			  [display,plot]() {
-				  if (display && plot && static_cast<VipDisplayObject*>(display.get())->widget())
-					  VipFDDisplayObjectSetItem().callAllMatch(display.get(), plot.get());
+				  if (display && plot && static_cast<VipDisplayObject*>(display.data())->widget())
+					  VipFDDisplayObjectSetItem().callAllMatch(display.data(), plot.data());
 			  },
 			  Qt::QueuedConnection);
 		}
 		else if (this->widget())
-			VipFDDisplayObjectSetItem().callAllMatch(this, item);
+			VipFDDisplayObjectSetItem().callAllMatch(const_cast<VipDisplayPlotItem*>(this), (item));
 	}
 	return item;
 }
@@ -474,7 +480,9 @@ void VipDisplayPlotItem::axesChanged(VipPlotItem* it)
 		auto notifier = a->notifier();
 		if (!notifier)
 			a->setNotifier(Vip::detail::ItemDirtyNotifierPtr::create());
+		
 	}
+	this->checkVisibility();
 }
 
 
@@ -637,21 +645,6 @@ bool VipDisplayPlotItem::isVisible() const
 		else if (!player->isEnabled())
 			return false;
 
-		// if the top level VipMultiDragWidget is minimized or another top level VipMultiDragWidget is maximized, return false
-		/* if (VipBaseDragWidget* bd = VipBaseDragWidget::fromChild(player))
-		{
-			if (bd->isHidden())
-				return false;
-			if(VipMultiDragWidget * mw = bd->validTopLevelMultiDragWidget())
-			{
-				if(mw->isMinimized())
-					return false;
-				else if(VipMultiDragWidget * maximized = VipDragWidgetHandler::find(mw->parentWidget())->maximizedMultiDragWidgets())
-					if(maximized != mw)
-						return false;
-			}
-		}*/
-
 		return true;
 	}
 	return false;
@@ -685,10 +678,10 @@ public:
 VipDisplayCurve::VipDisplayCurve(QObject* parent)
   : VipDisplayPlotItem(parent)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 	setItem(new VipPlotCurve());
 	item()->setAutoMarkDirty(false);
-	this->propertyName("Sliding_time_window")->setData(-1.);
+	this->propertyName("Sliding_time_window")->setData(VipNumericValueToPointVector::defaultSlidingTimeWindow());
 }
 
 VipDisplayCurve::~VipDisplayCurve()
@@ -773,7 +766,7 @@ bool VipDisplayCurve::prepareForDisplay(const VipAnyDataList& lst)
 		curve->updateSamples([&](VipPointVector& vec) {
 			if (d_data->is_full_vector)
 				vec = vector;
-			else {
+			else if(vector.size()){
 				//remove all data with a time greater than sample
 				qsizetype erase_from = vec.size();
 				for (qsizetype i = vec.size() - 1; i >= 0; --i) {
@@ -785,8 +778,8 @@ bool VipDisplayCurve::prepareForDisplay(const VipAnyDataList& lst)
 				vec.erase(vec.begin() + erase_from, vec.end());
 				vec.append(vector);
 			}
-
-			if (window > 0 && vec.size() && !d_data->is_full_vector) {
+			//TEST: apply windowing to ALL signal
+			if (window > 0 && vec.size() /*&& !d_data->is_full_vector*/) {
 				// convert to nanoseconds
 				window *= 1000000000;
 				for (int i = 0; i < vec.size(); ++i) {
@@ -946,7 +939,7 @@ public:
 VipDisplayImage::VipDisplayImage(QObject* parent)
   : VipDisplayPlotItem(parent)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 	setItem(new VipPlotSpectrogram());
 	item()->setSelectedPen(Qt::NoPen);
 	item()->setAutoMarkDirty(false);

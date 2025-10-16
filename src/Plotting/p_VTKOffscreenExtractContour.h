@@ -99,6 +99,7 @@ public Q_SLOTS:
 	*/
 	void Update();
 	void ForceUpdate();
+	void Reset();
 
 private:
 	void Execute();
@@ -106,7 +107,7 @@ private:
 	qint64 currentTime();
 
 	
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 Q_DECLARE_OPERATORS_FOR_FLAGS(OffscreenExtractContour::States)

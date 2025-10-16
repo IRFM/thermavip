@@ -25,7 +25,7 @@ public:
 VipTextSearchBar::VipTextSearchBar(QWidget* parent)
   : QToolBar(parent)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 	d_data->foundEnd = d_data->foundStart = d_data->line = 0;
 	d_data->restartFromCursor = true;
 	this->addSeparator();
@@ -406,7 +406,7 @@ public:
 VipTabEditor::VipTabEditor(Qt::Orientation tool_bar_orientation, QWidget* parent)
   : QWidget(parent)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 
 	d_data->tab.setTabsClosable(true);
 	d_data->unique = false;
@@ -820,7 +820,7 @@ void VipTabEditor::aboutToClose(int index)
 	}
 
 	if (ask_for_save) {
-		if (QMessageBox::question(this, "Save before closing", "Do you want to save editor's content before closing it?", QMessageBox::Yes | QMessageBox::No) == QMessageBox::Yes) {
+		if (vipQuestion( "Save before closing", "Do you want to save editor's content before closing it?", QMessageBox::Yes | QMessageBox::No) == QMessageBox::Yes) {
 			save(editor(index));
 		}
 	}

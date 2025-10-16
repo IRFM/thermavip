@@ -38,6 +38,7 @@
 #include <QVector>
 
 #include "VipBoxStyle.h"
+#include "VipPimpl.h"
 
 /// \addtogroup Plotting
 /// @{
@@ -214,7 +215,7 @@ private:
 	bool hasHeightForWidth() const;
 
 	
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 /// @}

@@ -91,7 +91,7 @@ public:
 VipProcessingObjectTree::VipProcessingObjectTree(QWidget* parent)
   : QTreeWidget(parent)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 
 	// behavior
 	this->setSelectionMode(QAbstractItemView::ExtendedSelection);
@@ -247,7 +247,7 @@ public:
 VipProcessingObjectMenu::VipProcessingObjectMenu(QWidget* parent)
   : VipDragMenu(parent)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 
 	this->setToolTipsVisible(true);
 

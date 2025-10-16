@@ -236,7 +236,7 @@ static ArraySpace arraySpaceAndData(const VipNDArray& ar)
 {
 	ArraySpace res;
 	
-	if (vipIsImageArray(ar)) {
+	if (vipIsImageArray(ar) || ar.dataType() == qMetaTypeId<VipRGB>()) {
 		int dim_count = 3;
 		hsize_t dims[3] = { (hsize_t)ar.shape(0), (hsize_t)ar.shape(1), 4 };
 		res.space = H5Object(H5Screate_simple(dim_count, dims, dims), H5Object::Space);
@@ -611,7 +611,7 @@ public:
 VipH5Archive::VipH5Archive()
   : VipArchive(Binary, MetaDataOnContent | MetaDataOnNodeStart)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 }
 VipH5Archive::VipH5Archive(QIODevice* d)
   : VipH5Archive()
@@ -830,7 +830,7 @@ void VipH5Archive::doStart(QString& name, QVariantMap& metadata, bool read_metad
 		if (read_metadata) {
 			QByteArray gr_bname = gr_name;
 			auto lst = listAttributes(gr, gr_bname.data());
-			for (const QByteArray attrname : lst) {
+			for (const QByteArray &attrname : lst) {
 				QVariant v = readAttribute(gr.id(), attrname.data());
 				if (v.userType() != 0)
 					metadata.insert(attrname, v);
@@ -898,8 +898,14 @@ static QVariant toNDArrayOrBytes(const QVariant& v)
 
 	if (v.userType() == qMetaTypeId<VipNDArray>() ) {
 		VipNDArray ar = v.value<VipNDArray>();
-		if (!vipIsImageArray(ar))
-			return QVariant::fromValue(ar.dense());
+		if (!vipIsImageArray(ar)) {
+			ar = ar.dense();
+			if (ar.dataType() == qMetaTypeId<VipRGB>()) {
+				VipNDArrayTypeView<VipRGB> view = ar;
+				return QVariant::fromValue(VipNDArray(VipNDArrayTypeView<uchar>((uchar*)view.ptr(), vipVector(ar.shape(0), ar.shape(1), 4))));
+			}
+			return QVariant::fromValue(ar);
+		}
 		return QVariant::fromValue(VipNDArray(VipNDArrayTypeView<uchar>((uchar*)vipToImage(ar).constBits(), vipVector(ar.shape(0), ar.shape(1), 4))));
 	}
 

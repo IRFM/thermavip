@@ -74,7 +74,7 @@ protected:
 	virtual void apply();
 
 private:
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 VIP_REGISTER_QOBJECT_METATYPE(VipPyNPZDevice*)
@@ -115,7 +115,7 @@ protected:
 	virtual void apply();
 
 private:
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 VIP_REGISTER_QOBJECT_METATYPE(VipPyMATDevice*)

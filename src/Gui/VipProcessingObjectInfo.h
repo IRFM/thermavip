@@ -291,7 +291,7 @@ protected:
 private:
 	QString content() const;
 	
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 VIP_GUI_EXPORT VipProcessingObjectInfo* vipGetProcessingObjectInfo(VipMainWindow* window = nullptr);

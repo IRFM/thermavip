@@ -10,7 +10,7 @@ set(CMAKE_AUTOMOC ON)
 include(GNUInstallDirs)
 
 add_library(VipLogging SHARED
-    VipLogging.cpp VipLogging.h
+    VipLogging.cpp VipLogging.h VipPimpl.h VipPimpl.cpp
 )
 target_compile_definitions(VipLogging PRIVATE
     VIP_BUILD_LOGGING_LIB

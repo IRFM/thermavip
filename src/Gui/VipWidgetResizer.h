@@ -32,9 +32,10 @@
 #ifndef VIP_WIDGET_RESIZER_H
 #define VIP_WIDGET_RESIZER_H
 
-#include <qwidget.h>
+#include <QWidget>
 
 #include "VipConfig.h"
+#include "VipPimpl.h"
 
 /// @brief Helper object that allows a QWidget to be resizable 
 /// using its borders, including non top level widgets.
@@ -79,7 +80,7 @@ private:
 	QPoint validPosition(const QPoint& pt, bool* ok = nullptr) const;
 	QSize validSize(const QSize& s, bool* ok = nullptr) const;
 	
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 #endif

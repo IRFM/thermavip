@@ -63,7 +63,7 @@ public:
 VipGenericRecorder::VipGenericRecorder(QObject* parent)
   : VipIODevice(parent)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 	this->setEnabled(false);
 	this->setScheduleStrategy(AcceptEmptyInput);
 	this->topLevelInputAt(0)->toMultiInput()->setListType(VipDataList::FIFO, VipDataList::None);
@@ -460,7 +460,7 @@ public:
 VipRecordWidget::VipRecordWidget(InfosLocation loc, QWidget* parent)
   : QWidget(parent)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 	d_data->previousBytes = 0;
 	d_data->recordInfos = FramesAndInputSize;
 	d_data->startTime = 0;

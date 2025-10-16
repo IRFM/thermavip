@@ -91,7 +91,7 @@ protected:
 	virtual void mergeData(int, int);
 
 private:
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 /// @brief Python processing class with one or more inputs and one output.
@@ -223,7 +223,7 @@ protected:
 	virtual QVariant initializeProcessing(const QVariant& v);
 
 private:
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 VIP_REGISTER_QOBJECT_METATYPE(VipPyProcessing*)

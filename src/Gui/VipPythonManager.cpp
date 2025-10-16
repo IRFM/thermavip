@@ -416,6 +416,7 @@ VipPythonManager::VipPythonManager()
 	  
 	//add the generators 
 
+	vipGetMainWindow()->generateMenu()->addSeparator();
 	QAction * complex_generator = vipGetMainWindow()->generateMenu()->addAction("Generate signal from Python script...");
 	complex_generator->setToolTip("Create a streaming/temporal video or plot from a Python script");
 	connect(complex_generator, &QAction::triggered, this, detail::pyCreateComplexPyGenerator);

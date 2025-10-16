@@ -122,7 +122,7 @@ protected:
 	/// @brief Implement selectors 'title' and 'legend'
 	virtual bool hasState(const QByteArray& state, bool enable) const override;
 	
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 /// Vertically stacked axes for cartesian system used by VipVMultiPlotArea2D
@@ -184,7 +184,7 @@ private:
 	double titleExtent() const;
 
 	
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 VIP_REGISTER_QOBJECT_METATYPE(VipAxisBase*)

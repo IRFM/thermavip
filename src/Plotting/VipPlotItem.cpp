@@ -65,7 +65,7 @@ public:
 
 VipPlotItemDynamicProperty::VipPlotItemDynamicProperty(const QString& name)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 	d_data->name = name;
 }
 VipPlotItemDynamicProperty::~VipPlotItemDynamicProperty()
@@ -160,7 +160,7 @@ public:
 
 VipPaintItem::VipPaintItem(QGraphicsObject* obj)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 	d_data->graphicsObject = obj;
 	d_data->graphicsObject->setProperty("VipPaintItem", QVariant::fromValue(this));
 }
@@ -738,8 +738,8 @@ VipPlotItem::VipPlotItem(const VipText& title)
   : QOpenGLGraphicsObject()
   , VipPaintItem(this)
   , VipRenderObject(this)
-  , d_data(new PrivateData())
 {
+	VIP_CREATE_PRIVATE_DATA();
 	setTitle(title);
 	this->setFlag(ItemIsSelectable);
 	this->setItemAttribute(HasLegendIcon, true);
@@ -771,11 +771,13 @@ VipPlotItem::~VipPlotItem()
 		if (d_data->axes[i])
 			d_data->axes[i]->removeItem(this);
 	}
+	d_data->axes.clear(); //TEST
 	// remove item's color map
 	if (d_data->axisColorMap) {
 		disconnect(d_data->axisColorMap, SIGNAL(valueChanged(double)), this, SLOT(update()));
 		disconnect(d_data->axisColorMap, SIGNAL(scaleDivChanged(bool)), this, SLOT(update()));
 		d_data->axisColorMap->removeItem(this);
+		d_data->axisColorMap = nullptr;
 	}
 
 	this->blockSignals(false);
@@ -813,20 +815,13 @@ VipCoordinateSystemPtr VipPlotItem::sceneMap() const
 
 		PrivateData* _data = const_cast<PrivateData*>(d_data.get());
 
-		VipCoordinateSystemPtr tmp(vipBuildCoordinateSystem(axes(), d_data->type));
+		const auto ax = axes();
+		VipCoordinateSystemPtr tmp(ax.isEmpty() ? nullptr : vipBuildCoordinateSystem(ax, d_data->type));
 		SHARED_PTR_NAMESPACE::atomic_store(&_data->sceneMap, tmp ? tmp : VipCoordinateSystemPtr(new VipNullCoordinateSystem(axes())));
-		//_data->sceneMap =  tmp ? tmp : VipCoordinateSystemPtr(new VipNullCoordinateSystem(axes()));
 		_data->dirtyCoordinateSystem = 0;
 	}
 
 	VipCoordinateSystemPtr res = SHARED_PTR_NAMESPACE::atomic_load(&d_data->sceneMap);
-
-	// Unused anymore as the VipPlotItemComposite set the sceneMap itself
-	/* if (res->type() == VipCoordinateSystem::Null) {
-		QVariant v = this->property("VipPlotItemComposite");
-		if (!v.isNull())
-			return v.value<VipPlotItemComposite*>()->sceneMap();
-	}*/
 	return res;
 }
 
@@ -2741,7 +2736,7 @@ public:
 VipPlotItemData::VipPlotItemData(const VipText& title)
   : VipPlotItem(title)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 	connect(this, SIGNAL(colorMapChanged(VipPlotItem*)), this, SLOT(resetData()), Qt::DirectConnection);
 }
 

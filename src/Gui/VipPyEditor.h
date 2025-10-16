@@ -63,7 +63,7 @@ protected:
 private:
 	bool isRunning();
 	
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 

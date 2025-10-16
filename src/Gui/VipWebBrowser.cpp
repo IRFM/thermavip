@@ -214,7 +214,7 @@ VipWebBrowser::VipWebBrowser(QWidget* parent)
   : VipWidgetPlayer(makeWebBrowserWidget(), parent)
 {
 	this->setObjectName("VipWebBrowser");
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 	d_data->view = widget()->findChild<QWebEngineView*>();
 	d_data->bar = widget()->findChild<VipWebBrowserToolBar*>();
 

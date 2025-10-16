@@ -33,7 +33,9 @@
 #define VIP_TIMER_H
 
 #include "VipConfig.h"
-#include <qthread.h>
+#include "VipPimpl.h"
+
+#include <QThread>
 
 /// A timer class similar to the QTimer one, except that it is supports concurrent access and start/stop from any thread.
 class VIP_CORE_EXPORT VipTimer : public QThread
@@ -76,7 +78,7 @@ protected:
 
 private:
 	
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 #endif

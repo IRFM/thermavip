@@ -34,6 +34,10 @@
 #include "VipUpdate.h"
 #include "VipVisualizeDB.h"
 
+#ifdef VIP_WITH_VTK
+#include "vtkObject.h"
+#endif
+
 #include <qsurfaceformat.h>
 
 #if !defined(_WIN32) && (defined(__unix__) || defined(__unix) || (defined(__APPLE__) && defined(__MACH__)))
@@ -48,9 +52,7 @@
 
 #include <QWebEngineUrlScheme>
 
-
 #endif
-
 
 static void myMessageOutput(QtMsgType type, const QMessageLogContext& context, const QString& msg)
 {
@@ -71,8 +73,8 @@ static void myMessageOutput(QtMsgType type, const QMessageLogContext& context, c
 	}
 	return;
 }
- 
-static void applyAppFont(QWidget * top, const QFont& previous)
+
+static void applyAppFont(QWidget* top, const QFont& previous)
 {
 	QFont font = qApp->font();
 	QString family = font.family();
@@ -90,75 +92,32 @@ static void applyAppFont(QWidget * top, const QFont& previous)
 	}
 }
 
-#include "VipMemoryPool.h"
-
 int main(int argc, char** argv)
 {
-	/*using type = std::string;
-	VipMemoryPool<type,VipNullLock> pool;
-
-	std::vector<type*> vv(1000000);
-
-	getchar();
-	auto st = QDateTime::currentMSecsSinceEpoch();
-	
-	for (size_t i = 0; i < vv.size(); ++i) {
-
-		vv[0] = pool.allocate();
-		memset(vv[0], 0, sizeof(type));
-		pool.deallocate(vv[0]);
-	}
-	//for (size_t i = 0; i < vv.size(); ++i)
-	//	pool.deallocate(vv[i]);
-
-	pool.clear();
-
-	auto el = QDateTime::currentMSecsSinceEpoch() - st;
-	printf("pool: %i ms\n", (int)el);
-
-	getchar();
-
-	st = QDateTime::currentMSecsSinceEpoch();
-
-	for (size_t i = 0; i < vv.size(); ++i) {
-
-		vv[0] = (type*)malloc(sizeof(type));
-		memset(vv[0], 0, sizeof(type));
-		free(vv[0]);
-	}
-	//for (size_t i = 0; i < vv.size(); ++i)
-	//	free(vv[i]);
-	
-
-	el = QDateTime::currentMSecsSinceEpoch() - st;
-	printf("malloc: %i ms\n", (int)el);
-
-	getchar();
-	return 0;*/
-	
-
-	// Load thermavip.env
-	QString env_file = vipGetDataDirectory() + "thermavip/thermavip.env";
-	vip_debug("env file: %s\n", env_file.toLatin1().data());
-	if (!QFileInfo(env_file).exists()) {
-		env_file = QFileInfo(QString(argv[0])).canonicalPath();
-		env_file.replace("\\", "/");
-		if (!env_file.endsWith("/"))
-			env_file += "/";
-		env_file += "thermavip.env";
-	}
-	if (QFileInfo(env_file).exists()) {
-		// Set env variables
-		QFile fin(env_file);
-		if (fin.open(QFile::ReadOnly | QFile::Text)) {
-			QTextStream str(&fin);
-			while (true) {
-				QString line = str.readLine();
-				if (line.isEmpty())
-					break;
-				QStringList lst = line.split(" ", VIP_SKIP_BEHAVIOR::SkipEmptyParts);
-				if (lst.size() == 2)
-					qputenv(lst[0].toLatin1().data(), lst[1].toLatin1());
+	{
+		// Load thermavip.env
+		QString env_file = vipGetDataDirectory() + "thermavip/thermavip.env";
+		vip_debug("env file: %s\n", env_file.toLatin1().data());
+		if (!QFileInfo(env_file).exists()) {
+			env_file = QFileInfo(QString(argv[0])).canonicalPath();
+			env_file.replace("\\", "/");
+			if (!env_file.endsWith("/"))
+				env_file += "/";
+			env_file += "thermavip.env";
+		}
+		if (QFileInfo(env_file).exists()) {
+			// Set env variables
+			QFile fin(env_file);
+			if (fin.open(QFile::ReadOnly | QFile::Text)) {
+				QTextStream str(&fin);
+				while (true) {
+					QString line = str.readLine();
+					if (line.isEmpty())
+						break;
+					QStringList lst = line.split(" ", VIP_SKIP_BEHAVIOR::SkipEmptyParts);
+					if (lst.size() == 2)
+						qputenv(lst[0].toLatin1().data(), lst[1].toLatin1());
+				}
 			}
 		}
 	}
@@ -187,10 +146,19 @@ int main(int argc, char** argv)
 	for (int i = 0; i < argc; ++i) {
 		args << QString(argv[i]);
 	}
-	VipCommandOptions::instance().parse(args); 
+	VipCommandOptions::instance().parse(args);
 
 	if (VipCommandOptions::instance().count("debug")) {
 		vip_log_detail::_vip_set_enable_debug(true);
+
+#ifdef VIP_WITH_VTK
+		vtkObject::GlobalWarningDisplayOn();
+#endif
+	}
+	else {
+#ifdef VIP_WITH_VTK
+		vtkObject::GlobalWarningDisplayOff();
+#endif
 	}
 
 	if (VipCommandOptions::instance().count("scale")) {
@@ -202,7 +170,7 @@ int main(int argc, char** argv)
 	QCoreApplication::addLibraryPath(QFileInfo(QString(argv[0])).canonicalPath());
 
 	QDir::setCurrent(QFileInfo(QString(argv[0])).canonicalPath());
- 
+
 	// qputenv("QSG_INFO", "1");
 	// qputenv("QT_OPENGL", "desktop");
 	// qputenv("QT_OPENGL", "angle");
@@ -230,9 +198,9 @@ int main(int argc, char** argv)
 	sc.setFlags(QWebEngineUrlScheme::SecureScheme);
 	QWebEngineUrlScheme::registerScheme(sc);
 #endif
-	 
+
 	QApplication app(argc, argv);
-	app.setAttribute(Qt::AA_DontCreateNativeWidgetSiblings);//TEST
+	app.setAttribute(Qt::AA_DontCreateNativeWidgetSiblings); // TEST
 
 	bool force_font = false;
 #if !defined(_WIN32) && (defined(__unix__) || defined(__unix) || (defined(__APPLE__) && defined(__MACH__)))
@@ -291,7 +259,6 @@ int main(int argc, char** argv)
 
 	QString app_dir = QFileInfo(vipAppCanonicalPath()).canonicalPath();
 
-
 #ifdef _MSC_VER
 #ifdef NDEBUG
 	QDir::setCurrent(QFileInfo(vipAppCanonicalPath()).canonicalPath());
@@ -341,7 +308,6 @@ int main(int argc, char** argv)
 	}
 
 	vip_debug("Application font: %s\n", app.font().family().toLatin1().data());
-
 
 	QString plugin_path = QApplication::applicationDirPath();
 	plugin_path.replace("\\", "/");
@@ -487,7 +453,7 @@ int main(int argc, char** argv)
 				if (update.isDownloadFinished()) {
 					if (!no_splashscreen)
 						splash->hide();
-					QMessageBox::StandardButton button = QMessageBox::question(nullptr, "Update Thermavip", "A Thermavip update is ready to be installed.\nInstall now?");
+					QMessageBox::StandardButton button = vipQuestion( "Update Thermavip", "A Thermavip update is ready to be installed.\nInstall now?");
 					if (button == QMessageBox::Yes) {
 						QString procname = QFileInfo(app.arguments()[0]).fileName();
 						// QProcess::startDetached(VipUpdate::getUpdateProgram() + " -u --command " + procname + " -o ./");
@@ -504,7 +470,6 @@ int main(int argc, char** argv)
 #endif
 
 #ifdef _WIN32
-
 
 	// On windows only, create register key to support url on the form 'thermavip://' in browsers
 
@@ -571,7 +536,7 @@ int main(int argc, char** argv)
 	// Detect dark skin
 	QColor c = vipWidgetTextBrush(vipGetMainWindow()).color();
 	bool is_dark = c.red() > 200 && c.green() > 200 && c.blue() > 200;
-	vip_debug("Dark skin detected: %i\n",(int)is_dark);
+	vip_debug("Dark skin detected: %i\n", (int)is_dark);
 #ifdef WIN32
 	// On windows, we might need to specify the QtWebEngineProcess path
 #ifdef NDEBUG
@@ -584,15 +549,13 @@ int main(int argc, char** argv)
 #endif
 	// Chromium flags
 	QByteArray chromium_flags;
-	vip_debug("Platform name: %s\n",app.platformName().toLatin1().data());
-	if(app.platformName() == "xcb" || app.platformName() == "wayland")
+	vip_debug("Platform name: %s\n", app.platformName().toLatin1().data());
+	if (app.platformName() == "xcb" || app.platformName() == "wayland")
 		// disable gpu, or possible crash
 		chromium_flags += "--disable-gpu ";
-	if(is_dark)
+	if (is_dark)
 		chromium_flags += "--blink-settings=forceDarkModeEnabled=true,forceDarkModeImagePolicy=2,forceDarkModePagePolicy=1,forceDarkModeInversionAlgorithm=4";
 	qputenv("QTWEBENGINE_CHROMIUM_FLAGS", chromium_flags);
-
-	
 
 	// Load plugins
 
@@ -684,14 +647,16 @@ int main(int argc, char** argv)
 				vipGetMainWindow()->showMaximized();
 				QCoreApplication::processEvents();
 				if (!last_session) {
-					QMessageBox box(
-					  QMessageBox::Question, "Load previous session", "Do you want to load the last session?", QMessageBox::Yes | QMessageBox::No, vipGetMainWindow());
-					
-					if (box.exec() == QMessageBox::Yes)
+					if(QMessageBox::Yes == vipQuestion("Load previous session", "Do you want to load the last session?"))
 						last_session = true;
+
+					/*QMessageBox box(
+					  QMessageBox::Question, "Load previous session", "Do you want to load the last session?", QMessageBox::Yes | QMessageBox::No, vipGetMainWindow());
+
+					if (box.exec() == QMessageBox::Yes)
+						last_session = true;*/
 				}
-				if (last_session)
-				{
+				if (last_session) {
 					load_session = filename;
 				}
 			}
@@ -731,7 +696,7 @@ int main(int argc, char** argv)
 	VipLogging::instance().close();
 
 	if (vipIsRestartEnabled()) {
-		//QProcess::startDetached(VipUpdate::getUpdateProgram() + " --hide --command Thermavip -l " + QString::number(vipRestartMSecs()));
+		// QProcess::startDetached(VipUpdate::getUpdateProgram() + " --hide --command Thermavip -l " + QString::number(vipRestartMSecs()));
 		QProcess::startDetached(VipUpdate::getUpdateProgram(),
 					QStringList() << "--hide"
 						      << "--command"

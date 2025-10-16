@@ -403,7 +403,7 @@ void VipRecordWindow::recordCurrentImage()
 VipRecordWindow::VipRecordWindow(QWidget* parent)
   : QWidget(parent)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 
 	QGridLayout* lay = new QGridLayout();
 
@@ -1044,7 +1044,7 @@ VipRegisterRecordWindow::~VipRegisterRecordWindow() {}
 VipRegisterRecordWindow::VipRegisterRecordWindow(VipMainWindow * win)
   : QObject(win)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 
 	// retrieve the list of available video devices
 	QStringList lst = VipMPEGLoader::listDevices();

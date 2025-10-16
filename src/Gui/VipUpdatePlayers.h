@@ -84,6 +84,7 @@ private Q_SLOTS:
 	void cropAdded(const QPointF& start, const QPointF& end);
 	void updateMarkers();
 	void setHideMinimums(bool);
+	void handleDestroy();
 
 private:
 	QPointer<VipVideoPlayer> m_player;
@@ -159,7 +160,7 @@ public Q_SLOTS:
 
 private Q_SLOTS:
 	void updateMarkers();
-	void stopMarkers(VipAbstractPlayer*);
+	void stopMarkers();
 
 private:
 	QPointer<VipPlotPlayer> m_player;

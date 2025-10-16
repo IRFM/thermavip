@@ -516,6 +516,12 @@ bool VipMapFileSystem::rename(const VipPath& src, const VipPath& dst, bool overw
 		return renamePath(src, dst);
 }
 
+/// @brief Download file or folder.
+bool VipMapFileSystem::download(const VipPath& src, const VipPath& dst)
+{
+	return this->downloadFile(src, dst);
+}
+
 bool VipMapFileSystem::copy(const VipPath& src, const VipPath& dst, bool overwrite, VipProgress* progress)
 {
 	if (dst.isDir() != src.isDir()) {
@@ -794,6 +800,7 @@ QIODevice* VipMapFileSystem::openPath(const VipPath&, QIODevice::OpenMode)
 #include <QStorageInfo>
 #include <qdatetime.h>
 #include <qdir.h>
+#include <QStandardPaths>
 
 // On Windows, having network mounted drive in unconnected state causes a LOT of problems.
 // It freezes calls to QFileInfo::exists and also cripple the icon provider.
@@ -804,6 +811,12 @@ VipPhysicalFileSystem::VipPhysicalFileSystem()
   : VipMapFileSystem(VipMapFileSystem::All)
 {
 	setObjectName("Local file system");
+}
+
+QString VipPhysicalFileSystem::homeDirectory() const
+{
+	const auto lst = QStandardPaths::standardLocations(QStandardPaths::HomeLocation);
+	return lst.isEmpty() ? QString() : lst.first();
 }
 
 QStringList VipPhysicalFileSystem::standardFileSystemAttributes()
@@ -831,16 +844,16 @@ bool VipPhysicalFileSystem::exists_timeout(const QString& path, int milli_timeou
 		return QFileInfo(path).exists();
 	}
 
-	std::atomic<bool> finished = false;
-	std::atomic<bool> exists = false;
-	std::thread* th = new std::thread([&]() {
+	std::shared_ptr<std::atomic<bool>> finished = std::make_shared < std::atomic<bool>>( false);
+	std::shared_ptr<std::atomic<bool>> exists = std::make_shared<std::atomic<bool>>(false);
+	std::thread* th = new std::thread([path,finished,exists]() {
 		QFileInfo info(path);
-		exists = info.exists();
-		finished = true;
+		*exists = info.exists();
+		*finished = true;
 	});
 
 	qint64 st = QDateTime::currentMSecsSinceEpoch();
-	while (QDateTime::currentMSecsSinceEpoch() - st < milli_timeout && !finished)
+	while (QDateTime::currentMSecsSinceEpoch() - st < milli_timeout && !*finished)
 		QThread::msleep(5);
 	if (QDateTime::currentMSecsSinceEpoch() - st >= milli_timeout && timed_out) {
 		_has_network_issue = true;
@@ -852,7 +865,7 @@ bool VipPhysicalFileSystem::exists_timeout(const QString& path, int milli_timeou
 	th->detach();
 	delete th;
 
-	return exists;
+	return *exists;
 #else
 	return QFileInfo(path).exists();
 #endif
@@ -993,6 +1006,7 @@ QIODevice* VipPhysicalFileSystem::openPath(const VipPath& path, QIODevice::OpenM
 #define _OPEN_ERROR(...)                                                                                                                                                                               \
 	{                                                                                                                                                                                              \
 		VIP_LOG_ERROR(__VA_ARGS__);                                                                                                                                                            \
+		vip_debug("%s\n", QString(__VA_ARGS__).toLatin1().data()) \
 		error = __VA_ARGS__;                                                                                                                                                                   \
 		finished = true;                                                                                                                                                                       \
 		proc.terminate();                                                                                                                                                                      \
@@ -1006,6 +1020,7 @@ public:
 	VipPath listPath;
 	VipPath getPath;
 	QString outFile;
+	QString home;
 	VipPathList result;
 	QByteArray address;
 	QByteArray password;
@@ -1014,6 +1029,7 @@ public:
 	QMutex mutex;
 	std::atomic<bool> finished;
 	std::atomic<bool> stop;
+	bool connected = false;
 
 	// list of path -> attributes
 	QMap<QString, QVariantMap> attributes;
@@ -1030,18 +1046,24 @@ public:
 		wait();
 	}
 
-	QString readOutput(QProcess& proc)
+	QString readOutput(QProcess& proc, const QString & in_reply = QString())
 	{
 		QString res;
 		while (true) {
 			if (proc.waitForReadyRead(100)) {
 
-				QString tmp = proc.readAllStandardOutput();
+				QString tmp = proc.readAll();
 				if (tmp.isEmpty())
 					return res;
 				res += tmp;
-				if (res.contains("psftp> "))
-					break;
+				if (res.contains("psftp> ")) {
+					if (in_reply.isEmpty())
+						break;
+					else if (res.contains(in_reply))
+						break;
+					else
+						res.clear(); //discard
+				}
 			}
 			if (proc.state() != QProcess::Running)
 				return QString();
@@ -1057,9 +1079,18 @@ public:
 	static bool waitForInput(QProcess& p)
 	{
 		while (true) {
-
-			if (!p.waitForReadyRead(2000))
+			auto start = QDateTime::currentMSecsSinceEpoch();
+			bool has_input = false;
+			while (QDateTime::currentMSecsSinceEpoch() - start < 20000) {
+				has_input = p.waitForReadyRead(200);
+				if (has_input)
+					break;
+				if (p.state() != QProcess::Running)
+					return false;
+			}
+			if (!has_input)
 				return false;
+			
 			QString tmp = p.readAllStandardOutput();
 			if (tmp.contains("psftp> "))
 				return true;
@@ -1084,18 +1115,18 @@ public:
 		proc.setProcessChannelMode(QProcess::MergedChannels);
 
 		QString cmd = "psftp"; //-pw " + password + "" + address;
-		proc.start(cmd, QStringList() << "-pw" << password << address);
+		proc.start(cmd, QStringList() << "-batch" << "-pw" << password << address);
 		if (!proc.waitForStarted(2000))
 			_OPEN_ERROR("Unable to connect to " + address + ", please check address and password");
 
 		if (proc.state() != QProcess::Running)
 			_OPEN_ERROR("Unable to connect to " + address + ", please check address and password");
 
-		QThread::msleep(100);
+		/* QThread::msleep(100);
 		proc.write("y\n");
 		if (!proc.waitForBytesWritten(4000))
 			_OPEN_ERROR("Unable to write to psftp process, please check address and password");
-
+		*/
 		if (!waitForInput(proc))
 			_OPEN_ERROR("Unable to read from psftp process, please check address and password");
 
@@ -1110,6 +1141,18 @@ public:
 
 		current_pwd.replace("Remote directory is ", "");
 		current_pwd.replace("\\", "/");
+
+		QList<QByteArray> lines = current_pwd.split('\n');
+		for (const QByteArray& ar : lines) {
+			if (ar.startsWith("psftp:"))
+				continue;
+			current_pwd = ar;
+			break;
+		}
+
+		current_pwd.replace("\r", "");
+		home = current_pwd;
+
 		QList<QByteArray> lst = current_pwd.split('/');
 		if (lst.size() && lst.first().isEmpty())
 			root = "/";
@@ -1130,14 +1173,17 @@ public:
 
 					proc.write(("get " + getPath.canonicalPath() + " " + outFile + "\n").toLatin1());
 					proc.waitForBytesWritten(2000);
-					QString res = readOutput(proc);
-					getPath = VipPath();
-					outFile.clear();
-					error.clear();
-					res.replace("\n", "");
+					QString res = readOutput(proc, getPath.canonicalPath());
+
 					if (!res.contains("=>"))
 						error = "Unable get remote file " + getPath.canonicalPath() + ": " + res;
+					else
+						error.clear();
 
+					getPath = VipPath();
+					outFile.clear();
+					res.replace("\n", "");
+					
 					finished = true;
 				}
 				if (!listPath.isEmpty()) {
@@ -1213,7 +1259,7 @@ public:
 VipSFTPFileSystem::VipSFTPFileSystem()
   : VipMapFileSystem(OpenRead | OpenText)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 }
 
 VipSFTPFileSystem::~VipSFTPFileSystem()
@@ -1234,6 +1280,7 @@ bool VipSFTPFileSystem::open(const QByteArray& addr)
 	d_data->address = addr;
 	d_data->stop = false;
 	d_data->finished = false;
+	d_data->attributes.clear();
 	d_data->start();
 
 	// wait for connected
@@ -1242,9 +1289,9 @@ bool VipSFTPFileSystem::open(const QByteArray& addr)
 	}
 
 	if (!d_data->error.isEmpty()) {
-		return false;
+		return d_data->connected = false;
 	}
-	return true;
+	return d_data->connected = true;
 }
 QByteArray VipSFTPFileSystem::address() const
 {
@@ -1252,12 +1299,17 @@ QByteArray VipSFTPFileSystem::address() const
 }
 bool VipSFTPFileSystem::isOpen() const
 {
-	return d_data->isRunning();
+	return d_data->connected && d_data->isRunning();
 }
 
 void VipSFTPFileSystem::setPassword(const QByteArray& pwd)
 {
 	d_data->password = pwd;
+}
+
+QString VipSFTPFileSystem::homeDirectory() const
+{
+	return d_data->home;
 }
 
 QStringList VipSFTPFileSystem::standardFileSystemAttributes()
@@ -1311,6 +1363,48 @@ VipPathList VipSFTPFileSystem::listPathContent(const VipPath& path)
 	}
 	return d_data->result;
 }
+
+bool VipSFTPFileSystem::downloadFile(const VipPath& path, const VipPath& out_path)
+{
+	if (!isOpen()) {
+		// TODO: check for password and ask if necessary
+		return false;
+	}
+
+	QString fname = out_path.canonicalPath();
+	if (out_path.isDir()) {
+		fname.replace("\\", "/");
+		if (!fname.endsWith("/"))
+			fname += "/";
+		fname += QFileInfo(path.canonicalPath()).fileName();
+	}
+
+	QMutexLocker lock(&d_data->mutex);
+	d_data->error.clear();
+	d_data->getPath = path;
+	d_data->outFile = fname;
+	d_data->finished = false;
+
+	/* VipProgress p;
+	p.setRange(0, outsize);
+	p.setCancelable(true);
+	p.setText("<b>Load file </b>" + QFileInfo(path.canonicalPath()).fileName());*/
+	while (!d_data->finished && d_data->isRunning()) {
+
+		// p.setValue(QFileInfo(fname).size());
+		vipSleep(5);
+
+		// if (p.canceled())
+		//	return nullptr;
+	}
+
+	if (!d_data->error.isEmpty()) {
+		VIP_LOG_ERROR(d_data->error);
+		return false;
+	}
+	return true;
+}
+
 QIODevice* VipSFTPFileSystem::openPath(const VipPath& path, QIODevice::OpenMode modes)
 {
 
@@ -1341,18 +1435,18 @@ QIODevice* VipSFTPFileSystem::openPath(const VipPath& path, QIODevice::OpenMode 
 		d_data->outFile = fname;
 		d_data->finished = false;
 
-		VipProgress p;
+		/* VipProgress p;
 		p.setRange(0, outsize);
 		p.setCancelable(true);
-		p.setText("<b>Load file </b>" + QFileInfo(path.canonicalPath()).fileName());
+		p.setText("<b>Load file </b>" + QFileInfo(path.canonicalPath()).fileName());*/
 		while (!d_data->finished && d_data->isRunning()) {
 
-			p.setValue(QFileInfo(fname).size());
+			//p.setValue(QFileInfo(fname).size());
 			vipSleep(5);
 
-			if (p.canceled()) {
-				return nullptr;
-			}
+			//if (p.canceled()) 
+			//	return nullptr;
+			
 		}
 	}
 

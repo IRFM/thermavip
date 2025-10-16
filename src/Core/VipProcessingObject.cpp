@@ -164,7 +164,7 @@ public:
 
 VipConnection::VipConnection()
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 }
 
 VipConnection::~VipConnection()
@@ -1279,7 +1279,7 @@ VipProcessingManager& VipProcessingManager::instance()
 
 VipProcessingManager::VipProcessingManager()
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 }
 
 void VipProcessingManager::add(VipDataList* lst)
@@ -2191,7 +2191,8 @@ VipProcessingObject* VipProcessingObject::Info::create() const
 VipProcessingObject::VipProcessingObject(QObject* parent)
   : VipErrorHandler()
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
+		
 	this->setParent(parent);
 
 	VipProcessingManager::instance().add(this);
@@ -2225,7 +2226,7 @@ VipProcessingObject::~VipProcessingObject()
 
 void VipProcessingObject::save()
 {
-	d_data->savedParameters.append(PrivateData::Parameters(scheduleStrategies(), isVisible(), isEnabled(), deleteOnOutputConnectionsClosed(), errorBufferMaxSize(), attributes()));
+	d_data->savedParameters.append(PrivateData::Parameters(scheduleStrategies(), isProcessingVisible(), isEnabled(), deleteOnOutputConnectionsClosed(), errorBufferMaxSize(), attributes()));
 }
 
 void VipProcessingObject::restore()
@@ -3159,11 +3160,7 @@ static std::atomic<bool>& atomic_ref(bool& value)
 	static_assert(sizeof(bool) == sizeof(std::atomic<bool>), "unsupported atomic ref on this platform");
 	return reinterpret_cast<std::atomic<bool>&>(value);
 }
-/* static const std::atomic<bool>& atomic_ref(const bool& value)
-{
-	static_assert(sizeof(bool) == sizeof(std::atomic<bool>), "unsupported atomic ref on this platform");
-	return reinterpret_cast<const std::atomic<bool>&>(value);
-}*/
+
 
 void VipProcessingObject::setEnabled(bool enable)
 {
@@ -3173,7 +3170,7 @@ void VipProcessingObject::setEnabled(bool enable)
 	}
 }
 
-void VipProcessingObject::setVisible(bool vis)
+void VipProcessingObject::setProcessingVisible(bool vis)
 {
 	bool expect = !vis;
 	if (atomic_ref(d_data->parameters.visible).compare_exchange_weak(expect, vis)) {
@@ -3181,16 +3178,14 @@ void VipProcessingObject::setVisible(bool vis)
 	}
 }
 
-bool VipProcessingObject::isVisible() const
+bool VipProcessingObject::isProcessingVisible() const
 {
 	return atomic_ref(d_data->parameters.visible).load(std::memory_order_relaxed);
-	// return d_data->parameters.visible;
 }
 
 bool VipProcessingObject::isEnabled() const
 {
 	return atomic_ref(d_data->parameters.enable).load(std::memory_order_relaxed);
-	// return d_data->parameters.enable;
 }
 
 bool VipProcessingObject::update(bool force_run)
@@ -3835,7 +3830,7 @@ public:
 VipProcessingList::VipProcessingList(QObject* parent)
   : VipProcessingObject(parent)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 }
 
 VipProcessingList::~VipProcessingList()
@@ -4224,7 +4219,7 @@ public:
 VipSceneModelBasedProcessing::VipSceneModelBasedProcessing(QObject* parent)
   : VipProcessingObject(parent)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 	this->topLevelPropertyAt(1)->toMultiProperty()->resize(1);
 }
 
@@ -4722,7 +4717,7 @@ VipArchive& operator<<(VipArchive& stream, const VipProcessingObject* r)
 	stream.content("attributes", r->attributes());
 	stream.content("scheduleStrategies", (int)r->scheduleStrategies());
 	stream.content("isEnabled", r->isEnabled());
-	stream.content("isVisible", r->isVisible());
+	stream.content("isVisible", r->isProcessingVisible());
 	stream.content("deleteOnOutputConnectionsClosed", r->deleteOnOutputConnectionsClosed());
 
 	// added in 2.2.14
@@ -4789,7 +4784,7 @@ VipArchive& operator>>(VipArchive& stream, VipProcessingObject* r)
 
 	r->setScheduleStrategies((VipProcessingObject::ScheduleStrategies)stream.read("scheduleStrategies").toInt());
 	r->setEnabled(stream.read("isEnabled").toBool());
-	r->setVisible(stream.read("isVisible").toBool());
+	r->setProcessingVisible(stream.read("isVisible").toBool());
 	r->setDeleteOnOutputConnectionsClosed(stream.read("deleteOnOutputConnectionsClosed").toBool());
 
 	// added in 2.2.14

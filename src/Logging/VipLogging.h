@@ -42,6 +42,7 @@
 #include <qthread.h>
 
 #include "VipConfig.h"
+#include "VipPimpl.h"
 
 ///\module Logging
 ///
@@ -98,6 +99,7 @@ class VipFileLogger;
 /// To log new entries, please consider using #VIP_LOG_INFO, #VIP_LOG_WARNING and #VIP_LOG_ERROR instead of #VipLogging::Log()
 class VIP_LOGGING_EXPORT VipLogging : public QThread
 {
+	Q_OBJECT
 public:
 	/// Possible outputs for each log entry
 	enum VipOutput
@@ -189,7 +191,7 @@ private:
 	int logCount();
 
 	
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 Q_DECLARE_OPERATORS_FOR_FLAGS(VipLogging::Outputs)

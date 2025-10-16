@@ -227,7 +227,7 @@ private:
 	void recomputeItem(const VipCoordinateSystemPtr&);
 
 	
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 class VipColorPalette;
@@ -483,7 +483,7 @@ private:
 	VipPieItem* createItem(int index);
 
 	
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 /// @}

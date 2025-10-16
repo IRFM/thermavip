@@ -83,7 +83,7 @@ private:
 	QByteArray dumpSelection();
 
 	
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 class VIP_ANNOTATION_EXPORT VisualizeDBToolWidget : public VipToolWidget

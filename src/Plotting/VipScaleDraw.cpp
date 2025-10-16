@@ -861,7 +861,7 @@ public:
 /// set to 4, the tick lengths are set to 4,6 and 8 pixels
 VipAbstractScaleDraw::VipAbstractScaleDraw()
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 }
 
 //! Destructor
@@ -1790,7 +1790,7 @@ public:
 /// The orientation is VipAbstractScaleDraw::Bottom.
 VipScaleDraw::VipScaleDraw()
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 	setLength(100);
 }
 
@@ -2907,7 +2907,7 @@ public:
 /// The orientation is VipAbstractScaleDraw::Bottom.
 VipPolarScaleDraw::VipPolarScaleDraw()
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 	this->setTicksPosition(TicksOutside);
 }
 
@@ -3520,7 +3520,7 @@ public:
 /// The orientation is VipAbstractScaleDraw::Bottom.
 VipRadialScaleDraw::VipRadialScaleDraw()
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 	setTicksPosition(TicksOutside);
 }
 

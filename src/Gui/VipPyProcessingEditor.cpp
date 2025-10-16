@@ -57,7 +57,7 @@ public:
 VipPySignalGeneratorEditor::VipPySignalGeneratorEditor(QWidget* parent)
   : QWidget(parent)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 
 	QHBoxLayout* slay = new QHBoxLayout();
 	slay->setContentsMargins(0, 0, 0, 0);
@@ -307,7 +307,7 @@ public:
 
 VipPyParametersEditor::VipPyParametersEditor(VipPyProcessing* p)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 	d_data->processing = p;
 	d_data->params = p->extractStdProcessingParameters();
 	QVariantMap args = p->stdProcessingParameters();
@@ -460,7 +460,7 @@ public:
 
 VipPyProcessingEditor::VipPyProcessingEditor()
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 	d_data->params = nullptr;
 
 	QGridLayout* hlay = new QGridLayout();
@@ -596,7 +596,7 @@ void VipPyProcessingEditor::registerProcessing()
 	if (dialog.exec() == QDialog::Accepted) {
 		bool ret = d_data->proc->registerThisProcessing(m->category(), m->name(), m->description(), m->overwrite());
 		if (!ret)
-			QMessageBox::warning(nullptr, "Operation failure", "Failed to register this processing.\nPlease make sure you entered a valid name and category.");
+			vipWarning("Operation failure", "Failed to register this processing.\nPlease make sure you entered a valid name and category.");
 		else {
 			// make sure to update all processing menu
 			vipGetMainWindow()->displayArea()->resetItemSelection();
@@ -634,7 +634,7 @@ public:
 VipPyApplyToolBar::VipPyApplyToolBar(QWidget* parent)
   : QWidget(parent)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 	d_data->apply = new QPushButton();
 	d_data->apply->setText("Update/Apply processing");
 	d_data->apply->setToolTip("<b>Update/Apply the processing</b><br>"
@@ -700,7 +700,7 @@ static QGroupBox* flatGroupBox(const QString& title)
 VipPySignalFusionProcessingManager::VipPySignalFusionProcessingManager(QWidget* parent)
   : QWidget(parent)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 
 	d_data->createWidget = new QWidget();
 	d_data->name = new QLineEdit();
@@ -1068,7 +1068,7 @@ static QString names_toolTip = "<b>Name mapping</b><br>This menu specifies the n
 VipPySignalFusionProcessingEditor::VipPySignalFusionProcessingEditor(QWidget* parent)
   : QWidget(parent)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 
 	QGridLayout* hlay = new QGridLayout();
 	hlay->addWidget(new QLabel("Resampling method"), 0, 0);
@@ -1157,7 +1157,7 @@ void VipPySignalFusionProcessingEditor::registerProcessing()
 	if (dialog.exec() == QDialog::Accepted) {
 		bool ret = d_data->proc->registerThisProcessing(m->category(), m->name(), m->description(), m->overwrite());
 		if (!ret)
-			QMessageBox::warning(nullptr, "Operation failure", "Failed to register this processing.\nPlease make sure you entered a valid name and category.");
+			vipWarning("Operation failure", "Failed to register this processing.\nPlease make sure you entered a valid name and category.");
 		else {
 			// make sure to update all processing menu
 			vipGetMainWindow()->displayArea()->resetItemSelection();
@@ -1477,7 +1477,7 @@ void vipOpenProcessingManager()
 	if (dialog.exec() == QDialog::Accepted) {
 		bool ret = m->applyChanges();
 		if (!ret)
-			QMessageBox::warning(nullptr, "Operation failure", "Failed to modify registered processing.");
+			vipWarning("Operation failure", "Failed to modify registered processing.");
 	}
 }
 
@@ -1504,7 +1504,7 @@ VipFitDialogBox::VipFitDialogBox(VipPlotPlayer* pl, const QString& fit, QWidget*
 	// retrieve all visible and selected curves
 	QList<VipPlotCurve*> curves = pl->viewer()->area()->findItems<VipPlotCurve*>(QString(), 1, 1);
 
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 	d_data->player = pl;
 
 	QGridLayout* lay = new QGridLayout();

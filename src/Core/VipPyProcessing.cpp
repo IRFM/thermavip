@@ -84,7 +84,7 @@ public:
 
 VipPyFunctionProcessing::VipPyFunctionProcessing()
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 	d_data->function = nullptr;
 	d_data->maxExecutionTime = 5000;
 }
@@ -245,7 +245,7 @@ public:
 VipPyProcessing::VipPyProcessing(QObject* parent)
   : VipPyBaseProcessing(parent)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 	d_data->lastError.traceback = "Uninitialized";
 	propertyAt(1)->setData(QString());
 	topLevelInputAt(0)->toMultiInput()->setMinSize(1);

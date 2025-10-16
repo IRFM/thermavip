@@ -126,6 +126,8 @@ struct PointMerge
 
 static bool isPerfectRightCartesiant(QPainter* painter, const VipCoordinateSystemPtr& m)
 {
+	if (!m)
+		return false;
 	QTransform tr = painter->worldTransform();
 	if (tr.isRotating() || m->type() != VipCoordinateSystem::Cartesian)
 		return false;
@@ -436,7 +438,7 @@ VipPlotCurve::~VipPlotCurve()
 //! Initialize internal members
 void VipPlotCurve::init()
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 	setRawData(VipPointVector());
 }
 
@@ -1911,7 +1913,7 @@ QRectF VipPlotCurve::drawLegend(QPainter* painter, const QRectF& rect, int) cons
 	painter->setRenderHints(this->renderHints());
 
 	if (d_data->legendAttributes == 0 || (d_data->legendAttributes & VipPlotCurve::LegendShowBrush)) {
-		const bool doFill = ((d_data->boxStyle.backgroundBrush().style() != Qt::NoBrush) && style() != NoCurve) || testCurveAttribute(FillMultiCurves);
+		const bool doFill = !d_data->full_continuous && (((d_data->boxStyle.backgroundBrush().style() != Qt::NoBrush) && style() != NoCurve) || testCurveAttribute(FillMultiCurves));
 		if (doFill) {
 			VipBoxStyle bs = d_data->boxStyle;
 			QBrush b = brush();

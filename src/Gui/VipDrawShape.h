@@ -212,7 +212,7 @@ private Q_SLOTS:
 
 private:
 	
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 class VipPlayer2D;
@@ -262,7 +262,7 @@ private:
 	// void populateStatistics(VipPlayer2D *, const VipShapeList & shapes);
 
 	
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 class VIP_GUI_EXPORT VipShapeButton : public QToolButton
@@ -386,7 +386,7 @@ private Q_SLOTS:
 private:
 	void cleanStates();
 	
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 /// @}

@@ -121,7 +121,7 @@ public:
 TextEditor::TextEditor()
   : QWidget()
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 
 	d_data->bar.setIconSize(QSize(20, 20));
 
@@ -472,29 +472,34 @@ void TextEditor::updateShapes(const QList<VipPlotShape*>& shapes)
 class ShapeEditor::PrivateData
 {
 public:
-	VipPenButton pen;
-	VipPenButton brush;
+	VipPenButton *pen;
+	VipPenButton *brush;
+
+	PrivateData() { 
+		pen = new VipPenButton();
+		brush = new VipPenButton();
+	}
 };
 ShapeEditor::ShapeEditor()
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 
-	d_data->pen.setMode(VipPenButton::Pen);
-	d_data->pen.setText("Annotation border pen");
-	d_data->pen.setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
-	d_data->brush.setMode(VipPenButton::Brush);
-	d_data->brush.setText("Annotation background brush");
-	d_data->brush.setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
+	d_data->pen->setMode(VipPenButton::Pen);
+	d_data->pen->setText("Annotation border pen");
+	d_data->pen->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
+	d_data->brush->setMode(VipPenButton::Brush);
+	d_data->brush->setText("Annotation background brush");
+	d_data->brush->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
 
 	QHBoxLayout* lay = new QHBoxLayout();
 	// lay->setContentsMargins(0, 0, 0, 0);
 	lay->setSpacing(5);
-	lay->addWidget(&d_data->pen);
-	lay->addWidget(&d_data->brush);
+	lay->addWidget(d_data->pen);
+	lay->addWidget(d_data->brush);
 	setLayout(lay);
 
-	connect(&d_data->pen, SIGNAL(penChanged(const QPen&)), this, SLOT(emitChanged()));
-	connect(&d_data->brush, SIGNAL(penChanged(const QPen&)), this, SLOT(emitChanged()));
+	connect(d_data->pen, SIGNAL(penChanged(const QPen&)), this, SLOT(emitChanged()));
+	connect(d_data->brush, SIGNAL(penChanged(const QPen&)), this, SLOT(emitChanged()));
 }
 ShapeEditor::~ShapeEditor()
 {
@@ -502,11 +507,11 @@ ShapeEditor::~ShapeEditor()
 
 QPen ShapeEditor::pen() const
 {
-	return d_data->pen.pen();
+	return d_data->pen->pen();
 }
 QBrush ShapeEditor::brush() const
 {
-	return d_data->brush.pen().brush();
+	return d_data->brush->pen().brush();
 }
 
 void ShapeEditor::setShapes(const QList<VipPlotShape*>& shapes)
@@ -535,8 +540,8 @@ void ShapeEditor::setShapes(const QList<VipPlotShape*>& shapes)
 	}
 
 	blockSignals(true);
-	d_data->pen.setPen(pen);
-	d_data->brush.setBrush(brush);
+	d_data->pen->setPen(pen);
+	d_data->brush->setBrush(brush);
 	blockSignals(false);
 }
 void ShapeEditor::updateShapes(const QList<VipPlotShape*>& shapes)
@@ -546,12 +551,12 @@ void ShapeEditor::updateShapes(const QList<VipPlotShape*>& shapes)
 			if (strcmp(annot->name(), "VipSimpleAnnotation") == 0) {
 				VipSimpleAnnotation* a = static_cast<VipSimpleAnnotation*>(annot);
 
-				if (!isNullPen(d_data->pen.pen())) {
-					a->setPen(d_data->pen.pen());
-					a->text().boxStyle().setBorderPen(d_data->pen.pen());
+				if (!isNullPen(d_data->pen->pen())) {
+					a->setPen(d_data->pen->pen());
+					a->text().boxStyle().setBorderPen(d_data->pen->pen());
 				}
-				if (!isNullBrush(d_data->brush.pen().brush()))
-					a->setBrush(d_data->brush.pen().brush());
+				if (!isNullBrush(d_data->brush->pen().brush()))
+					a->setBrush(d_data->brush->pen().brush());
 
 				shapes[i]->update();
 			}
@@ -567,7 +572,7 @@ public:
 };
 SymbolEditor::SymbolEditor()
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 
 	d_data->type.setIconSize(QSize(30, 20));
 	d_data->type.setToolTip("Symbol type");
@@ -703,7 +708,7 @@ public:
 };
 VipAnnotationWidget::VipAnnotationWidget()
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 
 	QVBoxLayout* lay = new QVBoxLayout();
 	lay->setContentsMargins(0, 0, 0, 0);
@@ -770,6 +775,7 @@ VipAnnotationToolWidget::VipAnnotationToolWidget(VipMainWindow* w)
 	setFloating(true);
 	setMaximumHeight(300);
 	connect(m_widget, SIGNAL(changed()), this, SLOT(updateShapes()));
+	connect(VipPlayerLifeTime::instance(), SIGNAL(destroyed(VipAbstractPlayer*)), this, SLOT(unsetPlayer(VipAbstractPlayer*)));
 }
 
 bool VipAnnotationToolWidget::setPlayer(VipAbstractPlayer* pl)
@@ -783,8 +789,15 @@ bool VipAnnotationToolWidget::setPlayer(VipAbstractPlayer* pl)
 		return false;
 
 	connect(m_player->plotWidget2D()->area(), SIGNAL(childSelectionChanged(VipPlotItem*)), this, SLOT(importShapes()));
+	
 	importShapes();
 	return true;
+}
+
+void VipAnnotationToolWidget::unsetPlayer(VipAbstractPlayer * pl)
+{
+	if (pl == m_player)
+		setPlayer(nullptr);
 }
 
 VipAnnotationWidget* VipAnnotationToolWidget::annotationWidget() const

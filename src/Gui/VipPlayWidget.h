@@ -47,6 +47,8 @@ class VipIODevice;
 class VipProcessingPool;
 class VipTimeRangeListItem;
 
+#define ITEM_START_HEIGHT 0.1
+#define ITEM_END_HEIGHT 0.9
 
 /// @brief Plot item representing a time range.
 ///
@@ -54,7 +56,7 @@ class VipTimeRangeListItem;
 /// Therefore, initialTimeRange() returns the initial time range before any user interaction,
 /// and currentTimeRange returns the time range after potential user interactions.
 /// 
-class VIP_GUI_EXPORT VipTimeRangeItem : public VipPlotItem
+class VIP_GUI_EXPORT VipTimeRangeItem : public QGraphicsObject
 {
 	Q_OBJECT
 
@@ -62,9 +64,10 @@ public:
 	VipTimeRangeItem(VipTimeRangeListItem* item);
 	~VipTimeRangeItem();
 
+	virtual void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget = nullptr){} 
 	virtual QRectF boundingRect() const;
 	virtual QPainterPath shapeFromCoordinateSystem(const VipCoordinateSystemPtr& m) const;
-
+	QPainterPath shape() const;
 	void setInitialTimeRange(const VipTimeRange&);
 	VipTimeRange initialTimeRange() const;
 
@@ -76,20 +79,7 @@ public:
 
 	VipTimeRangeListItem* parentItem() const;
 
-	void setHeights(double start, double end);
-	QPair<double, double> heights() const;
-
-	void setColor(const QColor&);
-	QColor color() const;
-
-	virtual void setPen(const QPen&) {}
-	virtual QPen pen() const { return QPen(); }
-	virtual void setBrush(const QBrush& b) { setColor(b.color()); }
-	virtual QBrush brush() const { return QBrush(color()); }
-
 	virtual void draw(QPainter*, const VipCoordinateSystemPtr&) const;
-	virtual void drawSelected(QPainter*, const VipCoordinateSystemPtr&) const;
-	virtual QList<VipInterval> plotBoundingIntervals() const;
 	virtual bool applyTransform(const QTransform&);
 
 	bool reverse() const;
@@ -110,7 +100,15 @@ protected:
 private:
 	int selection(const QPointF& pos) const;
 	
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VipTimeRange d_initialTimeRange;
+	VipTimeRangeListItem* d_parentItem = nullptr;
+	qint64 d_left = 0, d_right = 0;
+	QRectF d_moveAreaRect;
+	bool d_reverse = false;
+
+	QPointF d_pos; // for mouse moving
+	QMap<VipTimeRangeItem*, QPair<qint64, qint64>> d_initPos;
+	int d_selection = -2; // mouse selection (-1=left, 0=middle, 1=right)
 };
 
 Q_DECLARE_METATYPE(VipTimeRangeItem*)
@@ -232,7 +230,7 @@ private:
 	void addItem(VipTimeRangeItem*);
 	void removeItem(VipTimeRangeItem*);
 	
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 Q_DECLARE_OPERATORS_FOR_FLAGS(VipTimeRangeListItem::DrawComponents)
 
@@ -301,6 +299,7 @@ public Q_SLOTS:
 
 	void updateArea(bool check_item_visibility);
 	void updateAreaDevices();
+	void defferedUpdateAreaDevices();
 	void updateProcessingPool();
 	void defferedUpdateProcessingPool();
 	void addMissingDevices();
@@ -320,7 +319,7 @@ private:
 	// int findBestColor(VipTimeRangeListItem *);
 
 	
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 class VipValueToTime;
@@ -406,7 +405,7 @@ private:
 	void toolTipFlagsChanged(VipToolTip::DisplayFlags flags);
 
 	
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 VIP_REGISTER_QOBJECT_METATYPE(VipPlayWidget*)

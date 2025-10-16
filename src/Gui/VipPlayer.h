@@ -48,6 +48,8 @@
 #include "VipPlotWidget2D.h"
 #include "VipStandardWidgets.h"
 #include "VipToolTip.h"
+#include "VipPimpl.h"
+
 
 /// \addtogroup Gui
 /// @{
@@ -110,7 +112,7 @@ private:
 	static VipPlotItemClipboard& instance();
 
 	
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 class VipAbstractPlayer;
@@ -143,7 +145,7 @@ Q_SIGNALS:
 
 private:
 	
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 /// @brief Base class for VipAbstractPlayer
@@ -236,9 +238,12 @@ Q_SIGNALS:
 	void renderStarted(const VipRenderState&);
 	void renderEnded(const VipRenderState&);
 
+private Q_SLOTS:
+	void reloadPoolOnShow();
+
 private:
 	
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 // expose VipAbstractPlayer* and QList<VipAbstractPlayer*> to the meta type system for the function dispatchers
@@ -277,7 +282,7 @@ protected:
 
 private:
 	
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 VIP_REGISTER_QOBJECT_METATYPE(VipWidgetPlayer*)
 
@@ -508,7 +513,7 @@ Q_SIGNALS:
 
 private:
 	
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 VIP_REGISTER_QOBJECT_METATYPE(VipPlayer2D*)
@@ -753,7 +758,7 @@ protected:
 
 private:
 	
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 VIP_REGISTER_QOBJECT_METATYPE(VipVideoPlayer*)
@@ -914,6 +919,7 @@ public Q_SLOTS:
 	void setTimeMarkerAlwaysVisible(bool enable);
 	void removeStyleSheet();
 	void poolTypeChanged();
+	void setSlidingTimeWindow(double value);
 
 private Q_SLOTS:
 	void timeUnitChanged(); // update the bottom axis scale draw
@@ -961,7 +967,7 @@ protected:
 
 private:
 	
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 VIP_REGISTER_QOBJECT_METATYPE(VipPlotPlayer*)

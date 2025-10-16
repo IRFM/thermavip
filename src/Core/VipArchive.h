@@ -38,6 +38,7 @@
 #include <QStringList>
 
 #include "VipFunctional.h"
+#include "VipPimpl.h"
 
 /// \addtogroup Core
 /// @{
@@ -319,7 +320,7 @@ private:
 	static VipFunctionDispatcher<2>& deserializeDispatcher();
 
 	
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 Q_DECLARE_METATYPE(VipArchive*);

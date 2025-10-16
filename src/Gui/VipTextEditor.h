@@ -8,6 +8,7 @@
 #include <QObject>
 
 #include "VipConfig.h"
+#include "VipPimpl.h"
 
 class QPaintEvent;
 class QResizeEvent;
@@ -155,7 +156,7 @@ private:
 	void lineNumberAreaPaintEvent(QPaintEvent* event);
 	void formatStyleSheet();
 
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 Q_DECLARE_METATYPE(StringMap)

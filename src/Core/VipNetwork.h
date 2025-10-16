@@ -33,6 +33,7 @@
 #define VIP_NETWORK_H
 
 #include "VipConfig.h"
+#include "VipPimpl.h"
 
 #include <qhostaddress.h>
 #include <qmutex.h>
@@ -305,7 +306,7 @@ protected:
 
 private:
 	
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 Q_DECLARE_METATYPE(QAbstractSocket::PauseModes)

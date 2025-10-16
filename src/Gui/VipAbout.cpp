@@ -54,7 +54,7 @@ public:
 VipAboutDialog::VipAboutDialog()
   : QDialog(vipGetMainWindow())
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 	d_data->thermadiag = new QLabel();
 	d_data->infos = new QLabel();
 	d_data->products = new QListWidget();

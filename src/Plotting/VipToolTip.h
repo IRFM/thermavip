@@ -66,6 +66,7 @@ public:
 		SearchXAxis = 0x0100,
 		SearchYAxis = 0x0200,
 		Hidden = 0x0400,
+		RegularItems = 0x0800, // Use regular QGraphicsItem tool tip stored as property '_vip_toolTip'
 		All = PlotArea | Axes | ItemsTitles | ItemsLegends | ItemsPos | ItemsProperties | ItemsToolTips | SearchXAxis | SearchYAxis
 	};
 	Q_DECLARE_FLAGS(DisplayFlags, DisplayFlag);
@@ -189,7 +190,7 @@ private:
 	QString attributeMargins() const;
 	QPoint toolTipPosition(VipText& text, const QPointF& pos, Vip::RegionPositions position, Qt::Alignment align);
 
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 Q_DECLARE_OPERATORS_FOR_FLAGS(VipToolTip::DisplayFlags)

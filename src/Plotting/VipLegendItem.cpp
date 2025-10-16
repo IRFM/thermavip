@@ -72,7 +72,7 @@ public:
 VipLegendItem::VipLegendItem(VipPlotItem* item, int index, QGraphicsItem* parent)
   : VipBoxGraphicsWidget(parent)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 
 	setPlotItem(item, index);
 	this->setGeometry(QRectF(QPointF(0, 0), this->minimumSize()));
@@ -473,7 +473,7 @@ public:
 VipLegend::VipLegend(QGraphicsItem* parent)
   : VipBoxGraphicsWidget(parent)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 
 	d_data->legendItemTextStyle.setAlignment(Qt::AlignLeft);
 

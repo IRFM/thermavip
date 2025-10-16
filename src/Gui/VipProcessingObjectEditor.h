@@ -45,8 +45,10 @@
 #include "VipPlotItem.h"
 #include "VipProcessingObject.h"
 #include "VipStandardProcessing.h"
+#include "VipStandardWidgets.h"
 #include "VipToolWidget.h"
 #include "VipWarping.h"
+#include "VipPimpl.h"
 
 /// \addtogroup Gui
 /// @{
@@ -65,6 +67,34 @@ class VipDisplayCurve;
 class VipOperationBetweenPlayers;
 class VipConvert;
 class VipCSVWriter;
+class VipPlayer2D;
+
+/// @brief Combobox used to select a player among all available players
+/// within the current workspace
+class VIP_GUI_EXPORT VipPlayerSelector : public VipComboBox
+{
+	Q_OBJECT
+
+public:
+	VipPlayerSelector(QWidget * parent = nullptr);
+	~VipPlayerSelector();
+
+	// Filter player list based on metaobject
+	void setPlayerMetaObject(const QMetaObject*);
+	const QMetaObject* playerMetaObject() const;
+
+	// set/get the player
+	void setPlayer(VipPlayer2D* pl);
+	VipPlayer2D* player() const;
+
+
+private Q_SLOTS:
+	// populate all players within the current workspace
+	void populatePlayers();
+
+private:
+	const QMetaObject* d_meta = nullptr;
+};
 
 /// Widget to edit a VipOtherPlayerData
 class VIP_GUI_EXPORT VipOtherPlayerDataEditor : public QWidget
@@ -90,7 +120,7 @@ Q_SIGNALS:
 
 private:
 	
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 
@@ -113,7 +143,7 @@ Q_SIGNALS:
 	void changed();
 
 private:
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 
@@ -142,7 +172,7 @@ private Q_SLOTS:
 
 private:
 	
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 /// Edit a VipBaseDataFusion processing.
@@ -167,7 +197,7 @@ private Q_SLOTS:
 private:
 	int indexOfInput(QObject*);
 	
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 /// Widget to edit a VipProcessingObjectEditor
@@ -185,7 +215,7 @@ private Q_SLOTS:
 
 private:
 	
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 /// Widget to edit a VipIODeviceEditor
@@ -203,7 +233,7 @@ private Q_SLOTS:
 
 private:
 	
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 class QListWidgetItem;
@@ -254,7 +284,7 @@ private Q_SLOTS:
 
 private:
 	
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 class VipSplitAndMergeEditor : public QWidget
@@ -277,7 +307,7 @@ Q_SIGNALS:
 
 private:
 	
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 class QComboBox;
@@ -307,7 +337,7 @@ Q_SIGNALS:
 
 private:
 	
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 /// Widget to edit a VipConvert
@@ -333,7 +363,7 @@ Q_SIGNALS:
 
 private:
 	
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 /// Widget to edit a VipDisplayImage.
@@ -357,7 +387,7 @@ private Q_SLOTS:
 
 private:
 	
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 /// Widget to edit a VipDisplayCurve.
@@ -379,7 +409,7 @@ private Q_SLOTS:
 
 private:
 	
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 /// Widget to edit a VipSwitch
@@ -399,7 +429,7 @@ public Q_SLOTS:
 
 private:
 	
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 /// Widget to edit a VipClamp
@@ -419,7 +449,7 @@ public Q_SLOTS:
 
 private:
 	
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 /// Widget to edit a VipTextFileReader
@@ -436,7 +466,7 @@ private Q_SLOTS:
 
 private:
 	
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 /// Widget to edit a VipTextFileWriter
@@ -453,7 +483,7 @@ private Q_SLOTS:
 
 private:
 	
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 /// Widget to edit a VipImageWriter
@@ -470,7 +500,7 @@ private Q_SLOTS:
 
 private:
 	
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 class VIP_GUI_EXPORT VipCSVWriterEditor : public QWidget
@@ -487,7 +517,7 @@ private Q_SLOTS:
 
 private:
 	
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 /// Widget to edit a VipDirectoryReader
@@ -504,8 +534,52 @@ public Q_SLOTS:
 
 private:
 	
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
+
+class VipConcatenateVideos;
+
+  /// Widget to open a VipConcatenateVideos
+class VIP_GUI_EXPORT VipConcatenateVideosOpenEditor : public QWidget
+{
+	Q_OBJECT
+public:
+	VipConcatenateVideosOpenEditor();
+	~VipConcatenateVideosOpenEditor();
+	void setDevice(VipConcatenateVideos*);
+
+public Q_SLOTS:
+	void apply();
+
+private:
+	VIP_DECLARE_PRIVATE_DATA();
+};
+
+/// @brief Widget to edit an already open VipConcatenateVideos
+class VIP_GUI_EXPORT VipConcatenateVideosEditor : public QToolBar
+{
+	Q_OBJECT
+public:
+	VipConcatenateVideosEditor();
+	~VipConcatenateVideosEditor();
+	void setDevice(VipConcatenateVideos*);
+	VipConcatenateVideos* device() const;
+
+public Q_SLOTS:
+	void removeCurrentDevice();
+	void undo();
+	void redo();
+
+private Q_SLOTS:
+	void updateIcons();
+
+private:
+	VIP_DECLARE_PRIVATE_DATA();
+};
+
+
+
+
 
 /// Widget to edit a VipOperationBetweenPlayers
 class VIP_GUI_EXPORT VipOperationBetweenPlayersEditor : public QWidget
@@ -521,7 +595,7 @@ public Q_SLOTS:
 
 private:
 	
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 class VIP_GUI_EXPORT VipCropEditor : public QWidget
@@ -588,7 +662,7 @@ protected:
 
 private:
 	
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 class VIP_GUI_EXPORT VipComponentLabellingEditor : public QCheckBox
@@ -673,7 +747,7 @@ private:
 
 private:
 	
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 class PropertyWidget;
@@ -730,7 +804,7 @@ Q_SIGNALS:
 private:
 	void removeEndStretch();
 	
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 class VIP_GUI_EXPORT VipProcessingLeafSelector : public QToolButton
@@ -759,7 +833,7 @@ private Q_SLOTS:
 private:
 	QString title(VipProcessingObject* obj, QString& tool_tip) const;
 	
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 /// Widget used to hide/show a VipProcessingObject editor in a VipMultiProcessingObjectEditor.
@@ -788,7 +862,7 @@ Q_SIGNALS:
 
 private:
 	
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 /// Displays all the editors for a chain of VipProcessingObject.
 /// Use VipMultiProcessingObjectEditor::setProcessingObjects to set the widget's content and display all the editors for a list of VipProcessingObject.
@@ -837,7 +911,7 @@ Q_SIGNALS:
 
 private:
 	
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 
@@ -879,7 +953,7 @@ Q_SIGNALS:
 
 private:
 	
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 VIP_GUI_EXPORT VipProcessingEditorToolWidget* vipGetProcessingEditorToolWidget(VipMainWindow* window = nullptr);
@@ -892,7 +966,7 @@ VIP_GUI_EXPORT VipProcessingEditorToolWidget* vipGetProcessingEditorToolWidget(V
 /// and to remember device options when opening a file.
 class VipRememberDeviceOptions
 {
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA_NO_QOBJECT();
 	VipRememberDeviceOptions();
 
 public:
@@ -933,7 +1007,7 @@ public:
 	bool remember() const;
 
 private:
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 /// Select a device among all possible ones
@@ -950,7 +1024,7 @@ public:
 
 private:
 	
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 

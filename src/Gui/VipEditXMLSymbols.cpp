@@ -96,7 +96,7 @@ public:
 VipEditXMLSymbols::VipEditXMLSymbols(QWidget* parent)
   : VipBaseEditXMLSymbols(parent)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 	d_data->list.setSelectionMode(QListWidget::ExtendedSelection);
 
 	QVBoxLayout* lay = new QVBoxLayout();
@@ -194,7 +194,7 @@ public:
 VipExportSessionWidget::VipExportSessionWidget(QWidget* parent, bool export_current_area)
   : QWidget(parent)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 	d_data->filename.setMode(VipFileName::Save);
 #ifdef VIP_WITH_HDF5
 	d_data->filename.setFilters("Session file (*.session *.hsession)");
@@ -348,7 +348,7 @@ public:
 VipImportSessionWidget::VipImportSessionWidget(QWidget* parent)
   : QWidget(parent)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 	d_data->layout = new QVBoxLayout();
 	d_data->layout->setSpacing(0);
 	this->setLayout(d_data->layout);

@@ -72,7 +72,7 @@ private Q_SLOTS:
 
 private:
 	
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 class BaseCustomPlayer : public QObject
@@ -84,14 +84,21 @@ public:
 	{
 		if (pl->plotWidget2D())
 			connect(pl->plotWidget2D(), SIGNAL(viewportChanged(QWidget*)), this, SLOT(updateViewport(QWidget*)));
+		connect(pl, SIGNAL(destroy()), this , SLOT(handleDestroy()));
 	}
 	virtual VipDragWidget* dragWidget() const = 0;
-
+	bool isValid() const noexcept {return !d_destroyed;}
 public Q_SLOTS:
 	virtual void closePlayer();
 	virtual void maximizePlayer();
 	virtual void minimizePlayer();
 	virtual void updateViewport(QWidget* viewport) {}
+
+protected Q_SLOTS:
+	virtual void handleDestroy(){d_destroyed = true;} 
+
+private:
+	bool d_destroyed = false;
 };
 
 class CloseToolBar : public QToolBar
@@ -127,7 +134,7 @@ private:
 	Anchor anchor(const QPoint& viewport_pos, const QMimeData* mime);
 
 	
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 class BaseCustomPlayer2D : public BaseCustomPlayer
@@ -170,7 +177,7 @@ private Q_SLOTS:
 private:
 	Anchor anchor(const QPoint& viewport_pos, const QMimeData* mime);
 	
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 class CustomizePlotPlayer : public BaseCustomPlayer2D
@@ -193,7 +200,7 @@ private:
 	Anchor anchor(const QPoint& viewport_pos, const QMimeData* mime);
 
 	
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 #endif

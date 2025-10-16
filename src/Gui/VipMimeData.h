@@ -86,6 +86,10 @@ class VIP_GUI_EXPORT VipMimeDataProcessingObjectList : public VipMimeDataCoordin
 {
 	Q_OBJECT
 public:
+	VipMimeDataProcessingObjectList(VipCoordinateSystem::Type type = VipCoordinateSystem::Cartesian, QObject* parent = nullptr)
+	  : VipMimeDataCoordinateSystem(type, parent)
+	{
+	}
 	virtual QList<VipPlotItem*> plotData(VipPlotItem* drop_target, QWidget* drop_widget) const;
 
 	void setProcessing(const VipProcessingObjectList& lst) { m_procs = lst; }
@@ -101,6 +105,10 @@ class VIP_GUI_EXPORT VipMimeDataPaths : public VipMimeDataCoordinateSystem
 {
 	Q_OBJECT
 public:
+	VipMimeDataPaths(VipCoordinateSystem::Type type = VipCoordinateSystem::Cartesian, QObject* parent = nullptr)
+	  : VipMimeDataCoordinateSystem(type, parent)
+	{
+	}
 	virtual QList<VipPlotItem*> plotData(VipPlotItem* drop_target, QWidget* drop_widget) const
 	{
 		VipAbstractPlayer* pl = VipAbstractPlayer::findAbstractPlayer(drop_target);
@@ -123,6 +131,10 @@ class VIP_GUI_EXPORT VipMimeDataMapFile : public VipMimeDataCoordinateSystem
 {
 	Q_OBJECT
 public:
+	VipMimeDataMapFile(VipCoordinateSystem::Type type = VipCoordinateSystem::Cartesian, QObject* parent = nullptr)
+	  : VipMimeDataCoordinateSystem(type, parent)
+	{
+	}
 	virtual QList<VipPlotItem*> plotData(VipPlotItem* drop_target, QWidget* drop_widget) const
 	{
 		VipAbstractPlayer* pl = VipAbstractPlayer::findAbstractPlayer(drop_target);
@@ -142,13 +154,8 @@ private:
 
 #include <functional>
 
-/// @brief Mime data used to create new players based on function object
-/// that returns a list of processings.
-/// 
-/// The return type must inherit VipProcessingObject or be a QList<VipProcessingObject*>.
-/// 
-template<class Return> 
-class VipMimeDataLazyEvaluation : public VipMimeDataCoordinateSystem
+
+namespace detail
 {
 	template<class T>
 	struct is_list
@@ -160,7 +167,21 @@ class VipMimeDataLazyEvaluation : public VipMimeDataCoordinateSystem
 	{
 		static QList<VipAbstractPlayer*> create(const QList<T>& proc, VipAbstractPlayer* pl, QObject* target) { return vipCreatePlayersFromProcessings(proc, pl, target); }
 	};
+	template<>
+	struct is_list<VipProcessingObjectList>
+	{
+		static QList<VipAbstractPlayer*> create(const VipProcessingObjectList& proc, VipAbstractPlayer* pl, QObject* target) { return vipCreatePlayersFromProcessings(proc, pl, target); }
+	};
+}
 
+/// @brief Mime data used to create new players based on function object
+/// that returns a list of processings.
+/// 
+/// The return type must inherit VipProcessingObject or be a QList<VipProcessingObject*>.
+/// 
+template<class Return> 
+class VipMimeDataLazyEvaluation : public VipMimeDataCoordinateSystem
+{
 public:
 	VipMimeDataLazyEvaluation(VipCoordinateSystem::Type type = VipCoordinateSystem::Null, QObject* parent = nullptr)
 	  : VipMimeDataCoordinateSystem(type, parent)
@@ -179,8 +200,7 @@ public:
 	{
 		VipAbstractPlayer* pl = VipAbstractPlayer::findAbstractPlayer(drop_target);
 		Return ret = const_cast<std::function<Return()>&>(m_function)();
-		setPlayers(is_list<Return>::create(ret, pl, drop_target) // vipCreatePlayersFromProcessing(ret,pl, drop_target)
-		);
+		setPlayers(detail::is_list<Return>::create(ret, pl, drop_target) );
 
 		return VipPlotMimeData::plotData(drop_target, drop_widget);
 	}
@@ -190,10 +210,38 @@ public:
 	{
 		m_function = std::function<Return()>(fun);
 	}
+	const std::function<Return()>& function() const noexcept { return m_function; }
+
 
 private:
 	std::function<Return()> m_function;
 };
+
+/// @brief Mime data similar to VipMimeDataLazyEvaluation, but can be launched in an asynchronous way using VipProgressWidget::async().
+/// When using VipAsyncMimeDataLazyEvaluation instead of VipMimeDataLazyEvaluation, 
+/// certain drag & drop operations (like time trace inside video ROI) will be launched
+/// in an asynchronous way while only blocking the related workspace instead of the full
+/// application.
+/// 
+/// To implement an asynchronous drag & drop operation, one should use the vipHandleAsyncDrop() function.
+/// 
+class VIP_GUI_EXPORT VipAsyncMimeDataLazyEvaluation : public VipMimeDataLazyEvaluation<VipProcessingObjectList>
+{
+	Q_OBJECT
+
+public:
+	VipAsyncMimeDataLazyEvaluation(VipCoordinateSystem::Type type = VipCoordinateSystem::Null, QObject* parent = nullptr)
+	  : VipMimeDataLazyEvaluation<VipProcessingObjectList>(type, parent)
+	{
+	}
+	VipAsyncMimeDataLazyEvaluation(const std::function<VipProcessingObjectList()>& fun, VipCoordinateSystem::Type type = VipCoordinateSystem::Null, QObject* parent = nullptr)
+	  : VipMimeDataLazyEvaluation<VipProcessingObjectList>(fun, type, parent)
+	{
+	}
+};
+
+
+
 
 class VIP_GUI_EXPORT VipMimeDataDuplicatePlotItem : public VipMimeDataCoordinateSystem
 {

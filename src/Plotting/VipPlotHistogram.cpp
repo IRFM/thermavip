@@ -111,7 +111,7 @@ public:
 VipPlotHistogram::VipPlotHistogram(const VipText& title)
   : VipPlotItemDataType(title)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 	this->setData(QVariant::fromValue(VipIntervalSampleVector()));
 	this->boxStyle().setBackgroundBrush(QBrush(QColor(Qt::blue)));
 }

@@ -95,7 +95,7 @@ public:
 VipPlotScatter::VipPlotScatter(const VipText& title)
   : VipPlotItemDataType(title)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 	this->setData(QVariant::fromValue(VipScatterPointVector()));
 	this->setMajorColor(QColor(Qt::blue));
 }

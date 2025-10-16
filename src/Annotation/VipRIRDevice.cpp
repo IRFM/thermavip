@@ -147,7 +147,7 @@ bool VipRIRDevice::open(VipIODevice::OpenModes mode)
 			this->propertyAt(0)->setData(m_calibrations.size() - 1);
 
 		// set calibrations as property
-		this->setProperty("Calibrations", QVariant::fromValue(m_calibrations));
+		//this->setProperty("Calibrations", QVariant::fromValue(m_calibrations));
 	}
 	else {
 		close();
@@ -382,7 +382,7 @@ public:
 VipRIRDeviceEditor::VipRIRDeviceEditor(VipVideoPlayer* player)
   : QObject(player)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 
 	d_data->badPixels = new QToolButton();
 	d_data->calibrations = new QComboBox();
@@ -477,7 +477,7 @@ public:
 VipRIRRecorderEditor::VipRIRRecorderEditor(QWidget* parent)
   : QWidget(parent)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 
 	QGridLayout* lay = new QGridLayout();
 

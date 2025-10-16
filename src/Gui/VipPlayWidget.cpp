@@ -54,12 +54,9 @@
 #include <QTimer>
 #include <QToolBar>
 #include <QToolButton>
+#include <QHash>
 #include <qapplication.h>
 
-//#include <iostream>
-
-#define ITEM_START_HEIGHT 0.1
-#define ITEM_END_HEIGHT 0.9
 
 static QString lockedMessage()
 {
@@ -70,101 +67,82 @@ static QString lockedMessage()
 	return res;
 }
 
-class VipTimeRangeItem::PrivateData
-{
-public:
-	PrivateData()
-	  : parentItem(nullptr)
-	  , heights(ITEM_START_HEIGHT, ITEM_END_HEIGHT)
-	  , left(0)
-	  , right(0)
-	  , color(Qt::blue)
-	  , reverse(false)
-	  , selection(-2)
-	{
-	}
-
-	VipTimeRange initialTimeRange;
-	VipTimeRangeListItem* parentItem;
-	QPair<double, double> heights;
-	qint64 left, right;
-	QRectF moveAreaRect;
-	QRectF boundingRect;
-	QColor color;
-	bool reverse;
-
-	QPointF pos; // for mouse moving
-	QMap<VipTimeRangeItem*, QPair<qint64, qint64>> initPos;
-	int selection; // mouse selection (-1=left, 0=middle, 1=right)
-};
 
 VipTimeRangeItem::VipTimeRangeItem(VipTimeRangeListItem* item)
-  : VipPlotItem(VipText())
+  : QGraphicsObject(item)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
-	d_data->parentItem = item;
-
-	this->setItemAttribute(HasLegendIcon, false);
-	this->setItemAttribute(VisibleLegend, false);
-	this->setItemAttribute(AutoScale);
-	this->setItemAttribute(HasToolTip);
-	this->setIgnoreStyleSheet(true);
-	if (d_data->parentItem) {
+	d_parentItem = item;
+	this->setFlag(ItemIsSelectable,true);
+	if (d_parentItem) {
 		// register into parent
-		d_data->parentItem->addItem(this);
-		connect(this, SIGNAL(timeRangeChanged()), d_data->parentItem, SLOT(updateDevice()));
-		this->setAxes(d_data->parentItem->axes(), VipCoordinateSystem::Cartesian);
+		d_parentItem->addItem(this);
+		connect(this, SIGNAL(timeRangeChanged()), d_parentItem, SLOT(updateDevice()));
 	}
 }
 
 VipTimeRangeItem::~VipTimeRangeItem()
 {
-	if (d_data->parentItem)
-		d_data->parentItem->removeItem(this);
+	if (d_parentItem)
+		d_parentItem->removeItem(this);
 }
 
-QList<VipInterval> VipTimeRangeItem::plotBoundingIntervals() const
+QPainterPath VipTimeRangeItem::shape() const
 {
-	return QList<VipInterval>() << VipInterval(d_data->left, d_data->right) << VipInterval(d_data->heights.first, d_data->heights.second);
+	VipTimeRangeItem* _this = const_cast<VipTimeRangeItem*>(this);
+	auto m = d_parentItem->sceneMap();
+	auto heights = d_parentItem->heights();
+	QRectF r = m->transformRect(QRectF(QPointF(d_left, heights.second), QPointF(d_right, heights.first))).normalized();
+	if (r.width() == 0) {
+		r.setRight(r.right() + 1);
+		r.setLeft(r.left() - 1);
+	}
+	r.setTop(r.top() - 1);
+
+	_this->d_moveAreaRect = r;
+
+	QPainterPath p;
+	if (d_left != d_right) {
+		r.setLeft(r.left() - 9);
+		r.setRight(r.right() + 9);
+	}
+	p.addRect(r);
+	return p;
 }
 
 void VipTimeRangeItem::setInitialTimeRange(const VipTimeRange& range)
 {
-	d_data->initialTimeRange = range;
+	d_initialTimeRange = range;
 	setCurrentTimeRange(range);
 }
 
 VipTimeRange VipTimeRangeItem::initialTimeRange() const
 {
-	return d_data->initialTimeRange;
+	return d_initialTimeRange;
 }
 
 void VipTimeRangeItem::setCurrentTimeRange(const VipTimeRange& r)
 {
-	if (d_data->left != r.first || d_data->right != r.second) {
-		// bool first_set = d_data->left == 0 && d_data->right == 0;
-		d_data->left = r.first;
-		d_data->right = r.second;
-
+	if (d_left != r.first || d_right != r.second) {
+		// bool first_set = d_left == 0 && d_right == 0;
+		d_left = r.first;
+		d_right = r.second;
 		Q_EMIT timeRangeChanged();
-		emitItemChanged();
 	}
 }
 
 void VipTimeRangeItem::setCurrentTimeRange(qint64 left, qint64 right)
 {
-	if (d_data->left != left || d_data->right != right) {
-		d_data->left = left;
-		d_data->right = right;
+	if (d_left != left || d_right != right) {
+		d_left = left;
+		d_right = right;
 		Q_EMIT timeRangeChanged();
-		emitItemChanged();
 	}
 }
 
 VipTimeRange VipTimeRangeItem::currentTimeRange()
 {
-	VipTimeRange res(d_data->left, d_data->right);
-	if (d_data->reverse)
+	VipTimeRange res(d_left, d_right);
+	if (d_reverse)
 		res = vipReorder(res, Vip::Descending);
 	else
 		res = vipReorder(res, Vip::Ascending);
@@ -173,44 +151,19 @@ VipTimeRange VipTimeRangeItem::currentTimeRange()
 
 qint64 VipTimeRangeItem::left() const
 {
-	return d_data->left;
+	return d_left;
 }
 
 qint64 VipTimeRangeItem::right() const
 {
-	return d_data->right;
+	return d_right;
 }
 
 VipTimeRangeListItem* VipTimeRangeItem::parentItem() const
 {
-	return d_data->parentItem;
+	return d_parentItem;
 }
 
-void VipTimeRangeItem::setHeights(double start, double end)
-{
-	if (d_data->heights != QPair<double, double>(start, end)) {
-		d_data->heights = QPair<double, double>(start, end);
-		emitItemChanged();
-	}
-}
-
-QPair<double, double> VipTimeRangeItem::heights() const
-{
-	return d_data->heights;
-}
-
-void VipTimeRangeItem::setColor(const QColor& c)
-{
-	if (d_data->color != c) {
-		d_data->color = c;
-		emitItemChanged();
-	}
-}
-
-QColor VipTimeRangeItem::color() const
-{
-	return d_data->color;
-}
 
 static QLinearGradient& buildVerticalGradient(const QRectF& r, const QColor& c)
 {
@@ -228,35 +181,27 @@ static QLinearGradient& buildVerticalGradient(const QRectF& r, const QColor& c)
 	return grad;
 }
 
-/* QRectF VipTimeRangeItem::boundingRect() const
-{
-	return shape().boundingRect();
-}*/
 
 // QPainterPath VipTimeRangeItem::shape() const
 QPainterPath VipTimeRangeItem::shapeFromCoordinateSystem(const VipCoordinateSystemPtr& m) const
 {
 	VipTimeRangeItem* _this = const_cast<VipTimeRangeItem*>(this);
 
-	QRectF r = m->transformRect(QRectF(QPointF(d_data->left, d_data->heights.second), QPointF(d_data->right, d_data->heights.first))).normalized();
+	auto heights = d_parentItem->heights();
+	QRectF r = m->transformRect(QRectF(QPointF(d_left, heights.second), QPointF(d_right, heights.first))).normalized();
 	if (r.width() == 0) {
 		r.setRight(r.right() + 1);
 		r.setLeft(r.left() - 1);
 	}
 	r.setTop(r.top() - 1);
 
-	/* if (r != d_data->moveAreaRect) {
-		_this->prepareGeometryChange();
-		_this->QGraphicsObject::update();
-	}*/
-	_this->d_data->moveAreaRect = r;
+	_this->d_moveAreaRect = r;
 
 	QPainterPath p;
-	if (d_data->left != d_data->right) {
+	if (d_left != d_right) {
 		r.setLeft(r.left() - 9);
 		r.setRight(r.right() + 9);
 	}
-	d_data->boundingRect = r;
 	p.addRect(r);
 	return p;
 }
@@ -264,28 +209,26 @@ QPainterPath VipTimeRangeItem::shapeFromCoordinateSystem(const VipCoordinateSyst
 QRectF VipTimeRangeItem::boundingRect() const
 {
 	return shape().boundingRect();
-	if (this->isDirtyShape()) {
-		shape();
-	}
-	return d_data->boundingRect;
 }
 
 void VipTimeRangeItem::draw(QPainter* p, const VipCoordinateSystemPtr& m) const
 {
 	Q_UNUSED(m)
 
-	if (this->isDirtyShape()) {
-		shape();
-	}
-	QRectF r = d_data->moveAreaRect;
+	shape();
+	
+	QRectF r = d_moveAreaRect;
+	QColor color = d_parentItem->color();
+
 	// draw the rectange
 	{
-		const QLinearGradient& grad = buildVerticalGradient(r, d_data->color);
+		
+		const QLinearGradient& grad = buildVerticalGradient(r, color);
 
 		p->setRenderHint(QPainter::Antialiasing, false);
-		if (d_data->left != d_data->right) {
+		if (d_left != d_right) {
 
-			QPen pen(d_data->color.darker(120));
+			QPen pen(color.darker(120));
 			QBrush brush(grad);
 			p->setPen(pen);
 			p->setBrush(brush);
@@ -301,7 +244,7 @@ void VipTimeRangeItem::draw(QPainter* p, const VipCoordinateSystemPtr& m) const
 	}
 
 	QRectF direction = r;
-	if (d_data->reverse)
+	if (d_reverse)
 		direction.setLeft(r.right() - 5);
 	else
 		direction.setRight(r.left() + 5);
@@ -314,7 +257,7 @@ void VipTimeRangeItem::draw(QPainter* p, const VipCoordinateSystemPtr& m) const
 	if (direction_rect.width() > 4) {
 
 		// QColor c(255, 165, 0);
-		QColor c = d_data->color.darker(150);
+		QColor c = color.darker(150);
 		QBrush brush(c);
 		p->setBrush(brush);
 		p->drawRect(direction_rect);
@@ -323,47 +266,41 @@ void VipTimeRangeItem::draw(QPainter* p, const VipCoordinateSystemPtr& m) const
 	// draw the selection
 	if (isSelected()) {
 		p->setRenderHints(QPainter::Antialiasing);
-		p->setPen(QPen(d_data->color.darker(120)));
-		p->setBrush(QBrush(d_data->color.darker(120), Qt::BDiagPattern));
+		p->setPen(QPen(color.darker(120)));
+		p->setBrush(QBrush(color.darker(120), Qt::BDiagPattern));
 		p->drawRect(r); // drawRoundedRect(r,3,3);
 	}
 }
 
-void VipTimeRangeItem::drawSelected(QPainter* p, const VipCoordinateSystemPtr& m) const
-{
-	draw(p, m);
-}
-
 bool VipTimeRangeItem::applyTransform(const QTransform& tr)
 {
-	d_data->left = qRound64(tr.map(QPointF(d_data->left, 0)).x());
-	d_data->right = qRound64(tr.map(QPointF(d_data->right, 0)).x());
-	update();
+	d_left = qRound64(tr.map(QPointF(d_left, 0)).x());
+	d_right = qRound64(tr.map(QPointF(d_right, 0)).x());
+	d_parentItem->update();
 	return true;
 }
 
 void VipTimeRangeItem::setReverse(bool reverse)
 {
-	if (reverse != d_data->reverse) {
-		d_data->reverse = reverse;
-
+	if (reverse != d_reverse) {
+		d_reverse = reverse;
+		d_parentItem->update();
 		Q_EMIT timeRangeChanged();
-		emitItemChanged();
 	}
 }
 
 bool VipTimeRangeItem::reverse() const
 {
-	return d_data->reverse;
+	return d_reverse;
 }
 
 int VipTimeRangeItem::selection(const QPointF& pos) const
 {
-	if (d_data->left != d_data->right) {
-		QRectF left = d_data->moveAreaRect;
-		left.setRight(left.left() - 9);
-		QRectF right = d_data->moveAreaRect;
-		right.setLeft(right.right() + 9);
+	if (d_left != d_right) {
+		QRectF left = d_moveAreaRect;
+		left.setRight(left.left() + 9);
+		QRectF right = d_moveAreaRect;
+		right.setLeft(right.right() - 9);
 
 		if (left.contains(pos))
 			return -1;
@@ -394,24 +331,25 @@ void VipTimeRangeItem::mouseMoveEvent(QGraphicsSceneMouseEvent* event)
 		return;
 	}
 
-	qint64 diff = qRound64((sceneMap()->invTransform(event->pos()) - sceneMap()->invTransform(d_data->pos)).x());
+	auto m = d_parentItem->sceneMap();
+	qint64 diff = qRound64((m->invTransform(event->pos()) - m->invTransform(d_pos)).x());
 
-	if (d_data->selection == -1) { // left arrow
-		setCurrentTimeRange(parentItem()->closestTime(d_data->initPos[this].first + diff), d_data->initPos[this].second);
+	if (d_selection == -1) { // left arrow
+		setCurrentTimeRange(parentItem()->closestTime(d_initPos[this].first + diff), d_initPos[this].second);
 		Q_EMIT parentItem()->itemsTimeRangeChanged(QList<VipTimeRangeItem*>() << this);
 	}
-	else if (d_data->selection == 1) { // right arrow
-		setCurrentTimeRange(d_data->initPos[this].first, parentItem()->closestTime(d_data->initPos[this].second + diff));
+	else if (d_selection == 1) { // right arrow
+		setCurrentTimeRange(d_initPos[this].first, parentItem()->closestTime(d_initPos[this].second + diff));
 		Q_EMIT parentItem()->itemsTimeRangeChanged(QList<VipTimeRangeItem*>() << this);
 	}
-	else if (d_data->selection == 0) {
+	else if (d_selection == 0) {
 		// apply to all selected items
-		for (QMap<VipTimeRangeItem*, QPair<qint64, qint64>>::iterator it = d_data->initPos.begin(); it != d_data->initPos.end(); ++it) {
+		for (QMap<VipTimeRangeItem*, QPair<qint64, qint64>>::iterator it = d_initPos.begin(); it != d_initPos.end(); ++it) {
 			VipTimeRangeItem* item = it.key();
 			item->setCurrentTimeRange(item->parentItem()->closestTime(it.value().first + diff), item->parentItem()->closestTime(it.value().second + diff));
 		}
 
-		Q_EMIT parentItem()->itemsTimeRangeChanged(d_data->initPos.keys());
+		Q_EMIT parentItem()->itemsTimeRangeChanged(d_initPos.keys());
 	}
 
 	if (parentItem()) {
@@ -419,59 +357,88 @@ void VipTimeRangeItem::mouseMoveEvent(QGraphicsSceneMouseEvent* event)
 	}
 
 	// if(diff != 0)
-	//	d_data->pos = event->pos();
+	//	d_pos = event->pos();
 
-	if (d_data->selection != -2)
-		emitItemChanged();
+	//if (d_selection != -2)
+	//	d_shape.clear();
 }
 
 void VipTimeRangeItem::mousePressEvent(QGraphicsSceneMouseEvent* event)
 {
-	VipPlotItem::mousePressEvent(event);
-	d_data->pos = event->pos();
-	d_data->selection = selection(d_data->pos);
+	{
+		// handle selection like a regular VipPlotItem
+		bool inside_shape = shape().contains(event->pos()); // isUnderPoint(event->pos());
+		bool ctrl_down = (event->modifiers() & Qt::ControlModifier);
+		bool was_selected = isSelected();
+		bool selected = inside_shape;
+		if (was_selected && ctrl_down)
+			selected = false;
+
+		this->setSelected(selected);
+
+		if (!ctrl_down && !(was_selected && selected)) {
+			// unselect all other items
+			QList<QGraphicsItem*> items;
+			if (parentItem())
+				items = parentItem()->childItems();
+			else if (scene())
+				items = scene()->items();
+
+			for (int i = 0; i < items.size(); ++i) {
+				if (items[i] != this)
+					items[i]->setSelected(false);
+			}
+		}
+
+		if (!inside_shape)
+			event->ignore();
+
+		d_parentItem->update();
+	}	
+	d_pos = event->pos();
+	d_selection = selection(d_pos);
 
 	// Small trick: a time range of 1ns means that this is an empty time range.
 	// we just to specify a valid time range (> 0 ns) to display the actual VipTimeRangeItem.
-	if (d_data->selection != 0 && d_data->initialTimeRange.second - d_data->initialTimeRange.first == 0) // 1)
-		d_data->selection = 0;
+	if (d_selection != 0 && d_initialTimeRange.second - d_initialTimeRange.first == 0) // 1)
+		d_selection = 0;
 
-	d_data->initPos.clear();
-	d_data->initPos[this] = QPair<qint64, qint64>(d_data->left, d_data->right);
-	if (d_data->selection == 0) {
+	d_initPos.clear();
+	d_initPos[this] = QPair<qint64, qint64>(d_left, d_right);
+	if (d_selection == 0) {
 		// compute initial left and right values for all selected items
-		QList<VipTimeRangeItem*> items = d_data->parentItem->items();
+		QList<VipTimeRangeItem*> items = d_parentItem->items();
 		for (int i = 0; i < items.size(); ++i)
 			if (items[i]->isSelected()) {
-				d_data->initPos[items[i]] = QPair<qint64, qint64>(items[i]->left(), items[i]->right());
+				d_initPos[items[i]] = QPair<qint64, qint64>(items[i]->left(), items[i]->right());
 			}
 	}
 }
 
 void VipTimeRangeItem::mouseReleaseEvent(QGraphicsSceneMouseEvent*)
 {
-	d_data->selection = -2;
+	d_selection = -2;
 }
 
 QVariant VipTimeRangeItem::itemChange(GraphicsItemChange change, const QVariant& value)
 {
 	if (change == QGraphicsItem::ItemSelectedHasChanged) {
 		bool selected = false;
-		QList<VipTimeRangeItem*> items = d_data->parentItem->items();
+		QList<VipTimeRangeItem*> items = d_parentItem->items();
 		for (int i = 0; i < items.size(); ++i)
 			if (items[i]->isSelected()) {
 				selected = true;
 				break;
 			}
 
-		// d_data->parentItem->setVisible(items.size() > 1);
-		d_data->parentItem->setSelected(selected);
-		d_data->parentItem->prepareGeometryChange();
+		// d_parentItem->setVisible(items.size() > 1);
+		d_parentItem->setSelected(selected);
+		d_parentItem->prepareGeometryChange();
 
 		Q_EMIT parentItem()->itemSelectionChanged(this);
 	}
 
-	return VipPlotItem::itemChange(change, value);
+	return QGraphicsObject::itemChange(change, value);
 }
 
 VipFunctionDispatcher<2>& vipCreateTimeRangeItemsDispatcher()
@@ -504,7 +471,7 @@ public:
 
 	QPointF pos;
 	VipTimeRange initRange;
-	QMap<VipTimeRangeItem*, QPair<qint64, qint64>> initItemRanges;
+	QHash<VipTimeRangeItem*, QPair<qint64, qint64>> initItemRanges;
 	int selection;
 	int state;
 	DrawComponents drawComponents;
@@ -518,7 +485,7 @@ public:
 VipTimeRangeListItem::VipTimeRangeListItem(VipPlayerArea* area)
   : VipPlotItem(VipText())
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 	d_data->area = area;
 	this->setItemAttribute(AutoScale);
 	this->setItemAttribute(HasLegendIcon, false);
@@ -622,7 +589,8 @@ void VipTimeRangeListItem::computeToolTip()
 
 		this->setToolTipText(tool_tip);
 		for (int i = 0; i < d_data->items.size(); ++i) {
-			d_data->items[i]->setToolTipText(tool_tip);
+			//d_data->items[i]->setToolTipText(tool_tip);
+			d_data->items[i]->setProperty("_vip_toolTip",tool_tip);
 		}
 	}
 }
@@ -660,9 +628,7 @@ void VipTimeRangeListItem::setDevice(VipIODevice* device)
 					item->blockSignals(true);
 					item->setInitialTimeRange(it.key());
 					item->setCurrentTimeRange(it.value());
-					item->setColor(d_data->color);
 					item->setReverse(it.value().first > it.value().second);
-					item->setRenderHints(QPainter::Antialiasing);
 					item->setFlag(ItemHasNoContents);
 					item->blockSignals(false);
 				}
@@ -674,8 +640,6 @@ void VipTimeRangeListItem::setDevice(VipIODevice* device)
 					VipTimeRangeItem* item = new VipTimeRangeItem(this);
 					item->blockSignals(true);
 					item->setInitialTimeRange(_lst[i]);
-					item->setRenderHints(QPainter::Antialiasing);
-					item->setColor(d_data->color);
 					item->setFlag(ItemHasNoContents);
 					item->blockSignals(false);
 				}
@@ -730,28 +694,15 @@ VipTimeRangeTransforms VipTimeRangeListItem::transforms() const
 
 void VipTimeRangeListItem::setHeights(double start, double end)
 {
-	// if (d_data->heights != QPair<double, double>(start, end))
-	{
-		d_data->heights = QPair<double, double>(start, end);
-		QList<VipTimeRangeItem*> lst = items();
-
-		for (int i = 0; i < lst.size(); ++i)
-			lst[i]->setHeights(start, end);
-
-		update();
-		// emitItemChanged();
-	}
+	d_data->heights = QPair<double, double>(start, end);
+	update();
 }
 
 void VipTimeRangeListItem::setColor(const QColor& c)
 {
 	if (d_data->color != c) {
 		d_data->color = c;
-		QList<VipTimeRangeItem*> lst = items();
-
-		for (int i = 0; i < lst.size(); ++i)
-			lst[i]->setColor(c);
-
+		
 		emitItemChanged();
 	}
 }
@@ -897,22 +848,31 @@ void VipTimeRangeListItem::drawSelected(QPainter* p, const VipCoordinateSystemPt
 
 		static bool is_dark_skin = isDarkSkin(this->view());
 
-		// TEST: draw items
+		// draw items
+		p->setRenderHints(QPainter::Antialiasing);
+		QRect prev;
 		for (const VipTimeRangeItem* it : d_data->items) {
-			it->draw(p, m);
+			// Only draw non overlapping items
+			QRect r = it->boundingRect().toRect();
+			if(!prev.contains(r)){ 
+				it->draw(p, m);
+				prev = r;
+			}
 		}
 
-		// draw the device name
+		// set Z value
 		if (zValue() <= d_data->items.first()->zValue())
 			const_cast<VipTimeRangeListItem*>(this)->setZValue(d_data->items.first()->zValue() + 1);
 
+		VipIODevice* d = device();
+
 		QRectF bounding = itemsBoundingRect();
-		QPointF left = bounding.bottomLeft() + QPointF(20, -1); // m->transform(QPointF(d_data->items.first()->left(), this->heights().first));
+		QPointF left = bounding.bottomLeft() + QPointF(20, -1); 
 
 		if (d_data->drawComponents & Text) {
 			p->save();
 			p->setRenderHints(QPainter::TextAntialiasing | QPainter::Antialiasing);
-			QColor c = d_data->items.first()->color();
+			QColor c = d_data->color;
 			if (isLight(c) || isDark(c)) {
 				c.setRed(255 - c.red());
 				c.setGreen(255 - c.green());
@@ -927,16 +887,19 @@ void VipTimeRangeListItem::drawSelected(QPainter* p, const VipCoordinateSystemPt
 			f.setBold(true);
 			f.setPointSizeF(bounding.height() / 1.4);
 			p->setFont(f);
-			p->drawText(left, device()->name());
+			if (d)
+				p->drawText(left, d->name());
 			p->restore();
 		}
 
 		// set the items color if necessary
-		QVariant v = device()->property("_vip_color");
-		if (v.userType() == qMetaTypeId<QColor>()) {
-			QColor c = v.value<QColor>();
-			if (c != Qt::transparent) {
-				const_cast<VipTimeRangeListItem*>(this)->setColor(c);
+		if (d) {
+			QVariant v = d->property("_vip_color");
+			if (v.userType() == qMetaTypeId<QColor>()) {
+				QColor c = v.value<QColor>();
+				if (c != Qt::transparent) {
+					const_cast<VipTimeRangeListItem*>(this)->setColor(c);
+				}
 			}
 		}
 	}
@@ -1027,9 +990,7 @@ void VipTimeRangeListItem::mouseMoveEvent(QGraphicsSceneMouseEvent* event)
 	tr.scale(dx, dx);
 
 	// apply it
-	for (int i = 0; i < d_data->items.size(); ++i) {
-		VipTimeRangeItem* it = d_data->items[i];
-
+	for (VipTimeRangeItem* it : d_data->items) {
 		VipTimeRange itrange = d_data->initItemRanges[it];
 
 		QPointF times(itrange.first, itrange.second);
@@ -1303,24 +1264,26 @@ public:
 
 		for (; i < items.size(); ++i) {
 			if (VipTimeRangeListItem* it = qobject_cast<VipTimeRangeListItem*>(items[i]))
-				if (!(it->states() & VipTimeRangeListItem::HiddenForPlayer)) {
-					bounds = VipInterval(it->device()->firstTime(), it->device()->lastTime());
-					if (bounds.isValid()) {
-						++i;
-						break;
+				if (VipIODevice* d = it->device())
+					if (!(it->states() & VipTimeRangeListItem::HiddenForPlayer)) {
+						bounds = VipInterval(d->firstTime(), d->lastTime());
+						if (bounds.isValid()) {
+							++i;
+							break;
+						}
 					}
-				}
 		}
 
 		// compute the union boundaries
 
 		for (; i < items.size(); ++i) {
 			if (VipTimeRangeListItem* it = qobject_cast<VipTimeRangeListItem*>(items[i]))
-				if (!(it->states() & VipTimeRangeListItem::HiddenForPlayer)) {
-					VipInterval tmp(it->device()->firstTime(), it->device()->lastTime());
-					if (tmp.isValid())
-						bounds = bounds.unite(tmp);
-				}
+				if (VipIODevice* d = it->device())
+					if (!(it->states() & VipTimeRangeListItem::HiddenForPlayer)) {
+						VipInterval tmp(d->firstTime(), d->lastTime());
+						if (tmp.isValid())
+							bounds = bounds.unite(tmp);
+					}
 		}
 		vip_double stepSize = 0.;
 		vip_double x1 = bounds.minValue();
@@ -1367,7 +1330,7 @@ public:
 
 	qint64 highlightedTime;
 	qint64 boundTime;
-	VipPlotItem* highlightedItem;
+	QPointer<QGraphicsObject> highlightedItem;
 
 	VipPlotMarker* highlightedMarker;
 	VipPlotMarker* timeMarker;
@@ -1386,12 +1349,13 @@ public:
 	int adjustFactor;
 
 	bool dirtyProcessingPool;
+	QTimer updateDeviceTimer;
 };
 
 VipPlayerArea::VipPlayerArea()
   : VipPlotArea2D()
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 	d_data->timeRangeSelectionBrush = QBrush(QColor(0x8290FC));
 	d_data->selectionTimeRange = VipInvalidTimeRange;
 	// d_data->palette = VipColorPalette(VipLinearColorMap::ColorPaletteRandom);//VipColorPalette(VipLinearColorMap::ColorPaletteStandard);
@@ -1483,10 +1447,15 @@ VipPlayerArea::VipPlayerArea()
 	this->bottomAxis()->setUseBorderDistHintForLayout(true);
 
 	VipToolTip* tip = new VipToolTip();
+	tip->setDisplayFlag(VipToolTip::RegularItems);
 	tip->setRegionPositions(Vip::RegionPositions(Vip::XInside));
 	tip->setAlignment(Qt::AlignTop | Qt::AlignRight);
 	tip->setMaxItems(1);
 	this->setPlotToolTip(tip);
+
+	d_data->updateDeviceTimer.setSingleShot(true);
+	d_data->updateDeviceTimer.setInterval(100);
+	connect(&d_data->updateDeviceTimer, SIGNAL(timeout()), this, SLOT(updateAreaDevices()));
 }
 
 VipPlayerArea::~VipPlayerArea()
@@ -1666,7 +1635,16 @@ VipTimeRangeListItem* VipPlayerArea::findItem(VipIODevice* device) const
 
 void VipPlayerArea::updateAreaDevices()
 {
+	d_data->dirtyProcessingPool = false;
 	updateArea(false);
+}
+void VipPlayerArea::defferedUpdateAreaDevices()
+{
+	//d_data->updateDeviceTimer.start();
+	if (!d_data->dirtyProcessingPool) {
+		d_data->dirtyProcessingPool = true;
+		QMetaObject::invokeMethod(this, "updateAreaDevices", Qt::QueuedConnection);
+	}
 }
 
 void VipPlayerArea::updateArea(bool check_item_visibility)
@@ -1742,7 +1720,8 @@ void VipPlayerArea::updateArea(bool check_item_visibility)
 		// remove items with invalid devices
 		for (int i = 0; i < d_data->items.size(); ++i)
 			if (devices.indexOf(d_data->items[i]->device()) < 0) {
-				delete d_data->items[i];
+				d_data->items[i]->setVisible(false);
+				d_data->items[i]->deleteLater();
 				d_data->items.removeAt(i);
 				--i;
 			}
@@ -1772,8 +1751,8 @@ void VipPlayerArea::setProcessingPool(VipProcessingPool* pool)
 {
 	if (pool != d_data->pool) {
 		if (d_data->pool) {
-			disconnect(d_data->pool, SIGNAL(objectAdded(QObject*)), this, SLOT(updateAreaDevices()));
-			disconnect(d_data->pool, SIGNAL(objectRemoved(QObject*)), this, SLOT(updateAreaDevices()));
+			disconnect(d_data->pool, SIGNAL(objectAdded(QObject*)), this, SLOT(defferedUpdateAreaDevices()));
+			disconnect(d_data->pool, SIGNAL(objectRemoved(QObject*)), this, SLOT(defferedUpdateAreaDevices()));
 			disconnect(d_data->pool, SIGNAL(timestampingChanged()), this, SLOT(addMissingDevices()));
 			disconnect(d_data->pool, SIGNAL(timeChanged(qint64)), this, SLOT(setTime(qint64)));
 
@@ -1791,77 +1770,10 @@ void VipPlayerArea::setProcessingPool(VipProcessingPool* pool)
 			d_data->limit1Grip->setProcessingPool(pool);
 			d_data->limit2Grip->setProcessingPool(pool);
 
-			connect(d_data->pool, SIGNAL(objectAdded(QObject*)), this, SLOT(updateAreaDevices()));	 //,Qt::QueuedConnection);
-			connect(d_data->pool, SIGNAL(objectRemoved(QObject*)), this, SLOT(updateAreaDevices())); //,Qt::DirectConnection);
+			connect(d_data->pool, SIGNAL(objectAdded(QObject*)), this, SLOT(defferedUpdateAreaDevices())); //,Qt::QueuedConnection);
+			connect(d_data->pool, SIGNAL(objectRemoved(QObject*)), this, SLOT(defferedUpdateAreaDevices())); //,Qt::DirectConnection);
 			connect(d_data->pool, SIGNAL(timeChanged(qint64)), this, SLOT(setTime64(qint64)), Qt::QueuedConnection);
 			connect(d_data->pool, SIGNAL(timestampingChanged()), this, SLOT(addMissingDevices()), Qt::QueuedConnection);
-
-			// VipProcessingObjectList lst = pool->processing("VipIODevice");
-			//
-			// //update time slider
-			// qint64 time = d_data->pool->time();
-			// if (time < d_data->pool->firstTime())
-			// time = d_data->pool->firstTime();
-			// else if (time > d_data->pool->lastTime())
-			// time = d_data->pool->lastTime();
-			//
-			// d_data->timeMarker->setRawData(QPointF(time, 0));
-			// d_data->timeSliderGrip->blockSignals(true);
-			// d_data->timeSliderGrip->setValue(time);
-			// d_data->timeSliderGrip->blockSignals(false);
-			//
-			// int count = 0;
-			//
-			//
-			// for(int i=0; i < lst.size(); ++i)
-			// {
-			// VipIODevice * device = qobject_cast<VipIODevice*>(lst[i]);
-			//
-			// if( (device->openMode() & VipIODevice::ReadOnly) && device->deviceType() == VipIODevice::Temporal && device->size() != 1)
-			// {
-			// //retrieve all display object linked to this device
-			// QList<VipDisplayObject*> displays = vipListCast<VipDisplayObject*>(device->allSinks());
-			// //do not show this device time range if the display widgets are hidden
-			// bool hidden = displays.size() > 0;
-			// for(int d=0; d < displays.size(); ++d)
-			//	if(displays[d]->isVisible())
-			//	{
-			//		hidden = false;
-			//		break;
-			//	}
-			//
-			//
-			// //if the display is hidden, remove it from time computations (time window, next, previous and closest time) from the processing pool
-			// if (hidden)
-			// {
-			//	//only disable temporal devics that contribute to the processing pool time limits
-			//	if(device->deviceType() == VipIODevice::Temporal)
-			//		device->setEnabled(false);
-			//	continue;
-			// }
-			// else
-			// {
-			//	//enable the device, read the data at processing pool time if needed
-			//	bool need_reload = !device->isEnabled();
-			//	device->setEnabled( true);
-			//	if (need_reload)
-			//		device->read(pool->time());
-			// }
-			//
-			// VipTimeRangeListItem * item = new VipTimeRangeListItem();
-			// item->setAxes(d_data->timeScale,this->leftAxis(),VipCoordinateSystem::Cartesian);
-			// item->setDevice(device);
-			// item->setHeights(count + ITEM_START_HEIGHT, count+ITEM_END_HEIGHT);
-			// item->setColor(d_data->palette.color(d_data->items.size()));
-			// ++count;
-			//
-			// d_data->items << item;
-			//
-			// }
-			// }
-			//
-			// //update items visibility
-			// setTimeRangeVisible(d_data->visible);
 		}
 
 		updateArea(true);
@@ -2429,7 +2341,7 @@ VipPlayWidget::VipPlayWidget(QWidget* parent)
   : QFrame(parent)
 {
 
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 	d_data->dirtyTimeLines = false;
 	d_data->playWidgetHidden = false;
 	d_data->alignedToZero = false;

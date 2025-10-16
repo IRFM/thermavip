@@ -85,7 +85,7 @@ public:
 	bool ConstructNewObject() const;
 
 private:
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 ///@brief QTreeWidgetItem representing a VipFieldOfView.
@@ -155,7 +155,7 @@ private:
 	void buildPyramid();
 	OffscreenMappingToInputData* buildMapping(bool createNewObject, VipOutput* image);
 
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 /// @brief Widget displaying a list of VipFieldOfView as a QTreeWidget.
@@ -237,7 +237,7 @@ protected:
 	virtual void keyPressEvent(QKeyEvent* evt);
 
 private:
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 /// @brief Item representing a VipVTKObject in a QTeeWidget
@@ -408,7 +408,7 @@ protected:
 	virtual void keyPressEvent(QKeyEvent* evt);
 
 private:
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 /// @brief Small widget used to select attributes to save from a VipVTKPlayer
@@ -504,7 +504,7 @@ private:
 	VipVTKObject::AttributeType StringToType(const QString&) const;
 	void UpdateAttributeWidgets(VipVTKObject::AttributeType, const QString& attr = "None", int comp = 0);
 
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 class VIP_GUI_EXPORT VipVTKPlayerToolWidget : public VipToolWidgetPlayer
@@ -541,7 +541,7 @@ private Q_SLOTS:
 private:
 	void connectWidget(QWidget* src, const char* signal);
 
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 
@@ -626,18 +626,19 @@ public Q_SLOTS:
 	void setOrientationMarkerWidgetVisible(bool);
 	void setAxesVisible(bool);
 	void setLighting(bool);
-	void applyPendingActions();
+	
 private Q_SLOTS:
 	void timeChanged(qint64);
 	void applyDelayedPendingActions(const VipFieldOfView& fov);
 	void cameraChanged();
+	void applyPendingActions();
 
 protected:
 	virtual void startRender(VipRenderState& state);
 	virtual void endRender(VipRenderState& state);
 
 private:
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 VIP_REGISTER_QOBJECT_METATYPE(VipVTKPlayer*)
@@ -656,7 +657,7 @@ public:
 	virtual void updatePage();
 
 private:
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 #endif

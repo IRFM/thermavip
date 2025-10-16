@@ -127,7 +127,7 @@ private:
 	double closestValue(double);
 
 	
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 /// Widget representing a vertical or horizontal slider with an axis.

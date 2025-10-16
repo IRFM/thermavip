@@ -677,7 +677,7 @@ public:
 VipFOVSequenceEditor::VipFOVSequenceEditor(VipVTKGraphicsView * view, QWidget * parent)
 	:QWidget(parent)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 	d_data->view = view;
 	d_data->controls = new QToolBar();
 	d_data->times = new FOVListWidget();

@@ -303,6 +303,7 @@ H5FD_device_set_eoa(H5FD_t *_file, H5FD_mem_t /* type*/, haddr_t addr)
 {
 	H5FD_device_t	*file = (H5FD_device_t*)_file;
 	file->eoa = addr;
+
 	return SUCCEED;
 } /* end H5FD_device_set_eoa() */
 
@@ -370,6 +371,7 @@ H5FD_device_write(H5FD_t *_file, H5FD_mem_t  /*type*/, hid_t  /*dxpl_id*/, haddr
 		VIP_LOG_ERROR("addr overflow, addr = " + QString::number((unsigned long long)addr));
 		return -1;
 	}
+
 	/* Seek to the correct location */
 	if (!file->device->seek(addr))
 	{
@@ -378,6 +380,7 @@ H5FD_device_write(H5FD_t *_file, H5FD_mem_t  /*type*/, hid_t  /*dxpl_id*/, haddr
 	}
 
 	qint64 nbytes = file->device->write((const char*)buf, size);
+	QString err = file->device->errorString();
 	if(nbytes == -1)
 	{
 		VIP_LOG_ERROR("unable to seek to proper position");

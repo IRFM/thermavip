@@ -53,7 +53,7 @@ static QList<VipTextEditor*>& _editors()
 VipTextEditor::VipTextEditor(QWidget* parent)
   : QPlainTextEdit(parent)
 {
-	VIP_CREATE_PRIVATE_DATA(d_data);
+	VIP_CREATE_PRIVATE_DATA();
 	// setFrameShape(QFrame::NoFrame);
 	// setStyleSheet("border : none;");
 	d_data->line = -1;

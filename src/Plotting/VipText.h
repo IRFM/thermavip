@@ -40,6 +40,7 @@
 #include <QString>
 
 #include "VipBoxStyle.h"
+#include "VipPimpl.h"
 
 #if defined(Q_CC_MSVC) && _MSC_VER < 1900
 #define snprintf _snprintf
@@ -139,7 +140,7 @@ public:
 	virtual Qt::TextFormat format() const noexcept { return Qt::PlainText; }
 
 private:
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 #ifndef QT_NO_RICHTEXT
@@ -645,7 +646,7 @@ public:
 	VipText::TextDirection textDirection() const;
 
 private:
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 Q_DECLARE_OPERATORS_FOR_FLAGS(VipText::LayoutAttributes);

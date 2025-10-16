@@ -92,7 +92,7 @@ private:
 	void printMessage(VipLogging::Level level, const QString& msg);
 
 	
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 Q_DECLARE_OPERATORS_FOR_FLAGS(VipLogConsole::LogSections)
@@ -134,7 +134,7 @@ private Q_SLOTS:
 private:
 	void updateVisibleMenu();
 	
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 VIP_REGISTER_QOBJECT_METATYPE(VipConsoleWidget*)

@@ -32,7 +32,7 @@ Q_SIGNALS:
 	void changed();
 
 private:
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 class VipPyApplyToolBar;
@@ -58,7 +58,7 @@ private Q_SLOTS:
 	void manageProcessing();
 
 private:
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 /// @brief A simple horizontal widget used by the different Python processing editors.
@@ -79,7 +79,7 @@ public:
 	QToolButton* manageButton() const;
 
 private:
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 /// @brief Manager widget for custom Python processings.
@@ -122,7 +122,7 @@ private Q_SLOTS:
 protected:
 	virtual void keyPressEvent(QKeyEvent*);
 
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 class VipPlotPlayer;
@@ -160,7 +160,7 @@ public Q_SLOTS:
 	void showErrorDelayed(const QPoint& pos, const QString& error);
 
 private:
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 /// @brief Open the processing manager widget
@@ -187,7 +187,7 @@ private Q_SLOTS:
 	void updateVisibility();
 
 private:
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 
@@ -208,7 +208,7 @@ public:
 	int selectedFit() const;
 
 private:
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 

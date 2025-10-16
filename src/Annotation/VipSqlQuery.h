@@ -501,7 +501,7 @@ protected:
 
 private:
 	void init();
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 /// @brief Vertical widget used to query DB for events
@@ -580,7 +580,7 @@ private Q_SLOTS:
 
 public:
 	
-	VIP_DECLARE_PRIVATE_DATA(d_data);
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 #endif
