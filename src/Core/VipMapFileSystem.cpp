@@ -1092,6 +1092,11 @@ public:
 				return false;
 			
 			QString tmp = p.readAllStandardOutput();
+			if (tmp.contains("The host key is not cached")) {
+				p.write("y\n");
+				p.waitForBytesWritten();
+				continue;
+			}
 			if (tmp.contains("psftp> "))
 				return true;
 			if (tmp.contains("closed", Qt::CaseInsensitive) || tmp.contains("error", Qt::CaseInsensitive))
