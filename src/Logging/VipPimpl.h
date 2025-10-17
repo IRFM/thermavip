@@ -51,17 +51,21 @@ namespace detail
 	template<class PrivateData>
 	struct InternalData
 	{
+		template<class U>
+		static void emitObjectDestroy(void * u) {Q_EMIT static_cast<U*>(u)->destroy();}
+
 		void* object ;
 		PrivateData data;
-		std::function<void()> emitDestroy;
+		void (*emitDestroy)(void *);
 		
 		template<class T, class... Args>
 		InternalData(T* obj, Args&&... args)
 		  : object(obj)
 		  , data(std::forward<Args>(args)...)
+		  , emitDestroy(nullptr)
 		{
 			if constexpr (isQObject<T>::value)
-				emitDestroy = [obj]() { Q_EMIT obj->destroy(); };
+				emitDestroy = emitObjectDestroy<T>;
 			addPimpl(obj);
 		}
 
@@ -71,7 +75,7 @@ namespace detail
 			removePimpl(object);
 			// emit signal destroy() for QObject types
 			if (emitDestroy)
-				emitDestroy();
+				emitDestroy(object);
 		}
 
 		
@@ -116,16 +120,16 @@ namespace detail
 	{
 	};
 	
-	template<class T, class = int>
-	struct hasPimplData : std::false_type
-	{
-	};
-
-	template<class T>
-	struct hasPimplData<T, decltype((void)T::d_data, 0)> 
-	{
-		static constexpr bool value = isPimpl<decltype(T::d_data)>::value;
-	};
+	template <typename T>                                                      
+    class hasPimplData
+    {                                                                          
+        typedef char yes_type;
+        typedef long no_type;
+        template <typename U> static yes_type test(decltype(&U::d_data)); 
+        template <typename U> static no_type  test(...);                       
+    public:                                                                    
+        static constexpr bool value = sizeof(test<T>(0)) == sizeof(yes_type) && isPimpl<decltype(T::d_data)>::value;  
+    };
 
 
 }
