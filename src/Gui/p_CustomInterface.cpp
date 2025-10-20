@@ -134,7 +134,11 @@ public:
 	virtual void paintEvent(QPaintEvent*)
 	{
 		QStyleOption opt;
+#if QT_VERSION < QT_VERSION_CHECK(5, 15, 0)
 		opt.init(this);
+#else
+		opt.initFrom(this);
+#endif
 		QPainter p(this);
 		style()->drawPrimitive(QStyle::PE_Widget,&opt,&p,this);
 		

@@ -130,6 +130,11 @@ int main(int argc, char** argv)
 
 	qInstallMessageHandler(myMessageOutput);
 
+#ifdef WIN32
+	// For now, fix issues with Windows 11 style for QSpinBox
+	QApplication::setStyle("windowsvista");
+#endif
+
 	//_putenv("QT_SCALE_FACTOR=1.5");
 	// register command option for gui
 	VipCommandOptions::instance().add("last_session", "Load last session", VipCommandOptions::NoValue);

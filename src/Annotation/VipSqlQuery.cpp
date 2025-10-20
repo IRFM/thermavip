@@ -246,7 +246,7 @@ static bool reconnectDB(bool close = false)
 		db.close();
 
 	if (!db.isValid()) {
-		VIP_LOG_ERROR("DataBase not valid!!!");
+		VIP_LOG_ERROR("DataBase not valid!!! ",db.lastError().text());
 		return false;
 	}
 
