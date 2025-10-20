@@ -121,7 +121,7 @@ namespace detail
 	};
 	
 	template <typename T>                                                      
-    class hasPimplData
+    struct hasPimplData
     {                                                                          
         typedef char yes_type;
         typedef long no_type;
@@ -138,7 +138,7 @@ namespace detail
 /// @brief Declare private data for Pimpl idiom, use in class definition, inside the private section.
 /// This version is for any kind of (non copyable) classes
 #define VIP_DECLARE_PRIVATE_DATA_NO_QOBJECT()                                                                                                                                                          \
-	template<class T, class U>                                                                                                                                                                              \
+	template<class T>                                                                                                                                                                              \
 	friend struct detail::hasPimplData;                                                                                                                                                    \
 	class PrivateData;                                                                                                                                                                             \
 	detail::InternalDataPtr<PrivateData> d_data
