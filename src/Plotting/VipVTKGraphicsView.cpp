@@ -54,6 +54,12 @@ VipInfoWidget::VipInfoWidget(VipVTKGraphicsView* view)
 	setSizePolicy(QSizePolicy::MinimumExpanding, QSizePolicy::MinimumExpanding);
 	this->setMargin(5);
 	connect(view, SIGNAL(mouseMove(const QPoint&)), this, SLOT(updateDisplayInfo(const QPoint&)), Qt::QueuedConnection);
+
+	view->installEventFilter(this);
+	this->setMaximumWidth(view->width());
+	this->setMinimumWidth(view->width());
+	this->setWordWrap(true);
+	this->move(0, 20);
 }
 
 /* void VipInfoWidget::AddStartingText(const QString& str)
@@ -70,6 +76,15 @@ void VipInfoWidget::ClearAdditionalText()
 	beginAddText.clear();
 	endAddText.clear();
 }*/
+
+bool VipInfoWidget::eventFilter(QObject* w, QEvent* evt)
+{
+	if (evt->type() == QEvent::Resize) {
+		this->setMaximumWidth(view->width());
+		this->setMinimumWidth(view->width());
+	}
+	return false;
+}
 
 void VipInfoWidget::updateDisplayInfo(const QPoint& pt)
 {
@@ -97,7 +112,8 @@ void VipInfoWidget::updateDisplayInfo(const QPoint& pt)
 	setText(str);
 	setVisible(!str.isEmpty());
 	last = pos;
-	resize(VipText(text()).textSize().toSize() + QSize(10, 10));
+	
+	//resize(VipText(text()).textSize().toSize() + QSize(10, 10));
 }
 
 void VipInfoWidget::wheelEvent(QWheelEvent* event)
@@ -156,34 +172,275 @@ static QBrush WidgetTextBrush(QWidget* w)
 		return qApp->palette().text();
 }
 
+
+#include <vtkTriangleFilter.h>
+#include <vtkDecimatePro.h>
+#include <vtkUnstructuredGrid.h>
+#include <vtkStructuredGrid.h>
+#include <vtkUnstructuredGridQuadricDecimation.h>
+#include <vtkExplicitStructuredGridToUnstructuredGrid.h>
+#include <vtkGeometryFilter.h>
+
+static vtkDataObject* toDecimatedPolyData(vtkDataObject* obj)
+{
+	vtkSmartPointer < vtkPolyData> poly ;
+	if (obj->IsA("vtkPolyData"))
+		poly = vtkSmartPointer<vtkPolyData> (static_cast<vtkPolyData*>(obj));
+	else if (obj->IsA("vtkDataSet")) {
+		vtkGeometryFilter* f = vtkGeometryFilter::New();
+		f->SetInputData(obj);
+		f->Update();
+		poly = vtkSmartPointer<vtkPolyData> (f->GetOutput());
+		f->Delete();
+		if (!poly)
+			return nullptr;
+
+		// Remove attributes as the vtkGeometryFilter produces errors
+		while (poly->GetPointData()->GetNumberOfArrays())
+			poly->GetPointData()->RemoveArray(0);
+		while (poly->GetCellData()->GetNumberOfArrays())
+			poly->GetCellData()->RemoveArray(0);
+		while (poly->GetFieldData()->GetNumberOfArrays())
+			poly->GetFieldData()->RemoveArray(0);
+	}
+	if (!poly)
+		return nullptr;
+
+	vtkTriangleFilter* tr = vtkTriangleFilter::New();
+	tr->SetInputData(poly);
+	tr->Update();
+	vtkSmartPointer<vtkPolyData> tmp = vtkSmartPointer<vtkPolyData> (tr->GetOutput());
+	if (!tmp) 
+		return nullptr;
+	tr->Delete();
+
+	vtkDecimatePro* dec = vtkDecimatePro::New();
+	dec->SetInputData(tmp);
+	dec->SetTargetReduction(0.95);
+	dec->PreserveTopologyOff();
+	dec->Update();
+	vtkDataObject* res = dec->GetOutput();
+	res->Register(res);
+	dec->Delete();
+	return res;
+}
+/*
+static vtkDataObject* toDecimatedPolyData(vtkDataObject* obj)
+{
+	if (obj->IsA("vtkStructuredGrid")) {
+		vtkExplicitStructuredGridToUnstructuredGrid* conv = vtkExplicitStructuredGridToUnstructuredGrid::New();
+		conv->SetInputData(obj);
+		conv->Update();
+		vtkUnstructuredGrid * u = conv->GetOutput();
+		u->Register(u);
+		conv->Delete();
+
+		vtkUnstructuredGridQuadricDecimation* dec = vtkUnstructuredGridQuadricDecimation::New();
+		dec->SetTargetReduction(0.9);
+		dec->SetInputData(u);
+		dec->Update();
+		obj = dec->GetOutput();
+		obj->Register(obj);
+		dec->Delete();
+		return obj;
+	}
+
+	if (obj->IsA("vtkUnstructuredGrid")) {
+		vtkUnstructuredGridQuadricDecimation* dec = vtkUnstructuredGridQuadricDecimation::New();
+		dec->SetTargetReduction(0.9);
+		dec->SetInputData(obj);
+		dec->Update();
+		obj = dec->GetOutput();
+		obj->Register(obj);
+		dec->Delete();
+		return obj;
+	}
+	if (obj->IsA("vtkStructuredGrid")) {
+		vtkUnstructuredGridQuadricDecimation* dec = vtkUnstructuredGridQuadricDecimation::New();
+		dec->SetTargetReduction(0.9);
+		dec->SetInputData(obj);
+		dec->Update();
+		obj = dec->GetOutput();
+		obj->Register(obj);
+		dec->Delete();
+		return obj;
+	}
+	if (obj->IsA("vtkPolyData")) {
+		vtkDecimatePro* dec = vtkDecimatePro::New();
+		dec->SetInputData(obj);
+		dec->SetTargetReduction(0.9);
+		dec->PreserveTopologyOn();
+		dec->Update();
+		obj = dec->GetOutput();
+		obj->Register(obj);
+		dec->Delete();
+		return obj;
+	}
+	
+}
+*/
+struct Decimated
+{
+	VipPlotVTKObject* plot = nullptr;
+	vtkDataObject* src = nullptr;
+};
+
+static void computeDecimatedObjects(QHash<VipPlotVTKObject*, Decimated>& map, const PlotVipVTKObjectList& plots)
+{
+	QHash<VipPlotVTKObject*, Decimated> new_map;
+	QVector<VipPlotVTKObject*> vector_to_add;
+
+	for ( auto* plot : plots) {
+		auto it = map.find((VipPlotVTKObject*)plot);
+		bool to_add = false;
+		VipVTKObject obj = plot->rawData();
+		if (vtkPoints* pts = obj.points())
+			if (pts->GetNumberOfPoints() > 10000) {
+				if (it != map.end()) {
+					auto mtime_pts = pts->GetMTime();
+					if (mtime_pts > it.value().plot->rawData().data()->GetMTime() || it.value().src != obj.data())
+						to_add = true;
+					else {
+						new_map.insert(it.key(), it.value());
+					}
+				}
+				else
+					to_add = true;
+			}
+		if (to_add) {
+			vector_to_add.push_back(plot);
+			/* vtkPolyData* dec = toDecimatedPolyData(obj.data());
+			if (dec) {
+				VipPlotVTKObject* p = it == map.end() ? new VipPlotVTKObject() : it.value().plot;
+				p->setProperty("_vip_hidden",true);
+				p->setRawData(VipVTKObject(dec));
+				dec->Delete();
+				p->setAxes(plot->axes(), VipCoordinateSystem::Cartesian);
+				new_map.insert(plot, { p, obj.data() });
+			}*/
+		}
+	}
+
+	QVector<vtkDataObject*> decimated(vector_to_add.size());
+#pragma omp parallel for
+	for (int i = 0; i < (int)vector_to_add.size(); ++i) {
+		VipPlotVTKObject* plot = vector_to_add[i];
+		decimated[i] = toDecimatedPolyData(plot->rawData().data());
+	}
+
+	for (int i = 0; i < (int)vector_to_add.size(); ++i) {
+		vtkDataObject* dec = decimated[i];
+		VipPlotVTKObject* plot = vector_to_add[i];
+		if (dec) {
+			auto it = map.find((VipPlotVTKObject*)plot);
+			VipPlotVTKObject* p = it == map.end() ? new VipPlotVTKObject() : it.value().plot;
+			p->setProperty("_vip_hidden", true);
+			p->setRawData(VipVTKObject(dec));
+			dec->Delete();
+			p->setAxes(plot->axes(), VipCoordinateSystem::Cartesian);
+			new_map.insert(plot, { p, plot->rawData().data() });
+		}
+	}
+
+	// remove old objects
+	for (auto it = map.begin(); it != map.end(); ++it) {
+		if (new_map.find(it.key()) == new_map.end()) {
+			//delete value
+			it.value().plot->deleteLater();
+		}
+	}
+
+	map = std::move(new_map);
+
+	//set all attributes
+	for (auto it = map.begin(); it != map.end(); ++it) {
+		auto* plot = it.key();
+		auto* dec = it.value().plot;
+
+		dec->actor()->SetVisibility(plot->isVisible());
+		plot->actor()->SetVisibility(false);
+
+		dec->setSelectedColor(plot->selectedColor());
+		dec->setColor(plot->color());
+		dec->setEdgeColor(plot->edgeColor());
+		if (plot->hasHighlightColor())
+			dec->setHighlightColor(plot->highlightColor());
+		else
+			dec->removeHighlightColor();
+		dec->setEdgeVisible(plot->edgeVisible());
+		dec->setOpacity(plot->opacity());
+		dec->setLayer(plot->layer());
+		dec->actor()->GetProperty()->SetLighting(plot->actor()->GetProperty()->GetLighting());
+		dec->setSelected(plot->isSelected());
+	}
+
+	
+}
+
+
+class VipVTKGraphicsView::PrivateData
+{
+public:
+	VipVTKWidget* widget = nullptr;
+	VipInfoWidget* infos = nullptr;
+	vtkRenderer* renderer = nullptr;
+	QList<vtkRenderer*> renderers;
+	QGraphicsItem* itemUnderMouse = nullptr;
+	QPointer<QGraphicsObject> objectUnderMouse;
+	VipColorPalette palette;
+	VipBorderLegend* annotationLegend;
+	OffscreenExtractShapeStatistics* stats = nullptr;
+
+	vtkSmartPointer<vtkLookupTable> lut;
+	vtkSmartPointer<vtkScalarBarActor> scalarBar;
+	vtkSmartPointer<vtkCoordinate> coordinates;
+
+	vtkSmartPointer<vtkCubeAxesActor> cubeAxesActor;
+	// vtkSmartPointer<vtkGridAxes3DActor> mGridAxesActor;
+	vtkSmartPointer<vtkOrientationMarkerWidget> orientationAxes;
+
+	QHash<VipPlotVTKObject*, Decimated> decimated;
+
+	bool trackingEnabled = false;
+	bool dirtyColorMapDiv;
+	bool initialized{ false };
+	bool inRefresh{ false };
+	bool hasLight{ true };
+	bool resetCameraEnabled{ true };
+	bool decimateOnMove{ true };
+	OffscreenExtractContour contours;
+	qint64 lastFailContour = 0;
+};
+
+
 VipVTKGraphicsView::VipVTKGraphicsView()
   : VipImageWidget2D()
-  , mItemUnderMouse(nullptr)
-  , mTrackingEnable(false)
 {
+	VIP_CREATE_PRIVATE_DATA();
+
 	// Tell that we use a specific viewport
 	this->setUseInternalViewport(true);
 	this->setAttribute(Qt::WA_DeleteOnClose);
 	// this->setFrameShape(QFrame::NoFrame);
 
-	mWidget = new VipVTKWidget(); // mCtx);
-	this->setViewport(mWidget);
+	d_data->widget = new VipVTKWidget(); // mCtx);
+	this->setViewport(d_data->widget);
 	this->setViewportUpdateMode(QGraphicsView::FullViewportUpdate);
-	mWidget->renderWindow()->SetSwapBuffers(0); // don't let VTK swap buffers on us
+	d_data->widget->renderWindow()->SetSwapBuffers(0); // don't let VTK swap buffers on us
 
 	// Currently unused
-	//mStats = new OffscreenExtractShapeStatistics(this);
-	mStats = nullptr;
+	//d_data->stats = new OffscreenExtractShapeStatistics(this);
+	d_data->stats = nullptr;
 
 	// Overlayed information widget
-	mInfos = new VipInfoWidget(this);
-	mInfos->move(0, 0);
+	d_data->infos = new VipInfoWidget(this);
+	d_data->infos->move(0, 0);
 
 	// Lookup table
-	mLut = vtkSmartPointer<vtkLookupTable>::New();
-	mLut->SetRange(0, 100);
-	mLut->SetNanColor((double*)VipVTKObject::defaultObjectColor());
-	VIP_VTK_OBSERVER(mLut);
+	d_data->lut = vtkSmartPointer<vtkLookupTable>::New();
+	d_data->lut->SetRange(0, 100);
+	d_data->lut->SetNanColor((double*)VipVTKObject::defaultObjectColor());
+	VIP_VTK_OBSERVER(d_data->lut);
 
 	// Thread pool used to extract point data range
 	//int concurrency = std::thread::hardware_concurrency() / 2;
@@ -217,27 +474,27 @@ VipVTKGraphicsView::VipVTKGraphicsView()
 	
 
 	// Color palette used to affect colors to data objects
-	mPalette = VipColorPalette(VipLinearColorMap::ColorPaletteRandom);
+	d_data->palette = VipColorPalette(VipLinearColorMap::ColorPaletteRandom);
 
-	mScalarBar = vtkSmartPointer<vtkScalarBarActor>::New();
-	mScalarBar->SetLookupTable(mLut);
-	mScalarBar->SetTitle("Title");
-	mScalarBar->SetNumberOfLabels(4);
-	mScalarBar->SetOrientationToVertical();
-	mScalarBar->SetMaximumWidthInPixels(80);
-	mScalarBar->GetLabelTextProperty()->SetColor(0, 0, 0);
-	mScalarBar->GetLabelTextProperty()->SetBold(1);
-	mScalarBar->GetLabelTextProperty()->SetItalic(0);
-	mScalarBar->GetLabelTextProperty()->SetFontSize(14);
-	mScalarBar->GetLabelTextProperty()->SetShadow(0);
+	d_data->scalarBar = vtkSmartPointer<vtkScalarBarActor>::New();
+	d_data->scalarBar->SetLookupTable(d_data->lut);
+	d_data->scalarBar->SetTitle("Title");
+	d_data->scalarBar->SetNumberOfLabels(4);
+	d_data->scalarBar->SetOrientationToVertical();
+	d_data->scalarBar->SetMaximumWidthInPixels(80);
+	d_data->scalarBar->GetLabelTextProperty()->SetColor(0, 0, 0);
+	d_data->scalarBar->GetLabelTextProperty()->SetBold(1);
+	d_data->scalarBar->GetLabelTextProperty()->SetItalic(0);
+	d_data->scalarBar->GetLabelTextProperty()->SetFontSize(14);
+	d_data->scalarBar->GetLabelTextProperty()->SetShadow(0);
 
-	mScalarBar->GetTitleTextProperty()->SetColor(0, 0, 0);
-	mScalarBar->GetTitleTextProperty()->SetBold(1);
-	mScalarBar->GetTitleTextProperty()->SetItalic(0);
-	mScalarBar->GetTitleTextProperty()->SetFontSize(18);
-	mScalarBar->GetTitleTextProperty()->SetShadow(0);
-	mScalarBar->VisibilityOff();
-	VIP_VTK_OBSERVER(mScalarBar);
+	d_data->scalarBar->GetTitleTextProperty()->SetColor(0, 0, 0);
+	d_data->scalarBar->GetTitleTextProperty()->SetBold(1);
+	d_data->scalarBar->GetTitleTextProperty()->SetItalic(0);
+	d_data->scalarBar->GetTitleTextProperty()->SetFontSize(18);
+	d_data->scalarBar->GetTitleTextProperty()->SetShadow(0);
+	d_data->scalarBar->VisibilityOff();
+	VIP_VTK_OBSERVER(d_data->scalarBar);
 
 	/* mLegend = vtkSmartPointer<vtkLegendBoxActor>::New();
 	mLegend->GetEntryTextProperty ()->SetColor(0,0,0);
@@ -254,16 +511,16 @@ VipVTKGraphicsView::VipVTKGraphicsView()
 	VIP_VTK_OBSERVER(mLegend);*/
 
 	// Main renderer
-	mRenderer = vtkRenderer::New();
-	widget()->renderWindow()->AddRenderer(mRenderer);
-	mRenderer->SetInteractive(1);
-	mRenderers.append(mRenderer);
-	mRenderer->Delete();
+	d_data->renderer = vtkRenderer::New();
+	widget()->renderWindow()->AddRenderer(d_data->renderer);
+	d_data->renderer->SetInteractive(1);
+	d_data->renderers.append(d_data->renderer);
+	d_data->renderer->Delete();
 
 	// NEW for vtk9.1
-	mRenderer->GetActiveCamera();
+	d_data->renderer->GetActiveCamera();
 
-	VIP_VTK_OBSERVER(mRenderer);
+	VIP_VTK_OBSERVER(d_data->renderer);
 	VIP_VTK_OBSERVER(widget()->GetRenderWindow());
 
 	// Add layers
@@ -275,55 +532,55 @@ VipVTKGraphicsView::VipVTKGraphicsView()
 		ren->Delete();
 		// NEW for vtk9.1
 		ren->GetActiveCamera();
-		mRenderers << ren;
+		d_data->renderers << ren;
 		VIP_VTK_OBSERVER(ren);
 	}
 	widget()->renderWindow()->SetNumberOfLayers(10);
 
 	// Add legend and bar to the last layer
-	mRenderers.last()->AddActor(mScalarBar);
-	// mRenderers.last()->AddActor(mLegend);
+	d_data->renderers.last()->AddActor(d_data->scalarBar);
+	// d_data->renderers.last()->AddActor(mLegend);
 
 	// Add axes
-	/* mCubeAxesActor = vtkSmartPointer<vtkCubeAxesActor>::New();
+	/* d_data->cubeAxesActor = vtkSmartPointer<vtkCubeAxesActor>::New();
 	double bounds[6] = { 0, 1, 0, 1, 0, 1 };
-	mCubeAxesActor->SetBounds(bounds); // superquadricSource->GetOutput()->GetBounds());
-	mCubeAxesActor->SetUse2DMode(1);
-	mCubeAxesActor->SetLabelScaling(false, 2, 2, 2);
+	d_data->cubeAxesActor->SetBounds(bounds); // superquadricSource->GetOutput()->GetBounds());
+	d_data->cubeAxesActor->SetUse2DMode(1);
+	d_data->cubeAxesActor->SetLabelScaling(false, 2, 2, 2);
 
-	mCubeAxesActor->SetCamera(mRenderers.last()->GetActiveCamera());
-	mCubeAxesActor->GetTitleTextProperty(0)->SetColor(1.0, 0.0, 0.0);
-	mCubeAxesActor->GetLabelTextProperty(0)->SetColor(1.0, 0.0, 0.0);
-	mCubeAxesActor->GetLabelTextProperty(0)->SetFontSize(12);
-	mCubeAxesActor->GetTitleTextProperty(0)->SetFontSize(16);
-	mCubeAxesActor->GetXAxesLinesProperty()->SetColor(1.0, 0.0, 0.0);
+	d_data->cubeAxesActor->SetCamera(d_data->renderers.last()->GetActiveCamera());
+	d_data->cubeAxesActor->GetTitleTextProperty(0)->SetColor(1.0, 0.0, 0.0);
+	d_data->cubeAxesActor->GetLabelTextProperty(0)->SetColor(1.0, 0.0, 0.0);
+	d_data->cubeAxesActor->GetLabelTextProperty(0)->SetFontSize(12);
+	d_data->cubeAxesActor->GetTitleTextProperty(0)->SetFontSize(16);
+	d_data->cubeAxesActor->GetXAxesLinesProperty()->SetColor(1.0, 0.0, 0.0);
 
-	mCubeAxesActor->GetTitleTextProperty(1)->SetColor(0.0, 1.0, 0.0);
-	mCubeAxesActor->GetLabelTextProperty(1)->SetColor(0.0, 1.0, 0.0);
-	mCubeAxesActor->GetLabelTextProperty(1)->SetFontSize(12);
-	mCubeAxesActor->GetTitleTextProperty(1)->SetFontSize(16);
-	mCubeAxesActor->GetYAxesLinesProperty()->SetColor(0.0, 1.0, 0.0);
+	d_data->cubeAxesActor->GetTitleTextProperty(1)->SetColor(0.0, 1.0, 0.0);
+	d_data->cubeAxesActor->GetLabelTextProperty(1)->SetColor(0.0, 1.0, 0.0);
+	d_data->cubeAxesActor->GetLabelTextProperty(1)->SetFontSize(12);
+	d_data->cubeAxesActor->GetTitleTextProperty(1)->SetFontSize(16);
+	d_data->cubeAxesActor->GetYAxesLinesProperty()->SetColor(0.0, 1.0, 0.0);
 
-	mCubeAxesActor->GetTitleTextProperty(2)->SetColor(0.0, 0.0, 1.0);
-	mCubeAxesActor->GetLabelTextProperty(2)->SetColor(0.0, 0.0, 1.0);
-	mCubeAxesActor->GetLabelTextProperty(2)->SetFontSize(12);
-	mCubeAxesActor->GetTitleTextProperty(2)->SetFontSize(16);
-	mCubeAxesActor->GetZAxesLinesProperty()->SetColor(0.0, 0.0, 1.0);
-	VIP_VTK_OBSERVER(mCubeAxesActor);
+	d_data->cubeAxesActor->GetTitleTextProperty(2)->SetColor(0.0, 0.0, 1.0);
+	d_data->cubeAxesActor->GetLabelTextProperty(2)->SetColor(0.0, 0.0, 1.0);
+	d_data->cubeAxesActor->GetLabelTextProperty(2)->SetFontSize(12);
+	d_data->cubeAxesActor->GetTitleTextProperty(2)->SetFontSize(16);
+	d_data->cubeAxesActor->GetZAxesLinesProperty()->SetColor(0.0, 0.0, 1.0);
+	VIP_VTK_OBSERVER(d_data->cubeAxesActor);
 
-//mCubeAxesActor->DrawXGridlinesOn();
-//mCubeAxesActor->DrawYGridlinesOn();
-//mCubeAxesActor->DrawZGridlinesOn();
+//d_data->cubeAxesActor->DrawXGridlinesOn();
+//d_data->cubeAxesActor->DrawYGridlinesOn();
+//d_data->cubeAxesActor->DrawZGridlinesOn();
 #if VTK_MAJOR_VERSION > 5
-// mCubeAxesActor->SetGridLineLocation(VTK_GRID_LINES_FURTHEST);
+// d_data->cubeAxesActor->SetGridLineLocation(VTK_GRID_LINES_FURTHEST);
 #endif
 
-	mCubeAxesActor->XAxisMinorTickVisibilityOff();
-	mCubeAxesActor->YAxisMinorTickVisibilityOff();
-	mCubeAxesActor->ZAxisMinorTickVisibilityOff();
-	mCubeAxesActor->SetVisibility(0);
+	d_data->cubeAxesActor->XAxisMinorTickVisibilityOff();
+	d_data->cubeAxesActor->YAxisMinorTickVisibilityOff();
+	d_data->cubeAxesActor->ZAxisMinorTickVisibilityOff();
+	d_data->cubeAxesActor->SetVisibility(0);
 
-	mRenderers.last()->AddActor(mCubeAxesActor);
+	d_data->renderers.last()->AddActor(d_data->cubeAxesActor);
 	*/
 
 	//TEST
@@ -342,79 +599,79 @@ VipVTKGraphicsView::VipVTKGraphicsView()
 	QColor tcolor = WidgetTextBrush(qApp->topLevelWidgets().first()).color();
 	vipFromQColor(tcolor, textColorf);
 
-	mCubeAxesActor = vtkSmartPointer<vtkCubeAxesActor>::New();
-	mCubeAxesActor->SetUseTextActor3D(1);
+	d_data->cubeAxesActor = vtkSmartPointer<vtkCubeAxesActor>::New();
+	d_data->cubeAxesActor->SetUseTextActor3D(1);
 	double bounds[6] = { 0, 1, 0, 1, 0, 1 };
-	mCubeAxesActor->SetBounds(bounds);
-	mCubeAxesActor->SetCamera(mRenderers.last()->GetActiveCamera());
-	mCubeAxesActor->GetTitleTextProperty(0)->SetColor(axis1Color.GetData());
-	mCubeAxesActor->GetLabelTextProperty(0)->SetColor(axis1Color.GetData());
+	d_data->cubeAxesActor->SetBounds(bounds);
+	d_data->cubeAxesActor->SetCamera(d_data->renderers.last()->GetActiveCamera());
+	d_data->cubeAxesActor->GetTitleTextProperty(0)->SetColor(axis1Color.GetData());
+	d_data->cubeAxesActor->GetLabelTextProperty(0)->SetColor(axis1Color.GetData());
 
-	mCubeAxesActor->GetTitleTextProperty(1)->SetColor(axis2Color.GetData());
-	mCubeAxesActor->GetLabelTextProperty(1)->SetColor(axis2Color.GetData());
+	d_data->cubeAxesActor->GetTitleTextProperty(1)->SetColor(axis2Color.GetData());
+	d_data->cubeAxesActor->GetLabelTextProperty(1)->SetColor(axis2Color.GetData());
 
-	mCubeAxesActor->GetTitleTextProperty(2)->SetColor(axis3Color.GetData());
-	mCubeAxesActor->GetLabelTextProperty(2)->SetColor(axis3Color.GetData());
+	d_data->cubeAxesActor->GetTitleTextProperty(2)->SetColor(axis3Color.GetData());
+	d_data->cubeAxesActor->GetLabelTextProperty(2)->SetColor(axis3Color.GetData());
 
-	mCubeAxesActor->GetXAxesLinesProperty()->SetColor(textColorf);
-	mCubeAxesActor->GetXAxesGridlinesProperty()->SetColor(textColorf);
-	mCubeAxesActor->GetXAxesGridpolysProperty()->SetColor(textColorf);
-	mCubeAxesActor->GetXAxesGridpolysProperty()->SetOpacity(0.2);
+	d_data->cubeAxesActor->GetXAxesLinesProperty()->SetColor(textColorf);
+	d_data->cubeAxesActor->GetXAxesGridlinesProperty()->SetColor(textColorf);
+	d_data->cubeAxesActor->GetXAxesGridpolysProperty()->SetColor(textColorf);
+	d_data->cubeAxesActor->GetXAxesGridpolysProperty()->SetOpacity(0.2);
 
-	mCubeAxesActor->GetYAxesLinesProperty()->SetColor(textColorf);
-	mCubeAxesActor->GetYAxesGridlinesProperty()->SetColor(textColorf);
-	mCubeAxesActor->GetYAxesGridpolysProperty()->SetColor(textColorf);
-	mCubeAxesActor->GetYAxesGridpolysProperty()->SetOpacity(0.2);
+	d_data->cubeAxesActor->GetYAxesLinesProperty()->SetColor(textColorf);
+	d_data->cubeAxesActor->GetYAxesGridlinesProperty()->SetColor(textColorf);
+	d_data->cubeAxesActor->GetYAxesGridpolysProperty()->SetColor(textColorf);
+	d_data->cubeAxesActor->GetYAxesGridpolysProperty()->SetOpacity(0.2);
 
-	mCubeAxesActor->GetZAxesLinesProperty()->SetColor(textColorf);
-	mCubeAxesActor->GetZAxesGridlinesProperty()->SetColor(textColorf);
-	mCubeAxesActor->GetZAxesGridpolysProperty()->SetColor(textColorf);
-	mCubeAxesActor->GetZAxesGridpolysProperty()->SetOpacity(0.2);
+	d_data->cubeAxesActor->GetZAxesLinesProperty()->SetColor(textColorf);
+	d_data->cubeAxesActor->GetZAxesGridlinesProperty()->SetColor(textColorf);
+	d_data->cubeAxesActor->GetZAxesGridpolysProperty()->SetColor(textColorf);
+	d_data->cubeAxesActor->GetZAxesGridpolysProperty()->SetOpacity(0.2);
 
 
 	for (int i = 0; i < 3; ++i) {
-		mCubeAxesActor->GetLabelTextProperty(i)->SetFontSize(12);
-		mCubeAxesActor->GetTitleTextProperty(i)->SetFontSize(16);
+		d_data->cubeAxesActor->GetLabelTextProperty(i)->SetFontSize(12);
+		d_data->cubeAxesActor->GetTitleTextProperty(i)->SetFontSize(16);
 	}
 
-	mCubeAxesActor->DrawXGridlinesOn();
-	mCubeAxesActor->DrawYGridlinesOn();
-	mCubeAxesActor->DrawZGridlinesOn();
+	d_data->cubeAxesActor->DrawXGridlinesOn();
+	d_data->cubeAxesActor->DrawYGridlinesOn();
+	d_data->cubeAxesActor->DrawZGridlinesOn();
 
-	mCubeAxesActor->SetCornerOffset(0);
+	d_data->cubeAxesActor->SetCornerOffset(0);
 
-	mCubeAxesActor->SetUse2DMode(1);
-	mCubeAxesActor->SetLabelScaling(false, 2, 2, 2);
+	d_data->cubeAxesActor->SetUse2DMode(1);
+	d_data->cubeAxesActor->SetLabelScaling(false, 2, 2, 2);
 
 
 #if VTK_MAJOR_VERSION == 6
-	mCubeAxesActor->SetGridLineLocation(VTK_GRID_LINES_FURTHEST);
+	d_data->cubeAxesActor->SetGridLineLocation(VTK_GRID_LINES_FURTHEST);
 #endif
 #if VTK_MAJOR_VERSION > 6
-	mCubeAxesActor->SetGridLineLocation(mCubeAxesActor->VTK_GRID_LINES_FURTHEST);
+	d_data->cubeAxesActor->SetGridLineLocation(d_data->cubeAxesActor->VTK_GRID_LINES_FURTHEST);
 #endif
 
-	mCubeAxesActor->XAxisMinorTickVisibilityOff();
-	mCubeAxesActor->YAxisMinorTickVisibilityOff();
-	mCubeAxesActor->ZAxisMinorTickVisibilityOff();
+	d_data->cubeAxesActor->XAxisMinorTickVisibilityOff();
+	d_data->cubeAxesActor->YAxisMinorTickVisibilityOff();
+	d_data->cubeAxesActor->ZAxisMinorTickVisibilityOff();
 
-	//mCubeAxesActor->SetFlyModeToStaticEdges();
-	//mCubeAxesActor->SetFlyModeToStaticTriad();
-	//mCubeAxesActor->SetFlyModeToFurthestTriad();
-	//mCubeAxesActor->SetFlyModeToClosestTriad();
-	mCubeAxesActor->SetFlyModeToOuterEdges();
-	//mCubeAxesActor->SetStickyAxes(true);
+	//d_data->cubeAxesActor->SetFlyModeToStaticEdges();
+	//d_data->cubeAxesActor->SetFlyModeToStaticTriad();
+	//d_data->cubeAxesActor->SetFlyModeToFurthestTriad();
+	//d_data->cubeAxesActor->SetFlyModeToClosestTriad();
+	d_data->cubeAxesActor->SetFlyModeToOuterEdges();
+	//d_data->cubeAxesActor->SetStickyAxes(true);
 
-	mCubeAxesActor->SetVisibility(0);
+	d_data->cubeAxesActor->SetVisibility(0);
 
-	mRenderers.first()->AddActor(mCubeAxesActor);
+	d_data->renderers.first()->AddActor(d_data->cubeAxesActor);
 	
 
 
 	//TEST
 	//mGridAxesActor = vtkSmartPointer<vtkGridAxes3DActor>::New();
 	//mGridAxesActor->SetVisibility(1);
-	//mRenderers.first()->AddActor(mCubeAxesActor);
+	//d_data->renderers.first()->AddActor(d_data->cubeAxesActor);
 
 
 
@@ -422,14 +679,14 @@ VipVTKGraphicsView::VipVTKGraphicsView()
 	std::array<std::string, 3> xyzLabels{ { "X", "Y", "Z" } };
 	std::array<double, 3> scale{ { 1.0, 1.0, 1.0 } };
 	auto axes = MakeAxesActor(scale, xyzLabels);
-	mOrientationAxes = vtkSmartPointer<vtkOrientationMarkerWidget>::New();
+	d_data->orientationAxes = vtkSmartPointer<vtkOrientationMarkerWidget>::New();
 
-	mOrientationAxes->SetOrientationMarker(axes);
+	d_data->orientationAxes->SetOrientationMarker(axes);
 	// widget->SetCurrentRenderer(ren);
-	mOrientationAxes->SetInteractor(mWidget->renderWindow()->GetInteractor());
-	mOrientationAxes->SetEnabled(1);
-	mOrientationAxes->SetInteractive(0);
-	mOrientationAxes->SetViewport(0., 0., 0.2, 0.2);
+	d_data->orientationAxes->SetInteractor(d_data->widget->renderWindow()->GetInteractor());
+	d_data->orientationAxes->SetEnabled(1);
+	d_data->orientationAxes->SetInteractive(0);
+	d_data->orientationAxes->SetViewport(0., 0., 0.2, 0.2);
 	
 	
 
@@ -439,9 +696,9 @@ VipVTKGraphicsView::VipVTKGraphicsView()
 	widget()->renderWindow()->AlphaBitPlanesOn();
 
 	// Reset cameras
-	for (int i = 0; i < mRenderers.size(); ++i) {
-		mRenderers[i]->Render();
-		mRenderers[i]->ResetCamera();
+	for (int i = 0; i < d_data->renderers.size(); ++i) {
+		d_data->renderers[i]->Render();
+		d_data->renderers[i]->ResetCamera();
 	}
 
 	connect(this, SIGNAL(dataChanged()), this, SLOT(computeAxesBounds()));
@@ -452,25 +709,25 @@ VipVTKGraphicsView::VipVTKGraphicsView()
 	connect(area()->colorMapAxis()->grip1(), SIGNAL(valueChanged(double)), this, SLOT(colorMapDivModified()));
 	connect(area()->colorMapAxis()->grip2(), SIGNAL(valueChanged(double)), this, SLOT(colorMapDivModified()));
 	table()->SetNanColor(VipVTKObject::defaultObjectColor());
-	mDirtyColorMapDiv = false;
+	d_data->dirtyColorMapDiv = false;
 
 	this->area()->legend()->setVisible(true);
 
 	// setup annotation legend
-	mAnnotationLegend = new VipBorderLegend(VipBorderLegend::Bottom);
-	mAnnotationLegend->setLegend(new VipLegend());
-	this->area()->addScale(mAnnotationLegend, false);
-	mAnnotationLegend->setVisible(false);
+	d_data->annotationLegend = new VipBorderLegend(VipBorderLegend::Bottom);
+	d_data->annotationLegend->setLegend(new VipLegend());
+	this->area()->addScale(d_data->annotationLegend, false);
+	d_data->annotationLegend->setVisible(false);
 
 	// Setup contour extraction
-	mContours.SetRenderWindow(mWidget->renderWindow());
+	d_data->contours.SetRenderWindow(d_data->widget->renderWindow());
 	setTrackingEnable(false);
 
 	// Setup coordinate system
-	mCoordinates = vtkSmartPointer<vtkCoordinate>::New();
-	mCoordinates->SetCoordinateSystemToWorld();
-	mCoordinates->SetViewport(mRenderer);
-	VIP_VTK_OBSERVER(mCoordinates);
+	d_data->coordinates = vtkSmartPointer<vtkCoordinate>::New();
+	d_data->coordinates->SetCoordinateSystemToWorld();
+	d_data->coordinates->SetViewport(d_data->renderer);
+	VIP_VTK_OBSERVER(d_data->coordinates);
 
 	
 	// set the background
@@ -490,16 +747,16 @@ VipVTKGraphicsView::VipVTKGraphicsView()
 
 VipVTKGraphicsView::~VipVTKGraphicsView()
 {
-	//delete mStats;
+	//delete d_data->stats;
 }
 
 void VipVTKGraphicsView::resetActiveCameraToDirection(double look_x, double look_y, double look_z, double up_x, double up_y, double up_z)
 {
-	if (vtkCamera* cam = mRenderer->GetActiveCamera()) {
+	if (vtkCamera* cam = d_data->renderer->GetActiveCamera()) {
 		cam->SetPosition(0, 0, 0);
 		cam->SetFocalPoint(look_x, look_y, look_z);
 		cam->SetViewUp(up_x, up_y, up_z);
-		mWidget->applyCameraToAllLayers();
+		d_data->widget->applyCameraToAllLayers();
 	}
 }
 
@@ -536,17 +793,17 @@ void VipVTKGraphicsView::resetActiveCameraToNegativeZ()
 
 void VipVTKGraphicsView::rotateClockwise90()
 {
-	if (vtkCamera* cam = mRenderer->GetActiveCamera()) {
+	if (vtkCamera* cam = d_data->renderer->GetActiveCamera()) {
 		cam->Roll(-90);
-		mWidget->applyCameraToAllLayers();
+		d_data->widget->applyCameraToAllLayers();
 		refresh();
 	}
 }
 void VipVTKGraphicsView::rotateCounterClockwise90()
 {
-	if (vtkCamera* cam = mRenderer->GetActiveCamera()) {
+	if (vtkCamera* cam = d_data->renderer->GetActiveCamera()) {
 		cam->Roll(-90);
-		mWidget->applyCameraToAllLayers();
+		d_data->widget->applyCameraToAllLayers();
 		refresh();
 	}
 }
@@ -594,7 +851,7 @@ const double isometric_elev = vtkMath::DegreesFromRadians(std::asin(std::tan(vtk
 
 void VipVTKGraphicsView::resetActiveCameraToIsometricView()
 {
-	vtkCamera* cam = mRenderer->GetActiveCamera();
+	vtkCamera* cam = d_data->renderer->GetActiveCamera();
 	// Ref: Fig 2.4 - Brian Griffith: "Engineering Drawing for Manufacture", DOI
 	// https://doi.org/10.1016/B978-185718033-6/50016-1
 	resetActiveCameraToDirection(0, 0, -1, 0, 1, 0);
@@ -670,13 +927,13 @@ void VipVTKGraphicsView::resetCamera(bool closest , double offsetRatio) {
 		double bounds[6];
 		computeBounds(bounds);
 #if VTK_VERSION_MAJOR >= 9
-		mRenderer->ResetCameraScreenSpace(bounds, offsetRatio);
+		d_data->renderer->ResetCameraScreenSpace(bounds, offsetRatio);
 #else
 		// Make sure all bounds are visible to project into screen space
-		mRenderer->ResetCamera(bounds);
+		d_data->renderer->ResetCamera(bounds);
 
 		double expandedBounds[6] = { bounds[0], bounds[1], bounds[2], bounds[3], bounds[4], bounds[5] };
-		ExpandBounds(mRenderer,expandedBounds, mRenderer->GetActiveCamera()->GetModelTransformMatrix());
+		ExpandBounds(d_data->renderer,expandedBounds, d_data->renderer->GetActiveCamera()->GetModelTransformMatrix());
 
 		// 1) Compute the screen space bounding box
 		double xmin = VTK_DOUBLE_MAX;
@@ -693,9 +950,9 @@ void VipVTKGraphicsView::resetCamera(bool closest , double offsetRatio) {
 			double currentPoint[4] = { expandedBounds[i], expandedBounds[j + 2], expandedBounds[k + 4],
 				1.0 };
 
-			mRenderer->SetWorldPoint(currentPoint);
-			mRenderer->WorldToDisplay();
-			mRenderer->GetDisplayPoint(currentPointDisplay);
+			d_data->renderer->SetWorldPoint(currentPoint);
+			d_data->renderer->WorldToDisplay();
+			d_data->renderer->GetDisplayPoint(currentPointDisplay);
 
 			xmin = std::min(currentPointDisplay[0], xmin);
 			xmax = std::max(currentPointDisplay[0], xmax);
@@ -707,12 +964,12 @@ void VipVTKGraphicsView::resetCamera(bool closest , double offsetRatio) {
 
 		// Project the focal point in screen space
 		double fp[4];
-		mRenderer->GetActiveCamera()->GetFocalPoint(fp);
+		d_data->renderer->GetActiveCamera()->GetFocalPoint(fp);
 		fp[3] = 1.0;
 		double fpDisplay[3];
-		mRenderer->SetWorldPoint(fp);
-		mRenderer->WorldToDisplay();
-		mRenderer->GetDisplayPoint(fpDisplay);
+		d_data->renderer->SetWorldPoint(fp);
+		d_data->renderer->WorldToDisplay();
+		d_data->renderer->GetDisplayPoint(fpDisplay);
 
 		// The focal point must be at the center of the box
 		// So construct a box with fpDisplay at the center
@@ -737,9 +994,9 @@ void VipVTKGraphicsView::resetCamera(bool closest , double offsetRatio) {
 		// Now the focal point is at the center of the box
 
 		const vtkRecti box(xmin, ymin, xmax - xmin, ymax - ymin);
-		ZoomToBoxUsingViewAngle(mRenderer, box, offsetRatio);
+		ZoomToBoxUsingViewAngle(d_data->renderer, box, offsetRatio);
 #endif
-		mWidget->applyCameraToAllLayers();
+		d_data->widget->applyCameraToAllLayers();
 	}
 	else
 		resetCamera();
@@ -750,12 +1007,12 @@ void VipVTKGraphicsView::setBackgroundColor(const QColor& color)
 {
 	double dback[3];
 	vipFromQColor(color, dback);
-	mRenderer->SetBackground(dback); // stdBackgroundColor());
+	d_data->renderer->SetBackground(dback); // stdBackgroundColor());
 }
 
 QColor VipVTKGraphicsView::backgroundColor() const
 {
-	return vipToQColor(mRenderer->GetBackground());
+	return vipToQColor(d_data->renderer->GetBackground());
 }
 
 void VipVTKGraphicsView::startRender(VipRenderState& state)
@@ -855,17 +1112,17 @@ void VipVTKGraphicsView::propagateSourceProperties()
 
 QPoint VipVTKGraphicsView::transformToView(double* pt)
 {
-	mCoordinates->SetCoordinateSystemToWorld();
-	mCoordinates->SetValue(pt);
-	int* world = mCoordinates->GetComputedDisplayValue(mRenderer);
+	d_data->coordinates->SetCoordinateSystemToWorld();
+	d_data->coordinates->SetValue(pt);
+	int* world = d_data->coordinates->GetComputedDisplayValue(d_data->renderer);
 	return QPoint(world[0], this->height() - world[1] - 1);
 }
 
 QPointF VipVTKGraphicsView::transformToDoubleView(double* pt)
 {
-	mCoordinates->SetCoordinateSystemToWorld();
-	mCoordinates->SetValue(pt);
-	double* world = mCoordinates->GetComputedDoubleDisplayValue(mRenderer);
+	d_data->coordinates->SetCoordinateSystemToWorld();
+	d_data->coordinates->SetValue(pt);
+	double* world = d_data->coordinates->GetComputedDoubleDisplayValue(d_data->renderer);
 	return QPointF(world[0], this->height() - world[1] - 1);
 }
 
@@ -946,37 +1203,52 @@ QPointF VipVTKGraphicsView::transformToWorldXZ(const QPoint& pt, double y)
 
 VipVTKWidget* VipVTKGraphicsView::widget() const
 {
-	return mWidget;
+	return d_data->widget;
 }
 vtkLookupTable* VipVTKGraphicsView::table() const
 {
-	return mLut;
+	return d_data->lut;
 }
 vtkCubeAxesActor* VipVTKGraphicsView::cubeAxesActor() const 
 {
-	return mCubeAxesActor;
+	return d_data->cubeAxesActor;
 }
 
 vtkScalarBarActor* VipVTKGraphicsView::scalarBar() const
 {
-	return mScalarBar;
+	return d_data->scalarBar;
 }
 // vtkLegendBoxActor * VipVTKGraphicsView::legend() const {return mLegend;}
 VipBorderLegend* VipVTKGraphicsView::annotationLegend() const
 {
-	return mAnnotationLegend;
+	return d_data->annotationLegend;
 }
 OffscreenExtractContour* VipVTKGraphicsView::contours() const
 {
-	return const_cast<OffscreenExtractContour*>(&mContours);
+	return const_cast<OffscreenExtractContour*>(&d_data->contours);
 }
 OffscreenExtractShapeStatistics* VipVTKGraphicsView::statistics() const
 {
-	return const_cast<OffscreenExtractShapeStatistics*>(mStats);
+	return const_cast<OffscreenExtractShapeStatistics*>(d_data->stats);
 }
 VipInfoWidget* VipVTKGraphicsView::infos() const
 {
-	return const_cast<VipInfoWidget*>(mInfos);
+	return const_cast<VipInfoWidget*>(d_data->infos);
+}
+
+void VipVTKGraphicsView::setDecimateOnMove(bool enable)
+{
+	d_data->decimateOnMove = enable;
+	if (!enable) {
+		for (auto it = d_data->decimated.begin(); it != d_data->decimated.end(); ++it) {
+			it.value().plot->deleteLater();
+		}
+		d_data->decimated.clear();
+	}
+}
+bool VipVTKGraphicsView::decimateOnMove() const
+{
+	return d_data->decimateOnMove;
 }
 
 /* void VipVTKGraphicsView::setLegendEntries(int count)
@@ -999,64 +1271,72 @@ int VipVTKGraphicsView::legendEntries() const
 void VipVTKGraphicsView::setTrackingEnable(bool enable)
 {
 	if (contours()->IsEnabled() != enable) {
-		mTrackingEnable = enable;
+		d_data->trackingEnabled = enable;
 		if (enable)
 			contours()->Reset();
 		contours()->SetEnabled(enable);
 		if (enable) {
 			contours()->ForceUpdate();
 			// Mark everything as modified
-			for (int i = 0; i < mRenderers.size(); ++i) {
-				mRenderers[i]->Modified();
-				if (vtkCamera* cam = mRenderers[i]->GetActiveCamera())
+			for (int i = 0; i < d_data->renderers.size(); ++i) {
+				d_data->renderers[i]->Modified();
+				if (vtkCamera* cam = d_data->renderers[i]->GetActiveCamera())
 					cam->Modified();
 			}
-			mWidget->renderWindow()->Modified();
-			mWidget->interactor()->Modified();
+			d_data->widget->renderWindow()->Modified();
+			d_data->widget->interactor()->Modified();
 
 			auto plots = objects();
 			for (VipPlotVTKObject* pl : plots)
 				pl->rawData().modified();
 		}
-		mInfos->setVisible(enable);
+		d_data->infos->setVisible(enable);
+
+		// Update decimated models modified time.
+		// That's because the extract contour update the models points time,
+		// but we don't need to recompute the decimated models
+
+		for (auto it = d_data->decimated.begin(); it != d_data->decimated.end(); ++it) {
+			it.value().plot->rawData().modified();
+		}
 	}
 }
 
 bool VipVTKGraphicsView::trackingEnabled() const
 {
-	return mTrackingEnable;
+	return d_data->trackingEnabled;
 }
 
 void VipVTKGraphicsView::setOrientationMarkerWidgetVisible(bool vis) 
 {
-	mOrientationAxes->GetOrientationMarker()->SetVisibility(vis);
+	d_data->orientationAxes->GetOrientationMarker()->SetVisibility(vis);
 	refresh();
 }
 bool VipVTKGraphicsView::orientationMarkerWidgetVisible() const
 {
-	return mOrientationAxes->GetOrientationMarker()->GetVisibility();
+	return d_data->orientationAxes->GetOrientationMarker()->GetVisibility();
 }
 
 void VipVTKGraphicsView::setLighting(bool enable)
 {
-	if (mHasLight != enable) {
-		mHasLight = enable;
+	if (d_data->hasLight != enable) {
+		d_data->hasLight = enable;
 		applyLighting();
 	}
 }
 bool VipVTKGraphicsView::lighting() const
 {
-	return mHasLight;
+	return d_data->hasLight;
 }
 
 bool VipVTKGraphicsView::resetCameraEnabled() const 
 {
-	return mResetCameraEnabled;
+	return d_data->resetCameraEnabled;
 }
 
 void VipVTKGraphicsView::setResetCameraEnabled(bool enable)
 {
-	mResetCameraEnabled = enable;
+	d_data->resetCameraEnabled = enable;
 }
 
 void VipVTKGraphicsView::applyLighting()
@@ -1065,15 +1345,15 @@ void VipVTKGraphicsView::applyLighting()
 	//auto locks = vipLockVTKObjects(mDataObjects);
 	for (auto& obj : all) {
 		if (obj->hasActor())
-			obj->actor()->GetProperty()->SetLighting(mHasLight);
+			obj->actor()->GetProperty()->SetLighting(d_data->hasLight);
 	}
 	refresh();
 }
 
 void VipVTKGraphicsView::refresh()
 {
-	if (!mInRefresh) {
-		mInRefresh = true;
+	if (!d_data->inRefresh) {
+		d_data->inRefresh = true;
 		QMetaObject::invokeMethod(this, "immediateRefresh", Qt::QueuedConnection);
 	}
 }
@@ -1082,7 +1362,7 @@ void VipVTKGraphicsView::immediateRefresh()
 {
 	this->update();
 	viewport()->update();
-	mInRefresh = false;
+	d_data->inRefresh = false;
 }
 
 bool VipVTKGraphicsView::findPointAttributeBounds(const VipVTKObjectList& objs, VipVTKObject::AttributeType type, const QString& attribute, int component, double* min, double* max) const
@@ -1198,7 +1478,8 @@ PlotVipVTKObjectList VipVTKGraphicsView::objects() const
 	auto plots = this->area()->plotItems();
 	for (VipPlotItem* it : plots)
 		if (VipPlotVTKObject* o = qobject_cast<VipPlotVTKObject*>(it))
-			res.push_back(o);
+			if (!o->property("_vip_hidden").toBool())
+				res.push_back(o);
 	return res;
 }
 
@@ -1217,10 +1498,10 @@ PlotVipVTKObjectList VipVTKGraphicsView::selectedObjects() const
 	vtkPointPicker* picker = vtkPointPicker::New();
 	VIP_VTK_OBSERVER(picker);
 	picker->SetTolerance(0.005);
-	QPoint pos = mWidget->mapFrom(this, pt);
-	pos.setY(mWidget->height() - pos.y());
+	QPoint pos = d_data->widget->mapFrom(this, pt);
+	pos.setY(d_data->widget->height() - pos.y());
 
-	int res = picker->Pick(pos.x(), pos.y(), 0, mRenderer);
+	int res = picker->Pick(pos.x(), pos.y(), 0, d_data->renderer);
 	if (res) {
 		vtkActor* actor = picker->GetActor();
 		if (pointId)
@@ -1240,17 +1521,17 @@ PlotVipVTKObjectList VipVTKGraphicsView::selectedObjects() const
 
 vtkRenderWindow* VipVTKGraphicsView::renderWindow()
 {
-	return mWidget->renderWindow();
+	return d_data->widget->renderWindow();
 }
 
 vtkRenderer* VipVTKGraphicsView::renderer()
 {
-	return mRenderer;
+	return d_data->renderer;
 }
 
 const QList<vtkRenderer*>& VipVTKGraphicsView::renderers() const 
 {
-	return mRenderers;
+	return d_data->renderers;
 }
 
 void VipVTKGraphicsView::setCurrentCamera(const VipFieldOfView& fov)
@@ -1260,9 +1541,9 @@ void VipVTKGraphicsView::setCurrentCamera(const VipFieldOfView& fov)
 VipFieldOfView VipVTKGraphicsView::currentCamera() const
 {
 	VipFieldOfView fov;
-	fov.importCamera(mRenderer->GetActiveCamera());
+	fov.importCamera(d_data->renderer->GetActiveCamera());
 	//TEST: do it twice?
-	fov.importCamera(mRenderer->GetActiveCamera());
+	fov.importCamera(d_data->renderer->GetActiveCamera());
 	
 	fov.name = "current";
 	return fov;
@@ -1304,7 +1585,7 @@ QImage VipVTKGraphicsView::widgetContent(double* bounds)
 		it.key()->setVisible(it.value());
 	}
 	/*this->area()->legend()->setVisible(legend_vis);
-	mAnnotationLegend->setVisible(mAnnotationLegend_vis);*/
+	d_data->annotationLegend->setVisible(mAnnotationLegend_vis);*/
 	return img;
 }
 
@@ -1335,7 +1616,7 @@ VipVTKImage VipVTKGraphicsView::imageContent(int magnifier, double* bounds, int 
 
 bool VipVTKGraphicsView::axesVisible() const
 {
-	return mCubeAxesActor->GetVisibility();
+	return d_data->cubeAxesActor->GetVisibility();
 }
 
 void VipVTKGraphicsView::setAxesVisible(bool visible)
@@ -1343,7 +1624,7 @@ void VipVTKGraphicsView::setAxesVisible(bool visible)
 	if (visible)
 		computeAxesBounds();
 
-	mCubeAxesActor->SetVisibility(visible);
+	d_data->cubeAxesActor->SetVisibility(visible);
 	refresh();
 }
 
@@ -1372,10 +1653,10 @@ void VipVTKGraphicsView::computeBounds(double *bounds)
 
 void VipVTKGraphicsView::resetCamera()
 {
-	if (!mResetCameraEnabled)
+	if (!d_data->resetCameraEnabled)
 		return;
 
-	if (!mWidget->isValid()) {
+	if (!d_data->widget->isValid()) {
 		QMetaObject::invokeMethod(this, "resetCamera", Qt::QueuedConnection);
 		return;
 	}
@@ -1391,7 +1672,7 @@ void VipVTKGraphicsView::resetCamera()
 	while (vtkRenderer* tmp = col->GetNextItem())
 		tmp->ResetCamera(bounds);
 
-	mWidget->applyCameraToAllLayers();
+	d_data->widget->applyCameraToAllLayers();
 	refresh();
 }
 
@@ -1425,15 +1706,15 @@ void VipVTKGraphicsView::colorMapModified()
 
 void VipVTKGraphicsView::colorMapDivModified()
 {
-	if (!mDirtyColorMapDiv) {
-		mDirtyColorMapDiv = true;
+	if (!d_data->dirtyColorMapDiv) {
+		d_data->dirtyColorMapDiv = true;
 		QMetaObject::invokeMethod(this, "computeColorMap", Qt::QueuedConnection);
 	}
 }
 
 void VipVTKGraphicsView::computeColorMap()
 {
-	mDirtyColorMapDiv = false;
+	d_data->dirtyColorMapDiv = false;
 	VipInterval interval = area()->colorMapAxis()->gripInterval().normalized();
 	double min = interval.minValue();
 	double max = interval.maxValue();
@@ -1456,13 +1737,18 @@ void VipVTKGraphicsView::mousePressEvent(QMouseEvent* event)
 	auto lst = objects();
 	auto lockers = vipLockVTKObjects(fromPlotVipVTKObject(lst));
 
+	if (d_data->trackingEnabled) {
+		d_data->contours.SetState(OffscreenExtractContour::Disable);
+		//d_data->contours.SetEnabled(false);
+	}
+	
 	QList<QGraphicsItem*> items = this->items(event->pos());
-	mItemUnderMouse = nullptr;
+	d_data->itemUnderMouse = nullptr;
 	for (int i = 0; i < items.size(); ++i) {
 		QGraphicsItem* item = items[i];
 		if (item != this->area()->rubberBand() && item != this->area()->canvas() && item != this->area()) {
-			mItemUnderMouse = item;
-			mObjectUnderMouse = item->toGraphicsObject();
+			d_data->itemUnderMouse = item;
+			d_data->objectUnderMouse = item->toGraphicsObject();
 			break;
 		}
 	}
@@ -1478,6 +1764,8 @@ void VipVTKGraphicsView::mousePressEvent(QMouseEvent* event)
 		for(int i=0; i < mDataObjects.size(); ++i)
 			mDataObjects[i]->SetSimplified(true);
 	}*/
+
+	setProperty("_vip_decimate", d_data->decimateOnMove);
 }
 // overloaded mouse move handler
 void VipVTKGraphicsView::mouseMoveEvent(QMouseEvent* event)
@@ -1486,15 +1774,22 @@ void VipVTKGraphicsView::mouseMoveEvent(QMouseEvent* event)
 	auto lst = objects();
 	auto lockers = vipLockVTKObjects(fromPlotVipVTKObject(lst));
 
+	// compute decimated
+	if (event->buttons() & Qt::LeftButton)
+		if (d_data->decimateOnMove && property("_vip_decimate").toBool()) {
+			setProperty("_vip_decimate", false);
+			computeDecimatedObjects(d_data->decimated, lst);
+		}
+
 
 	// send the event to the VipImageWidget2D.
 	// If the event is not accepted, forward it tot the viewport.
 	VipImageWidget2D::mouseMoveEvent(event);
-	QObject* plot_object = mObjectUnderMouse ? qobject_cast<VipPlotVTKObject*>(mObjectUnderMouse) : nullptr;
+	QObject* plot_object = d_data->objectUnderMouse ? qobject_cast<VipPlotVTKObject*>(d_data->objectUnderMouse) : nullptr;
 	if (!plot_object)
-		plot_object = mObjectUnderMouse ? qobject_cast<VipPlotFieldOfView*>(mObjectUnderMouse) : nullptr;
+		plot_object = d_data->objectUnderMouse ? qobject_cast<VipPlotFieldOfView*>(d_data->objectUnderMouse) : nullptr;
 	if (!this->area()->rubberBand()->filter() &&
-	    (!VipPlotItem::eventAccepted() || !mItemUnderMouse || plot_object)) // If no QGraphicsItem accepted this mouse move event, forward it to the viewport
+	    (!VipPlotItem::eventAccepted() || !d_data->itemUnderMouse || plot_object)) // If no QGraphicsItem accepted this mouse move event, forward it to the viewport
 	{
 		if (event->buttons() & Qt::LeftButton)
 			static_cast<VipVTKWidget*>(viewport())->event(event);
@@ -1504,10 +1799,44 @@ void VipVTKGraphicsView::mouseMoveEvent(QMouseEvent* event)
 	VipPlotItem::setEventAccepted(true);
 
 	if (event->buttons() & Qt::LeftButton) {
-		if (mTrackingEnable)
-			mContours.SetEnabled(false);
+		/* if (d_data->trackingEnabled) {
+			d_data->contours.MightNeedReset();
+			d_data->contours.SetEnabled(false);
+		}*/
 	}
-	//viewport()->update();
+	else {
+
+		// If we are just moving the mouse without clicking (hovering),
+		// try to detect if the contour extractor is corrupted.
+		// For that check if a plot object is hovered while the
+		// contour extractor returns and empty object id.
+		if (d_data->trackingEnabled) {
+			
+			/* if (d_data->contours.ObjectId(event->pos()) < 0) {
+				QPointF scene = mapToScene(event->pos());
+				bool has_hover = false;
+				for (const auto* plot : lst) {
+					if (plot->isHovering())
+						has_hover = true;
+				}
+				if (has_hover) {
+					qint64 time = QDateTime::currentMSecsSinceEpoch();
+					if (d_data->lastFailContour && time - d_data->lastFailContour > 1000) {
+
+						// likely corrupted
+						setTrackingEnable(false);
+						setTrackingEnable(true);
+						d_data->lastFailContour = 0;
+						vip_debug("Recompute corrupted contours!");
+					}
+					else
+						d_data->lastFailContour = time;
+				}
+			}*/
+		}
+		
+	}
+
 	refresh();
 	Q_EMIT mouseMove(event->pos());
 }
@@ -1518,22 +1847,24 @@ void VipVTKGraphicsView::mouseReleaseEvent(QMouseEvent* event)
 	auto lst = objects();
 	auto lockers = vipLockVTKObjects(fromPlotVipVTKObject(lst));
 
+	if (d_data->decimateOnMove)
+		for (auto it = d_data->decimated.begin(); it != d_data->decimated.end(); ++it) {
+			it.key()->actor()->SetVisibility(it.key()->isVisible());
+			it.value().plot->actor()->SetVisibility(false);
+		}
+
+	// Update contours when releasing mouse
+	/* if (d_data->trackingEnabled) {
+		d_data->contours.SetEnabled(true);
+		d_data->contours.ForceUpdate();
+	}*/
+	d_data->contours.SetState(d_data->trackingEnabled ? OffscreenExtractContour::ExtractAll : OffscreenExtractContour::ExtractShape);
 
 	// send the event to the VipImageWidget2D and the viewport
 	VipImageWidget2D::mouseReleaseEvent(event);
 	static_cast<VipVTKWidget*>(viewport())->event(event);
 
-	// reset the true CAD objects
-	// for(int i=0; i < mDataObjects.size(); ++i)
-	// mDataObjects[i]->SetSimplified(false);
 
-	// Update contours when releasing mouse
-	if (mTrackingEnable) {
-		mContours.SetEnabled(true);
-		mContours.ForceUpdate();
-	}
-
-	//viewport()->update();
 	refresh();
 }
 // overloaded key press handler
@@ -1544,7 +1875,7 @@ void VipVTKGraphicsView::keyPressEvent(QKeyEvent* event)
 	auto lockers = vipLockVTKObjects(fromPlotVipVTKObject(lst));
 
 
-	if (mItemUnderMouse) {
+	if (d_data->itemUnderMouse) {
 		VipImageWidget2D::keyPressEvent(event);
 		if (!VipPlotItem::eventAccepted())
 			static_cast<VipVTKWidget*>(viewport())->event(event);
@@ -1562,7 +1893,7 @@ void VipVTKGraphicsView::keyReleaseEvent(QKeyEvent* event)
 	auto lockers = vipLockVTKObjects(fromPlotVipVTKObject(lst));
 
 
-	if (mItemUnderMouse) {
+	if (d_data->itemUnderMouse) {
 		VipImageWidget2D::keyReleaseEvent(event);
 		if (!VipPlotItem::eventAccepted())
 			static_cast<VipVTKWidget*>(viewport())->event(event);
@@ -1579,8 +1910,11 @@ void VipVTKGraphicsView::wheelEvent(QWheelEvent* event)
 	auto lst = objects();
 	auto lockers = vipLockVTKObjects(fromPlotVipVTKObject(lst));
 
+	if (d_data->trackingEnabled) {
+		d_data->contours.MightNeedReset();
+	}
 
-	if (mItemUnderMouse) {
+	if (d_data->itemUnderMouse) {
 		VipImageWidget2D::wheelEvent(event);
 		if (!event->isAccepted()) //! VipPlotItem::eventAccepted())
 			static_cast<VipVTKWidget*>(viewport())->event(event);
@@ -1611,7 +1945,7 @@ void VipVTKGraphicsView::drawBackground(QPainter* p, const QRectF&)
 #if QT_VERSION >= 0x040600
 	p->beginNativePainting();
 #endif
-	mWidget->paintGL(); 
+	d_data->widget->paintGL(); 
 #if QT_VERSION >= 0x040600
 	p->endNativePainting();
 #endif
@@ -1626,8 +1960,8 @@ void VipVTKGraphicsView::drawBackground(QPainter* p, const QRectF&)
 #if QT_VERSION >= 0x040600
 	p->beginNativePainting();
 #endif
-	mWidget->paintGL();//TEST
-	//mWidget->renderWindow()->GetInteractor()->Render();
+	d_data->widget->paintGL();//TEST
+	//d_data->widget->renderWindow()->GetInteractor()->Render();
 #if QT_VERSION >= 0x040600
 	p->endNativePainting();
 #endif
@@ -1636,7 +1970,7 @@ void VipVTKGraphicsView::drawBackground(QPainter* p, const QRectF&)
 
 void VipVTKGraphicsView::touchCamera()
 {
-	this->mRenderer->GetActiveCamera()->Modified();
+	this->d_data->renderer->GetActiveCamera()->Modified();
 	QList<VipPlotVTKObject*> items = vipCastItemList<VipPlotVTKObject*>(this->scene()->items());
 	for (int i = 0; i < items.size(); ++i) {
 		items[i]->geometryChanged();
@@ -1651,13 +1985,13 @@ void VipVTKGraphicsView::touchCamera()
 void VipVTKGraphicsView::initializeViewRendering()
 {
 	// Force a resize event to intialize the opengl widget (or black screen)
-	if (!mInitialized)
+	if (!d_data->initialized)
 		QMetaObject::invokeMethod(this, "sendFakeResizeEvent", Qt::QueuedConnection);
 }
 void VipVTKGraphicsView::sendFakeResizeEvent()
 {
-	if (!mInitialized) {
-		mInitialized = true;
+	if (!d_data->initialized) {
+		d_data->initialized = true;
 		QSize min_size = this->minimumSize();
 		QSize new_min_size = this->size() + QSize(1, 0);
 		this->setMinimumSize(new_min_size);
@@ -1674,7 +2008,7 @@ void VipVTKGraphicsView::resizeEvent(QResizeEvent* event)
 	//	scene()->setSceneRect(QRect(QPoint(0, 0), event->size()));
 	//}
 	VipImageWidget2D::resizeEvent(event);
-	mWidget->renderWindow()->SetSize(event->size().width(), event->size().height());
+	d_data->widget->renderWindow()->SetSize(event->size().width(), event->size().height());
 }
 
 void VipVTKGraphicsView::computeAxesBounds()
@@ -1704,8 +2038,8 @@ void VipVTKGraphicsView::computeAxesBounds()
 	step_size = 0;
 	engine.autoScale(10, bounds[4], bounds[5], step_size);
 	
-	mCubeAxesActor->SetBounds(bounds);
-	mCubeAxesActor->Modified();
+	d_data->cubeAxesActor->SetBounds(bounds);
+	d_data->cubeAxesActor->Modified();
 
 	//TEST
 	//mGridAxesActor->SetGridBounds(bounds);

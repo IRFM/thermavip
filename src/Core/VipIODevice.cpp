@@ -4140,7 +4140,7 @@ bool VipDirectoryReader::open(VipIODevice::OpenModes mode)
 			break;
 
 		progress.setValue(i);
-		progress.setText("Read <b>" + QFileInfo(d_data->files[i]).fileName() + "</b>");
+		progress.setText("<b>Read</b> " + QFileInfo(d_data->files[i]).fileName() );
 
 		bool have_template = false;
 		QSharedPointer<VipIODevice> template_device;

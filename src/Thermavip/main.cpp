@@ -130,10 +130,7 @@ int main(int argc, char** argv)
 
 	qInstallMessageHandler(myMessageOutput);
 
-#ifdef WIN32
-	// For now, fix issues with Windows 11 style for QSpinBox
-	QApplication::setStyle("windowsvista");
-#endif
+
 
 	//_putenv("QT_SCALE_FACTOR=1.5");
 	// register command option for gui
@@ -153,16 +150,19 @@ int main(int argc, char** argv)
 	}
 	VipCommandOptions::instance().parse(args);
 
+#ifdef VIP_WITH_VTK
+	vtkObject::GlobalWarningDisplayOff();
+#endif
 	if (VipCommandOptions::instance().count("debug")) {
 		vip_log_detail::_vip_set_enable_debug(true);
 
 #ifdef VIP_WITH_VTK
-		vtkObject::GlobalWarningDisplayOn();
+		//vtkObject::GlobalWarningDisplayOn();
 #endif
 	}
 	else {
 #ifdef VIP_WITH_VTK
-		vtkObject::GlobalWarningDisplayOff();
+		//vtkObject::GlobalWarningDisplayOff();
 #endif
 	}
 
@@ -205,6 +205,12 @@ int main(int argc, char** argv)
 #endif
 
 	QApplication app(argc, argv);
+
+#ifdef WIN32
+	// For now, fix issues with Windows 11 style for QSpinBox
+	QApplication::setStyle("windowsvista");
+#endif
+
 	app.setAttribute(Qt::AA_DontCreateNativeWidgetSiblings); // TEST
 
 	bool force_font = false;

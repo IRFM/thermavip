@@ -553,6 +553,7 @@ public:
 	bool lighting = true;	// Add lighting by default to all VipVTKPlayer
 	bool orientationWidget = true; // Show orientation widget by default to all VipVTKPlayer
 	bool showHideFOVItems = false; // Show cameras in 3D object browser by default
+	bool decimateOnMove = true; // Decimate the 3D objects on mouse move to fasten camera changes
 
 	void save(VipArchive&) const;
 	void restore(VipArchive&);
@@ -626,6 +627,7 @@ public Q_SLOTS:
 	void setOrientationMarkerWidgetVisible(bool);
 	void setAxesVisible(bool);
 	void setLighting(bool);
+	void setDecimateOnMove(bool);
 	
 private Q_SLOTS:
 	void timeChanged(qint64);
