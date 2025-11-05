@@ -334,6 +334,7 @@ static void computeDecimatedObjects(QHash<VipPlotVTKObject*, Decimated>& map, co
 		if (dec) {
 			auto it = map.find((VipPlotVTKObject*)plot);
 			VipPlotVTKObject* p = it == map.end() ? new VipPlotVTKObject() : it.value().plot;
+			p->setProperty("_vip_no_serialize", true);
 			p->setProperty("_vip_hidden", true);
 			p->setRawData(VipVTKObject(dec));
 			dec->Delete();
@@ -702,6 +703,9 @@ VipVTKGraphicsView::VipVTKGraphicsView()
 	}
 
 	connect(this, SIGNAL(dataChanged()), this, SLOT(computeAxesBounds()));
+
+	// Take into account the close/minimize/maximize icons on the top right
+	area()->colorMapAxis()->setMinBorderDist(0, 30);
 
 	// use the color map from thermavip
 	connect(area()->colorMapAxis(), SIGNAL(scaleDivChanged(bool)), this, SLOT(colorMapDivModified()));
@@ -1774,12 +1778,7 @@ void VipVTKGraphicsView::mouseMoveEvent(QMouseEvent* event)
 	auto lst = objects();
 	auto lockers = vipLockVTKObjects(fromPlotVipVTKObject(lst));
 
-	// compute decimated
-	if (event->buttons() & Qt::LeftButton)
-		if (d_data->decimateOnMove && property("_vip_decimate").toBool()) {
-			setProperty("_vip_decimate", false);
-			computeDecimatedObjects(d_data->decimated, lst);
-		}
+	
 
 
 	// send the event to the VipImageWidget2D.
@@ -1791,8 +1790,14 @@ void VipVTKGraphicsView::mouseMoveEvent(QMouseEvent* event)
 	if (!this->area()->rubberBand()->filter() &&
 	    (!VipPlotItem::eventAccepted() || !d_data->itemUnderMouse || plot_object)) // If no QGraphicsItem accepted this mouse move event, forward it to the viewport
 	{
-		if (event->buttons() & Qt::LeftButton)
+		if (event->buttons() & Qt::LeftButton) {
+			// compute decimated
+			if (d_data->decimateOnMove && property("_vip_decimate").toBool()) {
+				setProperty("_vip_decimate", false);
+				computeDecimatedObjects(d_data->decimated, lst);
+			}
 			static_cast<VipVTKWidget*>(viewport())->event(event);
+		}
 	}
 
 	// reset the event accepted flag to true
