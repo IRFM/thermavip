@@ -2921,7 +2921,7 @@ static void centerOnParent(QWidget *w, QWidget * parent)
 	QSize psize = parent->size();
 	psize = ((psize - size)/2);
 	QPoint pt(psize.width(),psize.height());
-	w->move(pt);
+	w->move(pt + parent->pos());
 }
 
 QMessageBox::StandardButton vipInformation(const QString & title, const QString & text, QMessageBox::StandardButtons buttons , QMessageBox::StandardButton defaultButton )

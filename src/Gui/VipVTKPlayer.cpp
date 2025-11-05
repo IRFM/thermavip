@@ -44,6 +44,7 @@
 #include <vtkStringArray.h>
 #include <vtkUnstructuredGrid.h>
 #include <vtkWindowToImageFilter.h>
+#include <vtkVersion.h>
 
 #include <QApplication>
 #include <QBoxLayout>
@@ -2749,8 +2750,8 @@ void VipVTKObjectItem::updateItem()
 		if (text() != name)
 			setText(name);
 
-		// dataObject->actor()->GetProperty()->setEdgeColor(0,0,0);
-		if (!plot->actor()->GetVisibility())
+		//TEST: added  && !plot->isVisible()
+		if (!plot->actor()->GetVisibility() && !plot->isVisible())
 			visible = Hidden;
 
 		if (!plot->edgeVisible()) // actor()->GetProperty()->GetEdgeVisibility())
@@ -5368,6 +5369,7 @@ void VipVTKPlayerOptions::save(VipArchive& arch) const
 	arch.content("orientationWidget", orientationWidget);
 	arch.content("showHideFOVItems", showHideFOVItems);
 	arch.content("defaultObjectColor", vipToQColor( VipVTKObject::defaultObjectColor()));
+	arch.content("decimateOnMove", decimateOnMove);
 }
 void VipVTKPlayerOptions::restore(VipArchive& arch)
 {
@@ -5378,6 +5380,7 @@ void VipVTKPlayerOptions::restore(VipArchive& arch)
 	QColor defaultObjectColor;
 	arch.content("defaultObjectColor", defaultObjectColor);
 	VipVTKObject::setDefaultObjectColor(vipFromQColor(defaultObjectColor));
+	arch.content("decimateOnMove", decimateOnMove);
 }
 
 
@@ -5406,6 +5409,7 @@ public:
 	QAction* axes;
 	QAction* orientation_axes;
 	QAction* light;
+	QAction* decimate;
 
 	std::unique_ptr<QStringList> pendingVisibleFOV;
 	std::unique_ptr<VipFieldOfView> pendingCamera;
@@ -5541,6 +5545,10 @@ VipVTKPlayer::VipVTKPlayer(QWidget* parent)
 	d_data->light->setCheckable(true);
 	d_data->light->setChecked(true);
 
+	d_data->decimate = toolBar()->addAction(vipIcon("decimate.png"), "Enable/disable decimation on move");
+	d_data->decimate->setCheckable(true);
+	d_data->decimate->setChecked(true);
+
 	d_data->tracking->setCheckable(true);
 	d_data->axes->setCheckable(true);
 	toolBar()->setIconSize(QSize(20, 20));
@@ -5560,6 +5568,7 @@ VipVTKPlayer::VipVTKPlayer(QWidget* parent)
 	connect(d_data->show_legend, SIGNAL(triggered(bool)), this, SLOT(setLegendVisible(bool)));
 	connect(d_data->orientation_axes, SIGNAL(triggered(bool)), view(), SLOT(setOrientationMarkerWidgetVisible(bool)));
 	connect(d_data->light, SIGNAL(triggered(bool)), view(), SLOT(setLighting(bool)));
+	connect(d_data->decimate, SIGNAL(triggered(bool)), view(), SLOT(setDecimateOnMove(bool)));
 	//connect(d_data->save_image, SIGNAL(triggered(bool)), this, SLOT(saveImage()));
 	connect(d_data->open_file, SIGNAL(triggered(bool)), this, SLOT(loadCadFiles()));
 	connect(d_data->open_dir, SIGNAL(triggered(bool)), this, SLOT(loadCadDirectory()));
@@ -5587,6 +5596,7 @@ VipVTKPlayer::VipVTKPlayer(QWidget* parent)
 	fov()->setVisible(VipVTKPlayerOptions::get().showHideFOVItems);
 	setLighting(VipVTKPlayerOptions::get().lighting);
 	setOrientationMarkerWidgetVisible(VipVTKPlayerOptions::get().orientationWidget);
+	setDecimateOnMove(VipVTKPlayerOptions::get().decimateOnMove);
 }
 
 VipVTKPlayer::~VipVTKPlayer()
@@ -5796,6 +5806,13 @@ void VipVTKPlayer::setLighting(bool enable)
 	d_data->light->setChecked(enable);
 	d_data->light->blockSignals(false);
 	view()->setLighting(enable);
+}
+void VipVTKPlayer::setDecimateOnMove(bool enable)
+{
+	d_data->decimate->blockSignals(true);
+	d_data->decimate->setChecked(enable);
+	d_data->decimate->blockSignals(false);
+	view()->setDecimateOnMove(enable);
 }
 
 void VipVTKPlayer::loadCadDirectory()
@@ -6104,6 +6121,7 @@ public:
 	QToolButton lighting;
 	QToolButton orientationWidget;
 	QToolButton showHideFOVItems;
+	QCheckBox decimateOnMove;
 	VipColorWidget defaultObjectColor;
 };
 
@@ -6124,6 +6142,8 @@ VipVTKPlayerOptionPage::VipVTKPlayerOptionPage(QWidget* parent)
 	d_data->showHideFOVItems.setIcon(vipIcon("fov_displayed.png"));
 	d_data->showHideFOVItems.setCheckable(true);
 
+	d_data->decimateOnMove.setText("Decimate models on mouse move");
+
 	d_data->defaultObjectColor.setColor(vipToQColor(VipVTKObject::defaultObjectColor()));
 
 	QGridLayout* lay = new QGridLayout();
@@ -6141,6 +6161,8 @@ VipVTKPlayerOptionPage::VipVTKPlayerOptionPage(QWidget* parent)
 	lay->addWidget(new QLabel("Default 3D object color"), row, 0, Qt::AlignLeft);
 	lay->addWidget(&d_data->defaultObjectColor, row++, 1, Qt::AlignLeft);
 
+	lay->addWidget(&d_data->decimateOnMove, row++, 0, 1,2, Qt::AlignLeft);
+
 	QVBoxLayout* vlay = new QVBoxLayout();
 	vlay->setContentsMargins(0,0,0,0);
 	vlay->addLayout(lay);
@@ -6156,6 +6178,7 @@ void VipVTKPlayerOptionPage::applyPage()
 	opts.lighting = d_data->lighting.isChecked();
 	opts.orientationWidget = d_data->orientationWidget.isChecked();
 	opts.showHideFOVItems = d_data->showHideFOVItems.isChecked();
+	opts.decimateOnMove = d_data->decimateOnMove.isChecked();
 	QColor defaultObjectColor = d_data->defaultObjectColor.color();
 	VipVTKObject::setDefaultObjectColor(vipFromQColor( defaultObjectColor));
 
@@ -6166,6 +6189,7 @@ void VipVTKPlayerOptionPage::applyPage()
 		p->setLighting(opts.lighting);
 		p->setOrientationMarkerWidgetVisible(opts.orientationWidget);
 		p->fov()->setVisible(opts.showHideFOVItems);
+		p->setDecimateOnMove(opts.decimateOnMove);
 	}
 }
 void VipVTKPlayerOptionPage::updatePage() 
@@ -6176,6 +6200,7 @@ void VipVTKPlayerOptionPage::updatePage()
 	d_data->orientationWidget.setChecked(opts.orientationWidget);
 	d_data->showHideFOVItems.setChecked(opts.showHideFOVItems);
 	d_data->defaultObjectColor.setColor(vipToQColor(VipVTKObject::defaultObjectColor()));
+	d_data->decimateOnMove.setChecked(opts.decimateOnMove);
 }
 
 

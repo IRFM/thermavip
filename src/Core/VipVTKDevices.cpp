@@ -234,6 +234,8 @@ VipVTKFileReader::~VipVTKFileReader()
 	close();
 }
 
+//#include <vtkExtractTimeSteps.h>
+
 bool VipVTKFileReader::open(VipIODevice::OpenModes mode)
 {
 	this->setOpenMode(NotOpen);
@@ -252,7 +254,15 @@ bool VipVTKFileReader::open(VipIODevice::OpenModes mode)
 			d_data = create(QVariant::fromValue(data));
 			d_data.setName(QFileInfo(info.canonicalFilePath()).fileName());
 			d_data.mergeAttributes(data.buildAllAttributes());
-			
+
+			//TEST
+			/* vtkExtractTimeSteps* steps = vtkExtractTimeSteps::New();
+			steps->SetInputData(data.data());
+			steps->Update();
+			int count = steps->GetNumberOfTimeSteps();
+			std::vector<int> times(count);
+			steps->GetTimeStepIndices(times.data());
+			*/
 			this->setOpenMode(mode);
 			read(0);
 			return true;
@@ -301,6 +311,173 @@ bool VipVTKFileReader::open(VipIODevice::OpenModes mode)
 	read(0);
 	return true;
 }
+
+
+
+struct TimedModel
+{
+	QStringList filenames;
+	QStringList groups;
+	QList<int> parts;
+	
+};
+class VipPVDFileReader::PrivateData
+{
+public:
+	QString root;
+	QVector<TimedModel> models;
+};
+
+VipPVDFileReader::VipPVDFileReader(QObject* parent)
+  : VipTimeRangeBasedGenerator(parent)
+{
+	VIP_CREATE_PRIVATE_DATA();
+	topLevelOutputAt(0)->toMultiOutput()->resize(1);
+	outputAt(0)->setData(VipVTKObject());
+}
+	
+VipPVDFileReader::~VipPVDFileReader(){}
+
+bool VipPVDFileReader::open(VipIODevice::OpenModes mode)
+{
+	close();
+
+	if (!(mode & ReadOnly))
+		return false;
+
+	QString filename = removePrefix(path());
+	QDomDocument doc;
+
+	QFile fin(filename);
+	if (!fin.open(QFile::ReadOnly))
+		return false;
+	
+	QString error;
+	int errorLine, errorCol;
+
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+	QDomDocument::ParseResult r = doc.setContent(&fin);
+	if (!r) {
+		error = r.errorMessage;
+		errorLine = r.errorLine;
+		errorCol = r.errorColumn;
+		setError(QString::asprintf("error at line %d, col %d:\n%s\n", errorLine, errorCol, error.toLatin1().data()));
+		vip_debug("error at line %d, col %d:\n%s\n", errorLine, errorCol, error.toLatin1().data());
+		fin.close();
+		return false;
+	}
+#else
+
+	if (!doc.setContent(&file, &error, &errorLine, &errorCol)) {
+		setError(QString::asprintf("error at line %d, col %d:\n%s\n", errorLine, errorCol, error.toLatin1().data()));
+		vip_debug("error at line %d, col %d:\n%s\n", errorLine, errorCol, error.toLatin1().data());
+		fin.close();
+		return false;
+	}
+#endif
+	
+	fin.close();
+	if (doc.isNull()) {
+		return false;
+	}
+
+	auto root = doc.documentElement();
+	QString root_name = root.nodeName();
+	if (root_name != "VTKFile")
+		return false;
+
+	auto collection = root.firstChildElement("Collection");
+	if (collection.isNull())
+		return false;
+
+	d_data->root = QFileInfo(filename).canonicalPath();
+	d_data->root.replace("\\", "/");
+	if (!d_data->root.endsWith("/"))
+		d_data->root.append("/");
+
+	const auto dataset = collection.childNodes();
+	QMap<int, TimedModel> models;
+	int max_models_per_time = 0;
+	
+	for (int i=0; i < dataset.count(); ++i) {
+		const auto node = dataset.at(i).toElement();
+
+		if (node.nodeName() != "DataSet")
+			continue;
+
+		// get attributes
+		auto timestep = node.attribute("timestep").toLongLong();
+		auto group = node.attribute("group");
+		auto part = node.attribute("part").toLongLong();
+		auto file = node.attribute("file");
+		TimedModel* m = &models[timestep];
+
+		if (QFileInfo(d_data->root + file).exists()) {
+			m->filenames.push_back(d_data->root + file);
+			max_models_per_time = qMax(max_models_per_time, m->filenames.size());
+		}
+		else if (QFileInfo(file).exists()) {
+			m->filenames.push_back(file);
+			max_models_per_time = qMax(max_models_per_time, m->filenames.size());
+		}
+		else
+			m = nullptr;
+		if (m) {
+			m->groups.push_back(group);
+			m->parts.push_back(part);
+		}
+	}
+	if (models.isEmpty())
+		return false;
+
+	VipTimestamps times(models.size());
+	d_data->models.resize(models.size());
+	int idx = 0;
+	for (auto it =	models.begin(); it != models.end(); ++it, ++idx) {
+		times[idx] = it.key();
+		d_data->models[idx] = it.value();
+	}
+	
+	topLevelOutputAt(0)->toMultiOutput()->resize(max_models_per_time);
+	setTimestamps(times);
+	setOpenMode(mode);
+	readData(times.first());
+	return true;
+}
+
+
+bool VipPVDFileReader::readData(qint64 time)
+{
+	qint64 pos = this->computeTimeToPos(time);
+	if (pos < 0 || pos >= size())
+		return false;
+
+	QString name = QFileInfo(removePrefix(path())).fileName();
+
+	TimedModel& m = d_data->models[pos];
+	for (qsizetype i = 0; i < m.filenames.size(); ++i) {
+		VipVTKFileReader r;
+		r.setPath(m.filenames[i]);
+		if (r.open(ReadOnly)) {
+			VipAnyData any = r.outputAt(0)->data();
+			VipVTKObject obj = any.value<VipVTKObject>();
+			QString group = m.groups[i];
+			int part = m.parts[i];
+			if (group.isEmpty())
+				obj.setDataName(name + (part ? (" - part " + QString::number(part)) : QString()));
+			else
+				obj.setDataName(m.groups[i] + (part ? (" - part " + QString::number(part)) : QString()));
+			any.setTime(time);
+			any.setSource(this);
+			any.setName(obj.dataName());
+			any.mergeAttributes(this->attributes());
+			outputAt(i)->setData(any);
+		}
+	}
+	return true;
+}
+
+
 
 #include <qfile.h>
 #include <vtkDelaunay2D.h>

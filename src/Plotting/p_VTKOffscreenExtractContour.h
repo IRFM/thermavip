@@ -83,6 +83,7 @@ public:
 	const VipVTKImage & HighlightedCells() const;
 	Type ObjectType();
 	int ObjectId(const QPoint & pt);
+	int GlobalObjectId(const QPoint& pt);
 	int ClosestPointId(int object_id, const QPoint & pt, QPointF * closest_point = nullptr, QPolygonF * cell = nullptr, double * cell_point = nullptr, double *weights = nullptr);
 	QString Description(const QPoint & pt);
 
@@ -100,6 +101,8 @@ public Q_SLOTS:
 	void Update();
 	void ForceUpdate();
 	void Reset();
+
+	void MightNeedReset();
 
 private:
 	void Execute();

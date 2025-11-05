@@ -108,6 +108,8 @@ public:
 
 	virtual void setData(const QVariant& data);
 
+	bool isHovering() const;
+
 	void setSelectedColor(const QColor& c);
 	const QColor& selectedColor() const;
 

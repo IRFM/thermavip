@@ -62,6 +62,8 @@ public:
 	//Therefore, we store the output VipVTKGraphicsView object to add later the VipPlotVTKObject when it has a valid VipVTKObject.
 	QPointer<VipVTKGraphicsView> pendingView;
 	std::unique_ptr<VipVTKObject> pendingAttributes;
+
+	QPainterPath shape;
 };
 
 VipPlotVTKObject::VipPlotVTKObject(const VipText & title)
@@ -221,9 +223,12 @@ QPainterPath VipPlotVTKObject::shape() const
 	if (VipVTKGraphicsView * v = qobject_cast<VipVTKGraphicsView*>(this->view()))
 	{
 		VipVTKObject dat = data().value<VipVTKObject>();
-		return  v->contours()->Shape(this);
+		const auto sh = v->contours()->Shape(this);
+		if (!sh.isEmpty())
+			return const_cast<VipPlotVTKObject*>(this)->d_data->shape = sh;
 	}
-	return QPainterPath();
+	// Returns the last valid shape
+	return d_data->shape;
 }
 
 QRectF VipPlotVTKObject::boundingRect() const
@@ -312,6 +317,11 @@ QRectF VipPlotVTKObject::drawLegend(QPainter * painter, const QRectF & rect, int
 	bs.drawBackground(painter);
 	
 	return rect;
+}
+
+bool VipPlotVTKObject::isHovering() const
+{
+	return d_data->hover;
 }
 
 void VipPlotVTKObject::hoverEnterEvent(QGraphicsSceneHoverEvent*)
@@ -677,17 +687,22 @@ void VipPlotVTKObject::buildMapperAndActor(const VipVTKObject & obj, bool in_set
 		// add the data to the VipVTKGraphicsView and remove the previous one
 		if (VipVTKGraphicsView* view = qobject_cast<VipVTKGraphicsView*>(this->view())) {
 
+			bool _vip_hidden = this->property("_vip_hidden").toBool();
+
 			bool reset_camera = d_data->actor->GetNumberOfConsumers() == 0;
 
 			// Add actor to view (if not already done)
 			vtkRenderer* ren = view->renderers()[d_data->layer];
 			ren->AddActor(d_data->actor);
-			view->contours()->add(this);
+
+			if (!_vip_hidden)
+				view->contours()->add(this);
 
 			d_data->actor->GetProperty()->SetLighting(view->lighting());
 
-			view->emitDataChanged();
-			if (reset_camera)
+			//if (!_vip_hidden)
+				view->emitDataChanged();
+			if (reset_camera && !_vip_hidden)
 				view->resetCamera();
 
 			//TODO

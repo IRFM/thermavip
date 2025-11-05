@@ -137,9 +137,12 @@ static const H5FD_class_t H5FD_device_g = {
 #else
 
 static const H5FD_class_t H5FD_device_g = {
-	#if (H5_VERS_MAJOR*100 + H5_VERS_MINOR) >= 113 
+#if (H5_VERS_MAJOR*100 + H5_VERS_MINOR) >= 113 
 	123456,
-	#endif
+#endif
+#if (H5_VERS_MAJOR * 100 + H5_VERS_MINOR) >= 114
+	256,
+#endif
 	"QIODevice",					/*name			*/
 	MAXADDR,					/*maxaddr		*/
 	H5F_CLOSE_WEAK,				/* fc_degree		*/
@@ -167,6 +170,12 @@ static const H5FD_class_t H5FD_device_g = {
 	nullptr,                       /*get_handle            */
 	H5FD_device_read,				/*read			*/
 	H5FD_device_write,				/*write			*/
+#if (H5_VERS_MAJOR * 100 + H5_VERS_MINOR) >= 114
+	nullptr, /* read_vector */
+	nullptr, /* write_vector */
+	nullptr, /* read_selection */
+	nullptr, /* write_selection */
+#endif
 	nullptr,					/*flush			*/
 	nullptr,				/*truncate		*/
 	nullptr,                                       /*lock                  */

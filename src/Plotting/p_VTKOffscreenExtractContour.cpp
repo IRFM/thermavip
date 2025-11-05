@@ -207,6 +207,8 @@ public:
 	ExtractContour extractor;
 
 	QTimer timer;
+	qint64 lastReset = 0;
+	bool mightNeedRest = false;
 };
 
 OffscreenExtractContour::OffscreenExtractContour()
@@ -276,6 +278,11 @@ OffscreenExtractContour::~OffscreenExtractContour()
 		d_data->filter = vtkSmartPointer<vtkWindowToImageFilter>();
 		d_data->renderWin = vtkSmartPointer<vtkRenderWindow>();
 	}
+}
+
+void OffscreenExtractContour::MightNeedReset()
+{
+	d_data->mightNeedRest = true;
 }
 
 void OffscreenExtractContour::Reset()
@@ -498,6 +505,16 @@ OffscreenExtractContour::Type OffscreenExtractContour::ObjectType()
 	return Unknown;
 }
 
+int OffscreenExtractContour::GlobalObjectId(const QPoint& pos)
+{
+	QMutexLocker lock(&d_data->mutex);
+	if (pos.x() >= 0 && pos.y() >= 0 && pos.x() < d_data->image.width() && pos.y() < d_data->image.height()) {
+		QPoint pt(pos.x(), d_data->image.height() - pos.y() - 1);
+		return ((QRgb*)d_data->image.image()->GetScalarPointer())[(pt.x(), pt.y() * d_data->image.width())] - 1;
+	}
+	return -1;
+}
+
 int OffscreenExtractContour::ObjectId(const QPoint& pos)
 {
 	QMutexLocker lock(&d_data->mutex);
@@ -624,7 +641,8 @@ QString OffscreenExtractContour::Description(const QPoint& pt)
 	OffscreenExtractContour::Type type = ObjectType();
 	int object_id = ObjectId(pt);
 	double cell_point[3], weights[3];
-	int point_id = ClosestPointId(object_id, pt, nullptr, nullptr, cell_point, weights);
+	QPolygonF cell_points;
+	int point_id = ClosestPointId(object_id, pt, nullptr, &cell_points, cell_point, weights);
 
 	QMutexLocker lock(&d_data->mutex);
 	VipVTKObject obj;
@@ -648,7 +666,8 @@ QString OffscreenExtractContour::Description(const QPoint& pt)
 		res += "<p>";
 		if (type == Cell) {
 			res += "<b>Cell id</b> :" + QString::number(object_id) + "<br>";
-			res += "<b>Cell point: </b> :" + QString::number(cell_point[0]) + ", " + QString::number(cell_point[1]) + ", " + QString::number(cell_point[2]) + "<br>";
+			if (cell_points.size() == 3)
+				res += "<b>Cell point: </b> :" + QString::number(cell_point[0]) + ", " + QString::number(cell_point[1]) + ", " + QString::number(cell_point[2]) + "<br>";
 		}
 		res += "<b>Closest point id: </b> :" + QString::number(point_id) + "<br>";
 		double point[3];
@@ -974,7 +993,6 @@ void OffscreenExtractContour::Execute()
 	}
 	d_data->image = VipVTKImage(d_data->filter->GetOutput());
 	// display_lock.reset();
-	// d_data->image.toQImage().save("all.png");
 
 	el1 = QDateTime::currentMSecsSinceEpoch() - start;
 
@@ -1093,8 +1111,35 @@ void OffscreenExtractContour::Execute()
 					// d_data->highlightedCells.toQImage().save("C:/Users/VM213788/Desktop/cells.png");
 					int width = d_data->highlightedCells.width(), height = d_data->highlightedCells.height();
 					if (width * height > 0) {
+						
 						// convert back colors to cell id+1 and flip vertically
 						QRgb* ptr = (QRgb*)(d_data->highlightedCells.image()->GetScalarPointer());
+
+						//Detect corrution of the cell extractor
+						QRgb* imp = (QRgb*)(d_data->image.image()->GetScalarPointer());
+						auto it = d_data->data.find(d_data->highlightedData);
+						unsigned idx = std::distance(d_data->data.begin(), it);
+						int diff_count = 0;
+						int pix_count = 0;
+						for (int i = 0; i < width * height; ++i) {
+							unsigned value = toValue(imp[i]);
+							if (value == idx + 1)
+								pix_count++;
+							diff_count += (bool)(value == idx + 1) != (bool)ptr[i];
+						}
+						if (pix_count && (double)diff_count / pix_count > 0.3)
+						{
+							// Corrupted!
+							qint64 time = QDateTime::currentMSecsSinceEpoch();
+							if (time - d_data->lastReset > 1000 ) {
+								d_data->lastReset = time;
+								Reset();
+								vip_debug("Force update!\n");
+								return ForceUpdate();
+							}
+						}
+
+
 						for (int y = 0; y < height / 2; ++y) {
 							for (int x = 0; x < width; ++x) {
 								QRgb tmp = ptr[y * width + x];
@@ -1102,6 +1147,7 @@ void OffscreenExtractContour::Execute()
 								ptr[(height - y - 1) * width + x] = toValue(tmp);
 							}
 						}
+
 					}
 				}
 

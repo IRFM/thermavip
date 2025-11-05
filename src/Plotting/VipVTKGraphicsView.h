@@ -84,6 +84,7 @@ public Q_SLOTS:
 	void updateDisplayInfo(const QPoint & pt = QPoint(-1,-1));
 
 protected:
+	virtual bool eventFilter(QObject* w, QEvent* evt);
 	virtual void wheelEvent(QWheelEvent* event);
 	virtual void mousePressEvent(QMouseEvent* event);
 	virtual void mouseMoveEvent(QMouseEvent* event);
@@ -143,6 +144,9 @@ class VIP_PLOTTING_EXPORT VipVTKGraphicsView : public VipImageWidget2D
 
     /// @brief Returns true if information tracking of cells/points under the mouse is enabled
     bool trackingEnabled() const;
+
+
+    bool decimateOnMove() const;
 
 	/// @brief Find attribute bounds for given attribute name and component
 	/// @return true is computation was successfull, false if attribute could not be found
@@ -255,6 +259,8 @@ public Q_SLOTS:
 	/// @brief Enable/disable lighting
 	void setLighting(bool);
 
+	void setDecimateOnMove(bool enable);
+
 	/// @brief Set the current active camera
 	void setCurrentCamera(const VipFieldOfView& fov);
 
@@ -321,32 +327,8 @@ private Q_SLOTS:
 	void resetActiveCameraToDirection(double look_x, double look_y, double look_z, double up_x, double up_y, double up_z);
 
 private:
+	VIP_DECLARE_PRIVATE_DATA();
 
-    VipVTKWidget* mWidget;
-	VipInfoWidget * mInfos;
-    vtkRenderer * mRenderer;
-	QList<vtkRenderer*> mRenderers;
-	QGraphicsItem* mItemUnderMouse;
-	QPointer<QGraphicsObject> mObjectUnderMouse;
-	VipColorPalette mPalette;
-	VipBorderLegend * mAnnotationLegend;
-	OffscreenExtractShapeStatistics * mStats;
-
-    vtkSmartPointer<vtkLookupTable> mLut;
-    vtkSmartPointer<vtkScalarBarActor> mScalarBar;
-	vtkSmartPointer<vtkCoordinate> mCoordinates;
-
-    vtkSmartPointer<vtkCubeAxesActor> mCubeAxesActor;
-	//vtkSmartPointer<vtkGridAxes3DActor> mGridAxesActor;
-	vtkSmartPointer<vtkOrientationMarkerWidget> mOrientationAxes;
-
-    bool mTrackingEnable;
-	bool mDirtyColorMapDiv;
-	bool mInitialized{ false };
-	bool mInRefresh{ false };
-	bool mHasLight{ true };
-	bool mResetCameraEnabled{ true };
-	OffscreenExtractContour mContours;
 };
 
 VIP_REGISTER_QOBJECT_METATYPE(VipVTKGraphicsView*)

@@ -97,6 +97,37 @@ private:
 VIP_REGISTER_QOBJECT_METATYPE(VipVTKFileReader*)
 
 
+
+/**
+Reads a VTK file and return a VipVTKObject
+*/
+class VIP_CORE_EXPORT VipPVDFileReader : public VipTimeRangeBasedGenerator
+{
+	Q_OBJECT
+	VIP_IO(VipMultiOutput output)
+	Q_CLASSINFO("category", "reader")
+	Q_CLASSINFO("description", "Read a 3D model time series")
+
+public:
+	VipPVDFileReader(QObject* parent = nullptr);
+	~VipPVDFileReader();
+
+	virtual bool probe(const QString& filename, const QByteArray&) const { return supportFilename(filename) || VipIODevice::probe(filename); }
+	virtual bool open(VipIODevice::OpenModes);
+	virtual VipIODevice::OpenModes supportedModes() const { return ReadOnly; }
+	virtual VipIODevice::DeviceType deviceType() const { return Temporal; }
+	virtual QString fileFilters() const { return "3D model file with time steps (*.pvd)"; }
+
+protected:
+	virtual bool readData(qint64 time);
+
+private:
+	VIP_DECLARE_PRIVATE_DATA();
+};
+
+VIP_REGISTER_QOBJECT_METATYPE(VipPVDFileReader*)
+
+
 /**
 Reads a X Y Z Values text file and return a VipVTKObject
 */
