@@ -364,6 +364,8 @@ public:
 	virtual bool isOpen() const;
 	virtual void setPassword(const QByteArray& pwd);
 	virtual bool requirePassword() const { return true; }
+	void setHostKey(const QByteArray& key);
+	QByteArray hostKey() const;
 	virtual QString homeDirectory() const;
 	using VipMapFileSystem::open;
 protected:

@@ -177,8 +177,6 @@ static QBrush WidgetTextBrush(QWidget* w)
 #include <vtkDecimatePro.h>
 #include <vtkUnstructuredGrid.h>
 #include <vtkStructuredGrid.h>
-#include <vtkUnstructuredGridQuadricDecimation.h>
-#include <vtkExplicitStructuredGridToUnstructuredGrid.h>
 #include <vtkGeometryFilter.h>
 
 static vtkDataObject* toDecimatedPolyData(vtkDataObject* obj)

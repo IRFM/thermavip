@@ -1013,6 +1013,15 @@ QIODevice* VipPhysicalFileSystem::openPath(const VipPath& path, QIODevice::OpenM
 		return;                                                                                                                                                                                \
 	}
 
+#define _OPEN_ERROR_FALSE(...)                                                                                                                                                                               \
+	{                                                                                                                                                                                              \
+		VIP_LOG_ERROR(__VA_ARGS__);                                                                                                                                                            \
+		vip_debug("%s\n", QString(__VA_ARGS__).toLatin1().data()) error = __VA_ARGS__;                                                                                                         \
+		finished = true;                                                                                                                                                                       \
+		proc.terminate();                                                                                                                                                                      \
+		return false;                                                                                                                                                                                \
+	}
+
 class VipSFTPFileSystem::PrivateData : public QThread
 {
 public:
@@ -1026,6 +1035,7 @@ public:
 	QByteArray password;
 	QByteArray current;
 	QByteArray root;
+	QByteArray key;
 	QMutex mutex;
 	std::atomic<bool> finished;
 	std::atomic<bool> stop;
@@ -1076,32 +1086,46 @@ public:
 		return res;
 	}
 
-	static bool waitForInput(QProcess& p)
+	static bool waitForInput(QProcess& p, QString * out)
 	{
 		while (true) {
 			auto start = QDateTime::currentMSecsSinceEpoch();
 			bool has_input = false;
+
+			QString input;
 			while (QDateTime::currentMSecsSinceEpoch() - start < 20000) {
-				has_input = p.waitForReadyRead(200);
+				has_input = p.waitForReadyRead(1000);
+				if (!has_input) {
+					input += p.readAllStandardOutput();
+					if (!input.isEmpty())
+						has_input = true;
+				}
+
 				if (has_input)
 					break;
-				if (p.state() != QProcess::Running)
+				if (p.state() != QProcess::Running) {
+					*out += p.readAllStandardOutput();
 					return false;
+				}
 			}
+			input += p.readAll();
 			if (!has_input)
 				return false;
-			
-			QString tmp = p.readAllStandardOutput();
-			if (tmp.contains("The host key is not cached")) {
+
+			input += p.readAllStandardOutput();
+			if (out)
+				*out += input;
+
+			if (input.contains(/*"The host key is not cached"*/ "y/n")) {
 				p.write("y\n");
 				p.waitForBytesWritten();
 				continue;
 			}
-			if (tmp.contains("psftp> "))
+			if (input.contains("psftp> "))
 				return true;
-			if (tmp.contains("closed", Qt::CaseInsensitive) || tmp.contains("error", Qt::CaseInsensitive))
+			if (input.contains("closed", Qt::CaseInsensitive) || input.contains("error", Qt::CaseInsensitive))
 				return false;
-			if (tmp.contains("denied", Qt::CaseInsensitive))
+			if (input.contains("denied", Qt::CaseInsensitive))
 				return false;
 
 			if (p.state() != QProcess::Running)
@@ -1109,31 +1133,57 @@ public:
 		}
 	}
 
-	virtual void run()
+	bool setupProcess(QProcess& proc, const QByteArray& hostkey)
 	{
+		if (proc.state() == QProcess::Running)
+			proc.kill();
+		proc.waitForFinished();
+
 		current.clear();
 		root.clear();
 		error.clear();
 
-		QProcess proc;
-
 		proc.setProcessChannelMode(QProcess::MergedChannels);
 
-		QString cmd = "psftp"; //-pw " + password + "" + address;
-		proc.start(cmd, QStringList() << "-batch" << "-pw" << password << address);
+		QString cmd = "psftp";
+		QStringList args;
+		if (!hostkey.isEmpty())
+			args << "-hostkey" << hostkey;
+		args << "-batch" << "-pw" << password << address;
+		// proc.start(cmd, QStringList() << "-batch" << "-pw" << password << address);
+		proc.start(cmd, args);
 		if (!proc.waitForStarted(2000))
-			_OPEN_ERROR("Unable to connect to " + address + ", please check address and password");
+			_OPEN_ERROR_FALSE("Unable to connect to " + address + ", please check address and password");
 
 		if (proc.state() != QProcess::Running)
-			_OPEN_ERROR("Unable to connect to " + address + ", please check address and password");
+			_OPEN_ERROR_FALSE("Unable to connect to " + address + ", please check address and password");
 
-		/* QThread::msleep(100);
-		proc.write("y\n");
-		if (!proc.waitForBytesWritten(4000))
-			_OPEN_ERROR("Unable to write to psftp process, please check address and password");
-		*/
-		if (!waitForInput(proc))
-			_OPEN_ERROR("Unable to read from psftp process, please check address and password");
+		QString output;
+		if (!waitForInput(proc, &output)) {
+			if (hostkey.isEmpty()) {
+				// Search for the host key in the output
+				QTextStream str(output.toLatin1());
+				while (str.status() == QTextStream::Ok) {
+					QString line = str.readLine();
+					if (line.contains("ssh-ed25519")) {
+						QStringList lst = line.split(" ", VIP_SKIP_BEHAVIOR::SkipEmptyParts);
+						if (lst.size() == 3 && !lst.last().isEmpty()) {
+							return setupProcess(proc, lst.last().toLatin1());
+						}
+					}
+				}
+			}
+			_OPEN_ERROR_FALSE("Unable to read from psftp process, please check address and password");
+		}
+		return true;
+	}
+
+	virtual void run()
+	{
+		
+		QProcess proc;
+		if (!setupProcess(proc, key))
+			return;
 
 		proc.write("pwd\n");
 		if (!proc.waitForBytesWritten(2000))
@@ -1269,6 +1319,15 @@ VipSFTPFileSystem::VipSFTPFileSystem()
 
 VipSFTPFileSystem::~VipSFTPFileSystem()
 {
+}
+
+void VipSFTPFileSystem::setHostKey(const QByteArray& key)
+{
+	d_data->key = key;
+}
+QByteArray VipSFTPFileSystem::hostKey() const
+{
+	return d_data->key;
 }
 
 bool VipSFTPFileSystem::open(const QByteArray& addr)
