@@ -710,7 +710,7 @@ VipVTKGraphicsView::VipVTKGraphicsView()
 	connect(area()->colorMapAxis(), SIGNAL(scaleNeedUpdate()), this, SLOT(colorMapModified()));
 	connect(area()->colorMapAxis()->grip1(), SIGNAL(valueChanged(double)), this, SLOT(colorMapDivModified()));
 	connect(area()->colorMapAxis()->grip2(), SIGNAL(valueChanged(double)), this, SLOT(colorMapDivModified()));
-	table()->SetNanColor(VipVTKObject::defaultObjectColor());
+	table()->SetNanColor((double*)VipVTKObject::defaultObjectColor());
 	d_data->dirtyColorMapDiv = false;
 
 	this->area()->legend()->setVisible(true);
