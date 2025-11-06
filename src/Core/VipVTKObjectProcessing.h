@@ -210,6 +210,7 @@ namespace detail
 #include <vtkUnstructuredGrid.h>
 #include <vtkGeometryFilter.h>
 #include <vtkDataSetTriangleFilter.h>
+#include <vtkVersion.h>
 
 /*vtkGeometryFilter algorithm*/
 VTK_DECLARE_ALGORITHM(GeometryFilter, VIP_CORE_EXPORT)
@@ -222,8 +223,10 @@ VTK_DECLARE_ALGORITHM(GeometryFilter, VIP_CORE_EXPORT)
 	VTK_DECLARE_PROPERTY(ExtentClipping);
 	VTK_DECLARE_PROPERTY(Merging);
 	VTK_DECLARE_PROPERTY(OutputPointsPrecision);
+//#if VTK_VERSION_NUMBER >= 90020210809ULL//VTK_VERSION_CHECK(9,4,0)
 	VTK_DECLARE_PROPERTY(FastMode);
 	VTK_DECLARE_PROPERTY(PieceInvariant);
+//#endif
 	VTK_DECLARE_PROPERTY(PassThroughCellIds);
 	VTK_DECLARE_PROPERTY(PassThroughPointIds);
 	VTK_DECLARE_PROPERTY(NonlinearSubdivisionLevel);
