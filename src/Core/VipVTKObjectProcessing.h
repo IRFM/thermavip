@@ -152,8 +152,11 @@ namespace detail
 			m_algo->Update();
 			if (m_algo->GetOutput())
 				return VipVTKObject(m_algo->GetOutput());
-			else
+			else {
+				setError(QString("VTK algorithm (%1) error code: %2").arg(m_algo->GetClassName()).arg(m_algo->GetErrorCode()));
 				return VipVTKObject();
+			}
+				
 		}
 	};
 }
@@ -189,7 +192,7 @@ namespace detail
 
 #define VTK_CREATE_ALGORITHM(classname, ...)                                                                                                                                                           \
 	Vip##classname()                                                                                                                                                                                    \
-	  : base_type({ VIP_FOR_EACH(VIP_STRINGIZE, VIP_COMMA, __VA_ARGS__) })
+	  : base_type({ VIP_FOR_EACH_GENERIC(VIP_STRINGIZE, VIP_COMMA, __VA_ARGS__) })
 
 ////////////////////////////////////////////////
 // Collection of VTK algorithms
@@ -205,6 +208,39 @@ namespace detail
 #include <vtkSmoothPolyDataFilter.h>
 #include <vtkAdaptiveSubdivisionFilter.h>
 #include <vtkUnstructuredGrid.h>
+#include <vtkGeometryFilter.h>
+#include <vtkDataSetTriangleFilter.h>
+
+/*vtkGeometryFilter algorithm*/
+VTK_DECLARE_ALGORITHM(GeometryFilter, VIP_CORE_EXPORT)
+{
+	Q_OBJECT
+	Q_CLASSINFO("description", "Extract geometry surface and convert to polydata. Based on vtkGeometryFilter class.")
+	Q_CLASSINFO("category", "3D");
+	VTK_DECLARE_PROPERTY(PointClipping);
+	VTK_DECLARE_PROPERTY(CellClipping);
+	VTK_DECLARE_PROPERTY(ExtentClipping);
+	VTK_DECLARE_PROPERTY(Merging);
+	VTK_DECLARE_PROPERTY(OutputPointsPrecision);
+	VTK_DECLARE_PROPERTY(FastMode);
+	VTK_DECLARE_PROPERTY(PieceInvariant);
+	VTK_DECLARE_PROPERTY(PassThroughCellIds);
+	VTK_DECLARE_PROPERTY(PassThroughPointIds);
+	VTK_DECLARE_PROPERTY(NonlinearSubdivisionLevel);
+	VTK_DECLARE_PROPERTY(MatchBoundariesIgnoringCellOrder);
+	VTK_DECLARE_PROPERTY(Delegation);
+	VTK_DECLARE_PROPERTY(RemoveGhostInterfaces);
+
+
+public:
+	VTK_CREATE_ALGORITHM(GeometryFilter, vtkDataObject) {}
+
+	virtual bool acceptInput(int index, const QVariant& v) const
+	{
+		return detail::VTKHelperProcessing<vtkGeometryFilter>::acceptInput(index, v);
+	}
+};
+VIP_REGISTER_QOBJECT_METATYPE(VipGeometryFilter*)
 
 /*vtkDecimatePro algorithm*/
 VTK_DECLARE_ALGORITHM(DecimatePro, VIP_CORE_EXPORT)
@@ -227,6 +263,11 @@ VTK_DECLARE_ALGORITHM(DecimatePro, VIP_CORE_EXPORT)
 
 public:
 	VTK_CREATE_ALGORITHM(DecimatePro, vtkPolyData) {}
+
+	virtual bool acceptInput(int index, const QVariant& v) const
+	{
+		return detail::VTKHelperProcessing<vtkDecimatePro>::acceptInput(index, v);
+	}
 };
 
 VIP_REGISTER_QOBJECT_METATYPE(VipDecimatePro*)
@@ -383,6 +424,20 @@ public:
  
 VIP_REGISTER_QOBJECT_METATYPE(VipSmoothPolyDataFilter*)
 
+
+VTK_DECLARE_ALGORITHM(DataSetTriangleFilter, VIP_CORE_EXPORT)
+{
+	Q_OBJECT
+	Q_CLASSINFO("description", "Triangulate any type of dataset")
+	Q_CLASSINFO("category", "3D/Dataset")
+	VTK_DECLARE_PROPERTY(TetrahedraOnly);
+
+public:
+	VTK_CREATE_ALGORITHM(DataSetTriangleFilter, vtkDataSet) {}
+};
+
+VIP_REGISTER_QOBJECT_METATYPE(VipDataSetTriangleFilter*)
+
 // TEST
 class VIP_CORE_EXPORT CosXYZ : public VipVTKObjectProcessing
 {
@@ -399,7 +454,7 @@ public:
 	virtual bool acceptInput(int /*index*/, const QVariant& v) const { return v.value<VipVTKObject>().polyData(); }
 	virtual VipVTKObject applyAlgorithm(const VipVTKObjectList& inputs, qint64 time);
 };
-VIP_REGISTER_QOBJECT_METATYPE(CosXYZ*)
+//VIP_REGISTER_QOBJECT_METATYPE(CosXYZ*)
 
 /*Apply an affine transform to X,Y and/or Z coordinate*/
 class VIP_CORE_EXPORT VipLinearTransform : public VipVTKObjectProcessing

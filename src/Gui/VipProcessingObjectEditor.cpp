@@ -1198,7 +1198,10 @@ void VipProcessingListEditor::updateProcessingTree()
 	if (d_data->processingList) {
 		// create a list of all VipProcessingObject that can be inserted into a VipProcessingList
 		QVariantList lst;
-		lst.append(d_data->processingList->inputAt(0)->probe().data());
+		QVariant out = d_data->processingList->outputAt(0)->data().data();
+		if (out.isNull())
+			out = d_data->processingList->inputAt(0)->probe().data();
+		lst.append(out);
 
 		QList<int> current_types = vipUserTypes();
 		//if (d_data->infos.isEmpty() || current_types != d_data->user_types) 

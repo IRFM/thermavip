@@ -186,6 +186,9 @@ public:
 	/// @brief Set the data name
 	void setDataName(const QString&);
 
+	/// @brief Returns the vtk object class name (vtkDataObject::GetClassName())
+	QString className() const;
+
 	/// @brief performs a deep copy of the object
 	VipVTKObject copy() const;
 

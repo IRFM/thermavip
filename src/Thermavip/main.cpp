@@ -206,8 +206,6 @@ int main(int argc, char** argv)
 
 	QApplication app(argc, argv);
 
-	
-
 #ifdef WIN32
 	// For now, fix issues with Windows 11 style for QSpinBox
 	QApplication::setStyle("windowsvista");
