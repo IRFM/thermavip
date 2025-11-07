@@ -89,11 +89,33 @@ endif()
 
 
 # Add HDF5 libraries if required
+set(HAS_HDF5 OFF CACHE INTERNAL "")
 if(WITH_HDF5)
-	find_package (HDF5 COMPONENTS C REQUIRED)
+	find_package (HDF5 COMPONENTS C GLOBAL)
+	if(NOT HDF5_FOUND)
+		include(FetchContent)
+		set(HDF5_ENABLE_SZIP_SUPPORT OFF)
+		set(HDF5_ENABLE_Z_LIB_SUPPORT OFF)
+		set(BUILD_TESTING OFF)
+		set(HDF5_BUILD_TOOLS OFF)
+		set(HDF5_BUILD_EXAMPLES OFF)
+		set(H5EX_BUILD_EXAMPLES OFF)
+		FetchContent_Declare(
+			hdf5
+			GIT_REPOSITORY https://github.com/HDFGroup/hdf5
+			GIT_TAG hdf5-1_10_0-patch1
+			OVERRIDE_FIND_PACKAGE
+		)
+		find_package (hdf5 REQUIRED COMPONENTS C GLOBAL)
+	endif()
+	if (TARGET hdf5_hl-shared)
+		get_target_property(HDF5_INCLUDE_DIRS hdf5_hl-shared INCLUDE_DIRECTORIES)
+		get_target_property(HDF5_LIBRARIES hdf5_hl-shared LINK_LIBRARIES)
+	endif()
 	target_include_directories(${TARGET_PROJECT} PRIVATE ${HDF5_INCLUDE_DIRS} )
 	target_link_libraries(${TARGET_PROJECT} PRIVATE ${HDF5_LIBRARIES})
 	target_compile_definitions(${TARGET_PROJECT} PUBLIC -DVIP_WITH_HDF5)
+	set(HAS_HDF5 ON CACHE INTERNAL "")
 endif()
 
 # Add VTK libraries if required

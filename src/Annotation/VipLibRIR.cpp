@@ -857,6 +857,19 @@ VipLibRIR* VipLibRIR::instance()
 			return librir = nullptr;
 		}
 
+		librir->get_hcc_nuc_offset = (_get_hcc_nuc_offset)westLib()->resolve("get_hcc_nuc_offset");
+		if (!librir->get_hcc_nuc_offset) {
+			VIP_LOG_ERROR("librir: missing get_hcc_nuc_offset");
+			delete librir;
+			return librir = nullptr;
+		}
+		librir->set_hcc_nuc_offset = (_set_hcc_nuc_offset)westLib()->resolve("set_hcc_nuc_offset");
+		if (!librir->set_hcc_nuc_offset) {
+			VIP_LOG_ERROR("librir: missing set_hcc_nuc_offset");
+			delete librir;
+			return librir = nullptr;
+		}
+
 		librir->get_camera_count = (_get_camera_count)westLib()->resolve("get_camera_count");
 		if (!librir->get_camera_count) {
 			VIP_LOG_ERROR("librir: missing get_camera_count");

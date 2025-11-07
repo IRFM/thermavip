@@ -130,7 +130,6 @@ public:
 	typedef int (*_close_camera)(int camera);
 	typedef int (*_get_filename)(int cam, char* filename);
 
-
 	typedef int (*_get_temp_directory)(char*);
 	typedef int (*_get_default_temp_directory)(char*);
 	typedef int (*_set_temp_directory)(char*);
@@ -200,12 +199,7 @@ public:
 
 	typedef int (*_apply_calibration_nuc)(int cam, int enable);
 	typedef int (*_is_calibration_nuc)(int cam);
-	typedef int (*_convert_hcc_file)(const char* hcc_file,
-					 const char* ,
-					 const char* ,
-					 int64_t start_timestamp_ns,
-					 const char* view,
-					 const char* out_file);
+	typedef int (*_convert_hcc_file)(const char* hcc_file, const char*, const char*, int64_t start_timestamp_ns, const char* view, const char* out_file);
 	typedef int (*_hcc_extract_times_and_fw_pos)(int cam, qint64* times, int* pos);
 	typedef int (*_hcc_extract_all_fw_pos)(int cam, int* pos, int* pos_count);
 
@@ -227,12 +221,14 @@ public:
 	typedef void (*_set_hcc_trfut_file)(const char* filename);
 	typedef void (*_get_hcc_trfut_file)(char* filename);
 
+	typedef int (*_set_hcc_nuc_offset)(int cam, const float nuc_offset, int fw_pos);
+	typedef float (*_get_hcc_nuc_offset)(int cam, int fw_pos);
+
 	typedef int (*_set_firca_folder)(const char* filename);
 	typedef int (*_get_firca_folder)(char* filename);
 
 	typedef int (*_read_file_from_dcamir)(const char* in_file, const char* out_file);
 	typedef int (*_write_file_to_dcamir)(const char* in_file, const char* out_file);
-
 
 	typedef int (*_attrs_open_file)(const char* filename);
 	typedef void (*_attrs_close)(int handle);
@@ -399,13 +395,14 @@ public:
 	_set_hcc_trfut_file set_hcc_trfut_file;
 	_get_hcc_trfut_file get_hcc_trfut_file;
 
+	_set_hcc_nuc_offset set_hcc_nuc_offset;
+	_get_hcc_nuc_offset get_hcc_nuc_offset;
+
 	_set_firca_folder firca_set_calibration_folder;
 	_get_firca_folder firca_get_calibration_folder;
 
 	_read_file_from_dcamir read_file_from_dcamir;
 	_write_file_to_dcamir write_file_to_dcamir;
-
-
 
 	_attrs_open_file attrs_open_file;
 	_attrs_close attrs_close;
