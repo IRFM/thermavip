@@ -2886,7 +2886,7 @@ VipArchive& operator<<(VipArchive& arch, const VipPlotItem* value)
 	QList<QByteArray> names = value->dynamicPropertyNames();
 	QVariantMap properties;
 	for (int i = 0; i < names.size(); ++i)
-		if (!names[i].startsWith("_q_")) {
+		if (!names[i].startsWith("_q_") && !names[i].startsWith("_vip_")) {
 			QVariant v = value->property(names[i]);
 			if (v.userType() > 0 && v.userType() < QMetaType::User) {
 				properties[names[i]] = v;

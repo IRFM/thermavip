@@ -189,6 +189,7 @@ else()
 endif()
 
 
+
 # Add targets
 target_include_directories(VipLogging  PUBLIC
 						   "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/VipLogging>"

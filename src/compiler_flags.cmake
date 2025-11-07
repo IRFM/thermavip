@@ -103,15 +103,16 @@ if(WITH_HDF5)
 		FetchContent_Declare(
 			hdf5
 			GIT_REPOSITORY https://github.com/HDFGroup/hdf5
-			GIT_TAG hdf5-1_10_0-patch1
+			GIT_TAG hdf5-1.14.6
 			OVERRIDE_FIND_PACKAGE
 		)
 		find_package (hdf5 REQUIRED COMPONENTS C GLOBAL)
+		if (TARGET hdf5_hl-shared)
+			get_target_property(HDF5_INCLUDE_DIRS hdf5_hl-shared INCLUDE_DIRECTORIES)
+			get_target_property(HDF5_LIBRARIES hdf5_hl-shared LINK_LIBRARIES)
+		endif()
 	endif()
-	if (TARGET hdf5_hl-shared)
-		get_target_property(HDF5_INCLUDE_DIRS hdf5_hl-shared INCLUDE_DIRECTORIES)
-		get_target_property(HDF5_LIBRARIES hdf5_hl-shared LINK_LIBRARIES)
-	endif()
+	
 	target_include_directories(${TARGET_PROJECT} PRIVATE ${HDF5_INCLUDE_DIRS} )
 	target_link_libraries(${TARGET_PROJECT} PRIVATE ${HDF5_LIBRARIES})
 	target_compile_definitions(${TARGET_PROJECT} PUBLIC -DVIP_WITH_HDF5)
