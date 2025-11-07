@@ -204,6 +204,11 @@ else()
 		#target_compile_options(${TARGET_PROJECT} PUBLIC /execution-charset:utf-8 /source-charset:utf-8)
 		
 		target_link_libraries(${TARGET_PROJECT} PRIVATE opengl32)
+	else()
+		# Find shared libraries next to the executable
+		set_target_properties(${TARGET_PROJECT} PROPERTIES
+			BUILD_WITH_INSTALL_RPATH FALSE
+			LINK_FLAGS "-Wl,-rpath,$ORIGIN/")
 	endif()
 	
 	# add openmp for all
