@@ -77,6 +77,8 @@
 #include <vtkSTLReader.h>
 #include <vtkDecimatePro.h>
 #include <vtkCallbackCommand.h>
+#include <vtkOBJReader.h>
+#include <vtkPLYReader.h>
 
 #include <QDir>
 #include <QDateTime>
@@ -565,8 +567,11 @@ QString VipVTKObject::description(int pointId, int cellId) const
 
 	QStringList text;
 
-	if (d_data->data)
+	if (d_data->data) {
+
 		text << QString("<b>Name: </b>") + QFileInfo(GetObjectName(d_data->data)).fileName();
+		text << QString("<b>Type: </b>") + d_data->data->GetClassName();
+	}
 
 	if (d_data->data && d_data->data->IsA("vtkDataSet")) {
 		text << "<b>Point count: </b>" + QString::number(static_cast<vtkDataSet*>(d_data->data.GetPointer())->GetNumberOfPoints());
@@ -629,6 +634,13 @@ QString VipVTKObject::dataName() const
 	QMutexLocker lock(const_cast<QRecursiveMutex*>(&d_data->mutex));
 	return d_data->data ? QString(GetObjectName(d_data->data)) : QString();
 }
+
+QString VipVTKObject::className() const
+{
+	QMutexLocker lock(const_cast<QRecursiveMutex*>(&d_data->mutex));
+	return d_data->data ? QString(d_data->data->GetClassName()) : QString();
+}
+
 
 void VipVTKObject::setDataName(const QString& name)
 {
@@ -1553,7 +1565,7 @@ vtkImageData* VipVTKObject::image() const
 
 QStringList VipVTKObject::vtkFileSuffixes()
 {
-	return (QStringList() << "stl"
+	return (QStringList() << "obj" << "ply"<< "stl"
 			      << "vtk"
 			      << "vti"
 			      << "vtp"
@@ -1564,7 +1576,7 @@ QStringList VipVTKObject::vtkFileSuffixes()
 
 QStringList VipVTKObject::vtkFileFilters()
 {
-	return (QStringList() << "*.stl"
+	return (QStringList() << "*.obj" << "*.ply" << "*.stl"
 			      << "*.vtk"
 			      << "*.vti"
 			      << "*.vtp"
@@ -1679,6 +1691,34 @@ VipVTKObject VipVTKObject::load(const QString& filename, QString* error )
 		if (!obj) {
 			if (error)
 					*error = "Unable to read input file "+ filename;
+			return VipVTKObject();
+		}
+		else
+			res = VipVTKObject(obj);
+	}
+	else if (suffix.compare("obj", Qt::CaseInsensitive) == 0)
+	{
+		vtkSmartPointer<vtkOBJReader> reader = vtkSmartPointer<vtkOBJReader>::New();
+		reader->SetFileName(filename.toLatin1().data());
+		reader->Update();
+		vtkDataObject* obj = reader->GetOutput();
+		if (!obj) {
+			if (error)
+				*error = "Unable to read input file " + filename;
+			return VipVTKObject();
+		}
+		else
+			res = VipVTKObject(obj);
+	}
+	else if (suffix.compare("ply", Qt::CaseInsensitive) == 0)
+	{
+		vtkSmartPointer<vtkPLYReader> reader = vtkSmartPointer<vtkPLYReader>::New();
+		reader->SetFileName(filename.toLatin1().data());
+		reader->Update();
+		vtkDataObject* obj = reader->GetOutput();
+		if (!obj) {
+			if (error)
+				*error = "Unable to read input file " + filename;
 			return VipVTKObject();
 		}
 		else

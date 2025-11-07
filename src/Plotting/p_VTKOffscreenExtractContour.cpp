@@ -655,6 +655,7 @@ QString OffscreenExtractContour::Description(const QPoint& pt)
 
 	// first paragraph: general infos
 	res += "<p><b>Name</b>: " + obj.dataName() + "<br>";
+	res += "<p><b>Type</b>: " + obj.className() + "<br>";
 	if (set) {
 		res += "<b>Cell count</b>: " + QString::number(set->GetNumberOfCells()) + "<br>";
 		res += "<b>Point count</b>: " + QString::number(set->GetNumberOfPoints());

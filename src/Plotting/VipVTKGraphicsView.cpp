@@ -177,9 +177,8 @@ static QBrush WidgetTextBrush(QWidget* w)
 #include <vtkDecimatePro.h>
 #include <vtkUnstructuredGrid.h>
 #include <vtkStructuredGrid.h>
-#include <vtkUnstructuredGridQuadricDecimation.h>
-#include <vtkExplicitStructuredGridToUnstructuredGrid.h>
 #include <vtkGeometryFilter.h>
+#include <vtkDataSetSurfaceFilter.h>
 
 static vtkDataObject* toDecimatedPolyData(vtkDataObject* obj)
 {
@@ -194,14 +193,6 @@ static vtkDataObject* toDecimatedPolyData(vtkDataObject* obj)
 		f->Delete();
 		if (!poly)
 			return nullptr;
-
-		// Remove attributes as the vtkGeometryFilter produces errors
-		while (poly->GetPointData()->GetNumberOfArrays())
-			poly->GetPointData()->RemoveArray(0);
-		while (poly->GetCellData()->GetNumberOfArrays())
-			poly->GetCellData()->RemoveArray(0);
-		while (poly->GetFieldData()->GetNumberOfArrays())
-			poly->GetFieldData()->RemoveArray(0);
 	}
 	if (!poly)
 		return nullptr;
@@ -219,66 +210,21 @@ static vtkDataObject* toDecimatedPolyData(vtkDataObject* obj)
 	dec->SetTargetReduction(0.95);
 	dec->PreserveTopologyOff();
 	dec->Update();
-	vtkDataObject* res = dec->GetOutput();
+	vtkPolyData* res = dec->GetOutput();
 	res->Register(res);
 	dec->Delete();
+
+	// Remove attributes as the vtkGeometryFilter produces errors
+	while (res->GetPointData()->GetNumberOfArrays())
+		res->GetPointData()->RemoveArray(0);
+	while (res->GetCellData()->GetNumberOfArrays())
+		res->GetCellData()->RemoveArray(0);
+	while (res->GetFieldData()->GetNumberOfArrays())
+		res->GetFieldData()->RemoveArray(0);
+
 	return res;
 }
-/*
-static vtkDataObject* toDecimatedPolyData(vtkDataObject* obj)
-{
-	if (obj->IsA("vtkStructuredGrid")) {
-		vtkExplicitStructuredGridToUnstructuredGrid* conv = vtkExplicitStructuredGridToUnstructuredGrid::New();
-		conv->SetInputData(obj);
-		conv->Update();
-		vtkUnstructuredGrid * u = conv->GetOutput();
-		u->Register(u);
-		conv->Delete();
 
-		vtkUnstructuredGridQuadricDecimation* dec = vtkUnstructuredGridQuadricDecimation::New();
-		dec->SetTargetReduction(0.9);
-		dec->SetInputData(u);
-		dec->Update();
-		obj = dec->GetOutput();
-		obj->Register(obj);
-		dec->Delete();
-		return obj;
-	}
-
-	if (obj->IsA("vtkUnstructuredGrid")) {
-		vtkUnstructuredGridQuadricDecimation* dec = vtkUnstructuredGridQuadricDecimation::New();
-		dec->SetTargetReduction(0.9);
-		dec->SetInputData(obj);
-		dec->Update();
-		obj = dec->GetOutput();
-		obj->Register(obj);
-		dec->Delete();
-		return obj;
-	}
-	if (obj->IsA("vtkStructuredGrid")) {
-		vtkUnstructuredGridQuadricDecimation* dec = vtkUnstructuredGridQuadricDecimation::New();
-		dec->SetTargetReduction(0.9);
-		dec->SetInputData(obj);
-		dec->Update();
-		obj = dec->GetOutput();
-		obj->Register(obj);
-		dec->Delete();
-		return obj;
-	}
-	if (obj->IsA("vtkPolyData")) {
-		vtkDecimatePro* dec = vtkDecimatePro::New();
-		dec->SetInputData(obj);
-		dec->SetTargetReduction(0.9);
-		dec->PreserveTopologyOn();
-		dec->Update();
-		obj = dec->GetOutput();
-		obj->Register(obj);
-		dec->Delete();
-		return obj;
-	}
-	
-}
-*/
 struct Decimated
 {
 	VipPlotVTKObject* plot = nullptr;
@@ -712,7 +658,7 @@ VipVTKGraphicsView::VipVTKGraphicsView()
 	connect(area()->colorMapAxis(), SIGNAL(scaleNeedUpdate()), this, SLOT(colorMapModified()));
 	connect(area()->colorMapAxis()->grip1(), SIGNAL(valueChanged(double)), this, SLOT(colorMapDivModified()));
 	connect(area()->colorMapAxis()->grip2(), SIGNAL(valueChanged(double)), this, SLOT(colorMapDivModified()));
-	table()->SetNanColor(VipVTKObject::defaultObjectColor());
+	table()->SetNanColor((double*)VipVTKObject::defaultObjectColor());
 	d_data->dirtyColorMapDiv = false;
 
 	this->area()->legend()->setVisible(true);

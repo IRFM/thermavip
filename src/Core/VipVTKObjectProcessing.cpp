@@ -84,6 +84,7 @@ void VipVTKObjectProcessing::apply()
 	out_any.setName(QFileInfo(name).fileName());
 	out_any.setSource(this);
 	out_any.setData(QVariant::fromValue(out));
+	out_any.mergeAttributes(out.buildAllAttributes()); //TEST
 
 	outputAt(0)->setData(out_any);
 }
