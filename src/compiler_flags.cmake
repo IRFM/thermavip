@@ -89,7 +89,7 @@ endif()
 
 
 # Add HDF5 libraries if required
-# set(HAS_HDF5 OFF CACHE INTERNAL "")
+set(HAS_HDF5 OFF CACHE INTERNAL "")
 if(WITH_HDF5)
 	find_package (HDF5 COMPONENTS C GLOBAL)
 	if(NOT HDF5_FOUND)
