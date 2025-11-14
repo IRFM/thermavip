@@ -25,6 +25,8 @@ set_and_check(THERMAVIP_PLUGIN_DIR ${THERMAVIP_APPLICATION_DIR}/VipPlugins)
 set(THERMAVIP_LIBRARIES_NO_GUI VipLogging VipDataType VipCore VipPlotting)
 set(THERMAVIP_LIBRARIES ${THERMAVIP_LIBRARIES_NO_GUI} VipGui VipAnnotation )
 
+
+
 # Setup Qt
 find_package(QT NAMES Qt5 Qt6 REQUIRED )
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets OpenGL Core Gui Xml Network Sql PrintSupport Svg)
@@ -93,13 +95,13 @@ else()
 	set(THERMAVIP_VTK_LIBRARIES "")
 endif()
 
-if(@HAS_HDF5@)
-	find_package (HDF5 COMPONENTS C REQUIRED)
-	set(THERMAVIP_HDF5_LIBRARIES ${HDF5_LIBRARIES}})
-	include_directories(${HDF5_INCLUDE_DIRS})
-else()
-	set(THERMAVIP_HDF5_LIBRARIES "")
-endif()
+#if(@HAS_HDF5@)
+#	find_package (HDF5 COMPONENTS C REQUIRED)
+#	set(THERMAVIP_HDF5_LIBRARIES ${HDF5_LIBRARIES}})
+#	include_directories(${HDF5_INCLUDE_DIRS})
+#else()
+#	set(THERMAVIP_HDF5_LIBRARIES "")
+#endif()
 
 if("@QT_WEBENGINE_LIBS@")
 	add_compile_definitions(__VIP_USE_WEB_ENGINE)

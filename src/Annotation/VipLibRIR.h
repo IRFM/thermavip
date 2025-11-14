@@ -199,7 +199,7 @@ public:
 
 	typedef int (*_apply_calibration_nuc)(int cam, int enable);
 	typedef int (*_is_calibration_nuc)(int cam);
-	typedef int (*_convert_hcc_file)(const char* hcc_file, const char*, const char*, int64_t start_timestamp_ns, const char* view, const char* out_file);
+	typedef int (*_convert_hcc_file)(const char* hcc_file, const char*, const char*, int64_t start_timestamp_ns, const char* view, const char* out_file, int threads);
 	typedef int (*_hcc_extract_times_and_fw_pos)(int cam, qint64* times, int* pos);
 	typedef int (*_hcc_extract_all_fw_pos)(int cam, int* pos, int* pos_count);
 

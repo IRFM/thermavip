@@ -246,6 +246,9 @@ public:
 	/// @brief Download file.
 	bool download(const VipPath& src, const VipPath& dst);
 
+	/// @brief Upload a file
+	bool upload(const VipPath& src, const VipPath& dst);
+
 	/// Starts a search in given directory based on a regular expression and a filter.
 	///  This function will launch the searching in a separate thread and return immediately.
 	///  Search results are retrieved with the signal #VipMapFileSystem::found() or the function #VipMapFileSystem::searchResults().
@@ -297,6 +300,7 @@ protected:
 	virtual QIODevice* openPath(const VipPath& path, QIODevice::OpenMode modes);
 
 	virtual bool downloadFile(const VipPath& path, const VipPath& out_path) { return false; }
+	virtual bool uploadFile(const VipPath& path, const VipPath& out_path) { return false; }
 
 	void setError(const QString& error_str, int error_code = -2);
 	void resetError();
@@ -379,7 +383,8 @@ protected:
 	virtual VipPathList listPathContent(const VipPath& path);
 	virtual QIODevice* openPath(const VipPath& path, QIODevice::OpenMode modes);
 	virtual bool downloadFile(const VipPath& path, const VipPath& out_path);
-	
+	virtual bool uploadFile(const VipPath& path, const VipPath& out_path);
+
 	VIP_DECLARE_PRIVATE_DATA();
 };
 

@@ -122,6 +122,31 @@ int main(int argc, char** argv)
 		}
 	}
 
+	
+#ifdef WIN32
+	{
+		QString jre_server = QFileInfo(argv[0]).absolutePath() + "\\jre\\bin\\server";
+		if (QFileInfo(jre_server).exists()) {
+			// Use local Jre
+			QByteArray path = qgetenv("PATH");
+			path = jre_server.toLatin1() + ";" + path;
+			qputenv("PATH", path);
+		}
+		else {
+			// Setup Java if JAVA_HOME env. variable exists
+			std::string java_home = getenv("JAVA_HOME");
+			if (!java_home.empty()) {
+				std::string t_path = getenv("PATH");
+				std::string n_path = java_home + "\\jre\\bin\\server;" + t_path;
+				if (QFileInfo((java_home + "\\jre\\bin\\server").c_str()).exists())
+					qputenv("PATH", n_path.c_str());
+			}
+		}
+	}
+#endif
+
+
+
 #ifdef WITH_MICRO
 	// Load micro_proxy library
 	QLibrary micro_proxy("micro_proxy");

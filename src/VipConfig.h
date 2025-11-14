@@ -78,6 +78,10 @@ namespace vip_log_detail {
 // Suppress deprecated warning with QString::SkipEmptyParts
 #if QT_VERSION < QT_VERSION_CHECK(5, 14, 0)
 #define VIP_SKIP_BEHAVIOR QString
+namespace Qt
+{
+	static constexpr auto SkipEmptyParts = QString::SkipEmptyParts;
+}
 #else
 #define VIP_SKIP_BEHAVIOR Qt
 #endif

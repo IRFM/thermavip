@@ -33,7 +33,7 @@ endif()
 
 
 
-target_link_libraries(${TARGET_PROJECT} PRIVATE ${QT_LIBS})
+target_link_libraries(${TARGET_PROJECT} PUBLIC ${QT_LIBS})
 
 
 
@@ -41,8 +41,8 @@ if(${QT_VERSION_MAJOR} LESS 6)
 else()
 find_package(Qt6 REQUIRED COMPONENTS Core5Compat)
 find_package(Qt6 REQUIRED COMPONENTS OpenGLWidgets)
-target_link_libraries(${TARGET_PROJECT} PRIVATE Qt6::Core5Compat)
-target_link_libraries(${TARGET_PROJECT} PRIVATE Qt6::OpenGLWidgets)
+target_link_libraries(${TARGET_PROJECT} PUBLIC Qt6::Core5Compat)
+target_link_libraries(${TARGET_PROJECT} PUBLIC Qt6::OpenGLWidgets)
 endif()
 
 if(NOT ${QT_VERSION_MAJOR} LESS 6)
@@ -68,17 +68,17 @@ if(NOT ${QT_VERSION_MAJOR} LESS 6)
 					#message(STATUS "Using web engine for ${TARGET_PROJECT}")
 					find_package(Qt${QT_VERSION_MAJOR} COMPONENTS WebEngineWidgets REQUIRED)
 					if(${QT_VERSION_MAJOR} LESS 6)
-					target_link_libraries(${TARGET_PROJECT} PRIVATE
+					target_link_libraries(${TARGET_PROJECT} PUBLIC
 					Qt5::WebEngine
 					Qt5::WebEngineWidgets
 					)
 					else()
-					target_link_libraries(${TARGET_PROJECT} PRIVATE
+					target_link_libraries(${TARGET_PROJECT} PUBLIC
 					Qt::WebEngineCore
 					Qt::WebEngineWidgets
 					)
 					endif()
-					target_compile_definitions(${TARGET_PROJECT} PRIVATE __VIP_USE_WEB_ENGINE)
+					target_compile_definitions(${TARGET_PROJECT} PUBLIC __VIP_USE_WEB_ENGINE)
 				endif()
 			else()
 				message(STATUS "WebEngine not found!")
@@ -107,12 +107,13 @@ if(WITH_HDF5)
 			OVERRIDE_FIND_PACKAGE
 		)
 		find_package (hdf5 REQUIRED COMPONENTS C GLOBAL)
-		if (TARGET hdf5_hl-shared)
-			get_target_property(HDF5_INCLUDE_DIRS hdf5_hl-shared INCLUDE_DIRECTORIES)
-			get_target_property(HDF5_LIBRARIES hdf5_hl-shared LINK_LIBRARIES)
-		endif()
+		
 	endif()
-	
+	if (TARGET hdf5_hl-shared AND NOT HDF5_INCLUDE_DIRS)
+		get_target_property(HDF5_INCLUDE_DIRS hdf5_hl-shared INCLUDE_DIRECTORIES)
+		get_target_property(HDF5_LIBRARIES hdf5_hl-shared LINK_LIBRARIES)
+		list(APPEND HDF5_LIBRARIES hdf5_hl-shared) 
+	endif()
 	target_include_directories(${TARGET_PROJECT} PRIVATE ${HDF5_INCLUDE_DIRS} )
 	target_link_libraries(${TARGET_PROJECT} PRIVATE ${HDF5_LIBRARIES})
 	target_compile_definitions(${TARGET_PROJECT} PUBLIC -DVIP_WITH_HDF5)
@@ -125,8 +126,8 @@ if(WITH_VTK)
 	#TEST: remove Qt based modules from VTK (possible conflict between different Qt versions)
 	list(FILTER VTK_LIBRARIES EXCLUDE REGEX "^.*Qt.*$")
 
-	target_include_directories(${TARGET_PROJECT} PRIVATE ${VTK_INCLUDE_DIRS})
-	target_link_libraries(${TARGET_PROJECT} PRIVATE ${VTK_LIBRARIES})
+	target_include_directories(${TARGET_PROJECT} PUBLIC ${VTK_INCLUDE_DIRS})
+	target_link_libraries(${TARGET_PROJECT} PUBLIC ${VTK_LIBRARIES})
 	target_compile_definitions(${TARGET_PROJECT} PUBLIC -DVIP_WITH_VTK)
 	
 	#if(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")

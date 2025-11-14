@@ -159,7 +159,9 @@ QWidget* VipStandardWidgets::fromStyleSheet(const QString& style_sheet)
 	// take care of '--' for widget inside namespace
 	class_name.replace("--", "::");
 	QWidget* widget = vipCreateVariant(class_name.toLatin1().data()).value<QWidget*>();
+	widget->setStyle(QApplication::style());
 	if (widget) {
+
 		// apply the style sheet and make sur it is applied to the widget
 		widget->setStyleSheet(style_sheet);
 		widget->style()->unpolish(widget);

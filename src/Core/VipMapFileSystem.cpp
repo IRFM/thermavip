@@ -522,6 +522,11 @@ bool VipMapFileSystem::download(const VipPath& src, const VipPath& dst)
 	return this->downloadFile(src, dst);
 }
 
+bool VipMapFileSystem::upload(const VipPath& src, const VipPath& dst)
+{
+	return this->uploadFile(src, dst);
+}
+
 bool VipMapFileSystem::copy(const VipPath& src, const VipPath& dst, bool overwrite, VipProgress* progress)
 {
 	if (dst.isDir() != src.isDir()) {
@@ -1028,6 +1033,7 @@ public:
 	QString error;
 	VipPath listPath;
 	VipPath getPath;
+	VipPath setPath;
 	QString outFile;
 	QString home;
 	VipPathList result;
@@ -1239,6 +1245,24 @@ public:
 					outFile.clear();
 					res.replace("\n", "");
 					
+					finished = true;
+				}
+				if (!setPath.isEmpty() && !outFile.isEmpty()) {
+					// download file
+
+					proc.write(("put " + setPath.canonicalPath() + " " + outFile + "\n").toLatin1());
+					proc.waitForBytesWritten(2000);
+					QString res = readOutput(proc, setPath.canonicalPath());
+
+					if (!res.contains("=>"))
+						error = "Unable put file " + setPath.canonicalPath() + ": " + res;
+					else
+						error.clear();
+
+					setPath = VipPath();
+					outFile.clear();
+					res.replace("\n", "");
+
 					finished = true;
 				}
 				if (!listPath.isEmpty()) {
@@ -1460,6 +1484,38 @@ bool VipSFTPFileSystem::downloadFile(const VipPath& path, const VipPath& out_pat
 
 		// if (p.canceled())
 		//	return nullptr;
+	}
+
+	if (!d_data->error.isEmpty()) {
+		VIP_LOG_ERROR(d_data->error);
+		return false;
+	}
+	return true;
+}
+
+bool VipSFTPFileSystem::uploadFile(const VipPath& path, const VipPath& out_path)
+{
+	if (!isOpen()) {
+		// TODO: check for password and ask if necessary
+		return false;
+	}
+
+	QString fname = out_path.canonicalPath();
+	if (out_path.isDir()) {
+		fname.replace("\\", "/");
+		if (!fname.endsWith("/"))
+			fname += "/";
+		fname += QFileInfo(path.canonicalPath()).fileName();
+	}
+
+	QMutexLocker lock(&d_data->mutex);
+	d_data->error.clear();
+	d_data->setPath = path;
+	d_data->outFile = fname;
+	d_data->finished = false;
+
+	while (!d_data->finished && d_data->isRunning()) {
+		vipSleep(5);
 	}
 
 	if (!d_data->error.isEmpty()) {
