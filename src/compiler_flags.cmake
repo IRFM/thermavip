@@ -107,7 +107,9 @@ if(WITH_HDF5)
 			OVERRIDE_FIND_PACKAGE
 		)
 		find_package (hdf5 REQUIRED COMPONENTS C GLOBAL)
-		
+		install(TARGETS hdf5_hl-shared hdf5-shared EXPORT thermavip DESTINATION "${CMAKE_INSTALL_LIBDIR}" LIBRARY)
+		install(EXPORT thermavip DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/thermavip")
+		install(TARGETS hdf5_hl-shared hdf5-shared DESTINATION "${THERMAVIP_APPLICATION_DIR}" RUNTIME)
 	endif()
 	if (TARGET hdf5_hl-shared AND NOT HDF5_INCLUDE_DIRS)
 		get_target_property(HDF5_INCLUDE_DIRS hdf5_hl-shared INCLUDE_DIRECTORIES)
