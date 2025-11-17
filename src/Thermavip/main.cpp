@@ -134,8 +134,9 @@ int main(int argc, char** argv)
 		}
 		else {
 			// Setup Java if JAVA_HOME env. variable exists
-			std::string java_home = getenv("JAVA_HOME");
-			if (!java_home.empty()) {
+			const char * jhome = getenv("JAVA_HOME");
+			if (jhome) {
+				std::string java_home = jhome;
 				std::string t_path = getenv("PATH");
 				std::string n_path = java_home + "\\jre\\bin\\server;" + t_path;
 				if (QFileInfo((java_home + "\\jre\\bin\\server").c_str()).exists())
