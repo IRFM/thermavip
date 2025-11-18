@@ -3916,7 +3916,7 @@ bool VipProcessingList::insert(int index, VipProcessingObject* obj)
 
 			obj->inputAt(0)->setData(any);
 			obj->inputAt(0)->data();
-			// obj->setParent(this);
+			obj->setParent(nullptr);
 
 			// set the source properties to the VipProcessingObject
 			QList<QByteArray> names = sourceProperties();
