@@ -1434,12 +1434,12 @@ bool VipPySignalFusionProcessingEditor::apply()
 			showErrorDelayed(pos, "Given script must use at least 2 different input signals!");
 			return false;
 		}
-		QString err = d_data->proc->error().errorString();
+		QString err = d_data->proc->errorString();
 		bool has_error = d_data->proc->hasError();
 		// d_data->proc->restore();
 		d_data->proc->setScheduleStrategy(VipProcessingObject::Asynchronous, true);
 		if (has_error) {
-			VipText text("An error occured while applying the processings!\n\n" + d_data->proc->error().errorString());
+			VipText text("An error occured while applying the processings!\n\n" + d_data->proc->errorString());
 			// QSize s = text.textSize().toSize();
 			QPoint pos = d_data->editor.mapToGlobal(QPoint(0, 0));
 			showErrorDelayed(pos, text.text());

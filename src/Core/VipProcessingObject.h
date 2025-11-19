@@ -230,11 +230,11 @@ public:
 			delete prev;
 	}
 	/// @brief Return the last error.
-	VIP_ALWAYS_INLINE const VipErrorData& error() const { return *d_data; }
+	VIP_ALWAYS_INLINE const VipErrorData& errorData() const { return *d_data; }
 	/// @brief Returns the last error string
-	VIP_ALWAYS_INLINE QString errorString() const { return error().errorString(); }
+	VIP_ALWAYS_INLINE QString errorString() const { return errorData().errorString(); }
 	/// @brief Returns the last error code, ot 0 if no error occured.
-	VIP_ALWAYS_INLINE int errorCode() const { return error().errorCode(); }
+	VIP_ALWAYS_INLINE int errorCode() const { return errorData().errorCode(); }
 	/// @brief Returns true if an error occurred during the last operation.
 	VIP_ALWAYS_INLINE bool hasError() const { return d_data != _null_error(); }
 
@@ -1116,9 +1116,12 @@ class VIP_CORE_EXPORT VipOutput : public UniqueProcessingIO
 	QSharedPointer<VipAnyData> d_data;
 	VipAnyDataList m_buffer;
 	VipSpinlock m_buffer_lock;
+	std::function<void(const VipAnyData&)> m_custom_sender; // Send the data to m_custom_sender function in addition of the regular connection
 	bool m_bufferize_outputs;
 
 public:
+	using FunctionType = std::function<void(const VipAnyData&)>;
+
 	VipOutput(const QString& name = QString(), VipProcessingObject* parent = nullptr);
 	VipOutput(const VipOutput& other);
 
@@ -1129,6 +1132,19 @@ public:
 	/// Reimplemented from #VipProcessingIO::setData. Set the output data, and set the data to all connected inputs.
 	virtual void setData(const VipAnyData&);
 	using VipProcessingIO::setData;
+
+	/// @brief Set a custom sending function.
+	/// @param fun function object
+	/// 
+	/// Set a function that will be called within setData() with the VipAnyData object as argument.
+	/// 
+	void setSendFunction(const FunctionType& fun) { m_custom_sender = fun;}
+	template<class Fun>
+	void setSendFunction(Fun&& fun)
+	{
+		m_custom_sender = std::forward<Fun>(fun);
+	}
+	const FunctionType& sendFunction() const noexcept { return m_custom_sender; }
 
 	/// Enable/disable data buffering (disabled by default)
 	/// If enabled, calling VipOutput::setData() will buffer the VipAnyData
@@ -1669,9 +1685,9 @@ public:
 	/// @brief Returns the property at given index
 	VipProperty* propertyAt(int index) const;
 
-	int indexOf(VipInput*) const;
-	int indexOf(VipOutput*) const;
-	int indexOf(VipProperty*) const;
+	int indexOf(const VipInput*) const;
+	int indexOf(const VipOutput*) const;
+	int indexOf(const VipProperty*) const;
 
 	/// @brief Returns the description of a top level input (declared with Q_PROPERTY, so this does not take into account
 	/// the VipInput inside VipMultiInput)

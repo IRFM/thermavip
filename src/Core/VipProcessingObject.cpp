@@ -366,14 +366,18 @@ void VipConnection::doOpenConnection(IOType type)
 		else if (d_data->address.length()) {
 			QString addr = removeClassNamePrefix(d_data->address);
 			QStringList lst = addr.split(";");
-			VipProcessingPool* pool = parentProcessingObject()->parentObjectPool();
-			// VipProcessingPool* parent_pool = pool;
+			QObject* pool = parentProcessingObject()->parentObjectPool();
 			if (lst.size() == 3) {
 				// When loading a player session, processing objects are first inserted in a temporary pool set as parent,
 				// so use this pool and not the one given in the connection name
 				if (!pool || !pool->property("_vip_useParentPool").toBool())
 					pool = VipProcessingPool::findPool(lst[0]);
 				lst = lst.mid(1);
+			}
+
+			if (!pool) {
+				// Use the parent object (like a VipProcessingBlock)
+				pool = parentProcessingObject()->parent();
 			}
 
 			if (pool && lst.size() == 2) {
@@ -986,6 +990,8 @@ void VipOutput::setData(const VipAnyData& d)
 		if (VipProcessingObject* obj = parentProcessing())
 			obj->setOutputDataTime(*d_data);
 		connection()->sendData(*d_data);
+		if (m_custom_sender)
+			m_custom_sender(*d_data);
 		if (m_bufferize_outputs) {
 			VipUniqueLock<VipSpinlock> lock(m_buffer_lock);
 			m_buffer.push_back(d);
@@ -2693,7 +2699,7 @@ QString VipProcessingObject::propertyCategory(const QString& property) const
 	return QString();
 }
 
-int VipProcessingObject::indexOf(VipInput* p) const
+int VipProcessingObject::indexOf(const VipInput* p) const
 {
 	initialize();
 	for (size_t i = 0; i < d_data->flatInputs.size(); ++i)
@@ -2701,7 +2707,7 @@ int VipProcessingObject::indexOf(VipInput* p) const
 			return static_cast<int>(i);
 	return -1;
 }
-int VipProcessingObject::indexOf(VipOutput* p) const
+int VipProcessingObject::indexOf(const VipOutput* p) const
 {
 	initialize();
 	for (size_t i = 0; i < d_data->flatOutputs.size(); ++i)
@@ -2709,7 +2715,7 @@ int VipProcessingObject::indexOf(VipOutput* p) const
 			return static_cast<int>(i);
 	return -1;
 }
-int VipProcessingObject::indexOf(VipProperty* p) const
+int VipProcessingObject::indexOf(const VipProperty* p) const
 {
 	initialize();
 	for (size_t i = 0; i < d_data->flatProperties.size(); ++i)
@@ -4857,8 +4863,9 @@ VipArchive& operator<<(VipArchive& stream, const VipProcessingList* lst)
 		QString classname = lst->at(i)->metaObject()->className() + QString("*");
 		VipProcessingObject* obj = vipCreateVariant(classname.toLatin1().data()).value<VipProcessingObject*>();
 		if (obj) {
+			if (!obj->property("_vip_no_serialize").toBool())
+				indexes.append(i);
 			delete obj;
-			indexes.append(i);
 		}
 	}
 
@@ -4945,4 +4952,5 @@ static int registerSerializeOperators()
 	return 0;
 }
 
-static int _registerSerializeOperators = vipAddInitializationFunction(registerSerializeOperators);
+// Initialization function should be called first
+static int _registerSerializeOperators = vipPrependInitializationFunction(registerSerializeOperators);

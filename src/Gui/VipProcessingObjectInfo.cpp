@@ -126,7 +126,7 @@ namespace detail
 		m_info->inputAt(0)->setData(tmp);
 		m_info->update();
 		if (m_info->hasError()) {
-			setError(m_info->error());
+			setError(m_info->errorData());
 			return;
 		}
 		VipAnyData any = m_info->outputAt(0)->data();
