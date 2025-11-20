@@ -4860,11 +4860,12 @@ VipArchive& operator<<(VipArchive& stream, const VipProcessingList* lst)
 	QList<int> indexes;
 	// find object that can be serialized
 	for (int i = 0; i < lst->size(); ++i) {
+		if (lst->at(i)->property("_vip_no_serialize").toBool())
+			continue;
 		QString classname = lst->at(i)->metaObject()->className() + QString("*");
 		VipProcessingObject* obj = vipCreateVariant(classname.toLatin1().data()).value<VipProcessingObject*>();
 		if (obj) {
-			if (!obj->property("_vip_no_serialize").toBool())
-				indexes.append(i);
+			indexes.append(i);
 			delete obj;
 		}
 	}

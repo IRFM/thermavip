@@ -22,6 +22,11 @@ QMainWindow::separator:hover {
 	  
 }   
 
+QCalendarWidget QTableView 
+{
+    alternate-background-color: #303030;  /* day name/week number background */
+}
+
 /*QSlider::handle:horizontal {
 	background: grey;
 }*/
