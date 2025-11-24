@@ -242,6 +242,9 @@ public:
 	typedef int (*_attrs_frame_timestamp)(int handle, int frame, int64_t* time);
 	typedef int (*_attrs_timestamps)(int handle, int64_t* time);
 
+	typedef int (*_firca_set_valid_range)(float min_val, float max_val);
+	typedef int (*_firca_get_valid_range)(float* min_val, float* max_val);
+
 	_set_print_function set_print_function;
 	_disable_print disable_print;
 	_reset_print_functions reset_print_functions;
@@ -415,6 +418,11 @@ public:
 	_attrs_frame_attribute_value attrs_frame_attribute_value;
 	_attrs_frame_timestamp attrs_frame_timestamp;
 	_attrs_timestamps attrs_timestamps;
+
+	_firca_set_valid_range firca_set_valid_alpha_range;
+	_firca_set_valid_range firca_set_valid_beta_range;
+	_firca_get_valid_range firca_get_valid_alpha_range;
+	_firca_get_valid_range firca_get_valid_beta_range;
 
 	// helper function
 	QStringList availableCameraIdentifiers(int pulse);

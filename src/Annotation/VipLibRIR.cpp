@@ -1035,6 +1035,34 @@ VipLibRIR* VipLibRIR::instance()
 			delete librir;
 			return librir = nullptr;
 		}
+
+
+		librir->firca_set_valid_alpha_range = (_firca_set_valid_range)westLib()->resolve("firca_set_valid_alpha_range");
+		if (!librir->firca_set_valid_alpha_range) {
+			VIP_LOG_ERROR("librir: missing firca_set_valid_alpha_range");
+			delete librir;
+			return librir = nullptr;
+		}
+		librir->firca_set_valid_beta_range = (_firca_set_valid_range)westLib()->resolve("firca_set_valid_beta_range");
+		if (!librir->firca_set_valid_beta_range) {
+			VIP_LOG_ERROR("librir: missing firca_set_valid_beta_range");
+			delete librir;
+			return librir = nullptr;
+		}
+		librir->firca_get_valid_alpha_range = (_firca_get_valid_range)westLib()->resolve("firca_get_valid_alpha_range");
+		if (!librir->firca_get_valid_alpha_range) {
+			VIP_LOG_ERROR("librir: missing firca_get_valid_alpha_range");
+			delete librir;
+			return librir = nullptr;
+		}
+		librir->firca_get_valid_beta_range = (_firca_get_valid_range)westLib()->resolve("firca_get_valid_beta_range");
+		if (!librir->firca_get_valid_beta_range) {
+			VIP_LOG_ERROR("librir: missing firca_get_valid_beta_range");
+			delete librir;
+			return librir = nullptr;
+		}
+		
+
 	}
 
 	vip_debug("Read all functions done\n");

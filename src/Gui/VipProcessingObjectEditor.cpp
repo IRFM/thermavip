@@ -3030,6 +3030,75 @@ static int register_VipConcatenateVideosEditor()
 static int _register_VipConcatenateVideosEditor = register_VipConcatenateVideosEditor();
 
 
+#include "VipMPEGSaver.h"
+
+class VipMPEGSaverEditor::PrivateData
+{
+public:
+	QSpinBox fps;
+	QSpinBox bitrate; //kb/s
+	QSpinBox threads;
+	QPointer<VipMPEGSaver> device;
+};
+
+VipMPEGSaverEditor::VipMPEGSaverEditor()
+{
+	VIP_CREATE_PRIVATE_DATA();
+	d_data->fps.setRange(1, 100);
+	d_data->fps.setToolTip("Display frames per seconds");
+	d_data->bitrate.setRange(1, 1000);
+	d_data->bitrate.setToolTip("Bitrate in kB/s");
+	d_data->threads.setRange(0, (int) std::thread::hardware_concurrency());
+	d_data->threads.setToolTip("ecording threads");
+
+	QGridLayout* grid = new QGridLayout();
+	grid->addWidget(new QLabel("Fps"), 0, 0);
+	grid->addWidget(&d_data->fps, 0, 1);
+	grid->addWidget(new QLabel("Bitrate (kB/s)"), 1, 0);
+	grid->addWidget(&d_data->bitrate, 1, 1);
+	grid->addWidget(new QLabel("Threads"), 2, 0);
+	grid->addWidget(&d_data->threads, 2, 1);
+
+	setLayout(grid);
+}
+VipMPEGSaverEditor::~VipMPEGSaverEditor()
+{
+
+}
+void VipMPEGSaverEditor::setDevice(VipMPEGSaver* d)
+{
+	if (d_data->device != d) {
+		d_data->device = d;
+		if (!d)
+			return;
+
+		auto h = d->additionalInfo();
+		d_data->fps.setValue(h.fps);
+		d_data->bitrate.setValue((int)(h.rate / 1000.));
+		d_data->threads.setValue(h.threads);
+	}
+}
+
+void VipMPEGSaverEditor::apply()
+{
+	if (VipMPEGSaver* s = d_data->device) {
+		VipMPEGIODeviceHandler h = s->additionalInfo();
+		h.fps = d_data->fps.value();
+		h.rate = d_data->bitrate.value() * 1000.;
+		h.threads = d_data->threads.value();
+		s->setAdditionalInfo(h);
+	}
+}
+
+static QWidget* editVipMPEGSaver(VipMPEGSaver* d)
+{
+	VipMPEGSaverEditor* editor = new VipMPEGSaverEditor();
+	editor->setDevice(d);
+	return editor;
+}
+
+
+
 class VipOperationBetweenPlayersEditor::PrivateData
 {
 public:
@@ -4355,6 +4424,7 @@ static int registerEditors()
 	vipFDObjectEditor().append<QWidget*(VipResize*)>(editResize);
 	vipFDObjectEditor().append<QWidget*(VipGenericImageTransform*)>(editGenericImageTransform);
 	vipFDObjectEditor().append<QWidget*(VipComponentLabelling*)>(editComponentLabelling);
+	vipFDObjectEditor().append<QWidget*(VipMPEGSaver*)>(editVipMPEGSaver);
 	return 0;
 }
 

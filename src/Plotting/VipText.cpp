@@ -423,15 +423,19 @@ private:
 	EngineMap d_map;
 };
 
+static VipPlainTextEngine* _default_engine = nullptr;
+
 TextEngineDict& TextEngineDict::dict()
 {
 	static TextEngineDict engineDict;
 	return engineDict;
 }
 
+
+
 TextEngineDict::TextEngineDict()
 {
-	d_map.insert(VipText::PlainText, new VipPlainTextEngine());
+	d_map.insert(VipText::PlainText, _default_engine = new VipPlainTextEngine());
 #ifndef QT_NO_RICHTEXT
 	d_map.insert(VipText::RichText, new VipRichTextEngine());
 #endif
@@ -448,6 +452,8 @@ TextEngineDict::~TextEngineDict()
 const VipTextEngine* TextEngineDict::textEngine(const QString& text, VipText::TextFormat format) const
 {
 	if (format == VipText::AutoText) {
+		if (text.isEmpty())
+			return _default_engine;
 		for (EngineMap::const_iterator it = d_map.begin(); it != d_map.end(); ++it) {
 			if (it.key() != VipText::PlainText) {
 				const VipTextEngine* e = engine(it);
@@ -455,6 +461,7 @@ const VipTextEngine* TextEngineDict::textEngine(const QString& text, VipText::Te
 					return e;
 			}
 		}
+		return _default_engine;
 	}
 
 	EngineMap::const_iterator it = d_map.find(format);
@@ -614,54 +621,37 @@ bool VipTextStyle::operator!=(const VipTextStyle& other) const
 	return !((*this) == other);
 }
 
-VipText::PrivateData::PrivateData()
-  : QSharedData()
-  , textEngine(nullptr)
+
+
+VipText::VipText()
+  : d_textEngine(textEngine(QString(), AutoText))
 {
 }
 
-VipText::PrivateData::PrivateData(const PrivateData& other)
-  : QSharedData()
-  , text(other.text)
-  , parameters(other.parameters)
-  , layoutAttributes(other.layoutAttributes)
-  , textEngine(other.textEngine)
-{
-}
 
-/// Constructor
-///
-/// \param text VipText content
-/// \param textFormat VipText format
 VipText::VipText(const QString& text, VipText::TextFormat textFormat)
-  : d_data(new PrivateData())
-  , d_dirtyTextSize(1)
+  : d_text(text)
+  , d_textEngine(textEngine(text, textFormat))
 {
-	d_data->text = text;
-	d_data->textEngine = textEngine(text, textFormat);
 }
 
 VipText::VipText(const QString& text, const VipTextStyle& p, TextFormat textFormat)
-  : d_data(new PrivateData())
-  , d_dirtyTextSize(1)
+  : d_text(text)
+  , d_textEngine(textEngine(text, textFormat))
+  , d_parameters(p)
 {
-	d_data->text = text;
-	d_data->textEngine = textEngine(text, textFormat);
-	d_data->parameters = p;
 }
 
 VipText::VipText(const QString& text, const VipTextEngine* engine)
-  : d_data(new PrivateData())
-  , d_dirtyTextSize(1)
+  : d_text(text)
+  , d_textEngine(engine)
 {
-	d_data->text = text;
-	d_data->textEngine = engine;
 }
 
 //! Relational operator
 bool VipText::operator==(const VipText& other) const
 {
-	return d_data->text == other.d_data->text && d_data->parameters == other.d_data->parameters;
+	return d_text == other.d_text && d_parameters == other.d_parameters;
 }
 
 //! Relational operator
@@ -678,9 +668,9 @@ bool VipText::operator!=(const VipText& other) const // invalidate
 /// \sa text()
 void VipText::setText(const QString& text, VipText::TextFormat textFormat)
 {
-	d_data->text = text;
-	d_data->textEngine = textEngine(text, textFormat);
-	d_dirtyTextSize = 1;
+	d_text = text;
+	d_textEngine = textEngine(text, textFormat);
+	d_dirtyTextSize = true;
 }
 
 /// \brief Change the render flags
@@ -693,13 +683,13 @@ void VipText::setText(const QString& text, VipText::TextFormat textFormat)
 /// \note Some alignment might have no effect, depending on the text format.
 VipText& VipText::setAlignment(Qt::Alignment align)
 {
-	d_data->parameters.setAlignment(align);
+	d_parameters.setAlignment(align);
 	return *this;
 }
 
 VipText& VipText::setCached(bool cached)
 {
-	d_data->parameters.setCached(cached);
+	d_parameters.setCached(cached);
 	return *this;
 }
 
@@ -724,8 +714,8 @@ void VipText::setCacheTextWhenPossible(bool enable)
 ///      the text contains control sequences for setting fonts.
 VipText& VipText::setFont(const QFont& font)
 {
-	d_data->parameters.setFont(font);
-	d_dirtyTextSize = 1;
+	d_parameters.setFont(font);
+	d_dirtyTextSize = true;
 	return *this;
 }
 
@@ -738,7 +728,7 @@ VipText& VipText::setFont(const QFont& font)
 ///      the text contains control sequences for setting colors.
 VipText& VipText::setTextPen(const QPen& pen)
 {
-	d_data->parameters.setTextPen(pen);
+	d_parameters.setTextPen(pen);
 	return *this;
 }
 
@@ -749,7 +739,7 @@ VipText& VipText::setTextPen(const QPen& pen)
 /// \sa borderRadius(), setBorderPen(), setBackgroundBrush()
 VipText& VipText::setBorderRadius(double radius)
 {
-	d_data->parameters.setBorderRadius(qMax(0.0, radius));
+	d_parameters.setBorderRadius(qMax(0.0, radius));
 	return *this;
 }
 
@@ -759,7 +749,7 @@ VipText& VipText::setBorderRadius(double radius)
 /// \sa borderPen(), setBackgroundBrush()
 VipText& VipText::setBorderPen(const QPen& pen)
 {
-	d_data->parameters.setBorderPen(pen);
+	d_parameters.setBorderPen(pen);
 	return *this;
 }
 
@@ -769,31 +759,32 @@ VipText& VipText::setBorderPen(const QPen& pen)
 /// \sa backgroundBrush(), setBorderPen()
 VipText& VipText::setBackgroundBrush(const QBrush& brush)
 {
-	d_data->parameters.setBackgroundBrush(brush);
+	d_parameters.setBackgroundBrush(brush);
 	return *this;
 }
 
 VipText& VipText::setRenderHints(QPainter::RenderHints hints)
 {
-	d_data->parameters.setRenderHints(hints);
+	d_parameters.setRenderHints(hints);
 	return *this;
 }
 
 VipText& VipText::setTextStyle(const VipTextStyle& p)
 {
-	d_data->parameters = p;
+	d_dirtyTextSize = true;
+	d_parameters = p;
 	return *this;
 }
 
 VipText& VipText::setBoxStyle(const VipBoxStyle& bs)
 {
-	d_data->parameters.setBoxStyle(bs);
+	d_parameters.setBoxStyle(bs);
 	return *this;
 }
 
 VipText& VipText::setTextBoxStyle(const VipBoxStyle& p)
 {
-	d_data->parameters.setTextBoxStyle(p);
+	d_parameters.setTextBoxStyle(p);
 	return *this;
 }
 
@@ -806,17 +797,17 @@ VipText& VipText::setTextBoxStyle(const VipBoxStyle& p)
 VipText& VipText::setLayoutAttribute(LayoutAttribute attribute, bool on)
 {
 	if (on)
-		d_data->layoutAttributes |= attribute;
+		d_layoutAttributes |= attribute;
 	else
-		d_data->layoutAttributes &= ~attribute;
-	d_dirtyTextSize = 1;
+		d_layoutAttributes &= ~attribute;
+	d_dirtyTextSize = true;
 	return *this;
 }
 
 VipText& VipText::setLayoutAttributes(LayoutAttributes attrs)
 {
-	d_data->layoutAttributes = attrs;
-	d_dirtyTextSize = 1;
+	d_layoutAttributes = attrs;
+	d_dirtyTextSize = true;
 	return *this;
 }
 
@@ -833,16 +824,16 @@ double VipText::heightForWidth(double width) const
 
 	double h = 0;
 
-	if (d_data->layoutAttributes & MinimumLayout) {
+	if (d_layoutAttributes & MinimumLayout) {
 		double left, right, top, bottom;
-		d_data->textEngine->textMargins(font(), d_data->text, left, right, top, bottom);
+		d_textEngine->textMargins(font(), d_text, left, right, top, bottom);
 
-		h = d_data->textEngine->heightForWidth(font(), alignment(), d_data->text, width + left + right);
+		h = d_textEngine->heightForWidth(font(), alignment(), d_text, width + left + right);
 
 		h -= top + bottom;
 	}
 	else {
-		h = d_data->textEngine->heightForWidth(font(), alignment(), d_data->text, width);
+		h = d_textEngine->heightForWidth(font(), alignment(), d_text, width);
 	}
 
 	return h;
@@ -864,15 +855,15 @@ QSizeF VipText::textSize() const
 	// we need a font that uses screen metrics
 
 	if (d_dirtyTextSize) {
-		const_cast<VipText*>(this)->d_textSize = d_data->textEngine->textSize(font(), alignment(), d_data->text);
-		const_cast<VipText*>(this)->d_dirtyTextSize = 0;
+		const_cast<VipText*>(this)->d_textSize = d_textEngine->textSize(font(), alignment(), d_text);
+		const_cast<VipText*>(this)->d_dirtyTextSize = false;
 	}
 
 	QSizeF sz = d_textSize;
 
-	if (d_data->layoutAttributes & MinimumLayout) {
+	if (d_layoutAttributes & MinimumLayout) {
 		double left, right, top, bottom;
-		d_data->textEngine->textMargins(font(), d_data->text, left, right, top, bottom);
+		d_textEngine->textMargins(font(), d_text, left, right, top, bottom);
 		sz -= QSizeF(left + right, top + bottom);
 	}
 
@@ -938,7 +929,7 @@ VipText& VipText::repeatBlock()
 
 const VipTextEngine* VipText::textEngine() const
 {
-	return d_data->textEngine;
+	return d_textEngine;
 }
 
 #include <qpaintengine.h>
@@ -1034,7 +1025,7 @@ void VipText::draw(QPainter* painter, const QRectF& rect) const
 		// we need a font that uses screen metrics
 
 		double left, right, top, bottom;
-		d_data->textEngine->textMargins(font(), d_data->text, left, right, top, bottom);
+		d_textEngine->textMargins(font(), d_text, left, right, top, bottom);
 
 		expandedRect.setTop(rect.top() - top);
 		expandedRect.setBottom(rect.bottom() + bottom);
@@ -1073,7 +1064,7 @@ void VipText::draw(QPainter* painter, const QRectF& rect) const
 		p.setRenderHints(renderHints());
 
 		if (!hasTextBoxStyle()) {
-			d_data->textEngine->draw(&p, expandedRect.translated(-expandedRect.topLeft()), alignment(), d_data->text);
+			d_textEngine->draw(&p, expandedRect.translated(-expandedRect.topLeft()), alignment(), d_text);
 		}
 		else {
 			QPainterPath path = textAsPath();
@@ -1125,7 +1116,7 @@ void VipText::draw(QPainter* painter, const QRectF& rect) const
 		if (!hasTextBoxStyle()) {
 			// Disable caching for now as it causes change bugs
 			//if (is_opengl || !drawThroughCache(painter, d_data->text, expandedRect, alignment(), d_data->textEngine->format()))
-				d_data->textEngine->draw(painter, expandedRect, alignment(), d_data->text);
+				d_textEngine->draw(painter, expandedRect, alignment(), d_text);
 		}
 		else {
 
@@ -1305,7 +1296,7 @@ void VipText::draw(QPainter* painter, const QPointF& c, const VipPie& pie, TextD
 	bstyle.draw(painter);
 
 	// draw text
-	if (d_data->text.isEmpty())
+	if (d_text.isEmpty())
 		return;
 
 	painter->save();

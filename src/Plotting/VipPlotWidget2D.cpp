@@ -1703,6 +1703,9 @@ int VipAbstractPlotArea::innerLegendMargin(int index) const
 
 void VipAbstractPlotArea::setTitle(const VipText& t)
 {
+	//TEST
+	int pt = t.font().pixelSize();
+	int ps = t.font().pointSize();
 	d_data->title->setTitle(t);
 	VipBoxGraphicsWidget::setTitle(t);
 }

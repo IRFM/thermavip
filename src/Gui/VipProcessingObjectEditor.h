@@ -578,7 +578,23 @@ private:
 };
 
 
+class VipMPEGSaver;
+  
+/// Widget to open a VipConcatenateVideos
+class VIP_GUI_EXPORT VipMPEGSaverEditor : public QWidget
+{
+	Q_OBJECT
+public:
+	VipMPEGSaverEditor();
+	~VipMPEGSaverEditor();
+	void setDevice(VipMPEGSaver*);
 
+public Q_SLOTS:
+	void apply();
+
+private:
+	VIP_DECLARE_PRIVATE_DATA();
+};
 
 
 /// Widget to edit a VipOperationBetweenPlayers

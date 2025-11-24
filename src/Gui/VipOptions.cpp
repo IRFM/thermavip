@@ -67,6 +67,7 @@ QGroupBox* VipPageOption::createOptionGroup(const QString& label)
 	QFont f = res->font();
 	f.setBold(true);
 	res->setFont(f);
+	res->setMinimumHeight(25);
 	return res;
 }
 

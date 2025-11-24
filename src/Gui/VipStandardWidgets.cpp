@@ -1717,7 +1717,7 @@ VipText VipTextWidget::getText() const
 {
 	VipText t;
 	t.setTextPen(QPen(d_data->fontColor.color()));
-	t.setFont(d_data->text.font());
+	t.setFont(d_data->fontColor.font());
 	t.setText(d_data->text.text());
 	return t;
 }

@@ -9,7 +9,7 @@ struct VipMPEGIODeviceHandler
 	int width{ 0 };
 	int height{ 0 };
 	int fps{ 25 };
-	double rate{ 20000000. }; // bits/s
+	double rate{ 1000000. }; // bits/s
 	int codec_id{ -1 };
 	int threads{ 1 };
 };

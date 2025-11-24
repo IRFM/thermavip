@@ -258,6 +258,9 @@ private:
 	QSharedDataPointer<PrivateData> d_data;
 };
 
+Q_DECLARE_TYPEINFO(VipTextStyle, Q_RELOCATABLE_TYPE);
+
+
 /// \brief A class representing a text
 ///
 /// A VipText is a text including a set of attributes to render it.
@@ -340,7 +343,8 @@ public:
 	//! Layout attributes
 	typedef QFlags<LayoutAttribute> LayoutAttributes;
 
-	VipText(const QString& = QString(), TextFormat textFormat = AutoText);
+	VipText();
+	VipText(const QString&, TextFormat textFormat = AutoText);
 	VipText(const QString&, const VipTextStyle&, TextFormat textFormat = AutoText);
 	VipText(const char* str)
 	  : VipText(QString(str))
@@ -352,14 +356,14 @@ public:
 	bool operator!=(const VipText&) const;
 
 	void setText(const QString&, VipText::TextFormat textFormat = AutoText);
-	VIP_ALWAYS_INLINE const QString& text() const noexcept { return d_data->text; }
-	VIP_ALWAYS_INLINE QString& text() { return d_data->text; }
+	VIP_ALWAYS_INLINE const QString& text() const noexcept { return d_text; }
+	VIP_ALWAYS_INLINE QString& text() { return d_text; }
 
 	VIP_ALWAYS_INLINE bool isNull() const noexcept { return text().isNull(); }
 	VIP_ALWAYS_INLINE bool isEmpty() const noexcept { return text().isEmpty(); }
 
 	VipText& setCached(bool);
-	VIP_ALWAYS_INLINE bool cached() const noexcept { return d_data->parameters.cached(); }
+	VIP_ALWAYS_INLINE bool cached() const noexcept { return d_parameters.cached(); }
 
 
 	/// @brief Activate potential text caching application wide.
@@ -372,45 +376,45 @@ public:
 	static bool cacheTextWhenPossible();
 
 	VipText& setFont(const QFont&);
-	VIP_ALWAYS_INLINE const QFont& font() const noexcept { return d_data->parameters.font(); }
-	VIP_ALWAYS_INLINE QFont& font() { return d_data->parameters.font(); }
+	VIP_ALWAYS_INLINE const QFont& font() const noexcept { return d_parameters.font(); }
+	VIP_ALWAYS_INLINE QFont& font() { return d_parameters.font(); }
 
 	VipText& setTextPen(const QPen&);
-	VIP_ALWAYS_INLINE const QPen& textPen() const noexcept { return d_data->parameters.textPen(); }
-	VIP_ALWAYS_INLINE QPen& textPen() { return d_data->parameters.textPen(); }
+	VIP_ALWAYS_INLINE const QPen& textPen() const noexcept { return d_parameters.textPen(); }
+	VIP_ALWAYS_INLINE QPen& textPen() { return d_parameters.textPen(); }
 
 	VipText& setBorderPen(const QPen&);
-	VIP_ALWAYS_INLINE const QPen& borderPen() const noexcept { return d_data->parameters.borderPen(); }
+	VIP_ALWAYS_INLINE const QPen& borderPen() const noexcept { return d_parameters.borderPen(); }
 
 	VipText& setBackgroundBrush(const QBrush&);
-	VIP_ALWAYS_INLINE const QBrush& backgroundBrush() const noexcept { return d_data->parameters.backgroundBrush(); }
+	VIP_ALWAYS_INLINE const QBrush& backgroundBrush() const noexcept { return d_parameters.backgroundBrush(); }
 
 	VipText& setBorderRadius(double);
-	VIP_ALWAYS_INLINE double borderRadius() const noexcept { return d_data->parameters.borderRadius(); }
+	VIP_ALWAYS_INLINE double borderRadius() const noexcept { return d_parameters.borderRadius(); }
 
 	VipText& setAlignment(Qt::Alignment flags);
-	VIP_ALWAYS_INLINE Qt::Alignment alignment() const noexcept { return d_data->parameters.alignment(); }
+	VIP_ALWAYS_INLINE Qt::Alignment alignment() const noexcept { return d_parameters.alignment(); }
 
 	VipText& setRenderHints(QPainter::RenderHints);
-	VIP_ALWAYS_INLINE QPainter::RenderHints renderHints() const noexcept { return d_data->parameters.renderHints(); }
+	VIP_ALWAYS_INLINE QPainter::RenderHints renderHints() const noexcept { return d_parameters.renderHints(); }
 
 	VipText& setBoxStyle(const VipBoxStyle& p);
-	VIP_ALWAYS_INLINE const VipBoxStyle& boxStyle() const noexcept { return d_data->parameters.boxStyle(); }
-	VIP_ALWAYS_INLINE VipBoxStyle& boxStyle() { return d_data->parameters.boxStyle(); }
+	VIP_ALWAYS_INLINE const VipBoxStyle& boxStyle() const noexcept { return d_parameters.boxStyle(); }
+	VIP_ALWAYS_INLINE VipBoxStyle& boxStyle() { return d_parameters.boxStyle(); }
 
 	VipText& setTextBoxStyle(const VipBoxStyle& p);
-	VIP_ALWAYS_INLINE const VipBoxStyle& textBoxStyle() const { return d_data->parameters.textBoxStyle(); }
-	VIP_ALWAYS_INLINE VipBoxStyle& textBoxStyle() { return d_data->parameters.textBoxStyle(); }
-	VIP_ALWAYS_INLINE bool hasTextBoxStyle() const noexcept { return d_data->parameters.hasTextBoxStyle(); }
+	VIP_ALWAYS_INLINE const VipBoxStyle& textBoxStyle() const { return d_parameters.textBoxStyle(); }
+	VIP_ALWAYS_INLINE VipBoxStyle& textBoxStyle() { return d_parameters.textBoxStyle(); }
+	VIP_ALWAYS_INLINE bool hasTextBoxStyle() const noexcept { return d_parameters.hasTextBoxStyle(); }
 
 	VipText& setTextStyle(const VipTextStyle& p);
-	VIP_ALWAYS_INLINE const VipTextStyle& textStyle() const noexcept { return d_data->parameters; }
-	VIP_ALWAYS_INLINE VipTextStyle& textStyle() { return d_data->parameters; }
+	VIP_ALWAYS_INLINE const VipTextStyle& textStyle() const noexcept { return d_parameters; }
+	VIP_ALWAYS_INLINE VipTextStyle& textStyle() { return d_parameters; }
 
 	VipText& setLayoutAttribute(LayoutAttribute, bool on = true);
 	VipText& setLayoutAttributes(LayoutAttributes attrs);
-	VIP_ALWAYS_INLINE bool testLayoutAttribute(LayoutAttribute attribute) const noexcept { return d_data->layoutAttributes | attribute; }
-	VIP_ALWAYS_INLINE VipText::LayoutAttributes layoutAttributes() const noexcept { return d_data->layoutAttributes; }
+	VIP_ALWAYS_INLINE bool testLayoutAttribute(LayoutAttribute attribute) const noexcept { return d_layoutAttributes | attribute; }
+	VIP_ALWAYS_INLINE VipText::LayoutAttributes layoutAttributes() const noexcept { return d_layoutAttributes; }
 
 	double heightForWidth(double width) const;
 	QSizeF textSize() const;
@@ -458,24 +462,15 @@ public:
 private:
 	VipText(const QString&, const VipTextEngine* engine);
 
-	class VIP_PLOTTING_EXPORT PrivateData : public QSharedData
-	{
-	public:
-		PrivateData();
-		PrivateData(const PrivateData& other);
-
-		QString text;
-		VipTextStyle parameters;
-		LayoutAttributes layoutAttributes{ MinimumLayout };
-		const VipTextEngine* textEngine;
-	};
-
-	QSharedDataPointer<PrivateData> d_data;
-
-	bool d_dirtyTextSize;
+	QString d_text;
+	VipTextStyle d_parameters;
+	LayoutAttributes d_layoutAttributes = MinimumLayout;
+	const VipTextEngine* d_textEngine = nullptr;
+	bool d_dirtyTextSize = true;
 	QSizeF d_textSize;
-	QPixmap d_cash;
 };
+
+Q_DECLARE_TYPEINFO(VipText, Q_RELOCATABLE_TYPE);
 
 
 namespace detail
