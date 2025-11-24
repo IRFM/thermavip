@@ -5272,8 +5272,10 @@ public:
 
 	QMenu* deleteItemMenu;
 	QToolButton* deleteItem;
-	VipDragMenu* selectionItemMenu;
-	QToolButton* selectionItem;
+	VipDragMenu* visibleItemMenu;
+	QToolButton* visibleItem;
+	VipDragMenu* selectItemMenu;
+	QToolButton* selectItem;
 	QToolButton* autoScale;
 	QToolButton* advancedTools;
 	QToolButton* displayVerticalWindow;
@@ -5400,17 +5402,28 @@ VipPlotPlayer::VipPlotPlayer(VipAbstractPlotWidget2D* viewer, QWidget* parent)
 	connect(d_data->deleteItemMenu, SIGNAL(aboutToShow()), this, SLOT(computeDeleteMenu()));
 	connect(d_data->deleteItemMenu, SIGNAL(triggered(QAction*)), this, SLOT(deleteItem(QAction*)));
 
-	d_data->selectionItemMenu = new VipDragMenu();
-	d_data->selectionItem = new QToolButton();
-	d_data->selectionItem->setToolTip(tr("Show/hide item"));
-	d_data->selectionItem->setIcon(vipIcon("select.png"));
-	d_data->selectionItem->setAutoRaise(true);
-	d_data->selectionItem->setMenu(d_data->selectionItemMenu);
-	d_data->selectionItem->setPopupMode(QToolButton::InstantPopup);
-	this->toolBar()->addWidget(d_data->selectionItem);
+	d_data->visibleItemMenu = new VipDragMenu();
+	d_data->visibleItem = new QToolButton();
+	d_data->visibleItem->setToolTip(tr("Show/Hide items"));
+	d_data->visibleItem->setIcon(vipIcon("select.png"));
+	d_data->visibleItem->setAutoRaise(true);
+	d_data->visibleItem->setMenu(d_data->visibleItemMenu);
+	d_data->visibleItem->setPopupMode(QToolButton::InstantPopup);
+	this->toolBar()->addWidget(d_data->visibleItem);
 
-	connect(d_data->selectionItemMenu, SIGNAL(aboutToShow()), this, SLOT(computeSelectionMenu()));
-	connect(d_data->selectionItemMenu, SIGNAL(triggered(QAction*)), this, SLOT(selectItem(QAction*)));
+	connect(d_data->visibleItemMenu, SIGNAL(aboutToShow()), this, SLOT(computeVisibilityMenu()));
+
+
+	d_data->selectItemMenu = new VipDragMenu();
+	d_data->selectItem = new QToolButton();
+	d_data->selectItem->setToolTip(tr("Select/Unselect items"));
+	d_data->selectItem->setIcon(vipIcon("select_item.png"));
+	d_data->selectItem->setAutoRaise(true);
+	d_data->selectItem->setMenu(d_data->selectItemMenu);
+	d_data->selectItem->setPopupMode(QToolButton::InstantPopup);
+	this->toolBar()->addWidget(d_data->selectItem);
+
+	connect(d_data->selectItemMenu, SIGNAL(aboutToShow()), this, SLOT(computeSelectionMenu()));
 
 	d_data->autoScale = new QToolButton();
 	d_data->autoScale->setIcon(vipIcon("axises.png"));
@@ -6438,7 +6451,7 @@ void VipPlotPlayer::deleteItem(QAction* act)
 
 		vipProcessEvents();
 		// show again the delete menu
-		// computeSelectionMenu();
+		// computeVisibilityMenu();
 		QMetaObject::invokeMethod(d_data->deleteItem, "showMenu", Qt::QueuedConnection);
 		// d_data->deleteItem->showMenu();
 	}
@@ -6469,22 +6482,63 @@ void VipPlotPlayer::closeEvent(QCloseEvent*)
 
 void VipPlotPlayer::hideAllItems()
 {
+	bool all_visible = true;
 	QList<VipPlotItem*> items = viewer()->area()->findItems<VipPlotItem*>();
 	for (int i = 0; i < items.size(); ++i) {
-		// only consider non grid items with a title
-		if (!qobject_cast<VipPlotGrid*>(items[i]) && !items[i]->title().isEmpty()) {
-			items[i]->setVisible(false);
+		if (!qobject_cast<VipPlotGrid*>(items[i]) && !items[i]->title().isEmpty()){
+			// only consider non grid items with a title
+			if(all_visible)
+				all_visible = items[i]->isVisible();
+		}
+		else {
+			items.removeAt(i);
+			--i;
 		}
 	}
+
+	// If all items are visible, hide all of them.
+	// Otherwise, show all of them.
+	all_visible = !all_visible;
+	for (int i = 0; i < items.size(); ++i) 
+		items[i]->setVisible(all_visible);
+
+	
+	this->plotWidget2D()->recomputeGeometry();
+	this->computeVisibilityMenu();
+}
+
+void VipPlotPlayer::selectAllItems()
+{
+	bool all_selected = true;
+	QList<VipPlotItem*> items = viewer()->area()->findItems<VipPlotItem*>();
+	for (int i = 0; i < items.size(); ++i) {
+		if (!qobject_cast<VipPlotGrid*>(items[i]) && !items[i]->title().isEmpty()){
+			// only consider non grid items with a title
+			if(all_selected)
+				all_selected = items[i]->isSelected();
+		}
+		else {
+			items.removeAt(i);
+			--i;
+		}
+	}
+
+	// If all items are visible, hide all of them.
+	// Otherwise, show all of them.
+	all_selected = !all_selected;
+	for (int i = 0; i < items.size(); ++i) 
+		items[i]->setSelected(all_selected);
+
+	
 	this->plotWidget2D()->recomputeGeometry();
 	this->computeSelectionMenu();
 }
 
-void VipPlotPlayer::computeSelectionMenu()
+void VipPlotPlayer::computeVisibilityMenu()
 {
 	// despite its name, this function create the menu to set the visibility of the plot items, not the selection
 
-	d_data->selectionItemMenu->clear();
+	d_data->visibleItemMenu->clear();
 
 	QList<VipPlotItem*> items = viewer()->area()->findItems<VipPlotItem*>();
 
@@ -6492,7 +6546,7 @@ void VipPlotPlayer::computeSelectionMenu()
 	w->setLayout(new QVBoxLayout());
 
 	QToolButton* hide_all = new QToolButton();
-	hide_all->setText("Hide all items");
+	hide_all->setText("Show/hide all items");
 	hide_all->setAutoRaise(true);
 	w->layout()->addWidget(hide_all);
 	w->layout()->addWidget(VipLineWidget::createSunkenHLine());
@@ -6514,24 +6568,45 @@ void VipPlotPlayer::computeSelectionMenu()
 			box->setText(items[i]->title().text());
 			connect(box, SIGNAL(clicked(bool)), items[i], SLOT(setVisible(bool)));
 			// make sure to recompute the widget geometry as the legend size might change
-			connect(box, SIGNAL(clicked(bool)), this->plotWidget2D(), SLOT(recomputeGeometry()));
+			//connect(box, SIGNAL(clicked(bool)), this->plotWidget2D(), SLOT(recomputeGeometry()));
 			w->layout()->addWidget(box);
 		}
 	}
 
 	w->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-	d_data->selectionItemMenu->setWidget(w);
+	d_data->visibleItemMenu->setWidget(w);
 }
 
-void VipPlotPlayer::selectItem(QAction* act)
+void VipPlotPlayer::computeSelectionMenu()
 {
-	// unselect all items
-	QList<VipPlotItem*> items = d_data->viewer->area()->findItems<VipPlotItem*>();
-	for (int i = 0; i < items.size(); ++i)
-		items[i]->setSelected(false);
+	d_data->selectItemMenu->clear();
 
-	if (VipPlotItem* item = act->property("VipPlotItem").value<VipPlotItem*>())
-		item->setSelected(true);
+	QList<VipPlotItem*> items = viewer()->area()->findItems<VipPlotItem*>();
+
+	QWidget* w = new QWidget();
+	w->setLayout(new QVBoxLayout());
+
+	QToolButton* select_all = new QToolButton();
+	select_all->setText("Select/unselect all items");
+	select_all->setAutoRaise(true);
+	w->layout()->addWidget(select_all);
+	w->layout()->addWidget(VipLineWidget::createSunkenHLine());
+	connect(select_all, SIGNAL(clicked(bool)), this, SLOT(selectAllItems()));
+
+	for (int i = 0; i < items.size(); ++i) {
+		// only consider non grid items with a title
+		if (!qobject_cast<VipPlotGrid*>(items[i]) && !items[i]->title().isEmpty()) {
+
+			QCheckBox* box = new QCheckBox();
+			box->setChecked(items[i]->isSelected());
+			box->setText(items[i]->title().text());
+			connect(box, SIGNAL(clicked(bool)), items[i], SLOT(setSelected(bool)));
+			w->layout()->addWidget(box);
+		}
+	}
+
+	w->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+	d_data->selectItemMenu->setWidget(w);
 }
 
 void VipPlotPlayer::addSelectedProcessing(const VipProcessingObject::Info& info)

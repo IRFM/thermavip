@@ -212,8 +212,16 @@ QString VipFileOpenHelper::validPathFromFormat(const QString& format) const
 {
 #ifdef __VIP_USE_WEB_ENGINE
 	VipHTTPFileHandler h;
-	if (h.probe(format, QByteArray()))
+	if (h.probe(format, QByteArray())) {
+
+		// Make sure another http based format does not exist
+		for(size_t i = 2; i <_open_helpers.size(); ++i) {
+			if(!_open_helpers[i]->validPathFromFormat(format).isEmpty())
+				return QString(); // Found one
+		}
+
 		return format;
+	}
 #endif
 
 	if (format.startsWith("thermavip://"))

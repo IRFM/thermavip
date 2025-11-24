@@ -926,9 +926,10 @@ private Q_SLOTS:
 	void timeChanged();	// update the time marker value
 	void computeDeleteMenu();
 	void deleteItem(QAction*);
+	void computeVisibilityMenu();
 	void computeSelectionMenu();
 	void hideAllItems();
-	void selectItem(QAction*);
+	void selectAllItems();
 	void addSelectedProcessing(const VipProcessingObject::Info&);
 	void histBinsChanged(int value);
 	void updateCurveEditor();
