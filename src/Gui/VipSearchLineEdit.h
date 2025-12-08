@@ -148,7 +148,7 @@ private Q_SLOTS:
 protected:
 	virtual void focusOutEvent(QFocusEvent* evt);
 	virtual bool event(QEvent* evt);
-	virtual void mouseMoveEvent(QMouseEvent* evt);
+	virtual void mousePressEvent(QMouseEvent* evt);
 	virtual bool eventFilter(QObject* watched, QEvent* event);
 
 private:

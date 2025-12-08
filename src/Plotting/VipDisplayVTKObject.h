@@ -193,7 +193,6 @@ protected:
 
 VIP_REGISTER_QOBJECT_METATYPE(VipDisplayVTKObject*)
 
-class VTK3DPlayer;
 
 /**
 A VipPlotItem that "displays" a VipFieldOfView.

@@ -484,6 +484,8 @@ VipVTKGraphicsView::VipVTKGraphicsView()
 	}
 	widget()->renderWindow()->SetNumberOfLayers(10);
 
+	
+
 	// Add legend and bar to the last layer
 	d_data->renderers.last()->AddActor(d_data->scalarBar);
 	// d_data->renderers.last()->AddActor(mLegend);

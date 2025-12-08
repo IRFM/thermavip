@@ -66,6 +66,10 @@
 #include "VipXmlArchive.h"
 #include "VipProgressWidget.h"
 
+#ifdef VIP_WITH_VTK
+#include "VipVTKRegion.h"
+#endif
+
 #include <QApplication>
 #include <QCheckBox>
 #include <QCursor>
@@ -7614,10 +7618,16 @@ void VipPlotPlayer::plotItemSelectionChanged(VipPlotItem*)
 
 	// show the hist bins spin box
 	QList<VipPlotHistogram*> lst = d_data->viewer->area()->findItems<VipPlotHistogram*>(QString(), 1, 1);
-	QList<VipExtractHistogram*> extractHist = QList<VipExtractHistogram*>();
+	QList<VipProcessingObject*> extractHist ;
 	for (int i = 0; i < lst.size(); ++i)
-		if (VipDisplayObject* disp = lst[i]->property("VipDisplayObject").value<VipDisplayObject*>())
-			extractHist += vipListCast<VipExtractHistogram*>(disp->allSources());
+		if (VipDisplayObject* disp = lst[i]->property("VipDisplayObject").value<VipDisplayObject*>()) {
+			 
+			extractHist += vipListCast < VipProcessingObject*>(vipListCast<VipExtractHistogram*>(disp->allSources()));
+
+#ifdef VIP_WITH_VTK
+			extractHist += vipListCast<VipProcessingObject*>(vipListCast<VipVTKExtractHistogram*>(disp->allSources()));
+#endif
+		}
 	if (extractHist.size()) {
 		d_data->histBinsAction->setVisible(true);
 		d_data->histBins->blockSignals(true);
@@ -7718,10 +7728,15 @@ void VipPlotPlayer::plotItemAxisUnitChanged(VipPlotItem*)
 void VipPlotPlayer::histBinsChanged(int value)
 {
 	QList<VipPlotHistogram*> lst = d_data->viewer->area()->findItems<VipPlotHistogram*>(QString(), 1, 1);
-	QList<VipExtractHistogram*> extractHist = QList<VipExtractHistogram*>();
+	QList<VipProcessingObject*> extractHist ;
 	for (int i = 0; i < lst.size(); ++i)
-		if (VipDisplayObject* disp = lst[i]->property("VipDisplayObject").value<VipDisplayObject*>())
-			extractHist += vipListCast<VipExtractHistogram*>(disp->allSources());
+		if (VipDisplayObject* disp = lst[i]->property("VipDisplayObject").value<VipDisplayObject*>()) {
+			extractHist += vipListCast<VipProcessingObject*>(vipListCast<VipExtractHistogram*>(disp->allSources()));
+
+#ifdef VIP_WITH_VTK
+			extractHist += vipListCast<VipProcessingObject*>(vipListCast<VipVTKExtractHistogram*>(disp->allSources()));
+#endif
+		}
 	for (int i = 0; i < extractHist.size(); ++i) {
 		extractHist[i]->propertyName("bins")->setData(value);
 		extractHist[i]->reload();
@@ -8033,110 +8048,116 @@ static QList<QAction*> standardActions(VipPlotItem* item, VipAbstractPlayer* pla
 		}
 
 		if (VipVideoPlayer* pl = qobject_cast<VipVideoPlayer*>(player)) {
-			if (VipPlotShape* shape = qobject_cast<VipPlotShape*>(item)) {
-				if (shape->rawData().type() != VipShape::Point) {
-					QAction* histogram = new QAction("Extract the shape histogram", nullptr);
-					QObject::connect(histogram, &QAction::triggered, std::bind(extractHistogram, shape, pl));
+			if (!pl->array().isEmpty()) {
+
+				if (VipPlotShape* shape = qobject_cast<VipPlotShape*>(item)) {
+					if (shape->rawData().type() != VipShape::Point) {
+						QAction* histogram = new QAction("Extract the shape histogram", nullptr);
+						QObject::connect(histogram, &QAction::triggered, std::bind(extractHistogram, shape, pl));
+						actions << histogram;
+
+						// make the menu action droppable
+						histogram->setProperty("QMimeData",
+								       QVariant::fromValue((QMimeData*)new VipMimeDataLazyEvaluation<QList<VipDisplayHistogram*>>(
+									 std::bind(&VipVideoPlayer::extractHistograms, pl, shape->rawData(), QString()), VipCoordinateSystem::Cartesian, histogram)));
+					}
+					if (shape->rawData().type() == VipShape::Polyline) {
+						QAction* polyline = new QAction("Extract values along the polyline", nullptr);
+						QList<VipPlotShape*> shapes = pl->viewer()->area()->findItems<VipPlotShape*>(QString(), 1, 1);
+						QObject::connect(polyline, &QAction::triggered, std::bind(extractPolyline, shapes, pl));
+						actions << polyline;
+
+						if (shapes.size() == 1) {
+							QAction* time_polyline = new QAction("Extract time trace of values along the polyline", nullptr);
+							QObject::connect(time_polyline, &QAction::triggered, std::bind(extractPolylineValuesAlongTime, shapes.first(), pl));
+							actions << time_polyline;
+
+							// make the menu action droppable
+							time_polyline->setProperty(
+							  "QMimeData",
+							  QVariant::fromValue((QMimeData*)new VipMimeDataLazyEvaluation<VipAnyResource*>(
+							    std::bind(&VipVideoPlayer::extractPolylineValuesAlongTime, pl, shapes.first()->rawData()), VipCoordinateSystem::Cartesian, time_polyline)));
+						}
+
+						QAction* extract_coordinates = new QAction("Extract pixels coordinates along the polyline", nullptr);
+						QObject::connect(extract_coordinates, &QAction::triggered, std::bind(extractPixelsCoordinates, shape, pl));
+						actions << extract_coordinates;
+
+						VipShapeList shs;
+						for (int i = 0; i < shapes.size(); ++i) {
+							VipShape sh = shapes[i]->rawData();
+							if (sh.type() == VipShape::Polyline)
+								shs.append(sh);
+						}
+
+						// make the menu action droppable
+						polyline->setProperty("QMimeData",
+								      QVariant::fromValue((QMimeData*)new VipMimeDataLazyEvaluation<QList<VipDisplayCurve*>>(
+									std::bind(&VipVideoPlayer::extractPolylines, pl, shs, QString()), VipCoordinateSystem::Cartesian, polyline)));
+					}
+
+					if (shape->type() != VipShape::Unknown && pl->array().canConvert<double>()) {
+						QAction* time_trace = new QAction("Extract the shape time trace", nullptr);
+						QObject::connect(time_trace,
+								 &QAction::triggered,
+								 std::bind(vipExtractTimeTrace2, pl->findSelectedShapes(1, 1), pl, VipShapeStatistics::Statistics(), 1, 2, (VipPlotPlayer*)nullptr));
+						actions << time_trace;
+
+						// make the menu action droppable
+						auto ff = [pl]() {
+							return extractTimeEvolutionFromPlayer2(pl, pl->findSelectedShapes(1, 1), VipShapeStatistics::Statistics(), 1, 2, QVector<double>());
+						};
+						time_trace->setProperty("QMimeData",
+									QVariant::fromValue((QMimeData*)new VipAsyncMimeDataLazyEvaluation(ff, VipCoordinateSystem::Cartesian, time_trace)));
+
+						if (pl->contourLevels().size() == 1) {
+							const VipNDArray img = pl->array();
+							if (img.isNumeric()) {
+
+								QPoint img_pos = pl->globalPosToImagePos(QCursor::pos());
+								if (img_pos.x() >= 0 && img_pos.y() >= 0 && img_pos.x() < img.shape(1) && img_pos.y() < img.shape(0)) {
+									// QMetaObject::invokeMethod(pl,"createShapeFromIsoLine",Qt::DirectConnection,Q_ARG(QPoint,img_pos));
+									QAction* _shape = new QAction("Update ROI from iso line", nullptr);
+									QObject::connect(_shape, &QAction::triggered, std::bind(&VipVideoPlayer::updateShapeFromIsoLine, pl, img_pos));
+									actions << _shape;
+								}
+							}
+						}
+					}
+				}
+				else {
+					QAction* histogram = new QAction("Extract the full image histogram", nullptr);
+					QObject::connect(histogram, &QAction::triggered, std::bind(extractHistogram, (VipPlotShape*)nullptr, pl));
 					actions << histogram;
 
 					// make the menu action droppable
 					histogram->setProperty("QMimeData",
 							       QVariant::fromValue((QMimeData*)new VipMimeDataLazyEvaluation<QList<VipDisplayHistogram*>>(
-								 std::bind(&VipVideoPlayer::extractHistograms, pl, shape->rawData(), QString()), VipCoordinateSystem::Cartesian, histogram)));
-				}
-				if (shape->rawData().type() == VipShape::Polyline) {
-					QAction* polyline = new QAction("Extract values along the polyline", nullptr);
-					QList<VipPlotShape*> shapes = pl->viewer()->area()->findItems<VipPlotShape*>(QString(), 1, 1);
-					QObject::connect(polyline, &QAction::triggered, std::bind(extractPolyline, shapes, pl));
-					actions << polyline;
-
-					if (shapes.size() == 1) {
-						QAction* time_polyline = new QAction("Extract time trace of values along the polyline", nullptr);
-						QObject::connect(time_polyline, &QAction::triggered, std::bind(extractPolylineValuesAlongTime, shapes.first(), pl));
-						actions << time_polyline;
-
-						// make the menu action droppable
-						time_polyline->setProperty(
-						  "QMimeData",
-						  QVariant::fromValue((QMimeData*)new VipMimeDataLazyEvaluation<VipAnyResource*>(
-						    std::bind(&VipVideoPlayer::extractPolylineValuesAlongTime, pl, shapes.first()->rawData()), VipCoordinateSystem::Cartesian, time_polyline)));
-					}
-
-					QAction* extract_coordinates = new QAction("Extract pixels coordinates along the polyline", nullptr);
-					QObject::connect(extract_coordinates, &QAction::triggered, std::bind(extractPixelsCoordinates, shape, pl));
-					actions << extract_coordinates;
-
-					VipShapeList shs;
-					for (int i = 0; i < shapes.size(); ++i) {
-						VipShape sh = shapes[i]->rawData();
-						if (sh.type() == VipShape::Polyline)
-							shs.append(sh);
-					}
-
-					// make the menu action droppable
-					polyline->setProperty("QMimeData",
-							      QVariant::fromValue((QMimeData*)new VipMimeDataLazyEvaluation<QList<VipDisplayCurve*>>(
-								std::bind(&VipVideoPlayer::extractPolylines, pl, shs, QString()), VipCoordinateSystem::Cartesian, polyline)));
-				}
-
-				if (shape->type() != VipShape::Unknown && pl->array().canConvert<double>()) {
-					QAction* time_trace = new QAction("Extract the shape time trace", nullptr);
-					QObject::connect(time_trace,
-							 &QAction::triggered,
-							 std::bind(vipExtractTimeTrace2, pl->findSelectedShapes(1, 1), pl, VipShapeStatistics::Statistics(), 1, 2, (VipPlotPlayer*)nullptr));
-					actions << time_trace;
-
-					// make the menu action droppable
-					auto ff = [pl]() { return extractTimeEvolutionFromPlayer2(pl, pl->findSelectedShapes(1, 1), VipShapeStatistics::Statistics(), 1, 2, QVector<double>()); };
-					time_trace->setProperty("QMimeData", QVariant::fromValue((QMimeData*)new VipAsyncMimeDataLazyEvaluation(ff, VipCoordinateSystem::Cartesian, time_trace)));
+								 std::bind(&VipVideoPlayer::extractHistograms, pl, VipShape(), QString()), VipCoordinateSystem::Cartesian, histogram)));
 
 					if (pl->contourLevels().size() == 1) {
 						const VipNDArray img = pl->array();
 						if (img.isNumeric()) {
-
 							QPoint img_pos = pl->globalPosToImagePos(QCursor::pos());
 							if (img_pos.x() >= 0 && img_pos.y() >= 0 && img_pos.x() < img.shape(1) && img_pos.y() < img.shape(0)) {
 								// QMetaObject::invokeMethod(pl,"createShapeFromIsoLine",Qt::DirectConnection,Q_ARG(QPoint,img_pos));
-								QAction* _shape = new QAction("Update ROI from iso line", nullptr);
-								QObject::connect(_shape, &QAction::triggered, std::bind(&VipVideoPlayer::updateShapeFromIsoLine, pl, img_pos));
+								QAction* _shape = new QAction("Create ROI from iso line", nullptr);
+								QObject::connect(_shape, &QAction::triggered, std::bind(&VipVideoPlayer::createShapeFromIsoLine, pl, img_pos));
 								actions << _shape;
 							}
 						}
 					}
 				}
-			}
-			else {
-				QAction* histogram = new QAction("Extract the full image histogram", nullptr);
-				QObject::connect(histogram, &QAction::triggered, std::bind(extractHistogram, (VipPlotShape*)nullptr, pl));
-				actions << histogram;
+
+				QAction* time_stat = new QAction("Extract the cumulated maximum image", nullptr);
+				QObject::connect(time_stat, &QAction::triggered, std::bind(vipExtractTimeStatistics, pl));
+				actions << time_stat;
 
 				// make the menu action droppable
-				histogram->setProperty("QMimeData",
-						       QVariant::fromValue((QMimeData*)new VipMimeDataLazyEvaluation<QList<VipDisplayHistogram*>>(
-							 std::bind(&VipVideoPlayer::extractHistograms, pl, VipShape(), QString()), VipCoordinateSystem::Cartesian, histogram)));
-
-				if (pl->contourLevels().size() == 1) {
-					const VipNDArray img = pl->array();
-					if (img.isNumeric()) {
-						QPoint img_pos = pl->globalPosToImagePos(QCursor::pos());
-						if (img_pos.x() >= 0 && img_pos.y() >= 0 && img_pos.x() < img.shape(1) && img_pos.y() < img.shape(0)) {
-							// QMetaObject::invokeMethod(pl,"createShapeFromIsoLine",Qt::DirectConnection,Q_ARG(QPoint,img_pos));
-							QAction* _shape = new QAction("Create ROI from iso line", nullptr);
-							QObject::connect(_shape, &QAction::triggered, std::bind(&VipVideoPlayer::createShapeFromIsoLine, pl, img_pos));
-							actions << _shape;
-						}
-					}
-				}
+				time_stat->setProperty("QMimeData",
+						       QVariant::fromValue((QMimeData*)new VipMimeDataLazyEvaluation<VipProcessingObject*>(
+							 std::bind(&VipVideoPlayer::extractTimeStatistics, pl), VipCoordinateSystem::Cartesian, time_stat)));
 			}
-
-			QAction* time_stat = new QAction("Extract the cumulated maximum image", nullptr);
-			QObject::connect(time_stat, &QAction::triggered, std::bind(vipExtractTimeStatistics, pl));
-			actions << time_stat;
-
-			// make the menu action droppable
-			time_stat->setProperty("QMimeData",
-					       QVariant::fromValue((QMimeData*)new VipMimeDataLazyEvaluation<VipProcessingObject*>(
-						 std::bind(&VipVideoPlayer::extractTimeStatistics, pl), VipCoordinateSystem::Cartesian, time_stat)));
 		}
 	}
 	else if (VipPlayer2D* p = qobject_cast<VipPlayer2D*>(player))

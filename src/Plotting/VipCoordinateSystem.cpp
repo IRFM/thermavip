@@ -169,6 +169,10 @@ QPainterPath VipCoordinateSystem::transform(const QPainterPath& path, const QRec
 		QVector2D vx(target[1].x() - target[0].x(), target[1].y() - target[0].y());
 		QVector2D vy(target[3].x() - target[0].x(), target[3].y() - target[0].y());
 		QPointF origin(target[0]);
+
+		if (p_rect.width() == 0 || p_rect.height() == 0)
+			return QPainterPath();
+
 		vx /= p_rect.width();
 		vy /= p_rect.height();
 

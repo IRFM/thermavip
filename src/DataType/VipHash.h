@@ -51,4 +51,21 @@ inline size_t vipHashBytes(const void* Msg0, size_t MsgLen) noexcept
 #endif
 }
 
+inline void vipHashCombine(size_t& seed, size_t h2) noexcept
+{
+#ifdef Q_PROCESSOR_X86_64
+	static constexpr std::uint64_t m = 14313749767032793493ULL;
+	static constexpr std::uint64_t r = 47ULL;
+
+	h2 *= m;
+	h2 ^= h2 >> r;
+	h2 *= m;
+
+	seed ^= h2;
+	seed *= m;
+#else
+	seed ^= h2 + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+#endif
+}
+
 #endif

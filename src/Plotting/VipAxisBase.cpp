@@ -672,17 +672,19 @@ double VipAxisBase::dimForLength(double length, const QFont& // scaleFont
 ) const
 {
 	Q_UNUSED(length)
-	const double extent = // std::ceil
-	  (constScaleDraw()->fullExtent());
+	const double extent = constScaleDraw()->fullExtent();
 
 	double dim = margin() + extent + 1;
+	int exponent = constScaleDraw()->valueToText()->exponent();
 
-	if ((!title().isEmpty() && isDrawTitleEnabled() && !titleInside()) || constScaleDraw()->valueToText()->exponent() != 0) {
+	if ((!title().isEmpty() && isDrawTitleEnabled() && !titleInside()) || exponent != 0) {
 		if (!title().isEmpty() && isDrawTitleEnabled() && !titleInside())
 			dim += title().textSize().height() + spacing();
-		if (constScaleDraw()->valueToText()->exponent() != 0) {
-			if (d_data->mergeExponent)
-				dim += title().textSize().height();
+		else if (exponent)
+			dim += VipText(" &#215;10<sup>2</sup>", title().textStyle(), VipText::RichText).textSize().height() + spacing();
+
+		if (exponent != 0 && d_data->mergeExponent) {
+			dim += title().textSize().height();
 		}
 	}
 

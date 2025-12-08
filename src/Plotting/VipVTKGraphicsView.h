@@ -63,7 +63,6 @@
 
 class VipPlotVTKObject;
 class VipVTKImage;
-class VTK3DPlayer;
 class VipVTKGraphicsView;
 class OffscreenExtractShapeStatistics;
 
@@ -112,7 +111,7 @@ protected:
 /// -	A VipVTKGraphicsView can render both 3D VTK based scenes as well as 2D plotting
 ///		based on thermavip Plotting library.
 /// 
-/// VipVTKGraphicsView is the plotting widget for VTK3DPlayer class.
+/// VipVTKGraphicsView is the plotting widget for VipVTKPlayer class.
 /// 
 class VIP_PLOTTING_EXPORT VipVTKGraphicsView : public VipImageWidget2D
 {

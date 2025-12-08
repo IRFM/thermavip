@@ -449,7 +449,7 @@ protected:
 			QApplication::instance()->sendEvent(edit, evt);
 			return true;
 		}
-		else if (event->type() == QEvent::MouseMove) {
+		else if (event->type() == QEvent::MouseButtonPress) {
 
 			// Dont filter scrollbars events
 			if (qobject_cast<QScrollBar*>(watched))
@@ -457,7 +457,7 @@ protected:
 
 			QMouseEvent* evt = static_cast<QMouseEvent*>(event);
 			QStringList paths;
-			if (evt->buttons() == Qt::LeftButton) {
+			if (evt->buttons() == Qt::LeftButton && (evt->modifiers() & Qt::CTRL) ) {
 				auto lst = this->selectedItems();
 				for (auto* it : lst) {
 					QString fmt = it->text();
@@ -634,9 +634,9 @@ bool VipSearchLineEdit::event(QEvent* event)
 	return QLineEdit::event( event);
 }
 
-void VipSearchLineEdit::mouseMoveEvent(QMouseEvent* evt)
+void VipSearchLineEdit::mousePressEvent(QMouseEvent* evt)
 {
-	if (evt->buttons() == Qt::LeftButton) {
+	if (evt->buttons() == Qt::LeftButton && (evt->modifiers()& Qt::CTRL)) {
 		QString fmt = this->selectedText();
 		if (const VipDeviceOpenHelper* helper = VipDeviceOpenHelper::fromFormat(fmt)) {
 			QString path = helper->validPathFromFormat(fmt);
@@ -650,7 +650,7 @@ void VipSearchLineEdit::mouseMoveEvent(QMouseEvent* evt)
 			}
 		}
 	}
-	QLineEdit::mouseMoveEvent(evt);
+	QLineEdit::mousePressEvent(evt);
 }
 
 bool VipSearchLineEdit::eventFilter(QObject* watched, QEvent* event)

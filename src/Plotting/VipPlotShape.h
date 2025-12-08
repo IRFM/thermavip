@@ -88,6 +88,11 @@ public:
 	VipPlotShape(const VipText& title = QString());
 	virtual ~VipPlotShape();
 
+	/// @brief Returns the shape name.
+	/// The shape name is computed based on the VipShape group and Id.
+	/// If an annotation is attached, use the annotation text.
+	QString shapeName() const;
+
 	/// @brief Get/set the components to be drawn
 	void setDrawComponents(DrawComponents);
 	void setDrawComponent(DrawComponent, bool on = true);

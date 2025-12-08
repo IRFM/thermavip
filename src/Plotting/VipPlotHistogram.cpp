@@ -576,6 +576,15 @@ void VipPlotHistogram::drawColumns(QPainter* painter, const VipCoordinateSystemP
 					brush.setColor(color(sample.value, brush.color()));
 					bs.setBackgroundBrush(brush);
 				}
+
+				if (pen.style() == Qt::NoPen || pen.color().alpha() == 0) {
+					QRectF bounding = rect.boundingRect();
+					if (bounding.width() <= 1 || bounding.height() <= 1) {
+						// Add a border pen
+						bs.setBorderPen(brush.color());
+					}
+				}
+
 				bs.drawBackground(painter);
 				bs.drawBorder(painter);
 			}

@@ -701,6 +701,10 @@ struct Separator : QAction
 static QList<QAction*> videoPlayerActions(VipPlotItem* item, VipVideoPlayer* player)
 {
 	QList<QAction*> actions;
+
+	if (player->array().isEmpty())
+		return actions;
+
 	if (VipPlotShape* shape = qobject_cast<VipPlotShape*>(item)) {
 		if ((shape->rawData().type() == VipShape::Path || shape->rawData().type() == VipShape::Polygon) && !vipIsImageArray(player->viewer()->area()->array())) {
 			QAction* crop = new QAction("Crop image on shape bounding rect", nullptr);

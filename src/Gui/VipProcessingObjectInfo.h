@@ -54,7 +54,7 @@ class QTreeWidgetItem;
 struct VIP_GUI_EXPORT VipProcInfo
 {
 	typedef QPair<QString, QVariant> info;
-	typedef QList<info> info_list;
+	typedef QVector<info> info_list;
 	typedef QMap<QString, QString> key_tips;
 
 	info_list infos;
@@ -130,6 +130,12 @@ public:
 	virtual VipAdditionalInfo* clone() const = 0;
 	/// @brief Tells if this VipAdditionalInfo returns information on a player or on a processing object
 	virtual bool isPlayerInfo() const = 0;
+
+	/// @brief Require the processing to (if possible) update itself right now.
+	/// This is used by VipAdditionalInfo that do not use an input, but
+	/// might still extract temporal attributes
+	virtual void requireUpdate(qint64 time) {}
+
 	/// @brief Returns the player used to extract information
 	VipAbstractPlayer* player() const { return m_player; }
 

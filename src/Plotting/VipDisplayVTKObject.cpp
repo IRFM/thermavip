@@ -97,7 +97,7 @@ VipPlotVTKObject::~VipPlotVTKObject()
 					static_cast<vtkRenderer*>(c)->RemoveActor(d_data->actor);
 			}
 	}
-	
+
 }
 
 QString VipPlotVTKObject::dataName() const {

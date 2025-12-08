@@ -394,6 +394,8 @@ public Q_SLOTS:
 	/// @brief Save the XYZ points with attribute values in a text or CSV file
 	void saveAttributeXYZValue();
 
+	void extractHistogram();
+
 private Q_SLOTS:
 
 	bool cleanItem(VipVTKObjectItem* item);
@@ -494,6 +496,8 @@ private Q_SLOTS:
 	void dataChanged();
 	void selectionChanged();
 	void AttributeSelectionChanged();
+
+
 
 private:
 	void ClearAnnotations();
@@ -628,7 +632,11 @@ public Q_SLOTS:
 	void setAxesVisible(bool);
 	void setLighting(bool);
 	void setDecimateOnMove(bool);
+	void extractROIs();
 	
+Q_SIGNALS:
+	void displayedAttributeChanged();
+
 private Q_SLOTS:
 	void timeChanged(qint64);
 	void applyDelayedPendingActions(const VipFieldOfView& fov);
@@ -660,6 +668,21 @@ public:
 
 private:
 	VIP_DECLARE_PRIVATE_DATA();
+};
+
+#include "VipProcessingObjectInfo.h"
+
+/// Extract info on a VipVTKPlayer player selected shapes
+class VIP_GUI_EXPORT VipVTKShapesInfos : public VipAdditionalInfo
+{
+public:
+	VipVTKShapesInfos(VipAbstractPlayer* pl);
+	virtual VipVTKShapesInfos* clone() const { return new VipVTKShapesInfos((player())); }
+	virtual bool isPlayerInfo() const { return true; }
+	virtual void requireUpdate(qint64 time);
+
+protected:
+	virtual void apply();
 };
 
 #endif

@@ -125,6 +125,8 @@ namespace detail
 		VipAnyData tmp = inputAt(0)->data();
 		m_info->inputAt(0)->setData(tmp);
 		m_info->update();
+		m_info->requireUpdate(this->parentObjectPool()->time());
+		
 		if (m_info->hasError()) {
 			setError(m_info->errorData());
 			return;
@@ -1358,6 +1360,8 @@ void VipProcessingObjectInfo::updateInfos()
 			ToDouble(map[pos].second, &to_double);
 			if (!to_double)
 				child->setFlags(item->flags() & (~Qt::ItemIsSelectable) & (~Qt::ItemIsDragEnabled));
+			else
+				child->setFlags(item->flags() | Qt::ItemIsSelectable | Qt::ItemIsDragEnabled);
 		}
 
 		// remove additional children
@@ -1498,7 +1502,7 @@ QList<VipProcessingObject*> VipProcessingObjectInfo::plotAttributes(QList<VipOut
 		VipProcessingObject* parent = outputs[i]->parentProcessing();
 		if (VipAdditionalInfo* info = qobject_cast<VipAdditionalInfo*>(parent)) {
 			// additional attributes
-			detail::VipExtractAttributeFromInfo* extr = new detail::VipExtractAttributeFromInfo();
+			detail::VipExtractAttributeFromInfo* extr = new detail::VipExtractAttributeFromInfo(pool);
 			// disable error logging
 			extr->setLogErrors(QSet<int>());
 			extr->setVipAdditionalInfo(info);

@@ -269,6 +269,8 @@ public:
 
 	QRecursiveMutex mutex;
 
+	QVariantMap properties;
+
 	PrivateData();
 	~PrivateData();
 	bool isValid() const;
@@ -480,17 +482,50 @@ QVariantMap VipVTKObject::buildAllAttributes() const
 			attrs["Point count"] = QString::number(set->GetNumberOfPoints());
 			attrs["Cell count"] = QString::number(set->GetNumberOfCells());
 
+			// Compute bounds
+			double bnds[6];
+			set->GetBounds(bnds);
+			attrs["X min"] = bnds[0];
+			attrs["X max"] = bnds[1];
+			attrs["Y min"] = bnds[2];
+			attrs["Y max"] = bnds[3];
+			attrs["Z min"] = bnds[4];
+			attrs["Z max"] = bnds[5];
+
 			vtkPointData* pdata = set->GetPointData();
 			for (int i = 0; i < pdata->GetNumberOfArrays(); ++i) {
 				vtkDataArray* ar = pdata->GetArray(i);
-				QString value = QString(ar->GetClassName()) + " (" + QString::number(ar->GetNumberOfTuples()) + ", " + QString::number(ar->GetNumberOfComponents()) + ")";
-				attrs["PointData/" + QString(ar->GetName())] = value;
+
+				for (int j = 0; j < ar->GetNumberOfComponents(); ++j) {
+					double range[2];
+					ar->GetRange(range,j);
+					QString name = ar->GetName();
+					if (ar->GetNumberOfComponents() > 1)
+						name += "[" + QString::number(j) + "]";
+					attrs[name + " min"] = range[0];
+					attrs[name + " max"] = range[1];
+
+				}
+
+				//QString value = QString(ar->GetClassName()) + " (" + QString::number(ar->GetNumberOfTuples()) + ", " + QString::number(ar->GetNumberOfComponents()) + ")";
+				//attrs["PointData/" + QString(ar->GetName())] = value;
 			}
 			vtkCellData* cdata = set->GetCellData();
 			for (int i = 0; i < cdata->GetNumberOfArrays(); ++i) {
 				vtkDataArray* ar = cdata->GetArray(i);
-				QString value = QString(ar->GetClassName()) + " (" + QString::number(ar->GetNumberOfTuples()) + ", " + QString::number(ar->GetNumberOfComponents()) + ")";
-				attrs["CellData/" + QString(ar->GetName())] = value;
+
+				for (int j = 0; j < ar->GetNumberOfComponents(); ++j) {
+					double range[2];
+					ar->GetRange(range, j);
+					QString name = ar->GetName();
+					if (ar->GetNumberOfComponents() > 1)
+						name += "[" + QString::number(j) + "]";
+					attrs[name + " min"] = range[0];
+					attrs[name + " max"] = range[1];
+				}
+
+				//QString value = QString(ar->GetClassName()) + " (" + QString::number(ar->GetNumberOfTuples()) + ", " + QString::number(ar->GetNumberOfComponents()) + ")";
+				//attrs["CellData/" + QString(ar->GetName())] = value;
 			}
 		}
 		QMap<QString, vtkVariantList> fattrs = fieldAttributes();
@@ -499,7 +534,7 @@ QVariantMap VipVTKObject::buildAllAttributes() const
 			QStringList values;
 			for (const vtkVariant& v : lst)
 				values.append(v.ToString().c_str());
-			attrs["FieldData/" + it.key()] = values.join(" ");
+			attrs[/*"FieldData/" +*/ it.key()] = values.join(" ");
 		}
 	}
 	return attrs;
@@ -1396,6 +1431,45 @@ bool VipVTKObject::importAttributes( const VipVTKObject& other)
 
 	return true;
 }
+
+
+QVariantMap VipVTKObject::properties() const
+{
+	QMutexLocker lock(const_cast<QRecursiveMutex*>(&d_data->mutex));
+	return d_data->properties;
+}
+void VipVTKObject::setProperties(const QVariantMap& map)
+{
+	QMutexLocker lock(const_cast<QRecursiveMutex*>(&d_data->mutex));
+	d_data->properties = map;
+}
+QVariant VipVTKObject::property(const QString& name) const
+{
+	QMutexLocker lock(const_cast<QRecursiveMutex*>(&d_data->mutex));
+	auto it = d_data->properties.find(name);
+	return it == d_data->properties.end() ? QVariant() : it.value();
+}
+void VipVTKObject::setProperty(const QString& name, const QVariant& value)
+{
+	QMutexLocker lock(const_cast<QRecursiveMutex*>(&d_data->mutex));
+	d_data->properties.insert(name, value);
+}
+
+QVariant VipVTKObject::takeProperty(const QString& name)
+{
+	QMutexLocker lock(const_cast<QRecursiveMutex*>(&d_data->mutex));
+	auto it = d_data->properties.find(name);
+	QVariant res;
+	if (it != d_data->properties.end())
+		res = std::move(it.value());
+	return res;
+}
+void VipVTKObject::removeProperty(const QString& name)
+{
+	QMutexLocker lock(const_cast<QRecursiveMutex*>(&d_data->mutex));
+	d_data->properties.remove(name);
+}
+
 /*
 void VipVTKObject::addDynamicProperty(const DynamicProperty& prop)
 {

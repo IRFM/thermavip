@@ -92,13 +92,35 @@ static void applyAppFont(QWidget* top, const QFont& previous)
 	}
 }
 
-#include "VipProcessingBlock.h"//TEST
-#include "VipStandardProcessing.h"
-#include "VipXmlArchive.h"
+static QSurfaceFormat makeDefaultFormat()
+{
+#ifdef VIP_WITH_VTK
+	
+		QSurfaceFormat fmt;
+		fmt.setRenderableType(QSurfaceFormat::OpenGL);
+		fmt.setVersion(3, 2);
+		fmt.setProfile(QSurfaceFormat::CoreProfile);
+		fmt.setSwapBehavior(QSurfaceFormat::DoubleBuffer);
+		fmt.setRedBufferSize(8);
+		fmt.setGreenBufferSize(8);
+		fmt.setBlueBufferSize(8);
+		fmt.setDepthBufferSize(8);
+		fmt.setAlphaBufferSize(8);
+		fmt.setStencilBufferSize(0);
+		fmt.setStereo(false);
+		fmt.setSamples(4); // we never need multisampling in the context since the FBO can support
+				   // multisamples independently
+		return fmt;
+#else
+	QSurfaceFormat format;
+	format.setSamples(4);
+	format.setSwapInterval(0);
+	return format;
+#endif
+}
 
 int main(int argc, char** argv)
 {
-	
 	{
 		// Load thermavip.env
 		QString env_file = vipGetDataDirectory() + "thermavip/thermavip.env";
@@ -216,10 +238,8 @@ int main(int argc, char** argv)
 #else
 	QCoreApplication::setAttribute(Qt::AA_UseOpenGLES);
 #endif
-	QSurfaceFormat format;
-	format.setSamples(4);
-	format.setSwapInterval(0);
-	QSurfaceFormat::setDefaultFormat(format);
+
+	QSurfaceFormat::setDefaultFormat(makeDefaultFormat());
 	VipText::setCacheTextWhenPossible(false);
 
 	// Disallow GUI initialization functions for now

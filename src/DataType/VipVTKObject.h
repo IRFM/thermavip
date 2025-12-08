@@ -288,6 +288,20 @@ public:
 	/// This function only works for vtkDataSet with the same number of points and cells.
 	bool importAttributes(const VipVTKObject& other);
 
+
+	//
+	// Properties
+	//
+
+	QVariantMap properties() const;
+	void setProperties(const QVariantMap&);
+	QVariant property(const QString& name) const;
+	void setProperty(const QString& name, const QVariant& value);
+	QVariant takeProperty(const QString& name);
+	void removeProperty(const QString& name);
+
+
+
 	/// @brief Returns the supported file suffixes to save this object
 	QStringList supportedFileSuffix() const;
 	/// @brief Returns the preffered file suffix to save this object

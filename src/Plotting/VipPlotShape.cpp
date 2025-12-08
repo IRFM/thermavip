@@ -473,6 +473,25 @@ VipAnnotation* VipPlotShape::annotation() const
 	return d_data->annotation.get();
 }
 
+QString VipPlotShape::shapeName() const
+{
+	// compute shape name
+	const VipShape sh = rawData();
+	QString name = sh.group() + " " + QString::number(sh.id());
+	if (!sh.attribute("Name").toString().isEmpty())
+		name = sh.attribute("Name").toString();
+	else {
+		// use annotation to get the name
+		if (VipAnnotation* annot = this->annotation()) {
+			if (strcmp(annot->name(), "VipSimpleAnnotation") == 0) {
+				VipSimpleAnnotation* a = static_cast<VipSimpleAnnotation*>(annot);
+				name = a->text().text();
+			}
+		}
+	} 
+	return name;
+}
+
 void VipPlotShape::setDrawComponents(DrawComponents components)
 {
 	if (d_data->components != components) {

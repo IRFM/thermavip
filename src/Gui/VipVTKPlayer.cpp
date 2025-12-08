@@ -26,7 +26,7 @@
 #include "VipRecordToolWidget.h"
 #include "VipSet.h"
 #include "VipStandardWidgets.h"
-
+#include "VipVTKRegion.h"
 
 //#include <vtkGenericOpenGLRenderWindow.h>
 #include <vtkCamera.h>
@@ -3206,6 +3206,9 @@ bool VipVTKObjectTreeWidget::isSync()
 
 		for (int i = 0; i < tmp.size(); ++i) {
 			VipVTKObjectItem* item = tmp[i];
+			// Check null plot
+			if (item->childCount() == 0 && d_data->tree->indexOfTopLevelItem(item) < 0 && !item->plotObject())
+				return false;
 			if (item->plotObject() && !item->isSync())
 				return false;
 
@@ -3499,6 +3502,49 @@ VipVTKObjectItem* VipVTKObjectTreeWidget::find(QTreeWidgetItem* root, const QStr
 	return nullptr;
 }*/
 
+
+static VipVTKExtractHistogram* extractVTKHistogram(VipVTKPlayer* pl, const QList<VipPlotVTKObject*>& plots)
+{
+	if (!pl)
+		return nullptr;
+
+	if (plots.isEmpty())
+		return nullptr;
+
+	QList<VipDisplayObject*> displays;
+	for (const auto* plot : plots) {
+		if (VipDisplayObject* d = plot->property("VipDisplayObject").value<VipDisplayObject*>())
+			displays.push_back(d);
+	}
+
+	if (displays.isEmpty())
+		return nullptr;
+
+	auto type = pl->attributes()->currentAttributeType();
+	auto name = pl->attributes()->currentAttribute();
+	auto comp = pl->attributes()->currentComponent();
+
+	if (name.isEmpty() || !(type == VipVTKObject::Cell || type == VipVTKObject::Point) || comp < 0)
+		return nullptr;
+
+	VipVTKExtractHistogram* hist = new VipVTKExtractHistogram();
+	hist->topLevelInputAt(0)->toMultiInput()->resize(displays.size());
+
+	for (int i = 0; i < displays.size(); ++i) {
+		hist->inputAt(i)->setConnection(displays[i]->inputAt(0)->source());
+		//hist->inputAt(i)->setData(displays[i]->inputAt(0)->source()->data());
+	}
+
+	hist->setDeleteOnOutputConnectionsClosed(true);
+	hist->setScheduleStrategy(VipProcessingObject::Asynchronous);
+	hist->setComponent(comp);
+	hist->setArrayName(name);
+	hist->setAttributeType(type);
+	//hist->reload();
+	return hist;
+}
+
+
 void VipVTKObjectTreeWidget::itemPressed(QTreeWidgetItem* item, int)
 {
 	if (!(QApplication::mouseButtons() & Qt::RightButton))
@@ -3507,7 +3553,7 @@ void VipVTKObjectTreeWidget::itemPressed(QTreeWidgetItem* item, int)
 	item->setSelected(true);
 	QList<QTreeWidgetItem*> selected = d_data->tree->selectedItems();
 
-	QMenu menu;
+	VipDragMenu menu;
 	// one single file
 	if (selected.size() == 1 && static_cast<VipVTKObjectItem*>(selected[0])->plotObject()) {
 		QAction* save = menu.addAction(vipIcon("save_as.png"), "Save a copy in file...");
@@ -3530,6 +3576,20 @@ void VipVTKObjectTreeWidget::itemPressed(QTreeWidgetItem* item, int)
 	QAction* save_points = menu.addAction("Save points (TEXT file)");
 	QAction* save_xyzv = menu.addAction("Save selection attributes (XYZValue file)");
 
+	VipVTKPlayer* pl = VipVTKPlayer::fromChild(d_data->view);
+	if(pl) {
+		auto type = pl->attributes()->currentAttributeType();
+		auto name = pl->attributes()->currentAttribute();
+		auto comp = pl->attributes()->currentComponent();
+		
+		if (!name.isEmpty() && name != "None" && (type == VipVTKObject::Cell || type == VipVTKObject::Point) && comp >= 0) {
+			QAction* hist = menu.addAction("Extract histogram");
+
+			hist->setProperty("QMimeData", QVariant::fromValue((QMimeData*)new VipMimeDataLazyEvaluation<VipVTKExtractHistogram*>([&]() { return extractVTKHistogram(pl, this->selectedObjects()); }, VipCoordinateSystem::Cartesian, hist)));
+
+			connect(hist, SIGNAL(triggered(bool)), this, SLOT(extractHistogram()));
+		}
+	}
 	connect(del, SIGNAL(triggered(bool)), this, SLOT(deleteSelection()));
 	connect(copy, SIGNAL(triggered(bool)), this, SLOT(copySelection()));
 	connect(hide_others, SIGNAL(triggered(bool)), this, SLOT(hideAllButSelection()));
@@ -3537,6 +3597,7 @@ void VipVTKObjectTreeWidget::itemPressed(QTreeWidgetItem* item, int)
 	connect(show_all, SIGNAL(triggered(bool)), this, SLOT(showAll()));
 	connect(save_xyzv, SIGNAL(triggered(bool)), this, SLOT(saveAttributeXYZValue()));
 	connect(save_points, SIGNAL(triggered(bool)), this, SLOT(saveXYZ()));
+	
 
 	PlotVipVTKObjectList objects;
 	for (int i = 0; i < selected.size(); ++i) {
@@ -3781,6 +3842,19 @@ void VipVTKObjectTreeWidget::showAll()
 {
 	QList<QTreeWidgetItem*> selected = d_data->tree->selectedItems();
 	d_data->inFile->setVisibility(VipVTKObjectItem::Visible);
+}
+
+
+void VipVTKObjectTreeWidget::extractHistogram()
+{	
+	VipVTKPlayer* pl = VipVTKPlayer::fromChild(d_data->view);
+	if (!pl)
+		return;
+
+	if (VipVTKExtractHistogram* hist = extractVTKHistogram(pl, this->selectedObjects())) {
+		auto lst = vipCreatePlayersFromProcessing(hist, nullptr);
+		vipGetMainWindow()->openPlayers(lst);		
+	}
 }
 
 void VipVTKObjectTreeWidget::saveAttributeXYZValue()
@@ -4341,10 +4415,13 @@ bool VipSelectDisplayedAttributeWidget::setDisplayedAttribute(VipVTKObject::Attr
 			d_data->component->blockSignals(false);
 		}
 		DisplaySelectedAttribue(true);
+
+		Q_EMIT VipVTKPlayer::fromChild( d_data->view)->displayedAttributeChanged();
 		return true;
 	}
 	else {
 		DisplaySelectedAttribue(false);
+		Q_EMIT VipVTKPlayer::fromChild(d_data->view)->displayedAttributeChanged();
 		return false;
 	}
 }
@@ -5400,6 +5477,7 @@ public:
 
 	QToolButton* camera;
 	QAction* show_legend;
+	QAction* extract_ROIs;
 	QAction* reset_camera;
 	QAction* sharedCamera;
 	QAction* save_image;
@@ -5491,7 +5569,7 @@ VipVTKPlayer::VipVTKPlayer(QWidget* parent)
 	
 	d_data->show_legend = toolBar()->addAction(vipIcon("show_legend.png"), "Show/hide the legend");
 	d_data->show_legend->setCheckable(true);
-	
+
 	QToolButton* camera = new QToolButton();
 	camera->setAutoRaise(true);
 	camera->setIcon(vipIcon("open_fov.png"));
@@ -5597,6 +5675,7 @@ VipVTKPlayer::VipVTKPlayer(QWidget* parent)
 	setLighting(VipVTKPlayerOptions::get().lighting);
 	setOrientationMarkerWidgetVisible(VipVTKPlayerOptions::get().orientationWidget);
 	setDecimateOnMove(VipVTKPlayerOptions::get().decimateOnMove);
+
 }
 
 VipVTKPlayer::~VipVTKPlayer()
@@ -5813,6 +5892,45 @@ void VipVTKPlayer::setDecimateOnMove(bool enable)
 	d_data->decimate->setChecked(enable);
 	d_data->decimate->blockSignals(false);
 	view()->setDecimateOnMove(enable);
+}
+
+
+void VipVTKPlayer::extractROIs()
+{
+	QList<VipPlotShape*> shapes = view()->area()->findItems<VipPlotShape*>(QString(), 1, 1);
+	for (VipPlotShape* sh : shapes) {
+		auto r = vipBuildRegion(sh, view(), 0);
+		if (r.isEmpty())
+			return;
+
+		int i = 1;
+		while (true) {
+			QString name = "Regions Of Intereset/ROI " + QString::number(i);
+			if (!view()->find(name).size()) {
+				r.name = name;
+				break;
+			}
+			++i;
+		}
+
+		VipVTKRegionProcessing* proc = new VipVTKRegionProcessing(this->processingPool());
+		proc->setDeleteOnOutputConnectionsClosed(true);
+		proc->setScheduleStrategy(VipVTKRegionProcessing::Asynchronous);
+		proc->setRegion(r);
+
+		if (!vipCreatePlayersFromProcessing(proc, this).size()) {
+			delete proc;
+		}
+
+		auto plots = view()->find(r.name);
+		if (plots.size()) {
+			auto* pl = plots.first();
+			pl->setColor(pl->selectedColor());
+			pl->actor()->GetProperty()->SetPointSize(5);
+			pl->actor()->GetProperty()->RenderPointsAsSpheresOn();
+			pl->actor()->GetProperty()->SetLighting(false);
+		}
+	}
 }
 
 void VipVTKPlayer::loadCadDirectory()
@@ -6207,6 +6325,74 @@ void VipVTKPlayerOptionPage::updatePage()
 
 
 
+static QList<QAction*> generateActionsForVTKPlayer(VipPlotShape* , VipVTKPlayer* player)
+{
+	QList<QAction*> res;
+
+	// Check if we have closed shapes
+	const auto lst = player->view()->area()->findItems<VipPlotShape*>(QString(), 1, 1);
+	const VipPlotShape* closed = nullptr;
+	for (const VipPlotShape* shape : lst) {
+		const VipShape sh = shape->rawData();
+		if (sh.type() == VipShape::Polygon || sh.type() == VipShape::Path) {
+			closed = shape;
+			break;
+		}
+	}
+
+	if (closed) {
+		QAction* extractROI = new QAction("Create Region Of Interset", nullptr);
+		QObject::connect(extractROI, &QAction::triggered, player, &VipVTKPlayer::extractROIs);
+		res.push_back(extractROI);
+
+	}
+	return res;
+}
+
+
+
+VipVTKShapesInfos::VipVTKShapesInfos(VipAbstractPlayer* pl)
+  : VipAdditionalInfo(pl)
+{
+	if (VipVTKPlayer* p = qobject_cast<VipVTKPlayer*>(pl)) {
+		connect(p, SIGNAL(sceneModelChanged(VipPlotSceneModel*)), this, SLOT(emitNeedUpdate()));
+		connect(p->plotSceneModel()->scene(), SIGNAL(selectionChanged()), this, SLOT(emitNeedUpdate()));
+	}
+}
+
+void VipVTKShapesInfos::requireUpdate(qint64 )
+{
+	this->apply();
+}
+
+void VipVTKShapesInfos::apply()
+{
+	VipProcInfo map;
+
+	VipVTKPlayer* pl = qobject_cast<VipVTKPlayer*>( player());
+	if (!pl || !pl->plotWidget2D())
+		return;
+
+	VipProcInfo infos;
+
+	QList<VipPlotShape*> psh = player()->plotWidget2D()->area()->findItems<VipPlotShape*>(QString(), 1, 1);
+	for (int i = 0; i < psh.size(); ++i) {
+		QString name = psh[i]->shapeName();
+		VipVTKRegion region = vipBuildRegion(psh[i], pl->view(), 0);
+		auto r_infos = vipBuildRegionAttributes(region);
+		for (auto it = r_infos.begin(); it != r_infos.end(); ++it) {
+			infos.append(name + "/" + it->first, it->second);
+		}
+	}
+
+	outputAt(0)->setData(create(QVariant::fromValue(infos)));
+}
+
+static VipVTKShapesInfos* extractVTKShapesInfos(VipVTKPlayer* p, VipOutput*, const QVariant&)
+{
+	return new VipVTKShapesInfos(p);
+}
+
 
 /**\internal Create a VipDisplayVTKObject object from a VipVTKObject data*/
 static VipDisplayVTKObject* createDisplayDataObject(const VipVTKObject& data, VipAbstractPlayer* pl, const VipAnyData& any)
@@ -6291,6 +6477,8 @@ static QList<VipAbstractPlayer*> createPlayerFromDisplayFOV(VipDisplayFieldOfVie
 
 static int registerOperators()
 {
+	//VipFDProcessingOutputInfo().append<VipVTKShapesInfos*(VipVTKPlayer*, VipOutput*, const QVariant&)>(extractVTKShapesInfos);
+
 	vipFDCreateDisplayFromData().append<VipDisplayVTKObject*(const VipVTKObject&, VipAbstractPlayer*, const VipAnyData&)>(createDisplayDataObject);
 	vipFDCreateDisplayFromData().append<VipDisplayVTKObject*(const VipVTKObject&, VipVTKPlayer*, const VipAnyData&)>(createDisplayDataObjectTokida);
 	vipFDCreateDisplayFromData().append<VipDisplayFieldOfView*(const VipFieldOfView&, VipAbstractPlayer*, const VipAnyData&)>(createDisplayFOV);
@@ -6306,7 +6494,9 @@ static int registerOperators()
 
 	vipFDPlayerCreated().append<void(VipVTKPlayer*)>(onMainWidgetCreated);
 
+	VipFDItemRightClick().append<QList<QAction*>(VipPlotShape*, VipVTKPlayer*)>(generateActionsForVTKPlayer);
+
 	return 0;
 }
 
-static int _registerOperators = registerOperators();
+static int _registerOperators = vipAddInitializationFunction(registerOperators); // registerOperators();
