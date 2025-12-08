@@ -4868,6 +4868,11 @@ QList<VipAbstractPlayer*> VipMainWindow::openDevices(const QList<VipIODevice*>& 
 {
 	if (!area)
 		area = displayArea()->currentDisplayPlayerArea();
+	if(!area)
+	{
+		area = new VipDisplayPlayerArea();
+		displayArea()->addWidget(area);
+	}
 	if (!area)
 		return QList<VipAbstractPlayer*>();
 
@@ -4938,6 +4943,10 @@ bool VipMainWindow::openPlayers(const QList<VipAbstractPlayer*> players, VipDisp
 {
 	if (!wks)
 		wks = displayArea()->currentDisplayPlayerArea();
+	if(!wks) {
+		wks = new VipDisplayPlayerArea();
+		displayArea()->addWidget(wks);
+	}
 	if (!wks)
 		return false;
 
@@ -4954,6 +4963,12 @@ QList<VipAbstractPlayer*> VipMainWindow::openPaths(const VipPathList& paths, Vip
 		return QList<VipAbstractPlayer*>();
 	if (!area)
 		area = displayArea()->currentDisplayPlayerArea();
+
+	if(!area)
+	{
+		area = new VipDisplayPlayerArea();
+		displayArea()->addWidget(area);
+	}
 
 	if (!area && !(paths.size() == 1 && (QFileInfo(paths.first().canonicalPath()).suffix() == "session" || QFileInfo(paths.first().canonicalPath()).suffix() == "hsession"))) {
 		VIP_LOG_ERROR("Cannot open paths: you need to select a valid Workspace first");
