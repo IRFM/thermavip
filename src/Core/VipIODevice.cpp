@@ -2711,8 +2711,14 @@ void VipTimeRangeBasedGenerator::setTimeWindows(const VipTimeRangeList& _ranges,
 
 	// compute the sizes
 	for (int i = 0; i < d_data->ranges.size(); ++i) {
-		d_data->sizes.append(qAbs(d_data->ranges[i].second - d_data->ranges[i].first) / d_data->step_size + 1);
-		d_data->full_size += d_data->sizes.back();
+		if(_step_size > 0) {
+			d_data->sizes.append(qAbs(d_data->ranges[i].second - d_data->ranges[i].first) / d_data->step_size + 1);
+			d_data->full_size += d_data->sizes.back();
+		}
+		else {
+			d_data->sizes.append(2);
+			d_data->full_size += 2;
+		}
 	}
 
 	this->setSize(d_data->full_size);
@@ -2722,6 +2728,7 @@ void VipTimeRangeBasedGenerator::setTimeWindows(const VipTimeRangeList& _ranges,
 	this->setTimestampingFilter(filter);
 	this->emitTimestampingChanged();
 }
+
 
 void VipTimeRangeBasedGenerator::setTimestamps(const QVector<qint64>& timestamps, bool enable_multiple_time_range)
 {
@@ -2843,6 +2850,20 @@ qint64 VipTimeRangeBasedGenerator::computePosToTime(qint64 pos) const
 			return d_data->timestamps[pos];
 	}
 
+	if(d_data->step_size == 0 && d_data->ranges.size()) {
+		if(pos < 0)
+			return d_data->ranges.first().first;
+		else if(pos >= d_data->ranges.size()*2 )
+			return d_data->ranges.last().second;
+		else {
+			auto r = pos /2;
+			if(pos & 1)
+				return d_data->ranges[r].second;
+			else
+				return d_data->ranges[r].first;
+		}
+	}
+
 	qint64 cum_pos = 0;
 	for (int i = 0; i < d_data->ranges.size(); ++i) {
 		if (pos < d_data->sizes[i] + cum_pos) {
@@ -2870,6 +2891,16 @@ qint64 VipTimeRangeBasedGenerator::computeTimeToPos(qint64 time) const
 			return prev - d_data->timestamps.cbegin();
 		else
 			return it - d_data->timestamps.cbegin();
+	}
+
+	if(d_data->step_size == 0 ) {
+		auto it = std::lower_bound(d_data->ranges.cbegin(),d_data->ranges.cend(),time,[](const auto &l, const auto &r){return l.first < r;});
+		auto ret = (it - d_data->ranges.cbegin())*2;
+		if(it == d_data->ranges.cend() || it->first == time)
+			return ret;
+		if(qAbs(time - it->first) < qAbs(time - it->second))
+			return ret;
+		return ret +1;
 	}
 
 	qint64 cum_pos = 0;

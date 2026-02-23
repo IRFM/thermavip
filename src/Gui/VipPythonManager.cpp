@@ -428,8 +428,9 @@ VipPythonManager::VipPythonManager()
 		)));
 
 	//register all files found in the Python directory
-	VipPyInterpreter::instance()->addProcessingDirectory(vipGetPythonDirectory());
-	VipPyInterpreter::instance()->addProcessingDirectory("./Python");
+	//TEST: disable for faster loading
+	//VipPyInterpreter::instance()->addProcessingDirectory(vipGetPythonDirectory());
+	//VipPyInterpreter::instance()->addProcessingDirectory("./Python");
 
 	//register PyCustomizePlotPlayer
 	vipFDPlayerCreated().append<void(VipPlotPlayer*)>(detail::pyCustomizePlotPlayer);
