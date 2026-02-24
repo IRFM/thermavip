@@ -2850,7 +2850,9 @@ qint64 VipTimeRangeBasedGenerator::computePosToTime(qint64 pos) const
 			return d_data->timestamps[pos];
 	}
 
-	if(d_data->step_size == 0 && d_data->ranges.size()) {
+	if(d_data->step_size == 0 ) {
+		if (d_data->ranges.isEmpty())
+			return VipInvalidTime;
 		if(pos < 0)
 			return d_data->ranges.first().first;
 		else if(pos >= d_data->ranges.size()*2 )
@@ -2894,10 +2896,29 @@ qint64 VipTimeRangeBasedGenerator::computeTimeToPos(qint64 time) const
 	}
 
 	if(d_data->step_size == 0 ) {
+		if (d_data->ranges.isEmpty())
+			return VipInvalidTime;
 		auto it = std::lower_bound(d_data->ranges.cbegin(),d_data->ranges.cend(),time,[](const auto &l, const auto &r){return l.first < r;});
+		if (it == d_data->ranges.cend()) {
+			if (time > (d_data->ranges.back().first + d_data->ranges.back().second) /2)
+				return d_data->ranges.size() * 2 - 1;
+			return (d_data->ranges.size()-1) * 2;
+		}
+		
+		if (it->first > time) {
+			if (it == d_data->ranges.begin())
+				return 0;
+			--it;
+			// check in between 2 ranges
+			if (time > it->second) {
+				auto middle = (it->second + std::next(it)->first)/2;
+				if (time > middle)
+					return (std::next(it) - d_data->ranges.cbegin()) * 2;
+				return (it - d_data->ranges.cbegin()) * 2 + 1;
+			}
+		}
+
 		auto ret = (it - d_data->ranges.cbegin())*2;
-		if(it == d_data->ranges.cend() || it->first == time)
-			return ret;
 		if(qAbs(time - it->first) < qAbs(time - it->second))
 			return ret;
 		return ret +1;

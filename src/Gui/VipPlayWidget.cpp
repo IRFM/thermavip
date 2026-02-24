@@ -378,15 +378,17 @@ void VipTimeRangeItem::mousePressEvent(QGraphicsSceneMouseEvent* event)
 
 		if (!ctrl_down && !(was_selected && selected)) {
 			// unselect all other items
-			QList<QGraphicsItem*> items;
+			/* QList<QGraphicsItem*> items;
 			if (parentItem())
-				items = parentItem()->childItems();
+				items = parentItem()->area()->childItems();
 			else if (scene())
-				items = scene()->items();
-
-			for (int i = 0; i < items.size(); ++i) {
-				if (items[i] != this)
-					items[i]->setSelected(false);
+				items = scene()->items();*/
+			if (scene()) {
+				auto items = scene()->selectedItems();
+				for (int i = 0; i < items.size(); ++i) {
+					if (items[i] != this)
+						items[i]->setSelected(false);
+				}
 			}
 		}
 
@@ -905,6 +907,9 @@ void VipTimeRangeListItem::drawSelected(QPainter* p, const VipCoordinateSystemPt
 	}
 
 	shape();
+
+	if (area()->timeRangesLocked())
+		return;
 
 	if ((d_data->drawComponents & MovingArea) && d_data->items.size() > 1) {
 		p->setRenderHint(QPainter::Antialiasing, false);
@@ -1659,6 +1664,9 @@ void VipPlayerArea::updateArea(bool check_item_visibility)
 	else {
 		VipProcessingObjectList lst = d_data->pool->processing("VipIODevice");
 
+		// Sort by property _vip_idx
+		std::sort(lst.begin(), lst.end(), [](const QObject* l, const QObject* r) { return l->property("_vip_idx").toInt() < r->property("_vip_idx").toInt(); });
+
 		int visibleItemCount = 0;
 
 		QList<VipIODevice*> devices;
@@ -1743,7 +1751,7 @@ void VipPlayerArea::updateArea(bool check_item_visibility)
 	}
 
 	this->computeStartDate();
-	this->setAutoScale(true);
+	//this->setAutoScale(true); //TEST
 	Q_EMIT devicesChanged();
 }
 
@@ -2313,6 +2321,8 @@ public:
 	QAction* reset;
 	QAction* startAtZero;
 	QToolButton* selectionMode;
+	QToolButton* increaseHeight;
+	QToolButton* decreaseHeight;
 
 	QAction* hidden;
 	QAction* axes;
@@ -2329,6 +2339,7 @@ public:
 	VipPlotWidget2D* playerWidget;
 
 	int height;
+	int deviceHeight = 14;
 	bool dirtyTimeLines;
 	bool playWidgetHidden;
 	bool alignedToZero;
@@ -2397,6 +2408,26 @@ VipPlayWidget::VipPlayWidget(QWidget* parent)
 	d_data->lock = d_data->playToolBar->addAction(vipIcon("lock.png"), "Lock/Unlock time ranges");
 	d_data->lock->setCheckable(true);
 
+
+	d_data->increaseHeight = new QToolButton();
+	d_data->increaseHeight->setText("+");
+	d_data->increaseHeight->setToolTip("Increase time lines height");
+	d_data->increaseHeight->setMaximumHeight(12);
+	d_data->decreaseHeight = new QToolButton();
+	d_data->decreaseHeight->setText("-");
+	d_data->decreaseHeight->setToolTip("Decrease time lines height");
+	d_data->decreaseHeight->setMaximumHeight(12);
+	{
+		QWidget* h = new QWidget();
+		QVBoxLayout* vlay = new QVBoxLayout();
+		vlay->setContentsMargins(0, 0, 0, 0);
+		vlay->setSpacing(0);
+		vlay->addWidget(d_data->increaseHeight);
+		vlay->addWidget(d_data->decreaseHeight);
+		h->setLayout(vlay);
+		d_data->playToolBar->addWidget(h);
+	}
+
 	d_data->selectionMode->setToolTip(QString("Selection mode"));
 	d_data->selectionMode->setIcon(vipIcon("select_item.png"));
 	d_data->selectionMode->setAutoRaise(true);
@@ -2435,6 +2466,8 @@ VipPlayWidget::VipPlayWidget(QWidget* parent)
 	connect(d_data->position, SIGNAL(triggered(bool)), this, SLOT(toolTipChanged()));
 	connect(d_data->properties, SIGNAL(triggered(bool)), this, SLOT(toolTipChanged()));
 	connect(d_data->lock, SIGNAL(triggered(bool)), this, SLOT(setTimeRangesLocked(bool)));
+	connect(d_data->increaseHeight, SIGNAL(clicked(bool)), this, SLOT(increaseDeviceSize()));
+	connect(d_data->decreaseHeight, SIGNAL(clicked(bool)), this, SLOT(decreaseDeviceSize()));
 
 	// time/number
 	d_data->time = new QLabel("<b>Time</b>");
@@ -2951,7 +2984,7 @@ void VipPlayWidget::updatePlayerInternal()
 	if (show_temporal) {
 		height = 35 + d_data->playerArea->timeScale()->scaleDraw()->fullExtent();
 		if (timeRangeVisible())
-			height += visibleItemCount * 14;
+			height += visibleItemCount * d_data->deviceHeight;
 		layout()->setSpacing(2);
 	}
 	else
@@ -3115,6 +3148,19 @@ void VipPlayWidget::setTimeRangesLocked(bool locked)
 	d_data->lock->setChecked(locked);
 	d_data->lock->blockSignals(false);
 	d_data->playerArea->setTimeRangesLocked(locked);
+}
+
+void VipPlayWidget::increaseDeviceSize()
+{
+	d_data->deviceHeight += 2;
+	updatePlayerInternal();
+}
+void VipPlayWidget::decreaseDeviceSize()
+{
+	if (d_data->deviceHeight > 2) {
+		d_data->deviceHeight -= 2;
+		updatePlayerInternal();
+	}
 }
 
 VipArchive& operator<<(VipArchive& arch, VipPlayWidget* w)

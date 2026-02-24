@@ -323,6 +323,9 @@ void VipAxisBase::layoutScale()
 	if (constScaleDraw()->pos() != QPointF(x, y)) {
 		scaleDraw()->move(x, y);
 	}
+	//TEST
+	if (length < 0)
+		length = 0;
 
 	if (constScaleDraw()->length() != length) {
 		scaleDraw()->setLength(length);

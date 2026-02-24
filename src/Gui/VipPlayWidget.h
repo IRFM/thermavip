@@ -376,6 +376,8 @@ public Q_SLOTS:
 	void disableAutoScale();
 	void updatePlayer();
 	void setTimeRangesLocked(bool locked);
+	void increaseDeviceSize();
+	void decreaseDeviceSize();
 
 private Q_SLOTS:
 
