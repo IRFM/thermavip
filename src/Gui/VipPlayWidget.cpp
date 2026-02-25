@@ -2343,6 +2343,7 @@ public:
 	bool dirtyTimeLines;
 	bool playWidgetHidden;
 	bool alignedToZero;
+	bool automaticResize = true;
 };
 
 static QList<VipPlayWidget*> playWidgets;
@@ -2981,7 +2982,7 @@ void VipPlayWidget::updatePlayerInternal()
 
 	// compute the best height
 	int height = 0;
-	if (show_temporal) {
+	if (show_temporal && d_data->automaticResize) {
 		height = 35 + d_data->playerArea->timeScale()->scaleDraw()->fullExtent();
 		if (timeRangeVisible())
 			height += visibleItemCount * d_data->deviceHeight;
@@ -3001,7 +3002,7 @@ void VipPlayWidget::updatePlayerInternal()
 	height += 10;
 
 	this->setVisible(show_temporal); // height > 0);
-	if (height != d_data->height) {
+	if (height != d_data->height && d_data->automaticResize) {
 		d_data->height = height;
 		this->setMaximumHeight(height);
 		this->setMinimumHeight(height);
@@ -3161,6 +3162,25 @@ void VipPlayWidget::decreaseDeviceSize()
 		d_data->deviceHeight -= 2;
 		updatePlayerInternal();
 	}
+}
+
+void VipPlayWidget::setAutomaticResize(bool enable)
+{
+	if (enable != d_data->automaticResize) {
+		d_data->automaticResize = enable;
+		if (!enable) {
+			int h = this->height();
+			this->setMinimumHeight(10);
+			this->setMaximumHeight(INT_MAX);
+			this->resize(this->width(),h);
+		}
+		else
+			updatePlayerInternal();
+	}
+}
+bool VipPlayWidget::automaticResize() const
+{
+	return d_data->automaticResize;
 }
 
 VipArchive& operator<<(VipArchive& arch, VipPlayWidget* w)

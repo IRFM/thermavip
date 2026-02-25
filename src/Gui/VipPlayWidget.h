@@ -361,6 +361,7 @@ public:
 	bool isMaxSpeed() const;
 	double playSpeed() const;
 	bool timeRangesLocked() const;
+	bool automaticResize() const;
 
 	static void setTimeUnitFunction(function_type fun);
 	static function_type timeUnitFunction();
@@ -378,6 +379,7 @@ public Q_SLOTS:
 	void setTimeRangesLocked(bool locked);
 	void increaseDeviceSize();
 	void decreaseDeviceSize();
+	void setAutomaticResize(bool);
 
 private Q_SLOTS:
 
