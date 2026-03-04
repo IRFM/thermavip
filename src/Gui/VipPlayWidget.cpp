@@ -2710,6 +2710,8 @@ void VipPlayWidget::setAutoScale(bool enable)
 	if (enable != d_data->playerArea->isAutoScale()) {
 		d_data->playerArea->computeStartDate();
 		d_data->playerArea->setAutoScale(enable);
+		//TEST: the left scale is always auto
+		d_data->playerArea->leftAxis()->setAutoScale(true);
 		d_data->autoScale->blockSignals(true);
 		d_data->autoScale->setChecked(enable);
 		d_data->autoScale->blockSignals(false);
@@ -3046,9 +3048,11 @@ void VipPlayWidget::timeUnitChanged()
 	d_data->playerArea->computeStartDate();
 
 	// We change the time unit, so get back to auto scale and recompute it
-	d_data->playerArea->setAutoScale(false);
-	d_data->playerArea->setAutoScale(true);
-
+	if (d_data->playerArea->isAutoScale()) {
+		//TEST: inside if
+		d_data->playerArea->setAutoScale(false);
+		d_data->playerArea->setAutoScale(true);
+	}
 	updatePlayer();
 
 	Q_EMIT valueToTimeChanged(v);

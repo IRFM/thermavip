@@ -139,7 +139,8 @@ VipNDArray VipRotate90Right::applyProcessing(const VipNDArray& ar)
 	else {
 		QTransform tr;
 		tr.rotate(90);
-		out = vipTransform<Vip::TransformBoundingRect, Vip::NoInterpolation>(ar, tr, 0, QPointF(0, -1));
+		//out = vipTransform<Vip::TransformBoundingRect, Vip::NoInterpolation>(ar, tr, 0, QPointF(0, -1));
+		out = vipTransform<Vip::TransformBoundingRect, Vip::NoInterpolation>(ar, tr, 0);
 	}
 
 	return out;
@@ -167,7 +168,8 @@ VipNDArray VipRotate90Left::applyProcessing(const VipNDArray& ar)
 	else {
 		QTransform tr;
 		tr.rotate(-90);
-		out = vipTransform<Vip::TransformBoundingRect, Vip::NoInterpolation>(ar, tr, 0, QPointF(-1, 0));
+		//out = vipTransform<Vip::TransformBoundingRect, Vip::NoInterpolation>(ar, tr, 0, QPointF(-1, 0));
+		out = vipTransform<Vip::TransformBoundingRect, Vip::NoInterpolation>(ar, tr, 0);
 	}
 
 	return out;
@@ -194,7 +196,8 @@ VipNDArray VipRotate180::applyProcessing(const VipNDArray& ar)
 	else {
 		QTransform tr;
 		tr.rotate(180);
-		out = vipTransform<Vip::TransformBoundingRect, Vip::NoInterpolation>(ar, tr, 0, QPointF(-1, -1));
+		//out = vipTransform<Vip::TransformBoundingRect, Vip::NoInterpolation>(ar, tr, 0, QPointF(-1, -1));
+		out = vipTransform<Vip::TransformBoundingRect, Vip::NoInterpolation>(ar, tr, 0);
 	}
 
 	return out;
@@ -225,7 +228,8 @@ VipNDArray VipMirrorH::applyProcessing(const VipNDArray& ar)
 	else {
 		QTransform tr;
 		tr.scale(-1, 1);
-		out = vipTransform<Vip::TransformBoundingRect, Vip::NoInterpolation>(ar, tr, 0, QPointF(-1, 0));
+//		out = vipTransform<Vip::TransformBoundingRect, Vip::NoInterpolation>(ar, tr, 0, QPointF(-1, 0));
+		out = vipTransform<Vip::TransformBoundingRect, Vip::NoInterpolation>(ar, tr, 0);
 	}
 
 	return out;
@@ -257,7 +261,8 @@ VipNDArray VipMirrorV::applyProcessing(const VipNDArray& ar)
 	else {
 		QTransform tr;
 		tr.scale(1, -1);
-		out = vipTransform<Vip::TransformBoundingRect, Vip::NoInterpolation>(ar, tr, 0, QPointF(0, -1));
+		//out = vipTransform<Vip::TransformBoundingRect, Vip::NoInterpolation>(ar, tr, 0, QPointF(0, -1));
+		out = vipTransform<Vip::TransformBoundingRect, Vip::NoInterpolation>(ar, tr, 0);
 	}
 
 	return out;

@@ -85,8 +85,11 @@ namespace detail
 		template<class Array, class T>
 		static VIP_ALWAYS_INLINE typename Array::value_type apply(const Array& ar, double x, double y, qsizetype w, qsizetype h, const T& background)
 		{
-			qsizetype _x = (qsizetype)(x + 0.5);
-			qsizetype _y = (qsizetype)(y + 0.5);
+			//qsizetype _x = (qsizetype)(x + 0.5);
+			//qsizetype _y = (qsizetype)(y + 0.5);
+			//TEST
+			qsizetype _x = (qsizetype)(x);
+			qsizetype _y = (qsizetype)(y);
 			if (_x < 0 || _x >= w || _y < 0 || _y >= h)
 				return background;
 
@@ -136,7 +139,6 @@ namespace detail
 
 		QTransform tr;
 		QPoint origin;
-		QPointF translate;
 		VipNDArrayShape sh;
 		const QTransform::TransformationType type;
 		value_type background;
@@ -149,11 +151,10 @@ namespace detail
 		  , h(0)
 		{
 		}
-		Transform(const Array& op1, const QTransform& tr, const QRect& rect, const value_type& back, const QPointF additional_translate = QPointF(0, 0))
+		Transform(const Array& op1, const QTransform& tr, const QRect& rect, const value_type& back)
 		  : base(op1)
 		  , tr(tr)
 		  , origin(0, 0)
-		  , translate(additional_translate)
 		  , type(tr.type())
 		  , background(back)
 		  , w(this->array1.shape()[1])
@@ -176,8 +177,8 @@ namespace detail
 			if (type == QTransform::TxNone)
 				return this->array1(pos);
 
-			const double fx = GetCoord<Coord,1>::get( pos) + origin.x(); // (Size == Vip::TransformBoundingRect ? origin.x() : 0);
-			const double fy = GetCoord<Coord,0>::get(pos) + origin.y(); // (Size == Vip::TransformBoundingRect ? origin.y() : 0);
+			const double fx = GetCoord<Coord, 1>::get(pos) + 0.5;		     //+ origin.x();
+			const double fy = GetCoord<Coord, 0>::get(pos) + 0.5; // + origin.y();
 			double x = fx, y = fy;
 
 			if (type == QTransform::TxTranslate) {
@@ -197,8 +198,8 @@ namespace detail
 					y *= _w;
 				}
 			}
-			x += translate.x();
-			y += translate.y();
+			//x += translate.x();
+			//y += translate.y();
 			return InterpVal<Inter != Vip::NoInterpolation>::apply(this->array1, x, y, w, h, background);
 		}
 	};
@@ -212,15 +213,13 @@ namespace detail
 		VipNDArrayShape sh;
 		QVariant background;
 		QRect rect;
-		QPointF translate;
 		Transform() {}
 		template<class T>
-		Transform(const Array& op1, const QTransform& tr, const QRect& rect, const T& back, const QPointF& additional_translate = QPointF())
+		Transform(const Array& op1, const QTransform& tr, const QRect& rect, const T& back)
 		  : BaseOperator1<NullType, Array>(op1)
 		  , tr(tr)
 		  , background(QVariant::fromValue(back))
 		  , rect(rect)
-		  , translate(additional_translate)
 		{
 			if (Size == Vip::SrcSize)
 				sh = op1.shape();
@@ -239,7 +238,7 @@ namespace detail
 		typedef Transform<Size, Inter, typename rebind_type::type, false> transform;
 		typedef transform type;
 
-		static transform cast(const op& a) { return transform(rebind_type::cast(a.array1), a.tr, a.rect, internal_cast<T>(a.background), a.translate); }
+		static transform cast(const op& a) { return transform(rebind_type::cast(a.array1), a.tr, a.rect, internal_cast<T>(a.background)); }
 	};
 
 	template<Vip::TransformSize Size, Vip::InterpolationType Inter, class Array>
@@ -261,12 +260,17 @@ namespace detail
 /// Output array is interpolated using the \a Inter template parameter. Only Vip::NoInterpolation
 /// and Vip::LinearInterpolation are valid values.
 template<Vip::TransformSize Size, Vip::InterpolationType Inter = Vip::NoInterpolation, class Array, class T>
-detail::Transform<Size, Inter, Array> vipTransform(const Array& array, const QTransform& tr, const T& background, const QPointF& additional_translate = QPointF())
+detail::Transform<Size, Inter, Array> vipTransform(const Array& array, const QTransform& tr, const T& background)
 {
 	QRect r;
-	if (Size == Vip::TransformBoundingRect)
-		r = tr.mapRect(QRect(0, 0, array.shape()[1], array.shape()[0]));
-	return detail::Transform<Size, Inter, Array>(array, tr.inverted(), r, background, additional_translate);
+	if (Size == Vip::TransformBoundingRect) {
+		const QRectF rect(0, 0, array.shape()[1], array.shape()[0]);
+		const QRect mapped = tr.mapRect(rect).toAlignedRect();
+		const QPoint delta = mapped.topLeft();
+		QTransform m = tr * QTransform().translate(-delta.x(), -delta.y());
+		return detail::Transform<Size, Inter, Array>(array, m.inverted(), mapped, background);
+	}
+	return detail::Transform<Size, Inter, Array>(array, tr.inverted(), r, background);
 }
 
 /// @}

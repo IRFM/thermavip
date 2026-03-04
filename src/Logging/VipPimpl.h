@@ -34,7 +34,7 @@
 
 #include "VipConfig.h"
 
-namespace detail
+namespace pimpl_detail
 {
 	
 	VIP_LOGGING_EXPORT void addPimpl(const void* p);
@@ -139,9 +139,9 @@ namespace detail
 /// This version is for any kind of (non copyable) classes
 #define VIP_DECLARE_PRIVATE_DATA_NO_QOBJECT()                                                                                                                                                          \
 	template<class T>                                                                                                                                                                              \
-	friend struct detail::hasPimplData;                                                                                                                                                    \
+	friend struct pimpl_detail::hasPimplData;                                                                                                                                                    \
 	class PrivateData;                                                                                                                                                                             \
-	detail::InternalDataPtr<PrivateData> d_data
+	pimpl_detail::InternalDataPtr<PrivateData> d_data
 
 /// @brief Declare private data for Pimpl idiom, use in class definition, inside the private section.
 /// This version is for QObject inheriting classes using the Q_OBJECT macro.
@@ -164,8 +164,8 @@ namespace detail
 template<class T>
 bool vipIsObjectValid(const T* obj)
 {
-	static_assert(detail::hasPimplData<T>::value, "vipIsObjectValid called on invalid data type");
-	return detail::existPimpl(obj);
+	static_assert(pimpl_detail::hasPimplData<T>::value, "vipIsObjectValid called on invalid data type");
+	return pimpl_detail::existPimpl(obj);
 }
 
 #endif
