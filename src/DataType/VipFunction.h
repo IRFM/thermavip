@@ -81,7 +81,7 @@ namespace detail
 	template<class Fun, class A1>
 	using try_Function1 = decltype(std::declval<Fun&>()(DeduceArrayType<A1>::value_type()));
 	template<class Fun, class A1>
-	struct is_valid_functor<Function1<Fun, A1, false>> : is_valid_op2<Fun, A1, try_Function1>
+	struct is_valid_functor2<Function1<Fun, A1, false>> : is_valid_op2<Fun, A1, try_Function1>
 	{
 		static void apply() {}
 	};
@@ -130,7 +130,7 @@ namespace detail
 	template<class Fun, class A1, class A2>
 	using try_Function2 = decltype(std::declval<Fun&>()(DeduceArrayType<A1>::value_type(), DeduceArrayType<A2>::value_type()));
 	template<class Fun, class A1, class A2>
-	struct is_valid_functor<Function2<Fun, A1, A2, false>> : is_valid_op3<Fun, A1, A2, try_Function2>
+	struct is_valid_functor2<Function2<Fun, A1, A2, false>> : is_valid_op3<Fun, A1, A2, try_Function2>
 	{
 		static void apply() {}
 	};
@@ -196,7 +196,7 @@ namespace detail
 	template<class Fun, class A1, class A2, class A3>
 	using try_Function3 = decltype(std::declval<Fun&>()(DeduceArrayType<A1>::value_type(), DeduceArrayType<A2>::value_type(), DeduceArrayType<A3>::value_type()));
 	template<class Fun, class A1, class A2, class A3>
-	struct is_valid_functor<Function3<Fun, A1, A2, A3, false>> : is_valid_op4<Fun, A1, A2, A3, try_Function3>
+	struct is_valid_functor2<Function3<Fun, A1, A2, A3, false>> : is_valid_op4<Fun, A1, A2, A3, try_Function3>
 	{
 		static void apply() {}
 	};

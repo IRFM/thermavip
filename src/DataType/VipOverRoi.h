@@ -45,7 +45,7 @@
 /// using this ROI  will result in effectively eval or reduce a functor expression on its whole shape.
 struct VipInfinitRoi
 {
-	static const qsizetype access_type = Vip::Flat | Vip::Position;
+	static const qsizetype access_type = Vip::Flat | Vip::Position | Vip::Cwise;
 	typedef bool value_type;
 	template<class ShapeType>
 	bool operator()(const ShapeType&) const

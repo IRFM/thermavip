@@ -95,7 +95,7 @@ namespace detail
 	};
 
 	template<class Array>
-	struct is_valid_functor<Transpose<Array, false>> : std::true_type
+	struct is_valid_functor2<Transpose<Array, false>> : std::true_type
 	{
 	};
 
@@ -174,7 +174,7 @@ namespace detail
 	};
 
 	template<Vip::ReverseArray Rev, class Array>
-	struct is_valid_functor<Reverse<Rev, Array, false>> : std::true_type
+	struct is_valid_functor2<Reverse<Rev, Array, false>> : std::true_type
 	{
 	};
 }

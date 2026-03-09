@@ -95,22 +95,22 @@ static void applyAppFont(QWidget* top, const QFont& previous)
 static QSurfaceFormat makeDefaultFormat()
 {
 #ifdef VIP_WITH_VTK
-	
-		QSurfaceFormat fmt;
-		fmt.setRenderableType(QSurfaceFormat::OpenGL);
-		fmt.setVersion(3, 2);
-		fmt.setProfile(QSurfaceFormat::CoreProfile);
-		fmt.setSwapBehavior(QSurfaceFormat::DoubleBuffer);
-		fmt.setRedBufferSize(8);
-		fmt.setGreenBufferSize(8);
-		fmt.setBlueBufferSize(8);
-		fmt.setDepthBufferSize(8);
-		fmt.setAlphaBufferSize(8);
-		fmt.setStencilBufferSize(0);
-		fmt.setStereo(false);
-		fmt.setSamples(4); // we never need multisampling in the context since the FBO can support
-				   // multisamples independently
-		return fmt;
+
+	QSurfaceFormat fmt;
+	fmt.setRenderableType(QSurfaceFormat::OpenGL);
+	fmt.setVersion(3, 2);
+	fmt.setProfile(QSurfaceFormat::CoreProfile);
+	fmt.setSwapBehavior(QSurfaceFormat::DoubleBuffer);
+	fmt.setRedBufferSize(8);
+	fmt.setGreenBufferSize(8);
+	fmt.setBlueBufferSize(8);
+	fmt.setDepthBufferSize(8);
+	fmt.setAlphaBufferSize(8);
+	fmt.setStencilBufferSize(0);
+	fmt.setStereo(false);
+	fmt.setSamples(4); // we never need multisampling in the context since the FBO can support
+			   // multisamples independently
+	return fmt;
 #else
 	QSurfaceFormat format;
 	format.setSamples(4);
@@ -118,11 +118,137 @@ static QSurfaceFormat makeDefaultFormat()
 	return format;
 #endif
 }
+/*
+namespace detail
+{
+	template<class AlwaysVoid, template<class...> class Op, class... Args>
+	struct detector : std::false_type
+	{
+		using type = void;
+	};
 
-#include "VipWebBrowser.h"
+	template<template<class...> class Op, class... Args>
+	struct detector<std::void_t<Op<Args...>>, Op, Args...> : std::true_type
+	{
+		using type = Op<Args...>;
+	};
+} // namespace detail
+
+template<template<class...> class Op, class... Args>
+using is_detected = typename detail::detector<void, Op, Args...>::value_t;
+
+template<template<class...> class Op, class... Args>
+using detected_t = typename detail::detector<void, Op, Args...>::type;
+
+template<template<class...> class Op, class... Args>
+constexpr bool detected_v = detail::detector<void, Op, Args...>::value;
+*/
+#include "VipTransform.h"
+
 
 int main(int argc, char** argv)
 {
+	{
+		
+		// TEST
+		const VipNDArray in(QMetaType::Double, vipVector(1000, 1000));
+		const VipNDArrayType<double> in2 = in;
+		VipNDArray out(QMetaType::Double, vipVector(1000, 1000));
+		VipNDArrayType<double> out2(vipVector(1000, 1000));
+		qint64 st, el;
+
+		vipEval(out, (in * 2));
+
+		// auto r = vipFunction1( [](auto v) { return v * 2; }, in);
+		// auto r2 = vipFunction1([](auto v) { return v * 2; }, in2);
+		// static_assert(detail::IsValidExpression<decltype(in2)>::value);
+		// static_assert(std::is_same_v<detail::ValueType_t<decltype(r)>, detail::NullType>);
+		// static_assert(std::is_same_v<detail::ValueType_t<decltype(r2)>, double>);
+		// static_assert(IsCastable<double, int>::value);
+		// static_assert(!IsCastable<Toto, double>::value);
+
+		//out = vipRed(in2);
+		// out = vipFunction1(in2, [](auto v) { return v * 2; });
+		// out = vipFunction1(in, [](auto v) { return toDouble(v); });
+
+		vipEval(out2, in2);
+		vipEval(out2, in);
+		vipEval(out, in2);
+		vipEval(out, in);
+
+		out = vipTransform<Vip::TransformBoundingRect, Vip::NoInterpolation>(in, QTransform());
+		out = vipFuzzyCompare(in, in);
+		out = vipComplex(in, in);
+		out = vipComplex(in, 2.);
+		out = vipPolar(in, in);
+		out = vipPolar(in, 2.);
+		out = vipClamp(in, in, in);
+		out = vipClamp(in, in, 2);
+		out = vipWhere(in, in, in);
+		out = vipWhere(in, in, 2);
+
+		vipMin(1, 2.);
+		vipEval(out, vipMin(in, in));
+		//static_assert(detected_v<detail::TryMin, double, double>);
+		//static_assert(!detected_v<detail::TryMin, complex_f, double>);
+
+		vipEval(out2, vipFunction([](auto v) { return v*2; },in2));
+		vipEval(out2, vipFunction([](auto v) { return v*2; },in));
+		vipEval(out, vipFunction([](double v) { return complex_f(v); }, in2));
+		vipEval(out, vipFunction([](double v) { return complex_f(v); }, in));
+
+		st = QDateTime::currentMSecsSinceEpoch();
+		for (int i = 0; i < 100; ++i)
+			memcpy(out.data(), in.data(), in.size() * sizeof(double));
+		el = QDateTime::currentMSecsSinceEpoch() - st;
+		std::cout << "memcpy " << el << "ms" << std::endl;
+
+		st = QDateTime::currentMSecsSinceEpoch();
+		for (int i = 0; i < 100; ++i)
+			in.convert(out);
+		el = QDateTime::currentMSecsSinceEpoch() - st;
+		std::cout << "convert " << el << "ms" << std::endl;
+
+		st = QDateTime::currentMSecsSinceEpoch();
+		for (int i = 0; i < 100; ++i) {
+			double* pin = (double*)in.data();
+			double* pout = (double*)out.data();
+			qsizetype size = in.size();
+			for (qsizetype i = 0; i < size; ++i)
+				pout[i] = pin[i];
+		}
+		el = QDateTime::currentMSecsSinceEpoch() - st;
+		std::cout << "Mul std " << el << "ms" << std::endl;
+
+		st = QDateTime::currentMSecsSinceEpoch();
+		for (int i = 0; i < 100; ++i)
+			out = in * 2.;
+		el = QDateTime::currentMSecsSinceEpoch() - st;
+		std::cout << "Mul var " << el << "ms" << std::endl;
+
+		st = QDateTime::currentMSecsSinceEpoch();
+		for (int i = 0; i < 100; ++i)
+			out = in2 * 2.;
+		el = QDateTime::currentMSecsSinceEpoch() - st;
+		std::cout << "Mul T " << el << "ms" << std::endl;
+
+		vipSetIterateThreadCount(4);
+
+		st = QDateTime::currentMSecsSinceEpoch();
+		for (int i = 0; i < 100; ++i)
+			out = in * 2.;
+		el = QDateTime::currentMSecsSinceEpoch() - st;
+		std::cout << "Mul var4 " << el << "ms" << std::endl;
+
+		st = QDateTime::currentMSecsSinceEpoch();
+		for (int i = 0; i < 100; ++i)
+			out = in2 * 2.;
+		el = QDateTime::currentMSecsSinceEpoch() - st;
+		std::cout << "Mul T4 " << el << "ms" << std::endl;
+
+		return 0;
+	}
+
 	{
 		// Load thermavip.env
 		QString env_file = vipGetDataDirectory() + "thermavip/thermavip.env";
@@ -151,7 +277,6 @@ int main(int argc, char** argv)
 		}
 	}
 
-	
 #ifdef WIN32
 	{
 		QString jre_server = QFileInfo(argv[0]).absolutePath() + "\\jre\\bin\\server";
@@ -163,7 +288,7 @@ int main(int argc, char** argv)
 		}
 		else {
 			// Setup Java if JAVA_HOME env. variable exists
-			const char * jhome = getenv("JAVA_HOME");
+			const char* jhome = getenv("JAVA_HOME");
 			if (jhome) {
 				std::string java_home = jhome;
 				std::string t_path = getenv("PATH");
@@ -175,8 +300,6 @@ int main(int argc, char** argv)
 	}
 #endif
 
-
-
 #ifdef WITH_MICRO
 	// Load micro_proxy library
 	QLibrary micro_proxy("micro_proxy");
@@ -184,8 +307,6 @@ int main(int argc, char** argv)
 #endif
 
 	qInstallMessageHandler(myMessageOutput);
-
-
 
 	//_putenv("QT_SCALE_FACTOR=1.5");
 	// register command option for gui
@@ -212,12 +333,12 @@ int main(int argc, char** argv)
 		vip_log_detail::_vip_set_enable_debug(true);
 
 #ifdef VIP_WITH_VTK
-		//vtkObject::GlobalWarningDisplayOn();
+		// vtkObject::GlobalWarningDisplayOn();
 #endif
 	}
 	else {
 #ifdef VIP_WITH_VTK
-		//vtkObject::GlobalWarningDisplayOff();
+		// vtkObject::GlobalWarningDisplayOff();
 #endif
 	}
 
@@ -517,7 +638,7 @@ int main(int argc, char** argv)
 				if (update.isDownloadFinished()) {
 					if (!no_splashscreen)
 						splash->hide();
-					QMessageBox::StandardButton button = vipQuestion( "Update Thermavip", "A Thermavip update is ready to be installed.\nInstall now?");
+					QMessageBox::StandardButton button = vipQuestion("Update Thermavip", "A Thermavip update is ready to be installed.\nInstall now?");
 					if (button == QMessageBox::Yes) {
 						QString procname = QFileInfo(app.arguments()[0]).fileName();
 						// QProcess::startDetached(VipUpdate::getUpdateProgram() + " -u --command " + procname + " -o ./");
@@ -711,7 +832,7 @@ int main(int argc, char** argv)
 				vipGetMainWindow()->showMaximized();
 				QCoreApplication::processEvents();
 				if (!last_session) {
-					if(QMessageBox::Yes == vipQuestion("Load previous session", "Do you want to load the last session?"))
+					if (QMessageBox::Yes == vipQuestion("Load previous session", "Do you want to load the last session?"))
 						last_session = true;
 
 					/*QMessageBox box(

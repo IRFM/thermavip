@@ -707,6 +707,7 @@ namespace detail
 
 		virtual QTextStream& oTextStream(const VipNDArrayShape& _start, const VipNDArrayShape& _shape, QTextStream& stream, const QString& separator) const
 		{
+			static_assert(!std::is_same_v<T, NullType>);
 			struct Otextstream
 			{
 				QTextStream* stream;

@@ -328,7 +328,7 @@ private:
 	shape_type m_start, m_end;
 };
 
-/// Specialization for di2, uses a QRect internally
+/// Specialization for 2D, uses a QRect internally
 template<>
 class VipNDRect<2>
 {

@@ -42,7 +42,6 @@
 
 #include "VipInterval.h"
 #include "VipNDArray.h"
-#include "VipReduction.h"
 
 /// \addtogroup DataType
 /// @{
@@ -50,6 +49,10 @@
 class VipShape;
 class VipSceneModel;
 class VipShapeSignals;
+
+
+
+
 
 /// Statistic informations extracted from on a 2D shape (#Shape type) and an image (#VipNDArray type)
 class VipShapeStatistics
@@ -305,11 +308,11 @@ public:
 				      VipShapeStatistics::Statistics stats = VipShapeStatistics::All,
 				      const QVector<double>& bbox_quantiles = QVector<double>()) const;
 
-	template<class T, Vip::ArrayStats Stats>
+	/* template<class T, Vip::ArrayStats Stats>
 	VipArrayStats<T, Stats> imageStats(const VipNDArray& img, const QPoint& img_offset = QPoint(0, 0)) const
 	{
 		return vipArrayStats<T, Stats>(img, vipOverRects(region()), vipVector(img_offset.y(), img_offset.x()));
-	}
+	}*/
 
 	/// Extract the histogram inside an image for a list of pixels.
 	///  \param bins number of bins for the output histogram(s)

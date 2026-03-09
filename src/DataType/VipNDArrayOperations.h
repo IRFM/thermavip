@@ -61,16 +61,15 @@ namespace detail
 #if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
 	inline uint qHash(const Conversion& c)
 	{
-		return (uint)( (std::intptr_t)c.source.data() ^ c.dest_type);
+		return (uint)((std::intptr_t)c.source.data() ^ c.dest_type);
 	}
-	
+
 #else
 	inline size_t qHash(const Conversion& c, size_t seed)
 	{
 		return (size_t)((std::intptr_t)c.source.data() ^ c.dest_type) ^ seed;
 	}
 #endif
-	
 
 	/// \internal
 	/// Store all possible conversions from VipNDArray to VipNDArrayType when casting a functor expression.
@@ -154,101 +153,53 @@ namespace detail
 		~ContextHelper() { FunctorContext::removeContext(); }
 	};
 
-	/// Compute offset based on strides and position for VipNDArrayType only
-	template<qsizetype Dim>
-	struct Offset
-	{
-		template<class Strides>
-		static qsizetype compute(const Strides& str, const VipCoordinate<Dim>& pos)
-		{
-			// default implementation
-			qsizetype p = pos.last();
-			for (qsizetype i = pos.size() - 2; i >= 0; --i)
-				p += str[i] * pos[i];
-			return p;
-		}
-	};
-	template<>
-	struct Offset<1>
-	{
-		template<class Strides>
-		static qsizetype compute(const Strides&, const VipCoordinate<1>& pos)
-		{
-			return pos[0];
-		}
-	};
-	template<>
-	struct Offset<2>
-	{
-		template<class Strides>
-		static qsizetype compute(const Strides& str, const VipCoordinate<2>& pos)
-		{
-			return pos[0] * str[0] + pos[1];
-		}
-	};
-	template<>
-	struct Offset<3>
-	{
-		template<class Strides>
-		static qsizetype compute(const Strides& str, const VipCoordinate<3>& pos)
-		{
-			return pos[0] * str[0] + pos[1] * str[1] + pos[2];
-		}
-	};
-
-	template<class T>
-	struct FromValue
-	{
-		template<class U>
-		static const T& value(const U& v)
-		{
-			return v;
-		}
-		static T value(const QVariant& v) { return v.value<T>(); }
-	};
 	/// Constant operand, simply wrap a constant value
 	template<class T>
 	struct ConstValue : BaseExpression
 	{
+		template<class U>
+		static T import(const U& v)
+		{
+			if constexpr (std::is_same_v<QVariant, U>)
+				return v.value<T>();
+			else
+				return static_cast<T>(v);
+		}
+
 		typedef T value_type;
 		static const qsizetype access_type = Vip::Flat | Vip::Position | Vip::Cwise;
 		const T value;
-		ConstValue()
-		  : value(T())
-		{
-		}
-		ConstValue(const ConstValue& other)
-		  : value(other.value)
-		{
-		}
+		ConstValue() = default;
+		ConstValue(const ConstValue& other) = default;
+		ConstValue(ConstValue&& other) noexcept = default;
 		ConstValue(const T& value)
-		  : value(FromValue<T>::value(value))
+		  : value(value)
 		{
 		}
 		template<class U>
 		ConstValue(const ConstValue<U>& other)
-		  : value(FromValue<T>::value(other.value))
+		  : value(import(other.value))
 		{
 		}
 		template<class U>
 		ConstValue(const U& other)
-		  : value(other)
+		  : value(import(other))
 		{
 		}
-		int dataType() const { return qMetaTypeId<T>(); }
-		bool isEmpty() const { return false; }
-		bool isUnstrided() const { return true; }
-		const VipNDArrayShape& shape() const
+		int dataType() const noexcept { return qMetaTypeId<T>(); }
+		bool isEmpty() const noexcept { return false; }
+		bool isUnstrided() const noexcept { return true; }
+		const VipNDArrayShape& shape() const noexcept
 		{
 			static const VipNDArrayShape null_shape;
 			return null_shape;
 		}
 		template<class ShapeType>
-		value_type operator()(const ShapeType&) const
+		const value_type& operator()(const ShapeType&) const noexcept
 		{
 			return value;
 		}
-		value_type operator[](qsizetype) const { return value; }
+		const value_type& operator[](qsizetype) const noexcept { return value; }
 	};
 
 	/// Specialization for QVariant
@@ -258,26 +209,28 @@ namespace detail
 		typedef NullType value_type;
 		static const qsizetype access_type = Vip::Flat | Vip::Position | Vip::Cwise;
 		const QVariant value;
-		ConstValue() {}
+		ConstValue() = default;
+		ConstValue(const ConstValue& other) = default;
+		ConstValue(ConstValue&& other) noexcept = default;
 		template<class T>
 		ConstValue(const T& value)
 		  : value(QVariant::fromValue(value))
 		{
 		}
-		int dataType() const { return value.userType(); }
-		bool isEmpty() const { return value.isNull(); }
-		bool isUnstrided() const { return true; }
-		const VipNDArrayShape& shape() const
+		int dataType() const noexcept { return value.userType(); }
+		bool isEmpty() const noexcept { return value.isNull(); }
+		bool isUnstrided() const noexcept { return true; }
+		const VipNDArrayShape& shape() const noexcept
 		{
 			static const VipNDArrayShape null_shape;
 			return null_shape;
 		}
 		template<class ShapeType>
-		const QVariant& operator()(const ShapeType&) const
+		const QVariant& operator()(const ShapeType&) const noexcept
 		{
 			return value;
 		}
-		QVariant operator[](qsizetype) const { return QVariant(); }
+		const QVariant& operator[](qsizetype) const noexcept { return value; }
 	};
 
 	/// Get object shape
@@ -297,33 +250,30 @@ namespace detail
 		return obj.VipNDArray::shape();
 	}
 
-	// TODO
-	// Add thread based context to avoid converting the same VipNDArray multiple times when used several times in a functor expression
-
 	/// Wrap a VipNDArrayType or VipNDArrayTypeView
 	template<class Array>
 	struct ArrayWrapper : BaseExpression
 	{
-		typedef typename Array::value_type value_type;
-		static const qsizetype access_type = Array::access_type;
-		const Array& array;
+		using value_type = typename Array::value_type;
+		static constexpr auto access_type = Array::access_type;
+
+		const Array array;
 		const value_type* ptr;
-		ArrayWrapper() {}
-		ArrayWrapper(const Array& ar)
+		ArrayWrapper(const Array& ar) noexcept
 		  : array(ar)
 		  , ptr(ar.ptr())
 		{
 		}
-		int dataType() const { return array.dataType(); }
-		bool isEmpty() const { return array.isEmpty(); }
-		bool isUnstrided() const { return array.isUnstrided(); }
-		const VipNDArrayShape& shape() const { return GetShape(array); }
+		int dataType() const noexcept { return array.dataType(); }
+		bool isEmpty() const noexcept { return array.isEmpty(); }
+		bool isUnstrided() const noexcept { return array.isUnstrided(); }
+		const VipNDArrayShape& shape() const noexcept { return GetShape(array); }
 		template<class ShapeType>
-		const value_type& operator()(const ShapeType& pos) const
+		const value_type& operator()(const ShapeType& pos) const noexcept
 		{
 			return array(pos);
 		}
-		value_type operator[](qsizetype i) const { return ptr[i]; }
+		const value_type& operator[](qsizetype i) const noexcept { return ptr[i]; }
 	};
 	/// Specialization for VipNDArrayType
 	template<class T, qsizetype NDims>
@@ -331,15 +281,10 @@ namespace detail
 	{
 		typedef T value_type;
 		static const qsizetype access_type = Vip::Flat | Vip::Position | Vip::Cwise;
+
 		const VipNDArrayType<T, NDims> array;
-		// VipNDArrayShape _shape;
-		//  VipNDArrayShape strides;
-		//  int _dataType;
-		const T* ptr;
-		ArrayWrapper()
-		  : ptr(nullptr)
-		{
-		}
+		const T* ptr = nullptr;
+
 		template<class Other>
 		ArrayWrapper(const Other& other)
 		  : array(FunctorContext::instance().convert<VipNDArrayType<T, NDims>>(other))
@@ -352,192 +297,120 @@ namespace detail
 		  , ptr(array.ptr())
 		{
 		}
-		ArrayWrapper(const ArrayWrapper& other)
-		  : //_shape(other._shape), strides(other.strides), _dataType(other._dataType), ptr(other.ptr)
-		  array(other.array)
+		ArrayWrapper(const ArrayWrapper& other) noexcept
+		  : array(other.array)
 		  , ptr(other.ptr)
 		{
 		}
-		ArrayWrapper(const VipNDArrayType<T, NDims>& array)
+		ArrayWrapper(const VipNDArrayType<T, NDims>& array) noexcept
 		  : array(array)
 		  , ptr(array.ptr())
 		{
-		} //{
-		  // _shape = array.shape();
-		  // strides = array.strides();
-		  // _dataType = array.dataType();
-		  // ptr = array.ptr();
-		// }
+		}
 		template<qsizetype ONDims>
 		ArrayWrapper(const VipNDArrayType<T, ONDims>& array)
 		  : array(array)
 		  , ptr(array.ptr())
 		{
 		}
-		int dataType() const
-		{
-			return array.dataType(); //_dataType;//
-		}
-		bool isEmpty() const { return array.isEmpty(); } // ptr == 0; }//array.isEmpty(); }
-		bool isUnstrided() const { return true; }
-		const VipNDArrayShape& shape() const
-		{
-			return GetShape(array); // return _shape;
-		}				// array.shape(); }
+		int dataType() const noexcept { return array.dataType(); }
+		bool isEmpty() const noexcept { return array.isEmpty(); }
+		bool isUnstrided() const noexcept { return true; }
+		const VipNDArrayShape& shape() const noexcept { return GetShape(array); }
 		template<class ShapeType>
-		const value_type& operator()(const ShapeType& pos) const
+		const value_type& operator()(const ShapeType& pos) const noexcept
 		{
-			return ptr[Offset<ShapeType::static_size>::compute(array.strides(), pos)];
+			return ptr[vipFlatOffset<true>(array.strides(), pos)];
 		}
-		value_type operator[](qsizetype i) const { return ptr[i]; }
+		const value_type& operator[](qsizetype i) const noexcept { return ptr[i]; }
 	};
 
 	// rebind U to T
 	template<class T, class U, bool isArray = std::is_base_of<VipNDArray, U>::value>
 	struct rebind
 	{
-		typedef U type;
-		static type cast(const U& a) { return a; }
+		static const auto& cast(const U& a) { return a; }
 	};
 	// rebind QVariant
 	template<class T>
 	struct rebind<T, QVariant, false>
 	{
-		typedef T type;
-		static type cast(const QVariant& a) { return a.value<T>(); }
+		static auto cast(const QVariant& a) { return a.value<T>(); }
 	};
 	// rebind VipNDArray inheriting class
 	template<class T, class U>
 	struct rebind<T, U, true>
 	{
-		typedef ArrayWrapper<VipNDArrayType<T>> type;
-		static type cast(const U& a) { return type(a); }
+		static auto cast(const U& a) { return ArrayWrapper<VipNDArrayType<T>>(a); }
 	};
 	// rebind VipNDArrayType class (does not change the type)
 	template<class T, class U, qsizetype NDims>
 	struct rebind<T, VipNDArrayType<U, NDims>, true>
 	{
-		typedef ArrayWrapper<VipNDArrayType<U, NDims>> type;
-		static type cast(const VipNDArrayType<U, NDims>& a) { return a; }
+		static auto cast(const VipNDArrayType<U, NDims>& a) { return ArrayWrapper<VipNDArrayType<U, NDims>>(a); }
 	};
 	// rebind VipNDArrayTypeView class (does not change the type)
 	template<class T, class U, qsizetype NDims>
 	struct rebind<T, VipNDArrayTypeView<U, NDims>, true>
 	{
-		typedef VipNDArrayTypeView<U, NDims> type;
-		static type cast(const VipNDArrayTypeView<U, NDims>& a) { return a; }
+		static const auto& cast(const VipNDArrayTypeView<U, NDims>& a) { return a; }
 	};
 	// rebind ConstValue (does not change the type)
 	template<class T, class U>
 	struct rebind<T, ConstValue<U>, false>
 	{
-		typedef ConstValue<U> type;
-		static const type& cast(const ConstValue<U>& a) { return a; }
+		static const auto& cast(const ConstValue<U>& a) { return a; }
 	};
 	// rebind ConstValue<QVariant>
 	template<class T>
 	struct rebind<T, ConstValue<QVariant>, false>
 	{
-		typedef ConstValue<T> type;
-		static type cast(const ConstValue<QVariant>& a) { return a; }
+		static auto cast(const ConstValue<QVariant>& a) { return ConstValue<T>(a); }
 	};
 	// rebind ArrayWrapper
 	template<class T, class U>
 	struct rebind<T, ArrayWrapper<U>, true>
 	{
-		typedef ArrayWrapper<typename rebind<T, U>::type> type;
-		static type cast(const ArrayWrapper<U>& a) { return type(a.array); }
+		static auto cast(const ArrayWrapper<U>& a) { return ArrayWrapper<typename rebind<T, U>::type>(a.array); }
 	};
 	template<class T>
 	struct rebind<T, ArrayWrapper<T>, true>
 	{
-		typedef ArrayWrapper<T> type;
-		static type cast(const ArrayWrapper<T>& a) { return a; }
+		static const ArrayWrapper<T>& cast(const ArrayWrapper<T>& a) { return a; }
 	};
 
-	template<class T1, template<class> class Op, class = void>
-	struct is_valid_op1 : std::false_type
+	template<class T, class U>
+	auto rebindExpression(const U& v)
 	{
-	};
-
-	template<template<class> class Op>
-	struct is_valid_op1<NullType, Op> : std::true_type
-	{
-	};
-
-	template<class T1, template<class> class Op>
-	struct is_valid_op1<T1, Op, std::void_t<Op<T1>>> : std::true_type
-	{
-	};
-
-	template<class T1, class T2, template<class, class> class Op, class = void>
-	struct is_valid_op2 : std::false_type
-	{
-	};
-
-	template<class T1, class T2, template<class, class> class Op>
-	struct is_valid_op2<T1, T2, Op, std::void_t<Op<T1, T2>>> : std::true_type
-	{
-	};
-
-	template<class T1, class T2, class T3, template<class, class, class> class Op, class = void>
-	struct is_valid_op3 : std::false_type
-	{
-	};
-
-	template<class T1, class T2, class T3, template<class, class, class> class Op>
-	struct is_valid_op3<T1, T2, T3, Op, std::void_t<Op<T1, T2, T3>>> : std::true_type
-	{
-	};
-
-	template<class T1, class T2, class T3, class T4, template<class, class, class, class> class Op, class = void>
-	struct is_valid_op4 : std::false_type
-	{
-	};
-
-	template<class T1, class T2, class T3, class T4, template<class, class, class, class> class Op>
-	struct is_valid_op4<T1, T2, T3, T4, Op, std::void_t<Op<T1, T2, T3, T4>>> : std::true_type
-	{
-	};
-
-	namespace helper
-	{
-
-		template<typename T>
-		struct is_complete_helper
-		{
-			template<typename U>
-			static auto test(U*) -> std::integral_constant<bool, sizeof(U) == sizeof(U)>;
-			static auto test(...) -> std::false_type;
-			using type = decltype(test((T*)0));
-		};
-
-		template<class Array, bool Comp = is_complete_helper<Array>::type::value>
-		struct is_array_helper;
-
-		template<class Array>
-		struct is_array_helper<Array, true> : std::is_base_of<NullOperand, Array>
-		{
-		};
-
-		template<class Array>
-		struct is_array_helper<Array, false> : std::false_type
-		{
-		};
-
+		return rebind<T, U>::cast(v);
 	}
 
-	template<typename T>
-	struct is_complete : helper::is_complete_helper<T>::type
+	// Check if type inherits NullOperand (nd array or functor expression)
+	template<class T, class = void>
+	struct IsArrayType : std::false_type
 	{
 	};
-	template<typename T>
-	struct is_nd_array : helper::is_array_helper<T>::type
+	template<class T>
+	struct IsArrayType<T, std::void_t<std::bool_constant<sizeof(T) == sizeof(T)>>> : std::is_base_of<NullOperand, T>
 	{
 	};
+	template<class T>
+	constexpr bool IsArrayType_v = IsArrayType<T>::value;
+
+	// Check if type inherits VipArrayBase (nd array object)
+	template<class T, class = void>
+	struct IsNDArrayType : std::false_type
+	{
+	};
+	template<class T>
+	struct IsNDArrayType<T, std::void_t<std::bool_constant<sizeof(T) == sizeof(T)>>> : std::is_base_of<VipArrayBase, T>
+	{
+	};
+	template<class T>
+	constexpr bool IsNDArrayType_v = IsNDArrayType<T>::value;
 
 	/// Deduce array type of Array with typedef array_type, and the value type with typedef value_type
-	template<class Array, bool IsArray = is_nd_array<Array>::value>
+	template<class Array, bool IsArray = IsArrayType<Array>::value>
 	struct DeduceArrayType
 	{
 	};
@@ -559,11 +432,11 @@ namespace detail
 		typedef ArrayWrapper<VipNDArrayTypeView<T, NDims>> array_type;
 		typedef T value_type;
 	};
-	template<class Array>
-	struct DeduceArrayType<Array, false>
+	template<class T>
+	struct DeduceArrayType<T, false>
 	{
-		typedef ConstValue<Array> array_type;
-		typedef Array value_type;
+		typedef ConstValue<T> array_type;
+		typedef T value_type;
 	};
 	template<>
 	struct DeduceArrayType<QVariant, false>
@@ -572,40 +445,51 @@ namespace detail
 		typedef NullType value_type;
 	};
 
-	/// Check whether a functor is valid or not
-	template<class T, class = void>
-	struct is_valid_functor : std::is_base_of<VipNDArray, T>
-	{
-		static void apply() {}
-	};
-	// template< class T>
-	// struct is_valid_functor<T, typename std::enable_if<std::is_same<NullType, typename DeduceArrayType<T>::value_type>::value, void>::type> : std::true_type { static void apply() {} };
 	template<class T>
-	struct is_valid_functor<ConstValue<T>> : std::true_type
-	{
-		static void apply() {}
-	};
-	template<class T>
-	struct is_valid_functor<ArrayWrapper<T>> : std::true_type
-	{
-		static void apply() {}
-	};
+	using DeduceArrayType_t = typename DeduceArrayType<T>::array_type;
 
 	/// Check if given arrays and/or constants define NullType (at least one of them is a VipNDArray)
-	template<class A1, class A2 = void, class A3 = void>
+	template<class... Array>
 	struct HasNullType
 	{
-		typedef typename DeduceArrayType<A1>::value_type t1;
-		typedef typename DeduceArrayType<A2>::value_type t2;
-		typedef typename DeduceArrayType<A3>::value_type t3;
-		static const bool value = std::is_same<t1, NullType>::value || std::is_same<t2, NullType>::value || std::is_same<t3, NullType>::value;
+		// Fold expression
+		static constexpr bool value = (... || std::is_same<typename DeduceArrayType<Array>::value_type, NullType>::value);
 	};
-	/// Check if at least one template argument is a NullOperand
-	template<class A1, class A2 = void, class A3 = void>
+	template<class... Array>
+	struct HasNullType<std::tuple<Array...>>
+	{
+		// Fold expression
+		static constexpr bool value = (... || std::is_same<typename DeduceArrayType<Array>::value_type, NullType>::value);
+	};
+
+	/// Check if at least one template argument is a NullOperand (nd array or functor expression)
+	template<class... Array>
 	struct HasArrayType
 	{
-		static const bool value = std::is_base_of<NullOperand, A1>::value || std::is_base_of<NullOperand, A2>::value || std::is_base_of<NullOperand, A3>::value;
+		// Fold expression
+		static constexpr bool value = (... || IsArrayType_v<Array>);
 	};
+	/// Check if at least one template argument is a NullOperand (nd array or functor expression)
+	template<class... Array>
+	struct HasArrayType<std::tuple<Array...>>
+	{
+		// Fold expression
+		static constexpr bool value = (... || IsArrayType_v<Array>);
+	};
+
+	template<class... Array>
+	constexpr bool HasArrayType_v = HasArrayType<Array...>::value;
+
+	/// @brief Check that all types ar either array or arithmetic
+	template<class... T>
+	struct IsArrayOrArithmetic
+	{
+		static constexpr bool value = (... && (std::is_arithmetic_v<T> || detail::HasArrayType_v<T>) );
+	};
+	template<class... Array>
+	constexpr bool IsArrayOrArithmetic_v = IsArrayOrArithmetic<Array...>::value;
+
+
 
 	/// Check if type inherits VipNDArray, but is not typed (like VipNDArrayType and VipNDArrayTypeView)
 	template<class T>
@@ -613,926 +497,318 @@ namespace detail
 	{
 		static const bool value = std::is_base_of<VipNDArray, T>::value && HasNullType<T>::value;
 	};
-	/// Check if type is a NullOperand but not a VipNDArray
-	template<class T>
-	struct IsOperand
+
+	struct FunctorBase
 	{
-		static const bool value = !std::is_base_of<VipNDArray, T>::value && std::is_base_of<NullOperand, T>::value;
 	};
 
-	/// Check if types are not NullOperand ones
-	template<class A1, class A2 = void, class A3 = void>
-	struct IsNoOperand
+	/// Value type of nd array or functor expression
+	template<class F, bool IsFunctorBase = std::is_base_of_v<FunctorBase, F>>
+	struct ValueType
 	{
-		static const bool value = !std::is_base_of<NullOperand, A1>::value && !std::is_base_of<NullOperand, A2>::value && !std::is_base_of<NullOperand, A2>::value;
+		using type = typename F::value_type;
 	};
 
-	template<class T, class ArrayType>
-	struct BaseOperator1 : BaseExpression
+	template<bool hasNullType, class F>
+	constexpr auto evalType(const F& f)
 	{
-		typedef BaseOperator1<T, ArrayType> base_type;
-		typedef T value_type;
-		typedef typename DeduceArrayType<ArrayType>::array_type array_type1;
-		static const qsizetype access_type = array_type1::access_type;
-		const array_type1 array1;
-		int dataType() const { return std::is_same<T, NullType>::value ? array1.dataType() : qMetaTypeId<T>(); }
-		bool isEmpty() const { return array1.isEmpty(); }
-		bool isUnstrided() const { return array1.isUnstrided(); }
-		const VipNDArrayShape& shape() const { return GetShape(array1); }
-		BaseOperator1() {}
-		BaseOperator1(const ArrayType& op1)
-		  : array1(op1)
+		if constexpr (hasNullType)
+			return NullType{};
+		else
+			return f.operator()(vipVector(0));
+	}
+
+	template<class F>
+	struct ValueType<F, true>
+	{
+		using arrays = typename F::array_types;
+		using type = decltype(evalType<HasNullType<arrays>::value, F>(std::declval<F&>()));
+	};
+
+	template<class F>
+	using ValueType_t = typename ValueType<F>::type;
+
+	/// @brief Base class for most functor expression classes
+	template<class Derived, class... Array>
+	class BaseFunctor
+	  : public BaseExpression
+	  , FunctorBase
+	{
+	protected:
+		template<class Sh>
+		void build_shape(const Sh& shape, bool& valid)
 		{
+			if (valid) {
+				if (sh.isEmpty())
+					sh = shape;
+				else if (!shape.isEmpty())
+					valid = (shape == sh);
+			}
 		}
-		// define dummy access operator to avoid compilation error
+		void build_type(int dtype)
+		{
+			if (type == 0)
+				type = dtype;
+			else if (dtype)
+				type = vipHigherArrayType(type, dtype);
+		}
+		VipNDArrayShape sh;
+		int type = 0;
+
+	public:
+		using array_types = std::tuple<typename DeduceArrayType<Array>::array_type...>;
+		static constexpr qsizetype access_type = (DeduceArrayType<Array>::array_type::access_type & ...);
+
+		const array_types arrays;
+
+		int dataType() const noexcept { return type; }
+		bool isEmpty() const noexcept
+		{
+			return std::apply([](auto&... args) { return (args.isEmpty() || ...); }, arrays);
+		}
+		bool isUnstrided() const
+		{
+			return std::apply([](auto&... args) { return (args.isUnstrided() && ...); }, arrays);
+		}
+		const VipNDArrayShape& shape() const { return sh; }
+		BaseFunctor() {}
+		template<class... Ar>
+		BaseFunctor(const Ar&... ar)
+		  : arrays(std::forward<const Ar&>(ar)...)
+		{
+			bool valid = true;
+			std::apply([&](auto&... args) { (build_shape(GetShape(args), valid), ...); }, arrays);
+
+			if constexpr (!HasNullType<Array...>::value)
+				type = qMetaTypeId<ValueType_t<Derived>>();
+			else
+				std::apply([&](auto&... args) { (build_type(args.dataType()), ...); }, arrays);
+		}
+		// Define dummy access operator to avoid compilation error
 		template<class ShapeType>
-		value_type operator()(const ShapeType&) const
+		NullType operator()(const ShapeType&) const
 		{
-			return value_type();
+			return NullType();
 		}
-		value_type operator[](qsizetype) const { return value_type(); }
+		template<class Coord>
+		NullType operator[](Coord) const
+		{
+			return NullType();
+		}
 	};
 
-#define _ENSURE_OPERATOR1_DEF(...)                                                                                                                                                                     \
-	typedef __VA_ARGS__ base;                                                                                                                                                                      \
-	typedef typename base::value_type value_type;                                                                                                                                                  \
-	typedef typename base::array_type1 array_type1;                                                                                                                                                \
-	using base::shape;                                                                                                                                                                             \
-	using base::dataType;                                                                                                                                                                          \
-	using base::isEmpty;                                                                                                                                                                           \
-	using base::isUnstrided;
-
-	static const VipNDArrayShape _null_shape;
-
-	template<class T, class ArrayType1, class ArrayType2>
-	struct BaseOperator2 : BaseExpression
+	/// @brief Functor expression mapping a function object
+	template<class Functor, class... Array>
+	struct GenericFunction : BaseFunctor<GenericFunction<Functor, Array...>, Array...>
 	{
-		typedef BaseOperator2<T, ArrayType1, ArrayType2> base_type;
-		typedef T value_type;
-		typedef typename DeduceArrayType<ArrayType1>::array_type array_type1;
-		typedef typename DeduceArrayType<ArrayType2>::array_type array_type2;
-		static const qsizetype access_type = array_type1::access_type & array_type2::access_type;
-		const array_type1 array1;
-		const array_type2 array2;
-		const VipNDArrayShape* sh;
-		int _dataType;
+		using base = BaseFunctor<GenericFunction<Functor, Array...>, Array...>;
 
-		int dataType() const
+		Functor functor;
+		GenericFunction() {}
+		template<class F, class... Ar>
+		GenericFunction(F&& f, Ar&&... args)
+		  : base(std::forward<Ar>(args)...)
+		  , functor(std::forward<F>(f))
 		{
-			if (_dataType == 0) {
-				if (std::is_same<T, NullType>::value) {
-					int dtype = vipHigherArrayType(array1.dataType(), array2.dataType());
-					if (dtype == 0)
-						dtype = array1.dataType();
-					const_cast<int&>(_dataType) = dtype;
-				}
-				else {
-					const_cast<int&>(_dataType) = qMetaTypeId<T>();
-				}
-			}
-			return _dataType;
 		}
-		bool isEmpty() const { return array1.isEmpty() || array2.isEmpty(); }
-		const VipNDArrayShape& shape() const { return *sh; }
-		bool isUnstrided() const { return array1.isUnstrided() && array2.isUnstrided(); }
-		BaseOperator2() {}
-		BaseOperator2(const ArrayType1& op1, const ArrayType2& op2)
-		  : array1(op1)
-		  , array2(op2)
-		  , sh(&_null_shape)
-		  , _dataType(0)
+		template<class Coord>
+		auto operator()(const Coord& index) const
 		{
-			if (!array1.shape().isEmpty() && !array2.shape().isEmpty()) {
-				if (array1.shape() == array2.shape())
-					sh = &GetShape(array1);
-			}
-			else {
-				if (!array1.shape().isEmpty())
-					sh = &GetShape(array1);
-				else
-					sh = &GetShape(array2);
-			}
+			return std::apply([&](auto... args) { return functor((args(index))...); }, this->arrays);
 		}
-		// define dummy access operator to avoid compilation error
-		template<class ShapeType>
-		value_type operator()(const ShapeType&) const
+		template<class Coord>
+		auto operator[](Coord index) const
 		{
-			return value_type();
+			return std::apply([&](auto... args) { return functor(args[index]...); }, this->arrays);
 		}
-		value_type operator[](qsizetype) const { return value_type(); }
 	};
 
-#define _ENSURE_OPERATOR2_DEF(...)                                                                                                                                                                     \
-	typedef __VA_ARGS__ base;                                                                                                                                                                      \
-	typedef typename base::value_type value_type;                                                                                                                                                  \
-	typedef typename base::array_type1 array_type1;                                                                                                                                                \
-	typedef typename base::array_type2 array_type2;                                                                                                                                                \
-	using base::shape;                                                                                                                                                                             \
-	using base::dataType;                                                                                                                                                                          \
-	using base::isEmpty;                                                                                                                                                                           \
-	using base::isUnstrided;
-
-	template<class T, class ArrayType1, class ArrayType2, class ArrayType3>
-	struct BaseOperator3 : BaseExpression
+	template<class U, class Functor, class... Array>
+	auto rebindExpression(const GenericFunction<Functor, Array...>& f)
 	{
-		typedef T value_type;
-		typedef typename DeduceArrayType<ArrayType1>::array_type array_type1;
-		typedef typename DeduceArrayType<ArrayType2>::array_type array_type2;
-		typedef typename DeduceArrayType<ArrayType3>::array_type array_type3;
-		static const qsizetype access_type = array_type1::access_type & array_type2::access_type & array_type3::access_type;
-		const array_type1 array1;
-		const array_type2 array2;
-		const array_type3 array3;
-		const VipNDArrayShape* sh;
-		int _dataType;
+		using functor = GenericFunction<Functor, Array...>;
+		using type = GenericFunction<Functor, decltype(rebindExpression<U>(std::declval<Array&>()))...>;
 
-		int dataType() const
-		{
-			if (_dataType == 0) {
-				if (std::is_same<T, NullType>::value) {
-					int dtype = vipHigherArrayType(array1.dataType(), array2.dataType());
-					dtype = vipHigherArrayType(dtype, array3.dataType());
-					if (dtype == 0)
-						dtype = array1.dataType();
-					const_cast<int&>(_dataType) = dtype;
-				}
-				else {
-					const_cast<int&>(_dataType) = qMetaTypeId<T>();
-				}
-			}
-			return _dataType;
-		}
-		bool isEmpty() const { return array1.isEmpty() || array2.isEmpty() || array3.isEmpty(); }
-		const VipNDArrayShape& shape() const { return *sh; }
-		bool isUnstrided() const { return array1.isUnstrided() && array2.isUnstrided() && array3.isUnstrided(); }
-		BaseOperator3() {}
-		BaseOperator3(const ArrayType1& op1, const ArrayType2& op2, const ArrayType3& op3)
-		  : array1(op1)
-		  , array2(op2)
-		  , array3(op3)
-		  , sh(&_null_shape)
-		  , _dataType(0)
-		{
-			sh = array1.shape().isEmpty() ? (array2.shape().isEmpty() ? &GetShape(array3) : &GetShape(array2)) : &GetShape(array1);
-			if (!array1.shape().isEmpty() && array1.shape() != *sh)
-				sh = &_null_shape; //.clear();
-			else if (!array2.shape().isEmpty() && array2.shape() != *sh)
-				sh = &_null_shape; //.clear();
-			else if (!array3.shape().isEmpty() && array3.shape() != *sh)
-				sh = &_null_shape; //.clear();
-		}
-		// define dummy access operator to avoid compilation error
-		template<class ShapeType>
-		value_type operator()(const ShapeType&) const
-		{
-			return value_type();
-		}
-		value_type operator[](qsizetype) const { return value_type(); }
-	};
-
-#define _ENSURE_OPERATOR3_DEF(...)                                                                                                                                                                     \
-	typedef __VA_ARGS__ base;                                                                                                                                                                      \
-	typedef typename base::value_type value_type;                                                                                                                                                  \
-	typedef typename base::array_type1 array_type1;                                                                                                                                                \
-	typedef typename base::array_type2 array_type2;                                                                                                                                                \
-	typedef typename base::array_type3 array_type3;                                                                                                                                                \
-	using base::shape;                                                                                                                                                                             \
-	using base::dataType;                                                                                                                                                                          \
-	using base::isEmpty;                                                                                                                                                                           \
-	using base::isUnstrided;
-
-	// create rebind specialization for functor inheriting BaseOperator1
-#define _REBIND_HELPER1(functor)                                                                                                                                                                       \
-	template<class T, class A1, bool hasNullType>                                                                                                                                                  \
-	struct rebind<T, functor<A1, hasNullType>, false>                                                                                                                                              \
-	{                                                                                                                                                                                              \
-		typedef functor<A1, hasNullType> op;                                                                                                                                                   \
-		typedef functor<typename rebind<T, typename op::array_type1>::type, false> type;                                                                                                       \
-		static type cast(const op& a) { return type(rebind<T, typename op::array_type1>::cast(a.array1)); }                                                                                    \
-	};
-
-	// create rebind specialization for functor inheriting BaseOperator2
-#define _REBIND_HELPER2(functor)                                                                                                                                                                       \
-	template<class T, class A1, class A2, bool hasNullType>                                                                                                                                        \
-	struct rebind<T, functor<A1, A2, hasNullType>, false>                                                                                                                                          \
-	{                                                                                                                                                                                              \
-		typedef functor<A1, A2, hasNullType> op;                                                                                                                                               \
-		typedef functor<typename rebind<T, typename op::array_type1>::type, typename rebind<T, typename op::array_type2>::type, false> type;                                                   \
-		static type cast(const op& a) { return type(rebind<T, typename op::array_type1>::cast(a.array1), rebind<T, typename op::array_type2>::cast(a.array2)); }                               \
-	};
-
-	// create rebind specialization for functor inheriting BaseOperator3
-#define _REBIND_HELPER3(functor)                                                                                                                                                                       \
-	template<class T, class A1, class A2, class A3, bool hasNullType>                                                                                                                              \
-	struct rebind<T, functor<A1, A2, A3, hasNullType>, false>                                                                                                                                      \
-	{                                                                                                                                                                                              \
-		typedef functor<A1, A2, A3, hasNullType> op;                                                                                                                                           \
-		typedef functor<typename rebind<T, typename op::array_type1>::type, typename rebind<T, typename op::array_type2>::type, typename rebind<T, typename op::array_type3>::type, false>     \
-		  type;                                                                                                                                                                                \
-		static type cast(const op& a)                                                                                                                                                          \
-		{                                                                                                                                                                                      \
-			return type(rebind<T, typename op::array_type1>::cast(a.array1), rebind<T, typename op::array_type2>::cast(a.array2), rebind<T, typename op::array_type3>::cast(a.array3));    \
-		}                                                                                                                                                                                      \
-	};
-
-	namespace cast
-	{
-		// Cast bool types to unsigned char for operators (and remove lengthy warning about boolean comparison)
-		template<class T>
-		const T& invariant_cast(const T& v)
-		{
-			return v;
-		}
-		inline const unsigned char invariant_cast(const bool v)
-		{
-			return (unsigned char)v;
-		}
+		if constexpr (std::is_invocable_v<Functor, ValueType_t<decltype(rebindExpression<U>(std::declval<Array&>()))>...>)
+			return std::apply([&](auto... args) { return type(f.functor, rebindExpression<U>(args)...); }, f.arrays);
+		else
+			return NullType{};
 	}
 
-#define _DECLARE_OPERATOR2(Fun, op)                                                                                                                                                                    \
-	namespace detail                                                                                                                                                                               \
-	{                                                                                                                                                                                              \
-		/*@brief Tells if given type supports operator*/                                                                                                                                       \
-		template<class T, class U>                                                                                                                                                             \
-		class SupportOperator##Fun                                                                                                                                                             \
-		{                                                                                                                                                                                      \
-			template<class TT, class UU>                                                                                                                                                   \
-			static auto test(int) -> decltype(cast::invariant_cast(TT()) op cast::invariant_cast(UU()), std::true_type());                                                                 \
-			template<class, class>                                                                                                                                                         \
-			static auto test(...) -> std::false_type;                                                                                                                                      \
-                                                                                                                                                                                                       \
-		public:                                                                                                                                                                                \
-			static constexpr bool value = decltype(test<T, U>(0))::value;                                                                                                                  \
-		};                                                                                                                                                                                     \
-		template<class A, class B, bool Support = SupportOperator##Fun<A, B>::value>                                                                                                           \
-		struct _DeduceOperatorType##Fun                                                                                                                                                        \
-		{                                                                                                                                                                                      \
-			using value_type = decltype(cast::invariant_cast(A()) op cast::invariant_cast(B()));                                                                                           \
-		};                                                                                                                                                                                     \
-		template<class A, class B>                                                                                                                                                             \
-		struct _DeduceOperatorType##Fun<A, B, false>                                                                                                                                           \
-		{                                                                                                                                                                                      \
-			using value_type = NullType;                                                                                                                                                   \
-		};                                                                                                                                                                                     \
-		template<class A, class B>                                                                                                                                                             \
-		struct DeduceOperatorType##Fun                                                                                                                                                         \
-		{                                                                                                                                                                                      \
-			static constexpr bool valid = SupportOperator##Fun<typename DeduceArrayType<A>::value_type, typename DeduceArrayType<B>::value_type>::value;                                   \
-			using value_type = typename _DeduceOperatorType##Fun<typename DeduceArrayType<A>::value_type, typename DeduceArrayType<B>::value_type>::value_type;                            \
-		};                                                                                                                                                                                     \
-		template<class A1, class A2, bool hasNullType = HasNullType<A1, A2>::value>                                                                                                            \
-		struct Fun : BaseOperator2<typename DeduceOperatorType##Fun<A1, A2>::value_type, A1, A2>                                                                                               \
-		{                                                                                                                                                                                      \
-			static constexpr bool valid = DeduceOperatorType##Fun<A1, A2>::valid;                                                                                                          \
-			typedef BaseOperator2<typename DeduceOperatorType##Fun<A1, A2>::value_type, A1, A2> base_type;                                                                                 \
-			Fun() {}                                                                                                                                                                       \
-			Fun(const A1& op1, const A2& op2)                                                                                                                                              \
-			  : base_type(op1, op2)                                                                                                                                                        \
-			{                                                                                                                                                                              \
-			}                                                                                                                                                                              \
-			template<class Coord>                                                                                                                                                          \
-			typename base_type::value_type operator()(const Coord& pos) const                                                                                                              \
-			{                                                                                                                                                                              \
-				return cast::invariant_cast(this->array1(pos)) op cast::invariant_cast(this->array2(pos));                                                                             \
-			}                                                                                                                                                                              \
-			typename base_type::value_type operator[](qsizetype index) const { return cast::invariant_cast(this->array1[index]) op cast::invariant_cast(this->array2[index]); }                  \
-		};                                                                                                                                                                                     \
-		template<class A1, class A2>                                                                                                                                                           \
-		struct Fun<A1, A2, true> : BaseOperator2<NullType, A1, A2>                                                                                                                             \
-		{                                                                                                                                                                                      \
-			static constexpr bool valid = false;                                                                                                                                           \
-			Fun() {}                                                                                                                                                                       \
-			Fun(const A1& op1, const A2& op2)                                                                                                                                              \
-			  : BaseOperator2<NullType, A1, A2>(op1, op2)                                                                                                                                  \
-			{                                                                                                                                                                              \
-			}                                                                                                                                                                              \
-		};                                                                                                                                                                                     \
-		_REBIND_HELPER2(Fun)                                                                                                                                                                   \
-		template<class A1, class A2>                                                                                                                                                           \
-		using try_##Fun = typename DeduceOperatorType##Fun<A1, A2>::value_type;                                                                                                                \
-		template<class A1, class A2>                                                                                                                                                           \
-		struct is_valid_functor<Fun<A1, A2, false>> : is_valid_op2<A1, A2, try_##Fun>                                                                                                          \
-		{                                                                                                                                                                                      \
-			static void apply() {}                                                                                                                                                         \
-		}; /*, std::void_t<decltype(Function(DeduceArrayType<A1>::value_type(),DeduceArrayType<A2>::value_type()))> > :std::true_type{};*/                                                     \
-	}                                                                                                                                                                                              \
-	template<class A1, class A2>                                                                                                                                                                   \
-	typename std::enable_if<detail::HasArrayType<A1, A2>::value, detail::Fun<A1, A2>>::type operator op(const A1& a1, const A2& a2)                                                                \
-	{                                                                                                                                                                                              \
-		return detail::Fun<A1, A2>(a1, a2);                                                                                                                                                    \
-	}
+}
 
-#define _DECLARE_OPERATOR2_FUNCTION(Fun, op, function)                                                                                                                                                 \
-	_DECLARE_FUNCTOR_FOR_FUNCTION2(Fun, function)                                                                                                                                                  \
-	template<class A1, class A2>                                                                                                                                                                   \
-	typename std::enable_if<detail::HasArrayType<A1, A2>::value, detail::Fun<A1, A2>>::type operator op(const A1& a1, const A2& a2)                                                                \
-	{                                                                                                                                                                                              \
-		return detail::Fun<A1, A2>(a1, a2);                                                                                                                                                    \
-	}
-
-#define _DECLARE_FUNCTOR_FOR_FUNCTION1(Functor, Function)                                                                                                                                              \
-	namespace detail                                                                                                                                                                               \
-	{                                                                                                                                                                                              \
-		/*@brief Tells if given type supports operator*/                                                                                                                                       \
-		template<class T>                                                                                                                                                                      \
-		class Support##Functor                                                                                                                                                                 \
-		{                                                                                                                                                                                      \
-			template<class TT>                                                                                                                                                             \
-			static auto test(int) -> decltype(Function(cast::invariant_cast(TT())), std::true_type());                                                                                     \
-			template<class>                                                                                                                                                                \
-			static auto test(...) -> std::false_type;                                                                                                                                      \
-                                                                                                                                                                                                       \
-		public:                                                                                                                                                                                \
-			static constexpr bool value = decltype(test<T>(0))::value;                                                                                                                     \
-		};                                                                                                                                                                                     \
-		template<class A, bool Support = Support##Functor<A>::value>                                                                                                                           \
-		struct _DeduceOperatorType##Functor                                                                                                                                                    \
-		{                                                                                                                                                                                      \
-			using value_type = decltype(Function(cast::invariant_cast(A())));                                                                                                              \
-		};                                                                                                                                                                                     \
-		template<class A>                                                                                                                                                                      \
-		struct _DeduceOperatorType##Functor<A, false>                                                                                                                                          \
-		{                                                                                                                                                                                      \
-			using value_type = NullType;                                                                                                                                                   \
-		};                                                                                                                                                                                     \
-		template<class A>                                                                                                                                                                      \
-		struct DeduceOperatorType##Functor                                                                                                                                                     \
-		{                                                                                                                                                                                      \
-			static constexpr bool valid = Support##Functor<typename DeduceArrayType<A>::value_type>::value;                                                                                \
-			using value_type = typename _DeduceOperatorType##Functor<typename DeduceArrayType<A>::value_type>::value_type;                                                                 \
-		};                                                                                                                                                                                     \
-                                                                                                                                                                                                       \
-		template<class A1, bool hasNullType = HasNullType<A1>::value>                                                                                                                          \
-		struct Functor : BaseOperator1<typename DeduceOperatorType##Functor<A1>::value_type, A1>                                                                                               \
-		{                                                                                                                                                                                      \
-			static constexpr bool valid = DeduceOperatorType##Functor<A1>::valid;                                                                                                          \
-			typedef BaseOperator1<typename DeduceOperatorType##Functor<A1>::value_type, A1> base_type;                                                                                     \
-			Functor() {}                                                                                                                                                                   \
-			Functor(const A1& op1)                                                                                                                                                         \
-			  : base_type(op1)                                                                                                                                                             \
-			{                                                                                                                                                                              \
-			}                                                                                                                                                                              \
-			template<class Coord>                                                                                                                                                          \
-			typename base_type::value_type operator()(const Coord& pos) const                                                                                                              \
-			{                                                                                                                                                                              \
-				return Function(this->array1(pos));                                                                                                                                    \
-			}                                                                                                                                                                              \
-			typename base_type::value_type operator[](qsizetype index) const { return Function(this->array1[index]); }                                                                           \
-		};                                                                                                                                                                                     \
-		template<class A1>                                                                                                                                                                     \
-		struct Functor<A1, true> : BaseOperator1<NullType, A1>                                                                                                                                 \
-		{                                                                                                                                                                                      \
-			static constexpr bool valid = false;                                                                                                                                           \
-			typedef BaseOperator1<NullType, A1> base_type;                                                                                                                                 \
-			Functor() {}                                                                                                                                                                   \
-			Functor(const A1& op1)                                                                                                                                                         \
-			  : base_type(op1)                                                                                                                                                             \
-			{                                                                                                                                                                              \
-			}                                                                                                                                                                              \
-		};                                                                                                                                                                                     \
-		_REBIND_HELPER1(Functor)                                                                                                                                                               \
-		template<class A1>                                                                                                                                                                     \
-		using try_##Functor = decltype(Function(A1()));                                                                                                                                        \
-		template<class A1>                                                                                                                                                                     \
-		struct is_valid_functor<Functor<A1, false>> : is_valid_op1<typename DeduceArrayType<A1>::value_type, try_##Functor>                                                                    \
-		{                                                                                                                                                                                      \
-		}; /*, std::void_t<decltype(Function(DeduceArrayType<A1>::value_type()))> > : std::true_type{};*/                                                                                      \
-	}
-
-#define _DECLARE_FUNCTOR_FOR_FUNCTION2(Functor, Function)                                                                                                                                              \
-	namespace detail                                                                                                                                                                               \
-	{                                                                                                                                                                                              \
-		/*@brief Tells if given type supports operator*/                                                                                                                                       \
-		template<class T, class U>                                                                                                                                                             \
-		class Support##Functor                                                                                                                                                                 \
-		{                                                                                                                                                                                      \
-			template<class TT, class UU>                                                                                                                                                   \
-			static auto test(int) -> decltype(Function(cast::invariant_cast(TT()), cast::invariant_cast(UU())), std::true_type());                                                         \
-			template<class, class>                                                                                                                                                         \
-			static auto test(...) -> std::false_type;                                                                                                                                      \
-                                                                                                                                                                                                       \
-		public:                                                                                                                                                                                \
-			static constexpr bool value = decltype(test<T, U>(0))::value;                                                                                                                  \
-		};                                                                                                                                                                                     \
-		template<class A, class B, bool Support = Support##Functor<A, B>::value>                                                                                                               \
-		struct _DeduceOperatorType##Functor                                                                                                                                                    \
-		{                                                                                                                                                                                      \
-			using value_type = decltype(Function(cast::invariant_cast(A()), cast::invariant_cast(B())));                                                                                   \
-		};                                                                                                                                                                                     \
-		template<class A, class B>                                                                                                                                                             \
-		struct _DeduceOperatorType##Functor<A, B, false>                                                                                                                                       \
-		{                                                                                                                                                                                      \
-			using value_type = NullType;                                                                                                                                                   \
-		};                                                                                                                                                                                     \
-		template<class A, class B>                                                                                                                                                             \
-		struct DeduceOperatorType##Functor                                                                                                                                                     \
-		{                                                                                                                                                                                      \
-			static constexpr bool valid = Support##Functor<typename DeduceArrayType<A>::value_type, typename DeduceArrayType<B>::value_type>::value;                                       \
-			using value_type = typename _DeduceOperatorType##Functor<typename DeduceArrayType<A>::value_type, typename DeduceArrayType<B>::value_type>::value_type;                        \
-		};                                                                                                                                                                                     \
-                                                                                                                                                                                                       \
-		template<class A1, class A2, bool hasNullType = HasNullType<A1, A2>::value>                                                                                                            \
-		struct Functor : BaseOperator2<typename DeduceOperatorType##Functor<A1, A2>::value_type, A1, A2>                                                                                       \
-		{                                                                                                                                                                                      \
-			static constexpr bool valid = DeduceOperatorType##Functor<A1, A2>::valid;                                                                                                      \
-			typedef BaseOperator2<typename DeduceOperatorType##Functor<A1, A2>::value_type, A1, A2> base_type;                                                                             \
-			Functor() {}                                                                                                                                                                   \
-			Functor(const A1& op1, const A2& op2)                                                                                                                                          \
-			  : base_type(op1, op2)                                                                                                                                                        \
-			{                                                                                                                                                                              \
-			}                                                                                                                                                                              \
-			template<class Coord>                                                                                                                                                          \
-			typename base_type::value_type operator()(const Coord& pos) const                                                                                                              \
-			{                                                                                                                                                                              \
-				return Function(this->array1(pos), this->array2(pos));                                                                                                                 \
-			}                                                                                                                                                                              \
-			typename base_type::value_type operator[](qsizetype index) const { return Function(this->array1[index], this->array2[index]); }                                                      \
-		};                                                                                                                                                                                     \
-		template<class A1, class A2>                                                                                                                                                           \
-		struct Functor<A1, A2, true> : BaseOperator2<NullType, A1, A2>                                                                                                                         \
-		{                                                                                                                                                                                      \
-			static constexpr bool valid = false;                                                                                                                                           \
-			typedef BaseOperator2<NullType, A1, A2> base_type;                                                                                                                             \
-			Functor() {}                                                                                                                                                                   \
-			Functor(const A1& op1, const A2& op2)                                                                                                                                          \
-			  : base_type(op1, op2)                                                                                                                                                        \
-			{                                                                                                                                                                              \
-			}                                                                                                                                                                              \
-		};                                                                                                                                                                                     \
-		_REBIND_HELPER2(Functor)                                                                                                                                                               \
-		template<class A1, class A2>                                                                                                                                                           \
-		using try_##Functor = typename DeduceOperatorType##Functor<A1, A2>::value_type;                                                                                                        \
-		template<class A1, class A2>                                                                                                                                                           \
-		struct is_valid_functor<Functor<A1, A2, false>> : is_valid_op2<A1, A2, try_##Functor>                                                                                                  \
-		{                                                                                                                                                                                      \
-		}; /*, std::void_t<decltype(Function(DeduceArrayType<A1>::value_type(),DeduceArrayType<A2>::value_type()))> > :std::true_type{};*/                                                     \
-	}
-
-#define _DECLARE_FUNCTOR_FOR_FUNCTION3(Functor, Function)                                                                                                                                              \
-	namespace detail                                                                                                                                                                               \
-	{                                                                                                                                                                                              \
-		/*@brief Tells if given type supports operator*/                                                                                                                                       \
-		template<class T, class U, class V>                                                                                                                                                    \
-		class Support##Functor                                                                                                                                                                 \
-		{                                                                                                                                                                                      \
-			template<class TT, class UU, class VV>                                                                                                                                         \
-			static auto test(int) -> decltype(Function(cast::invariant_cast(TT()), cast::invariant_cast(UU()), cast::invariant_cast(VV())), std::true_type());                             \
-			template<class, class, class>                                                                                                                                                  \
-			static auto test(...) -> std::false_type;                                                                                                                                      \
-                                                                                                                                                                                                       \
-		public:                                                                                                                                                                                \
-			static constexpr bool value = decltype(test<T, U, V>(0))::value;                                                                                                               \
-		};                                                                                                                                                                                     \
-		template<class A, class B, class C, bool Support = Support##Functor<A, B, C>::value>                                                                                                   \
-		struct _DeduceOperatorType##Functor                                                                                                                                                    \
-		{                                                                                                                                                                                      \
-			using value_type = decltype(Function(cast::invariant_cast(A()), cast::invariant_cast(B()), cast::invariant_cast(C())));                                                        \
-		};                                                                                                                                                                                     \
-		template<class A, class B, class C>                                                                                                                                                    \
-		struct _DeduceOperatorType##Functor<A, B, C, false>                                                                                                                                    \
-		{                                                                                                                                                                                      \
-			using value_type = NullType;                                                                                                                                                   \
-		};                                                                                                                                                                                     \
-		template<class A, class B, class C>                                                                                                                                                    \
-		struct DeduceOperatorType##Functor                                                                                                                                                     \
-		{                                                                                                                                                                                      \
-			static constexpr bool valid =                                                                                                                                                  \
-			  Support##Functor<typename DeduceArrayType<A>::value_type, typename DeduceArrayType<B>::value_type, typename DeduceArrayType<C>::value_type>::value;                          \
-			using value_type = typename _DeduceOperatorType##Functor<typename DeduceArrayType<A>::value_type,                                                                              \
-										 typename DeduceArrayType<B>::value_type,                                                                              \
-										 typename DeduceArrayType<C>::value_type>::value_type;                                                                 \
-		};                                                                                                                                                                                     \
-                                                                                                                                                                                                       \
-		template<class A1, class A2, class A3, bool hasNullType = HasNullType<A1, A2, A3>::value>                                                                                              \
-		struct Functor : BaseOperator3<typename DeduceOperatorType##Functor<A1, A2, A3>::value_type, A1, A2, A3>                                                                               \
-		{                                                                                                                                                                                      \
-			static constexpr bool valid = DeduceOperatorType##Functor<A1, A2, A3>::valid;                                                                                                  \
-			typedef BaseOperator3<typename DeduceOperatorType##Functor<A1, A2, A3>::value_type, A1, A2, A3> base_type;                                                                     \
-			Functor() {}                                                                                                                                                                   \
-			Functor(const A1& op1, const A2& op2, const A3& op3)                                                                                                                           \
-			  : base_type(op1, op2, op3)                                                                                                                                                   \
-			{                                                                                                                                                                              \
-			}                                                                                                                                                                              \
-			template<class Coord>                                                                                                                                                          \
-			typename base_type::value_type operator()(const Coord& pos) const                                                                                                              \
-			{                                                                                                                                                                              \
-				return Function(this->array1(pos), this->array2(pos), this->array3(pos));                                                                                              \
-			}                                                                                                                                                                              \
-			typename base_type::value_type operator[](qsizetype index) const { return Function(this->array1[index], this->array2[index], this->array3[index]); }                                 \
-		};                                                                                                                                                                                     \
-		template<class A1, class A2, class A3>                                                                                                                                                 \
-		struct Functor<A1, A2, A3, true> : BaseOperator3<NullType, A1, A2, A3>                                                                                                                 \
-		{                                                                                                                                                                                      \
-			static constexpr bool valid = false;                                                                                                                                           \
-			typedef BaseOperator3<NullType, A1, A2, A3> base_type;                                                                                                                         \
-			Functor() {}                                                                                                                                                                   \
-			Functor(const A1& op1, const A2& op2, const A3& op3)                                                                                                                           \
-			  : base_type(op1, op2, op3)                                                                                                                                                   \
-			{                                                                                                                                                                              \
-			}                                                                                                                                                                              \
-		};                                                                                                                                                                                     \
-		_REBIND_HELPER3(Functor)                                                                                                                                                               \
-		template<class A1, class A2, class A3>                                                                                                                                                 \
-		using try_##Functor = typename DeduceOperatorType##Functor<A1, A2, A3>::value_type;                                                                                                    \
-		template<class A1, class A2, class A3>                                                                                                                                                 \
-		struct is_valid_functor<Functor<A1, A2, A3, false>> : is_valid_op3<A1, A2, A3, try_##Functor>                                                                                          \
-		{                                                                                                                                                                                      \
-		}; /*, std::void_t<decltype(Function(DeduceArrayType<A1>::value_type(),DeduceArrayType<A2>::value_type()))> > :std::true_type{};*/                                                     \
-	}
-
-	//
-	// Create bits operators working on any types
-	//
-
-	template<class T>
-	typename std::enable_if<!std::is_integral<T>::value, T>::type bitwise_and(const T& v1, const T& v2)
-	{
-		T res;
-		const char* p1 = (const char*)&v1;
-		const char* p2 = (const char*)&v2;
-		char* pr = (char*)&res;
-		for (qsizetype i = 0; i < sizeof(T); ++i)
-			pr[i] = p1[i] & p2[i];
-		return res;
-	}
-	template<class T>
-	typename std::enable_if<std::is_integral<T>::value, T>::type bitwise_and(const T& v1, const T& v2)
-	{
-		return v1 & v2;
-	}
-	template<class T>
-	typename std::enable_if<!std::is_integral<T>::value, T>::type bitwise_or(const T& v1, const T& v2)
-	{
-		T res;
-		const char* p1 = (const char*)&v1;
-		const char* p2 = (const char*)&v2;
-		char* pr = (char*)&res;
-		for (qsizetype i = 0; i < sizeof(T); ++i)
-			pr[i] = p1[i] | p2[i];
-		return res;
-	}
-	template<class T>
-	typename std::enable_if<std::is_integral<T>::value, T>::type bitwise_or(const T& v1, const T& v2)
-	{
-		return v1 | v2;
-	}
-	template<class T>
-	typename std::enable_if<!std::is_integral<T>::value, T>::type bitwise_xor(const T& v1, const T& v2)
-	{
-		T res;
-		const char* p1 = (const char*)&v1;
-		const char* p2 = (const char*)&v2;
-		char* pr = (char*)&res;
-		for (qsizetype i = 0; i < sizeof(T); ++i)
-			pr[i] = p1[i] ^ p2[i];
-		return res;
-	}
-	template<class T>
-	typename std::enable_if<std::is_integral<T>::value, T>::type bitwise_xor(const T& v1, const T& v2)
-	{
-		return v1 ^ v2;
-	}
-	template<class T>
-	typename std::enable_if<!std::is_integral<T>::value, T>::type lshift(const T& v1, const T& v2)
-	{
-		T res;
-		const char* p1 = (const char*)&v1;
-		const char* p2 = (const char*)&v2;
-		char* pr = (char*)&res;
-		for (qsizetype i = 0; i < sizeof(T); ++i)
-			pr[i] = p1[i] << p2[i];
-		return res;
-	}
-	template<class T>
-	typename std::enable_if<std::is_integral<T>::value, T>::type lshift(const T& v1, const T& v2)
-	{
-		return v1 << v2;
-	}
-	template<class T>
-	typename std::enable_if<!std::is_integral<T>::value, T>::type rshift(const T& v1, const T& v2)
-	{
-		T res;
-		const char* p1 = (const char*)&v1;
-		const char* p2 = (const char*)&v2;
-		char* pr = (char*)&res;
-		for (qsizetype i = 0; i < sizeof(T); ++i)
-			pr[i] = p1[i] >> p2[i];
-		return res;
-	}
-	template<class T>
-	typename std::enable_if<std::is_integral<T>::value, T>::type rshift(const T& v1, const T& v2)
-	{
-		return v1 >> v2;
-	}
-
+/// @brief Create a functor expression that applies a function object.
+/// Used to create function expression from any function.
+template<class Functor, class... Array>
+auto vipFunction(const Functor& fun, Array... args)
+{
+	return detail::GenericFunction<Functor, detail::DeduceArrayType_t<Array>...>(fun, std::forward<Array>(args)...);
 }
 
 //
 // Create operator overloads for VipNDArray
 //
 
-_DECLARE_OPERATOR2(Add, +)
-_DECLARE_OPERATOR2(Mul, *)
-_DECLARE_OPERATOR2(Sub, -)
-_DECLARE_OPERATOR2(Div, /)
-_DECLARE_OPERATOR2(Rem, %)
-_DECLARE_OPERATOR2(And, &&)
-_DECLARE_OPERATOR2(Or, ||)
-_DECLARE_OPERATOR2(Gr, >)
-_DECLARE_OPERATOR2(Lr, <)
-_DECLARE_OPERATOR2(GrEq, >=)
-_DECLARE_OPERATOR2(LrEq, <=)
-_DECLARE_OPERATOR2(Eq, ==)
-_DECLARE_OPERATOR2(NotEq, !=)
-_DECLARE_OPERATOR2_FUNCTION(AndB, &, bitwise_and)
-_DECLARE_OPERATOR2_FUNCTION(OrB, |, bitwise_or)
-_DECLARE_OPERATOR2_FUNCTION(Xor, ^, bitwise_xor)
-
-_DECLARE_FUNCTOR_FOR_FUNCTION2(ShiftL, lshift)
-template<class A1, class A2>
-typename std::enable_if<detail::HasArrayType<A1>::value, detail::ShiftL<A1, A2>>::type operator<<(const A1& a1, const A2& a2)
+template<class A1, class A2, std::enable_if_t<detail::HasArrayType<A1, A2>::value, int> = 0>
+auto operator+(const A1& l, const A2& r)
 {
-	return detail::ShiftL<A1, A2>(a1, a2);
+	return vipFunction([](auto l, auto r, std::void_t<decltype(l + r)>* = nullptr) { return l + r; }, l, r);
 }
-_DECLARE_FUNCTOR_FOR_FUNCTION2(ShiftR, rshift)
-template<class A1, class A2>
-typename std::enable_if<detail::HasArrayType<A1>::value, detail::ShiftL<A1, A2>>::type operator>>(const A1& a1, const A2& a2)
+template<class A1, class A2, std::enable_if_t<detail::HasArrayType<A1, A2>::value, int> = 0>
+auto operator-(const A1& l, const A2& r)
 {
-	return detail::ShiftR<A1, A2>(a1, a2);
+	return vipFunction([](auto l, auto r, std::void_t<decltype(l - r)>* = nullptr) { return l - r; }, l, r);
+}
+template<class A1, class A2, std::enable_if_t<detail::HasArrayType<A1, A2>::value, int> = 0>
+auto operator*(const A1& l, const A2& r)
+{
+	return vipFunction([](auto l, auto r, std::void_t<decltype(l * r)>* = nullptr) { return l * r; }, l, r);
+}
+template<class A1, class A2, std::enable_if_t<detail::HasArrayType<A1, A2>::value, int> = 0>
+auto operator/(const A1& l, const A2& r)
+{
+	return vipFunction([](auto l, auto r, std::void_t<decltype(l / r)>* = nullptr) { return l / r; }, l, r);
+}
+template<class A1, class A2, std::enable_if_t<detail::HasArrayType<A1, A2>::value, int> = 0>
+auto operator%(const A1& l, const A2& r)
+{
+	return vipFunction([](auto l, auto r, std::void_t<decltype(l % r)>* = nullptr) { return l % r; }, l, r);
 }
 
-//
-// Create the ~ operator for VipNDArray
-//
-namespace detail
+template<class A1, class A2, std::enable_if_t<detail::HasArrayType<A1, A2>::value, int> = 0>
+auto operator<(const A1& l, const A2& r)
 {
-
-	template<class T>
-	typename std::enable_if<!std::is_integral<T>::value, T>::type reverse(const T& v1)
-	{
-		T res;
-		const char* p1 = (const char*)&v1;
-		char* pr = (char*)&res;
-		for (qsizetype i = 0; i < sizeof(T); ++i)
-			pr[i] = ~p1[i];
-		return res;
-	}
-	template<class T>
-	typename std::enable_if<std::is_integral<T>::value, T>::type reverse(const T& v1)
-	{
-		return ~v1;
-	}
-
-	// operator ~
-	template<class A1, bool hasNullType = HasNullType<A1>::value>
-	struct ReverseBits : BaseOperator1<typename DeduceArrayType<A1>::value_type, A1>
-	{
-		ReverseBits() {}
-		ReverseBits(const A1& op1)
-		  : BaseOperator1<typename DeduceArrayType<A1>::value_type, A1>(op1)
-		{
-		}
-		template<class Coord>
-		typename DeduceArrayType<A1>::value_type operator()(const Coord& pos) const
-		{
-			return ~this->array1(pos);
-		}
-		typename DeduceArrayType<A1>::value_type operator[](qsizetype index) const { return reverse(this->array1[index]); }
-	};
-	template<class A1>
-	struct ReverseBits<A1, true> : BaseOperator1<NullType, A1>
-	{
-		ReverseBits() {}
-		ReverseBits(const A1& op1)
-		  : BaseOperator1<NullType, A1>(op1)
-		{
-		}
-	};
-	_REBIND_HELPER1(ReverseBits)
-	template<class A1>
-	using try_ReverseBits = decltype(reverse(typename DeduceArrayType<A1>::value_type()));
-	template<class A1>
-	struct is_valid_functor<ReverseBits<A1, false>> : is_valid_op1<A1, try_ReverseBits>
-	{
-	};
+	return vipFunction([](auto l, auto r, std::void_t<decltype(l < r)>* = nullptr) { return l < r; }, l, r);
 }
-template<class A1>
-typename std::enable_if<detail::HasArrayType<A1>::value, detail::ReverseBits<A1>>::type operator~(const A1& a1)
+template<class A1, class A2, std::enable_if_t<detail::HasArrayType<A1, A2>::value, int> = 0>
+auto operator>(const A1& l, const A2& r)
 {
-	return detail::ReverseBits<A1>(a1);
+	return vipFunction([](auto l, auto r, std::void_t<decltype(l > r)>* = nullptr) { return l > r; }, l, r);
+}
+template<class A1, class A2, std::enable_if_t<detail::HasArrayType<A1, A2>::value, int> = 0>
+auto operator<=(const A1& l, const A2& r)
+{
+	return vipFunction([](auto l, auto r, std::void_t<decltype(l <= r)>* = nullptr) { return l <= r; }, l, r);
+}
+template<class A1, class A2, std::enable_if_t<detail::HasArrayType<A1, A2>::value, int> = 0>
+auto operator>=(const A1& l, const A2& r)
+{
+	return vipFunction([](auto l, auto r, std::void_t<decltype(l >= r)>* = nullptr) { return l >= r; }, l, r);
+}
+template<class A1, class A2, std::enable_if_t<detail::HasArrayType<A1, A2>::value, int> = 0>
+auto operator==(const A1& l, const A2& r)
+{
+	return vipFunction([](auto l, auto r, std::void_t<decltype(l == r)>* = nullptr) { return l == r; }, l, r);
+}
+template<class A1, class A2, std::enable_if_t<detail::HasArrayType<A1, A2>::value, int> = 0>
+auto operator!=(const A1& l, const A2& r)
+{
+	return vipFunction([](auto l, auto r, std::void_t<decltype(l != r)>* = nullptr) { return l != r; }, l, r);
 }
 
-//
-// Create the ! operator for VipNDArray
-//
-namespace detail
+template<class A1, class A2, std::enable_if_t<detail::HasArrayType<A1, A2>::value, int> = 0>
+auto operator&(const A1& l, const A2& r)
 {
-
-	// operator !
-	template<class A1, bool hasNullType = HasNullType<A1>::value>
-	struct Not : BaseOperator1<typename DeduceArrayType<A1>::value_type, A1>
-	{
-		Not() {}
-		Not(const A1& op1)
-		  : BaseOperator1<typename DeduceArrayType<A1>::value_type, A1>(op1)
-		{
-		}
-		template<class Coord>
-		typename DeduceArrayType<A1>::value_type operator()(const Coord& pos) const
-		{
-			return !this->array1(pos);
-		}
-		typename DeduceArrayType<A1>::value_type operator[](qsizetype index) const { return !(this->array1[index]); }
-	};
-	template<class A1>
-	struct Not<A1, true> : BaseOperator1<NullType, A1>
-	{
-		Not() {}
-		Not(const A1& op1)
-		  : BaseOperator1<NullType, A1>(op1)
-		{
-		}
-	};
-	_REBIND_HELPER1(Not)
-	template<class A1>
-	using try_Not = decltype(!(typename DeduceArrayType<A1>::value_type()));
-	template<class A1>
-	struct is_valid_functor<Not<A1, false>> : is_valid_op1<A1, try_Not>
-	{
-	};
-
+	return vipFunction([](auto l, auto r, std::void_t<decltype(l & r)>* = nullptr) { return l & r; }, l, r);
 }
-template<class A1>
-typename std::enable_if<detail::HasArrayType<A1>::value, detail::Not<A1>>::type operator!(const A1& a1)
+template<class A1, class A2, std::enable_if_t<detail::HasArrayType<A1, A2>::value, int> = 0>
+auto operator|(const A1& l, const A2& r)
 {
-	return detail::Not<A1>(a1);
+	return vipFunction([](auto l, auto r, std::void_t<decltype(l | r)>* = nullptr) { return l | r; }, l, r);
+}
+template<class A1, class A2, std::enable_if_t<detail::HasArrayType<A1, A2>::value, int> = 0>
+auto operator^(const A1& l, const A2& r)
+{
+	return vipFunction([](auto l, auto r, std::void_t<decltype(l ^ r)>* = nullptr) { return l ^ r; }, l, r);
+}
+
+template<class A1, class A2, std::enable_if_t<detail::HasArrayType<A1, A2>::value, int> = 0>
+auto operator<<(const A1& l, const A2& r)
+{
+	return vipFunction([](auto l, auto r, std::void_t<decltype(l << r)>* = nullptr) { return l << r; }, l, r);
+}
+template<class A1, class A2, std::enable_if_t<detail::HasArrayType<A1, A2>::value, int> = 0>
+auto operator>>(const A1& l, const A2& r)
+{
+	return vipFunction([](auto l, auto r, std::void_t<decltype(l >> r)>* = nullptr) { return l >> r; }, l, r);
+}
+
+template<class A1, std::enable_if_t<detail::HasArrayType<A1>::value, int> = 0>
+auto operator~(const A1& l)
+{
+	return vipFunction([](auto l, std::void_t<decltype(~l)>* = nullptr) { return ~l; }, l);
+}
+
+template<class A1, std::enable_if_t<detail::HasArrayType<A1>::value, int> = 0>
+auto operator!(const A1& l)
+{
+	return vipFunction([](auto l, std::void_t<decltype(!l)>* = nullptr) { return !l; }, l);
 }
 
 /////////////////////////////////
 // Operators +=, *=, -=, ...
 /////////////////////////////////
 
-template<class Array, class T>
-typename std::enable_if<detail::HasArrayType<Array>::value, Array>::type& operator+=(Array& a1, const T& a2)
+template<class A1, class A2, std::enable_if_t<detail::HasArrayType<A1>::value, int> = 0>
+A1& operator+=(A1& l, const A2& r)
 {
-	return a1 = a1 + a2;
+	return l = l + r;
 }
-template<class Array, class T>
-typename std::enable_if<detail::HasArrayType<Array>::value, Array>::type& operator-=(Array& a1, const T& a2)
+template<class A1, class A2, std::enable_if_t<detail::HasArrayType<A1>::value, int> = 0>
+A1& operator-=(A1& l, const A2& r)
 {
-	return a1 = a1 - a2;
+	return l = l - r;
 }
-template<class Array, class T>
-typename std::enable_if<detail::HasArrayType<Array>::value, Array>::type& operator*=(Array& a1, const T& a2)
+template<class A1, class A2, std::enable_if_t<detail::HasArrayType<A1>::value, int> = 0>
+A1& operator*=(A1& l, const A2& r)
 {
-	return a1 = a1 * a2;
+	return l = l * r;
 }
-template<class Array, class T>
-typename std::enable_if<detail::HasArrayType<Array>::value, Array>::type& operator/=(Array& a1, const T& a2)
+template<class A1, class A2, std::enable_if_t<detail::HasArrayType<A1>::value, int> = 0>
+A1& operator/=(A1& l, const A2& r)
 {
-	return a1 = a1 / a2;
+	return l = l / r;
 }
-template<class Array, class T>
-typename std::enable_if<detail::HasArrayType<Array>::value, Array>::type& operator%=(Array& a1, const T& a2)
+template<class A1, class A2, std::enable_if_t<detail::HasArrayType<A1>::value, int> = 0>
+A1& operator%=(A1& l, const A2& r)
 {
-	return a1 = a1 % a2;
+	return l = l % r;
 }
-template<class Array, class T>
-typename std::enable_if<detail::HasArrayType<Array>::value, Array>::type& operator&=(Array& a1, const T& a2)
+template<class A1, class A2, std::enable_if_t<detail::HasArrayType<A1>::value, int> = 0>
+A1& operator&=(A1& l, const A2& r)
 {
-	return a1 = a1 & a2;
+	return l = l & r;
 }
-template<class Array, class T>
-typename std::enable_if<detail::HasArrayType<Array>::value, Array>::type& operator|=(Array& a1, const T& a2)
+template<class A1, class A2, std::enable_if_t<detail::HasArrayType<A1>::value, int> = 0>
+A1& operator|=(A1& l, const A2& r)
 {
-	return a1 = a1 | a2;
+	return l = l | r;
 }
-template<class Array, class T>
-typename std::enable_if<detail::HasArrayType<Array>::value, Array>::type& operator<<=(Array& a1, const T& a2)
+template<class A1, class A2, std::enable_if_t<detail::HasArrayType<A1>::value, int> = 0>
+A1& operator^=(A1& l, const A2& r)
 {
-	return a1 = a1 << a2;
+	return l = l ^ r;
 }
-template<class Array, class T>
-typename std::enable_if<detail::HasArrayType<Array>::value, Array>::type& operator>>=(Array& a1, const T& a2)
+template<class A1, class A2, std::enable_if_t<detail::HasArrayType<A1>::value, int> = 0>
+A1& operator<<=(A1& l, const A2& r)
 {
-	return a1 = a1 >> a2;
+	return l = l << r;
 }
-template<class Array, class T>
-typename std::enable_if<detail::HasArrayType<Array>::value, Array>::type& operator^=(Array& a1, const T& a2)
+template<class A1, class A2, std::enable_if_t<detail::HasArrayType<A1>::value, int> = 0>
+A1& operator>>=(A1& l, const A2& r)
 {
-	return a1 = a1 ^ a2;
-}
-
-namespace detail
-{
-
-	//
-	// Create the vipCast function
-	//
-
-	/// Base Cast implementation, use static_cast
-	template<class T, class U, class Enable = void>
-	struct Cast
-	{
-		typedef T type;
-		static T cast(const U& u) { return Convert<T, U>::apply(u); }
-	};
-
-	/// functor use with functor expressions, uses the Cast structure
-	template<class T, class A1, bool hasNullType = HasNullType<A1>::value>
-	struct CastOp : public BaseOperator1<T, A1>
-	{
-		typedef Cast<T, typename BaseOperator1<T, A1>::value_type> cast;
-		CastOp() {}
-		CastOp(const A1& op1)
-		  : BaseOperator1<T, A1>(op1)
-		{
-		}
-		template<class Coord>
-		T operator()(const Coord& pos) const
-		{
-			return cast::cast(this->array1(pos));
-		}
-		T operator[](qsizetype index) const { return cast::cast(this->array1[index]); }
-	};
-	template<class T, class A1>
-	struct CastOp<T, A1, true> : public BaseOperator1<T, A1>
-	{
-		CastOp() {}
-		CastOp(const A1& op1)
-		  : BaseOperator1<T, A1>(op1)
-		{
-		}
-	};
-	/// rebind specialization for CastOp, create a CastOp with the same array type but returning a different type
-	template<class T, class U, class A1, bool hasNullType>
-	struct rebind<T, CastOp<U, A1, hasNullType>, false>
-	{
-		typedef CastOp<U, A1, hasNullType> op;
-		typedef CastOp<T, A1, false> type;
-		static type cast(const op& a) { return type(a.array1); }
-	};
-	template<class T, class A1>
-	struct is_valid_functor<CastOp<T, A1>> : std::true_type
-	{
-	};
-
-	//
-	// Specializations for Cast struct
-	//
-
-	/// cast to same type
-	template<class T>
-	struct Cast<T, T>
-	{
-		typedef const T& type;
-		static const T& cast(const T& u) { return u; }
-	};
-	/// cast VipNDArray : return a VipNDArrayType
-	template<class T, class U>
-	struct Cast<T, U, typename std::enable_if<IsNDArray<U>::value>::type>
-	{
-		typedef VipNDArrayType<T> type;
-		static type cast(const U& u) { return type(u); }
-	};
-	/// cast Operator : return a CastOp
-	template<class T, class U>
-	struct Cast<T, U, typename std::enable_if<IsOperand<U>::value>::type>
-	{
-		typedef CastOp<T, typename rebind<T, U>::type> type;
-		static type cast(const U& u) { return type(rebind<T, U>::cast(u)); }
-	};
-	/// cast VipNDArrayType : return a CastOp
-	template<class T, class U, qsizetype NDims>
-	struct Cast<T, VipNDArrayType<U, NDims>>
-	{
-		typedef CastOp<T, VipNDArrayType<U, NDims>> type;
-		static type cast(const VipNDArrayType<U, NDims>& u) { return type(u); }
-	};
-	/// cast VipNDArrayType to same type : return array
-	template<class T, qsizetype NDims>
-	struct Cast<T, VipNDArrayType<T, NDims>>
-	{
-		typedef const VipNDArrayType<T, NDims>& type;
-		static type cast(const VipNDArrayType<T, NDims>& u) { return u; }
-	};
-	/// cast VipNDArrayTypeView : return a CastOp
-	template<class T, class U, qsizetype NDims>
-	struct Cast<T, VipNDArrayTypeView<U, NDims>>
-	{
-		typedef CastOp<T, VipNDArrayTypeView<U, NDims>> type;
-		static type cast(const VipNDArrayTypeView<U, NDims>& u) { return type(u); }
-	};
-	/// cast VipNDArrayTypeView to same type: return array
-	template<class T, qsizetype NDims>
-	struct Cast<T, VipNDArrayTypeView<T, NDims>>
-	{
-		typedef const VipNDArrayTypeView<T, NDims>& type;
-		static type cast(const VipNDArrayTypeView<T, NDims>& u) { return u; }
-	};
+	return l = l >> r;
 }
 
-/// Cast input array or value to given type.
+/// @brief Tells if convertion using vipCast() is valid
+template<class From, class To>
+struct VipIsCastable : std::bool_constant<detail::Convert<To, From>::valid>
+{
+};
+template<class From, class To>
+constexpr bool VipIsCastable_v = VipIsCastable<From, To>::value;
+
+/// @brief Cast input array or value to given type.
 /// This function provides a different behavior depending on the input type:
 ///
 /// \code
@@ -1551,49 +827,14 @@ namespace detail
 /// //casted to VipNDArraytype<double>.
 /// \endcode
 template<class T, class U>
-typename detail::Cast<T, U>::type vipCast(const U& value)
+auto vipCast(const U& value)
 {
-	return detail::Cast<T, U>::cast(value);
+	if constexpr (detail::HasArrayType_v<U>)
+		return vipFunction(
+		  [](const auto& a, std::enable_if_t<VipIsCastable_v<std::decay_t<decltype(a)>, T>, void>* = nullptr) { return detail::Convert<T, std::decay_t<decltype(a)>>::apply(a); }, value);
+	else
+		return detail::Convert<T, U>::apply(value);
 }
-
-/// Create a version of the unary function \a fun that works with functor expression.
-/// \a Functor is the name of the functor structure created in the detail namespace.
-///
-/// Note that the standard version of \a fun (working on numerical values) must be defined with
-/// SFINAE to avoid declaration conflicts. See the #vipConjugate function as an example.
-#define VIP_CREATE_FUNCTION1(Functor, fun)                                                                                                                                                             \
-	_DECLARE_FUNCTOR_FOR_FUNCTION1(Functor, fun)                                                                                                                                                   \
-	template<class T1>                                                                                                                                                                             \
-	typename std::enable_if<!detail::IsNoOperand<T1>::value, detail::Functor<T1>>::type fun(const T1& v1)                                                                                          \
-	{                                                                                                                                                                                              \
-		return detail::Functor<T1>(v1);                                                                                                                                                        \
-	}
-
-/// Create a version of the binary function \a fun that works with functor expression.
-/// \a Functor is the name of the functor structure created in the detail namespace.
-///
-/// Note that the standard version of \a fun (working on numerical values) must be defined with
-/// SFINAE to avoid declaration conflicts. See the #vipMin function as an example.
-#define VIP_CREATE_FUNCTION2(Functor, fun)                                                                                                                                                             \
-	_DECLARE_FUNCTOR_FOR_FUNCTION2(Functor, fun)                                                                                                                                                   \
-	template<class T1, class T2>                                                                                                                                                                   \
-	typename std::enable_if<!detail::IsNoOperand<T1, T2>::value, detail::Functor<T1, T2>>::type fun(const T1& v1, const T2& v2)                                                                    \
-	{                                                                                                                                                                                              \
-		return detail::Functor<T1, T2>(v1, v2);                                                                                                                                                \
-	}
-
-/// Create a version of the ternary function \a fun that works with functor expression.
-/// \a Functor is the name of the functor structure created in the detail namespace.
-///
-/// Note that the standard version of \a fun (working on numerical values) must be defined with
-/// SFINAE to avoid declaration conflicts. See the #vipClamp function as an example.
-#define VIP_CREATE_FUNCTION3(Functor, fun)                                                                                                                                                             \
-	_DECLARE_FUNCTOR_FOR_FUNCTION3(Functor, fun)                                                                                                                                                   \
-	template<class T1, class T2, class T3>                                                                                                                                                         \
-	typename std::enable_if<!detail::IsNoOperand<T1, T2, T3>::value, detail::Functor<T1, T2, T3>>::type fun(const T1& v1, const T2& v2, const T3& v3)                                              \
-	{                                                                                                                                                                                              \
-		return detail::Functor<T1, T2, T3>(v1, v2, v3);                                                                                                                                        \
-	}
 
 /// \fn vipMin
 /// Returns the minimum of 2 expressions. This function works with VipNDArray and functor expressions.
@@ -1604,12 +845,14 @@ typename detail::Cast<T, U>::type vipCast(const U& value)
 /// auto p1 = vipMin(ar, 2);					//return a functor expression to evaluate minimum between VipNDArrayType and integer
 /// auto p2 = vipMin(3, 4.1);					//return 3.0
 /// \endcode
-template<class T1, class T2>
-typename std::enable_if<detail::IsNoOperand<T1, T2>::value, decltype(T1() + T2())>::type vipMin(const T1& v1, const T2& v2)
+template<class A1, class A2>
+auto vipMin(const A1& a1, const A2& a2)
 {
-	return v1 < v2 ? v1 : v2;
+	if constexpr (detail::HasArrayType_v<A1, A2>)
+		return vipFunction([](auto l, auto r, std::void_t<decltype(l < r)>* = nullptr) { return l < r ? l : r; }, a1, a2);
+	else
+		return a1 < a2 ? a1 : a2;
 }
-VIP_CREATE_FUNCTION2(MinFun, vipMin)
 
 /// \fn vipMax
 /// Returns the maximum of 2 expressions. This function works with VipNDArray and functor expressions.
@@ -1620,169 +863,177 @@ VIP_CREATE_FUNCTION2(MinFun, vipMin)
 /// auto p1 = vipMax(ar, 2);					//return a functor expression to evaluate maximum between VipNDArrayType and integer
 /// auto p2 = vipMax(3, 4.1);					//return 3.0
 /// \endcode
-template<class T1, class T2>
-typename std::enable_if<detail::IsNoOperand<T1, T2>::value, decltype(T1() + T2())>::type vipMax(const T1& v1, const T2& v2)
+template<class A1, class A2>
+auto vipMax(const A1& a1, const A2& a2)
 {
-	return v1 > v2 ? v1 : v2;
+	if constexpr (detail::HasArrayType_v<A1, A2>)
+		return vipFunction([](auto l, auto r, std::void_t<decltype(l > r)>* = nullptr) { return l > r ? l : r; }, a1, a2);
+	else
+		return a1 > a2 ? a1 : a2;
 }
-VIP_CREATE_FUNCTION2(MaxFun, vipMax)
 
 template<class T>
-typename std::enable_if<std::is_arithmetic<T>::value, T>::type vipReal(const T& v)
+struct VipIsComplex : std::false_type
 {
-	return v;
-}
+};
 template<class T>
-T vipReal(const std::complex<T>& c)
+struct VipIsComplex<std::complex<T>> : std::true_type
 {
-	return c.real();
-}
-VIP_CREATE_FUNCTION1(RealFun, vipReal)
-
+};
 template<class T>
-typename std::enable_if<std::is_arithmetic<T>::value, T>::type vipImag(const T& v)
-{
-	return (T)0;
-}
-template<class T>
-T vipImag(const std::complex<T>& c)
-{
-	return c.imag();
-}
-VIP_CREATE_FUNCTION1(ImagFun, vipImag)
+constexpr bool VipIsComplex_v = VipIsComplex<T>::value;
 
 template<class T>
-typename std::enable_if<std::is_arithmetic<T>::value, T>::type vipArg(const T& v)
+struct VipIsRgb : std::false_type
 {
-	return 0;
-}
+};
 template<class T>
-T vipArg(const std::complex<T>& c)
+struct VipIsRgb<VipRgb<T>> : std::true_type
 {
-	return std::arg(c);
-}
-VIP_CREATE_FUNCTION1(ArgFun, vipArg)
-
+};
 template<class T>
-typename std::enable_if<std::is_arithmetic<T>::value, T>::type vipNorm(const T& v)
-{
-	return std::norm(std::complex<T>(v));
-}
-template<class T>
-T vipNorm(const std::complex<T>& c)
-{
-	return std::norm(c);
-}
-VIP_CREATE_FUNCTION1(NormFun, vipNorm)
+constexpr bool VipIsRgb_v = VipIsRgb<T>::value;
 
-template<class T>
-typename std::enable_if<std::is_arithmetic<T>::value, T>::type vipConjugate(const T& v)
+template<class T, std::enable_if_t<std::is_arithmetic_v<T> || VipIsComplex<T>::value || detail::HasArrayType_v<T>, int> = 0>
+auto vipReal(const T& v)
 {
-	return v;
-}
-template<class T>
-T vipConjugate(const std::complex<T>& c)
-{
-	return std::complex<T>(c.real(), -c.imag());
-}
-VIP_CREATE_FUNCTION1(ConjugateFun, vipConjugate)
-
-VIP_CREATE_FUNCTION1(AbsFun, vipAbs)
-VIP_CREATE_FUNCTION1(CeilFun, vipCeil)
-VIP_CREATE_FUNCTION1(FloorFun, vipFloor)
-VIP_CREATE_FUNCTION1(RoundFun, vipRound)
-
-template<class T, class MA, class MI>
-typename std::enable_if<detail::IsNoOperand<T, MA, MI>::value, T>::type vipClamp(const T& v, const MI& min, const MA& max)
-{
-	return v < min ? (T)min : (v > max ? (T)max : v);
-}
-VIP_CREATE_FUNCTION3(ClampFun, vipClamp)
-
-VIP_CREATE_FUNCTION1(IsNanFun, vipIsNan)
-VIP_CREATE_FUNCTION1(IsInfFun, vipIsInf)
-
-template<class T1, class T2>
-typename std::enable_if<detail::IsNoOperand<T1, T2>::value, T1>::type vipReplaceNan(const T1& v, const T2& value)
-{
-	return vipIsNan(v) ? static_cast<T1>(value) : v;
-}
-VIP_CREATE_FUNCTION2(ReplaceNanFun, vipReplaceNan)
-
-template<class T1, class T2>
-typename std::enable_if<detail::IsNoOperand<T1, T2>::value, T1>::type vipReplaceInf(const T1& v, const T2& value)
-{
-	return vipIsInf(v) ? static_cast<T1>(value) : v;
-}
-VIP_CREATE_FUNCTION2(ReplaceInfFun, vipReplaceInf)
-
-template<class T1, class T2>
-typename std::enable_if<detail::IsNoOperand<T1, T2>::value, T1>::type vipReplaceNanInf(const T1& v, const T2& value)
-{
-	return (vipIsNan(v) || vipIsInf(v)) ? static_cast<T1>(value) : v;
-}
-VIP_CREATE_FUNCTION2(ReplaceNanInfFun, vipReplaceNanInf)
-
-template<class Cond, class T1, class T2>
-typename std::enable_if<detail::IsNoOperand<Cond, T1, T2>::value, T1>::type vipWhere(const Cond& condition, const T1& v1, const T2& v2)
-{
-	return condition ? v1 : static_cast<T2>(v2);
-}
-// Do NOT use VIP_CREATE_FUNCTION3 for vipWhere as it will always compute both values for a given condition.
-// This must be avoided as one of the branch can be very costly.
-// VIP_CREATE_FUNCTION3(WhereFun, vipWhere)
-namespace detail
-{
-
-	template<class A1, class A2, class A3, bool hasNullType = HasNullType<A1, A2, A3>::value>
-	struct WhereFun
-	  : BaseOperator3<decltype(vipWhere(typename DeduceArrayType<A1>::value_type(), typename DeduceArrayType<A2>::value_type(), typename DeduceArrayType<A3>::value_type())), A1, A2, A3>
-	{
-		typedef BaseOperator3<decltype(vipWhere(typename DeduceArrayType<A1>::value_type(), typename DeduceArrayType<A2>::value_type(), typename DeduceArrayType<A3>::value_type())),
-				      A1,
-				      A2,
-				      A3>
-		  base_type;
-		WhereFun() {}
-		WhereFun(const A1& op1, const A2& op2, const A3& op3)
-		  : base_type(op1, op2, op3)
-		{
-		}
-		template<class Coord>
-		typename base_type::value_type operator()(const Coord& pos) const
-		{
-			return (this->array1(pos) ? this->array2(pos) : this->array3(pos));
-		}
-		typename base_type::value_type operator[](qsizetype index) const { return this->array1[index] ? this->array2[index] : this->array3[index]; }
-	};
-	template<class A1, class A2, class A3>
-	struct WhereFun<A1, A2, A3, true> : BaseOperator3<NullType, A1, A2, A3>
-	{
-		typedef BaseOperator3<NullType, A1, A2, A3> base_type;
-		WhereFun() {}
-		WhereFun(const A1& op1, const A2& op2, const A3& op3)
-		  : base_type(op1, op2, op3)
-		{
-		}
-	};
-	_REBIND_HELPER3(WhereFun)
-	template<class A1, class A2, class A3>
-	using try_WhereFun = decltype(vipWhere(typename DeduceArrayType<A1>::value_type(), typename DeduceArrayType<A2>::value_type(), typename DeduceArrayType<A3>::value_type()));
-	template<class A1, class A2, class A3>
-	struct is_valid_functor<WhereFun<A1, A2, A3, false>> : is_valid_op3<A1, A2, A3, try_WhereFun>
-	{
-	}; //, std::void_t<decltype(vipWhere(DeduceArrayType<A1>::value_type(),DeduceArrayType<A2>::value_type()))> > :std::true_type{};
-}
-template<class T1, class T2, class T3>
-typename std::enable_if<!detail::IsNoOperand<T1, T2, T3>::value, detail::WhereFun<T1, T2, T3>>::type vipWhere(const T1& v1, const T2& v2, const T3& v3)
-{
-
-	return detail::WhereFun<T1, T2, T3>(v1, v2, v3);
+	if constexpr (detail::HasArrayType_v<T>)
+		return vipFunction([](auto l, std::void_t<decltype(vipReal(l))>* = nullptr) { return vipReal(l); }, v);
+	else if constexpr (std::is_arithmetic_v<T>)
+		return v;
+	else
+		return v.real();
 }
 
-VIP_CREATE_FUNCTION2(FuzzyCompareFun, vipFuzzyCompare)
-VIP_CREATE_FUNCTION2(FuzzyIsNullFun, vipFuzzyIsNull)
+template<class T, std::enable_if_t<std::is_arithmetic_v<T> || VipIsComplex<T>::value || detail::HasArrayType_v<T>, int> = 0>
+auto vipImag(const T& v)
+{
+	if constexpr (detail::HasArrayType_v<T>)
+		return vipFunction([](auto l, std::void_t<decltype(vipImag(l))>* = nullptr) { return vipImag(l); }, v);
+	else if constexpr (std::is_arithmetic_v<T>)
+		return v;
+	else
+		return v.imag();
+}
 
+template<class T, std::enable_if_t<std::is_arithmetic_v<T> || VipIsComplex<T>::value || detail::HasArrayType_v<T>, int> = 0>
+auto vipArg(const T& v)
+{
+	if constexpr (detail::HasArrayType_v<T>)
+		return vipFunction([](auto l, std::void_t<decltype(vipArg(l))>* = nullptr) { return vipArg(l); }, v);
+	else
+		return std::arg(v);
+}
+
+template<class T, std::enable_if_t<std::is_arithmetic_v<T> || VipIsComplex<T>::value || detail::HasArrayType_v<T>, int> = 0>
+auto vipNorm(const T& v)
+{
+	if constexpr (detail::HasArrayType_v<T>)
+		return vipFunction([](auto l, std::void_t<decltype(vipNorm(l))>* = nullptr) { return vipNorm(l); }, v);
+	else
+		return std::norm(v);
+}
+
+template<class T, std::enable_if_t<std::is_arithmetic_v<T> || VipIsComplex<T>::value || detail::HasArrayType_v<T>, int> = 0>
+auto vipConj(const T& v)
+{
+	if constexpr (detail::HasArrayType_v<T>)
+		return vipFunction([](auto l, std::void_t<decltype(vipConj(l))>* = nullptr) { return vipConj(l); }, v);
+	else
+		return std::conj(v);
+}
+
+
+template<class R, class I, std::enable_if_t<detail::IsArrayOrArithmetic<R,I>::value, int> = 0>
+auto vipComplex(const R& real, const I& imag)
+{
+	if constexpr (detail::HasArrayType_v<R, I>)
+		return vipFunction([](auto r, auto i, std::enable_if_t<std::is_arithmetic_v<decltype(r + i)>, int>* = nullptr) { return vipComplex(r, i); }, real, imag);
+	else {
+		using type = decltype(real + imag);
+		if constexpr (std::is_floating_point_v<type>)
+			return std::complex<type>((type)real, (type)imag);
+		else
+			return std::complex<double>((double)real, (double)imag);
+	}
+}
+
+template<class Rho, class Theta, std::enable_if_t<detail::IsArrayOrArithmetic<Rho, Theta>::value, int> = 0>
+auto vipPolar(const Rho& rho, const Theta& theta)
+{
+	if constexpr (detail::HasArrayType_v<Rho, Theta>)
+		return vipFunction(
+		  [](auto r, auto t, std::enable_if_t<std::is_arithmetic_v<decltype(r + t)>, int>* = nullptr) { return vipPolar(r,t); }, rho, theta);
+	else {
+		using type = decltype(rho + theta);
+		if constexpr (std::is_floating_point_v<type>)
+			return std::polar((type)rho, (type)theta);
+		else
+			return std::polar((double)rho, (double)theta);
+	}
+}
+
+template<class T, std::enable_if_t<detail::HasArrayType_v<T>, int> = 0>
+auto vipAbs(const T& v)
+{
+	return vipFunction([](auto l, std::void_t<decltype(vipAbs(l))>* = nullptr) { return vipAbs(l); }, v);
+}
+template<class T, std::enable_if_t<detail::HasArrayType_v<T>, int> = 0>
+auto vipCeil(const T& v)
+{
+	return vipFunction([](auto l, std::void_t<decltype(vipCeil(l))>* = nullptr) { return vipCeil(l); }, v);
+}
+template<class T, std::enable_if_t<detail::HasArrayType_v<T>, int> = 0>
+auto vipFloor(const T& v)
+{
+	return vipFunction([](auto l, std::void_t<decltype(vipFloor(l))>* = nullptr) { return vipFloor(l); }, v);
+}
+
+template<class T, std::enable_if_t<detail::HasArrayType_v<T>, int> = 0>
+auto vipRound(const T& v)
+{
+	return vipFunction([](auto l, std::void_t<decltype(vipRound(l))>* = nullptr) { return vipRound(l); }, v);
+}
+
+template<class A1, class A2, class A3, std::enable_if_t<detail::IsArrayOrArithmetic<A1,A2,A3>::value, int> = 0>
+auto vipClamp(const A1& a1, const A2& a2, const A3& a3)
+{
+	if constexpr (detail::HasArrayType_v<A1, A2, A3>)
+		return vipFunction(
+		  [](auto v1, auto v2, auto v3, std::enable_if_t<detail::IsArrayOrArithmetic_v<decltype(v1), decltype(v2), decltype(v3)>, int>* = nullptr) { return v1 < v2   ? v2
+																		      : v1 > v3 ? v3
+																				: v1; }, a1, a2, a3);
+	else
+		return a1 < a2 ? a2 : a1 > a3 ? a3 : a1;
+}
+
+template<class T, std::enable_if_t<detail::HasArrayType_v<T>, int> = 0>
+auto vipIsNan(const T& v)
+{
+	return vipFunction([](auto l, std::void_t<decltype(vipIsNan(l))>* = nullptr) { return vipIsNan(l); }, v);
+}
+template<class T, std::enable_if_t<detail::HasArrayType_v<T>, int> = 0>
+auto vipIsInf(const T& v)
+{
+	return vipFunction([](auto l, std::void_t<decltype(vipIsInf(l))>* = nullptr) { return vipIsInf(l); }, v);
+}
+
+template<class A1, class A2, class A3, std::enable_if_t<detail::HasArrayType_v<A1, A2, A3>, int> = 0>
+auto vipWhere(const A1& a1, const A2& a2, const A3& a3)
+{
+	if constexpr (detail::HasArrayType_v<A1, A2, A3>)
+		return vipFunction([](auto v1, auto v2, auto v3, std::void_t<decltype(v1 ? v2 : v3)>* = nullptr) { return v1 ? v2 : v3; }, a1, a2, a3);
+	else
+		return a1 ? a2 : a3;
+}
+
+template<class A1, class A2, std::enable_if_t<detail::HasArrayType_v<A1, A2>, int> = 0>
+auto vipFuzzyCompare(const A1& a1, const A2& a2)
+{
+	return vipFunction([](auto v1, auto v2, std::void_t<decltype(vipFuzzyCompare(v1, v2))>* = nullptr) { return vipFuzzyCompare(v1, v2); }, a1, a2);
+}
+
+/*
 template<class T>
 inline typename std::enable_if<std::is_arithmetic<T>::value, std::complex<T>>::type vipSetReal(const std::complex<T>& c, const T& real)
 {
@@ -2175,5 +1426,5 @@ typename std::enable_if<std::is_arithmetic<T>::value, _DOUBLE>::type vipLGamma(c
 	return std::lgamma(v);
 }
 VIP_CREATE_FUNCTION1(LGammaFun, vipLGamma)
-
+*/
 #endif

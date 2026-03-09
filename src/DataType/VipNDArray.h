@@ -82,8 +82,12 @@ namespace detail
 	};
 }
 
+struct VipArrayBase : public detail::NullOperand
+{
+};
+
 /// Base class for N dimensions array.
-class VIP_DATA_TYPE_EXPORT VipNDArrayBase : public detail::NullOperand
+class VIP_DATA_TYPE_EXPORT VipNDArrayBase : public VipArrayBase
 {
 private:
 	SharedHandle m_handle;
@@ -152,7 +156,7 @@ public:
 	friend VIP_DATA_TYPE_EXPORT QDataStream& operator<<(QDataStream&, const VipNDArray&);
 	friend VIP_DATA_TYPE_EXPORT QDataStream& operator>>(QDataStream&, VipNDArray&);
 
-	static const qsizetype access_type = Vip::Position;
+	static const qsizetype access_type = Vip::Position | Vip::Cwise;
 	typedef VipNDArray view_type;
 
 	/// Supported file formats to save/load VipNDArray
@@ -350,10 +354,7 @@ public:
 	bool convert(VipNDArray& other) const;
 
 	/// Returns true if the data type is numerical (integer or floating point types)
-	bool isNumeric() const noexcept
-	{
-		return vipIsArithmetic(dataType());
-	}
+	bool isNumeric() const noexcept { return vipIsArithmetic(dataType()); }
 	/// Returns true if the data type is a signed/unsigned integer type
 	bool isIntegral() const noexcept
 	{
@@ -362,7 +363,7 @@ public:
 		       dataType() == QMetaType::ULongLong || dataType() == QMetaType::LongLong;
 	}
 	/// Returns true if the data type is complex (float or double)
-	bool isComplex() const noexcept { return vipIsComplex( dataType() ); }
+	bool isComplex() const noexcept { return vipIsComplex(dataType()); }
 
 	/// Convenient function, equivalent to #VipNDArray::convert( QMetaType::Char)
 	VipNDArray toInt8() const;
@@ -617,17 +618,9 @@ public:
 	VIP_ALWAYS_INLINE bool isUnstrided() const noexcept { return true; }
 
 	/// Returns the data pointer
-	VIP_ALWAYS_INLINE T* ptr()
-	{
-		return (T*)opaqueData(); // static_cast<T*>(handle()->opaque)
-		;
-	}
+	VIP_ALWAYS_INLINE T* ptr() { return (T*)opaqueData(); }
 	/// Returns the data pointer
-	VIP_ALWAYS_INLINE const T* ptr() const noexcept
-	{
-		return (const T*)opaqueData(); // static_cast<const T*>(constHandle()->opaque)
-		;
-	}
+	VIP_ALWAYS_INLINE const T* ptr() const noexcept { return (const T*)opaqueData(); }
 
 	/// Returns the data pointer
 	VIP_ALWAYS_INLINE T* data() { return static_cast<T*>(handle()->opaque); }
@@ -680,7 +673,7 @@ public:
 	// Convenient access operators for 1D -> 3D
 	VIP_ALWAYS_INLINE const T& operator()(qsizetype x) const noexcept
 	{
-		if (NDims == 1)
+		if constexpr (NDims == 1)
 			return ptr()[x];
 		else
 			return ptr()[x * stride(0)];
@@ -688,7 +681,7 @@ public:
 
 	VIP_ALWAYS_INLINE T& operator()(qsizetype x)
 	{
-		if (NDims == 1)
+		if constexpr (NDims == 1)
 			return ptr()[x];
 		else
 			return ptr()[x * stride(0)];
@@ -696,7 +689,8 @@ public:
 
 	VIP_ALWAYS_INLINE const T& operator()(qsizetype y, qsizetype x) const noexcept
 	{
-		if (NDims == 2)
+		static_assert(NDims >= 2 || NDims == Vip::None);
+		if constexpr (NDims == 2)
 			return ptr()[y * stride(0) + x];
 		else
 			return ptr()[y * stride(0) + x * stride(1)];
@@ -704,7 +698,8 @@ public:
 
 	VIP_ALWAYS_INLINE T& operator()(qsizetype y, qsizetype x)
 	{
-		if (NDims == 2)
+		static_assert(NDims >= 2 || NDims == Vip::None);
+		if constexpr (NDims == 2)
 			return ptr()[y * stride(0) + x];
 		else
 			return ptr()[y * stride(0) + x * stride(1)];
@@ -712,7 +707,8 @@ public:
 
 	VIP_ALWAYS_INLINE const T& operator()(qsizetype z, qsizetype y, qsizetype x) const noexcept
 	{
-		if (NDims == 3)
+		static_assert(NDims >= 3 || NDims == Vip::None);
+		if constexpr (NDims == 3)
 			return ptr()[z * stride(0) + y * stride(1) + x];
 		else
 			return ptr()[z * stride(0) + y * stride(1) + x * stride(2)];
@@ -720,7 +716,8 @@ public:
 
 	VIP_ALWAYS_INLINE T& operator()(qsizetype z, qsizetype y, qsizetype x)
 	{
-		if (NDims == 3)
+		static_assert(NDims >= 3 || NDims == Vip::None);
+		if constexpr (NDims == 3)
 			return ptr()[z * stride(0) + y * stride(1) + x];
 		else
 			return ptr()[z * stride(0) + y * stride(1) + x * stride(2)];
@@ -873,7 +870,7 @@ public:
 	const VipCoordinate<NDims>& strides() const noexcept { return reinterpret_cast<const VipCoordinate<NDims>&>(VipNDArray::strides()); }
 
 	template<qsizetype D>
-	VIP_ALWAYS_INLINE T* ptr(const VipCoordinate<D>& position) 
+	VIP_ALWAYS_INLINE T* ptr(const VipCoordinate<D>& position)
 	{
 		return ptr() + vipFlatOffset<false>(strides(), position);
 	}
@@ -889,34 +886,34 @@ public:
 		return *(ptr(position));
 	}
 	template<qsizetype D>
-	VIP_ALWAYS_INLINE T& operator()(const VipCoordinate<D>& position) 
+	VIP_ALWAYS_INLINE T& operator()(const VipCoordinate<D>& position)
 	{
 		return *(ptr(position));
 	}
 	// Convenient access operators for 1D -> 3D
 	VIP_ALWAYS_INLINE const T& operator()(qsizetype x) const noexcept { return ptr()[x * stride(0)]; }
-	VIP_ALWAYS_INLINE T& operator()(qsizetype x)  { return ptr()[x * stride(0)]; }
+	VIP_ALWAYS_INLINE T& operator()(qsizetype x) { return ptr()[x * stride(0)]; }
 	VIP_ALWAYS_INLINE const T& operator()(qsizetype y, qsizetype x) const noexcept { return ptr()[y * stride(0) + x * stride(1)]; }
-	VIP_ALWAYS_INLINE T& operator()(qsizetype y, qsizetype x)  { return ptr()[y * stride(0) + x * stride(1)]; }
+	VIP_ALWAYS_INLINE T& operator()(qsizetype y, qsizetype x) { return ptr()[y * stride(0) + x * stride(1)]; }
 	VIP_ALWAYS_INLINE const T& operator()(qsizetype z, qsizetype y, qsizetype x) const noexcept { return ptr()[z * stride(0) + y * stride(1) + x * stride(2)]; }
-	VIP_ALWAYS_INLINE T& operator()(qsizetype z, qsizetype y, qsizetype x)  { return ptr()[z * stride(0) + y * stride(1) + x * stride(2)]; }
+	VIP_ALWAYS_INLINE T& operator()(qsizetype z, qsizetype y, qsizetype x) { return ptr()[z * stride(0) + y * stride(1) + x * stride(2)]; }
 
 	/// Flat access operator.
 	/// Be aware of unwanted consequences when used on strided views!
-	VIP_ALWAYS_INLINE T& operator[](qsizetype index)  { return ptr()[index]; }
+	VIP_ALWAYS_INLINE T& operator[](qsizetype index) { return ptr()[index]; }
 	VIP_ALWAYS_INLINE const T& operator[](qsizetype index) const noexcept { return ptr()[index]; }
 
-	VIP_ALWAYS_INLINE iterator begin()  { return iterator(shape(), strides(), ptr(), size()); }
+	VIP_ALWAYS_INLINE iterator begin() { return iterator(shape(), strides(), ptr(), size()); }
 	VIP_ALWAYS_INLINE const_iterator begin() const noexcept { return const_iterator(shape(), strides(), ptr(), size()); }
 	VIP_ALWAYS_INLINE const_iterator cbegin() const noexcept { return const_iterator(shape(), strides(), ptr(), size()); }
-	VIP_ALWAYS_INLINE iterator end()  { return iterator(shape(), strides(), ptr(), size(), size()); }
+	VIP_ALWAYS_INLINE iterator end() { return iterator(shape(), strides(), ptr(), size(), size()); }
 	VIP_ALWAYS_INLINE const_iterator end() const noexcept { return const_iterator(shape(), strides(), ptr(), size(), size()); }
 	VIP_ALWAYS_INLINE const_iterator cend() const noexcept { return const_iterator(shape(), strides(), ptr(), size(), size()); }
 
-	VIP_ALWAYS_INLINE reverse_iterator rbegin()  { return reverse_iterator(end()); }
+	VIP_ALWAYS_INLINE reverse_iterator rbegin() { return reverse_iterator(end()); }
 	VIP_ALWAYS_INLINE const_reverse_iterator rbegin() const noexcept { return const_reverse_iterator(end()); }
 	VIP_ALWAYS_INLINE const_reverse_iterator crbegin() const noexcept { return const_reverse_iterator(end()); }
-	VIP_ALWAYS_INLINE reverse_iterator rend()  { return reverse_iterator(begin()); }
+	VIP_ALWAYS_INLINE reverse_iterator rend() { return reverse_iterator(begin()); }
 	VIP_ALWAYS_INLINE const_reverse_iterator rend() const noexcept { return const_reverse_iterator(begin()); }
 	VIP_ALWAYS_INLINE const_reverse_iterator crend() const noexcept { return const_reverse_iterator(begin()); }
 

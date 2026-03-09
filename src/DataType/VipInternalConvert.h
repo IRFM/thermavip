@@ -205,7 +205,7 @@ namespace detail
 		static QByteArray apply(float d) { return QByteArray::number(d, 'g', FLT_DIG); }
 		static QByteArray apply(bool d) { return QByteArray(d ? "true" : "false"); }
 		static QByteArray apply(const QString& str) { return str.toLatin1(); }
-		const QByteArray& apply(const QByteArray& str) { return str; }
+		static const QByteArray& apply(const QByteArray& str) { return str; }
 		template<class T>
 		static QByteArray apply(const std::complex<T>& d)
 		{
@@ -231,31 +231,33 @@ namespace detail
 		}
 		static Res apply(const QString& d)
 		{
-			if (std::is_same<Res, float>::value)
+			if constexpr (std::is_same<Res, float>::value)
 				return d.toFloat();
-			else if (std::is_same<Res, double>::value)
+			else if constexpr (std::is_same<Res, double>::value)
 				return d.toDouble();
-			else if (std::is_same<Res, long double>::value)
+			else if constexpr (std::is_same<Res, long double>::value)
 				return vipLongDoubleFromString(d);
-			else if (std::is_same<Res, bool>::value) {
+			else if constexpr (std::is_same<Res, bool>::value) {
 				QString str = d.toLower();
 				return !(str == QString("0") || str == QString("false") || str.isEmpty());
 			}
-			return d.toLongLong();
+			else
+				return d.toLongLong();
 		}
 		static Res apply(const QByteArray& d)
 		{
-			if (std::is_same<Res, float>::value)
+			if constexpr (std::is_same<Res, float>::value)
 				return d.toFloat();
-			else if (std::is_same<Res, double>::value)
+			else if constexpr (std::is_same<Res, double>::value)
 				return d.toDouble();
-			else if (std::is_same<Res, long double>::value)
+			else if constexpr (std::is_same<Res, long double>::value)
 				return vipLongDoubleFromByteArray(d);
-			else if (std::is_same<Res, bool>::value) {
+			else if constexpr (std::is_same<Res, bool>::value) {
 				QString str = d.toLower();
 				return !(str == QString("0") || str == QString("false") || str.isEmpty());
 			}
-			return d.toLongLong();
+			else
+				return d.toLongLong();
 		}
 		template<class T>
 		Res operator()(const T& src) const
@@ -322,7 +324,7 @@ namespace detail
 	template<class D, class S, class = void>
 	struct Convert
 	{
-		static const bool valid = true;
+		static const bool valid = std::is_convertible_v<S,D>;
 		static D apply(const S& src) { return static_cast<D>(src); }
 	};
 
@@ -407,7 +409,7 @@ namespace detail
 	struct Convert<QByteArray, S>
 	{
 		static const bool valid = true;
-		static QString apply(const S& s) { return ToQByteArrayTransform::apply(s); }
+		static QByteArray apply(const S& s) { return ToQByteArrayTransform::apply(s); }
 	};
 
 	template<class D>
@@ -485,49 +487,6 @@ namespace detail
 		}
 	}
 
-	///\internal
-	template<class To>
-	struct GetConverterFunction
-	{
-		typedef void (*cast)(const void*, void*, int, qsizetype);
-		static cast get(int data_type)
-		{
-			if (data_type == QMetaType::Char)
-				return convertVoid<char, To>;
-			else if (data_type == QMetaType::SChar)
-				return convertVoid<qint8, To>;
-			else if (data_type == QMetaType::UChar)
-				return convertVoid<quint8, To>;
-			else if (data_type == QMetaType::Short)
-				return convertVoid<qint16, To>;
-			else if (data_type == QMetaType::UShort)
-				return convertVoid<quint16, To>;
-			else if (data_type == QMetaType::Int)
-				return convertVoid<qint32, To>;
-			else if (data_type == QMetaType::UInt)
-				return convertVoid<quint32, To>;
-			else if (data_type == QMetaType::Long)
-				return convertVoid<long, To>;
-			else if (data_type == QMetaType::ULong)
-				return convertVoid<unsigned long, To>;
-			else if (data_type == QMetaType::LongLong)
-				return convertVoid<qint64, To>;
-			else if (data_type == QMetaType::ULongLong)
-				return convertVoid<quint64, To>;
-			else if (data_type == QMetaType::Float)
-				return convertVoid<float, To>;
-			else if (data_type == QMetaType::Double)
-				return convertVoid<double, To>;
-			else if (data_type == qMetaTypeId<long double>())
-				return convertVoid<long double, To>;
-			else if (data_type == qMetaTypeId<complex_f>())
-				return convertVoid<complex_f, To>;
-			else if (data_type == qMetaTypeId<complex_d>())
-				return convertVoid<complex_d, To>;
-			else
-				return genericConverterVoid<To>;
-		}
-	};
 
 	/// \internal
 	/// Convert input possibly strided data to possibly strided array.

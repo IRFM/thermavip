@@ -59,11 +59,10 @@ namespace detail
 		static qsizetype get(const Coord& c) { return c[Pos]; }
 	};
 	template<class Coord, qsizetype Pos>
-	struct GetCoord<Coord,Pos,false>
+	struct GetCoord<Coord, Pos, false>
 	{
-		static qsizetype get(const Coord& ) { return 0; }
+		static qsizetype get(const Coord&) { return 0; }
 	};
-
 
 	template<class Array>
 	typename Array::value_type getVal(const Array& ar, qsizetype y, qsizetype x)
@@ -83,15 +82,12 @@ namespace detail
 	struct InterpVal
 	{
 		template<class Array, class T>
-		static VIP_ALWAYS_INLINE typename Array::value_type apply(const Array& ar, double x, double y, qsizetype w, qsizetype h, const T& background)
+		static VIP_ALWAYS_INLINE typename Array::value_type apply(const Array& ar, double x, double y, qsizetype w, qsizetype h, const QVariant& background)
 		{
-			//qsizetype _x = (qsizetype)(x + 0.5);
-			//qsizetype _y = (qsizetype)(y + 0.5);
-			//TEST
 			qsizetype _x = (qsizetype)(x);
 			qsizetype _y = (qsizetype)(y);
 			if (_x < 0 || _x >= w || _y < 0 || _y >= h)
-				return background;
+				return background.value<typename Array::value_type>();
 
 			VipCoordinate<2> p;
 			(p[0]) = _y;
@@ -103,10 +99,11 @@ namespace detail
 	struct InterpVal<true>
 	{
 		template<class Array, class T>
-		static VIP_ALWAYS_INLINE typename Array::value_type apply(const Array& ar, double x, double y, qsizetype w, qsizetype h, const T& background)
+		static VIP_ALWAYS_INLINE typename Array::value_type apply(const Array& ar, double x, double y, qsizetype w, qsizetype h, const QVariant& background)
 		{
+			using ret_type = typename Array::value_type;
 			if (x < -1 || x > w || y < -1 || y > h)
-				return background;
+				return background.value<ret_type>();
 
 			const qsizetype leftCellEdge = x < 0 ? -1 : x;
 			const qsizetype topCellEdge = y < 0 ? -1 : y;
@@ -117,134 +114,87 @@ namespace detail
 			const bool inLeft = leftCellEdge >= 0;
 			const bool inRight = rightCellEdge < w;
 
-			const typename Array::value_type p1 = inBottom && inLeft ? getVal(ar, bottomCellEdge, leftCellEdge) : background;
-			const typename Array::value_type p2 = inTop && inLeft ? getVal(ar, topCellEdge, leftCellEdge) : background;
-			const typename Array::value_type p3 = inBottom && inRight ? getVal(ar, bottomCellEdge, rightCellEdge) : background;
-			const typename Array::value_type p4 = inTop && inRight ? getVal(ar, topCellEdge, rightCellEdge) : background;
+			ret_type p1 = inBottom && inLeft ? getVal(ar, bottomCellEdge, leftCellEdge) : background;
+			ret_type p2 = inTop && inLeft ? getVal(ar, topCellEdge, leftCellEdge) : background;
+			ret_type p3 = inBottom && inRight ? getVal(ar, bottomCellEdge, rightCellEdge) : background;
+			ret_type p4 = inTop && inRight ? getVal(ar, topCellEdge, rightCellEdge) : background;
 
 			const double u = _abs(x - leftCellEdge);
 			const double v = _abs(bottomCellEdge - y);
 			const double v_1 = 1. - v;
 			const double u_1 = 1. - u;
-			return p1 * (v_1 * u_1) + p2 * (v * u_1) + p3 * (v_1 * u) + p4 * (v * u);
+			return static_cast<ret_type>(p1 * (v_1 * u_1) + p2 * (v * u_1) + p3 * (v_1 * u) + p4 * (v * u));
 		}
 	};
 
-	template<Vip::TransformSize Size, Vip::InterpolationType Inter, class Array, bool hasNullType = HasNullType<Array>::value>
-	struct Transform : BaseOperator1<typename DeduceArrayType<Array>::value_type, Array>
+	template<Vip::TransformSize Size, Vip::InterpolationType Inter, class Array>
+	struct Transform : BaseFunctor<Transform<Size, Inter, Array>, Array>
 	{
-		_ENSURE_OPERATOR1_DEF(BaseOperator1<typename DeduceArrayType<Array>::value_type, Array>)
-
 		static const qsizetype access_type = Vip::Position;
+		using base = BaseFunctor<Transform<Size, Inter, Array>, Array>;
 
 		QTransform tr;
-		QPoint origin;
-		VipNDArrayShape sh;
-		const QTransform::TransformationType type;
-		value_type background;
-		const qsizetype w, h;
+		QVariant background;
+		qsizetype w = 0, h = 0;
 		QRect rect;
 
-		Transform()
-		  : type(QTransform::TxNone)
-		  , w(0)
-		  , h(0)
-		{
-		}
-		Transform(const Array& op1, const QTransform& tr, const QRect& rect, const value_type& back)
+		Transform() noexcept = default;
+		Transform(const Array& op1, const QTransform& tr, const QRect& rect, const QVariant& back)
 		  : base(op1)
 		  , tr(tr)
-		  , origin(0, 0)
-		  , type(tr.type())
-		  , background(back)
-		  , w(this->array1.shape()[1])
-		  , h(this->array1.shape()[0])
+		  , background((back))
+		  , w(op1.shape()[1])
+		  , h(op1.shape()[0])
 		  , rect(rect)
 		{
 			if (Size == Vip::SrcSize)
-				sh = op1.shape();
+				this->sh = op1.shape();
 			else {
-				origin = rect.topLeft();
-				sh = vipVector(rect.height(), rect.width());
+				this->sh = vipVector(rect.height(), rect.width());
 			}
 		}
 
-		const VipNDArrayShape& shape() const { return sh; }
-
 		template<class Coord>
-		value_type operator()(const Coord& pos) const
+		auto operator()(const Coord& pos) const
 		{
-			if (type == QTransform::TxNone)
-				return this->array1(pos);
+			if (tr.type() == QTransform::TxNone)
+				return std::get<0>(this->arrays)(pos);
 
-			const double fx = GetCoord<Coord, 1>::get(pos) + 0.5;		     //+ origin.x();
-			const double fy = GetCoord<Coord, 0>::get(pos) + 0.5; // + origin.y();
+			const double fx = GetCoord<Coord, 1>::get(pos) + 0.5;
+			const double fy = GetCoord<Coord, 0>::get(pos) + 0.5;
 			double x = fx, y = fy;
 
-			if (type == QTransform::TxTranslate) {
+			if (tr.type() == QTransform::TxTranslate) {
 				x += tr.dx();
 				y += tr.dy();
 			}
-			else if (type == QTransform::TxScale) {
+			else if (tr.type() == QTransform::TxScale) {
 				x = tr.m11() * fx + tr.dx();
 				y = tr.m22() * fy + tr.dy();
 			}
 			else {
 				x = tr.m11() * fx + tr.m21() * fy + tr.dx();
 				y = tr.m12() * fx + tr.m22() * fy + tr.dy();
-				if (type == QTransform::TxProject) {
+				if (tr.type() == QTransform::TxProject) {
 					qreal _w = 1. / (tr.m13() * fx + tr.m23() * fy + tr.m33());
 					x *= _w;
 					y *= _w;
 				}
 			}
-			//x += translate.x();
-			//y += translate.y();
-			return InterpVal<Inter != Vip::NoInterpolation>::apply(this->array1, x, y, w, h, background);
+			return InterpVal <Inter != Vip::NoInterpolation >::apply(std::get<0>(this->arrays), x, y, w, h, background);
 		}
 	};
 
-	template<Vip::TransformSize Size, Vip::InterpolationType Inter, class Array>
-	struct Transform<Size, Inter, Array, true> : BaseOperator1<NullType, Array>
+	template<class U, Vip::TransformSize Size, Vip::InterpolationType Inter, class Array>
+	auto rebindExpression(const Transform<Size, Inter, Array>& tr)
 	{
-		_ENSURE_OPERATOR1_DEF(BaseOperator1<NullType, Array>)
-
-		QTransform tr;
-		VipNDArrayShape sh;
-		QVariant background;
-		QRect rect;
-		Transform() {}
-		template<class T>
-		Transform(const Array& op1, const QTransform& tr, const QRect& rect, const T& back)
-		  : BaseOperator1<NullType, Array>(op1)
-		  , tr(tr)
-		  , background(QVariant::fromValue(back))
-		  , rect(rect)
-		{
-			if (Size == Vip::SrcSize)
-				sh = op1.shape();
-			else
-				sh = vipVector(rect.height(), rect.width());
-		}
-		const VipNDArrayShape& shape() const { return sh; }
-	};
-
-	template<class T, Vip::TransformSize Size, Vip::InterpolationType Inter, class Array, bool hasNullType>
-	struct rebind<T, Transform<Size, Inter, Array, hasNullType>, false>
-	{
-
-		typedef Transform<Size, Inter, Array, hasNullType> op;
-		typedef rebind<T, typename op::array_type1> rebind_type;
-		typedef Transform<Size, Inter, typename rebind_type::type, false> transform;
-		typedef transform type;
-
-		static transform cast(const op& a) { return transform(rebind_type::cast(a.array1), a.tr, a.rect, internal_cast<T>(a.background)); }
-	};
-
-	template<Vip::TransformSize Size, Vip::InterpolationType Inter, class Array>
-	struct is_valid_functor<Transform<Size, Inter, Array, false>> : std::true_type
-	{
-	};
+		using type = Transform<Size,Inter, decltype( rebindExpression<U>(std::declval<Array&>()))>;
+		using vtype = ValueType_t<type>;
+		if constexpr (std::is_arithmetic_v<vtype> || VipIsComplex_v<vtype> || VipIsRgb_v<vtype>)
+			return type(rebindExpression<U>(std::get<0>(tr.arrays)), tr.tr, tr.rect, tr.background);
+		else
+			return NullType{};
+	}
 
 }
 
@@ -259,18 +209,18 @@ namespace detail
 ///
 /// Output array is interpolated using the \a Inter template parameter. Only Vip::NoInterpolation
 /// and Vip::LinearInterpolation are valid values.
-template<Vip::TransformSize Size, Vip::InterpolationType Inter = Vip::NoInterpolation, class Array, class T>
-detail::Transform<Size, Inter, Array> vipTransform(const Array& array, const QTransform& tr, const T& background)
+template<Vip::TransformSize Size, Vip::InterpolationType Inter = Vip::NoInterpolation, class Array>
+auto vipTransform(const Array& array, const QTransform& tr, const QVariant& background = {})
 {
-	QRect r;
-	if (Size == Vip::TransformBoundingRect) {
+	if constexpr (Size == Vip::TransformBoundingRect) {
 		const QRectF rect(0, 0, array.shape()[1], array.shape()[0]);
 		const QRect mapped = tr.mapRect(rect).toAlignedRect();
 		const QPoint delta = mapped.topLeft();
 		QTransform m = tr * QTransform().translate(-delta.x(), -delta.y());
 		return detail::Transform<Size, Inter, Array>(array, m.inverted(), mapped, background);
 	}
-	return detail::Transform<Size, Inter, Array>(array, tr.inverted(), r, background);
+	else
+		return detail::Transform<Size, Inter, Array>(array, tr.inverted(), QRect(), background);
 }
 
 /// @}

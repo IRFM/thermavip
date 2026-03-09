@@ -479,7 +479,7 @@ namespace detail
 	using try_convolve = decltype(T1() * T2() + T1());
 
 	template<Vip::ConvolveBorderRule Rule, class A, class Kernel>
-	struct is_valid_functor<Convolve<Rule, A, Kernel, false>> : is_valid_op2<typename DeduceArrayType<A>::value_type, typename DeduceArrayType<Kernel>::value_type, try_convolve>
+	struct is_valid_functor2<Convolve<Rule, A, Kernel, false>> : is_valid_op2<typename DeduceArrayType<A>::value_type, typename DeduceArrayType<Kernel>::value_type, try_convolve>
 	{
 	};
 

@@ -1262,9 +1262,9 @@ int test(int argc, char** argv)
 		bool stop = true;
 	}
 
-	bool arg1 = detail::is_valid_functor<detail::FloorFun<int>>::value;
-	bool arg2 = detail::is_valid_functor<detail::FloorFun<QString>>::value;
-	bool arg3 = detail::is_valid_functor<detail::FloorFun<VipNDArray>>::value;
+	bool arg1 = detail::is_valid_functor2<detail::FloorFun<int>>::value;
+	bool arg2 = detail::is_valid_functor2<detail::FloorFun<QString>>::value;
+	bool arg3 = detail::is_valid_functor2<detail::FloorFun<VipNDArray>>::value;
 	VipNDArrayType<int> djd;
 	djd.clear();
 	djd.reset(vipVector(10, 10));
@@ -1508,7 +1508,7 @@ int test(int argc, char** argv)
 	detail::InternalCast<int, decltype(type)>::valid;
 	detail::InternalCast<int, decltype(type)>::cast(type);
 	detail::internal_cast<int>(decltype(type)());
-	detail::is_valid_functor<decltype(detail::internal_cast<int>(decltype(type)()))> jj;
+	detail::is_valid_functor2<decltype(detail::internal_cast<int>(decltype(type)()))> jj;
 	// test(jj);
 	st = QDateTime::currentMSecsSinceEpoch();
 	for (int i = 0; i < count; ++i)
