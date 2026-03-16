@@ -138,7 +138,6 @@ T& get(const VipNDArrayType<T>& in, const VipCoordinate<Dim>& c)
 	return const_cast<T&>(in(c));
 }
 #include "VipStaticNDArray.h"
-#include "VipEval2.h"
 
 template<class T, class U, size_t N>
 auto operator*(const std::array<T, N>& ar, U val)
@@ -221,7 +220,7 @@ int test(int argc, char** argv)
 
 		st = QDateTime::currentMSecsSinceEpoch();
 		for (int c = 0; c < count; ++c) {
-			vipEval2(in, (in + in * 2.) * in + 3.);
+			in= (in + in * 2.) * in + 3.;
 		}
 		el = QDateTime::currentMSecsSinceEpoch() - st;
 		std::cout << "Mul expr " << el << "ms" << std::endl;
@@ -229,7 +228,7 @@ int test(int argc, char** argv)
 		vipSetIterateThreadCount(4);
 		st = QDateTime::currentMSecsSinceEpoch();
 		for (int c = 0; c < count; ++c) {
-			vipEval2(in , (in + in * 2.) * in + 3.);
+			in = (in + in * 2.) * in + 3.;
 		}
 		el = QDateTime::currentMSecsSinceEpoch() - st;
 		std::cout << "Mul expr// " << el << "ms" << std::endl;
