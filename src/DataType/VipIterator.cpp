@@ -35,12 +35,12 @@
 
 static std::atomic<int> _threads{ 1 };
 
-int vipIterateThreadCount()
+int vipIterateThreadCount() noexcept
 {
 	return _threads.load(std::memory_order_relaxed);
 }
 
-void vipSetIterateThreadCount(int threads)
+void vipSetIterateThreadCount(int threads) noexcept
 {
 	static int concurrency = (int)std::thread::hardware_concurrency();
 	if (threads < 1)
@@ -48,4 +48,26 @@ void vipSetIterateThreadCount(int threads)
 	else if (threads > concurrency)
 		threads = concurrency;
 	_threads.store(threads);
+}
+
+static std::atomic<int> _threshold{ 4096 };
+
+int vipParallelSizeThreshold() noexcept
+{
+	return _threshold.load(std::memory_order_relaxed);
+}
+void vipSetParallelSizeThreshold(int threshold) noexcept
+{
+	_threshold.store(threshold);
+}
+
+int vipLoopThreadCount(int size) noexcept
+{
+#ifndef _OPENMP
+	return 1;
+#else
+	if (size < _threshold.load(std::memory_order_relaxed))
+		return 1;
+	return std::min( _threads.load(std::memory_order_relaxed), size);
+#endif
 }

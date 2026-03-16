@@ -33,8 +33,11 @@
 #define VIP_HYBRID_VECTOR_H
 
 #include "VipConfig.h"
+
 #include <QDataStream>
+
 #include <algorithm>
+#include <iterator>
 
 /// \addtogroup DataType
 /// @{
@@ -49,6 +52,44 @@ namespace Vip
 	const qsizetype None = -1;
 }
 
+namespace detail
+{
+	// To allow ADL with custom begin/end
+	using std::begin;
+	using std::end;
+
+	template<class T>
+	auto is_iterable_impl(int) -> decltype(begin(std::declval<T&>()) != end(std::declval<T&>()),   // begin/end and operator !=
+					       void(),						       // Handle evil operator ,
+					       ++std::declval<decltype(begin(std::declval<T&>()))&>(), // operator ++
+					       void(*begin(std::declval<T&>())),		       // operator*
+					       std::true_type{});
+
+	template<typename T>
+	std::false_type is_iterable_impl(...);
+
+}
+
+/// @brief Check if given type is iterable
+template<class T>
+using VipIsIterable = decltype(detail::is_iterable_impl<T>(0));
+
+template<class T>
+constexpr bool VipIsIterable_v = VipIsIterable<T>::value;
+
+/// @brief Check if givern type is an iterator
+template<class T, class = void>
+struct VipIsIterator : std::false_type
+{
+};
+
+template<class T>
+struct VipIsIterator<T, std::void_t<typename std::iterator_traits<T>::iterator_category>> : std::true_type
+{
+};
+template<class T>
+constexpr bool VipIsIterator_v = VipIsIterator<T>::value;
+
 /// VipHybridVector is a container that follows an interface and a behavior similar to std::array.
 /// It is mainly used to store shapes and positions for #VipNDArray objects.
 /// Its behavior depends on the template integer \a N:
@@ -59,10 +100,8 @@ template<class T, qsizetype N>
 struct VipHybridVector
 {
 	static_assert(N <= VIP_MAX_DIMS, "");
-	enum
-	{
-		static_size = N
-	};
+	static constexpr qsizetype static_size = N;
+
 	T elems[N];
 
 	// type definitions
@@ -82,11 +121,27 @@ struct VipHybridVector
 	VIP_ALWAYS_INLINE const_iterator end() const noexcept { return elems + N; }
 
 	// operator[]
-	VIP_ALWAYS_INLINE reference operator[](size_type i) noexcept { return elems[i]; }
-	VIP_ALWAYS_INLINE const_reference operator[](size_type i) const noexcept { return elems[i]; }
+	VIP_ALWAYS_INLINE reference operator[](size_type i) noexcept
+	{
+		VIP_ASSERT_DEBUG(i < N && i >= 0);
+		return elems[i];
+	}
+	VIP_ALWAYS_INLINE const_reference operator[](size_type i) const noexcept
+	{
+		VIP_ASSERT_DEBUG(i < N && i >= 0);
+		return elems[i];
+	}
 
-	VIP_ALWAYS_INLINE reference at(size_type i) noexcept { return elems[i]; }
-	VIP_ALWAYS_INLINE const_reference at(size_type i) const noexcept { return elems[i]; }
+	VIP_ALWAYS_INLINE reference at(size_type i) noexcept
+	{
+		VIP_ASSERT_DEBUG(i < N && i >= 0);
+		return elems[i];
+	}
+	VIP_ALWAYS_INLINE const_reference at(size_type i) const noexcept
+	{
+		VIP_ASSERT_DEBUG(i < N && i >= 0);
+		return elems[i];
+	}
 
 	// front() and back()
 	VIP_ALWAYS_INLINE reference front() noexcept { return elems[0]; }
@@ -116,19 +171,12 @@ struct VipHybridVector
 	VIP_ALWAYS_INLINE T* data() noexcept { return elems; }
 
 	// assignment with type conversion
-	template<typename T2, qsizetype N2>
-	VipHybridVector& operator=(const VipHybridVector<T2, N2>& rhs) noexcept
+	template<class Other>
+	VipHybridVector& operator=(const Other& rhs) noexcept
 	{
 		qsizetype s = qMin(size(), rhs.size());
 		for (qsizetype i = 0; i < s; ++i)
-			elems[i] = rhs[i];
-		return *this;
-	}
-
-	template<typename T2>
-	VipHybridVector<T, N>& operator=(const QVector<T2>& rhs) noexcept
-	{
-		fromVector(rhs);
+			elems[i] = static_cast<T>(rhs[i]);
 		return *this;
 	}
 
@@ -137,13 +185,6 @@ struct VipHybridVector
 	void fill(const T& value) noexcept { std::fill_n(elems, N, value); }
 
 	void resize(size_type) noexcept {}
-
-	void fromVector(const QVector<T>& vec) noexcept
-	{
-		qsizetype s = qMin(vec.size(), (qsizetype)size());
-		for (qsizetype i = 0; i < s; ++i)
-			elems[i] = vec[i];
-	}
 
 	QVector<T> toVector() const
 	{
@@ -156,28 +197,28 @@ struct VipHybridVector
 
 	explicit operator bool() const noexcept { return true; }
 
-	template<class T2, qsizetype Dim2>
-	bool operator==(const VipHybridVector<T2, Dim2>& other) const noexcept
+	template<class Other>
+	bool operator==(const Other& other) const noexcept
 	{
 		if (other.size() != size())
 			return false;
 		return std::equal(begin(), end(), other.begin());
 	}
-
-	bool operator==(const QVector<T>& other) const noexcept
+	template<class Other>
+	bool operator!=(const Other& other) const noexcept
 	{
-		if (other.size() != size())
-			return false;
-		return std::equal(begin(), end(), other.begin());
+		return !(*this == other);
 	}
+};
 
-	template<class T2, qsizetype Dim2>
-	bool operator!=(const VipHybridVector<T2, Dim2>& other) const noexcept
-	{
-		if (other.size() != size())
-			return true;
-		return !std::equal(begin(), end(), other.begin());
-	}
+/// @brief Detect VipHybridVector type
+template<class T>
+struct VipIsHybridVector : std::false_type
+{
+};
+template<class T, qsizetype N>
+struct VipIsHybridVector<VipHybridVector<T, N>> : std::true_type
+{
 };
 
 template<class T>
@@ -188,10 +229,7 @@ class VipHybridVector<T, Vip::None>
 	qsizetype m_size;
 
 public:
-	enum
-	{
-		static_size = Vip::None
-	};
+	static constexpr qsizetype static_size = Vip::None;
 
 	// type definitions
 	typedef T value_type;
@@ -202,162 +240,136 @@ public:
 	typedef qsizetype size_type;
 	typedef qsizetype difference_type;
 
-	VipHybridVector() noexcept
+	VIP_ALWAYS_INLINE VipHybridVector() noexcept
 	  : m_size(0)
 	{
 	}
-	VipHybridVector(qsizetype size) noexcept
+	VIP_ALWAYS_INLINE VipHybridVector(qsizetype size) noexcept
 	  : m_size(size)
 	{
 	}
-	VipHybridVector(qsizetype size, const T& elem) noexcept
+	VIP_ALWAYS_INLINE VipHybridVector(qsizetype size, const T& elem) noexcept
 	  : m_size(size)
 	{
 		fill(elem);
 	}
 
-	template<class T2>
-	VipHybridVector(const QVector<T2>& v) noexcept
+	template<class Iter, std::enable_if_t<VipIsIterator_v<Iter>, int> = 0>
+	VIP_ALWAYS_INLINE VipHybridVector(Iter first, Iter last)
 	{
+		resize(std::distance(first, last));
+		std::copy(first, last, begin());
+	}
+
+	template<class Other, std::enable_if_t<VipIsIterable_v<Other>, int> = 0>
+	VIP_ALWAYS_INLINE VipHybridVector(const Other& v) noexcept
+	{
+		VIP_ASSERT_DEBUG(v.size() <= VIP_MAX_DIMS);
 		resize(v.size());
 		for (qsizetype i = 0; i < m_size; ++i)
 			m_elems[i] = static_cast<T>(v[i]);
 	}
 
-	VipHybridVector(const VipHybridVector& other) noexcept
+	VIP_ALWAYS_INLINE VipHybridVector(const VipHybridVector& other) noexcept
 	  : m_size(other.size())
 	{
 		memcpy(m_elems, other.m_elems, VIP_MAX_DIMS * sizeof(T));
-		// std::copy(other.m_elems,other.m_elems + VIP_MAX_DIMS,m_elems);
 	}
 
-	template<class T2, qsizetype N2>
-	VipHybridVector(const VipHybridVector<T2, N2>& v) noexcept
+	VIP_ALWAYS_INLINE void push_back(const T& elem) noexcept
 	{
-		resize(v.size());
-		for (qsizetype i = 0; i < m_size; ++i)
-			m_elems[i] = static_cast<T>(v[i]);
+		VIP_ASSERT_DEBUG(m_size < VIP_MAX_DIMS);
+		m_elems[m_size++] = elem;
 	}
 
-	template<qsizetype N2>
-	VipHybridVector(const VipHybridVector<T, N2>& v) noexcept
-	{
-		m_size = N2;
-		memcpy(m_elems, v.elems, sizeof(T) * N2);
-	}
-
-	void push_back(const T& elem) noexcept { m_elems[m_size++] = elem; }
-
-	void clear() noexcept { m_size = 0; }
+	VIP_ALWAYS_INLINE void clear() noexcept { m_size = 0; }
 
 	// iterator support
-	iterator begin() noexcept { return m_elems; }		  // elems.begin(); }
-	const_iterator begin() const noexcept { return m_elems; } // elems.begin();
-	iterator end() noexcept { return m_elems + m_size; }	  // elems.end(); }
-	const_iterator end() const noexcept
-	{
-		return m_elems + m_size;
-	} // return elems.end(); }
+	VIP_ALWAYS_INLINE iterator begin() noexcept { return m_elems; }		    // elems.begin(); }
+	VIP_ALWAYS_INLINE const_iterator begin() const noexcept { return m_elems; } // elems.begin();
+	VIP_ALWAYS_INLINE iterator end() noexcept { return m_elems + m_size; }	    // elems.end(); }
+	VIP_ALWAYS_INLINE const_iterator end() const noexcept { return m_elems + m_size; }
 
 #ifdef __GNUC__
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Warray-bounds"
 #endif
-	  //  operator[]
-	reference operator[](size_type i) noexcept
+	//  operator[]
+	VIP_ALWAYS_INLINE reference operator[](size_type i) noexcept
 	{
+		VIP_ASSERT_DEBUG(i >= 0 && i < m_size);
 		return m_elems[i];
 	}
-	const_reference operator[](size_type i) const noexcept
+	VIP_ALWAYS_INLINE const_reference operator[](size_type i) const noexcept
 	{
-		return m_elems[i];
-	}
-
-
-	reference at(size_type i) noexcept
-	{
-		return m_elems[i];
-	}
-	const_reference at(size_type i) const noexcept
-	{
+		VIP_ASSERT_DEBUG(i >= 0 && i < m_size);
 		return m_elems[i];
 	}
 
-	// front() and back()
-	reference front() noexcept
+	VIP_ALWAYS_INLINE reference at(size_type i) noexcept
 	{
+		VIP_ASSERT_DEBUG(i >= 0 && i < m_size);
+		return m_elems[i];
+	}
+	VIP_ALWAYS_INLINE const_reference at(size_type i) const noexcept
+	{
+		VIP_ASSERT_DEBUG(i >= 0 && i < m_size);
+		return m_elems[i];
+	}
+
+	VIP_ALWAYS_INLINE reference front() noexcept
+	{
+		VIP_ASSERT_DEBUG(!isEmpty());
 		return m_elems[0];
 	}
-	const_reference front() const noexcept
+	VIP_ALWAYS_INLINE const_reference front() const noexcept
 	{
+		VIP_ASSERT_DEBUG(!isEmpty());
 		return m_elems[0];
 	}
 
-	reference back() noexcept
+	VIP_ALWAYS_INLINE reference back() noexcept
 	{
+		VIP_ASSERT_DEBUG(!isEmpty());
 		return m_elems[m_size - 1];
 	}
-	const_reference back() const noexcept
+	VIP_ALWAYS_INLINE const_reference back() const noexcept
 	{
+		VIP_ASSERT_DEBUG(!isEmpty());
 		return m_elems[m_size - 1];
 	}
 
-	reference first() noexcept
-	{
-		return front();
-	}
-	const_reference first() const noexcept
-	{
-		return front();
-	}
-	reference last() noexcept
-	{
-		return back();
-	}
-	const_reference last() const noexcept
-	{
-		return back();
-	}
+	VIP_ALWAYS_INLINE reference first() noexcept { return front(); }
+	VIP_ALWAYS_INLINE const_reference first() const noexcept { return front(); }
+	VIP_ALWAYS_INLINE reference last() noexcept { return back(); }
+	VIP_ALWAYS_INLINE const_reference last() const noexcept { return back(); }
 
 	// size is constant
-	size_type size() const noexcept
-	{
-		return m_size;
-	} // static_cast<size_type>(elems.size()); }
-	bool isEmpty() const noexcept
-	{
-		return m_size == 0;
-	}
+	VIP_ALWAYS_INLINE size_type size() const noexcept { return m_size; }
+	VIP_ALWAYS_INLINE bool isEmpty() const noexcept { return m_size == 0; }
 
-	// swap (note: linear complexity)
-	void swap(VipHybridVector<T, Vip::None>& y) noexcept
+	VIP_ALWAYS_INLINE void swap(VipHybridVector& y) noexcept
 	{
 		std::swap(m_size, y.m_size);
 		for (size_type i = 0; i < VIP_MAX_DIMS; ++i)
 			std::swap(m_elems[i], y.m_elems[i]);
 	}
 
-	// direct access to data (read-only)
-	const T* data() const noexcept
-	{
-		return &m_elems[0];
-	}
-	T* data() noexcept
-	{
-		return &m_elems[0];
-	}
+	VIP_ALWAYS_INLINE const T* data() const noexcept { return m_elems; }
+	VIP_ALWAYS_INLINE T* data() noexcept { return m_elems; }
 
 	// assignment with type conversion
-	template<typename T2, qsizetype N>
-	VipHybridVector& operator=(const VipHybridVector<T2, N>& rhs) noexcept
+	template<class Other>
+	VIP_ALWAYS_INLINE VipHybridVector& operator=(const Other& rhs) noexcept
 	{
+		VIP_ASSERT_DEBUG(rhs.size() <= VIP_MAX_DIMS);
 		m_size = rhs.size();
 		for (qsizetype i = 0; i < m_size; ++i)
 			m_elems[i] = static_cast<T>(rhs[i]);
 		return *this;
 	}
 
-	VipHybridVector& operator=(const VipHybridVector& other) noexcept
+	VIP_ALWAYS_INLINE VipHybridVector& operator=(const VipHybridVector& other) noexcept
 	{
 		m_size = other.m_size;
 		// std::copy(other.m_elems, other.m_elems + VIP_MAX_DIMS, m_elems);
@@ -365,33 +377,14 @@ public:
 		return *this;
 	}
 
-	template<typename T2>
-	VipHybridVector& operator=(const QVector<T2>& rhs) noexcept
-	{
-		fromVector(rhs);
-		return *this;
-	}
-
 	// assign one value to all elements
-	void assign(const T& value) noexcept
-	{
-		fill(value);
-	} // A synonym for fill
-	void fill(const T& value) noexcept
-	{
-		std::fill_n(m_elems, VIP_MAX_DIMS, value);
-	}
+	VIP_ALWAYS_INLINE void assign(const T& value) noexcept { fill(value); } // A synonym for fill
+	VIP_ALWAYS_INLINE void fill(const T& value) noexcept { std::fill_n(m_elems, VIP_MAX_DIMS, value); }
 
-	void resize(size_type new_size) noexcept
+	VIP_ALWAYS_INLINE void resize(size_type new_size) noexcept
 	{
+		VIP_ASSERT_DEBUG(new_size <= VIP_MAX_DIMS && new_size >= 0);
 		m_size = new_size;
-	}
-
-	void fromVector(const QVector<T>& vec) noexcept
-	{
-		resize(vec.size());
-		for (qsizetype i = 0; i < m_size; ++i)
-			m_elems[i] = vec[i];
 	}
 
 	QVector<T> toVector() const
@@ -401,41 +394,35 @@ public:
 		return res;
 	}
 
-	operator QVector<T>() const
+	template<class Other, std::enable_if_t<VipIsIterable_v<Other>, int> = 0>
+	VIP_ALWAYS_INLINE operator Other() const
 	{
-		return toVector();
+		if constexpr (VipIsHybridVector<Other>::value) {
+			Other ret;
+			ret.resize(size());
+			std::copy(begin(), end(), ret.begin());
+			return ret;
+		}
+		else
+			return Other(begin(), end());
 	}
 
-	explicit operator bool() const noexcept
-	{
-		return size() > 0;
-	}
+	VIP_ALWAYS_INLINE explicit operator bool() const noexcept { return size() > 0; }
 
-	template<qsizetype Dim2>
-	operator VipHybridVector<T, Dim2>() const noexcept
-	{
-		VipHybridVector<T, Dim2> res;
-		std::copy(begin(), end(), res.begin());
-		return res;
-	}
-
-	template<class T2, qsizetype N2>
-	bool operator==(const VipHybridVector<T2, N2>& other) const noexcept
+	template<class Other>
+	VIP_ALWAYS_INLINE bool operator==(const Other& other) const noexcept
 	{
 		if (size() != other.size())
 			return false;
 		return std::equal(begin(), end(), other.begin());
 	}
-
-	template<class T2, qsizetype N2>
-	bool operator!=(const VipHybridVector<T2, N2>& other) const noexcept
+	template<class Other>
+	VIP_ALWAYS_INLINE bool operator!=(const Other& other) const noexcept
 	{
-		if (size() != other.size())
-			return true;
-		return !std::equal(begin(), end(), other.begin());
+		return !(*this == other);
 	}
 
-	VipHybridVector& operator<<(const T& elem) noexcept
+	VIP_ALWAYS_INLINE VipHybridVector& operator<<(const T& elem) noexcept
 	{
 		push_back(elem);
 		return *this;
@@ -446,19 +433,18 @@ public:
 #endif
 };
 
-
 /// @brief ND coordinate typedef
 template<qsizetype NDims>
 using VipCoordinate = VipHybridVector<qsizetype, NDims>;
 
-/// @brief VipNDArrayShape is a dynamic VipHybridVector. It is used to represent the shape of a #ipNDArray.
+/// @brief VipNDArrayShape is a dynamic VipHybridVector. It is used to represent the shape of a VipNDArray.
 using VipNDArrayShape = VipCoordinate<Vip::None>;
 VIP_IS_RELOCATABLE(VipNDArrayShape);
 
 template<qsizetype N1, qsizetype N2>
-VipCoordinate< Vip::None> operator+(const VipCoordinate< N1>& v1, const VipCoordinate< N2>& v2) noexcept
+VipCoordinate<Vip::None> operator+(const VipCoordinate<N1>& v1, const VipCoordinate<N2>& v2) noexcept
 {
-	VipCoordinate< Vip::None> tmp;
+	VipCoordinate<Vip::None> tmp;
 	if (v1.size() >= v2.size()) {
 		tmp = v1;
 		for (qsizetype i = 0; i < v2.size(); ++i)
@@ -492,18 +478,19 @@ QDataStream& operator>>(QDataStream& is, VipHybridVector<T, N>& v)
 	return is;
 }
 
-/// @brief Reverse \a vec into \a reverse
+/// @brief Return a reversed version of \a vec
 template<class T, qsizetype N>
-void vipReverse(const VipHybridVector<T, N>& vec, VipHybridVector<T, N>& reverse) noexcept
+VipHybridVector<T, N> vipReverse(const VipHybridVector<T, N>& vec) noexcept
 {
-	if (N == 1) {
+	VipHybridVector<T, N> reverse;
+	if constexpr (N == 1) {
 		reverse[0] = vec[0];
 	}
-	else if (N == 2) {
+	else if constexpr (N == 2) {
 		reverse[0] = vec[1];
 		reverse[1] = vec[0];
 	}
-	else if (N == 3) {
+	else if constexpr (N == 3) {
 		reverse[0] = vec[2];
 		reverse[1] = vec[1];
 		reverse[2] = vec[0];
@@ -513,14 +500,7 @@ void vipReverse(const VipHybridVector<T, N>& vec, VipHybridVector<T, N>& reverse
 		for (qsizetype i = 0; i < vec.size(); ++i)
 			reverse[i] = vec[vec.size() - i - 1];
 	}
-}
-/// @brief Return a reversed version of \a vec
-template<class T, qsizetype N>
-VipHybridVector<T, N> vipReverse(const VipHybridVector<T, N>& vec) noexcept
-{
-	VipHybridVector<T, N> res;
-	vipReverse(vec, res);
-	return res;
+	return reverse;
 }
 
 /// @brief Returns a copy of \a v and change its static size. Note that this won't work if N != N2 && N > 0 && N2 > 0.
@@ -539,18 +519,17 @@ VipHybridVector<T, Vip::None> vipVector(const QVector<T>& v) noexcept
 }
 
 /// @brief Create a VipCoordinate object
-template<class... Args >
+template<class... Args>
 auto vipVector(Args... sizes) noexcept
 {
 	return VipCoordinate<sizeof...(Args)>{ { std::forward<qsizetype>(sizes)... } };
 }
 
-
 #include <tuple>
 /// https://stackoverflow.com/questions/2124339/c-preprocessor-va-args-number-of-arguments
 /// MACRO version of vipVector, much faster on msvc (?)
 #define vip_vector(...)                                                                                                                                                                                \
-	VipCoordinate<std::tuple_size<decltype(std::make_tuple(__VA_ARGS__))>::value>                                                                                                           \
+	VipCoordinate<std::tuple_size<decltype(std::make_tuple(__VA_ARGS__))>::value>                                                                                                                  \
 	{                                                                                                                                                                                              \
 		__VA_ARGS__                                                                                                                                                                            \
 	}

@@ -47,99 +47,19 @@ namespace detail
 			using dtype = ValueType_t<Dst>;
 
 			qsizetype size = dst.size();
-			dtype* ptr = (dtype*)dst.constHandle()->dataPointer(VipNDArrayShape());
+			dtype* ptr = (dtype*)dst.constPtr();
 			if (!ptr)
 				return false;
 
-			if ((Dst::access_type & Vip::Flat) && (Src::access_type & Vip::Flat) && (OverRoi::access_type & Vip::Flat) && dst.isUnstrided() && src.isUnstrided() && roi.isUnstrided()) {
-				const Src s = src;
-				for (qsizetype i = 0; i < size; ++i)
-					if (roi[i])
-						ptr[i] = vipCast<dtype>(s[i]);
-				return true;
-			}
+			if ((Src::access_type & Vip::Flat) && (OverRoi::access_type & Vip::Flat) && dst.isUnstrided() && src.isUnstrided() && roi.isUnstrided()) {
+				if constexpr ((Src::access_type & Vip::Flat) && (OverRoi::access_type & Vip::Flat)) {
 
-			if ((Dst::access_type & Vip::Flat) && dst.isUnstrided()) {
-				if (src.shape().size() == 1) {
-					const qsizetype w = src.shape()[0];
-					VipCoordinate<1> p = { { 0 } };
-					for (p[0] = 0; p[0] < w; ++p[0])
-						if (roi(p))
-							ptr[p[0]] = vipCast<dtype>(src(p));
+					const Src s = src;
+					for (qsizetype i = 0; i < size; ++i)
+						if (roi[i])
+							ptr[i] = (s[i]);
+					return true;
 				}
-				else if (src.shape().size() == 2) {
-					const qsizetype h = src.shape()[0];
-					const qsizetype w = src.shape()[1];
-					qsizetype i = 0;
-					VipCoordinate<2> p = { { 0, 0 } };
-					for (p[0] = 0; p[0] < h; ++p[0])
-						for (p[1] = 0; p[1] < w; ++p[1], ++i)
-							if (roi(p))
-								ptr[i] = vipCast<dtype>(src(p));
-				}
-				else if (src.shape().size() == 3) {
-					const qsizetype z = src.shape()[0];
-					const qsizetype h = src.shape()[1];
-					const qsizetype w = src.shape()[2];
-					qsizetype i = 0;
-					VipCoordinate<3> p = { { 0, 0, 0 } };
-					for (p[0] = 0; p[0] < z; ++p[0])
-						for (p[1] = 0; p[1] < h; ++p[1])
-							for (p[2] = 0; p[2] < w; ++p[2], ++i)
-								if (roi(p))
-									ptr[i] = vipCast<dtype>(src(p));
-				}
-				else {
-					CIteratorFMajorNoSkip<VipNDArrayShape> iter(src.shape());
-					for (qsizetype i = 0; i < size; ++i) {
-						if (roi(iter.pos))
-							ptr[i] = vipCast<dtype>(src(iter.pos));
-						iter.increment();
-					}
-				}
-				return true;
-			}
-
-			if ((Src::access_type & Vip::Flat) && src.isUnstrided()) {
-				if (src.shape().size() == 1) {
-					const qsizetype w = src.shape()[0];
-					VipCoordinate<1> p = { { 0 } };
-					for (p[0] = 0; p[0] < w; ++p[0])
-						if (roi(p))
-							ptr[dst.stride(0) * p[0]] = vipCast<dtype>(src[p[0]]);
-				}
-				else if (src.shape().size() == 2) {
-					// const Src s = src;
-					const qsizetype h = src.shape()[0];
-					const qsizetype w = src.shape()[1];
-					VipCoordinate<2> p = { { 0, 0 } };
-					qsizetype i = 0;
-					for (p[0] = 0; p[0] < h; ++p[0])
-						for (p[1] = 0; p[1] < w; ++p[1], ++i)
-							if (roi(p))
-								ptr[dst.stride(0) * p[0] + dst.stride(1) * p[1]] = vipCast<dtype>(src[i]);
-				}
-				else if (src.shape().size() == 3) {
-					const qsizetype z = src.shape()[0];
-					const qsizetype h = src.shape()[1];
-					const qsizetype w = src.shape()[2];
-					VipCoordinate<3> p = { { 0, 0, 0 } };
-					qsizetype i = 0;
-					for (p[0] = 0; p[0] < z; ++p[0])
-						for (p[1] = 0; p[1] < h; ++p[1])
-							for (p[2] = 0; p[2] < w; ++p[2], ++i)
-								if (roi(p))
-									ptr[dst.stride(0) * p[0] + dst.stride(1) * p[1] + dst.stride(2) * p[2]] = vipCast<dtype>(src[i]);
-				}
-				else {
-					CIteratorFMajorNoSkip<VipNDArrayShape> iter(src.shape());
-					for (qsizetype i = 0; i < size; ++i) {
-						if (roi(iter.pos))
-							ptr[vipFlatOffset<false>(dst.strides(), iter.pos)] = vipCast<dtype>(src[i]);
-						iter.increment();
-					}
-				}
-				return true;
 			}
 
 			if (src.shape().size() == 1) {
@@ -147,7 +67,7 @@ namespace detail
 				VipCoordinate<1> p = { { 0 } };
 				for (p[0] = 0; p[0] < w; ++p[0])
 					if (roi(p))
-						ptr[dst.stride(0) * p[0]] = vipCast<dtype>(src(p));
+						ptr[dst.stride(0) * p[0]] = (src(p));
 			}
 			else if (src.shape().size() == 2) {
 				const qsizetype h = src.shape()[0];
@@ -156,7 +76,7 @@ namespace detail
 				for (p[0] = 0; p[0] < h; ++p[0])
 					for (p[1] = 0; p[1] < w; ++p[1])
 						if (roi(p))
-							ptr[vipFlatOffset<false>(dst.strides(), p)] = vipCast<dtype>(src(p));
+							ptr[vipFlatOffset<false>(dst.strides(), p)] = (src(p));
 			}
 			else if (src.shape().size() == 3) {
 				const qsizetype z = src.shape()[0];
@@ -167,15 +87,10 @@ namespace detail
 					for (p[1] = 0; p[1] < h; ++p[1])
 						for (p[2] = 0; p[2] < w; ++p[2])
 							if (roi(p))
-								ptr[vipFlatOffset<false>(dst.strides(), p)] = vipCast<dtype>(src(p));
+								ptr[vipFlatOffset<false>(dst.strides(), p)] = (src(p));
 			}
 			else {
-				CIteratorFMajorNoSkip<VipNDArrayShape> iter(src.shape());
-				for (qsizetype i = 0; i < size; ++i) {
-					if (roi(iter.pos))
-						ptr[vipFlatOffset<false>(dst.strides(), iter.pos)] = vipCast<dtype>(src(iter.pos));
-					iter.increment();
-				}
+				vip_iter_fmajor(src.shape(), c) if (roi(c)) ptr[vipFlatOffset<false>(dst.strides(), c)] = (src(c));
 			}
 			return true;
 		}
@@ -190,165 +105,62 @@ namespace detail
 		static bool apply(Dst& dst, const Src& src, const VipInfinitRoi&)
 		{
 			// src might be empty if the internal_cast fail (because of invalid conversion)
-			if (src.isEmpty())
+			if (src.isEmpty() || dst.isEmpty())
 				return false;
 
 			using dtype = ValueType_t<Dst>;
 			const qsizetype size = dst.size();
-			dtype* ptr = (dtype*)dst.constHandle()->dataPointer(VipNDArrayShape());
+			dtype* ptr = (dtype*)dst.constPtr();
 			if (!ptr)
 				return false;
+#ifdef _OPENMP
+			int threads = vipLoopThreadCount(dst.size());
+#else
+			int threads = 1;
+#endif
 
-			if (size > 4096 && vipIterateThreadCount() > 1) { // parallel access
-				if ((Src::access_type & Vip::Flat) && dst.isUnstrided() && src.isUnstrided()) {
-					VIP_PARALLEL_FOR
+			if ((Src::access_type & Vip::Flat) && dst.isUnstrided() && src.isUnstrided()) {
+				if constexpr (Src::access_type & Vip::Flat) {
+					VIP_PARALLEL_FOR_NUM_THREADS(threads)
 					for (qsizetype i = 0; i < size; ++i)
 						ptr[i] = (src[i]);
 					return true;
 				}
-				else {
-					if (src.shape().size() == 1) {
-						const qsizetype w = src.shape()[0];
-						VIP_PARALLEL_FOR
-						for (qsizetype i = 0; i < w; ++i)
-							ptr[i * dst.stride(0)] = src(vip_vector(i));
-					}
-					else if (src.shape().size() == 2) {
-						const qsizetype h = src.shape()[0];
-						const qsizetype w = src.shape()[1];
-						VIP_PARALLEL_FOR
-						for (qsizetype y = 0; y < h; ++y)
-							for (qsizetype x = 0; x < w; ++x)
-								ptr[y * dst.stride(0) + x * dst.stride(1)] = src(vip_vector(y, x));
-					}
-					else if (src.shape().size() == 3) {
-						const qsizetype l = src.shape()[0];
-						const qsizetype h = src.shape()[1];
-						const qsizetype w = src.shape()[2];
-						VIP_PARALLEL_FOR
-						for (qsizetype z = 0; z < l; ++z)
-							for (qsizetype y = 0; y < h; ++y)
-								for (qsizetype x = 0; x < w; ++x)
-									ptr[z * dst.stride(0) + y * dst.stride(1) + x * dst.stride(2)] = src(vip_vector(z, y, x));
-					}
-					else {
-						vip_iter_parallel_fmajor(dst.shape(), c) ptr[vipFlatOffset<false>(dst.strides(), c)] = src(c);
-					}
-					return true;
-				}
-			}
-
-			if ((Src::access_type & Vip::Flat) && dst.isUnstrided() && src.isUnstrided()) {
-				const Src s = src;
-				for (qsizetype i = 0; i < size; ++i)
-					ptr[i] = (s[i]);
-				return true;
-			}
-
-			if (dst.isUnstrided()) {
-				if (src.shape().size() == 1) {
-					const qsizetype w = src.shape()[0];
-					VipCoordinate<1> p = { { 0 } };
-					for (p[0] = 0; p[0] < w; ++p[0]) {
-						ptr[p[0]] = (src(p));
-					}
-				}
-				else if (src.shape().size() == 2) {
-					const qsizetype h = src.shape()[0];
-					const qsizetype w = src.shape()[1];
-					qsizetype i = 0;
-					VipCoordinate<2> p = { { 0, 0 } };
-					for (p[0] = 0; p[0] < h; ++p[0])
-						for (p[1] = 0; p[1] < w; ++p[1], ++i)
-							ptr[i] = (src(p));
-				}
-				else if (src.shape().size() == 3) {
-					const qsizetype z = src.shape()[0];
-					const qsizetype h = src.shape()[1];
-					const qsizetype w = src.shape()[2];
-					qsizetype i = 0;
-					VipCoordinate<3> p = { { 0, 0, 0 } };
-					for (p[0] = 0; p[0] < z; ++p[0])
-						for (p[1] = 0; p[1] < h; ++p[1])
-							for (p[2] = 0; p[2] < w; ++p[2], ++i)
-								ptr[i] = (src(p));
-				}
-				else {
-					CIteratorFMajorNoSkip<VipNDArrayShape> iter(src.shape());
-					for (qsizetype i = 0; i < size; ++i) {
-						ptr[i] = (src(iter.pos));
-						iter.increment();
-					}
-				}
-				return true;
-			}
-
-			if ((Src::access_type & Vip::Flat) && src.isUnstrided()) {
-				if (src.shape().size() == 1) {
-					const qsizetype w = src.shape()[0];
-					for (qsizetype i = 0; i < w; ++i)
-						ptr[dst.stride(0) * i] = (src[i]);
-				}
-				else if (src.shape().size() == 2) {
-					const qsizetype h = src.shape()[0];
-					const qsizetype w = src.shape()[1];
-					qsizetype i = 0;
-					for (qsizetype y = 0; y < h; ++y)
-						for (qsizetype x = 0; x < w; ++x, ++i)
-							ptr[dst.stride(0) * y + dst.stride(1) * x] = (src[i]);
-				}
-				else if (src.shape().size() == 3) {
-					const qsizetype z = src.shape()[0];
-					const qsizetype h = src.shape()[1];
-					const qsizetype w = src.shape()[2];
-					qsizetype i = 0;
-					for (qsizetype d = 0; d < z; ++d)
-						for (qsizetype y = 0; y < h; ++y)
-							for (qsizetype x = 0; x < w; ++x, ++i)
-								ptr[dst.stride(0) * d + dst.stride(1) * y + dst.stride(2) * x] = (src[i]);
-				}
-				else {
-					CIteratorFMajorNoSkip<VipNDArrayShape> iter(src.shape());
-					for (qsizetype i = 0; i < size; ++i) {
-						ptr[vipFlatOffset<false>(dst.strides(), iter.pos)] = (src[i]);
-						iter.increment();
-					}
-				}
-				return true;
-			}
-
-			if (src.shape().size() == 1) {
-				const qsizetype w = src.shape()[0];
-				VipCoordinate<1> p = { { 0 } };
-				for (p[0] = 0; p[0] < w; ++p[0])
-					ptr[dst.stride(0) * p[0]] = (src(p));
-			}
-			else if (src.shape().size() == 2) {
-				const qsizetype h = src.shape()[0];
-				const qsizetype w = src.shape()[1];
-				VipCoordinate<2> p = { { 0, 0 } };
-				for (p[0] = 0; p[0] < h; ++p[0])
-					for (p[1] = 0; p[1] < w; ++p[1])
-						ptr[vipFlatOffset<false>(dst.strides(), p)] = (src(p));
-			}
-			else if (src.shape().size() == 3) {
-				const qsizetype z = src.shape()[0];
-				const qsizetype h = src.shape()[1];
-				const qsizetype w = src.shape()[2];
-				VipCoordinate<3> p = { { 0, 0, 0 } };
-				for (p[0] = 0; p[0] < z; ++p[0])
-					for (p[1] = 0; p[1] < h; ++p[1])
-						for (p[2] = 0; p[2] < w; ++p[2])
-							ptr[vipFlatOffset<false>(dst.strides(), p)] = (src(p));
 			}
 			else {
-				CIteratorFMajorNoSkip<VipNDArrayShape> iter(src.shape());
-				for (qsizetype i = 0; i < size; ++i) {
-					ptr[vipFlatOffset<false>(dst.strides(), iter.pos)] = (src(iter.pos));
-					iter.increment();
+				if (src.shape().size() == 1) {
+					const qsizetype w = src.shape()[0];
+					VIP_PARALLEL_FOR_NUM_THREADS(threads)
+					for (qsizetype i = 0; i < w; ++i)
+						ptr[dst.flatIndex(vip_vector(i))] = src(vip_vector(i));
 				}
+				else if (src.shape().size() == 2) {
+					const qsizetype h = src.shape()[0];
+					const qsizetype w = src.shape()[1];
+					VIP_PARALLEL_FOR_NUM_THREADS(threads)
+					for (qsizetype y = 0; y < h; ++y) {
+						VipCoordinate<2> c{ { y, 0 } };
+						for (; c[1] < w; ++c[1])
+							ptr[dst.flatIndex(c)] = src(c);
+					}
+				}
+				else if (src.shape().size() == 3) {
+					const qsizetype l = src.shape()[0];
+					const qsizetype h = src.shape()[1];
+					const qsizetype w = src.shape()[2];
+					VIP_PARALLEL_FOR_NUM_THREADS(threads)
+					for (qsizetype z = 0; z < l; ++z) {
+						VipCoordinate<3> c{ { z, 0, 0 } };
+						for (c[1] = 0; c[1] < h; ++c[1])
+							for (c[2] = 0; c[2] < w; ++c[2])
+								ptr[dst.flatIndex(c)] = src(c);
+					}
+				}
+				else {
+					vip_iter_parallel_fmajor(dst.shape(), c) ptr[vipFlatOffset<false>(dst.strides(), c)] = src(c);
+				}
+				return true;
 			}
-			return true;
 		}
 	};
 
@@ -361,7 +173,7 @@ namespace detail
 		static bool apply(Dst& dst, const Src& src, const VipOverNDRects<Dim>& roi)
 		{
 			using dtype = ValueType_t<Dst>;
-			dtype* ptr = (dtype*)dst.constHandle()->dataPointer(VipNDArrayShape());
+			dtype* ptr = (dtype*)dst.constPtr();
 			if (!ptr)
 				return false;
 
@@ -376,7 +188,7 @@ namespace detail
 					VipCoordinate<1> p = { { 0 } };
 					for (p[0] = rect.start(0); p[0] < rect.end(0); ++p[0]) {
 						if (roi(p))
-							ptr[p[0] * dst.stride(0)] = vipCast<dtype>(src(p));
+							ptr[p[0] * dst.stride(0)] = (src(p));
 					}
 				}
 			}
@@ -387,7 +199,7 @@ namespace detail
 					for (p[0] = rect.start(0); p[0] < rect.end(0); ++p[0])
 						for (p[1] = rect.start(1); p[1] < rect.end(1); ++p[1]) {
 							if (roi(p))
-								ptr[vipFlatOffset<false>(dst.strides(), p)] = vipCast<dtype>(src(p));
+								ptr[vipFlatOffset<false>(dst.strides(), p)] = (src(p));
 						}
 				}
 			}
@@ -399,7 +211,7 @@ namespace detail
 						for (p[1] = rect.start(1); p[1] < rect.end(1); ++p[1])
 							for (p[2] = rect.start(2); p[2] < rect.end(2); ++p[2]) {
 								if (roi(p))
-									ptr[vipFlatOffset<false>(dst.strides(), p)] = vipCast<dtype>(src(p));
+									ptr[vipFlatOffset<false>(dst.strides(), p)] = (src(p));
 							}
 				}
 			}
@@ -411,7 +223,7 @@ namespace detail
 					qsizetype size = rect.shapeSize();
 					for (qsizetype i = 0; i < size; ++i) {
 						if (roi(iter.pos))
-							ptr[vipFlatOffset<false>(dst.strides(), iter.pos)] = vipCast<dtype>(src(iter.pos));
+							ptr[vipFlatOffset<false>(dst.strides(), iter.pos)] = (src(iter.pos));
 						iter.increment();
 					}
 				}
@@ -420,13 +232,33 @@ namespace detail
 		}
 	};
 
+
+	template<class Dst, class Src, class Roi>
+	bool evalInternal(Dst& dst, const Src& src, const Roi& roi)
+	{
+		if constexpr (!(Src::access_type & Vip::Cwise)) {
+			// We must check aliasing
+			if (src.alias(dst.constPtr())) {
+				// Aliasing: go through a temporary array
+				VipNDArrayType<typename Dst::value_type> tmp(dst.shape());
+				if (Eval<Roi>::apply(tmp, src, roi)) {
+					dst = tmp;
+					return true;
+				}
+				else
+					return false;
+			}
+		}
+
+		return Eval<Roi>::apply(dst, src, roi);
+	}
+
 	template<bool Err>
 	struct CError
 	{
 	};
 
-}// end detail
-
+} // end detail
 
 /// \addtogroup DataType
 /// @{
@@ -458,11 +290,6 @@ bool vipEval(const Dst& _dst, const Src& src, const OverRoi& roi = {}, detail::C
 	using dst_type = detail::ValueType_t<Dst>;
 	using src_type = detail::ValueType_t<Src>;
 
-	if (dst.shape() != src.shape())
-		return false;
-
-	detail::ContextHelper ctx;
-
 	if constexpr (std::is_base_of_v<VipNDArray, Src>) {
 		return src.convert(dst);
 	}
@@ -471,19 +298,36 @@ bool vipEval(const Dst& _dst, const Src& src, const OverRoi& roi = {}, detail::C
 			if constexpr (Err) {
 
 				static_assert(VipIsCastable_v<src_type, dst_type>, "cannot cast input functor type to destination array type");
-				return detail::Eval<OverRoi>::apply(dst, vipCast<dst_type>(src), roi);
+				if constexpr (!std::is_same_v<src_type, dst_type>)
+					return detail::evalInternal(dst, vipCast<dst_type>(src), roi);
+				else
+					return detail::evalInternal(dst, src, roi);
 			}
 			else {
-				if constexpr (VipIsCastable_v<src_type, dst_type>)
-					return detail::Eval<OverRoi>::apply(dst, vipCast<dst_type>(src), roi);
+				if constexpr (VipIsCastable_v<src_type, dst_type>) {
+					if constexpr (!std::is_same_v<src_type, dst_type>)
+						return detail::evalInternal(dst, vipCast<dst_type>(src), roi);
+					else
+						return detail::evalInternal(dst, src, roi);
+				}
 				else
 					return false;
 			}
 		}
 		else {
-			if constexpr (!std::is_same_v<detail::NullType, decltype(detail::rebindExpression<dst_type>(std::declval<Src&>()))>)
-				// Rebind src to dst type
-				return vipEval(dst, detail::rebindExpression<dst_type>(src),roi, detail::CError<false>{});
+			using rebing_src = detail::RebindType_t<dst_type,Src>;
+			if constexpr (!std::is_same_v<detail::NullType, rebing_src>) {
+				if constexpr (std::is_same_v<detail::NullType, detail::ValueType_t<rebing_src>>) {
+					static_assert(false, "failed to find a valid rebindExpression() overload");
+				}
+				else
+				{
+					// Use context helper to avoid converting the same array many times
+					detail::ContextHelper ctx;
+					// Rebind src to dst type
+					return vipEval(dst, detail::rebindExpression<dst_type>(src), roi, detail::CError<false>{});
+				}
+			}
 			else
 				return false;
 		}
@@ -525,7 +369,7 @@ bool vipEval(const Dst& _dst, const Src& src, const OverRoi& roi = {}, detail::C
 			case QMetaType::QByteArray:
 				return vipEval(VipNDArrayTypeView<QByteArray>(dst), src, roi, detail::CError<false>{});
 			case QMetaType::QString:
-				return vipEval(VipNDArrayTypeView<QString>(dst), src, roi, detail::CError<false>{});
+			 return vipEval(VipNDArrayTypeView<QString>(dst), src, roi, detail::CError<false>{});
 			default:
 				break;
 		}

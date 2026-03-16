@@ -48,10 +48,6 @@ class QPainter;
 class VipScaleMap;
 class VipNDArray;
 
-/// Number of threads used by default to render an object based on a color map
-#ifndef VIP_COLOR_MAP_THREADS
-#define VIP_COLOR_MAP_THREADS 1
-#endif
 
 /// \brief VipColorMap is used to map values into colors.
 ///
@@ -123,7 +119,7 @@ public:
 	/// \return RGB value, corresponding to value
 	virtual QRgb rgb(const VipInterval& interval, double value) const = 0;
 
-	virtual void applyColorMap(const VipInterval& interval, const VipNDArray& values, QRgb* out, int num_threads = VIP_COLOR_MAP_THREADS) const;
+	virtual void applyColorMap(const VipInterval& interval, const VipNDArray& values, QRgb* out) const;
 
 	/// Map a value of a given interval into a color index
 	///
@@ -157,7 +153,7 @@ class VIP_PLOTTING_EXPORT VipLinearColorMap : public VipColorMap
 	Q_OBJECT
 
 	template<class T>
-	friend void applyColorMapLinear(const VipLinearColorMap* map, const VipInterval& interval, const T* values, QRgb* out, const int w, const int h, const int);
+	friend void applyColorMapLinear(const VipLinearColorMap* map, const VipInterval& interval, const T* values, QRgb* out, const int w, const int h);
 
 public:
 	/// Mode of color map
@@ -263,7 +259,7 @@ public:
 	int colorRenderCount() const;
 
 	virtual QRgb rgb(const VipInterval&, double value) const;
-	virtual void applyColorMap(const VipInterval& interval, const VipNDArray& values, QRgb* out, int num_threads = 1) const;
+	virtual void applyColorMap(const VipInterval& interval, const VipNDArray& values, QRgb* out) const;
 
 	virtual unsigned char colorIndex(const VipInterval&, double value) const;
 

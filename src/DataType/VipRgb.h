@@ -253,15 +253,33 @@ typedef VipRgb<quint8> VipRGB;
 Q_DECLARE_METATYPE(VipRGB)
 VIP_IS_RELOCATABLE(VipRGB);
 
-template<class T>
-struct is_rgb : std::false_type
-{
-};
+
 
 template<class T>
-struct is_rgb<VipRgb<T>> : std::true_type
+struct VipIsRgb : std::false_type
 {
 };
+template<class T>
+struct VipIsRgb<VipRgb<T>> : std::true_type
+{
+};
+template<class T>
+constexpr bool VipIsRgb_v = VipIsRgb<T>::value;
+
+
+template<class T>
+struct VipIsRGB : std::false_type
+{
+};
+template<>
+struct VipIsRGB<VipRGB> : std::true_type
+{
+};
+template<class T>
+constexpr bool VipIsRGB_v = VipIsRGB<T>::value;
+
+
+
 //
 // Operator overloads
 //

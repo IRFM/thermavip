@@ -62,12 +62,13 @@ namespace Vip
 	{
 		Flat = 0x01,	 //! access by flat position with operator[](qsizetype index)
 		Position = 0x02, //! access by N-D position with operator()(const VectorType & pos)
-		Cwise = 0x04	 //! coefficient wise access supporting multi-threading
+		Cwise = 0x04	 //! access by N-D position with operator()(const VectorType & pos) without aliasing issue:
+				 // an expression can contain the same array on the left and right operands without unwanted behavior.
 	};
 }
 
 /// Custom deleter for VipNDArrayHandle
-typedef std::function<void(void*)> vip_deleter_type;
+using vip_deleter_type = std::function<void(void*)>;
 
 namespace detail
 {
@@ -75,16 +76,12 @@ namespace detail
 	/// Very base class for all ND arrays and functor expressions
 	struct NullOperand
 	{
-		typedef NullType value_type;
+		using value_type = NullType;
 		static constexpr qsizetype access_type = 0;
-		static constexpr bool valid = true;
-		int dataType() const;
-		const VipNDArrayShape& shape() const;
-		bool isEmpty() const;
-		bool isUnstrided() const;
-
-		// internal use only
-		void unref() const {}
+		auto dataType() const noexcept { return 0; }
+		auto shape() const noexcept { return VipNDArrayShape{}; }
+		bool isEmpty() const { return true; }
+		bool isUnstrided() const { return true; }
 	};
 
 	/// Base class for functor expressions
@@ -97,6 +94,17 @@ namespace detail
 	{
 	};
 }
+
+struct VipArrayBase : public detail::NullOperand
+{
+};
+
+/// @brief Base class for array-like classes (VipNDArray and VipStaticNDArray).
+/// Uses CRTP.
+template<class Derived>
+struct VipNDArrayBase : public VipArrayBase
+{
+};
 
 /// Check whether template parameter is a functor expression
 template<class T>
@@ -112,7 +120,15 @@ struct VipIsReductor
 	static const bool value = std::is_base_of<detail::BaseReductor, T>::value;
 };
 
+/// @brief Check whether all parameters are of integral type
+template<class... T>
+struct VipIsAllIntegers
+{
+	static constexpr bool value = (std::is_integral_v<T> && ...);
+};
+
 struct VipNDArrayHandle;
+
 /// Returns the global NullHandle pointer
 VIP_DATA_TYPE_EXPORT VipNDArrayHandle* vipNullHandlePtr() noexcept;
 /// Returns true if given metatype is arithmetic
@@ -145,16 +161,16 @@ struct VIP_DATA_TYPE_EXPORT VipNDArrayHandle : public QSharedData
 	// the array strides
 	VipNDArrayShape strides;
 	// the array flat size
-	qsizetype size;
+	qsizetype size = 0;
 	// the array data
-	void* opaque;
+	void* opaque = nullptr;
 	// custom deleter function, only used with StdHandle
 	vip_deleter_type deleter;
 
 	VipNDArrayHandle() noexcept;
 	/// Destructor.
 	///  Should destroy the underlying opaque data (if any)
-	virtual ~VipNDArrayHandle() noexcept;
+	virtual ~VipNDArrayHandle() noexcept {}
 
 	/// Returns the handle type (one of HandleType enum)
 	virtual int handleType() const = 0;
@@ -271,7 +287,7 @@ namespace detail
 	};
 
 	/// A shared pointer class using Copy On Write, very close to QSharedDataPointer.
-	///  The managed type must provide the copy() member function.
+	/// The managed type must provide the copy() member function.
 	template<class U>
 	class SharedDataPointer
 	{
@@ -559,10 +575,7 @@ namespace detail
 				    Vip::InterpolationType type,
 				    const VipNDArrayShape& out_start,
 				    const VipNDArrayShape& out_shape) const;
-		virtual const char* dataName() const
-		{
-			return vipTypeName(qMetaTypeId<T>());
-		}
+		virtual const char* dataName() const { return vipTypeName(qMetaTypeId<T>()); }
 		virtual qsizetype dataSize() const { return sizeof(T); }
 		virtual int dataType() const { return qMetaTypeId<T>(); }
 		virtual bool canExport(int data_type) const { return vipCanConvertStdTypes(qMetaTypeId<T>(), data_type) || vipCanConvert(qMetaTypeId<T>(), data_type); }
@@ -722,20 +735,6 @@ namespace detail
 			ou.stream = &stream;
 			ou.sep = separator;
 			vipInplaceArrayTransform(static_cast<T*>(opaque) + vipFlatOffset<false>(strides, _start), _shape, strides, ou);
-
-			// VipNDSubArrayIterator<T> begin(shape, strides, static_cast<T*>(opaque) + vipFlatOffset<false>(strides, start));
-			//  VipNDSubArrayIterator<T> end(shape, strides, static_cast<T*>(opaque) + vipFlatOffset<false>(strides, start), false);
-			//  for (; begin != end; ++begin)
-			//  stream << *begin << separator;
-			// if(shape.size() == 1) {
-			//  for(int x=start[0]; x < start[0] + shape[0]; ++x)
-			//  stream<< *(static_cast<T*>(opaque) + vipFlatOffset<false>(strides, vipVector(x))) << separator;
-			//  }
-			//  else if (shape.size() == 2) {
-			//  for(int y = start[0]; y < start[0] + shape[0]; ++y)
-			//  for (int x = start[1]; x < start[1] + shape[1]; ++x)
-			//	stream << *(static_cast<T*>(opaque) + vipFlatOffset<false>(strides, vipVector(y,x))) << separator;
-			//  }
 			return stream;
 		}
 	};
@@ -797,9 +796,10 @@ namespace detail
 	{
 		const SharedHandle handle;
 		VipNDArrayShape start;
-		bool pointerView; // tells if this handle is a pointer view (work on data that do not belong to another VipNDArray)
-		void* ptr;	  // pointer to the actual data start for the view
+		bool pointerView = false; // tells if this handle is a pointer view (work on data that do not belong to another VipNDArray)
+		void* ptr = nullptr;	  // pointer to the actual data start for the view
 
+		ViewHandle() noexcept = default;
 		ViewHandle(const ViewHandle& other)
 		  : handle(other.handle)
 		  , start(other.start)

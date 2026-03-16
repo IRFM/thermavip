@@ -225,11 +225,11 @@ ContourLines VipPlotSpectrogram::contourLines(const VipNDArray& array_2D, const 
 			if (x == 0) {
 				xy[TopRight].x = (pos.x());
 				xy[TopRight].y = (pos.y());
-				xy[TopRight].z = (value(xy[TopRight].y, xy[TopRight].x));
+				xy[TopRight].z = (value((qsizetype)xy[TopRight].y, (qsizetype)xy[TopRight].x));
 
 				xy[BottomRight].x = (pos.x());
 				xy[BottomRight].y = (pos.y() + dy);
-				xy[BottomRight].z = (value(xy[BottomRight].y, xy[BottomRight].x));
+				xy[BottomRight].z = (value((qsizetype)xy[BottomRight].y, (qsizetype)xy[BottomRight].x));
 			}
 
 			xy[TopLeft] = xy[TopRight];
@@ -240,8 +240,8 @@ ContourLines VipPlotSpectrogram::contourLines(const VipNDArray& array_2D, const 
 			xy[BottomRight].x = (pos.x() + dx);
 			xy[BottomRight].y = (pos.y() + dy);
 
-			xy[TopRight].z = (value(xy[TopRight].y, xy[TopRight].x));
-			xy[BottomRight].z = (value(xy[BottomRight].y, xy[BottomRight].x));
+			xy[TopRight].z = (value((qsizetype)xy[TopRight].y, (qsizetype)xy[TopRight].x));
+			xy[BottomRight].z = (value((qsizetype)xy[BottomRight].y, (qsizetype)xy[BottomRight].x));
 
 			double zMin = xy[TopLeft].z;
 			double zMax = zMin;

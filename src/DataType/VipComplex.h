@@ -33,19 +33,35 @@
 #define VIP_COMPLEX_H
 
 #include <complex>
+#include <type_traits>
 #include <qmetatype.h>
 #include "VipConfig.h"
 
 /// \addtogroup DataType
 /// @{
 
-typedef std::complex<float> complex_f;
-typedef std::complex<double> complex_d;
+using complex_f = std::complex<float> ;
+using complex_d = std::complex<double>;
+using VipComplexF = complex_f;
+using VipComplexD = complex_d;
 
 Q_DECLARE_METATYPE(complex_f)
 Q_DECLARE_METATYPE(complex_d)
 VIP_IS_RELOCATABLE(complex_f);
 VIP_IS_RELOCATABLE(complex_d);
+
+/// @brief Check if type is complex
+template<class T>
+struct VipIsComplex : std::false_type
+{
+};
+template<class T>
+struct VipIsComplex<std::complex<T>> : std::true_type
+{
+};
+template<class T>
+constexpr bool VipIsComplex_v = VipIsComplex<T>::value;
+
 
 /// @}
 // end DataType

@@ -125,7 +125,7 @@ public:
 	const double* ClamMaxPtr(int component) const;
 };
 
-// Invariant component extraction. Basically returns the inpute image.
+// Invariant component extraction. Basically returns the input image.
 class VIP_DATA_TYPE_EXPORT VipExtractInvariant : public VipExtractComponents
 {
 	Q_OBJECT

@@ -4892,6 +4892,14 @@ void serialize_VipDataListManager(VipArchive& arch)
 {
 	if (arch.mode() == VipArchive::Read) {
 		if (arch.start("VipProcessingManager")) {
+
+			arch.save();
+			int arrayThreads = 1;
+			if (arch.content("arrayThreads", arrayThreads))
+				vipSetIterateThreadCount(arrayThreads);
+			else
+				arch.restore();
+
 			int limit_type = arch.read("listLimitType").toInt();
 			int max_list_size = arch.read("maxListSize").toInt();
 			int max_memory = arch.read("maxListMemory").toInt();
@@ -4914,6 +4922,7 @@ void serialize_VipDataListManager(VipArchive& arch)
 	}
 	else if (arch.mode() == VipArchive::Write) {
 		if (arch.start("VipProcessingManager")) {
+			arch.content("arrayThreads", vipIterateThreadCount());
 			arch.content("listLimitType", VipProcessingManager::listLimitType());
 			arch.content("maxListSize", VipProcessingManager::maxListSize());
 			arch.content("maxListMemory", VipProcessingManager::maxListMemory());

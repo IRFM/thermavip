@@ -508,7 +508,7 @@ void VipAbs::apply()
 			return;
 		}
 		for (int i = 0; i < ar.size(); ++i)
-			ar[i].value = vipAbs(ar[i].value);
+			ar[i].value = vipAbs(ar[i].value); 
 		out_data = QVariant::fromValue(ar);
 	}
 	else if (any.data().userType() == qMetaTypeId<VipComplexPointVector>()) {

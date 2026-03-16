@@ -928,7 +928,7 @@ bool VipPlotRasterData::computeImage(const VipRasterData& raster,
 
 			if (VipAxisColorMap* axis_map = colorMap()) {
 				const VipColorMap* map = axis_map->colorMap();
-				map->applyColorMap(interval, tmp_array, (QRgb*)out.bits(), VIP_COLOR_MAP_THREADS);
+				map->applyColorMap(interval, tmp_array, (QRgb*)out.bits());
 
 				// set src_image_rect, it will be directly used in VipPainter::drawImage
 

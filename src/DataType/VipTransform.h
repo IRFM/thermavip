@@ -81,8 +81,8 @@ namespace detail
 	template<bool Interp>
 	struct InterpVal
 	{
-		template<class Array, class T>
-		static VIP_ALWAYS_INLINE typename Array::value_type apply(const Array& ar, double x, double y, qsizetype w, qsizetype h, const QVariant& background)
+		template<class Array>
+		static VIP_ALWAYS_INLINE auto apply(const Array& ar, double x, double y, qsizetype w, qsizetype h, const QVariant& background)
 		{
 			qsizetype _x = (qsizetype)(x);
 			qsizetype _y = (qsizetype)(y);
@@ -98,10 +98,12 @@ namespace detail
 	template<>
 	struct InterpVal<true>
 	{
-		template<class Array, class T>
-		static VIP_ALWAYS_INLINE typename Array::value_type apply(const Array& ar, double x, double y, qsizetype w, qsizetype h, const QVariant& background)
+		template<class Array>
+		static VIP_ALWAYS_INLINE auto apply(const Array& ar, double x, double y, qsizetype w, qsizetype h, const QVariant& background)
 		{
 			using ret_type = typename Array::value_type;
+			static_assert(!std::is_same_v < NullType, ret_type>);
+
 			if (x < -1 || x > w || y < -1 || y > h)
 				return background.value<ret_type>();
 
@@ -114,16 +116,16 @@ namespace detail
 			const bool inLeft = leftCellEdge >= 0;
 			const bool inRight = rightCellEdge < w;
 
-			ret_type p1 = inBottom && inLeft ? getVal(ar, bottomCellEdge, leftCellEdge) : background;
-			ret_type p2 = inTop && inLeft ? getVal(ar, topCellEdge, leftCellEdge) : background;
-			ret_type p3 = inBottom && inRight ? getVal(ar, bottomCellEdge, rightCellEdge) : background;
-			ret_type p4 = inTop && inRight ? getVal(ar, topCellEdge, rightCellEdge) : background;
+			auto p1 = inBottom && inLeft ? getVal(ar, bottomCellEdge, leftCellEdge) : background.value<ret_type>();
+			auto p2 = inTop && inLeft ? getVal(ar, topCellEdge, leftCellEdge) : background.value<ret_type>();
+			auto p3 = inBottom && inRight ? getVal(ar, bottomCellEdge, rightCellEdge) : background.value<ret_type>();
+			auto p4 = inTop && inRight ? getVal(ar, topCellEdge, rightCellEdge) : background.value<ret_type>();
 
 			const double u = _abs(x - leftCellEdge);
 			const double v = _abs(bottomCellEdge - y);
 			const double v_1 = 1. - v;
 			const double u_1 = 1. - u;
-			return static_cast<ret_type>(p1 * (v_1 * u_1) + p2 * (v * u_1) + p3 * (v_1 * u) + p4 * (v * u));
+			return vipCast<ret_type>(p1 * (v_1 * u_1) + p2 * (v * u_1) + p3 * (v_1 * u) + p4 * (v * u));
 		}
 	};
 
@@ -186,15 +188,18 @@ namespace detail
 	};
 
 	template<class U, Vip::TransformSize Size, Vip::InterpolationType Inter, class Array>
-	auto rebindExpression(const Transform<Size, Inter, Array>& tr)
+	struct RebindExpression<U, Transform<Size, Inter, Array>>
 	{
-		using type = Transform<Size,Inter, decltype( rebindExpression<U>(std::declval<Array&>()))>;
-		using vtype = ValueType_t<type>;
-		if constexpr (std::is_arithmetic_v<vtype> || VipIsComplex_v<vtype> || VipIsRgb_v<vtype>)
-			return type(rebindExpression<U>(std::get<0>(tr.arrays)), tr.tr, tr.rect, tr.background);
-		else
-			return NullType{};
-	}
+		static auto cast(const Transform<Size, Inter, Array>& tr)
+		{
+			using type = Transform<Size, Inter, RebindType_t<U, Array>>;
+			using in_type = ValueType_t<RebindType_t<U, Array>>;
+			if constexpr (std::is_arithmetic_v<in_type> || VipIsComplex_v<in_type> || VipIsRgb_v<in_type>)
+				return type(rebindExpression<U>(std::get<0>(tr.arrays)), tr.tr, tr.rect, tr.background);
+			else
+				return NullType{};
+		}
+	};
 
 }
 
@@ -217,10 +222,10 @@ auto vipTransform(const Array& array, const QTransform& tr, const QVariant& back
 		const QRect mapped = tr.mapRect(rect).toAlignedRect();
 		const QPoint delta = mapped.topLeft();
 		QTransform m = tr * QTransform().translate(-delta.x(), -delta.y());
-		return detail::Transform<Size, Inter, Array>(array, m.inverted(), mapped, background);
+		return detail::Transform<Size, Inter, detail::DeduceArrayType_t<Array>>(array, m.inverted(), mapped, background);
 	}
 	else
-		return detail::Transform<Size, Inter, Array>(array, tr.inverted(), QRect(), background);
+		return detail::Transform<Size, Inter, detail::DeduceArrayType_t<Array>>(array, tr.inverted(), QRect(), background);
 }
 
 /// @}

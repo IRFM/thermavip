@@ -41,55 +41,11 @@
 #include <qreadwritelock.h>
 #include <vector>
 
-template<class T>
-static void applyColorMapStd(const VipColorMap* map, const VipInterval& interval, const T* values, QRgb* out, int size, int num)
-{
-#if defined(_OPENMP)
-#pragma omp parallel for num_threads(num)
-	for (int i = 0; i < size; ++i)
-		out[i] = map->rgb(interval, values[i]);
-#else
-	Q_UNUSED(num);
-	for (int i = 0; i < size; ++i)
-		out[i] = map->rgb(interval, values[i]);
-#endif
-}
 
-void VipColorMap::applyColorMap(const VipInterval& interval, const VipNDArray& ar, QRgb* out, int num_threads) const
+void VipColorMap::applyColorMap(const VipInterval& interval, const VipNDArray& ar, QRgb* out) const
 {
-	if (!ar.isUnstrided())
-		return;
-
-	switch (ar.dataType()) {
-		case QMetaType::Char:
-			return applyColorMapStd(this, interval, (char*)ar.constData(), out, ar.size(), num_threads);
-		case QMetaType::SChar:
-			return applyColorMapStd(this, interval, (signed char*)ar.constData(), out, ar.size(), num_threads);
-		case QMetaType::UChar:
-			return applyColorMapStd(this, interval, (unsigned char*)ar.constData(), out, ar.size(), num_threads);
-		case QMetaType::Short:
-			return applyColorMapStd(this, interval, (qint16*)ar.constData(), out, ar.size(), num_threads);
-		case QMetaType::UShort:
-			return applyColorMapStd(this, interval, (quint16*)ar.constData(), out, ar.size(), num_threads);
-		case QMetaType::Int:
-			return applyColorMapStd(this, interval, (qint32*)ar.constData(), out, ar.size(), num_threads);
-		case QMetaType::UInt:
-			return applyColorMapStd(this, interval, (quint32*)ar.constData(), out, ar.size(), num_threads);
-		case QMetaType::Long:
-			return applyColorMapStd(this, interval, (long*)ar.constData(), out, ar.size(), num_threads);
-		case QMetaType::ULong:
-			return applyColorMapStd(this, interval, (unsigned long*)ar.constData(), out, ar.size(), num_threads);
-		case QMetaType::LongLong:
-			return applyColorMapStd(this, interval, (qint64*)ar.constData(), out, ar.size(), num_threads);
-		case QMetaType::ULongLong:
-			return applyColorMapStd(this, interval, (quint64*)ar.constData(), out, ar.size(), num_threads);
-		case QMetaType::Float:
-			return applyColorMapStd(this, interval, (float*)ar.constData(), out, ar.size(), num_threads);
-		case QMetaType::Double:
-			return applyColorMapStd(this, interval, (double*)ar.constData(), out, ar.size(), num_threads);
-		default:
-			break;
-	}
+	VipNDArrayTypeView<VipRGB> view((VipRGB*)out, ar.shape());
+	view = vipFunction([&](auto v, std::enable_if_t<std::is_arithmetic_v<decltype(v)>, void>* = nullptr) { return this->rgb(interval, v); }, ar);
 }
 
 class VipLinearColorMap::ColorStops
@@ -358,17 +314,18 @@ struct CastToFloat
 };
 
 template<class T>
-void histogram(const VipNDArrayTypeView<T>& img, VipNDArrayType<float>& tmp, int strength, const VipInterval& interval, VipIntervalSampleVector& out, int* indexes, int max_index, int num_threads)
+void histogram(const VipNDArrayTypeView<T>& img, VipNDArrayType<float>& tmp, int strength, const VipInterval& interval, VipIntervalSampleVector& out, int* indexes, int max_index)
 {
-	(void)num_threads;
 	const T* _src = img.ptr();
 	float* _out = tmp.ptr();
 	int w = img.shape(1);
 	int h = img.shape(0);
-	// std::copy(_src, _src + w * h, _out);
-
+	int size = w * h;
+	 
+	//std::copy(_src, _src + w * h, _out);
+	
 	if (strength == 1) {
-#pragma omp parallel for num_threads(num_threads)
+		VIP_PARALLEL_FOR_NUM_THREADS(vipLoopThreadCount(size))
 		for (int y = 0; y < h; ++y) {
 			for (int x = 1; x < w - 1; ++x) {
 				int index = x + y * w;
@@ -379,7 +336,7 @@ void histogram(const VipNDArrayTypeView<T>& img, VipNDArrayType<float>& tmp, int
 		}
 	}
 	else if (strength == 2) {
-#pragma omp parallel for num_threads(num_threads)
+		VIP_PARALLEL_FOR_NUM_THREADS(vipLoopThreadCount(size))
 		for (int y = 0; y < h; ++y) {
 			for (int x = 1; x < w - 1; ++x) {
 				int index = x + y * w;
@@ -393,7 +350,7 @@ void histogram(const VipNDArrayTypeView<T>& img, VipNDArrayType<float>& tmp, int
 		// copy first and last lines
 		std::transform(_src, _src + w, _out, CastToFloat());
 		std::transform(_src + (h - 1) * w, _src + h * w, _out + (h - 1) * w, CastToFloat());
-#pragma omp parallel for num_threads(num_threads)
+		VIP_PARALLEL_FOR_NUM_THREADS(vipLoopThreadCount(size))
 		for (int y = 1; y < h; ++y) {
 			for (int x = 1; x < w - 1; ++x) {
 				int index = x + y * w;
@@ -407,7 +364,7 @@ void histogram(const VipNDArrayTypeView<T>& img, VipNDArrayType<float>& tmp, int
 		// copy first and last lines
 		std::transform(_src, _src + w, _out, CastToFloat());
 		std::transform(_src + (h - 1) * w, _src + h * w, _out + (h - 1) * w, CastToFloat());
-#pragma omp parallel for num_threads(num_threads)
+		VIP_PARALLEL_FOR_NUM_THREADS(vipLoopThreadCount(size))
 		for (int y = 1; y < h - 1; ++y) {
 			for (int x = 1; x < w - 1; ++x) {
 				int index = x + y * w;
@@ -417,28 +374,28 @@ void histogram(const VipNDArrayTypeView<T>& img, VipNDArrayType<float>& tmp, int
 			_out[y * w + w - 1] = _src[y * w + w - 1];
 		}
 	}
-
+	
 	int numcolors = 1024;
 	vipExtractHistogram(tmp, out, numcolors, Vip::SameBinHeight, interval, indexes, 2, 1, max_index, 0, -(4 - (strength - 1)));
 }
 
 template<class T>
-void applyColorMapLinear(const VipLinearColorMap* map, const VipInterval& interval, const T* values, QRgb* out, const int w, const int h, const int num_threads)
+void applyColorMapLinear(const VipLinearColorMap* map, const VipInterval& interval, const T* values, QRgb* out, const int w, const int h)
 {
 	const_cast<VipLinearColorMap*>(map)->computeRenderColors();
 
 	const int num_colors = map->colorRenderCount();
 	const int multiply = num_colors - 1;
 	const int max_index = num_colors + 2;
-	const int size = w * h;
+	const qsizetype size = (qsizetype)w * (qsizetype)h;
 	// Make the for loop only use (almost) POD data
 	const double one_on_width = interval.width() > 0.0 ? 1.0 / interval.width() : 0;
 	const QRgb* palette = map->colorRender();
 	const double min_value = interval.minValue();
 	const double factor = one_on_width * multiply;
 	if (!map->useFlatHistogram()) {
-#pragma omp parallel for num_threads(num_threads)
-		for (int i = 0; i < size; ++i) {
+		VIP_PARALLEL_FOR_NUM_THREADS(vipLoopThreadCount(size))
+		for (qsizetype i = 0; i < size; ++i) {
 			const T value = values[i];
 			unsigned index = isNan(value) ? 0 : (unsigned)clamp((value - min_value) * factor + 2, 1., (double)max_index);
 			if (index >= num_colors + 3u)
@@ -468,7 +425,7 @@ void applyColorMapLinear(const VipLinearColorMap* map, const VipInterval& interv
 			if (true /* std::is_integral<T>::value*/) { //TEST
 				if (map->d_data->tmpArray.shape() != tmp.shape())
 					map->d_data->tmpArray.reset(tmp.shape());
-				histogram(tmp, map->d_data->tmpArray, map->d_data->flatHistogramStrength, interval, map->d_data->histogram, map->d_data->indexes.data(), max_index, num_threads);
+				histogram(tmp, map->d_data->tmpArray, map->d_data->flatHistogramStrength, interval, map->d_data->histogram, map->d_data->indexes.data(), max_index);
 			}
 			else {
 				vipExtractHistogram(tmp, map->d_data->histogram, num_colors, Vip::SameBinHeight, interval, map->d_data->indexes.data(), 2, 1, max_index, 0);
@@ -480,15 +437,14 @@ void applyColorMapLinear(const VipLinearColorMap* map, const VipInterval& interv
 		if (map->d_data->histogram.size() == 0) {
 			// null histogram set all pixels to 0 (nan color)
 			QRgb val = palette[0];
-			for (int i = 0; i < size; ++i)
-				out[i] = val;
+			std::fill_n(out, size, val);
 		}
 		else if (map->d_data->histogram.size() < num_colors) {
 			// small histogram, expand to num_colors
 			double f = num_colors / (double)(map->d_data->histogram.size());
 
-#pragma omp parallel for num_threads(num_threads)
-			for (int i = 0; i < size; ++i) {
+			VIP_PARALLEL_FOR_NUM_THREADS(vipLoopThreadCount(size))
+			for (qsizetype i = 0; i < size; ++i) {
 				int index = map->d_data->indexes[i];
 				if (index < max_index && index > 1)
 					index = (int)(((index - 2) * f) + 2.5);
@@ -497,8 +453,8 @@ void applyColorMapLinear(const VipLinearColorMap* map, const VipInterval& interv
 		}
 		else {
 			// histogram of size num_colors
-#pragma omp parallel for num_threads(num_threads)
-			for (int i = 0; i < size; ++i) {
+			VIP_PARALLEL_FOR_NUM_THREADS(vipLoopThreadCount(size))
+			for (qsizetype i = 0; i < size; ++i) {
 				out[i] = palette[map->d_data->indexes[i]];
 			}
 		}
@@ -812,38 +768,38 @@ QRgb VipLinearColorMap::rgb(const VipInterval& interval, double value) const
 	return d_data->colorStops.rgbNoBoundaryCheck(d_data->mode, ratio);
 }
 
-void VipLinearColorMap::applyColorMap(const VipInterval& interval, const VipNDArray& ar, QRgb* out, int num_threads) const
+void VipLinearColorMap::applyColorMap(const VipInterval& interval, const VipNDArray& ar, QRgb* out) const
 {
 	if (!ar.isUnstrided())
 		return;
 
 	switch (ar.dataType()) {
 		case QMetaType::Char:
-			return applyColorMapLinear(this, interval, (char*)ar.constData(), out, ar.shape(1), ar.shape(0), num_threads);
+			return applyColorMapLinear(this, interval, (char*)ar.constData(), out, ar.shape(1), ar.shape(0));
 		case QMetaType::SChar:
-			return applyColorMapLinear(this, interval, (signed char*)ar.constData(), out, ar.shape(1), ar.shape(0), num_threads);
+			return applyColorMapLinear(this, interval, (signed char*)ar.constData(), out, ar.shape(1), ar.shape(0));
 		case QMetaType::UChar:
-			return applyColorMapLinear(this, interval, (unsigned char*)ar.constData(), out, ar.shape(1), ar.shape(0), num_threads);
+			return applyColorMapLinear(this, interval, (unsigned char*)ar.constData(), out, ar.shape(1), ar.shape(0));
 		case QMetaType::Short:
-			return applyColorMapLinear(this, interval, (qint16*)ar.constData(), out, ar.shape(1), ar.shape(0), num_threads);
+			return applyColorMapLinear(this, interval, (qint16*)ar.constData(), out, ar.shape(1), ar.shape(0));
 		case QMetaType::UShort:
-			return applyColorMapLinear(this, interval, (quint16*)ar.constData(), out, ar.shape(1), ar.shape(0), num_threads);
+			return applyColorMapLinear(this, interval, (quint16*)ar.constData(), out, ar.shape(1), ar.shape(0));
 		case QMetaType::Int:
-			return applyColorMapLinear(this, interval, (qint32*)ar.constData(), out, ar.shape(1), ar.shape(0), num_threads);
+			return applyColorMapLinear(this, interval, (qint32*)ar.constData(), out, ar.shape(1), ar.shape(0));
 		case QMetaType::UInt:
-			return applyColorMapLinear(this, interval, (quint32*)ar.constData(), out, ar.shape(1), ar.shape(0), num_threads);
+			return applyColorMapLinear(this, interval, (quint32*)ar.constData(), out, ar.shape(1), ar.shape(0));
 		case QMetaType::Long:
-			return applyColorMapLinear(this, interval, (long*)ar.constData(), out, ar.shape(1), ar.shape(0), num_threads);
+			return applyColorMapLinear(this, interval, (long*)ar.constData(), out, ar.shape(1), ar.shape(0));
 		case QMetaType::ULong:
-			return applyColorMapLinear(this, interval, (unsigned long*)ar.constData(), out, ar.shape(1), ar.shape(0), num_threads);
+			return applyColorMapLinear(this, interval, (unsigned long*)ar.constData(), out, ar.shape(1), ar.shape(0));
 		case QMetaType::LongLong:
-			return applyColorMapLinear(this, interval, (qint64*)ar.constData(), out, ar.shape(1), ar.shape(0), num_threads);
+			return applyColorMapLinear(this, interval, (qint64*)ar.constData(), out, ar.shape(1), ar.shape(0));
 		case QMetaType::ULongLong:
-			return applyColorMapLinear(this, interval, (quint64*)ar.constData(), out, ar.shape(1), ar.shape(0), num_threads);
+			return applyColorMapLinear(this, interval, (quint64*)ar.constData(), out, ar.shape(1), ar.shape(0));
 		case QMetaType::Float:
-			return applyColorMapLinear(this, interval, (float*)ar.constData(), out, ar.shape(1), ar.shape(0), num_threads);
+			return applyColorMapLinear(this, interval, (float*)ar.constData(), out, ar.shape(1), ar.shape(0));
 		case QMetaType::Double:
-			return applyColorMapLinear(this, interval, (double*)ar.constData(), out, ar.shape(1), ar.shape(0), num_threads);
+			return applyColorMapLinear(this, interval, (double*)ar.constData(), out, ar.shape(1), ar.shape(0));
 		default:
 			break;
 	}

@@ -129,7 +129,7 @@ namespace Qt
 #define VIP_INLINE inline
 
 // Strongest available function inlining
-#if (defined(__GNUC__) && (__GNUC__>=4)) || defined(__MINGW32__)
+#if (defined(__GNUC__) && (__GNUC__ >= 4)) || defined(__MINGW32__) || defined(__clang__)
 #define VIP_ALWAYS_INLINE __attribute__((always_inline)) inline
 #elif defined(__GNUC__)
 #define VIP_ALWAYS_INLINE  inline
@@ -230,13 +230,6 @@ namespace Qt
 #endif
 #endif
 
-// Debug assertion
-#ifndef VIP_DEBUG
-#define VIP_ASSERT_DEBUG(condition, msg) 
-#else
-#define VIP_ASSERT_DEBUG(condition, ... )  assert((condition) && (__VA_ARGS__))
-#endif
-
 
 // Support for __has_builtin
 #ifndef __has_builtin
@@ -247,6 +240,57 @@ namespace Qt
 #ifndef __has_attribute
 #define __has_attribute(x) 0
 #endif
+
+
+namespace detail
+{
+#ifdef __clang__
+	_Pragma("clang diagnostic push") _Pragma("clang diagnostic warning \"-Wformat-nonliteral\"") _Pragma("clang diagnostic warning \"-Wformat-security\"")
+		_Pragma("clang diagnostic warning \"-Wmissing-noreturn\"")
+#endif
+
+		template<class... Args>
+		inline void assert_always(const char* file, int line, const char* format, Args&&... args)
+	{
+		char buffer[1024];
+		int s = snprintf(buffer, 1024, "assertion error in file %s at line %i: ", file, line);
+		if (s < 1024) {
+			char* st = buffer + s;
+			snprintf(st, static_cast<size_t>(1024 - s), format, std::forward<Args>(args)...);
+		}
+		buffer[sizeof(buffer) - 1] = 0;
+		fprintf(stderr, buffer);
+		std::abort();
+	}
+
+#ifdef __clang__
+	_Pragma("clang diagnostic pop")
+#endif
+
+	template<class... T>
+	bool msg(T...)
+	{
+		return true;
+	}
+}
+
+
+// Debug/release assertion, always valid
+#define VIP_ASSERT(condition, ...)                                                                                                                                                                      \
+	do {                                                                                                                                                                                           \
+		if (!(condition)) {                                                                                                                                                                    \
+			detail::assert_always(__FILE__, __LINE__, __VA_ARGS__);                                                                                                                    \
+		}                                                                                                                                                                                      \
+	} while (0)
+
+// Debug assertion only
+#ifndef VIP_DEBUG
+#define VIP_ASSERT_DEBUG(condition, ...)
+#else
+#define VIP_ASSERT_DEBUG(condition, ...) assert((condition) && detail::msg(__VA_ARGS__))
+#endif
+
+
 
 
 // Default move copy/construct

@@ -324,7 +324,7 @@ namespace detail
 	template<class D, class S, class = void>
 	struct Convert
 	{
-		static const bool valid = std::is_convertible_v<S,D>;
+		static const bool valid = std::is_convertible_v<S, D>;
 		static D apply(const S& src) { return static_cast<D>(src); }
 	};
 
@@ -339,7 +339,7 @@ namespace detail
 	struct Convert<std::complex<T>, std::complex<U>>
 	{
 		static const bool valid = true;
-		static std::complex<T> apply(const std::complex<U>& src) { return src; }
+		static std::complex<T> apply(const std::complex<U>& src) { return std::complex<T>((T)src.real(), (T)src.imag()); }
 	};
 	// complex to something: disable
 	template<class D, class T>
@@ -365,7 +365,7 @@ namespace detail
 
 	// disable for VipRGB
 	template<class S>
-	struct Convert<VipRGB, S, typename std::enable_if<!is_complex<S>::value && !is_rgb<S>::value, void>::type> // disable conversion to complex as it is already covered
+	struct Convert<VipRGB, S, typename std::enable_if<!is_complex<S>::value && !VipIsRgb<S>::value, void>::type> // disable conversion to complex as it is already covered
 	{
 		static const bool valid = false;
 		static VipRGB apply(const S&) { return VipRGB(); }
@@ -486,7 +486,6 @@ namespace detail
 #endif
 		}
 	}
-
 
 	/// \internal
 	/// Convert input possibly strided data to possibly strided array.

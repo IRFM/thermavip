@@ -118,137 +118,130 @@ static QSurfaceFormat makeDefaultFormat()
 	return format;
 #endif
 }
-/*
-namespace detail
-{
-	template<class AlwaysVoid, template<class...> class Op, class... Args>
-	struct detector : std::false_type
-	{
-		using type = void;
-	};
 
-	template<template<class...> class Op, class... Args>
-	struct detector<std::void_t<Op<Args...>>, Op, Args...> : std::true_type
-	{
-		using type = Op<Args...>;
-	};
-} // namespace detail
-
-template<template<class...> class Op, class... Args>
-using is_detected = typename detail::detector<void, Op, Args...>::value_t;
-
-template<template<class...> class Op, class... Args>
-using detected_t = typename detail::detector<void, Op, Args...>::type;
-
-template<template<class...> class Op, class... Args>
-constexpr bool detected_v = detail::detector<void, Op, Args...>::value;
-*/
 #include "VipTransform.h"
+#include "VipTranspose.h"
+#include <VipConvolve.h>
+template<class T>
+T& get(const VipNDArrayType<T>& in, qsizetype i)
+{
+	return const_cast<T&>(in[i]);
+}
+template<class T>
+T& get(const VipNDArrayType<T>& in, qsizetype y, qsizetype x)
+{
+	return const_cast<T&>(in(vipVector(y, x)));
+}
+template<class T, qsizetype Dim>
+T& get(const VipNDArrayType<T>& in, const VipCoordinate<Dim>& c)
+{
+	return const_cast<T&>(in(c));
+}
+#include "VipStaticNDArray.h"
+#include "VipEval2.h"
 
+template<class T, class U, size_t N>
+auto operator*(const std::array<T, N>& ar, U val)
+{
+	std::array<decltype(T() * U()), N> ret;
+	for (size_t i = 0; i < N; ++i)
+		ret[i] = ar[i] * val;
+	return ret;
+}
+template<class T, class U, size_t N>
+auto operator*(const std::array<T, N>& l, const std::array<U, N> &r)
+{
+	std::array<decltype(T() * U()), N> ret;
+	for (size_t i = 0; i < N; ++i)
+		ret[i] = l[i] * r[i];
+	return ret;
+}
+template<class T, class U, size_t N>
+auto operator+(const std::array<T, N>& l, U r)
+{
+	std::array<decltype(T() * U()), N> ret;
+	for (size_t i = 0; i < N; ++i)
+		ret[i] = l[i] + r;
+	return ret;
+}
+template<class T, class U, size_t N>
+auto operator+(const std::array<T, N>& l, const std::array<U, N> &r)
+{
+	std::array<decltype(T() * U()), N> ret;
+	for (size_t i = 0; i < N; ++i)
+		ret[i] = l[i] + r[i];
+	return ret;
+}
+
+int test(int argc, char** argv)
+{
+	for (int d = 0; d < 4; ++d) {
+		qint64 st, el;
+		int count = 1000 * (int)(std::pow(10, d));
+		int width = 1000 / (int)(std::pow(10, d));
+		VipNDArrayType<double> in(vipVector(width, width));
+
+		std::cout << std::endl << "Test for width = " << width << std::endl;
+
+		st = QDateTime::currentMSecsSinceEpoch();
+		for (int c = 0; c < count; ++c) {
+			double* pin = (double*)in.data();
+			double* pout = (double*)in.data();
+			qsizetype size = in.size();
+			for (qsizetype i = 0; i < size; ++i)
+				pout[i] = (pin[i] + pin[i] * 2.) * pin[i] + 3.;
+		}
+		el = QDateTime::currentMSecsSinceEpoch() - st;
+		std::cout << "Mul ptr " << el << "ms" << std::endl;
+
+		st = QDateTime::currentMSecsSinceEpoch();
+		for (int c = 0; c < count; ++c) {
+			auto* pin = (std::array<double,16>*)in.data();
+			auto* pout = (std::array<double, 16>*)in.data();
+			qsizetype size = in.size() / 16;
+			for (qsizetype i = 0; i < size; ++i)
+				pout[i] = (pin[i] + pin[i] * 2.) * pin[i] + 3.;
+		}
+		el = QDateTime::currentMSecsSinceEpoch() - st;
+		std::cout << "Mul array " << el << "ms" << std::endl;
+
+		st = QDateTime::currentMSecsSinceEpoch();
+		for (int c = 0; c < count; ++c) {
+			auto* pin = in.data();
+			auto* pout = in.data();
+			qsizetype size = in.size() ;
+			for (qsizetype i = 0; i < size; i += 2) {
+				__m128d v = _mm_loadu_pd(pin + i);
+				v = _mm_add_pd(_mm_mul_pd(_mm_add_pd(_mm_mul_pd(v, _mm_set1_pd(2.)), v),v), _mm_set1_pd(3.));
+				_mm_storeu_pd(pin + i, v);
+			}
+		}
+		el = QDateTime::currentMSecsSinceEpoch() - st;
+		std::cout << "Mul m128 " << el << "ms" << std::endl;
+
+		st = QDateTime::currentMSecsSinceEpoch();
+		for (int c = 0; c < count; ++c) {
+			vipEval2(in, (in + in * 2.) * in + 3.);
+		}
+		el = QDateTime::currentMSecsSinceEpoch() - st;
+		std::cout << "Mul expr " << el << "ms" << std::endl;
+
+		vipSetIterateThreadCount(4);
+		st = QDateTime::currentMSecsSinceEpoch();
+		for (int c = 0; c < count; ++c) {
+			vipEval2(in , (in + in * 2.) * in + 3.);
+		}
+		el = QDateTime::currentMSecsSinceEpoch() - st;
+		std::cout << "Mul expr// " << el << "ms" << std::endl;
+
+		vipSetIterateThreadCount(1);
+		//
+	}
+	return 0;
+}
 
 int main(int argc, char** argv)
 {
-	{
-		
-		// TEST
-		const VipNDArray in(QMetaType::Double, vipVector(1000, 1000));
-		const VipNDArrayType<double> in2 = in;
-		VipNDArray out(QMetaType::Double, vipVector(1000, 1000));
-		VipNDArrayType<double> out2(vipVector(1000, 1000));
-		qint64 st, el;
-
-		vipEval(out, (in * 2));
-
-		// auto r = vipFunction1( [](auto v) { return v * 2; }, in);
-		// auto r2 = vipFunction1([](auto v) { return v * 2; }, in2);
-		// static_assert(detail::IsValidExpression<decltype(in2)>::value);
-		// static_assert(std::is_same_v<detail::ValueType_t<decltype(r)>, detail::NullType>);
-		// static_assert(std::is_same_v<detail::ValueType_t<decltype(r2)>, double>);
-		// static_assert(IsCastable<double, int>::value);
-		// static_assert(!IsCastable<Toto, double>::value);
-
-		//out = vipRed(in2);
-		// out = vipFunction1(in2, [](auto v) { return v * 2; });
-		// out = vipFunction1(in, [](auto v) { return toDouble(v); });
-
-		vipEval(out2, in2);
-		vipEval(out2, in);
-		vipEval(out, in2);
-		vipEval(out, in);
-
-		out = vipTransform<Vip::TransformBoundingRect, Vip::NoInterpolation>(in, QTransform());
-		out = vipFuzzyCompare(in, in);
-		out = vipComplex(in, in);
-		out = vipComplex(in, 2.);
-		out = vipPolar(in, in);
-		out = vipPolar(in, 2.);
-		out = vipClamp(in, in, in);
-		out = vipClamp(in, in, 2);
-		out = vipWhere(in, in, in);
-		out = vipWhere(in, in, 2);
-
-		vipMin(1, 2.);
-		vipEval(out, vipMin(in, in));
-		//static_assert(detected_v<detail::TryMin, double, double>);
-		//static_assert(!detected_v<detail::TryMin, complex_f, double>);
-
-		vipEval(out2, vipFunction([](auto v) { return v*2; },in2));
-		vipEval(out2, vipFunction([](auto v) { return v*2; },in));
-		vipEval(out, vipFunction([](double v) { return complex_f(v); }, in2));
-		vipEval(out, vipFunction([](double v) { return complex_f(v); }, in));
-
-		st = QDateTime::currentMSecsSinceEpoch();
-		for (int i = 0; i < 100; ++i)
-			memcpy(out.data(), in.data(), in.size() * sizeof(double));
-		el = QDateTime::currentMSecsSinceEpoch() - st;
-		std::cout << "memcpy " << el << "ms" << std::endl;
-
-		st = QDateTime::currentMSecsSinceEpoch();
-		for (int i = 0; i < 100; ++i)
-			in.convert(out);
-		el = QDateTime::currentMSecsSinceEpoch() - st;
-		std::cout << "convert " << el << "ms" << std::endl;
-
-		st = QDateTime::currentMSecsSinceEpoch();
-		for (int i = 0; i < 100; ++i) {
-			double* pin = (double*)in.data();
-			double* pout = (double*)out.data();
-			qsizetype size = in.size();
-			for (qsizetype i = 0; i < size; ++i)
-				pout[i] = pin[i];
-		}
-		el = QDateTime::currentMSecsSinceEpoch() - st;
-		std::cout << "Mul std " << el << "ms" << std::endl;
-
-		st = QDateTime::currentMSecsSinceEpoch();
-		for (int i = 0; i < 100; ++i)
-			out = in * 2.;
-		el = QDateTime::currentMSecsSinceEpoch() - st;
-		std::cout << "Mul var " << el << "ms" << std::endl;
-
-		st = QDateTime::currentMSecsSinceEpoch();
-		for (int i = 0; i < 100; ++i)
-			out = in2 * 2.;
-		el = QDateTime::currentMSecsSinceEpoch() - st;
-		std::cout << "Mul T " << el << "ms" << std::endl;
-
-		vipSetIterateThreadCount(4);
-
-		st = QDateTime::currentMSecsSinceEpoch();
-		for (int i = 0; i < 100; ++i)
-			out = in * 2.;
-		el = QDateTime::currentMSecsSinceEpoch() - st;
-		std::cout << "Mul var4 " << el << "ms" << std::endl;
-
-		st = QDateTime::currentMSecsSinceEpoch();
-		for (int i = 0; i < 100; ++i)
-			out = in2 * 2.;
-		el = QDateTime::currentMSecsSinceEpoch() - st;
-		std::cout << "Mul T4 " << el << "ms" << std::endl;
-
-		return 0;
-	}
-
 	{
 		// Load thermavip.env
 		QString env_file = vipGetDataDirectory() + "thermavip/thermavip.env";

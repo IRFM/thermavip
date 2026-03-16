@@ -739,6 +739,8 @@ void AppearanceSettings::applyPage()
 class ProcessingSettings::PrivateData
 {
 public:
+	QSpinBox *arrayThreads;
+
 	QCheckBox* resetRemember;
 
 	QComboBox* procPriority;
@@ -761,6 +763,10 @@ ProcessingSettings::ProcessingSettings(QWidget* parent)
 
 	d_data->resetRemember = new QCheckBox("Reset remembered choices");
 	d_data->resetRemember->setToolTip("Reset association of file suffix -> device type.\nReset default device parameters.");
+
+	d_data->arrayThreads = new QSpinBox();
+	d_data->arrayThreads->setRange(1, (int)std::thread::hardware_concurrency());
+	d_data->arrayThreads->setToolTip("<b>Thread count for array operations</b><br>This include image processing algorithm,<br>image display, 3D array manipulation...");
 
 	d_data->procPriority = new QComboBox();
 	d_data->displayPriority = new QComboBox();
@@ -788,11 +794,13 @@ ProcessingSettings::ProcessingSettings(QWidget* parent)
 	d_data->displayPriority->addItem("Inherit Priority");
 
 	QGridLayout* glay = new QGridLayout();
-	glay->addWidget(new QLabel("Processing thread priority"), 0, 0);
-	glay->addWidget(d_data->procPriority, 0, 1);
-	glay->addWidget(new QLabel("Display processing thread priority"), 1, 0);
-	glay->addWidget(d_data->displayPriority, 1, 1);
-	glay->addWidget(d_data->printDebug, 2, 0, 1, 2);
+	glay->addWidget(new QLabel("ND-Arrays thread count"), 0, 0);
+	glay->addWidget(d_data->arrayThreads, 0, 1);
+	glay->addWidget(new QLabel("Processing thread priority"), 1, 0);
+	glay->addWidget(d_data->procPriority, 1, 1);
+	glay->addWidget(new QLabel("Display processing thread priority"), 2, 0);
+	glay->addWidget(d_data->displayPriority, 2, 1);
+	glay->addWidget(d_data->printDebug, 3, 0, 1, 2);
 
 	d_data->maxSizeEnable = new QCheckBox();
 	d_data->maxSize = new QSpinBox();
@@ -854,6 +862,8 @@ void ProcessingSettings::applyPage()
 {
 	disconnect(&VipProcessingManager::instance(), SIGNAL(changed()), this, SLOT(updatePage()));
 
+	vipSetIterateThreadCount(d_data->arrayThreads->value());
+
 	int type = 0;
 	if (d_data->maxSizeEnable->isChecked())
 		type |= VipDataList::Number;
@@ -896,6 +906,8 @@ void ProcessingSettings::applyPage()
 
 void ProcessingSettings::updatePage()
 {
+	d_data->arrayThreads->setValue(vipIterateThreadCount());
+
 	d_data->maxSizeEnable->setChecked(VipProcessingManager::listLimitType() & VipDataList::Number);
 	d_data->maxMemoryEnable->setChecked(VipProcessingManager::listLimitType() & VipDataList::MemorySize);
 
