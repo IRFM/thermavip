@@ -70,6 +70,19 @@ namespace detail
 
 }
 
+
+template<class F, qsizetype... Dims>
+VIP_ALWAYS_INLINE void vipForEachIntegerRange(F&& f, std::integer_sequence<qsizetype, Dims...>)
+{
+	(std::forward<F>(f)(Dims), ...);
+}
+template<class F, qsizetype... Dims>
+VIP_ALWAYS_INLINE void vipForEachIntegerRangeBackward(F&& f, std::integer_sequence<qsizetype, Dims...>)
+{
+	(... , std::forward<F>(f)(Dims));
+}
+
+
 /// @brief Check if given type is iterable
 template<class T>
 using VipIsIterable = decltype(detail::is_iterable_impl<T>(0));
@@ -156,8 +169,8 @@ struct VipHybridVector
 	VIP_ALWAYS_INLINE const_reference last() const noexcept { return back(); }
 
 	// size is constant
-	static size_type size() noexcept { return N; }
-	static bool isEmpty() noexcept { return false; }
+	static VIP_ALWAYS_INLINE size_type size() noexcept { return N; }
+	static VIP_ALWAYS_INLINE bool isEmpty() noexcept { return false; }
 
 	// swap (note: linear complexity)
 	void swap(VipHybridVector<T, N>& y) noexcept
@@ -442,20 +455,34 @@ using VipNDArrayShape = VipCoordinate<Vip::None>;
 VIP_IS_RELOCATABLE(VipNDArrayShape);
 
 template<qsizetype N1, qsizetype N2>
-VipCoordinate<Vip::None> operator+(const VipCoordinate<N1>& v1, const VipCoordinate<N2>& v2) noexcept
+VIP_ALWAYS_INLINE auto operator+(const VipCoordinate<N1>& v1, const VipCoordinate<N2>& v2) noexcept
 {
-	VipCoordinate<Vip::None> tmp;
-	if (v1.size() >= v2.size()) {
-		tmp = v1;
-		for (qsizetype i = 0; i < v2.size(); ++i)
-			tmp[i] += v2[i];
+	if constexpr (N1 > 0 && N2 > 0) {
+		
+		static constexpr qsizetype min_size = N1 < N2 ? N1 : N2;
+		static constexpr qsizetype max_size = N1 < N2 ? N2 : N1;
+		VipCoordinate<max_size> ret;
+
+		vipForEachIntegerRange([&](qsizetype i) { ret[i] = v1[i] + v2[i]; }, std::make_integer_sequence<qsizetype, min_size>{});
+		vipForEachIntegerRange([&](qsizetype i) { 
+			if constexpr (N1 > N2)
+				  ret[min_size + i] = v1[min_size + i];
+			  else
+				  ret[min_size + i] = v2[min_size + i];
+		  },
+		  std::make_integer_sequence<qsizetype, max_size - min_size>{});
+		return ret;
 	}
 	else {
-		tmp = v2;
-		for (qsizetype i = 0; i < v1.size(); ++i)
-			tmp[i] += v1[i];
+		VipCoordinate<Vip::None> ret;
+		qsizetype min_size = std::min(v1.size(), v2.size());
+		ret.resize(std::max(v1.size(), v2.size()));
+		for (qsizetype i = 0; i < min_size; ++i)
+			ret[i] = v1[i] + v2[i];
+		for (qsizetype i = min_size; i < ret.size(); ++i) 
+			ret[i] = v1.size() > v2.size() ? v1[i] : v2[i];
+		return ret;
 	}
-	return tmp;
 }
 
 template<class T, qsizetype N>
@@ -480,7 +507,7 @@ QDataStream& operator>>(QDataStream& is, VipHybridVector<T, N>& v)
 
 /// @brief Return a reversed version of \a vec
 template<class T, qsizetype N>
-VipHybridVector<T, N> vipReverse(const VipHybridVector<T, N>& vec) noexcept
+VIP_ALWAYS_INLINE VipHybridVector<T, N> vipReverse(const VipHybridVector<T, N>& vec) noexcept
 {
 	VipHybridVector<T, N> reverse;
 	if constexpr (N == 1) {
@@ -503,15 +530,41 @@ VipHybridVector<T, N> vipReverse(const VipHybridVector<T, N>& vec) noexcept
 	return reverse;
 }
 
+
+template<qsizetype N, class F>
+VIP_ALWAYS_INLINE void vipForEachCoord(const VipCoordinate<N>& c, F&& f)
+{
+	if constexpr (N > 0) {
+		using seq = std::make_integer_sequence<qsizetype, N>;
+		vipForEachIntegerRange(std::forward<F>(f), seq{});
+	}
+	else {
+		for (qsizetype i = 0; i < c.size(); ++i)
+			f(i);
+	}
+}
+template<qsizetype N, class F>
+VIP_ALWAYS_INLINE void vipForEachCoordBackward(const VipCoordinate<N>& c, F&& f)
+{
+	if constexpr (N > 0) {
+		using seq = std::make_integer_sequence<qsizetype, N>;
+		vipForEachIntegerRangeBackward(std::forward<F>(f), seq{});
+	}
+	else {
+		for (qsizetype i = c.size() -1; i >= 0; --i)
+			f(i);
+	}
+}
+
 /// @brief Returns a copy of \a v and change its static size. Note that this won't work if N != N2 && N > 0 && N2 > 0.
 template<qsizetype N, qsizetype N2>
-VipCoordinate<N> vipVector(const VipCoordinate<N2>& v) noexcept
+VIP_ALWAYS_INLINE VipCoordinate<N> vipVector(const VipCoordinate<N2>& v) noexcept
 {
 	return v;
 }
 /// @brief Create a dynamic VipHybridVector from a QVector
 template<class T>
-VipHybridVector<T, Vip::None> vipVector(const QVector<T>& v) noexcept
+VIP_ALWAYS_INLINE VipHybridVector<T, Vip::None> vipVector(const QVector<T>& v) noexcept
 {
 	VipHybridVector<T, Vip::None> res;
 	res = v;
@@ -520,9 +573,19 @@ VipHybridVector<T, Vip::None> vipVector(const QVector<T>& v) noexcept
 
 /// @brief Create a VipCoordinate object
 template<class... Args>
-auto vipVector(Args... sizes) noexcept
+VIP_ALWAYS_INLINE auto vipVector(Args... sizes) noexcept
 {
 	return VipCoordinate<sizeof...(Args)>{ { std::forward<qsizetype>(sizes)... } };
+}
+
+template<qsizetype NDims>
+VIP_ALWAYS_INLINE auto vipRepeat(qsizetype count, qsizetype value) noexcept
+{
+	VipCoordinate<NDims> ret;
+	if constexpr (NDims == Vip::None)
+		ret.resize(count);
+	vipForEachCoord(ret, [&](qsizetype i) { ret[i] = value; });
+	return ret;
 }
 
 #include <tuple>

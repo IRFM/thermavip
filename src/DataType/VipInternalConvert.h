@@ -325,7 +325,13 @@ namespace detail
 	struct Convert
 	{
 		static const bool valid = std::is_convertible_v<S, D>;
-		static D apply(const S& src) { return static_cast<D>(src); }
+		static D apply(const S& src) 
+		{ 
+			if constexpr (valid)
+				return static_cast<D>(src);
+			else
+				return D();
+		}
 	};
 
 	// conversion to complex
@@ -401,35 +407,42 @@ namespace detail
 	template<class S>
 	struct Convert<QString, S>
 	{
-		static const bool valid = true;
+		static const bool valid = !std::is_same_v<S, NullType>;
 		static QString apply(const S& s) { return ToQStringTransform::apply(s); }
 	};
 	// convertion to bytearray
 	template<class S>
 	struct Convert<QByteArray, S>
 	{
-		static const bool valid = true;
+		static const bool valid = !std::is_same_v<S, NullType>;
 		static QByteArray apply(const S& s) { return ToQByteArrayTransform::apply(s); }
 	};
 
-	template<class D>
+	/* template<class D, class S>
+	struct Convert<D, S, std::enable_if_t<std::is_same_v<D, NullType> || std::is_same_v<S, NullType>, void>>
+	{
+		static const bool valid = false;
+		static D apply(const S&) { return D(); }
+	};*/
+
+	/* template<class D>
 	struct Convert<D, NullType>
 	{
-		static const bool valid = true;
+		static const bool valid = false;
 		static D apply(const NullType&) { return D(); }
 	};
 	template<class S>
 	struct Convert<NullType, S>
 	{
-		static const bool valid = true;
+		static const bool valid = false;
 		static NullType apply(const S&) { return NullType(); }
 	};
 	template<>
 	struct Convert<NullType, NullType>
 	{
-		static const bool valid = true;
+		static const bool valid = false;
 		static NullType apply(const NullType&) { return NullType(); }
-	};
+	};*/
 
 	template<class In, class Out>
 	struct Converter

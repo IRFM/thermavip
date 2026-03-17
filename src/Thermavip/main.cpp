@@ -148,7 +148,7 @@ auto operator*(const std::array<T, N>& ar, U val)
 	return ret;
 }
 template<class T, class U, size_t N>
-auto operator*(const std::array<T, N>& l, const std::array<U, N> &r)
+auto operator*(const std::array<T, N>& l, const std::array<U, N>& r)
 {
 	std::array<decltype(T() * U()), N> ret;
 	for (size_t i = 0; i < N; ++i)
@@ -164,7 +164,7 @@ auto operator+(const std::array<T, N>& l, U r)
 	return ret;
 }
 template<class T, class U, size_t N>
-auto operator+(const std::array<T, N>& l, const std::array<U, N> &r)
+auto operator+(const std::array<T, N>& l, const std::array<U, N>& r)
 {
 	std::array<decltype(T() * U()), N> ret;
 	for (size_t i = 0; i < N; ++i)
@@ -172,8 +172,94 @@ auto operator+(const std::array<T, N>& l, const std::array<U, N> &r)
 	return ret;
 }
 
+void print(const VipNDArray& ar)
+{
+	QByteArray buff;
+	QTextStream str(&buff);
+	str << ar;
+	str.flush();
+	std::cout << buff.data() << std::endl;
+}
+#include "VipResize2.h"
+#include "VipResize.h"
 int test(int argc, char** argv)
 {
+	{
+		VipNDArray img("C:/Users/VM213788/Desktop/20250313_081_AEA30.png");
+		VipNDArrayType<VipRGB> dst(vipVector(1200, 700));
+		VipNDArrayTypeView<VipRGB> in(img);
+		vipResizeNoInterpolation(in,dst);
+		dst.save("C:/Users/VM213788/Desktop/20250313_081_AEA30_no.png");
+		vipResizeLinear(in, dst);
+		dst.save("C:/Users/VM213788/Desktop/20250313_081_AEA30_lin.png");
+		vipResizeCatmullRom(in, dst);
+		dst.save("C:/Users/VM213788/Desktop/20250313_081_AEA30_cub.png");
+		return 0;
+	}
+	{
+		vipSetIterateThreadCount(4);
+		VipNDArrayType<double> in(vipVector(1000, 1000));
+		in.fill(0);
+		VipNDArrayType<double> out(vipVector(5000, 5000));
+
+		qint64 st, el;
+		
+		st = QDateTime::currentMSecsSinceEpoch();
+		in.resize(out, Vip::NoInterpolation);
+		el = QDateTime::currentMSecsSinceEpoch() - st;
+		std::cout << "resize NoInterpolation " << el << " ms" << std::endl;
+
+		st = QDateTime::currentMSecsSinceEpoch();
+		out = vipResize<Vip::NoInterpolation>(in, out.shape());
+		el = QDateTime::currentMSecsSinceEpoch() - st;
+		std::cout << "vipResize NoInterpolation " << el << " ms" << std::endl;
+
+		st = QDateTime::currentMSecsSinceEpoch();
+		in.resize(out, Vip::LinearInterpolation);
+		el = QDateTime::currentMSecsSinceEpoch() - st;
+		std::cout << "resize LinearInterpolation " << el << " ms" << std::endl;
+
+		st = QDateTime::currentMSecsSinceEpoch();
+		out = vipResize<Vip::LinearInterpolation>(in, out.shape());
+		el = QDateTime::currentMSecsSinceEpoch() - st;
+		std::cout << "vipResize LinearInterpolation " << el << " ms" << std::endl;
+
+		st = QDateTime::currentMSecsSinceEpoch();
+		in.resize(out, Vip::CubicInterpolation);
+		el = QDateTime::currentMSecsSinceEpoch() - st;
+		std::cout << "resize CubicInterpolation " << el << " ms" << std::endl;
+
+		st = QDateTime::currentMSecsSinceEpoch();
+		out = vipResize<Vip::CubicInterpolation>(in, out.shape());
+		el = QDateTime::currentMSecsSinceEpoch() - st;
+		std::cout << "vipResize CubicInterpolation " << el << " ms" << std::endl;
+	}
+	{ 
+		vipSetIterateThreadCount(4);
+		VipNDArrayType<double> in = { { 0, 1 },{ 2, 3 } };
+		VipNDArray out = vipResize<Vip::NoInterpolation>(in, vipVector(5, 5));
+		print(in);
+		print(out);
+		out = vipResize<Vip::CubicInterpolation>(in, vipVector(5, 5));
+		
+		print(out);
+		VipNDArrayType<double> out2(out.shape());
+		in.resize(out2, Vip::CubicInterpolation);
+		print(out2);
+	}
+	std::cout << std::endl;
+	{
+		VipNDArrayType<double> in = { { 0, 1, 2, 3 }, { 4, 5, 6, 7 }, { 8, 9, 10, 11 }, { 12, 13, 14, 15 } };
+		VipNDArray out = vipResize<Vip::NoInterpolation>(in, vipVector(3,3));
+		print(in);
+		print(out);
+		out = vipResize<Vip::CubicInterpolation>(in, vipVector(3, 3)); 
+		print(out);
+		VipNDArrayType<double> out2(out.shape());
+		in.resize(out2, Vip::CubicInterpolation);
+		print(out2);
+		return 0;
+	}
 	for (int d = 0; d < 4; ++d) {
 		qint64 st, el;
 		int count = 1000 * (int)(std::pow(10, d));
@@ -195,7 +281,7 @@ int test(int argc, char** argv)
 
 		st = QDateTime::currentMSecsSinceEpoch();
 		for (int c = 0; c < count; ++c) {
-			auto* pin = (std::array<double,16>*)in.data();
+			auto* pin = (std::array<double, 16>*)in.data();
 			auto* pout = (std::array<double, 16>*)in.data();
 			qsizetype size = in.size() / 16;
 			for (qsizetype i = 0; i < size; ++i)
@@ -208,10 +294,10 @@ int test(int argc, char** argv)
 		for (int c = 0; c < count; ++c) {
 			auto* pin = in.data();
 			auto* pout = in.data();
-			qsizetype size = in.size() ;
+			qsizetype size = in.size();
 			for (qsizetype i = 0; i < size; i += 2) {
 				__m128d v = _mm_loadu_pd(pin + i);
-				v = _mm_add_pd(_mm_mul_pd(_mm_add_pd(_mm_mul_pd(v, _mm_set1_pd(2.)), v),v), _mm_set1_pd(3.));
+				v = _mm_add_pd(_mm_mul_pd(_mm_add_pd(_mm_mul_pd(v, _mm_set1_pd(2.)), v), v), _mm_set1_pd(3.));
 				_mm_storeu_pd(pin + i, v);
 			}
 		}
@@ -220,7 +306,7 @@ int test(int argc, char** argv)
 
 		st = QDateTime::currentMSecsSinceEpoch();
 		for (int c = 0; c < count; ++c) {
-			in= (in + in * 2.) * in + 3.;
+			in = (in + in * 2.) * in + 3.;
 		}
 		el = QDateTime::currentMSecsSinceEpoch() - st;
 		std::cout << "Mul expr " << el << "ms" << std::endl;
@@ -241,6 +327,7 @@ int test(int argc, char** argv)
 
 int main(int argc, char** argv)
 {
+	return test(argc, argv);
 	{
 		// Load thermavip.env
 		QString env_file = vipGetDataDirectory() + "thermavip/thermavip.env";

@@ -123,7 +123,7 @@ namespace detail
 		}
 		QImageNDFxTable(const QImage& img)
 		  : ImageHandle()
-		  , image(img)
+		  , image(img.convertToFormat(QImage::Format_ARGB32))
 		{
 			opaque = image.isNull() ? nullptr : &image;
 			shape = vipVector(image.height(), image.width());

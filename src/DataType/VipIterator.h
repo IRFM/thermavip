@@ -2284,7 +2284,7 @@ namespace iter_detail
 			if (VipCoordinate<detail::staticDims<decltype(start), decltype(end)>()> _st = start)                                                                                           \
 				/* Remove 1 to the inner shape since the for loop add 1 at the beginning */                                                                                            \
 				if ((ordering == Vip::FirstMajor ? coord.back() = _st.back() - 1 : coord[0] = _st[0] - 1) | 1)                                                                         \
-					if (qsizetype dimCount = shape.size())                                                                                                                         \
+					if (qsizetype dimCount = coord.size())                                                                                                                         \
 						/* Go! And pass the start parameter to incrementCheckContinue */                                                                                       \
 						while (iter_detail::incrementCheckContinue<ordering>(coord, _sh, dimCount, &_st))
 

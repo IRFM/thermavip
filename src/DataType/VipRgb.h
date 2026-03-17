@@ -47,18 +47,13 @@ template<class T>
 struct VipRgb
 {
 	typedef T value_type;
-	T b;
-	T g;
-	T r;
-	T a;
+	T b=0;
+	T g=0;
+	T r=0;
+	T a=0;
 
-	VipRgb() noexcept
-	  : b(0)
-	  , g(0)
-	  , r(0)
-	  , a(0)
-	{
-	}
+	VipRgb() noexcept = default;
+	 
 	VipRgb(T r, T g, T b, T a = (T)255) noexcept
 	  : b(b)
 	  , g(g)
@@ -67,42 +62,45 @@ struct VipRgb
 	{
 	}
 	VipRgb(const QColor& c) noexcept
-	  : b(c.blue())
-	  , g(c.green())
-	  , r(c.red())
-	  , a(c.alpha())
+	  : b((T)c.blue())
+	  , g((T)c.green())
+	  , r((T)c.red())
+	  , a((T)c.alpha())
 	{
 	}
 	VipRgb(QRgb c) noexcept
-	  : b(qBlue(c))
-	  , g(qGreen(c))
-	  , r(qRed(c))
-	  , a(qAlpha(c))
+	  : b((T)qBlue(c))
+	  , g((T)qGreen(c))
+	  , r((T)qRed(c))
+	  , a((T)qAlpha(c))
 	{
 	}
-	VipRgb(const VipRgb& other) noexcept
-	  : b(other.b)
-	  , g(other.g)
-	  , r(other.r)
-	  , a(other.a)
-	{
-	}
+	VipRgb(const VipRgb& other) noexcept = default;
 	template<class U>
 	VipRgb(const VipRgb<U>& other) noexcept
-	  : b(other.b)
-	  , g(other.g)
-	  , r(other.r)
-	  , a(other.a)
+	  : VipRgb(other.clamp((quint8)0,(quint8)255))
 	{
 	}
 
 	template<class U>
 	VipRgb<U> clamp(U min, U max) const noexcept
 	{
-		return VipRgb((U)r < min ? min : ((U)r > max ? max : (U)r),
+		return VipRgb<U>((U)r < min ? min : ((U)r > max ? max : (U)r),
 			      (U)g < min ? min : ((U)g > max ? max : (U)g),
 			      (U)b < min ? min : ((U)b > max ? max : (U)b),
 			      (U)a < min ? min : ((U)a > max ? max : (U)a));
+	}
+
+	VipRgb& operator=(const VipRgb& other) noexcept = default;
+
+	template<class U>
+	VipRgb& operator=(const VipRgb<U>& other) noexcept
+	{
+		r = (T)other.r;
+		g = (T)other.g;
+		b = (T)other.b;
+		a = (T)other.a;
+		return *this;
 	}
 
 	/// @brief Convert to QRgb
@@ -132,7 +130,7 @@ struct alignas(alignof(QRgb)) VipRgb<quint8>
 	quint8 b{ 0 };
 #endif
 
-	VipRgb() noexcept {}
+	VipRgb() noexcept = default;
 
 	VipRgb(quint8 r, quint8 g, quint8 b, quint8 a = 255) noexcept
 	  :
@@ -177,27 +175,23 @@ struct alignas(alignof(QRgb)) VipRgb<quint8>
 	VipRgb(const VipRgb<U>& other) noexcept
 	  :
 #if Q_BYTE_ORDER == Q_LITTLE_ENDIAN
-	  b(other.b)
-	  , g(other.g)
-	  , r(other.r)
-	  , a(other.a)
+	  b(other.b < (U)0 ? (quint8)0 : (other.b > (U)255 ? (quint8)255 : (quint8)other.b))
+	  , g(other.g < (U)0 ? (quint8)0 : (other.g > (U)255 ? (quint8)255 : (quint8)other.g))
+	  , r(other.r < (U)0 ? (quint8)0 : (other.r > (U)255 ? (quint8)255 : (quint8)other.r))
+	  , a(other.a < (U)0 ? (quint8)0 : (other.a > (U)255 ? (quint8)255 : (quint8)other.a))
 #else
-	  a(other.a)
-	  , r(other.r)
-	  , g(other.g)
-	  , b(other.b)
+	  a(other.a < (U)0 ? (quint8)0 : (other.a > (U)255 ? (quint8)255 : (quint8)other.a))
+	  , r(other.r < (U)0 ? (quint8)0 : (other.r > (U)255 ? (quint8)255 : (quint8)other.r))
+	  , g(other.g < (U)0 ? (quint8)0 : (other.g > (U)255 ? (quint8)255 : (quint8)other.g))
+	  , b(other.b < (U)0 ? (quint8)0 : (other.b > (U)255 ? (quint8)255 : (quint8)other.b))
 #endif
 	{
-		// r = other.r < (U)0 ? (quint8)0 : (other.r > (U)255 ? (quint8)255 : (quint8)other.r);
-		//  g = other.g < (U)0 ? (quint8)0 : (other.g > (U)255 ? (quint8)255 : (quint8)other.g);
-		//  b = other.b < (U)0 ? (quint8)0 : (other.b > (U)255 ? (quint8)255 : (quint8)other.b);
-		//  a = other.a < (U)0 ? (quint8)0 : (other.a > (U)255 ? (quint8)255 : (quint8)other.a);
 	}
 
 	template<class U>
 	VipRgb<U> clamp(U min, U max) const noexcept
 	{
-		return VipRgb((U)r < min ? min : ((U)r > max ? max : (U)r),
+		return VipRgb<U>((U)r < min ? min : ((U)r > max ? max : (U)r),
 			      (U)g < min ? min : ((U)g > max ? max : (U)g),
 			      (U)b < min ? min : ((U)b > max ? max : (U)b),
 			      (U)a < min ? min : ((U)a > max ? max : (U)a));
@@ -222,10 +216,10 @@ struct alignas(alignof(QRgb)) VipRgb<quint8>
 	template<class U>
 	VipRgb& operator=(const VipRgb<U>& other) noexcept
 	{
-		r = other.r; // < (U)0 ? (quint8)0 : (other.r > (U)255 ? (quint8)255 : (quint8)other.r);
-		g = other.g; // < (U)0 ? (quint8)0 : (other.g > (U)255 ? (quint8)255 : (quint8)other.g);
-		b = other.b; // < (U)0 ? (quint8)0 : (other.b > (U)255 ? (quint8)255 : (quint8)other.b);
-		a = other.a; // < (U)0 ? (quint8)0 : (other.a > (U)255 ? (quint8)255 : (quint8)other.a);
+		r = other.r < (U)0 ? (quint8)0 : (other.r > (U)255 ? (quint8)255 : (quint8)other.r);
+		g = other.g < (U)0 ? (quint8)0 : (other.g > (U)255 ? (quint8)255 : (quint8)other.g);
+		b = other.b < (U)0 ? (quint8)0 : (other.b > (U)255 ? (quint8)255 : (quint8)other.b);
+		a = other.a < (U)0 ? (quint8)0 : (other.a > (U)255 ? (quint8)255 : (quint8)other.a);
 		return *this;
 	}
 
