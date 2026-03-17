@@ -151,6 +151,16 @@ QDataStream& operator>>(QDataStream& str, VipRGB& v)
 	return str;
 }
 
+QDataStream& operator<<(QDataStream& str, const VipRGBf& v)
+{
+	return str << v.r << v.g << v.b << v.a;
+}
+QDataStream& operator>>(QDataStream& str, VipRGBf& v)
+{
+	str >> v.r >> v.g>> v.b >> v.a;
+	return str;
+}
+
 QDataStream& operator<<(QDataStream& o, const VipLongPoint& pt)
 {
 	return o << pt.x() << pt.y();
@@ -230,6 +240,11 @@ QTextStream& operator<<(QTextStream& stream, const VipRGB& p)
 {
 	return stream << "[" << (int)p.a << "," << (int)p.r << "," << (int)p.g << "," << (int)p.b << "]";
 }
+QTextStream& operator<<(QTextStream& stream, const VipRGBf& p)
+{
+	return stream << "[" << p.a << "," << p.r << "," << p.g << "," << p.b << "]";
+}
+
 QTextStream& operator>>(QTextStream& str, VipRGB& p)
 {
 	int a, r, g, b;
@@ -243,6 +258,22 @@ QTextStream& operator>>(QTextStream& str, VipRGB& p)
 	READ_VALUE(str, b);
 	READ_CHAR(str, ']');
 	p = VipRGB(r, g, b, a);
+	return str;
+}
+
+QTextStream& operator>>(QTextStream& str, VipRGBf& p)
+{
+	int a, r, g, b;
+	READ_CHAR(str, '[');
+	READ_VALUE(str, a);
+	READ_CHAR(str, ',');
+	READ_VALUE(str, r);
+	READ_CHAR(str, ',');
+	READ_VALUE(str, g);
+	READ_CHAR(str, ',');
+	READ_VALUE(str, b);
+	READ_CHAR(str, ']');
+	p = VipRGBf(r, g, b, a);
 	return str;
 }
 
@@ -1035,6 +1066,16 @@ static int registerConversionFunctions()
 	QMetaType::registerConverter<QByteArray, VipPoint>(detail::byteArrayToType<VipPoint>);
 #endif
 	// END TEST
+
+	QMetaType::registerConverter<VipRGB, QString>(detail::typeToString<VipRGB>);
+	QMetaType::registerConverter<QString, VipRGB>(detail::stringToType<VipRGB>);
+	QMetaType::registerConverter<VipRGB, QByteArray>(detail::typeToByteArray<VipRGB>);
+	QMetaType::registerConverter<QByteArray, VipRGB>(detail::byteArrayToType<VipRGB>);
+
+	QMetaType::registerConverter<VipRGBf, QString>(detail::typeToString<VipRGBf>);
+	QMetaType::registerConverter<QString, VipRGBf>(detail::stringToType<VipRGBf>);
+	QMetaType::registerConverter<VipRGBf, QByteArray>(detail::typeToByteArray<VipRGBf>);
+	QMetaType::registerConverter<QByteArray, VipRGBf>(detail::byteArrayToType<VipRGBf>);
 
 	QMetaType::registerConverter<vip_long_double, std::complex<float>>(fromLongDouble<std::complex<float>>);
 	QMetaType::registerConverter<vip_long_double, std::complex<double>>(fromLongDouble<std::complex<double>>);

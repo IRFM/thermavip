@@ -379,10 +379,10 @@ bool vipEval(const Dst& _dst, const Src& src, const OverRoi& roi = {}, detail::C
 			return vipEval(VipNDArrayTypeView<complex_f>(dst), src, roi, detail::CError<false>{});
 		if (dst.dataType() == qMetaTypeId<complex_d>())
 			return vipEval(VipNDArrayTypeView<complex_d>(dst), src, roi, detail::CError<false>{});
-		if (dst.dataType() == qMetaTypeId<VipRGB>())
+		if (dst.dataType() == qMetaTypeId<VipRGB>() || dst.dataType() == qMetaTypeId<QImage>())
 			return vipEval(VipNDArrayTypeView<VipRGB>(dst), src, roi, detail::CError<false>{});
-		if (dst.dataType() == qMetaTypeId<QImage>())
-			return vipEval(VipNDArrayTypeView<VipRGB>(dst), src, roi, detail::CError<false>{});
+		if (dst.dataType() == qMetaTypeId<VipRGBf>())
+			return vipEval(VipNDArrayTypeView<VipRGBf>(dst), src, roi, detail::CError<false>{});
 	}
 
 	return false;

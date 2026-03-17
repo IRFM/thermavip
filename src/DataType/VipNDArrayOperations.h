@@ -176,7 +176,7 @@ namespace detail
 		static T import(const U& v)
 		{
 			if constexpr (std::is_same_v<QVariant, U>)
-				return v.value<T>();
+				return v.template value<T>();
 			else
 				return static_cast<T>(v);
 		}
@@ -626,7 +626,7 @@ namespace detail
 
 		static auto cast(const GenericFunction<Functor, Array...>& f)
 		{
-			using functor = GenericFunction<Functor, Array...>;
+			//using functor = GenericFunction<Functor, Array...>;
 			using type = GenericFunction<Functor, RebindType_t<U, Array>...>;
 
 			if constexpr (std::is_invocable_v<Functor, ValueType_t<RebindType_t<U, Array>>...>)
@@ -1022,7 +1022,7 @@ auto vipFuzzyCompare(const A1& a1, const A2& a2) noexcept
 		if constexpr (detail::HasArrayType_v<T>)                                                                                                                                               \
 			return vipFunction([](auto v, std::void_t<decltype(std_name(v))>* = nullptr) { return std_name(v); }, val);                                                                    \
 		else                                                                                                                                                                                   \
-			return std_name(name);                                                                                                                                                         \
+			return std_name(val);                                                                                                                                                         \
 	}
 
 #define MATH_FUNCTION(std_name, name)                                                                                                                                                                  \
@@ -1032,7 +1032,7 @@ auto vipFuzzyCompare(const A1& a1, const A2& a2) noexcept
 		if constexpr (detail::HasArrayType_v<T>)                                                                                                                                               \
 			return vipFunction([](auto v, std::void_t<decltype(std_name(v))>* = nullptr) { return std_name(v); }, val);                                                                    \
 		else                                                                                                                                                                                   \
-			return std_name(name);                                                                                                                                                         \
+			return std_name(val);                                                                                                                                                         \
 	}
 
 TRIGONOMETRIC_FUNCTION(std::cos, vipCos)
@@ -1056,5 +1056,6 @@ MATH_FUNCTION(std::exp, vipExp)
 MATH_FUNCTION(std::exp2, vipExp2)
 MATH_FUNCTION(std::pow, vipPow)
 MATH_FUNCTION(std::sqrt, vipSqrt)
+
 
 #endif

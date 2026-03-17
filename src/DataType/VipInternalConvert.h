@@ -181,7 +181,8 @@ namespace detail
 		{
 			return typeToString<std::complex<T>>(d);
 		}
-		static QString apply(const VipRGB& c) { return typeToString<VipRGB>(c); }
+		template<class T>
+		static QString apply(const VipRgb<T>& c) { return typeToString<VipRgb<T>>(c); }
 
 		template<class T>
 		QString operator()(const T& src) const
@@ -211,7 +212,8 @@ namespace detail
 		{
 			return typeToByteArray<std::complex<T>>(d);
 		}
-		static QByteArray apply(const VipRGB& c) { return typeToByteArray<VipRGB>(c); }
+		template<class T>
+		static QByteArray apply(const VipRgb<T>& c) { return typeToByteArray<VipRgb<T>>(c); }
 
 		template<class T>
 		QByteArray operator()(const T& src) const
@@ -320,6 +322,22 @@ namespace detail
 		}
 	};
 
+	struct ToRGBf
+	{
+		static VipRGBf apply(const QString& d) { return stringToType<VipRGBf>(d); }
+		static VipRGBf apply(const QByteArray& d) { return byteArrayToType<VipRGBf>(d); }
+		template<class T>
+		static VipRGBf apply(const T&)
+		{
+			return VipRGBf();
+		}
+		template<class T>
+		VipRGBf operator()(const T& src) const
+		{
+			return apply(src);
+		}
+	};
+
 	/// \internal Conversion structure used by the whole DataType library through #vipCast
 	template<class D, class S, class = void>
 	struct Convert
@@ -364,11 +382,11 @@ namespace detail
 	};
 
 	// disable for VipRGB
-	template<class S>
-	struct Convert<VipRGB, S, typename std::enable_if<!is_complex<S>::value && !VipIsRgb<S>::value, void>::type> // disable conversion to complex as it is already covered
+	template<class T, class S>
+	struct Convert<VipRgb<T>, S, typename std::enable_if<!is_complex<S>::value && !VipIsRgb<S>::value, void>::type> // disable conversion to complex as it is already covered
 	{
 		static const bool valid = false;
-		static VipRGB apply(const S&) { return VipRGB(); }
+		static VipRgb<T> apply(const S&) { return {} ; }
 	};
 	template<class T, class U>
 	struct Convert<VipRgb<T>, VipRgb<U>>
@@ -383,12 +401,24 @@ namespace detail
 		static const bool valid = true;
 		static VipRGB apply(const QString& s) { return ToRGB::apply(s); }
 	};
+	template<>
+	struct Convert<VipRGBf, QString>
+	{
+		static const bool valid = true;
+		static VipRGBf apply(const QString& s) { return ToRGBf::apply(s); }
+	};
 	// enable QByteArray to VipRGB
 	template<>
 	struct Convert<VipRGB, QByteArray>
 	{
 		static const bool valid = true;
 		static const VipRGB apply(const QByteArray& s) { return ToRGB::apply(s); }
+	};
+	template<>
+	struct Convert<VipRGBf, QByteArray>
+	{
+		static const bool valid = true;
+		static const VipRGBf apply(const QByteArray& s) { return ToRGBf::apply(s); }
 	};
 	// enable QRgb to VipRGB
 	template<>
