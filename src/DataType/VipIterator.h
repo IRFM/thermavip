@@ -2148,8 +2148,16 @@ inline bool vipArrayTransformVoid(const void* in,
 	if (in_type == 0 || out_type == 0)
 		return false;
 
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
+	QVariant src_v(in_type, nullptr);
+	if(!src_v.canConvert(out_type))
+		return false;
+#else
+
 	if (!QMetaType::canConvert(VIP_META(in_type), VIP_META(out_type)))
 		return false;
+#endif
+
 
 	void* in_ptr = const_cast<void*>(in);
 	qsizetype inSizeOf = QMetaType(in_type).sizeOf();

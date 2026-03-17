@@ -2497,7 +2497,7 @@ void VipAffineTransform::apply()
 			for (int i = 0; i < size; ++i) {
 				auto a = ptr[i].a;
 				auto rgb = ptr[i] * factor + offset;
-				ptr[i] = rgb.clamp(0, 255);
+				ptr[i] = rgb.clamp<quint8>(0, 255);
 				ptr[i].a = a;
 			}
 			ar_out = QVariant::fromValue(vipToArray(qimg));

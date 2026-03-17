@@ -46,6 +46,7 @@
 template<class T>
 struct VipRgb
 {
+	static_assert(std::is_same_v<T,quint8>|| std::is_same_v<T,float>  );
 	typedef T value_type;
 	T b=0;
 	T g=0;
@@ -243,10 +244,13 @@ inline QRgb VipRgb<T>::toQRgb() const noexcept
 	return reinterpret_cast<QRgb&>(tmp);
 }
 
-typedef VipRgb<quint8> VipRGB;
+using VipRGB = VipRgb<quint8> ;
+using VipRGBf = VipRgb<float> ;
+
 Q_DECLARE_METATYPE(VipRGB)
 VIP_IS_RELOCATABLE(VipRGB);
-
+Q_DECLARE_METATYPE(VipRGBf)
+VIP_IS_RELOCATABLE(VipRGBf);
 
 
 template<class T>
@@ -271,6 +275,14 @@ struct VipIsRGB<VipRGB> : std::true_type
 };
 template<class T>
 constexpr bool VipIsRGB_v = VipIsRGB<T>::value;
+
+template<class T>
+struct VipRgbType
+{
+	using type = std::conditional_t<std::is_integral_v<T>, quint8,float>;
+};
+template<class T>
+using VipRgbType_t = typename VipRgbType<T>::type;
 
 
 
@@ -355,201 +367,201 @@ typename std::enable_if<std::is_arithmetic<U>::value, VipRgb<T>&>::type operator
 }
 
 template<class T, class U>
-inline VipRgb<decltype(T() + U())> operator+(const VipRgb<T>& v1, const VipRgb<U>& v2) noexcept
+inline auto operator+(const VipRgb<T>& v1, const VipRgb<U>& v2) noexcept
 {
-	return VipRgb<decltype(T() + U())>(v1.r + v2.r, v1.g + v2.g, v1.b + v2.b, v1.a + v2.a);
+	return VipRgb<VipRgbType_t<decltype(T() + U())>>(v1.r + v2.r, v1.g + v2.g, v1.b + v2.b, v1.a + v2.a);
 }
 template<class T, class U>
-inline VipRgb<typename std::enable_if<std::is_arithmetic<U>::value, decltype(T() + U())>::type> operator+(const VipRgb<T>& v1, const U& v2) noexcept
+inline VipRgb<typename std::enable_if<std::is_arithmetic<U>::value, VipRgbType_t<decltype(T() + U())>>::type> operator+(const VipRgb<T>& v1, const U& v2) noexcept
 {
-	return VipRgb<decltype(T() + U())>(v1.r + v2, v1.g + v2, v1.b + v2, v1.a + v2);
+	return VipRgb<VipRgbType_t<decltype(T() + U())>>(v1.r + v2, v1.g + v2, v1.b + v2, v1.a + v2);
 }
 template<class T, class U>
-inline VipRgb<typename std::enable_if<std::is_arithmetic<U>::value, decltype(T() + U())>::type> operator+(const U& v2, const VipRgb<T>& v1) noexcept
+inline VipRgb<typename std::enable_if<std::is_arithmetic<U>::value, VipRgbType_t<decltype(T() + U())>>::type> operator+(const U& v2, const VipRgb<T>& v1) noexcept
 {
-	return VipRgb<decltype(T() + U())>(v1.r + v2, v1.g + v2, v1.b + v2, v1.a + v2);
-}
-
-template<class T, class U>
-inline VipRgb<decltype(T() - U())> operator-(const VipRgb<T>& v1, const VipRgb<U>& v2) noexcept
-{
-	return VipRgb<decltype(T() - U())>(v1.r - v2.r, v1.g - v2.g, v1.b - v2.b, v1.a - v2.a);
-}
-template<class T, class U>
-inline VipRgb<typename std::enable_if<std::is_arithmetic<U>::value, decltype(T() - U())>::type> operator-(const VipRgb<T>& v1, const U& v2) noexcept
-{
-	return VipRgb<decltype(T() - U())>(v1.r - v2, v1.g - v2, v1.b - v2, v1.a - v2);
-}
-template<class T, class U>
-inline VipRgb<typename std::enable_if<std::is_arithmetic<U>::value, decltype(T() - U())>::type> operator-(const U& v2, const VipRgb<T>& v1) noexcept
-{
-	return VipRgb<decltype(T() - U())>(v1.r - v2, v1.g - v2, v1.b - v2, v1.a - v2);
+	return VipRgb<VipRgbType_t<decltype(T() + U())>>(v1.r + v2, v1.g + v2, v1.b + v2, v1.a + v2);
 }
 
 template<class T, class U>
-inline VipRgb<decltype(T() * U())> operator*(const VipRgb<T>& v1, const VipRgb<U>& v2) noexcept
+inline auto operator-(const VipRgb<T>& v1, const VipRgb<U>& v2) noexcept
 {
-	return VipRgb<decltype(T() * U())>(v1.r * v2.r, v1.g * v2.g, v1.b * v2.b, v1.a * v2.a);
+	return VipRgb<VipRgbType_t<decltype(T() - U())>>(v1.r - v2.r, v1.g - v2.g, v1.b - v2.b, v1.a - v2.a);
 }
 template<class T, class U>
-inline VipRgb<typename std::enable_if<std::is_arithmetic<U>::value, decltype(T() * U())>::type> operator*(const VipRgb<T>& v1, const U& v2) noexcept
+inline VipRgb<typename std::enable_if<std::is_arithmetic<U>::value, VipRgbType_t<decltype(T() - U())>>::type> operator-(const VipRgb<T>& v1, const U& v2) noexcept
 {
-	return VipRgb<decltype(T() * U())>(v1.r * v2, v1.g * v2, v1.b * v2, v1.a * v2);
+	return VipRgb<VipRgbType_t<decltype(T() - U())>>(v1.r - v2, v1.g - v2, v1.b - v2, v1.a - v2);
 }
 template<class T, class U>
-inline VipRgb<typename std::enable_if<std::is_arithmetic<U>::value, decltype(T() * U())>::type> operator*(const U& v2, const VipRgb<T>& v1) noexcept
+inline VipRgb<typename std::enable_if<std::is_arithmetic<U>::value, VipRgbType_t<decltype(T() - U())>>::type> operator-(const U& v2, const VipRgb<T>& v1) noexcept
 {
-	return VipRgb<decltype(T() * U())>(v1.r * v2, v1.g * v2, v1.b * v2, v1.a * v2);
-}
-
-template<class T, class U>
-inline VipRgb<decltype(T() / U())> operator/(const VipRgb<T>& v1, const VipRgb<U>& v2) noexcept
-{
-	return VipRgb<decltype(T() / U())>(v1.r / v2.r, v1.g / v2.g, v1.b / v2.b, v1.a / v2.a);
-}
-template<class T, class U>
-inline VipRgb<typename std::enable_if<std::is_arithmetic<U>::value, decltype(T() / U())>::type> operator/(const VipRgb<T>& v1, const U& v2) noexcept
-{
-	return VipRgb<decltype(T() / U())>(v1.r / v2, v1.g / v2, v1.b / v2, v1.a / v2);
+	return VipRgb<VipRgbType_t<decltype(T() - U())>>(v1.r - v2, v1.g - v2, v1.b - v2, v1.a - v2);
 }
 
 template<class T, class U>
-inline VipRgb<decltype(T() % U())> operator%(const VipRgb<T>& v1, const VipRgb<U>& v2) noexcept
+inline auto operator*(const VipRgb<T>& v1, const VipRgb<U>& v2) noexcept
 {
-	return VipRgb<decltype(T() % U())>(v1.r % v2.r, v1.g % v2.g, v1.b % v2.b, v1.a % v2.a);
+	return VipRgb<VipRgbType_t<decltype(T() * U())>>(v1.r * v2.r, v1.g * v2.g, v1.b * v2.b, v1.a * v2.a);
 }
 template<class T, class U>
-inline VipRgb<typename std::enable_if<std::is_arithmetic<U>::value, decltype(T() % U())>::type> operator%(const VipRgb<T>& v1, const U& v2) noexcept
+inline VipRgb<typename std::enable_if<std::is_arithmetic<U>::value, VipRgbType_t<decltype(T() * U())>>::type> operator*(const VipRgb<T>& v1, const U& v2) noexcept
 {
-	return VipRgb<decltype(T() % U())>(v1.r % v2, v1.g % v2, v1.b % v2, v1.a % v2);
+	return VipRgb<VipRgbType_t<decltype(T() * U())>>(v1.r * v2, v1.g * v2, v1.b * v2, v1.a * v2);
+}
+template<class T, class U>
+inline VipRgb<typename std::enable_if<std::is_arithmetic<U>::value, VipRgbType_t<decltype(T() * U())>>::type> operator*(const U& v2, const VipRgb<T>& v1) noexcept
+{
+	return VipRgb<VipRgbType_t<decltype(T() * U())>>(v1.r * v2, v1.g * v2, v1.b * v2, v1.a * v2);
 }
 
 template<class T, class U>
-inline VipRgb<bool> operator&&(const VipRgb<T>& v1, const VipRgb<U>& v2) noexcept
+inline auto operator/(const VipRgb<T>& v1, const VipRgb<U>& v2) noexcept
 {
-	return VipRgb<bool>(v1.r && v2.r, v1.g && v2.g, v1.b && v2.b, v1.a && v2.a);
+	return VipRgb<VipRgbType_t<decltype(T() / U())>>(v1.r / v2.r, v1.g / v2.g, v1.b / v2.b, v1.a / v2.a);
 }
 template<class T, class U>
-inline typename std::enable_if<std::is_arithmetic<U>::value, VipRgb<bool>>::type operator&&(const VipRgb<T>& v1, const U& v2) noexcept
+inline VipRgb<typename std::enable_if<std::is_arithmetic<U>::value, VipRgbType_t<decltype(T() / U())>>::type> operator/(const VipRgb<T>& v1, const U& v2) noexcept
 {
-	return VipRgb<bool>(v1.r && v2, v1.g && v2, v1.b && v2, v1.a && v2);
+	return VipRgb<VipRgbType_t<decltype(T() / U())>>(v1.r / v2, v1.g / v2, v1.b / v2, v1.a / v2);
+}
+
+template<class T, class U>
+inline auto operator%(const VipRgb<T>& v1, const VipRgb<U>& v2) noexcept
+{
+	return VipRgb<VipRgbType_t<decltype(T() % U())>>(v1.r % v2.r, v1.g % v2.g, v1.b % v2.b, v1.a % v2.a);
+}
+template<class T, class U>
+inline VipRgb<typename std::enable_if<std::is_arithmetic<U>::value, VipRgbType_t<decltype(T() % U())>>::type> operator%(const VipRgb<T>& v1, const U& v2) noexcept
+{
+	return VipRgb<VipRgbType_t<decltype(T() % U())>>(v1.r % v2, v1.g % v2, v1.b % v2, v1.a % v2);
+}
+
+template<class T, class U>
+inline VipRgb<quint8> operator&&(const VipRgb<T>& v1, const VipRgb<U>& v2) noexcept
+{
+	return VipRgb<quint8>(v1.r && v2.r, v1.g && v2.g, v1.b && v2.b, v1.a && v2.a);
+}
+template<class T, class U>
+inline typename std::enable_if<std::is_arithmetic<U>::value, VipRgb<quint8>>::type operator&&(const VipRgb<T>& v1, const U& v2) noexcept
+{
+	return VipRgb<quint8>(v1.r && v2, v1.g && v2, v1.b && v2, v1.a && v2);
 }
 template<class U, class T>
-inline typename std::enable_if<std::is_arithmetic<U>::value, VipRgb<bool>>::type operator&&(const U& v2, const VipRgb<T>& v1) noexcept
+inline typename std::enable_if<std::is_arithmetic<U>::value, VipRgb<quint8>>::type operator&&(const U& v2, const VipRgb<T>& v1) noexcept
 {
-	return VipRgb<bool>(v1.r && v2, v1.g && v2, v1.b && v2, v1.a && v2);
+	return VipRgb<quint8>(v1.r && v2, v1.g && v2, v1.b && v2, v1.a && v2);
 }
 
 template<class T, class U>
-inline VipRgb<bool> operator||(const VipRgb<T>& v1, const VipRgb<U>& v2) noexcept
+inline VipRgb<quint8> operator||(const VipRgb<T>& v1, const VipRgb<U>& v2) noexcept
 {
-	return VipRgb<bool>(v1.r || v2.r, v1.g || v2.g, v1.b || v2.b, v1.a || v2.a);
+	return VipRgb<quint8>(v1.r || v2.r, v1.g || v2.g, v1.b || v2.b, v1.a || v2.a);
 }
 template<class T, class U>
-inline typename std::enable_if<std::is_arithmetic<U>::value, VipRgb<bool>>::type operator||(const VipRgb<T>& v1, const U& v2) noexcept
+inline typename std::enable_if<std::is_arithmetic<U>::value, VipRgb<quint8>>::type operator||(const VipRgb<T>& v1, const U& v2) noexcept
 {
-	return VipRgb<bool>(v1.r || v2, v1.g || v2, v1.b || v2, v1.a || v2);
+	return VipRgb<quint8>(v1.r || v2, v1.g || v2, v1.b || v2, v1.a || v2);
 }
 template<class T, class U>
-inline typename std::enable_if<std::is_arithmetic<U>::value, VipRgb<bool>>::type operator||(const U& v2, const VipRgb<T>& v1) noexcept
+inline typename std::enable_if<std::is_arithmetic<U>::value, VipRgb<quint8>>::type operator||(const U& v2, const VipRgb<T>& v1) noexcept
 {
-	return VipRgb<bool>(v1.r || v2, v1.g || v2, v1.b || v2, v1.a || v2);
-}
-
-template<class T, class U>
-inline VipRgb<bool> operator<(const VipRgb<T>& v1, const VipRgb<U>& v2) noexcept
-{
-	return VipRgb<bool>(v1.r < v2.r, v1.g < v2.g, v1.b < v2.b, v1.a < v2.a);
-}
-template<class T, class U>
-inline typename std::enable_if<std::is_arithmetic<U>::value, VipRgb<bool>>::type operator<(const VipRgb<T>& v1, const U& v2) noexcept
-{
-	return VipRgb<bool>(v1.r < v2, v1.g < v2, v1.b < v2, v1.a < v2);
-}
-template<class T, class U>
-inline typename std::enable_if<std::is_arithmetic<U>::value, VipRgb<bool>>::type operator<(const U& v2, const VipRgb<T>& v1) noexcept
-{
-	return VipRgb<bool>(v2 < v1.r, v2 < v1.g, v2 < v1.b, v2 < v1.a);
+	return VipRgb<quint8>(v1.r || v2, v1.g || v2, v1.b || v2, v1.a || v2);
 }
 
 template<class T, class U>
-inline VipRgb<bool> operator<=(const VipRgb<T>& v1, const VipRgb<U>& v2) noexcept
+inline VipRgb<quint8> operator<(const VipRgb<T>& v1, const VipRgb<U>& v2) noexcept
 {
-	return VipRgb<bool>(v1.r <= v2.r, v1.g <= v2.g, v1.b <= v2.b, v1.a <= v2.a);
+	return VipRgb<quint8>(v1.r < v2.r, v1.g < v2.g, v1.b < v2.b, v1.a < v2.a);
 }
 template<class T, class U>
-inline typename std::enable_if<std::is_arithmetic<U>::value, VipRgb<bool>>::type operator<=(const VipRgb<T>& v1, const U& v2) noexcept
+inline typename std::enable_if<std::is_arithmetic<U>::value, VipRgb<quint8>>::type operator<(const VipRgb<T>& v1, const U& v2) noexcept
 {
-	return VipRgb<bool>(v1.r <= v2, v1.g <= v2, v1.b <= v2, v1.a <= v2);
+	return VipRgb<quint8>(v1.r < v2, v1.g < v2, v1.b < v2, v1.a < v2);
 }
 template<class T, class U>
-inline typename std::enable_if<std::is_arithmetic<U>::value, VipRgb<bool>>::type operator<=(const U& v2, const VipRgb<T>& v1) noexcept
+inline typename std::enable_if<std::is_arithmetic<U>::value, VipRgb<quint8>>::type operator<(const U& v2, const VipRgb<T>& v1) noexcept
 {
-	return VipRgb<bool>(v2 <= v1.r, v2 <= v1.g, v2 <= v1.b, v2 <= v1.a);
-}
-
-template<class T, class U>
-inline VipRgb<bool> operator>(const VipRgb<T>& v1, const VipRgb<U>& v2) noexcept
-{
-	return VipRgb<bool>(v1.r > v2.r, v1.g > v2.g, v1.b > v2.b, v1.a > v2.a);
-}
-template<class T, class U>
-inline typename std::enable_if<std::is_arithmetic<U>::value, VipRgb<bool>>::type operator>(const VipRgb<T>& v1, const U& v2) noexcept
-{
-	return VipRgb<bool>(v1.r > v2, v1.g > v2, v1.b > v2, v1.a > v2);
-}
-template<class T, class U>
-inline typename std::enable_if<std::is_arithmetic<U>::value, VipRgb<bool>>::type operator>(const U& v2, const VipRgb<T>& v1) noexcept
-{
-	return VipRgb<bool>(v2 > v1.r, v2 > v1.g, v2 > v1.b, v2 > v1.a);
+	return VipRgb<quint8>(v2 < v1.r, v2 < v1.g, v2 < v1.b, v2 < v1.a);
 }
 
 template<class T, class U>
-inline VipRgb<bool> operator>=(const VipRgb<T>& v1, const VipRgb<U>& v2) noexcept
+inline VipRgb<quint8> operator<=(const VipRgb<T>& v1, const VipRgb<U>& v2) noexcept
 {
-	return VipRgb<bool>(v1.r >= v2.r, v1.g >= v2.g, v1.b >= v2.b, v1.a >= v2.a);
+	return VipRgb<quint8>(v1.r <= v2.r, v1.g <= v2.g, v1.b <= v2.b, v1.a <= v2.a);
 }
 template<class T, class U>
-inline typename std::enable_if<std::is_arithmetic<U>::value, VipRgb<bool>>::type operator>=(const VipRgb<T>& v1, const U& v2) noexcept
+inline typename std::enable_if<std::is_arithmetic<U>::value, VipRgb<quint8>>::type operator<=(const VipRgb<T>& v1, const U& v2) noexcept
 {
-	return VipRgb<bool>(v1.r >= v2, v1.g >= v2, v1.b >= v2, v1.a >= v2);
+	return VipRgb<quint8>(v1.r <= v2, v1.g <= v2, v1.b <= v2, v1.a <= v2);
 }
 template<class T, class U>
-inline typename std::enable_if<std::is_arithmetic<U>::value, VipRgb<bool>>::type operator>=(const U& v2, const VipRgb<T>& v1) noexcept
+inline typename std::enable_if<std::is_arithmetic<U>::value, VipRgb<quint8>>::type operator<=(const U& v2, const VipRgb<T>& v1) noexcept
 {
-	return VipRgb<bool>(v2 >= v1.r, v2 >= v1.g, v2 >= v1.b, v2 >= v1.a);
+	return VipRgb<quint8>(v2 <= v1.r, v2 <= v1.g, v2 <= v1.b, v2 <= v1.a);
 }
 
 template<class T, class U>
-inline bool operator==(const VipRgb<T>& v1, const VipRgb<U>& v2) noexcept
+inline VipRgb<quint8> operator>(const VipRgb<T>& v1, const VipRgb<U>& v2) noexcept
+{
+	return VipRgb<quint8>(v1.r > v2.r, v1.g > v2.g, v1.b > v2.b, v1.a > v2.a);
+}
+template<class T, class U>
+inline typename std::enable_if<std::is_arithmetic<U>::value, VipRgb<quint8>>::type operator>(const VipRgb<T>& v1, const U& v2) noexcept
+{
+	return VipRgb<quint8>(v1.r > v2, v1.g > v2, v1.b > v2, v1.a > v2);
+}
+template<class T, class U>
+inline typename std::enable_if<std::is_arithmetic<U>::value, VipRgb<quint8>>::type operator>(const U& v2, const VipRgb<T>& v1) noexcept
+{
+	return VipRgb<quint8>(v2 > v1.r, v2 > v1.g, v2 > v1.b, v2 > v1.a);
+}
+
+template<class T, class U>
+inline VipRgb<quint8> operator>=(const VipRgb<T>& v1, const VipRgb<U>& v2) noexcept
+{
+	return VipRgb<quint8>(v1.r >= v2.r, v1.g >= v2.g, v1.b >= v2.b, v1.a >= v2.a);
+}
+template<class T, class U>
+inline typename std::enable_if<std::is_arithmetic<U>::value, VipRgb<quint8>>::type operator>=(const VipRgb<T>& v1, const U& v2) noexcept
+{
+	return VipRgb<quint8>(v1.r >= v2, v1.g >= v2, v1.b >= v2, v1.a >= v2);
+}
+template<class T, class U>
+inline typename std::enable_if<std::is_arithmetic<U>::value, VipRgb<quint8>>::type operator>=(const U& v2, const VipRgb<T>& v1) noexcept
+{
+	return VipRgb<quint8>(v2 >= v1.r, v2 >= v1.g, v2 >= v1.b, v2 >= v1.a);
+}
+
+template<class T, class U>
+inline quint8 operator==(const VipRgb<T>& v1, const VipRgb<U>& v2) noexcept
 {
 	return (v1.r == v2.r && v1.g == v2.g && v1.b == v2.b && v1.a == v2.a);
 }
 template<class T, class U>
-inline typename std::enable_if<std::is_arithmetic<U>::value, bool>::type operator==(const VipRgb<T>& v1, const U& v2) noexcept
+inline typename std::enable_if<std::is_arithmetic<U>::value, quint8>::type operator==(const VipRgb<T>& v1, const U& v2) noexcept
 {
-	return (v1.r == v2 && v1.g == v2 && v1.b == v2 && v1.a == v2);
+	return quint8(v1.r == v2 && v1.g == v2 && v1.b == v2 && v1.a == v2);
 }
 template<class T, class U>
-inline typename std::enable_if<std::is_arithmetic<U>::value, bool>::type operator==(const U& v2, const VipRgb<T>& v1) noexcept
+inline typename std::enable_if<std::is_arithmetic<U>::value, quint8>::type operator==(const U& v2, const VipRgb<T>& v1) noexcept
 {
-	return bool(v2 == v1.r, v2 == v1.g, v2 == v1.b, v2 == v1.a);
+	return quint8(v2 == v1.r, v2 == v1.g, v2 == v1.b, v2 == v1.a);
 }
 
 template<class T, class U>
-inline bool operator!=(const VipRgb<T>& v1, const VipRgb<U>& v2) noexcept
+inline quint8 operator!=(const VipRgb<T>& v1, const VipRgb<U>& v2) noexcept
 {
-	return (v1.r != v2.r && v1.g != v2.g && v1.b != v2.b && v1.a != v2.a);
+	return quint8(v1.r != v2.r && v1.g != v2.g && v1.b != v2.b && v1.a != v2.a);
 }
 template<class T, class U>
-inline typename std::enable_if<std::is_arithmetic<U>::value, bool>::type operator!=(const VipRgb<T>& v1, const U& v2) noexcept
+inline typename std::enable_if<std::is_arithmetic<U>::value, quint8>::type operator!=(const VipRgb<T>& v1, const U& v2) noexcept
 {
-	return (v1.r != v2 && v1.g != v2 && v1.b != v2 && v1.a != v2);
+	return quint8(v1.r != v2 && v1.g != v2 && v1.b != v2 && v1.a != v2);
 }
 template<class T, class U>
-inline typename std::enable_if<std::is_arithmetic<U>::value, bool>::type operator!=(const U& v2, const VipRgb<T>& v1) noexcept
+inline typename std::enable_if<std::is_arithmetic<U>::value, quint8>::type operator!=(const U& v2, const VipRgb<T>& v1) noexcept
 {
-	return bool(v2 != v1.r, v2 != v1.g, v2 != v1.b, v2 != v1.a);
+	return quint8(v2 != v1.r, v2 != v1.g, v2 != v1.b, v2 != v1.a);
 }
 
 template<class T>
