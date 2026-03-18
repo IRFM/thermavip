@@ -236,21 +236,32 @@ namespace detail
 	template<class Dst, class Src, class Roi>
 	bool evalInternal(Dst& dst, const Src& src, const Roi& roi)
 	{
-		if constexpr (!(Src::access_type & Vip::Cwise)) {
-			// We must check aliasing
-			if (src.alias(dst.constPtr())) {
-				// Aliasing: go through a temporary array
-				VipNDArrayType<typename Dst::value_type> tmp(dst.shape());
-				if (Eval<Roi>::apply(tmp, src, roi)) {
-					dst = tmp;
-					return true;
-				}
-				else
-					return false;
-			}
+		if constexpr (IsArrayAlgorithm<Src>::value) {
+			(void)roi;
+			// Check if the array algorithm is callable with given dst array type
+			if constexpr (Src::template callable<Dst>()) 
+				return src.apply(dst);
+			else
+				return false;
 		}
+		else {
 
-		return Eval<Roi>::apply(dst, src, roi);
+			if constexpr (!(Src::access_type & Vip::Cwise)) {
+				// We must check aliasing
+				if (src.alias(dst.constPtr())) {
+					// Aliasing: go through a temporary array
+					VipNDArrayType<typename Dst::value_type> tmp(dst.shape());
+					if (Eval<Roi>::apply(tmp, src, roi)) {
+						dst = tmp;
+						return true;
+					}
+					else
+						return false;
+				}
+			}
+
+			return Eval<Roi>::apply(dst, src, roi);
+		}
 	}
 
 	template<bool Err>

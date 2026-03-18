@@ -57,15 +57,7 @@ namespace detail
 		virtual int handleType() const { return MultiArray; }
 		virtual bool realloc(const VipNDArrayShape& sh) { return currentHandle->realloc(sh); }
 		virtual bool reshape(const VipNDArrayShape& sh) { return currentHandle->reshape(sh); }
-		virtual bool resize(const VipNDArrayShape& _start,
-				    const VipNDArrayShape& _shape,
-				    VipNDArrayHandle* h,
-				    Vip::InterpolationType type,
-				    const VipNDArrayShape& out_start,
-				    const VipNDArrayShape& out_shape) const
-		{
-			return currentHandle->resize(_start, _shape, h, type, out_start, out_shape);
-		}
+		
 		virtual void* opaqueForPos(void* op, const VipNDArrayShape& pos) const { return currentHandle->opaqueForPos(op, pos); }
 		virtual const char* dataName() const { return currentHandle ? currentHandle->dataName() : nullptr; }
 		virtual qsizetype dataSize() const { return currentHandle ? currentHandle->dataSize() : 0; }

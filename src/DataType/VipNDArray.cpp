@@ -36,6 +36,7 @@
 
 #include "VipNDArray.h"
 #include "VipNDArrayImage.h"
+#include "VipResize.h"
 
 bool vipIsNullArray(const VipNDArray& ar) noexcept
 {
@@ -575,9 +576,8 @@ bool VipNDArray::resize(VipNDArray& dst, Vip::InterpolationType type) const
 	if (isEmpty() || dst.isEmpty())
 		return false;
 
-	if (shape() != dst.shape()) {
-		return handle()->resize(VipNDArrayShape(shapeCount(), 0), shape(), dst.handle(), type, dst.viewStart(), dst.shape());
-	}
+	if (shape() != dst.shape()) 
+		return vipResize(dst, *this, type);
 	else
 		return convert(dst);
 }
@@ -591,8 +591,9 @@ VipNDArray VipNDArray::resize(const VipNDArrayShape& new_shape, Vip::Interpolati
 		return *this;
 
 	VipNDArray res(dataType(), new_shape);
-	handle()->resize(VipNDArrayShape(shapeCount(), 0), shape(), res.handle(), type, VipNDArrayShape(shapeCount(), 0), new_shape);
-	return res;
+	if (vipResize(res, *this, type))
+		return res;
+	return {};
 }
 
 bool VipNDArray::reset(const VipNDArrayShape& new_shape)

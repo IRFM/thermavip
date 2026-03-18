@@ -157,41 +157,6 @@ namespace detail
 			return true;
 		}
 
-		virtual bool resize(const VipNDArrayShape& _start,
-				    const VipNDArrayShape& _shape,
-				    VipNDArrayHandle* dst,
-				    Vip::InterpolationType type,
-				    const VipNDArrayShape& out_start,
-				    const VipNDArrayShape& out_shape) const
-		{
-			if (image.isNull())
-				return false;
-
-			if (dst->dataType() == qMetaTypeId<QImage>()) {
-				QRect source = QRect(_start[1], _start[0], _shape[1], _shape[0]);
-				QRect dest = QRect(out_start[1], out_start[0], out_shape[1], out_shape[0]);
-				QPainter painter(static_cast<ImageHandle*>(dst)->painteDevice());
-				painter.setRenderHint(QPainter::SmoothPixmapTransform, type != Vip::NoInterpolation);
-				painter.drawImage(dest, image, source);
-				return true;
-			}
-			else if (dst->dataType() == qMetaTypeId<VipRGB>()) {
-				QImage temp;
-				QImage src = image.copy(_start[1], _start[0], _shape[1], _shape[0]);
-				QRect out = QRect(out_start[1], out_start[0], out_shape[1], out_shape[0]);
-				if (type == Vip::NoInterpolation)
-					temp = src.scaled(out.width(), out.height(), Qt::IgnoreAspectRatio, Qt::FastTransformation).convertToFormat(QImage::Format_ARGB32);
-				else
-					temp = src.scaled(out.width(), out.height(), Qt::IgnoreAspectRatio, Qt::SmoothTransformation).convertToFormat(QImage::Format_ARGB32);
-
-				VipRGB* ptr = static_cast<VipRGB*>(dst->opaque) + vipFlatOffset<false>(dst->strides, out_start);
-
-				return vipArrayTransform(reinterpret_cast<const QRgb*>(temp.bits()), _shape, strides, (QRgb*)ptr, out_shape, dst->strides, VipNullTransform());
-			}
-
-			return false;
-		}
-
 		virtual const char* dataName() const { return "QImage"; }
 		virtual qsizetype dataSize() const { return sizeof(QRgb); }
 		virtual int dataType() const { return qMetaTypeId<QImage>(); }

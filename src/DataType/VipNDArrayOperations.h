@@ -257,6 +257,11 @@ namespace detail
 			static_assert(std::is_same_v<NullType, typename Other::value_type>);
 		}
 		VIP_ALWAYS_INLINE auto ptr() const noexcept { return static_cast<const value_type*>(handle_p->opaque); }
+		template<class Shape>
+		VIP_ALWAYS_INLINE auto ptr(const Shape& pos) const noexcept
+		{
+			return ptr() + vipFlatOffset<inner_unstrided>(handle_p->strides, pos);
+		}
 		VIP_ALWAYS_INLINE bool alias(const void* p) const noexcept
 		{
 			return (char*)p >= (char*)ptr() && (char*)p < (char*)(ptr() + vipFlatOffset<inner_unstrided>(handle_p->strides, handle_p->shape));
@@ -274,10 +279,15 @@ namespace detail
 			}
 		}
 		VIP_ALWAYS_INLINE const auto& shape() const noexcept { return handle_p->shape; }
+		VIP_ALWAYS_INLINE const auto& strides() const noexcept { return handle_p->strides; }
+		VIP_ALWAYS_INLINE qsizetype shape(qsizetype i) const noexcept { return handle_p->shape[i]; }
+		VIP_ALWAYS_INLINE qsizetype stride(qsizetype i) const noexcept { return handle_p->strides[i]; }
+		VIP_ALWAYS_INLINE qsizetype shapeCount() const noexcept { return handle_p->shape.size(); }
+		VIP_ALWAYS_INLINE qsizetype size() const noexcept { return handle_p->size; }
 		template<class ShapeType>
 		VIP_ALWAYS_INLINE const value_type& operator()(const ShapeType& pos) const noexcept
 		{
-			return ptr()[vipFlatOffset<inner_unstrided>(handle_p->strides, pos)];
+			return *ptr(pos);
 		}
 		VIP_ALWAYS_INLINE const value_type& operator[](qsizetype i) const noexcept { return ptr()[i]; }
 	};
@@ -289,22 +299,33 @@ namespace detail
 		using value_type = T;
 		static constexpr auto access_type = Vip::Flat | Vip::Position | Vip::Cwise;
 
-		const value_type* ptr;
+		const value_type* d_p;
 		ArrayWrapper(const VipStaticNDArray<T, Dims...>& ar) noexcept
-		  : ptr(ar.ptr())
+		  : d_p(ar.ptr())
 		{
 		}
-		VIP_ALWAYS_INLINE bool alias(const void* p) const noexcept { return (char*)p >= (char*)ptr && (char*)p < (char*)(ptr + (Dims * ...)); }
+		VIP_ALWAYS_INLINE auto ptr() const noexcept { return d_p; }
+		template<class Shape>
+		VIP_ALWAYS_INLINE auto ptr(const Shape & pos) const noexcept
+		{
+			return d_p + vipFlatOffset<true>(VipStaticNDArray<T, Dims...>::strides(), pos);
+		}
+		VIP_ALWAYS_INLINE bool alias(const void* p) const noexcept { return (char*)p >= (char*)d_p && (char*)p < (char*)(d_p + (Dims * ...)); }
 		VIP_ALWAYS_INLINE auto dataType() const noexcept { return qMetaTypeId<T>(); }
 		VIP_ALWAYS_INLINE bool isEmpty() const noexcept { return false; }
 		VIP_ALWAYS_INLINE bool isUnstrided() const noexcept { return true; }
 		VIP_ALWAYS_INLINE auto shape() const noexcept { return vipVector(Dims...); }
+		VIP_ALWAYS_INLINE auto strides() const noexcept { return VipStaticNDArray<T, Dims...>::strides(); }
+		VIP_ALWAYS_INLINE qsizetype shape(qsizetype i) const noexcept { return shape()[i]; }
+		VIP_ALWAYS_INLINE qsizetype stride(qsizetype i) const noexcept { return strides()[i]; }
+		VIP_ALWAYS_INLINE qsizetype shapeCount() const noexcept { return (qsizetype)sizeof...(Dims); }
+		VIP_ALWAYS_INLINE qsizetype size() const noexcept { return (... * Dims); }
 		template<class ShapeType>
 		VIP_ALWAYS_INLINE const value_type& operator()(const ShapeType& pos) const noexcept
 		{
-			return ptr[vipFlatOffset<true>(VipStaticNDArray<T, Dims...>::strides(), pos)];
+			return *ptr(pos);
 		}
-		VIP_ALWAYS_INLINE const value_type& operator[](qsizetype i) const noexcept { return ptr[i]; }
+		VIP_ALWAYS_INLINE const value_type& operator[](qsizetype i) const noexcept { return d_p[i]; }
 	};
 
 	template<class T, class U>
@@ -626,7 +647,7 @@ namespace detail
 
 		static auto cast(const GenericFunction<Functor, Array...>& f)
 		{
-			//using functor = GenericFunction<Functor, Array...>;
+			// using functor = GenericFunction<Functor, Array...>;
 			using type = GenericFunction<Functor, RebindType_t<U, Array>...>;
 
 			if constexpr (std::is_invocable_v<Functor, ValueType_t<RebindType_t<U, Array>>...>)
@@ -634,6 +655,70 @@ namespace detail
 			else
 				return NullType{};
 		}
+	};
+
+	/// @brief Base class for algorithms having one/multiple inputs and one output.
+	/// Such algorithm can be applied using vipEval(), but their operator() member
+	/// take as argument the destination array.
+	/// See vipResize() function as an example of such algorithm.
+	template<class Functor, class... Array>
+	struct ArrayAlgorithm : BaseFunctor<ArrayAlgorithm<Functor, Array...>, Array...>
+	{
+		using base = BaseFunctor<ArrayAlgorithm<Functor, Array...>, Array...>;
+		using functor_type = Functor;
+		Functor functor;
+
+		ArrayAlgorithm() {}
+		template<class F, class... Ar>
+		ArrayAlgorithm(F&& f, Ar&&... args)
+		  : base(std::forward<Ar>(args)...)
+		  , functor(std::forward<F>(f))
+		{
+		}
+
+		template<qsizetype N>
+		auto operator()(const VipCoordinate<N>&) const
+		{
+			if constexpr (HasNullType<Array...>::value)
+				return NullType{};
+			else
+				return std::get<0>(std::tuple<ValueType_t<Array...>>{});
+		}
+
+		template<class Dst>
+		auto apply(Dst& out) const
+		{
+			static_assert(!HasNullType<Dst>::value && !HasNullType<Array...>::value);
+			return std::apply(this->functor, std::tuple_cat(std::tuple<Dst&>(out), this->arrays));
+		}
+
+		template<class Dst>
+		static constexpr bool callable() noexcept
+		{
+			// Check whether the functor is callable for given dst array type
+			return std::is_invocable_v<Functor, Dst&, Array...>;
+		}
+	};
+
+	template<class U, class Functor, class... Array>
+	struct RebindExpression<U, ArrayAlgorithm<Functor, Array...>>
+	{
+
+		static auto cast(const ArrayAlgorithm<Functor, Array...>& f)
+		{
+			// Cast without checking the functor validity, that will be done in vipEval()
+			using type = ArrayAlgorithm<Functor, RebindType_t<U, Array>...>;
+			return std::apply([&](const auto&... args) { return type(f.functor, rebindExpression<U>(args)...); }, f.arrays);
+		}
+	};
+
+	template<class T>
+	struct IsArrayAlgorithm : std::false_type
+	{
+	};
+	template<class Functor, class... Array>
+	struct IsArrayAlgorithm<ArrayAlgorithm<Functor, Array...>> : std::true_type
+	{
 	};
 }
 
@@ -643,6 +728,14 @@ template<class Functor, class... Array>
 auto vipFunction(const Functor& fun, const Array&... args) noexcept
 {
 	auto r = detail::GenericFunction<Functor, detail::DeduceArrayType_t<std::decay_t<Array>>...>(fun, std::forward<const Array&>(args)...);
+	return r;
+}
+
+/// @brief Create an array algorithm that applies a function object.
+template<class Functor, class... Array>
+auto vipArrayAlgorithm(const Functor& fun, const Array&... args) noexcept
+{
+	auto r = detail::ArrayAlgorithm<Functor, detail::DeduceArrayType_t<std::decay_t<Array>>...>(fun, std::forward<const Array&>(args)...);
 	return r;
 }
 
@@ -830,7 +923,9 @@ constexpr bool VipIsCastable_v = VipIsCastable<From, To>::value;
 template<class T, class U>
 auto vipCast(const U& value)
 {
-	if constexpr (detail::HasArrayType_v<U>)
+	if constexpr (detail::IsArrayAlgorithm<U>::value)
+		return detail::rebindExpression<T>(value);
+	else if constexpr (detail::HasArrayType_v<U>)
 		return vipFunction(
 		  [](const auto& a, std::enable_if_t<VipIsCastable_v<std::decay_t<decltype(a)>, T>, void>* = nullptr) { return detail::Convert<T, std::decay_t<decltype(a)>>::apply(a); }, value);
 	else
@@ -1022,7 +1117,7 @@ auto vipFuzzyCompare(const A1& a1, const A2& a2) noexcept
 		if constexpr (detail::HasArrayType_v<T>)                                                                                                                                               \
 			return vipFunction([](auto v, std::void_t<decltype(std_name(v))>* = nullptr) { return std_name(v); }, val);                                                                    \
 		else                                                                                                                                                                                   \
-			return std_name(val);                                                                                                                                                         \
+			return std_name(val);                                                                                                                                                          \
 	}
 
 #define MATH_FUNCTION(std_name, name)                                                                                                                                                                  \
@@ -1032,7 +1127,7 @@ auto vipFuzzyCompare(const A1& a1, const A2& a2) noexcept
 		if constexpr (detail::HasArrayType_v<T>)                                                                                                                                               \
 			return vipFunction([](auto v, std::void_t<decltype(std_name(v))>* = nullptr) { return std_name(v); }, val);                                                                    \
 		else                                                                                                                                                                                   \
-			return std_name(val);                                                                                                                                                         \
+			return std_name(val);                                                                                                                                                          \
 	}
 
 TRIGONOMETRIC_FUNCTION(std::cos, vipCos)
@@ -1056,6 +1151,5 @@ MATH_FUNCTION(std::exp, vipExp)
 MATH_FUNCTION(std::exp2, vipExp2)
 MATH_FUNCTION(std::pow, vipPow)
 MATH_FUNCTION(std::sqrt, vipSqrt)
-
 
 #endif

@@ -180,86 +180,19 @@ void print(const VipNDArray& ar)
 	str.flush();
 	std::cout << buff.data() << std::endl;
 }
-#include "VipResize2.h"
 #include "VipResize.h"
 int test(int argc, char** argv)
 {
 	{
-		VipNDArray img("C:/Users/VM213788/Desktop/20250313_081_AEA30.png");
-		VipNDArrayType<VipRGB> dst(vipVector(1200, 700));
-		VipNDArrayTypeView<VipRGB> in(img);
-		vipResizeNoInterpolation(in,dst);
-		dst.save("C:/Users/VM213788/Desktop/20250313_081_AEA30_no.png");
-		vipResizeLinear(in, dst);
-		dst.save("C:/Users/VM213788/Desktop/20250313_081_AEA30_lin.png");
-		vipResizeCatmullRom(in, dst);
-		dst.save("C:/Users/VM213788/Desktop/20250313_081_AEA30_cub.png");
-		return 0;
-	}
-	{
-		vipSetIterateThreadCount(4);
-		VipNDArrayType<double> in(vipVector(1000, 1000));
-		in.fill(0);
-		VipNDArrayType<double> out(vipVector(5000, 5000));
+		VipNDArrayType<double> iin = { 0, 1, 2, 3, 4 };
+		iin = vipWhere(iin > 2, 2, iin);
+		print(iin);
 
-		qint64 st, el;
-		
-		st = QDateTime::currentMSecsSinceEpoch();
-		in.resize(out, Vip::NoInterpolation);
-		el = QDateTime::currentMSecsSinceEpoch() - st;
-		std::cout << "resize NoInterpolation " << el << " ms" << std::endl;
-
-		st = QDateTime::currentMSecsSinceEpoch();
-		out = vipResize<Vip::NoInterpolation>(in, out.shape());
-		el = QDateTime::currentMSecsSinceEpoch() - st;
-		std::cout << "vipResize NoInterpolation " << el << " ms" << std::endl;
-
-		st = QDateTime::currentMSecsSinceEpoch();
-		in.resize(out, Vip::LinearInterpolation);
-		el = QDateTime::currentMSecsSinceEpoch() - st;
-		std::cout << "resize LinearInterpolation " << el << " ms" << std::endl;
-
-		st = QDateTime::currentMSecsSinceEpoch();
-		out = vipResize<Vip::LinearInterpolation>(in, out.shape());
-		el = QDateTime::currentMSecsSinceEpoch() - st;
-		std::cout << "vipResize LinearInterpolation " << el << " ms" << std::endl;
-
-		st = QDateTime::currentMSecsSinceEpoch();
-		in.resize(out, Vip::CubicInterpolation);
-		el = QDateTime::currentMSecsSinceEpoch() - st;
-		std::cout << "resize CubicInterpolation " << el << " ms" << std::endl;
-
-		st = QDateTime::currentMSecsSinceEpoch();
-		out = vipResize<Vip::CubicInterpolation>(in, out.shape());
-		el = QDateTime::currentMSecsSinceEpoch() - st;
-		std::cout << "vipResize CubicInterpolation " << el << " ms" << std::endl;
-	}
-	{ 
-		vipSetIterateThreadCount(4);
-		VipNDArrayType<double> in = { { 0, 1 },{ 2, 3 } };
-		VipNDArray out = vipResize<Vip::NoInterpolation>(in, vipVector(5, 5));
+		VipNDArray in = { 0, 1, 2, 3, 4 };
+		in = vipWhere(in > 2, 2, in);
 		print(in);
-		print(out);
-		out = vipResize<Vip::CubicInterpolation>(in, vipVector(5, 5));
-		
-		print(out);
-		VipNDArrayType<double> out2(out.shape());
-		in.resize(out2, Vip::CubicInterpolation);
-		print(out2);
 	}
-	std::cout << std::endl;
-	{
-		VipNDArrayType<double> in = { { 0, 1, 2, 3 }, { 4, 5, 6, 7 }, { 8, 9, 10, 11 }, { 12, 13, 14, 15 } };
-		VipNDArray out = vipResize<Vip::NoInterpolation>(in, vipVector(3,3));
-		print(in);
-		print(out);
-		out = vipResize<Vip::CubicInterpolation>(in, vipVector(3, 3)); 
-		print(out);
-		VipNDArrayType<double> out2(out.shape());
-		in.resize(out2, Vip::CubicInterpolation);
-		print(out2);
-		return 0;
-	}
+	
 	for (int d = 0; d < 4; ++d) {
 		qint64 st, el;
 		int count = 1000 * (int)(std::pow(10, d));

@@ -46,15 +46,15 @@
 template<class T>
 struct VipRgb
 {
-	static_assert(std::is_same_v<T,quint8>|| std::is_same_v<T,float>  );
+	static_assert(std::is_same_v<T, quint8> || std::is_same_v<T, float>);
 	typedef T value_type;
-	T b=0;
-	T g=0;
-	T r=0;
-	T a=0;
+	T b = 0;
+	T g = 0;
+	T r = 0;
+	T a = 0;
 
 	VipRgb() noexcept = default;
-	 
+
 	VipRgb(T r, T g, T b, T a = (T)255) noexcept
 	  : b(b)
 	  , g(g)
@@ -79,17 +79,20 @@ struct VipRgb
 	VipRgb(const VipRgb& other) noexcept = default;
 	template<class U>
 	VipRgb(const VipRgb<U>& other) noexcept
-	  : VipRgb(other.clamp((quint8)0,(quint8)255))
+	  : b((T)other.b)
+	  , g((T)other.g)
+	  , r((T)other.r)
+	  , a((T)other.a)
 	{
 	}
 
 	template<class U>
 	VipRgb<U> clamp(U min, U max) const noexcept
 	{
-		return VipRgb<U>((U)r < min ? min : ((U)r > max ? max : (U)r),
-			      (U)g < min ? min : ((U)g > max ? max : (U)g),
-			      (U)b < min ? min : ((U)b > max ? max : (U)b),
-			      (U)a < min ? min : ((U)a > max ? max : (U)a));
+		return VipRgb<U>(r < (T)min ? min : (r > (T)max ? max : (U)r),
+				 g < (T)min ? min : (g > (T)max ? max : (U)g),
+				 b < (T)min ? min : (b > (T)max ? max : (U)b),
+				 a < (T)min ? min : (a > (T)max ? max : (U)a));
 	}
 
 	VipRgb& operator=(const VipRgb& other) noexcept = default;
@@ -165,27 +168,13 @@ struct alignas(alignof(QRgb)) VipRgb<quint8>
 	{
 	}
 
-	VipRgb(QRgb c) noexcept
-	{
-		*(QRgb*)this = c;
-	}
+	VipRgb(QRgb c) noexcept { *(QRgb*)this = c; }
 
 	VipRgb(const VipRgb& other) noexcept = default;
 
 	template<class U>
 	VipRgb(const VipRgb<U>& other) noexcept
-	  :
-#if Q_BYTE_ORDER == Q_LITTLE_ENDIAN
-	  b(other.b < (U)0 ? (quint8)0 : (other.b > (U)255 ? (quint8)255 : (quint8)other.b))
-	  , g(other.g < (U)0 ? (quint8)0 : (other.g > (U)255 ? (quint8)255 : (quint8)other.g))
-	  , r(other.r < (U)0 ? (quint8)0 : (other.r > (U)255 ? (quint8)255 : (quint8)other.r))
-	  , a(other.a < (U)0 ? (quint8)0 : (other.a > (U)255 ? (quint8)255 : (quint8)other.a))
-#else
-	  a(other.a < (U)0 ? (quint8)0 : (other.a > (U)255 ? (quint8)255 : (quint8)other.a))
-	  , r(other.r < (U)0 ? (quint8)0 : (other.r > (U)255 ? (quint8)255 : (quint8)other.r))
-	  , g(other.g < (U)0 ? (quint8)0 : (other.g > (U)255 ? (quint8)255 : (quint8)other.g))
-	  , b(other.b < (U)0 ? (quint8)0 : (other.b > (U)255 ? (quint8)255 : (quint8)other.b))
-#endif
+	  : VipRgb(other.clamp<quint8>(0,255))
 	{
 	}
 
@@ -193,26 +182,15 @@ struct alignas(alignof(QRgb)) VipRgb<quint8>
 	VipRgb<U> clamp(U min, U max) const noexcept
 	{
 		return VipRgb<U>((U)r < min ? min : ((U)r > max ? max : (U)r),
-			      (U)g < min ? min : ((U)g > max ? max : (U)g),
-			      (U)b < min ? min : ((U)b > max ? max : (U)b),
-			      (U)a < min ? min : ((U)a > max ? max : (U)a));
+				 (U)g < min ? min : ((U)g > max ? max : (U)g),
+				 (U)b < min ? min : ((U)b > max ? max : (U)b),
+				 (U)a < min ? min : ((U)a > max ? max : (U)a));
 	}
 
-	QRgb toQRgb() const noexcept
-	{
-		return reinterpret_cast<const QRgb&>(*this);
-	}
-	QColor vipToQColor() const noexcept
-	{
-		return QColor::fromRgba(toQRgb());
-	}
+	QRgb toQRgb() const noexcept { return reinterpret_cast<const QRgb&>(*this); }
+	QColor vipToQColor() const noexcept { return QColor::fromRgba(toQRgb()); }
 
-	VipRgb& operator=(const VipRgb& other) noexcept
-	{
-		// memcpy(this, &other, sizeof(VipRgb));
-		*(QRgb*)(this) = *(const QRgb*)&other;
-		return *this;
-	}
+	VipRgb& operator=(const VipRgb& other) noexcept = default;
 
 	template<class U>
 	VipRgb& operator=(const VipRgb<U>& other) noexcept
@@ -224,17 +202,9 @@ struct alignas(alignof(QRgb)) VipRgb<quint8>
 		return *this;
 	}
 
-	operator QRgb() const noexcept
-	{
-		return reinterpret_cast<const QRgb&>(*this);
-		;
-	}
-	operator QColor() const noexcept
-	{
-		return vipToQColor();
-	}
+	operator QRgb() const noexcept { return reinterpret_cast<const QRgb&>(*this); }
+	operator QColor() const noexcept { return vipToQColor(); }
 };
-
 
 /// @brief Convert to QRgb
 template<class T>
@@ -244,14 +214,13 @@ inline QRgb VipRgb<T>::toQRgb() const noexcept
 	return reinterpret_cast<QRgb&>(tmp);
 }
 
-using VipRGB = VipRgb<quint8> ;
-using VipRGBf = VipRgb<float> ;
+using VipRGB = VipRgb<quint8>;
+using VipRGBf = VipRgb<float>;
 
 Q_DECLARE_METATYPE(VipRGB)
 VIP_IS_RELOCATABLE(VipRGB);
 Q_DECLARE_METATYPE(VipRGBf)
 VIP_IS_RELOCATABLE(VipRGBf);
-
 
 template<class T>
 struct VipIsRgb : std::false_type
@@ -263,7 +232,6 @@ struct VipIsRgb<VipRgb<T>> : std::true_type
 };
 template<class T>
 constexpr bool VipIsRgb_v = VipIsRgb<T>::value;
-
 
 template<class T>
 struct VipIsRGB : std::false_type
@@ -279,12 +247,10 @@ constexpr bool VipIsRGB_v = VipIsRGB<T>::value;
 template<class T>
 struct VipRgbType
 {
-	using type = std::conditional_t<std::is_integral_v<T>, quint8,float>;
+	using type = std::conditional_t<std::is_integral_v<T>, quint8, float>;
 };
 template<class T>
 using VipRgbType_t = typename VipRgbType<T>::type;
-
-
 
 //
 // Operator overloads
@@ -311,7 +277,7 @@ typename std::enable_if<std::is_arithmetic<U>::value, VipRgb<T>&>::type operator
 
 template<class T, class U>
 VipRgb<T>& operator-=(VipRgb<T>& t, const VipRgb<U>& v) noexcept
-{ 
+{
 	t.r -= v.r;
 	t.g -= v.g;
 	t.b -= v.b;

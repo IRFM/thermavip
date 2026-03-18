@@ -43,6 +43,14 @@ static int registerConverters()
 	QMetaType::registerConverter<VipRGB, QByteArray>(detail::typeToByteArray<VipRGB>);
 	QMetaType::registerConverter<QString, VipRGB>(detail::stringToType<VipRGB>);
 	QMetaType::registerConverter<QByteArray, VipRGB>(detail::byteArrayToType<VipRGB>);
+
+	QMetaType::registerConverter<VipRGBf, QColor>();
+	QMetaType::registerConverter<QColor, VipRGBf>();
+	QMetaType::registerConverter<VipRGBf, QString>(detail::typeToString<VipRGBf>);
+	QMetaType::registerConverter<QString, VipRGBf>(detail::stringToType<VipRGBf>);
+	QMetaType::registerConverter<VipRGBf, QByteArray>(detail::typeToByteArray<VipRGBf>);
+	QMetaType::registerConverter<QByteArray, VipRGBf>(detail::byteArrayToType<VipRGBf>);
+
 	return 0;
 }
 static int _registerConverters = registerConverters();

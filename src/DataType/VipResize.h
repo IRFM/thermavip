@@ -32,7 +32,7 @@
 #ifndef VIP_RESIZE_H
 #define VIP_RESIZE_H
 
-#include "VipNDArray.h"
+#include "VipNDArrayOperations.h"
 #include "VipMath.h"
 
 /// \addtogroup DataType
@@ -105,28 +105,47 @@ namespace detail
 		}
 	};
 
-	struct SplineInterpolation
+	struct CubicInterpolation
 	{
 		template<class T>
-		auto operator()(T y0, T y1, T y2, T y3, double mu) const
+		auto operator()(T _y0, T _y1, T _y2, T _y3, double mu) const
 		{
-			double mu2 = mu * mu;
-			T a0 = y3 - y2 - y0 + y1;
-			T a1 = y0 - y1 - a0;
-			T a2 = y2 - y0;
-			return (a0 * mu * mu2 + a1 * mu2 + a2 * mu + y1*1.);
+			auto y0 = _y0 * 1.;
+			auto y1 = _y1 * 1.;
+			auto y2 = _y2 * 1.;
+			auto y3 = _y3 * 1.;
+			return y1 + 0.5 * mu * (y2 - y0 + mu * (2.0 * y0 - 5.0 * y1 + 4.0 * y2 - y3 + mu * (3.0 * (y1 - y2) + y3 - y0)));
 		}
 	};
-
+	/* struct SplineInterpolation
+	{
+		template<class T>
+		auto operator()(T _y0, T _y1, T _y2, T _y3, double mu) const
+		{
+			double mu2 = mu * mu;
+			auto y0 = _y0 * 1.;
+			auto y1 = _y1 * 1.;
+			auto y2 = _y2 * 1.;
+			auto y3 = _y3 * 1.;
+			auto a0 = y3 - y2 - y0 + y1;
+			auto a1 = y0 - y1 - a0;
+			auto a2 = y2 - y0;
+			return (a0 * mu * mu2 + a1 * mu2 + a2 * mu + y1);
+		}
+	};
 	struct CatmullRomInterpolation
 	{
 		template<class T>
-		auto operator()(T y0, T y1, T y2, T y3, double mu) const
+		auto operator()(T _y0, T _y1, T _y2, T _y3, double mu) const
 		{
 			double mu2 = mu * mu;
+			auto y0 = _y0 * 1.;
+			auto y1 = _y1 * 1.;
+			auto y2 = _y2 * 1.;
+			auto y3 = _y3 * 1.;
 			return 0.5 * ((2. * y1) + (-y0 + y2) * mu + (2. * y0 - 5. * y1 + 4. * y2 - y3) * mu2 + (-y0 + 3. * y1 - 3. * y2 + y3) * mu2 * mu);
 		}
-	};
+	};*/
 
 	template<class T>
 	inline T clamp(T value, T min, T max)
@@ -246,15 +265,16 @@ namespace detail
 		typedef VipLineIterator<const typename Src::value_type> SrcLine;
 		typedef VipLineIterator<typename Dst::value_type> DstLine;
 		
+		
 		if (src.shapeCount() == 1) {
 			if (src.stride(0) == 1 && dst.stride(0) == 1)
-				ResizeLine::apply(SrcLineUnstrided(src.data()), DstLineUnstrided(dst.data()), src.size(), dst.size());
+				ResizeLine::apply(SrcLineUnstrided(src.ptr()), DstLineUnstrided(dst.ptr()), src.size(), dst.size());
 			else if (src.stride(0) != 1 && dst.stride(0) != 1)
-				ResizeLine::apply(SrcLine(src.data(), src.stride(0)), DstLine(dst.data(), dst.stride(0)), src.size(), dst.size());
+				ResizeLine::apply(SrcLine(src.ptr(), src.stride(0)), DstLine(dst.ptr(), dst.stride(0)), src.size(), dst.size());
 			else if (src.stride(0) == 1)
-				ResizeLine::apply(SrcLineUnstrided(src.data()), DstLine(dst.data(), dst.stride(0)), src.size(), dst.size());
+				ResizeLine::apply(SrcLineUnstrided(src.ptr()), DstLine(dst.ptr(), dst.stride(0)), src.size(), dst.size());
 			else if (dst.stride(0) == 1)
-				ResizeLine::apply(SrcLine(src.data(), src.stride(0)), DstLineUnstrided(dst.data()), src.size(), dst.size());
+				ResizeLine::apply(SrcLine(src.ptr(), src.stride(0)), DstLineUnstrided(dst.ptr()), src.size(), dst.size());
 			return;
 		}
 		else if (src.shapeCount() == 2) {
@@ -266,7 +286,6 @@ namespace detail
 				const qsizetype dst_h = dst.shape(0);
 				const double dx = (double)(src_w - 1u) / (double)(dst_w - 1u);
 				const double dy = (double)(src_h - 1u) / (double)(dst_h - 1u);
-				double y = 0.5;
 				const src_value_type* _s = src.ptr();
 				dst_value_type* _d = dst.ptr();
 				const qsizetype src_stride0 = src.stride(0);
@@ -274,7 +293,7 @@ namespace detail
 				const qsizetype src_stride1 = src.stride(1);
 				const qsizetype dst_stride1 = dst.stride(1);
 
-				//VIP_PARALLEL_FOR_NUM_THREADS(vipLoopThreadCount(dst_h))
+				VIP_PARALLEL_FOR_NUM_THREADS(vipLoopThreadCount(dst_h))
 				for (qsizetype h = 0; h < dst_h; ++h) {
 					double x = 0.5;
 					double y = 0.5 + h * dy;
@@ -316,7 +335,7 @@ namespace detail
 				tmp_dst.reset(tmp[index % 2].ptr(), tmp_shape);
 			}
 
-			/* CIteratorFMajorSkipDim<CoordType> it(tmp_shape, index);
+			CIteratorFMajorSkipDim<CoordType> it(tmp_shape, index);
 			qsizetype iter_count = it.totalIterationCount();
 
 			qsizetype threads = vipLoopThreadCount(iter_count);
@@ -339,9 +358,9 @@ namespace detail
 					}
 					iter.increment();
 				}
-			}*/
+			}
 
-			CIteratorFMajorSkipDim<CoordType> iter(tmp_shape, index);
+			/* CIteratorFMajorSkipDim<CoordType> iter(tmp_shape, index);
 			qsizetype iter_count = iter.totalIterationCount();
 			for (qsizetype pos = 0; pos < iter_count; ++pos) {
 				if (index == 0) {
@@ -353,12 +372,49 @@ namespace detail
 			dst.shape(index));
 				}
 				iter.increment();
-			}
+			}*/
 		}
 	}
+
+	struct ResizeInternal
+	{
+		Vip::InterpolationType inter;
+
+		template<class Dst, class Src>
+		bool operator()(Dst& d, const Src& s, std::enable_if_t<VipIsCastable_v<typename Src::value_type, typename Dst::value_type>, void>* = nullptr) const
+		{
+			using intype = typename Src::value_type;
+			using outype = typename Dst::value_type;
+			if constexpr (!(std::is_arithmetic_v<intype> || VipIsComplex_v<intype> || VipIsRgb_v<intype>) ||
+				      !(std::is_arithmetic_v<outype> || VipIsComplex_v<outype> || VipIsRgb_v<outype>)) {
+				// Unsupported interpolation
+				detail::resize<Vip::None, detail::Resize>(s, d);
+			}
+			else {
+				if (inter == Vip::NoInterpolation)
+					detail::resize<Vip::None, detail::Resize>(s, d);
+				else if (inter == Vip::LinearInterpolation)
+					detail::resize<Vip::None, detail::ResizeLinear>(s, d);
+				else
+					detail::resize<Vip::None, detail::ResizeCubic<detail::CubicInterpolation>>(s, d);
+			}
+			return true;
+		}
+	};
+
 }
 
 template<class Src, class Dst>
+bool vipResize(const Src& src, Dst& dst, Vip::InterpolationType inter)
+{
+	if (src.isEmpty() || dst.isEmpty() || src.shapeCount() != dst.shapeCount())
+		return false;
+
+	return vipEval(dst, vipArrayAlgorithm(detail::ResizeInternal{inter}, src));
+}
+
+
+/* template<class Src, class Dst>
 void vipResizeNoInterpolation(const Src& src, Dst& dst)
 {
 	detail::resize<Vip::None, detail::Resize>(src, dst);
@@ -371,16 +427,12 @@ void vipResizeLinear(const Src& src, Dst& dst)
 }
 
 template<class Src, class Dst>
-void vipResizeSpline(const Src& src, Dst& dst)
+void vipResizeCubic(const Src& src, Dst& dst)
 {
-	detail::resize<Vip::None, detail::ResizeCubic<detail::SplineInterpolation>>(src, dst);
+	detail::resize<Vip::None, detail::ResizeCubic<detail::CubicInterpolation>>(src, dst);
 }
+*/
 
-template<class Src, class Dst>
-void vipResizeCatmullRom(const Src& src, Dst& dst)
-{
-	detail::resize<Vip::None, detail::ResizeCubic<detail::CatmullRomInterpolation>>(src, dst);
-}
 
 /// @}
 // end DataType
