@@ -3702,7 +3702,7 @@ VipCSVWriter::VipCSVWriter(QObject* parent)
   : VipIODevice(parent)
 {
 	setPaddValue(0);
-	setResampleMode(ResampleIntersection | ResampleInterpolation);
+	setResampleMode(Vip::ResampleIntersection | Vip::ResampleInterpolation);
 }
 
 VipCSVWriter::~VipCSVWriter() {}
@@ -3761,7 +3761,7 @@ void VipCSVWriter::apply()
 	}
 
 	if (vectors.size()) {
-		VipNDArray ar = vipResampleVectorsAsNDArray(vectors, (ResampleStrategies)resampleMode(), paddValue());
+		VipNDArray ar = vipResampleVectorsAsNDArray(vectors, (Vip::ResampleStrategies)resampleMode(), paddValue());
 		if (ar.isEmpty()) {
 			setError("Cannot create CSV file: check that the input signals are valid and not disjoint");
 			return;

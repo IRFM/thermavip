@@ -181,8 +181,41 @@ void print(const VipNDArray& ar)
 	std::cout << buff.data() << std::endl;
 }
 #include "VipResize.h"
+#include "VipNDArrayStatistics.h"
 int test(int argc, char** argv)
 {
+	{
+		VipNDArrayType<quint16> iin(vipVector(1000,1000));
+		for (qsizetype i = 0; i < iin.size(); ++i)
+			iin[i] = (quint16)i;
+		VipNDArray buffer;
+
+		QRect roi(10,10,2000,2000);
+		VipNDRect<2> rect(roi);
+		VipOverNDRects<2> over(&rect,1);
+		VipShape sh(roi);
+
+		qint64 st, el;
+
+		st = QDateTime::currentMSecsSinceEpoch();
+		VipArrayStatistics<double> stats2;
+		for (int i = 0; i < 100; ++i) {
+			stats2 = vipArrayStatistics<double>(iin, Vip::Min | Vip::Max | Vip::Std , over);
+		}
+		el = QDateTime::currentMSecsSinceEpoch() - st;
+		std::cout << "stats dyn: " << el << " ms " << stats2.min << " " << stats2.max << " " << stats2.mean << " " << stats2.std << " " << stats2.entropy << std::endl;
+
+		st = QDateTime::currentMSecsSinceEpoch();
+		VipArrayStatistics<double> stats3;
+		for (int i = 0; i < 100; ++i) {
+			stats3 = vipArrayStatistics < double, Vip::Min | Vip::Max | Vip::Std  > (iin, over);
+		}
+		el = QDateTime::currentMSecsSinceEpoch() - st;
+		std::cout << "stats static: " << el << " ms " << stats3.min << " " << stats3.max << " " << stats3.mean << " " << stats3.std << " " << stats3.entropy << std::endl;
+
+		return 0;
+
+	}
 	{
 		VipNDArrayType<double> iin = { 0, 1, 2, 3, 4 };
 		iin = vipWhere(iin > 2, 2, iin);

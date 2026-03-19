@@ -226,15 +226,18 @@ VIP_DATA_TYPE_EXPORT bool vipSetYValues(VipComplexPointVector& samples, const Vi
 /// @return VipComplexPointVector object
 VIP_DATA_TYPE_EXPORT VipComplexPointVector vipToComplexPointVector(const VipPointVector& samples);
 
-enum ResampleStrategy
+namespace Vip
 {
-	ResampleUnion = 0,
-	ResampleIntersection = 0x01,
-	ResamplePadd0 = 0x02,
-	ResampleInterpolation = 0x04
-};
-Q_DECLARE_FLAGS(ResampleStrategies, ResampleStrategy);
-Q_DECLARE_OPERATORS_FOR_FLAGS(ResampleStrategies)
+	enum ResampleStrategy
+	{
+		ResampleUnion = 0,
+		ResampleIntersection = 0x01,
+		ResamplePadd0 = 0x02,
+		ResampleInterpolation = 0x04
+	};
+	Q_DECLARE_FLAGS(ResampleStrategies, ResampleStrategy);
+	Q_DECLARE_OPERATORS_FOR_FLAGS(ResampleStrategies)
+}
 
 /// @brief Resample both a and b VipPointVector based on their timestamps (x coordinate).
 /// For both vectors, this will create missing x values in order for both vectors to have the same x coordinates.
@@ -245,7 +248,11 @@ Q_DECLARE_OPERATORS_FOR_FLAGS(ResampleStrategies)
 /// @param padd_a padding Y value when using ResampleUnion for vector a
 /// @param padd_b padding Y value when using ResampleUnion for vector b
 /// @return true on success, false otherwise
-VIP_DATA_TYPE_EXPORT bool vipResampleVectors(VipPointVector& a, VipPointVector& b, ResampleStrategies s = ResampleIntersection | ResampleInterpolation, vip_double padd_a = 0, vip_double padd_b = 0);
+VIP_DATA_TYPE_EXPORT bool vipResampleVectors(VipPointVector& a,
+					     VipPointVector& b,
+					     Vip::ResampleStrategies s = Vip::ResampleIntersection | Vip::ResampleInterpolation,
+					     vip_double padd_a = 0,
+					     vip_double padd_b = 0);
 
 /// @brief Resample both a and b VipComplexPointVector based on their timestamps (x coordinate).
 /// For both vectors, this will create missing x values in order for both vectors to have the same x coordinates.
@@ -258,7 +265,7 @@ VIP_DATA_TYPE_EXPORT bool vipResampleVectors(VipPointVector& a, VipPointVector& 
 /// @return true on success, false otherwise
 VIP_DATA_TYPE_EXPORT bool vipResampleVectors(VipComplexPointVector& a,
 					     VipComplexPointVector& b,
-					     ResampleStrategies s = ResampleIntersection | ResampleInterpolation,
+					     Vip::ResampleStrategies s = Vip::ResampleIntersection | Vip::ResampleInterpolation,
 					     complex_d padd_a = 0,
 					     complex_d padd_b = 0);
 
@@ -273,7 +280,7 @@ VIP_DATA_TYPE_EXPORT bool vipResampleVectors(VipComplexPointVector& a,
 /// @return true on success, false otherwise
 VIP_DATA_TYPE_EXPORT bool vipResampleVectors(VipPointVector& a,
 					     VipComplexPointVector& b,
-					     ResampleStrategies s = ResampleIntersection | ResampleInterpolation,
+					     Vip::ResampleStrategies s = Vip::ResampleIntersection | Vip::ResampleInterpolation,
 					     vip_double padd_a = 0,
 					     complex_d padd_b = 0);
 
@@ -282,14 +289,14 @@ VIP_DATA_TYPE_EXPORT bool vipResampleVectors(VipPointVector& a,
 /// @param s Resample strategy, combination of ResampleUnion, ResampleIntersection, ResamplePadd0 (used with ResampleUnion), ResampleInterpolation
 /// @param padd padding Y value when using ResampleUnion for all vectors
 /// @return true on success, false otherwise
-VIP_DATA_TYPE_EXPORT bool vipResampleVectors(QList<VipPointVector>& lst, ResampleStrategies s = ResampleIntersection | ResampleInterpolation, vip_double padd = 0);
+VIP_DATA_TYPE_EXPORT bool vipResampleVectors(QList<VipPointVector>& lst, Vip::ResampleStrategies s = Vip::ResampleIntersection | Vip::ResampleInterpolation, vip_double padd = 0);
 
 /// @brief Resample each VipComplexPointVector in lst based on their timestamps (x coordinate).
 /// @param lst input list of VipComplexPointVector
 /// @param s Resample strategy, combination of ResampleUnion, ResampleIntersection, ResamplePadd0 (used with ResampleUnion), ResampleInterpolation
 /// @param padd padding Y value when using ResampleUnion for all vectors
 /// @return true on success, false otherwise
-VIP_DATA_TYPE_EXPORT bool vipResampleVectors(QList<VipComplexPointVector>& lst, ResampleStrategies s = ResampleIntersection | ResampleInterpolation, complex_d padd = 0);
+VIP_DATA_TYPE_EXPORT bool vipResampleVectors(QList<VipComplexPointVector>& lst, Vip::ResampleStrategies s = Vip::ResampleIntersection | Vip::ResampleInterpolation, complex_d padd = 0);
 
 /// @brief Resample each VipPointVector and VipComplexPointVector objects in lst_a and lst_b based on their timestamps (x coordinate).
 /// @param lst_a input list of VipPointVector
@@ -300,7 +307,7 @@ VIP_DATA_TYPE_EXPORT bool vipResampleVectors(QList<VipComplexPointVector>& lst, 
 /// @return true on success, false otherwise
 VIP_DATA_TYPE_EXPORT bool vipResampleVectors(QList<VipPointVector>& lst_a,
 					     QList<VipComplexPointVector>& lst_b,
-					     ResampleStrategies s = ResampleIntersection | ResampleInterpolation,
+					     Vip::ResampleStrategies s = Vip::ResampleIntersection | Vip::ResampleInterpolation,
 					     vip_double padd_a = 0,
 					     complex_d padd_b = 0);
 
@@ -310,7 +317,7 @@ VIP_DATA_TYPE_EXPORT bool vipResampleVectors(QList<VipPointVector>& lst_a,
 /// @param s Resample strategy, combination of ResampleUnion, ResampleIntersection, ResamplePadd0 (used with ResampleUnion), ResampleInterpolation
 /// @param padd padding Y value when using ResampleUnion for all VipPointVector vectors
 /// @return true on success, false otherwise
-VIP_DATA_TYPE_EXPORT bool vipResampleVectors(QList<VipPointVector>& lst, vip_double x_step, ResampleStrategies s = ResampleIntersection | ResampleInterpolation, vip_double padd = 0);
+VIP_DATA_TYPE_EXPORT bool vipResampleVectors(QList<VipPointVector>& lst, vip_double x_step, Vip::ResampleStrategies s = Vip::ResampleIntersection | Vip::ResampleInterpolation, vip_double padd = 0);
 
 /// @brief Resample all VipPointVector in vectors based on their timestamps (x coordinate) and store the result in a VipNDArray of type double.
 /// The output array will contain the x coordinates as its first column. The other columns will contrain the Y values of each input VipPointVector object.
@@ -318,7 +325,9 @@ VIP_DATA_TYPE_EXPORT bool vipResampleVectors(QList<VipPointVector>& lst, vip_dou
 /// @param s Resample strategy, combination of ResampleUnion, ResampleIntersection, ResamplePadd0 (used with ResampleUnion), ResampleInterpolation
 /// @param padd padding Y value when using ResampleUnion for all VipPointVector vectors
 /// @return VipNDArray object
-VIP_DATA_TYPE_EXPORT VipNDArray vipResampleVectorsAsNDArray(const QList<VipPointVector>& vectors, ResampleStrategies s = ResampleIntersection | ResampleInterpolation, vip_double padd = 0);
+VIP_DATA_TYPE_EXPORT VipNDArray vipResampleVectorsAsNDArray(const QList<VipPointVector>& vectors,
+							    Vip::ResampleStrategies s = Vip::ResampleIntersection | Vip::ResampleInterpolation,
+							    vip_double padd = 0);
 
 /// @}
 // end DataType

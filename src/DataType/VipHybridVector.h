@@ -35,6 +35,7 @@
 #include "VipConfig.h"
 
 #include <QDataStream>
+#include <QPoint>
 
 #include <algorithm>
 #include <iterator>
@@ -70,18 +71,29 @@ namespace detail
 
 }
 
-
 template<class F, qsizetype... Dims>
-VIP_ALWAYS_INLINE void vipForEachIntegerRange(F&& f, std::integer_sequence<qsizetype, Dims...>)
+VIP_ALWAYS_INLINE void vipForEachDims(F&& f, std::integer_sequence<qsizetype, Dims...>)
 {
 	(std::forward<F>(f)(Dims), ...);
 }
 template<class F, qsizetype... Dims>
-VIP_ALWAYS_INLINE void vipForEachIntegerRangeBackward(F&& f, std::integer_sequence<qsizetype, Dims...>)
+VIP_ALWAYS_INLINE void vipForEachDimsBackward(F&& f, std::integer_sequence<qsizetype, Dims...>)
 {
-	(... , std::forward<F>(f)(Dims));
+	(..., std::forward<F>(f)(Dims));
 }
 
+template<class F, qsizetype First, qsizetype... Dims>
+VIP_ALWAYS_INLINE bool vipForEachDimsUntil(F&& f, std::integer_sequence<qsizetype, First, Dims...>)
+{
+	if constexpr (sizeof...(Dims) == 0)
+		return std::forward<F>(f)(First);
+	else {
+		if (!std::forward<F>(f)(First))
+			return false;
+		else
+			return vipForEachDimsUntil(std::forward<F>(f), std::integer_sequence<qsizetype, Dims...>{});
+	}
+}
 
 /// @brief Check if given type is iterable
 template<class T>
@@ -399,6 +411,13 @@ public:
 		VIP_ASSERT_DEBUG(new_size <= VIP_MAX_DIMS && new_size >= 0);
 		m_size = new_size;
 	}
+	VIP_ALWAYS_INLINE void resize(size_type new_size, const T & val) noexcept
+	{
+		VIP_ASSERT_DEBUG(new_size <= VIP_MAX_DIMS && new_size >= 0);
+		for (qsizetype i = m_size; i < new_size; ++i)
+			m_elems[i] = val;
+		m_size = new_size;
+	}
 
 	QVector<T> toVector() const
 	{
@@ -458,14 +477,15 @@ template<qsizetype N1, qsizetype N2>
 VIP_ALWAYS_INLINE auto operator+(const VipCoordinate<N1>& v1, const VipCoordinate<N2>& v2) noexcept
 {
 	if constexpr (N1 > 0 && N2 > 0) {
-		
+
 		static constexpr qsizetype min_size = N1 < N2 ? N1 : N2;
 		static constexpr qsizetype max_size = N1 < N2 ? N2 : N1;
 		VipCoordinate<max_size> ret;
 
-		vipForEachIntegerRange([&](qsizetype i) { ret[i] = v1[i] + v2[i]; }, std::make_integer_sequence<qsizetype, min_size>{});
-		vipForEachIntegerRange([&](qsizetype i) { 
-			if constexpr (N1 > N2)
+		vipForEachDims([&](qsizetype i) { ret[i] = v1[i] + v2[i]; }, std::make_integer_sequence<qsizetype, min_size>{});
+		vipForEachDims(
+		  [&](qsizetype i) {
+			  if constexpr (N1 > N2)
 				  ret[min_size + i] = v1[min_size + i];
 			  else
 				  ret[min_size + i] = v2[min_size + i];
@@ -479,7 +499,7 @@ VIP_ALWAYS_INLINE auto operator+(const VipCoordinate<N1>& v1, const VipCoordinat
 		ret.resize(std::max(v1.size(), v2.size()));
 		for (qsizetype i = 0; i < min_size; ++i)
 			ret[i] = v1[i] + v2[i];
-		for (qsizetype i = min_size; i < ret.size(); ++i) 
+		for (qsizetype i = min_size; i < ret.size(); ++i)
 			ret[i] = v1.size() > v2.size() ? v1[i] : v2[i];
 		return ret;
 	}
@@ -530,13 +550,12 @@ VIP_ALWAYS_INLINE VipHybridVector<T, N> vipReverse(const VipHybridVector<T, N>& 
 	return reverse;
 }
 
-
 template<qsizetype N, class F>
 VIP_ALWAYS_INLINE void vipForEachCoord(const VipCoordinate<N>& c, F&& f)
 {
 	if constexpr (N > 0) {
 		using seq = std::make_integer_sequence<qsizetype, N>;
-		vipForEachIntegerRange(std::forward<F>(f), seq{});
+		vipForEachDims(std::forward<F>(f), seq{});
 	}
 	else {
 		for (qsizetype i = 0; i < c.size(); ++i)
@@ -547,12 +566,26 @@ template<qsizetype N, class F>
 VIP_ALWAYS_INLINE void vipForEachCoordBackward(const VipCoordinate<N>& c, F&& f)
 {
 	if constexpr (N > 0) {
-		using seq = std::make_integer_sequence<qsizetype, N>;
-		vipForEachIntegerRangeBackward(std::forward<F>(f), seq{});
+		vipForEachDimsBackward(std::forward<F>(f), std::make_integer_sequence<qsizetype, N>{});
 	}
 	else {
-		for (qsizetype i = c.size() -1; i >= 0; --i)
-			f(i);
+		for (qsizetype i = c.size() - 1; i >= 0; --i)
+			std::forward<F>(f)(i);
+	}
+}
+
+template<qsizetype N, class F>
+VIP_ALWAYS_INLINE bool vipForEachCoordUntil(const VipCoordinate<N>& c, F&& f)
+{
+	if constexpr (N > 0) {
+		return vipForEachDimsUntil(std::forward<F>(f), std::make_integer_sequence<qsizetype, N>{});
+	}
+	else {
+		for (qsizetype i = 0; i < c.size(); ++i) {
+			if (!std::forward<F>(f)(i))
+				return false;
+		}
+		return true;
 	}
 }
 
@@ -576,6 +609,19 @@ template<class... Args>
 VIP_ALWAYS_INLINE auto vipVector(Args... sizes) noexcept
 {
 	return VipCoordinate<sizeof...(Args)>{ { std::forward<qsizetype>(sizes)... } };
+}
+
+VIP_ALWAYS_INLINE auto vipVector(const QPoint& pt)
+{
+	return vipVector(pt.y(), pt.x());
+}
+
+template<qsizetype N>
+VIP_ALWAYS_INLINE auto vipPoint(const VipCoordinate<N>& c)
+{
+	if (c.size() != 2)
+		return QPoint();
+	return QPoint(c[1], c[0]);
 }
 
 template<qsizetype NDims>

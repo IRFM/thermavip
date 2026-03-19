@@ -113,7 +113,10 @@ namespace detail
 		m_name = name;
 		m_exactName.clear();
 	}
-	QString VipExtractAttributeFromInfo::attributeName() const { return m_name; }
+	QString VipExtractAttributeFromInfo::attributeName() const
+	{
+		return m_name;
+	}
 
 	void VipExtractAttributeFromInfo::apply()
 	{
@@ -126,7 +129,7 @@ namespace detail
 		m_info->inputAt(0)->setData(tmp);
 		m_info->update();
 		m_info->requireUpdate(this->parentObjectPool()->time());
-		
+
 		if (m_info->hasError()) {
 			setError(m_info->errorData());
 			return;
@@ -176,11 +179,11 @@ void VipExtractImageInfos::apply()
 
 	if (ar.canConvert<double>()) {
 		VipShape sh(QRect(0, 0, ar.shape(1), ar.shape(0)));
-		VipShapeStatistics stats = sh.statistics(ar, QPoint(0, 0), nullptr, VipShapeStatistics::Maximum | VipShapeStatistics::Minimum | VipShapeStatistics::Mean | VipShapeStatistics::Std);
+		auto stats = sh.statistics(ar, QPoint(0, 0), Vip::Max | Vip::Min | Vip::Mean | Vip::Std);
 
 		map.append("Global information/Image maximum", stats.max);
 		map.append("Global information/Image minimum", stats.min);
-		map.append("Global information/Image average", stats.average);
+		map.append("Global information/Image average", stats.mean);
 		map.append("Global information/Image std. dev.", stats.std);
 	}
 
@@ -250,7 +253,7 @@ void VipExtractShapesInfos::apply()
 		return;
 	}
 
-	if (/*VipVideoPlayer* video =*/ qobject_cast<VipVideoPlayer*>(player())) {
+	if (/*VipVideoPlayer* video =*/qobject_cast<VipVideoPlayer*>(player())) {
 		// const VipSceneModel sm = video->plotSceneModel()->sceneModel();
 		// QList<VipPlotShape*> shapes = video->plotSceneModel()->shapes();
 		for (int i = 0; i < shapes.size(); ++i) {
@@ -277,17 +280,13 @@ void VipExtractShapesInfos::apply()
 #if QT_VERSION_MAJOR >= 5 && QT_VERSION_MINOR >= 8
 				map[name + "/Area"] = QString::number(area(sh.region())) + " pixels�";
 #endif
-				VipShapeStatistics stats =
-				  sh.statistics(ar,
-						QPoint(0, 0),
-						nullptr,
-						VipShapeStatistics::Maximum | VipShapeStatistics::Minimum | VipShapeStatistics::Mean | VipShapeStatistics::Std | VipShapeStatistics::PixelCount);
+				auto stats = sh.statistics(ar, QPoint(0, 0), Vip::Max | Vip::Min | Vip::Mean | Vip::Std);
 				if (ar.canConvert<double>()) {
 					map.append(name + "/Maximum", stats.max);
 					map.append(name + "/Minimum", stats.min);
-					map.append(name + "/Average", stats.average);
+					map.append(name + "/Average", stats.mean);
 					map.append(name + "/Std. dev.", stats.std);
-					map.append(name + "/Pixel count", stats.pixelCount);
+					map.append(name + "/Pixel count", stats.count);
 				}
 
 				// special case: polyline
@@ -511,9 +510,8 @@ void VipExtractCurveInfos::apply()
 		map.append(name + "/Y maximum", QVariant::fromValue(r[1].maxValue()));
 		if (full_continuous && points.size()) {
 			VipShape sh(QRect(0, 0, points.size(), 1));
-			VipShapeStatistics stats =
-			  sh.statistics(VipNDArrayTypeView<vip_double>(points.data(), vipVector(1, points.size())), QPoint(0, 0), nullptr, VipShapeStatistics::Mean | VipShapeStatistics::Std);
-			map.append(name + "/Y average", stats.average);
+			auto stats = sh.statistics(VipNDArrayTypeView<vip_double>(points.data(), vipVector(1, points.size())), QPoint(0, 0), Vip::Mean | Vip::Std);
+			map.append(name + "/Y average", stats.mean);
 			map.append(name + "/Y std. dev.", stats.std);
 		}
 		// map.append(name + "/Length", len);
@@ -1413,7 +1411,7 @@ void VipProcessingObjectInfo::showEvent(QShowEvent* evt)
 
 void VipProcessingObjectInfo::search()
 {
-	QRegExp exp = vipFromWildcard(d_data->search.text(),Qt::CaseInsensitive);
+	QRegExp exp = vipFromWildcard(d_data->search.text(), Qt::CaseInsensitive);
 
 	bool restore = d_data->search.text().isEmpty();
 

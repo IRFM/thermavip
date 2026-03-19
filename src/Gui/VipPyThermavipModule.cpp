@@ -1117,14 +1117,14 @@ static QVariant extractTimeTrace(int player, const QVariantList & rois, const QV
 	}
 
 	QString stat = attrs["statistics"].toString();
-	VipShapeStatistics::Statistics stats {};
+	Vip::ArrayStatistics stats {};
 	if (!stat.isEmpty()) {
 		if (stat.contains("min"))
-			stats |= VipShapeStatistics::Minimum;
+			stats |= Vip::Min;
 		if (stat.contains("max"))
-			stats |= VipShapeStatistics::Maximum;
+			stats |= Vip::Max;
 		if (stat.contains("mean"))
-			stats |= VipShapeStatistics::Mean;
+			stats |= Vip::Mean;
 	}
 
 	//launch

@@ -2482,13 +2482,13 @@ void VipCSVWriterEditor::setCSVWriter(VipCSVWriter* w)
 {
 	d_data->processing = w;
 	if (w) {
-		if (w->resampleMode() & ResampleIntersection)
+		if (w->resampleMode() & Vip::ResampleIntersection)
 			d_data->resample.setCurrentText("intersection");
 		else
 			d_data->resample.setCurrentText("union");
 
 		d_data->fixValue.setValue(w->paddValue());
-		d_data->useFixValue.setChecked(w->resampleMode() & ResamplePadd0);
+		d_data->useFixValue.setChecked(w->resampleMode() & Vip::ResamplePadd0);
 		if (w->writeTextFile())
 			d_data->saveAsCSV.setCurrentText("TEXT");
 		else
@@ -2499,13 +2499,13 @@ void VipCSVWriterEditor::setCSVWriter(VipCSVWriter* w)
 void VipCSVWriterEditor::updateCSVWriter()
 {
 	if (d_data->processing) {
-		int r = ResampleInterpolation;
+		int r = Vip::ResampleInterpolation;
 		if (d_data->resample.currentText() == "intersection")
-			r |= ResampleIntersection;
+			r |= Vip::ResampleIntersection;
 		else
-			r |= ResampleUnion;
+			r |= Vip::ResampleUnion;
 		if (d_data->useFixValue.isChecked()) {
-			r |= ResamplePadd0;
+			r |= Vip::ResamplePadd0;
 			d_data->processing->setPaddValue(d_data->fixValue.value());
 		}
 		d_data->processing->setResampleMode(r);

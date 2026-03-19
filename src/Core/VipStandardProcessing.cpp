@@ -1241,9 +1241,9 @@ void VipBaseDataFusion::apply()
 
 		QString time_range = propertyAt(0)->value<QString>();
 		// resample vectors
-		ResampleStrategies s = ResampleIntersection | ResampleInterpolation;
+		Vip::ResampleStrategies s = Vip::ResampleIntersection | Vip::ResampleInterpolation;
 		if (time_range == "union")
-			s = ResampleUnion | ResampleInterpolation;
+			s = Vip::ResampleUnion | Vip::ResampleInterpolation;
 		if (!d_data->merge_point_vector) {
 			vipResampleVectors(pvectors, s);
 			vipResampleVectors(cvectors, s);

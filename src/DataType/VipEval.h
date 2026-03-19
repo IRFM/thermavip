@@ -38,26 +38,51 @@
 
 namespace detail
 {
+	struct NullRoi
+	{
+		static constexpr qsizetype access_type = Vip::Flat | Vip::Position | Vip::Cwise;
+		using value_type = bool ;
+		template<class ShapeType>
+		constexpr bool operator()(const ShapeType&) const noexcept
+		{
+			return true;
+		}
+		constexpr bool operator[](qsizetype) const noexcept { return true; }
+		constexpr bool isUnstrided() const noexcept { return true; }
+	};
+
 	template<class OverRoi>
 	struct Eval
 	{
 		template<class Dst, class Src>
 		static bool apply(Dst& dst, const Src& src, const OverRoi& roi)
 		{
+			static constexpr auto reduce = std::is_base_of_v<BaseReductor, Dst>;
+
 			using dtype = ValueType_t<Dst>;
 
-			qsizetype size = dst.size();
-			dtype* ptr = (dtype*)dst.constPtr();
-			if (!ptr)
-				return false;
+			qsizetype size = 0;
+			dtype* ptr = nullptr;
+			if constexpr (!reduce) {
+				size = dst.size();
+				ptr = (dtype*)dst.constPtr();
+				if (!ptr)
+					return false;
+			}
+			else 
+				size = vipCumMultiply(src.shape());
 
-			if ((Src::access_type & Vip::Flat) && (OverRoi::access_type & Vip::Flat) && dst.isUnstrided() && src.isUnstrided() && roi.isUnstrided()) {
-				if constexpr ((Src::access_type & Vip::Flat) && (OverRoi::access_type & Vip::Flat)) {
+			if ((Dst::access_type & Vip::Flat) && (Src::access_type & Vip::Flat) && (OverRoi::access_type & Vip::Flat) && dst.isUnstrided() && src.isUnstrided() && roi.isUnstrided()) {
+				if constexpr ((Dst::access_type & Vip::Flat) && (Src::access_type & Vip::Flat) && (OverRoi::access_type & Vip::Flat)) {
 
 					const Src s = src;
 					for (qsizetype i = 0; i < size; ++i)
-						if (roi[i])
-							ptr[i] = (s[i]);
+						if (roi[i]) {
+							if constexpr (!reduce)
+								ptr[i] = (s[i]);
+							else
+								dst.setAt(i, (s[i]));
+						}
 					return true;
 				}
 			}
@@ -66,8 +91,12 @@ namespace detail
 				const qsizetype w = src.shape()[0];
 				VipCoordinate<1> p = { { 0 } };
 				for (p[0] = 0; p[0] < w; ++p[0])
-					if (roi(p))
-						ptr[dst.stride(0) * p[0]] = (src(p));
+					if (roi(p)) {
+						if constexpr (!reduce)
+							ptr[dst.stride(0) * p[0]] = (src(p));
+						else
+							dst.setPos(p, src(p));
+					}
 			}
 			else if (src.shape().size() == 2) {
 				const qsizetype h = src.shape()[0];
@@ -75,8 +104,12 @@ namespace detail
 				VipCoordinate<2> p = { { 0, 0 } };
 				for (p[0] = 0; p[0] < h; ++p[0])
 					for (p[1] = 0; p[1] < w; ++p[1])
-						if (roi(p))
-							ptr[vipFlatOffset<false>(dst.strides(), p)] = (src(p));
+						if (roi(p)) {
+							if constexpr (!reduce)
+								ptr[vipFlatOffset<false>(dst.strides(), p)] = (src(p));
+							else
+								dst.setPos(p, src(p));
+						}
 			}
 			else if (src.shape().size() == 3) {
 				const qsizetype z = src.shape()[0];
@@ -86,11 +119,23 @@ namespace detail
 				for (p[0] = 0; p[0] < z; ++p[0])
 					for (p[1] = 0; p[1] < h; ++p[1])
 						for (p[2] = 0; p[2] < w; ++p[2])
-							if (roi(p))
-								ptr[vipFlatOffset<false>(dst.strides(), p)] = (src(p));
+							if (roi(p)) {
+								if constexpr (!reduce)
+									ptr[vipFlatOffset<false>(dst.strides(), p)] = (src(p));
+								else
+									dst.setPos(p, src(p));
+							}
 			}
 			else {
-				vip_iter_fmajor(src.shape(), c) if (roi(c)) ptr[vipFlatOffset<false>(dst.strides(), c)] = (src(c));
+				vip_iter_fmajor(src.shape(), c)
+				{
+					if (roi(c)) {
+						if constexpr (!reduce)
+							ptr[vipFlatOffset<false>(dst.strides(), c)] = (src(c));
+						else
+							dst.setPos(c, src(c));
+					}
+				}
 			}
 			return true;
 		}
@@ -172,58 +217,85 @@ namespace detail
 		template<class Dst, class Src>
 		static bool apply(Dst& dst, const Src& src, const VipOverNDRects<Dim>& roi)
 		{
+			static constexpr auto reduce = std::is_base_of_v<BaseReductor, Dst>;
+
 			using dtype = ValueType_t<Dst>;
-			dtype* ptr = (dtype*)dst.constPtr();
-			if (!ptr)
-				return false;
+			dtype* ptr = nullptr;
+			if constexpr (!reduce) {
+				ptr = (dtype*)dst.constPtr();
+				if (!ptr)
+					return false;
+			}
 
 			if (roi.size() == 0)
 				return false;
 			if (roi.rects()[0].dimCount() != src.shape().size())
 				return false;
 
+			VipCoordinate<Dim> start;
+			start.resize(src.shape().size());
+			start.fill(0);
+
+			VipNDRect<Dim> im_rect(start, src.shape());
+
 			if (roi.rects()[0].dimCount() == 1) {
 				for (qsizetype r = 0; r < roi.size(); ++r) {
-					const VipNDRect<Dim>& rect = roi.rects()[r];
+					const VipNDRect<Dim> rect = roi.rects()[r] & im_rect;
 					VipCoordinate<1> p = { { 0 } };
 					for (p[0] = rect.start(0); p[0] < rect.end(0); ++p[0]) {
-						if (roi(p))
-							ptr[p[0] * dst.stride(0)] = (src(p));
+						if (roi(p)) {
+							if constexpr (!reduce)
+								ptr[p[0] * dst.stride(0)] = (src(p));
+							else
+								dst.setPos(p, src(p));
+						}
 					}
 				}
 			}
 			else if (roi.rects()[0].dimCount() == 2) {
 				for (qsizetype r = 0; r < roi.size(); ++r) {
-					const VipNDRect<Dim>& rect = roi.rects()[r];
+					const VipNDRect<Dim> rect = roi.rects()[r] & im_rect;
 					VipCoordinate<2> p = { { 0, 0 } };
 					for (p[0] = rect.start(0); p[0] < rect.end(0); ++p[0])
 						for (p[1] = rect.start(1); p[1] < rect.end(1); ++p[1]) {
-							if (roi(p))
-								ptr[vipFlatOffset<false>(dst.strides(), p)] = (src(p));
+							if (roi(p)) {
+								if constexpr (!reduce)
+									ptr[vipFlatOffset<false>(dst.strides(), p)] = (src(p));
+								else
+									dst.setPos(p, src(p));
+							}
 						}
 				}
 			}
 			else if (roi.rects()[0].dimCount() == 3) {
 				for (qsizetype r = 0; r < roi.size(); ++r) {
-					const VipNDRect<Dim>& rect = roi.rects()[r];
+					const VipNDRect<Dim> rect = roi.rects()[r] & im_rect;
 					VipCoordinate<3> p = { { 0, 0, 0 } };
 					for (p[0] = rect.start(0); p[0] < rect.end(0); ++p[0])
 						for (p[1] = rect.start(1); p[1] < rect.end(1); ++p[1])
 							for (p[2] = rect.start(2); p[2] < rect.end(2); ++p[2]) {
-								if (roi(p))
-									ptr[vipFlatOffset<false>(dst.strides(), p)] = (src(p));
+								if (roi(p)) {
+									if constexpr (!reduce)
+										ptr[vipFlatOffset<false>(dst.strides(), p)] = (src(p));
+									else
+										dst.setPos(p, src(p));
+								}
 							}
 				}
 			}
 			else {
 				for (qsizetype r = 0; r < roi.size(); ++r) {
-					const VipNDRect<Dim>& rect = roi.rects()[r];
+					const VipNDRect<Dim>& rect = roi.rects()[r] & im_rect;
 					CIteratorFMajorNoSkip<VipNDArrayShape> iter(rect.shape());
 					iter.pos = rect.start();
 					qsizetype size = rect.shapeSize();
 					for (qsizetype i = 0; i < size; ++i) {
-						if (roi(iter.pos))
-							ptr[vipFlatOffset<false>(dst.strides(), iter.pos)] = (src(iter.pos));
+						if (roi(iter.pos)) {
+							if constexpr (!reduce)
+								ptr[vipFlatOffset<false>(dst.strides(), iter.pos)] = (src(iter.pos));
+							else
+								dst.setPos(iter.pos, src(iter.pos));
+						}
 						iter.increment();
 					}
 				}
@@ -232,21 +304,34 @@ namespace detail
 		}
 	};
 
-
 	template<class Dst, class Src, class Roi>
 	bool evalInternal(Dst& dst, const Src& src, const Roi& roi)
 	{
-		if constexpr (IsArrayAlgorithm<Src>::value) {
+		if constexpr (std::is_base_of_v<BaseReductor,Dst>) {
+			if constexpr (std::is_same_v<Roi, VipInfinitRoi>) {
+				if (Eval<NullRoi>::apply(dst, src, NullRoi{}))
+					return dst.finish();
+				else
+					return false;
+			}
+			else {
+				if (Eval<Roi>::apply(dst, src, roi))
+					return dst.finish();
+				else
+					return false;
+			}
+		}
+		else if constexpr (IsArrayAlgorithm<Src>::value) {
 			(void)roi;
 			// Check if the array algorithm is callable with given dst array type
-			if constexpr (Src::template callable<Dst>()) 
+			if constexpr (Src::template callable<Dst>())
 				return src.apply(dst);
 			else
 				return false;
 		}
 		else {
 
-			if constexpr (!(Src::access_type & Vip::Cwise)) {
+			if constexpr (!(Src::access_type & Vip::Cwise) ) {
 				// We must check aliasing
 				if (src.alias(dst.constPtr())) {
 					// Aliasing: go through a temporary array
@@ -301,7 +386,7 @@ bool vipEval(const Dst& _dst, const Src& src, const OverRoi& roi = {}, detail::C
 	using dst_type = detail::ValueType_t<Dst>;
 	using src_type = detail::ValueType_t<Src>;
 
-	if constexpr (std::is_base_of_v<VipNDArray, Src>) {
+	if constexpr (std::is_base_of_v<VipNDArray, Src> && std::is_base_of_v<VipNDArray, Dst>) {
 		return src.convert(dst);
 	}
 	else if constexpr (!std::is_same_v<dst_type, detail::NullType>) {
@@ -326,17 +411,67 @@ bool vipEval(const Dst& _dst, const Src& src, const OverRoi& roi = {}, detail::C
 			}
 		}
 		else {
-			using rebing_src = detail::RebindType_t<dst_type,Src>;
+			using rebing_src = detail::RebindType_t<dst_type, Src>;
 			if constexpr (!std::is_same_v<detail::NullType, rebing_src>) {
 				if constexpr (std::is_same_v<detail::NullType, detail::ValueType_t<rebing_src>>) {
 					static_assert(false, "failed to find a valid rebindExpression() overload");
 				}
-				else
-				{
-					// Use context helper to avoid converting the same array many times
-					detail::ContextHelper ctx;
-					// Rebind src to dst type
-					return vipEval(dst, detail::rebindExpression<dst_type>(src), roi, detail::CError<false>{});
+				else {
+
+					if constexpr (std::is_base_of_v<detail::BaseReductor, Dst> && std::is_same_v<VipNDArray, Src>) {
+						// Reduce a VipNDArray: switch over types and cast to avoid an allocation
+						switch (src.dataType()) {
+							case QMetaType::Char:
+								return vipEval(dst, VipNDArrayTypeView<char>(src), roi, detail::CError<false>{});
+							case QMetaType::SChar:
+								return vipEval(dst, VipNDArrayTypeView<signed char>(src), roi, detail::CError<false>{});
+							case QMetaType::UChar:
+								return vipEval(dst, VipNDArrayTypeView<quint8>(src), roi, detail::CError<false>{});
+							case QMetaType::Short:
+								return vipEval(dst, VipNDArrayTypeView<qint16>(src), roi, detail::CError<false>{});
+							case QMetaType::UShort:
+								return vipEval(dst, VipNDArrayTypeView<quint16>(src), roi, detail::CError<false>{});
+							case QMetaType::Int:
+								return vipEval(dst, VipNDArrayTypeView<qint32>(src), roi, detail::CError<false>{});
+							case QMetaType::UInt:
+								return vipEval(dst, VipNDArrayTypeView<quint32>(src), roi, detail::CError<false>{});
+							case QMetaType::Long:
+								return vipEval(dst, VipNDArrayTypeView<long>(src), roi, detail::CError<false>{});
+							case QMetaType::ULong:
+								return vipEval(dst, VipNDArrayTypeView<unsigned long>(src), roi, detail::CError<false>{});
+							case QMetaType::LongLong:
+								return vipEval(dst, VipNDArrayTypeView<qint64>(src), roi, detail::CError<false>{});
+							case QMetaType::ULongLong:
+								return vipEval(dst, VipNDArrayTypeView<quint64>(src), roi, detail::CError<false>{});
+							case QMetaType::Float:
+								return vipEval(dst, VipNDArrayTypeView<float>(src), roi, detail::CError<false>{});
+							case QMetaType::Double:
+								return vipEval(dst, VipNDArrayTypeView<double>(src), roi, detail::CError<false>{});
+							case QMetaType::QString:
+								return vipEval(dst, VipNDArrayTypeView<QString>(src), roi, detail::CError<false>{});
+							case QMetaType::QByteArray:
+								return vipEval(dst, VipNDArrayTypeView<QString>(src), roi, detail::CError<false>{});
+							default:
+								break;
+						}
+						if (src.dataType() == qMetaTypeId<long double>())
+							return vipEval(dst, VipNDArrayTypeView<long double>(src), roi, detail::CError<false>{});
+						if (src.dataType() == qMetaTypeId<complex_f>())
+							return vipEval(dst, VipNDArrayTypeView<complex_f>(src), roi, detail::CError<false>{});
+						if (src.dataType() == qMetaTypeId<complex_d>())
+							return vipEval(dst, VipNDArrayTypeView<complex_d>(src), roi, detail::CError<false>{});
+						if (src.dataType() == qMetaTypeId<VipRGB>() || src.dataType() == qMetaTypeId<QImage>())
+							return vipEval(dst, VipNDArrayTypeView<VipRGB>(src), roi, detail::CError<false>{});
+						if (src.dataType() == qMetaTypeId<VipRGBf>())
+							return vipEval(dst, VipNDArrayTypeView<VipRGBf>(src), roi, detail::CError<false>{});
+					}
+					else {
+
+						// Use context helper to avoid converting the same array many times
+						detail::ContextHelper ctx;
+						// Rebind src to dst type
+						return vipEval(dst, detail::rebindExpression<dst_type>(src), roi, detail::CError<false>{});
+					}
 				}
 			}
 			else
@@ -380,7 +515,7 @@ bool vipEval(const Dst& _dst, const Src& src, const OverRoi& roi = {}, detail::C
 			case QMetaType::QByteArray:
 				return vipEval(VipNDArrayTypeView<QByteArray>(dst), src, roi, detail::CError<false>{});
 			case QMetaType::QString:
-			 return vipEval(VipNDArrayTypeView<QString>(dst), src, roi, detail::CError<false>{});
+				return vipEval(VipNDArrayTypeView<QString>(dst), src, roi, detail::CError<false>{});
 			default:
 				break;
 		}

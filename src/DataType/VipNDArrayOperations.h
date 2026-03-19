@@ -355,6 +355,12 @@ namespace detail
 		static auto cast(const ConstValue<QVariant>& a) noexcept { return ConstValue<T>(a); }
 	};
 
+	template<class T>
+	struct RebindExpression<T, VipNDArray>
+	{
+		static auto cast(const VipNDArray& a) noexcept { return VipNDArrayType<T>(a); }
+	};
+
 	template<class T, class U>
 	auto rebindExpression(const U& v)
 	{
@@ -718,6 +724,41 @@ namespace detail
 	};
 	template<class Functor, class... Array>
 	struct IsArrayAlgorithm<ArrayAlgorithm<Functor, Array...>> : std::true_type
+	{
+	};
+
+
+
+	/// Base class for all reductors
+	template<class T>
+	struct Reductor : BaseReductor
+	{
+		//! input value type
+		using value_type = T;
+		//! define the way input array is walked through. Depending on this value, setAt() or setPos() will be called.
+		static const qsizetype access_type = Vip::Flat | Vip::Position | Vip::Cwise;
+
+		int dataType() const noexcept { return qMetaTypeId<T>(); }
+		bool isEmpty() const noexcept { return false; }
+		bool isUnstrided() const noexcept { return true; }
+
+		//! set a new value for given flat index
+		bool setAt(qsizetype, const T&) { return true; }
+		//! set a new value for given position
+		template<class ShapeType>
+		bool setPos(const ShapeType&, const T&)
+		{
+			return true;
+		}
+		//! finish the reduction algorithm, returns true on success, false otherwise.
+		bool finish() { return true; }
+	};
+	template<class T>
+	struct IsReductor : std::false_type
+	{
+	};
+	template<class T>
+	struct IsReductor<Reductor<T>> : std::true_type
 	{
 	};
 }

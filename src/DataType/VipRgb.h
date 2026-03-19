@@ -610,100 +610,100 @@ inline VipRgb<quint8> operator~(const VipRgb<quint8>& v) noexcept
 }
 
 template<class T>
-Q_DECL_CONSTEXPR static inline bool vipIsNan(const VipRgb<T>& v) noexcept
+static inline bool vipIsNan(const VipRgb<T>& v) noexcept
 {
 	return vipIsNan(v.r) || vipIsNan(v.g) || vipIsNan(v.b) || vipIsNan(v.a);
 }
 template<class T>
-Q_DECL_CONSTEXPR static inline bool vipIsInf(const VipRgb<T>& v) noexcept
+static inline bool vipIsInf(const VipRgb<T>& v) noexcept
 {
 	return vipIsInf(v.r) || vipIsInf(v.g) || vipIsInf(v.b) || vipIsInf(v.a);
 }
 template<class T>
-Q_DECL_CONSTEXPR static inline VipRgb<T> vipFloor(const VipRgb<T>& v) noexcept
+static inline VipRgb<T> vipFloor(const VipRgb<T>& v) noexcept
 {
 	return VipRgb<T>(vipFloor(v.r), vipFloor(v.g), vipFloor(v.b), vipFloor(v.a));
 }
 template<class T>
-Q_DECL_CONSTEXPR static inline VipRgb<T> vipCeil(const VipRgb<T>& v) noexcept
+static inline VipRgb<T> vipCeil(const VipRgb<T>& v) noexcept
 {
 	return VipRgb<T>(vipCeil(v.r), vipCeil(v.g), vipCeil(v.b), vipCeil(v.a));
 }
 template<class T>
-Q_DECL_CONSTEXPR static inline VipRgb<T> vipRound(const VipRgb<T>& v) noexcept
+static inline VipRgb<T> vipRound(const VipRgb<T>& v) noexcept
 {
 	return VipRgb<T>(vipRound(v.r), vipRound(v.g), vipRound(v.b), vipRound(v.a));
 }
 template<class T>
-Q_DECL_CONSTEXPR static inline VipRgb<T> vipAbs(const VipRgb<T>& v) noexcept
+static inline VipRgb<T> vipAbs(const VipRgb<T>& v) noexcept
 {
 	return VipRgb<T>(vipAbs(v.r), vipAbs(v.g), vipAbs(v.b), vipAbs(v.a));
 }
 template<class T>
-Q_DECL_CONSTEXPR static inline bool vipFuzzyCompare(const VipRgb<T>& v1, VipRgb<T>& v2) noexcept
+static inline bool vipFuzzyCompare(const VipRgb<T>& v1, VipRgb<T>& v2) noexcept
 {
 	return vipFuzzyCompare(v1.r, v2.r) && vipFuzzyCompare(v1.g, v2.g) && vipFuzzyCompare(v1.b, v2.b) && vipFuzzyCompare(v1.a, v2.a);
 }
 
 template<class T>
-inline VipRgb<T> vipMin(const VipRgb<T>& v1, const VipRgb<T>& v2) noexcept
+static inline VipRgb<T> vipMin(const VipRgb<T>& v1, const VipRgb<T>& v2) noexcept
 {
 	return VipRgb<T>(std::min(v1.r, v2.r), std::min(v1.g, v2.g), std::min(v1.b, v2.b), std::min(v1.a, v2.a));
 }
 template<class T>
-inline VipRgb<T> vipMin(const VipRgb<T>& v1, const T& v2) noexcept
+static inline VipRgb<T> vipMin(const VipRgb<T>& v1, const T& v2) noexcept
 {
 	return VipRgb<T>(std::min(v1.r, v2), std::min(v1.g, v2), std::min(v1.b, v2), std::min(v1.a, v2));
 }
 template<class T, class U>
-inline VipRgb<T> vipMin(const T& v2, const VipRgb<T>& v1) noexcept
+static inline VipRgb<T> vipMin(const T& v2, const VipRgb<T>& v1) noexcept
 {
 	return VipRgb<T>(std::min(v1.r, v2), std::min(v1.g, v2), std::min(v1.b, v2), std::min(v1.a, v2));
 }
 
 template<class T>
-inline VipRgb<T> vipMax(const VipRgb<T>& v1, const VipRgb<T>& v2) noexcept
+static inline VipRgb<T> vipMax(const VipRgb<T>& v1, const VipRgb<T>& v2) noexcept
 {
 	return VipRgb<T>(std::max(v1.r, v2.r), std::max(v1.g, v2.g), std::max(v1.b, v2.b), std::max(v1.a, v2.a));
 }
 template<class T>
-inline VipRgb<T> vipMax(const VipRgb<T>& v1, const T& v2) noexcept
+static inline VipRgb<T> vipMax(const VipRgb<T>& v1, const T& v2) noexcept
 {
 	return VipRgb<T>(std::max(v1.r, v2), std::max(v1.g, v2), std::max(v1.b, v2), std::max(v1.a, v2));
 }
 template<class T, class U>
-inline VipRgb<T> vipMax(const T& v2, const VipRgb<T>& v1) noexcept
+static inline VipRgb<T> vipMax(const T& v2, const VipRgb<T>& v1) noexcept
 {
 	return VipRgb<T>(std::max(v1.r, v2), std::max(v1.g, v2), std::max(v1.b, v2), std::max(v1.a, v2));
 }
 
 template<class T>
-VipRgb<T> vipClamp(const VipRgb<T>& v, const VipRgb<T>& mi, const VipRgb<T>& ma) noexcept
+static inline VipRgb<T> vipClamp(const VipRgb<T>& v, const VipRgb<T>& mi, const VipRgb<T>& ma) noexcept
 {
 	return VipRgb<T>(v.r < mi ? mi : (v.r > ma ? ma : v.r), v.g < mi ? mi : (v.g > ma ? ma : v.g), v.b < mi ? mi : (v.b > ma ? ma : v.b), v.a < mi ? mi : (v.a > ma ? ma : v.a));
 }
 
 template<class T>
-VipRgb<T> vipReplaceNan(const VipRgb<T>& v, const VipRgb<T>& m) noexcept
+static inline VipRgb<T> vipReplaceNan(const VipRgb<T>& v, const VipRgb<T>& m) noexcept
 {
 	return VipRgb<T>(vipIsNan(v.r) ? m.r : v.r, vipIsNan(v.g) ? m.g : v.g, vipIsNan(v.b) ? m.b : v.b, vipIsNan(v.a) ? m.a : v.a);
 }
 
 template<class T>
-VipRgb<T> vipReplaceInf(const VipRgb<T>& v, const VipRgb<T>& m) noexcept
+static inline VipRgb<T> vipReplaceInf(const VipRgb<T>& v, const VipRgb<T>& m) noexcept
 {
 	return VipRgb<T>(vipIsInf(v.r) ? m.r : v.r, vipIsInf(v.g) ? m.g : v.g, vipIsInf(v.b) ? m.b : v.b, vipIsInf(v.a) ? m.a : v.a);
 }
 
 template<class T>
-VipRgb<T> vipReplaceNanInf(const VipRgb<T>& v, const VipRgb<T>& m) noexcept
+static inline VipRgb<T> vipReplaceNanInf(const VipRgb<T>& v, const VipRgb<T>& m) noexcept
 {
 	return VipRgb<T>(
 	  vipIsNan(v.r) || vipIsInf(v.r) ? m.r : v.r, vipIsNan(v.g) || vipIsInf(v.g) ? m.g : v.g, vipIsNan(v.b) || vipIsInf(v.b) ? m.b : v.b, vipIsNan(v.a) || vipIsInf(v.a) ? m.a : v.a);
 }
 
 template<class T, class U, class V>
-VipRgb<decltype(U() + V())> vipWhere(const VipRgb<T>& cond, const VipRgb<U>& v1, const VipRgb<V>& v2) noexcept
+static inline VipRgb<decltype(U() + V())> vipWhere(const VipRgb<T>& cond, const VipRgb<U>& v1, const VipRgb<V>& v2) noexcept
 {
 	return VipRgb<decltype(U() + V())>(cond.r ? v1.r : v2.r, cond.g ? v1.g : v2.g, cond.b ? v1.b : v2.b, cond.a ? v1.a : v2.a);
 }
