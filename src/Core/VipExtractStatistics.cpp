@@ -598,7 +598,7 @@ void VipExtractStatistics::updateStatistics()
 	topLevelOutputAt(1)->setEnabled(testStatistic(Vip::Max));
 	topLevelOutputAt(2)->setEnabled(testStatistic(Vip::Mean));
 	topLevelOutputAt(3)->setEnabled(testStatistic(Vip::Std));
-	topLevelOutputAt(4)->setEnabled(true);
+	topLevelOutputAt(4)->setEnabled(testStatistic(Vip::PixelCount));
 	topLevelOutputAt(5)->setEnabled(testStatistic(Vip::Entropy));
 	topLevelOutputAt(6)->setEnabled(testStatistic(Vip::Kurtosis));
 	topLevelOutputAt(7)->setEnabled(testStatistic(Vip::Skewness));
@@ -607,7 +607,7 @@ void VipExtractStatistics::updateStatistics()
 	outputAt(1)->setData(testStatistic(Vip::Max) ? QVariant::fromValue(VipPointVector()) : QVariant());
 	outputAt(2)->setData(testStatistic(Vip::Mean) ? QVariant::fromValue(VipPointVector()) : QVariant());
 	outputAt(3)->setData(testStatistic(Vip::Std) ? QVariant::fromValue(VipPointVector()) : QVariant());
-	outputAt(4)->setData(true ? QVariant::fromValue(VipPointVector()) : QVariant());
+	outputAt(4)->setData(testStatistic(Vip::PixelCount) ? QVariant::fromValue(VipPointVector()) : QVariant());
 	outputAt(5)->setData(testStatistic(Vip::Entropy) ? QVariant::fromValue(VipPointVector()) : QVariant());
 	outputAt(6)->setData(testStatistic(Vip::Kurtosis) ? QVariant::fromValue(VipPointVector()) : QVariant());
 	outputAt(7)->setData(testStatistic(Vip::Skewness) ? QVariant::fromValue(VipPointVector()) : QVariant());
@@ -673,7 +673,7 @@ void VipExtractStatistics::apply()
 			any.setXUnit("time");
 			std->setData(any);
 		}
-		if (true) {
+		if (testStatistic(Vip::PixelCount)) {
 			VipAnyData any = create(QVariant::fromValue(statistics.count));
 			any.setName(name + " pixels");
 			any.setTime(data.time());

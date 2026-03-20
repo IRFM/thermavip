@@ -2980,7 +2980,7 @@ QTransform VipProcessingObject::globalImageTransform()
 		// leaf processing do not have image transforms
 		if (inspected[i]->outputCount() > 0) {
 			// wait for the processing to update
-			inspected[i]->wait();
+			inspected[i]->wait(true,100);
 			tr *= inspected[i]->imageTransform();
 		}
 	}

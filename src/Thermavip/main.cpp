@@ -293,7 +293,7 @@ int test(int argc, char** argv)
 
 int main(int argc, char** argv)
 {
-	return test(argc, argv);
+	//return test(argc, argv);
 	{
 		// Load thermavip.env
 		QString env_file = vipGetDataDirectory() + "thermavip/thermavip.env";

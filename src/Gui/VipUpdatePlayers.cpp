@@ -576,7 +576,7 @@ void VipUpdateVideoPlayer::updateMarkers()
 					m_minMarkers.append(m);
 				}
 
-				auto statistics = shapes[i].statistics(image, offset,  Vip::Max | Vip::Min);
+				auto statistics = shapes[i].statistics(image, offset,  Vip::Max | Vip::Min | Vip::MinPos | Vip::MaxPos);
 				auto stats = statistics;
 
 				// get the size of a pixel

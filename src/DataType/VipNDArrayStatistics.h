@@ -57,6 +57,7 @@ namespace Vip
 		Skewness = 0x100,
 		Kurtosis = 0x200,
 		Entropy = 0x400,
+		PixelCount = 0x800,	//! Pixel count is always computed, but keep this for compatibility with previous SDK version
 		AllStats = Min | Max | MinPos | MaxPos | Mean | Sum | Multiply | Std | Skewness | Kurtosis | Entropy
 	};
 	Q_DECLARE_FLAGS(ArrayStatistics, ArrayStatistic);

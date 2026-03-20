@@ -4174,7 +4174,7 @@ QList<VipProcessingObject*> extractTimeEvolutionFromPlayer2(VipVideoPlayer* play
 			if (options->std.isChecked())
 				stats |= Vip::Std;
 			if (options->pixCount.isChecked())
-				; //TEST stats |= VipShapeStatistics::PixelCount;
+				stats |= Vip::PixelCount;
 			if (options->entropy.isChecked())
 				stats |= Vip::Entropy;
 			if (options->kurtosis.isChecked())
@@ -4649,7 +4649,7 @@ QList<VipProcessingObject*> extractTimeEvolutionFromPlayer2(VipVideoPlayer* play
 			any->setData(QVariant::fromValue(stats_values[i][3]));
 			res << any;
 		}
-		if (/* stats & VipShapeStatistics::PixelCount*/true) {//TEST
+		if (stats & Vip::PixelCount) {
 			VipAnyResource* any = new VipAnyResource(pool);
 			any->moveToThread(pool->thread());
 			any->setAttribute("XUnit", QString("Time"));
