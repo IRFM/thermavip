@@ -297,11 +297,11 @@ VipNDArray VipNDArray::convert(int out_type) const
 	VipNDArray res(out_type, shape());
 
 	if (handle()->canExport(out_type)) {
-		if(handle()->exportData(VipNDArrayShape(shapeCount(), 0), shape(), res.handle(), VipNDArrayShape(shapeCount(), 0), shape()))
+		if (handle()->exportData(VipNDArrayShape(shapeCount(), 0), shape(), res.handle(), VipNDArrayShape(shapeCount(), 0), shape()))
 			return res;
 	}
 	else if (res.handle()->canImport(dataType())) {
-		if(res.handle()->importData(VipNDArrayShape(shapeCount(), 0), shape(), handle(), viewStart(), shape()))
+		if (res.handle()->importData(VipNDArrayShape(shapeCount(), 0), shape(), handle(), viewStart(), shape()))
 			return res;
 	}
 	return VipNDArray();
@@ -576,8 +576,8 @@ bool VipNDArray::resize(VipNDArray& dst, Vip::InterpolationType type) const
 	if (isEmpty() || dst.isEmpty())
 		return false;
 
-	if (shape() != dst.shape()) 
-		return vipResize(dst, *this, type);
+	if (shape() != dst.shape())
+		return vipResize(*this, dst, type);
 	else
 		return convert(dst);
 }
@@ -591,7 +591,7 @@ VipNDArray VipNDArray::resize(const VipNDArrayShape& new_shape, Vip::Interpolati
 		return *this;
 
 	VipNDArray res(dataType(), new_shape);
-	if (vipResize(res, *this, type))
+	if (vipResize(*this, res, type))
 		return res;
 	return {};
 }
@@ -640,8 +640,6 @@ void VipNDArray::clear() noexcept
 {
 	setSharedHandle(vipNullHandle());
 }
-
-
 
 #include "VipMath.h"
 #include "VipNDArrayImage.h"

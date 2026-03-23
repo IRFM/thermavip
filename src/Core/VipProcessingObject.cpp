@@ -2030,6 +2030,16 @@ bool TaskPool::waitForDone(int milli_time)
 			lock.notify_all();
 			atomWait(ll, 15);
 		}
+		//TEST
+		/* while (this->remaining() > 0 && (!m_parent || m_parent->isEnabled())) {
+			if (!lock.try_lock_for(5)) {
+				QThread::msleep(5);
+				continue;
+			}
+			std::unique_lock<std::mutex> ll(lock.d_lock, std::adopt_lock_t{});
+			lock.notify_all();
+			atomWait(ll, 15);
+		}*/
 		return true;
 	}
 	else {

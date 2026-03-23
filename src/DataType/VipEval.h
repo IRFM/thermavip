@@ -418,7 +418,7 @@ bool vipEval(const Dst& _dst, const Src& src, const OverRoi& roi = {}, detail::C
 				}
 				else {
 
-					if constexpr (std::is_base_of_v<detail::BaseReductor, Dst> && std::is_same_v<VipNDArray, Src>) {
+					if constexpr (/* std::is_base_of_v<detail::BaseReductor, Dst> &&*/ std::is_same_v<VipNDArray, Src>) {
 						// Reduce a VipNDArray: switch over types and cast to avoid an allocation
 						switch (src.dataType()) {
 							case QMetaType::Char:

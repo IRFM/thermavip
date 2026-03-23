@@ -529,7 +529,10 @@ namespace detail
 			opaque = other.opaque;
 			if (size) {
 				opaque = new T[size];
-				std::copy(static_cast<const T*>(other.opaque), static_cast<const T*>(other.opaque) + size, static_cast<T*>(opaque));
+				if constexpr (std::is_trivial_v<T>)
+					memcpy(opaque, other.opaque, size * sizeof(T));
+				else
+					std::copy(static_cast<const T*>(other.opaque), static_cast<const T*>(other.opaque) + size, static_cast<T*>(opaque));
 			}
 		}
 

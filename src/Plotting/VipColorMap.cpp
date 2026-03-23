@@ -422,7 +422,7 @@ void applyColorMapLinear(const VipLinearColorMap* map, const VipInterval& interv
 			// prepare histogram
 			map->d_data->histogram.clear();
 			// compute array histogram
-			if (true /* std::is_integral<T>::value*/) { //TEST
+			if constexpr(true /* std::is_integral<T>::value*/) { //TEST
 				if (map->d_data->tmpArray.shape() != tmp.shape())
 					map->d_data->tmpArray.reset(tmp.shape());
 				histogram(tmp, map->d_data->tmpArray, map->d_data->flatHistogramStrength, interval, map->d_data->histogram, map->d_data->indexes.data(), max_index);
