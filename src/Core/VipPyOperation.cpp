@@ -1079,6 +1079,14 @@ static bool import_numpy_internal()
 #endif
 }
 
+static void setPythonHome(wchar_t * home)
+{
+	QString h = QString::fromWCharArray(home);
+	vip_debug("Python home: '%s'\n",h.toLatin1().data());
+	//Py_SetPythonHome(home);
+}
+
+
 // Handle Python initialization and finalization
 class PythonInit
 {
@@ -1107,30 +1115,6 @@ public:
 
 		QString python;
 		QByteArray python_path;
-
-/* #ifdef VIP_PYTHON_SHARED_LIBS
-		python_path = VIP_PYTHON_STDLIB;
-		vip_debug("stdlib: %s\n", python_path.data());
-
-		// Load python libs
-		QList<QByteArray> libs = QByteArray(VIP_PYTHON_SHARED_LIBS).split(' ');
-		for (QByteArray& lib : libs) {
-			if (lib.isEmpty())
-				continue;
-			lib.replace("\\", "/");
-			QLibrary l(lib);
-			l.setLoadHints(QLibrary::ExportExternalSymbolsHint);
-			if (l.load()) {
-				// if(dlopen(lib.data(), RTLD_GLOBAL | RTLD_NOW)){
-				vip_debug("loaded %s\n", lib.data());
-			}
-		}
-		std::string str = "/Applications/software/mamba/envs/python39/lib/python3.9";
-		std::wstring ws(str.begin(), str.end());
-		Py_SetPythonHome((wchar_t*)ws.c_str());
-		vip_debug("Py_SetPythonHome %s\n", str.c_str());
-
-#endif*/
 
 		vip_debug("python path: %s\n", python_path.data());
 		fflush(stdout);
@@ -1166,11 +1150,11 @@ public:
 				python_path = env;
 				std::string str = env.data();
 				std::wstring ws(str.begin(), str.end());
-				Py_SetPythonHome((wchar_t*)ws.c_str());
+				setPythonHome((wchar_t*)ws.c_str());
 			}
 			else {
-				QString miniconda = QFileInfo(qApp->arguments()[0]).canonicalPath() + "/miniconda";
-				if (QFileInfo(miniconda).exists()) {
+				//QString miniconda = QFileInfo(qApp->arguments()[0]).canonicalPath() + "/miniconda";
+				/*if (QFileInfo(miniconda).exists()) {
 					python_path = miniconda.toLatin1();
 					python_path.replace("\\", "/");
 					vip_debug("found miniconda at %s\n", python_path.data());
@@ -1179,12 +1163,12 @@ public:
 					wchar_t home[256];
 					memset(home, 0, sizeof(home));
 					miniconda.toWCharArray(home);
-					Py_SetPythonHome(home);
+					setPythonHome(home);
 				}
-				else {
+				else */{
 					python_path = "./";
 					wchar_t home[256] = L"./";
-					Py_SetPythonHome(home);
+					setPythonHome(home);
 				}
 			}
 		}

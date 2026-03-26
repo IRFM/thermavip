@@ -663,6 +663,12 @@ namespace detail
 		}
 	};
 
+	template<class A, class... Args>
+	struct first_type
+	{
+		using type = A;
+	};
+
 	/// @brief Base class for algorithms having one/multiple inputs and one output.
 	/// Such algorithm can be applied using vipEval(), but their operator() member
 	/// take as argument the destination array.
@@ -687,8 +693,10 @@ namespace detail
 		{
 			if constexpr (HasNullType<Array...>::value)
 				return NullType{};
-			else
-				return std::get<0>(std::tuple<ValueType_t<Array...>>{});
+			else{
+				using type = typename first_type<Array...>::type; 
+				return std::get<0>(std::tuple<ValueType_t<type>>{});
+			}	
 		}
 
 		template<class Dst>

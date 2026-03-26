@@ -346,7 +346,7 @@ namespace detail
 				if (th)
 					iter.setFlatPosition(th * chunk_size);
 				qsizetype count = th == threads - 1 ? (iter_count - chunk_size * (threads - 1)) : chunk_size;
-				for (qsizetype i = 0; i < chunk_size; ++i) {
+				for (qsizetype i = 0; i < count; ++i) {
 					if (index == 0) {
 						ResizeLine::apply(
 						  SrcLine(src.ptr(iter.pos), src.stride(index)), DstLine(tmp_dst.ptr(iter.pos), tmp_dst.stride(index)), src.shape(index), dst.shape(index));

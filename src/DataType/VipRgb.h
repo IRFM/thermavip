@@ -174,7 +174,7 @@ struct alignas(alignof(QRgb)) VipRgb<quint8>
 
 	template<class U>
 	VipRgb(const VipRgb<U>& other) noexcept
-	  : VipRgb(other.clamp<quint8>(0,255))
+	  : VipRgb(other.template clamp<quint8>(0,255))
 	{
 	}
 
