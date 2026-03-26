@@ -1079,12 +1079,10 @@ static bool import_numpy_internal()
 #endif
 }
 
-static void setPythonHome(wchar_t * home)
+static void setPythonHome(const char * home)
 {
-	QString h = QString::fromWCharArray(home);
-	vip_debug("Python home: '%s'\n",h.toLatin1().data());
-	qputenv("PYTHONHOME", h.toLatin1());
-	//Py_SetPythonHome(home);
+	vip_debug("Python home: '%s'\n",home);
+	qputenv("PYTHONHOME", home);
 }
 
 
@@ -1149,28 +1147,11 @@ public:
 			fflush(stdout);
 			if (!env.isEmpty()) {
 				python_path = env;
-				std::string str = env.data();
-				std::wstring ws(str.begin(), str.end());
-				setPythonHome((wchar_t*)ws.c_str());
+				setPythonHome(env.data());
 			}
 			else {
-				//QString miniconda = QFileInfo(qApp->arguments()[0]).canonicalPath() + "/miniconda";
-				/*if (QFileInfo(miniconda).exists()) {
-					python_path = miniconda.toLatin1();
-					python_path.replace("\\", "/");
-					vip_debug("found miniconda at %s\n", python_path.data());
-					local_pip = miniconda + "/Scripts/pip";
-
-					wchar_t home[256];
-					memset(home, 0, sizeof(home));
-					miniconda.toWCharArray(home);
-					setPythonHome(home);
-				}
-				else */{
-					python_path = "./";
-					wchar_t home[256] = L"./";
-					setPythonHome(home);
-				}
+				python_path = "./";
+				setPythonHome("./");
 			}
 		}
 
