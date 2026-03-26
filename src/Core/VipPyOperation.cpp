@@ -1083,6 +1083,7 @@ static void setPythonHome(wchar_t * home)
 {
 	QString h = QString::fromWCharArray(home);
 	vip_debug("Python home: '%s'\n",h.toLatin1().data());
+	qputenv("PYTHONHOME", h.toLatin1());
 	//Py_SetPythonHome(home);
 }
 
