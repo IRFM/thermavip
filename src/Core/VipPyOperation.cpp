@@ -1082,7 +1082,10 @@ static bool import_numpy_internal()
 static void setPythonHome(const char * home)
 {
 	vip_debug("Python home: '%s'\n",home);
+	// Using PYTHONHOME only work on Windows
+#ifdef WIN32
 	qputenv("PYTHONHOME", home);
+#endif	
 }
 
 
