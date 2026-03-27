@@ -194,6 +194,7 @@ public:
 	void split(VipTimeRangeItem* item, qint64 time);
 
 	QRectF itemsBoundingRect() const;
+	QRectF itemsBoundingRect(const VipInterval & x_bounds) const;
 	QPair<qint64, qint64> itemsRange() const;
 
 	VipPlayerArea* area() const;

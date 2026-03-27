@@ -764,6 +764,18 @@ QRectF VipTimeRangeListItem::itemsBoundingRect() const
 	return bounding;
 }
 
+QRectF VipTimeRangeListItem::itemsBoundingRect(const VipInterval & x_bounds) const
+{
+	QRectF bounding;
+	for (int i = 0; i < d_data->items.size(); ++i) {
+		auto * item = d_data->items[i];
+		if(item->left() > x_bounds.maxValue() || item->right() < x_bounds.minValue())
+			continue;
+		bounding |= item->boundingRect();
+	}
+	return bounding;
+}
+
 QPair<qint64, qint64> VipTimeRangeListItem::itemsRange() const
 {
 	if (d_data->items.size()) {
@@ -856,7 +868,13 @@ void VipTimeRangeListItem::drawSelected(QPainter* p, const VipCoordinateSystemPt
 		// draw items
 		p->setRenderHints(QPainter::Antialiasing);
 		QRect prev;
+
+		auto x_bounds= this->axes().first()->scaleDiv().bounds();
+
 		for (const VipTimeRangeItem* it : d_data->items) {
+			if(it->left() > x_bounds.maxValue() || it->right() < x_bounds.minValue())
+				continue;
+
 			// Only draw non overlapping items
 			QRect r = it->boundingRect().toRect();
 			if(!prev.contains(r)){ 
@@ -871,30 +889,31 @@ void VipTimeRangeListItem::drawSelected(QPainter* p, const VipCoordinateSystemPt
 
 		VipIODevice* d = device();
 
-		QRectF bounding = itemsBoundingRect();
-		QPointF left = bounding.bottomLeft() + QPointF(20, -1); 
+		QRectF bounding = itemsBoundingRect(x_bounds);
+		if(!bounding.isEmpty() && d) {
+			QPointF left = bounding.bottomLeft() + QPointF(20, -1); 
 
-		if (d_data->drawComponents & Text) {
-			p->save();
-			p->setRenderHints(QPainter::TextAntialiasing | QPainter::Antialiasing);
-			QColor c = d_data->color;
-			if (isLight(c) || isDark(c)) {
-				c.setRed(255 - c.red());
-				c.setGreen(255 - c.green());
-				c.setBlue(255 - c.blue());
-			}
-			else {
-				c = is_dark_skin ? Qt::white : Qt::black;
-			}
-			
-			p->setPen(c);
-			QFont f = p->font();
-			f.setBold(true);
-			f.setPointSizeF(bounding.height() / 1.4);
-			p->setFont(f);
-			if (d)
+			if ((d_data->drawComponents & Text)) {
+				p->save();
+				p->setRenderHints(QPainter::TextAntialiasing | QPainter::Antialiasing);
+				QColor c = d_data->color;
+				if (isLight(c) || isDark(c)) {
+					c.setRed(255 - c.red());
+					c.setGreen(255 - c.green());
+					c.setBlue(255 - c.blue());
+				}
+				else {
+					c = is_dark_skin ? Qt::white : Qt::black;
+				}
+				
+				p->setPen(c);
+				QFont f = p->font();
+				f.setBold(true);
+				f.setPointSizeF(bounding.height() / 1.4);
+				p->setFont(f);
 				p->drawText(left, d->name());
-			p->restore();
+				p->restore();
+			}
 		}
 
 		// set the items color if necessary
