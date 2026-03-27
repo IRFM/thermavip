@@ -269,6 +269,9 @@ public:
 	bool limitsEnabled() const;
 	bool timeRangesLocked() const;
 
+	bool timeSliderVisible() const;
+	bool drawTimeRangeDirection() const;
+
 	int visibleItemCount() const;
 
 	void setSelectionTimeRange(const VipTimeRange& r);
@@ -287,6 +290,10 @@ public Q_SLOTS:
 	void setLimit2(double);
 	void setLimitsEnable(bool);
 	void setTimeRangesLocked(bool locked);
+
+	void setTimeSliderVisible(bool);
+
+	void setDrawTimeRangeDirection(bool);
 
 	void moveToForeground();
 	void moveToBackground();
@@ -333,6 +340,11 @@ public:
 
 	VipPlayWidget(QWidget* parent = nullptr);
 	~VipPlayWidget();
+
+	QToolBar * leftToolBar() const;
+	QToolBar * playToolBar() const;
+	QWidget * bottomWidget() const;
+	VipValueToTimeButton * timeUnitButton() const;
 
 	QColor sliderColor() const;
 	void setSliderColor(const QColor&);

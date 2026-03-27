@@ -49,6 +49,7 @@
 // For unique_ptr
 #include <memory>
 #include <cstdio>
+#include <cstdlib>
 
 
 #include "VipBuildConfig.h"

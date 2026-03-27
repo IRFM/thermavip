@@ -414,7 +414,7 @@ bool vipEval(const Dst& _dst, const Src& src, const OverRoi& roi = {}, detail::C
 			using rebing_src = detail::RebindType_t<dst_type, Src>;
 			if constexpr (!std::is_same_v<detail::NullType, rebing_src>) {
 				if constexpr (std::is_same_v<detail::NullType, detail::ValueType_t<rebing_src>>) {
-					static_assert(false, "failed to find a valid rebindExpression() overload");
+					static_assert(!std::is_same_v<detail::NullType, detail::ValueType_t<rebing_src>>, "failed to find a valid rebindExpression() overload");
 				}
 				else {
 

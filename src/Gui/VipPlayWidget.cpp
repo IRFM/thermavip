@@ -243,24 +243,32 @@ void VipTimeRangeItem::draw(QPainter* p, const VipCoordinateSystemPtr& m) const
 		}
 	}
 
-	QRectF direction = r;
-	if (d_reverse)
-		direction.setLeft(r.right() - 5);
-	else
-		direction.setRight(r.left() + 5);
+	bool draw_direction = true;
+	if(auto p = parentItem()) {
+		if(p->area() && !p->area()->drawTimeRangeDirection())
+			draw_direction = false;
+	}
 
-	// Draw the direction rectangle that indicates where the time range starts.
-	// If the time range is too small, do not draw it to avoid overriding the display
-	// p->setPen(pen);
+	if(draw_direction) {
+		QRectF direction = r;
+		if (d_reverse)
+			direction.setLeft(r.right() - 5);
+		else
+			direction.setRight(r.left() + 5);
 
-	QRectF direction_rect = direction & r;
-	if (direction_rect.width() > 4) {
+		// Draw the direction rectangle that indicates where the time range starts.
+		// If the time range is too small, do not draw it to avoid overriding the display
+		// p->setPen(pen);
 
-		// QColor c(255, 165, 0);
-		QColor c = color.darker(150);
-		QBrush brush(c);
-		p->setBrush(brush);
-		p->drawRect(direction_rect);
+		QRectF direction_rect = direction & r;
+		if (direction_rect.width() > 4) {
+
+			// QColor c(255, 165, 0);
+			QColor c = color.darker(150);
+			QBrush brush(c);
+			p->setBrush(brush);
+			p->drawRect(direction_rect);
+		}
 	}
 
 	// draw the selection
@@ -378,11 +386,6 @@ void VipTimeRangeItem::mousePressEvent(QGraphicsSceneMouseEvent* event)
 
 		if (!ctrl_down && !(was_selected && selected)) {
 			// unselect all other items
-			/* QList<QGraphicsItem*> items;
-			if (parentItem())
-				items = parentItem()->area()->childItems();
-			else if (scene())
-				items = scene()->items();*/
 			if (scene()) {
 				auto items = scene()->selectedItems();
 				for (int i = 0; i < items.size(); ++i) {
@@ -1172,6 +1175,7 @@ public:
 	TimeSliderGrip* grip;
 	QColor sliderColor;
 	QColor sliderFillColor;
+	bool extendedDrawing = true;
 
 	TimeScale(VipProcessingPool* pool, QGraphicsItem* parent = nullptr)
 	  : VipAxisBase(Bottom, parent)
@@ -1212,6 +1216,8 @@ public:
 	virtual void draw(QPainter* painter, QWidget* widget)
 	{
 		VipAxisBase::draw(painter, widget);
+		if(!extendedDrawing)
+			return;
 
 		double half_width = lineWidth / 2.0;
 		QRectF rect = sliderRect();
@@ -1332,6 +1338,8 @@ public:
 	bool visible;
 	bool timeRangesLocked;
 	TimeScale* timeScale;
+	bool timeSliderVisible = true;
+	bool drawTimeRangeDirection = true;
 
 	qint64 highlightedTime;
 	qint64 boundTime;
@@ -1467,6 +1475,34 @@ VipPlayerArea::~VipPlayerArea()
 {
 }
 
+void VipPlayerArea::setTimeSliderVisible(bool visible)
+{
+	timeSliderGrip()->setVisible(visible);
+	d_data->timeMarker->setVisible(visible);
+	d_data->highlightedMarker->setVisible(visible);
+	d_data->timeScale->extendedDrawing = visible;
+	d_data->timeSliderVisible = visible;
+	this->update();
+}
+	
+bool VipPlayerArea::timeSliderVisible() const
+{
+	return timeSliderGrip()->isVisible();
+}
+
+
+void VipPlayerArea::setDrawTimeRangeDirection(bool enable)
+{
+	d_data->drawTimeRangeDirection = enable;
+	update();
+}
+	
+bool VipPlayerArea::drawTimeRangeDirection() const
+{
+	return d_data->drawTimeRangeDirection;
+}
+
+
 bool VipPlayerArea::timeRangesLocked() const
 {
 	return d_data->timeRangesLocked;
@@ -1490,7 +1526,7 @@ void VipPlayerArea::setTimeRangeVisible(bool visible)
 		d_data->items[i]->setVisible(item_visible);
 	}
 
-	d_data->timeMarker->setVisible(visible);
+	d_data->timeMarker->setVisible(visible && d_data->timeSliderVisible);
 	if (visible && (d_data->pool->modes() & VipProcessingPool::UseTimeLimits)) {
 		d_data->limit1Marker->setVisible(visible);
 		d_data->limit2Marker->setVisible(visible);
@@ -2295,6 +2331,8 @@ class VipPlayWidget::PrivateData
 public:
 	// playing tool bar
 	QToolBar* playToolBar;
+	QToolBar * leftToolBar;
+	QWidget* bottomWidget;
 	QAction* first;
 	QAction* previous;
 	QAction* playForward;
@@ -2522,20 +2560,31 @@ VipPlayWidget::VipPlayWidget(QWidget* parent)
 	d_data->sequential->setIconSize(QSize(18, 18));
 	d_data->sequential->addSeparator();
 
-	QHBoxLayout* toolbarLayout = new QHBoxLayout();
-	toolbarLayout->setContentsMargins(0, 0, 0, 0);
-	toolbarLayout->addLayout(timeLay);
+
+	d_data->bottomWidget = new QWidget();
+	QHBoxLayout * toolBarLayout = new QHBoxLayout();
+	toolBarLayout->setContentsMargins(0, 0, 0, 0);
+	toolBarLayout->addLayout(timeLay);
 	QWidget* line = VipLineWidget::createSunkenVLine();
-	toolbarLayout->addWidget(line);
-	toolbarLayout->addWidget(d_data->playToolBar);
-	toolbarLayout->addWidget(d_data->sequential);
+	toolBarLayout->addWidget(line);
+	toolBarLayout->addWidget(d_data->playToolBar);
+	toolBarLayout->addWidget(d_data->sequential);
+	d_data->bottomWidget->setLayout(toolBarLayout);
 	// line->show();
 
 	QVBoxLayout* vlay = new QVBoxLayout();
 	vlay->addWidget(d_data->playerWidget);
-	vlay->addLayout(toolbarLayout);
-	vlay->setContentsMargins(2, 6, 2, 2);
-	setLayout(vlay);
+	vlay->addWidget(d_data->bottomWidget);
+
+	QHBoxLayout * final_lay = new QHBoxLayout();
+	final_lay->addWidget(d_data->leftToolBar = new QToolBar());
+	final_lay->addLayout(vlay);
+	final_lay->setContentsMargins(2, 6, 2, 2);
+
+	d_data->leftToolBar->setOrientation(Qt::Vertical);
+	d_data->leftToolBar->hide();
+
+	setLayout(final_lay);
 
 	connect(d_data->visible, SIGNAL(triggered(bool)), this, SLOT(setTimeRangeVisible(bool)));
 	connect(d_data->timeUnit, SIGNAL(timeUnitChanged()), this, SLOT(timeUnitChanged()));
@@ -2556,6 +2605,26 @@ VipPlayWidget::VipPlayWidget(QWidget* parent)
 VipPlayWidget::~VipPlayWidget()
 {
 	playWidgets.removeOne(this);
+}
+
+QToolBar * VipPlayWidget::leftToolBar() const
+{
+	return d_data->leftToolBar;
+}
+
+QToolBar * VipPlayWidget::playToolBar() const
+{
+	return d_data->playToolBar;
+}
+
+QWidget * VipPlayWidget::bottomWidget() const
+{
+	return d_data->bottomWidget;
+}
+
+VipValueToTimeButton * VipPlayWidget::timeUnitButton() const
+{
+	return d_data->timeUnit;
 }
 
 QColor VipPlayWidget::sliderColor() const

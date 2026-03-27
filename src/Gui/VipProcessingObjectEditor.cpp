@@ -3029,6 +3029,7 @@ static int register_VipConcatenateVideosEditor()
 }
 static int _register_VipConcatenateVideosEditor = register_VipConcatenateVideosEditor();
 
+#ifdef VIP_WITH_FFMPEG
 
 #include "VipMPEGSaver.h"
 
@@ -3097,6 +3098,7 @@ static QWidget* editVipMPEGSaver(VipMPEGSaver* d)
 	return editor;
 }
 
+#endif
 
 
 class VipOperationBetweenPlayersEditor::PrivateData
@@ -4424,7 +4426,9 @@ static int registerEditors()
 	vipFDObjectEditor().append<QWidget*(VipResize*)>(editResize);
 	vipFDObjectEditor().append<QWidget*(VipGenericImageTransform*)>(editGenericImageTransform);
 	vipFDObjectEditor().append<QWidget*(VipComponentLabelling*)>(editComponentLabelling);
+#ifdef VIP_WITH_FFMPEG
 	vipFDObjectEditor().append<QWidget*(VipMPEGSaver*)>(editVipMPEGSaver);
+#endif
 	return 0;
 }
 
