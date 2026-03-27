@@ -428,6 +428,7 @@ VipPythonManager::VipPythonManager()
 		)));
 
 	//register all files found in the Python directory
+	//TEST: disable for faster loading
 	VipPyInterpreter::instance()->addProcessingDirectory(vipGetPythonDirectory());
 	VipPyInterpreter::instance()->addProcessingDirectory("./Python");
 

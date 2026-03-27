@@ -477,8 +477,8 @@ void VipUpdateVideoPlayer::saveROIInfos()
 				QString name = sh.name();
 				if (name.isEmpty())
 					name = sh.group() + " " + QString::number(sh.id());
-				VipShapeStatistics stats = sh.statistics(image, offset, &m_buffer, VipShapeStatistics::Maximum);
-				content += name.toLatin1() + ": " + QByteArray::number(stats.max) + " " + QByteArray::number(stats.maxPoint.x()) + " " + QByteArray::number(stats.maxPoint.y()) + "\n";
+				auto stats = sh.statistics(image, offset,Vip::Max);
+				content += name.toLatin1() + ": " + QByteArray::number(stats.max) + " " + QByteArray::number(stats.maxPos[1]) + " " + QByteArray::number(stats.maxPos[0]) + "\n";
 			}
 
 			QString filename = VipFileDialog::getSaveFileName(vipGetMainWindow(), "Save ROI infos", "Text file (*.txt)");
@@ -576,19 +576,19 @@ void VipUpdateVideoPlayer::updateMarkers()
 					m_minMarkers.append(m);
 				}
 
-				VipShapeStatistics statistics = shapes[i].statistics(image, offset, &m_buffer, VipShapeStatistics::Maximum | VipShapeStatistics::Minimum);
-				VipShapeStatistics stats = statistics;
+				auto statistics = shapes[i].statistics(image, offset,  Vip::Max | Vip::Min | Vip::MinPos | Vip::MaxPos);
+				auto stats = statistics;
 
 				// get the size of a pixel
 				QPointF pix_size = p->plotWidget2D()->area()->scaleToPosition(QPointF(1, 1)) - p->plotWidget2D()->area()->scaleToPosition(QPointF(0, 0));
 				// set the points
-				m_minMarkers[i]->setRawData(QPointF(stats.minPoint) + QPointF(0.5, 0.5));
-				m_maxMarkers[i]->setRawData(QPointF(stats.maxPoint) + QPointF(0.5, 0.5));
+				m_minMarkers[i]->setRawData(QPointF(vipPoint(stats.minPos)) + QPointF(0.5, 0.5));
+				m_maxMarkers[i]->setRawData(QPointF(vipPoint(stats.maxPos)) + QPointF(0.5, 0.5));
 
 				// set the texts
 				VipText min_t;
 				if (m_displayMarkerPos)
-					min_t.setText("<b>" + QString::number(stats.min) + "</b><br>(x:" + QString::number(stats.minPoint.x()) + " , y:" + QString::number(stats.minPoint.y()) + ")");
+					min_t.setText("<b>" + QString::number(stats.min) + "</b><br>(x:" + QString::number(stats.minPos[1]) + " , y:" + QString::number(stats.minPos[0]) + ")");
 				else
 					min_t.setText("<b>" + QString::number(stats.min) + "</b>");
 				min_t.setTextPen(QColor(Qt::blue));
@@ -596,7 +596,7 @@ void VipUpdateVideoPlayer::updateMarkers()
 
 				VipText max_t;
 				if (m_displayMarkerPos)
-					max_t.setText("<b>" + QString::number(stats.max) + "</b><br>(x:" + QString::number(stats.maxPoint.x()) + " , y:" + QString::number(stats.maxPoint.y()) + ")");
+					max_t.setText("<b>" + QString::number(stats.max) + "</b><br>(x:" + QString::number(stats.maxPos[1]) + " , y:" + QString::number(stats.maxPos[0]) + ")");
 				else
 					max_t.setText("<b>" + QString::number(stats.max) + "</b>");
 				max_t.setTextPen(QColor(Qt::red));

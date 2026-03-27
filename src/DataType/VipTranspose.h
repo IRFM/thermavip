@@ -46,58 +46,37 @@ namespace Vip
 
 namespace detail
 {
-	template<class Array, bool hasNullType = HasNullType<Array>::value>
-	struct Transpose : BaseOperator1<typename DeduceArrayType<Array>::value_type, Array>
+	template<class Array>
+	struct Transpose : BaseFunctor<Transpose<Array>, Array>
 	{
-		typedef BaseOperator1<typename DeduceArrayType<Array>::value_type, Array> base_type;
-		typedef typename base_type::value_type value_type;
-
+		using base = BaseFunctor<Transpose<Array>, Array>;
 		static const qsizetype access_type = Vip::Position;
-		VipNDArrayShape sh;
+
 		Transpose() {}
-		Transpose(const Array& op1, const VipNDArrayShape& sh)
-		  : base_type(op1)
-		  , sh(sh)
+		Transpose(const Array& op1, const VipNDArrayShape& new_sh)
+		  : base(op1)
 		{
+			this->sh = new_sh;
 		}
 
-		const VipNDArrayShape& shape() const { return sh; }
 		template<class Coord>
-		VIP_ALWAYS_INLINE value_type operator()(const Coord& pos) const
+		VIP_ALWAYS_INLINE auto operator()(const Coord& pos) const
 		{
-			Coord in;
-			vipReverse(pos, in);
-			return this->array1(in);
+			return std::get<0>(this->arrays)(vipReverse(pos));
 		}
 	};
 
-	template<class Array>
-	struct Transpose<Array, true> : BaseOperator1<NullType, Array>
+	template<class U, class Array>
+	struct RebindExpression<U, Transpose<Array>>
 	{
-
-		VipNDArrayShape sh;
-		Transpose() {}
-		Transpose(const Array& op1, const VipNDArrayShape& sh)
-		  : BaseOperator1<NullType, Array>(op1)
-		  , sh(sh)
+		static auto cast(const Transpose<Array>& tr)
 		{
+			using type = Transpose<RebindType_t<U,Array> >;
+			return type(rebindExpression<U>(std::get<0>(tr.arrays)), tr.shape());
 		}
-		const VipNDArrayShape& shape() const { return sh; }
 	};
 
-	template<class T, class Array, bool hasNullType>
-	struct rebind<T, Transpose<Array, hasNullType>, false>
-	{
-
-		typedef Transpose<Array, hasNullType> op;
-		typedef Transpose<typename rebind<T, typename op::array_type1>::type, false> type;
-		static type cast(const op& a) { return type(rebind<T, typename op::array_type1>::cast(a.array1), a.sh); }
-	};
-
-	template<class Array>
-	struct is_valid_functor<Transpose<Array, false>> : std::true_type
-	{
-	};
+	
 
 	template<Vip::ReverseArray Rev>
 	struct RevPos
@@ -115,68 +94,62 @@ namespace detail
 		template<class Coord, class Shape>
 		static void apply(const Coord& pos, Coord& rev, const Shape& sh, qsizetype)
 		{
-			rev.resize(pos.size());
-			for (qsizetype i = 0; i < pos.size(); ++i)
-				rev[i] = (sh)[i] - pos[i] - 1;
+			static constexpr auto static_size = Coord::static_size > Shape::static_size ? Coord::static_size : Shape::static_size;
+			if constexpr (static_size == 1) {
+				rev[0] = (sh)[0] - pos[0] - 1;
+			}
+			else if constexpr (static_size == 2) {
+				rev[0] = (sh)[0] - pos[0] - 1;
+				rev[1] = (sh)[1] - pos[1] - 1;
+			}
+			else if constexpr (static_size == 3) {
+				rev[0] = (sh)[0] - pos[0] - 1;
+				rev[1] = (sh)[1] - pos[1] - 1;
+				rev[2] = (sh)[2] - pos[2] - 1;
+			}
+			else {
+				rev.resize(pos.size());
+				for (qsizetype i = 0; i < pos.size(); ++i)
+					rev[i] = (sh)[i] - pos[i] - 1;
+			}
 		}
 	};
 
-	template<Vip::ReverseArray Rev, class Array, bool hasNullType = HasNullType<Array>::value>
-	struct Reverse : BaseOperator1<typename DeduceArrayType<Array>::value_type, Array>
+	template<Vip::ReverseArray Rev, class Array>
+	struct Reverse : BaseFunctor<Reverse<Rev, Array>, Array>
 	{
-		static const qsizetype access_type = Vip::Position | (Rev == Vip::ReverseFlat ? Vip::Flat : 0);
-		typedef BaseOperator1<typename DeduceArrayType<Array>::value_type, Array> base_type;
-		typedef typename base_type::value_type value_type;
+		static const qsizetype access_type = Vip::Position;
+		using base = BaseFunctor<Reverse<Rev, Array>, Array>;
 
-		qsizetype size;
-		qsizetype axis;
-		const VipNDArrayShape* sh;
+		qsizetype size = 0;
+		qsizetype axis = 0;
 		Reverse() {}
 		Reverse(const Array& op1, qsizetype size, qsizetype axis)
-		  : base_type(op1)
+		  : base(op1)
 		  , size(size)
 		  , axis(axis)
-		  , sh(&this->array1.shape())
 		{
 		}
 
 		template<class Coord>
-		VIP_ALWAYS_INLINE value_type operator()(const Coord& pos) const
+		auto operator()(const Coord& pos) const
 		{
 			Coord p;
-			RevPos<Rev>::apply(pos, p, *sh, axis);
-			return this->array1(p);
+			RevPos<Rev>::apply(pos, p, this->shape(), axis);
+			return std::get<0>(this->arrays)(p);
 		}
-		VIP_ALWAYS_INLINE value_type operator[](qsizetype index) const { return this->array1[size - index - 1]; }
 	};
 
-	template<Vip::ReverseArray Rev, class Array>
-	struct Reverse<Rev, Array, true> : BaseOperator1<NullType, Array>
+	template<class U, Vip::ReverseArray Rev, class Array>
+	struct RebindExpression<U, Reverse<Rev, Array>>
 	{
-		qsizetype size;
-		qsizetype axis;
-		Reverse() {}
-		Reverse(const Array& op1, qsizetype size, qsizetype axis)
-		  : BaseOperator1<NullType, Array>(op1)
-		  , size(size)
-		  , axis(axis)
+		static auto cast(const Reverse<Rev, Array>& r)
 		{
+			using type = Reverse<Rev,RebindType_t<U,Array> >;
+			return type(rebindExpression<U>(std::get<0>(r.arrays)), r.size, r.axis);
 		}
 	};
 
-	template<class T, Vip::ReverseArray Rev, class Array, bool hasNullType>
-	struct rebind<T, Reverse<Rev, Array, hasNullType>, false>
-	{
-
-		typedef Reverse<Rev, Array, hasNullType> op;
-		typedef Reverse<Rev, typename rebind<T, typename op::array_type1>::type, false> type;
-		static type cast(const op& a) { return type(rebind<T, typename op::array_type1>::cast(a.array1), a.size, a.axis); }
-	};
-
-	template<Vip::ReverseArray Rev, class Array>
-	struct is_valid_functor<Reverse<Rev, Array, false>> : std::true_type
-	{
-	};
 }
 
 /// \addtogroup DataType
@@ -184,11 +157,9 @@ namespace detail
 
 /// Returns a functor expression to transpose input N-D array.
 template<class Array>
-detail::Transpose<Array> vipTranspose(const Array& array)
+auto vipTranspose(const Array& array)
 {
-	VipNDArrayShape sh;
-	vipReverse(array.shape(), sh);
-	return detail::Transpose<Array>(array, sh);
+	return detail::Transpose<detail::DeduceArrayType_t< Array>>(array, vipReverse(array.shape()));
 }
 
 /// Returns a functor expression to reverse input N-D array.
@@ -196,9 +167,9 @@ detail::Transpose<Array> vipTranspose(const Array& array)
 /// If \a Rev is Vip::ReverseAxis, this will swap full rows/columns for given axis.
 /// To swap rows on a 2D array, use Vip::ReverseAxis with axis=0.
 template<Vip::ReverseArray Rev, class Array>
-detail::Reverse<Rev, Array> vipReverse(const Array& array, qsizetype axis = 0)
+auto vipReverse(const Array& array, qsizetype axis = 0)
 {
-	return detail::Reverse<Rev, Array>(array, vipCumMultiply(array.shape()), axis);
+	return detail::Reverse<Rev, detail::DeduceArrayType_t<Array>>(array, vipCumMultiply(array.shape()), axis);
 }
 
 /// @}

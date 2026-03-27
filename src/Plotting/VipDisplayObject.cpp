@@ -143,7 +143,9 @@ VipDisplayObject::~VipDisplayObject()
 {
 	d_data->isDestruct = true;
 	if (inputAt(0)->connection()->source()) {
-		this->wait();
+		inputAt(0)->setEnabled(false);
+		this->clearInputBuffers();
+		//this->wait();
 	}
 }
 

@@ -177,48 +177,6 @@ namespace detail
 		}
 	};
 
-	// template <>
-	//  struct ArrayConvolve<Vip::Clip>
-	//  {
-	//  template< class Array, class Kernel, class Type, class Coord1, class Coord2, class Coord3, class Coord4>
-	//  static bool apply(qsizetype Dim, qsizetype NbDim,
-	//  const Array & array,
-	//  const Kernel & kernel,
-	//  const Coord1 & current,
-	//  const Coord2 & k_center,
-	//  const Coord3 & arshape,
-	//  const Coord3 & kshape,
-	//  Coord4 & c_k,
-	//  Coord4 & c_a,
-	//  Type & res
-	//  )
-	//  {
-	//  if (Dim == 0)
-	//  {
-	//	qsizetype last = NbDim - 1;
-	//	for (qsizetype i = 0; i < kshape[last]; ++i){
-	//		//update coordinates
-	//		c_a[last] = current[last] + (c_k[last] = i) - (qsizetype)k_center[last];
-	//		if (c_a[last] < 0 || c_a[last] >= (qsizetype)arshape[last])
-	//			res += kernel(c_k) * 0;//array(c_a);
-	//		else
-	//			res += kernel(c_k) * array(c_a);
-	//	}
-	//	return true;
-	//  }
-	//
-	//
-	// qsizetype last = NbDim - Dim - 1;
-	// //loop on kernel coordinates
-	// for (qsizetype i = 0; i < kshape[last]; ++i){
-	//	//update coordinates
-	//	c_a[last] = current[last] + (c_k[last] = i) - (qsizetype)k_center[last];
-	//	if (c_a[last] >= 0 && c_a[last] < (qsizetype)arshape[last])
-	//		ArrayConvolve<Vip::Clip>::apply(Dim - 1, NbDim, array, kernel, current, k_center, arshape, kshape, c_k, c_a, res);
-	// }
-	// return true;
-	// }
-	// };
 
 	template<>
 	struct ArrayConvolve<Vip::Wrap>
@@ -414,16 +372,14 @@ namespace detail
 		}
 	};
 
-	template<Vip::ConvolveBorderRule Rule, class A, class Kernel, bool hasNullType = HasNullType<A, Kernel>::value>
-	struct Convolve : BaseOperator2<typename DeduceArrayType<A>::value_type, A, Kernel>
+	template<Vip::ConvolveBorderRule Rule, class A, class Kernel>
+	struct Convolve : BaseFunctor<Convolve<Rule,A,Kernel>, A, Kernel>
 	{
-		_ENSURE_OPERATOR2_DEF(BaseOperator2<typename DeduceArrayType<A>::value_type, A, Kernel>)
 		static const qsizetype access_type = Vip::Position;
-		// typedef BaseOperator2<typename DeduceArrayType<A>::value_type, A, Kernel> base_type;
-		// typedef typename base_type::value_type value_type;
+		using base = BaseFunctor<Convolve<Rule,A,Kernel>, A, Kernel>;
+
 		VipNDRect<Vip::None> valid_rect;
 		const VipNDArrayShape kshape;
-		const VipNDArrayShape sh;
 		const VipNDArrayShape kcenter;
 		VipNDArrayShape c_k, c_a;
 
@@ -431,57 +387,39 @@ namespace detail
 		Convolve(const A& op1, const Kernel& k, const VipNDArrayShape& kcenter)
 		  : base(op1, k)
 		  , kshape(k.shape())
-		  , sh(op1.shape())
 		  , kcenter(kcenter)
 		{
+			this->sh = op1.shape();
 			valid_rect.resize(k.shape().size());
-			for (qsizetype i = 0; i < sh.size(); ++i) {
+			for (qsizetype i = 0; i < this->sh.size(); ++i) {
 				valid_rect.setStart(i, kcenter[i]);
-				valid_rect.setEnd(i, sh[i] - kshape[i] + kcenter[i]);
+				valid_rect.setEnd(i, this->sh[i] - kshape[i] + kcenter[i]);
 			}
 		}
 
-		const VipNDArrayShape& shape() const { return this->array1.shape(); }
-		int dataType() const { return this->array1.dataType(); }
-
 		template<class Coord>
-		VIP_ALWAYS_INLINE value_type operator()(const Coord& pos) const
+		auto operator()(const Coord& pos) const
 		{
-			typedef decltype(typename array_type1::value_type() * typename array_type2::value_type()) op_type;
+			using op_type = decltype(std::get<0>(this->arrays)(vipVector(0))*std::get<1>(this->arrays)(vipVector(0)));
 			return ApplyConvolve<op_type, Rule, Coord::static_size>::apply(
-			  valid_rect, this->array1, sh, this->array2, pos, kcenter, kshape, const_cast<VipNDArrayShape&>(c_k), const_cast<VipNDArrayShape&>(c_a));
+			  valid_rect, std::get<0>(this->arrays), this->shape(), std::get<1>(this->arrays), pos, kcenter, kshape, const_cast<VipNDArrayShape&>(c_k), const_cast<VipNDArrayShape&>(c_a));
 		}
 	};
 
-	template<Vip::ConvolveBorderRule Rule, class A, class Kernel>
-	struct Convolve<Rule, A, Kernel, true> : BaseOperator2<NullType, A, Kernel>
+
+	template<class U, Vip::ConvolveBorderRule Rule, class A, class Kernel>
+	struct RebindExpression<U, Convolve<Rule, A, Kernel>>
 	{
-		const VipNDArrayShape kcenter;
-		Convolve() {}
-		Convolve(const A& op1, const Kernel& k, const VipNDArrayShape& kcenter)
-		  : BaseOperator2<NullType, A, Kernel>(op1, k)
-		  , kcenter(kcenter)
+		static auto cast(const Convolve<Rule, A, Kernel>& c)
 		{
+			using type = Convolve<Rule,RebindType_t<U,A>,RebindType_t<U,Kernel> >;
+			if constexpr (std::is_arithmetic_v<U> || VipIsComplex_v<U> || VipIsRgb_v<U>)
+				return type(std::get<0>(c.arrays), std::get<1>(c.arrays), c.kcenter);
+			else
+				return NullType();
 		}
-		const VipNDArrayShape& shape() const { return this->array1.shape(); }
 	};
 
-	template<class T, Vip::ConvolveBorderRule Rule, class A1, class A2, bool hasNullType>
-	struct rebind<T, Convolve<Rule, A1, A2, hasNullType>, false>
-	{
-
-		typedef Convolve<Rule, A1, A2, hasNullType> op;
-		typedef Convolve<Rule, typename rebind<T, typename op::array_type1>::type, typename rebind<T, typename op::array_type2>::type, false> type;
-		static type cast(const op& a) { return type(rebind<T, typename op::array_type1>::cast(a.array1), rebind<T, typename op::array_type2>::cast(a.array2), a.kcenter); }
-	};
-
-	template<class T1, class T2>
-	using try_convolve = decltype(T1() * T2() + T1());
-
-	template<Vip::ConvolveBorderRule Rule, class A, class Kernel>
-	struct is_valid_functor<Convolve<Rule, A, Kernel, false>> : is_valid_op2<typename DeduceArrayType<A>::value_type, typename DeduceArrayType<Kernel>::value_type, try_convolve>
-	{
-	};
 
 } // end detail
 
@@ -492,10 +430,15 @@ namespace detail
 /// Borders are handled differently depending on the \a Rule enum value.
 ///
 /// \sa vipEval
-template<Vip::ConvolveBorderRule Rule, class A, class Kernel, class Coord>
-detail::Convolve<Rule, A, Kernel> vipConvolve(const A& array, const Kernel& k, const Coord& kcenter)
+template<Vip::ConvolveBorderRule Rule, class A, class Kernel, class Coord = VipNDArrayShape>
+auto vipConvolve(const A& array, const Kernel& k,  Coord kcenter = {})
 {
-	return detail::Convolve<Rule, A, Kernel>(array, k, kcenter);
+	if (kcenter.isEmpty()) {
+		kcenter.resize(k.shape().size());
+		for (qsizetype i = 0; i < k.shape().size(); ++i)
+			kcenter[i] = k.shape()[i] / 2;
+	}
+	return detail::Convolve<Rule, detail::DeduceArrayType_t<A>, detail::DeduceArrayType_t<Kernel>>(array, k, kcenter);
 }
 
 /// @}

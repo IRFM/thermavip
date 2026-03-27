@@ -243,24 +243,32 @@ void VipTimeRangeItem::draw(QPainter* p, const VipCoordinateSystemPtr& m) const
 		}
 	}
 
-	QRectF direction = r;
-	if (d_reverse)
-		direction.setLeft(r.right() - 5);
-	else
-		direction.setRight(r.left() + 5);
+	bool draw_direction = true;
+	if(auto p = parentItem()) {
+		if(p->area() && !p->area()->drawTimeRangeDirection())
+			draw_direction = false;
+	}
 
-	// Draw the direction rectangle that indicates where the time range starts.
-	// If the time range is too small, do not draw it to avoid overriding the display
-	// p->setPen(pen);
+	if(draw_direction) {
+		QRectF direction = r;
+		if (d_reverse)
+			direction.setLeft(r.right() - 5);
+		else
+			direction.setRight(r.left() + 5);
 
-	QRectF direction_rect = direction & r;
-	if (direction_rect.width() > 4) {
+		// Draw the direction rectangle that indicates where the time range starts.
+		// If the time range is too small, do not draw it to avoid overriding the display
+		// p->setPen(pen);
 
-		// QColor c(255, 165, 0);
-		QColor c = color.darker(150);
-		QBrush brush(c);
-		p->setBrush(brush);
-		p->drawRect(direction_rect);
+		QRectF direction_rect = direction & r;
+		if (direction_rect.width() > 4) {
+
+			// QColor c(255, 165, 0);
+			QColor c = color.darker(150);
+			QBrush brush(c);
+			p->setBrush(brush);
+			p->drawRect(direction_rect);
+		}
 	}
 
 	// draw the selection
@@ -378,15 +386,12 @@ void VipTimeRangeItem::mousePressEvent(QGraphicsSceneMouseEvent* event)
 
 		if (!ctrl_down && !(was_selected && selected)) {
 			// unselect all other items
-			QList<QGraphicsItem*> items;
-			if (parentItem())
-				items = parentItem()->childItems();
-			else if (scene())
-				items = scene()->items();
-
-			for (int i = 0; i < items.size(); ++i) {
-				if (items[i] != this)
-					items[i]->setSelected(false);
+			if (scene()) {
+				auto items = scene()->selectedItems();
+				for (int i = 0; i < items.size(); ++i) {
+					if (items[i] != this)
+						items[i]->setSelected(false);
+				}
 			}
 		}
 
@@ -906,6 +911,9 @@ void VipTimeRangeListItem::drawSelected(QPainter* p, const VipCoordinateSystemPt
 
 	shape();
 
+	if (area()->timeRangesLocked())
+		return;
+
 	if ((d_data->drawComponents & MovingArea) && d_data->items.size() > 1) {
 		p->setRenderHint(QPainter::Antialiasing, false);
 
@@ -1167,6 +1175,7 @@ public:
 	TimeSliderGrip* grip;
 	QColor sliderColor;
 	QColor sliderFillColor;
+	bool extendedDrawing = true;
 
 	TimeScale(VipProcessingPool* pool, QGraphicsItem* parent = nullptr)
 	  : VipAxisBase(Bottom, parent)
@@ -1207,6 +1216,8 @@ public:
 	virtual void draw(QPainter* painter, QWidget* widget)
 	{
 		VipAxisBase::draw(painter, widget);
+		if(!extendedDrawing)
+			return;
 
 		double half_width = lineWidth / 2.0;
 		QRectF rect = sliderRect();
@@ -1327,6 +1338,8 @@ public:
 	bool visible;
 	bool timeRangesLocked;
 	TimeScale* timeScale;
+	bool timeSliderVisible = true;
+	bool drawTimeRangeDirection = true;
 
 	qint64 highlightedTime;
 	qint64 boundTime;
@@ -1462,6 +1475,34 @@ VipPlayerArea::~VipPlayerArea()
 {
 }
 
+void VipPlayerArea::setTimeSliderVisible(bool visible)
+{
+	timeSliderGrip()->setVisible(visible);
+	d_data->timeMarker->setVisible(visible);
+	d_data->highlightedMarker->setVisible(visible);
+	d_data->timeScale->extendedDrawing = visible;
+	d_data->timeSliderVisible = visible;
+	this->update();
+}
+	
+bool VipPlayerArea::timeSliderVisible() const
+{
+	return timeSliderGrip()->isVisible();
+}
+
+
+void VipPlayerArea::setDrawTimeRangeDirection(bool enable)
+{
+	d_data->drawTimeRangeDirection = enable;
+	update();
+}
+	
+bool VipPlayerArea::drawTimeRangeDirection() const
+{
+	return d_data->drawTimeRangeDirection;
+}
+
+
 bool VipPlayerArea::timeRangesLocked() const
 {
 	return d_data->timeRangesLocked;
@@ -1485,7 +1526,7 @@ void VipPlayerArea::setTimeRangeVisible(bool visible)
 		d_data->items[i]->setVisible(item_visible);
 	}
 
-	d_data->timeMarker->setVisible(visible);
+	d_data->timeMarker->setVisible(visible && d_data->timeSliderVisible);
 	if (visible && (d_data->pool->modes() & VipProcessingPool::UseTimeLimits)) {
 		d_data->limit1Marker->setVisible(visible);
 		d_data->limit2Marker->setVisible(visible);
@@ -1659,6 +1700,9 @@ void VipPlayerArea::updateArea(bool check_item_visibility)
 	else {
 		VipProcessingObjectList lst = d_data->pool->processing("VipIODevice");
 
+		// Sort by property _vip_idx
+		std::sort(lst.begin(), lst.end(), [](const QObject* l, const QObject* r) { return l->property("_vip_idx").toInt() < r->property("_vip_idx").toInt(); });
+
 		int visibleItemCount = 0;
 
 		QList<VipIODevice*> devices;
@@ -1743,7 +1787,7 @@ void VipPlayerArea::updateArea(bool check_item_visibility)
 	}
 
 	this->computeStartDate();
-	this->setAutoScale(true);
+	//this->setAutoScale(true); //TEST
 	Q_EMIT devicesChanged();
 }
 
@@ -2287,6 +2331,8 @@ class VipPlayWidget::PrivateData
 public:
 	// playing tool bar
 	QToolBar* playToolBar;
+	QToolBar * leftToolBar;
+	QWidget* bottomWidget;
 	QAction* first;
 	QAction* previous;
 	QAction* playForward;
@@ -2313,6 +2359,8 @@ public:
 	QAction* reset;
 	QAction* startAtZero;
 	QToolButton* selectionMode;
+	QToolButton* increaseHeight;
+	QToolButton* decreaseHeight;
 
 	QAction* hidden;
 	QAction* axes;
@@ -2329,9 +2377,11 @@ public:
 	VipPlotWidget2D* playerWidget;
 
 	int height;
+	int deviceHeight = 14;
 	bool dirtyTimeLines;
 	bool playWidgetHidden;
 	bool alignedToZero;
+	bool automaticResize = true;
 };
 
 static QList<VipPlayWidget*> playWidgets;
@@ -2397,6 +2447,26 @@ VipPlayWidget::VipPlayWidget(QWidget* parent)
 	d_data->lock = d_data->playToolBar->addAction(vipIcon("lock.png"), "Lock/Unlock time ranges");
 	d_data->lock->setCheckable(true);
 
+
+	d_data->increaseHeight = new QToolButton();
+	d_data->increaseHeight->setText("+");
+	d_data->increaseHeight->setToolTip("Increase time lines height");
+	d_data->increaseHeight->setMaximumHeight(12);
+	d_data->decreaseHeight = new QToolButton();
+	d_data->decreaseHeight->setText("-");
+	d_data->decreaseHeight->setToolTip("Decrease time lines height");
+	d_data->decreaseHeight->setMaximumHeight(12);
+	{
+		QWidget* h = new QWidget();
+		QVBoxLayout* vlay = new QVBoxLayout();
+		vlay->setContentsMargins(0, 0, 0, 0);
+		vlay->setSpacing(0);
+		vlay->addWidget(d_data->increaseHeight);
+		vlay->addWidget(d_data->decreaseHeight);
+		h->setLayout(vlay);
+		d_data->playToolBar->addWidget(h);
+	}
+
 	d_data->selectionMode->setToolTip(QString("Selection mode"));
 	d_data->selectionMode->setIcon(vipIcon("select_item.png"));
 	d_data->selectionMode->setAutoRaise(true);
@@ -2435,6 +2505,8 @@ VipPlayWidget::VipPlayWidget(QWidget* parent)
 	connect(d_data->position, SIGNAL(triggered(bool)), this, SLOT(toolTipChanged()));
 	connect(d_data->properties, SIGNAL(triggered(bool)), this, SLOT(toolTipChanged()));
 	connect(d_data->lock, SIGNAL(triggered(bool)), this, SLOT(setTimeRangesLocked(bool)));
+	connect(d_data->increaseHeight, SIGNAL(clicked(bool)), this, SLOT(increaseDeviceSize()));
+	connect(d_data->decreaseHeight, SIGNAL(clicked(bool)), this, SLOT(decreaseDeviceSize()));
 
 	// time/number
 	d_data->time = new QLabel("<b>Time</b>");
@@ -2488,20 +2560,31 @@ VipPlayWidget::VipPlayWidget(QWidget* parent)
 	d_data->sequential->setIconSize(QSize(18, 18));
 	d_data->sequential->addSeparator();
 
-	QHBoxLayout* toolbarLayout = new QHBoxLayout();
-	toolbarLayout->setContentsMargins(0, 0, 0, 0);
-	toolbarLayout->addLayout(timeLay);
+
+	d_data->bottomWidget = new QWidget();
+	QHBoxLayout * toolBarLayout = new QHBoxLayout();
+	toolBarLayout->setContentsMargins(0, 0, 0, 0);
+	toolBarLayout->addLayout(timeLay);
 	QWidget* line = VipLineWidget::createSunkenVLine();
-	toolbarLayout->addWidget(line);
-	toolbarLayout->addWidget(d_data->playToolBar);
-	toolbarLayout->addWidget(d_data->sequential);
+	toolBarLayout->addWidget(line);
+	toolBarLayout->addWidget(d_data->playToolBar);
+	toolBarLayout->addWidget(d_data->sequential);
+	d_data->bottomWidget->setLayout(toolBarLayout);
 	// line->show();
 
 	QVBoxLayout* vlay = new QVBoxLayout();
 	vlay->addWidget(d_data->playerWidget);
-	vlay->addLayout(toolbarLayout);
-	vlay->setContentsMargins(2, 6, 2, 2);
-	setLayout(vlay);
+	vlay->addWidget(d_data->bottomWidget);
+
+	QHBoxLayout * final_lay = new QHBoxLayout();
+	final_lay->addWidget(d_data->leftToolBar = new QToolBar());
+	final_lay->addLayout(vlay);
+	final_lay->setContentsMargins(2, 6, 2, 2);
+
+	d_data->leftToolBar->setOrientation(Qt::Vertical);
+	d_data->leftToolBar->hide();
+
+	setLayout(final_lay);
 
 	connect(d_data->visible, SIGNAL(triggered(bool)), this, SLOT(setTimeRangeVisible(bool)));
 	connect(d_data->timeUnit, SIGNAL(timeUnitChanged()), this, SLOT(timeUnitChanged()));
@@ -2522,6 +2605,26 @@ VipPlayWidget::VipPlayWidget(QWidget* parent)
 VipPlayWidget::~VipPlayWidget()
 {
 	playWidgets.removeOne(this);
+}
+
+QToolBar * VipPlayWidget::leftToolBar() const
+{
+	return d_data->leftToolBar;
+}
+
+QToolBar * VipPlayWidget::playToolBar() const
+{
+	return d_data->playToolBar;
+}
+
+QWidget * VipPlayWidget::bottomWidget() const
+{
+	return d_data->bottomWidget;
+}
+
+VipValueToTimeButton * VipPlayWidget::timeUnitButton() const
+{
+	return d_data->timeUnit;
 }
 
 QColor VipPlayWidget::sliderColor() const
@@ -2676,6 +2779,8 @@ void VipPlayWidget::setAutoScale(bool enable)
 	if (enable != d_data->playerArea->isAutoScale()) {
 		d_data->playerArea->computeStartDate();
 		d_data->playerArea->setAutoScale(enable);
+		//TEST: the left scale is always auto
+		d_data->playerArea->leftAxis()->setAutoScale(true);
 		d_data->autoScale->blockSignals(true);
 		d_data->autoScale->setChecked(enable);
 		d_data->autoScale->blockSignals(false);
@@ -2948,10 +3053,10 @@ void VipPlayWidget::updatePlayerInternal()
 
 	// compute the best height
 	int height = 0;
-	if (show_temporal) {
+	if (show_temporal && d_data->automaticResize) {
 		height = 35 + d_data->playerArea->timeScale()->scaleDraw()->fullExtent();
 		if (timeRangeVisible())
-			height += visibleItemCount * 14;
+			height += visibleItemCount * d_data->deviceHeight;
 		layout()->setSpacing(2);
 	}
 	else
@@ -2968,7 +3073,7 @@ void VipPlayWidget::updatePlayerInternal()
 	height += 10;
 
 	this->setVisible(show_temporal); // height > 0);
-	if (height != d_data->height) {
+	if (height != d_data->height && d_data->automaticResize) {
 		d_data->height = height;
 		this->setMaximumHeight(height);
 		this->setMinimumHeight(height);
@@ -3012,9 +3117,11 @@ void VipPlayWidget::timeUnitChanged()
 	d_data->playerArea->computeStartDate();
 
 	// We change the time unit, so get back to auto scale and recompute it
-	d_data->playerArea->setAutoScale(false);
-	d_data->playerArea->setAutoScale(true);
-
+	if (d_data->playerArea->isAutoScale()) {
+		//TEST: inside if
+		d_data->playerArea->setAutoScale(false);
+		d_data->playerArea->setAutoScale(true);
+	}
 	updatePlayer();
 
 	Q_EMIT valueToTimeChanged(v);
@@ -3115,6 +3222,38 @@ void VipPlayWidget::setTimeRangesLocked(bool locked)
 	d_data->lock->setChecked(locked);
 	d_data->lock->blockSignals(false);
 	d_data->playerArea->setTimeRangesLocked(locked);
+}
+
+void VipPlayWidget::increaseDeviceSize()
+{
+	d_data->deviceHeight += 2;
+	updatePlayerInternal();
+}
+void VipPlayWidget::decreaseDeviceSize()
+{
+	if (d_data->deviceHeight > 2) {
+		d_data->deviceHeight -= 2;
+		updatePlayerInternal();
+	}
+}
+
+void VipPlayWidget::setAutomaticResize(bool enable)
+{
+	if (enable != d_data->automaticResize) {
+		d_data->automaticResize = enable;
+		if (!enable) {
+			int h = this->height();
+			this->setMinimumHeight(10);
+			this->setMaximumHeight(INT_MAX);
+			this->resize(this->width(),h);
+		}
+		else
+			updatePlayerInternal();
+	}
+}
+bool VipPlayWidget::automaticResize() const
+{
+	return d_data->automaticResize;
 }
 
 VipArchive& operator<<(VipArchive& arch, VipPlayWidget* w)

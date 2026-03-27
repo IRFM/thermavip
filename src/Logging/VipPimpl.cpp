@@ -37,7 +37,7 @@
 
 
 
-namespace detail
+namespace pimpl_detail
 {
 
 	struct PimplGlobal

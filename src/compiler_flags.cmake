@@ -4,6 +4,8 @@ find_package(QT NAMES Qt5 Qt6 REQUIRED )
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets OpenGL Core Gui Xml Network Sql PrintSupport Svg Concurrent)
 message(STATUS "Qt found for ${TARGET_PROJECT}, version ${QT_VERSION_MAJOR}.${QT_VERSION_MINOR}")
 
+
+
 set(QT_PREFIX Qt${QT_VERSION_MAJOR})
 set(CMAKE_AUTOMOC ON)
 
@@ -30,7 +32,6 @@ set(QT_LIBS Qt::Core
 	Qt::Svg
 	)
 endif()
-
 
 
 target_link_libraries(${TARGET_PROJECT} PUBLIC ${QT_LIBS})

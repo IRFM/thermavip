@@ -673,6 +673,8 @@ public:
 	/// @brief Returns the central VipDisplayArea
 	VipDisplayArea* displayArea() const;
 
+	QToolBar* topToolBar() const;
+
 	/// @brief Returns the file tool bar,
 	/// used to open files/folders, generate signals or save sessions.
 	QToolBar* fileToolBar() const;

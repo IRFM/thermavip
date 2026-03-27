@@ -175,8 +175,8 @@ public:
 	QString string;	 //! Python code to execute (ExecCode) or variable name (SendObject and RetrieveObject)
 	QVariant object; //! Object to send (SendObject)
 
-	VipPyCommand() noexcept = default;
-	VIP_DEFAULT_MOVE(VipPyCommand);
+	//VipPyCommand() noexcept = default;
+	//VIP_DEFAULT_MOVE(VipPyCommand);
 	
 	/// @brief Returns the command unique identifier
 	QString buildId() const noexcept { return id.isEmpty() ? string : id; }

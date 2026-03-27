@@ -29,41 +29,45 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef VIP_COMPLEX_H
-#define VIP_COMPLEX_H
+#include <atomic>
+#include <thread>
+#include "VipIterator.h"
 
-#include <complex>
-#include <type_traits>
-#include <qmetatype.h>
-#include "VipConfig.h"
+static std::atomic<int> _threads{ 1 };
 
-/// \addtogroup DataType
-/// @{
-
-using complex_f = std::complex<float> ;
-using complex_d = std::complex<double>;
-using VipComplexF = complex_f;
-using VipComplexD = complex_d;
-
-Q_DECLARE_METATYPE(complex_f)
-Q_DECLARE_METATYPE(complex_d)
-VIP_IS_RELOCATABLE(complex_f);
-VIP_IS_RELOCATABLE(complex_d);
-
-/// @brief Check if type is complex
-template<class T>
-struct VipIsComplex : std::false_type
+int vipIterateThreadCount() noexcept
 {
-};
-template<class T>
-struct VipIsComplex<std::complex<T>> : std::true_type
+	return _threads.load(std::memory_order_relaxed);
+}
+
+void vipSetIterateThreadCount(int threads) noexcept
 {
-};
-template<class T>
-constexpr bool VipIsComplex_v = VipIsComplex<T>::value;
+	static int concurrency = (int)std::thread::hardware_concurrency();
+	if (threads < 1)
+		threads = 1;
+	else if (threads > concurrency)
+		threads = concurrency;
+	_threads.store(threads);
+}
 
+static std::atomic<int> _threshold{ 4096 };
 
-/// @}
-// end DataType
+int vipParallelSizeThreshold() noexcept
+{
+	return _threshold.load(std::memory_order_relaxed);
+}
+void vipSetParallelSizeThreshold(int threshold) noexcept
+{
+	_threshold.store(threshold);
+}
 
+int vipLoopThreadCount(int size) noexcept
+{
+#ifndef _OPENMP
+	return 1;
+#else
+	if (size < _threshold.load(std::memory_order_relaxed))
+		return 1;
+	return std::min( _threads.load(std::memory_order_relaxed), size);
 #endif
+}

@@ -151,6 +151,16 @@ QDataStream& operator>>(QDataStream& str, VipRGB& v)
 	return str;
 }
 
+QDataStream& operator<<(QDataStream& str, const VipRGBf& v)
+{
+	return str << v.r << v.g << v.b << v.a;
+}
+QDataStream& operator>>(QDataStream& str, VipRGBf& v)
+{
+	str >> v.r >> v.g>> v.b >> v.a;
+	return str;
+}
+
 QDataStream& operator<<(QDataStream& o, const VipLongPoint& pt)
 {
 	return o << pt.x() << pt.y();
@@ -230,6 +240,11 @@ QTextStream& operator<<(QTextStream& stream, const VipRGB& p)
 {
 	return stream << "[" << (int)p.a << "," << (int)p.r << "," << (int)p.g << "," << (int)p.b << "]";
 }
+QTextStream& operator<<(QTextStream& stream, const VipRGBf& p)
+{
+	return stream << "[" << p.a << "," << p.r << "," << p.g << "," << p.b << "]";
+}
+
 QTextStream& operator>>(QTextStream& str, VipRGB& p)
 {
 	int a, r, g, b;
@@ -243,6 +258,22 @@ QTextStream& operator>>(QTextStream& str, VipRGB& p)
 	READ_VALUE(str, b);
 	READ_CHAR(str, ']');
 	p = VipRGB(r, g, b, a);
+	return str;
+}
+
+QTextStream& operator>>(QTextStream& str, VipRGBf& p)
+{
+	int a, r, g, b;
+	READ_CHAR(str, '[');
+	READ_VALUE(str, a);
+	READ_CHAR(str, ',');
+	READ_VALUE(str, r);
+	READ_CHAR(str, ',');
+	READ_VALUE(str, g);
+	READ_CHAR(str, ',');
+	READ_VALUE(str, b);
+	READ_CHAR(str, ']');
+	p = VipRGBf(r, g, b, a);
 	return str;
 }
 
@@ -1034,7 +1065,7 @@ static int registerConversionFunctions()
 	QMetaType::registerConverter<VipPoint, QByteArray>(detail::typeToByteArray<VipPoint>);
 	QMetaType::registerConverter<QByteArray, VipPoint>(detail::byteArrayToType<VipPoint>);
 #endif
-	// END TEST
+	
 
 	QMetaType::registerConverter<vip_long_double, std::complex<float>>(fromLongDouble<std::complex<float>>);
 	QMetaType::registerConverter<vip_long_double, std::complex<double>>(fromLongDouble<std::complex<double>>);
@@ -1194,12 +1225,12 @@ VipComplexPointVector vipToComplexPointVector(const VipPointVector& samples)
 }
 
 template<class T, class U, class PA, class PB>
-bool __vipResampleVectors(QVector<T>& a, QVector<U>& b, ResampleStrategies s, const PA& padd_a, const PB& padd_b)
+bool __vipResampleVectors(QVector<T>& a, QVector<U>& b, Vip::ResampleStrategies s, const PA& padd_a, const PB& padd_b)
 {
 	if (a.size() == 0 || b.size() == 0)
 		return false;
 
-	if (s & ResampleIntersection) {
+	if (s & Vip::ResampleIntersection) {
 		// null intersection
 		if (a.last().x() < b.first().x())
 			return false;
@@ -1234,7 +1265,7 @@ bool __vipResampleVectors(QVector<T>& a, QVector<U>& b, ResampleStrategies s, co
 		// add missing points at the beginning
 		qsizetype i = 0;
 		while (i + 1 < a.size() && a[i].x() < b.first().x() && a[i + 1].x() < b.first().x()) {
-			if (s & ResamplePadd0)
+			if (s & Vip::ResamplePadd0)
 				prev_b.append(U(a[i].x(), padd_b));
 			else
 				prev_b.append(U(a[i].x(), b.first().y()));
@@ -1242,7 +1273,7 @@ bool __vipResampleVectors(QVector<T>& a, QVector<U>& b, ResampleStrategies s, co
 		}
 		i = 0;
 		while (i < b.size() && b[i].x() < a.first().x() && b[i + 1].x() < a.first().x()) {
-			if (s & ResamplePadd0)
+			if (s & Vip::ResamplePadd0)
 				prev_a.append(T(b[i].x(), padd_a));
 			else
 				prev_a.append(T(b[i].x(), a.first().y()));
@@ -1252,7 +1283,7 @@ bool __vipResampleVectors(QVector<T>& a, QVector<U>& b, ResampleStrategies s, co
 		// add missing points at the end
 		i = a.size() - 1;
 		while (i > 0 && a[i].x() > b.last().x() && a[i - 1].x() > b.last().x()) {
-			if (s & ResamplePadd0)
+			if (s & Vip::ResamplePadd0)
 				next_b.append(U(a[i].x(), padd_b));
 			else
 				next_b.append(U(a[i].x(), b.last().y()));
@@ -1260,7 +1291,7 @@ bool __vipResampleVectors(QVector<T>& a, QVector<U>& b, ResampleStrategies s, co
 		}
 		i = b.size() - 1;
 		while (i > 0 && b[i].x() > a.last().x() && b[i - 1].x() > a.last().x()) {
-			if (s & ResamplePadd0)
+			if (s & Vip::ResamplePadd0)
 				next_a.append(T(b[i].x(), padd_a));
 			else
 				next_a.append(T(b[i].x(), a.last().y()));
@@ -1292,7 +1323,7 @@ bool __vipResampleVectors(QVector<T>& a, QVector<U>& b, ResampleStrategies s, co
 				// keep a values, create new b values
 				ra.append(*ita);
 				U new_b(ita->x(), 0);
-				if (s & ResampleInterpolation) {
+				if (s & Vip::ResampleInterpolation) {
 					// create b value by interpoling closest 2 points
 					if (prev_b.x() == next_b.x())
 						new_b.setY(next_b.y());
@@ -1317,7 +1348,7 @@ bool __vipResampleVectors(QVector<T>& a, QVector<U>& b, ResampleStrategies s, co
 				// keep a values, create new b values
 				rb.append(*itb);
 				T new_a(itb->x(), 0);
-				if (s & ResampleInterpolation) {
+				if (s & Vip::ResampleInterpolation) {
 					// create b value by interpoling closest 2 points
 					if (prev_a.x() == next_a.x())
 						new_a.setY(next_a.y());
@@ -1416,7 +1447,7 @@ struct TimeIterator
 /// Returns a growing time vector containing all different time values of given VipPointVector and VipComplexPointVector samples,
 /// respecting the given resample strategy.
 template<class Vector1, class Vector2>
-static QVector<vip_double> vipExtractTimes(const QVector<Vector1>& vectors, const QVector<Vector2>& cvectors, ResampleStrategies s)
+static QVector<vip_double> vipExtractTimes(const QVector<Vector1>& vectors, const QVector<Vector2>& cvectors, Vip::ResampleStrategies s)
 {
 	if (vectors.isEmpty() && cvectors.isEmpty())
 		return QVector<vip_double>();
@@ -1483,7 +1514,7 @@ static QVector<vip_double> vipExtractTimes(const QVector<Vector1>& vectors, cons
 		}
 	}
 
-	if (s & ResampleIntersection) {
+	if (s & Vip::ResampleIntersection) {
 		// resample on intersection:
 		// find the intersection time range
 		vip_double start = 0, end = -1;
@@ -1551,7 +1582,7 @@ static QVector<vip_double> vipExtractTimes(const QVector<Vector1>& vectors, cons
 }
 
 template<class Point, class Vector, class U>
-Vector vipResampleInternal(const Vector& sample, const QVector<vip_double>& times, ResampleStrategies s, const U& padds)
+Vector vipResampleInternal(const Vector& sample, const QVector<vip_double>& times, Vip::ResampleStrategies s, const U& padds)
 {
 	Vector res(times.size());
 	typename Vector::const_iterator iters = sample.begin();
@@ -1562,7 +1593,7 @@ Vector vipResampleInternal(const Vector& sample, const QVector<vip_double>& time
 
 		// we already reached the last sample value
 		if (iters == ends) {
-			if (s & ResamplePadd0)
+			if (s & Vip::ResamplePadd0)
 				res[t] = (Point(time, padds));
 			else
 				res[t] = (Point(time, sample.last().y()));
@@ -1580,7 +1611,7 @@ Vector vipResampleInternal(const Vector& sample, const QVector<vip_double>& time
 		else if (time < samp.x()) {
 			// sample starts after
 			if (iters == sample.begin()) {
-				if (s & ResamplePadd0)
+				if (s & Vip::ResamplePadd0)
 					res[t] = (Point(time, padds));
 				else
 					res[t] = (Point(time, samp.y()));
@@ -1588,7 +1619,7 @@ Vector vipResampleInternal(const Vector& sample, const QVector<vip_double>& time
 			// in between 2 values
 			else {
 				typename Vector::const_iterator prev = iters - 1;
-				if (s & ResampleInterpolation) {
+				if (s & Vip::ResampleInterpolation) {
 					double factor = (double)(time - prev->x()) / (double)(samp.x() - prev->x());
 					res[t] = (Point(time, samp.y() * factor + (1 - factor) * prev->y()));
 				}
@@ -1611,7 +1642,7 @@ Vector vipResampleInternal(const Vector& sample, const QVector<vip_double>& time
 				}
 				else {
 					typename Vector::const_iterator prev = iters - 1;
-					if (s & ResampleInterpolation) {
+					if (s & Vip::ResampleInterpolation) {
 						// interpolation
 						double factor = (double)(time - prev->x()) / (double)(iters->x() - prev->x());
 						res[t] = (Point(time, iters->y() * factor + (1 - factor) * prev->y()));
@@ -1627,7 +1658,7 @@ Vector vipResampleInternal(const Vector& sample, const QVector<vip_double>& time
 			}
 			else {
 				// reach sample end
-				if (s & ResamplePadd0)
+				if (s & Vip::ResamplePadd0)
 					res[t] = (Point(time, padds));
 				else
 					res[t] = (Point(time, sample.last().y()));
@@ -1645,7 +1676,7 @@ Vector vipResampleInternal(const Vector& sample, const QVector<vip_double>& time
 // return vipResampleInternal<VipComplexPoint>(_samples, s, padd);
 // }
 
-bool vipResampleVectors(VipPointVector& first, VipPointVector& second, ResampleStrategies s, vip_double padd_a, vip_double padd_b)
+bool vipResampleVectors(VipPointVector& first, VipPointVector& second, Vip::ResampleStrategies s, vip_double padd_a, vip_double padd_b)
 {
 	// return __vipResampleVectors(first,second,s,padd_a,padd_b);
 	QVector<vip_double> times = vipExtractTimes(QVector<VipPointVector>() << first << second, QVector<VipPointVector>(), s);
@@ -1655,7 +1686,7 @@ bool vipResampleVectors(VipPointVector& first, VipPointVector& second, ResampleS
 	second = vipResampleInternal<VipPoint>(second, times, s, padd_b);
 	return true;
 }
-bool vipResampleVectors(VipComplexPointVector& first, VipComplexPointVector& second, ResampleStrategies s, complex_d padd_a, complex_d padd_b)
+bool vipResampleVectors(VipComplexPointVector& first, VipComplexPointVector& second, Vip::ResampleStrategies s, complex_d padd_a, complex_d padd_b)
 {
 	// return __vipResampleVectors(first,second,s,padd_a,padd_b);
 	QVector<vip_double> times = vipExtractTimes(QVector<VipComplexPointVector>() << first << second, QVector<VipPointVector>(), s);
@@ -1665,7 +1696,7 @@ bool vipResampleVectors(VipComplexPointVector& first, VipComplexPointVector& sec
 	second = vipResampleInternal<VipComplexPoint>(second, times, s, padd_b);
 	return true;
 }
-bool vipResampleVectors(VipPointVector& first, VipComplexPointVector& second, ResampleStrategies s, vip_double padd_a, complex_d padd_b)
+bool vipResampleVectors(VipPointVector& first, VipComplexPointVector& second, Vip::ResampleStrategies s, vip_double padd_a, complex_d padd_b)
 {
 	// return __vipResampleVectors(first,second,s,padd_a,padd_b);
 	QVector<vip_double> times = vipExtractTimes(QVector<VipPointVector>() << first, QVector<VipComplexPointVector>() << second, s);
@@ -1676,7 +1707,7 @@ bool vipResampleVectors(VipPointVector& first, VipComplexPointVector& second, Re
 	return true;
 }
 
-bool vipResampleVectors(QList<VipPointVector>& lst, ResampleStrategies s, vip_double padd)
+bool vipResampleVectors(QList<VipPointVector>& lst, Vip::ResampleStrategies s, vip_double padd)
 {
 	if (lst.size() == 0)
 		return false;
@@ -1691,7 +1722,7 @@ bool vipResampleVectors(QList<VipPointVector>& lst, ResampleStrategies s, vip_do
 	return true;
 }
 
-bool vipResampleVectors(QList<VipPointVector>& lst, vip_double x_step, ResampleStrategies s, vip_double padd)
+bool vipResampleVectors(QList<VipPointVector>& lst, vip_double x_step, Vip::ResampleStrategies s, vip_double padd)
 {
 	if (lst.size() == 0)
 		return false;
@@ -1712,7 +1743,7 @@ bool vipResampleVectors(QList<VipPointVector>& lst, vip_double x_step, ResampleS
 	return true;
 }
 
-bool vipResampleVectors(QList<VipComplexPointVector>& lst, ResampleStrategies s, complex_d padd)
+bool vipResampleVectors(QList<VipComplexPointVector>& lst, Vip::ResampleStrategies s, complex_d padd)
 {
 	if (lst.size() == 0)
 		return false;
@@ -1726,7 +1757,7 @@ bool vipResampleVectors(QList<VipComplexPointVector>& lst, ResampleStrategies s,
 		lst[i] = vipResampleInternal<VipComplexPoint>(lst[i], times, s, padd);
 	return true;
 }
-bool vipResampleVectors(QList<VipPointVector>& lst_a, QList<VipComplexPointVector>& lst_b, ResampleStrategies s, vip_double padd_a, complex_d padd_b)
+bool vipResampleVectors(QList<VipPointVector>& lst_a, QList<VipComplexPointVector>& lst_b, Vip::ResampleStrategies s, vip_double padd_a, complex_d padd_b)
 {
 	if (lst_a.size() == 0 && lst_b.size() == 0)
 		return false;
@@ -1742,7 +1773,7 @@ bool vipResampleVectors(QList<VipPointVector>& lst_a, QList<VipComplexPointVecto
 	return true;
 }
 
-VipNDArray vipResampleVectorsAsNDArray(const QList<VipPointVector>& vectors, ResampleStrategies s, vip_double padd)
+VipNDArray vipResampleVectorsAsNDArray(const QList<VipPointVector>& vectors, Vip::ResampleStrategies s, vip_double padd)
 {
 	QList<VipPointVector> tmp = vectors;
 	if (!vipResampleVectors(tmp, s, padd))

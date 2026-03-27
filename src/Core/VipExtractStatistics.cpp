@@ -563,7 +563,7 @@ void VipExtractPolyline::apply()
 		emitError(this, VipErrorData("Wrong input values"));
 }
 
-void VipExtractStatistics::setStatistics(VipShapeStatistics::Statistics s)
+void VipExtractStatistics::setStatistics(Vip::ArrayStatistics s)
 {
 	if (s != m_stats) {
 		m_stats = s;
@@ -571,7 +571,7 @@ void VipExtractStatistics::setStatistics(VipShapeStatistics::Statistics s)
 	}
 }
 
-void VipExtractStatistics::setStatistic(VipShapeStatistics::Statistic s, bool on)
+void VipExtractStatistics::setStatistic(Vip::ArrayStatistic s, bool on)
 {
 	if (m_stats.testFlag(s) != on) {
 		if (on)
@@ -582,47 +582,35 @@ void VipExtractStatistics::setStatistic(VipShapeStatistics::Statistic s, bool on
 		updateStatistics();
 	}
 }
-bool VipExtractStatistics::testStatistic(VipShapeStatistics::Statistic s) const
+bool VipExtractStatistics::testStatistic(Vip::ArrayStatistic s) const
 {
 	return m_stats.testFlag(s);
 }
 
-VipShapeStatistics::Statistics VipExtractStatistics::statistics() const
+Vip::ArrayStatistics VipExtractStatistics::statistics() const
 {
 	return m_stats;
 }
 
-void VipExtractStatistics::setShapeQuantiles(const QVector<double>& quantiles)
-{
-	m_quantiles = quantiles;
-	updateStatistics();
-}
-const QVector<double>& VipExtractStatistics::shapeQuantiles() const
-{
-	return m_quantiles;
-}
-
 void VipExtractStatistics::updateStatistics()
 {
-	topLevelOutputAt(0)->setEnabled(testStatistic(VipShapeStatistics::Minimum));
-	topLevelOutputAt(1)->setEnabled(testStatistic(VipShapeStatistics::Maximum));
-	topLevelOutputAt(2)->setEnabled(testStatistic(VipShapeStatistics::Mean));
-	topLevelOutputAt(3)->setEnabled(testStatistic(VipShapeStatistics::Std));
-	topLevelOutputAt(4)->setEnabled(testStatistic(VipShapeStatistics::PixelCount));
-	topLevelOutputAt(5)->setEnabled(testStatistic(VipShapeStatistics::Entropy));
-	topLevelOutputAt(6)->setEnabled(testStatistic(VipShapeStatistics::Kurtosis));
-	topLevelOutputAt(7)->setEnabled(testStatistic(VipShapeStatistics::Skewness));
-	topLevelOutputAt(8)->setEnabled(m_quantiles.size() > 0);
+	topLevelOutputAt(0)->setEnabled(testStatistic(Vip::Min));
+	topLevelOutputAt(1)->setEnabled(testStatistic(Vip::Max));
+	topLevelOutputAt(2)->setEnabled(testStatistic(Vip::Mean));
+	topLevelOutputAt(3)->setEnabled(testStatistic(Vip::Std));
+	topLevelOutputAt(4)->setEnabled(testStatistic(Vip::PixelCount));
+	topLevelOutputAt(5)->setEnabled(testStatistic(Vip::Entropy));
+	topLevelOutputAt(6)->setEnabled(testStatistic(Vip::Kurtosis));
+	topLevelOutputAt(7)->setEnabled(testStatistic(Vip::Skewness));
 
-	outputAt(0)->setData(testStatistic(VipShapeStatistics::Minimum) ? QVariant::fromValue(VipPointVector()) : QVariant());
-	outputAt(1)->setData(testStatistic(VipShapeStatistics::Maximum) ? QVariant::fromValue(VipPointVector()) : QVariant());
-	outputAt(2)->setData(testStatistic(VipShapeStatistics::Mean) ? QVariant::fromValue(VipPointVector()) : QVariant());
-	outputAt(3)->setData(testStatistic(VipShapeStatistics::Std) ? QVariant::fromValue(VipPointVector()) : QVariant());
-	outputAt(4)->setData(testStatistic(VipShapeStatistics::PixelCount) ? QVariant::fromValue(VipPointVector()) : QVariant());
-	outputAt(5)->setData(testStatistic(VipShapeStatistics::Entropy) ? QVariant::fromValue(VipPointVector()) : QVariant());
-	outputAt(6)->setData(testStatistic(VipShapeStatistics::Kurtosis) ? QVariant::fromValue(VipPointVector()) : QVariant());
-	outputAt(7)->setData(testStatistic(VipShapeStatistics::Skewness) ? QVariant::fromValue(VipPointVector()) : QVariant());
-	outputAt(8)->setData(m_quantiles.size() > 0 ? QVariant::fromValue(VipRectList()) : QVariant());
+	outputAt(0)->setData(testStatistic(Vip::Min) ? QVariant::fromValue(VipPointVector()) : QVariant());
+	outputAt(1)->setData(testStatistic(Vip::Max) ? QVariant::fromValue(VipPointVector()) : QVariant());
+	outputAt(2)->setData(testStatistic(Vip::Mean) ? QVariant::fromValue(VipPointVector()) : QVariant());
+	outputAt(3)->setData(testStatistic(Vip::Std) ? QVariant::fromValue(VipPointVector()) : QVariant());
+	outputAt(4)->setData(testStatistic(Vip::PixelCount) ? QVariant::fromValue(VipPointVector()) : QVariant());
+	outputAt(5)->setData(testStatistic(Vip::Entropy) ? QVariant::fromValue(VipPointVector()) : QVariant());
+	outputAt(6)->setData(testStatistic(Vip::Kurtosis) ? QVariant::fromValue(VipPointVector()) : QVariant());
+	outputAt(7)->setData(testStatistic(Vip::Skewness) ? QVariant::fromValue(VipPointVector()) : QVariant());
 }
 
 void VipExtractStatistics::apply()
@@ -637,7 +625,7 @@ void VipExtractStatistics::apply()
 
 	if (!ar.isEmpty() && ar.shapeCount() == 2 && !shape.isNull() && ar.canConvert<double>()) {
 
-		VipShapeStatistics statistics = shape.statistics(ar, QPoint(0, 0), &buffer(), m_stats, m_quantiles);
+		auto statistics = shape.statistics(ar, QPoint(0, 0), m_stats);
 
 		VipOutput* min = topLevelOutputAt(0)->toOutput();
 		VipOutput* max = topLevelOutputAt(1)->toOutput();
@@ -647,79 +635,71 @@ void VipExtractStatistics::apply()
 		VipOutput* entropy = topLevelOutputAt(5)->toOutput();
 		VipOutput* kurtosis = topLevelOutputAt(6)->toOutput();
 		VipOutput* skewness = topLevelOutputAt(7)->toOutput();
-		VipOutput* quantiles = topLevelOutputAt(8)->toOutput();
 
 		QString name = shape.name();
 		if (name.isEmpty())
 			name = shape.group() + " " + QString::number(shape.id());
 
-		if (testStatistic(VipShapeStatistics::Minimum)) {
+		if (testStatistic(Vip::Min)) {
 			VipAnyData any = create(QVariant::fromValue(statistics.min));
 			any.setName(name + " minimum");
 			any.setTime(data.time());
 			any.setYUnit(data.zUnit());
 			any.setXUnit("time");
-			any.setAttribute("Pos", QVariant::fromValue(statistics.minPoint));
+			any.setAttribute("Pos", QVariant::fromValue(vipPoint(statistics.minPos)));
 			min->setData(any);
 		}
-		if (testStatistic(VipShapeStatistics::Maximum)) {
+		if (testStatistic(Vip::Max)) {
 			VipAnyData any = create(QVariant::fromValue(statistics.max));
 			any.setName(name + " maximum");
 			any.setTime(data.time());
 			any.setYUnit(data.zUnit());
 			any.setXUnit("time");
-			any.setAttribute("Pos", QVariant::fromValue(statistics.maxPoint));
+			any.setAttribute("Pos", QVariant::fromValue(vipPoint(statistics.maxPos)));
 			max->setData(any);
 		}
-		if (testStatistic(VipShapeStatistics::Mean)) {
-			VipAnyData any = create(QVariant::fromValue(statistics.average));
+		if (testStatistic(Vip::Mean)) {
+			VipAnyData any = create(QVariant::fromValue(statistics.mean));
 			any.setName(name + " mean");
 			any.setTime(data.time());
 			any.setYUnit(data.zUnit());
 			any.setXUnit("time");
 			mean->setData(any);
 		}
-		if (testStatistic(VipShapeStatistics::Std)) {
+		if (testStatistic(Vip::Std)) {
 			VipAnyData any = create(QVariant::fromValue(statistics.std));
 			any.setName(name + " std");
 			any.setTime(data.time());
 			any.setXUnit("time");
 			std->setData(any);
 		}
-		if (testStatistic(VipShapeStatistics::PixelCount)) {
-			VipAnyData any = create(QVariant::fromValue(statistics.pixelCount));
+		if (testStatistic(Vip::PixelCount)) {
+			VipAnyData any = create(QVariant::fromValue(statistics.count));
 			any.setName(name + " pixels");
 			any.setTime(data.time());
 			any.setXUnit("time");
 			pixel_count->setData(any);
 		}
-		if (testStatistic(VipShapeStatistics::Entropy)) {
+		if (testStatistic(Vip::Entropy)) {
 			VipAnyData any = create(QVariant::fromValue(statistics.entropy));
 			any.setName(name + " entropy");
 			any.setTime(data.time());
 			any.setXUnit("time");
 			entropy->setData(any);
 		}
-		if (testStatistic(VipShapeStatistics::Kurtosis)) {
+		if (testStatistic(Vip::Kurtosis)) {
 			VipAnyData any = create(QVariant::fromValue(statistics.kurtosis));
 			any.setName(name + " kurtosis");
 			any.setTime(data.time());
 			any.setXUnit("time");
 			kurtosis->setData(any);
 		}
-		if (testStatistic(VipShapeStatistics::Skewness)) {
+		if (testStatistic(Vip::Skewness)) {
 			VipAnyData any = create(QVariant::fromValue(statistics.skewness));
 			any.setName(name + " skewness");
 			any.setTime(data.time());
 			any.setXUnit("time");
 			skewness->setData(any);
-		}
-		if (m_quantiles.size() > 0) {
-			VipAnyData any = create(QVariant::fromValue(statistics.quantiles));
-			any.setName(name + " quantiles");
-			any.setTime(data.time());
-			any.setXUnit("time");
-			quantiles->setData(any);
 		}
 	}
 	else {
@@ -808,7 +788,7 @@ VipArchive& operator<<(VipArchive& stream, const VipExtractStatistics* r)
 
 VipArchive& operator>>(VipArchive& stream, VipExtractStatistics* r)
 {
-	r->setStatistics(VipShapeStatistics::Statistics(stream.read("statistics").value<int>()));
+	r->setStatistics(Vip::ArrayStatistics(stream.read("statistics").value<int>()));
 	return stream;
 }
 

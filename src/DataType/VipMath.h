@@ -804,17 +804,17 @@ VIP_ALWAYS_INLINE auto vipBitScanReverse64(std::uint64_t bb) noexcept -> unsigne
 
 
 // for complex types, we are missing a few operators, so define them
-inline complex_f operator*(double v, const complex_f& c) noexcept
+inline complex_d operator*(double v, const complex_f& c) noexcept
 {
-	return complex_f(c.real() * v, c.imag() * v);
+	return complex_d(c.real() * v, c.imag() * v);
 }
 inline complex_d operator*(float v, const complex_d& c) noexcept
 {
 	return complex_d(c.real() * v, c.imag() * v);
 }
-inline complex_f operator*(const complex_f& c, double v) noexcept
+inline complex_d operator*(const complex_f& c, double v) noexcept
 {
-	return complex_f(c.real() * v, c.imag() * v);
+	return complex_d(c.real() * v, c.imag() * v);
 }
 inline complex_d operator*(const complex_d& c, float v) noexcept
 {

@@ -508,7 +508,7 @@ void VipAbs::apply()
 			return;
 		}
 		for (int i = 0; i < ar.size(); ++i)
-			ar[i].value = vipAbs(ar[i].value);
+			ar[i].value = vipAbs(ar[i].value); 
 		out_data = QVariant::fromValue(ar);
 	}
 	else if (any.data().userType() == qMetaTypeId<VipComplexPointVector>()) {
@@ -1241,9 +1241,9 @@ void VipBaseDataFusion::apply()
 
 		QString time_range = propertyAt(0)->value<QString>();
 		// resample vectors
-		ResampleStrategies s = ResampleIntersection | ResampleInterpolation;
+		Vip::ResampleStrategies s = Vip::ResampleIntersection | Vip::ResampleInterpolation;
 		if (time_range == "union")
-			s = ResampleUnion | ResampleInterpolation;
+			s = Vip::ResampleUnion | Vip::ResampleInterpolation;
 		if (!d_data->merge_point_vector) {
 			vipResampleVectors(pvectors, s);
 			vipResampleVectors(cvectors, s);
@@ -2497,7 +2497,7 @@ void VipAffineTransform::apply()
 			for (int i = 0; i < size; ++i) {
 				auto a = ptr[i].a;
 				auto rgb = ptr[i] * factor + offset;
-				ptr[i] = rgb.clamp(0, 255);
+				ptr[i] = rgb.clamp<quint8>(0, 255);
 				ptr[i].a = a;
 			}
 			ar_out = QVariant::fromValue(vipToArray(qimg));

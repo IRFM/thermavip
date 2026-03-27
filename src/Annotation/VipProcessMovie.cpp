@@ -1734,7 +1734,7 @@ void VipPlayerDBAccess::saveToJsonInternal(bool show_messages)
 			p.setText("Recompute temporal statistics for modified events...");
 
 			// recompute stats
-			QList<VipProcessingObject*> stats = m_player->extractTimeEvolution(to_recompute, VipShapeStatistics::Minimum | VipShapeStatistics::Maximum | VipShapeStatistics::Mean, 1, 2);
+			QList<VipProcessingObject*> stats = m_player->extractTimeEvolution(to_recompute, Vip::Min | Vip::Max | Vip::Mean, 1, 2);
 			qsizetype c = 0;
 			for (qsizetype i = 0; i < to_recomputeIds.size(); ++i) {
 				VipAnyResource* max = static_cast<VipAnyResource*>(stats[c++]);
@@ -1912,7 +1912,7 @@ void VipPlayerDBAccess::uploadInternal(bool show_messages)
 
 				// recompute stats
 				QList<VipProcessingObject*> stats =
-				  m_player->extractTimeEvolution(to_recompute, VipShapeStatistics::Minimum | VipShapeStatistics::Maximum | VipShapeStatistics::Mean, 1, 2);
+				  m_player->extractTimeEvolution(to_recompute, Vip::Min | Vip::Max | Vip::Mean, 1, 2);
 				qsizetype c = 0;
 				for (qsizetype i = 0; i < to_recomputeIds.size(); ++i) {
 					VipAnyResource* max = static_cast<VipAnyResource*>(stats[c++]);

@@ -62,12 +62,13 @@ namespace Vip
 	{
 		Flat = 0x01,	 //! access by flat position with operator[](qsizetype index)
 		Position = 0x02, //! access by N-D position with operator()(const VectorType & pos)
-		Cwise = 0x04	 //! coefficient wise access supporting multi-threading
+		Cwise = 0x04	 //! access by N-D position with operator()(const VectorType & pos) without aliasing issue:
+				 // an expression can contain the same array on the left and right operands without unwanted behavior.
 	};
 }
 
 /// Custom deleter for VipNDArrayHandle
-typedef std::function<void(void*)> vip_deleter_type;
+using vip_deleter_type = std::function<void(void*)>;
 
 namespace detail
 {
@@ -75,16 +76,12 @@ namespace detail
 	/// Very base class for all ND arrays and functor expressions
 	struct NullOperand
 	{
-		typedef NullType value_type;
+		using value_type = NullType;
 		static constexpr qsizetype access_type = 0;
-		static constexpr bool valid = true;
-		int dataType() const;
-		const VipNDArrayShape& shape() const;
-		bool isEmpty() const;
-		bool isUnstrided() const;
-
-		// internal use only
-		void unref() const {}
+		auto dataType() const noexcept { return 0; }
+		auto shape() const noexcept { return VipNDArrayShape{}; }
+		bool isEmpty() const { return true; }
+		bool isUnstrided() const { return true; }
 	};
 
 	/// Base class for functor expressions
@@ -98,12 +95,25 @@ namespace detail
 	};
 }
 
+struct VipArrayBase : public detail::NullOperand
+{
+};
+
+/// @brief Base class for array-like classes (VipNDArray and VipStaticNDArray).
+/// Uses CRTP.
+template<class Derived>
+struct VipNDArrayBase : public VipArrayBase
+{
+};
+
+
 /// Check whether template parameter is a functor expression
 template<class T>
 struct VipIsExpression
 {
 	static const bool value = std::is_base_of<detail::BaseExpression, T>::value;
 };
+
 
 /// Check whether template parameter is a reduction algorithm
 template<class T>
@@ -112,7 +122,15 @@ struct VipIsReductor
 	static const bool value = std::is_base_of<detail::BaseReductor, T>::value;
 };
 
+/// @brief Check whether all parameters are of integral type
+template<class... T>
+struct VipIsAllIntegers
+{
+	static constexpr bool value = (std::is_integral_v<T> && ...);
+};
+
 struct VipNDArrayHandle;
+
 /// Returns the global NullHandle pointer
 VIP_DATA_TYPE_EXPORT VipNDArrayHandle* vipNullHandlePtr() noexcept;
 /// Returns true if given metatype is arithmetic
@@ -145,16 +163,16 @@ struct VIP_DATA_TYPE_EXPORT VipNDArrayHandle : public QSharedData
 	// the array strides
 	VipNDArrayShape strides;
 	// the array flat size
-	qsizetype size;
+	qsizetype size = 0;
 	// the array data
-	void* opaque;
+	void* opaque = nullptr;
 	// custom deleter function, only used with StdHandle
 	vip_deleter_type deleter;
 
 	VipNDArrayHandle() noexcept;
 	/// Destructor.
 	///  Should destroy the underlying opaque data (if any)
-	virtual ~VipNDArrayHandle() noexcept;
+	virtual ~VipNDArrayHandle() noexcept {}
 
 	/// Returns the handle type (one of HandleType enum)
 	virtual int handleType() const = 0;
@@ -175,13 +193,6 @@ struct VIP_DATA_TYPE_EXPORT VipNDArrayHandle : public QSharedData
 		return op;
 	}
 
-	/// Resize a subpart of the array in a destination handle using given interpolation type
-	virtual bool resize(const VipNDArrayShape& start,
-			    const VipNDArrayShape& shape,
-			    VipNDArrayHandle* dst,
-			    Vip::InterpolationType,
-			    const VipNDArrayShape& out_start,
-			    const VipNDArrayShape& out_shape) const = 0;
 	/// Returns the data type name (like "int" or "double")
 	virtual const char* dataName() const = 0;
 	/// Returns the pixel data size (returns 4 for integer 32bits, 8 for double type, etc.)
@@ -254,7 +265,6 @@ namespace detail
 		virtual int handleType() const { return Null; }
 		virtual bool reshape(const VipNDArrayShape&) { return false; }
 		virtual bool realloc(const VipNDArrayShape&) { return false; }
-		virtual bool resize(const VipNDArrayShape&, const VipNDArrayShape&, VipNDArrayHandle*, Vip::InterpolationType, const VipNDArrayShape&, const VipNDArrayShape&) const { return false; }
 		virtual const char* dataName() const { return nullptr; }
 		virtual qsizetype dataSize() const { return 1; }
 		virtual int dataType() const { return 0; }
@@ -271,7 +281,7 @@ namespace detail
 	};
 
 	/// A shared pointer class using Copy On Write, very close to QSharedDataPointer.
-	///  The managed type must provide the copy() member function.
+	/// The managed type must provide the copy() member function.
 	template<class U>
 	class SharedDataPointer
 	{
@@ -519,7 +529,10 @@ namespace detail
 			opaque = other.opaque;
 			if (size) {
 				opaque = new T[size];
-				std::copy(static_cast<const T*>(other.opaque), static_cast<const T*>(other.opaque) + size, static_cast<T*>(opaque));
+				if constexpr (std::is_trivial_v<T>)
+					memcpy(opaque, other.opaque, size * sizeof(T));
+				else
+					std::copy(static_cast<const T*>(other.opaque), static_cast<const T*>(other.opaque) + size, static_cast<T*>(opaque));
 			}
 		}
 
@@ -553,16 +566,8 @@ namespace detail
 			return true;
 		}
 		virtual void* opaqueForPos(void* op, const VipNDArrayShape& pos) const { return static_cast<T*>(op) + vipFlatOffset<false>(strides, pos); }
-		virtual bool resize(const VipNDArrayShape& start,
-				    const VipNDArrayShape& shape,
-				    VipNDArrayHandle* dst,
-				    Vip::InterpolationType type,
-				    const VipNDArrayShape& out_start,
-				    const VipNDArrayShape& out_shape) const;
-		virtual const char* dataName() const
-		{
-			return vipTypeName(qMetaTypeId<T>());
-		}
+		
+		virtual const char* dataName() const { return vipTypeName(qMetaTypeId<T>()); }
 		virtual qsizetype dataSize() const { return sizeof(T); }
 		virtual int dataType() const { return qMetaTypeId<T>(); }
 		virtual bool canExport(int data_type) const { return vipCanConvertStdTypes(qMetaTypeId<T>(), data_type) || vipCanConvert(qMetaTypeId<T>(), data_type); }
@@ -707,6 +712,7 @@ namespace detail
 
 		virtual QTextStream& oTextStream(const VipNDArrayShape& _start, const VipNDArrayShape& _shape, QTextStream& stream, const QString& separator) const
 		{
+			static_assert(!std::is_same_v<T, NullType>);
 			struct Otextstream
 			{
 				QTextStream* stream;
@@ -721,20 +727,6 @@ namespace detail
 			ou.stream = &stream;
 			ou.sep = separator;
 			vipInplaceArrayTransform(static_cast<T*>(opaque) + vipFlatOffset<false>(strides, _start), _shape, strides, ou);
-
-			// VipNDSubArrayIterator<T> begin(shape, strides, static_cast<T*>(opaque) + vipFlatOffset<false>(strides, start));
-			//  VipNDSubArrayIterator<T> end(shape, strides, static_cast<T*>(opaque) + vipFlatOffset<false>(strides, start), false);
-			//  for (; begin != end; ++begin)
-			//  stream << *begin << separator;
-			// if(shape.size() == 1) {
-			//  for(int x=start[0]; x < start[0] + shape[0]; ++x)
-			//  stream<< *(static_cast<T*>(opaque) + vipFlatOffset<false>(strides, vipVector(x))) << separator;
-			//  }
-			//  else if (shape.size() == 2) {
-			//  for(int y = start[0]; y < start[0] + shape[0]; ++y)
-			//  for (int x = start[1]; x < start[1] + shape[1]; ++x)
-			//	stream << *(static_cast<T*>(opaque) + vipFlatOffset<false>(strides, vipVector(y,x))) << separator;
-			//  }
 			return stream;
 		}
 	};
@@ -796,9 +788,10 @@ namespace detail
 	{
 		const SharedHandle handle;
 		VipNDArrayShape start;
-		bool pointerView; // tells if this handle is a pointer view (work on data that do not belong to another VipNDArray)
-		void* ptr;	  // pointer to the actual data start for the view
+		bool pointerView = false; // tells if this handle is a pointer view (work on data that do not belong to another VipNDArray)
+		void* ptr = nullptr;	  // pointer to the actual data start for the view
 
+		ViewHandle() noexcept = default;
 		ViewHandle(const ViewHandle& other)
 		  : handle(other.handle)
 		  , start(other.start)
@@ -858,15 +851,7 @@ namespace detail
 		virtual bool realloc(const VipNDArrayShape&) { return false; }
 		virtual int handleType() const { return View; }
 		virtual void* opaqueForPos(void* op, const VipNDArrayShape& pos) const { return handle->opaqueForPos(op, pos); }
-		virtual bool resize(const VipNDArrayShape& _start,
-				    const VipNDArrayShape& _shape,
-				    VipNDArrayHandle* dst,
-				    Vip::InterpolationType type,
-				    const VipNDArrayShape& out_start,
-				    const VipNDArrayShape& out_shape) const
-		{
-			return handle->resize(_start + this->start, _shape, dst, type, out_start, out_shape);
-		}
+		
 		virtual const char* dataName() const { return handle->dataName(); }
 		virtual qsizetype dataSize() const { return handle->dataSize(); }
 		virtual int dataType() const { return handle->dataType(); }
@@ -908,58 +893,6 @@ namespace detail
 
 }
 
-struct VipNDArrayHandle;
-namespace detail
-{
-	// export this function in VipResize.cpp to avoid VipNDArray object exceeding max object size with mscv
-	VIP_DATA_TYPE_EXPORT bool vipResizeArray(const VipNDArrayHandle* src, VipNDArrayHandle* dst, Vip::InterpolationType type);
-}
 
-namespace detail
-{
-	template<class T>
-	bool StdHandle<T>::resize(const VipNDArrayShape& _start,
-				  const VipNDArrayShape& _shape,
-				  VipNDArrayHandle* dst,
-				  Vip::InterpolationType type,
-				  const VipNDArrayShape& out_start,
-				  const VipNDArrayShape& out_shape) const
-	{
-		if (!opaque || !dst->opaque)
-			return false;
-#ifdef __GNUC__
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wstrict-aliasing"
-#endif
-
-		StdHandle<T> handle_src;
-		handle_src.opaque = (T*)((void*)opaque) + vipFlatOffset<false>(strides, _start);
-		handle_src.shape = _shape;
-		handle_src.strides = strides;
-		handle_src.size = vipShapeToSize(_shape);
-
-		void* saveOpaque = dst->opaque;
-		VipNDArrayShape saveShape = dst->shape;
-		VipNDArrayShape saveStrides = dst->strides;
-		qsizetype saveSize = dst->size;
-
-		dst->opaque = ((uchar*)dst->opaque) + vipFlatOffset<false>(dst->strides, out_start) * dst->dataSize();
-		dst->shape = out_shape;
-		dst->strides = dst->strides;
-		dst->size = vipShapeToSize(out_shape);
-
-		bool res = vipResizeArray(&handle_src, dst, type);
-		handle_src.opaque = (void*)nullptr;
-		dst->opaque = saveOpaque;
-		dst->shape = saveShape;
-		dst->strides = saveStrides;
-		dst->size = saveSize;
-		return res;
-#ifdef __GNUC__
-#pragma GCC diagnostic pop
-#endif
-	}
-
-}
 
 #endif

@@ -378,6 +378,10 @@ QComboBox::down-arrow {
     image: url(skins/dark/icons/down.png);
 }
 
+QComboBox QAbstractItemView {
+	background-color: #1F1F1F;
+}
+
 QAbstractSpinBox::up-button {
 	border: none;
 }
