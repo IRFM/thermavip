@@ -20,6 +20,7 @@
 #include <qprocess.h>
 #include <qscreen.h>
 #include <qwindow.h>
+#include <QQuickWindow>
 
 #include "VipCommandOptions.h"
 #include "VipCore.h"
@@ -249,6 +250,9 @@ int main(int argc, char** argv)
 	sc.setFlags(QWebEngineUrlScheme::SecureScheme);
 	QWebEngineUrlScheme::registerScheme(sc);
 #endif
+
+	// ONLY way to have both QOpenglWidget and QQuickWindow (like web engine) in the same application
+	QQuickWindow::setGraphicsApi(QSGRendererInterface::OpenGL);
 
 	QApplication app(argc, argv);
 

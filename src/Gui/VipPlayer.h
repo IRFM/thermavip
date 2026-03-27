@@ -274,7 +274,7 @@ public:
 	void setWidget(QWidget*);
 	QWidget* widget() const;
 
-	virtual QWidget* widgetForMouseEvents() const { return widget(); }
+	virtual QWidget* widgetForMouseEvents() const;
 
 protected:
 	virtual void resizeEvent(QResizeEvent* evt);

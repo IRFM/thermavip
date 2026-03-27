@@ -663,6 +663,7 @@ class VipWidgetPlayer::PrivateData
 {
 public:
 	PrivateData() {}
+	QWidget* internalWidget;
 	QPointer<QWidget> widget;
 };
 
@@ -670,6 +671,14 @@ VipWidgetPlayer::VipWidgetPlayer(QWidget* w, QWidget* parent)
   : VipAbstractPlayer(parent)
 {
 	VIP_CREATE_PRIVATE_DATA();
+
+	// Use an intermediate widget that accepts drops
+	d_data->internalWidget = new QWidget(this);
+	d_data->internalWidget->setLayout(new QVBoxLayout());
+	d_data->internalWidget->layout()->setContentsMargins(0, 0, 0, 0);
+	d_data->internalWidget->resize(this->size());
+	d_data->internalWidget->setAcceptDrops(true);
+
 	setWidget(w);
 }
 
@@ -680,6 +689,12 @@ QSize VipWidgetPlayer::sizeHint() const
 	return d_data->widget ? d_data->widget->sizeHint() : QWidget::sizeHint();
 }
 
+QWidget* VipWidgetPlayer::widgetForMouseEvents() const
+{
+	//return widget();
+	return d_data->internalWidget;
+}
+
 void VipWidgetPlayer::setWidget(QWidget* w)
 {
 	if (d_data->widget != w) {
@@ -687,10 +702,8 @@ void VipWidgetPlayer::setWidget(QWidget* w)
 			delete d_data->widget;
 		d_data->widget = w;
 		if (w) {
-			w->setParent(this);
-			// if (d_data->transparent)
-			// delete d_data->transparent;
-			// data->transparent = new TransparentWidget(this);
+			//w->setParent(this);
+			d_data->internalWidget->layout()->addWidget(w);
 		}
 		resizeEvent(nullptr);
 	}
@@ -702,10 +715,10 @@ QWidget* VipWidgetPlayer::widget() const
 
 void VipWidgetPlayer::resizeEvent(QResizeEvent*)
 {
-	if (widget()) {
+	d_data->internalWidget->resize(this->size());
+	/*if (widget()) {
 		widget()->resize(this->size());
-		// d_data->transparent->resize(size());
-	}
+	}*/
 }
 
 bool VipWidgetPlayer::renderObject(QPainter* p, const QPointF& pos, bool)
