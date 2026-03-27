@@ -3308,7 +3308,8 @@ public:
 	  , loadSession(false)
 	{
 	}
-	QToolBar fileToolBar;
+	QToolBar topToolBar;
+	QToolBar* fileToolBar;
 	QToolButton fileButton;
 	QToolButton generate;
 	QAction* generateAction;
@@ -3357,9 +3358,9 @@ VipMainWindow::VipMainWindow()
 
 	setMargin(0);
 
-	d_data->fileToolBar.setObjectName("File tool bar");
-	d_data->fileToolBar.setWindowTitle(tr("File tool bar"));
-	d_data->fileToolBar.setMovable(false);
+	d_data->topToolBar.setObjectName("File tool bar");
+	d_data->topToolBar.setWindowTitle(tr("File tool bar"));
+	d_data->topToolBar.setMovable(false);
 
 	d_data->toolsToolBar.setObjectName("Tool widgets bar");
 	d_data->toolsToolBar.setWindowTitle(tr("Tool widgets bar"));
@@ -3376,10 +3377,15 @@ VipMainWindow::VipMainWindow()
 
 	setCentralWidget(d_data->displayArea);
 
-	d_data->fileToolBar.setIconSize(QSize(20, 20));
+	d_data->fileToolBar = new QToolBar();
+	d_data->fileToolBar->setIconSize(QSize(20, 20));
+	d_data->topToolBar.addWidget(d_data->fileToolBar);
+	  
+
+	d_data->topToolBar.setIconSize(QSize(20, 20));
 	d_data->fileButton.setToolTip(tr("<b>Open any files...</b><p>Open any kind of file (videos, signals, previous session,...) supported by Thermavip</p>"));
 	d_data->fileButton.setIcon(vipIcon("open_file.png"));
-	d_data->fileToolBar.addWidget(&d_data->fileButton);
+	d_data->fileToolBar->addWidget(&d_data->fileButton);
 	connect(&d_data->fileButton, SIGNAL(clicked(bool)), this, SLOT(openFiles()));
 
 	d_data->fileMenu = new QMenu(&d_data->fileButton);
@@ -3393,7 +3399,7 @@ VipMainWindow::VipMainWindow()
 
 	d_data->dirButton.setToolTip(tr("<b>Open a directory...</b><p>Open all the files in a directory and interpret them as separate data or a single data stream</p>"));
 	d_data->dirButton.setIcon(vipIcon("open_dir.png"));
-	QAction* a = d_data->fileToolBar.addWidget(&d_data->dirButton);
+	QAction* a = d_data->fileToolBar->addWidget(&d_data->dirButton);
 	a->setObjectName("DirButton");
 	connect(&d_data->dirButton, SIGNAL(clicked(bool)), this, SLOT(openDir()));
 
@@ -3401,7 +3407,7 @@ VipMainWindow::VipMainWindow()
 					 "<br>Save the whole Thermavip session or only the current Workspace<br>"
 					 "<b>F5:</b> fast session saving<br><b>F9:</b> fast session loading"));
 	d_data->saveButton.setIcon(vipIcon("save.png"));
-	d_data->saveSessionAction = d_data->fileToolBar.addWidget(&d_data->saveButton);
+	d_data->saveSessionAction = d_data->fileToolBar->addWidget(&d_data->saveButton);
 	connect(&d_data->saveButton, SIGNAL(clicked(bool)), this, SLOT(saveSession()));
 
 	d_data->generate.setIcon(vipIcon("generate_signals.png"));
@@ -3412,7 +3418,7 @@ VipMainWindow::VipMainWindow()
 	d_data->generateMenu = new VipDragMenu(&d_data->generate);
 	d_data->generateMenu->setToolTipsVisible(true);
 	d_data->generate.setMenu(d_data->generateMenu);
-	d_data->generateAction = d_data->fileToolBar.addWidget(&d_data->generate);
+	d_data->generateAction = d_data->fileToolBar->addWidget(&d_data->generate);
 	d_data->generateAction->setObjectName("GenerateButton");
 
 	// Add the concatenate videos generator
@@ -3422,13 +3428,13 @@ VipMainWindow::VipMainWindow()
 	/*QWidget* spacer = new QWidget();
 	spacer->setMaximumWidth(10);
 	spacer->setMinimumWidth(10);
-	d_data->fileToolBar.addWidget(spacer);*/
+	d_data->topToolBar.addWidget(spacer);*/
 	// Add stretch
 	QWidget* left_stretch = new QWidget();
 	left_stretch->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 	QWidget* right_stretch = new QWidget();
 	right_stretch->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-	d_data->fileToolBar.addWidget(left_stretch);
+	d_data->topToolBar.addWidget(left_stretch);
 
 	d_data->searchWidget = new QWidget();
 	QHBoxLayout* hlay = new QHBoxLayout();
@@ -3440,9 +3446,9 @@ VipMainWindow::VipMainWindow()
 	d_data->searchLineEdit->setMinimumHeight(20);
 
 	// d_data->searchLineEdit->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-	d_data->fileToolBar.addWidget(d_data->searchWidget);
-	d_data->fileToolBar.addWidget(right_stretch);
-	d_data->fileToolBar.setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+	d_data->topToolBar.addWidget(d_data->searchWidget);
+	d_data->topToolBar.addWidget(right_stretch);
+	d_data->topToolBar.setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 
 	// Add next/prev workspace buttons
 	QToolButton* prev = new QToolButton();
@@ -3469,15 +3475,15 @@ VipMainWindow::VipMainWindow()
 	d_data->closeBar->setWindowTitle("Close bar");
 
 	this->addToolBar(Qt::TopToolBarArea, d_data->iconBar);
-	this->addToolBar(Qt::TopToolBarArea, &d_data->fileToolBar);
+	this->addToolBar(Qt::TopToolBarArea, &d_data->topToolBar);
 	this->addToolBar(Qt::LeftToolBarArea, &d_data->toolsToolBar);
 	// this->addToolBar(Qt::TopToolBarArea, d_data->closeBar);
 	// TEST
-	d_data->fileToolBar.addWidget(d_data->closeBar);
+	d_data->topToolBar.addWidget(d_data->closeBar);
 
 	d_data->showTabBar = new VipShowWidgetOnHover(this);
 	d_data->showTabBar->setShowWidget(displayArea()->displayTabWidget()->tabBar());
-	d_data->showTabBar->setHoverWidgets(QList<QWidget*>() << &d_data->fileToolBar << d_data->iconBar);
+	d_data->showTabBar->setHoverWidgets(QList<QWidget*>() << &d_data->topToolBar << d_data->iconBar);
 	d_data->showTabBar->setEnabled(false);
 
 	setMargin(8);
@@ -3777,9 +3783,14 @@ VipDisplayArea* VipMainWindow::displayArea() const
 	return d_data->displayArea;
 }
 
+QToolBar* VipMainWindow::topToolBar() const
+{
+	return &d_data->topToolBar;
+}
+
 QToolBar* VipMainWindow::fileToolBar() const
 {
-	return &d_data->fileToolBar;
+	return d_data->fileToolBar;
 }
 
 QMenu* VipMainWindow::generateMenu() const
@@ -5408,7 +5419,7 @@ void VipMainWindow::maximizeWorkspaces(bool enable)
 
 		// all all title bars
 		vipGetMainWindow()->closeBar()->hide();
-		vipGetMainWindow()->fileToolBar()->hide();
+		vipGetMainWindow()->topToolBar()->hide();
 		vipGetMainWindow()->iconBar()->hide();
 		vipGetMainWindow()->toolsToolBar()->hide();
 
@@ -5427,7 +5438,7 @@ void VipMainWindow::maximizeWorkspaces(bool enable)
 		vipGetMainWindow()->displayArea()->displayTabWidget()->tabBar()->show();
 
 		vipGetMainWindow()->closeBar()->show();
-		vipGetMainWindow()->fileToolBar()->show();
+		vipGetMainWindow()->topToolBar()->show();
 		vipGetMainWindow()->iconBar()->show();
 		vipGetMainWindow()->toolsToolBar()->show();
 
