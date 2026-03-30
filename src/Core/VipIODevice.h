@@ -545,7 +545,7 @@ public:
 	virtual ~VipProcessingPool();
 
 	/// Returns all children read only VipIODevice
-	const QVector<VipIODevice*>& readDevices() const;
+	QVector<VipIODevice*> readDevices() const;
 
 	/// Returns the play speed (real speed == 1)
 	double playSpeed() const;

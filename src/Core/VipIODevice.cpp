@@ -1053,7 +1053,7 @@ public:
 	std::atomic<bool> dirty_time_window;
 	DeviceType device_type;
 	QObject* dirty_children;
-	QVector<VipIODevice*> read_devices; // use a vector to disable COW (very minor optimization, mainly for openmp)
+	QVector<QPointer<VipIODevice>> read_devices; // use a vector to disable COW (very minor optimization, mainly for openmp)
 	QRecursiveMutex device_mutex;
 	PlayThread thread;
 	// QSharedPointer<VipThreadPool> readPool;
@@ -1320,9 +1320,14 @@ void VipProcessingPool::setEnabled(bool enabled)
 		lst[i]->setEnabled(enabled);
 }
 
-const QVector<VipIODevice*>& VipProcessingPool::readDevices() const
+QVector<VipIODevice*> VipProcessingPool::readDevices() const
 {
-	return d_data->read_devices;
+	QVector<VipIODevice*>  ret;
+	for(const auto & d : d_data->read_devices) {
+		if(auto * dev = d.get())
+			ret.push_back(dev);
+	}
+	return ret;
 }
 
 double VipProcessingPool::playSpeed() const
@@ -1710,9 +1715,11 @@ bool VipProcessingPool::enableStreaming(bool enable)
 	// TEST
 	bool res = false;
 	for (int i = 0; i < d_data->read_devices.size(); ++i) {
-		bool has_streaming = d_data->read_devices[i]->deviceType() == VipIODevice::Sequential || d_data->read_devices[i]->hasStreamingMode();
-		if (has_streaming)
-			res = (d_data->read_devices[i]->setStreamingEnabled(enable)) || res;
+		if(auto * d = d_data->read_devices[i].get()) {
+			bool has_streaming = d->deviceType() == VipIODevice::Sequential || d->hasStreamingMode();
+			if (has_streaming)
+				res = (d->setStreamingEnabled(enable)) || res;
+		}
 	}
 
 	if (enable && res)
@@ -2091,7 +2098,10 @@ void VipProcessingPool::computeChildren()
 	QMutexLocker lock(&d_data->device_mutex);
 
 	// retrieve read only devices
-	d_data->read_devices = findDirectChildren<VipIODevice*>(this).toVector();
+	d_data->read_devices.clear();
+	for(auto * d : findDirectChildren<VipIODevice*>(this))
+		d_data->read_devices.push_back(d);
+		
 	for (int i = 0; i < d_data->read_devices.size(); ++i) {
 		VipIODevice* dev = d_data->read_devices[i];
 		if (!(dev->openMode() & VipIODevice::ReadOnly) && !(dev->supportedModes() & VipIODevice::ReadOnly)) {
