@@ -1324,7 +1324,7 @@ QVector<VipIODevice*> VipProcessingPool::readDevices() const
 {
 	QVector<VipIODevice*>  ret;
 	for(const auto & d : d_data->read_devices) {
-		if(auto * dev = d.get())
+		if(auto * dev = d.data())
 			ret.push_back(dev);
 	}
 	return ret;
@@ -1715,7 +1715,7 @@ bool VipProcessingPool::enableStreaming(bool enable)
 	// TEST
 	bool res = false;
 	for (int i = 0; i < d_data->read_devices.size(); ++i) {
-		if(auto * d = d_data->read_devices[i].get()) {
+		if(auto * d = d_data->read_devices[i].data()) {
 			bool has_streaming = d->deviceType() == VipIODevice::Sequential || d->hasStreamingMode();
 			if (has_streaming)
 				res = (d->setStreamingEnabled(enable)) || res;
