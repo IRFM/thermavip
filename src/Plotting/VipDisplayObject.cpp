@@ -780,8 +780,8 @@ bool VipDisplayCurve::prepareForDisplay(const VipAnyDataList& lst)
 				vec.erase(vec.begin() + erase_from, vec.end());
 				vec.append(vector);
 			}
-			//TEST: apply windowing to ALL signal
-			if (window > 0 && vec.size() /*&& !d_data->is_full_vector*/) {
+			// apply windowing to non full curve
+			if (window > 0 && vec.size() && !d_data->is_full_vector) {
 				// convert to nanoseconds
 				window *= 1000000000;
 				for (int i = 0; i < vec.size(); ++i) {
@@ -796,23 +796,6 @@ bool VipDisplayCurve::prepareForDisplay(const VipAnyDataList& lst)
 			}
 		});
 
-		/* if (window > 0 && vector.size() && !d_data->is_full_vector)
-		{
-			//convert to nanoseconds
-			window *= 1000000000;
-			for (int i = 0; i < vector.size(); ++i)
-			{
-				double range = vector.last().x() - vector[i].x();
-				if (range < window)
-				{
-					if (i != 0)
-						vector = vector.mid(i);
-					break;
-				}
-			}
-		}
-
-		curve->setRawData(vector);*/
 	}
 	return false;
 }

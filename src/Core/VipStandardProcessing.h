@@ -284,6 +284,7 @@ public:
 	static void setDefaultSlidingTimeWindow(double seconds);
 
 	VipNumericValueToPointVector(QObject* parent = nullptr);
+	virtual DisplayHint displayHint() const { return InputTransform; }
 	virtual bool acceptInput(int // index
 				 ,
 				 const QVariant& v) const;
