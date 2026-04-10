@@ -38,7 +38,7 @@
 #include <QImage>
 
 #include "VipArrayBase.h"
-#include "VipConfig.h"
+#include "VipRGB.h"
 #include "VipHybridVector.h"
 #include "VipIterator.h"
 #include "VipLongDouble.h"
@@ -94,12 +94,11 @@ class VipNDArrayTypeView;
 /// to reduce memory usage and to avoid the needless copying of data.
 ///
 /// All relevant data (data pointer, array size, shape) are internally stored in a shared pointer of #VipNDArrayHandle. You can use #vipCreateArrayHandle
-/// to create such object for a specific data type, and #vipRegisterArrayType to register a #SharedHandle for a specific type.
+/// to create such object for a specific data type, and #vipRegisterArrayType to register a #VipSharedHandle for a specific type.
 ///
 /// The shape of a VipNDArray is represented through a #VipNDArrayShape object. To create #VipNDArrayShape objects, you can use the helper function #vipVector.
 ///
 /// \a VipNDArray stores the data in row major order in a linear memory storage. For a 2D array, the height is the dimension of index 0, the width is the dimension of index 1.
-/// VipNDArray can also store QImage objects. See #vipToArray, #vipToImage and #vipIsImageArray for more details.
 class VIP_DATA_TYPE_EXPORT VipNDArray : public VipNDArrayBase<VipNDArray>
 {
 
@@ -126,6 +125,7 @@ public:
 	template<class T>
 	static VipNDArray makeView(const T* ptr, const VipNDArrayShape& shape, const VipNDArrayShape& strides = VipNDArrayShape())
 	{
+		vipRegisterStandardArrayHandle<T>();
 		return makeView(const_cast<void*>((const void*)ptr), qMetaTypeId<T>(), shape, strides);
 	}
 
@@ -152,8 +152,8 @@ public:
 		}
 	}
 
-	/// Create a VipNDArray from a #SharedHandle
-	VipNDArray(const SharedHandle& handle)
+	/// Create a VipNDArray from a #VipSharedHandle
+	VipNDArray(const VipSharedHandle& handle)
 	  : m_handle(handle)
 	{
 	}
@@ -188,7 +188,7 @@ public:
 	/// Create a VipNDArray of template data type \a T and shape \a shape.
 	/// The VipNDArray takes ownership of \a ptr and will delete it either with the custom deleter or with delete[].
 	template<class T>
-	VipNDArray(T* ptr, const VipNDArrayShape& shape, const vip_deleter_type& del)
+	VipNDArray(T* ptr, const VipNDArrayShape& shape, const VipDeleteFunction& del)
 	  : VipNDArray(vipCreateArrayHandle<T>(ptr, shape, del))
 	{
 	}
@@ -337,6 +337,9 @@ public:
 	/// Returns true if the data type is complex (float or double)
 	bool isComplex() const noexcept { return vipIsComplex(dataType()); }
 
+	/// Returns true if the data type is VipRGB 
+	bool isRGB() const noexcept { return dataType() == qMetaTypeId<VipRGB>(); }
+
 	/// Convenient function, equivalent to #VipNDArray::convert( QMetaType::Char)
 	VipNDArray toInt8() const;
 	/// Convenient function, equivalent to #VipNDArray::convert( QMetaType::UChar)
@@ -368,6 +371,11 @@ public:
 	VipNDArray toImag() const;
 	VipNDArray toArgument() const;
 	VipNDArray toAmplitude() const;
+
+	/// @brief Returns a hash value for this array.
+	/// The hash value take into account the array bytes (or pixels for images),
+	/// the array shape and data type. Null arrays always have a hash value of 0.
+	size_t hashValue() const;
 
 	/// Returns a view on a subpart of this array.
 	/// If \a shape is empty, a view on the whole array array starting to \a pos is returned.
@@ -440,8 +448,8 @@ public:
 	VIP_ALWAYS_INLINE const VipNDArrayHandle* constHandle() const noexcept { return m_handle.data(); }
 
 	/// Returns the internal VipNDArrayHandle
-	VIP_ALWAYS_INLINE const SharedHandle& sharedHandle() const noexcept { return m_handle; }
-	
+	VIP_ALWAYS_INLINE const VipSharedHandle& sharedHandle() const noexcept { return m_handle; }
+
 	/// Detaches the array.
 	/// If multiple arrays share the same #VipNDArrayHandle, performs a deep copy of the structure.
 	void detach() { m_handle.detach(); }
@@ -519,12 +527,12 @@ public:
 
 protected:
 	/// Set the internal VipNDArrayHandle
-	void setSharedHandle(const SharedHandle& other) noexcept { m_handle = other; }
+	void setSharedHandle(const VipSharedHandle& other) noexcept { m_handle = other; }
 
 private:
 	void import(const void* ptr, int data_type, const VipNDArrayShape& shape);
 
-	SharedHandle m_handle;
+	VipSharedHandle m_handle;
 };
 
 /// Returns true is given array is null (ar.isNull() == true)
@@ -569,7 +577,7 @@ public:
 	{
 	}
 
-	VipNDArrayType(const SharedHandle& handle) noexcept
+	VipNDArrayType(const VipSharedHandle& handle) noexcept
 	  : VipNDArray(handle)
 	{
 		if (handle->dataType() != qMetaTypeId<T>() || handle->handleType() != VipNDArrayHandle::Standard)
@@ -617,7 +625,7 @@ public:
 	}
 
 	/// Takes ownership of \a ptr. It will be deleted with delete[] or the custom deleter if not null.
-	VipNDArrayType(T* ptr, const VipNDArrayShape& shape, const vip_deleter_type& del)
+	VipNDArrayType(T* ptr, const VipNDArrayShape& shape, const VipDeleteFunction& del)
 	  : VipNDArray(ptr, shape, del)
 	{
 	}
@@ -812,18 +820,17 @@ class VipNDArrayTypeView : public VipNDArray
 	VIP_ALWAYS_INLINE const void* _p() const noexcept { return static_cast<const detail::ViewHandle*>(constHandle())->ptr; }
 
 public:
-	// type definitions
-	typedef T value_type;
-	typedef T& reference;
-	typedef const T& const_reference;
-	typedef qsizetype size_type;
+	using value_type = T;
+	using reference = T&;
+	using const_reference = const T&;
+	using size_type = qsizetype;
+	using iterator = VipNDSubArrayIterator<T, NDims>;
+	using const_iterator = VipNDSubArrayConstIterator<T, NDims>;
+	using reverse_iterator = std::reverse_iterator<iterator>;
+	using const_reverse_iterator = std::reverse_iterator<const_iterator>;
+	static constexpr qsizetype access_type = Vip::Flat | Vip::Position | Vip::Cwise;
+	static constexpr qsizetype ndims = NDims;
 
-	typedef VipNDSubArrayIterator<T, NDims> iterator;
-	typedef VipNDSubArrayConstIterator<T, NDims> const_iterator;
-	typedef std::reverse_iterator<iterator> reverse_iterator;
-	typedef std::reverse_iterator<const_iterator> const_reverse_iterator;
-	static const qsizetype access_type = Vip::Flat | Vip::Position | Vip::Cwise;
-	static const qsizetype ndims = NDims;
 	using VipNDArray::shape;
 
 	VipNDArrayTypeView() noexcept
@@ -847,8 +854,8 @@ public:
 
 	template<class Derived>
 	VipNDArrayTypeView(const VipNDArrayBase<Derived>& other)
-		: VipNDArray()
-	{ 
+	  : VipNDArray()
+	{
 		const Derived& d = static_cast<const Derived&>(other);
 		if (d.dataType() != qMetaTypeId<T>())
 			return;
@@ -1000,20 +1007,6 @@ public:
 protected:
 	bool importArray(const VipNDArray& other)
 	{
-		if constexpr (VipIsRGB_v<T>) {
-			if (other.dataType() == qMetaTypeId<QImage>()) {
-				if (other.handle()->handleType() == VipNDArrayHandle::View) {
-					const detail::ViewHandle* h = static_cast<const detail::ViewHandle*>(other.handle());
-					VipRGB* bits = ((VipRGB*)((QImage*)(h->opaque))->bits()) + vipFlatOffset<false>(h->strides, h->start);
-					return reset(bits, h->shape, h->strides);
-				}
-				else {
-					const VipNDArrayHandle* h = other.handle();
-					VipRGB* bits = (VipRGB*)((QImage*)(h->opaque))->bits();
-					return reset(bits, h->shape, h->strides);
-				}
-			}
-		}
 		if (other.dataType() != qMetaTypeId<T>())
 			return false; // wrong data type
 		setSharedHandle(VipNDArray::makeView(other).sharedHandle());
@@ -1021,7 +1014,249 @@ protected:
 	}
 };
 
+template<class T, qsizetype NDims = Vip::None>
+class VipArrayView : public VipNDArrayBase<VipArrayView<T, NDims>>
+{
+	T* d_ptr = nullptr;
+	qsizetype d_size = 0;
+	qsizetype d_unstrided = 0;
+	VipCoordinate<NDims> d_shape;
+	VipCoordinate<NDims> d_strides;
+
+public:
+	using value_type = T;
+	using reference = T&;
+	using const_reference = const T&;
+	using size_type = qsizetype;
+	using iterator = VipNDSubArrayIterator<T, NDims>;
+	using const_iterator = VipNDSubArrayConstIterator<T, NDims>;
+	using reverse_iterator = std::reverse_iterator<iterator>;
+	using const_reverse_iterator = std::reverse_iterator<const_iterator>;
+	static constexpr qsizetype access_type = Vip::Flat | Vip::Position | Vip::Cwise;
+	static constexpr qsizetype ndims = NDims;
+
+	VipArrayView() noexcept = default;
+	VipArrayView(const VipArrayView& ar) noexcept = default;
+	VipArrayView(VipArrayView&& ar) noexcept = default;
+	template<class D>
+	VipArrayView(const VipNDArrayBase<D>& ar) noexcept
+	{
+		const D& d = static_cast<const D&>(ar);
+		if (d.dataType() == qMetaTypeId<T>() && (NDims == -1 || NDims == d.shape().size())) {
+			d_ptr = (T*)d.data();
+			d_size = d.size();
+			d_shape = d.shape();
+			d_strides = d.strides();
+			d_unstrided = d.isUnstrided();
+		}
+	}
+	template<qsizetype N>
+	VipArrayView(T* ptr, const VipCoordinate<N>& shape)
+	  : d_ptr(ptr)
+	{
+		if (NDims == -1 || NDims == shape.size()) {
+			d_shape = shape;
+			d_size = vipComputeDefaultStrides<Vip::FirstMajor>(shape, d_strides);
+			d_unstrided = 1;
+		}
+		else
+			d_ptr = nullptr;
+	}
+	template<qsizetype N>
+	VipArrayView(T* ptr, const VipCoordinate<N>& shape, const VipCoordinate<N>& strides)
+	  : d_ptr(ptr)
+	{
+		if (NDims == -1 || NDims == shape.size()) {
+			d_shape = shape;
+			d_strides = strides;
+			bool unstrided;
+			d_size = vipShapeToSize(shape, strides, &unstrided);
+			d_unstrided = unstrided;
+		}
+		else
+			d_ptr = nullptr;
+	}
+
+	VipArrayView(const QImage& img)
+	{
+		if constexpr (VipIsRGB_v<T> && (NDims == -1 || NDims == 2)) {
+			if (!img.isNull() && img.format() == QImage::Format_ARGB32) {
+				d_ptr = (VipRGB*)img.bits();
+				d_shape = vipVector(img.height(), img.width());
+				d_strides = vipVector(img.width(), 1);
+				d_size = img.width() * img.height();
+				d_unstrided = 1;
+			}
+		}
+	}
+
+	template<qsizetype N>
+	bool reset(T* ptr, const VipCoordinate<N>& shape)
+	{
+		if (NDims == -1 || NDims == shape.size()) {
+			d_ptr = ptr;
+			d_shape = shape;
+			d_size = vipComputeDefaultStrides<Vip::FirstMajor>(shape, d_strides);
+			d_unstrided = 1;
+			return true;
+		}
+		return false;
+	}
+	template<qsizetype N>
+	bool reset(T* ptr, const VipCoordinate<N>& shape, const VipCoordinate<N>& strides)
+	{
+		if (NDims == -1 || NDims == shape.size()) {
+			d_ptr = ptr;
+			d_shape = shape;
+			d_strides = strides;
+			bool unstrided;
+			d_size = vipShapeToSize(shape, strides, &unstrided);
+			d_unstrided = unstrided;
+			return true;
+		}
+		return false;
+	}
+
+	void clear() noexcept
+	{
+		d_ptr = nullptr;
+		d_size = 0;
+		d_unstrided = 0;
+	}
+
+	VIP_ALWAYS_INLINE T* ptr() noexcept { return d_ptr; }
+	VIP_ALWAYS_INLINE const T* ptr() const noexcept { return d_ptr; }
+	VIP_ALWAYS_INLINE const T* constPtr() const noexcept { return d_ptr; }
+	VIP_ALWAYS_INLINE T* data() noexcept { return d_ptr; }
+	VIP_ALWAYS_INLINE const T* data() const noexcept { return d_ptr; }
+	VIP_ALWAYS_INLINE const T* constData() const noexcept { return d_ptr; }
+
+	VIP_ALWAYS_INLINE auto size() const noexcept { return d_size; }
+	VIP_ALWAYS_INLINE bool isEmpty() const noexcept { return d_size == 0; }
+	VIP_ALWAYS_INLINE bool isUnstrided() const noexcept { return d_unstrided == 1; }
+	VIP_ALWAYS_INLINE auto dataType() const noexcept { return qMetaTypeId<T>(); }
+	VIP_ALWAYS_INLINE auto shapeCount() const noexcept { return d_shape.size(); }
+	VIP_ALWAYS_INLINE const VipCoordinate<NDims>& shape() const noexcept { return d_shape; }
+	VIP_ALWAYS_INLINE const VipCoordinate<NDims>& strides() const noexcept { return d_strides; }
+
+	VIP_ALWAYS_INLINE auto shape(qsizetype i) const noexcept { return d_shape[i]; }
+	VIP_ALWAYS_INLINE auto stride(qsizetype i) const noexcept { return d_strides[i]; }
+
+	template<qsizetype D>
+	VIP_ALWAYS_INLINE qsizetype flatIndex(const VipCoordinate<D>& c) const noexcept
+	{
+		VIP_ASSERT_DEBUG(c.size() == shapeCount());
+		return vipFlatOffset<false>(d_strides, c);
+	}
+
+	template<qsizetype D>
+	VIP_ALWAYS_INLINE T* ptr(const VipCoordinate<D>& c) noexcept
+	{
+		return ptr() + vipFlatOffset<false>(d_strides, c);
+	}
+	template<qsizetype D>
+	VIP_ALWAYS_INLINE const T* ptr(const VipCoordinate<D>& c) const noexcept
+	{
+		return ptr() + vipFlatOffset<false>(d_strides, c);
+	}
+
+	template<qsizetype D>
+	VIP_ALWAYS_INLINE const T& operator()(const VipCoordinate<D>& position) const noexcept
+	{
+		return *ptr(position);
+	}
+	template<qsizetype D>
+	VIP_ALWAYS_INLINE T& operator()(const VipCoordinate<D>& position) noexcept
+	{
+		return *ptr(position);
+	}
+
+	template<class... Coords, std::enable_if_t<VipIsAllIntegers<Coords...>::value, int> = 0>
+	VIP_ALWAYS_INLINE const_reference operator()(Coords... coords) const noexcept
+	{
+		return *ptr(vipVector(coords...));
+	}
+	template<class... Coords, std::enable_if_t<VipIsAllIntegers<Coords...>::value, int> = 0>
+	VIP_ALWAYS_INLINE reference operator()(Coords... coords) noexcept
+	{
+		return *ptr(vipVector(coords...));
+	}
+
+	/// Flat access operator.
+	/// Be aware of unwanted consequences when used on strided views!
+	VIP_ALWAYS_INLINE T& operator[](qsizetype index) noexcept { return d_ptr[index]; }
+	VIP_ALWAYS_INLINE const T& operator[](qsizetype index) const noexcept { return d_ptr[index]; }
+
+	iterator begin() noexcept { return iterator(shape(), strides(), ptr(), size()); }
+	const_iterator begin() const noexcept { return const_iterator(shape(), strides(), ptr(), size()); }
+	const_iterator cbegin() const noexcept { return const_iterator(shape(), strides(), ptr(), size()); }
+	iterator end() noexcept { return iterator(shape(), strides(), ptr(), size(), size()); }
+	const_iterator end() const noexcept { return const_iterator(shape(), strides(), ptr(), size(), size()); }
+	const_iterator cend() const noexcept { return const_iterator(shape(), strides(), ptr(), size(), size()); }
+
+	reverse_iterator rbegin() noexcept { return reverse_iterator(end()); }
+	const_reverse_iterator rbegin() const noexcept { return const_reverse_iterator(end()); }
+	const_reverse_iterator crbegin() const noexcept { return const_reverse_iterator(end()); }
+	reverse_iterator rend() noexcept { return reverse_iterator(begin()); }
+	const_reverse_iterator rend() const noexcept { return const_reverse_iterator(begin()); }
+	const_reverse_iterator crend() const noexcept { return const_reverse_iterator(begin()); }
+
+	void swap(VipArrayView& other) noexcept
+	{
+		std::swap(d_ptr, other.d_ptr);
+		std::swap(d_shape, other.d_shape);
+		std::swap(d_strides, other.d_strides);
+		std::swap(d_size, other.d_size);
+		std::swap(d_unstrided, other.d_unstrided);
+	}
+
+	/// @brief Copy array content to destination buffer
+	/// with given shape and strides.
+	bool convert(void* dst, int dst_type, const VipNDArrayShape& shape, const VipNDArrayShape& strides) const
+	{
+		qsizetype out_size = vipCumMultiply(shape);
+		if (out_size != d_size)
+			return false;
+
+		if (dst_type == qMetaTypeId<T>())
+			return vipArrayTransform(d_ptr, d_shape, d_strides, (T*)dst, shape, strides, VipNullTransform{});
+		return detail::convert(d_ptr, qMetaTypeId<T>(), d_shape, d_strides, dst, dst_type, shape, strides);
+	}
+
+	VipNDArray toArray() const
+	{ 
+		VipNDArrayTypeView<T, NDims> ret(d_ptr, d_shape, d_strides);
+		return ret;
+	}
+
+	bool alias(const void* p) const noexcept { return (char*)p >= (char*)d_ptr && (char*)p < (char*)ptr(d_shape); }
+
+	template<class Derived>
+	VipArrayView& operator=(const VipNDArrayBase<Derived>& other)
+	{
+		const Derived& d = static_cast<const Derived&>(other);
+		if (d.isEmpty()) {
+			clear();
+			return *this;
+		}
+
+		if (!d.convert(ptr(), dataType(), shape(), strides()))
+			clear();
+		return *this;
+	}
+
+	template<class U>
+	typename std::enable_if<VipIsExpression<U>::value, VipArrayView&>::type operator=(const U& other);
+};
+
+
 Q_DECLARE_METATYPE(VipNDArray);
+
+
+
+
+VIP_DATA_TYPE_EXPORT VipNDArray vipToArray(const QImage& img);
+
 
 /// Returns the higher level type between \a t1 and \a t2.
 /// Higher level usually means which type should be use in a numerical operation. For instance, when multiplying an integer with
@@ -1065,9 +1300,8 @@ template<class T>
 VipNDArray::VipNDArray(const T& expression, typename std::enable_if<VipIsExpression<T>::value, void>::type*)
   : VipNDArray()
 {
-	if (reset(expression.shape(), expression.dataType()))
-		if (!vipEval(*this, expression))
-			clear();
+	if (!vipEvalResetDst(*this, expression))
+		clear();
 }
 template<class T>
 typename std::enable_if<VipIsExpression<T>::value, VipNDArray&>::type VipNDArray::operator=(const T& other)
@@ -1079,11 +1313,7 @@ typename std::enable_if<VipIsExpression<T>::value, VipNDArray&>::type VipNDArray
 	detach();
 	auto handle = this->sharedHandle();
 
-	if (!this->reset(sh, dtype)) {
-		clear();
-		return *this;
-	}
-	if (!vipEval(*this, other))
+	if (!vipEvalResetDst(*this, other))
 		clear();
 	return *this;
 }
@@ -1134,6 +1364,21 @@ typename std::enable_if<VipIsExpression<T>::value, VipNDArrayTypeView<U, NDims>&
 	}
 	return *this;
 }
+
+template<class U, qsizetype NDims>
+template<class T>
+typename std::enable_if<VipIsExpression<T>::value, VipArrayView<U, NDims>&>::type VipArrayView<U, NDims>::operator=(const T& other)
+{
+	if (other.shape() != shape()) {
+		clear();
+		return *this;
+	}
+	if (!vipEval(*this, other)) {
+		clear();
+	}
+	return *this;
+}
+
 
 /// @}
 // end DataType

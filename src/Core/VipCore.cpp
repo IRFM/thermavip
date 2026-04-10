@@ -1172,17 +1172,12 @@ int vipGetMemoryFootprint(const QVariant& v)
 	// custom types defined by thermavip
 	if (type == qMetaTypeId<VipNDArray>()) {
 		const VipNDArray ar = v.value<VipNDArray>();
-		if (vipIsImageArray(ar))
-			return (int)(ar.size() * 4);
 		return (int)(ar.size() * ar.dataSize());
 	}
-	// else if (type == qMetaTypeId<VipRasterData>())
-	//  {
-	//  const VipNDArray ar = v.value<VipNDArray>();
-	//  if (vipIsImageArray(ar))
-	//  return ar.size() * 4;
-	//  return ar.size()*ar.dataSize();
-	//  }
+	else if (type == qMetaTypeId<VipRGB>())
+		return (int)sizeof(VipRGB);
+	else if (type == qMetaTypeId<VipRGBf>())
+		return (int)sizeof(VipRGBf);
 	else if (type == qMetaTypeId<complex_f>())
 		return (int)sizeof(complex_f);
 	else if (type == qMetaTypeId<complex_d>())

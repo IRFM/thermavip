@@ -58,7 +58,7 @@ public:
 	{
 		if (v.userType() == qMetaTypeId<VipNDArray>()) {
 			const VipNDArray ar = v.value<VipNDArray>();
-			if (vipIsImageArray(ar))
+			if (ar.isRGB())
 				return false;
 			return true;
 		}
@@ -99,7 +99,7 @@ public:
 	{
 		if (v.userType() == qMetaTypeId<VipNDArray>()) {
 			const VipNDArray ar = v.value<VipNDArray>();
-			if (vipIsImageArray(ar))
+			if (ar.isRGB())
 				return false;
 			return true;
 		}

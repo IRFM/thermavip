@@ -17,7 +17,7 @@ struct VipMPEGIODeviceHandler
 class VideoEncoder;
 
 /// @brief A VipIODevice used to record a movie in any format supported by ffmpeg.
-/// Input images must have ARGB format (see vipIsImageArray() and vipToImage() functions).
+/// Input images must have ARGB format (VipRGB pixel type).
 ///
 /// Recording parameters are passed using VipMPEGIODeviceHandler structure.
 ///
@@ -46,8 +46,7 @@ public:
 	virtual bool acceptInput(int, const QVariant& v) const
 	{
 		if (v.userType() == qMetaTypeId<VipNDArray>()) {
-			const VipNDArray ar = v.value<VipNDArray>();
-			return vipIsImageArray(ar);
+			return v.value<VipNDArray>().isRGB();
 		}
 		return false;
 	}

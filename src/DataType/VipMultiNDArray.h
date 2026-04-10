@@ -43,7 +43,7 @@ namespace detail
 	{
 		QMap<QString, VipNDArray> arrays;
 		QString current;
-		SharedHandle currentHandle;
+		VipSharedHandle currentHandle;
 
 		MultiNDArrayHandle();
 		MultiNDArrayHandle(const MultiNDArrayHandle& h);
@@ -89,6 +89,8 @@ namespace detail
 		{
 			return currentHandle->oTextStream(_start, _shape, stream, separator);
 		}
+
+		virtual size_t hashValue() const { return currentHandle ? currentHandle->hashValue() : 0; }
 	};
 }
 
@@ -119,7 +121,7 @@ public:
 	const QString& currentArray() const;
 
 protected:
-	virtual void setSharedHandle(const SharedHandle& other);
+	virtual void setSharedHandle(const VipSharedHandle& other);
 };
 
 VIP_DATA_TYPE_EXPORT bool vipIsMultiNDArray(const VipNDArray& ar);

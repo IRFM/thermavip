@@ -444,24 +444,24 @@ enum ComplexComponent
 {
 	Real,
 	Imag,
-	Amplitude,
+	Norm,
 	Argument
 };
 
-/// Returns the real part of a complex image, or a null VipNDArray on error.
+/// Returns the real part of a complex array, or a null VipNDArray on error.
 VIP_DATA_TYPE_EXPORT VipNDArray ToReal(const VipNDArray& dat);
 
-/// Returns the imaginary part of a complex image, or a null VipNDArray on error.
+/// Returns the imaginary part of a complex array, or a null VipNDArray on error.
 VIP_DATA_TYPE_EXPORT VipNDArray ToImag(const VipNDArray& dat);
 
-/// Returns the amplitude of a complex image, or a null VipNDArray on error.
-VIP_DATA_TYPE_EXPORT VipNDArray ToAmplitude(const VipNDArray& dat);
+/// Returns the norm of a complex array, or a null VipNDArray on error.
+VIP_DATA_TYPE_EXPORT VipNDArray ToNorm(const VipNDArray& dat);
 
 /// Returns the argument of a complex image, or a null VipNDArray on error.
 VIP_DATA_TYPE_EXPORT VipNDArray ToArgument(const VipNDArray& dat);
 
 /// Returns the names of the components that might be extracted from a complex image.
-/// Basically returns QStringList()<<"Real"<<"Imag"<<"Amplitude"<<"Argument";
+/// Basically returns QStringList()<<"Real"<<"Imag"<<"Norm"<<"Argument";
 VIP_DATA_TYPE_EXPORT QStringList ComplexComponents();
 
 /// Returns the component \a component from the complex image \a dat, or a null VipNDArray on error.

@@ -59,7 +59,6 @@ bool vipStack(VipNDArray& dst, const VipNDArray& v1, const VipNDArray& v2, qsize
 	return true;
 }
 
-#include <qimage.h>
 VipNDArray vipStack(const VipNDArray& v1, const VipNDArray& v2, qsizetype axis)
 {
 	VipNDArrayShape sh = v1.shape();
@@ -67,12 +66,7 @@ VipNDArray vipStack(const VipNDArray& v1, const VipNDArray& v2, qsizetype axis)
 
 	int t1 = v1.dataType();
 	int t2 = v2.dataType();
-	if (t1 == qMetaTypeId<QImage>() && t2 == qMetaTypeId<QImage>()) {
-		VipNDArray res = VipNDArray(vipCreateArrayHandle(VipNDArrayHandle::Image, qMetaTypeId<QImage>(), sh));
-		if (!vipStack(res, v1, v2, axis))
-			res.clear();
-		return res;
-	}
+	
 	int type = t1 != t2 ? vipHigherArrayType(v1.dataType(), v2.dataType()) : t1;
 	VipNDArray res = VipNDArray(type, sh);
 	if (!vipStack(res, v1, v2, axis))

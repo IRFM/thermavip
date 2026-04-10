@@ -33,7 +33,6 @@
 #include "VipAxisColorMap.h"
 #include "VipMultiNDArray.h"
 #include "VipNDArray.h"
-#include "VipNDArrayImage.h"
 #include "VipPainter.h"
 #include "VipSliderGrip.h"
 
@@ -111,7 +110,7 @@ VipInterval computeBounds(const T* ptr, int size, const VipInterval& interval)
 
 		for (; data != end; ++data) {
 			if (is_valid(*data)) {
-				min = max = *data;
+				min = max = *data++;
 				break;
 			}
 		}
@@ -187,47 +186,29 @@ VipInterval computeBounds(const T* ptr, int size, const VipInterval& interval)
 	}
 }
 
-static VipInterval vipArrayMinMax(const void* ptr, int data_type, int size, const VipInterval& interval)
+static VipInterval arrayMinMax(const VipNDArray& ar, const VipInterval& interval)
 {
-	switch (data_type) {
-		case QMetaType::Bool:
-			return computeBounds((const unsigned char*)ptr, size, interval);
-		case QMetaType::Char:
-			return computeBounds((const char*)ptr, size, interval);
-		case QMetaType::UChar:
-			return computeBounds((const unsigned char*)ptr, size, interval);
-		case QMetaType::SChar:
-			return computeBounds((const char*)ptr, size, interval);
-		case QMetaType::UShort:
-			return computeBounds((const quint16*)ptr, size, interval);
-		case QMetaType::Short:
-			return computeBounds((const qint16*)ptr, size, interval);
-		case QMetaType::UInt:
-			return computeBounds((const quint32*)ptr, size, interval);
-		case QMetaType::Int:
-			return computeBounds((const qint32*)ptr, size, interval);
-		case QMetaType::ULong:
-			return computeBounds((const unsigned long*)ptr, size, interval);
-		case QMetaType::Long:
-			return computeBounds((const long*)ptr, size, interval);
-		case QMetaType::ULongLong:
-			return computeBounds((const quint64*)ptr, size, interval);
-		case QMetaType::LongLong:
-			return computeBounds((const qint64*)ptr, size, interval);
-		case QMetaType::Float:
-			return computeBounds((const float*)ptr, size, interval);
-		case QMetaType::Double:
-			return computeBounds((const double*)ptr, size, interval);
-		default: {
-			if (data_type == qMetaTypeId<long double>())
-				return computeBounds((const long double*)ptr, size, interval);
-			VipNDArray ar = VipNDArray::makeView(ptr, data_type, vipVector(size)).convert<double>();
-			if (ar.isEmpty())
-				return VipInterval();
-			return computeBounds((const double*)ar.constData(), ar.size(), interval);
-		}
-	}
+	VipInterval ret;
+	auto alg = vipArrayAlgorithm(
+	  [&](auto& , const auto& array) {
+		  using array_type = std::decay_t<decltype(array)>;
+		  using value_type = typename array_type::value_type;
+		  if constexpr (std::is_arithmetic_v<value_type>) {
+			  const value_type* ptr = array.ptr();
+			  VipNDArrayType<value_type> tmp;
+			  if (!array.isUnstrided()) {
+				  tmp = VipNDArrayType<value_type>(array);
+				  ptr = tmp.ptr();
+			  }
+			  ret = computeBounds(ptr, array.size(), interval);
+		  }
+	  },
+	  ar);
+
+	vipEval(VipArrayView<int>(), alg);
+	return ret;
 }
+
 
 class ArrayConverter : public VipRasterConverter
 {
@@ -308,13 +289,16 @@ public:
 		if (!im_rect.isValid())
 			return;
 
-		VipNDArrayShape shape = vipVector((int)im_rect.height(), (int)im_rect.width());
+		/* VipNDArrayShape shape = vipVector((int)im_rect.height(), (int)im_rect.width());
 		if (out_array->isNull() || out_array->shape() != shape || out_array->dataType() != array.dataType())
 			*out_array = VipNDArray(array.dataType(), shape);
 		if (out_array->canConvert<QImage>())
 			out_array->fill(QColor(Qt::transparent));
 
 		array.mid(vipVector((int)im_rect.top(), (int)im_rect.left()), vipVector((int)im_rect.height(), (int)im_rect.width())).convert(*out_array);
+		*/
+		//TEST
+		*out_array = array.mid(vipVector((int)im_rect.top(), (int)im_rect.left()), vipVector((int)im_rect.height(), (int)im_rect.width()));
 	}
 
 	virtual QVariant pick(const QPointF& pos) const
@@ -338,10 +322,7 @@ public:
 	{
 		if (array.isEmpty())
 			return VipInterval();
-
-		int size = array.size();
-		const void* ptr = array.constData();
-		return vipArrayMinMax(ptr, array.dataType(), size, interval);
+		return arrayMinMax(array, interval);
 	}
 };
 
@@ -908,14 +889,14 @@ bool VipPlotRasterData::computeImage(const VipRasterData& raster,
 	if (!rect.isEmpty()) {
 		QRectF extracted_rect;
 
-		if (raster.dataType() == qMetaTypeId<QImage>() || raster.dataType() == qMetaTypeId<QPixmap>()) {
+		if (raster.dataType() == qMetaTypeId<VipRGB>() ) {
 			out = vipToImage(raster.extract(rect, &extracted_rect));
 			// set src_image_rect, it will be directly used in VipPainter::drawImage
 			src_image_rect = rect;
 			src_image_rect.moveTopLeft(rect.topLeft() - extracted_rect.topLeft());
 		}
 		else {
-			VipNDArray tmp = raster.extract(rect, &extracted_rect);
+			const VipNDArray tmp = raster.extract(rect, &extracted_rect);
 			
 			if (tmp.isEmpty())
 				return false;
@@ -923,15 +904,19 @@ bool VipPlotRasterData::computeImage(const VipRasterData& raster,
 			QRect im_rect(0, 0, qMin(dst_rect.width(), (int)extracted_rect.width()), qMin(dst_rect.height(), (int)extracted_rect.height()));
 			if (out.width() != im_rect.width() || out.height() != im_rect.height())
 				out = QImage(im_rect.width(), im_rect.height(), QImage::Format_ARGB32_Premultiplied);
-			if (tmp_array.shape() != vipVector(im_rect.height(), im_rect.width()) || tmp_array.dataType() != tmp.dataType())
-				tmp_array = VipNDArray(tmp.dataType(), vipVector(im_rect.height(), im_rect.width()));
-
-			tmp.resize(tmp_array);
 			
-
+			const VipNDArray* tarray = &tmp;
+			if (tmp.shape() != vipVector(im_rect.height(), im_rect.width())) {
+				// Resize in temporary array
+				if (tmp_array.shape() != vipVector(im_rect.height(), im_rect.width()) || tmp_array.dataType() != tmp.dataType())
+					tmp_array = VipNDArray(tmp.dataType(), vipVector(im_rect.height(), im_rect.width()));
+				tmp.resize(tmp_array);
+				tarray = &tmp_array;
+			}
+			
 			if (VipAxisColorMap* axis_map = colorMap()) {
 				const VipColorMap* map = axis_map->colorMap();
-				map->applyColorMap(interval, tmp_array, (QRgb*)out.bits());
+				map->applyColorMap(interval, *tarray, (QRgb*)out.bits());
 
 				// set src_image_rect, it will be directly used in VipPainter::drawImage
 
@@ -1001,7 +986,7 @@ void VipPlotRasterData::setData(const QVariant& v)
 	else if (!d_data->imageRect.isEmpty()) {
 		// null current data: imageData
 		crect = d_data->imageRect;
-		ctype = qMetaTypeId<QImage>();
+		ctype = qMetaTypeId<VipRGB>();
 		carray = true;
 	}
 
@@ -1015,24 +1000,24 @@ void VipPlotRasterData::setData(const QVariant& v)
 		_new = v.value<VipRasterData>();
 
 	QRectF nrect = _new.boundingRect();
-
+	int ntype = _new.dataType();
 	d_data->empty_data = _new.isEmpty();
 
 	// reset intervals
 	d_data->dataInterval = d_data->dataValidInterval = VipInterval();
 
-	if (!_new.isEmpty() && carray && _new.isArray() && ctype == _new.dataType() && crect == nrect) {
+	if (!d_data->empty_data && carray && _new.isArray() && ctype == ntype && crect == nrect) {
 
 		bool update_colorscale = true;
 
 		// direct copy
 
 		const VipNDArray _ne = _new.extract(_new.boundingRect());
-		if (_ne.dataType() == qMetaTypeId<QImage>()) {
+		if (ntype == qMetaTypeId<VipRGB>()) {
 			// direct copy to imageData
 			{
 				Locker locker(dataLock());
-				const QImage qne = vipToImage(_ne);
+				const QImage qne = vipToImageRef(_ne);
 				if (d_data->imageData.image().size() != qne.size()) {
 					d_data->imageData = QImage(qne.width(), qne.height(), QImage::Format_ARGB32);
 				}
@@ -1045,12 +1030,12 @@ void VipPlotRasterData::setData(const QVariant& v)
 		else {
 			dataLock()->lock();
 			const QRectF bounding = current.boundingRect();
-			VipNDArray _cur = current.extract(bounding);
+			const VipNDArray _cur = current.extract(bounding);
 			// copy ND array content
 			if (_cur.isUnstrided() && _ne.isUnstrided() && vipIsArithmetic(_cur.dataType()) && _cur.handle()->ref <= 3)
 				memcpy((void*)_cur.data(), _ne.constData(), _ne.size() * _ne.dataSize());
 			else
-				_ne.convert((_cur));
+				_ne.convert(const_cast<VipNDArray&>(_cur));
 			dataLock()->unlock();
 
 
@@ -1058,7 +1043,7 @@ void VipPlotRasterData::setData(const QVariant& v)
 
 			// Optmize color map computation if the color scale only has this item
 			Locker locker(dataLock());
-			if (colorMap()) { //&& colorMap()->itemList().size() == 1) {
+			if (colorMap()) { 
 				VipInterval interval = colorMap()->gripInterval();
 				if (colorMap()->isAutoScale()) {
 					d_data->dataValidInterval = colorMap()->validInterval();
@@ -1067,7 +1052,6 @@ void VipPlotRasterData::setData(const QVariant& v)
 					dataLock()->lock();
 					d_data->dataInterval = interval;
 				}
-				// computeImage(current, interval, sceneMap(), d_data->temporaryArray, d_data->bypassImageData);
 			}
 		}
 
@@ -1087,7 +1071,7 @@ void VipPlotRasterData::setData(const QVariant& v)
 		}
 
 		//TEST
-		bool update_colorscale = (_new.dataType() != qMetaTypeId<QImage>());
+		bool update_colorscale = (_new.dataType() != qMetaTypeId<VipRGB>());
 		// update and mark color scale as dirty if needed
 		if (QThread::currentThread() == qApp->thread())
 			updateInternal(update_colorscale);

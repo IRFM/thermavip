@@ -33,7 +33,7 @@
 #include <qdatastream.h>
 #include <typeinfo>
 
-static bool isVipMultiNDArrayHandle(const SharedHandle& h)
+static bool isVipMultiNDArrayHandle(const VipSharedHandle& h)
 {
 	return h && h->handleType() == VipNDArrayHandle::MultiArray;
 }
@@ -135,17 +135,17 @@ namespace detail
 }
 
 // register the handle type
-int reg = vipRegisterArrayType(VipNDArrayHandle::MultiArray, 0, SharedHandle(new detail::MultiNDArrayHandle()));
+int reg = vipRegisterArrayType(VipNDArrayHandle::MultiArray, 0, VipSharedHandle(new detail::MultiNDArrayHandle()));
 
 /// Default constructor
 VipMultiNDArray::VipMultiNDArray()
-  : VipNDArray(SharedHandle(new detail::MultiNDArrayHandle()))
+  : VipNDArray(VipSharedHandle(new detail::MultiNDArrayHandle()))
 {
 }
 
 /// Construct from a VipNDArray
 VipMultiNDArray::VipMultiNDArray(const VipNDArray& ar)
-  : VipNDArray(SharedHandle(new detail::MultiNDArrayHandle()))
+  : VipNDArray(VipSharedHandle(new detail::MultiNDArrayHandle()))
 {
 	VipMultiNDArray::operator=(ar);
 }
@@ -169,7 +169,7 @@ VipMultiNDArray& VipMultiNDArray::operator=(const VipNDArray& other)
 
 /// Reimplemented from #VipNDArray::setSharedHandle.
 ///  Setting a null handle with vipNullHandle() will remove all arrays
-void VipMultiNDArray::setSharedHandle(const SharedHandle& other)
+void VipMultiNDArray::setSharedHandle(const VipSharedHandle& other)
 {
 	if (isVipMultiNDArrayHandle(other)) {
 		VipNDArray::setSharedHandle(other);

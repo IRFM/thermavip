@@ -223,7 +223,7 @@ QRectF VipVMultiPlotArea2D::plotRect() const
 
 void VipVMultiPlotArea2D::applyLabelOverlapping()
 {
-	QVector<QSharedPointer<QPainterPath>> overlapps;
+	/* QVector<QSharedPointer<QPainterPath>> overlapps;
 	for (int i = 0; i < d_data->yLeft->count(); ++i)
 		overlapps << d_data->yLeft->at(i)->constScaleDraw()->thisLabelArea();
 
@@ -255,7 +255,7 @@ void VipVMultiPlotArea2D::applyLabelOverlapping()
 				//++c;
 			}
 		}
-	}
+	}*/
 }
 
 void VipVMultiPlotArea2D::applyDefaultParameters()

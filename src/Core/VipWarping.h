@@ -35,7 +35,6 @@
 #include "VipImageProcessing.h"
 #include "VipMultiNDArray.h"
 #include "VipNDArray.h"
-#include "VipNDArrayImage.h"
 
 VIP_CORE_EXPORT VipPointVector vipWarping(QVector<QPoint> pts1, QVector<QPoint> pts2, int width, int height);
 

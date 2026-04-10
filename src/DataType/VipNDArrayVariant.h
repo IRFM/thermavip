@@ -32,7 +32,7 @@
 #ifndef VIP_NDARRAY_VARIANT_H
 #define VIP_NDARRAY_VARIANT_H
 
-#include "VipNDArrayImage.h"
+#include "VipNDArray.h"
 
 #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
 #include <QMultiMapIterator>
@@ -432,7 +432,7 @@ public:
 	}
 
 	/// Reimplemented from #VipNDArray::setSharedHandle
-	virtual void setSharedHandle(const SharedHandle& other)
+	virtual void setSharedHandle(const VipSharedHandle& other)
 	{
 		if (other && handler_type::isValidType(other->dataType()))
 			VipNDArray::setSharedHandle(other);

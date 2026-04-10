@@ -839,7 +839,6 @@ public:
 	QMap<vip_double, VipScaleText> customLabels;
 	std::map<vip_double, VipScaleText> labelCache;
 	QSharedPointer<QPainterPath> labelArea;
-	QTransform painterTransform;
 	QVector<QSharedPointer<QPainterPath>> otherLabelArea;
 	bool labelOverlap;
 	bool dirtyOverlap;
@@ -919,22 +918,6 @@ void VipAbstractScaleDraw::setComponents(int components)
 /// \param scaleDiv New scale division
 void VipAbstractScaleDraw::setScaleDiv(const VipScaleDiv& scaleDiv)
 {
-
-	// check if we need to invalidate the overlapping (only necessary if labels overlapping is not allowed)
-	if (!d_data->labelOverlap) {
-		vip_double epsilon = scaleDiv.range() / 1000.0;
-		if (fabs(d_data->scaleDiv.bounds().minValue() - scaleDiv.bounds().minValue()) > epsilon || fabs(d_data->scaleDiv.bounds().maxValue() - scaleDiv.bounds().maxValue()) > epsilon)
-			invalidateOverlap();
-		else {
-			// bounds are the same, just check the number of ticks
-			if (d_data->drawLabel[VipScaleDiv::MajorTick] && d_data->scaleDiv.ticks(VipScaleDiv::MajorTick).size() != scaleDiv.ticks(VipScaleDiv::MajorTick).size())
-				invalidateOverlap();
-			else if (d_data->drawLabel[VipScaleDiv::MediumTick] && d_data->scaleDiv.ticks(VipScaleDiv::MediumTick).size() != scaleDiv.ticks(VipScaleDiv::MediumTick).size())
-				invalidateOverlap();
-			else if (d_data->drawLabel[VipScaleDiv::MinorTick] && d_data->scaleDiv.ticks(VipScaleDiv::MinorTick).size() != scaleDiv.ticks(VipScaleDiv::MinorTick).size())
-				invalidateOverlap();
-		}
-	}
 	d_data->scaleDiv = scaleDiv;
 	d_data->map.setScaleInterval(scaleDiv.lowerBound(), scaleDiv.upperBound());
 	
@@ -983,70 +966,12 @@ const VipScaleDiv& VipAbstractScaleDraw::scaleDiv() const
 	return d_data->scaleDiv;
 }
 
-bool VipAbstractScaleDraw::drawLabelOverlap(QPainter* painter, vip_double v, const VipText& t, VipScaleDiv::TickType tick) const
-{
-	// TODO: we must fix the label overlapping!
-
-	// if label might overlap, just draw the label
-	if (true) { // d_data->labelOverlap || !d_data->dirtyOverlap) { //TODO: optimize
-		drawLabel(painter, v, t, tick);
-		return true;
-	}
-	// otherwise, make sure that no overlapping appears
-	else {
-		VipShapeDevice device;
-		QPainter p(&device);
-		drawLabel(&p, v, t, tick);
-		QPainterPath text_shape = device.shape();
-		// if we use other label areas, we need to work in device coordinates since other abstract scale might have a different transform
-		if (!d_data->otherLabelArea.isEmpty())
-			text_shape = d_data->painterTransform.map(device.shape());
-
-		//QRectF bounding = text_shape.boundingRect();
-		if (!d_data->labelArea->intersects(text_shape)) {
-			// check additional label overlapp
-			for (int i = 0; i < d_data->otherLabelArea.size(); ++i) {
-				//QRectF b = d_data->otherLabelArea[i]->boundingRect();
-				if (d_data->otherLabelArea[i]->intersects(text_shape))
-					return false;
-			}
-
-			const_cast<QPainterPath&>(*d_data->labelArea).addPath(text_shape);
-			drawLabel(painter, v, t, tick);
-			return true;
-		}
-	}
-	return false;
-}
 
 bool VipAbstractScaleDraw::drawTextOverlap(QPainter* painter, const VipText& t) const
 {
-	// if label might overlap, just draw the label
-	if (true) { // d_data->labelOverlap) {
-		t.draw(painter, t.textRect());
-		return true;
-	}
-	// otherwise, make sure that no overlapping appears
-	else {
-		VipShapeDevice device;
-		QPainter p(&device);
-		t.draw(&p, t.textRect());
-		QPainterPath text_shape = device.shape();
-		if (!d_data->otherLabelArea.isEmpty())
-			text_shape = d_data->painterTransform.map(device.shape());
-
-		if (!d_data->labelArea->intersects(text_shape)) {
-			// check additional label overlapp
-			for (int i = 0; i < d_data->otherLabelArea.size(); ++i)
-				if (d_data->otherLabelArea[i]->intersects(text_shape))
-					return false;
-
-			const_cast<QPainterPath&>(*d_data->labelArea).addPath(text_shape);
-			t.draw(painter, t.textRect());
-			return true;
-		}
-	}
-	return false;
+	// TODO: handle overlapping
+	t.draw(painter, t.textRect());
+	return true;
 }
 
 void VipAbstractScaleDraw::drawTicks(QPainter* painter) const
@@ -1087,10 +1012,9 @@ void VipAbstractScaleDraw::drawLabels(QPainter* painter) const
 	// d_data->lineCount = 0;
 	bool no_overlap = true;
 	if (hasComponent(VipAbstractScaleDraw::Labels)) {
-		if (!d_data->labelOverlap) {
+		if (!d_data->labelOverlap) 
 			*d_data->labelArea = QPainterPath();
-			d_data->painterTransform = painter->worldTransform(); // .inverted();
-		}
+		
 
 		//TEST
 		//painter->save();
@@ -1102,11 +1026,11 @@ void VipAbstractScaleDraw::drawLabels(QPainter* painter) const
 				for (QMap<vip_double, VipScaleText>::const_iterator it = add_text.begin(); it != add_text.end(); ++it) {
 					const VipScaleText text = it.value();
 					if (text.tr.isIdentity())
-						no_overlap = no_overlap && this->drawLabelOverlap(painter, text.value, text.text, text.tick);
+						no_overlap = this->drawLabel(painter, text.value, text.text, text.tick) && no_overlap;
 					else {
 						TrSaver tr(painter);
 						painter->setWorldTransform(text.tr, true);
-						no_overlap = no_overlap && this->drawLabelOverlap(painter, text.value, text.text, text.tick);
+						no_overlap = this->drawLabel(painter, text.value, text.text, text.tick) && no_overlap;
 					}
 				}
 			}
@@ -1123,12 +1047,13 @@ void VipAbstractScaleDraw::drawLabels(QPainter* painter) const
 
 			QMap<vip_double, VipScaleText>::const_iterator end = add_text.end();
 
+			
 			if (d_data->drawLabel[VipScaleDiv::MajorTick]) {
 				for (int i = 0; i < majorTicks.count(); i++) {
 					const vip_double v = majorTicks[i];
 					QMap<vip_double, VipScaleText>::const_iterator it = add_text.find(v);
-					if (d_data->scaleDiv.contains(v) && (it == end || it->tick != VipScaleDiv::MajorTick))
-						no_overlap = no_overlap && drawLabelOverlap(painter, v, tickLabel(v, VipScaleDiv::MajorTick).text, VipScaleDiv::MajorTick);
+					if (d_data->scaleDiv.contains(v) && (it == end || it->tick != VipScaleDiv::MajorTick)) 
+						no_overlap = drawLabel(painter, v, tickLabel(v, VipScaleDiv::MajorTick).text, VipScaleDiv::MajorTick) && no_overlap;
 				}
 			}
 			if (d_data->drawLabel[VipScaleDiv::MediumTick]) {
@@ -1136,7 +1061,7 @@ void VipAbstractScaleDraw::drawLabels(QPainter* painter) const
 					const vip_double v = mediumTicks[i];
 					QMap<vip_double, VipScaleText>::const_iterator it = add_text.find(v);
 					if (d_data->scaleDiv.contains(v) && (it == end || it->tick != VipScaleDiv::MediumTick))
-						no_overlap = no_overlap && drawLabelOverlap(painter, v, tickLabel(v, VipScaleDiv::MediumTick).text, VipScaleDiv::MediumTick);
+						no_overlap = drawLabel(painter, v, tickLabel(v, VipScaleDiv::MediumTick).text, VipScaleDiv::MediumTick) && no_overlap;
 				}
 			}
 			if (d_data->drawLabel[VipScaleDiv::MinorTick]) {
@@ -1144,7 +1069,7 @@ void VipAbstractScaleDraw::drawLabels(QPainter* painter) const
 					const vip_double v = minorTicks[i];
 					QMap<vip_double, VipScaleText>::const_iterator it = add_text.find(v);
 					if (d_data->scaleDiv.contains(v) && (it == end || it->tick != VipScaleDiv::MinorTick))
-						no_overlap = no_overlap && drawLabelOverlap(painter, v, tickLabel(v, VipScaleDiv::MinorTick).text, VipScaleDiv::MinorTick);
+						no_overlap = drawLabel(painter, v, tickLabel(v, VipScaleDiv::MinorTick).text, VipScaleDiv::MinorTick) && no_overlap;
 				}
 			}
 		}
@@ -1155,11 +1080,11 @@ void VipAbstractScaleDraw::drawLabels(QPainter* painter) const
 				if (d_data->scaleDiv.contains(v)) {
 					const VipScaleText text = it.value();
 					if (text.tr.isIdentity())
-						no_overlap = no_overlap && this->drawLabelOverlap(painter, text.value, text.text, text.tick);
+						no_overlap = this->drawLabel(painter, text.value, text.text, text.tick) && no_overlap;
 					else {
 						TrSaver tr(painter);
 						painter->setWorldTransform(text.tr, true);
-						no_overlap = no_overlap && drawLabelOverlap(painter, text.value, text.text, text.tick);
+						no_overlap = drawLabel(painter, text.value, text.text, text.tick) && no_overlap;
 					}
 				}
 			}
@@ -1169,11 +1094,11 @@ void VipAbstractScaleDraw::drawLabels(QPainter* painter) const
 		for (auto it = d_data->scaleTexts.cbegin(); it != d_data->scaleTexts.cend(); ++it) {
 			const VipScaleText& text = it.value();
 			if (text.tr.isIdentity())
-				no_overlap = no_overlap && this->drawLabelOverlap(painter, text.value, text.text, text.tick);
+				no_overlap = this->drawLabel(painter, text.value, text.text, text.tick) && no_overlap;
 			else {
 				TrSaver tr(painter);
 				painter->setWorldTransform(text.tr, true);
-				no_overlap = no_overlap && drawLabelOverlap(painter, text.value, text.text, text.tick);
+				no_overlap = drawLabel(painter, text.value, text.text, text.tick) && no_overlap;
 			}
 		}
 
@@ -1492,8 +1417,10 @@ bool VipAbstractScaleDraw::drawLabelEnabled(VipScaleDiv::TickType tick) const
 
 void VipAbstractScaleDraw::enableLabelOverlapping(bool enable)
 {
-	invalidateOverlap();
-	d_data->labelOverlap = enable;
+	if (d_data->labelOverlap != enable) {
+		invalidateOverlap();
+		d_data->labelOverlap = enable;
+	}
 }
 
 bool VipAbstractScaleDraw::labelOverlappingEnabled() const
@@ -1503,30 +1430,6 @@ bool VipAbstractScaleDraw::labelOverlappingEnabled() const
 QSharedPointer<QPainterPath> VipAbstractScaleDraw::thisLabelArea() const
 {
 	return d_data->labelArea;
-}
-void VipAbstractScaleDraw::addAdditionalLabelOverlapp(const QSharedPointer<QPainterPath>& other)
-{
-	if (d_data->otherLabelArea.indexOf(other) < 0)
-		d_data->otherLabelArea.push_back(other);
-}
-QVector<QSharedPointer<QPainterPath>> VipAbstractScaleDraw::additionalLabelOverlapp() const
-{
-	return d_data->otherLabelArea;
-}
-void VipAbstractScaleDraw::setAdditionalLabelOverlapp(const QVector<QSharedPointer<QPainterPath>>& other)
-{
-	invalidateOverlap();
-	d_data->otherLabelArea = other;
-}
-void VipAbstractScaleDraw::removeAdditionalLabelOverlapp(const QSharedPointer<QPainterPath>& other)
-{
-	invalidateOverlap();
-	d_data->otherLabelArea.removeOne(other);
-}
-void VipAbstractScaleDraw::clearAdditionalLabelOverlapp()
-{
-	invalidateOverlap();
-	d_data->otherLabelArea.clear();
 }
 
 void VipAbstractScaleDraw::setCustomTextStyle(CustomTextStyle style)
@@ -1646,6 +1549,15 @@ VipScaleDiv::TickList VipAbstractScaleDraw::labelTicks(VipScaleDiv::TickType tic
 	}
 
 	return values;
+}
+
+bool VipAbstractScaleDraw::needCheckLabelOverlapping() const
+{
+	bool lo = d_data->labelOverlap;
+	bool do_ = d_data->dirtyOverlap;
+	if (d_data->labelOverlap || !d_data->dirtyOverlap)
+		return false;
+	return true;
 }
 
 void VipAbstractScaleDraw::addLabelTransform(QTransform& textTransform, const QSizeF& textSize, VipScaleDiv::TickType tick) const
@@ -2589,10 +2501,10 @@ double VipScaleDraw::length() const
 /// \param value Value
 ///
 /// \sa drawTick(), drawBackbone(), boundingLabelRect()
-void VipScaleDraw::drawLabel(QPainter* painter, vip_double value, const VipText& lbl, VipScaleDiv::TickType tick) const
+bool VipScaleDraw::drawLabel(QPainter* painter, vip_double value, const VipText& lbl, VipScaleDiv::TickType tick) const
 {
 	if (lbl.isEmpty())
-		return;
+		return true;
 
 	QPointF pos = labelPosition(value, tick);
 	QSizeF labelSize = lbl.textSize();
@@ -2609,9 +2521,24 @@ void VipScaleDraw::drawLabel(QPainter* painter, vip_double value, const VipText&
 		text_rect = _tr.mapRect(text_rect);
 	}
 
-	lbl.draw(painter, text_rect);
+	bool ret = true;
+
+	// Handle label overlapping
+	if (needCheckLabelOverlapping()) {
+		auto path = this->thisLabelArea();
+		auto r = painter->worldTransform().mapRect(text_rect);
+		if (!path->intersects(r)) {
+			lbl.draw(painter, text_rect);
+			path->addRect(r);
+		}
+		else
+			ret = false;
+	}
+	else
+		lbl.draw(painter, text_rect);
 
 	painter->setWorldTransform(tr, false);
+	return ret;
 }
 
 /// \brief Find the bounding rectangle for the label.
@@ -3416,10 +3343,10 @@ QTransform VipPolarScaleDraw::labelTransformation(vip_double value, const VipTex
 /// \param value Value
 ///
 /// \sa drawTick(), drawBackbone()
-void VipPolarScaleDraw::drawLabel(QPainter* painter, vip_double value, const VipText& lbl, VipScaleDiv::TickType tick) const
+bool VipPolarScaleDraw::drawLabel(QPainter* painter, vip_double value, const VipText& lbl, VipScaleDiv::TickType tick) const
 {
 	if (lbl.isEmpty())
-		return;
+		return true;
 
 	if (textPosition() == TextAutomaticPosition)
 		const_cast<VipPolarScaleDraw*>(this)->setTextPosition(TextOutside);
@@ -3438,7 +3365,7 @@ void VipPolarScaleDraw::drawLabel(QPainter* painter, vip_double value, const Vip
 	const VipScaleDiv::TickList ticks = labelTicks(tick);
 	if (ticks.size() && value == ticks.last()) {
 		if (!d_data->drawLast[tick])
-			return;
+			return true;
 	}
 
 	painter->save();
@@ -3468,6 +3395,7 @@ void VipPolarScaleDraw::drawLabel(QPainter* painter, vip_double value, const Vip
 	}
 
 	painter->restore();
+	return true;
 }
 
 QPolygonF VipPolarScaleDraw::labelPolygon(vip_double value, VipScaleDiv::TickType tick) const
@@ -3868,10 +3796,10 @@ QTransform VipRadialScaleDraw::labelTransformation(vip_double value, const VipTe
 /// \param value Value
 ///
 /// \sa drawTick(), drawBackbone()
-void VipRadialScaleDraw::drawLabel(QPainter* painter, vip_double value, const VipText& lbl, VipScaleDiv::TickType tick) const
+bool VipRadialScaleDraw::drawLabel(QPainter* painter, vip_double value, const VipText& lbl, VipScaleDiv::TickType tick) const
 {
 	if (lbl.isEmpty())
-		return;
+		return true;
 
 	QPointF pos = labelPosition(value, tick);
 
@@ -3889,6 +3817,7 @@ void VipRadialScaleDraw::drawLabel(QPainter* painter, vip_double value, const Vi
 	lbl.draw(painter, text_rect);
 
 	painter->restore();
+	return true;
 }
 
 QPolygonF VipRadialScaleDraw::labelPolygon(vip_double value, VipScaleDiv::TickType tick) const

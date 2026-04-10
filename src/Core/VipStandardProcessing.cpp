@@ -35,7 +35,6 @@
 #include "VipMath.h"
 #include "VipStandardProcessing.h"
 #include "VipUniqueId.h"
-#include "VipNDArrayImage.h"
 
 class VipOtherPlayerData::PrivateData
 {
@@ -2484,30 +2483,6 @@ void VipAffineTransform::apply()
 	double offset = propertyAt(1)->value<double>();
 
 	QVariant ar_out = in.data();
-
-	if (ar_out.userType() == qMetaTypeId<VipNDArray>()) {
-		const VipNDArray ar = ar_out.value<VipNDArray>();
-		if (vipIsImageArray(ar) && ar.shapeCount() == 2 && !ar.isEmpty()) {
-
-			// Work on RGB image
-			QImage qimg = vipToImage(ar);
-			VipNDArrayTypeView<VipRGB> img = vipQImageView(qimg);
-			VipRGB* ptr = img.ptr();
-			int size = img.size();
-			for (int i = 0; i < size; ++i) {
-				auto a = ptr[i].a;
-				auto rgb = ptr[i] * factor + offset;
-				ptr[i] = rgb.clamp<quint8>(0, 255);
-				ptr[i].a = a;
-			}
-			ar_out = QVariant::fromValue(vipToArray(qimg));
-			VipAnyData out = create(ar_out);
-			out.setTime(in.time());
-			out.mergeAttributes(in.attributes());
-			outputAt(0)->setData(out);
-			return;
-		}
-	}
 
 	if (factor != 1) {
 		m_op.inputAt(0)->setData(ar_out);
