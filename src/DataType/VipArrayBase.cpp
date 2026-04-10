@@ -88,8 +88,8 @@ static VipSharedHandle nullHandle = VipSharedHandle(new detail::NullHandle());
 
 static QMap<int, QMap<int, VipSharedHandle>>& tables()
 {
-	static QMap<int, QMap<int, VipSharedHandle>> instances_;
-	return instances_;
+	static QMap<int, QMap<int, VipSharedHandle>>* instances_ = new QMap<int, QMap<int, VipSharedHandle>>();
+	return *instances_;
 }
 static QRecursiveMutex& tables_mutex()
 {
