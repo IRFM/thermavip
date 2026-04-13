@@ -684,13 +684,13 @@ public:
 	template<qsizetype D>
 	VIP_ALWAYS_INLINE T* ptr(const VipCoordinate<D>& c)
 	{
-		return ptr() + vipFlatOffset<false>(strides(), c);
+		return ptr() + vipFlatOffset<(D > 0 && D == NDims)>(strides(), c);
 	}
 	/// Returns the data pointer at a specific position
 	template<qsizetype D>
 	VIP_ALWAYS_INLINE const T* ptr(const VipCoordinate<D>& c) const noexcept
 	{
-		return ptr() + vipFlatOffset<false>(strides(), c);
+		return ptr() + vipFlatOffset<(D > 0 && D == NDims)>(strides(), c);
 	}
 
 	// Reimplement shape() and strides()

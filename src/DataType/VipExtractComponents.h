@@ -39,11 +39,6 @@
 /// \addtogroup DataType
 /// @{
 
-/// Helper function.
-/// Inplace clamp \a ar based on \a min and \a max.
-/// Clamp to \a min if \a min is not nullptr.
-/// Clamp to \a max if \a max is not nullptr.
-VIP_DATA_TYPE_EXPORT bool vipClamp(VipNDArray& ar, const double* min, const double* max);
 
 /// VipExtractComponents manages how to  extract components from an array of a specific pixel type,
 /// and how to build an array of this pixel type from separate components.
@@ -52,8 +47,8 @@ class VIP_DATA_TYPE_EXPORT VipExtractComponents : public QObject
 	Q_OBJECT
 
 	QList<VipNDArray> m_components;
-	QMap<int, double*> m_clampMin;
-	QMap<int, double*> m_clampMax;
+	QMap<int, double> m_clampMin;
+	QMap<int, double> m_clampMax;
 
 protected:
 	bool HasComponentsSameShapes() const;
@@ -120,9 +115,7 @@ public:
 	bool HasClampMin(int component) const;
 	bool HasClampMax(int component) const;
 	double ClampMin(int component) const;
-	double ClamMax(int component) const;
-	const double* ClampMinPtr(int component) const;
-	const double* ClamMaxPtr(int component) const;
+	double ClampMax(int component) const;
 };
 
 // Invariant component extraction. Basically returns the input image.
@@ -438,15 +431,18 @@ private:
 	QString m_component;
 };
 
-/// \enum ComplexComponent
-/// \brief Components which might be extracted from  a complex image
-enum ComplexComponent
+namespace Vip
 {
-	Real,
-	Imag,
-	Norm,
-	Argument
-};
+	/// \enum ComplexComponent
+	/// \brief Components which might be extracted from  a complex image
+	enum ComplexComponent
+	{
+		Real,
+		Imag,
+		Norm,
+		Argument
+	};
+}
 
 /// Returns the real part of a complex array, or a null VipNDArray on error.
 VIP_DATA_TYPE_EXPORT VipNDArray ToReal(const VipNDArray& dat);
@@ -465,30 +461,33 @@ VIP_DATA_TYPE_EXPORT VipNDArray ToArgument(const VipNDArray& dat);
 VIP_DATA_TYPE_EXPORT QStringList ComplexComponents();
 
 /// Returns the component \a component from the complex image \a dat, or a null VipNDArray on error.
-VIP_DATA_TYPE_EXPORT VipNDArray ToComplexComponent(const VipNDArray& dat, ComplexComponent component);
+VIP_DATA_TYPE_EXPORT VipNDArray ToComplexComponent(const VipNDArray& dat, Vip::ComplexComponent component);
 /// Returns the component \a component from the complex image \a dat, or a null VipNDArray on error.
 VIP_DATA_TYPE_EXPORT VipNDArray ToComplexComponent(const VipNDArray& dat, const QString& component);
 
-/// \enum ColorComponent
-/// \brief Components which might be extracted from  a color image
-enum ColorComponent
+namespace Vip
 {
-	GrayScale,
-	Red,
-	Green,
-	Blue,
-	Alpha,
-	HslHue,
-	HslSaturation,
-	HslLightness,
-	HsvHue,
-	HsvSaturation,
-	HsvValue,
-	CMYKCyan,
-	CMYKMagenta,
-	CMYKYellow,
-	CMYKBlack
-};
+	/// \enum ColorComponent
+	/// \brief Components which might be extracted from  a color image
+	enum ColorComponent
+	{
+		GrayScale,
+		Red,
+		Green,
+		Blue,
+		Alpha,
+		HslHue,
+		HslSaturation,
+		HslLightness,
+		HsvHue,
+		HsvSaturation,
+		HsvValue,
+		CMYKCyan,
+		CMYKMagenta,
+		CMYKYellow,
+		CMYKBlack
+	};
+}
 
 /// Convert input color image to a grayscale image.
 VIP_DATA_TYPE_EXPORT VipNDArray ToGrayScale(const VipNDArray& dat);
@@ -539,7 +538,7 @@ VIP_DATA_TYPE_EXPORT VipNDArray ToCMYKBlack(const VipNDArray& dat);
 VIP_DATA_TYPE_EXPORT QStringList ColorComponents();
 
 /// Returns the component \a component from the color image \a dat, or a null VipNDArray on error.
-VIP_DATA_TYPE_EXPORT VipNDArray ToColorComponent(const VipNDArray& dat, ColorComponent component);
+VIP_DATA_TYPE_EXPORT VipNDArray ToColorComponent(const VipNDArray& dat, Vip::ColorComponent component);
 
 /// Returns the component \a component from the color image \a dat, or a null VipNDArray on error.
 VIP_DATA_TYPE_EXPORT VipNDArray ToColorComponent(const VipNDArray& dat, const QString& component);

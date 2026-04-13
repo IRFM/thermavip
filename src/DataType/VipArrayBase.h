@@ -123,12 +123,6 @@ struct VipIsReductor
 	static const bool value = std::is_base_of<detail::BaseReductor, T>::value;
 };
 
-/// @brief Check whether all parameters are of integral type
-template<class... T>
-struct VipIsAllIntegers
-{
-	static constexpr bool value = (std::is_integral_v<T> && ...);
-};
 
 struct VipNDArrayHandle;
 

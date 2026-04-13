@@ -45,11 +45,10 @@ bool vipIsMultiNDArray(const VipNDArray& ar)
 
 namespace detail
 {
-
-	MultiNDArrayHandle::MultiNDArrayHandle()
-	  : VipNDArrayHandle()
-	  , currentHandle(vipNullHandle())
+	VipNDArray* MultiNDArrayHandle::null_array()
 	{
+		static VipNDArray null;
+		return &null;
 	}
 
 	MultiNDArrayHandle::MultiNDArrayHandle(const MultiNDArrayHandle& h)
@@ -57,7 +56,6 @@ namespace detail
 	{
 		arrays = h.arrays;
 		current = h.current;
-		// currentHandle = h.currentHandle;
 		setCurrentArray(current);
 	}
 
@@ -66,12 +64,12 @@ namespace detail
 		QMap<QString, VipNDArray>::iterator it = arrays.find(name);
 		if (it != arrays.end()) {
 			const VipNDArray& ar = it.value();
-			if (ar.sharedHandle() != currentHandle) {
+			if (&ar != currentArray) {
 				this->opaque = ar.handle()->opaque; // const_cast<void*>(ar.data());
 				this->shape = ar.shape();
 				this->size = ar.size();
 				this->strides = ar.strides();
-				currentHandle = ar.sharedHandle();
+				currentArray = const_cast<VipNDArray*>(&ar);
 			}
 			current = name;
 		}
@@ -80,9 +78,37 @@ namespace detail
 			this->shape.clear();
 			this->size = 0;
 			this->strides.clear();
-			currentHandle = vipNullHandle();
+			currentArray = null_array();
 			current.clear();
 		}
+	}
+
+	bool MultiNDArrayHandle::realloc(const VipNDArrayShape& sh)
+	{
+		return currentArray->handle()->realloc(sh);
+	}
+	bool MultiNDArrayHandle::reshape(const VipNDArrayShape& sh)
+	{
+		return currentArray->handle()->reshape(sh);
+	}
+
+	bool MultiNDArrayHandle::importData(const VipNDArrayShape& this_shape,
+						  const VipNDArrayShape& this_start,
+						  const VipNDArrayHandle* src,
+						  const VipNDArrayShape& src_shape,
+						  const VipNDArrayShape& src_start)
+	{
+		return currentArray->handle()->importData(this_shape, this_start, src, src_shape, src_start);
+	}
+
+	bool MultiNDArrayHandle::fill(const VipNDArrayShape& _start, const VipNDArrayShape& _shape, const QVariant& v)
+	{
+		return currentArray->handle()->fill(_start, _shape, v);
+	}
+
+	void MultiNDArrayHandle::fromVariant(const VipNDArrayShape& sh, const QVariant& v)
+	{
+		return currentArray->handle()->fromVariant(sh, v);
 	}
 
 	void MultiNDArrayHandle::addArray(const QString& name, const VipNDArray& ar)
@@ -145,9 +171,8 @@ VipMultiNDArray::VipMultiNDArray()
 
 /// Construct from a VipNDArray
 VipMultiNDArray::VipMultiNDArray(const VipNDArray& ar)
-  : VipNDArray(VipSharedHandle(new detail::MultiNDArrayHandle()))
+  : VipNDArray(vipIsMultiNDArray(ar) ? ar.sharedHandle() : VipSharedHandle(new detail::MultiNDArrayHandle()))
 {
-	VipMultiNDArray::operator=(ar);
 }
 
 detail::MultiNDArrayHandle* VipMultiNDArray::handle()
@@ -163,7 +188,7 @@ const detail::MultiNDArrayHandle* VipMultiNDArray::handle() const
 /// Copy operator
 VipMultiNDArray& VipMultiNDArray::operator=(const VipNDArray& other)
 {
-	VipNDArray::operator=(other);
+	setSharedHandle(other.sharedHandle());
 	return *this;
 }
 
@@ -175,22 +200,19 @@ void VipMultiNDArray::setSharedHandle(const VipSharedHandle& other)
 		VipNDArray::setSharedHandle(other);
 		return;
 	}
-
-	if (other == vipNullHandle()) {
+	else if (other == vipNullHandle()) {
 		handle()->arrays.clear();
 		handle()->current.clear();
+		handle()->setCurrentArray({});
 	}
-
-	handle()->currentHandle = other;
-	handle()->opaque = handle()->currentHandle->opaque;
-	handle()->size = handle()->currentHandle->size;
-	handle()->shape = handle()->currentHandle->shape;
-	handle()->strides = handle()->currentHandle->strides;
 }
 
-void VipMultiNDArray::addArray(const QString& name, const VipNDArray& array)
+bool VipMultiNDArray::addArray(const QString& name, const VipNDArray& array)
 {
+	if (array.isNull())
+		return false;
 	handle()->addArray(name, array);
+	return true;
 }
 
 void VipMultiNDArray::removeArray(const QString& name)
@@ -198,7 +220,7 @@ void VipMultiNDArray::removeArray(const QString& name)
 	handle()->removeArray(name);
 }
 
-qsizetype VipMultiNDArray::arrayCount() const
+qsizetype VipMultiNDArray::arrayCount() const noexcept
 {
 	return handle()->arrays.size();
 }
@@ -210,15 +232,15 @@ QList<VipNDArray> VipMultiNDArray::arrays() const
 {
 	return handle()->arrays.values();
 }
-VipNDArray VipMultiNDArray::array(const QString& name) const
+const VipNDArray& VipMultiNDArray::array(const QString& name) const noexcept
 {
 	QMap<QString, VipNDArray>::const_iterator it = handle()->arrays.find(name);
 	if (it != handle()->arrays.end())
 		return it.value();
 	else
-		return VipNDArray();
+		return *detail::MultiNDArrayHandle::null_array();
 }
-const QMap<QString, VipNDArray>& VipMultiNDArray::namedArrays() const
+const QMap<QString, VipNDArray>& VipMultiNDArray::namedArrays() const noexcept
 {
 	return handle()->arrays;
 }
@@ -232,7 +254,12 @@ void VipMultiNDArray::setCurrentArray(const QString& name)
 {
 	handle()->setCurrentArray(name);
 }
-const QString& VipMultiNDArray::currentArray() const
+const QString& VipMultiNDArray::currentArrayName() const noexcept
 {
 	return handle()->current;
+}
+
+const VipNDArray& VipMultiNDArray::currentArray() const noexcept
+{
+	return *handle()->currentArray;
 }

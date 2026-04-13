@@ -122,85 +122,9 @@ static QSurfaceFormat makeDefaultFormat()
 #endif
 }
 
+
 int main(int argc, char** argv)
 {
-	{
-		VipNDArrayType<int> ar(vipVector(1000, 1000));
-		const VipNDArrayType<int>& ar2 = ar;
-		qint64 st, el;
-		int count = 100;
-
-		st = QDateTime::currentMSecsSinceEpoch();
-		for (int i = 0; i < count; ++i) {
-			auto ptr = ar.ptr();
-#pragma loop(no_vector)
-			for (qsizetype j = 0; j < ar.size(); ++j)
-				ptr[j] = ptr[j] * 2;
-		}
-		el = QDateTime::currentMSecsSinceEpoch() - st;
-		printf("loop ptr: %i ms\n", (int)el);
-
-		st = QDateTime::currentMSecsSinceEpoch();
-		for (int i = 0; i < count; ++i) {
-			for (qsizetype j = 0; j < ar.size(); ++j)
-				const_cast<int&>(ar2[j]) = ar2[j] * 2;
-		}
-		el = QDateTime::currentMSecsSinceEpoch() - st;
-		printf("loop []: %i ms\n", (int)el);
-
-		st = QDateTime::currentMSecsSinceEpoch();
-		for (int i = 0; i < count; ++i) {
-			ar = ar * 2;
-		}
-		el = QDateTime::currentMSecsSinceEpoch() - st;
-		printf("loop eval: %i ms\n", (int)el);
-
-		st = QDateTime::currentMSecsSinceEpoch();
-		for (int i = 0; i < count; ++i) {
-			for (int y = 0; y < ar.shape(0); ++y)
-				for (int x = 0; x < ar.shape(1); ++x) {
-					const_cast<int&>(*(ar2.ptr() + x * ar2.stride(1) + y * ar2.stride(0))) = (*(ar2.ptr() + x * ar2.stride(1) + y * ar2.stride(0))) * 2;
-				}
-		}
-		el = QDateTime::currentMSecsSinceEpoch() - st;
-		printf("loop std: %i ms\n", (int)el);
-		
-		st = QDateTime::currentMSecsSinceEpoch();
-		for (int i = 0; i < count; ++i) {
-			for (int y = 0; y < ar.shape(0); ++y)
-				for (int x = 0; x < ar.shape(1); ++x) {
-					const_cast<int&>(ar2(y, x)) = ar2(y, x) * 2;
-				}
-		}
-		el = QDateTime::currentMSecsSinceEpoch() - st;
-		printf("loop vipVector: %i ms\n", (int)el);
-		return 0;
-	}
-
-	VipNDArray img;
-	img.load("C:/Users/VM213788/Desktop/thermavip-tsm.png");
-	QImage imgg = vipToImage(img);
-	auto aaa = vipToArray(QImage());
-	bool n = aaa.isNull();
-	bool n2 = aaa.isEmpty();
-	bool rgb = aaa.isRGB();
-	auto rr = QByteArray() < 1.;
-	// Both must work
-	VipNDArray ar1 = vipRed(img);
-	VipNDArrayType<int> arr1 = vipRed(img);
-	
-	auto fun = [](double ret, auto v, std::enable_if_t<std::is_arithmetic_v<decltype(v)>, int>* = nullptr) { return ret + (double)v; };
-	img = img * 2;
-
-	VipNDArray ar2(QMetaType::Int, vipVector(10, 10));
-	ar2.fill(1);
-	auto val2 = vipAccumulate(fun, 0., ar2);
-
-	auto ff = vipFunction([](auto a) { return a + a; }, ar2.copy());
-	vipEval(ar2, ff);
-
-	int data[100]; 
-	auto view = VipNDArray::makeView(data, { 10, 10 });
 
 	{
 		// Load thermavip.env

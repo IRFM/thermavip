@@ -34,52 +34,11 @@
 
 #include "VipExtractComponents.h"
 #include "VipMultiNDArray.h"
-#include "VipNDArrayVariant.h"
 
-struct Clamp
-{
-	const double* min;
-	const double* max;
-	template<class T>
-	T operator()(const T& val)
-	{
-		return min ? (val < *min ? *min : (max ? (val > *max ? *max : val) : val)) : (max ? (val > *max ? *max : val) : val);
-	}
-};
-struct ClampArray
-{
-	Clamp clamp;
-	template<class T>
-	void operator()(VipNDArrayTypeView<T> val)
-	{
-		vipArrayTransform(val.ptr(), val.shape(), val.strides(), val.ptr(), val.shape(), val.strides(), clamp);
-	}
-};
 
-bool vipClamp(VipNDArray& ar, const double* min, const double* max)
-{
-	if (!min && !max)
-		return true;
-
-	ar.detach();
-	VipNDNumericArray tmp;
-	if (tmp.isValidType(ar.dataType())) {
-		tmp = ar;
-		ClampArray c;
-		c.clamp.min = min;
-		c.clamp.max = max;
-		tmp.apply<void, ClampArray>(c);
-		return true;
-	}
-	return false;
-}
 
 VipExtractComponents::~VipExtractComponents()
 {
-	for (QMap<int, double*>::iterator it = m_clampMax.begin(); it != m_clampMax.end(); ++it)
-		delete it.value();
-	for (QMap<int, double*>::iterator it = m_clampMin.begin(); it != m_clampMin.end(); ++it)
-		delete it.value();
 }
 
 bool VipExtractComponents::HasComponentsSameShapes() const
@@ -146,8 +105,12 @@ bool VipExtractComponents::SetComponent(const QString& component, const VipNDArr
 		}
 
 		// clamp
-		vipClamp(m_components[index], ClampMinPtr(index), ClamMaxPtr(index));
-
+		if (HasClampMax(index) && HasClampMin(index)) {
+			double minval = HasClampMin(index) ? ClampMin(index) : -std::numeric_limits<double>::infinity();
+			double maxval = HasClampMax(index) ? ClampMax(index) : std::numeric_limits<double>::infinity();
+			m_components[index] = vipClamp(m_components[index], minval, maxval);
+		}
+		
 		if (m_components[index].isNull())
 			return false;
 
@@ -158,19 +121,11 @@ bool VipExtractComponents::SetComponent(const QString& component, const VipNDArr
 }
 void VipExtractComponents::SetClampMin(double min, int component)
 {
-	QMap<int, double*>::iterator found = m_clampMin.find(component);
-	if (found == m_clampMin.end())
-		m_clampMin[component] = new double(min);
-	else
-		*found.value() = min;
+	m_clampMin[component] = (min);
 }
 void VipExtractComponents::SetClampMax(double min, int component)
 {
-	QMap<int, double*>::iterator found = m_clampMax.find(component);
-	if (found == m_clampMax.end())
-		m_clampMax[component] = new double(min);
-	else
-		*found.value() = min;
+	m_clampMax[component] = (min);
 }
 bool VipExtractComponents::HasClampMin(int component) const
 {
@@ -182,24 +137,13 @@ bool VipExtractComponents::HasClampMax(int component) const
 }
 double VipExtractComponents::ClampMin(int component) const
 {
-	QMap<int, double*>::const_iterator found = m_clampMin.find(component);
-	return found == m_clampMin.end() ? 0. : *found.value();
+	auto found = m_clampMin.find(component);
+	return found == m_clampMin.end() ? 0. : found.value();
 }
-double VipExtractComponents::ClamMax(int component) const
+double VipExtractComponents::ClampMax(int component) const
 {
-	QMap<int, double*>::const_iterator found = m_clampMax.find(component);
-	return found == m_clampMax.end() ? 0. : *found.value();
-}
-
-const double* VipExtractComponents::ClampMinPtr(int component) const
-{
-	QMap<int, double*>::const_iterator found = m_clampMin.find(component);
-	return found == m_clampMin.end() ? nullptr : found.value();
-}
-const double* VipExtractComponents::ClamMaxPtr(int component) const
-{
-	QMap<int, double*>::const_iterator found = m_clampMax.find(component);
-	return found == m_clampMax.end() ? nullptr : found.value();
+	auto found = m_clampMax.find(component);
+	return found == m_clampMax.end() ? 0. : found.value();
 }
 
 VipNDArray VipExtractARGBComponents::ExtractOneComponent(const VipNDArray& array, const QString& component) const
@@ -571,15 +515,15 @@ QStringList ComplexComponents()
 			     << "Argument";
 }
 
-VipNDArray ToComplexComponent(const VipNDArray& dat, ComplexComponent component)
+VipNDArray ToComplexComponent(const VipNDArray& dat, Vip::ComplexComponent component)
 {
-	if (component == Real)
+	if (component == Vip::Real)
 		return ToReal(dat);
-	else if (component == Imag)
+	else if (component == Vip::Imag)
 		return ToImag(dat);
-	else if (component == Norm)
+	else if (component == Vip::Norm)
 		return ToNorm(dat);
-	else if (component == Argument)
+	else if (component == Vip::Argument)
 		return ToArgument(dat);
 	else
 		return VipNDArray();
@@ -590,7 +534,7 @@ VipNDArray ToComplexComponent(const VipNDArray& dat, const QString& component)
 	QStringList lst = ComplexComponents();
 	int index = lst.indexOf(component);
 	if (index >= 0)
-		return ToComplexComponent(dat, ComplexComponent(index));
+		return ToComplexComponent(dat, Vip::ComplexComponent(index));
 	else
 		return VipNDArray();
 }
@@ -689,37 +633,37 @@ VipNDArray ToCMYKBlack(const VipNDArray& dat)
 	return vipBlack(dat);
 }
 
-VipNDArray ToColorComponent(const VipNDArray& dat, ColorComponent component)
+VipNDArray ToColorComponent(const VipNDArray& dat, Vip::ColorComponent component)
 {
-	if (component == GrayScale)
+	if (component == Vip::GrayScale)
 		return ToGrayScale(dat);
-	else if (component == Red)
+	else if (component == Vip::Red)
 		return ToRed(dat);
-	else if (component == Green)
+	else if (component == Vip::Green)
 		return ToGreen(dat);
-	else if (component == Blue)
+	else if (component == Vip::Blue)
 		return ToBlue(dat);
-	else if (component == Alpha)
+	else if (component == Vip::Alpha)
 		return ToAlpha(dat);
-	else if (component == HslHue)
+	else if (component == Vip::HslHue)
 		return ToHslHue(dat);
-	else if (component == HslSaturation)
+	else if (component == Vip::HslSaturation)
 		return ToHslSaturation(dat);
-	else if (component == HslLightness)
+	else if (component == Vip::HslLightness)
 		return ToHslLightness(dat);
-	else if (component == HsvHue)
+	else if (component == Vip::HsvHue)
 		return ToHsvHue(dat);
-	else if (component == HsvSaturation)
+	else if (component == Vip::HsvSaturation)
 		return ToHsvSaturation(dat);
-	else if (component == HsvValue)
+	else if (component == Vip::HsvValue)
 		return ToHsvValue(dat);
-	else if (component == CMYKCyan)
+	else if (component == Vip::CMYKCyan)
 		return ToCMYKCyan(dat);
-	else if (component == CMYKMagenta)
+	else if (component == Vip::CMYKMagenta)
 		return ToCMYKMagenta(dat);
-	else if (component == CMYKYellow)
+	else if (component == Vip::CMYKYellow)
 		return ToCMYKYellow(dat);
-	else if (component == CMYKBlack)
+	else if (component == Vip::CMYKBlack)
 		return ToCMYKBlack(dat);
 	else
 		return VipNDArray();
@@ -730,7 +674,7 @@ VipNDArray ToColorComponent(const VipNDArray& dat, const QString& component)
 	QStringList lst = ColorComponents();
 	int index = lst.indexOf(component);
 	if (index >= 0)
-		return ToColorComponent(dat, ColorComponent(index));
+		return ToColorComponent(dat, Vip::ColorComponent(index));
 	else
 		return VipNDArray();
 }

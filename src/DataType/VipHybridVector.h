@@ -39,6 +39,7 @@
 
 #include <algorithm>
 #include <iterator>
+#include <type_traits>
 
 /// \addtogroup DataType
 /// @{
@@ -69,7 +70,23 @@ namespace detail
 	template<typename T>
 	std::false_type is_iterable_impl(...);
 
+
+	template <qsizetype I = 0, class C, class A, class... Args>
+	VIP_ALWAYS_INLINE auto affectValues(C & out, A a, Args... vals) noexcept
+	{
+		out[I] = (qsizetype)a;
+		if constexpr (sizeof...(Args) > 0)
+			affectValues<I + 1>(out, std::forward<Args>(vals)...);
+	}
 }
+
+
+/// @brief Check whether all parameters are of integral type
+template<class... T>
+struct VipIsAllIntegers
+{
+	static constexpr bool value = (std::is_integral_v<T> && ...);
+};
 
 template<class F, qsizetype... Dims>
 VIP_ALWAYS_INLINE void vipForEachDims(F&& f, std::integer_sequence<qsizetype, Dims...>)
@@ -148,6 +165,13 @@ struct VipHybridVector
 	VIP_ALWAYS_INLINE VipHybridVector(const T (&list)[N]) noexcept
 	{
 		vipForEachDims([&](auto i) { elems[i] = list[i]; }, std::make_integer_sequence<qsizetype, (qsizetype)N>{});
+	}
+
+	template<class... Args>
+	VIP_ALWAYS_INLINE VipHybridVector(Args... args) noexcept
+	{
+		static_assert((qsizetype)(sizeof...(Args)) == N);
+		detail::affectValues<0>(*this, std::forward<Args>(args)...);
 	}
 
 	template<class Iter, std::enable_if_t<VipIsIterator_v<Iter>, int> = 0>
@@ -642,10 +666,10 @@ VIP_ALWAYS_INLINE VipHybridVector<T, Vip::None> vipVector(const QVector<T>& v) n
 }
 
 /// @brief Create a VipCoordinate object
-template<class... Args>
+template<class... Args, std::enable_if_t<VipIsAllIntegers<Args...>::value, int> = 0>
 VIP_ALWAYS_INLINE auto vipVector(Args... sizes) noexcept
 {
-	return VipCoordinate<sizeof...(Args)>{ { std::forward<qsizetype>(sizes)... } };
+	return VipCoordinate<sizeof...(Args)>{ std::forward<qsizetype>(sizes)... };
 }
 
 VIP_ALWAYS_INLINE auto vipVector(const QPoint& pt)

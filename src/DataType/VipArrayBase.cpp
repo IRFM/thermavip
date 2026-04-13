@@ -66,8 +66,8 @@ bool vipCanConvertStdTypes(int from, int to) noexcept
 	if (from == QMetaType::QByteArray)
 		return vipIsArithmetic(to) || vipIsComplex(to) || to == QMetaType::QString || to == QMetaType::QByteArray || to == qMetaTypeId<VipRGB>()|| to == qMetaTypeId<VipRGBf>();
 
-	if (from == qMetaTypeId<VipRGB>()|| from == qMetaTypeId<VipRGBf>())
-		return (to == QMetaType::QString || to == QMetaType::QByteArray);
+	if (VipIsRgbType(from))
+		return (to == QMetaType::QString || to == QMetaType::QByteArray || VipIsRgbType(to));
 
 	return false;
 }
@@ -77,7 +77,7 @@ bool vipCanConvert(int from, int to)
 	QVariant v_from = vipFromVoid(from, nullptr);
 	bool res = v_from.canConvert(VIP_META(to));
 
-	// delete potential the QObject that was created
+	// delete the potential QObject that was created
 	if (QObject* obj = v_from.value<QObject*>())
 		delete obj;
 

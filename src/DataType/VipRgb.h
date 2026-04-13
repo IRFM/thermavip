@@ -252,6 +252,11 @@ struct VipRgbType
 template<class T>
 using VipRgbType_t = typename VipRgbType<T>::type;
 
+inline bool VipIsRgbType(int type)
+{
+	return type == qMetaTypeId<VipRGB>() || type == qMetaTypeId<VipRGBf>();
+}
+
 //
 // Operator overloads
 //
