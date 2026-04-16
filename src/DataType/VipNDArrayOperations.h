@@ -1338,7 +1338,6 @@ QImage vipToImage(const Expr& ar)
 /// through the QImage lifetime.
 inline QImage vipToImageRef(const VipNDArray& ar)
 {
-	auto shape = ar.shape();
 	if (ar.shapeCount() != 2 || ar.dataType() != qMetaTypeId<VipRGB>())
 		return {};
 

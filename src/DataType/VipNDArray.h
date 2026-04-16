@@ -38,7 +38,7 @@
 #include <QImage>
 
 #include "VipArrayBase.h"
-#include "VipRGB.h"
+#include "VipRgb.h"
 #include "VipHybridVector.h"
 #include "VipIterator.h"
 #include "VipLongDouble.h"
@@ -1306,9 +1306,6 @@ VipNDArray::VipNDArray(const T& expression, typename std::enable_if<VipIsExpress
 template<class T>
 typename std::enable_if<VipIsExpression<T>::value, VipNDArray&>::type VipNDArray::operator=(const T& other)
 {
-	const int dtype = other.dataType();
-	const VipNDArrayShape sh = other.shape();
-
 	// Detach and protect
 	detach();
 	auto handle = this->sharedHandle();

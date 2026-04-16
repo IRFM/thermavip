@@ -32,6 +32,9 @@
 #ifndef VIP_EVAL_H
 #define VIP_EVAL_H
 
+
+#include <optional>
+
 #include "VipNDArray.h"
 #include "VipNDArrayOperations.h"
 #include "VipOverRoi.h"
@@ -49,7 +52,7 @@ namespace detail
 
 // Forward declaration
 template<class Dst, class Src, class OverRoi , bool Err>
-bool vipEval(const Dst& _dst, const Src& src, const OverRoi& roi , detail::CError<Err>);
+bool vipEval(const Dst& _dst, const Src& src, const OverRoi& roi = {}, detail::CError<Err> = {});
 
 namespace detail
 {
@@ -445,7 +448,7 @@ namespace detail
 /// For instance, vipResize() uses internally vipEval() to apply a resizing algorithm.
 /// 
 template<class Dst, class Src, class OverRoi = VipInfinitRoi, bool Err = true>
-bool vipEval(const Dst& _dst, const Src& src, const OverRoi& roi = {}, detail::CError<Err> = {})
+bool vipEval(const Dst& _dst, const Src& src, const OverRoi& roi , detail::CError<Err> )
 {
 	static constexpr auto reduce = std::is_base_of_v<detail::BaseReductor, Dst>;
 

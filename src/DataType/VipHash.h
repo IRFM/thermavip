@@ -110,26 +110,26 @@ inline size_t vipHashValue(const T& value)
 {
 	if constexpr (std::is_arithmetic_v<T>) {
 
-		quint64 val;
+		std::uint64_t val;
 		if constexpr (sizeof(T) == 1)
-			val = (quint64)value;
+			val = (std::uint64_t)value;
 		else if constexpr (sizeof(T) == 2)
-			val = (quint64)value;
+			val = (std::uint64_t)value;
 		else {
 			if constexpr (std::is_integral_v<T>)
-				val = (quint64)value;
+				val = (std::uint64_t)value;
 			else {
 				val = 0;
 				memcpy(&val, &value, sizeof(T));
 			}
 		}
 #ifdef VIP_HAS_FAST_UMUL128
-		static constexpr quint64 k = 0xde5fb9d2630458e9ULL;
-		quint64 l, h;
-		vipUmul128((quint64)val, k, &l, &h);
+		static constexpr std::uint64_t k = 0xde5fb9d2630458e9ULL;
+		std::uint64_t l, h;
+		vipUmul128((std::uint64_t)val, k, &l, &h);
 		return static_cast<size_t>(h + l);
 #else
-		quint64 a = val;
+		std::uint64_t a = val;
 		a ^= a >> 23;
 		a *= 0x2127599bf4325c37ULL;
 		a ^= a >> 47;

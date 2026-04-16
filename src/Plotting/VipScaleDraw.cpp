@@ -679,7 +679,7 @@ QTransform textTransformation(VipPolarScaleDraw::TextTransform textTransform, Vi
 
 				// minor adjustements
 				if (ha < 90) {
-					// 45° and -45° from horizontal, right side
+					// 45ï¿½ and -45ï¿½ from horizontal, right side
 					double add = 1 - qAbs((ha - 45.) / 45.);
 					dx += add;
 					if (va > 0)
@@ -1553,8 +1553,6 @@ VipScaleDiv::TickList VipAbstractScaleDraw::labelTicks(VipScaleDiv::TickType tic
 
 bool VipAbstractScaleDraw::needCheckLabelOverlapping() const
 {
-	bool lo = d_data->labelOverlap;
-	bool do_ = d_data->dirtyOverlap;
 	if (d_data->labelOverlap || !d_data->dirtyOverlap)
 		return false;
 	return true;
@@ -3113,7 +3111,7 @@ QPointF VipPolarScaleDraw::labelPosition(vip_double value, double& angle, VipSca
 	double length = sweepLength() * Vip::ToRadian * radius();
 	angle = startAngle() + (sweepLength() * tval / length);
 
-	// Text that are located on 45° (on diagonals) are too close to the backbone.
+	// Text that are located on 45ï¿½ (on diagonals) are too close to the backbone.
 	// Below is a way to take them away
 
 	// clean angle to have it between 0 and 360
