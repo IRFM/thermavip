@@ -492,6 +492,8 @@ bool vipEval(const Dst& _dst, const Src& src, const OverRoi& roi = {}, detail::C
 				return vipEval(VipNDArrayTypeView<char>(dst), src, roi, detail::CError<false>{});
 			case QMetaType::SChar:
 				return vipEval(VipNDArrayTypeView<signed char>(dst), src, roi, detail::CError<false>{});
+			case QMetaType::UChar:
+				return vipEval(VipNDArrayTypeView<unsigned char>(dst), src, roi, detail::CError<false>{});
 			case QMetaType::Short:
 				return vipEval(VipNDArrayTypeView<qint16>(dst), src, roi, detail::CError<false>{});
 			case QMetaType::UShort:
