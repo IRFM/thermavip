@@ -773,6 +773,35 @@ static QVariant getData(int player, const QString & data_name)
 	return (item->inputAt(0)->data().data());
 }
 
+#include "VipProcessingObjectEditor.h"
+
+static QVariant loadData(const QString & path, const QVariant & time)
+{
+	std::unique_ptr<VipIODevice> device( VipCreateDevice::create(path));
+	if(!device)
+		return error("no suitable device found for given path");
+
+	if(!device->open(VipIODevice::ReadOnly)) {
+		return error("unable to open device of type " + QString(device->metaObject()->className()));
+	}
+	if(device->outputCount() == 0)
+		return error("device has no output");
+
+	if(device->deviceType() == VipIODevice::Temporal) {
+		qint64 load_time = device->firstTime();
+		if(!time.isNull())
+			load_time = time.toLongLong();
+		if(!device->read(load_time))
+			return error("cannot read first time of device");
+	}
+
+	VipAnyData any = device->outputAt(0)->data();
+	auto ret = any.attributes();
+	ret["data"] = any.data();
+	ret["time"] = any.time();
+	return QVariant::fromValue(ret);
+}
+
 static QVariant getDataAttribute(int player, const QString & data_name, const QString & attr_name)
 {
 	VipDragWidget * w = qobject_cast<VipDragWidget*>(VipUniqueId::find<VipBaseDragWidget>(player));
@@ -1923,6 +1952,7 @@ static int registerFunctions()
 	vipRegisterFunction(vipMakeFunctionObject(topLevel, "top_level"));
 	vipRegisterFunction(vipMakeFunctionObject(resize_rows_columns, "resize_workspace"));
 	vipRegisterFunction(vipMakeFunctionObject(getData, "get"));
+	vipRegisterFunction(vipMakeFunctionObject(loadData, "load"));
 	vipRegisterFunction(vipMakeFunctionObject(getDataAttribute, "get_attribute"));
 	vipRegisterFunction(vipMakeFunctionObject(getDataAttributes, "get_attributes"));
 	vipRegisterFunction(vipMakeFunctionObject(setDataAttribute, "set_attribute"));
