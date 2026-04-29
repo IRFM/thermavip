@@ -59,12 +59,12 @@ bool vipCanConvertStdTypes(int from, int to) noexcept
 		return vipIsComplex(to) || to == QMetaType::QString || to == QMetaType::QByteArray;
 
 	if (from == QMetaType::QString)
-		return vipIsArithmetic(to) || vipIsComplex(to) || to == QMetaType::QString || to == QMetaType::QByteArray || to == qMetaTypeId<VipRGB>();
+		return vipIsArithmetic(to) || vipIsComplex(to) || to == QMetaType::QString || to == QMetaType::QByteArray || to == qMetaTypeId<VipRGB>()|| to == qMetaTypeId<VipRGBf>();
 
 	if (from == QMetaType::QByteArray)
-		return vipIsArithmetic(to) || vipIsComplex(to) || to == QMetaType::QString || to == QMetaType::QByteArray || to == qMetaTypeId<VipRGB>();
+		return vipIsArithmetic(to) || vipIsComplex(to) || to == QMetaType::QString || to == QMetaType::QByteArray || to == qMetaTypeId<VipRGB>()|| to == qMetaTypeId<VipRGBf>();
 
-	if (from == qMetaTypeId<VipRGB>())
+	if (from == qMetaTypeId<VipRGB>()|| from == qMetaTypeId<VipRGBf>())
 		return (to == QMetaType::QString || to == QMetaType::QByteArray);
 
 	return false;
@@ -109,6 +109,7 @@ static QMap<int, QMap<int, SharedHandle>>& tables()
 		instances_[VipNDArrayHandle::Standard][qMetaTypeId<complex_d>()] = SharedHandle(new detail::StdHandle<complex_d>());
 		instances_[VipNDArrayHandle::Standard][qMetaTypeId<QString>()] = SharedHandle(new detail::StdHandle<QString>());
 		instances_[VipNDArrayHandle::Standard][qMetaTypeId<VipRGB>()] = SharedHandle(new detail::StdHandle<VipRGB>());
+		instances_[VipNDArrayHandle::Standard][qMetaTypeId<VipRGBf>()] = SharedHandle(new detail::StdHandle<VipRGBf>());
 	}
 
 	return instances_;

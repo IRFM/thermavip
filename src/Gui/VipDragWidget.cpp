@@ -927,6 +927,12 @@ VipDragWidget::VipDragWidget(QWidget* parent)
 	style()->polish(this);
 }
 
+VipDragWidget::VipDragWidget(QWidget * inner, QWidget *parent)
+:VipDragWidget(parent)
+{
+	setWidget(inner);
+}
+
 VipDragWidget::~VipDragWidget()
 {
 	this->VipBaseDragWidget::d_data->destroy = true;
@@ -2515,12 +2521,19 @@ void VipMultiDragWidget::swapWidgets(VipDragWidget* from, VipDragWidget* to)
 	tto->addTab(from, from->windowIcon(), from->windowTitle());
 }
 
-void VipMultiDragWidget::setWidget(int y, int x, VipBaseDragWidget* widget, bool update_content)
+void VipMultiDragWidget::setWidget(int y, int x, QWidget* w, bool update_content)
 {
+	VipBaseDragWidget * drag = qobject_cast<VipBaseDragWidget*>(w);
+	if(!drag) {
+		VipDragWidget * d = new VipDragWidget();
+		d->setWidget(w);
+		drag = d;
+	}
+
 	QTabWidget* tab = tabWidget(y, x);
-	tab->addTab(widget, widget->windowIcon(), widget->windowTitle());
-	widget->setFocusWidget();
-	d_data->lastAdded = widget;
+	tab->addTab(drag, drag->windowIcon(), drag->windowTitle());
+	drag->setFocusWidget();
+	d_data->lastAdded = drag;
 	if (update_content) {
 		// only update the internal structur if required
 		this->updateContent();

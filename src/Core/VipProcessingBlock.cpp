@@ -95,8 +95,17 @@ bool VipProcessingBlock::setOutputConnection(int index, VipOutput* output)
 		setError("Output does not belong to this block");
 		return false;
 	}
-	if (outputCount() != d_data->outputs.size())
-		d_data->outputs.resize(outputCount(),nullptr);
+	if (outputCount() != d_data->outputs.size()){ 
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
+		auto old = d_data->outputs.size();
+		d_data->outputs.resize(outputCount());
+		for(; old < d_data->outputs.size(); ++old )
+			d_data->outputs[old] = nullptr; 
+#else
+		d_data->outputs.resize(outputCount(),(VipOutput*)nullptr);
+#endif	
+	}
+
 
 	d_data->outputs[index] = output;
 	computeLeaves();
@@ -313,9 +322,20 @@ static void cleanupOutputs(QVector<VipOutput*>& io_vector, const QVector<VipProc
 	}
 }
 
+template<class T>
+static QList<T> findDirectChildren(const QObject* obj)
+{
+#if QT_VERSION >= QT_VERSION_CHECK(6, 7, 0)
+	return obj->findChildren<T>(QAnyStringView(), Qt::FindDirectChildrenOnly);
+#else
+	return obj->findChildren<T>(QString(), Qt::FindDirectChildrenOnly);
+#endif
+}
+ 
+
 void VipProcessingBlock::childEvent(QChildEvent* evt)
 {
-	auto lst = this->findChildren<VipProcessingObject*>(Qt::FindDirectChildrenOnly);
+	auto lst = findDirectChildren<VipProcessingObject*>(this); //this->findChildren<VipProcessingObject*>(Qt::FindDirectChildrenOnly);
 
 	if (evt->added()) {
 		if (auto* o = qobject_cast<VipProcessingObject*>(evt->child())) {
@@ -401,15 +421,6 @@ void VipProcessingBlock::receiveNewError(QObject * , const VipErrorData& error)
 
 
 
-template<class T>
-static QList<T> findDirectChildren(const QObject* obj)
-{
-#if QT_VERSION >= QT_VERSION_CHECK(6, 7, 0)
-	return obj->findChildren<T>(QAnyStringView(), Qt::FindDirectChildrenOnly);
-#else
-	return obj->findChildren<T>(QString(), Qt::FindDirectChildrenOnly);
-#endif
-}
  
 
 VipArchive& operator<<(VipArchive& stream, const VipProcessingBlock* r)

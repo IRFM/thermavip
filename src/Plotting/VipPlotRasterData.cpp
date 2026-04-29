@@ -916,6 +916,7 @@ bool VipPlotRasterData::computeImage(const VipRasterData& raster,
 		}
 		else {
 			VipNDArray tmp = raster.extract(rect, &extracted_rect);
+			
 			if (tmp.isEmpty())
 				return false;
 
@@ -924,11 +925,13 @@ bool VipPlotRasterData::computeImage(const VipRasterData& raster,
 				out = QImage(im_rect.width(), im_rect.height(), QImage::Format_ARGB32_Premultiplied);
 			if (tmp_array.shape() != vipVector(im_rect.height(), im_rect.width()) || tmp_array.dataType() != tmp.dataType())
 				tmp_array = VipNDArray(tmp.dataType(), vipVector(im_rect.height(), im_rect.width()));
+
 			tmp.resize(tmp_array);
+			
 
 			if (VipAxisColorMap* axis_map = colorMap()) {
 				const VipColorMap* map = axis_map->colorMap();
-				map->applyColorMap(interval, tmp_array, (QRgb*)out.bits(), VIP_COLOR_MAP_THREADS);
+				map->applyColorMap(interval, tmp_array, (QRgb*)out.bits());
 
 				// set src_image_rect, it will be directly used in VipPainter::drawImage
 
@@ -1002,6 +1005,7 @@ void VipPlotRasterData::setData(const QVariant& v)
 		carray = true;
 	}
 
+
 	VipRasterData _new;
 	if (v.userType() == qMetaTypeId<VipNDArray>())
 		_new = VipRasterData(v.value<VipNDArray>());
@@ -1048,6 +1052,8 @@ void VipPlotRasterData::setData(const QVariant& v)
 			else
 				_ne.convert((_cur));
 			dataLock()->unlock();
+
+
 			setInternalData(QVariant::fromValue(current = VipRasterData(_cur, bounding.topLeft())));
 
 			// Optmize color map computation if the color scale only has this item

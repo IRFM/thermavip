@@ -93,8 +93,6 @@ struct TiledPixmapItem
 	QRectF rect;
 	QPixmap pixmap;
 	QPointF pos;
-	TiledPixmapItem() = default;
-	DEFAULT_MOVE(TiledPixmapItem);
 };
 static QRectF itemBoundingRect(const TiledPixmapItem& it) noexcept
 {
@@ -107,8 +105,6 @@ struct PixmapItem
 	QRectF rect;
 	QPixmap pixmap;
 	QRectF src;
-	PixmapItem() = default;
-	DEFAULT_MOVE(PixmapItem);
 };
 static QRectF itemBoundingRect(const PixmapItem& it) noexcept
 {
@@ -122,8 +118,6 @@ struct ImageItem
 	QImage image;
 	QRectF src;
 	Qt::ImageConversionFlags flags;
-	ImageItem() = default;
-	DEFAULT_MOVE(ImageItem);
 };
 static QRectF itemBoundingRect(const ImageItem& it) noexcept
 {
@@ -137,8 +131,6 @@ struct TextItem
 	QPointF pos;
 	QFont font;
 	QRectF boundingRect;
-	TextItem() = default;
-	DEFAULT_MOVE(TextItem);
 };
 
 template<class T>

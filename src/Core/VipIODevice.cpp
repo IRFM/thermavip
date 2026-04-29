@@ -1053,7 +1053,7 @@ public:
 	std::atomic<bool> dirty_time_window;
 	DeviceType device_type;
 	QObject* dirty_children;
-	QVector<VipIODevice*> read_devices; // use a vector to disable COW (very minor optimization, mainly for openmp)
+	QVector<QPointer<VipIODevice>> read_devices; // use a vector to disable COW (very minor optimization, mainly for openmp)
 	QRecursiveMutex device_mutex;
 	PlayThread thread;
 	// QSharedPointer<VipThreadPool> readPool;
@@ -1320,9 +1320,14 @@ void VipProcessingPool::setEnabled(bool enabled)
 		lst[i]->setEnabled(enabled);
 }
 
-const QVector<VipIODevice*>& VipProcessingPool::readDevices() const
+QVector<VipIODevice*> VipProcessingPool::readDevices() const
 {
-	return d_data->read_devices;
+	QVector<VipIODevice*>  ret;
+	for(const auto & d : d_data->read_devices) {
+		if(auto * dev = d.data())
+			ret.push_back(dev);
+	}
+	return ret;
 }
 
 double VipProcessingPool::playSpeed() const
@@ -1710,9 +1715,11 @@ bool VipProcessingPool::enableStreaming(bool enable)
 	// TEST
 	bool res = false;
 	for (int i = 0; i < d_data->read_devices.size(); ++i) {
-		bool has_streaming = d_data->read_devices[i]->deviceType() == VipIODevice::Sequential || d_data->read_devices[i]->hasStreamingMode();
-		if (has_streaming)
-			res = (d_data->read_devices[i]->setStreamingEnabled(enable)) || res;
+		if(auto * d = d_data->read_devices[i].data()) {
+			bool has_streaming = d->deviceType() == VipIODevice::Sequential || d->hasStreamingMode();
+			if (has_streaming)
+				res = (d->setStreamingEnabled(enable)) || res;
+		}
 	}
 
 	if (enable && res)
@@ -2091,7 +2098,10 @@ void VipProcessingPool::computeChildren()
 	QMutexLocker lock(&d_data->device_mutex);
 
 	// retrieve read only devices
-	d_data->read_devices = findDirectChildren<VipIODevice*>(this).toVector();
+	d_data->read_devices.clear();
+	for(auto * d : findDirectChildren<VipIODevice*>(this))
+		d_data->read_devices.push_back(d);
+		
 	for (int i = 0; i < d_data->read_devices.size(); ++i) {
 		VipIODevice* dev = d_data->read_devices[i];
 		if (!(dev->openMode() & VipIODevice::ReadOnly) && !(dev->supportedModes() & VipIODevice::ReadOnly)) {
@@ -2711,8 +2721,14 @@ void VipTimeRangeBasedGenerator::setTimeWindows(const VipTimeRangeList& _ranges,
 
 	// compute the sizes
 	for (int i = 0; i < d_data->ranges.size(); ++i) {
-		d_data->sizes.append(qAbs(d_data->ranges[i].second - d_data->ranges[i].first) / d_data->step_size + 1);
-		d_data->full_size += d_data->sizes.back();
+		if(_step_size > 0) {
+			d_data->sizes.append(qAbs(d_data->ranges[i].second - d_data->ranges[i].first) / d_data->step_size + 1);
+			d_data->full_size += d_data->sizes.back();
+		}
+		else {
+			d_data->sizes.append(2);
+			d_data->full_size += 2;
+		}
 	}
 
 	this->setSize(d_data->full_size);
@@ -2722,6 +2738,7 @@ void VipTimeRangeBasedGenerator::setTimeWindows(const VipTimeRangeList& _ranges,
 	this->setTimestampingFilter(filter);
 	this->emitTimestampingChanged();
 }
+
 
 void VipTimeRangeBasedGenerator::setTimestamps(const QVector<qint64>& timestamps, bool enable_multiple_time_range)
 {
@@ -2843,6 +2860,22 @@ qint64 VipTimeRangeBasedGenerator::computePosToTime(qint64 pos) const
 			return d_data->timestamps[pos];
 	}
 
+	if(d_data->step_size == 0 ) {
+		if (d_data->ranges.isEmpty())
+			return VipInvalidTime;
+		if(pos < 0)
+			return d_data->ranges.first().first;
+		else if(pos >= d_data->ranges.size()*2 )
+			return d_data->ranges.last().second;
+		else {
+			auto r = pos /2;
+			if(pos & 1)
+				return d_data->ranges[r].second;
+			else
+				return d_data->ranges[r].first;
+		}
+	}
+
 	qint64 cum_pos = 0;
 	for (int i = 0; i < d_data->ranges.size(); ++i) {
 		if (pos < d_data->sizes[i] + cum_pos) {
@@ -2870,6 +2903,35 @@ qint64 VipTimeRangeBasedGenerator::computeTimeToPos(qint64 time) const
 			return prev - d_data->timestamps.cbegin();
 		else
 			return it - d_data->timestamps.cbegin();
+	}
+
+	if(d_data->step_size == 0 ) {
+		if (d_data->ranges.isEmpty())
+			return VipInvalidTime;
+		auto it = std::lower_bound(d_data->ranges.cbegin(),d_data->ranges.cend(),time,[](const auto &l, const auto &r){return l.first < r;});
+		if (it == d_data->ranges.cend()) {
+			if (time > (d_data->ranges.back().first + d_data->ranges.back().second) /2)
+				return d_data->ranges.size() * 2 - 1;
+			return (d_data->ranges.size()-1) * 2;
+		}
+		
+		if (it->first > time) {
+			if (it == d_data->ranges.begin())
+				return 0;
+			--it;
+			// check in between 2 ranges
+			if (time > it->second) {
+				auto middle = (it->second + std::next(it)->first)/2;
+				if (time > middle)
+					return (std::next(it) - d_data->ranges.cbegin()) * 2;
+				return (it - d_data->ranges.cbegin()) * 2 + 1;
+			}
+		}
+
+		auto ret = (it - d_data->ranges.cbegin())*2;
+		if(qAbs(time - it->first) < qAbs(time - it->second))
+			return ret;
+		return ret +1;
 	}
 
 	qint64 cum_pos = 0;
@@ -3650,7 +3712,7 @@ VipCSVWriter::VipCSVWriter(QObject* parent)
   : VipIODevice(parent)
 {
 	setPaddValue(0);
-	setResampleMode(ResampleIntersection | ResampleInterpolation);
+	setResampleMode(Vip::ResampleIntersection | Vip::ResampleInterpolation);
 }
 
 VipCSVWriter::~VipCSVWriter() {}
@@ -3709,7 +3771,7 @@ void VipCSVWriter::apply()
 	}
 
 	if (vectors.size()) {
-		VipNDArray ar = vipResampleVectorsAsNDArray(vectors, (ResampleStrategies)resampleMode(), paddValue());
+		VipNDArray ar = vipResampleVectorsAsNDArray(vectors, (Vip::ResampleStrategies)resampleMode(), paddValue());
 		if (ar.isEmpty()) {
 			setError("Cannot create CSV file: check that the input signals are valid and not disjoint");
 			return;

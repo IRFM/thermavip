@@ -38,11 +38,37 @@
 /// \addtogroup DataType
 /// @{
 
+/// @brief Set/get the number of threads used for iterating over VipNDArray objects
+/// using the vipEval() function. This thread count is passed to "openmp "omp parallel for" directive.
+/// Default to 1.
+VIP_DATA_TYPE_EXPORT int vipIterateThreadCount() noexcept;
+VIP_DATA_TYPE_EXPORT void vipSetIterateThreadCount(int threads) noexcept;
+
+/// @brief Set/get the loop parallelization threshold.
+/// vipEval() will parallelize function evaluation if vipIterateThreadCount() > 1 and
+/// total array size is greater than vipSetParallelSizeThreshold(). Defaults to 4096.
+VIP_DATA_TYPE_EXPORT int vipParallelSizeThreshold() noexcept;
+VIP_DATA_TYPE_EXPORT void vipSetParallelSizeThreshold(int) noexcept;
+
+VIP_DATA_TYPE_EXPORT int vipLoopThreadCount(int size) noexcept;
+
+#ifdef _OPENMP
+#define VIP_PARALLEL_FOR VIP_PRAGMA(omp parallel for schedule(static) num_threads(vipIterateThreadCount()))
+#else
+#define VIP_PARALLEL_FOR
+#endif
+
+#ifdef _OPENMP
+#define VIP_PARALLEL_FOR_NUM_THREADS(threads) VIP_PRAGMA(omp parallel for schedule(static) num_threads(threads))
+#else
+#define VIP_PARALLEL_FOR_NUM_THREADS(threads)
+#endif
+
 /// Null transform returning its input
 struct VipNullTransform
 {
 	template<class T>
-	T operator()(T v) const
+	VIP_ALWAYS_INLINE const T& operator()(const T& v) const
 	{
 		return v;
 	}
@@ -57,7 +83,11 @@ struct VipFillTransform
 	  : value(val)
 	{
 	}
-	T operator()(T) const { return value; }
+	template<class U>
+	VIP_ALWAYS_INLINE T operator()(const U&) const
+	{
+		return value;
+	}
 };
 
 namespace Vip
@@ -96,124 +126,60 @@ namespace Vip
 	};
 }
 
-namespace iter_detail
+namespace detail
 {
+	template<class Shape>
+	constexpr qsizetype ndims() noexcept
+	{
+		// Returns vector static size
+		using Sh = std::decay_t<Shape>;
+		return Sh::static_size;
+	}
+	template<class Strides, class Shape>
+	constexpr qsizetype staticDims() noexcept
+	{
+		// If both vector types are statis, returns the minimum size.
+		// Otherwise, returns a static size if possible, VipNone (-1) otherwise.
+		using Sh = std::decay_t<Shape>;
+		using St = std::decay_t<Strides>;
+		if constexpr (St::static_size > 0 && Sh::static_size > 0)
+			return St::static_size < Sh::static_size ? St::static_size : Sh::static_size;
+		else
+			return St::static_size > Sh::static_size ? St::static_size : Sh::static_size;
+	}
 
-	template<class Shape>
-	struct StaticSize
+	template<bool Unstrided, qsizetype Pos, qsizetype Dims, class StridesType, class ShapeType>
+	static VIP_ALWAYS_INLINE qsizetype flatOffsetInternal(const StridesType* strides, const ShapeType* pos) noexcept
 	{
-		static const qsizetype value = Shape::static_size;
-	};
-	template<class Shape>
-	struct StaticSize<Shape&>
-	{
-		static const qsizetype value = Shape::static_size;
-	};
-	template<class Shape>
-	struct StaticSize<const Shape&>
-	{
-		static const qsizetype value = Shape::static_size;
-	};
-	template<class Shape>
-	struct StaticSize<const Shape>
-	{
-		static const qsizetype value = Shape::static_size;
-	};
+		// UT_ASSERT_DEBUG(coord[Pos] >= 0);
+		if constexpr (Pos == Dims - 1) {
+			if constexpr (Unstrided)
+				return pos[Pos];
+			else
+				return strides[Pos] * pos[Pos];
+		}
+		else
+			return strides[Pos] * pos[Pos] + flatOffsetInternal<Unstrided, Pos + 1, Dims>(strides, pos);
+	}
 
 }
 
-#define __NDIM(expr) iter_detail::StaticSize<decltype(expr)>::value
-#define __NDIM2(expr1, expr2)                                                                                                                                                                          \
-	iter_detail::StaticSize<decltype(expr1)>::value > iter_detail::StaticSize<decltype(expr2)>::value ? iter_detail::StaticSize<decltype(expr1)>::value                                            \
-													  : iter_detail::StaticSize<decltype(expr2)>::value
-
-namespace detail
+/// Compute the flat position of given N-Dimension position based on given strides
+template<bool Unstrided, qsizetype Nst, qsizetype Nsh>
+static VIP_ALWAYS_INLINE qsizetype vipFlatOffset(const VipCoordinate<Nst>& strides, const VipCoordinate<Nsh>& pos) noexcept
 {
-	template<class StridesType, class PosType, qsizetype Dim>
-	struct ComputeOffset
-	{
-		static qsizetype offset(const StridesType& strides, const PosType& pos, qsizetype previous_offset) noexcept
-		{
-			return previous_offset + ComputeOffset<StridesType, PosType, Dim - 1>::offset(strides, pos, strides[PosType::static_size - Dim] * pos[PosType::static_size - Dim]);
-		}
-	};
-
-	template<class StridesType, class PosType>
-	struct ComputeOffset<StridesType, PosType, 1>
-	{
-		static qsizetype offset(const StridesType& strides, const PosType& pos, qsizetype previous_offset) noexcept
-		{
-			return previous_offset + pos[PosType::static_size - 1] * strides[PosType::static_size - 1];
-		}
-	};
-
-	template<class StridesType, class PosType>
-	struct ComputeOffset<StridesType, PosType, Vip::None>
-	{
-		static VIP_ALWAYS_INLINE qsizetype offset(const StridesType& strides, const PosType& pos, qsizetype) noexcept
-		{
-			switch (pos.size()) {
-				case 1:
-					return strides[0] * pos[0];
-				case 2:
-					return strides[0] * pos[0] + strides[1] * pos[1];
-				case 3:
-					return strides[0] * pos[0] + strides[1] * pos[1] + strides[2] * pos[2];
-				default: {
-					qsizetype res = strides[0] * pos[0];
-					for (qsizetype i = 1; i < pos.size(); ++i)
-						res += strides[i] * pos[i];
-					return res;
-				}
-			}
-		}
-	};
-
-	template<bool Unstrided, class StridesType, class PosType, qsizetype Dim>
-	struct ComputeFinalOffset
-	{
-		static VIP_ALWAYS_INLINE qsizetype offset(const StridesType& strides, const PosType& pos) noexcept
-		{
-			return ComputeOffset<StridesType, VipCoordinate< Dim>, Dim>::offset(strides, pos, 0);
-		}
-	};
-
-	// small optimization for dimension 1,2 and 3
-	template<bool Unstrided, class StridesType, class PosType>
-	struct ComputeFinalOffset<Unstrided, StridesType, PosType, 1>
-	{
-		static VIP_ALWAYS_INLINE qsizetype offset(const StridesType& strides, const PosType& pos) noexcept
-		{
-			if (StridesType::static_size == 1 && Unstrided)
-				return pos[0];
-			else
-				return pos[0] * strides[0];
-		}
-	};
-
-	template<bool Unstrided, class StridesType, class PosType>
-	struct ComputeFinalOffset<Unstrided, StridesType, PosType, 2>
-	{
-		static VIP_ALWAYS_INLINE qsizetype offset(const StridesType& strides, const PosType& pos) noexcept
-		{
-			if (StridesType::static_size == 2 && Unstrided)
-				return pos[0] * strides[0] + pos[1];
-			else
-				return pos[0] * strides[0] + pos[1] * strides[1];
-		}
-	};
-
-	template<bool Unstrided, class StridesType, class PosType>
-	struct ComputeFinalOffset<Unstrided, StridesType, PosType, 3>
-	{
-		static VIP_ALWAYS_INLINE qsizetype offset(const StridesType& strides, const PosType& pos) noexcept
-		{
-			if (StridesType::static_size == 3 && Unstrided)
-				return pos[0] * strides[0] + pos[1] * strides[1] + pos[2];
-			else
-				return pos[0] * strides[0] + pos[1] * strides[1] + pos[2] * strides[2];
-		}
-	};
+	using StridesType = VipCoordinate<Nst>;
+	using ShapeType = VipCoordinate<Nsh>;
+	if constexpr (detail::staticDims<StridesType, ShapeType>() > 0)
+		return detail::flatOffsetInternal<Unstrided, 0, detail::staticDims<StridesType, ShapeType>()>(strides.data(), pos.data());
+	else {
+		if (strides.isEmpty())
+			return 0;
+		qsizetype ret = pos[0] * strides[0];
+		for (qsizetype i = 1; i < strides.size(); ++i)
+			ret += pos[i] * strides[i];
+		return ret;
+	}
 }
 
 /// Compute the size of shape (#VipHybridVector object) by multiplying all its components
@@ -279,12 +245,7 @@ inline qsizetype vipComputeDefaultStrides(const Shape& shape, Strides& strides)
 template<class Vector>
 inline qsizetype vipCumMultiply(const Vector& shape)
 {
-	if (!shape.size())
-		return 0;
-	qsizetype res = shape[0];
-	for (qsizetype i = 1; i < shape.size(); ++i)
-		res *= shape[i];
-	return res;
+	return vipShapeToSize(shape);
 }
 /// Cumulative mutliplication of a shape (based on top left and top right position) to extract its size
 template<class Vector1, class Vector2>
@@ -296,21 +257,6 @@ inline qsizetype vipCumMultiplyRect(const Vector1& topLeft, const Vector2& botto
 	return res;
 }
 
-/// Compute the flat position of given N-Dimension position based on given strides
-template<bool Unstrided, class StridesType, qsizetype Dim>
-static VIP_ALWAYS_INLINE qsizetype vipFlatOffset(const StridesType& strides, const VipCoordinate< Dim>& pos) noexcept
-{
-	static const qsizetype NDims = __NDIM2(strides, pos);
-	return detail::ComputeFinalOffset<Unstrided, StridesType, VipCoordinate< Dim>, NDims>::offset(strides, pos);
-}
-
-template<bool Unstrided, class StridesType, class VectorType>
-static VIP_ALWAYS_INLINE qsizetype vipFlatOffset(const StridesType& strides, const VectorType& pos) noexcept
-{
-	static const qsizetype NDims = __NDIM2(strides, pos);
-	return detail::ComputeFinalOffset<Unstrided, StridesType, VectorType, NDims>::offset(strides, pos);
-}
-
 /// Returns true if the flat sizes of 2 shapes are the same
 template<class VectorType1, class VectorType2>
 inline bool vipCompareShapeSize(const VectorType1& sh1, const VectorType2 sh2)
@@ -318,85 +264,37 @@ inline bool vipCompareShapeSize(const VectorType1& sh1, const VectorType2 sh2)
 	return vipCumMultiply(sh1) == vipCumMultiply(sh2);
 }
 
-namespace iter_detail
+template<Vip::Ordering order, qsizetype N, class Shape>
+bool vipSetFlatPos(VipCoordinate<N>& coord, const Shape& shape, qsizetype offset)
 {
+	VipCoordinate<detail::staticDims<VipCoordinate<N>, Shape>()> strides;
+	vipComputeDefaultStrides<order>(shape, strides);
+	for (qsizetype i = 0; i < strides.size(); ++i) {
+		coord[i] = (offset / strides[i]);
+		offset = (offset % strides[i]);
+	}
+	return true;
+}
 
-	template<Vip::Ordering order, qsizetype N, class Shape>
-	VIP_INLINE bool setFlatPos(VipCoordinate< N>& coord, const Shape& shape, qsizetype offset)
-	{
-		static const qsizetype static_size = __NDIM2(coord, shape);
-		VipCoordinate< static_size> strides;
-		vipComputeDefaultStrides<order>(shape, strides);
-		for (qsizetype i = 0; i < strides.size(); ++i) {
-			coord[i] = (offset / strides[i]);
-			offset = (offset % strides[i]);
-		}
-		return true;
+template<Vip::Ordering order, qsizetype N, qsizetype N2, qsizetype N3>
+bool vipSetFlatPos(VipCoordinate<N>& coord, const VipCoordinate<N2>& start, const VipCoordinate<N3>& end, qsizetype offset)
+{
+	static const qsizetype static_size = N > 0 ? N : (N2 > 0 ? N2 : N3);
+	VipCoordinate<static_size> sh;
+	sh.resize(start.size());
+	for (qsizetype i = 0; i < sh.size(); ++i)
+		sh[i] = end[i] - start[i];
+	VipCoordinate<static_size> strides;
+	vipComputeDefaultStrides<order>(sh, strides);
+	for (qsizetype i = 0; i < sh.size(); ++i) {
+		coord[i] = (offset / strides[i]) + start[i];
+		offset = (offset % strides[i]);
 	}
-	template<Vip::Ordering order, qsizetype N, qsizetype N2, qsizetype N3>
-	VIP_INLINE bool setFlatPos(VipCoordinate< N>& coord, const VipCoordinate< N2>& start, const VipCoordinate< N3>& end, qsizetype offset)
-	{
-		static const qsizetype static_size = N > 0 ? N : (N2 > 0 ? N2 : N3);
-		VipCoordinate< static_size> sh;
-		sh.resize(start.size());
-		for (qsizetype i = 0; i < sh.size(); ++i)
-			sh[i] = end[i] - start[i];
-		VipCoordinate< static_size> strides;
-		vipComputeDefaultStrides<order>(sh, strides);
-		for (qsizetype i = 0; i < sh.size(); ++i) {
-			coord[i] = (offset / strides[i]) + start[i];
-			offset = (offset % strides[i]);
-		}
-		return true;
-	}
+	return true;
 }
 
 namespace detail
 {
-	// increment a position
-	template<Vip::Ordering ordering>
-	struct ReachEndIncrement;
-
-	template<>
-	struct ReachEndIncrement<Vip::FirstMajor>
-	{
-		template<class Position, class Shape>
-		VIP_ALWAYS_INLINE static bool apply(const Position& pos, const Shape& sh)
-		{
-			return pos[0] == sh[0];
-		}
-	};
-	template<>
-	struct ReachEndIncrement<Vip::LastMajor>
-	{
-		template<class Position, class Shape>
-		VIP_ALWAYS_INLINE static bool apply(const Position& pos, const Shape& sh)
-		{
-			return pos.back() == sh.back();
-		}
-	};
-
-	template<Vip::Ordering ordering>
-	struct ContinueIncrement;
-
-	template<>
-	struct ContinueIncrement<Vip::FirstMajor>
-	{
-		template<class Position, class Shape>
-		VIP_ALWAYS_INLINE static bool apply(const Position& pos, const Shape& sh)
-		{
-			return pos[0] != sh[0];
-		}
-	};
-	template<>
-	struct ContinueIncrement<Vip::LastMajor>
-	{
-		template<class Position, class Shape>
-		VIP_ALWAYS_INLINE static bool apply(const Position& pos, const Shape& sh)
-		{
-			return pos.back() != sh.back();
-		}
-	};
 
 	template<class Shape = void>
 	struct GetStart
@@ -824,61 +722,6 @@ namespace detail
 			return true;
 		}
 	};
-
-	// template<Ordering order>
-	//  struct Increment;
-	//
-	// template<>
-	// struct Increment<FirstMajor>
-	// {
-	// template< class Position, class VipShape>
-	// static bool apply(Position & pos, const VipShape & shape)
-	// {
-	// if(++pos.back() != shape.back())
-	//	return false;
-	// {
-	//	pos.back() = 0;
-	//	for(qsizetype i = pos.size()-2; i!= Vip::None; --i)
-	//	{
-	//		++pos[i];
-	//		if(i!=0)
-	//		{
-	//			if(pos[i] == shape[i] ) pos[i] = 0;
-	//			else break;
-	//		}
-	//	}
-	//	return true;
-	// }
-	// }
-	// };
-	//
-	// template<>
-	// struct Increment<LastMajor>
-	// {
-	// template< class Position, class VipShape>
-	// static bool apply(Position & pos, const VipShape & shape)
-	// {
-	// if(++pos[0] == shape.front())
-	// {
-	//	//update position
-	//	pos[0] = 0;
-	//	for(qsizetype i=1; i < shape.size(); ++i) {
-	//		if(++pos[i] == shape[i] ) {
-	//			pos[i] = 0;
-	//			if(i==shape.size()-1) pos[i] = shape.back(); //last iteration
-	//		}
-	//		else
-	//			break;
-	//	}
-	//
-	//	return true;
-	// }
-	// else
-	//	return false;
-	//
-	//
-	// }
-	// };
 
 	///
 	template<class ShapeType>
@@ -1573,9 +1416,9 @@ template<class TYPE, qsizetype Dim = Vip::None>
 struct VipNDSubArrayConstIterator
 {
 	// array shape
-	VipCoordinate< Dim> pos;
-	VipCoordinate< Dim> shape;
-	VipCoordinate< Dim> strides;
+	VipCoordinate<Dim> pos;
+	VipCoordinate<Dim> shape;
+	VipCoordinate<Dim> strides;
 	const TYPE* ptr;
 	qsizetype abspos;
 	qsizetype full_size;
@@ -1589,7 +1432,7 @@ struct VipNDSubArrayConstIterator
 	{
 		if (abspos == full_size) { // end
 			pos.resize(shape.size());
-			iter_detail::setFlatPos<Vip::FirstMajor>(pos, shape, --abspos);
+			vipSetFlatPos<Vip::FirstMajor>(pos, shape, --abspos);
 		}
 		else {
 			--abspos;
@@ -1635,7 +1478,7 @@ public:
 		if (abspos != new_pos) {
 			abspos = new_pos;
 			pos.resize(shape.size());
-			iter_detail::setFlatPos<Vip::FirstMajor>(pos, shape, abspos);
+			vipSetFlatPos<Vip::FirstMajor>(pos, shape, abspos);
 		}
 	}
 	VIP_ALWAYS_INLINE VipNDSubArrayConstIterator& operator++() noexcept
@@ -1786,234 +1629,33 @@ VIP_ALWAYS_INLINE typename VipNDSubArrayConstIterator<TYPE, Dim>::difference_typ
 template<class TYPE, qsizetype Dim>
 VIP_ALWAYS_INLINE bool operator==(const VipNDSubArrayConstIterator<TYPE, Dim>& it1, const VipNDSubArrayConstIterator<TYPE, Dim>& it2) noexcept
 {
-	return it1.abspos == it2.abspos; // it1.bucket == it2.bucket && it1.ptr == it2.ptr;
+	return it1.abspos == it2.abspos;
 }
 template<class TYPE, qsizetype Dim>
 VIP_ALWAYS_INLINE bool operator!=(const VipNDSubArrayConstIterator<TYPE, Dim>& it1, const VipNDSubArrayConstIterator<TYPE, Dim>& it2) noexcept
 {
-	return it1.abspos != it2.abspos; // it1.ptr != it2.ptr || it1.bucket != it2.bucket ;
+	return it1.abspos != it2.abspos;
 }
 template<class TYPE, qsizetype Dim>
 VIP_ALWAYS_INLINE bool operator<(const VipNDSubArrayConstIterator<TYPE, Dim>& it1, const VipNDSubArrayConstIterator<TYPE, Dim>& it2) noexcept
 {
-	return it1.abspos < it2.abspos; // it1.bucket == it2.bucket ? it1.index() < it2.index() : it1.bucket < it2.bucket;
+	return it1.abspos < it2.abspos;
 }
 template<class TYPE, qsizetype Dim>
 VIP_ALWAYS_INLINE bool operator>(const VipNDSubArrayConstIterator<TYPE, Dim>& it1, const VipNDSubArrayConstIterator<TYPE, Dim>& it2) noexcept
 {
-	return it1.abspos > it2.abspos; // it1.bucket == it2.bucket ? it1.index() > it2.index() : it1.bucket > it2.bucket;
+	return it1.abspos > it2.abspos;
 }
 template<class TYPE, qsizetype Dim>
 VIP_ALWAYS_INLINE bool operator<=(const VipNDSubArrayConstIterator<TYPE, Dim>& it1, const VipNDSubArrayConstIterator<TYPE, Dim>& it2) noexcept
 {
-	return it1.abspos <= it2.abspos; // it1.bucket == it2.bucket ? it1.index() <= it2.index() : it1.bucket < it2.bucket;
+	return it1.abspos <= it2.abspos;
 }
 template<class TYPE, qsizetype Dim>
 VIP_ALWAYS_INLINE bool operator>=(const VipNDSubArrayConstIterator<TYPE, Dim>& it1, const VipNDSubArrayConstIterator<TYPE, Dim>& it2) noexcept
 {
-	return it1.abspos >= it2.abspos; // it1.bucket == it2.bucket ? it1.index() >= it2.index() : it1.bucket > it2.bucket;
+	return it1.abspos >= it2.abspos;
 }
-
-// template< class TYPE, qsizetype Dim = Vip::None,  bool InnerUnstrided = false>
-//  struct VipNDSubArrayIterator
-//  {
-//  //array shape
-//  VipHybridVector<qsizetype,Dim> shape;
-//  //array strides
-//  VipHybridVector<qsizetype,Dim> strides;
-//  //current pointers in the source data
-//  VipHybridVector<TYPE*,Dim> 	 cur_ptr;
-//  //end pointers in the source data
-//  VipHybridVector<TYPE*,Dim> 	 end_ptr;
-//  //data pointer
-//  TYPE * data;
-//  //end of the inner dimension pointer
-//  TYPE * end;
-//
-//  inline void increment()
-//  {
-//  //incr src pointer
-//  if(InnerUnstrided)
-//	++data;
-//  else
-//	data += strides.back();
-//
-//  if(data == end)
-//	update_position();
-//  }
-//
-//  inline void update_position()
-//  {
-//  for(qsizetype i= shape.size()-1; i>=0; --i)
-//  {
-//	if(data == end_ptr[i])
-//	{
-//		//if we reach the first dimension maximum, return
-//		if(i==0)
-//			return;
-//
-//		//incr previous dimension
-//		cur_ptr[i-1] += strides[i-1];
-//		data = cur_ptr[i-1];
-//	}
-//	else
-//	{
-//		for(qsizetype j=i+1; j< shape.size(); j++ )
-//		{
-//			//reset current pointers and end pointer
-//			cur_ptr[j]=data;
-//			end_ptr[j]=data + shape[j] * strides[j];
-//		}
-//		break;
-//	}
-//  }
-//
-//  end = data  + shape.back() * strides.back();
-//  }
-//
-//
-//  VipNDArrayShape position() const
-//  {
-//  VipNDArrayShape pos(shape.size());
-//  for(qsizetype i=0; i < shape.size(); ++i)
-//  {
-//	pos[i] = (data - cur_ptr[i])/strides[i];
-//  }
-//  return pos;
-//  }
-//
-//
-//
-//  public:
-//
-//  typedef std::forward_iterator_tag iterator_category;
-//  typedef TYPE value_type;
-//  typedef qsizetype size_type ;
-//  typedef qsizetype difference_type;
-//  typedef TYPE* pointer;
-//  typedef const TYPE* const_pointer;
-//  typedef TYPE& reference;
-//  typedef const TYPE& const_reference;
-//
-//  VipNDSubArrayIterator()
-//  :data(nullptr),end(nullptr)
-//  {}
-//
-//  VipNDSubArrayIterator(const VipNDSubArrayIterator & other)
-//  :shape(other.shape),
-//  strides(other.strides),
-//  cur_ptr(other.cur_ptr),
-//  end_ptr(other.end_ptr),
-//  data(other.data),
-//  end(other.end)
-//  {}
-//
-//  VipNDSubArrayIterator(const VipNDArrayShape & sh, const VipNDArrayShape & st, TYPE * ptr, bool begin = true)
-//  : data(ptr),
-//  end(ptr)
-//  {
-//  shape = sh;
-//  strides = st;
-//  cur_ptr.resize(strides.size());
-//  cur_ptr.fill(ptr);
-//  end_ptr.resize(strides.size());
-//  end_ptr.fill(ptr);
-//  #ifdef __GNUC__
-//  #pragma GCC diagnostic push
-//  #pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
-//  #endif
-//  if(!begin)
-//	//data point to the end of the array
-//	data = ptr + shape[0] * strides[0];
-//  else
-//  {
-//	end = ptr  + shape.back() * strides.back();
-//	for(qsizetype i=0; i< shape.size(); ++i)
-//		end_ptr[i] = ptr + shape[i] * strides[i];
-//  }
-//  #ifdef __GNUC__
-//  #pragma GCC diagnostic pop
-//  #endif
-//  }
-//
-//  VipNDSubArrayIterator(TYPE * end_ptr)
-//  :data(end_ptr),end(end_ptr){}
-//
-//  //iterator like interface
-//  reference	operator*()
-//  {
-//  return *data;
-//  }
-//
-//  const_reference	 operator*() const
-//  {
-//  return *data;
-//  }
-//
-//  pointer	operator->()
-//  {
-//  return data;
-//  }
-//
-//  const_pointer	operator->() const
-//  {
-//  return data;
-//  }
-//
-//  template< class Vector>
-//  reference operator()(const Vector & pos)
-//  {
-//  return *(data + vipFlatOffset<InnerUnstrided>(strides,pos));
-//  }
-//
-//  template< class Vector>
-//  const_reference operator()(const Vector & pos) const
-//  {
-//  return *(data + vipFlatOffset<InnerUnstrided>(strides,pos));
-//  }
-//
-//  bool operator!=(const VipNDSubArrayIterator & other)
-//  {
-//  return data != other.data;
-//  }
-//
-//  bool operator==(const VipNDSubArrayIterator & other)
-//  {
-//  return data == other.data;
-//  }
-//
-//  VipNDSubArrayIterator&	operator++()
-//  {
-//  increment();
-//  return (*this);
-//  }
-//
-//  VipNDSubArrayIterator	operator++(qsizetype)
-//  {
-//  VipNDSubArrayIterator temp(*this);
-//  increment();
-//  return temp;
-//  }
-//
-//  VipNDSubArrayIterator & operator=(const VipNDSubArrayIterator & other)
-//  {
-//  (shape) = other.shape;
-//  (strides) = other.strides;
-//  data = other.data;
-//  end = other.end;
-//
-//  cur_ptr.resize(other.cur_ptr.size());
-//  end_ptr.resize(other.end_ptr.size());
-//
-//  for(qsizetype i=0; i < shape.size(); ++i)
-//  {
-//	cur_ptr[i] = other.cur_ptr[i];
-//	end_ptr[i] = other.end_ptr[i];
-//  }
-//
-//  return *this;
-//  }
-//  };
 
 /// Iterator over strided array of unkown type
 template<qsizetype Dim>
@@ -2242,95 +1884,80 @@ public:
 	typedef TYPE& reference;
 	typedef const TYPE& const_reference;
 
-	VipLineIterator(const TYPE* p = nullptr, qsizetype stride = 1)
+	VipLineIterator(const TYPE* p = nullptr, qsizetype stride = 1) noexcept
 	  : data(const_cast<TYPE*>(p))
 	  , stride(stride)
 	{
 	}
 
-	reference operator[](qsizetype pos) { return data[pos * this->stride]; }
-	const_reference operator[](qsizetype pos) const { return data[pos * this->stride]; }
+	reference operator[](qsizetype pos) noexcept { return data[pos * this->stride]; }
+	const_reference operator[](qsizetype pos) const noexcept { return data[pos * this->stride]; }
 
-	reference operator*() { return *data; }
-	const_reference operator*() const { return *data; }
-	pointer operator->() { return data; }
-	const_pointer operator->() const { return data; }
+	reference operator*() noexcept { return *data; }
+	const_reference operator*() const noexcept { return *data; }
+	pointer operator->() noexcept { return data; }
+	const_pointer operator->() const noexcept { return data; }
 
-	bool operator!=(const VipLineIterator& other) const { return data != other.data; }
-	bool operator==(const VipLineIterator& other) const { return data == other.data; }
+	bool operator!=(const VipLineIterator& other) const noexcept { return data != other.data; }
+	bool operator==(const VipLineIterator& other) const noexcept { return data == other.data; }
 
-	VipLineIterator& operator++()
+	VipLineIterator& operator++() noexcept
 	{
 		data += this->stride;
 		return (*this);
 	}
 
-	VipLineIterator operator++(int)
+	VipLineIterator operator++(int) noexcept
 	{
 		VipLineIterator temp(*this);
 		data += this->stride;
 		return temp;
 	}
 
-	VipLineIterator& operator--()
+	VipLineIterator& operator--() noexcept
 	{
 		data -= this->stride;
 		return (*this);
 	}
 
-	VipLineIterator operator--(int)
+	VipLineIterator operator--(int) noexcept
 	{
 		VipLineIterator temp = *this;
 		data -= this->stride;
 		return temp;
 	}
 
-	VipLineIterator operator+(qsizetype pos) const
+	VipLineIterator operator+(qsizetype pos) const noexcept
 	{
 		VipLineIterator res = *this;
 		res.data += pos * this->stride;
 		return res;
 	}
 
-	VipLineIterator& operator+=(qsizetype pos)
+	VipLineIterator& operator+=(qsizetype pos) noexcept
 	{
 		data += pos * this->stride;
 		return *this;
 	}
 
-	VipLineIterator operator-(qsizetype pos) const
+	VipLineIterator operator-(qsizetype pos) const noexcept
 	{
 		VipLineIterator res = *this;
 		res.data -= pos * this->stride;
 		return res;
 	}
 
-	VipLineIterator& operator-=(qsizetype pos)
+	VipLineIterator& operator-=(qsizetype pos) noexcept
 	{
 		data -= pos * this->stride;
 		return *this;
 	}
 
-	qsizetype operator-(const VipLineIterator& other) const { return (data - other.data) / this->stride; }
+	qsizetype operator-(const VipLineIterator& other) const noexcept { return (data - other.data) / this->stride; }
 };
 
 namespace detail
 {
-	template<typename InputIterator, typename OutputIterator, typename Transform>
-	inline OutputIterator stdTransform(InputIterator begin, InputIterator end, OutputIterator dest, Transform tr)
-	{
-		for (; begin != end; ++dest, ++begin)
-			*dest = tr(*begin);
-		return dest;
-	}
-
-	template<typename InputIterator, typename Transform>
-	inline void stdInplaceTransform(InputIterator begin, InputIterator end, Transform tr)
-	{
-		for (; begin != end; ++begin)
-			*begin = tr(*begin);
-	}
-
 	template<typename InputIterator, typename OutputIterator, typename Transform>
 	inline OutputIterator stdApplyBinary(InputIterator begin, InputIterator end, OutputIterator dest, Transform tr)
 	{
@@ -2348,60 +1975,55 @@ namespace detail
 		  , outType(o)
 		{
 		}
-		void operator()(const void* src, void* dst) { 
-			#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
-			QMetaType::convert(src, inType, dst, outType); 
-			#else
-			QMetaType::convert(QMetaType(inType), src, QMetaType(outType), dst); 
-			#endif
+		void operator()(const void* src, void* dst)
+		{
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
+			QMetaType::convert(src, inType, dst, outType);
+#else
+			QMetaType::convert(QMetaType(inType), src, QMetaType(outType), dst);
+#endif
 		}
 	};
 
-	template<class T, class U, class CONVERTER>
-	struct Copy
+	template<class Iter, class Out, class F>
+	void parallelTransform(int threads, qsizetype size, Iter first, Iter last, Out out, F f)
 	{
-		static void apply(const T* start, const T* end, U* other, CONVERTER c) { detail::stdTransform(start, end, other, c); }
-	};
-
-	template<class T, class U>
-	struct Copy<T, U, VipNullTransform>
-	{
-		static void apply(const T* start, const T* end, U* other, VipNullTransform) { std::copy(start, end, other); }
-	};
-
-	template<class T, class CONVERTER>
-	struct CopyInplace
-	{
-		static void apply(T* start, T* end, CONVERTER c) { detail::stdInplaceTransform(start, end, c); }
-	};
-
-	template<class T>
-	struct CopyInplace<T, VipNullTransform>
-	{
-		static void apply(T* start, T* end, VipNullTransform) {}
-	};
-
-	template<class T, class U>
-	struct CopyInplace<T, VipFillTransform<U>>
-	{
-		static void apply(T* start, T* end, VipFillTransform<U> tr) { std::fill(start, end, tr.value); }
-	};
-
+		qsizetype chunk_size = size / threads;
+		VIP_PARALLEL_FOR_NUM_THREADS(threads)
+		for (int i = 0; i < threads; ++i) {
+			auto b = first + i * chunk_size;
+			auto o = out + i * chunk_size;
+			auto e = i == threads - 1 ? last : (b + chunk_size);
+			for (; b != e; ++b, ++o)
+				*o = f(*b);
+		}
+	}
 } // end detail
 
 /// Apply convert function inplace on given possibly strided N-D array
-template<class INTYPE, class CONVERTER>
-bool vipInplaceArrayTransform(INTYPE* in, const VipNDArrayShape& in_shape, const VipNDArrayShape& in_strides, CONVERTER c)
+template<class T, class Fun>
+bool vipInplaceArrayTransform(T* in, const VipNDArrayShape& in_shape, const VipNDArrayShape& in_strides, Fun c)
 {
 	bool in_unstrided;
 	qsizetype size_in = vipShapeToSize(in_shape, in_strides, &in_unstrided);
 	if (!size_in)
 		return false;
 
-	if (in_unstrided)
-		detail::CopyInplace<INTYPE, CONVERTER>::apply(in, in + size_in, c);
+	int threads = vipLoopThreadCount(size_in);
+
+	if (in_unstrided) {
+		if constexpr (std::is_same_v<Fun, VipNullTransform>) {
+			// No-op
+		}
+		else {
+			VIP_PARALLEL_FOR_NUM_THREADS(threads)
+			for (qsizetype i = 0; i < size_in; ++i)
+				in[i] = c(in[i]);
+		}
+	}
 	else if (in_shape.size() == 1) {
 		const qsizetype s = in_shape[0];
+		VIP_PARALLEL_FOR_NUM_THREADS(threads)
 		for (qsizetype i = 0; i < s; ++i)
 			in[i * in_strides[0]] = c(in[i * in_strides[0]]);
 	}
@@ -2411,39 +2033,23 @@ bool vipInplaceArrayTransform(INTYPE* in, const VipNDArrayShape& in_shape, const
 		const qsizetype instride0 = in_strides[0];
 		const qsizetype instride1 = in_strides[1];
 		if (in_strides.last() == 1) {
+			VIP_PARALLEL_FOR_NUM_THREADS(threads)
 			for (qsizetype y = 0; y < h; ++y)
 				for (qsizetype x = 0; x < w; ++x)
 					in[y * instride0 + x] = c(in[y * instride0 + x]);
 		}
 		else {
+			VIP_PARALLEL_FOR_NUM_THREADS(threads)
 			for (qsizetype y = 0; y < h; ++y)
 				for (qsizetype x = 0; x < w; ++x)
 					in[y * instride0 + x * instride1] = c(in[y * instride0 + x * instride1]);
 		}
 	}
-	else if (in_shape.size() == 3) {
-		const qsizetype d = in_shape[0];
-		const qsizetype h = in_shape[1];
-		const qsizetype w = in_shape[2];
-		const qsizetype instride0 = in_strides[0];
-		const qsizetype instride1 = in_strides[1];
-		const qsizetype instride2 = in_strides[2];
-		if (in_strides.last() == 1) {
-			for (qsizetype z = 0; z < d; ++z)
-				for (qsizetype y = 0; y < h; ++y)
-					for (qsizetype x = 0; x < w; ++x)
-						in[z * instride0 + y * instride1 + x] = c(in[z * instride0 + y * instride1 + x]);
-		}
-		else {
-			for (qsizetype z = 0; z < d; ++z)
-				for (qsizetype y = 0; y < h; ++y)
-					for (qsizetype x = 0; x < w; ++x)
-						in[z * instride0 + y * instride1 + x * instride2] = c(in[z * instride0 + y * instride1 + x * instride2]);
-		}
+	else {
+		auto beg = VipNDSubArrayIterator<T>(in_shape, in_strides, in, size_in);
+		auto end = VipNDSubArrayIterator<T>(in_shape, in_strides, in, size_in, size_in);
+		detail::parallelTransform(threads, size_in, beg, end, beg, c);
 	}
-	else
-		detail::stdInplaceTransform(VipNDSubArrayIterator<INTYPE>(in_shape, in_strides, in, size_in), VipNDSubArrayIterator<INTYPE>(in_shape, in_strides, in, size_in, size_in), c);
-
 	return true;
 }
 
@@ -2454,15 +2060,9 @@ bool vipInplaceArrayTransform(INTYPE* in, const VipNDArrayShape& in_shape, const
 ///  \param out output pointer
 ///  \param out_shape output array shape
 ///  \param out_strides output array strides
-///  \param c function that converts a value of type INTYPE to a value of type OUTTYPE
-template<class INTYPE, class OUTTYPE, class CONVERTER>
-bool vipArrayTransform(const INTYPE* in,
-		       const VipNDArrayShape& in_shape,
-		       const VipNDArrayShape& in_strides,
-		       OUTTYPE* out,
-		       const VipNDArrayShape& out_shape,
-		       const VipNDArrayShape& out_strides,
-		       CONVERTER c)
+///  \param c function that converts a value of type T to a value of type U
+template<class T, class U, class Fun>
+bool vipArrayTransform(const T* in, const VipNDArrayShape& in_shape, const VipNDArrayShape& in_strides, U* out, const VipNDArrayShape& out_shape, const VipNDArrayShape& out_strides, Fun c)
 {
 	bool in_unstrided;
 	bool other_unstrided;
@@ -2472,12 +2072,16 @@ bool vipArrayTransform(const INTYPE* in,
 	if (size_out != size_in || !size_in || !size_out)
 		return false;
 
-	if (in_unstrided && other_unstrided)
-		detail::Copy<INTYPE, OUTTYPE, CONVERTER>::apply(in, in + size_out, out, c);
+	int threads = vipLoopThreadCount(size_in);
+
+	if (in_unstrided && other_unstrided) {
+		detail::parallelTransform(threads, size_in, in, in + size_in, out, c);
+	}
 	else if (in_shape.size() == 1) {
-		const qsizetype s = in_shape[0];
-		for (qsizetype i = 0; i < s; ++i)
-			out[i * out_strides[0]] = c(in[i * in_strides[0]]);
+		VipLineIterator<T> it_in(in, in_strides[0]);
+		VipLineIterator<T> it_end(in + in_shape[0] * in_strides[0], in_strides[0]);
+		VipLineIterator<U> it_out(out, out_strides[0]);
+		detail::parallelTransform(threads, size_in, it_in, it_end, it_out, c);
 	}
 	else if (in_shape.size() == 2 && in_shape == out_shape) {
 		const qsizetype h = in_shape[0];
@@ -2487,48 +2091,30 @@ bool vipArrayTransform(const INTYPE* in,
 		const qsizetype instride1 = in_strides[1];
 		const qsizetype outstride1 = out_strides[1];
 		if (in_strides.last() == 1 && out_strides.last() == 1) {
+			VIP_PARALLEL_FOR_NUM_THREADS(threads)
 			for (qsizetype y = 0; y < h; ++y)
 				for (qsizetype x = 0; x < w; ++x)
 					out[y * outstride0 + x] = c(in[y * instride0 + x]);
 		}
 		else {
+			VIP_PARALLEL_FOR_NUM_THREADS(threads)
 			for (qsizetype y = 0; y < h; ++y)
 				for (qsizetype x = 0; x < w; ++x)
 					out[y * outstride0 + x * outstride1] = c(in[y * instride0 + x * instride1]);
 		}
 	}
-	else if (in_shape.size() == 3 && in_shape == out_shape) {
-		const qsizetype d = in_shape[0];
-		const qsizetype h = in_shape[1];
-		const qsizetype w = in_shape[2];
-		const qsizetype instride0 = in_strides[0];
-		const qsizetype outstride0 = out_strides[0];
-		const qsizetype instride1 = in_strides[1];
-		const qsizetype outstride1 = out_strides[1];
-		const qsizetype instride2 = in_strides[2];
-		const qsizetype outstride2 = out_strides[2];
-		if (in_strides.last() == 1 && out_strides.last() == 1) {
-			for (qsizetype z = 0; z < d; ++z)
-				for (qsizetype y = 0; y < h; ++y)
-					for (qsizetype x = 0; x < w; ++x)
-						out[z * outstride0 + y * outstride1 + x] = c(in[z * instride0 + y * instride1 + x]);
-		}
-		else {
-			for (qsizetype z = 0; z < d; ++z)
-				for (qsizetype y = 0; y < h; ++y)
-					for (qsizetype x = 0; x < w; ++x)
-						out[z * outstride0 + y * outstride1 + x * outstride2] = c(in[z * instride0 + y * instride1 + x * instride2]);
-		}
-	}
 	else if (in_unstrided)
-		detail::stdTransform(in, in + size_out, VipNDSubArrayIterator<OUTTYPE>(out_shape, out_strides, out, size_out), c);
+		detail::parallelTransform(threads, size_in, in, in + size_out, VipNDSubArrayIterator<U>(out_shape, out_strides, out, size_out), c);
 	else if (other_unstrided)
-		detail::stdTransform(VipNDSubArrayConstIterator<INTYPE>(in_shape, in_strides, in, size_in), VipNDSubArrayConstIterator<INTYPE>(in_shape, in_strides, in, size_in, size_in), out, c);
+		detail::parallelTransform(
+		  threads, size_in, VipNDSubArrayConstIterator<T>(in_shape, in_strides, in, size_in), VipNDSubArrayConstIterator<T>(in_shape, in_strides, in, size_in, size_in), out, c);
 	else
-		detail::stdTransform(VipNDSubArrayConstIterator<INTYPE>(in_shape, in_strides, in, size_in),
-				     VipNDSubArrayConstIterator<INTYPE>(in_shape, in_strides, in, size_in, size_in),
-				     VipNDSubArrayIterator<OUTTYPE>(out_shape, out_strides, out, size_out),
-				     c);
+		detail::parallelTransform(threads,
+					  size_in,
+					  VipNDSubArrayConstIterator<T>(in_shape, in_strides, in, size_in),
+					  VipNDSubArrayConstIterator<T>(in_shape, in_strides, in, size_in, size_in),
+					  VipNDSubArrayIterator<U>(out_shape, out_strides, out, size_out),
+					  c);
 
 	return true;
 }
@@ -2561,6 +2147,17 @@ inline bool vipArrayTransformVoid(const void* in,
 
 	if (in_type == 0 || out_type == 0)
 		return false;
+
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
+	QVariant src_v(in_type, nullptr);
+	if(!src_v.canConvert(out_type))
+		return false;
+#else
+
+	if (!QMetaType::canConvert(VIP_META(in_type), VIP_META(out_type)))
+		return false;
+#endif
+
 
 	void* in_ptr = const_cast<void*>(in);
 	qsizetype inSizeOf = QMetaType(in_type).sizeOf();
@@ -2636,13 +2233,13 @@ namespace iter_detail
 /// \endcode
 #define vip_iter(ordering, shape, coord)                                                                                                                                                               \
 	/* Create the coord vector used in the iteration process */                                                                                                                                    \
-	if (VipCoordinate<__NDIM(shape)> coord = iter_detail::initStart<__NDIM(shape)>(shape))                                                                                                  \
-		if (VipCoordinate<__NDIM(shape)> sh = shape)                                                                                                                                    \
+	if (VipCoordinate<detail::ndims<decltype(shape)>()> coord = iter_detail::initStart<detail::ndims<decltype(shape)>()>(shape))                                                                   \
+		if (VipCoordinate<detail::ndims<decltype(shape)>()> __sh = shape)                                                                                                                      \
 			/* Remove 1 to the inner shape since the for loop add 1 at the beginning */                                                                                                    \
 			if ((ordering == Vip::FirstMajor ? coord.back() = Vip::None : coord[0] = Vip::None) | 1)                                                                                       \
-				if (qsizetype dimCount = shape.size())                                                                                                                                       \
+				if (qsizetype dimCount = shape.size())                                                                                                                                 \
 					/* Go! */                                                                                                                                                      \
-					while (iter_detail::incrementCheckContinue<ordering>(coord, sh, dimCount))
+					while (iter_detail::incrementCheckContinue<ordering>(coord, __sh, dimCount))
 
 /// Iterate over all dimensions of \a shape in given \a ordering in parallel using openmp.
 /// The iteration position is stored in \a coord as a #VipHybridVector.
@@ -2653,25 +2250,25 @@ namespace iter_detail
 /// \sa vip_iter
 #define vip_iter_parallel(ordering, shape, coord)                                                                                                                                                      \
 	/*Create the iteration shape (end bounds) */                                                                                                                                                   \
-	if (VipCoordinate<__NDIM(shape)> sh = shape)                                                                                                                                            \
+	if (VipCoordinate<detail::ndims<decltype(shape)>()> __sh = shape)                                                                                                                              \
 		/* Get the full iteration count */                                                                                                                                                     \
-		if (qsizetype _size = vipCumMultiply(sh))                                                                                                                                                    \
+		if (qsizetype _size = vipCumMultiply(__sh))                                                                                                                                            \
 			/* Get the number of thread, or 1 if the iteration count < thread_count*/                                                                                                      \
-			if (qsizetype thread_count = _size >= (qsizetype)vipOmpThreadCount() ? (qsizetype)vipOmpThreadCount() : _size)                                                                                   \
+			if (int thread_count = vipLoopThreadCount(_size))                                                                                                                              \
 				/* Get number of chunk per thread*/                                                                                                                                    \
-				if (qsizetype chunk_size = _size / thread_count)                                                                                                                             \
+				if (qsizetype chunk_size = _size / thread_count)                                                                                                                       \
 					/* Parallel directive */                                                                                                                                       \
-					VIP_PRAGMA(omp parallel for)                                                                                                                                   \
-	for (qsizetype i = 0; i < thread_count; ++i)                                                                                                                                                         \
+					VIP_PARALLEL_FOR_NUM_THREADS(thread_count)                                                                                                                     \
+	for (qsizetype i = 0; i < thread_count; ++i)                                                                                                                                                   \
 		/* End iteration for this thread, and take care of the remaining values*/                                                                                                              \
-		if (qsizetype end_iter = (i == thread_count - 1 ? (chunk_size + _size - chunk_size * thread_count) : chunk_size))                                                                            \
+		if (qsizetype end_iter = (i == thread_count - 1 ? (chunk_size + _size - chunk_size * thread_count) : chunk_size))                                                                      \
 			/* Create the coord vector used in the iteration process */                                                                                                                    \
-			if (VipCoordinate<__NDIM(shape)> coord = iter_detail::initStart<__NDIM(shape)>(sh))                                                                                     \
+			if (VipCoordinate<detail::ndims<decltype(shape)>()> coord = iter_detail::initStart<detail::ndims<decltype(shape)>()>(__sh))                                                    \
 				/* Advance coord */                                                                                                                                                    \
-				if (iter_detail::setFlatPos<ordering>(coord, sh, i * chunk_size))                                                                                                      \
-					if (qsizetype dimCount = sh.size())                                                                                                                                  \
+				if (vipSetFlatPos<ordering>(coord, __sh, i * chunk_size))                                                                                                              \
+					if (qsizetype dimCount = __sh.size())                                                                                                                          \
 						/* Go! */                                                                                                                                              \
-						for (qsizetype j = 0; j < end_iter; ++j, iter_detail::incrementPos<1, ordering>(coord, sh, dimCount))
+						for (qsizetype j = 0; j < end_iter; ++j, iter_detail::incrementPos<1, ordering>(coord, __sh, dimCount))
 
 /// Iterate over all dimensions of the range [start,end) in given \a ordering.
 /// The iteration position is stored in \a coord as a #VipHybridVector.
@@ -2690,14 +2287,14 @@ namespace iter_detail
 /// \endcode
 #define vip_iter_range(ordering, start, end, coord)                                                                                                                                                    \
 	/* Create the coord vector used in the iteration process */                                                                                                                                    \
-	if (VipCoordinate<__NDIM2(start, end)> coord = start /*iter_detail::initStartCopy(start)*/)                                                                                             \
-		if (VipCoordinate<__NDIM2(start, end)> sh = end)                                                                                                                                \
-			if (VipCoordinate<__NDIM2(start, end)> st = start)                                                                                                                      \
+	if (VipCoordinate<detail::staticDims<decltype(start), decltype(end)>()> coord = start /*iter_detail::initStartCopy(start)*/)                                                                   \
+		if (VipCoordinate<detail::staticDims<decltype(start), decltype(end)>()> _sh = end)                                                                                                     \
+			if (VipCoordinate<detail::staticDims<decltype(start), decltype(end)>()> _st = start)                                                                                           \
 				/* Remove 1 to the inner shape since the for loop add 1 at the beginning */                                                                                            \
-				if ((ordering == Vip::FirstMajor ? coord.back() = st.back() - 1 : coord[0] = st[0] - 1) | 1)                                                                           \
-					if (qsizetype dimCount = shape.size())                                                                                                                               \
+				if ((ordering == Vip::FirstMajor ? coord.back() = _st.back() - 1 : coord[0] = _st[0] - 1) | 1)                                                                         \
+					if (qsizetype dimCount = coord.size())                                                                                                                         \
 						/* Go! And pass the start parameter to incrementCheckContinue */                                                                                       \
-						while (iter_detail::incrementCheckContinue<ordering>(coord, sh, dimCount, &st))
+						while (iter_detail::incrementCheckContinue<ordering>(coord, _sh, dimCount, &_st))
 
 /// Iterate over all dimensions of the range [start,end) in given \a ordering in parallel using openmp.
 /// The iteration position is stored in \a coord as a #VipHybridVector.
@@ -2708,19 +2305,19 @@ namespace iter_detail
 /// \sa vip_iter_range
 #define vip_iter_range_parallel(ordering, start, end, coord)                                                                                                                                           \
 	/*Create the iteration shape (end bounds) */                                                                                                                                                   \
-	if (VipCoordinate<__NDIM2(start, end)> sh = end)                                                                                                                                        \
-		if (VipCoordinate<__NDIM2(start, end)> st = start)                                                                                                                              \
+	if (VipCoordinate<detail::staticDims<decltype(start), decltype(end)>()> _sh = end)                                                                                                             \
+		if (VipCoordinate<detail::staticDims<decltype(start), decltype(end)>()> _st = start)                                                                                                   \
 			/*Get the total iteration count */                                                                                                                                             \
-			if (qsizetype size = vipCumMultiplyRect(st, sh))                                                                                                                                     \
-				if (qsizetype thread_count = size > (qsizetype)vipOmpThreadCount() ? (qsizetype)vipOmpThreadCount() : size)                                                                              \
-					if (qsizetype chunk_size = size / thread_count)                                                                                                                      \
-						VIP_PRAGMA(omp parallel for)                                                                                                                           \
-	for (qsizetype i = 0; i < thread_count; ++i)                                                                                                                                                         \
-		if (qsizetype end_iter = (i == thread_count - 1 ? (chunk_size + size - chunk_size * thread_count) : chunk_size))                                                                             \
-			if (VipCoordinate<__NDIM2(start, end)> coord = st)                                                                                                                      \
-				if (setFlatPos<ordering>(coord, st, sh, i * chunk_size))                                                                                                               \
-					if (qsizetype dimCount = sh.size())                                                                                                                                  \
-						for (qsizetype j = 0; j < end_iter; ++j, iter_detail::incrementPos<1, ordering>(coord, sh, dimCount, &st))
+			if (qsizetype size = vipCumMultiplyRect(_st, _sh))                                                                                                                             \
+				if (int thread_count = vipLoopThreadCount(size))                                                                                                                       \
+					if (qsizetype chunk_size = size / thread_count)                                                                                                                \
+						VIP_PARALLEL_FOR_NUM_THREADS(thread_count)                                                                                                             \
+	for (qsizetype i = 0; i < thread_count; ++i)                                                                                                                                                   \
+		if (qsizetype end_iter = (i == thread_count - 1 ? (chunk_size + size - chunk_size * thread_count) : chunk_size))                                                                       \
+			if (VipCoordinate<detail::staticDims<decltype(start), decltype(end)>()> coord = _st)                                                                                           \
+				if (vipSetFlatPos<ordering>(coord, _st, _sh, i * chunk_size))                                                                                                          \
+					if (qsizetype dimCount = _sh.size())                                                                                                                           \
+						for (qsizetype j = 0; j < end_iter; ++j, iter_detail::incrementPos<1, ordering>(coord, _sh, dimCount, &_st))
 
 /// Equivalent to #vip_iter(Vip::FirstMajor,shape,coord)
 #define vip_iter_fmajor(shape, coord) vip_iter(Vip::FirstMajor, shape, coord)

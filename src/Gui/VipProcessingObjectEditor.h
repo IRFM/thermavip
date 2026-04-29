@@ -577,6 +577,7 @@ private:
 	VIP_DECLARE_PRIVATE_DATA();
 };
 
+#ifdef VIP_WITH_FFMPEG
 
 class VipMPEGSaver;
   
@@ -595,6 +596,8 @@ public Q_SLOTS:
 private:
 	VIP_DECLARE_PRIVATE_DATA();
 };
+
+#endif
 
 
 /// Widget to edit a VipOperationBetweenPlayers

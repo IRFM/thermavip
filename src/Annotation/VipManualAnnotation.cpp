@@ -1293,14 +1293,14 @@ Vip_event_list VipManualAnnotation::generateShapes(VipProgress* p, QString* erro
 			// create shape
 			VipShape sh(vipSimplifyPolygonDB(d_data->drawMarkers->createPolygon(time, m), VIP_DB_MAX_FRAME_POLYGON_POINTS));
 			const VipNDArray ar = src_output->data().value<VipNDArray>();
-			VipShapeStatistics st = sh.statistics(ar, QPoint(0, 0), nullptr, VipShapeStatistics::All);
+			auto st = sh.statistics(ar, QPoint(0, 0),  Vip::AllStats);
 
 			// reset shape initial geometry (without transform) after extracting statistics
 			if (!tr.isIdentity()) {
 				sh.transform(tr);
 				// apply to the max and min coordinates
-				st.maxPoint = tr.map(QPointF(st.maxPoint)).toPoint();
-				st.minPoint = tr.map(QPointF(st.minPoint)).toPoint();
+				st.maxPos = vipVector(tr.map(QPointF(vipPoint(st.maxPos))).toPoint());
+				st.minPos = vipVector(tr.map(QPointF(vipPoint(st.minPos))).toPoint());
 			}
 
 			QVariantMap attrs;
@@ -1327,15 +1327,15 @@ Vip_event_list VipManualAnnotation::generateShapes(VipProgress* p, QString* erro
 			attrs.insert("bbox_width", bounding.width());
 			attrs.insert("bbox_height", bounding.height());
 			attrs.insert("max_temperature_C", st.max); // TODO
-			attrs.insert("max_T_image_position_x", st.maxPoint.x());
-			attrs.insert("max_T_image_position_y", st.maxPoint.y());
+			attrs.insert("max_T_image_position_x", st.maxPos[1]);
+			attrs.insert("max_T_image_position_y", st.maxPos[0]);
 			attrs.insert("min_temperature_C", st.min);
-			attrs.insert("min_T_image_position_x", st.minPoint.x());
-			attrs.insert("min_T_image_position_y", st.minPoint.y());
-			attrs.insert("average_temperature_C", st.average);
+			attrs.insert("min_T_image_position_x", st.minPos[1]);
+			attrs.insert("min_T_image_position_y", st.minPos[0]);
+			attrs.insert("average_temperature_C", st.mean);
 			attrs.insert("pixel_area", bounding.width() * bounding.height());
-			attrs.insert("centroid_image_position_x", st.maxPoint.x());
-			attrs.insert("centroid_image_position_y", st.maxPoint.y());
+			attrs.insert("centroid_image_position_x", st.maxPos[1]);
+			attrs.insert("centroid_image_position_y", st.maxPos[0]);
 
 			// set the event flag
 			attrs.insert("origin", (int)VipPlayerDBAccess::New);

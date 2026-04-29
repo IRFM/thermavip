@@ -265,25 +265,18 @@ class VIP_CORE_EXPORT VipExtractStatistics : public VipExtractShapeData
 	VIP_IO(VipOutput entropy);
 	VIP_IO(VipOutput kurtosis);
 	VIP_IO(VipOutput skewness);
-	VIP_IO(VipOutput quantiles); // define as QList<QRect> (ot VipRectList)
 public:
 	VipExtractStatistics(QObject* parent = nullptr)
 	  : VipExtractShapeData(parent)
-	  , m_stats(VipShapeStatistics::All)
+	  , m_stats(Vip::AllStats)
 	{
 	}
 
 	/// Set the statistics we want to extract. The corresponding outputs will only update there values if their statistics are enabled.
-	void setStatistics(VipShapeStatistics::Statistics);
-	void setStatistic(VipShapeStatistics::Statistic, bool on = true);
-	bool testStatistic(VipShapeStatistics::Statistic) const;
-	VipShapeStatistics::Statistics statistics() const;
-
-	/// Set the bounding box quantile values that must be extracted (if any).
-	/// This bounding box includes all pixels belonging to the (quantile * 100)% highest pixels.
-	/// The quantil bounding boxes are stored in the quantiles output as a VipRectList object.
-	void setShapeQuantiles(const QVector<double>& quantiles);
-	const QVector<double>& shapeQuantiles() const;
+	void setStatistics(Vip::ArrayStatistics);
+	void setStatistic(Vip::ArrayStatistic, bool on = true);
+	bool testStatistic(Vip::ArrayStatistic) const;
+	Vip::ArrayStatistics statistics() const;
 
 protected:
 	virtual void apply();
@@ -291,8 +284,7 @@ protected:
 private:
 	void updateStatistics();
 
-	VipShapeStatistics::Statistics m_stats;
-	QVector<double> m_quantiles;
+	Vip::ArrayStatistics m_stats;
 };
 
 VIP_REGISTER_QOBJECT_METATYPE(VipExtractStatistics*)

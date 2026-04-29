@@ -42,7 +42,7 @@
 
 #include "VipInterval.h"
 #include "VipNDArray.h"
-#include "VipReduction.h"
+#include "VipNDArrayStatistics.h"
 
 /// \addtogroup DataType
 /// @{
@@ -50,54 +50,6 @@
 class VipShape;
 class VipSceneModel;
 class VipShapeSignals;
-
-/// Statistic informations extracted from on a 2D shape (#Shape type) and an image (#VipNDArray type)
-class VipShapeStatistics
-{
-public:
-	enum Statistic
-	{
-		None = 0,
-		Minimum = 0x0001,
-		Maximum = 0x0002,
-		Mean = 0X0004,
-		Std = 0x0008,
-		PixelCount = 0x0010,
-		Entropy = 0x0020,
-		Kurtosis = 0x0040,
-		Skewness = 0x0080,
-		All = Minimum | Maximum | Mean | Std | PixelCount | Entropy | Kurtosis | Skewness
-	};
-	Q_DECLARE_FLAGS(Statistics, Statistic);
-
-	VipShapeStatistics()
-	  : pixelCount(0)
-	  , average(0)
-	  , std(0)
-	  , min(0)
-	  , max(0)
-	  , entropy(0)
-	  , kurtosis(0)
-	  , skewness(0)
-	  , minPoint(-1, -1)
-	  , maxPoint(-1, -1)
-	{
-	}
-
-	qsizetype pixelCount; //! Number of pixels
-	double average; //! Average value
-	double std;	//! Standard deviation
-	double min;	//! Minimum value
-	double max;	//! Maximum value
-	double entropy;
-	double kurtosis;
-	double skewness;
-	QPoint minPoint;
-	QPoint maxPoint;
-	QList<QRect> quantiles;
-};
-
-Q_DECLARE_OPERATORS_FOR_FLAGS(VipShapeStatistics::Statistics);
 
 typedef QVector<VipShape> VipShapeList;
 
@@ -278,38 +230,16 @@ public:
 	static QVector<QRect> clip(const QVector<QRect>& rects, const QRect& rect, QRect* bounding = nullptr);
 
 	/// Extract the statistics inside an image for a list of pixels.
-	///  \param points The input pixels to consider
-	///  \param img the input image
-	///  \param img_offset the input image offset
-	///  \param the bounding rect of input points. If a null rect is given it will be computed.
-	///  \param buffer a buffer image that will speed up the computing. This only necessary if you intent to compute the statistics with the same shape for several images.
-	///  \return a list of #VipShapeStatistics (one per image component). If input image is a color image, output will contain the statistics for components Alpha, Red, Green, Blue.
-	///  If input image is complex, output will contain the statistics for components Real and Imag. Otherwise, only one component statistics is returned.
-	static VipShapeStatistics statistics(const QVector<QRect>& rects,
-					     const VipNDArray& img,
-					     const QPoint& img_offset = QPoint(0, 0),
-					     const QRect& bounding_rect = QRect(),
-					     VipNDArray* buffer = nullptr,
-					     VipShapeStatistics::Statistics stats = VipShapeStatistics::All,
-					     const QVector<double>& bbox_quantiles = QVector<double>());
+	static VipArrayStatistics<double> statistics(const QVector<QRect>& rects, const VipNDArray& img, const QPoint& img_offset, Vip::ArrayStatistics stats);
 
 	/// Extract the statistics inside an image for this shape.
-	///  \param img the input image
-	///  \param img_offset the input image offset
-	///  \param buffer a buffer image that will speed up the computing. This only necessary if you intent to compute the statistics with the same shape for several images.
-	///  \return a list of #VipShapeStatistics (one per image component). If input image is a color image, output will contain the statistics for components Alpha, Red, Green, Blue.
-	///  If input image is complex, output will contain the statistics for components Real and Imag. Otherwise, only one component statistics is returned.
-	VipShapeStatistics statistics(const VipNDArray& img,
-				      const QPoint& img_offset = QPoint(0, 0),
-				      VipNDArray* buffer = nullptr,
-				      VipShapeStatistics::Statistics stats = VipShapeStatistics::All,
-				      const QVector<double>& bbox_quantiles = QVector<double>()) const;
+	VipArrayStatistics<double> statistics(const VipNDArray& img, const QPoint& img_offset, Vip::ArrayStatistics stats) const;
 
-	template<class T, Vip::ArrayStats Stats>
+	/* template<class T, Vip::ArrayStats Stats>
 	VipArrayStats<T, Stats> imageStats(const VipNDArray& img, const QPoint& img_offset = QPoint(0, 0)) const
 	{
 		return vipArrayStats<T, Stats>(img, vipOverRects(region()), vipVector(img_offset.y(), img_offset.x()));
-	}
+	}*/
 
 	/// Extract the histogram inside an image for a list of pixels.
 	///  \param bins number of bins for the output histogram(s)
@@ -321,11 +251,11 @@ public:
 	///  \return a list of #VipIntervalSample (one per image component). If input image is a color image, output will contain the histogram for components Alpha, Red, Green, Blue.
 	///  If input image is complex, output will contain the histogram for components Real and Imag. Otherwise, only one component histogam is returned.
 	static VipIntervalSampleVector histogram(qsizetype bins,
-						    const QVector<QRect>& rects,
-						    const VipNDArray& img,
-						    const QPoint& img_offset = QPoint(0, 0),
-						    const QRect& bounding_rect = QRect(),
-						    VipNDArray* buffer = nullptr);
+						 const QVector<QRect>& rects,
+						 const VipNDArray& img,
+						 const QPoint& img_offset = QPoint(0, 0),
+						 const QRect& bounding_rect = QRect(),
+						 VipNDArray* buffer = nullptr);
 	/// Extract the histogram inside an image for this shape.
 	///  \param bins number of bins for the output histogram(s)
 	///  \param img the input image
@@ -344,10 +274,10 @@ public:
 	///  \return a list of point vector (one per image component), where each point contains (pixel index, pixel value). If input image is a color image, output will contain the pixel values for
 	///  components Alpha, Red, Green, Blue. If input image is complex, output will contain the pixel values for components Real and Imag. Otherwise, only one component pixel values is returned.
 	static VipPointVector polyline(const QVector<QPoint>& points,
-					 const VipNDArray& img,
-					 const QPoint& img_offset = QPoint(0, 0),
-					 const QRect& bounding_rect = QRect(),
-					 VipNDArray* buffer = nullptr);
+				       const VipNDArray& img,
+				       const QPoint& img_offset = QPoint(0, 0),
+				       const QRect& bounding_rect = QRect(),
+				       VipNDArray* buffer = nullptr);
 	/// Extract the pixel values inside an image for this shape (type() == Polyline).
 	///  \param img the input image
 	///  \param img_offset the input image offset
@@ -519,7 +449,7 @@ private:
 	class PrivateData;
 	QSharedPointer<PrivateData> d_data;
 
-	VipSceneModel(const QSharedPointer<PrivateData> &data);
+	VipSceneModel(const QSharedPointer<PrivateData>& data);
 };
 
 Q_DECLARE_METATYPE(VipSceneModel)

@@ -181,7 +181,8 @@ namespace detail
 		{
 			return typeToString<std::complex<T>>(d);
 		}
-		static QString apply(const VipRGB& c) { return typeToString<VipRGB>(c); }
+		template<class T>
+		static QString apply(const VipRgb<T>& c) { return typeToString<VipRgb<T>>(c); }
 
 		template<class T>
 		QString operator()(const T& src) const
@@ -205,13 +206,14 @@ namespace detail
 		static QByteArray apply(float d) { return QByteArray::number(d, 'g', FLT_DIG); }
 		static QByteArray apply(bool d) { return QByteArray(d ? "true" : "false"); }
 		static QByteArray apply(const QString& str) { return str.toLatin1(); }
-		const QByteArray& apply(const QByteArray& str) { return str; }
+		static const QByteArray& apply(const QByteArray& str) { return str; }
 		template<class T>
 		static QByteArray apply(const std::complex<T>& d)
 		{
 			return typeToByteArray<std::complex<T>>(d);
 		}
-		static QByteArray apply(const VipRGB& c) { return typeToByteArray<VipRGB>(c); }
+		template<class T>
+		static QByteArray apply(const VipRgb<T>& c) { return typeToByteArray<VipRgb<T>>(c); }
 
 		template<class T>
 		QByteArray operator()(const T& src) const
@@ -231,31 +233,33 @@ namespace detail
 		}
 		static Res apply(const QString& d)
 		{
-			if (std::is_same<Res, float>::value)
+			if constexpr (std::is_same<Res, float>::value)
 				return d.toFloat();
-			else if (std::is_same<Res, double>::value)
+			else if constexpr (std::is_same<Res, double>::value)
 				return d.toDouble();
-			else if (std::is_same<Res, long double>::value)
+			else if constexpr (std::is_same<Res, long double>::value)
 				return vipLongDoubleFromString(d);
-			else if (std::is_same<Res, bool>::value) {
+			else if constexpr (std::is_same<Res, bool>::value) {
 				QString str = d.toLower();
 				return !(str == QString("0") || str == QString("false") || str.isEmpty());
 			}
-			return d.toLongLong();
+			else
+				return d.toLongLong();
 		}
 		static Res apply(const QByteArray& d)
 		{
-			if (std::is_same<Res, float>::value)
+			if constexpr (std::is_same<Res, float>::value)
 				return d.toFloat();
-			else if (std::is_same<Res, double>::value)
+			else if constexpr (std::is_same<Res, double>::value)
 				return d.toDouble();
-			else if (std::is_same<Res, long double>::value)
+			else if constexpr (std::is_same<Res, long double>::value)
 				return vipLongDoubleFromByteArray(d);
-			else if (std::is_same<Res, bool>::value) {
+			else if constexpr (std::is_same<Res, bool>::value) {
 				QString str = d.toLower();
 				return !(str == QString("0") || str == QString("false") || str.isEmpty());
 			}
-			return d.toLongLong();
+			else
+				return d.toLongLong();
 		}
 		template<class T>
 		Res operator()(const T& src) const
@@ -318,12 +322,34 @@ namespace detail
 		}
 	};
 
+	struct ToRGBf
+	{
+		static VipRGBf apply(const QString& d) { return stringToType<VipRGBf>(d); }
+		static VipRGBf apply(const QByteArray& d) { return byteArrayToType<VipRGBf>(d); }
+		template<class T>
+		static VipRGBf apply(const T&)
+		{
+			return VipRGBf();
+		}
+		template<class T>
+		VipRGBf operator()(const T& src) const
+		{
+			return apply(src);
+		}
+	};
+
 	/// \internal Conversion structure used by the whole DataType library through #vipCast
 	template<class D, class S, class = void>
 	struct Convert
 	{
-		static const bool valid = true;
-		static D apply(const S& src) { return static_cast<D>(src); }
+		static const bool valid = std::is_convertible_v<S, D>;
+		static D apply(const S& src) 
+		{ 
+			if constexpr (valid)
+				return static_cast<D>(src);
+			else
+				return D();
+		}
 	};
 
 	// conversion to complex
@@ -337,7 +363,7 @@ namespace detail
 	struct Convert<std::complex<T>, std::complex<U>>
 	{
 		static const bool valid = true;
-		static std::complex<T> apply(const std::complex<U>& src) { return src; }
+		static std::complex<T> apply(const std::complex<U>& src) { return std::complex<T>((T)src.real(), (T)src.imag()); }
 	};
 	// complex to something: disable
 	template<class D, class T>
@@ -362,11 +388,11 @@ namespace detail
 	};
 
 	// disable for VipRGB
-	template<class S>
-	struct Convert<VipRGB, S, typename std::enable_if<!is_complex<S>::value && !is_rgb<S>::value, void>::type> // disable conversion to complex as it is already covered
+	template<class T, class S>
+	struct Convert<VipRgb<T>, S, typename std::enable_if<!is_complex<S>::value && !VipIsRgb<S>::value, void>::type> // disable conversion to complex as it is already covered
 	{
 		static const bool valid = false;
-		static VipRGB apply(const S&) { return VipRGB(); }
+		static VipRgb<T> apply(const S&) { return {} ; }
 	};
 	template<class T, class U>
 	struct Convert<VipRgb<T>, VipRgb<U>>
@@ -381,12 +407,24 @@ namespace detail
 		static const bool valid = true;
 		static VipRGB apply(const QString& s) { return ToRGB::apply(s); }
 	};
+	template<>
+	struct Convert<VipRGBf, QString>
+	{
+		static const bool valid = true;
+		static VipRGBf apply(const QString& s) { return ToRGBf::apply(s); }
+	};
 	// enable QByteArray to VipRGB
 	template<>
 	struct Convert<VipRGB, QByteArray>
 	{
 		static const bool valid = true;
 		static const VipRGB apply(const QByteArray& s) { return ToRGB::apply(s); }
+	};
+	template<>
+	struct Convert<VipRGBf, QByteArray>
+	{
+		static const bool valid = true;
+		static const VipRGBf apply(const QByteArray& s) { return ToRGBf::apply(s); }
 	};
 	// enable QRgb to VipRGB
 	template<>
@@ -399,35 +437,42 @@ namespace detail
 	template<class S>
 	struct Convert<QString, S>
 	{
-		static const bool valid = true;
+		static const bool valid = !std::is_same_v<S, NullType>;
 		static QString apply(const S& s) { return ToQStringTransform::apply(s); }
 	};
 	// convertion to bytearray
 	template<class S>
 	struct Convert<QByteArray, S>
 	{
-		static const bool valid = true;
-		static QString apply(const S& s) { return ToQByteArrayTransform::apply(s); }
+		static const bool valid = !std::is_same_v<S, NullType>;
+		static QByteArray apply(const S& s) { return ToQByteArrayTransform::apply(s); }
 	};
 
-	template<class D>
+	/* template<class D, class S>
+	struct Convert<D, S, std::enable_if_t<std::is_same_v<D, NullType> || std::is_same_v<S, NullType>, void>>
+	{
+		static const bool valid = false;
+		static D apply(const S&) { return D(); }
+	};*/
+
+	/* template<class D>
 	struct Convert<D, NullType>
 	{
-		static const bool valid = true;
+		static const bool valid = false;
 		static D apply(const NullType&) { return D(); }
 	};
 	template<class S>
 	struct Convert<NullType, S>
 	{
-		static const bool valid = true;
+		static const bool valid = false;
 		static NullType apply(const S&) { return NullType(); }
 	};
 	template<>
 	struct Convert<NullType, NullType>
 	{
-		static const bool valid = true;
+		static const bool valid = false;
 		static NullType apply(const NullType&) { return NullType(); }
-	};
+	};*/
 
 	template<class In, class Out>
 	struct Converter
@@ -484,50 +529,6 @@ namespace detail
 #endif
 		}
 	}
-
-	///\internal
-	template<class To>
-	struct GetConverterFunction
-	{
-		typedef void (*cast)(const void*, void*, int, qsizetype);
-		static cast get(int data_type)
-		{
-			if (data_type == QMetaType::Char)
-				return convertVoid<char, To>;
-			else if (data_type == QMetaType::SChar)
-				return convertVoid<qint8, To>;
-			else if (data_type == QMetaType::UChar)
-				return convertVoid<quint8, To>;
-			else if (data_type == QMetaType::Short)
-				return convertVoid<qint16, To>;
-			else if (data_type == QMetaType::UShort)
-				return convertVoid<quint16, To>;
-			else if (data_type == QMetaType::Int)
-				return convertVoid<qint32, To>;
-			else if (data_type == QMetaType::UInt)
-				return convertVoid<quint32, To>;
-			else if (data_type == QMetaType::Long)
-				return convertVoid<long, To>;
-			else if (data_type == QMetaType::ULong)
-				return convertVoid<unsigned long, To>;
-			else if (data_type == QMetaType::LongLong)
-				return convertVoid<qint64, To>;
-			else if (data_type == QMetaType::ULongLong)
-				return convertVoid<quint64, To>;
-			else if (data_type == QMetaType::Float)
-				return convertVoid<float, To>;
-			else if (data_type == QMetaType::Double)
-				return convertVoid<double, To>;
-			else if (data_type == qMetaTypeId<long double>())
-				return convertVoid<long double, To>;
-			else if (data_type == qMetaTypeId<complex_f>())
-				return convertVoid<complex_f, To>;
-			else if (data_type == qMetaTypeId<complex_d>())
-				return convertVoid<complex_d, To>;
-			else
-				return genericConverterVoid<To>;
-		}
-	};
 
 	/// \internal
 	/// Convert input possibly strided data to possibly strided array.

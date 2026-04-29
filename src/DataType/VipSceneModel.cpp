@@ -313,175 +313,6 @@ static QPolygon extractPixels(const QPolygonF& polygon)
 //  }
 #include <limits>
 
-// Same as qsizetype, but initialized to zero by default
-struct Int
-{
-	qsizetype value;
-	Int(qsizetype value = 0)
-	  : value(value)
-	{
-	}
-};
-
-template<class T>
-struct PixelPoint
-{
-	T value;
-	QPoint pos;
-	PixelPoint(const T& v = T(), const QPoint& p = QPoint())
-	  : value(v)
-	  , pos(p)
-	{
-	}
-	bool operator<(const PixelPoint& other) const { return value < other.value; }
-};
-
-template<qsizetype InnerStride, class T>
-static VipShapeStatistics extractStats(const T* input,
-				       qsizetype OuterStride,
-				       const QVector<QRect>& rects,
-				       const QPoint& img_offset,
-				       VipShapeStatistics::Statistics stats,
-				       const QVector<double>& bbox_quantiles)
-{
-	VipShapeStatistics res;
-	res.min = std::numeric_limits<double>::max();
-	res.max = -std::numeric_limits<double>::max();
-	bool compute_min_max = (stats & VipShapeStatistics::Minimum) || (stats & VipShapeStatistics::Maximum);
-
-	// for quantiles extraction
-	std::vector<PixelPoint<T>> pixel_points;
-
-	// extract min, max, pixel count
-	for (qsizetype i = 0; i < rects.size(); ++i) {
-		const QRect r = rects[i];
-		const qsizetype top = r.top(), bottom = r.bottom(), left = r.left(), right = r.right();
-
-		for (qsizetype y = top; y <= bottom; ++y) {
-
-			for (qsizetype x = left; x <= right; ++x) {
-				const QPoint pt(x - img_offset.x(), y - img_offset.y());
-				const T value = input[pt.y() * OuterStride + pt.x() * InnerStride];
-				if (!vipIsNan(value)) {
-					if (bbox_quantiles.size()) {
-						pixel_points.push_back(PixelPoint<T>(value, QPoint(x, y)));
-					}
-					if (compute_min_max) {
-						if (value > res.max) {
-							res.max = value;
-							res.maxPoint = QPoint(x, y);
-						}
-						if (value < res.min) {
-							res.min = value;
-							res.minPoint = QPoint(x, y);
-						}
-					}
-					res.pixelCount++;
-					res.average += value;
-				}
-			}
-		}
-	}
-
-	if (res.pixelCount)
-		res.average /= res.pixelCount;
-
-	// compute quantiles bbox
-	if (bbox_quantiles.size()) {
-		std::sort(pixel_points.begin(), pixel_points.end());
-		for (qsizetype i = 0; i < bbox_quantiles.size(); ++i) {
-			double quantile = bbox_quantiles[i]; // value between 0 and 1
-			size_t pixels = (size_t)std::ceil(res.pixelCount * quantile);
-			if (!pixels) {
-				res.quantiles.push_back(QRect());
-			}
-			else {
-				QRect r;
-				for (std::ptrdiff_t j = pixel_points.size() - 1; j >= (std::ptrdiff_t)(pixel_points.size() - pixels); --j) {
-					const QPoint& pt = pixel_points[j].pos;
-					if (r.isEmpty()) {
-						r = QRect(pt, QSize(1, 1));
-					}
-					else {
-						if (pt.x() < r.left())
-							r.setLeft(pt.x());
-						if (pt.x() > r.right())
-							r.setRight(pt.x());
-						if (pt.y() < r.top())
-							r.setTop(pt.y());
-						if (pt.y() > r.bottom())
-							r.setBottom(pt.y());
-					}
-				}
-				res.quantiles.push_back(r);
-			}
-		}
-	}
-
-	// extract standard deviation
-	if (res.pixelCount && (stats & VipShapeStatistics::Std)) {
-		for (qsizetype i = 0; i < rects.size(); ++i) {
-			const QRect r = rects[i];
-			const qsizetype top = r.top(), bottom = r.bottom(), left = r.left(), right = r.right();
-			for (qsizetype y = top; y <= bottom; ++y)
-				for (qsizetype x = left; x <= right; ++x) {
-					const QPoint pt(x - img_offset.x(), y - img_offset.y());
-					const T value = input[pt.y() * OuterStride + pt.x() * InnerStride];
-					if (!vipIsNan(value)) {
-						double std = value - res.average;
-						res.std += std * std;
-					}
-				}
-		}
-		res.std /= res.pixelCount;
-		res.std = qSqrt(res.std);
-	}
-
-	// extract entropy
-	if (stats & VipShapeStatistics::Entropy && res.pixelCount) {
-		QMap<T, Int> values;
-		for (qsizetype i = 0; i < rects.size(); ++i) {
-			const QRect r = rects[i];
-			const qsizetype top = r.top(), bottom = r.bottom(), left = r.left(), right = r.right();
-			for (qsizetype y = top; y <= bottom; ++y)
-				for (qsizetype x = left; x <= right; ++x) {
-					const QPoint pt(x - img_offset.x(), y - img_offset.y());
-					const T value = input[pt.y() * OuterStride + pt.x() * InnerStride];
-					if (!vipIsNan(value)) {
-						++values[value].value;
-					}
-				}
-		}
-
-		double inv_log_2 = 1 / std::log(2);
-		for (typename QMap<T, Int>::const_iterator it = values.begin(); it != values.end(); ++it) {
-			double p = it.value().value / double(res.pixelCount);
-			res.entropy += p * std::log(p) * inv_log_2;
-		}
-		res.entropy = -res.entropy;
-	}
-
-	// extract Kurtosis and Skewness
-	if (((stats & VipShapeStatistics::Kurtosis) || (stats & VipShapeStatistics::Skewness)) && res.pixelCount) {
-		ComputeStats c;
-		for (qsizetype i = 0; i < rects.size(); ++i) {
-			const QRect r = rects[i];
-			const qsizetype top = r.top(), bottom = r.bottom(), left = r.left(), right = r.right();
-			for (qsizetype y = top; y <= bottom; ++y)
-				for (qsizetype x = left; x <= right; ++x) {
-					const QPoint pt(x - img_offset.x(), y - img_offset.y());
-					const T value = input[pt.y() * OuterStride + pt.x() * InnerStride];
-					if (!vipIsNan(value)) {
-						c.add(value);
-					}
-				}
-		}
-		res.kurtosis = c.kurtosis();
-		res.skewness = c.skewness();
-	}
-
-	return res;
-}
 
 template<qsizetype InnerStride, class T>
 static VipIntervalSampleVector extractHist(const T* input, qsizetype OuterStride, const QVector<QRect>& rects, qsizetype bins, const QPoint& img_offset)
@@ -506,87 +337,6 @@ static VipIntervalSampleVector extractHist(const T* input, qsizetype OuterStride
 	return res;
 }
 
-template<qsizetype InnerStride, class T>
-  static VipIntervalSampleVector extractHist2(const T* input, qsizetype OuterStride, const QVector<QRect>& rects, qsizetype bins, const QPoint& img_offset)
-{
-	double min = std::numeric_limits<double>::max();
-	double max = -std::numeric_limits<double>::max();
-
-	// find min and max
-	for (qsizetype i = 0; i < rects.size(); ++i) {
-		const QRect r = rects[i];
-		const qsizetype top = r.top(), bottom = r.bottom(), left = r.left(), right = r.right();
-		for (qsizetype y = top; y <= bottom; ++y)
-			for (qsizetype x = left; x <= right; ++x) {
-				const QPoint pt(x - img_offset.x(), y - img_offset.y());
-				const T value = input[pt.y() * OuterStride + pt.x() * InnerStride];
-				if (!vipIsNan(value)) {
-					if (value > max)
-						max = value;
-					if (value < min)
-						min = value;
-				}
-			}
-	}
-
-	// add the pixels in a QMap
-	QMap<T, Int> values;
-	for (qsizetype i = 0; i < rects.size(); ++i) {
-		const QRect r = rects[i];
-		const qsizetype top = r.top(), bottom = r.bottom(), left = r.left(), right = r.right();
-		for (qsizetype y = top; y <= bottom; ++y)
-			for (qsizetype x = left; x <= right; ++x) {
-				const QPoint pt(x - img_offset.x(), y - img_offset.y());
-				const T value = input[pt.y() * OuterStride + pt.x() * InnerStride];
-				if (!vipIsNan(value)) {
-					values[value].value++;
-				}
-			}
-	}
-	if (values.size() == 0)
-		return VipIntervalSampleVector();
-
-	// compute the different steps between each values
-
-	if (values.size() <= bins) {
-		// there are less values than bins: keep the values as is, just compute the bin width (min vipDistance between 2 values)
-		double width = 1;
-		typename QMap<T, Int>::iterator it = values.begin();
-		double left_bound = it.key();
-		it++;
-		for (; it != values.end(); ++it) {
-			double tmp_width = it.key() - left_bound;
-			left_bound = it.key();
-			width = qMin(width, tmp_width);
-		}
-
-		// now fill in the result vector
-		VipIntervalSampleVector res;
-		for (typename QMap<T, Int>::iterator it = values.begin(); it != values.end(); ++it) {
-			qsizetype count = it.value().value;
-			VipIntervalSample sample(count, VipInterval(it.key() - width / 2, it.key() + width / 2));
-			res.append(sample);
-		}
-		return res;
-	}
-	else {
-		// initialize histogram
-		double width = (max - min) / bins;
-		double start = min;
-		VipIntervalSampleVector res(bins);
-		for (qsizetype i = 0; i < res.size(); ++i, start += width)
-			res[i] = VipIntervalSample(0, VipInterval(start, start + width, VipInterval::ExcludeMaximum));
-
-		for (typename QMap<T, Int>::iterator it = values.begin(); it != values.end(); ++it) {
-			qsizetype index = std::floor((it.key() - min) / width);
-			if (index == res.size())
-				--index;
-			res[index].value++;
-		}
-
-		return res;
-	}
-}
 
 template<qsizetype InnerStride, class T>
 static VipPointVector extractPolyline(const T* input, qsizetype OuterStride, const QVector<QPoint>& pixels, const QPoint& img_offset)
@@ -744,7 +494,7 @@ VipShape VipShape::copy() const
 	shape.d_data->type = d_data->type;
 	shape.d_data->attributes = d_data->attributes;
 	// TEST: detach
-	//shape.d_data->attributes.detach();
+	// shape.d_data->attributes.detach();
 	shape.d_data->region = d_data->region;
 	shape.d_data->rects = d_data->rects;
 	shape.d_data->polygonBased = d_data->polygonBased;
@@ -1286,67 +1036,30 @@ void VipShape::emitShapeChanged()
 	}
 }
 
-VipShapeStatistics VipShape::statistics(const QVector<QRect>& rects,
-					const VipNDArray& img,
-					const QPoint& img_offset,
-					const QRect& bounding_rect,
-					VipNDArray* tmp,
-					VipShapeStatistics::Statistics stats,
-					const QVector<double>& bbox_quantiles)
+VipArrayStatistics<double> VipShape::statistics(const QVector<QRect>& rects, const VipNDArray& img, const QPoint& img_offset, Vip::ArrayStatistics stats)
 {
 	if (!img.canConvert<double>())
-		return VipShapeStatistics();
+		return {};
 
-	QRect bounding = bounding_rect;
-	if (bounding.isEmpty()) {
-		for (qsizetype i = 0; i < rects.size(); ++i)
-			bounding |= rects[i];
+	QVector<QRect> tmp_rects;
+	VipOverNDRects<2> over((VipNDRect<2>*)rects.data(), rects.size());
+	if (img_offset != QPoint()) {
+		// Move rects
+		tmp_rects = rects;
+		for (QRect& r : tmp_rects)
+			r.moveTopLeft(r.topLeft() - img_offset);
+		over.setRects((VipNDRect<2>*)tmp_rects.constData(), tmp_rects.size());
 	}
-	if (bounding.isEmpty())
-		return VipShapeStatistics();
-
-	QRect image_rect(img_offset, QSize(img.shape(1), img.shape(0)));
-	bounding = bounding.united(image_rect);
-
-	VipNDArray buffer;
-	if (!tmp)
-		tmp = &buffer;
-
-	if (tmp->isNull() || tmp->dataType() != QMetaType::Double || tmp->shapeCount() < 2 || tmp->shape(0) != bounding.height() || tmp->shape(1) != bounding.width())
-		*tmp = VipNDArray(QMetaType::Double, vipVector(bounding.height(), bounding.width()));
-
-	// TEST
-	// if (img.mid(vipVector(bounding.top() - img_offset.y(), bounding.left() - img_offset.x()), vipVector(bounding.height(), bounding.width())).convert(*tmp))
-	//  {
-	//  QPointF topLeft = bounding.topLeft();
-	//  VipArrayStats<double, Vip::AllStats> st = vipArrayStats<double, Vip::AllStats>(*tmp, vipOverRects(rects), vipVector(topLeft.y(), topLeft.x()));
-	//  VipShapeStatistics res;
-	//  res.average = st.mean;
-	//  res.min = st.min;
-	//  res.max = st.max;
-	//  res.minPoint.rx() = st.minPos[1];
-	//  res.minPoint.ry() = st.minPos[0];
-	//  res.maxPoint.rx() = st.maxPos[1];
-	//  res.maxPoint.ry() = st.maxPos[0];
-	//  res.std = st.std;
-	//  res.pixelCount = st.count;
-	//  return res;
-	//  }
-	//  return VipShapeStatistics();
-
-	if (img.mid(vipVector(bounding.top() - img_offset.y(), bounding.left() - img_offset.x()), vipVector(bounding.height(), bounding.width())).convert(*tmp)) {
-		return extractStats<1>((const double*)tmp->data(), tmp->shape(1), rects, bounding.topLeft(), stats, bbox_quantiles);
-	}
-
-	return VipShapeStatistics();
+	return vipArrayStatistics<double>(img, stats, over);
 }
 
-VipShapeStatistics VipShape::statistics(const VipNDArray& img, const QPoint& img_offset, VipNDArray* buffer, VipShapeStatistics::Statistics stats, const QVector<double>& bbox_quantiles) const
+VipArrayStatistics<double> VipShape::statistics(const VipNDArray& img, const QPoint& img_offset, Vip::ArrayStatistics stats) const
 {
-	QRect bounding;
+	/* QRect bounding;
 	const QVector<QRect> tmp = fillRects();
 	const QVector<QRect> rects = clip(tmp, QRect(img_offset, QSize(img.shape(1), img.shape(0))), &bounding);
-	return statistics(rects, img, img_offset, bounding, buffer, stats, bbox_quantiles);
+	return statistics(rects, img, img_offset, stats);*/
+	return statistics(fillRects(), img, img_offset, stats);
 }
 
 VipIntervalSampleVector VipShape::histogram(qsizetype bins, const QVector<QRect>& rects, const VipNDArray& img, const QPoint& img_offset, const QRect& bounding_rect, VipNDArray* tmp)
@@ -1576,7 +1289,7 @@ VipSceneModel::VipSceneModel(const VipSceneModel& other)
 {
 }
 
-VipSceneModel::VipSceneModel(const QSharedPointer<PrivateData> &data)
+VipSceneModel::VipSceneModel(const QSharedPointer<PrivateData>& data)
   : d_data(data)
 {
 }

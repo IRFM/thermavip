@@ -62,6 +62,7 @@ namespace detail
 		Q_ASSERT(o_data);
 		Q_ASSERT(i_type != o_type);
 
+
 		switch ((o_type)) {
 
 			case QMetaType::QString: {
@@ -899,7 +900,6 @@ namespace detail
 					return false;
 			}
 		}
-
 		return false;
 	}
 

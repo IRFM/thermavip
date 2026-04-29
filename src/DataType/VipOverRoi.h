@@ -45,15 +45,15 @@
 /// using this ROI  will result in effectively eval or reduce a functor expression on its whole shape.
 struct VipInfinitRoi
 {
-	static const qsizetype access_type = Vip::Flat | Vip::Position;
-	typedef bool value_type;
+	static constexpr qsizetype access_type = Vip::Flat | Vip::Position | Vip::Cwise;
+	using value_type = bool;
 	template<class ShapeType>
-	bool operator()(const ShapeType&) const
+	constexpr bool operator()(const ShapeType&) const noexcept
 	{
 		return true;
 	}
-	bool operator[](qsizetype) const { return true; }
-	bool isUnstrided() const { return true; }
+	constexpr bool operator[](qsizetype) const noexcept { return true; }
+	constexpr bool isUnstrided() const noexcept { return true; }
 };
 
 /// A Region Of Interest (ROI) mixing a list of rectangles and another ROI.
@@ -63,33 +63,53 @@ struct VipInfinitRoi
 template<qsizetype Dim = Vip::None, class OverRoi = VipInfinitRoi>
 class VipOverNDRects
 {
-	const QVector<VipNDRect<Dim>> m_rects;
-	const VipNDRect<Dim>* m_ptr;
-	const qsizetype m_size;
 	const OverRoi m_roi;
+	QVector<VipNDRect<Dim>> m_rects;
+	const VipNDRect<Dim>* m_ptr = nullptr;
+	qsizetype m_size = 0;
 
 public:
 	static const qsizetype access_type = OverRoi::access_type;
 	typedef bool value_type;
 
+	VipOverNDRects(const OverRoi& roi = {})
+	  : m_roi(roi)
+	{
+	}
+
 	template<class Iter>
-	VipOverNDRects(Iter rect_first, Iter rect_last, const OverRoi& roi = OverRoi())
-	  : m_rects(rect_first,rect_last)
+	VipOverNDRects(Iter rect_first, Iter rect_last, const OverRoi& roi = {})
+	  : m_roi(roi)
+	  , m_rects(rect_first, rect_last)
 	  , m_ptr(m_rects.data())
 	  , m_size(m_rects.size())
-	  , m_roi(roi)
+
 	{
 	}
 
-	VipOverNDRects(const VipNDRect<Dim>* ptr, qsizetype size, const OverRoi& roi = OverRoi())
-	  : m_ptr(ptr)
+	VipOverNDRects(const VipNDRect<Dim>* ptr, qsizetype size, const OverRoi& roi = {})
+	  : m_roi(roi)
+	  , m_ptr(ptr)
 	  , m_size(size)
-	  , m_roi(roi)
+
 	{
 	}
 
-	const VipNDRect<Dim>* rects() const { return m_ptr; }
-	qsizetype size() const { return m_size; }
+	void setRects(const QVector<VipNDRect<Dim>>& rects)
+	{
+		m_rects = rects;
+		m_ptr = m_rects.constData();
+		m_size = m_rects.size();
+	}
+	void setRects(const VipNDRect<Dim>* ptr, qsizetype size) noexcept
+	{
+		m_rects.clear();
+		m_ptr = ptr;
+		m_size = size;
+	}
+
+	const VipNDRect<Dim>* rects() const noexcept { return m_ptr; }
+	qsizetype size() const noexcept { return m_size; }
 
 	template<class ShapeType>
 	bool operator()(const ShapeType& p) const
@@ -97,7 +117,7 @@ public:
 		return m_roi(p);
 	}
 	bool operator[](qsizetype i) const { return m_roi[i]; }
-	bool isUnstrided() const { return false; }
+	constexpr bool isUnstrided() const noexcept { return false; }
 };
 
 /// Create a #VipOverNDRects object based on a vector of rectangles and a ROI (default to #VipInfinitRoi)

@@ -324,6 +324,7 @@ class VIP_GUI_EXPORT VipDragWidget : public VipBaseDragWidget
 
 public:
 	VipDragWidget(QWidget* parent = nullptr);
+	VipDragWidget(QWidget * inner, QWidget *parent);
 	~VipDragWidget();
 
 	/// Returns true if the widget has the focus
@@ -602,7 +603,7 @@ public:
 	/// Returns the number of QTabWidget objects in the horizontal splitter at given vertical position.
 	int subCount(int y) const;
 
-	/// Return the total number (without recursion) of VipBaseDragWidget objects inside this VipMultiDragWidget.
+	/// Returns the total number (without recursion) of VipBaseDragWidget objects inside this VipMultiDragWidget.
 	int count() const;
 
 	/// Returns the position of given VipBaseDragWidget inside this VipMultiDragWidget.
@@ -617,12 +618,13 @@ public:
 	/// You can safely fill the new slots by calling #setWidget().
 	void subResize(int y, int new_size, VipMultiDragWidget::HorizontalSide side = VipMultiDragWidget::Right);
 
-	/// Set the given VipBaseDragWidget to given position.
+	/// Set the a widget to given position.
+	/// If provided widget is not a VipBaseDragWidget, an intermediate VipDragWidget is created.
 	/// The VipBaseDragWidget is added to a new page of the QTabWidget at this position.
-	void setWidget(int y, int x, VipBaseDragWidget* widget, bool update_content = true);
+	void setWidget(int y, int x, QWidget* widget, bool update_content = true);
 
 	void swapWidgets(VipDragWidget* from, VipDragWidget* to);
-	/// Insert orizontally a VipBaseDragWidget before given position.
+	/// Insert horizontally a VipBaseDragWidget before given position.
 	bool insertSub(int y, int x, VipBaseDragWidget* widget);
 
 	/// Insert vertically a VipBaseDragWidget before given position.

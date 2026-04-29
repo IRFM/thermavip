@@ -2030,6 +2030,16 @@ bool TaskPool::waitForDone(int milli_time)
 			lock.notify_all();
 			atomWait(ll, 15);
 		}
+		//TEST
+		/* while (this->remaining() > 0 && (!m_parent || m_parent->isEnabled())) {
+			if (!lock.try_lock_for(5)) {
+				QThread::msleep(5);
+				continue;
+			}
+			std::unique_lock<std::mutex> ll(lock.d_lock, std::adopt_lock_t{});
+			lock.notify_all();
+			atomWait(ll, 15);
+		}*/
 		return true;
 	}
 	else {
@@ -2980,7 +2990,7 @@ QTransform VipProcessingObject::globalImageTransform()
 		// leaf processing do not have image transforms
 		if (inspected[i]->outputCount() > 0) {
 			// wait for the processing to update
-			inspected[i]->wait();
+			inspected[i]->wait(true,100);
 			tr *= inspected[i]->imageTransform();
 		}
 	}
@@ -4892,6 +4902,14 @@ void serialize_VipDataListManager(VipArchive& arch)
 {
 	if (arch.mode() == VipArchive::Read) {
 		if (arch.start("VipProcessingManager")) {
+
+			arch.save();
+			int arrayThreads = 1;
+			if (arch.content("arrayThreads", arrayThreads))
+				vipSetIterateThreadCount(arrayThreads);
+			else
+				arch.restore();
+
 			int limit_type = arch.read("listLimitType").toInt();
 			int max_list_size = arch.read("maxListSize").toInt();
 			int max_memory = arch.read("maxListMemory").toInt();
@@ -4914,6 +4932,7 @@ void serialize_VipDataListManager(VipArchive& arch)
 	}
 	else if (arch.mode() == VipArchive::Write) {
 		if (arch.start("VipProcessingManager")) {
+			arch.content("arrayThreads", vipIterateThreadCount());
 			arch.content("listLimitType", VipProcessingManager::listLimitType());
 			arch.content("maxListSize", VipProcessingManager::maxListSize());
 			arch.content("maxListMemory", VipProcessingManager::maxListMemory());

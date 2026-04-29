@@ -463,9 +463,9 @@ private:
 	VipText(const QString&, const VipTextEngine* engine);
 
 	QString d_text;
+	const VipTextEngine* d_textEngine = nullptr;
 	VipTextStyle d_parameters;
 	LayoutAttributes d_layoutAttributes = MinimumLayout;
-	const VipTextEngine* d_textEngine = nullptr;
 	bool d_dirtyTextSize = true;
 	QSizeF d_textSize;
 };

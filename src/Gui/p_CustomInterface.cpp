@@ -1141,8 +1141,10 @@ CustomWidgetPlayer::CustomWidgetPlayer(VipWidgetPlayer* player)
 	if (!d_data->dragWidget)
 		return;
 
-	if (d_data->player->widgetForMouseEvents())
+	if (d_data->player->widgetForMouseEvents()) {
+		d_data->player->widgetForMouseEvents()->setAcceptDrops(true);
 		d_data->player->widgetForMouseEvents()->installEventFilter(this);
+	}
 
 	d_data->closeBar = new CloseToolBar(d_data->player);
 
@@ -1332,9 +1334,15 @@ bool CustomWidgetPlayer::eventFilter(QObject* w, QEvent* evt)
 			return false;
 		}
 		// Do not accept VipPlotMimeData objects
-		if (qobject_cast<const VipPlotMimeData*>(event->mimeData())) {
+		/* if (qobject_cast<const VipPlotMimeData*>(event->mimeData())) {
 			event->setAccepted(false);
 			return false;
+		}*/
+
+		//TEST: accept VipPlotMimeData as they could be dropped on a side to create a new VipDragWidget
+		if (qobject_cast<const VipPlotMimeData*>(event->mimeData())) {
+			event->setAccepted(true);
+			return true;
 		}
 	}
 	else if (evt->type() == QEvent::DragMove) {
@@ -1342,6 +1350,12 @@ bool CustomWidgetPlayer::eventFilter(QObject* w, QEvent* evt)
 
 		d_data->anchor = anchor(event->VIP_EVT_POSITION(), event->mimeData());
 		if (d_data->anchor.side != Vip::NoSide) {
+
+			//TEST: cannot drop VipPlotMimeData in the middle of any widget
+			if (d_data->anchor.side == Vip::AllSides && qobject_cast<const VipPlotMimeData*>(event->mimeData())) {
+				event->setAccepted(false);
+				return false;
+			}
 			// higlight area
 			anchorToArea(d_data->anchor, *DragRubberBand::instance(), d_data->player);
 			DragRubberBand::instance()->show(w);
@@ -1349,6 +1363,7 @@ bool CustomWidgetPlayer::eventFilter(QObject* w, QEvent* evt)
 			return true;
 		}
 		else if (d_data->anchor.side == Vip::AllSides && !event->mimeData()->data("application/dragwidget").isEmpty()) {
+			
 			// higlight area
 			anchorToArea(d_data->anchor, *DragRubberBand::instance(), d_data->player);
 			DragRubberBand::instance()->show(w);

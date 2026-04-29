@@ -20,6 +20,9 @@
 #include <qprocess.h>
 #include <qscreen.h>
 #include <qwindow.h>
+#if QT_VERSION > QT_VERSION_CHECK(6, 0, 0)
+#include <QQuickWindow>
+#endif
 
 #include "VipCommandOptions.h"
 #include "VipCore.h"
@@ -95,22 +98,22 @@ static void applyAppFont(QWidget* top, const QFont& previous)
 static QSurfaceFormat makeDefaultFormat()
 {
 #ifdef VIP_WITH_VTK
-	
-		QSurfaceFormat fmt;
-		fmt.setRenderableType(QSurfaceFormat::OpenGL);
-		fmt.setVersion(3, 2);
-		fmt.setProfile(QSurfaceFormat::CoreProfile);
-		fmt.setSwapBehavior(QSurfaceFormat::DoubleBuffer);
-		fmt.setRedBufferSize(8);
-		fmt.setGreenBufferSize(8);
-		fmt.setBlueBufferSize(8);
-		fmt.setDepthBufferSize(8);
-		fmt.setAlphaBufferSize(8);
-		fmt.setStencilBufferSize(0);
-		fmt.setStereo(false);
-		fmt.setSamples(4); // we never need multisampling in the context since the FBO can support
-				   // multisamples independently
-		return fmt;
+
+	QSurfaceFormat fmt;
+	fmt.setRenderableType(QSurfaceFormat::OpenGL);
+	fmt.setVersion(3, 2);
+	fmt.setProfile(QSurfaceFormat::CoreProfile);
+	fmt.setSwapBehavior(QSurfaceFormat::DoubleBuffer);
+	fmt.setRedBufferSize(8);
+	fmt.setGreenBufferSize(8);
+	fmt.setBlueBufferSize(8);
+	fmt.setDepthBufferSize(8);
+	fmt.setAlphaBufferSize(8);
+	fmt.setStencilBufferSize(0);
+	fmt.setStereo(false);
+	fmt.setSamples(4); // we never need multisampling in the context since the FBO can support
+			   // multisamples independently
+	return fmt;
 #else
 	QSurfaceFormat format;
 	format.setSamples(4);
@@ -149,7 +152,6 @@ int main(int argc, char** argv)
 		}
 	}
 
-	
 #ifdef WIN32
 	{
 		QString jre_server = QFileInfo(argv[0]).absolutePath() + "\\jre\\bin\\server";
@@ -161,7 +163,7 @@ int main(int argc, char** argv)
 		}
 		else {
 			// Setup Java if JAVA_HOME env. variable exists
-			const char * jhome = getenv("JAVA_HOME");
+			const char* jhome = getenv("JAVA_HOME");
 			if (jhome) {
 				std::string java_home = jhome;
 				std::string t_path = getenv("PATH");
@@ -173,8 +175,6 @@ int main(int argc, char** argv)
 	}
 #endif
 
-
-
 #ifdef WITH_MICRO
 	// Load micro_proxy library
 	QLibrary micro_proxy("micro_proxy");
@@ -182,8 +182,6 @@ int main(int argc, char** argv)
 #endif
 
 	qInstallMessageHandler(myMessageOutput);
-
-
 
 	//_putenv("QT_SCALE_FACTOR=1.5");
 	// register command option for gui
@@ -210,12 +208,12 @@ int main(int argc, char** argv)
 		vip_log_detail::_vip_set_enable_debug(true);
 
 #ifdef VIP_WITH_VTK
-		//vtkObject::GlobalWarningDisplayOn();
+		// vtkObject::GlobalWarningDisplayOn();
 #endif
 	}
 	else {
 #ifdef VIP_WITH_VTK
-		//vtkObject::GlobalWarningDisplayOff();
+		// vtkObject::GlobalWarningDisplayOff();
 #endif
 	}
 
@@ -255,8 +253,13 @@ int main(int argc, char** argv)
 	QWebEngineUrlScheme::registerScheme(sc);
 #endif
 
+#if QT_VERSION > QT_VERSION_CHECK(6, 0, 0)
+	// ONLY way to have both QOpenglWidget and QQuickWindow (like web engine) in the same application
+	QQuickWindow::setGraphicsApi(QSGRendererInterface::OpenGL);
+#endif
+
 	QApplication app(argc, argv);
-	
+
 #ifdef WIN32
 	// For now, fix issues with Windows 11 style for QSpinBox
 	QApplication::setStyle("windowsvista");
@@ -515,7 +518,7 @@ int main(int argc, char** argv)
 				if (update.isDownloadFinished()) {
 					if (!no_splashscreen)
 						splash->hide();
-					QMessageBox::StandardButton button = vipQuestion( "Update Thermavip", "A Thermavip update is ready to be installed.\nInstall now?");
+					QMessageBox::StandardButton button = vipQuestion("Update Thermavip", "A Thermavip update is ready to be installed.\nInstall now?");
 					if (button == QMessageBox::Yes) {
 						QString procname = QFileInfo(app.arguments()[0]).fileName();
 						// QProcess::startDetached(VipUpdate::getUpdateProgram() + " -u --command " + procname + " -o ./");
@@ -709,7 +712,7 @@ int main(int argc, char** argv)
 				vipGetMainWindow()->showMaximized();
 				QCoreApplication::processEvents();
 				if (!last_session) {
-					if(QMessageBox::Yes == vipQuestion("Load previous session", "Do you want to load the last session?"))
+					if (QMessageBox::Yes == vipQuestion("Load previous session", "Do you want to load the last session?"))
 						last_session = true;
 
 					/*QMessageBox box(
