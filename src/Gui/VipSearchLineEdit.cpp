@@ -249,7 +249,14 @@ QString VipFileOpenHelper::formatFromValidPath(const QString& path) const
 		return path;
 
 	// first, we need to remove potential class prefix
-	int idx = path.indexOf(":");
+	int idx = 0; 
+	{
+		QString _tmp = path;
+		// take care of namespace in class name
+		_tmp.replace("::", "--");
+		idx = _tmp.indexOf(":");
+	}
+
 	if (idx == 0)
 		// invalid path
 		return QString();

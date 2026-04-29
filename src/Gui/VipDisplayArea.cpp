@@ -4964,10 +4964,12 @@ QList<VipAbstractPlayer*> VipMainWindow::openPaths(const VipPathList& paths, Vip
 	if (!area)
 		area = displayArea()->currentDisplayPlayerArea();
 
+	bool create_workspace = false;
 	if(!area)
 	{
 		area = new VipDisplayPlayerArea();
 		displayArea()->addWidget(area);
+		create_workspace = true;
 	}
 
 	if (!area && !(paths.size() == 1 && (QFileInfo(paths.first().canonicalPath()).suffix() == "session" || QFileInfo(paths.first().canonicalPath()).suffix() == "hsession"))) {
@@ -4994,8 +4996,33 @@ QList<VipAbstractPlayer*> VipMainWindow::openPaths(const VipPathList& paths, Vip
 
 		VipPath path = paths[i];
 
+
+		QString c = path.canonicalPath();
+
+		if (c.startsWith("thermavip://")) {
+			QList<VipIODevice::Info> devices = VipIODevice::possibleReadDevices(path, QByteArray());
+			if (devices.isEmpty()) {
+
+				// Handle thermavip:// url with 2 or 3 slashes
+				c.remove("thermavip://");
+				if (c.startsWith("/"))
+					c = c.mid(1);
+				if (c.endsWith("/"))
+					c = c.mid(0, c.size() - 1);
+
+				if (c.startsWith("workspace+")) {
+					if (!create_workspace)
+						// Create new workspace
+						vipGetMainWindow()->displayArea()->addWidget(area = new VipDisplayPlayerArea());
+					c.remove("workspace+");
+				}
+				path = VipPath(c, path.isDir());
+			}
+		}
+
+
 		if (path.isDir()) {
-			progress.setText("<b>Open</b> " + QFileInfo((paths[i].canonicalPath())).fileName());
+			progress.setText("<b>Open</b> " + QFileInfo((path.canonicalPath())).fileName());
 			vipProcessEvents();
 
 			QString dirname = path.canonicalPath();
@@ -5008,7 +5035,7 @@ QList<VipAbstractPlayer*> VipMainWindow::openPaths(const VipPathList& paths, Vip
 					device->setProperty("_vip_enableProgress", true);
 
 					if (!device->open(VipIODevice::ReadOnly)) {
-						VIP_LOG_WARNING("Fail to open " + dirname + (device->errorString().size() ? ", " + device->errorString() : ""));
+						VIP_LOG_WARNING("Fail to open " , dirname , (device->errorString().size() ? ", " + device->errorString() : ""));
 						if (device->errorString().size())
 							errors << dirname;
 						delete device;
@@ -5023,7 +5050,7 @@ QList<VipAbstractPlayer*> VipMainWindow::openPaths(const VipPathList& paths, Vip
 			}
 		}
 		else {
-			QString filename = paths[i].canonicalPath();
+			QString filename = path.canonicalPath();
 			// session file
 			if (QFileInfo(filename).suffix() == "session") {
 				progress.setText("<b>Open</b> " + QFileInfo(filename).fileName());
@@ -5041,11 +5068,11 @@ QList<VipAbstractPlayer*> VipMainWindow::openPaths(const VipPathList& paths, Vip
 #endif
 			else {
 
-				QList<VipIODevice::Info> devices = VipIODevice::possibleReadDevices(paths[i], QByteArray());
-				VipIODevice* dev = VipCreateDevice::create(devices, paths[i]);
+				QList<VipIODevice::Info> devices = VipIODevice::possibleReadDevices(path, QByteArray());
+				VipIODevice* dev = VipCreateDevice::create(devices, path);
 				if (dev) {
 					dev->setPath(filename);
-					dev->setMapFileSystem(paths[i].mapFileSystem());
+					dev->setMapFileSystem(path.mapFileSystem());
 
 					QString name = dev->removePrefix(dev->name());
 					name = QFileInfo(name).fileName();

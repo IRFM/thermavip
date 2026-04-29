@@ -761,8 +761,7 @@ int main(int argc, char** argv)
 		// QProcess::startDetached(VipUpdate::getUpdateProgram() + " --hide --command Thermavip -l " + QString::number(vipRestartMSecs()));
 		QProcess::startDetached(VipUpdate::getUpdateProgram(),
 					QStringList() << "--hide"
-						      << "--command"
-						      << "Thermavip"
+						      << "--command" << vipAppCanonicalPath()
 						      << "-l" << QString::number(vipRestartMSecs()));
 	}
 
