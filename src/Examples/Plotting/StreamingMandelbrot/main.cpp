@@ -148,13 +148,13 @@ public:
 			}
 			// compute time traces
 			for (int i = 0; i < traces.size(); ++i) {
-				VipShapeStatistics v = traces[i].shape.statistics(VipNDArray(img),QPoint(),nullptr,VipShapeStatistics::Mean);
+				VipArrayStatistics<double> v = traces[i].shape.statistics(VipNDArray(img), QPoint(), Vip::Mean);
 
 				// Update VipPlotCurve content,
 				// and only keep the last 10s
 				qint64 ms_time = QDateTime::currentMSecsSinceEpoch();
 				VipPointVector vec = traces[i].curve->rawData();
-				vec.push_back(VipPoint(ms_time, v.average));
+				vec.push_back(VipPoint(ms_time, v.mean));
 				
 				int start = 0;
 				if (start < vec.size() && (vec.last().x() - vec[start].x()) > 10000LL)

@@ -4,3 +4,4 @@ build
 CMakeFiles
 *.pptx
 3rd_64
+.vscode
