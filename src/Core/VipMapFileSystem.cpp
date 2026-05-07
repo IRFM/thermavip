@@ -1121,6 +1121,7 @@ public:
 			input += p.readAllStandardOutput();
 			if (out)
 				*out += input;
+			//printf("'%s'\n", input.toLatin1().data());
 
 			if (input.contains(/*"The host key is not cached"*/ "y/n")) {
 				p.write("y\n");
@@ -1129,8 +1130,9 @@ public:
 			}
 			if (input.contains("psftp> "))
 				return true;
-			if (input.contains("closed", Qt::CaseInsensitive) || input.contains("error", Qt::CaseInsensitive))
+			if (input.contains("closed", Qt::CaseInsensitive) || input.contains("error", Qt::CaseInsensitive)) {
 				return false;
+			}
 			if (input.contains("denied", Qt::CaseInsensitive))
 				return false;
 

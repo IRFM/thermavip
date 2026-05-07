@@ -303,6 +303,37 @@ VIP_ALWAYS_INLINE T clamp(T val, T lo, T hi)
 	return (val > hi) ? hi : (val < lo) ? lo : val;
 }
 
+
+template<class V, class... T>
+VIP_ALWAYS_INLINE V firstNotNan(V val, V factor, T... rem)
+{
+	if (!vipIsNan(val))
+		return val;
+	if constexpr (sizeof...(rem) != 0)
+		return firstNotNan(rem...);
+	else
+		return (V)vipNan();
+}
+
+template<class V, class... T>
+VIP_ALWAYS_INLINE V multiplyNotNan(V val, V factor, T... rem)
+{
+	if constexpr (sizeof...(rem) != 0)
+		return val * factor + multiplyNotNan(rem...);
+	else
+		return val * factor;
+}
+
+template<class... T>
+VIP_ALWAYS_INLINE float getPixel(T... vals)
+{
+	if ((vipIsNan(vals) || ...)) {
+		return firstNotNan(vals...);
+	}
+	else
+		return multiplyNotNan(vals...);
+}
+
 template<class Ar>
 void histogram(const Ar& img, VipNDArrayType<float>& tmp, int strength, const VipInterval& interval, VipIntervalSampleVector& out, int* indexes, int max_index)
 {
@@ -326,7 +357,8 @@ void histogram(const Ar& img, VipNDArrayType<float>& tmp, int strength, const Vi
 		for (qsizetype y = 0; y < h; ++y) {
 			qsizetype start = y * w;
 			for (qsizetype x = 1; x < w - 1; ++x)
-				_out[start + x] = (float)img(vipVector(y, x - 1)) * 0.1f + (float)img(vipVector(y, x - 1)) * 0.9f;
+				_out[start + x] = getPixel((float)img(vipVector(y, x - 1)),
+							   0.1f , (float)img(vipVector(y, x)) , 0.9f); // (float)img(vipVector(y, x - 1)) * 0.1f + (float)img(vipVector(y, x)) * 0.9f;
 
 			_out[y * w] = (float)img(vipVector(y, 0));
 			_out[y * w + w - 1] = (float)img(vipVector(y, w - 1));

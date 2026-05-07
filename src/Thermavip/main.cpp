@@ -125,7 +125,7 @@ static QSurfaceFormat makeDefaultFormat()
 
 int main(int argc, char** argv)
 {
-
+	
 	{
 		// Load thermavip.env
 		QString env_file = vipGetDataDirectory() + "thermavip/thermavip.env";

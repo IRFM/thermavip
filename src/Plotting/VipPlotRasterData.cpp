@@ -797,8 +797,8 @@ bool VipPlotRasterData::computeImage(const VipRasterData& raster,
 
 			QRect im_rect(0, 0, qMin(dst_rect.width(), (int)extracted_rect.width()), qMin(dst_rect.height(), (int)extracted_rect.height()));
 			if (out.width() != im_rect.width() || out.height() != im_rect.height())
-				out = QImage(im_rect.width(), im_rect.height(), QImage::Format_ARGB32_Premultiplied);
-
+				out = QImage(im_rect.width(), im_rect.height(), QImage::Format_ARGB32);
+			
 			const VipNDArray* tarray = &tmp;
 			if (tmp.shape() != vipVector(im_rect.height(), im_rect.width())) {
 				// Resize in temporary array
