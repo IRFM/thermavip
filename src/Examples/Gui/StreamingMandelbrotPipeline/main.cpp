@@ -313,7 +313,7 @@ int main(int argc, char** argv)
 
 	// Create extract time trace
 	VipExtractStatistics* extracts = new VipExtractStatistics(&pool);
-	extracts->setStatistics(VipShapeStatistics::Mean);
+	extracts->setStatistics(Vip::Mean);
 	extracts->setScheduleStrategy(VipExtractHistogram::Asynchronous);
 	extracts->setFixedShape(poly->rawData());
 	extracts->inputAt(0)->setConnection(gen->outputAt(0));
