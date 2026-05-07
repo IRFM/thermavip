@@ -3,7 +3,7 @@
 IDI_ICON1	ICON	DISCARDABLE	"Thermavip.ico"
 
 VS_VERSION_INFO VERSIONINFO
-	FILEVERSION 5,0,0,0
+	FILEVERSION @PROJECT_VERSION_MAJOR@,@PROJECT_VERSION_MINOR@,@PROJECT_VERSION_PATCH@,0
 	PRODUCTVERSION 5,0,0,0
 	FILEFLAGSMASK 0x3fL
 #ifdef _DEBUG
@@ -21,11 +21,11 @@ VS_VERSION_INFO VERSIONINFO
 			BEGIN
 				VALUE "CompanyName", "CEA/IRFM\0"
 				VALUE "FileDescription", "Thermavip software\0"
-				VALUE "FileVersion", "5.0.0.0\0"
-				VALUE "LegalCopyright", "Copyright (C) 2015-2025\0"
+				VALUE "FileVersion", "@PROJECT_VERSION_MAJOR@,@PROJECT_VERSION_MINOR@,@PROJECT_VERSION_PATCH@,0\0"
+				VALUE "LegalCopyright", "Copyright (C) 2015-2026\0"
 				VALUE "OriginalFilename", "Thermavip.exe\0"
 				VALUE "ProductName", "Thermavip\0"
-				VALUE "ProductVersion", "5.0.0.0\0"
+				VALUE "ProductVersion", "@PROJECT_VERSION_MAJOR@,@PROJECT_VERSION_MINOR@,@PROJECT_VERSION_PATCH@,0\0"
 			END
 		END
 		BLOCK "VarFileInfo"
