@@ -44,7 +44,7 @@
 void VipColorMap::applyColorMap(const VipInterval& interval, const VipNDArray& ar, QRgb* out) const
 {
 	VipNDArrayTypeView<VipRGB> view((VipRGB*)out, ar.shape());
-	view = vipFunction([&](auto v, std::enable_if_t<std::is_arithmetic_v<decltype(v)>, void>* = nullptr) { return this->rgb(interval, v); }, ar);
+	view = vipFunction([&](auto v) ->  std::enable_if_t<std::is_arithmetic_v<decltype(v)>, QRgb> { return this->rgb(interval, v); }, ar);
 }
 
 class VipLinearColorMap::ColorStops
