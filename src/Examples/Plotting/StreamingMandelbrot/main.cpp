@@ -129,7 +129,7 @@ public:
 		while (!stop_thread) 
 		{
 			// Generate Mandelbrot image
-			VipNDArrayType<int> img(vip_vector(height, width));
+			VipNDArrayType<int> img(vipVector(height, width));
 			gen.updateImage(zoom, offsetX, offsetY, VipNDArrayTypeView<int>(img));
 
 			// Set image to all spectrograms
