@@ -57,7 +57,7 @@
 /// @{
 
 #include "VipLongDouble.h"
-#include "VipNDArrayImage.h"
+#include "VipNDArray.h"
 #include "VipSceneModel.h"
 
 /// @}

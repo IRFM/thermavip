@@ -37,6 +37,12 @@ static int registerConverters()
 {
 	qRegisterMetaType<VipRGB>();
 	qRegisterMetaTypeStreamOperators<VipRGB>();
+	qRegisterMetaType<VipRGBf>();
+	qRegisterMetaTypeStreamOperators<VipRGBf>();
+
+	QMetaType::registerConverter<VipRGB, VipRGBf>();
+	QMetaType::registerConverter<VipRGBf, VipRGB>();
+
 	QMetaType::registerConverter<VipRGB, QColor>();
 	QMetaType::registerConverter<QColor, VipRGB>();
 	QMetaType::registerConverter<VipRGB, QString>(detail::typeToString<VipRGB>);

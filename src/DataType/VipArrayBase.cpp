@@ -30,6 +30,8 @@
  */
 
 #include <QMap>
+#include <QMutexLocker>
+#include <QMutex>
 
 #include "VipArrayBase.h"
 #include "VipComplex.h"
@@ -64,8 +66,8 @@ bool vipCanConvertStdTypes(int from, int to) noexcept
 	if (from == QMetaType::QByteArray)
 		return vipIsArithmetic(to) || vipIsComplex(to) || to == QMetaType::QString || to == QMetaType::QByteArray || to == qMetaTypeId<VipRGB>()|| to == qMetaTypeId<VipRGBf>();
 
-	if (from == qMetaTypeId<VipRGB>()|| from == qMetaTypeId<VipRGBf>())
-		return (to == QMetaType::QString || to == QMetaType::QByteArray);
+	if (VipIsRgbType(from))
+		return (to == QMetaType::QString || to == QMetaType::QByteArray || VipIsRgbType(to));
 
 	return false;
 }
@@ -75,53 +77,59 @@ bool vipCanConvert(int from, int to)
 	QVariant v_from = vipFromVoid(from, nullptr);
 	bool res = v_from.canConvert(VIP_META(to));
 
-	// delete potential the QObject that was created
+	// delete the potential QObject that was created
 	if (QObject* obj = v_from.value<QObject*>())
 		delete obj;
 
 	return res;
 }
 
-static SharedHandle nullHandle = SharedHandle(new detail::NullHandle());
+static VipSharedHandle nullHandle = VipSharedHandle(new detail::NullHandle());
 
-static QMap<int, QMap<int, SharedHandle>>& tables()
+static QMap<int, QMap<int, VipSharedHandle>>& tables()
 {
-	static QMap<int, QMap<int, SharedHandle>> instances_;
-
-	if (!instances_.size()) {
-		instances_[0].insert(0, nullHandle);
-		instances_[VipNDArrayHandle::Standard][qMetaTypeId<bool>()] = SharedHandle(new detail::StdHandle<bool>());
-		instances_[VipNDArrayHandle::Standard][qMetaTypeId<char>()] = SharedHandle(new detail::StdHandle<char>());
-		instances_[VipNDArrayHandle::Standard][qMetaTypeId<qint8>()] = SharedHandle(new detail::StdHandle<qint8>());
-		instances_[VipNDArrayHandle::Standard][qMetaTypeId<quint8>()] = SharedHandle(new detail::StdHandle<quint8>());
-		instances_[VipNDArrayHandle::Standard][qMetaTypeId<qint16>()] = SharedHandle(new detail::StdHandle<qint16>());
-		instances_[VipNDArrayHandle::Standard][qMetaTypeId<quint16>()] = SharedHandle(new detail::StdHandle<quint16>());
-		instances_[VipNDArrayHandle::Standard][qMetaTypeId<qint32>()] = SharedHandle(new detail::StdHandle<qint32>());
-		instances_[VipNDArrayHandle::Standard][qMetaTypeId<quint32>()] = SharedHandle(new detail::StdHandle<quint32>());
-		instances_[VipNDArrayHandle::Standard][qMetaTypeId<long>()] = SharedHandle(new detail::StdHandle<long>());
-		instances_[VipNDArrayHandle::Standard][qMetaTypeId<unsigned long>()] = SharedHandle(new detail::StdHandle<unsigned long>());
-		instances_[VipNDArrayHandle::Standard][qMetaTypeId<qint64>()] = SharedHandle(new detail::StdHandle<qint64>());
-		instances_[VipNDArrayHandle::Standard][qMetaTypeId<quint64>()] = SharedHandle(new detail::StdHandle<quint64>());
-		instances_[VipNDArrayHandle::Standard][qMetaTypeId<float>()] = SharedHandle(new detail::StdHandle<float>());
-		instances_[VipNDArrayHandle::Standard][qMetaTypeId<double>()] = SharedHandle(new detail::StdHandle<double>());
-		instances_[VipNDArrayHandle::Standard][qMetaTypeId<long double>()] = SharedHandle(new detail::StdHandle<long double>());
-		instances_[VipNDArrayHandle::Standard][qMetaTypeId<complex_f>()] = SharedHandle(new detail::StdHandle<complex_f>());
-		instances_[VipNDArrayHandle::Standard][qMetaTypeId<complex_d>()] = SharedHandle(new detail::StdHandle<complex_d>());
-		instances_[VipNDArrayHandle::Standard][qMetaTypeId<QString>()] = SharedHandle(new detail::StdHandle<QString>());
-		instances_[VipNDArrayHandle::Standard][qMetaTypeId<VipRGB>()] = SharedHandle(new detail::StdHandle<VipRGB>());
-		instances_[VipNDArrayHandle::Standard][qMetaTypeId<VipRGBf>()] = SharedHandle(new detail::StdHandle<VipRGBf>());
-	}
-
-	return instances_;
+	static QMap<int, QMap<int, VipSharedHandle>>* instances_ = new QMap<int, QMap<int, VipSharedHandle>>();
+	return *instances_;
 }
+static QRecursiveMutex& tables_mutex()
+{
+	static QRecursiveMutex m;
+	return m;
+}
+
+static bool initHandles()
+{
+	vipRegisterStandardArrayHandle<bool>();
+	vipRegisterStandardArrayHandle<char>();
+	vipRegisterStandardArrayHandle<signed char>();
+	vipRegisterStandardArrayHandle<unsigned char>();
+	vipRegisterStandardArrayHandle<qint16>();
+	vipRegisterStandardArrayHandle<quint16>();
+	vipRegisterStandardArrayHandle<qint32>();
+	vipRegisterStandardArrayHandle<quint32>();
+	vipRegisterStandardArrayHandle<qint64>();
+	vipRegisterStandardArrayHandle<quint64>();
+	vipRegisterStandardArrayHandle<float>();
+	vipRegisterStandardArrayHandle<double>();
+	vipRegisterStandardArrayHandle<long double>();
+	vipRegisterStandardArrayHandle<complex_f>();
+	vipRegisterStandardArrayHandle<complex_d>();
+	vipRegisterStandardArrayHandle<QByteArray>();
+	vipRegisterStandardArrayHandle<QString>();
+	vipRegisterStandardArrayHandle<VipRGB>();
+	vipRegisterStandardArrayHandle<VipRGBf>();
+	return true;
+}
+static bool _initHandles = initHandles();
 
 namespace detail
 {
-	SharedHandle getHandle(int handle_type, int metatype)
+	VipSharedHandle getHandle(int handle_type, int metatype)
 	{
-		QMap<int, QMap<int, SharedHandle>>::iterator it_type = tables().find(handle_type);
+		QMutexLocker lock(&tables_mutex());
+		QMap<int, QMap<int, VipSharedHandle>>::iterator it_type = tables().find(handle_type);
 		if (it_type != tables().end()) {
-			QMap<int, SharedHandle>::iterator it_meta = it_type.value().find(metatype);
+			QMap<int, VipSharedHandle>::iterator it_meta = it_type.value().find(metatype);
 			if (it_meta == it_type.value().end()) {
 				if (it_type.value().size() == 1 && it_type.value().begin().key() == 0)
 					return it_type.value().begin().value();
@@ -131,6 +139,17 @@ namespace detail
 		}
 		return vipNullHandle();
 	}
+
+	bool hasStandardArrayType(int metatype)
+	{
+		QMutexLocker lock(&tables_mutex());
+		auto it = tables().find(VipNDArrayHandle::Standard);
+		if (it != tables().end()) {
+			auto found = it.value().find(metatype);
+			return found != it.value().end();
+		}
+		return false;
+	}
 }
 
 VipNDArrayHandle* vipNullHandlePtr() noexcept
@@ -139,21 +158,22 @@ VipNDArrayHandle* vipNullHandlePtr() noexcept
 	return &handle;
 }
 
-SharedHandle vipNullHandle() noexcept
+VipSharedHandle vipNullHandle() noexcept
 {
-	static SharedHandle h = SharedHandle(vipNullHandlePtr());
+	static VipSharedHandle h = VipSharedHandle(vipNullHandlePtr());
 	return h;
 }
 
-int vipRegisterArrayType(int hanndle_type, int metaType, const SharedHandle& handle)
+int vipRegisterArrayType(int handle_type, int metaType, const VipSharedHandle& handle)
 {
-	tables()[hanndle_type][metaType] = handle;
+	QMutexLocker lock(&tables_mutex());
+	tables()[handle_type][metaType] = handle;
 	return 0;
 }
 
-SharedHandle vipCreateArrayHandle(int hanndle_type, int metaType, const VipNDArrayShape& shape)
+VipSharedHandle vipCreateArrayHandle(int handle_type, int metaType, const VipNDArrayShape& shape)
 {
-	SharedHandle handle = detail::getHandle(hanndle_type, metaType);
+	VipSharedHandle handle = detail::getHandle(handle_type, metaType);
 	if (handle->handleType() == VipNDArrayHandle::Null)
 		return vipNullHandle();
 	handle.detach();
@@ -162,9 +182,9 @@ SharedHandle vipCreateArrayHandle(int hanndle_type, int metaType, const VipNDArr
 	return handle;
 }
 
-SharedHandle vipCreateArrayHandle(int hanndle_type, int metaType, void* ptr, const VipNDArrayShape& shape, const vip_deleter_type& del)
+VipSharedHandle vipCreateArrayHandle(int handle_type, int metaType, void* ptr, const VipNDArrayShape& shape, const VipDeleteFunction& del)
 {
-	SharedHandle handle = detail::getHandle(hanndle_type, metaType);
+	VipSharedHandle handle = detail::getHandle(handle_type, metaType);
 	if (handle->handleType() == VipNDArrayHandle::Null)
 		return vipNullHandle();
 	handle.detach();
@@ -175,9 +195,9 @@ SharedHandle vipCreateArrayHandle(int hanndle_type, int metaType, void* ptr, con
 	return handle;
 }
 
-SharedHandle vipCreateArrayHandle(int hanndle_type, int metaType)
+VipSharedHandle vipCreateArrayHandle(int handle_type, int metaType)
 {
-	SharedHandle handle = detail::getHandle(hanndle_type, metaType);
+	VipSharedHandle handle = detail::getHandle(handle_type, metaType);
 	if (handle->handleType() == VipNDArrayHandle::Null)
 		return vipNullHandle();
 

@@ -41,9 +41,9 @@
 #include <QRect>
 
 #include "VipMapFileSystem.h"
-#include "VipNDArrayImage.h"
 #include "VipProcessingObject.h"
 #include "VipTimestamping.h"
+#include "VipNDArray.h"
 
 /// \addtogroup Core
 /// @{
@@ -1105,10 +1105,8 @@ public:
 
 	virtual bool acceptInput(int, const QVariant& v) const
 	{
-		if (v.userType() == qMetaTypeId<VipNDArray>()) {
-			VipNDArray ar = v.value<VipNDArray>();
-			return vipIsImageArray(ar);
-		}
+		if (v.userType() == qMetaTypeId<VipNDArray>()) 
+			return v.value<VipNDArray>().dataType() == qMetaTypeId<VipRGB>();
 		return false;
 	}
 

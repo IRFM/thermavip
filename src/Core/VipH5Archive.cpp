@@ -32,7 +32,6 @@
 #include "VipH5Archive.h"
 #include "VipNDArray.h"
 #include "VipVectors.h"
-#include "VipNDArrayImage.h"
 #include "VipH5DeviceDriver.h"
 #include "VipTimestamping.h"
 #include "VipCore.h"
@@ -236,11 +235,11 @@ static ArraySpace arraySpaceAndData(const VipNDArray& ar)
 {
 	ArraySpace res;
 	
-	if (vipIsImageArray(ar) || ar.dataType() == qMetaTypeId<VipRGB>()) {
+	if (ar.dataType() == qMetaTypeId<VipRGB>()) {
 		int dim_count = 3;
 		hsize_t dims[3] = { (hsize_t)ar.shape(0), (hsize_t)ar.shape(1), 4 };
 		res.space = H5Object(H5Screate_simple(dim_count, dims, dims), H5Object::Space);
-		res.data = vipToImage(ar).constBits();
+		res.data = ar.data();
 		res.type = qtToHDF5(QMetaType::UChar);
 	}
 	else if (vipIsComplex(ar.dataType())) {
@@ -898,15 +897,12 @@ static QVariant toNDArrayOrBytes(const QVariant& v)
 
 	if (v.userType() == qMetaTypeId<VipNDArray>() ) {
 		VipNDArray ar = v.value<VipNDArray>();
-		if (!vipIsImageArray(ar)) {
-			ar = ar.dense();
-			if (ar.dataType() == qMetaTypeId<VipRGB>()) {
-				VipNDArrayTypeView<VipRGB> view = ar;
-				return QVariant::fromValue(VipNDArray(VipNDArrayTypeView<uchar>((uchar*)view.ptr(), vipVector(ar.shape(0), ar.shape(1), 4))));
-			}
-			return QVariant::fromValue(ar);
+		ar = ar.dense();
+		if (ar.dataType() == qMetaTypeId<VipRGB>()) {
+			VipNDArrayTypeView<VipRGB> view = ar;
+			return QVariant::fromValue(VipNDArray(VipNDArrayTypeView<uchar>((uchar*)view.ptr(), vipVector(ar.shape(0), ar.shape(1), 4))));
 		}
-		return QVariant::fromValue(VipNDArray(VipNDArrayTypeView<uchar>((uchar*)vipToImage(ar).constBits(), vipVector(ar.shape(0), ar.shape(1), 4))));
+		return QVariant::fromValue(ar);
 	}
 
 	QByteArray ar;

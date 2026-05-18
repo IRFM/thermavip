@@ -35,8 +35,8 @@
 #include <QTextStream>
 
 #include "VipNDArray.h"
-#include "VipNDArrayImage.h"
 #include "VipResize.h"
+#include "VipEval.h"
 
 bool vipIsNullArray(const VipNDArray& ar) noexcept
 {
@@ -66,14 +66,14 @@ VipNDArray VipNDArray::makeView(const VipNDArray& other)
 	if (other.handle()->handleType() != VipNDArrayHandle::Standard)
 		return VipNDArray();
 	detail::ViewHandle* h = new detail::ViewHandle(other.sharedHandle(), VipNDArrayShape(other.shapeCount(), 0), other.shape());
-	return VipNDArray(SharedHandle(h));
+	return VipNDArray(VipSharedHandle(h));
 }
 
 VipNDArray VipNDArray::makeView(void* ptr, int data_type, const VipNDArrayShape& shape, const VipNDArrayShape& strides)
 {
 	detail::ViewHandle* h = new detail::ViewHandle(ptr, data_type, shape, strides);
 	if (h->handle->handleType() == VipNDArrayHandle::Standard)
-		return VipNDArray(SharedHandle(h));
+		return VipNDArray(VipSharedHandle(h));
 	else
 		delete h;
 	return VipNDArray();
@@ -97,7 +97,7 @@ VipNDArray::VipNDArray(int data_type, const VipNDArrayShape& shape)
 
 void VipNDArray::import(const void* ptr, int data_type, const VipNDArrayShape& shape)
 {
-	SharedHandle h = vipCreateArrayHandle(VipNDArrayHandle::Standard, data_type, const_cast<void*>(ptr), shape, vip_deleter_type());
+	VipSharedHandle h = vipCreateArrayHandle(VipNDArrayHandle::Standard, data_type, const_cast<void*>(ptr), shape, VipDeleteFunction());
 	if (!h)
 		return;
 
@@ -123,7 +123,7 @@ bool VipNDArray::canConvert(int out_type) const noexcept
 	if (handle()->canExport(out_type))
 		return true;
 	else {
-		const SharedHandle h = detail::getHandle(VipNDArrayHandle::Standard, out_type);
+		const VipSharedHandle h = detail::getHandle(VipNDArrayHandle::Standard, out_type);
 		if (!vipIsNullArray(h.data()))
 			return h->canImport(this->dataType());
 		else
@@ -158,7 +158,7 @@ bool VipNDArray::load(const char* filename, FileFormat format)
 			qsizetype htype, dtype;
 			str >> htype;
 			str >> dtype;
-			SharedHandle h = vipCreateArrayHandle(htype, dtype);
+			VipSharedHandle h = vipCreateArrayHandle(htype, dtype);
 			if (h != vipNullHandle())
 				format = Binary;
 			else
@@ -255,7 +255,7 @@ bool VipNDArray::save(QIODevice* device, FileFormat format)
 		format = Binary;
 
 	if (format == Image) {
-		QImage tmp = vipToImage(*this);
+		const QImage tmp = vipToImageRef(*this);
 		if (tmp.isNull())
 			return false;
 		return tmp.save(device);
@@ -521,6 +521,18 @@ VipNDArray VipNDArray::toAmplitude() const
 	}
 }
 
+size_t VipNDArray::hashValue() const
+{
+	if (isNull())
+		return 0;
+
+	size_t h = handle()->hashValue();
+	vipHashCombine(h, vipHashValue(dataType()));
+	for (qsizetype i = 0; i < shapeCount(); ++i)
+		vipHashCombine(h, vipHashValue(shape(i)));
+	return h;
+}
+
 VipNDArray VipNDArray::mid(const VipNDArrayShape& pos, const VipNDArrayShape& shape) const
 {
 	if (isEmpty())
@@ -551,11 +563,11 @@ VipNDArray VipNDArray::mid(const VipNDArrayShape& pos, const VipNDArrayShape& sh
 		detail::ViewHandle* h = new detail::ViewHandle(*static_cast<const detail::ViewHandle*>(handle()), _pos, _shape);
 		// h->start = h->start + _pos;
 		// h->shape = _shape;
-		return VipNDArray(SharedHandle(h));
+		return VipNDArray(VipSharedHandle(h));
 	}
 	else {
 		detail::ViewHandle* h = new detail::ViewHandle(sharedHandle(), _pos, _shape);
-		return VipNDArray(SharedHandle(h));
+		return VipNDArray(VipSharedHandle(h));
 	}
 }
 
@@ -641,8 +653,57 @@ void VipNDArray::clear() noexcept
 	setSharedHandle(vipNullHandle());
 }
 
+namespace detail
+{
+	struct HashCompute : Reductor<size_t>
+	{
+		char bytes[1024];
+		size_t hash = 0;
+		size_t count = 0;
+
+		template<class T>
+		void setAt(qsizetype, const T& v)
+		{
+			if constexpr (std::is_arithmetic_v<T> || VipIsRgb_v<T> || VipIsComplex_v<T>) {
+				// Accumulate enough values in a buffer until we can call vipHashCombine() on it
+				static constexpr size_t total_bytes = (sizeof(bytes) / sizeof(T)) * sizeof(T);
+				*((T*)(bytes + count)) = v;
+				count += sizeof(T);
+				if (count == total_bytes) {
+					vipHashCombine(hash, vipHashBytes(bytes, count));
+					count = 0;
+				}
+			}
+			else {
+				vipHashCombine(hash, vipHashValue(v));
+			}
+		}
+		//! set a new value for given position
+		template<class ShapeType, class T>
+		void setPos(const ShapeType&, const T& v)
+		{
+			setAt(0, v);
+		}
+		//! finish the reduction algorithm, returns true on success, false otherwise.
+		bool finish()
+		{
+			if (count)
+				vipHashCombine(hash, vipHashBytes(bytes, count));
+			return true;
+		}
+	};
+
+	size_t ViewHandle::hashValue() const
+	{
+		// Implementation of ViewHandle::hashValue() is provided here as we need vipEval() for it
+		HashCompute h;
+		if (!vipEval(h, VipNDArray(VipSharedHandle((ViewHandle*)this))))
+			return 0;
+		return h.hash;
+	}
+}
+
 #include "VipMath.h"
-#include "VipNDArrayImage.h"
 
 template<class T, class U>
 void applyWarping(const T* src, U* dst, qsizetype w, qsizetype h, U background, const QPointF* warping)
@@ -731,7 +792,7 @@ bool vipApplyDeformation(const VipNDArray& in, const QPointF* deformation, VipND
 		applyWarping((complex_d*)input.data(), (complex_d*)out.data(), input.shape(1), input.shape(0), background.value<complex_d>(), deformation);
 		return true;
 	}
-	else if (vipIsImageArray(in) && (background.canConvert<QRgb>() || background.canConvert<QColor>() || background.canConvert<VipRGB>())) {
+	else if (in.isRGB() && (background.canConvert<QRgb>() || background.canConvert<QColor>() || background.canConvert<VipRGB>())) {
 		QRgb back = 0;
 		if (background.canConvert<QRgb>())
 			back = background.toUInt();
@@ -740,7 +801,7 @@ bool vipApplyDeformation(const VipNDArray& in, const QPointF* deformation, VipND
 		else
 			back = background.value<QColor>().rgba();
 
-		QImage imin = vipToImage(in);
+		QImage imin = vipToImageRef(in);
 		QImage imout = QImage(imin.width(), imin.height(), QImage::Format_ARGB32);
 
 		QRgb* in_p = (QRgb*)imin.bits();
@@ -752,6 +813,20 @@ bool vipApplyDeformation(const VipNDArray& in, const QPointF* deformation, VipND
 		return true;
 	}
 	return false;
+}
+
+VipNDArray vipToArray(const QImage& img)
+{
+	//if (img.isNull())
+	//	return {};
+
+	const auto tmp = img.convertToFormat(QImage::Format_ARGB32);
+	return VipNDArray((const VipRGB*)img.constBits(), vipVector(img.height(), img.width()));
+}
+
+static bool canConvert(int from, int to)
+{
+	return vipCanConvertStdTypes(from, to) || vipCanConvert(from, to);
 }
 
 int vipHigherArrayType(int t1, int t2)
@@ -791,9 +866,11 @@ int vipHigherArrayType(int t1, int t2)
 			return it1.value() > it2.value() ? t1 : t2;
 	}
 
-	bool t1_to_t2 = VipNDArray(t1, VipNDArrayShape()).canConvert(t2);
-	bool t2_to_t1 = VipNDArray(t2, VipNDArrayShape()).canConvert(t1);
+	bool t1_to_t2 = canConvert(t1, t2);
+	bool t2_to_t1 = canConvert(t2, t1);
 	if (!t1_to_t2 && !t2_to_t1) {
+		if (t1 == qMetaTypeId<VipRGBf>() || t2 == qMetaTypeId<VipRGBf>())
+			return qMetaTypeId<VipRGBf>();
 		if (t1 == qMetaTypeId<VipRGB>() || t2 == qMetaTypeId<VipRGB>())
 			return qMetaTypeId<VipRGB>();
 		return 0;

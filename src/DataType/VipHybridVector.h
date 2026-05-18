@@ -39,6 +39,7 @@
 
 #include <algorithm>
 #include <iterator>
+#include <type_traits>
 
 /// \addtogroup DataType
 /// @{
@@ -69,7 +70,23 @@ namespace detail
 	template<typename T>
 	std::false_type is_iterable_impl(...);
 
+
+	template <qsizetype I = 0, class C, class A, class... Args>
+	VIP_ALWAYS_INLINE auto affectValues(C & out, A a, Args... vals) noexcept
+	{
+		out[I] = (qsizetype)a;
+		if constexpr (sizeof...(Args) > 0)
+			affectValues<I + 1>(out, std::forward<Args>(vals)...);
+	}
 }
+
+
+/// @brief Check whether all parameters are of integral type
+template<class... T>
+struct VipIsAllIntegers
+{
+	static constexpr bool value = (std::is_integral_v<T> && ...);
+};
 
 template<class F, qsizetype... Dims>
 VIP_ALWAYS_INLINE void vipForEachDims(F&& f, std::integer_sequence<qsizetype, Dims...>)
@@ -138,6 +155,39 @@ struct VipHybridVector
 	typedef qsizetype size_type;
 	typedef qsizetype difference_type;
 
+	VipHybridVector() noexcept = default;
+	VipHybridVector(const VipHybridVector& other) = default;
+	VipHybridVector(VipHybridVector&& other) noexcept = default;
+
+	// Use this ugly construction instead of initializer list
+	// to be SURE to have a constexpr size. At least on msvc,
+	// std::initializer_list::size() cannot be used const evaluated context.
+	VIP_ALWAYS_INLINE VipHybridVector(const T (&list)[N]) noexcept
+	{
+		vipForEachDims([&](auto i) { elems[i] = list[i]; }, std::make_integer_sequence<qsizetype, (qsizetype)N>{});
+	}
+
+	template<class... Args>
+	VIP_ALWAYS_INLINE VipHybridVector(Args... args) noexcept
+	{
+		static_assert((qsizetype)(sizeof...(Args)) == N);
+		detail::affectValues<0>(*this, std::forward<Args>(args)...);
+	}
+
+	template<class Iter, std::enable_if_t<VipIsIterator_v<Iter>, int> = 0>
+	VIP_ALWAYS_INLINE VipHybridVector(Iter first, Iter last)
+	{
+		VIP_ASSERT_DEBUG(std::distance(first, last) == N);
+		std::copy(first, last, begin());
+	}
+
+	template<class Other, std::enable_if_t<VipIsIterable_v<Other>, int> = 0>
+	VIP_ALWAYS_INLINE VipHybridVector(const Other& v) noexcept
+	{
+		if(v.size() == N)
+			vipForEachDims([&](auto i) { elems[i] = static_cast<T>(v[i]); }, std::make_integer_sequence<qsizetype, (qsizetype)N>{});
+	}
+
 	// iterator support
 	VIP_ALWAYS_INLINE iterator begin() noexcept { return elems; }
 	VIP_ALWAYS_INLINE const_iterator begin() const noexcept { return elems; }
@@ -181,7 +231,7 @@ struct VipHybridVector
 	VIP_ALWAYS_INLINE const_reference last() const noexcept { return back(); }
 
 	// size is constant
-	static VIP_ALWAYS_INLINE size_type size() noexcept { return N; }
+	static VIP_ALWAYS_INLINE constexpr size_type size() noexcept { return N; }
 	static VIP_ALWAYS_INLINE bool isEmpty() noexcept { return false; }
 
 	// swap (note: linear complexity)
@@ -195,6 +245,9 @@ struct VipHybridVector
 	VIP_ALWAYS_INLINE const T* data() const noexcept { return elems; }
 	VIP_ALWAYS_INLINE T* data() noexcept { return elems; }
 
+	VipHybridVector& operator=(const VipHybridVector& other) = default;
+	VipHybridVector& operator=( VipHybridVector&& other) noexcept = default;
+
 	// assignment with type conversion
 	template<class Other>
 	VipHybridVector& operator=(const Other& rhs) noexcept
@@ -205,20 +258,19 @@ struct VipHybridVector
 		return *this;
 	}
 
+	template<size_t ON>
+	VIP_ALWAYS_INLINE VipHybridVector& operator=(const T (&list)[ON]) noexcept
+	{
+		static_assert(N == ON);
+		vipForEachDims([&](auto i) { elems[i] = list[i]; }, std::make_integer_sequence<qsizetype, (qsizetype)N>{});
+		return *this;
+	}
+
 	// assign one value to all elements
 	void assign(const T& value) noexcept { fill(value); } // A synonym for fill
 	void fill(const T& value) noexcept { std::fill_n(elems, N, value); }
 
 	void resize(size_type) noexcept {}
-
-	QVector<T> toVector() const
-	{
-		QVector<T> res(N);
-		std::copy(begin(), end(), res.begin());
-		return res;
-	}
-
-	operator QVector<T>() const { return toVector(); }
 
 	explicit operator bool() const noexcept { return true; }
 
@@ -269,14 +321,26 @@ public:
 	  : m_size(0)
 	{
 	}
-	VIP_ALWAYS_INLINE VipHybridVector(qsizetype size) noexcept
+	VIP_ALWAYS_INLINE explicit VipHybridVector(qsizetype size) noexcept
 	  : m_size(size)
 	{
+		VIP_ASSERT_DEBUG(m_size <= VIP_MAX_DIMS);
 	}
-	VIP_ALWAYS_INLINE VipHybridVector(qsizetype size, const T& elem) noexcept
+	VIP_ALWAYS_INLINE explicit VipHybridVector(qsizetype size, const T& elem) noexcept
 	  : m_size(size)
 	{
+		VIP_ASSERT_DEBUG(m_size <= VIP_MAX_DIMS);
 		fill(elem);
+	}
+
+	// Here, we use initializer list instead of const T (&list)[N]
+	// to avoid confusion with the constructor above.
+	// We loose consexpr size on some compilers....
+	VIP_ALWAYS_INLINE VipHybridVector(std::initializer_list<T> lst) noexcept
+	  : m_size(lst.size())
+	{
+		VIP_ASSERT_DEBUG(m_size <= VIP_MAX_DIMS);
+		std::copy(lst.begin(), lst.end(), m_elems);
 	}
 
 	template<class Iter, std::enable_if_t<VipIsIterator_v<Iter>, int> = 0>
@@ -295,11 +359,7 @@ public:
 			m_elems[i] = static_cast<T>(v[i]);
 	}
 
-	VIP_ALWAYS_INLINE VipHybridVector(const VipHybridVector& other) noexcept
-	  : m_size(other.size())
-	{
-		memcpy(m_elems, other.m_elems, VIP_MAX_DIMS * sizeof(T));
-	}
+	VIP_ALWAYS_INLINE VipHybridVector(const VipHybridVector& other) noexcept = default;
 
 	VIP_ALWAYS_INLINE void push_back(const T& elem) noexcept
 	{
@@ -369,7 +429,6 @@ public:
 	VIP_ALWAYS_INLINE reference last() noexcept { return back(); }
 	VIP_ALWAYS_INLINE const_reference last() const noexcept { return back(); }
 
-	// size is constant
 	VIP_ALWAYS_INLINE size_type size() const noexcept { return m_size; }
 	VIP_ALWAYS_INLINE bool isEmpty() const noexcept { return m_size == 0; }
 
@@ -394,11 +453,32 @@ public:
 		return *this;
 	}
 
-	VIP_ALWAYS_INLINE VipHybridVector& operator=(const VipHybridVector& other) noexcept
+	template<qsizetype N>
+	VIP_ALWAYS_INLINE VipHybridVector& operator=(const VipHybridVector<T,N>& other) noexcept
 	{
-		m_size = other.m_size;
-		// std::copy(other.m_elems, other.m_elems + VIP_MAX_DIMS, m_elems);
-		memcpy(m_elems, other.m_elems, VIP_MAX_DIMS * sizeof(T));
+		if constexpr (N > 0) {
+			static_assert(N <= VIP_MAX_DIMS);
+			m_size = (qsizetype)N;
+			vipForEachDims([&](auto i) { m_elems[i] = other[i]; }, std::make_integer_sequence<qsizetype, (qsizetype)N>{});
+		}
+		else {
+			m_size = other.m_size;
+			memcpy(m_elems, other.m_elems, VIP_MAX_DIMS * sizeof(T));
+		}
+		return *this;
+	}
+
+	VIP_ALWAYS_INLINE VipHybridVector& operator=(const VipHybridVector& other) noexcept = default;
+
+	// Use this ugly construction instead of initializer list
+	// to be SURE to have a constexpr size. At least on msvc,
+	// std::initializer_list::size() cannot be used const evaluated context.
+	template<size_t N>
+	VIP_ALWAYS_INLINE VipHybridVector& operator=(const T (&list)[N]) noexcept
+	{
+		static_assert(N <= VIP_MAX_DIMS);
+		m_size = (qsizetype)N;
+		vipForEachDims([&](auto i) { m_elems[i] = list[i]; }, std::make_integer_sequence<qsizetype, (qsizetype)N>{});
 		return *this;
 	}
 
@@ -419,25 +499,6 @@ public:
 		m_size = new_size;
 	}
 
-	QVector<T> toVector() const
-	{
-		QVector<T> res(size());
-		std::copy(begin(), end(), res.begin());
-		return res;
-	}
-
-	template<class Other, std::enable_if_t<VipIsIterable_v<Other>, int> = 0>
-	VIP_ALWAYS_INLINE operator Other() const
-	{
-		if constexpr (VipIsHybridVector<Other>::value) {
-			Other ret;
-			ret.resize(size());
-			std::copy(begin(), end(), ret.begin());
-			return ret;
-		}
-		else
-			return Other(begin(), end());
-	}
 
 	VIP_ALWAYS_INLINE explicit operator bool() const noexcept { return size() > 0; }
 
@@ -605,10 +666,10 @@ VIP_ALWAYS_INLINE VipHybridVector<T, Vip::None> vipVector(const QVector<T>& v) n
 }
 
 /// @brief Create a VipCoordinate object
-template<class... Args>
+template<class... Args, std::enable_if_t<VipIsAllIntegers<Args...>::value, int> = 0>
 VIP_ALWAYS_INLINE auto vipVector(Args... sizes) noexcept
 {
-	return VipCoordinate<sizeof...(Args)>{ { std::forward<qsizetype>(sizes)... } };
+	return VipCoordinate<sizeof...(Args)>{ std::forward<qsizetype>(sizes)... };
 }
 
 VIP_ALWAYS_INLINE auto vipVector(const QPoint& pt)
@@ -633,15 +694,6 @@ VIP_ALWAYS_INLINE auto vipRepeat(qsizetype count, qsizetype value) noexcept
 	vipForEachCoord(ret, [&](qsizetype i) { ret[i] = value; });
 	return ret;
 }
-
-#include <tuple>
-/// https://stackoverflow.com/questions/2124339/c-preprocessor-va-args-number-of-arguments
-/// MACRO version of vipVector, much faster on msvc (?)
-#define vip_vector(...)                                                                                                                                                                                \
-	VipCoordinate<std::tuple_size<decltype(std::make_tuple(__VA_ARGS__))>::value>                                                                                                                  \
-	{                                                                                                                                                                                              \
-		__VA_ARGS__                                                                                                                                                                            \
-	}
 
 /// @}
 // end DataType

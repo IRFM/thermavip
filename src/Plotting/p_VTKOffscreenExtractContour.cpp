@@ -984,7 +984,7 @@ void OffscreenExtractContour::Execute()
 			double color[4] = { 0, 0, 0, 1 };
 			toColor(value, color);
 
-			it->second.setColor(vipToQColor(color));
+			it->second.setColor(toQColor(color));
 			data_levels[value] = it->first;
 			levels << value;
 		}

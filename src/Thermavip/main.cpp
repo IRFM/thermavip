@@ -122,9 +122,14 @@ static QSurfaceFormat makeDefaultFormat()
 #endif
 }
 
+
 int main(int argc, char** argv)
 {
+	//TEST
+	//vip_log_detail::_vip_set_enable_debug(true);
+
 	{
+		vip_debug("Load thermavip.env...");
 		// Load thermavip.env
 		QString env_file = vipGetDataDirectory() + "thermavip/thermavip.env";
 		vip_debug("env file: %s\n", env_file.toLatin1().data());
@@ -154,8 +159,10 @@ int main(int argc, char** argv)
 
 #ifdef WIN32
 	{
+		vip_debug("Load JRE if possible...\n");
 		QString jre_server = QFileInfo(argv[0]).absolutePath() + "\\jre\\bin\\server";
 		if (QFileInfo(jre_server).exists()) {
+			vip_debug("Found %s\n", jre_server.toLatin1().data());
 			// Use local Jre
 			QByteArray path = qgetenv("PATH");
 			path = jre_server.toLatin1() + ";" + path;
@@ -165,6 +172,7 @@ int main(int argc, char** argv)
 			// Setup Java if JAVA_HOME env. variable exists
 			const char* jhome = getenv("JAVA_HOME");
 			if (jhome) {
+				vip_debug("Found JAVA_HOME: %s\n", jhome);
 				std::string java_home = jhome;
 				std::string t_path = getenv("PATH");
 				std::string n_path = java_home + "\\jre\\bin\\server;" + t_path;
@@ -180,6 +188,8 @@ int main(int argc, char** argv)
 	QLibrary micro_proxy("micro_proxy");
 	bool loaded = micro_proxy.load();
 #endif
+
+	vip_debug("Setup command line options\n");
 
 	qInstallMessageHandler(myMessageOutput);
 
@@ -200,6 +210,8 @@ int main(int argc, char** argv)
 		args << QString(argv[i]);
 	}
 	VipCommandOptions::instance().parse(args);
+
+	vip_debug("Setup VTK\n");
 
 #ifdef VIP_WITH_VTK
 	vtkObject::GlobalWarningDisplayOff();
@@ -227,6 +239,7 @@ int main(int argc, char** argv)
 
 	QDir::setCurrent(QFileInfo(QString(argv[0])).canonicalPath());
 
+	vip_debug("Setup OpenGL\n");
 	// qputenv("QSG_INFO", "1");
 	// qputenv("QT_OPENGL", "desktop");
 	// qputenv("QT_OPENGL", "angle");
@@ -307,7 +320,7 @@ int main(int argc, char** argv)
 #else
 
 	QString app_path = QFileInfo(argv[0]).canonicalFilePath();
-	vip_debug("App: %s\n", app_path.toLatin1().data());
+	vip_debug("App path: %s\n", app_path.toLatin1().data());
 	if (app_path.isEmpty())
 		app_path = QApplication::applicationDirPath() + "/Thermavip.exe";
 	vipSetAppCanonicalPath(app_path);
@@ -332,7 +345,7 @@ int main(int argc, char** argv)
 	QDir::setCurrent(QFileInfo(vipAppCanonicalPath()).canonicalPath());
 #endif
 
-	vip_debug("%s\n", app.font().toString().toLatin1().data());
+	vip_debug("Current font: %s\n", app.font().toString().toLatin1().data());
 
 	// load fonts embedded within Thermavip
 	QFontDatabase base;
@@ -411,6 +424,8 @@ int main(int argc, char** argv)
 		}
 	}
 
+	vip_debug("Load Core settings\n");
+
 	// load core settings
 	VipCoreSettings::instance()->restore(vipGetDataDirectory() + "core_settings.xml");
 	// initialize the log file
@@ -435,6 +450,7 @@ int main(int argc, char** argv)
 	// load the skin
 	if (VipCommandOptions::instance().count("skin")) {
 		QString skin = VipCommandOptions::instance().value("skin").toString();
+		vip_debug("Load custom skin: %s\n", skin.toLatin1().data());
 		vipLoadSkin(skin);
 	}
 	else {

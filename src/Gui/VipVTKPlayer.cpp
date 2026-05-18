@@ -672,8 +672,8 @@ void VipFOVItem::setPlotFov(VipPlotFieldOfView* p)
 				d_data->cam_path->setRawData(obj);
 
 				d_data->cam_path->setVisible(true);
-				//d_data->cam_path->setColor(vipToQColor(d_data->color));
-				//d_data->cam_path->setSelectedColor(vipToQColor(d_data->color));
+				//d_data->cam_path->setColor(toQColor(d_data->color));
+				//d_data->cam_path->setSelectedColor(toQColor(d_data->color));
 				d_data->cam_path->actor()->GetProperty()->SetLineWidth(2);
 				polyData->Delete();
 			}
@@ -820,8 +820,8 @@ void VipFOVItem::buildPyramid()
 	fov.pyramid(obj, depth); // = d_data->fov.pyramid(depth);
 	obj.setDataName(fov.name + "/FOV");
 	d_data->fov_pyramid.setRawData(obj);
-	//d_data->fov_pyramid.setColor(vipToQColor(d_data->color));
-	//d_data->fov_pyramid.setSelectedColor(vipToQColor(d_data->color));
+	//d_data->fov_pyramid.setColor(toQColor(d_data->color));
+	//d_data->fov_pyramid.setSelectedColor(toQColor(d_data->color));
 	d_data->fov_pyramid.setOpacity(0.4);
 	d_data->fov_pyramid.setVisible(false);
 	d_data->fov_pyramid.actor()->SetVisibility(false);
@@ -831,8 +831,8 @@ void VipFOVItem::buildPyramid()
 	fov.opticalAxis(axis, depth);
 	axis.setDataName(fov.name + "/Optical axis");
 	d_data->optical_axis.setRawData(axis);
-	//d_data->optical_axis.setColor(vipToQColor(d_data->color));
-	//d_data->optical_axis.setSelectedColor(vipToQColor(d_data->color));
+	//d_data->optical_axis.setColor(toQColor(d_data->color));
+	//d_data->optical_axis.setSelectedColor(toQColor(d_data->color));
 	d_data->optical_axis.setVisible(false);
 	d_data->optical_axis.actor()->SetVisibility(false);
 
@@ -4706,11 +4706,11 @@ void VipSelectDisplayedAttributeWidget::DisplaySelectedAnnotatedAttribue(bool di
 
 			PlotVipVTKObjectList lst = it.value();
 			for (int l = 0; l < lst.size(); ++l) {
-				lst[l]->setHighlightColor(vipToQColor(color));
+				lst[l]->setHighlightColor(toQColor(color));
 
 				// create a new fake VipPlotVTKObject for each VipVTKObject and add them into the VipLegend
 				VipPlotVTKObject* plot = new VipPlotVTKObject();
-				plot->setColor(vipToQColor(color));
+				plot->setColor(toQColor(color));
 				plot->setTitle(it.key());
 				d_data->view->annotationLegend()->legend()->addItem(plot);
 			}
@@ -5445,7 +5445,7 @@ void VipVTKPlayerOptions::save(VipArchive& arch) const
 	arch.content("lighting", lighting);
 	arch.content("orientationWidget", orientationWidget);
 	arch.content("showHideFOVItems", showHideFOVItems);
-	arch.content("defaultObjectColor", vipToQColor( VipVTKObject::defaultObjectColor()));
+	arch.content("defaultObjectColor", toQColor( VipVTKObject::defaultObjectColor()));
 	arch.content("decimateOnMove", decimateOnMove);
 }
 void VipVTKPlayerOptions::restore(VipArchive& arch)
@@ -6262,7 +6262,7 @@ VipVTKPlayerOptionPage::VipVTKPlayerOptionPage(QWidget* parent)
 
 	d_data->decimateOnMove.setText("Decimate models on mouse move");
 
-	d_data->defaultObjectColor.setColor(vipToQColor(VipVTKObject::defaultObjectColor()));
+	d_data->defaultObjectColor.setColor(toQColor(VipVTKObject::defaultObjectColor()));
 
 	QGridLayout* lay = new QGridLayout();
 	int row = 0;
@@ -6317,7 +6317,7 @@ void VipVTKPlayerOptionPage::updatePage()
 	d_data->lighting.setChecked(opts.lighting);
 	d_data->orientationWidget.setChecked(opts.orientationWidget);
 	d_data->showHideFOVItems.setChecked(opts.showHideFOVItems);
-	d_data->defaultObjectColor.setColor(vipToQColor(VipVTKObject::defaultObjectColor()));
+	d_data->defaultObjectColor.setColor(toQColor(VipVTKObject::defaultObjectColor()));
 	d_data->decimateOnMove.setChecked(opts.decimateOnMove);
 }
 

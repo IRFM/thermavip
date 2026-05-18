@@ -46,7 +46,6 @@
 #include "VipMimeData.h"
 #include "VipMultiNDArray.h"
 #include "VipMultiPlotWidget2D.h"
-#include "VipNDArrayImage.h"
 #include "VipPlayWidget.h"
 #include "VipPlotGrid.h"
 #include "VipPlotShape.h"
@@ -3023,7 +3022,7 @@ void VipVideoPlayer::setSpectrogram(VipPlotSpectrogram* spectrogram)
 			this->setWindowTitle(this->spectrogram()->title().text());
 
 		int data_type = this->spectrogram()->rawData().dataType();
-		d_data->viewer->area()->colorMapAxis()->setVisible(!(data_type == qMetaTypeId<QImage>() || data_type == qMetaTypeId<QPixmap>()));
+		d_data->viewer->area()->colorMapAxis()->setVisible(data_type != qMetaTypeId<VipRGB>());
 
 		d_data->viewer->area()->colorMapAxis()->scaleDraw()->setTicksPosition(VipScaleDraw::TicksOutside);
 
@@ -3575,8 +3574,7 @@ void VipVideoPlayer::onPlayerCreated()
 
 bool VipVideoPlayer::isColorImage() const
 {
-	int data_type = spectrogram()->rawData().dataType();
-	return ((data_type == qMetaTypeId<QImage>() || data_type == qMetaTypeId<QPixmap>()));
+	return spectrogram()->rawData().dataType() == qMetaTypeId<VipRGB>();
 }
 
 void VipVideoPlayer::imageChanged()
@@ -3596,20 +3594,6 @@ void VipVideoPlayer::imageChanged()
 	// update the tool tip
 	refreshToolTip();
 
-	// update the array choice combo box for VipMultiNDArray
-	// bool is_multi_array = false;
-	//  if (VipDisplayImage  * img = qobject_cast<VipDisplayImage*>(d_data->currentDisplay))
-	//  {
-	//  //update multiArrayChoice visibility
-	//  const VipNDArray ar = img->inputAt(0)->probe().value<VipNDArray>();
-	//  is_multi_array = vipIsMultiNDArray(ar) || !VipDisplayImage::canDisplayImageAsIs(ar);
-	//  if (!d_data->multiArray->isVisible() && is_multi_array)
-	//  d_data->multiArray->setVisible(true);
-	//  else if (!is_multi_array && d_data->multiArray->isVisible())
-	//  d_data->multiArray->setVisible(false);
-	//  }
-	//
-	// d_data->componentAction->setVisible((bool)d_data->extract && d_data->extract->supportedComponents().size() > 1);
 	if (VipDisplayImage* img = qobject_cast<VipDisplayImage*>(d_data->currentDisplay)) {
 		// Check for multi component images (VipMultiNDArray of complex image or RGB image...)
 		const VipNDArray ar = img->inputAt(0)->probe().value<VipNDArray>();
@@ -3640,11 +3624,11 @@ void VipVideoPlayer::imageChanged()
 
 	// update the color map visibility
 	int data_type = spectrogram()->rawData().dataType();
-	if ((data_type == qMetaTypeId<QImage>() || data_type == qMetaTypeId<QPixmap>())) {
+	if ((data_type == qMetaTypeId<VipRGB>() )) {
 		if (d_data->viewer->area()->colorMapAxis()->isVisible())
 			d_data->viewer->area()->colorMapAxis()->setVisible(false);
 	}
-	else if ((d_data->previousImageDataType == qMetaTypeId<QImage>() || d_data->previousImageDataType == qMetaTypeId<QPixmap>()) && !d_data->viewer->area()->colorMapAxis()->isVisible())
+	else if ((d_data->previousImageDataType == qMetaTypeId<VipRGB>() ) && !d_data->viewer->area()->colorMapAxis()->isVisible())
 		d_data->viewer->area()->colorMapAxis()->setVisible(true);
 	d_data->previousImageDataType = data_type;
 
@@ -3758,7 +3742,7 @@ QList<VipDisplayCurve*> VipVideoPlayer::extractPolylines(const VipShapeList& shs
 		src_output->setConnection(extract->inputAt(0));
 
 		QList<QPen> pen;
-		if (vipIsImageArray(ar))
+		if (ar.isRGB())
 			pen << QPen(Qt::red) << QPen(Qt::green) << QPen(Qt::blue) << QPen(Qt::yellow);
 		else
 			for (int i = 0; i < out->count(); ++i)
@@ -3872,7 +3856,7 @@ QList<VipDisplayHistogram*> VipVideoPlayer::extractHistograms(const VipShape& sh
 
 	QList<VipDisplayHistogram*> res;
 	QList<QBrush> brush;
-	if (vipIsImageArray(ar) && _method == "Color ARGB")
+	if (ar.isRGB() && _method == "Color ARGB")
 		brush << QBrush(Qt::red) << QBrush(Qt::green) << QBrush(Qt::blue) << QBrush(Qt::yellow);
 	else
 		for (int i = 0; i < out->count(); ++i)
@@ -8487,6 +8471,52 @@ static void setAxesTitleItemRemoved(VipPlotItem* item, VipPlotPlayer* player)
 	setAxesTitle(item, player, item);
 }
 
+static QToolButton* createFlatHistogramButton(VipVideoPlayer* player, VipAxisColorMap* map)
+{
+	QToolButton* hscale = new QToolButton();
+	hscale->setIcon(vipIcon("scalehisto.png"));
+	hscale->setToolTip("Adjust color scale to have the best dynamic");
+	hscale->setCheckable(true);
+	hscale->setChecked(player->isFlatHistogramColorScale());
+	hscale->setChecked(map->useFlatHistogram());
+	hscale->setMenu(new QMenu(hscale));
+	hscale->menu()->addAction("Very light")->setCheckable(true);
+	hscale->menu()->addAction("Light")->setCheckable(true);
+	hscale->menu()->addAction("Medium")->setCheckable(true);
+	hscale->menu()->addAction("Strong")->setCheckable(true);
+	hscale->menu()->addAction("Very strong")->setCheckable(true);
+	hscale->setPopupMode(QToolButton::MenuButtonPopup);
+
+	// Check the right value on popup show
+	QObject::connect(hscale->menu(), &QMenu::aboutToShow, [hscale,player, map]() {
+		int strength = map->flatHistogramStrength() -1;
+		if (strength < 0)
+			strength = 0;
+		else if (strength > 4)
+			strength = 4;
+		hscale->menu()->blockSignals(true);
+		auto lst = hscale->menu()->actions();
+		for (int i = 0; i < lst.size(); ++i) 
+			lst[i]->setChecked(i == strength);
+		hscale->menu()->blockSignals(false);
+		});
+
+	// Check button: apply to player
+	QObject::connect(hscale, SIGNAL(clicked(bool)), player, SLOT(setFlatHistogramColorScale(bool)));
+
+	QObject::connect(hscale->menu(), &QMenu::triggered, [hscale, player, map](QAction * a) { 
+		auto lst = hscale->menu()->actions();
+		int strength = lst.indexOf(a) + 1;
+		player->setFlatHistogramColorScale(true);
+		player->setFlatHistogramStrength(strength);
+		hscale->blockSignals(true);
+		hscale->setChecked(true);
+		hscale->blockSignals(false);
+	});
+
+	return hscale;
+}
+
 static void setVideoPlayer(VipDragWidget*, VipVideoPlayer* player)
 {
 
@@ -8502,10 +8532,12 @@ static void setVideoPlayer(VipDragWidget*, VipVideoPlayer* player)
 	player->setProperty("auto_scale", QVariant::fromValue(auto_scale));
 	QAction* fit_to_grip = new QAction(vipIcon("fit_to_scale.png"), "Fit color scale to grips", player);
 	player->setProperty("fit_to_grip", QVariant::fromValue(fit_to_grip));
-	QAction* histo_scale = new QAction(vipIcon("scalehisto.png"), "Adjust color scale to have the best dynamic", player);
-	histo_scale->setCheckable(true);
-	histo_scale->setChecked(map->useFlatHistogram());
+
+	
+	QWidgetAction* histo_scale = new QWidgetAction(player);
+	histo_scale->setDefaultWidget(createFlatHistogramButton(player,map));
 	player->setProperty("histo_scale", QVariant::fromValue(histo_scale));
+
 	QAction* scale_params = new QAction(vipIcon("scaletools.png"), "Display color scale parameters", player);
 	player->setProperty("scale_params", QVariant::fromValue(scale_params));
 

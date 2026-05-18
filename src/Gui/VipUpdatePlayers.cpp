@@ -706,7 +706,7 @@ static QList<QAction*> videoPlayerActions(VipPlotItem* item, VipVideoPlayer* pla
 		return actions;
 
 	if (VipPlotShape* shape = qobject_cast<VipPlotShape*>(item)) {
-		if ((shape->rawData().type() == VipShape::Path || shape->rawData().type() == VipShape::Polygon) && !vipIsImageArray(player->viewer()->area()->array())) {
+		if ((shape->rawData().type() == VipShape::Path || shape->rawData().type() == VipShape::Polygon) ) {
 			QAction* crop = new QAction("Crop image on shape bounding rect", nullptr);
 			QObject::connect(crop, &QAction::triggered, std::bind(cropOnShape, shape, player));
 			actions << crop;

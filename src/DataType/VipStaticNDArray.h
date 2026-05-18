@@ -238,7 +238,6 @@ struct VipStaticNDArray : public VipNDArrayBase<VipStaticNDArray<T, Dims...>>
 			std::swap(p[i], other.p[i]);
 	}
 
-	int count(const void* handle) const noexcept { return 0; }
 	bool alias(const void* p) const noexcept { return (char*)p >= (char*)begin() && (char*)p < (char*)end(); }
 };
 
