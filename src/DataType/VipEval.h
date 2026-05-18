@@ -51,7 +51,7 @@ namespace detail
 
 
 // Forward declaration
-template<class Dst, class Src, class OverRoi , bool Err>
+template<class Dst, class Src, class OverRoi = VipInfinitRoi, bool Err = true>
 bool vipEval(const Dst& _dst, const Src& src, const OverRoi& roi = {}, detail::CError<Err> = {});
 
 namespace detail
@@ -447,8 +447,8 @@ namespace detail
 /// vipEval() is also used to evaluate reduction algorithms (inheriting detail::BaseReductor) and array algorithms (inheriting detail::ArrayAlgorithm).
 /// For instance, vipResize() uses internally vipEval() to apply a resizing algorithm.
 /// 
-template<class Dst, class Src, class OverRoi = VipInfinitRoi, bool Err = true>
-bool vipEval(const Dst& _dst, const Src& src, const OverRoi& roi , detail::CError<Err> )
+template<class Dst, class Src, class OverRoi , bool Err >
+bool vipEval(const Dst& _dst, const Src& src, const OverRoi& roi , detail::CError<Err>  )
 {
 	static constexpr auto reduce = std::is_base_of_v<detail::BaseReductor, Dst>;
 
