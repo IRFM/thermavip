@@ -154,21 +154,6 @@ static void vipForceUnscaleFont(QPainter* painter)
 #endif
 }
 
-/*static inline void vipUnscaleFont(QPainter* painter)
-{
-	if (painter->font().pixelSize() >= 0)
-		return;
-
-	const QSize screenResolution = VipPainter::screenResolution();
-
-	const QPaintDevice* pd = painter->device();
-	if (!pd)
-		return;
-	if (pd->logicalDpiX() != screenResolution.width() || pd->logicalDpiY() != screenResolution.height()) {
-		vipForceUnscaleFont(painter);
-	}
-}*/
-
 bool VipPainter::isX11GraphicsSystem()
 {
 	static int onX11 = -1;
@@ -410,6 +395,7 @@ void VipPainter::drawText(QPainter* painter, const QPointF& pos, const QString& 
 	if (deviceClipping && !clipRect.contains(pos))
 		return;
 
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
 	const bool unscaled_font = vipNeedUnscaledFont(painter);
 	if (unscaled_font) {
 		painter->save();
@@ -418,6 +404,9 @@ void VipPainter::drawText(QPainter* painter, const QPointF& pos, const QString& 
 	painter->drawText(pos, text);
 	if (unscaled_font)
 		painter->restore();
+#else
+	painter->drawText(pos, text);
+#endif
 }
 
 //! Wrapper for QPainter::drawText()
@@ -429,6 +418,7 @@ void VipPainter::drawText(QPainter* painter, double x, double y, double w, doubl
 //! Wrapper for QPainter::drawText()
 void VipPainter::drawText(QPainter* painter, const QRectF& rect, int flags, const QString& text)
 {
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
 	const bool unscaled_font = vipNeedUnscaledFont(painter);
 	if (unscaled_font) {
 		painter->save();
@@ -437,6 +427,9 @@ void VipPainter::drawText(QPainter* painter, const QRectF& rect, int flags, cons
 	painter->drawText(rect, flags, text);
 	if (unscaled_font)
 		painter->restore();
+#else
+	painter->drawText(rect, flags, text);
+#endif
 }
 
 #ifndef QT_NO_RICHTEXT

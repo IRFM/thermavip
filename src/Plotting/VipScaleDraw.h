@@ -557,18 +557,8 @@ public:
 
 	virtual void enableLabelOverlapping(bool enable);
 	bool labelOverlappingEnabled() const;
-	QSharedPointer<QPainterPath> thisLabelArea() const;
-	/**
-	Add the label path of another VipAbstractScaleDraw in order to avoid text superimposition between several scales.
-	The other VipAbstractScaleDraw must belong to a VipAbstractScale that shares the same parent item
-	as this VipAbstractScale.
-	*/
-	void addAdditionalLabelOverlapp(const QSharedPointer<QPainterPath>& other);
-	QVector<QSharedPointer<QPainterPath>> additionalLabelOverlapp() const;
-	void setAdditionalLabelOverlapp(const QVector<QSharedPointer<QPainterPath>>& other);
-	void removeAdditionalLabelOverlapp(const QSharedPointer<QPainterPath>& other);
-	void clearAdditionalLabelOverlapp();
-
+	
+	
 	void setCustomTextStyle(CustomTextStyle);
 	CustomTextStyle customTextStyle() const;
 
@@ -654,7 +644,6 @@ public:
 	double minimumExtent() const;
 
 	VipScaleText tickLabel(vip_double value, VipScaleDiv::TickType tick) const;
-	bool drawLabelOverlap(QPainter* painter, vip_double value, const VipText& t, VipScaleDiv::TickType tick) const;
 	bool drawTextOverlap(QPainter* painter, const VipText& t) const;
 
 	/** Invalidate the internal label cache. Usually you do not need to call it explicitly. */
@@ -684,14 +673,16 @@ protected:
 	virtual void drawBackbone(QPainter* painter) const = 0;
 
 	/*!
-	    Draws the label for a major scale tick
+	    Draws the label for given scale tick.
+		Returns true if the label has been drawn,
+		false otherwise (label overlapping)
 
 	    \param painter VipPainter
 	    \param value Value
 
 	    \sa drawTick(), drawBackbone()
 	*/
-	virtual void drawLabel(QPainter* painter, vip_double value, const VipText& t, VipScaleDiv::TickType tick) const = 0;
+	virtual bool drawLabel(QPainter* painter, vip_double value, const VipText& t, VipScaleDiv::TickType tick) const = 0;
 	virtual void drawLabels(QPainter*) const;
 
 	/**
@@ -700,6 +691,10 @@ protected:
 	VipScaleDiv::TickList labelTicks(VipScaleDiv::TickType tick) const;
 
 	void addLabelTransform(QTransform& textTransform, const QSizeF& textSize, VipScaleDiv::TickType tick) const;
+
+	/// @brief Returns true if drawLabel() should check for label overlapping.
+	bool needCheckLabelOverlapping() const ;
+	QSharedPointer<QPainterPath> thisLabelArea() const;
 
 private:
 	VipAbstractScaleDraw(const VipAbstractScaleDraw&);
@@ -796,7 +791,7 @@ protected:
 	virtual void drawTicks(QPainter*) const;
 	virtual void drawTick(QPainter*, vip_double val, double len, VipScaleDiv::TickType tick) const;
 	virtual void drawBackbone(QPainter*) const;
-	virtual void drawLabel(QPainter*, vip_double val, const VipText& t, VipScaleDiv::TickType tick) const;
+	virtual bool drawLabel(QPainter*, vip_double val, const VipText& t, VipScaleDiv::TickType tick) const;
 
 private:
 	VipScaleDraw(const VipScaleDraw&);
@@ -876,7 +871,7 @@ protected:
 
 	virtual void drawTick(QPainter*, vip_double val, double len, VipScaleDiv::TickType tick) const;
 	virtual void drawBackbone(QPainter*) const;
-	virtual void drawLabel(QPainter*, vip_double val, const VipText& t, VipScaleDiv::TickType tick) const;
+	virtual bool drawLabel(QPainter*, vip_double val, const VipText& t, VipScaleDiv::TickType tick) const;
 
 private:
 	VipPolarScaleDraw(const VipPolarScaleDraw&);
@@ -939,7 +934,7 @@ protected:
 
 	virtual void drawTick(QPainter*, vip_double val, double len, VipScaleDiv::TickType tick) const;
 	virtual void drawBackbone(QPainter*) const;
-	virtual void drawLabel(QPainter*, vip_double val, const VipText& t, VipScaleDiv::TickType tick) const;
+	virtual bool drawLabel(QPainter*, vip_double val, const VipText& t, VipScaleDiv::TickType tick) const;
 
 private:
 	VipRadialScaleDraw(const VipPolarScaleDraw&);

@@ -43,7 +43,7 @@
 #include <vtkSmartPointer.h>
 
 /// @brief Convert floating point color to QColor
-static inline QColor vipToQColor(const double* color)
+static inline QColor toQColor(const double* color)
 {
 	return QColor(color[0] * 255, color[1] * 255, color[2] * 255);
 }

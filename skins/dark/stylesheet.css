@@ -117,7 +117,6 @@ VipProgressWidgetInternal {
 	margin: 10px;
 }
 
-
 VipViewport {
 	background-color: #303030;
 }
@@ -214,68 +213,6 @@ VipToolWidgetScrollArea[status="1"] {
 
 
 
-
-
-/*VipToolWidgetTitleBar[isFloating="false"] {
-	border-top: 1px solid #303030;
-	border-left: 1px solid #303030;
-	border-right: 1px solid #303030;
-	qproperty-closeButton: url(skins/dark/icons/close.png);
-	qproperty-floatButton: url(skins/dark/icons/pin.png);
-	qproperty-maximizeButton: url(skins/dark/icons/maximize.png);
-	qproperty-restoreButton: url(skins/dark/icons/restore.png);
-	qproperty-textColor: black;
-}
-VipToolWidgetScrollArea[isFloating="false"] {
-    border-bottom: 3px solid #303030;
-	border-left: 3px solid #303030;
-	border-right: 3px solid #303030;
-}
-
-VipToolWidgetTitleBar[isFloating="true"] {
-	border-top: 1px solid #777777;
-	border-left: 1px solid #777777;
-	border-right: 1px solid #777777;
-	qproperty-closeButton: url(skins/dark/icons/close.png);
-	qproperty-floatButton: url(skins/dark/icons/pin.png);
-	qproperty-maximizeButton: url(skins/dark/icons/maximize.png);
-	qproperty-restoreButton: url(skins/dark/icons/restore.png);
-	qproperty-textColor: black;
-}
-VipToolWidgetScrollArea[isFloating="true"] {
-    border-bottom: 1px solid #777777;
-	border-left: 1px solid #777777;
-	border-right: 1px solid #777777;
-}
-
-VipToolWidgetTitleBar[hasHover="true"] {
-	border-top: 1px solid #008BE8;
-	border-left: 1px solid #008BE8;
-	border-right: 1px solid #008BE8;
-}
-VipToolWidgetScrollArea[hasHover="true"] {
-    border-bottom: 1px solid #008BE8;
-	border-left: 1px solid #008BE8;
-	border-right: 1px solid #008BE8;
-}
-
-VipToolWidgetTitleBar[hasFocus="true"] {
-	border-top: 1px solid #008BE8;
-	border-left: 1px solid #008BE8;
-	border-right: 1px solid #008BE8;
-	background-color: #008BE8;
-	qproperty-closeButton: url(skins/dark/icons/close_white.png);
-	qproperty-floatButton: url(skins/dark/icons/pin_white.png);
-	qproperty-maximizeButton: url(skins/dark/icons/maximize_white.png);
-	qproperty-restoreButton: url(skins/dark/icons/restore_white.png);
-	qproperty-textColor: white;
-}
-VipToolWidgetScrollArea[hasFocus="true"] {
-    border-bottom: 1px solid #008BE8;
-	border-left: 1px solid #008BE8;
-	border-right: 1px solid #008BE8;
-}
-*/
 
 
 QTabBar {
@@ -722,8 +659,8 @@ VipLogConsole {
 
 VipAbstractPlotWidget2D
 {
-	background : #303030;
-	qproperty-backgroundColor: #303030;
+	background : #252621;
+	qproperty-backgroundColor: #252621;
 }
 
 /*VipAbstractPlotWidget2D  {

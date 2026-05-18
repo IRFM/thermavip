@@ -763,8 +763,28 @@ namespace detail
 				case QMetaType::QString:
 					CONVERT_TR(QString, VipRGB, ToRGB()) return true;
 				default:
-					return false;
+					break;
 			}
+			if (i_type == qMetaTypeId<VipRGBf>()) {
+				CONVERT_TR(VipRGBf, VipRGB, SimpleCastTransform < VipRGB>());
+				return true;
+			}
+			return false;
+		}
+		else if (o_type == qMetaTypeId<VipRGBf>()) {
+			switch (i_type) {
+				case QMetaType::QByteArray:
+					CONVERT_TR(QByteArray, VipRGBf, ToRGBf()) return true;
+				case QMetaType::QString:
+					CONVERT_TR(QString, VipRGBf, ToRGBf()) return true;
+				default:
+					break;
+			}
+			if (i_type == qMetaTypeId<VipRGB>()) {
+				CONVERT_TR(VipRGB, VipRGBf, SimpleCastTransform<VipRGBf>());
+				return true;
+			}
+			return false;
 		}
 		else if (o_type == qMetaTypeId<complex_f>()) {
 			if (i_type == qMetaTypeId<complex_d>()) {

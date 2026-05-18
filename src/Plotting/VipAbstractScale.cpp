@@ -930,7 +930,7 @@ void VipAbstractScale::setScaleDraw(VipAbstractScaleDraw* scaleDraw)
 
 		scaleDraw->setTransformation(transform);
 		scaleDraw->enableLabelOverlapping(sd->labelOverlappingEnabled());
-		scaleDraw->setAdditionalLabelOverlapp(sd->additionalLabelOverlapp());
+		//scaleDraw->setAdditionalLabelOverlapp(sd->additionalLabelOverlapp());
 	}
 
 	delete d_data->scaleDraw;

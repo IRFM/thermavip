@@ -221,7 +221,7 @@ inline qsizetype vipComputeDefaultStrides(const Shape& shape, Strides& strides)
 	if (!shape.size())
 		return 0;
 	strides.resize(shape.size());
-	if (order == Vip::FirstMajor) {
+	if constexpr (order == Vip::FirstMajor) {
 		qsizetype size = shape.back();
 		strides.back() = 1;
 		for (qsizetype i = strides.size() - 2; i >= 0; --i) {

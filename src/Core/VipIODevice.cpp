@@ -3472,7 +3472,7 @@ void VipImageWriter::apply()
 	}
 
 	VipAnyData any = inputAt(0)->data();
-	QImage img = vipToImage(any.value<VipNDArray>());
+	const QImage img = vipToImageRef(any.value<VipNDArray>());
 
 	if (img.isNull()) {
 		setError("nullptr input image", VipProcessingObject::WrongInput);

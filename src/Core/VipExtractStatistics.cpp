@@ -276,7 +276,7 @@ bool VipSplitAndMerge::acceptData(const QVariant& data, const QString& method)
 		return data.userType() == qMetaTypeId<complex_f>() || data.userType() == qMetaTypeId<complex_d>() || data.userType() == qMetaTypeId<VipComplexPoint>() ||
 		       data.userType() == qMetaTypeId<VipComplexPointVector>() || (data.userType() == qMetaTypeId<VipNDArray>() && data.value<VipNDArray>().isComplex());
 	else if (method == "Color ARGB" || method == "Color AHSL" || method == "Color AHSV" || method == "Color ACMYK")
-		return (data.userType() == qMetaTypeId<VipNDArray>() && vipIsImageArray(data.value<VipNDArray>()));
+		return (data.userType() == qMetaTypeId<VipNDArray>() && (data.value<VipNDArray>().isRGB()));
 	else
 		return false;
 }
@@ -300,7 +300,7 @@ QStringList VipSplitAndMerge::possibleMethods(const QVariant& data)
 		if (ar.dataType() == qMetaTypeId<complex_f>() || ar.dataType() == qMetaTypeId<complex_d>())
 			return QStringList() << "Complex Real/Imag"
 					     << "Complex Amplitude/Argument";
-		else if (vipIsImageArray(ar))
+		else if (ar.isRGB())
 			return QStringList() << "Color ARGB"
 					     << "Color AHSL"
 					     << "Color AHSV"

@@ -69,7 +69,7 @@ struct VipRgb
 	  , a((T)c.alpha())
 	{
 	}
-	VipRgb(QRgb c) noexcept
+	explicit VipRgb(QRgb c) noexcept
 	  : b((T)qBlue(c))
 	  , g((T)qGreen(c))
 	  , r((T)qRed(c))
@@ -110,7 +110,7 @@ struct VipRgb
 	/// @brief Convert to QRgb
 	QRgb toQRgb() const noexcept;
 	/// @brief Convert to QColor
-	QColor vipToQColor() const noexcept { return QColor::fromRgba(toQRgb()); }
+	QColor toQColor() const noexcept { return QColor::fromRgba(toQRgb()); }
 
 	operator QRgb() const noexcept { return toQRgb(); }
 	operator QColor() const noexcept { return toQRgb(); }
@@ -168,7 +168,7 @@ struct alignas(alignof(QRgb)) VipRgb<quint8>
 	{
 	}
 
-	VipRgb(QRgb c) noexcept { *(QRgb*)this = c; }
+	explicit VipRgb(QRgb c) noexcept { *(QRgb*)this = c; }
 
 	VipRgb(const VipRgb& other) noexcept = default;
 
@@ -188,7 +188,7 @@ struct alignas(alignof(QRgb)) VipRgb<quint8>
 	}
 
 	QRgb toQRgb() const noexcept { return reinterpret_cast<const QRgb&>(*this); }
-	QColor vipToQColor() const noexcept { return QColor::fromRgba(toQRgb()); }
+	QColor toQColor() const noexcept { return QColor::fromRgba(toQRgb()); }
 
 	VipRgb& operator=(const VipRgb& other) noexcept = default;
 
@@ -203,7 +203,7 @@ struct alignas(alignof(QRgb)) VipRgb<quint8>
 	}
 
 	operator QRgb() const noexcept { return reinterpret_cast<const QRgb&>(*this); }
-	operator QColor() const noexcept { return vipToQColor(); }
+	operator QColor() const noexcept { return toQColor(); }
 };
 
 /// @brief Convert to QRgb
@@ -251,6 +251,11 @@ struct VipRgbType
 };
 template<class T>
 using VipRgbType_t = typename VipRgbType<T>::type;
+
+inline bool VipIsRgbType(int type)
+{
+	return type == qMetaTypeId<VipRGB>() || type == qMetaTypeId<VipRGBf>();
+}
 
 //
 // Operator overloads
@@ -606,8 +611,80 @@ inline VipRgb<T> operator~(const VipRgb<T>& v) noexcept
 }
 inline VipRgb<quint8> operator~(const VipRgb<quint8>& v) noexcept
 {
-	return (const VipRgb<quint8>&)(~(const QRgb&)v);
+	return VipRgb<quint8>(~v.toQRgb());
 }
+
+template<class T>
+T vipRed(const VipRgb<T>& v)
+{
+	return v.r;
+}
+template<class T>
+T vipGreen(const VipRgb<T>& v)
+{
+	return v.g;
+}
+template<class T>
+T vipBlue(const VipRgb<T>& v)
+{
+	return v.b;
+}
+template<class T>
+T vipAlpha(const VipRgb<T>& v)
+{
+	return v.a;
+}
+template<class T>
+int vipGrayscale(const VipRgb<T>& v)
+{
+	return (int)qRound(0.299f * v.r + 0.587f * v.g + 0.114f * v.b);
+}
+template<class T>
+int vipHslHue(const VipRgb<T>& v)
+{
+	return v.toQColor().hslHue();
+}
+template<class T>
+int vipHslSaturation(const VipRgb<T>& v)
+{
+	return v.toQColor().hslSaturation();
+}
+template<class T>
+int vipValue(const VipRgb<T>& v)
+{
+	return v.toQColor().value();
+}
+template<class T>
+int vipHsvHue(const VipRgb<T>& v)
+{
+	return v.toQColor().hsvHue();
+}
+template<class T>
+int vipHsvSaturation(const VipRgb<T>& v)
+{
+	return v.toQColor().hsvSaturation();
+}
+template<class T>
+int vipCyan(const VipRgb<T>& v)
+{
+	return v.toQColor().cyan();
+}
+template<class T>
+int vipMagenta(const VipRgb<T>& v)
+{
+	return v.toQColor().magenta();
+}
+template<class T>
+int vipYellow(const VipRgb<T>& v)
+{
+	return v.toQColor().yellow();
+}
+template<class T>
+int vipBlack(const VipRgb<T>& v)
+{
+	return v.toQColor().black();
+}
+
 
 template<class T>
 static inline bool vipIsNan(const VipRgb<T>& v) noexcept

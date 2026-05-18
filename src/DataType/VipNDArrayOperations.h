@@ -29,8 +29,8 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef VIP_NDARRAY_OPERATIONS
-#define VIP_NDARRAY_OPERATIONS
+#ifndef VIP_NDARRAY_OPERATIONS_H
+#define VIP_NDARRAY_OPERATIONS_H
 
 #include <type_traits>
 
@@ -42,6 +42,7 @@
 #include "VipStaticNDArray.h"
 #include "VipRgb.h"
 #include "VipComplex.h"
+#include "VipFunctionTraits.h"
 
 #ifdef _MSC_VER
 // Disable warning message 4804 (unsafe use of type 'bool' in operation)
@@ -54,7 +55,7 @@ namespace detail
 	struct Conversion
 	{
 		const VipNDArrayHandle* src; // source VipNDArray
-		SharedHandle dst;	     // dest VipNDArrayType
+		VipSharedHandle dst;	     // dest VipNDArrayType
 		intptr_t dst_type;	     // data type of VipNDArrayType
 		bool operator==(const Conversion& other) const noexcept { return src == other.src && dst_type == other.dst_type; }
 	};
@@ -82,59 +83,32 @@ namespace detail
 		QSet<Conversion> conversions;
 
 		// find a conversion for input array and destination data type
-		SharedHandle findConversion(const VipNDArrayHandle* src, int dst_type) const noexcept
+		VipSharedHandle findConversion(const VipNDArrayHandle* src, int dst_type) const noexcept
 		{
-			Conversion c{ src, SharedHandle{}, (intptr_t)dst_type };
+			Conversion c{ src, VipSharedHandle{}, (intptr_t)dst_type };
 			auto it = conversions.find(c);
-			return (it != conversions.end()) ? it->dst : SharedHandle{};
+			return (it != conversions.end()) ? it->dst : VipSharedHandle{};
 		}
 
-		/// In the frame of a functor expression, convert an array containing a QImage to a VipNDArrayType<VipRGB> without copying the data
-		inline VipNDArrayType<VipRGB> convertRGB(const SharedHandle& src)
-		{
-			QImage* img = (QImage*)(src->opaque);
-			StdHandle<VipRGB>* h = new StdHandle<VipRGB>();
-			h->own = false;
-			h->opaque = img->bits();
-			h->shape = vipVector(img->height(), img->width());
-			h->size = vipComputeDefaultStrides<Vip::FirstMajor>(h->shape, h->strides);
-			return VipNDArrayType<VipRGB>(SharedHandle(h));
-		}
 
 		/// Consert input VipNDArray to Dst.
-		/// If the conversion already exists, the returned VipNDArrayType uses an existing SharedHandle, avoiding an additional allocation/copy.
+		/// If the conversion already exists, the returned VipNDArrayType uses an existing VipSharedHandle, avoiding an additional allocation/copy.
 		/// Otherwise, the conversion is performed (allocation + copy) and stored within the list of possible conversions.
 		template<class Type>
-		SharedHandle convert(const VipNDArrayHandle* src)
+		VipSharedHandle convert(const VipNDArrayHandle* src)
 		{
 			int metatype = qMetaTypeId<Type>();
 			if (metatype == src->dataType())
-				return SharedHandle((VipNDArrayHandle*)src);
+				return VipSharedHandle((VipNDArrayHandle*)src);
 
-			const SharedHandle h = findConversion(src, metatype);
+			const VipSharedHandle h = findConversion(src, metatype);
 			if (h)
 				return (h);
 
-			SharedHandle src_handle((VipNDArrayHandle*)src);
-			VipNDArrayType<Type> res = (src->dataType() == qMetaTypeId<QImage>() && src->handleType() != VipNDArrayHandle::View) ? convertRGB(src_handle) : VipNDArray(src_handle);
+			VipSharedHandle src_handle((VipNDArrayHandle*)src);
+			VipNDArrayType<Type> res = VipNDArray(src_handle);
 			conversions.insert(Conversion{ src, res.sharedHandle(), (intptr_t)res.dataType() });
 			return res.sharedHandle();
-			/* int metatype = qMetaTypeId<typename Dst::value_type>();
-
-			// If converting to same type, no need to go through the conversion container
-			if (metatype == src.dataType())
-				return src;
-
-			const SharedHandle h = findConversion(src.sharedHandle(), metatype);
-			if (h)
-				return Dst(h);
-			Dst res = (src.dataType() == qMetaTypeId<QImage>() && !src.isView()) ? convertRGB(src) : (src);
-			Conversion c;
-			c.source = src.sharedHandle();
-			c.dest_type = res.dataType();
-			c.dest = res.sharedHandle();
-			conversions.insert(c);
-			return res;*/
 		}
 
 		/// Returns the global context for the current thread
@@ -238,14 +212,28 @@ namespace detail
 	{
 		using value_type = typename Array::value_type;
 		static constexpr auto access_type = Array::access_type;
-		static constexpr bool inner_unstrided = IsVipNDArrayType<Array>::value;
-
 		static_assert(!std::is_same_v<value_type, void>);
 
-		const SharedHandle handle;
+		const VipSharedHandle handle;
 		const VipNDArrayHandle* handle_p;
+		const value_type* handle_data;
+
+		// Build from const reference.
+		// In this case, the src handle is NOT copied to avoid increasing the src reference count.
+		// Indeed, increasing the src reference count might trigger an unecessary allocation/copy
+		// If the src array is also the destination array.
 		ArrayWrapper(const Array& ar) noexcept
 		  : handle_p(ar.handle())
+		  , handle_data((value_type*)handle_p->dataPointer({}))
+		{
+		}
+		// Build from movable (temporary) array.
+		// In this case, we must copy the handle and increase the src reference count to avoid 
+		// destroying the temporary array as long as the expression is alive.
+		ArrayWrapper(Array&& ar) noexcept
+		  : handle(ar.sharedHandle())
+		  , handle_p(handle.constData())
+		  , handle_data((value_type*)handle_p->dataPointer({}))
 		{
 		}
 		ArrayWrapper(const ArrayWrapper&) noexcept = default;
@@ -253,30 +241,24 @@ namespace detail
 		ArrayWrapper(const ArrayWrapper<Other>& other)
 		  : handle(FunctorContext::instance().convert<value_type>(other.handle_p))
 		  , handle_p(handle.data())
+		  , handle_data((value_type*)handle_p->dataPointer({}))
 		{
 			static_assert(std::is_same_v<NullType, typename Other::value_type>);
 		}
-		VIP_ALWAYS_INLINE auto ptr() const noexcept { return static_cast<const value_type*>(handle_p->opaque); }
+		VIP_ALWAYS_INLINE auto ptr() const noexcept { return handle_data; }
 		template<class Shape>
 		VIP_ALWAYS_INLINE auto ptr(const Shape& pos) const noexcept
 		{
-			return ptr() + vipFlatOffset<inner_unstrided>(handle_p->strides, pos);
+			return ptr() + vipFlatOffset<false>(handle_p->strides, pos);
 		}
-		VIP_ALWAYS_INLINE bool alias(const void* p) const noexcept
-		{
-			return (char*)p >= (char*)ptr() && (char*)p < (char*)(ptr() + vipFlatOffset<inner_unstrided>(handle_p->strides, handle_p->shape));
-		}
+		VIP_ALWAYS_INLINE bool alias(const void* p) const noexcept { return (char*)p >= (char*)ptr() && (char*)p < (char*)(ptr() + vipFlatOffset<false>(handle_p->strides, handle_p->shape)); }
 		VIP_ALWAYS_INLINE auto dataType() const noexcept { return handle_p->dataType(); }
 		VIP_ALWAYS_INLINE bool isEmpty() const noexcept { return !handle_p || handle_p->size == 0; }
 		VIP_ALWAYS_INLINE bool isUnstrided() const noexcept
 		{
-			if constexpr (inner_unstrided)
-				return true;
-			else {
-				bool unstrided = false;
-				vipShapeToSize(handle_p->shape, handle_p->strides, &unstrided);
-				return unstrided;
-			}
+			bool unstrided = false;
+			vipShapeToSize(handle_p->shape, handle_p->strides, &unstrided);
+			return unstrided;
 		}
 		VIP_ALWAYS_INLINE const auto& shape() const noexcept { return handle_p->shape; }
 		VIP_ALWAYS_INLINE const auto& strides() const noexcept { return handle_p->strides; }
@@ -290,6 +272,44 @@ namespace detail
 			return *ptr(pos);
 		}
 		VIP_ALWAYS_INLINE const value_type& operator[](qsizetype i) const noexcept { return ptr()[i]; }
+	};
+
+	// Specialization for VipArrayView
+	template<class T, qsizetype NDims>
+	struct ArrayWrapper<VipArrayView<T, NDims>> : BaseExpression
+	{
+		using value_type = T;
+		static constexpr auto access_type = Vip::Flat | Vip::Position | Vip::Cwise;
+
+		VipArrayView<T, NDims> d_v;
+		ArrayWrapper(const ArrayWrapper&) noexcept = default;
+		ArrayWrapper(const VipArrayView<T, NDims>& ar) noexcept
+		  : d_v(ar)
+		{
+		}
+
+		VIP_ALWAYS_INLINE auto ptr() const noexcept { return d_v.ptr(); }
+		template<class Shape>
+		VIP_ALWAYS_INLINE auto ptr(const Shape& pos) const noexcept
+		{
+			return d_v.ptr(pos);
+		}
+		VIP_ALWAYS_INLINE bool alias(const void* p) const noexcept { return d_v.alias(p); }
+		VIP_ALWAYS_INLINE auto dataType() const noexcept { return d_v.dataType(); }
+		VIP_ALWAYS_INLINE bool isEmpty() const noexcept { return d_v.isEmpty(); }
+		VIP_ALWAYS_INLINE bool isUnstrided() const noexcept { return d_v.isUnstrided(); }
+		VIP_ALWAYS_INLINE const auto& shape() const noexcept { return d_v.shape(); }
+		VIP_ALWAYS_INLINE const auto& strides() const noexcept { return d_v.strides(); }
+		VIP_ALWAYS_INLINE qsizetype shape(qsizetype i) const noexcept { return d_v.shape(i); }
+		VIP_ALWAYS_INLINE qsizetype stride(qsizetype i) const noexcept { return d_v.strides(i); }
+		VIP_ALWAYS_INLINE qsizetype shapeCount() const noexcept { return d_v.shapeCount(); }
+		VIP_ALWAYS_INLINE qsizetype size() const noexcept { return d_v.size(); }
+		template<class ShapeType>
+		VIP_ALWAYS_INLINE const value_type& operator()(const ShapeType& pos) const noexcept
+		{
+			return d_v(pos);
+		}
+		VIP_ALWAYS_INLINE const value_type& operator[](qsizetype i) const noexcept { return d_v[i]; }
 	};
 
 	/// Wrap a VipStaticNDArray
@@ -306,7 +326,7 @@ namespace detail
 		}
 		VIP_ALWAYS_INLINE auto ptr() const noexcept { return d_p; }
 		template<class Shape>
-		VIP_ALWAYS_INLINE auto ptr(const Shape & pos) const noexcept
+		VIP_ALWAYS_INLINE auto ptr(const Shape& pos) const noexcept
 		{
 			return d_p + vipFlatOffset<true>(VipStaticNDArray<T, Dims...>::strides(), pos);
 		}
@@ -338,7 +358,7 @@ namespace detail
 	{
 		static auto cast(const ArrayWrapper<Array>& a) noexcept
 		{
-			if constexpr (std::is_same_v<NullType, typename Array::value_type>)
+			if constexpr (std::is_same_v<NullType, typename Array::value_type>) 
 				return ArrayWrapper<VipNDArrayType<T>>(a);
 			else
 				return a;
@@ -358,7 +378,10 @@ namespace detail
 	template<class T>
 	struct RebindExpression<T, VipNDArray>
 	{
-		static auto cast(const VipNDArray& a) noexcept { return VipNDArrayType<T>(a); }
+		static auto cast(const VipNDArray& a) noexcept
+		{
+			return VipNDArrayType<T>(a); 
+		}
 	};
 
 	template<class T, class U>
@@ -522,10 +545,11 @@ namespace detail
 	constexpr bool IsArrayOrComplex_v = IsArrayOrComplex<Array...>::value;
 
 	/// Value type of nd-array or functor expression
-	template<class F, bool IsFunctorBase = std::is_base_of_v<FunctorBase, F>>
+	template<class F, bool IsFunctorBase = std::is_base_of_v<FunctorBase, std::decay_t<F>>>
 	struct ValueType
 	{
-		using type = typename F::value_type;
+		using decay = std::decay_t<F>;
+		using type = typename decay::value_type;
 	};
 	template<>
 	struct ValueType<NullType, false>
@@ -535,17 +559,23 @@ namespace detail
 	template<class F>
 	struct ValueType<F, true>
 	{
-		template<bool hasNullType, class Fun>
+		using decay = std::decay_t<F>;
+		using arrays = typename decay::array_types;
+		static constexpr bool hasNullType = HasNullType<arrays>::value;
+
+		template<class Fun>
 		static constexpr auto evalType(const Fun& f)
 		{
 			if constexpr (hasNullType)
 				return NullType{};
-			else
-				return f.operator()(vipVector(0));
+			else {
+				auto c = vipVector(0);
+				return f.operator()(c);
+			}
 		}
 
-		using arrays = typename F::array_types;
-		using type = decltype(evalType<HasNullType<arrays>::value, F>(std::declval<F&>()));
+		
+		using type = decltype(evalType(std::declval<const decay&>()));
 	};
 
 	template<class F>
@@ -603,8 +633,8 @@ namespace detail
 		BaseFunctor(const BaseFunctor&) = default;
 		BaseFunctor(BaseFunctor&&) noexcept = default;
 		template<class... Ar>
-		BaseFunctor(const Ar&... ar)
-		  : arrays(std::forward<const Ar&>(ar)...)
+		BaseFunctor( Ar&&... ar)
+		  : arrays(std::forward<Ar>(ar)...)
 		{
 			if (!std::apply([&](const auto&... args) { return (build_shape(args.shape()) && ...); }, arrays))
 				sh.clear();
@@ -693,10 +723,10 @@ namespace detail
 		{
 			if constexpr (HasNullType<Array...>::value)
 				return NullType{};
-			else{
-				using type = typename first_type<Array...>::type; 
+			else {
+				using type = typename first_type<Array...>::type;
 				return std::get<0>(std::tuple<ValueType_t<type>>{});
-			}	
+			}
 		}
 
 		template<class Dst>
@@ -735,8 +765,6 @@ namespace detail
 	{
 	};
 
-
-
 	/// Base class for all reductors
 	template<class T>
 	struct Reductor : BaseReductor
@@ -751,12 +779,14 @@ namespace detail
 		bool isUnstrided() const noexcept { return true; }
 
 		//! set a new value for given flat index
-		bool setAt(qsizetype, const T&) { return true; }
-		//! set a new value for given position
-		template<class ShapeType>
-		bool setPos(const ShapeType&, const T&)
+		template<class U>
+		void setAt(qsizetype, const U&)
 		{
-			return true;
+		}
+		//! set a new value for given position
+		template<class ShapeType, class U>
+		void setPos(const ShapeType&, const U&)
+		{
 		}
 		//! finish the reduction algorithm, returns true on success, false otherwise.
 		bool finish() { return true; }
@@ -769,24 +799,76 @@ namespace detail
 	struct IsReductor<Reductor<T>> : std::true_type
 	{
 	};
+
+	template<class T, class Fun>
+	struct GenericAccumulator : Reductor<T>
+	{
+		static constexpr qsizetype access_type = Vip::Position | Vip::Flat;
+
+		Fun functor;
+		T value;
+
+		GenericAccumulator(const Fun& f, const T& v)
+		  : functor(f)
+		  , value(v)
+		{
+		}
+
+		//! set a new value for given flat index
+		template<class U, std::enable_if_t<std::is_invocable_v<Fun, T, U>, int> = 0>
+		void setAt(qsizetype, const U& v)
+		{
+			value = functor(value, v);
+		}
+		//! set a new value for given position
+		template<class ShapeType, class U, std::enable_if_t<std::is_invocable_v<Fun, T, U>, int> = 0>
+		void setPos(const ShapeType&, const U& v)
+		{
+			value = functor(value, v);
+		}
+	};
 }
+
+
+/// @brief Null type used within thermavip
+using VipNullType = detail::NullType;
+
+/// @brief Deduce value type from array type.
+/// Default to VipNullType for VipNDArray.
+template<class Array>
+using VipValueType_t = detail::ValueType_t<Array>;
+
+
 
 /// @brief Create a functor expression that applies a function object.
 /// Used to create function expression from any function.
 template<class Functor, class... Array>
-auto vipFunction(const Functor& fun, const Array&... args) noexcept
+auto vipFunction(const Functor& fun,  Array&&... args) noexcept
 {
-	auto r = detail::GenericFunction<Functor, detail::DeduceArrayType_t<std::decay_t<Array>>...>(fun, std::forward<const Array&>(args)...);
+	auto r = detail::GenericFunction<Functor, detail::DeduceArrayType_t<std::decay_t<Array>>...>(fun, std::forward<Array>(args)...);
 	return r;
 }
 
 /// @brief Create an array algorithm that applies a function object.
 template<class Functor, class... Array>
-auto vipArrayAlgorithm(const Functor& fun, const Array&... args) noexcept
+auto vipArrayAlgorithm(const Functor& fun, Array&&... args) noexcept
 {
-	auto r = detail::ArrayAlgorithm<Functor, detail::DeduceArrayType_t<std::decay_t<Array>>...>(fun, std::forward<const Array&>(args)...);
-	return r;
+	return detail::ArrayAlgorithm<Functor, detail::DeduceArrayType_t<std::decay_t<Array>>...>(fun, std::forward<Array>(args)...);
 }
+
+/// @brief Create an accumulator object that can be evaluated using vipEval().
+/// @param fun Accumulator function. Signature: T(T prev_value, U new_value)
+/// @param start_value Start accumulator value
+/// @return the accumulator object.
+template<class Functor, class T>
+auto vipAccumulator(const Functor& fun, const T& start_value)
+{
+	detail::GenericAccumulator<T, Functor> ret{ fun, start_value };
+	return ret;
+}
+
+
+
 
 //
 // Create operator overloads for VipNDArray
@@ -795,98 +877,99 @@ auto vipArrayAlgorithm(const Functor& fun, const Array&... args) noexcept
 template<class A1, class A2, std::enable_if_t<detail::HasArrayType<A1, A2>::value, int> = 0>
 auto operator+(const A1& l, const A2& r) noexcept
 {
-	return vipFunction([](auto l, auto r, std::void_t<decltype(l + r)>* = nullptr) { return l + r; }, l, r);
+	return vipFunction([](auto l, auto r) -> decltype(l + r) { return l + r; }, l, r);
 }
 template<class A1, class A2, std::enable_if_t<detail::HasArrayType<A1, A2>::value, int> = 0>
 auto operator-(const A1& l, const A2& r) noexcept
 {
-	return vipFunction([](auto l, auto r, std::void_t<decltype(l - r)>* = nullptr) { return l - r; }, l, r);
+	return vipFunction([](auto l, auto r) -> decltype(l - r) { return l - r; }, l, r);
 }
 template<class A1, class A2, std::enable_if_t<detail::HasArrayType<A1, A2>::value, int> = 0>
 auto operator*(const A1& l, const A2& r) noexcept
 {
-	return vipFunction([](auto l, auto r, std::void_t<decltype(l * r)>* = nullptr) { return l * r; }, l, r);
+	return vipFunction([](auto l, auto r) -> decltype(l * r) { return l * r; }, l, r);
 }
 template<class A1, class A2, std::enable_if_t<detail::HasArrayType<A1, A2>::value, int> = 0>
 auto operator/(const A1& l, const A2& r) noexcept
 {
-	return vipFunction([](auto l, auto r, std::void_t<decltype(l / r)>* = nullptr) { return l / r; }, l, r);
+	return vipFunction([](auto l, auto r) -> decltype(l / r) { return l / r; }, l, r);
 }
 template<class A1, class A2, std::enable_if_t<detail::HasArrayType<A1, A2>::value, int> = 0>
 auto operator%(const A1& l, const A2& r) noexcept
 {
-	return vipFunction([](auto l, auto r, std::void_t<decltype(l % r)>* = nullptr) { return l % r; }, l, r);
+	return vipFunction([](auto l, auto r) ->  decltype(l % r) { return l % r; }, l, r);
 }
 
 template<class A1, class A2, std::enable_if_t<detail::HasArrayType<A1, A2>::value, int> = 0>
 auto operator<(const A1& l, const A2& r) noexcept
 {
-	return vipFunction([](auto l, auto r, std::void_t<decltype(l < r)>* = nullptr) { return l < r; }, l, r);
+	return vipFunction([](auto l, auto r) -> decltype(l < r) { return l < r; }, l, r);
 }
 template<class A1, class A2, std::enable_if_t<detail::HasArrayType<A1, A2>::value, int> = 0>
 auto operator>(const A1& l, const A2& r) noexcept
 {
-	return vipFunction([](auto l, auto r, std::void_t<decltype(l > r)>* = nullptr) { return l > r; }, l, r);
+	return vipFunction([](auto l, auto r) ->  decltype(l > r) { return l > r; }, l, r);
 }
 template<class A1, class A2, std::enable_if_t<detail::HasArrayType<A1, A2>::value, int> = 0>
 auto operator<=(const A1& l, const A2& r) noexcept
 {
-	return vipFunction([](auto l, auto r, std::void_t<decltype(l <= r)>* = nullptr) { return l <= r; }, l, r);
+	return vipFunction([](auto l, auto r) -> decltype(l <= r) { return l <= r; }, l, r);
 }
 template<class A1, class A2, std::enable_if_t<detail::HasArrayType<A1, A2>::value, int> = 0>
 auto operator>=(const A1& l, const A2& r) noexcept
 {
-	return vipFunction([](auto l, auto r, std::void_t<decltype(l >= r)>* = nullptr) { return l >= r; }, l, r);
+	return vipFunction([](auto l, auto r) ->  decltype(l >= r) { return l >= r; }, l, r);
 }
 template<class A1, class A2, std::enable_if_t<detail::HasArrayType<A1, A2>::value, int> = 0>
-auto operator==(const A1& l, const A2& r) noexcept
+auto operator==(const A1& _l, const A2& _r) noexcept
 {
-	return vipFunction([](auto l, auto r, std::void_t<decltype(l == r)>* = nullptr) { return l == r; }, l, r);
+	return vipFunction([](auto l, auto r) -> decltype((l) == (r)) { return l == r; }, _l, _r);
 }
 template<class A1, class A2, std::enable_if_t<detail::HasArrayType<A1, A2>::value, int> = 0>
 auto operator!=(const A1& l, const A2& r) noexcept
 {
-	return vipFunction([](auto l, auto r, std::void_t<decltype(l != r)>* = nullptr) { return l != r; }, l, r);
+	return vipFunction([](auto l, auto r) -> decltype(l != r) { return l != r; }, l, r);
 }
 
 template<class A1, class A2, std::enable_if_t<detail::HasArrayType<A1, A2>::value, int> = 0>
 auto operator&(const A1& l, const A2& r) noexcept
 {
-	return vipFunction([](auto l, auto r, std::void_t<decltype(l & r)>* = nullptr) { return l & r; }, l, r);
+	return vipFunction([](auto l, auto r) -> decltype(l & r) { return l & r; }, l, r);
 }
 template<class A1, class A2, std::enable_if_t<detail::HasArrayType<A1, A2>::value, int> = 0>
 auto operator|(const A1& l, const A2& r) noexcept
 {
-	return vipFunction([](auto l, auto r, std::void_t<decltype(l | r)>* = nullptr) { return l | r; }, l, r);
+	return vipFunction([](auto l, auto r) -> decltype(l | r) { return l | r; }, l, r);
 }
 template<class A1, class A2, std::enable_if_t<detail::HasArrayType<A1, A2>::value, int> = 0>
 auto operator^(const A1& l, const A2& r) noexcept
 {
-	return vipFunction([](auto l, auto r, std::void_t<decltype(l ^ r)>* = nullptr) { return l ^ r; }, l, r);
+	return vipFunction([](auto l, auto r) ->  decltype(l ^ r) { return l ^ r; }, l, r);
 }
 
 template<class A1, class A2, std::enable_if_t<detail::HasArrayType_v<A1, A2> && (detail::AllArrayType_v<A1, A2> || detail::HasArithmeticType_v<A1, A2>), int> = 0>
 auto operator<<(const A1& l, const A2& r) noexcept
 {
-	return vipFunction([](auto l, auto r, std::void_t<decltype(l << r)>* = nullptr) { return l << r; }, l, r);
+	return vipFunction([](auto l, auto r) -> decltype(l << r) { return l << r; }, l, r);
 }
 template<class A1, class A2, std::enable_if_t<detail::HasArrayType_v<A1, A2> && (detail::AllArrayType_v<A1, A2> || detail::HasArithmeticType_v<A1, A2>), int> = 0>
 auto operator>>(const A1& l, const A2& r) noexcept
 {
-	return vipFunction([](auto l, auto r, std::void_t<decltype(l >> r)>* = nullptr) { return l >> r; }, l, r);
+	return vipFunction([](auto l, auto r) -> decltype(l >> r) { return l >> r; }, l, r);
 }
 
 template<class A1, std::enable_if_t<detail::HasArrayType<A1>::value, int> = 0>
 auto operator~(const A1& l) noexcept
 {
-	return vipFunction([](auto l, std::void_t<decltype(~l)>* = nullptr) { return ~l; }, l);
+	return vipFunction([](auto l) ->  decltype(~l) { return ~l; }, l);
 }
 
 template<class A1, std::enable_if_t<detail::HasArrayType<A1>::value, int> = 0>
 auto operator!(const A1& l) noexcept
 {
-	return vipFunction([](auto l, std::void_t<decltype(!l)>* = nullptr) { return !l; }, l);
+	return vipFunction([](auto l) ->  decltype(!l) { return !l; }, l);
 }
+
 
 /////////////////////////////////
 // Operators +=, *=, -=, ...
@@ -972,14 +1055,45 @@ constexpr bool VipIsCastable_v = VipIsCastable<From, To>::value;
 template<class T, class U>
 auto vipCast(const U& value)
 {
+	
 	if constexpr (detail::IsArrayAlgorithm<U>::value)
 		return detail::rebindExpression<T>(value);
 	else if constexpr (detail::HasArrayType_v<U>)
+		//return vipFunction(
+		//  [](const auto& a) ->  std::enable_if_t<VipIsCastable_v<std::decay_t<decltype(a)>, T>, T> { return detail::Convert<T, std::decay_t<decltype(a)>>::apply(a); }, value);
 		return vipFunction(
-		  [](const auto& a, std::enable_if_t<VipIsCastable_v<std::decay_t<decltype(a)>, T>, void>* = nullptr) { return detail::Convert<T, std::decay_t<decltype(a)>>::apply(a); }, value);
+			[](const auto& a)  {
+				static_assert(VipIsCastable_v<std::decay_t<decltype(a)>, T>,"invalid conversion");
+				 return detail::Convert<T, std::decay_t<decltype(a)>>::apply(a); 
+				}, value);
 	else
 		return detail::Convert<T, U>::apply(value);
 }
+
+
+template<class T, class U, class = void>
+struct VipIsMinComparable : std::false_type{};
+
+template<class T, class U>
+struct VipIsMinComparable<T, U, std::void_t<decltype(bool(std::declval<T&>() < std::declval<U&>() ))>> 
+{
+	static constexpr bool value = VipIsCastable_v<T, U> && VipIsCastable_v<U,T>;
+};
+
+template<class T, class U>
+constexpr bool VipIsMinComparable_v = VipIsMinComparable<T,U>::value;
+
+template<class T, class U, class = void>
+struct VipIsMaxComparable : std::false_type{};
+
+template<class T, class U>
+struct VipIsMaxComparable<T, U, std::void_t<decltype(bool(std::declval<T&>() > std::declval<U&>() ))>> 
+{
+	static constexpr bool value = VipIsCastable_v<T, U> && VipIsCastable_v<U,T>;
+};
+
+template<class T, class U>
+constexpr bool VipIsMaxComparable_v = VipIsMaxComparable<T,U>::value;
 
 /// \fn vipMin
 /// Returns the minimum of 2 expressions. This function works with VipNDArray and functor expressions.
@@ -994,7 +1108,8 @@ template<class A1, class A2>
 auto vipMin(const A1& a1, const A2& a2)
 {
 	if constexpr (detail::HasArrayType_v<A1, A2>)
-		return vipFunction([](auto l, auto r, std::void_t<decltype(l < r)>* = nullptr) { return l < r ? l : r; }, a1, a2);
+		return vipFunction([](auto l, auto r) 
+		-> std::enable_if_t<VipIsMinComparable_v<std::decay_t<decltype(l)>,std::decay_t<decltype(r)>>, std::decay_t<decltype(l)>> { return l < r ? l : r; }, a1, a2);
 	else
 		return a1 < a2 ? a1 : a2;
 }
@@ -1012,16 +1127,98 @@ template<class A1, class A2>
 auto vipMax(const A1& a1, const A2& a2)
 {
 	if constexpr (detail::HasArrayType_v<A1, A2>)
-		return vipFunction([](auto l, auto r, std::void_t<decltype(l > r)>* = nullptr) { return l > r ? l : r; }, a1, a2);
+		return vipFunction([](auto l, auto r) 
+		-> std::enable_if_t<VipIsMaxComparable_v<std::decay_t<decltype(l)>,std::decay_t<decltype(r)>>, std::decay_t<decltype(l)>>{ return l > r ? l : r; }, a1, a2);
 	else
 		return a1 > a2 ? a1 : a2;
 }
+
+
+//
+// RGB component extraction functions
+//
+
+template<class T, std::enable_if_t<detail::HasArrayType_v<T>, int> = 0>
+auto vipRed(const T& ar)
+{
+	return vipFunction([](auto v) -> decltype(vipRed(v)) { return vipRed(v); }, ar);
+}
+template<class T, std::enable_if_t<detail::HasArrayType_v<T>, int> = 0>
+auto vipGreen(const T& ar)
+{
+	return vipFunction([](auto v) -> decltype(vipGreen(v)) { return vipGreen(v); }, ar);
+}
+template<class T, std::enable_if_t<detail::HasArrayType_v<T>, int> = 0>
+auto vipBlue(const T& ar)
+{
+	return vipFunction([](auto v) -> decltype(vipBlue(v)) { return vipBlue(v); }, ar);
+}
+template<class T, std::enable_if_t<detail::HasArrayType_v<T>, int> = 0>
+auto vipAlpha(const T& ar)
+{
+	return vipFunction([](auto v) -> decltype(vipAlpha(v)) { return vipAlpha(v); }, ar);
+}
+template<class T, std::enable_if_t<detail::HasArrayType_v<T>, int> = 0>
+auto vipGrayscale(const T& ar)
+{
+	return vipFunction([](auto v) -> decltype(vipGrayscale(v)) { return vipGrayscale(v); }, ar);
+}
+template<class T, std::enable_if_t<detail::HasArrayType_v<T>, int> = 0>
+auto vipHslHue(const T& ar)
+{
+	return vipFunction([](auto v) -> decltype(vipHslHue(v)) { return vipHslHue(v); }, ar);
+}
+template<class T, std::enable_if_t<detail::HasArrayType_v<T>, int> = 0>
+auto vipHslSaturation(const T& ar)
+{
+	return vipFunction([](auto v) -> decltype(vipHslSaturation(v)) { return vipHslSaturation(v); }, ar);
+}
+template<class T, std::enable_if_t<detail::HasArrayType_v<T>, int> = 0>
+auto vipValue(const T& ar)
+{
+	return vipFunction([](auto v) -> decltype(vipValue(v)) { return vipValue(v); }, ar);
+}
+template<class T, std::enable_if_t<detail::HasArrayType_v<T>, int> = 0>
+auto vipHsvHue(const T& ar)
+{
+	return vipFunction([](auto v) -> decltype(vipHsvHue(v)) { return vipHsvHue(v); }, ar);
+}
+template<class T, std::enable_if_t<detail::HasArrayType_v<T>, int> = 0>
+auto vipHsvSaturation(const T& ar)
+{
+	return vipFunction([](auto v) -> decltype(vipHsvSaturation(v)) { return vipHsvSaturation(v); }, ar);
+}
+template<class T, std::enable_if_t<detail::HasArrayType_v<T>, int> = 0>
+auto vipCyan(const T& ar)
+{
+	return vipFunction([](auto v) -> decltype(vipCyan(v)) { return vipCyan(v); }, ar);
+}
+template<class T, std::enable_if_t<detail::HasArrayType_v<T>, int> = 0>
+auto vipMagenta(const T& ar)
+{
+	return vipFunction([](auto v) -> decltype(vipMagenta(v)) { return vipMagenta(v); }, ar);
+}
+template<class T, std::enable_if_t<detail::HasArrayType_v<T>, int> = 0>
+auto vipYellow(const T& ar)
+{
+	return vipFunction([](auto v) -> decltype(vipYellow(v)) { return vipYellow(v); }, ar);
+}
+template<class T, std::enable_if_t<detail::HasArrayType_v<T>, int> = 0>
+auto vipBlack(const T& ar)
+{
+	return vipFunction([](auto v) -> decltype(vipBlack(v)) { return vipBlack(v); }, ar);
+}
+
+
+//
+// Complex extraction
+//
 
 template<class T, std::enable_if_t<std::is_arithmetic_v<T> || VipIsComplex<T>::value || detail::HasArrayType_v<T>, int> = 0>
 auto vipReal(const T& v)
 {
 	if constexpr (detail::HasArrayType_v<T>)
-		return vipFunction([](auto l, std::void_t<decltype(vipReal(l))>* = nullptr) { return vipReal(l); }, v);
+		return vipFunction([](auto l) -> decltype(vipReal(l)) { return vipReal(l); }, v);
 	else if constexpr (std::is_arithmetic_v<T>)
 		return v;
 	else
@@ -1032,7 +1229,7 @@ template<class T, std::enable_if_t<std::is_arithmetic_v<T> || VipIsComplex<T>::v
 auto vipImag(const T& v)
 {
 	if constexpr (detail::HasArrayType_v<T>)
-		return vipFunction([](auto l, std::void_t<decltype(vipImag(l))>* = nullptr) { return vipImag(l); }, v);
+		return vipFunction([](auto l) -> decltype(vipImag(l)) { return vipImag(l); }, v);
 	else if constexpr (std::is_arithmetic_v<T>)
 		return v;
 	else
@@ -1043,7 +1240,7 @@ template<class T, std::enable_if_t<std::is_arithmetic_v<T> || VipIsComplex<T>::v
 auto vipArg(const T& v)
 {
 	if constexpr (detail::HasArrayType_v<T>)
-		return vipFunction([](auto l, std::void_t<decltype(vipArg(l))>* = nullptr) { return vipArg(l); }, v);
+		return vipFunction([](auto l) -> decltype(vipArg(l)) { return vipArg(l); }, v);
 	else
 		return std::arg(v);
 }
@@ -1052,7 +1249,7 @@ template<class T, std::enable_if_t<std::is_arithmetic_v<T> || VipIsComplex<T>::v
 auto vipNorm(const T& v)
 {
 	if constexpr (detail::HasArrayType_v<T>)
-		return vipFunction([](auto l, std::void_t<decltype(vipNorm(l))>* = nullptr) { return vipNorm(l); }, v);
+		return vipFunction([](auto l) -> decltype(vipNorm(l)) { return vipNorm(l); }, v);
 	else
 		return std::norm(v);
 }
@@ -1061,7 +1258,7 @@ template<class T, std::enable_if_t<std::is_arithmetic_v<T> || VipIsComplex<T>::v
 auto vipConj(const T& v)
 {
 	if constexpr (detail::HasArrayType_v<T>)
-		return vipFunction([](auto l, std::void_t<decltype(vipConj(l))>* = nullptr) { return vipConj(l); }, v);
+		return vipFunction([](auto l) -> decltype(vipConj(l)) { return vipConj(l); }, v);
 	else
 		return std::conj(v);
 }
@@ -1070,7 +1267,7 @@ template<class R, class I, std::enable_if_t<detail::IsArrayOrArithmetic<R, I>::v
 auto vipComplex(const R& real, const I& imag)
 {
 	if constexpr (detail::HasArrayType_v<R, I>)
-		return vipFunction([](auto r, auto i, std::enable_if_t<std::is_arithmetic_v<decltype(r + i)>, int>* = nullptr) { return vipComplex(r, i); }, real, imag);
+		return vipFunction([](auto r, auto i) -> std::enable_if_t<std::is_arithmetic_v<decltype(r + i)>, decltype(vipComplex(r, i))> { return vipComplex(r, i); }, real, imag);
 	else {
 		using type = decltype(real + imag);
 		if constexpr (std::is_floating_point_v<type>)
@@ -1084,7 +1281,7 @@ template<class Rho, class Theta, std::enable_if_t<detail::IsArrayOrArithmetic<Rh
 auto vipPolar(const Rho& rho, const Theta& theta)
 {
 	if constexpr (detail::HasArrayType_v<Rho, Theta>)
-		return vipFunction([](auto r, auto t, std::enable_if_t<std::is_arithmetic_v<decltype(r + t)>, int>* = nullptr) { return vipPolar(r, t); }, rho, theta);
+		return vipFunction([](auto r, auto t) -> std::enable_if_t<std::is_arithmetic_v<decltype(r + t)>, decltype(vipComplex(r, t))> { return vipPolar(r, t); }, rho, theta);
 	else {
 		using type = decltype(rho + theta);
 		if constexpr (std::is_floating_point_v<type>)
@@ -1097,23 +1294,23 @@ auto vipPolar(const Rho& rho, const Theta& theta)
 template<class T, std::enable_if_t<detail::HasArrayType_v<T>, int> = 0>
 auto vipAbs(const T& v) noexcept
 {
-	return vipFunction([](auto l, std::void_t<decltype(vipAbs(l))>* = nullptr) { return vipAbs(l); }, v);
+	return vipFunction([](auto l) -> decltype(vipAbs(l)) { return vipAbs(l); }, v);
 }
 template<class T, std::enable_if_t<detail::HasArrayType_v<T>, int> = 0>
 auto vipCeil(const T& v) noexcept
 {
-	return vipFunction([](auto l, std::void_t<decltype(vipCeil(l))>* = nullptr) { return vipCeil(l); }, v);
+	return vipFunction([](auto l) -> decltype(vipCeil(l)) { return vipCeil(l); }, v);
 }
 template<class T, std::enable_if_t<detail::HasArrayType_v<T>, int> = 0>
 auto vipFloor(const T& v) noexcept
 {
-	return vipFunction([](auto l, std::void_t<decltype(vipFloor(l))>* = nullptr) { return vipFloor(l); }, v);
+	return vipFunction([](auto l) -> decltype(vipFloor(l)) { return vipFloor(l); }, v);
 }
 
 template<class T, std::enable_if_t<detail::HasArrayType_v<T>, int> = 0>
 auto vipRound(const T& v) noexcept
 {
-	return vipFunction([](auto l, std::void_t<decltype(vipRound(l))>* = nullptr) { return vipRound(l); }, v);
+	return vipFunction([](auto l) -> decltype(vipRound(l)) { return vipRound(l); }, v);
 }
 
 template<class A1, class A2, class A3, std::enable_if_t<detail::IsArrayOrArithmetic<A1, A2, A3>::value, int> = 0>
@@ -1121,7 +1318,7 @@ auto vipClamp(const A1& a1, const A2& a2, const A3& a3)
 {
 	if constexpr (detail::HasArrayType_v<A1, A2, A3>)
 		return vipFunction(
-		  [](auto v1, auto v2, auto v3, std::enable_if_t<detail::IsArrayOrArithmetic_v<decltype(v1), decltype(v2), decltype(v3)>, int>* = nullptr) { return v1 < v2   ? v2
+		  [](auto v1, auto v2, auto v3) -> std::enable_if_t<detail::IsArrayOrArithmetic_v<decltype(v1), decltype(v2), decltype(v3)>, decltype(v1)> { return v1 < v2   ? v2
 																				    : v1 > v3 ? v3
 																					      : v1; },
 		  a1,
@@ -1134,19 +1331,19 @@ auto vipClamp(const A1& a1, const A2& a2, const A3& a3)
 template<class T, std::enable_if_t<detail::HasArrayType_v<T>, int> = 0>
 auto vipIsNan(const T& v) noexcept
 {
-	return vipFunction([](auto l, std::void_t<decltype(vipIsNan(l))>* = nullptr) { return vipIsNan(l); }, v);
+	return vipFunction([](auto l) -> decltype(vipIsNan(l)) { return vipIsNan(l); }, v);
 }
 template<class T, std::enable_if_t<detail::HasArrayType_v<T>, int> = 0>
 auto vipIsInf(const T& v) noexcept
 {
-	return vipFunction([](auto l, std::void_t<decltype(vipIsInf(l))>* = nullptr) { return vipIsInf(l); }, v);
+	return vipFunction([](auto l) -> decltype(vipIsInf(l)) { return vipIsInf(l); }, v);
 }
 
 template<class A1, class A2, class A3, std::enable_if_t<detail::HasArrayType_v<A1, A2, A3>, int> = 0>
 auto vipWhere(const A1& a1, const A2& a2, const A3& a3)
 {
 	if constexpr (detail::HasArrayType_v<A1, A2, A3>)
-		return vipFunction([](auto v1, auto v2, auto v3, std::void_t<decltype(v1 ? v2 : v3)>* = nullptr) { return v1 ? v2 : v3; }, a1, a2, a3);
+		return vipFunction([](auto v1, auto v2, auto v3) -> std::void_t<decltype(v1 ? v2 : v3)> { return v1 ? v2 : v3; }, a1, a2, a3);
 	else
 		return a1 ? a2 : a3;
 }
@@ -1154,8 +1351,47 @@ auto vipWhere(const A1& a1, const A2& a2, const A3& a3)
 template<class A1, class A2, std::enable_if_t<detail::HasArrayType_v<A1, A2>, int> = 0>
 auto vipFuzzyCompare(const A1& a1, const A2& a2) noexcept
 {
-	return vipFunction([](auto v1, auto v2, std::void_t<decltype(vipFuzzyCompare(v1, v2))>* = nullptr) { return vipFuzzyCompare(v1, v2); }, a1, a2);
+	return vipFunction([](auto v1, auto v2) -> decltype(vipFuzzyCompare(v1, v2)) { return vipFuzzyCompare(v1, v2); }, a1, a2);
 }
+
+
+/// @brief Convert an array or functor expression to QImage
+template<class Expr>
+QImage vipToImage(const Expr& ar)
+{
+	static_assert(detail::IsNDArrayType_v<Expr>);
+	auto shape = ar.shape();
+	if (shape.size() != 2 || (ar.dataType() != qMetaTypeId<VipRGB>() && ar.dataType() != qMetaTypeId<VipRGBf>()))
+		return {};
+
+	QImage ret((int)shape[1], (int)shape[0], QImage::Format_ARGB32);
+	VipArrayView<VipRGB, 2> view((VipRGB*)ret.bits(), shape);
+
+	if constexpr (std::is_base_of_v<VipArrayBase, Expr>) {
+		// Array type, use convert
+		if (ar.convert(view.data(), qMetaTypeId<VipRGB>(), view.shape(), view.strides()))
+			return ret;
+		return {};
+	}
+	else {
+		// Functor expression
+		if (vipEval(view, vipCast<VipRGB>(ar)))
+			return ret;
+		return {};
+	}
+}
+
+/// @brief Convert a VipNDArray to a QImage view.
+/// The QImage does not own its data, and the source array data must remain valid
+/// through the QImage lifetime.
+inline QImage vipToImageRef(const VipNDArray& ar)
+{
+	if (ar.shapeCount() != 2 || ar.dataType() != qMetaTypeId<VipRGB>())
+		return {};
+
+	return QImage((const uchar*)ar.data(), ar.shape(1), ar.shape(0), QImage::Format_ARGB32);
+}
+
 
 // Trigonometric and math functions
 
@@ -1164,7 +1400,7 @@ auto vipFuzzyCompare(const A1& a1, const A2& a2) noexcept
 	auto name(const T& val)                                                                                                                                                                        \
 	{                                                                                                                                                                                              \
 		if constexpr (detail::HasArrayType_v<T>)                                                                                                                                               \
-			return vipFunction([](auto v, std::void_t<decltype(std_name(v))>* = nullptr) { return std_name(v); }, val);                                                                    \
+			return vipFunction([](auto v) -> decltype(std_name(v)) { return std_name(v); }, val);                                                                    \
 		else                                                                                                                                                                                   \
 			return std_name(val);                                                                                                                                                          \
 	}
@@ -1174,7 +1410,7 @@ auto vipFuzzyCompare(const A1& a1, const A2& a2) noexcept
 	auto name(const T& val)                                                                                                                                                                        \
 	{                                                                                                                                                                                              \
 		if constexpr (detail::HasArrayType_v<T>)                                                                                                                                               \
-			return vipFunction([](auto v, std::void_t<decltype(std_name(v))>* = nullptr) { return std_name(v); }, val);                                                                    \
+			return vipFunction([](auto v) -> decltype(std_name(v)) { return std_name(v); }, val);                                                                    \
 		else                                                                                                                                                                                   \
 			return std_name(val);                                                                                                                                                          \
 	}

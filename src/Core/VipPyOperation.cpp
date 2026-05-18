@@ -539,14 +539,12 @@ static void* stdToPython(const QVariant& obj)
 		else if (obj.userType() == qMetaTypeId<VipNDArray>()) {
 			const VipNDArray info = obj.value<VipNDArray>();
 
-			if (vipIsImageArray(info)) {
+			if (info.isRGB() && info.shapeCount() == 2) {
 				// convert QImage to 3 dims array
-				const QImage img = vipToImage(info);
-				npy_intp shape[20] = { img.height(), img.width(), 3 };
-				std::vector<uchar> image(img.height() * img.width() * 3);
-				int size = img.height() * img.width();
-				const uint* pixels = (const uint*)img.bits();
-				for (int i = 0; i < size; ++i) {
+				npy_intp shape[20] = { info.shape(0),info.shape(1), 3 };
+				std::vector<uchar> image(info.size() * 3);
+				const uint* pixels = (const uint*)info.constData();
+				for (int i = 0; i < info.size(); ++i) {
 					image[i * 3] = qRed(pixels[i]);
 					image[i * 3 + 1] = qGreen(pixels[i]);
 					image[i * 3 + 2] = qBlue(pixels[i]);

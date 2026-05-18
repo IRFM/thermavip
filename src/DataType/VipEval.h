@@ -32,16 +32,35 @@
 #ifndef VIP_EVAL_H
 #define VIP_EVAL_H
 
+
+#include <optional>
+
 #include "VipNDArray.h"
 #include "VipNDArrayOperations.h"
 #include "VipOverRoi.h"
 
 namespace detail
 {
+	// Tells if a compile error should be triggered
+	template<bool Err>
+	struct CError
+	{
+	};
+}
+
+
+
+// Forward declaration
+template<class Dst, class Src, class OverRoi = VipInfinitRoi, bool Err = true>
+bool vipEval(const Dst& _dst, const Src& src, const OverRoi& roi = {}, detail::CError<Err> = {});
+
+namespace detail
+{
+
 	struct NullRoi
 	{
 		static constexpr qsizetype access_type = Vip::Flat | Vip::Position | Vip::Cwise;
-		using value_type = bool ;
+		using value_type = bool;
 		template<class ShapeType>
 		constexpr bool operator()(const ShapeType&) const noexcept
 		{
@@ -69,7 +88,7 @@ namespace detail
 				if (!ptr)
 					return false;
 			}
-			else 
+			else
 				size = vipCumMultiply(src.shape());
 
 			if ((Dst::access_type & Vip::Flat) && (Src::access_type & Vip::Flat) && (OverRoi::access_type & Vip::Flat) && dst.isUnstrided() && src.isUnstrided() && roi.isUnstrided()) {
@@ -177,7 +196,7 @@ namespace detail
 					const qsizetype w = src.shape()[0];
 					VIP_PARALLEL_FOR_NUM_THREADS(threads)
 					for (qsizetype i = 0; i < w; ++i)
-						ptr[dst.flatIndex(vip_vector(i))] = src(vip_vector(i));
+						ptr[dst.flatIndex(vipVector(i))] = src(vipVector(i));
 				}
 				else if (src.shape().size() == 2) {
 					const qsizetype h = src.shape()[0];
@@ -304,34 +323,58 @@ namespace detail
 		}
 	};
 
+	template<class Reductor, class SrcType, class = void>
+	struct IsReductorCallable : std::false_type
+	{
+	};
+	template<class Reductor, class SrcType>
+	struct IsReductorCallable<Reductor, SrcType, std::void_t<decltype(std::declval < Reductor&>().setPos(vipVector(0), SrcType{}))>> : std::true_type
+	{
+	};
+
 	template<class Dst, class Src, class Roi>
 	bool evalInternal(Dst& dst, const Src& src, const Roi& roi)
 	{
-		if constexpr (std::is_base_of_v<BaseReductor,Dst>) {
-			if constexpr (std::is_same_v<Roi, VipInfinitRoi>) {
-				if (Eval<NullRoi>::apply(dst, src, NullRoi{}))
-					return dst.finish();
-				else
-					return false;
+		if constexpr (std::is_base_of_v<BaseReductor, Dst>) {
+
+			using in_type = ValueType_t<Src>;
+			if constexpr (IsReductorCallable<Dst, in_type>::value) {
+
+				if constexpr (std::is_same_v<Roi, VipInfinitRoi>) {
+					if (Eval<NullRoi>::apply(dst, src, NullRoi{}))
+						return dst.finish();
+					else
+						return false;
+				}
+				else {
+					if (Eval<Roi>::apply(dst, src, roi))
+						return dst.finish();
+					else
+						return false;
+				}
 			}
-			else {
-				if (Eval<Roi>::apply(dst, src, roi))
-					return dst.finish();
-				else
-					return false;
-			}
+			else
+				return false;
 		}
 		else if constexpr (IsArrayAlgorithm<Src>::value) {
 			(void)roi;
 			// Check if the array algorithm is callable with given dst array type
-			if constexpr (Src::template callable<Dst>())
-				return src.apply(dst);
+			if constexpr (Src::template callable<Dst>()) {
+				auto fun = [&]() { return src.apply(dst); };
+				using ret = std::invoke_result_t<decltype(fun)>;
+				if constexpr (std::is_void_v<ret>) {
+					src.apply(dst);
+					return true;
+				}
+				else
+					return src.apply(dst);
+			}
 			else
 				return false;
 		}
 		else {
 
-			if constexpr (!(Src::access_type & Vip::Cwise) ) {
+			if constexpr (!(Src::access_type & Vip::Cwise)) {
 				// We must check aliasing
 				if (src.alias(dst.constPtr())) {
 					// Aliasing: go through a temporary array
@@ -349,39 +392,66 @@ namespace detail
 		}
 	}
 
-	template<bool Err>
-	struct CError
+
+
+
+	
+
+	template<class T, class Dst, class Src, class OverRoi = VipInfinitRoi>
+	bool evalInDst(Dst& dst, const Src& src, const OverRoi& roi = {})
 	{
-	};
+		using rebing_src = RebindType_t<T, Src>;
+		if constexpr (std::is_same_v<NullType, rebing_src>)
+			// Cannot rebind src
+			return false;
+		else if constexpr (std::is_same_v<NullType, ValueType_t<rebing_src>>)
+			// Cannot rebind src
+			return false;
+		else {
+			// Rebind src, use ContextHelper to avoid multiple conversions
+			detail::ContextHelper ctx;
+			return vipEval(dst, rebindExpression<T>(src), roi, CError<false>{});
+		}
+	}
+	
+
 
 } // end detail
 
 /// \addtogroup DataType
 /// @{
 
-/// Evaluate functor expression \a src into #VipNDArray \a dst over the Region Of Interest \a roi.
+/// Evaluate functor expression src into array dst over the Region Of Interest roi.
 ///
 /// The Region Of Interest is another functor expression which operators (position) and [index] return a boolean value.
-/// Use #vipOverRects to evaluate the functor expression on a sub part of input array.
+/// Use vipOverRects to evaluate the functor expression on a sub part of input array.
 ///
-/// Dst can be a raw #VipNDArray holding an array of one of the standard types: arithmetic types, complex_d and complex_f,
-/// QString, QByteArray of VipRGB. Dst can also be a typed array (like VipNDArrayType and VipNDArrayTypeView) of any type
+/// Dst can be a raw VipNDArray holding an array of one of the standard types: arithmetic types, complex_d and complex_f,
+/// QString, QByteArray, VipRGB and VipRGBf. Dst can also be a typed array (like VipNDArrayType, VipNDArrayTypeView, VipArrayView, vipStaticNDArray) of any type
 /// (not limited to the standard types).
 ///
-/// Src is a functor expression built by combining VipNDArray operators or using a function like #vipTransform or #vipConvolve.
-/// Src functor can mix typed or raw VipNDArray objects. Raw VipNDArray objects will be casted to Dst type before evaluation
+/// Src is a functor expression built by combining VipNDArray operators or using a function like vipTransform() or vipConvolve().
+/// Src functor can mix typed or raw VipNDArray objects. Raw VipNDArray objects will be casted to the deduced expression type before evaluation
 /// (which might trigger one or more allocations/copies). Note that a VipNDArray appearing several times in the fuctor expression
 /// will be casted only once.
 ///
-/// It is allowed to use \a dst in the functor expression and this won't trigger a reallocation/copy of dst array.
+/// It is allowed to use dst in the functor expression and this won't trigger a reallocation/copy of dst array.
 ///
 /// This function might return false for several reasons:
-/// - source and destination array mismatch,
+/// - source and destination array shape mismatch,
 /// - invalid cast from source to destination array type (using typed arrays only will result on a compilation error)
 /// - invalid functor expression for the destination type (trying to convolve an array of QString will return false).
-template<class Dst, class Src, class OverRoi = VipInfinitRoi, bool Err = true>
-bool vipEval(const Dst& _dst, const Src& src, const OverRoi& roi = {}, detail::CError<Err> = {})
+/// 
+/// This function will never reset the dst array.
+/// 
+/// vipEval() is also used to evaluate reduction algorithms (inheriting detail::BaseReductor) and array algorithms (inheriting detail::ArrayAlgorithm).
+/// For instance, vipResize() uses internally vipEval() to apply a resizing algorithm.
+/// 
+template<class Dst, class Src, class OverRoi , bool Err >
+bool vipEval(const Dst& _dst, const Src& src, const OverRoi& roi , detail::CError<Err>  )
 {
+	static constexpr auto reduce = std::is_base_of_v<detail::BaseReductor, Dst>;
+
 	Dst& dst = const_cast<Dst&>(_dst);
 	using dst_type = detail::ValueType_t<Dst>;
 	using src_type = detail::ValueType_t<Src>;
@@ -391,17 +461,20 @@ bool vipEval(const Dst& _dst, const Src& src, const OverRoi& roi = {}, detail::C
 	}
 	else if constexpr (!std::is_same_v<dst_type, detail::NullType>) {
 		if constexpr (!std::is_same_v<src_type, detail::NullType>) {
-			if constexpr (Err) {
+			if constexpr (Err && !detail::IsArrayAlgorithm<Src>::value) {
 
 				static_assert(VipIsCastable_v<src_type, dst_type>, "cannot cast input functor type to destination array type");
-				if constexpr (!std::is_same_v<src_type, dst_type>)
+				if constexpr (!std::is_same_v<src_type, dst_type> && !reduce)
 					return detail::evalInternal(dst, vipCast<dst_type>(src), roi);
 				else
 					return detail::evalInternal(dst, src, roi);
 			}
 			else {
-				if constexpr (VipIsCastable_v<src_type, dst_type>) {
-					if constexpr (!std::is_same_v<src_type, dst_type>)
+				if constexpr (detail::IsArrayAlgorithm<Src>::value) {
+					return detail::evalInternal(dst, src, roi);
+				}
+				else if constexpr (VipIsCastable_v<src_type, dst_type>) {
+					if constexpr (!std::is_same_v<src_type, dst_type> && !reduce)
 						return detail::evalInternal(dst, vipCast<dst_type>(src), roi);
 					else
 						return detail::evalInternal(dst, src, roi);
@@ -411,129 +484,230 @@ bool vipEval(const Dst& _dst, const Src& src, const OverRoi& roi = {}, detail::C
 			}
 		}
 		else {
-			using rebing_src = detail::RebindType_t<dst_type, Src>;
-			if constexpr (!std::is_same_v<detail::NullType, rebing_src>) {
-				if constexpr (std::is_same_v<detail::NullType, detail::ValueType_t<rebing_src>>) {
-					static_assert(!std::is_same_v<detail::NullType, detail::ValueType_t<rebing_src>>, "failed to find a valid rebindExpression() overload");
-				}
-				else {
+			// Src type unknwon at compile time
 
-					if constexpr (/* std::is_base_of_v<detail::BaseReductor, Dst> &&*/ std::is_same_v<VipNDArray, Src>) {
-						// Reduce a VipNDArray: switch over types and cast to avoid an allocation
-						switch (src.dataType()) {
-							case QMetaType::Char:
-								return vipEval(dst, VipNDArrayTypeView<char>(src), roi, detail::CError<false>{});
-							case QMetaType::SChar:
-								return vipEval(dst, VipNDArrayTypeView<signed char>(src), roi, detail::CError<false>{});
-							case QMetaType::UChar:
-								return vipEval(dst, VipNDArrayTypeView<quint8>(src), roi, detail::CError<false>{});
-							case QMetaType::Short:
-								return vipEval(dst, VipNDArrayTypeView<qint16>(src), roi, detail::CError<false>{});
-							case QMetaType::UShort:
-								return vipEval(dst, VipNDArrayTypeView<quint16>(src), roi, detail::CError<false>{});
-							case QMetaType::Int:
-								return vipEval(dst, VipNDArrayTypeView<qint32>(src), roi, detail::CError<false>{});
-							case QMetaType::UInt:
-								return vipEval(dst, VipNDArrayTypeView<quint32>(src), roi, detail::CError<false>{});
-							case QMetaType::Long:
-								return vipEval(dst, VipNDArrayTypeView<long>(src), roi, detail::CError<false>{});
-							case QMetaType::ULong:
-								return vipEval(dst, VipNDArrayTypeView<unsigned long>(src), roi, detail::CError<false>{});
-							case QMetaType::LongLong:
-								return vipEval(dst, VipNDArrayTypeView<qint64>(src), roi, detail::CError<false>{});
-							case QMetaType::ULongLong:
-								return vipEval(dst, VipNDArrayTypeView<quint64>(src), roi, detail::CError<false>{});
-							case QMetaType::Float:
-								return vipEval(dst, VipNDArrayTypeView<float>(src), roi, detail::CError<false>{});
-							case QMetaType::Double:
-								return vipEval(dst, VipNDArrayTypeView<double>(src), roi, detail::CError<false>{});
-							case QMetaType::QString:
-								return vipEval(dst, VipNDArrayTypeView<QString>(src), roi, detail::CError<false>{});
-							case QMetaType::QByteArray:
-								return vipEval(dst, VipNDArrayTypeView<QString>(src), roi, detail::CError<false>{});
-							default:
-								break;
-						}
-						if (src.dataType() == qMetaTypeId<long double>())
-							return vipEval(dst, VipNDArrayTypeView<long double>(src), roi, detail::CError<false>{});
-						if (src.dataType() == qMetaTypeId<complex_f>())
-							return vipEval(dst, VipNDArrayTypeView<complex_f>(src), roi, detail::CError<false>{});
-						if (src.dataType() == qMetaTypeId<complex_d>())
-							return vipEval(dst, VipNDArrayTypeView<complex_d>(src), roi, detail::CError<false>{});
-						if (src.dataType() == qMetaTypeId<VipRGB>() || src.dataType() == qMetaTypeId<QImage>())
-							return vipEval(dst, VipNDArrayTypeView<VipRGB>(src), roi, detail::CError<false>{});
-						if (src.dataType() == qMetaTypeId<VipRGBf>())
-							return vipEval(dst, VipNDArrayTypeView<VipRGBf>(src), roi, detail::CError<false>{});
-					}
-					else {
-
-						// Use context helper to avoid converting the same array many times
-						detail::ContextHelper ctx;
-						// Rebind src to dst type
-						return vipEval(dst, detail::rebindExpression<dst_type>(src), roi, detail::CError<false>{});
-					}
-				}
+			// Rebind src to its actual type
+			switch (src.dataType()) {
+				case QMetaType::Char:
+					return detail::evalInDst<char>(dst, src, roi);
+				case QMetaType::SChar:
+					return detail::evalInDst<signed char>(dst, src, roi);
+				case QMetaType::UChar:
+					return detail::evalInDst<unsigned char>(dst, src, roi);
+				case QMetaType::Short:
+					return detail::evalInDst<qint16>(dst, src, roi);
+				case QMetaType::UShort:
+					return detail::evalInDst<quint16>(dst, src, roi);
+				case QMetaType::Int:
+					return detail::evalInDst<qint32>(dst, src, roi);
+				case QMetaType::UInt:
+					return detail::evalInDst<quint32>(dst, src, roi);
+				case QMetaType::Long:
+					return detail::evalInDst<long>(dst, src, roi);
+				case QMetaType::ULong:
+					return detail::evalInDst<unsigned long>(dst, src, roi);
+				case QMetaType::LongLong:
+					return detail::evalInDst<qint64>(dst, src, roi);
+				case QMetaType::ULongLong:
+					return detail::evalInDst<quint64>(dst, src, roi);
+				case QMetaType::Float:
+					return detail::evalInDst<float>(dst, src, roi);
+				case QMetaType::Double:
+					return detail::evalInDst<double>(dst, src, roi);
+				case QMetaType::QString:
+					return detail::evalInDst<QString>(dst, src, roi);
+				case QMetaType::QByteArray:
+					return detail::evalInDst<QByteArray>(dst, src, roi);
+				default:
+					break;
 			}
-			else
-				return false;
+			if (src.dataType() == qMetaTypeId<long double>())
+				return detail::evalInDst<long double>(dst, src, roi);
+			if (src.dataType() == qMetaTypeId<complex_f>())
+				return detail::evalInDst<complex_f>(dst, src, roi);
+			if (src.dataType() == qMetaTypeId<complex_d>())
+				return detail::evalInDst<complex_d>(dst, src, roi);
+			if (src.dataType() == qMetaTypeId<VipRGB>())
+				return detail::evalInDst<VipRGB>(dst, src, roi);
+			if (src.dataType() == qMetaTypeId<VipRGBf>())
+				return detail::evalInDst<VipRGBf>(dst, src, roi);
 		}
 	}
 	else {
 		if constexpr (!std::is_same_v<src_type, detail::NullType>) {
 			if (dst.dataType() == src.dataType()) {
 				// Same src and dst data types
-				return vipEval(VipNDArrayTypeView<src_type>(dst), src, roi);
+				return vipEval(VipArrayView<src_type>(dst), src, roi);
 			}
 		}
 
 		// Unknown dst types, test all dst data type without triggering compilation error
 		switch (dst.dataType()) {
 			case QMetaType::Char:
-				return vipEval(VipNDArrayTypeView<char>(dst), src, roi, detail::CError<false>{});
+				return vipEval(VipArrayView<char>(dst), src, roi, detail::CError<false>{});
 			case QMetaType::SChar:
-				return vipEval(VipNDArrayTypeView<signed char>(dst), src, roi, detail::CError<false>{});
+				return vipEval(VipArrayView<signed char>(dst), src, roi, detail::CError<false>{});
 			case QMetaType::UChar:
-				return vipEval(VipNDArrayTypeView<unsigned char>(dst), src, roi, detail::CError<false>{});
+				return vipEval(VipArrayView<unsigned char>(dst), src, roi, detail::CError<false>{});
 			case QMetaType::Short:
-				return vipEval(VipNDArrayTypeView<qint16>(dst), src, roi, detail::CError<false>{});
+				return vipEval(VipArrayView<qint16>(dst), src, roi, detail::CError<false>{});
 			case QMetaType::UShort:
-				return vipEval(VipNDArrayTypeView<quint16>(dst), src, roi, detail::CError<false>{});
+				return vipEval(VipArrayView<quint16>(dst), src, roi, detail::CError<false>{});
 			case QMetaType::Int:
-				return vipEval(VipNDArrayTypeView<qint32>(dst), src, roi, detail::CError<false>{});
+				return vipEval(VipArrayView<qint32>(dst), src, roi, detail::CError<false>{});
 			case QMetaType::UInt:
-				return vipEval(VipNDArrayTypeView<quint32>(dst), src, roi, detail::CError<false>{});
+				return vipEval(VipArrayView<quint32>(dst), src, roi, detail::CError<false>{});
 			case QMetaType::Long:
-				return vipEval(VipNDArrayTypeView<long>(dst), src, roi, detail::CError<false>{});
+				return vipEval(VipArrayView<long>(dst), src, roi, detail::CError<false>{});
 			case QMetaType::ULong:
-				return vipEval(VipNDArrayTypeView<unsigned long>(dst), src, roi, detail::CError<false>{});
+				return vipEval(VipArrayView<unsigned long>(dst), src, roi, detail::CError<false>{});
 			case QMetaType::LongLong:
-				return vipEval(VipNDArrayTypeView<qint64>(dst), src, roi, detail::CError<false>{});
+				return vipEval(VipArrayView<qint64>(dst), src, roi, detail::CError<false>{});
 			case QMetaType::ULongLong:
-				return vipEval(VipNDArrayTypeView<quint64>(dst), src, roi, detail::CError<false>{});
+				return vipEval(VipArrayView<quint64>(dst), src, roi, detail::CError<false>{});
 			case QMetaType::Float:
-				return vipEval(VipNDArrayTypeView<float>(dst), src, roi, detail::CError<false>{});
+				return vipEval(VipArrayView<float>(dst), src, roi, detail::CError<false>{});
 			case QMetaType::Double:
-				return vipEval(VipNDArrayTypeView<double>(dst), src, roi, detail::CError<false>{});
+				return vipEval(VipArrayView<double>(dst), src, roi, detail::CError<false>{});
 			case QMetaType::QByteArray:
-				return vipEval(VipNDArrayTypeView<QByteArray>(dst), src, roi, detail::CError<false>{});
+				return vipEval(VipArrayView<QByteArray>(dst), src, roi, detail::CError<false>{});
 			case QMetaType::QString:
-				return vipEval(VipNDArrayTypeView<QString>(dst), src, roi, detail::CError<false>{});
+				return vipEval(VipArrayView<QString>(dst), src, roi, detail::CError<false>{});
 			default:
 				break;
 		}
 		if (dst.dataType() == qMetaTypeId<long double>())
-			return vipEval(VipNDArrayTypeView<long double>(dst), src, roi, detail::CError<false>{});
+			return vipEval(VipArrayView<long double>(dst), src, roi, detail::CError<false>{});
 		if (dst.dataType() == qMetaTypeId<complex_f>())
-			return vipEval(VipNDArrayTypeView<complex_f>(dst), src, roi, detail::CError<false>{});
+			return vipEval(VipArrayView<complex_f>(dst), src, roi, detail::CError<false>{});
 		if (dst.dataType() == qMetaTypeId<complex_d>())
-			return vipEval(VipNDArrayTypeView<complex_d>(dst), src, roi, detail::CError<false>{});
-		if (dst.dataType() == qMetaTypeId<VipRGB>() || dst.dataType() == qMetaTypeId<QImage>())
-			return vipEval(VipNDArrayTypeView<VipRGB>(dst), src, roi, detail::CError<false>{});
+			return vipEval(VipArrayView<complex_d>(dst), src, roi, detail::CError<false>{});
+		if (dst.dataType() == qMetaTypeId<VipRGB>() )
+			return vipEval(VipArrayView<VipRGB>(dst), src, roi, detail::CError<false>{});
 		if (dst.dataType() == qMetaTypeId<VipRGBf>())
-			return vipEval(VipNDArrayTypeView<VipRGBf>(dst), src, roi, detail::CError<false>{});
+			return vipEval(VipArrayView<VipRGBf>(dst), src, roi, detail::CError<false>{});
 	}
-
 	return false;
+}
+
+
+
+
+namespace detail
+{
+	template<class T, class Dst, class Src, class OverRoi = VipInfinitRoi, bool Err = true>
+	bool evalResetDst(Dst& dst, const Src& src, const OverRoi& roi = {}, CError<Err> err = {})
+	{
+		using rebing_src = RebindType_t<T, Src>;
+		if constexpr (std::is_same_v<NullType, rebing_src>)
+			// Cannot rebind src
+			return false;
+		else if constexpr (std::is_same_v<NullType, ValueType_t<rebing_src>>)
+			// Cannot rebind src
+			return false;
+		else {
+			// Use context helper to avoid converting the same array many times
+			detail::ContextHelper ctx;
+
+			// Reset dst to the new type and shape
+			using new_src_type = ValueType_t<rebing_src>;
+			dst.reset(src.shape(), qMetaTypeId<new_src_type>());
+			return vipEval(VipArrayView<new_src_type>(dst), rebindExpression<T>(src), roi, err);
+		}
+	}
+}
+
+/// @brief Evaluate functor expression src into array dst over the Region Of Interest roi.
+///
+/// This function is similar to vipEval(). Unlike vipEval(), vipEvalResetDst() will
+/// reset the destination array based on source expression if needed.
+/// 
+/// vipEvalResetDst() is used by VipNDArray construct and assignement from a functor expression.
+/// 
+template<class Dst, class Src, class OverRoi = VipInfinitRoi, bool Err = true>
+bool vipEvalResetDst(const Dst& _dst, const Src& src, const OverRoi& roi = {}, detail::CError<Err> err = {})
+{
+	Dst& dst = const_cast<Dst&>(_dst);
+	using dst_type = detail::ValueType_t<Dst>;
+	using src_type = detail::ValueType_t<Src>;
+
+	if constexpr (!std::is_same_v<dst_type, detail::NullType> || detail::IsArrayAlgorithm<Src>::value)
+		// Dst has a static type: just call vipEval.
+		// Likewise, do not reset output array for array algorithms.
+		return vipEval(dst, src, roi, err);
+	else if constexpr (!std::is_same_v<src_type, detail::NullType>) {
+		// Src type known at compile time
+		dst.reset(src.shape(), src.dataType());
+		return vipEval(VipArrayView<src_type>(dst), src, roi, err);
+	}
+	else {
+		// Dst is a VipNDArray, we can reset it to the input type
+		
+		// Rebind src to dst type
+		switch (src.dataType()) {
+			case QMetaType::Char:
+				return detail::evalResetDst<char>(dst, src, roi, err);
+			case QMetaType::SChar:
+				return detail::evalResetDst<signed char>(dst, src, roi, err);
+			case QMetaType::UChar:
+				return detail::evalResetDst<unsigned char>(dst, src, roi, err);
+			case QMetaType::Short:
+				return detail::evalResetDst<qint16>(dst, src, roi, err);
+			case QMetaType::UShort:
+				return detail::evalResetDst<quint16>(dst, src, roi, err);
+			case QMetaType::Int:
+				return detail::evalResetDst<qint32>(dst, src, roi, err);
+			case QMetaType::UInt:
+				return detail::evalResetDst<quint32>(dst, src, roi, err);
+			case QMetaType::Long:
+				return detail::evalResetDst<long>(dst, src, roi, err);
+			case QMetaType::ULong:
+				return detail::evalResetDst<unsigned long>(dst, src, roi, err);
+			case QMetaType::LongLong:
+				return detail::evalResetDst<qint64>(dst, src, roi, err);
+			case QMetaType::ULongLong:
+				return detail::evalResetDst<quint64>(dst, src, roi, err);
+			case QMetaType::Float:
+				return detail::evalResetDst<float>(dst, src, roi, err);
+			case QMetaType::Double:
+				return detail::evalResetDst<double>(dst, src, roi, err);
+			case QMetaType::QString:
+				return detail::evalResetDst<QString>(dst, src, roi, err);
+			case QMetaType::QByteArray:
+				return detail::evalResetDst<QByteArray>(dst, src, roi, err);
+			default:
+				break;
+		}
+		if (src.dataType() == qMetaTypeId<long double>())
+			return detail::evalResetDst<long double>(dst, src, roi, err);
+		if (src.dataType() == qMetaTypeId<complex_f>())
+			return detail::evalResetDst<complex_f>(dst, src, roi, err);
+		if (src.dataType() == qMetaTypeId<complex_d>())
+			return detail::evalResetDst<complex_d>(dst, src, roi, err);
+		if (src.dataType() == qMetaTypeId<VipRGB>())
+			return detail::evalResetDst<VipRGB>(dst, src, roi, err);
+		if (src.dataType() == qMetaTypeId<VipRGBf>())
+			return detail::evalResetDst<VipRGBf>(dst, src, roi, err);
+	}
+	return false;
+}
+	
+
+
+/// @brief Apply an accumulator function to an array expression.
+/// @param fun Accumulator function. Signature: T(T prev_value, U new_value)
+/// @param start_value Start accumulator value
+/// @param src Input array expression
+/// @param roi Restrict accumulator evaluation to given Region Of Interest
+/// @return The accumulator result wrapped in a std::optional in case vipEval() returns false.
+template<class Fun, class T, class Src, class OverRoi = VipInfinitRoi>
+std::optional<T> vipAccumulate(const Fun& f, const T& start_value, const Src& src, const OverRoi& roi = {})
+{
+	auto acc = vipAccumulator(f, start_value);
+	if (vipEval(acc, src, roi))
+		return std::optional<T>{ acc.value };
+	else
+		return {};
 }
 
 /// @}

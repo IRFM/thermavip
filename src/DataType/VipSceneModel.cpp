@@ -32,7 +32,6 @@
 #include "VipSceneModel.h"
 #include "VipHistogram.h"
 #include "VipMath.h"
-#include "VipNDArrayImage.h"
 #include "p_fixExtractShapePixels.h"
 #include <QBitmap>
 #include <QBrush>
