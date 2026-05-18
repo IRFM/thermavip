@@ -36,6 +36,7 @@
 
 #include "VipNDArray.h"
 #include "VipResize.h"
+#include "VipEval.h"
 
 bool vipIsNullArray(const VipNDArray& ar) noexcept
 {
