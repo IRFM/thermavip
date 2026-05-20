@@ -56,7 +56,7 @@ static int registerVipProcInfo()
 	qRegisterMetaType<VipProcInfo>();
 	return 0;
 }
-static int _registerVipProcInfo = registerVipProcInfo();
+static int _registerVipProcInfo = vipStaticInit("registerVipProcInfo",registerVipProcInfo);
 
 static double ToDouble(const QVariant& var, bool* ok = nullptr)
 {
@@ -594,7 +594,7 @@ static int registerAdditionalInfos()
 	VipFDProcessingOutputInfo().append<VipExtractHistogramInfos*(VipPlotPlayer*, VipOutput*, const VipIntervalSampleVector&)>(extractHistInfos);
 	return 0;
 }
-static int _registerAdditionalInfos = vipAddInitializationFunction(registerAdditionalInfos);
+static int _registerAdditionalInfos = vipStaticInit("vipAddInitializationFunction(registerAdditionalInfos)", []() { vipAddInitializationFunction(registerAdditionalInfos); });
 
 class BorderItemDelegate : public QItemDelegate
 {

@@ -46,7 +46,7 @@ static int registerAxisBaseKeyWords()
 	}
 	return 0;
 }
-static int _registerAxisBaseKeyWords = registerAxisBaseKeyWords();
+static int _registerAxisBaseKeyWords = vipStaticInit("registerAxisBaseKeyWords",registerAxisBaseKeyWords);
 
 class VipAxisBase::PrivateData
 {
@@ -1266,4 +1266,4 @@ static bool register_types()
 
 	return true;
 }
-static bool _register_types = register_types();
+static int _register_types = vipStaticInit("register_types",register_types);

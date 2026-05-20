@@ -60,7 +60,7 @@ static int registerSliderKeyWords()
 	}
 	return 0;
 }
-static int _registerSliderKeyWords = registerSliderKeyWords();
+static int _registerSliderKeyWords = vipStaticInit("registerSliderKeyWords",registerSliderKeyWords);
 
 class VipSliderGrip::PrivateData
 {

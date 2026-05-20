@@ -1468,7 +1468,7 @@ static int registerVipGuiDisplayParamaters()
 {
 	return 0;
 }
-static int _registerVipGuiDisplayParamaters = registerVipGuiDisplayParamaters();
+static int _registerVipGuiDisplayParamaters = vipStaticInit("registerVipGuiDisplayParamaters",registerVipGuiDisplayParamaters);
 
 VipFunctionDispatcher<3>& vipFDCreateDisplayFromData()
 {

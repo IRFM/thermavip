@@ -406,7 +406,7 @@ static int registerTypes()
 	QMetaType::registerConverter<TransformList, QTransform>(toQTransform);
 	return 0;
 }
-static int _registerTypes = registerTypes();
+static int _registerTypes = vipStaticInit("registerTypes", registerTypes);
 
 VipNDArray VipGenericImageTransform::applyProcessing(const VipNDArray& ar)
 {

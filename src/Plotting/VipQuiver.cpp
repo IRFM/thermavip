@@ -464,4 +464,4 @@ static bool register_types()
 	qRegisterMetaTypeStreamOperators<VipQuiverPath>();
 	return true;
 }
-static bool _register_types = register_types();
+static int _register_types = vipStaticInit("register_types",register_types);

@@ -61,7 +61,7 @@ static int registerQuiverKeyWords()
 	return 0;
 }
 
-static int _registerQuiverKeyWords = registerQuiverKeyWords();
+static int _registerQuiverKeyWords = vipStaticInit("registerQuiverKeyWords",registerQuiverKeyWords);
 
 class VipPlotQuiver::PrivateData
 {
@@ -440,4 +440,4 @@ static bool register_types()
 
 	return true;
 }
-static bool _register_types = register_types();
+static int _register_types = vipStaticInit("register_types",register_types);

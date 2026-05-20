@@ -120,7 +120,7 @@ static bool initHandles()
 	vipRegisterStandardArrayHandle<VipRGBf>();
 	return true;
 }
-static bool _initHandles = initHandles();
+static int _initHandles = vipStaticInit("initHandles",initHandles);
 
 namespace detail
 {

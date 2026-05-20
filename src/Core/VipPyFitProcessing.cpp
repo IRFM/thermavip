@@ -580,4 +580,4 @@ static int registerFit()
 	vipRegisterArchiveStreamOperators<VipPyFitProcessing*>();
 	return 0;
 }
-static int _registerFit = registerFit();
+static int _registerFit = vipStaticInit("registerFit",registerFit);

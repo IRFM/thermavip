@@ -30,7 +30,15 @@
  */
 
 
+#include <mutex>
+
 #include "VipArchive.h"
+
+/// @brief Returns the global mutex used to protect all HDF5 library calls
+VIP_CORE_EXPORT std::recursive_mutex & vipH5Mutex();
+
+using VipH5MutexLocker = std::scoped_lock<std::recursive_mutex>;
+
 
 /// \a VipH5Archive is an \a VipArchive that stores its data in a HDF5 container.
 /// It performs its I/O operations on a QIODevice.

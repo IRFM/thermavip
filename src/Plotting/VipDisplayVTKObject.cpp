@@ -1141,4 +1141,4 @@ static int registerObjects()
 	return 0;
 }
 
-static bool _registerObjects = vipAddInitializationFunction(registerObjects);
+static int _registerObjects = vipStaticInit("vipAddInitializationFunction(registerObjects)", []() { vipAddInitializationFunction(registerObjects); });

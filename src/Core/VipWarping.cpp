@@ -368,4 +368,4 @@ VipArchive& operator>>(VipArchive& ar, VipWarping* tr)
 	return ar;
 }
 
-static int _registerStreamOperator = vipRegisterArchiveStreamOperators<VipWarping*>();
+static int _registerStreamOperator = vipStaticInit("vipRegisterArchiveStreamOperators<VipWarping*>()", []() { vipRegisterArchiveStreamOperators<VipWarping*>(); });

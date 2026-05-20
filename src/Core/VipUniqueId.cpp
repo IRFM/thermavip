@@ -349,4 +349,4 @@ static int registerStreamOperators()
 	vipRegisterArchiveStreamOperators<VipLazySceneModel>();
 	return 0;
 }
-static int _registerStreamOperators = registerStreamOperators();
+static int _registerStreamOperators = vipStaticInit("registerStreamOperators", registerStreamOperators);

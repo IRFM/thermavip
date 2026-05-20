@@ -546,4 +546,4 @@ static int registerFormats()
 
 	return 0;
 }
-static int _registerFormats = registerFormats();
+static int _registerFormats = vipStaticInit("registerFormats",registerFormats);

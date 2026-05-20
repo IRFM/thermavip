@@ -6499,4 +6499,4 @@ static int registerOperators()
 	return 0;
 }
 
-static int _registerOperators = vipAddInitializationFunction(registerOperators); // registerOperators();
+static int _registerOperators = vipStaticInit("vipAddInitializationFunction(registerOperators)", []() { vipAddInitializationFunction(registerOperators); });

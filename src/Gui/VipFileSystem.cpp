@@ -80,7 +80,7 @@ static int initIntList()
 	qRegisterMetaType<IntList>();
 	return 0;
 }
-static int _initIntList = initIntList();
+static int _initIntList = vipStaticInit("initIntList",initIntList);
 
 
 
@@ -319,26 +319,55 @@ public:
 	virtual VipMapFileSystem* create() const { return new VipPSFTPFileSystem(); };
 };
 
+static void test_psftp(std::shared_ptr<bool> ok, std::shared_ptr<bool> started, std::shared_ptr<bool> finished)
+{
+	*started = true;
+	QProcess* pr = new QProcess();
+	printf("start\n");
+	pr->start("psftp", QStringList() << "-h");
+	printf("wait\n");
+	*ok = pr->waitForStarted(1000);
+	printf("write %i\n", (int)*ok);
+	if (*ok && pr->state() == QProcess::Running) {
+		pr->write("quit\n");
+	}
+	printf("terminate\n");
+	pr->terminate();
+	printf("kill\n");
+	pr->kill();
+	printf("delete\n");
+	delete pr;
+	*finished = true;
+}
+
 static int register_psftp()
 {
 	// Check for psftp process
-	{
-		QProcess* pr = new QProcess();
-		pr->start("psftp", QStringList() << "-h");
-		bool ok = pr->waitForStarted();
-		if (ok && pr->state() == QProcess::Running) {
-			pr->write("quit\n");
-		}
-		pr->terminate();
-		pr->kill();
-		pr->deleteLater();
-		if (!ok)
-			return 0;
+	/* std::shared_ptr<bool> ok = std::make_shared<bool>(false);
+	std::shared_ptr<bool> started = std::make_shared<bool>(false);
+	std::shared_ptr<bool> finished = std::make_shared<bool>(false);
+	std::thread th([ok, started, finished]() {
+		test_psftp(ok, started, finished); 
+		});
+	
+
+	while(!(*started)) {
+		QThread::msleep(10);
 	}
+	th.detach();
+
+	auto st = QDateTime::currentMSecsSinceEpoch();
+	auto target = st + 1000;
+	while (QDateTime::currentMSecsSinceEpoch() < target && !(*finished) && !(*ok)) {
+		QThread::msleep(10);
+	}
+	if (!(*ok))
+		return 0;
+	*/
 	VipFileSystemManager::registerManager(new PSFTPFileManager());
 	return 0;
 }
-static int _register_psftp = register_psftp();
+static int _register_psftp = vipStaticInit("register_psftp",register_psftp);
 
 #endif //_WIN32
 
@@ -2980,4 +3009,4 @@ static int registerVipDirectoryBrowser()
 	return 0;
 }
 
-static int _registerVipDirectoryBrowser = vipAddInitializationFunction(registerVipDirectoryBrowser);
+static int _registerVipDirectoryBrowser = vipStaticInit("vipAddInitializationFunction(registerVipDirectoryBrowser)", []() { vipAddInitializationFunction(registerVipDirectoryBrowser); });

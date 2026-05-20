@@ -242,4 +242,4 @@ static int registerLongDouble()
 	QMetaType::registerConverter<QByteArray, vip_long_double>(LongDoubleFromByteArray);
 	return 0;
 }
-static int _registerLongDouble = registerLongDouble();
+static int _registerLongDouble = vipStaticInit("registerLongDouble",registerLongDouble);

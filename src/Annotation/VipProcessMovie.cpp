@@ -2739,4 +2739,4 @@ static int registerPlayerDBAccess()
 	vipFDPlayerCreated().append<void(VipVideoPlayer*)>(onPlayerCreated);
 	return 0;
 }
-static int _registerPlayerDBAccess = registerPlayerDBAccess();
+static int _registerPlayerDBAccess = vipStaticInit("registerPlayerDBAccess",registerPlayerDBAccess);

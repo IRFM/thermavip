@@ -77,7 +77,7 @@ static int registerBarChartKeyWords()
 	return 0;
 }
 
-static int _registerBarChartKeyWords = registerBarChartKeyWords();
+static int _registerBarChartKeyWords = vipStaticInit("registerBarChartKeyWords",registerBarChartKeyWords);
 
 VipBar::VipBar(double pos, const QVector<double>& values)
   : d_pos(pos)
@@ -875,4 +875,4 @@ static bool register_types()
 
 	return true;
 }
-static bool _register_types = register_types();
+static int _register_types = vipStaticInit("register_types",register_types);

@@ -75,7 +75,7 @@ static int registerMarkerKeyWords()
 	return 0;
 }
 
-static int _registerMarkerKeyWords = registerMarkerKeyWords();
+static int _registerMarkerKeyWords = vipStaticInit("registerMarkerKeyWords", registerMarkerKeyWords);
 
 class VipPlotMarker::PrivateData
 {
@@ -623,4 +623,4 @@ static int registerStreamOperators()
 	return 0;
 }
 
-static int _registerStreamOperators = registerStreamOperators();
+static int _registerStreamOperators = vipStaticInit("registerStreamOperators",registerStreamOperators);

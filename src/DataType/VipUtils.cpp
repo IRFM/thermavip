@@ -1129,7 +1129,7 @@ static int registerConversionFunctions()
 	return 0;
 }
 
-static int _registerConversionFunctions = registerConversionFunctions();
+static int _registerConversionFunctions = vipStaticInit("registerConversionFunctions",registerConversionFunctions);
 
 VipNDArray vipExtractXValues(const VipPointVector& samples)
 {

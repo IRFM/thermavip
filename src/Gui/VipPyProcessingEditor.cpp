@@ -622,7 +622,7 @@ int registerEditPyProcessing()
 	vipFDObjectEditor().append<QWidget*(VipPySignalGenerator*)>(editPySignalGenerator);
 	return 0;
 }
-static int _registerEditPyProcessing = registerEditPyProcessing();
+static int _registerEditPyProcessing = vipStaticInit("registerEditPyProcessing",registerEditPyProcessing);
 
 class VipPyApplyToolBar::PrivateData
 {
@@ -1463,7 +1463,7 @@ int registerEditPySignalFusionProcessing()
 	vipFDObjectEditor().append<QWidget*(VipPySignalFusionProcessing*)>(editPySignalFusionProcessing);
 	return 0;
 }
-static int _registerEditPySignalFusionProcessing = registerEditPySignalFusionProcessing();
+static int _registerEditPySignalFusionProcessing = vipStaticInit("registerEditPySignalFusionProcessing",registerEditPySignalFusionProcessing);
 
 void vipOpenProcessingManager()
 {
@@ -1715,5 +1715,5 @@ namespace detail
 		VipFDDisplayObjectSetItem().append<void(VipDisplayCurve*, VipPlotCurve*)>(attachFitToPlayer);
 		return 0;
 	}
-	static int _registerAttachFit = registerAttachFit();
+	static int _registerAttachFit = vipStaticInit("registerAttachFit",registerAttachFit);
 }

@@ -1993,4 +1993,4 @@ static int registerFunctions()
 	return 0;
 }
 
-static int _registerFunction = registerFunctions();
+static int _registerFunction = vipStaticInit("registerFunctions",registerFunctions);

@@ -213,7 +213,7 @@ static int registerCurveKeyWords()
 	return 0;
 }
 
-static int _registerCurveKeyWords = registerCurveKeyWords();
+static int _registerCurveKeyWords = vipStaticInit("registerCurveKeyWords",registerCurveKeyWords);
 
 struct Condition
 {
@@ -2349,4 +2349,4 @@ static int registerStreamOperators()
 	return 0;
 }
 
-static int _registerStreamOperators = registerStreamOperators();
+static int _registerStreamOperators = vipStaticInit("registerStreamOperators", registerStreamOperators);

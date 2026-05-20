@@ -55,7 +55,7 @@ static int register_db_pulse_type()
 	qRegisterMetaType<Vip_experiment_id>("Vip_experiment_id");
 	return 0;
 }
-static int _register_db_pulse_type = register_db_pulse_type();
+static int _register_db_pulse_type = vipStaticInit("register_db_pulse_type", register_db_pulse_type);
 
 VipRequestCondition vipRequestCondition(const QString& varname, const QVariant& min, const QVariant& max, VipRequestCondition::Separator sep)
 {
@@ -2246,7 +2246,7 @@ static bool registerDefaultDevices()
 	_devices_parameters["W7X"] = QSharedPointer<VipBaseDeviceParameters>(new W7XDeviceParameters());
 	return true;
 }
-static bool _registerDefaultDevices = registerDefaultDevices();
+static int _registerDefaultDevices = vipStaticInit("registerDefaultDevices",registerDefaultDevices);
 
 bool vipRegisterDeviceParameters(const QString& name, VipBaseDeviceParameters* param)
 {
@@ -2923,4 +2923,5 @@ static void load_SQLParameters(VipArchive& arch)
 
  
 
-static bool _register = vipRegisterSettingsArchiveFunctions(save_SQLParameters, load_SQLParameters);
+static int _register =
+  vipStaticInit("vipRegisterSettingsArchiveFunctions(save_SQLParameters, load_SQLParameters)", []() { vipRegisterSettingsArchiveFunctions(save_SQLParameters, load_SQLParameters); });

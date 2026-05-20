@@ -54,7 +54,7 @@ static int registerMetaTypes()
 	qRegisterMetaTypeStreamOperators<MarkersType>();
 	return 0;
 }
-static int _registerMetaTypes = registerMetaTypes();
+static int _registerMetaTypes = vipStaticInit("registerMetaTypes",registerMetaTypes);
 
 class VipTimeMarker;
 

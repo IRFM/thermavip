@@ -257,4 +257,5 @@ static int registerOptions()
 	return 0;
 }
 
-static int _register = vipAddGuiInitializationFunction(registerOptions);
+static int _register = vipStaticInit("vipAddGuiInitializationFunction(registerOptions)",[](){
+	vipAddGuiInitializationFunction(registerOptions);});

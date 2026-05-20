@@ -241,7 +241,7 @@ static int registerRubberBandKeyWords()
 	}
 	return 0;
 }
-static int _registerRubberBandKeyWords = registerRubberBandKeyWords();
+static int _registerRubberBandKeyWords = vipStaticInit("registerRubberBandKeyWords",registerRubberBandKeyWords);
 
 class VipRubberBand::PrivateData
 {
@@ -1006,7 +1006,7 @@ static int registerAbstractAreaKeyWords()
 	return 0;
 }
 
-static int _registerAbstractAreaKeyWords = registerAbstractAreaKeyWords();
+static int _registerAbstractAreaKeyWords = vipStaticInit("registerAbstractAreaKeyWords", registerAbstractAreaKeyWords);
 
 VipAbstractPlotArea::VipAbstractPlotArea(QGraphicsItem* parent)
   : VipBoxGraphicsWidget()
@@ -3794,7 +3794,7 @@ static int registerPlotPolarKeywords()
 	vipSetKeyWordsForClass(&VipPlotPolarArea2D::staticMetaObject, keys);
 	return 0;
 }
-static int _registerPlotPolarKeywords = registerPlotPolarKeywords();
+static int _registerPlotPolarKeywords = vipStaticInit("registerPlotPolarKeywords",registerPlotPolarKeywords);
 
 class VipPlotPolarArea2D::PrivateData
 {
@@ -4414,7 +4414,7 @@ static int registerImageAreaKeywords()
 	vipSetKeyWordsForClass(&VipImageArea2D::staticMetaObject, keys);
 	return 0;
 }
-static int _registerImageAreaKeywords = registerImageAreaKeywords();
+static int _registerImageAreaKeywords = vipStaticInit("registerImageAreaKeywords",registerImageAreaKeywords);
 
 class VipImageArea2D::PrivateData
 {
@@ -5053,4 +5053,4 @@ static int registerStreamOperators()
 	return 0;
 }
 
-static int _registerStreamOperators = registerStreamOperators();
+static int _registerStreamOperators = vipStaticInit("registerStreamOperators",registerStreamOperators);

@@ -439,7 +439,7 @@ static int registerConverter()
 	QMetaType::registerConverter<VipRasterData, VipNDArray>(convertToArray);
 	return 0;
 }
-static int _registerConverter = registerConverter();
+static int _registerConverter = vipStaticInit("registerConverter",registerConverter);
 
 /// VipImageData gather drawing information required by a VipPlotRasterData object.
 /// It contains:
@@ -507,7 +507,7 @@ static int registerRasterDataKeyWords()
 	vipSetKeyWordsForClass(&VipPlotRasterData::staticMetaObject, keys);
 	return 0;
 }
-static int _registerRasterDataKeyWords = registerRasterDataKeyWords();
+static int _registerRasterDataKeyWords = vipStaticInit("registerRasterDataKeyWords",registerRasterDataKeyWords);
 
 VipPlotRasterData::VipPlotRasterData(const VipText& title)
   : VipPlotItemDataType(title)
@@ -1126,4 +1126,4 @@ static int registerStreamOperators()
 	return 0;
 }
 
-static int _registerStreamOperators = registerStreamOperators();
+static int _registerStreamOperators = vipStaticInit("registerStreamOperators",registerStreamOperators);

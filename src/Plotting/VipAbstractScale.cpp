@@ -65,7 +65,7 @@ static int registerBoxKeyWords()
 	}
 	return 0;
 }
-static int _registerBoxKeyWords = registerBoxKeyWords();
+static int _registerBoxKeyWords = vipStaticInit("registerBoxKeyWords",registerBoxKeyWords);
 
 static int registerAbstractScaleKeyWords()
 {
@@ -102,7 +102,7 @@ static int registerAbstractScaleKeyWords()
 	}
 	return 0;
 }
-static int _registerAbstractScaleKeyWords = registerAbstractScaleKeyWords();
+static int _registerAbstractScaleKeyWords = vipStaticInit("registerAbstractScaleKeyWords",registerAbstractScaleKeyWords);
 
 class VipBoxGraphicsWidget::PrivateData
 {
@@ -1700,4 +1700,4 @@ static int register_types()
 	vipRegisterArchiveStreamOperators<VipAbstractScale*>();
 	return 0;
 }
-static int _register_types = register_types();
+static int _register_types = vipStaticInit("register_types",register_types);

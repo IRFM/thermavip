@@ -132,7 +132,7 @@ static int registerStreamOperators()
 	qRegisterMetaType<VipAnyDataList>();
 	return 0;
 }
-static int _regiterStreamOperators = vipAddInitializationFunction(registerStreamOperators);
+static int _regiterStreamOperators = vipStaticInit("vipAddInitializationFunction(registerStreamOperators)", []() { vipAddInitializationFunction(registerStreamOperators); });
 
 VipErrorData* VipErrorHandler::_null_error()
 {
@@ -4973,4 +4973,4 @@ static int registerSerializeOperators()
 }
 
 // Initialization function should be called first
-static int _registerSerializeOperators = vipPrependInitializationFunction(registerSerializeOperators);
+static int _registerSerializeOperators = vipStaticInit("vipPrependInitializationFunction(registerSerializeOperators)", []() { vipPrependInitializationFunction(registerSerializeOperators); });

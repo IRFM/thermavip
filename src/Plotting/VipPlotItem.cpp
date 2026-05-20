@@ -104,7 +104,7 @@ static int staticRegister()
 	qRegisterMetaType<VipPlotItemPointer>();
 	return 0;
 }
-static int _staticRegister = staticRegister();
+static int _staticRegister = vipStaticInit("staticRegister", staticRegister);
 
 QPen VipPlotItem::defaultSelectionPen(const VipPlotItem*, const QPen& p)
 {
@@ -591,7 +591,7 @@ static int registerBaseKeyWords()
 	}
 	return 0;
 }
-static int _registerBaseKeyWords = registerBaseKeyWords();
+static int _registerBaseKeyWords = vipStaticInit("registerBaseKeyWords",registerBaseKeyWords);
 
 /// Default key words and related parsers for VipPlotItem objects
 
@@ -640,7 +640,7 @@ static int registerItemKeyWords()
 	}
 	return 0;
 }
-static int _registerItemKeyWords = registerItemKeyWords();
+static int _registerItemKeyWords = vipStaticInit("registerItemKeyWords",registerItemKeyWords);
 
 class VipPlotItem::PrivateData
 {
@@ -3034,4 +3034,4 @@ static int register_types()
 	vipRegisterArchiveStreamOperators<VipPlotItemData*>();
 	return 0;
 }
-static int _register_types = register_types();
+static int _register_types = vipStaticInit("register_types", register_types);

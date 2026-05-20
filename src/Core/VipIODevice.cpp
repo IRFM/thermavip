@@ -4850,7 +4850,8 @@ static int vipRegisterArchiveStreamOperators()
 	vipRegisterArchiveStreamOperators<ArchiveRecorderTrailer>();
 	return 0;
 }
-static int _registerArchiveStreamOperators = vipAddInitializationFunction(&vipRegisterArchiveStreamOperators);
+static int _registerArchiveStreamOperators =
+  vipStaticInit("vipAddInitializationFunction(&vipRegisterArchiveStreamOperators)", []() { vipAddInitializationFunction(&vipRegisterArchiveStreamOperators); });
 
 #ifdef VIP_WITH_HDF5
 #include "VipH5Archive.h"
@@ -5656,4 +5657,4 @@ static int registerStreamOperators()
 	return 0;
 }
 
-static int _registerStreamOperators = vipAddInitializationFunction(registerStreamOperators);
+static int _registerStreamOperators = vipStaticInit("vipAddInitializationFunction(registerStreamOperators)", []() { vipAddInitializationFunction(registerStreamOperators); });

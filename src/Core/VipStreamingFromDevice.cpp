@@ -176,4 +176,5 @@ static VipArchive& operator>>(VipArchive& arch, VipStreamingFromDevice* gen)
 		arch.resetError();
 	return arch;
 }
-static int _register = vipAddInitializationFunction(vipRegisterArchiveStreamOperators<VipStreamingFromDevice*>);
+static int _register = vipStaticInit("vipAddInitializationFunction(vipRegisterArchiveStreamOperators<VipStreamingFromDevice*>)",
+				     []() { vipAddInitializationFunction(vipRegisterArchiveStreamOperators<VipStreamingFromDevice*>); });

@@ -122,6 +122,12 @@ static QSurfaceFormat makeDefaultFormat()
 #endif
 }
 
+#include <QThreadPool>
+
+struct Test : public QRunnable
+{
+	virtual void run(){}
+};
 
 int main(int argc, char** argv)
 {
@@ -771,7 +777,9 @@ int main(int argc, char** argv)
 	// Apply current font
 	applyAppFont(vipGetMainWindow(), previous_font);
 
+	detail::setAppRunning(true);
 	int ret = app.exec();
+	detail::setAppRunning(false);
 
 	VipLoadPlugins::instance().unloadPlugins();
 	VipLogging::instance().close();

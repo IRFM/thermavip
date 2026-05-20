@@ -3330,4 +3330,4 @@ static int registerFunctions()
 	return 0;
 }
 
-static int _registerFunctions = vipAddInitializationFunction(registerFunctions);
+static int _registerFunctions = vipStaticInit("vipAddInitializationFunction(registerFunctions)", []() { vipAddInitializationFunction(registerFunctions); });

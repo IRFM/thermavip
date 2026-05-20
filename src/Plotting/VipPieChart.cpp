@@ -106,7 +106,7 @@ static int registerPieItemKeyWords()
 	}
 	return 0;
 }
-static int _registerPieItemKeyWords = registerPieItemKeyWords();
+static int _registerPieItemKeyWords = vipStaticInit("registerPieItemKeyWords",registerPieItemKeyWords);
 
 static int registerPieChartKeyWords()
 {
@@ -130,7 +130,7 @@ static int registerPieChartKeyWords()
 	}
 	return 0;
 }
-static int _registerPieChartKeyWords = registerPieChartKeyWords();
+static int _registerPieChartKeyWords = vipStaticInit("registerPieChartKeyWords",registerPieChartKeyWords);
 
 VipAbstractPieItem::VipAbstractPieItem(const VipText& title)
   : VipPlotItemDataType<VipPie>(title)

@@ -1006,7 +1006,8 @@ static int registerVipNumericValueToPointVector()
 	vipRegisterSettingsArchiveFunctions(serialize_VipNumericValueToPointVector, serialize_VipNumericValueToPointVector);
 	return 0;
 }
-static int _registerVipNumericValueToPointVector = vipAddInitializationFunction(registerVipNumericValueToPointVector);
+static int _registerVipNumericValueToPointVector =
+  vipStaticInit("vipAddInitializationFunction(registerVipNumericValueToPointVector)", []() { vipAddInitializationFunction(registerVipNumericValueToPointVector); });
 
 
 

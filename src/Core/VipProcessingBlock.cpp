@@ -556,4 +556,4 @@ static int registerStreamOperators()
 	return 0;
 }
 
-static int _registerStreamOperators = vipAddInitializationFunction(registerStreamOperators);
+static int _registerStreamOperators = vipStaticInit("vipAddInitializationFunction(registerStreamOperators)", []() { vipAddInitializationFunction(registerStreamOperators); });

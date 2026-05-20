@@ -376,7 +376,7 @@ static int registerShapeKeyWords()
 	return 0;
 }
 
-static int _registerShapeKeyWords = registerShapeKeyWords();
+static int _registerShapeKeyWords = vipStaticInit("registerShapeKeyWords",registerShapeKeyWords);
 
 class VipPlotShape::PrivateData
 {
@@ -1142,7 +1142,7 @@ bool VipPlotShape::setItemProperty(const char* name, const QVariant& value, cons
 	return VipPlotItem::setItemProperty(name, value, index);
 }
 
-static int _registerVipPlotSceneModel = vipSetKeyWordsForClass(&VipPlotSceneModel::staticMetaObject);
+static int _registerVipPlotSceneModel = vipStaticInit("vipSetKeyWordsForClass(&VipPlotSceneModel::staticMetaObject)", []() { vipSetKeyWordsForClass(&VipPlotSceneModel::staticMetaObject); });
 
 class VipPlotSceneModel::PrivateData
 {
@@ -2159,4 +2159,4 @@ static bool register_types()
 
 	return true;
 }
-static bool _register_types = register_types();
+static int _register_types = vipStaticInit("register_types",register_types);

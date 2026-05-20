@@ -2026,4 +2026,4 @@ static int registerOperators()
 	return 0;
 }
 
-static int _registerOperators = registerOperators();
+static int _registerOperators = vipStaticInit("registerOperators",registerOperators);

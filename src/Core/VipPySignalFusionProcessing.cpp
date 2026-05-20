@@ -56,7 +56,7 @@ static int registerPySignalFusionProcessingPtr()
 	qRegisterMetaType<VipPySignalFusionProcessingPtr>();
 	return 0;
 }
-static int _registerPySignalFusionProcessingPtr = registerPySignalFusionProcessingPtr();
+static int _registerPySignalFusionProcessingPtr = vipStaticInit("registerPySignalFusionProcessingPtr",registerPySignalFusionProcessingPtr);
 
 
 static std::array<QRegExp, 50>& xreg()

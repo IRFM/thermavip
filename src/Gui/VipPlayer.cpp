@@ -8596,7 +8596,7 @@ static int registerStandardFunctions()
 	return 0;
 }
 
-static int _registerStandardFunctions = vipAddInitializationFunction(registerStandardFunctions);
+static int _registerStandardFunctions = vipStaticInit("vipAddInitializationFunction(registerStandardFunctions)", []() { vipAddInitializationFunction(registerStandardFunctions); });
 
 static void saveVipPlayerToolTip(VipArchive& arch)
 {
@@ -8745,7 +8745,7 @@ static int registerDownsampledImage()
 	QMetaType::registerConverter<QByteArray, DownsampledImage>(detail::byteArrayToType<DownsampledImage>);
 	return 0;
 }
-static int _registerDownsampledImage = registerDownsampledImage();
+static int _registerDownsampledImage = vipStaticInit("registerDownsampledImage",registerDownsampledImage);
 
 static VipArchive& operator<<(VipArchive& arch, VipVideoPlayer* value)
 {
@@ -9214,4 +9214,4 @@ static int registerStreamOperators()
 	VipFDDropOnPlotItem().append<bool(VipVideoPlayer*, VipPlotItem*, QMimeData*)>(handleDropROIFileOnVideo);
 	return 0;
 }
-static int _registerStreamOperators = vipAddInitializationFunction(registerStreamOperators);
+static int _registerStreamOperators = vipStaticInit("vipAddInitializationFunction(registerStreamOperators)", []() { vipAddInitializationFunction(registerStreamOperators); });

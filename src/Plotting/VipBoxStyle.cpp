@@ -1140,4 +1140,4 @@ static int registerStreamOperators()
 	qRegisterMetaTypeStreamOperators<VipBoxStyle>("VipBoxStyle");
 	return 0;
 }
-static int _registerStreamOperators = registerStreamOperators();
+static int _registerStreamOperators = vipStaticInit("registerStreamOperators", registerStreamOperators);

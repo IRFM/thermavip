@@ -59,4 +59,4 @@ static int registerConverters()
 
 	return 0;
 }
-static int _registerConverters = registerConverters();
+static int _registerConverters = vipStaticInit("registerConverters", registerConverters);

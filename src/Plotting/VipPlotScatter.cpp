@@ -56,7 +56,7 @@ static int registerScatterKeyWords()
 	return 0;
 }
 
-static int _registerScatterKeyWords = registerScatterKeyWords();
+static int _registerScatterKeyWords = vipStaticInit("registerScatterKeyWords",registerScatterKeyWords);
 
 class VipPlotScatter::PrivateData
 {
@@ -526,4 +526,4 @@ static bool register_types()
 	vipRegisterArchiveStreamOperators<VipPlotScatter*>();
 	return true;
 }
-static bool _register_types = register_types();
+static int _register_types = vipStaticInit("register_types", register_types);

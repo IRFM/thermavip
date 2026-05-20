@@ -2783,7 +2783,7 @@ static int registerStreamOperators()
 	return 0;
 }
 
-static int _registerStreamOperators = vipAddInitializationFunction(registerStreamOperators);
+static int _registerStreamOperators = vipStaticInit("vipAddInitializationFunction(registerStreamOperators)", []() { vipAddInitializationFunction(registerStreamOperators); });
 
 static bool customSupportReparent(VipMultiDragWidget* drag, QWidget* new_parent)
 {
@@ -6140,4 +6140,4 @@ static int registerFunctions()
 	return 0;
 }
 
-static int _registerFunctions = vipAddInitializationFunction(registerFunctions);
+static int _registerFunctions = vipStaticInit("vipAddInitializationFunction(registerFunctions)", []() { vipAddInitializationFunction(registerFunctions); });
