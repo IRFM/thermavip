@@ -241,7 +241,7 @@ static int registerRubberBandKeyWords()
 	}
 	return 0;
 }
-static int _registerRubberBandKeyWords = vipStaticInit("registerRubberBandKeyWords",registerRubberBandKeyWords);
+static int _registerRubberBandKeyWords = vipStaticInit("registerRubberBandKeyWords", registerRubberBandKeyWords);
 
 class VipRubberBand::PrivateData
 {
@@ -815,6 +815,9 @@ struct Legend
 	bool operator!=(const VipLegend* other) const noexcept { return legend.data() != other; }
 };
 
+// Global last clicked point
+VipAreaItemPoint _lastClickedPoint;
+
 class VipAbstractPlotArea::PrivateData
 {
 public:
@@ -903,6 +906,8 @@ public:
 	QList<Legend> legends;
 
 	QPointer<VipPlotItem> lastPressed;
+
+	VipAreaItemPoint lastClickedPoint;
 
 	QPointer<VipToolTip> plotToolTip;
 	QList<VipAbstractScale*> scales;
@@ -2483,6 +2488,16 @@ VipPlotItem* VipAbstractPlotArea::lastPressed() const
 	return d_data->lastPressed;
 }
 
+VipAreaItemPoint VipAbstractPlotArea::lastClickedPoint() const
+{
+	return d_data->lastClickedPoint;
+}
+
+VipAreaItemPoint VipAbstractPlotArea::lastGlobalClickedPoint()
+{
+	return _lastClickedPoint;
+}
+
 void VipAbstractPlotArea::setCustomUpdateFunction(const std::function<void()>& f)
 {
 	d_data->customUpdate = f;
@@ -2527,6 +2542,8 @@ void VipAbstractPlotArea::mousePressEvent(QGraphicsSceneMouseEvent* event)
 	// bool inside_canvas = canvas()->shape().contains(event->pos());
 	QList<VipAbstractScale*> scales = scalesForPos(event->pos());
 
+	bool needComputeItemPoint = false;
+
 	if ((event->button() & d_data->mousePanning) && scales.size() // inside_canvas
 	) {
 		d_data->mousePos = event->pos();
@@ -2551,9 +2568,52 @@ void VipAbstractPlotArea::mousePressEvent(QGraphicsSceneMouseEvent* event)
 		}
 	}
 	else {
-
+		needComputeItemPoint = true;
 		event->ignore();
 	}
+
+	if (!needComputeItemPoint)
+		return;
+
+	d_data->lastClickedPoint.clear();
+	_lastClickedPoint.clear();
+
+	// Compute closest item point
+	QPointF spf = event->scenePos();
+	QPointF pf = this->mapFromScene(spf);
+
+	QList<VipPointVector> points;
+	VipBoxStyleList styles;
+	QList<int> legends;
+
+	// Retrieve items points close to the mouse
+	PlotItemList items = this->plotItems(pf, -1, 10, points, styles, legends);
+	// search closest point
+	QPointF closest;
+	double closest_dist = -1;
+	int idx = -1;
+	for (int i = 0; i < points.size(); ++i) {
+		const VipPointVector vec = points[i];
+		for (int j = 0; j < vec.size(); ++j) {
+			QPointF ip = items[i]->mapToScene(vec[j]);
+			double dist = (ip - spf).manhattanLength();
+			if (closest_dist == -1 || dist < closest_dist) {
+				closest_dist = dist;
+				closest = ip;
+				idx = i;
+			}
+		}
+	}
+	if (closest_dist == -1)
+		closest = spf;
+
+	d_data->lastClickedPoint.point = positionToScale(closest);
+	if (idx >= 0) {
+		d_data->lastClickedPoint.item = items[idx];
+		d_data->lastClickedPoint.legendIndex = legends[idx];
+		d_data->lastClickedPoint.pointShape = styles[idx];
+	}
+	_lastClickedPoint = d_data->lastClickedPoint;
 }
 
 void VipAbstractPlotArea::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
@@ -3794,7 +3854,7 @@ static int registerPlotPolarKeywords()
 	vipSetKeyWordsForClass(&VipPlotPolarArea2D::staticMetaObject, keys);
 	return 0;
 }
-static int _registerPlotPolarKeywords = vipStaticInit("registerPlotPolarKeywords",registerPlotPolarKeywords);
+static int _registerPlotPolarKeywords = vipStaticInit("registerPlotPolarKeywords", registerPlotPolarKeywords);
 
 class VipPlotPolarArea2D::PrivateData
 {
@@ -4414,7 +4474,7 @@ static int registerImageAreaKeywords()
 	vipSetKeyWordsForClass(&VipImageArea2D::staticMetaObject, keys);
 	return 0;
 }
-static int _registerImageAreaKeywords = vipStaticInit("registerImageAreaKeywords",registerImageAreaKeywords);
+static int _registerImageAreaKeywords = vipStaticInit("registerImageAreaKeywords", registerImageAreaKeywords);
 
 class VipImageArea2D::PrivateData
 {
@@ -5053,4 +5113,4 @@ static int registerStreamOperators()
 	return 0;
 }
 
-static int _registerStreamOperators = vipStaticInit("registerStreamOperators",registerStreamOperators);
+static int _registerStreamOperators = vipStaticInit("registerStreamOperators", registerStreamOperators);

@@ -5768,7 +5768,7 @@ void VipPlotPlayer::timeUnitChanged()
 	top->drawAdditionalText = false;
 
 	// modify scale draw if displaying times as integers or absolute date time
-	if ((bottom->displayType == VipValueToTime::Integer) || bottom->displayType == VipValueToTime::AbsoluteDateTime) {
+	if ((bottom->displayType == VipValueToTime::Integer) /* || bottom->displayType == VipValueToTime::AbsoluteDateTime*/) {
 		VipTextStyle st = pl->area()->bottomAxis()->scaleDraw()->textStyle();
 		st.setAlignment(Qt::AlignRight | Qt::AlignVCenter);
 		pl->area()->bottomAxis()->scaleDraw()->setTextStyle(st);
@@ -5778,7 +5778,7 @@ void VipPlotPlayer::timeUnitChanged()
 		VipTextStyle st = pl->area()->bottomAxis()->scaleDraw()->textStyle();
 		st.setAlignment(Qt::AlignHCenter | Qt::AlignVCenter);
 		pl->area()->bottomAxis()->scaleDraw()->setTextStyle(st);
-		pl->area()->bottomAxis()->scaleDraw()->setLabelRotation(0, VipScaleDiv::MajorTick);
+		//pl->area()->bottomAxis()->scaleDraw()->setLabelRotation(0, VipScaleDiv::MajorTick);
 	}
 
 	// import current text styles
@@ -7482,6 +7482,7 @@ bool VipPlotPlayer::plotItemClicked(VipPlotItem*, VipPlotItem::MouseButton butto
 			if (QGuiApplication::keyboardModifiers() & Qt::ShiftModifier)
 				if (haveTimeUnit())
 					if (VipProcessingPool* pool = this->processingPool()) {
+						/*
 						QPoint p = QCursor::pos();
 						p = this->plotWidget2D()->mapFromGlobal(p);
 						QPointF spf = this->plotWidget2D()->mapToScene(p);
@@ -7513,6 +7514,11 @@ bool VipPlotPlayer::plotItemClicked(VipPlotItem*, VipPlotItem::MouseButton butto
 						closest = this->plotWidget2D()->area()->mapFromScene(closest);
 						VipPoint scale = this->plotWidget2D()->area()->positionToScale(closest);
 						pool->seek(static_cast<qint64>(scale.x()));
+						*/
+						//TEST
+						auto pt = VipAbstractPlotArea::lastGlobalClickedPoint();
+						pool->seek(static_cast<qint64>(pt.point.x()));
+						//printf("%f %f\n%f %f\n", scale.x(), scale.y(), pt.point.x(), pt.point.y());
 
 						return true;
 					}

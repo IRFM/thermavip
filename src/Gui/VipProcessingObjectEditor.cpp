@@ -81,6 +81,8 @@ VipPlayerSelector::VipPlayerSelector(QWidget* parent )
 {
 	connect(this, SIGNAL(openPopup()), this, SLOT(populatePlayers()));
 
+	setSizeAdjustPolicy(AdjustToContents);
+
 	populatePlayers();
 	if (count())
 		setCurrentIndex(0);

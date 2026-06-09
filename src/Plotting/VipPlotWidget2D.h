@@ -184,7 +184,6 @@ private:
 	void installFilter(VipPlotAreaFilter* filter);
 	void removeFilter();
 
-	
 	VIP_DECLARE_PRIVATE_DATA();
 };
 
@@ -257,6 +256,23 @@ namespace Vip
 		using ItemDirtyNotifierPtr = QSharedPointer<ItemDirtyNotifier>;
 	}
 }
+
+/// @brief Information on a clicked point inside a VipAbstractPlotArea
+struct VipAreaItemPoint
+{
+	QPointer<VipPlotItem> item;
+	int legendIndex = 0;
+	VipBoxStyle pointShape;
+	VipPoint point;
+
+	void clear() noexcept
+	{
+		item = nullptr;
+		legendIndex = 0;
+		pointShape = {};
+		point = {};
+	}
+};
 
 /// @brief Base class for all types of plotting areas
 ///
@@ -647,9 +663,12 @@ public:
 	/// @brief Returns the last VipPlotItem which triggered a mouseButtonPressed() signal
 	VipPlotItem* lastPressed() const;
 
+	VipAreaItemPoint lastClickedPoint() const;
+	static VipAreaItemPoint lastGlobalClickedPoint();
+
 	/// @brief Internal use only
 	void setCustomUpdateFunction(const std::function<void()>& f);
-	
+
 public Q_SLOTS:
 
 	/// @brief Enable/disable automatic scaling for spatial scales
@@ -834,8 +853,8 @@ private:
 	void markScaleDivDirty(VipAbstractScale*);
 	bool markGeometryDirty();
 	void applyLabelOverlapping();
-	
-	void setNotifier(const Vip::detail::ItemDirtyNotifierPtr & notifier);
+
+	void setNotifier(const Vip::detail::ItemDirtyNotifierPtr& notifier);
 	Vip::detail::ItemDirtyNotifierPtr notifier();
 
 	VIP_DECLARE_PRIVATE_DATA();
@@ -891,7 +910,6 @@ protected:
 	virtual double titleOffset() const;
 
 private:
-	
 	VIP_DECLARE_PRIVATE_DATA();
 };
 
@@ -941,7 +959,6 @@ protected:
 	virtual bool setItemProperty(const char* name, const QVariant& value, const QByteArray& index);
 
 private:
-	
 	VIP_DECLARE_PRIVATE_DATA();
 };
 
@@ -1031,7 +1048,6 @@ private Q_SLOTS:
 private:
 	void recomputeGeometry(const QRectF& visualized_image_rect, bool recompute_aligned_areas = true);
 
-	
 	VIP_DECLARE_PRIVATE_DATA();
 };
 
@@ -1112,7 +1128,6 @@ protected:
 	virtual void setupViewport(QWidget* viewport);
 
 private:
-	
 	VIP_DECLARE_PRIVATE_DATA();
 };
 

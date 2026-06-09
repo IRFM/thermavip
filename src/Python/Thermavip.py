@@ -1018,6 +1018,12 @@ def get(player, data_name = ""):
     """
     return call_thermavip_fun('get',(player,data_name))
 
+def clicked_point():
+    """
+    Returns the last curve clicked point (list(x,y))
+    """
+    return call_thermavip_fun('clicked_point',tuple())
+
 def get_attribute(player, attribute_name, data_name = ""):
     """
     Returns the data attribute associated to given player and item data name.

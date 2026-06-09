@@ -242,6 +242,16 @@ public:
 	void setScaleDiv(const VipInterval& bounds, const VipScaleDiv::TickList& majorTicks);
 	const VipScaleDiv& scaleDiv() const;
 
+	/// @brief In auto scale only, set the minimum scale bounds.
+	/// Set to an invalid interval to disable.
+	void setMinimumBounds(const VipInterval&);
+	VipInterval minimumBounds() const;
+
+	/// @brief In auto scale only, set the maximum scale bounds.
+	/// Set to an invalid interval to disable.
+	void setMaximumBounds(const VipInterval&);
+	VipInterval maximumBounds() const;
+
 	/// @brief Add a text to be drawn on the scale
 	/// If id is 0 (or is invalid), this creates a new scale text and returns its id.
 	/// If provided id is valid, this updates the corresponding scale text.

@@ -351,6 +351,8 @@ public:
 	VipAbstractScaleDraw* scaleDraw;
 	VipScaleEngine* scaleEngine;
 	VipInterval computedInterval;
+	VipInterval minimumBounds;
+	VipInterval maximumBounds;
 
 	qint64 lastScaleIntervalUpdate;
 	vip_double lastScaleIntervalWidth;
@@ -442,6 +444,13 @@ void VipAbstractScale::computeScaleDiv()
 		return;
 
 	VipInterval bounds = itemsInterval();
+
+	if (d_data->minimumBounds.isValid()) {
+		bounds = bounds.unite(d_data->minimumBounds);
+	}
+	if (d_data->maximumBounds.isValid()) {
+		bounds = bounds.intersect(d_data->maximumBounds);
+	}
 
 	if (bounds != d_data->computedInterval) {
 		if (bounds.width() == 0) {
@@ -900,6 +909,33 @@ void VipAbstractScale::setScaleDiv(const VipScaleDiv& div, bool force_check_geom
 const VipScaleDiv& VipAbstractScale::scaleDiv() const
 {
 	return d_data->scaleDraw->scaleDiv();
+}
+
+void VipAbstractScale::setMinimumBounds(const VipInterval& inter)
+{
+	if (d_data->minimumBounds != inter) {
+		d_data->minimumBounds = inter;
+		if (isAutoScale())
+			computeScaleDiv();
+	}
+}
+VipInterval VipAbstractScale::minimumBounds() const
+{
+	return d_data->minimumBounds;
+}
+
+
+void VipAbstractScale::setMaximumBounds(const VipInterval& inter)
+{
+	if (d_data->maximumBounds != inter) {
+		d_data->maximumBounds = inter;
+		if (isAutoScale())
+			computeScaleDiv();
+	}
+}
+VipInterval VipAbstractScale::maximumBounds() const
+{
+	return d_data->maximumBounds;
 }
 
 int VipAbstractScale::addScaleText(int id, const VipScaleText& text)

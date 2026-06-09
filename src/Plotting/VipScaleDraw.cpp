@@ -424,6 +424,9 @@ QList<VipScaleText> VipValueToTime::additionalText(const VipAbstractScaleDraw* s
 	if (!drawAdditionalText)
 		return QList<VipScaleText>();
 
+	if (displayType == AbsoluteDateTime)
+		return {};//TEST
+
 	QList<VipScaleText> res;
 
 	// QColor c = textStyle(VipScaleDiv::MajorTick).textPen().color();

@@ -802,6 +802,18 @@ static QVariant loadData(const QString & path, const QVariant & time)
 	return QVariant::fromValue(ret);
 }
 
+static QVariant clickedPoint()
+{
+	auto pt = VipAbstractPlotArea::lastGlobalClickedPoint();
+	if (pt.item) {
+		QVariantList lst;
+		lst.push_back(pt.point.x());
+		lst.push_back(pt.point.y());
+		return QVariant::fromValue(lst);
+	}
+	return QVariant();
+}
+
 static QVariant getDataAttribute(int player, const QString & data_name, const QString & attr_name)
 {
 	VipDragWidget * w = qobject_cast<VipDragWidget*>(VipUniqueId::find<VipBaseDragWidget>(player));
@@ -1953,6 +1965,7 @@ static int registerFunctions()
 	vipRegisterFunction(vipMakeFunctionObject(resize_rows_columns, "resize_workspace"));
 	vipRegisterFunction(vipMakeFunctionObject(getData, "get"));
 	vipRegisterFunction(vipMakeFunctionObject(loadData, "load"));
+	vipRegisterFunction(vipMakeFunctionObject(clickedPoint, "clicked_point"));
 	vipRegisterFunction(vipMakeFunctionObject(getDataAttribute, "get_attribute"));
 	vipRegisterFunction(vipMakeFunctionObject(getDataAttributes, "get_attributes"));
 	vipRegisterFunction(vipMakeFunctionObject(setDataAttribute, "set_attribute"));
