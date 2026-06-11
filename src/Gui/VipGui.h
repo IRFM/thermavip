@@ -177,6 +177,9 @@ public:
 
 	~VipGuiDisplayParamaters();
 
+	
+	int defaultWorkspaceMaximumWidth() const;
+
 	int itemPaletteFactor() const;
 	bool videoPlayerShowAxes() const;
 	Vip::PlayerLegendPosition legendPosition() const;
@@ -217,7 +220,7 @@ public:
 	bool inSessionLoading() const;
 
 public Q_SLOTS:
-
+	void setDefaultWorkspaceMaximumWidth(int w);
 	void setItemPaletteFactor(int);
 	void setVideoPlayerShowAxes(bool);
 	void setLegendPosition(Vip::PlayerLegendPosition pos);

@@ -73,6 +73,7 @@
 
 #ifdef VIP_WITH_FFMPEG
 #include "VipRecordWindow.h"
+#include "VipMPEGLoader.h"
 #endif
 
 #include <QApplication>
@@ -651,7 +652,6 @@ void VipDisplayTabWidget::tabChanged(int index)
 	if (VipDisplayPlayerArea* area = qobject_cast<VipDisplayPlayerArea*>(this->widget(index))) {
 		if (vipIsObjectValid(area))
 			area->setFocus(true);
-		
 	}
 }
 
@@ -1029,6 +1029,17 @@ protected:
 
 static int _max_multi_width = 3;
 
+void VipDisplayPlayerArea::setDefaultMaximumWidth(int m)
+{
+	if (m < 1)
+		m = 1;
+	_max_multi_width = m;
+}
+int VipDisplayPlayerArea::defaultMaximumWidth()
+{
+	return _max_multi_width;
+}
+
 class VipDisplayPlayerArea::PrivateData
 {
 public:
@@ -1037,7 +1048,7 @@ public:
 	  , pool(nullptr)
 	  , floating(false)
 	  , id(0)
-	  , maxColumns(_max_multi_width)
+	  , maxColumns(VipDisplayPlayerArea::defaultMaximumWidth())
 	  , useGlobalColorMap(false)
 	  , operations(AllOperations)
 	  , dirtyColorMap(false)
@@ -1101,8 +1112,9 @@ VipDisplayPlayerArea::VipDisplayPlayerArea(QWidget* parent)
 	setProcessingPool(p);
 
 	VipImageArea2D area;
-	d_data->colorMap = new VipScaleWidget(d_data->colorMapAxis = area.createColorMap(
-						VipAxisBase::Right, VipInterval(0, 100), VipLinearColorMap::createColorMap(VipLinearColorMap::colorMapFromName( VipGuiDisplayParamaters::instance()->playerColorScale()))));
+	d_data->colorMap = new VipScaleWidget(
+	  d_data->colorMapAxis = area.createColorMap(
+	    VipAxisBase::Right, VipInterval(0, 100), VipLinearColorMap::createColorMap(VipLinearColorMap::colorMapFromName(VipGuiDisplayParamaters::instance()->playerColorScale()))));
 	// d_data->colorMapAxis->setColorBarWidth(12);
 	d_data->colorMapAxis->grip1()->setHandleDistance(0);
 	d_data->colorMapAxis->grip2()->setHandleDistance(0);
@@ -1143,7 +1155,7 @@ VipDisplayPlayerArea::VipDisplayPlayerArea(QWidget* parent)
 	connect(d_data->fit_to_grip, SIGNAL(triggered(bool)), this, SLOT(fitColorScaleToGrips()));
 	connect(d_data->histo_scale, SIGNAL(triggered(bool)), this, SLOT(setFlatHistogramColorScale(bool)));
 	// QObject::connect(scale_params, SIGNAL(triggered(bool)), player, SLOT(showColorScaleParameters()));
-	connect(d_data->scale, SIGNAL(colorPaletteNameChanged(const QString&)), this, SLOT(setColorMap(const QString &)));
+	connect(d_data->scale, SIGNAL(colorPaletteNameChanged(const QString&)), this, SLOT(setColorMap(const QString&)));
 	connect(d_data->colorMapAxis, &VipAxisColorMap::valueChanged, this, std::bind(&VipDisplayPlayerArea::setAutomaticColorScale, this, false));
 	connect(d_data->colorMapAxis, SIGNAL(mouseButtonDoubleClick(VipAbstractScale*, VipPlotItem::MouseButton, double)), this, SLOT(editColorMap()));
 
@@ -1514,7 +1526,7 @@ void VipDisplayPlayerArea::setAutomaticColorScale(bool auto_scale)
 	}
 }
 
-void VipDisplayPlayerArea::setColorMap(const QString & name)
+void VipDisplayPlayerArea::setColorMap(const QString& name)
 {
 	bool is_flat_histo = isFlatHistogramColorScale();
 	auto map = VipLinearColorMap::colorMapFromName(name);
@@ -2150,7 +2162,6 @@ VipProcessingPool* VipDisplayPlayerArea::processingPool() const
 	return const_cast<VipProcessingPool*>(d_data->pool);
 }
 
-
 VipDisplayPlayerArea* VipDisplayPlayerArea::fromChild(const QObject* child)
 {
 	QObject* tmp = const_cast<QObject*>(child);
@@ -2559,7 +2570,7 @@ VipDisplayPlayerArea* VipDisplayArea::displayPlayerArea(int index) const
 
 VipDisplayPlayerArea* VipDisplayArea::currentDisplayPlayerArea() const
 {
-	VipDisplayPlayerArea * res = d_data->current;
+	VipDisplayPlayerArea* res = d_data->current;
 	if (res && _valid_workspaces.contains(res))
 		return res;
 	return nullptr;
@@ -2626,7 +2637,7 @@ VipMainWindow* VipDisplayArea::parentMainWindow() const
 
 void VipDisplayArea::addWidget(VipDisplayPlayerArea* widget)
 {
-	
+
 	QString title = widget->windowTitle().isEmpty() ? generateWorkspaceName() : widget->windowTitle();
 	widget->setWindowTitle(title);
 	widget->d_data->parentArea = this;
@@ -2727,7 +2738,7 @@ void VipDisplayArea::setCurrentDisplayPlayerArea(VipDisplayPlayerArea* area)
 		int index = d_data->tabWidget->indexOf(area);
 		if (index >= 0 && index != d_data->tabWidget->currentIndex())
 			d_data->tabWidget->setCurrentIndex(index);
-		
+
 		if (area && !vipIsObjectValid(area))
 			return;
 
@@ -2954,20 +2965,7 @@ VipCloseBar::VipCloseBar(VipMainWindow* win)
 	// this->setMaximumWidth(500);
 
 	this->hasFrame = VipCommandOptions::instance().count("frame") > 0;
-
-	// create spin box for max number of columns
-	maxCols = new QSpinBox();
-	maxCols->setRange(1, 10);
-	maxCols->setObjectName("_vip_maxCols");
-	maxCols->setValue(3);
-	maxCols->setToolTip("Define the maximum number of columns when adding a new player");
-	QObject::connect(maxCols, SIGNAL(valueChanged(int)), mainWindow, SLOT(setMaxColumnsForWorkspace(int)));
-	maxColsAction = addWidget(maxCols);
-
-	maximize = addAction(vipIcon("show_normal.png"), "<b>Maximize workspaces</b><br>Maximize workspaces by hiding all surrounding tool widgets");
-	maximize->setCheckable(true);
-	QObject::connect(maximize, SIGNAL(triggered(bool)), mainWindow, SLOT(maximizeWorkspaces(bool)));
-
+	
 	this->toolsButton = new QToolButton();
 	toolsButton->setAutoRaise(true);
 	toolsButton->setIcon(vipIcon("scaletools2.png"));
@@ -2989,6 +2987,10 @@ VipCloseBar::VipCloseBar(VipMainWindow* win)
 	helpButton->setPopupMode(QToolButton::InstantPopup);
 	this->help = addWidget(helpButton);
 	addSeparator();
+
+	maximize = addAction(vipIcon("show_normal.png"), "<b>Maximize workspaces</b><br>Maximize workspaces by hiding all surrounding tool widgets");
+	maximize->setCheckable(true);
+	QObject::connect(maximize, SIGNAL(triggered(bool)), mainWindow, SLOT(maximizeWorkspaces(bool)));
 
 	this->minimizeButton = addAction(vipIcon("minimize.png"), tr("Minimize window"));
 	this->maximizeButton = addAction(vipIcon("maximize.png"), tr("Maximize window"));
@@ -3160,7 +3162,7 @@ void VipCloseBar::computeToolsMenu(QToolButton* button)
 		if (a->text().compare(global_color_scale, Qt::CaseInsensitive) == 0)
 			a->setChecked(true);
 	}
-	
+
 	QAction* global_color_map = menu->addAction(vipIcon("colormap.png"), "Videos: use global colormap");
 	global_color_map->setCheckable(true);
 	global_color_map->setChecked(VipGuiDisplayParamaters::instance()->globalColorScale());
@@ -3314,6 +3316,7 @@ public:
 	QToolButton generate;
 	QAction* generateAction;
 	VipDragMenu* generateMenu;
+	QMenu* connectedDevices;
 	QMenu* fileMenu;
 	QMenu* sessionMenu;
 	QToolButton dirButton;
@@ -3380,7 +3383,6 @@ VipMainWindow::VipMainWindow()
 	d_data->fileToolBar = new QToolBar();
 	d_data->fileToolBar->setIconSize(QSize(20, 20));
 	d_data->topToolBar.addWidget(d_data->fileToolBar);
-	  
 
 	d_data->topToolBar.setIconSize(QSize(20, 20));
 	d_data->fileButton.setToolTip(tr("<b>Open any files...</b><p>Open any kind of file (videos, signals, previous session,...) supported by Thermavip</p>"));
@@ -3412,7 +3414,7 @@ VipMainWindow::VipMainWindow()
 
 	d_data->generate.setIcon(vipIcon("generate_signals.png"));
 	// d_data->generate.setText("Generate");
-	d_data->generate.setToolTip("Generate a signal, a sequential video device,...");
+	d_data->generate.setToolTip("<b>Generate signals</b><br>Generate signals from a script, a sequential video device, open a webcam...");
 	// d_data->generate.setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
 	d_data->generate.setPopupMode(QToolButton::InstantPopup);
 	d_data->generateMenu = new VipDragMenu(&d_data->generate);
@@ -3420,6 +3422,15 @@ VipMainWindow::VipMainWindow()
 	d_data->generate.setMenu(d_data->generateMenu);
 	d_data->generateAction = d_data->fileToolBar->addWidget(&d_data->generate);
 	d_data->generateAction->setObjectName("GenerateButton");
+
+#ifdef VIP_WITH_FFMPEG
+	QStringList lst = VipMPEGLoader::listDevices();
+	d_data->connectedDevices = d_data->generateMenu->addMenu(vipIcon("webcam.png"), "Open a connected camera");
+	for (const QString& d : lst)
+		d_data->connectedDevices->addAction(d);
+	connect(d_data->connectedDevices, SIGNAL(triggered(QAction*)), this, SLOT(openVideoStream(QAction*)));
+	d_data->generateMenu->addSeparator();
+#endif
 
 	// Add the concatenate videos generator
 	connect(d_data->generateMenu->addAction("Concatenate videos/images..."), SIGNAL(triggered(bool)), this, SLOT(concatenateVideos()));
@@ -3442,7 +3453,7 @@ VipMainWindow::VipMainWindow()
 	d_data->searchWidget->setLayout(hlay);
 	// Add search line edit
 	d_data->searchLineEdit = new VipSearchLineEdit();
-	//d_data->searchLineEdit->setMinimumWidth(600);
+	// d_data->searchLineEdit->setMinimumWidth(600);
 	d_data->searchLineEdit->setMinimumHeight(20);
 
 	// d_data->searchLineEdit->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
@@ -3619,6 +3630,26 @@ void VipMainWindow::sessionTriggered(QAction* act)
 	QString file = vipGetUserPerspectiveDirectory() + act->text() + ".session";
 	if (QFileInfo(file).exists())
 		loadSession(file);
+}
+
+// open webcams
+void VipMainWindow::openVideoStream(QAction* action)
+{
+#ifdef VIP_WITH_FFMPEG
+	VipDisplayPlayerArea* wks = displayArea()->currentDisplayPlayerArea();
+	if (!wks)
+		displayArea()->addWidget(wks = new VipDisplayPlayerArea());
+
+	VipProcessingPool* pool = wks->processingPool();
+
+	VipMPEGLoader* loader = new VipMPEGLoader(pool);
+	if (!loader->open("video=" + action->text(), "dshow")) {
+		delete loader;
+		VIP_LOG_ERROR("Cannot open video stream: " + action->text());
+		return;
+	}
+	this->openDevices(VipIODeviceList() << loader, nullptr);
+#endif
 }
 
 QAction* VipMainWindow::addToolWidget(VipToolWidget* widget, const QIcon& icon, const QString& text, bool set_tool_icon)
@@ -4342,11 +4373,11 @@ void VipMainWindow::setFlatHistogramStrength()
 
 void VipMainWindow::tabChanged()
 {
-	if (VipDisplayPlayerArea* area = displayArea()->currentDisplayPlayerArea()) {
+	/* if (VipDisplayPlayerArea* area = displayArea()->currentDisplayPlayerArea()) {
 		int num_cols = area->maxColumns();
 		if (num_cols != closeBar()->maxCols->value())
 			closeBar()->maxCols->setValue(num_cols);
-	}
+	}*/
 }
 
 void VipMainWindow::finalizeToolsToolBar()
@@ -4433,7 +4464,7 @@ void VipMainWindow::mouseDoubleClickEvent(QMouseEvent*)
 	QRectF inner = geometry().adjusted(30, 30, -30, -30);
 	if (inner.contains(QCursor::pos()))
 		return; // nothing to do
-	
+
 	if (isMaximized())
 		showNormal();
 	else
@@ -4728,7 +4759,6 @@ void VipMainWindow::toggleWorkspaceFlatHistogram()
 	}
 }
 
-
 void VipMainWindow::concatenateVideos()
 {
 	VipConcatenateVideosOpenEditor* ed = new VipConcatenateVideosOpenEditor();
@@ -4775,7 +4805,7 @@ void VipMainWindow::closeEvent(QCloseEvent* evt)
 
 	// only ask for saving session if there is at least one SubWindow left
 	if (lst.size() > 0 && d_data->sessionSavingEnabled) {
-		int res = vipQuestion( "Save session", "Do you want to save your session?", QMessageBox::Yes | QMessageBox::No | QMessageBox::Cancel);
+		int res = vipQuestion("Save session", "Do you want to save your session?", QMessageBox::Yes | QMessageBox::No | QMessageBox::Cancel);
 		if (res == QMessageBox::Yes) {
 			saveSession(vipGetDataDirectory() + "last_session.session");
 		}
@@ -4821,7 +4851,7 @@ bool VipMainWindow::currentTabDestroying() const
 	return d_data->currentTabDestroy;
 }
 
-static void open_widgets(VipMainWindow* win, const QList<QWidget*>& widgets, VipDisplayPlayerArea * wks = nullptr)
+static void open_widgets(VipMainWindow* win, const QList<QWidget*>& widgets, VipDisplayPlayerArea* wks = nullptr)
 {
 	if (!widgets.size())
 		return;
@@ -4879,8 +4909,7 @@ QList<VipAbstractPlayer*> VipMainWindow::openDevices(const QList<VipIODevice*>& 
 {
 	if (!area)
 		area = displayArea()->currentDisplayPlayerArea();
-	if(!area)
-	{
+	if (!area) {
 		area = new VipDisplayPlayerArea();
 		displayArea()->addWidget(area);
 	}
@@ -4944,7 +4973,7 @@ QList<VipAbstractPlayer*> VipMainWindow::openDevices(const QList<VipIODevice*>& 
 		// Add paths to history
 		VipDeviceOpenHelper::addToHistory(paths);
 
-		open_widgets(this, vipListCast<QWidget*>(players),area);
+		open_widgets(this, vipListCast<QWidget*>(players), area);
 	}
 
 	return res;
@@ -4954,7 +4983,7 @@ bool VipMainWindow::openPlayers(const QList<VipAbstractPlayer*> players, VipDisp
 {
 	if (!wks)
 		wks = displayArea()->currentDisplayPlayerArea();
-	if(!wks) {
+	if (!wks) {
 		wks = new VipDisplayPlayerArea();
 		displayArea()->addWidget(wks);
 	}
@@ -4975,8 +5004,7 @@ QList<VipAbstractPlayer*> VipMainWindow::openPaths(const VipPathList& paths, Vip
 	if (!area)
 		area = displayArea()->currentDisplayPlayerArea();
 
-	if(!area)
-	{
+	if (!area) {
 		area = new VipDisplayPlayerArea();
 		displayArea()->addWidget(area);
 	}
@@ -4984,7 +5012,7 @@ QList<VipAbstractPlayer*> VipMainWindow::openPaths(const VipPathList& paths, Vip
 	if (!area && !(paths.size() == 1 && (QFileInfo(paths.first().canonicalPath()).suffix() == "session" || QFileInfo(paths.first().canonicalPath()).suffix() == "hsession"))) {
 		VIP_LOG_ERROR("Cannot open paths: you need to select a valid Workspace first");
 		if (_vip_openPathShowDialogOnError)
-			vipWarning( "Error", "Cannot open paths: you need to select a valid Workspace first");
+			vipWarning("Error", "Cannot open paths: you need to select a valid Workspace first");
 		return QList<VipAbstractPlayer*>();
 	}
 
@@ -5362,17 +5390,6 @@ void VipMainWindow::setMargin(int m)
 	// Enable mouse tracking if margin > 0
 	// in order to display the right cursor for resizing
 	this->setMouseTracking(m > 0);
-}
-
-void VipMainWindow::setMaxColumnsForWorkspace(int maxc)
-{
-	if (VipDisplayPlayerArea* area = displayArea()->currentDisplayPlayerArea()) {
-
-		closeBar()->maxCols->blockSignals(true);
-		closeBar()->maxCols->setValue(maxc);
-		closeBar()->maxCols->blockSignals(false);
-		area->setMaxColumns(maxc);
-	}
 }
 
 void VipMainWindow::maximizeWorkspaces(bool enable)

@@ -226,6 +226,10 @@ public:
 	};
 	typedef QFlags<Operation> Operations;
 
+	/// @brief Set the default maximum number of columns for new workspaces.
+	static void setDefaultMaximumWidth(int);
+	static int defaultMaximumWidth();
+
 	VipDisplayPlayerArea(QWidget* parent = nullptr);
 	~VipDisplayPlayerArea();
 
@@ -588,8 +592,6 @@ public:
 	// Get the widgets/actions available within this tool bar.
 	// This is mostly usefull to insert new actions within plugins.
 
-	QSpinBox* maxColumsWidget() { return maxCols; }
-	QAction* maxColumsAction() { return maxColsAction; }
 	QAction* maximizeOrShowNormalAction() { return maximize; }
 	QAction* gloablHelpAction() { return help; }
 	QToolButton* gloablHelpButton() { return helpButton; }
@@ -606,8 +608,6 @@ private Q_SLOTS:
 
 private:
 	QAction* spacer;
-	QSpinBox* maxCols;
-	QAction* maxColsAction;
 	QAction* maximize;
 
 	QToolButton* toolsButton;
@@ -796,9 +796,6 @@ public Q_SLOTS:
 	/// in order to have the widest possible area to display signals.
 	void maximizeWorkspaces(bool enable);
 
-	/// @brief Set the maximum number of columns for the current workspace.
-	void setMaxColumnsForWorkspace(int);
-
 	/// @brief Enable/disable the saving session feature
 	void setSessionSavingEnabled(bool enable);
 
@@ -850,6 +847,7 @@ private Q_SLOTS:
 	void openSharedMemoryFiles();
 	void computeSessions();
 	void sessionTriggered(QAction*);
+	void openVideoStream(QAction* action);
 	void showHelpCustom();
 	void restoreDockState(const QByteArray& state);
 	void applicationStateChanged(Qt::ApplicationState state);

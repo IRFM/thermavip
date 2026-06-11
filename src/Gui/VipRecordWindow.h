@@ -116,26 +116,6 @@ private:
 
 class VipMainWindow;
 
-/// @brief Open video stream widget
-class VIP_GUI_EXPORT OpenStream : public QWidget
-{
-	Q_OBJECT
-
-public:
-	OpenStream();
-
-	QString path() const;
-	QStringList recentPaths() const;
-	void setRencentPaths(const QStringList& lst);
-private Q_SLOTS:
-	void openFilePath();
-	void open();
-
-private:
-	QComboBox m_paths;
-	QToolButton m_open;
-};
-
   /// @brief Register the record window feature to the main interface
 class VIP_GUI_EXPORT VipRegisterRecordWindow : public QObject
 {
@@ -148,7 +128,6 @@ public:
 
 public Q_SLOTS:
 	void setRecording(bool);
-	void openVideoStream(QAction* action);
 
 private:
 	VIP_DECLARE_PRIVATE_DATA();
