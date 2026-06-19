@@ -451,6 +451,7 @@ public:
 	bool dirty;
 	bool setAndApply;
 	bool inSessionLoading{ false };
+	int defaultWorkspaceMaximumWidth = VipDisplayPlayerArea::defaultMaximumWidth();
 	QString playerColorScale;
 	Vip::PlayerLegendPosition legendPosition;
 	VipValueToTime::DisplayType displayType;
@@ -1040,6 +1041,18 @@ int VipGuiDisplayParamaters::flatHistogramStrength() const
 	return d_data->flatHistogramStrength;
 }
 
+void VipGuiDisplayParamaters::setDefaultWorkspaceMaximumWidth(int w)
+{
+	if (w < 1)
+		w = 1;
+	d_data->defaultWorkspaceMaximumWidth = w;
+	VipDisplayPlayerArea::setDefaultMaximumWidth(w);
+}
+int VipGuiDisplayParamaters::defaultWorkspaceMaximumWidth() const
+{
+	return d_data->defaultWorkspaceMaximumWidth;
+}
+
 QString VipGuiDisplayParamaters::playerColorScale() const
 {
 	return d_data->playerColorScale;
@@ -1254,6 +1267,14 @@ static void serialize_VipGuiDisplayParamaters(VipGuiDisplayParamaters* inst, Vip
 				return;
 
 			arch.save();
+			int defaultWorkspaceMaximumWidth = 3;
+			if (arch.content("defaultWorkspaceMaximumWidth", defaultWorkspaceMaximumWidth)) {
+				inst->setDefaultWorkspaceMaximumWidth(defaultWorkspaceMaximumWidth);
+			}
+			else
+				arch.restore();
+
+			arch.save();
 			QString skin;
 			bool diff_skin = true;
 			if (arch.content("skin", skin)) {
@@ -1406,6 +1427,7 @@ static void serialize_VipGuiDisplayParamaters(VipGuiDisplayParamaters* inst, Vip
 	else if (arch.mode() == VipArchive::Write) {
 		if (arch.start("VipGuiDisplayParamaters")) {
 			arch.content("version", QString(VIP_VERSION));
+			arch.content("defaultWorkspaceMaximumWidth", inst->defaultWorkspaceMaximumWidth());
 			arch.content("skin", _skin);
 			// vip_debug("save: %s\n", _skin.toLatin1().data());
 
@@ -1468,7 +1490,7 @@ static int registerVipGuiDisplayParamaters()
 {
 	return 0;
 }
-static int _registerVipGuiDisplayParamaters = registerVipGuiDisplayParamaters();
+static int _registerVipGuiDisplayParamaters = vipStaticInit("registerVipGuiDisplayParamaters",registerVipGuiDisplayParamaters);
 
 VipFunctionDispatcher<3>& vipFDCreateDisplayFromData()
 {

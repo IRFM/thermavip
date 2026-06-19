@@ -475,7 +475,7 @@ void VipPlotVTKObject::setHighlightColor(const QColor& c)
 QColor VipPlotVTKObject::highlightColor() const 
 {
 	if (hasHighlightColor())
-		return vipToQColor(d_data->highlightColor);
+		return toQColor(d_data->highlightColor);
 	return QColor(Qt::transparent);
 }
 bool VipPlotVTKObject::hasHighlightColor() const
@@ -582,7 +582,7 @@ void VipPlotVTKObject::applyPropertiesInternal()
 {
 	QColor c = d_data->color;
 	if (!isSelected() && hasHighlightColor()) {
-		c = vipToQColor(d_data->highlightColor);
+		c = toQColor(d_data->highlightColor);
 	}
 	else if (isSelected())
 		c = d_data->selectedColor;
@@ -1141,4 +1141,4 @@ static int registerObjects()
 	return 0;
 }
 
-static bool _registerObjects = vipAddInitializationFunction(registerObjects);
+static int _registerObjects = vipStaticInit("vipAddInitializationFunction(registerObjects)", []() { vipAddInitializationFunction(registerObjects); });

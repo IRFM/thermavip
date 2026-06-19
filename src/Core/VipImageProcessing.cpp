@@ -125,24 +125,7 @@ VipNDArray VipRotate90Right::applyProcessing(const VipNDArray& ar)
 		return VipNDArray();
 	}
 
-	VipNDArray out;
-
-	if (ar.isComplex()) {
-		out = VipNDArray(qMetaTypeId<complex_d>(), vipVector(ar.shape(1), ar.shape(0)));
-		VipNDArray in = ar.toComplexDouble();
-		rotate90Right(VipNDArrayTypeView<complex_d>(in), VipNDArrayTypeView<complex_d>(out));
-	}
-	else if (vipIsImageArray(ar)) {
-		QImage imout = vipToImage(ar).transformed(QTransform().rotate(90));
-		out = vipToArray(imout);
-	}
-	else {
-		QTransform tr;
-		tr.rotate(90);
-		//out = vipTransform<Vip::TransformBoundingRect, Vip::NoInterpolation>(ar, tr, 0, QPointF(0, -1));
-		out = vipTransform<Vip::TransformBoundingRect, Vip::NoInterpolation>(ar, tr, 0);
-	}
-
+	VipNDArray out = vipTransform<Vip::TransformBoundingRect, Vip::NoInterpolation>(ar, QTransform().rotate(90), 0);
 	return out;
 }
 
@@ -154,23 +137,10 @@ VipNDArray VipRotate90Left::applyProcessing(const VipNDArray& ar)
 		return VipNDArray();
 	}
 
-	VipNDArray out;
-
-	if (ar.isComplex()) {
-		out = VipNDArray(qMetaTypeId<complex_d>(), vipVector(ar.shape(1), ar.shape(0)));
-		VipNDArray in = ar.toComplexDouble();
-		rotate90Left(VipNDArrayTypeView<complex_d>(in), VipNDArrayTypeView<complex_d>(out));
-	}
-	else if (vipIsImageArray(ar)) {
-		QImage imout = vipToImage(ar).transformed(QTransform().rotate(-90));
-		out = vipToArray(imout);
-	}
-	else {
-		QTransform tr;
-		tr.rotate(-90);
-		//out = vipTransform<Vip::TransformBoundingRect, Vip::NoInterpolation>(ar, tr, 0, QPointF(-1, 0));
-		out = vipTransform<Vip::TransformBoundingRect, Vip::NoInterpolation>(ar, tr, 0);
-	}
+	QTransform tr;
+	tr.rotate(-90);
+	// out = vipTransform<Vip::TransformBoundingRect, Vip::NoInterpolation>(ar, tr, 0, QPointF(-1, 0));
+	VipNDArray out = vipTransform<Vip::TransformBoundingRect, Vip::NoInterpolation>(ar, QTransform().rotate(-90), 0);
 
 	return out;
 }
@@ -182,23 +152,10 @@ VipNDArray VipRotate180::applyProcessing(const VipNDArray& ar)
 		return VipNDArray();
 	}
 
-	VipNDArray out;
-
-	if (ar.isComplex()) {
-		out = VipNDArray(qMetaTypeId<complex_d>(), ar.shape());
-		VipNDArray in = ar.toComplexDouble();
-		rotate180(VipNDArrayTypeView<complex_d>(in), VipNDArrayTypeView<complex_d>(out));
-	}
-	else if (vipIsImageArray(ar)) {
-		QImage imout = vipToImage(ar).transformed(QTransform().rotate(180));
-		out = vipToArray(imout);
-	}
-	else {
-		QTransform tr;
-		tr.rotate(180);
-		//out = vipTransform<Vip::TransformBoundingRect, Vip::NoInterpolation>(ar, tr, 0, QPointF(-1, -1));
-		out = vipTransform<Vip::TransformBoundingRect, Vip::NoInterpolation>(ar, tr, 0);
-	}
+	QTransform tr;
+	tr.rotate(180);
+	// out = vipTransform<Vip::TransformBoundingRect, Vip::NoInterpolation>(ar, tr, 0, QPointF(-1, -1));
+	VipNDArray out = vipTransform<Vip::TransformBoundingRect, Vip::NoInterpolation>(ar, tr, 0);
 
 	return out;
 }
@@ -210,27 +167,9 @@ VipNDArray VipMirrorH::applyProcessing(const VipNDArray& ar)
 		return VipNDArray();
 	}
 
-	VipNDArray out;
-
-	if (ar.isComplex()) {
-		out = VipNDArray(qMetaTypeId<complex_d>(), ar.shape());
-		VipNDArray in = ar.toComplexDouble();
-		mirrorH(VipNDArrayTypeView<complex_d>(in), VipNDArrayTypeView<complex_d>(out));
-	}
-	else if (vipIsImageArray(ar)) {
-#if QT_VERSION < QT_VERSION_CHECK(6, 9, 0)
-		QImage imout = vipToImage(ar).mirrored(true, false);
-#else
-		QImage imout = vipToImage(ar).flipped(Qt::Horizontal);
-#endif
-		out = vipToArray(imout);
-	}
-	else {
-		QTransform tr;
-		tr.scale(-1, 1);
-//		out = vipTransform<Vip::TransformBoundingRect, Vip::NoInterpolation>(ar, tr, 0, QPointF(-1, 0));
-		out = vipTransform<Vip::TransformBoundingRect, Vip::NoInterpolation>(ar, tr, 0);
-	}
+	QTransform tr;
+	tr.scale(-1, 1);
+	VipNDArray out = vipTransform<Vip::TransformBoundingRect, Vip::NoInterpolation>(ar, tr, 0);
 
 	return out;
 }
@@ -242,28 +181,9 @@ VipNDArray VipMirrorV::applyProcessing(const VipNDArray& ar)
 		return VipNDArray();
 	}
 
-	VipNDArray out;
-
-	if (ar.isComplex()) {
-		out = VipNDArray(qMetaTypeId<complex_d>(), ar.shape());
-		VipNDArray in = ar.toComplexDouble();
-		mirrorV(VipNDArrayTypeView<complex_d>(in), VipNDArrayTypeView<complex_d>(out));
-	}
-	else if (vipIsImageArray(ar)) {
-#if QT_VERSION < QT_VERSION_CHECK(6, 9, 0)
-		QImage imout = vipToImage(ar).mirrored(false, true);
-#else
-		QImage imout = vipToImage(ar).flipped(Qt::Vertical);
-#endif
-
-		out = vipToArray(imout);
-	}
-	else {
-		QTransform tr;
-		tr.scale(1, -1);
-		//out = vipTransform<Vip::TransformBoundingRect, Vip::NoInterpolation>(ar, tr, 0, QPointF(0, -1));
-		out = vipTransform<Vip::TransformBoundingRect, Vip::NoInterpolation>(ar, tr, 0);
-	}
+	QTransform tr;
+	tr.scale(1, -1);
+	VipNDArray out = vipTransform<Vip::TransformBoundingRect, Vip::NoInterpolation>(ar, tr, 0);
 
 	return out;
 }
@@ -305,8 +225,6 @@ void VipImageCrop::setEndPosition(const VipNDArrayShape& sh)
 		lst.append(QString::number(sh[i]));
 	propertyName("Bottom_right")->setData(lst.join(","));
 }
-
-
 
 QTransform VipImageCrop::imageTransform(bool* from_center) const
 {
@@ -380,15 +298,11 @@ void VipImageCrop::apply()
 	cropping(ar, start, end);
 
 	VipNDArray out;
-	if (vipIsImageArray(ar)) {
-		out = vipToArray(vipToImage(ar).copy(QRect(QPoint(start[1], start[0]), QPoint(end[1] - 1, end[0] - 1))));
-	}
-	else {
-		VipNDArrayShape shape;
-		for (int i = 0; i < start.size(); ++i)
-			shape.push_back(end[i] - start[i]);
-		out = ar.mid(start, shape).convert(ar.dataType());
-	}
+	VipNDArrayShape shape;
+	for (int i = 0; i < start.size(); ++i)
+		shape.push_back(end[i] - start[i]);
+	out = ar.mid(start, shape).convert(ar.dataType());
+	
 
 	VipAnyData anyout = create(QVariant::fromValue(out));
 	anyout.setTime(any.time());
@@ -492,8 +406,7 @@ static int registerTypes()
 	QMetaType::registerConverter<TransformList, QTransform>(toQTransform);
 	return 0;
 }
-static int _registerTypes = registerTypes();
-
+static int _registerTypes = vipStaticInit("registerTypes", registerTypes);
 
 VipNDArray VipGenericImageTransform::applyProcessing(const VipNDArray& ar)
 {
@@ -525,7 +438,7 @@ VipNDArray VipGenericImageTransform::applyProcessing(const VipNDArray& ar)
 	else if (vipCanConvert(ar.dataType(), qMetaTypeId<complex_d>())) {
 		if (size == Vip::TransformBoundingRect) {
 			if (interp == Vip::NoInterpolation)
-				out = vipTransform<Vip::TransformBoundingRect, Vip::NoInterpolation>(ar, tr, QVariant::fromValue( propertyAt(3)->value<complex_d>()));
+				out = vipTransform<Vip::TransformBoundingRect, Vip::NoInterpolation>(ar, tr, QVariant::fromValue(propertyAt(3)->value<complex_d>()));
 			else
 				out = vipTransform<Vip::TransformBoundingRect, Vip::LinearInterpolation>(ar, tr, QVariant::fromValue(propertyAt(3)->value<complex_d>()));
 		}
@@ -536,7 +449,7 @@ VipNDArray VipGenericImageTransform::applyProcessing(const VipNDArray& ar)
 				out = vipTransform<Vip::SrcSize, Vip::LinearInterpolation>(ar, tr, QVariant::fromValue(propertyAt(3)->value<complex_d>()));
 		}
 	}
-	else if (vipIsImageArray(ar)) {
+	else if (ar.isRGB()) {
 		if (size == Vip::TransformBoundingRect) {
 			if (interp == Vip::NoInterpolation)
 				out = vipTransform<Vip::TransformBoundingRect, Vip::NoInterpolation>(ar, tr, QVariant::fromValue(propertyAt(3)->value<VipRGB>()));

@@ -209,7 +209,7 @@ static int registerPath()
 	vipRegisterArchiveStreamOperators<VipPathList>();
 	return 0;
 }
-static int _registerPath = vipAddInitializationFunction(registerPath);
+static int _registerPath = vipStaticInit("vipAddInitializationFunction(registerPath)", []() { vipAddInitializationFunction(registerPath); });
 
 #include <qthread.h>
 
@@ -1121,6 +1121,7 @@ public:
 			input += p.readAllStandardOutput();
 			if (out)
 				*out += input;
+			//printf("'%s'\n", input.toLatin1().data());
 
 			if (input.contains(/*"The host key is not cached"*/ "y/n")) {
 				p.write("y\n");
@@ -1129,8 +1130,9 @@ public:
 			}
 			if (input.contains("psftp> "))
 				return true;
-			if (input.contains("closed", Qt::CaseInsensitive) || input.contains("error", Qt::CaseInsensitive))
+			if (input.contains("closed", Qt::CaseInsensitive) || input.contains("error", Qt::CaseInsensitive)) {
 				return false;
+			}
 			if (input.contains("denied", Qt::CaseInsensitive))
 				return false;
 
@@ -1616,4 +1618,4 @@ static int registerVipMapFileSystem()
 	return 0;
 }
 
-static int _registerVipMapFileSystem = registerVipMapFileSystem();
+static int _registerVipMapFileSystem = vipStaticInit("registerVipMapFileSystem",registerVipMapFileSystem);

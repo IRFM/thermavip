@@ -32,16 +32,31 @@
 #ifndef VIP_HASH_H
 #define VIP_HASH_H
 
+#include <type_traits>
+#include <utility>
+
 #include <QtEndian>
+#include <qhash.h>
+
 #include "VipMath.h"
+#include "VipRgb.h"
+#include "VipComplex.h"
 
 /**
  Strip down version of KOMIHASH hash function.
  See https://github.com/avaneev/komihash/tree/main for more details.
  */
 VIP_DATA_TYPE_EXPORT size_t vipHashBytesKomihash(const void* Msg0, size_t MsgLen) noexcept;
+/**
+Murmur64 hash algorithm
+*/
 VIP_DATA_TYPE_EXPORT size_t vipHashBytesMurmur64(const void* Msg0, size_t MsgLen) noexcept;
 
+/**
+Compute the hash value of input bytes.
+Uses vipHashBytesKomihash if possible (having fast 128 bits multiplication),
+vipHashBytesMurmur64 otherwise.
+*/
 inline size_t vipHashBytes(const void* Msg0, size_t MsgLen) noexcept
 {
 #ifdef VIP_HAS_FAST_UMUL128
@@ -51,6 +66,9 @@ inline size_t vipHashBytes(const void* Msg0, size_t MsgLen) noexcept
 #endif
 }
 
+/**
+Combine hash values
+*/
 inline void vipHashCombine(size_t& seed, size_t h2) noexcept
 {
 #ifdef Q_PROCESSOR_X86_64
@@ -66,6 +84,74 @@ inline void vipHashCombine(size_t& seed, size_t h2) noexcept
 #else
 	seed ^= h2 + 0x9e3779b9 + (seed << 6) + (seed >> 2);
 #endif
+}
+
+
+namespace detail
+{
+	template<class T, class  = void>
+	struct SupportQHash : std::false_type
+	{
+	};
+	template<class T>
+	struct SupportQHash<T, std::void_t<decltype(qHash(std::declval<T&>(),0))>> : std::true_type
+	{
+	};
+}
+
+/**
+Compute the hash of given value.
+
+If input valuye is arithmetic, complex or VipRGB, a 128 bits multiplication is used (if possible).
+For other types, qHash is used if available. If not, std::hash is used instead.
+*/
+template<class T>
+inline size_t vipHashValue(const T& value)
+{
+	if constexpr (std::is_arithmetic_v<T>) {
+
+		std::uint64_t val;
+		if constexpr (sizeof(T) == 1)
+			val = (std::uint64_t)value;
+		else if constexpr (sizeof(T) == 2)
+			val = (std::uint64_t)value;
+		else {
+			if constexpr (std::is_integral_v<T>)
+				val = (std::uint64_t)value;
+			else {
+				val = 0;
+				memcpy(&val, &value, sizeof(T));
+			}
+		}
+#ifdef VIP_HAS_FAST_UMUL128
+		static constexpr std::uint64_t k = 0xde5fb9d2630458e9ULL;
+		std::uint64_t l, h;
+		vipUmul128((std::uint64_t)val, k, &l, &h);
+		return static_cast<size_t>(h + l);
+#else
+		std::uint64_t a = val;
+		a ^= a >> 23;
+		a *= 0x2127599bf4325c37ULL;
+		a ^= a >> 47;
+		return static_cast<size_t>(a);
+#endif
+	}
+	else if constexpr (VipIsRgb_v<T>) {
+		if constexpr (sizeof(T) == 4)
+			return vipHashValue(reinterpret_cast<const quint32&>(value));
+		else
+			return vipHashBytes(&value, sizeof(value));
+	}
+	else if constexpr (VipIsComplex_v<T>) {
+		size_t h = vipHashValue(value.real());
+		vipHashCombine(h, vipHashValue(value.imag()));
+		return h;
+	}
+	else if constexpr (detail::SupportQHash<T>::value) {
+		return qHash(value, 0);
+	}
+	else
+		return std::hash<T>{}(value);
 }
 
 #endif

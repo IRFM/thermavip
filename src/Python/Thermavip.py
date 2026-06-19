@@ -998,6 +998,17 @@ def top_level(player):
     """
     return call_thermavip_fun('top_level',(player,))
 
+def load(path, time = None):
+    """
+    Loads and returns the data from given path.
+    The path could be any path supported by Thermavip.
+    The returned object is a dictionary containing:
+    - All attributes of the loaded path
+    - The data itself with the key 'data'
+    - The data time with the key 'time'.
+    """
+    return call_thermavip_fun('load',(path,time))
+
 def get(player, data_name = ""):
     """
     Returns the data (usually a numpy array) associated to given player and item data name.
@@ -1006,6 +1017,12 @@ def get(player, data_name = ""):
     The returned data will be the one of the first item matching the partial name.
     """
     return call_thermavip_fun('get',(player,data_name))
+
+def clicked_point():
+    """
+    Returns the last curve clicked point (list(x,y))
+    """
+    return call_thermavip_fun('clicked_point',tuple())
 
 def get_attribute(player, attribute_name, data_name = ""):
     """

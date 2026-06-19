@@ -65,7 +65,7 @@ static int registerBoxKeyWords()
 	}
 	return 0;
 }
-static int _registerBoxKeyWords = registerBoxKeyWords();
+static int _registerBoxKeyWords = vipStaticInit("registerBoxKeyWords",registerBoxKeyWords);
 
 static int registerAbstractScaleKeyWords()
 {
@@ -102,7 +102,7 @@ static int registerAbstractScaleKeyWords()
 	}
 	return 0;
 }
-static int _registerAbstractScaleKeyWords = registerAbstractScaleKeyWords();
+static int _registerAbstractScaleKeyWords = vipStaticInit("registerAbstractScaleKeyWords",registerAbstractScaleKeyWords);
 
 class VipBoxGraphicsWidget::PrivateData
 {
@@ -351,6 +351,8 @@ public:
 	VipAbstractScaleDraw* scaleDraw;
 	VipScaleEngine* scaleEngine;
 	VipInterval computedInterval;
+	VipInterval minimumBounds;
+	VipInterval maximumBounds;
 
 	qint64 lastScaleIntervalUpdate;
 	vip_double lastScaleIntervalWidth;
@@ -442,6 +444,13 @@ void VipAbstractScale::computeScaleDiv()
 		return;
 
 	VipInterval bounds = itemsInterval();
+
+	if (d_data->minimumBounds.isValid()) {
+		bounds = bounds.unite(d_data->minimumBounds);
+	}
+	if (d_data->maximumBounds.isValid()) {
+		bounds = bounds.intersect(d_data->maximumBounds);
+	}
 
 	if (bounds != d_data->computedInterval) {
 		if (bounds.width() == 0) {
@@ -902,6 +911,33 @@ const VipScaleDiv& VipAbstractScale::scaleDiv() const
 	return d_data->scaleDraw->scaleDiv();
 }
 
+void VipAbstractScale::setMinimumBounds(const VipInterval& inter)
+{
+	if (d_data->minimumBounds != inter) {
+		d_data->minimumBounds = inter;
+		if (isAutoScale())
+			computeScaleDiv();
+	}
+}
+VipInterval VipAbstractScale::minimumBounds() const
+{
+	return d_data->minimumBounds;
+}
+
+
+void VipAbstractScale::setMaximumBounds(const VipInterval& inter)
+{
+	if (d_data->maximumBounds != inter) {
+		d_data->maximumBounds = inter;
+		if (isAutoScale())
+			computeScaleDiv();
+	}
+}
+VipInterval VipAbstractScale::maximumBounds() const
+{
+	return d_data->maximumBounds;
+}
+
 int VipAbstractScale::addScaleText(int id, const VipScaleText& text)
 {
 	return scaleDraw()->addScaleText(id, text);
@@ -930,7 +966,7 @@ void VipAbstractScale::setScaleDraw(VipAbstractScaleDraw* scaleDraw)
 
 		scaleDraw->setTransformation(transform);
 		scaleDraw->enableLabelOverlapping(sd->labelOverlappingEnabled());
-		scaleDraw->setAdditionalLabelOverlapp(sd->additionalLabelOverlapp());
+		//scaleDraw->setAdditionalLabelOverlapp(sd->additionalLabelOverlapp());
 	}
 
 	delete d_data->scaleDraw;
@@ -1700,4 +1736,4 @@ static int register_types()
 	vipRegisterArchiveStreamOperators<VipAbstractScale*>();
 	return 0;
 }
-static int _register_types = register_types();
+static int _register_types = vipStaticInit("register_types",register_types);

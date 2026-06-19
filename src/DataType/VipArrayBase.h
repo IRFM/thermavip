@@ -46,6 +46,7 @@
 #include "VipLongDouble.h"
 #include "VipRgb.h"
 #include "VipUtils.h"
+#include "VipHash.h"
 
 namespace Vip
 {
@@ -68,7 +69,7 @@ namespace Vip
 }
 
 /// Custom deleter for VipNDArrayHandle
-using vip_deleter_type = std::function<void(void*)>;
+using VipDeleteFunction = std::function<void(void*)>;
 
 namespace detail
 {
@@ -122,12 +123,6 @@ struct VipIsReductor
 	static const bool value = std::is_base_of<detail::BaseReductor, T>::value;
 };
 
-/// @brief Check whether all parameters are of integral type
-template<class... T>
-struct VipIsAllIntegers
-{
-	static constexpr bool value = (std::is_integral_v<T> && ...);
-};
 
 struct VipNDArrayHandle;
 
@@ -153,7 +148,6 @@ struct VIP_DATA_TYPE_EXPORT VipNDArrayHandle : public QSharedData
 		Null = 10000,
 		Standard,
 		MultiArray,
-		Image,
 		View,
 		User = 10010,
 	};
@@ -167,7 +161,7 @@ struct VIP_DATA_TYPE_EXPORT VipNDArrayHandle : public QSharedData
 	// the array data
 	void* opaque = nullptr;
 	// custom deleter function, only used with StdHandle
-	vip_deleter_type deleter;
+	VipDeleteFunction deleter;
 
 	VipNDArrayHandle() noexcept;
 	/// Destructor.
@@ -204,6 +198,9 @@ struct VIP_DATA_TYPE_EXPORT VipNDArrayHandle : public QSharedData
 	virtual bool canExport(int type) const = 0;
 	/// Returns true if this handle can import into its data from an array of given pixel type.
 	virtual bool canImport(int type) const = 0;
+
+	/// @brief Returns a hash value for internal bytes
+	virtual size_t hashValue() const = 0;
 
 	/// Export this handle data into another one.
 	///  \param this_shape shape of the data block to export
@@ -263,6 +260,7 @@ namespace detail
 		virtual NullHandle* copy() const { return (NullHandle*)vipNullHandlePtr(); }
 		virtual void* dataPointer(const VipNDArrayShape&) const { return nullptr; }
 		virtual int handleType() const { return Null; }
+		virtual size_t hashValue() const { return 0; }
 		virtual bool reshape(const VipNDArrayShape&) { return false; }
 		virtual bool realloc(const VipNDArrayShape&) { return false; }
 		virtual const char* dataName() const { return nullptr; }
@@ -397,11 +395,28 @@ namespace detail
 	};
 }
 
-/// Shared pointer type of #VipNDArrayHandle using COW
-typedef detail::SharedDataPointer<VipNDArrayHandle> SharedHandle;
+/// Shared pointer type of VipNDArrayHandle using Copy On Write
+using VipSharedHandle = detail::SharedDataPointer<VipNDArrayHandle>;
 
 namespace detail
 {
+	template<class Stream, class T, class  = void>
+	struct IsOstreamable : std::false_type
+	{
+	};
+	template<class Stream, class T>
+	struct IsOstreamable<Stream, T, std::void_t<decltype(std::declval<Stream&>() << std::declval<T&>())>> : std::true_type
+	{
+	};
+	template<class Stream, class T, class = void>
+	struct IsIstreamable : std::false_type
+	{
+	};
+	template<class Stream, class T>
+	struct IsIstreamable<Stream, T, std::void_t<decltype(std::declval<Stream&>() >> std::declval<T&>())>> : std::true_type
+	{
+	};
+
 
 	// helper struct
 	// special treatment for char type which is not handled properly by QDataStream
@@ -411,40 +426,19 @@ namespace detail
 		QDataStream* stream;
 		U operator()(const U& value) const
 		{
-			(*stream) << value;
+			// Handle missing operators for char, long and unsigned long
+			if constexpr (std::is_same_v<U,char>)
+				(*stream) << (qint8)value;
+			else if constexpr (std::is_same_v<U, long>)
+				(*stream) << (qint32)value;
+			else if constexpr (std::is_same_v<U, unsigned long>)
+				(*stream) << (quint32)value;
+			else
+				(*stream) << value;
 			return value;
 		}
 	};
-	template<>
-	struct Ostream<char>
-	{
-		QDataStream* stream;
-		char operator()(char value) const
-		{
-			(*stream) << (qint8)value;
-			return value;
-		}
-	};
-	template<>
-	struct Ostream<long>
-	{
-		QDataStream* stream;
-		long operator()(long value) const
-		{
-			(*stream) << (qint32)value;
-			return value;
-		}
-	};
-	template<>
-	struct Ostream<unsigned long>
-	{
-		QDataStream* stream;
-		unsigned long operator()(unsigned long value) const
-		{
-			(*stream) << (quint32)value;
-			return value;
-		}
-	};
+	
 
 	template<class U>
 	struct Istream
@@ -452,42 +446,26 @@ namespace detail
 		QDataStream* stream;
 		U operator()(const U&) const
 		{
-			U tmp;
-			(*stream) >> tmp;
-			return tmp;
-		}
-	};
-	template<>
-	struct Istream<char>
-	{
-		QDataStream* stream;
-		char operator()(const char&) const
-		{
-			qint8 tmp;
-			(*stream) >> tmp;
-			return tmp;
-		}
-	};
-	template<>
-	struct Istream<long>
-	{
-		QDataStream* stream;
-		long operator()(const long&) const
-		{
-			int tmp;
-			(*stream) >> tmp;
-			return tmp;
-		}
-	};
-	template<>
-	struct Istream<unsigned long>
-	{
-		QDataStream* stream;
-		unsigned long operator()(const unsigned long&) const
-		{
-			quint32 tmp;
-			(*stream) >> tmp;
-			return tmp;
+			if constexpr (std::is_same_v<U, char>) {
+				qint8 tmp;
+				(*stream) >> tmp;
+				return tmp;
+			}
+			else if constexpr (std::is_same_v<U, long>) {
+				qint32 tmp;
+				(*stream) >> tmp;
+				return (long)tmp;
+			}
+			else if constexpr (std::is_same_v<U, unsigned long>) {
+				quint32 tmp;
+				(*stream) >> tmp;
+				return (unsigned long)tmp;
+			}
+			else {
+				U tmp;
+				(*stream) >> tmp;
+				return tmp;
+			}
 		}
 	};
 
@@ -503,7 +481,7 @@ namespace detail
 	template<class T>
 	struct StdHandle : public VipNDArrayHandle
 	{
-		bool own; // tells if the data pointer should be deleted
+		bool own = true; // tells if the data pointer should be deleted
 
 		void deleteInternal() noexcept
 		{
@@ -516,12 +494,9 @@ namespace detail
 			opaque = nullptr;
 		}
 
-		StdHandle() noexcept
-		  : own(true)
-		{
-		}
+		StdHandle() noexcept = default;
+		 
 		StdHandle(const StdHandle& other)
-		  : own(true)
 		{
 			shape = other.shape;
 			strides = other.strides;
@@ -553,16 +528,15 @@ namespace detail
 
 		virtual bool realloc(const VipNDArrayShape& new_shape)
 		{
-			if (opaque) {
+			if (opaque) 
 				deleteInternal();
-			}
 
 			shape = new_shape;
 			size = vipComputeDefaultStrides<Vip::FirstMajor>(shape, strides);
 			if (size)
 				opaque = new T[size];
 			// remove deleter
-			deleter = vip_deleter_type();
+			deleter = VipDeleteFunction();
 			return true;
 		}
 		virtual void* opaqueForPos(void* op, const VipNDArrayShape& pos) const { return static_cast<T*>(op) + vipFlatOffset<false>(strides, pos); }
@@ -572,6 +546,13 @@ namespace detail
 		virtual int dataType() const { return qMetaTypeId<T>(); }
 		virtual bool canExport(int data_type) const { return vipCanConvertStdTypes(qMetaTypeId<T>(), data_type) || vipCanConvert(qMetaTypeId<T>(), data_type); }
 		virtual bool canImport(int data_type) const { return vipCanConvertStdTypes(data_type, qMetaTypeId<T>()) || vipCanConvert(data_type, qMetaTypeId<T>()); }
+
+		virtual size_t hashValue() const
+		{ 
+			if (opaque)
+				return vipHashBytes(opaque, size * sizeof(T));
+			return 0;
+		}
 
 		virtual bool exportData(const VipNDArrayShape& this_start,
 					const VipNDArrayShape& this_shape,
@@ -676,36 +657,41 @@ namespace detail
 
 		virtual QDataStream& ostream(const VipNDArrayShape& _start, const VipNDArrayShape& _shape, QDataStream& o) const
 		{
-			Ostream<T> out;
-			out.stream = &o;
-			// be carefull of the storage of float/double data type
-			if VIP_CONSTEXPR (std::is_same<double, T>::value || std::is_same<complex_d, T>::value)
-				o.setFloatingPointPrecision(QDataStream::DoublePrecision);
-			else
-				o.setFloatingPointPrecision(QDataStream::SinglePrecision);
-			vipInplaceArrayTransform(static_cast<T*>(opaque) + vipFlatOffset<false>(strides, _start), _shape, strides, out);
+			if constexpr (IsOstreamable<QDataStream, T>::value) {
+
+				Ostream<T> out;
+				out.stream = &o;
+				// be carefull of the storage of float/double data type
+				if VIP_CONSTEXPR (std::is_same<double, T>::value || std::is_same<complex_d, T>::value)
+					o.setFloatingPointPrecision(QDataStream::DoublePrecision);
+				else
+					o.setFloatingPointPrecision(QDataStream::SinglePrecision);
+				vipInplaceArrayTransform(static_cast<T*>(opaque) + vipFlatOffset<false>(strides, _start), _shape, strides, out);
+			}
 			return o;
 		}
 
 		virtual QDataStream& istream(const VipNDArrayShape& _start, const VipNDArrayShape& _shape, QDataStream& i)
 		{
-			if (std::is_same<long double, T>::value) {
-				// long double is a special case
-				Istream<long double> in;
-				in.stream = &i;
-				in.LD_support = i.device()->property("_vip_LD").toUInt();
-				i.setFloatingPointPrecision(QDataStream::DoublePrecision);
-				vipInplaceArrayTransform(static_cast<long double*>(opaque) + vipFlatOffset<false>(strides, _start), _shape, strides, in);
-			}
-			else {
-				Istream<T> in;
-				in.stream = &i;
-				// be carefull of the storage of float/double data type
-				if VIP_CONSTEXPR (std::is_same<double, T>::value || std::is_same<complex_d, T>::value)
+			if constexpr (IsIstreamable<QDataStream, T>::value) {
+				if constexpr(std::is_same<long double, T>::value) {
+					// long double is a special case
+					Istream<long double> in;
+					in.stream = &i;
+					in.LD_support = i.device()->property("_vip_LD").toUInt();
 					i.setFloatingPointPrecision(QDataStream::DoublePrecision);
-				else
-					i.setFloatingPointPrecision(QDataStream::SinglePrecision);
-				vipInplaceArrayTransform(static_cast<T*>(opaque) + vipFlatOffset<false>(strides, _start), _shape, strides, in);
+					vipInplaceArrayTransform(static_cast<long double*>(opaque) + vipFlatOffset<false>(strides, _start), _shape, strides, in);
+				}
+				else {
+					Istream<T> in;
+					in.stream = &i;
+					// be carefull of the storage of float/double data type
+					if VIP_CONSTEXPR (std::is_same<double, T>::value || std::is_same<complex_d, T>::value)
+						i.setFloatingPointPrecision(QDataStream::DoublePrecision);
+					else
+						i.setFloatingPointPrecision(QDataStream::SinglePrecision);
+					vipInplaceArrayTransform(static_cast<T*>(opaque) + vipFlatOffset<false>(strides, _start), _shape, strides, in);
+				}
 			}
 			return i;
 		}
@@ -713,69 +699,87 @@ namespace detail
 		virtual QTextStream& oTextStream(const VipNDArrayShape& _start, const VipNDArrayShape& _shape, QTextStream& stream, const QString& separator) const
 		{
 			static_assert(!std::is_same_v<T, NullType>);
-			struct Otextstream
-			{
-				QTextStream* stream;
-				QString sep;
-				T operator()(const T& value) const
+			if constexpr (IsOstreamable<QTextStream, T>::value) {
+				struct Otextstream
 				{
-					(*stream) << value << sep;
-					return value;
-				}
-			};
-			Otextstream ou;
-			ou.stream = &stream;
-			ou.sep = separator;
-			vipInplaceArrayTransform(static_cast<T*>(opaque) + vipFlatOffset<false>(strides, _start), _shape, strides, ou);
+					QTextStream* stream;
+					QString sep;
+					T operator()(const T& value) const
+					{
+						(*stream) << value << sep;
+						return value;
+					}
+				};
+				Otextstream ou;
+				ou.stream = &stream;
+				ou.sep = separator;
+				vipInplaceArrayTransform(static_cast<T*>(opaque) + vipFlatOffset<false>(strides, _start), _shape, strides, ou);
+			}
 			return stream;
 		}
 	};
 
-	VIP_DATA_TYPE_EXPORT SharedHandle getHandle(int handle_type, int metatype);
+	VIP_DATA_TYPE_EXPORT VipSharedHandle getHandle(int handle_type, int metatype);
+
+	VIP_DATA_TYPE_EXPORT bool hasStandardArrayType(int metatype);
 }
 
 /// Returns a NullHandle
-VIP_DATA_TYPE_EXPORT SharedHandle vipNullHandle() noexcept;
-/// Register a new #SharedHandle class for given type, or a NullHandle if the type was not registered.
-VIP_DATA_TYPE_EXPORT int vipRegisterArrayType(int handleType, int metaType, const SharedHandle& handle);
-/// Returns a SharedHandle object already allocated for given type, or a NullHandle if the type was not registered.
-VIP_DATA_TYPE_EXPORT SharedHandle vipCreateArrayHandle(int handleType, int metaType, const VipNDArrayShape& shape);
-/// Returns a SharedHandle for given type with the fields \a opaque, \a shape, \a size and \ strides already set , or a NullHandle if the type was not registered.
-VIP_DATA_TYPE_EXPORT SharedHandle vipCreateArrayHandle(int handleType, int metaType, void* ptr, const VipNDArrayShape& shape, const vip_deleter_type& del);
-/// Returns a SharedHandle for given type, or a NullHandle if the type was not registered.
-VIP_DATA_TYPE_EXPORT SharedHandle vipCreateArrayHandle(int handleType, int metaType);
+VIP_DATA_TYPE_EXPORT VipSharedHandle vipNullHandle() noexcept;
 
-/// Returns a SharedHandle for given type.Register it if it has not been registered yet.
+/// Register a new #VipSharedHandle class for given type, or a NullHandle if the type was not registered.
+VIP_DATA_TYPE_EXPORT int vipRegisterArrayType(int handleType, int metaType, const VipSharedHandle& handle);
+
+/// Returns a VipSharedHandle object already allocated for given type, or a NullHandle if the type was not registered.
+VIP_DATA_TYPE_EXPORT VipSharedHandle vipCreateArrayHandle(int handleType, int metaType, const VipNDArrayShape& shape);
+
+/// Returns a VipSharedHandle for given type with the fields \a opaque, \a shape, \a size and \ strides already set, or a NullHandle if the type was not registered.
+VIP_DATA_TYPE_EXPORT VipSharedHandle vipCreateArrayHandle(int handleType, int metaType, void* ptr, const VipNDArrayShape& shape, const VipDeleteFunction& del);
+
+/// Returns a VipSharedHandle for given type, or a NullHandle if the type was not registered.
+VIP_DATA_TYPE_EXPORT VipSharedHandle vipCreateArrayHandle(int handleType, int metaType);
+
+
 template<class T>
-SharedHandle vipCreateArrayHandle()
+inline void vipRegisterStandardArrayHandle()
 {
-	SharedHandle handle = vipCreateArrayHandle(VipNDArrayHandle::Standard, qMetaTypeId<T>());
+	static std::atomic<bool> init{ false };
+	if (!init.exchange(true) && !detail::hasStandardArrayType(qMetaTypeId<T>()))
+		vipRegisterArrayType(VipNDArrayHandle::Standard, qMetaTypeId<T>(), VipSharedHandle(new detail::StdHandle<T>()));
+}
+
+
+/// Returns a VipSharedHandle for given type.Register it if it has not been registered yet.
+template<class T>
+VipSharedHandle vipCreateArrayHandle()
+{
+	VipSharedHandle handle = vipCreateArrayHandle(VipNDArrayHandle::Standard, qMetaTypeId<T>());
 	if (handle == vipNullHandle()) {
-		vipRegisterArrayType(VipNDArrayHandle::Standard, qMetaTypeId<T>(), SharedHandle(new detail::StdHandle<T>()));
+		vipRegisterStandardArrayHandle<T>();
 		handle = vipCreateArrayHandle(VipNDArrayHandle::Standard, qMetaTypeId<T>());
 	}
 	return handle;
 }
 
-/// Returns an already allocated SharedHandle for given type. Register it if it has not been registered yet.
+/// Returns an already allocated VipSharedHandle for given type. Register it if it has not been registered yet.
 template<class T>
-SharedHandle vipCreateArrayHandle(const VipNDArrayShape& shape)
+VipSharedHandle vipCreateArrayHandle(const VipNDArrayShape& shape)
 {
-	SharedHandle handle = vipCreateArrayHandle(VipNDArrayHandle::Standard, qMetaTypeId<T>(), shape);
+	VipSharedHandle handle = vipCreateArrayHandle(VipNDArrayHandle::Standard, qMetaTypeId<T>(), shape);
 	if (handle == vipNullHandle()) {
-		vipRegisterArrayType(VipNDArrayHandle::Standard, qMetaTypeId<T>(), SharedHandle(new detail::StdHandle<T>()));
+		vipRegisterStandardArrayHandle<T>();
 		handle = vipCreateArrayHandle(VipNDArrayHandle::Standard, qMetaTypeId<T>(), shape);
 	}
 	return handle;
 }
 
-/// Returns a SharedHandle for given type with the fields \a opaque, \a shape, \a size already set. Register it if it has not been registered yet.
+/// Returns a VipSharedHandle for given type with the fields \a opaque, \a shape, \a size already set. Register it if it has not been registered yet.
 template<class T>
-SharedHandle vipCreateArrayHandle(T* ptr, const VipNDArrayShape& shape, const vip_deleter_type& del)
+VipSharedHandle vipCreateArrayHandle(T* ptr, const VipNDArrayShape& shape, const VipDeleteFunction& del)
 {
-	SharedHandle handle = ::vipCreateArrayHandle(VipNDArrayHandle::Standard, qMetaTypeId<T>(), (void*)ptr, shape, del);
+	VipSharedHandle handle = ::vipCreateArrayHandle(VipNDArrayHandle::Standard, qMetaTypeId<T>(), (void*)ptr, shape, del);
 	if (handle == vipNullHandle()) {
-		vipRegisterArrayType(VipNDArrayHandle::Standard, qMetaTypeId<T>(), SharedHandle(new detail::StdHandle<T>()));
+		vipRegisterStandardArrayHandle<T>();
 		handle = vipCreateArrayHandle(VipNDArrayHandle::Standard, qMetaTypeId<T>(), (void*)ptr, shape, del);
 	}
 	return handle;
@@ -786,7 +790,7 @@ namespace detail
 	/// A VipNDArrayHandle that provides a view on another VipNDArrayHandle
 	struct ViewHandle : public VipNDArrayHandle
 	{
-		const SharedHandle handle;
+		const VipSharedHandle handle;
 		VipNDArrayShape start;
 		bool pointerView = false; // tells if this handle is a pointer view (work on data that do not belong to another VipNDArray)
 		void* ptr = nullptr;	  // pointer to the actual data start for the view
@@ -814,7 +818,7 @@ namespace detail
 			size = vipShapeToSize(sh);
 			shape = sh;
 		}
-		ViewHandle(const SharedHandle& other, const VipNDArrayShape& start, const VipNDArrayShape& sh)
+		ViewHandle(const VipSharedHandle& other, const VipNDArrayShape& start, const VipNDArrayShape& sh)
 		  : handle(other)
 		  , start(start)
 		  , pointerView(false)
@@ -826,7 +830,7 @@ namespace detail
 			size = vipShapeToSize(sh);
 		}
 		ViewHandle(void* ptr, int type, const VipNDArrayShape& sh, const VipNDArrayShape& _strides)
-		  : handle(vipCreateArrayHandle(Standard, type, ptr, sh, vip_deleter_type()))
+		  : handle(vipCreateArrayHandle(Standard, type, ptr, sh, VipDeleteFunction()))
 		  , pointerView(true)
 		{
 			opaque = this->ptr = handle->opaque;
@@ -889,6 +893,7 @@ namespace detail
 		{
 			return handle->oTextStream(this->start + _start, _shape, stream, sep);
 		}
+		virtual size_t hashValue() const;
 	};
 
 }

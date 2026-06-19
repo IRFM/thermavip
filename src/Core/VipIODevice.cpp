@@ -3472,7 +3472,7 @@ void VipImageWriter::apply()
 	}
 
 	VipAnyData any = inputAt(0)->data();
-	QImage img = vipToImage(any.value<VipNDArray>());
+	const QImage img = vipToImageRef(any.value<VipNDArray>());
 
 	if (img.isNull()) {
 		setError("nullptr input image", VipProcessingObject::WrongInput);
@@ -4850,7 +4850,8 @@ static int vipRegisterArchiveStreamOperators()
 	vipRegisterArchiveStreamOperators<ArchiveRecorderTrailer>();
 	return 0;
 }
-static int _registerArchiveStreamOperators = vipAddInitializationFunction(&vipRegisterArchiveStreamOperators);
+static int _registerArchiveStreamOperators =
+  vipStaticInit("vipAddInitializationFunction(&vipRegisterArchiveStreamOperators)", []() { vipAddInitializationFunction(&vipRegisterArchiveStreamOperators); });
 
 #ifdef VIP_WITH_HDF5
 #include "VipH5Archive.h"
@@ -5656,4 +5657,4 @@ static int registerStreamOperators()
 	return 0;
 }
 
-static int _registerStreamOperators = vipAddInitializationFunction(registerStreamOperators);
+static int _registerStreamOperators = vipStaticInit("vipAddInitializationFunction(registerStreamOperators)", []() { vipAddInitializationFunction(registerStreamOperators); });

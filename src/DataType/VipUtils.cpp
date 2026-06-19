@@ -499,7 +499,6 @@ QTextStream& operator>>(QTextStream& stream, VipComplexPointVector& p)
 	return stream;
 }
 
-#include "VipNDArrayImage.h"
 
 QDataStream& operator<<(QDataStream& stream, const VipNDArray& ar)
 {
@@ -519,7 +518,7 @@ QDataStream& operator>>(QDataStream& stream, VipNDArray& ar)
 	VipNDArrayShape shape;
 
 	stream >> handle_type;
-	if (handle_type >= 10000) {
+	if (handle_type >= VipNDArrayHandle::Null) {
 		// this is the new format with a handle type
 		stream >> data_type;
 		stream >> shape;
@@ -531,7 +530,7 @@ QDataStream& operator>>(QDataStream& stream, VipNDArray& ar)
 		stream >> shape;
 	}
 
-	SharedHandle h = vipCreateArrayHandle(handle_type, data_type, shape);
+	VipSharedHandle h = vipCreateArrayHandle(handle_type, data_type, shape);
 	if (vipIsNullArray(h.constData()))
 		return stream;
 
@@ -1130,7 +1129,7 @@ static int registerConversionFunctions()
 	return 0;
 }
 
-static int _registerConversionFunctions = registerConversionFunctions();
+static int _registerConversionFunctions = vipStaticInit("registerConversionFunctions",registerConversionFunctions);
 
 VipNDArray vipExtractXValues(const VipPointVector& samples)
 {

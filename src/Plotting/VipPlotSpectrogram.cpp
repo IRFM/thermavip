@@ -316,7 +316,7 @@ static int registerSpectrogramKeyWords()
 	}
 	return 0;
 }
-static int _registerSpectrogramKeyWords = registerSpectrogramKeyWords();
+static int _registerSpectrogramKeyWords = vipStaticInit("registerSpectrogramKeyWords",registerSpectrogramKeyWords);
 
 class VipPlotSpectrogram::PrivateData
 {
@@ -546,4 +546,4 @@ static int registerStreamOperators()
 	return 0;
 }
 
-static int _registerStreamOperators = registerStreamOperators();
+static int _registerStreamOperators = vipStaticInit("registerStreamOperators",registerStreamOperators);

@@ -944,97 +944,10 @@ static int _registerHandler = registerHandler();
 
 
 
-
-OpenStream::OpenStream()
-  : QWidget()
-{
-	QHBoxLayout* hlay = new QHBoxLayout();
-	hlay->addWidget(&m_paths);
-	hlay->addWidget(&m_open);
-	hlay->setContentsMargins(0, 0, 0, 0);
-	setLayout(hlay);
-
-	m_paths.setToolTip("Enter network or local video path.\nPress ENTER to open.");
-	m_paths.setEditable(true);
-	m_open.setAutoRaise(true);
-	m_open.setToolTip("Open local video");
-	m_open.setText("...");
-	m_open.setMaximumWidth(20);
-
-	connect(&m_open, SIGNAL(clicked(bool)), this, SLOT(openFilePath()));
-	connect(m_paths.lineEdit(), SIGNAL(returnPressed()), this, SLOT(open()));
-
-	setMinimumWidth(300);
-}
-
-QString OpenStream::path() const
-{
-	return m_paths.currentText();
-}
-QStringList OpenStream::recentPaths() const
-{
-	QStringList res;
-	for (int i = 0; i < m_paths.count(); ++i)
-		res << m_paths.itemText(i);
-	return res;
-}
-void OpenStream::setRencentPaths(const QStringList& lst)
-{
-	m_paths.clear();
-	m_paths.addItems(lst);
-	while (m_paths.count() > 20)
-		m_paths.removeItem(20);
-}
-
-void OpenStream::openFilePath()
-{
-	VipMPEGLoader l;
-	QString filters = l.fileFilters();
-	QString path = VipFileDialog::getOpenFileName(nullptr, "Open video file", filters);
-	if (!path.isEmpty()) {
-		m_paths.setCurrentText(path);
-		open();
-	}
-}
-
-void OpenStream::open()
-{
-	if (path().isEmpty())
-		return;
-
-	int index = m_paths.findText(path());
-	if (index > 0)
-		m_paths.removeItem(index);
-	m_paths.insertItem(0, path());
-	while (m_paths.count() > 20)
-		m_paths.removeItem(20);
-	m_paths.setCurrentText(path());
-
-	VipDisplayArea& area = *vipGetMainWindow()->displayArea();
-	VipDisplayPlayerArea* plarea = area.currentDisplayPlayerArea();
-	if (plarea) {
-		VipProcessingPool* pool = plarea->processingPool();
-
-		VipMPEGLoader* loader = new VipMPEGLoader(pool);
-		loader->setPath(this->path());
-		if (!loader->open(VipIODevice::ReadOnly)) {
-			delete loader;
-			VIP_LOG_ERROR("Cannot open video: " + this->path());
-			return;
-		}
-
-		VipMultiDragWidget* bdw2 = vipCreateFromBaseDragWidget(vipCreateWidgetFromProcessingObject(loader));
-		plarea->addWidget(bdw2);
-	}
-}
-
-
-
 class VipRegisterRecordWindow::PrivateData
 {
 public:
 	VipRecordWindow* rec_win;
-	OpenStream* open_stream;
 	QToolButton* rec;
 };
 
@@ -1046,33 +959,6 @@ VipRegisterRecordWindow::VipRegisterRecordWindow(VipMainWindow * win)
 {
 	VIP_CREATE_PRIVATE_DATA();
 
-	// retrieve the list of available video devices
-	QStringList lst = VipMPEGLoader::listDevices();
-
-	
-	QToolButton* open = new QToolButton();
-	open->setAutoRaise(true);
-	open->setPopupMode(QToolButton::InstantPopup);
-	open->setIcon(vipIcon("webcam.png"));
-	open->setToolTip("Open a connected camera");
-	{
-		QMenu* menu = new QMenu(open);
-		for (int i = 0; i < lst.size(); ++i)
-			menu->addAction(lst[i]);
-		menu->addSeparator();
-		QWidgetAction* act = new QWidgetAction(menu);
-		act->setDefaultWidget(d_data->open_stream = new OpenStream());
-		menu->addAction(act);
-
-		open->setMenu(menu);
-		QObject::connect(menu, SIGNAL(triggered(QAction*)), this, SLOT(openVideoStream(QAction*)));
-
-		if (QAction* act = win->fileToolBar()->findChild<QAction*>("GenerateButton")) {
-			win->fileToolBar()->insertWidget(act, open)->setToolTip("Open local webcam or network stream");
-		}
-		else
-			win->fileToolBar()->addWidget(open)->setToolTip("Open local webcam or network stream");
-	}
 
 	// add button to make movies of thermavip (successive screenshots)
 	d_data->rec = new QToolButton();
@@ -1089,7 +975,7 @@ VipRegisterRecordWindow::VipRegisterRecordWindow(VipMainWindow * win)
 	connect(d_data->rec, SIGNAL(clicked(bool)), this, SLOT(setRecording(bool)));
 	connect(d_data->rec_win, SIGNAL(stateChanged(bool)), this, SLOT(setRecording(bool)), Qt::QueuedConnection);
 
-	win->closeBar()->insertWidget(win->closeBar()->minimizeAction(), d_data->rec);
+	win->closeBar()->insertWidget(win->closeBar()->maximizeOrShowNormalAction(), d_data->rec);
 }
 
 void VipRegisterRecordWindow::installRecordWindow(VipMainWindow* win)
@@ -1110,27 +996,4 @@ void VipRegisterRecordWindow::setRecording(bool enable)
 	d_data->rec->blockSignals(true);
 	d_data->rec->setChecked(enable);
 	d_data->rec->blockSignals(false);
-}
-
-
-// open webcams
-void VipRegisterRecordWindow::openVideoStream(QAction* action)
-{
-	VipDisplayArea& area = *vipGetMainWindow()->displayArea();
-	VipDisplayPlayerArea* plarea = area.currentDisplayPlayerArea();
-	if (plarea) {
-		VipProcessingPool* pool = plarea->processingPool();
-
-		VipMPEGLoader* loader = new VipMPEGLoader(pool);
-		if (!loader->open("video=" + action->text(), "dshow")) {
-			delete loader;
-			VIP_LOG_ERROR("Cannot open video stream: " + action->text());
-			return;
-		}
-
-		// loader->setPath(action->text());
-
-		VipMultiDragWidget* bdw2 = vipCreateFromBaseDragWidget(vipCreateWidgetFromProcessingObject(loader));
-		plarea->addWidget(bdw2);
-	}
 }

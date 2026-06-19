@@ -41,11 +41,10 @@
 #include <qreadwritelock.h>
 #include <vector>
 
-
 void VipColorMap::applyColorMap(const VipInterval& interval, const VipNDArray& ar, QRgb* out) const
 {
 	VipNDArrayTypeView<VipRGB> view((VipRGB*)out, ar.shape());
-	view = vipFunction([&](auto v, std::enable_if_t<std::is_arithmetic_v<decltype(v)>, void>* = nullptr) { return this->rgb(interval, v); }, ar);
+	view = vipFunction([&](auto v) ->  std::enable_if_t<std::is_arithmetic_v<decltype(v)>, QRgb> { return this->rgb(interval, v); }, ar);
 }
 
 class VipLinearColorMap::ColorStops
@@ -67,7 +66,7 @@ public:
 	public:
 		ColorStop()
 		  : pos(0.0)
-		  , rgb(0){};
+		  , rgb(0) {};
 		ColorStop(double p, const QColor& c)
 		  : pos(p)
 		  , rgb(c.rgb())
@@ -286,180 +285,138 @@ public:
 };
 
 template<class T>
-inline bool isNan(T)
+VIP_ALWAYS_INLINE bool isNan(T)
 {
 	return false;
 }
-inline bool isNan(float value)
+VIP_ALWAYS_INLINE bool isNan(float value)
 {
 	return value != value;
 }
-inline bool isNan(double value)
+VIP_ALWAYS_INLINE bool isNan(double value)
 {
 	return value != value;
 }
 template<typename T>
-inline T clamp(T val, T lo, T hi)
+VIP_ALWAYS_INLINE T clamp(T val, T lo, T hi)
 {
 	return (val > hi) ? hi : (val < lo) ? lo : val;
 }
 
-struct CastToFloat
-{
-	template<class T>
-	float operator()(const T& v) const
-	{
-		return static_cast<float>(v);
-	}
-};
 
-template<class T>
-void histogram(const VipNDArrayTypeView<T>& img, VipNDArrayType<float>& tmp, int strength, const VipInterval& interval, VipIntervalSampleVector& out, int* indexes, int max_index)
+template<class V, class... T>
+VIP_ALWAYS_INLINE V firstNotNan(V val, V factor, T... rem)
 {
-	const T* _src = img.ptr();
+	if (!vipIsNan(val))
+		return val;
+	if constexpr (sizeof...(rem) != 0)
+		return firstNotNan(rem...);
+	else
+		return (V)vipNan();
+}
+
+template<class V, class... T>
+VIP_ALWAYS_INLINE V multiplyNotNan(V val, V factor, T... rem)
+{
+	if constexpr (sizeof...(rem) != 0)
+		return val * factor + multiplyNotNan(rem...);
+	else
+		return val * factor;
+}
+
+template<class... T>
+VIP_ALWAYS_INLINE float getPixel(T... vals)
+{
+	if ((vipIsNan(vals) || ...)) {
+		return firstNotNan(vals...);
+	}
+	else
+		return multiplyNotNan(vals...);
+}
+
+template<class Ar>
+void histogram(const Ar& img, VipNDArrayType<float>& tmp, int strength, const VipInterval& interval, VipIntervalSampleVector& out, int* indexes, int max_index)
+{
+	const int numcolors = 1024;
+
+	if (img.shapeCount() != 2) {
+		if (vipEval(tmp, img))
+			vipExtractHistogram(tmp, out, numcolors, Vip::SameBinHeight, interval, indexes, 2, 1, max_index, 0, -(4 - (strength - 1)));
+		return;
+	}
+
+	// For image only: use a kind of pseudo gaussian filter to add some diversity to the histogram
+
 	float* _out = tmp.ptr();
-	int w = img.shape(1);
-	int h = img.shape(0);
-	int size = w * h;
-	 
-	//std::copy(_src, _src + w * h, _out);
-	
+	qsizetype w = img.shape(1);
+	qsizetype h = img.shape(0);
+	qsizetype size = w * h;
+
 	if (strength == 1) {
 		VIP_PARALLEL_FOR_NUM_THREADS(vipLoopThreadCount(size))
-		for (int y = 0; y < h; ++y) {
-			for (int x = 1; x < w - 1; ++x) {
-				int index = x + y * w;
-				_out[index] = _src[index - 1] * 0.1f + _src[index] * 0.9f;
-			}
-			_out[y * w] = _src[y * w];
-			_out[y * w + w - 1] = _src[y * w + w - 1];
+		for (qsizetype y = 0; y < h; ++y) {
+			qsizetype start = y * w;
+			for (qsizetype x = 1; x < w - 1; ++x)
+				_out[start + x] = getPixel((float)img(vipVector(y, x - 1)),
+							   0.1f , (float)img(vipVector(y, x)) , 0.9f); // (float)img(vipVector(y, x - 1)) * 0.1f + (float)img(vipVector(y, x)) * 0.9f;
+
+			_out[y * w] = (float)img(vipVector(y, 0));
+			_out[y * w + w - 1] = (float)img(vipVector(y, w - 1));
 		}
 	}
 	else if (strength == 2) {
 		VIP_PARALLEL_FOR_NUM_THREADS(vipLoopThreadCount(size))
-		for (int y = 0; y < h; ++y) {
-			for (int x = 1; x < w - 1; ++x) {
-				int index = x + y * w;
-				_out[index] = _src[index - 1] * 0.1f + _src[index] * 0.8f + _src[index + 1] * 0.1f;
+		for (qsizetype y = 0; y < h; ++y) {
+			qsizetype start = y * w;
+			for (qsizetype x = 1; x < w - 1; ++x) {
+				_out[start + x] = (float)img(vipVector(y, x - 1)) * 0.1f + (float)img(vipVector(y, x)) * 0.8f + (float)img(vipVector(y, x + 1)) * 0.1f;
 			}
-			_out[y * w] = _src[y * w];
-			_out[y * w + w - 1] = _src[y * w + w - 1];
+			_out[y * w] = (float)img(vipVector(y, 0));
+			_out[y * w + w - 1] = (float)img(vipVector(y, w - 1));
 		}
 	}
 	else if (strength == 3) {
 		// copy first and last lines
-		std::transform(_src, _src + w, _out, CastToFloat());
-		std::transform(_src + (h - 1) * w, _src + h * w, _out + (h - 1) * w, CastToFloat());
+		auto start_last = (h - 1) * w;
+		for (qsizetype x = 0; x < w; ++x) {
+			_out[x] = (float)img(vipVector(0, x));
+			_out[x + start_last] = (float)img(vipVector(h - 1, x));
+		}
+
 		VIP_PARALLEL_FOR_NUM_THREADS(vipLoopThreadCount(size))
-		for (int y = 1; y < h; ++y) {
-			for (int x = 1; x < w - 1; ++x) {
-				int index = x + y * w;
-				_out[index] = _src[index - 1] * 0.1f + _src[x + (y - 1) * w] * 0.05f + _src[index] * 0.8f + _src[index + 1] * 0.05f;
-			}
-			_out[y * w] = _src[y * w];
-			_out[y * w + w - 1] = _src[y * w + w - 1];
+		for (qsizetype y = 1; y < h; ++y) {
+			qsizetype start = y * w;
+			for (qsizetype x = 1; x < w - 1; ++x)
+				_out[start + x] =
+				  (float)img(vipVector(y, x - 1)) * 0.1f + (float)img(vipVector(y - 1, x)) * 0.05f + (float)img(vipVector(y, x)) * 0.8f + (float)img(vipVector(y, x + 1)) * 0.05f;
+
+			_out[y * w] = (float)img(vipVector(y, 0));
+			_out[y * w + w - 1] = (float)img(vipVector(y, w - 1));
 		}
 	}
 	else {
 		// copy first and last lines
-		std::transform(_src, _src + w, _out, CastToFloat());
-		std::transform(_src + (h - 1) * w, _src + h * w, _out + (h - 1) * w, CastToFloat());
+		auto start_last = (h - 1) * w;
+		for (qsizetype x = 0; x < w; ++x) {
+			_out[x] = (float)img(vipVector(0, x));
+			_out[x + start_last] = (float)img(vipVector(h - 1, x));
+		}
+
 		VIP_PARALLEL_FOR_NUM_THREADS(vipLoopThreadCount(size))
-		for (int y = 1; y < h - 1; ++y) {
-			for (int x = 1; x < w - 1; ++x) {
-				int index = x + y * w;
-				_out[index] = _src[index - 1] * 0.05f + _src[x + (y - 1) * w] * 0.05f + _src[x + (y + 1) * w] * 0.05f + _src[index] * 0.8f + _src[index + 1] * 0.05f;
+		for (qsizetype y = 1; y < h - 1; ++y) {
+			qsizetype start = y * w;
+			for (qsizetype x = 1; x < w - 1; ++x) {
+				_out[start + x] = (float)img(vipVector(y, x - 1)) * 0.05f + (float)img(vipVector(y - 1, x)) * 0.05f + (float)img(vipVector(y + 1, x)) * 0.05f +
+						  (float)img(vipVector(y, x)) * 0.8f + (float)img(vipVector(y, x + 1)) * 0.05f;
 			}
-			_out[y * w] = _src[y * w];
-			_out[y * w + w - 1] = _src[y * w + w - 1];
+			_out[y * w] = (float)img(vipVector(y, 0));
+			_out[y * w + w - 1] = (float)img(vipVector(y, w - 1));
 		}
 	}
-	
-	int numcolors = 1024;
+
 	vipExtractHistogram(tmp, out, numcolors, Vip::SameBinHeight, interval, indexes, 2, 1, max_index, 0, -(4 - (strength - 1)));
 }
 
-template<class T>
-void applyColorMapLinear(const VipLinearColorMap* map, const VipInterval& interval, const T* values, QRgb* out, const int w, const int h)
-{
-	const_cast<VipLinearColorMap*>(map)->computeRenderColors();
-
-	const int num_colors = map->colorRenderCount();
-	const int multiply = num_colors - 1;
-	const int max_index = num_colors + 2;
-	const qsizetype size = (qsizetype)w * (qsizetype)h;
-	// Make the for loop only use (almost) POD data
-	const double one_on_width = interval.width() > 0.0 ? 1.0 / interval.width() : 0;
-	const QRgb* palette = map->colorRender();
-	const double min_value = interval.minValue();
-	const double factor = one_on_width * multiply;
-	if (!map->useFlatHistogram()) {
-		VIP_PARALLEL_FOR_NUM_THREADS(vipLoopThreadCount(size))
-		for (qsizetype i = 0; i < size; ++i) {
-			const T value = values[i];
-			unsigned index = isNan(value) ? 0 : (unsigned)clamp((value - min_value) * factor + 2, 1., (double)max_index);
-			if (index >= num_colors + 3u)
-				index = 0;
-			out[i] = palette[index];
-		}
-	}
-	else {
-		// protect histogram, that can be used to draw the color map
-		QWriteLocker lock(&map->d_data->histLock);
-
-		// compute hash value
-		size_t hash = vipHashBytes(values, w * h * sizeof(T));
-
-		if (hash != map->d_data->arrayHash || map->d_data->histogram.size() == 0 || map->d_data->interval != interval || map->d_data->lastHistStrength != map->d_data->flatHistogramStrength) {
-			map->d_data->arrayHash = hash;
-			map->d_data->interval = interval;
-			map->d_data->lastHistStrength = map->d_data->flatHistogramStrength;
-			// input array
-			VipNDArrayTypeView<const T> tmp(values, vipVector(h, w));
-			// prepare array of indexes in the histogram
-			if ((int)map->d_data->indexes.size() != size)
-				map->d_data->indexes.resize(size);
-			// prepare histogram
-			map->d_data->histogram.clear();
-			// compute array histogram
-			if constexpr(true /* std::is_integral<T>::value*/) { //TEST
-				if (map->d_data->tmpArray.shape() != tmp.shape())
-					map->d_data->tmpArray.reset(tmp.shape());
-				histogram(tmp, map->d_data->tmpArray, map->d_data->flatHistogramStrength, interval, map->d_data->histogram, map->d_data->indexes.data(), max_index);
-			}
-			else {
-				vipExtractHistogram(tmp, map->d_data->histogram, num_colors, Vip::SameBinHeight, interval, map->d_data->indexes.data(), 2, 1, max_index, 0);
-			}
-		}
-
-		// qint64 el1 = QDateTime::currentMSecsSinceEpoch() - start;
-		// apply color map
-		if (map->d_data->histogram.size() == 0) {
-			// null histogram set all pixels to 0 (nan color)
-			QRgb val = palette[0];
-			std::fill_n(out, size, val);
-		}
-		else if (map->d_data->histogram.size() < num_colors) {
-			// small histogram, expand to num_colors
-			double f = num_colors / (double)(map->d_data->histogram.size());
-
-			VIP_PARALLEL_FOR_NUM_THREADS(vipLoopThreadCount(size))
-			for (qsizetype i = 0; i < size; ++i) {
-				int index = map->d_data->indexes[i];
-				if (index < max_index && index > 1)
-					index = (int)(((index - 2) * f) + 2.5);
-				out[i] = palette[index];
-			}
-		}
-		else {
-			// histogram of size num_colors
-			VIP_PARALLEL_FOR_NUM_THREADS(vipLoopThreadCount(size))
-			for (qsizetype i = 0; i < size; ++i) {
-				out[i] = palette[map->d_data->indexes[i]];
-			}
-		}
-	}
-}
 
 /// Build a color map with two stops at 0.0 and 1.0. The color
 /// at 0.0 is Qt::blue, at 1.0 it is Qt::yellow.
@@ -770,39 +727,92 @@ QRgb VipLinearColorMap::rgb(const VipInterval& interval, double value) const
 
 void VipLinearColorMap::applyColorMap(const VipInterval& interval, const VipNDArray& ar, QRgb* out) const
 {
-	if (!ar.isUnstrided())
-		return;
+	auto alg = vipArrayAlgorithm(
+	  [&](VipArrayView<QRgb>& imout, const auto& array) {
+		  using array_type = std::decay_t<decltype(array)>;
+		  using value_type = typename array_type::value_type;
+		  if constexpr (std::is_arithmetic_v<value_type>) {
 
-	switch (ar.dataType()) {
-		case QMetaType::Char:
-			return applyColorMapLinear(this, interval, (char*)ar.constData(), out, ar.shape(1), ar.shape(0));
-		case QMetaType::SChar:
-			return applyColorMapLinear(this, interval, (signed char*)ar.constData(), out, ar.shape(1), ar.shape(0));
-		case QMetaType::UChar:
-			return applyColorMapLinear(this, interval, (unsigned char*)ar.constData(), out, ar.shape(1), ar.shape(0));
-		case QMetaType::Short:
-			return applyColorMapLinear(this, interval, (qint16*)ar.constData(), out, ar.shape(1), ar.shape(0));
-		case QMetaType::UShort:
-			return applyColorMapLinear(this, interval, (quint16*)ar.constData(), out, ar.shape(1), ar.shape(0));
-		case QMetaType::Int:
-			return applyColorMapLinear(this, interval, (qint32*)ar.constData(), out, ar.shape(1), ar.shape(0));
-		case QMetaType::UInt:
-			return applyColorMapLinear(this, interval, (quint32*)ar.constData(), out, ar.shape(1), ar.shape(0));
-		case QMetaType::Long:
-			return applyColorMapLinear(this, interval, (long*)ar.constData(), out, ar.shape(1), ar.shape(0));
-		case QMetaType::ULong:
-			return applyColorMapLinear(this, interval, (unsigned long*)ar.constData(), out, ar.shape(1), ar.shape(0));
-		case QMetaType::LongLong:
-			return applyColorMapLinear(this, interval, (qint64*)ar.constData(), out, ar.shape(1), ar.shape(0));
-		case QMetaType::ULongLong:
-			return applyColorMapLinear(this, interval, (quint64*)ar.constData(), out, ar.shape(1), ar.shape(0));
-		case QMetaType::Float:
-			return applyColorMapLinear(this, interval, (float*)ar.constData(), out, ar.shape(1), ar.shape(0));
-		case QMetaType::Double:
-			return applyColorMapLinear(this, interval, (double*)ar.constData(), out, ar.shape(1), ar.shape(0));
-		default:
-			break;
-	}
+			  const_cast<VipLinearColorMap*>(this)->computeRenderColors();
+
+			  const int num_colors = this->colorRenderCount();
+			  const int multiply = num_colors - 1;
+			  const int max_index = num_colors + 2;
+			  const qsizetype size = ar.size();
+			  // Make the for loop only use (almost) POD data
+			  const double one_on_width = interval.width() > 0.0 ? 1.0 / interval.width() : 0;
+			  const QRgb* palette = this->colorRender();
+			  const double min_value = interval.minValue();
+			  const double factor = one_on_width * multiply;
+			  if (!this->useFlatHistogram()) {
+				  vipEval(imout,
+					  vipFunction(
+					    [&](auto v) {
+						    unsigned index = isNan(v) ? 0 : (unsigned)clamp(((double)v - min_value) * factor + 2, 1., (double)max_index);
+						    return palette[index >= num_colors + 3u ? 0 : index];
+					    },
+					    array));
+			  }
+			  else {
+				  // protect histogram, that can be used to draw the color this
+				  QWriteLocker lock(&this->d_data->histLock);
+
+				  // compute hash value
+				  size_t hash = ar.hashValue(); // vipHashBytes(ar.data(), size * sizeof(value_type));
+
+				  if (hash != this->d_data->arrayHash || this->d_data->histogram.size() == 0 || this->d_data->interval != interval ||
+				      this->d_data->lastHistStrength != this->d_data->flatHistogramStrength) {
+					  this->d_data->arrayHash = hash;
+					  this->d_data->interval = interval;
+					  this->d_data->lastHistStrength = this->d_data->flatHistogramStrength;
+
+					  // prepare array of indexes in the histogram
+					  if ((int)this->d_data->indexes.size() != size)
+						  this->d_data->indexes.resize(size);
+					  // prepare histogram
+					  this->d_data->histogram.clear();
+					  // compute array histogram
+
+					  if (this->d_data->tmpArray.shape() != array.shape())
+						  this->d_data->tmpArray.reset(array.shape());
+					  histogram(array, this->d_data->tmpArray, this->d_data->flatHistogramStrength, interval, this->d_data->histogram, this->d_data->indexes.data(), max_index);
+				  }
+
+				  // qint64 el1 = QDateTime::currentMSecsSinceEpoch() - start;
+
+				  if (this->d_data->histogram.size() == 0) {
+					  // null histogram set all pixels to 0 (nan color)
+					  QRgb val = palette[0];
+					  std::fill_n(out, size, val);
+				  }
+				  else if (this->d_data->histogram.size() < num_colors) {
+					  // small histogram, expand to num_colors
+					  double f = num_colors / (double)(this->d_data->histogram.size());
+
+					  vipEval(imout,
+						  vipFunction(
+						    [&](auto index) {
+							    if (index < max_index && index > 1)
+								    index = (int)(((index - 2) * f) + 2.5);
+							    return palette[index];
+						    },
+						    VipArrayView<int>(this->d_data->indexes.data(), array.shape())));
+				  }
+				  else {
+					  // histogram of size num_colors
+					  vipEval(imout, vipFunction([&](auto index) { return palette[index]; }, VipArrayView<int>(this->d_data->indexes.data(), array.shape())));
+				  }
+			  }
+
+			  return true;
+		  }
+		  else
+			  return false;
+	  },
+	  ar);
+
+	VipArrayView<QRgb> dst(out, ar.shape());
+	vipEval(dst, alg);
 }
 
 /// \brief Map a value of a given interval into a color index
@@ -1043,7 +1053,7 @@ QGradientStops VipLinearColorMap::createGradientStops(StandardColorMap color_map
 			colorStops_ << QGradientStop(0, QColor(255, 0, 0)) << QGradientStop(0.4, QColor(0, 255, 99)) << QGradientStop(0.8, QColor(199, 0, 255)) << QGradientStop(1, QColor(255, 0, 6));
 			break;
 
-		case VipLinearColorMap::Pink: 
+		case VipLinearColorMap::Pink:
 			colorStops_ << QGradientStop(0, QColor(15, 0, 0)) << QGradientStop(0.372549, QColor(195, 128, 128)) << QGradientStop(0.749020, QColor(234, 234, 181))
 				    << QGradientStop(1, QColor(255, 255, 255));
 			break;
@@ -1059,9 +1069,10 @@ QGradientStops VipLinearColorMap::createGradientStops(StandardColorMap color_map
 				    << QGradientStop(0.954, QColor(0x72190E)) << QGradientStop(1, QColor(0x42150A));
 			break;
 
-		case VipLinearColorMap::RevealIR: 
+		case VipLinearColorMap::RevealIR:
 			colorStops_ << QGradientStop(0, QColor(Qt::black)) << QGradientStop(0.142, QColor(0x0616CC)) << QGradientStop(0.286, QColor(0x721381)) << QGradientStop(0.428, QColor(0xC6118B))
-				    << QGradientStop(0.571, QColor(0xCC321E)) << QGradientStop(0.714, QColor(0xCF6308)) << QGradientStop(0.857, QColor(0xCCC248)) << QGradientStop(1., QColor(0xFFFFFF));
+				    << QGradientStop(0.571, QColor(0xCC321E)) << QGradientStop(0.714, QColor(0xCF6308)) << QGradientStop(0.857, QColor(0xCCC248))
+				    << QGradientStop(1., QColor(0xFFFFFF));
 			break;
 
 		case VipLinearColorMap::Spring:
@@ -1077,7 +1088,7 @@ QGradientStops VipLinearColorMap::createGradientStops(StandardColorMap color_map
 				    << QGradientStop(1, QColor(0xFDE725));
 			break;
 
-		case VipLinearColorMap::Visible: 
+		case VipLinearColorMap::Visible:
 			colorStops_ << QGradientStop(0, QColor(0x7E3F9A)) << QGradientStop(0.2, QColor(0x1E409A)) << QGradientStop(0.4, QColor(0x53A34C)) << QGradientStop(0.6, QColor(0xFCDB34))
 				    << QGradientStop(0.8, QColor(0xED6533)) << QGradientStop(1., QColor(0xD20502));
 			break;
@@ -1498,4 +1509,4 @@ static int registerStreamOperators()
 	return 0;
 }
 
-static int _registerStreamOperators = registerStreamOperators();
+static int _registerStreamOperators = vipStaticInit("registerStreamOperators",registerStreamOperators);

@@ -994,7 +994,7 @@ static int register_Operators()
 	return 0;
 }
 
-static bool _register_Operators = vipAddInitializationFunction(register_Operators);
+static int _register_Operators = vipStaticInit("vipAddInitializationFunction(register_Operators)", []() { vipAddInitializationFunction(register_Operators); });
 
 
 

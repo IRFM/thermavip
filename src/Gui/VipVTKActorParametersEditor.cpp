@@ -293,4 +293,4 @@ static int registerEditors()
 	return 0;
 }
 
-static bool _registerEditors = vipAddInitializationFunction(registerEditors);
+static int _registerEditors = vipStaticInit("vipAddInitializationFunction(registerEditors)", []() { vipAddInitializationFunction(registerEditors); });

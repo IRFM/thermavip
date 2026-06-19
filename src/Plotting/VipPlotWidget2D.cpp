@@ -68,7 +68,6 @@
 #include "VipLogging.h"
 #include "VipMultiPlotWidget2D.h"
 #include "VipNDArray.h"
-#include "VipNDArrayImage.h"
 #include "VipPainter.h"
 #include "QThreadOpenGLWidget.h"
 #include "VipPlotCurve.h"
@@ -242,7 +241,7 @@ static int registerRubberBandKeyWords()
 	}
 	return 0;
 }
-static int _registerRubberBandKeyWords = registerRubberBandKeyWords();
+static int _registerRubberBandKeyWords = vipStaticInit("registerRubberBandKeyWords", registerRubberBandKeyWords);
 
 class VipRubberBand::PrivateData
 {
@@ -816,6 +815,9 @@ struct Legend
 	bool operator!=(const VipLegend* other) const noexcept { return legend.data() != other; }
 };
 
+// Global last clicked point
+VipAreaItemPoint _lastClickedPoint;
+
 class VipAbstractPlotArea::PrivateData
 {
 public:
@@ -904,6 +906,8 @@ public:
 	QList<Legend> legends;
 
 	QPointer<VipPlotItem> lastPressed;
+
+	VipAreaItemPoint lastClickedPoint;
 
 	QPointer<VipToolTip> plotToolTip;
 	QList<VipAbstractScale*> scales;
@@ -1007,7 +1011,7 @@ static int registerAbstractAreaKeyWords()
 	return 0;
 }
 
-static int _registerAbstractAreaKeyWords = registerAbstractAreaKeyWords();
+static int _registerAbstractAreaKeyWords = vipStaticInit("registerAbstractAreaKeyWords", registerAbstractAreaKeyWords);
 
 VipAbstractPlotArea::VipAbstractPlotArea(QGraphicsItem* parent)
   : VipBoxGraphicsWidget()
@@ -1065,17 +1069,6 @@ VipAbstractPlotArea::VipAbstractPlotArea(QGraphicsItem* parent)
 VipAbstractPlotArea::~VipAbstractPlotArea()
 {
 	removeSharedAlignedArea(this);
-
-	/*auto* sc = this->scene();
-	if (sc)
-		sc->blockSignals(true);
-	auto lst = this->childItems();
-	for (auto* it : lst) {
-		it->setSelected(false);
-		//delete it;
-	}
-	if (sc)
-		sc->blockSignals(false);*/
 }
 
 QRectF VipAbstractPlotArea::visualizedSceneRect() const
@@ -1087,7 +1080,6 @@ QRectF VipAbstractPlotArea::visualizedSceneRect() const
 			return VipBorderItem::visualizedSceneRect(views.front());
 		}
 	}
-
 	return QRectF();
 }
 
@@ -1169,20 +1161,16 @@ void VipAbstractPlotArea::doUpdateScaleLogic()
 {
 	d_data->insideUpdate = true;
 	d_data->insideComputeScaleDiv = true;
-	// bool need_update = d_data->markNeedUpdate;
 
 	if (d_data->dirtyScaleDiv.size()) {
+		// compute scale div first, that might trigger a geometry update
+		QList<VipAbstractScale*> scales = VipAbstractScale::independentScales(d_data->dirtyScaleDiv.values());
 
-		{
-			// compute scale div first, that might trigger a geometry update
-			QList<VipAbstractScale*> scales = VipAbstractScale::independentScales(d_data->dirtyScaleDiv.values());
-
-			for (int i = 0; i < scales.size(); ++i) {
-				scales[i]->computeScaleDiv();
-			}
-
-			d_data->dcount = 0;
+		for (int i = 0; i < scales.size(); ++i) {
+			scales[i]->computeScaleDiv();
 		}
+
+		d_data->dcount = 0;
 	}
 
 	d_data->insideComputeScaleDiv = false;
@@ -1218,7 +1206,7 @@ void VipAbstractPlotArea::paint(QPainter* painter, const QStyleOptionGraphicsIte
 
 void VipAbstractPlotArea::applyLabelOverlapping()
 {
-	QVector<QSharedPointer<QPainterPath>> overlapps;
+	/* QVector<QSharedPointer<QPainterPath>> overlapps;
 	for (int i = 0; i < d_data->scales.size(); ++i)
 		overlapps << d_data->scales[i]->constScaleDraw()->thisLabelArea();
 	for (int i = 0; i < d_data->scales.size(); ++i) {
@@ -1228,7 +1216,7 @@ void VipAbstractPlotArea::applyLabelOverlapping()
 			d_data->scales[i]->scaleDraw()->clearAdditionalLabelOverlapp();
 			d_data->scales[i]->scaleDraw()->setAdditionalLabelOverlapp(copy);
 		}
-	}
+	}*/
 }
 
 // void VipAbstractPlotArea::recomputeIfDirty()
@@ -1366,6 +1354,8 @@ bool VipAbstractPlotArea::zoomEnabled(VipAbstractScale* sc)
 
 void VipAbstractPlotArea::setMaximumFrameRate(int fps)
 {
+	if (fps <= 0)
+		fps = 1;
 	d_data->maxFPS = fps;
 	d_data->maxMS = static_cast<int>((1. / fps) * 1000.);
 }
@@ -2425,7 +2415,7 @@ void VipAbstractPlotArea::hoverMoveEvent(QGraphicsSceneHoverEvent* event)
 		Qt::MouseButtons buttons = QApplication::mouseButtons();
 
 		// display tool tip
-		if (d_data->plotToolTip && d_data->plotToolTip->visible() &&  buttons == 0) {
+		if (d_data->plotToolTip && d_data->plotToolTip->visible() && buttons == 0) {
 			if (d_data->plotToolTip->plotArea() != this)
 				d_data->plotToolTip->setPlotArea(this);
 			d_data->plotToolTip->setScales(tool_tip_scales);
@@ -2498,6 +2488,16 @@ VipPlotItem* VipAbstractPlotArea::lastPressed() const
 	return d_data->lastPressed;
 }
 
+VipAreaItemPoint VipAbstractPlotArea::lastClickedPoint() const
+{
+	return d_data->lastClickedPoint;
+}
+
+VipAreaItemPoint VipAbstractPlotArea::lastGlobalClickedPoint()
+{
+	return _lastClickedPoint;
+}
+
 void VipAbstractPlotArea::setCustomUpdateFunction(const std::function<void()>& f)
 {
 	d_data->customUpdate = f;
@@ -2514,7 +2514,6 @@ Vip::detail::ItemDirtyNotifierPtr VipAbstractPlotArea::notifier()
 	QMutexLocker ll(&d_data->notifierLock);
 	return d_data->notifier;
 }
-
 
 bool VipAbstractPlotArea::mouseInUse() const
 {
@@ -2543,6 +2542,8 @@ void VipAbstractPlotArea::mousePressEvent(QGraphicsSceneMouseEvent* event)
 	// bool inside_canvas = canvas()->shape().contains(event->pos());
 	QList<VipAbstractScale*> scales = scalesForPos(event->pos());
 
+	bool needComputeItemPoint = false;
+
 	if ((event->button() & d_data->mousePanning) && scales.size() // inside_canvas
 	) {
 		d_data->mousePos = event->pos();
@@ -2567,9 +2568,52 @@ void VipAbstractPlotArea::mousePressEvent(QGraphicsSceneMouseEvent* event)
 		}
 	}
 	else {
-
+		needComputeItemPoint = true;
 		event->ignore();
 	}
+
+	if (!needComputeItemPoint)
+		return;
+
+	d_data->lastClickedPoint.clear();
+	_lastClickedPoint.clear();
+
+	// Compute closest item point
+	QPointF spf = event->scenePos();
+	QPointF pf = this->mapFromScene(spf);
+
+	QList<VipPointVector> points;
+	VipBoxStyleList styles;
+	QList<int> legends;
+
+	// Retrieve items points close to the mouse
+	PlotItemList items = this->plotItems(pf, -1, 10, points, styles, legends);
+	// search closest point
+	QPointF closest;
+	double closest_dist = -1;
+	int idx = -1;
+	for (int i = 0; i < points.size(); ++i) {
+		const VipPointVector vec = points[i];
+		for (int j = 0; j < vec.size(); ++j) {
+			QPointF ip = items[i]->mapToScene(vec[j]);
+			double dist = (ip - spf).manhattanLength();
+			if (closest_dist == -1 || dist < closest_dist) {
+				closest_dist = dist;
+				closest = ip;
+				idx = i;
+			}
+		}
+	}
+	if (closest_dist == -1)
+		closest = spf;
+
+	d_data->lastClickedPoint.point = positionToScale(closest);
+	if (idx >= 0) {
+		d_data->lastClickedPoint.item = items[idx];
+		d_data->lastClickedPoint.legendIndex = legends[idx];
+		d_data->lastClickedPoint.pointShape = styles[idx];
+	}
+	_lastClickedPoint = d_data->lastClickedPoint;
 }
 
 void VipAbstractPlotArea::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
@@ -3810,7 +3854,7 @@ static int registerPlotPolarKeywords()
 	vipSetKeyWordsForClass(&VipPlotPolarArea2D::staticMetaObject, keys);
 	return 0;
 }
-static int _registerPlotPolarKeywords = registerPlotPolarKeywords();
+static int _registerPlotPolarKeywords = vipStaticInit("registerPlotPolarKeywords", registerPlotPolarKeywords);
 
 class VipPlotPolarArea2D::PrivateData
 {
@@ -4264,7 +4308,7 @@ void VipBaseGraphicsView::paintEvent(QPaintEvent* evt)
 		p.fillRect(QRect(0, 0, width(), height()), c);
 	}
 	QGraphicsView::paintEvent(evt);
-	
+
 	if (d_data->hasStartRendering)
 		QMetaObject::invokeMethod(v, "stopRendering", Qt::DirectConnection);
 }
@@ -4430,7 +4474,7 @@ static int registerImageAreaKeywords()
 	vipSetKeyWordsForClass(&VipImageArea2D::staticMetaObject, keys);
 	return 0;
 }
-static int _registerImageAreaKeywords = registerImageAreaKeywords();
+static int _registerImageAreaKeywords = vipStaticInit("registerImageAreaKeywords", registerImageAreaKeywords);
 
 class VipImageArea2D::PrivateData
 {
@@ -4512,7 +4556,7 @@ void VipImageArea2D::setSpectrogram(VipPlotSpectrogram* spectrogram)
 			// hide or show the color map
 			const VipRasterData data = d_data->spectrogram->rawData();
 			int data_type = data.dataType();
-			if (data_type == qMetaTypeId<QImage>() || data_type == 0)
+			if (data_type == qMetaTypeId<VipRGB>() || data_type == 0)
 				d_data->colorMap->setVisible(false);
 			else
 				d_data->colorMap->setVisible(true);
@@ -5069,4 +5113,4 @@ static int registerStreamOperators()
 	return 0;
 }
 
-static int _registerStreamOperators = registerStreamOperators();
+static int _registerStreamOperators = vipStaticInit("registerStreamOperators", registerStreamOperators);

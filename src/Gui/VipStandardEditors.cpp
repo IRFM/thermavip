@@ -2255,4 +2255,4 @@ static int registerStandardEditors()
 	return 0;
 }
 
-static int _registerStandardEditors = vipAddInitializationFunction(registerStandardEditors);
+static int _registerStandardEditors = vipStaticInit("vipAddInitializationFunction(registerStandardEditors)", []() { vipAddInitializationFunction(registerStandardEditors); });

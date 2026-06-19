@@ -81,6 +81,8 @@ VipPlayerSelector::VipPlayerSelector(QWidget* parent )
 {
 	connect(this, SIGNAL(openPopup()), this, SLOT(populatePlayers()));
 
+	setSizeAdjustPolicy(AdjustToContents);
+
 	populatePlayers();
 	if (count())
 		setCurrentIndex(0);
@@ -3027,7 +3029,7 @@ static int register_VipConcatenateVideosEditor()
 	vipFDPlayerCreated().append<void(VipVideoPlayer*)>(apply_VipConcatenateVideosEditor);
 	return 0;
 }
-static int _register_VipConcatenateVideosEditor = register_VipConcatenateVideosEditor();
+static int _register_VipConcatenateVideosEditor = vipStaticInit("register_VipConcatenateVideosEditor",register_VipConcatenateVideosEditor);
 
 #ifdef VIP_WITH_FFMPEG
 
@@ -4432,7 +4434,7 @@ static int registerEditors()
 	return 0;
 }
 
-static int _registerEditors = vipAddInitializationFunction(registerEditors);
+static int _registerEditors = vipStaticInit("vipAddInitializationFunction(registerEditors)", []() { vipAddInitializationFunction(registerEditors); });
 
 #include <QBoxLayout>
 #include <QGroupBox>

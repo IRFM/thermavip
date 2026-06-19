@@ -50,7 +50,7 @@ class VIP_PLOTTING_EXPORT VipRasterConverter
 public:
 	virtual ~VipRasterConverter() {}
 	virtual QRectF boundingRect() const = 0;
-	virtual void extract(const QRectF& rect, VipNDArray* out_array, QRectF* out_rect = nullptr) const = 0;
+	virtual VipNDArray extract(const QRectF& rect, QRectF* out_rect = nullptr) const = 0;
 	virtual QVariant pick(const QPointF& pos) const = 0;
 	virtual VipInterval bounds(const VipInterval& valid_interval) const = 0;
 	virtual int dataType() const = 0;

@@ -354,6 +354,6 @@ static int registerArchive()
 	vipRegisterArchiveStreamOperators<VipWebBrowser*>();
 	return 0;
 }
-static int _registerArchive = registerArchive();
+static int _registerArchive = vipStaticInit("registerArchive" ,registerArchive);
 
 #endif // __VIP_USE_WEB_ENGINE

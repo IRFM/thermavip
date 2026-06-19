@@ -52,7 +52,7 @@ static int registerGridKeyWords()
 	}
 	return 0;
 }
-static int _registerGridKeyWords = registerGridKeyWords();
+static int _registerGridKeyWords = vipStaticInit("registerGridKeyWords",registerGridKeyWords);
 
 class VipPlotGrid::PrivateData
 {
@@ -589,4 +589,4 @@ static int registerStreamOperators()
 	return 0;
 }
 
-static int _registerStreamOperators = registerStreamOperators();
+static int _registerStreamOperators = vipStaticInit("registerStreamOperators" ,registerStreamOperators);

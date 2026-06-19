@@ -442,7 +442,7 @@ static int registerLegendKeyWords()
 	return 0;
 }
 
-static int _registerLegendKeyWords = registerLegendKeyWords();
+static int _registerLegendKeyWords = vipStaticInit("registerLegendKeyWords",registerLegendKeyWords);
 
 class VipLegend::PrivateData
 {

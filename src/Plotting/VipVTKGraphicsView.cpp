@@ -964,7 +964,7 @@ void VipVTKGraphicsView::setBackgroundColor(const QColor& color)
 
 QColor VipVTKGraphicsView::backgroundColor() const
 {
-	return vipToQColor(d_data->renderer->GetBackground());
+	return toQColor(d_data->renderer->GetBackground());
 }
 
 void VipVTKGraphicsView::startRender(VipRenderState& state)
@@ -1001,7 +1001,7 @@ bool VipVTKGraphicsView::renderObject(QPainter* p, const QPointF& pos, bool draw
 					scene()->render(&p, target, visible);
 				}
 
-				/*uint back = vipToQColor(renderer()->GetBackground()).rgba();
+				/*uint back = toQColor(renderer()->GetBackground()).rgba();
 				uint new_back = qRgba(255, 255, 255, 0);
 				int size = img.width()*img.height();
 				uint * pix = (uint*)img.bits();
@@ -2026,4 +2026,4 @@ static int registerOperators()
 	return 0;
 }
 
-static int _registerOperators = registerOperators();
+static int _registerOperators = vipStaticInit("registerOperators",registerOperators);

@@ -515,7 +515,7 @@ static int registerConversionFunctions()
 	return 0;
 }
 
-static int _registerConversionFunctions = registerConversionFunctions();
+static int _registerConversionFunctions = vipStaticInit("registerConversionFunctions",registerConversionFunctions);
 
 #include <QCoreApplication>
 #include <QMutex>
@@ -824,6 +824,20 @@ void vipEnableGuiInitializationFunction(bool enable)
 	_enableGuiInitializationFunction() = enable;
 }
 
+static bool _app_running = false;
+bool vipIsAppRunning()
+{
+	return _app_running;
+}
+namespace detail
+{
+	void setAppRunning(bool r)
+	{
+		_app_running = r;
+	}
+}
+
+
 struct GuiFunctions : public QObject
 {
 	QMutex mutex;
@@ -900,7 +914,7 @@ static int add_post_routine()
 	qAddPostRoutine(vipExecUnitializationFunction);
 	return 0;
 }
-static int _add_post_routine = add_post_routine();
+static int _add_post_routine = vipStaticInit("add_post_routine", add_post_routine);
 
 struct QStringHasher
 {
@@ -1172,17 +1186,12 @@ int vipGetMemoryFootprint(const QVariant& v)
 	// custom types defined by thermavip
 	if (type == qMetaTypeId<VipNDArray>()) {
 		const VipNDArray ar = v.value<VipNDArray>();
-		if (vipIsImageArray(ar))
-			return (int)(ar.size() * 4);
 		return (int)(ar.size() * ar.dataSize());
 	}
-	// else if (type == qMetaTypeId<VipRasterData>())
-	//  {
-	//  const VipNDArray ar = v.value<VipNDArray>();
-	//  if (vipIsImageArray(ar))
-	//  return ar.size() * 4;
-	//  return ar.size()*ar.dataSize();
-	//  }
+	else if (type == qMetaTypeId<VipRGB>())
+		return (int)sizeof(VipRGB);
+	else if (type == qMetaTypeId<VipRGBf>())
+		return (int)sizeof(VipRGBf);
 	else if (type == qMetaTypeId<complex_f>())
 		return (int)sizeof(complex_f);
 	else if (type == qMetaTypeId<complex_d>())

@@ -34,6 +34,7 @@
 
 #include "VipNDArrayOperations.h"
 #include "VipMath.h"
+#include "VipEval.h"
 
 /// \addtogroup DataType
 /// @{

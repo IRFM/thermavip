@@ -2799,4 +2799,4 @@ static int registerSceneModelEditor()
 	return 0;
 }
 
-static int _registerSceneModelEditor = vipAddInitializationFunction(registerSceneModelEditor);
+static int _registerSceneModelEditor = vipStaticInit("vipAddInitializationFunction(registerSceneModelEditor)", []() { vipAddInitializationFunction(registerSceneModelEditor); });

@@ -508,6 +508,24 @@ inline size_t vipOmpThreadId()
 #endif
 
 
+template<class F, class... Args>
+int vipStaticInitFunction(const char * file, int line, const char* msg, F&& fun, Args&&... args)
+{
+#ifndef NDEBUG
+	printf("File %s line %i, about to call %s...\n", file, line, msg);
+#endif 
+
+	std::forward<F>(fun)(std::forward<Args>(args)...);
+
+#ifndef NDEBUG
+	printf("Done\n");
+#endif 
+	return 0;
+}
+
+#define vipStaticInit(...) vipStaticInitFunction(__FILE__, __LINE__, __VA_ARGS__)
+
+
 #if defined(__clang__)
 // With clang, remove warning inconsistent-missing-override
 // until we add override specifier everywhere

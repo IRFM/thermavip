@@ -121,4 +121,4 @@ int registerGenerate()
 	return 0;
 }
 
-static bool _registerGenerate = vipAddGuiInitializationFunction(registerGenerate);
+static int _registerGenerate = vipStaticInit("vipAddGuiInitializationFunction(registerGenerate)", []() { vipAddGuiInitializationFunction(registerGenerate); });

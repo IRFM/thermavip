@@ -60,7 +60,7 @@ static int registerHistogramKeyWords()
 	return 0;
 }
 
-static int _registerHistogramKeyWords = registerHistogramKeyWords();
+static int _registerHistogramKeyWords = vipStaticInit("registerHistogramKeyWords",registerHistogramKeyWords);
 
 /* static inline bool isCombinable(const VipInterval& d1, const VipInterval& d2)
 {
@@ -763,4 +763,4 @@ static int registerStreamOperators()
 	return 0;
 }
 
-static int _registerStreamOperators = registerStreamOperators();
+static int _registerStreamOperators = vipStaticInit("registerStreamOperators",registerStreamOperators);

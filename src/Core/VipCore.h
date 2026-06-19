@@ -318,6 +318,13 @@ VIP_CORE_EXPORT bool vipAddUninitializationFunction(const VipFunction<0>& fun);
 VIP_CORE_EXPORT bool vipAddUninitializationFunction(void (*fun)());
 VIP_CORE_EXPORT bool vipAddUninitializationFunction(int (*fun)());
 
+
+VIP_CORE_EXPORT bool vipIsAppRunning();
+namespace detail
+{
+	VIP_CORE_EXPORT void setAppRunning(bool);
+}
+
 /// An error data, represented by an error code (<0) and an error string
 class VipErrorData
 {

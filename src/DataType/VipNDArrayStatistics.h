@@ -169,14 +169,15 @@ namespace detail
 		  , stats(st)
 		{
 		}
+		template<class U>
+		void setAt(qsizetype, const U& value) {  setPos(vipVector(0), value); }
 
-		bool setAt(qsizetype, const T& value) { return setPos(vipVector(0), value); }
-
-		template<class Coord>
-		bool setPos(const Coord& pos, const T& value)
+		template<class Coord, class U>
+		void setPos(const Coord& pos, const U& v)
 		{
+			T value = vipCast<T>(v);
 			if (vipIsNan(value))
-				return false;
+				return ;
 
 			++ret.count;
 			if (first) {
@@ -192,7 +193,7 @@ namespace detail
 					sum2 += (sum_type)value * (sum_type)value;
 				if ((stats & Vip::Skewness) || (stats & Vip::Kurtosis) || (stats & Vip::Entropy))
 					this->_add(value);
-				return true;
+				return ;
 			}
 
 			if constexpr (Stats < 0) {
@@ -247,7 +248,7 @@ namespace detail
 					this->_add(value);
 			}
 
-			return true;
+			return ;
 		}
 		bool finish()
 		{
@@ -335,43 +336,6 @@ template<class T, class Src, class OverRoi = VipInfinitRoi>
 T vipArrayStd(const Src& src, const OverRoi& roi = {})
 {
 	return vipArrayStatistics<T, Vip::Std>(src, roi).ret.std;
-}
-
-namespace detail
-{
-	template<class T, class Functor>
-	struct Accumulate : public detail::Reductor<T>
-	{
-		static constexpr qsizetype access_type = Vip::Position | Vip::Flat;
-
-		T init;
-		Functor fun;
-
-		template<class _T, class _F>
-		Accumulate(_T&& val, _F&& f)
-		  : init(std::forward<_T>(val))
-		  , fun(std::forward<_F>(f))
-		{
-		}
-
-		bool setAt(qsizetype, const T& value) { return setPos(0, value); }
-
-		template<class Coord>
-		bool setPos(const Coord&, const T& value)
-		{
-			init = fun(init, value);
-			return true;
-		}
-	};
-}
-
-template<class Src, class T, class Fun, class OverRoi = VipInfinitRoi>
-T vipAccumulate(const Src& src, T init, Fun f, const OverRoi& roi = {})
-{
-	detail::Accumulate<T, Fun> acc(std::move(init), std::move(f));
-	if (!vipEval(acc, src, roi))
-		return {};
-	return std::move(acc.init);
 }
 
 #endif

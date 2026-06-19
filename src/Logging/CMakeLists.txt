@@ -9,9 +9,16 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(CMAKE_AUTOMOC ON)
 include(GNUInstallDirs)
 
+if(MSVC)
+add_library(VipLogging SHARED
+    VipLogging.cpp VipLogging.h VipPimpl.h VipPimpl.cpp LdrDllNotificationHook.cpp LdrDllNotificationHook.h LdrInit.cpp
+)
+else()
 add_library(VipLogging SHARED
     VipLogging.cpp VipLogging.h VipPimpl.h VipPimpl.cpp
 )
+endif()
+
 target_compile_definitions(VipLogging PRIVATE
     VIP_BUILD_LOGGING_LIB
 )

@@ -1789,10 +1789,10 @@ static int registerStreamOperators()
 	qRegisterMetaTypeStreamOperators<VipText>("VipText");
 	return 0;
 }
-static int _registerStreamOperators = registerStreamOperators();
+static int _registerStreamOperators = vipStaticInit("registerStreamOperators",registerStreamOperators);
 
 // make the the types declared with Q_DECLARE_METATYPE are registered
-static int reg1 = qMetaTypeId<VipTextStyle>();
-static int reg2 = qMetaTypeId<VipTextList>();
-static int reg3 = qMetaTypeId<VipText>();
-static int reg4 = qMetaTypeId<VipTextObject>();
+static int reg1 = vipStaticInit("qMetaTypeId", []() { qMetaTypeId<VipTextStyle>(); });
+static int reg2 =vipStaticInit("qMetaTypeId", []() { qMetaTypeId<VipTextList>(); });
+static int reg3 = vipStaticInit("qMetaTypeId", []() { qMetaTypeId<VipText>(); });
+static int reg4 = vipStaticInit("qMetaTypeId", []() { qMetaTypeId<VipTextObject>(); });

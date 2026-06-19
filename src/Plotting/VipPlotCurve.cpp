@@ -213,7 +213,7 @@ static int registerCurveKeyWords()
 	return 0;
 }
 
-static int _registerCurveKeyWords = registerCurveKeyWords();
+static int _registerCurveKeyWords = vipStaticInit("registerCurveKeyWords",registerCurveKeyWords);
 
 struct Condition
 {
@@ -869,7 +869,8 @@ static void insideRect(const QRectF& r, const QPolygonF& pts, QVector<QLineF>& o
 
 void VipPlotCurve::draw(QPainter* painter, const VipCoordinateSystemPtr& m) const
 {
-	// qint64 st = QDateTime::currentMSecsSinceEpoch();
+	//qint64 stg = QDateTime::currentMSecsSinceEpoch();
+
 	QList<QPolygonF> drawn_polygons;
 
 	if (d_data->function) {
@@ -902,12 +903,16 @@ void VipPlotCurve::draw(QPainter* painter, const VipCoordinateSystemPtr& m) cons
 		}
 	}
 
+	//auto st = QDateTime::currentMSecsSinceEpoch();
 	for (int i = 0; i < d_data->vectors.size(); ++i) {
 		// compute the polygons to be drawn
 		drawn_polygons << computeSimplified(painter, m, d_data->vectors[i], d_data->continuous[i]);
 		if (d_data->style == Steps)
 			drawn_polygons.last() = computeSteps(drawn_polygons.last(), (d_data->attributes & Inverted));
 	}
+	//TEST
+	//auto el = QDateTime::currentMSecsSinceEpoch() -st;
+	//printf("simplify: %i ms\n", (int)el);
 
 	if (testCurveAttribute(FillMultiCurves) && isSubContinuous() && drawn_polygons.size() > 1) {
 		// fill the space between curves
@@ -1028,8 +1033,9 @@ void VipPlotCurve::draw(QPainter* painter, const VipCoordinateSystemPtr& m) cons
 		}
 	}
 
-	// qint64 el = QDateTime::currentMSecsSinceEpoch() - st;
-	// vip_debug("curve %s: %i ms\n",title().text().toLatin1().data(), (int)el);
+	//TEST
+	//qint64 elg = QDateTime::currentMSecsSinceEpoch() - stg;
+	//printf("full curve: %i ms\n", (int)elg);
 }
 
 void VipPlotCurve::drawSelected(QPainter* painter, const VipCoordinateSystemPtr& m) const
@@ -1273,14 +1279,33 @@ static void drawPolygonHelper(const QPolygonF& poly, QPainter* painter, const QP
 	// the rendering is not as good, but could be more than 10 times faster,
 	// which is HUGE for streaming purposes
 
+	//auto st = QDateTime::currentMSecsSinceEpoch();
+
 	painter->save();
 	QPen p = pen;
 	p.setJoinStyle(Qt::RoundJoin);
+	if (poly.size() < 100)
+		p.setCapStyle(Qt::RoundCap);
+	else
+		p.setCapStyle(Qt::SquareCap);
 	painter->setPen(p);
-	for (int i = 1; i < poly.size(); ++i) {
-		painter->drawLine(poly[i - 1], poly[i]);
+	
+	//for (int i = 1; i < poly.size(); ++i) 
+	//	painter->drawLine(poly[i - 1], poly[i]);
+	
+
+	thread_local std::vector<QLineF> lines;
+	lines.resize((size_t)(poly.size() - 1));
+	for (qsizetype i = 1; i < poly.size(); ++i) {
+		lines[(size_t)(i - 1)] = QLineF(poly[i - 1], poly[i]);
 	}
+	painter->drawLines(lines.data(), (int)lines.size());
+	
 	painter->restore();
+
+	//TEST
+	//auto el = QDateTime::currentMSecsSinceEpoch() -st;
+	//printf("drawHelper: %i ms\n", (int)el);
 }
 
 QPolygonF VipPlotCurve::drawLines(QPainter* painter,
@@ -2349,4 +2374,4 @@ static int registerStreamOperators()
 	return 0;
 }
 
-static int _registerStreamOperators = registerStreamOperators();
+static int _registerStreamOperators = vipStaticInit("registerStreamOperators", registerStreamOperators);

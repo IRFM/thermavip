@@ -152,9 +152,6 @@ class VIP_PLOTTING_EXPORT VipLinearColorMap : public VipColorMap
 {
 	Q_OBJECT
 
-	template<class T>
-	friend void applyColorMapLinear(const VipLinearColorMap* map, const VipInterval& interval, const T* values, QRgb* out, const int w, const int h);
-
 public:
 	/// Mode of color map
 	/// \sa setMode(), mode()

@@ -407,6 +407,7 @@ public:
 	QGroupBox* general;
 	QComboBox* skins;
 	QComboBox* colorPalette;
+	QSpinBox* maxCols;
 	VipTextWidget *editorFont;
 
 	QGroupBox* players;
@@ -436,7 +437,7 @@ AppearanceSettings::AppearanceSettings(QWidget* parent)
 	this->setWindowTitle("General appearance");
 	VIP_CREATE_PRIVATE_DATA();
 
-	d_data->general = createGroup("General appearance");
+	d_data->general = createGroup("General appearance settings");
 	d_data->skins = new QComboBox();
 	d_data->skins->addItems((QStringList() << "Default") + vipAvailableSkins());
 
@@ -469,6 +470,17 @@ AppearanceSettings::AppearanceSettings(QWidget* parent)
 	VipText t;
 	t.setFont(VipGuiDisplayParamaters::instance()->defaultEditorFont());
 	d_data->editorFont->setText(t);
+
+	// create spin box for max number of columns
+	d_data->maxCols = new QSpinBox();
+	d_data->maxCols->setRange(1, 10);
+	d_data->maxCols->setObjectName("_vip_maxCols");
+	d_data->maxCols->setValue(3);
+	d_data->maxCols->setToolTip("Define the maximum number of columns\nwhen adding a new player in a workspace");
+	glay->addWidget(new QLabel("Workspace columns"), 3, 0, Qt::AlignLeft);
+	glay->addWidget(d_data->maxCols, 3, 1, Qt::AlignLeft);
+
+
 
 	d_data->general->setLayout(glay);
 
@@ -607,6 +619,8 @@ void AppearanceSettings::updatePage()
 	t.setFont(VipGuiDisplayParamaters::instance()->defaultEditorFont());
 	d_data->editorFont->setText(t);
 
+	d_data->maxCols->setValue(VipDisplayPlayerArea::defaultMaximumWidth());
+
 	// Video player settings
 	d_data->colorMaps->setColorPaletteName(VipGuiDisplayParamaters::instance()->playerColorScale());
 	d_data->showScale->setChecked(VipGuiDisplayParamaters::instance()->videoPlayerShowAxes());
@@ -664,6 +678,9 @@ void AppearanceSettings::applyPage()
 	QList<QPlainTextEdit*> plain_edits = vipGetMainWindow()->findChildren<QPlainTextEdit*>();
 	for (QPlainTextEdit* e : plain_edits)
 		e->setFont(f);
+
+	VipDisplayPlayerArea::setDefaultMaximumWidth( d_data->maxCols->value());
+	VipGuiDisplayParamaters::instance()->setDefaultWorkspaceMaximumWidth(d_data->maxCols->value());
 
 	// Video player settings
 	VipGuiDisplayParamaters::instance()->setPlayerColorScale(d_data->colorMaps->colorPaletteName());

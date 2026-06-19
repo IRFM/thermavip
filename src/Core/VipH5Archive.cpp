@@ -32,7 +32,6 @@
 #include "VipH5Archive.h"
 #include "VipNDArray.h"
 #include "VipVectors.h"
-#include "VipNDArrayImage.h"
 #include "VipH5DeviceDriver.h"
 #include "VipTimestamping.h"
 #include "VipCore.h"
@@ -43,6 +42,12 @@
 #include <vector>
 extern "C" {
 #include <hdf5.h>
+}
+
+std::recursive_mutex& vipH5Mutex()
+{
+	static std::recursive_mutex inst;
+	return inst;
 }
 
 static hid_t qtToHDF5(int qt_type)
@@ -209,7 +214,7 @@ public:
 	}
 	VIP_DEFAULT_MOVE(H5Object);
 	VIP_ALWAYS_INLINE operator hid_t() const noexcept
-	{ 
+	{
 		hid_t i = id();
 		return i < 0 ? 0 : i;
 	}
@@ -220,7 +225,7 @@ public:
 
 static H5Object stringType(const QByteArray& utf8)
 {
-	H5Object type(H5Tcopy(H5T_C_S1), H5Object::H5Type); 
+	H5Object type(H5Tcopy(H5T_C_S1), H5Object::H5Type);
 	H5Tset_cset(type, H5T_CSET_UTF8);
 	H5Tset_size(type, (size_t)utf8.size() + 1);
 	return type;
@@ -235,18 +240,18 @@ struct ArraySpace
 static ArraySpace arraySpaceAndData(const VipNDArray& ar)
 {
 	ArraySpace res;
-	
-	if (vipIsImageArray(ar) || ar.dataType() == qMetaTypeId<VipRGB>()) {
+
+	if (ar.dataType() == qMetaTypeId<VipRGB>()) {
 		int dim_count = 3;
 		hsize_t dims[3] = { (hsize_t)ar.shape(0), (hsize_t)ar.shape(1), 4 };
 		res.space = H5Object(H5Screate_simple(dim_count, dims, dims), H5Object::Space);
-		res.data = vipToImage(ar).constBits();
+		res.data = ar.data();
 		res.type = qtToHDF5(QMetaType::UChar);
 	}
 	else if (vipIsComplex(ar.dataType())) {
 		int dim_count = ar.shapeCount() + 1;
 		hsize_t dims[VIP_MAX_DIMS + 1];
-		for (int i = 0; i < dim_count-1; ++i)
+		for (int i = 0; i < dim_count - 1; ++i)
 			dims[i] = (hsize_t)ar.shape(i);
 		dims[dim_count - 1] = 2;
 		res.space = H5Object(H5Screate_simple(dim_count, dims, dims), H5Object::Space);
@@ -285,8 +290,7 @@ static bool writeAttribute(hid_t loc, const char* name, const QVariant& value)
 
 	if (value.userType() == QMetaType::QString || value.userType() == QMetaType::QByteArray) {
 
-		if (value.userType() == QMetaType::QString)
-		{
+		if (value.userType() == QMetaType::QString) {
 			QByteArray utf8 = value.toString().toUtf8();
 			H5Object space(H5Screate(H5S_SCALAR), H5Object::Space);
 			if (!space)
@@ -342,7 +346,7 @@ QVariant readAttribute(hid_t id, const char* attr_name)
 
 	H5T_class_t type_class = H5Tget_class(type);
 	if (type_class == H5T_STRING) {
-		H5Object atype_mem(H5Tget_native_type(type, H5T_DIR_ASCEND),H5Object::H5Type);
+		H5Object atype_mem(H5Tget_native_type(type, H5T_DIR_ASCEND), H5Object::H5Type);
 		int _size = (int)H5Tget_size(atype_mem);
 		QByteArray data(_size, 0);
 		herr_t _ret = H5Aread(attr, atype_mem, data.data());
@@ -366,7 +370,7 @@ QVariant readAttribute(hid_t id, const char* attr_name)
 
 	// strings
 	if (qt_type == QMetaType::UChar && rank == 1) {
-		QByteArray ar((int)dims[0],(char)0);
+		QByteArray ar((int)dims[0], (char)0);
 		H5Aread(attr, type, ar.data());
 		return QVariant::fromValue(ar);
 	}
@@ -396,14 +400,14 @@ QVariant readAttribute(hid_t id, const char* attr_name)
 }
 
 using Content = QPair<QByteArray, H5Object::Type>;
-using GroupContent = QVector<Content >;
+using GroupContent = QVector<Content>;
 
 static herr_t iterate(hid_t group, const char* name, const H5L_info_t* info, void* op_data)
 {
 	GroupContent& res = *static_cast<GroupContent*>(op_data);
 
 	H5G_stat_t stat;
-	/* herr_t err =*/ H5Gget_objinfo(group, name, false, &stat);
+	/* herr_t err =*/H5Gget_objinfo(group, name, false, &stat);
 	auto h5type = H5Object::File;
 	if (stat.type == H5G_DATASET)
 		h5type = H5Object::Set;
@@ -412,13 +416,12 @@ static herr_t iterate(hid_t group, const char* name, const H5L_info_t* info, voi
 	else if (stat.type == H5G_TYPE)
 		h5type = H5Object::H5Type;
 	if (h5type != H5Object::File) {
-		res.push_back( { name, h5type } );
+		res.push_back({ name, h5type });
 	}
 	return 0;
 }
 
-
-static GroupContent listGroupContent(QIODevice * device, const QByteArray & name, const H5Object& obj)
+static GroupContent listGroupContent(QIODevice* device, const QByteArray& name, const H5Object& obj)
 {
 	GroupContent res;
 	if (!obj)
@@ -435,7 +438,7 @@ static GroupContent listGroupContent(QIODevice * device, const QByteArray & name
 						 NULL,
 						 iterate,
 						 &res);
-			if(status == 0)
+			if (status == 0)
 				return res;
 		}
 
@@ -458,7 +461,7 @@ static GroupContent listGroupContent(QIODevice * device, const QByteArray & name
 			}
 			name.resize(size);
 
-			H5G_stat_t stat; 
+			H5G_stat_t stat;
 			herr_t err = H5Gget_objinfo(obj, name.data(), false, &stat);
 			auto pos = device->pos();
 
@@ -474,7 +477,6 @@ static GroupContent listGroupContent(QIODevice * device, const QByteArray & name
 					content.push_back({ pos, { name, h5type } });
 				}
 			}
-
 		}
 		std::sort(content.begin(), content.end(), [](const auto& l, const auto& r) { return l.first < r.first; });
 		res.resize(content.size());
@@ -484,11 +486,11 @@ static GroupContent listGroupContent(QIODevice * device, const QByteArray & name
 	return res;
 }
 
-static QVector<QByteArray> listAttributes(const H5Object& obj, const char * obj_name)
+static QVector<QByteArray> listAttributes(const H5Object& obj, const char* obj_name)
 {
 	QVector<QByteArray> res;
-	
-	hsize_t count = (hsize_t)H5Aget_num_attrs(obj.id());	
+
+	hsize_t count = (hsize_t)H5Aget_num_attrs(obj.id());
 	for (hsize_t i = 0; i < count; ++i) {
 		QByteArray name(50, 0);
 		int size = H5Aget_name_by_idx(obj.id(), obj_name, H5_INDEX_CRT_ORDER, H5_ITER_INC, i, name.data(), name.size(), H5P_DEFAULT);
@@ -504,39 +506,38 @@ static QVector<QByteArray> listAttributes(const H5Object& obj, const char * obj_
 	return res;
 }
 
-
 class VipH5Archive::PrivateData
 {
 public:
 	struct Position
 	{
-		QByteArray name;		// full group name from root
-		H5Object group;			// group object
-		QByteArray last;		// last read/write position (dataset or group name)
-		GroupContent content;	// group content
+		QByteArray name;      // full group name from root
+		H5Object group;	      // group object
+		QByteArray last;      // last read/write position (dataset or group name)
+		GroupContent content; // group content
 		std::map<QByteArray, qint64> content_names;
 		QHash<QByteArray, GroupContent>* groups_contents{ nullptr };
-		void populate(QIODevice * device)
+		void populate(QIODevice* device)
 		{
 			if (content.isEmpty()) {
 				auto it = groups_contents->find(name);
 				if (it != groups_contents->end())
 					content = it.value();
 				else {
-					content = listGroupContent(device,name, group);
+					content = listGroupContent(device, name, group);
 					groups_contents->insert(name, content);
 				}
 				for (qsizetype i = 0; i < content.size(); ++i)
 					content_names[content[i].first] = i;
 			}
 		}
-		void addContent(const QByteArray& name, H5Object::Type type) 
-		{ 
+		void addContent(const QByteArray& name, H5Object::Type type)
+		{
 			content.push_back({ name, type });
-			content_names[name] = content.size()-1;
+			content_names[name] = content.size() - 1;
 		}
-		QByteArray createUniqueName(const QByteArray & name) const
-		{ 
+		QByteArray createUniqueName(const QByteArray& name) const
+		{
 			auto it = content_names.find(name);
 			if (it == content_names.end())
 				return name;
@@ -549,12 +550,13 @@ public:
 					break;
 				id = std::max((unsigned)it->first.mid(prefix.size()).toLongLong(), id);
 			}
-			QByteArray id_ar = QByteArray::number(id+1);
+			QByteArray id_ar = QByteArray::number(id + 1);
 			if (id_ar.size() != 9)
 				id_ar = QByteArray(9 - id_ar.size(), (char)'0') + id_ar;
 			return prefix + id_ar;
 		}
-		qint64 indexOf(const QByteArray& name) const noexcept{ 
+		qint64 indexOf(const QByteArray& name) const noexcept
+		{
 			if (name.isEmpty())
 				return -1;
 			for (qsizetype i = 0; i < content.size(); ++i)
@@ -563,7 +565,7 @@ public:
 			return -1;
 		}
 		static bool isName(const QByteArray& full_name, const QByteArray& prefix) noexcept
-		{ 
+		{
 			if (full_name.startsWith(prefix)) {
 				if (full_name.size() == prefix.size() || prefix.isEmpty())
 					return true;
@@ -571,7 +573,8 @@ public:
 			}
 			return false;
 		}
-		qint64 firstOf(H5Object::Type type, const QByteArray & prefix, qint64 start = 0) const noexcept {
+		qint64 firstOf(H5Object::Type type, const QByteArray& prefix, qint64 start = 0) const noexcept
+		{
 			for (qsizetype i = (qsizetype)start; i < content.size(); ++i)
 				if (content[i].second == type && isName(content[i].first, prefix))
 					return i;
@@ -580,13 +583,13 @@ public:
 		qint64 nextDataByName(hid_t file_id, const QByteArray& dataname, qint64 start = 0) const
 		{
 			for (; start != (qint64)content.size(); ++start) {
-					if (!dataname.isEmpty() && !isName(content[start].first , dataname))
-						continue;
+				if (!dataname.isEmpty() && !isName(content[start].first, dataname))
+					continue;
 				if (content[start].second == H5Object::Set)
 					return start;
 				else {
 					H5Object gr(H5Gopen1(file_id, this->name + "/" + content[start].first), H5Object::Group);
-					if (!gr) 
+					if (!gr)
 						continue;
 					QString type_name = readAttribute(gr, "type_name").toString();
 					if (type_name.isEmpty()) {
@@ -654,8 +657,8 @@ bool VipH5Archive::open(const QByteArray& a)
 	buf->open(QBuffer::ReadOnly);
 	return open(buf);
 }
-	
-bool VipH5Archive::open(const QString& filename, QIODevice::OpenMode mode) 
+
+bool VipH5Archive::open(const QString& filename, QIODevice::OpenMode mode)
 {
 	QFile* file = new QFile(filename, this);
 	if (!file->open(mode)) {
@@ -673,13 +676,15 @@ bool VipH5Archive::open(QIODevice* d)
 	close();
 	if (!d->isOpen())
 		return false;
-	
+
+	VipH5MutexLocker lock(vipH5Mutex());
+
 	d_data->device = d;
 	d_data->file = H5Object(vipH5OpenQIODevice(d), H5Object::File);
 	if (!d_data->file.isNull()) {
 		if (d->openMode() & QIODevice::WriteOnly)
 			this->setMode(Write);
-		else 
+		else
 			this->setMode(Read);
 		// add root
 		d_data->position.push_back({ "", d_data->file, QByteArray(), GroupContent() });
@@ -699,10 +704,11 @@ QIODevice* VipH5Archive::device() const
 {
 	return d_data->device;
 }
-	
+
 void VipH5Archive::close()
 {
 	if (d_data->device) {
+		VipH5MutexLocker lock(vipH5Mutex());
 		d_data->position.clear();
 		d_data->save.clear();
 		d_data->file = H5Object();
@@ -747,7 +753,7 @@ VipH5Archive::Content VipH5Archive::currentGroupContent() const
 		else if (t == H5Object::Set)
 			type = VipH5Archive::DataSet;
 		if (type != None) {
-			res.push_back( Object(vec[i].first, type));
+			res.push_back(Object(vec[i].first, type));
 		}
 	}
 	return res;
@@ -759,9 +765,11 @@ QByteArray VipH5Archive::lastRead() const noexcept
 
 void VipH5Archive::doStart(QString& name, QVariantMap& metadata, bool read_metadata)
 {
+	VipH5MutexLocker lock(vipH5Mutex());
+
 	// Start a group
 	QByteArray gr_name = d_data->position.back().name + "/" + name.toLatin1();
-	
+
 	if (mode() == Write) {
 
 		// Ensure the group name is unique
@@ -773,9 +781,9 @@ void VipH5Archive::doStart(QString& name, QVariantMap& metadata, bool read_metad
 
 		hid_t group_creation_plist;
 		group_creation_plist = H5Pcreate(H5P_GROUP_CREATE);
-		/* herr_t status =*/ H5Pset_link_creation_order(group_creation_plist, H5P_CRT_ORDER_TRACKED | H5P_CRT_ORDER_INDEXED);
+		/* herr_t status =*/H5Pset_link_creation_order(group_creation_plist, H5P_CRT_ORDER_TRACKED | H5P_CRT_ORDER_INDEXED);
 		// Favor compact group
-		/* status =*/ H5Pset_link_phase_change(group_creation_plist, 100, 100);
+		/* status =*/H5Pset_link_phase_change(group_creation_plist, 100, 100);
 
 		// Create group
 		H5Object gr(H5Gcreate(d_data->file.id(), gr_name.data(), H5P_DEFAULT, group_creation_plist, H5P_DEFAULT), H5Object::Group);
@@ -785,7 +793,7 @@ void VipH5Archive::doStart(QString& name, QVariantMap& metadata, bool read_metad
 			setError("Cannot create H5 group " + gr_name);
 			return;
 		}
-		d_data->position.back().addContent( name.toLatin1(), H5Object::Group );
+		d_data->position.back().addContent(name.toLatin1(), H5Object::Group);
 		d_data->position.push_back(PrivateData::Position{ gr_name, gr, QByteArray(), GroupContent() });
 		d_data->position.back().groups_contents = &d_data->groups_contents;
 
@@ -807,7 +815,7 @@ void VipH5Archive::doStart(QString& name, QVariantMap& metadata, bool read_metad
 			setError("Unable to open next H5 group");
 			return;
 		}
-		
+
 		gr_name = pos.name + "/" + pos.content[idx].first;
 		if (name.isEmpty()) {
 			const QByteArray ar = pos.content[idx].first;
@@ -817,7 +825,7 @@ void VipH5Archive::doStart(QString& name, QVariantMap& metadata, bool read_metad
 			else
 				name = ar.mid(0, index);
 		}
-		
+
 		H5Object gr(H5Gopen1(d_data->file.id(), gr_name.data()), H5Object::Group);
 		if (!gr) {
 			setError("Cannot open H5 group " + gr_name);
@@ -830,7 +838,7 @@ void VipH5Archive::doStart(QString& name, QVariantMap& metadata, bool read_metad
 		if (read_metadata) {
 			QByteArray gr_bname = gr_name;
 			auto lst = listAttributes(gr, gr_bname.data());
-			for (const QByteArray &attrname : lst) {
+			for (const QByteArray& attrname : lst) {
 				QVariant v = readAttribute(gr.id(), attrname.data());
 				if (v.userType() != 0)
 					metadata.insert(attrname, v);
@@ -840,8 +848,10 @@ void VipH5Archive::doStart(QString& name, QVariantMap& metadata, bool read_metad
 			setValue(d_data->dpos = device()->pos());
 	}
 }
-void VipH5Archive::doEnd() 
+void VipH5Archive::doEnd()
 {
+	VipH5MutexLocker lock(vipH5Mutex());
+
 	if (d_data->position.size() <= 1) {
 		setError("Cannot close the root group");
 		return;
@@ -857,15 +867,13 @@ void VipH5Archive::doEnd()
 	d_data->last_end = d_data->position.back().name;
 	d_data->position.pop_back();
 	d_data->position.back().last = current_name;
-	
 }
 
-#define ERROR(str)    \
-	{	setError(str);\
-		return;\
+#define ERROR(str)                                                                                                                                                                                     \
+	{                                                                                                                                                                                              \
+		setError(str);                                                                                                                                                                         \
+		return;                                                                                                                                                                                \
 	}
-
-
 
 static QVariant toNDArrayOrBytes(const QVariant& v)
 {
@@ -896,17 +904,14 @@ static QVariant toNDArrayOrBytes(const QVariant& v)
 		return QVariant::fromValue(VipNDArray({ c.first, c.second }));
 	}
 
-	if (v.userType() == qMetaTypeId<VipNDArray>() ) {
+	if (v.userType() == qMetaTypeId<VipNDArray>()) {
 		VipNDArray ar = v.value<VipNDArray>();
-		if (!vipIsImageArray(ar)) {
-			ar = ar.dense();
-			if (ar.dataType() == qMetaTypeId<VipRGB>()) {
-				VipNDArrayTypeView<VipRGB> view = ar;
-				return QVariant::fromValue(VipNDArray(VipNDArrayTypeView<uchar>((uchar*)view.ptr(), vipVector(ar.shape(0), ar.shape(1), 4))));
-			}
-			return QVariant::fromValue(ar);
+		ar = ar.dense();
+		if (ar.dataType() == qMetaTypeId<VipRGB>()) {
+			VipNDArrayTypeView<VipRGB> view = ar;
+			return QVariant::fromValue(VipNDArray(VipNDArrayTypeView<uchar>((uchar*)view.ptr(), vipVector(ar.shape(0), ar.shape(1), 4))));
 		}
-		return QVariant::fromValue(VipNDArray(VipNDArrayTypeView<uchar>((uchar*)vipToImage(ar).constBits(), vipVector(ar.shape(0), ar.shape(1), 4))));
+		return QVariant::fromValue(ar);
 	}
 
 	QByteArray ar;
@@ -914,9 +919,9 @@ static QVariant toNDArrayOrBytes(const QVariant& v)
 		QDataStream str(&ar, QIODevice::WriteOnly);
 		str.setByteOrder(QDataStream::LittleEndian);
 #if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
-		if (!QMetaType::save(str, v.userType(), v.constData())) 
+		if (!QMetaType::save(str, v.userType(), v.constData()))
 #else
-		if (!QMetaType(v.userType()).save(str, v.constData())) 
+		if (!QMetaType(v.userType()).save(str, v.constData()))
 #endif
 			return QVariant();
 
@@ -943,22 +948,22 @@ static H5Object defaultProp()
 	return plist;
 }
 
-void VipH5Archive::doContent(QString& name, QVariant& value, QVariantMap& metadata, bool read_metadata) 
+void VipH5Archive::doContent(QString& name, QVariant& value, QVariantMap& metadata, bool read_metadata)
 {
+	VipH5MutexLocker lock(vipH5Mutex());
+
 	hid_t id = d_data->position.back().group.id();
 	QByteArray bname = name.toLatin1();
 	H5Object set;
 	H5Object gr;
 
-	if (mode() == Write)
-	{
+	if (mode() == Write) {
 		if (name.isEmpty()) {
 			// default name
 			bname = "object";
 			name = bname;
 		}
 		bname = d_data->position.back().createUniqueName(bname);
-		
 
 		if (vipIsArithmetic(value.userType())) {
 			// Arithmetic object
@@ -983,7 +988,7 @@ void VipH5Archive::doContent(QString& name, QVariant& value, QVariantMap& metada
 			H5Object type = stringType(utf8);
 			H5Object layout = utf8.size() < (1 << 15) ? compactLayout() : defaultProp();
 			set = H5Object(H5Dcreate(id, bname.data(), type, space, H5P_DEFAULT, layout, H5P_DEFAULT), H5Object::Set);
-			
+
 			if (H5Dwrite(set, type, space, space, H5P_DEFAULT, utf8.data()) < 0)
 				ERROR("Failed to write dataset");
 			goto finish;
@@ -1034,7 +1039,7 @@ void VipH5Archive::doContent(QString& name, QVariant& value, QVariantMap& metada
 			goto finish;
 		}
 
-		if (val.userType()  == QMetaType::QByteArray) {
+		if (val.userType() == QMetaType::QByteArray) {
 			const QByteArray ar = val.toByteArray();
 			int dim_count = 1;
 			auto type = qtToHDF5(QMetaType::UChar);
@@ -1049,7 +1054,7 @@ void VipH5Archive::doContent(QString& name, QVariant& value, QVariantMap& metada
 			if (H5Dwrite(set, type, space, space, H5P_DEFAULT, ar.data()) < 0)
 				ERROR("Failed to write dataset");
 			// write 'type_name' attribute
-			if(!writeAttribute(set, "type_name", QByteArray(value.typeName())))
+			if (!writeAttribute(set, "type_name", QByteArray(value.typeName())))
 				ERROR("Failed to write the 'type' attribute to dataset");
 
 			goto finish;
@@ -1060,7 +1065,7 @@ void VipH5Archive::doContent(QString& name, QVariant& value, QVariantMap& metada
 			ArraySpace aspace = arraySpaceAndData(ar);
 			if (!aspace.space)
 				ERROR("Failed to create dataspace");
-			H5Object layout = (ar.size()*ar.dataSize()) < (1 << 15) ? compactLayout() : defaultProp();
+			H5Object layout = (ar.size() * ar.dataSize()) < (1 << 15) ? compactLayout() : defaultProp();
 			set = H5Object(H5Dcreate(id, bname.data(), aspace.type, aspace.space, H5P_DEFAULT, layout, H5P_DEFAULT), H5Object::Set);
 			if (!set)
 				ERROR("Failed to create dataset");
@@ -1098,8 +1103,7 @@ void VipH5Archive::doContent(QString& name, QVariant& value, QVariantMap& metada
 					name = bname.mid(0, index);
 			}
 		}
-		else
-		{
+		else {
 			// object name contains '%': this is a raw name, don't try to add a '%' ourselves
 			if (bname.lastIndexOf('%') == bname.size() - 1) {
 				// Ending by '%' : just remove the '%'
@@ -1112,8 +1116,7 @@ void VipH5Archive::doContent(QString& name, QVariant& value, QVariantMap& metada
 			idx = it->second;
 		}
 
-		if (pos.content[idx].second == H5Object::Group)
-		{
+		if (pos.content[idx].second == H5Object::Group) {
 			// Data is stored as a group with an attribute 'type_name'
 			QByteArray gr_name = pos.name + "/" + bname;
 
@@ -1175,7 +1178,7 @@ void VipH5Archive::doContent(QString& name, QVariant& value, QVariantMap& metada
 		int qt_type = HDF5ToQt(type);
 		hsize_t dims[32];
 		int rank = H5Sget_simple_extent_ndims(space);
-		//TODO: handle rank > 32
+		// TODO: handle rank > 32
 		H5Sget_simple_extent_dims(space, dims, nullptr);
 
 		if (!vipIsArithmetic(qt_type))
@@ -1197,13 +1200,12 @@ void VipH5Archive::doContent(QString& name, QVariant& value, QVariantMap& metada
 		QByteArray type_name = readAttribute(set, "type_name").toByteArray();
 		int type_id = vipIdFromName(type_name.data());
 		if (type_name.isEmpty() || type_id == 0) {
-			//ERROR("Invalide dataset type name: " + type_name);
+			// ERROR("Invalide dataset type name: " + type_name);
 
 			// No type id: use plain VipNDArray
 			type_id = qMetaTypeId<VipNDArray>();
 			type_name = "VipNDArray";
 		}
-			
 
 		// string type
 		if (type_id == QMetaType::QString || type_id == QMetaType::QByteArray) {
@@ -1217,9 +1219,8 @@ void VipH5Archive::doContent(QString& name, QVariant& value, QVariantMap& metada
 		}
 
 		if (type_id == qMetaTypeId<complex_f>() || type_id == qMetaTypeId<complex_d>() || type_id == qMetaTypeId<VipNDArray>() || type_id == qMetaTypeId<VipInterval>() ||
-		    type_id == qMetaTypeId<VipTimeRange>() ||
-		    type_id == qMetaTypeId<VipPointVector>()) {
-			
+		    type_id == qMetaTypeId<VipTimeRange>() || type_id == qMetaTypeId<VipPointVector>()) {
+
 			// Generic ND array
 			VipNDArrayShape sh;
 			sh.resize(rank);
@@ -1279,7 +1280,7 @@ void VipH5Archive::doContent(QString& name, QVariant& value, QVariantMap& metada
 
 		if (rank != 1)
 			ERROR("Invalid rank for dataset type " + type_name);
-		
+
 		// read bytes
 		QByteArray ar((int)dims[0], (char)0);
 		if (H5Dread(set, type, space, space, H5P_DEFAULT, (void*)ar.data()) != 0)
@@ -1308,7 +1309,7 @@ void VipH5Archive::doContent(QString& name, QVariant& value, QVariantMap& metada
 finish:
 	if (mode() == Write) {
 		// Add new content
-		d_data->position.back().addContent( bname, H5Object::Set );
+		d_data->position.back().addContent(bname, H5Object::Set);
 		for (auto it = metadata.constBegin(); it != metadata.constEnd(); ++it)
 			writeAttribute(set, it.key().toLatin1().data(), it.value());
 	}

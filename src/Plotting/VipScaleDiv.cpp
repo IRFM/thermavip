@@ -295,4 +295,4 @@ static int registerStreamOperators()
 	qRegisterMetaTypeStreamOperators<VipScaleDiv>("VipScaleDiv");
 	return 0;
 }
-static int _registerStreamOperators = registerStreamOperators();
+static int _registerStreamOperators = vipStaticInit("registerStreamOperators",registerStreamOperators);

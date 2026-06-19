@@ -328,9 +328,8 @@ void PathEngine::drawTextItem(const QPointF& p, const QTextItem& textItem)
 {
 	if (!m_device->testDrawPrimitive(VipShapeDevice::Text))
 		return;
-
 	const QFontMetricsF fm(textItem.font());
-	const QRectF rect = fm.boundingRect(QRectF(0, 0, INT_MAX, INT_MAX), 0, textItem.text());
+	const QRectF rect = fm.boundingRect(QRectF(0, 0, INT_MAX, INT_MAX), Qt::AlignTop|Qt::AlignLeft, textItem.text());
 	drawRect(rect.translated(p - QPointF(0, rect.height())));
 }
 

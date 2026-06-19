@@ -50,7 +50,7 @@ static int registerAxisColorMapKeywords()
 	return 0;
 }
 
-static int _registerAxisColorMapKeywords = registerAxisColorMapKeywords();
+static int _registerAxisColorMapKeywords = vipStaticInit("registerAxisColorMapKeywords",registerAxisColorMapKeywords);
 
 class VipAxisColorMap::PrivateData
 {
@@ -723,4 +723,4 @@ static int registerStreamOperators()
 	return 0;
 }
 
-static int _registerStreamOperators = registerStreamOperators();
+static int _registerStreamOperators = vipStaticInit("registerStreamOperators",registerStreamOperators);

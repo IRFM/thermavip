@@ -821,7 +821,12 @@ QString VipPlayerDBAccess::camera() const
 {
 	if (VipDisplayObject* disp = m_player->mainDisplayObject()) {
 		VipAnyData in = disp->inputAt(0)->probe();
-		return in.attribute("Camera").toString();
+		auto cam = in.attribute("Camera").toString();
+		if (cam.isEmpty())
+			cam = in.attribute("View").toString();
+		if (cam.isEmpty())
+			cam = in.attribute("view").toString();
+		return cam;
 	}
 	return QString();
 }
@@ -2739,4 +2744,4 @@ static int registerPlayerDBAccess()
 	vipFDPlayerCreated().append<void(VipVideoPlayer*)>(onPlayerCreated);
 	return 0;
 }
-static int _registerPlayerDBAccess = registerPlayerDBAccess();
+static int _registerPlayerDBAccess = vipStaticInit("registerPlayerDBAccess",registerPlayerDBAccess);

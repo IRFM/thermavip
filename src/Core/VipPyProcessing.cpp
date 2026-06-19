@@ -65,7 +65,7 @@ static int registerPyProcessingPtr()
 	qRegisterMetaType<VipPyProcessingPtr>();
 	return 0;
 }
-static int _registerPyProcessingPtr = registerPyProcessingPtr();
+static int _registerPyProcessingPtr = vipStaticInit("registerPyProcessingPtr",registerPyProcessingPtr);
 
 void VipPyBaseProcessing::newError(const VipErrorData& error)
 {
@@ -793,4 +793,4 @@ static int registerStreamOperators()
 	vipRegisterArchiveStreamOperators<VipPyProcessing*>();
 	return 0;
 }
-static int _registerStreamOperators = registerStreamOperators();
+static int _registerStreamOperators = vipStaticInit("registerStreamOperators",registerStreamOperators);

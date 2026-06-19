@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.16)
-project(Thermavip VERSION 1.0 LANGUAGES C CXX)
+#project(Thermavip VERSION 1.0 LANGUAGES C CXX)
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
@@ -9,10 +9,14 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(CMAKE_AUTOMOC ON)
 include(GNUInstallDirs)
 
+# Configure Thermavip_resource.rc
+configure_file(Thermavip_resource.rc.in ${CMAKE_BINARY_DIR}/Thermavip_resource.rc @ONLY)
+ 
+
 if(MSVC)
 	#if (CMAKE_BUILD_TYPE STREQUAL "Release" )
 		add_executable(Thermavip  WIN32
-			main.cpp Thermavip_resource.rc
+			main.cpp ${CMAKE_BINARY_DIR}/Thermavip_resource.rc
 		)
 	#else()
 	#	add_executable(Thermavip 
@@ -77,7 +81,7 @@ install(TARGETS Thermavip
     FRAMEWORK DESTINATION "${THERMAVIP_APPLICATION_DIR}"
     RUNTIME DESTINATION "${THERMAVIP_APPLICATION_DIR}"
 )
-install(FILES ${PROJECT_SOURCE_DIR}/base_session.session
+install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/base_session.session
         DESTINATION ${THERMAVIP_APPLICATION_DIR} )
-install(FILES ${PROJECT_SOURCE_DIR}/changelog.txt
+install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/changelog.txt
         DESTINATION ${THERMAVIP_APPLICATION_DIR} )

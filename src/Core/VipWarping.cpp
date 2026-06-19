@@ -295,7 +295,7 @@ inline VipNDArray warpSimpleArray(const VipNDArray& ar, const VipPointVector& wa
 			applyWarping((complex_d*)ar.data(), (complex_d*)out.data(), ar.shape(1), ar.shape(0), warping);
 		return out;
 	}
-	else if (vipIsImageArray(ar)) {
+	else if (ar.isRGB()) {
 		const QImage in = vipToImage(ar);
 		QImage out(in.width(), in.height(), QImage::Format_ARGB32);
 
@@ -368,4 +368,4 @@ VipArchive& operator>>(VipArchive& ar, VipWarping* tr)
 	return ar;
 }
 
-static int _registerStreamOperator = vipRegisterArchiveStreamOperators<VipWarping*>();
+static int _registerStreamOperator = vipStaticInit("vipRegisterArchiveStreamOperators<VipWarping*>()", []() { vipRegisterArchiveStreamOperators<VipWarping*>(); });
