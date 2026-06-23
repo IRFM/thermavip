@@ -56,7 +56,7 @@
 ///
 /// - p = p1 + ( p2 - p1 ) * ( T( s ) - T( s1 ) / ( T( s2 ) - T( s1 ) );
 /// - s = invT ( T( s1 ) + ( T( s2 ) - T( s1 ) ) * ( p - p1 ) / ( p2 - p1 ) );
-class VipValueTransform
+class VIP_PLOTTING_EXPORT VipValueTransform
 {
 public:
 	enum Type
