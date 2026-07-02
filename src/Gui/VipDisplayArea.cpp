@@ -1040,6 +1040,22 @@ int VipDisplayPlayerArea::defaultMaximumWidth()
 	return _max_multi_width;
 }
 
+static QList<VipDisplayPlayerArea::CustomizeFunction> _customize_functions;
+
+void VipDisplayPlayerArea::addCustomizeFunction(const CustomizeFunction& f, bool call_on_existing)
+{
+	_customize_functions.push_back(f);
+
+	if (call_on_existing) {
+		for (int i = 0; i < vipGetMainWindow()->displayArea()->count(); ++i)
+			f(vipGetMainWindow()->displayArea()->widget(i));
+	}
+}
+void VipDisplayPlayerArea::removeAllCustomizeFunctions()
+{
+	_customize_functions.clear();
+}
+
 class VipDisplayPlayerArea::PrivateData
 {
 public:
@@ -1077,6 +1093,7 @@ public:
 	Qt::WindowFlags standardFlags;
 	Operations operations;
 
+	bool emitContentChange = false;
 	bool dirtyColorMap;
 	VipColorScaleButton* scale;
 	QAction* auto_scale;
@@ -1208,6 +1225,9 @@ VipDisplayPlayerArea::VipDisplayPlayerArea(QWidget* parent)
 	setUseGlobalColorMap(VipGuiDisplayParamaters::instance()->globalColorScale());
 
 	_valid_workspaces.insert(this);
+
+	for (const auto& f : _customize_functions)
+		f(this);
 }
 
 VipDisplayPlayerArea::~VipDisplayPlayerArea()
@@ -1416,6 +1436,18 @@ void VipDisplayPlayerArea::print()
 		VipGuiDisplayParamaters::instance()->watermark().addToDevice(&printer);
 	}
 }
+
+void VipDisplayPlayerArea::resetTitle()
+{
+	setWindowTitle( property("_vip_initialTitle").toString());
+	setProperty("_vip_customTitle", false);
+}
+
+bool VipDisplayPlayerArea::hasCustomTitle()
+{
+	return property("_vip_customTitle").toBool();
+}
+
 void VipDisplayPlayerArea::saveSession()
 {
 	vipGetMainWindow()->displayArea()->setCurrentDisplayPlayerArea(this);
@@ -2087,8 +2119,18 @@ int VipDisplayPlayerArea::id() const
 
 void VipDisplayPlayerArea::emitWorkspaceContentChanged()
 {
+	if (!d_data->emitContentChange) {
+		d_data->emitContentChange = true;
+		QMetaObject::invokeMethod(this, &VipDisplayPlayerArea::internalEmitWorkspaceContentChanged, Qt::QueuedConnection);
+	}
+}
+
+void VipDisplayPlayerArea::internalEmitWorkspaceContentChanged()
+{
+	d_data->emitContentChange = false;
 	if (auto* win = parentMainWindow())
 		Q_EMIT win->workspaceContentChanged(this);
+	Q_EMIT contentHasChanged(this);
 }
 
 void VipDisplayPlayerArea::setProcessingPool(VipProcessingPool* pool)
@@ -2256,6 +2298,7 @@ void VipDisplayPlayerArea::added(VipMultiDragWidget*)
 void VipDisplayPlayerArea::contentChanged(VipMultiDragWidget*)
 {
 	setPoolToPlayers();
+	emitWorkspaceContentChanged();
 }
 
 void VipDisplayPlayerArea::setPoolToPlayers()
@@ -2637,9 +2680,11 @@ VipMainWindow* VipDisplayArea::parentMainWindow() const
 
 void VipDisplayArea::addWidget(VipDisplayPlayerArea* widget)
 {
-
-	QString title = widget->windowTitle().isEmpty() ? generateWorkspaceName() : widget->windowTitle();
+	QString initialTitle = generateWorkspaceName();
+	QString title = widget->windowTitle().isEmpty() ? initialTitle : widget->windowTitle();
 	widget->setWindowTitle(title);
+	widget->setProperty("_vip_initialTitle", initialTitle);
+
 	widget->d_data->parentArea = this;
 	widget->setId(count() + 1);
 

@@ -817,11 +817,14 @@ bool vipApplyDeformation(const VipNDArray& in, const QPointF* deformation, VipND
 
 VipNDArray vipToArray(const QImage& img)
 {
-	//if (img.isNull())
-	//	return {};
-
+	if (img.format() == QImage::Format_Grayscale8)
+		return VipNDArray((const uint8_t*)img.constBits(), vipVector(img.height(), img.width()));
+	if (img.format() == QImage::Format_Grayscale16)
+		return VipNDArray((const uint16_t*)img.constBits(), vipVector(img.height(), img.width()));
 	const auto tmp = img.convertToFormat(QImage::Format_ARGB32);
-	return VipNDArray((const VipRGB*)img.constBits(), vipVector(img.height(), img.width()));
+	if (tmp.isNull())
+		return {};
+	return VipNDArray((const VipRGB*)tmp.constBits(), vipVector(tmp.height(), tmp.width()));
 }
 
 static bool canConvert(int from, int to)
