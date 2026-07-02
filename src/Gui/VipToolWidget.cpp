@@ -1593,7 +1593,10 @@ void VipMultiProgressWidget::setValue(QObjectPointer ptr, int value)
 		// Check bypass VipProgressWidget
 		auto it = d_data->threadProgress.find(p->thread());
 		if (it != d_data->threadProgress.end() && it.value()) {
-			it.value()->setValue(p, value);
+			if(vipIsObjectValid(p))
+				it.value()->setValue(p, value);
+			else
+				return;
 			return;
 		}
 

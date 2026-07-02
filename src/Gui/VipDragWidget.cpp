@@ -1729,6 +1729,15 @@ int VipDragWidgetSplitter::maximumHandleWidth() const
 	return maxWidth;
 }
 
+void VipDragWidgetSplitter::resetSizes()
+{
+	QList<int> sizes;
+	for (int i = 0; i < this->count(); ++i)
+		sizes.append(1);
+	this->setSizes(sizes);
+	this->setOpaqueResize(true);
+}
+
 QSplitterHandle* VipDragWidgetSplitter::createHandle()
 {
 	VipDragWidgetHandle* res = new VipDragWidgetHandle(multiDragWidget, this->orientation(), this);
@@ -2861,6 +2870,15 @@ void VipMultiDragWidget::focusChanged(QWidget* old_w, QWidget* new_w)
 			else
 				new_w = new_w->parentWidget();
 		}
+	}
+}
+
+void VipMultiDragWidget::resetSizes()
+{
+	VipDragWidgetSplitter * main = static_cast<VipDragWidgetSplitter*>(mainSplitter());
+	main->resetSizes();
+	for(int y = 0; y < mainCount(); ++y) {
+		static_cast<VipDragWidgetSplitter*>(subSplitter(y))->resetSizes();
 	}
 }
 

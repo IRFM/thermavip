@@ -794,6 +794,8 @@ void VipLinearColorMap::applyColorMap(const VipInterval& interval, const VipNDAr
 						    [&](auto index) {
 							    if (index < max_index && index > 1)
 								    index = (int)(((index - 2) * f) + 2.5);
+								else if(index >= num_colors )
+									return qRgba(0, 0, 0, 0);
 							    return palette[index];
 						    },
 						    VipArrayView<int>(this->d_data->indexes.data(), array.shape())));

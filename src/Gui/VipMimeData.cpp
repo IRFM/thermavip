@@ -51,14 +51,14 @@ QList<VipPlotItem*> VipMimeDataProcessingObjectList::plotData(VipPlotItem* drop_
 	// we cannot drop on a different processing pool
 	VipProcessingPool* target = fromWidget(drop_widget);
 	VipProcessingPool* current = m_procs.size() ? m_procs.first()->parentObjectPool() : nullptr;
-	if (target != current) {
+	if (target != current && current) {
 		VIP_LOG_ERROR("Cannot drop on a different workspace");
 		return QList<VipPlotItem*>();
 	}
 
 	VipAbstractPlayer* pl = VipAbstractPlayer::findAbstractPlayer(drop_target);
 	if (pl)
-		setPlayers(vipCreatePlayersFromProcessings(m_procs, pl, target));
+		setPlayers(vipCreatePlayersFromProcessings(m_procs, pl, /*target*/drop_target));
 	else
 		setPlayers(vipCreatePlayersFromProcessings(m_procs, nullptr));
 	return VipPlotMimeData::plotData(drop_target, drop_widget);

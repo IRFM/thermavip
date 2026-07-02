@@ -4869,6 +4869,8 @@ static void open_widgets(VipMainWindow* win, const QList<QWidget*>& widgets, Vip
 			take_this = lst.first();
 		VipMultiDragWidget* main = area->mainDragWidget(take_this);
 		restore_widget(main);
+		main->resetSizes();
+		vipProcessEvents();
 
 		for (int i = 0; i < widgets.size(); ++i) {
 			if (widgets[i] == main)

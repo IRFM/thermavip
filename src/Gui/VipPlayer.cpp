@@ -4249,6 +4249,8 @@ QList<VipProcessingObject*> extractTimeEvolutionFromPlayer2(VipVideoPlayer* play
 	QTransform tr = player->imageTransform();
 	tr = tr.inverted();
 
+	bool has_dynamic_shapes = false;
+
 	if (!sh_merged.isNull()) {
 		VipSourceROI s;
 		s.player = player;
@@ -4302,6 +4304,8 @@ QList<VipProcessingObject*> extractTimeEvolutionFromPlayer2(VipVideoPlayer* play
 					// add the VipDisplaySceneModel source processing into the leafs and sources
 					leafs.push_back(src->parentProcessing());
 					sources << src->parentProcessing()->allSources() << src->parentProcessing();
+
+					has_dynamic_shapes = true;
 				}
 				else
 					extract->setShape(infos.shapes[i]);
@@ -4366,6 +4370,43 @@ QList<VipProcessingObject*> extractTimeEvolutionFromPlayer2(VipVideoPlayer* play
 
 	if (type == VipIODevice::Resource)
 		return QList<VipProcessingObject*>();
+
+	if (type != VipIODevice::Sequential) {
+		// Temporal pool: try to use the time trace dispatcher.
+		auto found = vipFDVideoTimeTrace().match(player, VipShapeList(), 0);
+		if(found.size()) {
+			if (!sh_merged.isNull() && sh_names.size() == 1) {
+				VipShape sh;
+				sh.setName(sh_names.first());
+				sh.setPolygon(sh_merged.copy().transform(tr).polygon());
+				VipShapeList lst;
+				lst.append(sh);
+				for(const auto & f : found) {
+					auto procs = f(player,lst,(int)stats).value<VipProcessingObjectList>();
+					if(procs.size()) {
+						qDeleteAll(extracts);
+						return procs;
+					}
+				}
+			}
+			else if(infos.shapes.size() && !has_dynamic_shapes) {
+				VipShapeList lst;
+				for(int i = 0; i < s_shapes.size(); ++i) {
+					VipShape s;
+					s.setName(sh_names[i]);
+					s.setPolygon(s_shapes[i].polygon);
+					lst.append(s);
+				}
+				for(const auto & f : found) {
+					auto procs = f(player,lst,(int)stats).value<VipProcessingObjectList>();
+					if(procs.size()) {
+						qDeleteAll(extracts);
+						return procs;
+					}
+				}
+			}
+		}
+	}
 
 	// for Sequential device only:
 
@@ -4727,6 +4768,7 @@ static VipPlotPlayer* plotTimeTraceCurves(const QList<VipProcessingObject*>& cur
 			return qobject_cast<VipPlotPlayer*>(players.first());
 	}
 	qDeleteAll(players);
+	qDeleteAll(curves);
 	return nullptr;
 }
 
@@ -7850,6 +7892,12 @@ VipFunctionDispatcher<3>& VipFDDropOnPlotItem()
 }
 
 VipFunctionDispatcher<3>& VipFDPlayerKeyPress()
+{
+	static VipFunctionDispatcher<3> disp;
+	return disp;
+}
+
+VipFunctionDispatcher<3>& vipFDVideoTimeTrace()
 {
 	static VipFunctionDispatcher<3> disp;
 	return disp;

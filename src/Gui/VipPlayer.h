@@ -1014,6 +1014,13 @@ VIP_GUI_EXPORT VipFunctionDispatcher<3>& VipFDDropOnPlotItem();
 /// Its signature is bool(VipPlayer2D*, int key, int modifiers);
 VIP_GUI_EXPORT VipFunctionDispatcher<3>& VipFDPlayerKeyPress();
 
+/// This function dispatcher is called when extracting a time trace from on or more shapes.
+/// Its signature is: VipProcessingObjectList(VipVideoPlayer* player, const VipShapeList& shapes,  int statistics);
+/// If it returns a non empty list of processing, they are used to display extracted curves. Otherwise, the standard
+/// extraction pattern is used. The shapes are already properly transformed and have the right names.
+/// This dispatcher is only used for temporal processing pools, not sequential (streaming) ones.
+VIP_GUI_EXPORT VipFunctionDispatcher<3>& vipFDVideoTimeTrace();
+
 typedef QList<QAction*> ActionList;
 Q_DECLARE_METATYPE(ActionList)
 

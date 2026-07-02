@@ -464,6 +464,10 @@ public:
 	void setMaximumHandleWidth(int);
 	int maximumHandleWidth() const;
 
+public Q_SLOTS:
+	/// @brief Set the same size to all children
+	void resetSizes();
+
 Q_SIGNALS:
 	void childChanged(QSplitter* s, QWidget* w, bool added);
 
@@ -655,6 +659,9 @@ public:
 	static VipMultiDragWidget* fromChild(QWidget* child);
 
 public Q_SLOTS:
+
+	/// @brief Reset the sizes of all internal widgets
+	void resetSizes();
 
 	/// Create a new VipMultiDragWidget of the same type and with the same options as this one.
 	/// You should always reimplement this function when subclassing VipMultiDragWidget.
