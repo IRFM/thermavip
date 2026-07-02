@@ -224,11 +224,16 @@ public:
 		Floatable = 0x02,	// The workspace is floatable through a dedicated button
 		AllOperations = Closable | Floatable
 	};
-	typedef QFlags<Operation> Operations;
+	using Operations = QFlags<Operation> ;
+	using CustomizeFunction = std::function<void(VipDisplayPlayerArea*)>;
 
 	/// @brief Set the default maximum number of columns for new workspaces.
 	static void setDefaultMaximumWidth(int);
 	static int defaultMaximumWidth();
+
+	/// @brief Add callback function that will be called every time a new VipDisplayPlayerArea is created.
+	static void addCustomizeFunction(const CustomizeFunction&, bool call_on_existing = true);
+	static void removeAllCustomizeFunctions();
 
 	VipDisplayPlayerArea(QWidget* parent = nullptr);
 	~VipDisplayPlayerArea();
@@ -370,6 +375,12 @@ public Q_SLOTS:
 	/// @brief Print the workspace content
 	void print();
 
+	/// @brief Reset workspace title to it original value (usually 'Workspace X')
+	void resetTitle();
+
+	/// @brief Returns true if this workspace has a custom title manually set by the user.
+	bool hasCustomTitle();
+
 Q_SIGNALS:
 	/// @brief Emitted when playing started from the processing pool
 	void playingStarted();
@@ -377,6 +388,9 @@ Q_SIGNALS:
 	void playingAdvancedOneFrame();
 	/// @brief Emitted when playing stopped from the processing pool
 	void playingStopped();
+	/// @brief Emitted when a new player has been added/removed, or when
+	/// a new device was added to the processing pool.
+	void contentHasChanged(VipDisplayPlayerArea*);
 
 private Q_SLOTS:
 	void added(VipMultiDragWidget*);
@@ -406,7 +420,7 @@ private:
 	void setInternalOperations();
 	void layoutColorMap(const QList<VipVideoPlayer*>& players = QList<VipVideoPlayer*>());
 	void setColorMapToPlayer(VipVideoPlayer* pl, bool enable);
-
+	void internalEmitWorkspaceContentChanged();
 	void setProgressWidget(VipProgressWidget*);
 	VipProgressWidget* progressWidget() const;
 	QMutex *closeMutex() const;
