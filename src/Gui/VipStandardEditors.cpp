@@ -36,6 +36,7 @@
 #include <qgroupbox.h>
 
 #include "VipGui.h"
+#include "VipLogging.h"
 #include "VipPlayer.h"
 #include "VipPlotCurve.h"
 #include "VipPlotGrid.h"
@@ -375,7 +376,11 @@ void VipPlotItemWidget::setPlotItem(VipPlotItem* item)
 		return;
 
 	m_item = item;
-	m_scales = vipAllScales(item);
+	// Held weakly: see the member declaration.
+	m_scales.clear();
+	const QList<VipAbstractScale*> all_scales = vipAllScales(item);
+	for (VipAbstractScale* s : all_scales)
+		m_scales.append(s);
 
 	m_visible.blockSignals(true);
 	m_antialiazed.blockSignals(true);
@@ -394,11 +399,11 @@ void VipPlotItemWidget::setPlotItem(VipPlotItem* item)
 	bool have_axis_option = false; //(item_scales.size() == 2);
 	if (have_axis_option) {
 		m_xAxis.clear();
-		m_xAxis.addItems(vipScaleNames(m_scales));
-		m_xAxis.setCurrentIndex(m_scales.indexOf(item_scales[0]));
+		m_xAxis.addItems(vipScaleNames(all_scales));
+		m_xAxis.setCurrentIndex(all_scales.indexOf(item_scales[0]));
 		m_yAxis.clear();
-		m_yAxis.addItems(vipScaleNames(m_scales));
-		m_yAxis.setCurrentIndex(m_scales.indexOf(item_scales[1]));
+		m_yAxis.addItems(vipScaleNames(all_scales));
+		m_yAxis.setCurrentIndex(all_scales.indexOf(item_scales[1]));
 	}
 	m_xAxis.setVisible(have_axis_option);
 	m_yAxis.setVisible(have_axis_option);
@@ -467,12 +472,14 @@ void VipPlotItemWidget::updatePlotItem(VipPlotItem* item)
 
 	QList<VipAbstractScale*> item_scales = item->axes();
 	if (item_scales.size() == 2) {
+		// Tested, not just bounded: a scale destroyed since the item was set leaves a
+		// null here instead of a dangling pointer handed to setAxes().
 		int index = m_xAxis.currentIndex();
-		if (index >= 0 && index < m_scales.size())
+		if (index >= 0 && index < m_scales.size() && m_scales[index])
 			item_scales[0] = m_scales[index];
 
 		index = m_yAxis.currentIndex();
-		if (index >= 0 && index < m_scales.size())
+		if (index >= 0 && index < m_scales.size() && m_scales[index])
 			item_scales[1] = m_scales[index];
 
 		item->setAxes(item_scales, item->coordinateSystemType());
@@ -1585,7 +1592,10 @@ void VipColorScaleWidget::emitColorScaleChanged()
 
 		// update color map
 		if (static_cast<VipLinearColorMap*>(scale->colorMap())->type() != d_data->colorMaps.colorPalette())
-			scale->setColorMap(d_data->thisColorScale->gripInterval(), VipLinearColorMap::createColorMap(VipLinearColorMap::StandardColorMap(d_data->colorMaps.colorPalette())));
+			// The overload taking the enumerator, which saves and restores the flat
+			// histogram settings around the change; the one taking a built map deletes
+			// the old one and those settings with it.
+			scale->setColorMap(d_data->thisColorScale->gripInterval(), VipLinearColorMap::StandardColorMap(d_data->colorMaps.colorPalette()));
 
 		// update external color
 		scale->colorMap()->setExternalValue(d_data->externalColor.isChecked() ? VipColorMap::ColorFixed : VipColorMap::ColorBounds, d_data->externalColorChoice.color().rgba());
@@ -1670,20 +1680,31 @@ void VipColorScaleButton::setColorPaletteName(const QString& name)
 	
 void VipColorScaleButton::setColorPalette(int color_palette)
 {
-	if (m_colorPalette != color_palette && color_palette >= 0 && color_palette < menu()->actions().size()) {
-		m_colorPalette = color_palette;
+	// The menu was used as both the source of values and the domain of valid ones,
+	// and it holds twenty entries where the enumeration holds thirty-two: any palette
+	// beyond it was refused in silence, the button kept showing another one, and the
+	// next event of the editor wrote that other one into the scale.
+	if (m_colorPalette == color_palette || color_palette < 0)
+		return;
 
-		QPixmap pix = VipColorScaleWidget::colorMapPixmap(color_palette, QSize(20, 16), QPen());
-		this->setIcon(pix);
-		QString name = VipLinearColorMap::colorMapToName((VipLinearColorMap::StandardColorMap)color_palette);
-		name[0] = name[0].toUpper();
-		this->setText(name);
-		name[0] = name[0].toLower();
-		this->setToolTip("Change color palette (current: " + menu()->actions()[color_palette]->text() + ")");
-
-		Q_EMIT colorPaletteChanged(color_palette);
-		Q_EMIT colorPaletteNameChanged(name);
+	const char* palette_name = VipLinearColorMap::colorMapToName((VipLinearColorMap::StandardColorMap)color_palette);
+	if (!palette_name || !*palette_name) {
+		VIP_LOG_WARNING("Unknown color palette index " + QString::number(color_palette));
+		return;
 	}
+
+	m_colorPalette = color_palette;
+
+	QPixmap pix = VipColorScaleWidget::colorMapPixmap(color_palette, QSize(20, 16), QPen());
+	this->setIcon(pix);
+	QString name = palette_name;
+	name[0] = name[0].toUpper();
+	this->setText(name);
+	this->setToolTip("Change color palette (current: " + name + ")");
+	name[0] = name[0].toLower();
+
+	Q_EMIT colorPaletteChanged(color_palette);
+	Q_EMIT colorPaletteNameChanged(name);
 }
 int VipColorScaleButton::colorPalette() const
 {
@@ -1753,10 +1774,15 @@ void VipAbstractPlayerWidget::setEditor(QWidget* editor)
 	// delete the previous editor if needed
 	QLayoutItem* item = d_data->grid->itemAtPosition(2, 0);
 	if (item && item->widget()) {
+		// Deferred, which is what the commented line below it already said: this is
+		// called from a slot of the editor being destroyed, so the destruction used to
+		// happen while its own call stack was live.
+		QWidget* previous = item->widget();
 		d_data->grid->removeItem(item);
-		delete item->widget();
 		delete item;
-		// item->widget()->deleteLater();
+		previous->hide();
+		previous->setParent(nullptr);
+		previous->deleteLater();
 	}
 
 	// add the new one

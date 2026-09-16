@@ -172,6 +172,9 @@ private Q_SLOTS:
 	void itemClicked(const VipPlotItemPointer&, int);
 	void timeout();
 	void launchRecord(bool record);
+	// The stop sequence, callable from the error paths of launchRecord(): calling
+	// the slot itself from inside its own body reaches the reentrance guard.
+	void stopRecord();
 
 	void updateBuffer();
 

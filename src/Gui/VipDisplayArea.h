@@ -902,6 +902,9 @@ private:
 
 /// @brief Returns (and create if necessary) the main unique VipMainWindow
 VIP_GUI_EXPORT VipMainWindow* vipGetMainWindow();
+/// @brief Clear the instance the accessor above keeps, when that instance is
+/// being destroyed. Called from the destructor of the window itself.
+VIP_GUI_EXPORT void vipForgetMainWindow(VipMainWindow* win);
 
 
 

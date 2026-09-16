@@ -47,6 +47,53 @@ namespace detail
 		return Convert<D, S>::apply(v);
 	}
 
+	template<class T>
+	inline T clamp(T value, T min, T max)
+	{
+		return min > value ? min : (max < value ? max : value);
+	}
+
+	/// Handles the sizes the interpolating kernels cannot express. With fewer than
+	/// two samples on one side the step is +inf, or NaN when both sides are one,
+	/// and converting either to an integer index is undefined: the counters used to
+	/// start past their bound and the loops wrote outside the destination.
+	/// Returns true when it handled the call.
+	template<class SrcIt, class DstIt>
+	bool resizeDegenerate(SrcIt src, DstIt dst, qsizetype src_size, qsizetype dst_size)
+	{
+		if (src_size >= 2 && dst_size >= 2)
+			return false;
+		if (src_size <= 0 || dst_size <= 0)
+			return true;
+
+		using dst_type = typename std::iterator_traits<DstIt>::value_type;
+		const double step = dst_size > 1 ? (double)(src_size - 1) / (double)(dst_size - 1) : 0.0;
+		for (qsizetype i = 0; i < dst_size; ++i) {
+			const qsizetype index = clamp((qsizetype)((double)i * step), (qsizetype)0, src_size - 1);
+			dst[i] = cast<dst_type>(src[index]);
+		}
+		return true;
+	}
+
+	/// The cubic kernel overshoots the range of its four samples by design near a
+	/// sharp edge. Converting a value outside the domain of an integer destination
+	/// is undefined and wraps in practice, turning a bright overshoot into a dark
+	/// dot; clamp to the domain instead.
+	template<class D, class S>
+	D castInterpolated(const S& value)
+	{
+		if constexpr (std::is_integral_v<D> && std::is_floating_point_v<S>) {
+			const double v = (double)value;
+			if (!(v > (double)std::numeric_limits<D>::lowest()))
+				return std::numeric_limits<D>::lowest();
+			if (!(v < (double)std::numeric_limits<D>::max()))
+				return std::numeric_limits<D>::max();
+			return (D)v;
+		}
+		else
+			return cast<D>(value);
+	}
+
 	struct Resize
 	{
 		template<class SrcIt, class DstIt>
@@ -59,6 +106,9 @@ namespace detail
 					*dst = cast<dst_type>(*src);
 				return;
 			}
+
+			if (resizeDegenerate(src, dst, src_size, dst_size))
+				return;
 
 			double dx = (double)(src_size - 1u) / (double)(dst_size - 1u);
 			double x = 0.5;
@@ -81,6 +131,9 @@ namespace detail
 					*dst = cast<dst_type>(*src);
 				return;
 			}
+
+			if (resizeDegenerate(src, dst, src_size, dst_size))
+				return;
 
 			double dx = (double)(src_size - 1) / (double)(dst_size - 1);
 			double x = dx;
@@ -148,12 +201,6 @@ namespace detail
 		}
 	};*/
 
-	template<class T>
-	inline T clamp(T value, T min, T max)
-	{
-		return min > value ? min : (max < value ? max : value);
-	}
-
 	template<class Interpolation>
 	struct ResizeCubic
 	{
@@ -168,6 +215,9 @@ namespace detail
 					*dst = cast<dst_type>(*src);
 				return;
 			}
+
+			if (resizeDegenerate(src, dst, src_size, dst_size))
+				return;
 
 			Interpolation interp;
 
@@ -186,7 +236,7 @@ namespace detail
 				qsizetype y2 = floor_x + 1;
 				qsizetype y3 = clamp(floor_x + 2, (qsizetype)0, src_size - 1);
 				double mu = x - (double)floor_x;
-				dst[i] = cast<dst_type>(interp(src[y0], src[y1], src[y2], src[y3], mu));
+				dst[i] = castInterpolated<dst_type>(interp(src[y0], src[y1], src[y2], src[y3], mu));
 			}
 
 			for (qsizetype i = start; i < dst_size - 1; ++i, x += dx) {
@@ -196,7 +246,7 @@ namespace detail
 				qsizetype y2 = floor_x + 1;
 				qsizetype y3 = clamp(floor_x + 2, (qsizetype)0, src_size - 1);
 				double mu = x - (double)floor_x;
-				dst[i] = cast<dst_type>(interp(src[y0], src[y1], src[y2], src[y3], mu));
+				dst[i] = castInterpolated<dst_type>(interp(src[y0], src[y1], src[y2], src[y3], mu));
 			}
 		}
 	};
@@ -218,8 +268,10 @@ namespace detail
 			typedef typename Src::value_type src_value_type;
 			typedef typename Dst::value_type dst_value_type;
 
-			const double x_ratio = ((double)(src.shape(1) - 1)) / (dst.shape(1) - 1);
-			const double y_ratio = ((double)(src.shape(0) - 1)) / (dst.shape(0) - 1);
+			// A destination of one row or one column makes the step infinite, and
+			// the first index is then computed from 0 * inf, that is NaN.
+			const double x_ratio = dst.shape(1) > 1 ? ((double)(src.shape(1) - 1)) / (double)(dst.shape(1) - 1) : 0.;
+			const double y_ratio = dst.shape(0) > 1 ? ((double)(src.shape(0) - 1)) / (double)(dst.shape(0) - 1) : 0.;
 			const src_value_type* _s = src.ptr();
 			dst_value_type* _d = dst.ptr();
 			const qsizetype src_stride0 = src.stride(0);
@@ -285,8 +337,8 @@ namespace detail
 				const qsizetype src_h = src.shape(0);
 				const qsizetype dst_w = dst.shape(1);
 				const qsizetype dst_h = dst.shape(0);
-				const double dx = (double)(src_w - 1u) / (double)(dst_w - 1u);
-				const double dy = (double)(src_h - 1u) / (double)(dst_h - 1u);
+				const double dx = dst_w > 1 ? (double)(src_w - 1) / (double)(dst_w - 1) : 0.;
+				const double dy = dst_h > 1 ? (double)(src_h - 1) / (double)(dst_h - 1) : 0.;
 				const src_value_type* _s = src.ptr();
 				dst_value_type* _d = dst.ptr();
 				const qsizetype src_stride0 = src.stride(0);

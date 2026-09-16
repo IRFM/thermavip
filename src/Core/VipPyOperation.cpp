@@ -32,6 +32,7 @@
 #include <iostream>
 #include <cmath>
 #include <set>
+#include <atomic>
 #include <deque>
 
 #define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
@@ -2056,6 +2057,9 @@ QStringList VipPyInterpreter::addProcessingFile(const QFileInfo& file, const QSt
 	QFile in(file.canonicalFilePath());
 	in.open(QFile::ReadOnly);
 	QString code = in.readAll();
+	// Scanning a directory runs every Python file in it. Say which ones, so that the
+	// mechanism is at least visible to the user it runs as.
+	VIP_LOG_INFO("Running Python file: " + file.canonicalFilePath());
 	VipPyError err = this->execCode(code).value(20000).value<VipPyError>();
 	if (!err.isNull()) {
 		VIP_LOG_WARNING("Cannot load Python processing: " + file.baseName());
@@ -2107,6 +2111,13 @@ QStringList VipPyInterpreter::addProcessingFile(const QFileInfo& file, const QSt
 
 QStringList VipPyInterpreter::addProcessingDirectory(const QString& dir, bool register_processings)
 {
+	// A relative directory is resolved against the working directory of the process,
+	// so starting the application from a folder that happens to hold one of these
+	// names ran everything inside it. Only an explicit location is accepted.
+	if (QDir::isRelativePath(dir)) {
+		VIP_LOG_ERROR("Refusing to run Python from a relative directory: " + dir);
+		return QStringList();
+	}
 	return addProcessingDirectoryInternal(dir, QString(), register_processings);
 }
 
@@ -2216,6 +2227,36 @@ public:
 	QPointer<QObject> interp;
 };
 
+// Session files carry the Python properties of the processings they store, so
+// opening one chooses what runs. Refused unless the user has said otherwise.
+//
+// For now, set to true until we add a dedicated graphical interface.
+static std::atomic<bool> _vip_restored_python_allowed{ true };
+
+void vipSetRestoredPythonCodeAllowed(bool allowed)
+{
+	_vip_restored_python_allowed = allowed;
+}
+bool vipRestoredPythonCodeAllowed()
+{
+	return _vip_restored_python_allowed;
+}
+
+void vipAllowRestoredPythonCode(VipProcessingObject* obj)
+{
+	if (obj)
+		obj->setFromArchive(false);
+}
+
+bool vipCanRunRestoredPythonCode(VipProcessingObject* obj)
+{
+	if (!obj )
+		return true;
+	if (!obj->isFromArchive() )
+		return true;
+	return _vip_restored_python_allowed;
+}
+
 VipPyInterpreter::VipPyInterpreter(QObject* parent)
   : VipPyIOOperation(parent)
 {
@@ -2274,9 +2315,24 @@ QVariantMap VipPyInterpreter::parameters() const
 
 void VipPyInterpreter::setWorkingDirectory(const QString& workingDirectory)
 {
+	// Normalised, and it has to name a directory that exists: this value also
+	// arrives from a session file, where nothing stopped it from being a relative
+	// walk upward or a network path.
+	const QString clean = QDir::cleanPath(workingDirectory);
+	if (clean.isEmpty())
+		return;
+	if (clean.contains('\n') || clean.contains('\r') || clean.contains('\'')) {
+		VIP_LOG_ERROR("Refused a working directory containing a quote or a line break");
+		return;
+	}
+	if (!QFileInfo(clean).isDir()) {
+		VIP_LOG_ERROR("Refused a working directory that is not one: " + clean);
+		return;
+	}
+
 	QWriteLocker ll(&d_data->lock);
-	if (QFileInfo(workingDirectory) != QFileInfo(d_data->workingDirectory) && !workingDirectory.isEmpty()) {
-		d_data->workingDirectory = workingDirectory;
+	if (QFileInfo(clean) != QFileInfo(d_data->workingDirectory)) {
+		d_data->workingDirectory = clean;
 		d_data->workingDirectory.replace("\\", "/");
 		d_data->dirty = true;
 	}
@@ -2423,7 +2479,13 @@ VipPyIOOperation* VipPyInterpreter::reset(bool create_new)
 	connect(this->d_data->pyIOOperation.get(), SIGNAL(started()), this, SLOT(emitStarted()), Qt::DirectConnection);
 	connect(this->d_data->pyIOOperation.get(), SIGNAL(finished()), this, SLOT(emitFinished()), Qt::DirectConnection);
 	this->d_data->pyIOOperation->start();
-	this->d_data->pyIOOperation->execCode("import os;os.chdir('" + d_data->workingDirectory + "')").wait();
+	// Sent as an object rather than pasted into the source: the value comes from a
+	// session file, and a single apostrophe in it closed the literal and ran the rest
+	// as Python in this process.
+	if (!d_data->workingDirectory.isEmpty()) {
+		this->d_data->pyIOOperation->sendObject("_vip_wd", QVariant(d_data->workingDirectory)).wait();
+		this->d_data->pyIOOperation->execCode("import os;os.chdir(_vip_wd)").wait();
+	}
 	this->d_data->pyIOOperation->execCode(d_data->startupCode).wait();
 
 	// register all files found in the Python directory

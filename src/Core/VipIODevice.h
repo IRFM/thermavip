@@ -506,7 +506,7 @@ class VIP_CORE_EXPORT VipProcessingPool : public VipIODevice
 	Q_OBJECT
 	Q_PROPERTY(double playSpeed READ playSpeed WRITE setPlaySpeed)
 	Q_PROPERTY(int maxListSize READ maxListSize WRITE setMaxListSize)
-	Q_PROPERTY(int maxListMemory READ maxListMemory WRITE setMaxListMemory)
+	Q_PROPERTY(qint64 maxListMemory READ maxListMemory WRITE setMaxListMemory)
 	Q_PROPERTY(qint64 stopBeginTime READ stopBeginTime WRITE setStopBeginTime)
 	Q_PROPERTY(qint64 stopEndTime READ stopEndTime WRITE setStopEndTime)
 	Q_PROPERTY(bool missFramesEnabled READ missFramesEnabled WRITE setMissFramesEnabled)
@@ -598,7 +598,7 @@ public:
 	void setMaxListSize(int size);
 	/// Set the maximum list memory footprint for all current and future processings in this pool.
 	///  Set a negative value to reset the max list memory size (#VipDataListManager will be used)
-	void setMaxListMemory(int memory);
+	void setMaxListMemory(qint64 memory);
 	/// Set the list limit type (combination of Number and MemorySize, or None) for all current and future processings in this pool.
 	///  Set a negative value to reset the limit type (#VipDataListManager will be used)
 	void setListLimitType(int type);
@@ -607,7 +607,7 @@ public:
 	/// Returns the maximum list size
 	int maxListSize() const;
 	/// Returns the maximum list memory footprint in bytes
-	int maxListMemory() const;
+	qint64 maxListMemory() const;
 
 	bool hasMaxListSize() const;
 	bool hasMaxListMemory() const;

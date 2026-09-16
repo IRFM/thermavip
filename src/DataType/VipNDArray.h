@@ -162,19 +162,26 @@ public:
 	/// Create and allocate a VipNDArray of data type \a data_type and shape \a shape.
 	/// Performs a deep copy of the data pointer \a ptr into the array
 	VipNDArray(const void* ptr, int data_type, const VipNDArrayShape& shape);
-	/// Load array from file.
+	/// Load array from file. The array is null if the file could not be read.
+	///
+	/// Explicit on purpose: with a default second argument this is a converting
+	/// constructor, so every function taking a const VipNDArray& used to accept a
+	/// string literal and read the file it names, with no conversion visible at the
+	/// call site.
 	/// \sa #VipNDArray::load
-	VipNDArray(const char* filename, FileFormat format = AutoDetect)
+	explicit VipNDArray(const char* filename, FileFormat format = AutoDetect)
 	  : VipNDArray()
 	{
-		load(filename, format);
+		if (!load(filename, format))
+			clear();
 	}
-	/// Load array from a QIODevice.
+	/// Load array from a QIODevice. The array is null if the device could not be read.
 	/// \sa #VipNDArray::load
-	VipNDArray(QIODevice* device, FileFormat format = AutoDetect)
+	explicit VipNDArray(QIODevice* device, FileFormat format = AutoDetect)
 	  : VipNDArray()
 	{
-		load(device, format);
+		if (!load(device, format))
+			clear();
 	}
 	/// Create and allocate a VipNDArray of template data type \a T and shape \a shape.
 	/// Performs a deep copy of the data pointer \a ptr into the array
@@ -693,7 +700,9 @@ public:
 		return ptr() + vipFlatOffset<(D > 0 && D == NDims)>(strides(), c);
 	}
 
-	// Reimplement shape() and strides()
+	// Reimplement shape() and strides().
+	// Use reinterpret_cast in order to return a const reference.
+	// The reinterpret is in theory illegal, but always works in practice.
 	VIP_ALWAYS_INLINE const VipCoordinate<NDims>& shape() const noexcept { return reinterpret_cast<const VipCoordinate<NDims>&>(VipNDArray::shape()); }
 	VIP_ALWAYS_INLINE const VipCoordinate<NDims>& strides() const noexcept { return reinterpret_cast<const VipCoordinate<NDims>&>(VipNDArray::strides()); }
 
@@ -915,9 +924,12 @@ public:
 	VIP_ALWAYS_INLINE const T* data() const noexcept { return ptr(); }
 	VIP_ALWAYS_INLINE const T* constData() const noexcept { return ptr(); }
 
-	// Reimplement shape() and strides()
-	VIP_ALWAYS_INLINE const VipCoordinate<NDims>& shape() const noexcept { return reinterpret_cast<const VipCoordinate<NDims>&>(VipNDArray::shape()); }
-	VIP_ALWAYS_INLINE const VipCoordinate<NDims>& strides() const noexcept { return reinterpret_cast<const VipCoordinate<NDims>&>(VipNDArray::strides()); }
+	// Reimplement shape() and strides(), by value rather than by reinterpreting the
+	// representation: the dynamic vector the base returns and the fixed size one
+	// asked for here are two distinct classes with two layouts, and they coincide
+	// only when NDims is the default.
+	VIP_ALWAYS_INLINE VipCoordinate<NDims> shape() const noexcept { return VipCoordinate<NDims>(VipNDArray::shape()); }
+	VIP_ALWAYS_INLINE VipCoordinate<NDims> strides() const noexcept { return VipCoordinate<NDims>(VipNDArray::strides()); }
 
 	template<qsizetype D>
 	VIP_ALWAYS_INLINE qsizetype flatIndex(const VipCoordinate<D>& c) const noexcept

@@ -67,7 +67,6 @@ public:
 	// virtual bool viewportEvent(QEvent *event);
 public Q_SLOTS:
 	void suppressSelectedLines();
-	void editSelectedColumn();
 	void launchQuery();
 	void resetQueryParameters();
 
@@ -75,6 +74,9 @@ public Q_SLOTS:
 	void copyToClipBoard();
 
 private Q_SLOTS:
+	// Its only connection is inside this class, and the exported header used to
+	// publish it as a callable entry point into the database write path.
+	void editSelectedColumn();
 	void displaySelectedEvents(QAction*);
 	void findRelatedEvents();
 	void plotTimeTrace();

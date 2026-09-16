@@ -128,6 +128,11 @@ void VipRenderObject::startRender(QObject* obj, VipRenderState& state)
 
 void VipRenderObject::endRender(QObject* obj, VipRenderState& state)
 {
+	// Tested, as getRenderObject() just below already does: the findChildren() call
+	// further down dereferences it without a guard.
+	if (!obj)
+		return;
+
 	if (VipRenderObject* render = getRenderObject(obj)) {
 		render->endRender(state);
 	}

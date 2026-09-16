@@ -956,7 +956,10 @@ void VipPieChart::setPie(const VipPie& p)
 		tmp.setMinRadius(p.minRadius());
 		tmp.setOffsetToCenter(p.offsetToCenter());
 		tmp.setStartAngle(start_angle);
-		double range = item->value() / d_data->sumValue;
+		// Scaled by the opening of the new ring, as the twin loop of setValues() does.
+		// The fractions sum to one, so without it the whole chart folded into a single
+		// unit of angle and the rest of the ring became one empty sector.
+		double range = (item->value() / d_data->sumValue) * p.sweepLength();
 		start_angle += range;
 		tmp.setEndAngle(start_angle);
 
@@ -1366,6 +1369,12 @@ VipPieItem* VipPieChart::createItem(int index)
 	item->setTextOuterDistanceToBorder(this->textOuterDistanceToBorder(), this->outerDistanceToBorder());
 	item->setQuiverPath(this->quiverPath());
 	item->setLegendStyle(this->legendStyle());
+	// The four properties the sixteen relaying setters carry and this copy did not:
+	// setting one of them before the items exist had no effect at all.
+	item->setSpacing(this->spacing());
+	item->setTextPosition(this->textPosition());
+	item->setTextAnglePosition(this->textAnglePosition());
+	item->setTextHorizontalDistance(this->textHorizontalDistance());
 	VipBoxStyle st = this->itemsBoxStyle();
 	QPen p = st.borderPen();
 	QBrush b = st.backgroundBrush();

@@ -53,6 +53,7 @@ public:
 	QList<VipPluginInterface*> interfaces;
 	std::vector<std::unique_ptr<QPluginLoader>> plugins;
 	QMap<QString, QStringList> availablePlugins;
+	bool unloaded{ false };
 };
 
 VipLoadPlugins::VipLoadPlugins()
@@ -158,6 +159,13 @@ VipPluginInterface* VipLoadPlugins::find(const QString& name) const
 
 void VipLoadPlugins::unloadPlugins()
 {
+	// Idempotent. Closing the main window unloads, and so does the end of main:
+	// every plugin used to receive unloadPlugin() twice on a normal exit, and the
+	// interface documents no such contract.
+	if (d_data->unloaded)
+		return;
+	d_data->unloaded = true;
+
 	for (qsizetype i = 0; i < d_data->interfaces.size(); ++i) {
 		d_data->interfaces[i]->unloadPlugin();
 	}
@@ -165,8 +173,11 @@ void VipLoadPlugins::unloadPlugins()
 
 void VipLoadPlugins::unloadAndDeletePlugins()
 {
-	for (qsizetype i = 0; i < d_data->interfaces.size(); ++i) {
-		d_data->interfaces[i]->unloadPlugin();
+	if (!d_data->unloaded) {
+		d_data->unloaded = true;
+		for (qsizetype i = 0; i < d_data->interfaces.size(); ++i) {
+			d_data->interfaces[i]->unloadPlugin();
+		}
 	}
 
 	for (qsizetype i = 0; i < d_data->interfaces.size(); ++i) {

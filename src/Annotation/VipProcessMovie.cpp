@@ -303,13 +303,17 @@ public:
 	{
 		QTcpSocket connection;
 		VipClientEventDevice* dev = parent.load();
-		if (!dev)
+		if (!dev) {
+			// The caller waits on this status: leaving it at zero froze it.
+			status = -1;
 			return;
+		}
 
 		QString path = dev->removePrefix(dev->path());
 		QStringList lst = path.split(";", VIP_SKIP_BEHAVIOR::SkipEmptyParts);
 		if (lst.size() != 3) {
 			VIP_LOG_ERROR("Wrong path format: ", path);
+			status = -1;
 			return;
 		}
 
@@ -447,13 +451,20 @@ bool VipClientEventDevice::enableStreaming(bool enable)
 		d_data->parent = this;
 		d_data->start();
 
-		// wait for status
-		while (d_data->status.load() == 0)
+		// Wait for status, with a bound. This runs in the thread of the interface,
+		// and the thread above can end without saying anything at all.
+		const qint64 deadline = QDateTime::currentMSecsSinceEpoch() + 5000;
+		while (d_data->status.load() == 0 && QDateTime::currentMSecsSinceEpoch() < deadline)
 			vipSleep(10);
-		if (d_data->status.load() < 0) {
+
+		if (d_data->status.load() == 0)
+			VIP_LOG_ERROR("Timeout while connecting to the event server");
+
+		if (d_data->status.load() <= 0) {
 			d_data->parent = nullptr;
 			d_data->wait();
 			VIP_CREATE_PRIVATE_DATA();
+			return false;
 		}
 	}
 
@@ -1062,16 +1073,28 @@ void VipPlayerDBAccess::changeValue(const QString& name, const QString& value, c
 
 void VipPlayerDBAccess::mergeIds(const QList<qint64>& ids)
 {
-	if (!ids.size())
+	if (ids.size() < 2) {
+		VIP_LOG_ERROR("At least two events are needed to merge");
 		return;
+	}
+
+	// The identifiers come from a free text field, and the non const lookup used
+	// to insert an empty entry for an unknown one before taking its first shape.
+	for (qint64 id : ids) {
+		auto found = m_events.constFind(id);
+		if (found == m_events.constEnd() || found.value().isEmpty()) {
+			VIP_LOG_ERROR("Unknown event identifier: " + QString::number(id));
+			return;
+		}
+	}
 
 	// check merge validity
-	QString category = m_events[ids.first()].first().group();
+	QString category = m_events.value(ids.first()).first().group();
 	QVector<VipTimeRange> ranges;
 	qsizetype count = 0;
 	for (qsizetype k = 0; k < ids.size(); ++k) {
 		qint64 id = ids[k];
-		const VipShapeList shs = m_events[id];
+		const VipShapeList shs = m_events.value(id);
 		count += shs.size();
 		if (shs.size()) {
 			QString cat = shs.first().group();
@@ -1425,6 +1448,12 @@ Vip_event_list VipPlayerDBAccess::applyActions(const Vip_event_list& events)
 						--s;
 					}
 				}
+				// The rest of the module assumes an identifier that is present has
+				// at least one shape, and every reader takes the first one. Removing
+				// a range covering the whole event used to leave the key behind with
+				// nothing under it.
+				if (shs.isEmpty())
+					res.remove(id);
 			}
 		}
 		else if (act.type == Action::InterpolateFrames) {
@@ -1439,8 +1468,20 @@ Vip_event_list VipPlayerDBAccess::applyActions(const Vip_event_list& events)
 					polygons[shs[s].attribute("timestamp_ns").toLongLong()] = shs[s];
 				}
 
-				// get the source IR device
-				VipIODevice* dev = vipListCast<VipIODevice*>(m_player->mainDisplayObject()->allSources()).first();
+				// get the source IR device. The main display object is null on the base
+				// implementation, and the list of sources is empty when the pipeline
+				// carries no device: every other caller of this accessor tests it.
+				VipDisplayObject* main_display = m_player ? m_player->mainDisplayObject() : nullptr;
+				if (!main_display) {
+					VIP_LOG_ERROR("No main display object, interpolation abandoned");
+					return res;
+				}
+				const QList<VipIODevice*> sources = vipListCast<VipIODevice*>(main_display->allSources());
+				if (sources.isEmpty()) {
+					VIP_LOG_ERROR("No source device, interpolation abandoned");
+					return res;
+				}
+				VipIODevice* dev = sources.first();
 
 				// get time before and after
 				qint64 start_t = dev->previousTime(range.first);
@@ -1468,7 +1509,11 @@ Vip_event_list VipPlayerDBAccess::applyActions(const Vip_event_list& events)
 				else if (range.second >= polygons.lastKey())
 					end = polygons.last().polygon();
 				else {
-					QMap<qint64, VipShape>::iterator it = polygons.upperBound(range.second + 1);
+					// Without the increment, and with a fallback: for a bound one unit
+					// below the last key, the search used to land past the end.
+					QMap<qint64, VipShape>::iterator it = polygons.upperBound(range.second);
+					if (it == polygons.end())
+						--it;
 					end = it.value().polygon();
 				}
 
@@ -1739,7 +1784,16 @@ void VipPlayerDBAccess::saveToJsonInternal(bool show_messages)
 			p.setText("Recompute temporal statistics for modified events...");
 
 			// recompute stats
+			// The extraction returns an empty list when it refuses the request, which
+			// it does for a colour image or without a pool, and the loop below indexed
+			// it without looking.
 			QList<VipProcessingObject*> stats = m_player->extractTimeEvolution(to_recompute, Vip::Min | Vip::Max | Vip::Mean, 1, 2);
+			if (stats.size() != 3 * to_recomputeIds.size()) {
+				VIP_LOG_WARNING("Temporal statistics unavailable, attributes not recomputed");
+				to_recompute.clear();
+				to_recomputeIds.clear();
+				stats.clear();
+			}
 			qsizetype c = 0;
 			for (qsizetype i = 0; i < to_recomputeIds.size(); ++i) {
 				VipAnyResource* max = static_cast<VipAnyResource*>(stats[c++]);
@@ -1811,6 +1865,17 @@ void VipPlayerDBAccess::uploadInternal(bool show_messages)
 	// compute the list of ids that needs to be removed from the DB
 	for (QMap<qint64, qint64>::const_iterator it = m_modifications.begin(); it != m_modifications.end(); ++it) {
 		if (m_initial_events.find(it.key()) != m_initial_events.end()) {
+			// An event still held here whose confidence is not above zero used to be
+			// deleted by this loop and refused by the one below, which sends only
+			// what is above zero: it was lost from the shared database, and the log
+			// said it had been removed. A removal the user actually asked for takes
+			// the event out of m_events, and that one still goes through.
+			Vip_event_list::const_iterator current = m_events.find(it.key());
+			if (current != m_events.end() && !current.value().isEmpty() && current.value().first().attribute("confidence").toDouble() <= 0) {
+				VIP_LOG_WARNING("Event ", it.key(), " is not sent back because its confidence is not above zero: its removal is cancelled");
+				continue;
+			}
+
 			// get flag
 			int origin = m_initial_events[it.key()].first().attribute("origin").toInt();
 			if (origin == DB) {
@@ -1916,8 +1981,17 @@ void VipPlayerDBAccess::uploadInternal(bool show_messages)
 				p.setText("Recompute temporal statistics for modified events...");
 
 				// recompute stats
+				// The extraction returns an empty list when it refuses the request, which
+				// it does for a colour image or without a pool, and the loop below indexed
+				// it without looking.
 				QList<VipProcessingObject*> stats =
 				  m_player->extractTimeEvolution(to_recompute, Vip::Min | Vip::Max | Vip::Mean, 1, 2);
+				if (stats.size() != 3 * to_recomputeIds.size()) {
+					VIP_LOG_WARNING("Temporal statistics unavailable, attributes not recomputed");
+					to_recompute.clear();
+					to_recomputeIds.clear();
+					stats.clear();
+				}
 				qsizetype c = 0;
 				for (qsizetype i = 0; i < to_recomputeIds.size(); ++i) {
 					VipAnyResource* max = static_cast<VipAnyResource*>(stats[c++]);
@@ -1959,27 +2033,50 @@ void VipPlayerDBAccess::uploadInternal(bool show_messages)
 				}
 			}
 
-			p.setText("Remove modified events from DB...");
+			// The delete ran first and outside any transaction, so a single failed
+			// insert destroyed the original rows for good, in a database the whole
+			// team shares and with no local copy to fall back on. Both halves now
+			// succeed or neither does; without transaction support the insert goes
+			// first, which leaves a repairable duplicate rather than a hole.
+			const bool grouped = vipDBHasTransactions();
+			if (!grouped)
+				VIP_LOG_WARNING("Database without transaction support: events are inserted before the old ones are removed");
 
-			// remove from db
-			if (to_remove_from_DB.size() && !vipRemoveFromDB(to_remove_from_DB)) {
+			QString failure;
+			const auto send = [&]() {
+				p.setText("Send events to DB...");
+				if (to_send.size() && vipSendToDB(PPO, camera, device, pulse, to_send).size() == 0) {
+					failure = "Failed to upload events!";
+					return false;
+				}
+				return true;
+			};
+			const bool uploaded = vipDBTransaction([&]() {
+				if (!grouped && !send())
+					return false;
+
+				p.setText("Remove modified events from DB...");
+				if (to_remove_from_DB.size() && !vipRemoveFromDB(to_remove_from_DB)) {
+					failure = "Unable to remove events from DB";
+					return false;
+				}
+
+				return grouped ? send() : true;
+			});
+
+			if (!uploaded) {
+				if (failure.isEmpty())
+					failure = "Could not commit the events to the database";
 				if (show_messages)
-					vipWarning("Warning", "Unable to remove events from DB");
-				VIP_LOG_WARNING("Unable to remove events from DB");
+					vipWarning("Warning", failure);
+				VIP_LOG_WARNING(failure);
 				return;
 			}
+
 			if (to_remove_from_DB.size() > 1)
 				VIP_LOG_INFO(to_remove_from_DB.size(), " events removed from DB");
 			else if (to_remove_from_DB.size() == 1)
 				VIP_LOG_INFO(to_remove_from_DB.size(), " event removed from DB");
-
-			p.setText("Send events to DB...");
-			if (to_send.size() && vipSendToDB(PPO, camera, device, pulse, to_send).size() == 0) {
-				if (show_messages)
-					vipWarning("Warning", "Failed to upload events!");
-				VIP_LOG_WARNING("Failed to upload events!");
-				return;
-			}
 
 			if (to_send.size() > 1)
 				VIP_LOG_INFO(to_send.size(), " events sent to DB");

@@ -35,10 +35,14 @@
 #include "VipConfig.h"
 #include "VipPimpl.h"
 
-#include <QThread>
+#include <QObject>
 
 /// A timer class similar to the QTimer one, except that it is supports concurrent access and start/stop from any thread.
-class VIP_CORE_EXPORT VipTimer : public QThread
+///
+/// The thread is held, not inherited: as a QThread, start() and isRunning()
+/// hid the members of the same name of the base, so the answer depended on the
+/// static type of the pointer, and through a QThread* the timer never started.
+class VIP_CORE_EXPORT VipTimer : public QObject
 {
 	Q_OBJECT
 
@@ -73,11 +77,9 @@ public Q_SLOTS:
 Q_SIGNALS:
 	void timeout();
 
-protected:
-	virtual void run();
-
 private:
-	
+	void loop();
+
 	VIP_DECLARE_PRIVATE_DATA();
 };
 

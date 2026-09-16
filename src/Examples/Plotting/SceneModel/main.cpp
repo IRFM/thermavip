@@ -1,4 +1,5 @@
 
+#include <atomic>
 #include <qapplication.h>
 #include <cmath>
 #include <qthread.h>
@@ -79,7 +80,10 @@ VipSceneModel createSceneModel(double advance1, double advance2)
 class GenSceneModel : public QThread
 {
 	VipPlotSceneModel* sm;
-	bool stop;
+	// Atomic: written by the thread of the interface and read every turn by the
+	// thread below. A plain bool is a data race, and nothing forces the read to
+	// happen again, so the wait on shutdown could never return.
+	std::atomic<bool> stop;
 
 public:
 	GenSceneModel(VipPlotSceneModel* pl)

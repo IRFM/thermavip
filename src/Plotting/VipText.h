@@ -598,7 +598,9 @@ public:
 	VipTextObject(const VipText& text = VipText(), const QRectF& rect = QRectF(), const QTransform& tr = QTransform());
 	VipTextObject(const VipText& text, const VipPie& pie, const QPointF& center, VipText::TextDirection dir = VipText::AutoDirection, const QTransform& tr = QTransform());
 	VipTextObject(const VipTextObject&);
-	VipTextObject(VipTextObject&&) noexcept;
+	// Not noexcept: moving a class with private data moves the data into a block
+	// bound to this object, which allocates.
+	VipTextObject(VipTextObject&&);
 	~VipTextObject();
 
 	VipTextObject& operator=(const VipTextObject&);

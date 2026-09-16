@@ -33,6 +33,11 @@
 
 #include <cstdint>
 
+// One day, above which a duration is a programming mistake rather than a wait:
+// the conversions below are undefined past the range of an unsigned 32 bit
+// integer, and that range holds INFINITE at its top.
+static const double MAX_SLEEP_MS = 24. * 3600. * 1000.;
+
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
@@ -93,6 +98,15 @@ static std::uint64_t NowInUs()
 */
 void vipSleep(double milliseconds)
 {
+	// The argument reaches a conversion to an unsigned integer, which is undefined
+	// outside its range: a negative duration slept for over an hour here and
+	// returned at once on the other platform. Written this way, it also rejects a
+	// value that is not a number.
+	if (!(milliseconds > 0))
+		return;
+	if (milliseconds > MAX_SLEEP_MS)
+		milliseconds = MAX_SLEEP_MS;
+
 	if (milliseconds > 20) {
 		SleepInMs(static_cast<std::uint32_t>(milliseconds));
 	}
@@ -115,21 +129,32 @@ static NTSTATUS(__stdcall* ZwSetTimerResolution)(IN ULONG RequestedResolution,
 
 void vipSleep(double milliseconds)
 {
+	// Same domain as the other platform: a negative interval is an absolute time
+	// for NtDelayExecution, so the call returned at once, and the cast to DWORD of
+	// a huge value gives INFINITE, which never returns.
+	if (!(milliseconds > 0))
+		return;
+	if (milliseconds > MAX_SLEEP_MS)
+		milliseconds = MAX_SLEEP_MS;
 
 	static bool once = true;
 	if (once) {
 		ULONG actualResolution;
-		ZwSetTimerResolution(1, true, &actualResolution);
+		// Neither of these two lives in the documented interface of Windows:
+		// GetProcAddress gives nullptr when a symbol is not there, and calling
+		// through it takes the process down. The documented Sleep is the fallback.
+		if (ZwSetTimerResolution)
+			ZwSetTimerResolution(1, true, &actualResolution);
 		once = false;
 	}
-	if (milliseconds > 20) {
+	if (milliseconds > 20 || !NtDelayExecution) {
 		::Sleep(static_cast<DWORD>(milliseconds));
 	}
 	else {
 
 		LARGE_INTEGER interval;
-		interval.QuadPart = -1 * (int)(milliseconds * 10000.0f);
-		NtDelayExecution(false, &interval); 
+		interval.QuadPart = -1 * (LONGLONG)(milliseconds * 10000.0);
+		NtDelayExecution(false, &interval);
 	}
 }
 

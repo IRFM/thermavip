@@ -211,6 +211,8 @@ protected:
 	virtual void apply();
 };
 
+VIP_REGISTER_QOBJECT_METATYPE(VipStartYAtZero*)
+
 /// Apply a constant offset to the X values of a VipPointVector in order to start at 0.
 class VIP_CORE_EXPORT VipXOffset : public VipProcessingObject
 {
@@ -231,6 +233,8 @@ public:
 protected:
 	virtual void apply();
 };
+
+VIP_REGISTER_QOBJECT_METATYPE(VipXOffset*)
 
 VIP_REGISTER_QOBJECT_METATYPE(VipStartAtZero*)
 

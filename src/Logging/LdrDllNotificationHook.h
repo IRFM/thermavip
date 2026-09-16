@@ -1,3 +1,8 @@
+// Vendored from https://github.com/m417z/LdrDllNotificationHook
+// Copyright 2023 Michael Maltsev
+// SPDX-License-Identifier: MIT
+// Full text in THIRD_PARTY_NOTICES.md at the repository root.
+
 #pragma once
 
 #include <windows.h>
@@ -60,5 +65,9 @@ typedef enum {
 	LDR_DLL_NOTIFICATION_REASON_UNLOADED = 2,
 } LDR_DLL_NOTIFICATION_REASON;
 
+/// Both edit, by hand, a linked list that the loader of the system walks under
+/// a lock this code cannot take. They must therefore be called from the main
+/// thread and before any other thread of the process exists, which is the only
+/// moment where no concurrent load can happen. Installing twice is refused.
 BOOL HookLdrDllNotifications(PLDR_DLL_NOTIFICATION_FUNCTION_HOOK hook);
 void UnhookLdrDllNotifications();

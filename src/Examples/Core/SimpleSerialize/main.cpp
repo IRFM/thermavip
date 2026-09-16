@@ -47,9 +47,18 @@ int main(int , char** )
 
 
 	// now another option: use the builtin factory to read the archive and create a new DerivedClass
-	iarch.open(arch.toString());
+	// Each step can fail on a truncated or unexpected archive, and an example is
+	// what readers copy: check the open, the read and the type before using them.
+	if (!iarch.open(arch.toString())) {
+		std::cerr << "Cannot open archive" << std::endl;
+		return 1;
+	}
 	QVariant var = iarch.read("Object");
 	DerivedClass * derived2 = var.value<DerivedClass*>();
+	if (iarch.hasError() || !derived2) {
+		std::cerr << "Cannot read a DerivedClass from the archive" << std::endl;
+		return 1;
+	}
 
 	//check again the result
 	if (derived2->ivalue == 4 && derived2->dvalue == 5.6) {

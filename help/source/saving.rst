@@ -12,8 +12,8 @@ Saving curves/raw images
 
 
 To save a raw image (in ascii format or any other supported file formats), simply click on the |save_icon| icon from the video player tool bar.
-Same way, to save a curve's content, simply click on the |save_icon| icon from the plot player tool bar and select the curve to save. It is also possible to save all signals in the same file. In this case, the file will contain one column for the X (time) values and one row for each signal. 
-Note that all signals will be resampled in order to share the same X values. 
+Same way, to save a curve's content, simply click on the |save_icon| icon from the plot player tool bar and select the curve to save. It is also possible to save all signals in the same file. In this case, the file contains one header line, then one line per time sample. The first column holds the X (time) values, expressed in nanoseconds since the Unix epoch, and each following column holds one signal. 
+Note that all signals are resampled onto a common X axis. Where a signal does not cover the common time range, the missing samples are filled with the padding value, which is 0 by default: such zeros are indistinguishable from a real measurement of zero, so check the time coverage of your signals before exporting them together. 
 Only the CSV format stores the curve units.
 
 You can also save the content of a plot/video player as a PNG or JPEG image. For that, click on the |save_toolbar_icon| icon from the player **title bar** (above the player tool bar).

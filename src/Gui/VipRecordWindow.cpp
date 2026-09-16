@@ -13,7 +13,9 @@
 #include <qthread.h>
 #include <qdatetime.h>
 #include <qmutex.h>
+#include <qsemaphore.h>
 #include <qapplication.h>
+#include <atomic>
 /*
 double sampling_ms = (1.0 / rec->recordingFps()) * 1000;
 qint64 last_time = 0;
@@ -24,9 +26,11 @@ if (last_time == 0 || (current - last_time) >= sampling_ms)
 }
 */
 
-// global timeout
-static QMutex __mutex;
-static bool __should_quit = false;
+// global timeout.
+// Atomic: three threads write it and two read it, and the mutex that used to be
+// here covered some of the writes and none of the reads, which is a lock that
+// creates no ordering at all. The loop below is then free to be hoisted.
+static std::atomic<bool> s_should_quit{ false };
 
 static bool IsCloseEventReceived()
 {
@@ -194,18 +198,13 @@ void VipPlayerSelection::selected()
 
 struct RecordThread : public QThread
 {
-	VipRecordWindow* rec;
-	VipMPEGSaver* encoder;
+	// Read by this thread and written by the graphics thread, so a single atomic
+	// read; and a rendez-vous rather than a bool the caller spun on.
+	std::atomic<VipRecordWindow*> rec{ nullptr };
+	VipMPEGSaver* encoder{ nullptr };
 	QList<QImage> images;
 	QMutex mutex;
-	bool started;
-
-	RecordThread()
-	  : rec(nullptr)
-	  , encoder(nullptr)
-	  , started(false)
-	{
-	}
+	QSemaphore ready;
 
 	void addImage(const QImage& img)
 	{
@@ -213,10 +212,31 @@ struct RecordThread : public QThread
 		images.append(img);
 	}
 
-	virtual void run()
+	void clearImages()
 	{
+		QMutexLocker lock(&mutex);
+		images.clear();
+	}
 
-		VipRecordWindow* r = rec;
+	void run() override
+	{
+		// Released however the start-up phase ends, failures included: the caller waits
+		// on it, and a run that gave up before signalling left it waiting for good.
+		struct ReleaseOnce
+		{
+			QSemaphore& sem;
+			bool done{ false };
+			void operator()()
+			{
+				if (!done) {
+					done = true;
+					sem.release();
+				}
+			}
+			~ReleaseOnce() { (*this)(); }
+		} signal_ready{ ready };
+
+		VipRecordWindow* r = rec.load();
 		if (!r) {
 			return;
 		}
@@ -228,27 +248,38 @@ struct RecordThread : public QThread
 
 			Q_EMIT r->started();
 			Q_EMIT r->stateChanged(true);
-			started = true;
 
 			QSize s = r->videoSize();
 			VIP_LOG_INFO("Start record thread (%i*%i) in file %s\n", s.width(), s.height(), r->filename().toLatin1().data());
 			encoder = new VipMPEGSaver();
+			// Configured, and its opening tested, exactly as the other recording path
+			// does. The handler built here was filled in and then dropped, and ReadOnly
+			// is a mode this device refuses: the device stayed closed, the frames were
+			// pushed into it all the same, and no video was ever produced.
+			encoder->setAdditionalInfo(VipMPEGIODeviceHandler{ s.width(), s.height(), r->movieFps(), r->rate() * 1000, -1, 2 });
 			encoder->setPath(r->filename());
-			VipMPEGIODeviceHandler h;
-			h.codec_id = 0;
-			h.fps = r->movieFps();
-			h.rate = r->rate() * 1000;
-			h.width = s.width();
-			h.height = s.height();
-			encoder->open(VipMPEGSaver::ReadOnly);
-			// encoder = new VideoEncoder();
-			// encoder->Open(r->filename().toLatin1().data(), s.width(), s.height(), r->movieFps(), r->rate() * 1000);
+			if (!encoder->open(VipIODevice::WriteOnly)) {
+				VIP_LOG_ERROR("Cannot open the video encoder for file " + r->filename());
+				delete encoder;
+				encoder = nullptr;
+				s_should_quit.store(true);
+				Q_EMIT r->stopped();
+				Q_EMIT r->stateChanged(false);
+				return;
+			}
+			signal_ready();
+
 			qint64 starttime = QDateTime::currentMSecsSinceEpoch();
 
-			while (rec && !__should_quit) {
-				VipRecordWindow* _rec = rec;
+			for (;;) {
+				// One atomic read, then the copy is tested. The pointer used to be tested
+				// and then read again, and the graphics thread clears it between the two:
+				// the two uses further down then dereferenced null.
+				VipRecordWindow* _rec = rec.load();
+				if (!_rec || s_should_quit.load())
+					break;
 
-				while (!__should_quit) {
+				while (!s_should_quit.load()) {
 					// get last image
 					QImage img;
 					{
@@ -263,7 +294,7 @@ struct RecordThread : public QThread
 						encoder->inputAt(0)->setData(QVariant::fromValue(vipToArray(img)));
 						encoder->update();
 						if (encoder->hasError()) {
-							__should_quit = true;
+							s_should_quit.store(true);
 						}
 					}
 					else {
@@ -271,39 +302,33 @@ struct RecordThread : public QThread
 						break;
 					}
 
-					if ((_rec->timeout() >= 0 && (QDateTime::currentMSecsSinceEpoch() - starttime) > _rec->timeout()) || IsCloseEventReceived()) {
-						QMutexLocker lock(&__mutex);
-						__should_quit = true;
-					}
+					if ((_rec->timeout() >= 0 && (QDateTime::currentMSecsSinceEpoch() - starttime) > _rec->timeout()) || IsCloseEventReceived())
+						s_should_quit.store(true);
 				}
 
-				if ((_rec->timeout() >= 0 && (QDateTime::currentMSecsSinceEpoch() - starttime) > _rec->timeout()) || IsCloseEventReceived()) {
-					QMutexLocker lock(&__mutex);
-					__should_quit = true;
-				}
+				if ((_rec->timeout() >= 0 && (QDateTime::currentMSecsSinceEpoch() - starttime) > _rec->timeout()) || IsCloseEventReceived())
+					s_should_quit.store(true);
 			}
 		}
 		catch (...) {
-			{
-				QMutexLocker lock(&__mutex);
-				__should_quit = true;
+			s_should_quit.store(true);
+			// Tested: everything before the allocation is inside the try, so this handler
+			// could be reached with nothing to close.
+			if (encoder) {
+				encoder->close();
+				delete encoder;
+				encoder = nullptr;
 			}
-			// encoder->Close();
-			encoder->close();
-			delete encoder;
-			encoder = nullptr;
 			Q_EMIT r->stopped();
 			Q_EMIT r->stateChanged(false);
 			return;
 		}
-		{
-			QMutexLocker lock(&__mutex);
-			__should_quit = true;
+		s_should_quit.store(true);
+		if (encoder) {
+			encoder->close();
+			delete encoder;
+			encoder = nullptr;
 		}
-		// encoder->Close();
-		encoder->close();
-		delete encoder;
-		encoder = nullptr;
 		Q_EMIT r->stopped();
 		Q_EMIT r->stateChanged(false);
 	}
@@ -567,9 +592,14 @@ void VipRecordWindow::setRecordOnPlay(bool enable)
 	if (enable != d_data->recordOnPlayEnabled) {
 		d_data->recordOnPlayEnabled = enable;
 		if (enable) {
-			connect(vipGetMainWindow()->displayArea(), SIGNAL(playingStarted()), this, SLOT(openFile()), Qt::DirectConnection);
+			// All three blocking, as the middle one already was. These signals reach us
+			// from the play thread, never from the graphics thread, so blocking keeps the
+			// strict order open / frames / close while running every slot here. Asked
+			// directly, openFile() and closeFile() read widgets and built and destroyed a
+			// QObject in the play thread.
+			connect(vipGetMainWindow()->displayArea(), SIGNAL(playingStarted()), this, SLOT(openFile()), Qt::BlockingQueuedConnection);
 			connect(vipGetMainWindow()->displayArea(), SIGNAL(playingAdvancedOneFrame()), this, SLOT(recordCurrentImage()), Qt::BlockingQueuedConnection);
-			connect(vipGetMainWindow()->displayArea(), SIGNAL(playingStopped()), this, SLOT(closeFile()), Qt::DirectConnection);
+			connect(vipGetMainWindow()->displayArea(), SIGNAL(playingStopped()), this, SLOT(closeFile()), Qt::BlockingQueuedConnection);
 		}
 		else {
 			disconnect(vipGetMainWindow()->displayArea(), SIGNAL(playingStarted()), this, SLOT(openFile()));
@@ -695,7 +725,10 @@ static QMultiMap<QString, int> _progress_status;
 
 void VipRecordWindow::grabImage()
 {
-	QMultiMap<QString, int> current = vipGetMultiProgressWidget()->currentProgresses();
+	VipMultiProgressWidget* progress_widget = vipGetMultiProgressWidget();
+	if (!progress_widget)
+		return;
+	QMultiMap<QString, int> current = progress_widget->currentProgresses();
 	if (diff(current, _progress_status)) {
 		// ok, update image and progress status
 		_progress_status = current;
@@ -802,10 +835,7 @@ QRect VipRecordWindow::computeRect()
 void VipRecordWindow::start()
 {
 	stop();
-	{
-		QMutexLocker lock(&__mutex);
-		__should_quit = false;
-	}
+	s_should_quit.store(false);
 
 	d_data->rect = computeRect();
 	d_data->screen = vipGetMainWindow()->screen();
@@ -818,12 +848,22 @@ void VipRecordWindow::start()
 
 	d_data->timer.setInterval(1000.0 / recordingFps());
 
+	// One recording path at a time. With recording synchronised on playing, the
+	// frames are written by openFile()/recordCurrentImage(); starting the thread as
+	// well put a second encoder on the same file, and it began by deleting it.
+	if (d_data->recordOnPlayEnabled)
+		return;
+
 	d_data->thread->rec = this;
 	d_data->thread->start();
-	if (!d_data->recordOnPlayEnabled)
-		d_data->timer.start();
-	while (!d_data->thread->started) {
-		QThread::msleep(1);
+	d_data->timer.start();
+
+	// A rendez-vous, bounded. The graphics thread used to spin on a plain bool that
+	// the thread sets after a delay this same user chose, up to ten seconds, and
+	// that a failed start never set at all.
+	if (!d_data->thread->ready.tryAcquire(1, int(recordDelay() * 1000) + 5000)) {
+		VIP_LOG_ERROR("The record thread did not start");
+		stop();
 	}
 }
 void VipRecordWindow::stop()
@@ -837,8 +877,16 @@ void VipRecordWindow::stop()
 
 	d_data->timer.stop();
 	d_data->thread->rec = nullptr;
-	d_data->thread->wait();
-	d_data->thread->images.clear();
+	// Asked to stop, not merely deprived of its pointer: the inner loop tests only
+	// this flag and leaves it once the queue is empty, so the graphics thread waited
+	// for the whole backlog to be encoded, without a bound and with nothing to
+	// cancel. The queue is cleared under its own mutex.
+	s_should_quit.store(true);
+	if (!d_data->thread->wait(5000)) {
+		VIP_LOG_WARNING("The record thread did not stop, waiting for it");
+		d_data->thread->wait();
+	}
+	d_data->thread->clearImages();
 	d_data->rect = QRect();
 	d_data->screen = nullptr;
 }

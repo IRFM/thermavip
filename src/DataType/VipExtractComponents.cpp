@@ -79,6 +79,17 @@ VipNDArray VipExtractComponents::GetComponent(const QString& component) const
 		return VipNDArray();
 }
 
+QList<VipNDArray> VipExtractComponents::ConvertToPixelComponentTypes(const QList<VipNDArray>& components) const
+{
+	const QList<QByteArray> types = PixelComponentTypes();
+	QList<VipNDArray> res;
+	for (qsizetype i = 0; i < components.size(); ++i) {
+		const int type = i < types.size() && !types[i].isEmpty() ? vipIdFromName(types[i].data()) : 0;
+		res.append(type > 0 && components[i].dataType() != type ? components[i].convert(type) : components[i]);
+	}
+	return res;
+}
+
 bool VipExtractComponents::SetComponent(const QString& component, const VipNDArray& array)
 {
 	if (m_components.size() != this->PixelComponentNames().size())
@@ -217,10 +228,12 @@ VipNDArray VipExtractHSLComponents::MergeComponents() const
 	VipNDArrayShape shape = components[0].shape();
 	qsizetype size = components[0].size();
 
-	qsizetype* h = (qsizetype*)components[0].data();
-	qsizetype* s = (qsizetype*)components[1].data();
-	qsizetype* l = (qsizetype*)components[2].data();
-	quint8* a = (quint8*)components[3].data();
+	// Through the published types: these were read eight bytes at a time from
+	// arrays of four and of one.
+	const int* h = (const int*)components[0].constData();
+	const int* s = (const int*)components[1].constData();
+	const int* l = (const int*)components[2].constData();
+	const quint8* a = (const quint8*)components[3].constData();
 
 	QImage res(shape[1], shape[0], QImage::Format_ARGB32);
 	uint* data = (uint*)res.bits();
@@ -265,10 +278,10 @@ VipNDArray VipExtractHSVComponents::MergeComponents() const
 	const VipNDArray a2 = components[2];
 	const VipNDArray a3 = components[3];
 
-	const qsizetype* h = (const qsizetype*)components[0].data();
-	const qsizetype* s = (const qsizetype*)components[1].data();
-	const qsizetype* v = (const qsizetype*)components[2].data();
-	const quint8* a = (const quint8*)components[3].data();
+	const int* h = (const int*)components[0].constData();
+	const int* s = (const int*)components[1].constData();
+	const int* v = (const int*)components[2].constData();
+	const quint8* a = (const quint8*)components[3].constData();
 
 	QImage res(shape[1], shape[0], QImage::Format_ARGB32);
 	uint* data = (uint*)res.bits();
@@ -311,11 +324,12 @@ VipNDArray VipExtractCMYKComponents::MergeComponents() const
 	VipNDArrayShape shape = components[0].shape();
 	qsizetype size = components[0].size();
 
-	const int* c = (const int*)components[0].data();
-	const int* y = (const int*)components[1].data();
-	const int* m = (const int*)components[2].data();
-	const int* k = (const int*)components[3].data();
-	const quint8* a = (const quint8*)components[4].data();
+	// Four bytes per element were read from arrays of one.
+	const quint8* c = (const quint8*)components[0].constData();
+	const quint8* y = (const quint8*)components[1].constData();
+	const quint8* m = (const quint8*)components[2].constData();
+	const quint8* k = (const quint8*)components[3].constData();
+	const quint8* a = (const quint8*)components[4].constData();
 
 	QImage res(shape[1], shape[0], QImage::Format_ARGB32);
 	uint* data = (uint*)res.bits();

@@ -70,6 +70,12 @@ public:
 	virtual void close();
 	virtual qint64 estimateFileSize() const;
 
+	/// Whether setPath() may open a modal dialog to let the user configure the
+	/// device it creates. Off by default: setPath() is also called from session
+	/// restore and from batch paths, where a dialog just freezes the application.
+	void setInteractiveDeviceSelection(bool enable);
+	bool interactiveDeviceSelection() const;
+
 	/// Directly set the internal recorder.
 	///  This will delete the preivous recorder, if any.
 	void setRecorder(VipIODevice* device);

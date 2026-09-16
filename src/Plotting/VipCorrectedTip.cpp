@@ -239,14 +239,18 @@ void QAlphaWidget::render()
 		alpha = 1;
 
 #if defined(Q_OS_WIN) && !defined(Q_OS_WINCE)
+	// Tested, as the other branch of this same #if and the two other users of this
+	// member already do: it is a QPointer, so it clears itself when the widget goes,
+	// and this runs from a timer beating every millisecond.
 	if (alpha >= 1 || !showWidget) {
 		anim.stop();
 		qApp->removeEventFilter(this);
-		widget->setWindowOpacity(1);
+		if (widget)
+			widget->setWindowOpacity(1);
 		q_blend = 0;
 		deleteLater();
 	}
-	else {
+	else if (widget) {
 		widget->setWindowOpacity(alpha);
 	}
 #else
@@ -536,19 +540,21 @@ VipTipLabel::VipTipLabel(VipTipContainer* parent)
 	// setAttribute(Qt::WA_TransparentForMouseEvents);
 }
 
+// The effect exists only for a real container; a fake one has none, and these
+// are reachable through it.
 bool VipTipLabel::dropShadowEnabled() const
 {
-	return container->effect->isEnabled();
+	return container->effect && container->effect->isEnabled();
 }
 
 double VipTipLabel::dropShadowOffset() const
 {
-	return container->effect->xOffset();
+	return container->effect ? container->effect->xOffset() : 0.;
 }
 
 double VipTipLabel::dropShadowBlurRadius() const
 {
-	return container->effect->blurRadius();
+	return container->effect ? container->effect->blurRadius() : 0.;
 }
 
 int VipTipLabel::expireTime() const
@@ -558,16 +564,20 @@ int VipTipLabel::expireTime() const
 
 void VipTipLabel::setDropShadowEnabled(bool enable)
 {
-	container->effect->setEnabled(enable);
+	if (container->effect)
+		container->effect->setEnabled(enable);
 }
 void VipTipLabel::setdropShadowOffset(double offset)
 {
-	container->effect->setXOffset(offset);
-	container->effect->setYOffset(offset);
+	if (container->effect) {
+		container->effect->setXOffset(offset);
+		container->effect->setYOffset(offset);
+	}
 }
 void VipTipLabel::setDropShadowBlurRadius(double radius)
 {
-	container->effect->setBlurRadius(radius);
+	if (container->effect)
+		container->effect->setBlurRadius(radius);
 }
 void VipTipLabel::setExpireTime(int time_ms)
 {

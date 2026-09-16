@@ -42,7 +42,10 @@ int vipIterateThreadCount() noexcept
 
 void vipSetIterateThreadCount(int threads) noexcept
 {
-	static int concurrency = (int)std::thread::hardware_concurrency();
+	// hardware_concurrency is allowed to return zero when it cannot tell, and the
+	// upper clamp then wrote that zero over every valid count: the divisor of the
+	// loop splitting and five thread counts would have taken it.
+	static int concurrency = std::max(1, (int)std::thread::hardware_concurrency());
 	if (threads < 1)
 		threads = 1;
 	else if (threads > concurrency)
@@ -58,6 +61,10 @@ int vipParallelSizeThreshold() noexcept
 }
 void vipSetParallelSizeThreshold(int threshold) noexcept
 {
+	// Its twin above clamps its argument; this one took anything, and a negative
+	// threshold made every loop parallel whatever its size.
+	if (threshold < 1)
+		threshold = 1;
 	_threshold.store(threshold);
 }
 

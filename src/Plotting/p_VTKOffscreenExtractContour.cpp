@@ -189,6 +189,11 @@ public:
 	std::map<const VipPlotVTKObject*, QList<QPolygonF>> outlines_list;
 	// vtkSmartPointer<vtkRenderer> render;
 	QList<vtkRenderer*> renderers;
+
+	// The layer of an object is a freely settable attribute, while this list holds
+	// one renderer per layer of the view: five sites used the former as an index
+	// into the latter without a bound.
+	vtkRenderer* rendererForLayer(int layer) const { return (layer >= 0 && layer < renderers.size()) ? renderers[layer] : nullptr; }
 	vtkSmartPointer<vtkRenderWindow> renderWin;
 	vtkSmartPointer<vtkWindowToImageFilter> filter;
 	qint64 mTime;
@@ -369,7 +374,8 @@ void OffscreenExtractContour::Reset()
 		dst->setLayer(data->layer());
 		if (vtkActor* act = dst->actor()) {
 			act->GetProperty()->LightingOff();
-			d_data->renderers[data->layer()]->AddActor(act);
+			if (vtkRenderer* ren = d_data->rendererForLayer(data->layer()))
+				ren->AddActor(act);
 		}
 		if (vtkMapper* m = dst->mapper())
 			m->SetScalarVisibility(0);
@@ -650,7 +656,10 @@ QString OffscreenExtractContour::Description(const QPoint& pt)
 		obj = d_data->highlightedData->rawData();
 	VipVTKObjectLocker locker = vipLockVTKObjects(obj);
 	vtkDataSet* set = obj.dataSet();
-	if (type == Unknown || object_id < 0)
+	// point_id too: it is what ClosestPointId() answered, and that answers -1 on
+	// paths this one reaches, including the one where object_id is past the cell
+	// count. This runs on every mouse move over a 3D object.
+	if (type == Unknown || object_id < 0 || point_id < 0)
 		return res;
 
 	// first paragraph: general infos
@@ -753,12 +762,14 @@ void OffscreenExtractContour::resetLayers()
 		VipVTKObject dst_data = dst.rawData();
 
 		if (src_data.data() != dst_data.data() || src->layer() != dst.layer()) {
-			d_data->renderers[dst.layer()]->RemoveActor(dst.actor());
+			if (vtkRenderer* ren = d_data->rendererForLayer(dst.layer()))
+				ren->RemoveActor(dst.actor());
 
 			dst_data = VipVTKObject(src_data.data());
 			dst.setRawData(dst_data);
 			dst.setLayer(src->layer());
-			d_data->renderers[dst.layer()]->AddActor(dst.actor());
+			if (vtkRenderer* ren = d_data->rendererForLayer(dst.layer()))
+				ren->AddActor(dst.actor());
 
 			if (vtkMapper* m = dst.mapper())
 				m->SetScalarVisibility(0);
@@ -781,7 +792,8 @@ void OffscreenExtractContour::add(const VipPlotVTKObject* data)
 	dst->setLayer(data->layer());
 	if (vtkActor* act = dst->actor()) {
 		act->GetProperty()->LightingOff();
-		d_data->renderers[data->layer()]->AddActor(act);
+		if (vtkRenderer* ren = d_data->rendererForLayer(data->layer()))
+			ren->AddActor(act);
 	}
 	if (vtkMapper* m = dst->mapper())
 		m->SetScalarVisibility(0);
@@ -801,7 +813,8 @@ void OffscreenExtractContour::remove(const VipPlotVTKObject* data)
 	auto it = d_data->data.find(data);
 	if (it != d_data->data.end()) {
 		VipVTKObjectLocker lock = vipLockVTKObjects(it->first->rawData());
-		d_data->renderers[it->second.layer()]->RemoveActor(it->second.actor());
+		if (vtkRenderer* ren = d_data->rendererForLayer(it->second.layer()))
+			ren->RemoveActor(it->second.actor());
 		d_data->data.erase(data);
 		d_data->shapes.erase(data);
 		d_data->outlines.erase(data);

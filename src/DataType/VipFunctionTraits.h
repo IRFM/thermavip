@@ -183,6 +183,10 @@ inline typename VipFunctionTraits<F>::return_type vipApply(F&& f, std::tuple<Arg
 	using ref_type = typename std::conditional<std::is_const<decltype(t)>::value, const tuple_type&, tuple_type&>::type;
 	using getter = details::TupleGetter<ref_type>;
 
+	// The unrolling is instantiated on the arity of the function, never on the size
+	// of the tuple: extra elements used to be dropped without a word.
+	static_assert(VipFunctionTraits<typename std::decay<F>::type>::nargs == sizeof...(Args),
+		      "vipApply: the arity of the function must be exactly the size of the tuple");
 	return details::ApplyFunctor<VipFunctionTraits<typename std::decay<F>::type>::nargs>::apply(std::forward<F>(f), getter{ t });
 }
 
@@ -197,6 +201,10 @@ inline typename VipFunctionTraits<F>::return_type vipApply(F&& f, const std::tup
 	using ref_type = const tuple_type&;
 	using getter = details::TupleGetter<ref_type>;
 
+	// The unrolling is instantiated on the arity of the function, never on the size
+	// of the tuple: extra elements used to be dropped without a word.
+	static_assert(VipFunctionTraits<typename std::decay<F>::type>::nargs == sizeof...(Args),
+		      "vipApply: the arity of the function must be exactly the size of the tuple");
 	return details::ApplyFunctor<VipFunctionTraits<typename std::decay<F>::type>::nargs>::apply(std::forward<F>(f), getter{ t });
 }
 

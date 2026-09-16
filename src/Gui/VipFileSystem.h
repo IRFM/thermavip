@@ -159,14 +159,17 @@ public:
 	virtual bool operator<(const QTreeWidgetItem& other) const;
 
 private:
-	VipPath m_path;
+	// m_mutex guards m_path as well as m_children and the two update flags: the
+	// path is read by the thread that refreshes the tree while the thread of the
+	// interface writes it, and every part of it is implicitly shared.
+	mutable VipPath m_path;
 	VipPathList m_children;
 	bool m_need_full_update;
 	bool m_need_attribute_update;
 	bool m_fake;
 	bool m_custom_dir;
 	bool m_custom_file;
-	QMutex m_mutex;
+	mutable QMutex m_mutex;
 };
 
 class VipMapFileSystemTreeDirItem

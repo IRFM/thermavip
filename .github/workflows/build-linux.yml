@@ -24,10 +24,10 @@ jobs:
         runs-on: ubuntu-22.04
         
         steps:
-        - uses: actions/checkout@v4
+        - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
         - name: Install Qt
-          uses: jurplel/install-qt-action@v4
+          uses: jurplel/install-qt-action@48d3ad6db93f3627c8ee7a0454bc6f3744f7e730 # v4.3.1 -- note: "v4" is a BRANCH here, not a tag
           with:
             modules: 'qt5compat'
           
@@ -43,6 +43,21 @@ jobs:
         - name: install HDF5
           run: sudo apt install libhdf5-serial-dev
 
+        # Cache the third-party tree built by configure_ffmpeg and
+        # 3rd_64/build-gcc.sh. Without it every push and pull request rebuilds
+        # nasm, kvazaar, x264 and ffmpeg from their upstream repositories, so
+        # the build depends on four unverified network hosts being up.
+        # The key is the digest of the two scripts that produce the tree, so
+        # any change to the recipe invalidates the cache. build-gcc.sh is
+        # idempotent, hence a partial restore only redoes what is missing.
+        - name: Cache 3rd party build
+          uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+          with:
+            path: 3rd_64
+            key: 3rd64-${{ runner.os }}-${{ hashFiles('3rd_64/build-gcc.sh', 'configure_ffmpeg') }}
+            restore-keys: |
+              3rd64-${{ runner.os }}-
+
         - name: Build on Linux
           run: |
               mkdir build 
@@ -55,5 +70,36 @@ jobs:
            CC:   gcc-10
            CXX:  g++-10
 
+        - name: Run tests
+          run: ctest --test-dir build --output-on-failure
+          shell: bash
+
         
 
+    # VTK support is compiled by no configuration today, so it degrades silently
+    # and only breaks for whoever turns the option on. Non-blocking on purpose:
+    # this code has never been built, so the first runs report accumulated
+    # breakage, and a job red from day one gets disabled before it helps.
+    build-linux-vtk:
+        runs-on: ubuntu-22.04
+        continue-on-error: true
+
+        steps:
+        - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+        - name: Install Qt
+          uses: jurplel/install-qt-action@48d3ad6db93f3627c8ee7a0454bc6f3744f7e730 # v4.3.1 -- note: "v4" is a BRANCH here, not a tag
+          with:
+            modules: 'qt5compat'
+
+        - name: install gcc 10 and VTK
+          run: sudo apt-get update && sudo apt-get install -y gcc-10 g++-10 libvtk9-dev
+
+        - name: Build with VTK
+          run: |
+              cmake -S . -B build-vtk -DCMAKE_BUILD_TYPE=Debug -DWITH_VTK=ON -DWITH_EXAMPLES=OFF -DLOCAL_INSTALL=ON
+              cmake --build build-vtk --parallel
+          shell: bash
+          env:
+           CC:   gcc-10
+           CXX:  g++-10

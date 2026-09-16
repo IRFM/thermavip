@@ -55,6 +55,7 @@ public:
 	QString datePrefix;
 	bool hasDatePrefix;
 	bool recorderAvailableDataOnOpen;
+	bool interactiveDeviceSelection{ false };
 	bool stopStreamingOnClose;
 	qint64 recordedSize;
 	QVariantList probeInputs;
@@ -91,11 +92,27 @@ void VipGenericRecorder::setProbeInputs(const QVariantList& lst)
 	d_data->probeInputs = lst;
 }
 
+void VipGenericRecorder::setInteractiveDeviceSelection(bool enable)
+{
+	d_data->interactiveDeviceSelection = enable;
+}
+bool VipGenericRecorder::interactiveDeviceSelection() const
+{
+	return d_data->interactiveDeviceSelection;
+}
+
 bool VipGenericRecorder::setPath(const QString& path)
 {
+	// Published straight away, as before: generateFilename() and the recording
+	// widgets read it back whether or not a device could be built for it.
 	VipIODevice::setPath(path);
+
 	if (!d_data->recorder || !d_data->recorder->probe(path)) {
 		if (d_data->recorder) {
+			// Closed first, as the two other sites that free the recorder already do:
+			// apply() writes into it and is not guaranteed to run in this thread, so
+			// this used to free a device in the middle of a write.
+			close();
 			delete d_data->recorder;
 			d_data->recorder = nullptr;
 		}
@@ -124,7 +141,10 @@ bool VipGenericRecorder::setPath(const QString& path)
 		if (lst.size() != inputCount())
 			lst.clear();
 
-		d_data->recorder = VipCreateDevice::create(VipIODevice::possibleWriteDevices(path, lst));
+		// The third argument decides whether a modal dialog is shown, and it defaults
+		// to true: this override of a purely programmatic entry point froze session
+		// restore and every batch path on a click.
+		d_data->recorder = VipCreateDevice::create(VipIODevice::possibleWriteDevices(path, lst), VipPath(), d_data->interactiveDeviceSelection);
 		if (!d_data->recorder)
 			return false;
 
@@ -365,7 +385,13 @@ QString VipGenericRecorder::generateFilename() const
 
 	QString path;
 
-	QFileInfo info(this->path().replace("\\", "/"));
+	// QFileInfo decomposes the path, both separators included. The normalisation
+	// used to be applied to a temporary and was therefore never kept, and the
+	// parent directory was then rebuilt by removing a substring from the raw
+	// path: on a Windows path nothing was removed, so the output directory was
+	// the file itself and the recording was lost without a word; and on a path
+	// whose directory carries the name of the file, both occurrences went.
+	const QFileInfo info(this->path());
 	QString fileName = info.fileName();
 
 	// remove the date prefix if possible
@@ -379,7 +405,7 @@ QString VipGenericRecorder::generateFilename() const
 	}
 
 	// get the canonical path
-	QString canonical_path = this->path().remove("/" + info.fileName());
+	const QString canonical_path = info.absolutePath();
 
 	QString prefix = QDateTime::currentDateTime().toString(datePrefix());
 	path = canonical_path + "/" + prefix + fileName;
@@ -792,7 +818,10 @@ void VipRecordWidget::startRecording()
 	if (VipGenericRecorder* recorder = d_data->recorder) {
 		recorder->setHasDatePrefix(d_data->addDate.isChecked());
 		recorder->setDatePrefix(d_data->date.text());
+		// The one place a dialog is wanted: the user just asked to record.
+		recorder->setInteractiveDeviceSelection(true);
 		recorder->setPath(d_data->filename.filename());
+		recorder->setInteractiveDeviceSelection(false);
 		if (!recorder->open(VipIODevice::WriteOnly)) {
 			stopRecording();
 			return;

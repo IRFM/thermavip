@@ -1000,7 +1000,7 @@ public:
 		qint64 time;
 
 		QSharedPointer<int> maxListSize;
-		QSharedPointer<int> maxListMemory;
+		QSharedPointer<qint64> maxListMemory;
 		QSharedPointer<int> listLimitType;
 		QSharedPointer<ErrorCodes> logErrors;
 
@@ -1011,7 +1011,7 @@ public:
 			   qint64 end_time = VipInvalidTime,
 			   qint64 time = VipInvalidTime,
 			   QSharedPointer<int> maxListSize = QSharedPointer<int>(),
-			   QSharedPointer<int> maxListMemory = QSharedPointer<int>(),
+			   QSharedPointer<qint64> maxListMemory = QSharedPointer<qint64>(),
 			   QSharedPointer<int> listLimitType = QSharedPointer<int>(),
 			   QSharedPointer<ErrorCodes> logErrors = QSharedPointer<ErrorCodes>())
 		  : enableMissFrames(enableMissFrames)
@@ -1404,10 +1404,10 @@ void VipProcessingPool::setMaxListSize(int size)
 	applyLimitsToChildren();
 }
 
-void VipProcessingPool::setMaxListMemory(int memory)
+void VipProcessingPool::setMaxListMemory(qint64 memory)
 {
 	if (memory >= 0)
-		d_data->parameters.maxListMemory.reset(new int(memory));
+		d_data->parameters.maxListMemory.reset(new qint64(memory));
 	else
 		d_data->parameters.maxListMemory.reset();
 	applyLimitsToChildren();
@@ -1430,7 +1430,7 @@ int VipProcessingPool::maxListSize() const
 {
 	return d_data->parameters.maxListSize ? *d_data->parameters.maxListSize : VipProcessingManager::maxListSize();
 }
-int VipProcessingPool::maxListMemory() const
+qint64 VipProcessingPool::maxListMemory() const
 {
 	return d_data->parameters.maxListMemory ? *d_data->parameters.maxListMemory : VipProcessingManager::maxListMemory();
 }
@@ -2065,7 +2065,7 @@ void VipProcessingPool::applyLimitsToChildren()
 	QList<VipProcessingObject*> objects = findDirectChildren<VipProcessingObject*>(this);
 
 	int max_list_size = maxListSize();
-	int max_list_memory = maxListMemory();
+	const qint64 max_list_memory = maxListMemory();
 	int list_limit_type = listLimitType();
 
 	for (int i = 0; i < objects.size(); ++i) {

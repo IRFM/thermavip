@@ -146,10 +146,10 @@ private Q_SLOTS:
 	void showHistoryWidget(const QStringList &);
 
 protected:
-	virtual void focusOutEvent(QFocusEvent* evt);
-	virtual bool event(QEvent* evt);
-	virtual void mousePressEvent(QMouseEvent* evt);
-	virtual bool eventFilter(QObject* watched, QEvent* event);
+	void focusOutEvent(QFocusEvent* evt) override;
+	bool event(QEvent* evt) override;
+	void mousePressEvent(QMouseEvent* evt) override;
+	bool eventFilter(QObject* watched, QEvent* event) override;
 
 private:
 	VIP_DECLARE_PRIVATE_DATA();

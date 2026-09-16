@@ -32,7 +32,9 @@
 #ifndef VIP_PROCESSING_OBJECT_H
 #define VIP_PROCESSING_OBJECT_H
 
+#include <atomic>
 #include <deque>
+#include <memory>
 #include <type_traits>
 
 #include <QIcon>
@@ -163,7 +165,10 @@ public:
 	}
 
 	/// Returns an approximation of the memory footprint for this object.
-	int memoryFootprint() const;
+	/// Size in bytes. 64 bit: the cap it feeds is expressed in bytes and a queue of
+	/// large images passes two gigabytes without difficulty, at which point a signed
+	/// 32 bit count overflows and compares favourably against any cap.
+	qint64 memoryFootprint() const;
 };
 
 typedef QVector<VipAnyData> VipAnyDataList;
@@ -195,48 +200,45 @@ public:
 	  , d_data(_null_error())
 	{
 	}
-	~VipErrorHandler()
-	{
-		VipErrorData* prev = d_data.exchange(_null_error());
-		if (prev != _null_error())
-			delete prev;
-	}
 	/// @brief Set the current error status.
 	/// The error will be redirected to the parent VipProcessingObject.
 	void setError(const QString& err, int code = -1) { setError(VipErrorData(err, code)); }
 	void setError(VipErrorData&& err)
 	{
-		VipErrorData* error = new VipErrorData(std::move(err));
-		VipErrorData* prev = d_data.exchange(error);
-		if (prev != _null_error())
-			delete prev;
-		newError(err);
-		emitError(this, err);
+		// err was moved from, so reading it again gave the extension point and the
+		// signal an empty error. Report the object that now holds it.
+		const std::shared_ptr<const VipErrorData> error = std::make_shared<const VipErrorData>(std::move(err));
+		std::atomic_store(&d_data, error);
+		d_has_error.store(true, std::memory_order_relaxed);
+		newError(*error);
+		emitError(this, *error);
 	}
 	void setError(const VipErrorData& err)
 	{
-		VipErrorData* error = new VipErrorData(err);
-		VipErrorData* prev = d_data.exchange(error);
-		if (prev != _null_error())
-			delete prev;
+		std::atomic_store(&d_data, std::make_shared<const VipErrorData>(err));
+		d_has_error.store(true, std::memory_order_relaxed);
 		newError(err);
 		emitError(this, err);
 	}
 	/// @brief Resets the current error status.
 	VIP_ALWAYS_INLINE void resetError()
 	{
-		VipErrorData* prev = d_data.exchange(_null_error());
-		if (prev != _null_error())
-			delete prev;
+		std::atomic_store(&d_data, _null_error());
+		d_has_error.store(false, std::memory_order_relaxed);
 	}
 	/// @brief Return the last error.
-	VIP_ALWAYS_INLINE const VipErrorData& errorData() const { return *d_data; }
+	/// By value: the reference this returned was to an object that the next
+	/// setError() or resetError() deleted, on a class documented thread safe, and
+	/// the reset happens before every run.
+	VIP_ALWAYS_INLINE VipErrorData errorData() const { return *std::atomic_load(&d_data); }
 	/// @brief Returns the last error string
 	VIP_ALWAYS_INLINE QString errorString() const { return errorData().errorString(); }
-	/// @brief Returns the last error code, ot 0 if no error occured.
+	/// @brief Returns the last error code.
+	/// With no error it answers -1, which is also RuntimeError: the code alone does
+	/// not tell an object that failed from one that never ran. hasError() does.
 	VIP_ALWAYS_INLINE int errorCode() const { return errorData().errorCode(); }
 	/// @brief Returns true if an error occurred during the last operation.
-	VIP_ALWAYS_INLINE bool hasError() const { return d_data != _null_error(); }
+	VIP_ALWAYS_INLINE bool hasError() const { return d_has_error.load(std::memory_order_relaxed); }
 
 	
 	
@@ -252,8 +254,9 @@ Q_SIGNALS:
 	void error(QObject*, const VipErrorData&);
 
 private:
-	static VipErrorData* _null_error();
-	std::atomic<VipErrorData*> d_data;
+	static const std::shared_ptr<const VipErrorData>& _null_error();
+	std::shared_ptr<const VipErrorData> d_data;
+	std::atomic<bool> d_has_error{ false };
 };
 
 class VipDataList;
@@ -261,6 +264,11 @@ class VipProcessingObject;
 
 typedef QMap<QString, QThread::Priority> PriorityMap;
 Q_DECLARE_METATYPE(PriorityMap)
+
+/// Serialise the priorities as key and value. Any value outside QThread::Priority
+/// falls back to QThread::InheritPriority.
+VIP_CORE_EXPORT QDataStream& operator<<(QDataStream& str, const PriorityMap& map);
+VIP_CORE_EXPORT QDataStream& operator>>(QDataStream& str, PriorityMap& map);
 
 /// VipProcessingManager manages the default configuration of all new VipDataList instances and VipProcessingObject instances.
 /// When a VipDataList is created, its data limit type, max list size and max memory size are set respectively to
@@ -291,14 +299,14 @@ public:
 	/// Set the list maximum size for all existing and future VipDataList instances
 	static void setMaxListSize(int size);
 	/// Set the list maximum memory footprint for all existing and future VipDataList instances
-	static void setMaxListMemory(int size);
+	static void setMaxListMemory(qint64 size);
 
 	/// Returns the current default list limit type
 	static int listLimitType();
 	/// Returns the current default maximum list size
 	static int maxListSize();
 	/// Returns the current default maximum memory footprint
-	static int maxListMemory();
+	static qint64 maxListMemory();
 
 	/// Error management for all processings
 	static void setLogErrorEnabled(int error_code, bool enable);
@@ -340,9 +348,11 @@ private:
 ///
 class VIP_CORE_EXPORT VipDataList
 {
-	int m_max_size;
-	int m_max_memory;
-	int m_data_limit_type;
+	// Written from the thread that configures, read from the thread that fills the
+	// buffer, and the setters below are plain assignments under no lock at all.
+	std::atomic<int> m_max_size;
+	std::atomic<qint64> m_max_memory;
+	std::atomic<int> m_data_limit_type;
 
 public:
 	/// The type of VipDataList
@@ -401,22 +411,22 @@ public:
 	virtual void clear() = 0;
 
 	/// Returns the memory footprint of the data list
-	virtual int memoryFootprint() const = 0;
+	virtual qint64 memoryFootprint() const = 0;
 
 	/// Set the maximum list size
-	void setMaxListSize(int size) { m_max_size = size; }
+	void setMaxListSize(int size) { m_max_size.store(size, std::memory_order_relaxed); }
 	/// Set the maximum list memory footprint
-	void setMaxListMemory(int memory) { m_max_memory = memory; }
+	void setMaxListMemory(qint64 memory) { m_max_memory.store(memory, std::memory_order_relaxed); }
 
 	/// Set the list limit type (combination of Number and MemorySize, or None)
-	void setListLimitType(int type) { m_data_limit_type = type; }
+	void setListLimitType(int type) { m_data_limit_type.store(type, std::memory_order_relaxed); }
 	/// Returns the list limit type
-	int listLimitType() const { return m_data_limit_type; }
+	int listLimitType() const { return m_data_limit_type.load(std::memory_order_relaxed); }
 
 	/// Returns the maximum list size
-	int maxListSize() const { return m_max_size; }
+	int maxListSize() const { return m_max_size.load(std::memory_order_relaxed); }
 	/// Returns the maximum list memory footprint in bytes
-	int maxListMemory() const { return m_max_memory; }
+	qint64 maxListMemory() const { return m_max_memory.load(std::memory_order_relaxed); }
 };
 
 /// @brief A FIFO, thread safe VipDataList
@@ -449,7 +459,7 @@ public:
 	virtual int status() const;
 	virtual VipDataList::Type listType() const { return FIFO; }
 	virtual int remaining() const;
-	virtual int memoryFootprint() const;
+	virtual qint64 memoryFootprint() const;
 	virtual void clear();
 };
 
@@ -477,7 +487,7 @@ public:
 	virtual int status() const;
 	virtual VipDataList::Type listType() const { return LIFO; }
 	virtual int remaining() const { return (int)m_list.size(); }
-	virtual int memoryFootprint() const;
+	virtual qint64 memoryFootprint() const;
 	virtual void clear();
 };
 
@@ -503,7 +513,7 @@ public:
 	virtual int status() const;
 	virtual VipDataList::Type listType() const { return LastAvailable; }
 	virtual int remaining() const { return hasNewData() ? 1 : 0; }
-	virtual int memoryFootprint() const;
+	virtual qint64 memoryFootprint() const;
 	virtual void clear();
 };
 
@@ -667,6 +677,11 @@ Q_SIGNALS:
 	void dataSent(VipProcessingIO* io, const VipAnyData& data);
 
 private:
+	/// @brief One copy of the peer vector, taken under the lock that guards it.
+	/// The vector is walked on the data path while the editing of the graph
+	/// empties or reallocates it.
+	VipConnectionVector connectionsCopy() const;
+
 	VIP_DECLARE_PRIVATE_DATA();
 };
 
@@ -858,10 +873,14 @@ public:
 	{
 		if (count() >= d_data->max_size)
 			return false;
+		if (pos < 0 || pos > d_data->vector.size())
+			return false;
 		TYPE* t = new TYPE(val);
 		t->setParentProcessing(parentProcessing());
 		d_data->vector.insert(pos, t);
-		added(d_data->vector.back());
+		// back(), not the element just inserted: anything but an append configured
+		// the wrong entry and left the new one unset. setAt() below writes it right.
+		added(t);
 		dirtyParentProcessingIO(this);
 		return true;
 	}
@@ -899,8 +918,12 @@ public:
 		if (size < 0)
 			size = 0;
 		if (size < count()) {
-			for (int i = size; i < count(); ++i)
+			// clear() and clearConnection() close the connection before destroying;
+			// these two paths did not, leaving the other end pointing at a dead object.
+			for (int i = size; i < count(); ++i) {
+				d_data->vector[i]->clearConnection();
 				delete d_data->vector[i];
+			}
 			d_data->vector.resize(size);
 			dirtyParentProcessingIO(this);
 		}
@@ -916,6 +939,9 @@ public:
 	{
 		if (count() <= d_data->min_size)
 			return false;
+		if (index < 0 || index >= d_data->vector.size())
+			return false;
+		d_data->vector[index]->clearConnection();
 		delete d_data->vector[index];
 		d_data->vector.removeAt(index);
 		dirtyParentProcessingIO(this);
@@ -947,11 +973,17 @@ public:
 	/// Returns the VipProcessingIO at given index
 	const TYPE* at(int index) const { return d_data->vector[index]; }
 	/// Reimplemented from #VipProcessingIO::data().
-	/// Returns the the data of the last VipProcessingIO.
-	virtual VipAnyData data() const { return d_data->vector.back()->data(); }
+	/// Returns the data of the last VipProcessingIO, or an empty one when there is
+	/// none: this container is documented as empty by default, and back() on it is
+	/// out of bounds.
+	virtual VipAnyData data() const { return d_data->vector.isEmpty() ? VipAnyData() : d_data->vector.back()->data(); }
 	/// Reimplemented from #VipProcessingIO::setData().
-	/// Set the data of the last VipProcessingIO.
-	virtual void setData(const VipAnyData& d) { d_data->vector.back()->setData(d); }
+	/// Set the data of the last VipProcessingIO. Does nothing when there is none.
+	virtual void setData(const VipAnyData& d)
+	{
+		if (!d_data->vector.isEmpty())
+			d_data->vector.back()->setData(d);
+	}
 	/// Clear all VipProcessingIO connections
 	virtual void clearConnection()
 	{
@@ -1041,7 +1073,7 @@ public:
 	/// Returns the list maximum size
 	VIP_ALWAYS_INLINE int maxListSize() const { return m_input_list->maxListSize(); }
 	/// Returns the list maximum memory size
-	VIP_ALWAYS_INLINE int maxListMemory() const { return m_input_list->maxListMemory(); }
+	VIP_ALWAYS_INLINE qint64 maxListMemory() const { return m_input_list->maxListMemory(); }
 	/// Returns the list limit type
 	VIP_ALWAYS_INLINE int listLimitType() const { return m_input_list->listLimitType(); }
 	/// Retruns true if the VipInput has a new data available, false otherwise
@@ -1105,7 +1137,7 @@ private:
 	VipDataList::Type m_type;
 	int m_list_limit_type;
 	int m_max_list_size;
-	int m_max_list_memory;
+	qint64 m_max_list_memory;
 };
 
 /// \a VipOutput represents an output of a VipProcessingObject.
@@ -1116,6 +1148,9 @@ class VIP_CORE_EXPORT VipOutput : public UniqueProcessingIO
 	QSharedPointer<VipAnyData> d_data;
 	VipAnyDataList m_buffer;
 	VipSpinlock m_buffer_lock;
+	// The current data itself, which the buffer lock never covered: the sibling
+	// property class holds the same pattern under its own lock.
+	VipSpinlock m_data_lock;
 	std::function<void(const VipAnyData&)> m_custom_sender; // Send the data to m_custom_sender function in addition of the regular connection
 	bool m_bufferize_outputs;
 
@@ -1802,15 +1837,23 @@ public:
 	/// @brief Setup all output connections for this processing. This function does not need to be called for direct connections.
 	/// \sa VipConnection::setupConnection.
 	void setupOutputConnections(const QString& address);
+	/// @brief Returns true once the destructor of this object has started.
+	/// The object stays visible to the global registry until the base destructor
+	/// runs, and must not be used any more from that point.
+	bool isBeingDestroyed() const noexcept;
+
 	/// @brief Open all input connections. This function does not need to be called for direct connections.
+	/// Returns false if at least one connection could not be opened.
 	/// \sa VipConnection::openConnection
-	void openInputConnections();
+	bool openInputConnections();
 	/// @brief Open all output connections. This function does not need to be called for direct connections.
+	/// Returns false if at least one connection could not be opened.
 	/// \sa VipConnection::openConnection
-	void openOutputConnections();
+	bool openOutputConnections();
 
 	/// @brief Open all connections. It starts first by the outputs and then the inputs/properties.
-	void openAllConnections();
+	/// Returns false if at least one connection could not be opened.
+	bool openAllConnections();
 
 	/// @brief Call VipConnection::removeProcessingPoolFromAddress() for all inputs/properties
 	void removeProcessingPoolFromAddresses();
@@ -1901,6 +1944,14 @@ public:
 
 	/// @brief Returns the number of pending processing in the TaskPool
 	int scheduledUpdates() const;
+
+	/// @brief Tells whether this object comes from a session file.
+	/// This is usefull for instance to disable running untrusted Python code.
+	bool isFromArchive() const noexcept;
+
+	/// @brief Set whether this object comes from a session file.
+	/// Setting to false will tell Python processing they are allowed to run their code.
+	void setFromArchive(bool) noexcept;
 
 	/// @brief Retrieve the number of inputs, properties and/or outputs that declares a given QMetaObject.
 	/// The QMetaObject must be related to a class inheriting VipProcessingObject.
@@ -2083,6 +2134,11 @@ private:
 
 	void run();
 	void runNoLock();
+	/// @brief Emit processingDone() for the last run of runNoLock(), if any.
+	/// Called by whoever ran it, once the lock serialising the run is released:
+	/// the signal reaches a processing list in a direct connection, and emitting
+	/// it under the lock closed a cycle with the mutex of that list.
+	void emitProcessingDone();
 	VipSpinlock& runLock() noexcept;
 	
 	VIP_DECLARE_PRIVATE_DATA();
@@ -2140,16 +2196,21 @@ QMultiMap<QString, VipProcessingObject::Info> VipProcessingObject::validProcessi
 			}
 		}
 		else {
+			// The objects walked here are the shared prototypes, alive for the
+			// whole process. Resizing one of them left every later query reading a
+			// number this one had just written, and two queries at once wrote the
+			// same container. Read the bounds and keep the count local.
+			int expected_input_count = obj->inputCount();
 			if (obj->topLevelInputCount() > 0)
-				if (VipMultiInput* multi = obj->topLevelInputAt(0)->toMultiInput()) {
+				if (const VipMultiInput* multi = obj->topLevelInputAt(0)->toMultiInput()) {
 					if (multi->minSize() > lst.size() || lst.size() > multi->maxSize()) {
 						// min/max size of VipMultiInput not compatible with the input list
 						continue;
 					}
-					multi->resize(lst.size());
+					expected_input_count = static_cast<int>(lst.size());
 				}
 
-			if (lst.size() == obj->inputCount()) {
+			if (lst.size() == expected_input_count) {
 				bool accept_all = true;
 				for (int j = 0; j < lst.size(); ++j) {
 					if (!obj->acceptInput(j, lst[j]) && lst[j].userType() != 0) {

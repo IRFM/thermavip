@@ -1065,6 +1065,14 @@ bool CustomizeVideoPlayer::eventFilter(QObject* w, QEvent* evt)
 						h = mw->subSplitterHandle(pos.y(), pos.x());
 				}
 
+				// The indices above are deliberately shifted by one to name the handle after
+				// an item, so they reach the count itself, and the splitter answers null
+				// there. The variable is initialised to null and was never tested.
+				if (!h) {
+					event->setDropAction(Qt::IgnoreAction);
+					return true;
+				}
+
 				bool res = h->dropMimeData(event->mimeData());
 				if (!res)
 					event->setDropAction(Qt::IgnoreAction);
@@ -1080,10 +1088,14 @@ bool CustomizeVideoPlayer::eventFilter(QObject* w, QEvent* evt)
 			if (!event->mimeData()->data("application/dragwidget").isEmpty()) {
 				// TODO: player swapping
 
-				VipBaseDragWidget* base = (VipBaseDragWidget*)(event->mimeData()->data("application/dragwidget").toULongLong());
-				if (VipDragWidget* d = qobject_cast<VipDragWidget*>(base)) {
-					d->parentMultiDragWidget()->swapWidgets(d, d_data->dragWidget);
-				}
+				// The typed mime data, which is what the rest of the module reads. The
+				// format above carries an address as decimal text, and any application can
+				// put a number of its choosing in a drag: the cast then read a class
+				// pointer at an address chosen outside.
+				if (const VipBaseDragWidgetMimeData* dmime = qobject_cast<const VipBaseDragWidgetMimeData*>(event->mimeData()))
+					if (VipDragWidget* d = qobject_cast<VipDragWidget*>(dmime->dragWidget.data()))
+						if (VipMultiDragWidget* pm = d->parentMultiDragWidget())
+							pm->swapWidgets(d, d_data->dragWidget);
 				event->setDropAction(Qt::IgnoreAction);
 				return true;
 			}
@@ -1387,10 +1399,14 @@ bool CustomWidgetPlayer::eventFilter(QObject* w, QEvent* evt)
 			if (!event->mimeData()->data("application/dragwidget").isEmpty()) {
 				// TODO: player swapping
 
-				VipBaseDragWidget* base = (VipBaseDragWidget*)(event->mimeData()->data("application/dragwidget").toULongLong());
-				if (VipDragWidget* d = qobject_cast<VipDragWidget*>(base)) {
-					d->parentMultiDragWidget()->swapWidgets(d, d_data->dragWidget);
-				}
+				// The typed mime data, which is what the rest of the module reads. The
+				// format above carries an address as decimal text, and any application can
+				// put a number of its choosing in a drag: the cast then read a class
+				// pointer at an address chosen outside.
+				if (const VipBaseDragWidgetMimeData* dmime = qobject_cast<const VipBaseDragWidgetMimeData*>(event->mimeData()))
+					if (VipDragWidget* d = qobject_cast<VipDragWidget*>(dmime->dragWidget.data()))
+						if (VipMultiDragWidget* pm = d->parentMultiDragWidget())
+							pm->swapWidgets(d, d_data->dragWidget);
 				event->setDropAction(Qt::IgnoreAction);
 				return true;
 			}
@@ -1427,6 +1443,14 @@ bool CustomWidgetPlayer::eventFilter(QObject* w, QEvent* evt)
 						h = mw->subSplitterHandle(pos.y(), pos.x() + 1);
 					else if (d_data->anchor.side == Vip::Top)
 						h = mw->subSplitterHandle(pos.y(), pos.x());
+				}
+
+				// The indices above are deliberately shifted by one to name the handle after
+				// an item, so they reach the count itself, and the splitter answers null
+				// there. The variable is initialised to null and was never tested.
+				if (!h) {
+					event->setDropAction(Qt::IgnoreAction);
+					return true;
 				}
 
 				bool res = h->dropMimeData(event->mimeData());
@@ -1846,6 +1870,14 @@ bool CustomizePlotPlayer::eventFilter(QObject* w, QEvent* evt)
 						h = mw->subSplitterHandle(pos.y(), pos.x());
 				}
 
+				// The indices above are deliberately shifted by one to name the handle after
+				// an item, so they reach the count itself, and the splitter answers null
+				// there. The variable is initialised to null and was never tested.
+				if (!h) {
+					event->setDropAction(Qt::IgnoreAction);
+					return true;
+				}
+
 				bool res = h->dropMimeData(event->mimeData());
 				if (!res)
 					event->setDropAction(Qt::IgnoreAction);
@@ -1862,10 +1894,14 @@ bool CustomizePlotPlayer::eventFilter(QObject* w, QEvent* evt)
 			if (!event->mimeData()->data("application/dragwidget").isEmpty()) {
 				// TODO: player swapping
 
-				VipBaseDragWidget* base = (VipBaseDragWidget*)(event->mimeData()->data("application/dragwidget").toULongLong());
-				if (VipDragWidget* d = qobject_cast<VipDragWidget*>(base)) {
-					d->parentMultiDragWidget()->swapWidgets(d, d_data->dragWidget);
-				}
+				// The typed mime data, which is what the rest of the module reads. The
+				// format above carries an address as decimal text, and any application can
+				// put a number of its choosing in a drag: the cast then read a class
+				// pointer at an address chosen outside.
+				if (const VipBaseDragWidgetMimeData* dmime = qobject_cast<const VipBaseDragWidgetMimeData*>(event->mimeData()))
+					if (VipDragWidget* d = qobject_cast<VipDragWidget*>(dmime->dragWidget.data()))
+						if (VipMultiDragWidget* pm = d->parentMultiDragWidget())
+							pm->swapWidgets(d, d_data->dragWidget);
 				event->setDropAction(Qt::IgnoreAction);
 				return false;
 			}
@@ -1940,6 +1976,10 @@ void CustomizePlotPlayer::reorganizeCloseButtons()
 			connect(closeBar->close, SIGNAL(triggered(bool)), this, SLOT(closeCanvas()));
 			connect(closeBar->maximize, SIGNAL(triggered(bool)), this, SLOT(maximizePlayer()));
 			connect(closeBar->minimize, SIGNAL(triggered(bool)), this, SLOT(minimizePlayer()));
+			// Hidden at once, not merely scheduled for deletion: the signal is emitted
+			// from the destructor, so the pointer these actions hold is already dangling
+			// while the bar stays visible and clickable until the event loop runs.
+			connect(canvas[i], SIGNAL(destroyed(VipPlotItem*)), closeBar, SLOT(hide()));
 			connect(canvas[i], SIGNAL(destroyed(VipPlotItem*)), closeBar, SLOT(deleteLater()));
 		}
 
@@ -1970,7 +2010,12 @@ void CustomizePlotPlayer::closeCanvas()
 	if (VipVMultiPlotArea2D* area = qobject_cast<VipVMultiPlotArea2D*>(d_data->player->plotWidget2D()->area())) {
 		if (sender()) {
 			if (VipPlotCanvas* c = sender()->property("_vip_canvas").value<VipPlotCanvas*>()) {
-				if (area->allCanvas().size() == 1)
+				// Compared, not dereferenced: the property is a raw pointer and the canvas
+				// may already be destroyed.
+				const QList<VipPlotCanvas*> all = area->allCanvas();
+				if (!all.contains(c))
+					return;
+				if (all.size() == 1)
 					closePlayer();
 				else
 					d_data->player->removeLeftScale(c->axes()[1]);
@@ -2138,9 +2183,15 @@ struct CustomizePlayer : public QObject
 		}
 		prev_focus = w;
 
+		// Tested, as four other sites of this file already do: it answers null when
+		// there is no current workspace, which is exactly the branch below.
+		VipDisplayPlayerArea* wsp = vipGetMainWindow()->displayArea()->currentDisplayPlayerArea();
+		if (!wsp)
+			return;
+
 		if (!w) {
 			// empty workspace, hide all tool bars
-			QWidget* top = vipGetMainWindow()->displayArea()->currentDisplayPlayerArea()->topWidget();
+			QWidget* top = wsp->topWidget();
 			QList<QWidget*> toolbars = top->findChildren<QWidget*>(QString(), Qt::FindDirectChildrenOnly);
 			for (int i = 0; i < toolbars.size(); ++i)
 				toolbars[i]->hide();
@@ -2156,7 +2207,7 @@ struct CustomizePlayer : public QObject
 			updateWidgetPlayer(widget);
 
 		// hide all tool bars
-		QWidget* top = vipGetMainWindow()->displayArea()->currentDisplayPlayerArea()->topWidget();
+		QWidget* top = wsp->topWidget();
 		QList<QWidget*> toolbars = top->findChildren<QWidget*>(QString(), Qt::FindDirectChildrenOnly);
 		for (int i = 0; i < toolbars.size(); ++i)
 			toolbars[i]->hide();

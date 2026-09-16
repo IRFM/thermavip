@@ -732,6 +732,12 @@ void VipH5Archive::doRestore()
 	d_data->position = d_data->save.back();
 	d_data->save.pop_back();
 }
+void VipH5Archive::doDiscardSave()
+{
+	if (!d_data->save.isEmpty())
+		d_data->save.pop_back();
+}
+
 
 QByteArray VipH5Archive::currentGroup() const noexcept
 {

@@ -7,11 +7,8 @@ Created on Tue Nov 28 09:03:19 2017
 
 
 import ThermavipPyProcessing as th
-import scipy
 import scipy.signal as sig
 import scipy.ndimage as nd
-import scipy.fftpack as fftp
-import scipy.misc as misc
 import numpy as np
 import sys 
 
@@ -22,22 +19,28 @@ def any_float(default):
 class ThermavipMedianFilter(th.ThermavipPyProcessing):
     """Simple median filter"""
     kernel_size = 3
+    mode = "reflect"
     
     def __init__(self):
         pass
 
     def apply(self, data, time):
         """Apply the processing for given data and time"""
-        if len(data.shape) != 2:
-            return sig.medfilt(data,self.kernel_size)
-        else:
-            return sig.medfilt2d(np.array(data,dtype=np.float64),self.kernel_size)
+        # The scipy.signal median filters pad with zeros and offer no choice. On a
+        # physical quantity those zeros are wrong values mixed into the window: a
+        # corner pixel of a 3x3 kernel sees four real values out of nine, so the
+        # median lands on the padding and the whole border reads 0 degrees. The
+        # ndimage filter is the same filter with a border mode, like the ten other
+        # filters in this file.
+        return nd.median_filter(data, self.kernel_size, output=np.float32, mode=self.mode)
         
     def parameters(self):
-        return {"KernelSize":("int",self.kernel_size,1,101,2) }
+        return {"KernelSize":("int",self.kernel_size,1,101,2) , \
+        "Mode": ("str",self.mode,"reflect","nearest","wrap") }
 
     def setParameters(self,**kwargs):
         self.kernel_size = kwargs["KernelSize"];
+        self.mode = kwargs["Mode"];
     
 class ThermavipConvolve(th.ThermavipPyProcessing):
     """Convolve two N-dimensional arrays.
@@ -163,22 +166,25 @@ class ThermavipOrderFilter(th.ThermavipPyProcessing):
     """
     kernel_size = 3
     rank = 0
+    mode = "reflect"
     
     def __init__(self):
         pass
 
     def apply(self, data, time):
-        kernel_shape = ((self.kernel_size,)*len(data.shape))
-        kernel = np.ones(kernel_shape)
-        return sig.order_filter(data, kernel, self.rank)
+        # Same as the median filter above: order_filter pads with zeros, and the
+        # rank is then taken over a window holding values that were never measured.
+        return nd.rank_filter(data, self.rank, self.kernel_size, None, None, self.mode)
         
     def parameters(self):
         return {"KernelSize":("int",self.kernel_size,3,31,2) , \
-        "Rank":("int",self.rank,0,1000) }
+        "Rank":("int",self.rank,0,1000) , \
+        "Mode": ("str",self.mode,"reflect","nearest","wrap") }
 
     def setParameters(self,**kwargs):
         self.kernel_size = kwargs["KernelSize"];
         self.rank = kwargs["Rank"];
+        self.mode = kwargs["Mode"];
 
 
 class ThermavipWienerFilter(th.ThermavipPyProcessing):
@@ -194,9 +200,11 @@ class ThermavipWienerFilter(th.ThermavipPyProcessing):
 
     def apply(self, data, time):
         Noise = self.noise
-        if Noise == 0:
+        if not Noise:
             Noise = None
-        return sig.wiener(data, self.kernel_size,self.noise)
+        # Noise, not self.noise: the guard just above computes the value that asks
+        # for the automatic estimation the docstring promises, and it was dropped.
+        return sig.wiener(data, self.kernel_size, Noise)
         
     def parameters(self):
         return {"KernelSize":("int",self.kernel_size,3,31,2) , \
@@ -322,7 +330,11 @@ class ThermavipLaplace(th.ThermavipPyProcessing):
 
     def apply(self, data, time):
         
-        return nd.laplace(data, mode=self.mode)
+        # A derivative is signed. With no output type, scipy computes it in the
+        # type of the input, and camera images arrive as unsigned 16 bit: every
+        # falling gradient was taken modulo 65536, so a step of -36 read as 65500,
+        # inside the sensor range and plausible.
+        return nd.laplace(data, np.float32, mode=self.mode)
         
     def parameters(self):
         return { "Mode": ("str",self.mode,"reflect","nearest","wrap") }
@@ -412,6 +424,10 @@ class ThermavipPercentileFilter(th.ThermavipPyProcessing):
 
     def setParameters(self,**kwargs):
         self.size = kwargs["Size"];
+        # The parameter is declared, shown as a spin box and sent by the
+        # application, but this only read the two the sibling filters have:
+        # the filter always computed the twentieth percentile.
+        self.percentile = kwargs["Percentile"];
         self.mode = kwargs["Mode"];
 
 class ThermavipPrewittFilter(th.ThermavipPyProcessing):
@@ -429,7 +445,11 @@ class ThermavipPrewittFilter(th.ThermavipPyProcessing):
 
     def apply(self, data, time):
         
-        return nd.prewitt(data, -1,None,self.mode)
+        # A derivative is signed. With no output type, scipy computes it in the
+        # type of the input, and camera images arrive as unsigned 16 bit: every
+        # falling gradient was taken modulo 65536, so a step of -36 read as 65500,
+        # inside the sensor range and plausible.
+        return nd.prewitt(data, -1, np.float32, self.mode)
         
     def parameters(self):
         return {"Mode": ("str",self.mode,"reflect","nearest","wrap") }
@@ -483,7 +503,11 @@ class ThermavipSobelFilter(th.ThermavipPyProcessing):
 
     def apply(self, data, time):
         
-        return nd.sobel(data, -1,None,self.mode)
+        # A derivative is signed. With no output type, scipy computes it in the
+        # type of the input, and camera images arrive as unsigned 16 bit: every
+        # falling gradient was taken modulo 65536, so a step of -36 read as 65500,
+        # inside the sensor range and plausible.
+        return nd.sobel(data, -1, np.float32, self.mode)
         
     def parameters(self):
         return {"Mode": ("str",self.mode,"reflect","nearest","wrap") }

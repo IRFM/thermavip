@@ -1,3 +1,4 @@
+#include <atomic>
 #include <cmath>
 #include <iostream>
 #include <thread>
@@ -97,7 +98,10 @@ public:
 	double zoom;
 	int width, height;
 	Mandelbrot gen;
-	bool stop_thread;
+	// Atomic: written by the thread of the interface and read every turn by the
+	// thread below. A plain bool is a data race, and nothing forces the read to
+	// happen again, so the wait on shutdown could never return.
+	std::atomic<bool> stop_thread;
 
 	MandelbrotGen(const QList<VipImageArea2D*> _areas, const QList<Histogram>& _hist, const QList<Poly>& _poly, const QList<TimeTrace>& _traces,
 		int w, int h, int max = 0)
@@ -123,9 +127,17 @@ public:
 		stop_thread = true;
 		this->wait();
 	}
-	virtual void run() 
+	/// Start, from the calling thread. The flag used to be cleared by run(), on
+	/// the wrong side of the boundary: a stop asked for before the thread was
+	/// actually scheduled was overwritten by the thread itself, and the wait in
+	/// stop() then never returned.
+	void startThread()
 	{
 		stop_thread = false;
+		QThread::start();
+	}
+	virtual void run() 
+	{
 		while (!stop_thread) 
 		{
 			// Generate Mandelbrot image
@@ -341,7 +353,7 @@ int main(int argc, char** argv)
 		QList<Poly>() << Poly{poly->rawData(),p}, 
 		QList<TimeTrace>() << TimeTrace{ rect->rawData(), t },
 		640, 420,383);
-	gen.start();
+	gen.startThread();
 
 	return app.exec();
 }

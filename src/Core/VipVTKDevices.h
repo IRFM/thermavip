@@ -230,7 +230,9 @@ public:
 	  : VipIODevice(parent)
 	{
 	}
-	~VipVTKFileWriter() { close(); }
+	// Qualified: from a destructor the call does not dispatch, so an override of a
+	// derived writer would be skipped without a word. Named here, it says so.
+	~VipVTKFileWriter() { VipVTKFileWriter::close(); }
 
 	virtual bool probe(const QString& filename, const QByteArray&) const { return supportFilename(filename) || VipIODevice::probe(filename); }
 	virtual bool acceptInput(int /*index*/, const QVariant& v) const { return v.userType() == qMetaTypeId<VipVTKObject>(); }
@@ -265,7 +267,7 @@ public:
 	  : VipIODevice(parent)
 	{
 	}
-	~VipFOVFileWriter() { close(); }
+	~VipFOVFileWriter() { VipFOVFileWriter::close(); }
 
 	virtual bool probe(const QString& filename, const QByteArray&) const { return supportFilename(filename) || VipIODevice::probe(filename); }
 	virtual bool acceptInput(int /*index*/, const QVariant& v) const { return v.userType() == qMetaTypeId<VipFieldOfView>(); }

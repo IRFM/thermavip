@@ -114,7 +114,10 @@ private Q_SLOTS:
 
 private:
 	QPointer<VipPlotItem> m_item;
-	QList<VipAbstractScale*> m_scales;
+	// QPointer, like the member above it: these belong to the scene, not to this
+	// widget, and they are filled in when the item is set and read much later, on a
+	// user action. Anything destroyed in between used to be handed to setAxes().
+	QList<QPointer<VipAbstractScale>> m_scales;
 
 	QLabel m_titleLabel;
 	// VipTextWidget

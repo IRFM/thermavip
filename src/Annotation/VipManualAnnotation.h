@@ -47,7 +47,10 @@ class VIP_ANNOTATION_EXPORT VipTimeMarker : public VipPlotMarker
 {
 	Q_OBJECT
 public:
-	VirtualTimeGrip* grip;
+	// Guarded like the three below: the grip is a graphics child of the scale,
+	// while this marker hangs from the parent of that scale, so the scale can
+	// destroy the grip first and the destructor then freed it a second time.
+	QPointer<VirtualTimeGrip> grip;
 	QPointer<VipProcessingPool> pool;
 	QPointer<VipVideoPlayer> player;
 	QPointer<VipPlotShape> shape;

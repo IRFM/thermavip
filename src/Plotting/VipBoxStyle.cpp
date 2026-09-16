@@ -750,8 +750,12 @@ void VipBoxStyle::computePie(const QPointF& c, const VipPie& pie, double spacing
 		center = line.p2();
 	}
 
+	// 360, not 2 pi: everything around this works in degrees, QLineF included, and
+	// the two other angle normalisations of this same function add and subtract 360.
+	// Adding 6.28 degrees at a time stopped just past the start angle instead of a
+	// full turn past it, which drew a sector of nearly no opening.
 	while (angle_end < angle_start)
-		angle_end += 2 * M_PI;
+		angle_end += 360;
 
 	const double radius = max_distance_to_center;
 	const double min_radius = min_distance_to_center;

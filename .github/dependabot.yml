@@ -1,0 +1,13 @@
+# Version tracking for GitHub actions.
+#
+# The five external references in the workflows are pinned to a commit SHA
+# rather than a moving tag, so the code the runner executes cannot change
+# without a commit in this repository. The downside is that version bumps
+# become invisible, which this file fixes: Dependabot opens a reviewed pull
+# request for each new version.
+version: 2
+updates:
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"

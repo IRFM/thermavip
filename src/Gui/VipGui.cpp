@@ -278,6 +278,13 @@ bool VipFileSharedMemory::addFilesToOpen(const QStringList& lst, bool new_worksp
 	if (!d_data->file_memory.lock())
 		return false;
 
+	// The segment is fixed and the list is not: a long command line, or a large
+	// multiple selection dropped on the application, wrote past its end.
+	if (ar.size() > d_data->file_memory.size() - (int)sizeof(int)) {
+		d_data->file_memory.unlock();
+		return false;
+	}
+
 	int size = ar.size();
 	memcpy(d_data->file_memory.data(), &size, sizeof(int));
 	memcpy((char*)d_data->file_memory.data() + sizeof(int), ar.data(), ar.size());

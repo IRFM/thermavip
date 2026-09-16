@@ -29,11 +29,18 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <QMutex>
+
+#include "VipLogging.h"
 #include "VipPyNPZDevice.h"
 
 class VipPyNPZDevice::PrivateData
 {
 public:
+	// Written by apply(), which runs in the thread of the task pool, and read by
+	// close(), which any thread may call and which the destructor calls too. Both
+	// are implicitly shared, so an assignment racing a copy loses a reference.
+	QMutex mutex;
 	VipNDArray previous;
 	QString dataname;
 };
@@ -44,9 +51,26 @@ VipPyNPZDevice::VipPyNPZDevice(QObject* parent)
 	VIP_CREATE_PRIVATE_DATA();
 }
 
+// A failed write has no return path: close() gives nothing back and the
+// destructor calls it too. It is logged either way, and only reported on the
+// object itself while that object is still whole.
+static void reportWriteFailure(VipIODevice* device, const QString& path, const QString& traceback, bool destroying)
+{
+	VIP_LOG_ERROR("Cannot write " + path + ": " + traceback);
+	if (!destroying)
+		device->setError(traceback);
+}
+
 VipPyNPZDevice::~VipPyNPZDevice()
 {
-	close();
+	// Not close(): a virtual does not dispatch from here, and the wait is kept
+	// short because the destruction usually runs in the thread serving the
+	// interface. The recording is still written. The input is closed and the
+	// scheduled work waited for first, so that apply() is not still writing the
+	// members read below.
+	setEnabled(false);
+	wait(false, 2000);
+	writeRecording(2000, true);
 }
 
 bool VipPyNPZDevice::open(VipIODevice::OpenModes mode)
@@ -54,11 +78,13 @@ bool VipPyNPZDevice::open(VipIODevice::OpenModes mode)
 	if (mode != WriteOnly)
 		return false;
 
-	close();
-
+	// The path is checked before the previous recording is flushed and cleared: an
+	// open that ends up refusing the extension used to write and purge it first.
 	QString p = removePrefix(path());
 	if (!p.endsWith(".npz"))
 		return false;
+
+	close();
 
 	setOpenMode(mode);
 	return true;
@@ -73,31 +99,38 @@ void VipPyNPZDevice::apply()
 			setError("Empty input array");
 			return;
 		}
-		d_data->dataname = any.name();
-
-		if (!d_data->previous.isEmpty() && ar.shape() != d_data->previous.shape()) {
+		bool mismatch = false;
+		{
+			QMutexLocker lock(&d_data->mutex);
+			if (!d_data->previous.isEmpty() && ar.shape() != d_data->previous.shape())
+				mismatch = true;
+			else {
+				d_data->dataname = any.name();
+				d_data->previous = ar;
+			}
+		}
+		if (mismatch) {
 			setError("Shape mismatch");
 			return;
 		}
 
-		d_data->previous = ar;
-
 		QString varname = "arr" + QString::number((qint64)this);
 		QString newname = "new" + QString::number((qint64)this);
+		// A bare except caught everything and assigned the last image to the
+		// accumulator, so one failed stack part way through a recording replaced the
+		// whole sequence acquired so far with a single frame, without a word. The
+		// two cases are told apart: the first frame starts the stack, a later one is
+		// appended, and a real failure is reported instead of swallowed.
 		QString code = "import numpy as np\n"
-			       "try: \n"
-			       "  if " +
-			       varname + ".shape == " + newname + ".shape: " + varname + ".shape=(1,*" + varname +
-			       ".shape)\n"
+			       "if '" +
+			       varname + "' not in globals():\n"
 			       "  " +
-			       newname + ".shape=(1,*" + newname +
-			       ".shape)\n"
+			       varname + " = " + newname + ".reshape((1, *" + newname +
+			       ".shape))\n"
+			       "else:\n"
 			       "  " +
-			       varname + " = np.vstack((" + varname + "," + newname +
-			       "))\n"
-			       "except:\n"
-			       "  " +
-			       varname + "=" + newname + "\n";
+			       varname + " = np.vstack((" + varname + ", " + newname + ".reshape((1, *" + newname +
+			       ".shape))))\n";
 
 		// vip_debug("%s\n", code.toLatin1().data());
 
@@ -118,9 +151,21 @@ void VipPyNPZDevice::apply()
 
 void VipPyNPZDevice::close()
 {
-	if (d_data->previous.isEmpty())
-		return;
-	QString dataname = d_data->dataname;
+	// First: it disables the input and waits for the scheduled processings, so
+	// that no apply() is still writing what is read below.
+	VipIODevice::close();
+	writeRecording(10000, false);
+}
+
+void VipPyNPZDevice::writeRecording(int timeout_ms, bool destroying)
+{
+	QString dataname;
+	{
+		QMutexLocker lock(&d_data->mutex);
+		if (d_data->previous.isEmpty())
+			return;
+		dataname = d_data->dataname;
+	}
 	if (dataname.isEmpty())
 		dataname = "arr_0";
 	else {
@@ -143,25 +188,42 @@ void VipPyNPZDevice::close()
 
 	QString file = removePrefix(path());
 	file.replace("\\", "/");
-	QString code;
-	{
-		code = "import numpy as np\n"
-		       "np.savez('" +
-		       file + "', " + dataname + "=" + varname +
-		       ")\n"
-		       "del " +
-		       varname +
-		       "\n"
-		       "del " +
-		       newname;
+
+	// The path used to be pasted between quotes in the generated source. It is not
+	// the user's alone: a device path is written to the session file and restored
+	// from it unchecked, so a single quote in it closed the literal and the rest ran
+	// as Python. Send it as an object, like the array itself, so that only generated
+	// identifiers appear in the source.
+	const QString pathvar = "pth" + QString::number((qint64)this);
+	const QString namevar = "nam" + QString::number((qint64)this);
+
+	VipPyError lastError = VipPyInterpreter::instance()->sendObject(pathvar, QVariant::fromValue(file)).value(timeout_ms).value<VipPyError>();
+	if (!lastError.isNull()) {
+		reportWriteFailure(this, path(), lastError.traceback, destroying);
+		return;
+	}
+	lastError = VipPyInterpreter::instance()->sendObject(namevar, QVariant::fromValue(dataname)).value(timeout_ms).value<VipPyError>();
+	if (!lastError.isNull()) {
+		reportWriteFailure(this, path(), lastError.traceback, destroying);
+		return;
 	}
 
-	d_data->dataname.clear();
-	d_data->previous = VipNDArray();
+	const QString code = "import numpy as np\n"
+			     "np.savez(" + pathvar + ", **{" + namevar + ": " + varname + "})\n"
+			     "del " + varname + "\n"
+			     "del " + newname + "\n"
+			     "del " + pathvar + "\n"
+			     "del " + namevar;
 
-	VipPyError lastError = VipPyInterpreter::instance()->execCode(code).value(10000).value<VipPyError>();
+	{
+		QMutexLocker lock(&d_data->mutex);
+		d_data->dataname.clear();
+		d_data->previous = VipNDArray();
+	}
+
+	lastError = VipPyInterpreter::instance()->execCode(code).value(timeout_ms).value<VipPyError>();
 	if (!lastError.isNull()) {
-		setError(lastError.traceback);
+		reportWriteFailure(this, path(), lastError.traceback, destroying);
 		return;
 	}
 }
@@ -169,6 +231,10 @@ void VipPyNPZDevice::close()
 class VipPyMATDevice::PrivateData
 {
 public:
+	// Written by apply(), which runs in the thread of the task pool, and read by
+	// close(), which any thread may call and which the destructor calls too. Both
+	// are implicitly shared, so an assignment racing a copy loses a reference.
+	QMutex mutex;
 	VipNDArray previous;
 	QString dataname;
 };
@@ -181,7 +247,14 @@ VipPyMATDevice::VipPyMATDevice(QObject* parent)
 
 VipPyMATDevice::~VipPyMATDevice()
 {
-	close();
+	// Not close(): a virtual does not dispatch from here, and the wait is kept
+	// short because the destruction usually runs in the thread serving the
+	// interface. The recording is still written. The input is closed and the
+	// scheduled work waited for first, so that apply() is not still writing the
+	// members read below.
+	setEnabled(false);
+	wait(false, 2000);
+	writeRecording(2000, true);
 }
 
 bool VipPyMATDevice::open(VipIODevice::OpenModes mode)
@@ -189,11 +262,12 @@ bool VipPyMATDevice::open(VipIODevice::OpenModes mode)
 	if (mode != WriteOnly)
 		return false;
 
-	close();
-
+	// Same order as the NPZ device above.
 	QString p = removePrefix(path());
 	if (!p.endsWith(".mat"))
 		return false;
+
+	close();
 
 	setOpenMode(mode);
 	return true;
@@ -208,31 +282,38 @@ void VipPyMATDevice::apply()
 			setError("Empty input array");
 			return;
 		}
-		d_data->dataname = any.name();
-
-		if (!d_data->previous.isEmpty() && ar.shape() != d_data->previous.shape()) {
+		bool mismatch = false;
+		{
+			QMutexLocker lock(&d_data->mutex);
+			if (!d_data->previous.isEmpty() && ar.shape() != d_data->previous.shape())
+				mismatch = true;
+			else {
+				d_data->dataname = any.name();
+				d_data->previous = ar;
+			}
+		}
+		if (mismatch) {
 			setError("Shape mismatch");
 			return;
 		}
 
-		d_data->previous = ar;
-
 		QString varname = "arr" + QString::number((qint64)this);
 		QString newname = "new" + QString::number((qint64)this);
+		// A bare except caught everything and assigned the last image to the
+		// accumulator, so one failed stack part way through a recording replaced
+		// the whole sequence acquired so far with a single frame, without a word.
+		// The two cases are told apart: the first frame starts the stack, a later
+		// one is appended, and a real failure is reported instead of swallowed.
 		QString code = "import numpy as np\n"
-			       "try: \n"
-			       "  if " +
-			       varname + ".shape == " + newname + ".shape: " + varname + ".shape=(1,*" + varname +
-			       ".shape)\n"
+			       "if '" +
+			       varname + "' not in globals():\n"
 			       "  " +
-			       newname + ".shape=(1,*" + newname +
-			       ".shape)\n"
+			       varname + " = " + newname + ".reshape((1, *" + newname +
+			       ".shape))\n"
+			       "else:\n"
 			       "  " +
-			       varname + " = np.vstack((" + varname + "," + newname +
-			       "))\n"
-			       "except:\n"
-			       "  " +
-			       varname + "=" + newname + "\n";
+			       varname + " = np.vstack((" + varname + ", " + newname + ".reshape((1, *" + newname +
+			       ".shape))))\n";
 
 		// vip_debug("%s\n", code.toLatin1().data());
 
@@ -253,9 +334,21 @@ void VipPyMATDevice::apply()
 
 void VipPyMATDevice::close()
 {
-	if (d_data->previous.isEmpty())
-		return;
-	QString dataname = d_data->dataname;
+	// First: it disables the input and waits for the scheduled processings, so
+	// that no apply() is still writing what is read below.
+	VipIODevice::close();
+	writeRecording(10000, false);
+}
+
+void VipPyMATDevice::writeRecording(int timeout_ms, bool destroying)
+{
+	QString dataname;
+	{
+		QMutexLocker lock(&d_data->mutex);
+		if (d_data->previous.isEmpty())
+			return;
+		dataname = d_data->dataname;
+	}
 	if (dataname.isEmpty())
 		dataname = "arr_0";
 	else {
@@ -278,32 +371,41 @@ void VipPyMATDevice::close()
 
 	QString file = removePrefix(path());
 	file.replace("\\", "/");
-	QString code;
 
-	code = "from scipy.io import savemat\n"
-	       "d={'" +
-	       dataname + "':" + varname +
-	       "}\n"
-	       //"print(d)\n"
-	       "savemat('" +
-	       file +
-	       "', d)\n"
-	       "del " +
-	       varname +
-	       "\n"
-	       "del " +
-	       newname +
-	       "\n"
-	       "del d";
+	// Same as the NPZ device above: the path comes back from a session file, so it
+	// travels as an object rather than as source text.
+	const QString pathvar = "pth" + QString::number((qint64)this);
+	const QString namevar = "nam" + QString::number((qint64)this);
 
-	// vip_debug("%s\n", code.toLatin1().data());
-
-	d_data->dataname.clear();
-	d_data->previous = VipNDArray();
-
-	VipPyError lastError = VipPyInterpreter::instance()->execCode(code).value(10000).value<VipPyError>();
+	VipPyError lastError = VipPyInterpreter::instance()->sendObject(pathvar, QVariant::fromValue(file)).value(timeout_ms).value<VipPyError>();
 	if (!lastError.isNull()) {
-		setError(lastError.traceback);
+		reportWriteFailure(this, path(), lastError.traceback, destroying);
+		return;
+	}
+	lastError = VipPyInterpreter::instance()->sendObject(namevar, QVariant::fromValue(dataname)).value(timeout_ms).value<VipPyError>();
+	if (!lastError.isNull()) {
+		reportWriteFailure(this, path(), lastError.traceback, destroying);
+		return;
+	}
+
+	const QString code = "from scipy.io import savemat\n"
+			     "d={" + namevar + ": " + varname + "}\n"
+			     "savemat(" + pathvar + ", d)\n"
+			     "del " + varname + "\n"
+			     "del " + newname + "\n"
+			     "del " + pathvar + "\n"
+			     "del " + namevar + "\n"
+			     "del d";
+
+	{
+		QMutexLocker lock(&d_data->mutex);
+		d_data->dataname.clear();
+		d_data->previous = VipNDArray();
+	}
+
+	lastError = VipPyInterpreter::instance()->execCode(code).value(timeout_ms).value<VipPyError>();
+	if (!lastError.isNull()) {
+		reportWriteFailure(this, path(), lastError.traceback, destroying);
 		return;
 	}
 }

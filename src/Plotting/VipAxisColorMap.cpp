@@ -258,7 +258,10 @@ void VipAxisColorMap::computeScaleDiv()
 			// compute the scale div the standard way in case
 			// plot items are actually using this color map as an axis.
 			d_data->computedInterval = VipInterval();
-			VipAbstractScale::computeScaleDiv();
+			// The direct parent, not the grandparent: VipAxisBase::computeScaleDiv()
+			// exists for one reason, the scale mapped onto the scene, and it delegates
+			// upward itself when that mode is off.
+			VipAxisBase::computeScaleDiv();
 		}
 	}
 	else
@@ -297,6 +300,9 @@ void VipAxisColorMap::drawColorBar(QPainter* painter, const QRectF& rect) const
 		return;
 
 	const VipScaleDraw* sd = this->constScaleDraw();
+
+	if (!d_data->colorBar.colorMap)
+		return;
 
 	VipPainter::drawColorBar(painter, *d_data->colorBar.colorMap, d_data->colorBar.interval.normalized(), sd->scaleMap(), sd->orientation(), rect, &d_data->pixmap);
 }
@@ -465,7 +471,7 @@ VipInterval VipAxisColorMap::colorMapInterval() const
 
 void VipAxisColorMap::setUseFlatHistogram(bool enable)
 {
-	if (d_data->colorBar.colorMap->mapType() == VipColorMap::Linear) {
+	if (d_data->colorBar.colorMap && d_data->colorBar.colorMap->mapType() == VipColorMap::Linear) {
 		VipLinearColorMap* map = static_cast<VipLinearColorMap*>(d_data->colorBar.colorMap);
 		if (map->useFlatHistogram() != enable) {
 			map->setUseFlatHistogram(enable);
@@ -476,14 +482,14 @@ void VipAxisColorMap::setUseFlatHistogram(bool enable)
 }
 bool VipAxisColorMap::useFlatHistogram() const
 {
-	if (d_data->colorBar.colorMap->mapType() == VipColorMap::Linear)
+	if (d_data->colorBar.colorMap && d_data->colorBar.colorMap->mapType() == VipColorMap::Linear)
 		return static_cast<VipLinearColorMap*>(d_data->colorBar.colorMap)->useFlatHistogram();
 	return false;
 }
 
 void VipAxisColorMap::setFlatHistogramStrength(int strength)
 {
-	if (d_data->colorBar.colorMap->mapType() == VipColorMap::Linear) {
+	if (d_data->colorBar.colorMap && d_data->colorBar.colorMap->mapType() == VipColorMap::Linear) {
 		VipLinearColorMap* map = static_cast<VipLinearColorMap*>(d_data->colorBar.colorMap);
 		if (map->flatHistogramStrength() != strength) {
 			map->setFlatHistogramStrength(strength);
@@ -494,13 +500,19 @@ void VipAxisColorMap::setFlatHistogramStrength(int strength)
 }
 int VipAxisColorMap::flatHistogramStrength() const
 {
-	if (d_data->colorBar.colorMap->mapType() == VipColorMap::Linear)
+	if (d_data->colorBar.colorMap && d_data->colorBar.colorMap->mapType() == VipColorMap::Linear)
 		return static_cast<VipLinearColorMap*>(d_data->colorBar.colorMap)->flatHistogramStrength();
 	return false;
 }
 
 void VipAxisColorMap::setColorMap(const VipInterval& interval, VipColorMap* colorMap)
 {
+	// Refused, rather than destroying the map in place and then dereferencing null:
+	// the deserialising operator hands over whatever the archive read gave it, and a
+	// failed read gives a default QVariant, that is a null pointer.
+	if (!colorMap)
+		return;
+
 	d_data->colorBar.interval = interval;
 
 	if (colorMap != d_data->colorBar.colorMap) {
@@ -610,11 +622,15 @@ QList<VipSliderGrip*> VipAxisColorMap::grips() const
 
 void VipAxisColorMap::gripValueChanged(double value)
 {
+	// Inside the guard. Every grip is connected here, the additional ones included,
+	// and one is created and given its value for each contour level: showing contour
+	// lines emitted this signal and so turned the automatic colour scale off, with
+	// the colour interval untouched.
 	if (sender() == grip1() || sender() == grip2()) {
 		d_data->colorBar.interval = gripInterval();
 		this->update();
+		Q_EMIT valueChanged(value);
 	}
-	Q_EMIT valueChanged(value);
 }
 
 void VipAxisColorMap::setAutoScaleMax(vip_double value)

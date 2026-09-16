@@ -159,9 +159,13 @@ private:
 ///
 class VipLazyPointer
 {
-	int m_id;
-	const QMetaObject* m_meta;
-	QPointer<QObject> m_object;
+	// mutable rather than const_cast in the const accessors below: id() and
+	// data() memoize their result, and const_cast is only defined when the
+	// underlying object is not really const, which nothing guarantees for a
+	// copyable, metatype-declared class stored in QVariant.
+	mutable int m_id;
+	mutable const QMetaObject* m_meta;
+	mutable QPointer<QObject> m_object;
 
 public:
 	VipLazyPointer(int id = 0)
@@ -181,7 +185,7 @@ public:
 	int id() const
 	{
 		if (m_object && m_meta)
-			return const_cast<int&>(m_id) = VipUniqueId::typeId(m_meta)->id(m_object.data());
+			return m_id = VipUniqueId::typeId(m_meta)->id(m_object.data());
 		return m_id;
 	}
 
@@ -202,15 +206,14 @@ public:
 	T* data(bool* just_found = nullptr) const
 	{
 		if (m_meta)
-			return qobject_cast<T*>(const_cast<QObject*>(m_object.data()));
+			return qobject_cast<T*>(m_object.data());
 		else {
-			VipLazyPointer* _this = const_cast<VipLazyPointer*>(this);
 			T* tmp = VipUniqueId::find<T>(m_id);
-			_this->m_object = tmp;
+			m_object = tmp;
 			if (just_found)
 				*just_found = tmp;
 			if (tmp)
-				_this->m_meta = &T::staticMetaObject;
+				m_meta = &T::staticMetaObject;
 			return tmp;
 		}
 	}

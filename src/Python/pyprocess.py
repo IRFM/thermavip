@@ -127,7 +127,12 @@ def pyToBytes(obj):
     elif isinstance(obj, (float)):
         return bytes(struct.pack('<i',PY_CODE_DOUBLE)) + bytes(struct.pack('<d',float(obj)))
     elif isinstance(obj, (str)):
-        return bytes(struct.pack('<i',PY_CODE_STRING)) + bytes(struct.pack('<i',len(obj)*2)) + obj.encode('utf-16le')
+        # Measure the payload, not the code points: anything outside the basic
+        # multilingual plane takes four bytes in UTF-16, so len(obj)*2 under
+        # declared the length, truncated the string and shifted every object after
+        # it in the frame. The neighbouring branch above already encodes first.
+        val = obj.encode('utf-16le')
+        return bytes(struct.pack('<i',PY_CODE_STRING)) + bytes(struct.pack('<i',len(val))) + val
     elif isinstance(obj, (bytes)):
         return bytes(struct.pack('<i',PY_CODE_BYTES)) + bytes(struct.pack('<i',len(obj))) + obj
     elif isinstance(obj, (complex)):
@@ -186,6 +191,9 @@ def bytesToPy(b):
     elif dt == PY_CODE_COMPLEX: return (complex(struct.unpack('<d',b[4:12])[0], struct.unpack('<d',b[12:20])[0]) , 20)
     elif dt == PY_CODE_STRING: 
         l = struct.unpack('<i',b[4:8])[0]
+        # Signed, and read from the frame: neither the sign nor the fit was checked.
+        if l < 0 or 8 + l > len(b):
+            raise ValueError('invalid length %d in python frame' % l)
         obj = b[8:l+8]
         res= (obj.decode('utf-16le') , 8 +l)
         if sys.version_info[0]==2:
@@ -195,24 +203,43 @@ def bytesToPy(b):
         return res
     elif dt == PY_CODE_BYTES:
         l = struct.unpack('<i',b[4:8])[0]
+        # Signed, and read from the frame: neither the sign nor the fit was checked.
+        if l < 0 or 8 + l > len(b):
+            raise ValueError('invalid length %d in python frame' % l)
         return (b[8:l+8] , 8 +l)
     elif dt == PY_CODE_LIST:
         l = struct.unpack('<i',b[4:8])[0]
+        # A count of two billion in a sixteen byte frame used to be honoured, one
+        # allocation at a time, until the process was killed. Each element takes at
+        # least eight bytes.
+        if l < 0 or 8 + l * 8 > len(b):
+            raise ValueError('invalid element count %d in python frame' % l)
         start = 8
         res = []
         for i in range(l):
             tmp, size = bytesToPy(b[start:])
             res += [tmp]
+            if size <= 0:
+                raise ValueError('python frame element consumed no bytes')
             start += size
         return (res,start)
     elif dt == PY_CODE_DICT:
         l = struct.unpack('<i',b[4:8])[0]
+        # A count of two billion in a sixteen byte frame used to be honoured, one
+        # allocation at a time, until the process was killed. Each element takes at
+        # least eight bytes.
+        if l < 0 or 8 + l * 8 > len(b):
+            raise ValueError('invalid element count %d in python frame' % l)
         start = 8
         res = {}
         for i in range(l):
             key, size = bytesToPy(b[start:])
+            if size <= 0:
+                raise ValueError('python frame element consumed no bytes')
             start += size
             tmp, size = bytesToPy(b[start:])
+            if size <= 0:
+                raise ValueError('python frame element consumed no bytes')
             start += size
             res[key] = tmp
         return (res, start)
@@ -229,14 +256,21 @@ def bytesToPy(b):
     elif dt == PY_CODE_NDARRAY:
         nt = b[4:5]
         sc = struct.unpack('<i',b[5:9])[0]  
+        # numpy caps an array at 32 dimensions, and each one takes four bytes.
+        if sc < 0 or sc > 32 or 9 + sc * 4 > len(b):
+            raise ValueError('invalid dimension count %d in python frame' % sc)
         shape = []
         start = 9
         size=1
         for s in range(sc):
             shape += [struct.unpack('<i',b[start:start+4])[0] ]
             start += 4
+            if shape[-1] < 0:
+                raise ValueError('negative dimension in python frame')
             size *= shape[-1]
         nt = numpy.dtype(nt)
+        if size * nt.itemsize > len(b) - start:
+            raise ValueError('python frame is shorter than the array it announces')
         res= numpy.frombuffer(b[start:],nt)
         
         if __debug_on : __debug("read array " + str(len(b)) + " " +str(shape) + " " + str(nt) + " " + str(res.shape))
@@ -350,6 +384,11 @@ def interpret_input():
     """
     code = readInput(1)
     if len(code) == 0:
+        # End of file: the parent has closed the pipe or died. This used to read
+        # as a simple absence of data, so the loops below span at a hundred turns
+        # a second for ever and every run of the application left an interpreter
+        # behind, holding a whole CPython and numpy, with no window to close.
+        globals()["__stop_loop"] = True
         return None
     if __debug_on : __debug("received")
     
@@ -423,7 +462,11 @@ def interpret_input():
         value, l = bytesToPy(b)
         return value
         
-    return None
+    # An unknown code used to fall through here without consuming anything, so its
+    # payload was read back byte by byte as further commands: a 'q' anywhere in the
+    # data exits the process, an 'e' starts executing the bytes that follow. There
+    # is no synchronisation mark to recover from that, so stop instead.
+    raise ValueError('unknown command code %r in python stream' % code)
 
 
 def format_exec(code):
@@ -455,6 +498,7 @@ class RedirectIn:
     
     def readline(self):
         send_wait_for_input()
+        # Ends on end of file as well, and says so the way a file does.
         while globals()["__stop_loop"] == False:
             try:
                 line = interpret_input()
@@ -473,8 +517,11 @@ class RedirectIn:
                 l = repr(traceback.format_exception(exc_type, exc_value,exc_traceback))
                 #if globals()["__debug_on"] : __debug(''.join(l) )
                 pass
-                
-        
+
+        # Nothing more will come: say end of file the way a file does, so that
+        # input() raises instead of the caller looping for ever.
+        return ''
+
     def fileno(self): return 0       
     def clear(self): pass
     def flush(self): pass
@@ -503,6 +550,8 @@ def main_loop():
     while globals()["__stop_loop"] == False:
         try:
             interpret_input()
+            if globals()["__stop_loop"]:
+                break
             time.sleep(0.01)
         except SystemExit:
             if __debug_on : __debug("SystemExit")

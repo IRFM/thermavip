@@ -335,6 +335,8 @@ public:
 
 	/// Set the inner widget.
 	///  This function can be overloaded, but the new implementation must call the base version to ensure internal integrity.
+	///  Takes ownership: the widget previously set, if any, is closed and
+	///  scheduled for deletion, whether or not its closeEvent accepted.
 	virtual void setWidget(QWidget* widget);
 	/// Returns the inner widget
 	QWidget* widget() const;
@@ -469,6 +471,9 @@ public Q_SLOTS:
 	void resetSizes();
 
 Q_SIGNALS:
+	/// Emitted when a child is added to or removed from the splitter.
+	/// @a w is null when @a added is false: a removal is signalled from the
+	/// child's destructor, so the pointer would already be dangling.
 	void childChanged(QSplitter* s, QWidget* w, bool added);
 
 private Q_SLOTS:
@@ -709,7 +714,6 @@ public Q_SLOTS:
 	// move the grip to the top left corner on resize
 	virtual void resizeEvent(QResizeEvent*);
 	virtual void moveEvent(QMoveEvent* event);
-	virtual void closeEvent(QCloseEvent* evt);
 
 	// take into account a parent change when maximized
 	virtual bool event(QEvent* event);

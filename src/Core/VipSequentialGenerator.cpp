@@ -59,7 +59,10 @@ public:
 			prev.mergeAttributes(parent->attributes());
 
 			// get sampling time
+			// The property can also be set from a session file.
 			qint64 sampling_ms = static_cast<qint64>(parent->propertyAt(0)->value<double>() * 1000.);
+			if (sampling_ms < 1)
+				sampling_ms = 1;
 			// send output value
 			parent->outputAt(0)->setData(prev);
 
@@ -85,7 +88,9 @@ VipSequentialGenerator::VipSequentialGenerator(const generator_function& fun, do
   : VipIODevice(parent)
 {
 	VIP_CREATE_PRIVATE_DATA(this);
-	propertyAt(0)->setData(sampling);
+	// Neither the constructor nor the property had a domain, and the value is used
+	// as a wait duration.
+	propertyAt(0)->setData(sampling > 0.001 ? sampling : 0.001);
 	setGeneratorFunction(fun);
 }
 

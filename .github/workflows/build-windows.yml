@@ -24,10 +24,10 @@ jobs:
         runs-on: windows-latest
         
         steps:
-        - uses: actions/checkout@v4
+        - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
         - name: Install Qt
-          uses: jurplel/install-qt-action@v4
+          uses: jurplel/install-qt-action@48d3ad6db93f3627c8ee7a0454bc6f3744f7e730 # v4.3.1 -- note: "v4" is a BRANCH here, not a tag
           with:
             version: '6.8.3'
             host: 'windows'
@@ -47,5 +47,9 @@ jobs:
               cmake .. -DCMAKE_BUILD_TYPE=Debug -DNO_WARNINGS=ON -DWITH_FFMPEG=ON -DWITH_PYTHON=ON -DLOCAL_INSTALL=ON 
               cmake --build ./ 
               cmake --build . --target install
+
+        - name: Run tests
+          run: ctest --test-dir build --output-on-failure
+          shell: bash
 
         

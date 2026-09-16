@@ -2141,6 +2141,14 @@ void VipFOVTreeWidget::computeOverlapping(bool enable)
 
 static void saveImage(const QString& out_file, VipVTKGraphicsView* view, const VipFieldOfView& fov, int buffer_type)
 {
+	// width and height are ints read from the .fov file the user opens, and their
+	// product is evaluated as an int: 65536 by 65536 overflows, which is undefined
+	// and in practice gave a negative size to the buffers indexed below.
+	if (fov.width <= 0 || fov.height <= 0 || (qint64)fov.width * (qint64)fov.height > 64LL * 1024 * 1024) {
+		VIP_LOG_ERROR("Invalid camera resolution: " + QString::number(fov.width) + "x" + QString::number(fov.height));
+		return;
+	}
+
 	VipProgress display;
 	display.setModal(true);
 	display.setText("<b>Extract image...</b>");
@@ -2228,6 +2236,14 @@ static void saveImage(const QString& out_file, VipVTKGraphicsView* view, const V
 #include <vtkIdList.h>
 static void saveImage(const QString& out_file, const VipVTKObjectList& lst, const VipFieldOfView& fov, VipVTKObject::AttributeType type, const QString& name, int comp)
 {
+	// width and height are ints read from the .fov file the user opens, and their
+	// product is evaluated as an int: 65536 by 65536 overflows, which is undefined
+	// and in practice gave a negative size to the buffers indexed below.
+	if (fov.width <= 0 || fov.height <= 0 || (qint64)fov.width * (qint64)fov.height > 64LL * 1024 * 1024) {
+		VIP_LOG_ERROR("Invalid camera resolution: " + QString::number(fov.width) + "x" + QString::number(fov.height));
+		return;
+	}
+
 	VipProgress display;
 	display.setText("<b>Start saving image...</b>");
 	display.setModal(true);
@@ -2238,8 +2254,9 @@ static void saveImage(const QString& out_file, const VipVTKObjectList& lst, cons
 	vtkSmartPointer<vtkDoubleArray> data = vtkSmartPointer<vtkDoubleArray>::New();
 
 	// just to avoid having more than one point per pixel, which is useless and slow down (or crash) vtkDelaunay2D
-	QVector<double> image_depth(fov.width * fov.height, 0);
-	QVector<int> image_index(fov.width * fov.height, -1);
+	const qint64 pixels = (qint64)fov.width * (qint64)fov.height;
+	QVector<double> image_depth(pixels, 0);
+	QVector<int> image_index(pixels, -1);
 
 	for (int i = 0; i < lst.size(); ++i) {
 		// only works for vtkDataSet
@@ -2280,17 +2297,17 @@ static void saveImage(const QString& out_file, const VipVTKObjectList& lst, cons
 					continue;
 
 				if (x >= 0 && y >= 0 && x < fov.width && y < fov.height) {
-					if (image_index[int(y) * fov.width + int(x)] < 0) {
+					if (image_index[(qint64)int(y) * fov.width + int(x)] < 0) {
 						double value = values->GetComponent(i, comp);
 						pts->InsertNextPoint(x, y, 0);
 						data->InsertNextTuple1(value);
-						image_depth[int(y) * fov.width + int(x)] = z;
-						image_index[int(y) * fov.width + int(x)] = pts->GetNumberOfPoints() - 1;
+						image_depth[(qint64)int(y) * fov.width + int(x)] = z;
+						image_index[(qint64)int(y) * fov.width + int(x)] = pts->GetNumberOfPoints() - 1;
 					}
-					else if (z < image_depth[int(y) * fov.width + int(x)]) {
+					else if (z < image_depth[(qint64)int(y) * fov.width + int(x)]) {
 						double value = values->GetComponent(i, comp);
-						data->SetTuple1(image_index[int(y) * fov.width + int(x)], value);
-						image_depth[int(y) * fov.width + int(x)] = z;
+						data->SetTuple1(image_index[(qint64)int(y) * fov.width + int(x)], value);
+						image_depth[(qint64)int(y) * fov.width + int(x)] = z;
 					}
 				}
 			}
@@ -5303,8 +5320,11 @@ void VipCubeAxesActorWidget::updateWidget()
 	d_data->zVisible->setChecked(d_data->actor->GetZAxisVisibility());
 
 	d_data->xLabelVisible->setChecked(d_data->actor->GetXAxisLabelVisibility());
-	d_data->yLabelVisible->setChecked(d_data->actor->GetXAxisLabelVisibility());
-	d_data->zLabelVisible->setChecked(d_data->actor->GetYAxisLabelVisibility());
+	// Y from Y and Z from Z. The block was copied from the X line and only the widget
+	// names were substituted, so the panel showed the wrong states and the first
+	// click wrote them back onto the actor.
+	d_data->yLabelVisible->setChecked(d_data->actor->GetYAxisLabelVisibility());
+	d_data->zLabelVisible->setChecked(d_data->actor->GetZAxisLabelVisibility());
 
 	d_data->xTickVisible->setChecked(d_data->actor->GetXAxisTickVisibility());
 	d_data->yTickVisible->setChecked(d_data->actor->GetYAxisTickVisibility());

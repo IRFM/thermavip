@@ -230,10 +230,16 @@ namespace detail
 
 VIP_ALWAYS_INLINE const VipCPUFeatures& vipCPUFeatures()
 {
-	static VipCPUFeatures features;
-	static bool initialized = false;
-	if (!initialized)
-		detail::compute_cpu_feature(features, initialized);
+	// A function local static is built once and seen complete by every thread.
+	// The double check written by hand read its flag without a lock and set it
+	// before the computation, so a second thread could take a structure that was
+	// only half filled.
+	static const VipCPUFeatures features = [] {
+		VipCPUFeatures computed;
+		bool initialized = false;
+		detail::compute_cpu_feature(computed, initialized);
+		return computed;
+	}();
 	return features;
 }
 

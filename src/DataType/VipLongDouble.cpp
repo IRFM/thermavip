@@ -29,6 +29,9 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <limits>
+#include <type_traits>
+
 #include "VipLongDouble.h"
 
 #include <complex>
@@ -72,7 +75,9 @@ QByteArray vipLongDoubleToByteArray(const vip_long_double v)
 vip_long_double vipLongDoubleFromString(const QString& str, bool* ok)
 {
 	std::istringstream ss(str.toLatin1().data());
-	vip_long_double res;
+	// Initialised: a failed extraction leaves it untouched, and the four callers
+	// of these functions all omit the flag that would tell them.
+	vip_long_double res = 0;
 	ss >> res;
 	if (ok)
 		*ok = !ss.fail();
@@ -81,7 +86,9 @@ vip_long_double vipLongDoubleFromString(const QString& str, bool* ok)
 vip_long_double vipLongDoubleFromByteArray(const QByteArray& str, bool* ok)
 {
 	std::istringstream ss(str.data());
-	vip_long_double res;
+	// Initialised: a failed extraction leaves it untouched, and the four callers
+	// of these functions all omit the flag that would tell them.
+	vip_long_double res = 0;
 	ss >> res;
 	if (ok)
 		*ok = !ss.fail();
@@ -148,7 +155,9 @@ vip_long_double vipLongDoubleFromStringLocale(const QString& str, const QLocale&
 	if (l.language() != //_locale.language()
 	    QLocale::C)
 		ss.imbue(vipToStdLocale(l)); // std::locale(l.name().toLatin1().data()));
-	vip_long_double res;
+	// Initialised: a failed extraction leaves it untouched, and the four callers
+	// of these functions all omit the flag that would tell them.
+	vip_long_double res = 0;
 	ss >> res;
 	if (ok)
 		*ok = !ss.fail();
@@ -159,7 +168,9 @@ vip_long_double vipLongDoubleFromByteArrayLocale(const QByteArray& str, const QL
 	std::istringstream ss(str.data());
 	if (l.language() != QLocale::C) //_locale.language())
 		ss.imbue(vipToStdLocale(l));
-	vip_long_double res;
+	// Initialised: a failed extraction leaves it untouched, and the four callers
+	// of these functions all omit the flag that would tell them.
+	vip_long_double res = 0;
 	ss >> res;
 	if (ok)
 		*ok = !ss.fail();
@@ -189,6 +200,19 @@ static vip_long_double toLongDouble(T v)
 template<class T>
 static T fromLongDouble(vip_long_double v)
 {
+	// Clamped for the integer targets. A cast of a value outside the range of
+	// the destination is undefined, and these eleven converters are reached from
+	// any QVariant conversion, so a number read from a file decided what happened.
+	if constexpr (std::is_integral<T>::value) {
+		if (v != v)
+			return T(0);
+		constexpr vip_long_double lowest = static_cast<vip_long_double>(std::numeric_limits<T>::lowest());
+		constexpr vip_long_double highest = static_cast<vip_long_double>(std::numeric_limits<T>::max());
+		if (v <= lowest)
+			return std::numeric_limits<T>::lowest();
+		if (v >= highest)
+			return std::numeric_limits<T>::max();
+	}
 	return (T)v;
 }
 

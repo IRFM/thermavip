@@ -107,7 +107,8 @@ VipTimeMarker::~VipTimeMarker()
 		m.remove(value());
 		shape->rawData().setAttribute("_vip_markers", QVariant::fromValue(m));
 	}
-	delete grip;
+	if (grip)
+		delete grip.data();
 }
 void VipTimeMarker::draw(QPainter* p, const VipCoordinateSystemPtr& m) const
 {
@@ -1056,10 +1057,12 @@ void VipManualAnnotation::emitSendToJson()
 
 		QString event_type = selected[i]->rawData().attribute("_vip_Event").toString();
 		if (event_type.isEmpty()) {
+			// Substituted, and said so: the message used not to mention that a
+			// value had been put in place of the missing one.
 			selected[i]->rawData().setAttribute("_vip_Event", QString("hot spot"));
 			QPoint pos = d_data->send->mapToGlobal(QPoint(0, 0));
-			QToolTip::showText(pos - QPoint(50, 0), "<b>Warning:</b><br>one or more shapes do not define a valid event type.");
-			// return;
+			QToolTip::showText(pos - QPoint(50, 0),
+					   "<b>Warning:</b><br>one or more shapes do not define a valid event type; they are exported as 'hot spot'.");
 		}
 		// Having a pulse of 0 is now allowed
 		/*if (selected[i]->rawData().attribute("_vip_Pulse").value< db_pulse_type>() <= 0) {
@@ -1087,9 +1090,13 @@ void VipManualAnnotation::emitSendToJson()
 		}
 
 		if (selected[i]->rawData().attribute("_vip_Device").toString().isEmpty()) {
-			// TODO: better way?
-			//  If no device defined, set it to WEST
-			selected[i]->rawData().setAttribute("_vip_Device", "WEST");
+			// Refused, like the camera just above. A missing device used to be
+			// written as WEST: the exported file then carried a name nobody typed,
+			// indistinguishable from one that was, and every installation that is
+			// not WEST exported its annotations under that name.
+			QPoint pos = d_data->send->mapToGlobal(QPoint(0, 0));
+			QToolTip::showText(pos - QPoint(50, 0), "<b>Cannot send to JSON:</b><br>one or more shapes do not define a device.");
+			return;
 		}
 	}
 
@@ -1227,9 +1234,15 @@ Vip_event_list VipManualAnnotation::generateShapes(VipProgress* p, QString* erro
 	QList<VipProcessingObject*> sources; // all sources
 	QList<VipProcessingObject*> leafs;   // last sources before the display
 	for (int i = 0; i < displays.size(); ++i) {
-		if (VipOutput* src = displays[i]->inputAt(0)->connection()->source())
-			if (VipProcessingObject* obj = src->parentProcessing())
-				leafs.append(obj);
+		// Guarded the whole way, as the same chain is thirty lines above: a
+		// display without an input, or with an input that is not connected, took
+		// the process down at the moment the user sends annotations that are not
+		// saved yet.
+		if (VipInput* in = displays[i]->inputAt(0))
+			if (VipConnectionPtr con = in->connection())
+				if (VipOutput* src = con->source())
+					if (VipProcessingObject* obj = src->parentProcessing())
+						leafs.append(obj);
 		sources += displays[i]->allSources();
 	}
 	// make sure sources are unique
@@ -1239,6 +1252,20 @@ Vip_event_list VipManualAnnotation::generateShapes(VipProgress* p, QString* erro
 	pool->stop(); // stop playing
 	// now, save the current VipProcessingPool state, because we are going to modify it heavily
 	pool->save();
+
+	// Restored on every way out. The loop below can be cancelled, and that exit
+	// skipped the single restore point at the end: the pool stayed stopped, with
+	// every processing but the sources disabled and its signals blocked, so the
+	// player was left unusable.
+	struct RestorePool
+	{
+		VipProcessingPool* pool;
+		~RestorePool()
+		{
+			pool->restore();
+			pool->blockSignals(false);
+		}
+	} restore_pool{ pool };
 
 	// disable all processing except the sources, remove the Automatic flag from the sources
 	pool->disableExcept(sources);
@@ -1271,7 +1298,10 @@ Vip_event_list VipManualAnnotation::generateShapes(VipProgress* p, QString* erro
 		if (p) {
 			p->setValue(time);
 			if (p->canceled())
-				return res;
+				// Nothing rather than a truncated batch: the caller tests only for an
+				// empty result, so a partial one went to the database as if it were
+				// complete and the source shapes were then removed.
+				return Vip_event_list();
 		}
 
 		pool->read(time, true);
@@ -1333,9 +1363,16 @@ Vip_event_list VipManualAnnotation::generateShapes(VipProgress* p, QString* erro
 			attrs.insert("min_T_image_position_x", st.minPos[1]);
 			attrs.insert("min_T_image_position_y", st.minPos[0]);
 			attrs.insert("average_temperature_C", st.mean);
-			attrs.insert("pixel_area", bounding.width() * bounding.height());
-			attrs.insert("centroid_image_position_x", st.maxPos[1]);
-			attrs.insert("centroid_image_position_y", st.maxPos[0]);
+			// The area of the shape, which the statistics already counted, not the
+			// area of its bounding box: on a polygon lying across the diagonal the
+			// two differ by a factor of two, and the number goes to the database
+			// under the name pixel_area. The centre is the centre of the shape and
+			// not the position of the maximum, which the two columns beside it
+			// already carry.
+			attrs.insert("pixel_area", (qint64)st.count);
+			const QPointF centroid = sh.polygon().boundingRect().center();
+			attrs.insert("centroid_image_position_x", centroid.x());
+			attrs.insert("centroid_image_position_y", centroid.y());
 
 			// set the event flag
 			attrs.insert("origin", (int)VipPlayerDBAccess::New);
@@ -1354,9 +1391,6 @@ Vip_event_list VipManualAnnotation::generateShapes(VipProgress* p, QString* erro
 
 		time = next;
 	}
-
-	pool->restore();
-	pool->blockSignals(false);
 
 	// set maximum value to all shapes
 	// for (int i = 0; i < res.size(); ++i)

@@ -30,6 +30,7 @@
  */
 
 #include <limits>
+#include "VipLogging.h"
 
 #include <QApplication>
 #include <QBoxLayout>
@@ -159,8 +160,13 @@ QWidget* VipStandardWidgets::fromStyleSheet(const QString& style_sheet)
 	// take care of '--' for widget inside namespace
 	class_name.replace("--", "::");
 	QWidget* widget = vipCreateVariant(class_name.toLatin1().data()).value<QWidget*>();
+	// A selector naming a class the metatype system does not know — a missing
+	// plugin, a session from a newer version — yields nullptr, and this call was
+	// made before the test that follows it.
+	if (!widget)
+		return nullptr;
 	widget->setStyle(QApplication::style());
-	if (widget) {
+	{
 
 		// apply the style sheet and make sur it is applied to the widget
 		widget->setStyleSheet(style_sheet);
@@ -416,10 +422,9 @@ void VipDoubleEdit::setValue(double value)
 	if (f.isEmpty())
 		f = "%g";
 
-	char val[50];
-	memset(val, 0, sizeof(val));
-	snprintf(val, 50, f.toLatin1().data(), value);
-	setText(QString(val));
+	// asprintf rather than a 50 byte buffer: a wide field silently truncated
+	// the value shown to the user. The format itself is validated on the setter.
+	setText(QString::asprintf(f.toLatin1().constData(), value));
 	setStyleSheet(m_rightStyle);
 
 	this->blockSignals(blocked);
@@ -445,8 +450,23 @@ void VipDoubleEdit::setWrongStyle(const QString& style)
 		setStyleSheet(style);
 }
 
+// A printf format reaching snprintf must be a single floating point
+// conversion. These formats are settable through a Qt style sheet property,
+// and style sheets come from the editable symbols of a session archive, so
+// the string is untrusted: %s reads an arbitrary pointer, %n writes to one,
+// and a wide field silently truncates the displayed value.
+static bool vipIsSafeDoubleFormat(const QString& f)
+{
+	static const QRegularExpression re(QStringLiteral("^[^%]*%[-+ #0]{0,3}[0-9]{0,3}(\\.[0-9]{0,3})?[eEfgG][^%]*$"));
+	return re.match(f).hasMatch();
+}
+
 void VipDoubleEdit::setFormat(const QString& format)
 {
+	if (!format.isEmpty() && !vipIsSafeDoubleFormat(format)) {
+		VIP_LOG_WARNING("VipDoubleEdit: rejected format string: " + format);
+		return;
+	}
 	m_format = format;
 	if (isValid())
 		setValue(value());
@@ -488,10 +508,7 @@ void VipDoubleEdit::enterPressed()
 			if (f.isEmpty())
 				f = "%g";
 
-			char val[50];
-			memset(val, 0, sizeof(val));
-			snprintf(val, 50, f.toLatin1().data(), m_value);
-			setText(QString(val));
+			setText(QString::asprintf(f.toLatin1().constData(), m_value));
 			setStyleSheet(m_rightStyle);
 		}
 		this->blockSignals(blocked);
@@ -618,6 +635,10 @@ void VipMultiComponentDoubleEdit::setSeparator(const QString& sep)
 }
 void VipMultiComponentDoubleEdit::setFormat(const QString& format)
 {
+	if (!format.isEmpty() && !vipIsSafeDoubleFormat(format)) {
+		VIP_LOG_WARNING("VipMultiComponentDoubleEdit: rejected format string: " + format);
+		return;
+	}
 	d_data->format = format;
 	this->applyFormat();
 }
@@ -641,21 +662,26 @@ VipNDDoubleCoordinate VipMultiComponentDoubleEdit::readValue(bool* ok) const
 	QStringList lst = str.split(" ", VIP_SKIP_BEHAVIOR::SkipEmptyParts);
 	for (int i = 0; i < lst.size(); ++i) {
 		bool is_ok = false;
-		VipDoubleEdit::readValue(lst[i], d_data->integer, &is_ok);
+		// The parsed component was dropped, so the coordinate stayed empty: the
+		// widget reported itself invalid whatever was typed, stayed marked in the
+		// error style, never displayed a value it was given, and never returned one
+		// that was entered.
+		const double component = VipDoubleEdit::readValue(lst[i], d_data->integer, &is_ok);
 		if (!is_ok) {
 			if (ok)
 				*ok = false;
 			return value;
 		}
+		value.push_back(component);
 	}
 
 	if (ok)
 		*ok = true;
-	if (d_data->fixedNumberOfComponents >= 0 && value.size() != d_data->fixedNumberOfComponents) {
+	if (d_data->fixedNumberOfComponents >= 0 && static_cast<int>(value.size()) != d_data->fixedNumberOfComponents) {
 		if (ok)
 			*ok = false;
 	}
-	if (d_data->maxNumberOfComponents >= 0 && value.size() > d_data->maxNumberOfComponents) {
+	if (d_data->maxNumberOfComponents >= 0 && static_cast<int>(value.size()) > d_data->maxNumberOfComponents) {
 		if (ok)
 			*ok = false;
 	}
@@ -686,10 +712,7 @@ void VipMultiComponentDoubleEdit::applyFormat()
 			if (f.isEmpty())
 				f = "%g";
 
-			char val[50];
-			memset(val, 0, sizeof(val));
-			snprintf(val, 50, f.toLatin1().data(), value[i]);
-			res += (QString(val));
+			res += QString::asprintf(f.toLatin1().constData(), value[i]);
 			if (i < value.size() - 1)
 				res += " " + separator() + " ";
 		}
@@ -755,8 +778,17 @@ bool VipDoubleSliderEdit::showSpinBox() const
 
 void VipDoubleSliderEdit::setupSlider()
 {
-	double range = maximum() - minimum();
-	int steps = range / singleStep();
+	// The spin box accepts the whole range of a double until a bound is set, so
+	// the span is infinite here and the count of steps was converted to an int
+	// from that, which is undefined and gave a maximum below the minimum.
+	const double step = singleStep();
+	if (!(step > 0))
+		return;
+	const double range = maximum() - minimum();
+	if (!std::isfinite(range) || range <= 0)
+		return;
+	const double raw = range / step;
+	const int steps = static_cast<int>(std::min<double>(raw, 1000000.));
 	m_slider->setMinimum(0);
 	m_slider->setMaximum(steps);
 	m_slider->setSingleStep(1);
@@ -2116,11 +2148,17 @@ static QList<Action> findActions(QWidget* bar, QAction* exclude = nullptr)
 				// if (QToolBar* b = qobject_cast<QToolBar*>(w))
 				//  res += findActions(b);
 				//  else
+				// An action listed by a widget can have no associated widget of its
+				// own, which is the state a transfer goes through: this runs on every
+				// action removed.
 #if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
-				res.append(Action(a, w, a->associatedWidgets()[0]));
+				const QList<QWidget*> assoc = a->associatedWidgets();
 #else
-				res.append(Action(a, w, qobject_cast<QWidget*>(a->associatedObjects()[0])));
+				const QObjectList assoc = a->associatedObjects();
 #endif
+				if (assoc.isEmpty())
+					continue;
+				res.append(Action(a, w, qobject_cast<QWidget*>(assoc.first())));
 			}
 		}
 		else {
@@ -2129,6 +2167,8 @@ static QList<Action> findActions(QWidget* bar, QAction* exclude = nullptr)
 #else
 			QList<QWidget*> ws = vipListCast<QWidget*>(acts[i]->associatedObjects());
 #endif
+			if (ws.isEmpty())
+				continue;
 			if (ws.size() > 1)
 				res.append(Action(acts[i], ws[1], ws[0]));
 			else
@@ -3075,7 +3115,17 @@ void VipDragMenu::mouseMoveEvent(QMouseEvent* evt)
 		// this->close();
 		QDrag* drag = d_data->drag[mime];
 		drag->setMimeData(mime);
+
+		// exec() opens a nested event loop from inside a mouse event of a menu
+		// that is itself usually inside the nested loop of QMenu::exec. Anything
+		// that closes the parent window or reloads the session while the drag is
+		// on destroys this menu, and everything after the call used to run on a
+		// destroyed object.
+		const QPointer<VipDragMenu> alive(this);
 		drag->exec();
+		if (!alive)
+			return;
+
 		QCoreApplication::removePostedEvents(drag, QEvent::DeferredDelete);
 		// QCoreApplication::processEvents();
 		// QMetaObject::invokeMethod(QCoreApplication::instance(), std::bind(execDrag, mime), Qt::QueuedConnection);

@@ -40,6 +40,7 @@
 #endif
 
 #include <QStandardPaths>
+#include <QTimer>
 #include <QListWidget>
 #include <QApplication>
 #include <QKeyEvent>
@@ -530,6 +531,11 @@ class VipSearchLineEdit::PrivateData
 public:
 	PopupListWidget* history;
 	QAction* displayHistory;
+	// The search reads the file system. Fired on every keystroke it enumerated
+	// the directory once per character, synchronously, in the thread that paints:
+	// pasting a path of forty characters did it forty times and threw away
+	// thirty-nine of the answers.
+	QTimer* pending;
 };
 
 VipSearchLineEdit::VipSearchLineEdit(QWidget* parent)
@@ -551,8 +557,13 @@ VipSearchLineEdit::VipSearchLineEdit(QWidget* parent)
 	
 	d_data->history = new PopupListWidget(this);
 	
+	d_data->pending = new QTimer(this);
+	d_data->pending->setSingleShot(true);
+	d_data->pending->setInterval(200);
+
 	connect(d_data->displayHistory, SIGNAL(triggered(bool)), this, SLOT(displayHistory()));
-	connect(this, SIGNAL(textChanged(const QString &)), this, SLOT(textEntered()));
+	connect(d_data->pending, &QTimer::timeout, this, &VipSearchLineEdit::textEntered);
+	connect(this, &QLineEdit::textChanged, this, [this]() { d_data->pending->start(); });
 
 	qApp->installEventFilter(this);
 }

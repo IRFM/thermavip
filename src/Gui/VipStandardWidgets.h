@@ -357,7 +357,7 @@ public Q_SLOTS:
 
 protected:
 	void resetMargins();
-	virtual void resizeEvent(QResizeEvent* evt);
+	void resizeEvent(QResizeEvent* evt) override;
 	QLabel* _prefix;
 	QLabel* _suffix;
 };
@@ -537,7 +537,7 @@ public Q_SLOTS:
 	void setIcon(const QIcon& icon);
 
 protected:
-	virtual void paintEvent(QPaintEvent* event);
+	void paintEvent(QPaintEvent* event) override;
 
 private:
 	QIcon m_icon;
@@ -573,7 +573,7 @@ public:
 	bool innerDragDropEnabled() const;
 
 protected:
-	virtual bool eventFilter(QObject* obj, QEvent* evt);
+	bool eventFilter(QObject* obj, QEvent* evt) override;
 
 public Q_SLOTS:
 	// add the function setCurrentText, not provided by QComboBox
@@ -821,8 +821,8 @@ private Q_SLOTS:
 
 	
 protected:
-	virtual void resizeEvent(QResizeEvent* evt);
-	virtual bool eventFilter(QObject* watched, QEvent* event);
+	void resizeEvent(QResizeEvent* evt) override;
+	bool eventFilter(QObject* watched, QEvent* event) override;
 };
 
 
@@ -963,11 +963,11 @@ class VIP_GUI_EXPORT VipAdditionalToolBar : public QToolBar
 	Q_OBJECT
 public:
 	VipAdditionalToolBar(VipToolBar* parent = nullptr);
-	virtual bool eventFilter(QObject* watched, QEvent* event);
+	bool eventFilter(QObject* watched, QEvent* event) override;
 
 protected:
-	virtual void showEvent(QShowEvent*);
-	virtual void hideEvent(QHideEvent*);
+	void showEvent(QShowEvent*) override;
+	void hideEvent(QHideEvent*) override;
 
 private:
 	VipToolBar* parent;
@@ -994,7 +994,7 @@ public:
 	VipToolBar(QWidget* parent = nullptr);
 	virtual ~VipToolBar();
 
-	virtual QSize sizeHint() const;
+	QSize sizeHint() const override;
 
 	void setShowAdditionals(ShowAdditionals sh);
 	ShowAdditionals showAdditionals() const;
@@ -1007,8 +1007,8 @@ public:
 	bool customBehaviorEnabled() const;
 
 protected:
-	virtual void showEvent(QShowEvent* evt);
-	virtual void resizeEvent(QResizeEvent* evt);
+	void showEvent(QShowEvent* evt) override;
+	void resizeEvent(QResizeEvent* evt) override;
 	virtual void actionEvent(QActionEvent* evt);
 
 private Q_SLOTS:
@@ -1097,11 +1097,11 @@ private Q_SLOTS:
 	void maximizeOrShowNormal();
 
 protected:
-	virtual bool eventFilter(QObject*, QEvent*);
-	virtual void mouseDoubleClickEvent(QMouseEvent* event);
-	virtual void mousePressEvent(QMouseEvent* evt);
-	virtual void mouseReleaseEvent(QMouseEvent* evt);
-	virtual void mouseMoveEvent(QMouseEvent* evt);
+	bool eventFilter(QObject*, QEvent*) override;
+	void mouseDoubleClickEvent(QMouseEvent* event) override;
+	void mousePressEvent(QMouseEvent* evt) override;
+	void mouseReleaseEvent(QMouseEvent* evt) override;
+	void mouseMoveEvent(QMouseEvent* evt) override;
 
 private:
 	
@@ -1153,11 +1153,11 @@ public:
 	bool isResizable() const;
 
 protected:
-	virtual bool eventFilter(QObject* watched, QEvent* evt);
-	virtual void mousePressEvent(QMouseEvent* evt);
-	virtual void mouseReleaseEvent(QMouseEvent* evt);
-	virtual void mouseMoveEvent(QMouseEvent* evt);
-	virtual void resizeEvent(QResizeEvent* evt);
+	bool eventFilter(QObject* watched, QEvent* evt) override;
+	void mousePressEvent(QMouseEvent* evt) override;
+	void mouseReleaseEvent(QMouseEvent* evt) override;
+	void mouseMoveEvent(QMouseEvent* evt) override;
+	void resizeEvent(QResizeEvent* evt) override;
 
 private:
 	
@@ -1196,7 +1196,7 @@ public:
 	void setEnabled(bool);
 	bool isEnabled() const;
 
-	virtual bool eventFilter(QObject* watched, QEvent* evt);
+	bool eventFilter(QObject* watched, QEvent* evt) override;
 
 private Q_SLOTS:
 	void startShow();

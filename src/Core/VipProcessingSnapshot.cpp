@@ -158,12 +158,14 @@ bool vipLoadProcessingPoolSnapshot(VipProcessingPool* pool, VipArchive& arch)
 			p->setParent(pool);
 
 			// load general information
-			p->m_info.classname = arch.read("classname").toString();
-			p->m_info.metatype = arch.read("metatype").toInt();
-			p->m_info.description = arch.read("description").toString();
-			p->m_info.category = arch.read("category").toString();
-			p->m_info.displayHint = (VipProcessingObject::DisplayHint)arch.read("displayHint").toInt();
-			p->m_info.icon = arch.read("icon").value<QIcon>();
+			VipProcessingObject::Info info;
+			info.classname = arch.read("classname").toString();
+			info.metatype = arch.read("metatype").toInt();
+			info.description = arch.read("description").toString();
+			info.category = arch.read("category").toString();
+			info.displayHint = (VipProcessingObject::DisplayHint)arch.read("displayHint").toInt();
+			info.icon = arch.read("icon").value<QIcon>();
+			p->setInfo(info);
 		}
 		else {
 			p = it.value();
@@ -173,8 +175,8 @@ bool vipLoadProcessingPoolSnapshot(VipProcessingPool* pool, VipArchive& arch)
 		objects.append(p);
 
 		// load the processing time
-		p->m_processingTime = arch.read("ptime").toLongLong();
-		p->m_lastProcessingTime = arch.read("ltime").toLongLong();
+		p->m_processingTime.store(arch.read("ptime").toLongLong(), std::memory_order_relaxed);
+		p->m_lastProcessingTime.store(arch.read("ltime").toLongLong(), std::memory_order_relaxed);
 
 		// load the last errors
 		if (!arch.start("errors"))
@@ -201,7 +203,7 @@ bool vipLoadProcessingPoolSnapshot(VipProcessingPool* pool, VipArchive& arch)
 			QString descr = arch.read("descr").toString();
 			VipInput* input = p->inputAt(j);
 			input->setName(_name);
-			p->m_inputDescriptions[_name] = descr;
+			p->setInputDescription(_name, descr);
 			if (input->connection()->address() != connection) {
 				has_new_connections = true;
 				input->connection()->setupConnection(connection);
@@ -221,7 +223,7 @@ bool vipLoadProcessingPoolSnapshot(VipProcessingPool* pool, VipArchive& arch)
 			QString descr = arch.read("descr").toString();
 			VipProperty* prop = p->propertyAt(j);
 			prop->setName(_name);
-			p->m_propertyDescriptions[_name] = descr;
+			p->setPropertyDescription(_name, descr);
 			if (prop->connection()->address() != connection) {
 				has_new_connections = true;
 				prop->connection()->setupConnection(connection);
@@ -241,7 +243,7 @@ bool vipLoadProcessingPoolSnapshot(VipProcessingPool* pool, VipArchive& arch)
 			QString descr = arch.read("descr").toString();
 			VipOutput* out = p->outputAt(j);
 			out->setName(_name);
-			p->m_outputDescriptions[_name] = descr;
+			p->setOutputDescription(_name, descr);
 			if (out->connection()->address() != connection) {
 				has_new_connections = true;
 				out->connection()->setupConnection(connection);

@@ -1,3 +1,4 @@
+#include <atomic>
 #include "VipPolarWidgets.h"
 #include "VipPlotWidget2D.h"
 #include "VipPolarAxis.h"
@@ -9,7 +10,10 @@
 class GaugeThread: public QThread
 {
 	QPointer<VipPolarValueGauge> gauge;
-	bool stop;
+	// Atomic: written by the thread of the interface and read every turn by the
+	// thread below. A plain bool is a data race, and nothing forces the read to
+	// happen again, so the wait on shutdown could never return.
+	std::atomic<bool> stop;
 
 public:
 	GaugeThread(VipPolarValueGauge* g)

@@ -110,7 +110,6 @@ VipSliderGrip::VipSliderGrip(VipAbstractScale* parent)
 	d_data->singleStep = 1;
 	d_data->singleStepReference = Vip::InvalidValue;
 	d_data->handleDistance = 5;
-	// d_data->image.loadFromData(reinterpret_cast<const uchar*>(slider_png), 477, "PNG");
 	this->setFlag(QGraphicsItem::ItemIsMovable, true);
 	this->setFlag(QGraphicsItem::ItemSendsGeometryChanges, true);
 
@@ -411,7 +410,9 @@ void VipSliderGrip::drawHandle(QPainter* painter) const
 { 
 	if (d_data->image.isNull()) {
 		VipSliderGrip* _this = const_cast<VipSliderGrip*>(this);
-		_this->d_data->image.loadFromData(reinterpret_cast<const uchar*>(slider_handle_png), 477, "PNG");
+		// The size of the array, not the size of the one this line was copied from:
+		// it read a hundred bytes past the end of a smaller array.
+		_this->d_data->image.loadFromData(reinterpret_cast<const uchar*>(slider_handle_png), sizeof(slider_handle_png), "PNG");
 		_this->d_data->reduced = _this->d_data->image;
 		if (d_data->maxImageSize.isValid())
 			if (d_data->image.width() > d_data->maxImageSize.width() || d_data->image.height() > d_data->maxImageSize.height())

@@ -34,6 +34,7 @@
 
 #include "VipHybridVector.h"
 #include <QPair>
+#include <limits>
 
 /// \addtogroup DataType
 /// @{
@@ -182,20 +183,41 @@ static VIP_ALWAYS_INLINE qsizetype vipFlatOffset(const VipCoordinate<Nst>& strid
 	}
 }
 
+/// @brief Multiply two sizes, reporting the overflow instead of producing it.
+///
+/// A shape can come from a file, and the product of dimensions that are each
+/// plausible still overflows: four of 65536 reach 2^64. Signed overflow is
+/// undefined, and produced a small or negative size that was then used to walk
+/// the array and to size allocations.
+inline bool vipSizeMulOverflows(qsizetype a, qsizetype b, qsizetype& res) noexcept
+{
+	if (a < 0 || b < 0)
+		return true;
+	if (b != 0 && a > (std::numeric_limits<qsizetype>::max)() / b)
+		return true;
+	res = a * b;
+	return false;
+}
+
 /// Compute the size of shape (#VipHybridVector object) by multiplying all its components
+/// Returns -1 if the shape is invalid or its size is not representable.
 template<class ShapeType>
 qsizetype vipShapeToSize(const ShapeType& shape)
 {
 	if (!shape.size())
 		return 0;
 	qsizetype res = shape[0];
+	if (res < 0)
+		return -1;
 	for (qsizetype i = 1; i < shape.size(); ++i)
-		res *= shape[i];
+		if (vipSizeMulOverflows(res, shape[i], res))
+			return -1;
 	return res;
 }
 
 /// Compute the size of shape (#VipHybridVector object) by multiplying all its components.
 /// In addition, tells if given strides are considered as unstrided for this shape.
+/// Returns -1 if the shape is invalid or its size is not representable.
 template<class ShapeType, class StrideType>
 qsizetype vipShapeToSize(const ShapeType& shape, const StrideType& strides, bool* is_unstrided)
 {
@@ -205,8 +227,11 @@ qsizetype vipShapeToSize(const ShapeType& shape, const StrideType& strides, bool
 	}
 	*is_unstrided = strides.back() == 1;
 	qsizetype size_in = shape.back();
+	if (size_in < 0)
+		return -1;
 	for (qsizetype i = strides.size() - 2; i >= 0; --i) {
-		size_in *= shape[i];
+		if (vipSizeMulOverflows(size_in, shape[i], size_in))
+			return -1;
 		if (strides[i] != strides[i + 1] * shape[i + 1])
 			*is_unstrided = false;
 	}
@@ -214,6 +239,7 @@ qsizetype vipShapeToSize(const ShapeType& shape, const StrideType& strides, bool
 }
 
 /// For given #Ordering and shape, compute the corresponding default strides.
+/// Returns -1 if the shape is invalid or its size is not representable.
 /// Returns the array size.
 template<Vip::Ordering order, class Shape, class Strides>
 inline qsizetype vipComputeDefaultStrides(const Shape& shape, Strides& strides)
@@ -225,7 +251,8 @@ inline qsizetype vipComputeDefaultStrides(const Shape& shape, Strides& strides)
 		qsizetype size = shape.back();
 		strides.back() = 1;
 		for (qsizetype i = strides.size() - 2; i >= 0; --i) {
-			size *= shape[i];
+			if (vipSizeMulOverflows(size, shape[i], size))
+				return -1;
 			strides[i] = strides[i + 1] * shape[i + 1];
 		}
 		return size;
@@ -234,7 +261,8 @@ inline qsizetype vipComputeDefaultStrides(const Shape& shape, Strides& strides)
 		qsizetype size = shape.front();
 		strides.front() = 1;
 		for (qsizetype i = 1; i < strides.size(); ++i) {
-			size *= shape[i];
+			if (vipSizeMulOverflows(size, shape[i], size))
+				return -1;
 			strides[i] = strides[i - 1] * shape[i - 1];
 		}
 		return size;
@@ -248,12 +276,18 @@ inline qsizetype vipCumMultiply(const Vector& shape)
 	return vipShapeToSize(shape);
 }
 /// Cumulative mutliplication of a shape (based on top left and top right position) to extract its size
+/// Returns -1 if the rectangle is invalid or its size is not representable.
 template<class Vector1, class Vector2>
 inline qsizetype vipCumMultiplyRect(const Vector1& topLeft, const Vector2& bottomRight)
 {
+	// A corner smaller than its opposite gives a negative extent, which nothing
+	// rejected before the multiplication.
 	qsizetype res = bottomRight[0] - topLeft[0];
+	if (res < 0)
+		return -1;
 	for (qsizetype i = 1; i < topLeft.size(); ++i)
-		res *= (bottomRight[i] - topLeft[i]);
+		if (vipSizeMulOverflows(res, bottomRight[i] - topLeft[i], res))
+			return -1;
 	return res;
 }
 
@@ -855,22 +889,30 @@ namespace detail
 
 		void setFlatPosition(qsizetype offset)
 		{
+			// The strides have to come from the shape. This filled new_shape with the
+			// current position, which the constructor zeroes, so every stride but the
+			// last was zero and the first division of the first call divided by zero.
+			// Two dimensions hid it, the single stride being 1 there; three or more
+			// did not. The loop below also has to walk the positions, not the strides:
+			// there is one stride fewer than there are dimensions.
 			VipNDArrayShape new_shape(shape.size() - 1);
 			qsizetype index = 0;
 			for (qsizetype i = 0; i < shape.size(); ++i)
 				if (i != skip)
-					new_shape[index++] = pos[i];
-
-			index = 0;
+					new_shape[index++] = shape[i];
 
 			VipNDArrayShape strides;
 			vipComputeDefaultStrides<Vip::FirstMajor>(new_shape, strides);
-			for (qsizetype i = 0; i < strides.size(); ++i) {
+
+			index = 0;
+			for (qsizetype i = 0; i < shape.size(); ++i) {
 				if (i != skip) {
 					pos[i] = (offset / strides[index]);
 					offset = (offset % strides[index]);
 					++index;
 				}
+				else
+					pos[i] = 0;
 			}
 		}
 
@@ -2000,9 +2042,11 @@ namespace detail
 	}
 } // end detail
 
-/// Apply convert function inplace on given possibly strided N-D array
+/// Apply convert function inplace on given possibly strided N-D array.
+///  max_threads bounds the parallelism: pass 1 for a function that must see the
+/// elements one at a time and in order, such as one writing them to a stream.
 template<class T, class Fun>
-bool vipInplaceArrayTransform(T* in, const VipNDArrayShape& in_shape, const VipNDArrayShape& in_strides, Fun c)
+bool vipInplaceArrayTransform(T* in, const VipNDArrayShape& in_shape, const VipNDArrayShape& in_strides, Fun c, int max_threads = 0)
 {
 	bool in_unstrided;
 	qsizetype size_in = vipShapeToSize(in_shape, in_strides, &in_unstrided);
@@ -2010,6 +2054,8 @@ bool vipInplaceArrayTransform(T* in, const VipNDArrayShape& in_shape, const VipN
 		return false;
 
 	int threads = vipLoopThreadCount(size_in);
+	if (max_threads > 0 && threads > max_threads)
+		threads = max_threads;
 
 	if (in_unstrided) {
 		if constexpr (std::is_same_v<Fun, VipNullTransform>) {

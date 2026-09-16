@@ -1,0 +1,112 @@
+name: Memory check (nightly, non-blocking)
+
+# Slow tools, kept off the critical path: around 10x for Valgrind, 5 to 15x
+# for ThreadSanitizer. Making those blocking would guarantee they get bypassed.
+#
+# continue-on-error is deliberate: on surfaces never instrumented before, the
+# first run mixes noise with pre-existing defects, and a job red from day one
+# is disabled before it ever helps. Results are published as artifacts.
+#
+# Dr. Memory, Application Verifier and UMDH are intentionally absent: no
+# established GitHub action, manual install, manual reading. They stay
+# investigation tools, used when the CRT debug heap reports a leak.
+
+on:
+  schedule:
+    # 03:17 UTC: quiet hours, offset to avoid the top of the hour.
+    - cron: '17 3 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+
+  linux-thread-sanitizer:
+    name: Linux ThreadSanitizer
+    runs-on: ubuntu-22.04
+    continue-on-error: true
+
+    # ThreadSanitizer has no MSVC equivalent: Application Verifier "Locks"
+    # covers only a fraction of it. This row relies entirely on Linux.
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      - name: Install Qt
+        uses: jurplel/install-qt-action@48d3ad6db93f3627c8ee7a0454bc6f3744f7e730 # v4.3.1 -- note: "v4" is a BRANCH here, not a tag
+        with:
+          modules: 'qt5compat'
+
+      - name: install gcc 10
+        run: sudo apt-get update && sudo apt-get install -y gcc-10 g++-10
+
+      - name: Configure
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DTHERMAVIP_SANITIZER=thread -DWITH_MICRO=OFF -DWITH_EXAMPLES=OFF -DLOCAL_INSTALL=ON
+        shell: bash
+        env:
+          CC: gcc-10
+          CXX: g++-10
+
+      - name: Build
+        run: cmake --build build --parallel
+        shell: bash
+
+      - name: Memory check
+        run: ctest --test-dir build -T memcheck --output-on-failure
+        shell: bash
+        env:
+          QT_QPA_PLATFORM: offscreen
+          TSAN_OPTIONS: second_deadlock_stack=1
+
+      - name: Publish report
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: tsan-report
+          path: build/Testing/
+          if-no-files-found: ignore
+
+  linux-valgrind:
+    name: Linux Valgrind memcheck
+    runs-on: ubuntu-22.04
+    continue-on-error: true
+
+    # Valgrind is the only Linux tool that detects reads of uninitialised
+    # memory. Neither AddressSanitizer nor the undefined behaviour sanitizer do.
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      - name: Install Qt
+        uses: jurplel/install-qt-action@48d3ad6db93f3627c8ee7a0454bc6f3744f7e730 # v4.3.1 -- note: "v4" is a BRANCH here, not a tag
+        with:
+          modules: 'qt5compat'
+
+      - name: install gcc 10 and valgrind
+        run: sudo apt-get update && sudo apt-get install -y gcc-10 g++-10 valgrind
+
+      # No sanitizer here: Valgrind and AddressSanitizer are incompatible. Build
+      # normally and ask CTest for the Valgrind backend.
+      - name: Configure
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DWITH_MICRO=OFF -DWITH_EXAMPLES=OFF -DLOCAL_INSTALL=ON -DMEMORYCHECK_TYPE=Valgrind
+        shell: bash
+        env:
+          CC: gcc-10
+          CXX: g++-10
+
+      - name: Build
+        run: cmake --build build --parallel
+        shell: bash
+
+      - name: Memory check
+        run: ctest --test-dir build -T memcheck --output-on-failure
+        shell: bash
+        env:
+          QT_QPA_PLATFORM: offscreen
+
+      - name: Publish report
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: valgrind-report
+          path: build/Testing/
+          if-no-files-found: ignore

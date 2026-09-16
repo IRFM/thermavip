@@ -51,8 +51,10 @@
 #include <QKeyEvent>
 #include <QLabel>
 #include <QPainter>
+#include <QScopeGuard>
 #include <QScrollArea>
 #include <QTextStream>
+#include <memory>
 #include <qmessagebox.h>
 
 VipDrawGraphicsShape::VipDrawGraphicsShape(VipPlotSceneModel* plotSceneModel, const QString& group)
@@ -132,7 +134,12 @@ void VipDrawGraphicsShape::findPlotSceneModel(const QPointF& scene_pos)
 	QList<QRectF> rects;
 
 	QList<VipAbstractScale*> scales = m_player->leftScales();
-	QRectF bottom = m_player->xScale()->mapToScene(m_player->xScale()->boundingRect()).boundingRect();
+	// The player is tested above, its scale was not: it is null while the axes are
+	// being built, and this runs on every press and every move of a drawing.
+	VipAbstractScale* xscale = m_player->xScale();
+	if (!xscale)
+		return;
+	QRectF bottom = xscale->mapToScene(xscale->boundingRect()).boundingRect();
 	for (int i = 0; i < scales.size(); ++i) {
 		VipPlotSceneModel* sm = m_player->findPlotSceneModel(QList<VipAbstractScale*>() << m_player->xScale() << scales[i]);
 		if (sm) {
@@ -362,13 +369,20 @@ QPainterPath VipDrawShapePolygon::shape() const
 
 void VipDrawShapePolygon::paint(QPainter* painter, const QStyleOptionGraphicsItem*, QWidget*)
 {
+	// The area is null between the construction of the filter and its installation,
+	// and again after it is removed, which happens one line before the hide: a
+	// repaint fits in between. shape() and sceneEvent() of this class already test it.
+	VipAbstractPlotArea* a = area();
+	if (!a)
+		return;
+
 	painter->setPen(QPen(QColor(255, 0, 0, 100), 0));
 	painter->setBrush(QColor(255, 0, 0, 50));
 	painter->setRenderHints(QPainter::Antialiasing);
 
 	QPolygonF poly(m_polygon);
 	poly.append(m_pos);
-	poly = area()->scaleToPosition(vipToPointVector( poly), sceneModelScales());
+	poly = a->scaleToPosition(vipToPointVector( poly), sceneModelScales());
 
 	poly = this->mapFromItem(area(), poly);
 	// TEST: remove Qt::WindingFill
@@ -479,13 +493,17 @@ VipDrawShapePolyline::VipDrawShapePolyline(VipPlotPlayer* player, const QString&
 }
 void VipDrawShapePolyline::paint(QPainter* painter, const QStyleOptionGraphicsItem*, QWidget*)
 {
+	VipAbstractPlotArea* a = area();
+	if (!a)
+		return;
+
 	painter->setPen(QPen(QColor(255, 0, 0, 50), 0));
 	painter->setBrush(Qt::NoBrush);
 	painter->setRenderHints(QPainter::Antialiasing);
 
 	QPolygonF poly(m_polygon);
 	poly.append(m_pos);
-	poly = area()->scaleToPosition(vipToPointVector( poly), sceneModelScales());
+	poly = a->scaleToPosition(vipToPointVector( poly), sceneModelScales());
 	painter->drawPolyline(poly);
 
 	// stop polyline
@@ -577,11 +595,15 @@ QPainterPath VipDrawShapeMask::shape() const
 
 void VipDrawShapeMask::paint(QPainter* painter, const QStyleOptionGraphicsItem*, QWidget*)
 {
+	VipAbstractPlotArea* a = area();
+	if (!a)
+		return;
+
 	painter->setPen(QPen(Qt::white, 0));
 	painter->setBrush(QColor(255, 0, 0, 50));
 	painter->setRenderHints(QPainter::Antialiasing);
 
-	QPolygonF poly = area()->scaleToPosition(vipToPointVector(m_polygon), sceneModelScales());
+	QPolygonF poly = a->scaleToPosition(vipToPointVector(m_polygon), sceneModelScales());
 	// TEST: remove Qt::WindingFill
 	painter->drawPolygon(poly /*,Qt::WindingFill*/);
 }
@@ -774,17 +796,27 @@ public:
 		if ((str >> c).status() == QTextStream::Ok)
 			return QVariant::fromValue(c);
 
-		QVariant v = val;
-		if (v.convert(VIP_META(QMetaType::Double)))
-			return v;
-		else if (v.convert(VIP_META(qMetaTypeId<complex_d>())))
-			return v;
-		else if (v.convert(VIP_META(qMetaTypeId<complex_f>())))
-			return v;
-		else if (!m_value.text().isEmpty())
-			return QVariant(m_value.text());
-		else
-			return QVariant();
+		// One copy per attempt: convert() rewrites the variant even when it fails, so
+		// the second and third tests no longer saw the text that was typed but a null
+		// double. The last fallback re-read the widget, which says the author knew.
+		{
+			QVariant v = val;
+			if (v.convert(VIP_META(QMetaType::Double)))
+				return v;
+		}
+		{
+			QVariant v = val;
+			if (v.convert(VIP_META(qMetaTypeId<complex_d>())))
+				return v;
+		}
+		{
+			QVariant v = val;
+			if (v.convert(VIP_META(qMetaTypeId<complex_f>())))
+				return v;
+		}
+		if (!val.isEmpty())
+			return QVariant(val);
+		return QVariant();
 	}
 };
 
@@ -803,6 +835,7 @@ public:
 	QToolBar bar;
 
 	QList<QCheckBox*> groups;
+	bool computing{ false };
 };
 ShowHideGroups::ShowHideGroups(QWidget* parent)
   : QWidget(parent)
@@ -851,9 +884,21 @@ void ShowHideGroups::computeGroups(const QList<VipPlotSceneModel*>& models)
 		}
 	}
 
-	// remove previous checkboxes
-	for (int i = 0; i < d_data->groups.size(); ++i)
-		delete d_data->groups[i];
+	// A click on one of these boxes reaches this function again, synchronously and
+	// through six steps, and the box whose clicked() is still being emitted was then
+	// destroyed under it.
+	if (d_data->computing)
+		return;
+	d_data->computing = true;
+	const auto leave = qScopeGuard([this] { d_data->computing = false; });
+
+	// remove previous checkboxes: hidden at once, disconnected so no second
+	// emission reaches us, and destroyed by the event loop once the stack is clear.
+	for (int i = 0; i < d_data->groups.size(); ++i) {
+		d_data->groups[i]->hide();
+		d_data->groups[i]->disconnect(this);
+		d_data->groups[i]->deleteLater();
+	}
 	d_data->groups.clear();
 
 	// add new checkboxes
@@ -1108,7 +1153,9 @@ VipSceneModelEditor::VipSceneModelEditor(QWidget* parent)
 	// TODO: completely remove d_data->statArea
 	d_data->statArea.hide();
 
-	QMenu* save_menu = new QMenu();
+	// Parented, like the three other menus of this file: setMenu() takes no
+	// ownership, so this one and its four actions outlived the editor.
+	QMenu* save_menu = new QMenu(this);
 	connect(save_menu->addAction("Save shapes..."), SIGNAL(triggered(bool)), this, SLOT(saveShapes()));
 	connect(save_menu->addAction("Create attribute image for selected shapes..."), SIGNAL(triggered(bool)), this, SLOT(saveShapesAttribute()));
 	connect(save_menu->addAction("Save image inside selected shapes bounding rect..."), SIGNAL(triggered(bool)), this, SLOT(saveShapesImage()));
@@ -1652,10 +1699,15 @@ void VipSceneModelEditor::saveShapes()
 		QString filename = VipFileDialog::getSaveFileName(nullptr, "Save shapes", filters.join(";;"));
 		if (!filename.isEmpty()) {
 			QList<VipIODevice::Info> devices = VipIODevice::possibleWriteDevices(filename, QVariantList() << QVariant::fromValue(VipSceneModelList()));
-			VipIODevice* dev = VipCreateDevice::create(devices, filename);
+			// Owned here, as the other call to this factory in this file already makes
+			// clear: the pointer was dropped on both paths, with its output buffer and
+			// its open file.
+			std::unique_ptr<VipIODevice> dev(VipCreateDevice::create(devices, filename));
 			if (dev && dev->open(VipIODevice::WriteOnly)) {
-				dev->inputAt(0)->setData(models);
+				if (VipInput* in = dev->inputAt(0))
+					in->setData(models);
 				dev->update();
+				dev->close();
 			}
 		}
 	}

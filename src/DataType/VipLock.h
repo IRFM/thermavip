@@ -180,7 +180,25 @@ public:
 	{
 		l.lock();
 	}
-	~VipUniqueLock() { d_lock->unlock(); }
+	// A copied guard would release the same lock twice, which is worse than a
+	// copied lock: the two lock classes of this header delete their copy too.
+	VipUniqueLock(const VipUniqueLock&) = delete;
+	VipUniqueLock& operator=(const VipUniqueLock&) = delete;
+	~VipUniqueLock()
+	{
+		if (d_lock)
+			d_lock->unlock();
+	}
+
+	/// @brief Release before the end of the scope, for a section that must not
+	/// hold the lock across a blocking call.
+	void unlock()
+	{
+		if (d_lock) {
+			d_lock->unlock();
+			d_lock = nullptr;
+		}
+	}
 };
 
 template<class Lock>
@@ -194,6 +212,8 @@ public:
 	{
 		l.lock_shared();
 	}
+	VipSharedLock(const VipSharedLock&) = delete;
+	VipSharedLock& operator=(const VipSharedLock&) = delete;
 	~VipSharedLock() { d_lock->unlock_shared(); }
 };
 

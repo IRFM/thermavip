@@ -42,7 +42,9 @@ Thermavip framework is meant to build desktop applications at it relies on [Qt W
 
 ## Prerequisites
 
-To compile and run *Thermavip*, you need a valid Qt installation (starting version 5.9).
+To compile and run *Thermavip*, you need a valid Qt 6 installation. Qt 6.8.3 is the version the
+continuous integration builds; nothing older than Qt 6 is built or tested. The build system still
+accepts Qt 5, but no configuration exercises it.
 Qt needs to be compiled with the desktop opengl option, and with mysql support if you wish to use the [Annotation](docs/annotation.md) library with a MySQL database.
 
 You can download Qt source code from this [website](https://download.qt.io/archive/qt/).

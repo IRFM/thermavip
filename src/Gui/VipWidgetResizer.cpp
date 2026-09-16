@@ -75,7 +75,11 @@ public:
 			if (!(*it)->isEnabled())
 				continue;
 
-			res = res || (*it)->filter(watched, event);
+			// filter() is not a predicate: it carries the whole state machine, the
+			// release of the grabber included. Short-circuited on the first resizer that
+			// took the event, the others stayed convinced a drag was still going on.
+			const bool used_by_this = (*it)->filter(watched, event);
+			res = res || used_by_this;
 			has_cursor = has_cursor || (*it)->hasCustomCursor();
 		}
 		if (!has_cursor && QGuiApplication::overrideCursor())
@@ -148,6 +152,15 @@ VipWidgetResizer::VipWidgetResizer(QWidget* parent)
 
 VipWidgetResizer::~VipWidgetResizer()
 {
+	// The grabber is set on press and cleared on release. Destroyed mid-drag, this
+	// resizer left the handler pointing at it for good, and no other resizer can
+	// reach the branch that clears it: resizing by the edges then stayed dead for
+	// every window until the process ended. QObject::parent(), because the QWidget
+	// sub-object of the parent may already be gone.
+	if (handler()->grabber && handler()->grabber == QObject::parent())
+		handler()->grabber = nullptr;
+	removeCursors();
+
 	handler()->removeResizer(this);
 	// QApplication::instance()->removeEventFilter(this);
 	d_data->timer.stop();
@@ -156,14 +169,10 @@ VipWidgetResizer::~VipWidgetResizer()
 
 void VipWidgetResizer::updateCursor()
 {
-	bool remove_cursor = false;
-	if (!parent())
-		remove_cursor = true;
-	if (!parent()->isVisible())
-		remove_cursor = true;
-	if (!isTopLevelWidget())
-		remove_cursor = true;
-	if (remove_cursor)
+	// The first test was decorative: nothing followed it, and the next line
+	// dereferenced the same pointer.
+	QWidget* p = parent();
+	if (!p || !p->isVisible() || !isTopLevelWidget())
 		removeCursors();
 }
 
@@ -216,6 +225,8 @@ bool VipWidgetResizer::isTopLevelWidget(const QPoint& screen_pos) const
 	// if (!p || !p->isTopLevel())
 	//	return false;
 	QWidget* p = parent();
+	if (!p)
+		return false;
 	if (screen_pos == QPoint())
 		return true;
 

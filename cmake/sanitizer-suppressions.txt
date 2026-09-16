@@ -1,0 +1,46 @@
+# AddressSanitizer / LeakSanitizer suppressions for the Thermavip tests.
+#
+# Qt and the graphics drivers allocate objects on first use that they never
+# free on purpose: type caches, factory tables, platform plugin context.
+# Reported as is, they drown the real leaks, the job stays red and gets ignored
+# within a week.
+#
+# Rules for this file:
+#   - one entry, one written justification right above it;
+#   - never an entry covering code under src/: a leak in Thermavip is fixed,
+#     not suppressed;
+#   - an entry added without justification is an entry to remove.
+#
+# The first line of defence is not here but in the test launcher:
+# QT_QPA_PLATFORM=offscreen avoids the real platform plugin and removes most of
+# the driver noise. This file only handles what is left.
+#
+# Usage:
+#   LSAN_OPTIONS=suppressions=<this file>:print_suppressions=0
+#   ASAN_OPTIONS=suppressions=<this file>
+
+# --- Qt --------------------------------------------------------------------
+# Qt registers its base types on first use in static tables freed by an atexit
+# handler the test process does not always reach.
+leak:libQt6Core.so
+leak:Qt6Core.dll
+
+# The platform plugin, offscreen included, allocates its context at startup and
+# leaves it to the system on exit.
+leak:QGuiApplicationPrivate::createPlatformIntegration
+leak:libQt6Gui.so
+leak:Qt6Gui.dll
+
+# --- Graphics drivers ------------------------------------------------------
+# OpenGL/Mesa drivers allocate internal structures they never free. None of
+# these allocations is reachable from project code.
+leak:libGLX
+leak:libGL.so
+leak:swrast_dri.so
+leak:i965_dri.so
+
+# --- Dynamic loading -------------------------------------------------------
+# dlopen keeps library handles that dlclose does not always release, and so do
+# the symbol resolution tables.
+leak:__libc_dlopen_mode
+leak:_dl_open

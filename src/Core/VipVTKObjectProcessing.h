@@ -223,10 +223,14 @@ VTK_DECLARE_ALGORITHM(GeometryFilter, VIP_CORE_EXPORT)
 	VTK_DECLARE_PROPERTY(ExtentClipping);
 	VTK_DECLARE_PROPERTY(Merging);
 	VTK_DECLARE_PROPERTY(OutputPointsPrecision);
-//#if VTK_VERSION_NUMBER >= 90020210809ULL//VTK_VERSION_CHECK(9,4,0)
+// FastMode and PieceInvariant only exist from VTK 9.0.20210809 on. The guard
+// had been commented out while the properties stayed active, so an older VTK
+// failed inside a decltype nested in a macro. No minimum VTK version is
+// declared to find_package, so nothing else enforces the requirement.
+#if VTK_VERSION_NUMBER >= 90020210809ULL
 	VTK_DECLARE_PROPERTY(FastMode);
 	VTK_DECLARE_PROPERTY(PieceInvariant);
-//#endif
+#endif
 	VTK_DECLARE_PROPERTY(PassThroughCellIds);
 	VTK_DECLARE_PROPERTY(PassThroughPointIds);
 	VTK_DECLARE_PROPERTY(NonlinearSubdivisionLevel);
@@ -384,7 +388,7 @@ VTK_DECLARE_ALGORITHM(Delaunay3D, VIP_CORE_EXPORT)
 	VTK_DECLARE_PROPERTY(OutputPointsPrecision);
 
 public:
-	VTK_CREATE_ALGORITHM(Delaunay3D) {}
+	VTK_CREATE_ALGORITHM(Delaunay3D, vtkPointSet) {}
 	virtual bool acceptInput(int /*index*/, const QVariant& v) const { return v.value<VipVTKObject>().pointSet(); }
 	virtual VipVTKObject transformInput(const VipVTKObject& obj, int) const
 	{

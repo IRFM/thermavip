@@ -53,6 +53,7 @@ extern "C" {
 //#endif
 #endif
 
+#include "VipLogging.h"
 #include "VipPyProcessing.h"
 #include "VipPyRegisterProcessing.h"
 #include "VipArchive.h"
@@ -146,10 +147,19 @@ void VipPyFunctionProcessing::mergeData(int, int)
 	// send function
 	{
 		VipGILLocker lock;
-		PyObject* __main__ = PyImport_ImportModule("__main__");
-		PyObject* globals = PyModule_GetDict(__main__);
-		Py_DECREF(__main__);
+		PyObject* main_module = PyImport_ImportModule("__main__");
+		if (!main_module) {
+			// The import can fail, and both calls below dereference their argument.
+			PyErr_Clear();
+			setError("cannot access the Python __main__ module", VipProcessingObject::WrongInput);
+			outputAt(0)->setData(out);
+			return;
+		}
+		// A borrowed reference, valid only while the module is: release the module
+		// after using it, not before.
+		PyObject* globals = PyModule_GetDict(main_module);
 		int r = PyDict_SetItemString(globals, "fun", d_data->function);
+		Py_DECREF(main_module);
 		if (r != 0) {
 			d_data->lastError = VipPyError(compute_error_t{});
 			if (!d_data->lastError.isNull()) {
@@ -308,14 +318,21 @@ void VipPyProcessing::setStdProcessingParameters(const QVariantMap& args, const 
 	// for a standard processing (Py file in vipGetPythonDirectory()), set the processing class parameters.
 	// this will call the processing memeber 'setParameters'.
 
-	if (d_data->std_proc_name.isEmpty())
-		return;
-
+	// Keep them whatever happens. This returned before storing them, so opening a
+	// session on a machine where the Python class is not installed dropped the
+	// parameters, and saving the session again wrote the empty map back: the
+	// settings were lost by opening and re-saving, without a word.
 	d_data->stdProcessingParameters = args;
 	d_data->extractParameters.clear();
 
-	// build the dict of parameters
-	QStringList parameters;
+	if (d_data->std_proc_name.isEmpty())
+		return;
+
+	// Names and values used to be pasted into the source of the call. Both come
+	// out of a session file, where a closing parenthesis or a newline in either
+	// ended the call and ran the rest as top level Python. They travel as one
+	// object now, so the source holds nothing but generated identifiers.
+	QVariantMap kwargs;
 	for (QVariantMap::iterator it = d_data->stdProcessingParameters.begin(); it != d_data->stdProcessingParameters.end(); ++it) {
 		// for 'other' type, send the object before in the 'other' variable
 		if (it.value().userType() == qMetaTypeId<VipOtherPlayerData>()) {
@@ -334,25 +351,38 @@ void VipPyProcessing::setStdProcessingParameters(const QVariantMap& args, const 
 				VipPyInterpreter::instance()->sendObject("other", value).wait(5000);
 			else
 				cmds->push_back(vipCSendObject("other", value));
-			parameters << it.key() + "= other";
+			kwargs.insert(it.key(), value);
 		}
-		else
-			parameters << it.key() + "=" + it.value().toString();
+		else {
+			QVariant value = it.value();
+			// Older sessions, and the editor before it stopped doing so, stored text
+			// parameters already quoted, because the value went into the source.
+			if (value.userType() == QMetaType::QString) {
+				const QString s = value.toString();
+				if (s.size() > 1 && s.startsWith(QLatin1Char('\'')) && s.endsWith(QLatin1Char('\'')))
+					value = s.mid(1, s.size() - 2);
+			}
+			kwargs.insert(it.key(), value);
+		}
 	}
 
 	// set the parameters if required
-	if (parameters.size()) {
-		QString classname = "Thermavip" + d_data->std_proc_name;
-		QString id = QString::number(qint64(this));
-		QString code = "pr = procs[" + id +
-			       "]\n"
-			       "pr.setParameters(" +
-			       parameters.join(",") + ")\n";
+	if (!kwargs.isEmpty()) {
+		const QString id = QString::number(qint64(this));
+		const QString argsvar = "args" + id;
+		const QString code = "pr = procs[" + id +
+				     "]\n"
+				     "pr.setParameters(**" +
+				     argsvar + ")\n";
 
-		if (!cmds)
+		if (!cmds) {
+			VipPyInterpreter::instance()->sendObject(argsvar, QVariant::fromValue(kwargs)).wait(5000);
 			VipPyInterpreter::instance()->execCode(code).wait(5000);
-		else
+		}
+		else {
+			cmds->push_back(vipCSendObject(argsvar, QVariant::fromValue(kwargs)));
 			cmds->push_back(vipCExecCode(code, "code"));
+		}
 	}
 }
 
@@ -625,6 +655,14 @@ void VipPyProcessing::resetProcessing() {}
 
 void VipPyProcessing::mergeData(int, int)
 {
+	// The code below is a property, and properties come back from session files.
+	// One session is opened at every start without asking, so running it would
+	// mean running whatever that file chose.
+	if (!vipCanRunRestoredPythonCode(this)) {
+		setError("Python code restored from a session file was not run");
+		return;
+	}
+
 	VipPyCommandList cmds;
 
 	// initialize the standard processing (if any) based on 'ThermavipPyProcessing' class
@@ -774,7 +812,11 @@ VipArchive& operator<<(VipArchive& ar, VipPyProcessing* p)
 VipArchive& operator>>(VipArchive& ar, VipPyProcessing* p)
 {
 	p->setMaxExecutionTime(ar.read("maxExecutionTime").toInt());
-	p->setStdPyProcessingFile(ar.read("stdPyProcessingFile").toString());
+	// The order matters and nothing enforces it: the file has to be resolved before
+	// the parameters are applied.
+	const QString proc_file = ar.read("stdPyProcessingFile").toString();
+	if (!proc_file.isEmpty() && !p->setStdPyProcessingFile(proc_file))
+		VIP_LOG_WARNING("Python processing '" + proc_file + "' is not available here; its parameters are kept but not applied");
 	p->setStdProcessingParameters(ar.read("stdProcessingParameters").value<QVariantMap>());
 
 	QVariantMap std = p->stdProcessingParameters();

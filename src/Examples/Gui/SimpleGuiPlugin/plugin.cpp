@@ -66,11 +66,23 @@ bool RAWSignalReader::open(VipIODevice::OpenModes mode)
 
 	// create deviec from path
 	QIODevice* d = createDevice(p, QIODevice::ReadOnly);
+	// Tested, as the writer below already does: this gives nothing when the file
+	// is missing, locked or unreadable, and a dropped file is enough to reach it.
+	if (!d)
+		return false;
 
 	// read file content
-	qint64 samples = d->size() / sizeof(VipPoint);
+	const qint64 samples = d->size() / (qint64)sizeof(VipPoint);
 	VipPointVector vec(samples);
-	d->read((char*)vec.data(), vec.size() * sizeof(VipPoint));
+	// Point by point, through the public interface: the vector is a circular
+	// buffer whose data() is private and returns the control structure it shares
+	// between copies, not the samples.
+	for (qsizetype i = 0; i < vec.size(); ++i) {
+		VipPoint pt;
+		if (d->read(reinterpret_cast<char*>(&pt), sizeof(pt)) != (qint64)sizeof(pt))
+			return false;
+		vec[i] = pt;
+	}
 
 	// set output data
 	outputAt(0)->setData(create(QVariant::fromValue(vec)));
@@ -121,8 +133,12 @@ void RAWSignalWriter::apply()
 	// get input data
 	VipAnyData any = inputAt(0)->data();
 	const VipPointVector v = any.value<VipPointVector>();
-	// write to file
-	device()->write((char*)v.data(), v.size() * sizeof(VipPoint));
+	// write to file, point by point for the same reason as the reader
+	for (qsizetype i = 0; i < v.size(); ++i) {
+		const VipPoint pt = v[i];
+		if (device()->write(reinterpret_cast<const char*>(&pt), sizeof(pt)) != (qint64)sizeof(pt))
+			return;
+	}
 }
 
 
@@ -192,12 +208,18 @@ SimpleGuiInterface::LoadResult SimpleGuiInterface::load()
 		sdevice->setAttribute("YUnit", "Y");
 		sdevice->setAttribute("Name", "sinus");
 
-		// Create player from data
-		VipAbstractPlayer* pl = vipCreatePlayersFromProcessing(cdevice,nullptr).first();
+		// Create player from data. The list can come back empty, and first() on an
+		// empty list is undefined; and the player created is not necessarily the
+		// kind this loop collects.
+		const QList<VipAbstractPlayer*> created = vipCreatePlayersFromProcessing(cdevice, nullptr);
+		if (created.isEmpty())
+			continue;
+		VipAbstractPlayer* pl = created.first();
 		// Add data to existing player
 		vipCreatePlayersFromProcessing(sdevice, pl);
 
-		players.push_back(qobject_cast<VipPlotPlayer*>(pl));
+		if (VipPlotPlayer* plot = qobject_cast<VipPlotPlayer*>(pl))
+			players.push_back(plot);
 	}
 
 

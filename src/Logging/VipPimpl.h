@@ -93,10 +93,14 @@ namespace pimpl_detail
 		InternalDataPtr() = default;
 		~InternalDataPtr() = default;
 		InternalDataPtr(const InternalDataPtr&) = delete;
-		InternalDataPtr(InternalDataPtr&& other) noexcept = default;
-
-		InternalDataPtr& operator=(InternalDataPtr&&) noexcept = default;
 		InternalDataPtr& operator=(const InternalDataPtr&) = delete;
+		// The block remembers the address of the object that owns it, and a move
+		// carried the block over without rebinding it: the moved to object was then
+		// reported as invalid, and the deregistration and the destroyed signal went
+		// to the object left behind. Nothing here can know the new owner, so a move
+		// is a compile error rather than a silent mismatch.
+		InternalDataPtr(InternalDataPtr&&) = delete;
+		InternalDataPtr& operator=(InternalDataPtr&&) = delete;
 
 		template<class T, class... Args>
 		void reset(T* obj, Args&&... args)

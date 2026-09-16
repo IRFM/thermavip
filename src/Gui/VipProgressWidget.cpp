@@ -178,12 +178,14 @@ VipProgressWidget::VipProgressWidget(VipDisplayPlayerArea* lock_parent, QThread*
 VipProgressWidget::~VipProgressWidget()
 {
 	parent()->removeEventFilter(this);
-	vipGetMultiProgressWidget()->removeProgressWidget(this);
+	if (VipMultiProgressWidget* progress = vipGetMultiProgressWidget())
+		progress->removeProgressWidget(this);
 }
 
 void VipProgressWidget::setThread(QThread* th)
 {
-	vipGetMultiProgressWidget()->addProgressWidget(this, th);
+	if (VipMultiProgressWidget* progress = vipGetMultiProgressWidget())
+		progress->addProgressWidget(this, th);
 }
 
 bool VipProgressWidget::eventFilter(QObject* obj, QEvent* evt)

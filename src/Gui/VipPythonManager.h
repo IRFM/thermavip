@@ -54,6 +54,12 @@ class VIP_GUI_EXPORT VipPythonParameters : public VipPageOption
 public:
 	VipPythonParameters();
 
+	/// @brief Load a startup code into the editor without installing it on the
+	/// interpreter and without running it. Used for a code that comes from a session
+	/// file: applying it stays an explicit action, through the button beside the
+	/// editor.
+	void setPendingStartupCode(const QString& code);
+
 public Q_SLOTS:
 	virtual void applyPage();
 	virtual void updatePage();

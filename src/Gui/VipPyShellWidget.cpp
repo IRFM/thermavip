@@ -11,7 +11,9 @@
 #include <QTextBlock>
 
 #include "VipGui.h"
+#include "VipStandardWidgets.h"
 #include "VipDisplayArea.h"
+#include "VipEnvironment.h"
 
 #include "VipPyOperation.h"
 #include "VipTextEditor.h"
@@ -24,8 +26,12 @@
 
 QString vipGetPythonHistoryFile(const QString & suffix)
 {
-	QString path = vipGetPythonDirectory(suffix);
-	return path + "history.py";
+	// Not under vipGetPythonDirectory(), and not a .py: that directory is scanned at
+	// every start and each .py in it that declares a Thermavip class is executed in
+	// full. Typing one such class in the console once was enough for the whole
+	// command history to be replayed on the next start, outside any interactive
+	// context and without a word.
+	return vipGetDataDirectory(suffix) + "python_history.txt";
 }
 
 VipPyHistoryList::VipPyHistoryList(qint32 max_size)
@@ -532,6 +538,21 @@ void VipPyShellWidget::pasteText(const QString & text)
 		QStringList lines = text.split("\n");
 		if (lines.isEmpty())
 			return;
+
+		// Everything past the first line is executed, one line at a time, with no
+		// confirmation — a single line ending in a newline included. Asked for once,
+		// before anything runs.
+		int executable = lines.size() - 1;
+		if (executable > 0 && lines.last().isEmpty())
+			--executable;
+		if (executable > 0) {
+			const QString question = executable == 1 ? QString("Run the pasted line in the interpreter?")
+								 : QString("Run the %1 pasted lines in the interpreter?").arg(executable);
+			if (QMessageBox::Yes != vipQuestion("Run pasted code", question)) {
+				c.insertText(text);
+				return;
+			}
+		}
 
 		//insert first line
 		c.insertText(cleanLine(lines.first()));

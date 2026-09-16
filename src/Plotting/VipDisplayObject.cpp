@@ -110,9 +110,13 @@ public:
 	}
 
 	std::atomic<bool> displayInProgress;
-	bool isDestruct;
+	// Atomic, like the flag above them: isDestruct is written by the destructor and
+	// read by apply() and display(), and visible is written in the graphics thread
+	// by checkVisibility() and read by apply() in the processing thread — the branch
+	// that posts checkVisibility() is the proof that the two differ.
+	std::atomic<bool> isDestruct;
 	bool formattingEnabled;
-	bool visible;
+	std::atomic<bool> visible;
 	bool first;
 	bool updateOnHidden;
 	bool empty = true;
@@ -145,8 +149,11 @@ VipDisplayObject::~VipDisplayObject()
 	if (inputAt(0)->connection()->source()) {
 		inputAt(0)->setEnabled(false);
 		this->clearInputBuffers();
-		//this->wait();
 	}
+	// Waited for, which the line above it asked for in a comment: a processing
+	// thread can be inside apply(), on the condition, while this private data is
+	// destroyed. The flag it tests is atomic now, so it does leave that loop.
+	this->wait(false);
 }
 
 void VipDisplayObject::checkVisibility()
@@ -221,16 +228,21 @@ void VipDisplayObject::apply()
 
 			// Wait for the display to end while processing events from the main event loop.
 			// This ensures that, whatever the display rate, the GUI remains responsive.
-			std::lock_guard<QMutex> ll(d_data->lock);
+			QMutexLocker<QMutex> ll(&d_data->lock);
 			while (d_data->displayInProgress.load(std::memory_order_relaxed) && !d_data->isDestruct) {
 				bool ret = d_data->cond.wait(&d_data->lock, 5);
 				qint64 current = QDateTime::currentMSecsSinceEpoch();
-				if ((current - time) > 50) {
+				const bool timed_out = (current - time) > 50;
+				if (timed_out || (!ret && buffer.size() > 1)) {
+					// The lock is released around it. processEvents() runs the event loop for
+					// up to a hundred millisecond, and the lock it used to hold is the one
+					// the display slot needs to say that it has finished.
+					ll.unlock();
 					processEvents();
-					break;
+					ll.relock();
 				}
-				else if (!ret && buffer.size() > 1)
-					processEvents();
+				if (timed_out)
+					break;
 			}
 		}
 	}
@@ -279,7 +291,10 @@ void VipDisplayObject::display(const VipAnyDataList& data)
 
 		// update parent VipAbstractPlayer title every 500 ms (no need for more in case of streaming)
 		qint64 time = QDateTime::currentMSecsSinceEpoch();
-		if (time - d_data->lastTitleUpdate > 500) {
+		// The object of this turn, not this one: the write on the next line already
+		// used it, so what was written was never read back, and one recently refreshed
+		// object in the batch suppressed the title of every other.
+		if (time - disp->d_data->lastTitleUpdate > 500) {
 			disp->d_data->lastTitleUpdate = time;
 			const VipAnyData data = dat.size() ? dat.back() : VipAnyData();
 			if (data.hasAttribute("Name") || data.hasAttribute("PlayerName")) {
@@ -288,7 +303,9 @@ void VipDisplayObject::display(const VipAnyDataList& data)
 				if (!title2.isEmpty())
 					title = title2;
 				if (disp->d_data->playerTitle != title) {
-					QWidget* player = findWidgetWith_automaticWindowTitle(widget());
+					// Its own widget: the title computed from the data of disp was applied to
+					// the window of this one.
+					QWidget* player = findWidgetWith_automaticWindowTitle(disp->widget());
 					if (player && !title.isEmpty()) {
 						if (player->property("automaticWindowTitle").toBool()) {
 							// vip_debug("set window title\n");

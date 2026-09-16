@@ -64,19 +64,26 @@ class VipLogging::PrivateData
 {
 public:
 	PrivateData()
-	  : semaphore("Log", 1)
-	  , stop(true)
+	  : stop(true)
 	  , enable_saving(false)
 	  , enabled(true)
 	{
 	}
 	QList<LogFrame> logs;
-	QSystemSemaphore semaphore;
 	QSharedMemory memory;
+	// The queue and the configuration.
 	QMutex mutex;
+	// The outputs themselves. Neither the file logger nor the shared memory object
+	// has any exclusion of its own, so writing needs one, but it must not be the
+	// mutex above: holding that one across a write blocks every thread that only
+	// wants to queue an entry.
+	QMutex outputMutex;
 	QSharedPointer<VipFileLogger> file;
 	Outputs outputs;
-	bool stop;
+	// Atomic: the writing thread reads it in its loop without the mutex, and
+	// close() writes it under the mutex. A plain bool leaves the thread free never
+	// to observe the write, and the wait that follows never returns.
+	std::atomic<bool> stop{ true };
 	bool enable_saving;
 	bool enabled;
 	QStringList saved;
@@ -98,6 +105,7 @@ struct VipLogging::LogFrame
 	{
 	}
 };
+
 
 void VipLogging::run()
 {
@@ -124,11 +132,11 @@ VipLogging::VipLogging()
 	VIP_CREATE_PRIVATE_DATA();
 }
 
-VipLogging::VipLogging(Outputs outputs, VipFileLogger* logger)
+VipLogging::VipLogging(Outputs outputs, std::unique_ptr<VipFileLogger> logger)
   : QThread()
 {
 	VIP_CREATE_PRIVATE_DATA();
-	open(outputs, logger);
+	open(outputs, std::move(logger));
 }
 
 VipLogging::VipLogging(Outputs outputs, const QString& identifier)
@@ -225,15 +233,41 @@ bool VipLogging::isEnabled() const
 	return d_data->enabled;
 }
 
-bool VipLogging::open(Outputs outputs, const QString& identifier)
+namespace
 {
-	VipFileLogger* logger = nullptr;
-	if (!identifier.isEmpty() && (outputs & File))
-		logger = new VipTextLogger(identifier, "./");
-	return open(outputs, logger);
+	/// Holds the inter process lock of a shared memory segment for a scope. The
+	/// lock is named and system wide: released by hand on two paths, an allocation
+	/// that throws between them left it taken for every process of the session,
+	/// including those started afterwards.
+	class SharedMemoryLocker
+	{
+		QSharedMemory* m_memory;
+
+	public:
+		explicit SharedMemoryLocker(QSharedMemory& memory)
+		  : m_memory(memory.lock() ? &memory : nullptr)
+		{
+		}
+		~SharedMemoryLocker()
+		{
+			if (m_memory)
+				m_memory->unlock();
+		}
+		SharedMemoryLocker(const SharedMemoryLocker&) = delete;
+		SharedMemoryLocker& operator=(const SharedMemoryLocker&) = delete;
+		explicit operator bool() const noexcept { return m_memory != nullptr; }
+	};
 }
 
-bool VipLogging::open(Outputs outputs, VipFileLogger* logger)
+bool VipLogging::open(Outputs outputs, const QString& identifier)
+{
+	std::unique_ptr<VipFileLogger> logger;
+	if (!identifier.isEmpty() && (outputs & File))
+		logger.reset(new VipTextLogger(identifier, "./"));
+	return open(outputs, std::move(logger));
+}
+
+bool VipLogging::open(Outputs outputs, std::unique_ptr<VipFileLogger> logger)
 {
 	close();
 
@@ -242,7 +276,6 @@ bool VipLogging::open(Outputs outputs, VipFileLogger* logger)
 		identifier = logger->identifier();
 
 	QMutexLocker lock(&d_data->mutex);
-	d_data->semaphore.setKey(identifier, 1);
 	d_data->outputs = outputs;
 
 	if (d_data->memory.isAttached())
@@ -255,13 +288,12 @@ bool VipLogging::open(Outputs outputs, VipFileLogger* logger)
 				return false;
 		}
 
-		d_data->memory.lock();
-		memset(d_data->memory.data(), 0, d_data->memory.size());
-		d_data->memory.unlock();
+		if (SharedMemoryLocker locker{ d_data->memory })
+			memset(d_data->memory.data(), 0, d_data->memory.size());
 	}
 
 	if (outputs & File) {
-		d_data->file = QSharedPointer<VipFileLogger>(logger);
+		d_data->file = QSharedPointer<VipFileLogger>(logger.release());
 	}
 
 	d_data->stop = false;
@@ -284,7 +316,10 @@ void VipLogging::close()
 		this->wait();
 	}
 
+	// Both, in this order and only here: a writer holds one at a time, so the two
+	// cannot be taken in the opposite order anywhere.
 	QMutexLocker lock(&d_data->mutex);
+	QMutexLocker outputs(&d_data->outputMutex);
 	if (d_data->memory.isAttached())
 		d_data->memory.detach();
 
@@ -333,12 +368,21 @@ void VipLogging::directLog(const LogFrame& frame)
 		return;
 
 	Outputs out = frame.outputs;
-	if (out < Cout)
-		out = d_data->outputs;
+
+	// Read the configuration under the queue mutex, then let it go: the writes
+	// below are what took the longest, and every call that only wants to queue an
+	// entry was waiting behind them.
+	QSharedPointer<VipFileLogger> file;
+	bool saving = false;
+	{
+		QMutexLocker lock(&d_data->mutex);
+		if (out < Cout)
+			out = d_data->outputs;
+		file = d_data->file;
+		saving = d_data->enable_saving;
+	}
 
 	QByteArray log;
-
-	QMutexLocker lock(&d_data->mutex);
 
 	if (out & Cout) {
 		if (log.isEmpty())
@@ -346,33 +390,47 @@ void VipLogging::directLog(const LogFrame& frame)
 		std::cout << log.data();
 		std::cout.flush();
 	}
-	if ((out & File) && d_data->file) {
-		// if(d_data->semaphore.acquire())
-		{
-			d_data->file->addLogEntry(frame.text, frame.level, frame.date);
-			// d_data->semaphore.release();
-		}
+
+	QMutexLocker lock(&d_data->outputMutex);
+
+	if ((out & File) && file) {
+		// No cross process exclusion here: two instances writing to the same file
+		// interleave their entries. The semaphore that was meant to prevent it was
+		// built and keyed on every open but both of its uses were commented out, so
+		// it protected nothing while still costing a system object. Restoring it
+		// means acquiring it outside the mutex below, which is a change to the
+		// locking order and belongs with the concurrency work.
+		file->addLogEntry(frame.text, frame.level, frame.date);
 	}
 	if (out & SharedMemory) {
 		if (log.isEmpty())
 			log = formatLogEntry(frame.text, frame.level, frame.date);
 
-		if (d_data->memory.lock()) {
-			qint32 size;
+		if (SharedMemoryLocker locker{ d_data->memory }) {
+			// The segment is named, so any process of the session can write this
+			// header. It is the destination offset of the copy below, and only the
+			// sum used to be tested; the sum itself was computed in 32 bits, where
+			// a value near the maximum wraps negative and passes that test.
+			qint32 size = 0;
 			memcpy(&size, d_data->memory.data(), sizeof(qint32));
-			qint32 new_size = size + log.size();
-
-			if (new_size + 4 < d_data->memory.size()) {
-				memcpy(d_data->memory.data(), &new_size, sizeof(qint32));
-				memcpy(static_cast<char*>(d_data->memory.data()) + size + sizeof(qint32), log.data(), log.size());
+			const qsizetype capacity = d_data->memory.size() - (qsizetype)sizeof(qint32);
+			if (size < 0 || (qsizetype)size > capacity) {
+				memset(d_data->memory.data(), 0, d_data->memory.size());
+				size = 0;
 			}
 
-			d_data->memory.unlock();
+			const qsizetype new_size = (qsizetype)size + log.size();
+			if (new_size <= capacity) {
+				const qint32 written = (qint32)new_size;
+				memcpy(d_data->memory.data(), &written, sizeof(qint32));
+				memcpy(static_cast<char*>(d_data->memory.data()) + size + sizeof(qint32), log.data(), log.size());
+			}
 		}
 	}
-	if (d_data->enable_saving) {
+	if (saving) {
 		if (log.isEmpty())
 			log = formatLogEntry(frame.text, frame.level, frame.date);
+		QMutexLocker queue(&d_data->mutex);
 		d_data->saved.append(log);
 	}
 }
@@ -383,12 +441,15 @@ QStringList VipLogging::lastLogEntries()
 
 	QStringList lst;
 
-	if (d_data->memory.lock()) {
-		qint32 size;
+	if (SharedMemoryLocker locker{ d_data->memory }) {
+		// Same header, same reason to distrust it: here it is the length of the read.
+		qint32 size = 0;
 		memcpy(&size, d_data->memory.data(), sizeof(qint32));
+		const qsizetype capacity = d_data->memory.size() - (qsizetype)sizeof(qint32);
 
-		if (!size) {
-			d_data->memory.unlock();
+		if (size <= 0 || (qsizetype)size > capacity) {
+			if (size != 0)
+				memset(d_data->memory.data(), 0, d_data->memory.size());
 			return lst;
 		}
 
@@ -396,8 +457,6 @@ QStringList VipLogging::lastLogEntries()
 		lst = str.split("\n", VIP_SKIP_BEHAVIOR::SkipEmptyParts);
 
 		memset(d_data->memory.data(), 0, d_data->memory.size());
-
-		d_data->memory.unlock();
 	}
 
 	return lst;
@@ -481,9 +540,18 @@ QString VipTextLogger::canonicalFilePath() const
 
 void VipTextLogger::addLogEntry(const QString& text, VipLogging::Level level, const QDateTime& date)
 {
-	QByteArray log = VipLogging::formatLogEntry(text, level, date);
-	if (d_file.open(QFile::WriteOnly | QFile::Text | QFile::Append)) {
-		d_file.write(log);
-		d_file.close();
+	// Nothing here was checked: a failed open dropped the entry without a word, a
+	// short write truncated it, and the close that flushes it hid any deferred
+	// error. A missing line in a log is read as the event not having happened. A
+	// logger cannot log its own failure, so it says so on the error stream.
+	const QByteArray log = VipLogging::formatLogEntry(text, level, date);
+	if (!d_file.open(QFile::WriteOnly | QFile::Text | QFile::Append)) {
+		std::cerr << "VipLogging: cannot open " << qPrintable(d_file.fileName()) << std::endl;
+		return;
 	}
+	const qint64 written = d_file.write(log);
+	const bool flushed = d_file.flush();
+	d_file.close();
+	if (written != log.size() || !flushed || d_file.error() != QFile::NoError)
+		std::cerr << "VipLogging: incomplete write to " << qPrintable(d_file.fileName()) << std::endl;
 }

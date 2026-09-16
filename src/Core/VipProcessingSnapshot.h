@@ -62,20 +62,61 @@ public:
 	  , m_lastProcessingTime(0)
 	{
 	}
-	virtual Info info() const { return m_info; }
-	virtual QString inputDescription(const QString& input) const { return m_inputDescriptions[input]; }
-	virtual QString outputDescription(const QString& output) const { return m_outputDescriptions[output]; }
-	virtual QString propertyDescription(const QString& property) const { return m_propertyDescriptions[property]; }
-	virtual qint64 processingTime() const { return m_processingTime; }
-	virtual qint64 lastProcessingTime() const { return m_lastProcessingTime; }
+	// The base class documents this family as thread safe, and the snapshot is
+	// meant to be filled by whoever receives it while the interface displays it.
+	// These six read what the loader below writes, so both take the lock.
+	virtual Info info() const
+	{
+		VipUniqueLock<VipSpinlock> lock(m_lock);
+		return m_info;
+	}
+	virtual QString inputDescription(const QString& input) const
+	{
+		VipUniqueLock<VipSpinlock> lock(m_lock);
+		return m_inputDescriptions.value(input);
+	}
+	virtual QString outputDescription(const QString& output) const
+	{
+		VipUniqueLock<VipSpinlock> lock(m_lock);
+		return m_outputDescriptions.value(output);
+	}
+	virtual QString propertyDescription(const QString& property) const
+	{
+		VipUniqueLock<VipSpinlock> lock(m_lock);
+		return m_propertyDescriptions.value(property);
+	}
+	virtual qint64 processingTime() const { return m_processingTime.load(std::memory_order_relaxed); }
+	virtual qint64 lastProcessingTime() const { return m_lastProcessingTime.load(std::memory_order_relaxed); }
 
 private:
+	void setInfo(const Info& info)
+	{
+		VipUniqueLock<VipSpinlock> lock(m_lock);
+		m_info = info;
+	}
+	void setInputDescription(const QString& name, const QString& descr)
+	{
+		VipUniqueLock<VipSpinlock> lock(m_lock);
+		m_inputDescriptions[name] = descr;
+	}
+	void setOutputDescription(const QString& name, const QString& descr)
+	{
+		VipUniqueLock<VipSpinlock> lock(m_lock);
+		m_outputDescriptions[name] = descr;
+	}
+	void setPropertyDescription(const QString& name, const QString& descr)
+	{
+		VipUniqueLock<VipSpinlock> lock(m_lock);
+		m_propertyDescriptions[name] = descr;
+	}
+
+	mutable VipSpinlock m_lock;
 	Info m_info;
 	QMap<QString, QString> m_inputDescriptions;
 	QMap<QString, QString> m_propertyDescriptions;
 	QMap<QString, QString> m_outputDescriptions;
-	qint64 m_processingTime;
-	qint64 m_lastProcessingTime;
+	std::atomic<qint64> m_processingTime;
+	std::atomic<qint64> m_lastProcessingTime;
 };
 
 /// Save a snapshot of a #VipProcessingPool into a #VipArchive.

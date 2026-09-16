@@ -74,8 +74,10 @@ bool vipPing(const QByteArray& host)
 				 << "1" << "-w" << "2",
 		   QIODevice::ReadOnly);
 #endif
-	proc.waitForStarted();
-	proc.waitForFinished();
+	// Bounded. The two waits defaulted to thirty seconds each, and this is called
+	// from the thread of the interface; the ping itself is given two.
+	proc.waitForStarted(3000);
+	proc.waitForFinished(5000);
 	// QByteArray ar = proc.readAllStandardOutput();
 	// printf("out: %s\n", ar.data());
 	return proc.exitCode() == 0;

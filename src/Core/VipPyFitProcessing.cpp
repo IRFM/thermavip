@@ -170,10 +170,31 @@ static void gaussianStartParams(const VipPointVector& pts, double& a, double& b,
 	b = max_x;
 	a = (max - min);
 
-	if (a != 0)
-		c = (pts[1].x() - b) / (sqrt(-log((pts[1].y() - d) / a)));
-	if (vipIsNan(c))
-		c = 1;
+	// The width, estimated at the first point that crosses half the height, not at
+	// the point of index 1, which has no relation to the curve: for that point the
+	// ratio is one at the maximum, where the logarithm is zero and the division is
+	// by zero, and zero at the minimum, where the width itself becomes zero and the
+	// model divides by it. The guard only caught one of those three states.
+	c = 0;
+	if (a != 0) {
+		const double half = d + a * 0.5;
+		for (int i = 0; i < pts.size(); ++i) {
+			const double ratio = (pts[i].y() - d) / a;
+			if (ratio <= 0 || ratio >= 1)
+				continue;
+			const double width = qAbs(pts[i].x() - b) / sqrt(-log(ratio));
+			if (width > 0 && !vipIsNan(width) && !vipIsInf(width)) {
+				c = width;
+				break;
+			}
+		}
+		Q_UNUSED(half);
+	}
+	if (vipIsNan(c) || vipIsInf(c) || c == 0) {
+		// A quarter of the window, which is homogeneous with the data.
+		const double span = qAbs(pts.last().x() - pts.first().x());
+		c = span > 0 ? span / 4. : 1.;
+	}
 }
 
 static QVariantList applyCurveFit(const VipAnyData& any,
@@ -197,8 +218,12 @@ static QVariantList applyCurveFit(const VipAnyData& any,
 	// get the input curve
 	VipPointVector curve = any.value<VipPointVector>();
 
-	if (!curve.size()) {
-		error = ("VipPyFitLinear: empty input curve");
+	if (curve.size() < 2) {
+		// One point, or none, reaches the slope below and divides by zero. The
+		// starting parameters are then formatted into the Python call, where nan and
+		// inf are names rather than literals, so the user gets a NameError about
+		// something unrelated.
+		error = ("VipPyFitLinear: a fit needs at least two points");
 		return QVariantList();
 	}
 
@@ -258,17 +283,33 @@ static QVariantList applyCurveFit(const VipAnyData& any,
 		if (fit_type == VipPyFitProcessing::Exponential) {
 			double a = 1, b = 1, c = 1;
 			type = exponentialStartParams(curve, a, b, c);
-			add = "p0=[" + QString::number(a) + "," + QString::number(b) + "," + QString::number(c) + "]";
+			// A starting parameter that is not finite is formatted as "nan" or "inf",
+			// which Python reads as a name and not as a number.
+			if (vipIsNan(a) || vipIsNan(b) || vipIsNan(c) || vipIsInf(a) || vipIsInf(b) || vipIsInf(c))
+				add = QString();
+			else
+				add = "p0=[" + QString::number(a) + "," + QString::number(b) + "," + QString::number(c) + "]";
 		}
 		else if (fit_type == VipPyFitProcessing::Linear) {
-			double a = (curve.last().y() - curve.first().y()) / (curve.last().x() - curve.first().x());
-			double b = curve.first().y() - a * curve.first().x();
-			add = "p0=[" + QString::number(a) + "," + QString::number(b) + "]";
+			const double dx = curve.last().x() - curve.first().x();
+			if (dx == 0) {
+				// Two points at the same abscissa: no slope to start from. Let the fit
+				// choose its own starting point rather than pass it nan.
+				add = QString();
+			}
+			else {
+				const double a = (curve.last().y() - curve.first().y()) / dx;
+				const double b = curve.first().y() - a * curve.first().x();
+				add = "p0=[" + QString::number(a) + "," + QString::number(b) + "]";
+			}
 		}
 		else if (fit_type == VipPyFitProcessing::Gaussian) {
 			double a = 1, b = 1, c = 1, d = 1;
 			gaussianStartParams(curve, a, b, c, d);
-			add = "p0=[" + QString::number(a) + "," + QString::number(b) + "," + QString::number(c) + "," + QString::number(d) + "]";
+			if (vipIsNan(a) || vipIsNan(b) || vipIsNan(c) || vipIsNan(d) || vipIsInf(a) || vipIsInf(b) || vipIsInf(c) || vipIsInf(d))
+				add = QString();
+			else
+				add = "p0=[" + QString::number(a) + "," + QString::number(b) + "," + QString::number(c) + "," + QString::number(d) + "]";
 		}
 
 		QVariantMap map;
@@ -345,31 +386,41 @@ QString VipPyFitProcessing::fitName(Type type) {
 
 void VipPyFitProcessing::setTimeUnit(const QString& unit)
 {
-	if (m_timeUnit != unit) {
-		m_timeUnit = unit;
-		if (unit == "ns")
-			m_timeFactor = 1;
-		else if (unit == "us")
-			m_timeFactor = 1 / 1000.;
-		else if (unit == "ms")
-			m_timeFactor = 1 / 1000000.;
-		else if (unit == "s")
-			m_timeFactor = 1 / 1000000000.;
-		else {
-			m_timeUnit = QString();
-			m_timeFactor = 1;
+	bool changed = false;
+	{
+		QMutexLocker lock(&m_timeLock);
+		if (m_timeUnit != unit) {
+			changed = true;
+			m_timeUnit = unit;
+			if (unit == "ns")
+				m_timeFactor = 1;
+			else if (unit == "us")
+				m_timeFactor = 1 / 1000.;
+			else if (unit == "ms")
+				m_timeFactor = 1 / 1000000.;
+			else if (unit == "s")
+				m_timeFactor = 1 / 1000000000.;
+			else {
+				m_timeUnit = QString();
+				m_timeFactor = 1;
+			}
 		}
-
-		reload();
 	}
+
+	// Outside the lock: it schedules the processing that reads what was just
+	// written.
+	if (changed)
+		reload();
 }
 QString VipPyFitProcessing::timeUnit() const
 {
+	QMutexLocker lock(&m_timeLock);
 	return m_timeUnit;
 }
 
 double VipPyFitProcessing::timeFactor() const
 {
+	QMutexLocker lock(&m_timeLock);
 	return m_timeFactor;
 }
 
@@ -444,6 +495,13 @@ void VipPyFitLinear::applyFit()
 	}
 
 	VipAnyData out = create(QVariant::fromValue(out_curve));
+	// The units of the data, as the exponential fit already does: create() only
+	// carries the attributes of the processing, so the derived curve came out with
+	// no physical unit at all.
+	out.setXUnit(any.xUnit());
+	out.setYUnit(any.yUnit());
+	out.setZUnit(any.zUnit());
+
 	if (!equation.isEmpty())
 		out.setAttribute("equation", equation);
 	outputAt(0)->setData(out);
@@ -532,6 +590,13 @@ void VipPyFitGaussian::applyFit()
 	}
 
 	VipAnyData out = create(QVariant::fromValue(out_curve));
+	// The units of the data, as the exponential fit already does: create() only
+	// carries the attributes of the processing, so the derived curve came out with
+	// no physical unit at all.
+	out.setXUnit(any.xUnit());
+	out.setYUnit(any.yUnit());
+	out.setZUnit(any.zUnit());
+
 	if (!equation.isEmpty())
 		out.setAttribute("equation", equation);
 	outputAt(0)->setData(out);
@@ -570,6 +635,13 @@ void VipPyFitPolynomial::applyFit()
 	}
 
 	VipAnyData out = create(QVariant::fromValue(out_curve));
+	// The units of the data, as the exponential fit already does: create() only
+	// carries the attributes of the processing, so the derived curve came out with
+	// no physical unit at all.
+	out.setXUnit(any.xUnit());
+	out.setYUnit(any.yUnit());
+	out.setZUnit(any.zUnit());
+
 	if (!equation.isEmpty())
 		out.setAttribute("equation", equation);
 	outputAt(0)->setData(out);

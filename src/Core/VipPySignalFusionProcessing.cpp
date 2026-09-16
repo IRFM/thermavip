@@ -215,6 +215,14 @@ bool VipPySignalFusionProcessing::registerThisProcessing(const QString& category
 
 void VipPySignalFusionProcessing::mergeData(int, int)
 {
+	// The code below is a property, and properties come back from session files.
+	// One session is opened at every start without asking, so running it would
+	// mean running whatever that file chose.
+	if (!vipCanRunRestoredPythonCode(this)) {
+		setError("Python code restored from a session file was not run");
+		return;
+	}
+
 	// find the inputs that we need
 	std::set<int> xinput, yinput, t, u, ux, merged;
 	QMap<int, VipPointVector> inputs;

@@ -118,6 +118,11 @@ inline size_t vipHashValue(const T& value)
 		else {
 			if constexpr (std::is_integral_v<T>)
 				val = (std::uint64_t)value;
+			else if constexpr (sizeof(T) > sizeof(std::uint64_t))
+				// A type wider than the accumulator, long double on every platform
+				// but this one: the copy below wrote past a variable on the stack.
+				// Same treatment as a colour of an unexpected width, below.
+				return vipHashBytes(&value, sizeof(value));
 			else {
 				val = 0;
 				memcpy(&val, &value, sizeof(T));

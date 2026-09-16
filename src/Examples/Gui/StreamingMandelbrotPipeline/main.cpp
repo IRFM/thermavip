@@ -208,8 +208,18 @@ int main(int argc, char** argv)
 			setup_image_area(area);
 		}
 
-	VipPlotShape * poly = addShape(areas.first(), VipShape(QPolygonF() << QPointF(100, 70) << QPointF(300, 300) << QPointF(500, 350), VipShape::Polyline));
-	VipPlotShape* rect = addShape(areas.first(), VipShape(QRectF(300, 200, 50, 50)));
+	// The shapes belong to a scene model. A VipShape shares its data explicitly,
+	// so handing one over as it is leaves a single path edited by the mouse in
+	// this thread and read by three asynchronous processings in theirs. Named by
+	// their scene model, they are copied on every run instead.
+	VipSceneModel model;
+	VipShape polyline_shape(QPolygonF() << QPointF(100, 70) << QPointF(300, 300) << QPointF(500, 350), VipShape::Polyline);
+	VipShape rect_shape(QRectF(300, 200, 50, 50));
+	model.add(polyline_shape);
+	model.add(rect_shape);
+
+	VipPlotShape* poly = addShape(areas.first(), polyline_shape);
+	VipPlotShape* rect = addShape(areas.first(), rect_shape);
 	rect->setBrush(QColor(255, 0, 0, 70));
 
 	// add a row with: one histogram, a polyline trace, a time trace
@@ -286,7 +296,7 @@ int main(int argc, char** argv)
 	VipExtractHistogram* extracth = new VipExtractHistogram(&pool);
 	extracth->setScheduleStrategy(VipExtractHistogram::Asynchronous);
 	extracth->propertyName("bins")->setData(20);
-	extracth->setFixedShape(rect->rawData());
+	extracth->setShape(rect->rawData());
 	extracth->inputAt(0)->setConnection(gen->outputAt(0));
 	extracth->topLevelOutputAt(0)->toMultiOutput()->resize(1);
 	
@@ -300,7 +310,7 @@ int main(int argc, char** argv)
 	// Create extract polyline
 	VipExtractPolyline* extractp = new VipExtractPolyline(&pool);
 	extractp->setScheduleStrategy(VipExtractHistogram::Asynchronous);
-	extractp->setFixedShape(poly->rawData());
+	extractp->setShape(poly->rawData());
 	extractp->inputAt(0)->setConnection(gen->outputAt(0));
 	extractp->topLevelOutputAt(0)->toMultiOutput()->resize(1);
 
@@ -315,7 +325,7 @@ int main(int argc, char** argv)
 	VipExtractStatistics* extracts = new VipExtractStatistics(&pool);
 	extracts->setStatistics(Vip::Mean);
 	extracts->setScheduleStrategy(VipExtractHistogram::Asynchronous);
-	extracts->setFixedShape(poly->rawData());
+	extracts->setShape(poly->rawData());
 	extracts->inputAt(0)->setConnection(gen->outputAt(0));
 
 	// Create display time trace

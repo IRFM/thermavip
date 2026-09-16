@@ -174,6 +174,15 @@ void VipArchive::restore()
 		d_data->saved.pop_back();
 	}
 }
+void VipArchive::discardSave()
+{
+	if (mode() != Read)
+		return;
+	if (d_data->saved.size()) {
+		this->doDiscardSave();
+		d_data->saved.pop_back();
+	}
+}
 void VipArchive::restore(unsigned id) 
 {
 	if (mode() != Read)
@@ -383,9 +392,10 @@ static bool toByteArray(const QVariant& v, QDataStream& stream)
 		return true;
 	}
 	else if (v.userType() == qMetaTypeId<QVariantMap>()) {
-		QByteArray res;
-		QDataStream str(&res, QIODevice::WriteOnly);
-		vipSafeVariantMapSave(str, v.value<QVariantMap>());
+		// This wrote into a local buffer that was destroyed on return, and reported
+		// success: nothing reached the stream, the header agreed with that, and the
+		// file read back an empty map with no error at all.
+		vipSafeVariantMapSave(stream, v.value<QVariantMap>());
 		return true;
 	}
 	else {
@@ -397,8 +407,26 @@ static bool toByteArray(const QVariant& v, QDataStream& stream)
 	}
 }
 
+// Every size in this format is read from the device before it is used to size a
+// buffer. A truncated or crafted file can therefore ask for any allocation at
+// all, and one of the entry points is format detection, which runs on files
+// before anything else validates them. No size can exceed what the device still
+// holds.
+static bool vipPlausibleSize(qsizetype size, QIODevice* device)
+{
+	if (size < 0)
+		return false;
+	if (!device)
+		return true;
+	const qint64 remaining = device->size() - device->pos();
+	return remaining < 0 || size <= remaining;
+}
+
 static bool fromByteArray(QDataStream& stream, QVariant& v, qsizetype max_size)
 {
+	if (!vipPlausibleSize(max_size, stream.device()))
+		return false;
+
 	if (v.userType() == QMetaType::QByteArray) {
 		QByteArray ar(max_size, 0);
 		stream.readRawData(ar.data(), max_size);
@@ -408,6 +436,8 @@ static bool fromByteArray(QDataStream& stream, QVariant& v, qsizetype max_size)
 	else if (v.userType() == QMetaType::QString) {
 		qsizetype size;
 		stream >> size;
+		if (!vipPlausibleSize(size, stream.device()) || size > max_size)
+			return false;
 		QByteArray ar(size, 0);
 		stream.readRawData(ar.data(), size);
 		v = QString(ar);
@@ -465,6 +495,16 @@ static bool fromByteArray(QDataStream& stream, QVariant& v, qsizetype max_size)
 			return return_value;                                                                                                                                                           \
 		}                                                                                                                                                                                      \
 		value = qFromLittleEndian(unused_tmp);                                                                                                                                                 \
+	}
+
+// Same as READ_DEVICE_INTEGER, for a value about to size a buffer.
+#define READ_DEVICE_SIZE(value, m_device, return_value)                                                                                                         \
+	{                                                                                                                                                              \
+		READ_DEVICE_INTEGER(value, m_device, return_value)                                                                                                            \
+		if (!vipPlausibleSize(value, m_device)) {                                                                                                                     \
+			this->setError("Corrupted archive: implausible size");                                                                                                       \
+			return return_value;                                                                                                                                         \
+		}                                                                                                                                                             \
 	}
 
 VipBinaryArchive::VipBinaryArchive()
@@ -556,6 +596,12 @@ void VipBinaryArchive::doRestore()
 	}
 }
 
+void VipBinaryArchive::doDiscardSave()
+{
+	if (m_saved_pos.size())
+		m_saved_pos.pop_back();
+}
+
 void VipBinaryArchive::doStart(QString& name, QVariantMap&, bool)
 {
 	if (mode() == Write) {
@@ -584,7 +630,7 @@ void VipBinaryArchive::doStart(QString& name, QVariantMap&, bool)
 
 			// read the name
 			qsizetype size;
-			READ_DEVICE_INTEGER(size, m_device, );
+			READ_DEVICE_SIZE(size, m_device, );
 			object_name.resize(size);
 			READ_DEVICE(object_name.data(), size, m_device, );
 			READ_DEVICE_INTEGER(size, m_device, );
@@ -623,9 +669,21 @@ void VipBinaryArchive::doEnd()
 			// read the value size;
 			READ_DEVICE_INTEGER(full_size, m_device, );
 
-			if (full_size == -1) // start tag: increase level
+			// The else bound to the second test, not the first, so a start tag both
+			// raised the level and then seeked by sizeof(qsizetype) + (-1), which lands
+			// seven bytes in and reads the rest of the archive out of alignment.
+			if (full_size == -1) { // start tag: increase level
+				// A start tag is -1, the name length, the name, then -1 again. Skipping
+				// only the first marker left the reader inside the tag.
+				qsizetype name_size = 0;
+				READ_DEVICE_SIZE(name_size, m_device, );
+				if (!m_device->seek(m_device->pos() + name_size + (qint64)sizeof(qsizetype))) {
+					setError("Corrupted archive: truncated start tag");
+					return;
+				}
 				level++;
-			if (full_size == -2) {
+			}
+			else if (full_size == -2) {
 				if (level == 0)
 					break;
 				else
@@ -633,7 +691,10 @@ void VipBinaryArchive::doEnd()
 			}
 			else // otherwise, go to next data
 			{
-				m_device->seek(pos + sizeof(qsizetype) + full_size);
+				// A content record is its size, its payload, then its size again, which
+				// is how doContent skips one. Counting a single size left the reader one
+				// integer short of the next record.
+				m_device->seek(pos + (qint64)sizeof(qsizetype) * 2 + full_size);
 			}
 		}
 	}
@@ -677,7 +738,7 @@ QByteArray VipBinaryArchive::readBinary(const QString& n)
 		}
 
 		// read the name
-		READ_DEVICE_INTEGER(name_size, m_device, QByteArray());
+		READ_DEVICE_SIZE(name_size, m_device, QByteArray());
 		object_name.resize(name_size);
 		READ_DEVICE(object_name.data(), name_size, m_device, QByteArray());
 
@@ -698,7 +759,14 @@ QByteArray VipBinaryArchive::readBinary(const QString& n)
 		}
 	}
 
-	QByteArray res = m_device->read(full_size - name_size - sizeof(qsizetype));
+	// sizeof() is unsigned: written as it was, a full_size smaller than the name
+	// turned the subtraction into a huge positive read length.
+	const qsizetype payload = full_size - name_size - (qsizetype)sizeof(qsizetype);
+	if (!vipPlausibleSize(payload, m_device)) {
+		setError("Corrupted archive: implausible content size");
+		return QByteArray();
+	}
+	QByteArray res = m_device->read(payload);
 
 	// go to the next data
 	if (readMode() == Forward)
@@ -718,6 +786,8 @@ QVariant VipBinaryArchive::deserialize(const QByteArray& ar)
 	QByteArray type_name;
 	qsizetype size;
 	if (buffer.read((char*)(&size), sizeof(size)) != sizeof(size))
+		return QVariant();
+	if (!vipPlausibleSize(size, &buffer))
 		return QVariant();
 	type_name.resize(size);
 	if (buffer.read(type_name.data(), type_name.size()) != type_name.size())
@@ -749,7 +819,7 @@ QVariant VipBinaryArchive::deserialize(const QByteArray& ar)
 
 	if (!serialized) {
 		// use the standard approach
-		qsizetype to_read = ar.size() - size - sizeof(qsizetype);
+		const qsizetype to_read = ar.size() - size - (qsizetype)sizeof(qsizetype);
 		QDataStream str(&buffer);
 		buffer.seek(size + sizeof(qsizetype));
 		str.setByteOrder(QDataStream::LittleEndian);
@@ -906,7 +976,7 @@ void VipBinaryArchive::doContent(QString& name, QVariant& value, QVariantMap& me
 
 			// read the name
 			qsizetype size;
-			READ_DEVICE_INTEGER(size, m_device, );
+			READ_DEVICE_SIZE(size, m_device, );
 			object_name.resize(size);
 			READ_DEVICE(object_name.data(), size, m_device, );
 
@@ -930,7 +1000,7 @@ void VipBinaryArchive::doContent(QString& name, QVariant& value, QVariantMap& me
 		// read the type name
 		QByteArray type_name;
 		qsizetype size;
-		READ_DEVICE_INTEGER(size, m_device, );
+		READ_DEVICE_SIZE(size, m_device, );
 		type_name.resize(size);
 		READ_DEVICE(type_name.data(), size, m_device, );
 		// const char * tp = type_name.data();
@@ -979,7 +1049,10 @@ void VipBinaryArchive::doContent(QString& name, QVariant& value, QVariantMap& me
 
 		if (!serialized) {
 			// use the standard approach
-			qsizetype to_read = readMode() == Forward ? current_pos + sizeof(qsizetype) + full_size - m_device->pos() : current_pos - m_device->pos() - sizeof(qsizetype);
+			// Signed throughout: sizeof() would otherwise make the whole expression
+			// unsigned and turn a short read into a huge length.
+			constexpr qsizetype header = (qsizetype)sizeof(qsizetype);
+			const qsizetype to_read = readMode() == Forward ? (qsizetype)(current_pos - m_device->pos()) + header + full_size : (qsizetype)(current_pos - m_device->pos()) - header;
 			QDataStream str(m_device);
 			str.setByteOrder(QDataStream::LittleEndian);
 			if (value.userType() && !fromByteArray(str, value, to_read)) {

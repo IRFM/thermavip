@@ -33,6 +33,8 @@
 #define VIP_PY_GENERATOR_H
 
 
+#include <atomic>
+
 #include "VipIODevice.h"
 #include "VipPyOperation.h"
 
@@ -60,7 +62,10 @@ class VIP_CORE_EXPORT VipPySignalGenerator : public VipTimeRangeBasedGenerator
 
 	struct ReadThread : public QThread
 	{
-		VipPySignalGenerator * generator;
+		// Atomic: the loop reads it every turn while the calling thread writes it
+		// to ask for a stop, and the thread itself clears it on the way out. A
+		// plain pointer is a race, and nothing forces the loop to read it again.
+		std::atomic<VipPySignalGenerator*> generator;
 		ReadThread(VipPySignalGenerator * gen) : generator(gen) {}
 		virtual void run();
 	};

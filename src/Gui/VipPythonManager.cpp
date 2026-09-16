@@ -6,6 +6,8 @@
  */
 
 
+#include <QCoreApplication>
+
 #include "VipPythonManager.h"
 #include "VipTextHighlighter.h"
 #include "VipPyProcessing.h"
@@ -241,6 +243,12 @@ void VipPythonParameters::openManager()
 	vipOpenProcessingManager();
 }
 
+void VipPythonParameters::setPendingStartupCode(const QString& code)
+{
+	if (startupCode->currentEditor())
+		startupCode->currentEditor()->setPlainText(code);
+}
+
 void VipPythonParameters::applyStartupCode()
 {
 	if (VipPyInterpreter::instance()->isRunning())
@@ -430,7 +438,8 @@ VipPythonManager::VipPythonManager()
 	//register all files found in the Python directory
 	//TEST: disable for faster loading
 	VipPyInterpreter::instance()->addProcessingDirectory(vipGetPythonDirectory());
-	VipPyInterpreter::instance()->addProcessingDirectory("./Python");
+	// Next to the application, not next to wherever it happened to be started from.
+	VipPyInterpreter::instance()->addProcessingDirectory(QCoreApplication::applicationDirPath() + "/Python");
 
 	//register PyCustomizePlotPlayer
 	vipFDPlayerCreated().append<void(VipPlotPlayer*)>(detail::pyCustomizePlotPlayer);
@@ -519,7 +528,6 @@ void VipPythonManager::restore(VipArchive & stream)
 	//NEW: for now always use Local
 	//opt.setPyType((VipPyInterpreter::PyType)type);
 	//opt.setPyType(VipPyInterpreter::Local);
-	opt.setStartupCode(startup);
 	opt.setLaunchCode((VipPyInterpreter::PyLaunchCode)launchCode);
 	
 	VipTextEditor::setStdColorSchemes(schemes);
@@ -536,6 +544,16 @@ void VipPythonManager::restore(VipArchive & stream)
 
 	VipPyInterpreter::instance()->pyIOOperation();
 	vipGetPythonParameters()->updatePage();
+
+	// The startup code is executed as soon as the interpreter is created, which the
+	// line above does. A session file is an exchange format, so one received from
+	// anywhere used to run Python with the rights of whoever opened it, with no
+	// dialogue and no trace. It is loaded into the editor for inspection instead;
+	// the button beside that editor is the point where the user applies it.
+	if (!startup.isEmpty() && startup != VipPyInterpreter::instance()->startupCode()) {
+		vipGetPythonParameters()->setPendingStartupCode(startup);
+		VIP_LOG_WARNING("Startup code found in the session was loaded but not executed. Review it in the Python options and apply it explicitly.");
+	}
 	stream.content("editor", vipGetPyEditorToolWidget());
 
 	//Restart IPython is python process is different

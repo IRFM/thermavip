@@ -282,6 +282,12 @@ void VipXArchive::doRestore()
 	}
 }
 
+void VipXArchive::doDiscardSave()
+{
+	if (d_data->saved.size())
+		d_data->saved.pop_back();
+}
+
 QDomNode VipXArchive::topNode() const
 {
 	QDomNode node = d_data->parameters.node;

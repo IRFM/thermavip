@@ -74,6 +74,11 @@ protected:
 	virtual void apply();
 
 private:
+	/// Writes the recording. Not virtual, and with an explicit budget: the
+	/// destructor calls it, where a virtual would not dispatch and where a ten
+	/// second wait on the interpreter freezes the thread that is destroying.
+	void writeRecording(int timeout_ms, bool destroying);
+
 	VIP_DECLARE_PRIVATE_DATA();
 };
 
@@ -115,6 +120,11 @@ protected:
 	virtual void apply();
 
 private:
+	/// Writes the recording. Not virtual, and with an explicit budget: the
+	/// destructor calls it, where a virtual would not dispatch and where a ten
+	/// second wait on the interpreter freezes the thread that is destroying.
+	void writeRecording(int timeout_ms, bool destroying);
+
 	VIP_DECLARE_PRIVATE_DATA();
 };
 

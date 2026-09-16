@@ -183,24 +183,29 @@ bool VipBorderItem::axisIntersectionEnabled() const
 	return d_data->intersectWith != nullptr;
 }
 
+double VipBorderItem::axisIntersectionCoordinate() const
+{
+	VipBorderItem* inter = d_data->intersectWith;
+	if (!inter)
+		return 0;
+	const QPointF p = inter->position(this->axisIntersectionValue(), 0, this->axisIntersectionType());
+	return this->orientation() == Qt::Vertical ? p.x() + inter->pos().x() : p.y() + inter->pos().y();
+}
+
 void VipBorderItem::emitScaleDivNeedUpdate()
 {
 	// Recompute geometry if axis intersection is wrong
 	if (VipBorderItem* inter = d_data->intersectWith) {
 		if (inter->parentItem() == this->parentItem()) {
 			// grab the theoric 'good' position computed in VipPlotWidget2D.cpp when recomputing the area geometry
-			QPointF theoric_pos = this->property("_vip_Pos").value<QPointF>();
+			const QPointF theoric_pos = this->property(vipTheoricPosProperty()).value<QPointF>();
+			const bool vertical = this->orientation() == Qt::Vertical;
 
-			if (this->orientation() == Qt::Vertical) {
-				double x = inter->position(this->axisIntersectionValue(), 0, this->axisIntersectionType()).x() + inter->pos().x();
-				if (x != theoric_pos.x())
-					emitGeometryNeedUpdate();
-			}
-			else {
-				double y = inter->position(this->axisIntersectionValue(), 0, this->axisIntersectionType()).y() + inter->pos().y();
-				if (y != theoric_pos.y())
-					this->emitGeometryNeedUpdate();
-			}
+			// One expression, evaluated here and by the layout through the same
+			// accessor: the tolerance guards against the rounding of two graphics
+			// transforms, no longer against two copies of a formula drifting apart.
+			if (!qFuzzyCompare(this->axisIntersectionCoordinate(), vertical ? theoric_pos.x() : theoric_pos.y()))
+				this->emitGeometryNeedUpdate();
 		}
 	}
 	VipAbstractScale::emitScaleDivNeedUpdate();

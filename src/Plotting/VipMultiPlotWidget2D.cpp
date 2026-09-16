@@ -389,7 +389,10 @@ bool VipVMultiPlotArea2D::internalAddScale(VipAbstractScale* sc, bool spatial)
 								d_data->haxes.insert(insert_index, haxe);
 						}
 					}
-					if (insert_index < 0 || insert_index >= d_data->haxes.size()) {
+					// Bounded by the lists it inserts into. It used to be bounded by the size
+					// of the horizontal axes, which only grow when there is more than one
+					// left scale, so the four parallel lists do not grow at the same rate.
+					if (insert_index < 0 || insert_index > d_data->canvas.size() || insert_index > d_data->grids.size()) {
 						d_data->canvas << canvas;
 						d_data->grids << grid;
 					}
@@ -438,13 +441,17 @@ bool VipVMultiPlotArea2D::internalRemoveScale(VipAbstractScale* sc)
 				VipAbstractScale* right = d_data->yRight->takeItem(index);
 				right->setParentItem(nullptr);
 
-				Q_EMIT canvasRemoved(d_data->canvas.at(index));
+				// The index comes from the left or right scale list; the two lists below are
+				// parallel but not guaranteed to be as long.
+				if (index < d_data->canvas.size() && index < d_data->grids.size()) {
+					Q_EMIT canvasRemoved(d_data->canvas.at(index));
 
-				// remove grid and canvas
-				d_data->grids[index]->setAxes(QList<VipAbstractScale*>(), VipCoordinateSystem::Null);
-				d_data->canvas[index]->setAxes(QList<VipAbstractScale*>(), VipCoordinateSystem::Null);
-				delete d_data->grids.takeAt(index);
-				delete d_data->canvas.takeAt(index);
+					// remove grid and canvas
+					d_data->grids[index]->setAxes(QList<VipAbstractScale*>(), VipCoordinateSystem::Null);
+					d_data->canvas[index]->setAxes(QList<VipAbstractScale*>(), VipCoordinateSystem::Null);
+					delete d_data->grids.takeAt(index);
+					delete d_data->canvas.takeAt(index);
+				}
 
 				// internalRemoveScale should not remove the scale being removed, so do NOT delete the left one,
 				// only the right one
@@ -469,9 +476,13 @@ bool VipVMultiPlotArea2D::internalRemoveScale(VipAbstractScale* sc)
 					for (int i = 0; i < d_data->yRight->count(); ++i)
 						if (!d_data->rmodel)
 							d_data->rmodel = qobject_cast<VipAxisBase*>(d_data->yRight->at(i));
-				if (!d_data->cmodel)
+				// Tested, in the form the two neighbouring accessors of this class already
+				// use: removing the last row empties both lists, and first() on an empty one
+				// is undefined. The guard that forbade removing the last row is still
+				// commented out thirty lines above.
+				if (!d_data->cmodel && d_data->canvas.size())
 					d_data->cmodel = d_data->canvas.first();
-				if (!d_data->gmodel)
+				if (!d_data->gmodel && d_data->grids.size())
 					d_data->gmodel = d_data->grids.first();
 
 				applyLabelOverlapping();
@@ -622,14 +633,18 @@ void VipVMultiPlotArea2D::resetInnerLegendsPosition()
 			else if (align & Qt::AlignRight)
 				pos.setX(parent.right() - size.width() - right_margin - x_margin);
 			else
-				pos.setX((parent.width() - size.width()) / 2);
+				// The offset of the parent, which the four branches around this one all
+				// apply: a centred legend was placed relative to the origin of the frame
+				// rather than to the canvas it belongs to, and in a multi row area every
+				// canvas sits at a different ordinate.
+				pos.setX(parent.left() + (parent.width() - size.width()) / 2);
 
 			if (align & Qt::AlignTop)
 				pos.setY(y_margin + top_margin + parent.top() + space);
 			else if (align & Qt::AlignBottom)
 				pos.setY(parent.bottom() - size.height() - bottom_margin - y_margin);
 			else
-				pos.setY((parent.bottom() - size.height()) / 2);
+				pos.setY(parent.top() + (parent.height() - size.height()) / 2);
 
 			QRectF geom(pos, size);
 			l->setGeometry(geom);

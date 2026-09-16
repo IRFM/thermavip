@@ -105,6 +105,13 @@ public:
 	/// Set the list of components
 	virtual void SetComponents(const QList<VipNDArray>& components) { m_components = components; }
 
+	/// Convert each component to the type this extractor publishes through
+	/// PixelComponentTypes(). The single component setter already works that way;
+	/// the list setters applied their own conversions and the merges read the
+	/// result back through a third set of types, eight bytes per element on
+	/// arrays of one.
+	QList<VipNDArray> ConvertToPixelComponentTypes(const QList<VipNDArray>& components) const;
+
 	/// Returns true if the given data_type is supported, false otherwise
 	bool IsSupported(const QByteArray& type_name) { return this->InputDataTypes().size() == 0 || this->InputDataTypes().indexOf(type_name) >= 0; }
 
@@ -217,17 +224,7 @@ public:
 				     << "Hsl Alpha";
 	}
 
-	virtual void SetComponents(const QList<VipNDArray>& components)
-	{
-		QList<VipNDArray> tmp;
-		for (qsizetype i = 0; i < components.size(); ++i) {
-			if (i == 0)
-				tmp.append(components[i].toInt32());
-			else
-				tmp.append(components[i].toUInt8());
-		}
-		VipExtractComponents::SetComponents(tmp);
-	}
+	virtual void SetComponents(const QList<VipNDArray>& components) { VipExtractComponents::SetComponents(ConvertToPixelComponentTypes(components)); }
 };
 
 // Extract the component 'Hsv Hue', 'Hsv Saturation', 'Hsv Value' and 'Hsv Alpha' of a color image.
@@ -257,17 +254,7 @@ public:
 				     << "Hsv Value"
 				     << "Hsv Alpha";
 	}
-	virtual void SetComponents(const QList<VipNDArray>& components)
-	{
-		QList<VipNDArray> tmp;
-		for (qsizetype i = 0; i < components.size(); ++i) {
-			if (i == 0)
-				tmp.append(components[i].toInt32());
-			else
-				tmp.append(components[i].toUInt8());
-		}
-		VipExtractComponents::SetComponents(tmp);
-	}
+	virtual void SetComponents(const QList<VipNDArray>& components) { VipExtractComponents::SetComponents(ConvertToPixelComponentTypes(components)); }
 };
 
 // Extract the component 'CMYK Cyan', 'CMYK Magenta', 'CMYK Yellow', 'CMYK Black' and 'CMYK Alpha' of a color image.
@@ -297,14 +284,7 @@ public:
 				     << "CMYK Black"
 				     << "CMYK Alpha";
 	}
-	virtual void SetComponents(const QList<VipNDArray>& components)
-	{
-		QList<VipNDArray> tmp;
-		for (qsizetype i = 0; i < components.size(); ++i) {
-			tmp.append(components[i].toUInt8());
-		}
-		VipExtractComponents::SetComponents(tmp);
-	}
+	virtual void SetComponents(const QList<VipNDArray>& components) { VipExtractComponents::SetComponents(ConvertToPixelComponentTypes(components)); }
 };
 
 // Convert a color image to a grayscale one.

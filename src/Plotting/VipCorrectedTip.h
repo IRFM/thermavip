@@ -205,7 +205,9 @@ protected:
 	void resizeEvent(QResizeEvent* e) Q_DECL_OVERRIDE;
 
 private:
-	QGraphicsDropShadowEffect* effect;
+	// Null for a fake container, which hiddenTip() builds and textGeometry() uses:
+	// the only assignment is inside the non-fake branch of the constructor.
+	QGraphicsDropShadowEffect* effect{ nullptr };
 	QWidget* styleSheetParent;
 	VipTipLabel* label;
 	bool fadingOut;

@@ -527,7 +527,11 @@ void VipToolTip::setPlotAreaPos(const QPointF& pos)
 				if (testDisplayFlag(ItemsPos) && !points[i].isEmpty()) {
 					QStringList axis_text;
 					const QList<VipAbstractScale*> scales = item->axes();
-					for (int p = 0; p < points_of_intereset.size(); ++p) {
+					// The line counter is common to the whole function, and each of the three
+					// breaks below only leaves its own loop: the enclosing ones re-entered and
+					// added a line per remaining point and per remaining item, so the tooltip
+					// went well past the maximum while announcing that it had been truncated.
+					for (int p = 0; p < points_of_intereset.size() && line < d_data->maxLines; ++p) {
 						for (int s = 0; s < scales.size(); ++s) {
 							if (!scales[s])
 								continue;
@@ -555,7 +559,7 @@ void VipToolTip::setPlotAreaPos(const QPointF& pos)
 				// compute item properties
 				if (testDisplayFlag(ItemsProperties)) {
 					QList<QByteArray> props = item->dynamicPropertyNames();
-					for (int p = 0; p < props.size(); ++p) {
+					for (int p = 0; p < props.size() && line < d_data->maxLines; ++p) {
 						if (!isPropertyIgnored(props[p])) {
 							QString t_value = item->property(props[p].data()).toString();
 							if (!t_value.isEmpty()) {

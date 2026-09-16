@@ -98,8 +98,12 @@ void VipStreamingFromDevice::close()
 
 void VipStreamingFromDevice::setIODevice(VipIODevice* device)
 {
+	// Ownership is taken in both cases. Refusing the device while this is open used
+	// to leave it neither stored nor destroyed, and the caller had read that we
+	// take it.
+	QSharedPointer<VipIODevice> owned(device);
 	if (!isOpen())
-		m_device = QSharedPointer<VipIODevice>(device);
+		m_device = owned;
 }
 
 VipIODevice* VipStreamingFromDevice::IODevice() const

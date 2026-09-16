@@ -56,6 +56,11 @@ public:
 	using generator_function = std::function<VipAnyData(const VipAnyData&)>;
 
 	VipSequentialGenerator(QObject* parent = nullptr);
+	/// @brief Build a generator calling @a fun every @a sampling seconds.
+	///
+	/// @a sampling must be strictly positive and is clamped to 1 ms at the low end:
+	/// zero or a negative value turned the wait into a busy loop on a thread that
+	/// never yields.
 	VipSequentialGenerator(const generator_function& fun, double sampling, QObject* parent = nullptr);
 	~VipSequentialGenerator();
 

@@ -131,6 +131,12 @@ static QVariant userInput(const QString& title, const QVariantList& values)
 			}
 			widgets << w;
 		}
+		else {
+			// A type this chain does not know used to be skipped in silence: the
+			// dialog opened with one field fewer, and since the answers are read
+			// back by position, every field after it was read as its neighbour.
+			return error("unknown input type '" + type + "' for field '" + label + "'");
+		}
 	}
 
 	VipGenericDialog dialog(w, title, vipGetMainWindow());
@@ -222,7 +228,11 @@ static QVariant openPath(const QVariant & p, int player = 0, const QString & sid
 		
 		//add to left, right, top or bottom
 		if (sum) {
+			// Tested, like the two pointers above: a player that floats on its own
+			// is inside no multi player, and this gives nothing for it.
 			VipMultiDragWidget * mw = VipMultiDragWidget::fromChild(w);
+			if (!mw)
+				return error("player number " + QString::number(player) + " is not inside a multi player");
 			QPoint pt = mw->indexOf(w);
 			//create new player
 			QList<VipAbstractPlayer*> pls = vipCreatePlayersFromPaths(paths, nullptr);
@@ -231,6 +241,8 @@ static QVariant openPath(const QVariant & p, int player = 0, const QString & sid
 				return error("Cannot open data for given path(s)");
 
 			VipDragWidget * dw = qobject_cast<VipDragWidget*>(vipCreateFromWidgets(QList<QWidget*>() << pl));
+			if (!dw)
+				return error("Cannot create a player for the given path(s)");
 			int id = VipUniqueId::id((VipBaseDragWidget*)dw);
 			if (left) {
 				mw->insertSub(pt.y(), pt.x(), dw);
@@ -248,9 +260,11 @@ static QVariant openPath(const QVariant & p, int player = 0, const QString & sid
 		}
 		else {
 			//open in existing player
-			vipGetMainWindow()->openPaths(paths, pl).isEmpty();
-			if (!pl)
-				return error( "Cannot open data in player number" + QString::number(player));
+			// The answer used to be computed and dropped, and the test below looked
+			// at a pointer checked fifteen lines above that nothing changes: the
+			// failure was never seen and the call reported a valid player.
+			if (vipGetMainWindow()->openPaths(paths, pl).isEmpty())
+				return error("Cannot open data in player number " + QString::number(player));
 
 			return QVariant(VipUniqueId::id(VipDragWidget::fromChild(pl)));
 		}
@@ -314,7 +328,14 @@ static QVariant setRowRatio(int row, double ratio)
 				QList<int> heights = vsplitter->sizes();
 				
 				heights[row] = new_height;
-				int to_add_or_remove = to_add ? (to_add / (heights.size()-2)) : (to_remove / (heights.size() - 2));
+				// The rows the difference is spread over, which is every row but this
+				// one and the last. There can be none: with two rows the divisor was
+				// zero, and an integer division by zero stops the process. Everything
+				// else about this call is validated, this alone was not.
+				const qsizetype others = heights.size() - 2;
+				int to_add_or_remove = 0;
+				if (others > 0)
+					to_add_or_remove = static_cast<int>((to_add ? to_add : to_remove) / others);
 				for (int i = 0; i < heights.size()-1; ++i) {
 					if (i != row)
 					{
@@ -513,12 +534,25 @@ static QVariant clampTime(const VipNDArray & ar, qint64 min, qint64 max)
 	if (ar.isEmpty())
 		return QVariant::fromValue(VipNDArray());
 
-	int size = ar.shape(1);
-	const vip_double *xptr = (const vip_double*)ar.constData();
+	// The array comes from Python. Its rank was never checked, so shape(1) on a
+	// one dimensional array read past the shape vector and gave an arbitrary
+	// size; and its buffer was reinterpreted as vip_double whatever it held, so
+	// an array of four byte elements gave twice its length in reads past the end
+	// of the block, and what was read came back to the caller. Convert, which is
+	// what every other function of this file does.
+	if (ar.shapeCount() != 2 || ar.shape(0) != 2)
+		return error("clamp_time expects an array of shape 2xN");
+
+	const VipNDArrayType<vip_double, 2> in = ar;
+	if (in.isEmpty())
+		return error("clamp_time cannot read this array as numbers");
+
+	const qsizetype size = in.shape(1);
+	const vip_double *xptr = in.ptr();
 	const vip_double *yptr = xptr + size;
 
 
-	for (int i = 1; i <size; ++i) {
+	for (qsizetype i = 1; i <size; ++i) {
 		if (xptr[i] <= xptr[i - 1])
 			return error( "given signal is not continuous");
 	}
@@ -526,7 +560,7 @@ static QVariant clampTime(const VipNDArray & ar, qint64 min, qint64 max)
 	QVector<vip_double> x, y;
 	x.reserve(size);
 	y.reserve(size);
-	int i = 0;
+	qsizetype i = 0;
 	while (i < size && xptr[i] < min) ++i;
 	while (i < size && xptr[i] <= max) {
 		x.append(xptr[i]);
@@ -703,6 +737,13 @@ static QVariant itemList(int player, int selection, const QString & partial_name
 				else if (item->item()->title().text().indexOf(partial_name) >= 0)
 					found = (item->item()->title().text());
 
+				// An item that matches neither used to be counted, named and returned
+				// as an empty string, so the caller could not tell no result from all
+				// of them rejected, and the second such item was published as "[2]",
+				// a name nothing else in this file can read back.
+				if (found.isEmpty())
+					continue;
+
 				int c = names.count(found);
 				names.insert(found, 0);
 				if (c == 0) {
@@ -723,7 +764,10 @@ static QVariant itemList(int player, int selection, const QString & partial_name
 	}
 }
 
-static QVariant setStyleSheet(int player, const QString & data_name, const QString & stylesheet)
+// The order the Python wrapper sends: it passes positionally, and the two
+// parameters are both strings, so the swap could only show up as "cannot find
+// data name", which is what every call produced.
+static QVariant setStyleSheet(int player, const QString & stylesheet, const QString & data_name)
 {
 	VipDragWidget * w = qobject_cast<VipDragWidget*>(VipUniqueId::find<VipBaseDragWidget>(player));
 	if (!w)
@@ -737,7 +781,13 @@ static QVariant setStyleSheet(int player, const QString & data_name, const QStri
 	if (!item)
 		return error( "cannot find data name for player " + QString::number(player));
 	item->setAttribute("stylesheet", stylesheet);
-	vipGetMainWindow()->displayArea()->currentDisplayPlayerArea()->processingPool()->reload();
+	// The pool of the player this call names, not the one of whatever workspace
+	// happens to be in front: the identifier is global, so a player of another
+	// workspace had its attribute set and someone else's pipeline reloaded. And
+	// the current workspace can be none, which eleven other places in this file
+	// already test for.
+	if (VipProcessingPool* pool = pl->processingPool())
+		pool->reload();
 	return QVariant();
 }
 
@@ -1454,10 +1504,23 @@ static QVariant setPlayerTitle(int player, const QString & title)
 //annotation functions
 
 //uniquely identifiy each annotation with a map of id -> shape identifier ('player_id:yaxis:group:shape_id')
-static QMap<int, QString> _annotations;
+// What an annotation identifier refers to. It used to be the four fields pasted
+// into one string with a colon between them, while one of the four comes from
+// the caller and may hold a colon of its own: the split then gave five pieces,
+// removal answered "wrong annotation identifier" for ever, the annotation stayed
+// on screen and the entry was never freed.
+struct AnnotationRef
+{
+	int player = 0;
+	QString yaxis;
+	QString group;
+	int shapeId = 0;
+};
+
+static QMap<int, AnnotationRef> _annotations;
 static int _createId() {
 	int start = 1;
-	for (QMap<int, QString>::const_iterator it = _annotations.begin(); it != _annotations.end(); ++it, ++start) {
+	for (QMap<int, AnnotationRef>::const_iterator it = _annotations.begin(); it != _annotations.end(); ++it, ++start) {
 		if (it.key() != start)
 			return start;
 	}
@@ -1489,11 +1552,16 @@ static QVariant createAnnotation(int player, const QString & type, const QString
 		return error( err);
 	}
 
-	VipShape sh = a->parentShape()->rawData();
-	QString sh_id = QString::number(player) + ":" + yaxis + ":" + sh.group() + ":" + QString::number(sh.id());
+	// Tested like the annotation above it: the shape it hangs from is a pointer
+	// like any other.
+	VipPlotShape* parent_shape = a->parentShape();
+	if (!parent_shape)
+		return error("the annotation has no shape");
+
+	VipShape sh = parent_shape->rawData();
 	int id = _createId();
 	sh.setAttribute("_vip_annotation_id", id);
-	_annotations[id] = sh_id;
+	_annotations[id] = AnnotationRef{ player, yaxis, sh.group(), (int)sh.id() };
 
 	return QVariant(id);
 }
@@ -1501,17 +1569,15 @@ static QVariant createAnnotation(int player, const QString & type, const QString
 static QVariant clearAnnotation(int id)
 {
 
-	QMap<int, QString>::const_iterator it = _annotations.find(id);
+	QMap<int, AnnotationRef>::const_iterator it = _annotations.find(id);
 	if (it == _annotations.end())
 		return error( "wrong annotation identifier");
-	QStringList lst = it.value().split(":");
-	if (lst.size() != 4)
-		return error( "wrong annotation identifier");
 
-	int player = lst[0].toInt();
-	QString yaxis = lst[1];
-	QString group = lst[2];
-	int sh_id = lst[3].toInt();
+	const AnnotationRef ref = it.value();
+	const int player = ref.player;
+	const QString yaxis = ref.yaxis;
+	const QString group = ref.group;
+	const int sh_id = ref.shapeId;
 
 	VipDragWidget * w = qobject_cast<VipDragWidget*>(VipUniqueId::find<VipBaseDragWidget>(player));
 	if (!w)

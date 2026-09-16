@@ -68,6 +68,15 @@ VIP_ALWAYS_INLINE bool isNan(double value)
 {
 	return value != value;
 }
+template<>
+VIP_ALWAYS_INLINE bool isNan(long double value)
+{
+	// The file has a branch of its own for this type, but the primary template
+	// answered no for it: no NaN was ever detected in an array of long double,
+	// so they entered the histogram as ordinary values and compared false
+	// against everything, which is not a strict weak ordering.
+	return value != value;
+}
 
 template<class T>
 struct sort_pair
@@ -80,7 +89,7 @@ struct sort_pair<float>
 	VIP_ALWAYS_INLINE bool operator()(const std::pair<float, int>& a, const std::pair<float, int>& b) const
 	{
 		if (isNan(a.first))
-			return true;
+			return !isNan(b.first);
 		else if (isNan(b.first))
 			return false;
 		else
@@ -93,7 +102,7 @@ struct sort_pair<double>
 	VIP_ALWAYS_INLINE bool operator()(const std::pair<double, int>& a, const std::pair<double, int>& b) const
 	{
 		if (isNan(a.first))
-			return true;
+			return !isNan(b.first);
 		else if (isNan(b.first))
 			return false;
 		else
@@ -111,8 +120,11 @@ struct sort_std<float>
 {
 	VIP_ALWAYS_INLINE bool operator()(const float a, const float b) const
 	{
+		// Not "return true": two NaNs used to compare less than each other in
+		// both directions, which breaks the strict weak ordering std::sort
+		// requires and lets the partition run off the array.
 		if (isNan(a))
-			return true;
+			return !isNan(b);
 		else if (isNan(b))
 			return false;
 		else
@@ -124,8 +136,11 @@ struct sort_std<double>
 {
 	VIP_ALWAYS_INLINE bool operator()(const double a, const double b) const
 	{
+		// Not "return true": two NaNs used to compare less than each other in
+		// both directions, which breaks the strict weak ordering std::sort
+		// requires and lets the partition run off the array.
 		if (isNan(a))
-			return true;
+			return !isNan(b);
 		else if (isNan(b))
 			return false;
 		else
@@ -391,14 +406,13 @@ VipIntervalSampleVector extractHistogram(const T* begin,
 	bool has_nan = false;
 
 	for (int i = 0; i < size; ++i) {
-		if (!isNan(begin[i])) {
-			values[i].first = (begin[i]);
-			values[i].second = i;
-		}
-		else {
+		// Unconditionally: the buffer is thread_local and survives from one call
+		// to the next, so a position left untouched kept the value and the index
+		// of an earlier image, which then entered this histogram.
+		values[i].first = (begin[i]);
+		values[i].second = i;
+		if (isNan(begin[i]))
 			has_nan = true;
-			// ignore nan values
-		}
 	}
 
 	int tot_count = 0;
@@ -415,7 +429,10 @@ VipIntervalSampleVector extractHistogram(const T* begin,
 
 	// ignore nan values
 	if (has_nan) {
-		while (beg < en && isNan(*beg)) {
+		// On the value, not on the pair: the pair resolved to the primary
+		// template, which returns false for anything, so the whole block was dead
+		// and replace_nan was never written.
+		while (beg < en && isNan(beg->first)) {
 			indexes[beg->second] = replace_nan;
 			++beg;
 		}

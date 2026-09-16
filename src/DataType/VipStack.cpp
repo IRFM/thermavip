@@ -36,9 +36,14 @@ bool vipStack(VipNDArray& dst, const VipNDArray& v1, const VipNDArray& v2, qsize
 	// test same dim count
 	if (v1.shapeCount() != v2.shapeCount())
 		return false;
+	// The axis comes from the caller and indexes a shape held on the stack.
+	if (axis < 0 || axis >= v1.shapeCount())
+		return false;
 	// test same shape except for given axis
 	for (qsizetype i = 0; i < v1.shapeCount(); ++i) {
-		if (i != axis && (v1.shape(i) != v2.shape(i) || v1.shape(i) != v2.shape(i)))
+		// Against the destination on the second term, as the template does: the two
+		// terms used to be the same comparison, so the destination was never checked.
+		if (i != axis && (v1.shape(i) != v2.shape(i) || v1.shape(i) != dst.shape(i)))
 			return false;
 	}
 
@@ -62,6 +67,8 @@ bool vipStack(VipNDArray& dst, const VipNDArray& v1, const VipNDArray& v2, qsize
 VipNDArray vipStack(const VipNDArray& v1, const VipNDArray& v2, qsizetype axis)
 {
 	VipNDArrayShape sh = v1.shape();
+	if (axis < 0 || axis >= sh.size() || axis >= v2.shapeCount())
+		return VipNDArray();
 	sh[axis] = v1.shape()[axis] + v2.shape()[axis];
 
 	int t1 = v1.dataType();

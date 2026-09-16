@@ -6,12 +6,10 @@ set(THERMAVIP_FOUND true)
 set(THERMAVIP_INCLUDE_DIRS ${PACKAGE_PREFIX_DIR}/include ${PACKAGE_PREFIX_DIR}/include/VipLogging ${PACKAGE_PREFIX_DIR}/include/VipDataType ${PACKAGE_PREFIX_DIR}/include/VipPlotting ${PACKAGE_PREFIX_DIR}/include/VipCore ${PACKAGE_PREFIX_DIR}/include/VipGui ${PACKAGE_PREFIX_DIR}/include/VipAnnotation)
 
 
-math(EXPR BITS "8*${CMAKE_SIZEOF_VOID_P}")
-IF(${BITS} MATCHES "64" AND UNIX)
-	set_and_check(THERMAVIP_LIB_DIR ${PACKAGE_PREFIX_DIR}/lib64)
-ELSE()
-	set_and_check(THERMAVIP_LIB_DIR ${PACKAGE_PREFIX_DIR}/lib)
-ENDIF()
+# Library directory, as actually used by the installation: substituted from
+# the producing project, where GNUInstallDirs set it. It used to be derived
+# from the pointer size, which disagrees with GNUInstallDirs on Debian and
+# Ubuntu, and set_and_check() then aborted the consumer's find_package().
 
 #IF(WIN32)
 #	set_and_check(THERMAVIP_BIN_DIR ${PACKAGE_PREFIX_DIR}/bin)
@@ -68,6 +66,9 @@ set(THERMAVIP_QT_LIBRARIES_NO_GUI Qt::Core
 	)
 endif()
 
+# Assigned unconditionally. It used to be set only inside the block below,
+# so a build without Qt WebEngine left this public variable undefined and
+# consumers linked no Qt module at all, failing at link time.
 if(NOT "@QT_WEBENGINE_LIBS@" STREQUAL "")
 	if(${QT_VERSION_MAJOR} LESS 6)
 		set(WEB_ENGINE WebEngine)
@@ -76,7 +77,6 @@ if(NOT "@QT_WEBENGINE_LIBS@" STREQUAL "")
 	endif()
 	find_package(Qt${QT_VERSION_MAJOR} COMPONENTS ${WEB_ENGINE})
 	find_package(Qt${QT_VERSION_MAJOR} COMPONENTS WebEngineWidgets )
-	set(THERMAVIP_QT_LIBRARIES ${THERMAVIP_QT_LIBRARIES_NO_GUI})
 	list(APPEND THERMAVIP_QT_LIBRARIES @QT_WEBENGINE_LIBS@)
 endif()
 

@@ -33,14 +33,17 @@
 #include "VipPainter.h"
 #include "VipPie.h"
 #include "VipShapeDevice.h"
+#include "VipLock.h"
 
 #include <limits>
 #include <numeric>
+#include <mutex>
 
 #include <QBuffer>
 #include <QPicture>
 #include <QRawFont>
 #include <QTextLayout>
+#include <QMutex>
 #include <QTextStream>
 #include <qabstracttextdocumentlayout.h>
 #include <qapplication.h>
@@ -185,6 +188,11 @@ public:
 	{
 		const QString fontKey = font.key();
 
+		// Under a lock: this engine is built once and handed to every VipText, so two
+		// texts being painted at the same time share this map literally, and it is
+		// written from a const method. QMap is not reentrant for writing.
+		std::scoped_lock<VipSpinlock> lock(d_ascentLock);
+
 		QMap<QString, int>::const_iterator it = d_ascentCache.find(fontKey);
 		if (it == d_ascentCache.end()) {
 			int ascent = findAscent(font);
@@ -230,6 +238,7 @@ private:
 	}
 
 	mutable QMap<QString, int> d_ascentCache;
+	mutable VipSpinlock d_ascentLock;
 };
 
 //! Constructor
@@ -409,6 +418,7 @@ public:
 
 	void setTextEngine(VipText::TextFormat, VipTextEngine*);
 
+	const VipTextEngine* defaultEngine() const;
 	const VipTextEngine* textEngine(VipText::TextFormat) const;
 	const VipTextEngine* textEngine(const QString&, VipText::TextFormat) const;
 
@@ -421,9 +431,12 @@ private:
 	inline const VipTextEngine* engine(EngineMap::const_iterator& it) const { return it.value(); }
 
 	EngineMap d_map;
+	// Engines that setTextEngine() replaced. Every VipText keeps the engine it was
+	// built with, so destroying the replaced one left all of them, and the plain
+	// text default, pointing at freed memory. They are kept until this registry
+	// goes, which is the end of the process.
+	QVector<VipTextEngine*> d_retired;
 };
-
-static VipPlainTextEngine* _default_engine = nullptr;
 
 TextEngineDict& TextEngineDict::dict()
 {
@@ -433,9 +446,16 @@ TextEngineDict& TextEngineDict::dict()
 
 
 
+// The plain text engine, read straight from the table instead of a global that
+// setTextEngine() never updated.
+const VipTextEngine* TextEngineDict::defaultEngine() const
+{
+	return d_map.value(VipText::PlainText, nullptr);
+}
+
 TextEngineDict::TextEngineDict()
 {
-	d_map.insert(VipText::PlainText, _default_engine = new VipPlainTextEngine());
+	d_map.insert(VipText::PlainText, new VipPlainTextEngine());
 #ifndef QT_NO_RICHTEXT
 	d_map.insert(VipText::RichText, new VipRichTextEngine());
 #endif
@@ -447,13 +467,15 @@ TextEngineDict::~TextEngineDict()
 		const VipTextEngine* textEngine = engine(it);
 		delete textEngine;
 	}
+	for (int i = 0; i < d_retired.size(); ++i)
+		delete d_retired[i];
 }
 
 const VipTextEngine* TextEngineDict::textEngine(const QString& text, VipText::TextFormat format) const
 {
 	if (format == VipText::AutoText) {
 		if (text.isEmpty())
-			return _default_engine;
+			return defaultEngine();
 		for (EngineMap::const_iterator it = d_map.begin(); it != d_map.end(); ++it) {
 			if (it.key() != VipText::PlainText) {
 				const VipTextEngine* e = engine(it);
@@ -461,7 +483,7 @@ const VipTextEngine* TextEngineDict::textEngine(const QString& text, VipText::Te
 					return e;
 			}
 		}
-		return _default_engine;
+		return defaultEngine();
 	}
 
 	EngineMap::const_iterator it = d_map.find(format);
@@ -486,8 +508,9 @@ void TextEngineDict::setTextEngine(VipText::TextFormat format, VipTextEngine* en
 	EngineMap::const_iterator it = d_map.find(format);
 	if (it != d_map.end()) {
 		const VipTextEngine* e = this->engine(it);
+		// Retired, not destroyed: see the member declaration.
 		if (e)
-			delete e;
+			d_retired.push_back(const_cast<VipTextEngine*>(e));
 
 		d_map.remove(format);
 	}
@@ -870,54 +893,64 @@ QSizeF VipText::textSize() const
 	return sz;
 }
 
+// Upper bound on a repetition count and on the number of blocks. This text is
+// data: it comes from item properties and from session files.
+static constexpr int vipMaxTextRepeat = 10000;
+static constexpr int vipMaxTextRepeatBlocks = 1000;
+
 QString VipText::repeatBlock(const QString input)
 {
 	QString str = input;
 
-	int end = str.indexOf("#endrepeat");
-	if (end < 0)
-		return str;
+	// Iterative and bounded. Each pass handled one block and called itself, so the
+	// depth was the number of blocks in the text, and the count below was the raw
+	// number read from that same text.
+	for (int block = 0; block < vipMaxTextRepeatBlocks; ++block) {
+		int end = str.indexOf("#endrepeat");
+		if (end < 0)
+			return str;
 
-	int start = str.lastIndexOf("#repeat", end);
-	if (start < 0)
-		return str;
+		int start = str.lastIndexOf("#repeat", end);
+		if (start < 0)
+			return str;
 
-	start += 7;
+		start += 7;
 
-	// read the number of loop
-	int end_start_tag1 = str.indexOf("=", start);
-	QTextStream stream(&str);
-	stream.seek(end_start_tag1 + 1);
-	int ntimes = 0;
-	stream >> ntimes;
-	if (stream.status() != QTextStream::Ok)
-		return str;
+		// read the number of loop
+		int end_start_tag1 = str.indexOf("=", start);
+		QTextStream stream(&str);
+		stream.seek(end_start_tag1 + 1);
+		int ntimes = 0;
+		stream >> ntimes;
+		if (stream.status() != QTextStream::Ok)
+			return str;
 
-	int end_start_tag2 = stream.pos();
-	if (end_start_tag1 < 0 || end_start_tag2 < 0)
-		return str;
+		int end_start_tag2 = stream.pos();
+		if (end_start_tag1 < 0 || end_start_tag2 < 0)
+			return str;
 
-	start = start - 7;
-	int start_inner = end_start_tag2;
-	int end_inner = end;
-	end = end + 10;
+		if (ntimes < 0 || ntimes > vipMaxTextRepeat)
+			return str;
 
-	QString inner = str.mid(start_inner, end_inner - start_inner);
-	QString repeated;
+		start = start - 7;
+		int start_inner = end_start_tag2;
+		int end_inner = end;
+		end = end + 10;
 
-	for (int i = 0; i < ntimes; ++i) {
-		QString num = QString::number(i);
-		QString _inner = inner;
-		_inner.replace("%i", num);
-		repeated += _inner;
+		QString inner = str.mid(start_inner, end_inner - start_inner);
+		QString repeated;
+
+		for (int i = 0; i < ntimes; ++i) {
+			QString num = QString::number(i);
+			QString _inner = inner;
+			_inner.replace("%i", num);
+			repeated += _inner;
+		}
+
+		str.replace(start, end - start, repeated);
 	}
 
-	str.replace(start, end - start, repeated);
-	// this->setText(str);
-
-	return repeatBlock(str);
-
-	// return *this;
+	return str;
 }
 
 VipText& VipText::repeatBlock()
@@ -1230,7 +1263,10 @@ static QList<QList<TextChar>> getCharactersPerLines(const VipText& t)
 			// apply the fragments format to eacg character
 			for (; !(it.atEnd()); ++it) {
 				QTextFragment frag = it.fragment();
-				for (int i = current_index; i < current_index + frag.length(); ++i)
+				// The list holds glyphs, keyed by abscissa, and the bound below counts
+				// characters: a ligature, a combining mark or a non latin script makes the
+				// two disagree, and two glyphs at the same abscissa collapse into one.
+				for (int i = current_index; i < current_index + frag.length() && i < lchars.size(); ++i)
 					lchars[i].format = frag.charFormat();
 				current_index += frag.length();
 			}
@@ -1360,6 +1396,10 @@ void VipText::draw(QPainter* painter, const QPointF& c, const VipPie& pie, TextD
 		radiuses << QList<double>();
 
 		const QList<TextChar>& tchar = textChar[line];
+		// An empty block, that is an empty line in a multi line text, contributes a
+		// line with no character: the four back() below then read empty containers.
+		if (tchar.isEmpty())
+			continue;
 
 		for (const TextChar& tc : tchar) {
 			if (dir == TowardInside) {
@@ -1380,7 +1420,11 @@ void VipText::draw(QPainter* painter, const QPointF& c, const VipPie& pie, TextD
 		}
 
 		// add the angle after last character
+		if (angle_positions.back().isEmpty() || radiuses.back().isEmpty())
+			continue;
 		const TextChar& tc = tchar.back();
+		if (tc.positions.isEmpty())
+			continue;
 		if (dir == TowardInside)
 			angle_positions.back() << angle_positions.back().back() +
 						    2 * qAsin((tc.raw_font.averageCharWidth() / 2.0) / (radiuses.back().back() - tc.positions.back().y() / 2.0)) * Vip::ToDegree;
@@ -1613,9 +1657,12 @@ VipTextObject::VipTextObject(const VipTextObject& other)
 	VIP_CREATE_PRIVATE_DATA(*other.d_data);
 }
 
-VipTextObject::VipTextObject(VipTextObject&& other) noexcept
-  : d_data(std::move(other.d_data))
+VipTextObject::VipTextObject(VipTextObject&& other)
 {
+	// The private data moves; the block that carries it stays bound to the object
+	// that owns it. Moving the block itself left it pointing at the source, which
+	// then took the deregistration and the destroyed signal of this one.
+	VIP_CREATE_PRIVATE_DATA(std::move(*other.d_data));
 }
 
 VipTextObject::~VipTextObject() = default;
@@ -1625,9 +1672,9 @@ VipTextObject& VipTextObject::operator=(const VipTextObject& other)
 	*d_data = *other.d_data;
 	return *this;
 }
-VipTextObject& VipTextObject::operator=( VipTextObject&& other) noexcept
+VipTextObject& VipTextObject::operator=(VipTextObject&& other) noexcept
 {
-	d_data = std::move(other.d_data);
+	*d_data = std::move(*other.d_data);
 	return *this;
 }
 

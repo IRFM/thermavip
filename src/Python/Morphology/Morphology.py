@@ -40,20 +40,30 @@ class ThermavipBinaryClosing(th.ThermavipPyProcessing):
     """
     iterations = 1
     FullConnectivity = True
+    threshold = 0.
     
     def __init__(self):
         pass
 
     def apply(self, data, time):
-        return nd.binary_closing(np.array(data,dtype=np.bool),structure(self.FullConnectivity,data),self.iterations)
+        # np.array(data, dtype=bool) is a threshold, and a threshold at raw zero:
+        # in degrees Celsius zero is not a physical boundary, a scene entirely
+        # below it becomes one solid object, and every NaN — dead pixel, masked
+        # area, coded saturation — counts as an object and is then dilated or
+        # eroded like real data. The threshold is a parameter now, and values that
+        # are not finite stay out of the mask.
+        mask = np.isfinite(data) & (np.asarray(data) > self.threshold)
+        return nd.binary_closing(mask, structure(self.FullConnectivity,data),self.iterations)
         
     def parameters(self):
         return {"Iterations":("int",self.iterations,0,20,1),\
-                "FullConnectivity":("bool",self.FullConnectivity)}
+                "FullConnectivity":("bool",self.FullConnectivity),\
+                "Threshold":any_float(self.threshold)}
 
     def setParameters(self,**kwargs):
         self.iterations = kwargs["Iterations"]
         self.FullConnectivity = kwargs["FullConnectivity"]
+        self.threshold = kwargs["Threshold"]
 
 class ThermavipBinaryOpening(th.ThermavipPyProcessing):
     """
@@ -69,20 +79,30 @@ class ThermavipBinaryOpening(th.ThermavipPyProcessing):
     """
     iterations = 1
     FullConnectivity = True
+    threshold = 0.
     
     def __init__(self):
         pass
 
     def apply(self, data, time):
-        return nd.binary_opening(np.array(data,dtype=np.bool),structure(self.FullConnectivity,data),self.iterations)
+        # np.array(data, dtype=bool) is a threshold, and a threshold at raw zero:
+        # in degrees Celsius zero is not a physical boundary, a scene entirely
+        # below it becomes one solid object, and every NaN — dead pixel, masked
+        # area, coded saturation — counts as an object and is then dilated or
+        # eroded like real data. The threshold is a parameter now, and values that
+        # are not finite stay out of the mask.
+        mask = np.isfinite(data) & (np.asarray(data) > self.threshold)
+        return nd.binary_opening(mask, structure(self.FullConnectivity,data),self.iterations)
         
     def parameters(self):
         return {"Iterations":("int",self.iterations,0,20,1),\
-                "FullConnectivity":("bool",self.FullConnectivity)}
+                "FullConnectivity":("bool",self.FullConnectivity),\
+                "Threshold":any_float(self.threshold)}
 
     def setParameters(self,**kwargs):
         self.iterations = kwargs["Iterations"]
         self.FullConnectivity = kwargs["FullConnectivity"]
+        self.threshold = kwargs["Threshold"]
 
 class ThermavipBinaryDilation(th.ThermavipPyProcessing):
     """
@@ -95,20 +115,30 @@ class ThermavipBinaryDilation(th.ThermavipPyProcessing):
     """
     iterations = 1
     FullConnectivity = True
+    threshold = 0.
     
     def __init__(self):
         pass
 
     def apply(self, data, time):
-        return nd.binary_dilation(np.array(data,dtype=np.bool),structure(self.FullConnectivity,data),self.iterations)
+        # np.array(data, dtype=bool) is a threshold, and a threshold at raw zero:
+        # in degrees Celsius zero is not a physical boundary, a scene entirely
+        # below it becomes one solid object, and every NaN — dead pixel, masked
+        # area, coded saturation — counts as an object and is then dilated or
+        # eroded like real data. The threshold is a parameter now, and values that
+        # are not finite stay out of the mask.
+        mask = np.isfinite(data) & (np.asarray(data) > self.threshold)
+        return nd.binary_dilation(mask, structure(self.FullConnectivity,data),self.iterations)
         
     def parameters(self):
         return {"Iterations":("int",self.iterations,0,20,1),\
-                "FullConnectivity":("bool",self.FullConnectivity)}
+                "FullConnectivity":("bool",self.FullConnectivity),\
+                "Threshold":any_float(self.threshold)}
 
     def setParameters(self,**kwargs):
         self.iterations = kwargs["Iterations"]
         self.FullConnectivity = kwargs["FullConnectivity"]
+        self.threshold = kwargs["Threshold"]
     
 class ThermavipBinaryErosion(th.ThermavipPyProcessing):
     """
@@ -121,20 +151,30 @@ class ThermavipBinaryErosion(th.ThermavipPyProcessing):
     """
     iterations = 1
     FullConnectivity = True
+    threshold = 0.
     
     def __init__(self):
         pass
 
     def apply(self, data, time):
-        return nd.binary_erosion(np.array(data,dtype=np.bool),structure(self.FullConnectivity,data),self.iterations)
+        # np.array(data, dtype=bool) is a threshold, and a threshold at raw zero:
+        # in degrees Celsius zero is not a physical boundary, a scene entirely
+        # below it becomes one solid object, and every NaN — dead pixel, masked
+        # area, coded saturation — counts as an object and is then dilated or
+        # eroded like real data. The threshold is a parameter now, and values that
+        # are not finite stay out of the mask.
+        mask = np.isfinite(data) & (np.asarray(data) > self.threshold)
+        return nd.binary_erosion(mask, structure(self.FullConnectivity,data),self.iterations)
         
     def parameters(self):
         return {"Iterations":("int",self.iterations,0,20,1),\
-                "FullConnectivity":("bool",self.FullConnectivity)}
+                "FullConnectivity":("bool",self.FullConnectivity),\
+                "Threshold":any_float(self.threshold)}
 
     def setParameters(self,**kwargs):
         self.iterations = kwargs["Iterations"]
         self.FullConnectivity = kwargs["FullConnectivity"]
+        self.threshold = kwargs["Threshold"]
 
 class ThermavipBinaryFillHoles(th.ThermavipPyProcessing):
     """
@@ -144,18 +184,28 @@ class ThermavipBinaryFillHoles(th.ThermavipPyProcessing):
     - FullConnectivity: If true, diagonally-connected elements are considered neighbors.
     """
     FullConnectivity = True
+    threshold = 0.
     
     def __init__(self):
         pass
 
     def apply(self, data, time):
-        return nd.binary_fill_holes(np.array(data,dtype=np.bool),structure(self.FullConnectivity,data),self.iterations)
+        # np.array(data, dtype=bool) is a threshold, and a threshold at raw zero:
+        # in degrees Celsius zero is not a physical boundary, a scene entirely
+        # below it becomes one solid object, and every NaN — dead pixel, masked
+        # area, coded saturation — counts as an object and is then dilated or
+        # eroded like real data. The threshold is a parameter now, and values that
+        # are not finite stay out of the mask.
+        mask = np.isfinite(data) & (np.asarray(data) > self.threshold)
+        return nd.binary_fill_holes(mask, structure(self.FullConnectivity, data))
         
     def parameters(self):
-        return {"FullConnectivity":("bool",self.FullConnectivity)}
+        return {"FullConnectivity":("bool",self.FullConnectivity),\
+                "Threshold":any_float(self.threshold)}
 
     def setParameters(self,**kwargs):
         self.FullConnectivity = kwargs["FullConnectivity"]
+        self.threshold = kwargs["Threshold"]
 
 class ThermavipGreyClosing(th.ThermavipPyProcessing):
     """

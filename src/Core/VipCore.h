@@ -489,6 +489,7 @@ class VIP_CORE_EXPORT VipCoreSettings
 	VipCoreSettings();
 	bool m_log_overwrite;
 	bool m_log_date;
+	bool m_register_associations;
 	QString m_skin;
 
 public:
@@ -499,6 +500,11 @@ public:
 
 	void setLogFileDate(bool);
 	bool logFileDate() const;
+
+	/// Whether the application may declare itself in the system registry as the
+	/// handler of the 'thermavip' URL scheme and of the .session extension.
+	void setRegisterFileAssociations(bool);
+	bool registerFileAssociations() const;
 
 	/// Set the GUI skin.
 	/// This function is provided in the Core module as the skin must be loaded before starting Thermavip GUI.
@@ -521,7 +527,7 @@ public:
 /// This function works for standard data types: numerical values, QString and QByteArray, VipNDArray, VipIntervalSampleVector, VipPointVector, etc.
 /// It is possible to define additional memory computation functions for custom types using vipRegisterMemoryFootprintFunction().
 /// If the data type is not handled, 0 is returned.
-VIP_CORE_EXPORT int vipGetMemoryFootprint(const QVariant& v);
+VIP_CORE_EXPORT qint64 vipGetMemoryFootprint(const QVariant& v);
 
 /// Register, for a given Qt meta type id, a function that computes the memory footprint of a QVariant.
 /// This function will be used in vipGetMemoryFootprint().

@@ -32,6 +32,7 @@
 #include "VipManualAnnotationHelper.h"
 #include "VipCore.h"
 #include "VipLogging.h"
+#include <QElapsedTimer>
 #include "VipStandardWidgets.h"
 
 #include <qdir.h>
@@ -168,16 +169,51 @@ Vip_event_list ManualAnnotationHelper::createFromUserProposal(const QList<QPolyg
 	// TEST
 	// sendToJSON("C:/Users/VM213788/Desktop/tmp_json.json", userName, camera, pulse, lst);
 	// vip_debug("filename: '%s'\n'", filename.toLatin1().data());
+	// The protocol is '<type> <json> [<file>]' terminated by a newline, so its
+	// fields are separated by spaces and cannot carry one. A path holding a space
+	// used to be cut in two and the script received a truncated name, which read
+	// as an unexplained failure; a path holding a newline injected a second
+	// command into the stream. The reading end lives in a script that is not part
+	// of this repository, so the fields cannot be encoded: what can be done here
+	// is to refuse a command that would not arrive as it was meant, and say why.
+	const QString offending = json.contains('\n') || json.contains(' ') ? json : (filename.contains('\n') || filename.contains(' ') ? filename : QString());
+	if (!offending.isEmpty()) {
+		VIP_LOG_ERROR("Cannot ask for annotations: this path cannot be sent to the helper because it contains a space or a line break: " + offending);
+		return Vip_event_list();
+	}
+
 	QString cmd = (type + " " + json + (filename.isEmpty() ? QString() : (" " + filename)) + "\n");
 	vip_debug("cmd: %s\n", cmd.toLatin1().data());
-	m_process.write((type + " " + json + (filename.isEmpty() ? QString() : (" " + filename)) + "\n").toLatin1()); // use 'segm' for segmentation
+	m_process.write(cmd.toLatin1()); // use 'segm' for segmentation
 
 	VipProgress p;
 	p.setRange(0, 100);
 	p.setValue(0);
 	p.setModal(true);
+	p.setCancelable(true);
+
+	// The end marker is looked for in what has been received so far, not in the
+	// last fragment alone: a pipe carries no message boundary, so the word could
+	// arrive in two pieces and the test never became true. This runs in the
+	// thread of the interface, so the wait also has a deadline and a way for the
+	// user to give up.
+	QByteArray received;
+	QElapsedTimer waited;
+	waited.start();
+	static const qint64 max_wait_ms = 30 * 60 * 1000;
 
 	while (true) {
+
+		if (p.canceled()) {
+			VIP_LOG_INFO("Annotation cancelled");
+			m_process.kill();
+			return Vip_event_list();
+		}
+		if (waited.elapsed() > max_wait_ms) {
+			VIP_LOG_ERROR("The annotation tool did not answer within thirty minutes");
+			m_process.kill();
+			return Vip_event_list();
+		}
 
 		if (m_process.state() != QProcess::Running) {
 			m_process.waitForReadyRead(500);
@@ -220,8 +256,9 @@ Vip_event_list ManualAnnotationHelper::createFromUserProposal(const QList<QPolyg
 		}
 		if (ar.size()) {
 			VIP_LOG_INFO(ar);
+			received += ar;
 		}
-		if (ar.contains("finished"))
+		if (received.contains("finished"))
 			break;
 	}
 	// read the 'ready' flag if not done
@@ -280,8 +317,10 @@ ManualAnnotationHelper* ManualAnnotationHelper::instance()
 
 void ManualAnnotationHelper::deleteInstance()
 {
-	if (_last)
-		delete _last;
+	// Cleared as well: the pointer used to be freed and left in place, so a
+	// second call freed it again and everything else went on reading it.
+	delete _last;
+	_last = nullptr;
 }
 
 bool ManualAnnotationHelper::isValidState()
@@ -356,7 +395,11 @@ static void extractAnnotationFromPlayer(VipVideoPlayer* pl, const VipShapeList& 
 	}
 
 	QString filename;
-	VipIODeviceList devices = vipListCast<VipIODevice*>(pl->mainDisplayObject()->allSources());
+	// Tested, as the three calls above already do: a player without a main
+	// display object gives nothing here.
+	VipIODeviceList devices;
+	if (VipDisplayObject* display = pl->mainDisplayObject())
+		devices = vipListCast<VipIODevice*>(display->allSources());
 	if (devices.size() == 1) {
 		QString path = devices[0]->path();
 		path = devices[0]->removePrefix(path);
@@ -409,8 +452,12 @@ static void extractSegmFromPlayer(VipVideoPlayer* pl, const VipShapeList& shs)
 static void uploadROIsFromPlayer(VipVideoPlayer* pl, const VipShapeList& shs)
 {
 	VipPlayerDBAccess* db = VipPlayerDBAccess::fromPlayer(pl);
-	if (!pl) {
-		vipWarning( "Error", "Unable to send ROI to DB");
+	// db, not pl: the guard was copied from a block written for the parameter and
+	// the name never followed. fromPlayer() gives nothing when the player has no
+	// database access or when that access has been destroyed, and everything
+	// below dereferences it.
+	if (!db) {
+		vipWarning("Error", "Unable to send ROI to DB: this player has no database access");
 		return;
 	}
 
@@ -441,10 +488,6 @@ static void uploadROIsFromPlayer(VipVideoPlayer* pl, const VipShapeList& shs)
 	}
 
 	//VipManualAnnotation* annot = db->manualAnnotationPanel();
-	if (!pl) {
-		vipWarning( "Error", "Unable to send ROI to DB");
-		return;
-	}
 
 	auto datasets = vipDatasetsDB();
 
@@ -531,9 +574,13 @@ static void uploadROIsFromPlayer(VipVideoPlayer* pl, const VipShapeList& shs)
 		attrs.insert("min_T_image_position_x", st.minPos[1]);
 		attrs.insert("min_T_image_position_y", st.minPos[0]);
 		attrs.insert("average_temperature_C", st.mean);
-		attrs.insert("pixel_area", bounding.width() * bounding.height());
-		attrs.insert("centroid_image_position_x", st.maxPos[1]);
-		attrs.insert("centroid_image_position_y", st.maxPos[0]);
+		// The area of the shape, which the statistics already counted, not the area
+		// of its bounding box; and the centre of the shape rather than the position
+		// of the maximum, which two other columns already carry.
+		attrs.insert("pixel_area", (qint64)st.count);
+		const QPointF centroid = sh.polygon().boundingRect().center();
+		attrs.insert("centroid_image_position_x", centroid.x());
+		attrs.insert("centroid_image_position_y", centroid.y());
 
 		// set the event flag
 		attrs.insert("origin", (int)VipPlayerDBAccess::New);
@@ -582,8 +629,12 @@ static void uploadImageEventFromPlayer(VipVideoPlayer* pl, bool remember = true)
 		remember_choices = false;
 
 	VipPlayerDBAccess* db = VipPlayerDBAccess::fromPlayer(pl);
-	if (!pl) {
-		vipWarning( "Error", "Unable to send ROI to DB");
+	// db, not pl: the guard was copied from a block written for the parameter and
+	// the name never followed. fromPlayer() gives nothing when the player has no
+	// database access or when that access has been destroyed, and everything
+	// below dereferences it.
+	if (!db) {
+		vipWarning("Error", "Unable to send ROI to DB: this player has no database access");
 		return;
 	}
 
@@ -622,10 +673,6 @@ static void uploadImageEventFromPlayer(VipVideoPlayer* pl, bool remember = true)
 	}
 
 	//VipManualAnnotation* annot = db->manualAnnotationPanel();
-	if (!pl) {
-		vipWarning( "Error", "Unable to send ROI to DB");
-		return;
-	}
 
 	int pulse = db->pulse();
 	QString camera = db->camera();

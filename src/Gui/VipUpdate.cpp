@@ -30,6 +30,7 @@
  */
 
 #include "VipUpdate.h"
+#include "VipCore.h"
 #include "VipLogging.h"
 
 #include <QDir>
@@ -100,8 +101,12 @@ QString VipUpdate::getUpdateProgram()
 		for (int i = 0; i < lst.size(); ++i) {
 			QString fname = lst[i].fileName();
 			// vip_debug("%s\n", fname.toLatin1().data());
+			// The absolute path: this name is handed to QProcess, and an unqualified
+			// one is resolved against the current directory and PATH, both of which the
+			// application points at directories a plain user can write into. The program
+			// this names is the one that replaces the binaries.
 			if (fname.startsWith("vipupdate") && fname.endsWith(".exe"))
-				return update_program = fname;
+				return update_program = lst[i].absoluteFilePath();
 		}
 	}
 	return update_program;
@@ -286,12 +291,22 @@ bool VipUpdate::renameNewFiles(const QString& dir_name)
 
 	bool has_opened_files = false;
 
+	// The caller used to pass the working directory, which is wherever the
+	// application happened to be started from. Promoting a file deletes the one it
+	// replaces, so the walk has to stay inside the installation, and it has to look
+	// only at the files it is meant to promote.
+	const QString install = QFileInfo(vipAppCanonicalPath()).canonicalPath();
+	if (QFileInfo(dir_name).canonicalFilePath() != install) {
+		VIP_LOG_ERROR("Refusing to promote update files outside the installation directory");
+		return false;
+	}
+
 	if (QDir(dir_name).exists()) {
 		QString m_inDir = dir_name;
 		m_inDir.replace("\\", "/");
 		if (!m_inDir.endsWith("/"))
 			m_inDir += "/";
-		QDirIterator it(m_inDir, QDirIterator::Subdirectories);
+		QDirIterator it(m_inDir, QStringList() << "*.vipnewfile", QDir::Files, QDirIterator::Subdirectories);
 		while (it.hasNext()) {
 			QString next = it.next();
 			QFileInfo info(next);
@@ -313,14 +328,19 @@ bool VipUpdate::renameNewFiles(const QString& dir_name)
 		QString new_name = files[i];
 		new_name.remove(".vipnewfile");
 
-		if (QFileInfo(new_name).exists()) {
+		// The rename used to sit inside the test for an existing target, so a file
+		// the update brings and that was not there before stayed on the disk under
+		// its temporary name and was never put in place: the installation ended up
+		// half updated, and the function still reported success.
+		if (QFileInfo::exists(new_name) && !QFile::remove(new_name)) {
+			VIP_LOG_ERROR("Cannot replace file " + new_name);
+			has_opened_files = true;
+			continue;
+		}
 
-			int cr = remove(new_name.toLatin1().data());
-			if (cr != 0) {
-				// VIP_LOG_WARNING("Cannot remove file " + QFileInfo(new_name).fileName());
-			}
-			else if (!QFile::rename(files[i], new_name))
-				return false;
+		if (!QFile::rename(files[i], new_name)) {
+			VIP_LOG_ERROR("Cannot rename " + files[i]);
+			return false;
 		}
 	}
 

@@ -106,6 +106,7 @@ protected:
 	virtual void doComment(QString& text);
 	virtual void doSave();
 	virtual void doRestore();
+	virtual void doDiscardSave();
 
 private:
 	VIP_DECLARE_PRIVATE_DATA();

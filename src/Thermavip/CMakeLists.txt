@@ -81,6 +81,26 @@ install(TARGETS Thermavip
     FRAMEWORK DESTINATION "${THERMAVIP_APPLICATION_DIR}"
     RUNTIME DESTINATION "${THERMAVIP_APPLICATION_DIR}"
 )
+# The shipped session declared a version the loader refuses, so it was rejected at
+# every start and none of its settings applied, silently. Nothing tied the file to
+# the guard, so nothing could report it: check it here, against the guard itself
+# rather than against a copy of its value.
+file(READ "${CMAKE_CURRENT_SOURCE_DIR}/../Gui/VipDisplayArea.h" _vip_display_area_header)
+string(REGEX MATCH "VIP_MINIMAL_SESSION_VERSION[ 	]+\"([0-9.]+)\"" _vip_match "${_vip_display_area_header}")
+if(NOT CMAKE_MATCH_1)
+	message(FATAL_ERROR "Cannot read VIP_MINIMAL_SESSION_VERSION from VipDisplayArea.h")
+endif()
+set(_vip_min_session_version "${CMAKE_MATCH_1}")
+
+file(READ "${CMAKE_CURRENT_SOURCE_DIR}/base_session.session" _vip_base_session)
+string(REGEX MATCH "<version[^>]*>([0-9.]+)</version>" _vip_match "${_vip_base_session}")
+if(NOT CMAKE_MATCH_1)
+	message(FATAL_ERROR "Cannot read the version of base_session.session")
+endif()
+if(CMAKE_MATCH_1 VERSION_LESS _vip_min_session_version)
+	message(FATAL_ERROR "base_session.session declares ${CMAKE_MATCH_1}, which the loader refuses: it requires at least ${_vip_min_session_version}")
+endif()
+
 install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/base_session.session
         DESTINATION ${THERMAVIP_APPLICATION_DIR} )
 install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/changelog.txt

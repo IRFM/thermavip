@@ -277,6 +277,9 @@ public Q_SLOTS:
 	/// Reset the archive status. Each call to restore() must match to a call to save().
 	void restore();
 	void restore(unsigned id);
+	/// Drop the last saved status, keeping the current position. A call to save()
+	/// is matched by exactly one restore() or one discardSave().
+	void discardSave();
 
 	/// Register a type (as returned by qMetaTypeId<T>()) as a fast type.
 	/// A fast type has its serialize/deserialize functions buffered in the archive, and they will be the first ones to be checked when saving/loading an object.
@@ -310,6 +313,8 @@ protected:
 	virtual void doSave() {}
 	/// Restore saved position. Only called for read-only archives.
 	virtual void doRestore() {}
+	/// Drop the last saved position without moving. Only called for read-only archives.
+	virtual void doDiscardSave() {}
 
 	VipFunctionDispatcher<2>::function_list_type serializeFunctions(const QVariant& value);
 	VipFunctionDispatcher<2>::function_list_type deserializeFunctions(const QVariant& value);
@@ -434,6 +439,7 @@ protected:
 	virtual void doContent(QString& name, QVariant& value, QVariantMap& metadata, bool read_metadata);
 	virtual void doSave();
 	virtual void doRestore();
+	virtual void doDiscardSave();
 
 private:
 	QIODevice* m_device;

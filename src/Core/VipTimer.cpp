@@ -32,42 +32,57 @@
 #include "VipTimer.h"
 #include "VipSleep.h"
  
+#include <atomic>
+
 #include <qdatetime.h>
 #include <qmutex.h>
+#include <qthread.h>
 #include <qwaitcondition.h>
 
 class VipTimer::PrivateData
 {
 public:
-	PrivateData()
-	  : start(0)
-	  , interval(0)
-	  , singleshot(true)
-	  , stop(false)
-	  , enable_restart_when_running(true)
+	struct Thread : QThread
+	{
+		VipTimer* parent;
+		Thread(VipTimer* p)
+		  : parent(p)
+		{
+		}
+
+	protected:
+		void run() override { parent->loop(); }
+	};
+
+	PrivateData(VipTimer* timer)
+	  : thread(timer)
 	{
 	}
-	qint64 start;
-	qint64 interval;
-	bool singleshot;
-	bool stop;
-	bool enable_restart_when_running;
+
+	// Atomic: the loop below reads them while any thread writes them, which is
+	// what the class advertises.
+	std::atomic<qint64> start{ 0 };
+	std::atomic<qint64> interval{ 0 };
+	std::atomic<bool> singleshot{ true };
+	std::atomic<bool> stop{ false };
+	std::atomic<bool> enable_restart_when_running{ true };
 	QMutex mutex;
 	QWaitCondition cond;
+	Thread thread;
 };
 
 VipTimer::VipTimer(QObject* parent)
-  : QThread(parent)
+  : QObject(parent)
 {
-	VIP_CREATE_PRIVATE_DATA();
-	this->QThread::start();
+	VIP_CREATE_PRIVATE_DATA(this);
+	d_data->thread.start();
 }
 
 VipTimer::~VipTimer()
 {
 	d_data->stop = true;
 	stop();
-	wait();
+	d_data->thread.wait();
 }
 
 qint64 VipTimer::interval() const
@@ -134,7 +149,7 @@ void VipTimer::setRestartWhenRunningEnabled(bool enable)
 	d_data->enable_restart_when_running = enable;
 }
 
-void VipTimer::run()
+void VipTimer::loop()
 {
 	while (!d_data->stop) {
 		while (!d_data->start && !d_data->stop) {

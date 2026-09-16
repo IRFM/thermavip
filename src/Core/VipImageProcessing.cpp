@@ -356,6 +356,14 @@ static QDataStream& operator>>(QDataStream& str, Transform& tr)
 {
 	int type = 0;
 	str >> type >> tr.x >> tr.y;
+	// The editor builds its item from this value with no default branch, so a type
+	// outside the enumeration left the item without a widget and crashed on the
+	// next dereference.
+	if (type < Transform::Translate || type > Transform::Shear) {
+		str.setStatus(QDataStream::ReadCorruptData);
+		tr.type = Transform::Translate;
+		return str;
+	}
 	tr.type = static_cast<Transform::TrType>(type);
 	return str;
 }
@@ -368,12 +376,19 @@ static QDataStream& operator<<(QDataStream& str, const TransformList& trs)
 }
 static QDataStream& operator>>(QDataStream& str, TransformList& trs)
 {
-	int size;
+	int size = 0;
 	str >> size;
-	for (int i = 0; i < size; ++i) {
+	// The count comes from the file; each transform is three values, so a count the
+	// stream cannot back is not readable.
+	if (size < 0 || (str.device() && !str.device()->isSequential() && size > str.device()->bytesAvailable())) {
+		str.setStatus(QDataStream::ReadCorruptData);
+		return str;
+	}
+	for (int i = 0; i < size && str.status() == QDataStream::Ok; ++i) {
 		Transform t;
 		str >> t;
-		trs.push_back(t);
+		if (str.status() == QDataStream::Ok)
+			trs.push_back(t);
 	}
 	return str;
 }

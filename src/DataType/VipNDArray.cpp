@@ -155,7 +155,11 @@ bool VipNDArray::load(const char* filename, FileFormat format)
 			if (!fin.open(QFile::ReadOnly))
 				return false;
 			QDataStream str(&fin);
-			qsizetype htype, dtype;
+			// Two ints, which is what the reader of this format writes and reads.
+			// Declared as qsizetype the probe consumed sixteen bytes for an eight
+			// byte header, so the two values it tested were never the ones stored
+			// and every binary file was taken for text.
+			int htype = 0, dtype = 0;
 			str >> htype;
 			str >> dtype;
 			VipSharedHandle h = vipCreateArrayHandle(htype, dtype);
@@ -835,10 +839,11 @@ static bool canConvert(int from, int to)
 int vipHigherArrayType(int t1, int t2)
 {
 
-	static bool init = false;
-	static QMap<int, int> type_to_level;
-	if (!init) {
-		init = true;
+	// A function local static, built once and published complete: the flag was set
+	// before the table was filled, so a second thread skipped the block and read a
+	// half built table, and two threads could fill it at the same time.
+	static const QMap<int, int> type_to_level = [] {
+		QMap<int, int> type_to_level;
 		int level = 0;
 		type_to_level[QMetaType::Bool] = level++;
 		type_to_level[QMetaType::UChar] = level++;
@@ -857,7 +862,8 @@ int vipHigherArrayType(int t1, int t2)
 		type_to_level[qMetaTypeId<long double>()] = level++;
 		type_to_level[qMetaTypeId<complex_f>()] = level++;
 		type_to_level[qMetaTypeId<complex_d>()] = level++;
-	}
+		return type_to_level;
+	}();
 
 	if (t1 == t2)
 		return t1;
@@ -906,7 +912,10 @@ int vipHigherArrayType(const QVector<VipNDArray>& in)
 
 static bool isUnder(int t1, int t2)
 {
-	return vipHigherArrayType(t1, t2) == t2;
+	// Not for two equal types: a comparator that says one is under itself breaks
+	// the strict weak ordering std::sort requires, and a duplicate in the list is
+	// enough to reach it.
+	return t1 != t2 && vipHigherArrayType(t1, t2) == t2;
 }
 
 int vipHigherArrayType(int dtype, const QList<int>& possible_types)

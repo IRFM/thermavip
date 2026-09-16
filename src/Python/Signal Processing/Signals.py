@@ -122,22 +122,35 @@ class ThermavipDecimate(th.ThermavipPyProcessing):
         By default, an order 8 Chebyshev type I filter is used. A 30 point FIR filter with hamming window is used if type is "FIR".
     """
     ftype = "Chebyshev"
-    q = 1
+    q = 2
     n = None
     
     def __init__(self):
         pass
 
+    def _apply(self, data, time):
+        # Decimating shortens the signal, so the time base has to be decimated with
+        # it. The base class keeps the length: it writes the result back into
+        # res[1,:], which raises on a shorter array, after which the caller
+        # republishes the untouched input. Overriding _apply is the way out the
+        # base class documents.
+        t = "iir" if self.ftype == "Chebyshev" else "fir"
+        if type(data) == np.ndarray and len(data.shape) == 2 and data.shape[0] == 2:
+            y = sig.decimate(data[1,:], self.q, self.n, t)
+            x = data[0, ::self.q][:len(y)]
+            return np.vstack((x, y))
+        return sig.decimate(data, self.q, self.n, t)
+
     def apply(self, data, time):
-        if self.ftype == "Chebyshev":
-            t = "iir"
-        else:
-            t = "fir"
-        return sig.decimate(data, self.q,self.n,t)
+        t = "iir" if self.ftype == "Chebyshev" else "fir"
+        return sig.decimate(data, self.q, self.n, t)
         
     def parameters(self):
+        # From 2: a factor of 0 divides by zero inside decimate, and 1 applies the
+        # low pass without decimating, which narrows the band of the signal with
+        # nothing in the interface saying so.
         return {"Type":("str",self.ftype,"Chebyshev","FIR") , \
-        "Factor":("int",self.q,0,100,1) }
+        "Factor":("int",self.q,2,100,1) }
 
     def setParameters(self,**kwargs):
         self.ftype = kwargs["Type"];
@@ -158,7 +171,9 @@ class ThermavipSymiirorder1(th.ThermavipPyProcessing):
                 (1-z1/z) (1 - z1 z)     
         The resulting signal will have mirror symmetric boundary conditions as well.
     """
-    c0 = 1.
+    # c0 is not independent: the filter has unit gain only when it equals
+    # (1 - z1)^2. Left at 1.0 with z1 = 0.1, a constant signal came out scaled by
+    # about 1.23, which reads as a measurement.
     z1 = 0.1
     precision = 1.
     
@@ -166,15 +181,15 @@ class ThermavipSymiirorder1(th.ThermavipPyProcessing):
         pass
 
     def apply(self, data, time):
-        return sig.symiirorder1(data, self.c0,self.z1,self.precision)
+        c0 = (1.0 - self.z1) ** 2
+        return sig.symiirorder1(data, c0, self.z1, self.precision)
         
     def parameters(self):
-        return {"c0":any_float(self.c0) , \
-                "z1":any_float(self.z1) , \
+        # |z1| < 1 is the stability condition of the first order section.
+        return {"z1":("float",self.z1,-0.999,0.999,0.01) , \
         "precision":any_float(self.precision) }
 
     def setParameters(self,**kwargs):
-        self.c0 = kwargs["c0"];
         self.z1 = kwargs["z1"];
         self.precision = kwargs["precision"];
 
@@ -197,7 +212,9 @@ class ThermavipSymiirorder2(th.ThermavipPyProcessing):
         a3 = - r^2
         cs = 1 - 2 r cos omega + r^2
     """
-    r = 1.
+    # Strictly inside the unit circle: r = 1.0 put both poles exactly on it, so
+    # the section shipped was not stable.
+    r = 0.9
     omega = 1.
     precision = 1.
     
@@ -208,8 +225,9 @@ class ThermavipSymiirorder2(th.ThermavipPyProcessing):
         return sig.symiirorder2(data, self.r,self.omega,self.precision)
         
     def parameters(self):
-        return {"r":any_float(self.r) , \
-                "omega":any_float(self.omega) , \
+        # r < 1 is the stability condition; omega is an angle, so 0 to pi.
+        return {"r":("float",self.r,0.0,0.999,0.01) , \
+                "omega":("float",self.omega,0.0,3.141592653589793,0.01) , \
         "precision":any_float(self.precision) }
 
     def setParameters(self,**kwargs):

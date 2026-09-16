@@ -55,7 +55,8 @@ public:
 
 	/// @brief Set the device that will be played repeatedly.
 	/// This must be called before VipIODevice::open().
-	/// VipStreamingFromDevice takes ownership of the device.
+	/// VipStreamingFromDevice takes ownership of the device, and destroys it right
+	/// away when called after open() rather than keeping it.
 	void setIODevice(VipIODevice* device);
 	VipIODevice* IODevice() const;
 

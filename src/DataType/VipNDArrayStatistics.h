@@ -183,7 +183,10 @@ namespace detail
 			if (first) {
 				ret.min = ret.max = value;
 				ret.sum = (sum_type)value;
-				ret.multiply = 1;
+				// The first element used to be left out of the product: the branch
+				// initialised the accumulator to the neutral element and returned,
+				// so the value it carries was never multiplied in.
+				ret.multiply = (sum_type)value;
 				first = false;
 				if (!std::is_integral_v<Coord> && (stats & Vip::MinPos))
 					ret.minPos = pos;
@@ -301,41 +304,44 @@ auto vipArrayStatistics(const Src& src, int statistics, const OverRoi& roi = {})
 	return stats.ret;
 }
 
+// The six functions below dereferenced a member of the accumulator on the value
+// the function above returns, so none of them could be instantiated at all.
+
 /// Returns the minimum value of input array or functor expression
 template<class T, class Src, class OverRoi = VipInfinitRoi>
 T vipArrayMin(const Src& src, const OverRoi& roi = {})
 {
-	return vipArrayStatistics<T, Vip::Min>(src, roi).ret.min;
+	return vipArrayStatistics<T, Vip::Min>(src, roi).min;
 }
 /// Returns the maximum value of input array or functor expression
 template<class T, class Src, class OverRoi = VipInfinitRoi>
 T vipArrayMax(const Src& src, const OverRoi& roi = {})
 {
-	return vipArrayStatistics<T, Vip::Max>(src, roi).ret.max;
+	return vipArrayStatistics<T, Vip::Max>(src, roi).max;
 }
 /// Returns the cumulative sum of input array or functor expression
 template<class T, class Src, class OverRoi = VipInfinitRoi>
 T vipArrayCumSum(const Src& src, const OverRoi& roi = {})
 {
-	return vipArrayStatistics<T, Vip::Sum>(src, roi).ret.sum;
+	return vipArrayStatistics<T, Vip::Sum>(src, roi).sum;
 }
 /// Returns the cumulative multiplication of input array or functor expression
 template<class T, class Src, class OverRoi = VipInfinitRoi>
 T vipArrayCumMultiply(const Src& src, const OverRoi& roi = {})
 {
-	return vipArrayStatistics<T, Vip::Multiply>(src, roi).ret.multiply;
+	return vipArrayStatistics<T, Vip::Multiply>(src, roi).multiply;
 }
 /// Returns the mean value of input array or functor expression
 template<class T, class Src, class OverRoi = VipInfinitRoi>
 T vipArrayMean(const Src& src, const OverRoi& roi = {})
 {
-	return vipArrayStatistics<T, Vip::Mean>(src, roi).ret.mean;
+	return vipArrayStatistics<T, Vip::Mean>(src, roi).mean;
 }
 /// Returns the standard deviation of input array or functor expression
 template<class T, class Src, class OverRoi = VipInfinitRoi>
 T vipArrayStd(const Src& src, const OverRoi& roi = {})
 {
-	return vipArrayStatistics<T, Vip::Std>(src, roi).ret.std;
+	return vipArrayStatistics<T, Vip::Std>(src, roi).std;
 }
 
 #endif

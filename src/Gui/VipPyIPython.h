@@ -87,7 +87,8 @@ public:
 	QString lastError() const;
 
 	/// @brief Set the IPython process style sheet (Qt format)
-	void setStyleSheet(const QString& st);
+	/// Returns true on success.
+	bool setStyleSheet(const QString& st);
 
 private:
 	/**Find a free shared memory name of the form 'Thermavip-X', where X is a numbed incremented at each trial*/

@@ -381,7 +381,6 @@ namespace detail
 		VipNDRect<Vip::None> valid_rect;
 		const VipNDArrayShape kshape;
 		const VipNDArrayShape kcenter;
-		VipNDArrayShape c_k, c_a;
 
 		Convolve() {}
 		Convolve(const A& op1, const Kernel& k, const VipNDArrayShape& kcenter)
@@ -401,8 +400,13 @@ namespace detail
 		auto operator()(const Coord& pos) const
 		{
 			using op_type = decltype(std::get<0>(this->arrays)(vipVector(0))*std::get<1>(this->arrays)(vipVector(0)));
+			// Local, not members: this operator is called concurrently, so the two
+			// buffers were resized and written by every thread at once and each one
+			// read the coordinates of its neighbours. The const_cast that carried
+			// them out of a const function goes with them.
+			VipNDArrayShape c_k, c_a;
 			return ApplyConvolve<op_type, Rule, Coord::static_size>::apply(
-			  valid_rect, std::get<0>(this->arrays), this->shape(), std::get<1>(this->arrays), pos, kcenter, kshape, const_cast<VipNDArrayShape&>(c_k), const_cast<VipNDArrayShape&>(c_a));
+			  valid_rect, std::get<0>(this->arrays), this->shape(), std::get<1>(this->arrays), pos, kcenter, kshape, c_k, c_a);
 		}
 	};
 

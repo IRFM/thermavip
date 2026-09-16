@@ -110,7 +110,7 @@ Q_DECL_CONSTEXPR static inline typename std::enable_if<std::is_floating_point<T>
 	return std::floor(v);
 }
 template<class T>
-Q_DECL_CONSTEXPR static inline bool vipFloor(const std::complex<T>& c) noexcept
+Q_DECL_CONSTEXPR static inline std::complex<T> vipFloor(const std::complex<T>& c) noexcept
 {
 	return std::complex<T>(vipFloor(c.real()), vipFloor(c.imag()));
 }
@@ -128,7 +128,7 @@ Q_DECL_CONSTEXPR static inline typename std::enable_if<std::is_floating_point<T>
 	return std::ceil(v);
 }
 template<class T>
-Q_DECL_CONSTEXPR static inline bool vipCeil(const std::complex<T>& c) noexcept
+Q_DECL_CONSTEXPR static inline std::complex<T> vipCeil(const std::complex<T>& c) noexcept
 {
 	return std::complex<T>(vipCeil(c.real()), vipCeil(c.imag()));
 }
@@ -146,7 +146,7 @@ Q_DECL_CONSTEXPR static inline typename std::enable_if<std::is_floating_point<T>
 	return std::round(v);
 }
 template<class T>
-Q_DECL_CONSTEXPR static inline bool vipRound(const std::complex<T>& c) noexcept
+Q_DECL_CONSTEXPR static inline std::complex<T> vipRound(const std::complex<T>& c) noexcept
 {
 	return std::complex<T>(vipRound(c.real()), vipRound(c.imag()));
 }
@@ -163,8 +163,12 @@ Q_DECL_CONSTEXPR static inline typename std::enable_if<std::is_floating_point<T>
 {
 	return std::abs(v);
 }
+// The four overloads above and this one declared bool. Three could not be
+// instantiated at all; this one compiled, because the modulus converts to bool:
+// it returned true for every non zero amplitude, so the magnitude of a spectrum
+// came out as a binary mask.
 template<class T>
-Q_DECL_CONSTEXPR static inline bool vipAbs(const std::complex<T>& c) noexcept
+Q_DECL_CONSTEXPR static inline T vipAbs(const std::complex<T>& c) noexcept
 {
 	return std::abs(c);
 }
@@ -327,7 +331,7 @@ Q_DECL_CONSTEXPR static inline qint64 qRound64(long double d) noexcept
 	return d >= (long double)0.0 ? qint64(d + (long double)0.5) : qint64(d - (long double)(qint64(d - 1)) + (long double)0.5) + qint64(d - (long double)1);
 }
 
-Q_DECL_CONSTEXPR static inline qint64 qFuzzyIsNull(long double d) noexcept
+Q_DECL_CONSTEXPR static inline bool qFuzzyIsNull(long double d) noexcept
 {
 	return qAbs(d) <= 0.00000000000001L;
 }
@@ -366,19 +370,11 @@ static inline int vipFuzzyCompare(long double value1, long double value2, long d
 
 	return 0;
 }
-static inline int qFuzzyCompare(long double value1, long double value2, long double intervalSize) noexcept
-{
-	const long double eps = sizeof(long double) > sizeof(double) ? qAbs(1.0e-8L * intervalSize) : qAbs(1.0e-6L * intervalSize);
-
-	if (value2 - value1 > eps)
-		return -1;
-
-	if (value1 - value2 > eps)
-		return 1;
-
-	return 0;
-}
-static inline int qFuzzyCompare(long double value1, long double value2) noexcept
+// Named after the family above, not after the Qt function: these return zero
+// when the values are equal, where qFuzzyCompare returns true, so an overload of
+// that name in the global namespace read as its own opposite. The three argument
+// form was the same body as vipFuzzyCompare already above.
+static inline int vipFuzzyCompare(long double value1, long double value2) noexcept
 {
 	const long double eps = sizeof(long double) > sizeof(double) ? 1.0e-8L : 1.0e-6L;
 

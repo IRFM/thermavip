@@ -1354,6 +1354,11 @@ public:
 
 	QList<VipTimeRangeListItem*> items;
 	QPointer<VipProcessingPool> pool;
+	// setTime() waits for the leaves, and that wait pumps the event loop: a new
+	// move of the cursor then re-entered setTime() and started another read while
+	// the first was still in flight. The nested wait returned at once, so the
+	// outer call gave up before its own read had finished.
+	bool inSetTime = false;
 	bool visible;
 	bool timeRangesLocked;
 	TimeScale* timeScale;
@@ -1534,6 +1539,11 @@ void VipPlayerArea::setTimeRangesLocked(bool locked)
 
 void VipPlayerArea::setTimeRangeVisible(bool visible)
 {
+	// The pool is a QPointer, and setProcessingPool(nullptr) is called when a
+	// workspace closes while the time scale stays on screen: a click on it reaches
+	// these methods, which used the pool without a word.
+	if (!d_data->pool)
+		return;
 	d_data->visible = visible;
 	for (int i = 0; i < d_data->items.size(); ++i) {
 		if (visible)
@@ -1559,6 +1569,8 @@ bool VipPlayerArea::timeRangeVisible() const
 
 bool VipPlayerArea::limitsEnabled() const
 {
+	if (!d_data->pool)
+		return false;
 	return d_data->pool->testMode(VipProcessingPool::UseTimeLimits);
 }
 
@@ -1614,6 +1626,8 @@ void VipPlayerArea::paint(QPainter* painter, const QStyleOptionGraphicsItem* opt
 
 void VipPlayerArea::setLimit1(double t)
 {
+	if (!d_data->pool)
+		return;
 	d_data->limit1Marker->setRawData(QPointF(t, 0));
 	d_data->limit1Grip->blockSignals(true);
 	d_data->limit1Grip->setValue(t);
@@ -1624,6 +1638,8 @@ void VipPlayerArea::setLimit1(double t)
 
 void VipPlayerArea::setLimit2(double t)
 {
+	if (!d_data->pool)
+		return;
 	d_data->limit2Marker->setRawData(QPointF(t, 0));
 	d_data->limit2Grip->blockSignals(true);
 	d_data->limit2Grip->setValue(t);
@@ -1634,6 +1650,8 @@ void VipPlayerArea::setLimit2(double t)
 
 void VipPlayerArea::setLimitsEnable(bool enable)
 {
+	if (!d_data->pool)
+		return;
 	d_data->limit1Marker->setItemAttribute(VipPlotItem::AutoScale, enable);
 	d_data->limit1Marker->setVisible(enable && d_data->visible);
 	d_data->limit1Grip->setVisible(enable);
@@ -1656,6 +1674,12 @@ void VipPlayerArea::setTime64(qint64 t)
 
 void VipPlayerArea::setTime(double t)
 {
+	// Captured once: the wait below pumps the event loop, and the pool can be
+	// destroyed while it does.
+	VipProcessingPool* pool = d_data->pool;
+	if (!pool)
+		return;
+
 	// set the selection time range
 	if (qApp->keyboardModifiers() & Qt::SHIFT) {
 		if (d_data->selectionTimeRange == VipInvalidTimeRange) {
@@ -1669,19 +1693,31 @@ void VipPlayerArea::setTime(double t)
 		d_data->selectionTimeRange = VipTimeRange(t, t);
 	}
 
-	if (t < d_data->pool->firstTime())
-		t = d_data->pool->firstTime();
-	else if (t > d_data->pool->lastTime())
-		t = d_data->pool->lastTime();
+	if (t < pool->firstTime())
+		t = pool->firstTime();
+	else if (t > pool->lastTime())
+		t = pool->lastTime();
 
 	d_data->timeMarker->setRawData(QPointF(t, 0));
 	d_data->timeSliderGrip->blockSignals(true);
 	d_data->timeSliderGrip->setValue(t);
 	d_data->timeSliderGrip->blockSignals(false);
-	if (sender() != processingPool()) {
-		d_data->pool->read(t);
-		VipProcessingObjectList objects = d_data->pool->leafs(false);
-		objects.wait();
+	if (sender() != processingPool() && !d_data->inSetTime) {
+		struct ClearInSetTime
+		{
+			bool& flag;
+			~ClearInSetTime() { flag = false; }
+		} clear_in_set_time{ d_data->inSetTime };
+		d_data->inSetTime = true;
+
+		pool->read(t);
+		// Bounded, and per leaf: this runs in the thread of the interface, and an
+		// unbounded wait on a slow or distant device froze it with nothing to
+		// cancel.
+		VipProcessingObjectList objects = pool->leafs(false);
+		for (int i = 0; i < objects.size(); ++i)
+			if (objects[i])
+				objects[i]->wait(true, 200);
 	}
 }
 
@@ -1915,9 +1951,15 @@ QList<VipTimeRangeListItem*> VipPlayerArea::timeRangeListItems() const
 
 void VipPlayerArea::timeRangeItems(QList<VipTimeRangeItem*>& selected, QList<VipTimeRangeItem*>& not_selected) const
 {
-	QList<VipPlotItem*> items = this->plotItems();
-	for (int i = 0; i < items.size(); ++i) {
-		if (VipTimeRangeItem* item = qobject_cast<VipTimeRangeItem*>(items[i])) {
+	// Through the lists that hold them, not through the plot items: a time range
+	// item is not a plot item, so the cast could only ever give nothing and the
+	// three menu entries that depend on this did nothing at all.
+	for (VipTimeRangeListItem* list : d_data->items) {
+		if (!list)
+			continue;
+		for (VipTimeRangeItem* item : list->items()) {
+			if (!item)
+				continue;
 			if (item->isSelected())
 				selected << item;
 			else
@@ -3311,12 +3353,17 @@ VipArchive& operator>>(VipArchive& arch, VipPlayWidget* w)
 	w->setPlaySpeed(arch.read("speed").toDouble());
 	w->area()->setTime(arch.read("time").toDouble());
 
-	VipScaleDiv divx = arch.read("x_scale").value<VipScaleDiv>();
-	VipScaleDiv divy = arch.read("y_scale").value<VipScaleDiv>();
+	// Named after the axis they belong to, not after the archive key: the writer
+	// stores the bottom axis under x_scale and the left one under y_scale, and the
+	// two used to be applied the other way round. With auto scale off, a reopened
+	// session showed the time axis bounded by track indices and the vertical axis
+	// by timestamps.
+	VipScaleDiv div_bottom = arch.read("x_scale").value<VipScaleDiv>();
+	VipScaleDiv div_left = arch.read("y_scale").value<VipScaleDiv>();
 
 	if (!w->isAutoScale()) {
-		w->area()->leftAxis()->setScaleDiv(divx);
-		w->area()->bottomAxis()->setScaleDiv(divy);
+		w->area()->bottomAxis()->setScaleDiv(div_bottom);
+		w->area()->leftAxis()->setScaleDiv(div_left);
 	}
 
 	w->setTimeRangesLocked(arch.read("locked").toBool());

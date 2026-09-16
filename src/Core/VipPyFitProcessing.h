@@ -123,6 +123,11 @@ protected:
 	VipFitManage* manager() const;
 
 private:
+	// Written from the thread of the interface and read from the task pool while
+	// the fit runs. The string is implicitly shared, so copying it while it is
+	// reassigned loses a reference; the mutex covers both, and they are set
+	// together.
+	mutable QMutex m_timeLock;
 	QString m_timeUnit;
 	double m_timeFactor;
 };

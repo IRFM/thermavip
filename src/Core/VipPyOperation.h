@@ -331,16 +331,26 @@ public:
 	{
 	}
 
+	/// @brief How long the immediate calls below wait for the interpreter, in
+	/// milliseconds. Not unlimited: the promise of a "Timeout" result only holds
+	/// when a delay is given, every caller in the project gives one of its own,
+	/// and a call made from the thread of the interface that never returns freezes
+	/// the application with nothing to cancel. To wait without a bound, ask for it
+	/// in as many words: sendCommand(cmd).value(-1).
+	static constexpr int immediateTimeout = 30000;
+
 	/// @brief Immediate command evaluation.
 	/// Returns the command result (VipPyError object on error).
-	virtual QVariant execCommand(const VipPyCommand& cmd) { return sendCommand(cmd).value(); }
+	/// Waits at most immediateTimeout milliseconds.
+	virtual QVariant execCommand(const VipPyCommand& cmd) { return sendCommand(cmd).value(immediateTimeout); }
 
 	/// @brief Immediate commands evaluation.
 	/// Execude all commands and store their results in a QVariantMap.
 	/// Command execution will stop at the first error, and a VipPyError object is returned.
 	/// Returns the commands results on success (QVariantMap object).
 	/// The member VipPyCommand::buildId() is used as keys for the QVariantMap.
-	virtual QVariant execCommands(const VipPyCommandList& cmds) { return sendCommands(cmds).value(); }
+	/// Waits at most immediateTimeout milliseconds.
+	virtual QVariant execCommands(const VipPyCommandList& cmds) { return sendCommands(cmds).value(immediateTimeout); }
 
 	/// @brief Asynchronous command evaluation.
 	/// Returns a VipPyFuture object.
@@ -646,5 +656,24 @@ private:
 
 	VIP_DECLARE_PRIVATE_DATA();
 };
+
+/// @brief Whether Python source restored from a session file may be run.
+///
+/// A session file stores the properties of the processings it holds, and several
+/// processings turn a property into executable code. Opening a session therefore
+/// chooses what runs, and the application opens one at every start without
+/// asking. Off by default: turn it on once the user has seen the code and
+/// accepted it.
+class VipProcessingObject;
+
+VIP_CORE_EXPORT void vipSetRestoredPythonCodeAllowed(bool allowed);
+VIP_CORE_EXPORT bool vipRestoredPythonCodeAllowed();
+
+/// @brief Whether @a obj may run Python it received from a session file.
+/// Refusals are logged once per object.
+VIP_CORE_EXPORT bool vipCanRunRestoredPythonCode(VipProcessingObject* obj);
+
+/// @brief Accept the Python @a obj carries, as an explicit user decision.
+VIP_CORE_EXPORT void vipAllowRestoredPythonCode(VipProcessingObject* obj);
 
 #endif

@@ -99,8 +99,16 @@ class SyncWrite:
         self.stopth=True
         
     def __call__(self,text):
-        core.QCoreApplication.processEvents()
-        return self.init_write(text)
+        # Write first, then let the interface breathe. This used to pump the
+        # event loop before every write, so the keyboard was delivered in the
+        # middle of the user code and could start a second execution over the
+        # first; and a print from a thread of the user pumped the queue of that
+        # thread, to no effect at all. Keyboard events are excluded and the
+        # cost is capped.
+        res = self.init_write(text)
+        if threading.current_thread().ident == main_thread_id:
+            core.QCoreApplication.processEvents(core.QEventLoop.ExcludeUserInputEvents, 5)
+        return res
     
 class SyncRun:
     
@@ -195,10 +203,13 @@ class CustomExec:
         global _in_process
         _in_process = False
         self.running=True
-        ret= self.init_exec( code,silent,store_history,user_expressions,allow_stdin)
-        self.running=False
-        _in_process = True
-        return ret
+        # In a finally: an exception used to leave the console declared busy for
+        # good, and the editor then refused to run anything else.
+        try:
+            return self.init_exec( code,silent,store_history,user_expressions,allow_stdin)
+        finally:
+            self.running=False
+            _in_process = True
         
 
 
@@ -280,8 +291,8 @@ class IPythonInterpreter(RichJupyterWidget):
         self.pushObjects({'__puller':self.puller})
         self.pushObjects({'__writer':SyncWrite(shell)})
         self.pushObjects({'__interp':self})
-        self.execInKernel("import sys;__writer.init_write = sys.stdout.write;sys.stdout.write=__writer")
-        self.execInKernel("import threading;__puller.shell_thread_id = threading.current_thread().ident")
+        self._execInternal("import sys;__writer.init_write = sys.stdout.write;sys.stdout.write=__writer")
+        self._execInternal("import threading;__puller.shell_thread_id = threading.current_thread().ident")
         global shell_thread_id
         shell_thread_id = self.puller.shell_thread_id
         
@@ -320,7 +331,7 @@ class IPythonInterpreter(RichJupyterWidget):
     
     def pull(self,name):
         self.puller.name = name
-        self.execInKernel("__puller.pull(globals()); ")
+        self._execInternal("__puller.pull(globals()); ")
         return self.puller.res
             
         
@@ -328,9 +339,18 @@ class IPythonInterpreter(RichJupyterWidget):
         """Add entry to interpreter"""
         self.execute(code)
         
-    def execInKernel(self,code):
-        """Exec code in kernel directly"""
-        self.kernel_client.execute(code,silent=True, store_history=False)
+    def _execInternal(self, code):
+        """Run one of this file's own literal strings. Silent on purpose: these are
+        plumbing, and showing them would be noise."""
+        self.kernel_client.execute(code, silent=True, store_history=False)
+
+    def execInKernel(self, code):
+        """Run code that did not come from this console.
+
+        It used to run silently and outside the history, so anything reaching this
+        method through the shared memory channel executed with no trace at all.
+        The user sees it and it is recorded."""
+        self.kernel_client.execute(code, silent=False, store_history=True)
         
     def pushObjects(self,objects):
         """Add objects to the kernel. Must be a dict."""
@@ -373,7 +393,7 @@ class IPythonInterpreter(RichJupyterWidget):
         self.pushObjects({'__puller':self.puller})
         self.pushObjects({'__writer':SyncWrite(shell)})
         self.pushObjects({'__interp':self})
-        self.execInKernel("import sys;__writer.init_write = sys.stdout.write;sys.stdout.write=__writer")
+        self._execInternal("import sys;__writer.init_write = sys.stdout.write;sys.stdout.write=__writer")
         
         
     def stopCode(self):

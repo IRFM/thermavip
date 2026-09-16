@@ -157,8 +157,11 @@ void VipPySignalGeneratorEditor::updateGenerator()
 {
 	if (VipPySignalGenerator* gen = d_data->generator) {
 		gen->propertyAt(0)->setData((qint64)(d_data->sampling.value() * 1000000000ull));
-		if (VipTextEditor* ed = d_data->editor.currentEditor())
+		if (VipTextEditor* ed = d_data->editor.currentEditor()) {
 			gen->propertyAt(3)->setData(ed->toPlainText());
+			// The user typed this one, so it is not what a session file chose.
+			vipAllowRestoredPythonCode(gen);
+		}
 
 		VipTimeRange range = VipInvalidTimeRange;
 
@@ -430,10 +433,11 @@ void VipPyParametersEditor::updateProcessing()
 			value = box->value();
 		else if (QCheckBox* box = qobject_cast<QCheckBox*>(ed))
 			value = int(box->isChecked());
+		// No quoting: the value reaches Python as an object, not as source text.
 		else if (VipComboBox* box = qobject_cast<VipComboBox*>(ed))
-			value = "'" + box->currentText() + "'";
+			value = box->currentText();
 		else if (VipLineEdit* line = qobject_cast<VipLineEdit*>(ed))
-			value = "'" + line->text() + "'";
+			value = line->text();
 		else if (Vip2DDataEditor* other = qobject_cast<Vip2DDataEditor*>(ed))
 			value = QVariant::fromValue(other->value());
 		map[name] = value;
@@ -563,6 +567,8 @@ void VipPyProcessingEditor::applyRequested()
 {
 	if (d_data->proc) {
 		d_data->proc->propertyAt(1)->setData(VipAnyData(QString(d_data->editor.currentEditor()->toPlainText()), VipInvalidTime));
+		// The user typed this one, so it is not what a session file chose.
+		vipAllowRestoredPythonCode(d_data->proc);
 		d_data->proc->reload();
 		d_data->proc->wait();
 		/*if(d_data->proc->lastError().isNull())
@@ -576,6 +582,7 @@ void VipPyProcessingEditor::uninitRequested()
 {
 	if (d_data->proc) {
 		d_data->proc->propertyAt(1)->setData(VipAnyData(QString(d_data->editor.currentEditor()->toPlainText()), VipInvalidTime));
+		vipAllowRestoredPythonCode(d_data->proc);
 		d_data->proc->reload();
 		d_data->proc->wait();
 		// d_data->editor.SetUninit();
@@ -1327,6 +1334,8 @@ bool VipPySignalFusionProcessingEditor::updateProcessing()
 
 		d_data->proc->propertyName("y_algo")->setData(algo);
 		d_data->proc->propertyName("x_algo")->setData(QString());
+		// The user typed this one, so it is not what a session file chose.
+		vipAllowRestoredPythonCode(d_data->proc);
 		d_data->proc->propertyName("output_title")->setData(output_title);
 		d_data->proc->propertyName("output_unit")->setData(output_unit);
 		d_data->proc->propertyName("output_x_unit")->setData(output_x_unit);

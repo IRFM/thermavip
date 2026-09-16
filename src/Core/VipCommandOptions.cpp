@@ -176,8 +176,21 @@ class CommandOptionsPrivate
 	Q_DECLARE_TR_FUNCTIONS(VipCommandOptions)
 public:
 	QList<CommandOption> options;
-	QHash<QString, CommandOption*> lookup;	  // cache structure to simplify processing
-	QHash<int, QList<CommandOption*>> groups; // cache structure to simplify processing
+	// Indices, not pointers. These cached pointers into `options`, and a QList holds
+	// its elements by value: appending one moves them all, after which every cached
+	// pointer names freed memory. The option added at static initialisation is
+	// enough to reach it, and the writes below go through those pointers.
+	QHash<QString, int> lookup;	 // cache structure to simplify processing
+	QHash<int, QList<int>> groups;	 // cache structure to simplify processing
+
+	CommandOption* optionAt(int index) { return (index >= 0 && index < options.size()) ? &options[index] : nullptr; }
+	int indexOfOption(const QString& name) const
+	{
+		for (int i = options.count() - 1; i >= 0; --i)
+			if (options[i].canonicalName == name)
+				return i;
+		return -1;
+	}
 	VipCommandOptions::FlagStyle flagStyle;
 	VipCommandOptions::ParamStyle paramStyle;
 	QStringList positional;	   // prefixless parameters
@@ -224,19 +237,20 @@ VipCommandOptions::VipCommandOptions()
 {
 	qxt_d().screenWidth = 80;
 	qxt_d().parsed = false;
-#ifdef Q_OS_WIN
-	setFlagStyle(Slash);
-	setParamStyle(Equals);
-#else
+	// The same convention on every platform, which is the one the application has
+	// always exposed: the singleton used to force DoubleDash back on every access,
+	// so the Windows branch selected here was never reachable, and it left the pair
+	// DoubleDash/Equals that neither branch describes. A caller wanting the Slash
+	// convention now asks for it, and the choice sticks.
 	setFlagStyle(DoubleDash);
 	setParamStyle(SpaceAndEquals);
-#endif
 }
 
 VipCommandOptions& VipCommandOptions::instance()
 {
+	// Setting the style here overwrote it on every access, so setFlagStyle() had no
+	// lasting effect: the default belongs to the constructor.
 	static VipCommandOptions instance;
-	instance.setFlagStyle(DoubleDash);
 	return instance;
 }
 
@@ -307,19 +321,21 @@ bool VipCommandOptions::add(const QString& name, const QString& desc, ParamTypes
 	option.group = group;
 	qxt_d().options.append(option);
 	if (group != -1)
-		qxt_d().groups[group].append(&(qxt_d().options.last()));
+		qxt_d().groups[group].append(qxt_d().options.size() - 1);
 	// Connect the canonical name to a usable name
 	return alias(name, name);
 }
 
 bool VipCommandOptions::alias(const QString& from, const QString& to)
 {
-	CommandOption* option = qxt_d().findOption(from);
-	if (!option)
-		return false; // findOption outputs the warning
-	option->names.append(to);
-	qxt_d().lookup[to] = option;
-	if (option->paramType & ValueOptional && qxt_d().flagStyle == DoubleDash && to.length() == 1)
+	const int index = qxt_d().indexOfOption(from);
+	if (index < 0) {
+		qWarning() << qPrintable(QString("VipCommandOptions: ") + tr("option \"%1\" not found").arg(from));
+		return false;
+	}
+	qxt_d().options[index].names.append(to);
+	qxt_d().lookup[to] = index;
+	if (qxt_d().options[index].paramType & ValueOptional && qxt_d().flagStyle == DoubleDash && to.length() == 1)
 		qWarning() << qPrintable(QString("VipCommandOptions: ") + tr("Short options cannot have optional parameters"));
 	return true;
 }
@@ -405,9 +421,10 @@ void CommandOptionsPrivate::setOption(CommandOption* option, const QString& valu
 {
 	if (groups.contains(option->group)) {
 		// Clear mutually-exclusive options
-		QList<CommandOption*>& others = groups[option->group];
-		for (CommandOption* other : others) {
-			if (other != option)
+		const QList<int>& others = groups[option->group];
+		for (int index : others) {
+			CommandOption* other = optionAt(index);
+			if (other && other != option)
 				other->values.clear();
 		}
 	}
@@ -443,7 +460,10 @@ void CommandOptionsPrivate::parse(const QStringList& params)
 		param = params[pos];
 		pos++;
 
-		if (!endFlags && ((flagStyle == VipCommandOptions::Slash && param[0] == '/') || (flagStyle != VipCommandOptions::Slash && param[0] == '-'))) {
+		// An empty argument reaches here whenever a script interpolates an unset
+		// variable between quotes, and param[0] on it is an out of bounds access.
+		// startsWith is defined on an empty string.
+		if (!endFlags && ((flagStyle == VipCommandOptions::Slash && param.startsWith('/')) || (flagStyle != VipCommandOptions::Slash && param.startsWith('-')))) {
 			// tagged argument
 			if (param.length() == 1) {
 				// "-" or "/" alone can't possibly match a flag, so use positional.
@@ -466,7 +486,7 @@ void CommandOptionsPrivate::parse(const QStringList& params)
 						endFlags = true;
 					}
 					else {
-						option = lookup.value(ch, 0);
+						option = optionAt(lookup.value(ch, -1));
 						if (!option) {
 							// single-letter flag has no known equivalent
 							unrecognized.append(QString("-") + param[i]);
@@ -480,6 +500,10 @@ void CommandOptionsPrivate::parse(const QStringList& params)
 									break;
 								}
 								value = params[pos];
+								// The long form consumes the value it takes; this one read it
+								// and left it in place, so the next turn of the loop saw it
+								// again as an argument of its own.
+								pos++;
 							}
 							else {
 								value = "";
@@ -506,7 +530,7 @@ void CommandOptionsPrivate::parse(const QStringList& params)
 				else
 					name = param.mid(1);
 
-				CommandOption* option = lookup.value(name, 0);
+				CommandOption* option = optionAt(lookup.value(name, -1));
 				if (!option) {
 					unrecognized.append(param);
 				}
@@ -522,8 +546,8 @@ void CommandOptionsPrivate::parse(const QStringList& params)
 					}
 					else if ((paramStyle & VipCommandOptions::Space) && (option->paramType & VipCommandOptions::ValueOptional) && !hasEquals) {
 						if (pos < params.count()) {
-							if (!((flagStyle == VipCommandOptions::Slash && params.at(pos)[0] == '/') ||
-							      (flagStyle != VipCommandOptions::Slash && params.at(pos)[0] == '-'))) {
+							if (!((flagStyle == VipCommandOptions::Slash && params.at(pos).startsWith('/')) ||
+							      (flagStyle != VipCommandOptions::Slash && params.at(pos).startsWith('-')))) {
 								value = params[pos];
 								pos++;
 							}

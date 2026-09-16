@@ -47,6 +47,7 @@
 #include <qdrag.h>
 #include <qheaderview.h>
 #include <qitemdelegate.h>
+#include <qregularexpression.h>
 #include <qtoolbar.h>
 #include <qtooltip.h>
 #include <qtreewidget.h>
@@ -278,7 +279,10 @@ void VipExtractShapesInfos::apply()
 				map.append(name + "/Bounding rect",
 					   "x:" + QString::number(r.left()) + ", y:" + QString::number(r.top()) + ", w:" + QString::number(r.width()) + ", h:" + QString::number(r.height()));
 #if QT_VERSION_MAJOR >= 5 && QT_VERSION_MINOR >= 8
-				map[name + "/Area"] = QString::number(area(sh.region())) + " pixels�";
+				// append(), like the five lines around it: the subscript by key returns
+				// a copy, so this assigned to a temporary and the area of a region of
+				// interest never reached the panel.
+				map.append(name + "/Area", QString::number(area(sh.region())) + " pixels");
 #endif
 				auto stats = sh.statistics(ar, QPoint(0, 0), Vip::Max | Vip::Min | Vip::Mean | Vip::Std);
 				if (ar.canConvert<double>()) {
@@ -399,6 +403,11 @@ void VipExtractShapesInfos::apply()
 VipExtractCurveInfos::VipExtractCurveInfos(VipPlotPlayer* pl)
   : VipAdditionalInfo(pl)
 {
+	// Tested, as the neighbouring constructor already does: this is called from
+	// clone(), which can hand over a player that is gone.
+	if (!pl)
+		return;
+
 	connect(pl, SIGNAL(sceneModelChanged(VipPlotSceneModel*)), this, SLOT(emitNeedUpdate()));
 	connect(pl->plotSceneModel()->scene(), SIGNAL(selectionChanged()), this, SLOT(emitNeedUpdate()));
 
@@ -607,7 +616,7 @@ public:
 	{
 	}
 
-	virtual QSize sizeHint(const QStyleOptionViewItem& option, const QModelIndex& index) const
+	QSize sizeHint(const QStyleOptionViewItem& option, const QModelIndex& index) const override
 	{
 		QSize size = QItemDelegate::sizeHint(option, index);
 		if (!(pen.color().alpha() == 0 || pen.style() == Qt::NoPen)) {
@@ -617,7 +626,7 @@ public:
 		return size;
 	}
 
-	virtual void paint(QPainter* painter, const QStyleOptionViewItem& option, const QModelIndex& index) const
+	void paint(QPainter* painter, const QStyleOptionViewItem& option, const QModelIndex& index) const override
 	{
 		QItemDelegate::paint(painter, option, index);
 
@@ -663,7 +672,10 @@ public:
 		setItemDelegate(delegate = new BorderItemDelegate(this));
 	}
 
-	QSize sizeHint() const
+	// override, and it did not even say virtual: nothing told a reader this is a
+	// point of substitution, and the day a base signature changes the redefinition
+	// silently stops being one.
+	QSize sizeHint() const override
 	{
 		// optimized version of sizeHint()
 
@@ -722,9 +734,20 @@ public:
 		return nullptr;
 	}
 
-	virtual void mouseMoveEvent(QMouseEvent* evt)
+	void mousePressEvent(QMouseEvent* evt) override
 	{
-		if (evt->buttons() & Qt::LeftButton) {
+		d_press_pos = evt->VIP_EVT_POSITION();
+		QTreeWidget::mousePressEvent(evt);
+	}
+
+	void mouseMoveEvent(QMouseEvent* evt) override
+	{
+		// The base used never to see this event, so selecting by dragging, the
+		// automatic scroll at the edge and the hover were all dead; and a drag
+		// started on the first pixel of movement, anywhere, even with nothing
+		// selected.
+		if ((evt->buttons() & Qt::LeftButton) && !selectedItems().isEmpty() && itemAt(d_press_pos) &&
+		    (evt->VIP_EVT_POSITION() - d_press_pos).manhattanLength() >= QApplication::startDragDistance()) {
 			QDrag drag(this);
 
 			// create the mime data
@@ -733,10 +756,13 @@ public:
 
 			drag.setMimeData(mime);
 			drag.exec();
+			return;
 		}
+
+		QTreeWidget::mouseMoveEvent(evt);
 	}
 
-	virtual void dragMoveEvent(QDragMoveEvent* evt)
+	void dragMoveEvent(QDragMoveEvent* evt) override
 	{
 		const QMimeData* mime = evt->mimeData();
 		if (qobject_cast<const VipMimeDataCoordinateSystem*>(mime)) {
@@ -744,7 +770,7 @@ public:
 		}
 	}
 
-	virtual void dragEnterEvent(QDragEnterEvent* evt)
+	void dragEnterEvent(QDragEnterEvent* evt) override
 	{
 		const QMimeData* mime = evt->mimeData();
 		if (qobject_cast<const VipMimeDataCoordinateSystem*>(mime)) {
@@ -752,7 +778,10 @@ public:
 		}
 	}
 
-	virtual void dropEvent(QDropEvent* evt) { evt->setAccepted(false); }
+	void dropEvent(QDropEvent* evt) override { evt->setAccepted(false); }
+
+private:
+	QPoint d_press_pos;
 };
 
 class VipProcessingObjectInfo::PrivateData
@@ -801,7 +830,11 @@ public:
 	QList<QPointer<VipAdditionalInfo>> infos;
 
 	VipTimer timer;
+	// Written by the slot above and by the end of updateInfos(). It carried two
+	// meanings at once: the date of the last refresh, and a sentinel saying one is
+	// already scheduled. The two are separate now, and the shared one is atomic.
 	qint64 lastUpdate;
+	std::atomic<bool> updateScheduled{ false };
 
 	QPointer<VipPlotItem> delayedItem;
 
@@ -931,6 +964,16 @@ bool VipProcessingObjectInfo::setPlayer(VipAbstractPlayer* player)
 void VipProcessingObjectInfo::setProcessingObject(VipProcessingObject* obj, VipOutput* output)
 {
 	if (obj) {
+		// The parameter is optional and the documentation says what is meant to
+		// happen without it, but every use below dereferenced it: take the first
+		// output of the processing, which is what the title code already assumes.
+		if (!output && obj->outputCount() > 0)
+			output = obj->outputAt(0);
+		if (!output) {
+			obj = nullptr;
+		}
+	}
+	if (obj) {
 		// for VipDisplayObject, use the source VipProcessingObject
 		if (VipDisplayObject* display = qobject_cast<VipDisplayObject*>(obj)) {
 			if (VipOutput* src = display->inputAt(0)->connection()->source()) {
@@ -973,7 +1016,11 @@ void VipProcessingObjectInfo::setProcessingObject(VipProcessingObject* obj, VipO
 		d_data->processing = obj;
 		d_data->output = output;
 
-		connect(d_data->processing.data(), SIGNAL(dataSent(VipProcessingIO*, const VipAnyData&)), this, SLOT(updateInfos(VipProcessingIO*, const VipAnyData&)), Qt::DirectConnection);
+		// Let Qt route it to the thread this widget lives in. Asked for directly,
+		// the slot ran in the thread of the task pool as soon as the source was
+		// asynchronous, and it reads the widget and writes the timestamp the
+		// interface writes too.
+		connect(d_data->processing.data(), SIGNAL(dataSent(VipProcessingIO*, const VipAnyData&)), this, SLOT(updateInfos(VipProcessingIO*, const VipAnyData&)));
 		updateInfos();
 	}
 }
@@ -1119,6 +1166,10 @@ QList<VipProcessingObject*> VipProcessingObjectInfo::plotSelectedAttributes()
 	VipProcessingPool* pool = nullptr;
 
 	for (int i = 0; i < items.size(); ++i) {
+		// Only the leaves are of this type. The categories are plain tree items, and
+		// reading the member of a type they do not have is a read past the object.
+		if (!items[i]->parent())
+			continue;
 		if (VipOutput* out = static_cast<InfoTreeWidgetItem*>(items[i])->output) {
 			if (!pool) {
 				pool = out->parentProcessing()->parentObjectPool();
@@ -1175,11 +1226,17 @@ void VipProcessingObjectInfo::updateInfos(VipProcessingIO* out, const VipAnyData
 	d_data->timer.start();
 
 	// if last update is older than 200ms and and update in not in progress, update
-	if (d_data->lastUpdate < 0)
+	if (d_data->updateScheduled.load(std::memory_order_relaxed))
 		return;
 
 	if (QDateTime::currentMSecsSinceEpoch() - d_data->lastUpdate > 200) {
-		d_data->lastUpdate = -1;
+		// Exchanged, not tested then set: two data arriving at once both scheduled
+		// an update. And the sentinel used to be cleared only at the very end of
+		// updateInfos(), which returns early on four conditions: once it took one
+		// of them, the immediate refresh was dead for the life of the process.
+		bool expected = false;
+		if (!d_data->updateScheduled.compare_exchange_strong(expected, true))
+			return;
 		d_data->timer.stop();
 		QMetaObject::invokeMethod(this, "updateInfos", Qt::QueuedConnection);
 	}
@@ -1197,6 +1254,13 @@ static bool Filter(const QString& name, const QVector<QString>& filters)
 
 void VipProcessingObjectInfo::updateInfos()
 {
+	// Cleared however this returns, including the four early exits below.
+	struct ClearScheduled
+	{
+		std::atomic<bool>& flag;
+		~ClearScheduled() { flag.store(false); }
+	} clear_scheduled{ d_data->updateScheduled };
+
 	if (d_data->plotting)
 		return;
 	if (!d_data->output)
@@ -1411,7 +1475,12 @@ void VipProcessingObjectInfo::showEvent(QShowEvent* evt)
 
 void VipProcessingObjectInfo::search()
 {
-	QRegExp exp = vipFromWildcard(d_data->search.text(), Qt::CaseInsensitive);
+	// QRegularExpression, not QRegExp: that one only exists in the compatibility
+	// module of Qt5. Left unanchored, and not treating the pattern as a path, so
+	// that a fragment still matches the way indexIn did.
+	const QRegularExpression exp(QRegularExpression::wildcardToRegularExpression(d_data->search.text(),
+								     QRegularExpression::UnanchoredWildcardConversion | QRegularExpression::NonPathWildcardConversion),
+				     QRegularExpression::CaseInsensitiveOption);
 
 	bool restore = d_data->search.text().isEmpty();
 
@@ -1426,7 +1495,7 @@ void VipProcessingObjectInfo::search()
 			if (restore)
 				child->setHidden(false);
 			else {
-				if (exp.indexIn(child->text(0)) >= 0 || exp.indexIn(child->text(1)) >= 0) {
+				if (exp.match(child->text(0)).hasMatch() || exp.match(child->text(1)).hasMatch()) {
 					child->setHidden(false);
 					found = true;
 				}
@@ -1555,7 +1624,10 @@ QList<VipProcessingObject*> VipProcessingObjectInfo::plotAttributes(QList<VipOut
 			VipNumericValueToPointVector* ConvertToPointVector = new VipNumericValueToPointVector(pool);
 			ConvertToPointVector->setScheduleStrategies(VipProcessingObject::Asynchronous);
 			ConvertToPointVector->setDeleteOnOutputConnectionsClosed(true);
-			ConvertToPointVector->inputAt(0)->setConnection(extract[i]->outputAt(i));
+			// Output zero, which is the only one these have; the loop index was used
+			// as an output index, so the second attribute onwards asked for an output
+			// that is not there. The line below already writes it the right way.
+			ConvertToPointVector->inputAt(0)->setConnection(extract[i]->outputAt(0));
 
 			VipProcessingList* ProcessingList = new VipProcessingList(pool);
 			ProcessingList->setScheduleStrategies(VipProcessingObject::Asynchronous);
@@ -1577,6 +1649,20 @@ QList<VipProcessingObject*> VipProcessingObjectInfo::plotAttributes(QList<VipOut
 
 	// now, save the current VipProcessingPool state, because we are going to modify it heavily
 	pool->save();
+
+	// Restored on every way out. The state installed below stops the pool, disables
+	// every processing but the sources and blocks its signals; the single restore
+	// point at the end is skipped by anything that leaves early, and the player is
+	// then left unusable.
+	struct RestorePool
+	{
+		VipProcessingPool* pool;
+		~RestorePool()
+		{
+			pool->blockSignals(false);
+			pool->restore();
+		}
+	} restore_pool{ pool };
 
 	// disable all processing except the sources, remove the Automatic flag from the sources
 	pool->disableExcept(sources);
@@ -1637,11 +1723,14 @@ QList<VipProcessingObject*> VipProcessingObjectInfo::plotAttributes(QList<VipOut
 			break;
 	}
 
-	pool->blockSignals(false);
-
-	// delete the attribute extraction objects
-	for (int i = 0; i < extract.size(); ++i)
-		delete extract[i];
+	// delete the attribute extraction objects. Disconnected first and deleted by
+	// the event loop: these are connected and asynchronous, and destroying one
+	// under its own signal is what a direct delete allows.
+	for (int i = 0; i < extract.size(); ++i) {
+		extract[i]->disconnect();
+		extract[i]->clearInputConnections();
+		extract[i]->deleteLater();
+	}
 
 	// store the result
 	QList<VipProcessingObject*> res;
@@ -1654,8 +1743,8 @@ QList<VipProcessingObject*> VipProcessingObjectInfo::plotAttributes(QList<VipOut
 		res << any;
 	}
 
-	// restore the VipProcessingPool
-	pool->restore();
+	// restore the VipProcessingPool: the guard above does it, this only puts the
+	// time back where it was.
 	pool->read(pool_time);
 
 	return res;

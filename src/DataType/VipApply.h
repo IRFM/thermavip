@@ -29,76 +29,14 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
- #ifndef VIP_FUNCTION_TRAITS_H
- #define VIP_FUNCTION_TRAITS_H
- 
- #include <tuple>
- #include <type_traits>
- #include <utility>
- #include <cstddef>
- 
- namespace details
- {
- 
-     template<size_t N>
-     struct ApplyFunctor
-     {
-         template<typename F, typename Getter, typename... A>
-         static inline auto apply(F&& f, Getter&& t, A&&... a)
-         {
-             return ApplyFunctor<N - 1>::apply(std::forward<F>(f), std::forward<Getter>(t), std::forward<Getter>(t).template get<N - 1>(), std::forward<A>(a)...);
-         }
-     };
- 
-     template<>
-     struct ApplyFunctor<0>
-     {
-         template<typename F, typename Getter, typename... A>
-         static inline auto apply(F&& f, Getter&&, A&&... a) 
-         {
-             return std::forward<F>(f)(std::forward<A>(a)...);
-         }
-     };
- 
-     template<class TupleRef>
-     struct TupleGetter
-     {
-         TupleRef t;
-         template<size_t I>
-         auto get() -> decltype(std::get<I>(t))
-         {
-             return std::get<I>(t);
-         }
-     };
- }
- 
- 
- /// @brief C++11 equivalent to std::apply()
- ///
- /// This overload forward tuple arguments to the functor object.
- ///
- template<typename F, typename... Args>
- inline auto vipApply(F&& f, std::tuple<Args...>&& t)
- {
-     using tuple_type = std::tuple<Args...>;
-     using ref_type = typename std::conditional<std::is_const<decltype(t)>::value, const tuple_type&, tuple_type&>::type;
-     using getter = details::TupleGetter<ref_type>;
- 
-     return details::ApplyFunctor<sizeof...(Args)>::apply(std::forward<F>(f), getter{ t });
- }
- 
- /// @brief C++11 equivalent to std::apply()
- ///
- /// This overload forward tuple arguments to the functor object.
- ///
- template<typename F, typename... Args>
- inline auto vipApply(F&& f, const std::tuple<Args...>& t)
- {
-     using tuple_type = std::tuple<Args...>;
-     using ref_type = const tuple_type&;
-     using getter = details::TupleGetter<ref_type>;
- 
-     return details::ApplyFunctor<sizeof...(Args)>::apply(std::forward<F>(f), getter{ t });
- }
- 
- #endif
+ // Both overloads of vipApply are defined in VipFunctionTraits.h, and this
+ // header used to define them again. The two files also shared one include
+ // guard, so including either of them reduced the other to an empty file
+ // inside the same translation unit, and the error named a file that was not
+ // the cause. This one now forwards, so the name it advertises keeps working.
+ #ifndef VIP_APPLY_H
+ #define VIP_APPLY_H
+
+ #include "VipFunctionTraits.h"
+
+ #endif // VIP_APPLY_H

@@ -142,7 +142,9 @@ bool VipTextEditor::saveToFile(const QString& filename)
 	if (!file.open(QFile::WriteOnly))
 		return false;
 	else {
-		file.write(this->toPlainText().toLatin1());
+		// UTF-8, which is what openFile() decodes: the round trip through Latin-1
+		// destroyed every character outside it and mangled the rest.
+		file.write(this->toPlainText().toUtf8());
 		d_data->info = QFileInfo(filename);
 		this->document()->setModified(true);
 		this->document()->setModified(false);

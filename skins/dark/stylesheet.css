@@ -154,7 +154,7 @@ VipToolWidgetTitleBar[status="0"] {
 	qproperty-floatButton: url(skins/dark/icons/pin.png);
 	qproperty-maximizeButton: url(skins/dark/icons/maximize.png);
 	qproperty-restoreButton: url(skins/dark/icons/restore.png);
-	qproperty-textColor: black;
+	qproperty-textColor: white;
 }
 VipToolWidgetScrollArea[status="0"] {
     border-bottom: 3px solid #303030;
@@ -171,7 +171,7 @@ VipToolWidgetTitleBar[status="3"] {
 	qproperty-floatButton: url(skins/dark/icons/pin.png);
 	qproperty-maximizeButton: url(skins/dark/icons/maximize.png);
 	qproperty-restoreButton: url(skins/dark/icons/restore.png);
-	qproperty-textColor: black;
+	qproperty-textColor: white;
 }
 VipToolWidgetScrollArea[status="3"] {
     border-bottom: 1px solid #777777;

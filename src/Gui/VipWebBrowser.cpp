@@ -32,18 +32,46 @@
 #include <qboxlayout.h>
 
 #include "VipDisplayArea.h"
+#include "VipLogging.h"
 #include "VipProgress.h"
 #include "VipWebBrowser.h"
 #include "VipSearchLineEdit.h"
 
 #ifdef __VIP_USE_WEB_ENGINE
 
+#include <qfileinfo.h>
 #include <qwebenginecertificateerror.h>
 #include <qwebenginesettings.h>
 #include <QWebEngineUrlScheme>
 #include <QWebEngineUrlSchemeHandler>
 #include <QWebEngineUrlRequestJob>
 #include <QWebEngineProfile>
+
+/// Turn what the application passes around into a URL. QUrl(QString) parses its
+/// argument as a URL and never as a path: a Windows drive letter becomes a scheme,
+/// and a bare IPv4 address becomes a relative URL with no scheme — the two forms
+/// the probe of this class says it accepts.
+static QUrl vipToWebUrl(const QString& s)
+{
+	if (QFileInfo::exists(s))
+		return QUrl::fromLocalFile(QFileInfo(s).absoluteFilePath());
+	const QUrl u(s);
+	// More than one character, which rules out the drive letter taken for a scheme.
+	if (u.scheme().size() > 1)
+		return u;
+	return QUrl::fromUserInput(s);
+}
+
+/// Whether a request for the thermavip scheme may act. The payload names a path
+/// that the application then opens, so only content the application itself shipped,
+/// or the user typing in the address bar, is allowed to send one.
+static bool vipBridgeOriginAllowed(const QUrl& initiator)
+{
+	if (!initiator.isValid() || initiator.isEmpty())
+		return true; // typed by the user, no page behind it
+	const QString scheme = initiator.scheme();
+	return scheme == "file" || scheme == "qrc" || scheme == "thermavip";
+}
 
 class ThermavipSchemeHandler : public QWebEngineUrlSchemeHandler
 {
@@ -58,6 +86,14 @@ public:
 		const QUrl url = job->requestUrl();
 		QString _url = url.toString();
 		if (_url.startsWith("thermavip://")) {
+			// The origin, not just the scheme: the test below authenticates the scheme,
+			// which any remote page can use, while the payload chooses which device the
+			// application instantiates and on which path — a network path included.
+			if (!vipBridgeOriginAllowed(job->initiator())) {
+				VIP_LOG_WARNING("Refused a 'thermavip' request from " + job->initiator().toString());
+				job->fail(QWebEngineUrlRequestJob::RequestDenied);
+				return;
+			}
 			vipGetMainWindow()->openPaths(QStringList() << _url);
 		}
 		else {
@@ -72,7 +108,21 @@ static bool registerHelper = VipShortcutsHelper::registerShorcut("web browser", 
 
 bool VipHTTPFileHandler::open(const QString& path, QString* error)
 {
-	(void)error;
+	// The base only reports what this returns, and this discarded the channel and
+	// returned true on every path: a missing file or a malformed address created a
+	// workspace and a player, silently, once per attempt.
+	const QUrl url = vipToWebUrl(path);
+	if (!url.isValid() || url.isEmpty()) {
+		if (error)
+			*error = "Not a usable address: " + path;
+		return false;
+	}
+	if (url.isLocalFile() && !QFileInfo::exists(url.toLocalFile())) {
+		if (error)
+			*error = "No such file: " + url.toLocalFile();
+		return false;
+	}
+
 	VipDisplayArea* area = vipGetMainWindow()->displayArea();
 	VipDisplayPlayerArea* tab = new VipDisplayPlayerArea();
 	area->addWidget(tab);
@@ -117,6 +167,9 @@ void VipWebBrowserToolBar::setIcon(const QIcon& icon)
 class WebPage : public QWebEnginePage
 {
 	VipWebBrowser* browser;
+	// Set on the pages createWindow() makes, which are the ones it makes sense to
+	// destroy after relaying a request. The same virtual runs on the main page.
+	bool transient = false;
 
 public:
 	explicit WebPage(VipWebBrowser * br, QWidget* parent = 0)
@@ -148,17 +201,24 @@ public:
 
 protected:
 
+	// Refused, and said out loud. This used to accept every certificate error
+	// without a word: self signed, expired, wrong host name, unknown authority.
+	// Anything on the path could then serve any content under an https address,
+	// and this window bridges to openPaths through the thermavip scheme. A list
+	// of hosts the user has explicitly approved is the way to allow one of them
+	// back, and it has to be a deliberate action, not a default.
 #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
-	void receiveCertificateError(const QWebEngineCertificateError& error) 
+	void receiveCertificateError(const QWebEngineCertificateError& error)
 	{
-		const_cast<QWebEngineCertificateError&>(error).acceptCertificate();
+		QWebEngineCertificateError& mutableError = const_cast<QWebEngineCertificateError&>(error);
+		VIP_LOG_WARNING("TLS certificate rejected for " + mutableError.url().host() + ": " + mutableError.description());
+		mutableError.rejectCertificate();
 	}
 #else
 	virtual bool certificateError(const QWebEngineCertificateError& error) override
 	{
-		QWebEngineCertificateError& mutableError = const_cast<QWebEngineCertificateError&>(error);
-		mutableError.ignoreCertificateError();
-		return true;
+		VIP_LOG_WARNING("TLS certificate rejected for " + error.url().host() + ": " + error.errorDescription());
+		return false;
 	}
 #endif
 
@@ -177,7 +237,11 @@ protected:
 				if (_url.startsWith("thermavip://")) {
 
 					QMetaObject::invokeMethod(vipGetMainWindow(), [_url]() { vipGetMainWindow()->openPaths(QStringList() << _url); }, Qt::QueuedConnection);
-					this->deleteLater();
+					// Only an ephemeral page. Destroying the main one took with it the
+					// certificate handling, the bridge and the connections made on it, and
+					// the view then silently rebuilt a plain page in its place.
+					if (transient)
+						this->deleteLater();
 					return false;
 				}
 			}
@@ -185,10 +249,12 @@ protected:
 		return QWebEnginePage::acceptNavigationRequest(url, type, isMainFrame); 
 	}
 
-	virtual QWebEnginePage* createWindow(QWebEnginePage::WebWindowType type) 
-	{ 
+	virtual QWebEnginePage* createWindow(QWebEnginePage::WebWindowType type)
+	{
 		// return WebPage object
-		return new WebPage(browser); 
+		WebPage* page = new WebPage(browser);
+		page->transient = true;
+		return page;
 	}
 
 };
@@ -239,7 +305,10 @@ VipWebBrowser::VipWebBrowser(QWidget* parent)
 #if QT_VERSION >= QT_VERSION_CHECK(6, 8, 0)
 	connect(webEngine()->page(), &QWebEnginePage::permissionRequested, this, &VipWebBrowser::handlePermissionRequested);
 #endif
-	webEngine()->page()->settings()->setAttribute(QWebEngineSettings::AllowRunningInsecureContent, true);
+	// Off. Allowing it lets a page served over https load and run scripts served in
+	// the clear, which hands the integrity TLS provides back to anything on the path
+	// — and this browser carries a bridge into the application.
+	webEngine()->page()->settings()->setAttribute(QWebEngineSettings::AllowRunningInsecureContent, false);
 }
 
 VipWebBrowser::~VipWebBrowser() {}
@@ -269,7 +338,7 @@ void VipWebBrowser::handlePermissionRequested(QWebEnginePermission perm)
 
 void VipWebBrowser::setUrlInternal()
 {
-	webEngine()->load(QUrl(d_data->bar->url.text()));
+	webEngine()->load(vipToWebUrl(d_data->bar->url.text()));
 }
 void VipWebBrowser::displayUrl(const QUrl& url)
 {
@@ -324,7 +393,7 @@ void VipWebBrowser::openWebBrowser(const QString& url)
 
 void VipWebBrowser::setUrl(const QString& url)
 {
-	webEngine()->load(QUrl(url));
+	webEngine()->load(vipToWebUrl(url));
 }
 
 VipArchive& operator<<(VipArchive& arch, const VipWebBrowser* browser)
@@ -339,7 +408,7 @@ VipArchive& operator>>(VipArchive& arch, VipWebBrowser* browser)
 	bool toolBarVisible = true;
 	arch.content("url", url);
 	if (arch.content("toolBarVisible", toolBarVisible)) {
-		browser->webEngine()->page()->setUrl(QUrl(url));
+		browser->webEngine()->page()->setUrl(vipToWebUrl(url));
 		browser->playerToolBar()->setVisible(toolBarVisible);
 		if (!toolBarVisible)
 			browser->playerToolBar()->hide();

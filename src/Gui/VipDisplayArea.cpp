@@ -139,7 +139,10 @@ public:
 	QIcon selectedFloatIcon;
 	int hoverIndex;
 	bool streamingButtonEnabled;
-	bool dirtyStreamingButton;
+	// Atomic: written from slots reached by direct connections from the thread of
+	// the pool and read by the thread of the interface. Tested then set, the
+	// notification it stands for could be dropped.
+	std::atomic<bool> dirtyStreamingButton;
 };
 
 VipDisplayTabBar::VipDisplayTabBar(VipDisplayTabWidget* parent)
@@ -313,10 +316,8 @@ void VipDisplayTabBar::enableStreaming()
 
 void VipDisplayTabBar::updateStreamingButtonDelayed()
 {
-	if (!d_data->dirtyStreamingButton) {
-		d_data->dirtyStreamingButton = true;
+	if (!d_data->dirtyStreamingButton.exchange(true))
 		QMetaObject::invokeMethod(this, "updateStreamingButton", Qt::QueuedConnection);
-	}
 }
 
 void VipDisplayTabBar::updateStreamingButton()
@@ -1093,15 +1094,18 @@ public:
 	Qt::WindowFlags standardFlags;
 	Operations operations;
 
-	bool emitContentChange = false;
-	bool dirtyColorMap;
+	// Same as above: set from direct connections, read here.
+	std::atomic<bool> emitContentChange{ false };
+	std::atomic<bool> dirtyColorMap;
 	VipColorScaleButton* scale;
 	QAction* auto_scale;
 	QAction* fit_to_grip;
 	QAction* histo_scale;
 
-	QToolBar* leftTabWidget;
-	QToolBar* rightTabWidget;
+	// Held by a QPointer: setTabButton hands the widget over to the tab bar, which
+	// destroys it on its own, and the setters below used to delete it a second time.
+	QPointer<QToolBar> leftTabWidget;
+	QPointer<QToolBar> rightTabWidget;
 
 	QPointer<VipProgressWidget> progressWidget;
 	QMutex closeMutex;
@@ -1575,8 +1579,7 @@ void VipDisplayPlayerArea::fitColorScaleToGrips()
 }
 void VipDisplayPlayerArea::internalLayoutColorMapDelay()
 {
-	if (!d_data->dirtyColorMap) {
-		d_data->dirtyColorMap = true;
+	if (!d_data->dirtyColorMap.exchange(true)) {
 		QMetaObject::invokeMethod(this, "internalLayoutColorMap", Qt::QueuedConnection);
 	}
 }
@@ -1660,10 +1663,12 @@ bool VipDisplayPlayerArea::useGlobalColorMap() const
 
 void VipDisplayPlayerArea::editColorMap()
 {
-	vipGetPlotToolWidgetPlayer()->setItem(d_data->colorMapAxis);
-	vipGetPlotToolWidgetPlayer()->show();
-	vipGetPlotToolWidgetPlayer()->raise();
-	vipGetPlotToolWidgetPlayer()->setWindowTitle("Edit workspace color map");
+	if (VipPlotToolWidgetPlayer* tool = vipGetPlotToolWidgetPlayer()) {
+		tool->setItem(d_data->colorMapAxis);
+		tool->show();
+		tool->raise();
+		tool->setWindowTitle("Edit workspace color map");
+	}
 }
 
 /* class ManageMainWidget : public QObject
@@ -1883,8 +1888,8 @@ QToolBar* VipDisplayPlayerArea::takeLeftTabWidget()
 void VipDisplayPlayerArea::setLeftTabWidget(QToolBar* w)
 {
 	if (w != d_data->leftTabWidget)
-		if (d_data->leftTabWidget)
-			delete d_data->leftTabWidget;
+		if (QToolBar* old = d_data->leftTabWidget)
+			old->deleteLater();
 	d_data->leftTabWidget = w;
 	if (w) {
 		if (VipDisplayTabWidget* d = this->parentTabWidget()) {
@@ -1919,8 +1924,8 @@ QToolBar* VipDisplayPlayerArea::takeRightTabWidget()
 void VipDisplayPlayerArea::setRightTabWidget(QToolBar* w)
 {
 	if (w != d_data->rightTabWidget)
-		if (d_data->rightTabWidget)
-			delete d_data->rightTabWidget;
+		if (QToolBar* old = d_data->rightTabWidget)
+			old->deleteLater();
 	d_data->rightTabWidget = w;
 	if (w) {
 		if (VipDisplayTabWidget* d = this->parentTabWidget()) {
@@ -2057,9 +2062,12 @@ void VipDisplayPlayerArea::setFloating(bool pin)
 						rightTabWidget()->setParent(nullptr);
 						rightTabWidget()->show();
 
-						// hide float and close buttons
-						actionForWidget(rightTabWidget(), rightTabWidget()->findChild<QToolButton*>("float_workspace"))->setVisible(false);
-						actionForWidget(rightTabWidget(), rightTabWidget()->findChild<QToolButton*>("close_workspace"))->setVisible(false);
+						// hide float and close buttons. The lookup returns nothing as soon
+						// as the bar has been rebuilt without them.
+						if (QAction* a = actionForWidget(rightTabWidget(), rightTabWidget()->findChild<QToolButton*>("float_workspace")))
+							a->setVisible(false);
+						if (QAction* a = actionForWidget(rightTabWidget(), rightTabWidget()->findChild<QToolButton*>("close_workspace")))
+							a->setVisible(false);
 						rightTabWidget()->setMinimumSize(rightTabWidget()->sizeHint());
 					}
 
@@ -2092,8 +2100,12 @@ void VipDisplayPlayerArea::setFloating(bool pin)
 				if (index >= 0) {
 
 					// show again float and close buttons
-					actionForWidget(rightTabWidget(), rightTabWidget()->findChild<QToolButton*>("float_workspace"))->setVisible(true);
-					actionForWidget(rightTabWidget(), rightTabWidget()->findChild<QToolButton*>("close_workspace"))->setVisible(true);
+					if (QToolBar* bar = rightTabWidget()) {
+						if (QAction* a = actionForWidget(bar, bar->findChild<QToolButton*>("float_workspace")))
+							a->setVisible(true);
+						if (QAction* a = actionForWidget(bar, bar->findChild<QToolButton*>("close_workspace")))
+							a->setVisible(true);
+					}
 
 					setLeftTabWidget(d_data->leftTabWidget);
 					setRightTabWidget(d_data->rightTabWidget);
@@ -2120,10 +2132,8 @@ int VipDisplayPlayerArea::id() const
 
 void VipDisplayPlayerArea::emitWorkspaceContentChanged()
 {
-	if (!d_data->emitContentChange) {
-		d_data->emitContentChange = true;
+	if (!d_data->emitContentChange.exchange(true))
 		QMetaObject::invokeMethod(this, &VipDisplayPlayerArea::internalEmitWorkspaceContentChanged, Qt::QueuedConnection);
-	}
 }
 
 void VipDisplayPlayerArea::internalEmitWorkspaceContentChanged()
@@ -2733,11 +2743,14 @@ void VipDisplayArea::removeWidget(VipDisplayPlayerArea* widget)
 
 void VipDisplayArea::clear()
 {
-	while (count() > 0) {
-		d_data->workspaces.first()->deleteLater();
-		d_data->workspaces.pop_front();
-		QCoreApplication::processEvents();
-	}
+	// Detach first, then schedule every deletion. Pumping the event loop between
+	// two removals re-entered this widget with the container half emptied: a slot
+	// could add or remove a workspace in the middle of the walk, and the deferred
+	// deletions came back through removeWidget on the very list being walked.
+	const QList<VipDisplayPlayerArea*> workspaces = d_data->workspaces;
+	d_data->workspaces.clear();
+	for (VipDisplayPlayerArea* area : workspaces)
+		area->deleteLater();
 }
 
 void VipDisplayArea::nextWorkspace()
@@ -3302,26 +3315,60 @@ void VipCloseBar::computeWindowState()
 class UpdateThread : public QThread
 {
 public:
-	VipMainWindow* mainWindow;
-	VipUpdate* update;
+	// Atomic: the loop below reads it every turn while the interface writes it to
+	// ask the thread to stop, and a plain pointer leaves this thread free never to
+	// observe that write.
+	std::atomic<VipMainWindow*> mainWindow;
+	// Read in the thread that owns the widgets, before this one starts. Walking
+	// the widget tree from here read objects of another thread through a pointer
+	// that was not even tested.
+	QPointer<QProgressBar> progress;
+	// Initialised here, not only in run(): the destruction below happens whether
+	// run() was reached or not.
+	VipUpdate* update = nullptr;
 	UpdateThread(VipMainWindow* win)
 	  : mainWindow(win)
 	{
 	}
 
+	/// Bind to the window. Called from the thread that owns the widgets, before
+	/// the thread starts.
+	void bindTo(VipMainWindow* win)
+	{
+		progress = win ? win->iconBar()->updateProgress : nullptr;
+		mainWindow = win;
+	}
+	~UpdateThread()
+	{
+		// The download owns a process. Stop it before taking its owner away.
+		if (update) {
+			if (QProcess* p = update->process())
+				if (p->state() != QProcess::NotRunning) {
+					p->kill();
+					p->waitForFinished(1000);
+				}
+			delete update;
+			update = nullptr;
+		}
+	}
+
 	virtual void run()
 	{
-		update = new VipUpdate();
-		connect(update, SIGNAL(updateProgressed(int)), mainWindow->iconBar()->updateProgress, SLOT(setValue(int)));
-		while (VipMainWindow* w = mainWindow) {
+		if (!update)
+			update = new VipUpdate();
+		if (progress)
+			connect(update, SIGNAL(updateProgressed(int)), progress, SLOT(setValue(int)));
+		while (VipMainWindow* w = mainWindow.load(std::memory_order_acquire)) {
 
 			bool downloaded = false;
-			if (update->process()->state() != QProcess::Running && update->hasUpdate("./", &downloaded) > 0) // QFileInfo(vipAppCanonicalPath()).canonicalPath(),&downloaded) > 0)
+			// The installation directory, not the one the process was started from.
+			const QString install = QFileInfo(vipAppCanonicalPath()).canonicalPath();
+			if (update->process()->state() != QProcess::Running && update->hasUpdate(install, &downloaded) > 0)
 			{
 				if (!downloaded) {
 					QMetaObject::invokeMethod(w->iconBar()->updateIconAction, "setVisible", Qt::QueuedConnection, Q_ARG(bool, false));
 					QMetaObject::invokeMethod(w->iconBar()->update, "setVisible", Qt::QueuedConnection, Q_ARG(bool, true));
-					update->startDownload("./"); // QFileInfo(vipAppCanonicalPath()).canonicalPath());
+					update->startDownload(install);
 				}
 				else
 					QMetaObject::invokeMethod(w->iconBar()->updateIconAction, "setVisible", Qt::QueuedConnection, Q_ARG(bool, true));
@@ -3336,11 +3383,10 @@ public:
 				qint64 el = QDateTime::currentMSecsSinceEpoch() - st;
 				int sleep = 200 - el;
 				QThread::msleep(sleep > 0 ? sleep : 0);
-				if (!mainWindow)
+				if (!mainWindow.load(std::memory_order_relaxed))
 					break;
 			}
 		}
-		delete update;
 	}
 };
 
@@ -3581,16 +3627,20 @@ static bool _has_quit = false;
 VipMainWindow::~VipMainWindow()
 {
 	_has_quit = true;
+	// The accessor keeps the instance in a static and never cleared it, so every
+	// call after the window closed returned a destroyed object; the flag below was
+	// the workaround.
+	vipForgetMainWindow(this);
 
 	Q_EMIT aboutToClose();
 
 	d_data->fileTimer.stop();
 	disconnect(&d_data->fileTimer, SIGNAL(timeout()), this, SLOT(openSharedMemoryFiles()));
 
+	stopUpdateThread();
 	if (d_data->updateThread) {
-		d_data->updateThread->mainWindow = nullptr;
-		d_data->updateThread->wait();
 		delete d_data->updateThread;
+		d_data->updateThread = nullptr;
 	}
 
 	d_data.clear();
@@ -4294,8 +4344,9 @@ bool VipMainWindow::loadSessionShowProgress(VipArchive& arch, VipProgress* progr
 		}
 	}
 
-	if (vipGetMultiProgressWidget()->isFloating())
-		vipGetMultiProgressWidget()->hide();
+	if (VipMultiProgressWidget* progress = vipGetMultiProgressWidget())
+		if (progress->isFloating())
+			progress->hide();
 
 	if (VipDisplayPlayerArea* area = displayArea()->currentDisplayPlayerArea())
 		if (area->processingPool()) {
@@ -4854,7 +4905,16 @@ void VipMainWindow::quickSave()
 }
 void VipMainWindow::quickLoad()
 {
-	loadSession(vipGetDataDirectory() + "auto_session.session");
+	const QString file = vipGetDataDirectory() + "auto_session.session";
+	// A single key replaced the whole workspace from a fixed, unprotected path, with
+	// no confirmation and no way back: everything unsaved was lost, and the file
+	// restores plugins, settings and, with Python built in, code.
+	if (displayArea() && displayArea()->count() > 0) {
+		if (vipQuestion("Load session", "Replace the current workspace with the quick session?\n" + file) != QMessageBox::Yes)
+			return;
+	}
+	VIP_LOG_INFO("Loading quick session: " + file);
+	loadSession(file);
 }
 
 void VipMainWindow::closeEvent(QCloseEvent* evt)
@@ -4867,23 +4927,29 @@ void VipMainWindow::closeEvent(QCloseEvent* evt)
 	QList<VipAbstractPlayer*> lst = this->findChildren<VipAbstractPlayer*>();
 
 	// only ask for saving session if there is at least one SubWindow left
+	const QString lastSession = vipGetDataDirectory() + "last_session.session";
+	const QString baseSession = vipGetDataDirectory() + "base_session.session";
+
 	if (lst.size() > 0 && d_data->sessionSavingEnabled) {
 		int res = vipQuestion("Save session", "Do you want to save your session?", QMessageBox::Yes | QMessageBox::No | QMessageBox::Cancel);
 		if (res == QMessageBox::Yes) {
-			saveSession(vipGetDataDirectory() + "last_session.session");
+			// The return was ignored, so a read only directory failed a save the user
+			// had just asked for, in silence, on the way out.
+			if (!saveSession(lastSession)) {
+				if (vipQuestion("Save session", "The session could not be saved.\nClose anyway?") != QMessageBox::Yes)
+					no_close = true;
+			}
 		}
 		else if (res == QMessageBox::No) {
-			saveSession(vipGetDataDirectory() + "base_session.session", MainWindow, MainWindowState | Plugins | Settings);
-			// remove last_session file
-			QFile::remove(vipGetDataDirectory() + "last_session.session");
+			// Declining to save today used to delete the session saved on a previous
+			// close, which the question gives no reason to expect. Keep it.
+			saveSession(baseSession, MainWindow, MainWindowState | Plugins | Settings);
 		}
 		else
 			no_close = true;
 	}
 	else {
-		saveSession(vipGetDataDirectory() + "base_session.session", MainWindow, MainWindowState | Plugins | Settings);
-		// remove last_session file
-		QFile::remove(vipGetDataDirectory() + "last_session.session");
+		saveSession(baseSession, MainWindow, MainWindowState | Plugins | Settings);
 	}
 
 	if (no_close)
@@ -5590,7 +5656,8 @@ void VipMainWindow::startUpdateThread()
 	stopUpdateThread();
 	if (!d_data->updateThread)
 		d_data->updateThread = new UpdateThread(this);
-	d_data->updateThread->mainWindow = this;
+	// Read there, in the thread that owns the widgets.
+	d_data->updateThread->bindTo(this);
 	d_data->updateThread->start();
 }
 
@@ -5598,13 +5665,31 @@ void VipMainWindow::stopUpdateThread()
 {
 	if (d_data->updateThread) {
 		d_data->updateThread->mainWindow = nullptr;
-		d_data->updateThread->wait();
+		// Bounded: the turn in progress can sit in a network call that carries no
+		// deadline of its own. Destroying a running thread aborts, so the bound is
+		// a diagnostic rather than a way out.
+		if (!d_data->updateThread->wait(30000)) {
+			VIP_LOG_WARNING("Update thread still running after 30s, waiting for it");
+			d_data->updateThread->wait();
+		}
 	}
+}
+
+static VipMainWindow*& mainWindowInstance()
+{
+	static VipMainWindow* win = nullptr;
+	return win;
+}
+
+void vipForgetMainWindow(VipMainWindow* win)
+{
+	if (mainWindowInstance() == win)
+		mainWindowInstance() = nullptr;
 }
 
 VipMainWindow* vipGetMainWindow()
 {
-	static VipMainWindow* win = nullptr;
+	VipMainWindow*& win = mainWindowInstance();
 	if (!win) {
 		win = new VipMainWindow();
 		// init() function cannot be called from within the constructor, so just call it after
@@ -5816,8 +5901,11 @@ static VipBaseDragWidget* dropPlotItem(VipPlotMimeData* mime, QWidget* drop_widg
 				res = new VipDragWidget();
 				static_cast<VipDragWidget*>(res)->setWidget(_new);
 
+				// Nothing is the ordinary outcome here: dropping into an empty area
+				// hands the widget over and returns nothing.
 				res = drop_mime_data_widget(VipDisplayPlayerArea::fromChild(drop_widget), res, drop_widget);
-				res->setFocusWidget();
+				if (res)
+					res->setFocusWidget();
 
 				return res;
 			}
@@ -5836,8 +5924,9 @@ static VipBaseDragWidget* dropPlotItem(VipPlotMimeData* mime, QWidget* drop_widg
 		QList<VipAbstractPlayer*> players = duplicate.players();
 		if (players.size()) {
 			auto* tmp = vipCreateFromWidgets(vipListCast<QWidget*>(players));
-			drop_mime_data_widget(VipDisplayPlayerArea::fromChild(drop_widget), tmp, drop_widget);
-			tmp->setFocusWidget();
+			tmp = drop_mime_data_widget(VipDisplayPlayerArea::fromChild(drop_widget), tmp, drop_widget);
+			if (tmp)
+				tmp->setFocusWidget();
 			return nullptr;
 		}
 	}
@@ -6066,8 +6155,22 @@ VipBaseDragWidget* vipLoadBaseDragWidget(VipArchive& arch, VipDisplayPlayerArea*
 	arch.start("Processings");
 	qint64 time = arch.read("time").toLongLong();
 	QList<VipProcessingObject*> objects;
+	// The two other read loops in this file stop when the read yields nothing. This
+	// one only watched the error flag, so a variant that is neither a processing nor
+	// an error left the body doing nothing and the loop running for ever. Nothing
+	// bounded the number of objects either, and each one is a device opened for
+	// reading before anything has looked at it.
+	constexpr int maxRestoredProcessings = 4096;
 	while (!arch.hasError()) {
-		if (VipProcessingObject* obj = arch.read().value<VipProcessingObject*>()) {
+		const QVariant v = arch.read();
+		if (!v.isValid() || arch.hasError())
+			break;
+		if (VipProcessingObject* obj = v.value<VipProcessingObject*>()) {
+			if (objects.size() >= maxRestoredProcessings) {
+				VIP_LOG_ERROR("Too many processings in session file, stopping at " + QString::number(objects.size()));
+				delete obj;
+				break;
+			}
 			// open the read only devices
 			if (VipIODevice* device = qobject_cast<VipIODevice*>(obj)) {
 				if (device->supportedModes() & VipIODevice::ReadOnly)

@@ -124,7 +124,10 @@ private:
 class VIP_GUI_EXPORT VipToolWidgetToolBar : public QToolBar
 {
 	Q_OBJECT
-	VipToolWidget* m_toolWidget;
+	// QPointer, as two members of this same header already are: the bar is parented
+	// to the window that shows it, not to the tool widget it points at, so the two
+	// lifetimes are independent.
+	QPointer<VipToolWidget> m_toolWidget;
 
 public:
 	VipToolWidgetToolBar(VipToolWidget* tool, QWidget* parent = nullptr)

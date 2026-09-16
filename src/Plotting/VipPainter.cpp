@@ -233,11 +233,19 @@ void VipPainter::drawPath(QPainter* painter, const QPainterPath& path)
 
 void VipPainter::drawPath(QPainter* painter, const QPainterPath& path, const QPolygonF& target)
 {
+	// The four points this indexes, and the divisor, as the fourth writing of this
+	// same transform already checks: an empty path gave a transform with infinite
+	// components, which was then installed on the painter.
+	if (target.size() < 4)
+		return;
+
+	QRectF p_rect = path.boundingRect();
+	if (p_rect.width() == 0 || p_rect.height() == 0)
+		return;
+
 	QVector2D vx(target[1].x() - target[0].x(), target[1].y() - target[0].y());
 	QVector2D vy(target[3].x() - target[0].x(), target[3].y() - target[0].y());
 	QPointF origin(target[0]);
-
-	QRectF p_rect = path.boundingRect();
 
 	vx /= p_rect.width();
 	vy /= p_rect.height();
@@ -777,6 +785,11 @@ void VipPainter::drawPoints(QPainter* painter, const QPointF* points, int pointC
 		}
 
 		if (rounding) {
+			// Trimmed to what the clipping actually kept. The polygon was sized to the
+			// input count, so this branch drew the entries past that, which were never
+			// written: default constructed points, that is the origin. Every point the
+			// clipping had just discarded came back at (0, 0).
+			clippedPolygon.resize(numClippedPoints);
 			QTransform tr = resetTransform(painter);
 			clippedPolygon = vipRound(clippedPolygon, tr);
 			painter->drawPoints(clippedPolygon.constData(), clippedPolygon.size());
@@ -840,6 +853,9 @@ void VipPainter::drawPixmap(QPainter* painter, const QRectF& rect, const QPixmap
 
 void VipPainter::drawPixmap(QPainter* painter, const QPolygonF& target, const QPixmap& pixmap, const QRectF& src)
 {
+	if (target.size() < 4 || pixmap.width() == 0 || pixmap.height() == 0)
+		return;
+
 	QVector2D vx(target[1].x() - target[0].x(), target[1].y() - target[0].y());
 	QVector2D vy(target[3].x() - target[0].x(), target[3].y() - target[0].y());
 	QPointF origin(target[0]);
@@ -858,6 +874,9 @@ void VipPainter::drawPixmap(QPainter* painter, const QPolygonF& target, const QP
 
 void VipPainter::drawImage(QPainter* painter, const QPolygonF& target, const QImage& image, const QRectF& src)
 {
+	if (target.size() < 4 || image.width() == 0 || image.height() == 0)
+		return;
+
 	QVector2D vx(target[1].x() - target[0].x(), target[1].y() - target[0].y());
 	QVector2D vy(target[3].x() - target[0].x(), target[3].y() - target[0].y());
 	QPointF origin(target[0]);

@@ -37,7 +37,6 @@
 #include <qmutex.h>
 #include <qsharedmemory.h>
 #include <qstringlist.h>
-#include <qsystemsemaphore.h>
 #include <qtextstream.h>
 #include <qthread.h>
 
@@ -57,9 +56,12 @@
 class VipFileLogger;
 
 /// \class VipLogging
-/// \brief A process/thread safe logging class.
+/// \brief A thread safe logging class.
 ///
-/// \ref VipLogging is a process/thread safe class used to log informations of different levels into one or multiple output devices.
+/// \ref VipLogging is a thread safe class used to log informations of different levels into one or multiple output devices.
+///
+/// It is NOT safe across processes: two instances writing to the same log file
+/// interleave their entries.
 ///
 /// The possible levels are:
 /// <ul>
@@ -73,10 +75,10 @@ class VipFileLogger;
 /// <ul>
 /// <li>VipLogging::Cout : output the log text into the standard output (std::cout)
 /// <li>VipLogging::SharedMemory : output the log text into a shared memory. The shared memory key is set using #VipLogging::SetIdentifier().
-/// <li>VipLogging::File : output the log text into a file. The file is protected using a semaphore which key is set using #VipLogging::SetIdentifier.
+/// <li>VipLogging::File : output the log text into a file. The file is not protected against other processes.
 /// </ul>
 ///
-/// The #VipLogging class is ready to use, you do not necessarily have to specify the shared memory and semaphore identifier
+/// The #VipLogging class is ready to use, you do not necessarily have to specify the shared memory identifier
 /// nor the file name, default values are provided ('Log.txt' for output file).
 ///
 /// The \ref VipLogging class uses a specific format for log text output:<br>
@@ -122,7 +124,8 @@ public:
 	Q_DECLARE_FLAGS(Levels, Level);
 
 	VipLogging();
-	VipLogging(Outputs outputs, VipFileLogger* logger);
+	/// Takes ownership of \p logger, which must come from new.
+	VipLogging(Outputs outputs, std::unique_ptr<VipFileLogger> logger);
 	VipLogging(Outputs outputs, const QString& identifier = QString());
 	~VipLogging();
 
@@ -130,7 +133,7 @@ public:
 
 	/// Return the current VipFileLogger instance
 	const VipFileLogger* logger() const;
-	/// Returns the logging identifier (used for the file semaphore and the shared memory keys).
+	/// Returns the logging identifier (used for the shared memory key).
 	QString identifier() const;
 	/// Returns the current output filename.
 	QString filename() const;
@@ -151,9 +154,12 @@ public:
 	bool isEnabled() const;
 
 	/// Set the log identifier.
-	/// This will close all previously opened shared memory and semaphore.
+	/// This will close any previously opened shared memory.
 	/// Returns true on success, false otherwise.
-	bool open(Outputs outputs, VipFileLogger* logger);
+	/// Takes ownership of \p logger, which must come from new: it is held in a
+	/// shared pointer and destroyed with this object. The type says so, so the
+	/// caller cannot keep a second owner by mistake.
+	bool open(Outputs outputs, std::unique_ptr<VipFileLogger> logger);
 	bool open(Outputs outputs, const QString& identifier = QString());
 	bool isOpen() const;
 	void close();
@@ -289,9 +295,12 @@ namespace details
 	{
 		return str.data();
 	}
-	static inline const char* __build_str(const QString& str)
+	// Returns the buffer holder, not a pointer into a temporary one: the conversion
+	// produces a QByteArray by value, and its buffer was already gone when the
+	// caller received the pointer.
+	static inline QByteArray __build_str(const QString& str)
 	{
-		return str.toLatin1().data();
+		return str.toLatin1();
 	}
 
 	template<int N>

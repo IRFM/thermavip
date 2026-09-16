@@ -17,7 +17,17 @@ def estimt(tau_up,tau_down,t_p,p):
     the power one and the up/down decay times
     """
     n = len(t_p)
-    cadence = np.max(t_p[1:] - t_p[0:n-1])
+    if n < 2:
+        raise ValueError("estimt: at least two samples are needed")
+    # The median of the steps, not their maximum: this is the step of an explicit
+    # Euler scheme, which needs step < tau to be stable, and a single gap in the
+    # acquisition made the maximum dwarf the real step and the whole trace diverge.
+    deltas = t_p[1:] - t_p[0:n-1]
+    cadence = float(np.median(deltas))
+    if not (cadence > 0):
+        raise ValueError("estimt: the time base does not increase")
+    if not (tau_up > 0) or not (tau_down > 0):
+        raise ValueError("estimt: the decay times must be positive")
     gain_up = cadence / tau_up 
     gain_down=cadence / tau_down 
     t= np.zeros((n,), dtype = np.float64)
@@ -30,10 +40,15 @@ def estimt(tau_up,tau_down,t_p,p):
         dp = p2 - tim1
         incr_up = gain_up * dp
         incr_down = gain_down * dp
+        # elif and else: the two tests were independent and neither covered
+        # equality, so the increment of the previous step was replayed and the
+        # simulated trace climbed past the set point it cannot exceed.
         if p2 > tim1:
             incr = incr_up
-        if p2 < tim1:
-            incr = incr_down 
+        elif p2 < tim1:
+            incr = incr_down
+        else:
+            incr = 0.0
         t[i] = tim1 + incr
     
     return t
@@ -101,6 +116,11 @@ def estimate_tau(times, val_temps, pow_vals):
 
     #max_p = np.max(medfilt(vp,151))
     max_p = np.max(vp)
+    # A power that is identically zero, which is what no heating and a failed read
+    # both give, used to turn the whole signal into NaN, and the fit below then
+    # returned an arbitrary point as a decay time.
+    if not (max_p > 0):
+        raise ValueError("estimate_tau: the power signal is null")
     vp = vp/max_p
     
     # ...then temperatures
@@ -111,16 +131,34 @@ def estimate_tau(times, val_temps, pow_vals):
     vmax = np.max(vt_filter)
     
     
+    if not (vmax > vmin):
+        raise ValueError("estimate_tau: the temperature signal is constant")
     vt = (vt - vmin)/(vmax - vmin)
     
     power = vp
     temperature = vt
     
     # Minimize error function
-    estimt_error = lambda x: np.linalg.norm(temperature - estimt(x[0], x[1],times, power))
-    xopt = fmin(func=estimt_error, x0=[1,1])
-    
-    return xopt #(tau_up, tau_down)
+    # A decay time is positive: the simplex walks freely and used to reach zero or
+    # a negative value, where the model has no meaning. Fit on the logarithm, so
+    # the constraint holds by construction, and say when it did not converge.
+    def estimt_error(x):
+        tau_up = float(np.exp(x[0]))
+        tau_down = float(np.exp(x[1]))
+        try:
+            simulated = estimt(tau_up, tau_down, times, power)
+        except ValueError:
+            return np.inf
+        error = np.linalg.norm(temperature - simulated)
+        return error if np.isfinite(error) else np.inf
+
+    xopt, fopt, iterations, calls, warnflag = fmin(func=estimt_error, x0=[0.0, 0.0], full_output=True, disp=False)
+    if warnflag != 0:
+        raise RuntimeError("estimate_tau: the fit did not converge")
+    if not np.isfinite(fopt):
+        raise RuntimeError("estimate_tau: the fit could not be evaluated")
+
+    return np.exp(xopt) #(tau_up, tau_down)
 
 
 
@@ -131,30 +169,27 @@ def estimate_tau_for_pulse(pulse: int, times , temperatures):
     import librir_west as w
     
     # Load all power signals
+    # One loop instead of three copies, a narrowed catch, and a trace for each
+    # failure: a bare except also swallows an interruption, and losing all three
+    # signals used to leave the temperature compared with itself, which returns a
+    # decay time that measures nothing.
+    import logging
+
     powers=[]
-    try:
-        #Hybrid power
-        hyb_power = w.ts_read_signal(pulse,"SHYBPTOT")
-        powers.append(hyb_power[0])
-        powers.append(hyb_power[1])
-    except:
-        pass
-    
-    try:
-        # ICRH power
-        ich_power = w.ts_read_signal(pulse,"SICHPTOT")
-        powers.append(ich_power[0])
-        powers.append(ich_power[1]*1e-3) # switch to MW
-    except:
-        pass
-    
-    try:
-        # IP power with a vloop of 1
-        smag_power = w.ts_read_signal(pulse,"SMAG_IP")
-        powers.append(smag_power[0])
-        powers.append(smag_power[1]*1e-3) # switch to MW considering a vloop of 1
-    except:
-        pass
+    for signal_name, factor, label in (("SHYBPTOT", 1.0, "hybrid"),
+                                       ("SICHPTOT", 1e-3, "ICRH"),          # switch to MW
+                                       ("SMAG_IP", 1e-3, "IP, vloop of 1")): # switch to MW
+        try:
+            signal = w.ts_read_signal(pulse, signal_name)
+        except Exception as error:
+            logging.warning("estimate_tau_for_pulse: %s (%s) unreadable for pulse %s: %s",
+                            signal_name, label, pulse, error)
+            continue
+        powers.append(signal[0])
+        powers.append(signal[1] * factor)
+
+    if not powers:
+        raise RuntimeError("estimate_tau_for_pulse: no power signal could be read for pulse %s" % pulse)
     
     # Add time trace for resampling
     powers.append(times)
@@ -171,7 +206,12 @@ def estimate_tau_for_pulse(pulse: int, times , temperatures):
         
     import time
     t = time.time()
-    taus = estimate_tau(pow_t * 1e-9,powers[-1],pow_v)
+    # tmp[-1], not powers[-1]: resample_all put every signal on one time base, and
+    # the temperature is the reference the fit is measured against. Passing the raw
+    # array threw that away for the one signal that matters — either the shapes
+    # disagree and the subtraction raises, or they happen to match and two signals
+    # offset in time are compared, which yields a wrong tau with no message.
+    taus = estimate_tau(pow_t * 1e-9,tmp[-1],pow_v)
     t = time.time() - t
     print("elapsed:",t)
     print(taus)

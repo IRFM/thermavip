@@ -24,7 +24,7 @@ jobs:
         runs-on: macos-latest
         
         steps:
-        - uses: actions/checkout@v4
+        - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         
         - name: install qt6 
           run: brew install qt6
@@ -45,5 +45,9 @@ jobs:
               cmake .. -DCMAKE_BUILD_TYPE=Debug -DWITH_FFMPEG=OFF -DNO_WARNINGS=ON -DLOCAL_INSTALL=ON 
               cmake --build ./ 
               cmake --build . --target install
+
+        - name: Run tests
+          run: ctest --test-dir build --output-on-failure
+          shell: bash
 
         

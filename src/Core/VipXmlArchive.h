@@ -156,6 +156,8 @@ protected:
 	virtual void doSave();
 	/// Reset the archive status. Each call to \a restore must match to a call to #save().
 	virtual void doRestore();
+	/// Drop the saved status, keeping the current position.
+	virtual void doDiscardSave();
 
 	void check_node(const QDomNode& n, const QString& error);
 	void set_current_value(const QDomNode& n);

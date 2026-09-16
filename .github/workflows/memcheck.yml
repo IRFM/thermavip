@@ -1,0 +1,140 @@
+name: Memory check (blocking)
+
+# Blocking memory checks, on every push and pull request. Only what is cheap
+# enough to keep: AddressSanitizer (~2x), LeakSanitizer, the undefined
+# behaviour sanitizer, and the Windows CRT debug heap.
+#
+# The slow tools live in memcheck-nightly.yml and do not block: a slow
+# blocking job is a job people learn to bypass.
+#
+# The command is the same everywhere, `ctest -T memcheck`; only the backend
+# changes, selected by THERMAVIP_SANITIZER.
+
+on:
+  push:
+    branches: [ "main", "dev" ]
+  pull_request:
+    branches: [ "main", "dev", "releases/**" ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+
+  linux-sanitizers:
+    name: Linux ${{ matrix.sanitizer }}
+    runs-on: ubuntu-22.04
+    strategy:
+      fail-fast: false
+      matrix:
+        # address also covers leaks: LeakSanitizer is part of it on Linux.
+        sanitizer: [ address, undefined ]
+
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      - name: Install Qt
+        uses: jurplel/install-qt-action@48d3ad6db93f3627c8ee7a0454bc6f3744f7e730 # v4.3.1 -- note: "v4" is a BRANCH here, not a tag
+        with:
+          modules: 'qt5compat'
+
+      - name: install gcc 10
+        run: sudo apt-get update && sudo apt-get install -y gcc-10 g++-10
+
+      # WITH_MICRO stays OFF: a replacement allocator blinds the checker, and
+      # the CMake refuses the combination anyway. Third-party dependencies are
+      # left out: we instrument project code, not ffmpeg.
+      - name: Configure
+        run: |
+          cmake -S . -B build \
+            -DCMAKE_BUILD_TYPE=Debug \
+            -DTHERMAVIP_SANITIZER=${{ matrix.sanitizer }} \
+            -DWITH_MICRO=OFF \
+            -DWITH_EXAMPLES=OFF \
+            -DLOCAL_INSTALL=ON
+        shell: bash
+        env:
+          CC: gcc-10
+          CXX: g++-10
+
+      - name: Build
+        run: cmake --build build --parallel
+        shell: bash
+
+      # offscreen: no display server, and most graphics driver noise disappears.
+      # The remaining suppressions are versioned and justified one by one.
+      - name: Memory check
+        run: ctest --test-dir build -T memcheck --output-on-failure
+        shell: bash
+        env:
+          QT_QPA_PLATFORM: offscreen
+          ASAN_OPTIONS: suppressions=${{ github.workspace }}/cmake/sanitizer-suppressions.txt:detect_leaks=1
+          LSAN_OPTIONS: suppressions=${{ github.workspace }}/cmake/sanitizer-suppressions.txt:print_suppressions=0
+          UBSAN_OPTIONS: print_stacktrace=1:halt_on_error=1
+
+  windows-asan:
+    name: Windows AddressSanitizer
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      - name: Install Qt
+        uses: jurplel/install-qt-action@48d3ad6db93f3627c8ee7a0454bc6f3744f7e730 # v4.3.1 -- note: "v4" is a BRANCH here, not a tag
+        with:
+          modules: 'qt5compat'
+
+      - name: Configure
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DTHERMAVIP_SANITIZER=address -DWITH_MICRO=OFF -DWITH_EXAMPLES=OFF -DLOCAL_INSTALL=ON
+        shell: bash
+
+      - name: Build
+        run: cmake --build build --config Debug
+        shell: bash
+
+      - name: Memory check
+        run: ctest --test-dir build -C Debug -T memcheck --output-on-failure
+        shell: bash
+        env:
+          QT_QPA_PLATFORM: offscreen
+
+  windows-crt-leaks:
+    name: Windows CRT debug heap (leaks)
+    runs-on: windows-latest
+
+    # Separate from the job above, and not for convenience. Measured: under
+    # /fsanitize=address a deliberate 4096-byte leak is NOT reported, because
+    # AddressSanitizer replaces the allocator; without it the same leak shows.
+    # Both are needed, since LeakSanitizer is not ported to Windows.
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      - name: Install Qt
+        uses: jurplel/install-qt-action@48d3ad6db93f3627c8ee7a0454bc6f3744f7e730 # v4.3.1 -- note: "v4" is a BRANCH here, not a tag
+        with:
+          modules: 'qt5compat'
+
+      - name: Configure
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DWITH_MICRO=OFF -DWITH_EXAMPLES=OFF -DLOCAL_INSTALL=ON
+        shell: bash
+
+      - name: Build
+        run: cmake --build build --config Debug
+        shell: bash
+
+      # The CRT debug heap is armed in src/Tests/vip_test_main.h and reports on
+      # stderr at process exit. It does not change the exit code, so grepping
+      # for the marker is what makes this step blocking.
+      - name: Run tests and fail on leaks
+        run: |
+          set -o pipefail
+          ctest --test-dir build -C Debug -V 2>&1 | tee ctest-output.txt
+          if grep -q "Detected memory leaks!" ctest-output.txt; then
+            echo "::error::The CRT debug heap reported memory leaks."
+            grep -A 20 "Detected memory leaks!" ctest-output.txt
+            exit 1
+          fi
+        shell: bash
+        env:
+          QT_QPA_PLATFORM: offscreen

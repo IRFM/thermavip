@@ -41,6 +41,16 @@
 
 namespace detail
 {
+	// An array owns its buffer and can detach it; a view does not.
+	template<class T, class = void>
+	struct HasDetach : std::false_type
+	{
+	};
+	template<class T>
+	struct HasDetach<T, std::void_t<decltype(std::declval<T&>().detach())>> : std::true_type
+	{
+	};
+
 	// Tells if a compile error should be triggered
 	template<bool Err>
 	struct CError
@@ -174,6 +184,18 @@ namespace detail
 
 			using dtype = ValueType_t<Dst>;
 			const qsizetype size = dst.size();
+
+			// Revert following change: we don' want to detach the destination 
+			// as it might be used in the right expression. This would trigger
+			// an unecessary allocation + copy.
+
+			// Detach before writing: the const accessor does not, on purpose, and
+			// this function is public. Called directly, it used to write into a
+			// buffer another array still shares. A view owns nothing and has no
+			// detach, which is the whole point of a view.
+			//if constexpr (detail::HasDetach<Dst>::value)
+			//	dst.detach();
+
 			dtype* ptr = (dtype*)dst.constPtr();
 			if (!ptr)
 				return false;
@@ -432,7 +454,7 @@ namespace detail
 ///
 /// Src is a functor expression built by combining VipNDArray operators or using a function like vipTransform() or vipConvolve().
 /// Src functor can mix typed or raw VipNDArray objects. Raw VipNDArray objects will be casted to the deduced expression type before evaluation
-/// (which might trigger one or more allocations/copies). Note that a VipNDArray appearing several times in the fuctor expression
+/// (which might trigger one or more allocations/copies). Note that a VipNDArray appearing several times in the functor expression
 /// will be casted only once.
 ///
 /// It is allowed to use dst in the functor expression and this won't trigger a reallocation/copy of dst array.
@@ -443,6 +465,14 @@ namespace detail
 /// - invalid functor expression for the destination type (trying to convolve an array of QString will return false).
 /// 
 /// This function will never reset the dst array.
+///
+/// Re-entrance, imposed on the src functor: its operator() and operator[] are
+/// called concurrently by several threads as soon as vipSetIterateThreadCount()
+/// was given more than one and dst holds more than a few thousand elements. A
+/// functor must therefore keep no working state of its own: buffers belong to
+/// the call, not to the object. A functor that ignores this runs correctly on
+/// small arrays and on one thread, and returns wrong values in production, with
+/// nothing to say so.
 /// 
 /// vipEval() is also used to evaluate reduction algorithms (inheriting detail::BaseReductor) and array algorithms (inheriting detail::ArrayAlgorithm).
 /// For instance, vipResize() uses internally vipEval() to apply a resizing algorithm.

@@ -78,13 +78,16 @@ public:
 
 		double pos;
 		QRgb rgb;
-		int r, g, b;
+		int r{ 0 }, g{ 0 }, b{ 0 };
 
-		// step to next ColorStop
-		int r_step;
-		int g_step;
-		int b_step;
-		double one_on_pos_step;
+		// step to next ColorStop. Initialised here, because insert() computes them
+		// only up to the last but one stop and the colour of the last position reads
+		// them: the product was zero whenever the last stop sat exactly at 1, which
+		// hid it, but the read itself always happened.
+		int r_step{ 0 };
+		int g_step{ 0 };
+		int b_step{ 0 };
+		double one_on_pos_step{ 0.0 };
 	};
 
 	inline int findUpper(double pos) const;
@@ -452,10 +455,8 @@ VipLinearColorMap::VipLinearColorMap(const QColor& color1, const QColor& color2,
 //! Destructor
 VipLinearColorMap::~VipLinearColorMap()
 {
-	{
-		QWriteLocker lock(&d_data->histLock);
-		dirtyColorMap();
-	}
+	// The lock lives inside dirtyColorMap() now, so every caller gets it.
+	dirtyColorMap();
 }
 
 const VipLinearColorMap::ColorStops& VipLinearColorMap::internalColorStops() const
@@ -585,6 +586,11 @@ QColor VipLinearColorMap::color2() const
 
 void VipLinearColorMap::dirtyColorMap()
 {
+	// The lock the destructor used to take around this call, taken here instead: the
+	// buffer freed below is read by the painting path between startDraw() and
+	// endDraw(), and the eight setters that reach this function took nothing at all.
+	QWriteLocker lock(&d_data->histLock);
+
 	if (d_data->renderColors)
 		delete[] d_data->renderColors;
 	d_data->renderColors = nullptr;
@@ -796,13 +802,26 @@ void VipLinearColorMap::applyColorMap(const VipInterval& interval, const VipNDAr
 								    index = (int)(((index - 2) * f) + 2.5);
 								else if(index >= num_colors )
 									return qRgba(0, 0, 0, 0);
-							    return palette[index];
+							    // Checked after the rescaling and on an unsigned, like the
+							    // computed path above: an index of 1 or less reached the
+							    // subscript untouched, negative ones included, and the rescaled
+							    // one was multiplied by f and never checked again.
+							    const unsigned i = (unsigned)index;
+							    return i >= num_colors + 3u ? qRgba(0, 0, 0, 0) : palette[i];
 						    },
 						    VipArrayView<int>(this->d_data->indexes.data(), array.shape())));
 				  }
 				  else {
 					  // histogram of size num_colors
-					  vipEval(imout, vipFunction([&](auto index) { return palette[index]; }, VipArrayView<int>(this->d_data->indexes.data(), array.shape())));
+					  // Same guard: this index comes out of the histogram pass, not out of a
+				  // clamp, and it indexes an array of num_colors + 3 entries.
+				  vipEval(imout,
+					  vipFunction(
+					    [&](auto index) {
+						    const unsigned i = (unsigned)index;
+						    return palette[i >= num_colors + 3u ? 0 : i];
+					    },
+					    VipArrayView<int>(this->d_data->indexes.data(), array.shape())));
 				  }
 			  }
 
@@ -1149,7 +1168,10 @@ QGradientStops VipLinearColorMap::createGradientStops(StandardColorMap color_map
 		case VipLinearColorMap::Sunset:
 			colorStops_ << QGradientStop(0, QColor(0x364B9A)) << QGradientStop(0.1, QColor(0x4A7BB7)) << QGradientStop(0.2, QColor(0x6EA6CD)) << QGradientStop(0.3, QColor(0x98CAE1))
 				    << QGradientStop(0.4, QColor(0xC2E4EF)) << QGradientStop(0.5, QColor(0xEAECCC)) << QGradientStop(0.6, QColor(0xFEDA8B)) << QGradientStop(0.7, QColor(0xFDB366))
-				    << QGradientStop(0.8, QColor(0xF67E4B)) << QGradientStop(0.9, QColor(0xDD3D2D)) << QGradientStop(0.1, QColor(0xA50026));
+				    // 1, not 0.1: the series rises to 0.9 and this last stop fell back to
+				    // 0.1, where insert() merges it into the second one. The palette lost its
+				    // pale low end, and its last stop no longer sat at 1.
+				    << QGradientStop(0.8, QColor(0xF67E4B)) << QGradientStop(0.9, QColor(0xDD3D2D)) << QGradientStop(1, QColor(0xA50026));
 			break;
 
 		case VipLinearColorMap::ColorPaletteStandard:

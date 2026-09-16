@@ -1157,7 +1157,15 @@ bool VipPlotToolWidgetPlayer::eventFilter(QObject*, QEvent* evt)
 
 VipPlotToolWidgetPlayer* vipGetPlotToolWidgetPlayer(VipMainWindow* window)
 {
-	static VipPlotToolWidgetPlayer* win = new VipPlotToolWidgetPlayer(window);
+	// A QPointer, because the object is a child of the main window and dies with it,
+	// while a raw static kept answering that address for the rest of the process.
+	static QPointer<VipPlotToolWidgetPlayer> win;
+	if (!win) {
+		VipMainWindow* w = window ? window : vipGetMainWindow();
+		if (!w)
+			return nullptr;
+		win = new VipPlotToolWidgetPlayer(w);
+	}
 	return win;
 }
 
@@ -1307,7 +1315,11 @@ VipMultiProgressWidget::~VipMultiProgressWidget()
 	VipProgress::resetProgressManager();
 	changeModality(Qt::NonModal);
 	this->disconnect();
-	vipProcessEvents();
+	// Never run the event loop from a destructor. disconnect() does not drop the
+	// meta-calls already posted to this object, and running the loop delivered them
+	// here, calling show() and raise() on an object being destroyed. ~QObject purges
+	// them too, but only after this body has returned.
+	QCoreApplication::removePostedEvents(this, QEvent::MetaCall);
 }
 
 QMultiMap<QString, int> VipMultiProgressWidget::currentProgresses() const
@@ -1699,6 +1711,14 @@ void VipMultiProgressWidget::setModal(QObjectPointer ptr, bool modal)
 
 VipMultiProgressWidget* vipGetMultiProgressWidget(VipMainWindow* window)
 {
-	static VipMultiProgressWidget* widget = new VipMultiProgressWidget(window);
+	// Same as above: destroyed by its parent, and the callers of this accessor run
+	// from destructors that the parent's own destruction triggers.
+	static QPointer<VipMultiProgressWidget> widget;
+	if (!widget) {
+		VipMainWindow* w = window ? window : vipGetMainWindow();
+		if (!w)
+			return nullptr;
+		widget = new VipMultiProgressWidget(w);
+	}
 	return widget;
 }

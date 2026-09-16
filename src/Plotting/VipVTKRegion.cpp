@@ -1,5 +1,7 @@
 #include "VipVTKRegion.h"
 #include "VipHash.h"
+
+#include <QMutex>
 #include "vtkCamera.h"
 #include "vtkCellArray.h"
 #include "vtkDataSet.h"
@@ -360,7 +362,14 @@ struct Point3D
 };
 size_t qHash(const Point3D& p)
 {
-	return vipHashBytes(&p, sizeof(p));
+	// Canonicalised first: the equality above is numeric and this hashes the bytes,
+	// and -0.0 == 0.0 while the two differ by a sign bit. This is the key that
+	// deduplicates the points of the rebuilt mesh, so a vertex produced by a mirror
+	// or a transform used to survive as a duplicate of its own twin.
+	double c[3];
+	for (int i = 0; i < 3; ++i)
+		c[i] = (p.p[i] == 0.0) ? 0.0 : p.p[i];
+	return vipHashBytes(c, sizeof(c));
 }
 
 VipVTKObject vipBuildRegionObject(const VipVTKRegion& r)
@@ -385,7 +394,11 @@ VipVTKObject vipBuildRegionObject(const VipVTKRegion& r)
 		if (!set)
 			continue;
 
+		// A rectilinear grid has no vtkPoints and answers null here, and this class is
+		// not restricted to point sets.
 		auto* set_points = set->GetPoints();
+		if (!set_points)
+			continue;
 		QHash<Point3D, vtkIdType> pts_to_id;
 
 		// Add the points and shift them toard the camera
@@ -482,10 +495,15 @@ QVector<QPair<QString, QVariant>> vipBuildRegionAttributes(const VipVTKRegion& r
 			auto lock = vipLockVTKObjects(obj);
 
 			if (vtkDataSet* set = obj.dataSet()) {
-				vtkPoints* pts = set->GetPoints();
+				const vtkIdType point_count = set->GetNumberOfPoints();
 				for (vtkIdType id : region.pointIds) {
+					// The generic accessor, valid for every kind of grid, and the identifier
+					// is checked: these come from a stored region and the object may have
+					// changed since.
+					if (id < 0 || id >= point_count)
+						continue;
 					double p[3];
-					pts->GetPoint(id, p);
+					set->GetPoint(id, p);
 					xmin = std::min(xmin, p[0]);
 					xmax = std::max(xmax, p[0]);
 					ymin = std::min(ymin, p[1]);
@@ -538,6 +556,7 @@ QVector<QPair<QString, QVariant>> vipBuildRegionAttributes(const VipVTKRegion& r
 		const auto& regions = it.value();
 		double min = vipNan(), max = vipNan(), mean = vipNan();
 		qint64 count = 0;
+		bool seen = false;
 
 		for (const auto& region : regions) {
 			VipVTKObject obj = region.object;
@@ -547,21 +566,32 @@ QVector<QPair<QString, QVariant>> vipBuildRegionAttributes(const VipVTKRegion& r
 				if (array->IsA("vtkDataArray") && array->GetNumberOfComponents() == 1) {
 					vtkDataArray* ar = static_cast<vtkDataArray*>(array);
 					for (auto id : region.region.pointIds) {
-						if (vipIsNan(min))
-							min = max = mean = ar->GetTuple1(id);
+						// A separate flag, and NaN skipped: NaN was the not-initialised marker
+						// and it is also how a missing value arrives in a scientific array. A
+						// first sample that was NaN made the loop take the first-element branch
+						// every turn, so the statistic ended up being the last sample while the
+						// count kept growing.
+						const double v = ar->GetTuple1(id);
+						if (vipIsNan(v))
+							continue;
+						if (!seen) {
+							min = max = v;
+							mean = 0;
+							seen = true;
+						}
 						else {
-							double v = ar->GetTuple1(id);
 							min = std::min(min, v);
 							max = std::max(max, v);
-							mean += v;
 						}
+						mean += v;
 						++count;
 					}
 				}
 			}
 		}
 
-		mean /= count;
+		if (count)
+			mean /= count;
 		map.push_back({ name + " min", (min) });
 		map.push_back({ name + " max", (max) });
 		map.push_back({ name + " mean", (mean) });
@@ -573,6 +603,7 @@ QVector<QPair<QString, QVariant>> vipBuildRegionAttributes(const VipVTKRegion& r
 		const auto& regions = it.value();
 		double min = vipNan(), max = vipNan(), mean = vipNan();
 		qint64 count = 0;
+		bool seen = false;
 
 		for (const auto& region : regions) {
 			VipVTKObject obj = region.object;
@@ -582,21 +613,32 @@ QVector<QPair<QString, QVariant>> vipBuildRegionAttributes(const VipVTKRegion& r
 				if (array->IsA("vtkDataArray") && array->GetNumberOfComponents() == 1) {
 					vtkDataArray* ar = static_cast<vtkDataArray*>(array);
 					for (auto id : region.region.completeCellIds) {
-						if (vipIsNan(min))
-							min = max = mean = ar->GetTuple1(id);
+						// A separate flag, and NaN skipped: NaN was the not-initialised marker
+						// and it is also how a missing value arrives in a scientific array. A
+						// first sample that was NaN made the loop take the first-element branch
+						// every turn, so the statistic ended up being the last sample while the
+						// count kept growing.
+						const double v = ar->GetTuple1(id);
+						if (vipIsNan(v))
+							continue;
+						if (!seen) {
+							min = max = v;
+							mean = 0;
+							seen = true;
+						}
 						else {
-							double v = ar->GetTuple1(id);
 							min = std::min(min, v);
 							max = std::max(max, v);
-							mean += v;
 						}
+						mean += v;
 						++count;
 					}
 				}
 			}
 		}
 
-		mean /= count;
+		if (count)
+			mean /= count;
 		map.push_back({ name + " min", (min) });
 		map.push_back({ name + " max", (min) });
 		map.push_back({ name + " mean", (mean) });
@@ -608,6 +650,10 @@ QVector<QPair<QString, QVariant>> vipBuildRegionAttributes(const VipVTKRegion& r
 class VipVTKRegionProcessing::PrivateData
 {
 public:
+	// The one caller of this processing puts it in Asynchronous mode and then calls
+	// setRegion() on the next line: apply() runs on the task pool while setRegion()
+	// and region() run in the graphics thread, and all three touch these members.
+	QMutex mutex;
 	VipVTKRegion region;
 	VipVTKObject output;
 	size_t hashs = 0; // hash value for all objects points and cells
@@ -629,7 +675,7 @@ static size_t computeHash(const VipVTKRegion& region, const QVector<VipVTKObject
 			if (vtkDataSet* set = obj.dataSet()) {
 				// Hash points
 				auto* pts = set->GetPoints();
-				if (pts->GetNumberOfPoints()) {
+				if (pts && pts->GetNumberOfPoints()) {
 					size_t tmp = vipHashBytes(pts->GetData()->GetVoidPointer(0), pts->GetNumberOfPoints() * sizeof(double));
 					vipHashCombine(h, tmp);
 				}
@@ -664,6 +710,8 @@ VipVTKRegionProcessing::~VipVTKRegionProcessing()
 
 void VipVTKRegionProcessing::setRegion(const VipVTKRegion& region)
 {
+	QMutexLocker lock(&d_data->mutex);
+
 	// Disconnect previous inputs
 	for (int i = 0; i < inputCount(); ++i)
 		inputAt(i)->clearConnection();
@@ -749,11 +797,14 @@ void VipVTKRegionProcessing::recompute()
 
 VipVTKRegion VipVTKRegionProcessing::region()
 {
+	QMutexLocker lock(&d_data->mutex);
 	return d_data->region;
 }
 
 void VipVTKRegionProcessing::apply()
 {
+	QMutexLocker lock(&d_data->mutex);
+
 	VipVTKObjectList objects;
 
 	// Consume inputs

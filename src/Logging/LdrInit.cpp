@@ -1,3 +1,8 @@
+// Vendored from https://github.com/m417z/LdrDllNotificationHook
+// Copyright 2023 Michael Maltsev
+// SPDX-License-Identifier: MIT
+// Full text in THIRD_PARTY_NOTICES.md at the repository root.
+
 #include <windows.h>
 #include <stdio.h>
 #include "LdrDllNotificationHook.h"
@@ -84,7 +89,9 @@ int LdrInit()
 
 	printf("\n========================================\n");
 	printf("Loading Ws2_32.dll\n");
-	HMODULE hWs2_32 = LoadLibrary(L"ws2_32.dll");
+	// By name alone, the search order can find a copy placed next to the
+	// executable before the system one.
+	HMODULE hWs2_32 = LoadLibraryExW(L"ws2_32.dll", nullptr, LOAD_LIBRARY_SEARCH_SYSTEM32);
 
 	printf("\n========================================\n");
 	printf("Unloading Ws2_32.dll\n");

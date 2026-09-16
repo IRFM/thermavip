@@ -17,7 +17,9 @@
 #include <QSplashScreen>
 #include <QTemporaryDir>
 #include <qopenglfunctions.h>
+#include <qpointer.h>
 #include <qprocess.h>
+#include <qsettings.h>
 #include <qscreen.h>
 #include <qwindow.h>
 #if QT_VERSION > QT_VERSION_CHECK(6, 0, 0)
@@ -129,6 +131,75 @@ struct Test : public QRunnable
 	virtual void run(){}
 };
 
+#ifdef _WIN32
+
+/// Declare this executable in HKEY_CURRENT_USER as the handler of the 'thermavip'
+/// URL scheme and of the .session extension. Does nothing if it is already so.
+static void vipRegisterFileAssociations()
+{
+	const QString exe = QDir::toNativeSeparators(vipAppCanonicalPath());
+	const QString expected = "\"" + exe + "\" \"%1\"";
+	QSettings reg("HKEY_CURRENT_USER\\Software\\Classes\\thermavip\\shell\\open\\command", QSettings::NativeFormat);
+	if (reg.value(".").toString() == expected)
+		return;
+
+	QTemporaryDir dir;
+	QString p = dir.path();
+	p.replace("\\", "/");
+	if (!p.endsWith("/"))
+		p += "/";
+	p += "register_thermavip.reg";
+
+	QString thermavip = vipAppCanonicalPath();
+	thermavip.replace("\\", "/");
+	thermavip.replace("/", "\\\\");
+
+	std::ofstream out(p.toLatin1().data());
+	if (!out)
+		return;
+
+	out << "Windows Registry Editor Version 5.00" << std::endl;
+	out << std::endl;
+	out << "[HKEY_CURRENT_USER\\Software\\Classes\\thermavip]" << std::endl;
+	out << "@=\"ThermaVIP\"" << std::endl;
+	out << "\"URL Protocol\"=\"\"" << std::endl;
+	out << std::endl;
+	out << "[HKEY_CURRENT_USER\\Software\\Classes\\thermavip\\shell]" << std::endl;
+	out << std::endl;
+	out << "[HKEY_CURRENT_USER\\Software\\Classes\\thermavip\\shell\\open]" << std::endl;
+	out << std::endl;
+	out << "[HKEY_CURRENT_USER\\Software\\Classes\\thermavip\\shell\\open\\command]" << std::endl;
+	out << "@=\"\\\"" << thermavip.toLatin1().data() << "\\\" \\\"%1\\\"\"" << std::endl;
+	out << std::endl;
+
+	// Register .session files
+	out << "[HKEY_CURRENT_USER\\Software\\Classes\\.session]" << std::endl;
+	out << "@=\"thermavip\"" << std::endl;
+	out << std::endl;
+	out << "[HKEY_CURRENT_USER\\Software\\Classes\\.session\\DefaultIcon]" << std::endl;
+	out << "@=\"" << thermavip.toLatin1().data() << "\"" << std::endl;
+
+	out.close();
+
+	// The full path: the current directory is the application directory and PATH was
+	// prefixed with one of its subdirectories, so an unqualified name is looked up in
+	// places a plain user can write into.
+	const QString regedit = QDir::toNativeSeparators(qEnvironmentVariable("SystemRoot", "C:/Windows") + "/regedit.exe");
+
+	QProcess process;
+	process.start(regedit, QStringList() << "/s" << p);
+	if (!process.waitForStarted(5000) || !process.waitForFinished(30000) || process.exitCode() != 0) {
+		VIP_LOG_WARNING("Unable to declare the 'thermavip' scheme and the .session extension");
+		return;
+	}
+
+	const QByteArray output = process.readAllStandardOutput() + process.readAllStandardError();
+	if (output.size())
+		VIP_LOG_WARNING(output.data());
+}
+
+#endif
+
 int main(int argc, char** argv)
 {
 	//TEST
@@ -137,7 +208,11 @@ int main(int argc, char** argv)
 	{
 		vip_debug("Load thermavip.env...");
 		// Load thermavip.env
-		QString env_file = vipGetDataDirectory() + "thermavip/thermavip.env";
+		// The options panel writes and re-reads this file directly under the data
+		// directory; the extra 'thermavip/' here duplicated the suffix that
+		// vipGetDataDirectory() already appends, so nothing entered in the panel was
+		// ever loaded.
+		QString env_file = vipGetDataDirectory() + "thermavip.env";
 		vip_debug("env file: %s\n", env_file.toLatin1().data());
 		if (!QFileInfo(env_file).exists()) {
 			env_file = QFileInfo(QString(argv[0])).canonicalPath();
@@ -243,7 +318,10 @@ int main(int argc, char** argv)
 
 	QCoreApplication::addLibraryPath(QFileInfo(QString(argv[0])).canonicalPath());
 
-	QDir::setCurrent(QFileInfo(QString(argv[0])).canonicalPath());
+	// Everything below resolves relative paths against it, the plugin directory
+	// included, so a failure is worth saying out loud even before the log exists.
+	if (!QDir::setCurrent(QFileInfo(QString(argv[0])).canonicalPath()))
+		fprintf(stderr, "Unable to enter the application directory\n");
 
 	vip_debug("Setup OpenGL\n");
 	// qputenv("QSG_INFO", "1");
@@ -421,7 +499,12 @@ int main(int argc, char** argv)
 		}
 		if (VipFileSharedMemory::instance().hasThermavipInstance()) {
 			// there is already an instance of thermavip: open ths files in the existing one and return
-			VipFileSharedMemory::instance().addFilesToOpen(files, VipCommandOptions::instance().count("workspace") > 0);
+			// The result says whether the list fitted in the shared segment; returning
+			// zero regardless reported success for files nobody will open.
+			if (!VipFileSharedMemory::instance().addFilesToOpen(files, VipCommandOptions::instance().count("workspace") > 0)) {
+				fprintf(stderr, "Unable to hand %d file(s) to the running instance\n", int(files.size()));
+				return 4;
+			}
 			return 0;
 		}
 		else {
@@ -433,12 +516,19 @@ int main(int argc, char** argv)
 	vip_debug("Load Core settings\n");
 
 	// load core settings
-	VipCoreSettings::instance()->restore(vipGetDataDirectory() + "core_settings.xml");
+	// Both of these answer whether they worked, and neither answer was read: a
+	// missing settings file started the application on defaults without a word, and
+	// a log that failed to open swallowed every message printed afterwards,
+	// including the plugin errors.
+	if (!VipCoreSettings::instance()->restore(vipGetDataDirectory() + "core_settings.xml"))
+		fprintf(stderr, "No usable core settings, starting on defaults\n");
 	// initialize the log file
 	QString log_file = "Log";
 	if (VipCoreSettings::instance()->logFileDate())
 		log_file += "_" + QDateTime::currentDateTime().toString("yyyy.MM.dd-hh.mm.ss");
-	VipLogging::instance().open(VipLogging::Cout | VipLogging::File, new VipTextLogger(log_file, vipGetLogDirectory(), VipCoreSettings::instance()->logFileOverwrite()));
+	if (!VipLogging::instance().open(VipLogging::Cout | VipLogging::File,
+					std::unique_ptr<VipFileLogger>(new VipTextLogger(log_file, vipGetLogDirectory(), VipCoreSettings::instance()->logFileOverwrite()))))
+		fprintf(stderr, "Unable to open a log file in %s\n", vipGetLogDirectory().toUtf8().data());
 	VipLogging::instance().setSavingEnabled(true);
 
 	bool last_session = false;
@@ -529,13 +619,15 @@ int main(int argc, char** argv)
 	{
 		if (!VipUpdate::getUpdateProgram().isEmpty()) {
 			VipUpdate update;
-			update.renameNewFiles("./"); // QFileInfo(vipAppCanonicalPath()).canonicalPath());
+			// The installation directory, not the one the process was started from.
+			const QString install = QFileInfo(vipAppCanonicalPath()).canonicalPath();
+			update.renameNewFiles(install);
 
 			// check for updates
 			if (!no_splashscreen)
 				splash->showMessage("Check for new updates...", Qt::AlignBottom | Qt::AlignHCenter, Qt::white);
 
-			if (update.hasUpdate("./")) // QFileInfo(vipAppCanonicalPath()).canonicalPath()) > 0)
+			if (update.hasUpdate(install))
 			{
 				if (update.isDownloadFinished()) {
 					if (!no_splashscreen)
@@ -544,11 +636,13 @@ int main(int argc, char** argv)
 					if (button == QMessageBox::Yes) {
 						QString procname = QFileInfo(app.arguments()[0]).fileName();
 						// QProcess::startDetached(VipUpdate::getUpdateProgram() + " -u --command " + procname + " -o ./");
-						QProcess::startDetached(VipUpdate::getUpdateProgram(),
-									QStringList() << "-u"
-										      << "--command" << procname << "-o"
-										      << "./");
-						return 0;
+						// Started, or said so: leaving through the return below on a failure
+						// closed the application without installing anything.
+						if (QProcess::startDetached(VipUpdate::getUpdateProgram(),
+									    QStringList() << "-u"
+											  << "--command" << procname << "-o" << install))
+							return 0;
+						VIP_LOG_ERROR("Unable to start the update program");
 					}
 				}
 			}
@@ -557,59 +651,11 @@ int main(int argc, char** argv)
 #endif
 
 #ifdef _WIN32
-
-	// On windows only, create register key to support url on the form 'thermavip://' in browsers
-
-	QTemporaryDir dir;
-	QString p = dir.path();
-	p.replace("\\", "/");
-	if (!p.endsWith("/"))
-		p += "/";
-	p += "register_thermavip.reg";
-
-	QString thermavip = vipAppCanonicalPath();
-	thermavip.replace("\\", "/");
-	thermavip.replace("/", "\\\\");
-	vip_debug("%s\n", p.toLatin1().data());
-	vip_debug("%s\n", thermavip.toLatin1().data());
-
-	std::ofstream out(p.toLatin1().data());
-	if (out) {
-
-		out << "Windows Registry Editor Version 5.00" << std::endl;
-		out << std::endl;
-		out << "[HKEY_CURRENT_USER\\Software\\Classes\\thermavip]" << std::endl;
-		out << "@=\"ThermaVIP\"" << std::endl;
-		out << "\"URL Protocol\"=\"\"" << std::endl;
-		out << std::endl;
-		out << "[HKEY_CURRENT_USER\\Software\\Classes\\thermavip\\shell]" << std::endl;
-		out << std::endl;
-		out << "[HKEY_CURRENT_USER\\Software\\Classes\\thermavip\\shell\\open]" << std::endl;
-		out << std::endl;
-		out << "[HKEY_CURRENT_USER\\Software\\Classes\\thermavip\\shell\\open\\command]" << std::endl;
-		out << "@=\"\\\"" << thermavip.toLatin1().data() << "\\\" \\\"%1\\\"\"" << std::endl;
-		out << std::endl;
-
-		// Register .session files
-		out << "[HKEY_CURRENT_USER\\Software\\Classes\\.session]" << std::endl;
-		out << "@=\"thermavip\"" << std::endl;
-		out << std::endl;
-		out << "[HKEY_CURRENT_USER\\Software\\Classes\\.session\\DefaultIcon]" << std::endl;
-		out << "@=\"" << thermavip.toLatin1().data() << "\"" << std::endl;
-
-		out.close();
-
-		QProcess process;
-		// QString cmd = "regedit /s " + p;
-		// process.start(cmd);
-		process.start("regedit", QStringList() << "/s" << p);
-		process.waitForStarted();
-		process.waitForFinished();
-
-		QByteArray output = process.readAllStandardOutput() + process.readAllStandardError();
-		if (output.size())
-			VIP_LOG_WARNING(output.data());
-	}
+	// A setting now, and a no-op once the registry already names this executable.
+	// The merge used to run on every start, without asking, without looking at what
+	// was there, and without reading its own result.
+	if (VipCoreSettings::instance()->registerFileAssociations())
+		vipRegisterFileAssociations();
 #endif
 
 	if (!no_splashscreen)
@@ -712,8 +758,9 @@ int main(int argc, char** argv)
 				if (!QFile::copy("base_session.session", vipGetDataDirectory() + "base_session.session"))
 					user_base_session_filename = "base_session.session";
 		}
-		else {
-			QFile::copy("base_session.session", vipGetDataDirectory() + "base_session.session");
+		else if (!QFile::copy("base_session.session", vipGetDataDirectory() + "base_session.session")) {
+			// Fall back on the installed one, as the branch above already does.
+			user_base_session_filename = "base_session.session";
 		}
 	}
 
@@ -757,6 +804,18 @@ int main(int argc, char** argv)
 			vipGetMainWindow()->metaObject()->invokeMethod(vipGetMainWindow(), "loadSession", Qt::QueuedConnection, Q_ARG(QString, load_session));
 	}
 	else {
+		// A session file rebuilds objects, points at devices and reconfigures the
+		// application. The .session extension is declared to the system, so one of
+		// these arrives by a double click on something that was downloaded or
+		// received: ask before reading it.
+		bool session_from_command_line = false;
+		for (const QString& f : files)
+			if (f.endsWith(".session", Qt::CaseInsensitive))
+				session_from_command_line = true;
+
+		if (session_from_command_line && QMessageBox::Yes != vipQuestion("Open session", "This session file comes from outside the application.\nOpen it?"))
+			return 0;
+
 		// open the command line files
 		vipGetMainWindow()->metaObject()->invokeMethod(vipGetMainWindow(), "openPaths", Qt::QueuedConnection, Q_ARG(QStringList, files));
 	}
@@ -768,7 +827,10 @@ int main(int argc, char** argv)
 	vipGetMainWindow()->showMaximized();
 
 #if defined(VIP_ALLOW_AUTO_UPDATE) && defined(_MSC_VER)
-	vipGetMainWindow()->startUpdateThread();
+	// Held, so that stopping it below neither builds a second main window nor
+	// touches one that has gone.
+	QPointer<VipMainWindow> update_window = vipGetMainWindow();
+	update_window->startUpdateThread();
 #endif
 
 	// Allow GUI initialization functions
@@ -781,15 +843,24 @@ int main(int argc, char** argv)
 	int ret = app.exec();
 	detail::setAppRunning(false);
 
+#if defined(VIP_ALLOW_AUTO_UPDATE) && defined(_MSC_VER)
+	// Started here and stopped nowhere: the only stop is in the destructor of a
+	// window that is never destroyed, so it was still running while the plugins
+	// unloaded and the log closed.
+	if (update_window)
+		update_window->stopUpdateThread();
+#endif
+
 	VipLoadPlugins::instance().unloadPlugins();
 	VipLogging::instance().close();
 
 	if (vipIsRestartEnabled()) {
 		// QProcess::startDetached(VipUpdate::getUpdateProgram() + " --hide --command Thermavip -l " + QString::number(vipRestartMSecs()));
-		QProcess::startDetached(VipUpdate::getUpdateProgram(),
-					QStringList() << "--hide"
-						      << "--command" << vipAppCanonicalPath()
-						      << "-l" << QString::number(vipRestartMSecs()));
+		if (!QProcess::startDetached(VipUpdate::getUpdateProgram(),
+					     QStringList() << "--hide"
+							   << "--command" << vipAppCanonicalPath()
+							   << "-l" << QString::number(vipRestartMSecs())))
+			fprintf(stderr, "Unable to restart the application\n");
 	}
 
 	return ret;

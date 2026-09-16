@@ -3197,12 +3197,12 @@ public:
 			if (VipBorderItem* inter = item->axisIntersection()) {
 				if (inter->parentItem() == item->parentItem()) {
 					if (item->orientation() == Qt::Vertical)
-						new_pos.setX(inter->position(item->axisIntersectionValue(), 0, item->axisIntersectionType()).x() + inter->pos().x());
+						new_pos.setX(item->axisIntersectionCoordinate());
 					else
-						new_pos.setY(inter->position(item->axisIntersectionValue(), 0, item->axisIntersectionType()).y() + inter->pos().y());
+						new_pos.setY(item->axisIntersectionCoordinate());
 
 					// record the theoric 'good' position as a property
-					item->setProperty("_vip_Pos", QVariant::fromValue(new_pos));
+					item->setProperty(vipTheoricPosProperty(), QVariant::fromValue(new_pos));
 
 					// If axisIntersectionEnabled() is true, then the rect height (or width) is 0, we must set the right value to draw the title
 					double length;

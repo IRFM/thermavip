@@ -33,13 +33,16 @@
 #define VIP_P_CUSTOM_INTERFACE_H
 
 #include "VipPlayer.h"
+#include <qpointer.h>
 
 class VipDragWidget;
 
 struct Anchor
 {
 	Vip::Side side;
-	VipPlotCanvas* canvas;
+	// QPointer: an anchor is kept as a member between two drag events, and this
+	// class declares the very slot that destroys canvases.
+	QPointer<VipPlotCanvas> canvas;
 	QRect highlight;
 	QString text;
 	Anchor()
@@ -62,7 +65,7 @@ public:
 	VipDragWidget* prev() const;
 
 protected:
-	virtual bool eventFilter(QObject*, QEvent* evt);
+	bool eventFilter(QObject*, QEvent* evt) override;
 
 private Q_SLOTS:
 	void goNext();
@@ -114,8 +117,8 @@ public:
 protected:
 	void setHasToolTip(bool);
 	bool hasToolTip() const;
-	virtual void mouseMoveEvent(QMouseEvent*);
-	virtual bool eventFilter(QObject*, QEvent*);
+	void mouseMoveEvent(QMouseEvent*) override;
+	bool eventFilter(QObject*, QEvent*) override;
 };
 
 class CustomWidgetPlayer : public BaseCustomPlayer
@@ -125,7 +128,7 @@ public:
 	CustomWidgetPlayer(VipWidgetPlayer* player);
 	~CustomWidgetPlayer();
 
-	virtual bool eventFilter(QObject* w, QEvent* evt);
+	bool eventFilter(QObject* w, QEvent* evt) override;
 	virtual VipDragWidget* dragWidget() const;
 private Q_SLOTS:
 	void reorganizeCloseButton();
@@ -162,7 +165,7 @@ class CustomizeVideoPlayer : public BaseCustomPlayer2D
 public:
 	CustomizeVideoPlayer(VipVideoPlayer* player);
 	~CustomizeVideoPlayer();
-	virtual bool eventFilter(QObject* w, QEvent* evt);
+	bool eventFilter(QObject* w, QEvent* evt) override;
 	virtual VipDragWidget* dragWidget() const;
 	virtual void updateViewport(QWidget* viewport);
 
@@ -187,7 +190,7 @@ public:
 	CustomizePlotPlayer(VipPlotPlayer* player);
 	~CustomizePlotPlayer();
 
-	virtual bool eventFilter(QObject* w, QEvent* evt);
+	bool eventFilter(QObject* w, QEvent* evt) override;
 	virtual VipDragWidget* dragWidget() const;
 	virtual void updateViewport(QWidget* viewport);
 private Q_SLOTS:

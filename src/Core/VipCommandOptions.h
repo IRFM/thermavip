@@ -59,9 +59,8 @@ class QIODevice;
 /// sync with the supported options, and it can produce warnings for common errors.
 ///
 /// It accepts Windows-style ("/option"), UNIX-style ("-option"), and GNU-style
-/// ("--option") options. By default, VipCommandOptions uses Windows-style options
-/// (VipCommandOptions::Slash) on Windows and GNU-style options (VipCommandOptions::DoubleDash)
-/// on UNIX and Mac. When using GNU-style options, single-character option names only
+/// ("--option") options. By default, VipCommandOptions uses GNU-style options
+/// (VipCommandOptions::DoubleDash) on every platform. When using GNU-style options, single-character option names only
 /// require a single leading dash and can be grouped together, for example, "-abc".
 ///
 /// VipAny parameter that does not start with the option prefix is considered a positional
@@ -81,8 +80,7 @@ class QIODevice;
 /// Some options may accept an optional or required parameter. Depending on the value
 /// of the paramStyle() property, the parameter may be separated from the option by
 /// an equals sign ("/option=value") or by a space ("-option value"). By default,
-/// Windows uses an equals sign and UNIX and Mac accept both an equals sign and a
-/// space. Optional parameters always require an equals sign. Note that, when using
+/// both are accepted. Optional parameters always require an equals sign. Note that, when using
 /// GNU-style options, single-character options cannot have optional parameters.
 ///
 /// A simple archiving application might use code similar to this:
@@ -121,8 +119,7 @@ class VIP_CORE_EXPORT VipCommandOptions
 public:
 	/// \enum VipCommandOptions::FlagStyle
 	/// This enum type defines which type of option prefix is used.
-	/// Slash is the default on Windows.
-	/// DoubleDash is the default on all other platforms.
+	/// DoubleDash is the default on every platform.
 	enum FlagStyle
 	{
 		DoubleDash, ///< Two dashes (GNU-style)
@@ -131,8 +128,7 @@ public:
 	};
 	/// \enum VipCommandOptions::ParamStyle
 	/// This enum type defines what syntax is used for options that
-	/// require parameters. Equals is the default on Windows.
-	/// SpaceAndEquals is the default on all other platforms.
+	/// require parameters. SpaceAndEquals is the default on every platform.
 	enum ParamStyle
 	{
 		Space = 1,	   ///< Space ("-option value")
@@ -163,8 +159,7 @@ public:
 
 	~VipCommandOptions();
 
-	/// Sets which prefix is used to identify options. The default value is Slash on Windows
-	/// and DoubleDash on all other platforms.
+	/// Sets which prefix is used to identify options. The default value is DoubleDash.
 	///
 	/// Note that Qt's built-in options (see QApplication) always use a single dash,
 	/// regardless of this setting.
@@ -174,8 +169,7 @@ public:
 	FlagStyle flagStyle() const;
 
 	/// Sets which value separator is used for options that accept parameters.
-	/// The default value is Equals on Windows and SpaceAndEquals on all other
-	/// platforms.
+	/// The default value is SpaceAndEquals.
 	///
 	/// Single-letter options with optional parameters in DoubleDash mode
 	/// always use an equals sign, regardless of this setting.

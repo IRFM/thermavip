@@ -40,6 +40,9 @@
 #include <qvector.h>
 #include <qlocale.h>
 
+#include <sstream>
+#include <cfloat>
+#include <cstring>
 #include <cstdint>
 #include <iomanip>
 #include <limits>
@@ -116,9 +119,16 @@ void vipWriteNLongDouble(QTextStream& s, const Container& values, const char* se
 template<class Container>
 int vipReadNLongDouble(QTextStream& s, Container& values)
 {
-	// qint64 pos = s.pos();
-	std::string str = s.readAll().toLatin1().data();
-	std::istringstream ss(str);
+	// readAll() takes the whole stream, and the loop ends on a failed extraction,
+	// after which tellg() returns -1: the seek meant to put the position back
+	// therefore failed in exactly the normal case, leaving the stream at the end.
+	// Everything after the values was then silently unreadable. Record where we
+	// started and restore from there. UTF-8 rather than Latin-1: the old
+	// conversion turned every other character into a question mark and made the
+	// offset disagree with the stream.
+	const qint64 start = s.pos();
+	const QByteArray bytes = s.readAll().toUtf8();
+	std::istringstream ss(std::string(bytes.constData(), (size_t)bytes.size()));
 	if (s.locale().language() != //_locale.language()
 	    QLocale::C)
 		ss.imbue(vipToStdLocale(s.locale()));
@@ -127,7 +137,13 @@ int vipReadNLongDouble(QTextStream& s, Container& values)
 		if (!(ss >> values[i]))
 			break;
 
-	s.seek(ss.tellg());
+
+	// tellg() needs a stream that is not in a failed state.
+	ss.clear();
+	const std::streamoff at = (std::streamoff)ss.tellg();
+	const std::streamoff consumed = at < 0 ? (std::streamoff)bytes.size() : at;
+	if (start >= 0)
+		s.seek(start + (qint64)consumed);
 	return i;
 }
 
@@ -135,9 +151,16 @@ int vipReadNLongDouble(QTextStream& s, Container& values)
 template<class Container>
 int vipReadNLongDoubleAppend(QTextStream& s, Container& values, int max_count)
 {
-	// qint64 pos = s.pos();
-	std::string str = s.readAll().toLatin1().data();
-	std::istringstream ss(str);
+	// readAll() takes the whole stream, and the loop ends on a failed extraction,
+	// after which tellg() returns -1: the seek meant to put the position back
+	// therefore failed in exactly the normal case, leaving the stream at the end.
+	// Everything after the values was then silently unreadable. Record where we
+	// started and restore from there. UTF-8 rather than Latin-1: the old
+	// conversion turned every other character into a question mark and made the
+	// offset disagree with the stream.
+	const qint64 start = s.pos();
+	const QByteArray bytes = s.readAll().toUtf8();
+	std::istringstream ss(std::string(bytes.constData(), (size_t)bytes.size()));
 	if (s.locale().language() != //_locale.language()
 	    QLocale::C)
 		ss.imbue(vipToStdLocale(s.locale()));
@@ -149,7 +172,13 @@ int vipReadNLongDoubleAppend(QTextStream& s, Container& values, int max_count)
 		values.append(v);
 	}
 
-	s.seek(ss.tellg());
+
+	// tellg() needs a stream that is not in a failed state.
+	ss.clear();
+	const std::streamoff at = (std::streamoff)ss.tellg();
+	const std::streamoff consumed = at < 0 ? (std::streamoff)bytes.size() : at;
+	if (start >= 0)
+		s.seek(start + (qint64)consumed);
 	return i;
 }
 
@@ -228,6 +257,15 @@ inline double vipLELongDoubleToDouble(const unsigned char x[10]) noexcept
 
 inline QDataStream& vipWriteLELongDouble(QDataStream& s, vip_long_double v)
 {
+	// The x87 extended format carries ten significant bytes in a sixteen byte
+	// object. Writing sizeof(v) bytes published the six padding bytes as the stack
+	// left them, so two writes of one value produced different files. Clearing
+	// them leaves the width, and therefore the format, unchanged.
+	if constexpr (LDBL_MANT_DIG == 64 && sizeof(vip_long_double) > 10) {
+		unsigned char buf[sizeof(vip_long_double)] = { 0 };
+		std::memcpy(buf, &v, 10);
+		std::memcpy(&v, buf, sizeof(v));
+	}
 #if Q_BYTE_ORDER == Q_LITTLE_ENDIAN
 	if (s.byteOrder() == QDataStream::BigEndian)
 		v = vipSwapLongDouble(v);
@@ -524,8 +562,18 @@ VIP_ALWAYS_INLINE vip_double vipReadLEDouble(unsigned LD_support, QDataStream& s
 		else { // case where read long double is of size 16 (or 12) and this platform long double is size 8
 		       // read a 80 bits long double as double
 		       // the long double must have been stored in little endian
-			unsigned char data[16];
-			stream.readRawData((char*)data, LD_size);
+			// LD_size is a 31 bit value carried by a dynamic property on the device,
+			// which any code holding that device can set: it used to be passed
+			// straight to readRawData over this sixteen byte stack buffer.
+			unsigned char data[16] = { 0 };
+			if (LD_size == 0 || LD_size > sizeof(data)) {
+				stream.setStatus(QDataStream::ReadCorruptData);
+				return v = 0;
+			}
+			if (stream.readRawData((char*)data, (int)LD_size) != (int)LD_size) {
+				stream.setStatus(QDataStream::ReadPastEnd);
+				return v = 0;
+			}
 			v = (vipLELongDoubleToDouble(data));
 		}
 	}
@@ -561,8 +609,18 @@ VIP_ALWAYS_INLINE vip_long_double vipReadLELongDouble(unsigned LD_support, QData
 		else { // case where read long double is of size 16 (or 12) and this platform long double is size 8
 		       // read a 80 bits long double as double
 		       // the long double must have been stored in little endian
-			unsigned char data[16];
-			stream.readRawData((char*)data, LD_size);
+			// LD_size is a 31 bit value carried by a dynamic property on the device,
+			// which any code holding that device can set: it used to be passed
+			// straight to readRawData over this sixteen byte stack buffer.
+			unsigned char data[16] = { 0 };
+			if (LD_size == 0 || LD_size > sizeof(data)) {
+				stream.setStatus(QDataStream::ReadCorruptData);
+				return v = 0;
+			}
+			if (stream.readRawData((char*)data, (int)LD_size) != (int)LD_size) {
+				stream.setStatus(QDataStream::ReadPastEnd);
+				return v = 0;
+			}
 			v = (vipLELongDoubleToDouble(data));
 		}
 	}

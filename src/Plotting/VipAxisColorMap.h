@@ -134,7 +134,7 @@ public:
 	virtual void startRender(VipRenderState& state);
 	virtual void endRender(VipRenderState& state);
 
-	virtual void computeScaleDiv();
+	void computeScaleDiv() override;
 
 	/// Returns the list of VipPlotItem related to this color map.
 	const QList<VipPlotItem*> itemList() const;

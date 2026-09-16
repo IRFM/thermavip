@@ -258,6 +258,11 @@ VipCartesianSystem::VipCartesianSystem(const QList<VipAbstractScale*>& axes)
 	QPointF start_y(0, 0);
 	QPointF end_x, end_y;
 
+	// Two entries are read here; the guard at the top of transform() asks for two,
+	// while the three clipPath() only ask that the list is not empty.
+	if (axes.size() < 2)
+		return;
+
 	const VipAxisBase* x = static_cast<const VipAxisBase*>(axes[0]);
 	const VipAxisBase* y = static_cast<const VipAxisBase*>(axes[1]);
 
@@ -319,7 +324,8 @@ QPointF VipCartesianSystem::transform(const VipPoint& value) const
 
 QPainterPath VipCartesianSystem::clipPath(const VipPlotItem* item) const
 {
-	if (!item->axes().size())
+	// Two, as the body reads two.
+	if (item->axes().size() < 2)
 		return QPainterPath();
 
 	QRectF bounding;
@@ -483,6 +489,9 @@ QPointF VipPolarSystem::polarTransformToPoint(const VipPolarCoordinate& p) const
 VipRadialPolarSystem::VipRadialPolarSystem(const QList<VipAbstractScale*>& axes)
   : VipPolarSystem(axes)
 {
+	if (axes.size() < 2)
+		return;
+
 	if (axes[0]) {
 		d_mradius = axes[0]->constScaleDraw()->scaleMap();
 		d_center = static_cast<const VipRadialAxis*>(axes[0])->center();
@@ -503,7 +512,7 @@ VipRadialPolarSystem::VipRadialPolarSystem(const QList<VipAbstractScale*>& axes)
 
 QPainterPath VipRadialPolarSystem::clipPath(const VipPlotItem* item) const
 {
-	if (!item->axes().size())
+	if (item->axes().size() < 2)
 		return QPainterPath();
 
 	VipRadialPolarSystem system(item->axes());
@@ -541,6 +550,9 @@ VipRadialPolarSystem* VipRadialPolarSystem::copy() const
 VipPolarRadialSystem::VipPolarRadialSystem(const QList<VipAbstractScale*>& axes)
   : VipPolarSystem(axes)
 {
+	if (axes.size() < 2)
+		return;
+
 	if (axes[1]) {
 		d_mradius = axes[1]->constScaleDraw()->scaleMap();
 		d_center = static_cast<const VipRadialAxis*>(axes[1])->center();
@@ -561,7 +573,7 @@ VipPolarRadialSystem::VipPolarRadialSystem(const QList<VipAbstractScale*>& axes)
 
 QPainterPath VipPolarRadialSystem::clipPath(const VipPlotItem* item) const
 {
-	if (!item->axes().size())
+	if (item->axes().size() < 2)
 		return QPainterPath();
 
 	VipPolarRadialSystem system(item->axes());

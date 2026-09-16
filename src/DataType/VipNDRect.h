@@ -211,19 +211,19 @@ public:
 	/// Returns the intersection of this rectangle with \a rect. Returns an empty rectangle if the rectangles do not intersect.
 	VipNDRect intersected(const VipNDRect rect) const noexcept
 	{
+		// The intersection of two intervals, the idiom united() uses two methods
+		// below. The previous body used neither start(i) nor rect.end(i), so a
+		// rectangle overlapping the left edge came back extended instead of clipped,
+		// and its second branch was unreachable.
 		VipNDRect res;
 		res.resize(size());
 		for (qsizetype i = 0; i < size(); ++i) {
-			if (end(i) <= rect.start(i) || start(i) >= rect.end(i))
+			const qsizetype s = qMax(start(i), rect.start(i));
+			const qsizetype e = qMin(end(i), rect.end(i));
+			if (e <= s)
 				return VipNDRect();
-			if (end(i) > rect.start(i)) {
-				res.setStart(i, rect.start(i));
-				res.setEnd(i, end(i));
-			}
-			else {
-				res.setStart(i, end(i));
-				res.setEnd(i, rect.start(i));
-			}
+			res.setStart(i, s);
+			res.setEnd(i, e);
 		}
 		return res;
 	}
@@ -343,10 +343,14 @@ public:
 	shape_type shape() const noexcept { return vipVector(m_rect.height(), m_rect.width()); }
 	/// Returns the shape (end -start) for given dimension
 	qsizetype shape(qsizetype index) const noexcept { return end(index) - start(index); }
-	/// Returns the start position for given dimension
-	qsizetype start(qsizetype index) const noexcept { return ((int*)&m_rect)[(1 - index)]; }
+	/// Returns the start position for given dimension.
+	/// Through the accessors of QRect, not through a pointer to int over its
+	/// representation: that aliased a QRect as an array, cast away the constness of
+	/// a member read from a const method, and assumed a memory layout Qt does not
+	/// promise. Dimension 0 is the vertical one, as everywhere in this file.
+	qsizetype start(qsizetype index) const noexcept { return index == 0 ? m_rect.top() : m_rect.left(); }
 	/// Returns the end position for given dimension
-	qsizetype end(qsizetype index) const noexcept { return ((int*)&m_rect)[(1 - index) + 2] + 1; }
+	qsizetype end(qsizetype index) const noexcept { return index == 0 ? m_rect.bottom() + 1 : m_rect.right() + 1; }
 
 	/// Moves the start position, leaving the shape unchanged (this might change the end position).
 	void moveStart(const shape_type& start) noexcept { m_rect.moveTopLeft(QPoint((int)start[1], (int)start[0])); }

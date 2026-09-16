@@ -85,12 +85,6 @@ inline std::istream& operator>>(std::istream& stream, QString& value)
 	return stream;
 }
 
-// define a warning output stream
-namespace std
-{
-	extern ostream cwarn;
-}
-
 /// Specific std::streambuf redirecting outputs to a QTextStream
 class VIP_CORE_EXPORT VipStreambufToQTextStream : public std::streambuf
 {

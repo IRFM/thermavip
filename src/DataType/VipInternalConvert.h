@@ -134,7 +134,10 @@ namespace detail
 	template<class T>
 	T stringToType(const QString& str)
 	{
-		T res;
+		// Value initialised: an extraction that fails leaves it untouched, and these
+		// two are wired as Qt metatype converters, which have no error channel at
+		// all: the caller cannot tell a failure from a success.
+		T res = T();
 		QTextStream stream(const_cast<QString*>(&str), QIODevice::ReadOnly);
 		stream >> res;
 		return res;
@@ -155,7 +158,7 @@ namespace detail
 	template<class T>
 	T byteArrayToType(const QByteArray& str)
 	{
-		T res;
+		T res = T();
 		QTextStream stream(const_cast<QByteArray*>(&str), QIODevice::ReadOnly);
 		stream >> res;
 		return res;
@@ -170,7 +173,10 @@ namespace detail
 			return QString::number(d);
 		}
 		static QString apply(long double d) { return vipLongDoubleToString(d); }
-		static QString apply(double d) { return QString::number(d, 'g', FLT_DIG); }
+		// DBL_DIG, not FLT_DIG: the second is what a float guarantees, six digits,
+		// and it truncated every double turned into text by nine significant
+		// digits, on the path every value of the library takes to become text.
+		static QString apply(double d) { return QString::number(d, 'g', DBL_DIG); }
 		static QString apply(float d) { return QString::number(d, 'g', FLT_DIG); }
 		static QString apply(bool d) { return QLatin1String(d ? "true" : "false"); }
 		static QString apply(const QByteArray& ar) { return QString(ar); }
@@ -202,7 +208,8 @@ namespace detail
 		static QByteArray apply(const long int& d) { return QByteArray::number((qint64)d); }
 		static QByteArray apply(const long unsigned int& d) { return QByteArray::number((quint64)d); }
 		static QByteArray apply(long double d) { return vipLongDoubleToByteArray(d); }
-		static QByteArray apply(double d) { return QByteArray::number(d, 'g', FLT_DIG); }
+		// DBL_DIG, not FLT_DIG, as above.
+		static QByteArray apply(double d) { return QByteArray::number(d, 'g', DBL_DIG); }
 		static QByteArray apply(float d) { return QByteArray::number(d, 'g', FLT_DIG); }
 		static QByteArray apply(bool d) { return QByteArray(d ? "true" : "false"); }
 		static QByteArray apply(const QString& str) { return str.toLatin1(); }
@@ -343,12 +350,29 @@ namespace detail
 	struct Convert
 	{
 		static const bool valid = std::is_convertible_v<S, D>;
-		static D apply(const S& src) 
-		{ 
-			if constexpr (valid)
+		static D apply(const S& src)
+		{
+			if constexpr (std::is_integral_v<D> && std::is_floating_point_v<S>) {
+				// Converting a floating point value outside the range of the
+				// destination is undefined, and wraps in practice: a value above the
+				// maximum came out at the other end of the scale. This is the
+				// conversion the whole library goes through.
+				const double v = static_cast<double>(src);
+				if (!(v > static_cast<double>(std::numeric_limits<D>::lowest())))
+					return std::numeric_limits<D>::lowest();
+				if (!(v < static_cast<double>(std::numeric_limits<D>::max())))
+					return std::numeric_limits<D>::max();
+				return static_cast<D>(v);
+			}
+			else if constexpr (valid)
 				return static_cast<D>(src);
-			else
+			else {
+				// A pair that cannot be converted used to return a default value, so
+				// the conversion produced zeroes and said nothing. Callers ask first,
+				// through VipIsCastable_v or VipNDArray::canConvert.
+				static_assert(valid, "these two types cannot be converted: ask VipIsCastable_v before converting");
 				return D();
+			}
 		}
 	};
 
@@ -370,7 +394,15 @@ namespace detail
 	struct Convert<D, std::complex<T>>
 	{
 		static const bool valid = false;
-		static D apply(const std::complex<T>&) { return D(); }
+		// The comment says disable, and nothing was: this returned a default value,
+		// so converting a complex array to a real one gave an image of zeroes with
+		// no error anywhere. Callers ask first, through VipIsCastable_v or
+		// VipNDArray::canConvert; instantiating this call is the error.
+		static D apply(const std::complex<T>&)
+		{
+			static_assert(!std::is_same<D, D>::value, "a complex value cannot be converted to this type: ask VipIsCastable_v before converting");
+			return D();
+		}
 	};
 	// complex to string
 	template<class T>

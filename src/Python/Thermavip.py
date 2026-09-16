@@ -14,9 +14,33 @@ import threading
 import time as time_module
 import types
 import inspect
+import io
 import pickle
 import struct
 import numpy as np
+
+
+# A pickle names the callable it wants rebuilt, so loading one from an untrusted
+# frame runs whatever it names. The channel only ever carries arrays and plain
+# values, so refuse everything else.
+_allowed_pickle_classes = {
+    'numpy': ('ndarray', 'dtype'),
+    'numpy.core.multiarray': ('_reconstruct', 'scalar'),
+    'numpy._core.multiarray': ('_reconstruct', 'scalar'),
+    'builtins': ('bool', 'bytearray', 'bytes', 'complex', 'dict', 'float', 'frozenset',
+                 'int', 'list', 'set', 'str', 'tuple'),
+}
+
+
+class _RestrictedUnpickler(pickle.Unpickler):
+    def find_class(self, module, name):
+        if name in _allowed_pickle_classes.get(module, ()):
+            return super().find_class(module, name)
+        raise pickle.UnpicklingError('refusing to load %s.%s from shared memory' % (module, name))
+
+
+def _safe_loads(data):
+    return _RestrictedUnpickler(io.BytesIO(data)).load()
 
 _SharedMemory = None
 
@@ -78,11 +102,14 @@ except:
                 self.traceback = traceback.format_exc()
                 #self.stdout.write("CallAfter.call exception\n");self.stdout.flush()
                 
-        @pyqtSlot()
-        def callLine(self):
+        # The code arrives as an argument. Held in an attribute, the queued call
+        # below read whatever the next message had already written there: one line
+        # lost, the next one run twice.
+        @pyqtSlot(str)
+        def callLine(self, code):
             self.traceback = None
             try:
-                _ipython_interp.execLine(self.code)
+                _ipython_interp.execLine(code)
             except:
                 import traceback
                 self.traceback = traceback.format_exc()
@@ -126,13 +153,16 @@ except:
                 #self.stdout.write("good object\n");self.stdout.flush()
                 _bytes = _bytes[len(b"SH_OBJECT       "):]
                 l = struct.unpack('i',_bytes[0:4])[0]
+                # The length comes from the frame and is signed.
+                if l < 0 or l > len(_bytes) - 4:
+                    return (False,None,None)
                 #self.stdout.write("len: " + str(l) + "\n");self.stdout.flush()
                 _bytes = _bytes[4:]
                 name = _bytes[0:l]
-                #self.stdout.write("name: "+ name.decode('ascii') + "\n");self.stdout.flush()
-                obj = pickle.loads(_bytes[l:])
+                #self.stdout.write("name: "+ name.decode('ascii', errors='replace') + "\n");self.stdout.flush()
+                obj = _safe_loads(_bytes[l:])
                 #self.stdout.write('pickle ok: ' + str(obj) + '\n');self.stdout.flush()
-                return (True,name.decode('ascii'),obj)
+                return (True,name.decode('ascii', errors='replace'),obj)
             #self.stdout.write("wrong marker\n");self.stdout.flush()
             return (False,None,None)
 
@@ -158,7 +188,12 @@ except:
                 #self.stdout.write("acquire\n");self.stdout.flush()
                 _SharedMemory.acquire()
                 #self.stdout.write("done\n");self.stdout.flush()
-                b = _SharedMemory.read(5)
+                try:
+                    b = _SharedMemory.read(5)
+                except RuntimeError:
+                    # the segment is gone: stop serving rather than spin
+                    _SharedMemory.release()
+                    return None
                 #self.stdout.write("read\n");self.stdout.flush()
                 if not b:
                     _SharedMemory.release()
@@ -167,7 +202,7 @@ except:
                         return None
                     continue
                 
-                #sys.__stdout__.write("received ");sys.__stdout__.flush();sys.__stdout__.write(b[0:16].decode('ascii'));sys.__stdout__.flush()
+                #sys.__stdout__.write("received ");sys.__stdout__.flush();sys.__stdout__.write(b[0:16].decode('ascii', errors='replace'));sys.__stdout__.flush()
                 #received an object
                 tmp = self.readObject(b)
                 #self.stdout.write("ok " + str(tmp));self.stdout.flush()
@@ -244,9 +279,7 @@ except:
                         if _ipython_interp:
                             #_ipython_interp.execInKernel(tmp[1])
                             #self.stdout.write("exec line "+tmp[1]+"\n");self.stdout.flush()
-                            self.code = tmp[1]
-                            
-                            core.QMetaObject.invokeMethod(self, "callLine", core.Qt.BlockingQueuedConnection)
+                            core.QMetaObject.invokeMethod(self, "callLine", core.Qt.BlockingQueuedConnection, core.Q_ARG(str, tmp[1]))
                             #core.QMetaObject.invokeMethod(_ipython_interp, "hide", core.Qt.QueuedConnection)
                             #core.QCoreApplication.instance().processEvents()
                             #self.stdout.write("end line\n");self.stdout.flush()
@@ -265,8 +298,7 @@ except:
                 if tmp[0]:
                     try:
                         if _ipython_interp:
-                            self.code = tmp[1]
-                            core.QMetaObject.invokeMethod(self, "callLine", core.Qt.QueuedConnection)
+                            core.QMetaObject.invokeMethod(self, "callLine", core.Qt.QueuedConnection, core.Q_ARG(str, tmp[1]))
                         else:
                             exec(tmp[1])
                         
@@ -290,7 +322,7 @@ except:
                     self.traceback = None
                     if _ipython_interp:
                         b = b[len(b"SH_STYLE_SHEET  "):]
-                        self.stylesheet = b.decode('ascii')
+                        self.stylesheet = b.decode('ascii', errors='replace')
                         core.QMetaObject.invokeMethod(self, "setStyleSheet", core.Qt.BlockingQueuedConnection)
                     _SharedMemory.release()
                     continue
@@ -299,7 +331,7 @@ except:
                     #sys.__stdout__.write("SH_RUNNING \n");sys.__stdout__.flush()
                     if _ipython_interp:
                         #sys.__stdout__.write("send 1 \n");sys.__stdout__.flush()
-                        _SharedMemory.write(str(int(_ipython_interp.isRunningCode())).encode('ascii'))
+                        _SharedMemory.write(str(int(_ipython_interp.isRunningCode())).encode('ascii', errors='replace'))
                     else :
                         _SharedMemory.write(b'0')
                     #sys.__stdout__.write("finish SH_RUNNING \n");sys.__stdout__.flush()
@@ -339,10 +371,15 @@ except:
             
         def read_header(self):
         
-            b = b'\x00'*64
+            # A mutable buffer, private to this call. A bytes object is immutable,
+            # and the interpreter folds and shares the constant this expression
+            # builds: writing into it corrupted the same object everywhere in the
+            # process, including in other libraries.
+            buf = ctypes.create_string_buffer(64)
             self.lock()
-            ctypes.memmove(b, int(self.data()), 64)
+            ctypes.memmove(buf, int(self.data()), 64)
             self.unlock()
+            b = buf.raw
             
             h = SharedMemory.Header()
             h.connected = st.unpack('i',b[0:4])[0]
@@ -362,9 +399,9 @@ except:
             _bytes = _bytes[0:44]
             self.lock()
             #read all flags
-            cur = bytes(44)
-            ctypes.memmove(cur,int(self.data()) + 20, 44)
-            cur = _bytes + cur[len(_bytes):]
+            cur_buf = ctypes.create_string_buffer(44)
+            ctypes.memmove(cur_buf,int(self.data()) + 20, 44)
+            cur = _bytes + cur_buf.raw[len(_bytes):]
             #write all flags
             ctypes.memmove(int(self.data()) + 20, cur,44)
             self.unlock()
@@ -457,10 +494,11 @@ except:
             
         def _waitForEmptyWrite(self, until = -1):
             while True:
-                b = b'\x00'*8
+                buf = ctypes.create_string_buffer(8)
                 self.lock()
-                ctypes.memmove(b,int(self.data()) + self.header.offset_write,8)
+                ctypes.memmove(buf,int(self.data()) + self.header.offset_write,8)
                 self.unlock()
+                b = buf.raw
                 s = st.unpack('i',b[0:4])[0]
                 if s != 0:
                     time_module.sleep(0.002)
@@ -469,20 +507,25 @@ except:
                 else:
                     return True
                     
-        def write(self,data, milli_timeout = -1):
+        def write(self,data, milli_timeout = 30000):
         
+            # By exception, not by a returned flag: the six callers of this all
+            # ignored the flag, and the read that followed a lost write waited for
+            # an answer to a request that was never sent, with the lock held.
+            # A finite default, like read: none of those callers passed one, so the
+            # wait below never ended if the other side stopped answering, and it is
+            # held under the lock that the service thread needs to make progress.
             if not self.isAttached():
-                return False
+                raise RuntimeError('shared memory is not attached')
             
-            start = core.QDateTime.currentMSecsSinceEpoch()
-            until = start + milli_timeout
+            until = core.QDateTime.currentMSecsSinceEpoch() + milli_timeout
             if milli_timeout == -1:
                 until = -1
             
             size = len(data)
             while True:
                 if not self._waitForEmptyWrite(until):
-                    return False
+                    raise TimeoutError('shared memory write timed out')
                 flag = int(size > self.header.max_msg_size)
                 s = size
                 if flag:
@@ -498,10 +541,12 @@ except:
                 if size == 0:
                     return True
                     
-        def read(self,milli_timeout = -1):
+        def read(self,milli_timeout = 30000):
         
+            # A finite default: the caller below reads without a timeout after a
+            # write, and an unlimited wait there freezes the console for good.
             if not self.isAttached():
-                return False
+                raise RuntimeError('shared memory is not attached')
             
             start = core.QDateTime.currentMSecsSinceEpoch()
             until = start + milli_timeout
@@ -511,10 +556,11 @@ except:
             res = bytes()
             
             while True:
-                _bytes = b'\x00'*8
+                head_buf = ctypes.create_string_buffer(8)
                 self.lock()
-                ctypes.memmove(_bytes,int(self.data()) + self.header.offset_read, 8)
+                ctypes.memmove(head_buf,int(self.data()) + self.header.offset_read, 8)
                 self.unlock()
+                _bytes = head_buf.raw
                 s = st.unpack('i',_bytes[0:4])[0]
                 flag = st.unpack('i',_bytes[4:])[0]
                 
@@ -524,10 +570,22 @@ except:
                     time_module.sleep(0.002)
                     continue
                     
-                tmp = b'\x00'*s
+                # s comes from the segment and is signed: 0x7fffffff asked for a two
+                # gigabyte read out of a fifty megabyte mapping, and a negative one
+                # became a huge size_t writing into an empty buffer. The header
+                # already carries the bound the writer applies.
+                if s < 0 or s > self.header.max_msg_size:
+                    zero = b'\x00'*4
+                    self.lock()
+                    ctypes.memmove(int(self.data()) + self.header.offset_read, zero, 4)
+                    ctypes.memmove(int(self.data()) + self.header.offset_read+4, zero, 4)
+                    self.unlock()
+                    raise RuntimeError('invalid message size %d in shared memory' % s)
+
+                tmp = ctypes.create_string_buffer(s)
                 self.lock()
                 ctypes.memmove(tmp,int(self.data()) + self.header.offset_read +8,s)
-                res += tmp
+                res += tmp.raw
                 #set read area to 0
                 b = b'\x00'*4
                 ctypes.memmove(int(self.data()) + self.header.offset_read, b, 4)
@@ -541,21 +599,27 @@ except:
             """
             Write serialized object to shared memory
             """
-            __res = b'SH_OBJECT       ' +struct.pack('i',len(name)) + name.encode('ascii') + pickle.dumps(obj)
+            # Encode first, then take the length of the bytes, and never raise: a
+            # single accented character used to abort the send, and inside an
+            # exception handler it killed the service thread with the lock held.
+            _name = name.encode('ascii', errors='replace')
+            __res = b'SH_OBJECT       ' +struct.pack('i',len(_name)) + _name + pickle.dumps(obj)
             self.write(__res)
             
         def writeError(self, errstr):
             """
             Write error traceback to shared memory
             """
-            __res = b'SH_ERROR_TRACE  ' + struct.pack('i',len(errstr)) + errstr.encode('ascii')
+            _err = errstr.encode('ascii', errors='replace')
+            __res = b'SH_ERROR_TRACE  ' + struct.pack('i',len(_err)) + _err
             self.write(__res)
             
         def writeSendObject(self, name):
             """
             Write to shared memory a request to get given object
             """
-            __res = b'SH_SEND_OBJECT  ' + struct.pack('i',len(name)) + name.encode('ascii')
+            _name = name.encode('ascii', errors='replace')
+            __res = b'SH_SEND_OBJECT  ' + struct.pack('i',len(_name)) + _name
             self.write(__res)
         
         def writeForeignFunction(self,fun_name, args, kwargs):
@@ -564,7 +628,7 @@ except:
             """
             args = pickle.dumps(args)
             dargs = pickle.dumps(kwargs)
-            name = fun_name.encode('ascii')
+            name = fun_name.encode('ascii', errors='replace')
             send = b"SH_EXEC_FUN     " + st.pack('i',len(name)) + st.pack('i',len(args)) + st.pack('i',len(dargs)) + name + args + dargs
             self.write(send)
             
@@ -572,14 +636,16 @@ except:
             """
             Send code to be executed
             """
-            send = b"SH_EXEC_CODE    " + st.pack('i',len(code)) + code.encode('ascii')
+            _code = code.encode('ascii', errors='replace')
+            send = b"SH_EXEC_CODE    " + st.pack('i',len(_code)) + _code
             self.write(send)
             
         def writeExecLine(self, line_code):
             """
             Ask to execute a line of code in the interpreter
             """
-            send = b"SH_EXEC_LINE    " + st.pack('i',len(line_code)) + line_code.encode('ascii')
+            _line = line_code.encode('ascii', errors='replace')
+            send = b"SH_EXEC_LINE    " + st.pack('i',len(_line)) + _line
             self.write(send)
             
         def readObject(self, _bytes):
@@ -591,10 +657,13 @@ except:
                 
                 _bytes = _bytes[len(b"SH_OBJECT       "):]
                 l = struct.unpack('i',_bytes[0:4])[0]
+                # The length comes from the frame and is signed.
+                if l < 0 or l > len(_bytes) - 4:
+                    return (False,None,None)
                 _bytes = _bytes[4:]
                 name = _bytes[0:l]
-                obj = pickle.loads(_bytes[l:])
-                return (True,name.decode('ascii'),obj)
+                obj = _safe_loads(_bytes[l:])
+                return (True,name.decode('ascii', errors='replace'),obj)
             return (False,None,None)
             
         def readSendObject(self, _bytes):
@@ -605,9 +674,12 @@ except:
             if _bytes.startswith(b"SH_SEND_OBJECT  "):
                 _bytes = _bytes[len(b"SH_SEND_OBJECT  "):]
                 l = struct.unpack('i',_bytes[0:4])[0]
+                # The length comes from the frame and is signed.
+                if l < 0 or l > len(_bytes) - 4:
+                    return (False,None)
                 _bytes = _bytes[4:]
                 name = _bytes[0:l]
-                return (True,name.decode('ascii'))
+                return (True,name.decode('ascii', errors='replace'))
             return (False,None)
             
         def readError(self, _bytes):
@@ -617,9 +689,12 @@ except:
             if _bytes.startswith(b"SH_ERROR_TRACE  "):
                 _bytes = _bytes[len(b"SH_ERROR_TRACE  "):]
                 l = struct.unpack('i',_bytes[0:4])[0]
+                # The length comes from the frame and is signed.
+                if l < 0 or l > len(_bytes) - 4:
+                    return (False,None)
                 _bytes = _bytes[4:]
                 err = _bytes[0:l]
-                return (True,err.decode('ascii'))
+                return (True,err.decode('ascii', errors='replace'))
             return (False,None)
             
         def readExecCode(self, _bytes):
@@ -629,9 +704,12 @@ except:
             if _bytes.startswith(b"SH_EXEC_CODE    "):
                 _bytes = _bytes[len(b"SH_EXEC_CODE    "):]
                 l = struct.unpack('i',_bytes[0:4])[0]
+                # The length comes from the frame and is signed.
+                if l < 0 or l > len(_bytes) - 4:
+                    return (False,None)
                 _bytes = _bytes[4:]
                 code = _bytes[0:l]
-                return (True,code.decode('ascii'))
+                return (True,code.decode('ascii', errors='replace'))
             return (False,None)
             
         def readExecLine(self, _bytes):
@@ -641,9 +719,12 @@ except:
             if _bytes.startswith(b"SH_EXEC_LINE    "):
                 _bytes = _bytes[len(b"SH_EXEC_LINE    "):]
                 l = struct.unpack('i',_bytes[0:4])[0]
+                # The length comes from the frame and is signed.
+                if l < 0 or l > len(_bytes) - 4:
+                    return (False,None)
                 _bytes = _bytes[4:]
                 code = _bytes[0:l]
-                return (True,code.decode('ascii'))
+                return (True,code.decode('ascii', errors='replace'))
             return (False,None)
             
         def readExecLineNoWait(self, _bytes):
@@ -653,9 +734,12 @@ except:
             if _bytes.startswith(b"SH_EXEC_LINE_NW "):
                 _bytes = _bytes[len(b"SH_EXEC_LINE_NW "):]
                 l = struct.unpack('i',_bytes[0:4])[0]
+                # The length comes from the frame and is signed.
+                if l < 0 or l > len(_bytes) - 4:
+                    return (False,None)
                 _bytes = _bytes[4:]
                 code = _bytes[0:l]
-                return (True,code.decode('ascii'))
+                return (True,code.decode('ascii', errors='replace'))
             return (False,None)
         
         def execForeignFunction(self,fun_name, args, kwargs):
@@ -663,9 +747,11 @@ except:
             Execute a foreign function through the shared memory and returns its result.
             """
             self.acquire()
-            self.writeForeignFunction(fun_name, args, kwargs)
-            res = self.read()
-            self.release()
+            try:
+                self.writeForeignFunction(fun_name, args, kwargs)
+                res = self.read()
+            finally:
+                self.release()
             
             tmp = self.readObject(res)
             if tmp[0]:
@@ -1182,7 +1268,7 @@ def x_range(player):
     """
     For given plot player, returns the list [min_x_value, max_x_value] for the union of all visible curves.
     """
-    return call_thermavip_fun('x_range',(player))
+    return call_thermavip_fun('x_range',(player,))
 
 def auto_scale(player, enable):
     """
@@ -1251,7 +1337,7 @@ def remove_annotation(annotation_id):
     """
     Remove annotation with given id
     """
-    return call_thermavip_fun('remove_annotation',(annotation_id))
+    return call_thermavip_fun('remove_annotation',(annotation_id,))
 
 def clear_annotations(player, all_annotations = False):
     """
@@ -1367,13 +1453,26 @@ def add_widget_to_player(player, widget, side):
     """
     Add a widget (from PySide2 or PyQt5) to a side of given player.
     side could be one of 'left', 'right', 'top', 'bottom'.
+
+    Only works from inside Thermavip: the native side must provide
+    'add_widget_to_player'. Raises AttributeError if it does not.
     """
-    import time
-    millis = int(round(time.time() * 1000))
+    import uuid
     oname = widget.objectName()
-    wname = str(millis)
+    # A unique name, where a millisecond timestamp gave two widgets added in the
+    # same millisecond the same one.
+    wname = '_vip_pywidget_' + uuid.uuid4().hex
+    add = getattr(builtins.internal, 'add_widget_to_player', None)
+    if add is None:
+        # The name used to be set first, so a call that could not work left the
+        # user's widget carrying a generated objectName and nothing restored it.
+        raise AttributeError("the native module does not provide 'add_widget_to_player'")
     widget.setObjectName(wname)
-    builtins.internal.add_widget_to_player(player, side, wname, oname,widget)
+    try:
+        add(player, side, wname, oname, widget)
+    except BaseException:
+        widget.setObjectName(oname)
+        raise
     widget.show()
 
 

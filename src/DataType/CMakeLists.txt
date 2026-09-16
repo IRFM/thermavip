@@ -56,5 +56,7 @@ install(TARGETS VipDataType
     RUNTIME DESTINATION "${THERMAVIP_TEST_DIR}"
 )
 
-file(GLOB HEADER_FILES ${PROJECT_SOURCE_DIR}/*.h)
-install(FILES ${HEADER_FILES} DESTINATION "${CMAKE_INSTALL_PREFIX}/include/VipDataType/")
+# Install ${Headers}, already filtered above, rather than re-globbing: a fresh
+# glob puts back the headers the WITH_VTK block just removed, so the SDK
+# installed headers that include <vtkCamera.h> while being built without VTK.
+install(FILES ${Headers} DESTINATION "${CMAKE_INSTALL_PREFIX}/include/VipDataType/")

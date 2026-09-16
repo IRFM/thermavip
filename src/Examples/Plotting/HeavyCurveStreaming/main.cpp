@@ -1,3 +1,4 @@
+#include <atomic>
 #include <cmath>
 #include <iostream>
 
@@ -15,6 +16,7 @@
 #include "VipColorMap.h"
 #include "VipSliderGrip.h"
 #include "VipAxisColorMap.h"
+#include "VipSleep.h"
 
 
 /// @brief Generate a cosinus curve of at most 500 points with X values being in seconds
@@ -22,7 +24,10 @@ class CurveStreaming : public QThread
 {
 	QList<VipPoint> points;
 	QList<VipPlotCurve*> curves;
-	bool stop;
+	// Atomic: written by the thread of the interface and read every turn by the
+	// thread below. A plain bool is a data race, and nothing forces the read to
+	// happen again, so the wait on shutdown could never return.
+	std::atomic<bool> stop;
 
 public:
 	CurveStreaming(const QList<VipPlotCurve*>& cs)
@@ -46,8 +51,17 @@ public:
 		int point_count = 0;
 
 		while (!stop) {
-		
-			// Continuously add points to the curves up to a maximum of 100k points per curves, without any sleep time
+
+			// Continuously add points to the curves up to a maximum of 100k points
+			// per curves, with no delay of its own: the pace comes from the display.
+			// Setting data from another thread posts an event to the thread of the
+			// interface, and that thread repaints at most sixty times a second, so
+			// pushing without waiting for the paint grew its queue without bound and
+			// kept a core busy for nothing.
+			if (curves.first()->lastPaintTime() < curves.first()->lastDataTime()) {
+				vipSleep(1);
+				continue;
+			}
 
 			double x = (QDateTime::currentMSecsSinceEpoch() - start) * 1e-3; 
 			double y = std::cos(x*2);

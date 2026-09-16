@@ -182,7 +182,11 @@ void VipVTKWidget::setRenderWindow(/* vtkGenericOpenGLRenderWindow*/vtkRenderWin
 	// unregister previous window
 	if (d_data->RenWin) {
 
+		// Finalize() destroys the textures, buffers and framebuffers of the render
+		// window, so the context has to be current when it runs.
+		this->makeCurrent();
 		d_data->RenWin->Finalize();
+		this->doneCurrent();
 		if (d_data->RenWin->IsA("vtkGenericOpenGLRenderWindow")) {
 			vtkGenericOpenGLRenderWindow* ren = static_cast<vtkGenericOpenGLRenderWindow*>(d_data->RenWin.GetPointer());
 			ren->SetMapped(0);
@@ -206,7 +210,9 @@ void VipVTKWidget::setRenderWindow(/* vtkGenericOpenGLRenderWindow*/vtkRenderWin
 		d_data->RenWin->PointSmoothingOn();
 
 		// if it is mapped somewhere else, unmap it
+		this->makeCurrent();
 		d_data->RenWin->Finalize();
+		this->doneCurrent();
 		if (d_data->RenWin->IsA("vtkGenericOpenGLRenderWindow")) {
 			vtkGenericOpenGLRenderWindow* ren = static_cast<vtkGenericOpenGLRenderWindow*>(d_data->RenWin.GetPointer());
 			ren->SetMapped(1);
@@ -340,6 +346,9 @@ void VipVTKWidget::paintGL()
 			view = static_cast<VipVTKGraphicsView*>(p);
 			break;
 		}
+		// The walk never advanced: an immediate parent that is not the view froze the
+		// graphics thread here, inside paintGL().
+		p = p->parentWidget();
 	}
 	if (view)
 		lockers = vipLockVTKObjects(fromPlotVipVTKObject(view->objects()));
@@ -465,6 +474,11 @@ void VipVTKWidget::applyCameraToAllLayers()
 		}
 	}
 
+	// No interactive renderer at all is a configuration this file produces itself,
+	// by turning interaction off on the upper layers.
+	if (!ren)
+		return;
+
 	// apply found camera to all other renderer
 	col->InitTraversal();
 	while (vtkRenderer* tmp = col->GetNextItem()) {
@@ -482,15 +496,17 @@ void VipVTKWidget::simulateMouseClick(const QPoint& from, const QPoint& to)
 	QMouseEvent press(QEvent::MouseButtonPress, from, glob_from, Qt::LeftButton, Qt::LeftButton, Qt::NoModifier);
 	QMouseEvent release(QEvent::MouseButtonRelease, to, glob_to, Qt::LeftButton, Qt::LeftButton, Qt::NoModifier);
 
+	// The flag is the only thing mouseMoveEvent() tests, and it was cleared just
+	// before the simulated move was sent: the guard it exists to arm was down at the
+	// exact moment it should have been up, so the simulated move was taken for a user
+	// move and turned off the camera tracking the simulation was meant to refresh.
 	d_data->IgnoreMouse = true;
 	this->mousePressEvent(&press);
-	d_data->IgnoreMouse = false;
 	//if (from != to) 
 	{
 		QMouseEvent move(QEvent::MouseMove, to, glob_to, Qt::LeftButton, Qt::LeftButton, Qt::NoModifier);
 		this->mouseMoveEvent(&move);
 	}
-	d_data->IgnoreMouse = true;
 	this->mouseReleaseEvent(&release);
 	vipProcessEvents(nullptr, 10);
 	d_data->IgnoreMouse = false;
