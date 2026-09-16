@@ -1044,7 +1044,7 @@ void VipMPEGSaver::apply()
 		return;
 	}
 
-	const QImage img = vipToImageRef(ar).scaled(fullFrameWidth(), fullFrameHeight(), Qt::IgnoreAspectRatio, Qt::SmoothTransformation).convertToFormat(QImage::Format_ARGB32);
+	QImage img = vipToImageRef(ar);
 	if (img.isNull()) {
 		setError("Empty input image", VipProcessingObject::WrongInput);
 		return;
@@ -1062,6 +1062,9 @@ void VipMPEGSaver::apply()
 			return;
 		}
 	}
+
+	if (img.width() != fullFrameWidth() || img.height() != fullFrameHeight() || img.format() != QImage::Format_ARGB32)
+		img = img.scaled(fullFrameWidth(), fullFrameHeight(), Qt::IgnoreAspectRatio, Qt::SmoothTransformation).convertToFormat(QImage::Format_ARGB32);
 
 	try {
 		if (!m_encoder->AddFrame(img)) {

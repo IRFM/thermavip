@@ -839,7 +839,7 @@ bool VipRecordToolWidget::updateFileFiltersAndDevice(bool build_connections, boo
 	if (d_data->recordType == Movie) {
 		// set a QImage input data to the VipGenericRecorder and update the file filters
 		d_data->recorder->topLevelInputAt(0)->toMultiInput()->resize(1);
-		lst.append(QVariant::fromValue(vipToArray(QImage())));
+		lst.append(QVariant::fromValue(vipToArray(QImage(10, 10, QImage::Format_ARGB32))));
 		d_data->recorder->setProbeInputs(lst);
 	}
 	else {

@@ -1042,7 +1042,7 @@ public:
 	virtual bool open(VipIODevice::OpenModes mode);
 	virtual bool reload();
 
-	virtual QString fileFilters() const { return "Image file (*.png *.bmp *.jpg *.jpeg *.gif *.giff *.pbm *.pgm *.ppm *.xpm *.xbm *.svg)"; }
+	virtual QString fileFilters() const { return "Image file (*.png *.bmp *.jpg *.jpeg *.gif *.giff *.pbm *.pgm *.ppm *.xpm *.xbm *.svg *.tif *.tiff)"; }
 
 protected:
 	virtual bool readData(qint64 time);
