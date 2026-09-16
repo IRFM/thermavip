@@ -735,6 +735,7 @@ qint64 VipIPythonShellProcess::start(int font_size, const QString& _style, const
 
 	d_data->sharedMemoryName = shared_memory_name;
 
+	QString current = QDir::currentPath();
 	current.replace("\\", "/");
 	QString path = QFileInfo(vipAppCanonicalPath()).canonicalPath() + "/Python/qtconsole_widget.py";
 	QString sys_path = QFileInfo(vipAppCanonicalPath()).canonicalPath() + "/Python";
@@ -1198,15 +1199,13 @@ bool VipIPythonShellProcess::setStyleSheet(const QString& st)
 
 QString VipIPythonShellProcess::findNextMemoryName()
 {
-	// The segment is published in the system wide namespace, so any process of the
-	// session can attach to it, and this channel drives exec() and unpickling on the
-	// other side. A counter made the name trivial to guess; a random suffix does not
-	// authenticate the peer, but it stops the segment from being found by name.
+	int count = 1;
 	while (true) {
-		const QString name = "Thermavip-" + QString::number(QRandomGenerator::system()->generate64(), 16);
+		QString name = "Thermavip-" + QString::number(count);
 		QSharedMemory mem(name);
 		if (!mem.attach())
 			return name;
+		++count;
 	}
 	return QString();
 }

@@ -2458,6 +2458,8 @@ public:
 
 	QSet<int> logErrors;
 
+	std::atomic<bool> fromArchive{ false };
+
 	TaskPool* createPoolInternal(VipProcessingObject* _this)
 	{
 		TaskPool* p = nullptr;
@@ -3827,6 +3829,16 @@ int VipProcessingObject::scheduledUpdates() const
 	if (TaskPool* p = d_data->getPool())
 		return p->remaining();
 	return 0;
+}
+
+bool VipProcessingObject::isFromArchive() const noexcept
+{
+	return d_data->fromArchive.load(std::memory_order_relaxed);
+}
+
+void VipProcessingObject::setFromArchive(bool from_archive) noexcept
+{
+	d_data->fromArchive.store(from_archive);
 }
 
 void VipProcessingObject::emitProcessingChanged()
@@ -5476,7 +5488,7 @@ VipArchive& operator>>(VipArchive& stream, VipProcessingObject* r)
 
 	// Mark the object as coming from a file. Its properties are now whatever the
 	// file said, and some processings turn a property into executable code.
-	r->setProperty("_vip_from_archive", true);
+	r->setFromArchive(true);
 
 	// initialize
 	r->initialize(true);

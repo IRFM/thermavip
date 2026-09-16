@@ -33,9 +33,11 @@
 #include "VipPainter.h"
 #include "VipPie.h"
 #include "VipShapeDevice.h"
+#include "VipLock.h"
 
 #include <limits>
 #include <numeric>
+#include <mutex>
 
 #include <QBuffer>
 #include <QPicture>
@@ -189,7 +191,7 @@ public:
 		// Under a lock: this engine is built once and handed to every VipText, so two
 		// texts being painted at the same time share this map literally, and it is
 		// written from a const method. QMap is not reentrant for writing.
-		QMutexLocker lock(&d_ascentLock);
+		std::scoped_lock<VipSpinlock> lock(d_ascentLock);
 
 		QMap<QString, int>::const_iterator it = d_ascentCache.find(fontKey);
 		if (it == d_ascentCache.end()) {
@@ -236,7 +238,7 @@ private:
 	}
 
 	mutable QMap<QString, int> d_ascentCache;
-	mutable QMutex d_ascentLock;
+	mutable VipSpinlock d_ascentLock;
 };
 
 //! Constructor

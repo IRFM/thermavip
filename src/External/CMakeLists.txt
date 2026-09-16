@@ -4,4 +4,9 @@
 # configured and built without being declared anywhere and without appearing in
 # any review. Adding an extension is a change to this file.
 #
-# add_subdirectory(MyExtension)
+file(GLOB V_GLOB LIST_DIRECTORIES true "*")
+foreach(item ${V_GLOB})
+	if(IS_DIRECTORY ${item})
+		add_subdirectory(${item})
+	endif()
+endforeach()
