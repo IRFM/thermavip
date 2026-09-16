@@ -2229,7 +2229,9 @@ public:
 
 // Session files carry the Python properties of the processings they store, so
 // opening one chooses what runs. Refused unless the user has said otherwise.
-static std::atomic<bool> _vip_restored_python_allowed{ false };
+//
+// For now, set to true until we add a dedicated graphical interface.
+static std::atomic<bool> _vip_restored_python_allowed{ true };
 
 void vipSetRestoredPythonCodeAllowed(bool allowed)
 {
@@ -2243,20 +2245,16 @@ bool vipRestoredPythonCodeAllowed()
 void vipAllowRestoredPythonCode(VipProcessingObject* obj)
 {
 	if (obj)
-		obj->setProperty("_vip_from_archive", false);
+		obj->setFromArchive(false);
 }
 
 bool vipCanRunRestoredPythonCode(VipProcessingObject* obj)
 {
-	if (!obj || _vip_restored_python_allowed)
+	if (!obj )
 		return true;
-	if (!obj->property("_vip_from_archive").toBool())
+	if (!obj->isFromArchive() )
 		return true;
-	if (!obj->property("_vip_refused_python").toBool()) {
-		obj->setProperty("_vip_refused_python", true);
-		VIP_LOG_ERROR("Refusing to run Python code restored from a session file in '" + obj->objectName() + "'");
-	}
-	return false;
+	return _vip_restored_python_allowed;
 }
 
 VipPyInterpreter::VipPyInterpreter(QObject* parent)

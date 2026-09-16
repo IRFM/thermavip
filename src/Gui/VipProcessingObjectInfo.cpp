@@ -282,7 +282,7 @@ void VipExtractShapesInfos::apply()
 				// append(), like the five lines around it: the subscript by key returns
 				// a copy, so this assigned to a temporary and the area of a region of
 				// interest never reached the panel.
-				map.append(name + "/Area", QString::number(area(sh.region())) + " pixels�");
+				map.append(name + "/Area", QString::number(area(sh.region())) + " pixels");
 #endif
 				auto stats = sh.statistics(ar, QPoint(0, 0), Vip::Max | Vip::Min | Vip::Mean | Vip::Std);
 				if (ar.canConvert<double>()) {

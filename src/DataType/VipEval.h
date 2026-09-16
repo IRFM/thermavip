@@ -184,12 +184,18 @@ namespace detail
 
 			using dtype = ValueType_t<Dst>;
 			const qsizetype size = dst.size();
+
+			// Revert following change: we don' want to detach the destination 
+			// as it might be used in the right expression. This would trigger
+			// an unecessary allocation + copy.
+
 			// Detach before writing: the const accessor does not, on purpose, and
 			// this function is public. Called directly, it used to write into a
 			// buffer another array still shares. A view owns nothing and has no
 			// detach, which is the whole point of a view.
-			if constexpr (detail::HasDetach<Dst>::value)
-				dst.detach();
+			//if constexpr (detail::HasDetach<Dst>::value)
+			//	dst.detach();
+
 			dtype* ptr = (dtype*)dst.constPtr();
 			if (!ptr)
 				return false;
@@ -448,7 +454,7 @@ namespace detail
 ///
 /// Src is a functor expression built by combining VipNDArray operators or using a function like vipTransform() or vipConvolve().
 /// Src functor can mix typed or raw VipNDArray objects. Raw VipNDArray objects will be casted to the deduced expression type before evaluation
-/// (which might trigger one or more allocations/copies). Note that a VipNDArray appearing several times in the fuctor expression
+/// (which might trigger one or more allocations/copies). Note that a VipNDArray appearing several times in the functor expression
 /// will be casted only once.
 ///
 /// It is allowed to use dst in the functor expression and this won't trigger a reallocation/copy of dst array.

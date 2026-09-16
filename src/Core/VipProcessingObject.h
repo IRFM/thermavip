@@ -1945,6 +1945,14 @@ public:
 	/// @brief Returns the number of pending processing in the TaskPool
 	int scheduledUpdates() const;
 
+	/// @brief Tells whether this object comes from a session file.
+	/// This is usefull for instance to disable running untrusted Python code.
+	bool isFromArchive() const noexcept;
+
+	/// @brief Set whether this object comes from a session file.
+	/// Setting to false will tell Python processing they are allowed to run their code.
+	void setFromArchive(bool) noexcept;
+
 	/// @brief Retrieve the number of inputs, properties and/or outputs that declares a given QMetaObject.
 	/// The QMetaObject must be related to a class inheriting VipProcessingObject.
 	/// Multi inputs/properties/outputs are considered as a single input/propertie/output/

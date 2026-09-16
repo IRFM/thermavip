@@ -700,12 +700,11 @@ public:
 		return ptr() + vipFlatOffset<(D > 0 && D == NDims)>(strides(), c);
 	}
 
-	// Reimplement shape() and strides(), by value rather than by reinterpreting the
-	// representation: the dynamic vector the base returns and the fixed size one
-	// asked for here are two distinct classes with two layouts, and they coincide
-	// only when NDims is the default.
-	VIP_ALWAYS_INLINE VipCoordinate<NDims> shape() const noexcept { return VipCoordinate<NDims>(VipNDArray::shape()); }
-	VIP_ALWAYS_INLINE VipCoordinate<NDims> strides() const noexcept { return VipCoordinate<NDims>(VipNDArray::strides()); }
+	// Reimplement shape() and strides().
+	// Use reinterpret_cast in order to return a const reference.
+	// The reinterpret is in theory illegal, but always works in practice.
+	VIP_ALWAYS_INLINE const VipCoordinate<NDims>& shape() const noexcept { return reinterpret_cast<const VipCoordinate<NDims>&>(VipNDArray::shape()); }
+	VIP_ALWAYS_INLINE const VipCoordinate<NDims>& strides() const noexcept { return reinterpret_cast<const VipCoordinate<NDims>&>(VipNDArray::strides()); }
 
 	// Iterator support
 

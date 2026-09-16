@@ -38,6 +38,18 @@ VTK_MODULE_INIT(vtkInteractionStyle)
 VTK_MODULE_INIT(vtkRenderingFreeType)
 VTK_MODULE_INIT(vtkRenderingOpenGL2)
 
+
+// The renderer of a layer, or null when the index is out of range. The layer was
+// clamped below only when both the actor and the view exist, while the member is
+// assigned in every case and used as a subscript on three other sites.
+static vtkRenderer* vipRendererForLayer(VipVTKGraphicsView* view, int layer)
+{
+	if (!view)
+		return nullptr;
+	const auto& rens = view->renderers();
+	return (layer >= 0 && layer < rens.size()) ? rens[layer] : nullptr;
+}
+
 class VipPlotVTKObject::PrivateData
 {
 public:
@@ -560,16 +572,7 @@ void VipPlotVTKObject::syncSelectionChanged(VipPlotItem*)
 		setSelected(it->isSelected());
 }
 
-// The renderer of a layer, or null when the index is out of range. The layer was
-// clamped below only when both the actor and the view exist, while the member is
-// assigned in every case and used as a subscript on three other sites.
-static vtkRenderer* vipRendererForLayer(VipVTKGraphicsView* view, int layer)
-{
-	if (!view)
-		return nullptr;
-	const auto& rens = view->renderers();
-	return (layer >= 0 && layer < rens.size()) ? rens[layer] : nullptr;
-}
+
 
 void VipPlotVTKObject::setLayer(int layer)
 {

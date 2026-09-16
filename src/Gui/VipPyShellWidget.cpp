@@ -13,6 +13,7 @@
 #include "VipGui.h"
 #include "VipStandardWidgets.h"
 #include "VipDisplayArea.h"
+#include "VipEnvironment.h"
 
 #include "VipPyOperation.h"
 #include "VipTextEditor.h"
