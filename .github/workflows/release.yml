@@ -21,8 +21,7 @@ jobs:
           - {label: linux-x64-qt5.15,   runner: ubuntu-22.04, qt: 5.15.2, coverage: false}
           - {label: windows-x64-qt6,    runner: windows-2022, qt: 6.8.3,  coverage: false}
           - {label: windows-x64-qt5.15, runner: windows-2022, qt: 5.15.2, coverage: false}
-          - {label: macos-x64-qt6,      runner: macos-13,     qt: 6.8.3,  coverage: false}
-          - {label: macos-x64-qt5.15,   runner: macos-13,     qt: 5.15.2, coverage: false}
+          - {label: macos-qt6,          runner: macos-latest, qt: 6.8.3,  coverage: false}
     uses: ./.github/workflows/wf-build-test.yml
     with:
       runner: ${{ matrix.runner }}
@@ -53,7 +52,7 @@ jobs:
         include:
           - {label: linux-x64-qt6,   runner: ubuntu-22.04, format: AppImage}
           - {label: windows-x64-qt6, runner: windows-2022, format: NSIS}
-          - {label: macos-x64-qt6,   runner: macos-13,     format: tar}
+          - {label: macos-qt6,       runner: macos-latest, format: tar}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 

@@ -23,7 +23,7 @@ duplicated: the Qt / CMake / ctest mechanism is written once, in
 | | branch | pull request | nightly | tag |
 |---|---|---|---|---|
 | clang-format, cppcheck, whole tree | warning | warning | warning | warning |
-| build + ctest | 1 lane | 6 lanes, **blocking** | 6 lanes | 6 lanes, **blocking** |
+| build + ctest | 1 lane | 5 lanes, **blocking** | 5 lanes | 5 lanes, **blocking** |
 | plugins (ffmpeg, python, hdf5) | no | no | yes | yes |
 | warnings as errors | no | no | yes | no |
 | coverage | artifact only | Codecov | Codecov | artifact only |
@@ -34,9 +34,18 @@ duplicated: the Qt / CMake / ctest mechanism is written once, in
 | clang-tidy, CodeQL | no | no | report | report |
 | packaging, release draft | no | no | no | yes |
 
-The six build lanes are Linux, Windows and macOS x86_64, each with Qt 6.8.3 and
-Qt 5.15.2. **macOS arm64 is not built**: the project does not target Apple
-Silicon, so a lane for it would report on something nobody ships.
+The five build lanes are Linux and Windows x86_64 with both Qt 6.8.3 and
+Qt 5.15.2, plus one macOS lane with Qt 6.8.3 only.
+
+macOS runs on `macos-latest` rather than a pinned version, and that is the one
+exception to pinning everything. `macos-13` was pinned here at first and has
+since been retired: the label still parses, so the job did not fail, it waited
+for a runner that will never come. There is no free x86_64 macOS runner left —
+the remaining Intel images are billed larger runners — so this lane is arm64,
+and its label carries no architecture because `-latest` will move again.
+
+That also settles the missing macOS Qt 5 row: Qt 5.15.2 was never built for
+macOS arm64, so there is nothing to install there.
 
 One rule explains what is blocking and what is not: **a blocking job is a job
 people wait for.** AddressSanitizer costs about 2x and blocks every pull

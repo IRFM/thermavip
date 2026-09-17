@@ -4,7 +4,7 @@ on:
   workflow_call:
     inputs:
       runner:
-        description: Runner image (ubuntu-24.04, ubuntu-22.04, windows-2022, macos-13)
+        description: Runner image (ubuntu-24.04, ubuntu-22.04, windows-2022, macos-latest)
         type: string
         required: true
       qt-version:

@@ -26,8 +26,7 @@ jobs:
           - {label: linux-x64-qt5.15,   runner: ubuntu-22.04, qt: 5.15.2, coverage: true}
           - {label: windows-x64-qt6,    runner: windows-2022, qt: 6.8.3,  coverage: false}
           - {label: windows-x64-qt5.15, runner: windows-2022, qt: 5.15.2, coverage: false}
-          - {label: macos-x64-qt6,      runner: macos-13,     qt: 6.8.3,  coverage: false}
-          - {label: macos-x64-qt5.15,   runner: macos-13,     qt: 5.15.2, coverage: false}
+          - {label: macos-qt6,          runner: macos-latest, qt: 6.8.3,  coverage: false}
     uses: ./.github/workflows/wf-build-test.yml
     with:
       runner: ${{ matrix.runner }}
