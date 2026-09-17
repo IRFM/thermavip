@@ -130,7 +130,7 @@ jobs:
             -DWITH_HDF5=$hdf5 \
             -DWITH_PYTHON=${{ inputs.plugins && 'ON' || 'OFF' }} \
             -DWITH_LIBRIR=${{ inputs.plugins && 'ON' || 'OFF' }} \
-            "${args[@]}"
+            ${args[@]+"${args[@]}"}
 
       - name: Build
         shell: bash
