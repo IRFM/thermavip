@@ -4,7 +4,7 @@ name: branch
 
 on:
   push:
-    branches-ignore: [main]
+    branches-ignore: [main, dev]
     paths-ignore: ['docs/**', 'doc/**', 'help/**', 'icons/**', 'skins/**', '**.md']
 
 concurrency:
