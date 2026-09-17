@@ -22,7 +22,11 @@
 #include <qsettings.h>
 #include <qscreen.h>
 #include <qwindow.h>
-#if QT_VERSION > QT_VERSION_CHECK(6, 0, 0)
+// QQuickWindow comes from Qt Quick, which this application does not use: it is
+// pulled in only by Qt WebEngine, whose renderer is a Quick scene. Guarded by
+// QT_VERSION alone, this include made Qt Quick a hard dependency that nothing
+// declared, and the build failed on any Qt installation without it.
+#if defined(__VIP_USE_WEB_ENGINE) && QT_VERSION > QT_VERSION_CHECK(6, 0, 0)
 #include <QQuickWindow>
 #endif
 
@@ -350,8 +354,9 @@ int main(int argc, char** argv)
 	QWebEngineUrlScheme::registerScheme(sc);
 #endif
 
-#if QT_VERSION > QT_VERSION_CHECK(6, 0, 0)
-	// ONLY way to have both QOpenglWidget and QQuickWindow (like web engine) in the same application
+#if defined(__VIP_USE_WEB_ENGINE) && QT_VERSION > QT_VERSION_CHECK(6, 0, 0)
+	// ONLY way to have both QOpenglWidget and QQuickWindow (like web engine) in the same application.
+	// Without WebEngine there is no Quick scene in the process and nothing to set.
 	QQuickWindow::setGraphicsApi(QSGRendererInterface::OpenGL);
 #endif
 
