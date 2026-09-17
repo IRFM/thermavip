@@ -22,7 +22,7 @@ duplicated: the Qt / CMake / ctest mechanism is written once, in
 
 | | branch | pull request | nightly | tag |
 |---|---|---|---|---|
-| clang-format, cppcheck, whole tree | **blocking** | **blocking** | **blocking** | **blocking** |
+| clang-format, cppcheck, whole tree | warning | warning | warning | warning |
 | build + ctest | 1 lane | 6 lanes, **blocking** | 6 lanes | 6 lanes, **blocking** |
 | plugins (ffmpeg, python, hdf5) | no | no | yes | yes |
 | warnings as errors | no | no | yes | no |
@@ -44,16 +44,59 @@ request. Valgrind costs 10x and does not: a slow blocking job is a job people
 learn to bypass. The slow tools become blocking exactly once, on a tag, where
 waiting a few hours is acceptable.
 
-Everything else blocks, including the two lint jobs over the whole tree and the
-Qt 5.15 lanes. They will be red until the tree is formatted, the cppcheck
-findings are triaged and Qt 5 is made to build — and that work is the point of
-this pipeline, not an obstacle to it. Each job publishes what is needed to do
-that work: clang-format uploads the complete patch, cppcheck the full list of
-findings, every build lane its test results.
+Everything else blocks, the six build lanes and the Qt 5.15 rows included. They
+will be red until Qt 5 is made to build, and that work is the point of this
+pipeline, not an obstacle to it.
 
-clang-tidy and CodeQL are the two exceptions that never block. A style finding
-must not stop a release, and CodeQL's output is the security tab, not an exit
-code.
+The two lint jobs are the exception: they report and never block. Neither
+`src/.clang-format` nor cppcheck has ever been applied to this tree, so enforcing
+either would stop every change until a backlog is cleared in one commit. Both
+still print everything they found in their log, under a collapsed group, write a
+breakdown to the job summary and attach the full report as an artifact — the
+drift is visible on every run rather than forgotten. Turning one into a gate is
+deleting its `::warning::` line in favour of an `::error::` and an `exit 1`.
+
+clang-tidy and CodeQL never block either. A style finding must not stop a
+release, and CodeQL's output is the security tab, not an exit code.
+
+cppcheck runs with `--library=qt` and the SDK include paths. Without them two
+thirds of its output was `unknownMacro` on `Q_OBJECT`, `Q_SLOTS` and the `VIP_*`
+macros — the analyser reporting its own ignorance rather than anything about the
+code. A finding that is wrong is silenced with a `// cppcheck-suppress <id>`
+comment next to the code it concerns, never in a shared list: `--inline-suppr` is
+enabled for that, and a suppression that lives next to the code goes through
+review.
+
+## Formatting rules
+
+The formatting style is `src/.clang-format`, which has been in the repository
+since the first commit: Mozilla with 8-column tabs, a 200-column limit,
+`AccessModifierOffset: -8`, `NamespaceIndentation: All` and `SortIncludes: false`
+(include order is hand-maintained here and reordering it would be a behaviour
+change disguised as formatting).
+
+There is deliberately no second `.clang-format` at the repository root.
+clang-format searches upward from each file, so a root file would be shadowed by
+`src/.clang-format` for every file the lint job checks, and the two would drift
+apart without anything reporting it. If the rules ever need to cover code outside
+`src/`, move that one file to the root rather than adding a second.
+
+Measured on the first run of this pipeline: 330 of the 415 source files differ
+from the style the project declares for itself, about 10 000 lines out of
+245 000. The bulk of it is in the VTK and Python sources, which no default
+configuration compiles — code nothing built is also code nothing formatted.
+
+Applying it is a single commit, and it must be a commit of its own:
+
+```sh
+python -m pip install clang-format==18.1.8
+git ls-files 'src/*.c' 'src/*.cpp' 'src/*.h' 'src/*.hpp' \
+  | xargs clang-format -style=file -i
+```
+
+Pin the version. clang-format 19 and 20 do not produce the same output as 18,
+and the runner uses 18: formatting with another version leaves the job reporting
+differences that are not there.
 
 ## Where the tests live
 
