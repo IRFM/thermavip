@@ -1,0 +1,118 @@
+name: lint
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  format:
+    name: clang-format
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      - name: Install clang-format
+        run: sudo apt-get update && sudo apt-get install -y clang-format-18
+
+      - name: Check the formatting
+        run: |
+          files=$(git ls-files 'src/*.c' 'src/*.cpp' 'src/*.h' 'src/*.hpp')
+          if [ -z "$files" ]; then
+            echo "No source file to check."
+            exit 0
+          fi
+
+          echo "$files" | xargs -P 4 -n 50 clang-format-18 -style=file -i
+
+          git diff --stat > format.stat
+          git diff > format.diff
+          if [ ! -s format.diff ]; then
+            echo "The whole tree is formatted."
+            exit 0
+          fi
+
+          {
+            echo '### clang-format'
+            echo
+            echo "$(git diff --name-only | wc -l) files are not formatted."
+            echo
+            echo 'The complete patch is attached to this run as the'
+            echo '`clang-format-report` artifact. To apply it locally:'
+            echo
+            echo '```sh'
+            echo "git ls-files 'src/*.c' 'src/*.cpp' 'src/*.h' 'src/*.hpp' \\"
+            echo '  | xargs clang-format -style=file -i'
+            echo '```'
+            echo
+            echo '```'
+            cat format.stat
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          echo "::error::The tree is not formatted. The patch is in the clang-format-report artifact."
+          exit 1
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        if: always()
+        with:
+          name: clang-format-report
+          path: |
+            format.diff
+            format.stat
+          retention-days: 14
+          if-no-files-found: ignore
+
+  cppcheck:
+    name: cppcheck
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      - name: Install cppcheck
+        run: sudo apt-get update && sudo apt-get install -y cppcheck
+
+      - name: Analyse
+        run: |
+          set -o pipefail
+          cppcheck --enable=warning,performance,portability \
+            --inline-suppr --std=c++17 --quiet \
+            --suppress=missingIncludeSystem \
+            --suppress=unusedFunction \
+            --template='{file}:{line}:{column}: {severity}: {message} [{id}]' \
+            -i 3rd_64 -i build \
+            src/ 2> cppcheck.txt || true
+
+          sort -u -o cppcheck.txt cppcheck.txt
+          count=$(wc -l < cppcheck.txt)
+
+          {
+            echo '### cppcheck'
+            echo
+            echo "$count findings."
+            echo
+            echo 'By severity:'
+            echo
+            echo '```'
+            sed -n 's/.*: \([a-z]*\): .*/\1/p' cppcheck.txt | sort | uniq -c | sort -rn
+            echo '```'
+            echo
+            echo 'Full list in the `cppcheck-report` artifact.'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          cat cppcheck.txt
+          if [ "$count" -gt 0 ]; then
+            echo "::error::cppcheck reports $count findings."
+            exit 1
+          fi
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        if: always()
+        with:
+          name: cppcheck-report
+          path: cppcheck.txt
+          retention-days: 14
+          if-no-files-found: ignore

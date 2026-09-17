@@ -1,0 +1,153 @@
+name: release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    uses: ./.github/workflows/wf-lint.yml
+
+  build:
+    needs: lint
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {label: linux-x64-qt6,      runner: ubuntu-22.04, qt: 6.8.3,  coverage: true}
+          - {label: linux-x64-qt5.15,   runner: ubuntu-22.04, qt: 5.15.2, coverage: false}
+          - {label: windows-x64-qt6,    runner: windows-2022, qt: 6.8.3,  coverage: false}
+          - {label: windows-x64-qt5.15, runner: windows-2022, qt: 5.15.2, coverage: false}
+          - {label: macos-x64-qt6,      runner: macos-13,     qt: 6.8.3,  coverage: false}
+          - {label: macos-x64-qt5.15,   runner: macos-13,     qt: 5.15.2, coverage: false}
+    uses: ./.github/workflows/wf-build-test.yml
+    with:
+      runner: ${{ matrix.runner }}
+      qt-version: ${{ matrix.qt }}
+      label: ${{ matrix.label }}
+      tests: true
+      coverage: ${{ matrix.coverage }}
+      plugins: true
+      retention-days: 90
+
+  heavy:
+    needs: build
+    uses: ./.github/workflows/wf-heavy.yml
+    with:
+      blocking: true
+    permissions:
+      contents: read
+      security-events: write
+
+  package:
+    name: package ${{ matrix.label }}
+    needs: heavy
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {label: linux-x64-qt6,   runner: ubuntu-22.04, format: AppImage}
+          - {label: windows-x64-qt6, runner: windows-2022, format: NSIS}
+          - {label: macos-x64-qt6,   runner: macos-13,     format: tar}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: thermavip-${{ matrix.label }}
+          path: install
+
+      - uses: jurplel/install-qt-action@bcb88e3bed2e992f5f9e24c0f9e364a231d278eb # v4.4.0
+        with:
+          version: 6.8.3
+          modules: qt5compat qtimageformats
+          cache: true
+          setup-python: false
+
+      - name: Restore the executable bits
+        if: runner.os != 'Windows'
+        shell: bash
+        run: |
+          set -eu
+          chmod +x install/thermavip/Thermavip
+          # -exec ... + rather than xargs -r: macOS xargs has no -r and would
+          # run chmod once with no argument when the find matches nothing.
+          find install \( -name '*.so' -o -name '*.so.*' -o -name '*.dylib' \) \
+            -exec chmod +x {} +
+
+      - name: Build the package
+        shell: bash
+        run: |
+          set -eu
+          version="${GITHUB_REF_NAME#v}"
+          out="thermavip-${version}-${{ matrix.label }}"
+          mkdir -p dist
+
+          case "${{ matrix.format }}" in
+            AppImage)
+              # The SDK libraries sit next to the executable in install/thermavip
+              # (the target RPATH is $ORIGIN); linuxdeploy resolves through ldd,
+              # which needs them on the search path.
+              export LD_LIBRARY_PATH="$PWD/install/thermavip:$PWD/install/lib:${LD_LIBRARY_PATH:-}"
+              wget -q https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage
+              wget -q https://github.com/linuxdeploy/linuxdeploy-plugin-qt/releases/download/continuous/linuxdeploy-plugin-qt-x86_64.AppImage
+              chmod +x linuxdeploy*.AppImage
+              ./linuxdeploy-x86_64.AppImage --appdir AppDir \
+                --executable install/thermavip/Thermavip \
+                --desktop-file packaging/thermavip.desktop \
+                --icon-file icons/thermavip.png \
+                --plugin qt --output appimage
+              mv ./*.AppImage "dist/${out}.AppImage"
+              ;;
+            NSIS)
+              windeployqt install/thermavip/Thermavip.exe
+              # Absolute, native paths: makensis resolves a relative File path
+              # against its own current directory, not against the script, and
+              # it does not understand the /c/... form git bash reports.
+              makensis -DVERSION="$version" \
+                -DSRC="$(cygpath -w "$PWD/install")" \
+                -DOUT="$(cygpath -w "$PWD/dist/${out}.exe")" \
+                packaging/thermavip.nsi
+              ;;
+            tar)
+              # Not a .dmg: src/Thermavip/CMakeLists.txt builds a plain
+              # executable, not a MACOSX_BUNDLE, so there is no .app for
+              # macdeployqt to fill and nothing to sign. An archive of the
+              # install tree is what this build actually produces; making it a
+              # bundle is a change to the build, not to the pipeline.
+              tar -C install -czf "dist/${out}.tar.gz" .
+              ;;
+          esac
+
+          cd dist && shasum -a 256 ./* > "${out}.sha256"
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: installer-${{ matrix.label }}
+          path: dist/
+          retention-days: 90
+          if-no-files-found: error
+
+  publish:
+    name: publish
+    needs: package
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          pattern: installer-*
+          path: dist
+          merge-multiple: true
+
+      - uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2.6.2
+        with:
+          files: dist/*
+          generate_release_notes: true
+          draft: true

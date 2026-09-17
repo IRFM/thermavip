@@ -1,13 +1,28 @@
 # Version tracking for GitHub actions.
 #
-# The five external references in the workflows are pinned to a commit SHA
-# rather than a moving tag, so the code the runner executes cannot change
-# without a commit in this repository. The downside is that version bumps
-# become invisible, which this file fixes: Dependabot opens a reviewed pull
-# request for each new version.
+# Every external reference in .github/workflows and .github/actions is pinned to
+# a commit SHA rather than a moving tag, so the code the runner executes cannot
+# change without a commit in this repository. A tag can be moved by whoever owns
+# it; jurplel/install-qt-action's "v4" is not even a tag but a branch.
+#
+# The cost of pinning is that version bumps become invisible, which this file
+# fixes: Dependabot opens a reviewed pull request for each new version and
+# updates the `# vX.Y.Z` comment next to the SHA.
 version: 2
 updates:
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "weekly"
+    groups:
+      # One pull request for the routine bumps instead of eleven. Anything that
+      # is not a patch bump is reviewed on its own.
+      actions-patch:
+        update-types: ["patch"]
+    labels: ["ci", "dependencies"]
+
+  - package-ecosystem: "github-actions"
+    directory: "/.github/actions/setup-build-env"
+    schedule:
+      interval: "weekly"
+    labels: ["ci", "dependencies"]

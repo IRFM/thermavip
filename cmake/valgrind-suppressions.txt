@@ -1,0 +1,68 @@
+# Valgrind suppressions for the Thermavip tests.
+#
+# Separate file from sanitizer-suppressions.txt, and not by accident: Valgrind
+# has its own syntax (a named block per entry) and the sanitizers have theirs
+# (`kind:substring`). Neither reads the other's file.
+#
+# Wired in cmake/thermavip_sanitizers.cmake as MEMORYCHECK_SUPPRESSIONS_FILE, so
+# `ctest -T memcheck` picks it up without any environment variable, locally and
+# in CI alike.
+#
+# Rules for this file, the same as for the sanitizer one:
+#   - one entry, one written justification right above it;
+#   - never an entry covering code under src/: a leak in Thermavip is fixed,
+#     not suppressed;
+#   - an entry added without justification is an entry to remove.
+#
+# Keep it short. Each entry potentially hides a real leak.
+
+# The dynamic loader reads relocation data that is partly uninitialised by
+# design; the condition Valgrind flags is on padding it never uses.
+{
+   dl_init_conditional
+   Memcheck:Cond
+   ...
+   fun:_dl_init
+}
+
+# dlopen keeps the library handle and the symbol resolution tables. dlclose does
+# not always release them, and a plugin-based application never unloads most of
+# what it opens.
+{
+   dl_open_leak
+   Memcheck:Leak
+   match-leak-kinds: reachable,possible
+   ...
+   fun:dlopen*
+}
+
+# fontconfig builds its pattern and charset caches on the first font lookup and
+# keeps them for the process lifetime.
+{
+   fontconfig_init_leak
+   Memcheck:Leak
+   match-leak-kinds: reachable
+   ...
+   obj:*libfontconfig.so*
+}
+
+# The Mesa software rasteriser allocates its internal state once and leaves it
+# to the system on exit. Reached only from the graphics stack, never from
+# project code.
+{
+   mesa_swrast_leak
+   Memcheck:Leak
+   match-leak-kinds: reachable
+   ...
+   obj:*swrast_dri.so*
+}
+
+# Qt registers its static plugins in a table freed by an atexit handler that a
+# test process does not always reach.
+{
+   qt_static_init_leak
+   Memcheck:Leak
+   match-leak-kinds: reachable
+   ...
+   fun:_ZN14QStaticPluginsC1Ev
+}

@@ -1,0 +1,33 @@
+name: branch
+
+# Fast feedback while developing: one runner, one Qt version.
+
+on:
+  push:
+    branches-ignore: [main]
+    paths-ignore: ['docs/**', 'doc/**', 'help/**', 'icons/**', 'skins/**', '**.md']
+
+concurrency:
+  group: branch-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    uses: ./.github/workflows/wf-lint.yml
+
+  build:
+    needs: lint
+    uses: ./.github/workflows/wf-build-test.yml
+    with:
+      runner: ubuntu-24.04
+      qt-version: 6.8.3
+      label: linux-x64-qt6
+      tests: true
+      coverage: true
+      # The coverage report leaves as an artifact but does not reach Codecov:
+      # a work branch must not move the baseline or the badges.
+      upload-coverage: false
+      retention-days: 7

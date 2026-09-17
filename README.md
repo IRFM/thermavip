@@ -1,6 +1,6 @@
-![Linux/gcc](https://github.com/IRFM/thermavip/actions/workflows/build-linux.yml/badge.svg?branch=main)
-![Windows/msvc](https://github.com/IRFM/thermavip/actions/workflows/build-windows.yml/badge.svg?branch=main)
-![MacOS/clang](https://github.com/IRFM/thermavip/actions/workflows/build-macos.yml/badge.svg?branch=main)
+[![CI](https://github.com/IRFM/thermavip/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/IRFM/thermavip/actions/workflows/ci.yml)
+[![nightly](https://github.com/IRFM/thermavip/actions/workflows/nightly.yml/badge.svg)](https://github.com/IRFM/thermavip/actions/workflows/nightly.yml)
+[![codecov](https://codecov.io/gh/IRFM/thermavip/branch/main/graph/badge.svg)](https://codecov.io/gh/IRFM/thermavip)
 
 <img src="docs/images/logo.png" width="615">
 
@@ -43,8 +43,8 @@ Thermavip framework is meant to build desktop applications at it relies on [Qt W
 ## Prerequisites
 
 To compile and run *Thermavip*, you need a valid Qt 6 installation. Qt 6.8.3 is the version the
-continuous integration builds; nothing older than Qt 6 is built or tested. The build system still
-accepts Qt 5, but no configuration exercises it.
+continuous integration builds, on Linux, Windows and macOS x86_64. Qt 5.15.2 is built and tested on
+the same three platforms, and its lanes block like every other one. See the [CI notes](docs/ci.md).
 Qt needs to be compiled with the desktop opengl option, and with mysql support if you wish to use the [Annotation](docs/annotation.md) library with a MySQL database.
 
 You can download Qt source code from this [website](https://download.qt.io/archive/qt/).
@@ -56,6 +56,9 @@ Default plugins shipped within the git reprository rely on the [HDF5](https://ww
 ## Compilation
 
 *Thermavip* compilation relies on cmake. See this [page](docs/compilation.md) for more details.
+
+The continuous integration, the test tree and the memory checkers are described in the
+[CI notes](docs/ci.md).
 
 ## Get started
 
