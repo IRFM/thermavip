@@ -62,7 +62,7 @@ runs:
         version: ${{ inputs.qt-version }}
         modules: ${{ startsWith(inputs.qt-version, '6.') && 'qt5compat qtimageformats' || '' }}
         cache: true
-        setup-python: false
+        setup-python: true
 
     - name: Plugin dependencies (Linux)
       if: inputs.plugins == 'true' && runner.os == 'Linux'
