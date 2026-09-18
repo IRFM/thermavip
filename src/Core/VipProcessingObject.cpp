@@ -3439,7 +3439,7 @@ static bool openIOConnection(UniqueProcessingIO* io, VipConnection::IOType type,
 	}
 	if (connection->openConnection(type))
 		return true;
-	VIP_LOG_ERROR("Cannot open connection for " + processing + "/" + io->name() + ", address: " + connection->address());
+	//VIP_LOG_ERROR("Cannot open connection for " + processing + "/" + io->name() + ", address: " + connection->address());
 	return false;
 }
 

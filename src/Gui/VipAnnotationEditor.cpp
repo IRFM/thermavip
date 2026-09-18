@@ -233,16 +233,18 @@ void TextEditor::changeFont()
 
 void TextEditor::emitChanged()
 {
-
-	if (!isNullPen(d_data->textPen->pen()))
+	d_data->editor.blockSignals(true);
+	if (!isNullPen(d_data->textPen->pen())) {
 		d_data->editor.setTextColor(d_data->textPen->pen().color());
+	}
 	if (sender() == d_data->font || sender() == d_data->textPen) {
 		QString t = d_data->editor.toPlainText();
-		d_data->editor.blockSignals(true);
+		
 		d_data->editor.clear();
 		d_data->editor.setPlainText(t);
-		d_data->editor.blockSignals(false);
+		
 	}
+	d_data->editor.blockSignals(false);
 	Q_EMIT changed();
 }
 

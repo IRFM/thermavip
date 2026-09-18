@@ -420,9 +420,16 @@ void VipTimeRangeItem::mousePressEvent(QGraphicsSceneMouseEvent* event)
 	}
 }
 
-void VipTimeRangeItem::mouseReleaseEvent(QGraphicsSceneMouseEvent*)
+void VipTimeRangeItem::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
 {
 	d_selection = -2;
+
+	if ((event->pos() - d_pos).manhattanLength() < QApplication::startDragDistance()) {
+		if (VipTimeRangeListItem* p = qobject_cast < VipTimeRangeListItem*>(parentItem()->toGraphicsObject()))
+			if (VipPlayerArea* area = qobject_cast<VipPlayerArea*>(p->area())) {
+				area->mouseReleased(p, (VipPlotItem::MouseButton) event->button());
+			}
+	}
 }
 
 QVariant VipTimeRangeItem::itemChange(GraphicsItemChange change, const QVariant& value)
@@ -2097,6 +2104,26 @@ void VipPlayerArea::resetSelection()
 		selected[i]->reset();
 }
 
+void VipPlayerArea::removeSelection()
+{
+	QList<VipTimeRangeListItem*> selected, not_selected;
+	timeRangeListItems(selected, not_selected);
+	for (auto* item : selected) {
+		if (auto* d = item->device()) {
+			// Remove the related display objects
+			auto displays = vipListCast<VipDisplayObject*>(d->allSinks());
+			for (auto* disp : displays) {
+				if (VipDisplayPlotItem* pl = qobject_cast<VipDisplayPlotItem*>(disp)) {
+					// Do NOT delete VipPlotSpectrogram that belongs to a VipImageArea2D or it will crash
+					if (!qobject_cast<VipPlotSpectrogram*>(pl->item()))
+						pl->item()->deleteLater();
+				}
+				disp->deleteLater();
+			}
+		}
+	}
+}
+
 void VipPlayerArea::resetAllTimeRanges()
 {
 	QList<VipTimeRangeListItem*> selected, not_selected;
@@ -2245,11 +2272,11 @@ void VipPlayerArea::mouseReleased(VipPlotItem* item, VipPlotItem::MouseButton bu
 		QMenu menu;
 		connect(menu.addAction(vipIcon("foreground.png"), "Move selection to foreground"), SIGNAL(triggered(bool)), this, SLOT(moveToForeground()));
 		connect(menu.addAction(vipIcon("background.png"), "Move selection to background"), SIGNAL(triggered(bool)), this, SLOT(moveToBackground()));
-		menu.addSeparator();
-		// connect(menu.addAction("Split time range on current time"),SIGNAL(triggered(bool)),this,SLOT(splitSelection()));
-		connect(menu.addAction("Reverse time range"), SIGNAL(triggered(bool)), this, SLOT(reverseSelection()));
+		
 		menu.addSeparator();
 		connect(menu.addAction("Reset selected time range"), SIGNAL(triggered(bool)), this, SLOT(resetSelection()));
+		menu.addSeparator();
+		connect(menu.addAction("Remove selected time range"), SIGNAL(triggered(bool)), this, SLOT(removeSelection()));
 
 		menu.exec(QCursor::pos());
 	}

@@ -301,6 +301,7 @@ public Q_SLOTS:
 	void splitSelection();
 	void reverseSelection();
 	void resetSelection();
+	void removeSelection();
 	void resetAllTimeRanges();
 	void alignToZero(bool enable);
 	void computeStartDate();
@@ -312,7 +313,6 @@ public Q_SLOTS:
 	void defferedUpdateProcessingPool();
 	void addMissingDevices();
 
-private Q_SLOTS:
 
 	// void deviceAdded(QObject*);
 	// void deviceRemoved(QObject*);

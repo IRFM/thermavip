@@ -4588,11 +4588,15 @@ double VipImageArea2D::zoom() const
 
 QRectF VipImageArea2D::imageBoundingRect() const
 {
-	return d_data->spectrogram->imageBoundingRect();
+	if(d_data->spectrogram)
+		return d_data->spectrogram->imageBoundingRect();
+	return QRectF();
 }
 
 QRectF VipImageArea2D::imageRect() const
 {
+	if (!d_data->spectrogram)
+		return QRectF();
 	QRectF r = d_data->spectrogram->imageBoundingRect();
 	r.setLeft(0);
 	r.setTop(0);
@@ -4618,6 +4622,8 @@ void VipImageArea2D::receiveNewRect(const QRectF& rect)
 
 void VipImageArea2D::setArray(const VipNDArray& ar, const QPointF& image_offset)
 {
+	if (!d_data->spectrogram)
+		return;
 	VipRasterData data(ar, image_offset);
 	d_data->spectrogram->setRawData(data);
 }
@@ -4634,12 +4640,16 @@ void VipImageArea2D::setPixmap(const QPixmap& image, const QPointF& image_offset
 
 VipNDArray VipImageArea2D::array() const
 {
-	return d_data->spectrogram->rawData().extract(d_data->spectrogram->imageBoundingRect());
+	if(d_data->spectrogram)
+		return d_data->spectrogram->rawData().extract(d_data->spectrogram->imageBoundingRect());
+	return {};
 }
 
 VipPlotSpectrogram* VipImageArea2D::spectrogram() const
 {
-	return const_cast<VipPlotSpectrogram*>(d_data->spectrogram.data());
+	if(d_data->spectrogram)
+		return const_cast<VipPlotSpectrogram*>(d_data->spectrogram.data());
+	return nullptr;
 }
 
 VipAxisColorMap* VipImageArea2D::colorMapAxis() const
@@ -4654,6 +4664,9 @@ void VipImageArea2D::emitVisualizedAreaChanged()
 
 void VipImageArea2D::recomputeGeometry(const QRectF& visualized_image_rect, bool recompute_aligned_areas)
 {
+	if (!d_data->spectrogram)
+		return;
+
 	if (d_data->spectrogram->imageBoundingRect().isValid()) {
 		QRectF inner_rect = innerRect();
 		QRectF outer_rect = outerRect();

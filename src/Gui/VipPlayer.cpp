@@ -9305,7 +9305,7 @@ static bool handleDropROIFileOnVideo(VipVideoPlayer* pl, VipPlotItem* sp, QMimeD
 		if (dev && dev->deviceType() == VipIODevice::Resource)
 			delete dev.data();
 
-
+		ok = true;
 		/* for (auto* d : disp) {
 			if (VipPlotSceneModel* plot = d->item()) {
 				// Remove background brush
