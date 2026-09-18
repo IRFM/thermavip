@@ -240,6 +240,17 @@ Q_DECLARE_METATYPE(VipResizeItemPtr)
 /// but each function requires an additional string parameter which is the scene model group on which the style applies.
 /// Passing an empy string will apply the style to all groups.
 ///
+/// VipPlotSceneModel support stylesheets and defines the following attributes:
+/// -	'text-alignment' : see VipPlotShape::setTextAlignment(), combination of 'left|right|top|bottom|center|vcenter|hcenter'
+/// -	'text-position': see VipPlotShape::setTextPosition(), combination of 'outside|xinside|yinside|xautomatic|yautomatic|automatic'
+/// -	'text-distance': see VipPlotShape::setTextDistance()
+/// -	'adjust-text-color': equivalent to VipPlotScatter::setAdjustTextColor()
+/// -   'components': equivalent to VipPlotScatter::setDrawComponents(), possible value are combinations of 'border|background|fillPixels|id|group|title|attributes'
+/// -   'component': enable/disable one component at a time. Usage: 'component[background]: true;'
+/// -	'mode': 0 for fixed, 1 for Movable, 2 for Resizable
+/// 
+/// These applies to all groups.
+/// 
 class VIP_PLOTTING_EXPORT VipPlotSceneModel : public VipPlotItemComposite
 {
 	Q_OBJECT

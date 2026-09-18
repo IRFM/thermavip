@@ -312,6 +312,7 @@ Q_DECLARE_METATYPE(VipPaintItem*)
 ///
 /// VipPlotItem supports stylesheets, and adds the following attributes:
 ///	-	'selection-border': border pen when selected (see VipPlotItem::setSelectedPen())
+/// -	'background': background color (see VipPlotItem::setBrush())
 /// -	'border': border pen (see VipPlotItem::setPen())
 /// -	'border-width': border pen width (see VipPlotItem::setPen())
 /// -	'major-color': set item color (both border and background), see VipPlotItem::setMajorColor()

@@ -851,7 +851,7 @@ VipDisplaySceneModel::VipDisplaySceneModel(QObject* parent)
 	item()->setBrush("All", QBrush(QColor(255, 0, 0, 70)));
 	item()->setDrawComponents("All", VipPlotShape::Border | VipPlotShape::Background | VipPlotShape::Id | VipPlotShape::Group);
 	item()->setZValue(1000);
-	item()->setIgnoreStyleSheet(true);
+	//item()->setIgnoreStyleSheet(true);//TEST: comment to allow style sheet from VipAnyData attribute
 }
 
 bool VipDisplaySceneModel::acceptInput(int, const QVariant& v) const

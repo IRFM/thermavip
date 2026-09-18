@@ -9235,9 +9235,87 @@ static VipArchive& operator>>(VipArchive& arch, VipPlotPlayer* value)
 
 #include <qmessagebox.h>
 
+
+QList<VipDisplaySceneModel*> vipAddSceneModelDeviceToPlayer(VipVideoPlayer* pl, VipIODevice* device)
+{
+	if (!(device->openMode() & VipIODevice::ReadOnly))
+	{
+		if (!device->open(VipIODevice::ReadOnly))
+			return {};
+	}
+
+	QList<VipDisplaySceneModel*> ret;
+
+	if (device->deviceType() == VipIODevice::Resource) {
+		VipSceneModelList lst;
+		VipAnyData any = device->outputAt(0)->data();
+		if (any.data().userType() == qMetaTypeId<VipSceneModel>())
+			lst << any.value<VipSceneModel>();
+		else
+			lst = any.value<VipSceneModelList>();
+		if (lst.size()) {
+			for (int i = 0; i < lst.size(); ++i) {
+				lst[i] = vipCopyVideoSceneModel(lst[i], nullptr, qobject_cast<VipVideoPlayer*>(pl));
+			}
+			pl->addSceneModels(lst, false);
+			if (auto* d = pl->findDisplaySceneModel(lst.first()))
+				ret.push_back(d);
+		}
+	}
+	else {
+		device->setParent(pl->processingPool());
+
+		QList<VipDisplayObject*> out;
+		vipCreatePlayersFromProcessing(device, pl, nullptr, nullptr, &out);
+		for (auto* d : out) {
+			if (auto* sm = qobject_cast<VipDisplaySceneModel*>(d))
+				ret.push_back(sm);
+		}
+	}
+
+	return ret;
+}
+
+
 static bool handleDropROIFileOnVideo(VipVideoPlayer* pl, VipPlotItem* sp, QMimeData* mime)
 {
 	(void)sp;
+
+	auto urls = mime->urls();
+	QStringList paths;
+	bool ok = false;
+	for (const auto& url : urls)
+	{
+		QString path = url.toString(QUrl::PreferLocalFile);
+		QList<VipIODevice::Info> devices = VipIODevice::possibleReadDevices(path, QByteArray(), QVariant::fromValue(VipSceneModel()));
+		QPointer<VipIODevice> dev = VipCreateDevice::create(devices, path);
+		if (!dev)
+			continue;
+		if (!(dev->openMode() & VipIODevice::ReadOnly)) {
+			if (!dev->open(VipIODevice::ReadOnly)) {
+				delete dev;
+				continue;
+			}
+		}
+		auto disp = vipAddSceneModelDeviceToPlayer(pl, dev);
+		if (disp.isEmpty())
+			delete dev.data();
+		else
+			ok = true;
+		if (dev && dev->deviceType() == VipIODevice::Resource)
+			delete dev.data();
+
+
+		/* for (auto* d : disp) {
+			if (VipPlotSceneModel* plot = d->item()) {
+				// Remove background brush
+				plot->setBrush(QString(), QBrush());
+			}
+		}*/
+	}
+	return ok;
+
+	/*
 	// Handle drop of ROI xml files on a video player
 	QStringList files;
 	if (mime->hasFormat("VipMimeDataMapFile"))
@@ -9273,7 +9351,7 @@ static bool handleDropROIFileOnVideo(VipVideoPlayer* pl, VipPlotItem* sp, QMimeD
 		if (vipGetSceneModelWidgetPlayer()->editor()->openShapes(roi_files[i], pl, remove_old).size() > 0)
 			res = true;
 	}
-	return res;
+	return res;*/
 }
 
 static int registerStreamOperators()

@@ -1556,7 +1556,8 @@ void VipRecordToolWidget::launchRecord(bool launch)
 
 		pool->blockSignals(false);
 
-		launchRecord(false);
+		//launchRecord(false);
+		stopRecord();
 
 		// TEST: restart indefinitly the saving
 		// QMetaObject::invokeMethod(d_data->recordWidget.record(), "setChecked", Qt::QueuedConnection, Q_ARG(bool, true));

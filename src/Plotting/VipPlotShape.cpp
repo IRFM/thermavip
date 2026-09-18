@@ -36,6 +36,7 @@
 #include "VipSet.h"
 #include "VipShapeDevice.h"
 #include "VipSimpleAnnotation.h"
+#include "VipPolygon.h"
 
 #include <QCursor>
 #include <QGraphicsSceneHoverEvent>
@@ -366,7 +367,7 @@ static int registerShapeKeyWords()
 		keywords["components"] = VipParserPtr(new EnumOrParser(drawComponentValues()));
 		keywords["component"] = VipParserPtr(new BoolParser());
 		keywords["text-alignment"] = VipParserPtr(new EnumOrParser(VipStandardStyleSheet::alignmentEnum()));
-		keywords["text-position"] = VipParserPtr(new EnumParser(VipStandardStyleSheet::regionPositionEnum()));
+		keywords["text-position"] = VipParserPtr(new EnumOrParser(VipStandardStyleSheet::regionPositionEnum()));
 		keywords["text-distance"] = VipParserPtr(new DoubleParser());
 		keywords["polygon-editable"] = VipParserPtr(new BoolParser());
 		keywords["adjust-text-color"] = VipParserPtr(new BoolParser());
@@ -864,8 +865,9 @@ void VipPlotShape::draw(QPainter* painter, const VipCoordinateSystemPtr& m) cons
 		text = VipText(QString(), textStyle());
 		QString name = sh.attribute("Name").toString();
 		if (!name.isEmpty()) {
-			// use the "Name" attribute if possible
-			text.setText(name);
+			if (testDrawComponent(VipPlotShape::Group) || testDrawComponent(VipPlotShape::Title))
+				// use the "Name" attribute if possible
+				text.setText(name);
 		}
 		else {
 			if (testDrawComponent(VipPlotShape::Id))
@@ -875,6 +877,7 @@ void VipPlotShape::draw(QPainter* painter, const VipCoordinateSystemPtr& m) cons
 			if (testDrawComponent(VipPlotShape::Title))
 				text.setText(text.text() + (text.text().isEmpty() ? "" : " ") + title().text());
 		}
+		
 
 		if (testDrawComponent(Attributes)) {
 			// add attributes
@@ -898,7 +901,12 @@ void VipPlotShape::draw(QPainter* painter, const VipCoordinateSystemPtr& m) cons
 		if (text.textStyle().textPen().style() == Qt::NoPen && text.textStyle().boxStyle().isTransparent())
 			return;
 
-		QRectF shape_rect = shape().boundingRect();
+		const QPainterPath item_shape = shape();
+		QRectF shape_rect = item_shape.boundingRect();
+
+		bool use_complex_center = (textPosition() == Vip::Inside && textAlignment() == Qt::AlignCenter) && (sh.type() == VipShape::Path || sh.type() == VipShape::Polygon);
+
+		if (!use_complex_center)
 		{
 			VipShapeDevice device;
 			QPainter p(&device);
@@ -909,15 +917,51 @@ void VipPlotShape::draw(QPainter* painter, const VipCoordinateSystemPtr& m) cons
 
 		VipText t = text;
 		const bool is_opengl = VipPainter::isOpenGL(painter);
-		if (d_data->adjustTextColor && !is_opengl) {
+		const bool save_painter = d_data->adjustTextColor && !is_opengl;
+
+		if (save_painter) {
 			painter->save();
 			t.setTextPen(QPen(Qt::white));
 			painter->setCompositionMode(QPainter::CompositionMode_Difference);
 		}
 
-		VipPainter::drawText(painter, t, textTransform(), textTransformReference(), textDistance(), textPosition(), textAlignment(), shape_rect);
+		if (use_complex_center) {
+			auto poly = item_shape.toFillPolygons().first();
+			poly = vipRDPSimplifyPolygon2(poly, 12);
+			QPointF center = vipVisualCenterAlwaysInside(poly);
 
-		if (d_data->adjustTextColor && !is_opengl)
+			//QPointF center = vipPolygonCentroid(poly);
+			QRectF textRect = t.textRect();
+			center -= QPointF(textRect.width() / 2, textRect.height() / 2);
+			QTransform final_tr;
+			final_tr.translate(center.x(), center.y());
+
+			auto text_tr = textTransform();
+			if (!text_tr.isIdentity()) {
+				QTransform tr;
+				QPointF ref = textTransformReference();
+				ref.rx() *= textRect.width();
+				ref.ry() *= textRect.height();
+				QPointF tl = ref;
+				tl = final_tr.map(tl);
+				tr.translate(-tl.x(), -tl.y());
+				tr *= text_tr;
+				QPointF pt = text_tr.inverted().map(tl);
+				tr.translate(pt.x(), pt.y());
+				final_tr *= tr;
+			}
+
+			if (!save_painter)
+				painter->save();
+			painter->setTransform(final_tr, true);
+			t.draw(painter, textRect);
+			if (!save_painter)
+				painter->restore();
+		}
+		else
+			VipPainter::drawText(painter, t, textTransform(), textTransformReference(), textDistance(), textPosition(), textAlignment(), shape_rect);
+
+		if (save_painter)
 			painter->restore();
 	}
 }
@@ -1142,7 +1186,29 @@ bool VipPlotShape::setItemProperty(const char* name, const QVariant& value, cons
 	return VipPlotItem::setItemProperty(name, value, index);
 }
 
-static int _registerVipPlotSceneModel = vipStaticInit("vipSetKeyWordsForClass(&VipPlotSceneModel::staticMetaObject)", []() { vipSetKeyWordsForClass(&VipPlotSceneModel::staticMetaObject); });
+
+
+
+static int registerSceneModelKeyWords()
+{
+	static VipKeyWords keywords;
+	if (keywords.isEmpty()) {
+
+		keywords["components"] = VipParserPtr(new EnumOrParser(drawComponentValues()));
+		keywords["component"] = VipParserPtr(new BoolParser());
+		keywords["text-alignment"] = VipParserPtr(new EnumOrParser(VipStandardStyleSheet::alignmentEnum()));
+		keywords["text-position"] = VipParserPtr(new EnumOrParser(VipStandardStyleSheet::regionPositionEnum()));
+		keywords["text-distance"] = VipParserPtr(new DoubleParser());
+		keywords["adjust-text-color"] = VipParserPtr(new BoolParser());
+		keywords["mode"] = VipParserPtr(new DoubleParser());
+
+		vipSetKeyWordsForClass(&VipPlotSceneModel::staticMetaObject, keywords);
+	}
+	return 0;
+}
+
+static int _registerSceneModelKeyWords = vipStaticInit("registerSceneModelKeyWords", registerSceneModelKeyWords);
+
 
 class VipPlotSceneModel::PrivateData
 {
@@ -2033,10 +2099,47 @@ bool VipPlotSceneModel::setItemProperty(const char* name, const QVariant& value,
 		return false;
 
 	if (strcmp(name, "border-width") == 0) {
-		// handle boder-width key ourselves
+		// handle border-width key ourselves
 		d_data->pen["All"].setWidthF(value.toDouble());
 		for (auto it = d_data->pen.begin(); it != d_data->pen.end(); ++it)
 			it.value().setWidthF(value.toDouble());
+		return true;
+	}
+	if (strcmp(name, "text-alignment") == 0) {
+		setTextAlignment(QString(), (Qt::Alignment)value.toInt());
+		return true;
+	}
+	if (strcmp(name, "text-position") == 0) {
+		setTextPosition(QString(), (Vip::RegionPositions)value.toInt());
+		return true;
+	}
+	if (strcmp(name, "text-distance") == 0) {
+		setTextDistance(QString(), value.toDouble());
+		return true;
+	}
+	if (strcmp(name, "components") == 0) {
+		setDrawComponents(QString(), (VipPlotShape::DrawComponents)value.toInt());
+		return true;
+	}
+	if (strcmp(name, "component") == 0) {
+		auto it = drawComponentValues().find(index);
+		if (it == drawComponentValues().end())
+			return false;
+		setDrawComponent(QString(), (VipPlotShape::DrawComponent)it.value(), value.toBool());
+		return true;
+	}
+	if (strcmp(name, "mode") == 0) {
+		int mode = value.toInt();
+		if (mode == Fixed)
+			setMode(Fixed);
+		else if (mode == Movable)
+			setMode(Movable);
+		else if (mode == Resizable)
+			setMode(Resizable);
+		return true;
+	}
+	if (strcmp(name, "adjust-text-color") == 0) {
+		setAdjustTextColor(QString(), value.toBool());
 		return true;
 	}
 	return VipPlotItemComposite::setItemProperty(name, value, index);

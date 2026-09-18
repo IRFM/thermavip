@@ -31,6 +31,10 @@
 
 #include "VipPolygon.h"
 #include "VipMatrix22.h"
+#include <QVector2D>
+
+#include <cmath>
+#include <queue>
 
 QPolygon vipSimplifyPolygon(const QPolygon& polygon)
 {
@@ -1022,7 +1026,44 @@ qsizetype vipPolygonAreaRasterize(const QPolygonF& poly)
 	}
 }
 
-QPointF vipPolygonCentroid(const QPolygonF& poly)
+QPointF vipPolygonCentroid(const QPolygonF& polygon)
+{
+	if (polygon.isEmpty())
+		return QPointF(0, 0);
+	if (polygon.size() == 1)
+		return polygon.first();
+	if (polygon.size() == 2)
+		return (polygon.first() + polygon.last()) / 2.0;
+
+	double signedArea = 0.0;
+	double cx = 0.0;
+	double cy = 0.0;
+
+	int n = polygon.size();
+
+	for (int i = 0; i < n; ++i) {
+		QPointF p0 = polygon[i];
+		QPointF p1 = polygon[(i + 1) % n]; // Wraps around to the first vertex
+
+		double a = p0.x() * p1.y() - p1.x() * p0.y();
+		signedArea += a;
+		cx += (p0.x() + p1.x()) * a;
+		cy += (p0.y() + p1.y()) * a;
+	}
+
+	signedArea *= 0.5;
+
+	// Guard against a zero-area polygon (collinear points)
+	if (qFuzzyIsNull(signedArea)) {
+		return polygon.boundingRect().center();
+	}
+
+	cx /= (6.0 * signedArea);
+	cy /= (6.0 * signedArea);
+
+	return QPointF(cx, cy);
+}
+/* QPointF vipPolygonCentroid(const QPolygonF& poly)
 {
 	// see file:///C:/Users/VM213788/Downloads/shape-descriptors.pdf
 	double A = vipPolygonArea(poly);
@@ -1036,7 +1077,7 @@ QPointF vipPolygonCentroid(const QPolygonF& poly)
 	gx /= 6 * A;
 	gy /= 6 * A;
 	return QPointF(gx, gy);
-}
+}*/
 
 QPolygonF vipReversePolygon(const QPolygonF& poly)
 {
@@ -1498,6 +1539,9 @@ QPolygonF vipRDPSimplifyPolygon2(const QPolygonF& _points, qsizetype max_points)
 {
 	// see https://gist.github.com/msbarry/9152218
 
+	if (_points.size() <= max_points)
+		return _points;
+
 	const QPolygonF points = vipRemoveConsecutiveDuplicates(_points);
 	QVector<double> weights(points.size(), 0.);
 
@@ -1518,4 +1562,354 @@ QPolygonF vipRDPSimplifyPolygon2(const QPolygonF& _points, qsizetype max_points)
 			res.push_back(points[i]);
 	}
 	return res;
+}
+
+struct Result
+{
+	QPointF point;
+	double distance; // Distance to the nearest boundary.
+};
+
+namespace detail
+{
+
+	constexpr std::size_t BlockSize = 32;
+	constexpr double Sqrt2 = 1.4142135623730950488;
+
+	const double Infinity = std::numeric_limits<double>::infinity();
+
+	struct Block
+	{
+		std::size_t begin;
+		std::size_t end;
+		std::size_t previous;
+
+		double minX;
+		double minY;
+		double maxX;
+		double maxY;
+	};
+
+	struct Geometry
+	{
+		// Contiguous coordinate storage, shared by all rings.
+		std::vector<QPointF> points;
+		std::vector<Block> blocks;
+		std::size_t outerEnd = 0;
+
+		explicit Geometry(const QVector<QPolygonF>& rings)
+		{
+			std::size_t count = 0;
+			for (const QPolygonF& ring : rings)
+				count += static_cast<std::size_t>(ring.size());
+
+			points.reserve(count);
+
+			bool outer = true;
+
+			for (const QPolygonF& ring : rings) {
+				const std::size_t begin = points.size();
+
+				for (const QPointF& p : ring) {
+					if (!std::isfinite(p.x()) || !std::isfinite(p.y()))
+						throw std::invalid_argument("Polygon coordinates must be finite");
+
+					points.push_back(p);
+				}
+
+				const std::size_t end = points.size();
+
+				if (outer) {
+					outerEnd = end;
+					outer = false;
+				}
+
+				// Empty inner rings are ignored.
+				for (std::size_t s = begin; s < end; s += BlockSize) {
+					const std::size_t blockEnd = s + std::min(BlockSize, end - s);
+
+					const std::size_t previous = s == begin ? end - 1 : s - 1;
+
+					const QPointF& p = points[previous];
+
+					Block block{ s, blockEnd, previous, p.x(), p.y(), p.x(), p.y() };
+
+					for (std::size_t i = s; i < blockEnd; ++i) {
+						const QPointF& q = points[i];
+
+						block.minX = std::min(block.minX, double(q.x()));
+						block.minY = std::min(block.minY, double(q.y()));
+						block.maxX = std::max(block.maxX, double(q.x()));
+						block.maxY = std::max(block.maxY, double(q.y()));
+					}
+
+					blocks.push_back(block);
+				}
+			}
+		}
+	};
+
+	struct Cell
+	{
+		double x;
+		double y;
+		double h;
+		double d = 0;
+		double max = 0;
+
+		// Nearest segment, used to seed child cells.
+		QPointF nearestA;
+		QPointF nearestB;
+
+		Cell(double xValue, double yValue, double halfSize)
+		  : x(xValue)
+		  , y(yValue)
+		  , h(halfSize)
+		{
+		}
+	};
+
+	struct CompareCells
+	{
+		bool operator()(const Cell& a, const Cell& b) const
+		{
+			// std::priority_queue puts the largest potential first.
+			return a.max < b.max;
+		}
+	};
+
+	inline double segmentDistanceSquared(double px, double py, const QPointF& a, const QPointF& b)
+	{
+		double x = a.x();
+		double y = a.y();
+		double dx = b.x() - x;
+		double dy = b.y() - y;
+
+		if (dx != 0 || dy != 0) {
+			const double t = ((px - x) * dx + (py - y) * dy) / (dx * dx + dy * dy);
+
+			if (t > 1) {
+				x = b.x();
+				y = b.y();
+			}
+			else if (t > 0) {
+				x += dx * t;
+				y += dy * t;
+			}
+		}
+
+		dx = px - x;
+		dy = py - y;
+
+		return dx * dx + dy * dy;
+	}
+
+	inline double pointToPolygonDistance(Cell& cell, const Geometry& geometry, double maxD, const Cell* seed)
+	{
+		const double x = cell.x;
+		const double y = cell.y;
+
+		bool inside = false;
+		double minDistanceSquared = Infinity;
+
+		const double thresholdSquared = maxD > 0 ? maxD * maxD : -1;
+
+		if (seed) {
+			cell.nearestA = seed->nearestA;
+			cell.nearestB = seed->nearestB;
+
+			minDistanceSquared = segmentDistanceSquared(x, y, cell.nearestA, cell.nearestB);
+
+			if (minDistanceSquared <= thresholdSquared)
+				return maxD;
+		}
+
+		for (const Block& block : geometry.blocks) {
+			const double dx = x < block.minX ? block.minX - x : x > block.maxX ? x - block.maxX : 0;
+
+			const double dy = y < block.minY ? block.minY - y : y > block.maxY ? y - block.maxY : 0;
+
+			const bool skipDistance = dx * dx + dy * dy >= minDistanceSquared;
+
+			const bool skipCrossing = y < block.minY || y >= block.maxY || x > block.maxX;
+
+			if (skipDistance && skipCrossing)
+				continue;
+
+			QPointF b = geometry.points[block.previous];
+
+			for (std::size_t i = block.begin; i < block.end; ++i) {
+				const QPointF& a = geometry.points[i];
+
+				if (!skipCrossing && ((a.y() > y) != (b.y() > y)) && x < (b.x() - a.x()) * (y - a.y()) / (b.y() - a.y()) + a.x()) {
+					inside = !inside;
+				}
+
+				if (!skipDistance) {
+					const double distanceSquared = segmentDistanceSquared(x, y, a, b);
+
+					if (distanceSquared < minDistanceSquared) {
+						minDistanceSquared = distanceSquared;
+						cell.nearestA = a;
+						cell.nearestB = b;
+
+						// This cell cannot improve the solution.
+						if (minDistanceSquared <= thresholdSquared)
+							return maxD;
+					}
+				}
+
+				b = a;
+			}
+		}
+
+		if (minDistanceSquared == 0)
+			return 0;
+
+		return (inside ? 1.0 : -1.0) * std::sqrt(minDistanceSquared);
+	}
+
+	inline Cell makeCell(double x, double y, double h, const Geometry& geometry, double maxD = -Infinity, const Cell* seed = nullptr)
+	{
+		Cell cell(x, y, h);
+
+		cell.d = pointToPolygonDistance(cell, geometry, maxD, seed);
+		cell.max = cell.d + h * Sqrt2;
+
+		return cell;
+	}
+
+	inline Cell centroidCell(const Geometry& geometry)
+	{
+		double area = 0;
+		double x = 0;
+		double y = 0;
+
+		const std::size_t end = geometry.outerEnd;
+
+		for (std::size_t i = 0, j = end - 1; i < end; j = i++) {
+			const QPointF& a = geometry.points[i];
+			const QPointF& b = geometry.points[j];
+
+			const double f = a.x() * b.y() - b.x() * a.y();
+
+			x += (a.x() + b.x()) * f;
+			y += (a.y() + b.y()) * f;
+			area += f * 3;
+		}
+
+		// Check before dividing, unlike the original JavaScript.
+		if (area != 0) {
+			const Cell centroid = makeCell(x / area, y / area, 0, geometry);
+
+			if (centroid.d >= 0)
+				return centroid;
+		}
+
+		const QPointF& first = geometry.points.front();
+		return makeCell(first.x(), first.y(), 0, geometry);
+	}
+
+} // namespace detail
+
+inline Result polylabel(const QVector<QPolygonF>& rings, double precision = 1.0, bool debug = false)
+{
+	using namespace detail;
+
+	if (rings.isEmpty() || rings.first().isEmpty())
+		throw std::invalid_argument("The outer ring must not be empty");
+
+	if (!std::isfinite(precision) || precision <= 0)
+		throw std::invalid_argument("Precision must be finite and positive");
+
+	const Geometry geometry(rings);
+
+	double minX = Infinity;
+	double minY = Infinity;
+	double maxX = -Infinity;
+	double maxY = -Infinity;
+
+	for (const QPointF& p : rings.first()) {
+		minX = std::min(minX, double(p.x()));
+		minY = std::min(minY, double(p.y()));
+		maxX = std::max(maxX, double(p.x()));
+		maxY = std::max(maxY, double(p.y()));
+	}
+
+	const double width = maxX - minX;
+	const double height = maxY - minY;
+	const double cellSize = std::max(precision, std::min(width, height));
+
+	// Preserve the original function's small/degenerate-bounds behavior.
+	if (cellSize == precision)
+		return Result{ QPointF(minX, minY), 0 };
+
+	std::priority_queue<Cell, std::vector<Cell>, CompareCells> queue;
+
+	Cell best = centroidCell(geometry);
+
+	const Cell bboxCell = makeCell(minX + width / 2, minY + height / 2, 0, geometry);
+
+	if (bboxCell.d > best.d)
+		best = bboxCell;
+
+	quint64 numProbes = 2;
+
+	const auto potentiallyQueue = [&](double x, double y, double h, const Cell* seed) {
+		const double threshold = best.d - std::max(0.0, h * Sqrt2 - precision);
+
+		const Cell cell = makeCell(x, y, h, geometry, threshold, seed);
+
+		++numProbes;
+
+		if (cell.max > best.d + precision)
+			queue.push(cell);
+
+		if (cell.d > best.d) {
+			best = cell;
+
+			if (debug) {
+				qDebug() << "Found best" << cell.d << "after" << numProbes << "probes";
+			}
+		}
+	};
+
+	const double initialHalfSize = cellSize / 2;
+
+	for (double x = minX; x < maxX; x += cellSize) {
+		for (double y = minY; y < maxY; y += cellSize) {
+			potentiallyQueue(x + initialHalfSize, y + initialHalfSize, initialHalfSize, nullptr);
+		}
+	}
+
+	while (!queue.empty()) {
+		// Copy before pop(): top() refers to the queue's storage.
+		const Cell cell = queue.top();
+		queue.pop();
+
+		if (cell.max - best.d <= precision)
+			break;
+
+		const double h = cell.h / 2;
+
+		potentiallyQueue(cell.x - h, cell.y - h, h, &cell);
+		potentiallyQueue(cell.x + h, cell.y - h, h, &cell);
+		potentiallyQueue(cell.x - h, cell.y + h, h, &cell);
+		potentiallyQueue(cell.x + h, cell.y + h, h, &cell);
+	}
+
+	if (debug) {
+		qDebug() << "Number of probes:" << numProbes << "Best distance:" << best.d;
+	}
+
+	return Result{ QPointF(best.x, best.y), best.d };
+}
+
+// Convenience overload for a polygon without holes.
+QPointF vipVisualCenterAlwaysInside(const QPolygonF& polygon, double precision)
+{
+	QVector<QPolygonF> rings;
+	rings.append(polygon);
+
+	return polylabel(rings, precision, false).point;
 }

@@ -1021,6 +1021,13 @@ VIP_GUI_EXPORT VipFunctionDispatcher<3>& VipFDPlayerKeyPress();
 /// This dispatcher is only used for temporal processing pools, not sequential (streaming) ones.
 VIP_GUI_EXPORT VipFunctionDispatcher<3>& vipFDVideoTimeTrace();
 
+/// @brief Add device outputing scene models (VipSceneModel or VipSceneModelList) on a video player.
+/// If the device is temporal, add it to the player processing pool.
+/// If the device is a ressource, add its output to the player internal scene models (the device can be safely deleted afterward).
+/// Try to open the device in read-only mode if it is not already opened.
+/// Returns the list of VipDisplaySceneModel outputing the device scene models.
+VIP_GUI_EXPORT QList<VipDisplaySceneModel*> vipAddSceneModelDeviceToPlayer(VipVideoPlayer* pl, VipIODevice* device);
+
 typedef QList<QAction*> ActionList;
 Q_DECLARE_METATYPE(ActionList)
 

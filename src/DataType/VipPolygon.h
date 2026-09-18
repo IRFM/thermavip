@@ -280,6 +280,10 @@ VIP_DATA_TYPE_EXPORT QPolygonF vipConvexHull(const QPolygonF& poly);
 //	one full turn (2 pi radians).
 VIP_DATA_TYPE_EXPORT bool vipIsNonConcave(const QPolygonF& poly);
 
+/// @brief Returns a visual center of the polygon using Polylabel algorithm.
+/// The center is always inside the polygon.
+VIP_DATA_TYPE_EXPORT QPointF vipVisualCenterAlwaysInside(const QPolygonF& polygon, double precision = 1.0);
+
 /// Oriented rect structure, as returned by vipMinimumAreaBBox
 struct VipOrientedRect
 {
