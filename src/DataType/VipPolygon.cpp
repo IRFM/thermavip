@@ -1812,7 +1812,7 @@ namespace detail
 
 } // namespace detail
 
-inline Result polylabel(const QVector<QPolygonF>& rings, double precision = 1.0, bool debug = false)
+inline Result polylabel(const QVector<QPolygonF>& rings, double precision = 1.0/*, bool debug = false*/)
 {
 	using namespace detail;
 
@@ -1868,9 +1868,9 @@ inline Result polylabel(const QVector<QPolygonF>& rings, double precision = 1.0,
 		if (cell.d > best.d) {
 			best = cell;
 
-			if (debug) {
+			/*if (debug) {
 				qDebug() << "Found best" << cell.d << "after" << numProbes << "probes";
-			}
+			}*/
 		}
 	};
 
@@ -1898,9 +1898,9 @@ inline Result polylabel(const QVector<QPolygonF>& rings, double precision = 1.0,
 		potentiallyQueue(cell.x + h, cell.y + h, h, &cell);
 	}
 
-	if (debug) {
+	/*if (debug) {
 		qDebug() << "Number of probes:" << numProbes << "Best distance:" << best.d;
-	}
+	}*/
 
 	return Result{ QPointF(best.x, best.y), best.d };
 }
@@ -1911,5 +1911,5 @@ QPointF vipVisualCenterAlwaysInside(const QPolygonF& polygon, double precision)
 	QVector<QPolygonF> rings;
 	rings.append(polygon);
 
-	return polylabel(rings, precision, false).point;
+	return polylabel(rings, precision).point;
 }

@@ -228,7 +228,7 @@ void VipDisplayObject::apply()
 
 			// Wait for the display to end while processing events from the main event loop.
 			// This ensures that, whatever the display rate, the GUI remains responsive.
-			QMutexLocker<QMutex> ll(&d_data->lock);
+			QMutexLocker ll(&d_data->lock);
 			while (d_data->displayInProgress.load(std::memory_order_relaxed) && !d_data->isDestruct) {
 				bool ret = d_data->cond.wait(&d_data->lock, 5);
 				qint64 current = QDateTime::currentMSecsSinceEpoch();

@@ -625,7 +625,7 @@ VipConnectionPtr VipConnection::buildConnection(IOType, const QString& address, 
 		// instantiated straight away: the constructor of any registered type ran,
 		// and when the cast below gave nothing the object was simply leaked. Ask
 		// the type system what the class is before building one.
-		const QMetaType type = QMetaType::fromName(class_name);
+		const QMetaType type(vipIdFromName(class_name));
 		const QMetaObject* meta = type.metaObject();
 		if (!meta || !meta->inherits(&VipConnection::staticMetaObject)) {
 			VIP_LOG_ERROR("Refused a connection address naming " + QString::fromLatin1(class_name) + ", which is not a connection");
@@ -1241,21 +1241,7 @@ VipMultiProperty::VipMultiProperty(const VipMultiProperty& other)
 class VipProcessingManager::PrivateData
 {
 public:
-	PrivateData()
-	  : _list_limit_type(VipDataList::MemorySize)
-	  , _max_list_size(INT_MAX)
-	  , _max_list_memory(50000000)
-	  , _lock_list_manager(false)
-	  , list_limit_type(_list_limit_type)
-	  , max_list_size(_max_list_size)
-	  , max_list_memory(_max_list_memory)
-	  , _log_errors(defaultLogErrors())
-	  , errors(_log_errors)
-	  , _obj_types(0)
-	  , _obj_infos(0)
-	  , _dirty_objects(1)
-	{
-	}
+	PrivateData() = default;
 
 	// errors is a copy, taken in the initialiser list: filling _log_errors in the
 	// body left the active set empty, so no error code was ever logged.
@@ -1266,26 +1252,26 @@ public:
 	}
 
 	// global default values
-	int _list_limit_type;
-	int _max_list_size;
-	qint64 _max_list_memory;
-	QSet<int> _log_errors;
-	bool _lock_list_manager;
+	int _list_limit_type = VipDataList::MemorySize;
+	int _max_list_size = INT_MAX;
+	qint64 _max_list_memory = 50000000;
+	QSet<int> _log_errors = defaultLogErrors();
+	bool _lock_list_manager = false;
 
 	QMutex mutex;
-	int list_limit_type;
-	int max_list_size;
-	qint64 max_list_memory;
-	ErrorCodes errors;
+	int list_limit_type = VipDataList::MemorySize;
+	int max_list_size = INT_MAX;
+	qint64 max_list_memory = 50000000;
+	ErrorCodes errors = defaultLogErrors();
 	PriorityMap priorities;
 	QList<VipDataList*> instances;
 	QList<VipProcessingObject*> processingInstances;
 
 	// additional VipProcessingObject info
 	QMultiMap<int, VipProcessingObject::Info> _infos;
-	int _obj_types;
-	int _obj_infos;
-	int _dirty_objects;
+	int _obj_types = 0;
+	int _obj_infos = 0;
+	int _dirty_objects = 1;
 	QRecursiveMutex _additional_info_mutex;
 	QList<const VipProcessingObject*> _allObjects;
 };
