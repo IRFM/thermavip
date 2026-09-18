@@ -3,7 +3,7 @@
 cmake_minimum_required(VERSION 3.16)
 
 project(thermavip
-    VERSION 5.4.1
+    VERSION 5.5.0
     DESCRIPTION "thermavip"
     HOMEPAGE_URL "https://github.com/IRFM/thermavip"
     LANGUAGES CXX C
@@ -35,7 +35,6 @@ option(WITH_VTK "Build VTK support" OFF)
 option(WITH_LIBRIR "Build and install librir" OFF)
 option(WITH_EXAMPLES "Build examples" ON)
 option(WITH_TESTS "Build tests" ON)
-option(WITH_MICRO "Experimental, use micro generic allocator to reduce memory footprint" OFF)
 option(NO_WARNING "Treat warnings as errors" OFF)
 option(THERMAVIP_NATIVE_ARCH "Optimise for the build machine CPU (GCC; binary is not redistributable)" OFF)
 

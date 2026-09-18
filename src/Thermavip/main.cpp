@@ -268,11 +268,6 @@ int main(int argc, char** argv)
 	}
 #endif
 
-#ifdef WITH_MICRO
-	// Load micro_proxy library
-	QLibrary micro_proxy("micro_proxy");
-	bool loaded = micro_proxy.load();
-#endif
 
 	vip_debug("Setup command line options\n");
 
