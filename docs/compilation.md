@@ -17,6 +17,11 @@ Thermavip must be built using provided cmake configuration files. The following 
 -	*WITH_PYTHON*: build the Python plugin. This requires a valid Python installation. It is possible to use a specific Python installation through the env. variables VIP_PYTHON_HOME (similar to PYHTONHOME) and VIP_PYTHON_VERSION (like "38").
 -	*WITH_LIBRIR*: download, build and install the [librir](https://github.com/IRFM/librir) library. Having the library folder next to Thermavip application allows to read-back/record IR videos using H264/HEVC codecs.
 -	*LOCAL_INSTALL* (ON by default): performs a local installation inside the build directory
+-	*WITH_TESTS* (ON by default): build the test tree under `src/Tests` and register it with CTest
+-	*WITH_EXAMPLES* (ON by default): build the example programs under `src/Examples`
+-	*THERMAVIP_SANITIZER* (`none` by default): runtime memory checking, one of `none`, `address`,
+	`thread` or `undefined`. Selects the CTest memcheck backend as well, so `ctest -T memcheck`
+	is the same command whatever the tool.
  
 Usage on Windows (build Visual Studio solution):
 
@@ -42,6 +47,32 @@ Once installed, the installation folder will  contain the following directories:
 -	*skins*: Thermavip application skins
 -	*tests*: All tests and example programs
 -	*thermavip*: Thermavip application itself with all required binaries and resources
+
+## Tests
+
+The tests live in `src/Tests`, one directory per SDK library, one leaf directory per test
+executable. They are built when `WITH_TESTS` is ON and registered with CTest, so:
+
+```sh
+cmake -S . -B build -DCMAKE_BUILD_TYPE=RelWithDebInfo -DWITH_TESTS=ON
+cmake --build build --parallel
+ctest --test-dir build --output-on-failure
+```
+
+Adding a test means adding a leaf directory with a `Test*.cpp` and a three-line `CMakeLists.txt`
+that includes `${THERMAVIP_TEST_SETUP_FILE}`; that file links the SDK, links Qt Test, registers
+the test and installs it into `<prefix>/tests`. Nothing has to be changed in the CI.
+
+Memory checking uses the same command everywhere, only the backend changes:
+
+```sh
+cmake -S . -B build-asan -DTHERMAVIP_SANITIZER=address -DWITH_EXAMPLES=OFF
+cmake --build build-asan --parallel
+ctest --test-dir build-asan -T memcheck --output-on-failure
+```
+
+The suppression files under `cmake/` are picked up automatically. The
+[CI notes](ci.md) describe which of these checks run where, and why.
 
 ## Use Thermavip SDK from another application
 

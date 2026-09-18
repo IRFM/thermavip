@@ -1033,16 +1033,20 @@ private Q_SLOTS:
 
 	// -- Image transform list ------------------------------------------------
 
-	/// A transform list must survive a session round trip. It does not.
+	/// A transform list must survive a session round trip.
 	///
-	/// EXPECTED FAILURE. Saving two transforms writes 48 bytes — the size as a
-	/// qsizetype plus twenty bytes per transform — and loading them back returns
-	/// success with an empty list. The stream operators the file declares are
-	/// static, so the metatype system does not use them: what runs is the generic
-	/// container streaming, and the two halves do not agree. An image transform
-	/// list stored in a session is therefore lost on reload, without a message.
-	/// This test states the EXPECTED behaviour and must stay red until the format
-	/// is made symmetric.
+	/// It did not, for two reasons that both had to go. The stream operators were
+	/// static, so whether QMetaType saw them at all depended on which translation
+	/// unit's metatype interface the linker kept: MSVC kept one that could
+	/// serialise, GCC kept one that could not and save() returned false. And the
+	/// two halves disagreed on the width of the count: QList::size() returned int
+	/// under Qt 5 and qsizetype under Qt 6, so the writer emitted eight bytes
+	/// while the reader still read four, took the high half of a big endian
+	/// count, got zero, and returned an empty list reporting success. Every
+	/// transform list stored in a session was lost on reload, silently.
+	///
+	/// 44 bytes: the count as an int, plus twenty per transform — the type as an
+	/// int and two doubles.
 	void transformListRoundTrip()
 	{
 		TransformList source;
@@ -1054,14 +1058,18 @@ private Q_SLOTS:
 			QDataStream out(&buffer, QIODevice::WriteOnly);
 			QVERIFY(QMetaType(qMetaTypeId<TransformList>()).save(out, &source));
 		}
-		QCOMPARE(buffer.size(), 48);
+		QCOMPARE(buffer.size(), 44);
 
 		TransformList read;
 		QDataStream in(buffer);
 		QVERIFY(QMetaType(qMetaTypeId<TransformList>()).load(in, &read));
 
-		QEXPECT_FAIL("", "the declared stream operators are static, the metatype system uses the generic ones", Continue);
 		QCOMPARE(read.size(), source.size());
+		for (qsizetype i = 0; i < source.size(); ++i) {
+			QCOMPARE(read[i].type, source[i].type);
+			QCOMPARE(read[i].x, source[i].x);
+			QCOMPARE(read[i].y, source[i].y);
+		}
 	}
 
 	/// The memory a queue holds is counted in bytes, and the cap it feeds is too.

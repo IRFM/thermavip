@@ -18,8 +18,8 @@ class TestLogFormat : public QObject
 	Q_OBJECT
 
 	/// Width of the two fixed fields the formatter writes before the text.
-	static const int typeWidth = 10;
-	static const int dateWidth = 25;
+	static constexpr int typeWidth = 10;
+	static constexpr int dateWidth = 25;
 
 	static QDateTime aDate() { return QDateTime(QDate(2026, 9, 11), QTime(7, 29, 35, 123)); }
 

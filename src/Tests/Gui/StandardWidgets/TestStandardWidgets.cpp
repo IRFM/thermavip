@@ -76,14 +76,19 @@ private Q_SLOTS:
 		recorder.setDatePrefix("yyyy.MM.dd");
 		recorder.setHasDatePrefix(true);
 
+		QString generated;
+#ifdef Q_OS_WIN
 		recorder.setPath("C:\\data\\run.h5");
-		QString generated = recorder.generateFilename();
+		generated = recorder.generateFilename();
 		QVERIFY2(generated.endsWith("run.h5"), qPrintable(generated));
 		QVERIFY2(!generated.contains("run.h5/"), qPrintable(generated));
 		QCOMPARE(QFileInfo(generated).absolutePath(), QFileInfo("C:/data/run.h5").absolutePath());
+#endif
 
 		recorder.setPath("/data/run.h5/run.h5");
 		generated = recorder.generateFilename();
+		QVERIFY2(generated.endsWith("run.h5"), qPrintable(generated));
+		QVERIFY2(!generated.contains("run.h5/run.h5/"), qPrintable(generated));
 		QCOMPARE(QFileInfo(generated).absolutePath(), QFileInfo("/data/run.h5/run.h5").absolutePath());
 	}
 };

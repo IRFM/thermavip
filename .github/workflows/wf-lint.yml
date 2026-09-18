@@ -1,0 +1,151 @@
+name: lint
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  format:
+    name: clang-format
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      - name: Install clang-format
+        run: sudo apt-get update && sudo apt-get install -y clang-format-18
+
+      - name: Check the formatting
+        run: |
+          files=$(git ls-files 'src/*.c' 'src/*.cpp' 'src/*.h' 'src/*.hpp')
+          if [ -z "$files" ]; then
+            echo "No source file to check."
+            exit 0
+          fi
+
+          echo "$files" | xargs -P 4 -n 50 clang-format-18 -style=file -i
+
+          git diff --stat > format.stat
+          git diff > format.diff
+          if [ ! -s format.diff ]; then
+            echo "The whole tree is formatted."
+            exit 0
+          fi
+
+          count=$(git diff --name-only | wc -l)
+          total=$(echo "$files" | wc -l)
+
+          echo "::group::Files differing from src/.clang-format"
+          cat format.stat
+          echo "::endgroup::"
+
+          echo "::group::Full patch"
+          cat format.diff
+          echo "::endgroup::"
+
+          {
+            echo '### clang-format'
+            echo
+            echo "$count of $total files differ from \`src/.clang-format\`."
+            echo
+            echo 'Reported, not enforced. The complete patch is attached to this'
+            echo 'run as the `clang-format-report` artifact. To apply it:'
+            echo
+            echo '```sh'
+            echo 'python -m pip install clang-format==18.1.8'
+            echo "git ls-files 'src/*.c' 'src/*.cpp' 'src/*.h' 'src/*.hpp' \\"
+            echo '  | xargs clang-format -style=file -i'
+            echo '```'
+            echo
+            echo '```'
+            cat format.stat
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          # Warning, not error: src/.clang-format has never been applied to the
+          # tree. Blocking on it would stop every change until 330 files are
+          # reformatted. See docs/ci.md.
+          echo "::warning::$count of $total files are not formatted. Patch in the clang-format-report artifact."
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        if: always()
+        with:
+          name: clang-format-report
+          path: |
+            format.diff
+            format.stat
+          retention-days: 14
+          if-no-files-found: ignore
+
+  cppcheck:
+    name: cppcheck
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      - name: Install cppcheck
+        run: sudo apt-get update && sudo apt-get install -y cppcheck
+
+      - name: Analyse
+        run: |
+          set -o pipefail
+          # --library=qt teaches cppcheck Q_OBJECT, Q_SLOTS, Q_DECLARE_METATYPE
+          # and the rest; without it two thirds of the output is unknownMacro,
+          # which reports on the analyser's ignorance, not on the code. The VIP_*
+          # macros come from the project's own headers, hence the include paths.
+          cppcheck --enable=warning,performance,portability \
+            --inline-suppr --std=c++17 --quiet \
+            --library=qt \
+            --suppress=missingIncludeSystem \
+            --suppress=unusedFunction \
+            --suppress=unknownMacro \
+            --template='{file}:{line}:{column}: {severity}: {message} [{id}]' \
+            -I src/Logging -I src/DataType -I src/Core -I src/Plotting \
+            -I src/Gui -I src/Annotation \
+            -i 3rd_64 -i build \
+            src/ 2> cppcheck.txt || true
+
+          sort -u -o cppcheck.txt cppcheck.txt
+          count=$(wc -l < cppcheck.txt)
+
+          echo "::group::cppcheck findings"
+          cat cppcheck.txt
+          echo "::endgroup::"
+
+          {
+            echo '### cppcheck'
+            echo
+            echo "$count findings. Reported, not enforced."
+            echo
+            echo 'By severity:'
+            echo
+            echo '```'
+            sed -n 's/.*: \([a-z]*\): .*/\1/p' cppcheck.txt | sort | uniq -c | sort -rn
+            echo '```'
+            echo
+            echo 'By check:'
+            echo
+            echo '```'
+            sed -n 's/.*\[\([a-zA-Z]*\)\]$/\1/p' cppcheck.txt | sort | uniq -c | sort -rn | head -25
+            echo '```'
+            echo
+            echo 'Full list in the `cppcheck-report` artifact.'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          # Warning, not error: the tree has never been analysed, so blocking
+          # here would stop every change until the backlog is triaged. A finding
+          # that is wrong is silenced with an inline // cppcheck-suppress comment.
+          if [ "$count" -gt 0 ]; then
+            echo "::warning::cppcheck reports $count findings. Full list in the cppcheck-report artifact."
+          fi
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        if: always()
+        with:
+          name: cppcheck-report
+          path: cppcheck.txt
+          retention-days: 14
+          if-no-files-found: ignore

@@ -1,0 +1,74 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main, dev]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    uses: ./.github/workflows/wf-lint.yml
+
+  build:
+    needs: lint
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {label: linux-x64-qt6,      runner: ubuntu-24.04, qt: 6.8.3,  coverage: true}
+          - {label: linux-x64-qt5.15,   runner: ubuntu-22.04, qt: 5.15.2, coverage: true}
+          - {label: windows-x64-qt6,    runner: windows-2022, qt: 6.8.3,  coverage: false}
+          - {label: windows-x64-qt5.15, runner: windows-2022, qt: 5.15.2, coverage: false}
+          - {label: macos-qt6,          runner: macos-latest, qt: 6.8.3,  coverage: false}
+    uses: ./.github/workflows/wf-build-test.yml
+    with:
+      runner: ${{ matrix.runner }}
+      qt-version: ${{ matrix.qt }}
+      label: ${{ matrix.label }}
+      tests: true
+      coverage: ${{ matrix.coverage }}
+      upload-coverage: true
+      retention-days: ${{ github.event_name == 'push' && 30 || 7 }}
+    secrets:
+      codecov-token: ${{ secrets.CODECOV_TOKEN }}
+
+  sanitizers:
+    needs: lint
+    uses: ./.github/workflows/wf-build-test.yml
+    with:
+      runner: ubuntu-24.04
+      qt-version: 6.8.3
+      label: linux-x64-qt6-asan
+      tests: true
+      sanitizer: address
+      retention-days: 7
+
+  report:
+    name: pull request report
+    needs: [build, sanitizers]
+    if: always() && github.event_name == 'pull_request'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      checks: write
+      pull-requests: write
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          pattern: test-results-*
+          path: results
+
+      - name: Annotate the tests
+        continue-on-error: true
+        uses: mikepenz/action-junit-report@3585e9575db828022551b4231f165eb59a0e74e3 # v5.6.2
+        with:
+          report_paths: results/**/test-results.xml
+          require_tests: false
+          fail_on_failure: true

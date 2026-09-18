@@ -32,6 +32,8 @@
 #ifndef VIP_IMAGE_PROCESSING_H
 #define VIP_IMAGE_PROCESSING_H
 
+#include <QDataStream>
+
 #include "VipProcessingHelper.h"
 #include "VipProcessingObject.h"
 #include "VipTransform.h"
@@ -355,6 +357,12 @@ struct Transform
 	double x, y;
 };
 typedef QList<Transform> TransformList;
+
+VIP_CORE_EXPORT QDataStream& operator<<(QDataStream& str, const Transform& tr);
+VIP_CORE_EXPORT QDataStream& operator>>(QDataStream& str, Transform& tr);
+VIP_CORE_EXPORT QDataStream& operator<<(QDataStream& str, const TransformList& trs);
+VIP_CORE_EXPORT QDataStream& operator>>(QDataStream& str, TransformList& trs);
+
 Q_DECLARE_METATYPE(Transform);
 Q_DECLARE_METATYPE(TransformList);
 Q_DECLARE_METATYPE(QTransform);

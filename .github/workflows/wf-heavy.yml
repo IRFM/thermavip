@@ -1,0 +1,244 @@
+name: heavy analyses
+
+on:
+  workflow_call:
+    inputs:
+      blocking:
+        description: Fail the calling workflow on a memcheck or SDK failure
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  memcheck:
+    name: ${{ matrix.tool }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    continue-on-error: ${{ !inputs.blocking }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - tool: valgrind
+            sanitizer: none
+            memcheck-type: Valgrind
+          - tool: thread-sanitizer
+            sanitizer: thread
+            memcheck-type: ThreadSanitizer
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      - uses: ./.github/actions/setup-build-env
+        with:
+          qt-version: 6.8.3
+          cache-key: heavy-${{ matrix.tool }}
+
+      - name: Install valgrind
+        if: matrix.tool == 'valgrind'
+        run: sudo apt-get install -y valgrind
+
+      - name: Configure and build
+        run: |
+          cmake -S . -B build -G Ninja \
+            -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+            -DCMAKE_CXX_FLAGS_RELWITHDEBINFO="-O1 -g -fno-omit-frame-pointer" \
+            -DCMAKE_C_FLAGS_RELWITHDEBINFO="-O1 -g -fno-omit-frame-pointer" \
+            -DCMAKE_C_COMPILER_LAUNCHER=ccache \
+            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
+            -DLOCAL_INSTALL=OFF -DCMAKE_INSTALL_PREFIX="$PWD/install" \
+            -DWITH_TESTS=ON -DWITH_EXAMPLES=OFF \
+            -DMEMORYCHECK_TYPE=${{ matrix.memcheck-type }} \
+            -DTHERMAVIP_SANITIZER=${{ matrix.sanitizer }}
+          cmake --build build --parallel
+
+      - name: Analyse
+        working-directory: build
+        env:
+          LIBGL_ALWAYS_SOFTWARE: 1
+          TSAN_OPTIONS: second_deadlock_stack=1:halt_on_error=0
+        run: ctest --test-dir . -T memcheck --output-on-failure --no-tests=error --timeout 1800
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        if: always()
+        with:
+          name: memcheck-${{ matrix.tool }}
+          path: build/Testing/
+          retention-days: 30
+          if-no-files-found: ignore
+
+  windows-memcheck:
+    name: windows ${{ matrix.tool }}
+    runs-on: windows-2022
+    timeout-minutes: 180
+    continue-on-error: ${{ !inputs.blocking }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - tool: address-sanitizer
+            sanitizer: address
+          - tool: crt-debug-heap
+            sanitizer: none
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      - uses: ./.github/actions/setup-build-env
+        with:
+          qt-version: 6.8.3
+          cache-key: heavy-win-${{ matrix.tool }}
+
+      - name: Configure and build
+        shell: bash
+        run: |
+          cmake -S . -B build -G Ninja \
+            -DCMAKE_BUILD_TYPE=Debug \
+            -DCMAKE_C_COMPILER_LAUNCHER=sccache \
+            -DCMAKE_CXX_COMPILER_LAUNCHER=sccache \
+            -DLOCAL_INSTALL=OFF -DCMAKE_INSTALL_PREFIX="$PWD/install" \
+            -DWITH_TESTS=ON -DWITH_EXAMPLES=OFF -DWITH_MICRO=OFF \
+            -DTHERMAVIP_SANITIZER=${{ matrix.sanitizer }}
+          cmake --build build --parallel
+
+      - name: Memory check
+        if: matrix.tool == 'address-sanitizer'
+        shell: bash
+        working-directory: build
+        run: ctest --test-dir . -T memcheck --output-on-failure --no-tests=error --timeout 1800
+
+      - name: Run the tests and fail on a leak
+        if: matrix.tool == 'crt-debug-heap'
+        shell: bash
+        working-directory: build
+        run: |
+          set -o pipefail
+          ctest --test-dir . -V --no-tests=error --timeout 600 2>&1 | tee ctest-output.txt
+          if grep -q "Detected memory leaks!" ctest-output.txt; then
+            echo "::error::The CRT debug heap reported memory leaks."
+            grep -A 20 "Detected memory leaks!" ctest-output.txt
+            exit 1
+          fi
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        if: always()
+        with:
+          name: memcheck-windows-${{ matrix.tool }}
+          path: |
+            build/Testing/
+            build/ctest-output.txt
+          retention-days: 30
+          if-no-files-found: ignore
+
+  clang-tidy:
+    name: clang-tidy
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      - uses: ./.github/actions/setup-build-env
+        with:
+          qt-version: 6.8.3
+          cache-key: heavy-tidy
+
+      - name: Install clang-tidy
+        run: sudo apt-get install -y clang-tidy-18
+
+      - name: Configure and build
+        run: |
+          cmake -S . -B build -G Ninja \
+            -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+            -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
+            -DWITH_EXAMPLES=OFF \
+            -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+          cmake --build build --parallel
+
+      - name: Analyse
+        run: |
+          git ls-files 'src/*.cpp' \
+            | grep -v '3rd_64' \
+            | xargs -P 4 -n 1 clang-tidy-18 -p build --quiet 2>&1 \
+            | tee clang-tidy.txt || true
+          echo "### clang-tidy" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "$(grep -c 'warning:' clang-tidy.txt || echo 0) warnings." >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        if: always()
+        with:
+          name: clang-tidy-report
+          path: clang-tidy.txt
+          retention-days: 30
+          if-no-files-found: ignore
+
+  codeql:
+    name: CodeQL
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    continue-on-error: true
+    permissions:
+      security-events: write
+      contents: read
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      - uses: ./.github/actions/setup-build-env
+        with:
+          qt-version: 6.8.3
+          cache-key: heavy-codeql
+
+      - uses: github/codeql-action/init@faaca9a8f6edddba5725ffe5adefdab6669a2eca # v3.38.0
+        with:
+          languages: c-cpp
+
+      - name: Build
+        run: |
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo -DWITH_EXAMPLES=OFF
+          cmake --build build --parallel
+
+      - uses: github/codeql-action/analyze@faaca9a8f6edddba5725ffe5adefdab6669a2eca # v3.38.0
+
+  sdk-consumer:
+    name: SDK integration
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    continue-on-error: ${{ !inputs.blocking }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      - uses: ./.github/actions/setup-build-env
+        with:
+          qt-version: 6.8.3
+          cache-key: heavy-sdk
+
+      - name: Install thermavip
+        run: |
+          cmake -S . -B build -G Ninja \
+            -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+            -DLOCAL_INSTALL=OFF -DCMAKE_INSTALL_PREFIX="$PWD/install" \
+            -DWITH_TESTS=OFF -DWITH_EXAMPLES=OFF \
+            -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+          cmake --build build --parallel
+          cmake --install build
+
+      - name: Build the consumer
+        run: |
+          cmake -S ci/sdk-consumer -B ci/sdk-consumer/build -G Ninja \
+            -DCMAKE_PREFIX_PATH="$PWD/install"
+          cmake --build ci/sdk-consumer/build
+
+      - name: Run the consumer
+        env:
+          QT_QPA_PLATFORM: offscreen
+        run: |
+          export LD_LIBRARY_PATH="$PWD/install/lib:$LD_LIBRARY_PATH"
+          ./ci/sdk-consumer/build/sdk_consumer
+
+      - name: Check thermavip.pc
+        run: |
+          export PKG_CONFIG_PATH="$PWD/install/share/pkgconfig:$PWD/install/lib/pkgconfig"
+          pkg-config --print-errors --exists thermavip
+          echo "cflags: $(pkg-config --cflags thermavip)"
+          echo "libs:   $(pkg-config --libs thermavip)"
