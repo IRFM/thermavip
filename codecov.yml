@@ -1,0 +1,35 @@
+codecov:
+  require_ci_to_pass: false
+
+coverage:
+  status:
+    project:
+      default:
+        informational: true
+    patch:
+      default:
+        informational: true
+
+flag_management:
+  default_rules:
+    carryforward: true
+  individual_flags:
+    - name: linux-x64-qt6
+      carryforward: true
+    - name: linux-x64-qt5.15
+      carryforward: true
+
+ignore:
+  - "3rd_64/**"
+  - "build/**"
+  - "**/*_autogen/**"
+  - "src/Tests/**"
+  - "src/Examples/**"
+  - "ci/**"
+  - "tools/**"
+  - "doc/**"
+  - "docs/**"
+
+comment:
+  layout: "condensed_header, diff, flags"
+  require_changes: true

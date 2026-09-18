@@ -44,3 +44,27 @@ leak:i965_dri.so
 # the symbol resolution tables.
 leak:__libc_dlopen_mode
 leak:_dl_open
+
+# --- Fonts and desktop bus ---------------------------------------------------
+# fontconfig builds its pattern and charset caches on the first font lookup and
+# keeps them for the process lifetime; QFontDatabase does the same on the Qt
+# side. libdbus-1 keeps its connection object until exit.
+leak:libfontconfig
+leak:QFontDatabase
+leak:libdbus-1
+
+# --- Qt 5 --------------------------------------------------------------------
+# Same static type tables as Qt 6 above, under the Qt 5 library names, for the
+# Qt 5.15 lanes.
+leak:libQt5Core.so
+leak:Qt5Core.dll
+leak:libQt5Gui.so
+leak:Qt5Gui.dll
+
+# --- Interceptors ------------------------------------------------------------
+# AddressSanitizer intercepts the string and memory functions globally. Inside
+# the Mesa driver and fontconfig those interceptions report on code we neither
+# wrote nor call directly, with a stack that stops at the library boundary.
+# interceptor_via_lib, not leak: it disables the interception itself.
+interceptor_via_lib:libGLX_mesa.so
+interceptor_via_lib:libfontconfig.so

@@ -1473,6 +1473,8 @@ void VipProcessingObjectInfo::showEvent(QShowEvent* evt)
 	updateInfos();
 }
 
+#if QT_VERSION > QT_VERSION_CHECK(6, 0, 0)
+
 void VipProcessingObjectInfo::search()
 {
 	// QRegularExpression, not QRegExp: that one only exists in the compatibility
@@ -1515,6 +1517,57 @@ void VipProcessingObjectInfo::search()
 		}
 	}
 }
+
+#else
+
+void VipProcessingObjectInfo::search()
+{
+	const QRegExp exp(d_data->search.text(),
+			 Qt::CaseInsensitive,
+			 QRegExp::Wildcard);
+
+	const bool restore = d_data->search.text().isEmpty();
+
+	for (int i = 0; i < d_data->attributes.topLevelItemCount(); ++i) {
+		QTreeWidgetItem* item = d_data->attributes.topLevelItem(i);
+
+		if (restore)
+			item->setHidden(item->childCount() == 0);
+
+		bool found = false;
+		for (int j = 0; j < item->childCount(); ++j) {
+			QTreeWidgetItem* child = item->child(j);
+
+			if (restore) {
+				child->setHidden(false);
+			}
+			else {
+				// indexIn() preserves the unanchored/substring behavior
+				// of the QRegularExpression implementation.
+				if (exp.indexIn(child->text(0)) >= 0 ||
+				    exp.indexIn(child->text(1)) >= 0) {
+					child->setHidden(false);
+					found = true;
+				}
+				else {
+					child->setHidden(true);
+				}
+			}
+		}
+
+		if (!restore) {
+			if (found) {
+				item->setHidden(false);
+				item->setExpanded(true);
+			}
+			else {
+				item->setHidden(true);
+			}
+		}
+	}
+}
+
+#endif
 
 void VipProcessingObjectInfo::currentDisplayPlayerAreaChanged(VipDisplayPlayerArea* area)
 {

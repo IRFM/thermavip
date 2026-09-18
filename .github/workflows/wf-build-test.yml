@@ -1,0 +1,226 @@
+name: build and test
+
+on:
+  workflow_call:
+    inputs:
+      runner:
+        description: Runner image (ubuntu-24.04, ubuntu-22.04, windows-2022, macos-latest)
+        type: string
+        required: true
+      qt-version:
+        type: string
+        required: true
+      label:
+        description: Short identifier, used as the artifact name (linux-x64-qt6)
+        type: string
+        required: true
+      tests:
+        description: Run ctest after the build
+        type: boolean
+        default: true
+      coverage:
+        description: Instrument and produce an lcov report (Linux/GCC only)
+        type: boolean
+        default: false
+      sanitizer:
+        description: none, address, thread or undefined
+        type: string
+        default: none
+      plugins:
+        description: Enable WITH_FFMPEG, WITH_PYTHON, WITH_HDF5 and WITH_LIBRIR
+        type: boolean
+        default: false
+      werror:
+        description: Build the SDK targets with -Werror / /WX (NO_WARNINGS=ON)
+        type: boolean
+        default: false
+      upload-coverage:
+        description: Push the report to Codecov
+        type: boolean
+        default: false
+      retention-days:
+        type: number
+        default: 7
+    secrets:
+      codecov-token:
+        required: false
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: ${{ inputs.label }}
+    runs-on: ${{ inputs.runner }}
+    timeout-minutes: 120
+
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          fetch-depth: 0
+
+      - uses: ./.github/actions/setup-build-env
+        with:
+          qt-version: ${{ inputs.qt-version }}
+          cache-key: ${{ inputs.label }}-${{ inputs.runner }}-${{ inputs.sanitizer }}${{ inputs.coverage && '-cov' || '' }}
+          plugins: ${{ inputs.plugins }}
+          coverage: ${{ inputs.coverage }}
+
+      - name: Third-party cache (ffmpeg)
+        if: inputs.plugins && runner.os == 'Linux'
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: 3rd_64
+          key: 3rd64-${{ inputs.runner }}-${{ hashFiles('3rd_64/build-gcc.sh', 'configure_ffmpeg') }}
+          restore-keys: 3rd64-${{ inputs.runner }}-
+
+      - name: Configure
+        shell: bash
+        run: |
+          set -eu
+          args=()
+
+          if [ "${{ inputs.coverage }}" = "true" ]; then
+            # -fprofile-abs-path keeps the .gcno paths usable from the source
+            # root, which is where lcov is run from.
+            args+=(-DCMAKE_CXX_FLAGS="--coverage -fprofile-abs-path")
+            args+=(-DCMAKE_C_FLAGS="--coverage -fprofile-abs-path")
+            args+=(-DCMAKE_EXE_LINKER_FLAGS="--coverage")
+            args+=(-DCMAKE_SHARED_LINKER_FLAGS="--coverage")
+            # -O0: the optimiser fuses and moves lines, and the report then
+            # attributes coverage to lines that were never executed.
+            args+=(-DCMAKE_CXX_FLAGS_RELWITHDEBINFO="-O0 -g")
+            args+=(-DCMAKE_C_FLAGS_RELWITHDEBINFO="-O0 -g")
+          elif [ "${{ inputs.sanitizer }}" != "none" ]; then
+            # The point here is the missing -DNDEBUG. CMake puts it in
+            # CMAKE_<LANG>_FLAGS_RELWITHDEBINFO, which lands AFTER
+            # CMAKE_<LANG>_FLAGS on the command line, so adding -UNDEBUG to the
+            # latter would be overridden and every Q_ASSERT would stay compiled
+            # out: the checker would never see an invariant. Replacing the
+            # per-config flags is the only way to keep them live. -O1 is what
+            # AddressSanitizer documents.
+            args+=(-DCMAKE_CXX_FLAGS_RELWITHDEBINFO="-O1 -g -fno-omit-frame-pointer")
+            args+=(-DCMAKE_C_FLAGS_RELWITHDEBINFO="-O1 -g -fno-omit-frame-pointer")
+            # Examples multiply the build time and no test exercises them; the
+            # SDK and its tests are what the checker looks at.
+            args+=(-DWITH_EXAMPLES=OFF)
+          fi
+
+          # FFmpeg: the macOS branch of configure_ffmpeg does `cd ../3rd_64`,
+          # one directory above the repository, so it cannot work from a
+          # checkout. HDF5 on macOS falls back to a full FetchContent build.
+          ffmpeg=OFF
+          hdf5=OFF
+          if [ "${{ inputs.plugins }}" = "true" ] && [ "${{ runner.os }}" != "macOS" ]; then
+            ffmpeg=ON
+            hdf5=ON
+          fi
+
+          cmake -S . -B build -G Ninja \
+            -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+            -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
+            -DCMAKE_C_COMPILER_LAUNCHER=${{ runner.os == 'Windows' && 'sccache' || 'ccache' }} \
+            -DCMAKE_CXX_COMPILER_LAUNCHER=${{ runner.os == 'Windows' && 'sccache' || 'ccache' }} \
+            -DLOCAL_INSTALL=OFF \
+            -DCMAKE_INSTALL_PREFIX="$PWD/install" \
+            -DTHERMAVIP_SANITIZER=${{ inputs.sanitizer }} \
+            -DWITH_TESTS=${{ inputs.tests && 'ON' || 'OFF' }} \
+            -DNO_WARNINGS=${{ inputs.werror && 'ON' || 'OFF' }} \
+            -DWITH_FFMPEG=$ffmpeg \
+            -DWITH_HDF5=$hdf5 \
+            -DWITH_PYTHON=${{ inputs.plugins && 'ON' || 'OFF' }} \
+            -DWITH_LIBRIR=${{ inputs.plugins && 'ON' || 'OFF' }} \
+            ${args[@]+"${args[@]}"}
+
+      - name: Build
+        shell: bash
+        run: cmake --build build --parallel
+
+      - name: Install
+        id: install
+        shell: bash
+        run: cmake --install build
+
+      - name: Build stamp
+        shell: bash
+        run: |
+          cat > install/build-info.json <<JSON
+          {
+            "commit": "${{ github.sha }}",
+            "ref": "${{ github.ref_name }}",
+            "run": "${{ github.run_id }}",
+            "label": "${{ inputs.label }}",
+            "qt": "${{ inputs.qt-version }}",
+            "runner": "${{ inputs.runner }}",
+            "sanitizer": "${{ inputs.sanitizer }}",
+            "plugins": ${{ inputs.plugins }},
+            "date": "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          }
+          JSON
+
+      - name: Test
+        if: inputs.tests
+        shell: bash
+        working-directory: build
+        env:
+          LIBGL_ALWAYS_SOFTWARE: 1
+          ASAN_OPTIONS: detect_leaks=1:abort_on_error=0:suppressions=${{ github.workspace }}/cmake/sanitizer-suppressions.txt
+          LSAN_OPTIONS: suppressions=${{ github.workspace }}/cmake/sanitizer-suppressions.txt:print_suppressions=0
+          UBSAN_OPTIONS: print_stacktrace=1
+        run: |
+          ctest --test-dir . --output-on-failure --no-tests=error \
+            --timeout 300 --output-junit test-results.xml
+
+      - name: Coverage report
+        if: inputs.coverage
+        shell: bash
+        run: |
+          lcov --capture --directory build --output-file coverage.info \
+            --ignore-errors mismatch,unused,gcov,negative
+          # Paths are case sensitive on Linux: the test tree is src/Tests.
+          lcov --remove coverage.info \
+            '/usr/*' '*/3rd_64/*' '*/build/*' '*_autogen/*' \
+            '*/src/Tests/*' '*/src/Examples/*' \
+            --output-file coverage.info --ignore-errors unused
+          genhtml coverage.info --output-directory coverage-html \
+            --ignore-errors source,category
+          lcov --summary coverage.info
+
+      - name: Publish coverage to Codecov
+        if: inputs.coverage && inputs.upload-coverage
+        uses: codecov/codecov-action@0fb7174895f61a3b6b78fc075e0cd60383518dac # v5.5.5
+        with:
+          files: coverage.info
+          flags: ${{ inputs.label }}
+          token: ${{ secrets.codecov-token }}
+          fail_ci_if_error: false
+
+      - name: Build artifact
+        if: always() && steps.install.outcome == 'success'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: thermavip-${{ inputs.label }}
+          path: install/
+          retention-days: ${{ inputs.retention-days }}
+          if-no-files-found: error
+
+      - name: Coverage artifact
+        if: inputs.coverage
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: coverage-${{ inputs.label }}
+          path: |
+            coverage.info
+            coverage-html/
+          retention-days: 30
+
+      - name: Test results
+        if: always() && inputs.tests
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: test-results-${{ inputs.label }}
+          path: |
+            build/test-results.xml
+            build/Testing/
+          retention-days: 14
+          if-no-files-found: ignore

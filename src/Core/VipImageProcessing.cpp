@@ -348,11 +348,11 @@ VipNDArray VipResize::applyProcessing(const VipNDArray& ar)
 	return out;
 }
 
-static QDataStream& operator<<(QDataStream& str, const Transform& tr)
+QDataStream& operator<<(QDataStream& str, const Transform& tr)
 {
 	return str << (int)tr.type << tr.x << tr.y;
 }
-static QDataStream& operator>>(QDataStream& str, Transform& tr)
+QDataStream& operator>>(QDataStream& str, Transform& tr)
 {
 	int type = 0;
 	str >> type >> tr.x >> tr.y;
@@ -367,14 +367,14 @@ static QDataStream& operator>>(QDataStream& str, Transform& tr)
 	tr.type = static_cast<Transform::TrType>(type);
 	return str;
 }
-static QDataStream& operator<<(QDataStream& str, const TransformList& trs)
+QDataStream& operator<<(QDataStream& str, const TransformList& trs)
 {
-	str << trs.size();
+	str << (int)trs.size();
 	for (int i = 0; i < trs.size(); ++i)
 		str << trs[i];
 	return str;
 }
-static QDataStream& operator>>(QDataStream& str, TransformList& trs)
+QDataStream& operator>>(QDataStream& str, TransformList& trs)
 {
 	int size = 0;
 	str >> size;

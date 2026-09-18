@@ -23,6 +23,9 @@ if(NOT THERMAVIP_SANITIZER IN_LIST _vip_known_sanitizers)
 	message(FATAL_ERROR "THERMAVIP_SANITIZER='${THERMAVIP_SANITIZER}' unknown. Accepted: ${_vip_known_sanitizers}.")
 endif()
 
+set(MEMORYCHECK_SUPPRESSIONS_FILE "${CMAKE_CURRENT_LIST_DIR}/valgrind-suppressions.txt"
+	CACHE FILEPATH "Valgrind suppression file used by ctest -T memcheck")
+
 if(THERMAVIP_SANITIZER STREQUAL "none")
 	function(thermavip_apply_sanitizer)
 	endfunction()

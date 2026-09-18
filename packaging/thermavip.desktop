@@ -1,0 +1,15 @@
+[Desktop Entry]
+Type=Application
+Version=1.0
+Name=Thermavip
+GenericName=Multi-sensor data visualization
+Comment=Acquisition, processing and visualization of multi-sensor data
+# linuxdeploy matches Icon= against the basename of --icon-file, so this value
+# and icons/thermavip.png must keep the same stem.
+Icon=thermavip
+Exec=Thermavip %F
+Terminal=false
+Categories=Science;Physics;DataVisualization;Graphics;Viewer;
+Keywords=infrared;thermography;plasma;tokamak;plotting;video;
+MimeType=application/x-thermavip-session;
+StartupWMClass=Thermavip
