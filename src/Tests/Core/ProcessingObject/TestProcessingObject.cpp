@@ -1056,13 +1056,23 @@ private Q_SLOTS:
 		QByteArray buffer;
 		{
 			QDataStream out(&buffer, QIODevice::WriteOnly);
-			QVERIFY(QMetaType(qMetaTypeId<TransformList>()).save(out, &source));
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
+	QVERIFY(QMetaType::save(out,qMetaTypeId<TransformList>(), &source));
+#else
+	QVERIFY(QMetaType(qMetaTypeId<TransformList>()).save(out, &source));
+#endif
+			
 		}
 		QCOMPARE(buffer.size(), 44);
 
 		TransformList read;
 		QDataStream in(buffer);
+
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
+		QVERIFY(QMetaType::load(in, qMetaTypeId<TransformList>(), &read));
+#else
 		QVERIFY(QMetaType(qMetaTypeId<TransformList>()).load(in, &read));
+#endif
 
 		QCOMPARE(read.size(), source.size());
 		for (qsizetype i = 0; i < source.size(); ++i) {

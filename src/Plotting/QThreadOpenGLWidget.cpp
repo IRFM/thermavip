@@ -1007,7 +1007,7 @@ class CommandQueue
 {
 	BaseCommandBatch end;	     // end node for the linked list of BaseCommandBatch
 	std::atomic<int> count{ 0 }; // total number of commands
-	std::atomic<bool> rectsDirty{ true };
+	std::atomic<int> rectsDirty{ 1 };
 	QRectF bRect; // exact bounding rectangle
 	QRectF eRect; // estimated bounding rectangle
 	QMutex lock;  // mutex
@@ -1023,12 +1023,12 @@ class CommandQueue
 		return true;
 	}
 
-	ALWAYS_INLINE void invalidateRects() noexcept { rectsDirty.store(true); }
+	ALWAYS_INLINE void invalidateRects() noexcept { rectsDirty.store(1); }
 
 	// Caller must hold lock.
 	ALWAYS_INLINE void refreshRectCacheIfNeeded() noexcept
 	{
-		if (rectsDirty.exchange(false))
+		if (rectsDirty.exchange(0))
 			bRect = eRect = QRectF();
 	}
 
@@ -2226,7 +2226,8 @@ void QThreadOpenGLWidget::stopRendering()
 void QThreadOpenGLWidget::drawFunction(const std::function<void(QPainter*)>& fun)
 {
 	init();
-	d_data->window->emplaceBack(CommandBatch::DrawFunction, fun);
+	if(auto * window = d_data->window.data()) // Not necessary, but resolve compilation warning on some gcc versions
+		window->emplaceBack(CommandBatch::DrawFunction, fun);
 }
 
 QSurfaceFormat QThreadOpenGLWidget::format() const
@@ -2616,8 +2617,10 @@ bool QOpenGLItem::drawThroughCache(QPainter* painter, const QStyleOptionGraphics
 	}
 
 	// Send the picture to the rendering pipeline
-	if (!ogl->d_data->window->trueEngine.discard(d_data->picture))
-		ogl->d_data->window->emplaceBack(CommandBatch::DrawRecord, d_data->picture);
+	if(auto * window = ogl->d_data->window.data()){ 
+		if (!window->trueEngine.discard(d_data->picture))
+			window->emplaceBack(CommandBatch::DrawRecord, d_data->picture);
+	}
 
 	// Restore painter state
 	if (save_painter_state)

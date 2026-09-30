@@ -99,7 +99,7 @@ inline int vipTestExec(QObject* testObject, int argc, char** argv)
 
 	const QString report = QDir::tempPath() + QStringLiteral("/vip_test_%1_%2.txt").arg(testObject->metaObject()->className()).arg(QCoreApplication::applicationPid());
 
-	QList<char*> args;
+	QVector<char*> args;
 	for (int i = 0; i < argc; ++i)
 		args.append(argv[i]);
 	QByteArray oflag("-o");
