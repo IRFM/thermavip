@@ -810,18 +810,18 @@ VipCoordinateSystemPtr VipPlotItem::sceneMap() const
 	// Currently, the only class using this multithreaded display is VipDisplayImage.
 
 	if (d_data->externCoordinateSystem)
-		return SHARED_PTR_NAMESPACE::atomic_load(&d_data->externCoordinateSystem);
+		return std::atomic_load(&d_data->externCoordinateSystem);
 	if ((int)d_data->dirtyCoordinateSystem) {
 
 		PrivateData* _data = const_cast<PrivateData*>(d_data.get());
 
 		const auto ax = axes();
 		VipCoordinateSystemPtr tmp(ax.isEmpty() ? nullptr : vipBuildCoordinateSystem(ax, d_data->type));
-		SHARED_PTR_NAMESPACE::atomic_store(&_data->sceneMap, tmp ? tmp : VipCoordinateSystemPtr(new VipNullCoordinateSystem(axes())));
+		std::atomic_store(&_data->sceneMap, tmp ? tmp : VipCoordinateSystemPtr(new VipNullCoordinateSystem(axes())));
 		_data->dirtyCoordinateSystem = 0;
 	}
 
-	VipCoordinateSystemPtr res = SHARED_PTR_NAMESPACE::atomic_load(&d_data->sceneMap);
+	VipCoordinateSystemPtr res = std::atomic_load(&d_data->sceneMap);
 	return res;
 }
 

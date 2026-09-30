@@ -61,12 +61,14 @@ public:
 /// VipRasterData represents a 2D raster data with a potentially infinit bounding rect.
 /// It can hold a VipNDArray, a QImage or a QPixmap, or any kind of VipRasterConverter object.
 ///
-/// VipRasterData uses shared ownership^.
+/// VipRasterData uses shared ownership.
 ///
 class VIP_PLOTTING_EXPORT VipRasterData
 {
 	template<class Conv>
 	friend class VipRasterDataEmbedConverter;
+	friend class VipPlotRasterData;
+
 public:
 	VipRasterData();
 	/// @brief Construct from a VipNDArray and an origin position
@@ -129,6 +131,8 @@ class VipImageData;
 class VIP_PLOTTING_EXPORT VipPlotRasterData : public VipPlotItemDataType<VipRasterData>
 {
 	Q_OBJECT
+
+	using Base = VipPlotItemDataType<VipRasterData>;
 
 public:
 	VipPlotRasterData(const VipText& title = VipText());
@@ -193,6 +197,25 @@ public:
 	/// @brief Set the border pen drawn around the image
 	void setBorderPen(const QPen& pen);
 	const QPen& borderPen() const;
+
+
+	// Corrections
+
+	void setContrast(double);
+	double contrast() const;
+
+	void setBrightness(double);
+	double brightness() const;
+
+	void setGamma(double);
+	double gamma() const;
+
+	void setCorrectionsEnabled(bool);
+	bool correctionsEnabled() const;
+
+
+	virtual void setColorMap(VipAxisColorMap* colorMap);
+	virtual void setAxes(const QList<VipAbstractScale*>& axes, VipCoordinateSystem::Type type);
 
 Q_SIGNALS:
 	/// Emitted when setting a new data changes the image bounding rect

@@ -1797,6 +1797,12 @@ void VipTextObject::draw(QPainter* painter) const
 
 QDataStream& operator<<(QDataStream& stream, const VipTextStyle& style)
 {
+	if (style.font().families().isEmpty()) {
+		QFont f = style.font();
+		f.setFamilies(QStringList() << f.family());
+		const_cast<VipTextStyle&>(style).setFont(f);
+	}
+		
 	return stream << style.font() << style.textPen() << (int)style.alignment() << (int)style.renderHints() << style.boxStyle();
 }
 

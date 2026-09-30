@@ -1357,6 +1357,8 @@ public:
 	  , adjustFactor(0)
 	  , dirtyProcessingPool(false)
 	{
+		setTimeTimer.setSingleShot(true);
+		setTimeTimer.setInterval(100);
 	}
 
 	QList<VipTimeRangeListItem*> items;
@@ -1365,6 +1367,8 @@ public:
 	// move of the cursor then re-entered setTime() and started another read while
 	// the first was still in flight. The nested wait returned at once, so the
 	// outer call gave up before its own read had finished.
+	QTimer setTimeTimer;
+	double setTimerValue = vipNan();
 	bool inSetTime = false;
 	bool visible;
 	bool timeRangesLocked;
@@ -1500,6 +1504,7 @@ VipPlayerArea::VipPlayerArea()
 	d_data->updateDeviceTimer.setSingleShot(true);
 	d_data->updateDeviceTimer.setInterval(100);
 	connect(&d_data->updateDeviceTimer, SIGNAL(timeout()), this, SLOT(updateAreaDevices()));
+	connect(&d_data->setTimeTimer, SIGNAL(timeout()), this, SLOT(setTimeInternal()));
 }
 
 VipPlayerArea::~VipPlayerArea()
@@ -1679,6 +1684,12 @@ void VipPlayerArea::setTime64(qint64 t)
 	setTime(t);
 }
 
+void VipPlayerArea::setTimeInternal() 
+{
+	if (!vipIsNan(d_data->setTimerValue))
+		setTime(d_data->setTimerValue);
+}
+
 void VipPlayerArea::setTime(double t)
 {
 	// Captured once: the wait below pumps the event loop, and the pool can be
@@ -1709,22 +1720,30 @@ void VipPlayerArea::setTime(double t)
 	d_data->timeSliderGrip->blockSignals(true);
 	d_data->timeSliderGrip->setValue(t);
 	d_data->timeSliderGrip->blockSignals(false);
-	if (sender() != processingPool() && !d_data->inSetTime) {
-		struct ClearInSetTime
-		{
-			bool& flag;
-			~ClearInSetTime() { flag = false; }
-		} clear_in_set_time{ d_data->inSetTime };
-		d_data->inSetTime = true;
+	if (sender() != processingPool()) {
+		if (d_data->inSetTime) {
+			// We already are inside setTime(): schedule for later
+			d_data->setTimerValue = t;
+			d_data->setTimeTimer.start();
+		}
+		else {
 
-		pool->read(t);
-		// Bounded, and per leaf: this runs in the thread of the interface, and an
-		// unbounded wait on a slow or distant device froze it with nothing to
-		// cancel.
-		VipProcessingObjectList objects = pool->leafs(false);
-		for (int i = 0; i < objects.size(); ++i)
-			if (objects[i])
-				objects[i]->wait(true, 200);
+			struct ClearInSetTime
+			{
+				bool& flag;
+				~ClearInSetTime() { flag = false; }
+			} clear_in_set_time{ d_data->inSetTime };
+			d_data->inSetTime = true;
+
+			pool->read(t);
+			// Bounded, and per leaf: this runs in the thread of the interface, and an
+			// unbounded wait on a slow or distant device froze it with nothing to
+			// cancel.
+			VipProcessingObjectList objects = pool->leafs(false);
+			for (int i = 0; i < objects.size(); ++i)
+				if (objects[i])
+					objects[i]->wait(true, 200);
+		}
 	}
 }
 

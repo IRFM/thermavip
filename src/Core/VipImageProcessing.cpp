@@ -522,3 +522,166 @@ bool VipComponentLabelling::connectivity8() const
 {
 	return propertyAt(0)->value<bool>();
 }
+
+
+
+
+static inline double fastPrecisePow(double a, double b)
+{
+	union
+	{
+		double d;
+		int x[2];
+	} u = { a };
+#if Q_BYTE_ORDER == Q_BIG_ENDIAN
+	u.x[0] = (int)(b * (u.x[0] - 1072632447) + 1072632447);
+	u.x[1] = 0;
+#else
+	u.x[1] = (int)(b * (u.x[1] - 1072632447) + 1072632447);
+	u.x[0] = 0;
+#endif
+	return u.d;
+
+	// calculate approximation with fraction of the exponent
+	/* int e = (int)b;
+	union
+	{
+		double d;
+		int x[2];
+	} u = { a };
+
+#if Q_BYTE_ORDER == Q_BIG_ENDIAN
+	u.x[0] = (int)((b - e) * (u.x[0] - 1072632447) + 1072632447);
+	u.x[1] = 0;
+#else
+	u.x[1] = (int)((b - e) * (u.x[1] - 1072632447) + 1072632447);
+	u.x[0] = 0;
+#endif
+
+	// exponentiation by squaring with the exponent's integer part
+	// double r = u.d makes everything much slower, not sure why
+	double r = 1.0;
+	while (e) {
+		if (e & 1) {
+			r *= a;
+		}
+		a *= a;
+		e >>= 1;
+	}
+
+	return r * u.d;*/
+}
+
+VipAdjustImage::VipAdjustImage(QObject* parent)
+  : VipProcessingObject(parent)
+{
+	outputAt(0)->setData(QVariant::fromValue(vipToArray(QImage())));
+	propertyAt(0)->setData(1.);
+	propertyAt(1)->setData(0.);
+	propertyAt(2)->setData(1.);
+}
+
+void VipAdjustImage::apply()
+{
+	VipAnyData any = inputAt(0)->data();
+	const VipNDArrayTypeView<VipRGB> img = any.value<VipNDArray>();
+	if (img.isEmpty()) {
+		// setError("null input image");
+		outputAt(0)->setData(any);
+		return;
+	}
+
+	double factor = propertyAt(0)->value<double>();
+	factor = std::clamp(factor, -255., 255.);
+
+	double offset = propertyAt(1)->value<double>();
+	offset = std::clamp(offset, -255., 255.);
+
+	double gamma = propertyAt(2)->value<double>();
+	gamma = std::clamp(gamma, -255., 255.);
+
+	const bool has_affine = !vipFuzzyCompare(factor, 1.) || !vipFuzzyCompare(offset, 0.);
+	const bool has_gamma = !vipFuzzyCompare(gamma, 1.);
+
+	if (!has_affine && !has_gamma) {
+		any.mergeAttributes(this->attributes());
+		outputAt(0)->setData(any);
+		return;
+	}
+
+	// Work on RGB image
+	VipNDArrayType<VipRGB> ret_img = vipFunction([&](auto val) 
+		{
+		  auto a = val.a;
+		  auto rgb = has_affine ? VipRgb<float>(val * factor + offset) : VipRgb<float>(val);
+		  if (has_gamma) {
+			  rgb = rgb.clamp(0.f, 255.f);
+			  rgb.r = (float)(fastPrecisePow(rgb.r / 255., gamma) * 255.);
+			  rgb.g = (float)(fastPrecisePow(rgb.g / 255., gamma) * 255.);
+			  rgb.b = (float)(fastPrecisePow(rgb.b / 255., gamma) * 255.);
+		  }
+		  VipRGB ret = rgb.clamp((quint8)0, (quint8)255);
+		  ret.a = a;
+		  return ret;
+		}, img);
+	
+
+	VipAnyData out = create(QVariant::fromValue(VipNDArray(ret_img)));
+	out.setTime(any.time());
+	out.mergeAttributes(any.attributes());
+	outputAt(0)->setData(out);
+}
+
+void VipAdjustImage::resetProcessing()
+{
+	propertyAt(0)->setData(1.);
+	propertyAt(1)->setData(0.);
+	propertyAt(2)->setData(1.);
+}
+
+VipRGB VipAdjustImage::apply(VipRGB val, double factor, double offset, double gamma)
+{
+	auto a = val.a;
+	auto rgb = VipRgb<float>(val * factor + offset);
+	if (!vipFuzzyCompare(gamma, 1.)) {
+		rgb = rgb.clamp(0.f, 255.f);
+		rgb.r = (float)(fastPrecisePow(rgb.r / 255., gamma) * 255.);
+		rgb.g = (float)(fastPrecisePow(rgb.g / 255., gamma) * 255.);
+		rgb.b = (float)(fastPrecisePow(rgb.b / 255., gamma) * 255.);
+	}
+	VipRGB ret = rgb.clamp((quint8)0, (quint8)255);
+	ret.a = a;
+	return ret;
+}
+
+void VipAdjustImage::apply(VipRGB *rgb, qsizetype size, double factor, double offset, double gamma)
+{
+	factor = std::clamp(factor, -255., 255.);
+	offset = std::clamp(offset, -255., 255.);
+	gamma = std::clamp(gamma, -255., 255.);
+
+	const bool has_affine = !vipFuzzyCompare(factor, 1.) || !vipFuzzyCompare(offset, 0.);
+	const bool has_gamma = !vipFuzzyCompare(gamma, 1.);
+
+	if (!has_affine && !has_gamma) 
+		return;
+
+	VipArrayView<VipRGB, 1> view(rgb, vipVector(size));
+
+	// Work on RGB image
+	view = vipFunction(
+	  [&](auto val) {
+		  auto a = val.a;
+		  auto rgb = has_affine ? VipRgb<float>(val * factor + offset) : VipRgb<float>(val);
+		  if (has_gamma) {
+			  rgb = rgb.clamp(0.f, 255.f);
+			  rgb.r = (float)(fastPrecisePow(rgb.r / 255., gamma) * 255.);
+			  rgb.g = (float)(fastPrecisePow(rgb.g / 255., gamma) * 255.);
+			  rgb.b = (float)(fastPrecisePow(rgb.b / 255., gamma) * 255.);
+		  }
+		  VipRGB ret = rgb.clamp((quint8)0, (quint8)255);
+		  ret.a = a;
+		  return ret;
+	  },
+	  view);
+}

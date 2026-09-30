@@ -31,6 +31,8 @@
 
 #include <complex>
 
+#include <qtimer.h>
+
 #include "VipLogging.h"
 #include "VipMath.h"
 #include "VipStandardProcessing.h"
@@ -1821,6 +1823,79 @@ void VipExtractBoundingBox::apply()
 	data.setTime(any.time());
 	outputAt(0)->setData(data);
 }
+
+
+
+class VipAdjustFrameRate::PrivateData
+{
+public:
+	std::unique_ptr<QTimer> timer;
+	VipAnyData last_data;
+	qint64 last_sent = VipInvalidTime;
+};
+
+VipAdjustFrameRate::VipAdjustFrameRate(QObject* parent)
+  : VipProcessingObject(parent)
+{
+	VIP_CREATE_PRIVATE_DATA();
+	propertyAt(0)->setData(INT_MAX);
+}
+
+VipAdjustFrameRate::~VipAdjustFrameRate()
+{
+	if (d_data->timer)
+		d_data->timer->moveToThread(this->thread());
+}
+
+void VipAdjustFrameRate::apply()
+{
+	double max_rate = propertyAt(0)->value<double>();
+	if (max_rate <= 0)
+		max_rate = 1;
+
+	qint64 min_sampling_ns = 1e9 / max_rate;
+
+	VipInput* in = inputAt(0);
+	VipAnyData any;
+
+	if (in->hasNewData())
+		any = inputAt(0)->data();
+	else {
+		any = std::move(d_data->last_data);
+		d_data->last_data = {};
+		d_data->last_sent = VipInvalidTime;
+	}
+
+	qint64 diff = any.time() - d_data->last_sent;
+
+	if (d_data->last_sent == VipInvalidTime || diff >= min_sampling_ns || any.time() < d_data->last_sent) {
+		// send data
+		if (d_data->timer)
+			d_data->timer->stop();
+		d_data->last_sent = any.time(); 
+		outputAt(0)->setData(std::move(any));
+		
+	}
+	else {
+		if (!d_data->timer) {
+			d_data->timer.reset(new QTimer());
+			d_data->timer->setSingleShot(true);
+			connect(d_data->timer.get(), SIGNAL(timeout()), this, SLOT(reload()));
+		}
+		d_data->last_data = std::move(any);
+		d_data->timer->start((int)((min_sampling_ns - diff) * 1e-6));
+		outputAt(0)->clearData();
+	}
+}
+
+
+
+
+
+
+
+
+
 
 #include <vector>
 static vip_double median(std::vector<vip_double>& vec)

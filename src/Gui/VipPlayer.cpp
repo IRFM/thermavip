@@ -1604,6 +1604,13 @@ void VipPlayer2D::itemAdded(VipPlotItem* item)
 	// just call all valid functions in the dispatcher
 	VipFDItemAddedOnPlayer().callAllMatch(item, this);
 
+	if (VipDisplayObject* obj = item->property("VipDisplayObject").value<VipDisplayObject*>()) {
+		QList<VipIODevice*> devices = vipListCast<VipIODevice*>(obj->allSources());
+		for (auto* d : devices) {
+			VipFDDeviceAddedOnPlayer().callAllMatch(d, this);
+		}
+	}
+
 	// remove all pending deleteLater() for this item.
 	// This is because on dropping, removeLeftScale is called before this function,
 	// and removeLeftScale will delete the items related to a stacked canvas that is removed because empty.
@@ -1647,6 +1654,15 @@ void VipPlayer2D::playerCreated()
 {
 	// call the dispatcher that might modify the player
 	vipFDPlayerCreated().callAllMatch(this);
+
+	const auto displays = this->displayObjects();
+	for (const auto* d : displays) {
+		auto devices = vipListCast<VipIODevice*>(d->allSources());
+		for (auto* dev : devices) {
+			VipFDDeviceAddedOnPlayer().callAllMatch(dev, this);
+		}
+	}
+	
 
 	this->onPlayerCreated();
 }
@@ -2504,9 +2520,9 @@ QAction* VipVideoPlayer::showAxesAction() const
 
 void VipVideoPlayer::setProcessingPool(VipProcessingPool* pool)
 {
-	VipProcessingPool* prev = processingPool();
+	//VipProcessingPool* prev = processingPool();
 	VipPlayer2D::setProcessingPool(pool);
-	if (pool && pool != prev) {
+	if (pool /* && pool != prev*/) {
 		// set the color map
 		if (VipDisplayPlayerArea* a = VipDisplayPlayerArea::fromChild(this))
 			a->setColorMapToPlayer(this, a->useGlobalColorMap());
@@ -7866,6 +7882,12 @@ VipFunctionDispatcher<1>& vipFDPlayerCreated()
 	return disp;
 }
 
+VipFunctionDispatcher<2>& VipFDDeviceAddedOnPlayer()
+{
+	static VipFunctionDispatcher<2> disp;
+	return disp;
+}
+
 VipFunctionDispatcher<2>& VipFDItemAddedOnPlayer()
 {
 	static VipFunctionDispatcher<2> disp;
@@ -8880,7 +8902,7 @@ static VipArchive& operator<<(VipArchive& arch, VipVideoPlayer* value)
 
 	for (int i = 0; i < items.size(); ++i) {
 		if (VipPlotItemComposite* it = items[i]->property("VipPlotItemComposite").value<VipPlotItemComposite*>()) {
-			if (!it->property("_vip_no_serialize").toBool())
+			if (!it->property("_vip_no_serialize").toBool() && !items[i]->property("_vip_no_serialize").toBool())
 				arch.content(items[i]);
 		}
 		else if (!items[i]->property("_vip_no_serialize").toBool())
@@ -9268,8 +9290,17 @@ QList<VipDisplaySceneModel*> vipAddSceneModelDeviceToPlayer(VipVideoPlayer* pl, 
 		QList<VipDisplayObject*> out;
 		vipCreatePlayersFromProcessing(device, pl, nullptr, nullptr, &out);
 		for (auto* d : out) {
-			if (auto* sm = qobject_cast<VipDisplaySceneModel*>(d))
+			if (auto* sm = qobject_cast<VipDisplaySceneModel*>(d)) {
+				for (int i = 0; i < sm->item()->count(); ++i) {
+					if (VipPlotShape* sh = qobject_cast<VipPlotShape*>(sm->item()->at(i))) {
+						sh->setProperty("_vip_no_serialize", true);
+						if (VipResizeItem* re = (sh->property("VipResizeItem").value<VipResizeItemPtr>()))
+							re->setProperty("_vip_no_serialize", true);
+					}
+				}
+				sm->item()->sceneModel().setAttribute("_vip_no_serialize", true);
 				ret.push_back(sm);
+			}
 		}
 	}
 

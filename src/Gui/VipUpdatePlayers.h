@@ -94,6 +94,7 @@ private:
 	QAction* m_toolBarAction;
 	QAction* m_minmaxPos;
 	QAction* m_hideMins;
+	QToolButton* m_adjust;
 
 	QList<VipPlotMarker*> m_minMarkers;
 	QList<VipPlotMarker*> m_maxMarkers;

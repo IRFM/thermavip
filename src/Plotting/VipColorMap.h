@@ -131,9 +131,6 @@ public:
 	QColor color(const VipInterval&, double value) const;
 	virtual QVector<QRgb> colorTable(const VipInterval&) const;
 
-	virtual void startDraw() {}
-	virtual void endDraw() {}
-
 protected:
 	virtual void dirtyColorMap() {}
 
@@ -222,6 +219,11 @@ public:
 	VipLinearColorMap(VipColorMap::Format = VipColorMap::RGB);
 	VipLinearColorMap(const QColor& from, const QColor& to, VipColorMap::Format = VipColorMap::RGB);
 
+	// Disabled copy constructor and operator=
+	VipLinearColorMap(const VipLinearColorMap&) = delete;
+	VipLinearColorMap& operator=(const VipLinearColorMap&) = delete;
+	
+
 	virtual ~VipLinearColorMap();
 
 	virtual Type mapType() const { return Linear; }
@@ -255,31 +257,23 @@ public:
 	void setColorRenderCount(int num_colors);
 	int colorRenderCount() const;
 
+	/// @brief Returns a hash value computed from the gradient stops, the type and histogram usage and strength 
+	size_t hashValue() const;
+
 	virtual QRgb rgb(const VipInterval&, double value) const;
 	virtual void applyColorMap(const VipInterval& interval, const VipNDArray& values, QRgb* out) const;
 
 	virtual unsigned char colorIndex(const VipInterval&, double value) const;
 
-	virtual void startDraw();
-	virtual void endDraw();
-
-	// for private use only
-	QRgb* colorRender() const;
-	void computeRenderColors();
-
-	class ColorStops;
-	const ColorStops& internalColorStops() const;
-
 protected:
 	virtual void dirtyColorMap();
-	QRgb rgbFlatHistogram(const VipInterval&, double value) const;
 
 private:
-	// Disabled copy constructor and operator=
-	VipLinearColorMap(const VipLinearColorMap&);
-	VipLinearColorMap& operator=(const VipLinearColorMap&);
-
 	
+	// for private use only
+	void computeRenderColors();
+	class ColorStops;
+
 	VIP_DECLARE_PRIVATE_DATA();
 };
 

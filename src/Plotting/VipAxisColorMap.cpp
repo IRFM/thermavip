@@ -288,6 +288,9 @@ void VipAxisColorMap::divideAxisScale(vip_double min, vip_double max, vip_double
 	// this->emitScaleDivChanged();
 }
 
+#include <VipPlotRasterData.h>
+#include <VipImageProcessing.h>
+
 /// Draw the color bar of the scale widget
 ///
 /// \param painter VipPainter
@@ -304,7 +307,26 @@ void VipAxisColorMap::drawColorBar(QPainter* painter, const QRectF& rect) const
 	if (!d_data->colorBar.colorMap)
 		return;
 
-	VipPainter::drawColorBar(painter, *d_data->colorBar.colorMap, d_data->colorBar.interval.normalized(), sd->scaleMap(), sd->orientation(), rect, &d_data->pixmap);
+	// Apply contrast, brightness and gamma to the color bar
+	std::function<QRgb(QRgb)> adjust;
+	if (d_data->plotItems.size() == 1)
+		if (auto* it = qobject_cast<VipPlotRasterData*>(d_data->plotItems.first())) {
+			bool has_correction = false;
+			if (it->correctionsEnabled()) {
+
+				if (!vipFuzzyCompare(it->contrast(), 1.))
+					has_correction = true;
+				else if (!vipFuzzyCompare(it->brightness(), 0.))
+					has_correction = true;
+				else if (!vipFuzzyCompare(it->gamma(), 1.))
+					has_correction = true;
+			}
+			if (has_correction) {
+				adjust = [it](QRgb val) { return (QRgb)VipAdjustImage::apply(VipRGB(val), it->contrast(), it->brightness(), it->gamma()); };
+			}
+		}
+
+	VipPainter::drawColorBar(painter, *d_data->colorBar.colorMap, d_data->colorBar.interval.normalized(), sd->scaleMap(), sd->orientation(), rect, &d_data->pixmap, adjust);
 }
 
 double VipAxisColorMap::extentForLength(double length) const

@@ -279,7 +279,6 @@ class VIP_CORE_EXPORT VipNumericValueToPointVector : public VipProcessingObject
 	Q_CLASSINFO("category", "Miscellaneous")
 
 public:
-
 	/// @brief Retrieve the sliding time window used by default by all VipNumericValueToPointVector
 	/// instances as well as all VipDisplayCurve. Default value is -1 (no time window).
 	static double defaultSlidingTimeWindow();
@@ -375,12 +374,11 @@ protected:
 
 	/// Same as #VipProcessingObject::create, but also set the output time (max time of all inputs)
 	/// and merge all inputs attributes.
-	virtual VipAnyData create(const QVariant& data, const QVariantMap & attr = QVariantMap()) const;
+	virtual VipAnyData create(const QVariant& data, const QVariantMap& attr = QVariantMap()) const;
 
 	const QVector<VipAnyData>& inputs() const;
 
 private:
-	
 	VIP_DECLARE_PRIVATE_DATA();
 };
 /// Extract a feature (min, max, mean,...) from a set of samples (images, curves,...)
@@ -404,7 +402,7 @@ protected:
 
 private:
 	void setOutput(const QVariant& v);
-	
+
 	VIP_DECLARE_PRIVATE_DATA();
 };
 
@@ -502,6 +500,32 @@ protected:
 };
 
 VIP_REGISTER_QOBJECT_METATYPE(VipExtractBoundingBox*)
+
+/// Adjust the frame rate of a processing pipeline by dropping samples
+class VIP_CORE_EXPORT VipAdjustFrameRate : public VipProcessingObject
+{
+	Q_OBJECT
+	VIP_IO(VipInput input)
+	VIP_IO(VipOutput output)
+	VIP_IO(VipProperty MaxFrequency) // Maximum frequency
+	Q_CLASSINFO("description", "Set a maximum frame rate to a processing pipeline by dropping samples")
+
+	Q_CLASSINFO("category", "Miscellaneous")
+
+public:
+	VipAdjustFrameRate(QObject* parent = nullptr);
+	~VipAdjustFrameRate();
+	virtual bool acceptInput(int, const QVariant&) const { return true; }
+	virtual VipProcessingObject::DisplayHint displayHint() const { return InputTransform; }
+
+protected:
+	virtual void apply();
+
+private:
+	VIP_DECLARE_PRIVATE_DATA();
+};
+
+VIP_REGISTER_QOBJECT_METATYPE(VipAdjustFrameRate*)
 
 /// Returns the minimum and maximum X values for given list of VipPointVector, as well as the minimum non 0 sampling value (if provided).
 /// This function assumes that each vector as increasing x values representing nanoseconds.

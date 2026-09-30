@@ -35,6 +35,8 @@
 #include "VipNDArray.h"
 #include "VipPainter.h"
 #include "VipSliderGrip.h"
+#include "VipLock.h"
+#include "VipImageProcessing.h"
 
 #include <limits>
 
@@ -314,6 +316,40 @@ public:
 	}
 };
 
+/// VipImageData gather drawing information required by a VipPlotRasterData object.
+/// It contains:
+/// <ul>
+/// <li> The image to draw as a QImage</li>
+/// <li> The input array rectangle that this image represents in the VipRasterData</li>
+/// <li> The destination polygon where the image should be drawn.</li>
+/// </ul>
+class VipImageData
+{
+public:
+	VipImageData(const QImage& img = QImage(), const QRectF& array_rect = QRectF(), const QPolygonF& dst = QPolygonF())
+	  : image(img)
+	  , arrayRect(array_rect)
+	  , dstPolygon(dst)
+	{
+	}
+	VipImageData(const VipImageData&) = default;
+	VipImageData(VipImageData&&) noexcept = default;
+	VipImageData& operator=(const VipImageData&) = default;
+	VipImageData& operator=(VipImageData&&) noexcept = default;
+
+	bool isEmpty() const { return image.isNull() || dstPolygon.isEmpty(); }
+
+	QImage image;
+	QRectF arrayRect;
+	QRectF srcImageRect;
+	QPolygonF dstPolygon;
+
+	// Used to trace the origin axis rect and grip interval
+	QRectF axisRects;
+	VipInterval gripInterval;
+	size_t colorMapHash = 0;
+};
+
 class VipRasterData::PrivateData
 {
 public:
@@ -337,6 +373,12 @@ public:
 	qint64 mTime;
 	bool isArray;
 	bool deleteConverter;
+
+	VipSpinlock intervalLock;
+	VipInterval interval;
+	VipInterval validInterval;
+	VipImageData precomputed;
+
 };
 
 template<class Converter>
@@ -406,7 +448,15 @@ QRectF VipRasterData::boundingRect() const
 
 VipInterval VipRasterData::bounds(const VipInterval& interval) const
 {
-	return d_data ? d_data->converter->bounds(interval) : VipInterval();
+	if (d_data) {
+		std::scoped_lock<VipSpinlock> guard(d_data->intervalLock);
+		if (interval == d_data->validInterval && d_data->interval.isValid())
+			return d_data->interval;
+
+		d_data->validInterval = interval;
+		return d_data->interval = d_data->converter->bounds(interval);
+	}
+	return VipInterval();
 }
 
 VipNDArray VipRasterData::extract(const QRectF& rect, QRectF* out_rect) const
@@ -439,36 +489,7 @@ static int registerConverter()
 	QMetaType::registerConverter<VipRasterData, VipNDArray>(convertToArray);
 	return 0;
 }
-static int _registerConverter = vipStaticInit("registerConverter",registerConverter);
-
-/// VipImageData gather drawing information required by a VipPlotRasterData object.
-/// It contains:
-/// <ul>
-/// <li> The image to draw as a QImage</li>
-/// <li> The input array rectangle that this image represents in the VipRasterData</li>
-/// <li> The destination polygon where the image should be drawn.</li>
-/// </ul>
-class VipImageData
-{
-public:
-	VipImageData(const QImage& img = QImage(), const QRectF& array_rect = QRectF(), const QPolygonF& dst = QPolygonF())
-	  : image(img)
-	  , arrayRect(array_rect)
-	  , dstPolygon(dst)
-	{
-	}
-	VipImageData(const VipImageData&) = default;
-	VipImageData(VipImageData&&) noexcept = default;
-	VipImageData& operator=(const VipImageData&) = default;
-	VipImageData& operator=(VipImageData&&) noexcept = default;
-
-	bool isEmpty() const { return image.isNull() || dstPolygon.isEmpty(); }
-
-	QImage image;
-	QRectF arrayRect;
-	QRectF srcImageRect;
-	QPolygonF dstPolygon;
-};
+static int _registerConverter = vipStaticInit("registerConverter", registerConverter);
 
 class VipPlotRasterData::PrivateData
 {
@@ -482,6 +503,7 @@ public:
 	}
 
 	VipNDArray temporaryArray;
+	VipNDArray precompute_tmp;
 	VipImageData imageData;
 	VipImageData bypassImageData;
 	QImage superimposeImage;
@@ -498,6 +520,26 @@ public:
 
 	qint64 modifiedTime;
 	QRectF modifiedRect;
+
+	
+	double contrast = 1.;
+	double brightness = 0.;
+	double gamma = 1.;
+	bool correctionsEnabled = true;
+
+	bool applyCorrections() const noexcept
+	{
+		if (!correctionsEnabled)
+			return false;
+
+		if (!vipFuzzyCompare(contrast, 1.))
+			return true;
+		if (!vipFuzzyCompare(brightness, 0.))
+			return true;
+		if (!vipFuzzyCompare(gamma, 1.))
+			return true;
+		return false;
+	}
 };
 
 static int registerRasterDataKeyWords()
@@ -507,7 +549,7 @@ static int registerRasterDataKeyWords()
 	vipSetKeyWordsForClass(&VipPlotRasterData::staticMetaObject, keys);
 	return 0;
 }
-static int _registerRasterDataKeyWords = vipStaticInit("registerRasterDataKeyWords",registerRasterDataKeyWords);
+static int _registerRasterDataKeyWords = vipStaticInit("registerRasterDataKeyWords", registerRasterDataKeyWords);
 
 VipPlotRasterData::VipPlotRasterData(const VipText& title)
   : VipPlotItemDataType(title)
@@ -542,6 +584,73 @@ const QPen& VipPlotRasterData::borderPen() const
 	return d_data->borderPen;
 }
 
+void VipPlotRasterData::setContrast(double v)
+{
+	if (v != d_data->contrast) {
+		d_data->contrast = v;
+		resetData();
+		emitItemChanged();
+	}
+}
+double VipPlotRasterData::contrast() const
+{
+	return d_data->contrast;
+}
+
+void VipPlotRasterData::setBrightness(double v)
+{
+	if (v != d_data->brightness) {
+		d_data->brightness = v;
+		resetData();
+		emitItemChanged();
+	}
+}
+double VipPlotRasterData::brightness() const
+{
+	return d_data->brightness;
+}
+
+void VipPlotRasterData::setGamma(double v)
+{
+	if (v != d_data->gamma) {
+		d_data->gamma = v;
+		resetData();
+		emitItemChanged();
+	}
+}
+double VipPlotRasterData::gamma() const
+{
+	return d_data->gamma;
+}
+
+void VipPlotRasterData::setCorrectionsEnabled(bool v)
+{
+	if (v != d_data->correctionsEnabled) {
+		d_data->correctionsEnabled = v;
+		resetData();
+		emitItemChanged();
+	}
+}
+bool VipPlotRasterData::correctionsEnabled() const
+{
+	return d_data->correctionsEnabled;
+}
+
+void VipPlotRasterData::setColorMap(VipAxisColorMap* colorMap)
+{
+	// Use the data lock to avoid changing the colormap while computing the image within setData()
+	dataLock()->lock();
+	Base::setColorMap(colorMap);
+	dataLock()->unlock();
+}
+void VipPlotRasterData::setAxes(const QList<VipAbstractScale*>& axes, VipCoordinateSystem::Type type)
+{
+	// Use the data lock to avoid changing the axes while computing the image within setData()
+	dataLock()->lock();
+	Base::setAxes(axes, type);
+	dataLock()->unlock();
+}
+
 QList<VipInterval> VipPlotRasterData::plotBoundingIntervals() const
 {
 	return VipInterval::fromRect(d_data->imageRect);
@@ -549,11 +658,13 @@ QList<VipInterval> VipPlotRasterData::plotBoundingIntervals() const
 
 VipInterval VipPlotRasterData::plotInterval(const VipInterval& interval) const
 {
-	if (d_data->dataInterval.isValid() && d_data->dataValidInterval == interval)
+	return rawData().bounds(interval);
+
+	/*if (d_data->dataInterval.isValid() && d_data->dataValidInterval == interval)
 		return d_data->dataInterval;
 	Locker lock(dataLock());
 	const_cast<VipPlotRasterData*>(this)->d_data->dataValidInterval = interval;
-	return const_cast<VipPlotRasterData*>(this)->d_data->dataInterval = data().value<VipRasterData>().bounds(interval);
+	return const_cast<VipPlotRasterData*>(this)->d_data->dataInterval = data().value<VipRasterData>().bounds(interval);*/
 }
 
 QRectF VipPlotRasterData::imageBoundingRect() const
@@ -677,12 +788,49 @@ void VipPlotRasterData::draw(QPainter* painter, const VipCoordinateSystemPtr& m)
 			d_data->imageData.dstPolygon = (dst);
 			painter->setRenderHint(QPainter::SmoothPixmapTransform, renderHints() & QPainter::Antialiasing);
 			drawBackground(painter, m, rect, dst);
-			VipPainter::drawImage(painter, d_data->imageData.dstPolygon, d_data->imageData.image, d_data->imageData.srcImageRect);
+
+			if (d_data->applyCorrections()) {
+				QImage img = d_data->imageData.image.convertToFormat(QImage::Format_ARGB32);
+				VipAdjustImage::apply((VipRGB*)img.bits(), img.width() * img.height(), d_data->contrast, d_data->brightness, d_data->gamma);
+				VipPainter::drawImage(painter, d_data->imageData.dstPolygon, img, d_data->imageData.srcImageRect);
+			} 
+			else
+				VipPainter::drawImage(painter, d_data->imageData.dstPolygon, d_data->imageData.image, d_data->imageData.srcImageRect);
 		}
 		else {
 			VipInterval inter;
-			if (colorMap())
-				inter = colorMap()->gripInterval();
+			VipAxisColorMap* map = colorMap();
+			if (map)
+				inter = map->gripInterval();
+
+			const VipRasterData raster = this->rawData();
+
+			// Try to use the precomputed image
+			VipImageData& precomputed = raster.d_data->precomputed;
+			VipLinearColorMap* linear = map ? qobject_cast<VipLinearColorMap*>(map->colorMap()) : nullptr;
+
+			if (linear && !precomputed.image.isNull() && map->itemList().size() == 1 && precomputed.colorMapHash == linear->hashValue() &&
+			    precomputed.axisRects == VipInterval::toRect(VipAbstractScale::scaleIntervals(axes()))) {
+				// Check used interval
+				bool same_interval = precomputed.gripInterval == inter;
+				if (!same_interval) {
+					if (map->isAutoScale() && raster.bounds(map->validInterval()) == precomputed.gripInterval)
+						same_interval = true;
+				}
+				if (same_interval) {
+
+					// compute the destination rect
+					const auto dstPoly = m->transform(precomputed.arrayRect);
+					if (dstPoly == precomputed.dstPolygon) {
+
+						painter->setRenderHint(QPainter::SmoothPixmapTransform, renderHints() & QPainter::Antialiasing);
+						drawBackground(painter, m, precomputed.arrayRect, precomputed.dstPolygon);
+						VipPainter::drawImage(painter, precomputed.dstPolygon, precomputed.image, precomputed.srcImageRect);
+						goto finish;
+					}
+				}
+			}
+
 			if (computeImage(this->rawData(), inter, m, d_data->temporaryArray, d_data->imageData)) {
 				painter->setRenderHint(QPainter::SmoothPixmapTransform, renderHints() & QPainter::Antialiasing);
 				rect = d_data->imageData.arrayRect;
@@ -699,9 +847,18 @@ void VipPlotRasterData::draw(QPainter* painter, const VipCoordinateSystemPtr& m)
 		dst = bypass.dstPolygon;
 		drawBackground(painter, m, rect, dst);
 		painter->setRenderHint(QPainter::SmoothPixmapTransform, renderHints() & QPainter::Antialiasing);
-		VipPainter::drawImage(painter, bypass.dstPolygon, bypass.image, bypass.srcImageRect);
+
+		if (d_data->applyCorrections()) {
+			QImage img = bypass.image.convertToFormat(QImage::Format_ARGB32);
+			VipAdjustImage::apply((VipRGB*)img.bits(), img.width() * img.height(), d_data->contrast, d_data->brightness, d_data->gamma);
+			VipPainter::drawImage(painter, bypass.dstPolygon, img, bypass.srcImageRect);
+		}
+		else
+			VipPainter::drawImage(painter, bypass.dstPolygon, bypass.image, bypass.srcImageRect);
 		d_data->bypassImageData = VipImageData();
 	}
+
+finish:
 
 	// draw the superimpose image
 	if (!d_data->superimposeImage.isNull()) {
@@ -739,6 +896,12 @@ bool VipPlotRasterData::computeImage(const VipRasterData& ar, const VipInterval&
 	QRectF srcImageRect;
 	QPolygonF dst;
 	if (computeImage(ar, interval, m, tmp_array, img.image, dst, rect, srcImageRect)) {
+
+		if (d_data->applyCorrections()) {
+			img.image = img.image.convertToFormat(QImage::Format_ARGB32);
+			VipAdjustImage::apply((VipRGB*)img.image.bits(), img.image.width() * img.image.height(), d_data->contrast, d_data->brightness, d_data->gamma);
+		}
+
 		img.arrayRect = (rect);
 		img.srcImageRect = (srcImageRect);
 		img.dstPolygon = (dst);
@@ -774,6 +937,9 @@ bool VipPlotRasterData::computeImage(const VipRasterData& raster,
 				     QRectF& rect,
 				     QRectF& src_image_rect) const
 {
+	if (!m)
+		return false;
+
 	rect = computeArrayRect(raster);
 
 	// compute the destination rect
@@ -798,7 +964,7 @@ bool VipPlotRasterData::computeImage(const VipRasterData& raster,
 			QRect im_rect(0, 0, qMin(dst_rect.width(), (int)extracted_rect.width()), qMin(dst_rect.height(), (int)extracted_rect.height()));
 			if (out.width() != im_rect.width() || out.height() != im_rect.height())
 				out = QImage(im_rect.width(), im_rect.height(), QImage::Format_ARGB32);
-			
+
 			const VipNDArray* tarray = &tmp;
 			if (tmp.shape() != vipVector(im_rect.height(), im_rect.width())) {
 				// Resize in temporary array
@@ -897,7 +1063,7 @@ void VipPlotRasterData::setData(const QVariant& v)
 	d_data->empty_data = _new.isEmpty();
 
 	// reset intervals
-	d_data->dataInterval = d_data->dataValidInterval = VipInterval();
+	// d_data->dataInterval = d_data->dataValidInterval = VipInterval();
 
 	if (!d_data->empty_data && carray && _new.isArray() && ctype == ntype && crect == nrect) {
 
@@ -931,20 +1097,46 @@ void VipPlotRasterData::setData(const QVariant& v)
 				_ne.convert(const_cast<VipNDArray&>(_cur));
 			dataLock()->unlock();
 
-			setInternalData(QVariant::fromValue(current = VipRasterData(_cur, bounding.topLeft())));
+			current = VipRasterData(_cur, bounding.topLeft());
 
-			// Optmize color map computation if the color scale only has this item
-			Locker locker(dataLock());
-			if (colorMap()) {
-				VipInterval interval = colorMap()->gripInterval();
-				if (colorMap()->isAutoScale()) {
-					d_data->dataValidInterval = colorMap()->validInterval();
-					dataLock()->unlock();
-					interval = current.bounds(d_data->dataValidInterval);
-					dataLock()->lock();
-					d_data->dataInterval = interval;
+			// Optimize color map computation if the color scale only has this item
+			{
+				Locker locker(dataLock());
+				if (auto* map = colorMap()) {
+					VipInterval interval = map->gripInterval();
+					if (map->isAutoScale()) {
+						/* d_data->dataValidInterval = map->validInterval();
+						dataLock()->unlock();
+						interval = current.bounds(d_data->dataValidInterval);
+						dataLock()->lock();
+						d_data->dataInterval = interval;*/
+
+						// Compute interval
+						auto validInterval = map->validInterval();
+						dataLock()->unlock();
+						interval = current.bounds(validInterval);
+						dataLock()->lock();
+					}
+
+					// TEST: for linear color map, precompute displayed data
+					//
+					if (map->itemList().size() == 1)
+						if (auto* linear = qobject_cast<VipLinearColorMap*>(map->colorMap())) {
+
+							dataLock()->unlock();
+							// Do the heavy computation without holding the lock: histogram computation + convert to rgb
+							if (this->computeImage(current, interval, this->sceneMap(), d_data->precompute_tmp, current.d_data->precomputed)) {
+								dataLock()->lock();
+								current.d_data->precomputed.axisRects = VipInterval::toRect(VipAbstractScale::scaleIntervals(axes()));
+								current.d_data->precomputed.gripInterval = interval;
+								current.d_data->precomputed.colorMapHash = linear->hashValue();
+							}
+							else
+								dataLock()->lock();
+						}
 				}
 			}
+			setInternalData(QVariant::fromValue(current));
 		}
 
 		// update and mark color scale as dirty if needed
@@ -954,7 +1146,6 @@ void VipPlotRasterData::setData(const QVariant& v)
 			QMetaObject::invokeMethod(this, "updateInternal", Qt::QueuedConnection, Q_ARG(bool, update_colorscale));
 	}
 	else {
-
 		d_data->empty_data = false;
 		VipPlotItemDataType::setData(QVariant::fromValue(_new));
 		if (crect != nrect) {
@@ -1109,13 +1300,35 @@ QString VipPlotRasterData::formatText(const QString& str, const QPointF& pos) co
 	return res.text();
 }
 
-VipArchive& operator<<(VipArchive& arch, const VipPlotRasterData*)
+VipArchive& operator<<(VipArchive& arch, const VipPlotRasterData* item)
 {
+	arch.content("contrast", item->contrast());
+	arch.content("brightness", item->brightness());
+	arch.content("gamma", item->gamma());
+	arch.content("correctionsEnabled", item->correctionsEnabled());
 	return arch;
 }
 
-VipArchive& operator>>(VipArchive& arch, VipPlotRasterData*)
+VipArchive& operator>>(VipArchive& arch, VipPlotRasterData* item)
 {
+	double contrast, brightness, gamma;
+	bool correctionsEnabled;
+	arch.save();
+	if (arch.content("contrast", contrast)) {
+		arch.content("brightness", brightness);
+		arch.content("gamma", gamma);
+		arch.content("correctionsEnabled", correctionsEnabled);
+
+		item->setContrast(contrast);
+		item->setBrightness(brightness);
+		item->setGamma(gamma);
+		item->setCorrectionsEnabled(correctionsEnabled);
+
+		arch.discardSave();
+	}
+	else
+		arch.restore();
+
 	return arch;
 }
 
@@ -1126,4 +1339,4 @@ static int registerStreamOperators()
 	return 0;
 }
 
-static int _registerStreamOperators = vipStaticInit("registerStreamOperators",registerStreamOperators);
+static int _registerStreamOperators = vipStaticInit("registerStreamOperators", registerStreamOperators);

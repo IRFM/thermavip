@@ -976,6 +976,11 @@ VIP_REGISTER_QOBJECT_METATYPE(VipPlotPlayer*)
 /// Its signature is: void(VipAbstractPlayer*);
 VIP_GUI_EXPORT VipFunctionDispatcher<1>& vipFDPlayerCreated();
 
+
+/// This function dispatcher is called every time a VipIODevice is added to a VipAbstractPlayer through a VipDisplayObject.
+/// Its signature is void(VipIODevice*, VipAbstractPlayer*);
+VIP_GUI_EXPORT VipFunctionDispatcher<2>& VipFDDeviceAddedOnPlayer();
+
 /// This function dispatcher is called every time a #VipPlotItem is added to an #VipAbstractPlayer.
 /// Its signature is void(VipPlotItem*, VipAbstractPlayer*);
 VIP_GUI_EXPORT VipFunctionDispatcher<2>& VipFDItemAddedOnPlayer();

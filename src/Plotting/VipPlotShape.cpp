@@ -656,8 +656,10 @@ QRectF VipPlotShape::boundingRect() const
 QPainterPath VipPlotShape::shape() const
 {
 	QPainterPath additional;
-	if (VipAnnotation* annot = annotation())
-		additional = annot->shape(rawData(), sceneMap());
+	// For now, do not take into account the full annotation shape
+	// as it does not work well with the surrounding VipResizeItem
+	//if (VipAnnotation* annot = annotation())
+	//	additional = annot->shape(rawData(), sceneMap());
 
 	// empty d_data->path if a point is outside the scale area or
 	// it won't be drawn
@@ -2089,6 +2091,7 @@ VipPlotShape* VipPlotSceneModel::createShape(const VipShape&) const
 {
 	VipPlotShape* shape = new PlotSceneModelShape();
 	shape->setProperty("VipPlotSceneModel", QVariant::fromValue((VipPlotSceneModel*)this));
+	shape->setProperty("_vip_no_serialize", true);
 	shape->setItemAttribute(VipPlotItem::IsSuppressable, this->testItemAttribute(VipPlotItem::IsSuppressable));
 	return shape;
 }
@@ -2242,13 +2245,38 @@ VipArchive& operator<<(VipArchive& arch, const VipPlotSceneModel* value)
 		}
 	}
 
-	return arch.content("mode", (int)value->mode()).content("sceneModel", value->sceneModel());
+	arch.content("mode", (int)value->mode()).content("sceneModel", value->sceneModel());
+
+	// Save the components to draw for each group
+	const auto groups = value->sceneModel().groups();
+	for (const auto& gr : groups) {
+		arch.start(gr);
+		arch.content("drawComponents", (int)value->drawComponents(gr));
+		arch.end();
+	}
+	return arch;
 }
 
 VipArchive& operator>>(VipArchive& arch, VipPlotSceneModel* value)
 {
 	value->setMode((VipPlotSceneModel::Mode)arch.read("mode").toInt());
-	value->setSceneModel(arch.read("sceneModel").value<VipSceneModel>());
+	auto sm = arch.read("sceneModel").value<VipSceneModel>();
+	if (!sm.attribute("_vip_no_serialize").toBool())
+		value->setSceneModel(sm);
+
+	// Load components to draw for each group
+	arch.save();
+	for (;;) {
+		QString group;
+		if (arch.start(group)) {
+			value->setDrawComponents(group, (VipPlotShape::DrawComponents)arch.read("drawComponents").toInt());
+			arch.end();
+		}
+		else
+			break;
+	}
+	arch.restore();
+
 	return arch;
 }
 

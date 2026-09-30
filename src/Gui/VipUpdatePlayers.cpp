@@ -36,6 +36,7 @@
 #include "VipPlotMarker.h"
 #include "VipPlotShape.h"
 #include "VipSymbol.h"
+#include "VipProcessingObjectEditor.h"
 
 #include <QApplication>
 #include <QGraphicsSceneMouseEvent>
@@ -145,6 +146,20 @@ VipUpdateVideoPlayer::VipUpdateVideoPlayer(VipVideoPlayer* player)
 
 	// make sure the tool bar has a fixed size and does not show a drop-down indicator
 	m_toolBar->setMinimumWidth(m_toolBar->sizeHint().width());
+
+
+	m_adjust = new QToolButton();
+	m_adjust->setAutoRaise(true);
+	m_adjust->setToolTip("Adjust contrast, brightness and gamma");
+	m_adjust->setIcon(vipIcon("adjust.png"));
+	VipDragMenu* adjust_menu = new VipDragMenu(m_adjust);
+	VipAdjustImageEditor* editor = new VipAdjustImageEditor();
+	editor->setPlotItem(player->spectrogram());
+	adjust_menu->setWidget(editor);
+	m_adjust->setMenu(adjust_menu);
+	m_adjust->setPopupMode(QToolButton::InstantPopup);
+	player->toolBar()->addWidget(m_adjust);
+
 
 	m_crop = new QToolButton();
 	m_crop->setAutoRaise(true);

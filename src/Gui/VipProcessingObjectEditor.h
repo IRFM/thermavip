@@ -717,6 +717,36 @@ public Q_SLOTS:
 	}
 };
 
+class VipAdjustImage;
+class VipPlotRasterData;
+
+class VIP_GUI_EXPORT VipAdjustImageEditor : public QWidget
+{
+	Q_OBJECT
+
+public:
+	VipAdjustImageEditor(QWidget* parent = nullptr);
+	~VipAdjustImageEditor();
+
+	void setProcessing(VipAdjustImage*);
+	VipAdjustImage* processing() const;
+
+	void setPlotItem(VipPlotRasterData*);
+	VipPlotRasterData* plotItem() const;
+
+private Q_SLOTS:
+	void changed();
+	void resetProcessing();
+	void reset();
+
+private:
+	class PrivateData;
+	PrivateData* m_data;
+};
+
+
+
+
 class PlotWarpingPoints;
 class VipVideoPlayer;
 class VIP_GUI_EXPORT VipWarpingEditor : public QWidget

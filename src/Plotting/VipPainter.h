@@ -166,7 +166,8 @@ public:
 	static void drawFocusRect(QPainter*, const QWidget*);
 	static void drawFocusRect(QPainter*, const QWidget*, const QRect&);
 
-	static void drawColorBar(QPainter* painter, VipColorMap&, const VipInterval&, const VipScaleMap&, Qt::Orientation, const QRectF&, QImage* pixmap = nullptr);
+	static void
+	drawColorBar(QPainter* painter, VipColorMap&, const VipInterval&, const VipScaleMap&, Qt::Orientation, const QRectF&, QImage* pixmap = nullptr, const std::function<QRgb(QRgb)>& adjust = {});
 
 	/// Check if the painter is using a paint engine, that aligns
 	/// coordinates to integers. Today these are all paint engines

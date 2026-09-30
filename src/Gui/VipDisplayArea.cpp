@@ -4812,6 +4812,14 @@ void VipMainWindow::exitFullScreen()
 {
 	if (isFullScreen())
 		showMaximized();
+	else {
+		// If a player is maximized, show normal
+		if (auto* wks = displayArea()->currentDisplayPlayerArea()) {
+			if (auto* focus = wks->dragWidgetHandler()->focusWidget())
+				if (focus->isMaximized())
+					focus->showNormal();
+		}
+	}
 }
 
 void VipMainWindow::restoreOrMaximizeCurrentPlayer()
@@ -4910,7 +4918,7 @@ void VipMainWindow::quickLoad()
 	// no confirmation and no way back: everything unsaved was lost, and the file
 	// restores plugins, settings and, with Python built in, code.
 	if (displayArea() && displayArea()->count() > 0) {
-		if (vipQuestion("Load session", "Replace the current workspace with the quick session?\n" + file) != QMessageBox::Yes)
+		if (vipQuestion("Load session", "Replace the current workspace with the quick session?" ) != QMessageBox::Yes)
 			return;
 	}
 	VIP_LOG_INFO("Loading quick session: " + file);

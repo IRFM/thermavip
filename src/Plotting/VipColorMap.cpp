@@ -34,17 +34,18 @@
 #include "VipNDArray.h"
 #include "VipScaleMap.h"
 #include "VipHash.h"
+#include "VipLock.h"
 #include <QDateTime>
 #include <QPainter>
 #include <QSet>
 #include <qnumeric.h>
-#include <qreadwritelock.h>
 #include <vector>
+#include <mutex>
 
 void VipColorMap::applyColorMap(const VipInterval& interval, const VipNDArray& ar, QRgb* out) const
 {
 	VipNDArrayTypeView<VipRGB> view((VipRGB*)out, ar.shape());
-	view = vipFunction([&](auto v) ->  std::enable_if_t<std::is_arithmetic_v<decltype(v)>, QRgb> { return this->rgb(interval, v); }, ar);
+	view = vipFunction([&](auto v) -> std::enable_if_t<std::is_arithmetic_v<decltype(v)>, QRgb> { return this->rgb(interval, v); }, ar);
 }
 
 class VipLinearColorMap::ColorStops
@@ -268,25 +269,6 @@ QVector<QRgb> VipColorMap::colorTable(const VipInterval& interval) const
 	return table;
 }
 
-class VipLinearColorMap::PrivateData
-{
-public:
-	ColorStops colorStops;
-	VipLinearColorMap::Mode mode;
-	StandardColorMap type;
-	QRgb* renderColors;
-	int renderColorsCount;
-	bool useFlatHistogram;
-	int flatHistogramStrength;
-	VipIntervalSampleVector histogram;
-	std::vector<int> indexes;
-	VipNDArrayType<float> tmpArray;
-	QReadWriteLock histLock;
-	size_t arrayHash = 0;
-	int lastHistStrength = -1;
-	VipInterval interval;
-};
-
 template<class T>
 VIP_ALWAYS_INLINE bool isNan(T)
 {
@@ -305,7 +287,6 @@ VIP_ALWAYS_INLINE T clamp(T val, T lo, T hi)
 {
 	return (val > hi) ? hi : (val < lo) ? lo : val;
 }
-
 
 template<class V, class... T>
 VIP_ALWAYS_INLINE V firstNotNan(V val, V factor, T... rem)
@@ -338,7 +319,7 @@ VIP_ALWAYS_INLINE float getPixel(T... vals)
 }
 
 template<class Ar>
-void histogram(const Ar& img, VipNDArrayType<float>& tmp, int strength, const VipInterval& interval, VipIntervalSampleVector& out, int* indexes, int max_index)
+void extractHistogram(const Ar& img, VipNDArrayType<float>& tmp, int strength, const VipInterval& interval, VipIntervalSampleVector& out, int* indexes, int max_index)
 {
 	const int numcolors = 1024;
 
@@ -360,8 +341,8 @@ void histogram(const Ar& img, VipNDArrayType<float>& tmp, int strength, const Vi
 		for (qsizetype y = 0; y < h; ++y) {
 			qsizetype start = y * w;
 			for (qsizetype x = 1; x < w - 1; ++x)
-				_out[start + x] = getPixel((float)img(vipVector(y, x - 1)),
-							   0.1f , (float)img(vipVector(y, x)) , 0.9f); // (float)img(vipVector(y, x - 1)) * 0.1f + (float)img(vipVector(y, x)) * 0.9f;
+				_out[start + x] =
+				  getPixel((float)img(vipVector(y, x - 1)), 0.1f, (float)img(vipVector(y, x)), 0.9f); // (float)img(vipVector(y, x - 1)) * 0.1f + (float)img(vipVector(y, x)) * 0.9f;
 
 			_out[y * w] = (float)img(vipVector(y, 0));
 			_out[y * w + w - 1] = (float)img(vipVector(y, w - 1));
@@ -420,6 +401,129 @@ void histogram(const Ar& img, VipNDArrayType<float>& tmp, int strength, const Vi
 	vipExtractHistogram(tmp, out, numcolors, Vip::SameBinHeight, interval, indexes, 2, 1, max_index, 0, -(4 - (strength - 1)));
 }
 
+// TEST
+#include <qthread.h>
+#include <qapplication.h>
+
+class VipLinearColorMap::PrivateData
+{
+public:
+	struct RGBCompute
+	{
+		const VipLinearColorMap::ColorStops colorStops;
+		const VipIntervalSampleVector histogram;
+		VipLinearColorMap::Mode mode;
+		StandardColorMap type;
+		std::vector<QRgb> renderColors;
+		int renderColorsCount;
+
+		
+		QRgb rgbFlatHistogram(const VipLinearColorMap* map, const VipInterval& interval, double value) const
+		{
+			// Handle NaN values
+			if (isNan(value))
+				return qRgba(0, 0, 0, 0);
+
+			// value not in interval
+			if (!interval.contains(value)) {
+				if (map->externalValue() == ColorFixed)
+					return map->externalColor();
+				else if (value <= interval.minValue())
+					return colorStops._stops[0].rgb;
+				else
+					return colorStops._stops[colorStops._stops.size() - 1].rgb;
+			}
+			if (histogram.isEmpty())
+				return qRgba(0, 0, 0, 0);
+			else if (value >= histogram.last().interval.maxValue())
+				return colorStops._stops[colorStops._stops.size() - 1].rgb;
+			else if (value <= histogram.first().interval.minValue())
+				return colorStops._stops[0].rgb;
+
+			int index = vipFindUpperEqual(histogram, value);
+			if (index < 0 || index >= renderColorsCount)
+				return qRgba(0, 0, 0, 0);
+
+			if (histogram.size() < renderColorsCount) {
+				index = (int)(index * (renderColorsCount / (double)histogram.size()) + 2.5);
+			}
+
+			return renderColors[index];
+		}
+		QRgb rgb(const VipLinearColorMap * map, const VipInterval& interval, double value) const
+		{
+			if (map->d_data->useFlatHistogram && histogram.size() && !renderColors.empty())
+				return rgbFlatHistogram(map, interval, value);
+
+			// nan value
+			if (vipIsNan(value))
+				return qRgba(0, 0, 0, 0);
+
+			const double width = interval.width();
+			double ratio = 0.0;
+			if (width > 0.0)
+				ratio = (value - interval.minValue()) / width;
+
+			if (!interval.contains(value)) {
+				if (map->externalValue() == ColorFixed)
+					return map->externalColor();
+				else if (ratio <= 0.0)
+					return colorStops._stops[0].rgb;
+				else if (ratio >= 1.0)
+					return colorStops._stops[colorStops._stops.size() - 1].rgb;
+			}
+
+			return colorStops.rgbNoBoundaryCheck(mode, ratio);
+		}
+	};
+	QSharedPointer<RGBCompute> rgb;
+
+	ColorStops colorStops;
+	VipLinearColorMap::Mode mode;
+	StandardColorMap type;
+	std::vector<QRgb> renderColors;
+	int renderColorsCount;
+	bool useFlatHistogram;
+	int flatHistogramStrength;
+	VipIntervalSampleVector histogram;
+	std::vector<int> indexes;
+	VipNDArrayType<float> tmpArray;
+	VipSharedSpinlock histLock;
+
+	size_t arrayHash = 0;
+	int lastHistStrength = -1;
+	VipInterval interval;
+
+	std::atomic<size_t> hash{ 0 };
+
+	template<class Array>
+	void computeHistogram(const VipInterval& interval, const Array& array, qsizetype size, size_t hash_value)
+	{
+		using value_type = typename Array::value_type;
+		if constexpr (std::is_arithmetic_v<value_type>) {
+
+			if (hash_value != this->arrayHash || this->histogram.size() == 0 || this->interval != interval || this->lastHistStrength != this->flatHistogramStrength) {
+				this->arrayHash = hash_value;
+				this->interval = interval;
+				this->lastHistStrength = this->flatHistogramStrength;
+				const int num_colors = this->renderColorsCount;
+				const int max_index = num_colors + 2;
+
+				// prepare array of indexes in the histogram
+				if ((int)this->indexes.size() != size)
+					this->indexes.resize(size);
+				// prepare histogram
+				this->histogram.clear();
+				// compute array histogram
+
+				if (this->tmpArray.shape() != array.shape())
+					this->tmpArray.reset(array.shape());
+				extractHistogram(array, this->tmpArray, this->flatHistogramStrength, interval, this->histogram, this->indexes.data(), max_index);
+
+			}
+		}
+	}
+};
 
 /// Build a color map with two stops at 0.0 and 1.0. The color
 /// at 0.0 is Qt::blue, at 1.0 it is Qt::yellow.
@@ -431,13 +535,24 @@ VipLinearColorMap::VipLinearColorMap(VipColorMap::Format format)
 	VIP_CREATE_PRIVATE_DATA();
 	d_data->mode = ScaledColors;
 	d_data->type = Unknown;
-	d_data->renderColors = nullptr;
 	d_data->renderColorsCount = 1024;
 	d_data->useFlatHistogram = false;
 	d_data->flatHistogramStrength = 1;
 
 	setColorInterval(Qt::blue, Qt::yellow);
 }
+
+using UniqueLock = std::scoped_lock<VipSharedSpinlock>;
+struct SharedLock
+{
+	VipSharedSpinlock* lock;
+	SharedLock(const VipSharedSpinlock& l) noexcept
+	  : lock(const_cast<VipSharedSpinlock*>(&l))
+	{
+		lock->lock_shared();
+	}
+	~SharedLock() noexcept { lock->unlock_shared(); }
+};
 
 /// Build a color map with two stops at 0.0 and 1.0.
 ///
@@ -459,11 +574,6 @@ VipLinearColorMap::~VipLinearColorMap()
 	dirtyColorMap();
 }
 
-const VipLinearColorMap::ColorStops& VipLinearColorMap::internalColorStops() const
-{
-	return d_data->colorStops;
-}
-
 /// \brief Set the mode of the color map
 ///
 /// FixedColors means the color is calculated from the next lower
@@ -473,6 +583,7 @@ const VipLinearColorMap::ColorStops& VipLinearColorMap::internalColorStops() con
 /// \sa mode()
 void VipLinearColorMap::setMode(Mode mode)
 {
+	UniqueLock guard(d_data->histLock);
 	d_data->mode = mode;
 	dirtyColorMap();
 }
@@ -481,37 +592,44 @@ void VipLinearColorMap::setMode(Mode mode)
 /// \sa setMode()
 VipLinearColorMap::Mode VipLinearColorMap::mode() const
 {
+	SharedLock guard(d_data->histLock);
 	return d_data->mode;
 }
 
 VipLinearColorMap::StandardColorMap VipLinearColorMap::type() const
 {
+	SharedLock guard(d_data->histLock);
 	return d_data->type;
 }
 
 void VipLinearColorMap::setType(VipLinearColorMap::StandardColorMap t)
 {
+	UniqueLock guard(d_data->histLock);
 	d_data->type = t;
 	dirtyColorMap();
 }
 
 void VipLinearColorMap::setUseFlatHistogram(bool enable)
 {
+	UniqueLock guard(d_data->histLock);
 	d_data->useFlatHistogram = enable;
 	dirtyColorMap();
 }
 bool VipLinearColorMap::useFlatHistogram() const
 {
+	SharedLock guard(d_data->histLock);
 	return d_data->useFlatHistogram;
 }
 
 void VipLinearColorMap::setFlatHistogramStrength(int strength)
 {
+	UniqueLock guard(d_data->histLock);
 	d_data->flatHistogramStrength = strength;
 	dirtyColorMap();
 }
 int VipLinearColorMap::flatHistogramStrength() const
 {
+	SharedLock guard(d_data->histLock);
 	return d_data->flatHistogramStrength;
 }
 
@@ -525,6 +643,7 @@ int VipLinearColorMap::flatHistogramStrength() const
 /// \sa color1(), color2()
 void VipLinearColorMap::setColorInterval(const QColor& color1, const QColor& color2)
 {
+	UniqueLock guard(d_data->histLock);
 	d_data->colorStops = ColorStops();
 	d_data->colorStops.insert(0.0, color1);
 	d_data->colorStops.insert(1.0, color2);
@@ -533,6 +652,7 @@ void VipLinearColorMap::setColorInterval(const QColor& color1, const QColor& col
 
 QGradientStops VipLinearColorMap::gradientStops() const
 {
+	SharedLock guard(d_data->histLock);
 	QGradientStops res;
 	for (int i = 0; i < d_data->colorStops._stops.size(); ++i) {
 		res.append(QGradientStop(d_data->colorStops._stops[i].pos, d_data->colorStops._stops[i].rgb));
@@ -542,6 +662,7 @@ QGradientStops VipLinearColorMap::gradientStops() const
 
 void VipLinearColorMap::setGradientStops(const QGradientStops& stops)
 {
+	UniqueLock guard(d_data->histLock);
 	d_data->colorStops = ColorStops();
 	for (int i = 0; i < stops.size(); ++i) {
 		d_data->colorStops.insert(stops[i].first, stops[i].second);
@@ -559,6 +680,7 @@ void VipLinearColorMap::setGradientStops(const QGradientStops& stops)
 /// \param color Color stop
 void VipLinearColorMap::addColorStop(double value, const QColor& color)
 {
+	UniqueLock guard(d_data->histLock);
 	if (value >= 0.0 && value <= 1.0)
 		d_data->colorStops.insert(value, color);
 	dirtyColorMap();
@@ -574,6 +696,7 @@ QVector<double> VipLinearColorMap::colorStops() const
 /// \sa setColorInterval()
 QColor VipLinearColorMap::color1() const
 {
+	SharedLock guard(d_data->histLock);
 	return QColor(d_data->colorStops.rgb(d_data->mode, 0.0));
 }
 
@@ -581,54 +704,21 @@ QColor VipLinearColorMap::color1() const
 /// \sa setColorInterval()
 QColor VipLinearColorMap::color2() const
 {
+	SharedLock guard(d_data->histLock);
 	return QColor(d_data->colorStops.rgb(d_data->mode, 1.0));
 }
 
 void VipLinearColorMap::dirtyColorMap()
 {
-	// The lock the destructor used to take around this call, taken here instead: the
-	// buffer freed below is read by the painting path between startDraw() and
-	// endDraw(), and the eight setters that reach this function took nothing at all.
-	QWriteLocker lock(&d_data->histLock);
-
-	if (d_data->renderColors)
-		delete[] d_data->renderColors;
-	d_data->renderColors = nullptr;
+	d_data->hash = 0;
+	d_data->renderColors.clear();
+	d_data->rgb.reset();
 }
 
-QRgb VipLinearColorMap::rgbFlatHistogram(const VipInterval& interval, double value) const
-{
-	if (!vipIsNan(value)) {
-		// QReadLocker lock(&d_data->histLock);
-		// value not in interval
-		if (!interval.contains(value)) {
-			if (externalValue() == ColorFixed)
-				return externalColor();
-			else if (value <= interval.minValue())
-				return d_data->colorStops._stops[0].rgb;
-			else
-				return d_data->colorStops._stops[d_data->colorStops._stops.size() - 1].rgb;
-		}
-		else if (value >= d_data->histogram.last().interval.maxValue())
-			return d_data->colorStops._stops[d_data->colorStops._stops.size() - 1].rgb;
-		else if (value <= d_data->histogram.first().interval.minValue())
-			return d_data->colorStops._stops[0].rgb;
-
-		int index = vipFindUpperEqual(d_data->histogram, value);
-		if (index < 0 || index >= d_data->renderColorsCount)
-			return qRgba(0, 0, 0, 0);
-
-		if (d_data->histogram.size() < d_data->renderColorsCount) {
-			index = (int)(index * (d_data->renderColorsCount / (double)d_data->histogram.size()) + 2.5);
-		}
-
-		return d_data->renderColors[index];
-	}
-	return qRgba(0, 0, 0, 0);
-}
 
 void VipLinearColorMap::setColorRenderCount(int num_colors)
 {
+	UniqueLock guard(d_data->histLock);
 	if (num_colors != d_data->renderColorsCount) {
 		d_data->renderColorsCount = num_colors;
 		dirtyColorMap();
@@ -637,26 +727,22 @@ void VipLinearColorMap::setColorRenderCount(int num_colors)
 
 int VipLinearColorMap::colorRenderCount() const
 {
+	SharedLock guard(d_data->histLock);
 	return d_data->renderColorsCount;
-}
-
-QRgb* VipLinearColorMap::colorRender() const
-{
-	return d_data->renderColors;
 }
 
 void VipLinearColorMap::computeRenderColors()
 {
-	if (!d_data->renderColors) {
-		d_data->renderColors = new QRgb[d_data->renderColorsCount + 3];
+	if (d_data->renderColors.empty()) {
+		d_data->renderColors.resize((size_t)(d_data->renderColorsCount + 3));
 
 		const int num_colors = d_data->renderColorsCount;
 		const int multiply = num_colors - 1;
 		const int max_index = num_colors + 2;
 
 		// Make the for loop only use (almost) POD data
-		const VipLinearColorMap::ColorStops::ColorStop* stops = internalColorStops()._stops.constData();
-		const int color_count = internalColorStops()._stops.size();
+		const ColorStops::ColorStop* stops = d_data->colorStops._stops.constData();
+		const int color_count = d_data->colorStops._stops.size();
 		const QRgb ext_color = externalColor();
 		const VipLinearColorMap::ExternalValue ext_value = externalValue();
 
@@ -666,37 +752,55 @@ void VipLinearColorMap::computeRenderColors()
 		else
 			d_data->renderColors[1] = stops[0].rgb;
 		if (ext_value == VipLinearColorMap::ColorFixed)
-			d_data->renderColors[max_index] = ext_color;
+			d_data->renderColors[(size_t)max_index] = ext_color;
 		else
-			d_data->renderColors[max_index] = stops[color_count - 1].rgb;
+			d_data->renderColors[(size_t)max_index] = stops[color_count - 1].rgb;
 		for (int i = 2; i < max_index; ++i) {
-			d_data->renderColors[i] = VipLinearColorMap::ColorStops::rgbNoBoundaryCheck(mode(), (i - 2) / double(multiply), stops, color_count);
+			d_data->renderColors[(size_t)i] = VipLinearColorMap::ColorStops::rgbNoBoundaryCheck(d_data->mode, (i - 2) / double(multiply), stops, color_count);
 		}
+
+		// Recreate the structure used to compute rgb values
+		d_data->rgb = QSharedPointer<PrivateData::RGBCompute>(
+		  new PrivateData::RGBCompute{ d_data->colorStops, d_data->histogram, d_data->mode, d_data->type, d_data->renderColors, d_data->renderColorsCount });
 	}
 }
 
 int VipLinearColorMap::colorCount() const
 {
+	SharedLock guard(d_data->histLock);
 	return d_data->colorStops._stops.size();
 }
 
 QRgb VipLinearColorMap::colorAt(int index)
 {
+	SharedLock guard(d_data->histLock);
 	return d_data->colorStops._stops[index].rgb;
 }
 
 double VipLinearColorMap::stopAt(int index)
 {
+	SharedLock guard(d_data->histLock);
 	return d_data->colorStops._stops[index].pos;
 }
 
-void VipLinearColorMap::startDraw()
+size_t VipLinearColorMap::hashValue() const
 {
-	d_data->histLock.lockForRead();
-}
-void VipLinearColorMap::endDraw()
-{
-	d_data->histLock.unlock();
+	if (auto h = d_data->hash.load(std::memory_order_relaxed))
+		return h;
+
+	SharedLock guard(d_data->histLock);
+	const auto stops = d_data->colorStops;
+	auto h = vipHashValue((int)d_data->mode);
+	vipHashCombine(h, vipHashValue(externalColor()));
+	vipHashCombine(h, vipHashValue((int)d_data->type));
+	vipHashCombine(h, vipHashValue((int)d_data->renderColorsCount));
+	vipHashCombine(h, vipHashValue((int)d_data->useFlatHistogram));
+	vipHashCombine(h, vipHashValue((int)d_data->flatHistogramStrength));
+	vipHashCombine(h, vipHashBytes(stops._stops.data(), (size_t)stops._stops.size() * sizeof(ColorStops::ColorStop)));
+	if (h == 0)
+		h = 1;
+	d_data->hash = h;
+	return h;
 }
 
 /// Map a value of a given interval into a RGB value
@@ -707,32 +811,23 @@ void VipLinearColorMap::endDraw()
 /// \return RGB value for value
 QRgb VipLinearColorMap::rgb(const VipInterval& interval, double value) const
 {
-	if (d_data->useFlatHistogram && d_data->histogram.size() && d_data->renderColors)
-		return rgbFlatHistogram(interval, value);
-
-	// nan value
-	if (vipIsNan(value))
-		return qRgba(0, 0, 0, 0);
-
-	const double width = interval.width();
-	double ratio = 0.0;
-	if (width > 0.0)
-		ratio = (value - interval.minValue()) / width;
-
-	if (!interval.contains(value)) {
-		if (externalValue() == ColorFixed)
-			return externalColor();
-		else if (ratio <= 0.0)
-			return d_data->colorStops._stops[0].rgb;
-		else if (ratio >= 1.0)
-			return d_data->colorStops._stops[d_data->colorStops._stops.size() - 1].rgb;
+	// Get the structure for rgb conversion
+	auto rgb = d_data->rgb;
+	if (!rgb) {
+		auto* _this = const_cast<VipLinearColorMap*>(this);
+		UniqueLock guard(_this->d_data->histLock);
+		_this->computeRenderColors();
+		rgb = d_data->rgb;
+		if (!rgb)
+			return qRgba(0, 0, 0, 0);
 	}
+	return rgb->rgb(this, interval, value);
 
-	return d_data->colorStops.rgbNoBoundaryCheck(d_data->mode, ratio);
 }
 
 void VipLinearColorMap::applyColorMap(const VipInterval& interval, const VipNDArray& ar, QRgb* out) const
 {
+	UniqueLock guard(d_data->histLock);
 	auto alg = vipArrayAlgorithm(
 	  [&](VipArrayView<QRgb>& imout, const auto& array) {
 		  using array_type = std::decay_t<decltype(array)>;
@@ -741,16 +836,17 @@ void VipLinearColorMap::applyColorMap(const VipInterval& interval, const VipNDAr
 
 			  const_cast<VipLinearColorMap*>(this)->computeRenderColors();
 
-			  const int num_colors = this->colorRenderCount();
+			  const int num_colors = d_data->renderColorsCount;
 			  const int multiply = num_colors - 1;
 			  const int max_index = num_colors + 2;
 			  const qsizetype size = ar.size();
 			  // Make the for loop only use (almost) POD data
 			  const double one_on_width = interval.width() > 0.0 ? 1.0 / interval.width() : 0;
-			  const QRgb* palette = this->colorRender();
+			  const QRgb* palette = this->d_data->renderColors.data();
 			  const double min_value = interval.minValue();
 			  const double factor = one_on_width * multiply;
-			  if (!this->useFlatHistogram()) {
+			  if (!d_data->useFlatHistogram) {
+
 				  vipEval(imout,
 					  vipFunction(
 					    [&](auto v) {
@@ -760,29 +856,8 @@ void VipLinearColorMap::applyColorMap(const VipInterval& interval, const VipNDAr
 					    array));
 			  }
 			  else {
-				  // protect histogram, that can be used to draw the color this
-				  QWriteLocker lock(&this->d_data->histLock);
 
-				  // compute hash value
-				  size_t hash = ar.hashValue(); // vipHashBytes(ar.data(), size * sizeof(value_type));
-
-				  if (hash != this->d_data->arrayHash || this->d_data->histogram.size() == 0 || this->d_data->interval != interval ||
-				      this->d_data->lastHistStrength != this->d_data->flatHistogramStrength) {
-					  this->d_data->arrayHash = hash;
-					  this->d_data->interval = interval;
-					  this->d_data->lastHistStrength = this->d_data->flatHistogramStrength;
-
-					  // prepare array of indexes in the histogram
-					  if ((int)this->d_data->indexes.size() != size)
-						  this->d_data->indexes.resize(size);
-					  // prepare histogram
-					  this->d_data->histogram.clear();
-					  // compute array histogram
-
-					  if (this->d_data->tmpArray.shape() != array.shape())
-						  this->d_data->tmpArray.reset(array.shape());
-					  histogram(array, this->d_data->tmpArray, this->d_data->flatHistogramStrength, interval, this->d_data->histogram, this->d_data->indexes.data(), max_index);
-				  }
+				  d_data->computeHistogram(interval, array, ar.size(), ar.hashValue());
 
 				  // qint64 el1 = QDateTime::currentMSecsSinceEpoch() - start;
 
@@ -795,33 +870,37 @@ void VipLinearColorMap::applyColorMap(const VipInterval& interval, const VipNDAr
 					  // small histogram, expand to num_colors
 					  double f = num_colors / (double)(this->d_data->histogram.size());
 
+					  QRgb upper = palette[num_colors - 1];
+					  if (externalValue() == ColorFixed)
+						  upper = externalColor();
+
 					  vipEval(imout,
 						  vipFunction(
 						    [&](auto index) {
 							    if (index < max_index && index > 1)
 								    index = (int)(((index - 2) * f) + 2.5);
-								else if(index >= num_colors )
-									return qRgba(0, 0, 0, 0);
+							    else if (index >= num_colors)
+								    return upper;
 							    // Checked after the rescaling and on an unsigned, like the
 							    // computed path above: an index of 1 or less reached the
 							    // subscript untouched, negative ones included, and the rescaled
 							    // one was multiplied by f and never checked again.
 							    const unsigned i = (unsigned)index;
-							    return i >= num_colors + 3u ? qRgba(0, 0, 0, 0) : palette[i];
+							    return /* i >= num_colors + 3u ? qRgba(0, 0, 0, 0) :*/ palette[i];
 						    },
 						    VipArrayView<int>(this->d_data->indexes.data(), array.shape())));
 				  }
 				  else {
 					  // histogram of size num_colors
 					  // Same guard: this index comes out of the histogram pass, not out of a
-				  // clamp, and it indexes an array of num_colors + 3 entries.
-				  vipEval(imout,
-					  vipFunction(
-					    [&](auto index) {
-						    const unsigned i = (unsigned)index;
-						    return palette[i >= num_colors + 3u ? 0 : i];
-					    },
-					    VipArrayView<int>(this->d_data->indexes.data(), array.shape())));
+					  // clamp, and it indexes an array of num_colors + 3 entries.
+					  vipEval(imout,
+						  vipFunction(
+						    [&](auto index) {
+							    const unsigned i = (unsigned)index;
+							    return palette[i >= num_colors + 3u ? 0 : i];
+						    },
+						    VipArrayView<int>(this->d_data->indexes.data(), array.shape())));
 				  }
 			  }
 
@@ -844,6 +923,7 @@ void VipLinearColorMap::applyColorMap(const VipInterval& interval, const VipNDAr
 /// \return Index, between 0 and 255
 unsigned char VipLinearColorMap::colorIndex(const VipInterval& interval, double value) const
 {
+	SharedLock guard(d_data->histLock);
 	const double width = interval.width();
 
 	if (qIsNaN(value) || width <= 0.0 || value <= interval.minValue())
@@ -1167,7 +1247,8 @@ QGradientStops VipLinearColorMap::createGradientStops(StandardColorMap color_map
 
 		case VipLinearColorMap::Sunset:
 			colorStops_ << QGradientStop(0, QColor(0x364B9A)) << QGradientStop(0.1, QColor(0x4A7BB7)) << QGradientStop(0.2, QColor(0x6EA6CD)) << QGradientStop(0.3, QColor(0x98CAE1))
-				    << QGradientStop(0.4, QColor(0xC2E4EF)) << QGradientStop(0.5, QColor(0xEAECCC)) << QGradientStop(0.6, QColor(0xFEDA8B)) << QGradientStop(0.7, QColor(0xFDB366))
+				    << QGradientStop(0.4, QColor(0xC2E4EF)) << QGradientStop(0.5, QColor(0xEAECCC)) << QGradientStop(0.6, QColor(0xFEDA8B))
+				    << QGradientStop(0.7, QColor(0xFDB366))
 				    // 1, not 0.1: the series rises to 0.9 and this last stop fell back to
 				    // 0.1, where insert() merges it into the second one. The palette lost its
 				    // pale low end, and its last stop no longer sat at 1.
@@ -1533,4 +1614,4 @@ static int registerStreamOperators()
 	return 0;
 }
 
-static int _registerStreamOperators = vipStaticInit("registerStreamOperators",registerStreamOperators);
+static int _registerStreamOperators = vipStaticInit("registerStreamOperators", registerStreamOperators);

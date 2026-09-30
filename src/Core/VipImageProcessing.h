@@ -418,4 +418,37 @@ private:
 	QVector<qsizetype> m_buffer;
 };
 
+/// Apply an affine transformation to an input array
+class VIP_CORE_EXPORT VipAdjustImage : public VipProcessingObject
+{
+	Q_OBJECT
+	VIP_IO(VipInput input)
+	VIP_IO(VipOutput output)
+	VIP_IO(VipProperty Contrast)
+	VIP_IO(VipProperty Brightness)
+	VIP_IO(VipProperty Gamma)
+	Q_CLASSINFO("description", "Adjust image contrast, brightness and gamma")
+	Q_CLASSINFO("category", "Numeric Operation")
+
+public:
+	VipAdjustImage(QObject* parent = nullptr);
+	virtual DisplayHint displayHint() const { return InputTransform; }
+	virtual bool acceptInput(int // index
+				 ,
+				 const QVariant& v) const
+	{
+		return v.canConvert<VipNDArray>() && v.value<VipNDArray>().isRGB();
+	}
+
+	static VipRGB apply(VipRGB val, double factor, double offset, double gamma);
+	static void apply(VipRGB* rgb, qsizetype size, double contrast, double brightness, double gamma);
+
+protected:
+	virtual void apply();
+	virtual void resetProcessing();
+};
+
+VIP_REGISTER_QOBJECT_METATYPE(VipAdjustImage*)
+
+
 #endif

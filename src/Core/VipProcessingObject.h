@@ -1166,7 +1166,13 @@ public:
 	virtual VipAnyData data() const;
 	/// Reimplemented from #VipProcessingIO::setData. Set the output data, and set the data to all connected inputs.
 	virtual void setData(const VipAnyData&);
+	virtual void setData(VipAnyData&& any);
 	using VipProcessingIO::setData;
+
+	/// @brief Clear the output data and any associated buffer.
+	void clearData();
+	/// @brief Returns true is this output has a data, false otherwise.
+	bool hasData() const;
 
 	/// @brief Set a custom sending function.
 	/// @param fun function object

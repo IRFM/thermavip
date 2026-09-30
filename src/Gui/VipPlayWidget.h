@@ -319,6 +319,9 @@ public Q_SLOTS:
 	void mouseMoved(VipPlotItem*, VipPlotItem::MouseButton);
 	void mouseReleased(VipPlotItem*, VipPlotItem::MouseButton);
 
+private Q_SLOTS:
+	void setTimeInternal();
+
 Q_SIGNALS:
 	void processingPoolChanged(VipProcessingPool*);
 	void devicesChanged();

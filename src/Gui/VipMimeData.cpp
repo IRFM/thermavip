@@ -301,7 +301,15 @@ QList<VipPlotItem*> VipMimeDataDuplicatePlotItem::plotData(VipPlotItem* drop_tar
 			for (QMultiMap<VipVideoPlayer*, VipPlotShape*>::iterator it = shapes.begin(); it != shapes.end(); ++it) {
 				if (VipSceneModel s = it.value()->rawData().parent()) {
 					QString unit = s.attribute("YUnit").toString();
-					sm[unit].add(vipCopyVideoShape(it.value()->rawData(), it.key(), vpl));
+					auto shape = vipCopyVideoShape(it.value()->rawData(), it.key(), vpl);
+					// Change shape group to be one of ROI, Polylines, Points in order to be modifiable
+					if (shape.type() == VipShape::Polyline)
+						shape.setGroup("Polylines");
+					else if (shape.type() == VipShape::Point)
+						shape.setGroup("Points");
+					else
+						shape.setGroup("ROI");
+					sm[unit].add(shape);
 					sm[unit].setAttribute("YUnit", unit);
 				}
 			}

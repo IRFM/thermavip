@@ -262,7 +262,6 @@ VipOutput* VipConnection::source() const
 	return nullptr;
 }
 
-
 template<class T>
 static qsizetype indexOfSharedVector(const QVector<QSharedPointer<T>>& vec, const T* val) noexcept
 {
@@ -271,7 +270,6 @@ static qsizetype indexOfSharedVector(const QVector<QSharedPointer<T>>& vec, cons
 			return i;
 	return -1;
 }
-
 
 void VipConnection::setupConnection(const QString& addr, const VipConnectionPtr& con)
 {
@@ -552,7 +550,7 @@ void VipConnection::doSendData(const VipAnyData& data)
 
 void VipConnection::doClearConnection()
 {
-	//VipConnectionPtr con = sharedFromThis();
+	// VipConnectionPtr con = sharedFromThis();
 	VipConnectionVector connections;
 	{
 		VipUniqueLock<VipSpinlock> locker(d_data->lock);
@@ -814,7 +812,7 @@ UniqueProcessingIO::UniqueProcessingIO(const UniqueProcessingIO& other)
 
 UniqueProcessingIO::~UniqueProcessingIO()
 {
-	//clearConnection();
+	// clearConnection();
 }
 
 void UniqueProcessingIO::setParentProcessing(VipProcessingObject* parent)
@@ -1151,6 +1149,22 @@ VipAnyData VipOutput::data() const
 	return *d_data;
 }
 
+void VipOutput::clearData()
+{
+	VipUniqueLock<VipSpinlock> lock(m_data_lock);
+	*d_data = {};
+	if (m_bufferize_outputs) {
+		VipUniqueLock<VipSpinlock> lock(m_buffer_lock);
+		m_buffer.clear();
+	}
+}
+
+bool VipOutput::hasData() const
+{
+	VipUniqueLock<VipSpinlock> lock(const_cast<VipSpinlock&>(m_data_lock));
+	return d_data->time() != VipInvalidTime && !d_data->data().isNull();
+}
+
 void VipOutput::setData(const VipAnyData& d)
 {
 	{
@@ -1163,6 +1177,30 @@ void VipOutput::setData(const VipAnyData& d)
 		// send its datum instead of ours. Sending happens outside the lock, since it
 		// reaches arbitrary code downstream.
 		VipAnyData sent = d;
+		if (VipProcessingObject* obj = parentProcessing())
+			obj->setOutputDataTime(sent);
+		connection()->sendData(sent);
+		if (m_custom_sender)
+			m_custom_sender(sent);
+		if (m_bufferize_outputs) {
+			VipUniqueLock<VipSpinlock> lock(m_buffer_lock);
+			m_buffer.push_back(d);
+		}
+	}
+}
+
+void VipOutput::setData(VipAnyData&& d) 
+{
+	{
+		VipUniqueLock<VipSpinlock> lock(m_data_lock);
+		*d_data = d;
+	}
+	if (isEnabled()) {
+		// The datum sent is the one received, not a re-read of the shared member:
+		// another thread setting this output between the two used to make this call
+		// send its datum instead of ours. Sending happens outside the lock, since it
+		// reaches arbitrary code downstream.
+		VipAnyData sent = std::move(d);
 		if (VipProcessingObject* obj = parentProcessing())
 			obj->setOutputDataTime(sent);
 		connection()->sendData(sent);
@@ -1247,7 +1285,7 @@ public:
 	// body left the active set empty, so no error code was ever logged.
 	static QSet<int> defaultLogErrors()
 	{
-		return QSet<int>{ VipProcessingObject::RuntimeError,	   VipProcessingObject::WrongInput,	VipProcessingObject::WrongInputNumber,
+		return QSet<int>{ VipProcessingObject::RuntimeError,	  VipProcessingObject::WrongInput,    VipProcessingObject::WrongInputNumber,
 				  VipProcessingObject::ConnectionNotOpen, VipProcessingObject::DeviceNotOpen, VipProcessingObject::IOError };
 	}
 
@@ -2488,7 +2526,7 @@ VipProcessingObject::VipProcessingObject(QObject* parent)
   : VipErrorHandler()
 {
 	VIP_CREATE_PRIVATE_DATA();
-		
+
 	this->setParent(parent);
 
 	VipProcessingManager::instance().add(this);
@@ -2866,7 +2904,7 @@ VipProcessingObject::Info VipProcessingObject::info() const
 		return d_data->info;
 
 	Info res;
-	res.metatype = vipMetaTypeFromQObject(this); 
+	res.metatype = vipMetaTypeFromQObject(this);
 	res.classname = className();
 	res.displayHint = this->displayHint();
 
@@ -3347,7 +3385,7 @@ QTransform VipProcessingObject::globalImageTransform()
 		// leaf processing do not have image transforms
 		if (inspected[i]->outputCount() > 0) {
 			// wait for the processing to update
-			inspected[i]->wait(true,100);
+			inspected[i]->wait(true, 100);
 			tr *= inspected[i]->imageTransform();
 		}
 	}
@@ -3425,7 +3463,7 @@ static bool openIOConnection(UniqueProcessingIO* io, VipConnection::IOType type,
 	}
 	if (connection->openConnection(type))
 		return true;
-	//VIP_LOG_ERROR("Cannot open connection for " + processing + "/" + io->name() + ", address: " + connection->address());
+	// VIP_LOG_ERROR("Cannot open connection for " + processing + "/" + io->name() + ", address: " + connection->address());
 	return false;
 }
 
@@ -3547,8 +3585,6 @@ bool VipProcessingObject::deleteOnOutputConnectionsClosed() const
 {
 	return d_data->parameters.deleteOnOutputConnectionsClosed;
 }
-
-
 
 void VipProcessingObject::setEnabled(bool enable)
 {
@@ -4636,16 +4672,19 @@ void VipProcessingList::applyFrom(VipProcessingObject* obj)
 	VipAnyData data;
 	if (index < 0) {
 		data = inputAt(0)->data();
-		if (objects[0]->isEnabled()) {
-			objects[0]->inputAt(0)->setData(data);
-			objects[0]->update(true);
+		auto* obj = objects[0];
+		if (obj->isEnabled()) {
+			obj->inputAt(0)->setData(data);
+			obj->update(true);
 
-			if (objects[0]->hasError()) {
-				if (objects[0]->lastErrors().size())
-					this->setError(objects[0]->lastErrors().last());
+			if (obj->hasError()) {
+				if (obj->lastErrors().size())
+					this->setError(obj->lastErrors().last());
 			}
 			else {
-				VipAnyData tmp = objects[0]->outputAt(0)->data();
+				VipAnyData tmp = obj->outputAt(0)->data();
+				if (tmp.isEmpty())
+					goto finish;
 				data.mergeAttributes(tmp.attributes());
 				data.setData(tmp.data());
 			}
@@ -4661,58 +4700,64 @@ void VipProcessingList::applyFrom(VipProcessingObject* obj)
 		data.setTime(lastTime);
 	}
 
-	index = qMax(index, 0);
+	{
+		index = qMax(index, 0);
 
-	const VipNDArray src_ar = objects.size() ? objects.first()->inputAt(0)->probe().value<VipNDArray>() : VipNDArray();
+		const VipNDArray src_ar = objects.size() ? objects.first()->inputAt(0)->probe().value<VipNDArray>() : VipNDArray();
 
-	bool need_compute_transform = !src_ar.isEmpty() && src_ar.shapeCount() == 2;
+		bool need_compute_transform = !src_ar.isEmpty() && src_ar.shapeCount() == 2;
 
-	if (!objects[index]->hasError()) {
-		for (int i = index + 1; i < objects.size(); ++i) {
-			if (!objects[i]->isEnabled())
-				continue;
-			objects[i]->inputAt(0)->setData(data);
-			objects[i]->update(true);
+		if (!objects[index]->hasError()) {
+			for (int i = index + 1; i < objects.size(); ++i) {
+				auto* obj = objects[i];
+				if (!obj->isEnabled())
+					continue;
+				obj->inputAt(0)->setData(data);
+				obj->update(true);
 
-			if (objects[i]->hasError()) {
-				if (objects[i]->lastErrors().size())
-					this->setError(objects[i]->lastErrors().last());
-				break;
+				if (obj->hasError()) {
+					if (obj->lastErrors().size())
+						this->setError(obj->lastErrors().last());
+					break;
+				}
+
+				VipAnyData tmp = obj->outputAt(0)->data();
+				if (tmp.isEmpty())
+					goto finish;
+				data.mergeAttributes(tmp.attributes());
+				data.setData(tmp.data());
 			}
-
-			VipAnyData tmp = objects[i]->outputAt(0)->data();
-			data.mergeAttributes(tmp.attributes());
-			data.setData(tmp.data());
 		}
-	}
 
-	QTransform tr;
-	if (need_compute_transform) {
-		// compute the list image transform
-		QMutexLocker lock(&d_data->mutex);
-		tr = computeTransform();
-	}
-
-	// for (int i = 0; i < d_data->objects.size(); ++i)
-	//	d_data->objects[i]->blockSignals(false);
-
-	// vip_debug("1 %s name: %s\n",objectName().toLatin1().data(), attribute("Name").toString().toLatin1().data());
-	VipAnyData out = create(data.data(), data.attributes());
-	out.setTime(data.time());
-	if (!overrideName.isEmpty())
-		out.setName(overrideName);
-	// vip_debug("2 %s name: %s\n", objectName().toLatin1().data(), out.name().toLatin1().data());
-
-	outputAt(0)->setData(out);
-
-	if (tr != previousTransform) {
-		{
+		QTransform tr;
+		if (need_compute_transform) {
+			// compute the list image transform
 			QMutexLocker lock(&d_data->mutex);
-			d_data->transform = tr;
+			tr = computeTransform();
 		}
-		emitImageTransformChanged();
+
+		// for (int i = 0; i < d_data->objects.size(); ++i)
+		//	d_data->objects[i]->blockSignals(false);
+
+		// vip_debug("1 %s name: %s\n",objectName().toLatin1().data(), attribute("Name").toString().toLatin1().data());
+		VipAnyData out = create(data.data(), data.attributes());
+		out.setTime(data.time());
+		if (!overrideName.isEmpty())
+			out.setName(overrideName);
+		// vip_debug("2 %s name: %s\n", objectName().toLatin1().data(), out.name().toLatin1().data());
+
+		outputAt(0)->setData(out);
+
+		if (tr != previousTransform) {
+			{
+				QMutexLocker lock(&d_data->mutex);
+				d_data->transform = tr;
+			}
+			emitImageTransformChanged();
+		}
 	}
 
+finish:
 	if (obj) {
 		// this function wasn't called from apply(), the signal processingDone() is not emitted, so emit it
 		qint64 elapsed = vipGetNanoSecondsSinceEpoch() - st;

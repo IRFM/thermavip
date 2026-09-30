@@ -995,6 +995,7 @@ bool VipDisplayImage::prepareForDisplay(const VipAnyDataList& data)
 				}
 				else
 					curve->setData(v);
+				
 			}
 			else if (v.userType() == qMetaTypeId<VipRasterData>()) {
 				const VipRasterData raster = v.value<VipRasterData>();

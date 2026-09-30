@@ -369,6 +369,11 @@ protected:
 	/// using QOpenGLContext::currentContext().
 	void drawFunction(const std::function<void(QPainter*)>& fun);
 
+	/// @brief Stop the rendering thread and wait for completion.
+	/// This function MUST be called in derived classes destructor
+	/// in case paintGL() is reimplemented.
+	void shutdownRendering();
+
 	/// @brief Initialize the opengl context.
 	/// This function is atomatically called at the beginning
 	/// of the rendering thread.
@@ -405,7 +410,7 @@ private Q_SLOTS:
 	/// However, if using multiple QPainter objects do draw on the
 	/// QThreadOpenGLWidget, this function might be called explicitly
 	/// (along with stopRendering()) to avoid partial drawings.
-	void startRendering();
+	void startRendering(bool capture = false);
 	void stopRendering();
 
 private:

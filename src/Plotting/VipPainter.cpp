@@ -1286,10 +1286,15 @@ void VipPainter::drawRoundedFrame(QPainter* painter, const QRectF& rect, double 
 /// \param scaleMap Scale map
 /// \param orientation Orientation
 /// \param rect Traget rectangle
-void VipPainter::drawColorBar(QPainter* painter, VipColorMap& colorMap, const VipInterval& interval, const VipScaleMap& scaleMap, Qt::Orientation orientation, const QRectF& rect, QImage* pixmap)
+void VipPainter::drawColorBar(QPainter* painter,
+			      VipColorMap& colorMap,
+			      const VipInterval& interval,
+			      const VipScaleMap& scaleMap,
+			      Qt::Orientation orientation,
+			      const QRectF& rect,
+			      QImage* pixmap,
+			      const std::function<QRgb(QRgb)>& adjust)
 {
-	colorMap.startDraw();
-
 	const QVector<QRgb> colorTable = (colorMap.format() == VipColorMap::Indexed) ? colorMap.colorTable(interval) : QVector<QRgb>();
 
 	QColor c;
@@ -1321,6 +1326,10 @@ void VipPainter::drawColorBar(QPainter* painter, VipColorMap& colorMap, const Vi
 			else
 				c = colorTable[colorMap.colorIndex(interval, value)];
 
+			if (adjust) {
+				c.setRgb(adjust(c.rgb()));
+			}
+
 			pmPainter.setPen(c);
 			pmPainter.drawLine(x, devRect.top(), x, devRect.bottom());
 		}
@@ -1338,6 +1347,11 @@ void VipPainter::drawColorBar(QPainter* painter, VipColorMap& colorMap, const Vi
 			const double value = sMap.invTransform(y);
 
 			QRgb color = colorMap.format() == VipColorMap::RGB ? colorMap.rgb(interval, value) : colorTable[colorMap.colorIndex(interval, value)];
+
+			if (adjust) {
+				color = (adjust(color));
+			}
+
 			int yp = y - devRect.top();
 			std::fill_n(pix + yp * width, width, color);
 			/* if (colorMap.format() == VipColorMap::RGB)
@@ -1352,8 +1366,6 @@ void VipPainter::drawColorBar(QPainter* painter, VipColorMap& colorMap, const Vi
 
 	QRectF tmp = rect;
 	drawImage(painter, tmp, *pixmap);
-
-	colorMap.endDraw();
 }
 
 static inline void vipFillRect(const QWidget* widget, QPainter* painter, const QRect& rect, const QBrush& brush)

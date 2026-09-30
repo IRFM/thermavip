@@ -33,6 +33,13 @@
 
 #include <mutex>
 #include <functional>
+#include <memory>
+#include <atomic>
+#include <cstddef>
+#include <cstdint>
+#include <climits>
+#include <type_traits>
+#include <utility>
 
 #include <QPicture>
 #include <qapplication.h>
@@ -94,7 +101,7 @@ struct TiledPixmapItem
 	QPixmap pixmap;
 	QPointF pos;
 };
-static QRectF itemBoundingRect(const TiledPixmapItem& it) noexcept
+static ALWAYS_INLINE QRectF itemBoundingRect(const TiledPixmapItem& it) noexcept
 {
 	return it.rect;
 }
@@ -106,7 +113,7 @@ struct PixmapItem
 	QPixmap pixmap;
 	QRectF src;
 };
-static QRectF itemBoundingRect(const PixmapItem& it) noexcept
+static ALWAYS_INLINE QRectF itemBoundingRect(const PixmapItem& it) noexcept
 {
 	return it.rect;
 }
@@ -119,7 +126,7 @@ struct ImageItem
 	QRectF src;
 	Qt::ImageConversionFlags flags;
 };
-static QRectF itemBoundingRect(const ImageItem& it) noexcept
+static ALWAYS_INLINE QRectF itemBoundingRect(const ImageItem& it) noexcept
 {
 	return it.rect;
 }
@@ -184,14 +191,14 @@ struct StaticVector
 		count = (qint64)len;
 	}
 
-	const T* data() const noexcept { return count == 1 ? &one : vec.data(); }
-	size_t size() const noexcept { return count; }
-	const T& back() const noexcept { return count == 1 ? one : vec.back(); }
-	T& back() noexcept { return count == 1 ? one : vec.back(); }
-	iterator begin() const noexcept { return data(); }
-	iterator end() const noexcept { return data() + count; }
+	ALWAYS_INLINE const T* data() const noexcept { return count == 1 ? &one : vec.data(); }
+	ALWAYS_INLINE size_t size() const noexcept { return count; }
+	ALWAYS_INLINE const T& back() const noexcept { return count == 1 ? one : vec.back(); }
+	ALWAYS_INLINE T& back() noexcept { return count == 1 ? one : vec.back(); }
+	ALWAYS_INLINE iterator begin() const noexcept { return data(); }
+	ALWAYS_INLINE iterator end() const noexcept { return data() + count; }
 	template<class U>
-	void pushBack(U&& v)
+	ALWAYS_INLINE void pushBack(U&& v)
 	{
 		if (!count) {
 			one = std::forward<U>(v);
@@ -204,19 +211,19 @@ struct StaticVector
 		++count;
 	}
 	template<class U>
-	void append(const StaticVector<U>& vec)
+	ALWAYS_INLINE void append(const StaticVector<U>& vec)
 	{
 		for (const U& v : vec)
 			pushBack(v);
 	}
 	template<class U>
-	void append(StaticVector<U>&& vec)
+	ALWAYS_INLINE void append(StaticVector<U>&& vec)
 	{
 		for (U& v : vec)
 			pushBack(std::move(v));
 	}
 	template<class U>
-	void append(const U* vec, int count)
+	ALWAYS_INLINE void append(const U* vec, int count)
 	{
 		for (int i = 0; i < count; ++i)
 			pushBack(vec[i]);
@@ -252,6 +259,13 @@ struct ClipRect
 	// Clip rectangle used for partial or full update
 	QRectF rect;
 	QBrush brush;
+	QColor paletteWindow = Qt::transparent;
+	QSize pixels;
+	qreal dpr = 1;
+	int dpiX = 96, dpiY = 96;
+	QPaintRecord::Optimizations options;
+	bool capture = false;
+	quint64 frameId = 0;
 };
 
 template<class T, class U>
@@ -265,25 +279,25 @@ ALWAYS_INLINE DrawVector<T> toVector(const U* begin, const U* end)
 // Bounding rectangle of common drawing items
 //
 
-static QRectF itemBoundingRect(const QPointF& it) noexcept
+static ALWAYS_INLINE QRectF itemBoundingRect(const QPointF& it) noexcept
 {
 	return QRectF(it, QSizeF(1, 1));
 }
-static QRectF itemBoundingRect(const QRectF& it) noexcept
+static ALWAYS_INLINE QRectF itemBoundingRect(const QRectF& it) noexcept
 {
 	return it;
 }
-static QRectF itemBoundingRect(const QPainterPath& it) noexcept
+static ALWAYS_INLINE QRectF itemBoundingRect(const QPainterPath& it) noexcept
 {
 	return it.boundingRect();
 }
-static QRectF itemBoundingRect(const QLineF& it) noexcept
+static ALWAYS_INLINE QRectF itemBoundingRect(const QLineF& it) noexcept
 {
 	return QRectF(it.p1(), it.p2()).normalized();
 }
 
 template<class T>
-static QRectF itemBoundingRect(const StaticVector<T>& it) noexcept
+static ALWAYS_INLINE QRectF itemBoundingRect(const StaticVector<T>& it) noexcept
 {
 	if (it.count == 1)
 		return itemBoundingRect(it.one);
@@ -293,7 +307,7 @@ static QRectF itemBoundingRect(const StaticVector<T>& it) noexcept
 	return r;
 }
 template<class T>
-static QRectF itemBoundingRect(const T* items, int count) noexcept
+static ALWAYS_INLINE QRectF itemBoundingRect(const T* items, int count) noexcept
 {
 	QRectF r;
 	for (int i = 0; i < count; ++i)
@@ -301,7 +315,7 @@ static QRectF itemBoundingRect(const T* items, int count) noexcept
 	return r;
 }
 
-static QRectF itemBoundingRect(const TextItem& it) noexcept
+static ALWAYS_INLINE QRectF itemBoundingRect(const TextItem& it) noexcept
 {
 	if (!it.boundingRect.isEmpty())
 		return it.boundingRect;
@@ -359,7 +373,7 @@ static QRectF estimateStringRect(const QString& text, const QFont& f)
 	return res;
 }
 
-static bool isStraight(const QLineF& line) noexcept
+static ALWAYS_INLINE bool isStraight(const QLineF& line) noexcept
 {
 	// Check if line is horizontal or vertical
 	return line.p1().x() == line.p2().x() || line.p1().y() == line.p2().y();
@@ -389,7 +403,7 @@ static void drawLinesAliasing(QPainter* p, const QLineF* data, int size)
 		p->setRenderHint(QPainter::Antialiasing, hint);
 }
 
-static bool isVectoriel(QPainter* painter) noexcept
+static ALWAYS_INLINE bool isVectoriel(QPainter* painter) noexcept
 {
 	// Check if painter draws on a vectoriel engine
 	return painter->paintEngine() && (painter->paintEngine()->type() == QPaintEngine::SVG || painter->paintEngine()->type() == QPaintEngine::MacPrinter ||
@@ -414,15 +428,15 @@ struct BaseCommandBatch
 	BaseCommandBatch() { prev = next = this; }
 	virtual ~BaseCommandBatch() noexcept {}
 	ALWAYS_INLINE CommandBatch* command() noexcept { return reinterpret_cast<CommandBatch*>(this); }
-	ALWAYS_INLINE bool isSeparator() const noexcept { return tail == COMMAND_SIZE; }
+	ALWAYS_INLINE bool isSeparator() const noexcept { return finish.load(std::memory_order_acquire) && tail == COMMAND_SIZE; }
 
-	void erase()
+	ALWAYS_INLINE void erase()
 	{
 		prev->next = next;
 		next->prev = prev;
 		next = prev = this;
 	}
-	void insert(BaseCommandBatch* after)
+	ALWAYS_INLINE void insert(BaseCommandBatch* after)
 	{
 		prev = after;
 		next = after->next;
@@ -479,14 +493,14 @@ public:
 		int cmd{ 0 };		// Command id
 		int cmd_tail{ 0 };	// tail position for the command id
 		void* value{ nullptr }; // Actual command value (PixmapItem, QPainterPath, QBrush ...)
-		int commandType() const noexcept { return cmd; }
+		ALWAYS_INLINE int commandType() const noexcept { return cmd; }
 	};
 
 	// Raw buffer of commands.
 	// Command values (PixmapItem, QPainterPath, QBrush ...)
 	// start at the head of the buffer.
 	// Command ids start at the tail in reverse order.
-	char data[COMMAND_SIZE - sizeof(BaseCommandBatch)];
+	alignas(std::max_align_t) char data[COMMAND_SIZE - sizeof(BaseCommandBatch)];
 
 	static int bytes(int cmd) noexcept
 	{
@@ -711,7 +725,7 @@ public:
 	}
 
 	template<class T>
-	bool pushBack(int cmd, T&& value)
+	ALWAYS_INLINE bool pushBack(int cmd, T&& value)
 	{
 		// Append a command
 		using value_type = typename std::decay<T>::type;
@@ -771,7 +785,7 @@ public:
 		return res;
 	}
 
-	static qint64 read64(void* p, int offset) noexcept { return *reinterpret_cast<qint64*>((char*)p + offset); }
+	static ALWAYS_INLINE qint64 read64(void* p, int offset) noexcept { return *reinterpret_cast<qint64*>((char*)p + offset); }
 
 	void apply(QPainter* p, QPaintRecord::Optimizations opt, const QTransform& worldMatrix = QTransform(), QThreadOpenGLWidget* widget = nullptr, bool drawBackground = true) const
 	{
@@ -993,9 +1007,10 @@ class CommandQueue
 {
 	BaseCommandBatch end;	     // end node for the linked list of BaseCommandBatch
 	std::atomic<int> count{ 0 }; // total number of commands
-	QRectF bRect;		     // exact bounding rectangle
-	QRectF eRect;		     // estimated bounding rectangle
-	QMutex lock;		     // mutex
+	std::atomic<bool> rectsDirty{ true };
+	QRectF bRect; // exact bounding rectangle
+	QRectF eRect; // estimated bounding rectangle
+	QMutex lock;  // mutex
 
 	template<class T>
 	bool emplaceBackSlow(int type, T&& cmd)
@@ -1008,7 +1023,14 @@ class CommandQueue
 		return true;
 	}
 
-	void invalidateRects() noexcept { bRect = eRect = QRectF(); }
+	ALWAYS_INLINE void invalidateRects() noexcept { rectsDirty.store(true); }
+
+	// Caller must hold lock.
+	ALWAYS_INLINE void refreshRectCacheIfNeeded() noexcept
+	{
+		if (rectsDirty.exchange(false))
+			bRect = eRect = QRectF();
+	}
 
 public:
 	ALWAYS_INLINE CommandQueue() noexcept {}
@@ -1036,7 +1058,7 @@ public:
 	}
 
 	template<class T>
-	bool emplaceBack(int type, T&& cmd)
+	ALWAYS_INLINE bool emplaceBack(int type, T&& cmd)
 	{
 		// Push back a command.
 		// Returns true if a CommandBatch allocation was required,
@@ -1076,9 +1098,15 @@ public:
 			std::lock_guard<QMutex> ll(lock);
 			first = end.next;
 
-			// make sure the remaining part does not have a clipping rect
+			// An unfinished head is still owned by the producer.
+			// Do not inspect its command storage.
+			if (first == &end || !first->finish.load(std::memory_order_acquire))
+				return 0;
+
+			// A separator is a BaseCommandBatch, not a CommandBatch.
+			// Make sure the remaining part does not have a clipping rect
 			// as partial updates should not be removed
-			if (first != &end && first->command()->begin().cmd == CommandBatch::DrawClipRect)
+			if (!first->isSeparator() && first->command()->begin().cmd == CommandBatch::DrawClipRect)
 				return 0;
 
 			BaseCommandBatch* c = end.prev;
@@ -1122,13 +1150,13 @@ public:
 		BaseCommandBatch* c = first;
 		while (c != last_sep) {
 			BaseCommandBatch* next = c->next;
-			c->erase();
+			// c->erase(); // Not necessary
 			count -= (int)c->count;
 			destroyCommand(c);
 			c = next;
 			++res;
 		}
-		last_sep->erase();
+		// last_sep->erase(); // Not necessary
 		destroyCommand(last_sep);
 		return res + 1;
 	}
@@ -1164,6 +1192,8 @@ public:
 		// Full commands bounding rectangle
 		QRectF rect;
 		std::lock_guard<QMutex> ll(lock);
+		refreshRectCacheIfNeeded();
+
 		if (!bRect.isEmpty())
 			return bRect;
 		BaseCommandBatch* c = end.next;
@@ -1179,6 +1209,8 @@ public:
 		// Full commands bounding rectangle estimation
 		QRectF rect;
 		std::lock_guard<QMutex> ll(lock);
+		refreshRectCacheIfNeeded();
+
 		if (!bRect.isEmpty())
 			return bRect;
 		if (!eRect.isEmpty())
@@ -1306,6 +1338,7 @@ public:
 			auto e = d_device->back();
 			LineFVector& vec = *static_cast<LineFVector*>(e.value);
 			vec.append(lines, lineCount);
+			return;
 		}
 		d_device->emplaceBack(CommandBatch::DrawLinesF, toVector<QLineF>(lines, lines + lineCount));
 	}
@@ -1316,6 +1349,7 @@ public:
 		if (batchCommands() && d_device->count() > 0 && d_device->backType() == CommandBatch::DrawLinesF) {
 			LineFVector& vec = *static_cast<LineFVector*>(d_device->back().value);
 			vec.append(lines, lineCount);
+			return;
 		}
 		d_device->emplaceBack(CommandBatch::DrawLinesF, toVector<QLineF>(lines, lines + lineCount));
 	}
@@ -1466,6 +1500,25 @@ public:
 	virtual QPaintEngine::Type type() const { return d_type; }
 };
 
+static int defaultDpiX()
+{
+	if (QCoreApplication::instance()->testAttribute(Qt::AA_Use96Dpi))
+		return 96;
+	if (const QScreen* screen = QGuiApplication::primaryScreen())
+		return qRound(screen->logicalDotsPerInchX());
+	// PI has not been initialised, or it is being initialised. Give a default dpi
+	return 100;
+}
+static int defaultDpiY()
+{
+	if (QCoreApplication::instance()->testAttribute(Qt::AA_Use96Dpi))
+		return 96;
+	if (const QScreen* screen = QGuiApplication::primaryScreen())
+		return qRound(screen->logicalDotsPerInchY());
+	// PI has not been initialised, or it is being initialised. Give a default dpi
+	return 100;
+}
+
 class QPaintRecord::PrivateData
 {
 public:
@@ -1482,6 +1535,10 @@ public:
 	CommandQueue commands;
 	QPaintEngine::Type type{ QPaintEngine ::Windows };
 	PicturePaintEngine<PrivateData> engine;
+
+	// Initialized on the recording thread, before publishing the record.
+	const int recordingDpiX = defaultDpiX();
+	const int recordingDpiY = defaultDpiY();
 
 	ALWAYS_INLINE int count() noexcept { return commands.lastCount(); }
 	template<class T>
@@ -1528,29 +1585,15 @@ uint QPaintRecord::size() const noexcept
 	return d_ptr->commands.size();
 }
 
-static int defaultDpiX()
-{
-	if (QCoreApplication::instance()->testAttribute(Qt::AA_Use96Dpi))
-		return 96;
-	if (const QScreen* screen = QGuiApplication::primaryScreen())
-		return qRound(screen->logicalDotsPerInchX());
-	// PI has not been initialised, or it is being initialised. Give a default dpi
-	return 100;
-}
-static int defaultDpiY()
-{
-	if (QCoreApplication::instance()->testAttribute(Qt::AA_Use96Dpi))
-		return 96;
-	if (const QScreen* screen = QGuiApplication::primaryScreen())
-		return qRound(screen->logicalDotsPerInchY());
-	// PI has not been initialised, or it is being initialised. Give a default dpi
-	return 100;
-}
-
 bool QPaintRecord::play(QPainter* p, Optimizations opts) const
 {
+	if (!p || !p->isActive())
+		return false;
+
 	QTransform worldMatrix = p->transform();
-	worldMatrix.scale(qreal(p->device()->logicalDpiX()) / qreal(defaultDpiX()), qreal(p->device()->logicalDpiY()) / qreal(defaultDpiY()));
+
+	worldMatrix.scale(qreal(p->device()->logicalDpiX()) / d_ptr->recordingDpiX, qreal(p->device()->logicalDpiY()) / d_ptr->recordingDpiY);
+
 	p->setTransform(worldMatrix);
 	d_ptr->commands.apply(p, opts, worldMatrix);
 	return true;
@@ -1611,11 +1654,11 @@ int QPaintRecord::metric(PaintDeviceMetric m) const
 			break;
 		case PdmDpiX:
 		case PdmPhysicalDpiX:
-			val = defaultDpiX();
+			val = d_ptr->recordingDpiX;
 			break;
 		case PdmDpiY:
 		case PdmPhysicalDpiY:
-			val = defaultDpiY();
+			val = d_ptr->recordingDpiY;
 			break;
 		case PdmNumColors:
 			val = 16777216;
@@ -1640,38 +1683,72 @@ int QPaintRecord::metric(PaintDeviceMetric m) const
 class OpenGLWindow : public QWindow
 {
 public:
+	enum GLError
+	{
+		CreateFailed = 1,
+		MakeCurrentFailed,
+		FunctionsFailed,
+		PainterBeginFailed,
+		WindowDestroyed
+	};
+
 	struct RenderingThread : QThread
 	{
-		QWindow* window{ nullptr };
+		std::atomic<OpenGLWindow*> window{ nullptr };
 		QThreadOpenGLWidget* parent{ nullptr };
 		CommandQueue* commands{ nullptr };
 
 		QMutex lock;
 		QWaitCondition cond;
-		std::atomic<bool> finished{ false };
+		std::atomic<quint64> completedFrameId{ 0 };
 		std::atomic<QOpenGLContext*> context{ nullptr };
+		std::atomic<int> glerror{ 0 };
 
 		// Members used for offscreen rendering
 		QOffscreenSurface surface;
-		std::atomic<bool> inBuffer{ false };
 		QImage bufferImage;
 
-		void wait_for(int ms)
+		ALWAYS_INLINE void wait_for(int ms)
 		{
 			std::lock_guard<QMutex> ll(lock);
 			cond.wait(&lock, ms);
 		}
+
+		void purgeCommands(BaseCommandBatch* cmd)
+		{
+			if (cmd)
+				destroyCommand(cmd);
+			cmd = commands->popCommandFront();
+			if (!cmd || !cmd->isSeparator()) {
+				// Purge remaining commands
+				do {
+					if (cmd)
+						destroyCommand(cmd);
+					cmd = commands->popCommandFront();
+					if (!cmd)
+						wait_for(1);
+				} while ((!cmd || !cmd->isSeparator()) && window.load(std::memory_order_relaxed));
+			}
+			if (cmd)
+				destroyCommand(cmd);
+		}
+
 		virtual void run()
 		{
 			// Create the opengl context
 			QOpenGLContext thread_context;
-			thread_context.setFormat(window->requestedFormat());
-			thread_context.create();
+			thread_context.setFormat(window.load()->requestedFormat());
+			if (!thread_context.create()) {
+				qWarning("QOpenGLContext::create() returned false");
+				glerror.store(CreateFailed);
+				return;
+			}
 			context.store(&thread_context);
+
 			bool first = true;
 			QSize surface_size;
 
-			while (QWindow* v = window) {
+			while (OpenGLWindow* v = window.load(std::memory_order_relaxed)) {
 
 				// retrieve commands
 				commands->popFrontUntilSeparator();
@@ -1681,98 +1758,182 @@ public:
 					continue;
 				}
 
-				// Start rendering loop
-				// qint64 st = QDateTime::currentMSecsSinceEpoch();
+				ClipRect clip;
 
-				const bool offscreenRendering = inBuffer.load();
-				std::unique_ptr<QOpenGLFramebufferObject> frame;
-				if (offscreenRendering) {
-					// Offscreen drawinf
-					thread_context.makeCurrent(&surface);
-					QOpenGLFramebufferObjectFormat format;
-					format.setSamples(surface.format().samples());
-					format.setAttachment(QOpenGLFramebufferObject::CombinedDepthStencil);
-					frame.reset(new QOpenGLFramebufferObject(v->size(), format));
-					frame->setAttachment(QOpenGLFramebufferObject::CombinedDepthStencil);
-					frame->bind();
-					inBuffer.store(false);
-				}
-				else
-					thread_context.makeCurrent(v);
+				glerror.store(0);
 
-				if (first) {
-					QOpenGLFunctions* glFuncs = QOpenGLContext::currentContext()->functions();
+				{
+					// Start rendering loop
+					// qint64 st = QDateTime::currentMSecsSinceEpoch();
 
-					// First rendering: draw background
-					QColor back = parent->palette().color(QPalette::Window);
-					glFuncs->glClearColor(back.red() * 0.00390625, back.green() * 0.00390625, back.blue() * 0.00390625, back.alpha() * 0.00390625);
-					glFuncs->glClear(GL_COLOR_BUFFER_BIT);
+					// Store requested size/dpi
+					if (cmd->command()->count) {
+						auto beg = cmd->command()->begin();
+						if (beg.commandType() == CommandBatch::DrawClipRect || beg.commandType() == CommandBatch::DrawViewBackground)
+							clip = *static_cast<ClipRect*>(beg.value);
+					}
 
-					// Call initializeGL()
-					parent->initializeGL();
-					first = false;
-				}
+					const bool offscreenRendering = clip.capture;
+					std::unique_ptr<QOpenGLFramebufferObject> frame;
+					bool has_current_context = false;
 
-				QSize actual_size = v->size();
-				if (surface_size != actual_size) {
-					// Call resizeGL() in case of window size change
-					surface_size = actual_size;
-					parent->resizeGL(actual_size.width(), actual_size.height());
-				}
-
-				// Initialize the painter
-				QOpenGLPaintDevice device(actual_size);
-				QPainter p;
-				p.begin(&device);
-
-				// Apply the first command which is a background drawing,
-				// then call paintGL()
-				if (cmd) {
-					cmd->command()->apply(&p, parent->optimizations(), QTransform(), parent, !offscreenRendering);
-					destroyCommand(cmd);
-				}
-				cmd = commands->popCommandFront();
-				if (!cmd || !cmd->isSeparator()) {
-					// Apply remaining commands
-					do {
-						if (cmd) {
-							cmd->command()->apply(&p, parent->optimizations());
-							destroyCommand(cmd);
+					std::unique_lock<QMutex> guard(v->surfaceEvent, std::defer_lock);
+					if (!offscreenRendering) {
+						guard.lock();
+						if (!v->surfaceAlive || v->surfaceTeardownRequested.load(std::memory_order_acquire)) {
+							guard.unlock();
+							purgeCommands(cmd);
+							goto publish;
 						}
-						cmd = commands->popCommandFront();
-						if (!cmd)
-							wait_for(1);
-					} while ((!cmd || !cmd->isSeparator()) && window);
-					if (cmd)
-						destroyCommand(cmd);
-				}
-				p.end();
+					}
 
-				// Swap buffers
-				if (offscreenRendering) {
-					frame->release();
-					thread_context.swapBuffers(&surface);
-					bufferImage = frame->toImage();
-					frame.reset();
-				}
-				else
-					thread_context.swapBuffers(v);
+					if (offscreenRendering) {
+						// Offscreen drawing
+						if (has_current_context = thread_context.makeCurrent(&surface)) {
 
-				thread_context.doneCurrent();
+							QOpenGLFramebufferObjectFormat format;
+							format.setSamples(surface.format().samples());
+							format.setAttachment(QOpenGLFramebufferObject::CombinedDepthStencil);
+							frame.reset(new QOpenGLFramebufferObject(clip.pixels, format));
+							frame->setAttachment(QOpenGLFramebufferObject::CombinedDepthStencil);
+							has_current_context = frame->bind();
+						}
+					}
+					else
+						has_current_context = thread_context.makeCurrent(v);
+
+					if (!has_current_context) {
+						qWarning("QOpenGLContext: cannot set current context or cannot bind QOpenGLFramebufferObjectFormat");
+						glerror.store(MakeCurrentFailed);
+						frame.reset();
+						if (QOpenGLContext::currentContext() == &thread_context)
+							thread_context.doneCurrent();
+						if (guard.owns_lock())
+							guard.unlock();
+						purgeCommands(cmd);
+						goto publish;
+					}
+
+					if (first) {
+						if (QOpenGLFunctions* glFuncs = QOpenGLContext::currentContext()->functions()) {
+
+							// First rendering: draw background
+							QColor back = clip.paletteWindow;
+							if (back != Qt::transparent)
+								glFuncs->glClearColor(back.red() * 0.00390625, back.green() * 0.00390625, back.blue() * 0.00390625, back.alpha() * 0.00390625);
+							glFuncs->glClear(GL_COLOR_BUFFER_BIT);
+
+							// Call initializeGL()
+							parent->initializeGL();
+						}
+						else {
+							qWarning("QOpenGLContext::functions() returned null");
+							glerror.store(FunctionsFailed);
+							frame.reset();
+							thread_context.doneCurrent();
+							if (guard.owns_lock())
+								guard.unlock();
+							purgeCommands(cmd);
+							goto publish;
+						}
+						first = false;
+					}
+
+					{
+						QSize actual_size = clip.pixels;
+						if (surface_size != actual_size) {
+							// Call resizeGL() in case of window size change
+							surface_size = actual_size;
+							parent->resizeGL(actual_size.width(), actual_size.height());
+						}
+
+						// Initialize the painter
+						QOpenGLPaintDevice device(actual_size);
+						device.setDevicePixelRatio(clip.dpr);
+						device.setDotsPerMeterX(qRound(clip.dpiX / 0.0254));
+						device.setDotsPerMeterY(qRound(clip.dpiY / 0.0254));
+						QPainter p;
+						if (p.begin(&device)) {
+
+							// Apply the first command which is a background drawing,
+							// then call paintGL()
+							if (cmd) {
+								cmd->command()->apply(&p, clip.options, QTransform(), parent, !offscreenRendering);
+								destroyCommand(cmd);
+							}
+							cmd = commands->popCommandFront();
+							if (!cmd || !cmd->isSeparator()) {
+								// Apply remaining commands
+								do {
+									// The GUI requests teardown before waiting for surfaceEvent.
+									// Release GL use before unlocking, then drain without the lock.
+									if (!offscreenRendering && v->surfaceTeardownRequested.load(std::memory_order_acquire)) {
+										glerror.store(WindowDestroyed);
+										p.end();
+										frame.reset();
+										thread_context.doneCurrent();
+										guard.unlock();
+										purgeCommands(cmd);
+										goto publish;
+									}
+									if (cmd) {
+										cmd->command()->apply(&p, clip.options);
+										destroyCommand(cmd);
+									}
+									cmd = commands->popCommandFront();
+									if (!cmd)
+										wait_for(1);
+								} while ((!cmd || !cmd->isSeparator()) && window.load(std::memory_order_relaxed));
+							}
+							if (cmd)
+								destroyCommand(cmd);
+
+							p.end();
+						}
+						else {
+							qWarning("QPainter::begin() failed");
+							glerror.store(PainterBeginFailed);
+							frame.reset();
+							thread_context.doneCurrent();
+							if (guard.owns_lock())
+								guard.unlock();
+							purgeCommands(cmd);
+							goto publish;
+						}
+					}
+
+					// Swap buffers
+					if (offscreenRendering) {
+						frame->release();
+						thread_context.swapBuffers(&surface);
+						bufferImage = frame->toImage();
+						bufferImage.setDevicePixelRatio(clip.dpr);
+						frame.reset();
+					}
+					else
+						thread_context.swapBuffers(v);
+
+					thread_context.doneCurrent();
+				}
 
 				// qint64 el = QDateTime::currentMSecsSinceEpoch() - st;
 				// printf("ogl: %i ms\n", (int)el);
 
-				finished.store(true);
+			publish:
+				completedFrameId.store(clip.frameId, std::memory_order_release);
 				cond.notify_one();
 			}
+			context.store(nullptr);
 		}
 	};
+
+	QMutex surfaceEvent;
+	bool surfaceAlive = true;
+	std::atomic<bool> surfaceTeardownRequested{ false };
 
 	RenderingThread thread;
 	PicturePaintEngine<OpenGLWindow> trueEngine;
 	CommandQueue commands;
-	ClipRect clipRect;
 	QTransform tr;
 	QPointF center;
 	QThreadOpenGLWidget* widget{ nullptr };
@@ -1781,6 +1942,7 @@ public:
 	qint64 lastRequestActive{ 0 };
 	qint64 startPainting{ 0 };
 	uint maximumPaintTime{ 0 };
+	quint64 currentFrameId = 0;
 
 public:
 	// members for PicturePaintEngine
@@ -1807,7 +1969,7 @@ public:
 			else
 				stopRendering();
 		};
-		thread.window = this;
+		thread.window.store(this);
 		thread.parent = top;
 		thread.commands = &commands;
 		thread.surface.setFormat(this->requestedFormat());
@@ -1816,11 +1978,12 @@ public:
 	}
 	~OpenGLWindow()
 	{
-		thread.window = nullptr;
+		removeEventFilter(widget);
+		thread.window.store(nullptr);
 		thread.wait();
 	}
 
-	void startRendering()
+	void startRendering(bool capture = false)
 	{
 		// Start rendering from the GUI thread.
 		// Automatically called by QPainter::begin()
@@ -1830,6 +1993,8 @@ public:
 		if (inRendering++ > 0)
 			return;
 
+		++currentFrameId;
+
 		// Check again for QGraphicsView parent in case
 		// the QGraphicsScene was changed using QGraphicsView::setScene()
 		widget->updateParent();
@@ -1838,29 +2003,11 @@ public:
 		startPainting = QDateTime::currentMSecsSinceEpoch();
 
 		// Init
-		thread.finished = false;
 		trueEngine.d_device_rect = QRectF();
 		bool hasClipRect = false;
 
 		// Always start by sending to the rendering thread a ClipRect object
 
-		if (!clipRect.rect.isEmpty()) {
-			QGraphicsView* view = qobject_cast<QGraphicsView*>(widget->parentWidget());
-			QPointF c = view->mapToScene(view->rect()).boundingRect().center();
-			if (view->transform() == tr && c == center) {
-				// We have a valid clipping rectangle in case of partial update
-				trueEngine.d_device_rect = QRectF(view->mapFromScene(clipRect.rect).boundingRect()).adjusted(-10, -10, 10, 10);
-				emplaceBack(CommandBatch::DrawClipRect, ClipRect{ QRectF(view->mapFromScene(clipRect.rect).boundingRect()), clipRect.brush });
-				hasClipRect = true;
-			}
-			else {
-				// Something changed after setting the clipping rect: full update
-				tr = view->transform();
-				center = c;
-			}
-			// Reset clipping rect
-			clipRect.rect = QRectF();
-		}
 		if (!hasClipRect) {
 			// We still need to draw the widget background.
 			// By default, we use the widget palette to find
@@ -1879,8 +2026,18 @@ public:
 					background = view->backgroundBrush();
 			}
 
+			ClipRect clip{ QRectF(widget->rect()), background };
+			clip.dpr = devicePixelRatio();
+			clip.pixels = (QSizeF(size()) * clip.dpr).toSize();
+			clip.dpiX = widget->logicalDpiX();
+			clip.dpiY = widget->logicalDpiY();
+			clip.options = widget->optimizations();
+			clip.frameId = currentFrameId;
+			clip.capture = capture;
+			clip.paletteWindow = widget->palette().color(QPalette::Window); // For the first drawing only
+
 			// Send the draw background command
-			emplaceBack(CommandBatch::DrawViewBackground, ClipRect{ QRectF(widget->rect()), background });
+			emplaceBack(CommandBatch::DrawViewBackground, std::move(clip));
 		}
 	}
 	void stopRendering()
@@ -1891,17 +2048,15 @@ public:
 
 		Q_ASSERT(inRendering == 0);
 
-		// Send a separator command to notify end of drawing
+		const quint64 targetFrameId = currentFrameId;
 		commands.addSeparator();
 
-		// Compute time spent in drawing functions
-		auto el = QDateTime::currentMSecsSinceEpoch() - startPainting;
+		while (thread.completedFrameId.load(std::memory_order_acquire) < targetFrameId) {
+			const auto elapsed = QDateTime::currentMSecsSinceEpoch() - startPainting;
 
-		// If necessary, wait for the opengl rendering
-		while (!thread.finished.load()) {
-			el = QDateTime::currentMSecsSinceEpoch() - startPainting;
-			if (el > maximumPaintTime)
+			if (elapsed > maximumPaintTime)
 				return;
+
 			thread.wait_for(1);
 		}
 	}
@@ -1916,7 +2071,11 @@ public:
 	  : window(nullptr)
 	{
 	}
-	~PrivateData() {}
+	~PrivateData()
+	{
+		if (widget)
+			delete widget;
+	}
 
 	QPointer<OpenGLWindow> window;
 	QPointer<QWidget> widget;
@@ -1946,7 +2105,7 @@ void QThreadOpenGLWidget::init(bool show_widget)
 	d_data->window = new OpenGLWindow(this, d_data->surfaceFormat);
 	d_data->widget = QWidget::createWindowContainer(d_data->window, this);
 
-	while (!d_data->window->thread.context.load())
+	while (!d_data->window->thread.context.load() && d_data->window->thread.glerror.load() == 0)
 		std::this_thread::yield();
 
 	d_data->widget->move(0, 0);
@@ -1978,6 +2137,7 @@ void QThreadOpenGLWidget::init(bool show_widget)
 		show();
 
 	if (QGraphicsView* view = qobject_cast<QGraphicsView*>(parent())) {
+		view->setViewportUpdateMode(QGraphicsView::FullViewportUpdate);
 		if (view->scene())
 			view->scene()->update();
 	}
@@ -2002,7 +2162,16 @@ QThreadOpenGLWidget::QThreadOpenGLWidget(QWidget* parent)
 
 QThreadOpenGLWidget::~QThreadOpenGLWidget()
 {
+	shutdownRendering();
 	delete d_data;
+}
+
+void QThreadOpenGLWidget::shutdownRendering()
+{
+	if (d_data->window && d_data->window->thread.window.load()) {
+		d_data->window->thread.window.store(nullptr);
+		d_data->window->thread.wait();
+	}
 }
 
 QPaintEngine* QThreadOpenGLWidget::paintEngine() const
@@ -2021,7 +2190,7 @@ void QThreadOpenGLWidget::setOptimization(QPaintRecord::Optimization opt, bool e
 {
 	d_data->optimizations.setFlag(opt, enable);
 	if (d_data->window)
-		d_data->window->trueEngine.d_optimizations = opt;
+		d_data->window->trueEngine.d_optimizations.setFlag(opt, enable);
 }
 QPaintRecord::Optimizations QThreadOpenGLWidget::optimizations() const noexcept
 {
@@ -2043,10 +2212,10 @@ uint QThreadOpenGLWidget::maximumPaintTime() const noexcept
 	return d_data->maximumPaintTime;
 }
 
-void QThreadOpenGLWidget::startRendering()
+void QThreadOpenGLWidget::startRendering(bool capture)
 {
 	init();
-	d_data->window->startRendering();
+	d_data->window->startRendering(capture);
 }
 void QThreadOpenGLWidget::stopRendering()
 {
@@ -2077,7 +2246,10 @@ QWindow* QThreadOpenGLWidget::openGLWindow() const
 
 QImage QThreadOpenGLWidget::toImage(bool draw_background) const
 {
-	QImage img(this->size(), QImage::Format_ARGB32);
+	qreal dpr = devicePixelRatioF();
+	QSize pixels = (QSizeF(size()) * dpr).toSize();
+	QImage img(pixels, QImage::Format_ARGB32);
+	img.setDevicePixelRatio(dpr);
 	img.fill(Qt::transparent);
 	{
 		QPainter p(&img);
@@ -2110,6 +2282,7 @@ void QThreadOpenGLWidget::updateParent()
 	d_data->scene = nullptr;
 	d_data->view = view;
 	if (d_data->view) {
+		view->setViewportUpdateMode(QGraphicsView::FullViewportUpdate);
 		d_data->scene = d_data->view->scene();
 		if (d_data->scene) {
 			connect(d_data->scene, SIGNAL(changed(const QList<QRectF>&)), this, SLOT(changed(const QList<QRectF>&)));
@@ -2132,59 +2305,8 @@ void QThreadOpenGLWidget::rubberBandChanged(QRect rubberBandRect, QPointF fromSc
 
 void QThreadOpenGLWidget::changed(const QList<QRectF>& rects)
 {
-	// Alot of complicated stuff to make partial update from QGraphicsView
-	// working. And it's still not perfect...
-
-	if (d_data->view->viewportUpdateMode() == QGraphicsView::FullViewportUpdate)
-		return;
-	if (!d_data->window)
-		return;
-
-	d_data->window->clipRect.brush = this->palette().brush(QPalette::Window);
-
-	if (!d_data->rubberBand.isEmpty()) {
-		// During rubber band, update the full viewport
-		QRectF r;
-		for (int i = 0; i < rects.size(); ++i)
-			r = r.united(rects[i]);
-		QRectF tmp = r;
-		r = r.united(d_data->prev);
-		d_data->prev = tmp;
-		r = r.united(d_data->rubberBand);
-		d_data->window->clipRect.rect = r;
-		return;
-	}
-
-	if (d_data->hadRubberBand) {
-		d_data->hadRubberBand = false;
-		d_data->window->clipRect.rect = QRectF();
-		return;
-	}
-
-	if (d_data->ignoreNext) {
-		// After a non null rects, there is always an empty one
-		// that must be ignored.
-		d_data->ignoreNext = false;
-		return;
-	}
-
-	QPointF center = d_data->view->mapToScene(d_data->view->rect()).boundingRect().center();
-	QRectF r;
-	if (d_data->tr == d_data->view->transform() && d_data->center == center) {
-		for (int i = 0; i < rects.size(); ++i)
-			r = r.united(rects[i]);
-		if (!r.isEmpty())
-			d_data->ignoreNext = true;
-		QRectF tmp = r;
-		r = r.united(d_data->prev);
-		d_data->prev = tmp;
-	}
-	else {
-		d_data->tr = d_data->view->transform();
-		d_data->center = center;
-	}
-
-	d_data->window->clipRect.rect = r;
+	Q_UNUSED(rects);
+	update();
 }
 
 bool QThreadOpenGLWidget::eventFilter(QObject* watched, QEvent* event)
@@ -2240,6 +2362,23 @@ bool QThreadOpenGLWidget::eventFilter(QObject* watched, QEvent* event)
 			}
 			break;
 		}
+		case QEvent::PlatformSurface: {
+			if (watched == d_data->window) {
+				QPlatformSurfaceEvent* evt = static_cast<QPlatformSurfaceEvent*>(event);
+				if (evt->surfaceEventType() == QPlatformSurfaceEvent::SurfaceCreated) {
+					std::scoped_lock<QMutex> guard(d_data->window->surfaceEvent);
+					d_data->window->surfaceAlive = true;
+					d_data->window->surfaceTeardownRequested.store(false, std::memory_order_release);
+				}
+				else if (evt->surfaceEventType() == QPlatformSurfaceEvent::SurfaceAboutToBeDestroyed) {
+					// Signal before locking so a renderer waiting for GUI-produced
+					// commands can end its painter and release the surface.
+					d_data->window->surfaceTeardownRequested.store(true, std::memory_order_release);
+					std::scoped_lock<QMutex> guard(d_data->window->surfaceEvent);
+					d_data->window->surfaceAlive = false;
+				}
+			}
+		} break;
 		default:
 			break;
 	}
@@ -2274,16 +2413,18 @@ bool QThreadOpenGLWidget::event(QEvent* e)
 			// Paint event (when the parent is not a QGraphicsView):
 			// ensure that startRendering() and stopRendering() are
 			// properly called.
-			this->startRendering();
+
+			auto shared = sharedPainter();
+			this->startRendering(shared != nullptr);
 			uint max_time = this->maximumPaintTime();
-			if (sharedPainter()) {
+
+			if (shared) {
 				// Shared painter in case of QWidget::render()
-				d_data->window->thread.inBuffer.store(true);
 				this->setMaximumPaintTime(UINT_MAX);
 			}
 			this->paintEvent(static_cast<QPaintEvent*>(e));
 			this->stopRendering();
-			if (sharedPainter()) {
+			if (shared) {
 				// Shared painter: draw the FBO content
 				this->setMaximumPaintTime(max_time);
 				QPainter p(this);
@@ -2365,14 +2506,13 @@ struct BoolLocker
 	~BoolLocker() { _val = false; }
 };
 
-
 static void resetColors(QPainter* p)
 {
-	//p->setEnabled(false);
+	// p->setEnabled(false);
 	const QColor no_color = QColor(121, 155, 7, 1);
 	p->setPen(QPen(no_color));
 	p->setBrush(QBrush(no_color));
-	//p->setEnabled(true);
+	// p->setEnabled(true);
 }
 
 bool QOpenGLItem::drawThroughCache(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget) const
@@ -2387,11 +2527,11 @@ bool QOpenGLItem::drawThroughCache(QPainter* painter, const QStyleOptionGraphics
 	}
 
 	if ((int)painter->paintEngine()->type() == (int)QPaintRecord::CustomEngineType) {
-	
+
 		// Tells that we are inside drawThroughCache()
 		BoolLocker lock(d_data->inDrawThroughCache);
 
-		//painter->save();
+		// painter->save();
 		QPaintRecord* rec = static_cast<QPaintRecord*>(painter->device());
 		PrivateData::PainterState state(painter, option);
 		const bool same_state = state == d_data->state;
@@ -2422,10 +2562,9 @@ bool QOpenGLItem::drawThroughCache(QPainter* painter, const QStyleOptionGraphics
 		}
 
 		// Restore painter state
-		//painter->restore();
+		// painter->restore();
 		return true;
 	}
-
 
 	// Get the QThreadOpenGLWidget widget
 	QThreadOpenGLWidget* ogl = qobject_cast<QThreadOpenGLWidget*>(widget);
