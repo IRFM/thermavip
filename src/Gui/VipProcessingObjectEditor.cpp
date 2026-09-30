@@ -3710,7 +3710,7 @@ void VipAdjustImageEditor::reset()
 
 	if (m_data->processing)
 		m_data->processing->reset();
-	if (auto* item = m_data->item.get()) {
+	if (auto* item = m_data->item.data()) {
 		item->setContrast(contrast);
 		item->setBrightness(brightness);
 		item->setGamma(gamma);

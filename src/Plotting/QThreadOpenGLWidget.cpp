@@ -1789,7 +1789,7 @@ public:
 
 					if (offscreenRendering) {
 						// Offscreen drawing
-						if (has_current_context = thread_context.makeCurrent(&surface)) {
+						if ((has_current_context = thread_context.makeCurrent(&surface)) ){
 
 							QOpenGLFramebufferObjectFormat format;
 							format.setSamples(surface.format().samples());
