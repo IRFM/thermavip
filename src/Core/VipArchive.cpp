@@ -100,6 +100,7 @@ void VipArchive::setError(const QString& error, int code)
 {
 	d_data->parameters.errorString = error;
 	d_data->parameters.errorCode = code;
+	vip_debug("VipArchive: error code %i, '%s'\n", code, error.toLatin1().data());
 }
 
 void VipArchive::resetError()

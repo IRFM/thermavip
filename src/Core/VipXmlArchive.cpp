@@ -927,7 +927,6 @@ bool VipXIfArchive::open(const QString& filename)
 		errorLine = r.errorLine;
 		errorCol = r.errorColumn;
 		setError(QString::asprintf("error at line %d, col %d:\n%s\n", errorLine, errorCol, error.toLatin1().data()));
-		vip_debug("error at line %d, col %d:\n%s\n", errorLine, errorCol, error.toLatin1().data());
 		file.close();
 		return false;
 	}
@@ -935,7 +934,6 @@ bool VipXIfArchive::open(const QString& filename)
 
 	if (!doc.setContent(&file, &error, &errorLine, &errorCol)) {
 		setError(QString::asprintf("error at line %d, col %d:\n%s\n", errorLine, errorCol, error.toLatin1().data()));
-		vip_debug("error at line %d, col %d:\n%s\n", errorLine, errorCol, error.toLatin1().data());
 		file.close();
 		return false;
 	}

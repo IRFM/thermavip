@@ -2249,8 +2249,10 @@ VipArchive& operator<<(VipArchive& arch, const VipPlotSceneModel* value)
 
 	// Save the components to draw for each group
 	const auto groups = value->sceneModel().groups();
-	for (const auto& gr : groups) {
-		arch.start(gr);
+	for (qsizetype i = 0; i < groups.size(); ++i) {
+		arch.start("group" +  QString::number(i));
+		const QString gr = groups[i];
+		arch.content("name", gr);
 		arch.content("drawComponents", (int)value->drawComponents(gr));
 		arch.end();
 	}
@@ -2267,9 +2269,13 @@ VipArchive& operator>>(VipArchive& arch, VipPlotSceneModel* value)
 	// Load components to draw for each group
 	arch.save();
 	for (;;) {
-		QString group;
-		if (arch.start(group)) {
-			value->setDrawComponents(group, (VipPlotShape::DrawComponents)arch.read("drawComponents").toInt());
+		QString id;
+		if (arch.start(id)) {
+			if (id.startsWith("group")) {
+				QString group;
+				arch.content("name", group);
+				value->setDrawComponents(group, (VipPlotShape::DrawComponents)arch.read("drawComponents").toInt());
+			}
 			arch.end();
 		}
 		else

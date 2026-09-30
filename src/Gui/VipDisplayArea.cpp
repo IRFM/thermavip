@@ -4391,8 +4391,10 @@ bool VipMainWindow::loadSessionShowProgress(const QString& filename, VipProgress
 #endif
 	{
 		VipXIfArchive arch(filename);
-		if (!arch)
+		if (!arch) {
+			VIP_LOG_ERROR(arch.errorString());
 			return false;
+		}
 		ret = loadSessionShowProgress(arch, progress);
 	}
 
@@ -4918,7 +4920,7 @@ void VipMainWindow::quickLoad()
 	// no confirmation and no way back: everything unsaved was lost, and the file
 	// restores plugins, settings and, with Python built in, code.
 	if (displayArea() && displayArea()->count() > 0) {
-		if (vipQuestion("Load session", "Replace the current workspace with the quick session?" ) != QMessageBox::Yes)
+		if (vipQuestion("Load session", "Do you want to load the quick session?" ) != QMessageBox::Yes)
 			return;
 	}
 	VIP_LOG_INFO("Loading quick session: " + file);
