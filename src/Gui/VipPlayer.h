@@ -573,6 +573,10 @@ public:
 	/// Returns the current #VipPlotSpectrogram object
 	VipPlotSpectrogram* spectrogram() const;
 
+	/// @brief Returns a generic marker that can be used to highlight a specific area.
+	/// This marker is hidden by default.
+	VipPlotMarker* highlightMarker() const;
+
 	QToolButton* superimposeButton() const;
 	QAction* superimposeAction() const;
 	QComboBox* zoomWidget() const;
@@ -939,6 +943,7 @@ private Q_SLOTS:
 	void toolTipStarted(const QPointF& pos);
 	void toolTipMoved(const QPointF& pos);
 	void toolTipEnded(const QPointF& pos);
+	void toolTipAttached(const VipToolTipHoverItems&);
 	/// Update the tool tip when the image content changes
 	void refreshToolTip(VipPlotItem*);
 	void computeZoom();

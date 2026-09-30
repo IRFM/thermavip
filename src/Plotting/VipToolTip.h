@@ -42,6 +42,16 @@ class VipAbstractPlotArea;
 class VipAbstractScale;
 class VipPlotItem;
 
+/// @brief Structure returned by VipToolTip::setPlotAreaPos()
+struct VipToolTipHoverItems
+{
+	QList<VipPlotItem*> items;
+	QList<VipPointVector> points;
+	VipBoxStyleList styles;
+	QList<int> legends;
+};
+Q_DECLARE_METATYPE(VipToolTipHoverItems)
+
 /// \addtogroup Plotting
 /// @{
 
@@ -177,7 +187,7 @@ public:
 	/// @brief Set the tool tip position in VipAbstractPlotArea coordinates.
 	/// This will recompute the tool tip content and display it.
 	/// This function is automatically called by the parent VipAbstractPlotArea.
-	virtual void setPlotAreaPos(const QPointF& pos);
+	virtual VipToolTipHoverItems setPlotAreaPos(const QPointF& pos);
 
 	void refresh(const QPointF& scene_pos);
 

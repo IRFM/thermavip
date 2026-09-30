@@ -397,12 +397,13 @@ void VipToolTip::refresh()
 	d_data->pos = saved;
 }
 
-void VipToolTip::setPlotAreaPos(const QPointF& pos)
+VipToolTipHoverItems VipToolTip::setPlotAreaPos(const QPointF& pos)
 {
+	VipToolTipHoverItems ret;
 	d_data->pos = QPointF();
 
 	if (!plotArea() || !plotArea()->scene() || testDisplayFlag(Hidden)) {
-		return;
+		return ret;
 	}
 
 	QStringList text;
@@ -438,10 +439,10 @@ void VipToolTip::setPlotAreaPos(const QPointF& pos)
 
 	// compute items text
 
-	PlotItemList items;
+	/* PlotItemList items;
 	QList<VipPointVector> points;
 	VipBoxStyleList styles;
-	QList<int> legends;
+	QList<int> legends;*/
 
 	int axis = -1;
 	if ((d_data->displayFlags & SearchXAxis) && !(d_data->displayFlags & SearchYAxis))
@@ -449,7 +450,7 @@ void VipToolTip::setPlotAreaPos(const QPointF& pos)
 	else if ((d_data->displayFlags & SearchYAxis) && !(d_data->displayFlags & SearchXAxis))
 		axis = 1;
 
-	items = plotArea()->plotItems(pos, axis, stickDistance(), points, styles, legends);
+	ret.items = plotArea()->plotItems(pos, axis, stickDistance(), ret.points, ret.styles, ret.legends);
 
 
 	QPicture additional;
@@ -459,8 +460,8 @@ void VipToolTip::setPlotAreaPos(const QPointF& pos)
 
 	if (this->maxItems()) {
 
-		for (qsizetype i = 0; i < items.size(); ++i) {
-			VipPlotItem* item = items[i];
+		for (qsizetype i = 0; i < ret.items.size(); ++i) {
+			VipPlotItem* item = ret.items[i];
 			if (!item->isVisible() || item->property("_vip_ignoreToolTip").toBool())
 				continue;
 
@@ -472,13 +473,13 @@ void VipToolTip::setPlotAreaPos(const QPointF& pos)
 			if (!item->testItemAttribute(VipPlotItem::HasToolTip))
 				continue;
 
-			if (!styles[i].isEmpty()) {
+			if (!ret.styles[i].isEmpty()) {
 				if (!pa) {
 					pa = new QPainter();
 					pa->begin(&additional);
 				}
 				if (d_data->overlayBrush.style() != Qt::NoBrush || d_data->overlayPen.style() != Qt::NoPen) {
-					VipBoxStyle st = styles[i];
+					VipBoxStyle st = ret.styles[i];
 					if (d_data->overlayBrush.style() != Qt::NoBrush)
 						st.setBackgroundBrush(d_data->overlayBrush);
 					if (d_data->overlayPen.style() != Qt::NoPen)
@@ -487,10 +488,10 @@ void VipToolTip::setPlotAreaPos(const QPointF& pos)
 					st.draw(pa);
 				}
 				else
-					styles[i].draw(pa);
+					ret.styles[i].draw(pa);
 			}
 
-			const VipPointVector points_of_intereset = points[i].isEmpty() ? (VipPointVector() << plotArea()->mapToItem(item, pos)) : points[i];
+			const VipPointVector points_of_intereset = ret.points[i].isEmpty() ? (VipPointVector() << plotArea()->mapToItem(item, pos)) : ret.points[i];
 
 			// compute custom tool tip
 			if (testDisplayFlag(ItemsToolTips)) {
@@ -509,8 +510,8 @@ void VipToolTip::setPlotAreaPos(const QPointF& pos)
 			QStringList item_text;
 
 			// compute title
-			if (legends[i] >= 0) {
-				int legend = legends[i];
+			if (ret.legends[i] >= 0) {
+				int legend = ret.legends[i];
 				VipText name = item->legendNames()[legend];
 				if (testDisplayFlag(ItemsLegends))
 					item_title << QString(vipToHtml(item->legendPixmap(QSize(20, 16), legend), "vertical-align:\"middle\"")) +
@@ -524,7 +525,7 @@ void VipToolTip::setPlotAreaPos(const QPointF& pos)
 
 			if (!item->testItemAttribute(VipPlotItem::CustomToolTipOnly)) {
 				// compute item position
-				if (testDisplayFlag(ItemsPos) && !points[i].isEmpty()) {
+				if (testDisplayFlag(ItemsPos) && !ret.points[i].isEmpty()) {
 					QStringList axis_text;
 					const QList<VipAbstractScale*> scales = item->axes();
 					// The line counter is common to the whole function, and each of the three
@@ -651,6 +652,8 @@ void VipToolTip::setPlotAreaPos(const QPointF& pos)
 		VipText t;
 		VipCorrectedTip::showText(toolTipPosition(t, pos, d_data->position, d_data->alignment), QString(), parent, QRect(), d_data->delayTime);
 	}
+
+	return ret;
 }
 
 static QPoint findPosition(Vip::RegionPositions position,

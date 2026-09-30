@@ -2052,6 +2052,7 @@ public:
 	VipImageWidget2D* viewer;
 	QComboBox* zoomChoice;
 	QToolButton* sharedZoom;
+	VipPlotMarker * highlightMarker;
 
 	// for the first image, check if we should display the image properties
 	QPointer<VipDisplayObject> currentDisplay;
@@ -2408,6 +2409,11 @@ VipVideoPlayer::VipVideoPlayer(VipImageWidget2D* img, QWidget* parent)
 	// d_data->recorder->setScheduleStrategy(VipProcessingObject::Asynchronous, true);
 	// d_data->recorder->setEnabled(false);
 	// connect(&d_data->recordWidget,SIGNAL(recordingChanged(bool)),this,SLOT(setRecording(bool)));
+
+	d_data->highlightMarker = new VipPlotMarker();
+	d_data->highlightMarker->setAxes(spectrogram()->axes(), VipCoordinateSystem::Cartesian);
+	d_data->highlightMarker->setVisible(false);
+	d_data->highlightMarker->setProperty("_vip_no_serialize", true);
 
 	// timer used to display the status info
 	d_data->timer.setSingleShot(false);
@@ -3081,6 +3087,11 @@ void VipVideoPlayer::setSpectrogram(VipPlotSpectrogram* spectrogram)
 VipPlotSpectrogram* VipVideoPlayer::spectrogram() const
 {
 	return d_data->viewer->area()->spectrogram();
+}
+
+VipPlotMarker* VipVideoPlayer::highlightMarker() const
+{
+	return d_data->highlightMarker;
 }
 
 void VipVideoPlayer::startRender(VipRenderState& state)
@@ -3787,6 +3798,9 @@ QList<VipDisplayCurve*> VipVideoPlayer::extractPolylines(const VipShapeList& shs
 			lst->outputAt(0)->setConnection(curve->inputAt(0));
 
 			res.append(curve);
+
+			curve->setProperty("_vip_polylinePlayer", QVariant::fromValue(QObjectPointer(const_cast<VipVideoPlayer*>(this))));
+			curve->setProperty("_vip_polylineShape", QVariant::fromValue(sh));
 		}
 
 		// reset the first data to update the display objects
@@ -5792,6 +5806,7 @@ VipPlotPlayer::VipPlotPlayer(VipAbstractPlotWidget2D* viewer, QWidget* parent)
 	connect(d_data->viewer->area(), SIGNAL(toolTipMoved(const QPointF&)), this, SLOT(toolTipMoved(const QPointF&)));
 	connect(d_data->viewer->area(), SIGNAL(toolTipEnded(const QPointF&)), this, SLOT(toolTipEnded(const QPointF&)));
 	connect(d_data->viewer->area(), SIGNAL(itemDataChanged(VipPlotItem*)), this, SLOT(refreshToolTip(VipPlotItem*)));
+	connect(d_data->viewer->area(), SIGNAL(toolTipHoverItems(const VipToolTipHoverItems&)), this, SLOT(toolTipAttached(const VipToolTipHoverItems&)));
 	// connect(d_data->viewer->area(), SIGNAL(itemDataChanged(VipPlotItem*)), this, SLOT(delayedComputeStartDate()), Qt::DirectConnection);
 
 	VipUniqueId::id(this);
@@ -7226,6 +7241,79 @@ void VipPlotPlayer::refreshToolTip(VipPlotItem* item)
 		}
 
 		d_data->viewer->area()->plotToolTip()->refresh();
+	}
+}
+
+void VipPlotPlayer::toolTipAttached(const VipToolTipHoverItems& items)
+{
+	// The tooltip 'attached' certain items.
+	// Use the polyline extracted curves to display the source point in the video player if possible
+
+	QList<VipVideoPlayer*> players;
+	QList<VipShape> polylines;
+	QList<VipPoint> points;
+
+	
+	for (qsizetype i = 0; i < items.items.size(); ++i) {
+		if (auto* c = qobject_cast<VipPlotCurve*>(items.items[i])) {
+			if (auto* d = c->property("VipDisplayObject").value<VipDisplayObject*>()) {
+				if (auto* pl = qobject_cast<VipVideoPlayer*>(d->property("_vip_polylinePlayer").value<QObjectPointer>().data())) {
+					auto sh = d->property("_vip_polylineShape").value<VipShape>();
+					if (sh.type() == VipShape::Polyline && items.points[i].size()) {
+						players.push_back(pl);
+						polylines.push_back(sh);
+						VipPoint pt(0,0);
+						for (const auto& p : items.points[i])
+							pt += p;
+						pt /= items.points[i].size();
+						points.push_back(c->sceneMap()->invTransform(pt));
+					}
+				}
+			}
+		}
+	}
+
+	if (players.isEmpty()) {
+
+		// Hide all markers
+		if (auto* multi = VipMultiDragWidget::fromChild(this)) {
+			auto players = multi->findChildren<VipVideoPlayer*>();
+			for (auto* pl : players)
+				pl->highlightMarker()->setVisible(false);
+		}
+		return;
+	}
+
+
+	for (qsizetype i = 0; i < players.size(); ++i) {
+
+		VipPlotSpectrogram* sp = players[i]->spectrogram();
+		qsizetype pixel_pos = (int)points[i].x();
+		const auto pixels = polylines[i].fillPixels();
+		if (pixel_pos < 0)
+			pixel_pos = 0;
+		else if (pixel_pos >= pixels.size())
+			pixel_pos = pixels.size() - 1;
+
+		QPoint im_point = pixels[pixel_pos];
+		QPointF scale_point = /* sp->sceneMap()->transform*/(players[i]->imageTransform().map(im_point));
+
+		auto * marker = players[i]->highlightMarker();
+		marker->setVisible(true);
+		marker->setLineStyle(VipPlotMarker::NoLine);
+		marker->setSymbol(new VipSymbol(VipSymbol::Ellipse, QBrush(), QPen(Qt::white), QSizeF(9, 9)));
+		marker->symbol()->setCachePolicy(VipSymbol::NoCache);
+		marker->setSymbolVisible(true);
+		marker->setRawData(scale_point + QPointF(0.5,0.5));
+		marker->setSpacing(10);
+		marker->setLabelAlignment(Qt::AlignHCenter | Qt::AlignBottom);
+
+		VipText text;
+		text.setText(QString("(x: %1, y: %2)").arg(im_point.x()).arg(im_point.y()));
+		text.setTextPen(QPen(Qt::black));
+		marker->setLabel(text);
+		//marker->setCompositionMode(QPainter::CompositionMode_Difference);
+		
 	}
 }
 

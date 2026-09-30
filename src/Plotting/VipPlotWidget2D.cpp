@@ -2419,8 +2419,9 @@ void VipAbstractPlotArea::hoverMoveEvent(QGraphicsSceneHoverEvent* event)
 			if (d_data->plotToolTip->plotArea() != this)
 				d_data->plotToolTip->setPlotArea(this);
 			d_data->plotToolTip->setScales(tool_tip_scales);
-			d_data->plotToolTip->setPlotAreaPos(event->pos());
+			const auto found = d_data->plotToolTip->setPlotAreaPos(event->pos());
 			Q_EMIT toolTipMoved(event->pos());
+			Q_EMIT toolTipHoverItems(found);
 		}
 
 		// Since the rubber band accept hover events, they won't be propagated to underlying items.

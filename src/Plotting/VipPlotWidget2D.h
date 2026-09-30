@@ -38,6 +38,7 @@
 #include "VipAxisColorMap.h"
 #include "VipNDArray.h"
 #include "VipPlotItem.h"
+#include "VipToolTip.h"
 
 /// \addtogroup Plotting
 /// @{
@@ -776,6 +777,8 @@ Q_SIGNALS:
 	void toolTipMoved(const QPointF&);
 	/// Emitted when the tool tip is hidden
 	void toolTipEnded(const QPointF&);
+	/// Emitted when the tool tip 'attached' item(s) point(s)
+	void toolTipHoverItems(const VipToolTipHoverItems&);
 
 	/// Emitted when a mouse panning operation just ended
 	void endMousePanning();
