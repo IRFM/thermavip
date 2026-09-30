@@ -2151,7 +2151,7 @@ bool VipPlotCurve::setItemProperty(const char* name, const QVariant& value, cons
 		VipSymbol sym = this->symbol() ? *this->symbol() : VipSymbol();
 		sym.setStyle((VipSymbol::Style)v);
 		setSymbol(new VipSymbol(sym));
-		setSymbolVisible(true);
+		//setSymbolVisible(true);
 		return true;
 	}
 	else if (strcmp(name, "symbol-size") == 0) {
@@ -2159,7 +2159,7 @@ bool VipPlotCurve::setItemProperty(const char* name, const QVariant& value, cons
 		VipSymbol sym = this->symbol() ? *this->symbol() : VipSymbol();
 		sym.setSize(QSizeF(v, v));
 		setSymbol(new VipSymbol(sym));
-		setSymbolVisible(true);
+		//setSymbolVisible(true);
 		return true;
 	}
 	else if (strcmp(name, "symbol-border") == 0) {
@@ -2167,7 +2167,7 @@ bool VipPlotCurve::setItemProperty(const char* name, const QVariant& value, cons
 		VipSymbol sym = this->symbol() ? *this->symbol() : VipSymbol();
 		sym.setPen(p);
 		setSymbol(new VipSymbol(sym));
-		setSymbolVisible(true);
+		//setSymbolVisible(true);
 		return true;
 	}
 	else if (strcmp(name, "symbol-background") == 0) {
@@ -2181,7 +2181,11 @@ bool VipPlotCurve::setItemProperty(const char* name, const QVariant& value, cons
 			sym.setBrush(b);
 		}
 		setSymbol(new VipSymbol(sym));
-		setSymbolVisible(true);
+		//setSymbolVisible(true);
+		return true;
+	}
+	else if (strcmp(name, "symbol-visible") == 0) {
+		setSymbolVisible(value.toBool());
 		return true;
 	}
 	else if (strcmp(name, "baseline") == 0) {

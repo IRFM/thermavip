@@ -55,6 +55,14 @@ static void applyAsStyleSheet(const VipBoxStyle& style, VipPlotItem* item)
 	item->updateStyleSheetString();
 }
 
+static void applySymbolAsStyleSheet(double size, const QBrush& background, const QPen & border, VipPlotCurve* item)
+{
+	item->styleSheet().setProperty("VipPlotCurve", "symbol-border", QVariant::fromValue(border));
+	item->styleSheet().setProperty("VipPlotCurve", "symbol-background", QVariant::fromValue(background.color()));
+	item->styleSheet().setProperty("VipPlotCurve", "symbol-size", QVariant::fromValue(size));
+	item->updateStyleSheetString();
+}
+
 static void removeStyleSheet(VipPlotItem* item)
 {
 	if (VipPlotPlayer* pl = qobject_cast<VipPlotPlayer*>(VipAbstractPlayer::findAbstractPlayer(item))) {
@@ -291,7 +299,7 @@ void VipSymbolWidget::setSymbol(const VipSymbol& symbol)
 	emit symbolChanged(m_symbol);
 }
 
-VipSymbol VipSymbolWidget::getSymbol() const
+const VipSymbol &VipSymbolWidget::getSymbol() const
 {
 	return m_symbol;
 }
@@ -819,7 +827,9 @@ void VipPlotCurveWidget::updateCurve(VipPlotCurve* curve)
 	curve->setStyle(m_draw_line.isChecked() ? (VipPlotCurve::CurveStyle)m_line_style.currentIndex() : VipPlotCurve::NoCurve);
 	curve->setBoxStyle(m_style.getBoxStyle());
 	applyAsStyleSheet(m_style.getBoxStyle(), curve);
-	curve->setSymbol(new VipSymbol(m_symbol.getSymbol()));
+	const auto& sym = m_symbol.getSymbol();
+	curve->setSymbol(new VipSymbol(sym));
+	applySymbolAsStyleSheet(sym.size().width(), sym.brush(), sym.pen(), curve);
 	curve->setSymbolVisible(m_draw_symbol.isChecked());
 	curve->setBaseline(m_baseline.value());
 }

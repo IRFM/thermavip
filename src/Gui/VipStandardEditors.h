@@ -66,7 +66,7 @@ public:
 	VipSymbolWidget(QWidget* parent = nullptr);
 
 	void setSymbol(const VipSymbol&);
-	VipSymbol getSymbol() const;
+	const VipSymbol& getSymbol() const;
 
 	// void setColorOptionsVisible(bool);
 	// bool colorOptionsVisible() const;

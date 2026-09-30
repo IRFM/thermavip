@@ -2908,6 +2908,12 @@ VipArchive& operator<<(VipArchive& arch, const VipPlotItem* value)
 	arch.end();
 
 	arch.content("styleSheet", value->styleSheetString());
+
+	// New in 5.5.0
+	QVariant idx = value->property("_vip_index");
+	if (!idx.isNull())
+		arch.content("_vip_index", idx.toInt());
+
 	return arch;
 }
 
@@ -2991,6 +2997,16 @@ VipArchive& operator>>(VipArchive& arch, VipPlotItem* value)
 	QString st;
 	if (arch.content("styleSheet", st))
 		value->setStyleSheet(st);
+	else
+		arch.restore();
+
+	// New in 5.5.0
+	arch.save();
+	int idx = 0;
+	if (arch.content("_vip_index", idx)) {
+		arch.discardSave();
+		value->setProperty("_vip_index", idx);
+	}
 	else
 		arch.restore();
 
