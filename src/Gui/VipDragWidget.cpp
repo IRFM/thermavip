@@ -171,7 +171,7 @@ void VipDragWidgetHandler::setParent(VipMultiDragWidget* top_level, QWidget* par
 
 static void minimizeDragWidget(VipBaseDragWidget* w, bool minimize)
 {
-	if (VipDragWidget* d = qobject_cast<VipDragWidget*>(w)){
+	if (VipDragWidget* d = qobject_cast<VipDragWidget*>(w)) {
 		if (minimize) {
 			if (d->property("_vip_minimizeWidget").value<QWidget*>() == nullptr) {
 
@@ -346,8 +346,7 @@ bool VipBaseDragWidget::isDropable() const
 	// The second term asked this again, so it was always false when the first was:
 	// a parent that withdrew the operation did not inhibit its only child. supportClose
 	// below is the one variant that asks the parent, which is what all six meant.
-	if (!this->testSupportedOperation(Drop) ||
-	    (this->parentMultiDragWidget() && this->parentMultiDragWidget()->count() == 1 && !this->parentMultiDragWidget()->testSupportedOperation(Drop)))
+	if (!this->testSupportedOperation(Drop) || (this->parentMultiDragWidget() && this->parentMultiDragWidget()->count() == 1 && !this->parentMultiDragWidget()->testSupportedOperation(Drop)))
 		return false;
 	else {
 		if (qobject_cast<const VipMultiDragWidget*>(this)) {
@@ -365,8 +364,7 @@ bool VipBaseDragWidget::isMovable() const
 	// The second term asked this again, so it was always false when the first was:
 	// a parent that withdrew the operation did not inhibit its only child. supportClose
 	// below is the one variant that asks the parent, which is what all six meant.
-	if (!this->testSupportedOperation(Move) ||
-	    (this->parentMultiDragWidget() && this->parentMultiDragWidget()->count() == 1 && !this->parentMultiDragWidget()->testSupportedOperation(Move)))
+	if (!this->testSupportedOperation(Move) || (this->parentMultiDragWidget() && this->parentMultiDragWidget()->count() == 1 && !this->parentMultiDragWidget()->testSupportedOperation(Move)))
 		return false;
 	else {
 		if (qobject_cast<const VipMultiDragWidget*>(this)) {
@@ -684,11 +682,11 @@ VipBaseDragWidget::Operations VipBaseDragWidget::supportedOperations() const
 	return d_data->operations;
 }
 
-VipBaseDragWidget* VipBaseDragWidget::fromChild(QWidget* child)
+VipBaseDragWidget* VipBaseDragWidget::fromChild(const QWidget* child)
 {
 	while (child) {
-		if (qobject_cast<VipBaseDragWidget*>(child))
-			return static_cast<VipBaseDragWidget*>(child);
+		if (qobject_cast<const VipBaseDragWidget*>(child))
+			return const_cast<VipBaseDragWidget*>(static_cast<const VipBaseDragWidget*>(child));
 		child = child->parentWidget();
 	}
 	return nullptr;
@@ -897,7 +895,7 @@ bool VipBaseDragWidget::isDestroying() const
 {
 	const VipBaseDragWidget* w = this;
 	while (w) {
-		if(!w->d_data.get())
+		if (!w->d_data.get())
 			return true;
 		if (w->d_data->destroy)
 			return true;
@@ -935,7 +933,7 @@ void VipBaseDragWidget::addIdToTitle()
 		this->setWindowTitle(t);
 }
 
-void VipBaseDragWidget::setTitleWithId(const QString & text)
+void VipBaseDragWidget::setTitleWithId(const QString& text)
 {
 	if (!this->property("showIdInTitle").toBool()) {
 		if (this->windowTitle() != text)
@@ -990,8 +988,8 @@ VipDragWidget::VipDragWidget(QWidget* parent)
 	style()->polish(this);
 }
 
-VipDragWidget::VipDragWidget(QWidget * inner, QWidget *parent)
-:VipDragWidget(parent)
+VipDragWidget::VipDragWidget(QWidget* inner, QWidget* parent)
+  : VipDragWidget(parent)
 {
 	setWidget(inner);
 }
@@ -1742,8 +1740,6 @@ static QList<int> addNewSplitterSize(QSplitter* s, int index, int* new_widget_si
 	return res;
 }
 
-
-
 bool VipDragWidgetHandle::dropMimeData(const QMimeData* mime)
 {
 	// check that this widget accept drop
@@ -1940,7 +1936,6 @@ void VipDragRubberBand::paintEvent(QPaintEvent*)
 class VipMultiDragWidget::PrivateData
 {
 public:
-
 	QWidget* header;
 	QSplitter* v_splitter;
 	// VipDragWidgetSizeGrip * grip;
@@ -2357,11 +2352,11 @@ bool VipMultiDragWidget::event(QEvent* event)
 	return VipBaseDragWidget::event(event);
 }
 
-VipMultiDragWidget* VipMultiDragWidget::fromChild(QWidget* child)
+VipMultiDragWidget* VipMultiDragWidget::fromChild(const QWidget* child)
 {
 	while (child) {
-		if (qobject_cast<VipMultiDragWidget*>(child))
-			return static_cast<VipMultiDragWidget*>(child);
+		if (qobject_cast<const VipMultiDragWidget*>(child))
+			return const_cast<VipMultiDragWidget*>(static_cast<const VipMultiDragWidget*>(child));
 		child = child->parentWidget();
 	}
 	return nullptr;
@@ -2705,9 +2700,9 @@ void VipMultiDragWidget::swapWidgets(VipDragWidget* from, VipDragWidget* to)
 
 void VipMultiDragWidget::setWidget(int y, int x, QWidget* w, bool update_content)
 {
-	VipBaseDragWidget * drag = qobject_cast<VipBaseDragWidget*>(w);
-	if(!drag) {
-		VipDragWidget * d = new VipDragWidget();
+	VipBaseDragWidget* drag = qobject_cast<VipBaseDragWidget*>(w);
+	if (!drag) {
+		VipDragWidget* d = new VipDragWidget();
 		d->setWidget(w);
 		drag = d;
 	}
@@ -3108,9 +3103,9 @@ void VipMultiDragWidget::focusChanged(QWidget* old_w, QWidget* new_w)
 
 void VipMultiDragWidget::resetSizes()
 {
-	VipDragWidgetSplitter * main = static_cast<VipDragWidgetSplitter*>(mainSplitter());
+	VipDragWidgetSplitter* main = static_cast<VipDragWidgetSplitter*>(mainSplitter());
 	main->resetSizes();
-	for(int y = 0; y < mainCount(); ++y) {
+	for (int y = 0; y < mainCount(); ++y) {
 		static_cast<VipDragWidgetSplitter*>(subSplitter(y))->resetSizes();
 	}
 }
@@ -3177,9 +3172,6 @@ void VipMultiDragWidget::moveEvent(QMoveEvent* event)
 	if (isTopLevel())
 		Q_EMIT VipDragWidgetHandler::find(parentWidget())->geometryChanged(this);
 }
-
-
-
 
 VipViewportArea::VipViewportArea()
   : QWidget()
@@ -3287,17 +3279,17 @@ void VipViewportArea::dropEvent(QDropEvent* evt)
 VipDragWidgetArea::VipDragWidgetArea(QWidget* parent)
   : QWidget(parent)
 {
-	/* setWidget*/(d_area = new VipViewportArea());
+	/* setWidget*/ (d_area = new VipViewportArea());
 	d_area->setParent(this);
 	d_area->move(0, 0);
 	d_area->resize(this->size());
-	
+
 	connect(VipDragWidgetHandler::find(widget()), SIGNAL(geometryChanged(VipMultiDragWidget*)), this, SLOT(recomputeSize()), Qt::QueuedConnection);
 	connect(VipDragWidgetHandler::find(widget()), SIGNAL(moving(VipMultiDragWidget*)), this, SLOT(moving(VipMultiDragWidget*)), Qt::QueuedConnection);
 
 	// disable scroll bars
-	//setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-	//setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+	// setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+	// setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
 
 	d_area->installEventFilter(this);
 }
@@ -3328,7 +3320,7 @@ void VipDragWidgetArea::resizeEvent(QResizeEvent* evt)
 	d_area->move(0, 0);
 	d_area->resize(this->size());
 	recomputeSize();
-	//QScrollArea::resizeEvent(evt);
+	// QScrollArea::resizeEvent(evt);
 }
 
 void VipDragWidgetArea::keyPressEvent(QKeyEvent* evt)
@@ -3337,14 +3329,14 @@ void VipDragWidgetArea::keyPressEvent(QKeyEvent* evt)
 	evt->ignore();
 }
 
-VipDragWidgetArea* VipDragWidgetArea::fromChildWidget(QWidget* child)
+VipDragWidgetArea* VipDragWidgetArea::fromChildWidget(const QWidget* child)
 {
-	QWidget* tmp = child;
+	const QWidget* tmp = child;
 
-	while (tmp && !qobject_cast<VipDragWidgetArea*>(tmp))
+	while (tmp && !qobject_cast<const VipDragWidgetArea*>(tmp))
 		tmp = tmp->parentWidget();
 
-	return qobject_cast<VipDragWidgetArea*>(tmp);
+	return const_cast<VipDragWidgetArea*>(qobject_cast<const VipDragWidgetArea*>(tmp));
 }
 
 void VipDragWidgetArea::recomputeSize()
@@ -3381,7 +3373,7 @@ void VipDragWidgetArea::recomputeSize()
 	}
 
 	if (maximized.size()) {
-		
+
 		d_area->move(0, 0);
 		d_area->resize(size());
 		// TODO: also resize the maximized VipMultiDragWidget
@@ -3417,8 +3409,8 @@ void VipDragWidgetArea::moving(VipMultiDragWidget* widget)
 	Q_UNUSED(widget)
 
 	// get the position in this widget coordinate system, and move the scroll bars if we are close to a border
-	//QPoint pos = this->mapFromGlobal(QCursor::pos());
-	//int vipDistance = 50;
+	// QPoint pos = this->mapFromGlobal(QCursor::pos());
+	// int vipDistance = 50;
 
 	/* if (pos.x() < vipDistance) {
 		// left border

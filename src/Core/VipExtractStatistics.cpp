@@ -44,12 +44,13 @@ QStringList VipExtractComponent::supportedComponents() const
 	return m_supportedComponents;
 }
 
+
 void VipExtractComponent::apply()
 {
 	VipAnyData in = inputAt(0)->data();
 
 	if (in.data().userType() == qMetaTypeId<VipNDArray>()) {
-		VipNDArray input_image = in.value<VipNDArray>();
+		const VipNDArray input_image = in.value<VipNDArray>();
 		m_supportedComponents = m_extract.SupportedComponents(input_image);
 		QString component = propertyAt(0)->data().value<QString>();
 		if (component.isEmpty()) {
@@ -59,7 +60,7 @@ void VipExtractComponent::apply()
 		}
 		m_extract.SetComponent(component);
 
-		VipNDArray out = m_extract.Extract(input_image);
+		const VipNDArray out = m_extract.Extract(input_image);
 		VipAnyData any = create(QVariant::fromValue(out));
 		any.mergeAttributes(in.attributes());
 		any.setTime(in.time());

@@ -244,7 +244,7 @@ public:
 	QString title() const;
 
 	/// Returns the first VipBaseDragWidget parent found for child \a child
-	static VipBaseDragWidget* fromChild(QWidget* child);
+	static VipBaseDragWidget* fromChild(const QWidget* child);
 
 	/// Internal use only
 	bool dragThisWidget(QObject* watched, const QPoint& mouse_pos);
@@ -661,7 +661,7 @@ public:
 	virtual void startRender(VipRenderState&);
 	virtual void endRender(VipRenderState&);
 
-	static VipMultiDragWidget* fromChild(QWidget* child);
+	static VipMultiDragWidget* fromChild(const QWidget* child);
 
 public Q_SLOTS:
 
@@ -795,7 +795,7 @@ public:
 	
 	void dropMimeData(const QMimeData* mime, const QPoint& pos);
 
-	static VipDragWidgetArea* fromChildWidget(QWidget* widget);
+	static VipDragWidgetArea* fromChildWidget(const QWidget* widget);
 
 protected:
 	virtual void resizeEvent(QResizeEvent* evt);

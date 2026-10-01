@@ -3799,7 +3799,7 @@ QList<VipDisplayCurve*> VipVideoPlayer::extractPolylines(const VipShapeList& shs
 			res.append(curve);
 
 			// Set custom property (starting with _vip_custom) in order to be saved in session files
-			curve->setProperty("_vip_custom_polylinePlayer", QVariant::fromValue(VipLazyPointer(const_cast<VipVideoPlayer*>(this))));
+			curve->setProperty("_vip_custom_polylinePlayer", QVariant::fromValue(VipLazyPointer(VipBaseDragWidget::fromChild(this))));
 			curve->setProperty("_vip_custom_polylineShape", QVariant::fromValue(VipLazyShape(sh)));
 		}
 
@@ -7247,16 +7247,18 @@ void VipPlotPlayer::toolTipAttached(const VipToolTipHoverItems& items)
 	for (qsizetype i = 0; i < items.items.size(); ++i) {
 		if (auto* c = qobject_cast<VipPlotCurve*>(items.items[i])) {
 			if (auto* d = c->property("VipDisplayObject").value<VipDisplayObject*>()) {
-				if (auto* pl = d->property("_vip_custom_polylinePlayer").value<VipLazyPointer>().data<VipVideoPlayer>()) {
-					if (auto sh = d->property("_vip_custom_polylineShape").value<VipLazyShape>().shape()) {
-						if (sh.type() == VipShape::Polyline && items.points[i].size()) {
-							players.push_back(pl);
-							polylines.push_back(sh);
-							VipPoint pt(0, 0);
-							for (const auto& p : items.points[i])
-								pt += p;
-							pt /= items.points[i].size();
-							points.push_back(c->sceneMap()->invTransform(pt));
+				if (auto* drag = qobject_cast<VipDragWidget*>(d->property("_vip_custom_polylinePlayer").value<VipLazyPointer>().data<VipBaseDragWidget>())) {
+					if (auto* pl = qobject_cast<VipVideoPlayer*>(drag->widget())) {
+						if (auto sh = d->property("_vip_custom_polylineShape").value<VipLazyShape>().shape()) {
+							if (sh.type() == VipShape::Polyline && items.points[i].size()) {
+								players.push_back(pl);
+								polylines.push_back(sh);
+								VipPoint pt(0, 0);
+								for (const auto& p : items.points[i])
+									pt += p;
+								pt /= items.points[i].size();
+								points.push_back(c->sceneMap()->invTransform(pt));
+							}
 						}
 					}
 				}
@@ -7277,7 +7279,6 @@ void VipPlotPlayer::toolTipAttached(const VipToolTipHoverItems& items)
 
 	for (qsizetype i = 0; i < players.size(); ++i) {
 
-		// VipPlotSpectrogram* sp = players[i]->spectrogram();
 		qsizetype pixel_pos = (int)points[i].x();
 		const auto pixels = polylines[i].fillPixels();
 		if (pixel_pos < 0)
@@ -7286,7 +7287,8 @@ void VipPlotPlayer::toolTipAttached(const VipToolTipHoverItems& items)
 			pixel_pos = pixels.size() - 1;
 
 		QPoint im_point = pixels[pixel_pos];
-		QPointF scale_point = /* sp->sceneMap()->transform*/ (players[i]->imageTransform().map(im_point));
+		QPointF scale_point = im_point; ///* sp->sceneMap()->transform*/ (players[i]->imageTransform().map(im_point));
+		im_point = players[i]->imageTransform().inverted().map(scale_point).toPoint();
 
 		auto* marker = players[i]->highlightMarker();
 		marker->setVisible(true);

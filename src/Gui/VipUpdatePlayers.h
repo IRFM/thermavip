@@ -102,6 +102,24 @@ private:
 	VipNDArray m_buffer;
 };
 
+
+class VIP_GUI_EXPORT VipUpdateVideoPlayerTemporal : public QObject
+{
+Q_OBJECT 
+
+public: 
+	VipUpdateVideoPlayerTemporal(VipVideoPlayer* player);
+	~VipUpdateVideoPlayerTemporal();
+
+public Q_SLOTS:
+	void setSubtractBackgroundEnabled(bool);
+	void updateBackgroundFrame();
+
+private:
+	VIP_DECLARE_PRIVATE_DATA();
+};
+
+
 /**
 A VipPlotAreaFilter used to draw a cropping region
 */

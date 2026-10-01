@@ -37,6 +37,7 @@
 #include "VipPlotShape.h"
 #include "VipSymbol.h"
 #include "VipProcessingObjectEditor.h"
+#include "VipIODevice.h"
 
 #include <QApplication>
 #include <QGraphicsSceneMouseEvent>
@@ -123,8 +124,6 @@ bool VipDrawCropArea::eventFilter(QObject* /*watched*/, QEvent* event)
 	return false;
 }
 
-
-
 static bool _globalHideMins = false;
 
 VipUpdateVideoPlayer::VipUpdateVideoPlayer(VipVideoPlayer* player)
@@ -147,7 +146,6 @@ VipUpdateVideoPlayer::VipUpdateVideoPlayer(VipVideoPlayer* player)
 	// make sure the tool bar has a fixed size and does not show a drop-down indicator
 	m_toolBar->setMinimumWidth(m_toolBar->sizeHint().width());
 
-
 	m_adjust = new QToolButton();
 	m_adjust->setAutoRaise(true);
 	m_adjust->setToolTip("Adjust contrast, brightness and gamma");
@@ -159,7 +157,6 @@ VipUpdateVideoPlayer::VipUpdateVideoPlayer(VipVideoPlayer* player)
 	m_adjust->setMenu(adjust_menu);
 	m_adjust->setPopupMode(QToolButton::InstantPopup);
 	player->toolBar()->addWidget(m_adjust);
-
 
 	m_crop = new QToolButton();
 	m_crop->setAutoRaise(true);
@@ -205,14 +202,13 @@ VipUpdateVideoPlayer::VipUpdateVideoPlayer(VipVideoPlayer* player)
 
 	// show the tool bar when the player displays a valid image.
 	connect(player, SIGNAL(displayImageChanged()), this, SLOT(newPlayerImage()), Qt::DirectConnection);
-	//connect(VipPlayerLifeTime::instance(), SIGNAL(destroyed(VipAbstractPlayer*)), this, SLOT(handleDestroy(VipAbstractPlayer*)));
+	// connect(VipPlayerLifeTime::instance(), SIGNAL(destroyed(VipAbstractPlayer*)), this, SLOT(handleDestroy(VipAbstractPlayer*)));
 	connect(player, SIGNAL(destroy()), this, SLOT(handleDestroy()));
 
 	// read properties and restore state
 	setMarkersEnabled(player->property("_vip_customMarkersEnabled").toBool());
 	setDisplayMarkerPos(player->property("_vip_customDisplayMarkerPos").toBool());
 }
-
 
 void VipUpdateVideoPlayer::setHideAllMinimums(bool enable)
 {
@@ -436,7 +432,6 @@ void VipUpdateVideoPlayer::handleDestroy()
 		disconnect(spectro, SIGNAL(dataChanged()), this, SLOT(updateMarkers()));
 		disconnect(m_player->spectrogram()->scene(), SIGNAL(selectionChanged()), this, SLOT(updateMarkers()));
 		disconnect(m_player->plotSceneModel()->sceneModel().shapeSignals(), SIGNAL(sceneModelChanged(const VipSceneModel&)), this, SLOT(updateMarkers()));
-
 	}
 }
 
@@ -492,7 +487,7 @@ void VipUpdateVideoPlayer::saveROIInfos()
 				QString name = sh.name();
 				if (name.isEmpty())
 					name = sh.group() + " " + QString::number(sh.id());
-				auto stats = sh.statistics(image, offset,Vip::Max);
+				auto stats = sh.statistics(image, offset, Vip::Max);
 				content += name.toLatin1() + ": " + QByteArray::number(stats.max) + " " + QByteArray::number(stats.maxPos[1]) + " " + QByteArray::number(stats.maxPos[0]) + "\n";
 			}
 
@@ -591,7 +586,7 @@ void VipUpdateVideoPlayer::updateMarkers()
 					m_minMarkers.append(m);
 				}
 
-				auto statistics = shapes[i].statistics(image, offset,  Vip::Max | Vip::Min | Vip::MinPos | Vip::MaxPos);
+				auto statistics = shapes[i].statistics(image, offset, Vip::Max | Vip::Min | Vip::MinPos | Vip::MaxPos);
 				auto stats = statistics;
 
 				// get the size of a pixel
@@ -721,7 +716,7 @@ static QList<QAction*> videoPlayerActions(VipPlotItem* item, VipVideoPlayer* pla
 		return actions;
 
 	if (VipPlotShape* shape = qobject_cast<VipPlotShape*>(item)) {
-		if ((shape->rawData().type() == VipShape::Path || shape->rawData().type() == VipShape::Polygon) ) {
+		if ((shape->rawData().type() == VipShape::Path || shape->rawData().type() == VipShape::Polygon)) {
 			QAction* crop = new QAction("Crop image on shape bounding rect", nullptr);
 			QObject::connect(crop, &QAction::triggered, std::bind(cropOnShape, shape, player));
 			actions << crop;
@@ -754,7 +749,14 @@ static void updateVideoPlayer(VipVideoPlayer* player)
 	}
 	if (player && !player->property("NoImageProcessing").toBool() && player->spectrogram()->property("VipDisplayObject").value<VipDisplayObject*>())
 		new VipUpdateVideoPlayer(player);
+
+	if (!player->property("_vip_subtractBackground").toBool()) {
+		auto* up = new VipUpdateVideoPlayerTemporal(player);
+		if (!player->property("_vip_subtractBackground").toBool())
+			delete up;
+	}
 }
+
 
 int VipUpdateVideoPlayer::registerClass()
 {
@@ -763,6 +765,185 @@ int VipUpdateVideoPlayer::registerClass()
 	vipFDPlayerCreated().append<void(VipVideoPlayer*)>(updateVideoPlayer);
 	return 0;
 }
+
+class VipUpdateVideoPlayerTemporal::PrivateData
+{
+public:
+	QPointer<VipVideoPlayer> player;
+	QPointer<VipIODevice> device;
+	VipAnyData background;
+	qint64 subtractTime = VipInvalidTime;
+	QToolButton* subtract = nullptr;
+
+	VipIODevice* findVideoDevice(VipVideoPlayer* pl) const
+	{
+		if (!pl || !pl->mainDisplayObject())
+			return nullptr;
+		
+		auto devices = vipListCast<VipIODevice*>(pl->mainDisplayObject()->allSources());
+		VipIODevice* ret = nullptr;
+		for (auto* d : devices) {
+			if (d->outputAt(0)->data().data().userType() == qMetaTypeId<VipNDArray>()) {
+				if (ret)
+					return nullptr;
+				ret = d;
+			}
+		}
+		if (ret && ret->deviceType() != VipIODevice::Temporal)
+			return nullptr;
+
+		return ret;
+	}
+};
+
+VipUpdateVideoPlayerTemporal::VipUpdateVideoPlayerTemporal(VipVideoPlayer* player)
+  : QObject(player)
+{
+	VIP_CREATE_PRIVATE_DATA();
+
+	d_data->player = player;
+	d_data->device = d_data->findVideoDevice(player);
+	if (!d_data->device)
+		return;
+
+	// Add tool bar button
+
+	QToolButton* subtract = new QToolButton();
+	subtract->setAutoRaise(true);
+	subtract->setIcon(vipIcon("subtract_background.png"));
+	subtract->setToolTip("<b>Subtract background</b><br>Subtract the first video image by default.<br>Use 'Update background image' to subtract the current image instead.");
+	subtract->setCheckable(true);
+	QMenu* menu = new QMenu(subtract);
+	connect(menu->addAction("Update background image"), SIGNAL(triggered(bool)), this, SLOT(updateBackgroundFrame()));
+	subtract->setMenu(menu);
+	subtract->setPopupMode(QToolButton::MenuButtonPopup);
+	player->toolBar()->addWidget(subtract);
+
+	// check if there is already a valid subtract background
+	if (VipProcessingList* lst = player->sourceProcessingList()) {
+		QList<VipSubtractBackground*> subs = lst->processings<VipSubtractBackground*>();
+		bool checked = false;
+		for (int i = 0; i < subs.size(); ++i)
+			if (subs[i]->isEnabled()) {
+				checked = true;
+				break;
+			}
+		subtract->setChecked(checked);
+	}
+
+	auto time = d_data->player->property("_vip_customSubtractTime");
+	if (!time.isNull())
+		d_data->subtractTime = time.toLongLong();
+
+	connect(subtract, SIGNAL(clicked(bool)), this, SLOT(setSubtractBackgroundEnabled(bool)));
+	d_data->subtract = subtract;
+
+	player->setProperty("_vip_subtractBackground", true);
+}
+
+VipUpdateVideoPlayerTemporal::~VipUpdateVideoPlayerTemporal() {}
+
+void VipUpdateVideoPlayerTemporal::setSubtractBackgroundEnabled(bool enable)
+{
+	if (!d_data->player)
+		return;
+	if (!d_data->device)
+		d_data->device = d_data->findVideoDevice(d_data->player);
+	if (!d_data->device)
+		return;
+
+	if (VipProcessingList* lst = d_data->player->sourceProcessingList()) {
+
+		auto out = lst->outputAt(0)->value<VipNDArray>();
+		if (out.isNull() || out.dataType() == qMetaTypeId<VipRGB>())
+			enable = false;
+
+		if (enable) {
+			// retrieve/create the VipSubtractBackground processing from the processing list
+			VipSubtractBackground* sub = nullptr;
+			QList<VipSubtractBackground*> subs = lst->processings<VipSubtractBackground*>();
+			QList<VipExtractComponent*> extract = lst->processings<VipExtractComponent*>();
+
+			if (subs.size() > 1) {
+				// restart from scratch
+				for (int i = 0; i < subs.size(); ++i)
+					lst->remove(subs[i]);
+				subs = {};
+			}
+
+			if (subs.size() == 0) {
+				// Insert AFTER component extraction
+				if (extract.size())
+					lst->insert(lst->indexOf(extract.last()) +1, sub = new VipSubtractBackground());
+				else
+					lst->insert(0, sub = new VipSubtractBackground());
+			}
+			else if (subs.size() == 1) {
+				sub = subs.first();
+				int index = 0;
+				if (extract.size())
+					index = lst->indexOf(extract.last()) +1;
+
+				if (lst->indexOf(sub) != index) {
+					lst->take(lst->indexOf(sub));
+					lst->insert(index, sub);
+				}
+			}
+			
+			qint64 time = d_data->device->time();
+			if (d_data->background.isEmpty()) {
+				if (d_data->subtractTime == VipInvalidTime)
+					// Take the first image
+					d_data->subtractTime = d_data->device->firstTime();
+
+				d_data->device->read(d_data->subtractTime);
+
+				VipAnyData data = d_data->device->outputAt(0)->data();
+
+				// Go through the component extraction is possible
+				if (extract.size() == 1) {
+					lst->wait();
+					data = extract.first()->outputAt(0)->data();
+				}
+
+				d_data->background = data;
+			}
+			
+			sub->propertyAt(0)->setData(d_data->background.value<VipNDArray>());
+			d_data->device->read(time, true);
+
+			d_data->player->setProperty("_vip_customSubtractTime", d_data->subtractTime);
+		}
+		else {
+			// remove all VipSubtractBackground
+			QList<VipSubtractBackground*> subs = lst->processings<VipSubtractBackground*>();
+			for (int i = 0; i < subs.size(); ++i)
+				lst->remove(subs[i]);
+			lst->reload();
+			d_data->background = {};
+		}
+	}
+
+	if (d_data->subtract) {
+		d_data->subtract->blockSignals(true);
+		d_data->subtract->setChecked(enable);
+		d_data->subtract->blockSignals(false);
+	}
+
+}
+void VipUpdateVideoPlayerTemporal::updateBackgroundFrame() 
+{
+	if (!d_data->device)
+		return;
+
+	d_data->background = VipAnyData();
+	d_data->subtractTime = d_data->device->time();
+	setSubtractBackgroundEnabled(false);
+	setSubtractBackgroundEnabled(true);
+}
+
+
+
 
 VipDrawDistance2Points::VipDrawDistance2Points(VipAbstractPlotArea* area)
   : startItem(nullptr)
@@ -1091,7 +1272,6 @@ void VipUpdatePlotPlayer::stopMarkers()
 	}
 }
 
-
 void VipUpdatePlotPlayer::updateMarkers()
 {
 
@@ -1133,7 +1313,7 @@ void VipUpdatePlotPlayer::updateMarkers()
 
 		// delete markers for non present curves
 		auto it_min = m_minMarkers.begin();
-		for (auto it_max = m_maxMarkers.begin(); it_max != m_maxMarkers.end(); ) {
+		for (auto it_max = m_maxMarkers.begin(); it_max != m_maxMarkers.end();) {
 			int id = curves.indexOf(static_cast<VipPlotCurve*>(it_max.key()));
 			if (id < 0) {
 				auto& mins = it_min.value();
