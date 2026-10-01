@@ -317,6 +317,20 @@ QDataStream& operator>>(QDataStream& stream, VipLazySceneModel& value)
 	return stream;
 }
 
+QDataStream& operator<<(QDataStream& stream, const VipLazyShape& value)
+{
+	return stream << value.sceneModel() << value.shapeGroup() << value.shapeId();
+}
+QDataStream& operator>>(QDataStream& stream, VipLazyShape& value)
+{
+	VipLazySceneModel sm;
+	QString group;
+	int id = 0;
+	stream >> sm >> group >> id;
+	value = VipLazyShape(sm,group,id);
+	return stream;
+}
+
 #include "VipArchive.h"
 
 static VipArchive& operator<<(VipArchive& arch, const VipLazyPointer& ptr)
@@ -341,12 +355,35 @@ static VipArchive& operator>>(VipArchive& arch, VipLazySceneModel& ptr)
 	return arch;
 }
 
+
+static VipArchive& operator<<(VipArchive& arch, const VipLazyShape& ptr)
+{
+	arch.content("sceneModel", ptr.sceneModel());
+	arch.content("group", ptr.shapeGroup());
+	arch.content("id", ptr.shapeId());
+	return arch;
+}
+
+static VipArchive& operator>>(VipArchive& arch, VipLazyShape& ptr)
+{
+	VipLazySceneModel sm;
+	QString group;
+	int id = 0;
+	arch.content("sceneModel", sm);
+	arch.content("group", group);
+	arch.content("id", id);
+	ptr = VipLazyShape(sm, group, id);
+	return arch;
+}
+
 static int registerStreamOperators()
 {
 	qRegisterMetaTypeStreamOperators<VipLazyPointer>("VipLazyPointer");
 	qRegisterMetaTypeStreamOperators<VipLazySceneModel>("VipLazySceneModel");
+	qRegisterMetaTypeStreamOperators<VipLazyShape>("VipLazyShape");
 	vipRegisterArchiveStreamOperators<VipLazyPointer>();
 	vipRegisterArchiveStreamOperators<VipLazySceneModel>();
+	vipRegisterArchiveStreamOperators<VipLazyShape>();
 	return 0;
 }
 static int _registerStreamOperators = vipStaticInit("registerStreamOperators", registerStreamOperators);

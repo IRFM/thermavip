@@ -34,6 +34,7 @@
 
 #include "VipConfig.h"
 #include "VipPimpl.h"
+#include "VipSceneModel.h"
 
 #include <QObject>
 #include <QPointer>
@@ -157,7 +158,7 @@ private:
 ///
 /// VipLazyPointer is usefull to serialize QObject objects that refer to each other.
 ///
-class VipLazyPointer
+class VIP_CORE_EXPORT VipLazyPointer
 {
 	// mutable rather than const_cast in the const accessors below: id() and
 	// data() memoize their result, and const_cast is only defined when the
@@ -219,10 +220,10 @@ public:
 	}
 };
 
-#include "VipSceneModel.h"
+
 
 /// VipLazySceneModel is a lazy pointer of VipSceneModel
-class VipLazySceneModel
+class VIP_CORE_EXPORT VipLazySceneModel
 {
 	VipLazyPointer m_pointer;
 	VipSceneModel m_scene;
@@ -254,12 +255,7 @@ public:
 
 	VipSceneModel sceneModel() const;
 
-	VipLazySceneModel& operator=(const VipLazySceneModel& other)
-	{
-		m_pointer = other.m_pointer;
-		m_scene = other.m_scene;
-		return *this;
-	}
+	VipLazySceneModel& operator=(const VipLazySceneModel& other) = default;
 
 	VipLazySceneModel& operator=(const VipSceneModel& other)
 	{
@@ -270,8 +266,54 @@ public:
 	operator VipSceneModel() const { return sceneModel(); }
 };
 
+/// VipLazyShape is a lazy pointer of VipShape
+class VIP_CORE_EXPORT VipLazyShape
+{
+	VipLazySceneModel m_scene;
+	QString m_group;
+	int m_id = 0;
+
+public:
+	VipLazyShape() = default;
+	VipLazyShape(const VipLazyShape&) = default;
+	VipLazyShape(const VipShape& shape)
+	  : m_scene(shape.parent())
+	  , m_group(shape.group())
+	  , m_id(shape.id())
+	{
+	}
+	VipLazyShape(const VipLazySceneModel& sm, const QString& group, int id)
+	  : m_scene(sm)
+	  , m_group(group)
+	  , m_id(id)
+	{
+	}
+
+	VipLazyShape& operator=(const VipLazyShape&) = default;
+	VipLazyShape& operator=(const VipShape& shape) 
+	{
+		m_scene = (shape.parent());
+		m_group = (shape.group());
+		m_id = (shape.id());
+		return *this;
+	}
+
+	const VipLazySceneModel& sceneModel() const noexcept { return m_scene; }
+	const QString& shapeGroup() const noexcept { return m_group; }
+	int shapeId() const noexcept { return m_id; }
+
+	VipShape shape() const
+	{
+		if (auto sm = m_scene.sceneModel())
+			return sm.find(m_group, m_id);
+		return {};
+	}
+};
+
+
 Q_DECLARE_METATYPE(VipLazyPointer)
 Q_DECLARE_METATYPE(VipLazySceneModel)
+Q_DECLARE_METATYPE(VipLazyShape)
 
 class QDataStream;
 VIP_CORE_EXPORT QDataStream& operator<<(QDataStream& arch, const VipLazyPointer& value);
@@ -279,6 +321,9 @@ VIP_CORE_EXPORT QDataStream& operator>>(QDataStream& arch, VipLazyPointer& value
 
 VIP_CORE_EXPORT QDataStream& operator<<(QDataStream& arch, const VipLazySceneModel& value);
 VIP_CORE_EXPORT QDataStream& operator>>(QDataStream& arch, VipLazySceneModel& value);
+
+VIP_CORE_EXPORT QDataStream& operator<<(QDataStream& arch, const VipLazyShape& value);
+VIP_CORE_EXPORT QDataStream& operator>>(QDataStream& arch, VipLazyShape& value);
 
 /// @}
 // end Core

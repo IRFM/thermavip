@@ -101,6 +101,8 @@ public:
 	///  Only compares the internal data pointer, not the actual shape.
 	bool operator==(const VipShape& other) const;
 
+	VIP_ALWAYS_INLINE explicit operator bool() const { return isValid(); }
+
 	/// Returns true if the shape is valid
 	VIP_ALWAYS_INLINE bool isValid() const { return type() != Unknown; }
 	/// Returns true if the shape is null
