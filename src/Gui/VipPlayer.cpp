@@ -3787,7 +3787,7 @@ QList<VipDisplayCurve*> VipVideoPlayer::extractPolylines(const VipShapeList& shs
 
 			VipDisplayCurve* curve = new VipDisplayCurve(display->parent());
 			curve->setScheduleStrategies(VipProcessingObject::Asynchronous);
-			curve->item()->setTitle(VipText(out->at(o)->data().name())); // sh.group() + " " +QString::number(sh.id()) + " " + extract->components()[o]));
+			curve->item()->setTitle(VipText(out->at(o)->data().name()));
 			curve->item()->boxStyle().setBorderPen(pen[o]);
 			if (curve->item()->symbol()) {
 				curve->item()->symbol()->setBrush(pen[o].color());
@@ -3798,9 +3798,10 @@ QList<VipDisplayCurve*> VipVideoPlayer::extractPolylines(const VipShapeList& shs
 			lst->outputAt(0)->setConnection(curve->inputAt(0));
 
 			res.append(curve);
-
-			curve->setProperty("_vip_polylinePlayer", QVariant::fromValue(QObjectPointer(const_cast<VipVideoPlayer*>(this))));
-			curve->setProperty("_vip_polylineShape", QVariant::fromValue(sh));
+			
+			// Set custom property (starting with _vip_custom) in order to be saved in session files
+			curve->setProperty("_vip_custom_polylinePlayer", QVariant::fromValue(VipLazyPointer(const_cast<VipVideoPlayer*>(this))));
+			curve->setProperty("_vip_custom_polylineShape", QVariant::fromValue(sh));
 		}
 
 		// reset the first data to update the display objects
@@ -7257,8 +7258,8 @@ void VipPlotPlayer::toolTipAttached(const VipToolTipHoverItems& items)
 	for (qsizetype i = 0; i < items.items.size(); ++i) {
 		if (auto* c = qobject_cast<VipPlotCurve*>(items.items[i])) {
 			if (auto* d = c->property("VipDisplayObject").value<VipDisplayObject*>()) {
-				if (auto* pl = qobject_cast<VipVideoPlayer*>(d->property("_vip_polylinePlayer").value<QObjectPointer>().data())) {
-					auto sh = d->property("_vip_polylineShape").value<VipShape>();
+				if (auto* pl = d->property("_vip_custom_polylinePlayer").value<VipLazyPointer>().data<VipVideoPlayer>()) {
+					auto sh = d->property("_vip_custom_polylineShape").value<VipShape>();
 					if (sh.type() == VipShape::Polyline && items.points[i].size()) {
 						players.push_back(pl);
 						polylines.push_back(sh);
@@ -7312,7 +7313,7 @@ void VipPlotPlayer::toolTipAttached(const VipToolTipHoverItems& items)
 		text.setText(QString("(x: %1, y: %2)").arg(im_point.x()).arg(im_point.y()));
 		text.setTextPen(QPen(Qt::black));
 		marker->setLabel(text);
-		//marker->setCompositionMode(QPainter::CompositionMode_Difference);
+		marker->setCompositionMode(QPainter::CompositionMode_Difference);
 		
 	}
 }

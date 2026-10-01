@@ -1022,7 +1022,13 @@ void VipPlotShape::drawPolyline(QPainter* painter, const VipCoordinateSystemPtr&
 			// painter->setPen(brush().color());
 			QVector<QPoint> points = sh.fillPixels();
 
-			painter->setBrush(brush());
+			QBrush b = brush();
+			if (b.style() == Qt::NoBrush || b.color().alpha() == 0) {
+				QColor c = pen().color();
+				c.setAlpha(std::min(c.alpha(), 120));
+				b = QBrush(c);
+			}
+			painter->setBrush(b);
 			painter->setPen(Qt::NoPen);
 
 			QPolygonF poly;
