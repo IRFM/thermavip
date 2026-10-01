@@ -7288,7 +7288,7 @@ void VipPlotPlayer::toolTipAttached(const VipToolTipHoverItems& items)
 
 	for (qsizetype i = 0; i < players.size(); ++i) {
 
-		VipPlotSpectrogram* sp = players[i]->spectrogram();
+		//VipPlotSpectrogram* sp = players[i]->spectrogram();
 		qsizetype pixel_pos = (int)points[i].x();
 		const auto pixels = polylines[i].fillPixels();
 		if (pixel_pos < 0)
