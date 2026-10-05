@@ -636,17 +636,12 @@ bool VipPlotRasterData::correctionsEnabled() const
 	return d_data->correctionsEnabled;
 }
 
-static VipInterval interval_for_colormap;
-
 void VipPlotRasterData::setColorMap(VipAxisColorMap* colorMap)
 {
 	// Use the data lock to avoid changing the colormap while computing the image within setData()
-	interval_for_colormap = VipInterval();
-	interval_for_colormap = plotInterval();
 	dataLock()->lock();
 	Base::setColorMap(colorMap);
 	dataLock()->unlock();
-	interval_for_colormap = VipInterval();
 }
 void VipPlotRasterData::setAxes(const QList<VipAbstractScale*>& axes, VipCoordinateSystem::Type type)
 {
@@ -663,8 +658,6 @@ QList<VipInterval> VipPlotRasterData::plotBoundingIntervals() const
 
 VipInterval VipPlotRasterData::plotInterval(const VipInterval& interval) const
 {
-	if (!interval_for_colormap.isNull())
-		return interval_for_colormap; // Just to avoid recursive lock with setColorMap()
 	return rawData().bounds(interval);
 
 	/*if (d_data->dataInterval.isValid() && d_data->dataValidInterval == interval)

@@ -968,12 +968,8 @@ bool VipDisplayImage::acceptInput(int, const QVariant& v) const
 
 QSize VipDisplayImage::sizeHint() const
 {
-	if (VipPlotSpectrogram* curve = item()) {
-		curve->dataLock()->lock();
-		QSize res = curve->rawData().boundingRect().size().toSize();
-		curve->dataLock()->unlock();
-		return res;
-	}
+	if (VipPlotSpectrogram* curve = item()) 
+		return curve->rawData().boundingRect().size().toSize();
 	else
 		return QSize();
 }

@@ -61,7 +61,7 @@ static int registerQuiverKeyWords()
 	return 0;
 }
 
-static int _registerQuiverKeyWords = vipStaticInit("registerQuiverKeyWords",registerQuiverKeyWords);
+static int _registerQuiverKeyWords = vipStaticInit("registerQuiverKeyWords", registerQuiverKeyWords);
 
 struct QuiverData
 {
@@ -102,9 +102,7 @@ VipPlotQuiver::VipPlotQuiver(const VipText& title)
 	setPen(p);
 }
 
-VipPlotQuiver::~VipPlotQuiver()
-{
-}
+VipPlotQuiver::~VipPlotQuiver() {}
 
 void VipPlotQuiver::setData(const QVariant& data)
 {
@@ -112,9 +110,11 @@ void VipPlotQuiver::setData(const QVariant& data)
 	QuiverData hdata;
 	hdata.bounding = dataBoundingIntervals(d);
 	const auto& cd = d;
-	hdata.dataInterval = VipInterval(cd[0].value, cd[0].value);
-	for (qsizetype i = 1; i < cd.size(); ++i) {
-		hdata.dataInterval.extend(cd[i].value);
+	if (cd.size()) {
+		hdata.dataInterval = VipInterval(cd[0].value, cd[0].value);
+		for (qsizetype i = 1; i < cd.size(); ++i) {
+			hdata.dataInterval.extend(cd[i].value);
+		}
 	}
 	d.setAnyData(QVariant::fromValue(hdata));
 	VipPlotItemDataType::setData(QVariant::fromValue(std::move(d)));
@@ -442,4 +442,4 @@ static bool register_types()
 
 	return true;
 }
-static int _register_types = vipStaticInit("register_types",register_types);
+static int _register_types = vipStaticInit("register_types", register_types);

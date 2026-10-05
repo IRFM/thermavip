@@ -305,9 +305,13 @@ void VipPlotHistogram::setData(const QVariant& data)
 	hdata.bounding = dataBoundingIntervals(d, baseline);
 	hdata.baseline = baseline;
 	const auto& cd = d;
-	hdata.plotInterval = VipInterval(cd[0].value, cd[0].value);
-	for (qsizetype i = 1; i < cd.size(); ++i) {
-		hdata.plotInterval.extend(cd[i].value);
+	hdata.plotInterval = VipInterval();
+	if (cd.size()) {
+
+		hdata.plotInterval = VipInterval(cd[0].value, cd[0].value);
+		for (qsizetype i = 1; i < cd.size(); ++i) {
+			hdata.plotInterval.extend(cd[i].value);
+		}
 	}
 	d.setAnyData(QVariant::fromValue(hdata));
 	VipPlotItemDataType::setData(QVariant::fromValue(std::move(d)));

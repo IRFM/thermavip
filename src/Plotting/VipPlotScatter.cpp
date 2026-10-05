@@ -57,7 +57,7 @@ static int registerScatterKeyWords()
 	return 0;
 }
 
-static int _registerScatterKeyWords = vipStaticInit("registerScatterKeyWords",registerScatterKeyWords);
+static int _registerScatterKeyWords = vipStaticInit("registerScatterKeyWords", registerScatterKeyWords);
 
 struct ScatterData
 {
@@ -84,7 +84,6 @@ public:
 	SizeUnit unit;
 	bool useValueAsSize;
 
-
 	Qt::Alignment textAlignment;
 	Vip::RegionPositions textPosition;
 	QTransform textTransform;
@@ -102,9 +101,7 @@ VipPlotScatter::VipPlotScatter(const VipText& title)
 	this->setMajorColor(QColor(Qt::blue));
 }
 
-VipPlotScatter::~VipPlotScatter()
-{
-}
+VipPlotScatter::~VipPlotScatter() {}
 
 void VipPlotScatter::setSizeUnit(SizeUnit unit)
 {
@@ -264,13 +261,15 @@ void VipPlotScatter::setData(const QVariant& data)
 	ScatterData hdata;
 	hdata.bounding = dataBoundingIntervals(d);
 	const auto& cd = d;
-	hdata.dataInterval = VipInterval(cd[0].value, cd[0].value);
-	for (qsizetype i = 1; i < cd.size(); ++i) {
-		hdata.dataInterval.extend(cd[i].value);
+	if (cd.size()) {
+
+		hdata.dataInterval = VipInterval(cd[0].value, cd[0].value);
+		for (qsizetype i = 1; i < cd.size(); ++i) {
+			hdata.dataInterval.extend(cd[i].value);
+		}
 	}
 	d.setAnyData(QVariant::fromValue(hdata));
 	VipPlotItemDataType::setData(QVariant::fromValue(std::move(d)));
-
 }
 
 VipInterval VipPlotScatter::plotInterval(const VipInterval& interval) const

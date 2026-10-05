@@ -1041,11 +1041,11 @@ class VIP_PLOTTING_EXPORT VipPlotItemData : public VipPlotItem
 	Q_OBJECT
 
 public:
-	using Mutex = VipSpinlock ;
+	using Mutex = VipRecursiveSpinlock ;
 #if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
 	using Locker =  QMutexLocker;
 #else
-	using Locker = QMutexLocker<VipSpinlock> ;
+	using Locker = QMutexLocker<VipRecursiveSpinlock> ;
 #endif
 	VipPlotItemData(const VipText& title = VipText());
 	~VipPlotItemData();
