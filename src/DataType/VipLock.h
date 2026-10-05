@@ -40,6 +40,8 @@
 #include <thread>
 #include <type_traits>
 
+#include "VipConfig.h"
+
 /// @brief Lightweight and fast VipSpinlock implementation based on https://rigtorp.se/VipSpinlock/
 ///
 /// VipSpinlock is a lightweight VipSpinlock implementation following the TimedMutex requirements.
@@ -57,7 +59,7 @@ public:
 	VipSpinlock(VipSpinlock const&) = delete;
 	VipSpinlock& operator=(VipSpinlock const&) = delete;
 
-	void lock() noexcept
+	VIP_ALWAYS_INLINE void lock() noexcept
 	{
 		for (;;) {
 			// Optimistically assume the lock is free on the first try
@@ -72,15 +74,15 @@ public:
 		}
 	}
 
-	bool is_locked() const noexcept { return d_lock.load(std::memory_order_relaxed); }
-	bool try_lock() noexcept
+	VIP_ALWAYS_INLINE bool is_locked() const noexcept { return d_lock.load(std::memory_order_relaxed); }
+	VIP_ALWAYS_INLINE bool try_lock() noexcept
 	{
 		// First do a relaxed load to check if lock is free in order to prevent
 		// unnecessary cache misses if someone does while(!try_lock())
 		return !d_lock.load(std::memory_order_relaxed) && !d_lock.exchange(true, std::memory_order_acquire);
 	}
 
-	void unlock() noexcept { d_lock.store(false, std::memory_order_release); }
+	VIP_ALWAYS_INLINE void unlock() noexcept { d_lock.store(false, std::memory_order_release); }
 
 	template<class Rep, class Period>
 	bool try_lock_for(const std::chrono::duration<Rep, Period>& duration) noexcept
@@ -96,125 +98,184 @@ public:
 				return true;
 
 			while (d_lock.load(std::memory_order_relaxed)) {
-				if (std::chrono::system_clock::now() > timePoint)
-					return false;
+				if (Clock::now() > timePoint)
+					return try_lock();
 				std::this_thread::yield();
 			}
 		}
 	}
 };
 
-/// @brief An unfaire read-write VipSpinlock class that favors write operations
+/// @brief Recursive spinlock based on VipSpinlock
+class VipRecursiveSpinlock
+{
+	VipSpinlock d_lock;
+	std::atomic<std::uint64_t> d_id = 0;
+	std::atomic<std::int64_t> d_count = 0;
+
+	VIP_ALWAYS_INLINE std::uint64_t thread_id() const noexcept
+	{
+		static std::atomic<std::uint64_t> id{ 1 };
+		thread_local std::uint64_t th_id = id.fetch_add(1);
+		return th_id;
+	}
+
+public:
+	VipRecursiveSpinlock() = default;
+	~VipRecursiveSpinlock() noexcept = default;
+
+	VipRecursiveSpinlock(const VipRecursiveSpinlock&) = delete;
+	VipRecursiveSpinlock& operator=(const VipRecursiveSpinlock&) = delete;
+
+	VIP_ALWAYS_INLINE void lock() noexcept
+	{
+		auto id = thread_id();
+		if (id == d_id.load(std::memory_order_relaxed)) {
+			++d_count;
+		}
+		else {
+			d_lock.lock();
+			d_id.store(id);
+		}
+	}
+
+	VIP_ALWAYS_INLINE bool try_lock() noexcept
+	{
+		auto id = thread_id();
+		if (id == d_id.load(std::memory_order_relaxed)) {
+			++d_count;
+			return true;
+		}
+		if (d_lock.try_lock()) {
+			d_id.store(id);
+			return true;
+		}
+		return false;
+	}
+
+	template<class Rep, class Period>
+	bool try_lock_for(const std::chrono::duration<Rep, Period>& duration) noexcept
+	{
+		return try_lock_until(std::chrono::system_clock::now() + duration);
+	}
+
+	template<class Clock, class Duration>
+	bool try_lock_until(const std::chrono::time_point<Clock, Duration>& timePoint) noexcept
+	{
+		for (;;) {
+			if (try_lock())
+				return true;
+
+			if (Clock::now() > timePoint)
+				return try_lock();
+
+			std::this_thread::yield();
+		}
+		VIP_UNREACHABLE();
+	}
+
+	VIP_ALWAYS_INLINE void unlock() noexcept
+	{
+		VIP_ASSERT_DEBUG(thread_id() == d_id.load(std::memory_order_relaxed));
+		if (d_count > 0) {
+			--d_count;
+		}
+		else {
+			d_id.store(0);
+			d_lock.unlock();
+		}
+	}
+};
+
+/// @brief An unfaire read-write spinlock class that favors write operations
 ///
-template<class LockType = std::int32_t>
+template<class LockType = std::uint32_t>
 class VipSharedSpinner
 {
-	static_assert(std::is_signed<LockType>::value, "VipSharedSpinner only supports signed atomic types!");
+	static_assert(std::is_unsigned_v<LockType>, "shared_spinner only supports unsigned atomic types!");
 	using lock_type = LockType;
 	static constexpr lock_type write = 1;
 	static constexpr lock_type need_lock = 2;
 	static constexpr lock_type read = 4;
+	static constexpr lock_type max_read_mask = 1ull << (sizeof(lock_type) * 8u - 1u);
 
-	bool try_lock(lock_type& expect) noexcept
+	bool failed_lock(lock_type& expect)
+	{
+		if (!(expect & (need_lock)))
+			d_lock.fetch_or(need_lock, std::memory_order_release);
+		expect = need_lock;
+		return false;
+	}
+	VIP_ALWAYS_INLINE bool try_lock(lock_type& expect)
 	{
 		if (!d_lock.compare_exchange_strong(expect, write, std::memory_order_acq_rel)) {
-			d_lock.fetch_or(expect = need_lock, std::memory_order_release);
-			return false;
+			return failed_lock(expect);
 		}
 		return true;
 	}
-	void yield() noexcept { std::this_thread::yield(); }
+	VIP_ALWAYS_INLINE void yield() { std::this_thread::yield(); }
 
 	std::atomic<lock_type> d_lock;
 
 public:
-	constexpr VipSharedSpinner() noexcept
+	constexpr VipSharedSpinner()
 	  : d_lock(0)
 	{
 	}
 	VipSharedSpinner(VipSharedSpinner const&) = delete;
 	VipSharedSpinner& operator=(VipSharedSpinner const&) = delete;
 
-	void lock() noexcept
+	VIP_ALWAYS_INLINE void lock()
 	{
 		lock_type expect = 0;
-		while ((!try_lock(expect)))
+		while (!try_lock(expect))
 			yield();
 	}
-	void unlock() noexcept { d_lock.fetch_and(~(write | need_lock), std::memory_order_release); }
-	void lock_shared() noexcept
+	VIP_ALWAYS_INLINE void unlock()
 	{
-		while ((!try_lock_shared()))
+		VIP_ASSERT_DEBUG(d_lock & write, "");
+		d_lock.fetch_and(static_cast<lock_type>(~(write | need_lock)), std::memory_order_release);
+	}
+	VIP_ALWAYS_INLINE void lock_shared()
+	{
+		while (!try_lock_shared())
 			yield();
 	}
-	void unlock_shared() noexcept { d_lock.fetch_add(-read, std::memory_order_release); }
+	VIP_ALWAYS_INLINE void unlock_shared()
+	{
+		VIP_ASSERT_DEBUG(d_lock > 0, "");
+		d_lock.fetch_sub(read, std::memory_order_release);
+	}
 	// Attempt to acquire writer permission. Return false if we didn't get it.
-	bool try_lock() noexcept
+	VIP_ALWAYS_INLINE bool try_lock()
 	{
 		if (d_lock.load(std::memory_order_relaxed) & (need_lock | write))
 			return false;
 		lock_type expect = 0;
 		return d_lock.compare_exchange_strong(expect, write, std::memory_order_acq_rel);
 	}
-	bool try_lock_shared() noexcept
+	VIP_ALWAYS_INLINE bool try_lock_shared()
 	{
-		if (!(d_lock.load(std::memory_order_relaxed) & (need_lock | write))) {
-			if ((!(d_lock.fetch_add(read, std::memory_order_acquire) & (need_lock | write))))
-				return true;
-			d_lock.fetch_add(-read, std::memory_order_release);
+		// This version might be slightly slower in some situations (low concurrency).
+		// However it works for very small lock type (like uint8_t) by avoiding overflows.
+		if constexpr (sizeof(d_lock) == 1) {
+			lock_type content = d_lock.load(std::memory_order_relaxed);
+			return (!(content & (need_lock | write | max_read_mask)) && d_lock.compare_exchange_strong(content, content + read));
 		}
-		return false;
+		else {
+			// Version based on fetch_add
+			if (!(d_lock.load(std::memory_order_relaxed) & (need_lock | write))) {
+				if (!(d_lock.fetch_add(read, std::memory_order_acquire) & (need_lock | write)))
+					return true;
+				d_lock.fetch_sub(read, std::memory_order_release);
+			}
+			return false;
+		}
 	}
+	VIP_ALWAYS_INLINE bool is_locked() const noexcept { return d_lock.load(std::memory_order_relaxed) != 0; }
+	VIP_ALWAYS_INLINE bool is_locked_shared() const noexcept { return d_lock.load(std::memory_order_relaxed) & write; }
 };
 
 using VipSharedSpinlock = VipSharedSpinner<>;
-
-template<class Lock>
-class VipUniqueLock
-{
-	Lock* d_lock;
-
-public:
-	VipUniqueLock(Lock& l)
-	  : d_lock(&l)
-	{
-		l.lock();
-	}
-	// A copied guard would release the same lock twice, which is worse than a
-	// copied lock: the two lock classes of this header delete their copy too.
-	VipUniqueLock(const VipUniqueLock&) = delete;
-	VipUniqueLock& operator=(const VipUniqueLock&) = delete;
-	~VipUniqueLock()
-	{
-		if (d_lock)
-			d_lock->unlock();
-	}
-
-	/// @brief Release before the end of the scope, for a section that must not
-	/// hold the lock across a blocking call.
-	void unlock()
-	{
-		if (d_lock) {
-			d_lock->unlock();
-			d_lock = nullptr;
-		}
-	}
-};
-
-template<class Lock>
-class VipSharedLock
-{
-	Lock* d_lock;
-
-public:
-	VipSharedLock(Lock& l)
-	  : d_lock(&l)
-	{
-		l.lock_shared();
-	}
-	VipSharedLock(const VipSharedLock&) = delete;
-	VipSharedLock& operator=(const VipSharedLock&) = delete;
-	~VipSharedLock() { d_lock->unlock_shared(); }
-};
 
 #endif

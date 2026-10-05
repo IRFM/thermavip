@@ -870,6 +870,7 @@ static void insideRect(const QRectF& r, const QPolygonF& pts, QVector<QLineF>& o
 void VipPlotCurve::draw(QPainter* painter, const VipCoordinateSystemPtr& m) const
 {
 	//qint64 stg = QDateTime::currentMSecsSinceEpoch();
+	//static qint64 last_print = 0;
 
 	QList<QPolygonF> drawn_polygons;
 
@@ -1034,7 +1035,8 @@ void VipPlotCurve::draw(QPainter* painter, const VipCoordinateSystemPtr& m) cons
 	}
 
 	//TEST
-	//qint64 elg = QDateTime::currentMSecsSinceEpoch() - stg;
+	//qint64 date = QDateTime::currentMSecsSinceEpoch();
+	//qint64 elg = date - stg;
 	//printf("full curve: %i ms\n", (int)elg);
 }
 

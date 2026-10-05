@@ -757,7 +757,7 @@ static std::unordered_set<int> _unregistered_ids;
 static VipSpinlock _unregistered_lock;
 static bool isUnregistered(int id)
 {
-	VipUniqueLock<VipSpinlock> lock(_unregistered_lock);
+	std::scoped_lock<VipSpinlock> lock(_unregistered_lock);
 	return _unregistered_ids.find(id) != _unregistered_ids.end();
 }
 
@@ -774,7 +774,7 @@ void VipIODevice::unregisterDeviceForPossibleReadWrite(int id)
 		}
 		delete obj;
 
-		VipUniqueLock<VipSpinlock> lock(_unregistered_lock);
+		std::scoped_lock<VipSpinlock> lock(_unregistered_lock);
 		_unregistered_ids.insert(id);
 	}
 }

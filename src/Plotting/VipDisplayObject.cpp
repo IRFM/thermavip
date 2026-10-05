@@ -63,6 +63,8 @@ namespace Vip
 		{
 			bool pendingDirty{ false };
 			QMutex lock;
+			QWaitCondition cond;
+			int waitCount = 0;
 			QVector<ItemAndData> dirtyItems;
 
 		public:
@@ -85,13 +87,32 @@ namespace Vip
 				QMutexLocker ll(&lock);
 				QVector<ItemAndData> res = std::move(dirtyItems);
 				pendingDirty = false;
+				if (waitCount)
+					cond.notify_all();
 				return res;
+			}
+
+			bool waitForDisplay(int milli = -1)
+			{
+				struct Decr
+				{
+					int* count;
+					~Decr() noexcept { --(*count); }
+				};
+				QMutexLocker ll(&lock);
+				++waitCount;
+				Decr decr{ &waitCount };
+				if (milli > 0)
+					return cond.wait(&lock, (unsigned)milli);
+				else {
+					cond.wait(&lock);
+					return true;
+				}
 			}
 		};
 	}
 
 }
-
 
 class VipDisplayObject::PrivateData
 {
@@ -127,10 +148,10 @@ public:
 
 	QPointer<VipAbstractPlotArea> area;
 
-	//VipSpinlock lock;
-	//std::condition_variable_any cond;
-	QMutex lock;
-	QWaitCondition cond;
+	// VipSpinlock lock;
+	// std::condition_variable_any cond;
+	std::mutex lock;
+	std::condition_variable cond;
 };
 
 VipDisplayObject::VipDisplayObject(QObject* parent)
@@ -168,10 +189,10 @@ static void processEvents()
 
 	qint64 start = QDateTime::currentMSecsSinceEpoch();
 	bool r = mutex.tryLock(100);
-	if (!r) 
+	if (!r)
 		// Wait at most 100 ms
 		return;
-	
+
 	std::lock_guard<QMutex> lock(mutex, std::adopt_lock_t{});
 	qint64 el = QDateTime::currentMSecsSinceEpoch() - start;
 	if (el < 5) {
@@ -215,34 +236,33 @@ void VipDisplayObject::apply()
 	if (!this->prepareForDisplay(buffer)) {
 
 		if ((QCoreApplication::instance() && QThread::currentThread() == QCoreApplication::instance()->thread()))
-			//display in the GUI thread
+			// display in the GUI thread
 			this->display(buffer);
 		else {
 
-			// Try to gather several items for display() call 
+			// Try to gather several items for display() call
 			auto notifier = d_data->area ? d_data->area->notifier() : Vip::detail::ItemDirtyNotifierPtr();
 			if (notifier)
 				notifier->markDirty(this, buffer);
 			else
 				QMetaObject::invokeMethod(this, "display", Qt::QueuedConnection, Q_ARG(VipAnyDataList, buffer));
 
+			
 			// Wait for the display to end while processing events from the main event loop.
 			// This ensures that, whatever the display rate, the GUI remains responsive.
-			QMutexLocker ll(&d_data->lock);
-			while (d_data->displayInProgress.load(std::memory_order_relaxed) && !d_data->isDestruct) {
-				bool ret = d_data->cond.wait(&d_data->lock, 5);
-				qint64 current = QDateTime::currentMSecsSinceEpoch();
-				const bool timed_out = (current - time) > 50;
-				if (timed_out || (!ret && buffer.size() > 1)) {
-					// The lock is released around it. processEvents() runs the event loop for
-					// up to a hundred millisecond, and the lock it used to hold is the one
-					// the display slot needs to say that it has finished.
-					ll.unlock();
+			if (notifier) {
+
+				if (!notifier->waitForDisplay(10))
 					processEvents();
-					ll.relock();
+			}
+			else {
+				bool done = false;
+				{
+					std::unique_lock ll(d_data->lock);
+					done = d_data->cond.wait_for(ll, std::chrono::milliseconds(10)) == std::cv_status::no_timeout;
 				}
-				if (timed_out)
-					break;
+				if (!done)
+					processEvents();
 			}
 		}
 	}
@@ -269,11 +289,11 @@ void VipDisplayObject::display(const VipAnyDataList& data)
 		return;
 
 	QVector<Vip::detail::ItemAndData> items;
-	if (auto * a = d_data->area.data())
+	if (auto* a = d_data->area.data())
 		if (auto notifier = a->notifier())
 			// Get all dirty items
 			items = notifier->dirtItems();
-	
+
 	const Vip::detail::ItemAndData one{ this, data };
 	const Vip::detail::ItemAndData* items_p = &one;
 	qsizetype count = 1;
@@ -287,7 +307,7 @@ void VipDisplayObject::display(const VipAnyDataList& data)
 		// Process all dirty items in one loop
 
 		const VipAnyDataList& dat = items_p[i].data;
-		VipDisplayObject* disp = const_cast <VipDisplayObject*>(items_p[i].item);
+		VipDisplayObject* disp = const_cast<VipDisplayObject*>(items_p[i].item);
 
 		// update parent VipAbstractPlayer title every 500 ms (no need for more in case of streaming)
 		qint64 time = QDateTime::currentMSecsSinceEpoch();
@@ -348,13 +368,11 @@ bool VipDisplayObject::updateOnHidden() const
 	return d_data->updateOnHidden;
 }
 
-
 VipFunctionDispatcher<2>& VipFDDisplayObjectSetItem()
 {
 	static VipFunctionDispatcher<2> inst;
 	return inst;
 }
-
 
 class VipDisplayPlotItem::PrivateData
 {
@@ -402,7 +420,7 @@ VipPlotItem* VipDisplayPlotItem::item() const
 		QMetaObject::invokeMethod(const_cast<VipDisplayPlotItem*>(this), "setItemProperty", Qt::AutoConnection);
 		connect(item, SIGNAL(destroyed(QObject*)), this, SLOT(deleteLater()));
 		connect(item, SIGNAL(axesChanged(VipPlotItem*)), this, SLOT(axesChanged(VipPlotItem*)));
-		const_cast < VipDisplayPlotItem*>(this)->axesChanged(item);
+		const_cast<VipDisplayPlotItem*>(this)->axesChanged(item);
 		item->setItemAttribute(VipPlotItem::IsSuppressable, d_data->itemSuppressable);
 
 		// This function ight not be called from the main thread, so use delayed call
@@ -413,7 +431,7 @@ VipPlotItem* VipDisplayPlotItem::item() const
 			QObjectPointer plot(item);
 			QMetaObject::invokeMethod(
 			  _this,
-			  [display,plot]() {
+			  [display, plot]() {
 				  if (display && plot && static_cast<VipDisplayObject*>(display.data())->widget())
 					  VipFDDisplayObjectSetItem().callAllMatch(display.data(), plot.data());
 			  },
@@ -491,7 +509,6 @@ void VipDisplayPlotItem::setItem(VipPlotItem* item)
 	}
 }
 
-
 void VipDisplayPlotItem::axesChanged(VipPlotItem* it)
 {
 	if (auto* a = it->area()) {
@@ -499,11 +516,9 @@ void VipDisplayPlotItem::axesChanged(VipPlotItem* it)
 		auto notifier = a->notifier();
 		if (!notifier)
 			a->setNotifier(Vip::detail::ItemDirtyNotifierPtr::create());
-		
 	}
 	this->checkVisibility();
 }
-
 
 void VipDisplayPlotItem::formatItem(VipPlotItem* item, const VipAnyData& data, bool force)
 {
@@ -703,9 +718,7 @@ VipDisplayCurve::VipDisplayCurve(QObject* parent)
 	this->propertyName("Sliding_time_window")->setData(VipNumericValueToPointVector::defaultSlidingTimeWindow());
 }
 
-VipDisplayCurve::~VipDisplayCurve()
-{
-}
+VipDisplayCurve::~VipDisplayCurve() {}
 
 VipExtractComponent* VipDisplayCurve::extractComponent() const
 {
@@ -721,10 +734,10 @@ void VipDisplayCurve::setItem(VipPlotItem* _it)
 {
 	VipPlotCurve* it = qobject_cast<VipPlotCurve*>(_it);
 	if (it && it != item()) {
-		//disconnect(item(), SIGNAL(axesChanged(VipPlotItem*)), this, SLOT(axesChanged(VipPlotItem*)));
+		// disconnect(item(), SIGNAL(axesChanged(VipPlotItem*)), this, SLOT(axesChanged(VipPlotItem*)));
 		it->setAutoMarkDirty(false);
 		VipDisplayPlotItem::setItem(it);
-		//connect(it, SIGNAL(axesChanged(VipPlotItem*)), this, SLOT(axesChanged(VipPlotItem*)));
+		// connect(it, SIGNAL(axesChanged(VipPlotItem*)), this, SLOT(axesChanged(VipPlotItem*)));
 	}
 }
 
@@ -785,8 +798,8 @@ bool VipDisplayCurve::prepareForDisplay(const VipAnyDataList& lst)
 		curve->updateSamples([&](VipPointVector& vec) {
 			if (d_data->is_full_vector)
 				vec = vector;
-			else if(vector.size()){
-				//remove all data with a time greater than sample
+			else if (vector.size()) {
+				// remove all data with a time greater than sample
 				qsizetype erase_from = vec.size();
 				for (qsizetype i = vec.size() - 1; i >= 0; --i) {
 					if (vec[i].x() >= vector.first().x())
@@ -812,7 +825,6 @@ bool VipDisplayCurve::prepareForDisplay(const VipAnyDataList& lst)
 				}
 			}
 		});
-
 	}
 	return false;
 }
@@ -851,7 +863,7 @@ VipDisplaySceneModel::VipDisplaySceneModel(QObject* parent)
 	item()->setBrush("All", QBrush(QColor(255, 0, 0, 70)));
 	item()->setDrawComponents("All", VipPlotShape::Border | VipPlotShape::Background | VipPlotShape::Id | VipPlotShape::Group);
 	item()->setZValue(1000);
-	//item()->setIgnoreStyleSheet(true);//TEST: comment to allow style sheet from VipAnyData attribute
+	// item()->setIgnoreStyleSheet(true);//TEST: comment to allow style sheet from VipAnyData attribute
 }
 
 bool VipDisplaySceneModel::acceptInput(int, const QVariant& v) const
@@ -947,9 +959,7 @@ VipDisplayImage::VipDisplayImage(QObject* parent)
 	item()->setAutoMarkDirty(false);
 }
 
-VipDisplayImage::~VipDisplayImage()
-{
-}
+VipDisplayImage::~VipDisplayImage() {}
 
 bool VipDisplayImage::acceptInput(int, const QVariant& v) const
 {
@@ -995,7 +1005,6 @@ bool VipDisplayImage::prepareForDisplay(const VipAnyDataList& data)
 				}
 				else
 					curve->setData(v);
-				
 			}
 			else if (v.userType() == qMetaTypeId<VipRasterData>()) {
 				const VipRasterData raster = v.value<VipRasterData>();
@@ -1052,4 +1061,4 @@ static int registerStreamOperators()
 	return 0;
 }
 
-static int _registerStreamOperators = vipStaticInit("registerStreamOperators",registerStreamOperators);
+static int _registerStreamOperators = vipStaticInit("registerStreamOperators", registerStreamOperators);

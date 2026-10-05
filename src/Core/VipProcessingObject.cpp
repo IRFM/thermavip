@@ -219,7 +219,7 @@ VipConnection::~VipConnection()
 	VipConnection::doClearConnection();
 	d_data->address.clear();
 	{
-		VipUniqueLock<VipSpinlock> locker(d_data->lock);
+		std::scoped_lock<VipSpinlock> locker(d_data->lock);
 		d_data->connections.clear();
 	}
 	d_data->openMode = UnknownConnection;
@@ -244,7 +244,7 @@ VipProcessingObject* VipConnection::parentProcessingObject() const
 
 VipConnectionVector VipConnection::connectionsCopy() const
 {
-	VipUniqueLock<VipSpinlock> locker(d_data->lock);
+	std::scoped_lock<VipSpinlock> locker(d_data->lock);
 	return d_data->connections;
 }
 
@@ -252,7 +252,7 @@ VipOutput* VipConnection::source() const
 {
 	VipConnectionPtr first;
 	{
-		VipUniqueLock<VipSpinlock> locker(d_data->lock);
+		std::scoped_lock<VipSpinlock> locker(d_data->lock);
 		if (d_data->connections.size())
 			first = d_data->connections.first();
 	}
@@ -280,7 +280,7 @@ void VipConnection::setupConnection(const QString& addr, const VipConnectionPtr&
 	// their own lock: this walked and mutated two vectors with none.
 	VipConnectionVector previous;
 	{
-		VipUniqueLock<VipSpinlock> locker(d_data->lock);
+		std::scoped_lock<VipSpinlock> locker(d_data->lock);
 		previous = d_data->connections;
 		if (con)
 			d_data->connections = VipConnectionVector() << con;
@@ -289,7 +289,7 @@ void VipConnection::setupConnection(const QString& addr, const VipConnectionPtr&
 	}
 
 	for (int i = 0; i < previous.size(); ++i) {
-		VipUniqueLock<VipSpinlock> locker(previous[i]->d_data->lock);
+		std::scoped_lock<VipSpinlock> locker(previous[i]->d_data->lock);
 		qsizetype index = indexOfSharedVector(previous[i]->d_data->connections, this);
 		if (index >= 0)
 			previous[i]->d_data->connections.remove(index);
@@ -336,7 +336,7 @@ void VipConnection::clearConnection()
 	doClearConnection();
 	d_data->address.clear();
 	{
-		VipUniqueLock<VipSpinlock> locker(d_data->lock);
+		std::scoped_lock<VipSpinlock> locker(d_data->lock);
 		d_data->connections.clear();
 	}
 	setOpenMode(UnknownConnection);
@@ -388,7 +388,7 @@ QString VipConnection::address() const
 		// build connection from given VipConnection instances
 		VipConnectionPtr back;
 		{
-			VipUniqueLock<VipSpinlock> locker(d_data->lock);
+			std::scoped_lock<VipSpinlock> locker(d_data->lock);
 			if (d_data->connections.size())
 				back = d_data->connections.back();
 		}
@@ -453,7 +453,7 @@ void VipConnection::doOpenConnection(IOType type)
 		// build connection from given VipConnection instances
 		VipConnectionPtr out;
 		{
-			VipUniqueLock<VipSpinlock> locker(d_data->lock);
+			std::scoped_lock<VipSpinlock> locker(d_data->lock);
 			if (d_data->connections.size())
 				// use the last (probably unique) connection which is the output
 				out = d_data->connections.back();
@@ -463,7 +463,7 @@ void VipConnection::doOpenConnection(IOType type)
 
 			// add this connection to output connection vector, under its own lock
 			{
-				VipUniqueLock<VipSpinlock> locker(out->d_data->lock);
+				std::scoped_lock<VipSpinlock> locker(out->d_data->lock);
 				if (out->d_data->connections.indexOf(in) < 0)
 					out->d_data->connections.append(in);
 			}
@@ -473,7 +473,7 @@ void VipConnection::doOpenConnection(IOType type)
 			if (!addr.isEmpty())
 				d_data->address = addr;
 			{
-				VipUniqueLock<VipSpinlock> locker(d_data->lock);
+				std::scoped_lock<VipSpinlock> locker(d_data->lock);
 				d_data->connections = VipConnectionVector() << out;
 			}
 			this->setOpenMode(InputConnection);
@@ -506,7 +506,7 @@ void VipConnection::doOpenConnection(IOType type)
 						VipConnectionPtr out = _output->connection();
 
 						{
-							VipUniqueLock<VipSpinlock> locker(out->d_data->lock);
+							std::scoped_lock<VipSpinlock> locker(out->d_data->lock);
 							if (out->d_data->connections.indexOf(in) < 0)
 								out->d_data->connections.append(in);
 						}
@@ -515,7 +515,7 @@ void VipConnection::doOpenConnection(IOType type)
 						if (!out_addr.isEmpty())
 							d_data->address = out_addr;
 						{
-							VipUniqueLock<VipSpinlock> locker(d_data->lock);
+							std::scoped_lock<VipSpinlock> locker(d_data->lock);
 							d_data->connections = VipConnectionVector() << out;
 						}
 						this->setOpenMode(InputConnection);
@@ -553,7 +553,7 @@ void VipConnection::doClearConnection()
 	// VipConnectionPtr con = sharedFromThis();
 	VipConnectionVector connections;
 	{
-		VipUniqueLock<VipSpinlock> locker(d_data->lock);
+		std::scoped_lock<VipSpinlock> locker(d_data->lock);
 		connections = d_data->connections;
 		d_data->connections.clear();
 	}
@@ -565,7 +565,7 @@ void VipConnection::doClearConnection()
 		bool removed = false;
 		bool empty = false;
 		{
-			VipUniqueLock<VipSpinlock> locker(peer->d_data->lock);
+			std::scoped_lock<VipSpinlock> locker(peer->d_data->lock);
 			qsizetype index = indexOfSharedVector(peer->d_data->connections, this);
 			if (index >= 0) {
 				peer->d_data->connections.remove(index);
@@ -591,7 +591,7 @@ void VipConnection::doClearConnection()
 
 void VipConnection::checkClosedConnections()
 {
-	VipUniqueLock<VipSpinlock> locker(d_data->lock);
+	std::unique_lock<VipSpinlock> locker(d_data->lock);
 	const bool empty = d_data->connections.size() == 0;
 	locker.unlock();
 	if (empty)
@@ -1119,7 +1119,7 @@ void VipOutput::setBufferDataEnabled(bool enable)
 	if (m_bufferize_outputs != enable) {
 		m_bufferize_outputs = enable;
 		if (!enable) {
-			VipUniqueLock<VipSpinlock> lock(m_buffer_lock);
+			std::scoped_lock<VipSpinlock> lock(m_buffer_lock);
 			m_buffer.clear();
 		}
 	}
@@ -1131,7 +1131,7 @@ bool VipOutput::bufferDataEnabled() const
 VipAnyDataList VipOutput::clearBufferedData()
 {
 	VipAnyDataList res;
-	VipUniqueLock<VipSpinlock> lock(m_buffer_lock);
+	std::scoped_lock<VipSpinlock> lock(m_buffer_lock);
 	res = m_buffer;
 	m_buffer.clear();
 	return res;
@@ -1139,36 +1139,36 @@ VipAnyDataList VipOutput::clearBufferedData()
 
 int VipOutput::bufferDataSize()
 {
-	VipUniqueLock<VipSpinlock> lock(m_buffer_lock);
+	std::scoped_lock<VipSpinlock> lock(m_buffer_lock);
 	return m_buffer.size();
 }
 
 VipAnyData VipOutput::data() const
 {
-	VipUniqueLock<VipSpinlock> lock(const_cast<VipSpinlock&>(m_data_lock));
+	std::scoped_lock<VipSpinlock> lock(const_cast<VipSpinlock&>(m_data_lock));
 	return *d_data;
 }
 
 void VipOutput::clearData()
 {
-	VipUniqueLock<VipSpinlock> lock(m_data_lock);
+	std::scoped_lock<VipSpinlock> lock(m_data_lock);
 	*d_data = {};
 	if (m_bufferize_outputs) {
-		VipUniqueLock<VipSpinlock> lock(m_buffer_lock);
+		std::scoped_lock<VipSpinlock> lock(m_buffer_lock);
 		m_buffer.clear();
 	}
 }
 
 bool VipOutput::hasData() const
 {
-	VipUniqueLock<VipSpinlock> lock(const_cast<VipSpinlock&>(m_data_lock));
+	std::scoped_lock<VipSpinlock> lock(const_cast<VipSpinlock&>(m_data_lock));
 	return d_data->time() != VipInvalidTime && !d_data->data().isNull();
 }
 
 void VipOutput::setData(const VipAnyData& d)
 {
 	{
-		VipUniqueLock<VipSpinlock> lock(m_data_lock);
+		std::scoped_lock<VipSpinlock> lock(m_data_lock);
 		*d_data = d;
 	}
 	if (isEnabled()) {
@@ -1183,7 +1183,7 @@ void VipOutput::setData(const VipAnyData& d)
 		if (m_custom_sender)
 			m_custom_sender(sent);
 		if (m_bufferize_outputs) {
-			VipUniqueLock<VipSpinlock> lock(m_buffer_lock);
+			std::scoped_lock<VipSpinlock> lock(m_buffer_lock);
 			m_buffer.push_back(d);
 		}
 	}
@@ -1192,7 +1192,7 @@ void VipOutput::setData(const VipAnyData& d)
 void VipOutput::setData(VipAnyData&& d) 
 {
 	{
-		VipUniqueLock<VipSpinlock> lock(m_data_lock);
+		std::scoped_lock<VipSpinlock> lock(m_data_lock);
 		*d_data = d;
 	}
 	if (isEnabled()) {
@@ -1207,7 +1207,7 @@ void VipOutput::setData(VipAnyData&& d)
 		if (m_custom_sender)
 			m_custom_sender(sent);
 		if (m_bufferize_outputs) {
-			VipUniqueLock<VipSpinlock> lock(m_buffer_lock);
+			std::scoped_lock<VipSpinlock> lock(m_buffer_lock);
 			m_buffer.push_back(d);
 		}
 	}
@@ -1245,14 +1245,14 @@ VipProperty& VipProperty::operator=(const VipProperty& other)
 }
 VipAnyData VipProperty::data() const
 {
-	VipUniqueLock<VipSpinlock> lock(const_cast<VipSpinlock&>(m_lock));
+	std::scoped_lock<VipSpinlock> lock(const_cast<VipSpinlock&>(m_lock));
 	return *d_data;
 }
 
 void VipProperty::setData(const VipAnyData& d)
 {
 	{
-		VipUniqueLock<VipSpinlock> lock(m_lock);
+		std::scoped_lock<VipSpinlock> lock(m_lock);
 		*d_data = d;
 	}
 	// only emit signal if parent processing is enabled
@@ -1273,7 +1273,7 @@ VipMultiProperty::VipMultiProperty(const VipMultiProperty& other)
 }
 
 #define LOCK(mutex) QMutexLocker lock_m(const_cast<QMutex*>(&mutex));
-#define SPIN_LOCK(mutex) VipUniqueLock<VipSpinlock> lock_p(const_cast<VipSpinlock&>(mutex));
+#define SPIN_LOCK(mutex) std::scoped_lock<VipSpinlock> lock_p(const_cast<VipSpinlock&>(mutex));
 
 // We gather all static variables related to VipProcessingObject inside VipProcessingManager
 class VipProcessingManager::PrivateData
@@ -1580,8 +1580,8 @@ VipDataList::~VipDataList()
 	VipProcessingManager::instance().remove(this);
 }
 
-#define _SPINLOCKER() VipUniqueLock<VipSpinlock> _lock(const_cast<VipSpinlock&>(m_mutex))
-#define _SHAREDSPINLOCKER() VipUniqueLock<VipSpinlock> _lock(const_cast<VipSpinlock&>(m_mutex))
+#define _SPINLOCKER() std::scoped_lock<VipSpinlock> _lock(const_cast<VipSpinlock&>(m_mutex))
+#define _SHAREDSPINLOCKER() std::scoped_lock<VipSpinlock> _lock(const_cast<VipSpinlock&>(m_mutex))
 
 VipFIFOList::VipFIFOList()
   : VipDataList()
@@ -2704,7 +2704,7 @@ void VipProcessingObject::internalInitIO(bool force) const
 	// back here on the same thread: this lock does not nest, and that froze.
 	std::function<void()> callback;
 	{
-		VipUniqueLock<VipSpinlock> locker(const_cast<VipSpinlock&>(d_data->init_lock));
+		std::scoped_lock<VipSpinlock> locker(const_cast<VipSpinlock&>(d_data->init_lock));
 		if (force || !d_data->initializeIO || d_data->dirtyIO || d_data->initializeIO != metaObject()->propertyCount()) {
 
 			const QMetaObject* meta = metaObject();

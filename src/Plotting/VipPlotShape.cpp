@@ -1716,7 +1716,7 @@ void VipPlotSceneModel::setSceneModel(const VipSceneModel& scene)
 		setSceneModelInternal();
 	}
 	else {
-		VipUniqueLock<VipSpinlock> lock(d_data->mutex);
+		std::scoped_lock<VipSpinlock> lock(d_data->mutex);
 		VipSceneModel prev = d_data->newSceneModel;
 		d_data->newSceneModel = scene;
 		if (prev.isNull())
@@ -1731,7 +1731,7 @@ void VipPlotSceneModel::resetContentWith(const VipSceneModel& scene)
 		resetSceneModelInternalWith();
 	}
 	else {
-		VipUniqueLock<VipSpinlock> lock(d_data->mutex);
+		std::scoped_lock<VipSpinlock> lock(d_data->mutex);
 		VipSceneModel prev = d_data->newSceneModel;
 		d_data->newSceneModel = scene;
 		if (prev.isNull())
@@ -1743,7 +1743,7 @@ void VipPlotSceneModel::resetSceneModelInternalWith()
 {
 	VipSceneModel scene = VipSceneModel::null();
 	{
-		VipUniqueLock<VipSpinlock> lock(d_data->mutex);
+		std::scoped_lock<VipSpinlock> lock(d_data->mutex);
 		scene = d_data->newSceneModel;
 		if (scene.isNull())
 			return;
@@ -1763,7 +1763,7 @@ void VipPlotSceneModel::mergeContentWith(const VipSceneModel& scene)
 		mergeSceneModelInternalWith();
 	}
 	else {
-		VipUniqueLock<VipSpinlock> lock(d_data->mutex);
+		std::scoped_lock<VipSpinlock> lock(d_data->mutex);
 		VipSceneModel prev = d_data->newSceneModel;
 		d_data->newSceneModel = scene;
 		if (prev.isNull())
@@ -1775,7 +1775,7 @@ void VipPlotSceneModel::mergeSceneModelInternalWith()
 {
 	VipSceneModel scene = VipSceneModel::null();
 	{
-		VipUniqueLock<VipSpinlock> lock(d_data->mutex);
+		std::scoped_lock<VipSpinlock> lock(d_data->mutex);
 		scene = d_data->newSceneModel;
 		if (scene.isNull())
 			return;
@@ -1793,7 +1793,7 @@ void VipPlotSceneModel::setSceneModelInternal()
 
 	VipSceneModel scene = VipSceneModel::null();
 	{
-		VipUniqueLock<VipSpinlock> lock(d_data->mutex);
+		std::scoped_lock<VipSpinlock> lock(d_data->mutex);
 		scene = d_data->newSceneModel;
 		if (scene.isNull())
 			return;

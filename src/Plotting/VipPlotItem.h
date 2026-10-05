@@ -46,6 +46,7 @@
 #include "VipInterval.h"
 #include "VipRenderObject.h"
 #include "VipStyleSheet.h"
+#include "VipLock.h"
 #include "VipText.h"
 #include "QThreadOpenGLWidget.h"
 
@@ -1040,11 +1041,11 @@ class VIP_PLOTTING_EXPORT VipPlotItemData : public VipPlotItem
 	Q_OBJECT
 
 public:
-	using Mutex = QRecursiveMutex ;
+	using Mutex = VipRecursiveSpinlock ;
 #if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
 	using Locker =  QMutexLocker;
 #else
-	using Locker = QMutexLocker<QRecursiveMutex> ;
+	using Locker = QMutexLocker<VipRecursiveSpinlock> ;
 #endif
 	VipPlotItemData(const VipText& title = VipText());
 	~VipPlotItemData();

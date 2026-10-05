@@ -1292,7 +1292,7 @@ void VipPlotItem::markAxesDirty()
 	if (this->testItemAttribute(VipPlotItem::AutoScale)) {
 		for (int i = 0; i < d_data->axes.size(); ++i) {
 			if (VipAbstractScale* axis = d_data->axes[i]) {
-				if (axis->isAutoScale()) //TEST
+				if (axis->isAutoScale()) 
 					axis->emitScaleDivNeedUpdate();
 			}
 		}
@@ -2804,6 +2804,7 @@ qint64 VipPlotItemData::lastPaintTime() const
 void VipPlotItemData::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget)
 {
 	d_data->lastPaintTime = QDateTime::currentMSecsSinceEpoch();
+	//TO TEST: no global lock for paint()
 	Locker acq(&d_data->dataLock);
 	VipPlotItem::paint(painter, option, widget);
 }

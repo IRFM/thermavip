@@ -1141,7 +1141,7 @@ VipArchive & operator<<(VipArchive & arch, const VipPlotFieldOfView * pl)
 	
 	return arch;
 }
-
+ 
 VipArchive& operator>>(VipArchive& arch, VipPlotFieldOfView* pl)
 {
 	QColor selectedColor = arch.read("selectedColor").value<QColor>();

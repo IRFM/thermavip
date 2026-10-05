@@ -67,22 +67,22 @@ public:
 	// These six read what the loader below writes, so both take the lock.
 	virtual Info info() const
 	{
-		VipUniqueLock<VipSpinlock> lock(m_lock);
+		std::scoped_lock<VipSpinlock> lock(m_lock);
 		return m_info;
 	}
 	virtual QString inputDescription(const QString& input) const
 	{
-		VipUniqueLock<VipSpinlock> lock(m_lock);
+		std::scoped_lock<VipSpinlock> lock(m_lock);
 		return m_inputDescriptions.value(input);
 	}
 	virtual QString outputDescription(const QString& output) const
 	{
-		VipUniqueLock<VipSpinlock> lock(m_lock);
+		std::scoped_lock<VipSpinlock> lock(m_lock);
 		return m_outputDescriptions.value(output);
 	}
 	virtual QString propertyDescription(const QString& property) const
 	{
-		VipUniqueLock<VipSpinlock> lock(m_lock);
+		std::scoped_lock<VipSpinlock> lock(m_lock);
 		return m_propertyDescriptions.value(property);
 	}
 	virtual qint64 processingTime() const { return m_processingTime.load(std::memory_order_relaxed); }
@@ -91,22 +91,22 @@ public:
 private:
 	void setInfo(const Info& info)
 	{
-		VipUniqueLock<VipSpinlock> lock(m_lock);
+		std::scoped_lock<VipSpinlock> lock(m_lock);
 		m_info = info;
 	}
 	void setInputDescription(const QString& name, const QString& descr)
 	{
-		VipUniqueLock<VipSpinlock> lock(m_lock);
+		std::scoped_lock<VipSpinlock> lock(m_lock);
 		m_inputDescriptions[name] = descr;
 	}
 	void setOutputDescription(const QString& name, const QString& descr)
 	{
-		VipUniqueLock<VipSpinlock> lock(m_lock);
+		std::scoped_lock<VipSpinlock> lock(m_lock);
 		m_outputDescriptions[name] = descr;
 	}
 	void setPropertyDescription(const QString& name, const QString& descr)
 	{
-		VipUniqueLock<VipSpinlock> lock(m_lock);
+		std::scoped_lock<VipSpinlock> lock(m_lock);
 		m_propertyDescriptions[name] = descr;
 	}
 

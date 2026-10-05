@@ -1097,6 +1097,7 @@ void VipPlotRasterData::setData(const QVariant& v)
 				_ne.convert(const_cast<VipNDArray&>(_cur));
 			dataLock()->unlock();
 
+			const QImage precompute_img = current.d_data->precomputed.image;
 			current = VipRasterData(_cur, bounding.topLeft());
 
 			// Optimize color map computation if the color scale only has this item
@@ -1105,12 +1106,7 @@ void VipPlotRasterData::setData(const QVariant& v)
 				if (auto* map = colorMap()) {
 					VipInterval interval = map->gripInterval();
 					if (map->isAutoScale()) {
-						/* d_data->dataValidInterval = map->validInterval();
-						dataLock()->unlock();
-						interval = current.bounds(d_data->dataValidInterval);
-						dataLock()->lock();
-						d_data->dataInterval = interval;*/
-
+						
 						// Compute interval
 						auto validInterval = map->validInterval();
 						dataLock()->unlock();
@@ -1124,6 +1120,9 @@ void VipPlotRasterData::setData(const QVariant& v)
 						if (auto* linear = qobject_cast<VipLinearColorMap*>(map->colorMap())) {
 
 							dataLock()->unlock();
+
+							current.d_data->precomputed.image = precompute_img;
+
 							// Do the heavy computation without holding the lock: histogram computation + convert to rgb
 							if (this->computeImage(current, interval, this->sceneMap(), d_data->precompute_tmp, current.d_data->precomputed)) {
 								dataLock()->lock();
