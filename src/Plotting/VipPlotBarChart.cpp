@@ -77,7 +77,7 @@ static int registerBarChartKeyWords()
 	return 0;
 }
 
-static int _registerBarChartKeyWords = vipStaticInit("registerBarChartKeyWords",registerBarChartKeyWords);
+static int _registerBarChartKeyWords = vipStaticInit("registerBarChartKeyWords", registerBarChartKeyWords);
 
 VipBar::VipBar(double pos, const QVector<double>& values)
   : d_pos(pos)
@@ -128,12 +128,24 @@ int VipBar::valueCount() const
 	return d_values.size();
 }
 
+class VipPlotBarChart::BarData
+{
+public:
+	VipInterval plotInterval;
+	QRectF plotRect;
+
+	void clear()
+	{
+		plotInterval = VipInterval();
+		plotRect = QRectF();
+	}
+	bool isEmpty() const { return plotInterval.isNull(); }
+};
+
 class VipPlotBarChart::PrivateData
 {
 public:
-	PrivateData()
-	{
-	}
+	PrivateData() {}
 
 	double spacing{ 0 };
 	WidthUnit spacingUnit{ ItemUnit };
@@ -156,9 +168,7 @@ public:
 	VipColorPalette palette{ VipLinearColorMap::ColorPaletteRandom };
 	QList<VipText> names;
 
-	QRectF plotRect;
-	VipInterval plotInterval;
-
+	BarData bdata;
 	QVector<QVector<QPolygonF>> barRects;
 
 	int indexOf(const QString& name)
@@ -177,21 +187,29 @@ VipPlotBarChart::VipPlotBarChart(const VipText& title)
 	d_data->boxStyle.setBorderPen(QPen(Qt::NoPen));
 }
 
-VipPlotBarChart::~VipPlotBarChart()
-{
-}
+VipPlotBarChart::~VipPlotBarChart() {}
 
 void VipPlotBarChart::setData(const QVariant& v)
 {
-	d_data->plotInterval = VipInterval();
-
-	d_data->plotRect = computePlotBoundingRect(v.value<VipBarVector>(), sceneMap());
-	d_data->barRects.clear();
-	VipPlotItemDataType::setData(v);
+	generateData([&]() {
+		this->d_data->bdata.clear();
+		return v;
+	});
 }
 
 VipInterval VipPlotBarChart::plotInterval(const VipInterval& interval) const
 {
+	if (interval == vipInfinitInterval())
+	{
+		{
+			Locker lock(dataLock());
+			if (!d_data->bdata.isEmpty())
+				return d_data->bdata.plotInterval;
+		}
+		BarData d;
+		const_cast < VipPlotBarChart*>(this)->regenerate(rawData(), d);
+		return d.plotInterval;
+	}
 	const VipBarVector vec = rawData();
 	VipInterval inter = VipInterval();
 
@@ -212,11 +230,42 @@ VipInterval VipPlotBarChart::plotInterval(const VipInterval& interval) const
 	return inter;
 }
 
+void VipPlotBarChart::invalidate()
+{
+	Locker lock(dataLock());
+	d_data->bdata.clear();
+}
+
+void VipPlotBarChart::regenerate(const VipBarVector& v, BarData & out)
+{
+	BarData d;
+	d.plotRect = computePlotBoundingRect(v, sceneMap());
+	VipInterval inter = VipInterval();
+
+	for (const VipBar& b : v) {
+		for (int i = 0; i < b.valueCount(); ++i) {
+			double val = b.value(i);
+			{
+				if (inter.isValid()) {
+					inter.setMinValue(std::min(inter.minValue(), val));
+					inter.setMaxValue(std::max(inter.maxValue(), val));
+				}
+				else
+					inter = VipInterval(val, val);
+			}
+		}
+	}
+	d.plotInterval = inter;
+
+	Locker lock(dataLock());
+	d_data->bdata = out = d;
+}
+
 void VipPlotBarChart::setValueType(ValueType type)
 {
 	if (d_data->valueType != type) {
 		d_data->valueType = type;
-		d_data->plotRect = computePlotBoundingRect(rawData(), sceneMap());
+		invalidate();
 		emitItemChanged();
 	}
 }
@@ -229,7 +278,7 @@ VipPlotBarChart::ValueType VipPlotBarChart::valueType() const
 void VipPlotBarChart::setBaseline(double reference)
 {
 	d_data->baseline = reference;
-	d_data->plotRect = computePlotBoundingRect(rawData(), sceneMap());
+	invalidate();
 	emitItemChanged();
 }
 
@@ -257,7 +306,7 @@ VipPlotBarChart::WidthUnit VipPlotBarChart::spacingUnit() const
 void VipPlotBarChart::setStyle(Style style)
 {
 	d_data->style = style;
-	d_data->plotRect = computePlotBoundingRect(rawData(), sceneMap());
+	invalidate();
 	emitItemChanged();
 }
 
@@ -265,7 +314,7 @@ void VipPlotBarChart::setBarWidth(double width, WidthUnit unit)
 {
 	d_data->width = width;
 	d_data->widthUnit = unit;
-	d_data->plotRect = computePlotBoundingRect(rawData(), sceneMap());
+	invalidate();
 	emitItemChanged();
 }
 
@@ -493,7 +542,15 @@ QRectF VipPlotBarChart::drawLegend(QPainter* painter, const QRectF& rect, int in
 
 QList<VipInterval> VipPlotBarChart::plotBoundingIntervals() const
 {
-	return QList<VipInterval>() << VipInterval(d_data->plotRect.left(), d_data->plotRect.right()).normalized() << VipInterval(d_data->plotRect.top(), d_data->plotRect.bottom()).normalized();
+	BarData d;
+	{
+		Locker lock(dataLock());
+		d = d_data->bdata;
+	}
+	if (d.isEmpty())
+		const_cast < VipPlotBarChart*>(this)->regenerate(rawData(), d);
+
+	return QList<VipInterval>() << VipInterval(d.plotRect.left(), d.plotRect.right()).normalized() << VipInterval(d.plotRect.top(), d.plotRect.bottom()).normalized();
 }
 
 QString VipPlotBarChart::formatToolTip(const QPointF& pos) const
@@ -813,7 +870,7 @@ QDataStream& operator>>(QDataStream& str, VipBar& b)
 {
 	QVector<double> values;
 	double position;
-	str >> position>> values;
+	str >> position >> values;
 	b.setValues(values);
 	b.setPosition(position);
 	return str;
@@ -875,4 +932,4 @@ static bool register_types()
 
 	return true;
 }
-static int _register_types = vipStaticInit("register_types",register_types);
+static int _register_types = vipStaticInit("register_types", register_types);

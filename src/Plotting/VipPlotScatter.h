@@ -42,7 +42,7 @@ struct VipScatterPoint
 	double value{ 0 };
 };
 
-using VipScatterPointVector = QVector<VipScatterPoint>;
+using VipScatterPointVector = VipCircularVector<VipScatterPoint>;
 
 Q_DECLARE_METATYPE(VipScatterPoint)
 Q_DECLARE_METATYPE(VipScatterPointVector)

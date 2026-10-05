@@ -35,12 +35,15 @@
 #include "VipConfig.h"
 #include "VipMath.h"
 #include "VipSpan.h"
+
 #include <QTypeInfo>
 #include <qlist.h>
 #include <qvector.h>
 #include <qshareddata.h>
 #include <qdatastream.h>
 #include <qiodevice.h>
+#include <qmap.h>
+#include <qvariant.h>
 
 #include <limits>
 #include <utility>
@@ -382,6 +385,8 @@ namespace detail
 
 		T* buffer; // actual values
 
+		QVariantMap properties;
+
 		// Initialize from a maximum capacity.
 		// INVARIANT: max_size is a power of two. mask() returns capacity - 1 and is
 		// used as a wrap-around bit mask by at(), spans() and destroy_range(), which
@@ -430,6 +435,7 @@ namespace detail
 		CircularBuffer(const CircularBuffer& other)
 		  : CircularBuffer(other.capacity)
 		{
+			properties = other.properties;
 			size = other.size;
 			// initialize full buffer
 			qsizetype i = 0;
@@ -471,6 +477,7 @@ namespace detail
 					move_construct_range(dst->buffer + first_range, buffer, remaining);
 			}
 			dst->size = this->size;
+			dst->properties = std::move(this->properties);
 			if VIP_CONSTEXPR (relocatable)
 				this->size = 0;
 		}
@@ -1044,32 +1051,32 @@ namespace detail
 	};
 
 	template<class BucketMgr>
-	VIP_ALWAYS_INLINE auto operator+(const VipCircularVectorConstIterator<BucketMgr>& it,
-					 typename VipCircularVectorConstIterator<BucketMgr>::difference_type diff) noexcept -> VipCircularVectorConstIterator<BucketMgr>
+	VIP_ALWAYS_INLINE auto operator+(const VipCircularVectorConstIterator<BucketMgr>& it, typename VipCircularVectorConstIterator<BucketMgr>::difference_type diff) noexcept
+	  -> VipCircularVectorConstIterator<BucketMgr>
 	{
 		VipCircularVectorConstIterator<BucketMgr> res = it;
 		res += diff;
 		return res;
 	}
 	template<class BucketMgr>
-	VIP_ALWAYS_INLINE auto operator+(const VipCircularVectorIterator<BucketMgr>& it,
-					 typename VipCircularVectorIterator<BucketMgr>::difference_type diff) noexcept -> VipCircularVectorIterator<BucketMgr>
+	VIP_ALWAYS_INLINE auto operator+(const VipCircularVectorIterator<BucketMgr>& it, typename VipCircularVectorIterator<BucketMgr>::difference_type diff) noexcept
+	  -> VipCircularVectorIterator<BucketMgr>
 	{
 		VipCircularVectorIterator<BucketMgr> res = it;
 		res += diff;
 		return res;
 	}
 	template<class BucketMgr>
-	VIP_ALWAYS_INLINE auto operator-(const VipCircularVectorConstIterator<BucketMgr>& it,
-					 typename VipCircularVectorConstIterator<BucketMgr>::difference_type diff) noexcept -> VipCircularVectorConstIterator<BucketMgr>
+	VIP_ALWAYS_INLINE auto operator-(const VipCircularVectorConstIterator<BucketMgr>& it, typename VipCircularVectorConstIterator<BucketMgr>::difference_type diff) noexcept
+	  -> VipCircularVectorConstIterator<BucketMgr>
 	{
 		VipCircularVectorConstIterator<BucketMgr> res = it;
 		res -= diff;
 		return res;
 	}
 	template<class BucketMgr>
-	VIP_ALWAYS_INLINE auto operator-(const VipCircularVectorIterator<BucketMgr>& it,
-					 typename VipCircularVectorIterator<BucketMgr>::difference_type diff) noexcept -> VipCircularVectorIterator<BucketMgr>
+	VIP_ALWAYS_INLINE auto operator-(const VipCircularVectorIterator<BucketMgr>& it, typename VipCircularVectorIterator<BucketMgr>::difference_type diff) noexcept
+	  -> VipCircularVectorIterator<BucketMgr>
 	{
 		VipCircularVectorIterator<BucketMgr> res = it;
 		res -= diff;
@@ -1203,6 +1210,7 @@ class VipCircularVector
 	using Data = detail::CircularBuffer<T, O>;
 	using DataPtr = detail::COWPointer<Data, O>;
 	DataPtr d_data;
+	QVariant d_any;
 
 	VIP_ALWAYS_INLINE bool hasData() const noexcept { return d_data.constData() != nullptr; }
 
@@ -1407,9 +1415,13 @@ public:
 	QVector<T> toVector() const { return convertTo<QVector<T>>(); }
 	QList<T> toList() const { return convertTo<QList<T>>(); }
 
+	VIP_ALWAYS_INLINE void setAnyData(const QVariant& value) { d_any = value; }
+	VIP_ALWAYS_INLINE void setAnyData(QVariant&& value) { d_any = std::move(value); }
+	VIP_ALWAYS_INLINE const QVariant& anyData() const noexcept { return d_any; }
+
 	void clear() noexcept
 	{
-		if (hasData()) 
+		if (hasData())
 			d_data = DataPtr();
 	}
 	void shrink_to_fit()

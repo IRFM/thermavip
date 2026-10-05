@@ -1041,11 +1041,11 @@ class VIP_PLOTTING_EXPORT VipPlotItemData : public VipPlotItem
 	Q_OBJECT
 
 public:
-	using Mutex = VipRecursiveSpinlock ;
+	using Mutex = VipSpinlock ;
 #if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
 	using Locker =  QMutexLocker;
 #else
-	using Locker = QMutexLocker<VipRecursiveSpinlock> ;
+	using Locker = QMutexLocker<VipSpinlock> ;
 #endif
 	VipPlotItemData(const VipText& title = VipText());
 	~VipPlotItemData();
@@ -1058,6 +1058,8 @@ public:
 
 	/// @brief Returns the object data set with VipPlotItemData::setData()
 	virtual QVariant data() const;
+
+	void generateData(const std::function<QVariant()>& fun);
 
 	/// @brief Returns the mutex object used in setData() and data().
 	/// You should use in your setData() implementation to keep it thread safe.

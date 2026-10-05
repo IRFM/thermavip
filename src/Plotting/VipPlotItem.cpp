@@ -2780,6 +2780,24 @@ void VipPlotItemData::setData(const QVariant& d)
 	}
 }
 
+void VipPlotItemData::generateData(const std::function<QVariant()>& fun)
+{
+	if (d_data->inDestroy)
+		return;
+	{
+		Locker acq(&d_data->dataLock);
+		d_data->data = fun();
+		d_data->lastDataTime = QDateTime::currentMSecsSinceEpoch();
+	}
+	Q_EMIT dataChanged();
+	if (d_data->autoMarkDirty && !d_data->inDestroy) {
+		if (QThread::currentThread() == qApp->thread())
+			markDirty();
+		else
+			QMetaObject::invokeMethod(this, "markDirty", Qt::QueuedConnection);
+	}
+}
+
 QVariant VipPlotItemData::takeData()
 {
 	if (d_data->inDestroy)
@@ -2805,7 +2823,7 @@ void VipPlotItemData::paint(QPainter* painter, const QStyleOptionGraphicsItem* o
 {
 	d_data->lastPaintTime = QDateTime::currentMSecsSinceEpoch();
 	//TO TEST: no global lock for paint()
-	Locker acq(&d_data->dataLock);
+	//Locker acq(&d_data->dataLock);
 	VipPlotItem::paint(painter, option, widget);
 }
 

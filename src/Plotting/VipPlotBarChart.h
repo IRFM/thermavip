@@ -60,7 +60,7 @@ private:
 	QVector<double> d_values;
 };
 
-typedef QVector<VipBar> VipBarVector;
+using VipBarVector = QVector<VipBar>;
 Q_DECLARE_METATYPE(VipBar);
 Q_DECLARE_METATYPE(VipBarVector);
 
@@ -319,6 +319,12 @@ public:
 	virtual QString formatToolTip(const QPointF& pos) const;
 	virtual bool areaOfInterest(const QPointF& pos, int axis, double maxDistance, VipPointVector& out_pos, VipBoxStyle& style, int& legend) const;
 
+	virtual void setAxes(const QList<VipAbstractScale*>& axes, VipCoordinateSystem::Type type)
+	{
+		invalidate();
+		VipPlotItemDataType<VipBarVector, VipBar>::setAxes(axes, type);
+	}
+
 protected:
 	void drawBarValues(QPainter*, const VipCoordinateSystemPtr&, const VipBar&, int) const;
 
@@ -329,7 +335,9 @@ protected:
 	virtual bool setItemProperty(const char* name, const QVariant& value, const QByteArray& index = QByteArray());
 
 private:
-	
+	class BarData;
+	void invalidate();
+	void regenerate(const VipBarVector& v, BarData & d);
 	VIP_DECLARE_PRIVATE_DATA();
 };
 
