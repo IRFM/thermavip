@@ -2058,6 +2058,7 @@ void VipPlotCurve::setFunction(const std::function<vip_double(vip_double)>& fun,
 
 QPainterPath VipPlotCurve::shapeFromCoordinateSystem(const VipCoordinateSystemPtr& m) const
 {
+	return {};//TEST
 	// qint64 st = QDateTime::currentMSecsSinceEpoch() ;
 	VipShapeDevice device;
 	{
