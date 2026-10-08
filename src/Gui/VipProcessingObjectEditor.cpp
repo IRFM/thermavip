@@ -3702,11 +3702,11 @@ VipAdjustImageEditor::~VipAdjustImageEditor()
 
 void VipAdjustImageEditor::showEvent(QShowEvent* evt)
 {
-	if (auto item = d_data->item.get()) {
+	if (auto item = d_data->item.data()) {
 		setPlotItem(nullptr);
 		setPlotItem(item);
 	}
-	else if (auto proc = d_data->processing.get()) {
+	else if (auto proc = d_data->processing.data()) {
 		setProcessing(nullptr);
 		setProcessing(proc);
 	}

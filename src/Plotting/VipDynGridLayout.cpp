@@ -493,7 +493,7 @@ QList<QRectF> VipDynGridLayout::layoutItems(const QRectF& rect, uint numColumns)
 	const double xySpace = spacing();
 	// Read here too: sizeHint() reserves l + r and t + b, and the first item used to
 	// be placed at the very edge of the rectangle whose size includes them.
-	double l = 0, r = 0, t = 0, b = 0;
+	double l = 0,  t = 0;
 	//this->getContentsMargins(&l, &t, &r, &b);
 
 	rowY[0] = yOffset + t;

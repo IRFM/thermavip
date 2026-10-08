@@ -64,6 +64,7 @@ struct ScatterData
 	QList<VipInterval> bounding;
 	VipInterval dataInterval;
 };
+Q_DECLARE_METATYPE(ScatterData)
 
 class VipPlotScatter::PrivateData
 {
