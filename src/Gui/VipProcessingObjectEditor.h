@@ -739,9 +739,11 @@ private Q_SLOTS:
 	void resetProcessing();
 	void reset();
 
+protected:
+	virtual void showEvent(QShowEvent* evt);
+
 private:
-	class PrivateData;
-	PrivateData* m_data;
+	VIP_DECLARE_PRIVATE_DATA();
 };
 
 

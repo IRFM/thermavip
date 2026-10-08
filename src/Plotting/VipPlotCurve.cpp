@@ -45,6 +45,16 @@
 #include <qpainter.h>
 #include <qpixmap.h>
 
+struct CurveData
+{
+	QList<VipPointVector> vectors;
+	VipInterval bounding[2];
+	QList<bool> continuous;
+	bool full_continuous = true;
+	bool sub_continuous = true;
+};
+Q_DECLARE_METATYPE(CurveData)
+
 template<class Point, class Double>
 struct PointMerge
 {
@@ -213,7 +223,7 @@ static int registerCurveKeyWords()
 	return 0;
 }
 
-static int _registerCurveKeyWords = vipStaticInit("registerCurveKeyWords",registerCurveKeyWords);
+static int _registerCurveKeyWords = vipStaticInit("registerCurveKeyWords", registerCurveKeyWords);
 
 struct Condition
 {
@@ -371,8 +381,6 @@ public:
 	  : drawn_pcount(0)
 	  , style(VipPlotCurve::Lines)
 	  , baseline(0.0)
-	  , full_continuous(false)
-	  , sub_continuous(false)
 	  , symbol(new VipSymbol(VipSymbol::Ellipse, QBrush(Qt::lightGray), QPen(Qt::darkGray), QSizeF(9, 9)))
 	  , symbolVisible(false)
 	  , legendAttributes(LegendShowBrush | LegendShowSymbol | LegendShowLine)
@@ -393,9 +401,6 @@ public:
 
 	VipPlotCurve::CurveStyle style;
 	vip_double baseline;
-	bool full_continuous;
-	bool sub_continuous;
-	QList<bool> continuous;
 
 	const VipSymbol* symbol;
 	bool symbolVisible;
@@ -403,11 +408,9 @@ public:
 	VipBoxStyle boxStyle;
 	QMap<int, QPen> subPen;
 	QMap<int, QBrush> subBrush;
-	// QRectF boundingRect;
-	// QList<VipInterval> bounding;
-	VipInterval bounding[2];
-	QList<VipPointVector> vectors;
 	PointMerge<QPointF, double> merge;
+
+	CurveData functionData;
 
 	VipPlotCurve::CurveAttributes attributes;
 	VipPlotCurve::LegendAttributes legendAttributes;
@@ -431,9 +434,7 @@ VipPlotCurve::VipPlotCurve(const VipText& title)
 }
 
 //! Destructor
-VipPlotCurve::~VipPlotCurve()
-{
-}
+VipPlotCurve::~VipPlotCurve() {}
 
 //! Initialize internal members
 void VipPlotCurve::init()
@@ -644,22 +645,31 @@ int VipPlotCurve::findClosestPos(const VipPointVector& data, const VipPoint& pos
 	return index;
 }
 
+static VIP_ALWAYS_INLINE void buildVectors(const VipPointVector& raw, const CurveData& d)
+{
+	if (d.vectors.isEmpty() && !raw.isEmpty())
+		const_cast<CurveData&>(d).vectors.push_back( raw);
+}
+
 bool VipPlotCurve::areaOfInterest(const QPointF& pos, int axis, double maxDistance, VipPointVector& out_pos, VipBoxStyle& style, int& legend) const
 {
-	Locker locker(dataLock());
+	//const CurveData& d = d_data->cdata;
+	const VipPointVector raw = cachedData().value<VipPointVector>();
+	const auto d = d_data->function ? d_data->functionData :raw.anyData().value<CurveData>();
+	buildVectors(raw, d);
 
 	legend = 0;
-	if (axis == 0 && d_data->vectors.size() > 1 && d_data->sub_continuous) {
+	if (axis == 0 && d.vectors.size() > 1 && d.sub_continuous) {
 		// special case: we look for the points of interest on a vertical line that intersects multiple curves
 		// that might overlapp on the x axis
 
 		QPainterPath path;
 
-		for (int i = 0; i < d_data->vectors.size(); ++i) {
-			int index = findClosestPos(d_data->vectors[i], pos, axis, maxDistance, d_data->continuous[i]);
+		for (int i = 0; i < d.vectors.size(); ++i) {
+			int index = findClosestPos(d.vectors[i], pos, axis, maxDistance, d.continuous[i]);
 			if (index >= 0) {
-				VipPoint found = sceneMap()->transform(d_data->vectors[i][index]);
-				out_pos.push_back( found);
+				VipPoint found = sceneMap()->transform(d.vectors[i][index]);
+				out_pos.push_back(found);
 				if (symbol() && symbolVisible() && symbol()->style() != VipSymbol::None) {
 					path |= symbol()->shape((QPointF)found);
 				}
@@ -676,11 +686,11 @@ bool VipPlotCurve::areaOfInterest(const QPointF& pos, int axis, double maxDistan
 		return !out_pos.isEmpty();
 	}
 
-	const VipPointVector raw = rawData();
-	int index = findClosestPos(raw, pos, axis, maxDistance, d_data->full_continuous);
+	
+	int index = findClosestPos(raw, pos, axis, maxDistance, d.full_continuous);
 	if (index >= 0) {
 		VipPoint found = sceneMap()->transform(raw[index]);
-		out_pos.push_back( found);
+		out_pos.push_back(found);
 		if (symbol() && symbolVisible() && symbol()->style() != VipSymbol::None) {
 			style.computePath(symbol()->shape((QPointF)found));
 		}
@@ -869,8 +879,13 @@ static void insideRect(const QRectF& r, const QPolygonF& pts, QVector<QLineF>& o
 
 void VipPlotCurve::draw(QPainter* painter, const VipCoordinateSystemPtr& m) const
 {
-	//qint64 stg = QDateTime::currentMSecsSinceEpoch();
-	//static qint64 last_print = 0;
+	// qint64 stg = QDateTime::currentMSecsSinceEpoch();
+	// static qint64 last_print = 0;
+
+	//const CurveData& d = (const_cast<CurveData&>(d_data->cdata) = rawData().anyData().value<CurveData>());
+	const VipPointVector raw = cachedData().value<VipPointVector>();
+	const CurveData d = d_data->function ? d_data->functionData : raw.anyData().value<CurveData>();
+	buildVectors(raw, d);
 
 	QList<QPolygonF> drawn_polygons;
 
@@ -885,7 +900,7 @@ void VipPlotCurve::draw(QPainter* painter, const VipCoordinateSystemPtr& m) cons
 			return;
 		VipInterval x_inter = m->axes().first()->scaleDiv().bounds();
 
-		if (d_data->drawn_pcount != point_count || d_data->drawn_interval != x_inter) {
+		if (d_data->drawn_pcount != point_count || d_data->drawn_interval != x_inter || d_data->functionData.vectors.isEmpty()) {
 
 			if (d_data->draw_interval.isValid())
 				x_inter = x_inter.intersect(d_data->draw_interval);
@@ -897,25 +912,27 @@ void VipPlotCurve::draw(QPainter* painter, const VipCoordinateSystemPtr& m) cons
 				vec[i] = VipPoint(x, d_data->function(x));
 				x += step;
 			}
-			d_data->vectors = QList<VipPointVector>() << vec;
-			d_data->continuous = QList<bool>() << true;
+			auto& cdata = const_cast<CurveData&>(d_data->functionData);
+			cdata.vectors = QList<VipPointVector>() << vec;
+			cdata.continuous = QList<bool>() << true;
 			d_data->drawn_pcount = point_count;
 			d_data->drawn_interval = x_inter;
+			const_cast<CurveData&>(d) = cdata;
 		}
 	}
 
-	//auto st = QDateTime::currentMSecsSinceEpoch();
-	for (int i = 0; i < d_data->vectors.size(); ++i) {
+	// auto st = QDateTime::currentMSecsSinceEpoch();
+	for (int i = 0; i < d.vectors.size(); ++i) {
 		// compute the polygons to be drawn
-		drawn_polygons << computeSimplified(painter, m, d_data->vectors[i], d_data->continuous[i]);
+		drawn_polygons << computeSimplified(painter, m, d.vectors[i], d.continuous[i]);
 		if (d_data->style == Steps)
 			drawn_polygons.last() = computeSteps(drawn_polygons.last(), (d_data->attributes & Inverted));
 	}
-	//TEST
-	//auto el = QDateTime::currentMSecsSinceEpoch() -st;
-	//printf("simplify: %i ms\n", (int)el);
+	// TEST
+	// auto el = QDateTime::currentMSecsSinceEpoch() -st;
+	// printf("simplify: %i ms\n", (int)el);
 
-	if (testCurveAttribute(FillMultiCurves) && isSubContinuous() && drawn_polygons.size() > 1) {
+	if (testCurveAttribute(FillMultiCurves) && d.sub_continuous && drawn_polygons.size() > 1) {
 		// fill the space between curves
 
 		for (int i = 1; i < drawn_polygons.size(); ++i) {
@@ -965,7 +982,7 @@ void VipPlotCurve::draw(QPainter* painter, const VipCoordinateSystemPtr& m) cons
 			// get the paint rect
 			QRectF prect = m->clipPath(this).boundingRect();
 
-			if (d_data->continuous[i]) //&& simplified.size()*0.7 > prect.width())
+			if (d.continuous[i]) //&& simplified.size()*0.7 > prect.width())
 			{
 				// use this method if the point density is high
 				// extract the curve enveloppe
@@ -1017,27 +1034,27 @@ void VipPlotCurve::draw(QPainter* painter, const VipCoordinateSystemPtr& m) cons
 				painter->save();
 				painter->setPen(selectedPen());
 				painter->setBrush(QBrush());
-				drawCurve(painter, d_data->style, m, simplified, true, d_data->continuous[i], i);
+				drawCurve(painter, d_data->style, m, simplified, true, d.continuous[i], i);
 
 				painter->restore();
 			}
 		}
 
 		painter->save();
-		drawCurve(painter, d_data->style, m, simplified, false, d_data->continuous[i], i);
+		drawCurve(painter, d_data->style, m, simplified, false, d.continuous[i], i);
 		painter->restore();
 
 		if (d_data->symbol && symbolVisible() && symbol()->style() != VipSymbol::None) {
 			painter->save();
-			drawSymbols(painter, *d_data->symbol, m, d_data->vectors[i], d_data->continuous[i], i);
+			drawSymbols(painter, *d_data->symbol, m, d.vectors[i], d.continuous[i], i);
 			painter->restore();
 		}
 	}
 
-	//TEST
-	//qint64 date = QDateTime::currentMSecsSinceEpoch();
-	//qint64 elg = date - stg;
-	//printf("full curve: %i ms\n", (int)elg);
+	// TEST
+	// qint64 date = QDateTime::currentMSecsSinceEpoch();
+	// qint64 elg = date - stg;
+	// printf("full curve: %i ms\n", (int)elg);
 }
 
 void VipPlotCurve::drawSelected(QPainter* painter, const VipCoordinateSystemPtr& m) const
@@ -1281,7 +1298,7 @@ static void drawPolygonHelper(const QPolygonF& poly, QPainter* painter, const QP
 	// the rendering is not as good, but could be more than 10 times faster,
 	// which is HUGE for streaming purposes
 
-	//auto st = QDateTime::currentMSecsSinceEpoch();
+	// auto st = QDateTime::currentMSecsSinceEpoch();
 
 	painter->save();
 	QPen p = pen;
@@ -1291,10 +1308,9 @@ static void drawPolygonHelper(const QPolygonF& poly, QPainter* painter, const QP
 	else
 		p.setCapStyle(Qt::SquareCap);
 	painter->setPen(p);
-	
-	//for (int i = 1; i < poly.size(); ++i) 
+
+	// for (int i = 1; i < poly.size(); ++i)
 	//	painter->drawLine(poly[i - 1], poly[i]);
-	
 
 	thread_local std::vector<QLineF> lines;
 	lines.resize((size_t)(poly.size() - 1));
@@ -1302,12 +1318,12 @@ static void drawPolygonHelper(const QPolygonF& poly, QPainter* painter, const QP
 		lines[(size_t)(i - 1)] = QLineF(poly[i - 1], poly[i]);
 	}
 	painter->drawLines(lines.data(), (int)lines.size());
-	
+
 	painter->restore();
 
-	//TEST
-	//auto el = QDateTime::currentMSecsSinceEpoch() -st;
-	//printf("drawHelper: %i ms\n", (int)el);
+	// TEST
+	// auto el = QDateTime::currentMSecsSinceEpoch() -st;
+	// printf("drawHelper: %i ms\n", (int)el);
 }
 
 QPolygonF VipPlotCurve::drawLines(QPainter* painter,
@@ -1318,6 +1334,7 @@ QPolygonF VipPlotCurve::drawLines(QPainter* painter,
 				  ,
 				  int index) const
 {
+	const auto d = d_data->function ? d_data->functionData : cachedData().value<VipPointVector>().anyData().value<CurveData>();
 
 	QPolygonF polyline;
 	polyline = points; // m->transform(points);
@@ -1332,7 +1349,7 @@ QPolygonF VipPlotCurve::drawLines(QPainter* painter,
 	}
 
 	const bool doFill =
-	  (boxStyle().backgroundBrush().style() != Qt::NoBrush && (boxStyle().backgroundBrush().color().alpha() > 0)) && (!testCurveAttribute(FillMultiCurves) || d_data->full_continuous);
+	  (boxStyle().backgroundBrush().style() != Qt::NoBrush && (boxStyle().backgroundBrush().color().alpha() > 0)) && (!testCurveAttribute(FillMultiCurves) || d.full_continuous);
 
 	if (doFill && !draw_selected) {
 		if (this->testCurveAttribute(ClosePolyline)) {
@@ -1405,58 +1422,6 @@ QPolygonF VipPlotCurve::drawSticks(QPainter* painter, const VipCoordinateSystemP
 {
 	painter->save();
 
-	// const bool doFill = ( d_data->boxStyle.backgroundBrush().style() != Qt::NoBrush );
-	//
-	// const QVector<VipPoint> polygon = points;
-	// QVector<VipPoint> tr_polygon(polygon.size());
-	// QPainterPath path;
-	// QVector<VipPoint> p(2);
-	//
-	//
-	// bool is_cartesian = isPerfectRightCartesiant(painter, m);
-	//
-	// if (is_cartesian)
-	// {
-	// double baseline =m->axes()[1]->position(d_data->baseline).y();
-	// for (int i = 0; i < polygon.size(); i++)
-	// {
-	// p[1] = (polygon[i]);
-	// tr_polygon[i] = p[1];
-	// p[0] = (VipPoint(polygon[i].x(), baseline));
-	// path.addPolygon(p);
-	// }
-	// }
-	// else
-	// {
-	// for (int i = 0; i < polygon.size(); i++)
-	// {
-	// VipPoint inv = m->invTransform(polygon[i]);
-	// inv.setY(d_data->baseline);
-	// inv = m->transform(inv);
-	// p[1] = (polygon[i]);
-	// tr_polygon[i] = p[1];
-	// p[0] = inv;
-	// path.addPolygon(p);
-	// }
-	// }
-	//
-	// VipBoxStyle bstyle = d_data->boxStyle;
-	// if (draw_selected)
-	// {
-	// bstyle.setBorderPen(selectedPen());
-	// bstyle.setBackgroundBrush(QBrush());
-	// }
-	//
-	// if(doFill)
-	// {
-	// closePolyline(painter, m, tr_polygon);
-	// bstyle.computePolyline(tr_polygon);
-	// bstyle.drawBackground(painter);
-	// }
-	//
-	// bstyle.computePath(path);
-	// bstyle.drawBorder(painter);
-
 	if (draw_selected) {
 
 		QPen p = selectedPen();
@@ -1526,6 +1491,7 @@ QPolygonF VipPlotCurve::drawSticks(QPainter* painter, const VipCoordinateSystemP
 /// \sa draw(), drawCurve(), drawSticks(), drawLines(), drawSteps()
 QPolygonF VipPlotCurve::drawDots(QPainter* painter, const VipCoordinateSystemPtr& m, const QPolygonF& pts, bool draw_selected, bool, int index) const
 {
+	const auto d = d_data->function ? d_data->functionData : cachedData().value<VipPointVector>().anyData().value<CurveData>();
 	const bool doFill = (d_data->boxStyle.backgroundBrush().style() != Qt::NoBrush) && !testCurveAttribute(FillMultiCurves);
 
 	const QPolygonF polygon = pts;
@@ -1554,7 +1520,7 @@ QPolygonF VipPlotCurve::drawDots(QPainter* painter, const VipCoordinateSystemPtr
 	}
 
 	if (bstyle.adaptativeGradientPen().type() != VipAdaptativeGradient::NoGradient) {
-		QRectF bounding(d_data->bounding[0].minValue(), d_data->bounding[1].minValue(), d_data->bounding[0].width(), d_data->bounding[1].width());
+		QRectF bounding(d.bounding[0].minValue(), d.bounding[1].minValue(), d.bounding[0].width(), d.bounding[1].width());
 		p.setBrush(bstyle.adaptativeGradientPen().createBrush(p.brush(), QPolygonF(m->transform(bounding)).boundingRect()));
 	}
 
@@ -1936,11 +1902,15 @@ QList<VipText> VipPlotCurve::legendNames() const
 
 QRectF VipPlotCurve::drawLegend(QPainter* painter, const QRectF& rect, int) const
 {
+	const auto raw = cachedData().value<VipPointVector>();
+	const auto d = d_data->function ? d_data->functionData : raw.anyData().value<CurveData>();
+	buildVectors(raw, d);
+
 	painter->save();
 	painter->setRenderHints(this->renderHints());
 
 	if (d_data->legendAttributes == 0 || (d_data->legendAttributes & VipPlotCurve::LegendShowBrush)) {
-		const bool doFill = !d_data->full_continuous && (((d_data->boxStyle.backgroundBrush().style() != Qt::NoBrush) && style() != NoCurve) || testCurveAttribute(FillMultiCurves));
+		const bool doFill = !d.full_continuous && (((d_data->boxStyle.backgroundBrush().style() != Qt::NoBrush) && style() != NoCurve) || testCurveAttribute(FillMultiCurves));
 		if (doFill) {
 			VipBoxStyle bs = d_data->boxStyle;
 			QBrush b = brush();
@@ -1953,7 +1923,7 @@ QRectF VipPlotCurve::drawLegend(QPainter* painter, const QRectF& rect, int) cons
 			}
 			bs.setBackgroundBrush(b);
 			bs.setBorderPen(QPen(Qt::transparent));
-			if (testCurveAttribute(FillMultiCurves) && d_data->sub_continuous && d_data->subBrush.size() && d_data->vectors.size() > 1)
+			if (testCurveAttribute(FillMultiCurves) && d.sub_continuous && d_data->subBrush.size() && d.vectors.size() > 1)
 				bs.setBackgroundBrush(d_data->subBrush.first());
 
 			bs.computeRect(rect);
@@ -1991,18 +1961,18 @@ QRectF VipPlotCurve::drawLegend(QPainter* painter, const QRectF& rect, int) cons
 
 QList<VipInterval> VipPlotCurve::plotBoundingIntervals() const
 {
-	// if (rawData().isEmpty())
-	//  return QList<VipInterval>();
-	//
-	// QList<VipInterval> tmp = d_data->bounding;
-	// return tmp;
-	return QList<VipInterval>() << d_data->bounding[0] << d_data->bounding[1];
+	const auto d = d_data->function ? d_data->functionData : cachedData().value<VipPointVector>().anyData().value<CurveData>();
+
+	return QList<VipInterval>() << d.bounding[0] << d.bounding[1];
 }
 
 QPointF VipPlotCurve::drawSelectionOrderPosition(const QFont& font, Qt::Alignment align, const QRectF& area_bounding_rect) const
 {
+	//const CurveData& d = d_data->cdata;
+	const auto d = d_data->function ? d_data->functionData : cachedData().value<VipPointVector>().anyData().value<CurveData>();
+
 	QPointF res = VipPlotItem::drawSelectionOrderPosition(font, align, area_bounding_rect);
-	if (d_data->sub_continuous) {
+	if (d.sub_continuous) {
 		// TODO, find a better location
 	}
 	return res;
@@ -2010,25 +1980,22 @@ QPointF VipPlotCurve::drawSelectionOrderPosition(const QFont& font, Qt::Alignmen
 
 void VipPlotCurve::setData(const QVariant& v)
 {
-	dataBoundingRect(v.value<VipPointVector>());
-	VipPlotItemDataType::setData(v);
-}
+	CurveData d;
+	const VipPointVector vec = v.value<VipPointVector>();
+	if (vec.size()) {
 
-const QList<VipPointVector>& VipPlotCurve::vectors() const
-{
-	return d_data->vectors;
-}
-const QList<bool> VipPlotCurve::continuousVectors() const
-{
-	return d_data->continuous;
-}
-bool VipPlotCurve::isFullContinuous() const
-{
-	return d_data->full_continuous;
-}
-bool VipPlotCurve::isSubContinuous() const
-{
-	return d_data->sub_continuous;
+		QList<VipInterval> bounds = dataBoundingRect(vec, d.vectors, d.continuous, d.full_continuous, d.sub_continuous);
+		if (bounds.size() == 2) {
+			d.bounding[0] = bounds[0];
+			d.bounding[1] = bounds[1];
+		}
+		if (d.vectors.size() == 1 && d.vectors.first().sharedData() == vec.sharedData())
+			d.vectors.clear();
+		const_cast<VipPointVector&>( vec).setAnyData(QVariant::fromValue(std::move(d)));
+		VipPlotItemDataType::setData(QVariant::fromValue(vec));
+	}
+	else
+		VipPlotItemDataType::setData(v);
 }
 
 void VipPlotCurve::resetFunction()
@@ -2042,6 +2009,14 @@ void VipPlotCurve::resetFunction()
 	emitItemChanged(true, true, true, false);
 }
 
+const QList<VipPointVector> VipPlotCurve::vectors() const noexcept
+{
+	const auto raw = cachedData().value<VipPointVector>();
+	const auto d = d_data->function ? d_data->functionData : raw.anyData().value<CurveData>();
+	buildVectors(raw, d);
+	return d.vectors;
+}
+
 void VipPlotCurve::setFunction(const std::function<vip_double(vip_double)>& fun, const VipInterval& scale_interval, const VipInterval& draw_interval)
 {
 	d_data->function = fun;
@@ -2053,7 +2028,7 @@ void VipPlotCurve::setFunction(const std::function<vip_double(vip_double)>& fun,
 	d_data->drawn_pcount = 0;
 	d_data->drawn_interval = VipInterval();
 
-	setRawData(VipPointVector());
+	
 
 	// Extract minimum X/Y for the scale interval
 
@@ -2068,13 +2043,19 @@ void VipPlotCurve::setFunction(const std::function<vip_double(vip_double)>& fun,
 		maxy = std::max(maxy, v);
 		x += step;
 	}
-	dataLock()->lock();
 
-	d_data->bounding[0] = d_data->scale_interval;
-	d_data->bounding[1] = VipInterval(miny, maxy);
-	d_data->sub_continuous = true;
+	d_data->functionData.sub_continuous = true;
+	d_data->functionData.bounding[0] = d_data->scale_interval;
+	d_data->functionData.bounding[1] = VipInterval(miny, maxy);
+	setRawData(VipPointVector());
 
-	dataLock()->unlock();
+	/*dataLock()->lock();
+
+	d_data->cdata.bounding[0] = d_data->scale_interval;
+	d_data->cdata.bounding[1] = VipInterval(miny, maxy);
+	d_data->cdata.sub_continuous = true;
+
+	dataLock()->unlock();*/
 
 	// no need to mark style sheet dirty
 	emitItemChanged(true, true, true, false);
@@ -2153,7 +2134,7 @@ bool VipPlotCurve::setItemProperty(const char* name, const QVariant& value, cons
 		VipSymbol sym = this->symbol() ? *this->symbol() : VipSymbol();
 		sym.setStyle((VipSymbol::Style)v);
 		setSymbol(new VipSymbol(sym));
-		//setSymbolVisible(true);
+		// setSymbolVisible(true);
 		return true;
 	}
 	else if (strcmp(name, "symbol-size") == 0) {
@@ -2161,7 +2142,7 @@ bool VipPlotCurve::setItemProperty(const char* name, const QVariant& value, cons
 		VipSymbol sym = this->symbol() ? *this->symbol() : VipSymbol();
 		sym.setSize(QSizeF(v, v));
 		setSymbol(new VipSymbol(sym));
-		//setSymbolVisible(true);
+		// setSymbolVisible(true);
 		return true;
 	}
 	else if (strcmp(name, "symbol-border") == 0) {
@@ -2169,7 +2150,7 @@ bool VipPlotCurve::setItemProperty(const char* name, const QVariant& value, cons
 		VipSymbol sym = this->symbol() ? *this->symbol() : VipSymbol();
 		sym.setPen(p);
 		setSymbol(new VipSymbol(sym));
-		//setSymbolVisible(true);
+		// setSymbolVisible(true);
 		return true;
 	}
 	else if (strcmp(name, "symbol-background") == 0) {
@@ -2183,7 +2164,7 @@ bool VipPlotCurve::setItemProperty(const char* name, const QVariant& value, cons
 			sym.setBrush(b);
 		}
 		setSymbol(new VipSymbol(sym));
-		//setSymbolVisible(true);
+		// setSymbolVisible(true);
 		return true;
 	}
 	else if (strcmp(name, "symbol-visible") == 0) {
@@ -2315,7 +2296,7 @@ QList<VipInterval> VipPlotCurve::dataBoundingRect(const VipPointVector& samples,
 	out_vectors = vectors;
 
 	if (vipIsNan(topleft.x()) || vipIsNan(topleft.y()) || vipIsNan(bottomright.x()) || vipIsNan(bottomright.y())) {
-		return QList<VipInterval>() << VipInterval(0,1) << VipInterval(0,1);
+		return QList<VipInterval>() << VipInterval(0, 1) << VipInterval(0, 1);
 	}
 
 	return QList<VipInterval>() << VipInterval(topleft.x(), bottomright.x()) << VipInterval(topleft.y(), bottomright.y());
@@ -2329,22 +2310,6 @@ void VipPlotCurve::addSamples(const VipPoint* pts, int numPoints)
 	});
 }
 
-void VipPlotCurve::dataBoundingRect(const VipPointVector& samples)
-{
-	dataLock()->lock();
-	d_data->merge.vector.reserve(samples.size());
-
-	QList<VipInterval> bounds = dataBoundingRect(samples, d_data->vectors, d_data->continuous, d_data->full_continuous, d_data->sub_continuous);
-	if (bounds.size() == 2) {
-		d_data->bounding[0] = bounds[0];
-		d_data->bounding[1] = bounds[1];
-	}
-	else {
-		d_data->bounding[0] = VipInterval();
-		d_data->bounding[1] = VipInterval();
-	}
-	dataLock()->unlock();
-}
 
 VipArchive& operator<<(VipArchive& arch, const VipPlotCurve* value)
 {

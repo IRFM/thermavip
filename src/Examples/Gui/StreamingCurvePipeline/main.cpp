@@ -149,6 +149,27 @@ VipAnyData test(const VipAnyData& v)
 }
 
 #include <QDir>
+
+static void myMessageOutput(QtMsgType type, const QMessageLogContext& context, const QString& msg)
+{
+	(void)context;
+	switch (type) {
+		case QtDebugMsg:
+			vip_debug("Debug: %s\n", msg.toLatin1().data());
+			break;
+		case QtWarningMsg:
+			vip_debug("Warning: %s\n", msg.toLatin1().data());
+			break;
+		case QtCriticalMsg:
+			vip_debug("Critical: %s\n", msg.toLatin1().data());
+			break;
+		case QtFatalMsg:
+			vip_debug("Fatal: %s\n", msg.toLatin1().data());
+			abort();
+	}
+	return;
+}
+
 int main(int argc, char** argv)
 {
 	// To debug from the thermavip folder
@@ -177,7 +198,8 @@ int main(int argc, char** argv)
 
 
 	QApplication app(argc, argv);
-
+	qInstallMessageHandler(myMessageOutput);
+	
 
 	VipPlotWidget2D w; 
 

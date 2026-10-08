@@ -46,7 +46,7 @@ struct VipQuiverPoint
 	VipPoint destination;
 	double value;
 };
-using VipQuiverPointVector = QVector<VipQuiverPoint>;
+using VipQuiverPointVector = VipCircularVector<VipQuiverPoint>;
 
 Q_DECLARE_METATYPE(VipQuiverPoint);
 Q_DECLARE_METATYPE(VipQuiverPointVector);

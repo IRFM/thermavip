@@ -39,6 +39,7 @@
 #include <mutex>
 #include <thread>
 #include <type_traits>
+#include <cstdint>
 
 #include "VipConfig.h"
 
@@ -68,8 +69,6 @@ public:
 
 			// Wait for lock to be released without generating cache misses
 			while (d_lock.load(std::memory_order_relaxed))
-				// Issue X86 PAUSE or ARM YIELD instruction to reduce contention between
-				// hyper-threads
 				std::this_thread::yield();
 		}
 	}
@@ -85,20 +84,23 @@ public:
 	VIP_ALWAYS_INLINE void unlock() noexcept { d_lock.store(false, std::memory_order_release); }
 
 	template<class Rep, class Period>
-	bool try_lock_for(const std::chrono::duration<Rep, Period>& duration) noexcept
+	bool try_lock_for(const std::chrono::duration<Rep, Period>& duration)
 	{
-		return try_lock_until(std::chrono::system_clock::now() + duration);
+		return try_lock_until(std::chrono::steady_clock::now() + duration);
 	}
 
 	template<class Clock, class Duration>
-	bool try_lock_until(const std::chrono::time_point<Clock, Duration>& timePoint) noexcept
+	bool try_lock_until(const std::chrono::time_point<Clock, Duration>& timePoint)
 	{
 		for (;;) {
 			if (!d_lock.exchange(true, std::memory_order_acquire))
 				return true;
 
+			if (Clock::now() >= timePoint)
+				return try_lock();
+
 			while (d_lock.load(std::memory_order_relaxed)) {
-				if (Clock::now() > timePoint)
+				if (Clock::now() >= timePoint)
 					return try_lock();
 				std::this_thread::yield();
 			}
@@ -107,18 +109,13 @@ public:
 };
 
 /// @brief Recursive spinlock based on VipSpinlock
-class VipRecursiveSpinlock
+class VIP_DATA_TYPE_EXPORT VipRecursiveSpinlock
 {
 	VipSpinlock d_lock;
 	std::atomic<std::uint64_t> d_id = 0;
-	std::atomic<std::int64_t> d_count = 0;
+	std::uint64_t d_count = 0;
 
-	VIP_ALWAYS_INLINE std::uint64_t thread_id() const noexcept
-	{
-		static std::atomic<std::uint64_t> id{ 1 };
-		thread_local std::uint64_t th_id = id.fetch_add(1);
-		return th_id;
-	}
+	std::uint64_t thread_id() const noexcept;
 
 public:
 	VipRecursiveSpinlock() = default;
@@ -154,19 +151,19 @@ public:
 	}
 
 	template<class Rep, class Period>
-	bool try_lock_for(const std::chrono::duration<Rep, Period>& duration) noexcept
+	bool try_lock_for(const std::chrono::duration<Rep, Period>& duration)
 	{
-		return try_lock_until(std::chrono::system_clock::now() + duration);
+		return try_lock_until(std::chrono::steady_clock::now() + duration);
 	}
 
 	template<class Clock, class Duration>
-	bool try_lock_until(const std::chrono::time_point<Clock, Duration>& timePoint) noexcept
+	bool try_lock_until(const std::chrono::time_point<Clock, Duration>& timePoint)
 	{
 		for (;;) {
 			if (try_lock())
 				return true;
 
-			if (Clock::now() > timePoint)
+			if (Clock::now() >= timePoint)
 				return try_lock();
 
 			std::this_thread::yield();
@@ -187,12 +184,15 @@ public:
 	}
 };
 
-/// @brief An unfaire read-write spinlock class that favors write operations
+/// @brief An unfaire read-write spinlock class
 ///
-template<class LockType = std::uint32_t>
+template<class LockType = std::uint64_t>
 class VipSharedSpinner
 {
-	static_assert(std::is_unsigned_v<LockType>, "shared_spinner only supports unsigned atomic types!");
+	static_assert(!std::is_same_v<LockType, bool>, "VipSharedSpinner does not support bool type");
+	static_assert(std::is_unsigned_v<LockType>, "VipSharedSpinner only supports unsigned atomic types");
+	static_assert(std::atomic<LockType>::is_always_lock_free, "VipSharedSpinner requires lock-free atomics");
+
 	using lock_type = LockType;
 	static constexpr lock_type write = 1;
 	static constexpr lock_type need_lock = 2;
@@ -243,7 +243,7 @@ public:
 	}
 	VIP_ALWAYS_INLINE void unlock_shared()
 	{
-		VIP_ASSERT_DEBUG(d_lock > 0, "");
+		VIP_ASSERT_DEBUG(d_lock >= read, "");
 		d_lock.fetch_sub(read, std::memory_order_release);
 	}
 	// Attempt to acquire writer permission. Return false if we didn't get it.
@@ -257,8 +257,8 @@ public:
 	VIP_ALWAYS_INLINE bool try_lock_shared()
 	{
 		// This version might be slightly slower in some situations (low concurrency).
-		// However it works for very small lock type (like uint8_t) by avoiding overflows.
-		if constexpr (sizeof(d_lock) == 1) {
+		// However it works for small lock type by avoiding overflows.
+		if constexpr (sizeof(lock_type) < sizeof(std::uint64_t)) {
 			lock_type content = d_lock.load(std::memory_order_relaxed);
 			return (!(content & (need_lock | write | max_read_mask)) && d_lock.compare_exchange_strong(content, content + read));
 		}
@@ -272,8 +272,6 @@ public:
 			return false;
 		}
 	}
-	VIP_ALWAYS_INLINE bool is_locked() const noexcept { return d_lock.load(std::memory_order_relaxed) != 0; }
-	VIP_ALWAYS_INLINE bool is_locked_shared() const noexcept { return d_lock.load(std::memory_order_relaxed) & write; }
 };
 
 using VipSharedSpinlock = VipSharedSpinner<>;

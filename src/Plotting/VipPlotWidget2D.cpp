@@ -953,6 +953,8 @@ public:
 	qint64 lastUpdate;
 	QTimer updateTimer;
 
+	quint64 paintCount = 0;
+
 	VipColorPalette colorPalette;
 	QString colorPaletteName;
 	QString colorMapName;
@@ -1198,6 +1200,8 @@ void VipAbstractPlotArea::doUpdateScaleLogic()
 
 void VipAbstractPlotArea::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget)
 {
+	d_data->paintCount++;
+
 	doUpdateScaleLogic();
 
 	// draw itself
@@ -2514,6 +2518,11 @@ Vip::detail::ItemDirtyNotifierPtr VipAbstractPlotArea::notifier()
 {
 	QMutexLocker ll(&d_data->notifierLock);
 	return d_data->notifier;
+}
+
+quint64 VipAbstractPlotArea::paintCount() const noexcept
+{
+	return d_data->paintCount;
 }
 
 bool VipAbstractPlotArea::mouseInUse() const
@@ -4290,6 +4299,8 @@ bool VipBaseGraphicsView::renderObject(QPainter* p, const QPointF& pos, bool dra
 
 void VipBaseGraphicsView::paintEvent(QPaintEvent* evt)
 {
+	//qint64 st = QDateTime::currentMSecsSinceEpoch();
+
 	QColor c;
 	if (hasBackgroundColor())
 		c = backgroundColor();
@@ -4312,6 +4323,9 @@ void VipBaseGraphicsView::paintEvent(QPaintEvent* evt)
 
 	if (d_data->hasStartRendering)
 		QMetaObject::invokeMethod(v, "stopRendering", Qt::DirectConnection);
+
+	//qint64 el = QDateTime::currentMSecsSinceEpoch() - st;
+	//printf("%s: %i ms\n", this->metaObject()->className(), (int)el);
 }
 
 QRectF VipBaseGraphicsView::visualizedSceneRect() const

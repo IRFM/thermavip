@@ -32,6 +32,8 @@
 #ifndef VIP_AXIS_COLOR_MAP_H
 #define VIP_AXIS_COLOR_MAP_H
 
+#include <limits>
+
 #include "VipAxisBase.h"
 #include "VipColorMap.h"
 #include "VipSliderGrip.h"
@@ -39,6 +41,11 @@
 /// \addtogroup Plotting
 /// @{
 
+
+inline VipInterval vipInfinitInterval()
+{
+	return VipInterval(-std::numeric_limits<vip_double>::infinity(), std::numeric_limits<vip_double>::infinity(), VipInterval::IncludeBorders);
+}
 
 /// A vertical or horizontal axis displaying an additional color map and 2 slider grips (that can be hidden).
 /// It is mostly used to display a color map for spectrograms (see VipPlotSpectrogram)

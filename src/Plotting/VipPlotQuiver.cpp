@@ -61,7 +61,14 @@ static int registerQuiverKeyWords()
 	return 0;
 }
 
-static int _registerQuiverKeyWords = vipStaticInit("registerQuiverKeyWords",registerQuiverKeyWords);
+static int _registerQuiverKeyWords = vipStaticInit("registerQuiverKeyWords", registerQuiverKeyWords);
+
+struct QuiverData
+{
+	QList<VipInterval> bounding;
+	VipInterval dataInterval;
+};
+Q_DECLARE_METATYPE(QuiverData)
 
 class VipPlotQuiver::PrivateData
 {
@@ -74,11 +81,6 @@ public:
 	}
 
 	VipQuiverPath quiver;
-
-	QList<VipInterval> bounding;
-
-	VipInterval dataInterval;
-	VipInterval dataValidInterval;
 
 	Qt::Alignment textAlignment;
 	Vip::RegionPositions textPosition;
@@ -100,19 +102,22 @@ VipPlotQuiver::VipPlotQuiver(const VipText& title)
 	setPen(p);
 }
 
-VipPlotQuiver::~VipPlotQuiver()
-{
-}
+VipPlotQuiver::~VipPlotQuiver() {}
 
 void VipPlotQuiver::setData(const QVariant& data)
 {
-	VipPlotItemDataType::setData(data);
-
-	Locker locker(dataLock());
-	const VipQuiverPointVector vec = data.value<VipQuiverPointVector>();
-	d_data->bounding = dataBoundingIntervals(vec);
-	d_data->dataValidInterval = Vip::InfinitInterval;
-	d_data->dataInterval = computeInterval(vec, Vip::InfinitInterval);
+	auto d = data.value<VipQuiverPointVector>();
+	QuiverData hdata;
+	hdata.bounding = dataBoundingIntervals(d);
+	const auto& cd = d;
+	if (cd.size()) {
+		hdata.dataInterval = VipInterval(cd[0].value, cd[0].value);
+		for (qsizetype i = 1; i < cd.size(); ++i) {
+			hdata.dataInterval = hdata.dataInterval.extend(cd[i].value);
+		}
+	}
+	d.setAnyData(QVariant::fromValue(hdata));
+	VipPlotItemDataType::setData(QVariant::fromValue(std::move(d)));
 }
 
 QList<VipInterval> VipPlotQuiver::dataBoundingIntervals(const VipQuiverPointVector& vec) const
@@ -140,6 +145,7 @@ QList<VipInterval> VipPlotQuiver::dataBoundingIntervals(const VipQuiverPointVect
 	}
 	return QList<VipInterval>() << x << y;
 }
+
 VipInterval VipPlotQuiver::computeInterval(const VipQuiverPointVector& vec, const VipInterval& inter) const
 {
 	if (vec.isEmpty())
@@ -185,7 +191,7 @@ int VipPlotQuiver::findQuiverIndex(const VipQuiverPointVector& vec, const QPoint
 QString VipPlotQuiver::formatText(const QString& text, const QPointF& pos) const
 {
 	QString res = VipPlotItem::formatText(text, pos);
-	const VipQuiverPointVector vec = rawData();
+	const VipQuiverPointVector vec = cachedData().value < VipQuiverPointVector>();
 	int index = findQuiverIndex(vec, pos, 10);
 	if (index < 0)
 		return res;
@@ -194,7 +200,7 @@ QString VipPlotQuiver::formatText(const QString& text, const QPointF& pos) const
 }
 bool VipPlotQuiver::areaOfInterest(const QPointF& pos, int, double maxDistance, VipPointVector& out_pos, VipBoxStyle& style, int& legend) const
 {
-	const VipQuiverPointVector vec = rawData();
+	const VipQuiverPointVector vec = cachedData().value<VipQuiverPointVector>();
 	int index = findQuiverIndex(vec, pos, maxDistance);
 	if (index < 0)
 		return false;
@@ -216,13 +222,9 @@ bool VipPlotQuiver::areaOfInterest(const QPointF& pos, int, double maxDistance, 
 
 QList<VipInterval> VipPlotQuiver::plotBoundingIntervals() const
 {
-	Locker locker(dataLock());
-	QList<VipInterval> res = d_data->bounding;
-	if (res.isEmpty()) {
-		res = const_cast<PrivateData*>(d_data.get())->bounding = dataBoundingIntervals(rawData());
-	}
-	res.detach();
-	return res;
+	const auto d = cachedData().value<VipQuiverPointVector>();
+	const QuiverData hdata = d.anyData().value<QuiverData>();
+	return hdata.bounding;
 }
 
 bool VipPlotQuiver::setItemProperty(const char* name, const QVariant& value, const QByteArray& index)
@@ -338,7 +340,7 @@ void VipPlotQuiver::draw(QPainter* painter, const VipCoordinateSystemPtr& m) con
 	QPen p((d_data->quiver.pen()));
 	VipQuiverPath quiver = d_data->quiver;
 
-	const VipQuiverPointVector vector = rawData();
+	const VipQuiverPointVector vector = cachedData().value<VipQuiverPointVector>();
 	const bool use_colormap = colorMap();
 	VipQuiver q;
 
@@ -371,11 +373,11 @@ QRectF VipPlotQuiver::drawLegend(QPainter* painter, const QRectF& r, int index) 
 
 VipInterval VipPlotQuiver::plotInterval(const VipInterval& interval) const
 {
-	if (d_data->dataInterval.isValid() && d_data->dataValidInterval == interval)
-		return d_data->dataInterval;
-	Locker lock(dataLock());
-	const_cast<VipPlotQuiver*>(this)->d_data->dataValidInterval = interval;
-	return const_cast<VipPlotQuiver*>(this)->d_data->dataInterval = computeInterval(rawData(), interval);
+	const auto d = cachedData().value<VipQuiverPointVector>();
+	if (interval == vipInfinitInterval()) {
+		return d.anyData().value<QuiverData>().dataInterval;
+	}
+	return computeInterval(d, interval);
 }
 
 void VipPlotQuiver::setQuiverPath(const VipQuiverPath& q)
@@ -440,4 +442,4 @@ static bool register_types()
 
 	return true;
 }
-static int _register_types = vipStaticInit("register_types",register_types);
+static int _register_types = vipStaticInit("register_types", register_types);

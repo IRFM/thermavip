@@ -339,6 +339,7 @@ class VIP_PLOTTING_EXPORT VipAbstractPlotArea : public VipBoxGraphicsWidget
 	Q_OBJECT
 	friend class VipRubberBand;
 	friend class VipPlotItem;
+	friend class VipPlotItemData;
 	friend class VipAbstractScale;
 	friend class VipBoxGraphicsWidget;
 	friend class VipAbstractPlotWidget2D;
@@ -859,6 +860,8 @@ private:
 
 	void setNotifier(const Vip::detail::ItemDirtyNotifierPtr& notifier);
 	Vip::detail::ItemDirtyNotifierPtr notifier();
+
+	quint64 paintCount() const noexcept;
 
 	VIP_DECLARE_PRIVATE_DATA();
 };

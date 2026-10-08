@@ -34,9 +34,18 @@
 #include "VipPainter.h"
 #include "VipPlotWidget2D.h"
 #include "VipToolTip.h"
+#include "VipAxisColorMap.h"
 
 #include <qpainter.h>
 #include <qstring.h>
+
+struct HistData
+{
+	IntervalList bounding;
+	VipInterval plotInterval;
+	double baseline = 0;
+};
+Q_DECLARE_METATYPE(HistData)
 
 static int registerHistogramKeyWords()
 {
@@ -91,11 +100,6 @@ public:
 
 	VipBoxStyle boxStyle;
 	VipPlotHistogram::HistogramStyle style;
-	QList<VipInterval> bounding;
-	QList<VipInterval> boundingInterval;
-
-	VipInterval plotInterval;
-	VipInterval plotValidInterval;
 
 	Qt::Alignment textAlignment;
 	Vip::RegionPositions textPosition;
@@ -155,11 +159,6 @@ void VipPlotHistogram::setBaseline(vip_double value)
 {
 	if (d_data->baseline != value) {
 		d_data->baseline = value;
-		{
-			dataLock()->lock();
-			d_data->bounding.clear();
-			dataLock()->unlock();
-		}
 		emitItemChanged();
 	}
 }
@@ -261,50 +260,62 @@ QList<VipInterval> VipPlotHistogram::dataBoundingIntervals(const VipIntervalSamp
 	return QList<VipInterval>() << VipInterval(x_min, x_max) << VipInterval(y_min, y_max);
 }
 
+
+
 VipInterval VipPlotHistogram::plotInterval(const VipInterval& interval) const
 {
-	if (!d_data->plotInterval.isValid() || d_data->plotValidInterval != interval) {
-		Locker locker(dataLock());
-		const VipIntervalSampleVector data = rawData();
-		if (!data.size())
-			return VipInterval();
-
-		VipInterval inter = VipInterval(data[0].value, data[0].value);
-		for (int i = 1; i < data.size(); ++i)
-			inter = inter.extend(data[i].value);
-
-		const_cast<PrivateData*>(d_data.get())->plotInterval = inter;
-		const_cast<PrivateData*>(d_data.get())->plotValidInterval = interval;
+	const auto d = cachedData().value<VipIntervalSampleVector>();
+	
+	if (interval == vipInfinitInterval()) {
+		return d.anyData().value<HistData>().plotInterval;
 	}
 
-	return d_data->plotInterval;
+	if (!d.size())
+		return VipInterval();
+
+	VipInterval inter;
+	for (int i = 0; i < d.size(); ++i) {
+		double v = d[i].value;
+		if (interval.contains(v)) {
+			if (inter.isNull())
+				inter = VipInterval(v, v);
+			else
+				inter = inter.extend(v);
+		}
+	}
+	return inter;
 }
 
 QList<VipInterval> VipPlotHistogram::plotBoundingIntervals() const
 {
-	Locker locker(dataLock());
-	QList<VipInterval> res = d_data->bounding;
-	if (res.isEmpty()) {
-		res = const_cast<PrivateData*>(d_data.get())->bounding = dataBoundingIntervals(rawData(), baseline());
-	}
-	res.detach();
-	return res;
+	const auto d = cachedData().value<VipIntervalSampleVector>();
+	const HistData hdata = d.anyData().value<HistData>();
+	if (hdata.baseline == d_data->baseline)
+		return hdata.bounding;
+
+	return dataBoundingIntervals(d, d_data->baseline);
 }
+
+
 
 void VipPlotHistogram::setData(const QVariant& data)
 {
-	VipPlotItemDataType::setData(data);
-	Locker locker(dataLock());
-	d_data->bounding = dataBoundingIntervals(rawData(), baseline()); //.clear();
-	const VipIntervalSampleVector vec = data.value<VipIntervalSampleVector>();
-	if (vec.size()) {
-		VipInterval inter = VipInterval(vec[0].value, vec[0].value);
-		for (int i = 1; i < vec.size(); ++i)
-			inter = inter.extend(vec[i].value);
-		(d_data)->plotInterval = inter;
+	auto d = data.value<VipIntervalSampleVector>();
+	HistData hdata;
+	double baseline = d_data->baseline;
+	hdata.bounding = dataBoundingIntervals(d, baseline);
+	hdata.baseline = baseline;
+	const auto& cd = d;
+	hdata.plotInterval = VipInterval();
+	if (cd.size()) {
+
+		hdata.plotInterval = VipInterval(cd[0].value, cd[0].value);
+		for (qsizetype i = 1; i < cd.size(); ++i) {
+			hdata.plotInterval = hdata.plotInterval.extend(cd[i].value);
+		}
 	}
-	// d_data->plotInterval = VipInterval();
-	// d_data->plotValidInterval = VipInterval();
+	d.setAnyData(QVariant::fromValue(hdata));
+	VipPlotItemDataType::setData(QVariant::fromValue(std::move(d)));
 }
 
 bool VipPlotHistogram::areaOfInterest(const QPointF& pos,
@@ -316,15 +327,13 @@ bool VipPlotHistogram::areaOfInterest(const QPointF& pos,
 				      VipBoxStyle& style,
 				      int& legend) const
 {
-	Locker locker(dataLock());
-
 	QRectF found;
 	int index = -1;
 	double dist = std::numeric_limits<double>::max();
 	legend = 0;
 
 	// try to find a sample at distance < maxDistance (in item's coordinates)
-	const VipIntervalSampleVector data = rawData();
+	const VipIntervalSampleVector data = cachedData().value<VipIntervalSampleVector>();
 	for (int i = 0; i < data.size(); ++i) {
 		QRectF rect(sceneMap()->transform(QPointF(data[i].interval.minValue(), baseline())), sceneMap()->transform(QPointF(data[i].interval.maxValue(), data[i].value)));
 		rect = rect.normalized();
@@ -378,8 +387,7 @@ QString VipPlotHistogram::formatText(const QString& str, const QPointF& pos) con
 	// we need to replace #min, #max and #value
 
 	// try to find a sample at distance < maxDistance (in item's coordinates)
-	Locker lock(dataLock());
-	const VipIntervalSampleVector data = rawData();
+	const VipIntervalSampleVector data = cachedData().value<VipIntervalSampleVector>();
 	for (int i = 0; i < data.size(); ++i) {
 		QRectF rect(sceneMap()->transform(QPointF(data[i].interval.minValue(), baseline())), sceneMap()->transform(QPointF(data[i].interval.maxValue(), data[i].value)));
 		rect = rect.normalized().adjusted(-dist, -dist, dist, dist);
@@ -424,7 +432,7 @@ void VipPlotHistogram::draw(QPainter* painter, const VipCoordinateSystemPtr& m) 
 
 	// draw the texts
 	if (!d_data->text.isEmpty()) {
-		VipIntervalSampleVector data = this->rawData();
+		const VipIntervalSampleVector data = cachedData().value<VipIntervalSampleVector>();
 
 		for (int i = 0; i < data.size(); ++i) {
 			const VipIntervalSample sample = data[i];
@@ -488,7 +496,7 @@ QRectF VipPlotHistogram::drawLegend(QPainter* painter, const QRectF& r, int // i
 ///        order and not overlapping.
 void VipPlotHistogram::drawOutline(QPainter* painter, const VipCoordinateSystemPtr& m) const
 {
-	const VipIntervalSampleVector data = this->rawData();
+	const VipIntervalSampleVector data = cachedData().value<VipIntervalSampleVector>();
 	if (!data.size())
 		return;
 
@@ -553,7 +561,7 @@ void VipPlotHistogram::drawOutline(QPainter* painter, const VipCoordinateSystemP
 /// \sa setStyle(), style(), setSymbol(), drawColumn()
 void VipPlotHistogram::drawColumns(QPainter* painter, const VipCoordinateSystemPtr& m) const
 {
-	const VipIntervalSampleVector data = this->rawData();
+	const VipIntervalSampleVector data = cachedData().value<VipIntervalSampleVector>();
 	VipBoxStyle bs = d_data->boxStyle;
 	QPen pen = bs.borderPen();
 
@@ -604,7 +612,7 @@ void VipPlotHistogram::drawColumns(QPainter* painter, const VipCoordinateSystemP
 /// \sa setStyle(), style(), setPen()
 void VipPlotHistogram::drawLines(QPainter* painter, const VipCoordinateSystemPtr& m) const
 {
-	const VipIntervalSampleVector data = this->rawData();
+	const VipIntervalSampleVector data = cachedData().value<VipIntervalSampleVector>();
 	VipBoxStyle bstyle = d_data->boxStyle;
 	QPainterPath path;
 

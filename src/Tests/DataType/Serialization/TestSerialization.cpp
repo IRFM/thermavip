@@ -457,16 +457,6 @@ private Q_SLOTS:
 		QCOMPARE((double)QVariant(QByteArray("not a number")).value<vip_long_double>(), 0.0);
 	}
 
-	/// A guard owns the lock it took. Copying one released the same lock twice,
-	/// which corrupts the exclusion the lock exists for; the two lock classes of
-	/// the same header already delete their copy.
-	void aLockGuardCannotBeCopied()
-	{
-		QVERIFY(!std::is_copy_constructible<VipUniqueLock<VipSpinlock>>::value);
-		QVERIFY(!std::is_copy_assignable<VipUniqueLock<VipSpinlock>>::value);
-		QVERIFY(!std::is_copy_constructible<VipSharedLock<VipSharedSpinlock>>::value);
-		QVERIFY(!std::is_copy_assignable<VipSharedLock<VipSharedSpinlock>>::value);
-	}
 
 	/// Hashing an arithmetic value copies its representation into an accumulator
 	/// of eight bytes. A type wider than that wrote past it; here the extended

@@ -109,6 +109,7 @@ namespace Vip
 					return true;
 				}
 			}
+
 		};
 	}
 
@@ -264,6 +265,7 @@ void VipDisplayObject::apply()
 				if (!done)
 					processEvents();
 			}
+			
 		}
 	}
 	else {
@@ -826,6 +828,7 @@ bool VipDisplayCurve::prepareForDisplay(const VipAnyDataList& lst)
 			}
 		});
 	}
+
 	return false;
 }
 
@@ -853,6 +856,7 @@ void VipDisplayCurve::displayData(const VipAnyDataList& lst)
 				curve->setTitle(attrs["Name"].toString());
 		}
 	}
+
 }
 
 VipDisplaySceneModel::VipDisplaySceneModel(QObject* parent)
@@ -968,12 +972,8 @@ bool VipDisplayImage::acceptInput(int, const QVariant& v) const
 
 QSize VipDisplayImage::sizeHint() const
 {
-	if (VipPlotSpectrogram* curve = item()) {
-		curve->dataLock()->lock();
-		QSize res = curve->rawData().boundingRect().size().toSize();
-		curve->dataLock()->unlock();
-		return res;
-	}
+	if (VipPlotSpectrogram* curve = item()) 
+		return curve->rawData().boundingRect().size().toSize();
 	else
 		return QSize();
 }
@@ -1012,6 +1012,7 @@ bool VipDisplayImage::prepareForDisplay(const VipAnyDataList& data)
 			}
 		}
 	}
+
 	return false;
 }
 
@@ -1030,13 +1031,11 @@ void VipDisplayImage::displayData(const VipAnyDataList& lst)
 
 VipArchive& operator<<(VipArchive& stream, const VipDisplayObject*)
 {
-	// return stream.content("displayInGuiThread",r->displayInGuiThread());
 	return stream;
 }
 
 VipArchive& operator>>(VipArchive& stream, VipDisplayObject*)
 {
-	// r->setDisplayInGuiThread(stream.read("displayInGuiThread").value<bool>());
 	return stream;
 }
 

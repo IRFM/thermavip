@@ -4625,43 +4625,28 @@ void VipProcessingList::applyFrom(VipProcessingObject* obj)
 		~ClearApplying() { flag.store(false); }
 	} clear_applying{ d_data->isApplying };
 
-	// The mutex is taken to read the container and the parameters, and released
-	// before the pipeline runs. It used to be held for the whole run, and a
-	// processing that pumps the event loop then blocked every other thread that
-	// only wanted to look at the list: that is why the locking of directSources()
-	// had been commented out rather than fixed.
-	QList<VipProcessingObject*> objects;
-	QString overrideName;
-	qint64 lastTime;
-	QTransform previousTransform;
-	{
-		QMutexLocker lock(&d_data->mutex);
-		computeParams();
-		objects = d_data->objects;
-		overrideName = d_data->overrideName;
-		lastTime = d_data->lastTime;
-		previousTransform = d_data->transform;
-	}
+	
+	std::unique_lock<QRecursiveMutex> guard(d_data->mutex);
 
-	if (!objects.size()) {
+	computeParams();
+	QTransform previousTransform = d_data->transform;
+	
+	if (!d_data->objects.size()) {
 		VipAnyData data = inputAt(0)->data();
 		VipAnyData out = create(data.data(), data.attributes());
-		{
-			QMutexLocker lock(&d_data->mutex);
-			d_data->lastTime = data.time();
-		}
+		d_data->lastTime = data.time();
 		out.setTime(data.time());
-		if (!overrideName.isEmpty())
-			out.setName(overrideName);
+		if (!d_data->overrideName.isEmpty())
+			out.setName(d_data->overrideName);
 		outputAt(0)->setData(out);
 		return;
 	}
 
 	int index = -1;
 	if (obj) {
-		index = objects.indexOf(obj);
+		index = d_data->objects.indexOf(obj);
 		// find an enabled processing
-		while (index >= 0 && !objects[index]->isEnabled())
+		while (index >= 0 && !d_data->objects[index]->isEnabled())
 			--index;
 	}
 
@@ -4672,7 +4657,7 @@ void VipProcessingList::applyFrom(VipProcessingObject* obj)
 	VipAnyData data;
 	if (index < 0) {
 		data = inputAt(0)->data();
-		auto* obj = objects[0];
+		auto* obj = d_data->objects[0];
 		if (obj->isEnabled()) {
 			obj->inputAt(0)->setData(data);
 			obj->update(true);
@@ -4689,27 +4674,25 @@ void VipProcessingList::applyFrom(VipProcessingObject* obj)
 				data.setData(tmp.data());
 			}
 		}
-		lastTime = data.time();
-		QMutexLocker lock(&d_data->mutex);
-		d_data->lastTime = lastTime;
+		d_data->lastTime = data.time();
 	}
 	else {
-		VipAnyData tmp = objects[index]->outputAt(0)->data();
+		VipAnyData tmp = d_data->objects[index]->outputAt(0)->data();
 		data.mergeAttributes(tmp.attributes());
 		data.setData(tmp.data());
-		data.setTime(lastTime);
+		data.setTime(d_data->lastTime);
 	}
 
 	{
 		index = qMax(index, 0);
 
-		const VipNDArray src_ar = objects.size() ? objects.first()->inputAt(0)->probe().value<VipNDArray>() : VipNDArray();
+		const VipNDArray src_ar = d_data->objects.size() ? d_data->objects.first()->inputAt(0)->probe().value<VipNDArray>() : VipNDArray();
 
 		bool need_compute_transform = !src_ar.isEmpty() && src_ar.shapeCount() == 2;
 
-		if (!objects[index]->hasError()) {
-			for (int i = index + 1; i < objects.size(); ++i) {
-				auto* obj = objects[i];
+		if (!d_data->objects[index]->hasError()) {
+			for (int i = index + 1; i < d_data->objects.size(); ++i) {
+				auto* obj = d_data->objects[i];
 				if (!obj->isEnabled())
 					continue;
 				obj->inputAt(0)->setData(data);
@@ -4732,29 +4715,26 @@ void VipProcessingList::applyFrom(VipProcessingObject* obj)
 		QTransform tr;
 		if (need_compute_transform) {
 			// compute the list image transform
-			QMutexLocker lock(&d_data->mutex);
 			tr = computeTransform();
 		}
-
-		// for (int i = 0; i < d_data->objects.size(); ++i)
-		//	d_data->objects[i]->blockSignals(false);
 
 		// vip_debug("1 %s name: %s\n",objectName().toLatin1().data(), attribute("Name").toString().toLatin1().data());
 		VipAnyData out = create(data.data(), data.attributes());
 		out.setTime(data.time());
-		if (!overrideName.isEmpty())
-			out.setName(overrideName);
+		if (!d_data->overrideName.isEmpty())
+			out.setName(d_data->overrideName);
 		// vip_debug("2 %s name: %s\n", objectName().toLatin1().data(), out.name().toLatin1().data());
 
 		outputAt(0)->setData(out);
 
 		if (tr != previousTransform) {
-			{
-				QMutexLocker lock(&d_data->mutex);
-				d_data->transform = tr;
-			}
+			d_data->transform = tr;
+			// Unlock before emitting signals
+			guard.unlock();
 			emitImageTransformChanged();
 		}
+		else
+			guard.unlock();
 	}
 
 finish:

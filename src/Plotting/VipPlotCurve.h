@@ -290,15 +290,6 @@ public:
 	template<class F>
 	void updateSamples(F&& fun);
 
-	/// @brief Returns the list of sub vectors (input VipPointVector splitted by NaN X value)
-	const QList<VipPointVector>& vectors() const;
-	/// @brief For each sub-vector, tells if the vector is sorted in X ascending order
-	const QList<bool> continuousVectors() const;
-	/// @brief Tells if the input VipPointVector (as set with setData() or setRawData()) is sorted in X ascending order
-	bool isFullContinuous() const;
-	/// @brief Tells if each sub-vector is sorted in X ascending order
-	bool isSubContinuous() const;
-
 	/// @brief Render a function instead of a VipPointVector
 	/// @param fun Function to be rendered
 	/// @param scale_interval starting X scale interval, also used for automatic scaling
@@ -312,6 +303,8 @@ public:
 	}
 	/// @brief Remove previously set function
 	void resetFunction();
+
+	const QList<VipPointVector> vectors() const noexcept;
 
 	/// @brief Reimplemented from VipPlotItem
 	virtual QPainterPath shapeFromCoordinateSystem(const VipCoordinateSystemPtr& m) const;
@@ -454,7 +447,7 @@ protected:
 	QPolygonF extractEnveloppe(const QPolygonF& points, int factor, double* length) const;
 
 private:
-	void dataBoundingRect(const VipPointVector&);
+	//void dataBoundingRect(const VipPointVector&);
 	int findClosestPos(const VipPointVector& data, const VipPoint& pos, int axis, double maxDistance, bool continuous) const;
 
 	
@@ -464,31 +457,6 @@ private:
 template<class F>
 void VipPlotCurve::updateSamples(F&& fun)
 {
-	// First, lock data
-	this->dataLock()->lock();
-
-	const QList<VipPointVector>& vecs = this->vectors();
-	if (vecs.size() == 1) {
-		// We only have one vector (most situations):
-		// take the internal data to remove a ref count
-		takeData();
-		// Call the functor on unref vector
-		try {
-			std::forward<F>(fun)(const_cast<VipPointVector&>(vecs.first()));
-		}
-		catch (...) {
-			VipPointVector tmp(vecs.first());
-			this->dataLock()->unlock();
-			setRawData(tmp);
-			throw;
-		}
-		// Unlock and set data
-		VipPointVector tmp(vecs.first());
-		this->dataLock()->unlock();
-		setRawData(tmp);
-		return;
-	}
-	this->dataLock()->unlock();
 	// Use standard updateData()
 	this->updateData(std::forward<F>(fun));
 }

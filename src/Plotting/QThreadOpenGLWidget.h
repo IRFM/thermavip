@@ -137,8 +137,6 @@ public:
 
 	/// @brief Returns true is the QPaintRecord is null or empty (size() == 0)
 	bool isEmpty() const noexcept;
-	/// @brief Returns the number of recorded painting commands
-	uint size() const noexcept;
 	/// @brief Remove all painting commands
 	void clear();
 	/// @brief Draw the QPaintRecord on given QPainter object

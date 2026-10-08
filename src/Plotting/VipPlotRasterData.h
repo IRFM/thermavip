@@ -241,7 +241,7 @@ private:
 	bool computeImage(const VipRasterData& ar, const VipInterval& interval, const VipCoordinateSystemPtr& m, VipNDArray& tmp_array, VipImageData& img) const;
 
 	QRectF computeArrayRect(const VipRasterData& raster) const;
-	void drawBackground(QPainter* painter, const VipCoordinateSystemPtr& m, const QRectF& rect, const QPolygonF& dst) const;
+	void drawBackground(const VipRasterData& raster, QPainter* painter, const VipCoordinateSystemPtr& m, const QRectF& rect, const QPolygonF& dst) const;
 
 	VIP_DECLARE_PRIVATE_DATA();
 };

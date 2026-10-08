@@ -1338,8 +1338,9 @@ void VipUpdatePlotPlayer::updateMarkers()
 			QList<VipPlotMarker*>& mins = m_minMarkers[curve];
 
 			// create missing markers, hide additional ones
-			if (maxs.size() != curve->vectors().size()) {
-				for (int j = maxs.size(); j < curve->vectors().size(); ++j) {
+			const auto vectors = curve->vectors();
+			if (maxs.size() != vectors.size()) {
+				for (int j = maxs.size(); j < vectors.size(); ++j) {
 
 					VipPlotMarker* max = new VipPlotMarker();
 					max->setIgnoreStyleSheet(true);
@@ -1388,7 +1389,6 @@ void VipUpdatePlotPlayer::updateMarkers()
 			}
 
 			// compute min/max
-			const QList<VipPointVector> vectors = curve->vectors();
 
 			// hide additional ones
 			for (int j = vectors.size(); j < maxs.size(); ++j) {

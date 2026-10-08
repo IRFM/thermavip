@@ -285,10 +285,7 @@ protected:
 
 	QString formatSampleText(const QString& str, const VipIntervalSample& s) const;
 
-private:
-	// void flushPolygon( QPainter *,const VipCoordinateSystemPtr & , double baseLine, QPolygonF & ,QPolygonF &) const;
-
-	
+private:	
 	VIP_DECLARE_PRIVATE_DATA();
 };
 

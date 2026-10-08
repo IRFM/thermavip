@@ -756,13 +756,13 @@ void VipPlotRasterData::drawSelected(QPainter* painter, const VipCoordinateSyste
 #include <qopenglcontext.h>
 #include <qopenglfunctions.h>
 
-void VipPlotRasterData::drawBackground(QPainter* painter, const VipCoordinateSystemPtr& m, const QRectF& rect, const QPolygonF& dst) const
+void VipPlotRasterData::drawBackground(const VipRasterData & raster, QPainter* painter, const VipCoordinateSystemPtr& m, const QRectF& rect, const QPolygonF& dst) const
 {
 	(void)m;
 	// draw the background image
 	if (!d_data->backgroundImage.isNull()) {
 		// compute the source rect
-		QRectF im_rect = this->rawData().boundingRect();
+		QRectF im_rect = raster.boundingRect();
 		double factor_x = d_data->backgroundImage.width() / im_rect.width();
 		double factor_y = d_data->backgroundImage.height() / im_rect.height();
 		QRectF src_rect(QPoint(rect.left() * factor_x, rect.top() * factor_y), QPoint(rect.right() * factor_x, rect.bottom() * factor_y));
@@ -774,8 +774,9 @@ void VipPlotRasterData::draw(QPainter* painter, const VipCoordinateSystemPtr& m)
 {
 	QRectF rect;
 	QPolygonF dst;
-	VipImageData bypass = d_data->bypassImageData;
-	bool use_bypass = !bypass.isEmpty() && computeArrayRect(this->rawData()) == bypass.arrayRect;
+	const VipImageData& bypass = d_data->bypassImageData;
+	const VipRasterData raster = this->rawData();
+	bool use_bypass = !bypass.isEmpty() && computeArrayRect(raster) == bypass.arrayRect;
 
 	if (!use_bypass) {
 		if (VipPlotItemData::data().isNull() && !d_data->imageData.image.isNull()) {
@@ -787,7 +788,7 @@ void VipPlotRasterData::draw(QPainter* painter, const VipCoordinateSystemPtr& m)
 			d_data->imageData.srcImageRect = (src);
 			d_data->imageData.dstPolygon = (dst);
 			painter->setRenderHint(QPainter::SmoothPixmapTransform, renderHints() & QPainter::Antialiasing);
-			drawBackground(painter, m, rect, dst);
+			drawBackground(raster, painter, m, rect, dst);
 
 			if (d_data->applyCorrections()) {
 				QImage img = d_data->imageData.image.convertToFormat(QImage::Format_ARGB32);
@@ -803,10 +804,10 @@ void VipPlotRasterData::draw(QPainter* painter, const VipCoordinateSystemPtr& m)
 			if (map)
 				inter = map->gripInterval();
 
-			const VipRasterData raster = this->rawData();
+			
 
 			// Try to use the precomputed image
-			VipImageData& precomputed = raster.d_data->precomputed;
+			const VipImageData& precomputed = raster.d_data->precomputed;
 			VipLinearColorMap* linear = map ? qobject_cast<VipLinearColorMap*>(map->colorMap()) : nullptr;
 
 			if (linear && !precomputed.image.isNull() && map->itemList().size() == 1 && precomputed.colorMapHash == linear->hashValue() &&
@@ -824,18 +825,18 @@ void VipPlotRasterData::draw(QPainter* painter, const VipCoordinateSystemPtr& m)
 					if (dstPoly == precomputed.dstPolygon) {
 
 						painter->setRenderHint(QPainter::SmoothPixmapTransform, renderHints() & QPainter::Antialiasing);
-						drawBackground(painter, m, precomputed.arrayRect, precomputed.dstPolygon);
+						drawBackground(raster, painter, m, precomputed.arrayRect, precomputed.dstPolygon);
 						VipPainter::drawImage(painter, precomputed.dstPolygon, precomputed.image, precomputed.srcImageRect);
 						goto finish;
 					}
 				}
 			}
 
-			if (computeImage(this->rawData(), inter, m, d_data->temporaryArray, d_data->imageData)) {
+			if (computeImage(raster, inter, m, d_data->temporaryArray, d_data->imageData)) {
 				painter->setRenderHint(QPainter::SmoothPixmapTransform, renderHints() & QPainter::Antialiasing);
 				rect = d_data->imageData.arrayRect;
 				dst = d_data->imageData.dstPolygon;
-				drawBackground(painter, m, rect, dst);
+				drawBackground(raster, painter, m, rect, dst);
 				VipPainter::drawImage(painter, d_data->imageData.dstPolygon, d_data->imageData.image, d_data->imageData.srcImageRect);
 			}
 			else
@@ -845,7 +846,7 @@ void VipPlotRasterData::draw(QPainter* painter, const VipCoordinateSystemPtr& m)
 	else {
 		rect = bypass.arrayRect;
 		dst = bypass.dstPolygon;
-		drawBackground(painter, m, rect, dst);
+		drawBackground(raster, painter, m, rect, dst);
 		painter->setRenderHint(QPainter::SmoothPixmapTransform, renderHints() & QPainter::Antialiasing);
 
 		if (d_data->applyCorrections()) {
@@ -865,7 +866,7 @@ finish:
 		painter->save();
 
 		// compute the source rect
-		QRectF im_rect = this->rawData().boundingRect();
+		QRectF im_rect = raster.boundingRect();
 		double factor_x = d_data->superimposeImage.width() / im_rect.width();
 		double factor_y = d_data->superimposeImage.height() / im_rect.height();
 		QRectF src_rect(QPoint(rect.left() * factor_x, rect.top() * factor_y), QPoint(rect.right() * factor_x, rect.bottom() * factor_y));
@@ -1167,15 +1168,16 @@ QString VipPlotRasterData::imageValue(const QPoint& im_pos) const
 	// display the value
 
 	QVariant value;
-	dataLock()->lock();
-	const VipNDArray ar = rawData().extract(rawData().boundingRect());
+	//dataLock()->lock();
+	const VipRasterData raster = rawData();
+	const VipNDArray ar = raster.extract(raster.boundingRect());
 	if (!ar.isNull()) {
 		int x = im_pos.x();
 		int y = im_pos.y();
 		if (ar.shape().size() == 2 && x >= 0 && y >= 0 && x < ar.shape(1) && y < ar.shape(0))
 			value = ar(vipVector(y, x));
 	}
-	dataLock()->unlock();
+	//dataLock()->unlock();
 
 	if (!value.isNull()) {
 		if (value.userType() == qMetaTypeId<QColor>()) {
