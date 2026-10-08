@@ -828,6 +828,7 @@ bool VipDisplayCurve::prepareForDisplay(const VipAnyDataList& lst)
 			}
 		});
 	}
+
 	return false;
 }
 
@@ -855,6 +856,7 @@ void VipDisplayCurve::displayData(const VipAnyDataList& lst)
 				curve->setTitle(attrs["Name"].toString());
 		}
 	}
+
 }
 
 VipDisplaySceneModel::VipDisplaySceneModel(QObject* parent)
@@ -1010,6 +1012,7 @@ bool VipDisplayImage::prepareForDisplay(const VipAnyDataList& data)
 			}
 		}
 	}
+
 	return false;
 }
 

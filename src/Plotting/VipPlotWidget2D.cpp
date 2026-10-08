@@ -4299,7 +4299,7 @@ bool VipBaseGraphicsView::renderObject(QPainter* p, const QPointF& pos, bool dra
 
 void VipBaseGraphicsView::paintEvent(QPaintEvent* evt)
 {
-	qint64 st = QDateTime::currentMSecsSinceEpoch();
+	//qint64 st = QDateTime::currentMSecsSinceEpoch();
 
 	QColor c;
 	if (hasBackgroundColor())
@@ -4324,8 +4324,8 @@ void VipBaseGraphicsView::paintEvent(QPaintEvent* evt)
 	if (d_data->hasStartRendering)
 		QMetaObject::invokeMethod(v, "stopRendering", Qt::DirectConnection);
 
-	qint64 el = QDateTime::currentMSecsSinceEpoch() - st;
-	printf("%s: %i ms\n", this->metaObject()->className(), (int)el);
+	//qint64 el = QDateTime::currentMSecsSinceEpoch() - st;
+	//printf("%s: %i ms\n", this->metaObject()->className(), (int)el);
 }
 
 QRectF VipBaseGraphicsView::visualizedSceneRect() const

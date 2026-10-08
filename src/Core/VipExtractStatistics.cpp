@@ -497,7 +497,6 @@ void VipExtractHistogram::apply()
 
 void VipExtractPolyline::apply()
 {
-
 	VipNDArray ar;
 	VipShape shape;
 
@@ -707,6 +706,7 @@ void VipExtractStatistics::apply()
 		setError("wrong input values", VipProcessingObject::WrongInput);
 		// shape.isNull();
 	}
+
 }
 
 VipExtractShapeAttribute::VipExtractShapeAttribute()
