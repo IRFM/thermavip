@@ -659,12 +659,6 @@ QList<VipInterval> VipPlotRasterData::plotBoundingIntervals() const
 VipInterval VipPlotRasterData::plotInterval(const VipInterval& interval) const
 {
 	return rawData().bounds(interval);
-
-	/*if (d_data->dataInterval.isValid() && d_data->dataValidInterval == interval)
-		return d_data->dataInterval;
-	Locker lock(dataLock());
-	const_cast<VipPlotRasterData*>(this)->d_data->dataValidInterval = interval;
-	return const_cast<VipPlotRasterData*>(this)->d_data->dataInterval = data().value<VipRasterData>().bounds(interval);*/
 }
 
 QRectF VipPlotRasterData::imageBoundingRect() const
@@ -1076,7 +1070,7 @@ void VipPlotRasterData::setData(const QVariant& v)
 		if (ntype == qMetaTypeId<VipRGB>()) {
 			// direct copy to imageData
 			{
-				Locker locker(dataLock());
+				Locker locker(*dataLock());
 				const QImage qne = vipToImageRef(_ne);
 				if (d_data->imageData.image.size() != qne.size()) {
 					d_data->imageData = VipImageData(QImage(qne.width(), qne.height(), QImage::Format_ARGB32));
@@ -1103,7 +1097,7 @@ void VipPlotRasterData::setData(const QVariant& v)
 
 			// Optimize color map computation if the color scale only has this item
 			{
-				Locker locker(dataLock());
+				Locker locker(*dataLock());
 				if (auto* map = colorMap()) {
 					VipInterval interval = map->gripInterval();
 					if (map->isAutoScale()) {

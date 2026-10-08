@@ -2746,7 +2746,7 @@ VipPlotItemData::~VipPlotItemData()
 {
 	d_data->inDestroy = true;
 	{
-		Locker acq(&d_data->dataLock);
+		Locker acq(d_data->dataLock);
 	}
 }
 
@@ -2764,7 +2764,7 @@ void VipPlotItemData::setInternalData(const QVariant& value)
 	if (d_data->inDestroy)
 		return;
 	{
-		Locker acq(&d_data->dataLock);
+		Locker acq(d_data->dataLock);
 		d_data->data = value;
 		d_data->lastDataTime = QDateTime::currentMSecsSinceEpoch();
 	}
@@ -2787,7 +2787,7 @@ void VipPlotItemData::generateData(const std::function<QVariant()>& fun)
 	if (d_data->inDestroy)
 		return;
 	{
-		Locker acq(&d_data->dataLock);
+		Locker acq(d_data->dataLock);
 		d_data->data = fun();
 		d_data->lastDataTime = QDateTime::currentMSecsSinceEpoch();
 	}
@@ -2815,13 +2815,13 @@ const QVariant& VipPlotItemData::cachedData() const
 		if (d_data->cachedCount != pc) {
 			d_data->cachedCount = pc;
 			{
-				Locker lock(dataLock());
+				Locker lock(*dataLock());
 				const_cast<QVariant&>(d_data->cached) = d_data->data;
 			}
 			return d_data->cached;
 		}
 	}
-	Locker lock(dataLock());
+	Locker lock(*dataLock());
 	return const_cast<QVariant&>(d_data->cached) = d_data->data;
 }
 
@@ -2842,8 +2842,6 @@ qint64 VipPlotItemData::lastPaintTime() const
 void VipPlotItemData::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget)
 {
 	d_data->lastPaintTime = QDateTime::currentMSecsSinceEpoch();
-	//TO TEST: no global lock for paint()
-	//Locker acq(&d_data->dataLock);
 	VipPlotItem::paint(painter, option, widget);
 }
 
@@ -2862,7 +2860,7 @@ void VipPlotItemData::resetData()
 
 QVariant VipPlotItemData::data() const
 {
-	Locker acq(&d_data->dataLock);
+	Locker acq(d_data->dataLock);
 	QVariant res = d_data->data;
 	res.detach();
 	return res;

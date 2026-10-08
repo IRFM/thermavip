@@ -33,11 +33,12 @@
 #define VIP_PLOT_ITEM_H
 
 #include <QGraphicsObject>
-#include <QMutex>
 #include <QPainter>
 #include <QPicture>
 #include <QVector>
 #include <qset.h>
+
+#include <mutex>
 
 #include "VipArchive.h"
 #include "VipCoordinateSystem.h"
@@ -1045,11 +1046,8 @@ class VIP_PLOTTING_EXPORT VipPlotItemData : public VipPlotItem
 
 public:
 	using Mutex = VipRecursiveSpinlock ;
-#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
-	using Locker =  QMutexLocker;
-#else
-	using Locker = QMutexLocker<VipRecursiveSpinlock> ;
-#endif
+	using Locker = std::scoped_lock<VipRecursiveSpinlock> ;
+
 	VipPlotItemData(const VipText& title = VipText());
 	~VipPlotItemData();
 
@@ -1144,7 +1142,7 @@ public:
 	template<class F>
 	void updateData(F&& fun)
 	{
-		Locker lock(this->dataLock());
+		Locker lock(*this->dataLock());
 		Data vec = takeData().template value<Data>();
 		try {
 			std::forward<F>(fun)(vec);
