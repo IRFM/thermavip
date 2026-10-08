@@ -1031,13 +1031,11 @@ void VipDisplayImage::displayData(const VipAnyDataList& lst)
 
 VipArchive& operator<<(VipArchive& stream, const VipDisplayObject*)
 {
-	// return stream.content("displayInGuiThread",r->displayInGuiThread());
 	return stream;
 }
 
 VipArchive& operator>>(VipArchive& stream, VipDisplayObject*)
 {
-	// r->setDisplayInGuiThread(stream.read("displayInGuiThread").value<bool>());
 	return stream;
 }
 
