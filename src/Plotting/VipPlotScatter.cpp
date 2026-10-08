@@ -265,7 +265,7 @@ void VipPlotScatter::setData(const QVariant& data)
 
 		hdata.dataInterval = VipInterval(cd[0].value, cd[0].value);
 		for (qsizetype i = 1; i < cd.size(); ++i) {
-			hdata.dataInterval.extend(cd[i].value);
+			hdata.dataInterval = hdata.dataInterval.extend(cd[i].value);
 		}
 	}
 	d.setAnyData(QVariant::fromValue(hdata));
@@ -274,7 +274,7 @@ void VipPlotScatter::setData(const QVariant& data)
 
 VipInterval VipPlotScatter::plotInterval(const VipInterval& interval) const
 {
-	const auto d = rawData();
+	const auto d = cachedData().value<VipScatterPointVector>();
 	if (interval == vipInfinitInterval()) {
 		return d.anyData().value<ScatterData>().dataInterval;
 	}
@@ -283,14 +283,14 @@ VipInterval VipPlotScatter::plotInterval(const VipInterval& interval) const
 
 QList<VipInterval> VipPlotScatter::plotBoundingIntervals() const
 {
-	const auto d = rawData();
+	const auto d = cachedData().value<VipScatterPointVector>();
 	const ScatterData hdata = d.anyData().value<ScatterData>();
 	return hdata.bounding;
 }
 
 QString VipPlotScatter::formatText(const QString& text, const QPointF& pos) const
 {
-	const VipScatterPointVector vec = rawData();
+	const VipScatterPointVector vec = cachedData().value<VipScatterPointVector>();
 	int index = findClosestPos(vec, pos, 0, nullptr);
 	if (index == -1)
 		return VipPlotItem::formatText(text, pos);
@@ -300,7 +300,7 @@ QString VipPlotScatter::formatText(const QString& text, const QPointF& pos) cons
 
 bool VipPlotScatter::areaOfInterest(const QPointF& pos, int, double maxDistance, VipPointVector& out_pos, VipBoxStyle& style, int& legend) const
 {
-	const VipScatterPointVector vec = rawData();
+	const VipScatterPointVector vec = cachedData().value<VipScatterPointVector>();
 	QRectF rect;
 	int index = findClosestPos(vec, pos, maxDistance, &rect);
 	if (index == -1)
@@ -330,7 +330,7 @@ void VipPlotScatter::draw(QPainter* painter, const VipCoordinateSystemPtr& m) co
 
 	const VipBorderItem* x = qobject_cast<const VipBorderItem*>(m->axes().first());
 	const VipBorderItem* y = qobject_cast<const VipBorderItem*>(m->axes().last());
-	const VipScatterPointVector vec = rawData();
+	const VipScatterPointVector vec = cachedData().value<VipScatterPointVector>();
 	const bool has_colormap = this->colorMap();
 
 	// Find symbol size

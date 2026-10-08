@@ -715,7 +715,8 @@ void VipBoxStyle::computePie(const QPointF& c, const VipPie& pie, double spacing
 	if (angle_start == angle_end) {
 		QLineF line(c, QPointF(c.x(), c.y() - max_distance_to_center - offset_to_center));
 		line.setAngle(angle_start);
-		line.setP1(line.pointAt((min_distance_to_center + offset_to_center) / line.length()));
+		if (line.p1() != line.p2())
+			line.setP1(line.pointAt((min_distance_to_center + offset_to_center) / line.length()));
 
 		QPainterPath border;
 		border.moveTo(line.p1());

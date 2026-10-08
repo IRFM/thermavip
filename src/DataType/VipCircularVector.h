@@ -50,6 +50,8 @@
 #include <type_traits>
 #include <iterator>
 #include <algorithm>
+#include <vector>
+#include <new>
 
 namespace Vip
 {
@@ -84,82 +86,82 @@ namespace detail
 		  , value(_value)
 		{
 		}
-		auto operator*() const noexcept -> reference { return value; }
-		auto operator->() const noexcept -> pointer { return std::pointer_traits<pointer>::pointer_to(**this); }
-		auto operator++() noexcept -> cvalue_iterator&
+		VIP_ALWAYS_INLINE auto operator*() const noexcept -> reference { return value; }
+		VIP_ALWAYS_INLINE auto operator->() const noexcept -> pointer { return std::pointer_traits<pointer>::pointer_to(**this); }
+		VIP_ALWAYS_INLINE auto operator++() noexcept -> cvalue_iterator&
 		{
 			++pos;
 			return *this;
 		}
-		auto operator++(int) noexcept -> cvalue_iterator
+		VIP_ALWAYS_INLINE auto operator++(int) noexcept -> cvalue_iterator
 		{
 			cvalue_iterator _Tmp = *this;
 			++(*this);
 			return _Tmp;
 		}
-		auto operator--() noexcept -> cvalue_iterator&
+		VIP_ALWAYS_INLINE auto operator--() noexcept -> cvalue_iterator&
 		{
 			--pos;
 			return *this;
 		}
-		auto operator--(int) noexcept -> cvalue_iterator
+		VIP_ALWAYS_INLINE auto operator--(int) noexcept -> cvalue_iterator
 		{
 			cvalue_iterator _Tmp = *this;
 			--(*this);
 			return _Tmp;
 		}
-		auto operator==(const cvalue_iterator& other) const noexcept -> bool { return pos == other.pos; }
-		auto operator!=(const cvalue_iterator& other) const noexcept -> bool { return pos != other.pos; }
-		auto operator+=(difference_type diff) noexcept -> cvalue_iterator&
+		VIP_ALWAYS_INLINE auto operator==(const cvalue_iterator& other) const noexcept -> bool { return pos == other.pos; }
+		VIP_ALWAYS_INLINE auto operator!=(const cvalue_iterator& other) const noexcept -> bool { return pos != other.pos; }
+		VIP_ALWAYS_INLINE auto operator+=(difference_type diff) noexcept -> cvalue_iterator&
 		{
 			pos += diff;
 			return *this;
 		}
-		auto operator-=(difference_type diff) noexcept -> cvalue_iterator&
+		VIP_ALWAYS_INLINE auto operator-=(difference_type diff) noexcept -> cvalue_iterator&
 		{
 			pos -= diff;
 			return *this;
 		}
-		auto operator[](difference_type diff) const noexcept -> const value_type& { return value; }
+		VIP_ALWAYS_INLINE auto operator[](difference_type diff) const noexcept -> const value_type& { return value; }
 
 		T value;
 		size_type pos;
 	};
 
 	template<class T>
-	auto operator+(const cvalue_iterator<T>& it, typename cvalue_iterator<T>::difference_type diff) noexcept -> cvalue_iterator<T>
+	VIP_ALWAYS_INLINE auto operator+(const cvalue_iterator<T>& it, typename cvalue_iterator<T>::difference_type diff) noexcept -> cvalue_iterator<T>
 	{
 		cvalue_iterator<T> res = it;
 		return res += diff;
 	}
 	template<class T>
-	auto operator-(const cvalue_iterator<T>& it, typename cvalue_iterator<T>::difference_type diff) noexcept -> cvalue_iterator<T>
+	VIP_ALWAYS_INLINE auto operator-(const cvalue_iterator<T>& it, typename cvalue_iterator<T>::difference_type diff) noexcept -> cvalue_iterator<T>
 	{
 		cvalue_iterator<T> res = it;
 		return res -= diff;
 	}
 	template<class T>
-	auto operator-(const cvalue_iterator<T>& it1, const cvalue_iterator<T>& it2) noexcept -> typename cvalue_iterator<T>::difference_type
+	VIP_ALWAYS_INLINE auto operator-(const cvalue_iterator<T>& it1, const cvalue_iterator<T>& it2) noexcept -> typename cvalue_iterator<T>::difference_type
 	{
 		return it1.pos - it2.pos;
 	}
 	template<class T>
-	auto operator<(const cvalue_iterator<T>& it1, const cvalue_iterator<T>& it2) noexcept -> bool
+	VIP_ALWAYS_INLINE auto operator<(const cvalue_iterator<T>& it1, const cvalue_iterator<T>& it2) noexcept -> bool
 	{
 		return it1.pos < it2.pos;
 	}
 	template<class T>
-	auto operator>(const cvalue_iterator<T>& it1, const cvalue_iterator<T>& it2) noexcept -> bool
+	VIP_ALWAYS_INLINE auto operator>(const cvalue_iterator<T>& it1, const cvalue_iterator<T>& it2) noexcept -> bool
 	{
 		return it1.pos > it2.pos;
 	}
 	template<class T>
-	auto operator<=(const cvalue_iterator<T>& it1, const cvalue_iterator<T>& it2) noexcept -> bool
+	VIP_ALWAYS_INLINE auto operator<=(const cvalue_iterator<T>& it1, const cvalue_iterator<T>& it2) noexcept -> bool
 	{
 		return it1.pos <= it2.pos;
 	}
 	template<class T>
-	auto operator>=(const cvalue_iterator<T>& it1, const cvalue_iterator<T>& it2) noexcept -> bool
+	VIP_ALWAYS_INLINE auto operator>=(const cvalue_iterator<T>& it1, const cvalue_iterator<T>& it2) noexcept -> bool
 	{
 		return it1.pos >= it2.pos;
 	}
@@ -182,16 +184,20 @@ namespace detail
 	template<class T>
 	void destroy_range_ptr(T* p, qsizetype size) noexcept
 	{
-		if VIP_CONSTEXPR (!std::is_trivially_destructible<T>::value)
+		if constexpr (!std::is_trivially_destructible<T>::value)
 			for (qsizetype i = 0; i < size; ++i)
 				destroy_ptr(p + i);
 	}
 
-	template<class T, bool NoExcept = std::is_nothrow_move_constructible<T>::value>
-	struct Mover
+	// Move construct range, taking care of potential exceptions thrown in constructor
+	template<class T>
+	void move_construct_range(T* dst, T* src, qsizetype size) noexcept(std::is_nothrow_move_constructible<T>::value)
 	{
-		static void move_construct(T* dst, T* src, qsizetype size)
-		{
+		if constexpr (std::is_nothrow_move_constructible<T>::value) {
+			for (qsizetype i = 0; i < size; ++i)
+				construct_ptr(dst + i, std::move(src[i]));
+		}
+		else {
 			qsizetype i = 0;
 			try {
 				for (; i < size; ++i)
@@ -202,22 +208,6 @@ namespace detail
 				throw;
 			}
 		}
-	};
-	template<class T>
-	struct Mover<T, true>
-	{
-		static void move_construct(T* dst, T* src, qsizetype size) noexcept
-		{
-			for (qsizetype i = 0; i < size; ++i)
-				construct_ptr(dst + i, std::move(src[i]));
-		}
-	};
-
-	// Move construct range, taking care of potential exceptions throw in constructor
-	template<class T>
-	void move_construct_range(T* dst, T* src, qsizetype size) noexcept(std::is_nothrow_move_constructible<T>::value)
-	{
-		Mover<T>::move_construct(dst, src, size);
 	}
 
 	// Similar to QSharedDataPointer but lighter and INLINED!!
@@ -314,7 +304,7 @@ namespace detail
 		  : d(data)
 		{
 		}
-		COWPointer(const COWPointer& o) noexcept
+		COWPointer(const COWPointer& o)
 		  : d(o.d ? new T(*o.d) : nullptr)
 		{
 		}
@@ -379,13 +369,12 @@ namespace detail
 		static constexpr bool relocatable = QTypeInfo<T>::isRelocatable;
 		using value_type = T;
 
+		QVariant any;
 		qsizetype begin;	  // begin index of data
 		qsizetype size;		  // number of elements
 		const qsizetype capacity; // buffer capacity
 
 		T* buffer; // actual values
-
-		QVariantMap properties;
 
 		// Initialize from a maximum capacity.
 		// INVARIANT: max_size is a power of two. mask() returns capacity - 1 and is
@@ -407,9 +396,7 @@ namespace detail
 			if (max_size) {
 				if (static_cast<size_t>(max_size) > (std::numeric_limits<size_t>::max)() / sizeof(T))
 					throw std::bad_alloc();
-				buffer = (T*)malloc((size_t)max_size * sizeof(T));
-				if (!buffer)
-					throw std::bad_alloc();
+				buffer = std::allocator<T>{}.allocate((size_t)max_size);
 			}
 		}
 		// Initialize from a maximum capacity, a size and a default value.
@@ -435,7 +422,7 @@ namespace detail
 		CircularBuffer(const CircularBuffer& other)
 		  : CircularBuffer(other.capacity)
 		{
-			properties = other.properties;
+			any = other.any;
 			size = other.size;
 			// initialize full buffer
 			qsizetype i = 0;
@@ -454,31 +441,42 @@ namespace detail
 		{
 			destroy_range(0, size);
 			if (buffer)
-				free(buffer);
+				std::allocator<T>{}.deallocate(buffer, static_cast<size_t>(capacity));
 		}
 
 		VIP_ALWAYS_INLINE qsizetype mask() const noexcept { return capacity - 1; }
 
 		// Relocate to dst.
 		// Called just before destroying this.
-		void relocate(CircularBuffer* dst) noexcept(std::is_nothrow_move_constructible<T>::value || relocatable)
+		void relocate(CircularBuffer* dst)
 		{
 			qsizetype stop = (begin + size) > capacity ? (capacity) : (begin + size);
 			qsizetype first_range = (stop - begin);
 			qsizetype remaining = size - first_range;
-			if VIP_CONSTEXPR (relocatable) {
-				memmove(static_cast<void*>(dst->buffer), buffer + begin, (size_t)first_range * sizeof(T));
-				if (remaining)
-					memmove(static_cast<void*>(dst->buffer + first_range), buffer, (size_t)remaining * sizeof(T));
+			if constexpr (relocatable) {
+				if (size) {
+					memmove(static_cast<void*>(dst->buffer), buffer + begin, (size_t)first_range * sizeof(T));
+					if (remaining)
+						memmove(static_cast<void*>(dst->buffer + first_range), buffer, (size_t)remaining * sizeof(T));
+				}
 			}
 			else {
-				move_construct_range(dst->buffer, buffer + begin, first_range);
-				if (remaining)
-					move_construct_range(dst->buffer + first_range, buffer, remaining);
+				if (size) {
+					move_construct_range(dst->buffer, buffer + begin, first_range);
+					if (remaining) {
+						try {
+							move_construct_range(dst->buffer + first_range, buffer, remaining);
+						}
+						catch (...) {
+							destroy_range_ptr(dst->buffer, first_range);
+							throw;
+						}
+					}
+				}
 			}
 			dst->size = this->size;
-			dst->properties = std::move(this->properties);
-			if VIP_CONSTEXPR (relocatable)
+			dst->any = std::move(this->any);
+			if constexpr (relocatable)
 				this->size = 0;
 		}
 
@@ -499,7 +497,7 @@ namespace detail
 
 		void destroy_range(qsizetype first, qsizetype last) noexcept
 		{
-			if VIP_CONSTEXPR (!std::is_trivially_destructible<T>::value) {
+			if constexpr (!std::is_trivially_destructible<T>::value) {
 				auto s = spans(first, last);
 				for (T& v : s.first)
 					destroy_ptr(&v);
@@ -603,27 +601,31 @@ namespace detail
 		// Pop back/front
 		VIP_ALWAYS_INLINE void pop_back() noexcept
 		{
-			if VIP_CONSTEXPR (!std::is_trivially_destructible<T>::value)
+			if constexpr (!std::is_trivially_destructible<T>::value)
 				destroy_ptr(&back());
 			--size;
 		}
-		VIP_ALWAYS_INLINE T pop_back_return() noexcept
+		VIP_ALWAYS_INLINE T pop_back_return() noexcept(std::is_nothrow_move_constructible_v<T>)
 		{
 			T r = std::move(back());
+			if constexpr (!std::is_trivially_destructible<T>::value)
+				destroy_ptr(&back());
 			--size;
 			return std::move(r);
 		}
 
 		VIP_ALWAYS_INLINE void pop_front() noexcept
 		{
-			if VIP_CONSTEXPR (!std::is_trivially_destructible<T>::value)
+			if constexpr (!std::is_trivially_destructible<T>::value)
 				destroy_ptr(buffer + begin);
 			begin = (begin + 1) & mask();
 			--size;
 		}
-		VIP_ALWAYS_INLINE T pop_front_return() noexcept
+		VIP_ALWAYS_INLINE T pop_front_return() noexcept(std::is_nothrow_move_constructible_v<T>)
 		{
 			T r = std::move(buffer[begin]);
+			if constexpr (!std::is_trivially_destructible<T>::value)
+				destroy_ptr(buffer + begin);
 			begin = (begin + 1) & mask();
 			--size;
 			return std::move(r);
@@ -641,7 +643,7 @@ namespace detail
 		void push_front_n(qsizetype n, const U& value)
 		{
 			for (qsizetype i = 0; i < n; ++i)
-				push_front(value);
+				emplace_front(value);
 		}
 		// Push front n values
 		void push_front_n(qsizetype n)
@@ -662,7 +664,7 @@ namespace detail
 
 		// Move buffer content toward the right by 1 element
 		// Might throw
-		void move_right_1(int pos) noexcept(std::is_nothrow_move_assignable<T>::value || relocatable)
+		void move_right_1(qsizetype pos) noexcept(std::is_nothrow_move_assignable<T>::value || relocatable)
 		{
 			// starting from pos, move elements toward the end
 			T* ptr1 = &at(size - 1);
@@ -670,7 +672,7 @@ namespace detail
 			if (stop > ptr1)
 				stop = buffer;
 
-			if VIP_CONSTEXPR (!relocatable) {
+			if constexpr (!relocatable) {
 				while (ptr1 > stop) {
 					ptr1[0] = std::move(ptr1[-1]);
 					--ptr1;
@@ -682,13 +684,13 @@ namespace detail
 			}
 
 			if (ptr1 != &at(pos)) {
-				if VIP_CONSTEXPR (!relocatable)
+				if constexpr (!relocatable)
 					*ptr1 = std::move(*(buffer + mask()));
 				else
 					memcpy(static_cast<void*>(ptr1), static_cast<void*>(buffer + mask()), sizeof(T));
 				ptr1 = (buffer + mask());
 				stop = &at(pos);
-				if VIP_CONSTEXPR (!relocatable) {
+				if constexpr (!relocatable) {
 					while (ptr1 > stop) {
 						ptr1[0] = std::move(ptr1[-1]);
 						--ptr1;
@@ -701,14 +703,14 @@ namespace detail
 		}
 		// Move buffer content toward the left by 1 element
 		// Might throw
-		void move_left_1(int pos) noexcept(std::is_nothrow_move_assignable<T>::value || relocatable)
+		void move_left_1(qsizetype pos) noexcept(std::is_nothrow_move_assignable<T>::value || relocatable)
 		{
 			// starting from pos, move elements toward the beginning
 			T* ptr1 = &at(0);
 			T* stop = buffer + ((begin + pos - 1) & mask()); //&at(pos);
 			if (stop < ptr1)
 				stop = buffer + mask();
-			if VIP_CONSTEXPR (!relocatable) {
+			if constexpr (!relocatable) {
 				while (ptr1 < stop) {
 					*ptr1 = std::move(ptr1[1]);
 					++ptr1;
@@ -719,13 +721,13 @@ namespace detail
 				ptr1 = stop;
 			}
 			if (ptr1 != buffer + ((begin + pos - 1) & mask())) {
-				if VIP_CONSTEXPR (!relocatable)
+				if constexpr (!relocatable)
 					*ptr1 = std::move(*(buffer));
 				else
 					memcpy(static_cast<void*>(ptr1), static_cast<void*>(buffer), sizeof(T));
 				ptr1 = buffer;
 				stop = &at(pos - 1);
-				if VIP_CONSTEXPR (!relocatable) {
+				if constexpr (!relocatable) {
 					while (ptr1 < stop) {
 						*ptr1 = std::move(ptr1[1]);
 						++ptr1;
@@ -741,7 +743,7 @@ namespace detail
 		// Might throw
 		void move_right(qsizetype pos) noexcept((std::is_nothrow_move_assignable<T>::value && std::is_nothrow_default_constructible<T>::value) || relocatable)
 		{
-			if VIP_CONSTEXPR (!relocatable)
+			if constexpr (!relocatable)
 				construct_ptr(&(*this)[size]);
 			// move elems after pos
 			++size;
@@ -753,7 +755,7 @@ namespace detail
 		}
 		void move_left(qsizetype pos) noexcept((std::is_nothrow_move_assignable<T>::value && std::is_nothrow_default_constructible<T>::value) || relocatable)
 		{
-			if VIP_CONSTEXPR (!relocatable)
+			if constexpr (!relocatable)
 				construct_ptr(&(*this)[begin ? -1 : mask()]);
 			// move elems before pos
 			if (--begin < 0)
@@ -770,6 +772,7 @@ namespace detail
 		template<class... Args>
 		T* emplace(qsizetype pos, Args&&... args)
 		{
+			T tmp = T(std::forward<Args>(args)...);
 			VIP_ASSERT_DEBUG(size != capacity, "cannot insert in a full circular buffer");
 			if (pos > size / 2) {
 				move_right(pos);
@@ -779,9 +782,9 @@ namespace detail
 			}
 
 			T* res = &(*this)[pos];
-			if VIP_CONSTEXPR (relocatable) {
+			if constexpr (relocatable) {
 				try {
-					construct_ptr(res, std::forward<Args>(args)...);
+					construct_ptr(res, std::move(tmp));
 				}
 				catch (...) {
 					// No choice but to destroy all values after pos and reduce the size in order to leave the buffer in a valid state
@@ -792,7 +795,7 @@ namespace detail
 			}
 			else {
 				// For non relocatable types, use move assignment to provide basic exception guarantee
-				*res = T(std::forward<Args>(args)...);
+				*res = std::move(tmp);
 			}
 
 			return res;
@@ -802,14 +805,14 @@ namespace detail
 		/// throw part way leaves the elements between pos and the end in a moved-from
 		/// but valid state, and the container destructible: this is the basic
 		/// guarantee, not the strong one, and nothing rolls the shift back.
-		void move_erase_right_1(int pos) noexcept(std::is_nothrow_move_assignable<T>::value || relocatable)
+		void move_erase_right_1(qsizetype pos) noexcept(std::is_nothrow_move_assignable<T>::value || relocatable)
 		{
 			// starting from pos, move elements toward the end
 			T* ptr1 = &at(pos);
 			T* stop = &at(size);
 			if (stop < ptr1)
 				stop = buffer + mask();
-			if VIP_CONSTEXPR (!relocatable) {
+			if constexpr (!relocatable) {
 				while (ptr1 < stop) {
 					*ptr1 = std::move(ptr1[1]);
 					++ptr1;
@@ -820,13 +823,13 @@ namespace detail
 				ptr1 = stop;
 			}
 			if (ptr1 != &at(size)) {
-				if VIP_CONSTEXPR (!relocatable)
+				if constexpr (!relocatable)
 					*ptr1 = std::move(*(buffer));
 				else
 					memcpy(static_cast<void*>(ptr1), static_cast<void*>(buffer), sizeof(T));
 				ptr1 = buffer;
 				stop = &at(size);
-				if VIP_CONSTEXPR (!relocatable) {
+				if constexpr (!relocatable) {
 					while (ptr1 < stop) {
 						*ptr1 = std::move(ptr1[1]);
 						++ptr1;
@@ -837,14 +840,14 @@ namespace detail
 				}
 			}
 		}
-		void move_erase_left_1(int pos) noexcept(std::is_nothrow_move_assignable<T>::value || relocatable)
+		void move_erase_left_1(qsizetype pos) noexcept(std::is_nothrow_move_assignable<T>::value || relocatable)
 		{
 			// starting from pos, move elements toward the beginning
 			T* ptr1 = &at(pos);
 			T* stop = &at(0);
 			if (stop > ptr1)
 				stop = buffer;
-			if VIP_CONSTEXPR (!relocatable) {
+			if constexpr (!relocatable) {
 				while (ptr1 > stop) {
 					*ptr1 = std::move(ptr1[-1]);
 					--ptr1;
@@ -856,13 +859,13 @@ namespace detail
 			}
 
 			if (ptr1 != &at(0)) {
-				if VIP_CONSTEXPR (!relocatable)
+				if constexpr (!relocatable)
 					*ptr1 = std::move(*(buffer + mask()));
 				else
 					memcpy(static_cast<void*>(ptr1), static_cast<void*>(buffer + mask()), sizeof(T));
 				ptr1 = (buffer + mask());
 				stop = &at(0);
-				if VIP_CONSTEXPR (!relocatable) {
+				if constexpr (!relocatable) {
 					while (ptr1 > stop) {
 						*ptr1 = std::move(ptr1[-1]);
 						--ptr1;
@@ -878,7 +881,7 @@ namespace detail
 		void erase(qsizetype pos)
 		{
 			// for relocatable type, destroy value at pos since it will be memcpied over
-			if VIP_CONSTEXPR (relocatable && !std::is_trivially_destructible<T>::value)
+			if constexpr (relocatable && !std::is_trivially_destructible<T>::value)
 				destroy_ptr(&(*this)[pos]);
 			if (pos > size / 2) {
 				// move elems after pos
@@ -890,7 +893,7 @@ namespace detail
 					++size;
 					throw;
 				}
-				if VIP_CONSTEXPR (!relocatable && !std::is_trivially_destructible<T>::value)
+				if constexpr (!relocatable && !std::is_trivially_destructible<T>::value)
 					destroy_ptr(&(*this)[size]);
 			}
 			else {
@@ -903,7 +906,7 @@ namespace detail
 					++size;
 					throw;
 				}
-				if VIP_CONSTEXPR (!relocatable && !std::is_trivially_destructible<T>::value)
+				if constexpr (!relocatable && !std::is_trivially_destructible<T>::value)
 					destroy_ptr(&(*this)[0]);
 				begin = (begin + 1) & (mask()); // increment begin
 			}
@@ -921,19 +924,18 @@ namespace detail
 		using pointer = const value_type*;
 		using reference = const value_type&;
 
-		const Data* data;
-		difference_type pos;
-
 		VIP_ALWAYS_INLINE VipCircularVectorConstIterator() noexcept {}
-		VIP_ALWAYS_INLINE VipCircularVectorConstIterator(const Data* d, difference_type p) noexcept
-		  : data(d)
-		  , pos(p)
-		{
-		}
+
 		// We could use default copy constructor, but it turns out that msvc do not properly inline it in most situation!
 		VIP_ALWAYS_INLINE VipCircularVectorConstIterator(const VipCircularVectorConstIterator& it) noexcept
 		  : data(it.data)
 		  , pos(it.pos)
+		{
+		}
+
+		VIP_ALWAYS_INLINE VipCircularVectorConstIterator(const Data* d, qsizetype p) noexcept
+		  : data(d)
+		  , pos(p)
 		{
 		}
 		VIP_ALWAYS_INLINE VipCircularVectorConstIterator& operator=(const VipCircularVectorConstIterator& it) noexcept
@@ -982,6 +984,13 @@ namespace detail
 			pos -= diff;
 			return *this;
 		}
+		VIP_ALWAYS_INLINE auto operator[](qsizetype diff) const noexcept -> reference { return data->at(pos + diff); }
+
+		VIP_ALWAYS_INLINE auto absolutePos() const noexcept { return pos; }
+
+	protected:
+		const Data* data;
+		difference_type pos;
 	};
 
 	// Iterator for VipCircularVector
@@ -999,18 +1008,15 @@ namespace detail
 		using const_reference = const value_type&;
 
 		VIP_ALWAYS_INLINE VipCircularVectorIterator() noexcept {}
-		VIP_ALWAYS_INLINE VipCircularVectorIterator(const Data* d, qsizetype p) noexcept
-		  : base_type(d, p)
-		{
-		}
-		VIP_ALWAYS_INLINE VipCircularVectorIterator(const VipCircularVectorConstIterator<Data>& it) noexcept
-		  : base_type(it)
-		{
-		}
 		VIP_ALWAYS_INLINE VipCircularVectorIterator(const VipCircularVectorIterator& it) noexcept
 		  : base_type(it)
 		{
 		}
+		VIP_ALWAYS_INLINE VipCircularVectorIterator(Data* d, qsizetype p) noexcept
+		  : base_type(d, p)
+		{
+		}
+
 		VIP_ALWAYS_INLINE VipCircularVectorIterator& operator=(const VipCircularVectorIterator& it) noexcept { return static_cast<VipCircularVectorIterator&>(base_type::operator=(it)); }
 		VIP_ALWAYS_INLINE auto operator*() noexcept -> reference { return const_cast<reference>(base_type::operator*()); }
 		VIP_ALWAYS_INLINE auto operator->() noexcept -> pointer { return std::pointer_traits<pointer>::pointer_to(**this); }
@@ -1048,6 +1054,12 @@ namespace detail
 			base_type::operator-=(diff);
 			return *this;
 		}
+		VIP_ALWAYS_INLINE auto operator[](qsizetype diff) const noexcept -> reference
+		{
+			auto it = *this;
+			it += diff;
+			return *it;
+		}
 	};
 
 	template<class BucketMgr>
@@ -1059,7 +1071,23 @@ namespace detail
 		return res;
 	}
 	template<class BucketMgr>
+	VIP_ALWAYS_INLINE auto operator+(typename VipCircularVectorConstIterator<BucketMgr>::difference_type diff, const VipCircularVectorConstIterator<BucketMgr>& it) noexcept
+	  -> VipCircularVectorConstIterator<BucketMgr>
+	{
+		VipCircularVectorConstIterator<BucketMgr> res = it;
+		res += diff;
+		return res;
+	}
+	template<class BucketMgr>
 	VIP_ALWAYS_INLINE auto operator+(const VipCircularVectorIterator<BucketMgr>& it, typename VipCircularVectorIterator<BucketMgr>::difference_type diff) noexcept
+	  -> VipCircularVectorIterator<BucketMgr>
+	{
+		VipCircularVectorIterator<BucketMgr> res = it;
+		res += diff;
+		return res;
+	}
+	template<class BucketMgr>
+	VIP_ALWAYS_INLINE auto operator+(typename VipCircularVectorIterator<BucketMgr>::difference_type diff, const VipCircularVectorIterator<BucketMgr>& it) noexcept
 	  -> VipCircularVectorIterator<BucketMgr>
 	{
 		VipCircularVectorIterator<BucketMgr> res = it;
@@ -1085,37 +1113,37 @@ namespace detail
 	template<class BucketMgr>
 	VIP_ALWAYS_INLINE qsizetype operator-(const VipCircularVectorConstIterator<BucketMgr>& it1, const VipCircularVectorConstIterator<BucketMgr>& it2) noexcept
 	{
-		return it1.pos - it2.pos;
+		return it1.absolutePos() - it2.absolutePos();
 	}
 	template<class BucketMgr>
 	VIP_ALWAYS_INLINE bool operator==(const VipCircularVectorConstIterator<BucketMgr>& it1, const VipCircularVectorConstIterator<BucketMgr>& it2) noexcept
 	{
-		return it1.pos == it2.pos;
+		return it1.absolutePos() == it2.absolutePos();
 	}
 	template<class BucketMgr>
 	VIP_ALWAYS_INLINE bool operator!=(const VipCircularVectorConstIterator<BucketMgr>& it1, const VipCircularVectorConstIterator<BucketMgr>& it2) noexcept
 	{
-		return it1.pos != it2.pos;
+		return it1.absolutePos() != it2.absolutePos();
 	}
 	template<class BucketMgr>
 	VIP_ALWAYS_INLINE bool operator<(const VipCircularVectorConstIterator<BucketMgr>& it1, const VipCircularVectorConstIterator<BucketMgr>& it2) noexcept
 	{
-		return (it1.pos) < (it2.pos);
+		return (it1.absolutePos()) < (it2.absolutePos());
 	}
 	template<class BucketMgr>
 	VIP_ALWAYS_INLINE bool operator>(const VipCircularVectorConstIterator<BucketMgr>& it1, const VipCircularVectorConstIterator<BucketMgr>& it2) noexcept
 	{
-		return (it1.pos) > (it2.pos);
+		return (it1.absolutePos()) > (it2.absolutePos());
 	}
 	template<class BucketMgr>
 	VIP_ALWAYS_INLINE bool operator<=(const VipCircularVectorConstIterator<BucketMgr>& it1, const VipCircularVectorConstIterator<BucketMgr>& it2) noexcept
 	{
-		return it1.pos <= it2.pos;
+		return it1.absolutePos() <= it2.absolutePos();
 	}
 	template<class BucketMgr>
 	VIP_ALWAYS_INLINE bool operator>=(const VipCircularVectorConstIterator<BucketMgr>& it1, const VipCircularVectorConstIterator<BucketMgr>& it2) noexcept
 	{
-		return it1.pos >= it2.pos;
+		return it1.absolutePos() >= it2.absolutePos();
 	}
 
 	// Check if class is constructible with provided arguments
@@ -1180,13 +1208,13 @@ namespace detail
 /// is not limited to a predifined capacity and will grow on insertion
 /// using a power of 2 growing strategy.
 ///
-/// Its is the container of choice for queues as it will almost always
+/// It is the container of choice for queues as it will almost always
 /// outperform std::deque or QVector (Qt6 version) for back and front operations.
 ///
 /// Like QVector, VipCircularVector never reduces its memory footprint except
 /// when calling shrink_to_fit() or on copy assignment.
 ///
-/// Indexing. Positions are of a SIGNED type, and a negative one is not an offset
+/// Positions are of a SIGNED type, and a negative one is not an offset
 /// from the end: at() throws on it, and the unchecked operator[] is undefined.
 /// Valid positions run from 0 to size() - 1; insertion also accepts size(),
 /// which appends.
@@ -1196,7 +1224,8 @@ namespace detail
 /// that were copied from one another share a buffer until either is written to,
 /// so writing through one while reading through the other is a data race.
 ///
-/// Exceptions. Insertion and growth give the BASIC guarantee: the container
+/// Exceptions. Insertion and growth give the strong guarantee is T is
+/// nothrow move constructible, basic other wise: the container
 /// stays valid and destructible, but the elements after the insertion point may
 /// have been moved, and the size may have been reduced to the insertion point.
 /// The STRONG guarantee is not offered for a type whose move assignment can
@@ -1210,7 +1239,6 @@ class VipCircularVector
 	using Data = detail::CircularBuffer<T, O>;
 	using DataPtr = detail::COWPointer<Data, O>;
 	DataPtr d_data;
-	QVariant d_any;
 
 	VIP_ALWAYS_INLINE bool hasData() const noexcept { return d_data.constData() != nullptr; }
 
@@ -1247,98 +1275,47 @@ class VipCircularVector
 		return dataNoDetach();
 	}
 
-	qsizetype capacityForSize(qsizetype size) const noexcept
+	qsizetype capacityForSize(qsizetype size) const
 	{
+		using unsigned_type = std::make_unsigned_t<qsizetype>;
+		constexpr qsizetype max_capacity = static_cast<qsizetype>(unsigned_type{ 1 } << (std::numeric_limits<qsizetype>::digits - 1));
+
 		if (size <= 0)
 			return 0;
+		if (size > max_capacity)
+			throw std::length_error("VipCircularBuffer: exceeds maximum size");
+
 		// next power of 2
 		auto s = 1ull << vipBitScanReverse64((uint64_t)size);
 		if (s < (uint64_t)size)
 			s = s << 1;
-		// Rounding up past the representable range wrapped to 0, which yielded a
-		// capacity of 0 for a non empty container. Report it; the buffer
-		// constructor turns a negative capacity into bad_alloc.
-		if (s == 0 || s > static_cast<uint64_t>((std::numeric_limits<qsizetype>::max)()))
-			return -1;
 		return s;
 	}
 
 	template<class... Args>
 	VIP_ALWAYS_INLINE T& emplace_back_no_detach(Args&&... args)
 	{
-		if (full())
+		if (full()) {
+			T tmp = T(std::forward<Args>(args)...);
 			adjust_capacity_for_size(size() + 1);
+			return *dataNoDetach()->emplace_back(std::move(tmp));
+		}
 		return *dataNoDetach()->emplace_back(std::forward<Args>(args)...);
 	}
 	template<class... Args>
 	VIP_ALWAYS_INLINE T& emplace_front_no_detach(Args&&... args)
 	{
-		if (full())
+		if (full()) {
+			T tmp = T(std::forward<Args>(args)...);
 			adjust_capacity_for_size(size() + 1);
+			return *dataNoDetach()->emplace_front(std::move(tmp));
+		}
 		return *dataNoDetach()->emplace_front(std::forward<Args>(args)...);
 	}
 	VIP_ALWAYS_INLINE void detach() { d_data.detach(); }
 
-	// Insert range for non random-access iterators
-	template<class Iter, class Cat>
-	void insert_cat(qsizetype pos, Iter first, Iter last, Cat /*unused*/)
-	{
-		VIP_ASSERT_DEBUG(pos <= size(), "invalid insert position");
-		if (first == last)
-			return;
-
-		if (pos < size() / 2) {
-			// push front values
-			qsizetype prev_size = size();
-			// Might throw, fine
-			for (; first != last; ++first)
-				emplace_front_no_detach(*first);
-
-			qsizetype num = size() - prev_size;
-			// Might throw, fine
-			std::reverse(begin(), begin() + num); // flip new stuff in place
-			std::rotate(begin(), begin() + num, begin() + (num + pos));
-		}
-		else {
-			// push back, might throw
-			qsizetype prev_size = size();
-			for (; first != last; ++first)
-				emplace_back_no_detach(*first);
-			// Might throw, fine
-			std::rotate(begin() + pos, begin() + prev_size, end());
-		}
-	}
-	// Insert range for random-access iterators
 	template<class Iter>
-	void insert_cat(qsizetype pos, Iter first, Iter last, std::random_access_iterator_tag /*unused*/)
-	{
-		VIP_ASSERT_DEBUG(pos <= size(), "invalid insert position");
-		if (first == last)
-			return;
-
-		if (pos < size() / 2) {
-			qsizetype to_insert = static_cast<qsizetype>(last - first);
-			// Might throw, fine
-			resize_front(size() + to_insert);
-			iterator beg = begin();
-			// Might throw, fine
-			for_each(to_insert, to_insert + pos, [&](T& v) {
-				*beg = std::move(v);
-				++beg;
-			});
-			for_each(pos, pos + to_insert, [&](T& v) { v = *first++; });
-		}
-		else {
-			// Might throw, fine
-			qsizetype to_insert = static_cast<qsizetype>(last - first);
-			resize(size() + to_insert);
-			std::move_backward(begin() + pos, begin() + static_cast<qsizetype>(size() - to_insert), end());
-			std::copy(first, last, begin() + (pos));
-		}
-	}
-
-	template<class Iter>
-	static constexpr bool isRandomAccess(Iter)
+	static constexpr bool isRandomAccess()
 	{
 		return std::is_same<std::random_access_iterator_tag, typename std::iterator_traits<Iter>::iterator_category>::value;
 	}
@@ -1362,23 +1339,25 @@ public:
 	using const_spans_type = std::pair<const_span_type, const_span_type>;
 
 	VipCircularVector() noexcept {}
-	VipCircularVector(const VipCircularVector&) noexcept = default;
+	VipCircularVector(const VipCircularVector&) = default;
 	VipCircularVector(VipCircularVector&&) noexcept = default;
 	VipCircularVector& operator=(const VipCircularVector&) = default;
 	VipCircularVector& operator=(VipCircularVector&&) = default;
 
 	VipCircularVector(qsizetype size)
-	  : d_data(new Data(capacityForSize(size), size))
 	{
+		if (size > 0)
+			d_data.reset(new Data(capacityForSize(size), size));
 	}
 	VipCircularVector(qsizetype size, const T& value)
-	  : d_data(new Data(capacityForSize(size), size, value))
 	{
+		if (size > 0)
+			d_data.reset(new Data(capacityForSize(size), size, value));
 	}
 	template<class Iter, detail::IfIsInputIterator<Iter> = true>
 	VipCircularVector(Iter first, Iter last)
 	{
-		if (isRandomAccess(first)) {
+		if constexpr (isRandomAccess<Iter>()) {
 			qsizetype size = (qsizetype)std::distance(first, last);
 			make_data(capacityForSize(size), size);
 			std::copy(first, last, begin());
@@ -1415,9 +1394,15 @@ public:
 	QVector<T> toVector() const { return convertTo<QVector<T>>(); }
 	QList<T> toList() const { return convertTo<QList<T>>(); }
 
-	VIP_ALWAYS_INLINE void setAnyData(const QVariant& value) { d_any = value; }
-	VIP_ALWAYS_INLINE void setAnyData(QVariant&& value) { d_any = std::move(value); }
-	VIP_ALWAYS_INLINE const QVariant& anyData() const noexcept { return d_any; }
+	const void* sharedData() const noexcept { return this->constData(); }
+
+	VIP_ALWAYS_INLINE void setAnyData(const QVariant& value) { make_data(1)->any = value; }
+	VIP_ALWAYS_INLINE void setAnyData(QVariant&& value) { make_data(1)->any = std::move(value); }
+	VIP_ALWAYS_INLINE const QVariant& anyData() const noexcept
+	{
+		static QVariant any;
+		return hasData() ? data()->any : any;
+	}
 
 	void clear() noexcept
 	{
@@ -1436,7 +1421,7 @@ public:
 	VIP_ALWAYS_INLINE bool isEmpty() const noexcept { return !d_data || d_data->size == 0; }
 	VIP_ALWAYS_INLINE qsizetype size() const noexcept { return d_data ? d_data->size : 0; }
 
-	VIP_ALWAYS_INLINE T& operator[](qsizetype i) noexcept { return d_data->at(i); }
+	VIP_ALWAYS_INLINE T& operator[](qsizetype i) { return d_data->at(i); }
 	VIP_ALWAYS_INLINE const T& operator[](qsizetype i) const noexcept { return d_data->at(i); }
 
 	/// Throws std::out_of_range when @a pos is not a valid index.
@@ -1457,39 +1442,39 @@ public:
 		return (d_data->at(pos));
 	}
 
-	VIP_ALWAYS_INLINE T& front() noexcept { return d_data->front(); }
+	VIP_ALWAYS_INLINE T& front() { return d_data->front(); }
 	VIP_ALWAYS_INLINE const T& front() const noexcept { return d_data->front(); }
-	VIP_ALWAYS_INLINE T& first() noexcept { return d_data->front(); }
+	VIP_ALWAYS_INLINE T& first() { return d_data->front(); }
 	VIP_ALWAYS_INLINE const T& first() const noexcept { return d_data->front(); }
 
-	VIP_ALWAYS_INLINE T& back() noexcept { return d_data->back(); }
+	VIP_ALWAYS_INLINE T& back() { return d_data->back(); }
 	VIP_ALWAYS_INLINE const T& back() const noexcept { return d_data->back(); }
-	VIP_ALWAYS_INLINE T& last() noexcept { return d_data->back(); }
+	VIP_ALWAYS_INLINE T& last() { return d_data->back(); }
 	VIP_ALWAYS_INLINE const T& last() const noexcept { return d_data->back(); }
 
-	VIP_ALWAYS_INLINE iterator begin() noexcept { return iterator(data(), 0); }
+	VIP_ALWAYS_INLINE iterator begin() { return iterator(data(), 0); }
 	VIP_ALWAYS_INLINE const_iterator begin() const noexcept { return const_iterator(data(), 0); }
 	VIP_ALWAYS_INLINE const_iterator cbegin() const noexcept { return const_iterator(data(), 0); }
 
-	VIP_ALWAYS_INLINE iterator end() noexcept { return iterator(data(), size()); }
+	VIP_ALWAYS_INLINE iterator end() { return iterator(data(), size()); }
 	VIP_ALWAYS_INLINE const_iterator end() const noexcept { return const_iterator(data(), size()); }
 	VIP_ALWAYS_INLINE const_iterator cend() const noexcept { return const_iterator(data(), size()); }
 
-	VIP_ALWAYS_INLINE reverse_iterator rbegin() noexcept { return reverse_iterator(end()); }
+	VIP_ALWAYS_INLINE reverse_iterator rbegin() { return reverse_iterator(end()); }
 	VIP_ALWAYS_INLINE const_reverse_iterator rbegin() const noexcept { return const_reverse_iterator(end()); }
 	VIP_ALWAYS_INLINE const_reverse_iterator crbegin() const noexcept { return const_reverse_iterator(end()); }
 
-	VIP_ALWAYS_INLINE reverse_iterator rend() noexcept { return reverse_iterator(begin()); }
+	VIP_ALWAYS_INLINE reverse_iterator rend() { return reverse_iterator(begin()); }
 	VIP_ALWAYS_INLINE const_reverse_iterator rend() const noexcept { return const_reverse_iterator(begin()); }
 	VIP_ALWAYS_INLINE const_reverse_iterator crend() const noexcept { return const_reverse_iterator(begin()); }
 
-	VIP_ALWAYS_INLINE spans_type spans(qsizetype first, qsizetype last) noexcept { return d_data->spans(first, last); }
-	VIP_ALWAYS_INLINE spans_type spans() noexcept { return d_data->spans(0, size()); }
-	VIP_ALWAYS_INLINE const_spans_type spans(qsizetype first, qsizetype last) const noexcept { return d_data->cspans(first, last); }
-	VIP_ALWAYS_INLINE const_spans_type spans() const noexcept { return d_data->cspans(0, size()); }
+	VIP_ALWAYS_INLINE spans_type spans(qsizetype first, qsizetype last) { return hasData() ? d_data->spans(first, last) : spans_type(); }
+	VIP_ALWAYS_INLINE spans_type spans() { return spans(0, size()); }
+	VIP_ALWAYS_INLINE const_spans_type spans(qsizetype first, qsizetype last) const noexcept { return hasData() ? d_data->cspans(first, last) : const_spans_type(); }
+	VIP_ALWAYS_INLINE const_spans_type spans() const noexcept { return spans(0, size()); }
 
 	template<class Fun>
-	void for_each(qsizetype first, qsizetype last, Fun&& f) noexcept(noexcept(f(std::declval<T&>())))
+	void for_each(qsizetype first, qsizetype last, Fun&& f)
 	{
 		auto s = spans(first, last);
 		for (T& v : s.first)
@@ -1507,11 +1492,33 @@ public:
 			f(v);
 	}
 
-	void resize(qsizetype new_size) { adjust_capacity_for_size(new_size)->resize(new_size); }
-	void resize(qsizetype new_size, const T& v) { adjust_capacity_for_size(new_size)->resize(new_size, v); }
+	void resize(qsizetype new_size)
+	{
+		if (new_size < 0)
+			new_size = 0;
+		adjust_capacity_for_size(new_size)->resize(new_size);
+	}
+	void resize(qsizetype new_size, const T& v)
+	{
+		if (new_size < 0)
+			new_size = 0;
+		T tmp = v;
+		adjust_capacity_for_size(new_size)->resize(new_size, tmp);
+	}
 
-	void resize_front(qsizetype new_size) { adjust_capacity_for_size(new_size)->resize_front(new_size); }
-	void resize_front(qsizetype new_size, const T& v) { adjust_capacity_for_size(new_size)->resize_front(new_size, v); }
+	void resize_front(qsizetype new_size)
+	{
+		if (new_size < 0)
+			new_size = 0;
+		adjust_capacity_for_size(new_size)->resize_front(new_size);
+	}
+	void resize_front(qsizetype new_size, const T& v)
+	{
+		if (new_size < 0)
+			new_size = 0;
+		T tmp = v;
+		adjust_capacity_for_size(new_size)->resize_front(new_size, tmp);
+	}
 
 	void swap(VipCircularVector& other) noexcept { d_data.swap(other.d_data); }
 
@@ -1583,8 +1590,11 @@ public:
 			return emplace_front(std::forward<Args>(args)...);
 		if (pos == size())
 			return emplace_back(std::forward<Args>(args)...);
-		if (full())
+		if (full()) {
+			T tmp = T(std::forward<Args>(args)...);
 			adjust_capacity_for_size(size() + 1);
+			return *d_data->emplace(pos, std::move(tmp));
+		}
 		return *d_data->emplace(pos, std::forward<Args>(args)...);
 	}
 	VIP_ALWAYS_INLINE void insert(size_type pos, const T& value) { emplace(pos, value); }
@@ -1593,22 +1603,8 @@ public:
 	template<class... Args>
 	VIP_ALWAYS_INLINE iterator emplace(const_iterator it, Args&&... args)
 	{
-		emplace(it.pos, std::forward<Args>(args)...);
-		return (iterator)cbegin() + it.pos;
-	}
-	/// Whether [first, last) points inside this container, in which case growing it
-	/// would invalidate the range being read.
-	template<class Iter>
-	bool ownsRange(Iter first, Iter last) const noexcept
-	{
-		if VIP_CONSTEXPR (std::is_same<typename std::decay<Iter>::type, iterator>::value || std::is_same<typename std::decay<Iter>::type, const_iterator>::value) {
-			return !empty() && first != last && first.data == d_data.constData();
-		}
-		else {
-			(void)first;
-			(void)last;
-			return false;
-		}
+		emplace(it.absolutePos(), std::forward<Args>(args)...);
+		return begin() + it.absolutePos();
 	}
 
 	VIP_ALWAYS_INLINE iterator insert(const_iterator it, const T& value) { return emplace(it, value); }
@@ -1616,23 +1612,55 @@ public:
 
 	/// Inserting a range taken from this same container is supported: the source is
 	/// copied first, since the growth below moves the elements it points at.
-	template<class Iter>
+	template<class Iter, detail::IfIsInputIterator<Iter> = true>
 	void insert(size_type pos, Iter first, Iter last)
 	{
 		detach();
-		if (ownsRange(first, last)) {
-			const std::vector<T> copy(first, last);
-			insert_cat(pos, copy.begin(), copy.end(), std::random_access_iterator_tag());
+		VIP_ASSERT_DEBUG(pos <= size(), "invalid insert position");
+		if (first == last)
 			return;
+
+		using iter_type = typename std::iterator_traits<Iter>::reference;
+		using iter_value = std::decay_t<typename std::iterator_traits<Iter>::value_type>;
+		if constexpr (std::is_same_v<iter_value, T> && (std::is_rvalue_reference_v<iter_type> || std::is_lvalue_reference_v<iter_type>)) {
+			if (!empty()) {
+				// Detect overlapp
+				auto&& element = *first;
+				const auto address = std::addressof(element);
+				if (!std::less<>{}(address, constData()->buffer) && std::less<>{}(address, constData()->buffer + constData()->capacity)) {
+					std::vector<T> tmp(first, last);
+					return insert(pos, std::make_move_iterator(tmp.begin()), std::make_move_iterator(tmp.end()));
+				}
+			}
 		}
-		insert_cat(pos, first, last, typename std::iterator_traits<Iter>::iterator_category());
+
+		if (pos < size() / 2) {
+			// push front values
+			qsizetype prev_size = size();
+			// Might throw, fine
+			for (; first != last; ++first)
+				emplace_front_no_detach(*first);
+
+			qsizetype num = size() - prev_size;
+			// Might throw, fine
+			std::reverse(begin(), begin() + num); // flip new stuff in place
+			std::rotate(begin(), begin() + num, begin() + (num + pos));
+		}
+		else {
+			// push back, might throw
+			qsizetype prev_size = size();
+			for (; first != last; ++first)
+				emplace_back_no_detach(*first);
+			// Might throw, fine
+			std::rotate(begin() + pos, begin() + prev_size, end());
+		}
 	}
-	template<class Iter>
+	template<class Iter, detail::IfIsInputIterator<Iter> = true>
 	iterator insert(const_iterator it, Iter first, Iter last)
 	{
-		const size_type pos = it.pos;
+		const size_type pos = it.absolutePos();
 		insert(pos, first, last);
-		return (iterator)cbegin() + pos;
+		return begin() + pos;
 	}
 	void insert(size_type pos, std::initializer_list<T> ilist) { return insert(pos, ilist.begin(), ilist.end()); }
 	iterator insert(const_iterator pos, std::initializer_list<T> ilist) { return insert(pos, ilist.begin(), ilist.end()); }
@@ -1650,8 +1678,8 @@ public:
 	}
 	VIP_ALWAYS_INLINE iterator erase(const_iterator it)
 	{
-		erase(it.pos);
-		return (iterator)cbegin() + it.pos;
+		erase(it.absolutePos());
+		return begin() + it.absolutePos();
 	}
 	void erase(size_type first, size_type last)
 	{
@@ -1679,14 +1707,14 @@ public:
 	}
 	iterator erase(const_iterator first, const_iterator last)
 	{
-		erase(first.pos, last.pos);
-		return (iterator)cbegin() + first.pos;
+		erase(first.absolutePos(), last.absolutePos());
+		return begin() + first.absolutePos();
 	}
 
 	template<class Iter, detail::IfIsInputIterator<Iter> = true>
 	VipCircularVector& assign(Iter first, Iter last)
 	{
-		if (isRandomAccess(first)) {
+		if constexpr (isRandomAccess<Iter>()) {
 			resize(std::distance(first, last));
 			std::copy(first, last, begin());
 		}

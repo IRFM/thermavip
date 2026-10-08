@@ -126,12 +126,13 @@ public:
 	{
 		// compute the list of polygons used to represent this shape
 		QList<QPolygonF> poly;
-		if (m_shape->rawData().type() == VipShape::Polygon)
-			poly.append(m_shape->rawData().polygon());
-		else if (m_shape->rawData().type() == VipShape::Polyline)
-			poly.append(m_shape->rawData().polyline());
-		else if (m_shape->rawData().isPolygonBased())
-			poly = m_shape->rawData().shape().toSubpathPolygons();
+		const auto d = m_shape->rawData();
+		if (d.type() == VipShape::Polygon)
+			poly.append(d.polygon());
+		else if (d.type() == VipShape::Polyline)
+			poly.append(d.polyline());
+		else if (d.isPolygonBased())
+			poly = d.shape().toSubpathPolygons();
 
 		// for each polygon, remove the last point if equals to first point
 		for (int i = 0; i < poly.size(); ++i) {
@@ -444,12 +445,13 @@ void VipPlotShape::setAnnotation(VipAnnotation* annot)
 		d_data->annotation.reset( annot);
 		if (annot)
 			annot->setParentShape(this);
-
-		QByteArray ar = rawData().attribute("_vip_annotation").toByteArray();
+		
+		auto d = rawData();
+		QByteArray ar = d.attribute("_vip_annotation").toByteArray();
 		QByteArray new_ar = annot ? vipSaveAnnotation(annot) : QByteArray();
 		d_data->annotationData = new_ar;
 		if (new_ar != ar)
-			rawData().setAttribute("_vip_annotation", new_ar);
+			d.setAttribute("_vip_annotation", new_ar);
 
 		emitItemChanged();
 	}
@@ -663,13 +665,15 @@ QPainterPath VipPlotShape::shape() const
 
 	// empty d_data->path if a point is outside the scale area or
 	// it won't be drawn
-	if (rawData().type() == VipShape::Point && !VipInterval::toRect(this->VipPlotItem::plotBoundingIntervals()).contains(rawData().point()))
+
+	const auto sh = rawData();
+
+	if (sh.type() == VipShape::Point && !VipInterval::toRect(this->VipPlotItem::plotBoundingIntervals()).contains(sh.point()))
 		const_cast<QPainterPath&>(d_data->path) = QPainterPath();
 
 	if (!d_data->path.isEmpty())
 		return d_data->path;
 	else {
-		VipShape sh = rawData();
 		QPainterPath path;
 
 		if (sh.type() == VipShape::Point) {
@@ -841,13 +845,13 @@ QRectF VipPlotShape::drawLegend(QPainter* p, const QRectF& r, int) const
 
 void VipPlotShape::draw(QPainter* painter, const VipCoordinateSystemPtr& m) const
 {
+	const VipShape sh = this->rawData();
+
 	if (VipAnnotation* annot = annotation())
-		return annot->draw(rawData(), painter, m);
+		return annot->draw(sh, painter, m);
 
 	d_data->path = QPainterPath();
 	d_data->textRect = QRectF();
-
-	VipShape sh = this->rawData();
 
 	// draw the shape itself
 	if (sh.type() == VipShape::Path)
@@ -885,7 +889,7 @@ void VipPlotShape::draw(QPainter* painter, const VipCoordinateSystemPtr& m) cons
 			// add attributes
 			QString t = text.text();
 			static const QString name_key = "Name";
-			const QVariantMap attrs = rawData().attributes();
+			const QVariantMap attrs = sh.attributes();
 			for (QVariantMap::const_iterator it = attrs.begin(); it != attrs.end(); ++it) {
 				if (it.key() != name_key && !it.key().startsWith("_vip_"))
 					t += "\n" + it.key() + ": " + it.value().toString();
@@ -1138,11 +1142,6 @@ void VipPlotShape::setShape(const QPainterPath& path) const
 
 QVariant VipPlotShape::itemChange(GraphicsItemChange change, const QVariant& value)
 {
-	// if (change == QGraphicsItem::ItemSelectedHasChanged)
-	// {
-	// //rawData().setSelected(this->isSelected());
-	// }
-	// else
 	if (change == QGraphicsItem::ItemVisibleHasChanged) {
 		if (d_data->polygonMovers) {
 			if (isVisible() && !d_data->polygonMovers->isVisible())
@@ -1356,7 +1355,8 @@ void VipPlotSceneModel::setMode(Mode mode)
 				item->setLibertyDegrees(VipResizeItem::AllMove);
 			}
 			else if (mode == Resizable) {
-				if (sh->rawData().type() != VipShape::Point && sh->rawData().type() != VipShape::Polyline)
+				const auto d = sh->rawData();
+				if (d.type() != VipShape::Point && d.type() != VipShape::Polyline)
 					item->setLibertyDegrees(VipResizeItem::MoveAndResize);
 				else
 					item->setLibertyDegrees(VipResizeItem::AllMove);

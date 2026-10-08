@@ -100,7 +100,7 @@ int main(int argc, char** argv)
 	QApplication app(argc, argv);
 	VipPlotWidget2D w;
 	// Enable threaded OpenGL rendering if necessary
-	//w.setRenderingMode(VipPlotWidget2D::OpenGLThread);
+	w.setRenderingMode(VipPlotWidget2D::OpenGLThread);
 
 	// setup plotting area
 	setup_plot_area(w.area());

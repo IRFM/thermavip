@@ -2726,6 +2726,8 @@ public:
 	}
 	bool inDestroy;
 	QVariant data;
+	QVariant cached;
+	quint64 cachedCount = 0;
 	// QMutex dataLock;
 	VipPlotItemData::Mutex dataLock;
 	int max_sample;
@@ -2803,6 +2805,24 @@ QVariant VipPlotItemData::takeData()
 	if (d_data->inDestroy)
 		return QVariant();
 	return std::exchange(d_data->data, QVariant());
+}
+
+const QVariant& VipPlotItemData::cachedData() const
+{
+	VIP_ASSERT_DEBUG(QThread::currentThread() == QCoreApplication::instance()->thread());
+	if (auto* a = area()) {
+		auto pc = a->paintCount();
+		if (d_data->cachedCount != pc) {
+			d_data->cachedCount = pc;
+			{
+				Locker lock(dataLock());
+				const_cast<QVariant&>(d_data->cached) = d_data->data;
+			}
+			return d_data->cached;
+		}
+	}
+	Locker lock(dataLock());
+	return const_cast<QVariant&>(d_data->cached) = d_data->data;
 }
 
 VipPlotItemData::Mutex* VipPlotItemData::dataLock() const

@@ -1040,6 +1040,9 @@ class VIP_PLOTTING_EXPORT VipPlotItemData : public VipPlotItem
 {
 	Q_OBJECT
 
+	template<class Data, class Sample >
+	friend class VipPlotItemDataType;
+
 public:
 	using Mutex = VipRecursiveSpinlock ;
 #if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
@@ -1091,13 +1094,19 @@ protected:
 	virtual void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget = 0);
 	void setInternalData(const QVariant& value);
 
+	/// @brief Helper function, returns the data set with setData().
+	/// This function returns a cached version of internal data.
+	/// This cached version is guaranteed to always be the same during the 
+	/// scale update and paint logic. This is usefull when setData() 
+	/// might be called in an asynchronous way. 
+	/// Dervied classes are free to use this mechanism or not.
+	const QVariant& cachedData() const;
+
+private:
 	/// Return current data and reset internal one.
 	/// Does NOT call setData(), which must be called later.
 	/// The lock must be held before calling this function.
 	QVariant takeData();
-
-private:
-	
 	VIP_DECLARE_PRIVATE_DATA();
 };
 
@@ -1135,20 +1144,18 @@ public:
 	template<class F>
 	void updateData(F&& fun)
 	{
-
-		this->dataLock()->lock();
+		Locker lock(this->dataLock());
 		Data vec = takeData().template value<Data>();
 		try {
 			std::forward<F>(fun)(vec);
 		}
 		catch (...) {
-			this->dataLock()->unlock();
 			setRawData(vec);
 			throw;
 		}
-		this->dataLock()->unlock();
 		setRawData(vec);
 	}
+
 };
 
 /// @}

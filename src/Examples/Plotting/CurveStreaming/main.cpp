@@ -18,7 +18,8 @@
 #include "VipColorMap.h"
 #include "VipSliderGrip.h"
 #include "VipAxisColorMap.h"
-
+#include "VipLegendItem.h"
+#include "VipDynGridLayout.h"
 
 
 /// @brief Generate a cosinus curve of at most 500 points with X values being in seconds
@@ -206,9 +207,8 @@ int main(int argc, char** argv)
 	
 
 	VipMultiGraphicsView w; 
-	//w.setViewport(new QPaintOpenGLWidget());
-	w.setRenderingMode(VipMultiGraphicsView::OpenGLThread);
-	VipText::setCacheTextWhenPossible(false);
+	//w.setRenderingMode(VipMultiGraphicsView::OpenGLThread);
+	VipText::setCacheTextWhenPossible(true);
 
 	QGraphicsGridLayout* grid = new QGraphicsGridLayout();
 	
@@ -225,8 +225,7 @@ int main(int argc, char** argv)
 			VipPlotArea2D* area = new VipPlotArea2D();
 			
 			//area->setMaximumFrameRate(2);
-			//area->setRenderStrategy(VipPlotArea2D::OpenGLOffscreen);
-			//area->setRenderingThreads(6);
+
 			grid->addItem(area, y, x);
 			setup_plot_area(area,i);
 

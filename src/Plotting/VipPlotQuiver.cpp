@@ -113,7 +113,7 @@ void VipPlotQuiver::setData(const QVariant& data)
 	if (cd.size()) {
 		hdata.dataInterval = VipInterval(cd[0].value, cd[0].value);
 		for (qsizetype i = 1; i < cd.size(); ++i) {
-			hdata.dataInterval.extend(cd[i].value);
+			hdata.dataInterval = hdata.dataInterval.extend(cd[i].value);
 		}
 	}
 	d.setAnyData(QVariant::fromValue(hdata));
@@ -191,7 +191,7 @@ int VipPlotQuiver::findQuiverIndex(const VipQuiverPointVector& vec, const QPoint
 QString VipPlotQuiver::formatText(const QString& text, const QPointF& pos) const
 {
 	QString res = VipPlotItem::formatText(text, pos);
-	const VipQuiverPointVector vec = rawData();
+	const VipQuiverPointVector vec = cachedData().value < VipQuiverPointVector>();
 	int index = findQuiverIndex(vec, pos, 10);
 	if (index < 0)
 		return res;
@@ -200,7 +200,7 @@ QString VipPlotQuiver::formatText(const QString& text, const QPointF& pos) const
 }
 bool VipPlotQuiver::areaOfInterest(const QPointF& pos, int, double maxDistance, VipPointVector& out_pos, VipBoxStyle& style, int& legend) const
 {
-	const VipQuiverPointVector vec = rawData();
+	const VipQuiverPointVector vec = cachedData().value<VipQuiverPointVector>();
 	int index = findQuiverIndex(vec, pos, maxDistance);
 	if (index < 0)
 		return false;
@@ -222,7 +222,7 @@ bool VipPlotQuiver::areaOfInterest(const QPointF& pos, int, double maxDistance, 
 
 QList<VipInterval> VipPlotQuiver::plotBoundingIntervals() const
 {
-	const auto d = rawData();
+	const auto d = cachedData().value<VipQuiverPointVector>();
 	const QuiverData hdata = d.anyData().value<QuiverData>();
 	return hdata.bounding;
 }
@@ -340,7 +340,7 @@ void VipPlotQuiver::draw(QPainter* painter, const VipCoordinateSystemPtr& m) con
 	QPen p((d_data->quiver.pen()));
 	VipQuiverPath quiver = d_data->quiver;
 
-	const VipQuiverPointVector vector = rawData();
+	const VipQuiverPointVector vector = cachedData().value<VipQuiverPointVector>();
 	const bool use_colormap = colorMap();
 	VipQuiver q;
 
@@ -373,7 +373,7 @@ QRectF VipPlotQuiver::drawLegend(QPainter* painter, const QRectF& r, int index) 
 
 VipInterval VipPlotQuiver::plotInterval(const VipInterval& interval) const
 {
-	const auto d = rawData();
+	const auto d = cachedData().value<VipQuiverPointVector>();
 	if (interval == vipInfinitInterval()) {
 		return d.anyData().value<QuiverData>().dataInterval;
 	}

@@ -3636,69 +3636,80 @@ public:
 VipAdjustImageEditor::VipAdjustImageEditor(QWidget* parent)
   : QWidget(parent)
 {
-	m_data = new PrivateData();
+	VIP_CREATE_PRIVATE_DATA();
 
-	m_data->constrast = new QSlider(Qt::Horizontal);
-	m_data->constrast->setMinimumWidth(60);
-	m_data->constrast->setRange(-10, 10);
-	m_data->constrast->setValue(0);
-	m_data->constrast->setToolTip("Adjust contrast");
+	d_data->constrast = new QSlider(Qt::Horizontal);
+	d_data->constrast->setMinimumWidth(60);
+	d_data->constrast->setRange(-10, 10);
+	d_data->constrast->setValue(0);
+	d_data->constrast->setToolTip("Adjust contrast");
 
-	m_data->brightness = new QSlider(Qt::Horizontal);
-	m_data->brightness->setMinimumWidth(60);
-	m_data->brightness->setRange(-100, 100);
-	m_data->brightness->setValue(0);
-	m_data->brightness->setToolTip("Adjust brightness");
+	d_data->brightness = new QSlider(Qt::Horizontal);
+	d_data->brightness->setMinimumWidth(60);
+	d_data->brightness->setRange(-100, 100);
+	d_data->brightness->setValue(0);
+	d_data->brightness->setToolTip("Adjust brightness");
 
-	m_data->gamma = new QSlider(Qt::Horizontal);
-	m_data->gamma->setMinimumWidth(60);
-	m_data->gamma->setRange(-10, 10);
-	m_data->gamma->setValue(0);
-	m_data->gamma->setToolTip("Adjust gamma");
+	d_data->gamma = new QSlider(Qt::Horizontal);
+	d_data->gamma->setMinimumWidth(60);
+	d_data->gamma->setRange(-10, 10);
+	d_data->gamma->setValue(0);
+	d_data->gamma->setToolTip("Adjust gamma");
 
-	m_data->constrast_v = new QLabel();
-	m_data->constrast_v->setMinimumWidth(20);
-	m_data->brightness_v = new QLabel();
-	m_data->brightness_v->setMinimumWidth(20);
-	m_data->gamma_v = new QLabel();
-	m_data->gamma_v->setMinimumWidth(20);
+	d_data->constrast_v = new QLabel();
+	d_data->constrast_v->setMinimumWidth(20);
+	d_data->brightness_v = new QLabel();
+	d_data->brightness_v->setMinimumWidth(20);
+	d_data->gamma_v = new QLabel();
+	d_data->gamma_v->setMinimumWidth(20);
 
-	m_data->reset = new QPushButton("Reset all");
-	m_data->applyToAll = new QCheckBox("Apply to all players");
+	d_data->reset = new QPushButton("Reset all");
+	d_data->applyToAll = new QCheckBox("Apply to all players");
 
 	QGridLayout* lay = new QGridLayout();
 
 	lay->addWidget(new QLabel("Contrast"), 0, 0);
-	lay->addWidget(m_data->constrast, 0, 1);
-	lay->addWidget(m_data->constrast_v, 0, 2);
+	lay->addWidget(d_data->constrast, 0, 1);
+	lay->addWidget(d_data->constrast_v, 0, 2);
 
 	lay->addWidget(new QLabel("Brightness"), 1, 0);
-	lay->addWidget(m_data->brightness, 1, 1);
-	lay->addWidget(m_data->brightness_v, 1, 2);
+	lay->addWidget(d_data->brightness, 1, 1);
+	lay->addWidget(d_data->brightness_v, 1, 2);
 
 	lay->addWidget(new QLabel("Gamma"), 2, 0);
-	lay->addWidget(m_data->gamma, 2, 1);
-	lay->addWidget(m_data->gamma_v, 2, 2);
+	lay->addWidget(d_data->gamma, 2, 1);
+	lay->addWidget(d_data->gamma_v, 2, 2);
 
 	QVBoxLayout* vlay = new QVBoxLayout();
 	vlay->addLayout(lay);
-	vlay->addWidget(m_data->reset);
-	vlay->addWidget(m_data->applyToAll);
+	vlay->addWidget(d_data->reset);
+	vlay->addWidget(d_data->applyToAll);
 	vlay->addStretch(1);
 	setLayout(vlay);
 
-	connect(m_data->constrast, SIGNAL(valueChanged(int)), this, SLOT(changed()));
-	connect(m_data->brightness, SIGNAL(valueChanged(int)), this, SLOT(changed()));
-	connect(m_data->gamma, SIGNAL(valueChanged(int)), this, SLOT(changed()));
-	connect(m_data->reset, SIGNAL(clicked(bool)), this, SLOT(reset()));
-	connect(m_data->applyToAll, SIGNAL(clicked(bool)), this, SLOT(changed()));
+	connect(d_data->constrast, SIGNAL(valueChanged(int)), this, SLOT(changed()));
+	connect(d_data->brightness, SIGNAL(valueChanged(int)), this, SLOT(changed()));
+	connect(d_data->gamma, SIGNAL(valueChanged(int)), this, SLOT(changed()));
+	connect(d_data->reset, SIGNAL(clicked(bool)), this, SLOT(reset()));
+	connect(d_data->applyToAll, SIGNAL(clicked(bool)), this, SLOT(changed()));
 
-	m_data->applyToAll->hide();
+	d_data->applyToAll->hide();
 }
 
 VipAdjustImageEditor::~VipAdjustImageEditor()
 {
-	delete m_data;
+}
+
+void VipAdjustImageEditor::showEvent(QShowEvent* evt)
+{
+	if (auto item = d_data->item.get()) {
+		setPlotItem(nullptr);
+		setPlotItem(item);
+	}
+	else if (auto proc = d_data->processing.get()) {
+		setProcessing(nullptr);
+		setProcessing(proc);
+	}
 }
 
 void VipAdjustImageEditor::reset()
@@ -3708,13 +3719,13 @@ void VipAdjustImageEditor::reset()
 	double brightness = 0.;
 	double gamma = 1.;
 
-	if (m_data->processing)
-		m_data->processing->reset();
-	if (auto* item = m_data->item.data()) {
+	if (d_data->processing)
+		d_data->processing->reset();
+	if (auto* item = d_data->item.data()) {
 		item->setContrast(contrast);
 		item->setBrightness(brightness);
 		item->setGamma(gamma);
-		if (m_data->applyToAll->isChecked()) {
+		if (d_data->applyToAll->isChecked()) {
 			if (VipDisplayPlayerArea* area = VipDisplayPlayerArea::fromChild(item->view())) {
 				QList<VipVideoPlayer*> players = area->findChildren<VipVideoPlayer*>();
 				for (auto* pl : players) {
@@ -3727,107 +3738,107 @@ void VipAdjustImageEditor::reset()
 	}
 
 
-	m_data->constrast->blockSignals(true);
-	m_data->constrast->setValue(qRound(contrast * 10) - 10);
-	m_data->constrast_v->setText(QString::number(m_data->constrast->value()));
-	m_data->constrast->blockSignals(false);
+	d_data->constrast->blockSignals(true);
+	d_data->constrast->setValue(qRound(contrast * 10) - 10);
+	d_data->constrast_v->setText(QString::number(d_data->constrast->value()));
+	d_data->constrast->blockSignals(false);
 
-	m_data->brightness->blockSignals(true);
-	m_data->brightness->setValue(qRound(brightness));
-	m_data->brightness_v->setText(QString::number(m_data->brightness->value()));
-	m_data->brightness->blockSignals(false);
+	d_data->brightness->blockSignals(true);
+	d_data->brightness->setValue(qRound(brightness));
+	d_data->brightness_v->setText(QString::number(d_data->brightness->value()));
+	d_data->brightness->blockSignals(false);
 
-	m_data->gamma->blockSignals(true);
-	m_data->gamma->setValue(qRound(gamma * 10) - 10);
-	m_data->gamma_v->setText(QString::number(m_data->gamma->value()));
-	m_data->gamma->blockSignals(false);
+	d_data->gamma->blockSignals(true);
+	d_data->gamma->setValue(qRound(gamma * 10) - 10);
+	d_data->gamma_v->setText(QString::number(d_data->gamma->value()));
+	d_data->gamma->blockSignals(false);
 }
 
 void VipAdjustImageEditor::resetProcessing()
 {
-	setProcessing(m_data->processing);
+	setProcessing(d_data->processing);
 }
 
 void VipAdjustImageEditor::setPlotItem(VipPlotRasterData* item)
 {
-	if (item != m_data->item) {
-		if (m_data->processing)
+	if (item != d_data->item) {
+		if (d_data->processing)
 			setProcessing(nullptr);
 
-		m_data->item = item;
+		d_data->item = item;
 		if (item) {
-			m_data->applyToAll->show();
-			m_data->constrast->blockSignals(true);
-			m_data->constrast->setValue(qRound(item->contrast() * 10) - 10);
-			m_data->constrast_v->setText(QString::number(m_data->constrast->value()));
-			m_data->constrast->blockSignals(false);
+			d_data->applyToAll->show();
+			d_data->constrast->blockSignals(true);
+			d_data->constrast->setValue(qRound(item->contrast() * 10) - 10);
+			d_data->constrast_v->setText(QString::number(d_data->constrast->value()));
+			d_data->constrast->blockSignals(false);
 
-			m_data->brightness->blockSignals(true);
-			m_data->brightness->setValue(qRound(item->brightness()));
-			m_data->brightness_v->setText(QString::number(m_data->brightness->value()));
-			m_data->brightness->blockSignals(false);
+			d_data->brightness->blockSignals(true);
+			d_data->brightness->setValue(qRound(item->brightness()));
+			d_data->brightness_v->setText(QString::number(d_data->brightness->value()));
+			d_data->brightness->blockSignals(false);
 
-			m_data->gamma->blockSignals(true);
-			m_data->gamma->setValue(qRound(item->gamma() * 10) - 10);
-			m_data->gamma_v->setText(QString::number(m_data->gamma->value()));
-			m_data->gamma->blockSignals(false);
+			d_data->gamma->blockSignals(true);
+			d_data->gamma->setValue(qRound(item->gamma() * 10) - 10);
+			d_data->gamma_v->setText(QString::number(d_data->gamma->value()));
+			d_data->gamma->blockSignals(false);
 
-			//item->setCorrectionsEnabled(m_data->shouldApply());
+			//item->setCorrectionsEnabled(d_data->shouldApply());
 		}
 	}
 }
 VipPlotRasterData* VipAdjustImageEditor::plotItem() const
 {
-	return m_data->item;
+	return d_data->item;
 }
 
 void VipAdjustImageEditor::setProcessing(VipAdjustImage* p)
 {
-	bool same = p == m_data->processing;
+	bool same = p == d_data->processing;
 
-	if (m_data->processing && !same)
-		disconnect(m_data->processing, SIGNAL(processingChanged(VipProcessingObject*)), this, SLOT(resetProcessing()));
+	if (d_data->processing && !same)
+		disconnect(d_data->processing, SIGNAL(processingChanged(VipProcessingObject*)), this, SLOT(resetProcessing()));
 
-	m_data->processing = p;
-	m_data->item = nullptr;
+	d_data->processing = p;
+	d_data->item = nullptr;
 	if (p) {
-		m_data->applyToAll->hide();
+		d_data->applyToAll->hide();
 		if (!same)
-			connect(m_data->processing, SIGNAL(processingChanged(VipProcessingObject*)), this, SLOT(resetProcessing()));
+			connect(d_data->processing, SIGNAL(processingChanged(VipProcessingObject*)), this, SLOT(resetProcessing()));
 
 		double contrast = p->propertyAt(0)->value<double>();
 		double brightness = p->propertyAt(1)->value<double>();
 		double gamma = p->propertyAt(2)->value<double>();
 
-		m_data->constrast->blockSignals(true);
-		m_data->constrast->setValue(qRound(contrast * 10) - 10);
-		m_data->constrast_v->setText(QString::number(m_data->constrast->value()));
-		m_data->constrast->blockSignals(false);
+		d_data->constrast->blockSignals(true);
+		d_data->constrast->setValue(qRound(contrast * 10) - 10);
+		d_data->constrast_v->setText(QString::number(d_data->constrast->value()));
+		d_data->constrast->blockSignals(false);
 
-		m_data->brightness->blockSignals(true);
-		m_data->brightness->setValue(qRound(brightness));
-		m_data->brightness_v->setText(QString::number(m_data->brightness->value()));
-		m_data->brightness->blockSignals(false);
+		d_data->brightness->blockSignals(true);
+		d_data->brightness->setValue(qRound(brightness));
+		d_data->brightness_v->setText(QString::number(d_data->brightness->value()));
+		d_data->brightness->blockSignals(false);
 
-		m_data->gamma->blockSignals(true);
-		m_data->gamma->setValue(qRound(gamma * 10) - 10);
-		m_data->gamma_v->setText(QString::number(m_data->gamma->value()));
-		m_data->gamma->blockSignals(false);
+		d_data->gamma->blockSignals(true);
+		d_data->gamma->setValue(qRound(gamma * 10) - 10);
+		d_data->gamma_v->setText(QString::number(d_data->gamma->value()));
+		d_data->gamma->blockSignals(false);
 	}
 }
 VipAdjustImage* VipAdjustImageEditor::processing() const
 {
-	return m_data->processing;
+	return d_data->processing;
 }
 
 void VipAdjustImageEditor::changed()
 {
-	m_data->constrast_v->setText(QString::number(m_data->constrast->value()));
-	m_data->brightness_v->setText(QString::number(m_data->brightness->value()));
-	m_data->gamma_v->setText(QString::number(m_data->gamma->value()));
+	d_data->constrast_v->setText(QString::number(d_data->constrast->value()));
+	d_data->brightness_v->setText(QString::number(d_data->brightness->value()));
+	d_data->gamma_v->setText(QString::number(d_data->gamma->value()));
 
 	double contrast, brightness, gamma;
-	m_data->computeValues(contrast, brightness, gamma);
+	d_data->computeValues(contrast, brightness, gamma);
 
 	if (VipAdjustImage* p = this->processing()) {
 		p->propertyAt(0)->setData(contrast);
@@ -3839,16 +3850,16 @@ void VipAdjustImageEditor::changed()
 		item->setContrast(contrast);
 		item->setBrightness(brightness);
 		item->setGamma(gamma);
-		//item->setCorrectionsEnabled(m_data->shouldApply());
+		//item->setCorrectionsEnabled(d_data->shouldApply());
 
-		if (m_data->applyToAll->isChecked()) {
+		if (d_data->applyToAll->isChecked()) {
 			if (VipDisplayPlayerArea* area = VipDisplayPlayerArea::fromChild(item->view())) {
 				QList<VipVideoPlayer*> players = area->findChildren<VipVideoPlayer*>();
 				for (auto* pl : players) {
 					pl->spectrogram()->setContrast(contrast);
 					pl->spectrogram()->setBrightness(brightness);
 					pl->spectrogram()->setGamma(gamma);
-					//pl->spectrogram()->setCorrectionsEnabled(m_data->shouldApply());
+					//pl->spectrogram()->setCorrectionsEnabled(d_data->shouldApply());
 				}
 			}
 		}

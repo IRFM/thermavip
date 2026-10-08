@@ -69,6 +69,8 @@
 #include <QOffscreenSurface>
 #include <QOpenGLFramebufferObject>
 
+#include "VipPolygon.h"
+
 // Default move copy/construct
 #define DEFAULT_MOVE(Type)                                                                                                                                                                             \
 	Type(const Type& other) = default;                                                                                                                                                             \
@@ -787,13 +789,14 @@ public:
 
 	static ALWAYS_INLINE qint64 read64(void* p, int offset) noexcept { return *reinterpret_cast<qint64*>((char*)p + offset); }
 
-	void apply(QPainter* p, QPaintRecord::Optimizations opt, const QTransform& worldMatrix = QTransform(), QThreadOpenGLWidget* widget = nullptr, bool drawBackground = true) const
+	quint64 apply(QPainter* p, QPaintRecord::Optimizations opt, const QTransform& worldMatrix = QTransform(), QThreadOpenGLWidget* widget = nullptr, bool drawBackground = true) const
 	{
 		// Apply recorded commands on given QPainter,
 		// using provided optimizations and starting world transform.
+		quint64 ret = 0;
 
 		if (isSeparator())
-			return;
+			return ret;
 
 		const bool vectoriel = isVectoriel(p);
 
@@ -901,9 +904,15 @@ public:
 				case DirtyBackgroundMode:
 					p->setBackgroundMode((Qt::BGMode) * static_cast<qint64*>(e.value));
 					break;
-				case DirtyClipPath:
-					p->setClipPath(static_cast<ClipPath*>(e.value)->path, (Qt::ClipOperation) static_cast<ClipPath*>(e.value)->operation);
-					break;
+				case DirtyClipPath: {
+					const ClipPath* clip = static_cast<ClipPath*>(e.value);
+					QRectF rect;
+					if (clip->operation == Qt::ReplaceClip && vipIsRect(clip->path.toFillPolygon(), &rect))
+						// Use if possible a (way faster) clipping rect
+						p->setClipRect(rect);
+					else
+						p->setClipPath(clip->path, (Qt::ClipOperation)clip->operation);
+				} break;
 				case DirtyClipRegion:
 					p->setClipRegion(static_cast<ClipRegion*>(e.value)->region, (Qt::ClipOperation) static_cast<ClipRegion*>(e.value)->operation);
 					break;
@@ -956,10 +965,13 @@ public:
 					p->drawText(item.pos, item.item);
 				} break;
 				default:
+					--ret;
 					break;
 			}
+			++ret;
 			e = next(e);
 		}
+		return ret;
 	}
 };
 
@@ -978,7 +990,7 @@ static ALWAYS_INLINE CommandBatch* makeCommand()
 }
 static ALWAYS_INLINE BaseCommandBatch* makeSeparator()
 {
-	// Create a separator used separate commands
+	// Create a separator used to separate commands
 	// between multiple paintEvent().
 #ifdef DEBUG_PAINT_GL_WIDGET
 	++cmd_count;
@@ -1005,8 +1017,8 @@ static ALWAYS_INLINE void destroyCommand(BaseCommandBatch* c)
 // RenderingThread safe FIFO of CommandBatch
 class CommandQueue
 {
-	BaseCommandBatch end;	     // end node for the linked list of BaseCommandBatch
-	std::atomic<int> count{ 0 }; // total number of commands
+	BaseCommandBatch end; // end node for the linked list of BaseCommandBatch
+	// std::atomic<int> count{ 0 }; // total number of commands
 	std::atomic<int> rectsDirty{ 1 };
 	QRectF bRect; // exact bounding rectangle
 	QRectF eRect; // estimated bounding rectangle
@@ -1019,7 +1031,7 @@ class CommandQueue
 		c->pushBack(type, std::forward<T>(cmd));
 		std::lock_guard<QMutex> ll(lock);
 		c->insert(end.prev);
-		++count;
+		//++count;
 		return true;
 	}
 
@@ -1035,7 +1047,8 @@ class CommandQueue
 public:
 	ALWAYS_INLINE CommandQueue() noexcept {}
 	ALWAYS_INLINE ~CommandQueue() noexcept { clear(); }
-	ALWAYS_INLINE int size() const noexcept { return count.load(std::memory_order_relaxed); }
+	// ALWAYS_INLINE int size() const noexcept { return count.load(std::memory_order_relaxed); }
+	ALWAYS_INLINE bool empty() const noexcept { return end.next == &end; }
 	ALWAYS_INLINE CommandBatch* getLast() noexcept { return end.prev->command(); }
 	ALWAYS_INLINE int lastCount() noexcept { return (int)getLast()->count; }
 	ALWAYS_INLINE auto back() noexcept { return getLast()->back(); }
@@ -1054,7 +1067,7 @@ public:
 			first = next;
 		}
 		end.next = end.prev = &end;
-		count = 0;
+		// count = 0;
 	}
 
 	template<class T>
@@ -1066,7 +1079,7 @@ public:
 		invalidateRects();
 		if (end.prev != &end) {
 			if (end.prev->command()->pushBack(type, std::forward<T>(cmd))) {
-				++count;
+				// count.fetch_add(1, std::memory_order_relaxed);
 				return false;
 			}
 		}
@@ -1150,13 +1163,11 @@ public:
 		BaseCommandBatch* c = first;
 		while (c != last_sep) {
 			BaseCommandBatch* next = c->next;
-			// c->erase(); // Not necessary
-			count -= (int)c->count;
+			// count -= (int)c->count;
 			destroyCommand(c);
 			c = next;
 			++res;
 		}
-		// last_sep->erase(); // Not necessary
 		destroyCommand(last_sep);
 		return res + 1;
 	}
@@ -1170,7 +1181,7 @@ public:
 			invalidateRects();
 			BaseCommandBatch* c = end.next;
 			c->erase();
-			count -= (int)c->count;
+			// count -= (int)c->count;
 			return c;
 		}
 		return nullptr;
@@ -1577,12 +1588,7 @@ bool QPaintRecord::testOptimization(Optimization opt) const noexcept
 
 bool QPaintRecord::isEmpty() const noexcept
 {
-	return size() == 0;
-}
-
-uint QPaintRecord::size() const noexcept
-{
-	return d_ptr->commands.size();
+	return d_ptr->commands.empty(); // size() == 0;
 }
 
 bool QPaintRecord::play(QPainter* p, Optimizations opts) const
@@ -1763,8 +1769,6 @@ public:
 				glerror.store(0);
 
 				{
-					// Start rendering loop
-					// qint64 st = QDateTime::currentMSecsSinceEpoch();
 
 					// Store requested size/dpi
 					if (cmd->command()->count) {
@@ -1789,7 +1793,7 @@ public:
 
 					if (offscreenRendering) {
 						// Offscreen drawing
-						if ((has_current_context = thread_context.makeCurrent(&surface)) ){
+						if ((has_current_context = thread_context.makeCurrent(&surface))) {
 
 							QOpenGLFramebufferObjectFormat format;
 							format.setSamples(surface.format().samples());
@@ -1915,9 +1919,6 @@ public:
 
 					thread_context.doneCurrent();
 				}
-
-				// qint64 el = QDateTime::currentMSecsSinceEpoch() - st;
-				// printf("ogl: %i ms\n", (int)el);
 
 			publish:
 				completedFrameId.store(clip.frameId, std::memory_order_release);
@@ -2226,7 +2227,7 @@ void QThreadOpenGLWidget::stopRendering()
 void QThreadOpenGLWidget::drawFunction(const std::function<void(QPainter*)>& fun)
 {
 	init();
-	if(auto * window = d_data->window.data()) // Not necessary, but resolve compilation warning on some gcc versions
+	if (auto* window = d_data->window.data()) // Not necessary, but resolve compilation warning on some gcc versions
 		window->emplaceBack(CommandBatch::DrawFunction, fun);
 }
 
@@ -2617,7 +2618,7 @@ bool QOpenGLItem::drawThroughCache(QPainter* painter, const QStyleOptionGraphics
 	}
 
 	// Send the picture to the rendering pipeline
-	if(auto * window = ogl->d_data->window.data()){ 
+	if (auto* window = ogl->d_data->window.data()) {
 		if (!window->trueEngine.discard(d_data->picture))
 			window->emplaceBack(CommandBatch::DrawRecord, d_data->picture);
 	}

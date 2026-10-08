@@ -109,6 +109,7 @@ namespace Vip
 					return true;
 				}
 			}
+
 		};
 	}
 
@@ -264,6 +265,7 @@ void VipDisplayObject::apply()
 				if (!done)
 					processEvents();
 			}
+			
 		}
 	}
 	else {

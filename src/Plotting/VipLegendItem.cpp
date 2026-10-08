@@ -472,8 +472,8 @@ public:
 	CheckState checkState;
 	bool drawCheckbox;
 
-	QSizeF minSymbolSize;
-	QSizeF maxSymbolSize;
+	QSizeF minSymbolSize = QSize(0,0);
+	QSizeF maxSymbolSize = QSize(20,20);
 };
 
 VipLegend::VipLegend(QGraphicsItem* parent)

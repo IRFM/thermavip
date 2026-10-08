@@ -304,7 +304,7 @@ public:
 	/// @brief Remove previously set function
 	void resetFunction();
 
-	const QList<VipPointVector>& vectors() const noexcept;
+	const QList<VipPointVector> vectors() const noexcept;
 
 	/// @brief Reimplemented from VipPlotItem
 	virtual QPainterPath shapeFromCoordinateSystem(const VipCoordinateSystemPtr& m) const;
