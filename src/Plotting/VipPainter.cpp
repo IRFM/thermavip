@@ -1343,24 +1343,22 @@ void VipPainter::drawColorBar(QPainter* painter,
 
 		uint* pix = (uint*)pixmap->bits();
 		int width = pixmap->width();
+		QRgb prev = 0;
 		for (int y = devRect.top(); y <= devRect.bottom(); y++) {
 			const double value = sMap.invTransform(y);
 
 			QRgb color = colorMap.format() == VipColorMap::RGB ? colorMap.rgb(interval, value) : colorTable[colorMap.colorIndex(interval, value)];
 
-			if (adjust) {
+			if (color == 0)
+				color = prev;
+			else
+				prev = color;
+
+			if (adjust) 
 				color = (adjust(color));
-			}
 
 			int yp = y - devRect.top();
 			std::fill_n(pix + yp * width, width, color);
-			/* if (colorMap.format() == VipColorMap::RGB)
-			    c.setRgba( colorMap.rgb( interval, value ) );
-			else
-			    c = colorTable[colorMap.colorIndex( interval, value )];
-
-			pmPainter.setPen( c );
-			pmPainter.drawLine( devRect.left(), y, devRect.right(), y );*/
 		}
 	}
 

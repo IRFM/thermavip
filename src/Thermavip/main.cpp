@@ -206,7 +206,6 @@ static void vipRegisterFileAssociations()
 
 int main(int argc, char** argv)
 {
-	//TEST
 	//vip_log_detail::_vip_set_enable_debug(true);
 
 	{

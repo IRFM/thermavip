@@ -318,22 +318,51 @@ VIP_ALWAYS_INLINE float getPixel(T... vals)
 		return multiplyNotNan(vals...);
 }
 
-template<class Ar>
-void extractHistogram(const Ar& img, VipNDArrayType<float>& tmp, int strength, const VipInterval& interval, VipIntervalSampleVector& out, int* indexes, int max_index)
+constexpr int colormap_numcolors = 1024;
+
+/// @brief Minimal static size hash map used to count unique pixel values
+class StaticIntegerPixelCount
 {
-	const int numcolors = 1024;
+	int d_values[256] = { 0 };
+	bool d_valid[256] = { 0 };
+	int d_size = 0;
 
-	if (img.shapeCount() != 2) {
-		if (vipEval(tmp, img))
-			vipExtractHistogram(tmp, out, numcolors, Vip::SameBinHeight, interval, indexes, 2, 1, max_index, 0, -(4 - (strength - 1)));
-		return;
+public:
+	StaticIntegerPixelCount() noexcept { memset(d_valid, 0, sizeof(d_valid)); }
+
+	VIP_ALWAYS_INLINE int size() const noexcept { return d_size; }
+
+	VIP_ALWAYS_INLINE bool insert(int val) 
+	{
+		if (VIP_UNLIKELY(d_size == 255))
+			return false;
+		auto h = vipHashValue(val);
+		size_t slot = h & 255;
+		size_t step = 1;
+		for (;;) {
+			if (!d_valid[slot]) {
+				d_valid[slot] = true;
+				d_values[slot] = val;
+				++d_size;
+				return true;
+			}
+			if (d_values[slot] == val)
+				return false;
+			slot = (slot + step) & 255;
+			++step;
+		}
+		VIP_UNREACHABLE();
 	}
+};
 
-	// For image only: use a kind of pseudo gaussian filter to add some diversity to the histogram
+template<class Ar>
+void extractHistogramImageInternal(const Ar& img, VipNDArrayType<float>& tmp, int strength, const VipInterval& interval, VipIntervalSampleVector& out, int* indexes, int max_index)
+{
+	const int numcolors = colormap_numcolors;
 
 	float* _out = tmp.ptr();
-	qsizetype w = img.shape(1);
-	qsizetype h = img.shape(0);
+	qsizetype w = img.shape()[1];
+	qsizetype h = img.shape()[0];
 	qsizetype size = w * h;
 
 	if (strength == 1) {
@@ -397,8 +426,59 @@ void extractHistogram(const Ar& img, VipNDArrayType<float>& tmp, int strength, c
 			_out[y * w + w - 1] = (float)img(vipVector(y, w - 1));
 		}
 	}
+	int slope = -(4 - (strength - 1));
+	vipExtractHistogram(tmp, out, numcolors, Vip::SameBinHeight, interval, indexes, 2, 1, max_index, 0, slope);
+}
 
-	vipExtractHistogram(tmp, out, numcolors, Vip::SameBinHeight, interval, indexes, 2, 1, max_index, 0, -(4 - (strength - 1)));
+template<class Ar>
+void extractHistogram(const Ar& img, VipNDArrayType<float>& tmp, int strength, const VipInterval& interval, VipIntervalSampleVector& out, int* indexes, int max_index)
+{
+	const int numcolors = colormap_numcolors;
+
+	if (img.shapeCount() != 2) {
+		if (vipEval(tmp, img)) {
+			int slope = -(4 - (strength - 1));
+			vipExtractHistogram(tmp, out, numcolors, Vip::SameBinHeight, interval, indexes, 2, 1, max_index, 0, slope);
+		}
+		return;
+	}
+
+	// For image only: use a kind of pseudo gaussian filter to add some diversity to the histogram
+
+	float* _out = tmp.ptr();
+	qsizetype w = img.shape(1);
+	qsizetype h = img.shape(0);
+	qsizetype size = w * h;
+
+	using value_type = typename Ar::value_type;
+
+	if (std::is_floating_point_v<value_type> && strength != 5) {
+
+		// Check bounds
+		if (interval.maxValue() < (double)std::numeric_limits<int>::max() && interval.minValue() > (double)std::numeric_limits<int>::min()) {
+
+			// There are no values outside of bounds, now check the diversity of values.
+			// With sufficient diversity (more than 50 different values), we can cast to integer first
+			// in order to reduce this diversity, and rely on pixel interpolation to create 'fake' diversity.
+			// This method produces better visual image quality than a true histogram equalization.
+			StaticIntegerPixelCount values;
+			bool convert_to_integer = false;
+			for (qsizetype y = 0; y < h; ++y) {
+				for (qsizetype x = 0; x < w; ++x) {
+					int v = static_cast<int>(img(vipVector(y, x)));
+					if(values.insert(v) && values.size() > 50){
+						convert_to_integer = true;
+						goto convert;
+					}
+				}
+			}
+		convert:
+			if (convert_to_integer)
+				return extractHistogramImageInternal(vipCast<int>(img), tmp, strength, interval, out, indexes, max_index);
+		}
+	}
+
+	return extractHistogramImageInternal(img, tmp, strength, interval, out, indexes, max_index);
 }
 
 // TEST
@@ -417,7 +497,6 @@ public:
 		std::vector<QRgb> renderColors;
 		int renderColorsCount;
 
-		
 		QRgb rgbFlatHistogram(const VipLinearColorMap* map, const VipInterval& interval, double value) const
 		{
 			// Handle NaN values
@@ -450,7 +529,7 @@ public:
 
 			return renderColors[index];
 		}
-		QRgb rgb(const VipLinearColorMap * map, const VipInterval& interval, double value) const
+		QRgb rgb(const VipLinearColorMap* map, const VipInterval& interval, double value) const
 		{
 			if (map->d_data->useFlatHistogram && histogram.size() && !renderColors.empty())
 				return rgbFlatHistogram(map, interval, value);
@@ -519,7 +598,6 @@ public:
 				if (this->tmpArray.shape() != array.shape())
 					this->tmpArray.reset(array.shape());
 				extractHistogram(array, this->tmpArray, this->flatHistogramStrength, interval, this->histogram, this->indexes.data(), max_index);
-
 			}
 		}
 	}
@@ -715,7 +793,6 @@ void VipLinearColorMap::dirtyColorMap()
 	d_data->rgb.reset();
 }
 
-
 void VipLinearColorMap::setColorRenderCount(int num_colors)
 {
 	UniqueLock guard(d_data->histLock);
@@ -822,7 +899,6 @@ QRgb VipLinearColorMap::rgb(const VipInterval& interval, double value) const
 			return qRgba(0, 0, 0, 0);
 	}
 	return rgb->rgb(this, interval, value);
-
 }
 
 void VipLinearColorMap::applyColorMap(const VipInterval& interval, const VipNDArray& ar, QRgb* out) const

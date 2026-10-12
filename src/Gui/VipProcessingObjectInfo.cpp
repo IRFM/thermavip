@@ -561,6 +561,7 @@ void VipExtractHistogramInfos::apply()
 			}
 			double avg = sum / pt.size();
 
+			map.append(name + "/Samples", pt.size());
 			map.append(name + "/Sum value", sum);
 			map.append(name + "/Maximum value", max);
 			map.append(name + "/Minimum value", min);
