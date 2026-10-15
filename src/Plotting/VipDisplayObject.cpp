@@ -254,7 +254,6 @@ void VipDisplayObject::apply()
 			else
 				QMetaObject::invokeMethod(this, "display", Qt::QueuedConnection, Q_ARG(VipAnyDataList, buffer));
 
-			/* guard.unlock();
 
 			// Wait for the display to end while processing events from the main event loop.
 			// This ensures that, whatever the display rate, the GUI remains responsive.
@@ -273,9 +272,8 @@ void VipDisplayObject::apply()
 					processEvents();
 			}
 
-			guard.lock();
 			if (d_data->isDestruct)
-				return;*/
+				return;
 		}
 	}
 	else {
