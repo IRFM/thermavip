@@ -29,6 +29,11 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#if _MSC_VER
+#include "Windows.h"
+#include "processthreadsapi.h"
+#endif
+
 #include "VipLock.h"
 
 static std::uint64_t generate_thread_id() noexcept
@@ -39,6 +44,10 @@ static std::uint64_t generate_thread_id() noexcept
 
 std::uint64_t VipRecursiveSpinlock::thread_id() const noexcept
 {
+	#if _MSC_VER
+	return GetCurrentThreadId();
+	#else
 	thread_local std::uint64_t th_id = generate_thread_id();
 	return th_id;
+	#endif
 }

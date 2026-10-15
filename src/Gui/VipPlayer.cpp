@@ -479,6 +479,23 @@ bool VipAbstractPlayer::inDestructor() const
 	return d_data->inDestructor;
 }
 
+void VipAbstractPlayer::aboutToDestroy()
+{
+	auto displays = this->displayObjects();
+	if (auto* pool = this->processingPool()) {
+		// Stop the processing pool
+		pool->stop();
+		pool->setStreamingEnabled(false);
+
+		// Disable all display objects
+		for (auto* d : displays) {
+
+			d->setEnabled(false);
+			d->wait();
+		}
+	}
+}
+
 void VipAbstractPlayer::setAutomaticWindowTitle(bool enable)
 {
 	d_data->automaticWindowTitle = enable;
@@ -846,6 +863,7 @@ VipPlayer2D::VipPlayer2D(QWidget* parent)
 
 VipPlayer2D::~VipPlayer2D()
 {
+	aboutToDestroy();
 	VipPlayerLifeTime::emitDestroyed(this);
 }
 
@@ -2478,6 +2496,7 @@ VipVideoPlayer::VipVideoPlayer(VipImageWidget2D* img, QWidget* parent)
 
 VipVideoPlayer::~VipVideoPlayer()
 {
+	aboutToDestroy();
 	d_data->timer.stop();
 	QCoreApplication::instance()->removePostedEvents(this, QEvent::MetaCall);
 	VipPlayerLifeTime::emitDestroyed(this);
@@ -5815,6 +5834,7 @@ VipPlotPlayer::VipPlotPlayer(VipAbstractPlotWidget2D* viewer, QWidget* parent)
 
 VipPlotPlayer::~VipPlotPlayer()
 {
+	aboutToDestroy();
 	d_data->aboutToClose = true;
 	QCoreApplication::instance()->removePostedEvents(this, QEvent::MetaCall);
 	// disconnect this signal as it could be sent longer after the player is destroyed

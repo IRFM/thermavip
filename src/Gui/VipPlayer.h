@@ -234,6 +234,11 @@ protected:
 
 	bool inDestructor() const;
 
+	// This member should be called at the beginning of derived classes destructor.
+	// It stop the processing pool and disable display objects
+	// to prevent crashes when closing a player while playing/streaming is on.
+	void aboutToDestroy();
+
 Q_SIGNALS:
 	void renderStarted(const VipRenderState&);
 	void renderEnded(const VipRenderState&);

@@ -527,6 +527,7 @@ public:
 	double gamma = 1.;
 	bool correctionsEnabled = true;
 
+
 	bool applyCorrections() const noexcept
 	{
 		if (!correctionsEnabled)
@@ -560,7 +561,9 @@ VipPlotRasterData::VipPlotRasterData(const VipText& title)
 	this->setSelectedPen(Qt::NoPen);
 }
 
-VipPlotRasterData::~VipPlotRasterData() {}
+VipPlotRasterData::~VipPlotRasterData()
+{
+}
 
 bool VipPlotRasterData::setItemProperty(const char* name, const QVariant& value, const QByteArray& index)
 {
@@ -821,6 +824,10 @@ void VipPlotRasterData::draw(QPainter* painter, const VipCoordinateSystemPtr& m)
 						painter->setRenderHint(QPainter::SmoothPixmapTransform, renderHints() & QPainter::Antialiasing);
 						drawBackground(raster, painter, m, precomputed.arrayRect, precomputed.dstPolygon);
 						VipPainter::drawImage(painter, precomputed.dstPolygon, precomputed.image, precomputed.srcImageRect);
+
+						rect = precomputed.arrayRect;
+						dst = precomputed.dstPolygon;
+						d_data->imageData = precomputed;
 						goto finish;
 					}
 				}

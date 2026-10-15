@@ -109,7 +109,6 @@ namespace Vip
 					return true;
 				}
 			}
-
 		};
 	}
 
@@ -153,7 +152,13 @@ public:
 	// std::condition_variable_any cond;
 	std::mutex lock;
 	std::condition_variable cond;
+
 };
+
+void VipDisplayObject::setDestroyed()
+{
+	d_data->isDestruct = true;
+}
 
 VipDisplayObject::VipDisplayObject(QObject* parent)
   : VipProcessingObject(parent)
@@ -167,7 +172,7 @@ VipDisplayObject::VipDisplayObject(QObject* parent)
 
 VipDisplayObject::~VipDisplayObject()
 {
-	d_data->isDestruct = true;
+	setDestroyed();
 	if (inputAt(0)->connection()->source()) {
 		inputAt(0)->setEnabled(false);
 		this->clearInputBuffers();
@@ -207,6 +212,7 @@ static void processEvents()
 
 void VipDisplayObject::apply()
 {
+
 	if (d_data->isDestruct)
 		return;
 
@@ -248,7 +254,8 @@ void VipDisplayObject::apply()
 			else
 				QMetaObject::invokeMethod(this, "display", Qt::QueuedConnection, Q_ARG(VipAnyDataList, buffer));
 
-			
+			/* guard.unlock();
+
 			// Wait for the display to end while processing events from the main event loop.
 			// This ensures that, whatever the display rate, the GUI remains responsive.
 			if (notifier) {
@@ -265,7 +272,10 @@ void VipDisplayObject::apply()
 				if (!done)
 					processEvents();
 			}
-			
+
+			guard.lock();
+			if (d_data->isDestruct)
+				return;*/
 		}
 	}
 	else {
@@ -420,6 +430,7 @@ VipPlotItem* VipDisplayPlotItem::item() const
 	if (found) {
 		// First access to the item: initialize
 		QMetaObject::invokeMethod(const_cast<VipDisplayPlotItem*>(this), "setItemProperty", Qt::AutoConnection);
+		connect(item, SIGNAL(destroyed(QObject*)), this, SLOT(setDestroyed()));
 		connect(item, SIGNAL(destroyed(QObject*)), this, SLOT(deleteLater()));
 		connect(item, SIGNAL(axesChanged(VipPlotItem*)), this, SLOT(axesChanged(VipPlotItem*)));
 		const_cast<VipDisplayPlotItem*>(this)->axesChanged(item);
@@ -477,6 +488,7 @@ VipPlotItem* VipDisplayPlotItem::takeItem()
 {
 	if (VipPlotItem* it = this->item()) {
 		disconnect(it, SIGNAL(destroyed(VipPlotItem*)), this, SLOT(disable()));
+		disconnect(it, SIGNAL(destroyed(QObject*)), this, SLOT(setDestroyed()));
 		disconnect(it, SIGNAL(destroyed(QObject*)), this, SLOT(deleteLater()));
 		disconnect(it, SIGNAL(axesChanged(VipPlotItem*)), this, SLOT(axesChanged(VipPlotItem*)));
 		it->setProperty("VipDisplayObject", QVariant());
@@ -491,6 +503,7 @@ void VipDisplayPlotItem::setItem(VipPlotItem* item)
 
 	if (VipPlotItem* it = this->item()) {
 		disconnect(it, SIGNAL(destroyed(VipPlotItem*)), this, SLOT(disable()));
+		disconnect(it, SIGNAL(destroyed(QObject*)), this, SLOT(setDestroyed()));
 		disconnect(it, SIGNAL(destroyed(QObject*)), this, SLOT(deleteLater()));
 		disconnect(it, SIGNAL(axesChanged(VipPlotItem*)), this, SLOT(axesChanged(VipPlotItem*)));
 		delete it;
@@ -500,6 +513,7 @@ void VipDisplayPlotItem::setItem(VipPlotItem* item)
 	if (item) {
 		item->setProperty("VipDisplayObject", QVariant::fromValue(this));
 		connect(item, SIGNAL(destroyed(VipPlotItem*)), this, SLOT(disable()), Qt::DirectConnection);
+		connect(item, SIGNAL(destroyed(QObject*)), this, SLOT(setDestroyed()));
 		connect(item, SIGNAL(destroyed(QObject*)), this, SLOT(deleteLater()));
 		connect(item, SIGNAL(axesChanged(VipPlotItem*)), this, SLOT(axesChanged(VipPlotItem*)));
 
@@ -856,7 +870,6 @@ void VipDisplayCurve::displayData(const VipAnyDataList& lst)
 				curve->setTitle(attrs["Name"].toString());
 		}
 	}
-
 }
 
 VipDisplaySceneModel::VipDisplaySceneModel(QObject* parent)
@@ -972,7 +985,7 @@ bool VipDisplayImage::acceptInput(int, const QVariant& v) const
 
 QSize VipDisplayImage::sizeHint() const
 {
-	if (VipPlotSpectrogram* curve = item()) 
+	if (VipPlotSpectrogram* curve = item())
 		return curve->rawData().boundingRect().size().toSize();
 	else
 		return QSize();

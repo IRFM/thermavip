@@ -138,9 +138,10 @@ Q_SIGNALS:
 private Q_SLOTS:
 	void display(const VipAnyDataList&);
 	
+protected Q_SLOTS:
+	void setDestroyed();
 
 private:
-	
 	VIP_DECLARE_PRIVATE_DATA();
 };
 
