@@ -215,6 +215,7 @@ static int registerCurveKeyWords()
 		keywords["symbol-background"] = VipParserPtr(new ColorParser());
 		keywords["baseline"] = VipParserPtr(new DoubleParser());
 		keywords["symbol-condition"] = VipParserPtr(new TextParser());
+		keywords["symbol-visible"] = VipParserPtr(new BoolParser());
 
 		keywords["optimize-large-pen-drawing"] = VipParserPtr(new BoolParser());
 
