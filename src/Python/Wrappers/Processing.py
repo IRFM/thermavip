@@ -1,6 +1,6 @@
 import numpy as np
 from collections import UserList
-from enum import Enum
+from enum import IntEnum
 
 VipInvalidTime = -np.iinfo(np.int64).max
 VipInvalidPosition = VipInvalidTime
@@ -202,6 +202,13 @@ class VipBaseProcessingIO:
     def deleter(self, fdel):
         return type(self)()
     
+    def get_io_list(self, owner, name):
+        try:
+            return owner.__dict__[name]
+        except:
+            owner.__dict__[name] = []
+            return owner.__dict__[name]
+    
     
 class VipBaseProcessingMultiIO(VipBaseProcessingIO):
     """
@@ -235,6 +242,10 @@ class VipInput(VipBaseProcessingIO):
         super().__init__( description,editor)
 
     def __set_name__(self, owner, name):
+        try:
+            owner._all_inputs
+        except:
+            owner._all_inputs = []
         owner._all_inputs.append(VipIODescription(name, self.description, self.editor))
         self.__name__ = name
         
@@ -247,6 +258,11 @@ class VipMultiInput(VipBaseProcessingMultiIO):
         super().__init__( description,editor)
 
     def __set_name__(self, owner, name):
+        try:
+            owner._all_multi_inputs
+        except:
+            owner._all_multi_inputs = []
+        print(owner, owner._all_multi_inputs)
         owner._all_multi_inputs.append(VipIODescription(name, self.description, self.editor))
         self.__name__ = name
         
@@ -259,6 +275,10 @@ class VipProperty(VipBaseProcessingIO):
         super().__init__( description, editor)
 
     def __set_name__(self, owner, name):
+        try:
+            owner._all_properties
+        except:
+            owner._all_properties = []
         owner._all_properties.append(VipIODescription(name, self.description, self.editor))
         self.__name__ = name
 
@@ -270,6 +290,10 @@ class VipMultiProperty(VipBaseProcessingMultiIO):
         super().__init__( description,editor)
 
     def __set_name__(self, owner, name):
+        try:
+            owner._all_multi_properties
+        except:
+            owner._all_multi_properties = []
         owner._all_multi_properties.append(VipIODescription(name, self.description, self.editor))
         self.__name__ = name
 
@@ -281,6 +305,10 @@ class VipOutput(VipBaseProcessingIO):
         super().__init__( description,editor)
 
     def __set_name__(self, owner, name):
+        try:
+            owner._all_outputs
+        except:
+            owner._all_outputs = []
         owner._all_outputs.append(VipIODescription(name, self.description, self.editor))
         self.__name__ = name
 
@@ -292,10 +320,14 @@ class VipMultiOutput(VipBaseProcessingMultiIO):
         super().__init__( description,editor)
 
     def __set_name__(self, owner, name):
+        try:
+            owner._all_multi_outputs
+        except:
+            owner._all_multi_outputs = []
         owner._all_multi_outputs.append(VipIODescription(name, self.description, self.editor))
         self.__name__ = name
  
-class VipDisplayHint(Enum):
+class VipDisplayHint(IntEnum):
     # The processing transform its unique input and returns an output of the same type and shape.
     # The processing output can replace the input for display.
     # This kind of processing should have only 1 input and 1 output.
@@ -319,21 +351,12 @@ class VipProcessingObject:
     within the class available inputs, outputs...
     
     Dervied class must define its own inputs/outputs/properties, and can override the following members:
-        - update(): apply the algorithm based on provided inputs/properties, and update potential outputs.
+        - apply(): apply the algorithm based on provided inputs/properties, and update potential outputs.
         - reset(): reset the processing parameter(s).
         - editor(): returns a Qt based editor widget used to edit this processing parameters.
         - display_hint(): returns the processing display hint
     """
     
-    ############################################################################
-    # Internal static variables describing all inputs/outputs/properties
-    ############################################################################
-    _all_inputs = []
-    _all_multi_inputs = []
-    _all_outputs = []
-    _all_multi_outputs = []
-    _all_properties = []
-    _all_multi_properties = []
     
     ######################################
     # Static description of the processing
@@ -342,6 +365,10 @@ class VipProcessingObject:
     category = str()
     use_event_loop = False
     display_hint = VipDisplayHint.UnknownDisplayHint
+    
+    @classmethod
+    def get_display_hint(cls):
+        return int(cls.display_hint)
     
     
     ######################################
@@ -363,8 +390,25 @@ class VipProcessingObject:
     
     def __init__(self):
         pass
+    
+    def get_io(self, name):
+        """
+        Returns input/output/property with given name
+
+        Parameters
+        ----------
+        name : str
+            IO name.
+
+        Returns
+        -------
+        VipAnyData or VipAnyDataList
+            Corresponding input(s)/property(ies)/output(s).
+
+        """
+        return self.__attribute(name)
         
-    def update(self):
+    def apply(self):
         """
         Processing algorithm implementation.
         Should throw on error.
@@ -430,13 +474,15 @@ class Processing(VipProcessingObject):
     @VipMultiInput
     def custom_input(self): pass
     
-print("start:", Processing._all_inputs)    
-a = Processing()
-print(a._all_inputs)
-print(a.input)
-a.input = VipAnyData(3, time=0)
-print(a.input)
-print(a.custom_input[0])
-a.custom_input.append(41.2)
-print(a.custom_input[1])
+# =============================================================================
+# print("start:", Processing._all_inputs)    
+# a = Processing()
+# print(a._all_inputs)
+# print(a.input)
+# a.input = VipAnyData(3, time=0)
+# print(a.input)
+# print(a.custom_input[0])
+# a.custom_input.append(41.2)
+# print(a.custom_input[1])
+# =============================================================================
 

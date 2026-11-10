@@ -204,6 +204,7 @@ static void vipRegisterFileAssociations()
 
 #endif
 
+
 int main(int argc, char** argv)
 {
 	//vip_log_detail::_vip_set_enable_debug(true);

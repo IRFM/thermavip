@@ -18,6 +18,7 @@ import io
 import pickle
 import struct
 import numpy as np
+from Wrappers import *
 
 
 # A pickle names the callable it wants rebuilt, so loading one from an untrusted
@@ -871,6 +872,21 @@ def open(path, player = 0, side = ""):
     Returns the ID of the player on which the path was opened. Throw an exception on error.
     """
     return call_thermavip_fun('open',(path,player,side))
+    
+def open_data(data, player = 0, side = ""):
+    """
+    Open given data(s) in a new or existing player.
+    
+    When called with one argument, the data is opened on a new player within the current workspace.
+    
+    If player is not 0, the data will be opened in an existing player with given ID.
+    
+    Optionally, you might specify a side to open the data around an existing player, and therefore
+    create a multiplayer. The side argument could be either 'left', 'right', 'top' or 'bottom'.
+    
+    Returns the ID of the player on which the data was opened. Throw an exception on error.
+    """
+    return call_thermavip_fun('open_data',(data,player,side))
 
 
 def close(player):
@@ -1503,3 +1519,12 @@ def current_pulse():
     Returns the current selected pulse number
     """
     return call_thermavip_fun('getCurrentPulse')
+    
+def register_processing(proc_type):
+    """
+    Register a processing class inheriting VipProcessingObject
+    """
+    
+    if not VipProcessingObject in inspect.getmro(proc_type):
+        raise RuntimeError("Invalid processing type")
+    return call_thermavip_fun('register_processing', (proc_type,))

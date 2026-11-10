@@ -234,4 +234,37 @@ class VipArchive;
 VipArchive& operator<<(VipArchive&, VipPyProcessing*);
 VipArchive& operator>>(VipArchive&, VipPyProcessing*);
 
+
+
+/// @brief Processing class wrapping a Python VipProcessingObject object
+///
+class VIP_CORE_EXPORT VipPyWrapperProcessing : public VipProcessingObject
+{
+	Q_OBJECT
+
+public:
+	VipPyWrapperProcessing(QObject* parent = nullptr);
+	~VipPyWrapperProcessing();
+
+	virtual VipProcessingObject::DisplayHint displayHint() const;
+	virtual Info info() const;
+	virtual bool useEventLoop() const;
+	virtual void copyParameters(VipProcessingObject* dst);
+
+	/// @brief Initialize from a VipPyObjectPtr containing the processing class
+	virtual QVariant initializeProcessing(const QVariant& value);
+
+protected:
+	virtual void apply();
+	virtual void resetProcessing();
+
+private:
+	void addCustomIOFromPython(const VipPyObject& obj, QStringList& names, VipProcessingIO::Type type);
+	void setLastError();
+	VIP_DECLARE_PRIVATE_DATA();
+};
+
+VIP_CORE_EXPORT bool vipRegisterPythonProcessingObject(const VipPyObject& processing_type);
+
+
 #endif

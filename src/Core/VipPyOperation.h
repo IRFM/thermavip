@@ -59,16 +59,22 @@ typedef QVariant (*python_to_variant)(void*);
 /// @brief QVariant to PyObject* converter function type
 typedef void* (*variant_to_python)(const QVariant& v);
 
+/// @brief Initialize the Python embedded interpreter.
+/// This can be called any number of times.
+/// It is automatically called when creating a local interpreter (VipPyLocal).
+VIP_CORE_EXPORT void vipPythonInitialize();
+
 /// @brief Register a new PyObject* to QVariant converter function
 VIP_CORE_EXPORT void vipRegisterToVariantConverter(python_to_variant);
 /// @brief Register a new QVariant to PyObject* converter function
 VIP_CORE_EXPORT void vipRegisterToPythonConverter(variant_to_python);
 /// @brief  Convert a PyObject* to QVariant based on registered converters.
 /// Default converter manages numeric, complex, string, byte and numpy array objects.
+/// If allowVipPyObject is true, unconvertible objects are instead returned as a VipPyObjectPtr.
 /// The GIL must be held.
-VIP_CORE_EXPORT QVariant vipPythonToVariant(void*);
+VIP_CORE_EXPORT QVariant vipPythonToVariant(const void*, bool allowVipPyObject = false);
 /// @brief Convert a QVariant to a PyObject*  based on registered converters.
-/// Default converter manages numeric, complex, string, byte and numpy array objects.
+/// Default converter manages numeric, complex, string, byte, VTK objects and numpy array objects.
 /// The GIL must be held.
 VIP_CORE_EXPORT void* vipVariantToPython(const QVariant&);
 /// @brief Convert numpy type to Qt meta type id
@@ -78,7 +84,7 @@ VIP_CORE_EXPORT int vipQtToNumpy(int);
 /// @brief Convert numpy_array to VipNDArray. The GIL must be held.
 VIP_CORE_EXPORT VipNDArray vipFromNumpyArray(void* numpy_array);
 /// @brief Convert any Python object to string. The GIL must be held.
-VIP_CORE_EXPORT QString vipFromPyString(void* obj);
+VIP_CORE_EXPORT QString vipFromPyString(const void* obj);
 /// @brief Current thread Id
 VIP_CORE_EXPORT quint64 vipPyThreadId();
 
@@ -112,6 +118,10 @@ struct compute_error_t
 {
 };
 
+struct borrow_t
+{
+};
+
 /// @brief Class representing a Python exception traceback
 class VIP_CORE_EXPORT VipPyError
 {
@@ -141,9 +151,88 @@ public:
 	operator const void*() const noexcept { return isNull() ? nullptr : this; }
 
 	bool isNull() const noexcept;
-	void printDebug(std::ostream&);
+	void printDebug(std::ostream&) const;
+
+	QString toString() const;
+
+	/// @brief Clear Python set error
+	static void clear();
 };
 Q_DECLARE_METATYPE(VipPyError)
+
+
+/// @brief Minimal PyObject wrapper.
+///
+/// Function members NEVER lock the GIL (i.e. the GIL must be held for every member call,
+/// including copy construction or copy assignment).
+/// 
+/// Note however that the destructor DOES grab the GIL.
+/// 
+class VIP_CORE_EXPORT VipPyObject
+{
+	void* pyobject = nullptr;
+
+public:
+	VipPyObject(void* pyobject = nullptr) noexcept;
+	VipPyObject(void* pyobject, borrow_t) noexcept;
+	~VipPyObject() noexcept;
+
+	VipPyObject(const VipPyObject&) noexcept;
+	VipPyObject& operator=(const VipPyObject&) noexcept;
+
+	VipPyObject(VipPyObject&&) noexcept;
+	VipPyObject& operator=(VipPyObject&&) noexcept;
+
+	/// @brief Returns the underlying Python object
+	const void* pyObject() const noexcept { return pyobject; }
+
+	bool isNull() const noexcept { return pyobject == nullptr; }
+	bool isValid() const noexcept { return !isNull(); }
+	explicit operator bool() const noexcept { return isValid(); }
+
+	bool isType() const noexcept;
+	bool isOfType(const VipPyObject& type) const noexcept;
+
+	/// @brief Returns the object type
+	VipPyObject type() const noexcept;
+
+	/// @brief Returns the object class name
+	QString typeName() const;
+
+	/// @brief Returns the class __doc__ string
+	QString doc() const;
+	/// @brief Returns a string representation of the object
+	QString str() const;
+	/// @brief Convert to variant.
+	/// @return Empty variant on failure.
+	QVariant toVariant() const;
+
+	qsizetype length() const noexcept;
+
+	VipPyObject at(qsizetype i) const noexcept;
+	VipPyObject at(const VipPyObject& key) const noexcept;
+
+	/// @brief Returns all member variables.
+	/// Does not work for builting types and returns an empy list.
+	QStringList members() const;
+
+	/// @brief Get/set/delete member variable
+	VipPyObject getMember(const char* name) const noexcept;
+	bool setMember(const char* name, const VipPyObject& value) noexcept;
+	bool delMember(const char* name) noexcept;
+
+
+	/// @brief Call a member function and return its result
+	VipPyObject callMember(const char* name, const QVariantList& args = {}, const QVariantMap& kwargs = {});
+
+	static VipPyObject eval(const QString& str);
+};
+
+// VipPyObject wrapped in a shared pointer, used to store a PyObject into a QVariant.
+using VipPyObjectPtr = QSharedPointer<VipPyObject>;
+Q_DECLARE_METATYPE(VipPyObjectPtr)
+
+
 
 /// @brief Command type executed by a VipPyIOOperation.
 ///

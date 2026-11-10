@@ -46,7 +46,6 @@
 // #pragma clang diagnostic pop
 #endif
 
-
 // undef _DEBUG or pyconfig.h will automatically try to link to python34_d.lib
 #undef _DEBUG
 extern "C" {
@@ -266,9 +265,36 @@ void vipRegisterToPythonConverter(variant_to_python fun)
 	getToPython().push_back(fun);
 }
 
-QVariant vipPythonToVariant(void* pyobject)
+static bool& doesAllowVipPyObject()
+{
+	thread_local bool allow = false;
+	return allow;
+}
+
+struct AllowVipPyObject
+{
+	static int& recursCount() noexcept
+	{
+		thread_local int recurs = 0;
+		return recurs;
+	}
+	AllowVipPyObject(bool allow) noexcept
+	{
+		if (++recursCount() == 1)
+			doesAllowVipPyObject() = allow;
+	}
+	~AllowVipPyObject() noexcept
+	{
+		if (--recursCount() == 0)
+			doesAllowVipPyObject() = false;
+	}
+};
+
+QVariant vipPythonToVariant(const void* pyobject, bool allowVipPyObject)
 {
 	try {
+
+		AllowVipPyObject allow(allowVipPyObject);
 
 		if (!pyobject)
 			return QVariant();
@@ -276,10 +302,13 @@ QVariant vipPythonToVariant(void* pyobject)
 			return QVariant();
 
 		for (int i = 0; i < getToVariant().size(); ++i) {
-			QVariant tmp = getToVariant()[i](pyobject);
+			QVariant tmp = getToVariant()[i]((PyObject*)pyobject);
 			if (!tmp.isNull())
 				return tmp;
 		}
+
+		if (allowVipPyObject)
+			return QVariant::fromValue(VipPyObjectPtr(new VipPyObject((void*)pyobject)));
 	}
 	catch (const std::exception& e) {
 		return QVariant::fromValue(VipErrorData(e.what()));
@@ -298,6 +327,16 @@ void* vipVariantToPython(const QVariant& variant)
 			Py_RETURN_NONE;
 		}
 
+		if (variant.userType() == qMetaTypeId<VipPyObjectPtr>()) {
+			VipPyObjectPtr ptr = variant.value<VipPyObjectPtr>();
+			if (!ptr) {
+				Py_RETURN_NONE;
+			}
+			PyObject* obj = (PyObject*)ptr->pyObject();
+			Py_INCREF(obj);
+			return obj;
+		}
+
 		for (int i = 0; i < getToPython().size(); ++i) {
 			void* tmp = getToPython()[i](variant);
 			if (tmp)
@@ -308,6 +347,21 @@ void* vipVariantToPython(const QVariant& variant)
 	}
 	Py_RETURN_NONE;
 }
+
+#ifdef VIP_WITH_VTK
+#include "vtkObject.h"
+#include "VipVTKObject.h"
+struct PyVTKObject
+{
+	PyObject_HEAD PyObject* vtk_dict; // each object has its own dict
+	PyObject* vtk_weakreflist;	  // list of weak references via python
+	void* vtk_class;		  // information about the class
+	vtkObjectBase* vtk_ptr;		  // pointer to the C++ object
+	Py_ssize_t* vtk_buffer;		  // ndims, shape, strides for Py_buffer
+	unsigned long* vtk_observers;	  // used to find our observers
+	unsigned int vtk_flags;		  // flags (see list above)
+};
+#endif
 
 static QVariant stdToVariant(void* pyobject)
 {
@@ -372,7 +426,7 @@ static QVariant stdToVariant(void* pyobject)
 		QVariantList tmp;
 		for (int i = 0; i < len; ++i) {
 			PyObject* obj = PyList_GetItem(res_object, i);
-			tmp.append(vipPythonToVariant(obj));
+			tmp.append(vipPythonToVariant(obj, doesAllowVipPyObject()));
 		}
 		res = QVariant::fromValue(tmp);
 	}
@@ -381,7 +435,7 @@ static QVariant stdToVariant(void* pyobject)
 		QVariantList tmp;
 		for (int i = 0; i < len; ++i) {
 			PyObject* obj = PyTuple_GetItem(res_object, i);
-			tmp.append(vipPythonToVariant(obj));
+			tmp.append(vipPythonToVariant(obj, doesAllowVipPyObject()));
 		}
 		res = QVariant::fromValue(tmp);
 	}
@@ -393,8 +447,8 @@ static QVariant stdToVariant(void* pyobject)
 		while (PyDict_Next(res_object, &pos, &key, &value)) {
 			/* do something interesting with the values... */
 			if (key && value) {
-				QString k = vipPythonToVariant(key).toString();
-				QVariant v = vipPythonToVariant(value);
+				QString k = vipPythonToVariant(key, doesAllowVipPyObject()).toString();
+				QVariant v = vipPythonToVariant(value, doesAllowVipPyObject());
 				tmp[k] = v;
 			}
 		}
@@ -410,7 +464,37 @@ static QVariant stdToVariant(void* pyobject)
 		vip_double value = PyFloat_AsDouble(res_object);
 		res = QVariant::fromValue(value);
 	}
-	else {
+#ifdef VIP_WITH_VTK
+	else if (PyObject* obj = PyObject_GetAttrString(res_object, "__vtk__")) {
+		PyObject* arglist = Py_BuildValue("()");
+		PyObject* result = PyObject_Call(obj, arglist, nullptr);
+		Py_DECREF(arglist);
+		Py_DECREF(obj);
+		if (result) {
+			vtkObjectBase* ptr = ((PyVTKObject*)result)->vtk_ptr;
+			if (ptr->IsA("vtkDataObject")) {
+#ifdef NDEBUG
+				res = QVariant::fromValue(VipVTKObject(static_cast<vtkDataObject*>(ptr)));
+#else
+				res = QVariant::fromValue(VipVTKObject(static_cast<vtkDataObject*>(ptr)).copy());
+#endif
+			}
+			Py_DECREF(result);
+		}
+	}
+	else if (PyObject* obj = PyObject_GetAttrString(res_object, "__vtkname__")) {
+		vtkObjectBase* ptr = ((PyVTKObject*)res_object)->vtk_ptr;
+		if (ptr->IsA("vtkDataObject")) {
+#ifdef NDEBUG
+			res = QVariant::fromValue(VipVTKObject(static_cast<vtkDataObject*>(ptr)));
+#else
+			res = QVariant::fromValue(VipVTKObject(static_cast<vtkDataObject*>(ptr)).copy());
+#endif
+		}
+		Py_DECREF(obj);
+	}
+#endif
+	else if (PyIter_Check(res_object)) {
 		PyObject* new_object = PyArray_FromAny(res_object, nullptr, 0, 0, NPY_ARRAY_ENSUREARRAY | NPY_ARRAY_C_CONTIGUOUS, nullptr);
 		if (new_object) {
 			// res = QVariant::fromValue(PyNDArray(new_object).copy());
@@ -542,7 +626,7 @@ static void* stdToPython(const QVariant& obj)
 
 			if (info.isRGB() && info.shapeCount() == 2) {
 				// convert QImage to 3 dims array
-				npy_intp shape[20] = { info.shape(0),info.shape(1), 3 };
+				npy_intp shape[20] = { info.shape(0), info.shape(1), 3 };
 				std::vector<uchar> image(info.size() * 3);
 				const uint* pixels = (const uint*)info.constData();
 				for (int i = 0; i < info.size(); ++i) {
@@ -574,9 +658,10 @@ static void* stdToPython(const QVariant& obj)
 // Python traceback module
 static PyObject* __traceback = nullptr;
 
-QString vipFromPyString(PyObject* obj)
+QString vipFromPyString(const void* obj)
 {
-	if (PyObject* s = PyObject_Str(obj)) {
+	PyObject* o = (PyObject*)obj;
+	if (PyObject* s = PyObject_Str(o)) {
 		Py_ssize_t size;
 		wchar_t* fname = PyUnicode_AsWideCharString(s, &size);
 		QString res = QString::fromWCharArray(fname, size);
@@ -757,12 +842,244 @@ bool VipPyError::isNull() const noexcept
 	return traceback.isEmpty() && line == 0;
 }
 
-void VipPyError::printDebug(std::ostream& oss)
+void VipPyError::printDebug(std::ostream& oss) const
 {
 	oss << "filename: " << filename.toLatin1().data() << std::endl;
 	oss << "functionName: " << functionName.toLatin1().data() << std::endl;
 	oss << "line: " << line << std::endl;
 	oss << "traceback: \n" << traceback.toLatin1().data() << std::endl;
+}
+
+QString VipPyError::toString() const 
+{
+	if (isNull())
+		return {};
+	std::ostringstream oss;
+	printDebug(oss);
+	return oss.str().c_str();
+}
+
+void VipPyError::clear()
+{
+	PyErr_Clear();
+}
+
+VipPyObject::VipPyObject(void* obj) noexcept
+  : pyobject(obj)
+{
+	if (obj)
+		Py_INCREF(obj);
+}
+
+VipPyObject::VipPyObject(void* obj, borrow_t) noexcept
+  : pyobject(obj)
+{
+}
+VipPyObject::~VipPyObject() noexcept
+{
+	if (pyobject) {
+		VipGILLocker lock;
+		Py_DECREF(pyobject);
+	}
+}
+VipPyObject::VipPyObject(const VipPyObject& other) noexcept
+  : pyobject(other.pyobject)
+{
+	if (pyobject)
+		Py_INCREF(pyobject);
+}
+VipPyObject& VipPyObject::operator=(const VipPyObject& other) noexcept
+{
+	if (pyobject)
+		Py_DECREF(pyobject);
+	pyobject = (other.pyobject);
+	if (pyobject)
+		Py_INCREF(pyobject);
+	return *this;
+}
+
+VipPyObject::VipPyObject(VipPyObject&& other) noexcept
+  : pyobject(other.pyobject)
+{
+	other.pyobject = nullptr;
+}
+
+VipPyObject& VipPyObject::operator=(VipPyObject&& other) noexcept
+{
+	if (pyobject)
+		Py_DECREF(pyobject);
+	pyobject = (other.pyobject);
+	other.pyobject = nullptr;
+	return *this;
+}
+
+bool VipPyObject::isType() const noexcept
+{
+	if (pyobject)
+		return PyType_Check((PyObject*)pyobject);
+	return false;
+}
+
+bool VipPyObject::isOfType(const VipPyObject& type) const noexcept
+{
+	if (pyobject && type.pyobject && PyType_Check((PyObject*)type.pyobject))
+		return Py_IS_TYPE((PyObject*)pyobject, (PyTypeObject*)type.pyobject);
+	return false;
+}
+
+/// @brief Returns the object class Python object
+VipPyObject VipPyObject::type() const noexcept
+{
+	if (PyObject* obj = (PyObject*)pyobject)
+		return VipPyObject(Py_TYPE(obj));
+	return {};
+}
+
+/// @brief Returns the object class name
+QString VipPyObject::typeName() const
+{
+	VipPyObject t = type();
+	if (!t)
+		return {};
+	VipPyObject name(PyType_GetName((PyTypeObject*)t.pyobject), borrow_t{});
+	if (name)
+		return vipFromPyString(name.pyObject());
+	return {};
+}
+
+QString VipPyObject::doc() const
+{
+	auto d = getMember("__doc__");
+	if (!d)
+		return {};
+	return vipFromPyString(d.pyObject());
+}
+
+QString VipPyObject::str() const
+{
+	return vipFromPyString(pyObject());
+}
+
+QVariant VipPyObject::toVariant() const
+{
+	if (!pyobject)
+		return {};
+	return vipPythonToVariant(pyobject);
+}
+
+qsizetype VipPyObject::length() const noexcept
+{
+	if (!pyobject)
+		return 0;
+
+	auto ret = PyObject_Length((PyObject*)pyobject);
+	return ret >= 0 ? ret : 0;
+}
+
+VipPyObject VipPyObject::at(qsizetype i) const noexcept
+{
+	if (!pyobject)
+		return {};
+
+	VipPyObject key(PyLong_FromLongLong(i), borrow_t{});
+	return VipPyObject(PyObject_GetItem((PyObject*)pyobject, (PyObject*)key.pyObject()), borrow_t{});
+}
+
+VipPyObject VipPyObject::at(const VipPyObject& key) const noexcept
+{
+	if (!pyobject)
+		return {};
+	return VipPyObject(PyObject_GetItem((PyObject*)pyobject, (PyObject*)key.pyObject()), borrow_t{});
+}
+
+/// @brief Returns all keys from __dict__
+QStringList VipPyObject::members() const
+{
+	if (isNull())
+		return {};
+
+	VipPyObject dict;
+	if (PyDict_Check((PyObject*)pyobject))
+		dict = VipPyObject(pyobject);
+	else
+		dict = VipPyObject(PyObject_GenericGetDict((PyObject*)pyobject, nullptr), borrow_t{});
+	if (!dict)
+		return {};
+
+	VipPyObject keys(PyDict_Keys((PyObject*)dict.pyObject()), borrow_t{});
+	if (!keys)
+		return {};
+
+	QVariantList lst = vipPythonToVariant(keys.pyObject()).value<QVariantList>();
+	QStringList ret;
+	for (const QVariant& v : lst)
+		ret.push_back(v.toString());
+	return ret;
+}
+
+VipPyObject VipPyObject::getMember(const char* name) const noexcept
+{
+	if (isNull())
+		return {};
+
+	return VipPyObject(PyObject_GetAttrString((PyObject*)pyObject(), name), borrow_t{});
+}
+
+bool VipPyObject::setMember(const char* name, const VipPyObject& value) noexcept
+{
+	if (isNull())
+		return false;
+
+	return PyObject_SetAttrString((PyObject*)pyobject, name, (PyObject*)value.pyObject()) == 0;
+}
+
+bool VipPyObject::delMember(const char* name) noexcept
+{
+	if (isNull())
+		return false;
+
+	return PyObject_DelAttrString((PyObject*)pyobject, name) != -1;
+}
+
+VipPyObject VipPyObject::callMember(const char* name, const QVariantList& args, const QVariantMap& kwargs)
+{
+	if (isNull())
+		return {};
+
+	VipPyObject callable = getMember(name);
+	if (!callable)
+		return {};
+
+	std::vector<VipPyObject> _args(args.size());
+	for (size_t i = 0; i < args.size(); ++i) {
+		_args[i] = VipPyObject(vipVariantToPython(QVariant::fromValue(args[i])), borrow_t{});
+		if (!_args[i])
+			return {};
+	}
+
+	VipPyObject _kwargs;
+	if (kwargs.size()) {
+		_kwargs = VipPyObject(vipVariantToPython(QVariant::fromValue(kwargs)), borrow_t{});
+		if (!_kwargs)
+			return {};
+	}
+
+	size_t count = _args.size();
+	PyObject** ptr = (PyObject**)_args.data();
+
+	return VipPyObject(PyObject_VectorcallDict((PyObject*)callable.pyObject(), ptr, count, (PyObject*)_kwargs.pyObject()), borrow_t{});
+}
+
+VipPyObject VipPyObject::eval(const QString& str)
+{
+	PyObject* globals = nullptr;
+	{
+		PyObject* __main__ = PyImport_ImportModule("__main__");
+		globals = PyModule_GetDict(__main__);
+		Py_DECREF(__main__);
+	}
+	PyObject* obj = PyRun_String(str.toLatin1().data(), Py_eval_input, globals, globals);
+	return VipPyObject(obj, borrow_t{});
 }
 
 // Associate each VipPyLocal instance to a QThread.
@@ -973,8 +1290,8 @@ static QVariant callRegisteredFunction(const VipFunctionObject& fun, const QVari
 }
 static PyObject* callRegisteredFun(PyObject*, PyObject* args, PyObject* kwargs)
 {
-	QVariantList lst = vipPythonToVariant(args).value<QVariantList>();
-	const QVariantMap map = vipPythonToVariant(kwargs).value<QVariantMap>();
+	QVariantList lst = vipPythonToVariant(args,true).value<QVariantList>();
+	const QVariantMap map = vipPythonToVariant(kwargs, true).value<QVariantMap>();
 	QString name = lst[0].toString();
 	lst = lst.mid(1);
 
@@ -1078,15 +1395,14 @@ static bool import_numpy_internal()
 #endif
 }
 
-static void setPythonHome(const char * home)
+static void setPythonHome(const char* home)
 {
-	vip_debug("Python home: '%s'\n",home);
+	vip_debug("Python home: '%s'\n", home);
 	// Using PYTHONHOME only work on Windows
 #ifdef WIN32
 	qputenv("PYTHONHOME", home);
-#endif	
+#endif
 }
-
 
 // Handle Python initialization and finalization
 class PythonInit
@@ -1143,7 +1459,7 @@ public:
 					env = VIP_PYTHONHOME;
 			}
 #endif
-			if(env.isEmpty())
+			if (env.isEmpty())
 				env = qgetenv("PYTHONPATH");
 			vip_debug("python env: %s\n", env.data());
 			fflush(stdout);
@@ -1322,6 +1638,11 @@ public:
 		return &inst;
 	}
 };
+
+void vipPythonInitialize()
+{
+	PythonInit::instance();
+}
 
 // Global Interpreter Locker mechanism
 VipGILLocker::VipGILLocker()
@@ -2250,9 +2571,9 @@ void vipAllowRestoredPythonCode(VipProcessingObject* obj)
 
 bool vipCanRunRestoredPythonCode(VipProcessingObject* obj)
 {
-	if (!obj )
+	if (!obj)
 		return true;
-	if (!obj->isFromArchive() )
+	if (!obj->isFromArchive())
 		return true;
 	return _vip_restored_python_allowed;
 }

@@ -32,6 +32,7 @@
 #include <chrono>
 #include <condition_variable>
 #include <vector>
+#include <set>
 
 #include <QDateTime>
 #include <QDebug>
@@ -2354,6 +2355,9 @@ void TaskPool::clear()
 	m_clear.store(m_run.load(std::memory_order_relaxed));
 }
 
+
+
+
 class VipProcessingObject::PrivateData
 {
 public:
@@ -2461,6 +2465,9 @@ public:
 	std::vector<std::unique_ptr<VipProcessingIO>> inputs;
 	std::vector<std::unique_ptr<VipProcessingIO>> outputs;
 	std::vector<std::unique_ptr<VipProcessingIO>> properties;
+
+	std::set<VipCustomIO, std::less<>> customIO;
+
 	std::function<void()> onInitIO;
 
 	// flatten representations
@@ -2709,41 +2716,58 @@ void VipProcessingObject::internalInitIO(bool force) const
 
 			const QMetaObject* meta = metaObject();
 			VipProcessingObject* _this = const_cast<VipProcessingObject*>(this);
+			auto* data = _this->d_data.get();
 
 			for (; d_data->initializeIO < meta->propertyCount(); ++d_data->initializeIO) {
 				const int i = d_data->initializeIO;
 				const int type = meta->property(i).userType();
 
 				if (type == qMetaTypeId<VipInput>())
-					_this->d_data->inputs.push_back(std::unique_ptr<VipProcessingIO>(new VipInput(meta->property(i).name(), _this)));
+					data->inputs.push_back(std::unique_ptr<VipProcessingIO>(new VipInput(meta->property(i).name(), _this)));
 				else if (type == qMetaTypeId<VipMultiInput>())
-					_this->d_data->inputs.push_back(std::unique_ptr<VipProcessingIO>(new VipMultiInput(meta->property(i).name(), _this)));
+					data->inputs.push_back(std::unique_ptr<VipProcessingIO>(new VipMultiInput(meta->property(i).name(), _this)));
 				else if (type == qMetaTypeId<VipProperty>())
-					_this->d_data->properties.push_back(std::unique_ptr<VipProcessingIO>(new VipProperty(meta->property(i).name(), _this)));
+					data->properties.push_back(std::unique_ptr<VipProcessingIO>(new VipProperty(meta->property(i).name(), _this)));
 				else if (type == qMetaTypeId<VipMultiProperty>())
-					_this->d_data->properties.push_back(std::unique_ptr<VipProcessingIO>(new VipMultiProperty(meta->property(i).name(), _this)));
+					data->properties.push_back(std::unique_ptr<VipProcessingIO>(new VipMultiProperty(meta->property(i).name(), _this)));
 				else if (type == qMetaTypeId<VipOutput>())
-					_this->d_data->outputs.push_back(std::unique_ptr<VipProcessingIO>(new VipOutput(meta->property(i).name(), _this)));
+					data->outputs.push_back(std::unique_ptr<VipProcessingIO>(new VipOutput(meta->property(i).name(), _this)));
 				else if (type == qMetaTypeId<VipMultiOutput>())
-					_this->d_data->outputs.push_back(std::unique_ptr<VipProcessingIO>(new VipMultiOutput(meta->property(i).name(), _this)));
+					data->outputs.push_back(std::unique_ptr<VipProcessingIO>(new VipMultiOutput(meta->property(i).name(), _this)));
 			}
 
-			_this->d_data->flatInputs = flatten<VipInput>(d_data->inputs);
-			_this->d_data->flatOutputs = flatten<VipOutput>(d_data->outputs);
-			_this->d_data->flatProperties = flatten<VipProperty>(d_data->properties);
+			for (auto it = data->customIO.begin(); it != data->customIO.end(); ++it) {
+				const auto& io = *it;
+				if (io.type == VipProcessingIO::TypeInput)
+					data->inputs.push_back(std::unique_ptr<VipProcessingIO>(new VipInput(io.name, _this)));
+				else if (io.type == VipProcessingIO::TypeMultiInput)
+					data->inputs.push_back(std::unique_ptr<VipProcessingIO>(new VipMultiInput(io.name, _this)));
+				else if (io.type == VipProcessingIO::TypeProperty)
+					data->properties.push_back(std::unique_ptr<VipProcessingIO>(new VipProperty(io.name, _this)));
+				else if (io.type == VipProcessingIO::TypeMultiProperty)
+					data->properties.push_back(std::unique_ptr<VipProcessingIO>(new VipMultiProperty(io.name, _this)));
+				else if (io.type == VipProcessingIO::TypeOutput)
+					data->outputs.push_back(std::unique_ptr<VipProcessingIO>(new VipOutput(io.name, _this)));
+				else if (io.type == VipProcessingIO::TypeMultiOutput)
+					data->outputs.push_back(std::unique_ptr<VipProcessingIO>(new VipMultiOutput(io.name, _this)));
+			}
+
+			data->flatInputs = flatten<VipInput>(d_data->inputs);
+			data->flatOutputs = flatten<VipOutput>(d_data->outputs);
+			data->flatProperties = flatten<VipProperty>(d_data->properties);
 
 			for (size_t i = 0; i < d_data->flatInputs.size(); ++i)
-				_this->d_data->flatInputs[i]->setParentProcessing(_this);
+				data->flatInputs[i]->setParentProcessing(_this);
 
 			for (size_t i = 0; i < d_data->flatOutputs.size(); ++i)
-				_this->d_data->flatOutputs[i]->setParentProcessing(_this);
+				data->flatOutputs[i]->setParentProcessing(_this);
 
 			for (size_t i = 0; i < d_data->flatProperties.size(); ++i)
-				_this->d_data->flatProperties[i]->setParentProcessing(_this);
+				data->flatProperties[i]->setParentProcessing(_this);
 
-			_this->d_data->dirtyIO = false;
+			data->dirtyIO = false;
 
-			callback = _this->d_data->onInitIO;
+			callback = data->onInitIO;
 		}
 	}
 
@@ -3079,6 +3103,10 @@ QString VipProcessingObject::propertyEditor(const QString& property) const
 			return QString(meta->classInfo(i).value());
 	}
 
+	auto it = d_data->customIO.find(property);
+	if (it != d_data->customIO.end())
+		return it->editor;
+
 	return QString();
 }
 
@@ -3127,6 +3155,10 @@ QString VipProcessingObject::description(const QString& name) const
 		if (meta->classInfo(i).name() == name)
 			return QString(meta->classInfo(i).value());
 	}
+
+	auto it = d_data->customIO.find(name);
+	if (it != d_data->customIO.end())
+		return it->description;
 
 	return QString();
 }
@@ -4101,6 +4133,16 @@ void VipProcessingObject::emitError(QObject* obj, const VipErrorData& err)
 	// force the parent to reemit the error
 	if (this->parentObjectPool())
 		this->parentObjectPool()->emitError(obj, err);
+}
+
+bool VipProcessingObject::addCustomIO(const VipCustomIO& io)
+{
+
+	if (d_data->customIO.insert(io).second) {
+		d_data->dirtyIO = true;
+		return true;
+	}
+	return false;
 }
 
 void VipProcessingObject::registerAdditionalInfoObject(const VipProcessingObject::Info& info)

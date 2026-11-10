@@ -35,6 +35,7 @@
 #include "VipEnvironment.h"
 #include "VipLogging.h"
 #include "VipSet.h"
+#include "VipArchive.h"
 
 #include <QDir>
 #include <QFileInfo>
@@ -47,11 +48,120 @@
 
 #include <vector>
 
+#ifdef VIP_WITH_PYTHON
+#include "VipPyOperation.h"
+
+class PythonPluginInterface : public VipPluginInterface
+{
+	VipPyObject interface;
+
+public:
+	PythonPluginInterface(const VipPyObject& obj)
+	{
+		VipGILLocker lock;
+		interface = obj;
+	}
+
+	virtual LoadResult load()
+	{
+		VipGILLocker lock;
+
+		VipPyError::clear();
+
+		auto ret = interface.callMember("load").toVariant().toInt();
+		if (ret <= 0 || ret > ExitProcess) {
+			if (VipPyError err = VipPyError(compute_error_t{})) {
+				std::ostringstream oss;
+				err.printDebug(oss);
+				VIP_LOG_ERROR("Failed to load plugin: ", QString(oss.str().c_str()));
+			}
+			return Failure;
+		}
+		return (LoadResult)ret;
+	}
+	/// Any cleanup operation should be performed in this function.
+	/// Thermavip always call VipPluginInterface::unload for all loaded plugins before exiting.
+	virtual void unload()
+	{
+		VipGILLocker lock;
+		VipPyError::clear();
+		interface.callMember("unload");
+	}
+	/// Returns the plugin version
+	virtual QByteArray pluginVersion()
+	{
+		VipGILLocker lock;
+		return interface.callMember("version").toVariant().toByteArray();
+	}
+	/// Returns the plugin author
+	virtual QString author()
+	{
+		VipGILLocker lock;
+		return interface.callMember("author").toVariant().toByteArray();
+	}
+	/// Returns the plugin description
+	virtual QString description()
+	{
+		VipGILLocker lock;
+		return interface.callMember("description").toVariant().toByteArray();
+	}
+	/// Returns a HTTP link related to this plugin
+	virtual QString link()
+	{
+		VipGILLocker lock;
+		return interface.callMember("link").toVariant().toByteArray();
+	}
+	/// Save the plugin state into a VipArchive
+	virtual void save(VipArchive& arch)
+	{
+		VipGILLocker lock;
+		auto ret = interface.callMember("save").toVariant().toByteArray();
+		if (VipPyError err = VipPyError(compute_error_t{})) {
+			std::ostringstream oss;
+			err.printDebug(oss);
+			VIP_LOG_ERROR("Failed to serialize plugin: ", QString(oss.str().c_str()));
+			return;
+		}
+		arch.content("state", ret.toBase64());
+	}
+	/// Restore the plugin state from a VipArchive
+	virtual void restore(VipArchive& arch)
+	{
+		VipGILLocker lock;
+		auto bytes = QByteArray::fromBase64(arch.read("state").toByteArray());
+		if (bytes.size())
+			interface.callMember("restore", QVariantList() << bytes);
+	}
+	/// Returns true if the plugin defines additional commands for command line usage.
+	virtual bool hasExtraCommands() { return false; }
+	/// Returns a potential additional style sheet that should be added to the global application style.
+	virtual QString additionalStyleSheet()
+	{
+		VipGILLocker lock;
+		return interface.callMember("stylesheet").toVariant().toString();
+	}
+};
+
+#endif
+
+struct PluginLib
+{
+	QPluginLoader loader;
+	QString name;
+
+	PluginLib() = default;
+	PluginLib(const QString& libname, const QString& plugin_name)
+	  : loader(libname)
+	  , name(plugin_name)
+	{
+	}
+};
+
 class VipLoadPlugins::PrivateData
 {
 public:
 	QList<VipPluginInterface*> interfaces;
-	std::vector<std::unique_ptr<QPluginLoader>> plugins;
+	std::vector<std::unique_ptr<PluginLib>> plugins;
 	QMap<QString, QStringList> availablePlugins;
 	bool unloaded{ false };
 };
@@ -84,7 +194,8 @@ VipLoadPlugins::VipLoadPlugins()
 VipLoadPlugins::~VipLoadPlugins()
 {
 	for (size_t i = 0; i < d_data->plugins.size(); ++i) {
-		d_data->plugins[i]->unload();
+		if (d_data->plugins[i]->loader.isLoaded())
+			d_data->plugins[i]->loader.unload();
 		d_data->plugins[i].reset();
 	}
 }
@@ -111,9 +222,47 @@ QStringList VipLoadPlugins::plugins(const QString& category) const
 QStringList VipLoadPlugins::pluginsInDir(const QString directory)
 {
 	QStringList res;
-	foreach (QString fileName, QDir(directory).entryList(QDir::Files)) {
-		if (QLibrary::isLibrary(fileName))
-			res << QFileInfo(fileName).baseName();
+	for (const QFileInfo& info : QDir(directory).entryInfoList(QDir::Files | QDir::Dirs | QDir::NoDotAndDotDot)) {
+		if (info.isDir()) {
+			// For folders, we need a dll with the same name as its parent directory, or a __init__.py file if Python is supported
+			QString dirname = info.canonicalFilePath();
+			QString libname = dirname + QDir::separator() + info.fileName();
+
+#ifdef WIN32
+			if (QFileInfo(libname + ".dll").exists()) {
+				res << info.fileName();
+				continue;
+			}
+#elif defined(__APPLE__)
+			if (QFileInfo(libname + ".so").exists()) {
+				res << info.fileName();
+				continue;
+			}
+			if (QFileInfo(libname + ".dylib").exists()) {
+				res << info.fileName();
+				continue;
+			}
+			if (QFileInfo(libname + ".bundle").exists()) {
+				res << info.fileName();
+				continue;
+			}
+#else
+			if (QFileInfo(libname + ".so").exists()) {
+				res << info.fileName();
+				continue;
+			}
+#endif
+
+#ifdef VIP_WITH_PYTHON
+			QString initname = dirname + QDir::separator() + "__init__.py";
+			if (QFileInfo(initname).exists()) {
+				res << info.fileName();
+				continue;
+			}
+#endif
+		}
+		else if (QLibrary::isLibrary(info.fileName()))
+			res << info.baseName();
 		// res << QDir::cleanPath(QDir(directory).absoluteFilePath(fileName));
 	}
 
@@ -131,7 +280,7 @@ QStringList VipLoadPlugins::loadedPluginNames() const
 {
 	QStringList res;
 	for (size_t i = 0; i < d_data->plugins.size(); ++i)
-		res << QFileInfo(d_data->plugins[i]->fileName()).baseName();
+		res << d_data->plugins[i]->name;
 	return res;
 }
 
@@ -150,7 +299,7 @@ VipPluginInterface* VipLoadPlugins::find(const QString& name) const
 	QString search = formatPluginName(name);
 
 	for (size_t i = 0; i < d_data->plugins.size(); ++i) {
-		QString pname = formatPluginName(d_data->plugins[i]->fileName());
+		QString pname = d_data->plugins[i]->name;
 		if (pname == search)
 			return d_data->interfaces[i];
 	}
@@ -182,7 +331,8 @@ void VipLoadPlugins::unloadAndDeletePlugins()
 
 	for (qsizetype i = 0; i < d_data->interfaces.size(); ++i) {
 		// delete d_data->interfaces[i];
-		d_data->plugins[i]->unload();
+		if (d_data->plugins[i]->loader.isLoaded())
+			d_data->plugins[i]->loader.unload();
 		d_data->plugins[i].reset();
 	}
 
@@ -195,6 +345,56 @@ VipPluginInterface::LoadResult VipLoadPlugins::loadPlugin(const QString& name, Q
 {
 	// get the full plugin filename
 	QString filename = (vipGetPluginsDirectory() + name);
+
+	QString pluginPath = vipGetPluginsDirectory() + name;
+
+	std::unique_ptr<PluginLib> loader;
+
+	if (QFileInfo(pluginPath).isDir()) {
+
+#ifdef VIP_WITH_PYTHON
+		QString pyfile = pluginPath + "/__init__.py";
+		if (QFileInfo(pyfile).exists()) {
+
+			vipPythonInitialize();
+
+			// Import Python module
+			VipGILLocker lock;
+			vipExecPythonCode("import sys; sys.path.append('" + vipGetPluginsDirectory() + "')");
+			QString module = QFileInfo(pluginPath).fileName();
+			vipExecPythonCode("import " + module);
+			if (VipPyError err = VipPyError(compute_error_t{})) {
+				std::ostringstream oss;
+				err.printDebug(oss);
+				VIP_LOG_ERROR("Error while loading plugin ", module, ": ", oss.str().c_str());
+				return VipPluginInterface::Failure;
+			}
+			QString interface_name = module + "." + module + "_interface";
+			VipPyObject interface = VipPyObject::eval(interface_name);
+			if (!interface) {
+				VipPyError err(compute_error_t{});
+				VIP_LOG_ERROR("Error while loading plugin ", module, ": ", err.toString());
+				return VipPluginInterface::Failure;
+			}
+
+			std::unique_ptr<VipPluginInterface> inter(new PythonPluginInterface(interface));
+
+			auto result = inter->loadPlugin();
+			if (result != VipPluginInterface::Failure && result != VipPluginInterface::Unauthorized) {
+				loader.reset(new PluginLib());
+				loader->name = module;
+				d_data->plugins.push_back(std::move(loader));
+				d_data->interfaces.append(inter.release());
+			}
+			return result;
+		}
+#endif
+
+		QString dllname = pluginPath + "/" + name;
+		filename = dllname;
+		loader.reset(new PluginLib(dllname, formatPluginName(name)));
+	}
+
 	if (QFileInfo(filename + ".dll").exists())
 		filename = filename + ".dll";
 	else if (QFileInfo(filename + ".so").exists())
@@ -210,10 +410,11 @@ VipPluginInterface::LoadResult VipLoadPlugins::loadPlugin(const QString& name, Q
 	else
 		return VipPluginInterface::Unauthorized;
 
-	std::unique_ptr<QPluginLoader> loader ( new QPluginLoader(vipGetPluginsDirectory() + name));
-	loader->load();
-	if (loader->isLoaded()) {
-		QObject* plugin = loader->instance();
+	if (!loader)
+		loader.reset(new PluginLib(pluginPath, formatPluginName(name)));
+	loader->loader.load();
+	if (loader->loader.isLoaded()) {
+		QObject* plugin = loader->loader.instance();
 		VipPluginInterface* _interface = qobject_cast<VipPluginInterface*>(plugin);
 		if (_interface) {
 			// check the vip version
@@ -246,7 +447,7 @@ VipPluginInterface::LoadResult VipLoadPlugins::loadPlugin(const QString& name, Q
 	}
 
 	if (error)
-		*error = loader->errorString();
+		*error = loader->loader.errorString();
 
 	return VipPluginInterface::Failure;
 }

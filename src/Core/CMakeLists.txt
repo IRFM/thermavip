@@ -237,6 +237,8 @@ if(WITH_PYTHON)
 
 	endif()
 
+	target_compile_definitions(VipCore PUBLIC -DVIP_WITH_PYTHON)
+
 	# Plugin custom installation process
 	install(CODE "set(PYTHON_RUNTIME \"${PYTHON_RUNTIME}\")")
 	install(CODE "set(CMAKE_INSTALL_BINDIR \"${CMAKE_INSTALL_BINDIR}\")")

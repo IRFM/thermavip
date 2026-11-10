@@ -59,7 +59,7 @@ public:
 		Failure,      //! Loading failed
 		ExitProcess,  //! Loading succeeded and Thermavip should exit
 		Unauthorized, //! The computer does not have the authorization to run this plugin
-		AlreadyLoaded // plugin already loaded
+		AlreadyLoaded //! plugin already loaded
 	};
 	VipPluginInterface()
 	  : m_loaded(false)

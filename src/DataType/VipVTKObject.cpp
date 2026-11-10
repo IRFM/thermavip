@@ -32,7 +32,6 @@
 #include "VipVTKObject.h"
 #include "VipVTKImage.h"
 
-
 #include <vtkAbstractArray.h>
 #include <vtkCellArray.h>
 #include <vtkCellData.h>
@@ -85,7 +84,6 @@
 #include <QTemporaryFile>
 
 #include <sstream>
-
 
 namespace detail
 {
@@ -173,7 +171,6 @@ namespace detail
 
 }
 
-
 /* static vtkMapper* MergeComposite(vtkCompositeDataSet* composite)
 {
 	vtkDataSetMapper* mapper = vtkDataSetMapper::New();
@@ -208,64 +205,59 @@ static vtkUnstructuredGrid* mergeCompositeInput(vtkCompositeDataSet* composite)
 	return res;
 }*/
 
-
-
-void VipVTKObject::SetObjectName(vtkDataObject * obj, const char * name)
+void VipVTKObject::SetObjectName(vtkDataObject* obj, const char* name)
 {
-#if (VTK_VERSION_MAJOR > 9 || (VTK_VERSION_MAJOR == 9 && VTK_VERSION_MINOR >=2))
+#if (VTK_VERSION_MAJOR > 9 || (VTK_VERSION_MAJOR == 9 && VTK_VERSION_MINOR >= 2))
 	obj->SetObjectName(name);
 #else
-	vtkFieldData * data = obj->GetFieldData();
-	if(!data)
+	vtkFieldData* data = obj->GetFieldData();
+	if (!data)
 		obj->SetFieldData(data = vtkFieldData::New());
-	vtkAbstractArray * ar = data->GetAbstractArray("ObjectName");
-	if(!ar) {
+	vtkAbstractArray* ar = data->GetAbstractArray("ObjectName");
+	if (!ar) {
 		ar = vtkStringArray::New();
 		ar->SetName("ObjectName");
 		data->AddArray(ar);
 	}
-	vtkStringArray * strings = static_cast<vtkStringArray*>(ar);
-	if(strings->GetSize() == 0)
-		strings->InsertNextValue(name); 
+	vtkStringArray* strings = static_cast<vtkStringArray*>(ar);
+	if (strings->GetSize() == 0)
+		strings->InsertNextValue(name);
 	else
-		strings->SetValue(0,name);
+		strings->SetValue(0, name);
 
 #endif
 }
 
-const char* VipVTKObject::GetObjectName(const vtkDataObject * _obj)
+const char* VipVTKObject::GetObjectName(const vtkDataObject* _obj)
 {
-	vtkDataObject * obj = const_cast<vtkDataObject*>(_obj);
-	if(!obj)
+	vtkDataObject* obj = const_cast<vtkDataObject*>(_obj);
+	if (!obj)
 		return "";
-	vtkFieldData * data = obj->GetFieldData();
-	if(!data)
+	vtkFieldData* data = obj->GetFieldData();
+	if (!data)
 		return "";
-	vtkAbstractArray * ar = data->GetAbstractArray("ObjectName");
-	if(!ar)	
+	vtkAbstractArray* ar = data->GetAbstractArray("ObjectName");
+	if (!ar)
 		return "";
-	vtkStringArray * strings = static_cast<vtkStringArray*>(ar);
-	if(strings->GetSize() == 0)
+	vtkStringArray* strings = static_cast<vtkStringArray*>(ar);
+	if (strings->GetSize() == 0)
 		return "";
 	else
 		return strings->GetValue(0).c_str();
 }
 
-
-
 class VipVTKObject::PrivateData
 {
 public:
-
 	vtkSmartPointer<vtkDataObject> data;
-	
+
 	qint64 cadMTime;
 
 	// vtkSmartPointer<vtkDecimatePro > simplifiedData;
 	bool simplified;
 	QVector<QPair<double, double>> ranges;
 
-	//QList<DynamicProperty> dynProperties;
+	// QList<DynamicProperty> dynProperties;
 
 	QRecursiveMutex mutex;
 
@@ -275,8 +267,6 @@ public:
 	~PrivateData();
 	bool isValid() const;
 };
-
-
 
 VipVTKObject::PrivateData::PrivateData()
   : cadMTime(0)
@@ -298,8 +288,6 @@ bool VipVTKObject::PrivateData::isValid() const
 	return data.GetPointer() != nullptr;
 }
 
-
-
 VipVTKObject::VipVTKObject(const SharedPointer& ptr) noexcept
   : d_data(ptr)
 {
@@ -310,7 +298,7 @@ VipVTKObject::VipVTKObject()
 	d_data.reset(new PrivateData());
 
 	setObject(nullptr);
-	
+
 	// d_data->simplifiedData = vtkSmartPointer<vtkDecimatePro >::New();
 
 	/*d_data->simplifiedData->SetTargetReduction(0.99);
@@ -323,12 +311,12 @@ VipVTKObject::VipVTKObject()
 VipVTKObject::VipVTKObject(vtkDataObject* object, const QString& name)
 {
 	d_data.reset(new PrivateData());
-	
+
 	// d_data->simplifiedData = vtkSmartPointer<vtkDecimatePro >::New();
 
 	setObject(object);
 	if (object && !name.isEmpty())
-		SetObjectName(object,name.toLatin1().data());
+		SetObjectName(object, name.toLatin1().data());
 	/*d_data->simplifiedData->SetTargetReduction(0.99);
 	d_data->simplifiedData->SetPreserveTopology(0);
 	//d_data->simplifiedData->SetSplitting (1);
@@ -336,11 +324,9 @@ VipVTKObject::VipVTKObject(vtkDataObject* object, const QString& name)
 	d_data->simplifiedData->SetMaximumError (VTK_DOUBLE_MAX);*/
 }
 
-VipVTKObject::~VipVTKObject()
-{
-}
+VipVTKObject::~VipVTKObject() {}
 
-static double _defaultObjectColor[4] = {0.9,0.9,0.9,1};
+static double _defaultObjectColor[4] = { 0.9, 0.9, 0.9, 1 };
 const double* VipVTKObject::defaultObjectColor()
 {
 	return _defaultObjectColor;
@@ -374,7 +360,6 @@ QStringList VipVTKObject::supportedFileSuffix() const
 	return QStringList() << "vtk";
 }
 
-
 QString VipVTKObject::preferredSuffix() const
 {
 	if (!d_data->data)
@@ -399,8 +384,6 @@ vtkDataObject* VipVTKObject::setObject(vtkDataObject* obj)
 	if (obj == d_data->data)
 		return obj;
 
-	
-	
 	if (obj) {
 		VIP_VTK_OBSERVER(obj);
 
@@ -411,7 +394,7 @@ vtkDataObject* VipVTKObject::setObject(vtkDataObject* obj)
 			obj.Delete();
 		}
 		else*/
-			d_data->data = vtkSmartPointer<vtkDataObject>(obj);
+		d_data->data = vtkSmartPointer<vtkDataObject>(obj);
 	}
 
 	return obj;
@@ -434,7 +417,6 @@ vtkDataObject* VipVTKObject::setObject(vtkDataObject* obj)
 	}
 	return false;
 }*/
-
 
 void VipVTKObject::modified()
 {
@@ -459,7 +441,7 @@ void VipVTKObject::clear()
 {
 	d_data->cadMTime = 0;
 	d_data->data = vtkSmartPointer<vtkDataObject>();
-	//d_data->dynProperties.clear();
+	// d_data->dynProperties.clear();
 	d_data->ranges.clear();
 	d_data->simplified = false;
 }
@@ -469,7 +451,7 @@ QVariantMap VipVTKObject::buildAllAttributes() const
 	QMutexLocker lock(const_cast<QRecursiveMutex*>(&d_data->mutex));
 
 	QVariantMap attrs;
-	
+
 	if (d_data->data) {
 		attrs["Name"] = QFileInfo(GetObjectName(d_data->data)).fileName();
 	}
@@ -498,17 +480,16 @@ QVariantMap VipVTKObject::buildAllAttributes() const
 
 				for (int j = 0; j < ar->GetNumberOfComponents(); ++j) {
 					double range[2];
-					ar->GetRange(range,j);
+					ar->GetRange(range, j);
 					QString name = ar->GetName();
 					if (ar->GetNumberOfComponents() > 1)
 						name += "[" + QString::number(j) + "]";
 					attrs[name + " min"] = range[0];
 					attrs[name + " max"] = range[1];
-
 				}
 
-				//QString value = QString(ar->GetClassName()) + " (" + QString::number(ar->GetNumberOfTuples()) + ", " + QString::number(ar->GetNumberOfComponents()) + ")";
-				//attrs["PointData/" + QString(ar->GetName())] = value;
+				// QString value = QString(ar->GetClassName()) + " (" + QString::number(ar->GetNumberOfTuples()) + ", " + QString::number(ar->GetNumberOfComponents()) + ")";
+				// attrs["PointData/" + QString(ar->GetName())] = value;
 			}
 			vtkCellData* cdata = set->GetCellData();
 			for (int i = 0; i < cdata->GetNumberOfArrays(); ++i) {
@@ -524,8 +505,8 @@ QVariantMap VipVTKObject::buildAllAttributes() const
 					attrs[name + " max"] = range[1];
 				}
 
-				//QString value = QString(ar->GetClassName()) + " (" + QString::number(ar->GetNumberOfTuples()) + ", " + QString::number(ar->GetNumberOfComponents()) + ")";
-				//attrs["CellData/" + QString(ar->GetName())] = value;
+				// QString value = QString(ar->GetClassName()) + " (" + QString::number(ar->GetNumberOfTuples()) + ", " + QString::number(ar->GetNumberOfComponents()) + ")";
+				// attrs["CellData/" + QString(ar->GetName())] = value;
 			}
 		}
 		QMap<QString, vtkVariantList> fattrs = fieldAttributes();
@@ -588,13 +569,10 @@ vtkPolyData * VipVTKObject::Simplified() const
 }
 */
 
-
-
 QRecursiveMutex* VipVTKObject::mutex() const
 {
 	return const_cast<QRecursiveMutex*>(&d_data->mutex);
 }
-
 
 QString VipVTKObject::description(int pointId, int cellId) const
 {
@@ -676,12 +654,11 @@ QString VipVTKObject::className() const
 	return d_data->data ? QString(d_data->data->GetClassName()) : QString();
 }
 
-
 void VipVTKObject::setDataName(const QString& name)
 {
 	QMutexLocker lock(const_cast<QRecursiveMutex*>(&d_data->mutex));
 	if (d_data->data)
-		SetObjectName(d_data->data,name.toLatin1().data());
+		SetObjectName(d_data->data, name.toLatin1().data());
 }
 
 bool VipVTKObject::isA(const char* class_name) const
@@ -1023,11 +1000,44 @@ QStringList VipVTKObject::fieldAttributesNames() const
 	return res;
 }
 
-void VipVTKObject::importData(const VipVTKObject& other) 
+#include <vtkUniformGrid.h>
+#include <vtkMultiPieceDataSet.h>
+#include <vtkNonOverlappingAMR.h>
+
+void VipVTKObject::importData(const VipVTKObject& other)
 {
 	auto locks = vipLockVTKObjects(VipVTKObjectList() << *this << other);
 	if (other.d_data->data && other.d_data->data != d_data->data) {
-		vtkDataObject* obj = other.d_data->data->NewInstance();
+
+		vtkDataObject* obj = nullptr;
+		vtkDataObject* d = other.d_data->data.GetPointer();
+		if (strcmp(d->GetClassName(), "vtkPolyData") == 0)
+			obj = vtkPolyData::New();
+		else if (strcmp(d->GetClassName(), "vtkStructuredGrid") == 0)
+			obj = vtkStructuredGrid::New();
+		else if (strcmp(d->GetClassName(), "vtkUnstructuredGrid") == 0)
+			obj = vtkUnstructuredGrid::New();
+		else if (strcmp(d->GetClassName(), "vtkRectilinearGrid") == 0)
+			obj = vtkRectilinearGrid::New();
+		else if (strcmp(d->GetClassName(), "vtkImageData") == 0)
+			obj = vtkImageData::New();
+		else if (strcmp(d->GetClassName(), "vtkStructuredPoints") == 0)
+			obj = vtkStructuredPoints::New();
+		else if (strcmp(d->GetClassName(), "vtkUniformGrid") == 0)
+			obj = vtkUniformGrid::New();
+		else if (strcmp(d->GetClassName(), "vtkMultiBlockDataSet") == 0)
+			obj = vtkMultiBlockDataSet::New();
+		else if (strcmp(d->GetClassName(), "vtkMultiPieceDataSet") == 0)
+			obj = vtkMultiPieceDataSet::New();
+		else if (strcmp(d->GetClassName(), "vtkUniformGridAMR") == 0)
+			obj = vtkUniformGridAMR::New();
+		else if (strcmp(d->GetClassName(), "vtkOverlappingAMR") == 0)
+			obj = vtkOverlappingAMR::New();
+		else if (strcmp(d->GetClassName(), "vtkNonOverlappingAMR") == 0)
+			obj = vtkNonOverlappingAMR::New();
+		else
+			obj = other.d_data->data->NewInstance();
+
 		obj->DeepCopy(other.d_data->data);
 
 		if (d_data->data) {
@@ -1047,7 +1057,7 @@ void VipVTKObject::importData(const VipVTKObject& other)
 
 		d_data->cadMTime = 0;
 		d_data->ranges = other.d_data->ranges;
-		//for (int i = 0; i < other.d_data->dynProperties.size(); ++i)
+		// for (int i = 0; i < other.d_data->dynProperties.size(); ++i)
 		//	d_data->dynProperties.push_back(other.d_data->dynProperties[i].copy());
 	}
 }
@@ -1388,7 +1398,7 @@ bool VipVTKObject::isColorAttribute(VipVTKObject::AttributeType t, const QString
 	return false;
 }
 
-bool VipVTKObject::importAttributes( const VipVTKObject& other)
+bool VipVTKObject::importAttributes(const VipVTKObject& other)
 {
 	if (other == *this)
 		return true;
@@ -1431,7 +1441,6 @@ bool VipVTKObject::importAttributes( const VipVTKObject& other)
 
 	return true;
 }
-
 
 QVariantMap VipVTKObject::properties() const
 {
@@ -1539,7 +1548,6 @@ VipVTKObjectLocker VipVTKObject::tryLock()
 	return VipVTKObjectLocker();
 }
 
-
 VipVTKObject::operator const void*() const noexcept
 {
 	return d_data->data.GetPointer();
@@ -1634,12 +1642,9 @@ vtkImageData* VipVTKObject::image() const
 	return nullptr;
 }
 
-
-
-
 QStringList VipVTKObject::vtkFileSuffixes()
 {
-	return (QStringList() << "obj" << "ply"<< "stl"
+	return (QStringList() << "obj" << "ply" << "stl"
 			      << "vtk"
 			      << "vti"
 			      << "vtp"
@@ -1658,7 +1663,6 @@ QStringList VipVTKObject::vtkFileFilters()
 			      << "*.vts"
 			      << "*.vtu");
 }
-
 
 /* bool VipVTKObject::ConvertFile(const QString& infile, const QString& outfile)
 {
@@ -1697,19 +1701,19 @@ QStringList VipVTKObject::vtkFileFilters()
 	return false;
 }*/
 
-VipVTKObject VipVTKObject::load(const QString& filename, QString* error )
+VipVTKObject VipVTKObject::load(const QString& filename, QString* error)
 {
 	QFileInfo info(filename);
 	QString suffix = info.suffix();
 	VipVTKObject res;
 
 	if (suffix.compare("stl", Qt::CaseInsensitive) == 0) {
-		//vtkSmartPointer<vtkPolyDataMapper> ptr = vtkSmartPointer<vtkPolyDataMapper>::New();
+		// vtkSmartPointer<vtkPolyDataMapper> ptr = vtkSmartPointer<vtkPolyDataMapper>::New();
 		vtkSmartPointer<vtkSTLReader> reader = vtkSmartPointer<vtkSTLReader>::New();
 		reader->SetFileName(filename.toLatin1().data());
 		reader->Update();
-		//ptr->SetInputConnection(reader->GetOutputPort());
-		//ptr->Update();
+		// ptr->SetInputConnection(reader->GetOutputPort());
+		// ptr->Update();
 		res = VipVTKObject(reader->GetOutput());
 	}
 	else if (suffix.compare("vtk", Qt::CaseInsensitive) == 0) {
@@ -1749,7 +1753,7 @@ VipVTKObject VipVTKObject::load(const QString& filename, QString* error )
 
 			vtkDataObject* obj = reader->GetOutput();
 			if (!obj) {
-				if(error)
+				if (error)
 					*error = "Unable to read input file" + filename;
 				return VipVTKObject();
 			}
@@ -1764,14 +1768,13 @@ VipVTKObject VipVTKObject::load(const QString& filename, QString* error )
 		vtkDataObject* obj = reader->GetOutput();
 		if (!obj) {
 			if (error)
-					*error = "Unable to read input file "+ filename;
+				*error = "Unable to read input file " + filename;
 			return VipVTKObject();
 		}
 		else
 			res = VipVTKObject(obj);
 	}
-	else if (suffix.compare("obj", Qt::CaseInsensitive) == 0)
-	{
+	else if (suffix.compare("obj", Qt::CaseInsensitive) == 0) {
 		vtkSmartPointer<vtkOBJReader> reader = vtkSmartPointer<vtkOBJReader>::New();
 		reader->SetFileName(filename.toLatin1().data());
 		reader->Update();
@@ -1784,8 +1787,7 @@ VipVTKObject VipVTKObject::load(const QString& filename, QString* error )
 		else
 			res = VipVTKObject(obj);
 	}
-	else if (suffix.compare("ply", Qt::CaseInsensitive) == 0)
-	{
+	else if (suffix.compare("ply", Qt::CaseInsensitive) == 0) {
 		vtkSmartPointer<vtkPLYReader> reader = vtkSmartPointer<vtkPLYReader>::New();
 		reader->SetFileName(filename.toLatin1().data());
 		reader->Update();
@@ -1806,7 +1808,7 @@ VipVTKObject VipVTKObject::load(const QString& filename, QString* error )
 	return res;
 }
 
-VipVTKObject VipVTKObject::loadFromBuffer(const QByteArray& str, const QString& format, QString * error)
+VipVTKObject VipVTKObject::loadFromBuffer(const QByteArray& str, const QString& format, QString* error)
 {
 	QString path;
 	{
@@ -1821,7 +1823,7 @@ VipVTKObject VipVTKObject::loadFromBuffer(const QByteArray& str, const QString& 
 	out.write(str);
 	out.close();
 
-	VipVTKObject res = load(path,error);
+	VipVTKObject res = load(path, error);
 	QFile::remove(path);
 	if (!res)
 		return res;
@@ -1945,9 +1947,9 @@ bool VipVTKObject::save(const QString& filename) const
 	return 0;
 }
 
-//#ifdef NDEBUG
+// #ifdef NDEBUG
 
-bool VipVTKObject::saveToBuffer( QByteArray& str, const QString& f) const
+bool VipVTKObject::saveToBuffer(QByteArray& str, const QString& f) const
 {
 	const VipVTKObject& obj = *this;
 	VipVTKObjectLocker lock = vipLockVTKObjects(obj);
@@ -2022,7 +2024,7 @@ bool VipVTKObject::saveToBuffer( QByteArray& str, const QString& f) const
 		VipVTKObjectLocker lock = vipLockVTKObjects(obj);
 		res = writer->Write();
 		std::string s = writer->GetOutputString();
-		str = QByteArray(s.c_str(),(int) s.size());
+		str = QByteArray(s.c_str(), (int)s.size());
 	}
 	else if (format.startsWith("vtp", Qt::CaseInsensitive)) {
 		vtkSmartPointer<vtkXMLPolyDataWriter> writer = vtkSmartPointer<vtkXMLPolyDataWriter>::New();
@@ -2139,7 +2141,7 @@ bool VipVTKObject::saveToDirectory(const QVector<VipVTKObject>& lst, const QStri
 		fname = fname.mid(0, fname.size() - 1);
 
 	for (int i = 0; i < lst.size(); ++i) {
-		//if (display.canceled())
+		// if (display.canceled())
 		//	return false;
 
 		VipVTKObject data = lst[i];
@@ -2158,13 +2160,11 @@ bool VipVTKObject::saveToDirectory(const QVector<VipVTKObject>& lst, const QStri
 		else
 			name += data.preferredSuffix();
 
-
 		QString file = directory + "/" + name;
 		QFileInfo info(file);
 
-
-		//display.setValue(i);
-		//display.setText("Save " + info.fileName());
+		// display.setValue(i);
+		// display.setText("Save " + info.fileName());
 
 		QString subdir = file;
 		subdir.remove(info.fileName());
@@ -2177,12 +2177,6 @@ bool VipVTKObject::saveToDirectory(const QVector<VipVTKObject>& lst, const QStri
 
 	return true;
 }
-
-
-
-
-
-
 
 bool isColorAttribute(const VipVTKObjectList& lst, VipVTKObject::AttributeType t, const QString& name)
 {
@@ -2234,8 +2228,6 @@ QStringList commonAttributes(const VipVTKObjectList& lst, VipVTKObject::Attribut
 
 	return res;
 }
-
-
 
 VipVTKObjectLocker::VipVTKObjectLocker(const SharedPointer& ptr)
   : d_ptr(ptr)
@@ -2339,10 +2331,6 @@ VipVTKObjectLockerList VipVTKObjectList::vipLockVTKObjects() const
 
 
 */
-
-
-
-
 
 /**
 At some point, we need to use dynamic properties, i.e. Point or Cell Attributes that can change through time.
@@ -2452,7 +2440,7 @@ DynamicProperty::DynamicProperty(const PrivateData& other)
 {
 }
 
-DynamicProperty DynamicProperty::copy() const 
+DynamicProperty DynamicProperty::copy() const
 {
 	return DynamicProperty(*d_data);
 }
@@ -2599,8 +2587,6 @@ QStringList OrganizeObjects(const VipVTKObjectList & lst)
 
 
 }*/
-
-
 
 /* static QDataStream& operator<<(QDataStream& str, const QVector<vtkSmartPointer<vtkDataArray>>& vec)
 {

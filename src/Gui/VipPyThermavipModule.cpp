@@ -19,9 +19,22 @@
 // Thermavip module functions
 ///////////////////////////////////////////////
 
+ 
+
 static QVariant error(const QString& str)
 {
 	return QVariant::fromValue(VipErrorData(str));
+}
+
+static QVariant registerPyProcessing(const QVariant& value)
+{
+	if (VipPyObjectPtr ptr = value.value<VipPyObjectPtr>()) {
+		bool ret = vipRegisterPythonProcessingObject(*ptr);
+		if (!ret)
+			return error("Unable to register Python processing class");
+		return {};
+	}
+	return error("Unable to register Python processing class: invalid argument");
 }
 
 static QVariant userInput(const QString& title, const QVariantList& values)
@@ -193,10 +206,160 @@ static QVariant setWorkspaceTitle(int id, const QString & title)
 	return error("wrong workspace id");
 }
 
+#include "VipProcessingObjectEditor.h"
+#include "VipProgress.h"
+
+static QVariant openData(const QVariant& p, int player = 0, const QString& side = QString())
+{
+	VipDragWidget* w = nullptr;
+
+	QVariantList data_or_path;
+	if (p.userType() == qMetaTypeId<QVariantList>())
+		data_or_path = p.value<QVariantList>();
+	else
+		data_or_path.append(p);
+
+	std::unique_ptr<VipProgress> progress(new VipProgress());
+	progress->setRange(0, data_or_path.size());
+	progress->setModal(true);
+	progress->setCancelable(true);
+
+	std::vector<std::unique_ptr<VipIODevice>> devices;
+
+	for (qsizetype i = 0; i< data_or_path.size(); ++i) {
+
+		if (progress->canceled())
+			break;
+
+		const auto& v = data_or_path[i];
+		if (v.isNull())
+			continue;
+
+		if (v.userType() == qMetaTypeId<QString>()) {
+			// handle path
+			QString path = v.toString();
+
+			progress->setValue((double)i);
+			progress->setText("<b>Open</b> " + QFileInfo(path).fileName());
+
+			QList<VipIODevice::Info> possible = VipIODevice::possibleReadDevices(path, QByteArray());
+			std::unique_ptr<VipIODevice> dev ( VipCreateDevice::create(possible, path));
+			if (dev) {
+				dev->setPath(path);
+				if (dev->open(VipIODevice::ReadOnly))
+					devices.push_back(std::move(dev));
+			}
+		}
+		else {
+
+			progress->setValue((double)i);
+			progress->setText("<b>Open</b> " + QString(v.typeName()));
+
+			devices.push_back(std::unique_ptr<VipIODevice>(new VipAnyResource()));
+			VipAnyResource* any = static_cast<VipAnyResource*>(devices.back().get());
+			any->setData(v);
+		}
+	}
+
+	if (player) {
+		// get parent VipDragWidget
+		w = qobject_cast<VipDragWidget*>(VipUniqueId::find<VipBaseDragWidget>(player));
+		if (!w)
+			return error("Cannot find player number " + QString::number(player));
+		// get VipAbstractPlayer inside
+		VipAbstractPlayer* pl = qobject_cast<VipAbstractPlayer*>(w->widget());
+		if (!pl)
+			return error("Invalid player type for player number " + QString::number(player));
+
+		int left = side.compare("left", Qt::CaseInsensitive) == 0;
+		int right = side.compare("right", Qt::CaseInsensitive) == 0;
+		int top = side.compare("top", Qt::CaseInsensitive) == 0;
+		int bottom = side.compare("bottom", Qt::CaseInsensitive) == 0;
+		int sum = left + top + right + bottom;
+		if (!side.isEmpty() && sum != 1)
+			return error("Wrong last  argument (" + QString::number(player) + "), should one of 'left', 'right', 'top' or 'bottom'");
+
+		// add to left, right, top or bottom
+		if (sum) {
+			// Tested, like the two pointers above: a player that floats on its own
+			// is inside no multi player, and this gives nothing for it.
+			VipMultiDragWidget* mw = VipMultiDragWidget::fromChild(w);
+			if (!mw)
+				return error("player number " + QString::number(player) + " is not inside a multi player");
+			QPoint pt = mw->indexOf(w);
+			// create new player
+			QList<VipProcessingObject*> procs;
+			for (auto& d : devices) {
+				procs.push_back(d.get());
+			}
+			QList<VipAbstractPlayer*> pls = vipCreatePlayersFromProcessings(procs, nullptr);
+			pl = pls.size() ? pls.first() : nullptr;
+			if (!pl)
+				return error("Cannot open data for given path(s)");
+
+			VipDragWidget* dw = qobject_cast<VipDragWidget*>(vipCreateFromWidgets(QList<QWidget*>() << pl));
+			if (!dw)
+				return error("Cannot create a player for the given path(s)");
+			int id = VipUniqueId::id((VipBaseDragWidget*)dw);
+			if (left) {
+				mw->insertSub(pt.y(), pt.x(), dw);
+			}
+			else if (right) {
+				mw->insertSub(pt.y(), pt.x() + 1, dw);
+			}
+			else if (top) {
+				mw->insertMain(pt.y(), dw);
+			}
+			else {
+				mw->insertMain(pt.y() + 1, dw);
+			}
+
+			// release devices
+			for (auto& d : devices)
+				d.release();
+
+			return QVariant(id);
+		}
+		else {
+			// open in existing player
+			//  The answer used to be computed and dropped, and the test below looked
+			//  at a pointer checked fifteen lines above that nothing changes: the
+			//  failure was never seen and the call reported a valid player.
+
+			VipIODeviceList lst;
+			for (auto& d : devices)
+				lst.push_back(d.get());
+			if(vipGetMainWindow()->openDevices(lst,pl).isEmpty())
+				return error("Cannot open data in player number " + QString::number(player));
+
+			// release devices
+			for (auto& d : devices)
+				d.release();
+
+			return QVariant(VipUniqueId::id(VipDragWidget::fromChild(pl)));
+		}
+	}
+	else {
+		VipIODeviceList lst;
+		for (auto& d : devices)
+			lst.push_back(d.get());
+		QList<VipAbstractPlayer*> pl = vipGetMainWindow()->openDevices(lst, nullptr);
+		if (pl.isEmpty())
+			return error("Cannot open data ");
+
+		// release devices
+		for (auto& d : devices)
+			d.release();
+
+		return QVariant(VipUniqueId::id(VipDragWidget::fromChild(pl.last())));
+	}
+}
+
 
 static QVariant openPath(const QVariant & p, int player = 0, const QString & side = QString())
 {
 	VipDragWidget * w = nullptr;
+	
 	VipPathList paths;
 	if (p.userType() == qMetaTypeId<QString>())
 		paths << p.toString();
@@ -205,6 +368,7 @@ static QVariant openPath(const QVariant & p, int player = 0, const QString & sid
 		for (int i = 0; i < lst.size(); ++i)
 			paths << lst[i].toString();
 	}
+	
 
 
 	if (player) {
@@ -2001,12 +2165,14 @@ static QVariant getFunction(int player, const QString & fun_name, const QString 
 
 static int registerFunctions()
 {
+	vipRegisterFunction(vipMakeFunctionObject(registerPyProcessing, "register_processing"));
 	vipRegisterFunction(vipMakeFunctionObject(playerType, "player_type"));
 	vipRegisterFunction(vipMakeFunctionObject(itemList, "item_list"));
 	vipRegisterFunction(vipMakeFunctionObject(setSelected, "set_selected"));
 	vipRegisterFunction(vipMakeFunctionObject(unselectAll, "unselect_all"));
 	vipRegisterFunction(vipMakeFunctionObject(queryPulseOrDate, "query"));
 	vipRegisterFunction(vipMakeFunctionObject(openPath, "open"));
+	vipRegisterFunction(vipMakeFunctionObject(openData, "open_data"));
 	vipRegisterFunction(vipMakeFunctionObject(closeWindow, "close"));
 	vipRegisterFunction(vipMakeFunctionObject(showMaximized, "show_maximized"));
 	vipRegisterFunction(vipMakeFunctionObject(showMinimized, "show_minimized"));

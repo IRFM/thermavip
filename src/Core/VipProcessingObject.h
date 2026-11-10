@@ -1356,6 +1356,22 @@ Q_DECLARE_METATYPE(VipMultiProperty)
 Q_DECLARE_METATYPE(VipOutput)
 Q_DECLARE_METATYPE(VipMultiOutput)
 
+
+/// @brief Custom input/output/property used by VipProcessingObject::addCustomIO()
+struct VipCustomIO
+{
+	QString name;
+	QString description;
+	QString editor;
+	VipProcessingIO::Type type = VipProcessingIO::TypeInput;
+
+	explicit operator bool() const noexcept { return !name.isEmpty(); }
+	friend bool operator<(const VipCustomIO& left, const VipCustomIO& right) noexcept { return left.name < right.name; }
+	friend bool operator<(const VipCustomIO& left, const QString& right) noexcept { return left.name < right; }
+	friend bool operator<(const QString& left, const VipCustomIO& right) noexcept { return left < right.name; }
+};
+
+
 /// @brief VipProcessingObject is the base class for all processing object based on inputs, outputs and properties (basically any kind of processing).
 ///
 /// When subclassing VipProcessingObject, you can declare any number of inputs, outputs or properties (see VipInput, VipMultiInput, VipOutput, VipMultiOutput, VipProperty and VipMultiProperty
@@ -2098,6 +2114,9 @@ protected:
 	}
 
 	virtual void newError(const VipErrorData& error);
+
+	/// @brief Add an input/output/property without using the macros VIP_IO()...
+	bool addCustomIO(const VipCustomIO& io);
 
 	void excludeFromProcessingRateComputation();
 

@@ -801,7 +801,8 @@ void VipPlotRasterData::draw(QPainter* painter, const VipCoordinateSystemPtr& m)
 			if (map)
 				inter = map->gripInterval();
 
-			
+			if (!raster.d_data)
+				return;
 
 			// Try to use the precomputed image
 			const VipImageData& precomputed = raster.d_data->precomputed;
