@@ -4129,6 +4129,9 @@ struct InSessionLoading
 
 bool VipMainWindow::loadSessionShowProgress(VipArchive& arch, VipProgress* progress)
 {
+	// Make sure all processing objects are properly registered before loading the session
+	VipProcessingObject::allObjects();
+
 	if (!arch) {
 		return false;
 	}

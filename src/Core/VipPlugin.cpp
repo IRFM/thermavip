@@ -214,7 +214,7 @@ QStringList VipLoadPlugins::pluginCategories() const
 QStringList VipLoadPlugins::plugins(const QString& category) const
 {
 	if (category == "Folder")
-		return pluginsInDir(vipGetPluginsDirectory());
+		return pluginsInDir(vipGetPluginsDirectory()) + pluginsInDir(vipGetDataDirectory() + "VipPlugins");
 	else
 		return d_data->availablePlugins[category];
 }
@@ -341,12 +341,18 @@ void VipLoadPlugins::unloadAndDeletePlugins()
 	d_data->availablePlugins.clear();
 }
 
-VipPluginInterface::LoadResult VipLoadPlugins::loadPlugin(const QString& name, QString* error)
+VipPluginInterface::LoadResult VipLoadPlugins::loadPlugin(const QString& name, Location location, QString* error)
 {
 	// get the full plugin filename
-	QString filename = (vipGetPluginsDirectory() + name);
 
-	QString pluginPath = vipGetPluginsDirectory() + name;
+	QString folder;
+	if (location == SystemPluginFolder) 
+		folder = vipGetPluginsDirectory();
+	else 
+		folder = vipGetDataDirectory() + "VipPlugins/";
+
+	QString filename = folder + name;
+	QString pluginPath = folder + name;
 
 	std::unique_ptr<PluginLib> loader;
 
@@ -360,7 +366,7 @@ VipPluginInterface::LoadResult VipLoadPlugins::loadPlugin(const QString& name, Q
 
 			// Import Python module
 			VipGILLocker lock;
-			vipExecPythonCode("import sys; sys.path.append('" + vipGetPluginsDirectory() + "')");
+			vipExecPythonCode("import sys; sys.path.append(r'" + folder + "')");
 			QString module = QFileInfo(pluginPath).fileName();
 			vipExecPythonCode("import " + module);
 			if (VipPyError err = VipPyError(compute_error_t{})) {

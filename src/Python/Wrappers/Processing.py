@@ -1,11 +1,17 @@
 import numpy as np
 from collections import UserList
 from enum import IntEnum
+from abc import ABC
+from abc import abstractmethod
+import sys
+from typing import Union
+from .QtCpp import qobject_address, qobject_from_address
 
 VipInvalidTime = -np.iinfo(np.int64).max
 VipInvalidPosition = VipInvalidTime
 VipMinTime = VipInvalidTime + 1
 VipMaxTime = np.iinfo(np.int64).max
+
 
 
 class VipAnyData:
@@ -153,7 +159,7 @@ class VipIODescription:
     Inout/output description: name (as defined in the processing class),
     optional description and editor.
     """
-    def __init__(self, name = str(), description = None, editor = None):
+    def __init__(self, name = str(), description = str(), editor = str()):
         self.name = name
         self.description = description
         self.editor = editor
@@ -165,11 +171,11 @@ class VipIODescription:
         return str({"name":self.name, "description": self.description, "editor": self.editor})
 
 
-class VipBaseProcessingIO:
+class VipBaseProcessingIO(ABC):
     """
     Base class for processing input/output decorator
     """
-    def __init__(self, description = None, editor = None):
+    def __init__(self, description =  str(), editor =  str()):
         self.description = description
         self.editor = editor
         
@@ -214,7 +220,7 @@ class VipBaseProcessingMultiIO(VipBaseProcessingIO):
     """
     Base class for processing multi input/output decorator
     """
-    def __init__(self, description=None, editor=None):
+    def __init__(self, description= str(), editor= str()):
         super().__init__( description,editor)
         
     def __get__(self, obj, objtype=None):
@@ -238,7 +244,7 @@ class VipInput(VipBaseProcessingIO):
     """
     Processing input decorator.
     """
-    def __init__(self, description=None, editor=None):
+    def __init__(self, description= str(), editor= str()):
         super().__init__( description,editor)
 
     def __set_name__(self, owner, name):
@@ -254,7 +260,7 @@ class VipMultiInput(VipBaseProcessingMultiIO):
     """
     Processing multiinput decorator.
     """
-    def __init__(self, description=None, editor=None):
+    def __init__(self, description= str(), editor= str()):
         super().__init__( description,editor)
 
     def __set_name__(self, owner, name):
@@ -262,7 +268,6 @@ class VipMultiInput(VipBaseProcessingMultiIO):
             owner._all_multi_inputs
         except:
             owner._all_multi_inputs = []
-        print(owner, owner._all_multi_inputs)
         owner._all_multi_inputs.append(VipIODescription(name, self.description, self.editor))
         self.__name__ = name
         
@@ -271,7 +276,7 @@ class VipProperty(VipBaseProcessingIO):
     """
     Processing property decorator.
     """
-    def __init__(self, description=None, editor=None):
+    def __init__(self, description= str(), editor= str()):
         super().__init__( description, editor)
 
     def __set_name__(self, owner, name):
@@ -286,7 +291,7 @@ class VipMultiProperty(VipBaseProcessingMultiIO):
     """
     Processing multiproperty decorator.
     """
-    def __init__(self, description=None, editor=None):
+    def __init__(self, description= str(), editor= str()):
         super().__init__( description,editor)
 
     def __set_name__(self, owner, name):
@@ -301,7 +306,7 @@ class VipOutput(VipBaseProcessingIO):
     """
     Processing output decorator.
     """
-    def __init__(self, description=None, editor=None):
+    def __init__(self, description= str(), editor= str()):
         super().__init__( description,editor)
 
     def __set_name__(self, owner, name):
@@ -316,7 +321,7 @@ class VipMultiOutput(VipBaseProcessingMultiIO):
     """
     Processing multioutput decorator.
     """
-    def __init__(self, description=None, editor=None):
+    def __init__(self, description= str(), editor= str()):
         super().__init__( description,editor)
 
     def __set_name__(self, owner, name):
@@ -341,7 +346,7 @@ class VipDisplayHint(IntEnum):
     # Default DisplayHint
     UnknownDisplayHint = 3
 
-class VipProcessingObject:
+class VipProcessingObject(ABC):
     """
     Base class for all processing embedded within Thermavip.
     
@@ -370,6 +375,10 @@ class VipProcessingObject:
     def get_display_hint(cls):
         return int(cls.display_hint)
     
+    @classmethod
+    def get_any_data_type(cls):
+        return VipAnyData
+    
     
     ######################################
     # Private members
@@ -382,16 +391,34 @@ class VipProcessingObject:
         
     def __attribute(self, key):
         return self.__dict__["_vip_" + key]
-            
+    
+    def __initializeIO(self, lst, value):
+        try:
+            for io in lst:
+                self.__dict__["_vip_" + io.name] = value
+        except: 
+            pass
     
     ######################################
     # Public members
     ######################################
     
     def __init__(self):
-        pass
+        # Initialize all inputs/properties/outputs
+        try: self.__initializeIO(type(self)._all_inputs, VipAnyData())
+        except: pass
+        try: self.__initializeIO(type(self)._all_multi_inputs, VipAnyDataList())
+        except: pass
+        try: self.__initializeIO(type(self)._all_properties, VipAnyData())
+        except: pass
+        try: self.__initializeIO(type(self)._all_multi_properties, VipAnyDataList())
+        except: pass
+        try: self.__initializeIO(type(self)._all_outputs, VipAnyData())
+        except: pass
+        try: self.__initializeIO(type(self)._all_multi_outputs, VipAnyDataList())
+        except: pass
     
-    def get_io(self, name):
+    def get_io(self, name) -> Union[VipAnyData , VipAnyDataList] :
         """
         Returns input/output/property with given name
 
@@ -407,7 +434,36 @@ class VipProcessingObject:
 
         """
         return self.__attribute(name)
+    
+    def set_io(self, name, index, value):
+        """
+        Set the input/output/property value for given io name and index (for multi-io)
+
+        Parameters
+        ----------
+        name : str
+            IO name.
+        index : int
+            Index for IO of type VipAnyDataList.
+        value : VipAnyData
+            value.
+
+        Returns
+        -------
+        None.
+
+        """
+        if not isinstance(value,VipAnyData):
+            value = VipAnyData(value)
+        key = "_vip_" + name
+        if isinstance(self.__dict__[key], VipAnyData):
+            if index != 0:
+                raise AttributeError("non 0 index for VipAnyData type")
+            self.__dict__[key] = value
+        else:
+            self.__dict__[key][index] = value
         
+    @abstractmethod     
     def apply(self):
         """
         Processing algorithm implementation.
@@ -438,24 +494,37 @@ class VipProcessingObject:
         None.
 
         """
-        for p in self._all_properties:
-            dst.__set_attribute(self.__attribute(p.name))
-        for lst in self._all_multi_properties:
-            props = self.__attribute(lst.name)
-            dst.__attribute(lst.name).resize(len(props))
-            out_props = dst.__attribute(lst.name)
-            for i in range(len(props)):
-                out_props[i] = props[i]
+        pass
             
     
     def editor(self):
         """
+        Returns the processing editor widget.
+        The widget must already know the processing it is working on.
+        This function must return a new widget.
+        
         Returns
         -------
-        Qt widget used to edit this processing
+        Qt widget used to edit this processing.
 
         """
         pass
+    
+    def editor_address(self) -> int:
+        try:
+            # This will throw on the first call, or if the C++ widget has been deleted
+            return qobject_address(self.__editor)
+        except:
+            pass
+        # (Re)create the editor
+        obj = self.editor()
+        if obj is None:
+            return 0
+        try:
+            ret = qobject_address(obj)
+            self.__editor = obj
+        except:
+            return 0
     
     
     
@@ -466,7 +535,7 @@ class Processing(VipProcessingObject):
         self.custom_input = [45.3]
     
     @VipInput("test", "tutu")
-    def input(self):
+    def inputVal(self):
         """
         """
         pass

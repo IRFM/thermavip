@@ -3625,7 +3625,7 @@ public:
 
 	bool shouldApply() const { return gamma->value() != 0 && constrast->value() != 0 && brightness->value() != 0; }
 
-	void computeValues(double& _contrast, double& _brightness, double & _gamma) const
+	void computeValues(double& _contrast, double& _brightness, double& _gamma) const
 	{
 		_contrast = (constrast->value() + 10) / 10.;
 		_brightness = brightness->value();
@@ -3696,9 +3696,7 @@ VipAdjustImageEditor::VipAdjustImageEditor(QWidget* parent)
 	d_data->applyToAll->hide();
 }
 
-VipAdjustImageEditor::~VipAdjustImageEditor()
-{
-}
+VipAdjustImageEditor::~VipAdjustImageEditor() {}
 
 void VipAdjustImageEditor::showEvent(QShowEvent* evt)
 {
@@ -3736,7 +3734,6 @@ void VipAdjustImageEditor::reset()
 			}
 		}
 	}
-
 
 	d_data->constrast->blockSignals(true);
 	d_data->constrast->setValue(qRound(contrast * 10) - 10);
@@ -3783,7 +3780,7 @@ void VipAdjustImageEditor::setPlotItem(VipPlotRasterData* item)
 			d_data->gamma_v->setText(QString::number(d_data->gamma->value()));
 			d_data->gamma->blockSignals(false);
 
-			//item->setCorrectionsEnabled(d_data->shouldApply());
+			// item->setCorrectionsEnabled(d_data->shouldApply());
 		}
 	}
 }
@@ -3850,7 +3847,7 @@ void VipAdjustImageEditor::changed()
 		item->setContrast(contrast);
 		item->setBrightness(brightness);
 		item->setGamma(gamma);
-		//item->setCorrectionsEnabled(d_data->shouldApply());
+		// item->setCorrectionsEnabled(d_data->shouldApply());
 
 		if (d_data->applyToAll->isChecked()) {
 			if (VipDisplayPlayerArea* area = VipDisplayPlayerArea::fromChild(item->view())) {
@@ -3859,13 +3856,12 @@ void VipAdjustImageEditor::changed()
 					pl->spectrogram()->setContrast(contrast);
 					pl->spectrogram()->setBrightness(brightness);
 					pl->spectrogram()->setGamma(gamma);
-					//pl->spectrogram()->setCorrectionsEnabled(d_data->shouldApply());
+					// pl->spectrogram()->setCorrectionsEnabled(d_data->shouldApply());
 				}
 			}
 		}
 	}
 }
-
 
 static QWidget* editAdjustImage(VipAdjustImage* p)
 {
@@ -3873,8 +3869,6 @@ static QWidget* editAdjustImage(VipAdjustImage* p)
 	editor->setProcessing(p);
 	return editor;
 }
-
-
 
 /**
 A VipPlotAreaFilter used to draw warping points
@@ -4837,18 +4831,19 @@ static bool IsDouble(const QVariant& v)
 	return ok;
 }
 
-PropertyEditor::PropertyEditor(VipProcessingObject* obj, const QString& property)
+PropertyEditor::PropertyEditor(VipProcessingObject* obj, VipProperty* prop, const QString& _name)
   : QWidget()
   , editor(nullptr)
-  , property(property)
+  , property(prop)
+  , name(_name)
   , object(obj)
   , parent(nullptr)
 {
 	this->setObjectName("_vip_PropertyEditor");
 
-	category = obj->propertyCategory(property);
-	QVariant v = obj->propertyName(property)->data().data();
-	QString style_sheet = obj->propertyEditor(property);
+	// category = obj->propertyCategory(property);
+	QVariant v = prop->data().data();
+	QString style_sheet = obj->propertyEditor(prop->name());
 	if (style_sheet.size()) {
 		editor = VipStandardWidgets::fromStyleSheet(style_sheet);
 		if (editor)
@@ -4873,12 +4868,12 @@ PropertyEditor::PropertyEditor(VipProcessingObject* obj, const QString& property
 	}
 
 	if (editor) {
-		editor->setProperty("value", obj->propertyName(property)->data().data());
-		editor->setToolTip(obj->propertyDescription(property));
+		editor->setProperty("value", prop->data().data());
+		editor->setToolTip(obj->propertyDescription(prop->name()));
 	}
 
 	QHBoxLayout* lay = new QHBoxLayout();
-	lay->addWidget(new QLabel(vipSplitClassname(property) + " : "));
+	lay->addWidget(new QLabel(vipSplitClassname(name) + " : "));
 	if (editor)
 		lay->addWidget(editor);
 	lay->setContentsMargins(0, 0, 0, 0);
@@ -4899,7 +4894,7 @@ void PropertyWidget::updateProperties()
 {
 	for (int i = 0; i < editors.size(); ++i) {
 		if (editors[i]->object && editors[i]->editor) {
-			if (VipProperty* p = editors[i]->object->propertyName(editors[i]->property)) {
+			if (VipProperty* p = editors[i]->property) {
 				QVariant v = editors[i]->editor->property("value");
 				if (v.userType() != 0)
 					p->setData(v);
@@ -4916,19 +4911,30 @@ void PropertyWidget::updateProperties()
 // If the processing has no property, a nullptr widget is returned.
 static QWidget* defaultEditor(VipProcessingObject* obj)
 {
-	int count = obj->propertyCount();
-	if (!count)
-		return nullptr;
-
 	QList<PropertyEditor*> editors;
-	for (int i = 0; i < count; ++i) {
-		VipProperty* p = obj->propertyAt(i);
-		if (p->data().data().canConvert<QString>() || obj->propertyEditor(p->name()).size()) {
-			PropertyEditor* edit = new PropertyEditor(obj, p->name());
-			if (edit->editor)
-				editors << edit;
-			else
-				delete edit;
+	for (qsizetype i = 0; i < obj->topLevelPropertyCount(); ++i) {
+		auto* prop = obj->topLevelPropertyAt(i);
+		if (prop->type() == VipProcessingIO::TypeProperty) {
+			if (prop->data().data().canConvert<QString>() || obj->propertyEditor(prop->name()).size()) {
+				PropertyEditor* edit = new PropertyEditor(obj, prop->toProperty(), prop->name());
+				if (edit->editor)
+					editors << edit;
+				else
+					delete edit;
+			}
+		}
+		else {
+			auto* mprops = prop->toMultiProperty();
+			for (qsizetype j = 0; j < mprops->count(); ++j) {
+				auto* p = mprops->at(j);
+				if (p->data().data().canConvert<QString>() || obj->propertyEditor(p->name()).size()) {
+					PropertyEditor* edit = new PropertyEditor(obj, p, QString("%1[%2]").arg(p->name()).arg(j));
+					if (edit->editor)
+						editors << edit;
+					else
+						delete edit;
+				}
+			}
 		}
 	}
 
@@ -4936,17 +4942,7 @@ static QWidget* defaultEditor(VipProcessingObject* obj)
 		return nullptr;
 
 	PropertyWidget* res = new PropertyWidget();
-
 	res->setEditors(editors);
-	// QVBoxLayout * lay = new QVBoxLayout();
-	// for (int i = 0; i < editors.size(); ++i)
-	// {
-	// lay->addWidget(editors[i]);
-	// editors[i]->parent = res;
-	// }
-	// res->editors = editors;
-	// lay->setContentsMargins(0, 0, 0, 0);
-	// res->setLayout(lay);
 	return res;
 }
 
@@ -6173,7 +6169,11 @@ VipIODevice* VipRememberDeviceOptions::deviceForSuffix(const QString& suffix) co
 	QString type = deviceTypeForSuffix(suffix);
 	if (type.isEmpty())
 		return nullptr;
-	return vipCreateVariant(((type.toLatin1()) + "*").data()).value<VipIODevice*>();
+
+	auto info = VipProcessingObject::findProcessingObject(type);
+	if (!info.metatype)
+		return nullptr;
+	return qobject_cast < VipIODevice*>(info.create());
 }
 
 /// Returns a map of 'class_name' -> 'VipIODevice*'
@@ -6191,11 +6191,11 @@ void VipRememberDeviceOptions::addDeviceOptions(const QString& device_type, VipI
 }
 bool VipRememberDeviceOptions::addDeviceOptionsCopy(const VipIODevice* src_device)
 {
-	VipIODevice* copy = (vipCreateVariant((QByteArray(src_device->metaObject()->className()) + "*").data()).value<VipIODevice*>());
+	VipIODevice* copy = qobject_cast<VipIODevice*>(src_device->info().create()); //(vipCreateVariant((QByteArray(src_device->metaObject()->className()) + "*").data()).value<VipIODevice*>());
 	if (!copy)
 		return false;
 	const_cast<VipIODevice*>(src_device)->copyParameters(copy);
-	d_data->deviceOptions.insert(src_device->metaObject()->className(), copy);
+	d_data->deviceOptions.insert(src_device->info().classname, copy);
 	return true;
 }
 void VipRememberDeviceOptions::clearDeviceOptions()
@@ -6206,7 +6206,7 @@ void VipRememberDeviceOptions::clearDeviceOptions()
 }
 bool VipRememberDeviceOptions::applyDefaultOptions(VipIODevice* device)
 {
-	auto it = d_data->deviceOptions.find(device->metaObject()->className());
+	auto it = d_data->deviceOptions.find(device->info().classname);
 	if (it == d_data->deviceOptions.end())
 		return false;
 	it.value()->copyParameters(device);
@@ -6242,7 +6242,7 @@ VipSelectDeviceParameters::VipSelectDeviceParameters(VipIODevice* device, QWidge
   : QDialog(parent)
 {
 	VIP_CREATE_PRIVATE_DATA();
-	setWindowTitle("Edit " + vipSplitClassname(device->metaObject()->className()));
+	setWindowTitle("Edit " + vipSplitClassname(device->info().classname));
 
 	d_data->device = device;
 	d_data->editor = editor;
@@ -6361,7 +6361,7 @@ void VipDeviceChoiceDialog::setChoices(const QList<VipIODevice*>& devices)
 	d_data->devices = devices;
 	d_data->tree.clear();
 	for (int i = 0; i < devices.size(); ++i) {
-		QString name = vipSplitClassname(devices[i]->className());
+		QString name = vipSplitClassname(devices[i]->info().classname);
 
 		QTreeWidgetItem* item = new QTreeWidgetItem();
 		item->setText(0, name);
@@ -6448,7 +6448,7 @@ VipIODevice* VipCreateDevice::create(const QList<VipProcessingObject::Info>& dev
 
 			// Remember user choice
 			if (remember_device_type)
-				VipRememberDeviceOptions::instance().addSuffixAndDeviceType(QFileInfo(path.canonicalPath()).suffix(), result->metaObject()->className());
+				VipRememberDeviceOptions::instance().addSuffixAndDeviceType(QFileInfo(path.canonicalPath()).suffix(), result->info().classname);
 		}
 	}
 

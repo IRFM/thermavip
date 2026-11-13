@@ -144,6 +144,13 @@ class VIP_CORE_EXPORT VipLoadPlugins : public QObject
 	VipLoadPlugins();
 
 public:
+
+	enum Location
+	{
+		SystemPluginFolder, //! Load plugin from the VipPlugins folder of Thermavip installation
+		UserPluginFolder //! Load plugin from the VipPlugins folder inside user's data directory
+	};
+
 	virtual ~VipLoadPlugins();
 	static VipLoadPlugins& instance();
 
@@ -162,7 +169,7 @@ public:
 
 	/// Load a plugin based on its name and return the #VipPluginInterface::LoadResult.
 	/// The plugin is searchd in the VipPlugins directory.
-	VipPluginInterface::LoadResult loadPlugin(const QString& name, QString* error = nullptr);
+	VipPluginInterface::LoadResult loadPlugin(const QString& name, Location location = SystemPluginFolder, QString* error = nullptr);
 
 public Q_SLOTS:
 

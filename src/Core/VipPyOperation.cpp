@@ -337,10 +337,19 @@ void* vipVariantToPython(const QVariant& variant)
 			return obj;
 		}
 
-		for (int i = 0; i < getToPython().size(); ++i) {
-			void* tmp = getToPython()[i](variant);
-			if (tmp)
-				return tmp;
+		if (QObject * obj = variant.value<QObject*>())
+		{
+			auto pyobj = vipPythonFromQObject(obj);
+			if (pyobj)
+				return pyobj.release();
+		}
+		else {
+
+			for (int i = 0; i < getToPython().size(); ++i) {
+				void* tmp = getToPython()[i](variant);
+				if (tmp)
+					return tmp;
+			}
 		}
 	}
 	catch (...) {
@@ -538,7 +547,7 @@ static void* stdToPython(const QVariant& obj)
 			break;
 		}
 		case QMetaType::QByteArray: {
-			QByteArray ar = obj.toByteArray();
+			const QByteArray ar = obj.toByteArray();
 			obj_object = PyByteArray_FromStringAndSize(ar.data(), ar.size());
 		}
 	}
@@ -557,27 +566,27 @@ static void* stdToPython(const QVariant& obj)
 			obj_object = PyComplex_FromDoubles(comp.real(), comp.imag());
 		}
 		else if (obj.userType() == qMetaTypeId<QVariantList>()) {
-			QVariantList lst = obj.value<QVariantList>();
+			const QVariantList lst = obj.value<QVariantList>();
 			obj_object = PyList_New(lst.size());
-			for (int i = 0; i < lst.size(); ++i) {
+			for (qsizetype i = 0; i < lst.size(); ++i) {
 				PyObject* item = (PyObject*)vipVariantToPython(lst[i]);
 				if (item)
 					PyList_SetItem(obj_object, i, item);
 			}
 		}
 		else if (obj.userType() == qMetaTypeId<QStringList>()) {
-			QStringList lst = obj.value<QStringList>();
+			const QStringList lst = obj.value<QStringList>();
 			obj_object = PyList_New(lst.size());
-			for (int i = 0; i < lst.size(); ++i) {
+			for (qsizetype i = 0; i < lst.size(); ++i) {
 				PyObject* item = (PyObject*)vipVariantToPython(lst[i]);
 				if (item)
 					PyList_SetItem(obj_object, i, item);
 			}
 		}
 		else if (obj.userType() == qMetaTypeId<QVariantMap>()) {
-			QVariantMap map = obj.value<QVariantMap>();
+			const QVariantMap map = obj.value<QVariantMap>();
 			obj_object = PyDict_New();
-			for (QVariantMap::iterator it = map.begin(); it != map.end(); ++it) {
+			for (auto it = map.begin(); it != map.end(); ++it) {
 				PyObject* item = (PyObject*)vipVariantToPython(it.value());
 				if (item) {
 					std::vector<wchar_t> str((size_t)it.key().size(), 0);
@@ -587,31 +596,31 @@ static void* stdToPython(const QVariant& obj)
 			}
 		}
 		else if (obj.userType() == qMetaTypeId<VipPointVector>()) {
-			VipPointVector vec = obj.value<VipPointVector>();
+			const VipPointVector vec = obj.value<VipPointVector>();
 			// array of 2 rows (x and y)
 			VipNDArrayType<vip_double> ar(vipVector(2, vec.size()));
-			for (int i = 0; i < vec.size(); ++i) {
+			for (qsizetype i = 0; i < vec.size(); ++i) {
 				ar(vipVector(0, i)) = vec[i].x();
 				ar(vipVector(1, i)) = vec[i].y();
 			}
 			obj_object = (PyObject*)vipVariantToPython(QVariant::fromValue(VipNDArray(ar)));
 		}
 		else if (obj.userType() == qMetaTypeId<VipComplexPointVector>()) {
-			VipComplexPointVector vec = obj.value<VipComplexPointVector>();
+			const VipComplexPointVector vec = obj.value<VipComplexPointVector>();
 			// array of 2 rows (x and y)
 			VipNDArrayType<complex_d> ar(vipVector(2, vec.size()));
-			for (int i = 0; i < vec.size(); ++i) {
+			for (qsizetype i = 0; i < vec.size(); ++i) {
 				ar(vipVector(0, i)) = vec[i].x();
 				ar(vipVector(1, i)) = vec[i].y();
 			}
 			obj_object = (PyObject*)vipVariantToPython(QVariant::fromValue(VipNDArray(ar)));
 		}
 		else if (obj.userType() == qMetaTypeId<VipIntervalSampleVector>()) {
-			VipIntervalSampleVector vec = obj.value<VipIntervalSampleVector>();
+			const VipIntervalSampleVector vec = obj.value<VipIntervalSampleVector>();
 			// list of 2 arrays: values and intervals
 			VipNDArrayType<double> values(vipVector(vec.size()));
 			VipNDArrayType<double> intervals(vipVector(vec.size() * 2));
-			for (int i = 0; i < vec.size(); ++i) {
+			for (qsizetype i = 0; i < vec.size(); ++i) {
 				values(vipVector(i)) = vec[i].value;
 				intervals(vipVector(i * 2)) = vec[i].interval.minValue();
 				intervals(vipVector(i * 2 + 1)) = vec[i].interval.maxValue();
@@ -913,6 +922,13 @@ VipPyObject& VipPyObject::operator=(VipPyObject&& other) noexcept
 	return *this;
 }
 
+void* VipPyObject::release() noexcept
+{
+	void* ret = pyobject;
+	pyobject = nullptr;
+	return ret;
+}
+
 bool VipPyObject::isType() const noexcept
 {
 	if (pyobject)
@@ -1081,6 +1097,93 @@ VipPyObject VipPyObject::eval(const QString& str)
 	PyObject* obj = PyRun_String(str.toLatin1().data(), Py_eval_input, globals, globals);
 	return VipPyObject(obj, borrow_t{});
 }
+
+
+static VipPyObject importPyQtOrPySide()
+{
+	static VipPyObject qt;
+	if (!qt) {
+
+		VipGILLocker lock;
+		VipPyError::clear();
+
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
+		qt = VipPyObject(PyImport_ImportModule("PySide2"), borrow_t{});
+		if (!qt) {
+			VipPyError::clear();
+			qt = VipPyObject(PyImport_ImportModule("PyQt5"), borrow_t{});
+		}
+#else
+		qt = VipPyObject(PyImport_ImportModule("PySide6"), borrow_t{});
+		if (!qt) {
+			VipPyError::clear();
+			qt = VipPyObject(PyImport_ImportModule("PyQt6"), borrow_t{});
+		}
+#endif
+	}
+	return qt;
+}
+
+VipPyObject vipPythonFromQObject(QObject* obj)
+{
+	if (!importPyQtOrPySide()) {
+		VIP_LOG_ERROR("Failed to load PySide or PyQt module");
+		return {};
+	}
+
+	VipGILLocker lock;
+	VipPyError::clear();
+
+	VipPyObject thermavip(PyImport_ImportModule("Thermavip"), borrow_t{});
+	if (!thermavip) {
+		VIP_LOG_ERROR("Failed to load Thermavip module");
+		return {};
+	}
+	VipPyObject qobject_from_address = thermavip.getMember("qobject_from_address");
+	if (!qobject_from_address) {
+		VIP_LOG_ERROR("Failed to retrieve 'qobject_from_address' from Thermavip module");
+		return {};
+	}
+	return qobject_from_address.callMember("__call__", QVariantList() << (std::uintptr_t)obj);
+}
+
+QObject* vipQObjectFromPython(const VipPyObject& obj)
+{
+	if (!importPyQtOrPySide()) {
+		VIP_LOG_ERROR("Failed to load PySide or PyQt module");
+		return {};
+	}
+	VipGILLocker lock;
+	VipPyError::clear();
+
+	VipPyObject thermavip(PyImport_ImportModule("Thermavip"), borrow_t{});
+	if (!thermavip) {
+		VIP_LOG_ERROR("Failed to load Thermavip module");
+		return {};
+	}
+	VipPyObject qobject_address = thermavip.getMember("qobject_address");
+	if (!qobject_address) {
+		VIP_LOG_ERROR("Failed to retrieve 'qobject_address' from Thermavip module");
+		return {};
+	}
+
+	std::uintptr_t addr = qobject_address.callMember("__call__", QVariantList() << vipToVariant(VipPyObjectPtr(new VipPyObject(obj)))).toVariant().value < std::uintptr_t>();
+	if (!addr)
+		return nullptr;
+
+	auto ret = (QObject*)addr;
+
+	// We must keep alive the Python object
+	ret->setProperty("_vip_PyObject", vipToVariant(VipPyObjectPtr(new VipPyObject(obj))));
+
+	// We must ensure that pure Python slots are protected
+	new VipPyQtWatcher(ret);
+
+	return ret;
+}
+
+
+
 
 // Associate each VipPyLocal instance to a QThread.
 // Used to select the right VipPyLocal instance for I/O operations based on sys.stdin, sys.stderr and sys.stdout
@@ -1326,8 +1429,41 @@ static PyObject* callRegisteredFun(PyObject*, PyObject* args, PyObject* kwargs)
 	return res;
 }
 
+
+
+static PyObject* qobject_casts(PyObject*, PyObject* address)
+{
+	auto* obj = static_cast<QObject*>(PyLong_AsVoidPtr(address));
+	if (!obj) {
+		if (!PyErr_Occurred())
+			PyErr_SetString(PyExc_ValueError, "Expected a non-null QObject address");
+		return nullptr;
+	}
+
+	PyObject* result = PyList_New(0);
+	if (!result)
+		return nullptr;
+
+	for (auto* meta = obj->metaObject(); meta; meta = meta->superClass()) {
+		const char* name = meta->className();
+		void* ptr = obj->qt_metacast(name);
+		if (!ptr)
+			continue;
+
+		PyObject* item = Py_BuildValue("(sN)", name, PyLong_FromVoidPtr(ptr));
+		if (!item || PyList_Append(result, item) < 0) {
+			Py_XDECREF(item);
+			Py_DECREF(result);
+			return nullptr;
+		}
+		Py_DECREF(item);
+	}
+	return result;
+}
+
 static PyMethodDef Thermavip_methods[] = {
 	{ "call_internal_func", (PyCFunction)callRegisteredFun, METH_VARARGS | METH_KEYWORDS, "internal.call_internal_func" },
+	{ "qobject_casts", qobject_casts, METH_O, "Return Qt class names and pointer addresses." },
 	{ 0, 0, 0, 0 } // sentinel
 };
 
@@ -1586,6 +1722,17 @@ public:
 
 			__traceback = PyImport_ImportModule("traceback");
 		}
+
+		// TEST
+		/* PyRun_SimpleString("import shiboken6");
+		printf("Imported shiboken6\n");
+		PyRun_SimpleString("import PySide6.QtCore");
+		printf("Imported PySide6.QtCore\n");
+		PyRun_SimpleString("import PySide6.QtGui");
+		printf("Imported PySide6.QtGui\n");
+		PyRun_SimpleString("import PySide6.QtWidgets");
+		printf("Imported PySide6.QtWidgets\n");*/
+
 
 		initThermavipModule();
 
@@ -2479,12 +2626,12 @@ struct GIL_Lock_Event : QEvent
 	GIL_Lock_Event()
 	  : QEvent((QEvent::Type)(QEvent::MaxUser + 1000))
 	{
-		// vip_debug("lock GIL\n");fflush(stdout);
+		//vip_debug("lock GIL\n");fflush(stdout);
 	}
 
 	~GIL_Lock_Event()
 	{
-		// vip_debug("unlock GIL\n");fflush(stdout);
+		//vip_debug("unlock GIL\n");fflush(stdout);
 	}
 };
 VipPyQtWatcher::VipPyQtWatcher(QObject* parent)

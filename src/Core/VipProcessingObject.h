@@ -1979,6 +1979,7 @@ public:
 	/// The QMetaObject must be related to a class inheriting VipProcessingObject.
 	/// Multi inputs/properties/outputs are considered as a single input/propertie/output/
 	static void IOCount(const QMetaObject* meta, int* inputs = nullptr, int* properties = nullptr, int* outputs = nullptr);
+	void IOCount(int* inputs, int* properties, int* outputs) const;
 
 	/// @brief Register a #VipProcessingObject::Info object.
 	/// This function should only be used whenever a processing class can be used to create different processings.
@@ -2192,7 +2193,7 @@ QMultiMap<QString, VipProcessingObject::Info> VipProcessingObject::validProcessi
 			continue;
 
 		int in_count, out_count;
-		VipProcessingObject::IOCount(meta, &in_count, nullptr, &out_count);
+		obj->IOCount( &in_count, nullptr, &out_count);
 		if (lst.size() && !in_count)
 			continue;
 		else if (output_count && !out_count)

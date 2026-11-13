@@ -1190,7 +1190,7 @@ void VipOutput::setData(const VipAnyData& d)
 	}
 }
 
-void VipOutput::setData(VipAnyData&& d) 
+void VipOutput::setData(VipAnyData&& d)
 {
 	{
 		std::scoped_lock<VipSpinlock> lock(m_data_lock);
@@ -2355,9 +2355,6 @@ void TaskPool::clear()
 	m_clear.store(m_run.load(std::memory_order_relaxed));
 }
 
-
-
-
 class VipProcessingObject::PrivateData
 {
 public:
@@ -2461,12 +2458,20 @@ public:
 	// Atomic: the fast path of initialize() reads them without the lock that the
 	// slow path writes them under, which is a race and a decision taken on a value
 	// being changed.
-	std::atomic<int> initializeIO;
+	std::atomic<int> initializeIO{ 0 };
 	std::vector<std::unique_ptr<VipProcessingIO>> inputs;
 	std::vector<std::unique_ptr<VipProcessingIO>> outputs;
 	std::vector<std::unique_ptr<VipProcessingIO>> properties;
 
-	std::set<VipCustomIO, std::less<>> customIO;
+	int initializeCustomIO{ 0 };
+	std::vector<VipCustomIO> customIO;
+	const VipCustomIO* findCustomIO(const QString& name) const
+	{
+		for (auto it = customIO.begin(); it != customIO.end(); ++it)
+			if (it->name == name)
+				return std::addressof(*it);
+		return nullptr;
+	}
 
 	std::function<void()> onInitIO;
 
@@ -2718,7 +2723,7 @@ void VipProcessingObject::internalInitIO(bool force) const
 			VipProcessingObject* _this = const_cast<VipProcessingObject*>(this);
 			auto* data = _this->d_data.get();
 
-			for (; d_data->initializeIO < meta->propertyCount(); ++d_data->initializeIO) {
+			for (; data->initializeIO < meta->propertyCount(); ++data->initializeIO) {
 				const int i = d_data->initializeIO;
 				const int type = meta->property(i).userType();
 
@@ -2736,8 +2741,8 @@ void VipProcessingObject::internalInitIO(bool force) const
 					data->outputs.push_back(std::unique_ptr<VipProcessingIO>(new VipMultiOutput(meta->property(i).name(), _this)));
 			}
 
-			for (auto it = data->customIO.begin(); it != data->customIO.end(); ++it) {
-				const auto& io = *it;
+			for (; data->initializeCustomIO < (int)data->customIO.size(); ++data->initializeCustomIO) {
+				const auto& io = data->customIO[(size_t)data->initializeCustomIO];
 				if (io.type == VipProcessingIO::TypeInput)
 					data->inputs.push_back(std::unique_ptr<VipProcessingIO>(new VipInput(io.name, _this)));
 				else if (io.type == VipProcessingIO::TypeMultiInput)
@@ -3103,8 +3108,7 @@ QString VipProcessingObject::propertyEditor(const QString& property) const
 			return QString(meta->classInfo(i).value());
 	}
 
-	auto it = d_data->customIO.find(property);
-	if (it != d_data->customIO.end())
+	if(auto it = d_data->findCustomIO(property))
 		return it->editor;
 
 	return QString();
@@ -3156,8 +3160,7 @@ QString VipProcessingObject::description(const QString& name) const
 			return QString(meta->classInfo(i).value());
 	}
 
-	auto it = d_data->customIO.find(name);
-	if (it != d_data->customIO.end())
+	if (auto it = d_data->findCustomIO(name))
 		return it->description;
 
 	return QString();
@@ -4137,9 +4140,8 @@ void VipProcessingObject::emitError(QObject* obj, const VipErrorData& err)
 
 bool VipProcessingObject::addCustomIO(const VipCustomIO& io)
 {
-
-	if (d_data->customIO.insert(io).second) {
-		d_data->dirtyIO = true;
+	if (!d_data->findCustomIO(io.name)) {
+		d_data->customIO.push_back(io);
 		return true;
 	}
 	return false;
@@ -4215,10 +4217,12 @@ QList<const VipProcessingObject*> VipProcessingObject::allObjects()
 		// remove the VipProcessingPool from the result
 		if (strcmp(vipTypeName(type), "VipProcessingPool*") == 0)
 			continue;
+
 		// create the object and initialize it
 		VipProcessingObject* obj = nullptr;
-		if (i >= types.size())
+		if (i >= types.size()) {
 			obj = additionals[i - types.size()].create(); // easy way
+		}
 		else {
 			obj = vipCreateVariant(type).value<VipProcessingObject*>();
 			if (obj) {
@@ -4247,6 +4251,19 @@ QList<const VipProcessingObject*> VipProcessingObject::allObjects()
 		VipProcessingManager::instance().d_data->_additional_info_mutex.lock();
 	}
 	return VipProcessingManager::instance().d_data->_allObjects;
+}
+
+void VipProcessingObject::IOCount(int* inputs, int* properties, int* outputs) const
+{
+	IOCount(metaObject(), inputs, properties, outputs);
+	for (auto it = d_data->customIO.begin(); it != d_data->customIO.end(); ++it) {
+		if (inputs && ((it->type == VipProcessingIO::TypeInput) || (it->type == VipProcessingIO::TypeMultiInput)))
+			++(*inputs);
+		if (properties && ((it->type == VipProcessingIO::TypeProperty) || (it->type == VipProcessingIO::TypeMultiProperty)))
+			++(*properties);
+		if (outputs && ((it->type == VipProcessingIO::TypeOutput) || (it->type == VipProcessingIO::TypeMultiOutput)))
+			++(*outputs);
+	}
 }
 
 void VipProcessingObject::IOCount(const QMetaObject* meta, int* inputs, int* properties, int* outputs)
@@ -4306,7 +4323,7 @@ VipProcessingObject::Info VipProcessingObject::findProcessingObject(const QStrin
 	const QList<const VipProcessingObject*> all = allObjects();
 
 	for (int i = 0; i < all.size(); ++i) {
-		if (class_name == all[i]->className())
+		if (class_name == all[i]->info().classname)
 			return all[i]->info();
 	}
 	return VipProcessingObject::Info();
@@ -4667,12 +4684,11 @@ void VipProcessingList::applyFrom(VipProcessingObject* obj)
 		~ClearApplying() { flag.store(false); }
 	} clear_applying{ d_data->isApplying };
 
-	
 	std::unique_lock<QRecursiveMutex> guard(d_data->mutex);
 
 	computeParams();
 	QTransform previousTransform = d_data->transform;
-	
+
 	if (!d_data->objects.size()) {
 		VipAnyData data = inputAt(0)->data();
 		VipAnyData out = create(data.data(), data.attributes());

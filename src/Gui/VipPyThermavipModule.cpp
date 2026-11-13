@@ -2071,6 +2071,34 @@ static QVariant plotsData(const QVariantList & vectors, const QVariantMap & attr
 }
 
 
+static QVariant get_generate_menu()
+{
+	return vipToVariant(vipGetMainWindow()->generateMenu());
+}
+
+static QVariant get_main_window()
+{
+	return vipToVariant(vipGetMainWindow());
+}
+
+static QVariant get_tool_widgets()
+{
+	
+	QVariantList ret;
+	for (auto* tool : vipGetMainWindow()->findChildren<VipToolWidget*>())
+		ret.push_back(vipToVariant(tool));
+	return vipToVariant(ret);
+}
+
+static QVariant get_tool_widget(const QString& name)
+{
+	auto * tool = vipGetMainWindow()->findChild<VipToolWidget*>(name);
+	if (tool)
+		return vipToVariant(tool);
+	return {};
+}
+
+
 /* static QVariant addFunction(int player, PyObject* fun, const QString& fun_name, const QString& item_name)
 {
 	//find the player
@@ -2235,7 +2263,53 @@ static int registerFunctions()
 	vipRegisterFunction(vipMakeFunctionObject(setXScale, "set_x_scale"));
 	vipRegisterFunction(vipMakeFunctionObject(userInput, "user_input"));
 
+	// GUI functions
+
+	vipRegisterFunction(vipMakeFunctionObject(get_generate_menu, "get_generate_menu"));
+	vipRegisterFunction(vipMakeFunctionObject(get_main_window, "get_main_window"));
+	vipRegisterFunction(vipMakeFunctionObject(get_tool_widgets, "get_tool_widgets"));
+	vipRegisterFunction(vipMakeFunctionObject(get_tool_widget, "get_tool_widget"));
+
 	return 0;
 }
 
 static int _registerFunction = vipStaticInit("registerFunctions",registerFunctions);
+
+
+
+
+static QWidget* editVipPyWrapperProcessing(VipPyWrapperProcessing* obj)
+{
+	VipGILLocker lock;
+	auto proc = obj->processingObject();
+	if (!proc)
+		return nullptr;
+
+	auto editor = proc.callMember("editor");
+	if (QObject* ed = vipQObjectFromPython(editor)) {
+		return qobject_cast<QWidget*>(ed);
+	}
+	return nullptr;
+}
+
+static QWidget* editVipPyWrapperIODevice(VipPyWrapperIODevice* obj)
+{
+	VipGILLocker lock;
+	auto proc = obj->processingObject();
+	if (!proc)
+		return nullptr;
+
+	auto editor = proc.callMember("editor");
+	if (QObject* ed = vipQObjectFromPython(editor))
+		return qobject_cast<QWidget*>(ed);
+	return nullptr;
+}
+
+static int registerWrapperEditors()
+{
+	vipFDObjectEditor().append<QWidget*(VipPyWrapperProcessing*)>(editVipPyWrapperProcessing);
+	vipFDObjectEditor().append<QWidget*(VipPyWrapperIODevice*)>(editVipPyWrapperIODevice);
+	return 0;
+}
+
+static int _registerEditors = vipStaticInit("registerWrapperEditors", registerWrapperEditors);

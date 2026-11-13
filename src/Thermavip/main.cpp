@@ -47,6 +47,10 @@
 #include "vtkObject.h"
 #endif
 
+#ifdef VIP_WITH_PYTHON
+#include "VipPyOperation.h"
+#endif
+
 #include <qsurfaceformat.h>
 
 #if !defined(_WIN32) && (defined(__unix__) || defined(__unix) || (defined(__APPLE__) && defined(__MACH__)))
@@ -203,6 +207,7 @@ static void vipRegisterFileAssociations()
 }
 
 #endif
+
 
 
 int main(int argc, char** argv)
@@ -564,6 +569,11 @@ int main(int argc, char** argv)
 		no_splashscreen = true;
 	vip_debug("Check splashscreen\n");
 
+	// Initialize Python here as it might be used just after
+#ifdef VIP_WITH_PYTHON
+	vipPythonInitialize();
+#endif
+
 	QSplashScreen* splash = nullptr;
 	if (!no_splashscreen) {
 		vip_debug("Build splashscreen;..\n");
@@ -711,7 +721,10 @@ int main(int argc, char** argv)
 		QString fileName = QFileInfo(plugins[i]).fileName();
 		vip_debug("Start loading %s\n", fileName.toLatin1().data());
 		QString error;
-		VipPluginInterface::LoadResult ret = VipLoadPlugins::instance().loadPlugin(plugins[i], &error);
+		VipPluginInterface::LoadResult ret = VipLoadPlugins::instance().loadPlugin(plugins[i], VipLoadPlugins::UserPluginFolder, &error);
+		if (ret == VipPluginInterface::Unauthorized)
+			ret = VipLoadPlugins::instance().loadPlugin(plugins[i], VipLoadPlugins::SystemPluginFolder, &error);
+
 		if (ret == VipPluginInterface::ExitProcess) {
 			return 0;
 		}

@@ -810,12 +810,13 @@ class PropertyEditor : public QWidget
 
 public:
 	QWidget* editor;
-	QString property;
+	VipProperty* property;
+	QString name;
 	QString category;
 	QPointer<VipProcessingObject> object;
 	PropertyWidget* parent;
 
-	PropertyEditor(VipProcessingObject* obj, const QString& property);
+	PropertyEditor(VipProcessingObject* obj, VipProperty * prop, const QString& name);
 
 public Q_SLOTS:
 	void updateProperty();

@@ -190,6 +190,8 @@ public:
 	bool isValid() const noexcept { return !isNull(); }
 	explicit operator bool() const noexcept { return isValid(); }
 
+	void* release() noexcept;
+
 	bool isType() const noexcept;
 	bool isOfType(const VipPyObject& type) const noexcept;
 
@@ -231,6 +233,9 @@ public:
 // VipPyObject wrapped in a shared pointer, used to store a PyObject into a QVariant.
 using VipPyObjectPtr = QSharedPointer<VipPyObject>;
 Q_DECLARE_METATYPE(VipPyObjectPtr)
+
+VIP_CORE_EXPORT VipPyObject vipPythonFromQObject(QObject* obj);
+VIP_CORE_EXPORT QObject* vipQObjectFromPython(const VipPyObject& obj);
 
 
 

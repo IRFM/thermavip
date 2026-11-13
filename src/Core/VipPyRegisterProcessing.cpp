@@ -59,7 +59,7 @@ static QMultiMap<QString, VipProcessingObject::Info> _validProcessingObjects(con
 			continue;
 
 		int in_count, out_count;
-		VipProcessingObject::IOCount(meta, &in_count, nullptr, &out_count);
+		obj->IOCount(&in_count, nullptr, &out_count);
 		if (lst.size() && !in_count)
 			continue;
 		else if (output_count && !out_count)

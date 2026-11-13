@@ -47,10 +47,10 @@ extern "C" {
 
 #ifdef VIP_HAS_DEBUG
 #define _DEBUG
-//#ifdef _MSC_VER
-// Bug https://github.com/microsoft/onnxruntime/issues/9735
-//#define _STL_CRT_SECURE_INVALID_PARAMETER(expr) _CRT_SECURE_INVALID_PARAMETER(expr)
-//#endif
+// #ifdef _MSC_VER
+//  Bug https://github.com/microsoft/onnxruntime/issues/9735
+// #define _STL_CRT_SECURE_INVALID_PARAMETER(expr) _CRT_SECURE_INVALID_PARAMETER(expr)
+// #endif
 #endif
 
 #include "VipLogging.h"
@@ -66,7 +66,7 @@ static int registerPyProcessingPtr()
 	qRegisterMetaType<VipPyProcessingPtr>();
 	return 0;
 }
-static int _registerPyProcessingPtr = vipStaticInit("registerPyProcessingPtr",registerPyProcessingPtr);
+static int _registerPyProcessingPtr = vipStaticInit("registerPyProcessingPtr", registerPyProcessingPtr);
 
 void VipPyBaseProcessing::newError(const VipErrorData& error)
 {
@@ -800,7 +800,6 @@ void VipPyProcessing::mergeData(int, int)
 	d_data->lastExecutedCode = code;
 }
 
-
 VipArchive& operator<<(VipArchive& ar, VipPyProcessing* p)
 {
 	ar.content("maxExecutionTime", p->maxExecutionTime());
@@ -835,63 +834,7 @@ static int registerStreamOperators()
 	vipRegisterArchiveStreamOperators<VipPyProcessing*>();
 	return 0;
 }
-static int _registerStreamOperators = vipStaticInit("registerStreamOperators",registerStreamOperators);
-
-
-
-
-
-
-class VipPyWrapperProcessing::PrivateData
-{
-public:
-	VipProcessingObject::Info info;
-	VipPyObjectPtr type;
-	VipPyObject object;
-
-	QStringList inputs, multi_inputs, properties, multi_properties, outptus, multi_outputs;
-
-	bool useEventLoop = false;
-};
-
-VipPyWrapperProcessing::VipPyWrapperProcessing(QObject* parent)
-  : VipProcessingObject(parent)
-{
-	VIP_CREATE_PRIVATE_DATA();
-}
-
-VipPyWrapperProcessing::~VipPyWrapperProcessing()
-{
-}
-
-VipProcessingObject::DisplayHint VipPyWrapperProcessing::displayHint() const
-{
-	return d_data->info.displayHint;
-}
-
-VipPyWrapperProcessing::Info VipPyWrapperProcessing::info() const
-{
-	return d_data->info;
-}
-
-bool VipPyWrapperProcessing::useEventLoop() const
-{
-	return d_data->useEventLoop;
-}
-
-void VipPyWrapperProcessing::copyParameters(VipProcessingObject* dst)
-{
-	VipPyWrapperProcessing* _dst = qobject_cast<VipPyWrapperProcessing*>(dst);
-	if (!_dst)
-		return;
-
-	if (!d_data->type || d_data->type != _dst->d_data->type)
-		return;
-
-	VipGILLocker lock;
-	d_data->object.callMember("copy_parameters", QVariantList() << QVariant::fromValue(VipPyObjectPtr(new VipPyObject( _dst->d_data->object))));
-}
-
+static int _registerStreamOperators = vipStaticInit("registerStreamOperators", registerStreamOperators);
 
 static VipCustomIO fromPython(const VipPyObject& obj, VipProcessingIO::Type type)
 {
@@ -908,7 +851,7 @@ static VipCustomIO fromPython(const VipPyObject& obj, VipProcessingIO::Type type
 	return ret;
 }
 
-static VipAnyData anyFromPython(const VipPyObject& obj, VipProcessingObject * source = nullptr)
+static VipAnyData anyFromPython(const VipPyObject& obj, VipProcessingObject* source = nullptr)
 {
 	VipAnyData ret;
 	if (source) {
@@ -921,20 +864,52 @@ static VipAnyData anyFromPython(const VipPyObject& obj, VipProcessingObject * so
 	return ret;
 }
 
-void VipPyWrapperProcessing::addCustomIOFromPython(const VipPyObject& obj, QStringList & names, VipProcessingIO::Type type)
+static QVariant anyToPython(const VipAnyData& any, VipPyObjectPtr& proc_type)
 {
-	qsizetype len = obj.length();
-	for (qsizetype i = 0; i < len; ++i) {
-		if (VipCustomIO io = fromPython(obj.at(i), type)) {
-			if (this->addCustomIO(io)) {
-				names.push_back(io.name);
-			}
-		}
-	}
+	static VipPyObject vip_any_data;
+	if (!vip_any_data)
+		vip_any_data = proc_type->callMember("get_any_data_type");
+
+	if (!vip_any_data)
+		return {};
+
+	QVariantMap kwargs;
+	kwargs.insert("data", any.data());
+	kwargs.insert("time", any.time());
+	kwargs.insert("attributes", QVariant::fromValue(any.attributes()));
+	return QVariant::fromValue(VipPyObjectPtr(new VipPyObject(vip_any_data.callMember("__call__", QVariantList(), kwargs))));
 }
 
-QVariant VipPyWrapperProcessing::initializeProcessing(const QVariant& value)
+static QObject* buildEditor(VipPyObject& proc)
 {
+	if (!proc)
+		return nullptr;
+
+	auto ret = proc.callMember("editor_address");
+	if (!ret)
+		return nullptr;
+	if (VipPyError err = VipPyError(compute_error_t{}))
+		return nullptr;
+	auto address = (std::uintptr_t)ret.toVariant().toLongLong();
+	if (!address)
+		return nullptr;
+
+	return (QObject*)address;
+}
+
+static VipPyObject getVipProcessingObjectType()
+{
+	vipExecPythonCode("import Thermavip as th\n"
+			  "proc_type = th.VipProcessingObject");
+
+	return VipPyObject::eval("proc_type");
+}
+
+template<class Processing>
+QVariant initializePyProcessing(Processing* _this, const QVariant& value)
+{
+	auto* d_data = _this->d_data.get();
+
 	VipPyObjectPtr ptr;
 	VipPyObject object;
 
@@ -962,16 +937,15 @@ QVariant VipPyWrapperProcessing::initializeProcessing(const QVariant& value)
 	info.category = ptr->getMember("category").str();
 	info.description = ptr->getMember("description").str();
 	info.classname = ptr->getMember("__name__").str();
-	info.metatype = vipVariantFromQObject(this).metaType().id();
-	info.displayHint = (DisplayHint)object.callMember("get_display_hint").toVariant().toInt();
+	info.metatype = vipVariantFromQObject(_this).metaType().id();
+	info.displayHint = (VipProcessingObject::DisplayHint)object.callMember("get_display_hint").toVariant().toInt();
 	info.init = value;
 	d_data->useEventLoop = object.getMember("use_event_loop").toVariant().toBool();
 	d_data->type = ptr;
 	d_data->object = object;
 
-	if (VipPyError err = VipPyError(compute_error_t{}))
-	{
-		setLastError();
+	if (VipPyError err = VipPyError(compute_error_t{})) {
+		_this->setLastError();
 		return false;
 	}
 
@@ -984,43 +958,236 @@ QVariant VipPyWrapperProcessing::initializeProcessing(const QVariant& value)
 	auto outputs = ptr->getMember("_all_outputs");
 	auto multi_outputs = ptr->getMember("_all_multi_outputs");
 
-	addCustomIOFromPython(inputs, d_data->inputs, VipProcessingIO::TypeInput);
-	addCustomIOFromPython(multi_inputs, d_data->multi_inputs, VipProcessingIO::TypeMultiInput);
-	addCustomIOFromPython(properties, d_data->properties, VipProcessingIO::TypeProperty);
-	addCustomIOFromPython(multi_properties, d_data->multi_properties, VipProcessingIO::TypeMultiProperty);
-	addCustomIOFromPython(outputs, d_data->outptus, VipProcessingIO::TypeOutput);
-	addCustomIOFromPython(multi_outputs, d_data->multi_outputs, VipProcessingIO::TypeMultiOutput);
+	_this->addCustomIOFromPython(inputs, d_data->inputs, VipProcessingIO::TypeInput);
+	_this->addCustomIOFromPython(multi_inputs, d_data->multi_inputs, VipProcessingIO::TypeMultiInput);
+	_this->addCustomIOFromPython(properties, d_data->properties, VipProcessingIO::TypeProperty);
+	_this->addCustomIOFromPython(multi_properties, d_data->multi_properties, VipProcessingIO::TypeMultiProperty);
+	_this->addCustomIOFromPython(outputs, d_data->outptus, VipProcessingIO::TypeOutput);
+	_this->addCustomIOFromPython(multi_outputs, d_data->multi_outputs, VipProcessingIO::TypeMultiOutput);
 
 	// Resize multi io
 	for (const auto& name : d_data->multi_inputs) {
 		auto io = d_data->object.callMember("get_io", QVariantList() << name);
 		if (!io) {
-			setLastError();
+			_this->setLastError();
 			return false;
 		}
-		topLevelInputName(name)->toMultiInput()->resize(io.length());
+		_this->topLevelInputName(name)->toMultiInput()->resize(io.length());
 	}
 	for (const auto& name : d_data->multi_properties) {
 		auto io = d_data->object.callMember("get_io", QVariantList() << name);
 		if (!io) {
-			setLastError();
+			_this->setLastError();
 			return false;
 		}
-		topLevelPropertyName(name)->toMultiProperty()->resize(io.length());
+		_this->topLevelPropertyName(name)->toMultiProperty()->resize(io.length());
 	}
 	for (const auto& name : d_data->multi_outputs) {
 		auto io = d_data->object.callMember("get_io", QVariantList() << name);
 		if (!io) {
-			setLastError();
+			_this->setLastError();
 			return false;
 		}
-		topLevelOutputName(name)->toMultiOutput()->resize(io.length());
+		_this->topLevelOutputName(name)->toMultiOutput()->resize(io.length());
 	}
-	
+
+	// Import properties
+	for (int i = 0; i < _this->topLevelPropertyCount(); ++i) {
+		auto prop = _this->topLevelPropertyAt(i);
+		if (prop->type() == VipProcessingIO::TypeProperty)
+			prop->toProperty()->setData(anyFromPython(d_data->object.callMember("get_io", QVariantList() << prop->name()), _this));
+		else {
+			auto mprop = prop->toMultiProperty();
+			auto io = d_data->object.callMember("get_io", QVariantList() << prop->name());
+			if (mprop->count() != io.length()) {
+				_this->setLastError();
+				return false;
+			}
+			for (int j = 0; j < mprop->count(); ++j)
+				mprop->at(j)->setData(anyFromPython(io.at(j), _this));
+		}
+	}
+
 	return true;
 }
 
-void VipPyWrapperProcessing::setLastError() 
+template<class Processing>
+bool applyPyProcessing(Processing* _this)
+{
+	auto* d_data = _this->d_data.get();
+
+	if (!d_data->object) {
+		_this->setError("VipPyWrapperProcessing: null Python object");
+		return false;
+	}
+
+	VipGILLocker lock;
+	VipPyError::clear();
+
+	// Set inputs
+	for (int i = 0; i < _this->topLevelInputCount(); ++i) {
+		auto in = _this->topLevelInputAt(i);
+		if (in->type() == VipProcessingIO::TypeInput)
+			d_data->object.callMember("set_io", QVariantList() << in->name() << 0 << anyToPython(in->data(), d_data->type));
+		else {
+			auto min = in->toMultiInput();
+			auto io = d_data->object.callMember("get_io", QVariantList() << in->name());
+			if (min->count() != io.length()) {
+				// Resize Python io
+				io.callMember("resize", QVariantList() << min->count());
+			}
+			for (int j = 0; j < min->count(); ++j)
+				d_data->object.callMember("set_io", QVariantList() << in->name() << j << anyToPython(min->at(j)->data(), d_data->type));
+		}
+	}
+
+	if (VipPyError err = VipPyError(compute_error_t{})) {
+		_this->setLastError();
+		return false;
+	}
+
+	// Set properties
+	for (int i = 0; i < _this->topLevelPropertyCount(); ++i) {
+		auto prop = _this->topLevelPropertyAt(i);
+		if (prop->type() == VipProcessingIO::TypeProperty)
+			d_data->object.callMember("set_io", QVariantList() << prop->name() << 0 << anyToPython(prop->data(), d_data->type));
+		else {
+			auto mprop = prop->toMultiProperty();
+			auto io = d_data->object.callMember("get_io", QVariantList() << prop->name());
+			if (mprop->count() != io.length()) {
+				// Resize Python io
+				io.callMember("resize", QVariantList() << mprop->count());
+			}
+			for (int j = 0; j < mprop->count(); ++j)
+				d_data->object.callMember("set_io", QVariantList() << prop->name() << j << anyToPython(mprop->at(j)->data(), d_data->type));
+		}
+	}
+
+	if (VipPyError err = VipPyError(compute_error_t{})) {
+		_this->setLastError();
+		return false;
+	}
+
+	// Apply
+	d_data->object.callMember("apply");
+	if (VipPyError err = VipPyError(compute_error_t{})) {
+		_this->setLastError();
+		return false;
+	}
+
+	// Set outputs
+	for (int i = 0; i < _this->topLevelOutputCount(); ++i) {
+		auto out = _this->topLevelOutputAt(i);
+		if (out->type() == VipProcessingIO::TypeOutput)
+			out->toOutput()->setData(anyFromPython(d_data->object.callMember("get_io", QVariantList() << out->name()), _this));
+		else {
+			auto mout = out->toMultiOutput();
+			auto io = d_data->object.callMember("get_io", QVariantList() << out->name());
+			if (mout->count() != io.length()) {
+				_this->setLastError();
+				return false;
+			}
+			for (int j = 0; j < mout->count(); ++j)
+				mout->at(j)->setData(anyFromPython(io.at(j), _this));
+		}
+	}
+
+	if (VipPyError err = VipPyError(compute_error_t{})) {
+		_this->setLastError();
+		return false;
+	}
+	return true;
+}
+
+class VipPyWrapperProcessing::PrivateData
+{
+public:
+	VipProcessingObject::Info info;
+	VipPyObjectPtr type;
+	VipPyObject object;
+
+	QStringList inputs, multi_inputs, properties, multi_properties, outptus, multi_outputs;
+
+	bool useEventLoop = false;
+};
+
+VipPyWrapperProcessing::VipPyWrapperProcessing(QObject* parent)
+  : VipProcessingObject(parent)
+{
+	VIP_CREATE_PRIVATE_DATA();
+}
+
+VipPyWrapperProcessing::~VipPyWrapperProcessing() {}
+
+const VipPyObject& VipPyWrapperProcessing::processingObject() const noexcept
+{
+	return d_data->object;
+}
+
+const VipPyObjectPtr& VipPyWrapperProcessing::processingClass() const noexcept
+{
+	return d_data->type;
+}
+
+
+VipProcessingObject::DisplayHint VipPyWrapperProcessing::displayHint() const
+{
+	return d_data->info.displayHint;
+}
+
+VipPyWrapperProcessing::Info VipPyWrapperProcessing::info() const
+{
+	if (d_data->info.metatype)
+		return d_data->info;
+	else
+		return VipProcessingObject::info();
+}
+
+bool VipPyWrapperProcessing::useEventLoop() const
+{
+	return d_data->useEventLoop;
+}
+
+void VipPyWrapperProcessing::copyParameters(VipProcessingObject* dst)
+{
+	VipPyWrapperProcessing* _dst = qobject_cast<VipPyWrapperProcessing*>(dst);
+	if (!_dst)
+		return;
+
+	if (!d_data->type || d_data->type != _dst->d_data->type)
+		return;
+
+	VipProcessingObject::copyParameters(dst);
+
+	VipGILLocker lock;
+	d_data->object.callMember("copy_parameters", QVariantList() << QVariant::fromValue(VipPyObjectPtr(new VipPyObject(_dst->d_data->object))));
+}
+
+void VipPyWrapperProcessing::addCustomIOFromPython(const VipPyObject& obj, QStringList& names, VipProcessingIO::Type type)
+{
+	qsizetype len = obj.length();
+	for (qsizetype i = 0; i < len; ++i) {
+		if (VipCustomIO io = fromPython(obj.at(i), type)) {
+			if (this->addCustomIO(io)) {
+				names.push_back(io.name);
+			}
+		}
+	}
+}
+
+QObject* VipPyWrapperProcessing::editor()
+{
+	VipGILLocker lock;
+	VipPyError::clear();
+	return buildEditor(d_data->object);
+}
+
+QVariant VipPyWrapperProcessing::initializeProcessing(const QVariant& value)
+{
+	return initializePyProcessing(this, value);
+}
+
+void VipPyWrapperProcessing::setLastError()
 {
 	if (VipPyError err = VipPyError(compute_error_t{})) {
 		std::ostringstream out;
@@ -1034,63 +1201,7 @@ void VipPyWrapperProcessing::setLastError()
 
 void VipPyWrapperProcessing::apply()
 {
-	if (!d_data->object) {
-		setError("VipPyWrapperProcessing: null Python object");
-		return;
-	}
-
-	VipGILLocker lock;
-	VipPyError::clear();
-
-	// Set inputs
-	for (int i = 0; i < topLevelInputCount(); ++i) {
-		auto in = topLevelInputAt(i);
-		if (in->type() == VipProcessingIO::TypeInput)
-			in->toInput()->setData(anyFromPython(d_data->object.callMember("get_io", QVariantList() << in->name())));
-		else {
-			auto min = in->toMultiInput();
-			auto io = d_data->object.callMember("get_io", QVariantList() << in->name());
-			if (min->count() != io.length())
-				return setLastError();
-			for (int j = 0; j < min->count(); ++j)
-				min->at(j)->setData(anyFromPython(io.at(j)));
-		}
-	}
-	
-	// Set properties
-	for (int i = 0; i < topLevelPropertyCount(); ++i) {
-		auto prop = topLevelPropertyAt(i);
-		if (prop->type() == VipProcessingIO::TypeProperty)
-			prop->toProperty()->setData(anyFromPython(d_data->object.callMember("get_io", QVariantList() << prop->name())));
-		else {
-			auto mprop = prop->toMultiProperty();
-			auto io = d_data->object.callMember("get_io", QVariantList() << prop->name());
-			if (mprop->count() != io.length())
-				return setLastError();
-			for (int j = 0; j < mprop->count(); ++j)
-				mprop->at(j)->setData(anyFromPython(io.at(j)));
-		}
-	}
-
-	// Apply
-	d_data->object.callMember("apply");
-	if (VipPyError err = VipPyError(compute_error_t{}))
-		return setLastError();
-
-	// Set outputs
-	for (int i = 0; i < topLevelOutputCount(); ++i) {
-		auto out = topLevelOutputAt(i);
-		if (out->type() == VipProcessingIO::TypeOutput)
-			out->toOutput()->setData(anyFromPython(d_data->object.callMember("get_io", QVariantList() << out->name()), this));
-		else {
-			auto mout = out->toMultiOutput();
-			auto io = d_data->object.callMember("get_io", QVariantList() << out->name());
-			if (mout->count() != io.length())
-				return setLastError();
-			for (int j = 0; j < mout->count(); ++j)
-				mout->at(j)->setData(anyFromPython(io.at(j), this));
-		}
-	}
+	applyPyProcessing(this);
 }
 void VipPyWrapperProcessing::resetProcessing()
 {
@@ -1102,35 +1213,476 @@ void VipPyWrapperProcessing::resetProcessing()
 	VipGILLocker lock;
 	VipPyError::clear();
 	d_data->object.callMember("reset");
-	if (VipPyError err = VipPyError(compute_error_t{})) 
+	if (VipPyError err = VipPyError(compute_error_t{}))
 		setLastError();
 }
 
-
-static VipPyObject getVipProcessingObjectType()
+class VipPyWrapperIODevice::PrivateData
 {
-	vipExecPythonCode("import Thermavip as th\n"
-		       "proc_type = th.VipProcessingObject");
-	
-	return VipPyObject::eval("proc_type");
+public:
+	VipProcessingObject::Info info;
+	VipPyObjectPtr type;
+	VipPyObject object;
+
+	QStringList inputs, multi_inputs, properties, multi_properties, outptus, multi_outputs;
+
+	bool useEventLoop = false;
+};
+
+VipPyWrapperIODevice::VipPyWrapperIODevice(QObject* parent)
+  : VipIODevice(parent)
+{
+	VIP_CREATE_PRIVATE_DATA();
 }
+
+VipPyWrapperIODevice::~VipPyWrapperIODevice() {}
+
+const VipPyObject& VipPyWrapperIODevice::processingObject() const noexcept
+{
+	return d_data->object;
+}
+
+const VipPyObjectPtr& VipPyWrapperIODevice::processingClass() const noexcept
+{
+	return d_data->type;
+}
+
+VipProcessingObject::DisplayHint VipPyWrapperIODevice::displayHint() const
+{
+	return d_data->info.displayHint;
+}
+
+VipPyWrapperIODevice::Info VipPyWrapperIODevice::info() const
+{
+	if (d_data->info.metatype)
+		return d_data->info;
+	else
+		return VipProcessingObject::info();
+}
+
+bool VipPyWrapperIODevice::useEventLoop() const
+{
+	return d_data->useEventLoop;
+}
+
+void VipPyWrapperIODevice::copyParameters(VipProcessingObject* dst)
+{
+	VipPyWrapperIODevice* _dst = qobject_cast<VipPyWrapperIODevice*>(dst);
+	if (!_dst)
+		return;
+
+	if (!d_data->type || d_data->type != _dst->d_data->type)
+		return;
+
+	VipProcessingObject::copyParameters(dst);
+
+	VipGILLocker lock;
+	d_data->object.callMember("copy_parameters", QVariantList() << QVariant::fromValue(VipPyObjectPtr(new VipPyObject(_dst->d_data->object))));
+}
+
+void VipPyWrapperIODevice::addCustomIOFromPython(const VipPyObject& obj, QStringList& names, VipProcessingIO::Type type)
+{
+	qsizetype len = obj.length();
+	for (qsizetype i = 0; i < len; ++i) {
+		if (VipCustomIO io = fromPython(obj.at(i), type)) {
+			if (this->addCustomIO(io)) {
+				names.push_back(io.name);
+			}
+		}
+	}
+}
+
+QObject* VipPyWrapperIODevice::editor()
+{
+	VipGILLocker lock;
+	VipPyError::clear();
+	return buildEditor(d_data->object);
+}
+
+QVariant VipPyWrapperIODevice::initializeProcessing(const QVariant& value)
+{
+	return initializePyProcessing(this, value);
+}
+
+void VipPyWrapperIODevice::setLastError()
+{
+	if (VipPyError err = VipPyError(compute_error_t{})) {
+		std::ostringstream out;
+		err.printDebug(out);
+		setError(out.str().c_str());
+	}
+	else {
+		setError("Unknown error");
+	}
+}
+
+void VipPyWrapperIODevice::apply()
+{
+	VipGILLocker lock;
+	VipPyError::clear();
+	applyPyProcessing(this);
+
+	if (!hasError()) {
+
+		// Retrieve size
+		qint64 size = d_data->object.getMember("size").toVariant().toLongLong();
+		this->setSize(size);
+	}
+}
+void VipPyWrapperIODevice::resetProcessing()
+{
+	if (!d_data->object) {
+		setError("VipPyWrapperIODevice: null Python object");
+		return;
+	}
+
+	VipGILLocker lock;
+	VipPyError::clear();
+	d_data->object.callMember("reset");
+	if (VipPyError err = VipPyError(compute_error_t{}))
+		setLastError();
+}
+
+bool VipPyWrapperIODevice::probe(const QString& filename, const QByteArray& first_bytes) const
+{
+	VipGILLocker lock;
+	VipPyError::clear();
+
+	auto ret = d_data->object.callMember("probe", QVariantList() << filename << first_bytes);
+	if (VipPyError err = VipPyError(compute_error_t{}))
+		return false;
+	return ret.toVariant().toBool();
+}
+VipIODevice::OpenModes VipPyWrapperIODevice::supportedModes() const
+{
+	VipGILLocker lock;
+	VipPyError::clear();
+	auto mode = d_data->object.getMember("supported_modes").toVariant().toInt();
+	if (VipPyError err = VipPyError(compute_error_t{})) {
+		err.printDebug(std::cout);
+	}
+	if (mode > (int)(Append | ReadOnly | WriteOnly) || mode < 0)
+		return NotOpen;
+	return (OpenModes)mode;
+}
+bool VipPyWrapperIODevice::open(VipIODevice::OpenModes mode)
+{
+	VipGILLocker lock;
+	VipPyError::clear();
+
+	QString p = removePrefix(path());
+	p.remove(d_data->info.classname + ":");
+
+	d_data->object.callMember("open", QVariantList() << p << (int)mode);
+
+	if (VipPyError err = VipPyError(compute_error_t{})) {
+		setLastError();
+		return false;
+	}
+
+	// Set properties
+	for (int i = 0; i < topLevelPropertyCount(); ++i) {
+		auto prop = topLevelPropertyAt(i);
+		if (prop->type() == VipProcessingIO::TypeProperty)
+			d_data->object.callMember("set_io", QVariantList() << prop->name() << 0 << anyToPython(prop->data(), d_data->type));
+		else {
+			auto mprop = prop->toMultiProperty();
+			auto io = d_data->object.callMember("get_io", QVariantList() << prop->name());
+			if (mprop->count() != io.length()) {
+				// Resize Python io
+				io.callMember("resize", QVariantList() << mprop->count());
+			}
+			for (int j = 0; j < mprop->count(); ++j)
+				d_data->object.callMember("set_io", QVariantList() << prop->name() << j << anyToPython(mprop->at(j)->data(), d_data->type));
+		}
+	}
+
+	// Retrieve open mode
+	mode = (OpenModes)d_data->object.getMember("open_mode").toVariant().toInt();
+	// Retrieve size
+	qint64 size = d_data->object.getMember("size").toVariant().toLongLong();
+
+	if (VipPyError err = VipPyError(compute_error_t{})) {
+		setLastError();
+		return false;
+	}
+
+	// Set outputs data and potentially resize them (in case Python open() did resize them)
+	for (int i = 0; i < topLevelOutputCount(); ++i) {
+		auto out = topLevelOutputAt(i);
+		if (out->type() == VipProcessingIO::TypeOutput)
+			out->toOutput()->setData(anyFromPython(d_data->object.callMember("get_io", QVariantList() << out->name()), this));
+		else {
+			auto mout = out->toMultiOutput();
+			auto io = d_data->object.callMember("get_io", QVariantList() << out->name());
+			if (mout->count() != io.length())
+				mout->resize(io.length());
+
+			for (int j = 0; j < mout->count(); ++j)
+				mout->at(j)->setData(anyFromPython(io.at(j), this));
+		}
+	}
+
+	if (VipPyError err = VipPyError(compute_error_t{})) {
+		setLastError();
+		return false;
+	}
+
+	setSize(size);
+	setOpenMode(mode);
+	return true;
+}
+
+VipPyWrapperIODevice::DeviceType VipPyWrapperIODevice::deviceType() const
+{
+	VipGILLocker lock;
+	VipPyError::clear();
+	auto type = d_data->object.getMember("device_type").toVariant().toInt();
+	if (type < 0 || type > Resource)
+		return Resource;
+	return (DeviceType)type;
+}
+
+void VipPyWrapperIODevice::close()
+{
+	VipGILLocker lock;
+	VipPyError::clear();
+	d_data->object.callMember("close");
+}
+
+QString VipPyWrapperIODevice::fileFilters() const
+{
+	VipGILLocker lock;
+	VipPyError::clear();
+	auto filters = d_data->object.getMember("file_filters").toVariant().toString();
+	return filters;
+}
+
+qint64 VipPyWrapperIODevice::computeNextTime(qint64 time) const
+{
+	VipGILLocker lock;
+	VipPyError::clear();
+	auto ret = d_data->object.callMember("next_time", QVariantList() << time);
+	if (VipPyError err = VipPyError(compute_error_t{}))
+		return VipInvalidTime;
+	return ret.toVariant().toLongLong();
+}
+
+qint64 VipPyWrapperIODevice::computePreviousTime(qint64 time) const
+{
+	VipGILLocker lock;
+	VipPyError::clear();
+	auto ret = d_data->object.callMember("prev_time", QVariantList() << time);
+	if (VipPyError err = VipPyError(compute_error_t{}))
+		return VipInvalidTime;
+	return ret.toVariant().toLongLong();
+}
+
+qint64 VipPyWrapperIODevice::computeClosestTime(qint64 time) const
+{
+	VipGILLocker lock;
+	VipPyError::clear();
+	auto ret = d_data->object.callMember("closest_time", QVariantList() << time);
+	if (VipPyError err = VipPyError(compute_error_t{}))
+		return VipInvalidTime;
+	return ret.toVariant().toLongLong();
+}
+
+qint64 VipPyWrapperIODevice::computePosToTime(qint64 pos) const
+{
+	VipGILLocker lock;
+	VipPyError::clear();
+	auto ret = d_data->object.callMember("pos_to_time", QVariantList() << pos);
+	if (VipPyError err = VipPyError(compute_error_t{}))
+		return VipInvalidTime;
+	return ret.toVariant().toLongLong();
+}
+
+qint64 VipPyWrapperIODevice::computeTimeToPos(qint64 time) const
+{
+	VipGILLocker lock;
+	VipPyError::clear();
+	auto ret = d_data->object.callMember("time_to_pos", QVariantList() << time);
+	if (VipPyError err = VipPyError(compute_error_t{}))
+		return VipInvalidPosition;
+	return ret.toVariant().toLongLong();
+}
+
+VipTimeRangeList VipPyWrapperIODevice::computeTimeWindow() const
+{
+	VipGILLocker lock;
+	VipPyError::clear();
+	auto ret = d_data->object.callMember("time_window");
+	if (VipPyError err = VipPyError(compute_error_t{}))
+		return {};
+	const QVariantList lst = ret.toVariant().value<QVariantList>();
+	VipTimeRangeList win;
+	for (const QVariant& v : lst) {
+		const auto range = v.value<QVariantList>();
+		if (range.size() != 2)
+			return win;
+		win.push_back(VipTimeRange(range[0].toLongLong(), range[1].toLongLong()));
+	}
+	return win;
+}
+
+bool VipPyWrapperIODevice::enableStreaming(bool enable)
+{
+	VipGILLocker lock;
+	VipPyError::clear();
+	d_data->object.callMember("set_streaming_enabled", QVariantList() << enable);
+	if (VipPyError err = VipPyError(compute_error_t{}))
+		return false;
+	return true;
+}
+
+bool VipPyWrapperIODevice::readData(qint64 time)
+{
+	VipGILLocker lock;
+	VipPyError::clear();
+
+	// Set properties
+	for (int i = 0; i < topLevelPropertyCount(); ++i) {
+		auto prop = topLevelPropertyAt(i);
+		if (prop->type() == VipProcessingIO::TypeProperty)
+			d_data->object.callMember("set_io", QVariantList() << prop->name() << 0 << anyToPython(prop->data(), d_data->type));
+		else {
+			auto mprop = prop->toMultiProperty();
+			auto io = d_data->object.callMember("get_io", QVariantList() << prop->name());
+			if (mprop->count() != io.length()) {
+				// Resize Python io
+				io.callMember("resize", QVariantList() << mprop->count());
+			}
+			for (int j = 0; j < mprop->count(); ++j)
+				d_data->object.callMember("set_io", QVariantList() << prop->name() << j << anyToPython(mprop->at(j)->data(), d_data->type));
+		}
+	}
+
+	if (VipPyError err = VipPyError(compute_error_t{})) {
+		setLastError();
+		return false;
+	}
+
+	d_data->object.callMember("read", QVariantList() << time);
+
+	if (VipPyError err = VipPyError(compute_error_t{})) {
+		setLastError();
+		return false;
+	}
+
+	// Set outputs data and potentially resize them (in case Python open() did resize them)
+	for (int i = 0; i < topLevelOutputCount(); ++i) {
+		auto out = topLevelOutputAt(i);
+		if (out->type() == VipProcessingIO::TypeOutput)
+			out->toOutput()->setData(anyFromPython(d_data->object.callMember("get_io", QVariantList() << out->name()), this));
+		else {
+			auto mout = out->toMultiOutput();
+			auto io = d_data->object.callMember("get_io", QVariantList() << out->name());
+			if (mout->count() != io.length()) {
+				// We cannot change the output count within readData()
+				setLastError();
+				return false;
+			}
+
+			for (int j = 0; j < mout->count(); ++j)
+				mout->at(j)->setData(anyFromPython(io.at(j), this));
+		}
+	}
+
+	if (VipPyError err = VipPyError(compute_error_t{})) {
+		setLastError();
+		return false;
+	}
+	return true;
+}
+
+VipArchive& operator<<(VipArchive& arch, VipPyWrapperProcessing* p)
+{
+	VipGILLocker lock;
+	VipPyError::clear();
+
+	auto type = p->processingClass();
+	auto classname = type->getMember("__name__").toVariant().toString();
+	arch.content("Classname", classname);
+
+	return arch;
+}
+
+VipArchive& operator>>(VipArchive& arch, VipPyWrapperProcessing* p)
+{
+	VipGILLocker lock;
+	VipPyError::clear();
+
+	auto classname = arch.read("Classname").toString();
+	auto info = VipProcessingObject::findProcessingObject(classname);
+	if (info.metatype == qMetaTypeId<VipPyWrapperProcessing*>()) {
+		bool ok = p->initializeProcessing(info.init).toBool();
+		if (!ok)
+			return arch;
+	}
+	return arch;
+}
+
+VipArchive& operator<<(VipArchive& arch, VipPyWrapperIODevice* p)
+{
+	VipGILLocker lock;
+	VipPyError::clear();
+
+	auto type = p->processingClass();
+	auto classname = type->getMember("__name__").toVariant().toString();
+	arch.content("Classname", classname);
+
+	return arch;
+}
+
+VipArchive& operator>>(VipArchive& arch, VipPyWrapperIODevice* p)
+{
+	VipGILLocker lock;
+	VipPyError::clear();
+
+	auto classname = arch.read("Classname").toString();
+	auto info = VipProcessingObject::findProcessingObject(classname);
+	if (info.metatype == qMetaTypeId<VipPyWrapperIODevice*>()) {
+		bool ok = p->initializeProcessing(info.init).toBool();
+		if (!ok)
+			return arch;
+	}
+	return arch;
+}
+
+static int registerWrappersStreamOperators()
+{
+	vipRegisterArchiveStreamOperators<VipPyWrapperProcessing*>();
+	vipRegisterArchiveStreamOperators<VipPyWrapperIODevice*>();
+	return 0;
+}
+static int _registerWrappersStreamOperators = vipStaticInit("registerWrappersStreamOperators", registerWrappersStreamOperators);
+
 
 bool vipRegisterPythonProcessingObject(const VipPyObject& proc)
 {
 	VipGILLocker lock;
 
-	//static VipPyObject vip_processing_type = getVipProcessingObjectType();
+	// static VipPyObject vip_processing_type = getVipProcessingObjectType();
 
 	if (!proc || !proc.isType())
 		return false;
 
-	//if (!proc.isOfType(vip_processing_type))
-	//	return false;
+	// Check for VipIODevice
+	bool is_device = proc.getMember("Sequential").toVariant().toInt() == VipIODevice::Sequential;
 
-	VipPyWrapperProcessing inst;
-	if (!inst.initializeProcessing(QVariant::fromValue(VipPyObjectPtr(new VipPyObject(proc)))).toBool())
-		return false;
+	if (is_device) {
+		VipPyWrapperIODevice inst;
+		if (!inst.initializeProcessing(QVariant::fromValue(VipPyObjectPtr(new VipPyObject(proc)))).toBool())
+			return false;
+		VipProcessingObject::registerAdditionalInfoObject(inst.info());
+	}
+	else {
 
-	VipProcessingObject::registerAdditionalInfoObject(inst.info());
+		VipPyWrapperProcessing inst;
+		if (!inst.initializeProcessing(QVariant::fromValue(VipPyObjectPtr(new VipPyObject(proc)))).toBool())
+			return false;
+		VipProcessingObject::registerAdditionalInfoObject(inst.info());
+	}
 	return true;
 }

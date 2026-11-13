@@ -33,6 +33,7 @@
 #define VIP_PY_PROCESSING_H
 
 #include "VipStandardProcessing.h"
+#include "VipIODevice.h"
 #include "VipPyOperation.h"
 
 /// @brief Base class for Python processings.
@@ -242,9 +243,17 @@ class VIP_CORE_EXPORT VipPyWrapperProcessing : public VipProcessingObject
 {
 	Q_OBJECT
 
+	template<class Processing>
+	friend QVariant initializePyProcessing(Processing* _this, const QVariant& value);
+	template<class Processing>
+	friend bool applyPyProcessing(Processing* _this);
+
 public:
 	VipPyWrapperProcessing(QObject* parent = nullptr);
 	~VipPyWrapperProcessing();
+
+	const VipPyObject & processingObject() const noexcept;
+	const VipPyObjectPtr& processingClass() const noexcept;
 
 	virtual VipProcessingObject::DisplayHint displayHint() const;
 	virtual Info info() const;
@@ -253,6 +262,9 @@ public:
 
 	/// @brief Initialize from a VipPyObjectPtr containing the processing class
 	virtual QVariant initializeProcessing(const QVariant& value);
+
+	/// @brief Returns the processing editor if any
+	QObject* editor();
 
 protected:
 	virtual void apply();
@@ -263,6 +275,71 @@ private:
 	void setLastError();
 	VIP_DECLARE_PRIVATE_DATA();
 };
+
+/// @brief VipIODevice class wrapping a Python VipIODevice object
+///
+class VIP_CORE_EXPORT VipPyWrapperIODevice : public VipIODevice
+{
+	Q_OBJECT
+
+	template<class Processing>
+	friend QVariant initializePyProcessing(Processing* _this, const QVariant& value);
+	template<class Processing>
+	friend bool applyPyProcessing(Processing* _this);
+
+public:
+	VipPyWrapperIODevice(QObject* parent = nullptr);
+	~VipPyWrapperIODevice();
+
+	const VipPyObject& processingObject() const noexcept;
+	const VipPyObjectPtr& processingClass() const noexcept;
+
+	// Reimplemented from VipProcessingObject
+	virtual VipProcessingObject::DisplayHint displayHint() const;
+	virtual Info info() const;
+	virtual bool useEventLoop() const;
+	virtual void copyParameters(VipProcessingObject* dst);
+	virtual QVariant initializeProcessing(const QVariant& value);
+
+	// Reimplemented from VipIODevice
+	virtual bool probe(const QString& filename, const QByteArray& first_bytes = QByteArray()) const;
+	virtual VipIODevice::OpenModes supportedModes() const;
+	virtual bool open(VipIODevice::OpenModes);
+	virtual DeviceType deviceType() const;
+	virtual void close();
+	virtual QString fileFilters() const;
+
+	/// @brief Returns the processing editor if any
+	QObject* editor();
+
+protected:
+	virtual void apply();
+	virtual void resetProcessing();
+
+	virtual qint64 computeNextTime(qint64 time) const;
+	virtual qint64 computePreviousTime(qint64 time) const;
+	virtual qint64 computeClosestTime(qint64 time) const;
+	virtual qint64 computePosToTime(qint64) const;
+	virtual qint64 computeTimeToPos(qint64) const;
+	virtual VipTimeRangeList computeTimeWindow() const;
+	virtual bool enableStreaming(bool);
+	virtual bool readData(qint64);
+
+private:
+	void addCustomIOFromPython(const VipPyObject& obj, QStringList& names, VipProcessingIO::Type type);
+	void setLastError();
+	VIP_DECLARE_PRIVATE_DATA();
+};
+
+
+
+VIP_REGISTER_QOBJECT_METATYPE(VipPyWrapperProcessing*)
+VIP_REGISTER_QOBJECT_METATYPE(VipPyWrapperIODevice*)
+
+VIP_CORE_EXPORT VipArchive& operator<<(VipArchive&, VipPyWrapperProcessing*);
+VIP_CORE_EXPORT VipArchive& operator>>(VipArchive&, VipPyWrapperProcessing*);
+VIP_CORE_EXPORT VipArchive& operator<<(VipArchive&, VipPyWrapperIODevice*);
+VIP_CORE_EXPORT VipArchive& operator>>(VipArchive&, VipPyWrapperIODevice*);
 
 VIP_CORE_EXPORT bool vipRegisterPythonProcessingObject(const VipPyObject& processing_type);
 
