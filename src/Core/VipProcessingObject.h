@@ -2153,10 +2153,12 @@ private:
 	QString description(const QString& input) const;
 
 	void dirtyProcessingIO(VipProcessingIO* io);
-	/// Generate a unique output name. Tou should not need to call this function yourself.
+	/// Generate a unique output name. You should not need to call this function yourself.
 	QString generateUniqueOutputName(const VipProcessingIO& out, const QString& name);
-	/// Generate a unique input name. Tou should not need to call this function yourself.
+	/// Generate a unique input name. You should not need to call this function yourself.
 	QString generateUniqueInputName(const VipProcessingIO& in, const QString& name);
+	/// Generate a unique property name. You should not need to call this function yourself.
+	QString generateUniquePropertyName(const VipProcessingIO& io, const QString& name);
 
 	void run();
 	void runNoLock();

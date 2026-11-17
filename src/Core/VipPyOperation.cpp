@@ -337,8 +337,7 @@ void* vipVariantToPython(const QVariant& variant)
 			return obj;
 		}
 
-		if (QObject * obj = variant.value<QObject*>())
-		{
+		if (QObject* obj = variant.value<QObject*>()) {
 			auto pyobj = vipPythonFromQObject(obj);
 			if (pyobj)
 				return pyobj.release();
@@ -859,7 +858,7 @@ void VipPyError::printDebug(std::ostream& oss) const
 	oss << "traceback: \n" << traceback.toLatin1().data() << std::endl;
 }
 
-QString VipPyError::toString() const 
+QString VipPyError::toString() const
 {
 	if (isNull())
 		return {};
@@ -1098,14 +1097,15 @@ VipPyObject VipPyObject::eval(const QString& str)
 	return VipPyObject(obj, borrow_t{});
 }
 
+VipPyObject VipPyObject::import(const QString& module)
+{
+	return VipPyObject(PyImport_ImportModule(module.toLatin1().data()), borrow_t{});
+}
 
 static VipPyObject importPyQtOrPySide()
 {
 	static VipPyObject qt;
 	if (!qt) {
-
-		VipGILLocker lock;
-		VipPyError::clear();
 
 #if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
 		qt = VipPyObject(PyImport_ImportModule("PySide2"), borrow_t{});
@@ -1124,24 +1124,30 @@ static VipPyObject importPyQtOrPySide()
 	return qt;
 }
 
+static VipPyObject importQtCpp()
+{
+	static VipPyObject thermavip = VipPyObject(PyImport_ImportModule("Thermavip"), borrow_t{});
+	static VipPyObject cpp = VipPyObject(PyImport_ImportModule("Thermavip.QtCpp"), borrow_t{});
+	return cpp;
+}
+
 VipPyObject vipPythonFromQObject(QObject* obj)
 {
+	VipGILLocker lock;
+	VipPyError::clear();
+
 	if (!importPyQtOrPySide()) {
 		VIP_LOG_ERROR("Failed to load PySide or PyQt module");
 		return {};
 	}
-
-	VipGILLocker lock;
-	VipPyError::clear();
-
-	VipPyObject thermavip(PyImport_ImportModule("Thermavip"), borrow_t{});
-	if (!thermavip) {
-		VIP_LOG_ERROR("Failed to load Thermavip module");
+	auto cpp = importQtCpp();
+	if (!cpp) {
+		VIP_LOG_ERROR("Failed to load QtCpp module");
 		return {};
 	}
-	VipPyObject qobject_from_address = thermavip.getMember("qobject_from_address");
+	VipPyObject qobject_from_address = cpp.getMember("qobject_from_address");
 	if (!qobject_from_address) {
-		VIP_LOG_ERROR("Failed to retrieve 'qobject_from_address' from Thermavip module");
+		VIP_LOG_ERROR("Failed to retrieve 'qobject_from_address' from QtCpp module");
 		return {};
 	}
 	return qobject_from_address.callMember("__call__", QVariantList() << (std::uintptr_t)obj);
@@ -1149,25 +1155,26 @@ VipPyObject vipPythonFromQObject(QObject* obj)
 
 QObject* vipQObjectFromPython(const VipPyObject& obj)
 {
+	VipGILLocker lock;
+	VipPyError::clear();
+
 	if (!importPyQtOrPySide()) {
 		VIP_LOG_ERROR("Failed to load PySide or PyQt module");
 		return {};
 	}
-	VipGILLocker lock;
-	VipPyError::clear();
-
-	VipPyObject thermavip(PyImport_ImportModule("Thermavip"), borrow_t{});
-	if (!thermavip) {
-		VIP_LOG_ERROR("Failed to load Thermavip module");
+	auto cpp = importQtCpp();
+	if (!cpp) {
+		VIP_LOG_ERROR("Failed to load QtCpp module");
 		return {};
 	}
-	VipPyObject qobject_address = thermavip.getMember("qobject_address");
+
+	VipPyObject qobject_address = cpp.getMember("qobject_address");
 	if (!qobject_address) {
-		VIP_LOG_ERROR("Failed to retrieve 'qobject_address' from Thermavip module");
+		VIP_LOG_ERROR("Failed to retrieve 'qobject_address' from QtCpp module");
 		return {};
 	}
 
-	std::uintptr_t addr = qobject_address.callMember("__call__", QVariantList() << vipToVariant(VipPyObjectPtr(new VipPyObject(obj)))).toVariant().value < std::uintptr_t>();
+	std::uintptr_t addr = qobject_address.callMember("__call__", QVariantList() << vipToVariant(VipPyObjectPtr(new VipPyObject(obj)))).toVariant().value<std::uintptr_t>();
 	if (!addr)
 		return nullptr;
 
@@ -1177,13 +1184,10 @@ QObject* vipQObjectFromPython(const VipPyObject& obj)
 	ret->setProperty("_vip_PyObject", vipToVariant(VipPyObjectPtr(new VipPyObject(obj))));
 
 	// We must ensure that pure Python slots are protected
-	new VipPyQtWatcher(ret);
+	//new VipPyQtWatcher(ret);
 
 	return ret;
 }
-
-
-
 
 // Associate each VipPyLocal instance to a QThread.
 // Used to select the right VipPyLocal instance for I/O operations based on sys.stdin, sys.stderr and sys.stdout
@@ -1393,7 +1397,7 @@ static QVariant callRegisteredFunction(const VipFunctionObject& fun, const QVari
 }
 static PyObject* callRegisteredFun(PyObject*, PyObject* args, PyObject* kwargs)
 {
-	QVariantList lst = vipPythonToVariant(args,true).value<QVariantList>();
+	QVariantList lst = vipPythonToVariant(args, true).value<QVariantList>();
 	const QVariantMap map = vipPythonToVariant(kwargs, true).value<QVariantMap>();
 	QString name = lst[0].toString();
 	lst = lst.mid(1);
@@ -1428,8 +1432,6 @@ static PyObject* callRegisteredFun(PyObject*, PyObject* args, PyObject* kwargs)
 	}
 	return res;
 }
-
-
 
 static PyObject* qobject_casts(PyObject*, PyObject* address)
 {
@@ -1662,6 +1664,8 @@ public:
 			// add the Python folder in Thermavip directory
 			QByteArray pypath = (QFileInfo(qApp->arguments()[0]).canonicalPath() + "/Python").toLatin1();
 			PyRun_SimpleString(("sys.path.append('" + pypath + "')").data());
+			pypath += "/CppProcessing";
+			PyRun_SimpleString(("sys.path.append('" + pypath + "')").data());
 		}
 		else {
 			if (QFileInfo(QFileInfo(qApp->arguments()[0]).canonicalPath() + "/miniconda").exists()) {
@@ -1732,7 +1736,6 @@ public:
 		printf("Imported PySide6.QtGui\n");
 		PyRun_SimpleString("import PySide6.QtWidgets");
 		printf("Imported PySide6.QtWidgets\n");*/
-
 
 		initThermavipModule();
 
@@ -2626,12 +2629,12 @@ struct GIL_Lock_Event : QEvent
 	GIL_Lock_Event()
 	  : QEvent((QEvent::Type)(QEvent::MaxUser + 1000))
 	{
-		//vip_debug("lock GIL\n");fflush(stdout);
+		// vip_debug("lock GIL\n");fflush(stdout);
 	}
 
 	~GIL_Lock_Event()
 	{
-		//vip_debug("unlock GIL\n");fflush(stdout);
+		// vip_debug("unlock GIL\n");fflush(stdout);
 	}
 };
 VipPyQtWatcher::VipPyQtWatcher(QObject* parent)
@@ -2674,10 +2677,8 @@ public:
 	PrivateData()
 	  : lock(QReadWriteLock::Recursive)
 	  , dirty(true)
-	  , type("VipPyLocal")
 	  , workingDirectory("./")
 	  , pyIOOperation(nullptr)
-	  , launchCode(VipPyInterpreter::InIPythonInterp)
 	{
 		startupCode = "import numpy as np";
 		python = "python";
@@ -2685,13 +2686,11 @@ public:
 	// Lock protecting the pyIOOperation
 	QReadWriteLock lock;
 	bool dirty;
-	QString type;
 	QString python;
 	QVariantMap params;
 	QString workingDirectory;
 	QString startupCode;
 	std::unique_ptr<VipPyIOOperation> pyIOOperation;
-	PyLaunchCode launchCode;
 	QPointer<QObject> interp;
 };
 
@@ -2736,24 +2735,6 @@ VipPyInterpreter::~VipPyInterpreter()
 	clear();
 }
 
-void VipPyInterpreter::setPyType(const QString& type)
-{
-	QWriteLocker ll(&d_data->lock);
-	if (type != d_data->type) {
-		QObject* obj = vipCreateVariant((type + "*").toLatin1().data()).value<QObject*>();
-		if (obj) {
-			delete obj;
-			d_data->type = type;
-			d_data->dirty = true;
-		}
-	}
-}
-
-QString VipPyInterpreter::pyType() const
-{
-	return d_data->type;
-}
-
 void VipPyInterpreter::setPython(const QString& python)
 {
 	QWriteLocker ll(&d_data->lock);
@@ -2762,7 +2743,7 @@ void VipPyInterpreter::setPython(const QString& python)
 		d_data->dirty = true;
 	}
 }
-QString VipPyInterpreter::python()
+QString VipPyInterpreter::python() const
 {
 	return d_data->python;
 }
@@ -2822,16 +2803,6 @@ void VipPyInterpreter::setStartupCode(const QString& code)
 QString VipPyInterpreter::startupCode() const
 {
 	return d_data->startupCode;
-}
-
-void VipPyInterpreter::setLaunchCode(PyLaunchCode l)
-{
-	QWriteLocker ll(&d_data->lock);
-	d_data->launchCode = l;
-}
-VipPyInterpreter::PyLaunchCode VipPyInterpreter::launchCode() const
-{
-	return d_data->launchCode;
 }
 
 void VipPyInterpreter::setMainInterpreter(QObject* interp)
@@ -2927,16 +2898,8 @@ VipPyIOOperation* VipPyInterpreter::reset(bool create_new)
 		}
 	}
 	this->d_data->pyIOOperation.reset();
-	if (d_data->type == "VipPyLocal")
-		this->d_data->pyIOOperation.reset(new VipPyLocal());
-	else {
-		this->d_data->pyIOOperation.reset(vipCreateVariant((d_data->type + "*").toLatin1().data()).value<VipPyIOOperation*>());
-		if (!this->d_data->pyIOOperation) {
-			d_data->lock.unlock();
-			return nullptr;
-		}
-		this->setProperty("_vip_dirs", QVariant::fromValue(QStringList())); // clear inspected path to restart PyAddProcessingDirectory
-	}
+	this->d_data->pyIOOperation.reset(new VipPyLocal());
+	
 	if (!this->d_data->pyIOOperation->initialize(d_data->params)) {
 		this->d_data->pyIOOperation.reset();
 		return nullptr;

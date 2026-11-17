@@ -3,9 +3,11 @@ from collections import UserList
 from enum import IntEnum
 from abc import ABC
 from abc import abstractmethod
+import inspect
 import sys
 from typing import Union
 from .QtCpp import qobject_address, qobject_from_address
+import Thermavip as th
 
 VipInvalidTime = -np.iinfo(np.int64).max
 VipInvalidPosition = VipInvalidTime
@@ -523,35 +525,19 @@ class VipProcessingObject(ABC):
         try:
             ret = qobject_address(obj)
             self.__editor = obj
+            return ret
         except:
             return 0
     
     
+def register_processing(proc_type):
+    """
+    Register a processing class inheriting VipProcessingObject
+    """
     
-class Processing(VipProcessingObject):
+    if not VipProcessingObject in inspect.getmro(proc_type):
+        raise RuntimeError("Invalid processing type")
+    return th.call_thermavip_fun('register_processing', (proc_type,))
+
     
-    def __init__(self):
-        super().__init__()
-        self.custom_input = [45.3]
-    
-    @VipInput("test", "tutu")
-    def inputVal(self):
-        """
-        """
-        pass
-    
-    @VipMultiInput
-    def custom_input(self): pass
-    
-# =============================================================================
-# print("start:", Processing._all_inputs)    
-# a = Processing()
-# print(a._all_inputs)
-# print(a.input)
-# a.input = VipAnyData(3, time=0)
-# print(a.input)
-# print(a.custom_input[0])
-# a.custom_input.append(41.2)
-# print(a.custom_input[1])
-# =============================================================================
 

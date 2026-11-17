@@ -20,14 +20,6 @@ public:
 	VipPyEditor(QWidget * parent = nullptr);
 	~VipPyEditor();
 
-	/// @brief Returns the shell that runs the script, either a VipPyShellWidget or a VipIPythonShellWidget.
-	/// Note that the shell widget is null until launching a Python file. 
-	QWidget * shellWidget() const;
-
-	/// @brief Returns the object running the code, either a VipPyIOOperation or a VipIPythonShellProcess
-	/// Note that the object is null until launching a Python file. 
-	QObject * interpreter() const;
-
 	/// @brief Returns true if a file is currently running.
 	bool isFileRunning() const;
 	/// @brief Returns true if a file is currently running in debug mode.
@@ -45,17 +37,12 @@ public Q_SLOTS:
 	void _continue();
 	/// @brief Start or restart the interpreter if it is a VipPyIOOperation
 	void startInteractiveInterpreter();
-	/// @brief Next file executions will be performed in the internal Python shell
-	void execInInternal();
-	/// @brief Next file executions will be performed in the external IPython shell if available
-	void execInIPython();
 
 Q_SIGNALS:
 	/// @brief Emitted when a file execution finished
 	void fileFinished();
 
 private Q_SLOTS:
-	void aboutToDisplayLaunchMode();
 	void check();
 
 protected:

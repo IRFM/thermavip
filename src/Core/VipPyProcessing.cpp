@@ -880,7 +880,7 @@ static QVariant anyToPython(const VipAnyData& any, VipPyObjectPtr& proc_type)
 	return QVariant::fromValue(VipPyObjectPtr(new VipPyObject(vip_any_data.callMember("__call__", QVariantList(), kwargs))));
 }
 
-static QObject* buildEditor(VipPyObject& proc)
+static QObject* buildEditor(VipPyObject& proc, const QString& member = "editor_address")
 {
 	if (!proc)
 		return nullptr;
@@ -1297,6 +1297,14 @@ QObject* VipPyWrapperIODevice::editor()
 	VipGILLocker lock;
 	VipPyError::clear();
 	return buildEditor(d_data->object);
+}
+
+
+QObject* VipPyWrapperIODevice::toolBar()
+{
+	VipGILLocker lock;
+	VipPyError::clear();
+	return buildEditor(d_data->object, "tool_bar_address");
 }
 
 QVariant VipPyWrapperIODevice::initializeProcessing(const QVariant& value)

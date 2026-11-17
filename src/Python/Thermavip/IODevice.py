@@ -1,4 +1,5 @@
 from .Processing import*
+from .QtCpp import qobject_address, qobject_from_address
 from abc import abstractmethod
 import numpy as np
 
@@ -78,6 +79,30 @@ class VipIODevice(VipProcessingObject):
             return filename.index(type(self).__name__ + ":") == 0
         except:
             return False
+        
+    def tool_bar(self):
+        """
+        Returns a QToolBar that should be displayed as part of the player's toolbar.
+        Reimplement in subclasses to provide custom device edition from the player toolbar (if any).
+        """
+        pass
+    
+    def tool_bar_address(self) -> int:
+        try:
+            # This will throw on the first call, or if the C++ widget has been deleted
+            return qobject_address(self.__tool_bar)
+        except:
+            pass
+        # (Re)create the editor
+        obj = self.tool_bar()
+        if obj is None:
+            return 0
+        try:
+            ret = qobject_address(obj)
+            self.__tool_bar = obj
+            return ret
+        except:
+            return 0
     
     @abstractmethod        
     def open(self, path, mode):

@@ -2,6 +2,7 @@
 
 #include "VipDisplayArea.h"
 #include "VipProgress.h"
+#include "VipArchive.h"
 
 #include <qsplitter.h>
 #include <qboxlayout.h>
@@ -9,13 +10,12 @@
 #include <qtoolbutton.h>
 #include <qmenu.h>
 
-#include "VipPyIPython.h"
-
 class VipPyEditor::PrivateData
 {
 public:
-	QPointer<QWidget> runningShell;	    // shell that runs the script, either a VipPyShellWidget or a VipIPythonShellWidget
-	QPointer<QObject> runningOperation; // Object reunning the code, either a VipPyIOOperation or a VipIPythonShellProcess
+	QPointer<QObject> runningOperation;
+	QPointer<QWidget> runningShell;
+
 	QToolButton* startButton;
 	QString runFileCode;
 	bool running;
@@ -63,23 +63,12 @@ VipPyEditor::VipPyEditor(QWidget* parent)
 	start->setAutoRaise(true);
 	start->setIcon(vipIcon("start_streaming.png"));
 	start->setToolTip("Run file");
-	start->setMenu(new QMenu());
-	connect(start->menu()->addAction("Execute in internal console"), SIGNAL(triggered(bool)), this, SLOT(execInInternal()));
-	connect(start->menu()->addAction("Execute in IPython console"), SIGNAL(triggered(bool)), this, SLOT(execInIPython()));
-	start->menu()->actions()[0]->setCheckable(true);
-	start->menu()->actions()[1]->setCheckable(true);
-	if (VipPyInterpreter::instance()->launchCode() == VipPyInterpreter::InLocalInterp)
-		start->menu()->actions()[0]->setChecked(true);
-	else
-		start->menu()->actions()[1]->setChecked(true);
-	start->setPopupMode(QToolButton::MenuButtonPopup);
 	d_data->startButton = start;
 
 	d_data->start = this->tabBar()->addWidget(start);
 	d_data->stop = this->tabBar()->addAction(vipIcon("stop.png"), "Stop running");
 	d_data->stop->setEnabled(false);
 
-	connect(d_data->startButton->menu(), SIGNAL(aboutToShow()), this, SLOT(aboutToDisplayLaunchMode()));
 	connect(d_data->startButton, SIGNAL(clicked(bool)), this, SLOT(execFile()));
 	connect(d_data->stop, SIGNAL(triggered(bool)), this, SLOT(stopFile()));
 
@@ -95,27 +84,6 @@ VipPyEditor::~VipPyEditor()
 	QCoreApplication::removePostedEvents(&d_data->timer);
 }
 
-void VipPyEditor::aboutToDisplayLaunchMode()
-{
-	if (VipPyInterpreter::instance()->launchCode() == VipPyInterpreter::InLocalInterp)
-		execInInternal();
-	else
-		execInIPython();
-}
-
-void VipPyEditor::execInInternal()
-{
-	d_data->startButton->menu()->actions()[0]->setChecked(true);
-	d_data->startButton->menu()->actions()[1]->setChecked(false);
-	VipPyInterpreter::instance()->setLaunchCode(VipPyInterpreter::InLocalInterp);
-}
-void VipPyEditor::execInIPython()
-{
-	d_data->startButton->menu()->actions()[0]->setChecked(false);
-	d_data->startButton->menu()->actions()[1]->setChecked(true);
-	VipPyInterpreter::instance()->setLaunchCode(VipPyInterpreter::InIPythonInterp);
-}
-
 void VipPyEditor::startInteractiveInterpreter()
 {
 	if (qobject_cast<VipPyIOOperation*>(d_data->runningOperation.data())) {
@@ -123,15 +91,6 @@ void VipPyEditor::startInteractiveInterpreter()
 			VipPyInterpreter::instance()->pyIOOperation(true);
 		}
 	}
-}
-
-QWidget* VipPyEditor::shellWidget() const
-{
-	return d_data->runningShell;
-}
-QObject* VipPyEditor::interpreter() const
-{
-	return d_data->runningOperation;
 }
 
 bool VipPyEditor::isFileRunning() const
@@ -155,19 +114,6 @@ bool VipPyEditor::isRunning()
 		if (d_data->runningOperation != VipPyInterpreter::instance()->pyIOOperation())
 			return false;
 		return true;
-	}
-	// Check if VipIPythonShellWidget is still running
-	else {
-		if (VipIPythonShellWidget* w = qobject_cast<VipIPythonShellWidget*>(d_data->runningShell)) {
-			if (w->process()->state() != QProcess::Running)
-				return false;
-
-			if (!w->process()->isRunningCode())
-				return false;
-
-			return true;
-		}
-		return false;
 	}
 
 	return false;
@@ -211,28 +157,7 @@ void VipPyEditor::execFile()
 {
 	stopFile();
 
-	QWidget* exec_in_shell = nullptr;
-	if (VipPyInterpreter::instance()->launchCode() == VipPyInterpreter::InIPythonInterp) {
-		if (vipGetIPythonToolWidget() && vipGetIPythonToolWidget()->widget()->count())
-			exec_in_shell = qobject_cast<VipIPythonShellWidget*>(vipGetIPythonToolWidget()->widget()->currentWidget());
-	}
-	if (!exec_in_shell) {
-		exec_in_shell = vipPyGetPythonInterpreter()->interpreter();
-	}
-	d_data->runningShell = exec_in_shell;
-	if (!exec_in_shell)
-		return;
-
-	VipIPythonShellWidget* ipython = qobject_cast<VipIPythonShellWidget*>(exec_in_shell);
-
-	// TODO
-	/* if (!ipython && qobject_cast<PyProcess*>(VipPyInterpreter::instance()->pyIOOperation())) {
-		//for external python process (PyProcess), make sure to register all new VipIODevice first
-		//because a call to VipPyProcessing::setStdPyProcessingFile will freeze the GUI (try to execute a python command while the
-		//python file is running -> deadlock)
-		VipProcessingObject::allObjects();
-
-	}*/
+	d_data->runningShell = vipPyGetPythonInterpreter()->shellWidget();
 
 	if (VipTextEditor* ed = this->currentEditor()) {
 		this->save();
@@ -244,31 +169,13 @@ void VipPyEditor::execFile()
 			d_data->debug = 0;
 
 			// Execute in global python interpreter
-			if (!ipython) {
-				VipPyInterpreter::instance()->execCode("_vip_stop=0").wait(1000);
-				VipPyInterpreter::instance()->execCode(d_data->runFileCode).wait(1000);
-				d_data->runningOperation = VipPyInterpreter::instance()->pyIOOperation();
-				vipPyGetPythonInterpreter()->interpreter()->execCommand("runFile('" + file + "')");
-				vipPyGetPythonInterpreter()->show();
-				vipPyGetPythonInterpreter()->raise();
-			}
-			// Execute in IPython
-			else {
-				if (ipython->process()->isRunningCode()) {
-					// do not run file if the ipython console is already running something
-					d_data->running = 0;
-					d_data->debug = 0;
-					return;
-				}
-				ipython->process()->execCode("_vip_stop=0");
-				ipython->process()->execCode(d_data->runFileCode);
-				d_data->runningOperation = ipython->process();
-				vipGetIPythonToolWidget()->show();
-				vipGetIPythonToolWidget()->raise();
-				// exec in separate thread
-				// std::thread(std::bind(&VipIPythonShellProcess::execLine, ipython->process(), ("runFile('" + file + "')"))).detach();
-				ipython->process()->execLineNoWait("runFile('" + file + "')");
-			}
+			VipPyInterpreter::instance()->execCode("_vip_stop=0").wait(1000);
+			VipPyInterpreter::instance()->execCode(d_data->runFileCode).wait(1000);
+			d_data->runningOperation = VipPyInterpreter::instance()->pyIOOperation();
+			vipPyGetPythonInterpreter()->shell()->execLine("runFile('" + file + "')");
+			vipPyGetPythonInterpreter()->show();
+			vipPyGetPythonInterpreter()->raise();
+
 			d_data->timer.start();
 			d_data->stop->setEnabled(true);
 			d_data->start->setEnabled(false);
@@ -281,15 +188,12 @@ void VipPyEditor::stopFile(bool wait)
 {
 	if (d_data->running) {
 
+		vipPyGetPythonInterpreter()->shell()->stopCurrentCode();
 		// Stop VipPyIOOperation
-		if (qobject_cast<VipPyIOOperation*>(d_data->runningOperation.data())) {
-			VipPyInterpreter::instance()->stop(wait);
-		}
-		// Stop VipIPythonShellWidget
-		else {
-			if (VipIPythonShellWidget* w = qobject_cast<VipIPythonShellWidget*>(d_data->runningShell))
-				w->restartProcess();
-		}
+		//if (qobject_cast<VipPyIOOperation*>(d_data->runningOperation.data())) {
+		//	VipPyInterpreter::instance()->stop(wait);
+		//}
+		
 
 		// d_data->running = 0;
 		// d_data->debug = 0;
@@ -310,7 +214,7 @@ void VipPyEditor::stepOut() {}
 void VipPyEditor::pause() {}
 void VipPyEditor::_continue() {}
 
-#include "VipArchive.h"
+
 static VipArchive& operator<<(VipArchive& arch, const VipPyEditorToolWidget* w)
 {
 	return arch.content("state", w->editor()->saveState());

@@ -749,8 +749,10 @@ void VipProcessingIO::setName(const QString& name)
 	if (d_data->parent) {
 		if (d_data->type == TypeOutput || d_data->type == TypeMultiOutput)
 			d_data->name = d_data->parent->generateUniqueOutputName(*this, name);
-		else
+		else if (d_data->type == TypeInput || d_data->type == TypeMultiInput)
 			d_data->name = d_data->parent->generateUniqueInputName(*this, name);
+		else
+			d_data->name = d_data->parent->generateUniquePropertyName(*this, name);
 	}
 	else
 		d_data->name = name;
@@ -3191,9 +3193,11 @@ QString VipProcessingObject::generateUniqueOutputName(const VipProcessingIO& io,
 				found << out->name();
 		}
 		else if (VipMultiOutput* mout = d_data->outputs[i]->toMultiOutput()) {
-			for (int o = 0; o < mout->count(); ++o)
-				if (*mout->at(o) != io && mout->at(o)->name().startsWith(name))
-					found << mout->at(o)->name();
+			if (*mout != io) {
+				for (int o = 0; o < mout->count(); ++o)
+					if (*mout->at(o) != io && mout->at(o)->name().startsWith(name))
+						found << mout->at(o)->name();
+			}
 		}
 	}
 
@@ -3216,9 +3220,38 @@ QString VipProcessingObject::generateUniqueInputName(const VipProcessingIO& io, 
 				found << in->name();
 		}
 		else if (VipMultiInput* min = d_data->inputs[i]->toMultiInput()) {
-			for (int o = 0; o < min->count(); ++o)
-				if (*min->at(o) != io && min->at(o)->name() == name)
-					found << min->at(o)->name();
+			if (*min != io) {
+				for (int o = 0; o < min->count(); ++o)
+					if (*min->at(o) != io && min->at(o)->name() == name)
+						found << min->at(o)->name();
+			}
+		}
+	}
+
+	QString res = name;
+	int count = 1;
+	while (found.indexOf(res) >= 0) {
+		res = name + "_" + QString::number(count);
+		++count;
+	}
+
+	return res;
+}
+
+QString VipProcessingObject::generateUniquePropertyName(const VipProcessingIO& io, const QString& name)
+{
+	QStringList found;
+	for (size_t i = 0; i < d_data->properties.size(); ++i) {
+		if (VipProperty* prop = d_data->properties[i]->toProperty()) {
+			if (*prop != io && prop->name().startsWith(name))
+				found << prop->name();
+		}
+		else if (VipMultiProperty* mprop = d_data->properties[i]->toMultiProperty()) {
+			if (*mprop != io) {
+				for (int p = 0; p < mprop->count(); ++p)
+					if (*mprop->at(p) != io && mprop->at(p)->name() == name)
+						found << mprop->at(p)->name();
+			}
 		}
 	}
 

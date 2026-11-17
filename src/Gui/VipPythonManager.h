@@ -29,9 +29,6 @@ class VIP_GUI_EXPORT VipPythonParameters : public VipPageOption
 {
 	Q_OBJECT
 
-	QRadioButton* launchInLocal;
-	QRadioButton* launchInIPython;
-
 	QLabel* pythonPathLabel;
 	VipFileName* pythonPath;
 

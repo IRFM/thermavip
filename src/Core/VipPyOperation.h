@@ -112,6 +112,9 @@ class VIP_CORE_EXPORT VipGILLocker
 public:
 	VipGILLocker();
 	~VipGILLocker();
+
+	VipGILLocker(const VipGILLocker&) = delete;
+	VipGILLocker& operator=(const VipGILLocker&) = delete;
 };
 
 struct compute_error_t
@@ -228,6 +231,7 @@ public:
 	VipPyObject callMember(const char* name, const QVariantList& args = {}, const QVariantMap& kwargs = {});
 
 	static VipPyObject eval(const QString& str);
+	static VipPyObject import(const QString& module);
 };
 
 // VipPyObject wrapped in a shared pointer, used to store a PyObject into a QVariant.
@@ -324,6 +328,8 @@ public:
 	virtual qint64 write(const QByteArray&) = 0;
 	/// @brief Returns true if the underlying process/operation is running
 	virtual bool isRunning() const = 0;
+	/// @brief Returns true if the executed Python code is waiting for a user input
+	virtual bool isWaitingForInput() const = 0;
 	/// @brief For shell mode, handle special commands
 	virtual bool handleMagicCommand(const QString&) { return false; }
 
@@ -495,8 +501,7 @@ public:
 	/// Returns false if pending operations are remaining.
 	virtual bool wait(bool* /*alive*/, int /*msecs*/ = -1) = 0;
 
-	/// @brief Returns true if the executed Python code is waiting for a user input
-	virtual bool isWaitingForInput() const = 0;
+	
 
 protected:
 	// These functions should not be used directly
@@ -647,22 +652,14 @@ class VIP_CORE_EXPORT VipPyInterpreter : public VipPyIOOperation
 	VipPyInterpreter(QObject* parent = nullptr);
 
 public:
-	/// @brief Tells where to execute code the main Python editor widget
-	enum PyLaunchCode
-	{
-		InLocalInterp,	//! execute the code in the local interpreter
-		InIPythonInterp //! execute the code in the IPython shell (if available)
-	};
+	
 	~VipPyInterpreter();
 
 	static VipPyInterpreter* instance();
 
-	/// @brief Set/get the type of interpreter (class name like "VipPyLocal", which is the default)
-	void setPyType(const QString& name);
-	QString pyType() const;
+	void setPython(const QString& python);
+	QString python() const;
 
-	void setPython(const QString&);
-	QString python();
 
 	/// @brief Set/get the working directory that the interpreter will be initialized with
 	void setWorkingDirectory(const QString&);
@@ -675,10 +672,6 @@ public:
 	/// @brief Set/get the parameters used to initialize the internal VipPyIOOperation object after construction
 	void setParameters(const QVariantMap& params);
 	QVariantMap parameters() const;
-
-	/// @brief Tells if the code editor should execute Python code in the IPython shell or internal shell
-	void setLaunchCode(PyLaunchCode l);
-	PyLaunchCode launchCode() const;
 
 	/// @brief Set the main interpreter object that should output Python errors
 	/// This interpreter should provide the slot showAndRaise() that will

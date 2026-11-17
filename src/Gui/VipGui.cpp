@@ -81,6 +81,8 @@ QStringList vipAvailableSkins()
 	return QStringList();
 }
 
+static QString _stylesheet;
+
 bool vipLoadSkin(const QString& skin_name)
 {
 	vip_debug("skin: %s\n", skin_name.toLatin1().data());
@@ -118,6 +120,8 @@ bool vipLoadSkin(const QString& skin_name)
 			vipAddFrontIconPath(skin + "/icons");
 			qApp->setStyleSheet(sk);
 
+			_stylesheet = skin_name;
+
 			{
 				// Now, read the plot_stylesheet.css file
 				QFile fin(skin + "/plot_stylesheet.css");
@@ -147,6 +151,8 @@ bool vipLoadSkin(const QString& skin_name)
 
 bool vipIsDarkSkin()
 {
+	if (_stylesheet == "dark")
+		return true;
 	QColor c = vipGetMainWindow()->palette().color(QPalette::Window);
 	return vipIsDarkColor(c);
 }

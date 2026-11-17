@@ -6,6 +6,8 @@ from importlib import import_module
 
 def qobject_address(obj) -> int:
     """Return the native address of a live PyQt or PySide QObject."""
+    import qtpy
+    
     for binding, runtime in (
         ("PyQt6", "PyQt6.sip"),
         ("PyQt5", "PyQt5.sip"),

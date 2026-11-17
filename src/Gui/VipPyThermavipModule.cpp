@@ -2305,11 +2305,39 @@ static QWidget* editVipPyWrapperIODevice(VipPyWrapperIODevice* obj)
 	return nullptr;
 }
 
+
+
+static void customizePlayerPyIODevice(VipPlayer2D* player)
+{
+	if (player->property("_vip_PyIODevice").toBool())
+		return;
+
+	QSet<VipPyWrapperIODevice*> dev;
+	for (VipDisplayObject* display : player->displayObjects()) {
+		auto src = vipListCast<VipPyWrapperIODevice*>(display->allSources());
+		for (auto* d : src)
+			dev.insert(d);
+	}
+	if (dev.size() == 1) {
+
+		if(QWidget* toolbar = qobject_cast<QWidget*>( (*dev.begin())->toolBar()))
+			player->toolBar()->addWidget(toolbar);
+		
+		player->setProperty("_vip_PyIODevice", true);
+	}
+
+}
+
+
+
 static int registerWrapperEditors()
 {
 	vipFDObjectEditor().append<QWidget*(VipPyWrapperProcessing*)>(editVipPyWrapperProcessing);
 	vipFDObjectEditor().append<QWidget*(VipPyWrapperIODevice*)>(editVipPyWrapperIODevice);
+	vipFDPlayerCreated().append<void(VipVideoPlayer*)>(customizePlayerPyIODevice);
 	return 0;
 }
 
 static int _registerEditors = vipStaticInit("registerWrapperEditors", registerWrapperEditors);
+
+

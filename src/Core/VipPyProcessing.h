@@ -118,7 +118,7 @@ private:
 /// closing/starting.
 ///
 /// VipPyProcessing can also wrap Python processing classes inheriting ThermavipPyProcessing
-/// (defined in Python/ThermavipPyProcessing.py). A Python processing class must
+/// (defined in Python/CppProcessing/ThermavipPyProcessing.py). A Python processing class must
 /// inherit ThermavipPyProcessing and the classname must start with 'Thermavip' prefix.
 ///
 /// Python processing classes are registered with VipPyInterpreter::addProcessingFile()
@@ -311,6 +311,9 @@ public:
 
 	/// @brief Returns the processing editor if any
 	QObject* editor();
+
+	/// @brief Returns the device tool bar if any
+	QObject* toolBar();
 
 protected:
 	virtual void apply();

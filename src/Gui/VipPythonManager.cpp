@@ -30,7 +30,6 @@
 #include "VipPlayer.h"
 #include "VipProcessingObjectEditor.h"
 #include "VipGui.h"
-#include "VipPyIPython.h"
 #include <functional>
 #include <QToolBar>
 #include <qlineedit.h>
@@ -90,10 +89,6 @@ VipPythonParameters::VipPythonParameters()
 		"        bar = 42\n"
 		"        print(bar)");
 
-	
-	launchInLocal = new QRadioButton("Launch script in internal interpreter", this);
-	launchInIPython = new QRadioButton("Launch scripts in IPython interpreter (if available)", this);
-	launchInIPython->setChecked(true);
 
 	restart = new QToolButton();
 	restart->setAutoRaise(true);
@@ -105,14 +100,6 @@ VipPythonParameters::VipPythonParameters()
 	QGridLayout * lay = new QGridLayout();
 	lay->setSpacing(5);
 
-	QGroupBox* launch = createOptionGroup("Launch scripts");
-	{
-		QVBoxLayout* v = new QVBoxLayout();
-		v->addWidget(launchInLocal);
-		v->addWidget(launchInIPython);
-		launch->setLayout(v);
-	}
-	lay->addWidget(launch, row++, 0, 1, 2);
 	lay->addWidget(createOptionGroup("External Python"), row++, 0, 1, 2);
 	lay->addWidget(pythonPathLabel, row, 0);
 	lay->addWidget(pythonPath, row++, 1);
@@ -182,11 +169,6 @@ VipPythonParameters::VipPythonParameters()
 
 void VipPythonParameters::applyPage()
 {
-	if (launchInLocal->isChecked())
-		VipPyInterpreter::instance()->setLaunchCode(VipPyInterpreter::InLocalInterp);
-	else
-		VipPyInterpreter::instance()->setLaunchCode(VipPyInterpreter::InIPythonInterp);
-
 	VipPyInterpreter::instance()->setPython(pythonPath->filename());
 	VipPyInterpreter::instance()->setWorkingDirectory(wdPath->filename());
 	if(startupCode->currentEditor())
@@ -200,11 +182,6 @@ void VipPythonParameters::applyPage()
 
 void VipPythonParameters::updatePage()
 {
-	if (VipPyInterpreter::instance()->launchCode() == VipPyInterpreter::InLocalInterp)
-		launchInLocal->setChecked(true);
-	else
-		launchInIPython->setChecked(true);
-
 	pythonPath->setFilename(VipPyInterpreter::instance()->python());
 	wdPath->setFilename(VipPyInterpreter::instance()->workingDirectory());
 	startupCode->currentEditor()->setPlainText(VipPyInterpreter::instance()->startupCode());
@@ -371,9 +348,7 @@ VipPythonManager* VipPythonManager::instance()
 
 static void uninit_python()
 {
-	// We MUST delete the VipIPythonToolWidget ourself as it spawn processes which prevent from deleting ALL windows
-	if (VipIPythonToolWidget* twidget = vipGetIPythonToolWidget())
-		delete twidget;
+	
 }
 
 VipPythonManager::VipPythonManager()
@@ -439,7 +414,7 @@ VipPythonManager::VipPythonManager()
 	//TEST: disable for faster loading
 	VipPyInterpreter::instance()->addProcessingDirectory(vipGetPythonDirectory());
 	// Next to the application, not next to wherever it happened to be started from.
-	VipPyInterpreter::instance()->addProcessingDirectory(QCoreApplication::applicationDirPath() + "/Python");
+	VipPyInterpreter::instance()->addProcessingDirectory(QCoreApplication::applicationDirPath() + "/Python/CppProcessing");
 
 	//register PyCustomizePlotPlayer
 	vipFDPlayerCreated().append<void(VipPlotPlayer*)>(detail::pyCustomizePlotPlayer);
@@ -452,29 +427,12 @@ VipPythonManager::VipPythonManager()
 
 	const VipTextHighlighter * h = VipTextEditor::stdColorSchemeForType("Python");
 	if (vipIsDarkSkin() ) {
-		vipSetIPythonStyle("monokai");
 		if(!vipIsDarkColor(h->backgroundColor()))
 			VipTextEditor::setStdColorSchemeForType("Python", "Spyder Dark");
 	}
 	else {
 		if(vipIsDarkColor(h->backgroundColor()))
 			VipTextEditor::setStdColorSchemeForType("Python", "Pydev");
-	}
-	vipSetIPythonFontSize(VipGuiDisplayParamaters::instance()->defaultEditorFont().pointSize());
-
-	//Initialize global shared memory
-	QString smem_name = vipPyGlobalSharedMemoryName();
-	//Set the shared memory name in thermavip title
-	QString main_title = vipGetMainWindow()->mainTitle();
-	main_title.replace("Thermavip", smem_name);
-	vipGetMainWindow()->setMainTitle(main_title);
-
-	// Initialize IPython tool widget
-	if (VipIPythonToolWidget* twidget = vipGetIPythonToolWidget(vipGetMainWindow()))
-	{
-		vipGetMainWindow()->addDockWidget(Qt::BottomDockWidgetArea, twidget);
-		vipGetIPythonToolWidget()->setFloating(false);
-		vipGetIPythonToolWidget()->hide();
 	}
 
 	vipAddUninitializationFunction(uninit_python);
@@ -492,8 +450,6 @@ void VipPythonManager::save(VipArchive & stream)
 	VipPyInterpreter & opt = *VipPyInterpreter::instance();
 	stream.content("python", opt.python());
 	stream.content("workingDirectory", opt.workingDirectory());
-	stream.content("type", opt.pyType());
-	stream.content("launchCode", (int)opt.launchCode());
 	stream.content("startup", opt.startupCode());
 	stream.content("schemes", VipTextEditor::stdColorSchemes());
 
@@ -504,31 +460,20 @@ void VipPythonManager::restore(VipArchive & stream)
 {
 	VipPyInterpreter & opt = *VipPyInterpreter::instance();
 
-	QString type ;
-	int launchCode = VipPyInterpreter::InIPythonInterp;
 	QString python = "python";
 	//int  protocol = 3;
 	QString workingDirectory;
 	QMap<QString, QString> schemes;
 	stream.content("python", python);
 	stream.content("workingDirectory", workingDirectory);
-	stream.content("type", type);
 
 	
-	//New in 3.3.6
-	stream.save();
-	if (!stream.content("launchCode", launchCode))
-		stream.restore();
 	
 	QString startup = stream.read("startup").toString();
 	stream.content("schemes", schemes);
 	
 	opt.setPython(python);
 	opt.setWorkingDirectory(workingDirectory);
-	//NEW: for now always use Local
-	//opt.setPyType((VipPyInterpreter::PyType)type);
-	//opt.setPyType(VipPyInterpreter::Local);
-	opt.setLaunchCode((VipPyInterpreter::PyLaunchCode)launchCode);
 	
 	VipTextEditor::setStdColorSchemes(schemes);
 	const VipTextHighlighter* h = VipTextEditor::stdColorSchemeForType("Python");
@@ -555,16 +500,6 @@ void VipPythonManager::restore(VipArchive & stream)
 		VIP_LOG_WARNING("Startup code found in the session was loaded but not executed. Review it in the Python options and apply it explicitly.");
 	}
 	stream.content("editor", vipGetPyEditorToolWidget());
-
-	//Restart IPython is python process is different
-	if (python != "python") {
-		if (VipIPythonToolWidget* twidget = vipGetIPythonToolWidget())
-		{
-			twidget->widget()->closeTab(0);
-			twidget->widget()->addInterpreter();
-		}
-	}
-
 }
 
 void VipPythonManager::applyCurveFit()
