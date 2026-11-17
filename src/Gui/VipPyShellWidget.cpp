@@ -316,7 +316,7 @@ void VipPyShellWidget::setFinishedIcon(const QIcon& icon)
 
 bool VipPyShellWidget::isIDLE() const
 {
-	if (auto proc = d_data->process.get())
+	if (auto proc = d_data->process.data())
 		return proc->isWaitingForInput();
 	return false;
 }
@@ -730,15 +730,29 @@ QTextEdit* VipIPythonShellWidget::textEdit() const
 	return d_data->textEdit;
 }
 
+struct PrintPyError
+{
+	~PrintPyError()
+	{
+		VipPyError err(compute_error_t{});
+		if(err){
+			VIP_LOG_ERROR(err.toString());
+		} 
+	}
+};
+
+
 QString VipIPythonShellWidget::historyFile() const
 {
 	VipGILLocker lock;
+	PrintPyError err;
 	VipPyError::clear();
 	return d_data->console.callMember("get_history_filename").toVariant().value<QString>();
 }
 QStringList VipIPythonShellWidget::historyFileLines(int max_lines) const
 {
 	VipGILLocker lock;
+	PrintPyError err;
 	VipPyError::clear();
 	return d_data->console.callMember("get_history_lines", QVariantList() << max_lines).toVariant().value<QStringList>();
 }
@@ -746,6 +760,7 @@ QStringList VipIPythonShellWidget::historyFileLines(int max_lines) const
 void VipIPythonShellWidget::stopCurrentCode()
 {
 	VipGILLocker lock;
+	PrintPyError err;
 	VipPyError::clear();
 	d_data->console.callMember("stop_current_code");
 }
@@ -753,6 +768,7 @@ void VipIPythonShellWidget::stopCurrentCode()
 bool VipIPythonShellWidget::isIDLE() const
 {
 	VipGILLocker lock;
+	PrintPyError err;
 	VipPyError::clear();
 	return d_data->console.getMember("is_idle").toVariant().toBool();
 }
@@ -760,12 +776,14 @@ bool VipIPythonShellWidget::isIDLE() const
 void VipIPythonShellWidget::restartInterpreter()
 {
 	VipGILLocker lock;
+	PrintPyError err;
 	VipPyError::clear();
 	d_data->console.callMember("restart_session");
 }
 void VipIPythonShellWidget::addLines(const QStringList& lines)
 {
 	VipGILLocker lock;
+	PrintPyError err;
 	VipPyError::clear();
 	d_data->console.callMember("add_input_lines", QVariantList() << vipToVariant(lines));
 }
@@ -776,6 +794,7 @@ void VipIPythonShellWidget::addLine(const QString& line)
 void VipIPythonShellWidget::execLines(const QStringList& lines)
 {
 	VipGILLocker lock;
+	PrintPyError err;
 	VipPyError::clear();
 	for (const auto& l : lines)
 		d_data->console.callMember("execute", QVariantList() << vipToVariant(l));
@@ -783,6 +802,7 @@ void VipIPythonShellWidget::execLines(const QStringList& lines)
 void VipIPythonShellWidget::execLine(const QString& line)
 {
 	VipGILLocker lock;
+	PrintPyError err;
 	VipPyError::clear();
 	d_data->console.callMember("execute", QVariantList() << vipToVariant(line));
 }
@@ -798,6 +818,7 @@ void VipIPythonShellWidget::appendText(const QString& str, const QColor& color)
 		args << color.name();
 
 	VipGILLocker lock;
+	PrintPyError err;
 	VipPyError::clear();
 	d_data->console.callMember("append_output", args);
 
@@ -811,6 +832,7 @@ void VipIPythonShellWidget::appendText(const QString& str, const QColor& color)
 void VipIPythonShellWidget::scrollToEnd()
 {
 	VipGILLocker lock;
+	PrintPyError err;
 	VipPyError::clear();
 	d_data->console.callMember("scroll_to_end");
 }
@@ -838,7 +860,7 @@ void VipIPythonShellWidget::setProcess(VipBaseIOOperation* proc)
 }
 VipBaseIOOperation* VipIPythonShellWidget::process() const
 {
-	return d_data->process.get();
+	return d_data->process.data();
 }
 
 void VipIPythonShellWidget::newOutput()
@@ -882,11 +904,11 @@ VipPyInterpreterToolWidget::VipPyInterpreterToolWidget(VipMainWindow* win)
 
 	d_data->ipythonShell = new VipIPythonShellWidget();
 	if (!d_data->ipythonShell->textEdit()) {
-		delete d_data->ipythonShell.get();
+		delete d_data->ipythonShell.data();
 		d_data->ipythonShell = nullptr;
 		d_data->stdShell = new VipPyShellWidget();
 	}
-	d_data->shell = d_data->ipythonShell ? static_cast<VipBasePythonShell*>(d_data->ipythonShell.get()) : static_cast<VipBasePythonShell*>(d_data->stdShell.get());
+	d_data->shell = d_data->ipythonShell ? static_cast<VipBasePythonShell*>(d_data->ipythonShell.data()) : static_cast<VipBasePythonShell*>(d_data->stdShell.data());
 	d_data->shell->setProcess(VipPyInterpreter::instance());
 
 	if (d_data->stdShell) {
@@ -942,7 +964,7 @@ VipPyInterpreterToolWidget::~VipPyInterpreterToolWidget()
 
 QWidget* VipPyInterpreterToolWidget::shellWidget() const
 {
-	return d_data->ipythonShell ? static_cast<QWidget*>(d_data->ipythonShell.get()) : static_cast<QWidget*>(d_data->stdShell.get());
+	return d_data->ipythonShell ? static_cast<QWidget*>(d_data->ipythonShell.data()) : static_cast<QWidget*>(d_data->stdShell.data());
 }
 QTextEdit* VipPyInterpreterToolWidget::shellEditor() const
 {

@@ -897,13 +897,6 @@ static QObject* buildEditor(VipPyObject& proc, const QString& member = "editor_a
 	return (QObject*)address;
 }
 
-static VipPyObject getVipProcessingObjectType()
-{
-	vipExecPythonCode("import Thermavip as th\n"
-			  "proc_type = th.VipProcessingObject");
-
-	return VipPyObject::eval("proc_type");
-}
 
 template<class Processing>
 QVariant initializePyProcessing(Processing* _this, const QVariant& value)
@@ -937,7 +930,12 @@ QVariant initializePyProcessing(Processing* _this, const QVariant& value)
 	info.category = ptr->getMember("category").str();
 	info.description = ptr->getMember("description").str();
 	info.classname = ptr->getMember("__name__").str();
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
+	info.metatype = vipVariantFromQObject(_this).userType();
+#else
 	info.metatype = vipVariantFromQObject(_this).metaType().id();
+#endif	
+
 	info.displayHint = (VipProcessingObject::DisplayHint)object.callMember("get_display_hint").toVariant().toInt();
 	info.init = value;
 	d_data->useEventLoop = object.getMember("use_event_loop").toVariant().toBool();

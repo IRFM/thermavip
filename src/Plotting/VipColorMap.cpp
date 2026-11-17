@@ -445,10 +445,8 @@ void extractHistogram(const Ar& img, VipNDArrayType<float>& tmp, int strength, c
 
 	// For image only: use a kind of pseudo gaussian filter to add some diversity to the histogram
 
-	float* _out = tmp.ptr();
 	qsizetype w = img.shape(1);
 	qsizetype h = img.shape(0);
-	qsizetype size = w * h;
 
 	using value_type = typename Ar::value_type;
 

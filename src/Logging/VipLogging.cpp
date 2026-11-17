@@ -345,6 +345,10 @@ void VipLogging::log(const QString& text, Level level, Outputs outputs, qint64 t
 	if (!isEnabled())
 		return;
 
+	if (vip_log_detail::_vip_enable_debug()){
+		vip_debug(formatLogEntry(text,level,QDateTime::currentDateTime()).data());
+	} 
+
 	if (time < 0)
 		pushLog(LogFrame(text, level, outputs));
 	else

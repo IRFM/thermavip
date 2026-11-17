@@ -1066,9 +1066,9 @@ VipPyObject VipPyObject::callMember(const char* name, const QVariantList& args, 
 		return {};
 
 	std::vector<VipPyObject> _args(args.size());
-	for (size_t i = 0; i < args.size(); ++i) {
-		_args[i] = VipPyObject(vipVariantToPython(QVariant::fromValue(args[i])), borrow_t{});
-		if (!_args[i])
+	for (qsizetype i = 0; i < args.size(); ++i) {
+		_args[(size_t)i] = VipPyObject(vipVariantToPython(QVariant::fromValue(args[i])), borrow_t{});
+		if (!_args[(size_t)i])
 			return {};
 	}
 
@@ -1150,7 +1150,7 @@ VipPyObject vipPythonFromQObject(QObject* obj)
 		VIP_LOG_ERROR("Failed to retrieve 'qobject_from_address' from QtCpp module");
 		return {};
 	}
-	return qobject_from_address.callMember("__call__", QVariantList() << (std::uintptr_t)obj);
+	return qobject_from_address.callMember("__call__", QVariantList() << vipToVariant((std::uint64_t)(std::uintptr_t)obj));
 }
 
 QObject* vipQObjectFromPython(const VipPyObject& obj)
