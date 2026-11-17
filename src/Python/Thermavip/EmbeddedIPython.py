@@ -489,7 +489,7 @@ class EmbeddedIPython(RichJupyterWidget):
 
         self._append_custom(insert_message, text, before_prompt=True)
 
-    def add_input_lines(self, *lines):
+    def add_input_lines(self, lines):
         """Append strings to the current editable cell, one per line.
 
         Each argument can also be a multiline block. Call on the GUI thread

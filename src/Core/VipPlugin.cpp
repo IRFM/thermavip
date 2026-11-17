@@ -221,6 +221,7 @@ QStringList VipLoadPlugins::plugins(const QString& category) const
 
 QStringList VipLoadPlugins::pluginsInDir(const QString directory)
 {
+	vip_debug("Find plugins in folder %s\n", directory.toLatin1().data());
 	QStringList res;
 	for (const QFileInfo& info : QDir(directory).entryInfoList(QDir::Files | QDir::Dirs | QDir::NoDotAndDotDot)) {
 		if (info.isDir()) {
